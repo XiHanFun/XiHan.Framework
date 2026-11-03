@@ -15,24 +15,24 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 
 /// <summary>
-/// 雪花标识特性。
+/// 雪花标识特性
 /// </summary>
 /// <remarks>
-/// 应用显式装配后得到 <see cref="IIdGenerator{TKey}"/>（<see cref="long"/>），Profile 不缺省装配它。配置了 <c>XiHan:Persistence:Snowflake:WorkerId</c> 时机器位固定；否则启动时经容器里的 <see cref="IDistributedLock"/>（<c>caching.distributed</c> 的 Provider 注册）租约分配，没有锁或机器位已满即启动失败，不做随机机器位。清单声明可选依赖 <c>caching.distributed@1</c>：装配了它的 Provider 时本特性排在其后启动、在其前停止，租约在锁存储可用时取得与释放，与 <c>UseFeature</c> 的先后无关；固定机器位又没有任何 <c>caching.distributed</c> Provider 时按可选依赖缺失进入 Degraded。调用里抛出的机器位不可用与时钟回拨由本特性登记在 Resilience 阶段的中间件转为 UNAVAILABLE 结果（ADR-0063）。
+/// 应用显式装配后得到 <see cref="IIdGenerator{TKey}"/>（<see cref="long"/>），Profile 不缺省装配它。配置了 <c>XiHan:Persistence:Snowflake:WorkerId</c> 时机器位固定；否则启动时经容器里的 <see cref="IDistributedLock"/>（<c>caching.distributed</c> 的 Provider 注册）租约分配，没有锁或机器位已满即启动失败，不做随机机器位。清单声明可选依赖 <c>caching.distributed@1</c>：装配了它的 Provider 时本特性排在其后启动、在其前停止，租约在锁存储可用时取得与释放，与 <c>UseFeature</c> 的先后无关；固定机器位又没有任何 <c>caching.distributed</c> Provider 时按可选依赖缺失进入 Degraded。调用里抛出的机器位不可用与时钟回拨由本特性登记在 Resilience 阶段的中间件转为 UNAVAILABLE 结果（ADR-0063）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SnowflakeIdFeature : IHostedFeature
 {
     /// <summary>
-    /// 启动时解析出的租约来源。
+    /// 启动时解析出的租约来源
     /// </summary>
     /// <remarks>
-    /// 固定机器位时为 <see langword="null"/>。
+    /// 固定机器位时为 <see langword="null"/>
     /// </remarks>
     private LeasedWorkerIdSource? _leased;
 
     /// <summary>
-    /// 配置阶段判定是否走租约分配。
+    /// 配置阶段判定是否走租约分配
     /// </summary>
     private bool _leasing;
 

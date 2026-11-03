@@ -9,26 +9,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Jwt;
 
 /// <summary>
-/// JWT 选项。
+/// JWT 选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Security:Jwt</c> 显式读取。
+/// 从配置节 <c>XiHan:Security:Jwt</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record JwtOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Security:Jwt";
 
     /// <summary>
-    /// 对称密钥最小字节数（HS256）。
+    /// 对称密钥最小字节数（HS256）
     /// </summary>
     public const int MinSecretBytes = 32;
 
     /// <summary>
-    /// 对称密钥。
+    /// 对称密钥
     /// </summary>
     public required string Secret
     {
@@ -39,26 +39,26 @@ public sealed record JwtOptions
     }
 
     /// <summary>
-    /// 签发者。
+    /// 签发者
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/> 不校验。
+    /// <see langword="null"/> 不校验
     /// </remarks>
     public string? Issuer { get; init; }
 
     /// <summary>
-    /// 受众。
+    /// 受众
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/> 不校验。
+    /// <see langword="null"/> 不校验
     /// </remarks>
     public string? Audience { get; init; }
 
     /// <summary>
-    /// 时钟偏移。
+    /// 时钟偏移
     /// </summary>
     /// <remarks>
-    /// 默认 60 秒。
+    /// 默认 60 秒
     /// </remarks>
     public TimeSpan ClockSkew
     {
@@ -67,10 +67,10 @@ public sealed record JwtOptions
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 作为主体 ID 的声明类型。
+    /// 作为主体 ID 的声明类型
     /// </summary>
     /// <remarks>
-    /// 默认 <c>sub</c>。
+    /// 默认 <c>sub</c>
     /// </remarks>
     public string NameClaim
     {
@@ -79,7 +79,7 @@ public sealed record JwtOptions
     } = "sub";
 
     /// <summary>
-    /// 从配置读取：<c>Secret</c>（必填）、<c>Issuer</c>、<c>Audience</c>、<c>ClockSkewSeconds</c>、<c>NameClaim</c>。
+    /// 从配置读取：<c>Secret</c>（必填）、<c>Issuer</c>、<c>Audience</c>、<c>ClockSkewSeconds</c>、<c>NameClaim</c>
     /// </summary>
     public static JwtOptions FromConfiguration(IConfiguration configuration)
     {
@@ -108,10 +108,10 @@ public sealed record JwtOptions
     }
 
     /// <summary>
-    /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替。
+    /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替
     /// </summary>
     /// <remarks>
-    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，对称签名密钥不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，对称签名密钥不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对
     /// </remarks>
     private bool PrintMembers(StringBuilder builder)
     {

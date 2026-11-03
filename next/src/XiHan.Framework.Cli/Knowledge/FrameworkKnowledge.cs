@@ -8,40 +8,40 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Knowledge;
 
 /// <summary>
-/// 随工具嵌入的框架离线知识库。
+/// 随工具嵌入的框架离线知识库
 /// </summary>
 /// <remarks>
-/// 包与特性清单（<c>catalog.json</c>）、配置节（<c>configuration.json</c>）与文档页（文档站、RFC 与约定、各包 README）都在构建时嵌入本程序集，数据与工具的版本一致（ADR-0076）。
+/// 包与特性清单（<c>catalog.json</c>）、配置节（<c>configuration.json</c>）与文档页（文档站、RFC 与约定、各包 README）都在构建时嵌入本程序集，数据与工具的版本一致（ADR-0076）
 /// </remarks>
 internal sealed class FrameworkKnowledge
 {
     /// <summary>
-    /// 包与特性清单的资源名。
+    /// 包与特性清单的资源名
     /// </summary>
     public const string CatalogResource = "knowledge/catalog.json";
 
     /// <summary>
-    /// 配置节索引的资源名。
+    /// 配置节索引的资源名
     /// </summary>
     public const string ConfigurationResource = "knowledge/configuration.json";
 
     /// <summary>
-    /// 使用技能的资源名。
+    /// 使用技能的资源名
     /// </summary>
     public const string SkillResource = "skills/xihan-framework/SKILL.md";
 
     /// <summary>
-    /// 文档页资源名的前缀，其后是仓库内路径。
+    /// 文档页资源名的前缀，其后是仓库内路径
     /// </summary>
     public const string DocsPrefix = "docs/";
 
     /// <summary>
-    /// 摘要的最大长度。
+    /// 摘要的最大长度
     /// </summary>
     private const int MaxSummaryLength = 160;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public FrameworkKnowledge(CatalogDocument catalog, ConfigurationDocument configuration, IReadOnlyList<DocPage> pages)
     {
@@ -55,40 +55,40 @@ internal sealed class FrameworkKnowledge
     }
 
     /// <summary>
-    /// 数据对应的框架版本，即工具自身的版本。
+    /// 数据对应的框架版本，即工具自身的版本
     /// </summary>
     public static string Version => FrameworkInfo.Version;
 
     /// <summary>
-    /// 全部正式包。
+    /// 全部正式包
     /// </summary>
     public IReadOnlyList<PackageEntry> Packages { get; }
 
     /// <summary>
-    /// 全部公开特性的清单。
+    /// 全部公开特性的清单
     /// </summary>
     public IReadOnlyList<FeatureEntry> Features { get; }
 
     /// <summary>
-    /// 全部配置节。
+    /// 全部配置节
     /// </summary>
     public IReadOnlyList<ConfigSectionEntry> Sections { get; }
 
     /// <summary>
-    /// 全部文档页，按路径排序。
+    /// 全部文档页，按路径排序
     /// </summary>
     public IReadOnlyList<DocPage> Pages { get; }
 
     /// <summary>
-    /// 从本程序集的嵌入资源读出。
+    /// 从本程序集的嵌入资源读出
     /// </summary>
     public static FrameworkKnowledge Load() => Load(typeof(FrameworkKnowledge).Assembly);
 
     /// <summary>
-    /// 从给定程序集的嵌入资源读出。
+    /// 从给定程序集的嵌入资源读出
     /// </summary>
     /// <remarks>
-    /// 缺少索引资源是构建缺陷，抛 <see cref="InvalidOperationException"/>。
+    /// 缺少索引资源是构建缺陷，抛 <see cref="InvalidOperationException"/>
     /// </remarks>
     public static FrameworkKnowledge Load(Assembly assembly)
     {
@@ -117,18 +117,18 @@ internal sealed class FrameworkKnowledge
     }
 
     /// <summary>
-    /// 读使用技能 <c>SKILL.md</c> 的原文。
+    /// 读使用技能 <c>SKILL.md</c> 的原文
     /// </summary>
     /// <remarks>
-    /// <c>setup</c> 把它写进项目，供编码助手按任务加载。
+    /// <c>setup</c> 把它写进项目，供编码助手按任务加载
     /// </remarks>
     public static string ReadSkill() => ReadResource(typeof(FrameworkKnowledge).Assembly, SkillResource);
 
     /// <summary>
-    /// 解析一页 Markdown。
+    /// 解析一页 Markdown
     /// </summary>
     /// <remarks>
-    /// 去掉开头的 frontmatter；标题取第一个一级标题，摘要取标题后第一段正文的首行。
+    /// 去掉开头的 frontmatter；标题取第一个一级标题，摘要取标题后第一段正文的首行
     /// </remarks>
     public static DocPage ParsePage(string path, string content)
     {
@@ -160,7 +160,7 @@ internal sealed class FrameworkKnowledge
     }
 
     /// <summary>
-    /// 去掉开头 <c>---</c> 包围的 frontmatter。
+    /// 去掉开头 <c>---</c> 包围的 frontmatter
     /// </summary>
     private static string StripFrontmatter(string text)
     {
@@ -174,7 +174,7 @@ internal sealed class FrameworkKnowledge
     }
 
     /// <summary>
-    /// 读一个嵌入资源的文本。
+    /// 读一个嵌入资源的文本
     /// </summary>
     private static string ReadResource(Assembly assembly, string name)
     {

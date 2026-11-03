@@ -7,46 +7,46 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Providers;
 
 /// <summary>
-/// Provider 目录的实现（单例）。
+/// Provider 目录的实现（单例）
 /// </summary>
 /// <remarks>
-/// 按名字找配置，按种类找工厂，实例按名字缓存；同一种类登记多个工厂以最后登记的为准。
+/// 按名字找配置，按种类找工厂，实例按名字缓存；同一种类登记多个工厂以最后登记的为准
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
 {
     /// <summary>
-    /// 保护缓存的锁。
+    /// 保护缓存的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly AIOptions _options;
 
     /// <summary>
-    /// 种类 → 聊天工厂。
+    /// 种类 → 聊天工厂
     /// </summary>
     private readonly Dictionary<string, IChatClientFactory> _chatFactories;
 
     /// <summary>
-    /// 种类 → 嵌入工厂。
+    /// 种类 → 嵌入工厂
     /// </summary>
     private readonly Dictionary<string, IEmbeddingGeneratorFactory> _embeddingFactories;
 
     /// <summary>
-    /// 名字 → 聊天客户端。
+    /// 名字 → 聊天客户端
     /// </summary>
     private readonly Dictionary<string, IChatClient> _chatClients = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 名字 → 嵌入生成器。
+    /// 名字 → 嵌入生成器
     /// </summary>
     private readonly Dictionary<string, IEmbeddingGenerator<string, Embedding<float>>> _generators = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public AIProviderCatalog(AIOptions options, IEnumerable<IChatClientFactory> chatFactories, IEnumerable<IEmbeddingGeneratorFactory> embeddingFactories)
     {
@@ -178,13 +178,13 @@ public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
     public void Dispose() => Invalidate();
 
     /// <summary>
-    /// Provider 未配置。
+    /// Provider 未配置
     /// </summary>
     internal static Error NotFound(string? name)
         => Error.NotFound(AIErrors.ProviderNotFound, AIMessages.ProviderNotFound, MessageArguments.Of(("name", name ?? string.Empty)));
 
     /// <summary>
-    /// 种类无工厂。
+    /// 种类无工厂
     /// </summary>
     private static Error KindUnknown(AIProviderOptions options)
         => Error.NotFound(AIErrors.ProviderNotFound, AIMessages.ProviderKindUnknown, MessageArguments.Of(("name", options.Name), ("kind", options.Kind)));

@@ -13,19 +13,19 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 一个分区（平台或租户）的实例表与节点实例表的读写。
+/// 一个分区（平台或租户）的实例表与节点实例表的读写
 /// </summary>
 /// <remarks>
-/// <see cref="WorkflowInstanceQuery"/> 的每个过滤项都翻译成 SQL 条件（关联 ID 集合是 <c>IN</c>，只取顶层是父实例为空，关键字对折叠后的查询列——标题与关联 ID——做包含判断）；租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件；删实例级联删节点实例。
+/// <see cref="WorkflowInstanceQuery"/> 的每个过滤项都翻译成 SQL 条件（关联 ID 集合是 <c>IN</c>，只取顶层是父实例为空，关键字对折叠后的查询列——标题与关联 ID——做包含判断）；租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件；删实例级联删节点实例
 /// </remarks>
-/// <typeparam name="TInstance">实例行类型。</typeparam>
-/// <typeparam name="TNode">节点实例行类型。</typeparam>
+/// <typeparam name="TInstance">实例行类型</typeparam>
+/// <typeparam name="TNode">节点实例行类型</typeparam>
 internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, string> instances, IRepository<TNode, string> nodes, WriteSequence sequence)
     where TInstance : WorkflowInstanceRow, new()
     where TNode : WorkflowNodeInstanceRow, new()
 {
     /// <summary>
-    /// 按 ID 找实例。
+    /// 按 ID 找实例
     /// </summary>
     public async ValueTask<Result<Maybe<WorkflowInstance>>> FindAsync(string id, CancellationToken cancellationToken)
     {
@@ -34,7 +34,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 按 ID 批量找实例。
+    /// 按 ID 批量找实例
     /// </summary>
     public async ValueTask<Result<IReadOnlyList<WorkflowInstance>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
@@ -43,7 +43,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 列表：按排序字段与方向，再接创建时间降序、写入序号降序与 ID 补成全序（<see cref="Sorted"/>）。
+    /// 列表：按排序字段与方向，再接创建时间降序、写入序号降序与 ID 补成全序（<see cref="Sorted"/>）
     /// </summary>
     public async ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
@@ -53,16 +53,16 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 计数。
+    /// 计数
     /// </summary>
     public async ValueTask<Result<long>> CountAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
         => await instances.CountAsync(Filter(query), cancellationToken).ConfigureAwait(false);
 
     /// <summary>
-    /// 新增或整体替换实例，返回要同步书签的行。
+    /// 新增或整体替换实例，返回要同步书签的行
     /// </summary>
     /// <remarks>
-    /// 要同步的是新增的行与状态、定义名或关键字查询列变了的行：书签行带着所属实例的状态、定义名与由后两者算出的实例一侧关键字查询列（待办查询下推），见 <see cref="BookmarkRows{TRow, TInstance}.SyncAsync"/>。
+    /// 要同步的是新增的行与状态、定义名或关键字查询列变了的行：书签行带着所属实例的状态、定义名与由后两者算出的实例一侧关键字查询列（待办查询下推），见 <see cref="BookmarkRows{TRow, TInstance}.SyncAsync"/>
     /// </remarks>
     public async ValueTask<Result<IReadOnlyList<TInstance>>> SaveAsync(IReadOnlyList<WorkflowInstance> items, CancellationToken cancellationToken)
     {
@@ -91,7 +91,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 删除实例，级联节点实例。
+    /// 删除实例，级联节点实例
     /// </summary>
     public async ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
@@ -114,7 +114,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 按 ID 找节点实例。
+    /// 按 ID 找节点实例
     /// </summary>
     public async ValueTask<Result<Maybe<WorkflowNodeInstance>>> FindNodeInstanceAsync(string id, CancellationToken cancellationToken)
     {
@@ -123,10 +123,10 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 实例的全部节点实例。
+    /// 实例的全部节点实例
     /// </summary>
     /// <remarks>
-    /// 开始时间升序，同刻按写入序号升序（同一实例的写入由实例锁串行化，序号即创建顺序），再按 ID 补成全序。
+    /// 开始时间升序，同刻按写入序号升序（同一实例的写入由实例锁串行化，序号即创建顺序），再按 ID 补成全序
     /// </remarks>
     public async ValueTask<Result<IReadOnlyList<WorkflowNodeInstance>>> NodeInstancesAsync(string instanceId, CancellationToken cancellationToken)
     {
@@ -140,16 +140,16 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 新增或整体替换节点实例。
+    /// 新增或整体替换节点实例
     /// </summary>
     public ValueTask<Result> SaveNodeInstancesAsync(IReadOnlyList<WorkflowNodeInstance> items, CancellationToken cancellationToken)
         => RecordQueries.UpsertAsync(nodes, items.Select(ToRecord).ToList(), Copy, cancellationToken);
 
     /// <summary>
-    /// 把查询的过滤项逐项翻译成条件。
+    /// 把查询的过滤项逐项翻译成条件
     /// </summary>
     /// <remarks>
-    /// 单个状态与状态集合取并集做 <c>IN</c>，其余等值，时间范围按列比较。
+    /// 单个状态与状态集合取并集做 <c>IN</c>，其余等值，时间范围按列比较
     /// </remarks>
     private static EntityQuery<TInstance> Filter(WorkflowInstanceQuery query)
     {
@@ -232,15 +232,15 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 没给排序项时的排序：创建时间降序。
+    /// 没给排序项时的排序：创建时间降序
     /// </summary>
     private static readonly WorkflowInstanceSort[] _defaultSorts = [new(WorkflowInstanceSortField.CreatedAt, Descending: true)];
 
     /// <summary>
-    /// 按实例查询的排序项依次排序，再接次序键补成全序。
+    /// 按实例查询的排序项依次排序，再接次序键补成全序
     /// </summary>
     /// <remarks>
-    /// 排序项按列表的顺序依次进 <c>ORDER BY</c>（ADR-0104），之后是次序键创建时间降序、写入序号降序、ID 降序（ADR-0102）；排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向，同刻的行按写入先后。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），结束时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序项为空或字段不在白名单里抛出：调用方（引擎）已校验，走到这里是编程错误。
+    /// 排序项按列表的顺序依次进 <c>ORDER BY</c>（ADR-0104），之后是次序键创建时间降序、写入序号降序、ID 降序（ADR-0102）；排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向，同刻的行按写入先后。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），结束时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序项为空或字段不在白名单里抛出：调用方（引擎）已校验，走到这里是编程错误
     /// </remarks>
     private static EntityQuery<TInstance> Sorted(EntityQuery<TInstance> query, WorkflowInstanceQuery instanceQuery)
     {
@@ -288,10 +288,10 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 实例 → 行。
+    /// 实例 → 行
     /// </summary>
     /// <remarks>
-    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy(TInstance, TInstance)"/> 不复制它；租户列由持久化在新增时写入。
+    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy(TInstance, TInstance)"/> 不复制它；租户列由持久化在新增时写入
     /// </remarks>
     private TInstance ToRecord(WorkflowInstance instance)
     {
@@ -317,7 +317,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 把新行的内容复制到已有行上。
+    /// 把新行的内容复制到已有行上
     /// </summary>
     private static void Copy(TInstance source, TInstance target)
     {
@@ -337,10 +337,10 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 节点实例 → 行。
+    /// 节点实例 → 行
     /// </summary>
     /// <remarks>
-    /// 序号只对新增的行生效。
+    /// 序号只对新增的行生效
     /// </remarks>
     private TNode ToRecord(WorkflowNodeInstance nodeInstance)
     {
@@ -356,7 +356,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     }
 
     /// <summary>
-    /// 把新行的内容复制到已有行上。
+    /// 把新行的内容复制到已有行上
     /// </summary>
     private static void Copy(TNode source, TNode target)
     {

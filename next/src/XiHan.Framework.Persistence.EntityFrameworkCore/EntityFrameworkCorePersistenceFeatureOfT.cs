@@ -23,65 +23,65 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// EF Core 持久化的能力包入口。
+/// EF Core 持久化的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败；SQLite 上逐连接核对 UTC ticks 时间列，库里还是旧的文本形式即启动失败（<see cref="PersistenceErrors.StorageFormatMismatch"/>）；租户分片库启动时枚举不到，在首次绑定时由工作单元核对（ADR-0097）。命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/>）：绑定它的工作单元所在作用域的 DbContext 按它建出，配置回调收到的绑定主值是它的连接串、属性沿用 <see cref="ConnectionBinding"/> 绑定。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>。
-/// 建出的 DbContext 带字符串匹配的查询拦截器与翻译插件：SQLite 上 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 一律译成 <c>LIKE … ESCAPE '\'</c>，只对 ASCII 字母不区分大小写，与 SqlSugar 在 SQLite 上同一套规则（ADR-0101）。
+/// 提供 <c>persistence.relational@1</c>，以应用的 <typeparamref name="TContext"/> 实现仓储与工作单元。启动时在独立作用域里建一次模型，索引声明不合法、Provider 不支持软删除实体的部分唯一索引这类建模错误在启动时失败；SQLite 上逐连接核对 UTC ticks 时间列，库里还是旧的文本形式即启动失败（<see cref="PersistenceErrors.StorageFormatMismatch"/>）；租户分片库启动时枚举不到，在首次绑定时由工作单元核对（ADR-0097）。命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/>）：绑定它的工作单元所在作用域的 DbContext 按它建出，配置回调收到的绑定主值是它的连接串、属性沿用 <see cref="ConnectionBinding"/> 绑定。健康项 <see cref="HealthName"/> 按 <see cref="EntityFrameworkCorePersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里 <c>CanConnect</c>
+/// 建出的 DbContext 带字符串匹配的查询拦截器与翻译插件：SQLite 上 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 一律译成 <c>LIKE … ESCAPE '\'</c>，只对 ASCII 字母不区分大小写，与 SqlSugar 在 SQLite 上同一套规则（ADR-0101）
 /// </remarks>
-/// <typeparam name="TContext">应用的 DbContext。</typeparam>
+/// <typeparam name="TContext">应用的 DbContext</typeparam>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFeature, IRepositoryRegistrar
     where TContext : DbContext
 {
     /// <summary>
-    /// 连接绑定名：<c>db</c>，类型 <c>connection:relational</c>，可选。
+    /// 连接绑定名：<c>db</c>，类型 <c>connection:relational</c>，可选
     /// </summary>
     public const string ConnectionBinding = "db";
 
     /// <summary>
-    /// 健康项名：默认连接的数据库是否可达。
+    /// 健康项名：默认连接的数据库是否可达
     /// </summary>
     public const string HealthName = "persistence.entityframeworkcore.database";
 
     /// <summary>
-    /// 连接绑定的类型。
+    /// 连接绑定的类型
     /// </summary>
     private const string ConnectionBindingType = "connection:relational";
 
     /// <summary>
-    /// 默认连接在核对消息里的名字。
+    /// 默认连接在核对消息里的名字
     /// </summary>
     /// <remarks>
-    /// 与命名连接保留的名字 <c>default</c> 一致（命名连接不能叫这个名字）。
+    /// 与命名连接保留的名字 <c>default</c> 一致（命名连接不能叫这个名字）
     /// </remarks>
     private const string DefaultConnection = "default";
 
     /// <summary>
-    /// 应用提供的 DbContext 配置回调。
+    /// 应用提供的 DbContext 配置回调
     /// </summary>
     /// <remarks>
-    /// 在每次构建 DbContext 选项时调用。
+    /// 在每次构建 DbContext 选项时调用
     /// </remarks>
     private readonly Action<Maybe<BindingValue>, DbContextOptionsBuilder> _configure;
 
     /// <summary>
-    /// 配置阶段读取的选项。
+    /// 配置阶段读取的选项
     /// </summary>
     /// <remarks>
-    /// <see cref="StartAsync"/> 据此决定是否建表。
+    /// <see cref="StartAsync"/> 据此决定是否建表
     /// </remarks>
     private EntityFrameworkCorePersistenceOptions _options = new();
 
     /// <summary>
-    /// 启动时起循环的健康探针，停止时结束它。
+    /// 启动时起循环的健康探针，停止时结束它
     /// </summary>
     private PeriodicHealthContributor? _health;
 
     /// <summary>
-    /// 创建特性。
+    /// 创建特性
     /// </summary>
-    /// <param name="configure">配置 DbContext 选项；第一个参数是宿主解析出的 <see cref="ConnectionBinding"/>（可能缺失）。</param>
+    /// <param name="configure">配置 DbContext 选项；第一个参数是宿主解析出的 <see cref="ConnectionBinding"/>（可能缺失）</param>
     public EntityFrameworkCorePersistenceFeature(Action<Maybe<BindingValue>, DbContextOptionsBuilder> configure)
     {
         _configure = configure ?? throw new ArgumentNullException(nameof(configure));
@@ -230,10 +230,10 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     }
 
     /// <summary>
-    /// 在登记了实体的每个命名连接上建表并核对时间列。
+    /// 在登记了实体的每个命名连接上建表并核对时间列
     /// </summary>
     /// <remarks>
-    /// 每个连接一个独立作用域，DbContext 按那个连接建出：开着 <c>EnsureCreated</c> 时先建表（EF Core 按整个模型建表，那个库里多出的空表不用；只用于开发与测试，与默认连接一样），再核对登记到这个连接的实体的时间列（<see cref="VerifyTimestampsAsync"/>）。
+    /// 每个连接一个独立作用域，DbContext 按那个连接建出：开着 <c>EnsureCreated</c> 时先建表（EF Core 按整个模型建表，那个库里多出的空表不用；只用于开发与测试，与默认连接一样），再核对登记到这个连接的实体的时间列（<see cref="VerifyTimestampsAsync"/>）
     /// </remarks>
     private async Task StartNamedAsync(IServiceProvider services, RepositoryRegistrations registrations, CancellationToken cancellationToken)
     {
@@ -257,10 +257,10 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     }
 
     /// <summary>
-    /// 核对一个连接上的 UTC ticks 时间列，库里还是旧的存储形式就启动失败。
+    /// 核对一个连接上的 UTC ticks 时间列，库里还是旧的存储形式就启动失败
     /// </summary>
     /// <remarks>
-    /// SQLite 上由约定映射成 UTC ticks 整数的列，在库里声明的不是 INTEGER（旧库的文本列，空表也算）或抽样到非整数的值（重建表时没换算），照读会静默读成错误的时刻：这个连接上的不符列一次列出，抛出携带 <see cref="PersistenceErrors.StorageFormatMismatch"/> 的 <see cref="FrameworkException"/>（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0094）。其余 Provider、库文件还不存在时什么也不做。
+    /// SQLite 上由约定映射成 UTC ticks 整数的列，在库里声明的不是 INTEGER（旧库的文本列，空表也算）或抽样到非整数的值（重建表时没换算），照读会静默读成错误的时刻：这个连接上的不符列一次列出，抛出携带 <see cref="PersistenceErrors.StorageFormatMismatch"/> 的 <see cref="FrameworkException"/>（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0094）。其余 Provider、库文件还不存在时什么也不做
     /// </remarks>
     private static async Task VerifyTimestampsAsync(TContext context, string connection, Func<Type, bool> placedHere, CancellationToken cancellationToken)
     {
@@ -273,10 +273,10 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     }
 
     /// <summary>
-    /// 命名连接的绑定。
+    /// 命名连接的绑定
     /// </summary>
     /// <remarks>
-    /// 主值换成命名连接的连接串，属性沿用 <see cref="ConnectionBinding"/> 绑定（数据库类型等，没有绑定时为空）。
+    /// 主值换成命名连接的连接串，属性沿用 <see cref="ConnectionBinding"/> 绑定（数据库类型等，没有绑定时为空）
     /// </remarks>
     private static Maybe<BindingValue> NamedBinding(Maybe<BindingValue> binding, string connectionString)
         => Maybe.Some(binding.TryGetValue(out var value)
@@ -284,10 +284,10 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
             : new BindingValue(ConnectionBinding, ConnectionBindingType, connectionString, new Dictionary<string, string>(StringComparer.Ordinal)));
 
     /// <summary>
-    /// 连通性探针。
+    /// 连通性探针
     /// </summary>
     /// <remarks>
-    /// 在独立作用域里取应用默认连接的 DbContext 试连；不开工作单元，不经管道。连不上返回 <see cref="PersistenceErrors.StoreUnavailable"/>。
+    /// 在独立作用域里取应用默认连接的 DbContext 试连；不开工作单元，不经管道。连不上返回 <see cref="PersistenceErrors.StoreUnavailable"/>
     /// </remarks>
     private static async ValueTask<Result> ProbeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {

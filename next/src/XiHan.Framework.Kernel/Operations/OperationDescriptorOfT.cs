@@ -9,41 +9,41 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 类型化的操作描述。
+/// 类型化的操作描述
 /// </summary>
 /// <remarks>
-/// 用源生成的 <see cref="JsonTypeInfo{T}"/> 编解码载荷，从作用域容器解析 <typeparamref name="TOperation"/> 执行；全程不经反射，可 AOT。
+/// 用源生成的 <see cref="JsonTypeInfo{T}"/> 编解码载荷，从作用域容器解析 <typeparamref name="TOperation"/> 执行；全程不经反射，可 AOT
 /// </remarks>
-/// <typeparam name="TOperation">操作实现。</typeparam>
-/// <typeparam name="TRequest">请求类型。</typeparam>
-/// <typeparam name="TResponse">响应类型。</typeparam>
+/// <typeparam name="TOperation">操作实现</typeparam>
+/// <typeparam name="TRequest">请求类型</typeparam>
+/// <typeparam name="TResponse">响应类型</typeparam>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : OperationDescriptor
     where TOperation : class, IOperation<TRequest, TResponse>
 {
     /// <summary>
-    /// 空载荷视为空对象，让没有输入的操作（如 <c>orders.list</c>）可以不带请求体。
+    /// 空载荷视为空对象，让没有输入的操作（如 <c>orders.list</c>）可以不带请求体
     /// </summary>
     private static readonly byte[] _emptyObject = "{}"u8.ToArray();
 
     /// <summary>
-    /// 请求类型的序列化元数据。
+    /// 请求类型的序列化元数据
     /// </summary>
     private readonly JsonTypeInfo<TRequest> _requestInfo;
 
     /// <summary>
-    /// 响应类型的序列化元数据。
+    /// 响应类型的序列化元数据
     /// </summary>
     private readonly JsonTypeInfo<TResponse> _responseInfo;
 
     /// <summary>
-    /// 创建描述。
+    /// 创建描述
     /// </summary>
-    /// <param name="contract">契约。</param>
-    /// <param name="ownerId">登记它的特性清单 ID。</param>
-    /// <param name="requestInfo">请求类型的序列化元数据（源生成）。</param>
-    /// <param name="responseInfo">响应类型的序列化元数据（源生成）。</param>
-    /// <param name="schema">请求与响应的 JSON Schema；手写登记可不提供。</param>
+    /// <param name="contract">契约</param>
+    /// <param name="ownerId">登记它的特性清单 ID</param>
+    /// <param name="requestInfo">请求类型的序列化元数据（源生成）</param>
+    /// <param name="responseInfo">响应类型的序列化元数据（源生成）</param>
+    /// <param name="schema">请求与响应的 JSON Schema；手写登记可不提供</param>
     public OperationDescriptor(OperationContract contract, string ownerId, JsonTypeInfo<TRequest> requestInfo, JsonTypeInfo<TResponse> responseInfo, OperationSchema? schema = null)
         : base(contract, ownerId, typeof(TOperation), typeof(TRequest), typeof(TResponse), schema)
     {
@@ -98,7 +98,7 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     }
 
     /// <summary>
-    /// 构造载荷不合法的失败结果。
+    /// 构造载荷不合法的失败结果
     /// </summary>
     private Result<object> InvalidPayload(string reason)
         => Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", Id), ("reason", reason)));

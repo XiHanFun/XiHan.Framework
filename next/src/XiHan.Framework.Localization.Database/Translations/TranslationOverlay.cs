@@ -4,25 +4,25 @@
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 一份不可变的翻译快照。
+/// 一份不可变的翻译快照
 /// </summary>
 /// <remarks>
-/// 键 → 区域 → 模板；整份替换，读取无锁。
+/// 键 → 区域 → 模板；整份替换，读取无锁
 /// </remarks>
 internal sealed class TranslationOverlay
 {
     /// <summary>
-    /// 空快照。
+    /// 空快照
     /// </summary>
     public static TranslationOverlay Empty { get; } = new(new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal), 0);
 
     /// <summary>
-    /// 键 → 区域（忽略大小写）→ 模板。
+    /// 键 → 区域（忽略大小写）→ 模板
     /// </summary>
     private readonly Dictionary<string, Dictionary<string, string>> _templates;
 
     /// <summary>
-    /// 由已分组的字典创建。
+    /// 由已分组的字典创建
     /// </summary>
     private TranslationOverlay(Dictionary<string, Dictionary<string, string>> templates, int count)
     {
@@ -31,15 +31,15 @@ internal sealed class TranslationOverlay
     }
 
     /// <summary>
-    /// 翻译条数。
+    /// 翻译条数
     /// </summary>
     public int Count { get; }
 
     /// <summary>
-    /// 由翻译实体建立快照。
+    /// 由翻译实体建立快照
     /// </summary>
     /// <remarks>
-    /// 同一键与区域重复时后者覆盖。
+    /// 同一键与区域重复时后者覆盖
     /// </remarks>
     public static TranslationOverlay From(IEnumerable<MessageTranslation> translations)
     {
@@ -68,7 +68,7 @@ internal sealed class TranslationOverlay
     }
 
     /// <summary>
-    /// 取模板。
+    /// 取模板
     /// </summary>
     public bool TryGet(string key, string locale, out string template)
     {

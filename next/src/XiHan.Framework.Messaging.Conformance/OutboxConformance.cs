@@ -18,50 +18,50 @@ using Xunit;
 namespace XiHan.Framework.Messaging.Conformance;
 
 /// <summary>
-/// 发件箱投递循环在持久化 Provider 上的一致性套件。
+/// 发件箱投递循环在持久化 Provider 上的一致性套件
 /// </summary>
 /// <remarks>
-/// 出处：RFC-0009「发件箱」，ADR-0064、ADR-0108。继承并实现 <see cref="CreateFeature"/>（提供 <c>persistence.relational@1</c> 的持久化特性），全部用例随之执行；内存持久化与数据库 Provider 跑同一套用例，行为一致。套件登记 <see cref="OutboxMessage"/> 的仓储与可推进的时钟，用脚本代理逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/>：不装配发件箱特性、不起后台循环、不等真实时间。行按载荷里的事件 ID 区分；每条行单独写入、写入之间推进时钟，创建时间各不相同，投递顺序在任何数据库上都确定。
+/// 出处：RFC-0009「发件箱」，ADR-0064、ADR-0108。继承并实现 <see cref="CreateFeature"/>（提供 <c>persistence.relational@1</c> 的持久化特性），全部用例随之执行；内存持久化与数据库 Provider 跑同一套用例，行为一致。套件登记 <see cref="OutboxMessage"/> 的仓储与可推进的时钟，用脚本代理逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/>：不装配发件箱特性、不起后台循环、不等真实时间。行按载荷里的事件 ID 区分；每条行单独写入、写入之间推进时钟，创建时间各不相同，投递顺序在任何数据库上都确定
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class OutboxConformance
 {
     /// <summary>
-    /// 套件使用的主题。
+    /// 套件使用的主题
     /// </summary>
     public const string OrdersTopic = "conformance.outbox.orders";
 
     /// <summary>
-    /// 套件使用的第二个主题。
+    /// 套件使用的第二个主题
     /// </summary>
     public const string ShipmentsTopic = "conformance.outbox.shipments";
 
     /// <summary>
-    /// 时钟起点。
+    /// 时钟起点
     /// </summary>
     private static readonly DateTimeOffset _start = new(2026, 11, 3, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 宿主配置。
+    /// 宿主配置
     /// </summary>
     /// <remarks>
-    /// Provider 需要的连接与建表开关在此提供。
+    /// Provider 需要的连接与建表开关在此提供
     /// </remarks>
     protected virtual IEnumerable<KeyValuePair<string, string?>> Configuration => [];
 
     /// <summary>
-    /// 创建被测持久化 Provider 的特性。
+    /// 创建被测持久化 Provider 的特性
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次。
+    /// 每个用例调用一次
     /// </remarks>
     protected abstract IFeature CreateFeature();
 
     /// <summary>
-    /// 用例 1：一直抛出的消息按退避进死信，同批的其他消息照常发出。
+    /// 用例 1：一直抛出的消息按退避进死信，同批的其他消息照常发出
     /// </summary>
     /// <remarks>
-    /// 代理对某条消息一直抛出：每次计一次尝试、按退避推后、到上限进死信。毒消息与两条好消息同一主题、同一批：首次按主题整批发布，整批抛出时这一批每条各计一次尝试，本轮余下的（另一个主题）留到下一轮；重试逐条单独发布，毒消息之外的随即发出。
+    /// 代理对某条消息一直抛出：每次计一次尝试、按退避推后、到上限进死信。毒消息与两条好消息同一主题、同一批：首次按主题整批发布，整批抛出时这一批每条各计一次尝试，本轮余下的（另一个主题）留到下一轮；重试逐条单独发布，毒消息之外的随即发出
     /// </remarks>
     [Fact]
     public async Task ThrowingMessage_IsRetriedWithBackoff_AndDeadLettered_WithoutHoldingBackOthers()
@@ -133,10 +133,10 @@ public abstract class OutboxConformance
     }
 
     /// <summary>
-    /// 用例 2：代理返回失败与代理抛出遵循同一套尝试上限、退避与死信规则。
+    /// 用例 2：代理返回失败与代理抛出遵循同一套尝试上限、退避与死信规则
     /// </summary>
     /// <remarks>
-    /// 一条一直被拒（失败结果），一条一直抛出，两条的尝试次数、下一次投递时间与进死信的时间逐轮相同，失败原因都带错误码。
+    /// 一条一直被拒（失败结果），一条一直抛出，两条的尝试次数、下一次投递时间与进死信的时间逐轮相同，失败原因都带错误码
     /// </remarks>
     [Fact]
     public async Task FailedAndThrownPublishes_FollowTheSameRetryRules()
@@ -167,10 +167,10 @@ public abstract class OutboxConformance
     }
 
     /// <summary>
-    /// 用例 3：调用方取消让本轮回滚，不计尝试、不进死信。
+    /// 用例 3：调用方取消让本轮回滚，不计尝试、不进死信
     /// </summary>
     /// <remarks>
-    /// 取消即宿主停止。之后照常投递，本轮已发出的再发一次（至少一次）。
+    /// 取消即宿主停止。之后照常投递，本轮已发出的再发一次（至少一次）
     /// </remarks>
     [Fact]
     public async Task Cancellation_RollsTheRoundBack_WithoutCountingAttempts()
@@ -213,10 +213,10 @@ public abstract class OutboxConformance
     }
 
     /// <summary>
-    /// 用例 4：不是调用方取消引起的取消异常是一次失败的尝试。
+    /// 用例 4：不是调用方取消引起的取消异常是一次失败的尝试
     /// </summary>
     /// <remarks>
-    /// 代理客户端自己的超时也以 <see cref="OperationCanceledException"/> 抛出，令牌没有取消，按失败计入、退避、到上限进死信。
+    /// 代理客户端自己的超时也以 <see cref="OperationCanceledException"/> 抛出，令牌没有取消，按失败计入、退避、到上限进死信
     /// </remarks>
     [Fact]
     public async Task OperationCanceled_NotRequestedByTheCaller_CountsAsAFailedAttempt()
@@ -242,10 +242,10 @@ public abstract class OutboxConformance
     }
 
     /// <summary>
-    /// 启动装配了被测 Provider、发件箱仓储与给定时钟的宿主。
+    /// 启动装配了被测 Provider、发件箱仓储与给定时钟的宿主
     /// </summary>
     /// <remarks>
-    /// 时钟也是仓储记创建时间用的时间源。
+    /// 时钟也是仓储记创建时间用的时间源
     /// </remarks>
     private async Task<TestHost> StartAsync(FakeTimeProvider clock)
         => await TestHost.StartAsync(
@@ -258,16 +258,16 @@ public abstract class OutboxConformance
             }).ConfigureAwait(false);
 
     /// <summary>
-    /// 以给定代理、时钟与选项创建投递循环。
+    /// 以给定代理、时钟与选项创建投递循环
     /// </summary>
     private static OutboxDispatcher Dispatcher(TestHost host, ScriptedOutboxBroker broker, FakeTimeProvider clock, OutboxOptions options)
         => new(host.Services, broker, options, clock, NullLoggerFactory.Instance);
 
     /// <summary>
-    /// 在一次调用里写入一条可解码的发件箱行。
+    /// 在一次调用里写入一条可解码的发件箱行
     /// </summary>
     /// <remarks>
-    /// 写入前推进时钟 1 毫秒：创建时间（仓储按时钟写入）各不相同，投递顺序确定；下一次投递时间等于创建时间，与发件箱发布者写入的一致。
+    /// 写入前推进时钟 1 毫秒：创建时间（仓储按时钟写入）各不相同，投递顺序确定；下一次投递时间等于创建时间，与发件箱发布者写入的一致
     /// </remarks>
     private static async Task SeedAsync(TestHost host, FakeTimeProvider clock, string topic, string id)
     {
@@ -291,7 +291,7 @@ public abstract class OutboxConformance
     }
 
     /// <summary>
-    /// 读出全部行，按载荷里的事件 ID 索引。
+    /// 读出全部行，按载荷里的事件 ID 索引
     /// </summary>
     private static async Task<Dictionary<string, OutboxMessage>> RowsAsync(TestHost host)
     {
@@ -301,7 +301,7 @@ public abstract class OutboxConformance
     }
 
     /// <summary>
-    /// 断言失败结果的那条与抛出的那条处在同一状态。
+    /// 断言失败结果的那条与抛出的那条处在同一状态
     /// </summary>
     private static async Task AssertSameStateAsync(TestHost host, int attempts, DateTimeOffset nextAttemptAt, DateTimeOffset? deadLetteredAt)
     {
@@ -317,7 +317,7 @@ public abstract class OutboxConformance
     }
 
     /// <summary>
-    /// 行里记下的失败原因（<c>[错误码] 文案</c>）的错误码。
+    /// 行里记下的失败原因（<c>[错误码] 文案</c>）的错误码
     /// </summary>
     private static string? ErrorCodeOf(OutboxMessage row)
         => row.LastError is { } error && error.StartsWith('[') ? error[1..error.IndexOf(']', StringComparison.Ordinal)] : null;

@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Conformance;
 
 /// <summary>
-/// 套件处理器：记录到达并按日志指示失败或抛异常。
+/// 套件处理器：记录到达并按日志指示失败或抛异常
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class RecordingHandler(DeliveryLog log) : IMessageHandler

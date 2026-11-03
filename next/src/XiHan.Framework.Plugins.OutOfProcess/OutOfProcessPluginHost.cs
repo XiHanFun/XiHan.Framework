@@ -22,121 +22,121 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Plugins.OutOfProcess;
 
 /// <summary>
-/// 进程外插件宿主（<c>isolation: out-of-process</c>，RFC-0017）。
+/// 进程外插件宿主（<c>isolation: out-of-process</c>，RFC-0017）
 /// </summary>
 /// <remarks>
-/// 按目录发现插件、启动并握手、把声明的操作与订阅接进宿主、监视健康与崩溃重启、运行宿主回调服务，并把每个插件作为健康条目上报。通常由 <see cref="OutOfProcessPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载。
+/// 按目录发现插件、启动并握手、把声明的操作与订阅接进宿主、监视健康与崩溃重启、运行宿主回调服务，并把每个插件作为健康条目上报。通常由 <see cref="OutOfProcessPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContributor, IAsyncDisposable
 {
     /// <summary>
-    /// 回调 <c>Host.Invoke</c> 需要的权限。
+    /// 回调 <c>Host.Invoke</c> 需要的权限
     /// </summary>
     public const string PipelinePermission = PluginCallbackPermissions.Pipeline;
 
     /// <summary>
-    /// 回调 <c>Host.Publish</c> 需要的权限。
+    /// 回调 <c>Host.Publish</c> 需要的权限
     /// </summary>
     public const string MessagingPermission = PluginCallbackPermissions.Messaging;
 
     /// <summary>
-    /// 回调时宿主所用主体的认证方案。
+    /// 回调时宿主所用主体的认证方案
     /// </summary>
     public const string PluginScheme = "Plugin";
 
     /// <summary>
-    /// 健康条目名前缀。
+    /// 健康条目名前缀
     /// </summary>
     public const string HealthPrefix = "plugins.";
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly OutOfProcessPluginOptions _options;
 
     /// <summary>
-    /// 会话登记表。
+    /// 会话登记表
     /// </summary>
     private readonly PluginSessions _sessions = new();
 
     /// <summary>
-    /// 已登记的运行时，按清单 ID。
+    /// 已登记的运行时，按清单 ID
     /// </summary>
     private readonly ConcurrentDictionary<string, PluginRuntime> _plugins = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 登记顺序（停止按相反顺序）。
+    /// 登记顺序（停止按相反顺序）
     /// </summary>
     private readonly List<PluginRuntime> _order = [];
 
     /// <summary>
-    /// 清单读不出来的插件目录与原因。
+    /// 清单读不出来的插件目录与原因
     /// </summary>
     /// <remarks>
-    /// 没有清单 ID，只作为健康条目 <c>plugins.&lt;目录名&gt;</c> 上报；只在配置阶段写入。
+    /// 没有清单 ID，只作为健康条目 <c>plugins.&lt;目录名&gt;</c> 上报；只在配置阶段写入
     /// </remarks>
     private readonly List<(string Directory, Error Error)> _unreadable = [];
 
     /// <summary>
-    /// 串行化加载与卸载。
+    /// 串行化加载与卸载
     /// </summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 串行化代理操作的登记与撤回。
+    /// 串行化代理操作的登记与撤回
     /// </summary>
     /// <remarks>
-    /// 登记发生在运行期加载与后台重试里（不持有 <see cref="_gate"/>），撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，卸载之后才完成的握手不会留下指向已卸载插件的登记（ADR-0085）。
+    /// 登记发生在运行期加载与后台重试里（不持有 <see cref="_gate"/>），撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，卸载之后才完成的握手不会留下指向已卸载插件的登记（ADR-0085）
     /// </remarks>
     private readonly Lock _registration = new();
 
     /// <summary>
-    /// 插件共享的宿主环境。
+    /// 插件共享的宿主环境
     /// </summary>
     private readonly PluginHostContext _context;
 
     /// <summary>
-    /// 日志工厂。
+    /// 日志工厂
     /// </summary>
     /// <remarks>
-    /// 附着到容器后换成宿主的。
+    /// 附着到容器后换成宿主的
     /// </remarks>
     private ILoggerFactory _loggerFactory;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private ILogger _logger;
 
     /// <summary>
-    /// 代理操作登记到的登记表。
+    /// 代理操作登记到的登记表
     /// </summary>
     /// <remarks>
-    /// 由特性在配置阶段提供。
+    /// 由特性在配置阶段提供
     /// </remarks>
     private OperationRegistry? _registry;
 
     /// <summary>
-    /// 回调服务器。
+    /// 回调服务器
     /// </summary>
     /// <remarks>
-    /// 附着后启动。
+    /// 附着后启动
     /// </remarks>
     private PluginCallbackServer? _server;
 
     /// <summary>
-    /// 创建宿主。
+    /// 创建宿主
     /// </summary>
     /// <remarks>
-    /// 回调端点在此刻选定（启动插件时经环境变量下发），服务器在 <see cref="AttachAsync"/> 时才监听。
+    /// 回调端点在此刻选定（启动插件时经环境变量下发），服务器在 <see cref="AttachAsync"/> 时才监听
     /// </remarks>
-    /// <param name="options">选项。</param>
-    /// <param name="configuration">宿主配置（插件配置节与绑定从中读取）。</param>
-    /// <param name="clock">时钟。</param>
-    /// <param name="loggerFactory">日志工厂。</param>
-    /// <param name="stopGrace">停止宽限（通常取内核的停止超时）。</param>
-    /// <param name="defaultLocale">宿主默认区域。</param>
+    /// <param name="options">选项</param>
+    /// <param name="configuration">宿主配置（插件配置节与绑定从中读取）</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="loggerFactory">日志工厂</param>
+    /// <param name="stopGrace">停止宽限（通常取内核的停止超时）</param>
+    /// <param name="defaultLocale">宿主默认区域</param>
     public OutOfProcessPluginHost(OutOfProcessPluginOptions options, IConfiguration configuration, TimeProvider clock, ILoggerFactory loggerFactory, TimeSpan stopGrace, string defaultLocale = "en-US")
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -160,7 +160,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 宿主回调端点。
+    /// 宿主回调端点
     /// </summary>
     public PluginEndpoint HostEndpoint { get; }
 
@@ -168,10 +168,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     public IReadOnlyList<PluginStatus> Plugins => _plugins.Values.Select(static r => r.Status).OrderBy(static s => s.Manifest.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 一个插件的诊断快照。
+    /// 一个插件的诊断快照
     /// </summary>
     /// <remarks>
-    /// 未加载为空。
+    /// 未加载为空
     /// </remarks>
     public OutOfProcessPluginStatus? Describe(string manifestId)
     {
@@ -180,20 +180,20 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 全部运行时（特性登记代理操作与订阅时使用）。
+    /// 全部运行时（特性登记代理操作与订阅时使用）
     /// </summary>
     internal IReadOnlyList<PluginRuntime> Runtimes => _order.ToList();
 
     /// <summary>
-    /// 指定代理操作的登记表。
+    /// 指定代理操作的登记表
     /// </summary>
     internal void UseRegistry(OperationRegistry registry) => _registry = registry;
 
     /// <summary>
-    /// 同步发现一个插件目录（配置阶段使用）。
+    /// 同步发现一个插件目录（配置阶段使用）
     /// </summary>
     /// <remarks>
-    /// 读清单、按选项授予权限、启动并握手。失败的插件仍登记在宿主里以 Failed 上报：发现时被拒的（清单、权限、入口不合格）可描述、是健康条目，清单读不出来的只作为健康条目 <c>plugins.&lt;目录名&gt;</c>（<c>lifecycle.md</c> §1）；附着到容器时逐个记日志。
+    /// 读清单、按选项授予权限、启动并握手。失败的插件仍登记在宿主里以 Failed 上报：发现时被拒的（清单、权限、入口不合格）可描述、是健康条目，清单读不出来的只作为健康条目 <c>plugins.&lt;目录名&gt;</c>（<c>lifecycle.md</c> §1）；附着到容器时逐个记日志
     /// </remarks>
     internal Result<PluginRuntime> Discover(string directory)
         => DiscoverAsync(directory, CancellationToken.None).GetAwaiter().GetResult();
@@ -236,7 +236,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
 
     /// <inheritdoc />
     /// <remarks>
-    /// 先按归属（清单 ID）撤回插件登记的代理操作与权限码，再停止进程（<c>plugin/invocation.md</c> §1，ADR-0085）：撤回之后按 ID 调用这些操作返回 <c>KERNEL_NOTFOUND_001</c>，已经在执行的调用照常完成或在进程停止后以 <c>PLUGINS_UNAVAILABLE_001</c> 结束；卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。订阅与消息目录在配置阶段接进容器，不随卸载撤回。
+    /// 先按归属（清单 ID）撤回插件登记的代理操作与权限码，再停止进程（<c>plugin/invocation.md</c> §1，ADR-0085）：撤回之后按 ID 调用这些操作返回 <c>KERNEL_NOTFOUND_001</c>，已经在执行的调用照常完成或在进程停止后以 <c>PLUGINS_UNAVAILABLE_001</c> 结束；卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。订阅与消息目录在配置阶段接进容器，不随卸载撤回
     /// </remarks>
     public async Task<Result> UnloadAsync(string manifestId, CancellationToken cancellationToken)
     {
@@ -266,10 +266,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 附着到已构建的宿主容器。
+    /// 附着到已构建的宿主容器
     /// </summary>
     /// <remarks>
-    /// 换用宿主日志与时钟、启动回调服务器、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件。握手失败与启动失败的插件按重启策略在后台重试（<c>lifecycle.md</c> §6），发现时被拒的不重试。
+    /// 换用宿主日志与时钟、启动回调服务器、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件。握手失败与启动失败的插件按重启策略在后台重试（<c>lifecycle.md</c> §6），发现时被拒的不重试
     /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
@@ -320,7 +320,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 停止全部插件（与登记相反的顺序）并关闭回调服务器。
+    /// 停止全部插件（与登记相反的顺序）并关闭回调服务器
     /// </summary>
     internal async Task StopAllAsync(CancellationToken cancellationToken)
     {
@@ -337,10 +337,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 把一条消息投递给订阅了该主题与类型的插件。
+    /// 把一条消息投递给订阅了该主题与类型的插件
     /// </summary>
     /// <remarks>
-    /// 第一个失败即为结果。
+    /// 第一个失败即为结果
     /// </remarks>
     internal async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
     {
@@ -364,12 +364,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             .ToList();
 
     /// <summary>
-    /// 已释放。
+    /// 已释放
     /// </summary>
     private bool _disposed;
 
     /// <summary>
-    /// 停止全部插件并释放。
+    /// 停止全部插件并释放
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -389,7 +389,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 按目录发现：读清单、按选项取授予。
+    /// 按目录发现：读清单、按选项取授予
     /// </summary>
     private async Task<Result<PluginRuntime>> DiscoverAsync(string directory, CancellationToken cancellationToken)
     {
@@ -413,10 +413,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 校验权限与可执行文件，登记运行时并探测启动。
+    /// 校验权限与可执行文件，登记运行时并探测启动
     /// </summary>
     /// <remarks>
-    /// <paramref name="atStartup"/> 为真（配置阶段按目录发现）时被拒的插件以 Failed 登记、握手失败的重试留到附着到容器之后；为假（运行期加载）时被拒只把错误返回给调用方，握手失败的插件保持 Failed 并立即按重启策略重试（<c>lifecycle.md</c> §6）。
+    /// <paramref name="atStartup"/> 为真（配置阶段按目录发现）时被拒的插件以 Failed 登记、握手失败的重试留到附着到容器之后；为假（运行期加载）时被拒只把错误返回给调用方，握手失败的插件保持 Failed 并立即按重启策略重试（<c>lifecycle.md</c> §6）
     /// </remarks>
     private async Task<Result<PluginRuntime>> DiscoverAsync(PluginSource source, Manifest manifest, bool atStartup, CancellationToken cancellationToken)
     {
@@ -455,7 +455,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 首次握手失败的插件按重启策略重试，成功后补登记声明。
+    /// 首次握手失败的插件按重启策略重试，成功后补登记声明
     /// </summary>
     private void RetryDiscovery(PluginRuntime runtime)
     {
@@ -464,10 +464,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 重试中才握手成功的插件：把代理操作登记进操作登记表。
+    /// 重试中才握手成功的插件：把代理操作登记进操作登记表
     /// </summary>
     /// <remarks>
-    /// 与运行期加载一致，代理操作只对内核调用器可见（协议适配器的路由在启动时已经发布）；订阅与消息目录要在配置阶段接进容器，宿主重启后才生效，这里记警告。
+    /// 与运行期加载一致，代理操作只对内核调用器可见（协议适配器的路由在启动时已经发布）；订阅与消息目录要在配置阶段接进容器，宿主重启后才生效，这里记警告
     /// </remarks>
     private Result RegisterLate(PluginRuntime runtime)
     {
@@ -481,16 +481,16 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 启动任何插件代码之前的检查：清单的贡献、权限、入口与可执行文件。
+    /// 启动任何插件代码之前的检查：清单的贡献、权限、入口与可执行文件
     /// </summary>
     /// <remarks>
-    /// 通过时返回空并给出可执行文件路径。
+    /// 通过时返回空并给出可执行文件路径
     /// </remarks>
     private static Error? Preflight(PluginSource source, Manifest manifest, out string? executable)
     {
         executable = null;
 
-        // 只有 Wasm 插件能贡献中间件（RFC-0017「范围」）：清单写了中间件而宿主照常加载，作者会以为它生效了。
+        // 只有 Wasm 插件能贡献中间件（RFC-0017「范围」）：清单写了中间件而宿主照常加载，作者会以为它生效了
         // 与隔离级别不符同属清单不合格，先于权限判定，按发现时被拒处理（lifecycle.md §1），不静默忽略
         if (manifest.Contributes.Pipeline.Count > 0)
         {
@@ -515,10 +515,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 以发现时被拒登记：不启动进程，插件停在 Failed（<c>lifecycle.md</c> §1）。
+    /// 以发现时被拒登记：不启动进程，插件停在 Failed（<c>lifecycle.md</c> §1）
     /// </summary>
     /// <remarks>
-    /// 返回拒绝的原因；同一清单 ID 已登记时返回冲突。
+    /// 返回拒绝的原因；同一清单 ID 已登记时返回冲突
     /// </remarks>
     private async Task<Result<PluginRuntime>> RejectAsync(PluginSource source, Manifest manifest, Error error, CancellationToken cancellationToken)
     {
@@ -544,10 +544,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 把运行时清单声明的权限码与握手声明的操作登记进宿主。
+    /// 把运行时清单声明的权限码与握手声明的操作登记进宿主
     /// </summary>
     /// <remarks>
-    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的权限码与代理操作。运行时已不是宿主里的当前运行时（卸载之后才握手成功的重试、卸载与运行期加载交错）时不登记，返回未加载。
+    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的权限码与代理操作。运行时已不是宿主里的当前运行时（卸载之后才握手成功的重试、卸载与运行期加载交错）时不登记，返回未加载
     /// </remarks>
     private Result Register(PluginRuntime runtime)
     {
@@ -569,10 +569,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 撤回运行时登记的权限码与代理操作。
+    /// 撤回运行时登记的权限码与代理操作
     /// </summary>
     /// <remarks>
-    /// 卸载时在 <see cref="_gate"/> 内、运行时移出宿主之后调用；没有登记过时什么都不做。
+    /// 卸载时在 <see cref="_gate"/> 内、运行时移出宿主之后调用；没有登记过时什么都不做
     /// </remarks>
     private void Withdraw(PluginRuntime runtime)
     {
@@ -588,7 +588,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 从登记里移除。
+    /// 从登记里移除
     /// </summary>
     private void Remove(PluginRuntime runtime)
     {
@@ -600,7 +600,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 读目录里的清单并确认是进程外插件。
+    /// 读目录里的清单并确认是进程外插件
     /// </summary>
     private static Result<Manifest> ReadManifest(string directory)
     {
@@ -615,7 +615,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 读目录里的清单文件。
+    /// 读目录里的清单文件
     /// </summary>
     private static Result<Manifest> ReadManifestFile(string directory)
     {
@@ -626,7 +626,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 清单是否描述一个进程外插件。
+    /// 清单是否描述一个进程外插件
     /// </summary>
     private static Result CheckKind(Manifest manifest)
         => manifest.Kind == ManifestKind.Plugin && manifest.Isolation == PluginIsolation.OutOfProcess
@@ -634,10 +634,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             : new Error(PluginErrors.InvalidSource, PluginMessages.NotOutOfProcess, MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
 
     /// <summary>
-    /// 入口相对插件目录。
+    /// 入口相对插件目录
     /// </summary>
     /// <remarks>
-    /// Windows 上没有扩展名时补 <c>.exe</c>。不存在返回空。
+    /// Windows 上没有扩展名时补 <c>.exe</c>。不存在返回空
     /// </remarks>
     internal static string? ResolveExecutable(string directory, string entry)
     {
@@ -656,25 +656,25 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 记录回调服务器已监听。
+    /// 记录回调服务器已监听
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin host callback server is listening on {Endpoint}.")]
     private static partial void LogServer(ILogger logger, PluginEndpoint endpoint);
 
     /// <summary>
-    /// 记录发现阶段失败的插件（宿主继续运行）。
+    /// 记录发现阶段失败的插件（宿主继续运行）
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {Plugin} failed during discovery: {Code} {Message}")]
     private static partial void LogDiscoveryFailed(ILogger logger, string plugin, string code, string message);
 
     /// <summary>
-    /// 记录重试中才握手成功的插件声明了无法补登记的订阅或消息目录。
+    /// 记录重试中才握手成功的插件声明了无法补登记的订阅或消息目录
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin {PluginId} completed its first handshake only after startup; its {Subscriptions} subscriptions and {Catalogs} message catalogs take effect after the host restarts.")]
     private static partial void LogLateDeclarations(ILogger logger, string pluginId, int subscriptions, int catalogs);
 
     /// <summary>
-    /// 记录插件启动失败（宿主继续运行）。
+    /// 记录插件启动失败（宿主继续运行）
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} failed to start: {Code} {Message}")]
     private static partial void LogStartFailed(ILogger logger, string pluginId, string code, string message);

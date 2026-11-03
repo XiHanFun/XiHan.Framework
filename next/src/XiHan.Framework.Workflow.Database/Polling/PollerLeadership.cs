@@ -8,51 +8,51 @@ using XiHan.Framework.Workflow.Database.Locking;
 namespace XiHan.Framework.Workflow.Database.Polling;
 
 /// <summary>
-/// 到期书签轮询的领导权（单例）。
+/// 到期书签轮询的领导权（单例）
 /// </summary>
 /// <remarks>
-/// 用与实例锁同一张租约表、资源名 <see cref="Resource"/>。每个轮询周期调用一次 <see cref="TryHoldAsync"/>：没持有就尝试一次（不等待），持有就按需续约；拿不到的节点跳过本周期。领导权只为省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由引擎的实例锁串行化。只在单个轮询循环里使用，不做并发保护。
+/// 用与实例锁同一张租约表、资源名 <see cref="Resource"/>。每个轮询周期调用一次 <see cref="TryHoldAsync"/>：没持有就尝试一次（不等待），持有就按需续约；拿不到的节点跳过本周期。领导权只为省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由引擎的实例锁串行化。只在单个轮询循环里使用，不做并发保护
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class PollerLeadership
 {
     /// <summary>
-    /// 租约行的资源名。
+    /// 租约行的资源名
     /// </summary>
     public const string Resource = "workflow.poller";
 
     /// <summary>
-    /// 租约行操作。
+    /// 租约行操作
     /// </summary>
     private readonly LeaseTable _leases;
 
     /// <summary>
-    /// 本节点在这张表上的持有者标记：节点标识加随机后缀，同一节点重启后不与旧行混淆。
+    /// 本节点在这张表上的持有者标记：节点标识加随机后缀，同一节点重启后不与旧行混淆
     /// </summary>
     private readonly string _holder;
 
     /// <summary>
-    /// 租约时长。
+    /// 租约时长
     /// </summary>
     private readonly TimeSpan _lease;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 最近一次获取或续约成功的时刻。
+    /// 最近一次获取或续约成功的时刻
     /// </summary>
     private DateTimeOffset _renewedAt;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public PollerLeadership(IServiceProvider services, DatabaseWorkflowOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -66,15 +66,15 @@ public sealed partial class PollerLeadership
     }
 
     /// <summary>
-    /// 当前是否持有领导权。
+    /// 当前是否持有领导权
     /// </summary>
     public bool IsLeader { get; private set; }
 
     /// <summary>
-    /// 没持有就尝试一次获取（不等待）。
+    /// 没持有就尝试一次获取（不等待）
     /// </summary>
     /// <remarks>
-    /// 持有且距上次续约已过三分之一租约就续约；返回本周期是否持有。
+    /// 持有且距上次续约已过三分之一租约就续约；返回本周期是否持有
     /// </remarks>
     public async ValueTask<bool> TryHoldAsync(CancellationToken cancellationToken)
     {
@@ -127,10 +127,10 @@ public sealed partial class PollerLeadership
     }
 
     /// <summary>
-    /// 释放领导权（停止时调用）。
+    /// 释放领导权（停止时调用）
     /// </summary>
     /// <remarks>
-    /// 没持有时什么也不做。
+    /// 没持有时什么也不做
     /// </remarks>
     public async ValueTask ReleaseAsync(CancellationToken cancellationToken)
     {
@@ -148,31 +148,31 @@ public sealed partial class PollerLeadership
     }
 
     /// <summary>
-    /// 拿到领导权。
+    /// 拿到领导权
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Acquired the workflow poller leadership '{Resource}'.")]
     private static partial void LogAcquired(ILogger logger, string resource);
 
     /// <summary>
-    /// 失去领导权。
+    /// 失去领导权
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Lost the workflow poller leadership '{Resource}'.")]
     private static partial void LogLost(ILogger logger, string resource);
 
     /// <summary>
-    /// 获取失败。
+    /// 获取失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Acquiring the workflow poller leadership failed with '{ErrorCode}'.")]
     private static partial void LogAcquireFailed(ILogger logger, string errorCode);
 
     /// <summary>
-    /// 续约失败。
+    /// 续约失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Renewing the workflow poller leadership failed with '{ErrorCode}'.")]
     private static partial void LogRenewFailed(ILogger logger, string errorCode);
 
     /// <summary>
-    /// 释放失败。
+    /// 释放失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Releasing the workflow poller leadership failed with '{ErrorCode}'; it expires on its own.")]
     private static partial void LogReleaseFailed(ILogger logger, string errorCode);

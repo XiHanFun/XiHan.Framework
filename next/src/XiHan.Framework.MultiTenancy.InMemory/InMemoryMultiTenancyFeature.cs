@@ -16,16 +16,16 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.MultiTenancy.InMemory;
 
 /// <summary>
-/// 内存多租户的能力包入口。
+/// 内存多租户的能力包入口
 /// </summary>
 /// <remarks>
-/// 默认提供 <c>multitenancy.context@1</c> 与 <c>multitenancy.sharding@1</c>，只为被选中的能力注册：租户上下文是租户存储、解析器（先声明后 Baggage）、Tenant 阶段中间件与健康项 <see cref="HealthName"/>（租户存储满时 Degraded），分片是从租户存储推出分片的解析器。
+/// 默认提供 <c>multitenancy.context@1</c> 与 <c>multitenancy.sharding@1</c>，只为被选中的能力注册：租户上下文是租户存储、解析器（先声明后 Baggage）、Tenant 阶段中间件与健康项 <see cref="HealthName"/>（租户存储满时 Degraded），分片是从租户存储推出分片的解析器
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryMultiTenancyFeature : IFeature
 {
     /// <summary>
-    /// 健康项名：租户存储是否还有余量。
+    /// 健康项名：租户存储是否还有余量
     /// </summary>
     public const string HealthName = "multitenancy.inmemory.capacity";
 

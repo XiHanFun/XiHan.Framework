@@ -13,41 +13,41 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 数据库实例与节点实例存储（作用域服务）。
+/// 数据库实例与节点实例存储（作用域服务）
 /// </summary>
 /// <remarks>
-/// 在调用方的工作单元里经仓储读写，随它提交或回滚。分区为空（平台）读写 <see cref="PlatformWorkflowInstanceRecord"/> 与 <see cref="PlatformWorkflowNodeInstanceRecord"/>，否则读写 <see cref="WorkflowInstanceRecord"/> 与 <see cref="WorkflowNodeInstanceRecord"/>（随租户分库）；分区必须等于工作单元的租户。失败 → <see cref="WorkflowErrors.StoreUnavailable"/>（只读拒绝原样返回）。
+/// 在调用方的工作单元里经仓储读写，随它提交或回滚。分区为空（平台）读写 <see cref="PlatformWorkflowInstanceRecord"/> 与 <see cref="PlatformWorkflowNodeInstanceRecord"/>，否则读写 <see cref="WorkflowInstanceRecord"/> 与 <see cref="WorkflowNodeInstanceRecord"/>（随租户分库）；分区必须等于工作单元的租户。失败 → <see cref="WorkflowErrors.StoreUnavailable"/>（只读拒绝原样返回）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
 {
     /// <summary>
-    /// 调用方的工作单元。
+    /// 调用方的工作单元
     /// </summary>
     private readonly IUnitOfWork _unitOfWork;
 
     /// <summary>
-    /// 平台分区的表。
+    /// 平台分区的表
     /// </summary>
     private readonly InstanceRows<PlatformWorkflowInstanceRecord, PlatformWorkflowNodeInstanceRecord> _platform;
 
     /// <summary>
-    /// 租户分区的表。
+    /// 租户分区的表
     /// </summary>
     private readonly InstanceRows<WorkflowInstanceRecord, WorkflowNodeInstanceRecord> _tenant;
 
     /// <summary>
-    /// 平台分区的书签表：实例的状态变了同步到它。
+    /// 平台分区的书签表：实例的状态变了同步到它
     /// </summary>
     private readonly BookmarkRows<PlatformWorkflowBookmarkRecord, PlatformWorkflowInstanceRecord> _platformBookmarks;
 
     /// <summary>
-    /// 租户分区的书签表：实例的状态变了同步到它。
+    /// 租户分区的书签表：实例的状态变了同步到它
     /// </summary>
     private readonly BookmarkRows<WorkflowBookmarkRecord, WorkflowInstanceRecord> _tenantBookmarks;
 
     /// <summary>
-    /// 创建（作用域服务）。
+    /// 创建（作用域服务）
     /// </summary>
     public DatabaseWorkflowInstanceStore(IServiceProvider services)
     {
@@ -148,10 +148,10 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 写实例，再把新增的与状态变了的实例同步到它们的书签行。
+    /// 写实例，再把新增的与状态变了的实例同步到它们的书签行
     /// </summary>
     /// <remarks>
-    /// 两步在调用方的同一事务里，任一步失败随调用回滚。
+    /// 两步在调用方的同一事务里，任一步失败随调用回滚
     /// </remarks>
     private static async ValueTask<Result> SaveAndSyncAsync<TInstance, TNode, TBookmark>(InstanceRows<TInstance, TNode> rows, BookmarkRows<TBookmark, TInstance> bookmarks, IReadOnlyList<WorkflowInstance> instances, CancellationToken cancellationToken)
         where TInstance : WorkflowInstanceRow, new()
@@ -163,7 +163,7 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 核对分区与工作单元的租户一致。
+    /// 核对分区与工作单元的租户一致
     /// </summary>
     private void Enter(string? tenantId) => StorePartition.Ensure(_unitOfWork, tenantId);
 }

@@ -7,31 +7,31 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 表达式求值的作用域。
+/// 表达式求值的作用域
 /// </summary>
 /// <remarks>
-/// 实例变量加临时值（<c>outcome</c>、<c>item</c> 等），以及 <c>now()</c> 用的时钟。临时值优先于同名变量。
+/// 实例变量加临时值（<c>outcome</c>、<c>item</c> 等），以及 <c>now()</c> 用的时钟。临时值优先于同名变量
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ExpressionScope
 {
     /// <summary>
-    /// 变量。
+    /// 变量
     /// </summary>
     private readonly JsonObject _variables;
 
     /// <summary>
-    /// 临时值。
+    /// 临时值
     /// </summary>
     private readonly Dictionary<string, JsonNode?> _extras = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public ExpressionScope(JsonObject variables, TimeProvider clock)
     {
@@ -40,15 +40,15 @@ public sealed class ExpressionScope
     }
 
     /// <summary>
-    /// 当前时刻（UTC）。
+    /// 当前时刻（UTC）
     /// </summary>
     public DateTimeOffset Now => _clock.GetUtcNow();
 
     /// <summary>
-    /// 加一个临时值（覆盖同名变量）。
+    /// 加一个临时值（覆盖同名变量）
     /// </summary>
     /// <remarks>
-    /// 返回自身便于链式调用。
+    /// 返回自身便于链式调用
     /// </remarks>
     public ExpressionScope With(string name, JsonNode? value)
     {
@@ -58,10 +58,10 @@ public sealed class ExpressionScope
     }
 
     /// <summary>
-    /// 解析根名字。
+    /// 解析根名字
     /// </summary>
     /// <remarks>
-    /// 先临时值，再变量；都没有返回 <see langword="false"/>。
+    /// 先临时值，再变量；都没有返回 <see langword="false"/>
     /// </remarks>
     public bool TryResolve(string name, out JsonNode? value)
     {

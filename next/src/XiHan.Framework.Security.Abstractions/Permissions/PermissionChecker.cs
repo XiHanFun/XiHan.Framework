@@ -7,56 +7,56 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Permissions;
 
 /// <summary>
-/// RBAC 检查器。
+/// RBAC 检查器
 /// </summary>
 /// <remarks>
-/// 用户本身的授予与其角色（来自 <see cref="SecurityOptions.RoleClaim"/> 声明）的授予之并集，存储都没命中时再并上各 <see cref="IPermissionGrantSource"/> 的额外授予；<see cref="PermissionGrant.All"/> 匹配任何权限。授予命中之后再经全部 <see cref="IPermissionFilter"/> 收窄（逐个 AND，任一拒绝即不持有）；匿名主体与授予未命中时不调用过滤器。存储、来源或过滤器返回的失败原样返回，不当作不持有（RFC-0008，ADR-0071）。
+/// 用户本身的授予与其角色（来自 <see cref="SecurityOptions.RoleClaim"/> 声明）的授予之并集，存储都没命中时再并上各 <see cref="IPermissionGrantSource"/> 的额外授予；<see cref="PermissionGrant.All"/> 匹配任何权限。授予命中之后再经全部 <see cref="IPermissionFilter"/> 收窄（逐个 AND，任一拒绝即不持有）；匿名主体与授予未命中时不调用过滤器。存储、来源或过滤器返回的失败原样返回，不当作不持有（RFC-0008，ADR-0071）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionChecker : IPermissionChecker
 {
     /// <summary>
-    /// 授予存储。
+    /// 授予存储
     /// </summary>
     /// <remarks>
-    /// 每次判定按主体与租户查询。
+    /// 每次判定按主体与租户查询
     /// </remarks>
     private readonly IPermissionGrantStore _store;
 
     /// <summary>
-    /// 安全选项。
+    /// 安全选项
     /// </summary>
     /// <remarks>
-    /// 提供承载角色的声明类型。
+    /// 提供承载角色的声明类型
     /// </remarks>
     private readonly SecurityOptions _options;
 
     /// <summary>
-    /// 收窄过滤器，按登记顺序。
+    /// 收窄过滤器，按登记顺序
     /// </summary>
     /// <remarks>
-    /// 没有登记时为空。
+    /// 没有登记时为空
     /// </remarks>
     private readonly IPermissionFilter[] _filters;
 
     /// <summary>
-    /// 存储之外的授予来源，按登记顺序。
+    /// 存储之外的授予来源，按登记顺序
     /// </summary>
     /// <remarks>
-    /// 没有登记时为空。
+    /// 没有登记时为空
     /// </remarks>
     private readonly IPermissionGrantSource[] _sources;
 
     /// <summary>
-    /// 创建检查器。
+    /// 创建检查器
     /// </summary>
     /// <remarks>
-    /// 容器解析时 <paramref name="filters"/> 与 <paramref name="sources"/> 是全部登记的 <see cref="IPermissionFilter"/> 与 <see cref="IPermissionGrantSource"/>（没有就是空集合）。
+    /// 容器解析时 <paramref name="filters"/> 与 <paramref name="sources"/> 是全部登记的 <see cref="IPermissionFilter"/> 与 <see cref="IPermissionGrantSource"/>（没有就是空集合）
     /// </remarks>
-    /// <param name="store">授予存储。</param>
-    /// <param name="options">安全选项。</param>
-    /// <param name="filters">授予命中之后的收窄过滤器；<see langword="null"/> 视为没有。</param>
-    /// <param name="sources">存储之外的授予来源；<see langword="null"/> 视为没有。</param>
+    /// <param name="store">授予存储</param>
+    /// <param name="options">安全选项</param>
+    /// <param name="filters">授予命中之后的收窄过滤器；<see langword="null"/> 视为没有</param>
+    /// <param name="sources">存储之外的授予来源；<see langword="null"/> 视为没有</param>
     public PermissionChecker(IPermissionGrantStore store, SecurityOptions options, IEnumerable<IPermissionFilter>? filters = null, IEnumerable<IPermissionGrantSource>? sources = null)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
@@ -92,7 +92,7 @@ public sealed class PermissionChecker : IPermissionChecker
             return granted;
         }
 
-        // 授予命中之后才收窄：过滤器只能拿走权限、不能凭空给出；全部放行才算持有。
+        // 授予命中之后才收窄：过滤器只能拿走权限、不能凭空给出；全部放行才算持有
         // 过滤器无法判定时同样原样返回失败——跳过它等于放行，按拒绝处理又会把故障变成 403
         foreach (var filter in _filters)
         {
@@ -107,10 +107,10 @@ public sealed class PermissionChecker : IPermissionChecker
     }
 
     /// <summary>
-    /// 授予是否命中。
+    /// 授予是否命中
     /// </summary>
     /// <remarks>
-    /// 先查用户本身的授予，再逐个角色查，存储都没命中时再逐个查授予来源；任一命中即返回，避免多余的存储与来源访问。任一次读取失败立即返回该失败，不再查后面的：用户与角色读的是同一个存储，后面的读取多半同样失败，逐个等待只会拖长失败的调用。
+    /// 先查用户本身的授予，再逐个角色查，存储都没命中时再逐个查授予来源；任一命中即返回，避免多余的存储与来源访问。任一次读取失败立即返回该失败，不再查后面的：用户与角色读的是同一个存储，后面的读取多半同样失败，逐个等待只会拖长失败的调用
     /// </remarks>
     private async ValueTask<Result<bool>> IsGrantedAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
     {
@@ -144,7 +144,7 @@ public sealed class PermissionChecker : IPermissionChecker
     }
 
     /// <summary>
-    /// 授予集合是否命中：通配 <see cref="PermissionGrant.All"/> 或与权限码精确相等（区分大小写）。
+    /// 授予集合是否命中：通配 <see cref="PermissionGrant.All"/> 或与权限码精确相等（区分大小写）
     /// </summary>
     private static bool Matches(IReadOnlyCollection<string> grants, string permission)
     {

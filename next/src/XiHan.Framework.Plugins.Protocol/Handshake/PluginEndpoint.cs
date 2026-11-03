@@ -9,38 +9,38 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol.Handshake;
 
 /// <summary>
-/// 一个本机 gRPC 端点。
+/// 一个本机 gRPC 端点
 /// </summary>
 /// <remarks>
-/// Unix 域套接字、回环 TCP 或 Windows 命名管道（<c>spec/plugin/handshake.md</c>）。
+/// Unix 域套接字、回环 TCP 或 Windows 命名管道（<c>spec/plugin/handshake.md</c>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record PluginEndpoint
 {
     /// <summary>
-    /// 网络类型：Unix 域套接字。
+    /// 网络类型：Unix 域套接字
     /// </summary>
     public const string Unix = "unix";
 
     /// <summary>
-    /// 网络类型：回环 TCP。
+    /// 网络类型：回环 TCP
     /// </summary>
     public const string Tcp = "tcp";
 
     /// <summary>
-    /// 网络类型：Windows 命名管道。
+    /// 网络类型：Windows 命名管道
     /// </summary>
     public const string NamedPipe = "npipe";
 
     /// <summary>
-    /// 握手行格式版本前缀。
+    /// 握手行格式版本前缀
     /// </summary>
     public const string HandshakeLinePrefix = "xihan-plugin/1";
 
     /// <summary>
-    /// 创建端点。
+    /// 创建端点
     /// </summary>
-    /// <exception cref="ArgumentException">网络类型未知、地址为空，或 TCP 地址不是回环地址。</exception>
+    /// <exception cref="ArgumentException">网络类型未知、地址为空，或 TCP 地址不是回环地址</exception>
     public PluginEndpoint(string network, string address)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(network);
@@ -55,17 +55,17 @@ public sealed partial record PluginEndpoint
     }
 
     /// <summary>
-    /// 网络类型（<see cref="Unix"/>、<see cref="Tcp"/>、<see cref="NamedPipe"/>）。
+    /// 网络类型（<see cref="Unix"/>、<see cref="Tcp"/>、<see cref="NamedPipe"/>）
     /// </summary>
     public string Network { get; }
 
     /// <summary>
-    /// 地址：套接字路径、<c>host:port</c> 或管道名。
+    /// 地址：套接字路径、<c>host:port</c> 或管道名
     /// </summary>
     public string Address { get; }
 
     /// <summary>
-    /// 解析插件写到 stdout 的握手行 <c>xihan-plugin/1 &lt;network&gt; &lt;address&gt;</c>。
+    /// 解析插件写到 stdout 的握手行 <c>xihan-plugin/1 &lt;network&gt; &lt;address&gt;</c>
     /// </summary>
     public static bool TryParseHandshakeLine(string? line, [NotNullWhen(true)] out PluginEndpoint? endpoint)
     {
@@ -79,7 +79,7 @@ public sealed partial record PluginEndpoint
     }
 
     /// <summary>
-    /// 解析环境变量形式 <c>&lt;network&gt; &lt;address&gt;</c>。
+    /// 解析环境变量形式 <c>&lt;network&gt; &lt;address&gt;</c>
     /// </summary>
     public static bool TryParse(string? text, [NotNullWhen(true)] out PluginEndpoint? endpoint)
     {
@@ -93,7 +93,7 @@ public sealed partial record PluginEndpoint
     }
 
     /// <summary>
-    /// 握手行文本。
+    /// 握手行文本
     /// </summary>
     public string ToHandshakeLine() => $"{HandshakeLinePrefix} {Network} {Address}";
 
@@ -101,7 +101,7 @@ public sealed partial record PluginEndpoint
     public override string ToString() => $"{Network} {Address}";
 
     /// <summary>
-    /// 校验通过时创建端点。
+    /// 校验通过时创建端点
     /// </summary>
     private static bool TryCreate(string network, string address, [NotNullWhen(true)] out PluginEndpoint? endpoint)
     {
@@ -110,10 +110,10 @@ public sealed partial record PluginEndpoint
     }
 
     /// <summary>
-    /// 网络类型已知且地址合法。
+    /// 网络类型已知且地址合法
     /// </summary>
     /// <remarks>
-    /// TCP 只接受带端口的回环地址，其他网络只要求地址非空。
+    /// TCP 只接受带端口的回环地址，其他网络只要求地址非空
     /// </remarks>
     private static bool IsValid(string network, string address) => network switch
     {
@@ -123,13 +123,13 @@ public sealed partial record PluginEndpoint
     };
 
     /// <summary>
-    /// 握手行文法。
+    /// 握手行文法
     /// </summary>
     [GeneratedRegex(@"^xihan-plugin/1 (?<network>unix|tcp|npipe) (?<address>\S+)$")]
     private static partial Regex HandshakeLine();
 
     /// <summary>
-    /// 环境变量形式的文法。
+    /// 环境变量形式的文法
     /// </summary>
     [GeneratedRegex(@"^(?<network>unix|tcp|npipe) (?<address>\S+)$")]
     private static partial Regex EndpointText();

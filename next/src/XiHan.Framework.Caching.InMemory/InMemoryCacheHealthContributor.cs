@@ -8,31 +8,31 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 健康项 <see cref="InMemoryCachingFeature.HealthName"/>。
+/// 健康项 <see cref="InMemoryCachingFeature.HealthName"/>
 /// </summary>
 /// <remarks>
-/// 两张 LRU 表（字节存储、对象缓存）任一条目数达到 <see cref="InMemoryCachingOptions.MaxEntries"/> 即 Degraded——缓存仍可用，但每次写入都在淘汰，命中率已受容量限制。同步计算，不起后台循环。
+/// 两张 LRU 表（字节存储、对象缓存）任一条目数达到 <see cref="InMemoryCachingOptions.MaxEntries"/> 即 Degraded——缓存仍可用，但每次写入都在淘汰，命中率已受容量限制。同步计算，不起后台循环
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryCacheHealthContributor : IHealthContributor
 {
     /// <summary>
-    /// 字节存储。
+    /// 字节存储
     /// </summary>
     private readonly InMemoryCacheStore _store;
 
     /// <summary>
-    /// 对象缓存。
+    /// 对象缓存
     /// </summary>
     private readonly InMemoryObjectCache _cache;
 
     /// <summary>
-    /// 每张表的条目上限。
+    /// 每张表的条目上限
     /// </summary>
     private readonly int _capacity;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryCacheHealthContributor(InMemoryCacheStore store, InMemoryObjectCache cache, InMemoryCachingOptions options)
     {

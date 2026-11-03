@@ -8,24 +8,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Database;
 
 /// <summary>
-/// 数据库调度 Provider 自己的选项（配置节 <c>XiHan:Scheduling:Database</c>）。
+/// 数据库调度 Provider 自己的选项（配置节 <c>XiHan:Scheduling:Database</c>）
 /// </summary>
 /// <remarks>
-/// 引擎与选举的选项仍在 <c>XiHan:Scheduling</c>。
+/// 引擎与选举的选项仍在 <c>XiHan:Scheduling</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseSchedulingOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Scheduling:Database";
 
     /// <summary>
-    /// 健康项 <c>scheduling.database.leader</c> 的重探间隔（也是单次探测的超时）。
+    /// 健康项 <c>scheduling.database.leader</c> 的重探间隔（也是单次探测的超时）
     /// </summary>
     /// <remarks>
-    /// 默认 15 秒。
+    /// 默认 15 秒
     /// </remarks>
     public TimeSpan HealthProbeInterval
     {
@@ -34,7 +34,7 @@ public sealed record DatabaseSchedulingOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 从配置读取：<c>HealthProbeIntervalSeconds</c>。
+    /// 从配置读取：<c>HealthProbeIntervalSeconds</c>
     /// </summary>
     public static DatabaseSchedulingOptions FromConfiguration(IConfiguration configuration)
     {

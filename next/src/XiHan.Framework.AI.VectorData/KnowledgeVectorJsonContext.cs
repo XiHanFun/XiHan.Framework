@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.AI.VectorData;
 
 /// <summary>
-/// 元数据字典的序列化上下文。
+/// 元数据字典的序列化上下文
 /// </summary>
 [JsonSerializable(typeof(Dictionary<string, string>))]
 internal sealed partial class KnowledgeVectorJsonContext : JsonSerializerContext;

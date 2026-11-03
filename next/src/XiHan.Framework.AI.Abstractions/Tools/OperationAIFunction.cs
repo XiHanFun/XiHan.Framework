@@ -15,41 +15,41 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tools;
 
 /// <summary>
-/// 把一个操作契约桥接成模型工具。
+/// 把一个操作契约桥接成模型工具
 /// </summary>
 /// <remarks>
-/// 参数序列化成请求 JSON（无法序列化的参数以 <c>AI_VALIDATION_001</c> 交给模型），在新作用域的新上下文里经完整管道执行。新上下文复制调用方的追踪 ID、Baggage、截止时间与安全上下文（主体与租户），工具以调用方身份执行、Authorize 阶段照常按契约判定；凭据不复制，不重新认证。成功返回响应 JSON，失败返回 <c>{"error","message"}</c> 交给模型。
+/// 参数序列化成请求 JSON（无法序列化的参数以 <c>AI_VALIDATION_001</c> 交给模型），在新作用域的新上下文里经完整管道执行。新上下文复制调用方的追踪 ID、Baggage、截止时间与安全上下文（主体与租户），工具以调用方身份执行、Authorize 阶段照常按契约判定；凭据不复制，不重新认证。成功返回响应 JSON，失败返回 <c>{"error","message"}</c> 交给模型
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OperationAIFunction : AIFunction
 {
     /// <summary>
-    /// 操作。
+    /// 操作
     /// </summary>
     private readonly OperationDescriptor _descriptor;
 
     /// <summary>
-    /// 调用器。
+    /// 调用器
     /// </summary>
     private readonly IOperationInvoker _invoker;
 
     /// <summary>
-    /// 作用域工厂。
+    /// 作用域工厂
     /// </summary>
     private readonly IServiceScopeFactory _scopes;
 
     /// <summary>
-    /// 本地化器（可无）。
+    /// 本地化器（可无）
     /// </summary>
     private readonly IMessageLocalizer? _localizer;
 
     /// <summary>
-    /// 调用方上下文。
+    /// 调用方上下文
     /// </summary>
     private readonly InvocationContext _caller;
 
     /// <summary>
-    /// 创建（由 <see cref="AIToolCatalog"/> 在绑定时调用）。
+    /// 创建（由 <see cref="AIToolCatalog"/> 在绑定时调用）
     /// </summary>
     internal OperationAIFunction(string name, string? description, JsonElement schema, JsonElement? returnSchema, OperationDescriptor descriptor, IOperationInvoker invoker, IServiceScopeFactory scopes, IMessageLocalizer? localizer, InvocationContext caller)
     {
@@ -77,7 +77,7 @@ public sealed class OperationAIFunction : AIFunction
     public override JsonElement? ReturnJsonSchema { get; }
 
     /// <summary>
-    /// 桥接的操作 ID。
+    /// 桥接的操作 ID
     /// </summary>
     public string OperationId => _descriptor.Id;
 
@@ -119,10 +119,10 @@ public sealed class OperationAIFunction : AIFunction
     }
 
     /// <summary>
-    /// 交给模型的错误对象 <c>{"error","message"}</c>。
+    /// 交给模型的错误对象 <c>{"error","message"}</c>
     /// </summary>
     /// <remarks>
-    /// 文案按调用方区域翻译，没有本地化器时取错误的描述。
+    /// 文案按调用方区域翻译，没有本地化器时取错误的描述
     /// </remarks>
     private JsonElement Failure(Error error, InvocationContext context)
     {
@@ -132,10 +132,10 @@ public sealed class OperationAIFunction : AIFunction
     }
 
     /// <summary>
-    /// 参数 → 请求 JSON。
+    /// 参数 → 请求 JSON
     /// </summary>
     /// <remarks>
-    /// JSON 元素与节点原样写入，标量按类型写入，其他类型按序列化选项里登记的类型信息写入；序列化不了的参数返回 <c>AI_VALIDATION_001</c>。
+    /// JSON 元素与节点原样写入，标量按类型写入，其他类型按序列化选项里登记的类型信息写入；序列化不了的参数返回 <c>AI_VALIDATION_001</c>
     /// </remarks>
     private Result<ReadOnlyMemory<byte>> SerializeArguments(AIFunctionArguments arguments)
     {
@@ -159,10 +159,10 @@ public sealed class OperationAIFunction : AIFunction
     }
 
     /// <summary>
-    /// 写一个参数值。
+    /// 写一个参数值
     /// </summary>
     /// <remarks>
-    /// 序列化选项里没有该类型的信息、或序列化本身失败时返回 <see langword="false"/>。
+    /// 序列化选项里没有该类型的信息、或序列化本身失败时返回 <see langword="false"/>
     /// </remarks>
     private bool WriteValue(Utf8JsonWriter writer, object? value)
     {

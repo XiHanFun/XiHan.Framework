@@ -7,22 +7,22 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 只读的套件操作。
+/// 只读的套件操作
 /// </summary>
 /// <remarks>
-/// 动词 <c>get</c>，契约只读：Transaction 阶段为它开只读工作单元。处理器执行用例登记的脚本。
+/// 动词 <c>get</c>，契约只读：Transaction 阶段为它开只读工作单元。处理器执行用例登记的脚本
 /// </remarks>
-/// <param name="scripts">脚本登记处。</param>
+/// <param name="scripts">脚本登记处</param>
 [Operation(Id)]
 internal sealed class ReadScriptOperation(ConformanceScripts scripts) : IOperation<ConformanceScriptRequest, ConformanceScriptResponse>
 {
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public const string Id = "conformance-scripts.get";
 
     /// <summary>
-    /// 脚本登记处。
+    /// 脚本登记处
     /// </summary>
     private readonly ConformanceScripts _scripts = scripts ?? throw new ArgumentNullException(nameof(scripts));
 

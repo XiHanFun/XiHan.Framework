@@ -6,63 +6,63 @@ using Microsoft.Extensions.Logging;
 namespace XiHan.Framework.Observability.Host;
 
 /// <summary>
-/// 使用率与速率的后台采样器。
+/// 使用率与速率的后台采样器
 /// </summary>
 /// <remarks>
-/// 按间隔采 CPU 时间、进程处理器时间与网卡累计字节数，用相邻两次之差算出使用率与速率并缓存；读取只返回缓存，不阻塞（RFC-0023 的采样）。第一次采样之后、第二次之前各值为空。
+/// 按间隔采 CPU 时间、进程处理器时间与网卡累计字节数，用相邻两次之差算出使用率与速率并缓存；读取只返回缓存，不阻塞（RFC-0023 的采样）。第一次采样之后、第二次之前各值为空
 /// </remarks>
 internal sealed partial class HostSampler : IAsyncDisposable
 {
     /// <summary>
-    /// 读取路径。
+    /// 读取路径
     /// </summary>
     private readonly HostPlatform _platform;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 逻辑核心数。
+    /// 逻辑核心数
     /// </summary>
     /// <remarks>
-    /// 进程使用率按它折算。
+    /// 进程使用率按它折算
     /// </remarks>
     private readonly int _logicalCores;
 
     /// <summary>
-    /// 采样与停止的互斥。
+    /// 采样与停止的互斥
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 上一次的原始采样。
+    /// 上一次的原始采样
     /// </summary>
     private Snapshot? _previous;
 
     /// <summary>
-    /// 最近一次算出的值。
+    /// 最近一次算出的值
     /// </summary>
     private volatile Rates _rates = Rates.Empty;
 
     /// <summary>
-    /// 停止信号。
+    /// 停止信号
     /// </summary>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 后台循环。
+    /// 后台循环
     /// </summary>
     private Task? _loop;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public HostSampler(HostPlatform platform, TimeSpan interval, TimeProvider clock, ILogger logger, int logicalCores)
     {
@@ -79,31 +79,31 @@ internal sealed partial class HostSampler : IAsyncDisposable
     }
 
     /// <summary>
-    /// 采样间隔。
+    /// 采样间隔
     /// </summary>
     public TimeSpan Interval { get; }
 
     /// <summary>
-    /// 系统 CPU 使用率（0–100）。
+    /// 系统 CPU 使用率（0–100）
     /// </summary>
     public double? CpuUsagePercent => _rates.Cpu;
 
     /// <summary>
-    /// 进程 CPU 使用率（0–100）。
+    /// 进程 CPU 使用率（0–100）
     /// </summary>
     public double? ProcessCpuUsagePercent => _rates.Process;
 
     /// <summary>
-    /// 一块网卡的收发速率（字节/秒）。
+    /// 一块网卡的收发速率（字节/秒）
     /// </summary>
     /// <remarks>
-    /// 没有采到这块网卡时两项都为空。
+    /// 没有采到这块网卡时两项都为空
     /// </remarks>
     public (double? Receive, double? Send) NetworkRate(string id)
         => _rates.Network.TryGetValue(id, out var rate) ? rate : (null, null);
 
     /// <summary>
-    /// 采一次样，与上一次求差。
+    /// 采一次样，与上一次求差
     /// </summary>
     public void Sample()
     {
@@ -120,10 +120,10 @@ internal sealed partial class HostSampler : IAsyncDisposable
     }
 
     /// <summary>
-    /// 同步采第一次样，再起后台循环。
+    /// 同步采第一次样，再起后台循环
     /// </summary>
     /// <remarks>
-    /// 重复调用不再起第二个循环。
+    /// 重复调用不再起第二个循环
     /// </remarks>
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -143,10 +143,10 @@ internal sealed partial class HostSampler : IAsyncDisposable
     }
 
     /// <summary>
-    /// 停止后台循环。
+    /// 停止后台循环
     /// </summary>
     /// <remarks>
-    /// 最近算出的值保留。
+    /// 最近算出的值保留
     /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -177,10 +177,10 @@ internal sealed partial class HostSampler : IAsyncDisposable
     }
 
     /// <summary>
-    /// 两次采样之差。
+    /// 两次采样之差
     /// </summary>
     /// <remarks>
-    /// 计数变小或总增量为零时该项为空；百分比限制在 0–100。
+    /// 计数变小或总增量为零时该项为空；百分比限制在 0–100
     /// </remarks>
     private Rates Compute(Snapshot previous, Snapshot current)
     {
@@ -215,24 +215,24 @@ internal sealed partial class HostSampler : IAsyncDisposable
     }
 
     /// <summary>
-    /// 比例换成 0–100 的百分比。
+    /// 比例换成 0–100 的百分比
     /// </summary>
     private static double Percent(double ratio) => Math.Clamp(ratio * 100d, 0d, 100d);
 
     /// <summary>
-    /// 累计值的每秒增量。
+    /// 累计值的每秒增量
     /// </summary>
     /// <remarks>
-    /// 变小或读不到为空。
+    /// 变小或读不到为空
     /// </remarks>
     private static double? PerSecond(long? before, long? after, TimeSpan elapsed)
         => before is { } b && after is { } a && a >= b ? (a - b) / elapsed.TotalSeconds : null;
 
     /// <summary>
-    /// 按间隔采样，直到停止。
+    /// 按间隔采样，直到停止
     /// </summary>
     /// <remarks>
-    /// 计时器由本方法释放；一次采样失败记警告后继续。
+    /// 计时器由本方法释放；一次采样失败记警告后继续
     /// </remarks>
     private async Task LoopAsync(PeriodicTimer timer, CancellationToken stopping)
     {
@@ -260,30 +260,30 @@ internal sealed partial class HostSampler : IAsyncDisposable
     }
 
     /// <summary>
-    /// 一次采样失败。
+    /// 一次采样失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Host sampling failed; the previous usage values are kept.")]
     private static partial void LogSampleFailed(ILogger logger, Exception exception);
 
     /// <summary>
-    /// 一次原始采样。
+    /// 一次原始采样
     /// </summary>
-    /// <param name="Timestamp">时钟的时间戳。</param>
-    /// <param name="Cpu">系统 CPU 时间；读不到为空。</param>
-    /// <param name="ProcessCpu">进程处理器时间。</param>
-    /// <param name="Network">各网卡的累计字节数。</param>
+    /// <param name="Timestamp">时钟的时间戳</param>
+    /// <param name="Cpu">系统 CPU 时间；读不到为空</param>
+    /// <param name="ProcessCpu">进程处理器时间</param>
+    /// <param name="Network">各网卡的累计字节数</param>
     private sealed record Snapshot(long Timestamp, CpuTimes? Cpu, TimeSpan ProcessCpu, IReadOnlyList<NetworkCounters> Network);
 
     /// <summary>
-    /// 一组算出的值。
+    /// 一组算出的值
     /// </summary>
-    /// <param name="Cpu">系统 CPU 使用率。</param>
-    /// <param name="Process">进程 CPU 使用率。</param>
-    /// <param name="Network">各网卡的收发速率。</param>
+    /// <param name="Cpu">系统 CPU 使用率</param>
+    /// <param name="Process">进程 CPU 使用率</param>
+    /// <param name="Network">各网卡的收发速率</param>
     private sealed record Rates(double? Cpu, double? Process, IReadOnlyDictionary<string, (double? Receive, double? Send)> Network)
     {
         /// <summary>
-        /// 还没算出任何值。
+        /// 还没算出任何值
         /// </summary>
         public static Rates Empty { get; } = new(null, null, new Dictionary<string, (double?, double?)>(StringComparer.Ordinal));
     }

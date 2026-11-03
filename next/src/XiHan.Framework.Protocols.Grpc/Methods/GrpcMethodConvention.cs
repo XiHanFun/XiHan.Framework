@@ -8,16 +8,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Methods;
 
 /// <summary>
-/// 从操作 ID 推导 gRPC 方法名（<c>spec/conventions/operation-ids.md</c>）。
+/// 从操作 ID 推导 gRPC 方法名（<c>spec/conventions/operation-ids.md</c>）
 /// </summary>
 /// <remarks>
-/// 服务 = 资源段的 PascalCase（连字符分段，<c>order-lines</c> → <c>OrderLines</c>），方法 = 动词的 PascalCase（<c>create</c> → <c>Create</c>）。
+/// 服务 = 资源段的 PascalCase（连字符分段，<c>order-lines</c> → <c>OrderLines</c>），方法 = 动词的 PascalCase（<c>create</c> → <c>Create</c>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class GrpcMethodConvention
 {
     /// <summary>
-    /// 推导方法名。
+    /// 推导方法名
     /// </summary>
     public static GrpcMethodName Derive(OperationContract contract)
     {
@@ -26,7 +26,7 @@ public static class GrpcMethodConvention
     }
 
     /// <summary>
-    /// 连字符分段的小写标识转 PascalCase。
+    /// 连字符分段的小写标识转 PascalCase
     /// </summary>
     private static string Pascal(string identifier)
     {

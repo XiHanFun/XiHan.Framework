@@ -9,20 +9,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 套件用的消息解析器：直接查宿主登记的消息目录。
+/// 套件用的消息解析器：直接查宿主登记的消息目录
 /// </summary>
 /// <remarks>
-/// 只按给定区域精确查找、严格格式化，不回退到别的区域：用例据此断言故障在哪个区域渲染成了哪种语言，不依赖宿主是否装配了本地化特性。
+/// 只按给定区域精确查找、严格格式化，不回退到别的区域：用例据此断言故障在哪个区域渲染成了哪种语言，不依赖宿主是否装配了本地化特性
 /// </remarks>
 internal sealed class CatalogMessageResolver : IMessageResolver
 {
     /// <summary>
-    /// 宿主登记的消息目录。
+    /// 宿主登记的消息目录
     /// </summary>
     private readonly IReadOnlyList<MessageCatalog> _catalogs;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public CatalogMessageResolver(IEnumerable<MessageCatalog> catalogs)
     {

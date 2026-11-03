@@ -11,39 +11,39 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Security.OpenIdConnect;
 
 /// <summary>
-/// 用签发者 JWKS 里的密钥校验 <c>Bearer</c> 令牌并映射为主体。
+/// 用签发者 JWKS 里的密钥校验 <c>Bearer</c> 令牌并映射为主体
 /// </summary>
 /// <remarks>
-/// 签名密钥未知时按需刷新一次元数据再试。
+/// 签名密钥未知时按需刷新一次元数据再试
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
 {
     /// <summary>
-    /// 方案名 <c>Bearer</c>。
+    /// 方案名 <c>Bearer</c>
     /// </summary>
     public const string SchemeName = "Bearer";
 
     /// <summary>
-    /// 令牌处理器。
+    /// 令牌处理器
     /// </summary>
     /// <remarks>
-    /// 关闭入站声明映射，声明按 JWT 原始类型名进入主体。
+    /// 关闭入站声明映射，声明按 JWT 原始类型名进入主体
     /// </remarks>
     private readonly JsonWebTokenHandler _handler = new() { MapInboundClaims = false };
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly OpenIdConnectOptions _options;
 
     /// <summary>
-    /// 签发者元数据。
+    /// 签发者元数据
     /// </summary>
     private readonly OpenIdConnectMetadataCache _metadata;
 
     /// <summary>
-    /// 创建处理器。
+    /// 创建处理器
     /// </summary>
     public OpenIdConnectAuthenticationHandler(OpenIdConnectOptions options, OpenIdConnectMetadataCache metadata)
     {
@@ -108,10 +108,10 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
     }
 
     /// <summary>
-    /// 由选项与一份元数据推出校验参数。
+    /// 由选项与一份元数据推出校验参数
     /// </summary>
     /// <remarks>
-    /// 签名、过期与有效期始终强制，签发者取选项覆盖或发现文档，受众只在配置了才校验。
+    /// 签名、过期与有效期始终强制，签发者取选项覆盖或发现文档，受众只在配置了才校验
     /// </remarks>
     private TokenValidationParameters Parameters(OpenIdConnectMetadata metadata) => new()
     {
@@ -129,7 +129,7 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
     };
 
     /// <summary>
-    /// 令牌无效的失败结果。
+    /// 令牌无效的失败结果
     /// </summary>
     private static Result<Principal> InvalidToken()
         => Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, SecurityMessages.InvalidToken));

@@ -7,28 +7,28 @@ using Microsoft.Extensions.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions;
 
 /// <summary>
-/// 以一份可整体替换的键值表实现 <see cref="IConfigurationProvider"/>。
+/// 以一份可整体替换的键值表实现 <see cref="IConfigurationProvider"/>
 /// </summary>
 /// <remarks>
-/// 替换时触发重载令牌。本包只能引用抽象包，所以不派生自 <c>ConfigurationProvider</c>。
+/// 替换时触发重载令牌。本包只能引用抽象包，所以不派生自 <c>ConfigurationProvider</c>
 /// </remarks>
 internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, IDisposable
 {
     /// <summary>
-    /// 保护键值表与令牌的锁。
+    /// 保护键值表与令牌的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 当前键值表。
+    /// 当前键值表
     /// </summary>
     private Dictionary<string, string?> _data = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 当前重载令牌的源。
+    /// 当前重载令牌的源
     /// </summary>
     /// <remarks>
-    /// 替换数据时取消并换新。
+    /// 替换数据时取消并换新
     /// </remarks>
     private CancellationTokenSource _reload = new();
 
@@ -94,7 +94,7 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
     }
 
     /// <summary>
-    /// 释放：派生类先停自己的后台工作再调用基类。
+    /// 释放：派生类先停自己的后台工作再调用基类
     /// </summary>
     protected virtual void Dispose(bool disposing)
     {
@@ -110,7 +110,7 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
     }
 
     /// <summary>
-    /// 当前键值表的副本。
+    /// 当前键值表的副本
     /// </summary>
     protected Dictionary<string, string?> Snapshot()
     {
@@ -121,10 +121,10 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
     }
 
     /// <summary>
-    /// 整体替换键值表。
+    /// 整体替换键值表
     /// </summary>
     /// <remarks>
-    /// <paramref name="notify"/> 为真且键值有变化时触发重载令牌（首次加载不触发）；重读到同样的内容不触发，订阅者不会因为轮询而反复重绑。
+    /// <paramref name="notify"/> 为真且键值有变化时触发重载令牌（首次加载不触发）；重读到同样的内容不触发，订阅者不会因为轮询而反复重绑
     /// </remarks>
     protected void Replace(IReadOnlyDictionary<string, string?> values, bool notify)
     {
@@ -148,10 +148,10 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
     }
 
     /// <summary>
-    /// 两份键值表是否相同。
+    /// 两份键值表是否相同
     /// </summary>
     /// <remarks>
-    /// 键不分大小写，值按序数比较。
+    /// 键不分大小写，值按序数比较
     /// </remarks>
     private static bool SameValues(Dictionary<string, string?> current, IReadOnlyDictionary<string, string?> next)
     {
@@ -172,7 +172,7 @@ internal abstract class KeyValueConfigurationProvider : IConfigurationProvider, 
     }
 
     /// <summary>
-    /// 键从 <paramref name="start"/> 起到下一个分隔符之前的一段。
+    /// 键从 <paramref name="start"/> 起到下一个分隔符之前的一段
     /// </summary>
     private static string Segment(string key, int start)
     {

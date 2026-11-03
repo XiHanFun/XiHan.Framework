@@ -7,15 +7,15 @@ using System.Text;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 生成 .NET Aspire AppHost 的登记代码。
+/// 生成 .NET Aspire AppHost 的登记代码
 /// </summary>
 /// <remarks>
-/// 按绑定添加资源，把连接串注入应用的绑定环境变量。
+/// 按绑定添加资源，把连接串注入应用的绑定环境变量
 /// </remarks>
 internal static class AspireGenerator
 {
     /// <summary>
-    /// 生成 <c>aspire/XiHanAppHost.g.cs</c>。
+    /// 生成 <c>aspire/XiHanAppHost.g.cs</c>
     /// </summary>
     public static PackOutput Generate(AppManifest manifest)
     {
@@ -131,7 +131,7 @@ internal static class AspireGenerator
     }
 
     /// <summary>
-    /// 把名字变成 C# 标识符：按 <c>-</c> 分段首字母大写。
+    /// 把名字变成 C# 标识符：按 <c>-</c> 分段首字母大写
     /// </summary>
     private static string Identifier(string name, bool lowerFirst = false)
     {

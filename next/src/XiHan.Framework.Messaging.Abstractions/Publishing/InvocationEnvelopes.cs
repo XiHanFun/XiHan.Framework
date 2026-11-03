@@ -11,15 +11,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Publishing;
 
 /// <summary>
-/// 发布时从当前调用补齐信封的扩展属性。
+/// 发布时从当前调用补齐信封的扩展属性
 /// </summary>
 /// <remarks>
-/// RFC-0009「信封」：<c>traceparent</c> 取当前调用的追踪 ID、父跨度与采样标志（RFC-0003 规则 7）；租户先取安全上下文再取 Baggage；主体取已认证主体的 ID，匿名时取 Baggage；关联与区域取 Baggage。信封上已有的扩展保持不变，不在调用内时原样返回。
+/// RFC-0009「信封」：<c>traceparent</c> 取当前调用的追踪 ID、父跨度与采样标志（RFC-0003 规则 7）；租户先取安全上下文再取 Baggage；主体取已认证主体的 ID，匿名时取 Baggage；关联与区域取 Baggage。信封上已有的扩展保持不变，不在调用内时原样返回
 /// </remarks>
 internal static class InvocationEnvelopes
 {
     /// <summary>
-    /// 补齐一个信封。
+    /// 补齐一个信封
     /// </summary>
     public static MessageEnvelope Enrich(MessageEnvelope envelope, IInvocationAccessor? invocation)
     {
@@ -28,10 +28,10 @@ internal static class InvocationEnvelopes
     }
 
     /// <summary>
-    /// 补齐一批信封。
+    /// 补齐一批信封
     /// </summary>
     /// <remarks>
-    /// 从调用取值只做一次；没有要补的扩展时返回原列表。
+    /// 从调用取值只做一次；没有要补的扩展时返回原列表
     /// </remarks>
     public static IReadOnlyList<MessageEnvelope> Enrich(IReadOnlyList<MessageEnvelope> envelopes, IInvocationAccessor? invocation)
     {
@@ -53,16 +53,16 @@ internal static class InvocationEnvelopes
     }
 
     /// <summary>
-    /// 当前调用的上下文。
+    /// 当前调用的上下文
     /// </summary>
     /// <remarks>
-    /// 没有访问器或不在调用内为 <see langword="null"/>。
+    /// 没有访问器或不在调用内为 <see langword="null"/>
     /// </remarks>
     private static InvocationContext? Current(IInvocationAccessor? invocation)
         => invocation is not null && invocation.Current.TryGetValue(out var context) ? context : null;
 
     /// <summary>
-    /// 从调用上下文算出要补的扩展。
+    /// 从调用上下文算出要补的扩展
     /// </summary>
     private static Dictionary<string, string> FromContext(InvocationContext context)
     {
@@ -91,10 +91,10 @@ internal static class InvocationEnvelopes
     }
 
     /// <summary>
-    /// 当前调用的 W3C <c>traceparent</c>。
+    /// 当前调用的 W3C <c>traceparent</c>
     /// </summary>
     /// <remarks>
-    /// 当前 Activity 与调用同一 trace 且有采样决定（Observe 阶段的 <c>xihan.invoke</c> 或它的子 Span）时以它为父级、带它的采样标志，消费端是它的子 Span；否则用调用的父跨度与标志，上游「不采样」原样传下去，没有上游（链路的根）按已采样处理。
+    /// 当前 Activity 与调用同一 trace 且有采样决定（Observe 阶段的 <c>xihan.invoke</c> 或它的子 Span）时以它为父级、带它的采样标志，消费端是它的子 Span；否则用调用的父跨度与标志，上游「不采样」原样传下去，没有上游（链路的根）按已采样处理
     /// </remarks>
     private static string TraceParentOf(InvocationContext context)
     {
@@ -110,16 +110,16 @@ internal static class InvocationEnvelopes
     }
 
     /// <summary>
-    /// 按 W3C 版本 00 拼出 <c>traceparent</c>，标志只保留采样位。
+    /// 按 W3C 版本 00 拼出 <c>traceparent</c>，标志只保留采样位
     /// </summary>
     private static string Format(string traceId, string spanId, ActivityTraceFlags flags)
         => $"00-{traceId}-{spanId}-{((byte)(flags & ActivityTraceFlags.Recorded)).ToString("x2", CultureInfo.InvariantCulture)}";
 
     /// <summary>
-    /// 把调用里的扩展并进信封，信封已有的扩展优先。
+    /// 把调用里的扩展并进信封，信封已有的扩展优先
     /// </summary>
     /// <remarks>
-    /// 都已存在时返回原信封。
+    /// 都已存在时返回原信封
     /// </remarks>
     private static MessageEnvelope Merge(MessageEnvelope envelope, Dictionary<string, string> extensions)
     {

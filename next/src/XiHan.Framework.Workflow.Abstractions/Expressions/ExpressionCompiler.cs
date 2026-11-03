@@ -10,25 +10,25 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 表达式小语言的编译器。
+/// 表达式小语言的编译器
 /// </summary>
 /// <remarks>
-/// 递归下降解析成闭包树。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；<c>==</c> 跨数字类型宽松、字符串序数比较；未知根变量是错误，缺少的成员或键是 null。
+/// 递归下降解析成闭包树。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；<c>==</c> 跨数字类型宽松、字符串序数比较；未知根变量是错误，缺少的成员或键是 null
 /// </remarks>
 internal sealed class ExpressionCompiler
 {
     /// <summary>
-    /// 源文本。
+    /// 源文本
     /// </summary>
     private readonly string _text;
 
     /// <summary>
-    /// 当前位置。
+    /// 当前位置
     /// </summary>
     private int _position;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     private ExpressionCompiler(string text)
     {
@@ -36,10 +36,10 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 编译。
+    /// 编译
     /// </summary>
     /// <remarks>
-    /// 语法错误抛 <see cref="ExpressionException"/>。
+    /// 语法错误抛 <see cref="ExpressionException"/>
     /// </remarks>
     public static CompiledExpression Compile(string expression)
     {
@@ -62,7 +62,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// <c>||</c>，短路，要求布尔操作数。
+    /// <c>||</c>，短路，要求布尔操作数
     /// </summary>
     private CompiledExpression ParseOr()
     {
@@ -78,7 +78,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// <c>&amp;&amp;</c>，短路，要求布尔操作数。
+    /// <c>&amp;&amp;</c>，短路，要求布尔操作数
     /// </summary>
     private CompiledExpression ParseAnd()
     {
@@ -94,7 +94,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// <c>==</c> 与 <c>!=</c>。
+    /// <c>==</c> 与 <c>!=</c>
     /// </summary>
     private CompiledExpression ParseEquality()
     {
@@ -121,7 +121,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// <c>&lt;</c>、<c>&lt;=</c>、<c>&gt;</c>、<c>&gt;=</c>。
+    /// <c>&lt;</c>、<c>&lt;=</c>、<c>&gt;</c>、<c>&gt;=</c>
     /// </summary>
     private CompiledExpression ParseComparison()
     {
@@ -162,7 +162,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// <c>+</c> 与 <c>-</c>。
+    /// <c>+</c> 与 <c>-</c>
     /// </summary>
     private CompiledExpression ParseAdditive()
     {
@@ -189,7 +189,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// <c>*</c>、<c>/</c>、<c>%</c>。
+    /// <c>*</c>、<c>/</c>、<c>%</c>
     /// </summary>
     private CompiledExpression ParseMultiplicative()
     {
@@ -230,7 +230,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 一元 <c>!</c> 与 <c>-</c>。
+    /// 一元 <c>!</c> 与 <c>-</c>
     /// </summary>
     private CompiledExpression ParseUnary()
     {
@@ -250,7 +250,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 后缀：成员访问与索引。
+    /// 后缀：成员访问与索引
     /// </summary>
     private CompiledExpression ParsePostfix()
     {
@@ -284,7 +284,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 原子：数字、字符串、<c>true</c> / <c>false</c> / <c>null</c>、标识符或函数调用、括号。
+    /// 原子：数字、字符串、<c>true</c> / <c>false</c> / <c>null</c>、标识符或函数调用、括号
     /// </summary>
     private CompiledExpression ParsePrimary()
     {
@@ -360,10 +360,10 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 内置函数（名字不区分大小写）。
+    /// 内置函数（名字不区分大小写）
     /// </summary>
     /// <remarks>
-    /// 参数个数在编译期校验。
+    /// 参数个数在编译期校验
     /// </remarks>
     private static CompiledExpression BindFunction(string name, List<CompiledExpression> args)
     {
@@ -474,17 +474,17 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 布尔字面量 <c>true</c>（每次新建，节点不能复用父）。
+    /// 布尔字面量 <c>true</c>（每次新建，节点不能复用父）
     /// </summary>
     private static JsonNode True => JsonValue.Create(true);
 
     /// <summary>
-    /// 布尔字面量 <c>false</c>。
+    /// 布尔字面量 <c>false</c>
     /// </summary>
     private static JsonNode False => JsonValue.Create(false);
 
     /// <summary>
-    /// 成员访问：对象取属性（没有为 null），null 为 null，其他类型是错误。
+    /// 成员访问：对象取属性（没有为 null），null 为 null，其他类型是错误
     /// </summary>
     private static JsonNode? Member(JsonNode? target, string member) => target switch
     {
@@ -494,7 +494,7 @@ internal sealed class ExpressionCompiler
     };
 
     /// <summary>
-    /// 索引：数组按整数（越界是错误），对象按字符串键（没有为 null），null 为 null。
+    /// 索引：数组按整数（越界是错误），对象按字符串键（没有为 null），null 为 null
     /// </summary>
     private static JsonNode? Index(JsonNode? target, JsonNode? index)
     {
@@ -513,7 +513,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 加法：任一侧是字符串即拼接，否则数字相加。
+    /// 加法：任一侧是字符串即拼接，否则数字相加
     /// </summary>
     private static JsonValue Add(JsonNode? left, JsonNode? right)
     {
@@ -526,10 +526,10 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 宽松相等。
+    /// 宽松相等
     /// </summary>
     /// <remarks>
-    /// 都为 null 相等；都是数字按数值；都是布尔按值；其余按字符串序数比较。
+    /// 都为 null 相等；都是数字按数值；都是布尔按值；其余按字符串序数比较
     /// </remarks>
     private static bool AreEqual(JsonNode? left, JsonNode? right)
     {
@@ -557,7 +557,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 排序比较：数字按数值，时间按时刻，其余按字符串序数。
+    /// 排序比较：数字按数值，时间按时刻，其余按字符串序数
     /// </summary>
     private static int Compare(JsonNode? left, JsonNode? right, string op)
     {
@@ -580,19 +580,19 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 要求布尔。
+    /// 要求布尔
     /// </summary>
     private static bool Boolean(JsonNode? node, string op)
         => node is JsonValue value && !IsString(value) && WorkflowValues.TryBool(value, out var flag) ? flag : throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotBoolean, MessageArguments.Of(("operator", op)));
 
     /// <summary>
-    /// 要求数字（字符串形式的数字也接受）。
+    /// 要求数字（字符串形式的数字也接受）
     /// </summary>
     private static decimal Number(JsonNode? node, string op)
         => node is JsonValue value && WorkflowValues.TryDecimal(value, out var number) ? number : throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotNumeric, MessageArguments.Of(("operator", op)));
 
     /// <summary>
-    /// 任意值的字符串形式：null 为空串，标量按 <see cref="WorkflowValues.AsString"/>，容器为 JSON 文本。
+    /// 任意值的字符串形式：null 为空串，标量按 <see cref="WorkflowValues.AsString"/>，容器为 JSON 文本
     /// </summary>
     private static string Text(JsonNode? node) => node switch
     {
@@ -602,12 +602,12 @@ internal sealed class ExpressionCompiler
     };
 
     /// <summary>
-    /// 是否字符串标量。
+    /// 是否字符串标量
     /// </summary>
     private static bool IsString(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out _);
 
     /// <summary>
-    /// 跳过空白。
+    /// 跳过空白
     /// </summary>
     private void SkipWhitespace()
     {
@@ -618,10 +618,10 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 若当前位置是 <paramref name="token"/> 则消费。
+    /// 若当前位置是 <paramref name="token"/> 则消费
     /// </summary>
     /// <remarks>
-    /// 运算符前先跳空白。
+    /// 运算符前先跳空白
     /// </remarks>
     private bool TryConsume(string token)
     {
@@ -642,10 +642,10 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 读标识符（字母、数字、下划线，首字符非数字）。
+    /// 读标识符（字母、数字、下划线，首字符非数字）
     /// </summary>
     /// <remarks>
-    /// 不是标识符返回 <see langword="null"/>。
+    /// 不是标识符返回 <see langword="null"/>
     /// </remarks>
     private string? ReadIdentifier()
     {
@@ -665,7 +665,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 读数字（十进制，可带小数）。
+    /// 读数字（十进制，可带小数）
     /// </summary>
     private decimal ReadNumber()
     {
@@ -682,7 +682,7 @@ internal sealed class ExpressionCompiler
     }
 
     /// <summary>
-    /// 读引号字符串，支持 <c>\n \t \r \\ \' \"</c> 转义。
+    /// 读引号字符串，支持 <c>\n \t \r \\ \' \"</c> 转义
     /// </summary>
     private string ReadString(char quote)
     {

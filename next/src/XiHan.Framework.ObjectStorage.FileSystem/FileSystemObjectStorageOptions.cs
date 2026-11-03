@@ -8,24 +8,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 文件系统对象存储选项。
+/// 文件系统对象存储选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:ObjectStorage:FileSystem</c> 显式读取：<c>RootPath</c>、<c>MaxTotalBytes</c>、<c>MaxBlobBytes</c>、<c>MultipartExpiryHours</c>；命名实例（Provider <c>filesystem</c>）的设置用同样的键。
+/// 从配置节 <c>XiHan:ObjectStorage:FileSystem</c> 显式读取：<c>RootPath</c>、<c>MaxTotalBytes</c>、<c>MaxBlobBytes</c>、<c>MultipartExpiryHours</c>；命名实例（Provider <c>filesystem</c>）的设置用同样的键
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record FileSystemObjectStorageOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:ObjectStorage:FileSystem";
 
     /// <summary>
-    /// 根目录。
+    /// 根目录
     /// </summary>
     /// <remarks>
-    /// 默认 <c>&lt;AppContext.BaseDirectory&gt;/blobs</c>。相对路径按当前目录解析。
+    /// 默认 <c>&lt;AppContext.BaseDirectory&gt;/blobs</c>。相对路径按当前目录解析
     /// </remarks>
     public string RootPath
     {
@@ -34,10 +34,10 @@ public sealed record FileSystemObjectStorageOptions
     } = Path.Combine(AppContext.BaseDirectory, "blobs");
 
     /// <summary>
-    /// 全部对象的总字节上限。
+    /// 全部对象的总字节上限
     /// </summary>
     /// <remarks>
-    /// 默认 1 GiB。
+    /// 默认 1 GiB
     /// </remarks>
     public long MaxTotalBytes
     {
@@ -46,10 +46,10 @@ public sealed record FileSystemObjectStorageOptions
     } = 1L << 30;
 
     /// <summary>
-    /// 单个对象的字节上限。
+    /// 单个对象的字节上限
     /// </summary>
     /// <remarks>
-    /// 默认 256 MiB。
+    /// 默认 256 MiB
     /// </remarks>
     public long MaxBlobBytes
     {
@@ -58,10 +58,10 @@ public sealed record FileSystemObjectStorageOptions
     } = 256L << 20;
 
     /// <summary>
-    /// 未完成的分片上传保留多久。
+    /// 未完成的分片上传保留多久
     /// </summary>
     /// <remarks>
-    /// 启动扫描时清掉更早发起的上传。默认 7 天。
+    /// 启动扫描时清掉更早发起的上传。默认 7 天
     /// </remarks>
     public TimeSpan MultipartExpiry
     {
@@ -70,12 +70,12 @@ public sealed record FileSystemObjectStorageOptions
     } = TimeSpan.FromDays(7);
 
     /// <summary>
-    /// 设置键（配置节下的键与命名实例的设置共用）。
+    /// 设置键（配置节下的键与命名实例的设置共用）
     /// </summary>
     private static readonly string[] _settingKeys = ["RootPath", "MaxTotalBytes", "MaxBlobBytes", "MultipartExpiryHours"];
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static FileSystemObjectStorageOptions FromConfiguration(IConfiguration configuration)
     {
@@ -84,7 +84,7 @@ public sealed record FileSystemObjectStorageOptions
     }
 
     /// <summary>
-    /// 从命名实例的设置读取（键同配置节，不区分大小写）：<c>RootPath</c> 必填，未知的键抛出。
+    /// 从命名实例的设置读取（键同配置节，不区分大小写）：<c>RootPath</c> 必填，未知的键抛出
     /// </summary>
     public static FileSystemObjectStorageOptions FromSettings(IReadOnlyDictionary<string, string> settings)
     {
@@ -104,10 +104,10 @@ public sealed record FileSystemObjectStorageOptions
     }
 
     /// <summary>
-    /// 按名读取各项。
+    /// 按名读取各项
     /// </summary>
     /// <remarks>
-    /// <paramref name="prefix"/> 只用于报错。
+    /// <paramref name="prefix"/> 只用于报错
     /// </remarks>
     private static FileSystemObjectStorageOptions Parse(Func<string, string?> read, string prefix)
     {

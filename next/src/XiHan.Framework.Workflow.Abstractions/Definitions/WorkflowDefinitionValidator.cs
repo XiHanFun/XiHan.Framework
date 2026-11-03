@@ -14,31 +14,31 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 定义校验（RFC-0021）。
+/// 定义校验（RFC-0021）
 /// </summary>
 /// <remarks>
-/// 结构、活动类型、转移、条件语法、汇合与用户任务的属性、指派规则、可达性。作用域服务（指派规则校验用到 Provider）。每条问题是一条 <see cref="SchemaViolation"/>：位置是定义 JSON 里的路径（<c>$.nodes[2].properties.Cron</c>、<c>$.transitions[0].condition</c>，定义级的问题是 <c>$.nodes</c>），文案是消息键与参数，宿主按调用方的区域翻译（RFC-0010，ADR-0106）。
+/// 结构、活动类型、转移、条件语法、汇合与用户任务的属性、指派规则、可达性。作用域服务（指派规则校验用到 Provider）。每条问题是一条 <see cref="SchemaViolation"/>：位置是定义 JSON 里的路径（<c>$.nodes[2].properties.Cron</c>、<c>$.transitions[0].condition</c>，定义级的问题是 <c>$.nodes</c>），文案是消息键与参数，宿主按调用方的区域翻译（RFC-0010，ADR-0106）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowDefinitionValidator
 {
     /// <summary>
-    /// 活动登记表。
+    /// 活动登记表
     /// </summary>
     private readonly ActivityRegistry _registry;
 
     /// <summary>
-    /// 求值器。
+    /// 求值器
     /// </summary>
     private readonly IWorkflowExpressionEvaluator _evaluator;
 
     /// <summary>
-    /// 指派规则解析。
+    /// 指派规则解析
     /// </summary>
     private readonly AssigneeResolver _assignees;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public WorkflowDefinitionValidator(ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, AssigneeResolver assignees)
     {
@@ -48,10 +48,10 @@ public sealed class WorkflowDefinitionValidator
     }
 
     /// <summary>
-    /// 校验。
+    /// 校验
     /// </summary>
     /// <remarks>
-    /// 不合法返回 <see cref="WorkflowErrors.DefinitionInvalid"/>（消息键 <see cref="WorkflowMessages.DefinitionInvalid"/>，参数 <c>count</c>），<c>details.errors</c> 是全部问题（<see cref="SchemaViolation"/> 的列表，宿主写成 Problem Details 的字段级 <c>errors</c>）。
+    /// 不合法返回 <see cref="WorkflowErrors.DefinitionInvalid"/>（消息键 <see cref="WorkflowMessages.DefinitionInvalid"/>，参数 <c>count</c>），<c>details.errors</c> 是全部问题（<see cref="SchemaViolation"/> 的列表，宿主写成 Problem Details 的字段级 <c>errors</c>）
     /// </remarks>
     public Result Validate(WorkflowDefinition definition)
     {
@@ -62,10 +62,10 @@ public sealed class WorkflowDefinitionValidator
     }
 
     /// <summary>
-    /// 全部问题（给设计器）。
+    /// 全部问题（给设计器）
     /// </summary>
     /// <remarks>
-    /// 空表示合法。每条带定义 JSON 里的路径、消息键与参数；<see cref="SchemaViolation.Reason"/> 是按进程默认区域渲染的文本（日志用），展示用消息键与参数按调用方的区域渲染。
+    /// 空表示合法。每条带定义 JSON 里的路径、消息键与参数；<see cref="SchemaViolation.Reason"/> 是按进程默认区域渲染的文本（日志用），展示用消息键与参数按调用方的区域渲染
     /// </remarks>
     public IReadOnlyList<SchemaViolation> Diagnose(WorkflowDefinition definition)
     {
@@ -205,7 +205,7 @@ public sealed class WorkflowDefinitionValidator
     }
 
     /// <summary>
-    /// 按活动类型校验属性：汇合模式、用户任务的策略、指派来源与规则、结束结果。
+    /// 按活动类型校验属性：汇合模式、用户任务的策略、指派来源与规则、结束结果
     /// </summary>
     private void ValidateNodeProperties(WorkflowNode node, int index, List<SchemaViolation> issues)
     {
@@ -275,10 +275,10 @@ public sealed class WorkflowDefinitionValidator
     }
 
     /// <summary>
-    /// 用户任务。
+    /// 用户任务
     /// </summary>
     /// <remarks>
-    /// 至少一个指派来源，策略与空指派策略取值合法，规则类型已登记且参数合法，兜底策略要有兜底规则。
+    /// 至少一个指派来源，策略与空指派策略取值合法，规则类型已登记且参数合法，兜底策略要有兜底规则
     /// </remarks>
     private void ValidateUserTask(WorkflowNode node, int index, List<SchemaViolation> issues)
     {
@@ -354,31 +354,31 @@ public sealed class WorkflowDefinitionValidator
     }
 
     /// <summary>
-    /// 记一条问题：错误的消息键与参数原样带上，原因文本是错误按进程默认区域渲染的消息。
+    /// 记一条问题：错误的消息键与参数原样带上，原因文本是错误按进程默认区域渲染的消息
     /// </summary>
     private static void Add(List<SchemaViolation> issues, string path, Error error)
         => issues.Add(new SchemaViolation(path, error.Message, error.MessageKey, error.Details));
 
     /// <summary>
-    /// 第 <paramref name="index"/> 个节点的路径。
+    /// 第 <paramref name="index"/> 个节点的路径
     /// </summary>
     private static string NodePath(int index) => $"$.nodes[{index}]";
 
     /// <summary>
-    /// 第 <paramref name="index"/> 个节点某个属性的路径。
+    /// 第 <paramref name="index"/> 个节点某个属性的路径
     /// </summary>
     private static string NodePath(int index, string property) => NodePath(index) + ".properties" + Member(property);
 
     /// <summary>
-    /// 第 <paramref name="index"/> 条转移的路径。
+    /// 第 <paramref name="index"/> 条转移的路径
     /// </summary>
     private static string TransitionPath(int index) => $"$.transitions[{index}]";
 
     /// <summary>
-    /// 路径里的成员段。
+    /// 路径里的成员段
     /// </summary>
     /// <remarks>
-    /// 只含字母、数字、下划线的写成 <c>.名字</c>，否则 <c>['名字']</c>（同 JSON Schema 校验的路径写法）。
+    /// 只含字母、数字、下划线的写成 <c>.名字</c>，否则 <c>['名字']</c>（同 JSON Schema 校验的路径写法）
     /// </remarks>
     private static string Member(string name)
         => name.Length > 0 && name.All(static c => char.IsAsciiLetterOrDigit(c) || c == '_') ? "." + name : $"['{name.Replace("'", "\\'", StringComparison.Ordinal)}']";

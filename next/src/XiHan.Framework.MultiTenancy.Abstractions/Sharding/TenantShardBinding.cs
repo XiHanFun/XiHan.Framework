@@ -9,19 +9,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 
 /// <summary>
-/// 把当前调用的租户分片表示成连接绑定。
+/// 把当前调用的租户分片表示成连接绑定
 /// </summary>
 /// <remarks>
-/// 供持久化 Provider 在作用域内创建客户端时替换应用默认连接。绑定主值是分片连接串，属性并入分片属性并带 <c>tenant</c> 与 <c>provider</c>。
+/// 供持久化 Provider 在作用域内创建客户端时替换应用默认连接。绑定主值是分片连接串，属性并入分片属性并带 <c>tenant</c> 与 <c>provider</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class TenantShardBinding
 {
     /// <summary>
-    /// 作用域带分片时返回分片绑定，否则返回 <see cref="Maybe.None{T}"/>。
+    /// 作用域带分片时返回分片绑定，否则返回 <see cref="Maybe.None{T}"/>
     /// </summary>
     /// <remarks>
-    /// 先看 <see cref="TenantShardScope"/> 的显式绑定，再看 Tenant 阶段写进当前调用上下文的分片；不触存储、不阻塞。持久化 Provider 在创建客户端时调用，此后作用域不能再绑定分片（ADR-0057）。
+    /// 先看 <see cref="TenantShardScope"/> 的显式绑定，再看 Tenant 阶段写进当前调用上下文的分片；不触存储、不阻塞。持久化 Provider 在创建客户端时调用，此后作用域不能再绑定分片（ADR-0057）
     /// </remarks>
     public static Maybe<BindingValue> Resolve(IServiceProvider scopedServices, string bindingName, string bindingType, Maybe<BindingValue> fallback)
     {
@@ -60,7 +60,7 @@ public static class TenantShardBinding
     }
 
     /// <summary>
-    /// 当前调用上下文里的分片。
+    /// 当前调用上下文里的分片
     /// </summary>
     private static Maybe<TenantShard> InvocationShard(IServiceProvider scopedServices)
         => scopedServices.GetService<IInvocationAccessor>() is { } accessor && accessor.Current.TryGetValue(out var context) ? context.GetTenantShard() : Maybe.None<TenantShard>();

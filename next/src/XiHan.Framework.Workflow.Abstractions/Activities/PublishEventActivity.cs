@@ -12,21 +12,21 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 发布自定义事件。
+/// 发布自定义事件
 /// </summary>
 /// <remarks>
-/// 主题 <c>workflow.custom</c>，信封 <c>Subject</c> 为 <c>EventName</c>（模板），<c>Payload</c> 里的字符串按模板渲染。没有装配消息发布者时跳过。
+/// 主题 <c>workflow.custom</c>，信封 <c>Subject</c> 为 <c>EventName</c>（模板），<c>Payload</c> 里的字符串按模板渲染。没有装配消息发布者时跳过
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class PublishEventActivity : IActivity
 {
     /// <summary>
-    /// 属性：事件名。
+    /// 属性：事件名
     /// </summary>
     public const string EventNameProperty = "EventName";
 
     /// <summary>
-    /// 属性：载荷。
+    /// 属性：载荷
     /// </summary>
     public const string PayloadProperty = "Payload";
 

@@ -4,18 +4,18 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 一种绑定类型在 Compose 与 Aspire 里的对应。
+/// 一种绑定类型在 Compose 与 Aspire 里的对应
 /// </summary>
-/// <param name="Type">清单里的类型。</param>
-/// <param name="Image">Compose 镜像。</param>
-/// <param name="Port">服务端口。</param>
+/// <param name="Type">清单里的类型</param>
+/// <param name="Image">Compose 镜像</param>
+/// <param name="Port">服务端口</param>
 internal sealed record BindingKind(string Type, string Image, int Port)
 {
     /// <summary>
-    /// 全部已知类型。
+    /// 全部已知类型
     /// </summary>
     /// <remarks>
-    /// 与框架 Provider 清单声明的绑定类型一一对应（<c>spec/packaging/app-manifest.md</c>）：持久化 <c>connection:relational</c>、<c>Caching.Redis</c> <c>cache:distributed</c>、<c>Messaging.RabbitMQ</c> <c>queue</c>、<c>ObjectStorage.S3</c> <c>blob</c>、<c>Messaging.Kafka</c> <c>stream</c>、<c>Configuration.Nacos</c> <c>configuration:remote</c>。
+    /// 与框架 Provider 清单声明的绑定类型一一对应（<c>spec/packaging/app-manifest.md</c>）：持久化 <c>connection:relational</c>、<c>Caching.Redis</c> <c>cache:distributed</c>、<c>Messaging.RabbitMQ</c> <c>queue</c>、<c>ObjectStorage.S3</c> <c>blob</c>、<c>Messaging.Kafka</c> <c>stream</c>、<c>Configuration.Nacos</c> <c>configuration:remote</c>
     /// </remarks>
     public static IReadOnlyList<BindingKind> All { get; } =
     [
@@ -28,15 +28,15 @@ internal sealed record BindingKind(string Type, string Image, int Port)
     ];
 
     /// <summary>
-    /// 按类型找。
+    /// 按类型找
     /// </summary>
     public static BindingKind? Find(string type) => All.FirstOrDefault(k => string.Equals(k.Type, type, StringComparison.Ordinal));
 
     /// <summary>
-    /// Compose 里注入给应用的主值（服务名即主机名）。
+    /// Compose 里注入给应用的主值（服务名即主机名）
     /// </summary>
     /// <remarks>
-    /// 形式与各 Provider 读取绑定主值的方式一致：Kafka 是引导地址 <c>host:port</c>，Nacos 是服务地址 URL（路径缺省为上下文路径 <c>/nacos</c>）。
+    /// 形式与各 Provider 读取绑定主值的方式一致：Kafka 是引导地址 <c>host:port</c>，Nacos 是服务地址 URL（路径缺省为上下文路径 <c>/nacos</c>）
     /// </remarks>
     public string ComposeValue(string binding, string app) => Type switch
     {
@@ -47,31 +47,31 @@ internal sealed record BindingKind(string Type, string Image, int Port)
     };
 
     /// <summary>
-    /// 镜像名（不含标签）。
+    /// 镜像名（不含标签）
     /// </summary>
     /// <remarks>
-    /// Aspire 的容器资源把镜像名与标签分开传。
+    /// Aspire 的容器资源把镜像名与标签分开传
     /// </remarks>
     public string ImageName => Image[..Image.LastIndexOf(':')];
 
     /// <summary>
-    /// 镜像标签。
+    /// 镜像标签
     /// </summary>
     public string ImageTag => Image[(Image.LastIndexOf(':') + 1)..];
 
     /// <summary>
-    /// 本地联调的 S3 访问密钥 ID。
+    /// 本地联调的 S3 访问密钥 ID
     /// </summary>
     /// <remarks>
-    /// Compose 与 Aspire 以它启动 RustFS（<c>RUSTFS_ACCESS_KEY</c>），并作为 <c>blob</c> 绑定的属性 <c>accessKey</c> 注入应用（RFC-0016「资源绑定与配置节」）。只用于本地联调。
+    /// Compose 与 Aspire 以它启动 RustFS（<c>RUSTFS_ACCESS_KEY</c>），并作为 <c>blob</c> 绑定的属性 <c>accessKey</c> 注入应用（RFC-0016「资源绑定与配置节」）。只用于本地联调
     /// </remarks>
     public const string BlobAccessKey = "xihan";
 
     /// <summary>
-    /// 本地联调的 S3 访问密钥。
+    /// 本地联调的 S3 访问密钥
     /// </summary>
     /// <remarks>
-    /// RustFS 以它启动（<c>RUSTFS_SECRET_KEY</c>），并作为 <c>blob</c> 绑定的属性 <c>secretKey</c> 注入应用；取至少 8 个字符，兼容服务多有此下限。只用于本地联调。
+    /// RustFS 以它启动（<c>RUSTFS_SECRET_KEY</c>），并作为 <c>blob</c> 绑定的属性 <c>secretKey</c> 注入应用；取至少 8 个字符，兼容服务多有此下限。只用于本地联调
     /// </remarks>
     public const string BlobSecretKey = "xihanxihan";
 }

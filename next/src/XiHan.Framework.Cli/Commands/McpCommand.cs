@@ -21,23 +21,23 @@ using XiHan.Framework.Protocols.Mcp.Transports;
 namespace XiHan.Framework.Cli.Commands;
 
 /// <summary>
-/// 命令 <c>mcp</c>：以 stdio 提供框架知识库的 MCP 服务。
+/// 命令 <c>mcp</c>：以 stdio 提供框架知识库的 MCP 服务
 /// </summary>
 /// <remarks>
-/// 用法：<c>mcp [--path &lt;项目目录&gt;] [--locale &lt;区域&gt;]</c>。内嵌一个最小的 XiHan 应用（内存本地化 + <c>Protocols.Mcp</c> + <see cref="KnowledgeFeature"/>），由 <c>Protocols.Mcp</c> 的 stdio 传输处理协议，直到 stdin 关闭或取消；tool 的描述按 <c>--locale</c> 或当前 UI 文化给出。项目引用的框架版本与本工具不同时在 stderr 与服务端说明里提示。
+/// 用法：<c>mcp [--path &lt;项目目录&gt;] [--locale &lt;区域&gt;]</c>。内嵌一个最小的 XiHan 应用（内存本地化 + <c>Protocols.Mcp</c> + <see cref="KnowledgeFeature"/>），由 <c>Protocols.Mcp</c> 的 stdio 传输处理协议，直到 stdin 关闭或取消；tool 的描述按 <c>--locale</c> 或当前 UI 文化给出。项目引用的框架版本与本工具不同时在 stderr 与服务端说明里提示
 /// </remarks>
 internal sealed class McpCommand : ICommand
 {
     /// <summary>
-    /// 输入。
+    /// 输入
     /// </summary>
     /// <remarks>
-    /// 为空时执行时以 UTF-8 读标准输入，测试换成内存读取器。
+    /// 为空时执行时以 UTF-8 读标准输入，测试换成内存读取器
     /// </remarks>
     private readonly TextReader? _input;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public McpCommand(TextReader? input)
     {
@@ -84,10 +84,10 @@ internal sealed class McpCommand : ICommand
     }
 
     /// <summary>
-    /// 内嵌应用：服务端名、tool 名、说明与区域都由配置给出。
+    /// 内嵌应用：服务端名、tool 名、说明与区域都由配置给出
     /// </summary>
     /// <remarks>
-    /// 用空的宿主构建器：不读当前目录的 appsettings 与环境变量里的 <c>XiHan</c> 配置，不注册控制台日志（stdout 只留给协议消息）。
+    /// 用空的宿主构建器：不读当前目录的 appsettings 与环境变量里的 <c>XiHan</c> 配置，不注册控制台日志（stdout 只留给协议消息）
     /// </remarks>
     internal static IHost CreateHost(FrameworkKnowledge knowledge, string locale, string instructions)
     {

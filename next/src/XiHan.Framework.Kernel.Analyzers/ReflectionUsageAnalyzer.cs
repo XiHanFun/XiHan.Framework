@@ -9,16 +9,16 @@ using Microsoft.CodeAnalysis.Operations;
 namespace XiHan.Framework.Kernel.Analyzers;
 
 /// <summary>
-/// XH0005：Ring 0/1（<c>XiHanRing</c> 为 0 或 1）不得使用反射 API。
+/// XH0005：Ring 0/1（<c>XiHanRing</c> 为 0 或 1）不得使用反射 API
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>
-    /// <c>System.Type</c> 上按名查找成员、动态构造泛型与取程序集/模块的成员。
+    /// <c>System.Type</c> 上按名查找成员、动态构造泛型与取程序集/模块的成员
     /// </summary>
     /// <remarks>
-    /// 命中即视为反射。
+    /// 命中即视为反射
     /// </remarks>
     private static readonly ImmutableHashSet<string> _reflectiveTypeMembers = ImmutableHashSet.Create(
         StringComparer.Ordinal,
@@ -27,7 +27,7 @@ public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
         "GetInterface", "GetInterfaces", "GetCustomAttributes", "GetCustomAttributesData", "Assembly", "Module");
 
     /// <summary>
-    /// <c>typeof(T).Name</c> 这类只读元数据不是反射：MemberInfo 上的这些成员放行。
+    /// <c>typeof(T).Name</c> 这类只读元数据不是反射：MemberInfo 上的这些成员放行
     /// </summary>
     private static readonly ImmutableHashSet<string> _harmlessMemberInfoMembers = ImmutableHashSet.Create(
         StringComparer.Ordinal,
@@ -61,7 +61,7 @@ public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// 检查调用、构造与成员引用的目标是否为反射 API，是则报告 XH0005。
+    /// 检查调用、构造与成员引用的目标是否为反射 API，是则报告 XH0005
     /// </summary>
     private static void Analyze(OperationAnalysisContext context)
     {
@@ -85,10 +85,10 @@ public sealed class ReflectionUsageAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// 判定成员是否属于反射 API。
+    /// 判定成员是否属于反射 API
     /// </summary>
     /// <remarks>
-    /// <c>System.Reflection</c> 命名空间（MemberInfo 的只读元数据除外）、<c>Activator</c>，以及 <c>System.Type</c> 上的成员查找与动态构造。
+    /// <c>System.Reflection</c> 命名空间（MemberInfo 的只读元数据除外）、<c>Activator</c>，以及 <c>System.Type</c> 上的成员查找与动态构造
     /// </remarks>
     private static bool IsReflective(ISymbol member)
     {

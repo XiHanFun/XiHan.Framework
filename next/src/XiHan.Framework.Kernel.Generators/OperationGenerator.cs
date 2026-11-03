@@ -12,36 +12,36 @@ using XiHan.Framework.Kernel.Generators.Json;
 namespace XiHan.Framework.Kernel.Generators;
 
 /// <summary>
-/// 从 <c>[Operation]</c> 类生成登记代码与 JSON Schema。
+/// 从 <c>[Operation]</c> 类生成登记代码与 JSON Schema
 /// </summary>
 /// <remarks>
-/// 输出 <c>GeneratedOperations</c> 静态类，含每个操作的 <c>Add&lt;类名&gt;</c> 与登记全部操作的 <c>AddGeneratedOperations</c>。
+/// 输出 <c>GeneratedOperations</c> 静态类，含每个操作的 <c>Add&lt;类名&gt;</c> 与登记全部操作的 <c>AddGeneratedOperations</c>
 /// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class OperationGenerator : IIncrementalGenerator
 {
     /// <summary>
-    /// <c>OperationAttribute</c> 的全名。
+    /// <c>OperationAttribute</c> 的全名
     /// </summary>
     private const string OperationAttributeName = "XiHan.Framework.Kernel.Operations.OperationAttribute";
 
     /// <summary>
-    /// <c>OperationDefaultsAttribute</c> 的全名。
+    /// <c>OperationDefaultsAttribute</c> 的全名
     /// </summary>
     private const string OperationDefaultsAttributeName = "XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute";
 
     /// <summary>
-    /// <c>Expose.All</c> 的数值：Http | Grpc | Mcp | CommandLine | Ai（与内核枚举同步）。
+    /// <c>Expose.All</c> 的数值：Http | Grpc | Mcp | CommandLine | Ai（与内核枚举同步）
     /// </summary>
     private const int ExposeAll = 31;
 
     /// <summary>
-    /// <c>IOperation&lt;,&gt;</c> 的元数据名。
+    /// <c>IOperation&lt;,&gt;</c> 的元数据名
     /// </summary>
     private const string OperationInterfaceName = "XiHan.Framework.Kernel.Operations.IOperation`2";
 
     /// <summary>
-    /// 操作 ID 文法，与原语层 <c>OperationId</c> 一致。
+    /// 操作 ID 文法，与原语层 <c>OperationId</c> 一致
     /// </summary>
     private static readonly Regex _operationId = new("^[a-z][a-z0-9]*(-[a-z0-9]+)*\\.[a-z][a-z0-9]*(-[a-z0-9]+)*$", RegexOptions.Compiled);
 
@@ -61,7 +61,7 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 校验每个操作、解析序列化上下文并输出源文件。
+    /// 校验每个操作、解析序列化上下文并输出源文件
     /// </summary>
     private static void Emit(SourceProductionContext context, ImmutableArray<(INamedTypeSymbol Symbol, AttributeData Attribute)> candidates, Compilation compilation, string? rootNamespace)
     {
@@ -93,10 +93,10 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 程序集级缺省暴露协议。
+    /// 程序集级缺省暴露协议
     /// </summary>
     /// <remarks>
-    /// <c>[assembly: OperationDefaults(Expose = ...)]</c> 的值；没有该特性（或没写 <c>Expose</c>）时为 <see langword="null"/>。
+    /// <c>[assembly: OperationDefaults(Expose = ...)]</c> 的值；没有该特性（或没写 <c>Expose</c>）时为 <see langword="null"/>
     /// </remarks>
     private static int? AssemblyDefaultExpose(Compilation compilation)
     {
@@ -116,10 +116,10 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 读取特性与接口、解析上下文。
+    /// 读取特性与接口、解析上下文
     /// </summary>
     /// <remarks>
-    /// 有问题的操作报诊断并跳过。没写 <c>Expose</c> 的操作取程序集缺省 <paramref name="defaultExpose"/>，再没有就是全部协议。
+    /// 有问题的操作报诊断并跳过。没写 <c>Expose</c> 的操作取程序集缺省 <paramref name="defaultExpose"/>，再没有就是全部协议
     /// </remarks>
     private static OperationModel? CreateModel(SourceProductionContext context, INamedTypeSymbol symbol, AttributeData attribute, INamedTypeSymbol? operationInterface, List<JsonContextModel> contexts, int? defaultExpose)
     {
@@ -202,7 +202,7 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 在全部上下文里找登记了该类型的那个。
+    /// 在全部上下文里找登记了该类型的那个
     /// </summary>
     private static bool Resolve(List<JsonContextModel> contexts, ITypeSymbol type, out JsonContextModel? found, out string? property)
     {
@@ -222,7 +222,7 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 渲染源文件。
+    /// 渲染源文件
     /// </summary>
     private static string Render(string ns, List<OperationModel> models)
     {
@@ -290,18 +290,18 @@ public sealed class OperationGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 带 <c>global::</c> 的完整类型名。
+    /// 带 <c>global::</c> 的完整类型名
     /// </summary>
     private static string Display(ITypeSymbol type)
         => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
     /// <summary>
-    /// C# 字符串字面量（逐字字符串，双写引号）。
+    /// C# 字符串字面量（逐字字符串，双写引号）
     /// </summary>
     private static string Literal(string value) => "@\"" + value.Replace("\"", "\"\"") + "\"";
 
     /// <summary>
-    /// 把根命名空间整理成合法的命名空间名。
+    /// 把根命名空间整理成合法的命名空间名
     /// </summary>
     private static string Sanitize(string value)
     {

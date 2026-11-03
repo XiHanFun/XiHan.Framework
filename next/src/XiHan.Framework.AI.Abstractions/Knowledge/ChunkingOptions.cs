@@ -6,16 +6,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 切块选项：块大小与相邻块的重叠（字符）。
+/// 切块选项：块大小与相邻块的重叠（字符）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record ChunkingOptions
 {
     /// <summary>
-    /// 块大小。
+    /// 块大小
     /// </summary>
     /// <remarks>
-    /// 默认 1000。
+    /// 默认 1000
     /// </remarks>
     public int MaxChunkSize
     {
@@ -24,10 +24,10 @@ public sealed record ChunkingOptions
     } = 1000;
 
     /// <summary>
-    /// 重叠。
+    /// 重叠
     /// </summary>
     /// <remarks>
-    /// 默认 100，实际裁到 <c>[0, MaxChunkSize − 1]</c>。
+    /// 默认 100，实际裁到 <c>[0, MaxChunkSize − 1]</c>
     /// </remarks>
     public int Overlap
     {

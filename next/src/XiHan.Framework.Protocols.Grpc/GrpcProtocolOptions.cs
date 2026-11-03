@@ -10,24 +10,24 @@ using XiHan.Framework.Protocols.Grpc.Methods;
 namespace XiHan.Framework.Protocols.Grpc;
 
 /// <summary>
-/// gRPC 协议适配器选项。
+/// gRPC 协议适配器选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Protocols:Grpc</c> 显式读取：<c>Package</c>（protobuf 包名，也是服务路径前缀），<c>Methods:&lt;操作 ID&gt;</c> = <c>Service/Method</c> 显式覆盖推导的方法名。
+/// 从配置节 <c>XiHan:Protocols:Grpc</c> 显式读取：<c>Package</c>（protobuf 包名，也是服务路径前缀），<c>Methods:&lt;操作 ID&gt;</c> = <c>Service/Method</c> 显式覆盖推导的方法名
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record GrpcProtocolOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Protocols:Grpc";
 
     /// <summary>
-    /// protobuf 包名（如 <c>acme.orders</c>）。
+    /// protobuf 包名（如 <c>acme.orders</c>）
     /// </summary>
     /// <remarks>
-    /// 写进 <c>.proto</c> 的 <c>package</c>，服务路径为 <c>/{package}.{Service}/{Method}</c>；空表示没有包。
+    /// 写进 <c>.proto</c> 的 <c>package</c>，服务路径为 <c>/{package}.{Service}/{Method}</c>；空表示没有包
     /// </remarks>
     public string? Package
     {
@@ -44,10 +44,10 @@ public sealed partial record GrpcProtocolOptions
     }
 
     /// <summary>
-    /// 显式覆盖。
+    /// 显式覆盖
     /// </summary>
     /// <remarks>
-    /// 操作 ID → 方法名；未覆盖的操作按 <see cref="GrpcMethodConvention"/> 推导。
+    /// 操作 ID → 方法名；未覆盖的操作按 <see cref="GrpcMethodConvention"/> 推导
     /// </remarks>
     public IReadOnlyDictionary<string, GrpcMethodName> Methods
     {
@@ -65,7 +65,7 @@ public sealed partial record GrpcProtocolOptions
     } = new Dictionary<string, GrpcMethodName>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static GrpcProtocolOptions FromConfiguration(IConfiguration configuration)
     {
@@ -88,7 +88,7 @@ public sealed partial record GrpcProtocolOptions
     }
 
     /// <summary>
-    /// 操作最终的方法名：显式覆盖优先，否则按约定推导。
+    /// 操作最终的方法名：显式覆盖优先，否则按约定推导
     /// </summary>
     public GrpcMethodName MethodFor(OperationContract contract)
     {
@@ -97,7 +97,7 @@ public sealed partial record GrpcProtocolOptions
     }
 
     /// <summary>
-    /// protobuf 包名的匹配。
+    /// protobuf 包名的匹配
     /// </summary>
     [GeneratedRegex(@"^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)*$")]
     private static partial Regex PackageName();

@@ -11,10 +11,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存仓储。
+/// 内存仓储
 /// </summary>
 /// <remarks>
-/// 在活动工作单元的覆盖层上读写，按协议维护审计字段、租户与软删除。读写都复制：查找与查询交出的是副本，写入存的是调用方实例的副本，调用方在读出的实例上的修改不经仓储写回就碰不到表与覆盖层。更新沿用当前行的创建时间、租户与删除标记，软删除在当前行的副本上打标。批量方法在同一次调用里逐项进入覆盖层，提交时由工作单元校验后原子应用。只读工作单元里的写入在进入覆盖层之前以 <see cref="PersistenceErrors.ReadOnly"/> 拒绝（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败。
+/// 在活动工作单元的覆盖层上读写，按协议维护审计字段、租户与软删除。读写都复制：查找与查询交出的是副本，写入存的是调用方实例的副本，调用方在读出的实例上的修改不经仓储写回就碰不到表与覆盖层。更新沿用当前行的创建时间、租户与删除标记，软删除在当前行的副本上打标。批量方法在同一次调用里逐项进入覆盖层，提交时由工作单元校验后原子应用。只读工作单元里的写入在进入覆盖层之前以 <see cref="PersistenceErrors.ReadOnly"/> 拒绝（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMemoryUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
@@ -22,20 +22,20 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     where TKey : notnull, IEquatable<TKey>
 {
     /// <summary>
-    /// 已提交数据所在的存储。
+    /// 已提交数据所在的存储
     /// </summary>
     private readonly InMemoryStore _store = store ?? throw new ArgumentNullException(nameof(store));
 
     /// <summary>
-    /// 本作用域的工作单元。
+    /// 本作用域的工作单元
     /// </summary>
     /// <remarks>
-    /// 提供覆盖层与当前租户。
+    /// 提供覆盖层与当前租户
     /// </remarks>
     private readonly InMemoryUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
-    /// 审计字段使用的时间源。
+    /// 审计字段使用的时间源
     /// </summary>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
@@ -185,20 +185,20 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 处于活动状态的工作单元。
+    /// 处于活动状态的工作单元
     /// </summary>
     /// <remarks>
-    /// 不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验。
+    /// 不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，每个操作都经此校验
     /// </remarks>
     private InMemoryUnitOfWork Active => _unitOfWork.State == UnitOfWorkState.Active
         ? _unitOfWork
         : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{_unitOfWork.State}'; repositories must be used within the Transaction stage.");
 
     /// <summary>
-    /// 新增一项。
+    /// 新增一项
     /// </summary>
     /// <remarks>
-    /// 重复判定不做可见性过滤（已软删除或属于其他租户的同键行同样与新键冲突），通过后写入审计字段并把副本放进覆盖层。别的工作单元在此之后提交了同一标识，由提交时的校验报告重复。
+    /// 重复判定不做可见性过滤（已软删除或属于其他租户的同键行同样与新键冲突），通过后写入审计字段并把副本放进覆盖层。别的工作单元在此之后提交了同一标识，由提交时的校验报告重复
     /// </remarks>
     private Result Add(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
@@ -219,10 +219,10 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 更新一项。
+    /// 更新一项
     /// </summary>
     /// <remarks>
-    /// 目标须存在且可见；调用方实例的并发戳与当前值不同即冲突。之后沿用当前行的创建时间、租户与删除标记，刷新修改时间与并发戳，把副本放进覆盖层。
+    /// 目标须存在且可见；调用方实例的并发戳与当前值不同即冲突。之后沿用当前行的创建时间、租户与删除标记，刷新修改时间与并发戳，把副本放进覆盖层
     /// </remarks>
     private Result Update(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
@@ -245,10 +245,10 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 删除一项。
+    /// 删除一项
     /// </summary>
     /// <remarks>
-    /// 目标须存在且可见。软删除在当前行的副本上打标（调用方实例上的其他改动不写入），作为一次更新进覆盖层，删除标记再同步回调用方实例；物理删除才进入覆盖层的删除集合。
+    /// 目标须存在且可见。软删除在当前行的副本上打标（调用方实例上的其他改动不写入），作为一次更新进覆盖层，删除标记再同步回调用方实例；物理删除才进入覆盖层的删除集合
     /// </remarks>
     private Result Remove(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TEntity entity, DateTimeOffset now)
     {
@@ -277,10 +277,10 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 只读工作单元拒绝写入。
+    /// 只读工作单元拒绝写入
     /// </summary>
     /// <remarks>
-    /// 只读时返回 <see cref="PersistenceErrors.ReadOnly"/> 并把工作单元记为失败（处理器忽略这次失败而返回成功时，提交返回同一错误）；可写时返回 <see langword="null"/>。在进入覆盖层之前判定，只读工作单元的覆盖层始终为空。
+    /// 只读时返回 <see cref="PersistenceErrors.ReadOnly"/> 并把工作单元记为失败（处理器忽略这次失败而返回成功时，提交返回同一错误）；可写时返回 <see langword="null"/>。在进入覆盖层之前判定，只读工作单元的覆盖层始终为空
     /// </remarks>
     private Error? RejectReadOnly()
     {
@@ -295,7 +295,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 同一结果给每一项。
+    /// 同一结果给每一项
     /// </summary>
     private static Result[] Repeat(Result result, int count)
     {
@@ -305,15 +305,15 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 构造实体不存在的错误。
+    /// 构造实体不存在的错误
     /// </summary>
     private static Error NotFound(TKey id) => Error.NotFound(PersistenceErrors.NotFound, PersistenceMessages.NotFound, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
 
     /// <summary>
-    /// 先查覆盖层，再查表。
+    /// 先查覆盖层，再查表
     /// </summary>
     /// <remarks>
-    /// 覆盖层标记为删除的视为不存在。返回的是覆盖层或表自己的对象，只用于判定，交给调用方之前必须复制。<paramref name="committed"/> 是从表里读到的行（标识已在覆盖层里时为 <see langword="null"/>）：写入以它为依据，提交时据此校验。
+    /// 覆盖层标记为删除的视为不存在。返回的是覆盖层或表自己的对象，只用于判定，交给调用方之前必须复制。<paramref name="committed"/> 是从表里读到的行（标识已在覆盖层里时为 <see langword="null"/>）：写入以它为依据，提交时据此校验
     /// </remarks>
     private Maybe<TEntity> Lookup(InMemoryUnitOfWork.PendingChanges<TEntity, TKey> changes, TKey id, out TEntity? committed)
     {
@@ -329,10 +329,10 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 把覆盖层合并到表的行上，再施加可见性与查询过滤。
+    /// 把覆盖层合并到表的行上，再施加可见性与查询过滤
     /// </summary>
     /// <remarks>
-    /// 排序与分页由调用方处理。返回的是覆盖层与表自己的对象。
+    /// 排序与分页由调用方处理。返回的是覆盖层与表自己的对象
     /// </remarks>
     private IEnumerable<TEntity> Visible(EntityQuery<TEntity> query)
     {
@@ -342,7 +342,7 @@ public sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InMem
     }
 
     /// <summary>
-    /// 实体是否对当前调用可见：租户必须匹配，且除非显式包含，已软删除的不可见。
+    /// 实体是否对当前调用可见：租户必须匹配，且除非显式包含，已软删除的不可见
     /// </summary>
     private bool IsVisible(TEntity entity, bool includeDeleted)
         => PersistenceConventions.IsVisibleTo(entity, _unitOfWork.TenantId) && (includeDeleted || !PersistenceConventions.IsDeleted(entity));

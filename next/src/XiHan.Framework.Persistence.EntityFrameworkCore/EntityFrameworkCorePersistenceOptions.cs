@@ -9,37 +9,37 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// EF Core Provider 选项。
+/// EF Core Provider 选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Persistence:EntityFrameworkCore</c> 显式读取。
+/// 从配置节 <c>XiHan:Persistence:EntityFrameworkCore</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record EntityFrameworkCorePersistenceOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Persistence:EntityFrameworkCore";
 
     /// <summary>
-    /// 保留的连接名：带租户分片的调用里的连接。
+    /// 保留的连接名：带租户分片的调用里的连接
     /// </summary>
     private const string ShardName = "shard";
 
     /// <summary>
-    /// 启动时调用 <c>EnsureCreated</c> 建表。
+    /// 启动时调用 <c>EnsureCreated</c> 建表
     /// </summary>
     /// <remarks>
-    /// 只用于开发与测试；生产用迁移。默认 <see langword="false"/>。
+    /// 只用于开发与测试；生产用迁移。默认 <see langword="false"/>
     /// </remarks>
     public bool EnsureCreated { get; init; }
 
     /// <summary>
-    /// 健康项 <c>persistence.entityframeworkcore.database</c> 的重探间隔。
+    /// 健康项 <c>persistence.entityframeworkcore.database</c> 的重探间隔
     /// </summary>
     /// <remarks>
-    /// 也是单次探测的超时。默认 15 秒。
+    /// 也是单次探测的超时。默认 15 秒
     /// </remarks>
     public TimeSpan HealthProbeInterval
     {
@@ -48,10 +48,10 @@ public sealed record EntityFrameworkCorePersistenceOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 核对通过的租户分片库最多记多少个。
+    /// 核对通过的租户分片库最多记多少个
     /// </summary>
     /// <remarks>
-    /// SQLite 上租户分片库首次绑定时核对时间列（ADR-0097），核对通过的按分片连接串记在进程内、之后不再查；记满时淘汰最早记下的，被淘汰的分片下次绑定时重新核对一次。默认 1024，至少 1。
+    /// SQLite 上租户分片库首次绑定时核对时间列（ADR-0097），核对通过的按分片连接串记在进程内、之后不再查；记满时淘汰最早记下的，被淘汰的分片下次绑定时重新核对一次。默认 1024，至少 1
     /// </remarks>
     public int VerifiedShardCapacity
     {
@@ -60,10 +60,10 @@ public sealed record EntityFrameworkCorePersistenceOptions
     } = 1024;
 
     /// <summary>
-    /// 命名连接：名字 → 连接串。
+    /// 命名连接：名字 → 连接串
     /// </summary>
     /// <remarks>
-    /// 来自 <c>XiHan:Persistence:EntityFrameworkCore:Connections:&lt;name&gt;</c>，缺省为空。供登记到命名连接的实体与绑定连接的工作单元使用（RFC-0005「命名连接」）：绑定这个连接的工作单元所在作用域的 DbContext 按它建出——配置回调收到的绑定主值是这个连接串、属性沿用 <c>db</c> 绑定。名字合 <c>^[a-z0-9][a-z0-9-]{0,63}$</c>，不能是 <c>default</c> 或 <c>shard</c>（与 SqlSugar 的约定连接同名规则一致）；连接串是机密，不进日志。
+    /// 来自 <c>XiHan:Persistence:EntityFrameworkCore:Connections:&lt;name&gt;</c>，缺省为空。供登记到命名连接的实体与绑定连接的工作单元使用（RFC-0005「命名连接」）：绑定这个连接的工作单元所在作用域的 DbContext 按它建出——配置回调收到的绑定主值是这个连接串、属性沿用 <c>db</c> 绑定。名字合 <c>^[a-z0-9][a-z0-9-]{0,63}$</c>，不能是 <c>default</c> 或 <c>shard</c>（与 SqlSugar 的约定连接同名规则一致）；连接串是机密，不进日志
     /// </remarks>
     public IReadOnlyDictionary<string, string> Connections
     {
@@ -72,10 +72,10 @@ public sealed record EntityFrameworkCorePersistenceOptions
     } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 读 <c>EnsureCreated</c>、<c>HealthProbeIntervalSeconds</c>、<c>VerifiedShardCapacity</c>、<c>Connections:&lt;name&gt;</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理。
+    /// 读 <c>EnsureCreated</c>、<c>HealthProbeIntervalSeconds</c>、<c>VerifiedShardCapacity</c>、<c>Connections:&lt;name&gt;</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理
     /// </remarks>
     public static EntityFrameworkCorePersistenceOptions FromConfiguration(IConfiguration configuration)
     {
@@ -123,10 +123,10 @@ public sealed record EntityFrameworkCorePersistenceOptions
     }
 
     /// <summary>
-    /// 核对命名连接。
+    /// 核对命名连接
     /// </summary>
     /// <remarks>
-    /// 名字不合文法、是 <c>default</c> 或 <c>shard</c>、连接串空白都抛出 <see cref="ArgumentException"/>；消息只带名字。返回一份副本。
+    /// 名字不合文法、是 <c>default</c> 或 <c>shard</c>、连接串空白都抛出 <see cref="ArgumentException"/>；消息只带名字。返回一份副本
     /// </remarks>
     private static Dictionary<string, string> ValidateConnections(IReadOnlyDictionary<string, string> connections)
     {

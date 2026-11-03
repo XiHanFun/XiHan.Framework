@@ -9,16 +9,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine;
 
 /// <summary>
-/// 以命令行方式运行宿主：启动（装配并启动应用），执行一条命令，停止，返回退出码。
+/// 以命令行方式运行宿主：启动（装配并启动应用），执行一条命令，停止，返回退出码
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineHostExtensions
 {
     /// <summary>
-    /// 启动宿主、执行 <paramref name="args"/> 对应的命令、停止宿主。
+    /// 启动宿主、执行 <paramref name="args"/> 对应的命令、停止宿主
     /// </summary>
     /// <remarks>
-    /// Ctrl+C 取消当前命令（退出码 <see cref="CommandLineExitCodes.Cancelled"/>）。
+    /// Ctrl+C 取消当前命令（退出码 <see cref="CommandLineExitCodes.Cancelled"/>）
     /// </remarks>
     public static async Task<int> RunXiHanCommandLineAsync(this IHost host, IReadOnlyList<string> args, CancellationToken cancellationToken = default)
     {

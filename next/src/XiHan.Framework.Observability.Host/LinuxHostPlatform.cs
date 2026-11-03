@@ -8,16 +8,16 @@ using XiHan.Framework.Observability.Abstractions;
 namespace XiHan.Framework.Observability.Host;
 
 /// <summary>
-/// Linux 的读取路径。
+/// Linux 的读取路径
 /// </summary>
 /// <remarks>
-/// 读 <c>/proc</c>、<c>/sys</c> 与 <c>pci.ids</c>，路径都相对 <paramref name="root"/>（正式运行是 <c>/</c>，测试指向夹具目录）。磁盘容量仍按 <see cref="DriveInfo"/> 读真实的挂载点。
+/// 读 <c>/proc</c>、<c>/sys</c> 与 <c>pci.ids</c>，路径都相对 <paramref name="root"/>（正式运行是 <c>/</c>，测试指向夹具目录）。磁盘容量仍按 <see cref="DriveInfo"/> 读真实的挂载点
 /// </remarks>
-/// <param name="root">文件系统根。</param>
+/// <param name="root">文件系统根</param>
 internal sealed class LinuxHostPlatform(string root) : HostPlatform
 {
     /// <summary>
-    /// <c>pci.ids</c> 的常见位置。
+    /// <c>pci.ids</c> 的常见位置
     /// </summary>
     private static readonly string[] _pciIdsPaths = ["usr/share/hwdata/pci.ids", "usr/share/misc/pci.ids", "usr/share/pci.ids"];
 
@@ -37,7 +37,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
 
     /// <inheritdoc />
     /// <remarks>
-    /// <c>/proc/stat</c> 首行：空闲含 iowait，总量是前八列之和（guest 已计入 user）。
+    /// <c>/proc/stat</c> 首行：空闲含 iowait，总量是前八列之和（guest 已计入 user）
     /// </remarks>
     public override CpuTimes? ReadCpuTimes()
     {
@@ -75,14 +75,14 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
 
     /// <inheritdoc />
     /// <remarks>
-    /// <c>/proc/uptime</c> 的第一列，含挂起的时间。
+    /// <c>/proc/uptime</c> 的第一列，含挂起的时间
     /// </remarks>
     public override TimeSpan? ReadSystemUptime()
         => ReadText("proc/uptime")?.Split(' ')[0] is { } seconds && double.TryParse(seconds, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? TimeSpan.FromSeconds(value) : null;
 
     /// <inheritdoc />
     /// <remarks>
-    /// 只取块设备，每个设备取第一个挂载点。
+    /// 只取块设备，每个设备取第一个挂载点
     /// </remarks>
     public override IReadOnlyList<DiskInfo> ReadDisks()
     {
@@ -110,7 +110,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
 
     /// <inheritdoc />
     /// <remarks>
-    /// <c>/sys/class/drm/card&lt;N&gt;/device</c>；名称与厂商名查 <c>pci.ids</c>。
+    /// <c>/sys/class/drm/card&lt;N&gt;/device</c>；名称与厂商名查 <c>pci.ids</c>
     /// </remarks>
     public override IReadOnlyList<GpuInfo> ReadGpus()
     {
@@ -147,7 +147,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
 
     /// <inheritdoc />
     /// <remarks>
-    /// <c>/sys/class/dmi/id</c>；<c>board_serial</c> 只有 root 读得到。
+    /// <c>/sys/class/dmi/id</c>；<c>board_serial</c> 只有 root 读得到
     /// </remarks>
     public override BoardInfo ReadBoard() => new()
     {
@@ -163,10 +163,10 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     };
 
     /// <summary>
-    /// 解析 <c>/proc/self/mounts</c>。
+    /// 解析 <c>/proc/self/mounts</c>
     /// </summary>
     /// <remarks>
-    /// 路径里的八进制转义（如 <c>\040</c> 表示空格）还原。
+    /// 路径里的八进制转义（如 <c>\040</c> 表示空格）还原
     /// </remarks>
     public static IReadOnlyList<MountEntry> ParseMounts(string? text)
     {
@@ -189,7 +189,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 块设备的挂载：<c>/dev/</c> 开头、不是回环设备，每个设备取第一个。
+    /// 块设备的挂载：<c>/dev/</c> 开头、不是回环设备，每个设备取第一个
     /// </summary>
     public static IReadOnlyList<MountEntry> BlockDevices(IReadOnlyList<MountEntry> mounts)
     {
@@ -199,7 +199,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 还原挂载表里的八进制转义。
+    /// 还原挂载表里的八进制转义
     /// </summary>
     private static string Unescape(string value)
     {
@@ -227,10 +227,10 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 规范成四位小写十六进制的 PCI 厂商与设备 ID。
+    /// 规范成四位小写十六进制的 PCI 厂商与设备 ID
     /// </summary>
     /// <remarks>
-    /// 先用 <c>uevent</c> 的 <c>PCI_ID</c>（如 <c>1002:73BF</c>），没有再用 <c>vendor</c> / <c>device</c> 文件（如 <c>0x1002</c>）。
+    /// 先用 <c>uevent</c> 的 <c>PCI_ID</c>（如 <c>1002:73BF</c>），没有再用 <c>vendor</c> / <c>device</c> 文件（如 <c>0x1002</c>）
     /// </remarks>
     private static (string? VendorId, string? DeviceId) PciId(string? pciId, string? vendor, string? device)
     {
@@ -249,7 +249,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// <c>/proc/cpuinfo</c> 或 <c>uevent</c> 里第一个同名字段的值。
+    /// <c>/proc/cpuinfo</c> 或 <c>uevent</c> 里第一个同名字段的值
     /// </summary>
     private static string? Field(string? text, string key, char separator = ':')
     {
@@ -271,7 +271,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 把缓存大小（如 <c>32K</c>、<c>8M</c>）换成字节数。
+    /// 把缓存大小（如 <c>32K</c>、<c>8M</c>）换成字节数
     /// </summary>
     private static long? Size(string? value)
     {
@@ -292,7 +292,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 物理核心数：不同的封装与核心编号组合。
+    /// 物理核心数：不同的封装与核心编号组合
     /// </summary>
     private int? PhysicalCores()
     {
@@ -315,7 +315,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 最后一级缓存：<c>cpu0</c> 的缓存里级别最高、不是指令缓存的那一项。
+    /// 最后一级缓存：<c>cpu0</c> 的缓存里级别最高、不是指令缓存的那一项
     /// </summary>
     private long? LastLevelCache()
     {
@@ -341,7 +341,7 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 显卡温度：<c>hwmon</c> 下第一个 <c>temp1_input</c>（毫摄氏度）。
+    /// 显卡温度：<c>hwmon</c> 下第一个 <c>temp1_input</c>（毫摄氏度）
     /// </summary>
     private double? Temperature(string device)
     {
@@ -357,12 +357,12 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 相对根的路径。
+    /// 相对根的路径
     /// </summary>
     private string PathOf(string relative) => Path.Combine(root, relative);
 
     /// <summary>
-    /// 读整个文件，读不到为空。
+    /// 读整个文件，读不到为空
     /// </summary>
     private string? ReadText(string relative)
     {
@@ -377,12 +377,12 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     }
 
     /// <summary>
-    /// 读文件的第一行，空白为空。
+    /// 读文件的第一行，空白为空
     /// </summary>
     private string? ReadLine(string relative) => Readings.Clean(ReadText(relative)?.Split('\n')[0]);
 
     /// <summary>
-    /// 读一个整数文件。
+    /// 读一个整数文件
     /// </summary>
     private long? ReadNumber(string relative)
         => ReadLine(relative) is { } text && long.TryParse(text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var value) ? value : null;

@@ -9,61 +9,61 @@ using XiHan.Framework.Workflow.Abstractions.Engine;
 namespace XiHan.Framework.Workflow.Database.Polling;
 
 /// <summary>
-/// 到期书签的轮询循环（单例）。
+/// 到期书签的轮询循环（单例）
 /// </summary>
 /// <remarks>
-/// 按 <see cref="DatabaseWorkflowOptions.PollInterval"/> 定时，每个周期先经 <see cref="PollerLeadership"/> 拿或续领导权，只有持有时才调用 <see cref="DueBookmarkPoller.RunCycleAsync"/>（覆盖平台与每个启用的租户分区，到了维护周期再按保留期清理）。应用不在服务状态（启动中、排空中）的周期不拿也不续领导权，持有就立即释放：排空开始后最多一个轮询周期，另一个在服务的实例就能接手，不用等本节点的特性停止或租约到期。领导权是全局一份：平台库里的租约行 <see cref="PollerLeadership.Resource"/>，领导节点逐个分区轮询。不用 <see cref="DueBookmarkPoller.StartAsync"/> 的内置循环，领导权判定才能插在每个周期之前。
+/// 按 <see cref="DatabaseWorkflowOptions.PollInterval"/> 定时，每个周期先经 <see cref="PollerLeadership"/> 拿或续领导权，只有持有时才调用 <see cref="DueBookmarkPoller.RunCycleAsync"/>（覆盖平台与每个启用的租户分区，到了维护周期再按保留期清理）。应用不在服务状态（启动中、排空中）的周期不拿也不续领导权，持有就立即释放：排空开始后最多一个轮询周期，另一个在服务的实例就能接手，不用等本节点的特性停止或租约到期。领导权是全局一份：平台库里的租约行 <see cref="PollerLeadership.Resource"/>，领导节点逐个分区轮询。不用 <see cref="DueBookmarkPoller.StartAsync"/> 的内置循环，领导权判定才能插在每个周期之前
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DueBookmarkPollingLoop : IDisposable
 {
     /// <summary>
-    /// 轮询器。
+    /// 轮询器
     /// </summary>
     private readonly DueBookmarkPoller _poller;
 
     /// <summary>
-    /// 领导权。
+    /// 领导权
     /// </summary>
     private readonly PollerLeadership _leadership;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly DatabaseWorkflowOptions _options;
 
     /// <summary>
-    /// 应用：每个周期先看它是否在服务状态。
+    /// 应用：每个周期先看它是否在服务状态
     /// </summary>
     private readonly App _app;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 同一时刻只有一个周期在跑（循环的刻度与手动调用互斥）：领导权对象不做并发保护。
+    /// 同一时刻只有一个周期在跑（循环的刻度与手动调用互斥）：领导权对象不做并发保护
     /// </summary>
     private readonly SemaphoreSlim _cycle = new(1, 1);
 
     /// <summary>
-    /// 停止信号。
+    /// 停止信号
     /// </summary>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 循环任务。
+    /// 循环任务
     /// </summary>
     private Task? _loop;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public DueBookmarkPollingLoop(DueBookmarkPoller poller, PollerLeadership leadership, DatabaseWorkflowOptions options, App app, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -77,20 +77,20 @@ public sealed partial class DueBookmarkPollingLoop : IDisposable
     }
 
     /// <summary>
-    /// 是否在循环。
+    /// 是否在循环
     /// </summary>
     public bool IsRunning => _loop is not null;
 
     /// <summary>
-    /// 本节点当前是否持有轮询领导权。
+    /// 本节点当前是否持有轮询领导权
     /// </summary>
     public bool IsLeader => _leadership.IsLeader;
 
     /// <summary>
-    /// 启动循环。
+    /// 启动循环
     /// </summary>
     /// <remarks>
-    /// 已在跑时什么也不做。
+    /// 已在跑时什么也不做
     /// </remarks>
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -105,7 +105,7 @@ public sealed partial class DueBookmarkPollingLoop : IDisposable
     }
 
     /// <summary>
-    /// 停止：不再开始新的周期，等进行中的一次结束，然后释放领导权。
+    /// 停止：不再开始新的周期，等进行中的一次结束，然后释放领导权
     /// </summary>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -143,10 +143,10 @@ public sealed partial class DueBookmarkPollingLoop : IDisposable
     }
 
     /// <summary>
-    /// 执行一个周期：拿或续领导权并轮询，不在服务状态时释放领导权。
+    /// 执行一个周期：拿或续领导权并轮询，不在服务状态时释放领导权
     /// </summary>
     /// <remarks>
-    /// 应用在服务状态时拿或续领导权，持有时轮询一次；不在服务状态时释放领导权（没持有时什么也不做）。循环的每个刻度调用它；测试推进注入的时钟后调用一次即可断言，不必等计时器。与循环互斥。返回成功恢复的书签数。
+    /// 应用在服务状态时拿或续领导权，持有时轮询一次；不在服务状态时释放领导权（没持有时什么也不做）。循环的每个刻度调用它；测试推进注入的时钟后调用一次即可断言，不必等计时器。与循环互斥。返回成功恢复的书签数
     /// </remarks>
     public async ValueTask<int> RunCycleAsync(CancellationToken cancellationToken)
     {
@@ -185,7 +185,7 @@ public sealed partial class DueBookmarkPollingLoop : IDisposable
     }
 
     /// <summary>
-    /// 轮询循环。
+    /// 轮询循环
     /// </summary>
     private async Task LoopAsync(CancellationToken stopping)
     {
@@ -216,7 +216,7 @@ public sealed partial class DueBookmarkPollingLoop : IDisposable
     }
 
     /// <summary>
-    /// 轮询抛出异常。
+    /// 轮询抛出异常
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Polling due workflow bookmarks threw.")]
     private static partial void LogPollThrew(ILogger logger, Exception exception);

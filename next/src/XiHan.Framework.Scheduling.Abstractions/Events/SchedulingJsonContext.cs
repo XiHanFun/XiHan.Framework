@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Scheduling.Abstractions.Events;
 
 /// <summary>
-/// 调度事件数据的源生成序列化上下文（AOT 可用）。
+/// 调度事件数据的源生成序列化上下文（AOT 可用）
 /// </summary>
 [JsonSerializable(typeof(SchedulingEventData))]
 [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, UseStringEnumConverter = true)]

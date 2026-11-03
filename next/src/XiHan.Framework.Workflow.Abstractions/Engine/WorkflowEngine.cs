@@ -22,122 +22,122 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 引擎（RFC-0021）。
+/// 引擎（RFC-0021）
 /// </summary>
 /// <remarks>
-/// 在实例锁内按波次执行节点，状态先在会话里改、波次结束一次批量写回，事件波次后发布，子流程启动与父流程通知在锁外进行。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区，实例锁持有到作用域结束。
+/// 在实例锁内按波次执行节点，状态先在会话里改、波次结束一次批量写回，事件波次后发布，子流程启动与父流程通知在锁外进行。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区，实例锁持有到作用域结束
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class WorkflowEngine : IWorkflowEngine
 {
     /// <summary>
-    /// 实例变量里记录最近一次"继续"错误的键。
+    /// 实例变量里记录最近一次"继续"错误的键
     /// </summary>
     /// <remarks>
-    /// 值是 <see cref="WorkflowFault"/> 的 JSON（ADR-0106）：表达式读 <c>lastError.code</c>（错误码）与 <c>lastError.message</c>（按进程默认区域渲染的文本），展示用 <c>WorkflowJson.DeserializeFault(variables[LastErrorVariable])?.Localize()</c> 按调用方的区域渲染 <c>messageKey</c> 与 <c>arguments</c>。
+    /// 值是 <see cref="WorkflowFault"/> 的 JSON（ADR-0106）：表达式读 <c>lastError.code</c>（错误码）与 <c>lastError.message</c>（按进程默认区域渲染的文本），展示用 <c>WorkflowJson.DeserializeFault(variables[LastErrorVariable])?.Localize()</c> 按调用方的区域渲染 <c>messageKey</c> 与 <c>arguments</c>
     /// </remarks>
     public const string LastErrorVariable = "lastError";
 
     /// <summary>
-    /// 继续出错时的出边结果标签。
+    /// 继续出错时的出边结果标签
     /// </summary>
     public const string ErrorOutcome = "error";
 
     /// <summary>
-    /// 子流程回调输入：子实例 ID。
+    /// 子流程回调输入：子实例 ID
     /// </summary>
     public const string ChildInstanceIdInput = "childInstanceId";
 
     /// <summary>
-    /// 子流程回调输入：子实例状态。
+    /// 子流程回调输入：子实例状态
     /// </summary>
     public const string ChildStatusInput = "childStatus";
 
     /// <summary>
-    /// 子流程回调输入：子实例变量。
+    /// 子流程回调输入：子实例变量
     /// </summary>
     public const string ChildVariablesInput = "childVariables";
 
     /// <summary>
-    /// 子流程回调输入：子实例故障。
+    /// 子流程回调输入：子实例故障
     /// </summary>
     /// <remarks>
-    /// 是 <see cref="WorkflowFault"/> 的 JSON（<c>code</c>、<c>message</c>、<c>messageKey</c>、<c>arguments</c>、<c>inner</c>），子实例没有故障时为空（ADR-0105）。
+    /// 是 <see cref="WorkflowFault"/> 的 JSON（<c>code</c>、<c>message</c>、<c>messageKey</c>、<c>arguments</c>、<c>inner</c>），子实例没有故障时为空（ADR-0105）
     /// </remarks>
     public const string ChildFaultInput = "childFault";
 
     /// <summary>
-    /// 信号启动时写入的变量：信号载荷。
+    /// 信号启动时写入的变量：信号载荷
     /// </summary>
     public const string SignalVariable = "signal";
 
     /// <summary>
-    /// 输出映射表达式作用域里本节点输出的名字。
+    /// 输出映射表达式作用域里本节点输出的名字
     /// </summary>
     public const string OutputsScopeName = "outputs";
 
     /// <summary>
-    /// 通知父实例时等锁的尝试次数。
+    /// 通知父实例时等锁的尝试次数
     /// </summary>
     private const int ParentNotifyAttempts = 3;
 
     /// <summary>
-    /// 定义存储。
+    /// 定义存储
     /// </summary>
     private readonly IWorkflowDefinitionStore _definitions;
 
     /// <summary>
-    /// 实例存储。
+    /// 实例存储
     /// </summary>
     private readonly IWorkflowInstanceStore _instances;
 
     /// <summary>
-    /// 书签存储。
+    /// 书签存储
     /// </summary>
     private readonly IWorkflowBookmarkStore _bookmarks;
 
     /// <summary>
-    /// 活动登记表。
+    /// 活动登记表
     /// </summary>
     private readonly ActivityRegistry _registry;
 
     /// <summary>
-    /// 求值器。
+    /// 求值器
     /// </summary>
     private readonly IWorkflowExpressionEvaluator _evaluator;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly WorkflowOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 活动执行器。
+    /// 活动执行器
     /// </summary>
     private readonly ActivityExecutor _executor;
 
     /// <summary>
-    /// 事件发布。
+    /// 事件发布
     /// </summary>
     private readonly WorkflowEventPublisher _events;
 
     /// <summary>
-    /// 执行范围：事务的加入或自开、调用方租户、实例锁的持有。
+    /// 执行范围：事务的加入或自开、调用方租户、实例锁的持有
     /// </summary>
     private readonly WorkflowScope _scope;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 创建（作用域服务）。
+    /// 创建（作用域服务）
     /// </summary>
     public WorkflowEngine(IWorkflowDefinitionStore definitions, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, WorkflowOptions options, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
     {
@@ -166,7 +166,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 启动（在事务里）。
+    /// 启动（在事务里）
     /// </summary>
     private async ValueTask<Result<WorkflowInstance>> StartCoreAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
     {
@@ -231,7 +231,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 恢复书签（在事务里）。
+    /// 恢复书签（在事务里）
     /// </summary>
     private async ValueTask<Result<WorkflowInstance>> ResumeCoreAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, CancellationToken cancellationToken)
     {
@@ -316,7 +316,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 发信号（在事务里）：只消费调用方分区的信号书签、只启动调用方分区的定义。
+    /// 发信号（在事务里）：只消费调用方分区的信号书签、只启动调用方分区的定义
     /// </summary>
     private async ValueTask<Result<int>> SignalCoreAsync(string signalName, JsonObject? payload, string? correlationId, CancellationToken cancellationToken)
     {
@@ -449,7 +449,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 改变量（在事务里）。
+    /// 改变量（在事务里）
     /// </summary>
     private async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> SetVariablesCoreAsync(IReadOnlyList<WorkflowVariableUpdate> updates, CancellationToken cancellationToken)
     {
@@ -485,7 +485,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 跳转（在事务里）。
+    /// 跳转（在事务里）
     /// </summary>
     private async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> JumpCoreAsync(IReadOnlyList<WorkflowJump> jumps, CancellationToken cancellationToken)
     {
@@ -542,7 +542,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 迁移（在事务里）。
+    /// 迁移（在事务里）
     /// </summary>
     private async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> MigrateCoreAsync(IReadOnlyList<WorkflowMigration> migrations, CancellationToken cancellationToken)
     {
@@ -615,10 +615,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 在事务里清理调用方分区的已结束实例。
+    /// 在事务里清理调用方分区的已结束实例
     /// </summary>
     /// <remarks>
-    /// 只清调用方的分区；轮询器的保留期清理逐个分区调用。
+    /// 只清调用方的分区；轮询器的保留期清理逐个分区调用
     /// </remarks>
     private async ValueTask<Result<int>> PurgeCoreAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken)
     {
@@ -652,7 +652,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 定时启动：在定义 ID 的锁内消费书签、推算并写入下一次，锁外启动实例。
+    /// 定时启动：在定义 ID 的锁内消费书签、推算并写入下一次，锁外启动实例
     /// </summary>
     private async ValueTask<Result<WorkflowInstance>> ResumeDefinitionTimerAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken)
     {
@@ -709,10 +709,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 已发布定义的下一次定时启动书签。
+    /// 已发布定义的下一次定时启动书签
     /// </summary>
     /// <remarks>
-    /// 没有 <c>Start.Cron</c> 或没有下一次为空。
+    /// 没有 <c>Start.Cron</c> 或没有下一次为空
     /// </remarks>
     public static WorkflowBookmark? DefinitionTimerBookmark(WorkflowDefinition definition, DateTimeOffset after)
     {
@@ -745,10 +745,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 实例级超时到期。
+    /// 实例级超时到期
     /// </summary>
     /// <remarks>
-    /// 按定义的超时动作故障或终止；已结束的实例只消费书签。
+    /// 按定义的超时动作故障或终止；已结束的实例只消费书签
     /// </remarks>
     private async ValueTask<Result> TimeOutInstanceAsync(WorkflowSession session, WorkflowBookmark bookmark)
     {
@@ -778,7 +778,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 提醒到期：对该节点实例的每个用户任务书签发布提醒事件，再按间隔排下一次。
+    /// 提醒到期：对该节点实例的每个用户任务书签发布提醒事件，再按间隔排下一次
     /// </summary>
     private static void RemindTask(WorkflowSession session, WorkflowBookmark bookmark)
     {
@@ -807,13 +807,13 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 按实例 ID 的批量控制（同步版）：在调用方事务里，或自己开一次调用。
+    /// 按实例 ID 的批量控制（同步版）：在调用方事务里，或自己开一次调用
     /// </summary>
     private ValueTask<IReadOnlyList<Result<WorkflowInstance>>> Batch(IReadOnlyList<string> instanceIds, string target, Func<IWorkflowEngine, ValueTask<IReadOnlyList<Result<WorkflowInstance>>>> nested, Func<WorkflowSession, Result> action, CancellationToken cancellationToken)
         => Batch(instanceIds, target, nested, session => ValueTask.FromResult(action(session)), cancellationToken);
 
     /// <summary>
-    /// 按实例 ID 的批量控制：在调用方事务里，或自己开一次调用。
+    /// 按实例 ID 的批量控制：在调用方事务里，或自己开一次调用
     /// </summary>
     private ValueTask<IReadOnlyList<Result<WorkflowInstance>>> Batch(IReadOnlyList<string> instanceIds, string target, Func<IWorkflowEngine, ValueTask<IReadOnlyList<Result<WorkflowInstance>>>> nested, Func<WorkflowSession, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
@@ -822,7 +822,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 在实例锁内对一组实例逐个执行 <paramref name="action"/>，逐项结果。
+    /// 在实例锁内对一组实例逐个执行 <paramref name="action"/>，逐项结果
     /// </summary>
     private async ValueTask<IReadOnlyList<Result<WorkflowInstance>>> ForEachAsync(IReadOnlyList<string> instanceIds, Func<WorkflowSession, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
@@ -838,10 +838,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 加锁 → 加载会话 → 执行 → 写回 → 发事件 → 交还锁 → 锁外动作。
+    /// 加锁 → 加载会话 → 执行 → 写回 → 发事件 → 交还锁 → 锁外动作
     /// </summary>
     /// <remarks>
-    /// 返回写回后的实例。写回与事件都在调用方的事务里；交还锁只把它标为空闲，作用域结束（事务提交或回滚之后）才真正释放。
+    /// 返回写回后的实例。写回与事件都在调用方的事务里；交还锁只把它标为空闲，作用域结束（事务提交或回滚之后）才真正释放
     /// </remarks>
     private async ValueTask<Result<WorkflowInstance>> RunLockedAsync(string instanceId, Func<WorkflowSession, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
@@ -881,7 +881,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 加载实例、定义、节点实例与书签。
+    /// 加载实例、定义、节点实例与书签
     /// </summary>
     private async ValueTask<Result<WorkflowSession>> LoadAsync(string instanceId, CancellationToken cancellationToken)
     {
@@ -924,7 +924,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 写回会话里的改动。
+    /// 写回会话里的改动
     /// </summary>
     private async ValueTask<Result> FlushAsync(WorkflowSession session, CancellationToken cancellationToken)
     {
@@ -964,7 +964,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 锁外动作：启动子流程、通知父实例、级联子实例。
+    /// 锁外动作：启动子流程、通知父实例、级联子实例
     /// </summary>
     private async ValueTask RunPostActionsAsync(WorkflowSession session, CancellationToken cancellationToken)
     {
@@ -1014,10 +1014,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 以子流程书签回调父实例。
+    /// 以子流程书签回调父实例
     /// </summary>
     /// <remarks>
-    /// 等锁超时重试几次。
+    /// 等锁超时重试几次
     /// </remarks>
     private async ValueTask NotifyParentAsync(string parentInstanceId, string parentNodeInstanceId, JsonObject inputs, CancellationToken cancellationToken)
     {
@@ -1051,10 +1051,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 波次。
+    /// 波次
     /// </summary>
     /// <remarks>
-    /// 在锁内逐个执行队列里的节点直到队列空或实例不再运行，然后收尾；故障要求了补偿就在收尾后补偿。
+    /// 在锁内逐个执行队列里的节点直到队列空或实例不再运行，然后收尾；故障要求了补偿就在收尾后补偿
     /// </remarks>
     private async ValueTask RunBurstAsync(WorkflowSession session)
     {
@@ -1080,7 +1080,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 执行一项工作。
+    /// 执行一项工作
     /// </summary>
     private async ValueTask ExecuteNodeAsync(WorkflowSession session, WorkItem item)
     {
@@ -1159,10 +1159,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 节点完成。
+    /// 节点完成
     /// </summary>
     /// <remarks>
-    /// 记输出与结果标签、合并变量、套用输出映射、登记子流程、清掉剩余书签；输出映射求值失败返回错误。
+    /// 记输出与结果标签、合并变量、套用输出映射、登记子流程、清掉剩余书签；输出映射求值失败返回错误
     /// </remarks>
     private Error? CompleteNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome)
     {
@@ -1200,10 +1200,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 节点挂起。
+    /// 节点挂起
     /// </summary>
     /// <remarks>
-    /// 建书签（用户任务发创建事件、外部任务发创建事件）、首次挂起且有超时时加超时书签。
+    /// 建书签（用户任务发创建事件、外部任务发创建事件）、首次挂起且有超时时加超时书签
     /// </remarks>
     private static void SuspendNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome, bool resumed)
     {
@@ -1234,7 +1234,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 发用户任务创建事件（抄送人来自载荷）。
+    /// 发用户任务创建事件（抄送人来自载荷）
     /// </summary>
     internal static void PublishTaskCreated(WorkflowSession session, WorkflowNodeInstance nodeInstance, WorkflowBookmark bookmark)
         => session.Publish(WorkflowTopics.TaskCreated, session.EventData(nodeInstance) with
@@ -1246,7 +1246,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
         });
 
     /// <summary>
-    /// 节点失败：重试策略 → 继续出错 → 实例故障。
+    /// 节点失败：重试策略 → 继续出错 → 实例故障
     /// </summary>
     private void HandleFault(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, Error error)
     {
@@ -1275,10 +1275,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 实例故障。
+    /// 实例故障
     /// </summary>
     /// <remarks>
-    /// 记录故障与位置，清空队列，发事件，通知父实例；定义要求故障补偿时记下，波次结束后补偿。
+    /// 记录故障与位置，清空队列，发事件，通知父实例；定义要求故障补偿时记下，波次结束后补偿
     /// </remarks>
     private static void FaultInstance(WorkflowSession session, Error error, string? nodeId, string? nodeInstanceId)
     {
@@ -1295,7 +1295,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 按出边选择方式把后继节点入队。
+    /// 按出边选择方式把后继节点入队
     /// </summary>
     private void FlowOutgoing(WorkflowSession session, WorkflowNode node, string? label)
     {
@@ -1381,10 +1381,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 把转移的目标入队。
+    /// 把转移的目标入队
     /// </summary>
     /// <remarks>
-    /// 目标是汇合节点时按模式计数。返回 <see langword="false"/> 表示实例已故障。
+    /// 目标是汇合节点时按模式计数。返回 <see langword="false"/> 表示实例已故障
     /// </remarks>
     private static bool EnqueueTarget(WorkflowSession session, WorkflowTransition transition)
     {
@@ -1448,10 +1448,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 波次收尾。
+    /// 波次收尾
     /// </summary>
     /// <remarks>
-    /// 结束请求或没有节点在等待时完成（有未凑齐的汇合则故障）；终止活动置的状态在这里清理。
+    /// 结束请求或没有节点在等待时完成（有未凑齐的汇合则故障）；终止活动置的状态在这里清理
     /// </remarks>
     private static void FinalizeBurst(WorkflowSession session)
     {
@@ -1497,7 +1497,7 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 实例完成。
+    /// 实例完成
     /// </summary>
     private static void Complete(WorkflowSession session)
     {
@@ -1508,10 +1508,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 强制结束（取消或终止）。
+    /// 强制结束（取消或终止）
     /// </summary>
     /// <remarks>
-    /// 已结束的幂等返回，故障的允许；清非终态节点与全部书签；取消且启用补偿时补偿；级联子实例。
+    /// 已结束的幂等返回，故障的允许；清非终态节点与全部书签；取消且启用补偿时补偿；级联子实例
     /// </remarks>
     private async ValueTask<Result> FinishForciblyAsync(WorkflowSession session, WorkflowInstanceStatus status, string? reason)
     {
@@ -1538,10 +1538,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 按完成顺序逆序补偿已完成的节点（<paramref name="nodeIds"/> 为空取全部）。
+    /// 按完成顺序逆序补偿已完成的节点（<paramref name="nodeIds"/> 为空取全部）
     /// </summary>
     /// <remarks>
-    /// 单个补偿失败只记日志、继续。返回被补偿的节点实例 ID。
+    /// 单个补偿失败只记日志、继续。返回被补偿的节点实例 ID
     /// </remarks>
     private async ValueTask<IReadOnlyList<string>> CompensateAsync(WorkflowSession session, IReadOnlyList<string>? nodeIds)
     {
@@ -1576,10 +1576,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 按重用策略查重并写入新实例。
+    /// 按重用策略查重并写入新实例
     /// </summary>
     /// <remarks>
-    /// 要查重时（有关联 ID 且策略不是 <see cref="WorkflowReusePolicy.AllowDuplicate"/>），查重与写入在同一把实例锁里完成，锁键由分区、定义名与关联 ID 推出：并发的同键启动串行化；锁持有到调用方的事务结束，后到者一定看得到先到者提交的实例。查重只看同一分区的实例。返回新写入的实例（<c>Created</c> 为真），或 <see cref="WorkflowReusePolicy.ReturnActive"/> 命中的已有实例。
+    /// 要查重时（有关联 ID 且策略不是 <see cref="WorkflowReusePolicy.AllowDuplicate"/>），查重与写入在同一把实例锁里完成，锁键由分区、定义名与关联 ID 推出：并发的同键启动串行化；锁持有到调用方的事务结束，后到者一定看得到先到者提交的实例。查重只看同一分区的实例。返回新写入的实例（<c>Created</c> 为真），或 <see cref="WorkflowReusePolicy.ReturnActive"/> 命中的已有实例
     /// </remarks>
     private async ValueTask<Result<(WorkflowInstance Instance, bool Created)>> CreateInstanceAsync(WorkflowStartRequest request, WorkflowDefinition definition, CancellationToken cancellationToken)
     {
@@ -1620,10 +1620,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 补全变量、构造并写入新实例。
+    /// 补全变量、构造并写入新实例
     /// </summary>
     /// <remarks>
-    /// 声明的变量缺省补默认值，必填缺失返回 <c>WORKFLOW_VALIDATION_002</c>。
+    /// 声明的变量缺省补默认值，必填缺失返回 <c>WORKFLOW_VALIDATION_002</c>
     /// </remarks>
     private async ValueTask<Result<(WorkflowInstance Instance, bool Created)>> SaveNewInstanceAsync(WorkflowStartRequest request, WorkflowDefinition definition, CancellationToken cancellationToken)
     {
@@ -1676,19 +1676,19 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 重用策略查重时的锁键。
+    /// 重用策略查重时的锁键
     /// </summary>
     /// <remarks>
-    /// <c>start.</c> 加上分区（租户）、定义名与关联 ID 的 SHA-256 十六进制：与实例 ID、定义 ID 不相交，长度固定。租户与定义名都不含换行、合法租户不为空串，以换行拼接不会有歧义。
+    /// <c>start.</c> 加上分区（租户）、定义名与关联 ID 的 SHA-256 十六进制：与实例 ID、定义 ID 不相交，长度固定。租户与定义名都不含换行、合法租户不为空串，以换行拼接不会有歧义
     /// </remarks>
     private static string ReuseLockKey(string? tenantId, WorkflowName name, string correlation)
         => "start." + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Concat(tenantId, "\n", name.Value, "\n", correlation))));
 
     /// <summary>
-    /// 找请求指向的已发布定义。
+    /// 找请求指向的已发布定义
     /// </summary>
     /// <remarks>
-    /// 只在调用方的分区里找：按 ID 指向别的分区的定义、按名字只有别的分区有的定义，都按不存在处理（<c>WORKFLOW_NOTFOUND_001</c>），不暴露别的分区有什么定义。
+    /// 只在调用方的分区里找：按 ID 指向别的分区的定义、按名字只有别的分区有的定义，都按不存在处理（<c>WORKFLOW_NOTFOUND_001</c>），不暴露别的分区有什么定义
     /// </remarks>
     private async ValueTask<Result<WorkflowDefinition>> FindPublishedDefinitionAsync(WorkflowStartRequest request, CancellationToken cancellationToken)
     {
@@ -1777,10 +1777,10 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 关联 ID 集合越界时的校验错误。
+    /// 关联 ID 集合越界时的校验错误
     /// </summary>
     /// <remarks>
-    /// 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个或有空白的 ID 是调用方可以改正的输入，以校验错误返回（不进存储）；没给集合或集合合法为 <see langword="null"/>。
+    /// 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个或有空白的 ID 是调用方可以改正的输入，以校验错误返回（不进存储）；没给集合或集合合法为 <see langword="null"/>
     /// </remarks>
     private static Error? CorrelationsInvalid(WorkflowInstanceQuery query)
         => query.CorrelationIds is { } ids && (ids.Count > WorkflowInstanceQuery.MaxCorrelationIds || ids.Any(string.IsNullOrWhiteSpace))
@@ -1834,42 +1834,42 @@ public sealed partial class WorkflowEngine : IWorkflowEngine
     }
 
     /// <summary>
-    /// 调用方的分区：调用的租户，空为平台。
+    /// 调用方的分区：调用的租户，空为平台
     /// </summary>
     private string? Tenant => _scope.TenantId;
 
     /// <summary>
-    /// 实例状态不允许该操作。
+    /// 实例状态不允许该操作
     /// </summary>
     private static Error StatusConflict(WorkflowInstance instance)
         => WorkflowStatusConflicts.Of(instance);
 
     /// <summary>
-    /// 书签不存在。
+    /// 书签不存在
     /// </summary>
     private static Error BookmarkNotFound(string id)
         => Error.NotFound(WorkflowErrors.BookmarkNotFound, WorkflowMessages.BookmarkNotFound, MessageArguments.Of(("id", id)));
 
     /// <summary>
-    /// 信号恢复失败。
+    /// 信号恢复失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Resuming bookmark '{BookmarkId}' for signal '{Signal}' failed with '{ErrorCode}'.")]
     private static partial void LogSignalFailed(ILogger logger, string signal, string bookmarkId, string errorCode);
 
     /// <summary>
-    /// 信号启动失败。
+    /// 信号启动失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Starting definition '{DefinitionId}' for signal '{Signal}' failed with '{ErrorCode}'.")]
     private static partial void LogSignalStartFailed(ILogger logger, string signal, string definitionId, string errorCode);
 
     /// <summary>
-    /// 通知父实例失败。
+    /// 通知父实例失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Notifying parent instance '{ParentInstanceId}' failed with '{ErrorCode}'.")]
     private static partial void LogParentNotifyFailed(ILogger logger, string parentInstanceId, string errorCode);
 
     /// <summary>
-    /// 补偿失败。
+    /// 补偿失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Compensating node instance '{NodeInstanceId}' of instance '{InstanceId}' failed with '{ErrorCode}'.")]
     private static partial void LogCompensationFailed(ILogger logger, string instanceId, string nodeInstanceId, string errorCode);

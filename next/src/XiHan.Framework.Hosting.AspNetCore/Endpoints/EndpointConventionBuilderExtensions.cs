@@ -9,16 +9,16 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Hosting.AspNetCore.Endpoints;
 
 /// <summary>
-/// 把授权要求挂在端点元数据上。
+/// 把授权要求挂在端点元数据上
 /// </summary>
 /// <remarks>
-/// <c>UseXiHan()</c> 在构造调用上下文时读取它，Authorize 阶段据此判定。
+/// <c>UseXiHan()</c> 在构造调用上下文时读取它，Authorize 阶段据此判定
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class EndpointConventionBuilderExtensions
 {
     /// <summary>
-    /// 端点要求已认证。
+    /// 端点要求已认证
     /// </summary>
     public static TBuilder RequireXiHanAuthentication<TBuilder>(this TBuilder builder)
         where TBuilder : IEndpointConventionBuilder
@@ -28,7 +28,7 @@ public static class EndpointConventionBuilderExtensions
     }
 
     /// <summary>
-    /// 端点要求权限（权限码须由某个特性登记）。
+    /// 端点要求权限（权限码须由某个特性登记）
     /// </summary>
     public static TBuilder RequireXiHanPermission<TBuilder>(this TBuilder builder, string permissionCode, ResourceName? resource = null)
         where TBuilder : IEndpointConventionBuilder
@@ -38,7 +38,7 @@ public static class EndpointConventionBuilderExtensions
     }
 
     /// <summary>
-    /// 端点要求命名策略。
+    /// 端点要求命名策略
     /// </summary>
     public static TBuilder RequireXiHanPolicy<TBuilder>(this TBuilder builder, string policyName, ResourceName? resource = null)
         where TBuilder : IEndpointConventionBuilder

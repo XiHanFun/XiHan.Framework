@@ -6,16 +6,16 @@ using System.Globalization;
 namespace XiHan.Framework.Primitives.Manifests;
 
 /// <summary>
-/// 清单 <c>provides</c> 中的一项：提供的能力及其接口版本。
+/// 清单 <c>provides</c> 中的一项：提供的能力及其接口版本
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record CapabilityDeclaration
 {
     /// <summary>
-    /// 创建声明。
+    /// 创建声明
     /// </summary>
-    /// <param name="id">能力 ID。</param>
-    /// <param name="version">接口版本，正整数。</param>
+    /// <param name="id">能力 ID</param>
+    /// <param name="version">接口版本，正整数</param>
     public CapabilityDeclaration(string id, int version)
     {
         Id = CapabilityId.Validate(id);
@@ -24,17 +24,17 @@ public sealed record CapabilityDeclaration
     }
 
     /// <summary>
-    /// 能力 ID。
+    /// 能力 ID
     /// </summary>
     public string Id { get; }
 
     /// <summary>
-    /// 接口版本。
+    /// 接口版本
     /// </summary>
     public int Version { get; }
 
     /// <summary>
-    /// 解析 <c>id@version</c> 形式，例如 <c>persistence.relational@1</c>。
+    /// 解析 <c>id@version</c> 形式，例如 <c>persistence.relational@1</c>
     /// </summary>
     public static CapabilityDeclaration Parse(string text)
     {
@@ -45,11 +45,11 @@ public sealed record CapabilityDeclaration
     }
 
     /// <summary>
-    /// 尝试解析 <c>id@version</c> 形式。
+    /// 尝试解析 <c>id@version</c> 形式
     /// </summary>
     public static bool TryParse(string? text, out CapabilityDeclaration declaration)
     {
-        // 失败时 out 参数不应被读取；null! 只是为了满足定赋值要求。
+        // 失败时 out 参数不应被读取；null! 只是为了满足定赋值要求
         declaration = null!;
         if (text is null)
         {
@@ -62,7 +62,7 @@ public sealed record CapabilityDeclaration
             return false;
         }
 
-        // 版本只接受无符号十进制整数且至少为 1，拒绝 "+1"、"01" 之外的前缀与空白。
+        // 版本只接受无符号十进制整数且至少为 1，拒绝 "+1"、"01" 之外的前缀与空白
         if (!int.TryParse(text[(at + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var version) || version < 1)
         {
             return false;

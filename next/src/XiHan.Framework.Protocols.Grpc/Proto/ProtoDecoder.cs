@@ -10,36 +10,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// 按消息描述把 protobuf 线格式解码为 JSON 对象。
+/// 按消息描述把 protobuf 线格式解码为 JSON 对象
 /// </summary>
 /// <remarks>
-/// 描述里没有的字段号跳过；重复的单值字段取最后一个；repeated 的数值接受打包与不打包两种形式；线类型与描述不符、截断、非法 UTF-8 等抛出 <see cref="ProtoException"/>。线上没有的隐式存在字段按 proto3 语义写出默认值：布尔与数值写零值、重复写空数组、映射写空对象，让契约 Schema 里的 <c>required</c> 在 gRPC 上成立；字符串 / 字节 / 任意 JSON 不补（空串对 date-time、uuid、枚举这类带格式的字符串不是合法值），显式存在（<c>optional</c>）与嵌套消息缺席时不写。
+/// 描述里没有的字段号跳过；重复的单值字段取最后一个；repeated 的数值接受打包与不打包两种形式；线类型与描述不符、截断、非法 UTF-8 等抛出 <see cref="ProtoException"/>。线上没有的隐式存在字段按 proto3 语义写出默认值：布尔与数值写零值、重复写空数组、映射写空对象，让契约 Schema 里的 <c>required</c> 在 gRPC 上成立；字符串 / 字节 / 任意 JSON 不补（空串对 date-time、uuid、枚举这类带格式的字符串不是合法值），显式存在（<c>optional</c>）与嵌套消息缺席时不写
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ProtoDecoder
 {
     /// <summary>
-    /// varint 线类型。
+    /// varint 线类型
     /// </summary>
     private const int WireVarint = 0;
 
     /// <summary>
-    /// fixed64 线类型。
+    /// fixed64 线类型
     /// </summary>
     private const int WireFixed64 = 1;
 
     /// <summary>
-    /// 长度前缀线类型。
+    /// 长度前缀线类型
     /// </summary>
     private const int WireLengthDelimited = 2;
 
     /// <summary>
-    /// fixed32 线类型。
+    /// fixed32 线类型
     /// </summary>
     private const int WireFixed32 = 5;
 
     /// <summary>
-    /// 解码一个消息，写成 JSON 对象。
+    /// 解码一个消息，写成 JSON 对象
     /// </summary>
     public static void Decode(ProtoMessage message, ReadOnlyMemory<byte> input, Utf8JsonWriter writer)
     {
@@ -96,18 +96,18 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 线上的一个字段值：线类型、varint / fixed 的位，或长度前缀的内容。
+    /// 线上的一个字段值：线类型、varint / fixed 的位，或长度前缀的内容
     /// </summary>
-    /// <param name="WireType">线类型。</param>
-    /// <param name="Bits">varint 或 fixed 的位。</param>
-    /// <param name="Bytes">长度前缀的内容。</param>
+    /// <param name="WireType">线类型</param>
+    /// <param name="Bits">varint 或 fixed 的位</param>
+    /// <param name="Bytes">长度前缀的内容</param>
     private readonly record struct RawValue(int WireType, ulong Bits, ReadOnlyMemory<byte> Bytes);
 
     /// <summary>
-    /// 把一段消息拆成字段号 → 值列表（保持出现顺序）。
+    /// 把一段消息拆成字段号 → 值列表（保持出现顺序）
     /// </summary>
     /// <remarks>
-    /// 分组（已废弃的线类型 3 / 4）不支持。
+    /// 分组（已废弃的线类型 3 / 4）不支持
     /// </remarks>
     private static Dictionary<int, List<RawValue>> Parse(ReadOnlyMemory<byte> input)
     {
@@ -162,7 +162,7 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 写一个单值。
+    /// 写一个单值
     /// </summary>
     private static void WriteValue(ProtoValueType type, RawValue raw, Utf8JsonWriter writer, string path)
     {
@@ -214,7 +214,7 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 写打包的标量序列：varint 连读，或按 4 / 8 字节连读。
+    /// 写打包的标量序列：varint 连读，或按 4 / 8 字节连读
     /// </summary>
     private static void WritePacked(ProtoValueType type, ReadOnlyMemory<byte> payload, Utf8JsonWriter writer, string path)
     {
@@ -232,10 +232,10 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 写一个映射条目。
+    /// 写一个映射条目
     /// </summary>
     /// <remarks>
-    /// 条目消息里 1 是键、2 是值；缺键按空串，缺值按类型默认值。
+    /// 条目消息里 1 是键、2 是值；缺键按空串，缺值按类型默认值
     /// </remarks>
     private static void WriteMapEntry(ProtoValueType valueType, RawValue raw, Utf8JsonWriter writer, string path)
     {
@@ -255,10 +255,10 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 线上缺席的字段。
+    /// 线上缺席的字段
     /// </summary>
     /// <remarks>
-    /// 单值的布尔与数值写 proto3 默认值，重复写空数组，映射写空对象；字符串、字节、任意 JSON、消息与 <c>optional</c> 不写。
+    /// 单值的布尔与数值写 proto3 默认值，重复写空数组，映射写空对象；字符串、字节、任意 JSON、消息与 <c>optional</c> 不写
     /// </remarks>
     private static void WriteAbsent(ProtoField field, Utf8JsonWriter writer)
     {
@@ -284,7 +284,7 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 类型的 proto3 默认值。
+    /// 类型的 proto3 默认值
     /// </summary>
     private static void WriteDefault(ProtoValueType type, Utf8JsonWriter writer)
     {
@@ -315,7 +315,7 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 线类型必须与描述一致。
+    /// 线类型必须与描述一致
     /// </summary>
     private static void Expect(RawValue raw, int wireType, string path)
     {
@@ -326,7 +326,7 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 校验 UTF-8。
+    /// 校验 UTF-8
     /// </summary>
     private static ReadOnlySpan<byte> ValidUtf8(ReadOnlySpan<byte> bytes, string path)
     {
@@ -339,7 +339,7 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 文本必须是合法 JSON（可限定种类），返回原文供原样写出。
+    /// 文本必须是合法 JSON（可限定种类），返回原文供原样写出
     /// </summary>
     private static string ValidJson(string text, JsonValueKind? kind, string path)
     {
@@ -360,7 +360,7 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 读 varint（最多 10 字节）。
+    /// 读 varint（最多 10 字节）
     /// </summary>
     private static ulong ReadVarint(ReadOnlySpan<byte> input, ref int position)
     {
@@ -384,7 +384,7 @@ public static class ProtoDecoder
     }
 
     /// <summary>
-    /// 读小端定长整数（4 或 8 字节）。
+    /// 读小端定长整数（4 或 8 字节）
     /// </summary>
     private static ulong ReadFixed(ReadOnlySpan<byte> input, ref int position, int size)
     {

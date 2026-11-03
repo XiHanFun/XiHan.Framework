@@ -9,7 +9,7 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 namespace XiHan.Framework.Workflow.Abstractions.Serialization;
 
 /// <summary>
-/// <see cref="ActivityType"/> 以字符串序列化。
+/// <see cref="ActivityType"/> 以字符串序列化
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ActivityTypeJsonConverter : JsonConverter<ActivityType>

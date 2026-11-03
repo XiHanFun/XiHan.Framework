@@ -6,13 +6,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Commands;
 
 /// <summary>
-/// 帮助文本：用法行、命令列表（按名字排序）与操作简写的说明，文案按当前区域渲染。
+/// 帮助文本：用法行、命令列表（按名字排序）与操作简写的说明，文案按当前区域渲染
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineHelp
 {
     /// <summary>
-    /// 写帮助。
+    /// 写帮助
     /// </summary>
     public static async Task WriteAsync(TextWriter writer, IEnumerable<ICommand> commands)
     {
@@ -30,7 +30,7 @@ public static class CommandLineHelp
     }
 
     /// <summary>
-    /// 用法行里的程序名：可执行文件名，取不到时用进程友好名。
+    /// 用法行里的程序名：可执行文件名，取不到时用进程友好名
     /// </summary>
     private static string ProgramName()
     {

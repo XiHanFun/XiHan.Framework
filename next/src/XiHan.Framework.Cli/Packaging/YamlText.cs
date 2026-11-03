@@ -7,20 +7,20 @@ using System.Text;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 极简 YAML 拼接。
+/// 极简 YAML 拼接
 /// </summary>
 /// <remarks>
-/// 按缩进写行，标量按需加引号，多行文本用块标量。生成的清单只用映射、序列与标量三种结构。
+/// 按缩进写行，标量按需加引号，多行文本用块标量。生成的清单只用映射、序列与标量三种结构
 /// </remarks>
 internal sealed class YamlText
 {
     /// <summary>
-    /// 缓冲。
+    /// 缓冲
     /// </summary>
     private readonly StringBuilder _builder = new();
 
     /// <summary>
-    /// 写一行，前面补 <paramref name="indent"/> 个空格。
+    /// 写一行，前面补 <paramref name="indent"/> 个空格
     /// </summary>
     public YamlText Line(int indent, string text)
     {
@@ -29,22 +29,22 @@ internal sealed class YamlText
     }
 
     /// <summary>
-    /// 写 <c>key: value</c>，值按需加引号。
+    /// 写 <c>key: value</c>，值按需加引号
     /// </summary>
     public YamlText Pair(int indent, string key, string value) => Line(indent, key + ": " + Scalar(value));
 
     /// <summary>
-    /// 写 <c>key: 数字</c>。
+    /// 写 <c>key: 数字</c>
     /// </summary>
     public YamlText Pair(int indent, string key, int value) => Line(indent, key + ": " + value.ToString(CultureInfo.InvariantCulture));
 
     /// <summary>
-    /// 写 <c>key: 布尔</c>。
+    /// 写 <c>key: 布尔</c>
     /// </summary>
     public YamlText Pair(int indent, string key, bool value) => Line(indent, key + ": " + (value ? "true" : "false"));
 
     /// <summary>
-    /// 写块标量 <c>key: |</c> 与缩进后的多行内容。
+    /// 写块标量 <c>key: |</c> 与缩进后的多行内容
     /// </summary>
     public YamlText Block(int indent, string key, string content)
     {
@@ -58,7 +58,7 @@ internal sealed class YamlText
     }
 
     /// <summary>
-    /// 空行。
+    /// 空行
     /// </summary>
     public YamlText Blank()
     {
@@ -70,7 +70,7 @@ internal sealed class YamlText
     public override string ToString() => _builder.ToString();
 
     /// <summary>
-    /// 标量文本：字母数字与 URL、镜像名常见的安全符号直接写，其余加双引号并转义。
+    /// 标量文本：字母数字与 URL、镜像名常见的安全符号直接写，其余加双引号并转义
     /// </summary>
     public static string Scalar(string value)
     {

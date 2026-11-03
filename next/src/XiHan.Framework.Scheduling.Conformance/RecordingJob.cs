@@ -9,26 +9,26 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// 套件作业：按 <see cref="RecordingJobLog"/> 的开关记录、停留、失败或抛出。
+/// 套件作业：按 <see cref="RecordingJobLog"/> 的开关记录、停留、失败或抛出
 /// </summary>
 /// <remarks>
-/// 运行数据里的 <c>failBeforeAttempt</c>（第几次尝试之前都失败）与 <c>delayMilliseconds</c>（停留多久，响应取消）只作用于这次运行。停留按注入的 <see cref="TimeProvider"/> 计时：套件用手动时钟，作业停在那里直到用例推进时钟或取消。
+/// 运行数据里的 <c>failBeforeAttempt</c>（第几次尝试之前都失败）与 <c>delayMilliseconds</c>（停留多久，响应取消）只作用于这次运行。停留按注入的 <see cref="TimeProvider"/> 计时：套件用手动时钟，作业停在那里直到用例推进时钟或取消
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RecordingJob : IJob
 {
     /// <summary>
-    /// 记录。
+    /// 记录
     /// </summary>
     private readonly RecordingJobLog _log;
 
     /// <summary>
-    /// 停留计时用的时钟。
+    /// 停留计时用的时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public RecordingJob(RecordingJobLog log, TimeProvider clock)
     {

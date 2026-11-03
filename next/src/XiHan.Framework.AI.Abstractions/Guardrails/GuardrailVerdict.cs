@@ -6,16 +6,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Guardrails;
 
 /// <summary>
-/// 护栏判定。
+/// 护栏判定
 /// </summary>
 /// <remarks>
-/// 放行，或带原因拦截。原因是消息键（<c>AIMessages.*</c> 或应用自己的键）加参数，宿主在出口翻译。
+/// 放行，或带原因拦截。原因是消息键（<c>AIMessages.*</c> 或应用自己的键）加参数，宿主在出口翻译
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record GuardrailVerdict
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     private GuardrailVerdict(bool blocked, string? reasonKey, IReadOnlyDictionary<string, object?>? reasonArguments)
     {
@@ -25,27 +25,27 @@ public sealed record GuardrailVerdict
     }
 
     /// <summary>
-    /// 是否拦截。
+    /// 是否拦截
     /// </summary>
     public bool Blocked { get; }
 
     /// <summary>
-    /// 拦截原因的消息键。
+    /// 拦截原因的消息键
     /// </summary>
     public string? ReasonKey { get; }
 
     /// <summary>
-    /// 拦截原因的参数。
+    /// 拦截原因的参数
     /// </summary>
     public IReadOnlyDictionary<string, object?>? ReasonArguments { get; }
 
     /// <summary>
-    /// 放行。
+    /// 放行
     /// </summary>
     public static GuardrailVerdict Allow() => new(false, null, null);
 
     /// <summary>
-    /// 拦截。
+    /// 拦截
     /// </summary>
     public static GuardrailVerdict Block(string reasonKey, IReadOnlyDictionary<string, object?>? reasonArguments = null)
     {
@@ -54,7 +54,7 @@ public sealed record GuardrailVerdict
     }
 
     /// <summary>
-    /// 原因的本地化文案（按当前区域）。
+    /// 原因的本地化文案（按当前区域）
     /// </summary>
     public string Reason => ReasonKey is null ? string.Empty : ReasonKey.L(ReasonArguments);
 }

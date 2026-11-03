@@ -10,28 +10,28 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Abstractions.Events;
 
 /// <summary>
-/// 把调度事件发成 CloudEvents 信封。
+/// 把调度事件发成 CloudEvents 信封
 /// </summary>
 /// <remarks>
-/// 没有发布者时跳过，发布失败只记日志（事件是旁路，不影响调度状态）。
+/// 没有发布者时跳过，发布失败只记日志（事件是旁路，不影响调度状态）
 /// </remarks>
 internal sealed partial class SchedulingEventPublisher
 {
     /// <summary>
-    /// 发布者。
+    /// 发布者
     /// </summary>
     /// <remarks>
-    /// 没有装配消息能力时为空。
+    /// 没有装配消息能力时为空
     /// </remarks>
     private readonly IMessagePublisher? _publisher;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public SchedulingEventPublisher(IMessagePublisher? publisher, ILogger logger)
     {
@@ -40,12 +40,12 @@ internal sealed partial class SchedulingEventPublisher
     }
 
     /// <summary>
-    /// 是否会发布。
+    /// 是否会发布
     /// </summary>
     public bool IsEnabled => _publisher is not null;
 
     /// <summary>
-    /// 发布一个事件。
+    /// 发布一个事件
     /// </summary>
     public async ValueTask PublishAsync(string topic, SchedulingEventData data, CancellationToken cancellationToken)
     {
@@ -78,13 +78,13 @@ internal sealed partial class SchedulingEventPublisher
     }
 
     /// <summary>
-    /// 发布失败。
+    /// 发布失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Publishing scheduling event '{Topic}' failed with '{ErrorCode}'.")]
     private static partial void LogPublishFailed(ILogger logger, string topic, string errorCode);
 
     /// <summary>
-    /// 发布抛出。
+    /// 发布抛出
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Publishing scheduling event '{Topic}' threw.")]
     private static partial void LogPublishThrew(ILogger logger, Exception exception, string topic);

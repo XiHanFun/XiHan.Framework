@@ -14,84 +14,84 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Nacos;
 
 /// <summary>
-/// Nacos 远程配置客户端。
+/// Nacos 远程配置客户端
 /// </summary>
 /// <remarks>
-/// 命名空间即 <c>dataId</c>，版本是内容的 MD5（取响应头 <c>Content-MD5</c>，没有时按 UTF-8 自己算）；<c>knownVersion</c> 非空时先用它长轮询监听，服务端报告变化才取整份文档。直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），有用户名密码时先登录取令牌并在到期前续；多个地址按序尝试。地址的路径是 Nacos 的上下文路径，接口路径接在它后面，没有路径时用缺省的 <c>/nacos</c>。
+/// 命名空间即 <c>dataId</c>，版本是内容的 MD5（取响应头 <c>Content-MD5</c>，没有时按 UTF-8 自己算）；<c>knownVersion</c> 非空时先用它长轮询监听，服务端报告变化才取整份文档。直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），有用户名密码时先登录取令牌并在到期前续；多个地址按序尝试。地址的路径是 Nacos 的上下文路径，接口路径接在它后面，没有路径时用缺省的 <c>/nacos</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisposable
 {
     /// <summary>
-    /// 宿主里登记的 <c>HttpClient</c> 名。
+    /// 宿主里登记的 <c>HttpClient</c> 名
     /// </summary>
     public const string HttpClientName = "xihan.configuration.nacos";
 
     /// <summary>
-    /// Nacos 的缺省上下文路径。
+    /// Nacos 的缺省上下文路径
     /// </summary>
     /// <remarks>
-    /// 服务地址没有路径时用它。
+    /// 服务地址没有路径时用它
     /// </remarks>
     private const string DefaultContextPath = "/nacos";
 
     /// <summary>
-    /// 取配置的接口（相对上下文路径）。
+    /// 取配置的接口（相对上下文路径）
     /// </summary>
     private const string ConfigsPath = "/v1/cs/configs";
 
     /// <summary>
-    /// 长轮询监听的接口（相对上下文路径）。
+    /// 长轮询监听的接口（相对上下文路径）
     /// </summary>
     private const string ListenerPath = "/v1/cs/configs/listener";
 
     /// <summary>
-    /// 登录接口（相对上下文路径）。
+    /// 登录接口（相对上下文路径）
     /// </summary>
     private const string LoginPath = "/v1/auth/login";
 
     /// <summary>
-    /// 令牌提前续期的余量。
+    /// 令牌提前续期的余量
     /// </summary>
     private static readonly TimeSpan _tokenRenewMargin = TimeSpan.FromMinutes(1);
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly NacosOptions _options;
 
     /// <summary>
-    /// HTTP 客户端。
+    /// HTTP 客户端
     /// </summary>
     private readonly HttpClient _http;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 是否由本实例创建并在释放时关闭 HTTP 客户端。
+    /// 是否由本实例创建并在释放时关闭 HTTP 客户端
     /// </summary>
     private readonly bool _ownsHttp;
 
     /// <summary>
-    /// 保护登录的锁。
+    /// 保护登录的锁
     /// </summary>
     private readonly SemaphoreSlim _loginGate = new(1, 1);
 
     /// <summary>
-    /// 当前令牌。
+    /// 当前令牌
     /// </summary>
     private string? _token;
 
     /// <summary>
-    /// 令牌到期时刻。
+    /// 令牌到期时刻
     /// </summary>
     private DateTimeOffset _tokenExpiresAt;
 
     /// <summary>
-    /// 创建（HTTP 客户端由外部持有，超时应为无限，由本类按请求控制）。
+    /// 创建（HTTP 客户端由外部持有，超时应为无限，由本类按请求控制）
     /// </summary>
     public NacosConfigurationClient(NacosOptions options, HttpClient httpClient, TimeProvider clock)
         : this(options, httpClient, clock, ownsHttpClient: false)
@@ -107,15 +107,15 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 自建 HTTP 客户端创建（配置构建期没有容器时用），释放时一并关闭。
+    /// 自建 HTTP 客户端创建（配置构建期没有容器时用），释放时一并关闭
     /// </summary>
     public static NacosConfigurationClient Create(NacosOptions options, TimeProvider? clock = null) => Create(options, clock, handler: null);
 
     /// <summary>
-    /// 自建 HTTP 客户端创建，HTTP 处理器由测试替换。
+    /// 自建 HTTP 客户端创建，HTTP 处理器由测试替换
     /// </summary>
     /// <remarks>
-    /// <paramref name="handler"/> 为空时用缺省处理器；给出时归自建的 HTTP 客户端所有，随它释放。
+    /// <paramref name="handler"/> 为空时用缺省处理器；给出时归自建的 HTTP 客户端所有，随它释放
     /// </remarks>
     internal static NacosConfigurationClient Create(NacosOptions options, TimeProvider? clock, HttpMessageHandler? handler)
     {
@@ -183,10 +183,10 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 取整份内容。
+    /// 取整份内容
     /// </summary>
     /// <remarks>
-    /// 不存在为无值。版本取响应头 <c>Content-MD5</c>（Nacos 1.x / 2.x 总是给出）；它是内容头，<c>HttpClient</c> 把它归入 <c>Content.Headers</c>，按原文读取不经解析。没有时（如经过去掉该头的代理）按服务端的算法自己算内容的 MD5，监听接口照样认得这个版本。
+    /// 不存在为无值。版本取响应头 <c>Content-MD5</c>（Nacos 1.x / 2.x 总是给出）；它是内容头，<c>HttpClient</c> 把它归入 <c>Content.Headers</c>，按原文读取不经解析。没有时（如经过去掉该头的代理）按服务端的算法自己算内容的 MD5，监听接口照样认得这个版本
     /// </remarks>
     private async Task<Maybe<(string Text, string Version)>> GetContentAsync(string dataId, CancellationToken cancellationToken)
     {
@@ -203,7 +203,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 长轮询监听：服务端在窗口内发现 MD5 变化就返回变化的条目，否则窗口到期返回空。
+    /// 长轮询监听：服务端在窗口内发现 MD5 变化就返回变化的条目，否则窗口到期返回空
     /// </summary>
     private async Task<bool> ListenAsync(string dataId, string knownVersion, CancellationToken cancellationToken)
     {
@@ -226,10 +226,10 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 按地址顺序发送。
+    /// 按地址顺序发送
     /// </summary>
     /// <remarks>
-    /// 连接失败换下一个地址，全部失败抛出最后一个异常；每次请求各自计超时。
+    /// 连接失败换下一个地址，全部失败抛出最后一个异常；每次请求各自计超时
     /// </remarks>
     private async Task<HttpResponseMessage> SendAsync(Func<Uri, HttpRequestMessage> build, TimeSpan timeout, CancellationToken cancellationToken)
     {
@@ -259,7 +259,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 配置了用户名密码时取令牌，到期前一分钟续。
+    /// 配置了用户名密码时取令牌，到期前一分钟续
     /// </summary>
     private async Task EnsureTokenAsync(CancellationToken cancellationToken)
     {
@@ -330,7 +330,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 非 2xx（404 除外，由调用方处理）视为不可达，把状态码与响应正文带进原因。
+    /// 非 2xx（404 除外，由调用方处理）视为不可达，把状态码与响应正文带进原因
     /// </summary>
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, string action, CancellationToken cancellationToken)
     {
@@ -344,7 +344,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 取配置的地址：<c>dataId</c>、<c>group</c>、可选的 <c>tenant</c> 与令牌。
+    /// 取配置的地址：<c>dataId</c>、<c>group</c>、可选的 <c>tenant</c> 与令牌
     /// </summary>
     private Uri ConfigsUri(Uri address, string dataId)
     {
@@ -354,10 +354,10 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 接口地址：服务地址的路径（Nacos 的上下文路径）后面接上接口路径。
+    /// 接口地址：服务地址的路径（Nacos 的上下文路径）后面接上接口路径
     /// </summary>
     /// <remarks>
-    /// 地址没有路径（或只有 <c>/</c>）时用缺省的 <c>/nacos</c>。Nacos 改了 <c>server.servlet.contextPath</c>，或经网关挂在别的前缀下时，把完整的上下文路径写进地址。
+    /// 地址没有路径（或只有 <c>/</c>）时用缺省的 <c>/nacos</c>。Nacos 改了 <c>server.servlet.contextPath</c>，或经网关挂在别的前缀下时，把完整的上下文路径写进地址
     /// </remarks>
     private static UriBuilder Endpoint(Uri address, string apiPath)
     {
@@ -366,7 +366,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 有令牌时追加 <c>accessToken</c> 查询参数。
+    /// 有令牌时追加 <c>accessToken</c> 查询参数
     /// </summary>
     private UriBuilder WithToken(UriBuilder builder)
     {
@@ -381,10 +381,10 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 服务端没有给出 MD5 时自己算的内容 MD5（小写十六进制）。
+    /// 服务端没有给出 MD5 时自己算的内容 MD5（小写十六进制）
     /// </summary>
     /// <remarks>
-    /// 监听接口拿客户端报来的值与服务端存的内容 MD5（按 UTF-8 编码计算）逐字比较，换成别的摘要永远对不上，每个窗口都报告变化。
+    /// 监听接口拿客户端报来的值与服务端存的内容 MD5（按 UTF-8 编码计算）逐字比较，换成别的摘要永远对不上，每个窗口都报告变化
     /// </remarks>
     [SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms", Justification = "Nacos 监听协议以配置内容的 MD5 标识版本，只用于与服务端比对是否变化，不用于任何安全目的。")]
     private static string Fingerprint(string content) => Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(content)));

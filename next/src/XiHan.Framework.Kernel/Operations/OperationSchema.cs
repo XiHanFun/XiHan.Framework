@@ -7,22 +7,22 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 操作的请求与响应 JSON Schema（draft 2020-12，UTF-16 文本）。
+/// 操作的请求与响应 JSON Schema（draft 2020-12，UTF-16 文本）
 /// </summary>
 /// <remarks>
-/// 由源生成器从类型产出。协议适配器据此发布 OpenAPI 与 MCP tool 描述。
+/// 由源生成器从类型产出。协议适配器据此发布 OpenAPI 与 MCP tool 描述
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record OperationSchema
 {
     /// <summary>
-    /// 创建 Schema。
+    /// 创建 Schema
     /// </summary>
     /// <remarks>
-    /// 两段都必须是 JSON 对象。
+    /// 两段都必须是 JSON 对象
     /// </remarks>
-    /// <param name="request">请求类型的 Schema。</param>
-    /// <param name="response">响应类型的 Schema。</param>
+    /// <param name="request">请求类型的 Schema</param>
+    /// <param name="response">响应类型的 Schema</param>
     public OperationSchema(string request, string response)
     {
         Request = Validate(request, nameof(request));
@@ -30,17 +30,17 @@ public sealed record OperationSchema
     }
 
     /// <summary>
-    /// 请求类型的 Schema。
+    /// 请求类型的 Schema
     /// </summary>
     public string Request { get; }
 
     /// <summary>
-    /// 响应类型的 Schema。
+    /// 响应类型的 Schema
     /// </summary>
     public string Response { get; }
 
     /// <summary>
-    /// 校验文本是 JSON 对象。
+    /// 校验文本是 JSON 对象
     /// </summary>
     private static string Validate(string schema, string paramName)
     {

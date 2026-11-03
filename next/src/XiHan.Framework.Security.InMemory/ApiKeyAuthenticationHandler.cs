@@ -9,40 +9,40 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Security.InMemory;
 
 /// <summary>
-/// <c>ApiKey</c> 方案的认证处理器。
+/// <c>ApiKey</c> 方案的认证处理器
 /// </summary>
 /// <remarks>
-/// 把配置里的主体记录变成 <see cref="Principal"/>（角色声明、租户声明与附加声明）；角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>，租户声明类型取 <see cref="InMemorySecurityOptions.TenantClaim"/>。
+/// 把配置里的主体记录变成 <see cref="Principal"/>（角色声明、租户声明与附加声明）；角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>，租户声明类型取 <see cref="InMemorySecurityOptions.TenantClaim"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, SecurityOptions options, InMemorySecurityOptions inMemoryOptions) : IAuthenticationHandler
 {
     /// <summary>
-    /// 方案名 <c>ApiKey</c>。
+    /// 方案名 <c>ApiKey</c>
     /// </summary>
     public const string SchemeName = "ApiKey";
 
     /// <summary>
-    /// 主体存储。
+    /// 主体存储
     /// </summary>
     /// <remarks>
-    /// 按 API Key 查找记录。
+    /// 按 API Key 查找记录
     /// </remarks>
     private readonly InMemoryPrincipalStore _store = store ?? throw new ArgumentNullException(nameof(store));
 
     /// <summary>
-    /// 安全选项。
+    /// 安全选项
     /// </summary>
     /// <remarks>
-    /// 提供角色声明类型。
+    /// 提供角色声明类型
     /// </remarks>
     private readonly SecurityOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <summary>
-    /// 租户声明类型。
+    /// 租户声明类型
     /// </summary>
     /// <remarks>
-    /// 与多租户选项的 <c>TenantClaim</c> 读同一个配置键。
+    /// 与多租户选项的 <c>TenantClaim</c> 读同一个配置键
     /// </remarks>
     private readonly string _tenantClaim = (inMemoryOptions ?? throw new ArgumentNullException(nameof(inMemoryOptions))).TenantClaim;
 

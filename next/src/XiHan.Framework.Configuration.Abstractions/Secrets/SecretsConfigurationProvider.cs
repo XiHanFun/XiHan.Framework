@@ -7,50 +7,50 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 
 /// <summary>
-/// 密钥配置的 Provider。
+/// 密钥配置的 Provider
 /// </summary>
 /// <remarks>
-/// 构建时一次批量读取映射的密钥，可按周期重读；重读失败的项保留旧值。整体失败（超时、密钥库抛出、条数与请求不一致）在首次读取与重读时一样回调 <see cref="SecretsConfigurationOptions.OnError"/>，首次失败再按 <see cref="SecretsConfigurationOptions.Optional"/> 抛出或为空，不论成败都开始重读。
+/// 构建时一次批量读取映射的密钥，可按周期重读；重读失败的项保留旧值。整体失败（超时、密钥库抛出、条数与请求不一致）在首次读取与重读时一样回调 <see cref="SecretsConfigurationOptions.OnError"/>，首次失败再按 <see cref="SecretsConfigurationOptions.Optional"/> 抛出或为空，不论成败都开始重读
 /// </remarks>
 internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvider
 {
     /// <summary>
-    /// 密钥库。
+    /// 密钥库
     /// </summary>
     private readonly ISecretStore _store;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly SecretsConfigurationOptions _options;
 
     /// <summary>
-    /// 映射的配置键，顺序固定，与批量请求的名字一一对应。
+    /// 映射的配置键，顺序固定，与批量请求的名字一一对应
     /// </summary>
     private readonly string[] _keys;
 
     /// <summary>
-    /// 映射的密钥名，与 <see cref="_keys"/> 同序。
+    /// 映射的密钥名，与 <see cref="_keys"/> 同序
     /// </summary>
     private readonly SecretName[] _names;
 
     /// <summary>
-    /// 停止重读的信号。
+    /// 停止重读的信号
     /// </summary>
     private readonly CancellationTokenSource _stopping = new();
 
     /// <summary>
-    /// 重读定时器。
+    /// 重读定时器
     /// </summary>
     private PeriodicTimer? _timer;
 
     /// <summary>
-    /// 重读循环。
+    /// 重读循环
     /// </summary>
     private Task? _loop;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public SecretsConfigurationProvider(ISecretStore store, SecretsConfigurationOptions options)
     {
@@ -120,10 +120,10 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
     }
 
     /// <summary>
-    /// 把逐项结果写进键值表。
+    /// 把逐项结果写进键值表
     /// </summary>
     /// <remarks>
-    /// 调用方已核对条数。首次时失败项按 <see cref="SecretsConfigurationOptions.Optional"/> 决定跳过或抛出；重读时失败项保留旧值。
+    /// 调用方已核对条数。首次时失败项按 <see cref="SecretsConfigurationOptions.Optional"/> 决定跳过或抛出；重读时失败项保留旧值
     /// </remarks>
     private void Apply(IReadOnlyList<SecretLookup> lookups, bool initial)
     {
@@ -156,22 +156,22 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
     }
 
     /// <summary>
-    /// 条数与请求不一致时的原因。
+    /// 条数与请求不一致时的原因
     /// </summary>
     private string Miscounted(int count)
         => string.Create(CultureInfo.InvariantCulture, $"the secret store returned {count} results for {_names.Length} names");
 
     /// <summary>
-    /// 密钥库整体不可达的失败，原因写进参数。
+    /// 密钥库整体不可达的失败，原因写进参数
     /// </summary>
     private static Error Unavailable(string reason)
         => Error.Unavailable(ConfigurationErrors.SecretsUnavailable, ConfigurationMessages.SecretsUnavailable, MessageArguments.Of(("reason", reason)));
 
     /// <summary>
-    /// 回调 <see cref="SecretsConfigurationOptions.OnError"/>。
+    /// 回调 <see cref="SecretsConfigurationOptions.OnError"/>
     /// </summary>
     /// <remarks>
-    /// 回调是唯一的报告渠道，它自己抛出的异常没有更上一层可报告，丢弃：不改变首次读取的结果，也不终止重读。
+    /// 回调是唯一的报告渠道，它自己抛出的异常没有更上一层可报告，丢弃：不改变首次读取的结果，也不终止重读
     /// </remarks>
     private void Report(Error error)
     {
@@ -186,10 +186,10 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
     }
 
     /// <summary>
-    /// 周期性重读。
+    /// 周期性重读
     /// </summary>
     /// <remarks>
-    /// 失败只回调，不丢弃已有数据：逐项失败的项保留旧值，整体失败（密钥库抛出、条数不符）保留全部旧值。停止之后的任何异常都不再报告。
+    /// 失败只回调，不丢弃已有数据：逐项失败的项保留旧值，整体失败（密钥库抛出、条数不符）保留全部旧值。停止之后的任何异常都不再报告
     /// </remarks>
     private async Task RefreshAsync(PeriodicTimer timer, CancellationToken cancellationToken)
     {

@@ -11,36 +11,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.VectorData;
 
 /// <summary>
-/// <see cref="IKnowledgeStore"/> 到 <see cref="VectorStore"/> 的映射。
+/// <see cref="IKnowledgeStore"/> 到 <see cref="VectorStore"/> 的映射
 /// </summary>
 /// <remarks>
-/// 每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成；删除与裁剪按过滤条件分页取键再按键删。
+/// 每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成；删除与裁剪按过滤条件分页取键再按键删
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class VectorDataKnowledgeStore : IKnowledgeStore
 {
     /// <summary>
-    /// 按过滤条件取键删除时的分页大小。
+    /// 按过滤条件取键删除时的分页大小
     /// </summary>
     private const int DeletePageSize = 500;
 
     /// <summary>
-    /// 元数据过滤时多取的倍数。
+    /// 元数据过滤时多取的倍数
     /// </summary>
     private const int MetadataOverfetch = 4;
 
     /// <summary>
-    /// 向量存储。
+    /// 向量存储
     /// </summary>
     private readonly VectorStore _store;
 
     /// <summary>
-    /// 集合定义。
+    /// 集合定义
     /// </summary>
     private readonly VectorStoreCollectionDefinition _definition;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public VectorDataKnowledgeStore(VectorStore store, AIOptions options)
     {
@@ -166,15 +166,15 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     }
 
     /// <summary>
-    /// 取集合。
+    /// 取集合
     /// </summary>
     private VectorStoreCollection<string, KnowledgeVectorRecord> Collection(string name) => _store.GetCollection<string, KnowledgeVectorRecord>(name, _definition);
 
     /// <summary>
-    /// 删除满足过滤条件的全部记录。
+    /// 删除满足过滤条件的全部记录
     /// </summary>
     /// <remarks>
-    /// 连接器不一定支持按过滤删除：先分页取键再按键删，直到取不满一页。删掉的记录不再出现在下一页里，所以不需要跳过。
+    /// 连接器不一定支持按过滤删除：先分页取键再按键删，直到取不满一页。删掉的记录不再出现在下一页里，所以不需要跳过
     /// </remarks>
     private static async ValueTask DeleteMatchingAsync(VectorStoreCollection<string, KnowledgeVectorRecord> target, Expression<Func<KnowledgeVectorRecord, bool>> filter, CancellationToken cancellationToken)
     {
@@ -201,7 +201,7 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     }
 
     /// <summary>
-    /// <c>r.DocumentId == id &amp;&amp; r.ChunkIndex &gt;= count</c>（常量比较，连接器都能翻译）。
+    /// <c>r.DocumentId == id &amp;&amp; r.ChunkIndex &gt;= count</c>（常量比较，连接器都能翻译）
     /// </summary>
     private static Expression<Func<KnowledgeVectorRecord, bool>> TrimFilter(string documentId, int chunkCount)
     {
@@ -212,7 +212,7 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     }
 
     /// <summary>
-    /// <c>r.DocumentId == id1 || r.DocumentId == id2 …</c>（常量比较，连接器都能翻译）。
+    /// <c>r.DocumentId == id1 || r.DocumentId == id2 …</c>（常量比较，连接器都能翻译）
     /// </summary>
     private static Expression<Func<KnowledgeVectorRecord, bool>> DocumentFilter(IReadOnlyList<string> documentIds)
     {
@@ -229,7 +229,7 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     }
 
     /// <summary>
-    /// 知识记录 → 向量记录。
+    /// 知识记录 → 向量记录
     /// </summary>
     private static KnowledgeVectorRecord ToVector(KnowledgeRecord record) => new()
     {
@@ -242,7 +242,7 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     };
 
     /// <summary>
-    /// 向量记录 → 命中。
+    /// 向量记录 → 命中
     /// </summary>
     private static RetrievedChunk ToChunk(KnowledgeVectorRecord record, double score) => new()
     {
@@ -257,7 +257,7 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     };
 
     /// <summary>
-    /// 存储不可达。
+    /// 存储不可达
     /// </summary>
     private static Error Unavailable(Exception exception)
         => Error.Unavailable(AIErrors.KnowledgeUnavailable, AIMessages.KnowledgeUnavailable, MessageArguments.Of(("reason", exception.Message)));

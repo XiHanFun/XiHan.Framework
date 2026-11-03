@@ -8,19 +8,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件实体。
+/// 套件实体
 /// </summary>
 /// <remarks>
-/// 实现全部持久化协议的聚合根。Provider 的测试需要把它映射到存储。
+/// 实现全部持久化协议的聚合根。Provider 的测试需要把它映射到存储
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ConformanceOrder : IAggregateRoot<Guid>, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp, ISoftDeletable
 {
     /// <summary>
-    /// 以组合方式持有的领域事件缓冲。
+    /// 以组合方式持有的领域事件缓冲
     /// </summary>
     /// <remarks>
-    /// 不映射到存储。
+    /// 不映射到存储
     /// </remarks>
     private readonly DomainEventBuffer _events = new();
 
@@ -28,12 +28,12 @@ public sealed class ConformanceOrder : IAggregateRoot<Guid>, IHasCreationTime, I
     public Guid Id { get; init; }
 
     /// <summary>
-    /// 名称。
+    /// 名称
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// 金额（整数，避免 Provider 对 decimal 的排序差异）。
+    /// 金额（整数，避免 Provider 对 decimal 的排序差异）
     /// </summary>
     public int Amount { get; set; }
 
@@ -56,7 +56,7 @@ public sealed class ConformanceOrder : IAggregateRoot<Guid>, IHasCreationTime, I
     public IReadOnlyList<IDomainEvent> DomainEvents => _events.Items;
 
     /// <summary>
-    /// 记录事件。
+    /// 记录事件
     /// </summary>
     public void Raise(IDomainEvent domainEvent) => _events.Add(domainEvent);
 

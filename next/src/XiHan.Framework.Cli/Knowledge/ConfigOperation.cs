@@ -7,12 +7,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Knowledge;
 
 /// <summary>
-/// 操作 <c>cli.config</c>：查配置节的键、类型、缺省值与取值范围。
+/// 操作 <c>cli.config</c>：查配置节的键、类型、缺省值与取值范围
 /// </summary>
 /// <remarks>
-/// 发布为 MCP tool <c>xihan_framework_config</c>，见 <see cref="KnowledgeQueries.Config"/>。
+/// 发布为 MCP tool <c>xihan_framework_config</c>，见 <see cref="KnowledgeQueries.Config"/>
 /// </remarks>
-/// <param name="knowledge">离线知识库。</param>
+/// <param name="knowledge">离线知识库</param>
 internal sealed class ConfigOperation(FrameworkKnowledge knowledge) : IOperation<ConfigRequest, ConfigResponse>
 {
     /// <inheritdoc />

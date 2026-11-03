@@ -12,12 +12,12 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Plugins.Protocol.Mapping;
 
 /// <summary>
-/// 消息信封与协议 <c>Envelope</c> 之间的映射（RFC-0009）。
+/// 消息信封与协议 <c>Envelope</c> 之间的映射（RFC-0009）
 /// </summary>
 internal static class PluginEnvelopeMapper
 {
     /// <summary>
-    /// 投递 → 协议信封。
+    /// 投递 → 协议信封
     /// </summary>
     public static Envelope ToProto(string topic, MessageEnvelope envelope)
     {
@@ -42,10 +42,10 @@ internal static class PluginEnvelopeMapper
     }
 
     /// <summary>
-    /// 协议信封 → 消息信封。
+    /// 协议信封 → 消息信封
     /// </summary>
     /// <remarks>
-    /// 属性不合法返回 <c>MESSAGING_VALIDATION_002</c>。
+    /// 属性不合法返回 <c>MESSAGING_VALIDATION_002</c>
     /// </remarks>
     public static Result<MessageEnvelope> FromProto(Envelope proto)
     {

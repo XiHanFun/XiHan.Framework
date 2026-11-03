@@ -12,26 +12,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// SqlSugar 的库结构读取。
+/// SqlSugar 的库结构读取
 /// </summary>
 /// <remarks>
-/// 读表 <c>DbMaintenance.GetTableInfoList</c>、读列 <c>GetColumnInfosByTableName</c>（同步 API，在调用线程上执行，读列之前检查取消）。缺省连接另开一个不在事务里的连接（<c>CopyNew</c>）；运行时数据源经注册表按当前定义登记后另建客户端读。分表按已登记实体的模板折叠。驱动与 SqlSugar 的异常翻译为 <see cref="PersistenceErrors.DataSourceUnavailable"/>，原因脱敏；其余异常原样抛出。
+/// 读表 <c>DbMaintenance.GetTableInfoList</c>、读列 <c>GetColumnInfosByTableName</c>（同步 API，在调用线程上执行，读列之前检查取消）。缺省连接另开一个不在事务里的连接（<c>CopyNew</c>）；运行时数据源经注册表按当前定义登记后另建客户端读。分表按已登记实体的模板折叠。驱动与 SqlSugar 的异常翻译为 <see cref="PersistenceErrors.DataSourceUnavailable"/>，原因脱敏；其余异常原样抛出
 /// </remarks>
-/// <param name="services">根容器：在独立作用域里取应用的客户端。</param>
-/// <param name="dataSources">运行时数据源注册表。</param>
-/// <param name="catalog">实体目录：分表模板。</param>
+/// <param name="services">根容器：在独立作用域里取应用的客户端</param>
+/// <param name="dataSources">运行时数据源注册表</param>
+/// <param name="catalog">实体目录：分表模板</param>
 internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSourceRegistry dataSources, SqlSugarEntityCatalog catalog) : ISchemaReader
 {
     /// <summary>
-    /// 有精度与小数位的类型名（定点数族）。
+    /// 有精度与小数位的类型名（定点数族）
     /// </summary>
     private static readonly HashSet<string> _precisionTypes = new(StringComparer.OrdinalIgnoreCase) { "decimal", "dec", "numeric", "number", "money", "smallmoney" };
 
     /// <summary>
-    /// 有声明长度的类型名（字符与二进制）。
+    /// 有声明长度的类型名（字符与二进制）
     /// </summary>
     /// <remarks>
-    /// 只有它们的长度是长度：别的类型数据库报告的是显示宽度（MySQL <c>tinyint(1)</c>）、小数秒位数（<c>datetime(6)</c>）、存储字节数或二进制精度（SQL Server <c>int</c> 的 10、<c>float</c> 的 53），当成长度会误导代码生成。
+    /// 只有它们的长度是长度：别的类型数据库报告的是显示宽度（MySQL <c>tinyint(1)</c>）、小数秒位数（<c>datetime(6)</c>）、存储字节数或二进制精度（SQL Server <c>int</c> 的 10、<c>float</c> 的 53），当成长度会误导代码生成
     /// </remarks>
     private static readonly HashSet<string> _lengthTypes = new(StringComparer.OrdinalIgnoreCase) { "char", "nchar", "varchar", "nvarchar", "varchar2", "nvarchar2", "character", "character varying", "bpchar", "binary", "varbinary", "raw" };
 
@@ -112,10 +112,10 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     }
 
     /// <summary>
-    /// 取客户端并读取。
+    /// 取客户端并读取
     /// </summary>
     /// <remarks>
-    /// 缺省连接：在独立作用域里取应用的客户端再 <c>CopyNew</c>——应用注册的 <c>SqlSugarScope</c> 在本调用链上可能开着事务，PostgreSQL 系语句失败会中止那个事务，读结构不能在里面做。运行时数据源：先按当前定义登记（定义不合法、登记已满、不支持按注册表的错误返回），再另建客户端，不碰共享客户端。
+    /// 缺省连接：在独立作用域里取应用的客户端再 <c>CopyNew</c>——应用注册的 <c>SqlSugarScope</c> 在本调用链上可能开着事务，PostgreSQL 系语句失败会中止那个事务，读结构不能在里面做。运行时数据源：先按当前定义登记（定义不合法、登记已满、不支持按注册表的错误返回），再另建客户端，不碰共享客户端
     /// </remarks>
     private async Task<Result<T>> ReadAsync<T>(DataSourceDefinition? dataSource, Func<SqlSugarClient, CancellationToken, T> read, CancellationToken cancellationToken)
     {
@@ -139,10 +139,10 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     }
 
     /// <summary>
-    /// 执行读取，把驱动与 SqlSugar 的异常翻译为读取失败。
+    /// 执行读取，把驱动与 SqlSugar 的异常翻译为读取失败
     /// </summary>
     /// <remarks>
-    /// 只翻译连接与查询类的异常（驱动的 <see cref="DbException"/>、SqlSugar 包装的异常、I/O 与超时）；编程错误原样抛出，不变成「连不上」。原因脱敏后才进错误。
+    /// 只翻译连接与查询类的异常（驱动的 <see cref="DbException"/>、SqlSugar 包装的异常、I/O 与超时）；编程错误原样抛出，不变成「连不上」。原因脱敏后才进错误
     /// </remarks>
     private static Result<T> Run<T>(SqlSugarClient client, Func<SqlSugarClient, CancellationToken, T> read, string name, string connectionString, CancellationToken cancellationToken)
     {
@@ -157,7 +157,7 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     }
 
     /// <summary>
-    /// 读出全部表并把分表折叠成逻辑表，按名字排序。
+    /// 读出全部表并把分表折叠成逻辑表，按名字排序
     /// </summary>
     private static List<TableInfo> Fold(SqlSugarClient client, IReadOnlyList<SplitTableTemplate> templates)
     {
@@ -196,10 +196,10 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     }
 
     /// <summary>
-    /// 按名字找表：先精确匹配，再按不区分大小写的唯一匹配。
+    /// 按名字找表：先精确匹配，再按不区分大小写的唯一匹配
     /// </summary>
     /// <remarks>
-    /// 只差大小写的两张表（PostgreSQL 加引号的名字）不区分大小写时有歧义，只认精确的名字。
+    /// 只差大小写的两张表（PostgreSQL 加引号的名字）不区分大小写时有歧义，只认精确的名字
     /// </remarks>
     private static TableInfo? Resolve(List<TableInfo> tables, string name)
     {
@@ -213,10 +213,10 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     }
 
     /// <summary>
-    /// 读一张物理表的列。
+    /// 读一张物理表的列
     /// </summary>
     /// <remarks>
-    /// Oracle 查数据字典（<see cref="OracleColumns"/>），别的数据库用 SqlSugar 的读列。
+    /// Oracle 查数据字典（<see cref="OracleColumns"/>），别的数据库用 SqlSugar 的读列
     /// </remarks>
     private static List<DbColumnInfo> ReadColumns(SqlSugarClient client, string table)
         => client.CurrentConnectionConfig.DbType == DbType.Oracle
@@ -224,10 +224,10 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
             : client.DbMaintenance.GetColumnInfosByTableName(table, false);
 
     /// <summary>
-    /// 把 SqlSugar 的列信息换成中立的列。
+    /// 把 SqlSugar 的列信息换成中立的列
     /// </summary>
     /// <remarks>
-    /// 定点数族的长度是精度、小数位取 <c>DecimalDigits</c>；字符与二进制类型的长度是声明的长度（0 与负数——<c>nvarchar(max)</c>——为 null）；其余类型没有长度。SQLite 对 <c>INTEGER PRIMARY KEY</c> 报告可空，主键列一律报告为不可空。
+    /// 定点数族的长度是精度、小数位取 <c>DecimalDigits</c>；字符与二进制类型的长度是声明的长度（0 与负数——<c>nvarchar(max)</c>——为 null）；其余类型没有长度。SQLite 对 <c>INTEGER PRIMARY KEY</c> 报告可空，主键列一律报告为不可空
     /// </remarks>
     private static ColumnInfo Map(DbColumnInfo column, int ordinal)
     {
@@ -252,7 +252,7 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     }
 
     /// <summary>
-    /// 空白为 <see langword="null"/>。
+    /// 空白为 <see langword="null"/>
     /// </summary>
     private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 }

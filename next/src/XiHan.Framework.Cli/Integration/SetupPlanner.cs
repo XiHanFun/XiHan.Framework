@@ -11,33 +11,33 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Integration;
 
 /// <summary>
-/// 把 MCP 服务配置与使用技能写进项目。
+/// 把 MCP 服务配置与使用技能写进项目
 /// </summary>
 /// <remarks>
-/// <see cref="Plan"/> 只算动作、不碰磁盘；<see cref="Apply"/> 写入，JSON 配置只改本服务一项，其余内容原样保留；<see cref="Check"/> 核对是否已经生效。
+/// <see cref="Plan"/> 只算动作、不碰磁盘；<see cref="Apply"/> 写入，JSON 配置只改本服务一项，其余内容原样保留；<see cref="Check"/> 核对是否已经生效
 /// </remarks>
 internal static class SetupPlanner
 {
     /// <summary>
-    /// 支持的编码助手。
+    /// 支持的编码助手
     /// </summary>
     public static readonly IReadOnlyList<string> Clients = ["claude", "cursor", "vscode", "codex"];
 
     /// <summary>
-    /// 支持的模式：只写 MCP、只写技能、两者都写。
+    /// 支持的模式：只写 MCP、只写技能、两者都写
     /// </summary>
     public static readonly IReadOnlyList<string> Modes = ["mcp", "skill", "both"];
 
     /// <summary>
-    /// 写 JSON 配置的选项：缩进、LF 换行、不转义中文与引号外的字符。
+    /// 写 JSON 配置的选项：缩进、LF 换行、不转义中文与引号外的字符
     /// </summary>
     private static readonly JsonWriterOptions _writerOptions = new() { Indented = true, NewLine = "\n", Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// <summary>
-    /// 启动服务端的命令。
+    /// 启动服务端的命令
     /// </summary>
     /// <remarks>
-    /// 经 <c>dnx</c> 按版本运行本工具的 <c>mcp</c> 命令；Windows 上的 Claude Code 不经 shell 启动子进程，要经 <c>cmd /c</c> 才找得到 <c>dnx</c>。
+    /// 经 <c>dnx</c> 按版本运行本工具的 <c>mcp</c> 命令；Windows 上的 Claude Code 不经 shell 启动子进程，要经 <c>cmd /c</c> 才找得到 <c>dnx</c>
     /// </remarks>
     public static (string Command, IReadOnlyList<string> Arguments) ServerCommand(string client, string version, bool windows)
     {
@@ -48,14 +48,14 @@ internal static class SetupPlanner
     }
 
     /// <summary>
-    /// 按编码助手与模式算出要做的事。
+    /// 按编码助手与模式算出要做的事
     /// </summary>
-    /// <param name="client">编码助手，见 <see cref="Clients"/>。</param>
-    /// <param name="mode">模式，见 <see cref="Modes"/>。</param>
-    /// <param name="root">项目根目录。</param>
-    /// <param name="version">服务端钉住的工具版本。</param>
-    /// <param name="windows">是否在 Windows 上。</param>
-    /// <param name="skill">使用技能的原文。</param>
+    /// <param name="client">编码助手，见 <see cref="Clients"/></param>
+    /// <param name="mode">模式，见 <see cref="Modes"/></param>
+    /// <param name="root">项目根目录</param>
+    /// <param name="version">服务端钉住的工具版本</param>
+    /// <param name="windows">是否在 Windows 上</param>
+    /// <param name="skill">使用技能的原文</param>
     public static IReadOnlyList<SetupAction> Plan(string client, string mode, string root, string version, bool windows, string skill)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -90,10 +90,10 @@ internal static class SetupPlanner
     }
 
     /// <summary>
-    /// 动作对应的片段。
+    /// 动作对应的片段
     /// </summary>
     /// <remarks>
-    /// JSON 动作是 <c>{ 服务表: { 服务名: 配置 } }</c>，其余是要写入或打印的文本。
+    /// JSON 动作是 <c>{ 服务表: { 服务名: 配置 } }</c>，其余是要写入或打印的文本
     /// </remarks>
     public static string Snippet(SetupAction action)
     {
@@ -104,10 +104,10 @@ internal static class SetupPlanner
     }
 
     /// <summary>
-    /// 读一份 JSON 配置。
+    /// 读一份 JSON 配置
     /// </summary>
     /// <remarks>
-    /// 文件不存在或为空时是空对象；不是合法 JSON 对象（含注释的 JSONC 也算）时返回 <see cref="CliErrors.SetupConfigInvalid"/>，文件不动，由用户按 <c>--dry-run</c> 打印的片段手工合并。
+    /// 文件不存在或为空时是空对象；不是合法 JSON 对象（含注释的 JSONC 也算）时返回 <see cref="CliErrors.SetupConfigInvalid"/>，文件不动，由用户按 <c>--dry-run</c> 打印的片段手工合并
     /// </remarks>
     public static Result<JsonObject> ReadConfig(string path)
     {
@@ -136,10 +136,10 @@ internal static class SetupPlanner
     }
 
     /// <summary>
-    /// 执行一条动作。
+    /// 执行一条动作
     /// </summary>
     /// <remarks>
-    /// JSON 配置只替换服务表里本服务的一项，别的服务与别的顶层键原样保留；只打印的动作什么都不写。
+    /// JSON 配置只替换服务表里本服务的一项，别的服务与别的顶层键原样保留；只打印的动作什么都不写
     /// </remarks>
     public static Result Apply(SetupAction action)
     {
@@ -174,9 +174,9 @@ internal static class SetupPlanner
     }
 
     /// <summary>
-    /// 核对一条动作是否已经生效。
+    /// 核对一条动作是否已经生效
     /// </summary>
-    /// <returns>未生效的说明；已生效或只打印的动作为空。</returns>
+    /// <returns>未生效的说明；已生效或只打印的动作为空</returns>
     public static string? Check(SetupAction action)
     {
         ArgumentNullException.ThrowIfNull(action);
@@ -211,7 +211,7 @@ internal static class SetupPlanner
     }
 
     /// <summary>
-    /// 一项 stdio 服务配置。
+    /// 一项 stdio 服务配置
     /// </summary>
     private static JsonObject Entry(string command, IReadOnlyList<string> arguments, bool typed)
     {
@@ -227,7 +227,7 @@ internal static class SetupPlanner
     }
 
     /// <summary>
-    /// 缩进写出一个 JSON 节点。
+    /// 缩进写出一个 JSON 节点
     /// </summary>
     private static string Serialize(JsonNode node)
     {

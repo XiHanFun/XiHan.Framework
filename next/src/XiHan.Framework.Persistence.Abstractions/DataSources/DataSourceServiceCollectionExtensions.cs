@@ -12,19 +12,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.DataSources;
 
 /// <summary>
-/// 运行时数据源的登记。
+/// 运行时数据源的登记
 /// </summary>
 /// <remarks>
-/// 持久化 Provider 在装配时调用：支持运行时数据源的登记自己的 <see cref="IDataSourceProvider"/>（<see cref="AddDataSourceProvider"/>），不支持的只登记注册表（<see cref="AddDataSourceRegistry"/>），取用时得到明确的 <see cref="PersistenceErrors.NotSupported"/>。注册表与它的健康项只登记一次。
+/// 持久化 Provider 在装配时调用：支持运行时数据源的登记自己的 <see cref="IDataSourceProvider"/>（<see cref="AddDataSourceProvider"/>），不支持的只登记注册表（<see cref="AddDataSourceRegistry"/>），取用时得到明确的 <see cref="PersistenceErrors.NotSupported"/>。注册表与它的健康项只登记一次
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class DataSourceServiceCollectionExtensions
 {
     /// <summary>
-    /// 登记一个 Provider（同一类型只登记一次），并确保注册表已登记。
+    /// 登记一个 Provider（同一类型只登记一次），并确保注册表已登记
     /// </summary>
     /// <remarks>
-    /// 选项从 <paramref name="configuration"/> 的 <c>XiHan:Persistence:DataSources</c> 读取，值不合法时在这里抛出 <see cref="ArgumentException"/>（装配即失败）；先登记的那份选项为准。
+    /// 选项从 <paramref name="configuration"/> 的 <c>XiHan:Persistence:DataSources</c> 读取，值不合法时在这里抛出 <see cref="ArgumentException"/>（装配即失败）；先登记的那份选项为准
     /// </remarks>
     public static IServiceCollection AddDataSourceProvider<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TProvider>(this IServiceCollection services, IConfiguration configuration)
         where TProvider : class, IDataSourceProvider
@@ -37,10 +37,10 @@ public static class DataSourceServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记注册表 <see cref="DataSourceRegistry"/>（单例）与它的健康项（只登记一次）。
+    /// 登记注册表 <see cref="DataSourceRegistry"/>（单例）与它的健康项（只登记一次）
     /// </summary>
     /// <remarks>
-    /// 不支持运行时数据源的 Provider 只调这个：没有 <see cref="IDataSourceProvider"/> 的注册表取用与测试连接都返回 <see cref="PersistenceErrors.NotSupported"/>。容器里没有 <see cref="DataSourceOptions"/> 时用缺省选项。
+    /// 不支持运行时数据源的 Provider 只调这个：没有 <see cref="IDataSourceProvider"/> 的注册表取用与测试连接都返回 <see cref="PersistenceErrors.NotSupported"/>。容器里没有 <see cref="DataSourceOptions"/> 时用缺省选项
     /// </remarks>
     public static IServiceCollection AddDataSourceRegistry(this IServiceCollection services)
     {

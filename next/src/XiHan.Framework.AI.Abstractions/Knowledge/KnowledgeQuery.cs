@@ -6,29 +6,29 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 一次检索：问题文本、集合、条数、过滤、嵌入 Provider 与最低得分。
+/// 一次检索：问题文本、集合、条数、过滤、嵌入 Provider 与最低得分
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KnowledgeQuery
 {
     /// <summary>
-    /// 问题文本。
+    /// 问题文本
     /// </summary>
     public required string Text { get; init; }
 
     /// <summary>
-    /// 集合。
+    /// 集合
     /// </summary>
     /// <remarks>
-    /// 空取 <see cref="KnowledgeOptions.Collection"/>。
+    /// 空取 <see cref="KnowledgeOptions.Collection"/>
     /// </remarks>
     public string? Collection { get; init; }
 
     /// <summary>
-    /// 条数。
+    /// 条数
     /// </summary>
     /// <remarks>
-    /// 空取 <see cref="KnowledgeOptions.Top"/>。
+    /// 空取 <see cref="KnowledgeOptions.Top"/>
     /// </remarks>
     public int? Top
     {
@@ -37,23 +37,23 @@ public sealed record KnowledgeQuery
     }
 
     /// <summary>
-    /// 过滤。
+    /// 过滤
     /// </summary>
     public RetrievalFilter? Filter { get; init; }
 
     /// <summary>
-    /// 嵌入 Provider。
+    /// 嵌入 Provider
     /// </summary>
     /// <remarks>
-    /// 空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>。
+    /// 空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>
     /// </remarks>
     public string? Provider { get; init; }
 
     /// <summary>
-    /// 最低得分。
+    /// 最低得分
     /// </summary>
     /// <remarks>
-    /// 低于它的命中被丢弃。
+    /// 低于它的命中被丢弃
     /// </remarks>
     public double? MinScore { get; init; }
 }

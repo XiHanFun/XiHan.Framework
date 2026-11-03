@@ -17,70 +17,70 @@ using Xunit;
 namespace XiHan.Framework.Messaging.Conformance;
 
 /// <summary>
-/// <c>messaging.queue@1</c> Provider 的一致性套件（含批量发布用例）。
+/// <c>messaging.queue@1</c> Provider 的一致性套件（含批量发布用例）
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。
+/// 继承并实现 <see cref="CreateFeature"/>，全部用例随之执行
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class MessageBrokerConformance
 {
     /// <summary>
-    /// 套件使用的主题。
+    /// 套件使用的主题
     /// </summary>
     public const string OrdersTopic = "conformance.orders";
 
     /// <summary>
-    /// 套件使用的第二个主题。
+    /// 套件使用的第二个主题
     /// </summary>
     public const string ShipmentsTopic = "conformance.shipments";
 
     /// <summary>
-    /// 套件里没人订阅的主题。
+    /// 套件里没人订阅的主题
     /// </summary>
     public const string UnsubscribedTopic = "conformance.unsubscribed";
 
     /// <summary>
-    /// 订阅方式用例的主题。
+    /// 订阅方式用例的主题
     /// </summary>
     public const string NoticesTopic = "conformance.notices";
 
     /// <summary>
-    /// 套件配置的最多投递次数。
+    /// 套件配置的最多投递次数
     /// </summary>
     public const int MaxAttempts = 2;
 
     /// <summary>
-    /// 等待投递的超时。
+    /// 等待投递的超时
     /// </summary>
     protected virtual TimeSpan DeliveryTimeout => TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 被测 Provider 能否让两个宿主连到同一个代理。
+    /// 被测 Provider 能否让两个宿主连到同一个代理
     /// </summary>
     /// <remarks>
-    /// 默认能。多实例用例（广播每个实例都收到、竞争只有一个实例收到）要两个宿主共用一个代理；内存代理每个宿主各有一个进程内代理，覆写为 <see langword="false"/>，这些用例跳过。
+    /// 默认能。多实例用例（广播每个实例都收到、竞争只有一个实例收到）要两个宿主共用一个代理；内存代理每个宿主各有一个进程内代理，覆写为 <see langword="false"/>，这些用例跳过
     /// </remarks>
     protected virtual bool SupportsMultipleInstances => true;
 
     /// <summary>
-    /// 宿主配置。
+    /// 宿主配置
     /// </summary>
     /// <remarks>
-    /// Provider 需要的连接等在此提供。
+    /// Provider 需要的连接等在此提供
     /// </remarks>
     protected virtual IEnumerable<KeyValuePair<string, string?>> Configuration => [];
 
     /// <summary>
-    /// 创建被测 Provider 的特性。
+    /// 创建被测 Provider 的特性
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次。
+    /// 每个用例调用一次
     /// </remarks>
     protected abstract IFeature CreateFeature();
 
     /// <summary>
-    /// 用例 1：信封的属性、扩展与数据完整到达处理器。
+    /// 用例 1：信封的属性、扩展与数据完整到达处理器
     /// </summary>
     [Fact]
     public async Task Publish_DeliversEnvelope_WithAttributesExtensionsAndData()
@@ -111,7 +111,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 2：非 JSON 数据按字节完整往返。
+    /// 用例 2：非 JSON 数据按字节完整往返
     /// </summary>
     [Fact]
     public async Task Publish_PreservesBinaryData()
@@ -128,10 +128,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 3：同一主题按发布顺序投递。
+    /// 用例 3：同一主题按发布顺序投递
     /// </summary>
     /// <remarks>
-    /// 一次批量发布多条同样保持入参顺序。
+    /// 一次批量发布多条同样保持入参顺序
     /// </remarks>
     [Fact]
     public async Task Publish_PreservesOrder_WithinTopic()
@@ -155,7 +155,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 4：主题互不串扰。
+    /// 用例 4：主题互不串扰
     /// </summary>
     [Fact]
     public async Task Topics_AreIsolated()
@@ -173,7 +173,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 5：处理器失败时重试到上限后停止，后续消息照常投递。
+    /// 用例 5：处理器失败时重试到上限后停止，后续消息照常投递
     /// </summary>
     [Fact]
     public async Task FailingHandler_IsRetriedUpToMaxAttempts_ThenStops()
@@ -194,7 +194,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 6：处理器抛异常同样算失败并重试。
+    /// 用例 6：处理器抛异常同样算失败并重试
     /// </summary>
     [Fact]
     public async Task ThrowingHandler_IsTreatedAsFailure_AndRetried()
@@ -210,10 +210,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 7：租户、关联与追踪扩展进入调用上下文。
+    /// 用例 7：租户、关联与追踪扩展进入调用上下文
     /// </summary>
     /// <remarks>
-    /// 主体与区域同样按对应表进入 Baggage，见用例 10。<c>traceparent</c> 的采样标志原样还原：<c>-01</c> 为已采样，<c>-00</c>（上游不采样）仍是不采样。
+    /// 主体与区域同样按对应表进入 Baggage，见用例 10。<c>traceparent</c> 的采样标志原样还原：<c>-01</c> 为已采样，<c>-00</c>（上游不采样）仍是不采样
     /// </remarks>
     [Fact]
     public async Task TenantCorrelationAndTrace_FlowIntoInvocationContext()
@@ -242,7 +242,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 8：非法主题被发布者拒绝，不到达代理。
+    /// 用例 8：非法主题被发布者拒绝，不到达代理
     /// </summary>
     [Fact]
     public async Task Publisher_RejectsInvalidTopic()
@@ -255,10 +255,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 9：批量发布逐项结果与入参一一对应并全部投递。
+    /// 用例 9：批量发布逐项结果与入参一一对应并全部投递
     /// </summary>
     /// <remarks>
-    /// 空集合返回空列表；主题不合法时每一项都被发布者拒绝，不到达代理。
+    /// 空集合返回空列表；主题不合法时每一项都被发布者拒绝，不到达代理
     /// </remarks>
     [Fact]
     public async Task PublishMany_ReportsPerItem_EmptyIsEmpty_AndInvalidTopicRejectsAll()
@@ -280,10 +280,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 10：调用内发布的追踪与 Baggage 随消息到达处理器。
+    /// 用例 10：调用内发布的追踪与 Baggage 随消息到达处理器
     /// </summary>
     /// <remarks>
-    /// 发布者从当前调用补齐扩展，处理器在同一条追踪链上，带同样的租户、主体、关联与区域；幂等键不随消息传下去；信封上显式设置的扩展优先（RFC-0009「信封」）。
+    /// 发布者从当前调用补齐扩展，处理器在同一条追踪链上，带同样的租户、主体、关联与区域；幂等键不随消息传下去；信封上显式设置的扩展优先（RFC-0009「信封」）
     /// </remarks>
     [Fact]
     public async Task PublishWithinInvocation_CarriesTraceAndBaggage_ToTheHandler()
@@ -330,10 +330,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 11：发布到没人订阅的主题成功。
+    /// 用例 11：发布到没人订阅的主题成功
     /// </summary>
     /// <remarks>
-    /// 单条与批量都成功、逐项成功，不当作发布失败（RFC-0009，ADR-0074、ADR-0079）：调度、工作流等框架事件照常发到应用不一定订阅的主题。消息是否留存由 Provider 决定（内存代理与 RabbitMQ 丢弃，Kafka 按保留期留在主题里），这里不断言；订阅的主题照常投递。
+    /// 单条与批量都成功、逐项成功，不当作发布失败（RFC-0009，ADR-0074、ADR-0079）：调度、工作流等框架事件照常发到应用不一定订阅的主题。消息是否留存由 Provider 决定（内存代理与 RabbitMQ 丢弃，Kafka 按保留期留在主题里），这里不断言；订阅的主题照常投递
     /// </remarks>
     [Fact]
     public async Task Publish_ToATopicNobodySubscribes_Succeeds()
@@ -353,10 +353,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 12：同一主题的竞争订阅与广播订阅各收到一次，各自重试。
+    /// 用例 12：同一主题的竞争订阅与广播订阅各收到一次，各自重试
     /// </summary>
     /// <remarks>
-    /// 一个实例里两种方式是两次独立的投递（RFC-0009「订阅方式」）：成功的消息每种方式各一次；失败的消息每种方式各自重试到上限（竞争进死信、广播丢弃），互不影响。
+    /// 一个实例里两种方式是两次独立的投递（RFC-0009「订阅方式」）：成功的消息每种方式各一次；失败的消息每种方式各自重试到上限（竞争进死信、广播丢弃），互不影响
     /// </remarks>
     [Fact]
     public async Task CompetingAndBroadcast_OnTheSameTopic_EachReceiveTheMessageOnce_AndRetrySeparately()
@@ -381,10 +381,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 13：两个实例的广播订阅都收到同一条消息。
+    /// 用例 13：两个实例的广播订阅都收到同一条消息
     /// </summary>
     /// <remarks>
-    /// 两个宿主连同一个代理，各自以广播方式订阅同一主题，只发布一次；每个实例各收到一份。需要 <see cref="SupportsMultipleInstances"/>。
+    /// 两个宿主连同一个代理，各自以广播方式订阅同一主题，只发布一次；每个实例各收到一份。需要 <see cref="SupportsMultipleInstances"/>
     /// </remarks>
     [Fact]
     public async Task Broadcast_ReachesEveryInstance()
@@ -407,10 +407,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 用例 14：两个实例的竞争订阅每条消息只有一个收到。
+    /// 用例 14：两个实例的竞争订阅每条消息只有一个收到
     /// </summary>
     /// <remarks>
-    /// 两个宿主连同一个代理，各自以竞争方式订阅同一主题；一批消息每条恰好被其中一个实例收到一次。需要 <see cref="SupportsMultipleInstances"/>。
+    /// 两个宿主连同一个代理，各自以竞争方式订阅同一主题；一批消息每条恰好被其中一个实例收到一次。需要 <see cref="SupportsMultipleInstances"/>
     /// </remarks>
     [Fact]
     public async Task Competing_ReachesOnlyOneInstance()
@@ -441,13 +441,13 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 装配并启动宿主：被测特性、两个主题的记录处理器、套件配置（最多投递 2 次）。
+    /// 装配并启动宿主：被测特性、两个主题的记录处理器、套件配置（最多投递 2 次）
     /// </summary>
     protected Task<TestHost> StartAsync(DeliveryLog log)
         => StartWithSubscriptionsAsync(log, [new(OrdersTopic, SubscriptionMode.Competing), new(ShipmentsTopic, SubscriptionMode.Competing)]);
 
     /// <summary>
-    /// 装配并启动宿主：被测特性、给定订阅的记录处理器、套件配置（最多投递 2 次）。
+    /// 装配并启动宿主：被测特性、给定订阅的记录处理器、套件配置（最多投递 2 次）
     /// </summary>
     protected Task<TestHost> StartWithSubscriptionsAsync(DeliveryLog log, IReadOnlyList<MessageSubscription> subscriptions)
     {
@@ -469,10 +469,10 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 等到每个宿主的广播订阅都开始收消息。
+    /// 等到每个宿主的广播订阅都开始收消息
     /// </summary>
     /// <remarks>
-    /// 广播只投给在线、已经接上代理的实例；有的代理在启动之后才异步接上（Kafka 的消费组要等分到分区）。反复向 <see cref="NoticesTopic"/> 发预热消息（ID 以 <c>warmup-</c> 开头），直到每个记录器都以广播方式收到一条，超过 <see cref="DeliveryTimeout"/> 抛出 <see cref="TimeoutException"/>。用例断言时按 ID 排除预热消息。
+    /// 广播只投给在线、已经接上代理的实例；有的代理在启动之后才异步接上（Kafka 的消费组要等分到分区）。反复向 <see cref="NoticesTopic"/> 发预热消息（ID 以 <c>warmup-</c> 开头），直到每个记录器都以广播方式收到一条，超过 <see cref="DeliveryTimeout"/> 抛出 <see cref="TimeoutException"/>。用例断言时按 ID 排除预热消息
     /// </remarks>
     protected async Task WarmUpBroadcastAsync(TestHost publisher, IReadOnlyList<DeliveryLog> logs)
     {
@@ -499,7 +499,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 在新作用域内发布。
+    /// 在新作用域内发布
     /// </summary>
     protected static async Task<Result> PublishAsync(TestHost host, string topic, MessageEnvelope envelope)
     {
@@ -509,7 +509,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 在新作用域内批量发布。
+    /// 在新作用域内批量发布
     /// </summary>
     protected static async Task<IReadOnlyList<Result>> PublishManyAsync(TestHost host, string topic, IReadOnlyList<MessageEnvelope> envelopes)
     {
@@ -519,7 +519,7 @@ public abstract class MessageBrokerConformance
     }
 
     /// <summary>
-    /// 套件信封。
+    /// 套件信封
     /// </summary>
     protected static MessageEnvelope Envelope(string id, string type) => new() { Id = id, Source = "/conformance", Type = type };
 }

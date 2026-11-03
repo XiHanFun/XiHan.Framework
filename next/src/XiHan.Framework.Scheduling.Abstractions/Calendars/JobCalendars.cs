@@ -6,29 +6,29 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 
 /// <summary>
-/// 日历登记表。
+/// 日历登记表
 /// </summary>
 /// <remarks>
-/// 名字 → 日历。以实例注册进容器，特性与应用共同填充；同名重复登记是编程错误。
+/// 名字 → 日历。以实例注册进容器，特性与应用共同填充；同名重复登记是编程错误
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JobCalendars
 {
     /// <summary>
-    /// 按名字索引的日历。
+    /// 按名字索引的日历
     /// </summary>
     private readonly Dictionary<string, IJobCalendar> _calendars = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 已登记的名字（升序）。
+    /// 已登记的名字（升序）
     /// </summary>
     public IReadOnlyCollection<string> Names => _calendars.Keys.Order(StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 按名字找日历。
+    /// 按名字找日历
     /// </summary>
     /// <remarks>
-    /// 未登记为无值。
+    /// 未登记为无值
     /// </remarks>
     public Maybe<IJobCalendar> Find(string name)
     {
@@ -37,10 +37,10 @@ public sealed class JobCalendars
     }
 
     /// <summary>
-    /// 登记。
+    /// 登记
     /// </summary>
     /// <remarks>
-    /// 名字须符合作业名文法。
+    /// 名字须符合作业名文法
     /// </remarks>
     public JobCalendars Add(string name, IJobCalendar calendar)
     {

@@ -8,24 +8,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.InMemory;
 
 /// <summary>
-/// 内存审计选项。
+/// 内存审计选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Auditing:InMemory</c> 显式读取：<c>Capacity</c>、<c>LogEvents</c>。
+/// 从配置节 <c>XiHan:Auditing:InMemory</c> 显式读取：<c>Capacity</c>、<c>LogEvents</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemoryAuditingOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Auditing:InMemory";
 
     /// <summary>
-    /// 保留的事件数上限，满了丢最旧的。
+    /// 保留的事件数上限，满了丢最旧的
     /// </summary>
     /// <remarks>
-    /// 默认 10000。
+    /// 默认 10000
     /// </remarks>
     public int Capacity
     {
@@ -34,15 +34,15 @@ public sealed record InMemoryAuditingOptions
     } = 10_000;
 
     /// <summary>
-    /// 是否把每条事件写进日志（Information 级）。
+    /// 是否把每条事件写进日志（Information 级）
     /// </summary>
     /// <remarks>
-    /// 默认 <see langword="true"/>。
+    /// 默认 <see langword="true"/>
     /// </remarks>
     public bool LogEvents { get; init; } = true;
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static InMemoryAuditingOptions FromConfiguration(IConfiguration configuration)
     {

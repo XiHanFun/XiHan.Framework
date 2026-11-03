@@ -9,24 +9,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions;
 
 /// <summary>
-/// 多租户选项。
+/// 多租户选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:MultiTenancy</c> 显式读取。
+/// 从配置节 <c>XiHan:MultiTenancy</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record MultiTenancyOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:MultiTenancy";
 
     /// <summary>
-    /// 没有解析到租户时使用的默认租户。
+    /// 没有解析到租户时使用的默认租户
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/> 表示没有默认租户。
+    /// <see langword="null"/> 表示没有默认租户
     /// </remarks>
     public string? DefaultTenant
     {
@@ -35,26 +35,26 @@ public sealed record MultiTenancyOptions
     }
 
     /// <summary>
-    /// 调用必须带租户。
+    /// 调用必须带租户
     /// </summary>
     /// <remarks>
-    /// 没有解析到且没有默认租户时返回 <see cref="MultiTenancyErrors.MissingTenant"/>。默认 <see langword="false"/>。
+    /// 没有解析到且没有默认租户时返回 <see cref="MultiTenancyErrors.MissingTenant"/>。默认 <see langword="false"/>
     /// </remarks>
     public bool RequireTenant { get; init; }
 
     /// <summary>
-    /// 解析出的租户必须在存储中存在且启用。
+    /// 解析出的租户必须在存储中存在且启用
     /// </summary>
     /// <remarks>
-    /// 默认 <see langword="true"/>；关闭后只校验格式。
+    /// 默认 <see langword="true"/>；关闭后只校验格式
     /// </remarks>
     public bool ValidateAgainstStore { get; init; } = true;
 
     /// <summary>
-    /// <see cref="Sharding.TenantStoreShardResolver"/> 的缓存容量（租户数）。
+    /// <see cref="Sharding.TenantStoreShardResolver"/> 的缓存容量（租户数）
     /// </summary>
     /// <remarks>
-    /// 默认 10000，满时整体清空。
+    /// 默认 10000，满时整体清空
     /// </remarks>
     public int ShardCacheSize
     {
@@ -63,10 +63,10 @@ public sealed record MultiTenancyOptions
     } = 10_000;
 
     /// <summary>
-    /// 承载租户 ID 的声明类型。
+    /// 承载租户 ID 的声明类型
     /// </summary>
     /// <remarks>
-    /// 默认 <c>tenant</c>。
+    /// 默认 <c>tenant</c>
     /// </remarks>
     public string TenantClaim
     {
@@ -75,10 +75,10 @@ public sealed record MultiTenancyOptions
     } = "tenant";
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>DefaultTenant</c>、<c>RequireTenant</c>、<c>ValidateAgainstStore</c>、<c>TenantClaim</c>、<c>ShardCacheSize</c>（正整数）；取值不合法抛出 <see cref="ArgumentException"/>。
+    /// <c>DefaultTenant</c>、<c>RequireTenant</c>、<c>ValidateAgainstStore</c>、<c>TenantClaim</c>、<c>ShardCacheSize</c>（正整数）；取值不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static MultiTenancyOptions FromConfiguration(IConfiguration configuration)
     {
@@ -116,10 +116,10 @@ public sealed record MultiTenancyOptions
     }
 
     /// <summary>
-    /// 读取配置节下的布尔值。
+    /// 读取配置节下的布尔值
     /// </summary>
     /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是 true/false 抛出 <see cref="ArgumentException"/>。
+    /// 未配置返回 <see langword="null"/>，不是 true/false 抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static bool? ReadBool(IConfiguration configuration, string name)
     {

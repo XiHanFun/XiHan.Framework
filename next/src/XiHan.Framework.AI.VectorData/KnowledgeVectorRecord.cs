@@ -7,46 +7,46 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.VectorData;
 
 /// <summary>
-/// 向量存储里的知识块。
+/// 向量存储里的知识块
 /// </summary>
 /// <remarks>
-/// 元数据以 JSON 字符串保存；集合定义由 <see cref="Definition"/> 按维度构造（余弦相似度）。
+/// 元数据以 JSON 字符串保存；集合定义由 <see cref="Definition"/> 按维度构造（余弦相似度）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KnowledgeVectorRecord
 {
     /// <summary>
-    /// 记录 ID（<c>&lt;documentId&gt;#&lt;chunkIndex&gt;</c>）。
+    /// 记录 ID（<c>&lt;documentId&gt;#&lt;chunkIndex&gt;</c>）
     /// </summary>
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
-    /// 文档 ID。
+    /// 文档 ID
     /// </summary>
     public string DocumentId { get; set; } = string.Empty;
 
     /// <summary>
-    /// 块序号。
+    /// 块序号
     /// </summary>
     public int ChunkIndex { get; set; }
 
     /// <summary>
-    /// 块文本。
+    /// 块文本
     /// </summary>
     public string Text { get; set; } = string.Empty;
 
     /// <summary>
-    /// 元数据（JSON 对象字符串）。
+    /// 元数据（JSON 对象字符串）
     /// </summary>
     public string? Metadata { get; set; }
 
     /// <summary>
-    /// 向量。
+    /// 向量
     /// </summary>
     public ReadOnlyMemory<float> Vector { get; set; }
 
     /// <summary>
-    /// 集合定义。
+    /// 集合定义
     /// </summary>
     public static VectorStoreCollectionDefinition Definition(int dimensions)
     {

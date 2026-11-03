@@ -11,32 +11,32 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database;
 
 /// <summary>
-/// 数据库优先的本地化器。
+/// 数据库优先的本地化器
 /// </summary>
 /// <remarks>
-/// 每个回退区域先查数据库翻译的快照，再查嵌入的目录（按注册顺序）。快照由 <see cref="MessageTranslationLoader"/> 整份替换，读取无锁。
+/// 每个回退区域先查数据库翻译的快照，再查嵌入的目录（按注册顺序）。快照由 <see cref="MessageTranslationLoader"/> 整份替换，读取无锁
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolver
 {
     /// <summary>
-    /// 已注册的目录，按注册顺序。
+    /// 已注册的目录，按注册顺序
     /// </summary>
     /// <remarks>
-    /// 同一键先注册的目录优先。
+    /// 同一键先注册的目录优先
     /// </remarks>
     private readonly IReadOnlyList<MessageCatalog> _catalogs;
 
     /// <summary>
-    /// 当前快照。
+    /// 当前快照
     /// </summary>
     /// <remarks>
-    /// 整份替换。
+    /// 整份替换
     /// </remarks>
     private volatile TranslationOverlay _overlay = TranslationOverlay.Empty;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public DatabaseMessageLocalizer(IEnumerable<MessageCatalog> catalogs, LocalizationOptions options)
     {
@@ -49,7 +49,7 @@ public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolv
     public LocalizationOptions Options { get; }
 
     /// <summary>
-    /// 当前快照里的翻译条数。
+    /// 当前快照里的翻译条数
     /// </summary>
     public int TranslationCount => _overlay.Count;
 
@@ -121,12 +121,12 @@ public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolv
     }
 
     /// <summary>
-    /// 整份替换快照。
+    /// 整份替换快照
     /// </summary>
     internal void Apply(TranslationOverlay overlay) => _overlay = overlay;
 
     /// <summary>
-    /// 沿回退链找模板：每个候选区域先看数据库快照，再看全部目录。
+    /// 沿回退链找模板：每个候选区域先看数据库快照，再看全部目录
     /// </summary>
     private bool TryFind(string key, string locale, out string template, out string resolvedLocale)
     {

@@ -7,65 +7,65 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 一个属性上折进 Schema 的 DataAnnotations。
+/// 一个属性上折进 Schema 的 DataAnnotations
 /// </summary>
 /// <remarks>
-/// 从属性本身与位置记录的同名主构造参数两处收集（位置记录的注解默认落在参数上）。
+/// 从属性本身与位置记录的同名主构造参数两处收集（位置记录的注解默认落在参数上）
 /// </remarks>
 internal sealed class PropertyConstraints
 {
     /// <summary>
-    /// DataAnnotations 的命名空间前缀。
+    /// DataAnnotations 的命名空间前缀
     /// </summary>
     private const string Namespace = "System.ComponentModel.DataAnnotations.";
 
     /// <summary>
-    /// 是否 <c>[Required]</c>：进 <c>required</c> 且不允许 null。
+    /// 是否 <c>[Required]</c>：进 <c>required</c> 且不允许 null
     /// </summary>
     public bool Required { get; private set; }
 
     /// <summary>
-    /// <c>[Required(AllowEmptyStrings = true)]</c>：字符串不再要求非空。
+    /// <c>[Required(AllowEmptyStrings = true)]</c>：字符串不再要求非空
     /// </summary>
     private bool _allowEmptyStrings;
 
     /// <summary>
-    /// 下界的 JSON 数值文本（来自 <c>[Range]</c>）。
+    /// 下界的 JSON 数值文本（来自 <c>[Range]</c>）
     /// </summary>
     private string? _minimum;
 
     /// <summary>
-    /// 上界的 JSON 数值文本（来自 <c>[Range]</c>）。
+    /// 上界的 JSON 数值文本（来自 <c>[Range]</c>）
     /// </summary>
     private string? _maximum;
 
     /// <summary>
-    /// 下界是否开区间。
+    /// 下界是否开区间
     /// </summary>
     private bool _minimumExclusive;
 
     /// <summary>
-    /// 上界是否开区间。
+    /// 上界是否开区间
     /// </summary>
     private bool _maximumExclusive;
 
     /// <summary>
-    /// 最小长度 / 元素数。
+    /// 最小长度 / 元素数
     /// </summary>
     private long? _minLength;
 
     /// <summary>
-    /// 最大长度 / 元素数。
+    /// 最大长度 / 元素数
     /// </summary>
     private long? _maxLength;
 
     /// <summary>
-    /// 正则模式（来自 <c>[RegularExpression]</c>）。
+    /// 正则模式（来自 <c>[RegularExpression]</c>）
     /// </summary>
     private string? _pattern;
 
     /// <summary>
-    /// 收集属性与同名主构造参数上的注解。
+    /// 收集属性与同名主构造参数上的注解
     /// </summary>
     public static PropertyConstraints Collect(INamedTypeSymbol type, IPropertySymbol property)
     {
@@ -92,10 +92,10 @@ internal sealed class PropertyConstraints
     }
 
     /// <summary>
-    /// 把约束关键字并进属性的 Schema 片段（一个 JSON 对象文本）。
+    /// 把约束关键字并进属性的 Schema 片段（一个 JSON 对象文本）
     /// </summary>
     /// <remarks>
-    /// 字符串用长度与模式，数组与集合用元素数。
+    /// 字符串用长度与模式，数组与集合用元素数
     /// </remarks>
     public string ApplyTo(string fragment, ITypeSymbol propertyType)
     {
@@ -145,10 +145,10 @@ internal sealed class PropertyConstraints
     }
 
     /// <summary>
-    /// 按注解类型记录约束。
+    /// 按注解类型记录约束
     /// </summary>
     /// <remarks>
-    /// 不认识的注解忽略。
+    /// 不认识的注解忽略
     /// </remarks>
     private void Apply(AttributeData attribute)
     {
@@ -198,16 +198,16 @@ internal sealed class PropertyConstraints
     }
 
     /// <summary>
-    /// 读命名参数的值。
+    /// 读命名参数的值
     /// </summary>
     private static object? Named(AttributeData attribute, string name)
         => attribute.NamedArguments.FirstOrDefault(a => string.Equals(a.Key, name, StringComparison.Ordinal)).Value.Value;
 
     /// <summary>
-    /// 把 <c>[Range]</c> 的整数或浮点参数写成 JSON 数值文本。
+    /// 把 <c>[Range]</c> 的整数或浮点参数写成 JSON 数值文本
     /// </summary>
     /// <remarks>
-    /// 其他重载（类型 + 字符串）不折。
+    /// 其他重载（类型 + 字符串）不折
     /// </remarks>
     private static string? Number(TypedConstant constant) => constant.Value switch
     {
@@ -218,7 +218,7 @@ internal sealed class PropertyConstraints
     };
 
     /// <summary>
-    /// 是否集合（实现 <c>IEnumerable&lt;T&gt;</c>）。
+    /// 是否集合（实现 <c>IEnumerable&lt;T&gt;</c>）
     /// </summary>
     private static bool IsEnumerable(INamedTypeSymbol type)
     {

@@ -13,35 +13,35 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Remote;
 
 /// <summary>
-/// 经插件操作集实现的 <see cref="ICacheStore"/>（RFC-0019）。
+/// 经插件操作集实现的 <see cref="ICacheStore"/>（RFC-0019）
 /// </summary>
 /// <remarks>
-/// 每个操作按 ID 取宿主登记表里的代理操作并直接执行，不经过管道；插件未加载、操作未登记、进程不可达或超时都映射为 <see cref="CachingErrors.StoreUnavailable"/>，不伪装成未命中。批量方法各对应一个批量操作，一次往返；响应数组与请求数组长度不符视为插件违反协议。
+/// 每个操作按 ID 取宿主登记表里的代理操作并直接执行，不经过管道；插件未加载、操作未登记、进程不可达或超时都映射为 <see cref="CachingErrors.StoreUnavailable"/>，不伪装成未命中。批量方法各对应一个批量操作，一次往返；响应数组与请求数组长度不符视为插件违反协议
 /// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed class RemoteCacheStore : ICacheStore
 {
     /// <summary>
-    /// 根容器：每次操作开一个作用域构造调用上下文。
+    /// 根容器：每次操作开一个作用域构造调用上下文
     /// </summary>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly RemoteCachingOptions _options;
 
     /// <summary>
-    /// 时钟，用于截止时间。
+    /// 时钟，用于截止时间
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 创建存储。
+    /// 创建存储
     /// </summary>
-    /// <param name="services">根容器。</param>
-    /// <param name="options">选项。</param>
-    /// <param name="clock">时钟。</param>
+    /// <param name="services">根容器</param>
+    /// <param name="options">选项</param>
+    /// <param name="clock">时钟</param>
     public RemoteCacheStore(IServiceProvider services, RemoteCachingOptions options, TimeProvider clock)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
@@ -143,7 +143,7 @@ public sealed class RemoteCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 组装写入请求：过期时间换算成毫秒，没有设置的字段不写出。
+    /// 组装写入请求：过期时间换算成毫秒，没有设置的字段不写出
     /// </summary>
     private static RemoteCacheOperations.SetRequest Write(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions options)
         => new(
@@ -153,7 +153,7 @@ public sealed class RemoteCacheStore : ICacheStore
             options.SlidingExpiration is { } sliding ? Milliseconds(sliding) : null);
 
     /// <summary>
-    /// 取键的字符串形式。
+    /// 取键的字符串形式
     /// </summary>
     private static string[] Names(IReadOnlyList<CacheKey> keys)
     {
@@ -167,7 +167,7 @@ public sealed class RemoteCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 校验批量响应的数组：缺失或长度与请求不符视为插件违反协议。
+    /// 校验批量响应的数组：缺失或长度与请求不符视为插件违反协议
     /// </summary>
     private static IReadOnlyList<T> Sized<T>(IReadOnlyList<T>? values, int expected, string operation)
         => values is not null && values.Count == expected
@@ -175,15 +175,15 @@ public sealed class RemoteCacheStore : ICacheStore
             : throw new FrameworkException(CachingErrors.StoreUnavailable, $"The remote cache operation '{operation}' returned {values?.Count.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "no"} values for {expected} keys.");
 
     /// <summary>
-    /// 过期时间换算成至少 1 的毫秒整数（向上取整，亚毫秒的过期不会被截成 0）。
+    /// 过期时间换算成至少 1 的毫秒整数（向上取整，亚毫秒的过期不会被截成 0）
     /// </summary>
     private static long Milliseconds(TimeSpan duration) => Math.Max(1, (long)Math.Ceiling(duration.TotalMilliseconds));
 
     /// <summary>
-    /// 解码 base64 的值。
+    /// 解码 base64 的值
     /// </summary>
     /// <remarks>
-    /// 不合法视为插件违反协议。
+    /// 不合法视为插件违反协议
     /// </remarks>
     private static ReadOnlyMemory<byte> Decode(string value, string operation)
     {
@@ -198,7 +198,7 @@ public sealed class RemoteCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 在新作用域里构造带截止时间的上下文，直接执行代理操作并解码响应。
+    /// 在新作用域里构造带截止时间的上下文，直接执行代理操作并解码响应
     /// </summary>
     private async ValueTask<TResponse> ExecuteAsync<TRequest, TResponse>(string operation, TRequest request, JsonTypeInfo<TRequest> requestInfo, JsonTypeInfo<TResponse> responseInfo, CancellationToken cancellationToken)
         where TResponse : class
@@ -233,10 +233,10 @@ public sealed class RemoteCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 把失败翻译成异常。
+    /// 把失败翻译成异常
     /// </summary>
     /// <remarks>
-    /// 缓存域的错误码原样（插件侧的键与选项校验），其余（插件未加载、未登记、不可达、超时）为存储不可用并带原错误码。
+    /// 缓存域的错误码原样（插件侧的键与选项校验），其余（插件未加载、未登记、不可达、超时）为存储不可用并带原错误码
     /// </remarks>
     private static FrameworkException Translate(Error error, string operation)
         => string.Equals(ErrorCode.DomainOf(error.Code), "CACHING", StringComparison.Ordinal)

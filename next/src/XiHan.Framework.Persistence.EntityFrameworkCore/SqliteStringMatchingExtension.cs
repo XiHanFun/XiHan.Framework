@@ -8,19 +8,19 @@ using Microsoft.Extensions.DependencyInjection;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// 把字符串匹配的翻译插件登记到 EF Core 内部服务容器的选项扩展。
+/// 把字符串匹配的翻译插件登记到 EF Core 内部服务容器的选项扩展
 /// </summary>
 /// <remarks>
-/// 方法翻译插件只能经选项扩展登记：EF Core 按选项扩展建内部服务容器，插件先于 Provider 内置的翻译被询问。
-/// 扩展不带配置，任何两个实例等价，共用同一个内部服务容器。应用自己用 <c>UseInternalServiceProvider</c> 提供内部服务容器时扩展的服务不会登记，这种用法不受支持。
+/// 方法翻译插件只能经选项扩展登记：EF Core 按选项扩展建内部服务容器，插件先于 Provider 内置的翻译被询问
+/// 扩展不带配置，任何两个实例等价，共用同一个内部服务容器。应用自己用 <c>UseInternalServiceProvider</c> 提供内部服务容器时扩展的服务不会登记，这种用法不受支持
 /// </remarks>
 internal sealed class SqliteStringMatchingExtension : IDbContextOptionsExtension
 {
     /// <summary>
-    /// 扩展的描述。
+    /// 扩展的描述
     /// </summary>
     /// <remarks>
-    /// EF Core 频繁读取，建一次。
+    /// EF Core 频繁读取，建一次
     /// </remarks>
     private DbContextOptionsExtensionInfo? _info;
 
@@ -37,14 +37,14 @@ internal sealed class SqliteStringMatchingExtension : IDbContextOptionsExtension
     }
 
     /// <summary>
-    /// 扩展的描述：不是数据库 Provider、没有配置。
+    /// 扩展的描述：不是数据库 Provider、没有配置
     /// </summary>
     private sealed class ExtensionInfo : DbContextOptionsExtensionInfo
     {
         /// <summary>
-        /// 创建。
+        /// 创建
         /// </summary>
-        /// <param name="extension">所描述的扩展。</param>
+        /// <param name="extension">所描述的扩展</param>
         public ExtensionInfo(IDbContextOptionsExtension extension)
             : base(extension)
         {

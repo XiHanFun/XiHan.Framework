@@ -8,18 +8,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Conformance;
 
 /// <summary>
-/// 审计套件的夹具：被测接收器与查询（通常是同一个对象）。
+/// 审计套件的夹具：被测接收器与查询（通常是同一个对象）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class AuditTrailFixture
 {
     /// <summary>
-    /// 被测接收器。
+    /// 被测接收器
     /// </summary>
     public abstract IAuditSink Sink { get; }
 
     /// <summary>
-    /// 被测查询。
+    /// 被测查询
     /// </summary>
     public abstract IAuditTrail Trail { get; }
 }

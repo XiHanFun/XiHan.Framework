@@ -12,46 +12,46 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 定义目录的默认实现。
+/// 定义目录的默认实现
 /// </summary>
 /// <remarks>
-/// 生命周期规则在这里，存储只管读写。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区——平台调用只看得到、改得动平台的定义，租户只看得到、改得动本租户的。
+/// 生命周期规则在这里，存储只管读写。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区——平台调用只看得到、改得动平台的定义，租户只看得到、改得动本租户的
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
 {
     /// <summary>
-    /// 存储。
+    /// 存储
     /// </summary>
     private readonly IWorkflowDefinitionStore _store;
 
     /// <summary>
-    /// 校验。
+    /// 校验
     /// </summary>
     private readonly WorkflowDefinitionValidator _validator;
 
     /// <summary>
-    /// 书签存储（定时启动书签）。
+    /// 书签存储（定时启动书签）
     /// </summary>
     private readonly IWorkflowBookmarkStore _bookmarks;
 
     /// <summary>
-    /// 活动登记表。
+    /// 活动登记表
     /// </summary>
     private readonly ActivityRegistry _registry;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 执行范围：事务的加入或自开、调用方租户。
+    /// 执行范围：事务的加入或自开、调用方租户
     /// </summary>
     private readonly WorkflowScope _scope;
 
     /// <summary>
-    /// 创建（作用域服务）。
+    /// 创建（作用域服务）
     /// </summary>
     public WorkflowDefinitionCatalog(IWorkflowDefinitionStore store, IWorkflowBookmarkStore bookmarks, ActivityRegistry registry, WorkflowDefinitionValidator validator, TimeProvider clock, IServiceProvider services)
     {
@@ -65,7 +65,7 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <summary>
-    /// 调用方的分区：调用的租户，空为平台。
+    /// 调用方的分区：调用的租户，空为平台
     /// </summary>
     private string? Tenant => _scope.TenantId;
 
@@ -343,10 +343,10 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <summary>
-    /// 删掉停用或归档成功的定义的定时启动书签。
+    /// 删掉停用或归档成功的定义的定时启动书签
     /// </summary>
     /// <remarks>
-    /// 删除失败时成功的项都改报那个错误：调用方据此回滚，定义不会停了用却还在按时启动。
+    /// 删除失败时成功的项都改报那个错误：调用方据此回滚，定义不会停了用却还在按时启动
     /// </remarks>
     private async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> RemoveTimersAsync(IReadOnlyList<Result<WorkflowDefinition>> results, CancellationToken cancellationToken)
     {
@@ -361,7 +361,7 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <summary>
-    /// 批量状态迁移：逐项读当前状态，<paramref name="transition"/> 给出新状态或错误，成功的一次写回。
+    /// 批量状态迁移：逐项读当前状态，<paramref name="transition"/> 给出新状态或错误，成功的一次写回
     /// </summary>
     private async ValueTask<IReadOnlyList<Result<WorkflowDefinition>>> TransitionAsync(IReadOnlyList<string> ids, Func<WorkflowDefinition, Result<WorkflowDefinition>> transition, CancellationToken cancellationToken)
     {
@@ -409,12 +409,12 @@ public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     }
 
     /// <summary>
-    /// 定义不存在（或不在调用方的分区里）。
+    /// 定义不存在（或不在调用方的分区里）
     /// </summary>
     private static Error NotFound(string id) => Error.NotFound(WorkflowErrors.DefinitionNotFound, WorkflowMessages.DefinitionNotFound, MessageArguments.Of(("name", id)));
 
     /// <summary>
-    /// 定义的状态不允许该操作。
+    /// 定义的状态不允许该操作
     /// </summary>
     private static Error StatusConflict(WorkflowDefinition definition)
         => WorkflowStatusConflicts.Of(definition);

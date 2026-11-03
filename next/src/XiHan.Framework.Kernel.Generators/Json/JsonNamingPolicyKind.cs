@@ -4,37 +4,37 @@
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 与 <c>System.Text.Json.Serialization.JsonKnownNamingPolicy</c> 同值的命名策略。
+/// 与 <c>System.Text.Json.Serialization.JsonKnownNamingPolicy</c> 同值的命名策略
 /// </summary>
 internal enum JsonNamingPolicyKind
 {
     /// <summary>
-    /// 不改名。
+    /// 不改名
     /// </summary>
     Unspecified = 0,
 
     /// <summary>
-    /// camelCase。
+    /// camelCase
     /// </summary>
     CamelCase = 1,
 
     /// <summary>
-    /// snake_case。
+    /// snake_case
     /// </summary>
     SnakeCaseLower = 2,
 
     /// <summary>
-    /// SNAKE_CASE。
+    /// SNAKE_CASE
     /// </summary>
     SnakeCaseUpper = 3,
 
     /// <summary>
-    /// kebab-case。
+    /// kebab-case
     /// </summary>
     KebabCaseLower = 4,
 
     /// <summary>
-    /// KEBAB-CASE。
+    /// KEBAB-CASE
     /// </summary>
     KebabCaseUpper = 5,
 }

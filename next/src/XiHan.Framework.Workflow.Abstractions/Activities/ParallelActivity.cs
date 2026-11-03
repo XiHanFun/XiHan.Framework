@@ -6,7 +6,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 并行网关：立即完成，全部出边流出。
+/// 并行网关：立即完成，全部出边流出
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ParallelActivity : IActivity

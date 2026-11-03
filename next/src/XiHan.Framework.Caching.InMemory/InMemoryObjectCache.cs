@@ -8,24 +8,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 进程内的类型化缓存。
+/// 进程内的类型化缓存
 /// </summary>
 /// <remarks>
-/// 直接保存对象引用，不序列化，与 <c>IMemoryCache</c> 同样的约定——调用方不得修改取回的对象。<see cref="Store"/> 指向同一进程的字节存储，供锁与幂等使用。批量方法一次加锁逐项处理。对象条目不在字节存储里，经 <see cref="ICacheInspector"/> 列出与查看（ADR-0058）。
+/// 直接保存对象引用，不序列化，与 <c>IMemoryCache</c> 同样的约定——调用方不得修改取回的对象。<see cref="Store"/> 指向同一进程的字节存储，供锁与幂等使用。批量方法一次加锁逐项处理。对象条目不在字节存储里，经 <see cref="ICacheInspector"/> 列出与查看（ADR-0058）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryObjectCache : ISharedCache, ICacheInspector
 {
     /// <summary>
-    /// 直接保存对象引用的有界 LRU 表。
+    /// 直接保存对象引用的有界 LRU 表
     /// </summary>
     /// <remarks>
-    /// 与字节存储各自独立计数。
+    /// 与字节存储各自独立计数
     /// </remarks>
     private readonly BoundedLruTable<object> _table;
 
     /// <summary>
-    /// 创建缓存。
+    /// 创建缓存
     /// </summary>
     public InMemoryObjectCache(InMemoryCacheStore store, InMemoryCachingOptions options, TimeProvider timeProvider)
     {
@@ -39,7 +39,7 @@ public sealed class InMemoryObjectCache : ISharedCache, ICacheInspector
     public ICacheStore Store { get; }
 
     /// <summary>
-    /// 当前对象条目数。
+    /// 当前对象条目数
     /// </summary>
     public int Count => _table.Count;
 
@@ -92,7 +92,7 @@ public sealed class InMemoryObjectCache : ISharedCache, ICacheInspector
 
     /// <inheritdoc />
     /// <remarks>
-    /// 按键的序数顺序分页，续页标记是上一页最后一个键。每页上限越界返回 <see cref="Abstractions.CachingErrors.ListLimitInvalid"/>。
+    /// 按键的序数顺序分页，续页标记是上一页最后一个键。每页上限越界返回 <see cref="Abstractions.CachingErrors.ListLimitInvalid"/>
     /// </remarks>
     public ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
     {
@@ -138,7 +138,7 @@ public sealed class InMemoryObjectCache : ISharedCache, ICacheInspector
     }
 
     /// <summary>
-    /// 取键的字符串形式。
+    /// 取键的字符串形式
     /// </summary>
     private static string[] Names(IReadOnlyList<CacheKey> keys)
     {

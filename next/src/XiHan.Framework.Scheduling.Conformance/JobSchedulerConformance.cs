@@ -17,69 +17,69 @@ using Xunit;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// <c>scheduling.jobs@1</c> 的一致性套件。
+/// <c>scheduling.jobs@1</c> 的一致性套件
 /// </summary>
 /// <remarks>
-/// Provider 的测试项目继承并实现 <see cref="StartAsync"/>，装配被测 Provider，并把轮询周期设得很长（如 3600 秒），让后台循环不动作。
-/// 用例由自己驱动时间：套件在回调里登记一个只由用例推进的时钟（<see cref="TimeProvider"/>），引擎、选举、作业的停留与执行时限都按它计时；用例推进时钟、经 <see cref="JobSchedulerHost.PollAsync"/> 轮询一次（等本周期起的运行连同收尾结束）再断言，不按墙钟等待，结果与机器快慢无关。
+/// Provider 的测试项目继承并实现 <see cref="StartAsync"/>，装配被测 Provider，并把轮询周期设得很长（如 3600 秒），让后台循环不动作
+/// 用例由自己驱动时间：套件在回调里登记一个只由用例推进的时钟（<see cref="TimeProvider"/>），引擎、选举、作业的停留与执行时限都按它计时；用例推进时钟、经 <see cref="JobSchedulerHost.PollAsync"/> 轮询一次（等本周期起的运行连同收尾结束）再断言，不按墙钟等待，结果与机器快慢无关
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class JobSchedulerConformance
 {
     /// <summary>
-    /// 套件时钟的起点。
+    /// 套件时钟的起点
     /// </summary>
     /// <remarks>
-    /// 整秒：存储往返不丢精度，断言可以按确切时刻比较。
+    /// 整秒：存储往返不丢精度，断言可以按确切时刻比较
     /// </remarks>
     private static readonly DateTimeOffset _start = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 间隔作业的间隔。
+    /// 间隔作业的间隔
     /// </summary>
     private static readonly TimeSpan _interval = TimeSpan.FromMilliseconds(100);
 
     /// <summary>
-    /// 本用例的时钟。
+    /// 本用例的时钟
     /// </summary>
     /// <remarks>
-    /// xUnit 为每个用例新建测试类实例，时钟随之各用各的；计时器只在推进时触发。
+    /// xUnit 为每个用例新建测试类实例，时钟随之各用各的；计时器只在推进时触发
     /// </remarks>
     private readonly FakeTimeProvider _clock = new(_start);
 
     /// <summary>
-    /// 每 100 毫秒的作业。
+    /// 每 100 毫秒的作业
     /// </summary>
     protected static JobName IntervalJob => new("conformance.interval");
 
     /// <summary>
-    /// 只手动触发的作业。
+    /// 只手动触发的作业
     /// </summary>
     protected static JobName ManualJob => new("conformance.manual");
 
     /// <summary>
-    /// 允许并发的手动作业。
+    /// 允许并发的手动作业
     /// </summary>
     protected static JobName ConcurrentJob => new("conformance.concurrent");
 
     /// <summary>
-    /// 等待作业开始运行的上限。
+    /// 等待作业开始运行的上限
     /// </summary>
     /// <remarks>
-    /// 只防止用例挂死：等待由作业的记录唤醒，不参与判定。
+    /// 只防止用例挂死：等待由作业的记录唤醒，不参与判定
     /// </remarks>
     protected virtual TimeSpan WaitTimeout => TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 启动装配了被测 Provider 的宿主。
+    /// 启动装配了被测 Provider 的宿主
     /// </summary>
     /// <remarks>
-    /// 回调 <paramref name="configure"/> 里有套件的作业与时钟，要在 Provider 装配之前应用（<c>TestHost</c> 的服务回调即是）；<paramref name="configuration"/> 里是用例要求的引擎配置（如 misfire 阈值）。
+    /// 回调 <paramref name="configure"/> 里有套件的作业与时钟，要在 Provider 装配之前应用（<c>TestHost</c> 的服务回调即是）；<paramref name="configuration"/> 里是用例要求的引擎配置（如 misfire 阈值）
     /// </remarks>
     protected abstract Task<JobSchedulerHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration = null);
 
     /// <summary>
-    /// 手动触发：运行、关联 ID、状态与历史里的结果。
+    /// 手动触发：运行、关联 ID、状态与历史里的结果
     /// </summary>
     [Fact]
     public async Task Trigger_RunsTheJob_AndReportsOutcomeAndStatus()
@@ -113,10 +113,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 批量触发逐项结果。
+    /// 批量触发逐项结果
     /// </summary>
     /// <remarks>
-    /// 未登记的作业；手动触发的数据覆盖作业数据。
+    /// 未登记的作业；手动触发的数据覆盖作业数据
     /// </remarks>
     [Fact]
     public async Task Trigger_UnknownJob_IsNotFound_AndBatchReturnsPerItem()
@@ -139,10 +139,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 间隔计划反复运行并更新触发器状态。
+    /// 间隔计划反复运行并更新触发器状态
     /// </summary>
     /// <remarks>
-    /// 固定延迟：上一次完成后再等一个间隔。
+    /// 固定延迟：上一次完成后再等一个间隔
     /// </remarks>
     [Fact]
     public async Task IntervalSchedule_RunsRepeatedly()
@@ -169,10 +169,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 不允许并发的作业运行中再触发返回冲突。
+    /// 不允许并发的作业运行中再触发返回冲突
     /// </summary>
     /// <remarks>
-    /// 允许并发的可以同时运行。作业停在注入的时钟上，推进时钟才结束。
+    /// 允许并发的可以同时运行。作业停在注入的时钟上，推进时钟才结束
     /// </remarks>
     [Fact]
     public async Task ConcurrentTrigger_ConflictsUnlessAllowed()
@@ -197,7 +197,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 抛出异常的作业是失败结果，之后仍可运行。
+    /// 抛出异常的作业是失败结果，之后仍可运行
     /// </summary>
     [Fact]
     public async Task ThrowingJob_IsAFailureResult()
@@ -212,10 +212,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 运行时登记、暂停与恢复、替换与删除。
+    /// 运行时登记、暂停与恢复、替换与删除
     /// </summary>
     /// <remarks>
-    /// 类型未登记、触发器名重复、日历未登记被拒绝。
+    /// 类型未登记、触发器名重复、日历未登记被拒绝
     /// </remarks>
     [Fact]
     public async Task Schedule_AddsRuntimeJob_PauseResume_AndUnschedule()
@@ -264,7 +264,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 一个作业多个触发器：各自的数据与次数，单个触发器的暂停与恢复。
+    /// 一个作业多个触发器：各自的数据与次数，单个触发器的暂停与恢复
     /// </summary>
     [Fact]
     public async Task MultipleTriggers_HavePriorityData_AndCanBePausedIndividually()
@@ -309,7 +309,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 恢复后按 misfire 策略补运行或跳过。
+    /// 恢复后按 misfire 策略补运行或跳过
     /// </summary>
     [Fact]
     public async Task Misfire_PoliciesApplyAfterResume()
@@ -353,7 +353,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 入队的运行由集群运行一次，不等待。
+    /// 入队的运行由集群运行一次，不等待
     /// </summary>
     [Fact]
     public async Task Enqueue_RunsOnceWithoutWaiting()
@@ -373,7 +373,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 取消运行：作业的令牌被取消，历史记为取消。
+    /// 取消运行：作业的令牌被取消，历史记为取消
     /// </summary>
     [Fact]
     public async Task CancelRun_StopsTheJob_AndRecordsCanceled()
@@ -396,7 +396,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 运行历史按作业、状态、时间范围与分页查询。
+    /// 运行历史按作业、状态、时间范围与分页查询
     /// </summary>
     [Fact]
     public async Task History_IsQueryable_WithPagingAndStates()
@@ -423,10 +423,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 运行历史的分页越界以校验错误返回。
+    /// 运行历史的分页越界以校验错误返回
     /// </summary>
     /// <remarks>
-    /// 错误码 <see cref="SchedulingErrors.RunQueryInvalid"/>，不在构造时抛出、不进存储；上下边界照常查询，计数不看分页。
+    /// 错误码 <see cref="SchedulingErrors.RunQueryInvalid"/>，不在构造时抛出、不进存储；上下边界照常查询，计数不看分页
     /// </remarks>
     [Fact]
     public async Task History_OutOfRangePaging_IsAValidationError()
@@ -449,10 +449,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 本地作业在每个实例上运行。
+    /// 本地作业在每个实例上运行
     /// </summary>
     /// <remarks>
-    /// 排除一切的日历让触发器没有下一次。
+    /// 排除一切的日历让触发器没有下一次
     /// </remarks>
     [Fact]
     public async Task LocalJob_RunsOnEveryInstance_AndCalendarExcludes()
@@ -483,10 +483,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 失败的运行按重试策略再跑，成功即止、次数用尽即止。
+    /// 失败的运行按重试策略再跑，成功即止、次数用尽即止
     /// </summary>
     /// <remarks>
-    /// 重试的触发来源、第几次尝试与首次运行 ID；手动触发拿到第一次的结果；每个实例各自运行的作业在本实例重试（ADR-0060）。重试在失败时刻加上等待时间到期。
+    /// 重试的触发来源、第几次尝试与首次运行 ID；手动触发拿到第一次的结果；每个实例各自运行的作业在本实例重试（ADR-0060）。重试在失败时刻加上等待时间到期
     /// </remarks>
     [Fact]
     public async Task Retry_FailedRuns_AreRetried_UntilSuccessOrExhausted()
@@ -530,10 +530,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 超过执行时限的运行记为超时失败并重试，被取消的运行不重试。
+    /// 超过执行时限的运行记为超时失败并重试，被取消的运行不重试
     /// </summary>
     /// <remarks>
-    /// 执行时限与作业的停留都按注入的时钟：作业停着，推进时钟越过时限即超时。
+    /// 执行时限与作业的停留都按注入的时钟：作业停着，推进时钟越过时限即超时
     /// </remarks>
     [Fact]
     public async Task Timeout_FailsAndRetries_ButCanceledRunsAreNotRetried()
@@ -572,7 +572,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 重试策略与执行时限在状态里，运行时可改，可恢复为代码定义。
+    /// 重试策略与执行时限在状态里，运行时可改，可恢复为代码定义
     /// </summary>
     [Fact]
     public async Task RetryAndTimeout_AreInTheStatus_OverriddenAndRestored()
@@ -600,7 +600,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 一个作业的全部运行，按尝试次数排序。
+    /// 一个作业的全部运行，按尝试次数排序
     /// </summary>
     protected static async Task<IReadOnlyList<JobRunRecord>> AttemptsAsync(JobSchedulerHost host, JobName name)
     {
@@ -610,7 +610,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 作业的状态（必须存在）。
+    /// 作业的状态（必须存在）
     /// </summary>
     protected static async Task<JobStatus> StatusAsync(JobSchedulerHost host, JobName name)
     {
@@ -619,12 +619,12 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 某作业已记录的运行次数。
+    /// 某作业已记录的运行次数
     /// </summary>
     private static int CountOf(RecordingJobLog log, JobName name) => log.Runs.Count(r => r.Run.Name == name);
 
     /// <summary>
-    /// 推进时钟，再轮询一次（等本周期起的运行连同收尾结束）。
+    /// 推进时钟，再轮询一次（等本周期起的运行连同收尾结束）
     /// </summary>
     private async Task AdvanceAsync(JobSchedulerHost host, TimeSpan by)
     {
@@ -633,10 +633,10 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 登记套件的时钟与三个作业。
+    /// 登记套件的时钟与三个作业
     /// </summary>
     /// <remarks>
-    /// 时钟登记在 Provider 装配之前，内核只在没有时才补系统时钟。
+    /// 时钟登记在 Provider 装配之前，内核只在没有时才补系统时钟
     /// </remarks>
     private void Register(IServiceCollection services, RecordingJobLog log)
     {
@@ -648,7 +648,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 排除一切的日历。
+    /// 排除一切的日历
     /// </summary>
     private sealed class NeverCalendar : IJobCalendar
     {
@@ -657,7 +657,7 @@ public abstract class JobSchedulerConformance
     }
 
     /// <summary>
-    /// 没有登记的作业类型。
+    /// 没有登记的作业类型
     /// </summary>
     private sealed class UnregisteredJob : IJob
     {

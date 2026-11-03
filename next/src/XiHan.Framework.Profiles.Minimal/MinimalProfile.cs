@@ -8,16 +8,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Profiles.Minimal;
 
 /// <summary>
-/// Minimal 组合：内核、宿主与本地化，不装配任何子系统。
+/// Minimal 组合：内核、宿主与本地化，不装配任何子系统
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class MinimalProfile
 {
     /// <summary>
-    /// 装配 Minimal 组合。
+    /// 装配 Minimal 组合
     /// </summary>
     /// <remarks>
-    /// 内存本地化默认实现；内核与宿主由 <c>AddXiHan()</c> 与 <c>UseXiHan()</c> 提供。
+    /// 内存本地化默认实现；内核与宿主由 <c>AddXiHan()</c> 与 <c>UseXiHan()</c> 提供
     /// </remarks>
     public static AppBuilder UseMinimalProfile(this AppBuilder builder)
     {

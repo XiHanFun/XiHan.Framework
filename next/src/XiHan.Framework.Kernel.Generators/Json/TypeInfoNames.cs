@@ -7,16 +7,16 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 序列化上下文里类型信息属性的默认名。
+/// 序列化上下文里类型信息属性的默认名
 /// </summary>
 /// <remarks>
-/// 即 System.Text.Json 源生成器为 <c>[JsonSerializable(typeof(T))]</c> 生成的 <c>Default.&lt;属性&gt;</c> 的名字。
-/// 简单类型用 CLR 名（<c>Int32</c>、<c>String</c>），泛型为类型名加各实参名（<c>ListOrderResponse</c>），数组加 <c>Array</c>，可空值类型加 <c>Nullable</c> 前缀。
+/// 即 System.Text.Json 源生成器为 <c>[JsonSerializable(typeof(T))]</c> 生成的 <c>Default.&lt;属性&gt;</c> 的名字
+/// 简单类型用 CLR 名（<c>Int32</c>、<c>String</c>），泛型为类型名加各实参名（<c>ListOrderResponse</c>），数组加 <c>Array</c>，可空值类型加 <c>Nullable</c> 前缀
 /// </remarks>
 internal static class TypeInfoNames
 {
     /// <summary>
-    /// 推导默认属性名。
+    /// 推导默认属性名
     /// </summary>
     public static string DefaultPropertyName(ITypeSymbol type)
     {
@@ -26,7 +26,7 @@ internal static class TypeInfoNames
     }
 
     /// <summary>
-    /// 递归拼接类型名。
+    /// 递归拼接类型名
     /// </summary>
     private static void Append(StringBuilder builder, ITypeSymbol type)
     {
@@ -55,7 +55,7 @@ internal static class TypeInfoNames
     }
 
     /// <summary>
-    /// 非泛型、非数组类型的名字：基元类型用 CLR 名（<c>Int32</c>、<c>String</c>），其余取类型名。
+    /// 非泛型、非数组类型的名字：基元类型用 CLR 名（<c>Int32</c>、<c>String</c>），其余取类型名
     /// </summary>
     public static string SimpleName(ITypeSymbol type) => type.SpecialType switch
     {

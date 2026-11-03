@@ -9,39 +9,39 @@ using XiHan.Framework.Scheduling.Abstractions.Leadership;
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 进程内租约式领导选举。
+/// 进程内租约式领导选举
 /// </summary>
 /// <remarks>
-/// 每个资源一条记录（持有者、存活时间、到期时刻），过期视为空闲。单实例下正确；多实例换数据库或 Kubernetes Lease 的 Provider。
+/// 每个资源一条记录（持有者、存活时间、到期时刻），过期视为空闲。单实例下正确；多实例换数据库或 Kubernetes Lease 的 Provider
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryLeaderElection : ILeaderElection
 {
     /// <summary>
-    /// 一条租约记录。
+    /// 一条租约记录
     /// </summary>
-    /// <param name="Holder">持有者。</param>
-    /// <param name="TimeToLive">每次续约延长的时间。</param>
-    /// <param name="ExpiresAt">到期时刻。</param>
+    /// <param name="Holder">持有者</param>
+    /// <param name="TimeToLive">每次续约延长的时间</param>
+    /// <param name="ExpiresAt">到期时刻</param>
     private sealed record LeaseRecord(string Holder, TimeSpan TimeToLive, DateTimeOffset ExpiresAt);
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 保护记录表的锁。
+    /// 保护记录表的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 资源 → 记录。
+    /// 资源 → 记录
     /// </summary>
     private readonly Dictionary<string, LeaseRecord> _leases = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryLeaderElection(TimeProvider clock)
     {
@@ -72,7 +72,7 @@ public sealed class InMemoryLeaderElection : ILeaderElection
     }
 
     /// <summary>
-    /// 资源当前是否由 <paramref name="holder"/> 持有且未过期。
+    /// 资源当前是否由 <paramref name="holder"/> 持有且未过期
     /// </summary>
     internal bool IsHeldBy(JobName resource, string holder)
     {
@@ -83,10 +83,10 @@ public sealed class InMemoryLeaderElection : ILeaderElection
     }
 
     /// <summary>
-    /// 持有者的到期时刻。
+    /// 持有者的到期时刻
     /// </summary>
     /// <remarks>
-    /// 不是持有者时为 <see cref="DateTimeOffset.MinValue"/>。
+    /// 不是持有者时为 <see cref="DateTimeOffset.MinValue"/>
     /// </remarks>
     internal DateTimeOffset ExpiresAt(JobName resource, string holder)
     {
@@ -97,7 +97,7 @@ public sealed class InMemoryLeaderElection : ILeaderElection
     }
 
     /// <summary>
-    /// 续约：仍是未过期的持有者才延长。
+    /// 续约：仍是未过期的持有者才延长
     /// </summary>
     internal Result Renew(JobName resource, string holder)
     {
@@ -115,10 +115,10 @@ public sealed class InMemoryLeaderElection : ILeaderElection
     }
 
     /// <summary>
-    /// 释放。
+    /// 释放
     /// </summary>
     /// <remarks>
-    /// 仍是持有者才删除记录；幂等。
+    /// 仍是持有者才删除记录；幂等
     /// </remarks>
     internal void Release(JobName resource, string holder)
     {

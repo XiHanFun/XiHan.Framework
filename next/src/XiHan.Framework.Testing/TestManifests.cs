@@ -7,20 +7,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Testing;
 
 /// <summary>
-/// 用能力 ID 文本快速构造清单。
+/// 用能力 ID 文本快速构造清单
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class TestManifests
 {
     /// <summary>
-    /// 创建清单。
+    /// 创建清单
     /// </summary>
-    /// <param name="id">清单 ID。</param>
-    /// <param name="provides">提供的能力，<c>id@version</c>。</param>
-    /// <param name="requires">依赖的能力，<c>id@[^]version[?]</c>。</param>
-    /// <param name="role">角色。</param>
-    /// <param name="kind">种类。</param>
-    /// <param name="bindings">绑定。</param>
+    /// <param name="id">清单 ID</param>
+    /// <param name="provides">提供的能力，<c>id@version</c></param>
+    /// <param name="requires">依赖的能力，<c>id@[^]version[?]</c></param>
+    /// <param name="role">角色</param>
+    /// <param name="kind">种类</param>
+    /// <param name="bindings">绑定</param>
     public static Manifest Create(
         string id,
         IEnumerable<string>? provides = null,

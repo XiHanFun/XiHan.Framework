@@ -7,16 +7,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Remote;
 
 /// <summary>
-/// 把 <see cref="IRemoteConfigurationClient"/> 接进 <see cref="IConfigurationBuilder"/> 的配置源。
+/// 把 <see cref="IRemoteConfigurationClient"/> 接进 <see cref="IConfigurationBuilder"/> 的配置源
 /// </summary>
 /// <remarks>
-/// 通常经 <see cref="RemoteConfigurationBuilderExtensions.AddXiHanRemoteConfiguration(IConfigurationBuilder, IRemoteConfigurationClient, RemoteConfigurationOptions)"/> 使用。客户端由调用方持有，Provider 释放时不释放它。
+/// 通常经 <see cref="RemoteConfigurationBuilderExtensions.AddXiHanRemoteConfiguration(IConfigurationBuilder, IRemoteConfigurationClient, RemoteConfigurationOptions)"/> 使用。客户端由调用方持有，Provider 释放时不释放它
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RemoteConfigurationSource : IConfigurationSource
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public RemoteConfigurationSource(IRemoteConfigurationClient client, RemoteConfigurationOptions options)
     {
@@ -25,12 +25,12 @@ public sealed class RemoteConfigurationSource : IConfigurationSource
     }
 
     /// <summary>
-    /// 客户端。
+    /// 客户端
     /// </summary>
     public IRemoteConfigurationClient Client { get; }
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     public RemoteConfigurationOptions Options { get; }
 

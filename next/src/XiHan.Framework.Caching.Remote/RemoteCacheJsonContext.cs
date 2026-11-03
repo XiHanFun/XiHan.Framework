@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Caching.Remote;
 
 /// <summary>
-/// 操作集消息的源生成序列化上下文：属性名 camelCase，<see langword="null"/> 不写出。
+/// 操作集消息的源生成序列化上下文：属性名 camelCase，<see langword="null"/> 不写出
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(RemoteCacheOperations.KeyRequest))]

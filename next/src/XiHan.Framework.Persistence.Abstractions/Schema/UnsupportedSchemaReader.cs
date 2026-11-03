@@ -7,10 +7,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Schema;
 
 /// <summary>
-/// 不能读库结构的 Provider 登记的读取器。
+/// 不能读库结构的 Provider 登记的读取器
 /// </summary>
 /// <remarks>
-/// 两个方法都返回 <see cref="PersistenceErrors.NotSupported"/>，不返回空结果冒充。
+/// 两个方法都返回 <see cref="PersistenceErrors.NotSupported"/>，不返回空结果冒充
 /// </remarks>
 internal sealed class UnsupportedSchemaReader : ISchemaReader
 {
@@ -29,7 +29,7 @@ internal sealed class UnsupportedSchemaReader : ISchemaReader
     }
 
     /// <summary>
-    /// 不支持。
+    /// 不支持
     /// </summary>
     private static Error NotSupported() => Error.Unavailable(PersistenceErrors.NotSupported, PersistenceMessages.SchemaNotSupported);
 }

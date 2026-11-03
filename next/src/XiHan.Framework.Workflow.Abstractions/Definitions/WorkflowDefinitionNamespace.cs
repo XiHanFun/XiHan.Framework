@@ -7,18 +7,18 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 定义按名字的解析，目录与引擎共用。
+/// 定义按名字的解析，目录与引擎共用
 /// </summary>
 /// <remarks>
-/// 只在调用方的分区里解析（平台或该租户）：没有全局定义，也不退回到别的分区（ADR-0077 推翻了 ADR-0066 第 5 节的全局定义）。
+/// 只在调用方的分区里解析（平台或该租户）：没有全局定义，也不退回到别的分区（ADR-0077 推翻了 ADR-0066 第 5 节的全局定义）
 /// </remarks>
 internal static class WorkflowDefinitionNamespace
 {
     /// <summary>
-    /// 在分区里按名字（可带版本）找已发布定义。
+    /// 在分区里按名字（可带版本）找已发布定义
     /// </summary>
     /// <remarks>
-    /// 没给版本取最新已发布的；给了版本只认已发布的那一版。
+    /// 没给版本取最新已发布的；给了版本只认已发布的那一版
     /// </remarks>
     public static async ValueTask<Result<Maybe<WorkflowDefinition>>> FindPublishedAsync(IWorkflowDefinitionStore store, string? tenantId, WorkflowName name, int? version, CancellationToken cancellationToken)
     {

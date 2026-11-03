@@ -9,18 +9,18 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件值的解析、转换与比较。
+/// 条件值的解析、转换与比较
 /// </summary>
 /// <remarks>
-/// 各值种类统一成一种 CLR 表示：字符串 → <see cref="string"/>、数字 → <see cref="decimal"/>、布尔 → <see cref="bool"/>、日期时间 → <see cref="DateTimeOffset"/>、日期 → <see cref="DateOnly"/>、时刻 → <see cref="TimeOnly"/>、IP → <see cref="IPAddress"/>（IPv4 映射地址还原成 IPv4），条件值集合里的网段 → <see cref="IPNetwork"/>。
+/// 各值种类统一成一种 CLR 表示：字符串 → <see cref="string"/>、数字 → <see cref="decimal"/>、布尔 → <see cref="bool"/>、日期时间 → <see cref="DateTimeOffset"/>、日期 → <see cref="DateOnly"/>、时刻 → <see cref="TimeOnly"/>、IP → <see cref="IPAddress"/>（IPv4 映射地址还原成 IPv4），条件值集合里的网段 → <see cref="IPNetwork"/>
 /// </remarks>
 internal static partial class ConditionValues
 {
     /// <summary>
-    /// 解析条件值原文里的一个元素。
+    /// 解析条件值原文里的一个元素
     /// </summary>
     /// <remarks>
-    /// <paramref name="allowNetwork"/> 时 IP 可写成 CIDR 网段。
+    /// <paramref name="allowNetwork"/> 时 IP 可写成 CIDR 网段
     /// </remarks>
     public static bool TryParseText(string text, ConditionValueKind kind, TimeZoneInfo timeZone, bool allowNetwork, out object value)
     {
@@ -63,10 +63,10 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// 把属性的原始 CLR 值转换成值种类的统一表示。
+    /// 把属性的原始 CLR 值转换成值种类的统一表示
     /// </summary>
     /// <remarks>
-    /// 类型对不上时按文本再解析一次。
+    /// 类型对不上时按文本再解析一次
     /// </remarks>
     public static bool TryConvertAttribute(object raw, ConditionValueKind kind, TimeZoneInfo timeZone, out object value)
     {
@@ -162,7 +162,7 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// 两个同种类的值是否相等：字符串不区分大小写，IP 与网段按包含。
+    /// 两个同种类的值是否相等：字符串不区分大小写，IP 与网段按包含
     /// </summary>
     public static bool AreEqual(object left, object right, ConditionValueKind kind) => kind switch
     {
@@ -172,10 +172,10 @@ internal static partial class ConditionValues
     };
 
     /// <summary>
-    /// 比较两个同种类的值。
+    /// 比较两个同种类的值
     /// </summary>
     /// <remarks>
-    /// 数字、布尔、日期时间、日期、时刻，以及字符串的不区分大小写序数比较。
+    /// 数字、布尔、日期时间、日期、时刻，以及字符串的不区分大小写序数比较
     /// </remarks>
     public static int Compare(object left, object right, ConditionValueKind kind) => kind switch
     {
@@ -189,23 +189,23 @@ internal static partial class ConditionValues
     };
 
     /// <summary>
-    /// 是否为可比较大小的值种类。
+    /// 是否为可比较大小的值种类
     /// </summary>
     public static bool IsOrdered(ConditionValueKind kind)
         => kind is ConditionValueKind.Number or ConditionValueKind.DateTime or ConditionValueKind.Date or ConditionValueKind.TimeOfDay;
 
     /// <summary>
-    /// 输出给说明用的不变文化文本。
+    /// 输出给说明用的不变文化文本
     /// </summary>
     public static string Format(object value) => value is IFormattable formattable ? formattable.ToString(null, CultureInfo.InvariantCulture) : value.ToString() ?? string.Empty;
 
     /// <summary>
-    /// 把 IPv4 映射的 IPv6 地址还原成 IPv4。
+    /// 把 IPv4 映射的 IPv6 地址还原成 IPv4
     /// </summary>
     public static IPAddress Normalize(IPAddress address) => address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
 
     /// <summary>
-    /// 布尔：<c>true</c> / <c>false</c> / <c>1</c> / <c>0</c>（不区分大小写）。
+    /// 布尔：<c>true</c> / <c>false</c> / <c>1</c> / <c>0</c>（不区分大小写）
     /// </summary>
     private static bool TryParseBoolean(string text, out bool value)
     {
@@ -224,7 +224,7 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// 日期时间：带偏移或 Z 的按原偏移，不带的按给定时区的墙钟解释。
+    /// 日期时间：带偏移或 Z 的按原偏移，不带的按给定时区的墙钟解释
     /// </summary>
     private static bool TryParseDateTime(string text, TimeZoneInfo timeZone, out DateTimeOffset value)
     {
@@ -244,7 +244,7 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// <see cref="DateTime"/> 按 Kind 换成时刻：UTC 与本地按其含义，未指定的按给定时区的墙钟。
+    /// <see cref="DateTime"/> 按 Kind 换成时刻：UTC 与本地按其含义，未指定的按给定时区的墙钟
     /// </summary>
     private static DateTimeOffset FromDateTime(DateTime dateTime, TimeZoneInfo timeZone) => dateTime.Kind switch
     {
@@ -254,7 +254,7 @@ internal static partial class ConditionValues
     };
 
     /// <summary>
-    /// IP 地址：IPv4 只收四段点分（<see cref="IPAddress.TryParse(string, out IPAddress)"/> 认 <c>10.1</c> 这类简写），IPv6 不收区域标识。
+    /// IP 地址：IPv4 只收四段点分（<see cref="IPAddress.TryParse(string, out IPAddress)"/> 认 <c>10.1</c> 这类简写），IPv6 不收区域标识
     /// </summary>
     private static bool TryParseAddress(string text, out IPAddress address)
     {
@@ -272,10 +272,10 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// CIDR 网段。
+    /// CIDR 网段
     /// </summary>
     /// <remarks>
-    /// 前缀不超过地址位数，主机位必须为零（如 <c>203.0.113.5/24</c> 多半是笔误，不替使用者猜是哪个网段）。
+    /// 前缀不超过地址位数，主机位必须为零（如 <c>203.0.113.5/24</c> 多半是笔误，不替使用者猜是哪个网段）
     /// </remarks>
     private static bool TryParseNetwork(string text, out IPNetwork network)
     {
@@ -297,7 +297,7 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// 前缀之后的位是否全为零。
+    /// 前缀之后的位是否全为零
     /// </summary>
     private static bool HostBitsAreZero(IPAddress address, int prefix)
     {
@@ -314,7 +314,7 @@ internal static partial class ConditionValues
     }
 
     /// <summary>
-    /// 日期时间文本末尾的偏移（<c>Z</c> 或 <c>±hh:mm</c>）。
+    /// 日期时间文本末尾的偏移（<c>Z</c> 或 <c>±hh:mm</c>）
     /// </summary>
     [GeneratedRegex(@"(Z|[+-]\d{2}:?\d{2})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex OffsetSuffix();

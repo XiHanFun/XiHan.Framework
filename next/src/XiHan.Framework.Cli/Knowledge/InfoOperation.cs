@@ -7,12 +7,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Knowledge;
 
 /// <summary>
-/// 操作 <c>cli.info</c>：查包、特性与能力。
+/// 操作 <c>cli.info</c>：查包、特性与能力
 /// </summary>
 /// <remarks>
-/// 发布为 MCP tool <c>xihan_framework_info</c>，见 <see cref="KnowledgeQueries.Info"/>。
+/// 发布为 MCP tool <c>xihan_framework_info</c>，见 <see cref="KnowledgeQueries.Info"/>
 /// </remarks>
-/// <param name="knowledge">离线知识库。</param>
+/// <param name="knowledge">离线知识库</param>
 internal sealed class InfoOperation(FrameworkKnowledge knowledge) : IOperation<InfoRequest, InfoResponse>
 {
     /// <inheritdoc />

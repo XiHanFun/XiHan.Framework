@@ -8,18 +8,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 
 /// <summary>
-/// 幂等记录。
+/// 幂等记录
 /// </summary>
 /// <remarks>
-/// 处理中标记或已完成的调用结果。失败结果保留错误码、已解析文案、消息键与字符串化的参数，回放时还原为可本地化的 <see cref="Error"/>。操作调用还记下操作 ID，成功时连同响应（XGI 的 JSON 编码）一起记，回放时还原响应（RFC-0006）。
+/// 处理中标记或已完成的调用结果。失败结果保留错误码、已解析文案、消息键与字符串化的参数，回放时还原为可本地化的 <see cref="Error"/>。操作调用还记下操作 ID，成功时连同响应（XGI 的 JSON 编码）一起记，回放时还原响应（RFC-0006）
 /// </remarks>
-/// <param name="State">记录状态：<see cref="InProgressState"/> 或 <see cref="CompletedState"/>。</param>
-/// <param name="ErrorCode">失败时的错误码；成功为 <see langword="null"/>。</param>
-/// <param name="ErrorMessage">失败时已解析的文案；键错误未解析时为 <see langword="null"/>。</param>
-/// <param name="ErrorMessageKey">失败时的消息键；自由文本错误为 <see langword="null"/>。</param>
-/// <param name="ErrorDetails">失败时的模板参数，值已按不变文化转成字符串。</param>
-/// <param name="Operation">首次调用的操作 ID；不是操作调用为 <see langword="null"/>。</param>
-/// <param name="Response">操作调用成功时的响应 JSON；失败或不是操作调用为 <see langword="null"/>。</param>
+/// <param name="State">记录状态：<see cref="InProgressState"/> 或 <see cref="CompletedState"/></param>
+/// <param name="ErrorCode">失败时的错误码；成功为 <see langword="null"/></param>
+/// <param name="ErrorMessage">失败时已解析的文案；键错误未解析时为 <see langword="null"/></param>
+/// <param name="ErrorMessageKey">失败时的消息键；自由文本错误为 <see langword="null"/></param>
+/// <param name="ErrorDetails">失败时的模板参数，值已按不变文化转成字符串</param>
+/// <param name="Operation">首次调用的操作 ID；不是操作调用为 <see langword="null"/></param>
+/// <param name="Response">操作调用成功时的响应 JSON；失败或不是操作调用为 <see langword="null"/></param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record IdempotencyRecord(
     string State,
@@ -31,27 +31,27 @@ public sealed record IdempotencyRecord(
     JsonElement? Response = null)
 {
     /// <summary>
-    /// 处理中状态。
+    /// 处理中状态
     /// </summary>
     public const string InProgressState = "in-progress";
 
     /// <summary>
-    /// 已完成状态。
+    /// 已完成状态
     /// </summary>
     public const string CompletedState = "completed";
 
     /// <summary>
-    /// 处理中标记。
+    /// 处理中标记
     /// </summary>
     public static IdempotencyRecord InProgress { get; } = new(InProgressState);
 
     /// <summary>
-    /// 是否处理中。
+    /// 是否处理中
     /// </summary>
     public bool IsInProgress => string.Equals(State, InProgressState, StringComparison.Ordinal);
 
     /// <summary>
-    /// 由调用结果生成已完成记录。
+    /// 由调用结果生成已完成记录
     /// </summary>
     public static IdempotencyRecord From(Result outcome)
     {
@@ -65,10 +65,10 @@ public sealed record IdempotencyRecord(
     }
 
     /// <summary>
-    /// 还原为调用结果。
+    /// 还原为调用结果
     /// </summary>
     /// <remarks>
-    /// 失败记录还原为带消息键与参数的 <see cref="Error"/>。
+    /// 失败记录还原为带消息键与参数的 <see cref="Error"/>
     /// </remarks>
     public Result ToResult()
     {
@@ -90,7 +90,7 @@ public sealed record IdempotencyRecord(
     }
 
     /// <summary>
-    /// 把参数值按不变文化转成字符串，便于源生成序列化且回放时格式化结果与原始一致。
+    /// 把参数值按不变文化转成字符串，便于源生成序列化且回放时格式化结果与原始一致
     /// </summary>
     private static Dictionary<string, string>? Stringify(IReadOnlyDictionary<string, object?>? details)
         => details?.ToDictionary(static d => d.Key, static d => Convert.ToString(d.Value, CultureInfo.InvariantCulture) ?? string.Empty, StringComparer.Ordinal);

@@ -14,82 +14,82 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// 事务型工作单元。
+/// 事务型工作单元
 /// </summary>
 /// <remarks>
-/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/> 里声明的）时，本作用域的 DbContext 建在那个连接上：实体必须登记在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。一个 DbContext 一个连接，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写。DbContext 建在租户分片上而那个分片库还没有核对通过时，开始之前先核对 SQLite 的时间列，不符即抛出携带 <see cref="PersistenceErrors.StorageFormatMismatch"/> 的 <see cref="FrameworkException"/>、工作单元保持未开始（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0097）。
+/// 首次写入时开启数据库事务（只读调用不开事务），提交即提交事务，回滚丢弃变更跟踪与事务。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。仓储在写入阶段发现并发新增撞上同一标识、或在只读工作单元里拒绝写入后把工作单元标为失败，此后提交只回滚并返回那个错误。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常，提交时有未保存的跟踪变更也以它回滚。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接（<see cref="EntityFrameworkCorePersistenceOptions.Connections"/> 里声明的）时，本作用域的 DbContext 建在那个连接上：实体必须登记在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。一个 DbContext 一个连接，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写。DbContext 建在租户分片上而那个分片库还没有核对通过时，开始之前先核对 SQLite 的时间列，不符即抛出携带 <see cref="PersistenceErrors.StorageFormatMismatch"/> 的 <see cref="FrameworkException"/>、工作单元保持未开始（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0097）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposable
 {
     /// <summary>
-    /// 取本作用域的 DbContext。
+    /// 取本作用域的 DbContext
     /// </summary>
     /// <remarks>
-    /// 由作用域容器解析；建 DbContext 选项的回调按 <see cref="_connection"/> 选连接。
+    /// 由作用域容器解析；建 DbContext 选项的回调按 <see cref="_connection"/> 选连接
     /// </remarks>
     private readonly Func<DbContext> _resolve;
 
     /// <summary>
-    /// 本作用域的 DbContext 建在哪个连接上。
+    /// 本作用域的 DbContext 建在哪个连接上
     /// </summary>
     private readonly ContextConnection _connection;
 
     /// <summary>
-    /// 声明的命名连接：名字 → 连接串。
+    /// 声明的命名连接：名字 → 连接串
     /// </summary>
     private readonly IReadOnlyDictionary<string, string> _connections;
 
     /// <summary>
-    /// 登记的实体与它们的落点。
+    /// 登记的实体与它们的落点
     /// </summary>
     private readonly RepositoryRegistrations _registrations;
 
     /// <summary>
-    /// 租户分片库的时间列核对。
+    /// 租户分片库的时间列核对
     /// </summary>
     private readonly ShardTimestampChecks _shards;
 
     /// <summary>
-    /// 本作用域的 DbContext。
+    /// 本作用域的 DbContext
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 表示尚未建出。
+    /// 为 <see langword="null"/> 表示尚未建出
     /// </remarks>
     private DbContext? _context;
 
     /// <summary>
-    /// 绑定的命名连接。
+    /// 绑定的命名连接
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 表示没有绑定，实体落缺省连接。
+    /// 为 <see langword="null"/> 表示没有绑定，实体落缺省连接
     /// </remarks>
     private string? _bound;
 
     /// <summary>
-    /// 延迟开启的数据库事务。
+    /// 延迟开启的数据库事务
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 表示本工作单元尚未写入。
+    /// 为 <see langword="null"/> 表示本工作单元尚未写入
     /// </remarks>
     private IDbContextTransaction? _transaction;
 
     /// <summary>
-    /// 写入阶段记下的失败。
+    /// 写入阶段记下的失败
     /// </summary>
     /// <remarks>
-    /// 非空时提交只回滚并返回它。
+    /// 非空时提交只回滚并返回它
     /// </remarks>
     private Error? _failure;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
-    /// <param name="context">取本作用域的 DbContext；工作单元开始时才调用，那时已知道要不要绑定命名连接。</param>
-    /// <param name="connection">本作用域的 DbContext 建在哪个连接上。</param>
-    /// <param name="options">Provider 选项，取声明的命名连接。</param>
-    /// <param name="registrations">登记的实体与它们的落点。</param>
-    /// <param name="shards">租户分片库的时间列核对（单例）。</param>
+    /// <param name="context">取本作用域的 DbContext；工作单元开始时才调用，那时已知道要不要绑定命名连接</param>
+    /// <param name="connection">本作用域的 DbContext 建在哪个连接上</param>
+    /// <param name="options">Provider 选项，取声明的命名连接</param>
+    /// <param name="registrations">登记的实体与它们的落点</param>
+    /// <param name="shards">租户分片库的时间列核对（单例）</param>
     internal EntityFrameworkCoreUnitOfWork(Func<DbContext> context, ContextConnection connection, EntityFrameworkCorePersistenceOptions options, RepositoryRegistrations registrations, ShardTimestampChecks shards)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -101,10 +101,10 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <summary>
-    /// 本作用域的 DbContext。
+    /// 本作用域的 DbContext
     /// </summary>
     /// <remarks>
-    /// 工作单元开始时建出：绑定了命名连接就建在那个连接上，否则建在缺省连接（带租户分片的调用是分片连接）。开始之前取用即按缺省建出，之后就不能再绑定命名连接。
+    /// 工作单元开始时建出：绑定了命名连接就建在那个连接上，否则建在缺省连接（带租户分片的调用是分片连接）。开始之前取用即按缺省建出，之后就不能再绑定命名连接
     /// </remarks>
     public DbContext Context => _context ??= _resolve();
 
@@ -143,7 +143,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
 
         // 开始即建出 DbContext，与此前在构造时建出一样落在 Transaction 阶段（带分片的调用在这时按租户分片建）；建不出时工作单元保持未开始
         _ = Context;
-        // 建在租户分片上：分片库启动时枚举不到，在首次绑定时核对时间列，不符即抛出、工作单元保持未开始。
+        // 建在租户分片上：分片库启动时枚举不到，在首次绑定时核对时间列，不符即抛出、工作单元保持未开始
         // 命名连接的绑定优先于分片，DbContext 建在命名连接上时没有分片要核对
         if (_connection.Shard is { } shard)
         {
@@ -155,10 +155,10 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <summary>
-    /// 核对 DbContext 所在的租户分片库之后开始。
+    /// 核对 DbContext 所在的租户分片库之后开始
     /// </summary>
     /// <remarks>
-    /// 范围与默认连接相同：没有登记到命名连接的实体。核对通过的分片只查一次（<see cref="ShardTimestampChecks"/>）。
+    /// 范围与默认连接相同：没有登记到命名连接的实体。核对通过的分片只查一次（<see cref="ShardTimestampChecks"/>）
     /// </remarks>
     private async Task BeginOnShardAsync(UnitOfWorkOptions options, BindingValue shard, CancellationToken cancellationToken)
     {
@@ -167,7 +167,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <summary>
-    /// 记下选项，进入活动状态。
+    /// 记下选项，进入活动状态
     /// </summary>
     private void Activate(UnitOfWorkOptions options)
     {
@@ -178,10 +178,10 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <summary>
-    /// 确保数据库事务已开启。
+    /// 确保数据库事务已开启
     /// </summary>
     /// <remarks>
-    /// 写入的声明：仓储在每次写入前调用，直接用 <see cref="Context"/> 写入（<c>SaveChanges</c>、<c>ExecuteUpdate</c> 等）之前也要先调用它，写入才在本工作单元的事务里。只读工作单元里抛出携带 <see cref="PersistenceErrors.ReadOnly"/> 的 <see cref="FrameworkException"/> 并把工作单元记为失败，写入不会执行；Transaction 阶段把它转为同码结果。
+    /// 写入的声明：仓储在每次写入前调用，直接用 <see cref="Context"/> 写入（<c>SaveChanges</c>、<c>ExecuteUpdate</c> 等）之前也要先调用它，写入才在本工作单元的事务里。只读工作单元里抛出携带 <see cref="PersistenceErrors.ReadOnly"/> 的 <see cref="FrameworkException"/> 并把工作单元记为失败，写入不会执行；Transaction 阶段把它转为同码结果
     /// </remarks>
     public async ValueTask EnsureTransactionAsync(CancellationToken cancellationToken)
     {
@@ -274,10 +274,10 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <summary>
-    /// 仓储取实体所在的 DbContext。
+    /// 仓储取实体所在的 DbContext
     /// </summary>
     /// <remarks>
-    /// 实体登记的落点要与本工作单元的连接一致：绑定了命名连接而实体落在别处，抛出携带 <see cref="PersistenceErrors.UnknownConnection"/> 的 <see cref="FrameworkException"/>；没有绑定而实体登记在命名连接上，抛出携带 <see cref="PersistenceErrors.NotSupported"/> 的 <see cref="FrameworkException"/>。
+    /// 实体登记的落点要与本工作单元的连接一致：绑定了命名连接而实体落在别处，抛出携带 <see cref="PersistenceErrors.UnknownConnection"/> 的 <see cref="FrameworkException"/>；没有绑定而实体登记在命名连接上，抛出携带 <see cref="PersistenceErrors.NotSupported"/> 的 <see cref="FrameworkException"/>
     /// </remarks>
     internal DbContext ContextFor(Type entityType)
     {
@@ -298,10 +298,10 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <summary>
-    /// 标为失败。
+    /// 标为失败
     /// </summary>
     /// <remarks>
-    /// 仓储在写入阶段发现并发新增撞上同一标识、只读工作单元拒绝写入时调用；只记第一次。
+    /// 仓储在写入阶段发现并发新增撞上同一标识、只读工作单元拒绝写入时调用；只记第一次
     /// </remarks>
     internal void Fail(Error error)
     {
@@ -310,10 +310,10 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     }
 
     /// <summary>
-    /// 残余变更里的创建时间与租户回到原值。
+    /// 残余变更里的创建时间与租户回到原值
     /// </summary>
     /// <remarks>
-    /// 这两个字段只在新增时写入：绕过仓储直接改跟踪实体也不能把行改到别的租户或改掉创建时间。
+    /// 这两个字段只在新增时写入：绕过仓储直接改跟踪实体也不能把行改到别的租户或改掉创建时间
     /// </remarks>
     private static void KeepStored(ChangeTracker tracker)
     {

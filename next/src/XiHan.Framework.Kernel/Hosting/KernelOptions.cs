@@ -8,44 +8,44 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 内核选项。
+/// 内核选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Kernel</c> 显式读取，不经反射绑定。
+/// 从配置节 <c>XiHan:Kernel</c> 显式读取，不经反射绑定
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record KernelOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Kernel";
 
     /// <summary>
-    /// 单个特性的启动超时。
+    /// 单个特性的启动超时
     /// </summary>
     public TimeSpan StartTimeout { get; init; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 单个特性的停止超时。
+    /// 单个特性的停止超时
     /// </summary>
     public TimeSpan StopTimeout { get; init; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 启动失败策略。
+    /// 启动失败策略
     /// </summary>
     public FailurePolicy FailurePolicy { get; init; } = FailurePolicy.TerminateStartup;
 
     /// <summary>
-    /// 是否自动加入内核的内置中间件（Observe、Resilience 阶段）。
+    /// 是否自动加入内核的内置中间件（Observe、Resilience 阶段）
     /// </summary>
     public bool UseBuiltInMiddleware { get; init; } = true;
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 缺省键保持默认值，非法值抛出 <see cref="ArgumentException"/>。
+    /// 缺省键保持默认值，非法值抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static KernelOptions FromConfiguration(IConfiguration configuration)
     {
@@ -53,7 +53,7 @@ public sealed record KernelOptions
         var section = configuration.GetSection(ConfigurationSection);
         var options = new KernelOptions();
 
-        // 每个键单独读取并显式解析，缺省回落到默认实例的值；不用 Bind 以保持零反射与 AOT 友好。
+        // 每个键单独读取并显式解析，缺省回落到默认实例的值；不用 Bind 以保持零反射与 AOT 友好
         return options with
         {
             StartTimeout = ReadSeconds(section, "StartTimeoutSeconds") ?? options.StartTimeout,
@@ -64,10 +64,10 @@ public sealed record KernelOptions
     }
 
     /// <summary>
-    /// 读取以秒计的时长键。
+    /// 读取以秒计的时长键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，非正数或非数字抛出 <see cref="ArgumentException"/>。
+    /// 缺省返回 <see langword="null"/>，非正数或非数字抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static TimeSpan? ReadSeconds(IConfiguration section, string key)
     {
@@ -83,10 +83,10 @@ public sealed record KernelOptions
     }
 
     /// <summary>
-    /// 读取布尔键。
+    /// 读取布尔键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，无法解析抛出 <see cref="ArgumentException"/>。
+    /// 缺省返回 <see langword="null"/>，无法解析抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static bool? ReadBool(IConfiguration section, string key)
     {
@@ -100,12 +100,12 @@ public sealed record KernelOptions
     }
 
     /// <summary>
-    /// 读取枚举键，不区分大小写。
+    /// 读取枚举键，不区分大小写
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，未定义的值抛出 <see cref="ArgumentException"/>。
+    /// 缺省返回 <see langword="null"/>，未定义的值抛出 <see cref="ArgumentException"/>
     /// </remarks>
-    /// <typeparam name="TEnum">枚举类型。</typeparam>
+    /// <typeparam name="TEnum">枚举类型</typeparam>
     private static TEnum? ReadEnum<TEnum>(IConfiguration section, string key)
         where TEnum : struct, Enum
     {

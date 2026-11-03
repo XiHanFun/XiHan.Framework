@@ -6,7 +6,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 
 /// <summary>
-/// 从 Baggage 的 <see cref="BaggageKeys.Tenant"/> 解析租户：客户端或上游服务自报的租户。
+/// 从 Baggage 的 <see cref="BaggageKeys.Tenant"/> 解析租户：客户端或上游服务自报的租户
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class BaggageTenantResolver : ITenantResolver

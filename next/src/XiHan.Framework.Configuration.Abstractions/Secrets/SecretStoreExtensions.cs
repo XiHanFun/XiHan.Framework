@@ -6,13 +6,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 
 /// <summary>
-/// 单条便捷方法。
+/// 单条便捷方法
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SecretStoreExtensions
 {
     /// <summary>
-    /// 读取一个密钥。
+    /// 读取一个密钥
     /// </summary>
     public static async ValueTask<Result<SecretValue>> GetAsync(this ISecretStore store, SecretName name, CancellationToken cancellationToken)
     {

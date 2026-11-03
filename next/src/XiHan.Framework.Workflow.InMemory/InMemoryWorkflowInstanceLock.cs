@@ -8,31 +8,31 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 进程内实例锁。
+/// 进程内实例锁
 /// </summary>
 /// <remarks>
-/// 每个实例一个信号量，没人用时回收；等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>。
+/// 每个实例一个信号量，没人用时回收；等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowInstanceLock : IWorkflowInstanceLock, IDisposable
 {
     /// <summary>
-    /// 保护表的锁。
+    /// 保护表的锁
     /// </summary>
     private readonly Lock _sync = new();
 
     /// <summary>
-    /// 实例 ID → 条目。
+    /// 实例 ID → 条目
     /// </summary>
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 等待上限。
+    /// 等待上限
     /// </summary>
     private readonly TimeSpan _timeout;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryWorkflowInstanceLock(WorkflowOptions options)
     {
@@ -41,7 +41,7 @@ public sealed class InMemoryWorkflowInstanceLock : IWorkflowInstanceLock, IDispo
     }
 
     /// <summary>
-    /// 当前有人持有或等待的实例数。
+    /// 当前有人持有或等待的实例数
     /// </summary>
     public int ActiveCount
     {
@@ -106,7 +106,7 @@ public sealed class InMemoryWorkflowInstanceLock : IWorkflowInstanceLock, IDispo
     }
 
     /// <summary>
-    /// 一个使用者离开：最后一个走时回收条目。
+    /// 一个使用者离开：最后一个走时回收条目
     /// </summary>
     private void Leave(string instanceId, Entry entry)
     {
@@ -122,28 +122,28 @@ public sealed class InMemoryWorkflowInstanceLock : IWorkflowInstanceLock, IDispo
     }
 
     /// <summary>
-    /// 一个实例的信号量与使用者计数。
+    /// 一个实例的信号量与使用者计数
     /// </summary>
     private sealed class Entry
     {
         /// <summary>
-        /// 信号量（一次一个）。
+        /// 信号量（一次一个）
         /// </summary>
         public SemaphoreSlim Semaphore { get; } = new(1, 1);
 
         /// <summary>
-        /// 持有或等待的人数。
+        /// 持有或等待的人数
         /// </summary>
         public int Users { get; set; }
     }
 
     /// <summary>
-    /// 释放句柄：释放信号量并离开。
+    /// 释放句柄：释放信号量并离开
     /// </summary>
     private sealed class Release(InMemoryWorkflowInstanceLock owner, string instanceId, Entry entry) : IAsyncDisposable
     {
         /// <summary>
-        /// 已释放。
+        /// 已释放
         /// </summary>
         private bool _released;
 

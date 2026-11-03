@@ -92,7 +92,7 @@ namespace Orders;
 // 只定义键，文案在 Localization/<区域>.json
 public static class OrdersMessages
 {
-    /// <summary>订单不存在。占位符：<c>id</c>。</summary>
+    /// <summary>订单不存在。占位符：<c>id</c></summary>
     public const string NotFound = "orders.order.not_found";
 }
 

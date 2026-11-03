@@ -7,31 +7,31 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// 把 <c>string.Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 译成按字面匹配的 <c>LIKE … ESCAPE '!'</c>。
+/// 把 <c>string.Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 译成按字面匹配的 <c>LIKE … ESCAPE '!'</c>
 /// </summary>
 /// <remarks>
-/// SqlSugar 把这三个方法译成不转义的 <c>LIKE</c>：实参里的 <c>_</c>、<c>%</c> 成了通配符，SQL Server 的 <c>[</c> 开字符类，PostgreSQL 与 MySQL 的 <c>LIKE</c> 缺省以反斜杠转义。本类以 SqlSugar 的外部函数（<see cref="ConfigureExternalServices.SqlFuncServices"/>）按这三个名字接管翻译——SqlSugar 解析方法调用时先按名字查外部函数、查到就不走内置翻译，所以经仓储的规约与直接用客户端的查询、删除条件、投影都经过这里（集合的 <c>Contains</c> 先被它改名成 <c>ContainsArray</c>，不受影响）。
+/// SqlSugar 把这三个方法译成不转义的 <c>LIKE</c>：实参里的 <c>_</c>、<c>%</c> 成了通配符，SQL Server 的 <c>[</c> 开字符类，PostgreSQL 与 MySQL 的 <c>LIKE</c> 缺省以反斜杠转义。本类以 SqlSugar 的外部函数（<see cref="ConfigureExternalServices.SqlFuncServices"/>）按这三个名字接管翻译——SqlSugar 解析方法调用时先按名字查外部函数、查到就不走内置翻译，所以经仓储的规约与直接用客户端的查询、删除条件、投影都经过这里（集合的 <c>Contains</c> 先被它改名成 <c>ContainsArray</c>，不受影响）
 /// <list type="bullet">
-/// <item>实参是 SqlSugar 为常量或闭包值建的参数：参数值先转义、再拼上通配符，SQL 里只有参数名，不拼接实参。</item>
-/// <item>实参是列或 SQL 表达式：在 SQL 里用 <c>REPLACE</c> 逐个转义，拼接的写法与 SqlSugar 原来的翻译相同（PostgreSQL 与 MySQL 用 <c>concat</c>，SQL Server 用 <c>+</c>，SQLite 与 Oracle 用 <c>||</c>），实参为 NULL 时的结果因此不变。</item>
-/// <item>转义 <c>%</c>、<c>_</c> 与转义符 <c>!</c> 本身；SQL Server 另转义 <c>[</c>。Oracle 的转义符后面只能跟 <c>%</c>、<c>_</c> 或它自己（否则 ORA-01424），所以别的库不转义 <c>[</c>。</item>
-/// <item>连接配置开了 <c>MoreSettings.EnableILike</c> 时照 SqlSugar 原样用 <c>ilike</c>。</item>
-/// <item>只在真实库上验证过的 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上改写；其余数据库沿用 SqlSugar 原来的翻译（不转义）。</item>
+/// <item>实参是 SqlSugar 为常量或闭包值建的参数：参数值先转义、再拼上通配符，SQL 里只有参数名，不拼接实参</item>
+/// <item>实参是列或 SQL 表达式：在 SQL 里用 <c>REPLACE</c> 逐个转义，拼接的写法与 SqlSugar 原来的翻译相同（PostgreSQL 与 MySQL 用 <c>concat</c>，SQL Server 用 <c>+</c>，SQLite 与 Oracle 用 <c>||</c>），实参为 NULL 时的结果因此不变</item>
+/// <item>转义 <c>%</c>、<c>_</c> 与转义符 <c>!</c> 本身；SQL Server 另转义 <c>[</c>。Oracle 的转义符后面只能跟 <c>%</c>、<c>_</c> 或它自己（否则 ORA-01424），所以别的库不转义 <c>[</c></item>
+/// <item>连接配置开了 <c>MoreSettings.EnableILike</c> 时照 SqlSugar 原样用 <c>ilike</c></item>
+/// <item>只在真实库上验证过的 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上改写；其余数据库沿用 SqlSugar 原来的翻译（不转义）</item>
 /// </list>
-/// 大小写与重音是否敏感照各库的 <c>LIKE</c> 与排序规则，不在这里统一。
+/// 大小写与重音是否敏感照各库的 <c>LIKE</c> 与排序规则，不在这里统一
 /// </remarks>
 internal static class LiteralStringMatching
 {
     /// <summary>
-    /// <c>LIKE</c> 的转义符。
+    /// <c>LIKE</c> 的转义符
     /// </summary>
     /// <remarks>
-    /// 不用反斜杠：MySQL 缺省模式下字面量 <c>'\'</c> 没有结束（反斜杠转义了引号），写成 <c>'\\'</c> 在 <c>NO_BACKSLASH_ESCAPES</c> 模式下又是两个字符；PostgreSQL 的 <c>standard_conforming_strings = off</c> 同理。<c>!</c> 在五种数据库的字面量与 <c>LIKE</c> 里都没有特殊含义，SQL 里也就不出现反斜杠，结果不受这些模式影响。
+    /// 不用反斜杠：MySQL 缺省模式下字面量 <c>'\'</c> 没有结束（反斜杠转义了引号），写成 <c>'\\'</c> 在 <c>NO_BACKSLASH_ESCAPES</c> 模式下又是两个字符；PostgreSQL 的 <c>standard_conforming_strings = off</c> 同理。<c>!</c> 在五种数据库的字面量与 <c>LIKE</c> 里都没有特殊含义，SQL 里也就不出现反斜杠，结果不受这些模式影响
     /// </remarks>
     internal const char EscapeCharacter = '!';
 
     /// <summary>
-    /// 接管的三个方法：名字、模式前后是否加通配符、SqlSugar 原来的翻译。
+    /// 接管的三个方法：名字、模式前后是否加通配符、SqlSugar 原来的翻译
     /// </summary>
     private static readonly (string Name, bool Leading, bool Trailing, Func<IDbMethods, MethodCallExpressionModel, string> Original)[] _methods =
     [
@@ -41,10 +41,10 @@ internal static class LiteralStringMatching
     ];
 
     /// <summary>
-    /// 在外部服务上登记三个方法的翻译。
+    /// 在外部服务上登记三个方法的翻译
     /// </summary>
     /// <remarks>
-    /// 已有同名的外部函数（应用自己登记的，或此前已施加过约定）不再登记：SqlSugar 按名字取第一个，应用自己的优先；重复施加不重复登记。
+    /// 已有同名的外部函数（应用自己登记的，或此前已施加过约定）不再登记：SqlSugar 按名字取第一个，应用自己的优先；重复施加不重复登记
     /// </remarks>
     public static void Register(ConfigureExternalServices services)
     {
@@ -66,10 +66,10 @@ internal static class LiteralStringMatching
     }
 
     /// <summary>
-    /// 转义值里的 <c>LIKE</c> 特殊字符。
+    /// 转义值里的 <c>LIKE</c> 特殊字符
     /// </summary>
     /// <remarks>
-    /// <c>%</c>、<c>_</c> 与 <see cref="EscapeCharacter"/> 前加转义符；SQL Server 另转义 <c>[</c>。
+    /// <c>%</c>、<c>_</c> 与 <see cref="EscapeCharacter"/> 前加转义符；SQL Server 另转义 <c>[</c>
     /// </remarks>
     private static string Escape(string value, DbType dbType)
     {
@@ -89,18 +89,18 @@ internal static class LiteralStringMatching
     }
 
     /// <summary>
-    /// 是否在这个数据库上改写。
+    /// 是否在这个数据库上改写
     /// </summary>
     /// <remarks>
-    /// 只认在真实库上验证过的五种；MySQL、PostgreSQL、Oracle 的兼容库（TiDB、人大金仓、达梦等）是别的 <see cref="DbType"/>，不在其列。
+    /// 只认在真实库上验证过的五种；MySQL、PostgreSQL、Oracle 的兼容库（TiDB、人大金仓、达梦等）是别的 <see cref="DbType"/>，不在其列
     /// </remarks>
     private static bool IsSupported(DbType dbType) => dbType is DbType.Sqlite or DbType.PostgreSQL or DbType.MySql or DbType.SqlServer or DbType.Oracle;
 
     /// <summary>
-    /// 一次方法调用的翻译。
+    /// 一次方法调用的翻译
     /// </summary>
     /// <remarks>
-    /// <paramref name="model"/> 的第一个实参是被匹配的一侧，第二个是要找的子串；带 <c>StringComparison</c> 的重载的第三个实参照 SqlSugar 原样忽略。
+    /// <paramref name="model"/> 的第一个实参是被匹配的一侧，第二个是要找的子串；带 <c>StringComparison</c> 的重载的第三个实参照 SqlSugar 原样忽略
     /// </remarks>
     private static string Translate(MethodCallExpressionModel model, DbType reported, ExpressionContext context, string method, bool leading, bool trailing, Func<IDbMethods, MethodCallExpressionModel, string> original)
     {
@@ -129,10 +129,10 @@ internal static class LiteralStringMatching
     }
 
     /// <summary>
-    /// 值实参的参数值换成转义后加通配符的模式。
+    /// 值实参的参数值换成转义后加通配符的模式
     /// </summary>
     /// <remarks>
-    /// 只处理 SqlSugar 为常量、闭包值或字符建的字符串（或字符）参数。参数是这次方法调用独占的（SqlSugar 为每个实参新建一个 <c>MethodConst</c> 参数），改它的值不影响别处；值为 null、或实参是列与表达式时返回 <see langword="false"/>，由调用方在 SQL 里转义。
+    /// 只处理 SqlSugar 为常量、闭包值或字符建的字符串（或字符）参数。参数是这次方法调用独占的（SqlSugar 为每个实参新建一个 <c>MethodConst</c> 参数），改它的值不影响别处；值为 null、或实参是列与表达式时返回 <see langword="false"/>，由调用方在 SQL 里转义
     /// </remarks>
     private static bool TryBindPattern(MethodCallExpressionModel model, MethodCallExpressionArgs argument, DbType dbType, bool leading, bool trailing, out string parameterName)
     {
@@ -166,7 +166,7 @@ internal static class LiteralStringMatching
     }
 
     /// <summary>
-    /// 列或表达式实参的 SQL 文本。
+    /// 列或表达式实参的 SQL 文本
     /// </summary>
     private static string Operand(MethodCallExpressionArgs argument, string method)
         => argument.MemberName?.ToString() is { } sql && !string.IsNullOrWhiteSpace(sql)
@@ -174,10 +174,10 @@ internal static class LiteralStringMatching
             : throw new NotSupportedException($"The argument of '{method}' cannot be translated.");
 
     /// <summary>
-    /// 在 SQL 里转义列或表达式的值。
+    /// 在 SQL 里转义列或表达式的值
     /// </summary>
     /// <remarks>
-    /// 先替换转义符自己，再替换通配符，否则后加的转义符会被再转义一次。
+    /// 先替换转义符自己，再替换通配符，否则后加的转义符会被再转义一次
     /// </remarks>
     private static string EscapeInSql(string operand, DbType dbType)
     {
@@ -186,10 +186,10 @@ internal static class LiteralStringMatching
     }
 
     /// <summary>
-    /// 按方言拼上前后的通配符。
+    /// 按方言拼上前后的通配符
     /// </summary>
     /// <remarks>
-    /// 写法与 SqlSugar 原来的翻译一致：PostgreSQL 与 MySQL 用 <c>concat</c>，SQL Server 用 <c>+</c>，SQLite 与 Oracle 用 <c>||</c>。
+    /// 写法与 SqlSugar 原来的翻译一致：PostgreSQL 与 MySQL 用 <c>concat</c>，SQL Server 用 <c>+</c>，SQLite 与 Oracle 用 <c>||</c>
     /// </remarks>
     private static string Concatenate(DbType dbType, bool leading, string operand, bool trailing)
     {

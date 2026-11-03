@@ -8,24 +8,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 
 /// <summary>
-/// 幂等选项。
+/// 幂等选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Caching:Idempotency</c> 显式读取。
+/// 从配置节 <c>XiHan:Caching:Idempotency</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record IdempotencyOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Caching:Idempotency";
 
     /// <summary>
-    /// 已完成结果的保留时间。
+    /// 已完成结果的保留时间
     /// </summary>
     /// <remarks>
-    /// 默认 24 小时。
+    /// 默认 24 小时
     /// </remarks>
     public TimeSpan TimeToLive
     {
@@ -34,10 +34,10 @@ public sealed record IdempotencyOptions
     } = TimeSpan.FromHours(24);
 
     /// <summary>
-    /// "处理中"标记的保留时间，处理器崩溃且未能清理时的最长封锁。
+    /// "处理中"标记的保留时间，处理器崩溃且未能清理时的最长封锁
     /// </summary>
     /// <remarks>
-    /// 默认 60 秒。
+    /// 默认 60 秒
     /// </remarks>
     public TimeSpan InProgressTimeToLive
     {
@@ -46,7 +46,7 @@ public sealed record IdempotencyOptions
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 从配置读取：<c>TimeToLiveSeconds</c>、<c>InProgressTimeToLiveSeconds</c>。
+    /// 从配置读取：<c>TimeToLiveSeconds</c>、<c>InProgressTimeToLiveSeconds</c>
     /// </summary>
     public static IdempotencyOptions FromConfiguration(IConfiguration configuration)
     {
@@ -66,10 +66,10 @@ public sealed record IdempotencyOptions
     }
 
     /// <summary>
-    /// 读取配置节下的秒数。
+    /// 读取配置节下的秒数
     /// </summary>
     /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是正数抛出 <see cref="ArgumentException"/>。
+    /// 未配置返回 <see langword="null"/>，不是正数抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static TimeSpan? ReadSeconds(IConfiguration configuration, string name)
     {

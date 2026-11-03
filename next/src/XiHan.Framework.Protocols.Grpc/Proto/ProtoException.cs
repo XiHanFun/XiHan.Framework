@@ -6,23 +6,23 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// Schema 无法映射为 protobuf，或线上数据与 Schema 不符。
+/// Schema 无法映射为 protobuf，或线上数据与 Schema 不符
 /// </summary>
 /// <remarks>
-/// 消息为英文诊断文本；适配器把它翻译为错误码与本地化文案。
+/// 消息为英文诊断文本；适配器把它翻译为错误码与本地化文案
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ProtoException : Exception
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public ProtoException()
     {
     }
 
     /// <summary>
-    /// 创建，带诊断文本。
+    /// 创建，带诊断文本
     /// </summary>
     public ProtoException(string message)
         : base(message)
@@ -30,7 +30,7 @@ public sealed class ProtoException : Exception
     }
 
     /// <summary>
-    /// 创建，带诊断文本与原因。
+    /// 创建，带诊断文本与原因
     /// </summary>
     public ProtoException(string message, Exception innerException)
         : base(message, innerException)

@@ -6,15 +6,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol.Proxies;
 
 /// <summary>
-/// 把代理操作的调用交给某种载体（子进程、Wasm 实例）的运行时。
+/// 把代理操作的调用交给某种载体（子进程、Wasm 实例）的运行时
 /// </summary>
 internal interface IPluginInvoker
 {
     /// <summary>
-    /// 调用插件的一个操作。
+    /// 调用插件的一个操作
     /// </summary>
     /// <remarks>
-    /// 载荷与结果都是原样搬运的 JSON 字节。
+    /// 载荷与结果都是原样搬运的 JSON 字节
     /// </remarks>
     ValueTask<Result<object>> InvokeAsync(string operation, ReadOnlyMemory<byte> payload, InvocationContext context);
 }

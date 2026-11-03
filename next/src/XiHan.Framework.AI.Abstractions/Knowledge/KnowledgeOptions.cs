@@ -6,24 +6,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 知识库选项（<c>XiHan:AI:Knowledge</c>）。
+/// 知识库选项（<c>XiHan:AI:Knowledge</c>）
 /// </summary>
 /// <remarks>
-/// 默认集合、嵌入维度、切块、检索条数、嵌入 Provider 与增强提示词。
+/// 默认集合、嵌入维度、切块、检索条数、嵌入 Provider 与增强提示词
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KnowledgeOptions
 {
     /// <summary>
-    /// 默认集合名。
+    /// 默认集合名
     /// </summary>
     public const string DefaultCollection = "knowledge";
 
     /// <summary>
-    /// 默认集合。
+    /// 默认集合
     /// </summary>
     /// <remarks>
-    /// 默认 <c>knowledge</c>。
+    /// 默认 <c>knowledge</c>
     /// </remarks>
     public string Collection
     {
@@ -32,10 +32,10 @@ public sealed record KnowledgeOptions
     } = DefaultCollection;
 
     /// <summary>
-    /// 嵌入维度。
+    /// 嵌入维度
     /// </summary>
     /// <remarks>
-    /// 默认 1536。
+    /// 默认 1536
     /// </remarks>
     public int Dimensions
     {
@@ -44,10 +44,10 @@ public sealed record KnowledgeOptions
     } = 1536;
 
     /// <summary>
-    /// 切块大小（字符）。
+    /// 切块大小（字符）
     /// </summary>
     /// <remarks>
-    /// 默认 1000。
+    /// 默认 1000
     /// </remarks>
     public int ChunkSize
     {
@@ -56,10 +56,10 @@ public sealed record KnowledgeOptions
     } = 1000;
 
     /// <summary>
-    /// 相邻块的重叠（字符）。
+    /// 相邻块的重叠（字符）
     /// </summary>
     /// <remarks>
-    /// 默认 100。
+    /// 默认 100
     /// </remarks>
     public int ChunkOverlap
     {
@@ -68,10 +68,10 @@ public sealed record KnowledgeOptions
     } = 100;
 
     /// <summary>
-    /// 默认检索条数。
+    /// 默认检索条数
     /// </summary>
     /// <remarks>
-    /// 默认 5。
+    /// 默认 5
     /// </remarks>
     public int Top
     {
@@ -80,23 +80,23 @@ public sealed record KnowledgeOptions
     } = 5;
 
     /// <summary>
-    /// 嵌入 Provider 名。
+    /// 嵌入 Provider 名
     /// </summary>
     /// <remarks>
-    /// 空表示默认嵌入 Provider。
+    /// 空表示默认嵌入 Provider
     /// </remarks>
     public string? EmbeddingProvider { get; init; }
 
     /// <summary>
-    /// 提示增强用的提示词模板名（占位符 <c>{context}</c>、<c>{question}</c>）。
+    /// 提示增强用的提示词模板名（占位符 <c>{context}</c>、<c>{question}</c>）
     /// </summary>
     /// <remarks>
-    /// 空表示内置模板。启动时校验：模板不存在（<c>AI_NOTFOUND_002</c>）或引用了这两个以外的占位符（<c>AI_VALIDATION_001</c>）即启动失败。
+    /// 空表示内置模板。启动时校验：模板不存在（<c>AI_NOTFOUND_002</c>）或引用了这两个以外的占位符（<c>AI_VALIDATION_001</c>）即启动失败
     /// </remarks>
     public string? PromptName { get; init; }
 
     /// <summary>
-    /// 切块选项。
+    /// 切块选项
     /// </summary>
     public ChunkingOptions Chunking => new() { MaxChunkSize = ChunkSize, Overlap = ChunkOverlap };
 }

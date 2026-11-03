@@ -6,19 +6,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Queries;
 
 /// <summary>
-/// 查询的时间范围提示（两端都含）。
+/// 查询的时间范围提示（两端都含）
 /// </summary>
 /// <remarks>
-/// 按时间分表 / 分区的 Provider 据此只扫描范围内的表。它不是过滤条件，见 <see cref="EntityQuery{T}.TimeRange"/>。
+/// 按时间分表 / 分区的 Provider 据此只扫描范围内的表。它不是过滤条件，见 <see cref="EntityQuery{T}.TimeRange"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record TimeRange
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// <paramref name="from"/> 不能晚于 <paramref name="to"/>。
+    /// <paramref name="from"/> 不能晚于 <paramref name="to"/>
     /// </remarks>
     public TimeRange(DateTimeOffset from, DateTimeOffset to)
     {
@@ -32,12 +32,12 @@ public sealed record TimeRange
     }
 
     /// <summary>
-    /// 起点（含）。
+    /// 起点（含）
     /// </summary>
     public DateTimeOffset From { get; }
 
     /// <summary>
-    /// 终点（含）。
+    /// 终点（含）
     /// </summary>
     public DateTimeOffset To { get; }
 }

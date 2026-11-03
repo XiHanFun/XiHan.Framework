@@ -15,12 +15,12 @@ using MessageCatalog = XiHan.Framework.Localization.Abstractions.Messages.Messag
 namespace XiHan.Framework.Plugins.Protocol.Handshake;
 
 /// <summary>
-/// 核对握手响应与目录里的清单（<c>spec/plugin/handshake.md</c> §3）。
+/// 核对握手响应与目录里的清单（<c>spec/plugin/handshake.md</c> §3）
 /// </summary>
 internal static class HandshakeValidator
 {
     /// <summary>
-    /// 校验并整理握手结果。
+    /// 校验并整理握手结果
     /// </summary>
     public static Result<HandshakeInfo> Validate(Manifest manifest, HandshakeResponse response, int primitives, PluginIsolation isolation)
     {
@@ -125,10 +125,10 @@ internal static class HandshakeValidator
     }
 
     /// <summary>
-    /// 声明 → 契约与 Schema。
+    /// 声明 → 契约与 Schema
     /// </summary>
     /// <remarks>
-    /// ID、稳定性、暴露面或 Schema 不合法即失败。
+    /// ID、稳定性、暴露面或 Schema 不合法即失败
     /// </remarks>
     private static Result<ProxyOperation> ToOperation(OperationDeclaration declaration)
     {
@@ -179,13 +179,13 @@ internal static class HandshakeValidator
     }
 
     /// <summary>
-    /// 协议层面的握手失败。
+    /// 协议层面的握手失败
     /// </summary>
     private static Error Invalid(string id, string reason)
         => new(PluginErrors.InvalidHandshake, PluginMessages.HandshakeInvalid, MessageArguments.Of(("id", id), ("reason", reason)));
 
     /// <summary>
-    /// 与清单不一致。
+    /// 与清单不一致
     /// </summary>
     private static Error Mismatch(string id, string reason)
         => new(PluginErrors.HandshakeMismatch, PluginMessages.HandshakeMismatch, MessageArguments.Of(("id", id), ("reason", reason)));

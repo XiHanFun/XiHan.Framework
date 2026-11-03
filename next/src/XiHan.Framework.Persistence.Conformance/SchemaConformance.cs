@@ -15,50 +15,50 @@ using Xunit;
 namespace XiHan.Framework.Persistence.Conformance;
 
 /// <summary>
-/// 库结构读取与实体目录的一致性套件。
+/// 库结构读取与实体目录的一致性套件
 /// </summary>
 /// <remarks>
-/// 见 RFC-0005「库结构读取与实体目录」。每个 <c>persistence.relational@1</c> Provider 都继承它；宿主登记套件的三种实体（<see cref="ConformanceOrder"/> 登记两次），读结构的 Provider 要在启动时建出它们的表（<c>InitTables</c> / <c>EnsureCreated</c>）。不读结构的 Provider 把 <see cref="ReadsSchema"/> 设为 <see langword="false"/>，用例随之断言读取返回 <see cref="PersistenceErrors.NotSupported"/>，不返回空结果冒充。
+/// 见 RFC-0005「库结构读取与实体目录」。每个 <c>persistence.relational@1</c> Provider 都继承它；宿主登记套件的三种实体（<see cref="ConformanceOrder"/> 登记两次），读结构的 Provider 要在启动时建出它们的表（<c>InitTables</c> / <c>EnsureCreated</c>）。不读结构的 Provider 把 <see cref="ReadsSchema"/> 设为 <see langword="false"/>，用例随之断言读取返回 <see cref="PersistenceErrors.NotSupported"/>，不返回空结果冒充
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class SchemaConformance
 {
     /// <summary>
-    /// 宿主配置。
+    /// 宿主配置
     /// </summary>
     protected virtual IEnumerable<KeyValuePair<string, string?>> Configuration => [];
 
     /// <summary>
-    /// Provider 是否读库结构。
+    /// Provider 是否读库结构
     /// </summary>
     protected abstract bool ReadsSchema { get; }
 
     /// <summary>
-    /// 创建被测 Provider 的特性。
+    /// 创建被测 Provider 的特性
     /// </summary>
     protected abstract IFeature CreateFeature();
 
     /// <summary>
-    /// 附加服务注册。
+    /// 附加服务注册
     /// </summary>
     protected virtual void ConfigureServices(IServiceCollection services)
     {
     }
 
     /// <summary>
-    /// 指向应用自己库的运行时数据源定义。
+    /// 指向应用自己库的运行时数据源定义
     /// </summary>
     /// <remarks>
-    /// 用例经它读同一个库，结果应与缺省连接一致；不支持运行时数据源时返回 <see langword="null"/>。
+    /// 用例经它读同一个库，结果应与缺省连接一致；不支持运行时数据源时返回 <see langword="null"/>
     /// </remarks>
-    /// <param name="name">数据源名。</param>
+    /// <param name="name">数据源名</param>
     protected abstract DataSourceDefinition? CreateDefinition(string name);
 
     /// <summary>
-    /// 用例 1：实体目录列出每个登记的实体。
+    /// 用例 1：实体目录列出每个登记的实体
     /// </summary>
     /// <remarks>
-    /// 同一实体登记两次只一条；标识类型、协议、主键列与普通列都对；不映射的属性（领域事件）不列。
+    /// 同一实体登记两次只一条；标识类型、协议、主键列与普通列都对；不映射的属性（领域事件）不列
     /// </remarks>
     [Fact]
     public async Task EntityCatalog_ListsEveryRegisteredEntity_Once()
@@ -90,10 +90,10 @@ public abstract class SchemaConformance
     }
 
     /// <summary>
-    /// 用例 2：列表含每张实体表，关键字与分页照常。
+    /// 用例 2：列表含每张实体表，关键字与分页照常
     /// </summary>
     /// <remarks>
-    /// 不读结构的 Provider 返回 <see cref="PersistenceErrors.NotSupported"/>。
+    /// 不读结构的 Provider 返回 <see cref="PersistenceErrors.NotSupported"/>
     /// </remarks>
     [Fact]
     public async Task ListTables_ContainsEveryEntityTable_OrIsNotSupported()
@@ -124,10 +124,10 @@ public abstract class SchemaConformance
     }
 
     /// <summary>
-    /// 用例 5：表列表的分页越界以校验结果返回，边界值照常。
+    /// 用例 5：表列表的分页越界以校验结果返回，边界值照常
     /// </summary>
     /// <remarks>
-    /// <c>Skip</c> = -1、<c>Take</c> = 0 → <see cref="PersistenceErrors.ListPageInvalid"/>，<c>Take</c> = 1001 → <see cref="PersistenceErrors.TakeExceeded"/>，都在构造查询时不抛出、读取器不连库；经运行时数据源时也不登记它。<c>Skip</c> = 0、<c>Take</c> = 1 与 1000 照常。不读结构的 Provider 仍返回 <see cref="PersistenceErrors.NotSupported"/>。
+    /// <c>Skip</c> = -1、<c>Take</c> = 0 → <see cref="PersistenceErrors.ListPageInvalid"/>，<c>Take</c> = 1001 → <see cref="PersistenceErrors.TakeExceeded"/>，都在构造查询时不抛出、读取器不连库；经运行时数据源时也不登记它。<c>Skip</c> = 0、<c>Take</c> = 1 与 1000 照常。不读结构的 Provider 仍返回 <see cref="PersistenceErrors.NotSupported"/>
     /// </remarks>
     [Fact]
     public async Task ListTables_PageOutOfRange_IsAValidationResult()
@@ -168,10 +168,10 @@ public abstract class SchemaConformance
     }
 
     /// <summary>
-    /// 用例 3：按表名批量读结构。
+    /// 用例 3：按表名批量读结构
     /// </summary>
     /// <remarks>
-    /// 主键列不可空；不存在的表该项 <see cref="PersistenceErrors.TableNotFound"/>；超过上限整批 <see cref="PersistenceErrors.TakeExceeded"/>；空集合返回空列表。不读结构的 Provider 返回 <see cref="PersistenceErrors.NotSupported"/>。
+    /// 主键列不可空；不存在的表该项 <see cref="PersistenceErrors.TableNotFound"/>；超过上限整批 <see cref="PersistenceErrors.TakeExceeded"/>；空集合返回空列表。不读结构的 Provider 返回 <see cref="PersistenceErrors.NotSupported"/>
     /// </remarks>
     [Fact]
     public async Task GetTables_ReadsColumns_ReportsMissingPerItem_AndCapsTheBatch()
@@ -207,10 +207,10 @@ public abstract class SchemaConformance
     }
 
     /// <summary>
-    /// 用例 4：经运行时数据源读同一个库，结果与缺省连接一致。
+    /// 用例 4：经运行时数据源读同一个库，结果与缺省连接一致
     /// </summary>
     /// <remarks>
-    /// 不读结构或不支持运行时数据源的 Provider 跳过比对，只断言明确的错误。
+    /// 不读结构或不支持运行时数据源的 Provider 跳过比对，只断言明确的错误
     /// </remarks>
     [Fact]
     public async Task NamedDataSource_ReadsTheSameSchema()
@@ -238,7 +238,7 @@ public abstract class SchemaConformance
     }
 
     /// <summary>
-    /// 装配并启动宿主：被测特性、三种套件实体（订单登记两次）与附加服务。
+    /// 装配并启动宿主：被测特性、三种套件实体（订单登记两次）与附加服务
     /// </summary>
     protected Task<TestHost> StartAsync() => TestHost.StartAsync(
         builder => builder.UseFeature(CreateFeature()),

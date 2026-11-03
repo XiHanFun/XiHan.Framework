@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Scheduling.Kubernetes.Leases;
 
 /// <summary>
-/// Lease 与 Status 的序列化上下文：camelCase，空值不写出。
+/// Lease 与 Status 的序列化上下文：camelCase，空值不写出
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(LeaseDocument))]

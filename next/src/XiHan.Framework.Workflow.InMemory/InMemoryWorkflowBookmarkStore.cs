@@ -13,46 +13,46 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 有界内存的书签存储。
+/// 有界内存的书签存储
 /// </summary>
 /// <remarks>
-/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝；按实例建索引；容量按全部分区合计。没有事务：写入立即生效。待办查询与同一特性的实例存储连接，取实例的状态、定义名、标题与关联 ID。
+/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝；按实例建索引；容量按全部分区合计。没有事务：写入立即生效。待办查询与同一特性的实例存储连接，取实例的状态、定义名、标题与关联 ID
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
 {
     /// <summary>
-    /// 保护表的锁。
+    /// 保护表的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 分区与书签 ID → (书签, 写入序号)。
+    /// 分区与书签 ID → (书签, 写入序号)
     /// </summary>
     private readonly Dictionary<PartitionKey, (WorkflowBookmark Bookmark, long Sequence)> _bookmarks = [];
 
     /// <summary>
-    /// 分区与实例 ID → 它的书签 ID。
+    /// 分区与实例 ID → 它的书签 ID
     /// </summary>
     private readonly Dictionary<PartitionKey, HashSet<string>> _byInstance = [];
 
     /// <summary>
-    /// 容量。
+    /// 容量
     /// </summary>
     private readonly int _capacity;
 
     /// <summary>
-    /// 同一特性的实例存储：待办查询按它取实例的状态、定义名、标题与关联 ID。
+    /// 同一特性的实例存储：待办查询按它取实例的状态、定义名、标题与关联 ID
     /// </summary>
     private readonly InMemoryWorkflowInstanceStore _instances;
 
     /// <summary>
-    /// 写入序号。
+    /// 写入序号
     /// </summary>
     private long _sequence;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryWorkflowBookmarkStore(InMemoryWorkflowOptions options, InMemoryWorkflowInstanceStore instances)
     {
@@ -63,7 +63,7 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <summary>
-    /// 当前条数（全部分区）。
+    /// 当前条数（全部分区）
     /// </summary>
     public int Count
     {
@@ -269,7 +269,7 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <summary>
-    /// 一个分区里的书签（调用方持锁）。
+    /// 一个分区里的书签（调用方持锁）
     /// </summary>
     private IEnumerable<(WorkflowBookmark Bookmark, long Sequence)> InPartition(string? tenantId)
     {
@@ -278,10 +278,10 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <summary>
-    /// 满足待办查询条件的用户任务书签（深拷贝，未排序）。
+    /// 满足待办查询条件的用户任务书签（深拷贝，未排序）
     /// </summary>
     /// <remarks>
-    /// 先在本表的锁里按书签自己的列筛出候选并拷贝，放锁之后再问实例存储哪些实例在运行中：两把锁不嵌套，不会死锁。没有事务，两步之间实例的状态可能变化。
+    /// 先在本表的锁里按书签自己的列筛出候选并拷贝，放锁之后再问实例存储哪些实例在运行中：两把锁不嵌套，不会死锁。没有事务，两步之间实例的状态可能变化
     /// </remarks>
     private List<(WorkflowBookmark Bookmark, long Sequence)> UserTasks(string? tenantId, UserTaskQuery query)
     {
@@ -307,16 +307,16 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     }
 
     /// <summary>
-    /// 用户任务书签载荷里的任务标题。
+    /// 用户任务书签载荷里的任务标题
     /// </summary>
     /// <remarks>
-    /// 与 <see cref="UserTask.From"/> 取标题的方式相同；没有或不是字符串为空。
+    /// 与 <see cref="UserTask.From"/> 取标题的方式相同；没有或不是字符串为空
     /// </remarks>
     private static string? TaskTitle(WorkflowBookmark bookmark)
         => bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.Title, out var title) && title is JsonValue value ? WorkflowValues.AsString(value) : null;
 
     /// <summary>
-    /// 创建时间升序、同刻按写入顺序，深拷贝。
+    /// 创建时间升序、同刻按写入顺序，深拷贝
     /// </summary>
     private static List<WorkflowBookmark> Ordered(IEnumerable<(WorkflowBookmark Bookmark, long Sequence)> entries, int limit = int.MaxValue)
         => entries.OrderBy(static entry => entry.Bookmark.CreatedAt).ThenBy(static entry => entry.Sequence).Take(limit).Select(static entry => WorkflowJson.Clone(entry.Bookmark)).ToList();

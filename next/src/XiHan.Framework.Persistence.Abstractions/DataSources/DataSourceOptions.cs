@@ -8,29 +8,29 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.DataSources;
 
 /// <summary>
-/// 运行时数据源注册表的选项。
+/// 运行时数据源注册表的选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Persistence:DataSources</c> 显式读取。
+/// 从配置节 <c>XiHan:Persistence:DataSources</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DataSourceOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Persistence:DataSources";
 
     /// <summary>
-    /// 登记数的上限。
+    /// 登记数的上限
     /// </summary>
     public const int MaxCountLimit = 1024;
 
     /// <summary>
-    /// 最多登记多少个数据源。
+    /// 最多登记多少个数据源
     /// </summary>
     /// <remarks>
-    /// 1 到 <see cref="MaxCountLimit"/>，缺省 64。满了再登记新名字返回 <see cref="PersistenceErrors.DataSourceCapacityExceeded"/>，不淘汰已有的；替换同名的不占名额。
+    /// 1 到 <see cref="MaxCountLimit"/>，缺省 64。满了再登记新名字返回 <see cref="PersistenceErrors.DataSourceCapacityExceeded"/>，不淘汰已有的；替换同名的不占名额
     /// </remarks>
     public int MaxCount
     {
@@ -39,10 +39,10 @@ public sealed record DataSourceOptions
     } = 64;
 
     /// <summary>
-    /// 健康项 <c>persistence.datasource.&lt;name&gt;</c> 的重探间隔（也是单次探测的超时）。
+    /// 健康项 <c>persistence.datasource.&lt;name&gt;</c> 的重探间隔（也是单次探测的超时）
     /// </summary>
     /// <remarks>
-    /// 缺省 15 秒。
+    /// 缺省 15 秒
     /// </remarks>
     public TimeSpan HealthProbeInterval
     {
@@ -51,9 +51,9 @@ public sealed record DataSourceOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 从配置读取：<c>MaxCount</c>、<c>HealthProbeIntervalSeconds</c>。
+    /// 从配置读取：<c>MaxCount</c>、<c>HealthProbeIntervalSeconds</c>
     /// </summary>
-    /// <exception cref="ArgumentException">值不合法。</exception>
+    /// <exception cref="ArgumentException">值不合法</exception>
     public static DataSourceOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);

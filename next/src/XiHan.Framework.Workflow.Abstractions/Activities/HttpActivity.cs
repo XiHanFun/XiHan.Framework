@@ -12,75 +12,75 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// HTTP 请求。
+/// HTTP 请求
 /// </summary>
 /// <remarks>
-/// <c>Url</c>（模板）、<c>Method</c>（默认 GET）、<c>Headers</c>（对象，值为模板）、<c>Body</c>（字符串模板或对象 → JSON）、<c>ContentType</c>、<c>TimeoutSeconds</c>、<c>ResultVariable</c>（默认 <c>http</c>）、<c>FailOnErrorStatus</c>（默认 <see langword="true"/>）。输出 <c>{ status, headers, body }</c>，JSON 响应解析为对象。
-/// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpTimedOut"/>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>。
+/// <c>Url</c>（模板）、<c>Method</c>（默认 GET）、<c>Headers</c>（对象，值为模板）、<c>Body</c>（字符串模板或对象 → JSON）、<c>ContentType</c>、<c>TimeoutSeconds</c>、<c>ResultVariable</c>（默认 <c>http</c>）、<c>FailOnErrorStatus</c>（默认 <see langword="true"/>）。输出 <c>{ status, headers, body }</c>，JSON 响应解析为对象
+/// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpTimedOut"/>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HttpActivity : IActivity
 {
     /// <summary>
-    /// 属性：URL（模板）。
+    /// 属性：URL（模板）
     /// </summary>
     public const string UrlProperty = "Url";
 
     /// <summary>
-    /// 属性：方法。
+    /// 属性：方法
     /// </summary>
     public const string MethodProperty = "Method";
 
     /// <summary>
-    /// 属性：请求头（对象）。
+    /// 属性：请求头（对象）
     /// </summary>
     public const string HeadersProperty = "Headers";
 
     /// <summary>
-    /// 属性：请求体。
+    /// 属性：请求体
     /// </summary>
     public const string BodyProperty = "Body";
 
     /// <summary>
-    /// 属性。
+    /// 属性
     /// </summary>
     /// <remarks>
-    /// 内容类型（默认按请求体推断：对象为 <c>application/json</c>，字符串为 <c>text/plain</c>）。
+    /// 内容类型（默认按请求体推断：对象为 <c>application/json</c>，字符串为 <c>text/plain</c>）
     /// </remarks>
     public const string ContentTypeProperty = "ContentType";
 
     /// <summary>
-    /// 属性：超时秒数（默认取引擎选项 <c>HttpTimeoutSeconds</c>）。
+    /// 属性：超时秒数（默认取引擎选项 <c>HttpTimeoutSeconds</c>）
     /// </summary>
     public const string TimeoutSecondsProperty = "TimeoutSeconds";
 
     /// <summary>
-    /// 属性：结果写入的变量名。
+    /// 属性：结果写入的变量名
     /// </summary>
     public const string ResultVariableProperty = "ResultVariable";
 
     /// <summary>
-    /// 属性：非 2xx 状态是否视为节点故障。
+    /// 属性：非 2xx 状态是否视为节点故障
     /// </summary>
     public const string FailOnErrorStatusProperty = "FailOnErrorStatus";
 
     /// <summary>
-    /// 默认结果变量。
+    /// 默认结果变量
     /// </summary>
     public const string DefaultResultVariable = "http";
 
     /// <summary>
-    /// 响应体最大读取字节数：防止把超大响应装进实例变量。
+    /// 响应体最大读取字节数：防止把超大响应装进实例变量
     /// </summary>
     private const int MaxBodyBytes = 4 * 1024 * 1024;
 
     /// <summary>
-    /// 允许的方法。
+    /// 允许的方法
     /// </summary>
     private static readonly string[] _methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 
     /// <summary>
-    /// 方法名是否合法。
+    /// 方法名是否合法
     /// </summary>
     public static bool IsValidMethod(string? method) => method is null || Array.Exists(_methods, candidate => string.Equals(candidate, method, StringComparison.OrdinalIgnoreCase));
 
@@ -175,10 +175,10 @@ public sealed class HttpActivity : IActivity
     }
 
     /// <summary>
-    /// 客户端抛出的异常是否按超时报告。
+    /// 客户端抛出的异常是否按超时报告
     /// </summary>
     /// <remarks>
-    /// 返回 false 的取消是调用方的取消，原样抛出；其余异常由调用处按请求失败报告或原样抛出。
+    /// 返回 false 的取消是调用方的取消，原样抛出；其余异常由调用处按请求失败报告或原样抛出
     /// </remarks>
     private static bool IsTimeout(Exception exception, CancellationToken timer, CancellationToken caller)
     {
@@ -204,15 +204,15 @@ public sealed class HttpActivity : IActivity
     }
 
     /// <summary>
-    /// 超时的节点故障。
+    /// 超时的节点故障
     /// </summary>
     private static Error TimedOut() => Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpTimedOut);
 
     /// <summary>
-    /// 组装请求体。
+    /// 组装请求体
     /// </summary>
     /// <remarks>
-    /// 字符串按模板渲染，对象序列化为 JSON；没有请求体时 <paramref name="content"/> 为空。返回属性错误，成功为空。
+    /// 字符串按模板渲染，对象序列化为 JSON；没有请求体时 <paramref name="content"/> 为空。返回属性错误，成功为空
     /// </remarks>
     private static Error? BuildBody(ActivityContext context, out HttpContent? content)
     {
@@ -259,7 +259,7 @@ public sealed class HttpActivity : IActivity
     }
 
     /// <summary>
-    /// 读响应：状态、头与正文（JSON 解析为节点，其余为字符串，超过上限截断）。
+    /// 读响应：状态、头与正文（JSON 解析为节点，其余为字符串，超过上限截断）
     /// </summary>
     private static async Task<JsonObject> ReadResultAsync(HttpResponseMessage response, CancellationToken cancellationToken)
     {

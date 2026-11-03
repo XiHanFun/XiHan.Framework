@@ -6,15 +6,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Domain.Entities;
 
 /// <summary>
-/// 有标识的实体。
+/// 有标识的实体
 /// </summary>
-/// <typeparam name="TKey">标识类型。</typeparam>
+/// <typeparam name="TKey">标识类型</typeparam>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IEntity<out TKey>
     where TKey : notnull
 {
     /// <summary>
-    /// 标识。
+    /// 标识
     /// </summary>
     TKey Id { get; }
 }

@@ -7,21 +7,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Authentication;
 
 /// <summary>
-/// 把某一方案的凭据变成主体。
+/// 把某一方案的凭据变成主体
 /// </summary>
 /// <remarks>
-/// 基础设施失败抛异常；凭据无效以 <see cref="SecurityErrors.InvalidCredential"/> 返回。
+/// 基础设施失败抛异常；凭据无效以 <see cref="SecurityErrors.InvalidCredential"/> 返回
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IAuthenticationHandler
 {
     /// <summary>
-    /// 处理的方案。
+    /// 处理的方案
     /// </summary>
     string Scheme { get; }
 
     /// <summary>
-    /// 认证。
+    /// 认证
     /// </summary>
     ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken);
 }

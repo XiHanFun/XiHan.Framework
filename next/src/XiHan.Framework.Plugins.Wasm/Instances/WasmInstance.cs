@@ -7,66 +7,66 @@ using XiHan.Framework.Plugins.Wasm.Runtime;
 namespace XiHan.Framework.Plugins.Wasm.Instances;
 
 /// <summary>
-/// 一个模块实例。
+/// 一个模块实例
 /// </summary>
 /// <remarks>
-/// 自己的 Store（内存上限、WASI、epoch 截止）、导入函数与导出函数的委托；按 ABI v1 的内存约定做一次调用。实例不是线程安全的，调用由运行时串行化；回调引发的再入由 <see cref="WasmCallPump"/> 回到执行线程上。
+/// 自己的 Store（内存上限、WASI、epoch 截止）、导入函数与导出函数的委托；按 ABI v1 的内存约定做一次调用。实例不是线程安全的，调用由运行时串行化；回调引发的再入由 <see cref="WasmCallPump"/> 回到执行线程上
 /// </remarks>
 internal sealed class WasmInstance : IDisposable
 {
     /// <summary>
-    /// Store：内存上限、WASI 配置与 epoch 截止时间都挂在它上面。
+    /// Store：内存上限、WASI 配置与 epoch 截止时间都挂在它上面
     /// </summary>
     private readonly Store _store;
 
     /// <summary>
-    /// 链接器：WASI 与 <c>xihan</c> 导入。
+    /// 链接器：WASI 与 <c>xihan</c> 导入
     /// </summary>
     private readonly Linker _linker;
 
     /// <summary>
-    /// 线性内存。
+    /// 线性内存
     /// </summary>
     private readonly Memory _memory;
 
     /// <summary>
-    /// <c>xihan_alloc</c>。
+    /// <c>xihan_alloc</c>
     /// </summary>
     private readonly Func<int, int> _alloc;
 
     /// <summary>
-    /// <c>xihan_free</c>。
+    /// <c>xihan_free</c>
     /// </summary>
     private readonly Action<int, int> _free;
 
     /// <summary>
-    /// 各调用导出。
+    /// 各调用导出
     /// </summary>
     private readonly Dictionary<string, Func<int, int, long>> _calls = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// epoch 递增间隔，用于把时限换算成 epoch 配额。
+    /// epoch 递增间隔，用于把时限换算成 epoch 配额
     /// </summary>
     private readonly TimeSpan _epochInterval;
 
     /// <summary>
-    /// 所属插件的调用泵。
+    /// 所属插件的调用泵
     /// </summary>
     private readonly WasmCallPump _pump;
 
     /// <summary>
-    /// 实例化。
+    /// 实例化
     /// </summary>
     /// <remarks>
-    /// 定义导入、设上限与 WASI、实例化模块、调用 <c>_initialize</c>、读 ABI 版本并解析导出。
+    /// 定义导入、设上限与 WASI、实例化模块、调用 <c>_initialize</c>、读 ABI 版本并解析导出
     /// </remarks>
-    /// <param name="engine">引擎。</param>
-    /// <param name="module">已校验的模块。</param>
-    /// <param name="functions">宿主导入函数。</param>
-    /// <param name="wasi">WASI 配置。</param>
-    /// <param name="memoryLimit">线性内存上限（字节）。</param>
-    /// <param name="epochInterval">epoch 递增间隔。</param>
-    /// <param name="startupTimeout">实例化与初始化的时限。</param>
+    /// <param name="engine">引擎</param>
+    /// <param name="module">已校验的模块</param>
+    /// <param name="functions">宿主导入函数</param>
+    /// <param name="wasi">WASI 配置</param>
+    /// <param name="memoryLimit">线性内存上限（字节）</param>
+    /// <param name="epochInterval">epoch 递增间隔</param>
+    /// <param name="startupTimeout">实例化与初始化的时限</param>
     public WasmInstance(Engine engine, WasmModule module, WasmHostFunctions functions, WasiConfiguration wasi, long memoryLimit, TimeSpan epochInterval, TimeSpan startupTimeout)
     {
         _epochInterval = epochInterval;
@@ -108,35 +108,35 @@ internal sealed class WasmInstance : IDisposable
     }
 
     /// <summary>
-    /// 模块报告的 ABI 版本。
+    /// 模块报告的 ABI 版本
     /// </summary>
     public uint AbiVersion { get; }
 
     /// <summary>
-    /// 模块是否导出该调用。
+    /// 模块是否导出该调用
     /// </summary>
     public bool Supports(string export) => _calls.ContainsKey(export);
 
     /// <summary>
-    /// 一次外层调用。
+    /// 一次外层调用
     /// </summary>
     /// <remarks>
-    /// 设截止时间、在当前线程上登记执行线程，把请求写进客体内存，调用导出，读回响应并释放。
+    /// 设截止时间、在当前线程上登记执行线程，把请求写进客体内存，调用导出，读回响应并释放
     /// </remarks>
     public WasmCallOutcome Call(string export, ReadOnlyMemory<byte> request, TimeSpan timeout)
         => _pump.Run(() => CallCore(export, request, timeout));
 
     /// <summary>
-    /// 一次再入调用。
+    /// 一次再入调用
     /// </summary>
     /// <remarks>
-    /// 外层调用的导入函数等待期间、在执行线程上调用导出；不另设截止时间，受外层调用的截止时间约束。
+    /// 外层调用的导入函数等待期间、在执行线程上调用导出；不另设截止时间，受外层调用的截止时间约束
     /// </remarks>
     public WasmCallOutcome CallNested(string export, ReadOnlyMemory<byte> request)
         => CallCore(export, request, null);
 
     /// <summary>
-    /// 调用导出并按内存约定交换请求与响应。
+    /// 调用导出并按内存约定交换请求与响应
     /// </summary>
     private WasmCallOutcome CallCore(string export, ReadOnlyMemory<byte> request, TimeSpan? timeout)
     {
@@ -201,7 +201,7 @@ internal sealed class WasmInstance : IDisposable
     }
 
     /// <summary>
-    /// 把时限换算成 epoch 配额：至少 1 个刻度。
+    /// 把时限换算成 epoch 配额：至少 1 个刻度
     /// </summary>
     private void SetDeadline(TimeSpan timeout)
         => _store.SetEpochDeadline((ulong)Math.Max(1, Math.Ceiling(timeout / _epochInterval)));

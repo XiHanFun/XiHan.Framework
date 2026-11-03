@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 元数据文件的源生成序列化上下文。
+/// 元数据文件的源生成序列化上下文
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(BlobMetadataDocument))]

@@ -9,24 +9,24 @@ using Xunit;
 namespace XiHan.Framework.AI.Conformance.Knowledge;
 
 /// <summary>
-/// 知识库存储的一致性套件（RFC-0022 §知识库）。
+/// 知识库存储的一致性套件（RFC-0022 §知识库）
 /// </summary>
 /// <remarks>
-/// 写入与按相似度排序、文档与元数据过滤、重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索。Provider 继承并实现 <see cref="StartAsync"/>。
+/// 写入与按相似度排序、文档与元数据过滤、重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索。Provider 继承并实现 <see cref="StartAsync"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class KnowledgeStoreConformance
 {
     /// <summary>
-    /// 启动装配了被测存储的夹具。
+    /// 启动装配了被测存储的夹具
     /// </summary>
     protected abstract Task<KnowledgeStoreHost> StartAsync();
 
     /// <summary>
-    /// 用例 1：写入后按向量搜索，按得分降序，最多 top 条。
+    /// 用例 1：写入后按向量搜索，按得分降序，最多 top 条
     /// </summary>
     /// <remarks>
-    /// 空集合返回空。
+    /// 空集合返回空
     /// </remarks>
     [Fact]
     public async Task Search_OrdersBySimilarity_AndHonoursTop()
@@ -55,7 +55,7 @@ public abstract class KnowledgeStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：按文档与元数据过滤，元数据原样取回。
+    /// 用例 2：按文档与元数据过滤，元数据原样取回
     /// </summary>
     [Fact]
     public async Task Search_FiltersByDocumentsAndMetadata()
@@ -86,7 +86,7 @@ public abstract class KnowledgeStoreConformance
     }
 
     /// <summary>
-    /// 用例 3：同 ID 重写入替换，按文档删除清掉它的全部块且不影响别的文档与集合。
+    /// 用例 3：同 ID 重写入替换，按文档删除清掉它的全部块且不影响别的文档与集合
     /// </summary>
     [Fact]
     public async Task Upsert_Replaces_AndDeleteRemovesWholeDocuments_PerCollection()
@@ -111,10 +111,10 @@ public abstract class KnowledgeStoreConformance
     }
 
     /// <summary>
-    /// 用例 4：裁剪只删一篇文档里块序号不小于给定值的记录。
+    /// 用例 4：裁剪只删一篇文档里块序号不小于给定值的记录
     /// </summary>
     /// <remarks>
-    /// 更小序号的块与别的文档不动；没有多余的块、文档或集合不存在都成功；给 0 删掉整篇。
+    /// 更小序号的块与别的文档不动；没有多余的块、文档或集合不存在都成功；给 0 删掉整篇
     /// </remarks>
     [Fact]
     public async Task Trim_RemovesOnlyChunksAtOrBeyondTheCount()
@@ -144,18 +144,18 @@ public abstract class KnowledgeStoreConformance
     }
 
     /// <summary>
-    /// 集合里全部记录的 ID（按序数排序）。
+    /// 集合里全部记录的 ID（按序数排序）
     /// </summary>
     private static async Task<List<string>> IdsAsync(KnowledgeStoreHost host, string collection, HashingEmbeddingGenerator generator)
         => (await host.Store.SearchAsync(collection, generator.Embed("part"), 100, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static chunk => chunk.Id).Order(StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 每次用例一个不重名的集合。
+    /// 每次用例一个不重名的集合
     /// </summary>
     protected static string Collection(string prefix) => prefix + "-" + Guid.NewGuid().ToString("N")[..8];
 
     /// <summary>
-    /// 一条记录。
+    /// 一条记录
     /// </summary>
     protected static KnowledgeRecord Record(HashingEmbeddingGenerator generator, string documentId, int index, string text, params (string Key, string Value)[] metadata)
     {

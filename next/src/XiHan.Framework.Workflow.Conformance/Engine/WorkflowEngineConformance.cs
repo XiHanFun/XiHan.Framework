@@ -29,37 +29,37 @@ using Xunit;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 引擎的一致性套件（RFC-0021）。
+/// 引擎的一致性套件（RFC-0021）
 /// </summary>
 /// <remarks>
-/// 顺序流、决策、并行与汇合、用户任务的三种完成策略、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、取消 / 终止 / 挂起 / 恢复、定义生命周期、事件主题、事件网关、HTTP、补偿、输出映射、实例级超时、延迟启动与重用策略、信号与定时启动、改变量 / 跳转 / 迁移、清理与延时变体。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器。
+/// 顺序流、决策、并行与汇合、用户任务的三种完成策略、转办与加签、延时与超时、信号、子流程与 ForEach、重试与继续、取消 / 终止 / 挂起 / 恢复、定义生命周期、事件主题、事件网关、HTTP、补偿、输出映射、实例级超时、延迟启动与重用策略、信号与定时启动、改变量 / 跳转 / 迁移、清理与延时变体。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowEngineConformance
 {
     /// <summary>
-    /// 启动装配了被测 Provider 的宿主。
+    /// 启动装配了被测 Provider 的宿主
     /// </summary>
     /// <remarks>
-    /// <paramref name="configure"/> 登记套件的记录器与活动，必须在宿主构建前应用；<paramref name="configuration"/> 是额外配置。
+    /// <paramref name="configure"/> 登记套件的记录器与活动，必须在宿主构建前应用；<paramref name="configuration"/> 是额外配置
     /// </remarks>
     protected abstract Task<WorkflowEngineHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration = null);
 
     /// <summary>
-    /// 延时与超时用例等待的上限。
+    /// 延时与超时用例等待的上限
     /// </summary>
     protected virtual TimeSpan WaitTimeout => TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 被测 Provider 的写入是否随调用方提交或回滚。
+    /// 被测 Provider 的写入是否随调用方提交或回滚
     /// </summary>
     /// <remarks>
-    /// 数据库实现是（加入 Transaction 阶段开启的工作单元）；内存实现没有事务、写入立即生效，覆盖为 <see langword="false"/>，事务相关的用例按它断言。
+    /// 数据库实现是（加入 Transaction 阶段开启的工作单元）；内存实现没有事务、写入立即生效，覆盖为 <see langword="false"/>，事务相关的用例按它断言
     /// </remarks>
     protected virtual bool JoinsCallerTransaction => true;
 
     /// <summary>
-    /// 用例 1：顺序流：输出合并进变量、表达式求值、节点实例与事件按顺序记录、实例完成。
+    /// 用例 1：顺序流：输出合并进变量、表达式求值、节点实例与事件按顺序记录、实例完成
     /// </summary>
     [Fact]
     public async Task Linear_RunsToCompletion_MergesOutputs_AndPublishesEvents()
@@ -106,10 +106,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 2：决策按条件选一条出边，都不匹配走默认出边。
+    /// 用例 2：决策按条件选一条出边，都不匹配走默认出边
     /// </summary>
     /// <remarks>
-    /// 条件里能用结果标签。
+    /// 条件里能用结果标签
     /// </remarks>
     [Fact]
     public async Task Decision_PicksMatchingTransition_OrDefault()
@@ -144,10 +144,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 3：并行网关让两个分支都执行。
+    /// 用例 3：并行网关让两个分支都执行
     /// </summary>
     /// <remarks>
-    /// 汇合等全部到达只执行一次；有分支死掉的汇合让实例故障。
+    /// 汇合等全部到达只执行一次；有分支死掉的汇合让实例故障
     /// </remarks>
     [Fact]
     public async Task Parallel_RunsBothBranches_AndJoinWaitsForAll()
@@ -186,10 +186,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 4：用户任务（Any）。
+    /// 用例 4：用户任务（Any）
     /// </summary>
     /// <remarks>
-    /// 待办按指派人查到；非指派人完成被拒；结果不在允许范围被拒；通过后继续；事件记录任务创建与完成。
+    /// 待办按指派人查到；非指派人完成被拒；结果不在允许范围被拒；通过后继续；事件记录任务创建与完成
     /// </remarks>
     [Fact]
     public async Task UserTask_Any_PendingCompleteAndGuards()
@@ -225,10 +225,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 5：会签（All）要全部通过，拒绝立即结束。
+    /// 用例 5：会签（All）要全部通过，拒绝立即结束
     /// </summary>
     /// <remarks>
-    /// 顺序（Sequential）一次一个。
+    /// 顺序（Sequential）一次一个
     /// </remarks>
     [Fact]
     public async Task UserTask_AllAndSequential_Policies()
@@ -263,10 +263,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 6：转办把任务交给目标（目标已是指派人被拒）。
+    /// 用例 6：转办把任务交给目标（目标已是指派人被拒）
     /// </summary>
     /// <remarks>
-    /// 加签立即给新人任务（已有的被拒）。
+    /// 加签立即给新人任务（已有的被拒）
     /// </remarks>
     [Fact]
     public async Task UserTask_TransferAndAddAssignees()
@@ -299,10 +299,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 7：延时以定时书签挂起，到期轮询后完成。
+    /// 用例 7：延时以定时书签挂起，到期轮询后完成
     /// </summary>
     /// <remarks>
-    /// 用户任务超时以 <c>timeout</c> 结果完成。
+    /// 用户任务超时以 <c>timeout</c> 结果完成
     /// </remarks>
     [Fact]
     public async Task Delay_AndNodeTimeout_ResumeByPolling()
@@ -343,10 +343,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 8：信号按名字与关联消费书签，载荷成为输出。
+    /// 用例 8：信号按名字与关联消费书签，载荷成为输出
     /// </summary>
     /// <remarks>
-    /// 关联不匹配的不消费。
+    /// 关联不匹配的不消费
     /// </remarks>
     [Fact]
     public async Task Signal_ResumesMatchingBookmarks()
@@ -377,10 +377,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 9：子流程等待回调并取回子实例变量。
+    /// 用例 9：子流程等待回调并取回子实例变量
     /// </summary>
     /// <remarks>
-    /// ForEach 顺序逐项启动子流程并汇总结果。
+    /// ForEach 顺序逐项启动子流程并汇总结果
     /// </remarks>
     [Fact]
     public async Task SubWorkflow_AndForEach_RunChildren()
@@ -422,10 +422,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 10：重试策略按退避重试（到期轮询）。
+    /// 用例 10：重试策略按退避重试（到期轮询）
     /// </summary>
     /// <remarks>
-    /// 用尽后故障；<c>RetryAsync</c> 从故障节点再来；继续出错以 <c>error</c> 流出并记 <c>lastError</c>。
+    /// 用尽后故障；<c>RetryAsync</c> 从故障节点再来；继续出错以 <c>error</c> 流出并记 <c>lastError</c>
     /// </remarks>
     [Fact]
     public async Task Faults_RetryPolicy_ManualRetry_AndContinueOnError()
@@ -475,10 +475,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 11：挂起的实例不接收到期书签（轮询后推），恢复后接收。
+    /// 用例 11：挂起的实例不接收到期书签（轮询后推），恢复后接收
     /// </summary>
     /// <remarks>
-    /// 取消清掉书签并补偿，终止不补偿；已结束的幂等；状态不允许的报冲突。
+    /// 取消清掉书签并补偿，终止不补偿；已结束的幂等；状态不允许的报冲突
     /// </remarks>
     [Fact]
     public async Task Control_SuspendResumeCancelTerminate()
@@ -521,10 +521,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 12：定义生命周期。
+    /// 用例 12：定义生命周期
     /// </summary>
     /// <remarks>
-    /// 不合法的草稿发布失败；发布后不能改；新版本是草稿；停用后不能启动；删除只允许草稿；结束节点带结果时结果处理器失败即故障。
+    /// 不合法的草稿发布失败；发布后不能改；新版本是草稿；停用后不能启动；删除只允许草稿；结束节点带结果时结果处理器失败即故障
     /// </remarks>
     [Fact]
     public async Task Definitions_Lifecycle_AndOutcomeHandlers()
@@ -582,7 +582,7 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 13：一个波次执行的节点数超过上限时实例故障（死循环保护），且不可重试。
+    /// 用例 13：一个波次执行的节点数超过上限时实例故障（死循环保护），且不可重试
     /// </summary>
     [Fact]
     public async Task RunawayLoop_FaultsInstance()
@@ -603,10 +603,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 14：租户隔离。
+    /// 用例 14：租户隔离
     /// </summary>
     /// <remarks>
-    /// 租户启动的实例，平台的调用查不到它的任务、发不到它的信号；租户自己的待办只有自己的。
+    /// 租户启动的实例，平台的调用查不到它的任务、发不到它的信号；租户自己的待办只有自己的
     /// </remarks>
     [Fact]
     public async Task Tenant_IsolatesTasksAndSignals()
@@ -639,10 +639,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 15：事件网关。
+    /// 用例 15：事件网关
     /// </summary>
     /// <remarks>
-    /// 先到的信号决定出路并带出载荷，其余书签清掉；没有信号时按超时流出。
+    /// 先到的信号决定出路并带出载荷，其余书签清掉；没有信号时按超时流出
     /// </remarks>
     [Fact]
     public async Task EventGateway_TakesFirstSignalOrTimeout()
@@ -677,10 +677,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 16：HTTP 活动。
+    /// 用例 16：HTTP 活动
     /// </summary>
     /// <remarks>
-    /// 模板 URL 与请求体、响应解析为对象、输出映射取值；非 2xx 默认故障，关掉后以 error 标签继续。
+    /// 模板 URL 与请求体、响应解析为对象、输出映射取值；非 2xx 默认故障，关掉后以 error 标签继续
     /// </remarks>
     [Fact]
     public async Task Http_SendsRequests_AndMapsResponses()
@@ -722,10 +722,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 17：补偿活动逆序补偿指定的已完成节点后继续。
+    /// 用例 17：补偿活动逆序补偿指定的已完成节点后继续
     /// </summary>
     /// <remarks>
-    /// 故障补偿在实例故障时补偿全部已完成节点。
+    /// 故障补偿在实例故障时补偿全部已完成节点
     /// </remarks>
     [Fact]
     public async Task Compensate_ActivityAndOnFault()
@@ -757,10 +757,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 18：输出映射以节点输出为作用域求值写入变量。
+    /// 用例 18：输出映射以节点输出为作用域求值写入变量
     /// </summary>
     /// <remarks>
-    /// 表达式不合法在发布时拒绝，求值失败即节点故障。
+    /// 表达式不合法在发布时拒绝，求值失败即节点故障
     /// </remarks>
     [Fact]
     public async Task OutputMappings_WriteVariables_AndFailLoudly()
@@ -786,7 +786,7 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 19：实例级超时到期按定义的动作故障或终止，书签清空并发布超时事件。
+    /// 用例 19：实例级超时到期按定义的动作故障或终止，书签清空并发布超时事件
     /// </summary>
     [Fact]
     public async Task InstanceTimeout_FaultsOrTerminates()
@@ -818,10 +818,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 20：延迟启动在到期前只有开始节点的定时书签。
+    /// 用例 20：延迟启动在到期前只有开始节点的定时书签
     /// </summary>
     /// <remarks>
-    /// 重用策略按关联 ID 拒绝或返回已有实例。
+    /// 重用策略按关联 ID 拒绝或返回已有实例
     /// </remarks>
     [Fact]
     public async Task DelayedStart_AndReusePolicy()
@@ -864,10 +864,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 21：信号启动为声明了该信号的已发布定义启动实例。
+    /// 用例 21：信号启动为声明了该信号的已发布定义启动实例
     /// </summary>
     /// <remarks>
-    /// 定时启动在发布时排定义级书签，到期由轮询启动并再次排期，停用后不再排。
+    /// 定时启动在发布时排定义级书签，到期由轮询启动并再次排期，停用后不再排
     /// </remarks>
     [Fact]
     public async Task SignalStart_AndCronStart()
@@ -907,10 +907,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 22：改变量、跳转到指定节点、迁移到兼容的新版本。
+    /// 用例 22：改变量、跳转到指定节点、迁移到兼容的新版本
     /// </summary>
     /// <remarks>
-    /// 不兼容的版本与不存在的节点被拒绝。
+    /// 不兼容的版本与不存在的节点被拒绝
     /// </remarks>
     [Fact]
     public async Task SetVariables_Jump_AndMigrate()
@@ -954,10 +954,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 23：清理删除早于时刻结束的实例及其节点与书签，运行中的不动。
+    /// 用例 23：清理删除早于时刻结束的实例及其节点与书签，运行中的不动
     /// </summary>
     /// <remarks>
-    /// 延时节点支持到时刻与 cron。
+    /// 延时节点支持到时刻与 cron
     /// </remarks>
     [Fact]
     public async Task Purge_AndDelayVariants()
@@ -1012,10 +1012,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 24：两个并发的拒绝重复启动只建出一个实例。
+    /// 用例 24：两个并发的拒绝重复启动只建出一个实例
     /// </summary>
     /// <remarks>
-    /// 探针把第一个启动卡在查重之后、写入之前，等第二个启动也走到查重处或在实例锁上等待时再放行。查重与写入原子时第二个启动看到第一个建出的实例，以 <c>WORKFLOW_CONFLICT_005</c> 失败，同一关联 ID 下只有一个未结束的实例。
+    /// 探针把第一个启动卡在查重之后、写入之前，等第二个启动也走到查重处或在实例锁上等待时再放行。查重与写入原子时第二个启动看到第一个建出的实例，以 <c>WORKFLOW_CONFLICT_005</c> 失败，同一关联 ID 下只有一个未结束的实例
     /// </remarks>
     [Fact]
     public async Task ReusePolicy_ConcurrentRejectActiveStarts_CreateOneInstance()
@@ -1047,10 +1047,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 25：定义按分区隔离。
+    /// 用例 25：定义按分区隔离
     /// </summary>
     /// <remarks>
-    /// 平台与各租户各是一个分区：同名定义各自从版本 1 编号；按名字或 ID 启动、目录的查找、列表、按 ID 的改动与新版本都看不到别的分区的定义；平台的定义对租户不可见（没有全局定义），租户的定义对平台也不可见；迁移只在同一分区里；重用策略只在同一分区里查重。
+    /// 平台与各租户各是一个分区：同名定义各自从版本 1 编号；按名字或 ID 启动、目录的查找、列表、按 ID 的改动与新版本都看不到别的分区的定义；平台的定义对租户不可见（没有全局定义），租户的定义对平台也不可见；迁移只在同一分区里；重用策略只在同一分区里查重
     /// </remarks>
     [Fact]
     public async Task Definitions_AreIsolatedPerPartition()
@@ -1131,10 +1131,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 26：调用只看得到、操作得了自己分区的实例与书签。
+    /// 用例 26：调用只看得到、操作得了自己分区的实例与书签
     /// </summary>
     /// <remarks>
-    /// 租户 t2 与平台对 t1 的实例：按实例 ID 的控制、按书签 ID 的恢复、用户任务与外部任务的操作都按不存在处理，查询只给自己分区的，清理只清自己分区的；t1 照常操作自己的实例。平台不再看得到、操作得了租户的实例。
+    /// 租户 t2 与平台对 t1 的实例：按实例 ID 的控制、按书签 ID 的恢复、用户任务与外部任务的操作都按不存在处理，查询只给自己分区的，清理只清自己分区的；t1 照常操作自己的实例。平台不再看得到、操作得了租户的实例
     /// </remarks>
     [Fact]
     public async Task Instances_AreIsolatedPerPartition()
@@ -1216,10 +1216,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 27：业务回滚时引擎的写入一起回滚。
+    /// 用例 27：业务回滚时引擎的写入一起回滚
     /// </summary>
     /// <remarks>
-    /// 在调用方的调用里发起流程，之后业务失败、调用回滚：实例、节点实例与书签都不留（<see cref="JoinsCallerTransaction"/> 的 Provider）；调用提交时都在。不加入事务的 Provider（内存实现）写入立即生效，回滚不撤销，套件照实断言这一点。宿主装了发件箱时，事件随调用写进发件箱：回滚的调用发出的事件不会送达，提交的会（ADR-0096 第六节）。
+    /// 在调用方的调用里发起流程，之后业务失败、调用回滚：实例、节点实例与书签都不留（<see cref="JoinsCallerTransaction"/> 的 Provider）；调用提交时都在。不加入事务的 Provider（内存实现）写入立即生效，回滚不撤销，套件照实断言这一点。宿主装了发件箱时，事件随调用写进发件箱：回滚的调用发出的事件不会送达，提交的会（ADR-0096 第六节）
     /// </remarks>
     [Fact]
     public async Task Transaction_BusinessRollback_DiscardsTheWorkflowWrites()
@@ -1254,10 +1254,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 28：办理任务随业务提交或回滚。
+    /// 用例 28：办理任务随业务提交或回滚
     /// </summary>
     /// <remarks>
-    /// 在调用里办理最后一个任务，流程走到结果结束节点完成；业务随后失败、调用回滚：实例仍在运行、任务仍在待办（加入事务的 Provider）。调用提交时实例完成、结果处理器收到结论。
+    /// 在调用里办理最后一个任务，流程走到结果结束节点完成；业务随后失败、调用回滚：实例仍在运行、任务仍在待办（加入事务的 Provider）。调用提交时实例完成、结果处理器收到结论
     /// </remarks>
     [Fact]
     public async Task Transaction_TaskCompletion_CommitsOrRollsBackWithTheBusiness()
@@ -1289,10 +1289,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 29：实例锁持有到调用结束，回滚后立即释放、不泄漏。
+    /// 用例 29：实例锁持有到调用结束，回滚后立即释放、不泄漏
     /// </summary>
     /// <remarks>
-    /// 调用里挂起一个实例后，别的调用在它结束之前改这个实例拿不到锁（<c>WORKFLOW_TIMEOUT_001</c>），不会读到提交之前的旧状态再改写；调用回滚后锁立即释放，别的调用照常操作。
+    /// 调用里挂起一个实例后，别的调用在它结束之前改这个实例拿不到锁（<c>WORKFLOW_TIMEOUT_001</c>），不会读到提交之前的旧状态再改写；调用回滚后锁立即释放，别的调用照常操作
     /// </remarks>
     [Fact]
     public async Task Transaction_InstanceLock_IsHeldUntilTheInvocationEnds_AndReleasedOnRollback()
@@ -1317,10 +1317,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 30：只读调用里的引擎写入在执行之前即被拒绝。
+    /// 用例 30：只读调用里的引擎写入在执行之前即被拒绝
     /// </summary>
     /// <remarks>
-    /// 只读的调用（动词 <c>get</c>）里启动流程：Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_UNEXPECTED_001</c>，活动没有执行、什么也没写下，调用本身照常结束；查询照常。加入事务与不加入事务的 Provider 同一断言（ADR-0099）：数据库实现看工作单元，内存实现看调用的操作契约，宿主装没装发件箱都一样。
+    /// 只读的调用（动词 <c>get</c>）里启动流程：Provider 在取锁、执行活动之前返回 <c>PERSISTENCE_UNEXPECTED_001</c>，活动没有执行、什么也没写下，调用本身照常结束；查询照常。加入事务与不加入事务的 Provider 同一断言（ADR-0099）：数据库实现看工作单元，内存实现看调用的操作契约，宿主装没装发件箱都一样
     /// </remarks>
     [Fact]
     public async Task Transaction_ReadOnlyInvocation_RejectsEngineWritesBeforeRunningActivities()
@@ -1352,10 +1352,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 31：到期书签轮询覆盖平台与每个启用的租户分区。
+    /// 用例 31：到期书签轮询覆盖平台与每个启用的租户分区
     /// </summary>
     /// <remarks>
-    /// 平台、<c>t1</c>、<c>t2</c> 各有一个到期的延时：一次次轮询把它们都恢复到完成，每个都在自己的分区里；停用的租户 <c>t-off</c> 不轮询，它的延时等租户重新启用再接续。
+    /// 平台、<c>t1</c>、<c>t2</c> 各有一个到期的延时：一次次轮询把它们都恢复到完成，每个都在自己的分区里；停用的租户 <c>t-off</c> 不轮询，它的延时等租户重新启用再接续
     /// </remarks>
     [Fact]
     public async Task Poller_CoversThePlatformAndEveryEnabledTenant()
@@ -1397,10 +1397,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 32：实例查询的分页与清理的条数越界以校验错误返回。
+    /// 用例 32：实例查询的分页与清理的条数越界以校验错误返回
     /// </summary>
     /// <remarks>
-    /// 错误码 <see cref="WorkflowErrors.InputInvalid"/>，不在构造时抛出、不进存储也不开事务；上下边界照常执行，计数不看分页，被拒绝的清理什么都不删。
+    /// 错误码 <see cref="WorkflowErrors.InputInvalid"/>，不在构造时抛出、不进存储也不开事务；上下边界照常执行，计数不看分页，被拒绝的清理什么都不删
     /// </remarks>
     [Fact]
     public async Task InstanceQueryAndPurge_OutOfRangeLimits_AreValidationErrors()
@@ -1435,10 +1435,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 33：目录按条件列定义摘要的一页与总数。
+    /// 用例 33：目录按条件列定义摘要的一页与总数
     /// </summary>
     /// <remarks>
-    /// 分页越界以 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.definition.query_page_invalid</c>）返回，不在构造时抛出；关键字、分类与状态在目录建出、发布后的定义上生效，名字升序、版本降序，总数不看分页（ADR-0096）。
+    /// 分页越界以 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.definition.query_page_invalid</c>）返回，不在构造时抛出；关键字、分类与状态在目录建出、发布后的定义上生效，名字升序、版本降序，总数不看分页（ADR-0096）
     /// </remarks>
     [Fact]
     public async Task Catalog_Query_PagesSummaries_AndRejectsOutOfRangePages()
@@ -1476,10 +1476,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 34：实例查询只取顶层、按一组关联 ID 与关键字过滤。
+    /// 用例 34：实例查询只取顶层、按一组关联 ID 与关键字过滤
     /// </summary>
     /// <remarks>
-    /// 子流程继承父实例的发起人与关联 ID，只取顶层把它们排除（「我发起的」、按单据查进度）；关键字匹配实例标题或关联 ID（同 4.x，ADR-0099），标题是启动时给的显示名，没给取定义的显示名。关联 ID 集合超过上限或有空白是 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.instance.query_correlations_invalid</c>），列表与计数都校验；空集合列表为空、计数为 0（ADR-0096）。
+    /// 子流程继承父实例的发起人与关联 ID，只取顶层把它们排除（「我发起的」、按单据查进度）；关键字匹配实例标题或关联 ID（同 4.x，ADR-0099），标题是启动时给的显示名，没给取定义的显示名。关联 ID 集合超过上限或有空白是 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.instance.query_correlations_invalid</c>），列表与计数都校验；空集合列表为空、计数为 0（ADR-0096）
     /// </remarks>
     [Fact]
     public async Task Instances_Query_TopLevelCorrelationSetAndTitleKeyword()
@@ -1545,10 +1545,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 35：引擎按实例列出全部等待点（书签）的摘要。
+    /// 用例 35：引擎按实例列出全部等待点（书签）的摘要
     /// </summary>
     /// <remarks>
-    /// 并行分支同时停在用户任务（两个指派人加节点超时）、信号与延时上：摘要列出全部种类，创建时间升序，用户任务的摘要 ID 就是任务 ID；书签被消费后随之消失。只看调用方分区的实例：别的分区与不存在的实例都是 <see cref="WorkflowErrors.InstanceNotFound"/>（ADR-0096）。
+    /// 并行分支同时停在用户任务（两个指派人加节点超时）、信号与延时上：摘要列出全部种类，创建时间升序，用户任务的摘要 ID 就是任务 ID；书签被消费后随之消失。只看调用方分区的实例：别的分区与不存在的实例都是 <see cref="WorkflowErrors.InstanceNotFound"/>（ADR-0096）
     /// </remarks>
     [Fact]
     public async Task Bookmarks_ListEveryWaitPointOfTheInstance_InTheCallersPartition()
@@ -1599,10 +1599,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 36：目录与实例查询的排序经引擎下推，排序项越界是校验错误。
+    /// 用例 36：目录与实例查询的排序经引擎下推，排序项越界是校验错误
     /// </summary>
     /// <remarks>
-    /// 排序项不合法以 <see cref="WorkflowErrors.InputInvalid"/> 返回、不在构造时抛出（ADR-0104）：字段不在白名单（请求里给了越界的数字）或某项为空是 <c>query_sort_invalid</c>，同一字段两次是 <c>query_sort_duplicate</c>，项数超过上限是 <c>query_sorts_too_many</c>，按上限、非法、重复的顺序检查；白名单里的全部字段各一次照常查询，空列表等于缺省排序；实例计数不看排序、不校验。定义按标题升降序、按创建时间区间过滤；实例按标题升降序，没给排序项时按创建时间降序（ADR-0102、ADR-0104）。
+    /// 排序项不合法以 <see cref="WorkflowErrors.InputInvalid"/> 返回、不在构造时抛出（ADR-0104）：字段不在白名单（请求里给了越界的数字）或某项为空是 <c>query_sort_invalid</c>，同一字段两次是 <c>query_sort_duplicate</c>，项数超过上限是 <c>query_sorts_too_many</c>，按上限、非法、重复的顺序检查；白名单里的全部字段各一次照常查询，空列表等于缺省排序；实例计数不看排序、不校验。定义按标题升降序、按创建时间区间过滤；实例按标题升降序，没给排序项时按创建时间降序（ADR-0102、ADR-0104）
     /// </remarks>
     [Fact]
     public async Task Queries_SortThroughTheEngine_AndRejectUnknownSortFields()
@@ -1674,10 +1674,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 37：按状态排序是生命周期的先后，经目录与引擎改了状态之后位置随之变化。
+    /// 用例 37：按状态排序是生命周期的先后，经目录与引擎改了状态之后位置随之变化
     /// </summary>
     /// <remarks>
-    /// 同 4.x 按状态枚举的整数值排（ADR-0103）：定义草稿、已发布、已停用、已归档；实例运行中、已挂起、已完成、已取消、故障、已终止。定义经目录发布、停用、归档，实例经引擎挂起、取消、终止、恢复；升序是生命周期的顺序，降序反过来，同状态按次序键。名字的字母序、状态名的字母序都与生命周期不同，排错了用例就失败。
+    /// 同 4.x 按状态枚举的整数值排（ADR-0103）：定义草稿、已发布、已停用、已归档；实例运行中、已挂起、已完成、已取消、故障、已终止。定义经目录发布、停用、归档，实例经引擎挂起、取消、终止、恢复；升序是生命周期的顺序，降序反过来，同状态按次序键。名字的字母序、状态名的字母序都与生命周期不同，排错了用例就失败
     /// </remarks>
     [Fact]
     public async Task SortByStatus_FollowsTheLifecycle_AsTheCatalogAndEngineChangeStates()
@@ -1737,10 +1737,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 38：故障存消息键与参数，按调用方的区域本地化。
+    /// 用例 38：故障存消息键与参数，按调用方的区域本地化
     /// </summary>
     /// <remarks>
-    /// 三条路径：发起即故障（没有指派人）、完成任务之后活动失败（属性不合法）、子流程故障（子实例的故障是内层原因）。实例、节点实例与故障事件上的 <see cref="WorkflowFault"/> 经存储与事件往返之后仍带消息键与参数，<see cref="WorkflowFault.Localize"/> 在 zh-CN 与 en-US 的消息作用域里分别得到中文与英文，<see cref="WorkflowFault.ToError"/> 带键、参数与内层（ADR-0105）。
+    /// 三条路径：发起即故障（没有指派人）、完成任务之后活动失败（属性不合法）、子流程故障（子实例的故障是内层原因）。实例、节点实例与故障事件上的 <see cref="WorkflowFault"/> 经存储与事件往返之后仍带消息键与参数，<see cref="WorkflowFault.Localize"/> 在 zh-CN 与 en-US 的消息作用域里分别得到中文与英文，<see cref="WorkflowFault.ToError"/> 带键、参数与内层（ADR-0105）
     /// </remarks>
     [Fact]
     public async Task Faults_KeepMessageKeys_AndLocalizeInTheCallersLocale()
@@ -1813,10 +1813,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 39：返回给调用方的错误只带消息键与参数，由宿主按调用方的区域翻译。
+    /// 用例 39：返回给调用方的错误只带消息键与参数，由宿主按调用方的区域翻译
     /// </summary>
     /// <remarks>
-    /// 外部任务的锁定时长与拉取条数、待办查询的目标：错误码不变，消息键是具体的键，参数里没有英文句子；按 zh-CN 与 en-US 解析得到各自的语言（ADR-0105）。
+    /// 外部任务的锁定时长与拉取条数、待办查询的目标：错误码不变，消息键是具体的键，参数里没有英文句子；按 zh-CN 与 en-US 解析得到各自的语言（ADR-0105）
     /// </remarks>
     [Fact]
     public async Task ReturnedErrors_CarryMessageKeys_ThatResolvePerLocale()
@@ -1848,10 +1848,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 40：设计期诊断、lastError 与状态名按调用方的区域渲染。
+    /// 用例 40：设计期诊断、lastError 与状态名按调用方的区域渲染
     /// </summary>
     /// <remarks>
-    /// 发布不合法的定义返回逐条问题（路径、消息键与参数）与汇总；活动描述符按区域渲染；继续出错写进 <c>lastError</c> 的是故障的结构，表达式照旧按 <c>code</c> 判断，展示按区域渲染；条件里的未知变量让实例故障，原因是表达式的键；子流程被取消时父节点是"子流程被取消"；状态不允许操作按状态各一句，状态的展示名按区域（ADR-0106）。
+    /// 发布不合法的定义返回逐条问题（路径、消息键与参数）与汇总；活动描述符按区域渲染；继续出错写进 <c>lastError</c> 的是故障的结构，表达式照旧按 <c>code</c> 判断，展示按区域渲染；条件里的未知变量让实例故障，原因是表达式的键；子流程被取消时父节点是"子流程被取消"；状态不允许操作按状态各一句，状态的展示名按区域（ADR-0106）
     /// </remarks>
     [Fact]
     public async Task DesignDiagnostics_LastError_AndStatusNames_LocalizeInTheCallersLocale()
@@ -1957,10 +1957,10 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 用例 41：别的发布端的消息照常确认成功，不当工作流事件解析。
+    /// 用例 41：别的发布端的消息照常确认成功，不当工作流事件解析
     /// </summary>
     /// <remarks>
-    /// 宿主里别的特性（调度、应用自己的事件）也经套件顶替的代理发布：调用之外直接发布，调用里装了发件箱时随事务写进发件箱、提交后由夹具投递。两条都确认成功、记进 <see cref="ConformanceLog.OtherTopics"/>，不出现在工作流事件里；工作流事件照旧记录（ADR-0096 修订）。
+    /// 宿主里别的特性（调度、应用自己的事件）也经套件顶替的代理发布：调用之外直接发布，调用里装了发件箱时随事务写进发件箱、提交后由夹具投递。两条都确认成功、记进 <see cref="ConformanceLog.OtherTopics"/>，不出现在工作流事件里；工作流事件照旧记录（ADR-0096 修订）
     /// </remarks>
     [Fact]
     public async Task OtherPublishers_Messages_AreAcknowledged_NotParsedAsWorkflowEvents()
@@ -1987,7 +1987,7 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 带标签记录节点的定义：开始 → 记录 → 结束。
+    /// 带标签记录节点的定义：开始 → 记录 → 结束
     /// </summary>
     private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(name)
         .AddStart().AddNode("a", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.LabelProperty, label)).AddEnd()
@@ -1995,7 +1995,7 @@ public abstract class WorkflowEngineConformance
         .Build();
 
     /// <summary>
-    /// 停在一小时延时上的定义：开始 → 等待 → 结束。
+    /// 停在一小时延时上的定义：开始 → 等待 → 结束
     /// </summary>
     private static WorkflowDefinition Waiting(string name) => WorkflowDefinitionBuilder.Create(name)
         .AddStart().AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
@@ -2003,7 +2003,7 @@ public abstract class WorkflowEngineConformance
         .Build();
 
     /// <summary>
-    /// 在给定作用域里建草稿并发布。
+    /// 在给定作用域里建草稿并发布
     /// </summary>
     private static async ValueTask<WorkflowDefinition> PublishAsync(IServiceProvider services, WorkflowDefinition definition)
     {
@@ -2013,19 +2013,19 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 在给定作用域里按名字启动最新已发布版本。
+    /// 在给定作用域里按名字启动最新已发布版本
     /// </summary>
     private static ValueTask<Result<WorkflowInstance>> StartByNameAsync(IServiceProvider services, string name)
         => services.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = name }, CancellationToken.None);
 
     /// <summary>
-    /// 以给定租户（空为平台）在一次经管道的调用里执行。
+    /// 以给定租户（空为平台）在一次经管道的调用里执行
     /// </summary>
     private static ValueTask<T> AsTenantAsync<T>(WorkflowEngineHost host, string? tenantId, Func<IServiceProvider, ValueTask<T>> action)
         => host.AsTenantAsync(tenantId, action);
 
     /// <summary>
-    /// 带实例级超时的定义：开始 → 记录 → 等一小时。
+    /// 带实例级超时的定义：开始 → 记录 → 等一小时
     /// </summary>
     private static WorkflowDefinition TimingOut(string name, WorkflowTimeoutAction action) => WorkflowDefinitionBuilder.Create(name)
         .WithTimeout(TimeSpan.FromMilliseconds(100), action)
@@ -2034,12 +2034,12 @@ public abstract class WorkflowEngineConformance
         .Build();
 
     /// <summary>
-    /// 套件用的 HTTP 处理器：记录请求，<c>/orders/*</c> 返回 JSON，<c>/fail</c> 返回 500。
+    /// 套件用的 HTTP 处理器：记录请求，<c>/orders/*</c> 返回 JSON，<c>/fail</c> 返回 500
     /// </summary>
     private sealed class StubHttpHandler : HttpMessageHandler
     {
         /// <summary>
-        /// 收到的请求：方法、URL、正文、<c>X-Trace</c> 头。
+        /// 收到的请求：方法、URL、正文、<c>X-Trace</c> 头
         /// </summary>
         public List<(string Method, string Url, string Body, string? Trace)> Requests { get; } = [];
 
@@ -2058,7 +2058,7 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 登记套件的记录器、活动与处理器。
+    /// 登记套件的记录器、活动与处理器
     /// </summary>
     protected static void Register(IServiceCollection services, ConformanceLog log)
     {
@@ -2076,7 +2076,7 @@ public abstract class WorkflowEngineConformance
     }
 
     /// <summary>
-    /// 一个"开始 → 用户任务 → 决策 → 结束（approved / rejected）"的定义。
+    /// 一个"开始 → 用户任务 → 决策 → 结束（approved / rejected）"的定义
     /// </summary>
     protected static WorkflowDefinition Approval(string name, UserTaskCompletionPolicy policy, params IReadOnlyList<string> assignees)
         => WorkflowDefinitionBuilder.Create(name)
@@ -2093,7 +2093,7 @@ public abstract class WorkflowEngineConformance
             .Build();
 
     /// <summary>
-    /// 轮询直到条件成立或超时。
+    /// 轮询直到条件成立或超时
     /// </summary>
     private async Task WaitUntilAsync(Func<Task<bool>> condition)
     {

@@ -22,50 +22,50 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// S3 对象存储的能力包入口。
+/// S3 对象存储的能力包入口
 /// </summary>
 /// <remarks>
-/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。启动时探一次服务是否认条件写入（<see cref="S3ObjectStorageOptions.ConditionalWrites"/>，与健康项的首次探测并行，ADR-0089、ADR-0090、ADR-0093）：探明不认、被拒绝或探测桶不存在都启动失败；只有连不上照常启动，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶），并即时并入条件写入的状态（数据 <c>conditionalWrites</c>；连不上 Degraded，不认以及启动之后才被拒绝或缺桶 Failed）。被要求提供分片上传或预签名时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而其余能力都只是兜底选出时，只登记它（被顶替时经 <see cref="ConfigureShadowed"/>），不建缺省客户端、不探测。
+/// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。启动时探一次服务是否认条件写入（<see cref="S3ObjectStorageOptions.ConditionalWrites"/>，与健康项的首次探测并行，ADR-0089、ADR-0090、ADR-0093）：探明不认、被拒绝或探测桶不存在都启动失败；只有连不上照常启动，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶），并即时并入条件写入的状态（数据 <c>conditionalWrites</c>；连不上 Degraded，不认以及启动之后才被拒绝或缺桶 Failed）。被要求提供分片上传或预签名时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而其余能力都只是兜底选出时，只登记它（被顶替时经 <see cref="ConfigureShadowed"/>），不建缺省客户端、不探测
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
 {
     /// <summary>
-    /// 连接绑定名。
+    /// 连接绑定名
     /// </summary>
     /// <remarks>
-    /// <c>objectstorage</c>，类型 <c>blob</c>（RFC-0016 的绑定类型词表），可选。主值是服务端点，属性 <c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>。
+    /// <c>objectstorage</c>，类型 <c>blob</c>（RFC-0016 的绑定类型词表），可选。主值是服务端点，属性 <c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>
     /// </remarks>
     public const string ConnectionBinding = "objectstorage";
 
     /// <summary>
-    /// 健康项名：服务是否可达。
+    /// 健康项名：服务是否可达
     /// </summary>
     public const string HealthName = "objectstorage.s3.connection";
 
     /// <summary>
-    /// 启动时起循环的健康探针，停止时结束它。
+    /// 启动时起循环的健康探针，停止时结束它
     /// </summary>
     private PeriodicHealthContributor? _health;
 
     /// <summary>
-    /// 缺省实例的条件写入状态：启动时探一次、停止时结束后台重试。
+    /// 缺省实例的条件写入状态：启动时探一次、停止时结束后台重试
     /// </summary>
     private S3ConditionalWriteGate? _conditionalWrites;
 
     /// <summary>
-    /// 本特性是否提供缺省实例。
+    /// 本特性是否提供缺省实例
     /// </summary>
     /// <remarks>
-    /// 由 <see cref="Configure"/> 判定（<see cref="BlobStoreSelection.ProvidesDefaultInstance"/>）；不提供时与被顶替相同，启动时不探测。
+    /// 由 <see cref="Configure"/> 判定（<see cref="BlobStoreSelection.ProvidesDefaultInstance"/>）；不提供时与被顶替相同，启动时不探测
     /// </remarks>
     private bool _providesDefault;
 
     /// <summary>
-    /// 本特性是否提供缺省的分片上传。
+    /// 本特性是否提供缺省的分片上传
     /// </summary>
     /// <remarks>
-    /// 提供时启动探测也核对分片上传的条件完成。
+    /// 提供时启动探测也核对分片上传的条件完成
     /// </remarks>
     private bool _providesMultipart;
 
@@ -141,7 +141,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
 
     /// <inheritdoc />
     /// <remarks>
-    /// 只登记命名实例的 Provider：缺省实例由别的存储提供，不读本包的配置节与连接绑定、不建客户端。
+    /// 只登记命名实例的 Provider：缺省实例由别的存储提供，不读本包的配置节与连接绑定、不建客户端
     /// </remarks>
     public void ConfigureShadowed(FeatureContext context)
     {
@@ -193,10 +193,10 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     }
 
     /// <summary>
-    /// 按选项创建客户端。
+    /// 按选项创建客户端
     /// </summary>
     /// <remarks>
-    /// 有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；没有密钥时走 SDK 默认凭据链。
+    /// 有端点时指向兼容服务并只在服务端要求时计算 / 校验校验和（多数兼容服务不支持分块尾部校验和），没有端点时按区域访问 Amazon S3；没有密钥时走 SDK 默认凭据链
     /// </remarks>
     public static AmazonS3Client CreateClient(S3ObjectStorageOptions options)
     {
@@ -220,10 +220,10 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
     }
 
     /// <summary>
-    /// 连通性探针。
+    /// 连通性探针
     /// </summary>
     /// <remarks>
-    /// 配了健康桶就 HEAD 它（桶不存在、无权限或服务不可达都抛出）；没配就列桶，是最轻的通用管理调用。异常由探针宿主记成 Degraded 并带异常消息。
+    /// 配了健康桶就 HEAD 它（桶不存在、无权限或服务不可达都抛出）；没配就列桶，是最轻的通用管理调用。异常由探针宿主记成 Degraded 并带异常消息
     /// </remarks>
     internal static async ValueTask<Result> ProbeAsync(IAmazonS3 client, string? bucket, CancellationToken cancellationToken)
     {

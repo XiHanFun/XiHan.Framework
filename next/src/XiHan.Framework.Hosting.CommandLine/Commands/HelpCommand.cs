@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Commands;
 
 /// <summary>
-/// <c>help</c>：打印用法与命令列表。
+/// <c>help</c>：打印用法与命令列表
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HelpCommand : ICommand

@@ -6,26 +6,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件求值器（无状态，线程安全）。
+/// 条件求值器（无状态，线程安全）
 /// </summary>
 /// <remarks>
-/// 多值属性按"任一元素"判定（等于、比大小、包含、在集合中、在范围内、开头、结尾），否定运算符按"没有元素"判定；字符串比较不区分大小写。为空 / 不为空把取不到、空列表与全是空白的字符串当空，可以取反；其余运算符遇到取不到的属性为无法判定，取反不翻转。
+/// 多值属性按"任一元素"判定（等于、比大小、包含、在集合中、在范围内、开头、结尾），否定运算符按"没有元素"判定；字符串比较不区分大小写。为空 / 不为空把取不到、空列表与全是空白的字符串当空，可以取反；其余运算符遇到取不到的属性为无法判定，取反不翻转
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConditionEvaluator : IConditionEvaluator
 {
     /// <summary>
-    /// 不带说明的命中结果。
+    /// 不带说明的命中结果
     /// </summary>
     private static readonly ConditionEvaluationResult _matched = new(ConditionOutcome.Matched, []);
 
     /// <summary>
-    /// 不带说明的不命中结果。
+    /// 不带说明的不命中结果
     /// </summary>
     private static readonly ConditionEvaluationResult _notMatched = new(ConditionOutcome.NotMatched, []);
 
     /// <summary>
-    /// 不带说明的待定结果。
+    /// 不带说明的待定结果
     /// </summary>
     private static readonly ConditionEvaluationResult _pending = new(ConditionOutcome.Pending, []);
 
@@ -71,10 +71,10 @@ public sealed class ConditionEvaluator : IConditionEvaluator
     }
 
     /// <summary>
-    /// 组内且。
+    /// 组内且
     /// </summary>
     /// <remarks>
-    /// 任一子句不命中或无法判定即不命中（不要说明时立即返回），否则任一待定即待定，否则命中。
+    /// 任一子句不命中或无法判定即不命中（不要说明时立即返回），否则任一待定即待定，否则命中
     /// </remarks>
     private static async ValueTask<(ConditionOutcome Outcome, IReadOnlyList<ConditionClauseEvaluation> Clauses)> EvaluateGroupAsync(CompiledConditionGroup group, TimeZoneInfo timeZone, IConditionAttributeSource source, bool explain, CancellationToken cancellationToken)
     {
@@ -106,10 +106,10 @@ public sealed class ConditionEvaluator : IConditionEvaluator
     }
 
     /// <summary>
-    /// 一个子句。
+    /// 一个子句
     /// </summary>
     /// <remarks>
-    /// 编译出错为无法判定；取属性值，暂不可得为待定；为空 / 不为空直接判定；其余先把属性值转成值种类再运算。
+    /// 编译出错为无法判定；取属性值，暂不可得为待定；为空 / 不为空直接判定；其余先把属性值转成值种类再运算
     /// </remarks>
     private static async ValueTask<ConditionClauseEvaluation> EvaluateClauseAsync(CompiledConditionClause clause, TimeZoneInfo timeZone, IConditionAttributeSource source, bool explain, CancellationToken cancellationToken)
     {
@@ -158,7 +158,7 @@ public sealed class ConditionEvaluator : IConditionEvaluator
     }
 
     /// <summary>
-    /// 运算：多值按任一元素，否定运算符按没有元素。
+    /// 运算：多值按任一元素，否定运算符按没有元素
     /// </summary>
     private static bool Apply(ConditionOperator @operator, ConditionAttributeDescriptor descriptor, CompiledConditionClause clause, List<object> elements)
     {
@@ -183,7 +183,7 @@ public sealed class ConditionEvaluator : IConditionEvaluator
     }
 
     /// <summary>
-    /// 包含：多值属性为列表含该值，单值字符串为子串（不区分大小写）。
+    /// 包含：多值属性为列表含该值，单值字符串为子串（不区分大小写）
     /// </summary>
     private static bool Contains(ConditionAttributeDescriptor descriptor, CompiledConditionClause clause, List<object> elements)
         => descriptor.IsMultiValued
@@ -191,10 +191,10 @@ public sealed class ConditionEvaluator : IConditionEvaluator
             : elements.Exists(element => ((string)element).Contains((string)clause.Scalar!, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
-    /// 闭区间。
+    /// 闭区间
     /// </summary>
     /// <remarks>
-    /// 时刻的下限大于上限表示跨零点（落在下限之后或上限之前）。
+    /// 时刻的下限大于上限表示跨零点（落在下限之后或上限之前）
     /// </remarks>
     private static bool InRange(object value, object min, object max, ConditionValueKind kind)
     {
@@ -207,15 +207,15 @@ public sealed class ConditionEvaluator : IConditionEvaluator
     }
 
     /// <summary>
-    /// 运算结果加取反：只翻转命中与不命中。
+    /// 运算结果加取反：只翻转命中与不命中
     /// </summary>
     private static ConditionOutcome ToOutcome(bool result, bool isNegated) => result != isNegated ? ConditionOutcome.Matched : ConditionOutcome.NotMatched;
 
     /// <summary>
-    /// 子句说明。
+    /// 子句说明
     /// </summary>
     /// <remarks>
-    /// 不要说明时不格式化属性值。
+    /// 不要说明时不格式化属性值
     /// </remarks>
     private static ConditionClauseEvaluation Describe(CompiledConditionClause clause, ConditionOutcome outcome, IReadOnlyList<object> values, Error? reason, bool explain)
         => new(

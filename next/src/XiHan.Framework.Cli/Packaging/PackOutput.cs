@@ -4,8 +4,8 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 一个生成的文件：相对输出目录的路径（正斜杠）与内容。
+/// 一个生成的文件：相对输出目录的路径（正斜杠）与内容
 /// </summary>
-/// <param name="Path">相对路径。</param>
-/// <param name="Content">内容，LF 换行。</param>
+/// <param name="Path">相对路径</param>
+/// <param name="Content">内容，LF 换行</param>
 internal sealed record PackOutput(string Path, string Content);

@@ -7,22 +7,22 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// 能力图谱求解（RFC-0002）。
+/// 能力图谱求解（RFC-0002）
 /// </summary>
 /// <remarks>
-/// 按能力 ID 与接口版本把每个 <c>requires</c> 绑定到唯一提供者，拓扑排序，报错可解释。
+/// 按能力 ID 与接口版本把每个 <c>requires</c> 绑定到唯一提供者，拓扑排序，报错可解释
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class CapabilityResolver
 {
     /// <summary>
-    /// 求解。
+    /// 求解
     /// </summary>
-    /// <param name="manifests">参与装配的全部清单，包含内核清单。</param>
-    /// <param name="providerSelections">显式指定的提供者：能力 ID → 清单 ID。</param>
+    /// <param name="manifests">参与装配的全部清单，包含内核清单</param>
+    /// <param name="providerSelections">显式指定的提供者：能力 ID → 清单 ID</param>
     /// <exception cref="FrameworkException">
     /// <see cref="KernelErrors.DuplicateManifest"/>、<see cref="KernelErrors.MissingCapability"/>、<see cref="KernelErrors.CapabilityVersionConflict"/>、
-    /// <see cref="KernelErrors.AmbiguousProvider"/>、<see cref="KernelErrors.CircularCapability"/>。
+    /// <see cref="KernelErrors.AmbiguousProvider"/>、<see cref="KernelErrors.CircularCapability"/>
     /// </exception>
     public static ResolvedGraph Resolve(IReadOnlyList<Manifest> manifests, IReadOnlyDictionary<string, string>? providerSelections = null)
     {
@@ -38,7 +38,7 @@ public static class CapabilityResolver
             }
         }
 
-        // 第一遍：为每条 requires 选提供者并建边。同一能力只记录第一次选中的提供者，后续依赖者复用同一结果。
+        // 第一遍：为每条 requires 选提供者并建边。同一能力只记录第一次选中的提供者，后续依赖者复用同一结果
         // 有人依赖（且解析到了提供者）的能力记为被要求的；配置或代码指定了提供者的能力同样是被要求的，回填时一并判定
         var providers = new Dictionary<string, ResolvedNode>(StringComparer.Ordinal);
         var demanded = new HashSet<string>(StringComparer.Ordinal);
@@ -59,7 +59,7 @@ public static class CapabilityResolver
             }
         }
 
-        // 没有被任何人依赖的能力也按同一规则选出提供者：显式 Provider 优先，其次唯一的 default，否则要求配置指定。
+        // 没有被任何人依赖的能力也按同一规则选出提供者：显式 Provider 优先，其次唯一的 default，否则要求配置指定
         foreach (var group in nodes.Values
                      .SelectMany(static n => n.Manifest.Provides.Select(p => (p.Id, Node: n)))
                      .GroupBy(static x => x.Id, StringComparer.Ordinal))
@@ -70,7 +70,7 @@ public static class CapabilityResolver
             }
         }
 
-        // 把选中结果回填到节点：未被任何能力选中的节点将被宿主视为 shadowed，不装配。
+        // 把选中结果回填到节点：未被任何能力选中的节点将被宿主视为 shadowed，不装配
         // 没人依赖、也没人指定的能力只是兜底选出：照样算选中，但不是被要求的（特性可据此放宽跨能力的一致性约束）
         foreach (var (capabilityId, provider) in providers)
         {
@@ -82,19 +82,19 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 为一条 <c>requires</c> 选提供者。
+    /// 为一条 <c>requires</c> 选提供者
     /// </summary>
     /// <remarks>
-    /// 配置指定优先；无配置时按候选数与角色决定；可选依赖缺失返回 <see langword="null"/>。
+    /// 配置指定优先；无配置时按候选数与角色决定；可选依赖缺失返回 <see langword="null"/>
     /// </remarks>
-    /// <param name="requester">声明该依赖的节点，仅用于错误信息。</param>
-    /// <param name="requirement">待满足的依赖。</param>
-    /// <param name="all">全部节点。</param>
-    /// <param name="selections">配置或代码显式指定的提供者。</param>
-    /// <returns>选中的提供者；可选依赖无法满足时为 <see langword="null"/>。</returns>
+    /// <param name="requester">声明该依赖的节点，仅用于错误信息</param>
+    /// <param name="requirement">待满足的依赖</param>
+    /// <param name="all">全部节点</param>
+    /// <param name="selections">配置或代码显式指定的提供者</param>
+    /// <returns>选中的提供者；可选依赖无法满足时为 <see langword="null"/></returns>
     private static ResolvedNode? Select(ResolvedNode requester, CapabilityRequirement requirement, IEnumerable<ResolvedNode> all, IReadOnlyDictionary<string, string> selections)
     {
-        // sameId 用于区分"没人提供"与"有人提供但版本不符"，后者报版本冲突并列出双方版本。
+        // sameId 用于区分"没人提供"与"有人提供但版本不符"，后者报版本冲突并列出双方版本
         var sameId = all.Where(n => n.Manifest.Provides.Any(p => string.Equals(p.Id, requirement.Id, StringComparison.Ordinal))).ToList();
         var candidates = sameId.Where(n => n.Manifest.Provides.Any(requirement.IsSatisfiedBy)).ToList();
 
@@ -106,7 +106,7 @@ public static class CapabilityResolver
                 return selected;
             }
 
-            // 配置指向了不存在或版本不符的清单：必需依赖直接失败，可选依赖按缺失处理。
+            // 配置指向了不存在或版本不符的清单：必需依赖直接失败，可选依赖按缺失处理
             if (!requirement.Optional)
             {
                 throw new FrameworkException(
@@ -137,15 +137,15 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 在候选里选一个。
+    /// 在候选里选一个
     /// </summary>
     /// <remarks>
-    /// 配置指定 → 唯一的显式 Provider → 唯一的 default → 否则多候选未指定。
+    /// 配置指定 → 唯一的显式 Provider → 唯一的 default → 否则多候选未指定
     /// </remarks>
-    /// <param name="capabilityId">能力 ID。</param>
-    /// <param name="candidates">提供该能力且版本匹配的节点。</param>
-    /// <param name="selections">显式指定的提供者；<see langword="null"/> 表示调用方已处理过配置指定。</param>
-    /// <param name="what">错误信息的主语，描述是谁需要这个能力。</param>
+    /// <param name="capabilityId">能力 ID</param>
+    /// <param name="candidates">提供该能力且版本匹配的节点</param>
+    /// <param name="selections">显式指定的提供者；<see langword="null"/> 表示调用方已处理过配置指定</param>
+    /// <param name="what">错误信息的主语，描述是谁需要这个能力</param>
     private static ResolvedNode Choose(string capabilityId, IReadOnlyList<ResolvedNode> candidates, IReadOnlyDictionary<string, string>? selections, string what)
     {
         if (selections is not null && selections.TryGetValue(capabilityId, out var selectedId))
@@ -161,7 +161,7 @@ public static class CapabilityResolver
                 $"Configuration selects '{selectedId}' to provide '{capabilityId}', but it does not exist or does not provide '{capabilityId}'. Candidates: {Describe(candidates)}.");
         }
 
-        // default 角色只在没有任何显式 Provider 时参与竞争；有显式 Provider 时 default 被顶替。
+        // default 角色只在没有任何显式 Provider 时参与竞争；有显式 Provider 时 default 被顶替
         var explicitProviders = candidates.Where(static n => n.Manifest.Role != ManifestRole.Default).ToList();
         var pool = explicitProviders.Count > 0 ? explicitProviders : candidates;
         if (pool.Count == 1)
@@ -175,7 +175,7 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 对节点做深度优先拓扑排序：被依赖者在前，输入顺序作为同层次的次序，保证结果确定。
+    /// 对节点做深度优先拓扑排序：被依赖者在前，输入顺序作为同层次的次序，保证结果确定
     /// </summary>
     private static List<ResolvedNode> Sort(List<ResolvedNode> nodes)
     {
@@ -192,15 +192,15 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 深度优先访问一个节点。
+    /// 深度优先访问一个节点
     /// </summary>
     /// <remarks>
-    /// 先输出其全部依赖，再输出自身；沿当前路径再次遇到同一节点即为环。
+    /// 先输出其全部依赖，再输出自身；沿当前路径再次遇到同一节点即为环
     /// </remarks>
-    /// <param name="node">当前节点。</param>
-    /// <param name="visited">已完成输出的节点。</param>
-    /// <param name="path">当前递归路径，用于检测环并给出可读的环路。</param>
-    /// <param name="ordered">输出序列。</param>
+    /// <param name="node">当前节点</param>
+    /// <param name="visited">已完成输出的节点</param>
+    /// <param name="path">当前递归路径，用于检测环并给出可读的环路</param>
+    /// <param name="ordered">输出序列</param>
     private static void Visit(ResolvedNode node, HashSet<ResolvedNode> visited, List<ResolvedNode> path, List<ResolvedNode> ordered)
     {
         if (visited.Contains(node))
@@ -208,7 +208,7 @@ public static class CapabilityResolver
             return;
         }
 
-        // 节点出现在当前路径上说明依赖成环；从首次出现处截取路径，报错时打印完整环路。
+        // 节点出现在当前路径上说明依赖成环；从首次出现处截取路径，报错时打印完整环路
         var cycleStart = path.IndexOf(node);
         if (cycleStart >= 0)
         {
@@ -228,10 +228,10 @@ public static class CapabilityResolver
     }
 
     /// <summary>
-    /// 把节点列表格式化为错误信息里的清单 ID 列表。
+    /// 把节点列表格式化为错误信息里的清单 ID 列表
     /// </summary>
     /// <remarks>
-    /// 空列表输出 <c>none</c>。
+    /// 空列表输出 <c>none</c>
     /// </remarks>
     private static string Describe(IEnumerable<ResolvedNode> nodes)
     {

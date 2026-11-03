@@ -7,16 +7,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Authentication;
 
 /// <summary>
-/// 协议层提取的凭据。
+/// 协议层提取的凭据
 /// </summary>
 /// <remarks>
-/// 方案（如 <c>Bearer</c>、<c>ApiKey</c>）与值。方案比较不区分大小写。
+/// 方案（如 <c>Bearer</c>、<c>ApiKey</c>）与值。方案比较不区分大小写
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record AuthenticationCredential
 {
     /// <summary>
-    /// 创建凭据。
+    /// 创建凭据
     /// </summary>
     public AuthenticationCredential(string scheme, string value)
     {
@@ -25,20 +25,20 @@ public sealed record AuthenticationCredential
     }
 
     /// <summary>
-    /// 方案。
+    /// 方案
     /// </summary>
     public string Scheme { get; }
 
     /// <summary>
-    /// 值。
+    /// 值
     /// </summary>
     /// <remarks>
-    /// 不写入日志。
+    /// 不写入日志
     /// </remarks>
     public string Value { get; }
 
     /// <summary>
-    /// 解析 <c>&lt;scheme&gt; &lt;value&gt;</c> 形式（如 HTTP <c>Authorization</c> 头）。
+    /// 解析 <c>&lt;scheme&gt; &lt;value&gt;</c> 形式（如 HTTP <c>Authorization</c> 头）
     /// </summary>
     public static bool TryParse([NotNullWhen(true)] string? header, [NotNullWhen(true)] out AuthenticationCredential? credential)
     {

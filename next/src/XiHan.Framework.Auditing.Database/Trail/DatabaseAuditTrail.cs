@@ -15,95 +15,95 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Database.Trail;
 
 /// <summary>
-/// 数据库审计（单例）。
+/// 数据库审计（单例）
 /// </summary>
 /// <remarks>
-/// 写入只是进有界队列，不阻塞调用路径，满了丢弃并计数；后台循环攒够一批或到刷写间隔就把队列里的事件一次批量落库，失败只记日志、丢弃该批并计数，不重试；查询经仓储按写入序号升序分页，续页令牌是上一页最后一条的序号。读写都在自己的作用域与工作单元里执行（<see cref="AuditStoreScope"/>），不加入调用方的事务。
+/// 写入只是进有界队列，不阻塞调用路径，满了丢弃并计数；后台循环攒够一批或到刷写间隔就把队列里的事件一次批量落库，失败只记日志、丢弃该批并计数，不重试；查询经仓储按写入序号升序分页，续页令牌是上一页最后一条的序号。读写都在自己的作用域与工作单元里执行（<see cref="AuditStoreScope"/>），不加入调用方的事务
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDisposable
 {
     /// <summary>
-    /// 丢弃警告的节流窗口：窗口内只记一条，附上累计丢弃数。
+    /// 丢弃警告的节流窗口：窗口内只记一条，附上累计丢弃数
     /// </summary>
     private static readonly TimeSpan _dropWarningInterval = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly DatabaseAuditingOptions _options;
 
     /// <summary>
-    /// 记录 ID 生成器。
+    /// 记录 ID 生成器
     /// </summary>
     private readonly IIdGenerator<Guid> _ids;
 
     /// <summary>
-    /// 时钟：写入序号、刷写定时与警告节流都按它。
+    /// 时钟：写入序号、刷写定时与警告节流都按它
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 读写记录的作用域。
+    /// 读写记录的作用域
     /// </summary>
     private readonly AuditStoreScope _store;
 
     /// <summary>
-    /// 等待落库的事件。
+    /// 等待落库的事件
     /// </summary>
     /// <remarks>
-    /// 有界，满了丢弃新到的。
+    /// 有界，满了丢弃新到的
     /// </remarks>
     private readonly Channel<AuditEvent> _queue;
 
     /// <summary>
-    /// 批满信号。
+    /// 批满信号
     /// </summary>
     /// <remarks>
-    /// 队列攒够一批时唤醒后台循环，不等刷写间隔；容量 1，重复信号丢弃。
+    /// 队列攒够一批时唤醒后台循环，不等刷写间隔；容量 1，重复信号丢弃
     /// </remarks>
     private readonly Channel<bool> _wake = Channel.CreateBounded<bool>(new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropWrite, SingleReader = true });
 
     /// <summary>
-    /// 刷写互斥：后台循环与 <see cref="FlushAsync"/> 不同时出队。
+    /// 刷写互斥：后台循环与 <see cref="FlushAsync"/> 不同时出队
     /// </summary>
     private readonly SemaphoreSlim _flushing = new(1, 1);
 
     /// <summary>
-    /// 上一个分配的写入序号。
+    /// 上一个分配的写入序号
     /// </summary>
     /// <remarks>
-    /// 只在持有 <see cref="_flushing"/> 时读写。
+    /// 只在持有 <see cref="_flushing"/> 时读写
     /// </remarks>
     private long _lastSequence;
 
     /// <summary>
-    /// 因队列满或已停止而丢弃的事件数。
+    /// 因队列满或已停止而丢弃的事件数
     /// </summary>
     private long _dropped;
 
     /// <summary>
-    /// 落库失败的事件数。
+    /// 落库失败的事件数
     /// </summary>
     private long _failed;
 
     /// <summary>
-    /// 已落库的事件数。
+    /// 已落库的事件数
     /// </summary>
     private long _persisted;
 
     /// <summary>
-    /// 上一条丢弃警告的时钟刻度。
+    /// 上一条丢弃警告的时钟刻度
     /// </summary>
     private long _lastDropWarningTicks;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public DatabaseAuditTrail(IServiceProvider services, DatabaseAuditingOptions options, IIdGenerator<Guid> ids, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -118,22 +118,22 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 因队列满或已停止而丢弃的事件数。
+    /// 因队列满或已停止而丢弃的事件数
     /// </summary>
     public long DroppedCount => Interlocked.Read(ref _dropped);
 
     /// <summary>
-    /// 落库失败（整批异常或逐项被拒）的事件数。
+    /// 落库失败（整批异常或逐项被拒）的事件数
     /// </summary>
     public long FailedCount => Interlocked.Read(ref _failed);
 
     /// <summary>
-    /// 已落库的事件数。
+    /// 已落库的事件数
     /// </summary>
     public long PersistedCount => Interlocked.Read(ref _persisted);
 
     /// <summary>
-    /// 队列里等待落库的事件数。
+    /// 队列里等待落库的事件数
     /// </summary>
     public int PendingCount => _queue.Reader.Count;
 
@@ -212,10 +212,10 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 立即把队列里的事件全部落库并等待完成。
+    /// 立即把队列里的事件全部落库并等待完成
     /// </summary>
     /// <remarks>
-    /// 与后台循环互斥，循环正在刷写时等它这一批结束再接着刷剩下的。
+    /// 与后台循环互斥，循环正在刷写时等它这一批结束再接着刷剩下的
     /// </remarks>
     public async Task FlushAsync(CancellationToken cancellationToken)
     {
@@ -238,10 +238,10 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     public void Dispose() => _flushing.Dispose();
 
     /// <summary>
-    /// 后台循环。
+    /// 后台循环
     /// </summary>
     /// <remarks>
-    /// 到刷写间隔或收到批满信号就刷写，直到取消；取消后剩余的事件由停止流程另行刷写。
+    /// 到刷写间隔或收到批满信号就刷写，直到取消；取消后剩余的事件由停止流程另行刷写
     /// </remarks>
     internal async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -280,18 +280,18 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 停止接收。
+    /// 停止接收
     /// </summary>
     /// <remarks>
-    /// 之后写入的事件按丢弃计数；队列里已有的仍可被刷写。
+    /// 之后写入的事件按丢弃计数；队列里已有的仍可被刷写
     /// </remarks>
     internal void Complete() => _queue.Writer.TryComplete();
 
     /// <summary>
-    /// 按查询的过滤项组合规约。
+    /// 按查询的过滤项组合规约
     /// </summary>
     /// <remarks>
-    /// 可空字符串列只写相等比较，空值在 SQL 里本就不相等。
+    /// 可空字符串列只写相等比较，空值在 SQL 里本就不相等
     /// </remarks>
     private static EntityQuery<AuditRecord> Filter(AuditQuery query, long after)
     {
@@ -340,10 +340,10 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 从队列取出最多一批的事件。
+    /// 从队列取出最多一批的事件
     /// </summary>
     /// <remarks>
-    /// 队列为空返回空列表。
+    /// 队列为空返回空列表
     /// </remarks>
     private List<AuditEvent> TakeBatch()
     {
@@ -357,10 +357,10 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 把一批事件映射成记录并一次批量写入。
+    /// 把一批事件映射成记录并一次批量写入
     /// </summary>
     /// <remarks>
-    /// 整批异常或逐项被拒都只记日志并计数，这一批不再重试。
+    /// 整批异常或逐项被拒都只记日志并计数，这一批不再重试
     /// </remarks>
     private async Task PersistAsync(List<AuditEvent> batch, CancellationToken cancellationToken)
     {
@@ -409,10 +409,10 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 下一个写入序号。
+    /// 下一个写入序号
     /// </summary>
     /// <remarks>
-    /// 上一个加一与时钟 UTC 刻度的较大者——同一进程内严格递增，时钟回拨或同一刻度内多次取号时退化为上一个加一。
+    /// 上一个加一与时钟 UTC 刻度的较大者——同一进程内严格递增，时钟回拨或同一刻度内多次取号时退化为上一个加一
     /// </remarks>
     private long NextSequence()
     {
@@ -421,7 +421,7 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 按窗口节流的丢弃警告：丢弃通常成片发生，窗口内只记一条。
+    /// 按窗口节流的丢弃警告：丢弃通常成片发生，窗口内只记一条
     /// </summary>
     private void WarnDropped(string action, long dropped)
     {
@@ -434,25 +434,25 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     }
 
     /// <summary>
-    /// 一条审计事件。
+    /// 一条审计事件
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Audit {Action} {Outcome} by {PrincipalId} in tenant {TenantId} on {Resource} ({TraceId}).")]
     private static partial void LogAudit(ILogger logger, string action, string outcome, string? principalId, string? tenantId, string? resource, string traceId);
 
     /// <summary>
-    /// 事件被丢弃。
+    /// 事件被丢弃
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Audit event '{Action}' was dropped because the queue is full or the trail has stopped; {DroppedCount} events dropped so far.")]
     private static partial void LogDropped(ILogger logger, string action, long droppedCount);
 
     /// <summary>
-    /// 整批落库失败。
+    /// 整批落库失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Persisting a batch of {Count} audit events failed; the batch is dropped.")]
     private static partial void LogBatchFailed(ILogger logger, Exception exception, int count);
 
     /// <summary>
-    /// 批内有记录被仓储拒绝。
+    /// 批内有记录被仓储拒绝
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "{Count} audit records were rejected by the repository (first error '{ErrorCode}'); they are dropped.")]
     private static partial void LogRecordsRejected(ILogger logger, int count, string errorCode);

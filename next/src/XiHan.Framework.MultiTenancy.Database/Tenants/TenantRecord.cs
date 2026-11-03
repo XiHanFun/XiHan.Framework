@@ -9,10 +9,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 
 /// <summary>
-/// 租户目录的存储行。
+/// 租户目录的存储行
 /// </summary>
 /// <remarks>
-/// 主键是租户 ID（文法由 <c>TenantIdentifier</c> 校验），显示名、启用标记各一列，属性整份放在 JSON 列里。平台级数据：不实现 <c>IMultiTenant</c>、不软删除，读写不受当前调用租户影响。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;TenantRecord&gt;()</c>，SqlSugar 按约定映射。
+/// 主键是租户 ID（文法由 <c>TenantIdentifier</c> 校验），显示名、启用标记各一列，属性整份放在 JSON 列里。平台级数据：不实现 <c>IMultiTenant</c>、不软删除，读写不受当前调用租户影响。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;TenantRecord&gt;()</c>，SqlSugar 按约定映射
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class TenantRecord : IEntity<string>, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp
@@ -22,24 +22,24 @@ public sealed class TenantRecord : IEntity<string>, IHasCreationTime, IHasModifi
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
-    /// 显示名。
+    /// 显示名
     /// </summary>
     [StringLength(256)]
     public string? DisplayName { get; set; }
 
     /// <summary>
-    /// 是否启用。
+    /// 是否启用
     /// </summary>
     /// <remarks>
-    /// 禁用的租户解析时被拒绝。
+    /// 禁用的租户解析时被拒绝
     /// </remarks>
     public bool IsEnabled { get; set; } = true;
 
     /// <summary>
-    /// 租户属性（键区分大小写的字符串字典）的 JSON 对象。
+    /// 租户属性（键区分大小写的字符串字典）的 JSON 对象
     /// </summary>
     /// <remarks>
-    /// 长文本列。
+    /// 长文本列
     /// </remarks>
     [LongText]
     public string PropertiesJson { get; set; } = TenantRecordMapping.EmptyProperties;

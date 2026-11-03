@@ -9,18 +9,18 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 设变量：<c>Values</c>（名 → 字面量）与 <c>Expressions</c>（名 → 表达式）都成为输出。
+/// 设变量：<c>Values</c>（名 → 字面量）与 <c>Expressions</c>（名 → 表达式）都成为输出
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SetVariableActivity : IActivity
 {
     /// <summary>
-    /// 属性：字面量。
+    /// 属性：字面量
     /// </summary>
     public const string ValuesProperty = "Values";
 
     /// <summary>
-    /// 属性：表达式。
+    /// 属性：表达式
     /// </summary>
     public const string ExpressionsProperty = "Expressions";
 

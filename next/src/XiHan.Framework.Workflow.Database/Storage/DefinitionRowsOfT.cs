@@ -13,17 +13,17 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 一张定义表（平台或租户分区）的读写。
+/// 一张定义表（平台或租户分区）的读写
 /// </summary>
 /// <remarks>
-/// 租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件；平台分区的表只有平台的行。定义以 JSON 文档存储，读出来的对象天然是快照。
+/// 租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件；平台分区的表只有平台的行。定义以 JSON 文档存储，读出来的对象天然是快照
 /// </remarks>
-/// <typeparam name="TRow">行类型。</typeparam>
+/// <typeparam name="TRow">行类型</typeparam>
 internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     where TRow : WorkflowDefinitionRow, new()
 {
     /// <summary>
-    /// 按 ID 找。
+    /// 按 ID 找
     /// </summary>
     public async ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(string id, CancellationToken cancellationToken)
     {
@@ -32,13 +32,13 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 按 ID 批量找。
+    /// 按 ID 批量找
     /// </summary>
     public async ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
         => ToDefinitions(await RecordQueries.FindManyAsync(repository, ids, cancellationToken).ConfigureAwait(false));
 
     /// <summary>
-    /// 按名字与版本找。
+    /// 按名字与版本找
     /// </summary>
     public ValueTask<Result<Maybe<WorkflowDefinition>>> FindAsync(WorkflowName name, int version, CancellationToken cancellationToken)
     {
@@ -47,7 +47,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 该名字下版本号最大的已发布定义。
+    /// 该名字下版本号最大的已发布定义
     /// </summary>
     public ValueTask<Result<Maybe<WorkflowDefinition>>> FindLatestPublishedAsync(WorkflowName name, CancellationToken cancellationToken)
     {
@@ -61,7 +61,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 该名字下的最大版本号，没有为 0。
+    /// 该名字下的最大版本号，没有为 0
     /// </summary>
     public async ValueTask<Result<int>> MaxVersionAsync(WorkflowName name, CancellationToken cancellationToken)
     {
@@ -75,7 +75,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 列表：名字升序、版本降序。
+    /// 列表：名字升序、版本降序
     /// </summary>
     public async ValueTask<Result<IReadOnlyList<WorkflowDefinition>>> ListAsync(WorkflowName? name, WorkflowDefinitionStatus? status, CancellationToken cancellationToken)
     {
@@ -98,10 +98,10 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 定义查询的一页摘要。
+    /// 定义查询的一页摘要
     /// </summary>
     /// <remarks>
-    /// 过滤、排序与分页都在 SQL 里；按排序字段与方向，再接名字升序、版本降序与 ID 补成全序（<see cref="Sorted"/>）。仓储读回整行，摘要从文档取，与按 ID 找到的定义一致。
+    /// 过滤、排序与分页都在 SQL 里；按排序字段与方向，再接名字升序、版本降序与 ID 补成全序（<see cref="Sorted"/>）。仓储读回整行，摘要从文档取，与按 ID 找到的定义一致
     /// </remarks>
     public async ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken)
     {
@@ -113,19 +113,19 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 定义查询的总数。
+    /// 定义查询的总数
     /// </summary>
     public async ValueTask<Result<long>> CountAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken)
         => await repository.CountAsync(Filter(query), cancellationToken).ConfigureAwait(false);
 
     /// <summary>
-    /// 新增或整体替换。
+    /// 新增或整体替换
     /// </summary>
     public ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowDefinition> definitions, CancellationToken cancellationToken)
         => RecordQueries.UpsertAsync(repository, definitions.Select(ToRecord).ToList(), Copy, cancellationToken);
 
     /// <summary>
-    /// 删除，不存在的忽略。
+    /// 删除，不存在的忽略
     /// </summary>
     public async ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
@@ -134,10 +134,10 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 把定义查询的过滤项逐项翻译成条件。
+    /// 把定义查询的过滤项逐项翻译成条件
     /// </summary>
     /// <remarks>
-    /// 每个给出的条件一个规约，由查询取交集；没给的条件不写进 SQL（不写 <c>参数 == null ||</c> 这类条件，SqlSugar 对它的翻译不可靠）。关键字对查询列做包含判断：两边都已小写折叠，按字面由持久化的 <c>Contains</c> 保证（RFC-0005，ADR-0098）；先判非空，升级前写入、还没回填的行不匹配。
+    /// 每个给出的条件一个规约，由查询取交集；没给的条件不写进 SQL（不写 <c>参数 == null ||</c> 这类条件，SqlSugar 对它的翻译不可靠）。关键字对查询列做包含判断：两边都已小写折叠，按字面由持久化的 <c>Contains</c> 保证（RFC-0005，ADR-0098）；先判非空，升级前写入、还没回填的行不匹配
     /// </remarks>
     private static EntityQuery<TRow> Filter(WorkflowDefinitionQuery query)
     {
@@ -178,15 +178,15 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 没给排序项时的排序：名字升序。
+    /// 没给排序项时的排序：名字升序
     /// </summary>
     private static readonly WorkflowDefinitionSort[] _defaultSorts = [new(WorkflowDefinitionSortField.Name)];
 
     /// <summary>
-    /// 按定义查询的排序项依次排序，再接次序键补成全序。
+    /// 按定义查询的排序项依次排序，再接次序键补成全序
     /// </summary>
     /// <remarks>
-    /// 排序项按列表的顺序依次进 <c>ORDER BY</c>（ADR-0104），之后是次序键名字升序、版本降序、ID 升序（ADR-0102）：名字与版本在分区里唯一，ID 只为让全序不依赖唯一索引。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），发布时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序项为空或字段不在白名单里抛出：调用方（目录）已校验，走到这里是编程错误。
+    /// 排序项按列表的顺序依次进 <c>ORDER BY</c>（ADR-0104），之后是次序键名字升序、版本降序、ID 升序（ADR-0102）：名字与版本在分区里唯一，ID 只为让全序不依赖唯一索引。文本按列的排序规则比较，状态按状态序号列（生命周期的先后，ADR-0103），发布时间的空值位置照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小）。排序项为空或字段不在白名单里抛出：调用方（目录）已校验，走到这里是编程错误
     /// </remarks>
     private static EntityQuery<TRow> Sorted(EntityQuery<TRow> query, WorkflowDefinitionQuery definitionQuery)
     {
@@ -233,7 +233,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 取查询的第一条。
+    /// 取查询的第一条
     /// </summary>
     private async ValueTask<Result<Maybe<WorkflowDefinition>>> FirstAsync(EntityQuery<TRow> query, CancellationToken cancellationToken)
     {
@@ -242,10 +242,10 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 定义 → 行。
+    /// 定义 → 行
     /// </summary>
     /// <remarks>
-    /// 租户列由持久化在新增时按工作单元的租户写入，这里不设。
+    /// 租户列由持久化在新增时按工作单元的租户写入，这里不设
     /// </remarks>
     private static TRow ToRecord(WorkflowDefinition definition)
     {
@@ -267,7 +267,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 把新行的内容复制到已有行上。
+    /// 把新行的内容复制到已有行上
     /// </summary>
     private static void Copy(TRow source, TRow target)
     {
@@ -284,15 +284,15 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     }
 
     /// <summary>
-    /// 行 → 定义。
+    /// 行 → 定义
     /// </summary>
     /// <remarks>
-    /// 文档不合法视为存储损坏。
+    /// 文档不合法视为存储损坏
     /// </remarks>
     private static Result<WorkflowDefinition> ToDefinition(TRow record) => WorkflowJson.DeserializeDefinition(record.Document);
 
     /// <summary>
-    /// 多行 → 定义，任一行不合法即失败。
+    /// 多行 → 定义，任一行不合法即失败
     /// </summary>
     private static Result<IReadOnlyList<WorkflowDefinition>> ToDefinitions(List<TRow> records)
     {

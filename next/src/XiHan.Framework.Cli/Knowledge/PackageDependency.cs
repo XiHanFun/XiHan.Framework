@@ -4,17 +4,17 @@
 namespace XiHan.Framework.Cli.Knowledge;
 
 /// <summary>
-/// 一个第三方包依赖。
+/// 一个第三方包依赖
 /// </summary>
 internal sealed record PackageDependency
 {
     /// <summary>
-    /// 包 ID。
+    /// 包 ID
     /// </summary>
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
-    /// 中央包管理里登记的版本。
+    /// 中央包管理里登记的版本
     /// </summary>
     public string Version { get; set; } = string.Empty;
 }

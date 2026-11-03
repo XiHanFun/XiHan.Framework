@@ -9,24 +9,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Database;
 
 /// <summary>
-/// 数据库租户目录选项。
+/// 数据库租户目录选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:MultiTenancy:Database</c> 显式读取：<c>CacheSize</c>、<c>CacheTimeToLiveSeconds</c>（0 不过期）、<c>MaxListedTenants</c>。
+/// 从配置节 <c>XiHan:MultiTenancy:Database</c> 显式读取：<c>CacheSize</c>、<c>CacheTimeToLiveSeconds</c>（0 不过期）、<c>MaxListedTenants</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseMultiTenancyOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:MultiTenancy:Database";
 
     /// <summary>
-    /// <see cref="DatabaseTenantStore"/> 的缓存容量（租户数，不存在的租户也占一条）。
+    /// <see cref="DatabaseTenantStore"/> 的缓存容量（租户数，不存在的租户也占一条）
     /// </summary>
     /// <remarks>
-    /// 默认 10000，满时整体清空。
+    /// 默认 10000，满时整体清空
     /// </remarks>
     public int CacheSize
     {
@@ -35,10 +35,10 @@ public sealed record DatabaseMultiTenancyOptions
     } = 10_000;
 
     /// <summary>
-    /// 缓存条目的存活时间。
+    /// 缓存条目的存活时间
     /// </summary>
     /// <remarks>
-    /// 默认 30 秒，<see langword="null"/> 不过期（只靠 <see cref="DatabaseTenantStore.Invalidate"/> 失效）。
+    /// 默认 30 秒，<see langword="null"/> 不过期（只靠 <see cref="DatabaseTenantStore.Invalidate"/> 失效）
     /// </remarks>
     public TimeSpan? CacheTimeToLive
     {
@@ -47,10 +47,10 @@ public sealed record DatabaseMultiTenancyOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// <see cref="DatabaseTenantStore.ListAsync"/> 返回的租户数上限（有界枚举）。
+    /// <see cref="DatabaseTenantStore.ListAsync"/> 返回的租户数上限（有界枚举）
     /// </summary>
     /// <remarks>
-    /// 默认 10000，超出的部分不返回并记警告。
+    /// 默认 10000，超出的部分不返回并记警告
     /// </remarks>
     public int MaxListedTenants
     {
@@ -59,7 +59,7 @@ public sealed record DatabaseMultiTenancyOptions
     } = 10_000;
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static DatabaseMultiTenancyOptions FromConfiguration(IConfiguration configuration)
     {

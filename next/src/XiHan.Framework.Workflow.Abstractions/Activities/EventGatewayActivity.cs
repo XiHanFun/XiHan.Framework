@@ -10,44 +10,44 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 事件网关。
+/// 事件网关
 /// </summary>
 /// <remarks>
-/// 同时等待 <c>Signals</c> 列表里的任一信号与可选的 <c>TimeoutSeconds</c>，先到的一个决定出路——结果标签 = 信号名或 <c>timeout</c>，输出 <c>signal</c>、<c>payload</c>；其余书签由引擎清掉。<c>AcceptAnyCorrelation</c> 同 <c>WaitSignal</c>。
+/// 同时等待 <c>Signals</c> 列表里的任一信号与可选的 <c>TimeoutSeconds</c>，先到的一个决定出路——结果标签 = 信号名或 <c>timeout</c>，输出 <c>signal</c>、<c>payload</c>；其余书签由引擎清掉。<c>AcceptAnyCorrelation</c> 同 <c>WaitSignal</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EventGatewayActivity : IResumableActivity
 {
     /// <summary>
-    /// 属性：信号名列表（元素为模板）。
+    /// 属性：信号名列表（元素为模板）
     /// </summary>
     public const string SignalsProperty = "Signals";
 
     /// <summary>
-    /// 属性。
+    /// 属性
     /// </summary>
     /// <remarks>
-    /// 超时秒数；空为不超时。
+    /// 超时秒数；空为不超时
     /// </remarks>
     public const string TimeoutSecondsProperty = "TimeoutSeconds";
 
     /// <summary>
-    /// 属性：接受任意关联。
+    /// 属性：接受任意关联
     /// </summary>
     public const string AcceptAnyCorrelationProperty = "AcceptAnyCorrelation";
 
     /// <summary>
-    /// 超时的结果标签。
+    /// 超时的结果标签
     /// </summary>
     public const string TimeoutOutcome = "timeout";
 
     /// <summary>
-    /// 输出：命中的信号名。
+    /// 输出：命中的信号名
     /// </summary>
     public const string SignalOutput = "signal";
 
     /// <summary>
-    /// 输出：信号载荷。
+    /// 输出：信号载荷
     /// </summary>
     public const string PayloadOutput = "payload";
 

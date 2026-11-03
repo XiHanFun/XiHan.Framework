@@ -7,13 +7,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 
 /// <summary>
-/// 单条便捷方法：都转调批量方法。
+/// 单条便捷方法：都转调批量方法
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class BlobStoreExtensions
 {
     /// <summary>
-    /// 写入一个流。
+    /// 写入一个流
     /// </summary>
     public static async ValueTask<Result<BlobMetadata>> PutAsync(this IBlobStore store, ContainerName container, BlobKey key, Stream content, BlobPutOptions options, CancellationToken cancellationToken)
     {
@@ -23,7 +23,7 @@ public static class BlobStoreExtensions
     }
 
     /// <summary>
-    /// 写入一段字节。
+    /// 写入一段字节
     /// </summary>
     public static async ValueTask<Result<BlobMetadata>> PutAsync(this IBlobStore store, ContainerName container, BlobKey key, ReadOnlyMemory<byte> content, BlobPutOptions options, CancellationToken cancellationToken)
     {
@@ -33,10 +33,10 @@ public static class BlobStoreExtensions
     }
 
     /// <summary>
-    /// 删除一个对象。
+    /// 删除一个对象
     /// </summary>
     /// <remarks>
-    /// 返回是否存在过。
+    /// 返回是否存在过
     /// </remarks>
     public static async ValueTask<Result<bool>> DeleteAsync(this IBlobStore store, ContainerName container, BlobKey key, CancellationToken cancellationToken)
     {
@@ -46,10 +46,10 @@ public static class BlobStoreExtensions
     }
 
     /// <summary>
-    /// 对象是否存在。
+    /// 对象是否存在
     /// </summary>
     /// <remarks>
-    /// 不存在是成功的 <see langword="false"/>，其他失败原样返回。
+    /// 不存在是成功的 <see langword="false"/>，其他失败原样返回
     /// </remarks>
     public static async ValueTask<Result<bool>> ExistsAsync(this IBlobStore store, ContainerName container, BlobKey key, CancellationToken cancellationToken)
     {
@@ -64,7 +64,7 @@ public static class BlobStoreExtensions
     }
 
     /// <summary>
-    /// 读出全部字节。
+    /// 读出全部字节
     /// </summary>
     public static async ValueTask<Result<byte[]>> ReadAllBytesAsync(this IBlobStore store, ContainerName container, BlobKey key, CancellationToken cancellationToken)
     {

@@ -7,44 +7,44 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// <see cref="IKnowledgeRetriever"/> 的实现（单例）。
+/// <see cref="IKnowledgeRetriever"/> 的实现（单例）
 /// </summary>
 /// <remarks>
-/// 查询文本的嵌入受嵌入 Provider 的超时令牌约束（RFC-0022「超时与取消」）。
+/// 查询文本的嵌入受嵌入 Provider 的超时令牌约束（RFC-0022「超时与取消」）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KnowledgeRetriever : IKnowledgeRetriever
 {
     /// <summary>
-    /// AI 选项（实际的默认嵌入 Provider）。
+    /// AI 选项（实际的默认嵌入 Provider）
     /// </summary>
     private readonly AIOptions _ai;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly KnowledgeOptions _options;
 
     /// <summary>
-    /// Provider 目录。
+    /// Provider 目录
     /// </summary>
     private readonly IAIProviderCatalog _providers;
 
     /// <summary>
-    /// 时间源。
+    /// 时间源
     /// </summary>
     /// <remarks>
-    /// 嵌入 Provider 的超时令牌按它计时。
+    /// 嵌入 Provider 的超时令牌按它计时
     /// </remarks>
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
-    /// 存储（没有 Provider 时为空）。
+    /// 存储（没有 Provider 时为空）
     /// </summary>
     private readonly IKnowledgeStore? _store;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public KnowledgeRetriever(AIOptions options, IAIProviderCatalog providers, TimeProvider timeProvider, IKnowledgeStore? store = null)
     {

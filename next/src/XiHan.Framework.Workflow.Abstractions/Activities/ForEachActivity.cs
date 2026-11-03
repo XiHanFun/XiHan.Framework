@@ -10,61 +10,61 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 对 <c>Items</c>逐项启动子流程。
+/// 对 <c>Items</c>逐项启动子流程
 /// </summary>
 /// <remarks>
-/// 表达式，求值为数组。<c>DefinitionName</c> / <c>DefinitionVersion</c> / <c>Variables</c>。每个子实例得到 <c>ItemVariable</c>（默认 <c>item</c>）与 <c>index</c>。<c>Parallel</c>（默认假）决定一起启动还是逐个；<c>FailFast</c>（默认真）时子实例未完成即故障；<c>ResultVariable</c> 接收各子实例变量的数组。空集合立即完成。
+/// 表达式，求值为数组。<c>DefinitionName</c> / <c>DefinitionVersion</c> / <c>Variables</c>。每个子实例得到 <c>ItemVariable</c>（默认 <c>item</c>）与 <c>index</c>。<c>Parallel</c>（默认假）决定一起启动还是逐个；<c>FailFast</c>（默认真）时子实例未完成即故障；<c>ResultVariable</c> 接收各子实例变量的数组。空集合立即完成
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ForEachActivity : IResumableActivity
 {
     /// <summary>
-    /// 属性：集合表达式。
+    /// 属性：集合表达式
     /// </summary>
     public const string ItemsProperty = "Items";
 
     /// <summary>
-    /// 属性：元素变量名。
+    /// 属性：元素变量名
     /// </summary>
     public const string ItemVariableProperty = "ItemVariable";
 
     /// <summary>
-    /// 属性：是否并行。
+    /// 属性：是否并行
     /// </summary>
     public const string ParallelProperty = "Parallel";
 
     /// <summary>
-    /// 属性：子实例失败是否立即故障。
+    /// 属性：子实例失败是否立即故障
     /// </summary>
     public const string FailFastProperty = "FailFast";
 
     /// <summary>
-    /// 状态：元素。
+    /// 状态：元素
     /// </summary>
     private const string ItemsState = "items";
 
     /// <summary>
-    /// 状态：下一个要启动的下标。
+    /// 状态：下一个要启动的下标
     /// </summary>
     private const string NextIndexState = "nextIndex";
 
     /// <summary>
-    /// 状态：已完成的子实例数。
+    /// 状态：已完成的子实例数
     /// </summary>
     private const string CompletedState = "completed";
 
     /// <summary>
-    /// 状态：各子实例的变量。
+    /// 状态：各子实例的变量
     /// </summary>
     private const string ResultsState = "results";
 
     /// <summary>
-    /// 默认元素变量名。
+    /// 默认元素变量名
     /// </summary>
     private const string DefaultItemVariable = "item";
 
     /// <summary>
-    /// 子实例里的下标变量名。
+    /// 子实例里的下标变量名
     /// </summary>
     private const string IndexVariable = "index";
 
@@ -155,7 +155,7 @@ public sealed class ForEachActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 第 <paramref name="index"/> 个元素的子流程启动请求。
+    /// 第 <paramref name="index"/> 个元素的子流程启动请求
     /// </summary>
     private static Result<WorkflowStartRequest> ChildRequest(ActivityContext context, JsonArray items, int index)
     {
@@ -169,7 +169,7 @@ public sealed class ForEachActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 结果输出：<c>ResultVariable</c> 有值时放各子实例变量的数组。
+    /// 结果输出：<c>ResultVariable</c> 有值时放各子实例变量的数组
     /// </summary>
     private static JsonObject ResultOutputs(ActivityContext context, JsonArray results)
     {

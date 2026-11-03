@@ -22,26 +22,26 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database;
 
 /// <summary>
-/// 数据库工作流特性（<c>role: provider</c>）。
+/// 数据库工作流特性（<c>role: provider</c>）
 /// </summary>
 /// <remarks>
-/// 提供 <c>workflow.execution@1</c>，依赖 <c>persistence.relational@1</c>——定义、实例、节点实例与书签在调用方的工作单元里经仓储读写（随业务提交或回滚），按分区落表：租户的记录实现 <c>IMultiTenant</c>、随租户分库，平台的记录在平台库；实例锁与轮询领导权以平台库里的租约行实现，应用进入服务状态后由持有领导权的节点逐个分区（平台与租户目录里启用的租户）轮询到期书签。可选依赖 <c>multitenancy.context@1</c>：装配了多租户时轮询器从它的租户目录取租户。装配后顶替默认的内存工作流。健康项 <see cref="HealthName"/> 按 <see cref="DatabaseWorkflowOptions.HealthProbeInterval"/> 周期读一次轮询领导权的租约行，租约表不可达时条目 Degraded。
+/// 提供 <c>workflow.execution@1</c>，依赖 <c>persistence.relational@1</c>——定义、实例、节点实例与书签在调用方的工作单元里经仓储读写（随业务提交或回滚），按分区落表：租户的记录实现 <c>IMultiTenant</c>、随租户分库，平台的记录在平台库；实例锁与轮询领导权以平台库里的租约行实现，应用进入服务状态后由持有领导权的节点逐个分区（平台与租户目录里启用的租户）轮询到期书签。可选依赖 <c>multitenancy.context@1</c>：装配了多租户时轮询器从它的租户目录取租户。装配后顶替默认的内存工作流。健康项 <see cref="HealthName"/> 按 <see cref="DatabaseWorkflowOptions.HealthProbeInterval"/> 周期读一次轮询领导权的租约行，租约表不可达时条目 Degraded
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowFeature : IHostedFeature
 {
     /// <summary>
-    /// 健康项名：轮询领导权的租约存储是否可达。
+    /// 健康项名：轮询领导权的租约存储是否可达
     /// </summary>
     public const string HealthName = "workflow.database.poller";
 
     /// <summary>
-    /// 启动后保存的轮询循环，供停止时使用。
+    /// 启动后保存的轮询循环，供停止时使用
     /// </summary>
     private DueBookmarkPollingLoop? _loop;
 
     /// <summary>
-    /// 启动时起循环的健康探针，停止时结束它。
+    /// 启动时起循环的健康探针，停止时结束它
     /// </summary>
     private PeriodicHealthContributor? _health;
 

@@ -13,40 +13,40 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 在引擎所在的调用里执行一个活动（执行、恢复或补偿）。
+/// 在引擎所在的调用里执行一个活动（执行、恢复或补偿）
 /// </summary>
 /// <remarks>
-/// 活动与引擎同一服务作用域、同一调用上下文、同一事务：活动与结果处理器的写入随引擎的写入一起提交或回滚。抛出的异常翻译为 <see cref="WorkflowErrors.ActivityFailed"/>；取消以调用的取消令牌为准，原样抛出。
+/// 活动与引擎同一服务作用域、同一调用上下文、同一事务：活动与结果处理器的写入随引擎的写入一起提交或回滚。抛出的异常翻译为 <see cref="WorkflowErrors.ActivityFailed"/>；取消以调用的取消令牌为准，原样抛出
 /// </remarks>
 internal sealed class ActivityExecutor
 {
     /// <summary>
-    /// 执行范围：取当前调用。
+    /// 执行范围：取当前调用
     /// </summary>
     private readonly WorkflowScope _scope;
 
     /// <summary>
-    /// 引擎所在的服务作用域：活动从这里解析。
+    /// 引擎所在的服务作用域：活动从这里解析
     /// </summary>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 活动登记表。
+    /// 活动登记表
     /// </summary>
     private readonly ActivityRegistry _registry;
 
     /// <summary>
-    /// 求值器。
+    /// 求值器
     /// </summary>
     private readonly IWorkflowExpressionEvaluator _evaluator;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public ActivityExecutor(WorkflowScope scope, IServiceProvider services, ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, TimeProvider clock)
     {
@@ -58,10 +58,10 @@ internal sealed class ActivityExecutor
     }
 
     /// <summary>
-    /// 执行或恢复（给了书签即恢复）。
+    /// 执行或恢复（给了书签即恢复）
     /// </summary>
     /// <remarks>
-    /// 不实现 <see cref="IResumableActivity"/> 的活动：超时书签即故障，其他书签以输入作输出完成。
+    /// 不实现 <see cref="IResumableActivity"/> 的活动：超时书签即故障，其他书签以输入作输出完成
     /// </remarks>
     public ValueTask<Result<ActivityOutcome>> RunAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, WorkflowBookmark? bookmark, JsonObject? inputs)
         => InvokeAsync(session, node, nodeInstance, async (activity, context) =>
@@ -86,10 +86,10 @@ internal sealed class ActivityExecutor
         });
 
     /// <summary>
-    /// 补偿。
+    /// 补偿
     /// </summary>
     /// <remarks>
-    /// 活动不可补偿时返回成功（不做事）。
+    /// 活动不可补偿时返回成功（不做事）
     /// </remarks>
     public async ValueTask<Result> CompensateAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance)
     {
@@ -107,7 +107,7 @@ internal sealed class ActivityExecutor
     }
 
     /// <summary>
-    /// 解析活动、建上下文、调用 <paramref name="body"/>。
+    /// 解析活动、建上下文、调用 <paramref name="body"/>
     /// </summary>
     private async ValueTask<Result<ActivityOutcome>> InvokeAsync(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, Func<IActivity, ActivityContext, ValueTask<Result<ActivityOutcome>>> body)
     {

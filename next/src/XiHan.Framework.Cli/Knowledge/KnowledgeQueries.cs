@@ -11,43 +11,43 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Knowledge;
 
 /// <summary>
-/// 知识库的三类查询：包与能力、配置节、文档。
+/// 知识库的三类查询：包与能力、配置节、文档
 /// </summary>
 /// <remarks>
-/// 查不到时返回 <see cref="CliErrors.KnowledgeNotFound"/>，文案里带上最接近的候选，编码助手据此改写名字再查。
+/// 查不到时返回 <see cref="CliErrors.KnowledgeNotFound"/>，文案里带上最接近的候选，编码助手据此改写名字再查
 /// </remarks>
 internal static class KnowledgeQueries
 {
     /// <summary>
-    /// 检索结果的缺省条数。
+    /// 检索结果的缺省条数
     /// </summary>
     public const int DefaultLimit = 10;
 
     /// <summary>
-    /// 检索结果的最大条数。
+    /// 检索结果的最大条数
     /// </summary>
     public const int MaxLimit = 50;
 
     /// <summary>
-    /// 包 ID 的公共前缀。
+    /// 包 ID 的公共前缀
     /// </summary>
     private const string PackagePrefix = "XiHan.Framework.";
 
     /// <summary>
-    /// 候选的最大个数。
+    /// 候选的最大个数
     /// </summary>
     private const int MaxCandidates = 8;
 
     /// <summary>
-    /// 摘录的最大长度。
+    /// 摘录的最大长度
     /// </summary>
     private const int MaxSnippetLength = 160;
 
     /// <summary>
-    /// 查包、特性或能力。
+    /// 查包、特性或能力
     /// </summary>
     /// <remarks>
-    /// 依次按包（ID、短名、文档页名、清单 ID、特性类型名）与能力 ID 匹配；名字为空时列出全部包。
+    /// 依次按包（ID、短名、文档页名、清单 ID、特性类型名）与能力 ID 匹配；名字为空时列出全部包
     /// </remarks>
     public static Result<InfoResponse> Info(FrameworkKnowledge knowledge, string? name)
     {
@@ -79,10 +79,10 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 查配置节。
+    /// 查配置节
     /// </summary>
     /// <remarks>
-    /// 依次按节路径（含子节）、完整键路径、包、Options 类名与键名或说明里的文字匹配；查询为空时列出全部配置节。
+    /// 依次按节路径（含子节）、完整键路径、包、Options 类名与键名或说明里的文字匹配；查询为空时列出全部配置节
     /// </remarks>
     public static Result<ConfigResponse> Config(FrameworkKnowledge knowledge, string? query)
     {
@@ -142,10 +142,10 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 检索文档，或取一页全文。
+    /// 检索文档，或取一页全文
     /// </summary>
     /// <remarks>
-    /// 给了页面时取全文；否则按检索词计分（标题 20、小节标题 5、正文每行 1，每个词封顶 60），所有词都要出现。
+    /// 给了页面时取全文；否则按检索词计分（标题 20、小节标题 5、正文每行 1，每个词封顶 60），所有词都要出现
     /// </remarks>
     public static Result<SearchResponse> Search(FrameworkKnowledge knowledge, string? query, string? page, int? limit)
     {
@@ -186,7 +186,7 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 按包 ID、短名、文档页名、清单 ID 或特性类型名找包。
+    /// 按包 ID、短名、文档页名、清单 ID 或特性类型名找包
     /// </summary>
     public static PackageEntry? FindPackage(FrameworkKnowledge knowledge, string name)
     {
@@ -215,7 +215,7 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 按仓库内路径、文件名、RFC 编号或包 ID 找一页文档。
+    /// 按仓库内路径、文件名、RFC 编号或包 ID 找一页文档
     /// </summary>
     public static Result<DocPage> FindPage(FrameworkKnowledge knowledge, string name)
     {
@@ -269,15 +269,15 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 包 README 的路径。
+    /// 包 README 的路径
     /// </summary>
     public static string ReadmePath(string packageId) => "next/src/" + packageId + "/README.md";
 
     /// <summary>
-    /// 包在文档站的参考页路径。
+    /// 包在文档站的参考页路径
     /// </summary>
     /// <remarks>
-    /// <c>XiHan.Framework.Caching.Redis</c> → <c>docs-next/packages/caching-redis.md</c>。
+    /// <c>XiHan.Framework.Caching.Redis</c> → <c>docs-next/packages/caching-redis.md</c>
     /// </remarks>
     public static string PackagePagePath(string packageId)
     {
@@ -287,7 +287,7 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 一个包的详情。
+    /// 一个包的详情
     /// </summary>
     private static PackageView ViewOf(FrameworkKnowledge knowledge, PackageEntry package)
     {
@@ -309,10 +309,10 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 按能力 ID 找提供者与依赖方。
+    /// 按能力 ID 找提供者与依赖方
     /// </summary>
     /// <remarks>
-    /// 名字可带 <c>@版本</c> 与可选标记 <c>?</c>，只按 ID 匹配。
+    /// 名字可带 <c>@版本</c> 与可选标记 <c>?</c>，只按 ID 匹配
     /// </remarks>
     private static CapabilityView? FindCapability(FrameworkKnowledge knowledge, string name)
     {
@@ -338,7 +338,7 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 把命中的节与键组装成输出。
+    /// 把命中的节与键组装成输出
     /// </summary>
     private static ConfigResponse Sections(IEnumerable<(ConfigSectionEntry Section, IReadOnlyList<ConfigKeyEntry> Keys)> matches)
     {
@@ -354,10 +354,10 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 按缺省值与必填键的示例写出 appsettings 片段。
+    /// 按缺省值与必填键的示例写出 appsettings 片段
     /// </summary>
     /// <remarks>
-    /// 只含没有占位符、且有缺省值或是必填的键；数值与布尔按 JSON 类型写。
+    /// 只含没有占位符、且有缺省值或是必填的键；数值与布尔按 JSON 类型写
     /// </remarks>
     public static string Appsettings(string section, IReadOnlyList<ConfigKeyEntry> keys)
     {
@@ -403,10 +403,10 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 键的完整路径。
+    /// 键的完整路径
     /// </summary>
     /// <remarks>
-    /// 以 <c>XiHan:</c> 开头的键是绝对路径（Options 类读了自己节以外的键），其余接在节后。
+    /// 以 <c>XiHan:</c> 开头的键是绝对路径（Options 类读了自己节以外的键），其余接在节后
     /// </remarks>
     public static string PathOf(string section, ConfigKeyEntry key)
     {
@@ -416,7 +416,7 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 键的模式（占位符匹配任意一段）是否与路径相同。
+    /// 键的模式（占位符匹配任意一段）是否与路径相同
     /// </summary>
     private static bool PathMatches(string pattern, string path)
     {
@@ -439,10 +439,10 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 一页对一组检索词的得分。
+    /// 一页对一组检索词的得分
     /// </summary>
     /// <remarks>
-    /// 任何一个词没出现即不命中。
+    /// 任何一个词没出现即不命中
     /// </remarks>
     private static SearchHit? Score(DocPage page, IReadOnlyList<string> terms)
     {
@@ -478,14 +478,14 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 查不到：有候选时文案带上候选。
+    /// 查不到：有候选时文案带上候选
     /// </summary>
     private static Error NotFound(string subject, List<string> candidates) => candidates.Count == 0
         ? Error.NotFound(CliErrors.KnowledgeNotFound, CliMessages.KnowledgeNotFound, MessageArguments.Of(("subject", subject)))
         : Error.NotFound(CliErrors.KnowledgeNotFound, CliMessages.KnowledgeNotFoundCandidates, MessageArguments.Of(("subject", subject), ("candidates", string.Join(", ", candidates))));
 
     /// <summary>
-    /// 候选：规范化后互相包含，或编辑距离不超过 2。
+    /// 候选：规范化后互相包含，或编辑距离不超过 2
     /// </summary>
     private static List<string> Suggest(string text, IEnumerable<string> names)
     {
@@ -508,7 +508,7 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 规范化：去掉包 ID 前缀与分隔符，转小写。
+    /// 规范化：去掉包 ID 前缀与分隔符，转小写
     /// </summary>
     private static string Normalize(string text)
     {
@@ -518,7 +518,7 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 类型名去掉命名空间与泛型参数。
+    /// 类型名去掉命名空间与泛型参数
     /// </summary>
     private static string SimpleTypeName(string type)
     {
@@ -528,7 +528,7 @@ internal static class KnowledgeQueries
     }
 
     /// <summary>
-    /// 编辑距离。
+    /// 编辑距离
     /// </summary>
     private static int Distance(string a, string b)
     {

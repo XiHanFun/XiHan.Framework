@@ -7,28 +7,28 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions;
 
 /// <summary>
-/// 对象存储子系统的能力 ID 与接口版本。
+/// 对象存储子系统的能力 ID 与接口版本
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ObjectStorageCapabilities
 {
     /// <summary>
-    /// 对象存储：容器 / 键 / 字节 / 元数据，<see cref="IBlobStore"/>。
+    /// 对象存储：容器 / 键 / 字节 / 元数据，<see cref="IBlobStore"/>
     /// </summary>
     public const string Blob = "objectstorage.blob";
 
     /// <summary>
-    /// 分片上传：<see cref="Multipart.IBlobMultipartStore"/>。
+    /// 分片上传：<see cref="Multipart.IBlobMultipartStore"/>
     /// </summary>
     public const string Multipart = "objectstorage.multipart";
 
     /// <summary>
-    /// 预签名地址：<see cref="Signing.IBlobUrlSigner"/>。
+    /// 预签名地址：<see cref="Signing.IBlobUrlSigner"/>
     /// </summary>
     public const string Presign = "objectstorage.presign";
 
     /// <summary>
-    /// 当前接口版本。
+    /// 当前接口版本
     /// </summary>
     public const int Version = 1;
 }

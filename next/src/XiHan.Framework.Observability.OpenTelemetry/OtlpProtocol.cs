@@ -6,18 +6,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Observability.OpenTelemetry;
 
 /// <summary>
-/// OTLP 的传输协议。
+/// OTLP 的传输协议
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public enum OtlpProtocol
 {
     /// <summary>
-    /// gRPC（默认端口 4317）。
+    /// gRPC（默认端口 4317）
     /// </summary>
     Grpc = 0,
 
     /// <summary>
-    /// HTTP + protobuf（默认端口 4318）。
+    /// HTTP + protobuf（默认端口 4318）
     /// </summary>
     HttpProtobuf = 1,
 }

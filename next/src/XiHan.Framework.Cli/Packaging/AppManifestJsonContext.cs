@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 应用清单的序列化上下文：camelCase、不区分大小写、允许注释与尾随逗号。
+/// 应用清单的序列化上下文：camelCase、不区分大小写、允许注释与尾随逗号
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,

@@ -19,13 +19,13 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存持久化的能力包入口：提供 <c>persistence.relational@1</c>，角色为默认实现。
+/// 内存持久化的能力包入口：提供 <c>persistence.relational@1</c>，角色为默认实现
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryPersistenceFeature : IFeature, IRepositoryRegistrar
 {
     /// <summary>
-    /// 健康项名：各实体的内存表是否都还有余量。
+    /// 健康项名：各实体的内存表是否都还有余量
     /// </summary>
     public const string HealthName = "persistence.inmemory.capacity";
 

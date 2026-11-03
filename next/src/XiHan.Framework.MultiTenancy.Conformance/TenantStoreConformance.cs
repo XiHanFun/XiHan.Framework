@@ -8,16 +8,16 @@ using Xunit;
 namespace XiHan.Framework.MultiTenancy.Conformance;
 
 /// <summary>
-/// <see cref="ITenantStore"/> 的一致性套件。
+/// <see cref="ITenantStore"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行。
+/// 继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class TenantStoreConformance
 {
     /// <summary>
-    /// 套件租户：启用、带显示名与属性。
+    /// 套件租户：启用、带显示名与属性
     /// </summary>
     public static TenantInfo Acme { get; } = new()
     {
@@ -27,23 +27,23 @@ public abstract class TenantStoreConformance
     };
 
     /// <summary>
-    /// 套件租户：禁用、无显示名。
+    /// 套件租户：禁用、无显示名
     /// </summary>
     public static TenantInfo Dormant { get; } = new() { Id = "Dormant-01", IsEnabled = false };
 
     /// <summary>
-    /// 用给定租户创建被测存储。
+    /// 用给定租户创建被测存储
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次。
+    /// 每个用例调用一次
     /// </remarks>
     protected abstract ValueTask<ITenantStore> CreateStoreAsync(IReadOnlyList<TenantInfo> tenants);
 
     /// <summary>
-    /// 用例 1：按 ID 查找返回完整信息。
+    /// 用例 1：按 ID 查找返回完整信息
     /// </summary>
     /// <remarks>
-    /// 不存在为无值。
+    /// 不存在为无值
     /// </remarks>
     [Fact]
     public async Task Find_ReturnsSeededTenant_AndNoneForMissing()
@@ -62,7 +62,7 @@ public abstract class TenantStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：ID 区分大小写。
+    /// 用例 2：ID 区分大小写
     /// </summary>
     [Fact]
     public async Task Find_IsCaseSensitive()
@@ -75,7 +75,7 @@ public abstract class TenantStoreConformance
     }
 
     /// <summary>
-    /// 用例 3：禁用标记与空显示名完整往返。
+    /// 用例 3：禁用标记与空显示名完整往返
     /// </summary>
     [Fact]
     public async Task Find_PreservesDisabledFlag_AndMissingDisplayName()
@@ -89,7 +89,7 @@ public abstract class TenantStoreConformance
     }
 
     /// <summary>
-    /// 用例 4：枚举返回全部租户，空存储返回空列表。
+    /// 用例 4：枚举返回全部租户，空存储返回空列表
     /// </summary>
     [Fact]
     public async Task List_ReturnsAllTenants()

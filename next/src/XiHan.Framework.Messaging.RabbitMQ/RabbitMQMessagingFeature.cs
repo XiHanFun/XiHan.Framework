@@ -15,42 +15,42 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Messaging.RabbitMQ;
 
 /// <summary>
-/// RabbitMQ 消息的能力包入口。
+/// RabbitMQ 消息的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>messaging.queue@1</c>；启动时连接并消费全部订阅主题，停止时关闭。健康项 <see cref="HealthName"/> 按 <see cref="RabbitMQMessagingOptions.HealthProbeInterval"/> 周期检查连接与发布通道是否打开。
+/// 提供 <c>messaging.queue@1</c>；启动时连接并消费全部订阅主题，停止时关闭。健康项 <see cref="HealthName"/> 按 <see cref="RabbitMQMessagingOptions.HealthProbeInterval"/> 周期检查连接与发布通道是否打开
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RabbitMQMessagingFeature : IHostedFeature
 {
     /// <summary>
-    /// 连接绑定名：<c>queue</c>，类型 <c>queue</c>，可选。
+    /// 连接绑定名：<c>queue</c>，类型 <c>queue</c>，可选
     /// </summary>
     public const string ConnectionBinding = "queue";
 
     /// <summary>
-    /// 健康项名：代理连接是否打开。
+    /// 健康项名：代理连接是否打开
     /// </summary>
     public const string HealthName = "messaging.rabbitmq.connection";
 
     /// <summary>
-    /// 启动后取得的运行时。
+    /// 启动后取得的运行时
     /// </summary>
     /// <remarks>
-    /// 停止时用它结束消费。
+    /// 停止时用它结束消费
     /// </remarks>
     private MessagingRuntime? _runtime;
 
     /// <summary>
-    /// 启动时连接的代理。
+    /// 启动时连接的代理
     /// </summary>
     /// <remarks>
-    /// 停止时释放连接。
+    /// 停止时释放连接
     /// </remarks>
     private RabbitMQMessageBroker? _broker;
 
     /// <summary>
-    /// 启动时起循环的健康探针，停止时结束它。
+    /// 启动时起循环的健康探针，停止时结束它
     /// </summary>
     private PeriodicHealthContributor? _health;
 

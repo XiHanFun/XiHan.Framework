@@ -6,18 +6,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 
 /// <summary>
-/// 组合日历：任一成员排除即排除。
+/// 组合日历：任一成员排除即排除
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CompositeCalendar : IJobCalendar
 {
     /// <summary>
-    /// 成员。
+    /// 成员
     /// </summary>
     private readonly IReadOnlyList<IJobCalendar> _calendars;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public CompositeCalendar(params IReadOnlyList<IJobCalendar> calendars)
     {
@@ -26,7 +26,7 @@ public sealed class CompositeCalendar : IJobCalendar
     }
 
     /// <summary>
-    /// 成员。
+    /// 成员
     /// </summary>
     public IReadOnlyList<IJobCalendar> Calendars => _calendars;
 

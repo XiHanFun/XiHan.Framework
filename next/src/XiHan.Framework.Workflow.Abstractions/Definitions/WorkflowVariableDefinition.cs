@@ -7,13 +7,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 定义声明的变量：启动时缺省补默认值，必填且没给值则启动失败。
+/// 定义声明的变量：启动时缺省补默认值，必填且没给值则启动失败
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowVariableDefinition
 {
     /// <summary>
-    /// 变量名。
+    /// 变量名
     /// </summary>
     public required string Name
     {
@@ -22,20 +22,20 @@ public sealed record WorkflowVariableDefinition
     }
 
     /// <summary>
-    /// 是否必填。
+    /// 是否必填
     /// </summary>
     public bool Required { get; init; }
 
     /// <summary>
-    /// 默认值。
+    /// 默认值
     /// </summary>
     /// <remarks>
-    /// 没有为 <see langword="null"/>。
+    /// 没有为 <see langword="null"/>
     /// </remarks>
     public JsonNode? DefaultValue { get; init; }
 
     /// <summary>
-    /// 说明。
+    /// 说明
     /// </summary>
     public string? Description { get; init; }
 }

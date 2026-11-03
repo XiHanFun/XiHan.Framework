@@ -7,13 +7,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 
 /// <summary>
-/// 从已认证主体的声明解析租户（声明类型见 <see cref="MultiTenancyOptions.TenantClaim"/>）。
+/// 从已认证主体的声明解析租户（声明类型见 <see cref="MultiTenancyOptions.TenantClaim"/>）
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ClaimTenantResolver(MultiTenancyOptions options) : ITenantResolver
 {
     /// <summary>
-    /// 提供承载租户 ID 的声明类型。
+    /// 提供承载租户 ID 的声明类型
     /// </summary>
     private readonly MultiTenancyOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 

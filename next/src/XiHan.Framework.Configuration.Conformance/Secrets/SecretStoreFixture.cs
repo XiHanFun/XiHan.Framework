@@ -7,21 +7,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Conformance.Secrets;
 
 /// <summary>
-/// 密钥库套件的夹具：被测密钥库与写入密钥的钩子。
+/// 密钥库套件的夹具：被测密钥库与写入密钥的钩子
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class SecretStoreFixture
 {
     /// <summary>
-    /// 被测密钥库。
+    /// 被测密钥库
     /// </summary>
     public abstract ISecretStore Store { get; }
 
     /// <summary>
-    /// 写入（创建或覆盖）一个密钥。
+    /// 写入（创建或覆盖）一个密钥
     /// </summary>
     /// <remarks>
-    /// 返回后密钥库应能读到。
+    /// 返回后密钥库应能读到
     /// </remarks>
     public abstract Task PutAsync(SecretName name, string value, CancellationToken cancellationToken);
 }

@@ -8,21 +8,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 写日志。
+/// 写日志
 /// </summary>
 /// <remarks>
-/// <c>Message</c>（模板）按 <c>Level</c>（默认 Information）写到 <c>XiHan.Framework.Workflow.Abstractions.Activities.LogActivity</c> 日志类别。
+/// <c>Message</c>（模板）按 <c>Level</c>（默认 Information）写到 <c>XiHan.Framework.Workflow.Abstractions.Activities.LogActivity</c> 日志类别
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class LogActivity : IActivity
 {
     /// <summary>
-    /// 属性：消息模板。
+    /// 属性：消息模板
     /// </summary>
     public const string MessageProperty = "Message";
 
     /// <summary>
-    /// 属性：级别。
+    /// 属性：级别
     /// </summary>
     public const string LevelProperty = "Level";
 
@@ -50,7 +50,7 @@ public sealed partial class LogActivity : IActivity
     }
 
     /// <summary>
-    /// 节点日志。
+    /// 节点日志
     /// </summary>
     [LoggerMessage(Message = "Workflow instance '{InstanceId}' node '{NodeId}': {Message}")]
     private static partial void LogMessage(ILogger logger, LogLevel level, string instanceId, string nodeId, string message);

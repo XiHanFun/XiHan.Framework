@@ -10,37 +10,37 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存存储。
+/// 内存存储
 /// </summary>
 /// <remarks>
-/// 每种实体一张有界的表。单例。同时是健康项 <see cref="InMemoryPersistenceFeature.HealthName"/> 的贡献者：任一张表满即 Degraded。
+/// 每种实体一张有界的表。单例。同时是健康项 <see cref="InMemoryPersistenceFeature.HealthName"/> 的贡献者：任一张表满即 Degraded
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryStore(InMemoryPersistenceOptions options) : IHealthContributor
 {
     /// <summary>
-    /// 按实体类型索引的表。
+    /// 按实体类型索引的表
     /// </summary>
     /// <remarks>
-    /// 值是对应的 <see cref="InMemoryTable{TEntity, TKey}"/>，并发创建由字典保证只保留一张。
+    /// 值是对应的 <see cref="InMemoryTable{TEntity, TKey}"/>，并发创建由字典保证只保留一张
     /// </remarks>
     private readonly ConcurrentDictionary<Type, object> _tables = new();
 
     /// <summary>
-    /// 最近分配的建表序号。
+    /// 最近分配的建表序号
     /// </summary>
     /// <remarks>
-    /// 表的加锁次序；并发建表时落选的那张也会占一个序号，不影响次序的唯一性。
+    /// 表的加锁次序；并发建表时落选的那张也会占一个序号，不影响次序的唯一性
     /// </remarks>
     private long _order;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     public InMemoryPersistenceOptions Options { get; } = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <summary>
-    /// 取实体的表。
+    /// 取实体的表
     /// </summary>
     public InMemoryTable<TEntity, TKey> Table<TEntity, TKey>()
         where TEntity : class, IEntity<TKey>
@@ -48,7 +48,7 @@ public sealed class InMemoryStore(InMemoryPersistenceOptions options) : IHealthC
         => (InMemoryTable<TEntity, TKey>)_tables.GetOrAdd(typeof(TEntity), _ => new InMemoryTable<TEntity, TKey>(Options.MaxEntitiesPerType) { Order = Interlocked.Increment(ref _order) });
 
     /// <summary>
-    /// 清空全部表。
+    /// 清空全部表
     /// </summary>
     public void Clear() => _tables.Clear();
 

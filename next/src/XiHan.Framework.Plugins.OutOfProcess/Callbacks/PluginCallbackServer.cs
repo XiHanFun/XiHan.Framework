@@ -13,33 +13,33 @@ using XiHan.Framework.Plugins.Protocol.Handshake;
 namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 
 /// <summary>
-/// 宿主回调服务器。
+/// 宿主回调服务器
 /// </summary>
 /// <remarks>
-/// 一个只监听本机端点、只服务 <c>Host</c> 的 Kestrel 实例，与宿主应用自己的服务器无关。
+/// 一个只监听本机端点、只服务 <c>Host</c> 的 Kestrel 实例，与宿主应用自己的服务器无关
 /// </remarks>
 internal sealed class PluginCallbackServer(PluginEndpoint endpoint, PluginSessions sessions, IServiceProvider services, ILoggerFactory loggerFactory) : IAsyncDisposable
 {
     /// <summary>
-    /// 命名管道地址前缀。
+    /// 命名管道地址前缀
     /// </summary>
     private const string PipePrefix = @"\\.\pipe\";
 
     /// <summary>
-    /// 运行中的应用。
+    /// 运行中的应用
     /// </summary>
     private WebApplication? _app;
 
     /// <summary>
-    /// 监听的端点。
+    /// 监听的端点
     /// </summary>
     public PluginEndpoint Endpoint => endpoint;
 
     /// <summary>
-    /// 为本机选一个新端点。
+    /// 为本机选一个新端点
     /// </summary>
     /// <remarks>
-    /// Windows 用命名管道，其他系统用临时目录下的 Unix 域套接字；名字随机，不与其他宿主冲突。
+    /// Windows 用命名管道，其他系统用临时目录下的 Unix 域套接字；名字随机，不与其他宿主冲突
     /// </remarks>
     public static PluginEndpoint CreateEndpoint()
     {
@@ -50,7 +50,7 @@ internal sealed class PluginCallbackServer(PluginEndpoint endpoint, PluginSessio
     }
 
     /// <summary>
-    /// 启动服务器。
+    /// 启动服务器
     /// </summary>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -86,7 +86,7 @@ internal sealed class PluginCallbackServer(PluginEndpoint endpoint, PluginSessio
     }
 
     /// <summary>
-    /// 停止服务器并清理套接字文件。
+    /// 停止服务器并清理套接字文件
     /// </summary>
     public async ValueTask DisposeAsync()
     {

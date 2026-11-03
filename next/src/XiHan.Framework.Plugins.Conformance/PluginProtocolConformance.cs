@@ -19,58 +19,58 @@ using ProtoLifecycleState = XiHan.Framework.Plugins.Protocol.V1.LifecycleState;
 namespace XiHan.Framework.Plugins.Conformance;
 
 /// <summary>
-/// 进程外插件协议 <c>xihan.plugin.v1</c> 的黑盒一致性套件。
+/// 进程外插件协议 <c>xihan.plugin.v1</c> 的黑盒一致性套件
 /// </summary>
 /// <remarks>
-/// RFC-0017，<c>spec/plugin/invocation.md</c> §7。以宿主身份启动插件目录里的进程，核对握手行、版本协商、清单一致性、生命周期、调用、事件与退出约定。任何语言的插件实现都应以其构建产物目录继承本类运行。
+/// RFC-0017，<c>spec/plugin/invocation.md</c> §7。以宿主身份启动插件目录里的进程，核对握手行、版本协商、清单一致性、生命周期、调用、事件与退出约定。任何语言的插件实现都应以其构建产物目录继承本类运行
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class PluginProtocolConformance
 {
     /// <summary>
-    /// 可服务的状态集合。
+    /// 可服务的状态集合
     /// </summary>
     private static readonly ProtoLifecycleState[] _serving = [ProtoLifecycleState.Started, ProtoLifecycleState.Ready, ProtoLifecycleState.Degraded];
 
     /// <summary>
-    /// 被测插件目录：含 <c>xihan.manifest.json</c> 与清单 <c>entry</c> 指向的可执行文件。
+    /// 被测插件目录：含 <c>xihan.manifest.json</c> 与清单 <c>entry</c> 指向的可执行文件
     /// </summary>
     protected abstract string PluginDirectory { get; }
 
     /// <summary>
-    /// 每次协议调用的时限。
+    /// 每次协议调用的时限
     /// </summary>
     /// <remarks>
-    /// 默认 15 秒。
+    /// 默认 15 秒
     /// </remarks>
     protected virtual TimeSpan Timeout => TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// <c>Configure</c> 下发的配置节 JSON。
+    /// <c>Configure</c> 下发的配置节 JSON
     /// </summary>
     /// <remarks>
-    /// 默认空对象。
+    /// 默认空对象
     /// </remarks>
     protected virtual string ConfigurationJson => "{}";
 
     /// <summary>
-    /// 调用用例使用的示例请求（操作 ID → JSON）。
+    /// 调用用例使用的示例请求（操作 ID → JSON）
     /// </summary>
     /// <remarks>
-    /// 没有示例的操作以 <c>{}</c> 调用。
+    /// 没有示例的操作以 <c>{}</c> 调用
     /// </remarks>
     protected virtual IReadOnlyDictionary<string, string> SampleRequests => new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 调用用例跳过的操作（如故意崩溃或需要宿主回调的操作）。
+    /// 调用用例跳过的操作（如故意崩溃或需要宿主回调的操作）
     /// </summary>
     protected virtual IReadOnlySet<string> ExcludedOperations => new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 用例 1：握手与清单相符。
+    /// 用例 1：握手与清单相符
     /// </summary>
     /// <remarks>
-    /// 进程写出合法握手行、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅都在清单声明范围内；清单不写 <c>contributes.pipeline</c>（进程外插件不能贡献中间件，宿主在发现时拒绝，RFC-0017「范围」）。
+    /// 进程写出合法握手行、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅都在清单声明范围内；清单不写 <c>contributes.pipeline</c>（进程外插件不能贡献中间件，宿主在发现时拒绝，RFC-0017「范围」）
     /// </remarks>
     [Fact]
     public async Task Handshake_PublishesAnEndpoint_NegotiatesTheVersion_AndMatchesTheManifest()
@@ -85,10 +85,10 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 用例 2：宿主没有共同版本时握手必须以 <c>FailedPrecondition</c> 拒绝。
+    /// 用例 2：宿主没有共同版本时握手必须以 <c>FailedPrecondition</c> 拒绝
     /// </summary>
     /// <remarks>
-    /// 而不是返回宿主不支持的版本。
+    /// 而不是返回宿主不支持的版本
     /// </remarks>
     [Fact]
     public async Task Handshake_WithoutACommonVersion_IsRefused()
@@ -102,10 +102,10 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 用例 3：Configure 与 Start 成功。
+    /// 用例 3：Configure 与 Start 成功
     /// </summary>
     /// <remarks>
-    /// Health 与 WatchHealth 报可服务状态；Stop 成功后进程在宽限内退出。
+    /// Health 与 WatchHealth 报可服务状态；Stop 成功后进程在宽限内退出
     /// </remarks>
     [Fact]
     public async Task Lifecycle_ConfigureStartHealthStop_FollowTheProtocol()
@@ -127,7 +127,7 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 用例 4：未声明的操作以 gRPC <c>Unimplemented</c> 结束，而不是业务失败。
+    /// 用例 4：未声明的操作以 gRPC <c>Unimplemented</c> 结束，而不是业务失败
     /// </summary>
     [Fact]
     public async Task Invoke_UnknownOperation_IsUnimplemented()
@@ -141,10 +141,10 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 用例 5：每个声明的一元操作都返回带 <c>status</c> 的应答。
+    /// 用例 5：每个声明的一元操作都返回带 <c>status</c> 的应答
     /// </summary>
     /// <remarks>
-    /// 成功时载荷是 JSON，失败时错误码合法；gRPC 状态保持 OK。
+    /// 成功时载荷是 JSON，失败时错误码合法；gRPC 状态保持 OK
     /// </remarks>
     [Fact]
     public async Task Invoke_DeclaredOperations_ReturnAStatus()
@@ -176,7 +176,7 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 用例 6：向声明的订阅投递一条消息必须得到确认（没有订阅时跳过）。
+    /// 用例 6：向声明的订阅投递一条消息必须得到确认（没有订阅时跳过）
     /// </summary>
     [Fact]
     public async Task HandleEvent_ForADeclaredSubscription_IsAcknowledged()
@@ -208,7 +208,7 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 用例 7：宿主关闭 stdin 后插件必须自行退出（不留孤儿进程）。
+    /// 用例 7：宿主关闭 stdin 后插件必须自行退出（不留孤儿进程）
     /// </summary>
     [Fact]
     public async Task Process_ExitsWhenStdinCloses()
@@ -221,7 +221,7 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 启动进程并读握手行。
+    /// 启动进程并读握手行
     /// </summary>
     private async Task<PluginProcess> StartProcessAsync()
     {
@@ -234,7 +234,7 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 启动、握手并核对清单。
+    /// 启动、握手并核对清单
     /// </summary>
     private async Task<PluginSession> LaunchAsync()
     {
@@ -255,7 +255,7 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// Configure 与 Start，都必须成功。
+    /// Configure 与 Start，都必须成功
     /// </summary>
     private async Task StartAsync(PluginSession session)
     {
@@ -271,13 +271,13 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 读目录里的清单。
+    /// 读目录里的清单
     /// </summary>
     private Manifest ReadManifest()
         => ManifestReader.ReadFile(Path.Combine(PluginDirectory, ManifestReader.FileName)).ValueOrThrow();
 
     /// <summary>
-    /// 以给定版本列表组装握手请求。
+    /// 以给定版本列表组装握手请求
     /// </summary>
     private static HandshakeRequest HandshakeRequest(IEnumerable<uint> versions)
     {
@@ -294,7 +294,7 @@ public abstract class PluginProtocolConformance
     }
 
     /// <summary>
-    /// 占位的宿主回调端点：套件不提供回调服务，只验证插件侧。
+    /// 占位的宿主回调端点：套件不提供回调服务，只验证插件侧
     /// </summary>
     private static PluginEndpoint HostEndpoint()
         => OperatingSystem.IsWindows()
@@ -302,7 +302,7 @@ public abstract class PluginProtocolConformance
             : new PluginEndpoint(PluginEndpoint.Unix, Path.Combine(Path.GetTempPath(), "xihan-conformance-host.sock"));
 
     /// <summary>
-    /// 本次调用的截止时间。
+    /// 本次调用的截止时间
     /// </summary>
     private DateTime Deadline() => DateTime.UtcNow + Timeout;
 }

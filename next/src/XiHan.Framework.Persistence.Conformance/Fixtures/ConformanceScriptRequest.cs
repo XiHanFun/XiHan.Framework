@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件操作的请求。
+/// 套件操作的请求
 /// </summary>
-/// <param name="Script"><see cref="ConformanceScripts.Add"/> 返回的键。</param>
+/// <param name="Script"><see cref="ConformanceScripts.Add"/> 返回的键</param>
 internal sealed record ConformanceScriptRequest(string Script);

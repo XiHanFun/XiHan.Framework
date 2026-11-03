@@ -8,29 +8,29 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.Abstractions.Authorization;
 
 /// <summary>
-/// 策略。
+/// 策略
 /// </summary>
 /// <remarks>
-/// 主体持有某个权限（经 <see cref="IPermissionChecker"/>）。匿名主体先按未认证拒绝；检查器失败（授予存储不可达等）时判定失败，不当作缺少权限。
+/// 主体持有某个权限（经 <see cref="IPermissionChecker"/>）。匿名主体先按未认证拒绝；检查器失败（授予存储不可达等）时判定失败，不当作缺少权限
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class PermissionPolicy : IPolicy
 {
     /// <summary>
-    /// 策略名前缀 <c>permission:</c>。
+    /// 策略名前缀 <c>permission:</c>
     /// </summary>
     public const string Prefix = "permission:";
 
     /// <summary>
-    /// 权限检查器。
+    /// 权限检查器
     /// </summary>
     /// <remarks>
-    /// 判定主体是否持有 <see cref="PermissionCode"/>。
+    /// 判定主体是否持有 <see cref="PermissionCode"/>
     /// </remarks>
     private readonly IPermissionChecker _checker;
 
     /// <summary>
-    /// 创建权限策略。
+    /// 创建权限策略
     /// </summary>
     public PermissionPolicy(string permissionCode, IPermissionChecker checker)
     {
@@ -39,7 +39,7 @@ public sealed class PermissionPolicy : IPolicy
     }
 
     /// <summary>
-    /// 权限码。
+    /// 权限码
     /// </summary>
     public string PermissionCode { get; }
 
@@ -47,7 +47,7 @@ public sealed class PermissionPolicy : IPolicy
     public string Name => NameFor(PermissionCode);
 
     /// <summary>
-    /// 权限码对应的策略名。
+    /// 权限码对应的策略名
     /// </summary>
     public static string NameFor(string permissionCode)
     {
@@ -56,10 +56,10 @@ public sealed class PermissionPolicy : IPolicy
     }
 
     /// <summary>
-    /// 从策略名取权限码。
+    /// 从策略名取权限码
     /// </summary>
     /// <remarks>
-    /// 不是权限策略返回 <see langword="null"/>。
+    /// 不是权限策略返回 <see langword="null"/>
     /// </remarks>
     public static string? CodeOf(string policyName)
         // 前缀之后必须还有内容："permission:" 本身不是权限策略

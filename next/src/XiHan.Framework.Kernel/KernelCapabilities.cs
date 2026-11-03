@@ -7,51 +7,51 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 内核提供的能力 ID。
+/// 内核提供的能力 ID
 /// </summary>
 /// <remarks>
-/// 特性在清单的 <c>requires</c> 中引用它们。
+/// 特性在清单的 <c>requires</c> 中引用它们
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class KernelCapabilities
 {
     /// <summary>
-    /// 应用构建、特性装配、生命周期。
+    /// 应用构建、特性装配、生命周期
     /// </summary>
     public const string Hosting = "kernel.hosting";
 
     /// <summary>
-    /// 清单解析与能力图谱。
+    /// 清单解析与能力图谱
     /// </summary>
     public const string Capabilities = "kernel.capabilities";
 
     /// <summary>
-    /// 执行管道。
+    /// 执行管道
     /// </summary>
     public const string Pipeline = "kernel.pipeline";
 
     /// <summary>
-    /// 诊断薄桥与审计接收器。
+    /// 诊断薄桥与审计接收器
     /// </summary>
     public const string Diagnostics = "kernel.diagnostics";
 
     /// <summary>
-    /// 安全原语。
+    /// 安全原语
     /// </summary>
     public const string Security = "kernel.security";
 
     /// <summary>
-    /// 插件宿主抽象。
+    /// 插件宿主抽象
     /// </summary>
     public const string Plugins = "kernel.plugins";
 
     /// <summary>
-    /// 当前内核实现的接口版本。
+    /// 当前内核实现的接口版本
     /// </summary>
     public const int Version = 1;
 
     /// <summary>
-    /// 内核自身的清单：所有内核能力的提供者，总是能力图谱的根。
+    /// 内核自身的清单：所有内核能力的提供者，总是能力图谱的根
     /// </summary>
     public static Manifest Manifest { get; } = new()
     {

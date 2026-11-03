@@ -14,26 +14,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 
 /// <summary>
-/// Idempotency 阶段的中间件。
+/// Idempotency 阶段的中间件
 /// </summary>
 /// <remarks>
-/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记（操作调用另记操作 ID 与成功的响应）；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果、不执行处理器，操作调用同时还原响应对象，记录属于另一个调用时返回 <see cref="CachingErrors.IdempotentMismatch"/>。处理器抛出异常时清除标记，允许重试。
+/// Baggage 里有 <see cref="BaggageKeys.IdempotencyKey"/> 时，按（租户、主体、键）在 <see cref="ISharedCache"/> 的存储里去重。首次调用写入"处理中"标记并执行，完成后用调用结果替换标记（操作调用另记操作 ID 与成功的响应）；处理中的重复调用返回 <see cref="CachingErrors.IdempotentInProgress"/>；已完成的重复调用直接回放结果、不执行处理器，操作调用同时还原响应对象，记录属于另一个调用时返回 <see cref="CachingErrors.IdempotentMismatch"/>。处理器抛出异常时清除标记，允许重试
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelineMiddleware
 {
     /// <summary>
-    /// 上下文项键：标记本次调用的结果来自回放。
+    /// 上下文项键：标记本次调用的结果来自回放
     /// </summary>
     private static readonly ContextItemKey<bool> _replayedKey = new("xihan.idempotency.replayed");
 
     /// <summary>
-    /// 幂等选项（结果与"处理中"标记的保留时间）。
+    /// 幂等选项（结果与"处理中"标记的保留时间）
     /// </summary>
     private readonly IdempotencyOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <summary>
-    /// 本次调用的结果是否来自回放。
+    /// 本次调用的结果是否来自回放
     /// </summary>
     public static bool WasReplayed(InvocationContext context)
     {
@@ -109,10 +109,10 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     }
 
     /// <summary>
-    /// 由首次调用的结果生成已完成记录。
+    /// 由首次调用的结果生成已完成记录
     /// </summary>
     /// <remarks>
-    /// 操作调用记下操作 ID；成功且上下文里有响应对象时按描述编成 XGI 的 JSON 一起记（已经过响应过滤，与首次调用拿到的一致）。
+    /// 操作调用记下操作 ID；成功且上下文里有响应对象时按描述编成 XGI 的 JSON 一起记（已经过响应过滤，与首次调用拿到的一致）
     /// </remarks>
     private static IdempotencyRecord Complete(InvocationContext context, Result outcome)
     {
@@ -132,10 +132,10 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     }
 
     /// <summary>
-    /// 回放已完成的记录。
+    /// 回放已完成的记录
     /// </summary>
     /// <remarks>
-    /// 记录必须属于同一个操作（都不是操作调用时都为空），否则返回 <see cref="CachingErrors.IdempotentMismatch"/>；成功的操作调用把记录的响应解码放回上下文，调用器与宿主端点据此返回首次调用的响应。
+    /// 记录必须属于同一个操作（都不是操作调用时都为空），否则返回 <see cref="CachingErrors.IdempotentMismatch"/>；成功的操作调用把记录的响应解码放回上下文，调用器与宿主端点据此返回首次调用的响应
     /// </remarks>
     private static Result Replay(InvocationContext context, IdempotencyRecord record)
     {
@@ -169,13 +169,13 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     }
 
     /// <summary>
-    /// 构造记录的响应无法回放的错误。
+    /// 构造记录的响应无法回放的错误
     /// </summary>
     private static Error Unavailable(string operation, string reason)
         => Error.Conflict(CachingErrors.IdempotentMismatch, CachingMessages.IdempotentResponseUnavailable, MessageArguments.Of(("operation", operation), ("reason", reason)));
 
     /// <summary>
-    /// 用源生成上下文把记录序列化为 UTF-8 JSON 字节。
+    /// 用源生成上下文把记录序列化为 UTF-8 JSON 字节
     /// </summary>
     private static ReadOnlyMemory<byte> Serialize(IdempotencyRecord record)
         => JsonSerializer.SerializeToUtf8Bytes(record, CachingJsonContext.Default.IdempotencyRecord);

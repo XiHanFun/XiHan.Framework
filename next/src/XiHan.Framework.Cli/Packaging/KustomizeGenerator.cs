@@ -6,28 +6,28 @@ using System.Globalization;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 生成 Kustomize 清单。
+/// 生成 Kustomize 清单
 /// </summary>
 /// <remarks>
-/// Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization。
+/// Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization
 /// </remarks>
 internal static class KustomizeGenerator
 {
     /// <summary>
-    /// 产物目录。
+    /// 产物目录
     /// </summary>
     private const string Directory = "kustomize/";
 
     /// <summary>
-    /// Service Binding 挂载根。
+    /// Service Binding 挂载根
     /// </summary>
     private const string BindingRoot = "/bindings";
 
     /// <summary>
-    /// 生成全部文件。
+    /// 生成全部文件
     /// </summary>
     /// <remarks>
-    /// <paramref name="manifestDirectory"/> 用来读取配置文件内容。
+    /// <paramref name="manifestDirectory"/> 用来读取配置文件内容
     /// </remarks>
     public static IEnumerable<PackOutput> Generate(AppManifest manifest, string manifestDirectory)
     {
@@ -69,17 +69,17 @@ internal static class KustomizeGenerator
     }
 
     /// <summary>
-    /// 副本数：有伸缩时取最少副本。
+    /// 副本数：有伸缩时取最少副本
     /// </summary>
     private static int ReplicaCount(AppManifest manifest) => manifest.Scaling?.Min ?? manifest.Replicas;
 
     /// <summary>
-    /// 绑定的 Secret 名。
+    /// 绑定的 Secret 名
     /// </summary>
     private static string SecretName(AppManifest manifest, string binding, BindingSettings settings) => settings.Secret ?? manifest.Name + "-" + binding;
 
     /// <summary>
-    /// 公共标签。
+    /// 公共标签
     /// </summary>
     private static YamlText Labels(YamlText yaml, int indent, AppManifest manifest)
         => yaml.Pair(indent, "app.kubernetes.io/name", manifest.Name)
@@ -87,7 +87,7 @@ internal static class KustomizeGenerator
             .Pair(indent, "xihan.profile", manifest.Profile);
 
     /// <summary>
-    /// Deployment。
+    /// Deployment
     /// </summary>
     private static string Deployment(AppManifest manifest)
     {
@@ -209,12 +209,12 @@ internal static class KustomizeGenerator
     }
 
     /// <summary>
-    /// 一个环境变量。
+    /// 一个环境变量
     /// </summary>
     private static void Env(YamlText yaml, string name, string value) => yaml.Line(12, "- name: " + name).Pair(14, "value", value);
 
     /// <summary>
-    /// 一个取自 Pod 字段的环境变量。
+    /// 一个取自 Pod 字段的环境变量
     /// </summary>
     private static void FieldEnv(YamlText yaml, string name, string fieldPath)
         => yaml.Line(12, "- name: " + name)
@@ -223,7 +223,7 @@ internal static class KustomizeGenerator
             .Pair(18, "fieldPath", fieldPath);
 
     /// <summary>
-    /// 一个 HTTP 探针。
+    /// 一个 HTTP 探针
     /// </summary>
     private static void Probe(YamlText yaml, string kind, string path, ProbeSettings probes, int failureThreshold)
         => yaml.Line(10, kind + ":")
@@ -235,7 +235,7 @@ internal static class KustomizeGenerator
             .Pair(12, "failureThreshold", failureThreshold);
 
     /// <summary>
-    /// 一组资源数量。
+    /// 一组资源数量
     /// </summary>
     private static void Quantities(YamlText yaml, string key, ResourceQuantities? quantities)
     {
@@ -257,7 +257,7 @@ internal static class KustomizeGenerator
     }
 
     /// <summary>
-    /// Service。
+    /// Service
     /// </summary>
     private static string Service(AppManifest manifest)
     {
@@ -285,7 +285,7 @@ internal static class KustomizeGenerator
     }
 
     /// <summary>
-    /// ConfigMap：列出的文件存在时嵌入内容，否则为空对象。
+    /// ConfigMap：列出的文件存在时嵌入内容，否则为空对象
     /// </summary>
     private static string ConfigMap(AppManifest manifest, string manifestDirectory)
     {
@@ -305,7 +305,7 @@ internal static class KustomizeGenerator
     }
 
     /// <summary>
-    /// HPA。
+    /// HPA
     /// </summary>
     private static string HorizontalPodAutoscaler(AppManifest manifest)
         => new YamlText()
@@ -330,7 +330,7 @@ internal static class KustomizeGenerator
             .ToString();
 
     /// <summary>
-    /// PDB：至少一个可用。
+    /// PDB：至少一个可用
     /// </summary>
     private static string PodDisruptionBudget(AppManifest manifest)
         => new YamlText()
@@ -346,7 +346,7 @@ internal static class KustomizeGenerator
             .ToString();
 
     /// <summary>
-    /// Lease 的 ServiceAccount、Role 与 RoleBinding。
+    /// Lease 的 ServiceAccount、Role 与 RoleBinding
     /// </summary>
     private static string Rbac(AppManifest manifest)
         => new YamlText()
@@ -382,10 +382,10 @@ internal static class KustomizeGenerator
             .ToString();
 
     /// <summary>
-    /// 绑定 Secret 的示例，不进 kustomization。
+    /// 绑定 Secret 的示例，不进 kustomization
     /// </summary>
     /// <remarks>
-    /// 按 Service Binding 规范写 <c>type</c> 与 <c>uri</c>，另以注释列出该类型可单独给出的凭据键。
+    /// 按 Service Binding 规范写 <c>type</c> 与 <c>uri</c>，另以注释列出该类型可单独给出的凭据键
     /// </remarks>
     private static string BindingSecrets(AppManifest manifest)
     {
@@ -417,10 +417,10 @@ internal static class KustomizeGenerator
     }
 
     /// <summary>
-    /// 绑定类型可单独给出的凭据属性。
+    /// 绑定类型可单独给出的凭据属性
     /// </summary>
     /// <remarks>
-    /// 与各 Provider 读取的绑定属性一致；关系型数据库的凭据在连接串里，没有单独的键。
+    /// 与各 Provider 读取的绑定属性一致；关系型数据库的凭据在连接串里，没有单独的键
     /// </remarks>
     private static string[] CredentialKeys(string type) => type switch
     {
@@ -431,7 +431,7 @@ internal static class KustomizeGenerator
     };
 
     /// <summary>
-    /// kustomization。
+    /// kustomization
     /// </summary>
     private static string Kustomization(AppManifest manifest, IReadOnlyList<string> resources)
     {

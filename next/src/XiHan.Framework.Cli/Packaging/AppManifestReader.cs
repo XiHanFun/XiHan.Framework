@@ -8,23 +8,23 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 读取并校验应用清单。
+/// 读取并校验应用清单
 /// </summary>
 /// <remarks>
-/// 全部问题一次列出。
+/// 全部问题一次列出
 /// </remarks>
 internal static partial class AppManifestReader
 {
     /// <summary>
-    /// 默认文件名。
+    /// 默认文件名
     /// </summary>
     public const string DefaultFileName = "xihan.app.json";
 
     /// <summary>
-    /// 从文件读取。
+    /// 从文件读取
     /// </summary>
     /// <remarks>
-    /// 文件不存在由调用方先判断。
+    /// 文件不存在由调用方先判断
     /// </remarks>
     public static Result<AppManifest> Read(string path)
     {
@@ -50,7 +50,7 @@ internal static partial class AppManifestReader
     }
 
     /// <summary>
-    /// 校验，返回全部问题（空表示合法）。
+    /// 校验，返回全部问题（空表示合法）
     /// </summary>
     public static IReadOnlyList<string> Validate(AppManifest manifest, string manifestDirectory)
     {
@@ -184,31 +184,31 @@ internal static partial class AppManifestReader
     }
 
     /// <summary>
-    /// 不合法的清单。
+    /// 不合法的清单
     /// </summary>
     private static Error Invalid(string path, string reason)
         => Error.Validation(CliErrors.ManifestInvalid, CliMessages.ManifestInvalid, MessageArguments.Of(("path", path), ("reason", reason)));
 
     /// <summary>
-    /// DNS 标签。
+    /// DNS 标签
     /// </summary>
     [GeneratedRegex("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")]
     private static partial Regex DnsLabel();
 
     /// <summary>
-    /// 绑定名。
+    /// 绑定名
     /// </summary>
     [GeneratedRegex("^[a-z][a-z0-9-]*$")]
     private static partial Regex BindingName();
 
     /// <summary>
-    /// k8s 数量。
+    /// k8s 数量
     /// </summary>
     [GeneratedRegex("^[0-9]+(\\.[0-9]+)?(m|k|Ki|M|Mi|G|Gi|T|Ti)?$")]
     private static partial Regex Quantity();
 
     /// <summary>
-    /// 环境变量名。
+    /// 环境变量名
     /// </summary>
     [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*$")]
     private static partial Regex EnvironmentName();

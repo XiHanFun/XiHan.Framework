@@ -14,24 +14,24 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Messaging.InMemory;
 
 /// <summary>
-/// 内存消息的能力包入口。
+/// 内存消息的能力包入口
 /// </summary>
 /// <remarks>
-/// 默认提供 <c>messaging.queue@1</c>；启动时消费全部订阅主题，停止时等待进行中的投递结束。
+/// 默认提供 <c>messaging.queue@1</c>；启动时消费全部订阅主题，停止时等待进行中的投递结束
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryMessagingFeature : IHostedFeature
 {
     /// <summary>
-    /// 健康项名：每主题的有界队列是否都还有余量。
+    /// 健康项名：每主题的有界队列是否都还有余量
     /// </summary>
     public const string HealthName = "messaging.inmemory.capacity";
 
     /// <summary>
-    /// 启动后取得的运行时。
+    /// 启动后取得的运行时
     /// </summary>
     /// <remarks>
-    /// 停止时用它结束消费。
+    /// 停止时用它结束消费
     /// </remarks>
     private MessagingRuntime? _runtime;
 

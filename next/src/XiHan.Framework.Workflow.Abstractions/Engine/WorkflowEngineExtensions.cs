@@ -7,13 +7,13 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 单实例的控制操作：批量方法的特例。
+/// 单实例的控制操作：批量方法的特例
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowEngineExtensions
 {
     /// <summary>
-    /// 挂起一个实例。
+    /// 挂起一个实例
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> SuspendAsync(this IWorkflowEngine engine, string instanceId, string? reason, CancellationToken cancellationToken)
     {
@@ -22,7 +22,7 @@ public static class WorkflowEngineExtensions
     }
 
     /// <summary>
-    /// 恢复一个挂起的实例。
+    /// 恢复一个挂起的实例
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> ResumeInstanceAsync(this IWorkflowEngine engine, string instanceId, CancellationToken cancellationToken)
     {
@@ -31,7 +31,7 @@ public static class WorkflowEngineExtensions
     }
 
     /// <summary>
-    /// 取消一个实例。
+    /// 取消一个实例
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> CancelAsync(this IWorkflowEngine engine, string instanceId, string? reason, CancellationToken cancellationToken)
     {
@@ -40,7 +40,7 @@ public static class WorkflowEngineExtensions
     }
 
     /// <summary>
-    /// 终止一个实例。
+    /// 终止一个实例
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> TerminateAsync(this IWorkflowEngine engine, string instanceId, string? reason, CancellationToken cancellationToken)
     {
@@ -49,7 +49,7 @@ public static class WorkflowEngineExtensions
     }
 
     /// <summary>
-    /// 重试一个故障实例。
+    /// 重试一个故障实例
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> RetryAsync(this IWorkflowEngine engine, string instanceId, CancellationToken cancellationToken)
     {
@@ -58,7 +58,7 @@ public static class WorkflowEngineExtensions
     }
 
     /// <summary>
-    /// 改一个实例的变量。
+    /// 改一个实例的变量
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> SetVariablesAsync(this IWorkflowEngine engine, WorkflowVariableUpdate update, CancellationToken cancellationToken)
     {
@@ -67,7 +67,7 @@ public static class WorkflowEngineExtensions
     }
 
     /// <summary>
-    /// 跳转一个实例。
+    /// 跳转一个实例
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> JumpAsync(this IWorkflowEngine engine, WorkflowJump jump, CancellationToken cancellationToken)
     {
@@ -76,7 +76,7 @@ public static class WorkflowEngineExtensions
     }
 
     /// <summary>
-    /// 迁移一个实例。
+    /// 迁移一个实例
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> MigrateAsync(this IWorkflowEngine engine, WorkflowMigration migration, CancellationToken cancellationToken)
     {

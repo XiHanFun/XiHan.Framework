@@ -9,25 +9,25 @@ using XiHan.Framework.Scheduling.Abstractions;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// 应用生命周期用例的探针特性。
+/// 应用生命周期用例的探针特性
 /// </summary>
 /// <remarks>
-/// 依赖 <c>scheduling.jobs</c>：在调度特性（已起引擎）之后启动、之前停止，启动与停止两个钩子都正赶上应用不在服务状态（启动中、排空中），用例在钩子里直接执行引擎的周期。
+/// 依赖 <c>scheduling.jobs</c>：在调度特性（已起引擎）之后启动、之前停止，启动与停止两个钩子都正赶上应用不在服务状态（启动中、排空中），用例在钩子里直接执行引擎的周期
 /// </remarks>
 internal sealed class LeadershipProbeFeature : IHostedFeature
 {
     /// <summary>
-    /// 启动钩子：收到宿主的服务。
+    /// 启动钩子：收到宿主的服务
     /// </summary>
     private readonly Func<IServiceProvider, CancellationToken, Task> _onStart;
 
     /// <summary>
-    /// 停止钩子。
+    /// 停止钩子
     /// </summary>
     private readonly Func<CancellationToken, Task> _onStop;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public LeadershipProbeFeature(Func<IServiceProvider, CancellationToken, Task> onStart, Func<CancellationToken, Task> onStop)
     {

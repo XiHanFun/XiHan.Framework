@@ -11,15 +11,15 @@ using XiHan.Framework.Scheduling.Database.Entities;
 namespace XiHan.Framework.Scheduling.Database.Storage;
 
 /// <summary>
-/// 契约记录与实体行之间的换算。
+/// 契约记录与实体行之间的换算
 /// </summary>
 /// <remarks>
-/// 枚举存整数值，JSON 数据存文本，计划存 <see cref="JobSchedule.ToString"/> 的文本。<c>Copy</c> 把新内容复制到取回的行上，不碰标识、并发戳与写入序号——整体替换由协议维护的列保持在取回的实例里。
+/// 枚举存整数值，JSON 数据存文本，计划存 <see cref="JobSchedule.ToString"/> 的文本。<c>Copy</c> 把新内容复制到取回的行上，不碰标识、并发戳与写入序号——整体替换由协议维护的列保持在取回的实例里
 /// </remarks>
 internal static class RecordMapping
 {
     /// <summary>
-    /// 作业记录 → 行。
+    /// 作业记录 → 行
     /// </summary>
     public static JobEntity ToEntity(JobRecord record)
     {
@@ -30,7 +30,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 作业行 → 记录。
+    /// 作业行 → 记录
     /// </summary>
     public static JobRecord ToRecord(JobEntity row)
     {
@@ -55,7 +55,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 把新作业行的内容复制到已有行上。
+    /// 把新作业行的内容复制到已有行上
     /// </summary>
     public static void Copy(JobEntity source, JobEntity target)
     {
@@ -80,7 +80,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 触发器记录 → 行。
+    /// 触发器记录 → 行
     /// </summary>
     public static TriggerEntity ToEntity(TriggerRecord record)
     {
@@ -91,7 +91,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 触发器行 → 记录。
+    /// 触发器行 → 记录
     /// </summary>
     public static TriggerRecord ToRecord(TriggerEntity row)
     {
@@ -121,7 +121,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 把新触发器行的内容复制到已有行上。
+    /// 把新触发器行的内容复制到已有行上
     /// </summary>
     public static void Copy(TriggerEntity source, TriggerEntity target)
     {
@@ -149,10 +149,10 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 运行记录 → 行。
+    /// 运行记录 → 行
     /// </summary>
     /// <remarks>
-    /// <paramref name="sequence"/> 只对新增的行生效，替换已有行时 <see cref="Copy(JobRunEntity, JobRunEntity)"/> 不复制它。
+    /// <paramref name="sequence"/> 只对新增的行生效，替换已有行时 <see cref="Copy(JobRunEntity, JobRunEntity)"/> 不复制它
     /// </remarks>
     public static JobRunEntity ToEntity(JobRunRecord record, long sequence)
     {
@@ -163,7 +163,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 运行行 → 记录。
+    /// 运行行 → 记录
     /// </summary>
     public static JobRunRecord ToRecord(JobRunEntity row)
     {
@@ -189,7 +189,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 把新运行行的内容复制到已有行上。
+    /// 把新运行行的内容复制到已有行上
     /// </summary>
     public static void Copy(JobRunEntity source, JobRunEntity target)
     {
@@ -212,7 +212,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 节点记录 → 行。
+    /// 节点记录 → 行
     /// </summary>
     public static SchedulerNodeEntity ToEntity(SchedulerNodeRecord record)
     {
@@ -221,7 +221,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 节点行 → 记录。
+    /// 节点行 → 记录
     /// </summary>
     public static SchedulerNodeRecord ToRecord(SchedulerNodeEntity row)
     {
@@ -230,7 +230,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 把新节点行的内容复制到已有行上。
+    /// 把新节点行的内容复制到已有行上
     /// </summary>
     public static void Copy(SchedulerNodeEntity source, SchedulerNodeEntity target)
     {
@@ -241,7 +241,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 作业记录的字段写到行上（标识除外）。
+    /// 作业记录的字段写到行上（标识除外）
     /// </summary>
     private static void Copy(JobRecord record, JobEntity row)
     {
@@ -264,7 +264,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 触发器记录的字段写到行上（标识除外）。
+    /// 触发器记录的字段写到行上（标识除外）
     /// </summary>
     private static void Copy(TriggerRecord record, TriggerEntity row)
     {
@@ -290,7 +290,7 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 运行记录的字段写到行上（标识与序号除外）。
+    /// 运行记录的字段写到行上（标识与序号除外）
     /// </summary>
     private static void Copy(JobRunRecord record, JobRunEntity row)
     {
@@ -311,10 +311,10 @@ internal static class RecordMapping
     }
 
     /// <summary>
-    /// 行上的重试策略。
+    /// 行上的重试策略
     /// </summary>
     /// <remarks>
-    /// 次数与等待时间都有值才算有策略；时间按毫秒存。
+    /// 次数与等待时间都有值才算有策略；时间按毫秒存
     /// </remarks>
     private static JobRetryPolicy? RetryOf(JobEntity row)
         => row.RetryMaxRetries is { } retries && row.RetryDelayMilliseconds is { } delay
@@ -326,10 +326,10 @@ internal static class RecordMapping
             : null;
 
     /// <summary>
-    /// JSON 文本 → 对象。
+    /// JSON 文本 → 对象
     /// </summary>
     /// <remarks>
-    /// 空文本或不是对象的文本按空对象处理。
+    /// 空文本或不是对象的文本按空对象处理
     /// </remarks>
     private static JsonObject ParseData(string text)
         => string.IsNullOrWhiteSpace(text) ? [] : JsonNode.Parse(text) as JsonObject ?? [];

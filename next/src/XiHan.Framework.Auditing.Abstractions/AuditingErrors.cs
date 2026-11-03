@@ -6,21 +6,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions;
 
 /// <summary>
-/// 审计子系统的错误码。
+/// 审计子系统的错误码
 /// </summary>
 /// <remarks>
-/// 登记在 <c>spec/conventions/error-codes.md</c>。
+/// 登记在 <c>spec/conventions/error-codes.md</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class AuditingErrors
 {
     /// <summary>
-    /// 查询不合法：页大小越界、起止颠倒或续页令牌不可识别。
+    /// 查询不合法：页大小越界、起止颠倒或续页令牌不可识别
     /// </summary>
     public const string QueryInvalid = "AUDITING_VALIDATION_001";
 
     /// <summary>
-    /// 审计存储不可达。
+    /// 审计存储不可达
     /// </summary>
     public const string TrailUnavailable = "AUDITING_UNAVAILABLE_001";
 }

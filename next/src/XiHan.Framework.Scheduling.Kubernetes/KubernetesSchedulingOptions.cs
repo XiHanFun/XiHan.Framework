@@ -10,37 +10,37 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Kubernetes;
 
 /// <summary>
-/// Kubernetes 领导选举选项。
+/// Kubernetes 领导选举选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Scheduling:Kubernetes</c> 显式读取：<c>Lease</c>、<c>Namespace</c>、<c>Holder</c>、<c>ApiServer</c>、<c>TokenPath</c>、<c>CertificateAuthorityPath</c>。没给的值按 Pod 内的约定解析：命名空间读 ServiceAccount 挂载或 <c>POD_NAMESPACE</c>，持有者读 <c>XIHAN_POD_NAME</c> / <c>HOSTNAME</c>，API Server 读 <c>KUBERNETES_SERVICE_HOST</c> / <c>PORT</c>。
+/// 从配置节 <c>XiHan:Scheduling:Kubernetes</c> 显式读取：<c>Lease</c>、<c>Namespace</c>、<c>Holder</c>、<c>ApiServer</c>、<c>TokenPath</c>、<c>CertificateAuthorityPath</c>。没给的值按 Pod 内的约定解析：命名空间读 ServiceAccount 挂载或 <c>POD_NAMESPACE</c>，持有者读 <c>XIHAN_POD_NAME</c> / <c>HOSTNAME</c>，API Server 读 <c>KUBERNETES_SERVICE_HOST</c> / <c>PORT</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record KubernetesSchedulingOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Scheduling:Kubernetes";
 
     /// <summary>
-    /// 调度器默认竞争的资源名。
+    /// 调度器默认竞争的资源名
     /// </summary>
     /// <remarks>
-    /// 它映射到 <see cref="Lease"/>，其他资源映射到 <c>&lt;Lease&gt;-&lt;资源&gt;</c>。
+    /// 它映射到 <see cref="Lease"/>，其他资源映射到 <c>&lt;Lease&gt;-&lt;资源&gt;</c>
     /// </remarks>
     public const string DefaultResource = "scheduling.jobs";
 
     /// <summary>
-    /// ServiceAccount 挂载目录。
+    /// ServiceAccount 挂载目录
     /// </summary>
     private const string ServiceAccountDirectory = "/var/run/secrets/kubernetes.io/serviceaccount";
 
     /// <summary>
-    /// 调度器租约的 Lease 名（DNS 标签）。
+    /// 调度器租约的 Lease 名（DNS 标签）
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan-scheduler</c>。
+    /// 默认 <c>xihan-scheduler</c>
     /// </remarks>
     public string Lease
     {
@@ -49,52 +49,52 @@ public sealed partial record KubernetesSchedulingOptions
     } = "xihan-scheduler";
 
     /// <summary>
-    /// 命名空间。
+    /// 命名空间
     /// </summary>
     /// <remarks>
-    /// 为空时解析 ServiceAccount 挂载的 namespace 文件、环境变量 <c>POD_NAMESPACE</c>，最后 <c>default</c>。
+    /// 为空时解析 ServiceAccount 挂载的 namespace 文件、环境变量 <c>POD_NAMESPACE</c>，最后 <c>default</c>
     /// </remarks>
     public string? Namespace { get; init; }
 
     /// <summary>
-    /// 持有者标识。
+    /// 持有者标识
     /// </summary>
     /// <remarks>
-    /// 为空时解析环境变量 <c>XIHAN_POD_NAME</c>、<c>HOSTNAME</c>，最后机器名。
+    /// 为空时解析环境变量 <c>XIHAN_POD_NAME</c>、<c>HOSTNAME</c>，最后机器名
     /// </remarks>
     public string? Holder { get; init; }
 
     /// <summary>
-    /// API Server 地址。
+    /// API Server 地址
     /// </summary>
     /// <remarks>
-    /// 为空时由 <c>KUBERNETES_SERVICE_HOST</c> / <c>KUBERNETES_SERVICE_PORT</c> 拼出，没有时 <c>https://kubernetes.default.svc</c>。
+    /// 为空时由 <c>KUBERNETES_SERVICE_HOST</c> / <c>KUBERNETES_SERVICE_PORT</c> 拼出，没有时 <c>https://kubernetes.default.svc</c>
     /// </remarks>
     public Uri? ApiServer { get; init; }
 
     /// <summary>
-    /// 直接给定的 Bearer 令牌（测试用）。
+    /// 直接给定的 Bearer 令牌（测试用）
     /// </summary>
     /// <remarks>
-    /// 为空时每次请求从 <see cref="TokenPath"/> 读取，以跟上投射令牌的轮换。
+    /// 为空时每次请求从 <see cref="TokenPath"/> 读取，以跟上投射令牌的轮换
     /// </remarks>
     public string? Token { get; init; }
 
     /// <summary>
-    /// ServiceAccount 令牌文件。
+    /// ServiceAccount 令牌文件
     /// </summary>
     public string TokenPath { get; init; } = ServiceAccountDirectory + "/token";
 
     /// <summary>
-    /// API Server 的 CA 证书文件。
+    /// API Server 的 CA 证书文件
     /// </summary>
     /// <remarks>
-    /// 不存在时用系统信任。
+    /// 不存在时用系统信任
     /// </remarks>
     public string CertificateAuthorityPath { get; init; } = ServiceAccountDirectory + "/ca.crt";
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static KubernetesSchedulingOptions FromConfiguration(IConfiguration configuration)
     {
@@ -137,7 +137,7 @@ public sealed partial record KubernetesSchedulingOptions
     }
 
     /// <summary>
-    /// 解析命名空间。
+    /// 解析命名空间
     /// </summary>
     public string ResolveNamespace()
     {
@@ -156,7 +156,7 @@ public sealed partial record KubernetesSchedulingOptions
     }
 
     /// <summary>
-    /// 解析持有者标识。
+    /// 解析持有者标识
     /// </summary>
     public string ResolveHolder()
         => !string.IsNullOrWhiteSpace(Holder) ? Holder
@@ -165,7 +165,7 @@ public sealed partial record KubernetesSchedulingOptions
             : Environment.MachineName;
 
     /// <summary>
-    /// 解析 API Server 地址。
+    /// 解析 API Server 地址
     /// </summary>
     public Uri ResolveApiServer()
     {
@@ -187,10 +187,10 @@ public sealed partial record KubernetesSchedulingOptions
     }
 
     /// <summary>
-    /// 资源对应的 Lease 名。
+    /// 资源对应的 Lease 名
     /// </summary>
     /// <remarks>
-    /// 默认资源用 <see cref="Lease"/>，其他资源追加成 <c>&lt;Lease&gt;-&lt;资源&gt;</c>（点与下划线换成连字符，截到 63 字符）。
+    /// 默认资源用 <see cref="Lease"/>，其他资源追加成 <c>&lt;Lease&gt;-&lt;资源&gt;</c>（点与下划线换成连字符，截到 63 字符）
     /// </remarks>
     public string LeaseNameFor(JobName resource)
     {
@@ -204,16 +204,16 @@ public sealed partial record KubernetesSchedulingOptions
     }
 
     /// <summary>
-    /// DNS 标签。
+    /// DNS 标签
     /// </summary>
     [GeneratedRegex("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")]
     private static partial Regex DnsLabel();
 
     /// <summary>
-    /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替。
+    /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替
     /// </summary>
     /// <remarks>
-    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，服务账号令牌（令牌文件路径照常打印）不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对。
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，服务账号令牌（令牌文件路径照常打印）不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对
     /// </remarks>
     private bool PrintMembers(StringBuilder builder)
     {

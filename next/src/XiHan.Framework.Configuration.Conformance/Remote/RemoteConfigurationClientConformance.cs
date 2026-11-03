@@ -9,32 +9,32 @@ using Xunit;
 namespace XiHan.Framework.Configuration.Conformance.Remote;
 
 /// <summary>
-/// <see cref="IRemoteConfigurationClient"/> 的一致性套件。
+/// <see cref="IRemoteConfigurationClient"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateFixtureAsync"/>，全部用例随之执行。
+/// 继承并实现 <see cref="CreateFixtureAsync"/>，全部用例随之执行
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class RemoteConfigurationClientConformance
 {
     /// <summary>
-    /// 未变化的取值允许阻塞的时间（长轮询实现在此之内返回无值）。
+    /// 未变化的取值允许阻塞的时间（长轮询实现在此之内返回无值）
     /// </summary>
     protected virtual TimeSpan UnchangedWait => TimeSpan.FromSeconds(3);
 
     /// <summary>
-    /// 创建夹具。
+    /// 创建夹具
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次。
+    /// 每个用例调用一次
     /// </remarks>
     protected abstract Task<RemoteConfigurationFixture> CreateFixtureAsync();
 
     /// <summary>
-    /// 用例 1：发布后取到整份文档与非空版本。
+    /// 用例 1：发布后取到整份文档与非空版本
     /// </summary>
     /// <remarks>
-    /// 再次以该版本取值返回无值。
+    /// 再次以该版本取值返回无值
     /// </remarks>
     [Fact]
     public async Task Fetch_ReturnsPublishedDocument_AndUnchangedForKnownVersion()
@@ -56,10 +56,10 @@ public abstract class RemoteConfigurationClientConformance
     }
 
     /// <summary>
-    /// 用例 2：再次发布后以旧版本取值得到新文档与不同的版本。
+    /// 用例 2：再次发布后以旧版本取值得到新文档与不同的版本
     /// </summary>
     /// <remarks>
-    /// 以空版本取值总是返回文档。
+    /// 以空版本取值总是返回文档
     /// </remarks>
     [Fact]
     public async Task Fetch_AfterRepublish_ReturnsNewVersion()
@@ -77,7 +77,7 @@ public abstract class RemoteConfigurationClientConformance
     }
 
     /// <summary>
-    /// 用例 3：不存在的命名空间是 NOTFOUND。
+    /// 用例 3：不存在的命名空间是 NOTFOUND
     /// </summary>
     [Fact]
     public async Task Fetch_UnknownNamespace_IsNotFound()
@@ -88,7 +88,7 @@ public abstract class RemoteConfigurationClientConformance
     }
 
     /// <summary>
-    /// 套件内唯一的命名空间。
+    /// 套件内唯一的命名空间
     /// </summary>
     private static string Namespace() => "conformance." + Guid.NewGuid().ToString("N")[..8];
 }

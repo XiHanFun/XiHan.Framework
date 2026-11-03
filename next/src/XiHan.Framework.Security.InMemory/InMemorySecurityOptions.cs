@@ -9,32 +9,32 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.InMemory;
 
 /// <summary>
-/// 内存安全选项。
+/// 内存安全选项
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Security:InMemory</c>。
+/// 配置节 <c>XiHan:Security:InMemory</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemorySecurityOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Security:InMemory";
 
     /// <summary>
-    /// 租户声明类型的配置键。
+    /// 租户声明类型的配置键
     /// </summary>
     /// <remarks>
-    /// 与多租户选项读同一个键，Tenant 阶段的声明解析器按它认租户声明（RFC-0008 认证第 4 条）。
+    /// 与多租户选项读同一个键，Tenant 阶段的声明解析器按它认租户声明（RFC-0008 认证第 4 条）
     /// </remarks>
     public const string TenantClaimKey = "XiHan:MultiTenancy:TenantClaim";
 
     /// <summary>
-    /// 主体上限。
+    /// 主体上限
     /// </summary>
     /// <remarks>
-    /// 默认 1000。
+    /// 默认 1000
     /// </remarks>
     public int MaxPrincipals
     {
@@ -43,10 +43,10 @@ public sealed record InMemorySecurityOptions
     } = 1_000;
 
     /// <summary>
-    /// 授予上限。
+    /// 授予上限
     /// </summary>
     /// <remarks>
-    /// 默认 10000。
+    /// 默认 10000
     /// </remarks>
     public int MaxGrants
     {
@@ -55,10 +55,10 @@ public sealed record InMemorySecurityOptions
     } = 10_000;
 
     /// <summary>
-    /// 主体记录的租户写成声明时用的声明类型。
+    /// 主体记录的租户写成声明时用的声明类型
     /// </summary>
     /// <remarks>
-    /// 默认 <c>tenant</c>，从 <see cref="TenantClaimKey"/> 读取，与多租户选项的 <c>TenantClaim</c> 一致。
+    /// 默认 <c>tenant</c>，从 <see cref="TenantClaimKey"/> 读取，与多租户选项的 <c>TenantClaim</c> 一致
     /// </remarks>
     public string TenantClaim
     {
@@ -67,7 +67,7 @@ public sealed record InMemorySecurityOptions
     } = "tenant";
 
     /// <summary>
-    /// 装载的主体。
+    /// 装载的主体
     /// </summary>
     public IReadOnlyList<PrincipalRecord> Principals
     {
@@ -76,7 +76,7 @@ public sealed record InMemorySecurityOptions
     } = [];
 
     /// <summary>
-    /// 装载的授予（全局）。
+    /// 装载的授予（全局）
     /// </summary>
     public IReadOnlyList<PermissionGrant> Grants
     {
@@ -85,10 +85,10 @@ public sealed record InMemorySecurityOptions
     } = [];
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、<c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码）；租户声明类型另从 <see cref="TenantClaimKey"/> 读取。
+    /// <c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、<c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码）；租户声明类型另从 <see cref="TenantClaimKey"/> 读取
     /// </remarks>
     public static InMemorySecurityOptions FromConfiguration(IConfiguration configuration)
     {
@@ -143,10 +143,10 @@ public sealed record InMemorySecurityOptions
     }
 
     /// <summary>
-    /// 读取配置节下的正整数。
+    /// 读取配置节下的正整数
     /// </summary>
     /// <remarks>
-    /// 缺失返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>。
+    /// 缺失返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static int? ReadPositive(IConfiguration configuration, string name)
     {
@@ -162,10 +162,10 @@ public sealed record InMemorySecurityOptions
     }
 
     /// <summary>
-    /// 按逗号拆分并去掉空白与空项。
+    /// 按逗号拆分并去掉空白与空项
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/> 得到空列表。
+    /// <see langword="null"/> 得到空列表
     /// </remarks>
     private static List<string> Split(string? value)
         => value is null ? [] : value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();

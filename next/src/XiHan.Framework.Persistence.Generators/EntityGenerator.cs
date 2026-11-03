@@ -11,47 +11,47 @@ using Microsoft.CodeAnalysis.Text;
 namespace XiHan.Framework.Persistence.Generators;
 
 /// <summary>
-/// 从实现 <c>IEntity&lt;TKey&gt;</c> 的实体类生成 <c>GeneratedEntities</c>。
+/// 从实现 <c>IEntity&lt;TKey&gt;</c> 的实体类生成 <c>GeneratedEntities</c>
 /// </summary>
 /// <remarks>
-/// 实体类含 <c>record</c>（<c>record class</c>）；值类型（<c>struct</c>、<c>record struct</c>）不能作仓储的实体，报 XHP004 错误、不登记，不静默跳过。生成仓储登记 <c>AddGeneratedRepositories</c>、引用了 EF Core 时的实体登记 <c>ApplyGeneratedEntities</c>，以及每个软删除 / 多租户实体的 <c>&lt;实体&gt;Filters</c> 规约（<c>NotDeleted</c>、<c>ForTenant</c>、<c>ActiveFor</c>）。
+/// 实体类含 <c>record</c>（<c>record class</c>）；值类型（<c>struct</c>、<c>record struct</c>）不能作仓储的实体，报 XHP004 错误、不登记，不静默跳过。生成仓储登记 <c>AddGeneratedRepositories</c>、引用了 EF Core 时的实体登记 <c>ApplyGeneratedEntities</c>，以及每个软删除 / 多租户实体的 <c>&lt;实体&gt;Filters</c> 规约（<c>NotDeleted</c>、<c>ForTenant</c>、<c>ActiveFor</c>）
 /// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class EntityGenerator : IIncrementalGenerator
 {
     /// <summary>
-    /// <c>IEntity&lt;TKey&gt;</c> 的元数据名。
+    /// <c>IEntity&lt;TKey&gt;</c> 的元数据名
     /// </summary>
     private const string EntityInterfaceName = "XiHan.Framework.Domain.Entities.IEntity`1";
 
     /// <summary>
-    /// <c>IEntity&lt;TKey&gt;</c> 原始定义的显示名，供语法阶段快速筛选。
+    /// <c>IEntity&lt;TKey&gt;</c> 原始定义的显示名，供语法阶段快速筛选
     /// </summary>
     private const string EntityInterfaceDisplay = "XiHan.Framework.Domain.Entities.IEntity<TKey>";
 
     /// <summary>
-    /// <c>ISoftDeletable</c> 的元数据名。
+    /// <c>ISoftDeletable</c> 的元数据名
     /// </summary>
     private const string SoftDeletableName = "XiHan.Framework.Domain.Entities.ISoftDeletable";
 
     /// <summary>
-    /// <c>IMultiTenant</c> 的元数据名。
+    /// <c>IMultiTenant</c> 的元数据名
     /// </summary>
     private const string MultiTenantName = "XiHan.Framework.Domain.Entities.IMultiTenant";
 
     /// <summary>
-    /// EF Core <c>ModelBuilder</c> 的元数据名。
+    /// EF Core <c>ModelBuilder</c> 的元数据名
     /// </summary>
     /// <remarks>
-    /// 存在时生成实体登记。
+    /// 存在时生成实体登记
     /// </remarks>
     private const string ModelBuilderName = "Microsoft.EntityFrameworkCore.ModelBuilder";
 
     /// <summary>
-    /// 持久化 EF Core Provider 的约定扩展。
+    /// 持久化 EF Core Provider 的约定扩展
     /// </summary>
     /// <remarks>
-    /// 存在时在实体登记后应用约定。
+    /// 存在时在实体登记后应用约定
     /// </remarks>
     private const string ConventionsName = "XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions";
 
@@ -76,7 +76,7 @@ public sealed class EntityGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 类是否（直接或经 <c>IAggregateRoot&lt;TKey&gt;</c>）实现了 <c>IEntity&lt;TKey&gt;</c>。
+    /// 类是否（直接或经 <c>IAggregateRoot&lt;TKey&gt;</c>）实现了 <c>IEntity&lt;TKey&gt;</c>
     /// </summary>
     private static bool ImplementsEntity(INamedTypeSymbol symbol)
     {
@@ -92,7 +92,7 @@ public sealed class EntityGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 校验每个实体并输出源文件。
+    /// 校验每个实体并输出源文件
     /// </summary>
     private static void Emit(SourceProductionContext context, ImmutableArray<INamedTypeSymbol> candidates, Compilation compilation, string? rootNamespace)
     {
@@ -133,10 +133,10 @@ public sealed class EntityGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 解析键类型与协议。
+    /// 解析键类型与协议
     /// </summary>
     /// <remarks>
-    /// 有问题的实体报诊断并跳过。
+    /// 有问题的实体报诊断并跳过
     /// </remarks>
     private static EntityModel? CreateModel(SourceProductionContext context, INamedTypeSymbol symbol, INamedTypeSymbol entityInterface, INamedTypeSymbol? softDeletable, INamedTypeSymbol? multiTenant, Compilation compilation)
     {
@@ -189,7 +189,7 @@ public sealed class EntityGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 渲染源文件。
+    /// 渲染源文件
     /// </summary>
     private static string Render(string ns, List<EntityModel> models, bool hasModelBuilder, bool hasConventions)
     {
@@ -254,7 +254,7 @@ public sealed class EntityGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 渲染一个实体的过滤规约类，放在实体的命名空间里，可访问性与实体一致。
+    /// 渲染一个实体的过滤规约类，放在实体的命名空间里，可访问性与实体一致
     /// </summary>
     private static void RenderFilters(StringBuilder builder, EntityModel model)
     {
@@ -315,16 +315,16 @@ public sealed class EntityGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// 带 <c>global::</c> 的完整类型名。
+    /// 带 <c>global::</c> 的完整类型名
     /// </summary>
     /// <remarks>
-    /// 特殊类型仍用关键字（<c>int</c>、<c>string</c>）。
+    /// 特殊类型仍用关键字（<c>int</c>、<c>string</c>）
     /// </remarks>
     private static string Display(ITypeSymbol type)
         => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
     /// <summary>
-    /// 把根命名空间整理成合法的命名空间名。
+    /// 把根命名空间整理成合法的命名空间名
     /// </summary>
     private static string Sanitize(string value)
     {

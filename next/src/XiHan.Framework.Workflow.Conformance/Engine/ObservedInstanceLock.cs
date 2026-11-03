@@ -7,10 +7,10 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 把实例锁请求报告给探针的锁装饰器。
+/// 把实例锁请求报告给探针的锁装饰器
 /// </summary>
 /// <remarks>
-/// 报告之后原样转给 Provider 的锁，等待与超时语义不变。
+/// 报告之后原样转给 Provider 的锁，等待与超时语义不变
 /// </remarks>
 internal sealed class ObservedInstanceLock(IWorkflowInstanceLock inner, StartRaceProbe probe) : IWorkflowInstanceLock
 {

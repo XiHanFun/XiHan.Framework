@@ -10,83 +10,83 @@ using XiHan.Framework.Security.Abstractions;
 namespace XiHan.Framework.Security.OpenIdConnect;
 
 /// <summary>
-/// 签发者元数据的缓存。
+/// 签发者元数据的缓存
 /// </summary>
 /// <remarks>
-/// 首次按需取发现文档与 JWKS，按 <see cref="OpenIdConnectOptions.RefreshInterval"/> 自动刷新，未知签名密钥时按需刷新但不快于 <see cref="OpenIdConnectOptions.MinimumRefreshInterval"/>；刷新失败沿用最后一份成功结果。
+/// 首次按需取发现文档与 JWKS，按 <see cref="OpenIdConnectOptions.RefreshInterval"/> 自动刷新，未知签名密钥时按需刷新但不快于 <see cref="OpenIdConnectOptions.MinimumRefreshInterval"/>；刷新失败沿用最后一份成功结果
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class OpenIdConnectMetadataCache : IDisposable
 {
     /// <summary>
-    /// 尚无任何元数据时，两次失败尝试之间的间隔。
+    /// 尚无任何元数据时，两次失败尝试之间的间隔
     /// </summary>
     /// <remarks>
-    /// 避免签发者故障期间每次认证都发起请求。
+    /// 避免签发者故障期间每次认证都发起请求
     /// </remarks>
     public static readonly TimeSpan FailureRetryDelay = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly OpenIdConnectOptions _options;
 
     /// <summary>
-    /// 取元数据的 HTTP 客户端。
+    /// 取元数据的 HTTP 客户端
     /// </summary>
     private readonly HttpClient _http;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 发现文档地址。
+    /// 发现文档地址
     /// </summary>
     private readonly Uri _address;
 
     /// <summary>
-    /// 同一时刻只允许一次取数。
+    /// 同一时刻只允许一次取数
     /// </summary>
     /// <remarks>
-    /// 并发的调用方等待同一次结果。
+    /// 并发的调用方等待同一次结果
     /// </remarks>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 保护按需刷新时间戳的锁。
+    /// 保护按需刷新时间戳的锁
     /// </summary>
     private readonly Lock _refreshLock = new();
 
     /// <summary>
-    /// 最后一份成功取得的元数据。
+    /// 最后一份成功取得的元数据
     /// </summary>
     private volatile OpenIdConnectMetadata? _current;
 
     /// <summary>
-    /// 此刻之后才再次自动取数。
+    /// 此刻之后才再次自动取数
     /// </summary>
     private DateTimeOffset _syncAfter = DateTimeOffset.MinValue;
 
     /// <summary>
-    /// 上一次按需刷新的时刻。
+    /// 上一次按需刷新的时刻
     /// </summary>
     /// <remarks>
-    /// 空表示还没有过。
+    /// 空表示还没有过
     /// </remarks>
     private DateTimeOffset? _lastRequestedRefresh;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// <paramref name="http"/> 的生命周期由调用方掌握。
+    /// <paramref name="http"/> 的生命周期由调用方掌握
     /// </remarks>
     public OpenIdConnectMetadataCache(OpenIdConnectOptions options, HttpClient http, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -99,18 +99,18 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     }
 
     /// <summary>
-    /// 最后一份成功取得的元数据。
+    /// 最后一份成功取得的元数据
     /// </summary>
     /// <remarks>
-    /// 尚未取得为空。
+    /// 尚未取得为空
     /// </remarks>
     public OpenIdConnectMetadata? Current => _current;
 
     /// <summary>
-    /// 取元数据。
+    /// 取元数据
     /// </summary>
     /// <remarks>
-    /// 缓存未到期直接返回；否则取数，失败时有缓存就沿用缓存，没有缓存返回 <c>SECURITY_UNAVAILABLE_003</c>。
+    /// 缓存未到期直接返回；否则取数，失败时有缓存就沿用缓存，没有缓存返回 <c>SECURITY_UNAVAILABLE_003</c>
     /// </remarks>
     public ValueTask<Result<OpenIdConnectMetadata>> GetAsync(CancellationToken cancellationToken)
     {
@@ -121,10 +121,10 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     }
 
     /// <summary>
-    /// 按需刷新（签名密钥未知时调用）。
+    /// 按需刷新（签名密钥未知时调用）
     /// </summary>
     /// <remarks>
-    /// 距上次按需刷新不足 <see cref="OpenIdConnectOptions.MinimumRefreshInterval"/> 时不取数，直接返回当前结果。
+    /// 距上次按需刷新不足 <see cref="OpenIdConnectOptions.MinimumRefreshInterval"/> 时不取数，直接返回当前结果
     /// </remarks>
     public ValueTask<Result<OpenIdConnectMetadata>> RefreshAsync(CancellationToken cancellationToken)
     {
@@ -148,16 +148,16 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     public void Dispose() => _gate.Dispose();
 
     /// <summary>
-    /// 为选项创建默认 HTTP 客户端：连接池 5 分钟轮换，超时取 <see cref="OpenIdConnectOptions.BackchannelTimeout"/>。
+    /// 为选项创建默认 HTTP 客户端：连接池 5 分钟轮换，超时取 <see cref="OpenIdConnectOptions.BackchannelTimeout"/>
     /// </summary>
     internal static HttpClient CreateHttpClient(OpenIdConnectOptions options)
         => new(new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }) { Timeout = options.BackchannelTimeout };
 
     /// <summary>
-    /// 在门内取数。
+    /// 在门内取数
     /// </summary>
     /// <remarks>
-    /// <paramref name="force"/> 为假时先复查别的调用方是否已经取好。
+    /// <paramref name="force"/> 为假时先复查别的调用方是否已经取好
     /// </remarks>
     private async Task<Result<OpenIdConnectMetadata>> FetchAsync(bool force, CancellationToken cancellationToken)
     {
@@ -211,7 +211,7 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     }
 
     /// <summary>
-    /// 取发现文档，再取其 <c>jwks_uri</c> 指向的密钥集。
+    /// 取发现文档，再取其 <c>jwks_uri</c> 指向的密钥集
     /// </summary>
     private async Task<OpenIdConnectMetadata> RetrieveAsync(CancellationToken cancellationToken)
     {
@@ -234,25 +234,25 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     }
 
     /// <summary>
-    /// 签发者不可用的失败结果。
+    /// 签发者不可用的失败结果
     /// </summary>
     private Result<OpenIdConnectMetadata> Unavailable()
         => Result.Failure<OpenIdConnectMetadata>(Error.Unavailable(SecurityErrors.IssuerUnavailable, SecurityMessages.IssuerUnavailable, MessageArguments.Of(("authority", _options.Authority))));
 
     /// <summary>
-    /// 记录元数据装载成功。
+    /// 记录元数据装载成功
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Loaded OpenID Connect metadata from '{Address}': issuer '{Issuer}', {KeyCount} signing keys.")]
     private static partial void LogLoaded(ILogger logger, Uri address, string issuer, int keyCount);
 
     /// <summary>
-    /// 记录刷新失败但沿用旧密钥。
+    /// 记录刷新失败但沿用旧密钥
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Failed to refresh OpenID Connect metadata from '{Address}'; keeping the signing keys retrieved at {RetrievedAt:O}.")]
     private static partial void LogRefreshFailed(ILogger logger, Exception exception, Uri address, DateTimeOffset retrievedAt);
 
     /// <summary>
-    /// 记录首次装载失败。
+    /// 记录首次装载失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load OpenID Connect metadata from '{Address}'; tokens cannot be validated until the issuer is reachable.")]
     private static partial void LogLoadFailed(ILogger logger, Exception exception, Uri address);

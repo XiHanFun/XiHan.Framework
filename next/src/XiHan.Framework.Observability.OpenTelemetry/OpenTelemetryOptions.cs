@@ -9,24 +9,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Observability.OpenTelemetry;
 
 /// <summary>
-/// OpenTelemetry 选项。
+/// OpenTelemetry 选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Observability:OpenTelemetry</c> 显式读取：<c>ServiceName</c>、<c>ServiceVersion</c>、<c>Tracing</c>、<c>Metrics</c>、<c>Logging</c>、<c>SamplingRatio</c>、<c>Otlp:Enabled</c>、<c>Otlp:Endpoint</c>、<c>Otlp:Protocol</c>、<c>Console</c>、<c>Sources</c>（逗号分隔）、<c>Meters</c>（逗号分隔）。
+/// 从配置节 <c>XiHan:Observability:OpenTelemetry</c> 显式读取：<c>ServiceName</c>、<c>ServiceVersion</c>、<c>Tracing</c>、<c>Metrics</c>、<c>Logging</c>、<c>SamplingRatio</c>、<c>Otlp:Enabled</c>、<c>Otlp:Endpoint</c>、<c>Otlp:Protocol</c>、<c>Console</c>、<c>Sources</c>（逗号分隔）、<c>Meters</c>（逗号分隔）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record OpenTelemetryOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Observability:OpenTelemetry";
 
     /// <summary>
-    /// 资源属性 <c>service.name</c>。
+    /// 资源属性 <c>service.name</c>
     /// </summary>
     /// <remarks>
-    /// 默认入口程序集名。
+    /// 默认入口程序集名
     /// </remarks>
     public string ServiceName
     {
@@ -39,42 +39,42 @@ public sealed record OpenTelemetryOptions
     } = Assembly.GetEntryAssembly()?.GetName().Name ?? "xihan";
 
     /// <summary>
-    /// 资源属性 <c>service.version</c>。
+    /// 资源属性 <c>service.version</c>
     /// </summary>
     /// <remarks>
-    /// 默认入口程序集版本。
+    /// 默认入口程序集版本
     /// </remarks>
     public string? ServiceVersion { get; init; } = Assembly.GetEntryAssembly()?.GetName().Version?.ToString();
 
     /// <summary>
-    /// 是否导出追踪。
+    /// 是否导出追踪
     /// </summary>
     /// <remarks>
-    /// 默认开。
+    /// 默认开
     /// </remarks>
     public bool Tracing { get; init; } = true;
 
     /// <summary>
-    /// 是否导出指标。
+    /// 是否导出指标
     /// </summary>
     /// <remarks>
-    /// 默认开。
+    /// 默认开
     /// </remarks>
     public bool Metrics { get; init; } = true;
 
     /// <summary>
-    /// 是否把 <c>Microsoft.Extensions.Logging</c> 的日志经 OpenTelemetry 导出。
+    /// 是否把 <c>Microsoft.Extensions.Logging</c> 的日志经 OpenTelemetry 导出
     /// </summary>
     /// <remarks>
-    /// 默认开。
+    /// 默认开
     /// </remarks>
     public bool Logging { get; init; } = true;
 
     /// <summary>
-    /// 根 Span 的采样比例，0 到 1。
+    /// 根 Span 的采样比例，0 到 1
     /// </summary>
     /// <remarks>
-    /// 有上游决定的沿用上游。默认 1。
+    /// 有上游决定的沿用上游。默认 1
     /// </remarks>
     public double SamplingRatio
     {
@@ -83,54 +83,54 @@ public sealed record OpenTelemetryOptions
     } = 1;
 
     /// <summary>
-    /// 是否启用 OTLP 导出器。
+    /// 是否启用 OTLP 导出器
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/>（默认）表示自动：配置了 <see cref="OtlpEndpoint"/> 或环境变量 <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> 时启用。
+    /// <see langword="null"/>（默认）表示自动：配置了 <see cref="OtlpEndpoint"/> 或环境变量 <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> 时启用
     /// </remarks>
     public bool? Otlp { get; init; }
 
     /// <summary>
-    /// OTLP 端点。
+    /// OTLP 端点
     /// </summary>
     /// <remarks>
-    /// 为空时导出器按标准环境变量与默认端口决定。
+    /// 为空时导出器按标准环境变量与默认端口决定
     /// </remarks>
     public Uri? OtlpEndpoint { get; init; }
 
     /// <summary>
-    /// OTLP 协议。
+    /// OTLP 协议
     /// </summary>
     /// <remarks>
-    /// 默认 gRPC，只与 <see cref="OtlpEndpoint"/> 一起生效；配置里写了协议却没写端点时 <see cref="FromConfiguration"/> 抛出参数异常。没有端点时导出器按标准环境变量 <c>OTEL_EXPORTER_OTLP_PROTOCOL</c> 决定协议。
+    /// 默认 gRPC，只与 <see cref="OtlpEndpoint"/> 一起生效；配置里写了协议却没写端点时 <see cref="FromConfiguration"/> 抛出参数异常。没有端点时导出器按标准环境变量 <c>OTEL_EXPORTER_OTLP_PROTOCOL</c> 决定协议
     /// </remarks>
     public OtlpProtocol OtlpProtocol { get; init; }
 
     /// <summary>
-    /// 是否同时写到控制台导出器（开发用）。
+    /// 是否同时写到控制台导出器（开发用）
     /// </summary>
     /// <remarks>
-    /// 默认关。
+    /// 默认关
     /// </remarks>
     public bool Console { get; init; }
 
     /// <summary>
-    /// 在默认之外额外订阅的 Activity 源。
+    /// 在默认之外额外订阅的 Activity 源
     /// </summary>
     public IReadOnlyList<string> Sources { get; init; } = [];
 
     /// <summary>
-    /// 在默认之外额外订阅的 Meter。
+    /// 在默认之外额外订阅的 Meter
     /// </summary>
     public IReadOnlyList<string> Meters { get; init; } = [];
 
     /// <summary>
-    /// 是否应启用 OTLP 导出器：显式设置优先，否则看端点配置与标准环境变量。
+    /// 是否应启用 OTLP 导出器：显式设置优先，否则看端点配置与标准环境变量
     /// </summary>
     public bool ExportsOtlp => Otlp ?? (OtlpEndpoint is not null || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable(OpenTelemetryDefaults.OtlpEndpointVariable)));
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static OpenTelemetryOptions FromConfiguration(IConfiguration configuration)
     {
@@ -192,10 +192,10 @@ public sealed record OpenTelemetryOptions
     }
 
     /// <summary>
-    /// 读布尔开关。
+    /// 读布尔开关
     /// </summary>
     /// <remarks>
-    /// 缺失用默认值。
+    /// 缺失用默认值
     /// </remarks>
     private static bool Flag(IConfiguration section, string key, bool fallback)
     {
@@ -209,7 +209,7 @@ public sealed record OpenTelemetryOptions
     }
 
     /// <summary>
-    /// 读逗号分隔的名字列表。
+    /// 读逗号分隔的名字列表
     /// </summary>
     private static string[] List(IConfiguration section, string key)
         => section[key] is { } text ? text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : [];

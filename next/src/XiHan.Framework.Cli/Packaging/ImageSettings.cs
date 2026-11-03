@@ -4,25 +4,25 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 镜像设置。
+/// 镜像设置
 /// </summary>
 internal sealed record ImageSettings
 {
     /// <summary>
-    /// 镜像仓库（可含注册表前缀）。
+    /// 镜像仓库（可含注册表前缀）
     /// </summary>
     /// <remarks>
-    /// 为空时用应用名。
+    /// 为空时用应用名
     /// </remarks>
     public string? Repository { get; set; }
 
     /// <summary>
-    /// 标签。
+    /// 标签
     /// </summary>
     public string Tag { get; set; } = "latest";
 
     /// <summary>
-    /// 是否 Native AOT 发布。
+    /// 是否 Native AOT 发布
     /// </summary>
     public bool Aot { get; set; }
 }

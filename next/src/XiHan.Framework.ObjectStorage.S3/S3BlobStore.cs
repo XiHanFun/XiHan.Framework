@@ -17,57 +17,57 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// S3 对象存储。
+/// S3 对象存储
 /// </summary>
 /// <remarks>
-/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不探测条件写入（由调用方负责服务认它），也不拥有客户端，释放什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端。
+/// 容器即桶，键即对象键。不覆盖写入用条件请求（<c>If-None-Match: *</c>）保证原子，已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>；服务是否认条件写入要先探明（ADR-0089、ADR-0090）：特性启动或命名实例建出时探一次，没探明就在后台重试，这期间不覆盖的写入与分片上传返回 <see cref="ObjectStorageErrors.ConditionalWriteUnconfirmed"/>，探明不认或选项关闭条件写入时一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>；批量删除先逐键 HEAD 得知是否存在，再一次 <c>DeleteObjects</c>；列举经 <c>ListObjectsV2</c>，条目只有键、长度、ETag 与修改时间（内容类型为默认值、自定义元数据为空，需要时再 HEAD）。范围读取经 <c>Range</c> 请求头；分片上传直接映射 S3 的 multipart（不覆盖的完成带 <c>If-None-Match: *</c>）；预签名地址由 SDK 本地签出（签名 V4），客户端直连存储。不存在的键与桶映射为 <see cref="ObjectStorageErrors.BlobNotFound"/>，其余服务端与网络错误映射为 <see cref="ObjectStorageErrors.StoreUnavailable"/>。经公开构造函数创建的实例不探测条件写入（由调用方负责服务认它），也不拥有客户端，释放什么都不做；命名实例（<see cref="S3BlobStoreProvider"/>）自己建客户端并在后台重试探测，释放实例即停止重试、释放客户端
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigner, IDisposable, IAsyncDisposable
 {
     /// <summary>
-    /// 自定义元数据在 S3 头里的前缀。
+    /// 自定义元数据在 S3 头里的前缀
     /// </summary>
     private const string MetadataPrefix = "x-amz-meta-";
 
     /// <summary>
-    /// 一次 DeleteObjects 允许的最大键数。
+    /// 一次 DeleteObjects 允许的最大键数
     /// </summary>
     private const int DeleteBatchSize = 1000;
 
     /// <summary>
-    /// S3 客户端。
+    /// S3 客户端
     /// </summary>
     private readonly IAmazonS3 _client;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly S3ObjectStorageOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     /// <remarks>
-    /// 写入结果的修改时间来自它（PutObject 的响应不带修改时间）。
+    /// 写入结果的修改时间来自它（PutObject 的响应不带修改时间）
     /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 条件写入的状态：不覆盖写入之前经它放行或拒绝。
+    /// 条件写入的状态：不覆盖写入之前经它放行或拒绝
     /// </summary>
     private readonly S3ConditionalWriteGate _conditionalWrites;
 
     /// <summary>
-    /// 是否拥有客户端与条件写入的状态（释放实例时一并停止重试、释放客户端）。
+    /// 是否拥有客户端与条件写入的状态（释放实例时一并停止重试、释放客户端）
     /// </summary>
     private readonly bool _owned;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// 客户端归调用方（或容器）所有。不探测条件写入：<see cref="S3ObjectStorageOptions.ConditionalWrites"/> 开启时视作服务认它（由调用方负责），关闭时不覆盖的写入一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>。
+    /// 客户端归调用方（或容器）所有。不探测条件写入：<see cref="S3ObjectStorageOptions.ConditionalWrites"/> 开启时视作服务认它（由调用方负责），关闭时不覆盖的写入一律返回 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>
     /// </remarks>
     public S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock)
     {
@@ -79,10 +79,10 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     }
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// <paramref name="owned"/> 为真时客户端与条件写入的状态归本实例所有，释放实例即停止重试、释放客户端（命名实例）；为假时归容器（缺省实例）。
+    /// <paramref name="owned"/> 为真时客户端与条件写入的状态归本实例所有，释放实例即停止重试、释放客户端（命名实例）；为假时归容器（缺省实例）
     /// </remarks>
     internal S3BlobStore(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock, S3ConditionalWriteGate conditionalWrites, bool owned)
     {
@@ -94,12 +94,12 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     }
 
     /// <summary>
-    /// 条件写入的状态（测试核对用）。
+    /// 条件写入的状态（测试核对用）
     /// </summary>
     internal S3ConditionalWriteGate ConditionalWrites => _conditionalWrites;
 
     /// <summary>
-    /// 释放：只在拥有时发出停止重试的信号并释放客户端，不等待正在进行的探测。
+    /// 释放：只在拥有时发出停止重试的信号并释放客户端，不等待正在进行的探测
     /// </summary>
     public void Dispose()
     {
@@ -111,7 +111,7 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     }
 
     /// <summary>
-    /// 释放：只在拥有时停止重试、等正在进行的探测结束，再释放客户端。
+    /// 释放：只在拥有时停止重试、等正在进行的探测结束，再释放客户端
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -124,10 +124,10 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     }
 
     /// <summary>
-    /// 健康探测：连通性加条件写入的状态。
+    /// 健康探测：连通性加条件写入的状态
     /// </summary>
     /// <remarks>
-    /// 按本实例的 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD 桶或列桶（同缺省健康项），连通之后再看条件写入是否已确认：尚未确认时返回最近一次探测失败的错误（连不上，或启动之后才被拒绝、缺桶），探明不认时返回不认的错误（注册表都记为 Degraded）。
+    /// 按本实例的 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD 桶或列桶（同缺省健康项），连通之后再看条件写入是否已确认：尚未确认时返回最近一次探测失败的错误（连不上，或启动之后才被拒绝、缺桶），探明不认时返回不认的错误（注册表都记为 Degraded）
     /// </remarks>
     internal async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
     {
@@ -644,7 +644,7 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     }
 
     /// <summary>
-    /// 解析 <c>Content-Range: bytes 起-止/总长</c>。
+    /// 解析 <c>Content-Range: bytes 起-止/总长</c>
     /// </summary>
     private static bool TryParseContentRange(string? header, out BlobContentRange range)
     {
@@ -670,26 +670,26 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     }
 
     /// <summary>
-    /// 分片上传不存在或已结束。
+    /// 分片上传不存在或已结束
     /// </summary>
     private static bool IsNoSuchUpload(AmazonS3Exception exception) => exception.ErrorCode == "NoSuchUpload";
 
     /// <summary>
-    /// 分片上传不存在或已结束。
+    /// 分片上传不存在或已结束
     /// </summary>
     private static Error UploadNotFound(BlobMultipartUpload upload)
         => Error.NotFound(ObjectStorageErrors.UploadNotFound, ObjectStorageMessages.UploadNotFound, MessageArguments.Of(("container", upload.Container.Value), ("key", upload.Key.Value), ("upload", upload.UploadId)));
 
     /// <summary>
-    /// 空的自定义元数据。
+    /// 空的自定义元数据
     /// </summary>
     private static IReadOnlyDictionary<string, string> EmptyMetadata { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 写一个对象。
+    /// 写一个对象
     /// </summary>
     /// <remarks>
-    /// 不覆盖时先经条件写入的状态放行（探明之前、不认或关闭时直接失败，不访问写入目标），再 HEAD（已存在时不必上传内容）、带条件写入，由服务端保证原子。桶不存在且开启 <see cref="S3ObjectStorageOptions.EnsureBuckets"/> 时建桶后重试一次。
+    /// 不覆盖时先经条件写入的状态放行（探明之前、不认或关闭时直接失败，不访问写入目标），再 HEAD（已存在时不必上传内容）、带条件写入，由服务端保证原子。桶不存在且开启 <see cref="S3ObjectStorageOptions.EnsureBuckets"/> 时建桶后重试一次
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
@@ -779,7 +779,7 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     }
 
     /// <summary>
-    /// 响应里的自定义元数据（去掉 <c>x-amz-meta-</c> 前缀）。
+    /// 响应里的自定义元数据（去掉 <c>x-amz-meta-</c> 前缀）
     /// </summary>
     private static Dictionary<string, string> ReadMetadata(MetadataCollection metadata)
     {
@@ -794,56 +794,56 @@ public sealed class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlobUrlSigne
     }
 
     /// <summary>
-    /// 去掉 ETag 两端的引号。
+    /// 去掉 ETag 两端的引号
     /// </summary>
     private static string Unquote(string? etag) => (etag ?? string.Empty).Trim('"');
 
     /// <summary>
-    /// 把 SDK 的修改时间（UTC）转成带偏移的时刻。
+    /// 把 SDK 的修改时间（UTC）转成带偏移的时刻
     /// </summary>
     /// <remarks>
-    /// 缺失时为最小值。
+    /// 缺失时为最小值
     /// </remarks>
     private static DateTimeOffset ToTimestamp(DateTime? value)
         => value is { } time ? new DateTimeOffset(DateTime.SpecifyKind(time, DateTimeKind.Utc)) : DateTimeOffset.MinValue;
 
     /// <summary>
-    /// 对象或桶不存在。
+    /// 对象或桶不存在
     /// </summary>
     private static bool IsNotFound(AmazonS3Exception exception)
         => exception.StatusCode == HttpStatusCode.NotFound || exception.ErrorCode is "NoSuchKey" or "NotFound" || IsNoSuchBucket(exception);
 
     /// <summary>
-    /// 桶不存在。
+    /// 桶不存在
     /// </summary>
     private static bool IsNoSuchBucket(AmazonS3Exception exception) => exception.ErrorCode == "NoSuchBucket";
 
     /// <summary>
-    /// 该异常是存储故障（服务端错误、网络错误、SDK 超时）而不是调用方取消。
+    /// 该异常是存储故障（服务端错误、网络错误、SDK 超时）而不是调用方取消
     /// </summary>
     private static bool IsStoreFailure(Exception exception, CancellationToken cancellationToken)
         => exception is AmazonServiceException or AmazonClientException or HttpRequestException or IOException
             || (exception is OperationCanceledException && !cancellationToken.IsCancellationRequested);
 
     /// <summary>
-    /// 不存在。
+    /// 不存在
     /// </summary>
     private static Error NotFound(ContainerName container, BlobKey key)
         => Error.NotFound(ObjectStorageErrors.BlobNotFound, ObjectStorageMessages.BlobNotFound, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
 
     /// <summary>
-    /// 已存在且不允许覆盖。
+    /// 已存在且不允许覆盖
     /// </summary>
     private static Error Exists(ContainerName container, BlobKey key)
         => Error.Conflict(ObjectStorageErrors.BlobExists, ObjectStorageMessages.BlobExists, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
 
     /// <summary>
-    /// 存储不可用。
+    /// 存储不可用
     /// </summary>
     private static Error Unavailable(Exception exception) => Unavailable(exception.Message);
 
     /// <summary>
-    /// 存储不可用。
+    /// 存储不可用
     /// </summary>
     private static Error Unavailable(string reason)
         => Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", reason)));

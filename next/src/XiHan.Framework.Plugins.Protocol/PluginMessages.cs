@@ -7,186 +7,186 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol;
 
 /// <summary>
-/// 插件协议各载体共用的消息键。
+/// 插件协议各载体共用的消息键
 /// </summary>
 /// <remarks>
-/// 文案在 <c>Localization/&lt;区域&gt;.json</c>（RFC-0010）。
+/// 文案在 <c>Localization/&lt;区域&gt;.json</c>（RFC-0010）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class PluginMessages
 {
     /// <summary>
-    /// 消息目录名。
+    /// 消息目录名
     /// </summary>
     public const string CatalogName = "plugins.protocol";
 
     /// <summary>
-    /// 插件目录里的清单不合法。
+    /// 插件目录里的清单不合法
     /// </summary>
     /// <remarks>
-    /// 参数：<c>directory</c>、<c>reason</c>。
+    /// 参数：<c>directory</c>、<c>reason</c>
     /// </remarks>
     public const string ManifestInvalid = "plugins.process.manifest_invalid";
 
     /// <summary>
-    /// 清单描述的不是进程外插件。
+    /// 清单描述的不是进程外插件
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>kind</c>、<c>isolation</c>。
+    /// 参数：<c>id</c>、<c>kind</c>、<c>isolation</c>
     /// </remarks>
     public const string NotOutOfProcess = "plugins.process.not_out_of_process";
 
     /// <summary>
-    /// 清单没有声明入口可执行文件。
+    /// 清单没有声明入口可执行文件
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>。
+    /// 参数：<c>id</c>
     /// </remarks>
     public const string EntryRequired = "plugins.process.entry_required";
 
     /// <summary>
-    /// 进程外插件的清单写了 <c>contributes.pipeline</c>。
+    /// 进程外插件的清单写了 <c>contributes.pipeline</c>
     /// </summary>
     /// <remarks>
-    /// 只有 Wasm 插件能贡献中间件（RFC-0017「范围」）。参数：<c>id</c>、<c>middleware</c>（声明的中间件名，逗号分隔）。
+    /// 只有 Wasm 插件能贡献中间件（RFC-0017「范围」）。参数：<c>id</c>、<c>middleware</c>（声明的中间件名，逗号分隔）
     /// </remarks>
     public const string PipelineUnsupported = "plugins.process.pipeline_unsupported";
 
     /// <summary>
-    /// 入口可执行文件不存在。
+    /// 入口可执行文件不存在
     /// </summary>
     /// <remarks>
-    /// 参数：<c>path</c>。
+    /// 参数：<c>path</c>
     /// </remarks>
     public const string ExecutableMissing = "plugins.process.executable_missing";
 
     /// <summary>
-    /// 插件声明的权限未被授予。
+    /// 插件声明的权限未被授予
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>permissions</c>。
+    /// 参数：<c>id</c>、<c>permissions</c>
     /// </remarks>
     public const string PermissionsNotGranted = "plugins.process.permissions_not_granted";
 
     /// <summary>
-    /// 插件已加载。
+    /// 插件已加载
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>。
+    /// 参数：<c>id</c>
     /// </remarks>
     public const string AlreadyLoaded = "plugins.process.already_loaded";
 
     /// <summary>
-    /// 插件未加载。
+    /// 插件未加载
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>。
+    /// 参数：<c>id</c>
     /// </remarks>
     public const string NotLoaded = "plugins.process.not_loaded";
 
     /// <summary>
-    /// 握手行不合法或协议版本没有交集。
+    /// 握手行不合法或协议版本没有交集
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>reason</c>。
+    /// 参数：<c>id</c>、<c>reason</c>
     /// </remarks>
     public const string HandshakeInvalid = "plugins.handshake.invalid";
 
     /// <summary>
-    /// 握手响应与清单不一致。
+    /// 握手响应与清单不一致
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>reason</c>。
+    /// 参数：<c>id</c>、<c>reason</c>
     /// </remarks>
     public const string HandshakeMismatch = "plugins.handshake.mismatch";
 
     /// <summary>
-    /// 某阶段超时。
+    /// 某阶段超时
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>phase</c>。
+    /// 参数：<c>id</c>、<c>phase</c>
     /// </remarks>
     public const string ProcessTimeout = "plugins.process.timeout";
 
     /// <summary>
-    /// 插件进程不可用。
+    /// 插件进程不可用
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>state</c>。
+    /// 参数：<c>id</c>、<c>state</c>
     /// </remarks>
     public const string ProcessUnavailable = "plugins.process.unavailable";
 
     /// <summary>
-    /// 插件进程异常退出。
+    /// 插件进程异常退出
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>exitCode</c>。
+    /// 参数：<c>id</c>、<c>exitCode</c>
     /// </remarks>
     public const string ProcessCrashed = "plugins.process.crashed";
 
     /// <summary>
-    /// 某阶段失败。
+    /// 某阶段失败
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>phase</c>、<c>reason</c>。
+    /// 参数：<c>id</c>、<c>phase</c>、<c>reason</c>
     /// </remarks>
     public const string ProcessFailed = "plugins.process.failed";
 
     /// <summary>
-    /// 插件回调需要的权限未在清单声明或未被授予。
+    /// 插件回调需要的权限未在清单声明或未被授予
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>permission</c>。
+    /// 参数：<c>id</c>、<c>permission</c>
     /// </remarks>
     public const string CallbackDenied = "plugins.callback.denied";
 
     /// <summary>
-    /// 插件回调的会话令牌无效。
+    /// 插件回调的会话令牌无效
     /// </summary>
     public const string SessionInvalid = "plugins.callback.session_invalid";
 
     /// <summary>
-    /// 宿主没有消息发布器，无法代插件发布。
+    /// 宿主没有消息发布器，无法代插件发布
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>。
+    /// 参数：<c>id</c>
     /// </remarks>
     public const string MessagingUnavailable = "plugins.callback.messaging_unavailable";
 
     /// <summary>
-    /// Wasm 模块不合法。
+    /// Wasm 模块不合法
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>reason</c>。
+    /// 参数：<c>id</c>、<c>reason</c>
     /// </remarks>
     public const string ModuleInvalid = "plugins.module.invalid";
 
     /// <summary>
-    /// Wasm 实例陷阱。
+    /// Wasm 实例陷阱
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>trap</c>。
+    /// 参数：<c>id</c>、<c>trap</c>
     /// </remarks>
     public const string ModuleTrapped = "plugins.module.trapped";
 
     /// <summary>
-    /// 沙箱资源不足。
+    /// 沙箱资源不足
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>reason</c>。
+    /// 参数：<c>id</c>、<c>reason</c>
     /// </remarks>
     public const string SandboxExhausted = "plugins.sandbox.exhausted";
 
     /// <summary>
-    /// 延迟装载的目录。
+    /// 延迟装载的目录
     /// </summary>
     /// <remarks>
-    /// 首次访问时读嵌入的语言文件，之后复用同一实例。
+    /// 首次访问时读嵌入的语言文件，之后复用同一实例
     /// </remarks>
     private static readonly Lazy<MessageCatalog> _catalog = new(static () => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(PluginMessages)));
 
     /// <summary>
-    /// 本包的消息目录。
+    /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => _catalog.Value;
 }

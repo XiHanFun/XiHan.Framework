@@ -20,10 +20,10 @@ using XiHan.Framework.Security.Database.Grants;
 namespace XiHan.Framework.Security.Database;
 
 /// <summary>
-/// 数据库授权的能力包入口。
+/// 数据库授权的能力包入口
 /// </summary>
 /// <remarks>
-/// 只提供 <c>security.authorization@1</c>（授予在数据库里），依赖 <c>persistence.relational@1</c>；认证仍由 <c>Security.InMemory</c>（ApiKey）、<c>Security.Jwt</c> 或 <c>Security.OpenIdConnect</c> 提供。装配后顶替默认内存实现的授权部分，内存实现只剩认证。被选为授权能力时登记启动核对，核对操作契约引用的策略（ADR-0080、ADR-0085）。
+/// 只提供 <c>security.authorization@1</c>（授予在数据库里），依赖 <c>persistence.relational@1</c>；认证仍由 <c>Security.InMemory</c>（ApiKey）、<c>Security.Jwt</c> 或 <c>Security.OpenIdConnect</c> 提供。装配后顶替默认内存实现的授权部分，内存实现只剩认证。被选为授权能力时登记启动核对，核对操作契约引用的策略（ADR-0080、ADR-0085）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseSecurityFeature : IFeature
@@ -74,7 +74,7 @@ public sealed class DatabaseSecurityFeature : IFeature
             context.Services.TryAddSingleton<PolicyCatalog>();
             context.AddMiddleware<AuthorizationMiddleware>(PipelineStage.Authorize);
             // 契约按名引用的策略在启动核对里核对（ADR-0085）：策略是容器里的 IPolicy，容器建好才知道全部策略名；
-            // 启动核对在任何特性启动之前执行、不归失败策略管——引用了不存在的策略在隔离策略下也拒绝启动。
+            // 启动核对在任何特性启动之前执行、不归失败策略管——引用了不存在的策略在隔离策略下也拒绝启动
             // 核对同时挂到登记表上，此后插件握手登记的操作在登记时逐个核对，引用了不存在的策略整组被拒
             context.AddStartupCheck(static services => services.GetRequiredService<PolicyCatalog>().EnforceOn(services.GetRequiredService<OperationRegistry>()));
         }

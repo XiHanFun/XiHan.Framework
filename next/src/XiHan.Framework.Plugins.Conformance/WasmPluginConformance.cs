@@ -24,55 +24,55 @@ using ProtoLifecycleState = XiHan.Framework.Plugins.Protocol.V1.LifecycleState;
 namespace XiHan.Framework.Plugins.Conformance;
 
 /// <summary>
-/// Wasm 载体的黑盒一致性套件（RFC-0018，<c>spec/plugin/wasm.md</c> §7）。
+/// Wasm 载体的黑盒一致性套件（RFC-0018，<c>spec/plugin/wasm.md</c> §7）
 /// </summary>
 /// <remarks>
-/// 以模块文件为输入，核对导出表与 ABI 版本、握手一致性、生命周期、调用、事件与中间件钩子。任何语言编译出的插件都应以其产物目录继承本类运行。
+/// 以模块文件为输入，核对导出表与 ABI 版本、握手一致性、生命周期、调用、事件与中间件钩子。任何语言编译出的插件都应以其产物目录继承本类运行
 /// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public abstract class WasmPluginConformance
 {
     /// <summary>
-    /// 可服务的状态集合。
+    /// 可服务的状态集合
     /// </summary>
     private static readonly ProtoLifecycleState[] _serving = [ProtoLifecycleState.Started, ProtoLifecycleState.Ready, ProtoLifecycleState.Degraded];
 
     /// <summary>
-    /// 被测插件目录：含 <c>xihan.manifest.json</c> 与清单 <c>entry</c> 指向的模块文件。
+    /// 被测插件目录：含 <c>xihan.manifest.json</c> 与清单 <c>entry</c> 指向的模块文件
     /// </summary>
     protected abstract string PluginDirectory { get; }
 
     /// <summary>
-    /// <c>Configure</c> 下发的配置节 JSON。
+    /// <c>Configure</c> 下发的配置节 JSON
     /// </summary>
     /// <remarks>
-    /// 默认空对象。
+    /// 默认空对象
     /// </remarks>
     protected virtual string ConfigurationJson => "{}";
 
     /// <summary>
-    /// 调用用例使用的示例请求（操作 ID → JSON）。
+    /// 调用用例使用的示例请求（操作 ID → JSON）
     /// </summary>
     /// <remarks>
-    /// 没有示例的操作以 <c>{}</c> 调用。
+    /// 没有示例的操作以 <c>{}</c> 调用
     /// </remarks>
     protected virtual IReadOnlyDictionary<string, string> SampleRequests => new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 调用用例跳过的操作（如故意陷阱、忙等或需要宿主回调的操作）。
+    /// 调用用例跳过的操作（如故意陷阱、忙等或需要宿主回调的操作）
     /// </summary>
     protected virtual IReadOnlySet<string> ExcludedOperations => new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 故意陷阱的操作 ID。
+    /// 故意陷阱的操作 ID
     /// </summary>
     /// <remarks>
-    /// 用例 8（陷阱后重建）用它触发陷阱；为空时跳过该用例。通常也应列进 <see cref="ExcludedOperations"/>。
+    /// 用例 8（陷阱后重建）用它触发陷阱；为空时跳过该用例。通常也应列进 <see cref="ExcludedOperations"/>
     /// </remarks>
     protected virtual string? TrapOperation => null;
 
     /// <summary>
-    /// 用例 1：模块是 reactor、导出表与导入表符合 ABI v1、<c>xihan_abi_version</c> 返回 1。
+    /// 用例 1：模块是 reactor、导出表与导入表符合 ABI v1、<c>xihan_abi_version</c> 返回 1
     /// </summary>
     [Fact]
     public void Module_ExportsFollowTheAbi()
@@ -84,10 +84,10 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 2：握手与清单相符。
+    /// 用例 2：握手与清单相符
     /// </summary>
     /// <remarks>
-    /// 握手协商出版本 1、清单与目录里的文件一致、操作与订阅在清单声明范围内、没有流式操作。
+    /// 握手协商出版本 1、清单与目录里的文件一致、操作与订阅在清单声明范围内、没有流式操作
     /// </remarks>
     [Fact]
     public void Handshake_MatchesTheManifest()
@@ -109,10 +109,10 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 3：生命周期按协议进行。
+    /// 用例 3：生命周期按协议进行
     /// </summary>
     /// <remarks>
-    /// Configure 与 Start 成功、Health 报可服务状态且健康项都已在清单声明、Stop 成功。
+    /// Configure 与 Start 成功、Health 报可服务状态且健康项都已在清单声明、Stop 成功
     /// </remarks>
     [Fact]
     public void Lifecycle_ConfigureStartHealthStop_FollowTheProtocol()
@@ -129,7 +129,7 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 4：未声明的操作以 <c>KERNEL_NOTFOUND_001</c> 的失败状态应答，而不是陷阱。
+    /// 用例 4：未声明的操作以 <c>KERNEL_NOTFOUND_001</c> 的失败状态应答，而不是陷阱
     /// </summary>
     [Fact]
     public void Invoke_UnknownOperation_IsNotFound()
@@ -144,10 +144,10 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 5：每个声明的操作都返回带 <c>status</c> 的应答。
+    /// 用例 5：每个声明的操作都返回带 <c>status</c> 的应答
     /// </summary>
     /// <remarks>
-    /// 成功时载荷是 JSON，失败时错误码合法。
+    /// 成功时载荷是 JSON，失败时错误码合法
     /// </remarks>
     [Fact]
     public void Invoke_DeclaredOperations_ReturnAStatus()
@@ -179,7 +179,7 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 6：向声明的订阅投递一条消息必须得到确认（没有订阅时跳过）。
+    /// 用例 6：向声明的订阅投递一条消息必须得到确认（没有订阅时跳过）
     /// </summary>
     [Fact]
     public void HandleEvent_ForADeclaredSubscription_IsAcknowledged()
@@ -211,10 +211,10 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 7：每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果）。
+    /// 用例 7：每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果）
     /// </summary>
     /// <remarks>
-    /// 在 after 阶段也应答（没有中间件贡献时跳过）。
+    /// 在 after 阶段也应答（没有中间件贡献时跳过）
     /// </remarks>
     [Fact]
     public void Middleware_BeforeAndAfter_ReturnValidDecisions()
@@ -239,10 +239,10 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 用例 8：陷阱之后可以从同一个模块重建实例。
+    /// 用例 8：陷阱之后可以从同一个模块重建实例
     /// </summary>
     /// <remarks>
-    /// 新实例重走握手、配置、启动，声明与首次相同并恢复服务（<c>wasm.md</c> §5）。以 <see cref="TrapOperation"/> 触发陷阱；没有给出时跳过。
+    /// 新实例重走握手、配置、启动，声明与首次相同并恢复服务（<c>wasm.md</c> §5）。以 <see cref="TrapOperation"/> 触发陷阱；没有给出时跳过
     /// </remarks>
     [Fact]
     public void Trap_ThenANewInstance_HandshakesTheSameAndServes()
@@ -266,7 +266,7 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 编译、校验、实例化并握手。
+    /// 编译、校验、实例化并握手
     /// </summary>
     private WasmSession Open()
     {
@@ -283,16 +283,16 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 从会话的模块再建一个实例并握手（宿主陷阱后的重建）。
+    /// 从会话的模块再建一个实例并握手（宿主陷阱后的重建）
     /// </summary>
     /// <remarks>
-    /// 新会话不拥有引擎与模块，先于原会话释放。
+    /// 新会话不拥有引擎与模块，先于原会话释放
     /// </remarks>
     private static WasmSession Rebuild(WasmSession session)
         => Handshake(new WasmSession(session.Engine, session.Module, Instantiate(session.Engine, session.Module, session.Manifest, session.WorkDirectory), session.Manifest, session.WorkDirectory, ownsModule: false));
 
     /// <summary>
-    /// 实例化模块。
+    /// 实例化模块
     /// </summary>
     private static WasmInstance Instantiate(Engine engine, WasmModule module, Manifest manifest, string workDirectory)
     {
@@ -303,7 +303,7 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 握手并核对，失败时释放会话。
+    /// 握手并核对，失败时释放会话
     /// </summary>
     private static WasmSession Handshake(WasmSession session)
     {
@@ -325,7 +325,7 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// Configure 与 Start，都必须成功。
+    /// Configure 与 Start，都必须成功
     /// </summary>
     private void Start(WasmSession session)
     {
@@ -336,45 +336,45 @@ public abstract class WasmPluginConformance
     }
 
     /// <summary>
-    /// 一个已握手的被测实例。
+    /// 一个已握手的被测实例
     /// </summary>
     private sealed class WasmSession(Engine engine, WasmModule module, WasmInstance instance, Manifest manifest, string workDirectory, bool ownsModule) : IDisposable
     {
         /// <summary>
-        /// 引擎。
+        /// 引擎
         /// </summary>
         public Engine Engine { get; } = engine;
 
         /// <summary>
-        /// 模块。
+        /// 模块
         /// </summary>
         public WasmModule Module { get; } = module;
 
         /// <summary>
-        /// 实例。
+        /// 实例
         /// </summary>
         public WasmInstance Instance { get; } = instance;
 
         /// <summary>
-        /// 目录里的清单。
+        /// 目录里的清单
         /// </summary>
         public Manifest Manifest { get; } = manifest;
 
         /// <summary>
-        /// 工作目录。
+        /// 工作目录
         /// </summary>
         public string WorkDirectory { get; } = workDirectory;
 
         /// <summary>
-        /// 核对后的握手结果。
+        /// 核对后的握手结果
         /// </summary>
         public HandshakeInfo Handshake { get; set; } = null!;
 
         /// <summary>
-        /// 一次调用。
+        /// 一次调用
         /// </summary>
         /// <remarks>
-        /// 编码请求、调用导出、解码响应；陷阱或无响应即失败。
+        /// 编码请求、调用导出、解码响应；陷阱或无响应即失败
         /// </remarks>
         public TResponse Call<TResponse>(string export, IMessage request)
             where TResponse : IMessage<TResponse>, new()

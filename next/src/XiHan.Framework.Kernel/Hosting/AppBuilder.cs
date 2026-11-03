@@ -19,50 +19,50 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 应用构建器。
+/// 应用构建器
 /// </summary>
 /// <remarks>
-/// 收集特性、求解能力图谱、按拓扑顺序配置特性、把 <see cref="App"/> 与宿主服务注册进容器。容器由宿主构建；内核只配置 <see cref="IServiceCollection"/>。
+/// 收集特性、求解能力图谱、按拓扑顺序配置特性、把 <see cref="App"/> 与宿主服务注册进容器。容器由宿主构建；内核只配置 <see cref="IServiceCollection"/>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class AppBuilder
 {
     /// <summary>
-    /// 通过 <see cref="UseFeature(IFeature)"/> 加入的特性，按加入顺序。
+    /// 通过 <see cref="UseFeature(IFeature)"/> 加入的特性，按加入顺序
     /// </summary>
     private readonly List<IFeature> _features = [];
 
     /// <summary>
-    /// 通过 <see cref="UseProvider"/> 在代码里显式指定的提供者：能力 ID → 清单 ID。
+    /// 通过 <see cref="UseProvider"/> 在代码里显式指定的提供者：能力 ID → 清单 ID
     /// </summary>
     private readonly Dictionary<string, string> _providerSelections = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 通过 <see cref="UseOptions"/> 覆盖的内核选项。
+    /// 通过 <see cref="UseOptions"/> 覆盖的内核选项
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/> 时从配置读取。
+    /// <see langword="null"/> 时从配置读取
     /// </remarks>
     private KernelOptions? _options;
 
     /// <summary>
-    /// 通过 <see cref="UseServiceBindingRoot"/> 覆盖的 Service Binding 根目录。
+    /// 通过 <see cref="UseServiceBindingRoot"/> 覆盖的 Service Binding 根目录
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/> 时读环境变量。
+    /// <see langword="null"/> 时读环境变量
     /// </remarks>
     private string? _serviceBindingRoot;
 
     /// <summary>
-    /// 是否已调用过 <see cref="Build"/>。
+    /// 是否已调用过 <see cref="Build"/>
     /// </summary>
     /// <remarks>
-    /// 构建后禁止再修改。
+    /// 构建后禁止再修改
     /// </remarks>
     private bool _built;
 
     /// <summary>
-    /// 创建构建器。
+    /// 创建构建器
     /// </summary>
     public AppBuilder(IServiceCollection services, IConfiguration configuration)
     {
@@ -72,32 +72,32 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 宿主的服务集合。
+    /// 宿主的服务集合
     /// </summary>
     public IServiceCollection Services { get; }
 
     /// <summary>
-    /// 宿主配置。
+    /// 宿主配置
     /// </summary>
     public IConfiguration Configuration { get; }
 
     /// <summary>
-    /// 应用的管道构建器。
+    /// 应用的管道构建器
     /// </summary>
     /// <remarks>
-    /// 特性与应用都向它贡献中间件。
+    /// 特性与应用都向它贡献中间件
     /// </remarks>
     public PipelineBuilder Pipeline { get; }
 
     /// <summary>
-    /// 加入一个特性。
+    /// 加入一个特性
     /// </summary>
     public AppBuilder UseFeature<TFeature>()
         where TFeature : class, IFeature, new()
         => UseFeature(new TFeature());
 
     /// <summary>
-    /// 加入一个已创建的特性实例。
+    /// 加入一个已创建的特性实例
     /// </summary>
     public AppBuilder UseFeature(IFeature feature)
     {
@@ -108,10 +108,10 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 显式指定某个能力由哪份清单提供。
+    /// 显式指定某个能力由哪份清单提供
     /// </summary>
     /// <remarks>
-    /// 优先于配置 <c>XiHan:Providers:&lt;能力ID&gt;</c>。
+    /// 优先于配置 <c>XiHan:Providers:&lt;能力ID&gt;</c>
     /// </remarks>
     public AppBuilder UseProvider(string capabilityId, string manifestId)
     {
@@ -121,7 +121,7 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 覆盖从配置读取的内核选项。
+    /// 覆盖从配置读取的内核选项
     /// </summary>
     public AppBuilder UseOptions(KernelOptions options)
     {
@@ -132,7 +132,7 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 覆盖 Service Binding 根目录（默认读环境变量 <c>SERVICE_BINDING_ROOT</c>）。
+    /// 覆盖 Service Binding 根目录（默认读环境变量 <c>SERVICE_BINDING_ROOT</c>）
     /// </summary>
     public AppBuilder UseServiceBindingRoot(string? directory)
     {
@@ -142,10 +142,10 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 应用级地向管道贡献中间件。
+    /// 应用级地向管道贡献中间件
     /// </summary>
     /// <remarks>
-    /// 归属缺省为 <see cref="PipelineBuilder.AppOwner"/>；按类型登记的中间件在 <see cref="Build"/> 时以单例补登记进容器，应用已有的登记不覆盖（RFC-0004「登记入口」）。
+    /// 归属缺省为 <see cref="PipelineBuilder.AppOwner"/>；按类型登记的中间件在 <see cref="Build"/> 时以单例补登记进容器，应用已有的登记不覆盖（RFC-0004「登记入口」）
     /// </remarks>
     public AppBuilder ConfigurePipeline(Action<PipelineBuilder> configure)
     {
@@ -156,19 +156,19 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 求解能力图谱、配置特性并注册 <see cref="App"/>。
+    /// 求解能力图谱、配置特性并注册 <see cref="App"/>
     /// </summary>
     /// <remarks>
-    /// 只能调用一次。
+    /// 只能调用一次
     /// </remarks>
-    /// <returns>已解析图。</returns>
+    /// <returns>已解析图</returns>
     public ResolvedGraph Build()
     {
         EnsureNotBuilt();
         _built = true;
 
         var options = _options ?? KernelOptions.FromConfiguration(Configuration);
-        // 内核清单永远参与求解，它是所有 kernel.* 能力的唯一提供者，也是图谱的根。
+        // 内核清单永远参与求解，它是所有 kernel.* 能力的唯一提供者，也是图谱的根
         var manifests = new List<Manifest> { KernelCapabilities.Manifest };
         var featuresById = new Dictionary<string, IFeature>(StringComparer.Ordinal);
         foreach (var feature in _features)
@@ -183,7 +183,7 @@ public sealed class AppBuilder
             manifests.Add(manifest);
         }
 
-        // 提供者指定的优先级：代码里的 UseProvider 覆盖配置节 XiHan:Providers，后写入者胜出。
+        // 提供者指定的优先级：代码里的 UseProvider 覆盖配置节 XiHan:Providers，后写入者胜出
         var selections = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var section in Configuration.GetSection("XiHan:Providers").GetChildren())
         {
@@ -205,7 +205,7 @@ public sealed class AppBuilder
         var startupChecks = new List<(string OwnerId, Action<IServiceProvider> Check)>();
 
         // 内置中间件归属于内核清单并放在各自阶段开头，特性贡献的同阶段中间件都排在它们之后；
-        // Resilience 阶段先截止时间再限制（同 Placement、同归属按注册顺序）。
+        // Resilience 阶段先截止时间再限制（同 Placement、同归属按注册顺序）
         if (options.UseBuiltInMiddleware)
         {
             Services.TryAddSingleton<ObserveMiddleware>();
@@ -239,7 +239,7 @@ public sealed class AppBuilder
                 continue;
             }
 
-            // 必需绑定在构建期就校验，让缺失的资源在启动前暴露；可选绑定由特性自己通过 TryGetBinding 处理。
+            // 必需绑定在构建期就校验，让缺失的资源在启动前暴露；可选绑定由特性自己通过 TryGetBinding 处理
             foreach (var binding in node.Manifest.Bindings.Where(static b => b.Required))
             {
                 if (!bindings.TryGetValue(binding.Name, out var value))
@@ -247,7 +247,7 @@ public sealed class AppBuilder
                     throw new FrameworkException(KernelErrors.MissingBinding, $"Binding '{binding.Name}' ({binding.Type}) required by feature '{node.Manifest.Id}' is not provided.");
                 }
 
-                // 来源未声明类型（空字符串）时不做类型比对，只有显式声明且不一致才算错误。
+                // 来源未声明类型（空字符串）时不做类型比对，只有显式声明且不一致才算错误
                 if (value.Type.Length > 0 && !string.Equals(value.Type, binding.Type, StringComparison.Ordinal))
                 {
                     throw new FrameworkException(KernelErrors.MissingBinding, $"Binding '{binding.Name}' required by feature '{node.Manifest.Id}' must be of type '{binding.Type}', but the provided binding is of type '{value.Type}'.");
@@ -266,7 +266,7 @@ public sealed class AppBuilder
         // 不会等到第一次调用才因为容器里没有它而失败
         Pipeline.RegisterServices(Services);
 
-        // 宿主可能已经注册了时间源、日志与审计，这里只补缺省实现，不覆盖。
+        // 宿主可能已经注册了时间源、日志与审计，这里只补缺省实现，不覆盖
         Services.TryAddSingleton(TimeProvider.System);
         Services.TryAddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         Services.TryAddSingleton<IAuditSink>(NullAuditSink.Instance);
@@ -285,7 +285,7 @@ public sealed class AppBuilder
     }
 
     /// <summary>
-    /// 构建后再修改或重复构建时抛出 <see cref="KernelErrors.InvalidAppState"/>。
+    /// 构建后再修改或重复构建时抛出 <see cref="KernelErrors.InvalidAppState"/>
     /// </summary>
     private void EnsureNotBuilt()
     {

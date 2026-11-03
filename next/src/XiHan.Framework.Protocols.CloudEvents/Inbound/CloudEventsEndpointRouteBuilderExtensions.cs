@@ -16,24 +16,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.CloudEvents.Inbound;
 
 /// <summary>
-/// 入站 CloudEvents 端点。
+/// 入站 CloudEvents 端点
 /// </summary>
 /// <remarks>
-/// <c>POST</c> 收 binary / structured / batch 事件，按类型映射到主题，派发模式下在请求内经内核管道交给主题的处理器，发布模式下按主题分组批量交给消息代理；全部成功回 202。端点经过 <c>UseXiHan()</c>：请求的凭据先在外层认证，失败结果写成 Problem Details；可用 <c>RequireXiHanAuthentication()</c> 等约定限制调用方。必须放在 <c>UseXiHan()</c> 之后。
+/// <c>POST</c> 收 binary / structured / batch 事件，按类型映射到主题，派发模式下在请求内经内核管道交给主题的处理器，发布模式下按主题分组批量交给消息代理；全部成功回 202。端点经过 <c>UseXiHan()</c>：请求的凭据先在外层认证，失败结果写成 Problem Details；可用 <c>RequireXiHanAuthentication()</c> 等约定限制调用方。必须放在 <c>UseXiHan()</c> 之后
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CloudEventsEndpointRouteBuilderExtensions
 {
     /// <summary>
-    /// 两种订阅方式，按派发模式的投递顺序。
+    /// 两种订阅方式，按派发模式的投递顺序
     /// </summary>
     private static readonly SubscriptionMode[] _modes = [SubscriptionMode.Competing, SubscriptionMode.Broadcast];
 
     /// <summary>
-    /// 映射入站端点。
+    /// 映射入站端点
     /// </summary>
     /// <remarks>
-    /// 需要 <see cref="CloudEventsProtocolFeature"/> 已装配。
+    /// 需要 <see cref="CloudEventsProtocolFeature"/> 已装配
     /// </remarks>
     public static IEndpointConventionBuilder MapXiHanCloudEvents(this IEndpointRouteBuilder endpoints, string pattern = "/events")
     {
@@ -46,10 +46,10 @@ public static class CloudEventsEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 端点处理。
+    /// 端点处理
     /// </summary>
     /// <remarks>
-    /// 读事件，先把每个事件的类型解析成主题（任一事件没有映射整批 400，不处理任何事件），再派发或发布；派发按顺序处理、第一个失败即停止，发布按主题分组一次发布、第一个失败的结果作为响应（已处理的不回滚，发送方重试整批时处理器按消息 ID 去重）。
+    /// 读事件，先把每个事件的类型解析成主题（任一事件没有映射整批 400，不处理任何事件），再派发或发布；派发按顺序处理、第一个失败即停止，发布按主题分组一次发布、第一个失败的结果作为响应（已处理的不回滚，发送方重试整批时处理器按消息 ID 去重）
     /// </remarks>
     private static async Task HandleAsync(HttpContext httpContext, CloudEventsProtocolOptions options)
     {
@@ -91,10 +91,10 @@ public static class CloudEventsEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 发布模式。
+    /// 发布模式
     /// </summary>
     /// <remarks>
-    /// 按主题分组（保持首次出现的主题顺序与组内到达顺序），每组一次批量发布；返回第一个失败的结果。
+    /// 按主题分组（保持首次出现的主题顺序与组内到达顺序），每组一次批量发布；返回第一个失败的结果
     /// </remarks>
     private static async Task<Result> PublishAsync(IMessagePublisher publisher, string[] topics, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken)
     {
@@ -127,10 +127,10 @@ public static class CloudEventsEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 派发模式：逐个在请求内经管道交给本实例里主题的处理器，第一个失败即停止。
+    /// 派发模式：逐个在请求内经管道交给本实例里主题的处理器，第一个失败即停止
     /// </summary>
     /// <remarks>
-    /// 竞争订阅与广播订阅各一次投递，先竞争后广播（<c>spec/protocol/cloudevents.md</c>）。派发只发生在接收请求的这个实例，要让广播订阅到达每个实例用发布模式。
+    /// 竞争订阅与广播订阅各一次投递，先竞争后广播（<c>spec/protocol/cloudevents.md</c>）。派发只发生在接收请求的这个实例，要让广播订阅到达每个实例用发布模式
     /// </remarks>
     private static async Task<Result> DispatchAsync(IServiceProvider services, string[] topics, IReadOnlyList<MessageEnvelope> envelopes, CancellationToken cancellationToken)
     {

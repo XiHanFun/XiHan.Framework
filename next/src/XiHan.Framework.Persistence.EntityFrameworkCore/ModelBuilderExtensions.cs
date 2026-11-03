@@ -12,36 +12,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// 按实体协议配置模型。
+/// 按实体协议配置模型
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ModelBuilderExtensions
 {
     /// <summary>
-    /// SQLite 的 EF Core Provider 名。
+    /// SQLite 的 EF Core Provider 名
     /// </summary>
     internal const string SqliteProvider = "Microsoft.EntityFrameworkCore.Sqlite";
 
     /// <summary>
-    /// SQL Server 的 EF Core Provider 名。
+    /// SQL Server 的 EF Core Provider 名
     /// </summary>
     internal const string SqlServerProvider = "Microsoft.EntityFrameworkCore.SqlServer";
 
     /// <summary>
-    /// PostgreSQL（Npgsql）的 EF Core Provider 名。
+    /// PostgreSQL（Npgsql）的 EF Core Provider 名
     /// </summary>
     internal const string NpgsqlProvider = "Npgsql.EntityFrameworkCore.PostgreSQL";
 
     /// <summary>
-    /// 对已注册的每个实体。
+    /// 对已注册的每个实体
     /// </summary>
     /// <remarks>
-    /// <see cref="IHasConcurrencyStamp"/> 的并发戳设为并发令牌（长度 32）；<see cref="IMultiTenant"/> 的租户与 <see cref="ISoftDeletable"/> 的删除标记建索引；实体上的 <see cref="EntityIndexAttribute"/> 映射为 <c>HasIndex</c>（唯一性与索引名按 <see cref="EntityIndexes"/>，名字用此刻的表名推出，与 SqlSugar 建出的同名）。软删除实体的唯一索引只约束未删除的行（<see cref="EntityIndex.ExcludesDeleted"/>），另加 <c>HasFilter</c>：条件按 <paramref name="database"/> 的 Provider 写方言（Npgsql <c>"IsDeleted" = false</c>、SQLite <c>"IsDeleted" = 0</c>、SQL Server <c>[IsDeleted] = 0</c>，SQL Server 上键含可空列时另加 <c>IS NOT NULL</c>，与它对唯一索引的缺省一致），列名取此刻的映射；其余关系型 Provider 不支持部分唯一索引，建模时抛出；非关系型 Provider 本来不建索引，不加条件。Provider 是 SQLite 时，模型里全部实体（含从属类型与复杂类型）的 <see cref="DateTimeOffset"/> 与可空 <see cref="DateTimeOffset"/> 属性存成 UTC ticks 整数（SQLite 的 EF Core Provider 存成文本时翻译不了大小比较与排序），应用已配了值转换或存储类型的属性不动。在 <c>OnModelCreating</c> 里注册全部实体、配置完表名、列名与自己的值转换之后调用：<c>modelBuilder.ApplyPersistenceConventions(Database)</c>。
+    /// <see cref="IHasConcurrencyStamp"/> 的并发戳设为并发令牌（长度 32）；<see cref="IMultiTenant"/> 的租户与 <see cref="ISoftDeletable"/> 的删除标记建索引；实体上的 <see cref="EntityIndexAttribute"/> 映射为 <c>HasIndex</c>（唯一性与索引名按 <see cref="EntityIndexes"/>，名字用此刻的表名推出，与 SqlSugar 建出的同名）。软删除实体的唯一索引只约束未删除的行（<see cref="EntityIndex.ExcludesDeleted"/>），另加 <c>HasFilter</c>：条件按 <paramref name="database"/> 的 Provider 写方言（Npgsql <c>"IsDeleted" = false</c>、SQLite <c>"IsDeleted" = 0</c>、SQL Server <c>[IsDeleted] = 0</c>，SQL Server 上键含可空列时另加 <c>IS NOT NULL</c>，与它对唯一索引的缺省一致），列名取此刻的映射；其余关系型 Provider 不支持部分唯一索引，建模时抛出；非关系型 Provider 本来不建索引，不加条件。Provider 是 SQLite 时，模型里全部实体（含从属类型与复杂类型）的 <see cref="DateTimeOffset"/> 与可空 <see cref="DateTimeOffset"/> 属性存成 UTC ticks 整数（SQLite 的 EF Core Provider 存成文本时翻译不了大小比较与排序），应用已配了值转换或存储类型的属性不动。在 <c>OnModelCreating</c> 里注册全部实体、配置完表名、列名与自己的值转换之后调用：<c>modelBuilder.ApplyPersistenceConventions(Database)</c>
     /// </remarks>
-    /// <param name="modelBuilder">模型构建器。</param>
-    /// <param name="database">本 DbContext 的 <see cref="DbContext.Database"/>：据它的 Provider 写部分唯一索引的条件。</param>
-    /// <exception cref="InvalidOperationException">实体的索引声明不合法（见 <see cref="EntityIndexes"/>）。</exception>
-    /// <exception cref="FrameworkException">有软删除实体声明了唯一索引，而 Provider 不支持部分唯一索引（<see cref="PersistenceErrors.NotSupported"/>，一次列出全部）。</exception>
+    /// <param name="modelBuilder">模型构建器</param>
+    /// <param name="database">本 DbContext 的 <see cref="DbContext.Database"/>：据它的 Provider 写部分唯一索引的条件</param>
+    /// <exception cref="InvalidOperationException">实体的索引声明不合法（见 <see cref="EntityIndexes"/>）</exception>
+    /// <exception cref="FrameworkException">有软删除实体声明了唯一索引，而 Provider 不支持部分唯一索引（<see cref="PersistenceErrors.NotSupported"/>，一次列出全部）</exception>
     public static ModelBuilder ApplyPersistenceConventions(this ModelBuilder modelBuilder, DatabaseFacade database)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -50,10 +50,10 @@ public static class ModelBuilderExtensions
     }
 
     /// <summary>
-    /// 按 Provider 名施加约定。
+    /// 按 Provider 名施加约定
     /// </summary>
     /// <remarks>
-    /// 公开入口与测试共用：测试据此覆盖没有引用的 Provider（Npgsql、SQL Server、不支持的）。
+    /// 公开入口与测试共用：测试据此覆盖没有引用的 Provider（Npgsql、SQL Server、不支持的）
     /// </remarks>
     internal static ModelBuilder Apply(ModelBuilder modelBuilder, string? providerName, bool relational)
     {
@@ -124,11 +124,11 @@ public static class ModelBuilderExtensions
     }
 
     /// <summary>
-    /// 把时刻属性存成 UTC ticks 整数。
+    /// 把时刻属性存成 UTC ticks 整数
     /// </summary>
     /// <remarks>
-    /// 类型上声明的 <see cref="DateTimeOffset"/> 与可空 <see cref="DateTimeOffset"/> 属性，递归到复杂类型。
-    /// 应用已经配了值转换或存储类型的属性（<c>HasConversion</c>、<c>ConfigureConventions</c> 里的 <c>HaveConversion</c>）不动：显式配置优先于约定，已有库的存储格式也就不变。
+    /// 类型上声明的 <see cref="DateTimeOffset"/> 与可空 <see cref="DateTimeOffset"/> 属性，递归到复杂类型
+    /// 应用已经配了值转换或存储类型的属性（<c>HasConversion</c>、<c>ConfigureConventions</c> 里的 <c>HaveConversion</c>）不动：显式配置优先于约定，已有库的存储格式也就不变
     /// </remarks>
     private static void StoreDateTimeOffsetsAsUtcTicks(IMutableTypeBase type)
     {
@@ -152,10 +152,10 @@ public static class ModelBuilderExtensions
     }
 
     /// <summary>
-    /// 部分唯一索引的条件：只约束未删除的行。
+    /// 部分唯一索引的条件：只约束未删除的行
     /// </summary>
     /// <remarks>
-    /// Provider 不支持时为 <see langword="null"/>。列名取此刻的映射（<c>HasColumnName</c> 与命名约定要在约定之前生效）。
+    /// Provider 不支持时为 <see langword="null"/>。列名取此刻的映射（<c>HasColumnName</c> 与命名约定要在约定之前生效）
     /// </remarks>
     internal static string? FilterOf(string? providerName, IMutableEntityType entityType, EntityIndex index)
     {
@@ -181,12 +181,12 @@ public static class ModelBuilderExtensions
     }
 
     /// <summary>
-    /// 标准 SQL 的双引号标识符（PostgreSQL、SQLite）。
+    /// 标准 SQL 的双引号标识符（PostgreSQL、SQLite）
     /// </summary>
     internal static string Quote(string identifier) => $"\"{identifier.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
 
     /// <summary>
-    /// SQL Server 的方括号标识符。
+    /// SQL Server 的方括号标识符
     /// </summary>
     private static string Bracket(string identifier) => $"[{identifier.Replace("]", "]]", StringComparison.Ordinal)}]";
 }

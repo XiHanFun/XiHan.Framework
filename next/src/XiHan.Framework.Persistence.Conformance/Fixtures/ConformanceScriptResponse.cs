@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件操作的响应。
+/// 套件操作的响应
 /// </summary>
-/// <param name="Script">执行过的脚本的键。</param>
+/// <param name="Script">执行过的脚本的键</param>
 internal sealed record ConformanceScriptResponse(string Script);

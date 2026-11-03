@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件操作的请求与响应的源生成序列化元数据。
+/// 套件操作的请求与响应的源生成序列化元数据
 /// </summary>
 [JsonSerializable(typeof(ConformanceScriptRequest))]
 [JsonSerializable(typeof(ConformanceScriptResponse))]

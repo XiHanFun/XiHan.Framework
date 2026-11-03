@@ -13,31 +13,31 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 数据库定义存储（作用域服务）。
+/// 数据库定义存储（作用域服务）
 /// </summary>
 /// <remarks>
-/// 在调用方的工作单元里经仓储读写，随它提交或回滚。分区为空（平台）读写 <see cref="PlatformWorkflowDefinitionRecord"/>（平台库），否则读写 <see cref="WorkflowDefinitionRecord"/>（实现 <c>IMultiTenant</c>，随租户分库）；分区必须等于工作单元的租户。失败 → <see cref="WorkflowErrors.StoreUnavailable"/>（只读拒绝原样返回）。
+/// 在调用方的工作单元里经仓储读写，随它提交或回滚。分区为空（平台）读写 <see cref="PlatformWorkflowDefinitionRecord"/>（平台库），否则读写 <see cref="WorkflowDefinitionRecord"/>（实现 <c>IMultiTenant</c>，随租户分库）；分区必须等于工作单元的租户。失败 → <see cref="WorkflowErrors.StoreUnavailable"/>（只读拒绝原样返回）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
 {
     /// <summary>
-    /// 调用方的工作单元。
+    /// 调用方的工作单元
     /// </summary>
     private readonly IUnitOfWork _unitOfWork;
 
     /// <summary>
-    /// 平台分区的表。
+    /// 平台分区的表
     /// </summary>
     private readonly DefinitionRows<PlatformWorkflowDefinitionRecord> _platform;
 
     /// <summary>
-    /// 租户分区的表。
+    /// 租户分区的表
     /// </summary>
     private readonly DefinitionRows<WorkflowDefinitionRecord> _tenant;
 
     /// <summary>
-    /// 创建（作用域服务）。
+    /// 创建（作用域服务）
     /// </summary>
     public DatabaseWorkflowDefinitionStore(IServiceProvider services)
     {
@@ -129,7 +129,7 @@ public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <summary>
-    /// 核对分区与工作单元的租户一致。
+    /// 核对分区与工作单元的租户一致
     /// </summary>
     private void Enter(string? tenantId) => StorePartition.Ensure(_unitOfWork, tenantId);
 }

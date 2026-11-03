@@ -18,16 +18,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions;
 
 /// <summary>
-/// AI 子系统的服务登记。
+/// AI 子系统的服务登记
 /// </summary>
 /// <remarks>
-/// 所有 AI 特性共用的 <see cref="AddAI(IServiceCollection, IConfiguration)"/>（幂等），以及工厂、护栏、提示词与工具的登记。
+/// 所有 AI 特性共用的 <see cref="AddAI(IServiceCollection, IConfiguration)"/>（幂等），以及工厂、护栏、提示词与工具的登记
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class AIServiceCollectionExtensions
 {
     /// <summary>
-    /// 按配置登记 AI 核心服务。
+    /// 按配置登记 AI 核心服务
     /// </summary>
     public static IServiceCollection AddAI(this IServiceCollection services, IConfiguration configuration)
     {
@@ -36,10 +36,10 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记 AI 核心服务。
+    /// 登记 AI 核心服务
     /// </summary>
     /// <remarks>
-    /// 选项、消息目录、Provider 目录、聊天入口、提示词目录、工具目录、知识库流水线；已登记的不重复。
+    /// 选项、消息目录、Provider 目录、聊天入口、提示词目录、工具目录、知识库流水线；已登记的不重复
     /// </remarks>
     public static IServiceCollection AddAI(this IServiceCollection services, AIOptions options)
     {
@@ -65,7 +65,7 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记聊天客户端工厂（<c>ai.chat@1</c> 的 Provider）。
+    /// 登记聊天客户端工厂（<c>ai.chat@1</c> 的 Provider）
     /// </summary>
     public static IServiceCollection AddAIChatClientFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFactory>(this IServiceCollection services) where TFactory : class, IChatClientFactory
     {
@@ -75,7 +75,7 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记嵌入生成器工厂（<c>ai.embedding@1</c> 的 Provider）。
+    /// 登记嵌入生成器工厂（<c>ai.embedding@1</c> 的 Provider）
     /// </summary>
     public static IServiceCollection AddAIEmbeddingGeneratorFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFactory>(this IServiceCollection services) where TFactory : class, IEmbeddingGeneratorFactory
     {
@@ -85,10 +85,10 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记护栏。
+    /// 登记护栏
     /// </summary>
     /// <remarks>
-    /// 按登记顺序执行。
+    /// 按登记顺序执行
     /// </remarks>
     public static IServiceCollection AddAIGuardrail<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TGuardrail>(this IServiceCollection services) where TGuardrail : class, IAIGuardrail
     {
@@ -98,10 +98,10 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记提示词模板。
+    /// 登记提示词模板
     /// </summary>
     /// <remarks>
-    /// 同名覆盖配置里的。
+    /// 同名覆盖配置里的
     /// </remarks>
     public static IServiceCollection AddAIPrompt(this IServiceCollection services, AIPromptTemplate template)
     {
@@ -112,7 +112,7 @@ public static class AIServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记一个工具（<see cref="AIFunctionFactory"/> 创建的函数或任何 <see cref="AITool"/>）。
+    /// 登记一个工具（<see cref="AIFunctionFactory"/> 创建的函数或任何 <see cref="AITool"/>）
     /// </summary>
     public static IServiceCollection AddAITool(this IServiceCollection services, AITool tool)
     {

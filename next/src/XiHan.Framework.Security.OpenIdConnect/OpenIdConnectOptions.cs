@@ -8,26 +8,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.OpenIdConnect;
 
 /// <summary>
-/// OpenID Connect 认证选项（配置节 <c>XiHan:Security:OpenIdConnect</c>）。
+/// OpenID Connect 认证选项（配置节 <c>XiHan:Security:OpenIdConnect</c>）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record OpenIdConnectOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Security:OpenIdConnect";
 
     /// <summary>
-    /// 发现文档相对签发者地址的路径。
+    /// 发现文档相对签发者地址的路径
     /// </summary>
     public const string DiscoveryPath = ".well-known/openid-configuration";
 
     /// <summary>
-    /// 签发者地址（绝对 URI，如 <c>https://login.example.com/realms/shop</c>）。
+    /// 签发者地址（绝对 URI，如 <c>https://login.example.com/realms/shop</c>）
     /// </summary>
     /// <remarks>
-    /// 发现文档默认在其下的 <see cref="DiscoveryPath"/>。
+    /// 发现文档默认在其下的 <see cref="DiscoveryPath"/>
     /// </remarks>
     public required string Authority
     {
@@ -36,10 +36,10 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 发现文档地址。
+    /// 发现文档地址
     /// </summary>
     /// <remarks>
-    /// 为空时由 <see cref="Authority"/> 推出。
+    /// 为空时由 <see cref="Authority"/> 推出
     /// </remarks>
     public string? MetadataAddress
     {
@@ -48,34 +48,34 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 期望的签发者。
+    /// 期望的签发者
     /// </summary>
     /// <remarks>
-    /// 为空时取发现文档里的 <c>issuer</c>。
+    /// 为空时取发现文档里的 <c>issuer</c>
     /// </remarks>
     public string? Issuer { get; init; }
 
     /// <summary>
-    /// 期望的受众。
+    /// 期望的受众
     /// </summary>
     /// <remarks>
-    /// 为空时不校验受众。
+    /// 为空时不校验受众
     /// </remarks>
     public string? Audience { get; init; }
 
     /// <summary>
-    /// 发现文档与 JWKS 是否必须经 HTTPS 取得。
+    /// 发现文档与 JWKS 是否必须经 HTTPS 取得
     /// </summary>
     /// <remarks>
-    /// 默认是，只在本地开发时关闭。
+    /// 默认是，只在本地开发时关闭
     /// </remarks>
     public bool RequireHttpsMetadata { get; init; } = true;
 
     /// <summary>
-    /// 校验有效期时允许的时钟偏移。
+    /// 校验有效期时允许的时钟偏移
     /// </summary>
     /// <remarks>
-    /// 默认 60 秒。
+    /// 默认 60 秒
     /// </remarks>
     public TimeSpan ClockSkew
     {
@@ -84,10 +84,10 @@ public sealed record OpenIdConnectOptions
     } = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 元数据的自动刷新间隔。
+    /// 元数据的自动刷新间隔
     /// </summary>
     /// <remarks>
-    /// 默认 12 小时。
+    /// 默认 12 小时
     /// </remarks>
     public TimeSpan RefreshInterval
     {
@@ -96,10 +96,10 @@ public sealed record OpenIdConnectOptions
     } = TimeSpan.FromHours(12);
 
     /// <summary>
-    /// 两次按需刷新（未知签名密钥触发）之间的最短间隔，也是刷新失败后沿用旧密钥的时长。
+    /// 两次按需刷新（未知签名密钥触发）之间的最短间隔，也是刷新失败后沿用旧密钥的时长
     /// </summary>
     /// <remarks>
-    /// 默认 5 分钟。
+    /// 默认 5 分钟
     /// </remarks>
     public TimeSpan MinimumRefreshInterval
     {
@@ -108,10 +108,10 @@ public sealed record OpenIdConnectOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// 取发现文档或 JWKS 的 HTTP 超时。
+    /// 取发现文档或 JWKS 的 HTTP 超时
     /// </summary>
     /// <remarks>
-    /// 默认 30 秒。
+    /// 默认 30 秒
     /// </remarks>
     public TimeSpan BackchannelTimeout
     {
@@ -120,10 +120,10 @@ public sealed record OpenIdConnectOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 作为主体 ID 的声明类型。
+    /// 作为主体 ID 的声明类型
     /// </summary>
     /// <remarks>
-    /// 默认 <c>sub</c>。
+    /// 默认 <c>sub</c>
     /// </remarks>
     public string NameClaim
     {
@@ -132,9 +132,9 @@ public sealed record OpenIdConnectOptions
     } = "sub";
 
     /// <summary>
-    /// 发现文档的最终地址：<see cref="MetadataAddress"/>，否则 <see cref="Authority"/> 下的 <see cref="DiscoveryPath"/>。
+    /// 发现文档的最终地址：<see cref="MetadataAddress"/>，否则 <see cref="Authority"/> 下的 <see cref="DiscoveryPath"/>
     /// </summary>
-    /// <exception cref="InvalidOperationException"><see cref="RequireHttpsMetadata"/> 为真而地址不是 HTTPS。</exception>
+    /// <exception cref="InvalidOperationException"><see cref="RequireHttpsMetadata"/> 为真而地址不是 HTTPS</exception>
     public Uri ResolveMetadataAddress()
     {
         var address = MetadataAddress is { } explicitAddress
@@ -146,10 +146,10 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>Authority</c> 必填，各时长以秒为单位（<c>ClockSkewSeconds</c>、<c>RefreshIntervalSeconds</c>、<c>MinimumRefreshIntervalSeconds</c>、<c>BackchannelTimeoutSeconds</c>）。
+    /// <c>Authority</c> 必填，各时长以秒为单位（<c>ClockSkewSeconds</c>、<c>RefreshIntervalSeconds</c>、<c>MinimumRefreshIntervalSeconds</c>、<c>BackchannelTimeoutSeconds</c>）
     /// </remarks>
     public static OpenIdConnectOptions FromConfiguration(IConfiguration configuration)
     {
@@ -200,10 +200,10 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 读取以秒为单位的时长。
+    /// 读取以秒为单位的时长
     /// </summary>
     /// <remarks>
-    /// 未配置为空，不是非负数则抛出。
+    /// 未配置为空，不是非负数则抛出
     /// </remarks>
     private static TimeSpan? Seconds(IConfiguration configuration, string name)
     {
@@ -219,7 +219,7 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
-    /// 是否为绝对的 http / https URI。
+    /// 是否为绝对的 http / https URI
     /// </summary>
     private static bool IsHttpUri(string? value)
         => Uri.TryCreate(value, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);

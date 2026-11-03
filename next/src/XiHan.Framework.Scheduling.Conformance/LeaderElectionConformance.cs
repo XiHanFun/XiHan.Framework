@@ -14,43 +14,43 @@ using Xunit;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// <see cref="ILeaderElection"/> 的一致性套件。
+/// <see cref="ILeaderElection"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateElection"/> 与 <see cref="StartNodeAsync"/>，全部用例随之执行。到期按套件传入的时钟判定，用例推进时钟而不是等待真实时间，结果与机器快慢无关。<see cref="StartNodeAsync"/> 供应用生命周期用例：选举接在调度引擎上，应用不在服务状态（启动中、排空中）时引擎不持有租约、持有就释放，释放在那时也必须真正生效（ADR-0091、ADR-0094）。
+/// 继承并实现 <see cref="CreateElection"/> 与 <see cref="StartNodeAsync"/>，全部用例随之执行。到期按套件传入的时钟判定，用例推进时钟而不是等待真实时间，结果与机器快慢无关。<see cref="StartNodeAsync"/> 供应用生命周期用例：选举接在调度引擎上，应用不在服务状态（启动中、排空中）时引擎不持有租约、持有就释放，释放在那时也必须真正生效（ADR-0091、ADR-0094）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class LeaderElectionConformance
 {
     /// <summary>
-    /// 过期用例使用的存活时间。
+    /// 过期用例使用的存活时间
     /// </summary>
     /// <remarks>
-    /// 只有整数秒粒度的 Provider（如 Kubernetes Lease）改为 1 秒。
+    /// 只有整数秒粒度的 Provider（如 Kubernetes Lease）改为 1 秒
     /// </remarks>
     protected virtual TimeSpan LeaseTimeToLive => TimeSpan.FromMilliseconds(400);
 
     /// <summary>
-    /// 创建被测选举。
+    /// 创建被测选举
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次；选举与它产生的租约都按 <paramref name="clock"/> 判定到期。
+    /// 每个用例调用一次；选举与它产生的租约都按 <paramref name="clock"/> 判定到期
     /// </remarks>
     protected abstract ILeaderElection CreateElection(TimeProvider clock);
 
     /// <summary>
-    /// 启动一个用被测选举的调度节点，并给出与它争同一租约的竞争者。
+    /// 启动一个用被测选举的调度节点，并给出与它争同一租约的竞争者
     /// </summary>
     /// <remarks>
-    /// 应用生命周期用例调用。节点是一个宿主：装配调度引擎（<see cref="JobSchedulerEngine"/>，提供 <c>scheduling.jobs</c>）与被测选举，把 <paramref name="clock"/> 登记为时钟（在 Provider 装配之前，引擎与选举都按它计时），轮询周期设得很长（如 <c>XiHan:Scheduling:PollIntervalSeconds = 3600</c>）让后台循环不动作，再装配 <paramref name="probe"/>（<c>UseFeature(probe)</c>）。<c>Competitor</c> 是另一个持有者的选举：与节点争同一个资源，节点启动、服务、排空与停止期间都要能获取与释放（数据库实现是同一个库上另一个在服务的节点，进程内实现是节点自己的选举实例）。<c>Host</c> 释放节点与竞争者用到的一切；用例可能已经停止了节点。
+    /// 应用生命周期用例调用。节点是一个宿主：装配调度引擎（<see cref="JobSchedulerEngine"/>，提供 <c>scheduling.jobs</c>）与被测选举，把 <paramref name="clock"/> 登记为时钟（在 Provider 装配之前，引擎与选举都按它计时），轮询周期设得很长（如 <c>XiHan:Scheduling:PollIntervalSeconds = 3600</c>）让后台循环不动作，再装配 <paramref name="probe"/>（<c>UseFeature(probe)</c>）。<c>Competitor</c> 是另一个持有者的选举：与节点争同一个资源，节点启动、服务、排空与停止期间都要能获取与释放（数据库实现是同一个库上另一个在服务的节点，进程内实现是节点自己的选举实例）。<c>Host</c> 释放节点与竞争者用到的一切；用例可能已经停止了节点
     /// </remarks>
     protected abstract Task<(ILeaderElection Competitor, IAsyncDisposable Host)> StartNodeAsync(TimeProvider clock, IFeature probe);
 
     /// <summary>
-    /// 用例 1：空闲资源可获取。
+    /// 用例 1：空闲资源可获取
     /// </summary>
     /// <remarks>
-    /// 被持有时拒绝；释放后可再获取；不同资源互不影响。
+    /// 被持有时拒绝；释放后可再获取；不同资源互不影响
     /// </remarks>
     [Fact]
     public async Task Acquire_RefusesWhileHeld_AndSucceedsAfterRelease()
@@ -78,10 +78,10 @@ public abstract class LeaderElectionConformance
     }
 
     /// <summary>
-    /// 用例 2：到期后他人可获取，原持有者续约失败。
+    /// 用例 2：到期后他人可获取，原持有者续约失败
     /// </summary>
     /// <remarks>
-    /// 到期前续约延长到期时刻。
+    /// 到期前续约延长到期时刻
     /// </remarks>
     [Fact]
     public async Task Lease_ExpiresUnlessRenewed()
@@ -108,10 +108,10 @@ public abstract class LeaderElectionConformance
     }
 
     /// <summary>
-    /// 用例 3：引擎只在应用服务时持有领导租约。
+    /// 用例 3：引擎只在应用服务时持有领导租约
     /// </summary>
     /// <remarks>
-    /// 启动中（探针的启动钩子）的周期不拿，资源空着、竞争者能拿到；进入服务后，竞争者放手，下一个周期就拿到，竞争者随即被拒；排空中（探针的停止钩子）时钟只走半个租约、远没到期，这个周期释放，竞争者立即拿到。释放在排空中也必须真正生效（RFC-0013：<c>LeaderLease.Release</c> 在应用不在服务状态时也要生效）。时钟由用例推进，周期经 <see cref="JobSchedulerEngine.PollOnceAsync"/> 直接执行，不靠后台循环与真实等待。内核里应用离开服务状态只有启动中与排空中两段，排空之后不会回到服务状态，「恢复服务后重新拿」就是启动中让出、进入服务后再拿到。
+    /// 启动中（探针的启动钩子）的周期不拿，资源空着、竞争者能拿到；进入服务后，竞争者放手，下一个周期就拿到，竞争者随即被拒；排空中（探针的停止钩子）时钟只走半个租约、远没到期，这个周期释放，竞争者立即拿到。释放在排空中也必须真正生效（RFC-0013：<c>LeaderLease.Release</c> 在应用不在服务状态时也要生效）。时钟由用例推进，周期经 <see cref="JobSchedulerEngine.PollOnceAsync"/> 直接执行，不靠后台循环与真实等待。内核里应用离开服务状态只有启动中与排空中两段，排空之后不会回到服务状态，「恢复服务后重新拿」就是启动中让出、进入服务后再拿到
     /// </remarks>
     [Fact]
     public async Task Engine_HoldsTheLeaseOnlyWhileTheApplicationServes()
@@ -178,15 +178,15 @@ public abstract class LeaderElectionConformance
     }
 
     /// <summary>
-    /// 用例时钟的起点。
+    /// 用例时钟的起点
     /// </summary>
     /// <remarks>
-    /// 整秒，避开只有微秒精度的存储（如 Kubernetes MicroTime）的截断。
+    /// 整秒，避开只有微秒精度的存储（如 Kubernetes MicroTime）的截断
     /// </remarks>
     private static DateTimeOffset Start { get; } = new(2026, 10, 31, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 套件内唯一的资源名。
+    /// 套件内唯一的资源名
     /// </summary>
     private static JobName Resource() => new("conformance.lease." + Guid.NewGuid().ToString("N")[..8]);
 }

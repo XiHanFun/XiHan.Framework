@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Commands;
 
 /// <summary>
-/// <c>pipeline</c>：打印管道的阶段与中间件（<see cref="App.DescribePipeline"/>）。
+/// <c>pipeline</c>：打印管道的阶段与中间件（<see cref="App.DescribePipeline"/>）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class PipelineCommand : ICommand

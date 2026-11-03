@@ -10,31 +10,31 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 有界内存的定义存储。
+/// 有界内存的定义存储
 /// </summary>
 /// <remarks>
-/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝（读己之写，不泄漏引用）；容量按全部分区合计，满 → <see cref="WorkflowErrors.StoreCapacity"/>。没有事务：写入立即生效。
+/// 按分区（平台或租户）隔离：键是分区加 ID，查询只看给定分区。保存与返回都是深拷贝（读己之写，不泄漏引用）；容量按全部分区合计，满 → <see cref="WorkflowErrors.StoreCapacity"/>。没有事务：写入立即生效
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
 {
     /// <summary>
-    /// 保护表的锁。
+    /// 保护表的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 分区与 ID → 定义。
+    /// 分区与 ID → 定义
     /// </summary>
     private readonly Dictionary<PartitionKey, WorkflowDefinition> _definitions = [];
 
     /// <summary>
-    /// 容量。
+    /// 容量
     /// </summary>
     private readonly int _capacity;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryWorkflowDefinitionStore(InMemoryWorkflowOptions options)
     {
@@ -43,7 +43,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <summary>
-    /// 当前条数（全部分区）。
+    /// 当前条数（全部分区）
     /// </summary>
     public int Count
     {
@@ -142,15 +142,15 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <summary>
-    /// 没给排序项时的排序：名字升序。
+    /// 没给排序项时的排序：名字升序
     /// </summary>
     private static readonly WorkflowDefinitionSort[] _defaultSorts = [new(WorkflowDefinitionSortField.Name)];
 
     /// <summary>
-    /// 按定义查询的排序项依次排序，再接次序键名字升序、版本降序。
+    /// 按定义查询的排序项依次排序，再接次序键名字升序、版本降序
     /// </summary>
     /// <remarks>
-    /// 名字与版本在分区里唯一，接上次序键即是全序，分页不重不漏（ADR-0102、ADR-0104）。排序项里已有的字段不再作次序键，重复的字段只按第一次出现的排，与数据库实现的 SQL 同一结果（调用方已校验重复）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），发布时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
+    /// 名字与版本在分区里唯一，接上次序键即是全序，分页不重不漏（ADR-0102、ADR-0104）。排序项里已有的字段不再作次序键，重复的字段只按第一次出现的排，与数据库实现的 SQL 同一结果（调用方已校验重复）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），发布时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>
     /// </remarks>
     private static IOrderedEnumerable<WorkflowDefinition> Sorted(IEnumerable<WorkflowDefinition> definitions, WorkflowDefinitionQuery query)
     {
@@ -180,7 +180,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <summary>
-    /// 接上一个排序项：还没有排序时开始排，否则作次级排序。
+    /// 接上一个排序项：还没有排序时开始排，否则作次级排序
     /// </summary>
     private static IOrderedEnumerable<WorkflowDefinition> Then(IEnumerable<WorkflowDefinition> definitions, IOrderedEnumerable<WorkflowDefinition>? sorted, WorkflowDefinitionSort sort) => sort.Field switch
     {
@@ -194,7 +194,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     };
 
     /// <summary>
-    /// 按一个键升序或降序排：作主排序或次级排序。
+    /// 按一个键升序或降序排：作主排序或次级排序
     /// </summary>
     private static IOrderedEnumerable<WorkflowDefinition> Order<TKey>(IEnumerable<WorkflowDefinition> definitions, IOrderedEnumerable<WorkflowDefinition>? sorted, Func<WorkflowDefinition, TKey> key, IComparer<TKey> comparer, bool descending)
         => sorted is null
@@ -254,7 +254,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     }
 
     /// <summary>
-    /// 一个分区里的定义（调用方持锁）。
+    /// 一个分区里的定义（调用方持锁）
     /// </summary>
     private IEnumerable<WorkflowDefinition> InPartition(string? tenantId)
     {

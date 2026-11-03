@@ -10,36 +10,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// 按消息描述把 JSON 对象编码为 protobuf 线格式。
+/// 按消息描述把 JSON 对象编码为 protobuf 线格式
 /// </summary>
 /// <remarks>
-/// JSON 里的 <c>null</c> 与描述里没有的属性不上线；非空值都写出（含 proto3 默认值）；repeated 的数值与布尔打包写出；映射写成 <c>{1: key, 2: value}</c> 的条目。值与 Schema 不符时抛出 <see cref="ProtoException"/>。
+/// JSON 里的 <c>null</c> 与描述里没有的属性不上线；非空值都写出（含 proto3 默认值）；repeated 的数值与布尔打包写出；映射写成 <c>{1: key, 2: value}</c> 的条目。值与 Schema 不符时抛出 <see cref="ProtoException"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ProtoEncoder
 {
     /// <summary>
-    /// varint 线类型。
+    /// varint 线类型
     /// </summary>
     private const uint WireVarint = 0;
 
     /// <summary>
-    /// fixed64 线类型。
+    /// fixed64 线类型
     /// </summary>
     private const uint WireFixed64 = 1;
 
     /// <summary>
-    /// 长度前缀线类型。
+    /// 长度前缀线类型
     /// </summary>
     private const uint WireLengthDelimited = 2;
 
     /// <summary>
-    /// fixed32 线类型。
+    /// fixed32 线类型
     /// </summary>
     private const uint WireFixed32 = 5;
 
     /// <summary>
-    /// 编码一个消息。
+    /// 编码一个消息
     /// </summary>
     public static void Encode(ProtoMessage message, JsonElement value, IBufferWriter<byte> output)
     {
@@ -63,7 +63,7 @@ public static class ProtoEncoder
     }
 
     /// <summary>
-    /// 编码一个字段：按基数分派。
+    /// 编码一个字段：按基数分派
     /// </summary>
     private static void WriteField(ProtoField field, JsonElement value, IBufferWriter<byte> output, string path)
     {
@@ -134,7 +134,7 @@ public static class ProtoEncoder
     }
 
     /// <summary>
-    /// 写一个带标签的值。
+    /// 写一个带标签的值
     /// </summary>
     private static void WriteValue(int number, ProtoValueType type, JsonElement value, IBufferWriter<byte> output, string path)
     {
@@ -198,7 +198,7 @@ public static class ProtoEncoder
     }
 
     /// <summary>
-    /// 写可打包标量的载荷（不带标签）：varint、fixed32 或 fixed64。
+    /// 写可打包标量的载荷（不带标签）：varint、fixed32 或 fixed64
     /// </summary>
     private static void WriteScalarPayload(ProtoValueType type, JsonElement value, IBufferWriter<byte> output, string path)
     {
@@ -253,12 +253,12 @@ public static class ProtoEncoder
     }
 
     /// <summary>
-    /// 写字段标签：<c>(字段号 &lt;&lt; 3) | 线类型</c> 的 varint。
+    /// 写字段标签：<c>(字段号 &lt;&lt; 3) | 线类型</c> 的 varint
     /// </summary>
     private static void WriteTag(IBufferWriter<byte> output, int number, uint wireType) => WriteVarint(output, ((ulong)number << 3) | wireType);
 
     /// <summary>
-    /// 写长度前缀与内容。
+    /// 写长度前缀与内容
     /// </summary>
     private static void WriteLengthDelimited(IBufferWriter<byte> output, ReadOnlySpan<byte> data)
     {
@@ -268,7 +268,7 @@ public static class ProtoEncoder
     }
 
     /// <summary>
-    /// 写 varint（最多 10 字节）。
+    /// 写 varint（最多 10 字节）
     /// </summary>
     private static void WriteVarint(IBufferWriter<byte> output, ulong value)
     {

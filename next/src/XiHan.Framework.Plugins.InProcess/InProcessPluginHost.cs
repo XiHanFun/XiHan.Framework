@@ -13,48 +13,48 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Plugins.InProcess;
 
 /// <summary>
-/// 进程内插件宿主。
+/// 进程内插件宿主
 /// </summary>
 /// <remarks>
-/// 每个插件拥有自己的可收集加载上下文与服务容器；失败以 <see cref="Result"/> 返回，不影响宿主。
+/// 每个插件拥有自己的可收集加载上下文与服务容器；失败以 <see cref="Result"/> 返回，不影响宿主
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
 {
     /// <summary>
-    /// 宿主配置。
+    /// 宿主配置
     /// </summary>
     /// <remarks>
-    /// 以只读视图传给每个插件的 <see cref="PluginContext"/>。
+    /// 以只读视图传给每个插件的 <see cref="PluginContext"/>
     /// </remarks>
     private readonly IConfiguration _configuration;
 
     /// <summary>
-    /// 宿主日志。
+    /// 宿主日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 已加载插件，按清单 ID 索引。
+    /// 已加载插件，按清单 ID 索引
     /// </summary>
     /// <remarks>
-    /// 读写都在 <see cref="_gate"/> 内进行。
+    /// 读写都在 <see cref="_gate"/> 内进行
     /// </remarks>
     private readonly Dictionary<string, LoadedPlugin> _plugins = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 串行化加载、卸载与释放的互斥量，保证同一清单 ID 不会被并发加载两次。
+    /// 串行化加载、卸载与释放的互斥量，保证同一清单 ID 不会被并发加载两次
     /// </summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 创建插件宿主。
+    /// 创建插件宿主
     /// </summary>
     /// <remarks>
-    /// 进程内插件按清单中的类型名实例化，需要运行期反射与动态代码。
+    /// 进程内插件按清单中的类型名实例化，需要运行期反射与动态代码
     /// </remarks>
-    /// <param name="configuration">宿主配置（只读视图传给插件）。</param>
-    /// <param name="loggerFactory">日志工厂。</param>
+    /// <param name="configuration">宿主配置（只读视图传给插件）</param>
+    /// <param name="loggerFactory">日志工厂</param>
     [RequiresUnreferencedCode("In-process plugins load assemblies and instantiate entry types by the names in the manifest; trimmed types may not be found.")]
     [RequiresDynamicCode("In-process plugins instantiate entry types by the names in the manifest, which requires runtime reflection.")]
     public InProcessPluginHost(IConfiguration configuration, ILoggerFactory loggerFactory)
@@ -175,7 +175,7 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     }
 
     /// <summary>
-    /// 停止并卸载全部插件。
+    /// 停止并卸载全部插件
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -198,10 +198,10 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     }
 
     /// <summary>
-    /// 在独立加载上下文里加载程序集、实例化入口类型、配置并启动插件。
+    /// 在独立加载上下文里加载程序集、实例化入口类型、配置并启动插件
     /// </summary>
     /// <remarks>
-    /// 任一步失败都释放已建的容器并卸载上下文，以 <see cref="Result{T}"/> 返回错误；取消异常原样向上传播。
+    /// 任一步失败都释放已建的容器并卸载上下文，以 <see cref="Result{T}"/> 返回错误；取消异常原样向上传播
     /// </remarks>
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "构造函数已声明 RequiresUnreferencedCode。")]
     [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "构造函数已声明 RequiresUnreferencedCode。")]
@@ -255,48 +255,48 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
     }
 
     /// <summary>
-    /// 记录插件进入某个生命周期状态。
+    /// 记录插件进入某个生命周期状态
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin {PluginId} entered {State}.")]
     private static partial void LogPluginState(ILogger logger, string pluginId, LifecycleState state);
 
     /// <summary>
-    /// 记录插件加载或启动期间的未处理异常。
+    /// 记录插件加载或启动期间的未处理异常
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} failed.")]
     private static partial void LogPluginFailed(ILogger logger, Exception exception, string pluginId);
 
     /// <summary>
-    /// 一个已加载插件的运行时句柄：实例、专属服务容器与加载上下文，以及当前状态。
+    /// 一个已加载插件的运行时句柄：实例、专属服务容器与加载上下文，以及当前状态
     /// </summary>
     private sealed class LoadedPlugin(Manifest manifest, IPlugin plugin, ServiceProvider provider, PluginLoadContext context)
     {
         /// <summary>
-        /// 当前生命周期状态。
+        /// 当前生命周期状态
         /// </summary>
         /// <remarks>
-        /// 加载成功即为 <see cref="LifecycleState.Ready"/>。
+        /// 加载成功即为 <see cref="LifecycleState.Ready"/>
         /// </remarks>
         public LifecycleState State { get; private set; } = LifecycleState.Ready;
 
         /// <summary>
-        /// 停止失败时的错误。
+        /// 停止失败时的错误
         /// </summary>
         /// <remarks>
-        /// 正常情况下为 <c>null</c>。
+        /// 正常情况下为 <c>null</c>
         /// </remarks>
         public Error? Error { get; private set; }
 
         /// <summary>
-        /// 对外暴露的状态快照。
+        /// 对外暴露的状态快照
         /// </summary>
         public PluginStatus Status => new(manifest, State, Error);
 
         /// <summary>
-        /// 停止插件并释放其容器与加载上下文。
+        /// 停止插件并释放其容器与加载上下文
         /// </summary>
         /// <remarks>
-        /// 停止抛出的异常记为 <see cref="LifecycleState.Failed"/>，资源仍然释放。
+        /// 停止抛出的异常记为 <see cref="LifecycleState.Failed"/>，资源仍然释放
         /// </remarks>
         public async Task ShutdownAsync(CancellationToken cancellationToken)
         {

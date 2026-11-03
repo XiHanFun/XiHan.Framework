@@ -8,16 +8,16 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions;
 
 /// <summary>
-/// 状态的展示名：消息键与按当前区域的文案。
+/// 状态的展示名：消息键与按当前区域的文案
 /// </summary>
 /// <remarks>
-/// 状态在模型、查询结果、事件与回调输入里都是枚举值（程序判断用）；给人看时按消息键翻译（RFC-0010，ADR-0106），<see cref="Localize(WorkflowInstanceStatus)"/> 按当前消息作用域渲染，调用链里是调用方的区域。
+/// 状态在模型、查询结果、事件与回调输入里都是枚举值（程序判断用）；给人看时按消息键翻译（RFC-0010，ADR-0106），<see cref="Localize(WorkflowInstanceStatus)"/> 按当前消息作用域渲染，调用链里是调用方的区域
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowStatusMessages
 {
     /// <summary>
-    /// 实例状态的消息键。
+    /// 实例状态的消息键
     /// </summary>
     public static string KeyOf(WorkflowInstanceStatus status) => status switch
     {
@@ -31,7 +31,7 @@ public static class WorkflowStatusMessages
     };
 
     /// <summary>
-    /// 节点实例状态的消息键。
+    /// 节点实例状态的消息键
     /// </summary>
     public static string KeyOf(WorkflowNodeInstanceStatus status) => status switch
     {
@@ -45,7 +45,7 @@ public static class WorkflowStatusMessages
     };
 
     /// <summary>
-    /// 定义状态的消息键。
+    /// 定义状态的消息键
     /// </summary>
     public static string KeyOf(WorkflowDefinitionStatus status) => status switch
     {
@@ -57,17 +57,17 @@ public static class WorkflowStatusMessages
     };
 
     /// <summary>
-    /// 实例状态按当前区域的展示名。
+    /// 实例状态按当前区域的展示名
     /// </summary>
     public static string Localize(this WorkflowInstanceStatus status) => KeyOf(status).L();
 
     /// <summary>
-    /// 节点实例状态按当前区域的展示名。
+    /// 节点实例状态按当前区域的展示名
     /// </summary>
     public static string Localize(this WorkflowNodeInstanceStatus status) => KeyOf(status).L();
 
     /// <summary>
-    /// 定义状态按当前区域的展示名。
+    /// 定义状态按当前区域的展示名
     /// </summary>
     public static string Localize(this WorkflowDefinitionStatus status) => KeyOf(status).L();
 }

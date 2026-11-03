@@ -13,45 +13,45 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 
 /// <summary>
-/// 把投递变成一次内核调用。
+/// 把投递变成一次内核调用
 /// </summary>
 /// <remarks>
-/// 新作用域、从扩展属性构造 Baggage（租户、主体、关联、区域，见 <see cref="EnvelopeExtensions.BaggageMappings"/>）与追踪（<c>traceparent</c>），经完整管道执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。不写幂等键：重试必须重新执行处理器。
+/// 新作用域、从扩展属性构造 Baggage（租户、主体、关联、区域，见 <see cref="EnvelopeExtensions.BaggageMappings"/>）与追踪（<c>traceparent</c>），经完整管道执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。不写幂等键：重试必须重新执行处理器
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class MessageDispatcher(IServiceProvider services, App app, MessageSubscriptions subscriptions)
 {
     /// <summary>
-    /// 调用上下文里存放当前投递的键。
+    /// 调用上下文里存放当前投递的键
     /// </summary>
     private static readonly ContextItemKey<MessageDelivery> _deliveryKey = new("xihan.messaging.delivery");
 
     /// <summary>
-    /// 根服务提供者。
+    /// 根服务提供者
     /// </summary>
     /// <remarks>
-    /// 每次投递从它创建新作用域。
+    /// 每次投递从它创建新作用域
     /// </remarks>
     private readonly IServiceProvider _services = services ?? throw new ArgumentNullException(nameof(services));
 
     /// <summary>
-    /// 应用。
+    /// 应用
     /// </summary>
     /// <remarks>
-    /// 投递经它的完整管道执行。
+    /// 投递经它的完整管道执行
     /// </remarks>
     private readonly App _app = app ?? throw new ArgumentNullException(nameof(app));
 
     /// <summary>
-    /// 订阅表。
+    /// 订阅表
     /// </summary>
     /// <remarks>
-    /// 决定主题有哪些处理器。
+    /// 决定主题有哪些处理器
     /// </remarks>
     private readonly MessageSubscriptions _subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
 
     /// <summary>
-    /// 读取本次调用正在处理的投递。
+    /// 读取本次调用正在处理的投递
     /// </summary>
     public static Maybe<MessageDelivery> GetDelivery(InvocationContext context)
     {
@@ -60,10 +60,10 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     }
 
     /// <summary>
-    /// 派发。
+    /// 派发
     /// </summary>
     /// <remarks>
-    /// 只执行以 <see cref="MessageDelivery.Mode"/> 订阅了该主题的处理器：同一条消息到达竞争订阅与广播订阅是两次投递，各执行各的。没有处理器的订阅直接成功。
+    /// 只执行以 <see cref="MessageDelivery.Mode"/> 订阅了该主题的处理器：同一条消息到达竞争订阅与广播订阅是两次投递，各执行各的。没有处理器的订阅直接成功
     /// </remarks>
     public async ValueTask<Result> DispatchAsync(MessageDelivery delivery, CancellationToken cancellationToken)
     {
@@ -98,10 +98,10 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     }
 
     /// <summary>
-    /// 从信封扩展属性构造 Baggage。
+    /// 从信封扩展属性构造 Baggage
     /// </summary>
     /// <remarks>
-    /// 按 <see cref="EnvelopeExtensions.BaggageMappings"/>：租户、主体、关联与区域；幂等键不在其中，派发不写幂等键。空值视为缺失。
+    /// 按 <see cref="EnvelopeExtensions.BaggageMappings"/>：租户、主体、关联与区域；幂等键不在其中，派发不写幂等键。空值视为缺失
     /// </remarks>
     private static Dictionary<string, string> BaggageOf(MessageEnvelope envelope)
     {
@@ -118,10 +118,10 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     }
 
     /// <summary>
-    /// 从 <c>traceparent</c> 扩展取追踪 ID、父跨度 ID 与采样标志。
+    /// 从 <c>traceparent</c> 扩展取追踪 ID、父跨度 ID 与采样标志
     /// </summary>
     /// <remarks>
-    /// 缺失或格式不符时三者都为 <see langword="null"/>，内核另起追踪；标志原样保留，上游「不采样」不被改成采样（RFC-0003 规则 7）。
+    /// 缺失或格式不符时三者都为 <see langword="null"/>，内核另起追踪；标志原样保留，上游「不采样」不被改成采样（RFC-0003 规则 7）
     /// </remarks>
     private static (string? TraceId, string? SpanId, ActivityTraceFlags? TraceFlags) TraceOf(MessageEnvelope envelope)
         => envelope.Extension(EnvelopeExtensions.TraceParent).TryGetValue(out var traceparent) && TraceParent().Match(traceparent) is { Success: true } match
@@ -129,10 +129,10 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
             : (null, null, null);
 
     /// <summary>
-    /// W3C <c>traceparent</c> 版本 00 的文法。
+    /// W3C <c>traceparent</c> 版本 00 的文法
     /// </summary>
     /// <remarks>
-    /// 追踪 ID 32 位、跨度 ID 16 位、标志 2 位十六进制。
+    /// 追踪 ID 32 位、跨度 ID 16 位、标志 2 位十六进制
     /// </remarks>
     [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$")]
     private static partial Regex TraceParent();

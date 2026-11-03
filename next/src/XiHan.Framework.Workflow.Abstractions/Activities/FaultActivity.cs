@@ -6,13 +6,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 故障节点：以 <c>Message</c>（模板）让节点故障（走重试、继续或实例故障）。
+/// 故障节点：以 <c>Message</c>（模板）让节点故障（走重试、继续或实例故障）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class FaultActivity : IActivity
 {
     /// <summary>
-    /// 属性：消息。
+    /// 属性：消息
     /// </summary>
     public const string MessageProperty = "Message";
 

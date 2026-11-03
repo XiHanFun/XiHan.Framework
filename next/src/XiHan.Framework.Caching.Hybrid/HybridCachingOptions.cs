@@ -8,24 +8,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Hybrid;
 
 /// <summary>
-/// 两级缓存的选项。
+/// 两级缓存的选项
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Caching:Hybrid</c>：<c>LocalCapacity</c>（L1 条目上限，默认 10000）、<c>LocalTimeToLiveSeconds</c>（L1 存活时间上限，默认 30 秒）。
+/// 配置节 <c>XiHan:Caching:Hybrid</c>：<c>LocalCapacity</c>（L1 条目上限，默认 10000）、<c>LocalTimeToLiveSeconds</c>（L1 存活时间上限，默认 30 秒）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record HybridCachingOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Caching:Hybrid";
 
     /// <summary>
-    /// L1 条目上限。
+    /// L1 条目上限
     /// </summary>
     /// <remarks>
-    /// 满时淘汰最久未访问的条目。
+    /// 满时淘汰最久未访问的条目
     /// </remarks>
     public int LocalCapacity
     {
@@ -34,7 +34,7 @@ public sealed record HybridCachingOptions
     } = 10_000;
 
     /// <summary>
-    /// L1 存活时间上限：条目在 L1 里最多留这么久，别的实例的写入最长在这个窗口后可见。
+    /// L1 存活时间上限：条目在 L1 里最多留这么久，别的实例的写入最长在这个窗口后可见
     /// </summary>
     public TimeSpan LocalTimeToLive
     {
@@ -43,7 +43,7 @@ public sealed record HybridCachingOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static HybridCachingOptions FromConfiguration(IConfiguration configuration)
     {

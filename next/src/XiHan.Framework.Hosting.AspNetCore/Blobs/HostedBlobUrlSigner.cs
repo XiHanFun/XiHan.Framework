@@ -14,76 +14,76 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 
 /// <summary>
-/// 宿主代收发的预签名地址。
+/// 宿主代收发的预签名地址
 /// </summary>
 /// <remarks>
-/// 给没有原生签名的存储（文件系统）签出指向 <c>MapXiHanBlobs()</c> 端点的地址，端点验签后经 <c>IBlobStore</c> / <c>IBlobMultipartStore</c> 收发内容。地址为 <c>&lt;BaseUrl&gt;/&lt;container&gt;/&lt;key&gt;?x-method=…&amp;x-expires=…[&amp;x-store=…][&amp;x-content-type=…][&amp;x-filename=…][&amp;x-upload=…&amp;x-part=…]&amp;x-signature=…</c>，签名是对方法、命名实例、容器、键、过期时刻（Unix 秒）与各限定项的 HMAC-SHA256（Base64Url）；无状态，同一密钥的多个实例互认，密钥轮换即令旧地址失效。容器里的这个签名器对缺省的 <c>IBlobStore</c> 签名；<see cref="ForStore"/> 取得对命名实例（<see cref="BlobStores"/>）签名的签名器，端点按地址里的 <c>x-store</c> 取实例。
+/// 给没有原生签名的存储（文件系统）签出指向 <c>MapXiHanBlobs()</c> 端点的地址，端点验签后经 <c>IBlobStore</c> / <c>IBlobMultipartStore</c> 收发内容。地址为 <c>&lt;BaseUrl&gt;/&lt;container&gt;/&lt;key&gt;?x-method=…&amp;x-expires=…[&amp;x-store=…][&amp;x-content-type=…][&amp;x-filename=…][&amp;x-upload=…&amp;x-part=…]&amp;x-signature=…</c>，签名是对方法、命名实例、容器、键、过期时刻（Unix 秒）与各限定项的 HMAC-SHA256（Base64Url）；无状态，同一密钥的多个实例互认，密钥轮换即令旧地址失效。容器里的这个签名器对缺省的 <c>IBlobStore</c> 签名；<see cref="ForStore"/> 取得对命名实例（<see cref="BlobStores"/>）签名的签名器，端点按地址里的 <c>x-store</c> 取实例
 /// </remarks>
-/// <param name="options">选项。</param>
-/// <param name="clock">时钟；过期时刻按它计算与判定。</param>
+/// <param name="options">选项</param>
+/// <param name="clock">时钟；过期时刻按它计算与判定</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvider clock) : IBlobUrlSigner
 {
     /// <summary>
-    /// 方法参数。
+    /// 方法参数
     /// </summary>
     internal const string MethodParameter = "x-method";
 
     /// <summary>
-    /// 过期时刻参数（Unix 秒）。
+    /// 过期时刻参数（Unix 秒）
     /// </summary>
     internal const string ExpiresParameter = "x-expires";
 
     /// <summary>
-    /// 上传限定的内容类型参数。
+    /// 上传限定的内容类型参数
     /// </summary>
     internal const string ContentTypeParameter = "x-content-type";
 
     /// <summary>
-    /// 下载保存的文件名参数。
+    /// 下载保存的文件名参数
     /// </summary>
     internal const string FileNameParameter = "x-filename";
 
     /// <summary>
-    /// 分片上传标识参数。
+    /// 分片上传标识参数
     /// </summary>
     internal const string UploadParameter = "x-upload";
 
     /// <summary>
-    /// 分片编号参数。
+    /// 分片编号参数
     /// </summary>
     internal const string PartParameter = "x-part";
 
     /// <summary>
-    /// 签名参数。
+    /// 签名参数
     /// </summary>
     internal const string SignatureParameter = "x-signature";
 
     /// <summary>
-    /// 命名实例参数。
+    /// 命名实例参数
     /// </summary>
     internal const string StoreParameter = "x-store";
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly HostedBlobUrlOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock = clock ?? throw new ArgumentNullException(nameof(clock));
 
     /// <summary>
-    /// 绑定的命名实例。
+    /// 绑定的命名实例
     /// </summary>
     /// <remarks>
-    /// 缺省实例为 <see langword="null"/>。
+    /// 缺省实例为 <see langword="null"/>
     /// </remarks>
     private readonly string? _store;
 
     /// <summary>
-    /// 创建绑定命名实例的签名器。
+    /// 创建绑定命名实例的签名器
     /// </summary>
     private HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvider clock, string store)
         : this(options, clock)
@@ -92,23 +92,23 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     }
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     public HostedBlobUrlOptions Options => _options;
 
     /// <summary>
-    /// 绑定的命名实例。
+    /// 绑定的命名实例
     /// </summary>
     /// <remarks>
-    /// 对缺省实例签名时为 <see langword="null"/>。
+    /// 对缺省实例签名时为 <see langword="null"/>
     /// </remarks>
     public string? Store => _store;
 
     /// <summary>
-    /// 对命名实例签名的签名器（同一密钥、同一端点）。
+    /// 对命名实例签名的签名器（同一密钥、同一端点）
     /// </summary>
     /// <remarks>
-    /// 签出的地址带 <c>x-store</c>，端点经 <see cref="BlobStores.GetAsync"/> 取实例收发。实例名不合法时抛出 <see cref="ArgumentException"/>；实例是否存在在端点收到请求时判定。
+    /// 签出的地址带 <c>x-store</c>，端点经 <see cref="BlobStores.GetAsync"/> 取实例收发。实例名不合法时抛出 <see cref="ArgumentException"/>；实例是否存在在端点收到请求时判定
     /// </remarks>
     public HostedBlobUrlSigner ForStore(string name)
         => BlobStoreDefinition.IsValidName(name)
@@ -160,10 +160,10 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     }
 
     /// <summary>
-    /// 验签。
+    /// 验签
     /// </summary>
     /// <remarks>
-    /// 方法相符、参数齐全、签名一致（定时比较），再看是否过期；签名不符先于过期判定，篡改过期时刻即签名不符。
+    /// 方法相符、参数齐全、签名一致（定时比较），再看是否过期；签名不符先于过期判定，篡改过期时刻即签名不符
     /// </remarks>
     internal Result<VerifiedBlobUrl> Verify(BlobUrlMethod method, ContainerName container, BlobKey key, IQueryCollection query)
     {
@@ -215,10 +215,10 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     }
 
     /// <summary>
-    /// HMAC-SHA256（Base64Url，无填充）。
+    /// HMAC-SHA256（Base64Url，无填充）
     /// </summary>
     /// <remarks>
-    /// 规范串按行连接版本、方法、命名实例、容器、键、过期时刻与各限定项（缺省为空行）。
+    /// 规范串按行连接版本、方法、命名实例、容器、键、过期时刻与各限定项（缺省为空行）
     /// </remarks>
     private string Sign(string method, string? store, string container, string key, long expires, string? contentType, string? fileName, string? upload, string? part)
     {
@@ -228,7 +228,7 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
     }
 
     /// <summary>
-    /// 方法名。
+    /// 方法名
     /// </summary>
     private static string MethodName(BlobUrlMethod method) => method == BlobUrlMethod.Get ? "GET" : "PUT";
 }

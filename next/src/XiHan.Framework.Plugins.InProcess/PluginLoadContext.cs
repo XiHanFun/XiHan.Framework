@@ -7,31 +7,31 @@ using System.Runtime.Loader;
 namespace XiHan.Framework.Plugins.InProcess;
 
 /// <summary>
-/// 插件的可收集加载上下文。
+/// 插件的可收集加载上下文
 /// </summary>
 /// <remarks>
-/// 框架与 .NET 基础程序集回落到默认上下文以共享类型，插件私有依赖按 <c>.deps.json</c> 隔离解析。
+/// 框架与 .NET 基础程序集回落到默认上下文以共享类型，插件私有依赖按 <c>.deps.json</c> 隔离解析
 /// </remarks>
 internal sealed class PluginLoadContext(string name, string assemblyPath) : AssemblyLoadContext(name, isCollectible: true)
 {
     /// <summary>
-    /// 必须与宿主共享的程序集名前缀。
+    /// 必须与宿主共享的程序集名前缀
     /// </summary>
     /// <remarks>
-    /// 这些程序集交给默认上下文，保证 <c>IPlugin</c> 等类型在两边是同一个类型。
+    /// 这些程序集交给默认上下文，保证 <c>IPlugin</c> 等类型在两边是同一个类型
     /// </remarks>
     private static readonly string[] _sharedPrefixes = ["XiHan.Framework.", "Microsoft.Extensions.", "System.", "netstandard", "mscorlib"];
 
     /// <summary>
-    /// 按插件自己的 <c>.deps.json</c> 与运行时配置解析托管和原生依赖。
+    /// 按插件自己的 <c>.deps.json</c> 与运行时配置解析托管和原生依赖
     /// </summary>
     private readonly AssemblyDependencyResolver _resolver = new(assemblyPath);
 
     /// <summary>
-    /// 解析托管程序集。
+    /// 解析托管程序集
     /// </summary>
     /// <remarks>
-    /// 共享前缀返回 <c>null</c> 交给默认上下文；其余按插件目录解析，解析不到也返回 <c>null</c> 让运行时继续回落。
+    /// 共享前缀返回 <c>null</c> 交给默认上下文；其余按插件目录解析，解析不到也返回 <c>null</c> 让运行时继续回落
     /// </remarks>
     protected override Assembly? Load(AssemblyName assemblyName)
     {
@@ -47,7 +47,7 @@ internal sealed class PluginLoadContext(string name, string assemblyPath) : Asse
     }
 
     /// <summary>
-    /// 解析原生库：只在插件目录内查找，找不到返回 <see cref="IntPtr.Zero"/> 让运行时按默认探测继续。
+    /// 解析原生库：只在插件目录内查找，找不到返回 <see cref="IntPtr.Zero"/> 让运行时按默认探测继续
     /// </summary>
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
     {

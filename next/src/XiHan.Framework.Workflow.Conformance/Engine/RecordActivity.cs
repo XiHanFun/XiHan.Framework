@@ -11,41 +11,41 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 套件活动 <c>Record</c>。
+/// 套件活动 <c>Record</c>
 /// </summary>
 /// <remarks>
-/// 记录执行，以 <c>Outputs</c> 属性为输出、<c>Label</c> 属性为结果标签完成；<c>FailTimes</c> 属性让前几次尝试失败。
+/// 记录执行，以 <c>Outputs</c> 属性为输出、<c>Label</c> 属性为结果标签完成；<c>FailTimes</c> 属性让前几次尝试失败
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RecordActivity : ICompensableActivity
 {
     /// <summary>
-    /// 类型名。
+    /// 类型名
     /// </summary>
     public const string TypeName = "Record";
 
     /// <summary>
-    /// 属性：输出。
+    /// 属性：输出
     /// </summary>
     public const string OutputsProperty = "Outputs";
 
     /// <summary>
-    /// 属性：结果标签。
+    /// 属性：结果标签
     /// </summary>
     public const string LabelProperty = "Label";
 
     /// <summary>
-    /// 属性：前几次尝试失败。
+    /// 属性：前几次尝试失败
     /// </summary>
     public const string FailTimesProperty = "FailTimes";
 
     /// <summary>
-    /// 记录器。
+    /// 记录器
     /// </summary>
     private readonly ConformanceLog _log;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public RecordActivity(ConformanceLog log)
     {

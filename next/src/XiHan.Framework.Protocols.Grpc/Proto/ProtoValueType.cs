@@ -6,15 +6,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// 字段值（或数组元素、映射值）的类型：种类，以及 <see cref="ProtoKind.Message"/> 时的消息。
+/// 字段值（或数组元素、映射值）的类型：种类，以及 <see cref="ProtoKind.Message"/> 时的消息
 /// </summary>
-/// <param name="Kind">种类。</param>
-/// <param name="Message">嵌套消息；只有 <see cref="ProtoKind.Message"/> 时有值。</param>
+/// <param name="Kind">种类</param>
+/// <param name="Message">嵌套消息；只有 <see cref="ProtoKind.Message"/> 时有值</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record ProtoValueType(ProtoKind Kind, ProtoMessage? Message)
 {
     /// <summary>
-    /// 标量类型。
+    /// 标量类型
     /// </summary>
     public static ProtoValueType Scalar(ProtoKind kind)
     {
@@ -27,7 +27,7 @@ public sealed record ProtoValueType(ProtoKind Kind, ProtoMessage? Message)
     }
 
     /// <summary>
-    /// 消息类型。
+    /// 消息类型
     /// </summary>
     public static ProtoValueType Of(ProtoMessage message)
     {
@@ -36,7 +36,7 @@ public sealed record ProtoValueType(ProtoKind Kind, ProtoMessage? Message)
     }
 
     /// <summary>
-    /// 是否可打包（proto3 的 repeated 数值与布尔默认打包）。
+    /// 是否可打包（proto3 的 repeated 数值与布尔默认打包）
     /// </summary>
     public bool IsPackable => Kind is ProtoKind.Bool or ProtoKind.Varint32 or ProtoKind.Varint64 or ProtoKind.Fixed32 or ProtoKind.Fixed64;
 }

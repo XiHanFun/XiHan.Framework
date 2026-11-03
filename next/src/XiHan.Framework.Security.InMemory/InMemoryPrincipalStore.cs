@@ -9,26 +9,26 @@ using XiHan.Framework.Security.Abstractions;
 namespace XiHan.Framework.Security.InMemory;
 
 /// <summary>
-/// 内存主体存储：按 API Key 查主体。
+/// 内存主体存储：按 API Key 查主体
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryPrincipalStore
 {
     /// <summary>
-    /// 主体记录，按主体 ID 索引（区分大小写）。
+    /// 主体记录，按主体 ID 索引（区分大小写）
     /// </summary>
     private readonly Dictionary<string, PrincipalRecord> _byId = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 保护主体表的锁。
+    /// 保护主体表的锁
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 创建并装载选项里的主体。
+    /// 创建并装载选项里的主体
     /// </summary>
     /// <remarks>
-    /// 超出容量抛出 <see cref="FrameworkException"/>。
+    /// 超出容量抛出 <see cref="FrameworkException"/>
     /// </remarks>
     public InMemoryPrincipalStore(InMemorySecurityOptions options)
     {
@@ -41,12 +41,12 @@ public sealed class InMemoryPrincipalStore
     }
 
     /// <summary>
-    /// 容量上限。
+    /// 容量上限
     /// </summary>
     public int Capacity { get; }
 
     /// <summary>
-    /// 当前主体数。
+    /// 当前主体数
     /// </summary>
     public int Count
     {
@@ -60,10 +60,10 @@ public sealed class InMemoryPrincipalStore
     }
 
     /// <summary>
-    /// 新增或替换。
+    /// 新增或替换
     /// </summary>
     /// <remarks>
-    /// 新增超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>。
+    /// 新增超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>
     /// </remarks>
     public Result Set(PrincipalRecord principal)
     {
@@ -82,7 +82,7 @@ public sealed class InMemoryPrincipalStore
     }
 
     /// <summary>
-    /// 删除。
+    /// 删除
     /// </summary>
     public bool Remove(string principalId)
     {
@@ -94,10 +94,10 @@ public sealed class InMemoryPrincipalStore
     }
 
     /// <summary>
-    /// 按 API Key 查找。
+    /// 按 API Key 查找
     /// </summary>
     /// <remarks>
-    /// 比较为常量时间。
+    /// 比较为常量时间
     /// </remarks>
     public Maybe<PrincipalRecord> FindByApiKey(string apiKey)
     {

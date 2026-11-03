@@ -6,9 +6,9 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 批量写入或删除里一项的结果。
+/// 批量写入或删除里一项的结果
 /// </summary>
-/// <param name="Key">自然键。</param>
-/// <param name="Outcome">仓储的结果，或不存在的失败。</param>
+/// <param name="Key">自然键</param>
+/// <param name="Outcome">仓储的结果，或不存在的失败</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record MessageTranslationResult(MessageTranslationKey Key, Result Outcome);

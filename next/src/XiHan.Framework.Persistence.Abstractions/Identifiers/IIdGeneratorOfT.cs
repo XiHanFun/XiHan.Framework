@@ -6,15 +6,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 
 /// <summary>
-/// 标识生成器。
+/// 标识生成器
 /// </summary>
-/// <typeparam name="TKey">标识类型。</typeparam>
+/// <typeparam name="TKey">标识类型</typeparam>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IIdGenerator<out TKey>
     where TKey : notnull
 {
     /// <summary>
-    /// 生成一个新标识。
+    /// 生成一个新标识
     /// </summary>
     TKey NewId();
 }

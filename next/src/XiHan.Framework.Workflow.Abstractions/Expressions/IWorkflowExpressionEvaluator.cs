@@ -7,37 +7,37 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 表达式求值器。
+/// 表达式求值器
 /// </summary>
 /// <remarks>
-/// 条件、属性表达式与 <c>{{ 表达式 }}</c> 模板。语法或求值失败 → <see cref="WorkflowErrors.ExpressionInvalid"/>。
+/// 条件、属性表达式与 <c>{{ 表达式 }}</c> 模板。语法或求值失败 → <see cref="WorkflowErrors.ExpressionInvalid"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowExpressionEvaluator
 {
     /// <summary>
-    /// 校验语法。
+    /// 校验语法
     /// </summary>
     Result Validate(string expression);
 
     /// <summary>
-    /// 求值。
+    /// 求值
     /// </summary>
     /// <remarks>
-    /// 结果是 <see langword="null"/>（字面量 <c>null</c>、缺少的成员或键、值为 null 的变量）时是成功的无值，不是失败（ADR-0059）。
+    /// 结果是 <see langword="null"/>（字面量 <c>null</c>、缺少的成员或键、值为 null 的变量）时是成功的无值，不是失败（ADR-0059）
     /// </remarks>
     Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope);
 
     /// <summary>
-    /// 求布尔值。
+    /// 求布尔值
     /// </summary>
     /// <remarks>
-    /// 结果不是布尔（含无值）即失败。
+    /// 结果不是布尔（含无值）即失败
     /// </remarks>
     Result<bool> EvaluateCondition(string expression, ExpressionScope scope);
 
     /// <summary>
-    /// 渲染模板：<c>{{ 表达式 }}</c> 占位替换为求值结果的文本（无值为空串，容器为 JSON）。
+    /// 渲染模板：<c>{{ 表达式 }}</c> 占位替换为求值结果的文本（无值为空串，容器为 JSON）
     /// </summary>
     Result<string> Render(string source, ExpressionScope scope);
 }

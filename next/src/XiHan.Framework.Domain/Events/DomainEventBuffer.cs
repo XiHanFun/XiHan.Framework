@@ -6,33 +6,33 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Domain.Events;
 
 /// <summary>
-/// 领域事件的有界缓冲，供聚合以组合方式持有。
+/// 领域事件的有界缓冲，供聚合以组合方式持有
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class DomainEventBuffer
 {
     /// <summary>
-    /// 默认容量上限。
+    /// 默认容量上限
     /// </summary>
     public const int DefaultCapacity = 256;
 
     /// <summary>
-    /// 尚未派发的事件，按记录顺序保存。
+    /// 尚未派发的事件，按记录顺序保存
     /// </summary>
     private readonly List<IDomainEvent> _events = [];
 
     /// <summary>
-    /// 容量上限。
+    /// 容量上限
     /// </summary>
     /// <remarks>
-    /// 达到后 <see cref="Add"/> 拒绝继续记录。
+    /// 达到后 <see cref="Add"/> 拒绝继续记录
     /// </remarks>
     private readonly int _capacity;
 
     /// <summary>
-    /// 创建集合。
+    /// 创建集合
     /// </summary>
-    /// <param name="capacity">容量上限；超出时 <see cref="Add"/> 抛出 <see cref="InvalidOperationException"/>。</param>
+    /// <param name="capacity">容量上限；超出时 <see cref="Add"/> 抛出 <see cref="InvalidOperationException"/></param>
     public DomainEventBuffer(int capacity = DefaultCapacity)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
@@ -40,12 +40,12 @@ public sealed class DomainEventBuffer
     }
 
     /// <summary>
-    /// 尚未派发的事件。
+    /// 尚未派发的事件
     /// </summary>
     public IReadOnlyList<IDomainEvent> Items => _events;
 
     /// <summary>
-    /// 记录一个事件。
+    /// 记录一个事件
     /// </summary>
     public void Add(IDomainEvent domainEvent)
     {
@@ -60,7 +60,7 @@ public sealed class DomainEventBuffer
     }
 
     /// <summary>
-    /// 清空。
+    /// 清空
     /// </summary>
     public void Clear() => _events.Clear();
 }

@@ -10,32 +10,32 @@ using Xunit;
 namespace XiHan.Framework.Auditing.Conformance;
 
 /// <summary>
-/// <c>IAuditSink</c> + <see cref="IAuditTrail"/> 的一致性套件。
+/// <c>IAuditSink</c> + <see cref="IAuditTrail"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateFixtureAsync"/>，全部用例随之执行。每个夹具应是空的（或用 trace-id 前缀隔离的）存储。
+/// 继承并实现 <see cref="CreateFixtureAsync"/>，全部用例随之执行。每个夹具应是空的（或用 trace-id 前缀隔离的）存储
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class AuditTrailConformance
 {
     /// <summary>
-    /// 基准时刻。
+    /// 基准时刻
     /// </summary>
     private static readonly DateTimeOffset _epoch = new(2026, 10, 23, 12, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 创建夹具。
+    /// 创建夹具
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次。
+    /// 每个用例调用一次
     /// </remarks>
     protected abstract Task<AuditTrailFixture> CreateFixtureAsync();
 
     /// <summary>
-    /// 用例 1：写入后按写入顺序读回。
+    /// 用例 1：写入后按写入顺序读回
     /// </summary>
     /// <remarks>
-    /// 字段完整往返（失败结果保留错误码，细节按文本比较）。
+    /// 字段完整往返（失败结果保留错误码，细节按文本比较）
     /// </remarks>
     [Fact]
     public async Task Query_ReturnsEventsInWriteOrder_WithAllFields()
@@ -59,10 +59,10 @@ public abstract class AuditTrailConformance
     }
 
     /// <summary>
-    /// 用例 2：各过滤项取交集。
+    /// 用例 2：各过滤项取交集
     /// </summary>
     /// <remarks>
-    /// 没有匹配时返回空页。
+    /// 没有匹配时返回空页
     /// </remarks>
     [Fact]
     public async Task Query_FiltersIntersect()
@@ -88,10 +88,10 @@ public abstract class AuditTrailConformance
     }
 
     /// <summary>
-    /// 用例 3：分页与续页令牌。
+    /// 用例 3：分页与续页令牌
     /// </summary>
     /// <remarks>
-    /// 最后一页没有令牌。
+    /// 最后一页没有令牌
     /// </remarks>
     [Fact]
     public async Task Query_PagesWithContinuationToken()
@@ -121,7 +121,7 @@ public abstract class AuditTrailConformance
     }
 
     /// <summary>
-    /// 用例 4：页大小越界、起止颠倒与不可识别的续页令牌都是 VALIDATION。
+    /// 用例 4：页大小越界、起止颠倒与不可识别的续页令牌都是 VALIDATION
     /// </summary>
     [Fact]
     public async Task Query_InvalidQueries_AreValidationFailures()
@@ -140,12 +140,12 @@ public abstract class AuditTrailConformance
     }
 
     /// <summary>
-    /// 套件内唯一的 trace-id（32 位十六进制）。
+    /// 套件内唯一的 trace-id（32 位十六进制）
     /// </summary>
     private static string Trace() => Guid.NewGuid().ToString("N");
 
     /// <summary>
-    /// 基准时刻起第 <paramref name="minute"/> 分钟的事件。
+    /// 基准时刻起第 <paramref name="minute"/> 分钟的事件
     /// </summary>
     private static AuditEvent Event(string trace, int minute, string action, string? principal = null, string? tenant = null, string? resource = null, string? failure = null, IReadOnlyDictionary<string, object?>? details = null)
         => new(_epoch.AddMinutes(minute), action, failure is null ? Result.Success() : new Error(failure, "conformance.failed"), trace)

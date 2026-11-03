@@ -6,26 +6,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 
 /// <summary>
-/// 用户任务的内置结果。
+/// 用户任务的内置结果
 /// </summary>
 /// <remarks>
-/// 自定义结果也允许（须在节点的 <c>AllowedOutcomes</c> 里）。
+/// 自定义结果也允许（须在节点的 <c>AllowedOutcomes</c> 里）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class UserTaskOutcomes
 {
     /// <summary>
-    /// 通过。
+    /// 通过
     /// </summary>
     public const string Approved = "approved";
 
     /// <summary>
-    /// 拒绝。
+    /// 拒绝
     /// </summary>
     public const string Rejected = "rejected";
 
     /// <summary>
-    /// 超时。
+    /// 超时
     /// </summary>
     public const string Timeout = "timeout";
 }

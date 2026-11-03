@@ -17,36 +17,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli;
 
 /// <summary>
-/// 组装工具的服务与命令并执行一条命令行。
+/// 组装工具的服务与命令并执行一条命令行
 /// </summary>
 /// <remarks>
-/// 工具不是 XiHan 应用：没有能力图谱与管道，只借用命令行宿主的解析、帮助、失败输出与退出码。
+/// 工具不是 XiHan 应用：没有能力图谱与管道，只借用命令行宿主的解析、帮助、失败输出与退出码
 /// </remarks>
 internal static class CliHost
 {
     /// <summary>
-    /// 执行。
+    /// 执行
     /// </summary>
     public static ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, CancellationToken cancellationToken)
         => RunAsync(args, output, error, new ProcessLauncher(), cancellationToken);
 
     /// <summary>
-    /// 以指定的子进程启动器执行（测试用）。
+    /// 以指定的子进程启动器执行（测试用）
     /// </summary>
     public static ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, CancellationToken cancellationToken)
         => RunAsync(args, output, error, launcher, MigrationRuleSets.All, cancellationToken);
 
     /// <summary>
-    /// 以指定的子进程启动器与迁移规则集执行（测试用）。
+    /// 以指定的子进程启动器与迁移规则集执行（测试用）
     /// </summary>
     public static ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, IReadOnlyList<MigrationRuleSet> migrationRuleSets, CancellationToken cancellationToken)
         => RunAsync(args, output, error, launcher, migrationRuleSets, null, cancellationToken);
 
     /// <summary>
-    /// 以指定的子进程启动器、迁移规则集与 <c>mcp</c> 的输入执行（测试用）。
+    /// 以指定的子进程启动器、迁移规则集与 <c>mcp</c> 的输入执行（测试用）
     /// </summary>
     /// <remarks>
-    /// <paramref name="input"/> 为空时 <c>mcp</c> 以 UTF-8 读标准输入。
+    /// <paramref name="input"/> 为空时 <c>mcp</c> 以 UTF-8 读标准输入
     /// </remarks>
     public static async ValueTask<int> RunAsync(IReadOnlyList<string> args, TextWriter output, TextWriter error, IProcessLauncher launcher, IReadOnlyList<MigrationRuleSet> migrationRuleSets, TextReader? input, CancellationToken cancellationToken)
     {

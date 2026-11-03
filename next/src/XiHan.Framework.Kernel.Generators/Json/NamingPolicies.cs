@@ -6,12 +6,12 @@ using System.Text;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 属性命名策略的实现，与 System.Text.Json 的内置策略一致。
+/// 属性命名策略的实现，与 System.Text.Json 的内置策略一致
 /// </summary>
 internal static class NamingPolicies
 {
     /// <summary>
-    /// 按策略转换属性名。
+    /// 按策略转换属性名
     /// </summary>
     public static string Apply(JsonNamingPolicyKind policy, string name)
         => policy switch
@@ -25,7 +25,7 @@ internal static class NamingPolicies
         };
 
     /// <summary>
-    /// camelCase：连续的前导大写字母一起转小写（<c>IOStream</c> → <c>ioStream</c>），与 STJ 一致。
+    /// camelCase：连续的前导大写字母一起转小写（<c>IOStream</c> → <c>ioStream</c>），与 STJ 一致
     /// </summary>
     private static string CamelCase(string name)
     {
@@ -55,10 +55,10 @@ internal static class NamingPolicies
     }
 
     /// <summary>
-    /// 按单词边界插入分隔符。
+    /// 按单词边界插入分隔符
     /// </summary>
     /// <remarks>
-    /// 小写后接大写、大写后接"大写+小写"、字母与数字之间都算边界。
+    /// 小写后接大写、大写后接"大写+小写"、字母与数字之间都算边界
     /// </remarks>
     private static string Separate(string name, char separator, bool upper)
     {
@@ -78,7 +78,7 @@ internal static class NamingPolicies
     }
 
     /// <summary>
-    /// 位置 <paramref name="i"/> 之前是否是单词边界。
+    /// 位置 <paramref name="i"/> 之前是否是单词边界
     /// </summary>
     private static bool IsBoundary(string name, int i)
     {

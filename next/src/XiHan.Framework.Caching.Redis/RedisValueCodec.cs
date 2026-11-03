@@ -6,28 +6,28 @@ using System.Buffers.Binary;
 namespace XiHan.Framework.Caching.Redis;
 
 /// <summary>
-/// 值的线上编码。
+/// 值的线上编码
 /// </summary>
 /// <remarks>
-/// 1 字节头（0 绝对、1 滑动），滑动时跟 8 字节窗口毫秒数（小端），其后是载荷。
+/// 1 字节头（0 绝对、1 滑动），滑动时跟 8 字节窗口毫秒数（小端），其后是载荷
 /// </remarks>
 internal static class RedisValueCodec
 {
     /// <summary>
-    /// 头部标记：绝对过期，后面直接是载荷。
+    /// 头部标记：绝对过期，后面直接是载荷
     /// </summary>
     private const byte Absolute = 0;
 
     /// <summary>
-    /// 头部标记：滑动过期，后面先是 8 字节窗口毫秒数，再是载荷。
+    /// 头部标记：滑动过期，后面先是 8 字节窗口毫秒数，再是载荷
     /// </summary>
     private const byte Sliding = 1;
 
     /// <summary>
-    /// 编码。
+    /// 编码
     /// </summary>
     /// <remarks>
-    /// 给载荷加上头部；<paramref name="sliding"/> 不为 <see langword="null"/> 时一并写入窗口。
+    /// 给载荷加上头部；<paramref name="sliding"/> 不为 <see langword="null"/> 时一并写入窗口
     /// </remarks>
     public static byte[] Encode(ReadOnlyMemory<byte> payload, TimeSpan? sliding)
     {
@@ -47,10 +47,10 @@ internal static class RedisValueCodec
     }
 
     /// <summary>
-    /// 只看头部：头部字节数与滑动窗口。
+    /// 只看头部：头部字节数与滑动窗口
     /// </summary>
     /// <remarks>
-    /// <paramref name="head"/> 至少是值的前 9 个字节（值更短时是整个值）；不是本 Provider 写入的格式抛出 <see cref="InvalidOperationException"/>。
+    /// <paramref name="head"/> 至少是值的前 9 个字节（值更短时是整个值）；不是本 Provider 写入的格式抛出 <see cref="InvalidOperationException"/>
     /// </remarks>
     public static (int HeaderLength, TimeSpan? Sliding) Header(byte[] head)
     {
@@ -64,10 +64,10 @@ internal static class RedisValueCodec
     }
 
     /// <summary>
-    /// 解码。
+    /// 解码
     /// </summary>
     /// <remarks>
-    /// 按头部拆出载荷与滑动窗口；不是本 Provider 写入的格式抛出 <see cref="InvalidOperationException"/>。
+    /// 按头部拆出载荷与滑动窗口；不是本 Provider 写入的格式抛出 <see cref="InvalidOperationException"/>
     /// </remarks>
     public static (ReadOnlyMemory<byte> Payload, TimeSpan? Sliding) Decode(byte[] encoded)
     {

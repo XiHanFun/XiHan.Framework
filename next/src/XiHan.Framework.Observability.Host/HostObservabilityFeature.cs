@@ -12,16 +12,16 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Observability.Host;
 
 /// <summary>
-/// 运行信息的能力包入口。
+/// 运行信息的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>observability.host@1</c>：被选中时注册单例 <see cref="IHostMonitor"/>，启动时同步采第一次样并起采样循环，停止时结束循环。选项见 <see cref="HostObservabilityOptions"/>。
+/// 提供 <c>observability.host@1</c>：被选中时注册单例 <see cref="IHostMonitor"/>，启动时同步采第一次样并起采样循环，停止时结束循环。选项见 <see cref="HostObservabilityOptions"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HostObservabilityFeature : IHostedFeature
 {
     /// <summary>
-    /// 启动后的采样器。
+    /// 启动后的采样器
     /// </summary>
     private HostSampler? _sampler;
 

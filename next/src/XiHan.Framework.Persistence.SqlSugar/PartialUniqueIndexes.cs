@@ -11,44 +11,44 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// 软删除实体的部分唯一索引：只约束未删除的行（<see cref="EntityIndex.ExcludesDeleted"/>）。
+/// 软删除实体的部分唯一索引：只约束未删除的行（<see cref="EntityIndex.ExcludesDeleted"/>）
 /// </summary>
 /// <remarks>
-/// SqlSugar 的索引入口（<see cref="SugarIndexAttribute"/>、<c>DbMaintenance.CreateIndex</c>）写不出条件，部分唯一索引不交给它，由这里在建表之后按数据库方言建出。只支持 PostgreSQL、SQLite、SQL Server；其余数据库没有部分索引（MySQL 系、Oracle 系、达梦等）或没有验证过（源自 PostgreSQL 的人大金仓、openGauss、GaussDB、瀚高、Vastbase、PolarDB 等），一律按不支持处理、启动失败，不退化成普通唯一索引。
+/// SqlSugar 的索引入口（<see cref="SugarIndexAttribute"/>、<c>DbMaintenance.CreateIndex</c>）写不出条件，部分唯一索引不交给它，由这里在建表之后按数据库方言建出。只支持 PostgreSQL、SQLite、SQL Server；其余数据库没有部分索引（MySQL 系、Oracle 系、达梦等）或没有验证过（源自 PostgreSQL 的人大金仓、openGauss、GaussDB、瀚高、Vastbase、PolarDB 等），一律按不支持处理、启动失败，不退化成普通唯一索引
 /// </remarks>
 internal static class PartialUniqueIndexes
 {
     /// <summary>
-    /// 支持部分唯一索引、并在真实库上验证过的数据库类型。
+    /// 支持部分唯一索引、并在真实库上验证过的数据库类型
     /// </summary>
     private static readonly DbType[] _supported = [DbType.PostgreSQL, DbType.Sqlite, DbType.SqlServer];
 
     /// <summary>
-    /// 数据库类型是否支持部分唯一索引。
+    /// 数据库类型是否支持部分唯一索引
     /// </summary>
     public static bool IsSupported(DbType dbType) => Array.IndexOf(_supported, dbType) >= 0;
 
     /// <summary>
-    /// 实体有没有部分唯一索引：软删除实体声明了唯一索引、列里没有删除标记。
+    /// 实体有没有部分唯一索引：软删除实体声明了唯一索引、列里没有删除标记
     /// </summary>
     /// <remarks>
-    /// 只看声明，不取实体信息、不推名字，启动核对时不必为每个实体建映射。
+    /// 只看声明，不取实体信息、不推名字，启动核对时不必为每个实体建映射
     /// </remarks>
     public static bool Declares(Type entityType)
         => typeof(ISoftDeletable).IsAssignableFrom(entityType)
             && entityType.GetCustomAttributes<EntityIndexAttribute>(inherit: true).Any(static index => index.IsUnique && !index.Properties.Contains(nameof(ISoftDeletable.IsDeleted), StringComparer.Ordinal));
 
     /// <summary>
-    /// 实体的部分唯一索引，按名字排序。
+    /// 实体的部分唯一索引，按名字排序
     /// </summary>
     /// <remarks>
-    /// <paramref name="table"/> 是映射出的表名，参与索引名。
+    /// <paramref name="table"/> 是映射出的表名，参与索引名
     /// </remarks>
     public static IReadOnlyList<EntityIndex> Of(Type entityType, string table)
         => [.. EntityIndexes.Resolve(entityType, table).Where(static index => index.ExcludesDeleted)];
 
     /// <summary>
-    /// 数据库不支持部分唯一索引时的启动错误，一次列出全部实体。
+    /// 数据库不支持部分唯一索引时的启动错误，一次列出全部实体
     /// </summary>
     public static FrameworkException NotSupported(IEnumerable<(Type EntityType, DbType DbType)> offenders)
     {
@@ -59,12 +59,12 @@ internal static class PartialUniqueIndexes
     }
 
     /// <summary>
-    /// 在连接上补建实体的部分唯一索引。
+    /// 在连接上补建实体的部分唯一索引
     /// </summary>
     /// <remarks>
-    /// 已有同名的索引不改、不删。
+    /// 已有同名的索引不改、不删
     /// </remarks>
-    /// <exception cref="FrameworkException">数据库类型不支持部分唯一索引（<see cref="PersistenceErrors.NotSupported"/>）。</exception>
+    /// <exception cref="FrameworkException">数据库类型不支持部分唯一索引（<see cref="PersistenceErrors.NotSupported"/>）</exception>
     public static void Create(ISqlSugarClient client, Type entityType)
     {
         var entity = client.EntityMaintenance.GetEntityInfo(entityType);
@@ -89,10 +89,10 @@ internal static class PartialUniqueIndexes
     }
 
     /// <summary>
-    /// 建一个部分唯一索引的语句，已有同名索引时什么也不做。
+    /// 建一个部分唯一索引的语句，已有同名索引时什么也不做
     /// </summary>
     /// <remarks>
-    /// PostgreSQL、SQLite 用 <c>CREATE UNIQUE INDEX IF NOT EXISTS … WHERE</c>，PostgreSQL 上名字转小写（与 SqlSugar 建出的其他索引一致，PostgreSQL 把不加引号的名字折成小写）；SQL Server 先查 <c>sys.indexes</c>，筛选索引的条件里给可空的键列另加 <c>IS NOT NULL</c>（SQL Server 的唯一索引把 NULL 当作相等，与 EF Core 在 SQL Server 上的缺省一致）。
+    /// PostgreSQL、SQLite 用 <c>CREATE UNIQUE INDEX IF NOT EXISTS … WHERE</c>，PostgreSQL 上名字转小写（与 SqlSugar 建出的其他索引一致，PostgreSQL 把不加引号的名字折成小写）；SQL Server 先查 <c>sys.indexes</c>，筛选索引的条件里给可空的键列另加 <c>IS NOT NULL</c>（SQL Server 的唯一索引把 NULL 当作相等，与 EF Core 在 SQL Server 上的缺省一致）
     /// </remarks>
     internal static string Sql(DbType dbType, ISqlBuilder builder, EntityInfo entity, EntityIndex index)
     {
@@ -121,14 +121,14 @@ internal static class PartialUniqueIndexes
     }
 
     /// <summary>
-    /// 属性对应的列。
+    /// 属性对应的列
     /// </summary>
     private static EntityColumnInfo ColumnOf(EntityInfo entity, string property)
         => entity.Columns.Find(column => string.Equals(column.PropertyName, property, StringComparison.Ordinal) && !column.IsIgnore)
             ?? throw new InvalidOperationException($"Entity '{entity.Type.FullName}' has no mapped column for property '{property}' of index.");
 
     /// <summary>
-    /// 放进 SQL 字符串字面量的文本：单引号成对。
+    /// 放进 SQL 字符串字面量的文本：单引号成对
     /// </summary>
     private static string Literal(string text) => text.Replace("'", "''", StringComparison.Ordinal);
 }

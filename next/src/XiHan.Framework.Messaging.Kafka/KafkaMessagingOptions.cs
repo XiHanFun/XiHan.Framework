@@ -9,29 +9,29 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Kafka;
 
 /// <summary>
-/// Kafka Provider 的选项。
+/// Kafka Provider 的选项
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 覆盖同名键）。
+/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 覆盖同名键）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KafkaMessagingOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Messaging:Kafka";
 
     /// <summary>
-    /// 绑定 <c>stream</c> 里覆盖 <see cref="Properties"/> 同名键的属性。
+    /// 绑定 <c>stream</c> 里覆盖 <see cref="Properties"/> 同名键的属性
     /// </summary>
     /// <remarks>
-    /// 只认 SASL 的凭据与用法（RFC-0016「资源绑定与配置节」）；绑定目录里的其余文件（<c>type</c>、<c>provider</c>、<c>host</c> 等）不是 librdkafka 的配置项，透传会让客户端拒绝启动。
+    /// 只认 SASL 的凭据与用法（RFC-0016「资源绑定与配置节」）；绑定目录里的其余文件（<c>type</c>、<c>provider</c>、<c>host</c> 等）不是 librdkafka 的配置项，透传会让客户端拒绝启动
     /// </remarks>
     private static readonly string[] _boundProperties = ["security.protocol", "sasl.mechanism", "sasl.username", "sasl.password"];
 
     /// <summary>
-    /// 引导地址，逗号分隔的 <c>host:port</c>。
+    /// 引导地址，逗号分隔的 <c>host:port</c>
     /// </summary>
     public required string BootstrapServers
     {
@@ -40,10 +40,10 @@ public sealed record KafkaMessagingOptions
     }
 
     /// <summary>
-    /// 消费组。
+    /// 消费组
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan</c>。同一消费组的实例分摊分区。
+    /// 默认 <c>xihan</c>。同一消费组的实例分摊分区
     /// </remarks>
     public string GroupId
     {
@@ -52,26 +52,26 @@ public sealed record KafkaMessagingOptions
     } = "xihan";
 
     /// <summary>
-    /// 主题前缀。
+    /// 主题前缀
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan.</c>。
+    /// 默认 <c>xihan.</c>
     /// </remarks>
     public string TopicPrefix { get; init; } = "xihan.";
 
     /// <summary>
-    /// 透传给 librdkafka 的配置（生产者与消费者共用）。
+    /// 透传给 librdkafka 的配置（生产者与消费者共用）
     /// </summary>
     /// <remarks>
-    /// 如 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>ssl.ca.location</c>。
+    /// 如 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>ssl.ca.location</c>
     /// </remarks>
     public IReadOnlyDictionary<string, string> Properties { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 健康项 <c>messaging.kafka.connection</c> 的重探间隔（也是单次探测的超时）。
+    /// 健康项 <c>messaging.kafka.connection</c> 的重探间隔（也是单次探测的超时）
     /// </summary>
     /// <remarks>
-    /// 默认 15 秒。
+    /// 默认 15 秒
     /// </remarks>
     public TimeSpan HealthProbeInterval
     {
@@ -80,10 +80,10 @@ public sealed record KafkaMessagingOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 投递没有完成时重新投递前的等待。
+    /// 投递没有完成时重新投递前的等待
     /// </summary>
     /// <remarks>
-    /// 默认 5 秒。死信发布没有得到确认（或投递因代理不可达等异常没有完成）时，消费者不提交位点、回退到这条消息，等这么久再重新投递，期间该分区不往后读。
+    /// 默认 5 秒。死信发布没有得到确认（或投递因代理不可达等异常没有完成）时，消费者不提交位点、回退到这条消息，等这么久再重新投递，期间该分区不往后读
     /// </remarks>
     public TimeSpan RedeliveryDelay
     {
@@ -92,10 +92,10 @@ public sealed record KafkaMessagingOptions
     } = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// 从配置与绑定读取。
+    /// 从配置与绑定读取
     /// </summary>
     /// <remarks>
-    /// <c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先于配置，RFC-0016）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 各自覆盖 <c>Properties</c> 里的同名键，空白的不算给出。
+    /// <c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先于配置，RFC-0016）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 各自覆盖 <c>Properties</c> 里的同名键，空白的不算给出
     /// </remarks>
     public static KafkaMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {

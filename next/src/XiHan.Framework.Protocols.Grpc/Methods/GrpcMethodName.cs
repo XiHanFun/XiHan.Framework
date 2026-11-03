@@ -7,19 +7,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Methods;
 
 /// <summary>
-/// 一个 gRPC 方法的名字。
+/// 一个 gRPC 方法的名字
 /// </summary>
 /// <remarks>
-/// 服务名与方法名，都是 protobuf 标识符（字母、数字、下划线，不以数字开头）。文本形式 <c>Service/Method</c>；完整路径 <c>/{package}.{Service}/{Method}</c>。
+/// 服务名与方法名，都是 protobuf 标识符（字母、数字、下划线，不以数字开头）。文本形式 <c>Service/Method</c>；完整路径 <c>/{package}.{Service}/{Method}</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record GrpcMethodName
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// 名字不合法时抛出 <see cref="ArgumentException"/>。
+    /// 名字不合法时抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public GrpcMethodName(string service, string method)
     {
@@ -28,17 +28,17 @@ public sealed partial record GrpcMethodName
     }
 
     /// <summary>
-    /// 服务名（如 <c>Orders</c>）。
+    /// 服务名（如 <c>Orders</c>）
     /// </summary>
     public string Service { get; }
 
     /// <summary>
-    /// 方法名（如 <c>Create</c>）。
+    /// 方法名（如 <c>Create</c>）
     /// </summary>
     public string Method { get; }
 
     /// <summary>
-    /// 解析 <c>Service/Method</c>。
+    /// 解析 <c>Service/Method</c>
     /// </summary>
     public static GrpcMethodName Parse(string text)
     {
@@ -53,15 +53,15 @@ public sealed partial record GrpcMethodName
     }
 
     /// <summary>
-    /// 带包名的完整服务名。
+    /// 带包名的完整服务名
     /// </summary>
     /// <remarks>
-    /// <c>{package}.{Service}</c>；没有包名时就是服务名。
+    /// <c>{package}.{Service}</c>；没有包名时就是服务名
     /// </remarks>
     public string FullServiceName(string? package) => string.IsNullOrEmpty(package) ? Service : package + "." + Service;
 
     /// <summary>
-    /// HTTP/2 路径：<c>/{package}.{Service}/{Method}</c>。
+    /// HTTP/2 路径：<c>/{package}.{Service}/{Method}</c>
     /// </summary>
     public string PathFor(string? package) => "/" + FullServiceName(package) + "/" + Method;
 
@@ -69,7 +69,7 @@ public sealed partial record GrpcMethodName
     public override string ToString() => Service + "/" + Method;
 
     /// <summary>
-    /// 校验 protobuf 标识符。
+    /// 校验 protobuf 标识符
     /// </summary>
     private static string ValidateIdentifier(string value, string paramName)
     {
@@ -83,7 +83,7 @@ public sealed partial record GrpcMethodName
     }
 
     /// <summary>
-    /// protobuf 标识符的匹配。
+    /// protobuf 标识符的匹配
     /// </summary>
     [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*$")]
     private static partial Regex Identifier();

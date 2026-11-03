@@ -8,16 +8,16 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace XiHan.Framework.Kernel.Analyzers;
 
 /// <summary>
-/// XH0001 / XH0002 / XH0004：框架包中公开类型的稳定性标注与命名。
+/// XH0001 / XH0002 / XH0004：框架包中公开类型的稳定性标注与命名
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class PublicTypeAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>
-    /// 禁用的类型名后缀。
+    /// 禁用的类型名后缀
     /// </summary>
     /// <remarks>
-    /// 与 <c>Default</c> 前缀一起构成 XH0004 的词表。
+    /// 与 <c>Default</c> 前缀一起构成 XH0004 的词表
     /// </remarks>
     private static readonly ImmutableArray<string> _forbiddenSuffixes = ImmutableArray.Create("Manager", "Helper", "Utils", "Util", "Common", "Shared", "Impl", "Base");
 
@@ -45,10 +45,10 @@ public sealed class PublicTypeAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// 对单个命名类型执行 XH0001、XH0002 与 XH0004。
+    /// 对单个命名类型执行 XH0001、XH0002 与 XH0004
     /// </summary>
     /// <remarks>
-    /// 只看源码里声明的有效公开类型。
+    /// 只看源码里声明的有效公开类型
     /// </remarks>
     private static void Analyze(SymbolAnalysisContext context, INamedTypeSymbol? attribute)
     {

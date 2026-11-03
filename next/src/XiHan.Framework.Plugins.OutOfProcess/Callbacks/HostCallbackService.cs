@@ -19,10 +19,10 @@ using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 
 /// <summary>
-/// 宿主回调服务 <c>xihan.plugin.v1.Host</c>。
+/// 宿主回调服务 <c>xihan.plugin.v1.Host</c>
 /// </summary>
 /// <remarks>
-/// 以插件身份经完整管道调用操作、经消息发布器发布消息；所需权限要在清单里声明并且已被宿主授予（<c>spec/plugin/invocation.md</c> §5）。
+/// 以插件身份经完整管道调用操作、经消息发布器发布消息；所需权限要在清单里声明并且已被宿主授予（<c>spec/plugin/invocation.md</c> §5）
 /// </remarks>
 internal sealed class HostCallbackService(HostServices host) : Host.HostBase
 {
@@ -71,7 +71,7 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
     }
 
     /// <summary>
-    /// 拦截器放进调用状态的运行时。
+    /// 拦截器放进调用状态的运行时
     /// </summary>
     private static PluginRuntime RuntimeOf(ServerCallContext context)
         => context.UserState.TryGetValue(SessionInterceptor.RuntimeKey, out var value) && value is PluginRuntime runtime
@@ -79,10 +79,10 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
             : throw new RpcException(new Grpc.Core.Status(StatusCode.Unauthenticated, "The plugin session token is missing or invalid."), new Metadata { { PluginProtocol.ErrorCodeTrailer, PluginErrors.CallbackDenied } });
 
     /// <summary>
-    /// 权限未在清单声明或未授予即以 PermissionDenied 结束调用，尾部元数据带错误码。
+    /// 权限未在清单声明或未授予即以 PermissionDenied 结束调用，尾部元数据带错误码
     /// </summary>
     /// <remarks>
-    /// 授予多于声明的部分不放行（RFC-0017）。
+    /// 授予多于声明的部分不放行（RFC-0017）
     /// </remarks>
     private static void Require(PluginRuntime runtime, string permission)
     {

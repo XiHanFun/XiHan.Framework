@@ -10,25 +10,25 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions;
 
 /// <summary>
-/// 工作流定义名。
+/// 工作流定义名
 /// </summary>
 /// <remarks>
-/// <c>^[a-z0-9][a-z0-9._-]{0,127}$</c>（与主题文法相同）；一个名字下有多个版本。
+/// <c>^[a-z0-9][a-z0-9._-]{0,127}$</c>（与主题文法相同）；一个名字下有多个版本
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [JsonConverter(typeof(WorkflowNameJsonConverter))]
 public readonly partial record struct WorkflowName
 {
     /// <summary>
-    /// 最大长度。
+    /// 最大长度
     /// </summary>
     public const int MaxLength = 128;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public WorkflowName(string value)
     {
@@ -36,25 +36,25 @@ public readonly partial record struct WorkflowName
     }
 
     /// <summary>
-    /// 名字文本。
+    /// 名字文本
     /// </summary>
     public string Value { get; }
 
     /// <summary>
-    /// 从字符串隐式创建。
+    /// 从字符串隐式创建
     /// </summary>
     public static implicit operator WorkflowName(string value) => new(value);
 
     /// <summary>
-    /// 是否合法。
+    /// 是否合法
     /// </summary>
     public static bool IsValid([NotNullWhen(true)] string? value) => value is not null && Pattern().IsMatch(value);
 
     /// <summary>
-    /// 校验并返回。
+    /// 校验并返回
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static string Validate(string value)
     {
@@ -68,7 +68,7 @@ public readonly partial record struct WorkflowName
     public override string ToString() => Value;
 
     /// <summary>
-    /// 名字的匹配。
+    /// 名字的匹配
     /// </summary>
     [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,127}$")]
     private static partial Regex Pattern();

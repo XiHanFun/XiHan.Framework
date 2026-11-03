@@ -17,57 +17,57 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 
 /// <summary>
-/// 用户任务服务。
+/// 用户任务服务
 /// </summary>
 /// <remarks>
-/// 待办按书签查、完成经引擎消费书签、转办、加签、认领与释放在实例锁内改书签与节点状态、退回经引擎跳转、催办只发事件。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区。
+/// 待办按书签查、完成经引擎消费书签、转办、加签、认领与释放在实例锁内改书签与节点状态、退回经引擎跳转、催办只发事件。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowTaskService : IWorkflowTaskService
 {
     /// <summary>
-    /// 退回写进节点历史的结果。
+    /// 退回写进节点历史的结果
     /// </summary>
     private const string ReturnedOutcome = "returned";
 
     /// <summary>
-    /// 引擎。
+    /// 引擎
     /// </summary>
     private readonly IWorkflowEngine _engine;
 
     /// <summary>
-    /// 定义存储。
+    /// 定义存储
     /// </summary>
     private readonly IWorkflowDefinitionStore _definitions;
 
     /// <summary>
-    /// 实例存储。
+    /// 实例存储
     /// </summary>
     private readonly IWorkflowInstanceStore _instances;
 
     /// <summary>
-    /// 书签存储。
+    /// 书签存储
     /// </summary>
     private readonly IWorkflowBookmarkStore _bookmarks;
 
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 事件发布。
+    /// 事件发布
     /// </summary>
     private readonly WorkflowEventPublisher _events;
 
     /// <summary>
-    /// 执行范围：事务的加入或自开、调用方租户、实例锁的持有。
+    /// 执行范围：事务的加入或自开、调用方租户、实例锁的持有
     /// </summary>
     private readonly WorkflowScope _scope;
 
     /// <summary>
-    /// 创建（作用域服务）。
+    /// 创建（作用域服务）
     /// </summary>
     public WorkflowTaskService(IWorkflowEngine engine, IWorkflowDefinitionStore definitions, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
     {
@@ -83,7 +83,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 调用方的分区：调用的租户，空为平台。
+    /// 调用方的分区：调用的租户，空为平台
     /// </summary>
     private string? Tenant => _scope.TenantId;
 
@@ -119,10 +119,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 按条件查询待办（在事务里）。
+    /// 按条件查询待办（在事务里）
     /// </summary>
     /// <remarks>
-    /// 过滤、排序与分页都下推到存储；这里只校验条件、把书签换成任务视图。
+    /// 过滤、排序与分页都下推到存储；这里只校验条件、把书签换成任务视图
     /// </remarks>
     private async ValueTask<Result<UserTaskPage>> QueryCoreAsync(UserTaskQuery query, CancellationToken cancellationToken)
     {
@@ -213,7 +213,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 按入参顺序逐项执行，逐项结果。
+    /// 按入参顺序逐项执行，逐项结果
     /// </summary>
     private static async ValueTask<IReadOnlyList<TResult>> EachAsync<TItem, TResult>(IReadOnlyList<TItem> items, Func<TItem, CancellationToken, ValueTask<TResult>> action, CancellationToken cancellationToken)
     {
@@ -228,7 +228,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 完成一个任务：校验操作者与结果后经引擎消费书签，再发任务完成事件。
+    /// 完成一个任务：校验操作者与结果后经引擎消费书签，再发任务完成事件
     /// </summary>
     private async ValueTask<Result<WorkflowInstance>> CompleteOneAsync(UserTaskCompletion completion, CancellationToken cancellationToken)
     {
@@ -265,7 +265,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 转办一个任务：在实例锁内把书签的键换成目标并更新节点状态里的指派人。
+    /// 转办一个任务：在实例锁内把书签的键换成目标并更新节点状态里的指派人
     /// </summary>
     private async ValueTask<Result> TransferOneAsync(UserTaskTransfer transfer, CancellationToken cancellationToken)
     {
@@ -327,10 +327,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 加签。
+    /// 加签
     /// </summary>
     /// <remarks>
-    /// 在实例锁内追加指派人；Any / All 立即建书签（已认领的任务只有认领人还持有书签，所以只有认领人能加签），Sequential 排到队尾。
+    /// 在实例锁内追加指派人；Any / All 立即建书签（已认领的任务只有认领人还持有书签，所以只有认领人能加签），Sequential 排到队尾
     /// </remarks>
     private async ValueTask<Result> AddOneAsync(UserTaskAddition addition, CancellationToken cancellationToken)
     {
@@ -379,10 +379,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 认领。
+    /// 认领
     /// </summary>
     /// <remarks>
-    /// 只对 <c>Any</c> 策略；在实例锁内记认领人、撤下其他指派人的书签、本人书签记 <c>claimedBy</c>。
+    /// 只对 <c>Any</c> 策略；在实例锁内记认领人、撤下其他指派人的书签、本人书签记 <c>claimedBy</c>
     /// </remarks>
     private async ValueTask<Result> ClaimOneAsync(UserTaskClaim claim, CancellationToken cancellationToken)
     {
@@ -443,10 +443,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 释放认领。
+    /// 释放认领
     /// </summary>
     /// <remarks>
-    /// 操作者必须是认领人；在实例锁内清认领人、按节点状态里的指派人为其他人重建书签。
+    /// 操作者必须是认领人；在实例锁内清认领人、按节点状态里的指派人为其他人重建书签
     /// </remarks>
     private async ValueTask<Result> ReleaseOneAsync(UserTaskRelease release, CancellationToken cancellationToken)
     {
@@ -497,10 +497,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 退回。
+    /// 退回
     /// </summary>
     /// <remarks>
-    /// 在实例锁内定目标并把 <c>returned</c> 记进节点历史，释放锁后经引擎跳转到目标节点，再发退回事件。
+    /// 在实例锁内定目标并把 <c>returned</c> 记进节点历史，释放锁后经引擎跳转到目标节点，再发退回事件
     /// </remarks>
     private async ValueTask<Result<WorkflowInstance>> ReturnOneAsync(UserTaskReturn request, CancellationToken cancellationToken)
     {
@@ -549,10 +549,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 催办。
+    /// 催办
     /// </summary>
     /// <remarks>
-    /// 任务存在且属于本租户、实例运行中即发布催办事件；不要求操作者是指派人。
+    /// 任务存在且属于本租户、实例运行中即发布催办事件；不要求操作者是指派人
     /// </remarks>
     private async ValueTask<Result> UrgeOneAsync(UserTaskUrge urge, CancellationToken cancellationToken)
     {
@@ -574,10 +574,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 退回目标。
+    /// 退回目标
     /// </summary>
     /// <remarks>
-    /// 给了就用给的；否则本节点实例之前最近完成的 <c>UserTask</c> 节点，再没有则 <c>Start</c> 的首条出边目标。
+    /// 给了就用给的；否则本节点实例之前最近完成的 <c>UserTask</c> 节点，再没有则 <c>Start</c> 的首条出边目标
     /// </remarks>
     private async ValueTask<Result<string>> ReturnTargetAsync(UserTaskReturn request, WorkflowBookmark bookmark, WorkflowNodeInstance current, WorkflowInstance instance, CancellationToken cancellationToken)
     {
@@ -634,7 +634,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 在实例锁内重读书签与节点实例后执行 <paramref name="action"/>。
+    /// 在实例锁内重读书签与节点实例后执行 <paramref name="action"/>
     /// </summary>
     private async ValueTask<Result> WithLockedTaskAsync(WorkflowBookmark peek, string actorId, Func<WorkflowBookmark, WorkflowNodeInstance, WorkflowInstance, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
@@ -675,7 +675,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 找实例并要求运行中：不存在 → <see cref="WorkflowErrors.InstanceNotFound"/>，不在运行中 → <see cref="WorkflowErrors.InstanceStatus"/>。
+    /// 找实例并要求运行中：不存在 → <see cref="WorkflowErrors.InstanceNotFound"/>，不在运行中 → <see cref="WorkflowErrors.InstanceStatus"/>
     /// </summary>
     private async ValueTask<Result<WorkflowInstance>> FindRunningInstanceAsync(string instanceId, CancellationToken cancellationToken)
     {
@@ -699,7 +699,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 找用户任务书签并校验操作者是它的指派人。
+    /// 找用户任务书签并校验操作者是它的指派人
     /// </summary>
     private async ValueTask<Result<WorkflowBookmark>> FindTaskBookmarkAsync(string taskId, string actorId, CancellationToken cancellationToken)
     {
@@ -719,10 +719,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 找调用方分区的用户任务书签。
+    /// 找调用方分区的用户任务书签
     /// </summary>
     /// <remarks>
-    /// 不存在、种类不对或在别的分区的都按不存在处理（不泄露别的租户的任务）。
+    /// 不存在、种类不对或在别的分区的都按不存在处理（不泄露别的租户的任务）
     /// </remarks>
     private async ValueTask<Result<WorkflowBookmark>> FindTenantTaskBookmarkAsync(string taskId, CancellationToken cancellationToken)
     {
@@ -746,7 +746,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 同一节点实例上其他指派人的用户任务书签。
+    /// 同一节点实例上其他指派人的用户任务书签
     /// </summary>
     private async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> OtherTaskBookmarksAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken)
     {
@@ -764,10 +764,10 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 任务所在节点允许的结果。
+    /// 任务所在节点允许的结果
     /// </summary>
     /// <remarks>
-    /// 缺省 <c>approved</c> / <c>rejected</c>。
+    /// 缺省 <c>approved</c> / <c>rejected</c>
     /// </remarks>
     private async ValueTask<Result<IReadOnlyList<string>>> AllowedOutcomesAsync(WorkflowBookmark bookmark, CancellationToken cancellationToken)
     {
@@ -798,7 +798,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 书签 → 任务视图：只保留实例运行中的（书签本来就只来自调用方的分区）。
+    /// 书签 → 任务视图：只保留实例运行中的（书签本来就只来自调用方的分区）
     /// </summary>
     private async ValueTask<Result<IReadOnlyList<UserTask>>> ToTasksAsync(IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
     {
@@ -828,7 +828,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 以同一节点实例、同样载荷给另一个指派人建书签（载荷不带认领人）。
+    /// 以同一节点实例、同样载荷给另一个指派人建书签（载荷不带认领人）
     /// </summary>
     private WorkflowBookmark CloneBookmark(WorkflowBookmark bookmark, string assignee)
     {
@@ -850,7 +850,7 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     }
 
     /// <summary>
-    /// 任务事件的数据。
+    /// 任务事件的数据
     /// </summary>
     private WorkflowEventData EventData(WorkflowInstance instance, WorkflowBookmark bookmark) => new()
     {
@@ -873,16 +873,16 @@ public sealed class WorkflowTaskService : IWorkflowTaskService
     };
 
     /// <summary>
-    /// 节点状态里的认领人。
+    /// 节点状态里的认领人
     /// </summary>
     /// <remarks>
-    /// 没有为空。
+    /// 没有为空
     /// </remarks>
     private static string? ClaimedBy(WorkflowNodeInstance nodeInstance)
         => nodeInstance.State.TryGetPropertyValue(UserTaskPayloadKeys.ClaimedBy, out var value) && value is JsonValue scalar ? WorkflowValues.AsString(scalar) : null;
 
     /// <summary>
-    /// 字符串数组。
+    /// 字符串数组
     /// </summary>
     private static JsonArray StringArray(IEnumerable<string> values) => new(values.Select(static value => (JsonNode?)JsonValue.Create(value)).ToArray());
 }

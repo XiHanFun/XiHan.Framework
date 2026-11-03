@@ -6,13 +6,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Domain.Entities;
 
 /// <summary>
-/// 修改时间：持久化子系统在更新时写入。
+/// 修改时间：持久化子系统在更新时写入
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IHasModificationTime
 {
     /// <summary>
-    /// 最近修改时间（UTC）。
+    /// 最近修改时间（UTC）
     /// </summary>
     DateTimeOffset? ModifiedAt { get; set; }
 }

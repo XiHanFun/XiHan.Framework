@@ -4,22 +4,22 @@
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 波次队列里一项工作的种类。
+/// 波次队列里一项工作的种类
 /// </summary>
 internal enum WorkItemKind
 {
     /// <summary>
-    /// 新执行一个节点。
+    /// 新执行一个节点
     /// </summary>
     Fresh = 0,
 
     /// <summary>
-    /// 从书签恢复节点。
+    /// 从书签恢复节点
     /// </summary>
     Resume = 1,
 
     /// <summary>
-    /// 重试故障节点。
+    /// 重试故障节点
     /// </summary>
     Retry = 2,
 }

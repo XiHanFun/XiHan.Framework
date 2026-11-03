@@ -9,10 +9,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Database.Trail;
 
 /// <summary>
-/// 一条审计记录。
+/// 一条审计记录
 /// </summary>
 /// <remarks>
-/// <c>AuditEvent</c> 的存储行，只追加——不软删除、无并发戳。租户只是普通列，不实现 <c>IMultiTenant</c>，写入与查询都不受当前调用租户影响。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;AuditRecord&gt;()</c> 后调用 <c>ApplyPersistenceConventions(Database)</c>，JSON 与消息列用长文本类型。索引：<c>(Sequence)</c> 供按写入序号排序与续页（不唯一：不同节点的序号只按时钟大致有序，可能相同）；<c>(Timestamp)</c> 供时间范围；<c>(TraceId)</c> 供按 trace-id 查找；<c>(TenantId, Sequence)</c> 供按租户的分页查询。
+/// <c>AuditEvent</c> 的存储行，只追加——不软删除、无并发戳。租户只是普通列，不实现 <c>IMultiTenant</c>，写入与查询都不受当前调用租户影响。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;AuditRecord&gt;()</c> 后调用 <c>ApplyPersistenceConventions(Database)</c>，JSON 与消息列用长文本类型。索引：<c>(Sequence)</c> 供按写入序号排序与续页（不唯一：不同节点的序号只按时钟大致有序，可能相同）；<c>(Timestamp)</c> 供时间范围；<c>(TraceId)</c> 供按 trace-id 查找；<c>(TenantId, Sequence)</c> 供按租户的分页查询
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [EntityIndex(nameof(Sequence))]
@@ -25,91 +25,91 @@ public sealed class AuditRecord : IEntity<Guid>
     public Guid Id { get; set; }
 
     /// <summary>
-    /// 写入序号。
+    /// 写入序号
     /// </summary>
     /// <remarks>
-    /// 查询按它升序，续页令牌就是它。同一进程内严格递增（上一个加一与时钟 UTC 刻度的较大者），不同节点之间只按时钟大致有序。
+    /// 查询按它升序，续页令牌就是它。同一进程内严格递增（上一个加一与时钟 UTC 刻度的较大者），不同节点之间只按时钟大致有序
     /// </remarks>
     public long Sequence { get; set; }
 
     /// <summary>
-    /// 事件发生时间（UTC）。
+    /// 事件发生时间（UTC）
     /// </summary>
     public DateTimeOffset Timestamp { get; set; }
 
     /// <summary>
-    /// 动作，例如 <c>orders.create</c>。
+    /// 动作，例如 <c>orders.create</c>
     /// </summary>
     [StringLength(256)]
     public string Action { get; set; } = string.Empty;
 
     /// <summary>
-    /// 调用是否成功。
+    /// 调用是否成功
     /// </summary>
     public bool Succeeded { get; set; }
 
     /// <summary>
-    /// 失败的错误码。
+    /// 失败的错误码
     /// </summary>
     [StringLength(64)]
     public string? ErrorCode { get; set; }
 
     /// <summary>
-    /// 失败的消息键。
+    /// 失败的消息键
     /// </summary>
     /// <remarks>
-    /// 字面错误（线上还原、异常转换）没有键。
+    /// 字面错误（线上还原、异常转换）没有键
     /// </remarks>
     [StringLength(256)]
     public string? ErrorMessageKey { get; set; }
 
     /// <summary>
-    /// 写入时按进程默认区域渲染的错误消息。
+    /// 写入时按进程默认区域渲染的错误消息
     /// </summary>
     /// <remarks>
-    /// 没有键的字面错误靠它还原。长文本列。
+    /// 没有键的字面错误靠它还原。长文本列
     /// </remarks>
     [LongText]
     public string? ErrorMessage { get; set; }
 
     /// <summary>
-    /// 错误细节（模板参数）的 JSON 对象文本。
+    /// 错误细节（模板参数）的 JSON 对象文本
     /// </summary>
     /// <remarks>
-    /// 长文本列。
+    /// 长文本列
     /// </remarks>
     [LongText]
     public string? ErrorDetailsJson { get; set; }
 
     /// <summary>
-    /// 所属调用的 trace-id。
+    /// 所属调用的 trace-id
     /// </summary>
     [StringLength(64)]
     public string TraceId { get; set; } = string.Empty;
 
     /// <summary>
-    /// 资源名（<c>xrn:</c>）。
+    /// 资源名（<c>xrn:</c>）
     /// </summary>
     [StringLength(1024)]
     public string? Resource { get; set; }
 
     /// <summary>
-    /// 主体 ID。
+    /// 主体 ID
     /// </summary>
     [StringLength(256)]
     public string? PrincipalId { get; set; }
 
     /// <summary>
-    /// 租户 ID。
+    /// 租户 ID
     /// </summary>
     [StringLength(128)]
     public string? TenantId { get; set; }
 
     /// <summary>
-    /// 附加细节的 JSON 对象文本（键区分大小写）。
+    /// 附加细节的 JSON 对象文本（键区分大小写）
     /// </summary>
     /// <remarks>
-    /// 长文本列。
+    /// 长文本列
     /// </remarks>
     [LongText]
     public string? DetailsJson { get; set; }

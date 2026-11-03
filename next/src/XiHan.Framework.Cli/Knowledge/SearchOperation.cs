@@ -7,12 +7,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Knowledge;
 
 /// <summary>
-/// 操作 <c>cli.search</c>：检索文档，或取一页全文。
+/// 操作 <c>cli.search</c>：检索文档，或取一页全文
 /// </summary>
 /// <remarks>
-/// 发布为 MCP tool <c>xihan_framework_search</c>，见 <see cref="KnowledgeQueries.Search"/>。
+/// 发布为 MCP tool <c>xihan_framework_search</c>，见 <see cref="KnowledgeQueries.Search"/>
 /// </remarks>
-/// <param name="knowledge">离线知识库。</param>
+/// <param name="knowledge">离线知识库</param>
 internal sealed class SearchOperation(FrameworkKnowledge knowledge) : IOperation<SearchRequest, SearchResponse>
 {
     /// <inheritdoc />

@@ -7,62 +7,62 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Hosting;
 
 /// <summary>
-/// 周期探测、缓存结果的健康贡献者。
+/// 周期探测、缓存结果的健康贡献者
 /// </summary>
 /// <remarks>
-/// Provider 把连通性探针（PING、HEAD、打开连接）交给它，由它在后台按 <see cref="Interval"/> 重探并缓存最近一次结果，<see cref="Check"/> 只返回缓存、立即返回且不抛出。<see cref="StartAsync"/> 先同步探一次（超时取 <see cref="Interval"/>）再起循环，探针抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/>；探针返回的失败结果原样作为条目错误。
+/// Provider 把连通性探针（PING、HEAD、打开连接）交给它，由它在后台按 <see cref="Interval"/> 重探并缓存最近一次结果，<see cref="Check"/> 只返回缓存、立即返回且不抛出。<see cref="StartAsync"/> 先同步探一次（超时取 <see cref="Interval"/>）再起循环，探针抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/>；探针返回的失败结果原样作为条目错误
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsyncDisposable
 {
     /// <summary>
-    /// 探针。
+    /// 探针
     /// </summary>
     private readonly Func<CancellationToken, ValueTask<Result>> _probe;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     /// <remarks>
-    /// 循环的计时器与每次探测的超时都按它计时。
+    /// 循环的计时器与每次探测的超时都按它计时
     /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 最近一次结果。
+    /// 最近一次结果
     /// </summary>
     /// <remarks>
-    /// 探测完成后整体替换，<see cref="Check"/> 读它不加锁。
+    /// 探测完成后整体替换，<see cref="Check"/> 读它不加锁
     /// </remarks>
     private volatile ContributorStatus _status;
 
     /// <summary>
-    /// 停止信号。
+    /// 停止信号
     /// </summary>
     /// <remarks>
-    /// 非空表示循环在跑。
+    /// 非空表示循环在跑
     /// </remarks>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 后台循环。
+    /// 后台循环
     /// </summary>
     private Task? _loop;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
-    /// <param name="name">条目名，即清单 <c>contributes.health</c> 里声明的名字。</param>
-    /// <param name="probe">探针：成功表示可达，失败结果原样作为条目错误，抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/>。</param>
-    /// <param name="interval">重探间隔，也是单次探测的超时；必须为正。</param>
-    /// <param name="clock">时钟。</param>
-    /// <param name="loggerFactory">日志工厂。</param>
-    /// <param name="description">条目检查的是什么；可空。</param>
+    /// <param name="name">条目名，即清单 <c>contributes.health</c> 里声明的名字</param>
+    /// <param name="probe">探针：成功表示可达，失败结果原样作为条目错误，抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/></param>
+    /// <param name="interval">重探间隔，也是单次探测的超时；必须为正</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="loggerFactory">日志工厂</param>
+    /// <param name="description">条目检查的是什么；可空</param>
     public PeriodicHealthContributor(string name, Func<CancellationToken, ValueTask<Result>> probe, TimeSpan interval, TimeProvider clock, ILoggerFactory loggerFactory, string? description = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -84,33 +84,33 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 条目名。
+    /// 条目名
     /// </summary>
     public string Name { get; }
 
     /// <summary>
-    /// 重探间隔，也是单次探测的超时。
+    /// 重探间隔，也是单次探测的超时
     /// </summary>
     public TimeSpan Interval { get; }
 
     /// <summary>
-    /// 条目检查的是什么。
+    /// 条目检查的是什么
     /// </summary>
     public string? Description { get; }
 
     /// <summary>
-    /// 最近一次探测完成的时刻。
+    /// 最近一次探测完成的时刻
     /// </summary>
     /// <remarks>
-    /// 还没探过为 <see langword="null"/>。
+    /// 还没探过为 <see langword="null"/>
     /// </remarks>
     public DateTimeOffset? LastProbedAt { get; private set; }
 
     /// <summary>
-    /// 同步探一次（受 <see cref="Interval"/> 上限约束的超时），然后起后台循环按 <see cref="Interval"/> 重探。
+    /// 同步探一次（受 <see cref="Interval"/> 上限约束的超时），然后起后台循环按 <see cref="Interval"/> 重探
     /// </summary>
     /// <remarks>
-    /// 重复调用不再起第二个循环。
+    /// 重复调用不再起第二个循环
     /// </remarks>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -129,10 +129,10 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 停止后台循环。
+    /// 停止后台循环
     /// </summary>
     /// <remarks>
-    /// 缓存的最近结果保留。
+    /// 缓存的最近结果保留
     /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -157,10 +157,10 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 立即探测一次并更新缓存。
+    /// 立即探测一次并更新缓存
     /// </summary>
     /// <remarks>
-    /// 探针抛出的异常（含超时）不传播，记为 <see cref="LifecycleState.Degraded"/>；只有 <paramref name="cancellationToken"/> 被取消时才抛出。
+    /// 探针抛出的异常（含超时）不传播，记为 <see cref="LifecycleState.Degraded"/>；只有 <paramref name="cancellationToken"/> 被取消时才抛出
     /// </remarks>
     public async ValueTask ProbeAsync(CancellationToken cancellationToken)
     {
@@ -197,10 +197,10 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 把探测结果写成条目状态。
+    /// 把探测结果写成条目状态
     /// </summary>
     /// <remarks>
-    /// 成功 Ready、失败 Degraded；状态或错误码变化时记日志。
+    /// 成功 Ready、失败 Degraded；状态或错误码变化时记日志
     /// </remarks>
     private void Apply(Result outcome, TimeSpan duration)
     {
@@ -229,10 +229,10 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 按间隔重探，直到停止。
+    /// 按间隔重探，直到停止
     /// </summary>
     /// <remarks>
-    /// 计时器由本方法释放。
+    /// 计时器由本方法释放
     /// </remarks>
     private async Task LoopAsync(PeriodicTimer timer, CancellationToken stopping)
     {
@@ -253,13 +253,13 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     }
 
     /// <summary>
-    /// 条目进入 Degraded。
+    /// 条目进入 Degraded
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Health item '{Name}' changed from {Previous} to Degraded: {Code} {Message}")]
     private static partial void LogDegraded(ILogger logger, string name, LifecycleState previous, string code, string message);
 
     /// <summary>
-    /// 条目回到 Ready。
+    /// 条目回到 Ready
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Health item '{Name}' changed from {Previous} to Ready.")]
     private static partial void LogRecovered(ILogger logger, string name, LifecycleState previous);

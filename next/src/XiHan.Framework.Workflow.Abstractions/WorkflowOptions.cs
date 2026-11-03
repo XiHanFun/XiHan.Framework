@@ -8,21 +8,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions;
 
 /// <summary>
-/// 引擎选项（配置节 <c>XiHan:Workflow</c>）。
+/// 引擎选项（配置节 <c>XiHan:Workflow</c>）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Workflow";
 
     /// <summary>
-    /// 一个波次最多执行的节点数。
+    /// 一个波次最多执行的节点数
     /// </summary>
     /// <remarks>
-    /// 超过即实例故障（防死循环）。默认 1000。
+    /// 超过即实例故障（防死循环）。默认 1000
     /// </remarks>
     public int MaxNodeExecutionsPerBurst
     {
@@ -31,10 +31,10 @@ public sealed record WorkflowOptions
     } = 1000;
 
     /// <summary>
-    /// 子流程最大深度。
+    /// 子流程最大深度
     /// </summary>
     /// <remarks>
-    /// 默认 16。
+    /// 默认 16
     /// </remarks>
     public int MaxSubWorkflowDepth
     {
@@ -43,10 +43,10 @@ public sealed record WorkflowOptions
     } = 16;
 
     /// <summary>
-    /// 等实例锁的上限。
+    /// 等实例锁的上限
     /// </summary>
     /// <remarks>
-    /// 默认 10 秒。
+    /// 默认 10 秒
     /// </remarks>
     public TimeSpan LockTimeout
     {
@@ -55,10 +55,10 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 到期书签因实例不在运行中而不能恢复时，把到期时间后推多久。
+    /// 到期书签因实例不在运行中而不能恢复时，把到期时间后推多久
     /// </summary>
     /// <remarks>
-    /// 默认 5 分钟。
+    /// 默认 5 分钟
     /// </remarks>
     public TimeSpan NotResumableBackoff
     {
@@ -67,10 +67,10 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// 表达式缓存上限。
+    /// 表达式缓存上限
     /// </summary>
     /// <remarks>
-    /// 默认 10000。
+    /// 默认 10000
     /// </remarks>
     public int ExpressionCacheSize
     {
@@ -79,10 +79,10 @@ public sealed record WorkflowOptions
     } = 10_000;
 
     /// <summary>
-    /// 已结束实例的保留期。
+    /// 已结束实例的保留期
     /// </summary>
     /// <remarks>
-    /// 零为不自动清理（默认）。
+    /// 零为不自动清理（默认）
     /// </remarks>
     public TimeSpan Retention
     {
@@ -91,10 +91,10 @@ public sealed record WorkflowOptions
     }
 
     /// <summary>
-    /// 轮询器维护（按保留期清理）的周期。
+    /// 轮询器维护（按保留期清理）的周期
     /// </summary>
     /// <remarks>
-    /// 默认 1 小时。
+    /// 默认 1 小时
     /// </remarks>
     public TimeSpan HousekeepingInterval
     {
@@ -103,10 +103,10 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromHours(1);
 
     /// <summary>
-    /// <c>Http</c> 活动的默认超时。
+    /// <c>Http</c> 活动的默认超时
     /// </summary>
     /// <remarks>
-    /// 默认 30 秒。
+    /// 默认 30 秒
     /// </remarks>
     public TimeSpan HttpTimeout
     {
@@ -115,10 +115,10 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>、<c>RetentionDays</c>、<c>HousekeepingIntervalSeconds</c>、<c>HttpTimeoutSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理。
+    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>、<c>RetentionDays</c>、<c>HousekeepingIntervalSeconds</c>、<c>HttpTimeoutSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理
     /// </remarks>
     public static WorkflowOptions FromConfiguration(IConfiguration configuration)
     {
@@ -168,10 +168,10 @@ public sealed record WorkflowOptions
     }
 
     /// <summary>
-    /// 读取整数键。
+    /// 读取整数键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
     /// </remarks>
     private static int? Integer(IConfiguration configuration, string key, int minimum)
     {
@@ -190,10 +190,10 @@ public sealed record WorkflowOptions
     }
 
     /// <summary>
-    /// 读取以秒计的正时长键。
+    /// 读取以秒计的正时长键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
     /// </remarks>
     private static TimeSpan? Seconds(IConfiguration configuration, string key)
     {
@@ -212,10 +212,10 @@ public sealed record WorkflowOptions
     }
 
     /// <summary>
-    /// 读取以天计的非负时长键。
+    /// 读取以天计的非负时长键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，负数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，负数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
     /// </remarks>
     private static TimeSpan? Days(IConfiguration configuration, string key)
     {

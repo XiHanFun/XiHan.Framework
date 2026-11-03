@@ -6,7 +6,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 按字符的固定窗口切块：换行统一为 <c>\n</c>，每块裁掉首尾空白，空块丢弃。
+/// 按字符的固定窗口切块：换行统一为 <c>\n</c>，每块裁掉首尾空白，空块丢弃
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class FixedWindowChunkingStrategy : IChunkingStrategy

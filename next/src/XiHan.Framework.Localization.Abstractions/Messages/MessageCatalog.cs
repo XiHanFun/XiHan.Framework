@@ -8,37 +8,37 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Abstractions.Messages;
 
 /// <summary>
-/// 只读的消息目录。
+/// 只读的消息目录
 /// </summary>
 /// <remarks>
-/// 消息键 → 区域 → 模板。一种语言一个文件（<c>Localization/&lt;区域&gt;.json</c>，内容是键 → 模板的平面对象），各包用 <see cref="FromEmbeddedResources"/> 装载自己嵌入的全部语言文件。区域名在装载时规范化，查找不区分大小写。
+/// 消息键 → 区域 → 模板。一种语言一个文件（<c>Localization/&lt;区域&gt;.json</c>，内容是键 → 模板的平面对象），各包用 <see cref="FromEmbeddedResources"/> 装载自己嵌入的全部语言文件。区域名在装载时规范化，查找不区分大小写
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class MessageCatalog
 {
     /// <summary>
-    /// 嵌入资源的默认前缀。
+    /// 嵌入资源的默认前缀
     /// </summary>
     public const string DefaultResourcePrefix = "Localization/";
 
     /// <summary>
-    /// 消息键 → 区域（规范化、不区分大小写）→ 模板。
+    /// 消息键 → 区域（规范化、不区分大小写）→ 模板
     /// </summary>
     private readonly Dictionary<string, Dictionary<string, string>> _byKey;
 
     /// <summary>
-    /// 目录里出现过的区域，按装载顺序。
+    /// 目录里出现过的区域，按装载顺序
     /// </summary>
     private readonly List<string> _locales;
 
     /// <summary>
-    /// 用按区域分组的模板创建目录。
+    /// 用按区域分组的模板创建目录
     /// </summary>
     /// <remarks>
-    /// 键与区域名会被校验，区域名规范化。
+    /// 键与区域名会被校验，区域名规范化
     /// </remarks>
-    /// <param name="name">目录名，同名目录注册时合并为一份。</param>
-    /// <param name="templatesByLocale">区域 → 消息键 → 模板。</param>
+    /// <param name="name">目录名，同名目录注册时合并为一份</param>
+    /// <param name="templatesByLocale">区域 → 消息键 → 模板</param>
     public MessageCatalog(string name, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> templatesByLocale)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -85,34 +85,34 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
-    /// 目录名。
+    /// 目录名
     /// </summary>
     public string Name { get; }
 
     /// <summary>
-    /// 目录里出现过的区域，按装载顺序。
+    /// 目录里出现过的区域，按装载顺序
     /// </summary>
     public IReadOnlyCollection<string> Locales => _locales;
 
     /// <summary>
-    /// 全部消息键。
+    /// 全部消息键
     /// </summary>
     public IReadOnlyCollection<string> Keys => _byKey.Keys;
 
     /// <summary>
-    /// 消息键的数量。
+    /// 消息键的数量
     /// </summary>
     public int Count => _byKey.Count;
 
     /// <summary>
-    /// 从 <paramref name="anchor"/> 所在程序集的嵌入资源装载全部 <c>&lt;前缀&gt;&lt;区域&gt;.json</c>。
+    /// 从 <paramref name="anchor"/> 所在程序集的嵌入资源装载全部 <c>&lt;前缀&gt;&lt;区域&gt;.json</c>
     /// </summary>
     /// <remarks>
-    /// 没有任何语言文件或文件不合法时抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>。
+    /// 没有任何语言文件或文件不合法时抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>
     /// </remarks>
-    /// <param name="name">目录名。</param>
-    /// <param name="anchor">目录所在程序集里的任意类型，用于定位程序集。</param>
-    /// <param name="prefix">嵌入资源的逻辑名前缀，默认 <see cref="DefaultResourcePrefix"/>。</param>
+    /// <param name="name">目录名</param>
+    /// <param name="anchor">目录所在程序集里的任意类型，用于定位程序集</param>
+    /// <param name="prefix">嵌入资源的逻辑名前缀，默认 <see cref="DefaultResourcePrefix"/></param>
     public static MessageCatalog FromEmbeddedResources(string name, Type anchor, string prefix = DefaultResourcePrefix)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -150,10 +150,10 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
-    /// 解析一种语言的文件（键 → 模板的平面 JSON 对象）。
+    /// 解析一种语言的文件（键 → 模板的平面 JSON 对象）
     /// </summary>
     /// <remarks>
-    /// 不合法抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>。
+    /// 不合法抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>
     /// </remarks>
     public static IReadOnlyDictionary<string, string> ParseLocaleFile(string name, string locale, ReadOnlySpan<byte> utf8Json)
     {
@@ -191,10 +191,10 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
-    /// 取某键在某区域的模板，只做精确匹配。
+    /// 取某键在某区域的模板，只做精确匹配
     /// </summary>
     /// <remarks>
-    /// 回退由 <see cref="IMessageLocalizer"/> 负责。
+    /// 回退由 <see cref="IMessageLocalizer"/> 负责
     /// </remarks>
     public Maybe<string> Find(string key, string locale)
     {
@@ -206,7 +206,7 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
-    /// 某键已有模板的区域。
+    /// 某键已有模板的区域
     /// </summary>
     public IReadOnlyCollection<string> LocalesOf(string key)
     {
@@ -215,10 +215,10 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
-    /// 与同名目录合并。
+    /// 与同名目录合并
     /// </summary>
     /// <remarks>
-    /// 同名目录可以互为补充（如插件带两种语言、宿主包带全部十种）：区域与键取并集，先有的在前。同一键同一区域的模板必须逐字相同，否则抛出携带 <see cref="LocalizationErrors.DuplicateCatalog"/> 的 <see cref="FrameworkException"/>。<paramref name="other"/> 没有带来新的区域或模板时返回本目录自身。
+    /// 同名目录可以互为补充（如插件带两种语言、宿主包带全部十种）：区域与键取并集，先有的在前。同一键同一区域的模板必须逐字相同，否则抛出携带 <see cref="LocalizationErrors.DuplicateCatalog"/> 的 <see cref="FrameworkException"/>。<paramref name="other"/> 没有带来新的区域或模板时返回本目录自身
     /// </remarks>
     internal MessageCatalog MergeWith(MessageCatalog other)
     {
@@ -268,7 +268,7 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
-    /// 构造"目录不合法"异常。
+    /// 构造"目录不合法"异常
     /// </summary>
     private static FrameworkException Invalid(string name, string reason)
         => new(LocalizationErrors.InvalidCatalog, $"Message catalog '{name}' is not valid: {reason}.");

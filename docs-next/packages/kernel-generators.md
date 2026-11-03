@@ -90,13 +90,13 @@ using XiHan.Framework.Primitives.Manifests;
 namespace Contoso.Notes;
 
 /// <summary>
-/// 新建便签的请求。
+/// 新建便签的请求
 /// </summary>
-/// <param name="Title">标题。</param>
+/// <param name="Title">标题</param>
 public sealed record CreateNoteRequest([Required, StringLength(80)] string Title);
 
 /// <summary>
-/// 便签。
+/// 便签
 /// </summary>
 public sealed record NoteResponse(Guid Id, string Title);
 

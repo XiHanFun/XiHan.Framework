@@ -14,61 +14,61 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Chat;
 
 /// <summary>
-/// <see cref="IAIChat"/> 的实现。
+/// <see cref="IAIChat"/> 的实现
 /// </summary>
 /// <remarks>
-/// 工具绑定到当前调用（没有时为本作用域新建的上下文），护栏按登记顺序检查全部消息。
+/// 工具绑定到当前调用（没有时为本作用域新建的上下文），护栏按登记顺序检查全部消息
 /// 调用 Provider 时把它的 <see cref="AIProviderOptions.Timeout"/> 按注入的 <see cref="TimeProvider"/> 落成超时令牌、与调用方令牌链接后交给它，
-/// 超时与取消按令牌归因（RFC-0022「超时与取消」）。
+/// 超时与取消按令牌归因（RFC-0022「超时与取消」）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIChat : IAIChat
 {
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly AIOptions _options;
 
     /// <summary>
-    /// Provider 目录。
+    /// Provider 目录
     /// </summary>
     private readonly IAIProviderCatalog _providers;
 
     /// <summary>
-    /// 提示词目录。
+    /// 提示词目录
     /// </summary>
     private readonly IAIPromptCatalog _prompts;
 
     /// <summary>
-    /// 工具目录。
+    /// 工具目录
     /// </summary>
     private readonly IAIToolCatalog _tools;
 
     /// <summary>
-    /// 护栏（登记顺序）。
+    /// 护栏（登记顺序）
     /// </summary>
     private readonly IReadOnlyList<IAIGuardrail> _guardrails;
 
     /// <summary>
-    /// 当前调用。
+    /// 当前调用
     /// </summary>
     private readonly IInvocationAccessor _invocation;
 
     /// <summary>
-    /// 本作用域的服务。
+    /// 本作用域的服务
     /// </summary>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 时间源。
+    /// 时间源
     /// </summary>
     /// <remarks>
-    /// Provider 的超时令牌按它计时，测试推进虚拟时间即触发。
+    /// Provider 的超时令牌按它计时，测试推进虚拟时间即触发
     /// </remarks>
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public AIChat(AIOptions options, IAIProviderCatalog providers, IAIPromptCatalog prompts, IAIToolCatalog tools, IEnumerable<IAIGuardrail> guardrails, IInvocationAccessor invocation, TimeProvider timeProvider, IServiceProvider services)
     {
@@ -120,11 +120,11 @@ public sealed class AIChat : IAIChat
     }
 
     /// <summary>
-    /// 流式调用。
+    /// 流式调用
     /// </summary>
     /// <remarks>
-    /// 时限是等每个更新（含第一个）的时长：只在等 Provider 时计时，调用方处理更新的时间不算，流的总时长不限。
-    /// 超时以 <see cref="TimeoutException"/> 抛出（流已交给调用方，不能再返回结果），调用方取消抛出 <see cref="OperationCanceledException"/>，其余异常原样抛出。
+    /// 时限是等每个更新（含第一个）的时长：只在等 Provider 时计时，调用方处理更新的时间不算，流的总时长不限
+    /// 超时以 <see cref="TimeoutException"/> 抛出（流已交给调用方，不能再返回结果），调用方取消抛出 <see cref="OperationCanceledException"/>，其余异常原样抛出
     /// </remarks>
     private async IAsyncEnumerable<ChatResponseUpdate> StreamCoreAsync(PreparedCall call, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -166,7 +166,7 @@ public sealed class AIChat : IAIChat
     }
 
     /// <summary>
-    /// 提示词 → 工具 → 护栏 → Provider。
+    /// 提示词 → 工具 → 护栏 → Provider
     /// </summary>
     private async ValueTask<Result<PreparedCall>> PrepareAsync(AIChatRequest request, CancellationToken cancellationToken)
     {
@@ -251,19 +251,19 @@ public sealed class AIChat : IAIChat
     }
 
     /// <summary>
-    /// 超时。
+    /// 超时
     /// </summary>
     private static Error Timeout(string provider)
         => new(AIErrors.ModelTimeout, AIMessages.ModelTimeout, MessageArguments.Of(("provider", provider)));
 
     /// <summary>
-    /// 不可达或返回错误。
+    /// 不可达或返回错误
     /// </summary>
     private static Error Unavailable(string provider, Exception exception)
         => Error.Unavailable(AIErrors.ModelUnavailable, AIMessages.ModelUnavailable, MessageArguments.Of(("provider", provider), ("reason", exception.Message)));
 
     /// <summary>
-    /// 准备好的调用。
+    /// 准备好的调用
     /// </summary>
     private sealed record PreparedCall(IChatClient Client, List<ChatMessage> Messages, ChatOptions? Options, string Provider, TimeSpan Timeout);
 }

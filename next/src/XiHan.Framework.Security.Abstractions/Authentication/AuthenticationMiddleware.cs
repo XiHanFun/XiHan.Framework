@@ -9,19 +9,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Authentication;
 
 /// <summary>
-/// Authenticate 阶段的中间件。
+/// Authenticate 阶段的中间件
 /// </summary>
 /// <remarks>
-/// 没有凭据则保持匿名；有凭据则交给方案匹配的 <see cref="IAuthenticationHandler"/>，成功写入主体，失败以结果返回；<see cref="SecurityOptions.RequireAuthentication"/> 为真时拒绝匿名调用。
+/// 没有凭据则保持匿名；有凭据则交给方案匹配的 <see cref="IAuthenticationHandler"/>，成功写入主体，失败以结果返回；<see cref="SecurityOptions.RequireAuthentication"/> 为真时拒绝匿名调用
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class AuthenticationMiddleware(SecurityOptions options) : IPipelineMiddleware
 {
     /// <summary>
-    /// 安全选项。
+    /// 安全选项
     /// </summary>
     /// <remarks>
-    /// 决定是否拒绝匿名调用。
+    /// 决定是否拒绝匿名调用
     /// </remarks>
     private readonly SecurityOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
@@ -62,10 +62,10 @@ public sealed class AuthenticationMiddleware(SecurityOptions options) : IPipelin
     }
 
     /// <summary>
-    /// 在已注册的处理器里按方案名（不区分大小写）找第一个匹配者。
+    /// 在已注册的处理器里按方案名（不区分大小写）找第一个匹配者
     /// </summary>
     /// <remarks>
-    /// 没有返回 <see langword="null"/>。
+    /// 没有返回 <see langword="null"/>
     /// </remarks>
     private static IAuthenticationHandler? FindHandler(InvocationContext context, string scheme)
     {

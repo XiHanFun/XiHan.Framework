@@ -11,17 +11,17 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Hosting.AspNetCore.Endpoints;
 
 /// <summary>
-/// 核对端点元数据上的授权要求引用的策略都存在。
+/// 核对端点元数据上的授权要求引用的策略都存在
 /// </summary>
 /// <remarks>
-/// <c>UseXiHan()</c> 在宿主建请求管道时调用一次（ADR-0080）：此刻路由已全部映射（<c>UseEndpoints</c> 已把数据源交给路由），容器里的策略也都已注册。<c>RequireXiHanPermission</c> 的权限码未登记、<c>RequireXiHanPolicy</c> 的策略未注册，都抛出携带 <see cref="SecurityErrors.UnregisteredPolicy"/> 的 <see cref="FrameworkException"/>，一次列出全部，宿主启动失败，而不是等到调用时以 <see cref="SecurityErrors.PolicyNotFound"/> 拒绝。没有装配授权能力（容器里没有 <see cref="PolicyCatalog"/>）时 Authorize 阶段不判定任何要求，这里也不核对。
+/// <c>UseXiHan()</c> 在宿主建请求管道时调用一次（ADR-0080）：此刻路由已全部映射（<c>UseEndpoints</c> 已把数据源交给路由），容器里的策略也都已注册。<c>RequireXiHanPermission</c> 的权限码未登记、<c>RequireXiHanPolicy</c> 的策略未注册，都抛出携带 <see cref="SecurityErrors.UnregisteredPolicy"/> 的 <see cref="FrameworkException"/>，一次列出全部，宿主启动失败，而不是等到调用时以 <see cref="SecurityErrors.PolicyNotFound"/> 拒绝。没有装配授权能力（容器里没有 <see cref="PolicyCatalog"/>）时 Authorize 阶段不判定任何要求，这里也不核对
 /// </remarks>
 internal static class EndpointRequirementCheck
 {
     /// <summary>
-    /// 核对全部端点的授权要求。
+    /// 核对全部端点的授权要求
     /// </summary>
-    /// <param name="app">宿主的应用构建器；是 <see cref="IEndpointRouteBuilder"/>（<c>WebApplication</c>）时连同它自己的数据源一起看。</param>
+    /// <param name="app">宿主的应用构建器；是 <see cref="IEndpointRouteBuilder"/>（<c>WebApplication</c>）时连同它自己的数据源一起看</param>
     public static void Verify(IApplicationBuilder app)
     {
         var services = app.ApplicationServices;

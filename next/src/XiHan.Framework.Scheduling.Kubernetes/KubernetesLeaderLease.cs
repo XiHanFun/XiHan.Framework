@@ -10,40 +10,40 @@ using XiHan.Framework.Scheduling.Kubernetes.Leases;
 namespace XiHan.Framework.Scheduling.Kubernetes;
 
 /// <summary>
-/// 以 Lease 对象承载的租约。
+/// 以 Lease 对象承载的租约
 /// </summary>
 /// <remarks>
-/// 续约写 <c>renewTime</c>，释放清空 <c>holderIdentity</c>；每次写都带 resourceVersion，版本过期即视为已被他人接管。
+/// 续约写 <c>renewTime</c>，释放清空 <c>holderIdentity</c>；每次写都带 resourceVersion，版本过期即视为已被他人接管
 /// </remarks>
 internal sealed class KubernetesLeaderLease : LeaderLease
 {
     /// <summary>
-    /// 客户端。
+    /// 客户端
     /// </summary>
     private readonly KubernetesLeaseClient _client;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 存活时间。
+    /// 存活时间
     /// </summary>
     private readonly TimeSpan _timeToLive;
 
     /// <summary>
-    /// 最近一次写入后的 Lease 对象（含 resourceVersion）。
+    /// 最近一次写入后的 Lease 对象（含 resourceVersion）
     /// </summary>
     private LeaseDocument _document;
 
     /// <summary>
-    /// 是否已释放或已失去。
+    /// 是否已释放或已失去
     /// </summary>
     private bool _lost;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public KubernetesLeaderLease(KubernetesLeaseClient client, TimeProvider clock, JobName resource, string holder, TimeSpan timeToLive, LeaseDocument document)
         : base(resource, holder)
@@ -103,12 +103,12 @@ internal sealed class KubernetesLeaderLease : LeaderLease
     }
 
     /// <summary>
-    /// 被占用。
+    /// 被占用
     /// </summary>
     private Error Held() => Error.Conflict(SchedulingErrors.LeaseHeld, SchedulingMessages.LeaseHeld, MessageArguments.Of(("resource", Resource.Value)));
 
     /// <summary>
-    /// 复制一份文档用于写入。
+    /// 复制一份文档用于写入
     /// </summary>
     internal static LeaseDocument Clone(LeaseDocument source) => new()
     {

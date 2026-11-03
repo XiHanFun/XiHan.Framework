@@ -4,38 +4,38 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 要生成的产物种类。
+/// 要生成的产物种类
 /// </summary>
 [Flags]
 internal enum PackKinds
 {
     /// <summary>
-    /// 无。
+    /// 无
     /// </summary>
     None = 0,
 
     /// <summary>
-    /// Dockerfile 与 .dockerignore。
+    /// Dockerfile 与 .dockerignore
     /// </summary>
     Dockerfile = 1,
 
     /// <summary>
-    /// Kustomize 清单。
+    /// Kustomize 清单
     /// </summary>
     Kustomize = 2,
 
     /// <summary>
-    /// Compose 文件。
+    /// Compose 文件
     /// </summary>
     Compose = 4,
 
     /// <summary>
-    /// Aspire AppHost 登记代码。
+    /// Aspire AppHost 登记代码
     /// </summary>
     Aspire = 8,
 
     /// <summary>
-    /// 全部。
+    /// 全部
     /// </summary>
     All = Dockerfile | Kustomize | Compose | Aspire,
 }

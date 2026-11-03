@@ -7,31 +7,31 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 
 /// <summary>
-/// 一次投递：主题、信封、第几次尝试与订阅方式。
+/// 一次投递：主题、信封、第几次尝试与订阅方式
 /// </summary>
 /// <remarks>
-/// 尝试次数从 1 起。订阅方式说明投递来自哪种订阅：派发器只执行该方式的处理器，同一条消息到达竞争订阅与广播订阅是两次投递（RFC-0009「订阅方式」）。
+/// 尝试次数从 1 起。订阅方式说明投递来自哪种订阅：派发器只执行该方式的处理器，同一条消息到达竞争订阅与广播订阅是两次投递（RFC-0009「订阅方式」）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record MessageDelivery(string Topic, MessageEnvelope Envelope, int Attempt, SubscriptionMode Mode)
 {
     /// <summary>
-    /// 主题。
+    /// 主题
     /// </summary>
     public string Topic { get; } = TopicName.Validate(Topic);
 
     /// <summary>
-    /// 信封。
+    /// 信封
     /// </summary>
     public MessageEnvelope Envelope { get; } = Envelope ?? throw new ArgumentNullException(nameof(Envelope));
 
     /// <summary>
-    /// 第几次尝试。
+    /// 第几次尝试
     /// </summary>
     public int Attempt { get; } = Attempt >= 1 ? Attempt : throw new ArgumentOutOfRangeException(nameof(Attempt), Attempt, "The attempt number starts at 1.");
 
     /// <summary>
-    /// 订阅方式。
+    /// 订阅方式
     /// </summary>
     public SubscriptionMode Mode { get; } = Mode is SubscriptionMode.Competing or SubscriptionMode.Broadcast
         ? Mode

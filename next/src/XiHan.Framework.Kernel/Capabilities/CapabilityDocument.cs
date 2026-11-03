@@ -4,20 +4,20 @@
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 中 <c>provides</c> 一项的 JSON 形态。
+/// <c>xihan.manifest.json</c> 中 <c>provides</c> 一项的 JSON 形态
 /// </summary>
 /// <remarks>
-/// 版本以字符串承载，转换时再解析为正整数。
+/// 版本以字符串承载，转换时再解析为正整数
 /// </remarks>
 internal sealed class CapabilityDocument
 {
     /// <summary>
-    /// 能力 ID。
+    /// 能力 ID
     /// </summary>
     public string? Id { get; set; }
 
     /// <summary>
-    /// 接口版本的原始文本。
+    /// 接口版本的原始文本
     /// </summary>
     public string? Version { get; set; }
 }

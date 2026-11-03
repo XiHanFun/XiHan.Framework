@@ -7,24 +7,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 
 /// <summary>
-/// 缺省存储的选择规则（RFC-0012「缺省实例与命名实例」）。
+/// 缺省存储的选择规则（RFC-0012「缺省实例与命名实例」）
 /// </summary>
 /// <remarks>
-/// 缺省的 <see cref="Blobs.IBlobStore"/>、<see cref="Multipart.IBlobMultipartStore"/> 与 <see cref="Signing.IBlobUrlSigner"/> 必须落在同一存储上，只约束被要求的契约（ADR-0082）：存储包被要求提供 <c>objectstorage.multipart</c> 或 <c>objectstorage.presign</c>（有清单依赖该能力，或 <c>XiHan:Providers</c> / <c>UseProvider</c> 指定了它，见 <see cref="ResolvedNode.IsRequestedFor"/>）时必须同时被选为 <c>objectstorage.blob</c>；只是兜底选出的不约束，存储包按被顶替处理。宿主代收发的签名器（<c>xihan.hosting.blob-urls</c>）经缺省 <see cref="Blobs.IBlobStore"/> 收发，不是存储包，不受此约束。存储包在 <c>Configure</c> 开头调用 <see cref="ProvidesDefaultInstance"/>。
+/// 缺省的 <see cref="Blobs.IBlobStore"/>、<see cref="Multipart.IBlobMultipartStore"/> 与 <see cref="Signing.IBlobUrlSigner"/> 必须落在同一存储上，只约束被要求的契约（ADR-0082）：存储包被要求提供 <c>objectstorage.multipart</c> 或 <c>objectstorage.presign</c>（有清单依赖该能力，或 <c>XiHan:Providers</c> / <c>UseProvider</c> 指定了它，见 <see cref="ResolvedNode.IsRequestedFor"/>）时必须同时被选为 <c>objectstorage.blob</c>；只是兜底选出的不约束，存储包按被顶替处理。宿主代收发的签名器（<c>xihan.hosting.blob-urls</c>）经缺省 <see cref="Blobs.IBlobStore"/> 收发，不是存储包，不受此约束。存储包在 <c>Configure</c> 开头调用 <see cref="ProvidesDefaultInstance"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class BlobStoreSelection
 {
     /// <summary>
-    /// 核对存储包节点被选中的能力，判定它是否提供缺省实例。
+    /// 核对存储包节点被选中的能力，判定它是否提供缺省实例
     /// </summary>
     /// <remarks>
-    /// 被选为 <c>objectstorage.blob</c> 返回 <see langword="true"/>：它是缺省存储，为被选中的各项能力注册契约（兜底选出的也注册）。
-    /// 没被选为 <c>objectstorage.blob</c>、分片上传与预签名也都只是兜底选出（或没被选中）返回 <see langword="false"/>：存储包不提供缺省实例，按被顶替处理，只登记命名实例 Provider。
-    /// 没被选为 <c>objectstorage.blob</c> 却被要求提供分片上传或预签名时抛出携带 <see cref="ObjectStorageErrors.StoreSelectionInvalid"/> 的 <see cref="FrameworkException"/>，应用启动失败，消息列出被要求的能力与要改的 <c>XiHan:Providers</c> 键。
+    /// 被选为 <c>objectstorage.blob</c> 返回 <see langword="true"/>：它是缺省存储，为被选中的各项能力注册契约（兜底选出的也注册）
+    /// 没被选为 <c>objectstorage.blob</c>、分片上传与预签名也都只是兜底选出（或没被选中）返回 <see langword="false"/>：存储包不提供缺省实例，按被顶替处理，只登记命名实例 Provider
+    /// 没被选为 <c>objectstorage.blob</c> 却被要求提供分片上传或预签名时抛出携带 <see cref="ObjectStorageErrors.StoreSelectionInvalid"/> 的 <see cref="FrameworkException"/>，应用启动失败，消息列出被要求的能力与要改的 <c>XiHan:Providers</c> 键
     /// </remarks>
-    /// <param name="node">存储包在已解析图中的节点。</param>
-    /// <returns>存储包是否提供缺省实例。</returns>
+    /// <param name="node">存储包在已解析图中的节点</param>
+    /// <returns>存储包是否提供缺省实例</returns>
     public static bool ProvidesDefaultInstance(ResolvedNode node)
     {
         ArgumentNullException.ThrowIfNull(node);

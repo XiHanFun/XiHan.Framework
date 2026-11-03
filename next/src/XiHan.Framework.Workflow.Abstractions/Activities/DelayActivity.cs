@@ -11,31 +11,31 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 延时。
+/// 延时
 /// </summary>
 /// <remarks>
-/// <c>Duration</c>（秒，或求值为秒数的表达式）、<c>Until</c>（时刻，或求值为时刻的表达式）、<c>Cron</c>（+ <c>TimeZone</c>，下一次匹配时刻）三选一，以 Timer 书签挂起到该时刻。
+/// <c>Duration</c>（秒，或求值为秒数的表达式）、<c>Until</c>（时刻，或求值为时刻的表达式）、<c>Cron</c>（+ <c>TimeZone</c>，下一次匹配时刻）三选一，以 Timer 书签挂起到该时刻
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DelayActivity : IResumableActivity
 {
     /// <summary>
-    /// 属性：秒数或表达式。
+    /// 属性：秒数或表达式
     /// </summary>
     public const string DurationProperty = "Duration";
 
     /// <summary>
-    /// 属性：时刻或表达式。
+    /// 属性：时刻或表达式
     /// </summary>
     public const string UntilProperty = "Until";
 
     /// <summary>
-    /// 属性：cron 表达式。
+    /// 属性：cron 表达式
     /// </summary>
     public const string CronProperty = "Cron";
 
     /// <summary>
-    /// 属性：cron 的时区 ID。
+    /// 属性：cron 的时区 ID
     /// </summary>
     public const string TimeZoneProperty = "TimeZone";
 
@@ -59,7 +59,7 @@ public sealed class DelayActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 按属性算出到期时刻。
+    /// 按属性算出到期时刻
     /// </summary>
     private static Result<DateTimeOffset> DueAt(ActivityContext context)
     {

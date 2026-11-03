@@ -6,32 +6,32 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Envelopes;
 
 /// <summary>
-/// CloudEvents 1.0 信封。
+/// CloudEvents 1.0 信封
 /// </summary>
 /// <remarks>
-/// 数据是字节；<see cref="DataContentType"/> 说明其格式，JSON 数据在结构化编码里内联，其他数据按 Base64 编码。
+/// 数据是字节；<see cref="DataContentType"/> 说明其格式，JSON 数据在结构化编码里内联，其他数据按 Base64 编码
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record MessageEnvelope
 {
     /// <summary>
-    /// 共享的空扩展表。
+    /// 共享的空扩展表
     /// </summary>
     /// <remarks>
-    /// 没有扩展的信封都指向它。
+    /// 没有扩展的信封都指向它
     /// </remarks>
     private static readonly IReadOnlyDictionary<string, string> _noExtensions = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// CloudEvents 规范版本。
+    /// CloudEvents 规范版本
     /// </summary>
     public const string SpecVersion = "1.0";
 
     /// <summary>
-    /// 事件 ID。
+    /// 事件 ID
     /// </summary>
     /// <remarks>
-    /// 与 <see cref="Source"/> 一起唯一。
+    /// 与 <see cref="Source"/> 一起唯一
     /// </remarks>
     public required string Id
     {
@@ -40,7 +40,7 @@ public sealed record MessageEnvelope
     }
 
     /// <summary>
-    /// 来源（URI 引用，如 <c>/orders</c>）。
+    /// 来源（URI 引用，如 <c>/orders</c>）
     /// </summary>
     public required string Source
     {
@@ -49,7 +49,7 @@ public sealed record MessageEnvelope
     }
 
     /// <summary>
-    /// 事件类型（如 <c>orders.placed</c>）。
+    /// 事件类型（如 <c>orders.placed</c>）
     /// </summary>
     public required string Type
     {
@@ -58,20 +58,20 @@ public sealed record MessageEnvelope
     }
 
     /// <summary>
-    /// 发生时间。
+    /// 发生时间
     /// </summary>
     public DateTimeOffset? Time { get; init; }
 
     /// <summary>
-    /// 主题标识（事件所涉对象）。
+    /// 主题标识（事件所涉对象）
     /// </summary>
     public string? Subject { get; init; }
 
     /// <summary>
-    /// 数据内容类型。
+    /// 数据内容类型
     /// </summary>
     /// <remarks>
-    /// 默认 <c>application/json</c>。
+    /// 默认 <c>application/json</c>
     /// </remarks>
     public string DataContentType
     {
@@ -80,15 +80,15 @@ public sealed record MessageEnvelope
     } = "application/json";
 
     /// <summary>
-    /// 数据。
+    /// 数据
     /// </summary>
     public ReadOnlyMemory<byte> Data { get; init; }
 
     /// <summary>
-    /// 扩展属性。
+    /// 扩展属性
     /// </summary>
     /// <remarks>
-    /// 名称须满足 <see cref="EnvelopeExtensions.IsValidName"/>。
+    /// 名称须满足 <see cref="EnvelopeExtensions.IsValidName"/>
     /// </remarks>
     public IReadOnlyDictionary<string, string> Extensions
     {
@@ -109,14 +109,14 @@ public sealed record MessageEnvelope
     } = _noExtensions;
 
     /// <summary>
-    /// 数据是否为 JSON（<c>application/json</c> 或 <c>+json</c> 结尾）。
+    /// 数据是否为 JSON（<c>application/json</c> 或 <c>+json</c> 结尾）
     /// </summary>
     public bool IsJsonData
         => DataContentType.StartsWith("application/json", StringComparison.OrdinalIgnoreCase)
             || DataContentType.Split(';')[0].TrimEnd().EndsWith("+json", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 派生带一个扩展属性的信封。
+    /// 派生带一个扩展属性的信封
     /// </summary>
     public MessageEnvelope WithExtension(string name, string value)
     {
@@ -126,7 +126,7 @@ public sealed record MessageEnvelope
     }
 
     /// <summary>
-    /// 读扩展属性。
+    /// 读扩展属性
     /// </summary>
     public Maybe<string> Extension(string name)
     {

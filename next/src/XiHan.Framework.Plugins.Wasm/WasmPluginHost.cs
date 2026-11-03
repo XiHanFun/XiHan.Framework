@@ -24,116 +24,116 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Plugins.Wasm;
 
 /// <summary>
-/// Wasm 插件宿主（<c>isolation: wasm</c>，RFC-0018，Experimental）。
+/// Wasm 插件宿主（<c>isolation: wasm</c>，RFC-0018，Experimental）
 /// </summary>
 /// <remarks>
-/// 按目录发现插件、编译并握手、把声明的操作与订阅接进宿主、健康轮询与崩溃重建，并把每个插件作为健康条目上报。通常由 <see cref="WasmPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载，插件贡献的中间件随加载成组登记进管道、随卸载按归属撤回（ADR-0088）。
+/// 按目录发现插件、编译并握手、把声明的操作与订阅接进宿主、健康轮询与崩溃重建，并把每个插件作为健康条目上报。通常由 <see cref="WasmPluginsFeature"/> 装配；也可按 <see cref="IPluginHost"/> 在运行期加载与卸载，插件贡献的中间件随加载成组登记进管道、随卸载按归属撤回（ADR-0088）
 /// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IAsyncDisposable
 {
     /// <summary>
-    /// 健康条目名前缀。
+    /// 健康条目名前缀
     /// </summary>
     public const string HealthPrefix = "plugins.";
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly WasmPluginOptions _options;
 
     /// <summary>
-    /// 已登记的运行时，按清单 ID。
+    /// 已登记的运行时，按清单 ID
     /// </summary>
     private readonly ConcurrentDictionary<string, WasmPluginRuntime> _plugins = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 登记顺序（停止按相反顺序）。
+    /// 登记顺序（停止按相反顺序）
     /// </summary>
     private readonly List<WasmPluginRuntime> _order = [];
 
     /// <summary>
-    /// 清单读不出来的插件目录与原因。
+    /// 清单读不出来的插件目录与原因
     /// </summary>
     /// <remarks>
-    /// 没有清单 ID，只作为健康条目 <c>plugins.&lt;目录名&gt;</c> 上报；只在配置阶段写入。
+    /// 没有清单 ID，只作为健康条目 <c>plugins.&lt;目录名&gt;</c> 上报；只在配置阶段写入
     /// </remarks>
     private readonly List<(string Directory, Error Error)> _unreadable = [];
 
     /// <summary>
-    /// 串行化加载与卸载。
+    /// 串行化加载与卸载
     /// </summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 串行化代理操作与中间件的登记与撤回。
+    /// 串行化代理操作与中间件的登记与撤回
     /// </summary>
     /// <remarks>
-    /// 运行期加载的登记不持有 <see cref="_gate"/>，撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，与卸载交错的加载不会留下指向已卸载插件的登记或中间件（ADR-0085、ADR-0088）。
+    /// 运行期加载的登记不持有 <see cref="_gate"/>，撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，与卸载交错的加载不会留下指向已卸载插件的登记或中间件（ADR-0085、ADR-0088）
     /// </remarks>
     private readonly Lock _registration = new();
 
     /// <summary>
-    /// 插件共享的宿主环境。
+    /// 插件共享的宿主环境
     /// </summary>
     private readonly WasmHostContext _context;
 
     /// <summary>
-    /// epoch 计时器：按间隔递增引擎 epoch，让各实例的截止时间生效。
+    /// epoch 计时器：按间隔递增引擎 epoch，让各实例的截止时间生效
     /// </summary>
     private readonly CancellationTokenSource _ticker = new();
 
     /// <summary>
-    /// 计时循环。
+    /// 计时循环
     /// </summary>
     /// <remarks>
-    /// 释放时先等它退出，引擎才能安全释放。
+    /// 释放时先等它退出，引擎才能安全释放
     /// </remarks>
     private readonly Task _ticking;
 
     /// <summary>
-    /// 已释放。
+    /// 已释放
     /// </summary>
     private bool _disposed;
 
     /// <summary>
-    /// 日志工厂。
+    /// 日志工厂
     /// </summary>
     /// <remarks>
-    /// 附着到容器后换成宿主的。
+    /// 附着到容器后换成宿主的
     /// </remarks>
     private ILoggerFactory _loggerFactory;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private ILogger _logger;
 
     /// <summary>
-    /// 代理操作登记到的登记表。
+    /// 代理操作登记到的登记表
     /// </summary>
     /// <remarks>
-    /// 由特性在配置阶段提供。
+    /// 由特性在配置阶段提供
     /// </remarks>
     private OperationRegistry? _registry;
 
     /// <summary>
-    /// 插件中间件登记到的管道。
+    /// 插件中间件登记到的管道
     /// </summary>
     /// <remarks>
-    /// 由特性在配置阶段提供；运行期加载经它成组登记插件贡献的中间件，卸载经它按归属撤回（ADR-0088）。
+    /// 由特性在配置阶段提供；运行期加载经它成组登记插件贡献的中间件，卸载经它按归属撤回（ADR-0088）
     /// </remarks>
     private PipelineBuilder? _pipeline;
 
     /// <summary>
-    /// 创建宿主：建一个启用 epoch 中断的引擎并开始计时。
+    /// 创建宿主：建一个启用 epoch 中断的引擎并开始计时
     /// </summary>
-    /// <param name="options">选项。</param>
-    /// <param name="configuration">宿主配置。</param>
-    /// <param name="clock">时钟。</param>
-    /// <param name="loggerFactory">日志工厂。</param>
-    /// <param name="defaultLocale">宿主默认区域。</param>
-    /// <exception cref="FrameworkException">宿主进程强制用户态影子栈（CET），Wasm 陷阱会终止进程；宿主可执行项目须设置 <c>CETCompat=false</c>。</exception>
+    /// <param name="options">选项</param>
+    /// <param name="configuration">宿主配置</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="loggerFactory">日志工厂</param>
+    /// <param name="defaultLocale">宿主默认区域</param>
+    /// <exception cref="FrameworkException">宿主进程强制用户态影子栈（CET），Wasm 陷阱会终止进程；宿主可执行项目须设置 <c>CETCompat=false</c></exception>
     public WasmPluginHost(WasmPluginOptions options, IConfiguration configuration, TimeProvider clock, ILoggerFactory loggerFactory, string defaultLocale = "en-US")
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -161,10 +161,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     public IReadOnlyList<PluginStatus> Plugins => _plugins.Values.Select(static r => r.Status).OrderBy(static s => s.Manifest.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 一个插件的诊断快照。
+    /// 一个插件的诊断快照
     /// </summary>
     /// <remarks>
-    /// 未加载为空。
+    /// 未加载为空
     /// </remarks>
     public WasmPluginStatus? Describe(string manifestId)
     {
@@ -173,25 +173,25 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 全部运行时（特性登记代理操作、订阅与中间件时使用）。
+    /// 全部运行时（特性登记代理操作、订阅与中间件时使用）
     /// </summary>
     internal IReadOnlyList<WasmPluginRuntime> Runtimes => _order.ToList();
 
     /// <summary>
-    /// 指定代理操作的登记表。
+    /// 指定代理操作的登记表
     /// </summary>
     internal void UseRegistry(OperationRegistry registry) => _registry = registry;
 
     /// <summary>
-    /// 指定插件中间件的管道。
+    /// 指定插件中间件的管道
     /// </summary>
     internal void UsePipeline(PipelineBuilder pipeline) => _pipeline = pipeline;
 
     /// <summary>
-    /// 把插件清单贡献的中间件登记进管道并声明相对次序。
+    /// 把插件清单贡献的中间件登记进管道并声明相对次序
     /// </summary>
     /// <remarks>
-    /// 每个贡献项一个实例，以 <c>&lt;清单 ID&gt;:&lt;中间件名&gt;</c> 为名登记在所在阶段末尾，归属为清单 ID（<c>spec/plugin/wasm.md</c> §6）。<c>before</c> / <c>after</c> 的每一项先按本插件的中间件名解析，否则原样作为管道里的中间件名（另一个插件的 <c>&lt;清单 ID&gt;:&lt;中间件名&gt;</c>，或只登记一次的宿主中间件类型全名）。配置阶段直接登记，目标在构建管道时解析；运行期加载时在 <see cref="PipelineBuilder.UseOwned"/> 里登记、立即核对。约束只声明在本插件的中间件上，按归属撤回时一并撤掉。
+    /// 每个贡献项一个实例，以 <c>&lt;清单 ID&gt;:&lt;中间件名&gt;</c> 为名登记在所在阶段末尾，归属为清单 ID（<c>spec/plugin/wasm.md</c> §6）。<c>before</c> / <c>after</c> 的每一项先按本插件的中间件名解析，否则原样作为管道里的中间件名（另一个插件的 <c>&lt;清单 ID&gt;:&lt;中间件名&gt;</c>，或只登记一次的宿主中间件类型全名）。配置阶段直接登记，目标在构建管道时解析；运行期加载时在 <see cref="PipelineBuilder.UseOwned"/> 里登记、立即核对。约束只声明在本插件的中间件上，按归属撤回时一并撤掉
     /// </remarks>
     internal static void AddMiddleware(PipelineBuilder pipeline, WasmPluginRuntime runtime)
     {
@@ -221,17 +221,17 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 同步发现一个插件目录（配置阶段使用）。
+    /// 同步发现一个插件目录（配置阶段使用）
     /// </summary>
     /// <remarks>
-    /// 读清单、按选项授予权限与映射、编译并握手。失败的插件仍登记在宿主里以 Failed 上报：发现时被拒的（清单、权限、模块文件不合格）可描述、是健康条目，清单读不出来的只作为健康条目 <c>plugins.&lt;目录名&gt;</c>（<c>lifecycle.md</c> §1）；附着到容器时逐个记日志。
+    /// 读清单、按选项授予权限与映射、编译并握手。失败的插件仍登记在宿主里以 Failed 上报：发现时被拒的（清单、权限、模块文件不合格）可描述、是健康条目，清单读不出来的只作为健康条目 <c>plugins.&lt;目录名&gt;</c>（<c>lifecycle.md</c> §1）；附着到容器时逐个记日志
     /// </remarks>
     internal Result<WasmPluginRuntime> Discover(string directory)
         => DiscoverAsync(directory, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc />
     /// <remarks>
-    /// 代理操作、声明的权限码与贡献的中间件一次登记、全进或全不进（ADR-0085、ADR-0088）：中间件在 <see cref="PipelineBuilder.UseOwned"/> 里成组登记并立即核对，约束目标未登记、有歧义、跨阶段（<c>KERNEL_PIPELINE_003</c>）或成环（<c>KERNEL_PIPELINE_001</c>）时整个插件登记失败、已登记的操作与权限码撤回、管道不变。登记成功之后开始的调用经过插件的中间件。
+    /// 代理操作、声明的权限码与贡献的中间件一次登记、全进或全不进（ADR-0085、ADR-0088）：中间件在 <see cref="PipelineBuilder.UseOwned"/> 里成组登记并立即核对，约束目标未登记、有歧义、跨阶段（<c>KERNEL_PIPELINE_003</c>）或成环（<c>KERNEL_PIPELINE_001</c>）时整个插件登记失败、已登记的操作与权限码撤回、管道不变。登记成功之后开始的调用经过插件的中间件
     /// </remarks>
     public async Task<Result<PluginStatus>> LoadAsync(PluginSource source, CancellationToken cancellationToken)
     {
@@ -262,7 +262,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
 
     /// <inheritdoc />
     /// <remarks>
-    /// 先按归属（清单 ID）撤回插件贡献的中间件、登记的代理操作与权限码，再停止并丢弃实例（<c>plugin/invocation.md</c> §1、<c>plugin/wasm.md</c> §6，ADR-0085、ADR-0088）：撤回之后开始的调用不再经过它的中间件，按 ID 调用它的操作返回 <c>KERNEL_NOTFOUND_001</c>；撤回之前已经进入管道的调用照常完成，或在插件停止后以 <c>PLUGINS_UNAVAILABLE_001</c> 结束。卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。别的中间件以次序约束引用了它的中间件时卸载被拒（<c>KERNEL_PIPELINE_003</c>），什么都不撤、插件照常服务。订阅与消息目录在配置阶段接进容器，不随卸载撤回。
+    /// 先按归属（清单 ID）撤回插件贡献的中间件、登记的代理操作与权限码，再停止并丢弃实例（<c>plugin/invocation.md</c> §1、<c>plugin/wasm.md</c> §6，ADR-0085、ADR-0088）：撤回之后开始的调用不再经过它的中间件，按 ID 调用它的操作返回 <c>KERNEL_NOTFOUND_001</c>；撤回之前已经进入管道的调用照常完成，或在插件停止后以 <c>PLUGINS_UNAVAILABLE_001</c> 结束。卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。别的中间件以次序约束引用了它的中间件时卸载被拒（<c>KERNEL_PIPELINE_003</c>），什么都不撤、插件照常服务。订阅与消息目录在配置阶段接进容器，不随卸载撤回
     /// </remarks>
     public async Task<Result> UnloadAsync(string manifestId, CancellationToken cancellationToken)
     {
@@ -297,10 +297,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 附着到已构建的宿主容器。
+    /// 附着到已构建的宿主容器
     /// </summary>
     /// <remarks>
-    /// 换用宿主日志与时钟、开放回调、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件（失败只记日志）。
+    /// 换用宿主日志与时钟、开放回调、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件（失败只记日志）
     /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
@@ -343,7 +343,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 停止全部插件（与登记相反的顺序）。
+    /// 停止全部插件（与登记相反的顺序）
     /// </summary>
     internal async Task StopAllAsync(CancellationToken cancellationToken)
     {
@@ -354,10 +354,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 把一条消息投递给订阅了该主题与类型的插件。
+    /// 把一条消息投递给订阅了该主题与类型的插件
     /// </summary>
     /// <remarks>
-    /// 第一个失败即为结果。
+    /// 第一个失败即为结果
     /// </remarks>
     internal async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
     {
@@ -381,7 +381,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             .ToList();
 
     /// <summary>
-    /// 停止全部插件、停止 epoch 计时并释放引擎。
+    /// 停止全部插件、停止 epoch 计时并释放引擎
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -407,7 +407,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 按间隔递增 epoch。
+    /// 按间隔递增 epoch
     /// </summary>
     private static async Task TickAsync(Engine engine, TimeSpan interval, CancellationToken token)
     {
@@ -430,7 +430,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 按目录发现：读清单、按选项取授予与映射。
+    /// 按目录发现：读清单、按选项取授予与映射
     /// </summary>
     private async Task<Result<WasmPluginRuntime>> DiscoverAsync(string directory, CancellationToken cancellationToken)
     {
@@ -455,10 +455,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 校验权限（<c>capability:</c> 须授予、<c>fs.*</c> 须映射、<c>net.outbound:</c> 永不授予）与模块文件。
+    /// 校验权限（<c>capability:</c> 须授予、<c>fs.*</c> 须映射、<c>net.outbound:</c> 永不授予）与模块文件
     /// </summary>
     /// <remarks>
-    /// 登记运行时并探测启动。<paramref name="keepRejected"/> 为真（按目录发现）时被拒的插件以 Failed 登记，否则（运行期加载）只把错误返回给调用方。
+    /// 登记运行时并探测启动。<paramref name="keepRejected"/> 为真（按目录发现）时被拒的插件以 Failed 登记，否则（运行期加载）只把错误返回给调用方
     /// </remarks>
     private async Task<Result<WasmPluginRuntime>> DiscoverAsync(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, bool keepRejected, CancellationToken cancellationToken)
     {
@@ -491,10 +491,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 实例化任何模块之前的检查：权限、入口与模块文件。
+    /// 实例化任何模块之前的检查：权限、入口与模块文件
     /// </summary>
     /// <remarks>
-    /// 通过时返回空并给出模块文件的绝对路径。
+    /// 通过时返回空并给出模块文件的绝对路径
     /// </remarks>
     private static Error? Preflight(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, out string? modulePath)
     {
@@ -515,10 +515,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 以发现时被拒登记：不建实例，插件停在 Failed（<c>lifecycle.md</c> §1）。
+    /// 以发现时被拒登记：不建实例，插件停在 Failed（<c>lifecycle.md</c> §1）
     /// </summary>
     /// <remarks>
-    /// 返回拒绝的原因；同一清单 ID 已登记时返回冲突。
+    /// 返回拒绝的原因；同一清单 ID 已登记时返回冲突
     /// </remarks>
     private async Task<Result<WasmPluginRuntime>> RejectAsync(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, Error error, CancellationToken cancellationToken)
     {
@@ -544,10 +544,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 一项清单权限是否被授予。
+    /// 一项清单权限是否被授予
     /// </summary>
     /// <remarks>
-    /// <c>capability:</c> 看宿主授予，<c>fs.read:</c> / <c>fs.write:</c> 看是否映射，其余（含 <c>net.outbound:</c>）不授予。
+    /// <c>capability:</c> 看宿主授予，<c>fs.read:</c> / <c>fs.write:</c> 看是否映射，其余（含 <c>net.outbound:</c>）不授予
     /// </remarks>
     private static bool IsGranted(string permission, PermissionGrant granted, IReadOnlyDictionary<string, string> mounts)
     {
@@ -565,10 +565,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 把运行时清单声明的权限码、握手声明的操作与清单贡献的中间件登记进宿主。
+    /// 把运行时清单声明的权限码、握手声明的操作与清单贡献的中间件登记进宿主
     /// </summary>
     /// <remarks>
-    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，或中间件的约束目标未登记、有歧义、跨阶段、成环，插件整体登记失败，不会留下半组指向被拒插件的权限码、代理操作与中间件。运行时已不是宿主里的当前运行时（卸载与运行期加载交错）时不登记，返回未加载。
+    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，或中间件的约束目标未登记、有歧义、跨阶段、成环，插件整体登记失败，不会留下半组指向被拒插件的权限码、代理操作与中间件。运行时已不是宿主里的当前运行时（卸载与运行期加载交错）时不登记，返回未加载
     /// </remarks>
     private Result Register(WasmPluginRuntime runtime)
     {
@@ -603,10 +603,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 把运行时清单贡献的中间件成组登记进管道。
+    /// 把运行时清单贡献的中间件成组登记进管道
     /// </summary>
     /// <remarks>
-    /// 在 <see cref="_registration"/> 内调用。没有贡献中间件时什么都不做；登记被拒时管道不变，返回内核的错误（<c>KERNEL_PIPELINE_003</c> / <c>KERNEL_PIPELINE_001</c>）。
+    /// 在 <see cref="_registration"/> 内调用。没有贡献中间件时什么都不做；登记被拒时管道不变，返回内核的错误（<c>KERNEL_PIPELINE_003</c> / <c>KERNEL_PIPELINE_001</c>）
     /// </remarks>
     private Result UseMiddleware(WasmPluginRuntime runtime)
     {
@@ -628,10 +628,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 把运行时移出宿主，并撤回它贡献的中间件、登记的权限码与代理操作。
+    /// 把运行时移出宿主，并撤回它贡献的中间件、登记的权限码与代理操作
     /// </summary>
     /// <remarks>
-    /// 卸载时在 <see cref="_gate"/> 内调用。先撤中间件：别的中间件以次序约束引用了它的中间件时撤不了（<c>KERNEL_PIPELINE_003</c>），这时什么都不改、运行时留在宿主里照常服务。撤回与移出在同一段 <see cref="_registration"/> 里，与运行期加载的登记互斥。
+    /// 卸载时在 <see cref="_gate"/> 内调用。先撤中间件：别的中间件以次序约束引用了它的中间件时撤不了（<c>KERNEL_PIPELINE_003</c>），这时什么都不改、运行时留在宿主里照常服务。撤回与移出在同一段 <see cref="_registration"/> 里，与运行期加载的登记互斥
     /// </remarks>
     private Result Withdraw(WasmPluginRuntime runtime)
     {
@@ -661,7 +661,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 从登记里移除。
+    /// 从登记里移除
     /// </summary>
     private void Remove(WasmPluginRuntime runtime)
     {
@@ -673,7 +673,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 读目录里的清单并确认是 Wasm 插件。
+    /// 读目录里的清单并确认是 Wasm 插件
     /// </summary>
     private static Result<Manifest> ReadManifest(string directory)
     {
@@ -688,7 +688,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 读目录里的清单文件。
+    /// 读目录里的清单文件
     /// </summary>
     private static Result<Manifest> ReadManifestFile(string directory)
     {
@@ -699,7 +699,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 清单是否描述一个 Wasm 插件。
+    /// 清单是否描述一个 Wasm 插件
     /// </summary>
     private static Result CheckKind(Manifest manifest)
         => manifest.Kind == ManifestKind.Plugin && manifest.Isolation == PluginIsolation.Wasm
@@ -707,13 +707,13 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             : new Error(PluginErrors.InvalidSource, PluginMessages.NotOutOfProcess, MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
 
     /// <summary>
-    /// 记录发现阶段失败的插件（宿主继续运行）。
+    /// 记录发现阶段失败的插件（宿主继续运行）
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Wasm plugin {Plugin} failed during discovery: {Code} {Message}")]
     private static partial void LogDiscoveryFailed(ILogger logger, string plugin, string code, string message);
 
     /// <summary>
-    /// 记录插件启动失败（宿主继续运行）。
+    /// 记录插件启动失败（宿主继续运行）
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Wasm plugin {PluginId} failed to start: {Code} {Message}")]
     private static partial void LogStartFailed(ILogger logger, string pluginId, string code, string message);

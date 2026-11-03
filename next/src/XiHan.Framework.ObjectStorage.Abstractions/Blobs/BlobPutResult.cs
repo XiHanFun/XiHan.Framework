@@ -7,9 +7,9 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 
 /// <summary>
-/// 批量写入里一项的结果。
+/// 批量写入里一项的结果
 /// </summary>
-/// <param name="Key">键。</param>
-/// <param name="Outcome">写入后的元数据，或失败。</param>
+/// <param name="Key">键</param>
+/// <param name="Outcome">写入后的元数据，或失败</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record BlobPutResult(BlobKey Key, Result<BlobMetadata> Outcome);

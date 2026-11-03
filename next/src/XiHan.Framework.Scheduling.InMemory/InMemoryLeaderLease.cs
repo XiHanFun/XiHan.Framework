@@ -8,17 +8,17 @@ using XiHan.Framework.Scheduling.Abstractions.Leadership;
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 进程内租约：续约与释放都回到 <see cref="InMemoryLeaderElection"/> 的表里核对持有者。
+/// 进程内租约：续约与释放都回到 <see cref="InMemoryLeaderElection"/> 的表里核对持有者
 /// </summary>
 internal sealed class InMemoryLeaderLease : LeaderLease
 {
     /// <summary>
-    /// 所属的选举。
+    /// 所属的选举
     /// </summary>
     private readonly InMemoryLeaderElection _election;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryLeaderLease(InMemoryLeaderElection election, JobName resource, string holder)
         : base(resource, holder)

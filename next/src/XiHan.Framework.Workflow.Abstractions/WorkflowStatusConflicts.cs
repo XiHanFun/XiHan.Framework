@@ -8,15 +8,15 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions;
 
 /// <summary>
-/// 状态不允许操作的错误：每种状态一个消息键。
+/// 状态不允许操作的错误：每种状态一个消息键
 /// </summary>
 /// <remarks>
-/// 状态名不进文案（ADR-0106）：文案按状态各写一句，参数 <c>status</c> 仍是枚举名，供程序判断。
+/// 状态名不进文案（ADR-0106）：文案按状态各写一句，参数 <c>status</c> 仍是枚举名，供程序判断
 /// </remarks>
 internal static class WorkflowStatusConflicts
 {
     /// <summary>
-    /// 实例的状态不允许该操作。
+    /// 实例的状态不允许该操作
     /// </summary>
     public static Error Of(WorkflowInstance instance)
     {
@@ -34,7 +34,7 @@ internal static class WorkflowStatusConflicts
     }
 
     /// <summary>
-    /// 定义的状态不允许该操作。
+    /// 定义的状态不允许该操作
     /// </summary>
     public static Error Of(WorkflowDefinition definition)
     {

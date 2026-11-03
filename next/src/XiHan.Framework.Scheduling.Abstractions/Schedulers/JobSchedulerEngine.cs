@@ -20,193 +20,193 @@ using XiHan.Framework.Scheduling.Abstractions.Storage;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 
 /// <summary>
-/// 调度引擎（RFC-0013）。
+/// 调度引擎（RFC-0013）
 /// </summary>
 /// <remarks>
-/// 按周期抢占到期的触发器并在本节点运行，推算下一次、处理 misfire 与并发阻塞，记录运行历史；领导者负责失联恢复与历史清理。Provider 注册 <see cref="IJobStore"/> 与 <see cref="ILeaderElection"/> 后装配并启停它。
+/// 按周期抢占到期的触发器并在本节点运行，推算下一次、处理 misfire 与并发阻塞，记录运行历史；领导者负责失联恢复与历史清理。Provider 注册 <see cref="IJobStore"/> 与 <see cref="ILeaderElection"/> 后装配并启停它
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
 {
     /// <summary>
-    /// 手动入队的一次性触发器名前缀。
+    /// 手动入队的一次性触发器名前缀
     /// </summary>
     public const string ManualTriggerPrefix = "manual-";
 
     /// <summary>
-    /// 恢复运行的一次性触发器名前缀。
+    /// 恢复运行的一次性触发器名前缀
     /// </summary>
     public const string RecoveryTriggerPrefix = "recovery-";
 
     /// <summary>
-    /// 重试的一次性触发器名前缀。
+    /// 重试的一次性触发器名前缀
     /// </summary>
     public const string RetryTriggerPrefix = "retry-";
 
     /// <summary>
-    /// 一次性触发器的优先级：高于普通触发器，入队的运行先于到期的计划。
+    /// 一次性触发器的优先级：高于普通触发器，入队的运行先于到期的计划
     /// </summary>
     private const int TransientPriority = 10;
 
     /// <summary>
-    /// 本地触发器集合的刷新周期（按轮询次数）。
+    /// 本地触发器集合的刷新周期（按轮询次数）
     /// </summary>
     private const int LocalRefreshTicks = 10;
 
     /// <summary>
-    /// 存储。
+    /// 存储
     /// </summary>
     private readonly IJobStore _store;
 
     /// <summary>
-    /// 代码登记的作业。
+    /// 代码登记的作业
     /// </summary>
     private readonly JobRegistry _codeJobs;
 
     /// <summary>
-    /// 作业类型登记表。
+    /// 作业类型登记表
     /// </summary>
     private readonly JobTypeRegistry _types;
 
     /// <summary>
-    /// 日历登记表。
+    /// 日历登记表
     /// </summary>
     private readonly JobCalendars _calendars;
 
     /// <summary>
-    /// 派发器。
+    /// 派发器
     /// </summary>
     private readonly JobDispatcher _dispatcher;
 
     /// <summary>
-    /// 领导选举。
+    /// 领导选举
     /// </summary>
     private readonly ILeaderElection _election;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly SchedulerOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 应用（服务状态判定）。
+    /// 应用（服务状态判定）
     /// </summary>
     private readonly App _app;
 
     /// <summary>
-    /// 根服务提供者：按需解析消息发布者。
+    /// 根服务提供者：按需解析消息发布者
     /// </summary>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 保护运行表、本地触发器表与租约。
+    /// 保护运行表、本地触发器表与租约
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 本节点进行中的运行，按运行 ID。
+    /// 本节点进行中的运行，按运行 ID
     /// </summary>
     private readonly Dictionary<string, RunningRun> _running = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 本地触发器的推算状态，按触发器键文本。
+    /// 本地触发器的推算状态，按触发器键文本
     /// </summary>
     private readonly Dictionary<string, LocalTriggerState> _local = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 本实例等待中的重试。
+    /// 本实例等待中的重试
     /// </summary>
     /// <remarks>
-    /// 每个实例各自运行的作业的重试只在失败的实例上进行，不进存储。
+    /// 每个实例各自运行的作业的重试只在失败的实例上进行，不进存储
     /// </remarks>
     private readonly List<PendingRetry> _localRetries = [];
 
     /// <summary>
-    /// 轮询周期之间互斥：循环与手动 <see cref="PollOnceAsync"/> 不重叠。
+    /// 轮询周期之间互斥：循环与手动 <see cref="PollOnceAsync"/> 不重叠
     /// </summary>
     private readonly SemaphoreSlim _polling = new(1, 1);
 
     /// <summary>
-    /// 手动轮询周期里起的后台运行。
+    /// 手动轮询周期里起的后台运行
     /// </summary>
     /// <remarks>
-    /// 只在 <see cref="PollOnceAsync"/> 持有轮询互斥期间非空，循环的周期不收集；起运行的代码都在周期内，读写因而不会交错。
+    /// 只在 <see cref="PollOnceAsync"/> 持有轮询互斥期间非空，循环的周期不收集；起运行的代码都在周期内，读写因而不会交错
     /// </remarks>
     private List<Task>? _pollRuns;
 
     /// <summary>
-    /// 触发器读改写的互斥。
+    /// 触发器读改写的互斥
     /// </summary>
     /// <remarks>
-    /// 存储整体替换、不比对版本：抢占后运行、运行结束推算下一次、暂停与恢复、登记与删除各自读出触发器改完写回，本节点上交错就会互相覆盖（如结束时把刚暂停的写回等待）。
+    /// 存储整体替换、不比对版本：抢占后运行、运行结束推算下一次、暂停与恢复、登记与删除各自读出触发器改完写回，本节点上交错就会互相覆盖（如结束时把刚暂停的写回等待）
     /// </remarks>
     private readonly SemaphoreSlim _triggerWrites = new(1, 1);
 
     /// <summary>
-    /// 启动时刻。
+    /// 启动时刻
     /// </summary>
     private DateTimeOffset _startedAt;
 
     /// <summary>
-    /// 停止信号。
+    /// 停止信号
     /// </summary>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 是否接受手动触发：启动后为真，开始停止时为假，再次启动又为真。
+    /// 是否接受手动触发：启动后为真，开始停止时为假，再次启动又为真
     /// </summary>
     /// <remarks>
-    /// 启动之前没有轮询，停止只等待已经开始的运行：这两段时间里起的手动运行都无人照看，记录会停在运行中直到被判失联。
+    /// 启动之前没有轮询，停止只等待已经开始的运行：这两段时间里起的手动运行都无人照看，记录会停在运行中直到被判失联
     /// </remarks>
     private volatile bool _accepting;
 
     /// <summary>
-    /// 轮询循环。
+    /// 轮询循环
     /// </summary>
     private Task? _loop;
 
     /// <summary>
-    /// 轮询定时器。
+    /// 轮询定时器
     /// </summary>
     private PeriodicTimer? _timer;
 
     /// <summary>
-    /// 持有的领导租约。
+    /// 持有的领导租约
     /// </summary>
     private LeaderLease? _lease;
 
     /// <summary>
-    /// 代码作业是否已写入存储。
+    /// 代码作业是否已写入存储
     /// </summary>
     private bool _synced;
 
     /// <summary>
-    /// 本地触发器集合是否需要立即刷新。
+    /// 本地触发器集合是否需要立即刷新
     /// </summary>
     private bool _localDirty = true;
 
     /// <summary>
-    /// 距上次刷新本地触发器集合的轮询次数。
+    /// 距上次刷新本地触发器集合的轮询次数
     /// </summary>
     private int _ticksSinceLocalRefresh;
 
     /// <summary>
-    /// 上次维护时刻。
+    /// 上次维护时刻
     /// </summary>
     private DateTimeOffset _lastHousekeeping = DateTimeOffset.MinValue;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public JobSchedulerEngine(IJobStore store, JobRegistry codeJobs, JobTypeRegistry types, JobCalendars calendars, JobDispatcher dispatcher, ILeaderElection election, SchedulerOptions options, TimeProvider clock, App app, IServiceProvider services, ILoggerFactory loggerFactory)
     {
@@ -225,22 +225,22 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 节点 ID。
+    /// 节点 ID
     /// </summary>
     public string NodeId => _options.NodeId;
 
     /// <summary>
-    /// 轮询是否在进行。
+    /// 轮询是否在进行
     /// </summary>
     public bool IsRunning => _loop is not null;
 
     /// <summary>
-    /// 是否持有领导租约。
+    /// 是否持有领导租约
     /// </summary>
     public bool IsLeader => _lease is { IsHeld: true };
 
     /// <summary>
-    /// 本节点进行中的运行数。
+    /// 本节点进行中的运行数
     /// </summary>
     public int RunningCount
     {
@@ -254,10 +254,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 开始轮询。
+    /// 开始轮询
     /// </summary>
     /// <remarks>
-    /// 幂等。
+    /// 幂等
     /// </remarks>
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -277,10 +277,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 停止轮询。
+    /// 停止轮询
     /// </summary>
     /// <remarks>
-    /// 等待进行中的运行结束；<paramref name="cancellationToken"/> 触发时取消它们并再等待收尾；最后释放领导租约。
+    /// 等待进行中的运行结束；<paramref name="cancellationToken"/> 触发时取消它们并再等待收尾；最后释放领导租约
     /// </remarks>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -327,7 +327,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             await Task.WhenAll(running).ConfigureAwait(false);
         }
 
-        // 循环已退出，只剩手动调用的周期可能在跑：与它互斥（周期在应用不在服务状态时也会释放租约）。
+        // 循环已退出，只剩手动调用的周期可能在跑：与它互斥（周期在应用不在服务状态时也会释放租约）
         // 不用停止令牌等：宿主不再等待时令牌已取消，等待会直接抛出，租约就留到到期
         await _polling.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
@@ -353,12 +353,12 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 执行一个轮询周期，并等本周期起的运行连同收尾结束。
+    /// 执行一个轮询周期，并等本周期起的运行连同收尾结束
     /// </summary>
     /// <remarks>
-    /// 周期即心跳、领导、维护、取消、本地触发器、本地重试与抢占，等的是本节点起的运行。
-    /// 测试与一致性套件用，与循环互斥：推进注入的时钟、调用一次即可断言，不必按墙钟等待。返回时本周期起的运行已标为完成，间隔触发器已推算下一次，失败的已排好重试。
-    /// 作业要等时钟推进才能结束（停留、执行时限）时，先发起调用、推进时钟，再等它完成。
+    /// 周期即心跳、领导、维护、取消、本地触发器、本地重试与抢占，等的是本节点起的运行
+    /// 测试与一致性套件用，与循环互斥：推进注入的时钟、调用一次即可断言，不必按墙钟等待。返回时本周期起的运行已标为完成，间隔触发器已推算下一次，失败的已排好重试
+    /// 作业要等时钟推进才能结束（停留、执行时限）时，先发起调用、推进时钟，再等它完成
     /// </remarks>
     public async ValueTask PollOnceAsync(CancellationToken cancellationToken)
     {
@@ -645,7 +645,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 轮询循环：每个刻度执行一个周期，单次周期的意外不停掉循环。
+    /// 轮询循环：每个刻度执行一个周期，单次周期的意外不停掉循环
     /// </summary>
     private async Task LoopAsync(PeriodicTimer timer, CancellationToken stopping)
     {
@@ -679,11 +679,11 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 一个周期。
+    /// 一个周期
     /// </summary>
     private async ValueTask TickAsync(CancellationToken cancellationToken)
     {
-        // 宿主未进入服务状态前不按计划运行：此时特性可能尚未就绪，数据库存储也无法经管道访问。
+        // 宿主未进入服务状态前不按计划运行：此时特性可能尚未就绪，数据库存储也无法经管道访问
         // 领导租约同样不拿不续，持有就立即释放：排空要等依赖调度的特性逐个停完（在途调用、各自的停止超时），
         // 这期间续着租约，在服务的另一个实例就一直拿不到，失联恢复与历史清理停在原地；释放后它下一个周期就接手（ADR-0091）
         if (!_app.State.IsServing())
@@ -722,10 +722,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 首次把代码登记的作业写入存储。
+    /// 首次把代码登记的作业写入存储
     /// </summary>
     /// <remarks>
-    /// 失败时记日志并在下个周期重试。
+    /// 失败时记日志并在下个周期重试
     /// </remarks>
     private async ValueTask<bool> EnsureSyncedAsync(CancellationToken cancellationToken)
     {
@@ -749,7 +749,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 续约或获取领导租约。
+    /// 续约或获取领导租约
     /// </summary>
     private async ValueTask EnsureLeadershipAsync(CancellationToken cancellationToken)
     {
@@ -773,10 +773,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 释放持有的领导租约。
+    /// 释放持有的领导租约
     /// </summary>
     /// <remarks>
-    /// 没持有时什么也不做。调用方持有轮询互斥：周期与停止都会调用，两边不能同时改 <c>_lease</c>。租约的释放幂等、不受取消约束（Provider 自己保证在应用不在服务状态时也能放掉）。
+    /// 没持有时什么也不做。调用方持有轮询互斥：周期与停止都会调用，两边不能同时改 <c>_lease</c>。租约的释放幂等、不受取消约束（Provider 自己保证在应用不在服务状态时也能放掉）
     /// </remarks>
     private async ValueTask ReleaseLeadershipAsync()
     {
@@ -793,7 +793,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 领导者维护：失联节点恢复、历史清理。
+    /// 领导者维护：失联节点恢复、历史清理
     /// </summary>
     private async ValueTask HousekeepAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -825,7 +825,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 恢复失联节点：它们的运行记为 Lost，要求恢复的作业以恢复触发器重新入队。
+    /// 恢复失联节点：它们的运行记为 Lost，要求恢复的作业以恢复触发器重新入队
     /// </summary>
     private async ValueTask RecoverAsync(IReadOnlyList<string> nodeIds, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -854,7 +854,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 取消本节点被请求取消的运行。
+    /// 取消本节点被请求取消的运行
     /// </summary>
     private async ValueTask ApplyCancelRequestsAsync(CancellationToken cancellationToken)
     {
@@ -886,7 +886,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 到了刷新周期或有变更时重建本地触发器集合。
+    /// 到了刷新周期或有变更时重建本地触发器集合
     /// </summary>
     private async ValueTask RefreshLocalIfDueAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -947,7 +947,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 运行到期的本地触发器。
+    /// 运行到期的本地触发器
     /// </summary>
     private async ValueTask FireLocalTriggersAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -1027,7 +1027,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 抢占到期的触发器并运行。
+    /// 抢占到期的触发器并运行
     /// </summary>
     private async ValueTask AcquireAndFireAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -1058,10 +1058,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 在锁内以存储里的当前状态运行一条刚抢占的触发器。
+    /// 在锁内以存储里的当前状态运行一条刚抢占的触发器
     /// </summary>
     /// <remarks>
-    /// 抢占之后、拿到锁之前，暂停、改计划或删除可能已经改了它：不再由本节点持有就不动，作业没了就删掉孤儿。
+    /// 抢占之后、拿到锁之前，暂停、改计划或删除可能已经改了它：不再由本节点持有就不动，作业没了就删掉孤儿
     /// </remarks>
     private async ValueTask FireAcquiredAsync(TriggerKey key, bool scheduledAllowed, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -1100,10 +1100,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 运行一条已抢占的触发器。
+    /// 运行一条已抢占的触发器
     /// </summary>
     /// <remarks>
-    /// 暂停与类型检查、misfire、独占开始、推算下一次、后台运行。
+    /// 暂停与类型检查、misfire、独占开始、推算下一次、后台运行
     /// </remarks>
     private async ValueTask FireAcquiredAsync(TriggerRecord trigger, JobRecord job, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -1194,16 +1194,16 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 间隔触发器在运行结束时写下一次时刻。
+    /// 间隔触发器在运行结束时写下一次时刻
     /// </summary>
     /// <remarks>
-    /// 在运行标为完成之前执行：触发器仍由本节点持有，状态里已能看到下一次。重读存储里的状态，只在仍由本节点持有时写回；被暂停的只更新时刻、保持暂停。
+    /// 在运行标为完成之前执行：触发器仍由本节点持有，状态里已能看到下一次。重读存储里的状态，只在仍由本节点持有时写回；被暂停的只更新时刻、保持暂停
     /// </remarks>
     private ValueTask FinishIntervalTriggerAsync(TriggerRecord trigger, DateTimeOffset completedAt)
         => UnderTriggerLockAsync(() => FinishIntervalTriggerLockedAsync(trigger, completedAt), CancellationToken.None);
 
     /// <summary>
-    /// 在锁内写间隔触发器的下一次时刻。
+    /// 在锁内写间隔触发器的下一次时刻
     /// </summary>
     private async ValueTask FinishIntervalTriggerLockedAsync(TriggerRecord trigger, DateTimeOffset completedAt)
     {
@@ -1228,16 +1228,16 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 间隔触发器在运行标为完成之后放回等待。
+    /// 间隔触发器在运行标为完成之后放回等待
     /// </summary>
     /// <remarks>
-    /// 占用此时已释放：别的节点不会在本次运行结束前抢到它、再因占用未释放把它阻塞。重读存储里的状态，只在仍由本节点持有时写回；下一次按同一结束时刻推算，没有下一次即完成（一次性的删除）。
+    /// 占用此时已释放：别的节点不会在本次运行结束前抢到它、再因占用未释放把它阻塞。重读存储里的状态，只在仍由本节点持有时写回；下一次按同一结束时刻推算，没有下一次即完成（一次性的删除）
     /// </remarks>
     private ValueTask ReleaseIntervalTriggerAsync(TriggerRecord trigger, DateTimeOffset completedAt)
         => UnderTriggerLockAsync(() => ReleaseIntervalTriggerLockedAsync(trigger, completedAt), CancellationToken.None);
 
     /// <summary>
-    /// 在锁内放回间隔触发器。
+    /// 在锁内放回间隔触发器
     /// </summary>
     private async ValueTask ReleaseIntervalTriggerLockedAsync(TriggerRecord trigger, DateTimeOffset completedAt)
     {
@@ -1258,10 +1258,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 重读一条触发器在存储里的当前状态。
+    /// 重读一条触发器在存储里的当前状态
     /// </summary>
     /// <remarks>
-    /// 读失败记日志；已被删除为 <see langword="null"/>。
+    /// 读失败记日志；已被删除为 <see langword="null"/>
     /// </remarks>
     private async ValueTask<TriggerRecord?> FreshTriggerAsync(TriggerRecord trigger, string operation)
     {
@@ -1276,16 +1276,16 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 触发器仍由本节点抢占持有。
+    /// 触发器仍由本节点抢占持有
     /// </summary>
     private bool IsHeldHere(TriggerRecord trigger)
         => trigger.State == TriggerState.Acquired && string.Equals(trigger.AcquiredBy, NodeId, StringComparison.Ordinal);
 
     /// <summary>
-    /// 后台运行。
+    /// 后台运行
     /// </summary>
     /// <remarks>
-    /// 运行标为完成之前执行 <paramref name="completed"/>，之后执行 <paramref name="released"/>。
+    /// 运行标为完成之前执行 <paramref name="completed"/>，之后执行 <paramref name="released"/>
     /// </remarks>
     private void StartBackground(JobRunRecord record, JobRun run, Type jobType, JobRecord job, Func<DateTimeOffset, ValueTask>? completed, Func<DateTimeOffset, ValueTask>? released = null)
     {
@@ -1331,10 +1331,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 包成只执行一次的收尾。
+    /// 包成只执行一次的收尾
     /// </summary>
     /// <remarks>
-    /// 抛出的异常记日志，不影响运行的结果。
+    /// 抛出的异常记日志，不影响运行的结果
     /// </remarks>
     private Func<DateTimeOffset, ValueTask>? Once(Func<DateTimeOffset, ValueTask>? action, JobRun run)
     {
@@ -1363,7 +1363,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 手动触发一项：找作业与类型、独占开始、在本实例运行并等待。
+    /// 手动触发一项：找作业与类型、独占开始、在本实例运行并等待
     /// </summary>
     private async ValueTask<Result> TriggerOneAsync(JobTriggerRequest request, CancellationToken cancellationToken)
     {
@@ -1414,7 +1414,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 运行连同收尾回调都结束后才从运行表移除：停止时等待的是整个任务。
+    /// 运行连同收尾回调都结束后才从运行表移除：停止时等待的是整个任务
     /// </summary>
     private void Forget(string runId)
     {
@@ -1425,10 +1425,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 执行一次运行并写回结果。
+    /// 执行一次运行并写回结果
     /// </summary>
     /// <remarks>
-    /// 调用方的令牌取消时抛出，其他取消（取消请求、宿主停止）记为取消的失败结果；作业返回之前执行时限已过记为超时失败。失败（不含取消）按作业的重试策略排下一次尝试（ADR-0060）。
+    /// 调用方的令牌取消时抛出，其他取消（取消请求、宿主停止）记为取消的失败结果；作业返回之前执行时限已过记为超时失败。失败（不含取消）按作业的重试策略排下一次尝试（ADR-0060）
     /// </remarks>
     private async ValueTask<Result> ExecuteAsync(RunningRun running, JobRun run, Type jobType, JobRecord job, CancellationToken callerToken)
     {
@@ -1513,10 +1513,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 按重试策略排下一次尝试。
+    /// 按重试策略排下一次尝试
     /// </summary>
     /// <remarks>
-    /// 集群唯一的作业写成存储里的一次性触发器，任一节点到期抢占；每个实例各自运行的作业在本实例进程内等待。
+    /// 集群唯一的作业写成存储里的一次性触发器，任一节点到期抢占；每个实例各自运行的作业在本实例进程内等待
     /// </remarks>
     private async ValueTask ScheduleRetryAsync(JobRecord job, JobRun failed, JobRetryPolicy policy, DateTimeOffset failedAt)
     {
@@ -1543,10 +1543,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 运行本实例到期的重试。
+    /// 运行本实例到期的重试
     /// </summary>
     /// <remarks>
-    /// 以存储里的当前作业为准：作业没了即丢弃，暂停了就等恢复，不允许并发的等本实例上的运行结束。
+    /// 以存储里的当前作业为准：作业没了即丢弃，暂停了就等恢复，不允许并发的等本实例上的运行结束
     /// </remarks>
     private async ValueTask FireLocalRetriesAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -1613,17 +1613,17 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 新增或替换一个作业及其触发器。
+    /// 新增或替换一个作业及其触发器
     /// </summary>
     /// <remarks>
-    /// 按代码写入（<paramref name="source"/> 为 <see cref="JobSource.Code"/>）时记下代码定义的指纹；存储里是运行时改过、指纹没变的作业时保留运行时的修改，<paramref name="force"/> 为真时（恢复）照样按代码写入。
-    /// 运行时替换代码作业时来源记为 <see cref="JobSource.Overridden"/> 并带上原来的指纹。
+    /// 按代码写入（<paramref name="source"/> 为 <see cref="JobSource.Code"/>）时记下代码定义的指纹；存储里是运行时改过、指纹没变的作业时保留运行时的修改，<paramref name="force"/> 为真时（恢复）照样按代码写入
+    /// 运行时替换代码作业时来源记为 <see cref="JobSource.Overridden"/> 并带上原来的指纹
     /// </remarks>
     private ValueTask<Result> ScheduleOneAsync(JobDefinition definition, JobSource source, CancellationToken cancellationToken, bool force = false)
         => UnderTriggerLockAsync(() => ScheduleOneLockedAsync(definition, source, force, cancellationToken), cancellationToken);
 
     /// <summary>
-    /// 在锁内新增或替换一个作业及其触发器。
+    /// 在锁内新增或替换一个作业及其触发器
     /// </summary>
     private async ValueTask<Result> ScheduleOneLockedAsync(JobDefinition definition, JobSource source, bool force, CancellationToken cancellationToken)
     {
@@ -1773,7 +1773,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 暂停或恢复作业（及其全部触发器）。
+    /// 暂停或恢复作业（及其全部触发器）
     /// </summary>
     private async ValueTask<IReadOnlyList<Result>> SetPausedAsync(IReadOnlyList<JobName> names, bool paused, CancellationToken cancellationToken)
     {
@@ -1790,13 +1790,13 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 暂停或恢复一个作业。
+    /// 暂停或恢复一个作业
     /// </summary>
     private ValueTask<Result> SetPausedOneAsync(JobName name, bool paused, CancellationToken cancellationToken)
         => UnderTriggerLockAsync(() => SetPausedOneLockedAsync(name, paused, cancellationToken), cancellationToken);
 
     /// <summary>
-    /// 在锁内暂停或恢复一个作业。
+    /// 在锁内暂停或恢复一个作业
     /// </summary>
     private async ValueTask<Result> SetPausedOneLockedAsync(JobName name, bool paused, CancellationToken cancellationToken)
     {
@@ -1854,7 +1854,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 暂停或恢复单个触发器。
+    /// 暂停或恢复单个触发器
     /// </summary>
     private async ValueTask<IReadOnlyList<Result>> SetTriggersPausedAsync(IReadOnlyList<TriggerKey> keys, bool paused, CancellationToken cancellationToken)
     {
@@ -1871,7 +1871,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 在锁内暂停或恢复一个触发器。
+    /// 在锁内暂停或恢复一个触发器
     /// </summary>
     private async ValueTask<Result> SetTriggerPausedLockedAsync(TriggerKey key, bool paused, CancellationToken cancellationToken)
     {
@@ -1902,7 +1902,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 在触发器写锁内执行。
+    /// 在触发器写锁内执行
     /// </summary>
     private async ValueTask<T> UnderTriggerLockAsync<T>(Func<ValueTask<T>> action, CancellationToken cancellationToken)
     {
@@ -1918,7 +1918,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 在触发器写锁内执行，没有返回值。
+    /// 在触发器写锁内执行，没有返回值
     /// </summary>
     private async ValueTask UnderTriggerLockAsync(Func<ValueTask> action, CancellationToken cancellationToken)
     {
@@ -1934,10 +1934,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 把触发器改成暂停或从暂停恢复。
+    /// 把触发器改成暂停或从暂停恢复
     /// </summary>
     /// <remarks>
-    /// 返回是否有改动。恢复时没有下一次时刻的（间隔计划在运行中被暂停）从现在推算。
+    /// 返回是否有改动。恢复时没有下一次时刻的（间隔计划在运行中被暂停）从现在推算
     /// </remarks>
     private bool ApplyPause(TriggerRecord trigger, bool paused, DateTimeOffset now)
     {
@@ -1971,7 +1971,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 找作业记录：存储里没有时退到代码登记（尚未同步时也能手动触发与看状态）。
+    /// 找作业记录：存储里没有时退到代码登记（尚未同步时也能手动触发与看状态）
     /// </summary>
     private async ValueTask<Result<Maybe<JobRecord>>> FindJobRecordAsync(JobName name, CancellationToken cancellationToken)
     {
@@ -2007,7 +2007,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 找作业记录与已登记的类型。
+    /// 找作业记录与已登记的类型
     /// </summary>
     private async ValueTask<Result<(JobRecord Record, Type Type)>> ResolveJobAsync(JobName name, CancellationToken cancellationToken)
     {
@@ -2031,7 +2031,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 组装状态：本地触发器的下一次时刻取本节点的推算。
+    /// 组装状态：本地触发器的下一次时刻取本节点的推算
     /// </summary>
     private JobStatus BuildStatus(JobRecord job, IReadOnlyList<TriggerRecord> triggers, int runningCount, JobRunRecord? last)
     {
@@ -2054,10 +2054,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 到期触发器的 misfire 判定与计划时刻。
+    /// 到期触发器的 misfire 判定与计划时刻
     /// </summary>
     /// <remarks>
-    /// 返回推算下一次的基准时刻与本次运行的计划时刻；<paramref name="skip"/> 为真表示本次不运行。
+    /// 返回推算下一次的基准时刻与本次运行的计划时刻；<paramref name="skip"/> 为真表示本次不运行
     /// </remarks>
     private (DateTimeOffset NextFrom, DateTimeOffset ScheduledAt) Plan(TriggerRecord trigger, DateTimeOffset planned, DateTimeOffset now, out bool skip)
     {
@@ -2082,7 +2082,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 把触发器改回等待（或完成）。
+    /// 把触发器改回等待（或完成）
     /// </summary>
     private static void ReleaseTrigger(TriggerRecord trigger, DateTimeOffset? next)
     {
@@ -2093,10 +2093,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 套用日历与次数上限推算下一次。
+    /// 套用日历与次数上限推算下一次
     /// </summary>
     /// <remarks>
-    /// 日历未登记按不排除处理（登记时已校验）。
+    /// 日历未登记按不排除处理（登记时已校验）
     /// </remarks>
     private DateTimeOffset? NextFire(JobSchedule schedule, DateTimeOffset after, long fireCount)
     {
@@ -2110,7 +2110,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 一次性触发器：立即到期、运行一次后删除。
+    /// 一次性触发器：立即到期、运行一次后删除
     /// </summary>
     private static TriggerRecord TransientTrigger(JobName job, string name, JobTrigger runAs, JsonObject? data, DateTimeOffset now) => new()
     {
@@ -2127,7 +2127,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     };
 
     /// <summary>
-    /// 新的运行记录。
+    /// 新的运行记录
     /// </summary>
     private JobRunRecord NewRecord(JobRun run, DateTimeOffset startedAt) => new()
     {
@@ -2145,7 +2145,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     };
 
     /// <summary>
-    /// 作业数据 ← 触发器数据 ← 手动数据逐层覆盖。
+    /// 作业数据 ← 触发器数据 ← 手动数据逐层覆盖
     /// </summary>
     private static JsonObject Merge(JsonObject? job, JsonObject? trigger, JsonObject? manual)
     {
@@ -2167,7 +2167,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 写回一条触发器，失败只记日志。
+    /// 写回一条触发器，失败只记日志
     /// </summary>
     private async ValueTask SaveTriggerAsync(TriggerRecord trigger, CancellationToken cancellationToken)
     {
@@ -2179,7 +2179,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 删除某作业的本地触发器状态。
+    /// 删除某作业的本地触发器状态
     /// </summary>
     private void ForgetLocal(JobName name)
     {
@@ -2193,7 +2193,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 发布事件：装配了消息能力时经新作用域里的发布者发出。
+    /// 发布事件：装配了消息能力时经新作用域里的发布者发出
     /// </summary>
     private async ValueTask PublishAsync(string topic, SchedulingEventData data, CancellationToken cancellationToken)
     {
@@ -2206,7 +2206,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <summary>
-    /// 运行记录的事件数据。
+    /// 运行记录的事件数据
     /// </summary>
     private SchedulingEventData EventOf(JobRunRecord record) => new()
     {
@@ -2227,86 +2227,86 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     };
 
     /// <summary>
-    /// 作业未登记。
+    /// 作业未登记
     /// </summary>
     private static Error JobNotFound(JobName name) => Error.NotFound(SchedulingErrors.JobNotFound, SchedulingMessages.JobNotFound, MessageArguments.Of(("name", name.Value)));
 
     /// <summary>
-    /// 定义不合法。
+    /// 定义不合法
     /// </summary>
     private static Error DefinitionInvalid(JobName name, string reason) => Error.Validation(SchedulingErrors.DefinitionInvalid, SchedulingMessages.DefinitionInvalid, MessageArguments.Of(("name", name.Value), ("reason", reason)));
 
     /// <summary>
-    /// 代码定义变了，运行时的修改被覆盖。
+    /// 代码定义变了，运行时的修改被覆盖
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "The code definition of job {Job} changed; the runtime changes made to it are replaced by the code definition.")]
     private static partial void LogOverrideDiscarded(ILogger logger, string job);
 
     /// <summary>
-    /// 获取领导租约。
+    /// 获取领导租约
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Acquired the leader lease for '{Resource}'.")]
     private static partial void LogLeadershipAcquired(ILogger logger, string resource);
 
     /// <summary>
-    /// 失去领导租约。
+    /// 失去领导租约
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Lost the leader lease for '{Resource}'.")]
     private static partial void LogLeadershipLost(ILogger logger, string resource);
 
     /// <summary>
-    /// 释放领导租约（应用不在服务状态或调度器停止）。
+    /// 释放领导租约（应用不在服务状态或调度器停止）
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Released the leader lease for '{Resource}'.")]
     private static partial void LogLeadershipReleased(ILogger logger, string resource);
 
     /// <summary>
-    /// 运行失败。
+    /// 运行失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Job {Job} run {RunId} failed: {ErrorCode}")]
     private static partial void LogRunFailed(ILogger logger, string job, string runId, string errorCode);
 
     /// <summary>
-    /// 运行抛出。
+    /// 运行抛出
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Job {Job} run {RunId} threw outside the pipeline.")]
     private static partial void LogRunThrew(ILogger logger, Exception exception, string job, string runId);
 
     /// <summary>
-    /// 存储操作失败。
+    /// 存储操作失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Job store operation '{Operation}' failed with '{ErrorCode}'.")]
     private static partial void LogStoreFailed(ILogger logger, string operation, string errorCode);
 
     /// <summary>
-    /// 代码作业同步失败。
+    /// 代码作业同步失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Writing code-defined job '{Job}' to the store failed with '{ErrorCode}'; retrying next cycle.")]
     private static partial void LogSyncFailed(ILogger logger, string job, string errorCode);
 
     /// <summary>
-    /// 作业类型未登记。
+    /// 作业类型未登记
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Job '{Job}' references job type '{JobType}', which is not registered on this node.")]
     private static partial void LogTypeMissing(ILogger logger, string job, string jobType);
 
     /// <summary>
-    /// 节点失联。
+    /// 节点失联
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Scheduler nodes [{Nodes}] missed their heartbeat and are being recovered.")]
     private static partial void LogNodesLost(ILogger logger, string nodes);
 
     /// <summary>
-    /// 周期抛出。
+    /// 周期抛出
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "A scheduler cycle threw.")]
     private static partial void LogTickThrew(ILogger logger, Exception exception);
 
     /// <summary>
-    /// 代码定义的指纹。
+    /// 代码定义的指纹
     /// </summary>
     /// <remarks>
-    /// 类型键、数据、标志、说明、重试策略与执行时限（设置了才计入，ADR-0060）与各触发器（名字、计划文本、数据、优先级、misfire 策略、说明）按行拼接后的 SHA-256 十六进制。
+    /// 类型键、数据、标志、说明、重试策略与执行时限（设置了才计入，ADR-0060）与各触发器（名字、计划文本、数据、优先级、misfire 策略、说明）按行拼接后的 SHA-256 十六进制
     /// </remarks>
     private static string FingerprintOf(JobDefinition definition, string typeKey)
     {

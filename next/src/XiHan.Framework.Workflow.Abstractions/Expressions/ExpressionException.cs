@@ -6,15 +6,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 表达式的语法或求值错误。
+/// 表达式的语法或求值错误
 /// </summary>
 /// <remarks>
-/// 带消息键与参数（RFC-0010，ADR-0106），在求值器边界经 <see cref="ToError"/> 翻译成 <see cref="WorkflowErrors.ExpressionInvalid"/>；异常消息只是键与参数的描述，不给人看。
+/// 带消息键与参数（RFC-0010，ADR-0106），在求值器边界经 <see cref="ToError"/> 翻译成 <see cref="WorkflowErrors.ExpressionInvalid"/>；异常消息只是键与参数的描述，不给人看
 /// </remarks>
 internal sealed class ExpressionException : Exception
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public ExpressionException(string messageKey, IReadOnlyDictionary<string, object?>? arguments = null)
         : base(MessageTemplate.Describe(messageKey, arguments))
@@ -24,17 +24,17 @@ internal sealed class ExpressionException : Exception
     }
 
     /// <summary>
-    /// 消息键（<c>workflow.expression.*</c>）。
+    /// 消息键（<c>workflow.expression.*</c>）
     /// </summary>
     public string MessageKey { get; }
 
     /// <summary>
-    /// 消息参数（不含表达式本身）。
+    /// 消息参数（不含表达式本身）
     /// </summary>
     public IReadOnlyDictionary<string, object?>? Arguments { get; }
 
     /// <summary>
-    /// 转成错误：表达式文本放在参数 <c>expression</c>，其余参数随后。
+    /// 转成错误：表达式文本放在参数 <c>expression</c>，其余参数随后
     /// </summary>
     public Error ToError(string expression)
     {

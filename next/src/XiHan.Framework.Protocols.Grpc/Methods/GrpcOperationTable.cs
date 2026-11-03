@@ -8,19 +8,19 @@ using XiHan.Framework.Protocols.Grpc.Proto;
 namespace XiHan.Framework.Protocols.Grpc.Methods;
 
 /// <summary>
-/// 登记表里暴露给 gRPC 的操作及其 protobuf 描述与 <c>.proto</c> 文本。
+/// 登记表里暴露给 gRPC 的操作及其 protobuf 描述与 <c>.proto</c> 文本
 /// </summary>
 /// <remarks>
-/// 构造时一次建成，Schema 缺失或无法映射、方法名不合法或重复、同名消息冲突都在这里失败。
+/// 构造时一次建成，Schema 缺失或无法映射、方法名不合法或重复、同名消息冲突都在这里失败
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class GrpcOperationTable
 {
     /// <summary>
-    /// 从登记表与选项建表。
+    /// 从登记表与选项建表
     /// </summary>
     /// <remarks>
-    /// 登记表此时必须已定型。
+    /// 登记表此时必须已定型
     /// </remarks>
     public GrpcOperationTable(OperationRegistry registry, GrpcProtocolOptions options)
     {
@@ -80,20 +80,20 @@ public sealed class GrpcOperationTable
     }
 
     /// <summary>
-    /// 发布的操作，按 <c>Service/Method</c> 排序。
+    /// 发布的操作，按 <c>Service/Method</c> 排序
     /// </summary>
     public IReadOnlyList<GrpcOperation> Operations { get; }
 
     /// <summary>
-    /// protobuf 包名。
+    /// protobuf 包名
     /// </summary>
     /// <remarks>
-    /// 空表示没有包。
+    /// 空表示没有包
     /// </remarks>
     public string? Package { get; }
 
     /// <summary>
-    /// 生成的 <c>.proto</c> 文本。
+    /// 生成的 <c>.proto</c> 文本
     /// </summary>
     public string Proto { get; }
 }

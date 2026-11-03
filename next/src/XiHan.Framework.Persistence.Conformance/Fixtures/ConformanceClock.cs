@@ -6,16 +6,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件用的可拨动时钟。
+/// 套件用的可拨动时钟
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class ConformanceClock(DateTimeOffset start) : TimeProvider
 {
     /// <summary>
-    /// 当前时刻。
+    /// 当前时刻
     /// </summary>
     /// <remarks>
-    /// 只由 <see cref="Advance"/> 推进，不随真实时间流动。
+    /// 只由 <see cref="Advance"/> 推进，不随真实时间流动
     /// </remarks>
     private DateTimeOffset _now = start;
 
@@ -23,7 +23,7 @@ public sealed class ConformanceClock(DateTimeOffset start) : TimeProvider
     public override DateTimeOffset GetUtcNow() => _now;
 
     /// <summary>
-    /// 前进。
+    /// 前进
     /// </summary>
     public void Advance(TimeSpan by) => _now += by;
 }

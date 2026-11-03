@@ -7,10 +7,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 平台分区的工作流实例行。
+/// 平台分区的工作流实例行
 /// </summary>
 /// <remarks>
-/// 无租户的调用（平台）启动的实例：不实现 <c>IMultiTenant</c>，落平台库，租户看不到。索引：<c>(ParentInstanceId)</c>、<c>(CorrelationId)</c>、<c>(EndedAt)</c>、<c>(CreatedAt)</c>、<c>(StarterId, CreatedAt)</c>，用途同 <see cref="WorkflowInstanceRecord"/>。
+/// 无租户的调用（平台）启动的实例：不实现 <c>IMultiTenant</c>，落平台库，租户看不到。索引：<c>(ParentInstanceId)</c>、<c>(CorrelationId)</c>、<c>(EndedAt)</c>、<c>(CreatedAt)</c>、<c>(StarterId, CreatedAt)</c>，用途同 <see cref="WorkflowInstanceRecord"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [EntityIndex(nameof(ParentInstanceId))]

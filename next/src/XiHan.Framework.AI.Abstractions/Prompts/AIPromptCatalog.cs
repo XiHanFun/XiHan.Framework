@@ -6,18 +6,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Prompts;
 
 /// <summary>
-/// 提示词目录的实现（单例）。
+/// 提示词目录的实现（单例）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIPromptCatalog : IAIPromptCatalog
 {
     /// <summary>
-    /// 名字 → 模板。
+    /// 名字 → 模板
     /// </summary>
     private readonly SortedDictionary<string, AIPromptTemplate> _templates = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建：先放配置里的，再用显式登记覆盖。
+    /// 创建：先放配置里的，再用显式登记覆盖
     /// </summary>
     public AIPromptCatalog(AIOptions options, IEnumerable<AIPromptTemplate> registered)
     {

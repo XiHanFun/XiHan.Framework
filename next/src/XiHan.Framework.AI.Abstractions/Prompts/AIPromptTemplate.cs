@@ -8,13 +8,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Prompts;
 
 /// <summary>
-/// 提示词模板：占位符 <c>{name}</c>，<c>{{</c> / <c>}}</c> 转义成字面量。
+/// 提示词模板：占位符 <c>{name}</c>，<c>{{</c> / <c>}}</c> 转义成字面量
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record AIPromptTemplate
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public AIPromptTemplate(string name, string template, string? description = null)
     {
@@ -24,22 +24,22 @@ public sealed record AIPromptTemplate
     }
 
     /// <summary>
-    /// 名字。
+    /// 名字
     /// </summary>
     public string Name { get; }
 
     /// <summary>
-    /// 模板。
+    /// 模板
     /// </summary>
     public string Template { get; }
 
     /// <summary>
-    /// 说明。
+    /// 说明
     /// </summary>
     public string? Description { get; }
 
     /// <summary>
-    /// 模板引用的参数名（去重、按出现顺序）。
+    /// 模板引用的参数名（去重、按出现顺序）
     /// </summary>
     public IReadOnlyList<string> Placeholders
     {
@@ -60,10 +60,10 @@ public sealed record AIPromptTemplate
     }
 
     /// <summary>
-    /// 渲染。
+    /// 渲染
     /// </summary>
     /// <remarks>
-    /// 缺参数 → <see cref="AIErrors.RequestInvalid"/>。值按不变文化转字符串，<see langword="null"/> 为空串。
+    /// 缺参数 → <see cref="AIErrors.RequestInvalid"/>。值按不变文化转字符串，<see langword="null"/> 为空串
     /// </remarks>
     public Result<string> Render(IReadOnlyDictionary<string, object?>? arguments = null)
     {
@@ -114,7 +114,7 @@ public sealed record AIPromptTemplate
     }
 
     /// <summary>
-    /// 从 <paramref name="position"/> 起找下一个占位符。
+    /// 从 <paramref name="position"/> 起找下一个占位符
     /// </summary>
     private static bool TryNextPlaceholder(string template, ref int position, out string name)
     {

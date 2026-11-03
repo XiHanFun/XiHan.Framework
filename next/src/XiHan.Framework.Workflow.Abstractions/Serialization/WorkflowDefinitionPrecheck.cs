@@ -12,18 +12,18 @@ using XiHan.Framework.Workflow.Abstractions.Definitions;
 namespace XiHan.Framework.Workflow.Abstractions.Serialization;
 
 /// <summary>
-/// 构造定义模型之前对定义 JSON 的核对。
+/// 构造定义模型之前对定义 JSON 的核对
 /// </summary>
 /// <remarks>
-/// 模型的 <c>init</c> 与序列化器拒绝的值（缺少必填成员、名字与活动类型的文法、定义 ID、版本、分类长度、超时、节点与转移 ID、变量名、重试策略）在这里按同一组规则先查一遍：值的规则是 <see cref="WorkflowDefinitionRules"/>、<see cref="WorkflowName.IsValid"/>、<see cref="ActivityType.IsValid"/>、<see cref="WorkflowIdentifiers.IsValidElementId"/>，与模型共用；必填成员取自序列化器的元数据。每条问题是一条带路径、消息键与参数的 <see cref="SchemaViolation"/>（ADR-0106 修订）。值的类型不对时不在这里报：交给随后的反序列化报 <see cref="WorkflowMessages.DefinitionJsonMalformed"/>。
+/// 模型的 <c>init</c> 与序列化器拒绝的值（缺少必填成员、名字与活动类型的文法、定义 ID、版本、分类长度、超时、节点与转移 ID、变量名、重试策略）在这里按同一组规则先查一遍：值的规则是 <see cref="WorkflowDefinitionRules"/>、<see cref="WorkflowName.IsValid"/>、<see cref="ActivityType.IsValid"/>、<see cref="WorkflowIdentifiers.IsValidElementId"/>，与模型共用；必填成员取自序列化器的元数据。每条问题是一条带路径、消息键与参数的 <see cref="SchemaViolation"/>（ADR-0106 修订）。值的类型不对时不在这里报：交给随后的反序列化报 <see cref="WorkflowMessages.DefinitionJsonMalformed"/>
 /// </remarks>
 internal static class WorkflowDefinitionPrecheck
 {
     /// <summary>
-    /// 核对整份定义。
+    /// 核对整份定义
     /// </summary>
     /// <remarks>
-    /// 根不是对象时没有问题可报（反序列化会报类型不对）。
+    /// 根不是对象时没有问题可报（反序列化会报类型不对）
     /// </remarks>
     public static IReadOnlyList<SchemaViolation> Check(JsonElement root)
     {
@@ -74,16 +74,16 @@ internal static class WorkflowDefinitionPrecheck
     }
 
     /// <summary>
-    /// 超时不是正数的错误（定义与节点相同）。
+    /// 超时不是正数的错误（定义与节点相同）
     /// </summary>
     private static Error Timeout(TimeSpan? timeout)
         => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionTimeoutInvalid, MessageArguments.Of(("value", (timeout ?? TimeSpan.Zero).ToString("c", CultureInfo.InvariantCulture))));
 
     /// <summary>
-    /// 按一条值的规则核对一个成员。
+    /// 按一条值的规则核对一个成员
     /// </summary>
     /// <remarks>
-    /// 在场的成员用序列化器同一个转换器读出，过不了规则就报 <paramref name="invalid"/>；类型不对时不报（反序列化会报）。不在场的成员不报：必填成员缺了由 <see cref="Required"/> 报，非必填成员取模型的初值（ADR-0107），初值本身过得了规则。
+    /// 在场的成员用序列化器同一个转换器读出，过不了规则就报 <paramref name="invalid"/>；类型不对时不报（反序列化会报）。不在场的成员不报：必填成员缺了由 <see cref="Required"/> 报，非必填成员取模型的初值（ADR-0107），初值本身过得了规则
     /// </remarks>
     private static void Rule<T>(JsonElement owner, string ownerPath, string clrName, JsonTypeInfo<T> type, Func<T?, bool> valid, Func<T?, Error> invalid, List<SchemaViolation> issues)
     {
@@ -110,7 +110,7 @@ internal static class WorkflowDefinitionPrecheck
     }
 
     /// <summary>
-    /// 必填成员（序列化器元数据里的 <see cref="JsonPropertyInfo.IsRequired"/>，即模型的 <c>required</c>）缺了就报。
+    /// 必填成员（序列化器元数据里的 <see cref="JsonPropertyInfo.IsRequired"/>，即模型的 <c>required</c>）缺了就报
     /// </summary>
     private static void Required(JsonElement owner, string path, JsonTypeInfo type, List<SchemaViolation> issues)
     {
@@ -124,16 +124,16 @@ internal static class WorkflowDefinitionPrecheck
     }
 
     /// <summary>
-    /// 缺少成员的错误。
+    /// 缺少成员的错误
     /// </summary>
     private static Error MemberMissing(string member)
         => Error.Validation(WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionMemberMissing, MessageArguments.Of(("member", member)));
 
     /// <summary>
-    /// 根对象上数组成员里的对象项与它们的路径。
+    /// 根对象上数组成员里的对象项与它们的路径
     /// </summary>
     /// <remarks>
-    /// 成员不是数组、项不是对象时跳过（反序列化会报类型不对）。
+    /// 成员不是数组、项不是对象时跳过（反序列化会报类型不对）
     /// </remarks>
     private static IEnumerable<(JsonElement Item, string Path)> Items(JsonElement root, string clrName)
     {
@@ -155,7 +155,7 @@ internal static class WorkflowDefinitionPrecheck
     }
 
     /// <summary>
-    /// 按模型属性名（序列化成 camelCase，与序列化器同一命名策略）取成员。
+    /// 按模型属性名（序列化成 camelCase，与序列化器同一命名策略）取成员
     /// </summary>
     private static bool Member(JsonElement owner, string ownerPath, string clrName, out JsonElement value, out string path)
     {
@@ -165,7 +165,7 @@ internal static class WorkflowDefinitionPrecheck
     }
 
     /// <summary>
-    /// 记一条问题：错误的消息键与参数原样带上，原因文本是错误按进程默认区域渲染的消息。
+    /// 记一条问题：错误的消息键与参数原样带上，原因文本是错误按进程默认区域渲染的消息
     /// </summary>
     private static void Add(List<SchemaViolation> issues, string path, Error error)
         => issues.Add(new SchemaViolation(path, error.Message, error.MessageKey, error.Details));

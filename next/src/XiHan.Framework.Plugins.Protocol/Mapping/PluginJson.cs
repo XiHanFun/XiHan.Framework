@@ -9,15 +9,15 @@ using Microsoft.Extensions.Configuration;
 namespace XiHan.Framework.Plugins.Protocol.Mapping;
 
 /// <summary>
-/// 协议里 JSON 文本字段的编解码：错误细节与配置节。
+/// 协议里 JSON 文本字段的编解码：错误细节与配置节
 /// </summary>
 internal static class PluginJson
 {
     /// <summary>
-    /// 错误细节（模板参数）写成 JSON 对象。
+    /// 错误细节（模板参数）写成 JSON 对象
     /// </summary>
     /// <remarks>
-    /// 只处理 JSON 可表示的值，其余按 <see cref="object.ToString"/>。
+    /// 只处理 JSON 可表示的值，其余按 <see cref="object.ToString"/>
     /// </remarks>
     public static string SerializeDetails(IReadOnlyDictionary<string, object?> details)
     {
@@ -38,10 +38,10 @@ internal static class PluginJson
     }
 
     /// <summary>
-    /// 解析错误细节。
+    /// 解析错误细节
     /// </summary>
     /// <remarks>
-    /// 不是 JSON 对象返回空。
+    /// 不是 JSON 对象返回空
     /// </remarks>
     public static IReadOnlyDictionary<string, object?>? ParseDetails(string json)
     {
@@ -73,10 +73,10 @@ internal static class PluginJson
     }
 
     /// <summary>
-    /// 配置节序列化为 JSON。
+    /// 配置节序列化为 JSON
     /// </summary>
     /// <remarks>
-    /// 没有子项的节是标量，子键都是从 0 起的连续整数时是数组，否则是对象。
+    /// 没有子项的节是标量，子键都是从 0 起的连续整数时是数组，否则是对象
     /// </remarks>
     public static string SerializeSection(IConfigurationSection section)
     {
@@ -90,7 +90,7 @@ internal static class PluginJson
     }
 
     /// <summary>
-    /// 递归写一个配置节。
+    /// 递归写一个配置节
     /// </summary>
     private static void WriteSection(Utf8JsonWriter writer, IConfigurationSection section, bool root)
     {
@@ -135,7 +135,7 @@ internal static class PluginJson
     }
 
     /// <summary>
-    /// 写一个细节值。
+    /// 写一个细节值
     /// </summary>
     private static void WriteValue(Utf8JsonWriter writer, object? value)
     {
@@ -188,10 +188,10 @@ internal static class PluginJson
     }
 
     /// <summary>
-    /// 读一个细节值。
+    /// 读一个细节值
     /// </summary>
     /// <remarks>
-    /// 字符串、数字（整数优先）、布尔、空；对象与数组保留为 <see cref="JsonElement"/>。
+    /// 字符串、数字（整数优先）、布尔、空；对象与数组保留为 <see cref="JsonElement"/>
     /// </remarks>
     private static object? ReadValue(JsonElement element) => element.ValueKind switch
     {

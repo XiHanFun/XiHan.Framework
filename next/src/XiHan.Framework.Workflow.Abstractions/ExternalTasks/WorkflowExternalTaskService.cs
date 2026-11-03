@@ -17,47 +17,47 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 
 /// <summary>
-/// 外部任务服务（RFC-0021）。
+/// 外部任务服务（RFC-0021）
 /// </summary>
 /// <remarks>
-/// 领取在实例锁内把锁写进 <c>External</c> 书签载荷并把书签 <c>DueAt</c> 设为锁到期时刻（到期由轮询恢复、活动原样重新挂起即自动解锁）；完成与无重试的失败先在锁内校验工作者持锁，交还锁后经引擎消费书签（引擎复用本作用域空闲的锁）；带重试的失败与延长锁只改书签。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区。
+/// 领取在实例锁内把锁写进 <c>External</c> 书签载荷并把书签 <c>DueAt</c> 设为锁到期时刻（到期由轮询恢复、活动原样重新挂起即自动解锁）；完成与无重试的失败先在锁内校验工作者持锁，交还锁后经引擎消费书签（引擎复用本作用域空闲的锁）；带重试的失败与延长锁只改书签。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
 {
     /// <summary>
-    /// 引擎。
+    /// 引擎
     /// </summary>
     private readonly IWorkflowEngine _engine;
 
     /// <summary>
-    /// 实例存储。
+    /// 实例存储
     /// </summary>
     private readonly IWorkflowInstanceStore _instances;
 
     /// <summary>
-    /// 书签存储。
+    /// 书签存储
     /// </summary>
     private readonly IWorkflowBookmarkStore _bookmarks;
 
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 事件发布。
+    /// 事件发布
     /// </summary>
     private readonly WorkflowEventPublisher _events;
 
     /// <summary>
-    /// 本次调用的上下文访问器。
+    /// 本次调用的上下文访问器
     /// </summary>
     private readonly WorkflowScope _scope;
 
     /// <summary>
-    /// 创建（作用域服务）。
+    /// 创建（作用域服务）
     /// </summary>
     public WorkflowExternalTaskService(IWorkflowEngine engine, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
     {
@@ -72,7 +72,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 调用方的分区：调用的租户，空为平台。
+    /// 调用方的分区：调用的租户，空为平台
     /// </summary>
     private string? Tenant => _scope.TenantId;
 
@@ -85,7 +85,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 领取（在事务里）。
+    /// 领取（在事务里）
     /// </summary>
     private async ValueTask<Result<IReadOnlyList<ExternalTask>>> FetchCoreAsync(string topic, string workerId, TimeSpan lockDuration, int maxTasks, CancellationToken cancellationToken)
     {
@@ -205,10 +205,10 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 完成一项。
+    /// 完成一项
     /// </summary>
     /// <remarks>
-    /// 锁内校验工作者持锁，释放锁后经引擎以 <c>outputs</c> 恢复节点（输出合并进实例变量），再发完成事件。
+    /// 锁内校验工作者持锁，释放锁后经引擎以 <c>outputs</c> 恢复节点（输出合并进实例变量），再发完成事件
     /// </remarks>
     private async ValueTask<Result<WorkflowInstance>> CompleteOneAsync(ExternalTaskCompletion completion, CancellationToken cancellationToken)
     {
@@ -235,10 +235,10 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 失败一项。
+    /// 失败一项
     /// </summary>
     /// <remarks>
-    /// 有 <c>RetryAfter</c> 时在锁内解锁、尝试次数加一、后推可领取时刻并把书签到期设到那时；没有时释放锁后经引擎以 <c>error</c> 恢复节点使其故障。
+    /// 有 <c>RetryAfter</c> 时在锁内解锁、尝试次数加一、后推可领取时刻并把书签到期设到那时；没有时释放锁后经引擎以 <c>error</c> 恢复节点使其故障
     /// </remarks>
     private async ValueTask<Result> FailOneAsync(ExternalTaskFailure failure, CancellationToken cancellationToken)
     {
@@ -304,7 +304,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 延长一项的锁：锁内校验工作者持锁后把锁到期与书签到期都设为现在加时长。
+    /// 延长一项的锁：锁内校验工作者持锁后把锁到期与书签到期都设为现在加时长
     /// </summary>
     private async ValueTask<Result> ExtendOneAsync(ExternalTaskLockExtension extension, CancellationToken cancellationToken)
     {
@@ -336,10 +336,10 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 在实例锁内确认工作者持有未过期的锁。
+    /// 在实例锁内确认工作者持有未过期的锁
     /// </summary>
     /// <remarks>
-    /// 返回锁内重读的书签。锁在返回前释放：随后的引擎调用自己加锁。
+    /// 返回锁内重读的书签。锁在返回前释放：随后的引擎调用自己加锁
     /// </remarks>
     private async ValueTask<Result<WorkflowBookmark>> VerifyLockAsync(string taskId, string workerId, CancellationToken cancellationToken)
     {
@@ -369,7 +369,7 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 在实例锁内重读书签与实例（要求实例运行中）后执行 <paramref name="action"/>。
+    /// 在实例锁内重读书签与实例（要求实例运行中）后执行 <paramref name="action"/>
     /// </summary>
     private async ValueTask<Result> WithLockedBookmarkAsync(WorkflowBookmark peek, Func<WorkflowBookmark, WorkflowInstance, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
@@ -409,10 +409,10 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 找本租户的外部任务书签。
+    /// 找本租户的外部任务书签
     /// </summary>
     /// <remarks>
-    /// 不存在、种类不对或不是本租户的都按不存在处理（不泄露别的租户的任务）。
+    /// 不存在、种类不对或不是本租户的都按不存在处理（不泄露别的租户的任务）
     /// </remarks>
     private async ValueTask<Result<WorkflowBookmark>> FindExternalBookmarkAsync(string taskId, CancellationToken cancellationToken)
     {
@@ -436,14 +436,14 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     }
 
     /// <summary>
-    /// 可领取：未锁定或锁已过期，且没有 <c>notBefore</c> 或已到。
+    /// 可领取：未锁定或锁已过期，且没有 <c>notBefore</c> 或已到
     /// </summary>
     private static bool IsFetchable(WorkflowBookmark bookmark, DateTimeOffset now)
         => (Time(bookmark, ExternalTaskPayloadKeys.LockedUntil) is not { } until || until < now)
            && (Time(bookmark, ExternalTaskPayloadKeys.NotBefore) is not { } notBefore || notBefore <= now);
 
     /// <summary>
-    /// 工作者持有未过期的锁。
+    /// 工作者持有未过期的锁
     /// </summary>
     private static bool HoldsLock(WorkflowBookmark bookmark, string workerId, DateTimeOffset now)
         => !string.IsNullOrWhiteSpace(workerId)
@@ -451,13 +451,13 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
            && Time(bookmark, ExternalTaskPayloadKeys.LockedUntil) is { } until && until >= now;
 
     /// <summary>
-    /// 工作者没有持锁的错误。
+    /// 工作者没有持锁的错误
     /// </summary>
     private static Error Denied(string taskId, string workerId)
         => Error.Denied(WorkflowErrors.ExternalTaskDenied, WorkflowMessages.ExternalTaskDenied, MessageArguments.Of(("task", taskId), ("worker", workerId)));
 
     /// <summary>
-    /// 外部任务视图。
+    /// 外部任务视图
     /// </summary>
     private static ExternalTask View(WorkflowBookmark bookmark, WorkflowInstance instance, DateTimeOffset lockedUntil) => new()
     {
@@ -474,39 +474,39 @@ public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     };
 
     /// <summary>
-    /// 载荷里的尝试次数。
+    /// 载荷里的尝试次数
     /// </summary>
     /// <remarks>
-    /// 没有为 1。
+    /// 没有为 1
     /// </remarks>
     private static int Attempt(WorkflowBookmark bookmark)
         => bookmark.Payload.TryGetPropertyValue(ExternalTaskPayloadKeys.Attempt, out var value) && WorkflowValues.TryConvert<int>(value, out var attempt) && attempt >= 1 ? attempt : 1;
 
     /// <summary>
-    /// 载荷里的时刻。
+    /// 载荷里的时刻
     /// </summary>
     /// <remarks>
-    /// 没有或不是时刻为空。
+    /// 没有或不是时刻为空
     /// </remarks>
     private static DateTimeOffset? Time(WorkflowBookmark bookmark, string key)
         => bookmark.Payload.TryGetPropertyValue(key, out var value) && WorkflowValues.TryConvert<DateTimeOffset>(value, out var at) ? at : null;
 
     /// <summary>
-    /// 载荷里的字符串。
+    /// 载荷里的字符串
     /// </summary>
     /// <remarks>
-    /// 没有或不是标量为空。
+    /// 没有或不是标量为空
     /// </remarks>
     private static string? Text(JsonObject payload, string key)
         => payload.TryGetPropertyValue(key, out var value) && value is JsonValue scalar ? WorkflowValues.AsString(scalar) : null;
 
     /// <summary>
-    /// 时刻的 ISO-8601 往返形式（存储往返后仍可解析）。
+    /// 时刻的 ISO-8601 往返形式（存储往返后仍可解析）
     /// </summary>
     private static string Stamp(DateTimeOffset at) => at.ToString("O", CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// 外部任务事件的数据。
+    /// 外部任务事件的数据
     /// </summary>
     private WorkflowEventData EventData(WorkflowInstance instance, WorkflowBookmark bookmark) => new()
     {

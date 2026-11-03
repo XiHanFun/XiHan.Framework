@@ -16,27 +16,27 @@ using XiHan.Framework.Scheduling.Abstractions.Storage;
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 内存调度的能力包入口。
+/// 内存调度的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>scheduling.jobs@1</c>（进程内作业存储 + 抽象包的引擎）与 <c>scheduling.leader@1</c>（进程内租约）。被显式 Provider 顶替的能力只留本包自己的类型。
+/// 提供 <c>scheduling.jobs@1</c>（进程内作业存储 + 抽象包的引擎）与 <c>scheduling.leader@1</c>（进程内租约）。被显式 Provider 顶替的能力只留本包自己的类型
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemorySchedulingFeature : IHostedFeature
 {
     /// <summary>
-    /// 健康项名。
+    /// 健康项名
     /// </summary>
     /// <remarks>
-    /// 领导权状态（进程内租约，持有与否都是 Ready；引擎停止为 Stopped）。
+    /// 领导权状态（进程内租约，持有与否都是 Ready；引擎停止为 Stopped）
     /// </remarks>
     public const string HealthName = "scheduling.inmemory.leader";
 
     /// <summary>
-    /// 引擎。
+    /// 引擎
     /// </summary>
     /// <remarks>
-    /// 只在本包被选中提供作业能力时存在。
+    /// 只在本包被选中提供作业能力时存在
     /// </remarks>
     private JobSchedulerEngine? _engine;
 

@@ -21,59 +21,59 @@ using Xunit;
 namespace XiHan.Framework.Persistence.Conformance;
 
 /// <summary>
-/// <c>persistence.relational@1</c> Provider 的一致性套件（含批量用例）。
+/// <c>persistence.relational@1</c> Provider 的一致性套件（含批量用例）
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。每个用例都以 <see cref="TestHost"/> 走完整管道：工作单元由 Transaction 阶段的中间件开启、提交或回滚。
+/// 继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。每个用例都以 <see cref="TestHost"/> 走完整管道：工作单元由 Transaction 阶段的中间件开启、提交或回滚
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class RepositoryConformance
 {
     /// <summary>
-    /// 套件时钟的起点。
+    /// 套件时钟的起点
     /// </summary>
     public static DateTimeOffset Epoch { get; } = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 注入宿主的时钟。
+    /// 注入宿主的时钟
     /// </summary>
     /// <remarks>
-    /// 审计字段的期望值据此计算。
+    /// 审计字段的期望值据此计算
     /// </remarks>
     protected ConformanceClock Clock { get; } = new(Epoch);
 
     /// <summary>
-    /// 宿主配置。
+    /// 宿主配置
     /// </summary>
     /// <remarks>
-    /// Provider 需要的连接等在此提供。
+    /// Provider 需要的连接等在此提供
     /// </remarks>
     protected virtual IEnumerable<KeyValuePair<string, string?>> Configuration => [];
 
     /// <summary>
-    /// 创建被测 Provider 的特性。
+    /// 创建被测 Provider 的特性
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次。
+    /// 每个用例调用一次
     /// </remarks>
     protected abstract IFeature CreateFeature();
 
     /// <summary>
-    /// 附加服务注册。
+    /// 附加服务注册
     /// </summary>
     protected virtual void ConfigureServices(IServiceCollection services)
     {
     }
 
     /// <summary>
-    /// 附加应用配置。
+    /// 附加应用配置
     /// </summary>
     protected virtual void ConfigureApp(AppBuilder builder)
     {
     }
 
     /// <summary>
-    /// 用例 1：新增在同一工作单元内可读，提交后对新调用可见，并写入创建时间与并发戳。
+    /// 用例 1：新增在同一工作单元内可读，提交后对新调用可见，并写入创建时间与并发戳
     /// </summary>
     [Fact]
     public async Task Add_IsReadableInSameUnitOfWork_AndVisibleAfterCommit()
@@ -106,7 +106,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 2：未提交的写入对其他工作单元不可见。
+    /// 用例 2：未提交的写入对其他工作单元不可见
     /// </summary>
     [Fact]
     public async Task UncommittedWrite_IsInvisibleToOtherUnitOfWork()
@@ -134,7 +134,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 3：标识重复，无论在同一工作单元还是跨工作单元，都返回 <see cref="PersistenceErrors.Duplicate"/>。
+    /// 用例 3：标识重复，无论在同一工作单元还是跨工作单元，都返回 <see cref="PersistenceErrors.Duplicate"/>
     /// </summary>
     [Fact]
     public async Task Add_DuplicateId_ReturnsDuplicate()
@@ -159,7 +159,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 4：更新写入修改时间并刷新并发戳。
+    /// 用例 4：更新写入修改时间并刷新并发戳
     /// </summary>
     [Fact]
     public async Task Update_WritesModificationTime_AndRefreshesStamp()
@@ -188,7 +188,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 5：更新或删除不存在的实体返回 <see cref="PersistenceErrors.NotFound"/>。
+    /// 用例 5：更新或删除不存在的实体返回 <see cref="PersistenceErrors.NotFound"/>
     /// </summary>
     [Fact]
     public async Task Update_And_Remove_Missing_ReturnNotFound()
@@ -204,10 +204,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 6：软删除实体被打标并隐藏，只有 <see cref="EntityQuery{T}.IncludeDeleted"/> 能看到。
+    /// 用例 6：软删除实体被打标并隐藏，只有 <see cref="EntityQuery{T}.IncludeDeleted"/> 能看到
     /// </summary>
     /// <remarks>
-    /// 之后更新与再次删除返回 NotFound。
+    /// 之后更新与再次删除返回 NotFound
     /// </remarks>
     [Fact]
     public async Task Remove_SoftDeletable_HidesEntity_UntilIncludeDeleted()
@@ -241,7 +241,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 7：不实现软删除协议的实体被物理删除。
+    /// 用例 7：不实现软删除协议的实体被物理删除
     /// </summary>
     [Fact]
     public async Task Remove_PlainEntity_DeletesPhysically()
@@ -263,7 +263,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 8：调用结果为失败时回滚，失败结果原样返回。
+    /// 用例 8：调用结果为失败时回滚，失败结果原样返回
     /// </summary>
     [Fact]
     public async Task FailureOutcome_RollsBack()
@@ -287,7 +287,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 9：未处理异常回滚，并由内核转为 <see cref="KernelErrors.Unexpected"/>。
+    /// 用例 9：未处理异常回滚，并由内核转为 <see cref="KernelErrors.Unexpected"/>
     /// </summary>
     [Fact]
     public async Task Exception_RollsBack_AndBecomesUnexpectedOutcome()
@@ -310,10 +310,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 10：多租户实体没有当前租户时拒绝新增。
+    /// 用例 10：多租户实体没有当前租户时拒绝新增
     /// </summary>
     /// <remarks>
-    /// 不同租户互不可见；无租户的调用看不到任何多租户实体。
+    /// 不同租户互不可见；无租户的调用看不到任何多租户实体
     /// </remarks>
     [Fact]
     public async Task MultiTenant_RequiresTenant_AndIsolatesTenants()
@@ -337,10 +337,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 11：查询按过滤、排序、分页返回。
+    /// 用例 11：查询按过滤、排序、分页返回
     /// </summary>
     /// <remarks>
-    /// 计数忽略分页。
+    /// 计数忽略分页
     /// </remarks>
     [Fact]
     public async Task List_AppliesFilterOrderingAndPaging_CountIgnoresPaging()
@@ -366,10 +366,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 11b。
+    /// 用例 11b
     /// </summary>
     /// <remarks>
-    /// 规约里可空值类型与 null 的相等 / 不等按存在性（<c>IS NULL</c> / <c>IS NOT NULL</c>）过滤——字面量 null、闭包里的 null 变量、左右互换、与 <c>HasValue</c> 都一致，组合到别的条件里也成立。SqlSugar 原本把 <c>DateTimeOffset?</c> 的提升比较译成 <c>= NULL</c>（永假、静默空集），Provider 必须按本用例的语义翻译。
+    /// 规约里可空值类型与 null 的相等 / 不等按存在性（<c>IS NULL</c> / <c>IS NOT NULL</c>）过滤——字面量 null、闭包里的 null 变量、左右互换、与 <c>HasValue</c> 都一致，组合到别的条件里也成立。SqlSugar 原本把 <c>DateTimeOffset?</c> 的提升比较译成 <c>= NULL</c>（永假、静默空集），Provider 必须按本用例的语义翻译
     /// </remarks>
     [Fact]
     public async Task List_NullableValueTypeComparedWithNull_FiltersByPresence()
@@ -405,10 +405,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 11c：可空值类型判空、取反与 <c>&amp;&amp;</c> / <c>||</c> 嵌套组合照常过滤。
+    /// 用例 11c：可空值类型判空、取反与 <c>&amp;&amp;</c> / <c>||</c> 嵌套组合照常过滤
     /// </summary>
     /// <remarks>
-    /// 或条件、取反出现在与条件的右侧，判空或取反是或条件的左操作数（发件箱的到期判定就是 <c>A &amp;&amp; B &amp;&amp; (可空值 == null || …)</c>）。SqlSugar 在这些位置会漏写 <c>AND</c> / <c>OR</c>，生成语法错误的 SQL，Provider 必须照常翻译。规约只用存在性判定与整数比较，不对可空值做取反后的大小比较（C# 与 SQL 对 null 的三值逻辑不同）。
+    /// 或条件、取反出现在与条件的右侧，判空或取反是或条件的左操作数（发件箱的到期判定就是 <c>A &amp;&amp; B &amp;&amp; (可空值 == null || …)</c>）。SqlSugar 在这些位置会漏写 <c>AND</c> / <c>OR</c>，生成语法错误的 SQL，Provider 必须照常翻译。规约只用存在性判定与整数比较，不对可空值做取反后的大小比较（C# 与 SQL 对 null 的三值逻辑不同）
     /// </remarks>
     [Fact]
     public async Task List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten()
@@ -447,10 +447,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 11d：一次查询最多取 <see cref="EntityQuery.DefaultMaxTake"/> 条。
+    /// 用例 11d：一次查询最多取 <see cref="EntityQuery.DefaultMaxTake"/> 条
     /// </summary>
     /// <remarks>
-    /// 比上限多一条数据：缺省查询与取满上限的查询都只返回上限条，计数仍是全部，第二页取到剩下的一条。超过上限的取出条数在构造查询时就以 <see cref="PersistenceErrors.TakeExceeded"/> 拒绝，不交给 Provider 截断；调用里先写入、再用超限的条数构造查询，调用以该码的校验结果结束，写入回滚。
+    /// 比上限多一条数据：缺省查询与取满上限的查询都只返回上限条，计数仍是全部，第二页取到剩下的一条。超过上限的取出条数在构造查询时就以 <see cref="PersistenceErrors.TakeExceeded"/> 拒绝，不交给 Provider 截断；调用里先写入、再用超限的条数构造查询，调用以该码的校验结果结束，写入回滚
     /// </remarks>
     [Fact]
     public async Task List_ReturnsAtMostTheMaximumTake_AndLargerTakesAreRejected()
@@ -484,10 +484,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 11e：规约里字符串的包含、前缀与后缀按字面匹配。
+    /// 用例 11e：规约里字符串的包含、前缀与后缀按字面匹配
     /// </summary>
     /// <remarks>
-    /// 实参里的 <c>%</c>、<c>_</c>、<c>[</c>、反斜杠、<c>!</c> 与单引号不是通配符、转义符或语法：<c>t_2</c> 不命中 <c>budgetx2026</c>，<c>0%</c> 不命中 <c>500 off</c>，<c>[a]</c> 不命中 <c>a</c>（SQL Server 的字符类），<c>a\b</c> 不命中 <c>ab</c>（PostgreSQL 与 MySQL 的 <c>LIKE</c> 缺省以反斜杠转义），<c>!y</c> 不命中 <c>xy</c>。实参是闭包变量与常量都一样。大小写是否敏感各库不同，不在本用例：数据与实参都是小写（RFC-0005「规约里的字符串匹配」）。SqlSugar 原本把它们译成不转义的 <c>LIKE</c>，Provider 必须按本用例的语义翻译。
+    /// 实参里的 <c>%</c>、<c>_</c>、<c>[</c>、反斜杠、<c>!</c> 与单引号不是通配符、转义符或语法：<c>t_2</c> 不命中 <c>budgetx2026</c>，<c>0%</c> 不命中 <c>500 off</c>，<c>[a]</c> 不命中 <c>a</c>（SQL Server 的字符类），<c>a\b</c> 不命中 <c>ab</c>（PostgreSQL 与 MySQL 的 <c>LIKE</c> 缺省以反斜杠转义），<c>!y</c> 不命中 <c>xy</c>。实参是闭包变量与常量都一样。大小写是否敏感各库不同，不在本用例：数据与实参都是小写（RFC-0005「规约里的字符串匹配」）。SqlSugar 原本把它们译成不转义的 <c>LIKE</c>，Provider 必须按本用例的语义翻译
     /// </remarks>
     [Fact]
     public async Task List_StringContainsStartsWithEndsWith_MatchWildcardCharactersLiterally()
@@ -550,10 +550,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 11f：规约里字符串的包含、前缀与后缀在大小写上一致。
+    /// 用例 11f：规约里字符串的包含、前缀与后缀在大小写上一致
     /// </summary>
     /// <remarks>
-    /// 同一个 Provider 上，三个方法之间、实参是闭包变量、常量还是另一列之间，ASCII 字母的大小写规则相同：全都区分或全都不区分，不断言是哪一种（照各库，RFC-0005「规约里的字符串匹配」）。列实参取多租户实体的租户列：租户 <c>acme</c> 的笔记 <c>ACME</c> 与它只差大小写。EF Core 的 SQLite Provider 原本把 <c>Contains</c> 译成区分大小写的 <c>instr</c>、<c>StartsWith</c> / <c>EndsWith</c> 的值实参译成不区分的 <c>LIKE</c>、列实参译成区分的 <c>substr</c> 比较，一个库上三种规则，Provider 必须统一成一套。
+    /// 同一个 Provider 上，三个方法之间、实参是闭包变量、常量还是另一列之间，ASCII 字母的大小写规则相同：全都区分或全都不区分，不断言是哪一种（照各库，RFC-0005「规约里的字符串匹配」）。列实参取多租户实体的租户列：租户 <c>acme</c> 的笔记 <c>ACME</c> 与它只差大小写。EF Core 的 SQLite Provider 原本把 <c>Contains</c> 译成区分大小写的 <c>instr</c>、<c>StartsWith</c> / <c>EndsWith</c> 的值实参译成不区分的 <c>LIKE</c>、列实参译成区分的 <c>substr</c> 比较，一个库上三种规则，Provider 必须统一成一套
     /// </remarks>
     [Fact]
     public async Task List_StringContainsStartsWithEndsWith_AgreeOnLetterCase()
@@ -596,7 +596,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 12：在 Transaction 阶段之外使用仓储抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>。
+    /// 用例 12：在 Transaction 阶段之外使用仓储抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>
     /// </summary>
     [Fact]
     public async Task Repository_OutsideTransactionStage_Throws()
@@ -614,10 +614,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 13：Provider 注册 <see cref="IIdGenerator{TKey}"/>（Guid 版本 7）。
+    /// 用例 13：Provider 注册 <see cref="IIdGenerator{TKey}"/>（Guid 版本 7）
     /// </summary>
     /// <remarks>
-    /// 并在清单里声明 <c>persistence.relational@1</c>。
+    /// 并在清单里声明 <c>persistence.relational@1</c>
     /// </remarks>
     [Fact]
     public async Task Provider_RegistersIdGenerator_AndDeclaresCapability()
@@ -632,10 +632,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 14：批量新增一次写入、读己之写，结果与入参一一对应。
+    /// 用例 14：批量新增一次写入、读己之写，结果与入参一一对应
     /// </summary>
     /// <remarks>
-    /// 批内重复与跨工作单元的重复标识按项报告，其余项照常落库；按标识集合查找只返回存在的，顺序按入参、重复只一次。
+    /// 批内重复与跨工作单元的重复标识按项报告，其余项照常落库；按标识集合查找只返回存在的，顺序按入参、重复只一次
     /// </remarks>
     [Fact]
     public async Task AddRange_ReportsPerItem_AndFindManyKeepsInputOrder()
@@ -679,10 +679,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 15：批量更新一次写入。
+    /// 用例 15：批量更新一次写入
     /// </summary>
     /// <remarks>
-    /// 写入修改时间并刷新并发戳；并发戳过期的游离实例返回 <see cref="PersistenceErrors.Concurrency"/>、不存在的返回 NotFound，其余项照常生效。
+    /// 写入修改时间并刷新并发戳；并发戳过期的游离实例返回 <see cref="PersistenceErrors.Concurrency"/>、不存在的返回 NotFound，其余项照常生效
     /// </remarks>
     [Fact]
     public async Task UpdateRange_RefreshesStamps_AndReportsStaleOrMissingPerItem()
@@ -724,10 +724,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 16：批量删除一次写入。
+    /// 用例 16：批量删除一次写入
     /// </summary>
     /// <remarks>
-    /// 软删除实体打标隐藏、普通实体物理删除；批内同一实体第二次与不存在的实体按项返回 NotFound，其余项照常生效。
+    /// 软删除实体打标隐藏、普通实体物理删除；批内同一实体第二次与不存在的实体按项返回 NotFound，其余项照常生效
     /// </remarks>
     [Fact]
     public async Task RemoveRange_SoftDeletesOrDeletes_AndReportsMissingPerItem()
@@ -774,10 +774,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 17：空集合不触后端、返回空列表。
+    /// 用例 17：空集合不触后端、返回空列表
     /// </summary>
     /// <remarks>
-    /// 在 Transaction 阶段之外使用批量方法同样抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>。
+    /// 在 Transaction 阶段之外使用批量方法同样抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>
     /// </remarks>
     [Fact]
     public async Task BatchMethods_EmptyInputReturnsEmpty_AndRequireUnitOfWork()
@@ -804,7 +804,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 装配并启动宿主：被测特性、套件特性、三种套件实体的登记、套件时钟。
+    /// 装配并启动宿主：被测特性、套件特性、三种套件实体的登记、套件时钟
     /// </summary>
     protected Task<TestHost> StartAsync(Action<IServiceCollection>? extra = null) => TestHost.StartAsync(
         builder =>
@@ -825,10 +825,10 @@ public abstract class RepositoryConformance
         });
 
     /// <summary>
-    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果。
+    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
     /// <remarks>
-    /// <paramref name="tenantId"/> 经 Baggage 进入 Tenant 阶段。
+    /// <paramref name="tenantId"/> 经 Baggage 进入 Tenant 阶段
     /// </remarks>
     protected static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action, string? tenantId = null)
     {
@@ -840,11 +840,11 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 19：时间范围提示不是过滤条件。
+    /// 用例 19：时间范围提示不是过滤条件
     /// </summary>
     /// <remarks>
-    /// 不分表的实体带 <c>Within</c> 查询仍返回范围之外的行。
-    /// 计数也不变。范围颠倒是编程错误。
+    /// 不分表的实体带 <c>Within</c> 查询仍返回范围之外的行
+    /// 计数也不变。范围颠倒是编程错误
     /// </remarks>
     [Fact]
     public async Task List_WithTimeRangeHint_OnUnpartitionedEntity_ReturnsAllRows()
@@ -862,10 +862,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 20：聚合记录的领域事件在提交时交给派发器。
+    /// 用例 20：聚合记录的领域事件在提交时交给派发器
     /// </summary>
     /// <remarks>
-    /// 新增与更新过的聚合都登记、同一实例一次、带当前租户。派发后缓冲清空。失败的调用回滚，不派发。
+    /// 新增与更新过的聚合都登记、同一实例一次、带当前租户。派发后缓冲清空。失败的调用回滚，不派发
     /// </remarks>
     [Fact]
     public async Task DomainEvents_AreDispatchedOnCommit_AndCleared()
@@ -903,10 +903,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 21：派发器失败即回滚且调用结果是派发器的错误。
+    /// 用例 21：派发器失败即回滚且调用结果是派发器的错误
     /// </summary>
     /// <remarks>
-    /// 没有注册派发器却有事件返回 <see cref="PersistenceErrors.EventsUndispatched"/> 并回滚；没有事件的调用不受影响。
+    /// 没有注册派发器却有事件返回 <see cref="PersistenceErrors.EventsUndispatched"/> 并回滚；没有事件的调用不受影响
     /// </remarks>
     [Fact]
     public async Task DomainEvents_DispatchFailureRollsBack_AndMissingDispatcherIsRejected()
@@ -939,10 +939,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 22：更新沿用存储的创建时间与删除标记，删除也不改创建时间。
+    /// 用例 22：更新沿用存储的创建时间与删除标记，删除也不改创建时间
     /// </summary>
     /// <remarks>
-    /// 自己构造的游离实例与读出后改过的实例两种：调用方实例上的创建时间、删除标记一律不生效，写入成功后调用方实例拿到存储里的值；软删除只打标，创建时间仍是新增时的值。
+    /// 自己构造的游离实例与读出后改过的实例两种：调用方实例上的创建时间、删除标记一律不生效，写入成功后调用方实例拿到存储里的值；软删除只打标，创建时间仍是新增时的值
     /// </remarks>
     [Fact]
     public async Task Update_And_Remove_KeepStoredCreationTimeAndDeletionMarker()
@@ -996,10 +996,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 23：更新不能把实体改到别的租户。
+    /// 用例 23：更新不能把实体改到别的租户
     /// </summary>
     /// <remarks>
-    /// 游离实例带着别的租户、读出后改了租户，两种更新都成功，但行仍属于新增时的租户，别的租户看不到它；调用方实例拿回存储里的租户。
+    /// 游离实例带着别的租户、读出后改了租户，两种更新都成功，但行仍属于新增时的租户，别的租户看不到它；调用方实例拿回存储里的租户
     /// </remarks>
     [Fact]
     public async Task Update_KeepsStoredTenant()
@@ -1030,10 +1030,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 24：两个工作单元先后新增同一标识，检查时对方尚未提交。
+    /// 用例 24：两个工作单元先后新增同一标识，检查时对方尚未提交
     /// </summary>
     /// <remarks>
-    /// 只有一个成功，另一个以 <see cref="PersistenceErrors.Duplicate"/> 结束，留下的是成功者的行，不会静默覆盖。第一个调用新增后停在提交之前，第二个调用此时开始：关系型 Provider 里第二个调用的写入要等第一个提交后才失败，所以它跑在另一个线程上；内存实现里谁先提交谁成功，后提交的在提交时失败。断言不依赖哪一个先完成。
+    /// 只有一个成功，另一个以 <see cref="PersistenceErrors.Duplicate"/> 结束，留下的是成功者的行，不会静默覆盖。第一个调用新增后停在提交之前，第二个调用此时开始：关系型 Provider 里第二个调用的写入要等第一个提交后才失败，所以它跑在另一个线程上；内存实现里谁先提交谁成功，后提交的在提交时失败。断言不依赖哪一个先完成
     /// </remarks>
     [Fact]
     public async Task ConcurrentAdds_OfSameId_OneSucceeds_OtherReturnsDuplicate()
@@ -1062,10 +1062,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 25：回滚的调用不在存储里留下任何痕迹。
+    /// 用例 25：回滚的调用不在存储里留下任何痕迹
     /// </summary>
     /// <remarks>
-    /// 读出的实例改名后更新、另一个读出的实例删除，调用以失败结束：存储里的名称、并发戳、修改时间与删除标记都是调用前的值。更新之后、提交之前，另一个工作单元读到的也是旧值。
+    /// 读出的实例改名后更新、另一个读出的实例删除，调用以失败结束：存储里的名称、并发戳、修改时间与删除标记都是调用前的值。更新之后、提交之前，另一个工作单元读到的也是旧值
     /// </remarks>
     [Fact]
     public async Task RolledBackWrites_LeaveStoredEntitiesUntouched()
@@ -1114,10 +1114,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 26：只读操作里的写入都被拒绝，读照常。
+    /// 用例 26：只读操作里的写入都被拒绝，读照常
     /// </summary>
     /// <remarks>
-    /// 在动词为 <c>get</c> 的操作里：查找与计数照常；单条与批量的新增、更新、删除都返回 <see cref="PersistenceErrors.ReadOnly"/>，空批量仍返回空列表。处理器忽略全部拒绝而返回成功时调用仍以它结束，把拒绝作为结果返回时同样以它结束；存储不变。
+    /// 在动词为 <c>get</c> 的操作里：查找与计数照常；单条与批量的新增、更新、删除都返回 <see cref="PersistenceErrors.ReadOnly"/>，空批量仍返回空列表。处理器忽略全部拒绝而返回成功时调用仍以它结束，把拒绝作为结果返回时同样以它结束；存储不变
     /// </remarks>
     [Fact]
     public async Task ReadOnlyOperation_RejectsEveryWrite_AndReadsAsUsual()
@@ -1166,10 +1166,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 27：只读操作在新的服务作用域里调用写操作，写入照常提交。
+    /// 用例 27：只读操作在新的服务作用域里调用写操作，写入照常提交
     /// </summary>
     /// <remarks>
-    /// 只读不向内传播：内层写操作开自己的可写工作单元、成功即提交；外层自己的写入仍被拒绝、调用以 <see cref="PersistenceErrors.ReadOnly"/> 结束，已提交的内层写入不随外层回滚。
+    /// 只读不向内传播：内层写操作开自己的可写工作单元、成功即提交；外层自己的写入仍被拒绝、调用以 <see cref="PersistenceErrors.ReadOnly"/> 结束，已提交的内层写入不随外层回滚
     /// </remarks>
     [Fact]
     public async Task WriteOperation_CalledFromReadOnlyOperation_InItsOwnScope_Commits()
@@ -1200,10 +1200,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 用例 28：同一服务作用域里再经管道的调用被拒绝。
+    /// 用例 28：同一服务作用域里再经管道的调用被拒绝
     /// </summary>
     /// <remarks>
-    /// 内层以 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 结束，处理器不执行。作用域里的工作单元已由外层开始：内层不加入它、也不再开始它；外层的工作单元不受影响，照常提交自己的写入。
+    /// 内层以 <see cref="PersistenceErrors.InvalidUnitOfWorkState"/> 结束，处理器不执行。作用域里的工作单元已由外层开始：内层不加入它、也不再开始它；外层的工作单元不受影响，照常提交自己的写入
     /// </remarks>
     [Fact]
     public async Task NestedInvocation_InTheSameScope_EndsWithInvalidState_WithoutRunningTheHandler()
@@ -1234,10 +1234,10 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 经套件操作在一次完整管道调用内执行 <paramref name="script"/>，其返回值作为调用结果。
+    /// 经套件操作在一次完整管道调用内执行 <paramref name="script"/>，其返回值作为调用结果
     /// </summary>
     /// <remarks>
-    /// <paramref name="operationId"/> 选只读的 <see cref="ReadScriptOperation"/> 或可写的 <see cref="WriteScriptOperation"/>。
+    /// <paramref name="operationId"/> 选只读的 <see cref="ReadScriptOperation"/> 或可写的 <see cref="WriteScriptOperation"/>
     /// </remarks>
     private static async Task<Result> InvokeScriptAsync(TestHost host, string operationId, Func<InvocationContext, Task<Result>> script)
     {
@@ -1247,7 +1247,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 取调用作用域内的仓储。
+    /// 取调用作用域内的仓储
     /// </summary>
     protected static IRepository<TEntity, TKey> Repository<TEntity, TKey>(InvocationContext context)
         where TEntity : class, IEntity<TKey>
@@ -1258,7 +1258,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 在新调用内按标识查找。
+    /// 在新调用内按标识查找
     /// </summary>
     protected static async Task<Maybe<TEntity>> FindAsync<TEntity, TKey>(TestHost host, TKey id, string? tenantId = null)
         where TEntity : class, IEntity<TKey>
@@ -1274,7 +1274,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 在新调用内按标识集合查找。
+    /// 在新调用内按标识集合查找
     /// </summary>
     protected static async Task<IReadOnlyList<TEntity>> FindManyAsync<TEntity, TKey>(TestHost host, IReadOnlyList<TKey> ids, string? tenantId = null)
         where TEntity : class, IEntity<TKey>
@@ -1290,7 +1290,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 把逐项结果折成一个：第一个失败，否则成功。
+    /// 把逐项结果折成一个：第一个失败，否则成功
     /// </summary>
     protected static Result Fold(IReadOnlyList<Result> results)
     {
@@ -1307,7 +1307,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 在新调用内查询。
+    /// 在新调用内查询
     /// </summary>
     protected static async Task<IReadOnlyList<TEntity>> ListAsync<TEntity, TKey>(TestHost host, EntityQuery<TEntity> query, string? tenantId = null)
         where TEntity : class, IEntity<TKey>
@@ -1323,7 +1323,7 @@ public abstract class RepositoryConformance
     }
 
     /// <summary>
-    /// 在新调用内计数。
+    /// 在新调用内计数
     /// </summary>
     protected static async Task<long> CountAsync<TEntity, TKey>(TestHost host, EntityQuery<TEntity> query, string? tenantId = null)
         where TEntity : class, IEntity<TKey>

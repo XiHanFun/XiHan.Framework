@@ -6,22 +6,22 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 带记忆的属性来源。
+/// 带记忆的属性来源
 /// </summary>
 /// <remarks>
-/// 同一属性只向内层取一次。按单次调用使用，不是线程安全的；<see cref="ConditionAttributeValueState.Deferred"/> 不记忆，补齐后再取能拿到值。
+/// 同一属性只向内层取一次。按单次调用使用，不是线程安全的；<see cref="ConditionAttributeValueState.Deferred"/> 不记忆，补齐后再取能拿到值
 /// </remarks>
-/// <param name="inner">内层来源。</param>
+/// <param name="inner">内层来源</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class MemoizingConditionAttributeSource(IConditionAttributeSource inner) : IConditionAttributeSource
 {
     /// <summary>
-    /// 内层来源。
+    /// 内层来源
     /// </summary>
     private readonly IConditionAttributeSource _inner = inner ?? throw new ArgumentNullException(nameof(inner));
 
     /// <summary>
-    /// 已取到的值，按规范名（不区分大小写）。
+    /// 已取到的值，按规范名（不区分大小写）
     /// </summary>
     private readonly Dictionary<string, ConditionAttributeValue> _values = new(StringComparer.OrdinalIgnoreCase);
 

@@ -4,15 +4,15 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 按种类调用各生成器并写文件。
+/// 按种类调用各生成器并写文件
 /// </summary>
 /// <remarks>
-/// 每次整份覆盖已有产物，不删除输出目录里的其他文件。
+/// 每次整份覆盖已有产物，不删除输出目录里的其他文件
 /// </remarks>
 internal static class Packager
 {
     /// <summary>
-    /// 生成产物。
+    /// 生成产物
     /// </summary>
     public static IReadOnlyList<PackOutput> Generate(AppManifest manifest, string manifestDirectory, string outputDirectory, PackKinds kinds)
     {
@@ -49,7 +49,7 @@ internal static class Packager
     }
 
     /// <summary>
-    /// 写到输出目录，LF 换行、UTF-8 无 BOM。
+    /// 写到输出目录，LF 换行、UTF-8 无 BOM
     /// </summary>
     public static async Task WriteAsync(IReadOnlyList<PackOutput> outputs, string outputDirectory, CancellationToken cancellationToken)
     {
@@ -64,10 +64,10 @@ internal static class Packager
     }
 
     /// <summary>
-    /// 正斜杠的相对路径。
+    /// 正斜杠的相对路径
     /// </summary>
     /// <remarks>
-    /// 相同目录为 <c>.</c>。
+    /// 相同目录为 <c>.</c>
     /// </remarks>
     private static string Relative(string from, string to)
     {

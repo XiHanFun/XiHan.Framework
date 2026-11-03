@@ -9,19 +9,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Values;
 
 /// <summary>
-/// JSON 值与 .NET 值之间的转换（不用反射，AOT 可用）。
+/// JSON 值与 .NET 值之间的转换（不用反射，AOT 可用）
 /// </summary>
 /// <remarks>
-/// 数字跨类型、字符串解析成数字 / 布尔 / 时间 / Guid / 枚举，数组转字符串列表。
+/// 数字跨类型、字符串解析成数字 / 布尔 / 时间 / Guid / 枚举，数组转字符串列表
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowValues
 {
     /// <summary>
-    /// 转成 <typeparamref name="T"/>。
+    /// 转成 <typeparamref name="T"/>
     /// </summary>
     /// <remarks>
-    /// <see langword="null"/>、转不成返回 <see langword="false"/>。支持 string、bool、int、long、double、decimal、float、DateTimeOffset、DateTime、TimeSpan、Guid、枚举、<see cref="JsonObject"/>、<see cref="JsonArray"/>、<see cref="JsonNode"/>。
+    /// <see langword="null"/>、转不成返回 <see langword="false"/>。支持 string、bool、int、long、double、decimal、float、DateTimeOffset、DateTime、TimeSpan、Guid、枚举、<see cref="JsonObject"/>、<see cref="JsonArray"/>、<see cref="JsonNode"/>
     /// </remarks>
     public static bool TryConvert<T>(JsonNode? node, out T? value)
     {
@@ -183,15 +183,15 @@ public static class WorkflowValues
     }
 
     /// <summary>
-    /// 转成 <typeparamref name="T"/>，转不成返回 <paramref name="fallback"/>。
+    /// 转成 <typeparamref name="T"/>，转不成返回 <paramref name="fallback"/>
     /// </summary>
     public static T? ConvertOr<T>(JsonNode? node, T? fallback) => TryConvert<T>(node, out var value) ? value : fallback;
 
     /// <summary>
-    /// 转成字符串列表。
+    /// 转成字符串列表
     /// </summary>
     /// <remarks>
-    /// 数组逐项转字符串（跳过 null），字符串按逗号拆分并裁剪，其他标量单元素；<see langword="null"/> 为空列表。
+    /// 数组逐项转字符串（跳过 null），字符串按逗号拆分并裁剪，其他标量单元素；<see langword="null"/> 为空列表
     /// </remarks>
     public static IReadOnlyList<string> ToStringList(JsonNode? node)
     {
@@ -219,7 +219,7 @@ public static class WorkflowValues
     }
 
     /// <summary>
-    /// 标量的字符串形式：字符串原文，数字按不变文化，布尔 <c>true</c> / <c>false</c>。
+    /// 标量的字符串形式：字符串原文，数字按不变文化，布尔 <c>true</c> / <c>false</c>
     /// </summary>
     public static string AsString(JsonValue value)
     {
@@ -248,7 +248,7 @@ public static class WorkflowValues
     }
 
     /// <summary>
-    /// 是否"真"：布尔按值，数字非零，字符串非空，数组与对象非空，<see langword="null"/> 为假。
+    /// 是否"真"：布尔按值，数字非零，字符串非空，数组与对象非空，<see langword="null"/> 为假
     /// </summary>
     public static bool IsTruthy(JsonNode? node) => node switch
     {
@@ -262,7 +262,7 @@ public static class WorkflowValues
     };
 
     /// <summary>
-    /// 标量转 decimal：数字直接取，字符串按不变文化解析。
+    /// 标量转 decimal：数字直接取，字符串按不变文化解析
     /// </summary>
     public static bool TryDecimal(JsonValue value, out decimal number)
     {
@@ -310,7 +310,7 @@ public static class WorkflowValues
     }
 
     /// <summary>
-    /// 标量转布尔：布尔直接取，字符串 <c>true</c> / <c>false</c>（不区分大小写）。
+    /// 标量转布尔：布尔直接取，字符串 <c>true</c> / <c>false</c>（不区分大小写）
     /// </summary>
     public static bool TryBool(JsonValue value, out bool flag)
     {
@@ -336,7 +336,7 @@ public static class WorkflowValues
     }
 
     /// <summary>
-    /// 标量转枚举：按名字（不区分大小写）或数字。
+    /// 标量转枚举：按名字（不区分大小写）或数字
     /// </summary>
     private static bool TryEnum<T>(JsonValue scalar, string text, out T? value)
     {

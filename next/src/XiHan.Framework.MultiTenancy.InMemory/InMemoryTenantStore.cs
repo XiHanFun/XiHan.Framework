@@ -10,32 +10,32 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.InMemory;
 
 /// <summary>
-/// 有界的内存租户存储。
+/// 有界的内存租户存储
 /// </summary>
 /// <remarks>
-/// ID 区分大小写。同时是健康项 <see cref="InMemoryMultiTenancyFeature.HealthName"/> 的贡献者：租户数达到容量即 Degraded。
+/// ID 区分大小写。同时是健康项 <see cref="InMemoryMultiTenancyFeature.HealthName"/> 的贡献者：租户数达到容量即 Degraded
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
 {
     /// <summary>
-    /// 按 ID 索引的租户。
+    /// 按 ID 索引的租户
     /// </summary>
     /// <remarks>
-    /// 读取无锁。
+    /// 读取无锁
     /// </remarks>
     private readonly ConcurrentDictionary<string, TenantInfo> _tenants = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 串行化新增与替换，使容量检查与写入成为一个原子步骤。
+    /// 串行化新增与替换，使容量检查与写入成为一个原子步骤
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 创建存储并装载选项里的租户。
+    /// 创建存储并装载选项里的租户
     /// </summary>
     /// <remarks>
-    /// 超出容量抛出 <see cref="FrameworkException"/>。
+    /// 超出容量抛出 <see cref="FrameworkException"/>
     /// </remarks>
     public InMemoryTenantStore(InMemoryMultiTenancyOptions options)
     {
@@ -48,12 +48,12 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     }
 
     /// <summary>
-    /// 容量上限。
+    /// 容量上限
     /// </summary>
     public int Capacity { get; }
 
     /// <summary>
-    /// 当前租户数。
+    /// 当前租户数
     /// </summary>
     public int Count => _tenants.Count;
 
@@ -81,10 +81,10 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
         => ValueTask.FromResult<IReadOnlyList<TenantInfo>>(_tenants.Values.OrderBy(static t => t.Id, StringComparer.Ordinal).ToList());
 
     /// <summary>
-    /// 新增或替换。
+    /// 新增或替换
     /// </summary>
     /// <remarks>
-    /// 新增超出容量返回 <see cref="MultiTenancyErrors.CapacityExceeded"/>。
+    /// 新增超出容量返回 <see cref="MultiTenancyErrors.CapacityExceeded"/>
     /// </remarks>
     public Result Set(TenantInfo tenant)
     {
@@ -103,10 +103,10 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     }
 
     /// <summary>
-    /// 删除。
+    /// 删除
     /// </summary>
     /// <remarks>
-    /// 存在返回 <see langword="true"/>。
+    /// 存在返回 <see langword="true"/>
     /// </remarks>
     public bool Remove(string tenantId)
     {

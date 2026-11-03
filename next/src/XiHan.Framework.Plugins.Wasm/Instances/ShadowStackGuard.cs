@@ -9,33 +9,33 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Wasm.Instances;
 
 /// <summary>
-/// 宿主进程的影子栈检查。
+/// 宿主进程的影子栈检查
 /// </summary>
 /// <remarks>
-/// wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈（CET）冲突，影子栈强制时第一次陷阱就让进程 fail-fast（0xC0000409），所以在创建引擎前拒绝。
+/// wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈（CET）冲突，影子栈强制时第一次陷阱就让进程 fail-fast（0xC0000409），所以在创建引擎前拒绝
 /// </remarks>
 internal static partial class ShadowStackGuard
 {
     /// <summary>
-    /// 影子栈策略位：已启用。
+    /// 影子栈策略位：已启用
     /// </summary>
     private const uint EnableUserShadowStack = 0x1;
 
     /// <summary>
-    /// 影子栈策略位：只审计、不终止进程。
+    /// 影子栈策略位：只审计、不终止进程
     /// </summary>
     private const uint AuditUserShadowStack = 0x2;
 
     /// <summary>
-    /// <c>GetProcessMitigationPolicy</c> 的 <c>ProcessUserShadowStackPolicy</c>。
+    /// <c>GetProcessMitigationPolicy</c> 的 <c>ProcessUserShadowStackPolicy</c>
     /// </summary>
     private const int ProcessUserShadowStackPolicy = 16;
 
     /// <summary>
-    /// 当前进程是否强制用户态影子栈（已启用且不是审计模式）。
+    /// 当前进程是否强制用户态影子栈（已启用且不是审计模式）
     /// </summary>
     /// <remarks>
-    /// 非 Windows 或系统没有该策略时为否。
+    /// 非 Windows 或系统没有该策略时为否
     /// </remarks>
     internal static bool IsEnforced()
     {
@@ -48,9 +48,9 @@ internal static partial class ShadowStackGuard
     }
 
     /// <summary>
-    /// 影子栈强制时抛出配置错误，提示宿主可执行项目关闭 CET 兼容。
+    /// 影子栈强制时抛出配置错误，提示宿主可执行项目关闭 CET 兼容
     /// </summary>
-    /// <exception cref="FrameworkException">当前进程强制用户态影子栈。</exception>
+    /// <exception cref="FrameworkException">当前进程强制用户态影子栈</exception>
     internal static void EnsureTrapsAreSafe()
     {
         if (IsEnforced())
@@ -60,7 +60,7 @@ internal static partial class ShadowStackGuard
     }
 
     /// <summary>
-    /// 查询 Windows 的进程缓解策略。
+    /// 查询 Windows 的进程缓解策略
     /// </summary>
     [SupportedOSPlatform("windows")]
     private static bool IsEnforcedOnWindows()
@@ -85,19 +85,19 @@ internal static partial class ShadowStackGuard
     }
 
     /// <summary>
-    /// kernel32 导入。
+    /// kernel32 导入
     /// </summary>
     [SupportedOSPlatform("windows")]
     private static partial class NativeMethods
     {
         /// <summary>
-        /// 当前进程的伪句柄。
+        /// 当前进程的伪句柄
         /// </summary>
         [LibraryImport("kernel32.dll")]
         internal static partial nint GetCurrentProcess();
 
         /// <summary>
-        /// 读取一项进程缓解策略。
+        /// 读取一项进程缓解策略
         /// </summary>
         [LibraryImport("kernel32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]

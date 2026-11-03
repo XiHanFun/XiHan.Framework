@@ -9,30 +9,30 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Abstractions.Locales;
 
 /// <summary>
-/// 区域名文法（BCP 47 的常用子集）。
+/// 区域名文法（BCP 47 的常用子集）
 /// </summary>
 /// <remarks>
-/// 2–3 个字母的语言子标签，之后是 0 到多个 2–8 位字母数字的子标签，用 <c>-</c> 连接。比较不区分大小写；<see cref="Normalize"/> 给出规范大小写（语言小写、两位地区大写、四位文字首字母大写）。
+/// 2–3 个字母的语言子标签，之后是 0 到多个 2–8 位字母数字的子标签，用 <c>-</c> 连接。比较不区分大小写；<see cref="Normalize"/> 给出规范大小写（语言小写、两位地区大写、四位文字首字母大写）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class LocaleName
 {
     /// <summary>
-    /// 最大长度。
+    /// 最大长度
     /// </summary>
     public const int MaxLength = 35;
 
     /// <summary>
-    /// 是否合法。
+    /// 是否合法
     /// </summary>
     public static bool IsValid([NotNullWhen(true)] string? locale)
         => locale is not null && locale.Length <= MaxLength && Pattern().IsMatch(locale);
 
     /// <summary>
-    /// 校验并规范化。
+    /// 校验并规范化
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static string Validate(string locale)
     {
@@ -43,10 +43,10 @@ public static partial class LocaleName
     }
 
     /// <summary>
-    /// 规范化大小写。
+    /// 规范化大小写
     /// </summary>
     /// <remarks>
-    /// <c>zh-cn</c> → <c>zh-CN</c>，<c>ZH-hant-tw</c> → <c>zh-Hant-TW</c>。输入必须已合法。
+    /// <c>zh-cn</c> → <c>zh-CN</c>，<c>ZH-hant-tw</c> → <c>zh-Hant-TW</c>。输入必须已合法
     /// </remarks>
     public static string Normalize(string locale)
     {
@@ -70,7 +70,7 @@ public static partial class LocaleName
     }
 
     /// <summary>
-    /// 取语言子标签（<c>zh-CN</c> → <c>zh</c>），小写。
+    /// 取语言子标签（<c>zh-CN</c> → <c>zh</c>），小写
     /// </summary>
     public static string LanguageOf(string locale)
     {
@@ -80,10 +80,10 @@ public static partial class LocaleName
     }
 
     /// <summary>
-    /// 区域对应的文化。
+    /// 区域对应的文化
     /// </summary>
     /// <remarks>
-    /// 运行时不认识的区域（或不变全球化模式）用不变文化。
+    /// 运行时不认识的区域（或不变全球化模式）用不变文化
     /// </remarks>
     public static CultureInfo CultureOf(string locale)
     {
@@ -99,12 +99,12 @@ public static partial class LocaleName
     }
 
     /// <summary>
-    /// 两个区域名是否相同（不区分大小写）。
+    /// 两个区域名是否相同（不区分大小写）
     /// </summary>
     public static bool AreEqual(string? left, string? right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 区域名文法：2–3 个字母的语言子标签，之后是 0 到多个 2–8 位字母数字子标签。
+    /// 区域名文法：2–3 个字母的语言子标签，之后是 0 到多个 2–8 位字母数字子标签
     /// </summary>
     [GeneratedRegex("^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$")]
     private static partial Regex Pattern();

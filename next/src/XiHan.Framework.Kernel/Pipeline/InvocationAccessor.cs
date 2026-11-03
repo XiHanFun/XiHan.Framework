@@ -6,18 +6,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Pipeline;
 
 /// <summary>
-/// <see cref="IInvocationAccessor"/> 的内核实现。
+/// <see cref="IInvocationAccessor"/> 的内核实现
 /// </summary>
 /// <remarks>
-/// 作用域内一个实例，<see cref="Hosting.App.InvokeAsync"/> 进入管道前 <see cref="Enter"/>、离开时恢复。
+/// 作用域内一个实例，<see cref="Hosting.App.InvokeAsync"/> 进入管道前 <see cref="Enter"/>、离开时恢复
 /// </remarks>
 internal sealed class InvocationAccessor : IInvocationAccessor
 {
     /// <summary>
-    /// 当前上下文。
+    /// 当前上下文
     /// </summary>
     /// <remarks>
-    /// 不在调用内为 <see langword="null"/>。
+    /// 不在调用内为 <see langword="null"/>
     /// </remarks>
     private InvocationContext? _current;
 
@@ -25,10 +25,10 @@ internal sealed class InvocationAccessor : IInvocationAccessor
     public Maybe<InvocationContext> Current => _current is null ? default : Maybe.Some(_current);
 
     /// <summary>
-    /// 把 <paramref name="context"/> 设为当前上下文，返回的作用域释放时恢复之前的值。
+    /// 把 <paramref name="context"/> 设为当前上下文，返回的作用域释放时恢复之前的值
     /// </summary>
     /// <remarks>
-    /// 同一服务作用域内的嵌套调用据此形成栈。
+    /// 同一服务作用域内的嵌套调用据此形成栈
     /// </remarks>
     public Scope Enter(InvocationContext context)
     {
@@ -39,10 +39,10 @@ internal sealed class InvocationAccessor : IInvocationAccessor
     }
 
     /// <summary>
-    /// 一次 <see cref="Enter"/> 的作用域。
+    /// 一次 <see cref="Enter"/> 的作用域
     /// </summary>
     /// <remarks>
-    /// 默认值释放时什么都不做。
+    /// 默认值释放时什么都不做
     /// </remarks>
     public readonly struct Scope(InvocationAccessor? accessor, InvocationContext? previous) : IDisposable
     {

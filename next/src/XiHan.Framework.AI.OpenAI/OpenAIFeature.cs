@@ -13,10 +13,10 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.OpenAI;
 
 /// <summary>
-/// OpenAI 兼容端点的 Provider。
+/// OpenAI 兼容端点的 Provider
 /// </summary>
 /// <remarks>
-/// 提供 <c>ai.chat@1</c> 与 <c>ai.embedding@1</c>；装配与启动不触网，客户端在首次解析时创建。启动时构建工具目录并解析提示增强器：工具名不合法或重复、知识库配置引用的提示词找不到或渲染不了即启动失败——只装本特性（不装工具目录特性与知识库 Provider）时也一样。
+/// 提供 <c>ai.chat@1</c> 与 <c>ai.embedding@1</c>；装配与启动不触网，客户端在首次解析时创建。启动时构建工具目录并解析提示增强器：工具名不合法或重复、知识库配置引用的提示词找不到或渲染不了即启动失败——只装本特性（不装工具目录特性与知识库 Provider）时也一样
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OpenAIFeature : IHostedFeature

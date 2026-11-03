@@ -7,16 +7,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 要写入的一条翻译。
+/// 要写入的一条翻译
 /// </summary>
 /// <remarks>
-/// 键须符合消息键文法，区域会规范化大小写，模板不能为空。不合法是编程错误，在构造时抛出。
+/// 键须符合消息键文法，区域会规范化大小写，模板不能为空。不合法是编程错误，在构造时抛出
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record MessageTranslationEntry
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public MessageTranslationEntry(string key, string locale, string template)
     {
@@ -33,17 +33,17 @@ public sealed record MessageTranslationEntry
     }
 
     /// <summary>
-    /// 消息键。
+    /// 消息键
     /// </summary>
     public string Key { get; }
 
     /// <summary>
-    /// 区域（已规范化）。
+    /// 区域（已规范化）
     /// </summary>
     public string Locale { get; }
 
     /// <summary>
-    /// 模板。
+    /// 模板
     /// </summary>
     public string Template { get; }
 }

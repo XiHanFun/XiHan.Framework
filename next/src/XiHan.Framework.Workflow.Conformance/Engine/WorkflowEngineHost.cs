@@ -20,35 +20,35 @@ using Xunit;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 引擎套件的夹具。
+/// 引擎套件的夹具
 /// </summary>
 /// <remarks>
-/// 装配了被测 Provider 的宿主，以及"轮询一次到期书签"的入口。两种用法：<see cref="InScopeAsync{T}"/> 在没有调用的新作用域里解析服务（引擎自己开调用，平台分区），<see cref="AsTenantAsync{T}"/> 在以给定租户开的一次调用里解析（加入这次调用的事务）。读存储的辅助方法都在调用里、按给定分区读。宿主装了发件箱（<see cref="OutboxFeature"/>）时，这两个入口与 <see cref="PollAsync"/> 在操作结束（提交或回滚）之后都调 <see cref="DrainOutboxAsync"/>，把已提交的事件立即送到套件的记录器，用例读事件不必等投递循环（ADR-0096 第六节）。
+/// 装配了被测 Provider 的宿主，以及"轮询一次到期书签"的入口。两种用法：<see cref="InScopeAsync{T}"/> 在没有调用的新作用域里解析服务（引擎自己开调用，平台分区），<see cref="AsTenantAsync{T}"/> 在以给定租户开的一次调用里解析（加入这次调用的事务）。读存储的辅助方法都在调用里、按给定分区读。宿主装了发件箱（<see cref="OutboxFeature"/>）时，这两个入口与 <see cref="PollAsync"/> 在操作结束（提交或回滚）之后都调 <see cref="DrainOutboxAsync"/>，把已提交的事件立即送到套件的记录器，用例读事件不必等投递循环（ADR-0096 第六节）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowEngineHost : IAsyncDisposable
 {
     /// <summary>
-    /// 释放句柄。
+    /// 释放句柄
     /// </summary>
     private readonly IAsyncDisposable _host;
 
     /// <summary>
-    /// 轮询一次。
+    /// 轮询一次
     /// </summary>
     private readonly Func<CancellationToken, ValueTask<int>> _poll;
 
     /// <summary>
-    /// 一次 <see cref="DrainOutboxAsync"/> 至多投递的轮数。
+    /// 一次 <see cref="DrainOutboxAsync"/> 至多投递的轮数
     /// </summary>
     private const int MaxDrainRounds = 100;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
-    /// <param name="services">已启动的宿主的根服务提供者。</param>
-    /// <param name="poll">轮询一次到期书签。</param>
-    /// <param name="host">释放宿主的句柄。释放时先停宿主（应用排空：轮询器释放领导权、后台循环退出），再删库或删库文件；先删库再停，还在服务的宿主会如实报存储不可达（<c>WORKFLOW_UNAVAILABLE_001</c>）。</param>
+    /// <param name="services">已启动的宿主的根服务提供者</param>
+    /// <param name="poll">轮询一次到期书签</param>
+    /// <param name="host">释放宿主的句柄。释放时先停宿主（应用排空：轮询器释放领导权、后台循环退出），再删库或删库文件；先删库再停，还在服务的宿主会如实报存储不可达（<c>WORKFLOW_UNAVAILABLE_001</c>）</param>
     public WorkflowEngineHost(IServiceProvider services, Func<CancellationToken, ValueTask<int>> poll, IAsyncDisposable host)
     {
         Services = services ?? throw new ArgumentNullException(nameof(services));
@@ -57,15 +57,15 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 根服务提供者。
+    /// 根服务提供者
     /// </summary>
     public IServiceProvider Services { get; }
 
     /// <summary>
-    /// 轮询一次到期书签。
+    /// 轮询一次到期书签
     /// </summary>
     /// <remarks>
-    /// 返回恢复的书签数。
+    /// 返回恢复的书签数
     /// </remarks>
     public async ValueTask<int> PollAsync(CancellationToken cancellationToken = default)
     {
@@ -75,10 +75,10 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 宿主装了发件箱时，把已提交、待投递的事件立即投递到代理。
+    /// 宿主装了发件箱时，把已提交、待投递的事件立即投递到代理
     /// </summary>
     /// <remarks>
-    /// 没装发件箱时什么也不做。逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/> 直到一轮没有可投递的，至多 <see cref="MaxDrainRounds"/> 轮。只投递已提交的行：回滚的事件从没进过发件箱，也就不会送到记录器。发件箱自己的投递循环可能同时投递同一批，记录器按信封 ID 去重。
+    /// 没装发件箱时什么也不做。逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/> 直到一轮没有可投递的，至多 <see cref="MaxDrainRounds"/> 轮。只投递已提交的行：回滚的事件从没进过发件箱，也就不会送到记录器。发件箱自己的投递循环可能同时投递同一批，记录器按信封 ID 去重
     /// </remarks>
     public async ValueTask DrainOutboxAsync(CancellationToken cancellationToken = default)
     {
@@ -98,7 +98,7 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 在没有调用的新作用域里执行：引擎、目录与任务服务自己开调用（平台分区）。
+    /// 在没有调用的新作用域里执行：引擎、目录与任务服务自己开调用（平台分区）
     /// </summary>
     public async ValueTask<T> InScopeAsync<T>(Func<IServiceProvider, ValueTask<T>> action)
     {
@@ -115,10 +115,10 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 以给定租户（空为平台）在一次经管道的调用里执行，处理器返回后调用提交。
+    /// 以给定租户（空为平台）在一次经管道的调用里执行，处理器返回后调用提交
     /// </summary>
     /// <remarks>
-    /// 租户预先写进调用的安全上下文，Transaction 阶段按它开工作单元；宿主不必装配多租户。断言失败不交给管道翻译成意外错误：记下来在调用之外原样抛出。<paramref name="rollback"/> 为真时处理器之后让调用以失败结束（业务回滚）；<paramref name="readOnly"/> 为真时调用带一个动词为 <c>get</c> 的操作描述，Transaction 阶段开只读工作单元。
+    /// 租户预先写进调用的安全上下文，Transaction 阶段按它开工作单元；宿主不必装配多租户。断言失败不交给管道翻译成意外错误：记下来在调用之外原样抛出。<paramref name="rollback"/> 为真时处理器之后让调用以失败结束（业务回滚）；<paramref name="readOnly"/> 为真时调用带一个动词为 <c>get</c> 的操作描述，Transaction 阶段开只读工作单元
     /// </remarks>
     public async ValueTask<T> AsTenantAsync<T>(string? tenantId, Func<IServiceProvider, ValueTask<T>> action, bool rollback = false, bool readOnly = false)
     {
@@ -162,16 +162,16 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 创建并发布定义，返回发布后的定义。
+    /// 创建并发布定义，返回发布后的定义
     /// </summary>
     public async ValueTask<WorkflowDefinition> PublishAsync(WorkflowDefinition definition, string? tenantId = null)
         => (await PublishManyAsync(tenantId, definition).ConfigureAwait(false))[0];
 
     /// <summary>
-    /// 在一个分区里批量创建并发布定义，按入参顺序返回发布后的定义。
+    /// 在一个分区里批量创建并发布定义，按入参顺序返回发布后的定义
     /// </summary>
     /// <remarks>
-    /// 以该分区的租户开一次调用：逐个创建，再一次批量发布。
+    /// 以该分区的租户开一次调用：逐个创建，再一次批量发布
     /// </remarks>
     public ValueTask<IReadOnlyList<WorkflowDefinition>> PublishManyAsync(string? tenantId, params IReadOnlyList<WorkflowDefinition> definitions)
     {
@@ -190,10 +190,10 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 启动实例。
+    /// 启动实例
     /// </summary>
     /// <remarks>
-    /// 没给租户时在没有调用的作用域里启动（引擎自己开调用，平台分区），给了租户时以该租户开一次调用启动。
+    /// 没给租户时在没有调用的作用域里启动（引擎自己开调用，平台分区），给了租户时以该租户开一次调用启动
     /// </remarks>
     public ValueTask<Result<WorkflowInstance>> StartAsync(WorkflowName name, JsonObject? variables = null, string? starterId = null, string? correlationId = null, string? tenantId = null)
     {
@@ -204,67 +204,67 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// 读实例（存储里已提交的当前状态）。
+    /// 读实例（存储里已提交的当前状态）
     /// </summary>
     public ValueTask<WorkflowInstance> InstanceAsync(string id, string? tenantId = null)
         => AsTenantAsync(tenantId, async sp => (await sp.GetRequiredService<IWorkflowInstanceStore>().FindAsync(tenantId, id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow());
 
     /// <summary>
-    /// 实例在不在存储里。
+    /// 实例在不在存储里
     /// </summary>
     public ValueTask<bool> InstanceExistsAsync(string id, string? tenantId = null)
         => AsTenantAsync(tenantId, async sp => (await sp.GetRequiredService<IWorkflowInstanceStore>().FindAsync(tenantId, id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
 
     /// <summary>
-    /// 读实例的节点实例。
+    /// 读实例的节点实例
     /// </summary>
     public ValueTask<IReadOnlyList<WorkflowNodeInstance>> NodeInstancesAsync(string instanceId, string? tenantId = null)
         => AsTenantAsync(tenantId, async sp => (await sp.GetRequiredService<IWorkflowInstanceStore>().NodeInstancesAsync(tenantId, instanceId, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
 
     /// <summary>
-    /// 读实例的书签。
+    /// 读实例的书签
     /// </summary>
     public ValueTask<IReadOnlyList<WorkflowBookmark>> BookmarksAsync(string instanceId, string? tenantId = null)
         => AsTenantAsync(tenantId, async sp => (await sp.GetRequiredService<IWorkflowBookmarkStore>().ByInstanceAsync(tenantId, instanceId, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
 
     /// <summary>
-    /// 按条件列实例。
+    /// 按条件列实例
     /// </summary>
     public ValueTask<IReadOnlyList<WorkflowInstance>> ListInstancesAsync(WorkflowInstanceQuery query, string? tenantId = null)
         => AsTenantAsync(tenantId, async sp => (await sp.GetRequiredService<IWorkflowInstanceStore>().ListAsync(tenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
 
     /// <summary>
-    /// 某人的待办。
+    /// 某人的待办
     /// </summary>
     public ValueTask<IReadOnlyList<UserTask>> PendingAsync(string assigneeId, string? tenantId = null)
         => AsTenantAsync(tenantId, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().PendingAsync(assigneeId, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
 
     /// <summary>
-    /// 完成任务。
+    /// 完成任务
     /// </summary>
     public ValueTask<Result<WorkflowInstance>> CompleteAsync(string taskId, string actorId, string outcome, JsonObject? variables = null, string? comment = null)
         => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(taskId, actorId, outcome, comment, variables), CancellationToken.None));
 
     /// <summary>
-    /// 转办任务。
+    /// 转办任务
     /// </summary>
     public ValueTask<Result> TransferAsync(string taskId, string actorId, string target)
         => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().TransferAsync(new UserTaskTransfer(taskId, actorId, target), CancellationToken.None));
 
     /// <summary>
-    /// 加签。
+    /// 加签
     /// </summary>
     public ValueTask<Result> AddAssigneesAsync(string taskId, string actorId, params IReadOnlyList<string> assignees)
         => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().AddAssigneesAsync(new UserTaskAddition(taskId, actorId, assignees), CancellationToken.None));
 
     /// <summary>
-    /// 发信号。
+    /// 发信号
     /// </summary>
     public ValueTask<Result<int>> SignalAsync(string name, JsonObject? payload = null, string? correlationId = null)
         => InScopeAsync(sp => sp.GetRequiredService<IWorkflowEngine>().SignalAsync(name, payload, correlationId, CancellationToken.None));
 
     /// <summary>
-    /// 对引擎执行一个操作。
+    /// 对引擎执行一个操作
     /// </summary>
     public ValueTask<T> EngineAsync<T>(Func<IWorkflowEngine, ValueTask<T>> action)
         => InScopeAsync(sp => action(sp.GetRequiredService<IWorkflowEngine>()));

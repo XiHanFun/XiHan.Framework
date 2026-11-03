@@ -9,10 +9,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 租户分区的书签行。
+/// 租户分区的书签行
 /// </summary>
 /// <remarks>
-/// 实现 <see cref="IMultiTenant"/>：按当前租户写入与过滤，随租户分库。索引：<c>(InstanceId)</c> 供按实例读取与级联删除；<c>(Kind, Key)</c> 供按信号、用户任务受理人、子流程节点找书签；<c>(TenantId, DueAt)</c> 供逐个租户轮询到期书签。
+/// 实现 <see cref="IMultiTenant"/>：按当前租户写入与过滤，随租户分库。索引：<c>(InstanceId)</c> 供按实例读取与级联删除；<c>(Kind, Key)</c> 供按信号、用户任务受理人、子流程节点找书签；<c>(TenantId, DueAt)</c> 供逐个租户轮询到期书签
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [EntityIndex(nameof(InstanceId))]

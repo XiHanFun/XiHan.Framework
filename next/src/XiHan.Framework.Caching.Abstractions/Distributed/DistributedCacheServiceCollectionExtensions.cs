@@ -10,19 +10,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Distributed;
 
 /// <summary>
-/// 把 <see cref="IDistributedCache"/> 登记为架在 <see cref="ICacheStore"/> 上的适配器。
+/// 把 <see cref="IDistributedCache"/> 登记为架在 <see cref="ICacheStore"/> 上的适配器
 /// </summary>
 /// <remarks>
-/// 提供 <c>caching.distributed@1</c> 的 Provider 在被选中时调用；已有登记（应用自己的 <see cref="IDistributedCache"/>）优先。
+/// 提供 <c>caching.distributed@1</c> 的 Provider 在被选中时调用；已有登记（应用自己的 <see cref="IDistributedCache"/>）优先
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class DistributedCacheServiceCollectionExtensions
 {
     /// <summary>
-    /// 以 <paramref name="store"/> 解析出的存储登记 <see cref="IDistributedCache"/>（幂等：已有登记时不覆盖）。
+    /// 以 <paramref name="store"/> 解析出的存储登记 <see cref="IDistributedCache"/>（幂等：已有登记时不覆盖）
     /// </summary>
     /// <remarks>
-    /// 时钟取容器里的 <see cref="TimeProvider"/>，没有则用系统时钟。
+    /// 时钟取容器里的 <see cref="TimeProvider"/>，没有则用系统时钟
     /// </remarks>
     public static IServiceCollection AddXiHanDistributedCache(this IServiceCollection services, Func<IServiceProvider, ICacheStore> store)
     {

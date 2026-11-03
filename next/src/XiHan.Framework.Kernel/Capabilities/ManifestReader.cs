@@ -10,24 +10,24 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 与 <see cref="Manifest"/> 的互转。
+/// <c>xihan.manifest.json</c> 与 <see cref="Manifest"/> 的互转
 /// </summary>
 /// <remarks>
-/// JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义；序列化经源生成，不用反射。
+/// JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义；序列化经源生成，不用反射
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class ManifestReader
 {
     /// <summary>
-    /// 清单文件名。
+    /// 清单文件名
     /// </summary>
     public const string FileName = "xihan.manifest.json";
 
     /// <summary>
-    /// 从 JSON 文本读取清单。
+    /// 从 JSON 文本读取清单
     /// </summary>
     /// <remarks>
-    /// 格式或约束错误以 <see cref="KernelErrors.InvalidManifest"/> 返回。
+    /// 格式或约束错误以 <see cref="KernelErrors.InvalidManifest"/> 返回
     /// </remarks>
     public static Result<Manifest> Read(string json)
     {
@@ -42,14 +42,14 @@ public static class ManifestReader
             return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalidJson, MessageArguments.Of(("reason", exception.Message)));
         }
 
-        // 字面量 "null" 能成功反序列化为 null，同样视为非法清单。
+        // 字面量 "null" 能成功反序列化为 null，同样视为非法清单
         return document is null
             ? new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestEmpty)
             : Convert(document);
     }
 
     /// <summary>
-    /// 从文件读取清单。
+    /// 从文件读取清单
     /// </summary>
     public static Result<Manifest> ReadFile(string path)
     {
@@ -63,12 +63,12 @@ public static class ManifestReader
     }
 
     /// <summary>
-    /// 把清单写为 JSON 文本。
+    /// 把清单写为 JSON 文本
     /// </summary>
     public static string Write(Manifest manifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
-        // 枚举统一写为小写名，与 schema 的枚举值一致；隔离边界的 kebab-case 映射与 Convert 中的读取一一对应。
+        // 枚举统一写为小写名，与 schema 的枚举值一致；隔离边界的 kebab-case 映射与 Convert 中的读取一一对应
         var document = new ManifestDocument
         {
             Schema = "https://spec.xihanfun.com/manifest/v1.json",
@@ -106,15 +106,15 @@ public static class ManifestReader
     }
 
     /// <summary>
-    /// 把 JSON 形态转换为 <see cref="Manifest"/>。
+    /// 把 JSON 形态转换为 <see cref="Manifest"/>
     /// </summary>
     /// <remarks>
-    /// 必填字段缺失、格式错误与跨字段约束失败都收敛为 <see cref="KernelErrors.InvalidManifest"/>。
+    /// 必填字段缺失、格式错误与跨字段约束失败都收敛为 <see cref="KernelErrors.InvalidManifest"/>
     /// </remarks>
     private static Result<Manifest> Convert(ManifestDocument document)
     {
         // 原语层以 ArgumentException 报告单字段格式错误，阶段名未知以 FrameworkException 报告；
-        // 这里把两者都翻译成 Result 失败，调用方不需要区分异常来源。
+        // 这里把两者都翻译成 Result 失败，调用方不需要区分异常来源
         try
         {
             var manifest = new Manifest
@@ -168,10 +168,10 @@ public static class ManifestReader
     }
 
     /// <summary>
-    /// 核对 <c>contributes.permissions</c>：每项合权限码文法、不重复（manifest.schema.json）。
+    /// 核对 <c>contributes.permissions</c>：每项合权限码文法、不重复（manifest.schema.json）
     /// </summary>
     /// <remarks>
-    /// 插件宿主按这一列表替插件登记权限码（ADR-0080），不合法的清单在读取时就拒绝，而不是登记到一半才失败。不合法抛出 <see cref="ArgumentException"/>。
+    /// 插件宿主按这一列表替插件登记权限码（ADR-0080），不合法的清单在读取时就拒绝，而不是登记到一半才失败。不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static List<string> PermissionCodes(List<string> codes)
     {
@@ -193,42 +193,42 @@ public static class ManifestReader
     }
 
     /// <summary>
-    /// 构造"必填字段缺失"异常。
+    /// 构造"必填字段缺失"异常
     /// </summary>
     /// <remarks>
-    /// 在对象初始化器里以 <c>?? throw</c> 形式使用。
+    /// 在对象初始化器里以 <c>?? throw</c> 形式使用
     /// </remarks>
-    /// <param name="field">字段的 JSON 路径，例如 <c>provides.id</c>。</param>
+    /// <param name="field">字段的 JSON 路径，例如 <c>provides.id</c></param>
     private static ArgumentException Missing(string field) => new($"The manifest is missing the required field '{field}'.");
 
     /// <summary>
-    /// 把字段文本解析为正整数。
+    /// 把字段文本解析为正整数
     /// </summary>
     /// <remarks>
-    /// 非数字或小于 1 时抛出 <see cref="ArgumentException"/>。
+    /// 非数字或小于 1 时抛出 <see cref="ArgumentException"/>
     /// </remarks>
-    /// <param name="text">原始文本。</param>
-    /// <param name="field">字段的 JSON 路径，用于错误信息。</param>
+    /// <param name="text">原始文本</param>
+    /// <param name="field">字段的 JSON 路径，用于错误信息</param>
     private static int ParseInt(string text, string field)
         => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
             ? value
             : throw new ArgumentException($"The value '{text}' of field '{field}' must be a positive integer.");
 
     /// <summary>
-    /// 解析 <c>requires.version</c>：允许 <c>^</c> 前缀，语义与不带前缀相同。
+    /// 解析 <c>requires.version</c>：允许 <c>^</c> 前缀，语义与不带前缀相同
     /// </summary>
     private static int ParseVersion(string text)
         => ParseInt(text.StartsWith('^') ? text[1..] : text, "requires.version");
 
     /// <summary>
-    /// 把字段文本解析为枚举，不区分大小写。
+    /// 把字段文本解析为枚举，不区分大小写
     /// </summary>
     /// <remarks>
-    /// 未定义的值抛出 <see cref="ArgumentException"/>。
+    /// 未定义的值抛出 <see cref="ArgumentException"/>
     /// </remarks>
-    /// <typeparam name="TEnum">枚举类型。</typeparam>
-    /// <param name="text">原始文本。</param>
-    /// <param name="field">字段的 JSON 路径，用于错误信息。</param>
+    /// <typeparam name="TEnum">枚举类型</typeparam>
+    /// <param name="text">原始文本</param>
+    /// <param name="field">字段的 JSON 路径，用于错误信息</param>
     private static TEnum ParseEnum<TEnum>(string text, string field)
         where TEnum : struct, Enum
         => Enum.TryParse<TEnum>(text, ignoreCase: true, out var value) && Enum.IsDefined(value)

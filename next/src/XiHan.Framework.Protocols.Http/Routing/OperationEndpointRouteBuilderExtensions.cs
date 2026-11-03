@@ -13,16 +13,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.Routing;
 
 /// <summary>
-/// 把登记表里暴露给 HTTP 的操作映射为端点。
+/// 把登记表里暴露给 HTTP 的操作映射为端点
 /// </summary>
 /// <remarks>
-/// 路由按操作 ID 推导或由选项覆盖，端点元数据携带 <see cref="OperationDescriptor"/> 与 <see cref="OperationPayloadBinder"/>（<c>UseXiHan()</c> 据此在进入管道前把描述放入上下文并把路由值、请求体与查询串绑定为 XGI 载荷，Authorize 阶段按契约判定、Validate 阶段按 Schema 校验并解码），端点内只在当前调用里执行；失败结果留在上下文，由 <c>UseXiHan()</c> 写成 Problem Details。必须放在 <c>UseXiHan()</c> 之后。
+/// 路由按操作 ID 推导或由选项覆盖，端点元数据携带 <see cref="OperationDescriptor"/> 与 <see cref="OperationPayloadBinder"/>（<c>UseXiHan()</c> 据此在进入管道前把描述放入上下文并把路由值、请求体与查询串绑定为 XGI 载荷，Authorize 阶段按契约判定、Validate 阶段按 Schema 校验并解码），端点内只在当前调用里执行；失败结果留在上下文，由 <c>UseXiHan()</c> 写成 Problem Details。必须放在 <c>UseXiHan()</c> 之后
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class OperationEndpointRouteBuilderExtensions
 {
     /// <summary>
-    /// 映射全部暴露给 HTTP 且非 <see cref="Stability.Internal"/> 的操作，返回映射的端点数。
+    /// 映射全部暴露给 HTTP 且非 <see cref="Stability.Internal"/> 的操作，返回映射的端点数
     /// </summary>
     public static int MapXiHanOperations(this IEndpointRouteBuilder endpoints)
     {
@@ -64,10 +64,10 @@ public static class OperationEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 端点处理。
+    /// 端点处理
     /// </summary>
     /// <remarks>
-    /// 用 <c>UseXiHan()</c> 进管道前绑定好的载荷在当前调用里执行操作（Validate 阶段已解码时直接执行），成功写 JSON 响应，失败把结果留给宿主。
+    /// 用 <c>UseXiHan()</c> 进管道前绑定好的载荷在当前调用里执行操作（Validate 阶段已解码时直接执行），成功写 JSON 响应，失败把结果留给宿主
     /// </remarks>
     private static async Task HandleAsync(HttpContext httpContext, OperationDescriptor descriptor)
     {
@@ -93,10 +93,10 @@ public static class OperationEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 写出成功响应。
+    /// 写出成功响应
     /// </summary>
     /// <remarks>
-    /// 状态码按约定（<c>create</c> 为 201，其余 200），正文是响应的 JSON。
+    /// 状态码按约定（<c>create</c> 为 201，其余 200），正文是响应的 JSON
     /// </remarks>
     private static async Task WriteResponseAsync(HttpContext httpContext, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload, CancellationToken cancellationToken)
     {

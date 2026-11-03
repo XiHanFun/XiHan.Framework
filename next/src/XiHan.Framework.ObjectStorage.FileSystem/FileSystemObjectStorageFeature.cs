@@ -16,29 +16,29 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 文件系统对象存储的能力包入口。
+/// 文件系统对象存储的能力包入口
 /// </summary>
 /// <remarks>
-/// 默认提供 <c>objectstorage.blob@1</c> 与 <c>objectstorage.multipart@1</c>（分片暂存在容器的 <c>uploads</c> 目录）；启动时建根目录、扫描已用量并清理过期的分片上传。预签名地址由宿主的签名端点代为收发（<c>Hosting.AspNetCore</c> 的 <c>HostedBlobUrlFeature</c>）。被要求提供分片上传时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="FileSystemBlobStoreProvider"/>（名 <c>filesystem</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而分片上传只是兜底选出时，只登记它（<see cref="ConfigureShadowed"/>），不建缺省实例、不启动。
+/// 默认提供 <c>objectstorage.blob@1</c> 与 <c>objectstorage.multipart@1</c>（分片暂存在容器的 <c>uploads</c> 目录）；启动时建根目录、扫描已用量并清理过期的分片上传。预签名地址由宿主的签名端点代为收发（<c>Hosting.AspNetCore</c> 的 <c>HostedBlobUrlFeature</c>）。被要求提供分片上传时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="FileSystemBlobStoreProvider"/>（名 <c>filesystem</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而分片上传只是兜底选出时，只登记它（<see cref="ConfigureShadowed"/>），不建缺省实例、不启动
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class FileSystemObjectStorageFeature : IHostedFeature, IShadowAwareFeature
 {
     /// <summary>
-    /// 健康项名：总配额是否还有余量。
+    /// 健康项名：总配额是否还有余量
     /// </summary>
     public const string HealthName = "objectstorage.filesystem.capacity";
 
     /// <summary>
-    /// 启动后保存的存储实例，供停止时使用。
+    /// 启动后保存的存储实例，供停止时使用
     /// </summary>
     private FileSystemBlobStore? _store;
 
     /// <summary>
-    /// 本特性是否提供缺省实例。
+    /// 本特性是否提供缺省实例
     /// </summary>
     /// <remarks>
-    /// 由 <see cref="Configure"/> 判定（<see cref="BlobStoreSelection.ProvidesDefaultInstance"/>）；不提供时与被顶替相同，启动时不建根目录、不扫描。
+    /// 由 <see cref="Configure"/> 判定（<see cref="BlobStoreSelection.ProvidesDefaultInstance"/>）；不提供时与被顶替相同，启动时不建根目录、不扫描
     /// </remarks>
     private bool _providesDefault;
 
@@ -95,7 +95,7 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature, IShadowAwar
 
     /// <inheritdoc />
     /// <remarks>
-    /// 只登记命名实例的 Provider：缺省实例由别的存储提供，不读本包的配置节、不建根目录。
+    /// 只登记命名实例的 Provider：缺省实例由别的存储提供，不读本包的配置节、不建根目录
     /// </remarks>
     public void ConfigureShadowed(FeatureContext context)
     {

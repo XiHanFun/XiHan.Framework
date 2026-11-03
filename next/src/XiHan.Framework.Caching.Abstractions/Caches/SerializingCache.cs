@@ -8,16 +8,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Caches;
 
 /// <summary>
-/// 把 <see cref="ICacheStore"/> 与 <see cref="ICacheSerializer"/> 组合成类型化缓存。
+/// 把 <see cref="ICacheStore"/> 与 <see cref="ICacheSerializer"/> 组合成类型化缓存
 /// </summary>
 /// <remarks>
-/// 同时实现 <see cref="ISharedCache"/>，由 Provider 决定注册为哪一个。
+/// 同时实现 <see cref="ISharedCache"/>，由 Provider 决定注册为哪一个
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class SerializingCache(ICacheStore store, ICacheSerializer serializer) : ISharedCache
 {
     /// <summary>
-    /// 值与字节之间的序列化器。
+    /// 值与字节之间的序列化器
     /// </summary>
     private readonly ICacheSerializer _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
 

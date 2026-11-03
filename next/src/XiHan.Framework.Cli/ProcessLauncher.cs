@@ -8,10 +8,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli;
 
 /// <summary>
-/// 以 <see cref="Process"/> 启动子进程，标准输出与标准错误逐行转发到写入器。
+/// 以 <see cref="Process"/> 启动子进程，标准输出与标准错误逐行转发到写入器
 /// </summary>
 /// <remarks>
-/// 取消时结束子进程。
+/// 取消时结束子进程
 /// </remarks>
 internal sealed class ProcessLauncher : IProcessLauncher
 {
@@ -69,7 +69,7 @@ internal sealed class ProcessLauncher : IProcessLauncher
     }
 
     /// <summary>
-    /// 逐行把一路输出转发到写入器。
+    /// 逐行把一路输出转发到写入器
     /// </summary>
     private static async Task PumpAsync(StreamReader reader, TextWriter writer, CancellationToken cancellationToken)
     {

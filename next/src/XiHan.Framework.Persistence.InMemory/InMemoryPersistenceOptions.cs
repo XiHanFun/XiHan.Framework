@@ -8,21 +8,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存持久化选项。
+/// 内存持久化选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Persistence:InMemory</c> 显式读取。
+/// 从配置节 <c>XiHan:Persistence:InMemory</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemoryPersistenceOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Persistence:InMemory";
 
     /// <summary>
-    /// 每种实体的容量上限。
+    /// 每种实体的容量上限
     /// </summary>
     public int MaxEntitiesPerType
     {
@@ -31,7 +31,7 @@ public sealed record InMemoryPersistenceOptions
     } = 100_000;
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static InMemoryPersistenceOptions FromConfiguration(IConfiguration configuration)
     {

@@ -11,32 +11,32 @@ using Xunit;
 namespace XiHan.Framework.Caching.Conformance;
 
 /// <summary>
-/// <see cref="ICacheStore"/> 的一致性套件（含批量用例）。
+/// <see cref="ICacheStore"/> 的一致性套件（含批量用例）
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateStore"/>，全部用例随之执行。
+/// 继承并实现 <see cref="CreateStore"/>，全部用例随之执行
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public abstract class CacheStoreConformance
 {
     /// <summary>
-    /// 过期用例在存活时间之外额外等待的时间，给 Provider 的过期粒度留余量。
+    /// 过期用例在存活时间之外额外等待的时间，给 Provider 的过期粒度留余量
     /// </summary>
     protected virtual TimeSpan ExpirationGrace => TimeSpan.FromMilliseconds(300);
 
     /// <summary>
-    /// 创建被测存储。
+    /// 创建被测存储
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次；返回的存储不应含有本套件使用的键。
+    /// 每个用例调用一次；返回的存储不应含有本套件使用的键
     /// </remarks>
     protected abstract ICacheStore CreateStore();
 
     /// <summary>
-    /// 用例 1：写入后能读到同样的字节。
+    /// 用例 1：写入后能读到同样的字节
     /// </summary>
     /// <remarks>
-    /// 没写过的键为无值。
+    /// 没写过的键为无值
     /// </remarks>
     [Fact]
     public async Task Set_ThenGet_RoundTrips_AndMissingIsNone()
@@ -52,10 +52,10 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：再次写入覆盖旧值。
+    /// 用例 2：再次写入覆盖旧值
     /// </summary>
     /// <remarks>
-    /// 键区分大小写。
+    /// 键区分大小写
     /// </remarks>
     [Fact]
     public async Task Set_Overwrites_AndKeysAreCaseSensitive()
@@ -72,7 +72,7 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 3：删除报告是否存在，删除后读不到。
+    /// 用例 3：删除报告是否存在，删除后读不到
     /// </summary>
     [Fact]
     public async Task Remove_ReportsExistence()
@@ -87,7 +87,7 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 4：不存在才写——首次成功，之后失败，删除后又能写。
+    /// 用例 4：不存在才写——首次成功，之后失败，删除后又能写
     /// </summary>
     [Fact]
     public async Task TryAdd_OnlyFirstWins_UntilRemoved()
@@ -104,7 +104,7 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 5：并发的不存在才写恰好一个成功。
+    /// 用例 5：并发的不存在才写恰好一个成功
     /// </summary>
     [Fact]
     public async Task TryAdd_Concurrent_ExactlyOneWins()
@@ -122,7 +122,7 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 6：比较删只在值相同时删除。
+    /// 用例 6：比较删只在值相同时删除
     /// </summary>
     [Fact]
     public async Task TryRemove_RequiresMatchingValue()
@@ -139,7 +139,7 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 7：绝对存活时间到期后读不到，也能重新"不存在才写"。
+    /// 用例 7：绝对存活时间到期后读不到，也能重新"不存在才写"
     /// </summary>
     [Fact]
     public async Task TimeToLive_ExpiresEntry()
@@ -158,10 +158,10 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 8：滑动过期在读取时延长。
+    /// 用例 8：滑动过期在读取时延长
     /// </summary>
     /// <remarks>
-    /// 不再读取后到期。
+    /// 不再读取后到期
     /// </remarks>
     [Fact]
     public async Task SlidingExpiration_ExtendsOnRead_ThenExpires()
@@ -182,7 +182,7 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 9：大值完整往返。
+    /// 用例 9：大值完整往返
     /// </summary>
     [Fact]
     public async Task LargeValue_RoundTrips()
@@ -203,7 +203,7 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 10：基于存储的分布式锁互斥、可释放、释放后可再获取、到期自动释放。
+    /// 用例 10：基于存储的分布式锁互斥、可释放、释放后可再获取、到期自动释放
     /// </summary>
     [Fact]
     public async Task DistributedLock_IsExclusive_ReleasableAndExpiring()
@@ -230,10 +230,10 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 11：批量写入后批量读取。
+    /// 用例 11：批量写入后批量读取
     /// </summary>
     /// <remarks>
-    /// 结果与键顺序一一对应、未命中为无值；同一键在一批里出现多次后者覆盖。
+    /// 结果与键顺序一一对应、未命中为无值；同一键在一批里出现多次后者覆盖
     /// </remarks>
     [Fact]
     public async Task SetMany_ThenGetMany_KeepsOrder_AndLastWriteWins()
@@ -259,10 +259,10 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 12：批量删除逐键报告是否存在，同一键出现多次第二次为假。
+    /// 用例 12：批量删除逐键报告是否存在，同一键出现多次第二次为假
     /// </summary>
     /// <remarks>
-    /// 之后批量读取都未命中。
+    /// 之后批量读取都未命中
     /// </remarks>
     [Fact]
     public async Task RemoveMany_ReportsPerKey()
@@ -279,7 +279,7 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 13：空集合返回空结果，不触后端也不抛出。
+    /// 用例 13：空集合返回空结果，不触后端也不抛出
     /// </summary>
     [Fact]
     public async Task BatchMethods_EmptyInput_ReturnEmpty()
@@ -293,10 +293,10 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例 14：批量写入的每项各自过期。
+    /// 用例 14：批量写入的每项各自过期
     /// </summary>
     /// <remarks>
-    /// 短存活的到期后读不到、长存活的仍在；批量读取同样延长滑动过期。
+    /// 短存活的到期后读不到、长存活的仍在；批量读取同样延长滑动过期
     /// </remarks>
     [Fact]
     public async Task SetMany_HonoursPerEntryExpiration_AndGetManyExtendsSliding()
@@ -327,10 +327,10 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 键管理：按前缀分页列出、读大小与存活时间、按前缀删除。
+    /// 键管理：按前缀分页列出、读大小与存活时间、按前缀删除
     /// </summary>
     /// <remarks>
-    /// 存储没有实现 <see cref="ICacheStoreInspector"/> 时跳过。续页可能重复同一个键（Redis 的 SCAN），按集合比较。
+    /// 存储没有实现 <see cref="ICacheStoreInspector"/> 时跳过。续页可能重复同一个键（Redis 的 SCAN），按集合比较
     /// </remarks>
     [Fact]
     public async Task Inspector_ListsInspectsAndRemovesByPrefix()
@@ -385,10 +385,10 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 用例：键列表的每页上限越界以校验结果返回，边界值照常分页。
+    /// 用例：键列表的每页上限越界以校验结果返回，边界值照常分页
     /// </summary>
     /// <remarks>
-    /// 存储没有实现 <see cref="ICacheStoreInspector"/> 时跳过。0 与 <see cref="CacheKeyQuery.MaxLimit"/> + 1 返回 <see cref="CachingErrors.ListLimitInvalid"/>（构造查询时不抛出）；1 与 <see cref="CacheKeyQuery.MaxLimit"/> 照常列出。
+    /// 存储没有实现 <see cref="ICacheStoreInspector"/> 时跳过。0 与 <see cref="CacheKeyQuery.MaxLimit"/> + 1 返回 <see cref="CachingErrors.ListLimitInvalid"/>（构造查询时不抛出）；1 与 <see cref="CacheKeyQuery.MaxLimit"/> 照常列出
     /// </remarks>
     [Fact]
     public async Task Inspector_ListLimitOutOfRange_IsAValidationResult()
@@ -435,20 +435,20 @@ public abstract class CacheStoreConformance
     }
 
     /// <summary>
-    /// 新的随机键。
+    /// 新的随机键
     /// </summary>
     protected static CacheKey Key() => new($"conformance:{Guid.NewGuid():N}");
 
     /// <summary>
-    /// UTF-8 字节。
+    /// UTF-8 字节
     /// </summary>
     protected static ReadOnlyMemory<byte> Bytes(string text) => Encoding.UTF8.GetBytes(text);
 
     /// <summary>
-    /// 读取结果转文本。
+    /// 读取结果转文本
     /// </summary>
     /// <remarks>
-    /// 无值抛出。
+    /// 无值抛出
     /// </remarks>
     protected static string Text(Maybe<ReadOnlyMemory<byte>> value) => Encoding.UTF8.GetString(value.ValueOrThrow().Span);
 }

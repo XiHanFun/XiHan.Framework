@@ -6,13 +6,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 终止节点：以 <c>Reason</c> 终止实例（不补偿）。
+/// 终止节点：以 <c>Reason</c> 终止实例（不补偿）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class TerminateActivity : IActivity
 {
     /// <summary>
-    /// 属性：原因。
+    /// 属性：原因
     /// </summary>
     public const string ReasonProperty = "Reason";
 

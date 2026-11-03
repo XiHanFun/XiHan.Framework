@@ -12,75 +12,75 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions;
 
 /// <summary>
-/// AI 子系统选项（配置节 <c>XiHan:AI</c>）。
+/// AI 子系统选项（配置节 <c>XiHan:AI</c>）
 /// </summary>
 /// <remarks>
-/// 默认 Provider、Provider 表、工具名覆盖、护栏、知识库与配置里的提示词。读取配置时值不合法即抛出 <see cref="ArgumentException"/>（启动失败），不按缺省处理。
+/// 默认 Provider、Provider 表、工具名覆盖、护栏、知识库与配置里的提示词。读取配置时值不合法即抛出 <see cref="ArgumentException"/>（启动失败），不按缺省处理
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record AIOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:AI";
 
     /// <summary>
-    /// 默认聊天 Provider。
+    /// 默认聊天 Provider
     /// </summary>
     /// <remarks>
-    /// 空且只有一个 Provider 时取它。
+    /// 空且只有一个 Provider 时取它
     /// </remarks>
     public string? DefaultProvider { get; init; }
 
     /// <summary>
-    /// 默认嵌入 Provider。
+    /// 默认嵌入 Provider
     /// </summary>
     /// <remarks>
-    /// 空时同 <see cref="DefaultProvider"/>。
+    /// 空时同 <see cref="DefaultProvider"/>
     /// </remarks>
     public string? DefaultEmbeddingProvider { get; init; }
 
     /// <summary>
-    /// Provider 表（名字 → 配置）。
+    /// Provider 表（名字 → 配置）
     /// </summary>
     public IReadOnlyDictionary<string, AIProviderOptions> Providers { get; init; } = new Dictionary<string, AIProviderOptions>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 操作工具名覆盖（操作 ID → 工具名）。
+    /// 操作工具名覆盖（操作 ID → 工具名）
     /// </summary>
     public IReadOnlyDictionary<string, string> Tools { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 护栏选项。
+    /// 护栏选项
     /// </summary>
     public AIGuardrailOptions Guardrails { get; init; } = new();
 
     /// <summary>
-    /// 知识库选项。
+    /// 知识库选项
     /// </summary>
     public KnowledgeOptions Knowledge { get; init; } = new();
 
     /// <summary>
-    /// 配置里声明的提示词模板。
+    /// 配置里声明的提示词模板
     /// </summary>
     public IReadOnlyList<AIPromptTemplate> Prompts { get; init; } = [];
 
     /// <summary>
-    /// 实际的默认聊天 Provider 名。
+    /// 实际的默认聊天 Provider 名
     /// </summary>
     public string? ResolveDefaultProvider() => DefaultProvider ?? (Providers.Count == 1 ? Providers.Keys.First() : null);
 
     /// <summary>
-    /// 实际的默认嵌入 Provider 名。
+    /// 实际的默认嵌入 Provider 名
     /// </summary>
     public string? ResolveDefaultEmbeddingProvider() => DefaultEmbeddingProvider ?? ResolveDefaultProvider();
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// Provider 缺 <c>Kind</c>、<c>Endpoint</c> 不是绝对的 http(s) 地址、数值项不是要求的整数或正数、布尔项不是 <c>true</c> / <c>false</c>、提示词缺模板时抛出 <see cref="ArgumentException"/>。
+    /// Provider 缺 <c>Kind</c>、<c>Endpoint</c> 不是绝对的 http(s) 地址、数值项不是要求的整数或正数、布尔项不是 <c>true</c> / <c>false</c>、提示词缺模板时抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static AIOptions FromConfiguration(IConfiguration configuration)
     {
@@ -121,7 +121,7 @@ public sealed record AIOptions
     }
 
     /// <summary>
-    /// 读一个 Provider。
+    /// 读一个 Provider
     /// </summary>
     private static AIProviderOptions ReadProvider(IConfigurationSection section)
     {
@@ -159,7 +159,7 @@ public sealed record AIOptions
     }
 
     /// <summary>
-    /// 读护栏选项。
+    /// 读护栏选项
     /// </summary>
     private static AIGuardrailOptions ReadGuardrails(IConfigurationSection section) => new()
     {
@@ -170,7 +170,7 @@ public sealed record AIOptions
     };
 
     /// <summary>
-    /// 读知识库选项。
+    /// 读知识库选项
     /// </summary>
     private static KnowledgeOptions ReadKnowledge(IConfigurationSection section)
     {
@@ -204,10 +204,10 @@ public sealed record AIOptions
     }
 
     /// <summary>
-    /// 读取整数键。
+    /// 读取整数键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是整数或小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentException"/>。
+    /// 缺省返回 <see langword="null"/>，不是整数或小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static int? ReadInt(IConfigurationSection section, string key, int minimum)
     {
@@ -223,10 +223,10 @@ public sealed record AIOptions
     }
 
     /// <summary>
-    /// 读取正数键。
+    /// 读取正数键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是有限的正数抛出 <see cref="ArgumentException"/>。
+    /// 缺省返回 <see langword="null"/>，不是有限的正数抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static double? ReadPositiveNumber(IConfigurationSection section, string key)
     {
@@ -242,10 +242,10 @@ public sealed record AIOptions
     }
 
     /// <summary>
-    /// 读取布尔键。
+    /// 读取布尔键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是 <c>true</c> / <c>false</c> 抛出 <see cref="ArgumentException"/>。
+    /// 缺省返回 <see langword="null"/>，不是 <c>true</c> / <c>false</c> 抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static bool? ReadBool(IConfigurationSection section, string key)
     {
@@ -259,10 +259,10 @@ public sealed record AIOptions
     }
 
     /// <summary>
-    /// 读取 http(s) 地址键。
+    /// 读取 http(s) 地址键
     /// </summary>
     /// <remarks>
-    /// 缺省或空串返回 <see langword="null"/>，不是绝对的 http 或 https 地址抛出 <see cref="ArgumentException"/>。
+    /// 缺省或空串返回 <see langword="null"/>，不是绝对的 http 或 https 地址抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static Uri? ReadHttpUrl(IConfigurationSection section, string key)
     {
@@ -278,7 +278,7 @@ public sealed record AIOptions
     }
 
     /// <summary>
-    /// 读字符串数组节（<c>:0</c>、<c>:1</c>…）。
+    /// 读字符串数组节（<c>:0</c>、<c>:1</c>…）
     /// </summary>
     private static List<string> ReadList(IConfigurationSection section)
         => section.GetChildren().Select(static child => child.Value).Where(static value => !string.IsNullOrWhiteSpace(value)).Select(static value => value!).ToList();

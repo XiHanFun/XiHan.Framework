@@ -6,21 +6,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Parsing;
 
 /// <summary>
-/// 命令行记号的解析。
+/// 命令行记号的解析
 /// </summary>
 /// <remarks>
-/// 第一个非选项记号是命令名，其余非选项记号是位置参数；<c>--name value</c>、<c>--name=value</c> 是选项，后面不跟值的 <c>--flag</c> 记为 <c>true</c>；<c>--</c> 之后全是位置参数。不做类型转换，值一律是字符串。
+/// 第一个非选项记号是命令名，其余非选项记号是位置参数；<c>--name value</c>、<c>--name=value</c> 是选项，后面不跟值的 <c>--flag</c> 记为 <c>true</c>；<c>--</c> 之后全是位置参数。不做类型转换，值一律是字符串
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CommandLineParser
 {
     /// <summary>
-    /// 选项前缀。
+    /// 选项前缀
     /// </summary>
     private const string OptionPrefix = "--";
 
     /// <summary>
-    /// 解析。
+    /// 解析
     /// </summary>
     public static ParsedCommandLine Parse(IReadOnlyList<string> args)
     {
@@ -85,7 +85,7 @@ public static class CommandLineParser
     }
 
     /// <summary>
-    /// 是否为选项记号（<c>--</c> 加至少一个字符）。
+    /// 是否为选项记号（<c>--</c> 加至少一个字符）
     /// </summary>
     private static bool IsOption(string token) => token.StartsWith(OptionPrefix, StringComparison.Ordinal) && token.Length > OptionPrefix.Length;
 }

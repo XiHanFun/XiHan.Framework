@@ -4,13 +4,13 @@
 namespace XiHan.Framework.Primitives;
 
 /// <summary>
-/// <see cref="PipelineStage"/> 与清单中小写阶段名的互转。
+/// <see cref="PipelineStage"/> 与清单中小写阶段名的互转
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class PipelineStageExtensions
 {
     /// <summary>
-    /// 清单中的小写阶段名，下标即 <see cref="PipelineStage"/> 的枚举值。
+    /// 清单中的小写阶段名，下标即 <see cref="PipelineStage"/> 的枚举值
     /// </summary>
     private static readonly string[] _names =
     [
@@ -18,13 +18,13 @@ public static class PipelineStageExtensions
     ];
 
     /// <summary>
-    /// 全部阶段，按执行顺序。
+    /// 全部阶段，按执行顺序
     /// </summary>
     public static IReadOnlyList<PipelineStage> All { get; } =
         [PipelineStage.Ingress, PipelineStage.Observe, PipelineStage.Resilience, PipelineStage.Authenticate, PipelineStage.Tenant, PipelineStage.Authorize, PipelineStage.Validate, PipelineStage.Idempotency, PipelineStage.Transaction, PipelineStage.Handle, PipelineStage.Egress];
 
     /// <summary>
-    /// 清单中的小写阶段名。
+    /// 清单中的小写阶段名
     /// </summary>
     public static string ToManifestName(this PipelineStage stage)
     {
@@ -35,7 +35,7 @@ public static class PipelineStageExtensions
     }
 
     /// <summary>
-    /// 从清单中的小写阶段名解析。
+    /// 从清单中的小写阶段名解析
     /// </summary>
     public static bool TryParse(string? name, out PipelineStage stage)
     {

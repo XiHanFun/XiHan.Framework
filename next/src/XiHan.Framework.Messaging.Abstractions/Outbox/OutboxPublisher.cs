@@ -13,56 +13,56 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 
 /// <summary>
-/// 事务性发布者。
+/// 事务性发布者
 /// </summary>
 /// <remarks>
-/// 有活动工作单元时写入发件箱表（随业务事务提交或回滚），否则直接发布到代理。批量发布用仓储的批量新增一次写入。在调用内发布时先从当前调用补齐信封缺失的扩展（<c>traceparent</c>、租户、主体、关联、区域，RFC-0009「信封」），写进发件箱的就是补齐后的信封。
+/// 有活动工作单元时写入发件箱表（随业务事务提交或回滚），否则直接发布到代理。批量发布用仓储的批量新增一次写入。在调用内发布时先从当前调用补齐信封缺失的扩展（<c>traceparent</c>、租户、主体、关联、区域，RFC-0009「信封」），写进发件箱的就是补齐后的信封
 /// </remarks>
-/// <param name="unitOfWork">当前作用域的工作单元。</param>
-/// <param name="outbox">发件箱仓储。</param>
-/// <param name="ids">发件箱消息的 ID 生成器。</param>
-/// <param name="broker">没有活动工作单元时直接发布的目标代理。</param>
-/// <param name="timeProvider">时间源。</param>
-/// <param name="invocation">当前调用的访问器；为 <see langword="null"/> 时不补扩展。</param>
+/// <param name="unitOfWork">当前作用域的工作单元</param>
+/// <param name="outbox">发件箱仓储</param>
+/// <param name="ids">发件箱消息的 ID 生成器</param>
+/// <param name="broker">没有活动工作单元时直接发布的目标代理</param>
+/// <param name="timeProvider">时间源</param>
+/// <param name="invocation">当前调用的访问器；为 <see langword="null"/> 时不补扩展</param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMessage, Guid> outbox, IIdGenerator<Guid> ids, IMessageBroker broker, TimeProvider timeProvider, IInvocationAccessor? invocation = null) : IMessagePublisher
 {
     /// <summary>
-    /// 当前作用域的工作单元。
+    /// 当前作用域的工作单元
     /// </summary>
     /// <remarks>
-    /// 活动时消息随它提交或回滚。
+    /// 活动时消息随它提交或回滚
     /// </remarks>
     private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
-    /// 发件箱仓储。
+    /// 发件箱仓储
     /// </summary>
     private readonly IRepository<OutboxMessage, Guid> _outbox = outbox ?? throw new ArgumentNullException(nameof(outbox));
 
     /// <summary>
-    /// 发件箱消息的 ID 生成器。
+    /// 发件箱消息的 ID 生成器
     /// </summary>
     private readonly IIdGenerator<Guid> _ids = ids ?? throw new ArgumentNullException(nameof(ids));
 
     /// <summary>
-    /// 没有活动工作单元时直接发布的目标代理。
+    /// 没有活动工作单元时直接发布的目标代理
     /// </summary>
     private readonly IMessageBroker _broker = broker ?? throw new ArgumentNullException(nameof(broker));
 
     /// <summary>
-    /// 时间源。
+    /// 时间源
     /// </summary>
     /// <remarks>
-    /// 记消息创建时间。
+    /// 记消息创建时间
     /// </remarks>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
     /// <summary>
-    /// 当前调用的访问器。
+    /// 当前调用的访问器
     /// </summary>
     /// <remarks>
-    /// 发布时从它取调用上下文补齐扩展。
+    /// 发布时从它取调用上下文补齐扩展
     /// </remarks>
     private readonly IInvocationAccessor? _invocation = invocation;
 
@@ -118,7 +118,7 @@ public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMe
     }
 
     /// <summary>
-    /// 把信封编码成一条发件箱消息。
+    /// 把信封编码成一条发件箱消息
     /// </summary>
     private OutboxMessage Message(string topic, MessageEnvelope envelope, DateTimeOffset now) => new()
     {

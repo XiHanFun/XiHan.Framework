@@ -9,10 +9,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Database.Entities;
 
 /// <summary>
-/// 租户分区的节点实例行。
+/// 租户分区的节点实例行
 /// </summary>
 /// <remarks>
-/// 实现 <see cref="IMultiTenant"/>：与所属实例同一租户、同一个库。索引：<c>(InstanceId)</c> 供按实例读取与级联删除。
+/// 实现 <see cref="IMultiTenant"/>：与所属实例同一租户、同一个库。索引：<c>(InstanceId)</c> 供按实例读取与级联删除
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [EntityIndex(nameof(InstanceId))]

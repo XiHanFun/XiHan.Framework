@@ -6,15 +6,15 @@ using System.Globalization;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 生成本地联调的 Compose 文件：应用服务与每个绑定一个依赖服务。
+/// 生成本地联调的 Compose 文件：应用服务与每个绑定一个依赖服务
 /// </summary>
 internal static class ComposeGenerator
 {
     /// <summary>
-    /// 生成 <c>compose.yaml</c>。
+    /// 生成 <c>compose.yaml</c>
     /// </summary>
     /// <remarks>
-    /// <paramref name="buildContext"/> 与 <paramref name="dockerfile"/> 是相对 compose 文件与构建上下文的路径。
+    /// <paramref name="buildContext"/> 与 <paramref name="dockerfile"/> 是相对 compose 文件与构建上下文的路径
     /// </remarks>
     public static PackOutput Generate(AppManifest manifest, string buildContext, string dockerfile)
     {
@@ -99,7 +99,7 @@ internal static class ComposeGenerator
                         .Pair(6, "interval", "10s");
                     break;
                 case "stream":
-                    // 单节点 KRaft：同一进程兼任 broker 与 controller；一旦给了 KAFKA_* 变量镜像就不再用自带的配置文件，必需项都要写全。
+                    // 单节点 KRaft：同一进程兼任 broker 与 controller；一旦给了 KAFKA_* 变量镜像就不再用自带的配置文件，必需项都要写全
                     // 对外地址写服务名，Compose 网络里的应用拿到的元数据才指向可达的主机，而不是镜像缺省的 localhost
                     yaml.Line(4, "environment:")
                         .Pair(6, "KAFKA_NODE_ID", "1")

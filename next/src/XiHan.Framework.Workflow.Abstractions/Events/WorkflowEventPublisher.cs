@@ -10,28 +10,28 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Events;
 
 /// <summary>
-/// 把攒下的事件以 CloudEvents 信封按主题批量发布。
+/// 把攒下的事件以 CloudEvents 信封按主题批量发布
 /// </summary>
 /// <remarks>
-/// 没有装配消息发布者时跳过，发布失败只记日志。
+/// 没有装配消息发布者时跳过，发布失败只记日志
 /// </remarks>
 internal sealed partial class WorkflowEventPublisher
 {
     /// <summary>
-    /// 发布者。
+    /// 发布者
     /// </summary>
     /// <remarks>
-    /// 没有为 <see langword="null"/>。
+    /// 没有为 <see langword="null"/>
     /// </remarks>
     private readonly IMessagePublisher? _publisher;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public WorkflowEventPublisher(IMessagePublisher? publisher, ILogger logger)
     {
@@ -40,7 +40,7 @@ internal sealed partial class WorkflowEventPublisher
     }
 
     /// <summary>
-    /// 发布一组事件：按主题分组，每组一次批量发布。
+    /// 发布一组事件：按主题分组，每组一次批量发布
     /// </summary>
     public async ValueTask FlushAsync(IReadOnlyList<PendingEvent> events, CancellationToken cancellationToken)
     {
@@ -72,7 +72,7 @@ internal sealed partial class WorkflowEventPublisher
     }
 
     /// <summary>
-    /// 事件 → 信封：来源 <c>/workflow</c>，类型为主题，租户与关联进扩展属性。
+    /// 事件 → 信封：来源 <c>/workflow</c>，类型为主题，租户与关联进扩展属性
     /// </summary>
     private static MessageEnvelope Envelope(PendingEvent pending)
     {
@@ -99,13 +99,13 @@ internal sealed partial class WorkflowEventPublisher
     }
 
     /// <summary>
-    /// 发布返回失败。
+    /// 发布返回失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Publishing workflow event '{Topic}' (envelope '{EnvelopeId}') failed with '{ErrorCode}'.")]
     private static partial void LogPublishFailed(ILogger logger, string topic, string envelopeId, string errorCode);
 
     /// <summary>
-    /// 发布抛出异常。
+    /// 发布抛出异常
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Publishing workflow events on topic '{Topic}' threw.")]
     private static partial void LogPublishThrew(ILogger logger, Exception exception, string topic);

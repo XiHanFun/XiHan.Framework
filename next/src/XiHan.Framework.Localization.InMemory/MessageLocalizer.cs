@@ -10,27 +10,27 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.InMemory;
 
 /// <summary>
-/// 汇集全部已注册目录的本地化器，同时是安装到 <see cref="MessageScope"/> 的解析器。
+/// 汇集全部已注册目录的本地化器，同时是安装到 <see cref="MessageScope"/> 的解析器
 /// </summary>
 /// <remarks>
-/// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>；同一键先注册的目录优先。占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）。
+/// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>；同一键先注册的目录优先。占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class MessageLocalizer : IMessageLocalizer, IMessageResolver
 {
     /// <summary>
-    /// 已注册的目录，按注册顺序。
+    /// 已注册的目录，按注册顺序
     /// </summary>
     /// <remarks>
-    /// 同一键先注册的目录优先。
+    /// 同一键先注册的目录优先
     /// </remarks>
     private readonly IReadOnlyList<MessageCatalog> _catalogs;
 
     /// <summary>
-    /// 创建本地化器。
+    /// 创建本地化器
     /// </summary>
-    /// <param name="catalogs">已注册的目录，按注册顺序。</param>
-    /// <param name="options">选项。</param>
+    /// <param name="catalogs">已注册的目录，按注册顺序</param>
+    /// <param name="options">选项</param>
     public MessageLocalizer(IEnumerable<MessageCatalog> catalogs, LocalizationOptions options)
     {
         ArgumentNullException.ThrowIfNull(catalogs);
@@ -109,7 +109,7 @@ public sealed class MessageLocalizer : IMessageLocalizer, IMessageResolver
     }
 
     /// <summary>
-    /// 沿回退链在全部目录里找模板，返回命中的模板与其区域。
+    /// 沿回退链在全部目录里找模板，返回命中的模板与其区域
     /// </summary>
     private bool TryFind(string key, string locale, out string template, out string resolvedLocale)
     {

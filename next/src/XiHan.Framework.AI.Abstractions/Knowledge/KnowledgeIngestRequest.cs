@@ -6,50 +6,50 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 摄入一篇文档。
+/// 摄入一篇文档
 /// </summary>
 /// <remarks>
-/// 切块、嵌入、写入集合；同一文档再次摄入先删后写。
+/// 切块、嵌入、写入集合；同一文档再次摄入先删后写
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KnowledgeIngestRequest
 {
     /// <summary>
-    /// 文档 ID。
+    /// 文档 ID
     /// </summary>
     public required string DocumentId { get; init; }
 
     /// <summary>
-    /// 正文。
+    /// 正文
     /// </summary>
     public required string Text { get; init; }
 
     /// <summary>
-    /// 集合。
+    /// 集合
     /// </summary>
     /// <remarks>
-    /// 空取 <see cref="KnowledgeOptions.Collection"/>。
+    /// 空取 <see cref="KnowledgeOptions.Collection"/>
     /// </remarks>
     public string? Collection { get; init; }
 
     /// <summary>
-    /// 随每个块保存的元数据（可按键值相等过滤）。
+    /// 随每个块保存的元数据（可按键值相等过滤）
     /// </summary>
     public IReadOnlyDictionary<string, string>? Metadata { get; init; }
 
     /// <summary>
-    /// 嵌入 Provider。
+    /// 嵌入 Provider
     /// </summary>
     /// <remarks>
-    /// 空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>。
+    /// 空取 <see cref="KnowledgeOptions.EmbeddingProvider"/>
     /// </remarks>
     public string? Provider { get; init; }
 
     /// <summary>
-    /// 切块选项。
+    /// 切块选项
     /// </summary>
     /// <remarks>
-    /// 空取 <see cref="KnowledgeOptions.Chunking"/>。
+    /// 空取 <see cref="KnowledgeOptions.Chunking"/>
     /// </remarks>
     public ChunkingOptions? Chunking { get; init; }
 }

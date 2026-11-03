@@ -12,39 +12,39 @@ using XiHan.Framework.Scheduling.Abstractions;
 namespace XiHan.Framework.Scheduling.Database.Storage;
 
 /// <summary>
-/// 存储与租约共用的执行方式。
+/// 存储与租约共用的执行方式
 /// </summary>
 /// <remarks>
-/// 每个操作在根提供者的新作用域里经 <see cref="App.InvokeAsync"/> 走完整管道，仓储只能在 Transaction 阶段内使用，动作返回时工作单元提交。动作返回失败时把失败写成调用结果让工作单元回滚；管道自身的失败原样返回；应用不在服务状态时返回 <see cref="SchedulingErrors.StoreUnavailable"/>。
+/// 每个操作在根提供者的新作用域里经 <see cref="App.InvokeAsync"/> 走完整管道，仓储只能在 Transaction 阶段内使用，动作返回时工作单元提交。动作返回失败时把失败写成调用结果让工作单元回滚；管道自身的失败原样返回；应用不在服务状态时返回 <see cref="SchedulingErrors.StoreUnavailable"/>
 /// </remarks>
 internal sealed class StoreInvocation
 {
     /// <summary>
-    /// 调度子系统错误码的前缀。
+    /// 调度子系统错误码的前缀
     /// </summary>
     /// <remarks>
-    /// 带此前缀的失败是业务语义（作业不存在等），不归为存储不可达。
+    /// 带此前缀的失败是业务语义（作业不存在等），不归为存储不可达
     /// </remarks>
     private const string SchedulingPrefix = "SCHEDULING_";
 
     /// <summary>
-    /// 根服务提供者。
+    /// 根服务提供者
     /// </summary>
     /// <remarks>
-    /// 每次操作开新作用域。
+    /// 每次操作开新作用域
     /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 应用。
+    /// 应用
     /// </summary>
     /// <remarks>
-    /// 操作经它的管道执行。
+    /// 操作经它的管道执行
     /// </remarks>
     private readonly App _app;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public StoreInvocation(IServiceProvider services, App app)
     {
@@ -53,7 +53,7 @@ internal sealed class StoreInvocation
     }
 
     /// <summary>
-    /// 在新作用域的管道里执行并取回动作的值。
+    /// 在新作用域的管道里执行并取回动作的值
     /// </summary>
     public async ValueTask<Result<T>> RunAsync<T>(Func<InvocationContext, ValueTask<Result<T>>> action, CancellationToken cancellationToken)
     {
@@ -86,7 +86,7 @@ internal sealed class StoreInvocation
     }
 
     /// <summary>
-    /// 在新作用域的管道里执行没有返回值的动作。
+    /// 在新作用域的管道里执行没有返回值的动作
     /// </summary>
     public async ValueTask<Result> RunAsync(Func<InvocationContext, ValueTask<Result>> action, CancellationToken cancellationToken)
     {
@@ -100,7 +100,7 @@ internal sealed class StoreInvocation
     }
 
     /// <summary>
-    /// 取当前调用作用域里的仓储。
+    /// 取当前调用作用域里的仓储
     /// </summary>
     public static IRepository<TEntity, string> Repository<TEntity>(InvocationContext context)
         where TEntity : class, IEntity<string>
@@ -110,10 +110,10 @@ internal sealed class StoreInvocation
     }
 
     /// <summary>
-    /// 把失败归为存储不可达。
+    /// 把失败归为存储不可达
     /// </summary>
     /// <remarks>
-    /// 调度子系统自己的错误（作业不存在、运行不存在、已经是存储不可达）原样返回，其余以原错误码为原因、原错误为内部错误包一层。
+    /// 调度子系统自己的错误（作业不存在、运行不存在、已经是存储不可达）原样返回，其余以原错误码为原因、原错误为内部错误包一层
     /// </remarks>
     public static Error Unavailable(Error cause)
     {
@@ -124,18 +124,18 @@ internal sealed class StoreInvocation
     }
 
     /// <summary>
-    /// 以文本原因构造存储不可达。
+    /// 以文本原因构造存储不可达
     /// </summary>
     public static Error Unavailable(string reason)
         => new(SchedulingErrors.StoreUnavailable, SchedulingMessages.StoreUnavailable, MessageArguments.Of(("reason", reason)));
 
     /// <summary>
-    /// 失败归为存储不可达，成功原样返回。
+    /// 失败归为存储不可达，成功原样返回
     /// </summary>
     public static Result<T> OrUnavailable<T>(Result<T> result) => result.IsSuccess ? result : Unavailable(result.Error!);
 
     /// <summary>
-    /// 失败归为存储不可达，成功原样返回。
+    /// 失败归为存储不可达，成功原样返回
     /// </summary>
     public static Result OrUnavailable(Result result) => result.IsSuccess ? result : Unavailable(result.Error!);
 }

@@ -8,45 +8,45 @@ using XiHan.Framework.Observability.Abstractions;
 namespace XiHan.Framework.Observability.Host;
 
 /// <summary>
-/// <see cref="IHostMonitor"/> 的实现。
+/// <see cref="IHostMonitor"/> 的实现
 /// </summary>
 /// <remarks>
-/// 处理器的静态部分、GPU 与主板首次读取后缓存；使用率与速率取采样器的最近值。
+/// 处理器的静态部分、GPU 与主板首次读取后缓存；使用率与速率取采样器的最近值
 /// </remarks>
 internal sealed class HostMonitor : IHostMonitor
 {
     /// <summary>
-    /// 读取路径。
+    /// 读取路径
     /// </summary>
     private readonly HostPlatform _platform;
 
     /// <summary>
-    /// 采样器。
+    /// 采样器
     /// </summary>
     private readonly HostSampler _sampler;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 处理器的静态部分。
+    /// 处理器的静态部分
     /// </summary>
     private readonly Lazy<ProcessorInfo> _processor;
 
     /// <summary>
-    /// 显卡。
+    /// 显卡
     /// </summary>
     private readonly Lazy<IReadOnlyList<GpuInfo>> _gpus;
 
     /// <summary>
-    /// 主板。
+    /// 主板
     /// </summary>
     private readonly Lazy<BoardInfo> _board;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public HostMonitor(HostPlatform platform, HostSampler sampler, TimeProvider clock)
     {

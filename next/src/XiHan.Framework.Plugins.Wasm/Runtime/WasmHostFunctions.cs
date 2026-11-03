@@ -23,64 +23,64 @@ using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace XiHan.Framework.Plugins.Wasm.Runtime;
 
 /// <summary>
-/// 宿主导入 <c>xihan.log</c> / <c>invoke</c> / <c>publish</c>（<c>spec/plugin/wasm.md</c> §4）。
+/// 宿主导入 <c>xihan.log</c> / <c>invoke</c> / <c>publish</c>（<c>spec/plugin/wasm.md</c> §4）
 /// </summary>
 /// <remarks>
-/// 读客体内存里的请求，经 <c>xihan_alloc</c> 写回响应；权限要在清单里声明并且已被宿主授予，回调嵌套深度有上限。回调期间管道再次进入同一插件的调用经 <see cref="Pump"/> 回到执行线程上同步完成。
+/// 读客体内存里的请求，经 <c>xihan_alloc</c> 写回响应；权限要在清单里声明并且已被宿主授予，回调嵌套深度有上限。回调期间管道再次进入同一插件的调用经 <see cref="Pump"/> 回到执行线程上同步完成
 /// </remarks>
 internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGrant permissions, WasmHostContext host, ILogger logger)
 {
     /// <summary>
-    /// 本插件的调用泵：外层调用登记执行线程，回调引发的再入在这条线程上泵出。
+    /// 本插件的调用泵：外层调用登记执行线程，回调引发的再入在这条线程上泵出
     /// </summary>
     public WasmCallPump Pump { get; } = new();
 
     /// <summary>
-    /// 回调 <c>Host.Invoke</c> 需要的权限。
+    /// 回调 <c>Host.Invoke</c> 需要的权限
     /// </summary>
     public const string PipelinePermission = PluginCallbackPermissions.Pipeline;
 
     /// <summary>
-    /// 回调 <c>Host.Publish</c> 需要的权限。
+    /// 回调 <c>Host.Publish</c> 需要的权限
     /// </summary>
     public const string MessagingPermission = PluginCallbackPermissions.Messaging;
 
     /// <summary>
-    /// 回调时宿主所用主体的认证方案。
+    /// 回调时宿主所用主体的认证方案
     /// </summary>
     public const string PluginScheme = "Plugin";
 
     /// <summary>
-    /// 回调嵌套深度上限。
+    /// 回调嵌套深度上限
     /// </summary>
     public const int MaxDepth = 8;
 
     /// <summary>
-    /// 当前回调嵌套深度。
+    /// 当前回调嵌套深度
     /// </summary>
     /// <remarks>
-    /// 调用串行，无需同步。
+    /// 调用串行，无需同步
     /// </remarks>
     private int _depth;
 
     /// <summary>
-    /// 当前调用（宿主进入模块的那次导出调用）的截止时间。
+    /// 当前调用（宿主进入模块的那次导出调用）的截止时间
     /// </summary>
     /// <remarks>
-    /// 由 <see cref="RunCall{T}"/> 设置，回调据此约束新调用与发布；没有当前调用（如实例化时的 <c>_initialize</c>）为空。
+    /// 由 <see cref="RunCall{T}"/> 设置，回调据此约束新调用与发布；没有当前调用（如实例化时的 <c>_initialize</c>）为空
     /// </remarks>
     private DateTimeOffset? _deadline;
 
     /// <summary>
-    /// 当前调用的取消令牌。
+    /// 当前调用的取消令牌
     /// </summary>
     private CancellationToken _cancellation;
 
     /// <summary>
-    /// 以一次导出调用的截止时间与取消运行它。
+    /// 以一次导出调用的截止时间与取消运行它
     /// </summary>
     /// <remarks>
-    /// 期间的导入回调都受这两者约束（<c>spec/plugin/wasm.md</c> §4）。调用串行：执行线程上同一时刻只有一次外层调用，再入不经过这里、沿用外层的约束。
+    /// 期间的导入回调都受这两者约束（<c>spec/plugin/wasm.md</c> §4）。调用串行：执行线程上同一时刻只有一次外层调用，再入不经过这里、沿用外层的约束
     /// </remarks>
     public T RunCall<T>(Func<T> call, DateTimeOffset deadline, CancellationToken cancellationToken)
     {
@@ -98,7 +98,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// <c>xihan.log(level, ptr, len)</c>。
+    /// <c>xihan.log(level, ptr, len)</c>
     /// </summary>
     public void Log(Caller caller, int level, int pointer, int length)
     {
@@ -120,7 +120,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// <c>xihan.invoke(ptr, len) -> i64</c>：以插件身份经宿主完整管道调用操作。
+    /// <c>xihan.invoke(ptr, len) -> i64</c>：以插件身份经宿主完整管道调用操作
     /// </summary>
     public long Invoke(Caller caller, int pointer, int length)
     {
@@ -137,7 +137,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// <c>xihan.publish(ptr, len) -> i64</c>：经宿主消息发布器发布。
+    /// <c>xihan.publish(ptr, len) -> i64</c>：经宿主消息发布器发布
     /// </summary>
     public long Publish(Caller caller, int pointer, int length)
     {
@@ -161,10 +161,10 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 回调的核心。
+    /// 回调的核心
     /// </summary>
     /// <remarks>
-    /// 权限、嵌套深度、宿主容器，然后在当前线程同步等待管道（Wasm 调用本身是同步的）。新调用的截止时间取请求元数据与当前调用中较早者、取消随当前调用；到期不再等待，返回超时（<c>spec/plugin/wasm.md</c> §4）。
+    /// 权限、嵌套深度、宿主容器，然后在当前线程同步等待管道（Wasm 调用本身是同步的）。新调用的截止时间取请求元数据与当前调用中较早者、取消随当前调用；到期不再等待，返回超时（<c>spec/plugin/wasm.md</c> §4）
     /// </remarks>
     private InvokeResponse InvokeCore(InvokeRequest request)
     {
@@ -226,10 +226,10 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 发布的核心：权限、宿主容器、按主题分组批量发布。
+    /// 发布的核心：权限、宿主容器、按主题分组批量发布
     /// </summary>
     /// <remarks>
-    /// 发布受当前调用的截止时间与取消约束，到期不再等待，尚未完成的各项为超时（<c>spec/plugin/wasm.md</c> §4）。
+    /// 发布受当前调用的截止时间与取消约束，到期不再等待，尚未完成的各项为超时（<c>spec/plugin/wasm.md</c> §4）
     /// </remarks>
     private void PublishCore(PublishRequest request, PublishResponse response)
     {
@@ -283,10 +283,10 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 当前调用的截止时间与剩余时间。
+    /// 当前调用的截止时间与剩余时间
     /// </summary>
     /// <remarks>
-    /// 没有当前调用时（实例化期间的 <c>_initialize</c>）按调用时限从现在算。
+    /// 没有当前调用时（实例化期间的 <c>_initialize</c>）按调用时限从现在算
     /// </remarks>
     private (DateTimeOffset Deadline, TimeSpan Remaining) Budget()
     {
@@ -296,26 +296,26 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 不再等待的回调对应的错误：截止时间到了为超时，否则为外层取消。
+    /// 不再等待的回调对应的错误：截止时间到了为超时，否则为外层取消
     /// </summary>
     private Error Abandoned(CancellationTokenSource timer, DateTimeOffset deadline)
         => DeadlineReached(timer, deadline) ? new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded) : new Error(KernelErrors.Cancelled, KernelMessages.Cancelled);
 
     /// <summary>
-    /// 回调的截止时间是否已到：回调的计时器已触发，或时钟已过截止时间。
+    /// 回调的截止时间是否已到：回调的计时器已触发，或时钟已过截止时间
     /// </summary>
     /// <remarks>
-    /// 不再等待与回调已返回两条路径都用它，外层调用同时被取消也按超时报告（RFC-0004、<c>plugin/wasm.md</c> §4，ADR-0092）。计时器已触发时不再看时钟：定时器可能早于时钟读数到达截止时间。
-    /// 外层调用的令牌在它的截止时间也会取消，可能先于本地计时器触发：那一刻宿主分不出是外层的截止时间还是外层调用方取消，只能看时钟；回调交给插件的结果不再经过任何中间件归因，这是宿主唯一能判断的地方。
+    /// 不再等待与回调已返回两条路径都用它，外层调用同时被取消也按超时报告（RFC-0004、<c>plugin/wasm.md</c> §4，ADR-0092）。计时器已触发时不再看时钟：定时器可能早于时钟读数到达截止时间
+    /// 外层调用的令牌在它的截止时间也会取消，可能先于本地计时器触发：那一刻宿主分不出是外层的截止时间还是外层调用方取消，只能看时钟；回调交给插件的结果不再经过任何中间件归因，这是宿主唯一能判断的地方
     /// </remarks>
     private bool DeadlineReached(CancellationTokenSource timer, DateTimeOffset deadline)
         => timer.IsCancellationRequested || host.Clock.GetUtcNow() >= deadline;
 
     /// <summary>
-    /// 回调用到的作用域与令牌源在它的任务结束后释放。
+    /// 回调用到的作用域与令牌源在它的任务结束后释放
     /// </summary>
     /// <remarks>
-    /// 不再等待的回调仍在后台收尾，不能先于它释放；没有任务或任务已结束则立即释放。
+    /// 不再等待的回调仍在后台收尾，不能先于它释放；没有任务或任务已结束则立即释放
     /// </remarks>
     private static void ReleaseWhenDone(Task? pending, params IDisposable?[] resources)
     {
@@ -329,7 +329,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 依次释放。
+    /// 依次释放
     /// </summary>
     private static void Release(IDisposable?[] resources)
     {
@@ -340,10 +340,10 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 读客体内存里的一段字节。
+    /// 读客体内存里的一段字节
     /// </summary>
     /// <remarks>
-    /// 越界返回假。
+    /// 越界返回假
     /// </remarks>
     private static bool TryRead(Caller caller, int pointer, int length, out byte[] bytes)
     {
@@ -359,10 +359,10 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 经客体的 <c>xihan_alloc</c> 写回响应，返回 <c>(ptr &lt;&lt; 32) | len</c>。
+    /// 经客体的 <c>xihan_alloc</c> 写回响应，返回 <c>(ptr &lt;&lt; 32) | len</c>
     /// </summary>
     /// <remarks>
-    /// 分配失败返回 0。
+    /// 分配失败返回 0
     /// </remarks>
     private static long Write(Caller caller, byte[] bytes)
     {
@@ -384,7 +384,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 记录客体经 <c>xihan.log</c> 写出的一行。
+    /// 记录客体经 <c>xihan.log</c> 写出的一行
     /// </summary>
     [LoggerMessage(Message = "[plugins.{PluginId}] {Line}")]
     private static partial void LogGuest(ILogger logger, LogLevel level, string pluginId, string line);

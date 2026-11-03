@@ -13,26 +13,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// 探测 S3 兼容服务是否认条件写入。
+/// 探测 S3 兼容服务是否认条件写入
 /// </summary>
 /// <remarks>
-/// 不覆盖写入靠 <c>If-None-Match: *</c> 保证原子（ADR-0089）：不认它的服务上，先 HEAD 再写的两个写入方会让后写的静默覆盖先写的。何时探、结论如何生效由 <see cref="S3ConditionalWriteGate"/> 决定（ADR-0090），这里只做一次探测。探测在 <see cref="S3ObjectStorageOptions.HealthBucket"/> 里对固定的探测键 <see cref="ProbeKey"/> 带条件写入两次，第二次必须被拒（412）；需要时再以同一个键带条件完成一次分片上传，同样必须被拒，被拒的上传随即放弃。探测键写入后不删除：任何一次 412 都证明服务认得条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动都得到同一结论，凭据只需要对这一个键的写入权限，桶里只多一个空对象。
+/// 不覆盖写入靠 <c>If-None-Match: *</c> 保证原子（ADR-0089）：不认它的服务上，先 HEAD 再写的两个写入方会让后写的静默覆盖先写的。何时探、结论如何生效由 <see cref="S3ConditionalWriteGate"/> 决定（ADR-0090），这里只做一次探测。探测在 <see cref="S3ObjectStorageOptions.HealthBucket"/> 里对固定的探测键 <see cref="ProbeKey"/> 带条件写入两次，第二次必须被拒（412）；需要时再以同一个键带条件完成一次分片上传，同样必须被拒，被拒的上传随即放弃。探测键写入后不删除：任何一次 412 都证明服务认得条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动都得到同一结论，凭据只需要对这一个键的写入权限，桶里只多一个空对象
 /// </remarks>
 internal static class S3ConditionalWriteProbe
 {
     /// <summary>
-    /// 探测键。
+    /// 探测键
     /// </summary>
     /// <remarks>
-    /// 保留前缀（<see cref="BlobKey.ReservedSegment"/>）下的空对象：不在键文法之内，业务写不进，各 Provider 列举时跳过，不混进业务列举（ADR-0090）；可单独授权（如 IAM 策略只放行 <c>arn:aws:s3:::&lt;桶&gt;/.xihan/probe/*</c> 的写入）。名字与 ADR-0089 相同，已在桶里的旧探测键无需迁移。
+    /// 保留前缀（<see cref="BlobKey.ReservedSegment"/>）下的空对象：不在键文法之内，业务写不进，各 Provider 列举时跳过，不混进业务列举（ADR-0090）；可单独授权（如 IAM 策略只放行 <c>arn:aws:s3:::&lt;桶&gt;/.xihan/probe/*</c> 的写入）。名字与 ADR-0089 相同，已在桶里的旧探测键无需迁移
     /// </remarks>
     internal const string ProbeKey = BlobKey.ReservedSegment + "/probe/conditional-write";
 
     /// <summary>
-    /// 核对条件写入开启时配置了探测用的桶。
+    /// 核对条件写入开启时配置了探测用的桶
     /// </summary>
     /// <remarks>
-    /// 没配时抛出 <see cref="ArgumentException"/>（配置错误）：缺省实例装配失败，命名实例由注册表翻译为定义不合法。<paramref name="prefix"/> 是报错用的设置键前缀。
+    /// 没配时抛出 <see cref="ArgumentException"/>（配置错误）：缺省实例装配失败，命名实例由注册表翻译为定义不合法。<paramref name="prefix"/> 是报错用的设置键前缀
     /// </remarks>
     internal static void RequireBucket(S3ObjectStorageOptions options, string prefix)
     {
@@ -43,16 +43,16 @@ internal static class S3ConditionalWriteProbe
     }
 
     /// <summary>
-    /// 探测一次。
+    /// 探测一次
     /// </summary>
     /// <remarks>
-    /// 成功表示服务认条件写入。失败的原因各有错误码：不认 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>，被拒绝（凭据无效或无权写探测键、建桶、放弃上传）<see cref="ObjectStorageErrors.ProbeDenied"/>，桶不存在 <see cref="ObjectStorageErrors.BlobNotFound"/>，连不上、超时或其余服务端错误 <see cref="ObjectStorageErrors.StoreUnavailable"/>。调用方的取消原样抛出。单次探测以 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 为超时。
+    /// 成功表示服务认条件写入。失败的原因各有错误码：不认 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>，被拒绝（凭据无效或无权写探测键、建桶、放弃上传）<see cref="ObjectStorageErrors.ProbeDenied"/>，桶不存在 <see cref="ObjectStorageErrors.BlobNotFound"/>，连不上、超时或其余服务端错误 <see cref="ObjectStorageErrors.StoreUnavailable"/>。调用方的取消原样抛出。单次探测以 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 为超时
     /// </remarks>
-    /// <param name="client">客户端。</param>
-    /// <param name="options">选项；<see cref="S3ObjectStorageOptions.HealthBucket"/> 必须有值。</param>
-    /// <param name="multipart">是否也探测分片上传的完成。</param>
-    /// <param name="clock">时钟（超时按它计）。</param>
-    /// <param name="cancellationToken">取消令牌。</param>
+    /// <param name="client">客户端</param>
+    /// <param name="options">选项；<see cref="S3ObjectStorageOptions.HealthBucket"/> 必须有值</param>
+    /// <param name="multipart">是否也探测分片上传的完成</param>
+    /// <param name="clock">时钟（超时按它计）</param>
+    /// <param name="cancellationToken">取消令牌</param>
     internal static async ValueTask<Result> RunAsync(IAmazonS3 client, S3ObjectStorageOptions options, bool multipart, TimeProvider clock, CancellationToken cancellationToken)
     {
         var bucket = options.HealthBucket ?? throw new ArgumentException("The conditional write probe needs a health bucket.", nameof(options));
@@ -107,10 +107,10 @@ internal static class S3ConditionalWriteProbe
     }
 
     /// <summary>
-    /// 带条件写入探测键。
+    /// 带条件写入探测键
     /// </summary>
     /// <remarks>
-    /// 写入成功返回 <see langword="true"/>，被条件拒绝（412）返回 <see langword="false"/>；桶不存在且允许建桶时建桶后重试一次，其余错误抛出。<paramref name="step"/> 记录当前请求名，供报错。
+    /// 写入成功返回 <see langword="true"/>，被条件拒绝（412）返回 <see langword="false"/>；桶不存在且允许建桶时建桶后重试一次，其余错误抛出。<paramref name="step"/> 记录当前请求名，供报错
     /// </remarks>
     private static async ValueTask<bool> PutAsync(IAmazonS3 client, string bucket, bool ensureBucket, Action<string> step, CancellationToken cancellationToken)
     {
@@ -137,10 +137,10 @@ internal static class S3ConditionalWriteProbe
     }
 
     /// <summary>
-    /// 以探测键带条件完成一次分片上传。
+    /// 以探测键带条件完成一次分片上传
     /// </summary>
     /// <remarks>
-    /// 被条件拒绝（412）返回 <see langword="true"/> 并放弃这个上传（不留未完成的分片上传；服务已自行清掉时不算错）；完成了返回 <see langword="false"/>（服务忽略了条件，探测键被同样为空的内容覆盖，无害）。中途出错时尽力放弃上传，再抛出原来的错误。<paramref name="step"/> 记录当前请求名，供报错。
+    /// 被条件拒绝（412）返回 <see langword="true"/> 并放弃这个上传（不留未完成的分片上传；服务已自行清掉时不算错）；完成了返回 <see langword="false"/>（服务忽略了条件，探测键被同样为空的内容覆盖，无害）。中途出错时尽力放弃上传，再抛出原来的错误。<paramref name="step"/> 记录当前请求名，供报错
     /// </remarks>
     private static async ValueTask<bool> CompleteRefusedAsync(IAmazonS3 client, string bucket, Action<string> step, CancellationToken cancellationToken)
     {
@@ -193,7 +193,7 @@ internal static class S3ConditionalWriteProbe
     }
 
     /// <summary>
-    /// 服务不认条件写入。
+    /// 服务不认条件写入
     /// </summary>
     private static Error Unsupported(string bucket, string operation)
         => Error.Unavailable(ObjectStorageErrors.ConditionalWriteUnavailable, ObjectStorageMessages.ConditionalWriteUnsupported, MessageArguments.Of(("bucket", bucket), ("operation", operation)));

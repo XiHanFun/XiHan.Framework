@@ -8,32 +8,32 @@ using XiHan.Framework.Security.Abstractions;
 namespace XiHan.Framework.Security.InMemory;
 
 /// <summary>
-/// 健康项 <see cref="InMemorySecurityFeature.HealthName"/>。
+/// 健康项 <see cref="InMemorySecurityFeature.HealthName"/>
 /// </summary>
 /// <remarks>
-/// 主体存储或授予存储任一满即 Degraded（再登记会被 <see cref="SecurityErrors.CapacityExceeded"/> 拒绝）。两个存储只在对应能力被本包提供时存在，缺的那个不参与判定。同步计算，不起后台循环。
+/// 主体存储或授予存储任一满即 Degraded（再登记会被 <see cref="SecurityErrors.CapacityExceeded"/> 拒绝）。两个存储只在对应能力被本包提供时存在，缺的那个不参与判定。同步计算，不起后台循环
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemorySecurityHealthContributor : IHealthContributor
 {
     /// <summary>
-    /// 主体存储。
+    /// 主体存储
     /// </summary>
     /// <remarks>
-    /// 认证能力被别的 Provider 提供时为 <see langword="null"/>。
+    /// 认证能力被别的 Provider 提供时为 <see langword="null"/>
     /// </remarks>
     private readonly InMemoryPrincipalStore? _principals;
 
     /// <summary>
-    /// 授予存储。
+    /// 授予存储
     /// </summary>
     /// <remarks>
-    /// 授权能力被别的 Provider 提供时为 <see langword="null"/>。
+    /// 授权能力被别的 Provider 提供时为 <see langword="null"/>
     /// </remarks>
     private readonly InMemoryPermissionGrantStore? _grants;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemorySecurityHealthContributor(InMemoryPrincipalStore? principals, InMemoryPermissionGrantStore? grants)
     {

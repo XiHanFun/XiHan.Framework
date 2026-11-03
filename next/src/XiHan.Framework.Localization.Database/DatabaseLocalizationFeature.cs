@@ -16,21 +16,21 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Localization.Database;
 
 /// <summary>
-/// 数据库本地化的能力包入口。
+/// 数据库本地化的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>localization.resources@1</c>，依赖 <c>persistence.relational@1</c>。装配后顶替默认的内存本地化。健康项 <see cref="HealthName"/> 由 <see cref="MessageTranslationLoader"/> 以最近一次加载的结果报告：失败（上一份快照仍在生效）为 Degraded。
+/// 提供 <c>localization.resources@1</c>，依赖 <c>persistence.relational@1</c>。装配后顶替默认的内存本地化。健康项 <see cref="HealthName"/> 由 <see cref="MessageTranslationLoader"/> 以最近一次加载的结果报告：失败（上一份快照仍在生效）为 Degraded
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseLocalizationFeature : IHostedFeature
 {
     /// <summary>
-    /// 健康项名：翻译最近一次加载是否成功。
+    /// 健康项名：翻译最近一次加载是否成功
     /// </summary>
     public const string HealthName = "localization.database.translations";
 
     /// <summary>
-    /// 启动后保存的加载器，供停止时使用。
+    /// 启动后保存的加载器，供停止时使用
     /// </summary>
     private MessageTranslationLoader? _loader;
 

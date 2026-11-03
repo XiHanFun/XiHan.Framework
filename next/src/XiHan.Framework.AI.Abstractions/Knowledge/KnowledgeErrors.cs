@@ -8,34 +8,34 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 知识库流水线共用的错误构造与嵌入调用包装。
+/// 知识库流水线共用的错误构造与嵌入调用包装
 /// </summary>
 internal static class KnowledgeErrors
 {
     /// <summary>
-    /// 没有 <c>ai.knowledge</c> Provider。
+    /// 没有 <c>ai.knowledge</c> Provider
     /// </summary>
     public static Error NoStore()
         => Error.Unavailable(AIErrors.KnowledgeUnavailable, AIMessages.KnowledgeUnavailable, MessageArguments.Of(("reason", "no provider for 'ai.knowledge' is configured")));
 
     /// <summary>
-    /// 维度不一致。
+    /// 维度不一致
     /// </summary>
     public static Error Dimensions(int actual, int expected)
         => Error.Validation(AIErrors.DimensionsMismatch, AIMessages.KnowledgeDimensions, MessageArguments.Of(("actual", actual), ("expected", expected)));
 
     /// <summary>
-    /// 解析嵌入 Provider 并生成嵌入，把传输异常映射成 <see cref="AIErrors.ModelUnavailable"/> / <see cref="AIErrors.ModelTimeout"/>。
+    /// 解析嵌入 Provider 并生成嵌入，把传输异常映射成 <see cref="AIErrors.ModelUnavailable"/> / <see cref="AIErrors.ModelTimeout"/>
     /// </summary>
     /// <remarks>
     /// 一次嵌入批调用一个 Provider 超时令牌（<see cref="AIProviderOptions.Timeout"/>，按注入的时间源计时），超时与取消按令牌归因（RFC-0022「超时与取消」）：
-    /// 超时令牌已触发即 <see cref="AIErrors.ModelTimeout"/>，不论调用方是否也取消、生成器是抛出还是正常返回；只有调用方取消时抛出 <see cref="OperationCanceledException"/>。
+    /// 超时令牌已触发即 <see cref="AIErrors.ModelTimeout"/>，不论调用方是否也取消、生成器是抛出还是正常返回；只有调用方取消时抛出 <see cref="OperationCanceledException"/>
     /// </remarks>
-    /// <param name="providers">Provider 目录。</param>
-    /// <param name="provider">Provider 名；为空表示没有可用的默认嵌入 Provider。</param>
-    /// <param name="inputs">输入文本。</param>
-    /// <param name="timeProvider">时间源。</param>
-    /// <param name="cancellationToken">调用方令牌。</param>
+    /// <param name="providers">Provider 目录</param>
+    /// <param name="provider">Provider 名；为空表示没有可用的默认嵌入 Provider</param>
+    /// <param name="inputs">输入文本</param>
+    /// <param name="timeProvider">时间源</param>
+    /// <param name="cancellationToken">调用方令牌</param>
     public static async ValueTask<Result<GeneratedEmbeddings<Embedding<float>>>> EmbedAsync(IAIProviderCatalog providers, string? provider, IReadOnlyList<string> inputs, TimeProvider timeProvider, CancellationToken cancellationToken)
     {
         var generator = providers.ResolveEmbeddingGenerator(provider);
@@ -70,7 +70,7 @@ internal static class KnowledgeErrors
     }
 
     /// <summary>
-    /// 嵌入调用超时。
+    /// 嵌入调用超时
     /// </summary>
     private static Error Timeout(string provider)
         => new(AIErrors.ModelTimeout, AIMessages.ModelTimeout, MessageArguments.Of(("provider", provider)));

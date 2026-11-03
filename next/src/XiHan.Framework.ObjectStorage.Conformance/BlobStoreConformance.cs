@@ -14,43 +14,43 @@ using Xunit;
 namespace XiHan.Framework.ObjectStorage.Conformance;
 
 /// <summary>
-/// <see cref="IBlobStore"/> 的一致性套件。
+/// <see cref="IBlobStore"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateStore"/> 与 <see cref="PlantOutsideContractAsync"/>，全部用例随之执行。
+/// 继承并实现 <see cref="CreateStore"/> 与 <see cref="PlantOutsideContractAsync"/>，全部用例随之执行
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class BlobStoreConformance
 {
     /// <summary>
-    /// 用例使用的容器。
+    /// 用例使用的容器
     /// </summary>
     protected virtual ContainerName Container => new("conformance");
 
     /// <summary>
-    /// 创建被测存储。
+    /// 创建被测存储
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次；返回的存储在 <see cref="Container"/> 里不应含有本套件使用的键。
+    /// 每个用例调用一次；返回的存储在 <see cref="Container"/> 里不应含有本套件使用的键
     /// </remarks>
     protected abstract IBlobStore CreateStore();
 
     /// <summary>
-    /// 绕过契约直接在底层存储里放入一个对象。
+    /// 绕过契约直接在底层存储里放入一个对象
     /// </summary>
     /// <remarks>
-    /// 键不必符合键文法（用例 13 放入保留前缀 <see cref="BlobKey.ReservedSegment"/> 下的对象，模拟框架自己写入的对象，如 S3 的条件写入探测键）；内容随意，元数据不必齐全。用例只经契约列举，核对这类对象被跳过（ADR-0090）。
+    /// 键不必符合键文法（用例 13 放入保留前缀 <see cref="BlobKey.ReservedSegment"/> 下的对象，模拟框架自己写入的对象，如 S3 的条件写入探测键）；内容随意，元数据不必齐全。用例只经契约列举，核对这类对象被跳过（ADR-0090）
     /// </remarks>
-    /// <param name="container">容器。</param>
-    /// <param name="key">键文本。</param>
-    /// <param name="content">内容。</param>
+    /// <param name="container">容器</param>
+    /// <param name="key">键文本</param>
+    /// <param name="content">内容</param>
     protected abstract Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content);
 
     /// <summary>
-    /// 用例 1：写入后能读到同样的字节、内容类型与自定义元数据。
+    /// 用例 1：写入后能读到同样的字节、内容类型与自定义元数据
     /// </summary>
     /// <remarks>
-    /// ETag 与长度正确；没写过的键是 NOTFOUND。
+    /// ETag 与长度正确；没写过的键是 NOTFOUND
     /// </remarks>
     [Fact]
     public async Task Put_ThenGet_RoundTripsContentAndMetadata()
@@ -84,10 +84,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：允许覆盖时新内容替换旧内容且 ETag 变化。
+    /// 用例 2：允许覆盖时新内容替换旧内容且 ETag 变化
     /// </summary>
     /// <remarks>
-    /// 不允许覆盖时返回 CONFLICT 且内容不变；键区分大小写。
+    /// 不允许覆盖时返回 CONFLICT 且内容不变；键区分大小写
     /// </remarks>
     [Fact]
     public async Task Put_OverwritesOrConflicts_AndKeysAreCaseSensitive()
@@ -112,10 +112,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 3：批量写入按顺序逐项返回结果，空列表返回空。
+    /// 用例 3：批量写入按顺序逐项返回结果，空列表返回空
     /// </summary>
     /// <remarks>
-    /// 重复键按顺序各执行一次。
+    /// 重复键按顺序各执行一次
     /// </remarks>
     [Fact]
     public async Task PutMany_ReturnsOneResultPerUpload_InOrder()
@@ -144,10 +144,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 4：批量删除逐项报告是否存在。
+    /// 用例 4：批量删除逐项报告是否存在
     /// </summary>
     /// <remarks>
-    /// 不存在是成功；重复键第二次报告不存在；删除后读不到。
+    /// 不存在是成功；重复键第二次报告不存在；删除后读不到
     /// </remarks>
     [Fact]
     public async Task DeleteMany_ReportsExistencePerKey()
@@ -168,10 +168,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 5：按前缀列举，键的序数顺序。
+    /// 用例 5：按前缀列举，键的序数顺序
     /// </summary>
     /// <remarks>
-    /// 页大小生效，续页标记取完全部且不重复；无匹配为空页。
+    /// 页大小生效，续页标记取完全部且不重复；无匹配为空页
     /// </remarks>
     [Fact]
     public async Task List_FiltersByPrefix_OrdersByKey_AndPaginates()
@@ -208,7 +208,7 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 6：大对象流式写入与读出内容一致，不要求一次装进内存。
+    /// 用例 6：大对象流式写入与读出内容一致，不要求一次装进内存
     /// </summary>
     [Fact]
     public async Task LargeContent_StreamsThrough()
@@ -234,10 +234,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 7：不合法的容器名、键、元数据名与查询前缀在构造时拒绝。
+    /// 用例 7：不合法的容器名、键、元数据名与查询前缀在构造时拒绝
     /// </summary>
     /// <remarks>
-    /// 页大小越界不在构造时拒绝，而是在列举时返回校验错误，见用例 11。
+    /// 页大小越界不在构造时拒绝，而是在列举时返回校验错误，见用例 11
     /// </remarks>
     [Fact]
     public void InvalidIdentifiers_AreRejectedEarly()
@@ -261,10 +261,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 8：范围读取——起点与长度、读到末尾、超出末尾截断。
+    /// 用例 8：范围读取——起点与长度、读到末尾、超出末尾截断
     /// </summary>
     /// <remarks>
-    /// <see cref="BlobContent.Range"/> 给出实际范围，元数据长度仍是总长。起点不在对象内（含空对象）不可满足；不存在是 NOTFOUND。
+    /// <see cref="BlobContent.Range"/> 给出实际范围，元数据长度仍是总长。起点不在对象内（含空对象）不可满足；不存在是 NOTFOUND
     /// </remarks>
     [Fact]
     public async Task GetRange_ReturnsTheRequestedBytes()
@@ -295,10 +295,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 9：分片上传——乱序上传、同一编号重传覆盖，列出分片升序。
+    /// 用例 9：分片上传——乱序上传、同一编号重传覆盖，列出分片升序
     /// </summary>
     /// <remarks>
-    /// 完成前对象不可见，完成后是按编号拼接的内容，内容类型与自定义元数据来自发起时；完成后上传不存在。存储不支持分片时跳过。
+    /// 完成前对象不可见，完成后是按编号拼接的内容，内容类型与自定义元数据来自发起时；完成后上传不存在。存储不支持分片时跳过
     /// </remarks>
     [Fact]
     public async Task Multipart_UploadsPartsInAnyOrder_AndCompletesAtomically()
@@ -329,10 +329,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 10：分片清单不合法返回 PARTS_INVALID 且上传保留、之后仍可完成。
+    /// 用例 10：分片清单不合法返回 PARTS_INVALID 且上传保留、之后仍可完成
     /// </summary>
     /// <remarks>
-    /// 为空、乱序、ETag 不符、非末片过小。不覆盖时对象已存在拒绝发起与完成；放弃后上传不存在，再放弃也成功。存储不支持分片时跳过。
+    /// 为空、乱序、ETag 不符、非末片过小。不覆盖时对象已存在拒绝发起与完成；放弃后上传不存在，再放弃也成功。存储不支持分片时跳过
     /// </remarks>
     [Fact]
     public async Task Multipart_RejectsInvalidPartLists_AndHonoursOverwriteAndAbort()
@@ -366,10 +366,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 11：列举的页大小越界返回校验错误。
+    /// 用例 11：列举的页大小越界返回校验错误
     /// </summary>
     /// <remarks>
-    /// 错误码 <see cref="ObjectStorageErrors.PageSizeInvalid"/>，不在构造时抛出、不访问存储；1 与上限两个边界照常列举。
+    /// 错误码 <see cref="ObjectStorageErrors.PageSizeInvalid"/>，不在构造时抛出、不访问存储；1 与上限两个边界照常列举
     /// </remarks>
     [Fact]
     public async Task List_RejectsOutOfRangePageSize_AsValidationError()
@@ -395,10 +395,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 12：并发的不覆盖写入只有一个成功。
+    /// 用例 12：并发的不覆盖写入只有一个成功
     /// </summary>
     /// <remarks>
-    /// 多个写入方同时以 <c>Overwrite = false</c> 写同一个新键：恰好一个成功，其余都是 CONFLICT，对象内容是成功者写的。先查是否存在再写的实现在并发下会让后写的静默覆盖先写的，过不了本用例；原子的实现每次都过。
+    /// 多个写入方同时以 <c>Overwrite = false</c> 写同一个新键：恰好一个成功，其余都是 CONFLICT，对象内容是成功者写的。先查是否存在再写的实现在并发下会让后写的静默覆盖先写的，过不了本用例；原子的实现每次都过
     /// </remarks>
     [Fact]
     public async Task Put_WithoutOverwrite_IsAtomicUnderConcurrentWriters()
@@ -424,10 +424,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 用例 13：保留前缀下的键构造时拒绝，存储里已有的这类对象列举时跳过。
+    /// 用例 13：保留前缀下的键构造时拒绝，存储里已有的这类对象列举时跳过
     /// </summary>
     /// <remarks>
-    /// 首段是 <see cref="BlobKey.ReservedSegment"/> 的键留给框架自己的对象（ADR-0090）：不在键文法之内，只看首段且区分大小写。经 <see cref="PlantOutsideContractAsync"/> 放入这样的对象后，以保留前缀列举为空，按更短的前缀列举只有业务对象。放入的键固定、业务对象用完即删，反复运行不在共享存储里累积。
+    /// 首段是 <see cref="BlobKey.ReservedSegment"/> 的键留给框架自己的对象（ADR-0090）：不在键文法之内，只看首段且区分大小写。经 <see cref="PlantOutsideContractAsync"/> 放入这样的对象后，以保留前缀列举为空，按更短的前缀列举只有业务对象。放入的键固定、业务对象用完即删，反复运行不在共享存储里累积
     /// </remarks>
     [Fact]
     public async Task ReservedKeys_AreRejected_AndSkippedWhenListing()
@@ -458,10 +458,10 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 被测存储与其分片上传。
+    /// 被测存储与其分片上传
     /// </summary>
     /// <remarks>
-    /// 存储没有实现 <see cref="IBlobMultipartStore"/> 时跳过用例。
+    /// 存储没有实现 <see cref="IBlobMultipartStore"/> 时跳过用例
     /// </remarks>
     private (IBlobStore Store, IBlobMultipartStore Multipart) CreateMultipartStore()
     {
@@ -471,17 +471,17 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 套件内唯一的键：加随机后缀，避免共享存储时用例互相污染。
+    /// 套件内唯一的键：加随机后缀，避免共享存储时用例互相污染
     /// </summary>
     private static BlobKey Key(string suffix) => new(Guid.NewGuid().ToString("N")[..8] + "/" + suffix);
 
     /// <summary>
-    /// UTF-8 字节流。
+    /// UTF-8 字节流
     /// </summary>
     private static MemoryStream Bytes(string text) => new(Encoding.UTF8.GetBytes(text), writable: false);
 
     /// <summary>
-    /// 读流为文本。
+    /// 读流为文本
     /// </summary>
     private static async Task<string> Text(Stream stream)
     {
@@ -490,7 +490,7 @@ public abstract class BlobStoreConformance
     }
 
     /// <summary>
-    /// 字节为文本。
+    /// 字节为文本
     /// </summary>
     private static string Text(byte[] bytes) => Encoding.UTF8.GetString(bytes);
 }

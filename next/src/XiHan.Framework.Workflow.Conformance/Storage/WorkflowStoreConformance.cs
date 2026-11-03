@@ -13,24 +13,24 @@ using Xunit;
 namespace XiHan.Framework.Workflow.Conformance.Storage;
 
 /// <summary>
-/// 存储与实例锁的一致性套件（RFC-0021 §存储契约）。
+/// 存储与实例锁的一致性套件（RFC-0021 §存储契约）
 /// </summary>
 /// <remarks>
-/// 查询、排序、批量、级联、快照语义、分区隔离与锁的互斥。Provider 继承并实现 <see cref="StartAsync"/>（返回装配了被测 Provider 的已启动宿主）；锁等待上限应配置在 1 秒以内。存储在 <see cref="WorkflowStoreHost.InPartitionAsync{T}"/> 开的调用里使用。
+/// 查询、排序、批量、级联、快照语义、分区隔离与锁的互斥。Provider 继承并实现 <see cref="StartAsync"/>（返回装配了被测 Provider 的已启动宿主）；锁等待上限应配置在 1 秒以内。存储在 <see cref="WorkflowStoreHost.InPartitionAsync{T}"/> 开的调用里使用
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowStoreConformance
 {
     /// <summary>
-    /// 启动装配了被测存储与锁的夹具。
+    /// 启动装配了被测存储与锁的夹具
     /// </summary>
     protected abstract Task<WorkflowStoreHost> StartAsync();
 
     /// <summary>
-    /// 用例 1：定义按 ID、名字 + 版本、最新已发布查得到。
+    /// 用例 1：定义按 ID、名字 + 版本、最新已发布查得到
     /// </summary>
     /// <remarks>
-    /// 最大版本与列表排序正确；删除后找不到；批量找忽略不存在的。
+    /// 最大版本与列表排序正确；删除后找不到；批量找忽略不存在的
     /// </remarks>
     [Fact]
     public async Task Definitions_SaveFindListAndDelete()
@@ -67,10 +67,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：保存后再改原对象不影响存下的。
+    /// 用例 2：保存后再改原对象不影响存下的
     /// </summary>
     /// <remarks>
-    /// 返回的对象再改也不影响（快照语义）。
+    /// 返回的对象再改也不影响（快照语义）
     /// </remarks>
     [Fact]
     public async Task Stores_KeepSnapshots_NotReferences()
@@ -101,10 +101,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 3：实例列表按创建时间降序、过滤项与上限生效。
+    /// 用例 3：实例列表按创建时间降序、过滤项与上限生效
     /// </summary>
     /// <remarks>
-    /// 关联 ID 集合（重复只算一个、空集合不匹配）、只取顶层、关键字（实例标题——显示名，没有取定义名——或关联 ID；<c>%</c> 与 <c>_</c> 按字面，不跨字段）也是过滤项（ADR-0096、ADR-0099）。节点实例按开始时间升序、同刻按写入顺序；删实例级联节点实例。
+    /// 关联 ID 集合（重复只算一个、空集合不匹配）、只取顶层、关键字（实例标题——显示名，没有取定义名——或关联 ID；<c>%</c> 与 <c>_</c> 按字面，不跨字段）也是过滤项（ADR-0096、ADR-0099）。节点实例按开始时间升序、同刻按写入顺序；删实例级联节点实例
     /// </remarks>
     [Fact]
     public async Task Instances_ListFiltersAndOrders_NodeInstancesOrdered_DeleteCascades()
@@ -195,10 +195,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 4：书签按实例、到期、种类与键、信号查询，排序与上限正确。
+    /// 用例 4：书签按实例、到期、种类与键、信号查询，排序与上限正确
     /// </summary>
     /// <remarks>
-    /// 按 ID 与按实例删除。
+    /// 按 ID 与按实例删除
     /// </remarks>
     [Fact]
     public async Task Bookmarks_Queries_Order_AndDelete()
@@ -244,10 +244,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 5：实例锁互斥。
+    /// 用例 5：实例锁互斥
     /// </summary>
     /// <remarks>
-    /// 持有期间第二个获取者等到超时得 <c>WORKFLOW_TIMEOUT_001</c>；释放后能获取；不同实例互不影响。
+    /// 持有期间第二个获取者等到超时得 <c>WORKFLOW_TIMEOUT_001</c>；释放后能获取；不同实例互不影响
     /// </remarks>
     [Fact]
     public async Task Lock_IsExclusivePerInstance_AndTimesOut()
@@ -268,10 +268,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 6：可领取的书签按到期时刻限量查询。
+    /// 用例 6：可领取的书签按到期时刻限量查询
     /// </summary>
     /// <remarks>
-    /// 按种类、键与到期时刻过滤，创建时间升序，条数受上限约束。到期时刻为空或不晚于此刻才可领取（恰好等于此刻也算）。
+    /// 按种类、键与到期时刻过滤，创建时间升序，条数受上限约束。到期时刻为空或不晚于此刻才可领取（恰好等于此刻也算）
     /// </remarks>
     [Fact]
     public async Task Bookmarks_Available_FilterByKindKeyAndDue_WithLimit()
@@ -298,10 +298,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 7：按名字的查询以分区为名字空间。
+    /// 用例 7：按名字的查询以分区为名字空间
     /// </summary>
     /// <remarks>
-    /// 版本号、按名字与版本找、最新已发布都只看本分区的定义：平台与各租户各自从版本 1 编号，互不可见。
+    /// 版本号、按名字与版本找、最新已发布都只看本分区的定义：平台与各租户各自从版本 1 编号，互不可见
     /// </remarks>
     [Fact]
     public async Task Definitions_NameQueries_AreScopedToThePartition()
@@ -337,10 +337,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 8：分区互不可见。
+    /// 用例 8：分区互不可见
     /// </summary>
     /// <remarks>
-    /// 租户 t1 写下的定义、实例、节点实例与书签，平台与租户 t2 按 ID、列表、计数、到期、种类与键、信号、可领取都查不到，删除也碰不到；t1 自己照常查得到。
+    /// 租户 t1 写下的定义、实例、节点实例与书签，平台与租户 t2 按 ID、列表、计数、到期、种类与键、信号、可领取都查不到，删除也碰不到；t1 自己照常查得到
     /// </remarks>
     [Fact]
     public async Task Partitions_AreIsolated()
@@ -409,10 +409,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 9：写入的记录属于别的租户是编程错误。
+    /// 用例 9：写入的记录属于别的租户是编程错误
     /// </summary>
     /// <remarks>
-    /// 记录的 <c>TenantId</c> 与写入的分区不同时抛出 <see cref="ArgumentException"/>，不替调用方改写、不落库。
+    /// 记录的 <c>TenantId</c> 与写入的分区不同时抛出 <see cref="ArgumentException"/>，不替调用方改写、不落库
     /// </remarks>
     [Fact]
     public async Task Writes_RejectRecordsOfAnotherPartition()
@@ -430,10 +430,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 10：待办查询下推到存储。
+    /// 用例 10：待办查询下推到存储
     /// </summary>
     /// <remarks>
-    /// 只含用户任务、所属实例运行中的书签；按指派人、实例、节点、定义名、创建时间与关键字（任务标题、实例标题、定义名或所属实例的关联 ID，ADR-0096、ADR-0099）过滤，按创建时间升序或降序分页，计数与列表同条件。实例挂起后它的任务退出结果、恢复后回来，实例的标题或关联 ID 变了关键字随之匹配新值；别的分区的任务看不到。
+    /// 只含用户任务、所属实例运行中的书签；按指派人、实例、节点、定义名、创建时间与关键字（任务标题、实例标题、定义名或所属实例的关联 ID，ADR-0096、ADR-0099）过滤，按创建时间升序或降序分页，计数与列表同条件。实例挂起后它的任务退出结果、恢复后回来，实例的标题或关联 ID 变了关键字随之匹配新值；别的分区的任务看不到
     /// </remarks>
     [Fact]
     public async Task Bookmarks_UserTaskQuery_FiltersOrdersPagesAndFollowsInstanceStatus()
@@ -550,10 +550,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 11：定义查询按关键字、名字、分类与状态过滤，排序、分页与计数正确。
+    /// 用例 11：定义查询按关键字、名字、分类与状态过滤，排序、分页与计数正确
     /// </summary>
     /// <remarks>
-    /// 关键字去掉首尾空白、不区分大小写地包含在名字、显示名或说明里（ADR-0096）：<c>%</c>、<c>_</c>、<c>[</c>、<c>\</c> 按字面匹配，与全角的 <c>％</c>、<c>＿</c>、<c>［</c>、<c>＼</c> 不视为相同（ADR-0099），不跨字段匹配；整体替换后按新内容匹配。结果按名字升序、版本降序，总数不看分页，摘要带列表要的字段。
+    /// 关键字去掉首尾空白、不区分大小写地包含在名字、显示名或说明里（ADR-0096）：<c>%</c>、<c>_</c>、<c>[</c>、<c>\</c> 按字面匹配，与全角的 <c>％</c>、<c>＿</c>、<c>［</c>、<c>＼</c> 不视为相同（ADR-0099），不跨字段匹配；整体替换后按新内容匹配。结果按名字升序、版本降序，总数不看分页，摘要带列表要的字段
     /// </remarks>
     [Fact]
     public async Task Definitions_Query_FiltersPagesAndCounts()
@@ -635,10 +635,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 12：定义查询按每个排序字段排序，并按创建时间区间过滤。
+    /// 用例 12：定义查询按每个排序字段排序，并按创建时间区间过滤
     /// </summary>
     /// <remarks>
-    /// 次序键是名字升序、版本降序（ADR-0102）：同值的行按它排，分页不重不漏。状态按生命周期的先后（ADR-0103），状态变了位置随之变化。标题按前 256 个字符比较：前 256 个字符相同的两个长标题按名字排，而不是按完整的标题。发布时间为空的行位置照数据库，只断言有值的行之间的先后，以及空值的行连在一起（在最前或最后）。数据只用各种排序规则下先后都相同的文本（首字母不同、只有小写）。创建时间区间下界含、上界不含。
+    /// 次序键是名字升序、版本降序（ADR-0102）：同值的行按它排，分页不重不漏。状态按生命周期的先后（ADR-0103），状态变了位置随之变化。标题按前 256 个字符比较：前 256 个字符相同的两个长标题按名字排，而不是按完整的标题。发布时间为空的行位置照数据库，只断言有值的行之间的先后，以及空值的行连在一起（在最前或最后）。数据只用各种排序规则下先后都相同的文本（首字母不同、只有小写）。创建时间区间下界含、上界不含
     /// </remarks>
     [Fact]
     public async Task Definitions_Query_SortsByEachField_AndFiltersTheCreatedRange()
@@ -718,10 +718,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 13：实例列表按每个排序字段升序或降序排，次序键补成全序。
+    /// 用例 13：实例列表按每个排序字段升序或降序排，次序键补成全序
     /// </summary>
     /// <remarks>
-    /// 次序键是创建时间降序、写入先后降序（ADR-0102）；状态按生命周期的先后（ADR-0103），终止、恢复、故障之后位置随之变化；按创建时间排序时写入先后随它的方向，同刻的两个实例在升序里先写的在前。标题按前 256 个字符：超长的显示名照样写得进数据库的标题列。结束时间为空的行位置照数据库，只断言有值的行之间的先后，以及空值的行连在一起。数据只用各种排序规则下先后都相同的文本。
+    /// 次序键是创建时间降序、写入先后降序（ADR-0102）；状态按生命周期的先后（ADR-0103），终止、恢复、故障之后位置随之变化；按创建时间排序时写入先后随它的方向，同刻的两个实例在升序里先写的在前。标题按前 256 个字符：超长的显示名照样写得进数据库的标题列。结束时间为空的行位置照数据库，只断言有值的行之间的先后，以及空值的行连在一起。数据只用各种排序规则下先后都相同的文本
     /// </remarks>
     [Fact]
     public async Task Instances_List_SortsByEachField_WithStableTieBreaks()
@@ -804,10 +804,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 14：定义查询按多个排序项依次排序。
+    /// 用例 14：定义查询按多个排序项依次排序
     /// </summary>
     /// <remarks>
-    /// 排序项有序（ADR-0104）：第一项相同的按第二项，再相同的按第三项，都相同的按次序键（名字升序、版本降序，排序项里已有的跳过）。覆盖主次字段的组合、升降混合、含状态（生命周期的先后）、显式按名字与版本、逐页取拼起来就是整份顺序；空列表与没给一样是缺省排序。数据只用各种排序规则下先后都相同的文本。
+    /// 排序项有序（ADR-0104）：第一项相同的按第二项，再相同的按第三项，都相同的按次序键（名字升序、版本降序，排序项里已有的跳过）。覆盖主次字段的组合、升降混合、含状态（生命周期的先后）、显式按名字与版本、逐页取拼起来就是整份顺序；空列表与没给一样是缺省排序。数据只用各种排序规则下先后都相同的文本
     /// </remarks>
     [Fact]
     public async Task Definitions_Query_SortsByMultipleItemsInOrder()
@@ -860,10 +860,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 用例 15：实例列表按多个排序项依次排序。
+    /// 用例 15：实例列表按多个排序项依次排序
     /// </summary>
     /// <remarks>
-    /// 排序项有序（ADR-0104）：第一项相同的按第二项，都相同的按次序键（创建时间降序、写入先后降序；排序项里有创建时间时写入先后随它的方向）。覆盖主次字段的组合、升降混合、含状态（生命周期的先后）、逐页取拼起来就是整份顺序；空列表与没给一样是缺省排序（创建时间降序，同刻后写的在前）。
+    /// 排序项有序（ADR-0104）：第一项相同的按第二项，都相同的按次序键（创建时间降序、写入先后降序；排序项里有创建时间时写入先后随它的方向）。覆盖主次字段的组合、升降混合、含状态（生命周期的先后）、逐页取拼起来就是整份顺序；空列表与没给一样是缺省排序（创建时间降序，同刻后写的在前）
     /// </remarks>
     [Fact]
     public async Task Instances_List_SortsByMultipleItemsInOrder()
@@ -931,10 +931,10 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 断言有值的行按给定先后、没有值的行按给定先后连在一起，在最前或最后。
+    /// 断言有值的行按给定先后、没有值的行按给定先后连在一起，在最前或最后
     /// </summary>
     /// <remarks>
-    /// 可空列的空值在排序里的位置随数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小），两种位置都接受。
+    /// 可空列的空值在排序里的位置随数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小），两种位置都接受
     /// </remarks>
     private static void AssertNullsGrouped(IReadOnlyList<string> withValues, IReadOnlyList<string> withoutValues, IReadOnlyList<string> actual)
     {
@@ -944,43 +944,43 @@ public abstract class WorkflowStoreConformance
     }
 
     /// <summary>
-    /// 定义查询的定义 ID。
+    /// 定义查询的定义 ID
     /// </summary>
     private static async Task<List<string>> DefinitionIdsAsync(WorkflowStores stores, WorkflowDefinitionQuery query)
         => (await stores.Definitions.ListSummariesAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static summary => summary.Id).ToList();
 
     /// <summary>
-    /// 定义查询的总数。
+    /// 定义查询的总数
     /// </summary>
     private static async Task<long> DefinitionCountAsync(WorkflowStores stores, WorkflowDefinitionQuery query)
         => (await stores.Definitions.CountAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
 
     /// <summary>
-    /// 待办查询的书签 ID。
+    /// 待办查询的书签 ID
     /// </summary>
     private static async Task<List<string>> TaskIdsAsync(WorkflowStores stores, UserTaskQuery query)
         => (await stores.Bookmarks.ListUserTasksAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id).ToList();
 
     /// <summary>
-    /// 待办查询的总数。
+    /// 待办查询的总数
     /// </summary>
     private static async Task<long> TaskCountAsync(WorkflowStores stores, UserTaskQuery query)
         => (await stores.Bookmarks.CountUserTasksAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
 
     /// <summary>
-    /// 实例列表的 ID。
+    /// 实例列表的 ID
     /// </summary>
     private static async Task<List<string>> IdsAsync(WorkflowStores stores, WorkflowInstanceQuery query)
         => (await stores.Instances.ListAsync(stores.TenantId, query, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static instance => instance.Id).ToList();
 
     /// <summary>
-    /// 主题 <c>pay</c> 的外部任务书签里可领取的 ID。
+    /// 主题 <c>pay</c> 的外部任务书签里可领取的 ID
     /// </summary>
     private static async Task<List<string>> AvailableAsync(WorkflowStores stores, DateTimeOffset now, int limit)
         => (await stores.Bookmarks.AvailableAsync(stores.TenantId, BookmarkKinds.External, "pay", now, limit, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static bookmark => bookmark.Id).ToList();
 
     /// <summary>
-    /// 一个最小的定义（平台分区）。
+    /// 一个最小的定义（平台分区）
     /// </summary>
     protected static WorkflowDefinition Definition(string name, int version, WorkflowDefinitionStatus status) => new()
     {
@@ -994,7 +994,7 @@ public abstract class WorkflowStoreConformance
     };
 
     /// <summary>
-    /// 一个运行中的实例（平台分区）。
+    /// 一个运行中的实例（平台分区）
     /// </summary>
     protected static WorkflowInstance Instance(string definitionName, string id, DateTimeOffset? createdAt = null) => new()
     {
@@ -1006,7 +1006,7 @@ public abstract class WorkflowStoreConformance
     };
 
     /// <summary>
-    /// 一个节点实例。
+    /// 一个节点实例
     /// </summary>
     protected static WorkflowNodeInstance NodeInstance(string instanceId, string nodeId, DateTimeOffset startedAt) => new()
     {
@@ -1018,7 +1018,7 @@ public abstract class WorkflowStoreConformance
     };
 
     /// <summary>
-    /// 一个书签（平台分区）。
+    /// 一个书签（平台分区）
     /// </summary>
     protected static WorkflowBookmark Bookmark(string instanceId, string nodeInstanceId, string kind, string? key, DateTimeOffset? dueAt, DateTimeOffset? createdAt = null) => new()
     {

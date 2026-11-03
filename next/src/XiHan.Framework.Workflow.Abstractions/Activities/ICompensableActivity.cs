@@ -6,13 +6,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 可补偿的活动：实例被取消且定义启用补偿时，按完成顺序逆序调用。
+/// 可补偿的活动：实例被取消且定义启用补偿时，按完成顺序逆序调用
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface ICompensableActivity : IActivity
 {
     /// <summary>
-    /// 补偿已完成的执行。
+    /// 补偿已完成的执行
     /// </summary>
     ValueTask<Result> CompensateAsync(ActivityContext context, CancellationToken cancellationToken);
 }

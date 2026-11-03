@@ -9,24 +9,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 
 /// <summary>
-/// 发件箱选项。
+/// 发件箱选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Messaging:Outbox</c> 显式读取。
+/// 从配置节 <c>XiHan:Messaging:Outbox</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record OutboxOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Messaging:Outbox";
 
     /// <summary>
-    /// 轮询间隔。
+    /// 轮询间隔
     /// </summary>
     /// <remarks>
-    /// 默认 1 秒。
+    /// 默认 1 秒
     /// </remarks>
     public TimeSpan PollInterval
     {
@@ -35,10 +35,10 @@ public sealed record OutboxOptions
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// 每轮最多投递条数。
+    /// 每轮最多投递条数
     /// </summary>
     /// <remarks>
-    /// 默认 100，1 到 <see cref="EntityQuery.DefaultMaxTake"/>：每轮按它分页查发件箱表，查询的取出条数不能超过这个上限。也是每轮最多清理的已投递行数。
+    /// 默认 100，1 到 <see cref="EntityQuery.DefaultMaxTake"/>：每轮按它分页查发件箱表，查询的取出条数不能超过这个上限。也是每轮最多清理的已投递行数
     /// </remarks>
     public int BatchSize
     {
@@ -47,10 +47,10 @@ public sealed record OutboxOptions
     } = 100;
 
     /// <summary>
-    /// 一条消息最多尝试投递的次数（含首次）。
+    /// 一条消息最多尝试投递的次数（含首次）
     /// </summary>
     /// <remarks>
-    /// 默认 10。用尽后进死信，不再投递。代理抛出与返回失败一样计一次尝试（ADR-0108）；只有调用方取消（宿主停止）的一轮回滚、不计尝试。
+    /// 默认 10。用尽后进死信，不再投递。代理抛出与返回失败一样计一次尝试（ADR-0108）；只有调用方取消（宿主停止）的一轮回滚、不计尝试
     /// </remarks>
     public int MaxAttempts
     {
@@ -59,10 +59,10 @@ public sealed record OutboxOptions
     } = 10;
 
     /// <summary>
-    /// 第一次失败后的重试间隔。
+    /// 第一次失败后的重试间隔
     /// </summary>
     /// <remarks>
-    /// 默认 5 秒。之后每失败一次翻倍，不超过 <see cref="MaxRetryDelay"/>；退避中的消息不占批次。
+    /// 默认 5 秒。之后每失败一次翻倍，不超过 <see cref="MaxRetryDelay"/>；退避中的消息不占批次
     /// </remarks>
     public TimeSpan RetryDelay
     {
@@ -71,10 +71,10 @@ public sealed record OutboxOptions
     } = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// 重试间隔的上限。
+    /// 重试间隔的上限
     /// </summary>
     /// <remarks>
-    /// 默认 5 分钟。
+    /// 默认 5 分钟
     /// </remarks>
     public TimeSpan MaxRetryDelay
     {
@@ -83,10 +83,10 @@ public sealed record OutboxOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// 投递成功的行保留多久。
+    /// 投递成功的行保留多久
     /// </summary>
     /// <remarks>
-    /// 默认 1 天，过后由投递循环删除（每轮最多 <see cref="BatchSize"/> 行）；为 0 时投递成功即在同一工作单元删除。死信行不自动删除。
+    /// 默认 1 天，过后由投递循环删除（每轮最多 <see cref="BatchSize"/> 行）；为 0 时投递成功即在同一工作单元删除。死信行不自动删除
     /// </remarks>
     public TimeSpan DispatchedRetention
     {
@@ -95,10 +95,10 @@ public sealed record OutboxOptions
     } = TimeSpan.FromDays(1);
 
     /// <summary>
-    /// 第几次失败之后的重试间隔。
+    /// 第几次失败之后的重试间隔
     /// </summary>
     /// <remarks>
-    /// <see cref="RetryDelay"/> 乘以 2 的（失败次数减一）次方，不超过 <see cref="MaxRetryDelay"/>。
+    /// <see cref="RetryDelay"/> 乘以 2 的（失败次数减一）次方，不超过 <see cref="MaxRetryDelay"/>
     /// </remarks>
     public TimeSpan RetryDelayAfter(int attempts)
     {
@@ -110,10 +110,10 @@ public sealed record OutboxOptions
     }
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 键：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>MaxAttempts</c>、<c>RetryDelaySeconds</c>、<c>MaxRetryDelaySeconds</c>、<c>DispatchedRetentionSeconds</c>；非法值抛出 <see cref="ArgumentException"/>。
+    /// 键：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>MaxAttempts</c>、<c>RetryDelaySeconds</c>、<c>MaxRetryDelaySeconds</c>、<c>DispatchedRetentionSeconds</c>；非法值抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static OutboxOptions FromConfiguration(IConfiguration configuration)
     {
@@ -153,10 +153,10 @@ public sealed record OutboxOptions
     }
 
     /// <summary>
-    /// 读取配置节下的秒数。
+    /// 读取配置节下的秒数
     /// </summary>
     /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是正数（允许 0 时不是非负数）抛出 <see cref="ArgumentException"/>。
+    /// 未配置返回 <see langword="null"/>，不是正数（允许 0 时不是非负数）抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static TimeSpan? ReadSeconds(IConfiguration configuration, string name, bool allowZero)
     {
@@ -173,10 +173,10 @@ public sealed record OutboxOptions
     }
 
     /// <summary>
-    /// 读取配置节下的正整数。
+    /// 读取配置节下的正整数
     /// </summary>
     /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>。
+    /// 未配置返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>
     /// </remarks>
     private static int? ReadPositive(IConfiguration configuration, string name)
     {

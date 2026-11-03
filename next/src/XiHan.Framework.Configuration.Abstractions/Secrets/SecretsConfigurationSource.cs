@@ -7,16 +7,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 
 /// <summary>
-/// 把 <see cref="ISecretStore"/> 接进 <see cref="IConfigurationBuilder"/> 的配置源。
+/// 把 <see cref="ISecretStore"/> 接进 <see cref="IConfigurationBuilder"/> 的配置源
 /// </summary>
 /// <remarks>
-/// 通常经 <see cref="SecretsConfigurationBuilderExtensions.AddXiHanSecrets"/> 使用。
+/// 通常经 <see cref="SecretsConfigurationBuilderExtensions.AddXiHanSecrets"/> 使用
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SecretsConfigurationSource : IConfigurationSource
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public SecretsConfigurationSource(ISecretStore store, SecretsConfigurationOptions options)
     {
@@ -25,12 +25,12 @@ public sealed class SecretsConfigurationSource : IConfigurationSource
     }
 
     /// <summary>
-    /// 密钥库。
+    /// 密钥库
     /// </summary>
     public ISecretStore Store { get; }
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     public SecretsConfigurationOptions Options { get; }
 

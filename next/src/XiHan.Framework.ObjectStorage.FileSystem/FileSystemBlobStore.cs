@@ -15,70 +15,70 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 文件系统对象存储。
+/// 文件系统对象存储
 /// </summary>
 /// <remarks>
-/// <c>&lt;root&gt;/&lt;container&gt;/data/&lt;key&gt;</c> 存内容，<c>&lt;root&gt;/&lt;container&gt;/meta/&lt;key&gt;.json</c> 存元数据（键的段按 <see cref="BlobPathEncoding"/> 编码，大小写不敏感的文件系统上仍区分大小写）。写入先落同目录的临时文件再原子替换，读取方要么看到旧对象要么看到完整的新对象；ETag 是内容的 SHA-256。配额在进程内计量：<see cref="InitializeAsync"/> 扫描目录得到已用量，之后每次写入与删除更新；多进程共享目录时只是近似。同时是健康项 <see cref="FileSystemObjectStorageFeature.HealthName"/> 的贡献者：已用量达到 <see cref="FileSystemObjectStorageOptions.MaxTotalBytes"/> 即 Degraded。范围读取打开内容文件后定位到起点、只交出该段；分片上传暂存在 <c>&lt;root&gt;/&lt;container&gt;/uploads/&lt;上传标识&gt;/</c>，完成时拼接成临时文件再原子替换（见 <see cref="FileSystemMultipartUploads"/>）。
+/// <c>&lt;root&gt;/&lt;container&gt;/data/&lt;key&gt;</c> 存内容，<c>&lt;root&gt;/&lt;container&gt;/meta/&lt;key&gt;.json</c> 存元数据（键的段按 <see cref="BlobPathEncoding"/> 编码，大小写不敏感的文件系统上仍区分大小写）。写入先落同目录的临时文件再原子替换，读取方要么看到旧对象要么看到完整的新对象；ETag 是内容的 SHA-256。配额在进程内计量：<see cref="InitializeAsync"/> 扫描目录得到已用量，之后每次写入与删除更新；多进程共享目录时只是近似。同时是健康项 <see cref="FileSystemObjectStorageFeature.HealthName"/> 的贡献者：已用量达到 <see cref="FileSystemObjectStorageOptions.MaxTotalBytes"/> 即 Degraded。范围读取打开内容文件后定位到起点、只交出该段；分片上传暂存在 <c>&lt;root&gt;/&lt;container&gt;/uploads/&lt;上传标识&gt;/</c>，完成时拼接成临时文件再原子替换（见 <see cref="FileSystemMultipartUploads"/>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHealthContributor
 {
     /// <summary>
-    /// 内容目录名。
+    /// 内容目录名
     /// </summary>
     private const string DataDirectory = "data";
 
     /// <summary>
-    /// 元数据目录名。
+    /// 元数据目录名
     /// </summary>
     private const string MetaDirectory = "meta";
 
     /// <summary>
-    /// 临时文件的名字片段。
+    /// 临时文件的名字片段
     /// </summary>
     /// <remarks>
-    /// 列举时跳过。
+    /// 列举时跳过
     /// </remarks>
     internal const string TemporaryMarker = ".xihan-tmp-";
 
     /// <summary>
-    /// 元数据文件后缀。
+    /// 元数据文件后缀
     /// </summary>
     private const string MetaSuffix = ".json";
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly FileSystemObjectStorageOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     /// <remarks>
-    /// 元数据的修改时间来自它。
+    /// 元数据的修改时间来自它
     /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 保护配额计量的锁。
+    /// 保护配额计量的锁
     /// </summary>
     private readonly Lock _quota = new();
 
     /// <summary>
-    /// 已用字节。
+    /// 已用字节
     /// </summary>
     /// <remarks>
-    /// 负数表示尚未扫描。
+    /// 负数表示尚未扫描
     /// </remarks>
     private long _usedBytes = -1;
 
     /// <summary>
-    /// 分片上传的暂存与拼接。
+    /// 分片上传的暂存与拼接
     /// </summary>
     private readonly FileSystemMultipartUploads _multipart;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public FileSystemBlobStore(FileSystemObjectStorageOptions options, TimeProvider clock)
     {
@@ -88,15 +88,15 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 根目录。
+    /// 根目录
     /// </summary>
     public string RootPath => _options.RootPath;
 
     /// <summary>
-    /// 已用字节（进程内计量）。
+    /// 已用字节（进程内计量）
     /// </summary>
     /// <remarks>
-    /// 未扫描时为 0。
+    /// 未扫描时为 0
     /// </remarks>
     public long UsedBytes
     {
@@ -121,10 +121,10 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 建根目录并扫描已用量，清掉过期（早于 <see cref="FileSystemObjectStorageOptions.MultipartExpiry"/>）的分片上传。
+    /// 建根目录并扫描已用量，清掉过期（早于 <see cref="FileSystemObjectStorageOptions.MultipartExpiry"/>）的分片上传
     /// </summary>
     /// <remarks>
-    /// 可重复调用，每次重新扫描。
+    /// 可重复调用，每次重新扫描
     /// </remarks>
     public Task InitializeAsync(CancellationToken cancellationToken)
     {
@@ -223,10 +223,10 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 打开内容。
+    /// 打开内容
     /// </summary>
     /// <remarks>
-    /// 整对象，或定位到范围起点并只交出该段（起点不在对象内时返回 <see cref="ObjectStorageErrors.RangeNotSatisfiable"/>）。
+    /// 整对象，或定位到范围起点并只交出该段（起点不在对象内时返回 <see cref="ObjectStorageErrors.RangeNotSatisfiable"/>）
     /// </remarks>
     private Result<BlobContent> Open(ContainerName container, BlobKey key, BlobRange? range)
     {
@@ -369,10 +369,10 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 写一个对象。
+    /// 写一个对象
     /// </summary>
     /// <remarks>
-    /// 配额预检、流式复制到临时文件并计算 SHA-256、原子替换（不覆盖时原子占位）、写元数据、更新用量。
+    /// 配额预检、流式复制到临时文件并计算 SHA-256、原子替换（不覆盖时原子占位）、写元数据、更新用量
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
@@ -439,10 +439,10 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 提交写好的临时内容文件。
+    /// 提交写好的临时内容文件
     /// </summary>
     /// <remarks>
-    /// 原子替换为对象内容、写元数据（同样先临时文件再替换）、按与旧对象的长度差更新用量。写入与分片上传的完成共用。<paramref name="overwrite"/> 为 <see langword="false"/> 时以不替换的移动原子占位，内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不写元数据、不计用量。
+    /// 原子替换为对象内容、写元数据（同样先临时文件再替换）、按与旧对象的长度差更新用量。写入与分片上传的完成共用。<paramref name="overwrite"/> 为 <see langword="false"/> 时以不替换的移动原子占位，内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不写元数据、不计用量
     /// </remarks>
     internal async ValueTask<Result<BlobMetadata>> CommitAsync(ContainerName container, BlobKey key, string temporary, long length, string etag, string contentType, IReadOnlyDictionary<string, string> metadata, long previousLength, bool overwrite, CancellationToken cancellationToken)
     {
@@ -488,10 +488,10 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 与对象内容同目录的新临时文件路径（同一卷上原子替换）。
+    /// 与对象内容同目录的新临时文件路径（同一卷上原子替换）
     /// </summary>
     /// <remarks>
-    /// 目录不存在时建出。
+    /// 目录不存在时建出
     /// </remarks>
     internal string TemporaryDataPath(ContainerName container, BlobKey key)
     {
@@ -501,15 +501,15 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 容器目录。
+    /// 容器目录
     /// </summary>
     internal string ContainerPath(ContainerName container) => Within(Path.Combine(_options.RootPath, container.Value));
 
     /// <summary>
-    /// 删一个对象。
+    /// 删一个对象
     /// </summary>
     /// <remarks>
-    /// 内容与元数据都删，更新用量；返回是否存在过。
+    /// 内容与元数据都删，更新用量；返回是否存在过
     /// </remarks>
     private Result<bool> DeleteOne(ContainerName container, BlobKey key)
     {
@@ -551,10 +551,10 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 读元数据文件。
+    /// 读元数据文件
     /// </summary>
     /// <remarks>
-    /// 内容文件在而元数据缺失（外部写入）时按文件信息补一份。
+    /// 内容文件在而元数据缺失（外部写入）时按文件信息补一份
     /// </remarks>
     internal Maybe<BlobMetadata> ReadMetadata(ContainerName container, BlobKey key)
     {
@@ -579,13 +579,13 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 元数据文件 → 元数据。
+    /// 元数据文件 → 元数据
     /// </summary>
     private static BlobMetadata ToMetadata(BlobKey key, BlobMetadataDocument document)
         => new(key, document.Length, document.ContentType, document.ETag, document.LastModified, document.Metadata);
 
     /// <summary>
-    /// 再写 <paramref name="delta"/> 字节是否仍在总配额内。
+    /// 再写 <paramref name="delta"/> 字节是否仍在总配额内
     /// </summary>
     internal bool FitsQuota(long delta)
     {
@@ -596,7 +596,7 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 没有扫描过时按空目录起算，让不经宿主直接构造的存储也能用。
+    /// 没有扫描过时按空目录起算，让不经宿主直接构造的存储也能用
     /// </summary>
     private void EnsureInitialized()
     {
@@ -612,20 +612,20 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 内容文件路径。
+    /// 内容文件路径
     /// </summary>
     /// <remarks>
-    /// 键的段按 <see cref="BlobPathEncoding"/> 编码后映射为子目录。结果必须落在根目录内（键文法已排除 <c>..</c>，这里再守一道）。
+    /// 键的段按 <see cref="BlobPathEncoding"/> 编码后映射为子目录。结果必须落在根目录内（键文法已排除 <c>..</c>，这里再守一道）
     /// </remarks>
     private string DataPath(ContainerName container, BlobKey key) => Within(Path.Combine(_options.RootPath, container.Value, DataDirectory, BlobPathEncoding.ToRelativePath(key)));
 
     /// <summary>
-    /// 元数据文件路径。
+    /// 元数据文件路径
     /// </summary>
     private string MetaPath(ContainerName container, BlobKey key) => Within(Path.Combine(_options.RootPath, container.Value, MetaDirectory, BlobPathEncoding.ToRelativePath(key) + MetaSuffix));
 
     /// <summary>
-    /// 路径必须在根目录之内。
+    /// 路径必须在根目录之内
     /// </summary>
     private string Within(string path)
     {
@@ -636,15 +636,15 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 续页标记：上一页最后一个键的 Base64Url。
+    /// 续页标记：上一页最后一个键的 Base64Url
     /// </summary>
     private static string EncodeToken(string lastKey) => Convert.ToBase64String(Encoding.UTF8.GetBytes(lastKey)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
     /// <summary>
-    /// 解析续页标记。
+    /// 解析续页标记
     /// </summary>
     /// <remarks>
-    /// 不合法当作从头开始。
+    /// 不合法当作从头开始
     /// </remarks>
     private static string? DecodeToken(string token)
     {
@@ -661,25 +661,25 @@ public sealed class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHeal
     }
 
     /// <summary>
-    /// 不存在。
+    /// 不存在
     /// </summary>
     internal static Error NotFound(ContainerName container, BlobKey key)
         => Error.NotFound(ObjectStorageErrors.BlobNotFound, ObjectStorageMessages.BlobNotFound, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
 
     /// <summary>
-    /// 已存在且不允许覆盖。
+    /// 已存在且不允许覆盖
     /// </summary>
     internal static Error Exists(ContainerName container, BlobKey key)
         => Error.Conflict(ObjectStorageErrors.BlobExists, ObjectStorageMessages.BlobExists, MessageArguments.Of(("container", container.Value), ("key", key.Value)));
 
     /// <summary>
-    /// 超配额。
+    /// 超配额
     /// </summary>
     internal Error QuotaExceeded(long requested)
         => Error.Unavailable(ObjectStorageErrors.QuotaExceeded, ObjectStorageMessages.QuotaExceeded, MessageArguments.Of(("limit", Math.Min(_options.MaxTotalBytes, _options.MaxBlobBytes)), ("requested", requested)));
 
     /// <summary>
-    /// IO 失败。
+    /// IO 失败
     /// </summary>
     internal static Error Unavailable(Exception exception)
         => Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", exception.Message)));

@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Commands;
 
 /// <summary>
-/// <c>graph</c>：打印能力图谱（与启动日志同一份输出，<see cref="App.DescribeGraph"/>）。
+/// <c>graph</c>：打印能力图谱（与启动日志同一份输出，<see cref="App.DescribeGraph"/>）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class GraphCommand : ICommand

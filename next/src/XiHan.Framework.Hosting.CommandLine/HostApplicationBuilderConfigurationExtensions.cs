@@ -10,19 +10,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine;
 
 /// <summary>
-/// 通用宿主构建器上的装配。
+/// 通用宿主构建器上的装配
 /// </summary>
 /// <remarks>
-/// 在内核的 <c>AddXiHan</c> 之前把 <c>XIHAN_CONFIG_PATH</c> 目录里的 JSON 文件作为可重载的配置源，插在 <c>appsettings.{环境}.json</c> 之后（RFC-0016）。
+/// 在内核的 <c>AddXiHan</c> 之前把 <c>XIHAN_CONFIG_PATH</c> 目录里的 JSON 文件作为可重载的配置源，插在 <c>appsettings.{环境}.json</c> 之后（RFC-0016）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class HostApplicationBuilderConfigurationExtensions
 {
     /// <summary>
-    /// 装配 XiHan 应用，并装载挂载的配置目录（存在时）。
+    /// 装配 XiHan 应用，并装载挂载的配置目录（存在时）
     /// </summary>
     /// <remarks>
-    /// 目录里的文件紧接最后一个 appsettings 文件源（<c>appsettings.json</c> 或 <c>appsettings.{环境}.json</c>）插入：覆盖 appsettings，又被其后的开发环境用户机密、环境变量、命令行参数与应用随后添加的配置源覆盖。构建器里没有 appsettings 文件源（关掉了默认配置）时追加在末尾。文件变化触发 <c>IOptionsMonitor</c> 重载。
+    /// 目录里的文件紧接最后一个 appsettings 文件源（<c>appsettings.json</c> 或 <c>appsettings.{环境}.json</c>）插入：覆盖 appsettings，又被其后的开发环境用户机密、环境变量、命令行参数与应用随后添加的配置源覆盖。构建器里没有 appsettings 文件源（关掉了默认配置）时追加在末尾。文件变化触发 <c>IOptionsMonitor</c> 重载
     /// </remarks>
     public static HostApplicationBuilder AddXiHan(this HostApplicationBuilder builder, Action<AppBuilder> configure)
     {
@@ -33,7 +33,7 @@ public static class HostApplicationBuilderConfigurationExtensions
     }
 
     /// <summary>
-    /// 把挂载目录里的 JSON 文件按装载顺序插到最后一个 appsettings 文件源之后。
+    /// 把挂载目录里的 JSON 文件按装载顺序插到最后一个 appsettings 文件源之后
     /// </summary>
     private static void AddConfigurationDirectory(ConfigurationManager configuration, string environmentName)
     {

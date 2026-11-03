@@ -4,20 +4,20 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 协议端口。
+/// 协议端口
 /// </summary>
 internal sealed record PortSettings
 {
     /// <summary>
-    /// HTTP 端口。
+    /// HTTP 端口
     /// </summary>
     public int Http { get; set; } = 8080;
 
     /// <summary>
-    /// gRPC（h2c）端口。
+    /// gRPC（h2c）端口
     /// </summary>
     /// <remarks>
-    /// 没有时不暴露。
+    /// 没有时不暴露
     /// </remarks>
     public int? Grpc { get; set; }
 }

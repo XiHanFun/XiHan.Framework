@@ -4,38 +4,38 @@
 namespace XiHan.Framework.ObjectStorage.FileSystem;
 
 /// <summary>
-/// 分片上传的清单文件（<c>uploads/&lt;上传标识&gt;/manifest.json</c>）。
+/// 分片上传的清单文件（<c>uploads/&lt;上传标识&gt;/manifest.json</c>）
 /// </summary>
 /// <remarks>
-/// 完成后对象的键与写入选项。
+/// 完成后对象的键与写入选项
 /// </remarks>
 internal sealed class MultipartManifestDocument
 {
     /// <summary>
-    /// 完成后对象的键。
+    /// 完成后对象的键
     /// </summary>
     public string Key { get; set; } = string.Empty;
 
     /// <summary>
-    /// 内容类型。
+    /// 内容类型
     /// </summary>
     public string ContentType { get; set; } = string.Empty;
 
     /// <summary>
-    /// 自定义元数据。
+    /// 自定义元数据
     /// </summary>
     public Dictionary<string, string> Metadata { get; set; } = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 完成时对象已存在是否覆盖。
+    /// 完成时对象已存在是否覆盖
     /// </summary>
     public bool Overwrite { get; set; }
 
     /// <summary>
-    /// 发起时间。
+    /// 发起时间
     /// </summary>
     /// <remarks>
-    /// 过期清理据此判断。
+    /// 过期清理据此判断
     /// </remarks>
     public DateTimeOffset StartedAt { get; set; }
 }

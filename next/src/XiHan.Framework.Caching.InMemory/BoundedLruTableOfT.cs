@@ -6,37 +6,37 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 有界 LRU 表。
+/// 有界 LRU 表
 /// </summary>
 /// <remarks>
-/// 所有操作在一把锁内完成，过期在访问时清理，满时淘汰最久未访问的条目；批量方法一次加锁逐项处理。
+/// 所有操作在一把锁内完成，过期在访问时清理，满时淘汰最久未访问的条目；批量方法一次加锁逐项处理
 /// </remarks>
 internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTimeToLive, TimeProvider timeProvider)
     where TValue : class
 {
     /// <summary>
-    /// 键到链表节点的索引。
+    /// 键到链表节点的索引
     /// </summary>
     /// <remarks>
-    /// 键区分大小写。
+    /// 键区分大小写
     /// </remarks>
     private readonly Dictionary<string, LinkedListNode<Entry>> _index = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 按最近访问排序的链表：头部最新，尾部最久未访问，满时从尾部淘汰。
+    /// 按最近访问排序的链表：头部最新，尾部最久未访问，满时从尾部淘汰
     /// </summary>
     private readonly LinkedList<Entry> _recency = new();
 
     /// <summary>
-    /// 保护索引与链表的锁。
+    /// 保护索引与链表的锁
     /// </summary>
     /// <remarks>
-    /// 所有公开操作都在它之内完成。
+    /// 所有公开操作都在它之内完成
     /// </remarks>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 当前条目数（含尚未被访问清理的过期条目）。
+    /// 当前条目数（含尚未被访问清理的过期条目）
     /// </summary>
     public int Count
     {
@@ -50,10 +50,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 读取未过期的值。
+    /// 读取未过期的值
     /// </summary>
     /// <remarks>
-    /// 不存在或已过期返回 <see langword="null"/>。命中会刷新最近使用顺序，滑动过期的条目同时延长到期时刻。
+    /// 不存在或已过期返回 <see langword="null"/>。命中会刷新最近使用顺序，滑动过期的条目同时延长到期时刻
     /// </remarks>
     public TValue? Get(string key)
     {
@@ -64,10 +64,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 批量读取。
+    /// 批量读取
     /// </summary>
     /// <remarks>
-    /// 一次加锁逐键读取，语义同 <see cref="Get"/>；结果与键顺序一一对应。
+    /// 一次加锁逐键读取，语义同 <see cref="Get"/>；结果与键顺序一一对应
     /// </remarks>
     public TValue?[] GetMany(IReadOnlyList<string> keys)
     {
@@ -84,10 +84,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 写入或覆盖。
+    /// 写入或覆盖
     /// </summary>
     /// <remarks>
-    /// 满时先淘汰最久未访问的条目。
+    /// 满时先淘汰最久未访问的条目
     /// </remarks>
     public void Set(string key, TValue value, CacheEntryOptions options)
     {
@@ -98,7 +98,7 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 批量写入：一次加锁逐项写入，同一键出现多次后者覆盖。
+    /// 批量写入：一次加锁逐项写入，同一键出现多次后者覆盖
     /// </summary>
     public void SetMany(IReadOnlyList<(string Key, TValue Value, CacheEntryOptions Options)> entries)
     {
@@ -112,10 +112,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 不存在（或已过期）才写入。
+    /// 不存在（或已过期）才写入
     /// </summary>
     /// <remarks>
-    /// 写入返回 <see langword="true"/>。检查与写入在同一把锁内，因此是原子的。
+    /// 写入返回 <see langword="true"/>。检查与写入在同一把锁内，因此是原子的
     /// </remarks>
     public bool TryAdd(string key, TValue value, CacheEntryOptions options)
     {
@@ -132,10 +132,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 删除未过期的条目。
+    /// 删除未过期的条目
     /// </summary>
     /// <remarks>
-    /// 给定 <paramref name="condition"/> 时只在当前值满足条件才删除（比较删）。删除返回 <see langword="true"/>。
+    /// 给定 <paramref name="condition"/> 时只在当前值满足条件才删除（比较删）。删除返回 <see langword="true"/>
     /// </remarks>
     public bool Remove(string key, Func<TValue, bool>? condition = null)
     {
@@ -146,10 +146,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 批量删除。
+    /// 批量删除
     /// </summary>
     /// <remarks>
-    /// 一次加锁逐键删除；结果与键顺序一一对应，同一键出现多次第二次为 <see langword="false"/>。
+    /// 一次加锁逐键删除；结果与键顺序一一对应，同一键出现多次第二次为 <see langword="false"/>
     /// </remarks>
     public bool[] RemoveMany(IReadOnlyList<string> keys)
     {
@@ -166,10 +166,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 按前缀分页列出仍存活的键。
+    /// 按前缀分页列出仍存活的键
     /// </summary>
     /// <remarks>
-    /// 按键的序数顺序分页，续页标记是上一页最后一个键；不更新访问顺序（ADR-0055）。
+    /// 按键的序数顺序分页，续页标记是上一页最后一个键；不更新访问顺序（ADR-0055）
     /// </remarks>
     public CacheKeyPage ListKeys(CacheKeyQuery query)
     {
@@ -192,10 +192,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 读一个仍存活的条目，不更新访问顺序与滑动过期。
+    /// 读一个仍存活的条目，不更新访问顺序与滑动过期
     /// </summary>
     /// <remarks>
-    /// 不存在或已过期为 <see langword="null"/>。
+    /// 不存在或已过期为 <see langword="null"/>
     /// </remarks>
     public (TValue Value, TimeSpan? TimeToLive, TimeSpan? Sliding)? Peek(string key)
     {
@@ -213,10 +213,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 删除前缀下的全部条目，返回其中仍存活的个数。
+    /// 删除前缀下的全部条目，返回其中仍存活的个数
     /// </summary>
     /// <remarks>
-    /// 前缀为空或不合法抛出 <see cref="ArgumentException"/>。
+    /// 前缀为空或不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public long RemoveByPrefix(string prefix)
     {
@@ -241,7 +241,7 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 清空全部条目。
+    /// 清空全部条目
     /// </summary>
     public void Clear()
     {
@@ -253,10 +253,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 读取未过期的值，命中时刷新最近使用顺序并延长滑动过期。
+    /// 读取未过期的值，命中时刷新最近使用顺序并延长滑动过期
     /// </summary>
     /// <remarks>
-    /// 须在锁内调用。
+    /// 须在锁内调用
     /// </remarks>
     private TValue? Read(string key)
     {
@@ -279,10 +279,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 删除未过期的条目，给定条件时只在当前值满足条件才删除。
+    /// 删除未过期的条目，给定条件时只在当前值满足条件才删除
     /// </summary>
     /// <remarks>
-    /// 须在锁内调用。
+    /// 须在锁内调用
     /// </remarks>
     private bool Delete(string key, Func<TValue, bool>? condition)
     {
@@ -298,10 +298,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 取出未过期的节点。
+    /// 取出未过期的节点
     /// </summary>
     /// <remarks>
-    /// 不存在返回 <see langword="null"/>，已过期则顺手清理并返回 <see langword="null"/>。须在锁内调用。
+    /// 不存在返回 <see langword="null"/>，已过期则顺手清理并返回 <see langword="null"/>。须在锁内调用
     /// </remarks>
     private LinkedListNode<Entry>? Live(string key)
     {
@@ -321,10 +321,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 无条件写入。
+    /// 无条件写入
     /// </summary>
     /// <remarks>
-    /// 移除同键旧条目，按需淘汰最久未访问的条目腾出容量，再把新条目放到链表头部。须在锁内调用。
+    /// 移除同键旧条目，按需淘汰最久未访问的条目腾出容量，再把新条目放到链表头部。须在锁内调用
     /// </remarks>
     private void Write(string key, TValue value, CacheEntryOptions options)
     {
@@ -350,10 +350,10 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 同时从索引与链表移除节点。
+    /// 同时从索引与链表移除节点
     /// </summary>
     /// <remarks>
-    /// 须在锁内调用。
+    /// 须在锁内调用
     /// </remarks>
     private void Evict(LinkedListNode<Entry> node)
     {
@@ -362,33 +362,33 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
-    /// 表中的一个条目：键、值与过期信息。
+    /// 表中的一个条目：键、值与过期信息
     /// </summary>
     private sealed class Entry(string key, TValue value)
     {
         /// <summary>
-        /// 条目的键。
+        /// 条目的键
         /// </summary>
         public string Key { get; } = key;
 
         /// <summary>
-        /// 条目的值。
+        /// 条目的值
         /// </summary>
         public TValue Value { get; } = value;
 
         /// <summary>
-        /// 滑动窗口。
+        /// 滑动窗口
         /// </summary>
         /// <remarks>
-        /// <see langword="null"/> 表示不滑动。
+        /// <see langword="null"/> 表示不滑动
         /// </remarks>
         public TimeSpan? Sliding { get; init; }
 
         /// <summary>
-        /// 到期时刻。
+        /// 到期时刻
         /// </summary>
         /// <remarks>
-        /// 滑动过期的条目在每次读取后更新。
+        /// 滑动过期的条目在每次读取后更新
         /// </remarks>
         public DateTimeOffset ExpiresAt { get; set; }
     }

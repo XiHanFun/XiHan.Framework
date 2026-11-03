@@ -9,22 +9,22 @@ using XiHan.Framework.Persistence.Abstractions.Schema;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// SqlSugar 的实体目录。
+/// SqlSugar 的实体目录
 /// </summary>
 /// <remarks>
-/// 表名与列取 <c>EntityMaintenance.GetEntityInfo</c>：施加了 <see cref="SqlSugarConventions"/> 与应用自己回调的映射，与建表、读写用的同一份。分表实体的表名是模板，逻辑名按 <see cref="SplitTableTemplate"/> 推出，模板另留给库结构读取折叠物理表。在独立作用域里取客户端，不连库；首次调用时算出并缓存。
+/// 表名与列取 <c>EntityMaintenance.GetEntityInfo</c>：施加了 <see cref="SqlSugarConventions"/> 与应用自己回调的映射，与建表、读写用的同一份。分表实体的表名是模板，逻辑名按 <see cref="SplitTableTemplate"/> 推出，模板另留给库结构读取折叠物理表。在独立作用域里取客户端，不连库；首次调用时算出并缓存
 /// </remarks>
-/// <param name="services">根容器：在独立作用域里取作用域客户端。</param>
-/// <param name="registrations">登记的实体。</param>
+/// <param name="services">根容器：在独立作用域里取作用域客户端</param>
+/// <param name="registrations">登记的实体</param>
 internal sealed class SqlSugarEntityCatalog(IServiceProvider services, RepositoryRegistrations registrations) : IEntityCatalog
 {
     /// <summary>
-    /// 只算一次：并发的首次调用排队等同一个结果。
+    /// 只算一次：并发的首次调用排队等同一个结果
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 算好的目录。
+    /// 算好的目录
     /// </summary>
     private Snapshot? _snapshot;
 
@@ -33,10 +33,10 @@ internal sealed class SqlSugarEntityCatalog(IServiceProvider services, Repositor
         => ValueTask.FromResult(GetSnapshot(cancellationToken).Mappings);
 
     /// <summary>
-    /// 目录与分表模板。
+    /// 目录与分表模板
     /// </summary>
     /// <remarks>
-    /// 取实体信息只读特性与回调、不连库，所以同步算。
+    /// 取实体信息只读特性与回调、不连库，所以同步算
     /// </remarks>
     internal Snapshot GetSnapshot(CancellationToken cancellationToken)
     {
@@ -80,9 +80,9 @@ internal sealed class SqlSugarEntityCatalog(IServiceProvider services, Repositor
     }
 
     /// <summary>
-    /// 算好的目录。
+    /// 算好的目录
     /// </summary>
-    /// <param name="Mappings">实体映射，按登记顺序。</param>
-    /// <param name="SplitTemplates">分表实体的表名模板。</param>
+    /// <param name="Mappings">实体映射，按登记顺序</param>
+    /// <param name="SplitTemplates">分表实体的表名模板</param>
     internal sealed record Snapshot(IReadOnlyList<EntityMapping> Mappings, IReadOnlyList<SplitTableTemplate> SplitTemplates);
 }

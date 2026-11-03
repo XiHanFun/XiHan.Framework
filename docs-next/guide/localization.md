@@ -47,22 +47,22 @@ Segment    = [a-z][a-z0-9_]*
 namespace SimpleApp;
 
 /// <summary>
-/// 示例应用的消息键。
+/// 示例应用的消息键
 /// </summary>
 public static class SampleMessages
 {
     /// <summary>
-    /// 示例资源不存在。
+    /// 示例资源不存在
     /// </summary>
     public const string ResourceMissing = "samples.resource.missing";
 
     /// <summary>
-    /// 下单操作的标题，即 MCP tool 的 title 与 OpenAPI 的 summary。
+    /// 下单操作的标题，即 MCP tool 的 title 与 OpenAPI 的 summary
     /// </summary>
     public const string CreateOrderTitle = "orders.create.title";
 
     /// <summary>
-    /// 订单名称只有空白。
+    /// 订单名称只有空白
     /// </summary>
     public const string OrderNameBlank = "samples.order.name_blank";
 }

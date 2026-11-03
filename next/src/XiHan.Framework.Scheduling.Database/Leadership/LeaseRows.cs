@@ -12,30 +12,30 @@ using XiHan.Framework.Scheduling.Database.Storage;
 namespace XiHan.Framework.Scheduling.Database.Leadership;
 
 /// <summary>
-/// 租约行的三个原子步骤。
+/// 租约行的三个原子步骤
 /// </summary>
 /// <remarks>
-/// 获取、续约、释放，每一步都在自己的工作单元里提交（返回即提交，别的节点立刻看得见）。获取与续约是独立的管道调用，只在应用处于服务状态时进行（引擎不在服务状态的周期不拿不续）；释放不经管道，排空与停止时也能删行（ADR-0091）。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回冲突。
+/// 获取、续约、释放，每一步都在自己的工作单元里提交（返回即提交，别的节点立刻看得见）。获取与续约是独立的管道调用，只在应用处于服务状态时进行（引擎不在服务状态的周期不拿不续）；释放不经管道，排空与停止时也能删行（ADR-0091）。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回冲突
 /// </remarks>
 internal sealed class LeaseRows
 {
     /// <summary>
-    /// 管道执行（获取与续约）。
+    /// 管道执行（获取与续约）
     /// </summary>
     private readonly StoreInvocation _invocation;
 
     /// <summary>
-    /// 根服务提供者：释放时开新作用域。
+    /// 根服务提供者：释放时开新作用域
     /// </summary>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public LeaseRows(IServiceProvider services, App app, TimeProvider clock)
     {
@@ -45,10 +45,10 @@ internal sealed class LeaseRows
     }
 
     /// <summary>
-    /// 尝试获取。
+    /// 尝试获取
     /// </summary>
     /// <remarks>
-    /// 行不存在就插入；存在且已过期就接管；拿到返回到期时刻，被占用（含插入或接管时撞上别的节点）返回成功的无值；其余失败原样返回。
+    /// 行不存在就插入；存在且已过期就接管；拿到返回到期时刻，被占用（含插入或接管时撞上别的节点）返回成功的无值；其余失败原样返回
     /// </remarks>
     public ValueTask<Result<Maybe<DateTimeOffset>>> TryAcquireAsync(string resource, string holder, string token, TimeSpan timeToLive, CancellationToken cancellationToken)
         => _invocation.RunAsync<Maybe<DateTimeOffset>>(async ctx =>
@@ -77,10 +77,10 @@ internal sealed class LeaseRows
         }, cancellationToken);
 
     /// <summary>
-    /// 续约。
+    /// 续约
     /// </summary>
     /// <remarks>
-    /// 行仍带着 <paramref name="token"/> 时把到期时刻推到现在加存活时间并返回新的到期时刻；行没了、令牌变了或撞上别的节点返回成功的无值。
+    /// 行仍带着 <paramref name="token"/> 时把到期时刻推到现在加存活时间并返回新的到期时刻；行没了、令牌变了或撞上别的节点返回成功的无值
     /// </remarks>
     public ValueTask<Result<Maybe<DateTimeOffset>>> RenewAsync(string resource, string token, TimeSpan timeToLive, CancellationToken cancellationToken)
         => _invocation.RunAsync<Maybe<DateTimeOffset>>(async ctx =>
@@ -98,10 +98,10 @@ internal sealed class LeaseRows
         }, cancellationToken);
 
     /// <summary>
-    /// 释放。
+    /// 释放
     /// </summary>
     /// <remarks>
-    /// 只删带着 <paramref name="token"/> 的行；行没了、令牌变了或撞上别的节点都视为已释放。不经管道：在根提供者的新作用域里开可写工作单元、删完即提交；异常归为存储不可达。
+    /// 只删带着 <paramref name="token"/> 的行；行没了、令牌变了或撞上别的节点都视为已释放。不经管道：在根提供者的新作用域里开可写工作单元、删完即提交；异常归为存储不可达
     /// </remarks>
     public async ValueTask<Result> ReleaseAsync(string resource, string token, CancellationToken cancellationToken)
     {
@@ -144,21 +144,21 @@ internal sealed class LeaseRows
     }
 
     /// <summary>
-    /// 写入失败归类：与别的节点撞上（先插入、先接管、先删除）是被占用，其余原样返回。
+    /// 写入失败归类：与别的节点撞上（先插入、先接管、先删除）是被占用，其余原样返回
     /// </summary>
     private static Result<Maybe<DateTimeOffset>> Contended(Error error)
         => RecordQueries.IsRace(error) ? Taken() : Result.Failure<Maybe<DateTimeOffset>>(error);
 
     /// <summary>
-    /// 拿到了，到期时刻是 <paramref name="expiresAt"/>。
+    /// 拿到了，到期时刻是 <paramref name="expiresAt"/>
     /// </summary>
     private static Result<Maybe<DateTimeOffset>> Until(DateTimeOffset expiresAt) => Result.Success(Maybe.Some(expiresAt));
 
     /// <summary>
-    /// 被占用或已失去。
+    /// 被占用或已失去
     /// </summary>
     /// <remarks>
-    /// 是成功的无值，不是失败：原语的成功结果不能携带 <see langword="null"/>。
+    /// 是成功的无值，不是失败：原语的成功结果不能携带 <see langword="null"/>
     /// </remarks>
     private static Result<Maybe<DateTimeOffset>> Taken() => Result.Success(Maybe.None<DateTimeOffset>());
 }

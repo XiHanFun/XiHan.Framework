@@ -8,55 +8,55 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 应用内全部操作的登记表。
+/// 应用内全部操作的登记表
 /// </summary>
 /// <remarks>
-/// 操作 ID 唯一，容量有界。特性在配置阶段经 <c>FeatureContext.AddOperation</c> 登记，协议适配器按它发布端点。登记表在构造时绑定它核对的 <see cref="PermissionRegistry"/>：操作引用的权限码必须已登记，装配完成时由 <c>AppBuilder.Build</c> 一次核对（未登记即启动失败），此后登记的操作（插件握手之后）由 <see cref="AddRange"/> 在登记时核对。插件宿主卸载插件时经 <see cref="RemoveOwnedBy"/> 按归属撤回它登记的操作与权限码，之后可以再登记（ADR-0085）。
+/// 操作 ID 唯一，容量有界。特性在配置阶段经 <c>FeatureContext.AddOperation</c> 登记，协议适配器按它发布端点。登记表在构造时绑定它核对的 <see cref="PermissionRegistry"/>：操作引用的权限码必须已登记，装配完成时由 <c>AppBuilder.Build</c> 一次核对（未登记即启动失败），此后登记的操作（插件握手之后）由 <see cref="AddRange"/> 在登记时核对。插件宿主卸载插件时经 <see cref="RemoveOwnedBy"/> 按归属撤回它登记的操作与权限码，之后可以再登记（ADR-0085）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OperationRegistry
 {
     /// <summary>
-    /// 默认容量。
+    /// 默认容量
     /// </summary>
     public const int DefaultCapacity = 10_000;
 
     /// <summary>
-    /// 操作 ID → 描述。
+    /// 操作 ID → 描述
     /// </summary>
     private readonly ConcurrentDictionary<string, OperationDescriptor> _operations = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 容量上限。
+    /// 容量上限
     /// </summary>
     private readonly int _capacity;
 
     /// <summary>
-    /// 核对操作引用的权限码、并随一组操作登记归属定义的权限码的权限登记表。
+    /// 核对操作引用的权限码、并随一组操作登记归属定义的权限码的权限登记表
     /// </summary>
     private readonly PermissionRegistry _permissions;
 
     /// <summary>
-    /// 每次登记的每一项都要经过的核对。
+    /// 每次登记的每一项都要经过的核对
     /// </summary>
     /// <remarks>
-    /// 装配阶段为空（定义权限码的特性可能按拓扑排在后面，此时核对会误报）；装配完成时挂上权限码核对，授权能力启动时挂上策略名核对（<see cref="Enforce"/>）。只在 <see cref="_gate"/> 内读写。
+    /// 装配阶段为空（定义权限码的特性可能按拓扑排在后面，此时核对会误报）；装配完成时挂上权限码核对，授权能力启动时挂上策略名核对（<see cref="Enforce"/>）。只在 <see cref="_gate"/> 内读写
     /// </remarks>
     private readonly List<Func<OperationDescriptor, Error?>> _checks = [];
 
     /// <summary>
-    /// 登记的互斥锁。
+    /// 登记的互斥锁
     /// </summary>
     /// <remarks>
-    /// 只串行化写入（整组校验与插入、挂核对）；读取走并发字典，不取锁。
+    /// 只串行化写入（整组校验与插入、挂核对）；读取走并发字典，不取锁
     /// </remarks>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 创建登记表。
+    /// 创建登记表
     /// </summary>
-    /// <param name="permissions">核对操作引用的权限码、登记一组操作的归属定义的权限码所用的权限登记表。</param>
-    /// <param name="capacity">容量上限，至少 1。</param>
+    /// <param name="permissions">核对操作引用的权限码、登记一组操作的归属定义的权限码所用的权限登记表</param>
+    /// <param name="capacity">容量上限，至少 1</param>
     public OperationRegistry(PermissionRegistry permissions, int capacity = DefaultCapacity)
     {
         ArgumentNullException.ThrowIfNull(permissions);
@@ -66,15 +66,15 @@ public sealed class OperationRegistry
     }
 
     /// <summary>
-    /// 已登记的数量。
+    /// 已登记的数量
     /// </summary>
     public int Count => _operations.Count;
 
     /// <summary>
-    /// 登记操作。
+    /// 登记操作
     /// </summary>
     /// <remarks>
-    /// 是 <see cref="AddRange"/> 只有一个操作、没有权限码、归属取 <see cref="OperationDescriptor.OwnerId"/> 的特例：重复 ID 返回 <see cref="KernelErrors.DuplicateOperation"/>；装配完成之后登记、引用了未登记权限码的返回 <see cref="KernelErrors.UnregisteredPermission"/>；超限返回 <see cref="KernelErrors.OperationRegistryFull"/>。
+    /// 是 <see cref="AddRange"/> 只有一个操作、没有权限码、归属取 <see cref="OperationDescriptor.OwnerId"/> 的特例：重复 ID 返回 <see cref="KernelErrors.DuplicateOperation"/>；装配完成之后登记、引用了未登记权限码的返回 <see cref="KernelErrors.UnregisteredPermission"/>；超限返回 <see cref="KernelErrors.OperationRegistryFull"/>
     /// </remarks>
     public Result Add(OperationDescriptor descriptor)
     {
@@ -83,14 +83,14 @@ public sealed class OperationRegistry
     }
 
     /// <summary>
-    /// 一次登记一个归属的一组操作连同它定义的权限码，全部登记或一个都不登记。
+    /// 一次登记一个归属的一组操作连同它定义的权限码，全部登记或一个都不登记
     /// </summary>
     /// <remarks>
-    /// 插件握手声明的操作与清单声明的权限码经它登记（ADR-0080），归属是插件的清单 ID，卸载时经 <see cref="RemoveOwnedBy"/> 一起撤回（ADR-0085）。权限码先进权限登记表，同组的操作可以引用它们；任一项不过——操作与已登记的或同一批里的重复（<see cref="KernelErrors.DuplicateOperation"/>）、整批超出容量（<see cref="KernelErrors.OperationRegistryFull"/>）、权限码与已登记的重复或超出容量（<see cref="KernelErrors.DuplicatePermission"/> / <see cref="KernelErrors.PermissionRegistryFull"/>）、装配完成之后引用了未登记的权限码（<see cref="KernelErrors.UnregisteredPermission"/>）、经 <see cref="Enforce"/> 挂上的核对不通过（返回核对给出的错误）——都返回第一项的失败，已写进的权限码撤回，两个登记表都不变，不会留下被拒插件的半组登记。都为空返回成功；集合里有 <see langword="null"/>、或操作的 <see cref="OperationDescriptor.OwnerId"/> 不是 <paramref name="ownerId"/>，抛出 <see cref="ArgumentException"/>。
+    /// 插件握手声明的操作与清单声明的权限码经它登记（ADR-0080），归属是插件的清单 ID，卸载时经 <see cref="RemoveOwnedBy"/> 一起撤回（ADR-0085）。权限码先进权限登记表，同组的操作可以引用它们；任一项不过——操作与已登记的或同一批里的重复（<see cref="KernelErrors.DuplicateOperation"/>）、整批超出容量（<see cref="KernelErrors.OperationRegistryFull"/>）、权限码与已登记的重复或超出容量（<see cref="KernelErrors.DuplicatePermission"/> / <see cref="KernelErrors.PermissionRegistryFull"/>）、装配完成之后引用了未登记的权限码（<see cref="KernelErrors.UnregisteredPermission"/>）、经 <see cref="Enforce"/> 挂上的核对不通过（返回核对给出的错误）——都返回第一项的失败，已写进的权限码撤回，两个登记表都不变，不会留下被拒插件的半组登记。都为空返回成功；集合里有 <see langword="null"/>、或操作的 <see cref="OperationDescriptor.OwnerId"/> 不是 <paramref name="ownerId"/>，抛出 <see cref="ArgumentException"/>
     /// </remarks>
-    /// <param name="ownerId">归属：特性或插件的清单 ID；每个操作的 <see cref="OperationDescriptor.OwnerId"/> 都必须是它，权限码按它记下归属。</param>
-    /// <param name="descriptors">操作。</param>
-    /// <param name="permissions">这个归属定义的权限码；没有时传空集合。</param>
+    /// <param name="ownerId">归属：特性或插件的清单 ID；每个操作的 <see cref="OperationDescriptor.OwnerId"/> 都必须是它，权限码按它记下归属</param>
+    /// <param name="descriptors">操作</param>
+    /// <param name="permissions">这个归属定义的权限码；没有时传空集合</param>
     public Result AddRange(string ownerId, IReadOnlyList<OperationDescriptor> descriptors, IReadOnlyList<PermissionDefinition> permissions)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerId);
@@ -107,7 +107,7 @@ public sealed class OperationRegistry
             throw new ArgumentException($"Operation '{foreign.Id}' is owned by '{foreign.OwnerId}', not by '{ownerId}'; register each owner's operations separately.", nameof(descriptors));
         }
 
-        // 校验与写入在同一个锁里：整组要么全进、要么不进，并发登记看不到半组。
+        // 校验与写入在同一个锁里：整组要么全进、要么不进，并发登记看不到半组
         // 登记只发生在配置阶段与插件加载时，读取（Find / All）不取锁
         lock (_gate)
         {
@@ -127,7 +127,7 @@ public sealed class OperationRegistry
                 return new Error(KernelErrors.OperationRegistryFull, KernelMessages.OperationRegistryFull, MessageArguments.Of(("capacity", _capacity)));
             }
 
-            // 归属定义的权限码先登记：同组操作引用自己定义的码时，下面的核对要看得到它们。
+            // 归属定义的权限码先登记：同组操作引用自己定义的码时，下面的核对要看得到它们
             // 权限登记表自己保证这一批全进或不进；之后的核对不过时在本锁内撤回，此时还没有任何操作引用这些码
             var registered = _permissions.AddRange(ownerId, permissions);
             if (registered.IsFailure)
@@ -157,17 +157,17 @@ public sealed class OperationRegistry
     }
 
     /// <summary>
-    /// 撤回一个归属登记的全部操作与权限码。
+    /// 撤回一个归属登记的全部操作与权限码
     /// </summary>
     /// <remarks>
-    /// 插件宿主卸载插件时调用（ADR-0085），之后同一归属可以再经 <see cref="AddRange"/> 登记（换版本不用重启宿主）。与登记一样在本表的锁里一次完成：先撤回操作、再撤回权限码（<see cref="PermissionRegistry.RemoveOwnedBy"/>），与并发的登记互斥；读取不取锁，并发的调用按 ID 逐个查找，看到的每个操作要么还登记着、要么已撤回。撤回不经过挂上的核对，也不连带别的归属：别的归属的操作引用了被撤回的权限码时照旧登记着，授权判定时按策略不存在拒绝。撤回之后按 ID 调用这些操作得到 <see cref="KernelErrors.UnknownOperation"/>。没有登记过的归属什么都不做。
+    /// 插件宿主卸载插件时调用（ADR-0085），之后同一归属可以再经 <see cref="AddRange"/> 登记（换版本不用重启宿主）。与登记一样在本表的锁里一次完成：先撤回操作、再撤回权限码（<see cref="PermissionRegistry.RemoveOwnedBy"/>），与并发的登记互斥；读取不取锁，并发的调用按 ID 逐个查找，看到的每个操作要么还登记着、要么已撤回。撤回不经过挂上的核对，也不连带别的归属：别的归属的操作引用了被撤回的权限码时照旧登记着，授权判定时按策略不存在拒绝。撤回之后按 ID 调用这些操作得到 <see cref="KernelErrors.UnknownOperation"/>。没有登记过的归属什么都不做
     /// </remarks>
-    /// <param name="ownerId">归属：特性或插件的清单 ID。</param>
-    /// <returns>撤回的操作数。</returns>
+    /// <param name="ownerId">归属：特性或插件的清单 ID</param>
+    /// <returns>撤回的操作数</returns>
     public int RemoveOwnedBy(string ownerId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerId);
-        // 与 AddRange 同一个锁：撤回与登记互斥，同一归属的再登记一定发生在撤回完成之后或之前，不会交错。
+        // 与 AddRange 同一个锁：撤回与登记互斥，同一归属的再登记一定发生在撤回完成之后或之前，不会交错
         // 锁的次序与登记相同（先本表、再权限登记表），不会死锁
         lock (_gate)
         {
@@ -184,7 +184,7 @@ public sealed class OperationRegistry
     }
 
     /// <summary>
-    /// 按操作 ID 查找。
+    /// 按操作 ID 查找
     /// </summary>
     public Maybe<OperationDescriptor> Find(string id)
     {
@@ -193,10 +193,10 @@ public sealed class OperationRegistry
     }
 
     /// <summary>
-    /// 装配完成时核对操作引用的权限码，并对此后的登记逐个核对。
+    /// 装配完成时核对操作引用的权限码，并对此后的登记逐个核对
     /// </summary>
     /// <remarks>
-    /// 由 <c>AppBuilder.Build</c> 在全部特性配置完之后调用一次；有操作引用未登记的权限码时抛出携带 <see cref="KernelErrors.UnregisteredPermission"/> 的 <see cref="FrameworkException"/>，一次列出全部。
+    /// 由 <c>AppBuilder.Build</c> 在全部特性配置完之后调用一次；有操作引用未登记的权限码时抛出携带 <see cref="KernelErrors.UnregisteredPermission"/> 的 <see cref="FrameworkException"/>，一次列出全部
     /// </remarks>
     internal void RequireRegisteredPermissions()
     {
@@ -209,23 +209,23 @@ public sealed class OperationRegistry
     }
 
     /// <summary>
-    /// 全部操作，按 ID 排序。
+    /// 全部操作，按 ID 排序
     /// </summary>
     public IReadOnlyList<OperationDescriptor> All() => _operations.Values.OrderBy(static d => d.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 暴露给指定协议的操作，按 ID 排序。
+    /// 暴露给指定协议的操作，按 ID 排序
     /// </summary>
     public IReadOnlyList<OperationDescriptor> ExposedTo(Expose protocol)
         => _operations.Values.Where(d => d.Contract.IsExposedTo(protocol)).OrderBy(static d => d.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 核对已登记的全部操作，并让此后每次登记的每一项都经过同一核对。
+    /// 核对已登记的全部操作，并让此后每次登记的每一项都经过同一核对
     /// </summary>
     /// <remarks>
-    /// 供容器建好才有判定依据的子系统使用：授权能力启动时才知道有哪些策略，经它核对契约的策略名（ADR-0080）。返回已登记的操作里不通过的（按 ID 排序），由调用方决定怎样失败（通常是启动失败）；此后 <see cref="AddRange"/> 的任一项不通过，整组不登记并返回核对给出的错误。
+    /// 供容器建好才有判定依据的子系统使用：授权能力启动时才知道有哪些策略，经它核对契约的策略名（ADR-0080）。返回已登记的操作里不通过的（按 ID 排序），由调用方决定怎样失败（通常是启动失败）；此后 <see cref="AddRange"/> 的任一项不通过，整组不登记并返回核对给出的错误
     /// </remarks>
-    /// <param name="check">核对一项：通过返回 <see langword="null"/>，否则返回错误。</param>
+    /// <param name="check">核对一项：通过返回 <see langword="null"/>，否则返回错误</param>
     public IReadOnlyList<OperationDescriptor> Enforce(Func<OperationDescriptor, Error?> check)
     {
         ArgumentNullException.ThrowIfNull(check);
@@ -239,10 +239,10 @@ public sealed class OperationRegistry
     }
 
     /// <summary>
-    /// 操作要求的权限码未登记时的错误。
+    /// 操作要求的权限码未登记时的错误
     /// </summary>
     /// <remarks>
-    /// 没有权限要求或已登记时为 <see langword="null"/>。
+    /// 没有权限要求或已登记时为 <see langword="null"/>
     /// </remarks>
     private Error? UnregisteredPermissionOf(OperationDescriptor descriptor)
         => descriptor.Contract.Permission is { } code && !_permissions.Find(code).HasValue

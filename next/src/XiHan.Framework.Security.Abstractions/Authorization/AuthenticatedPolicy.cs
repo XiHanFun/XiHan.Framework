@@ -7,13 +7,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Authorization;
 
 /// <summary>
-/// 策略：主体已认证。
+/// 策略：主体已认证
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class AuthenticatedPolicy : IPolicy
 {
     /// <summary>
-    /// 策略名 <c>authenticated</c>。
+    /// 策略名 <c>authenticated</c>
     /// </summary>
     public const string PolicyName = "authenticated";
 

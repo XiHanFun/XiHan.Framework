@@ -11,49 +11,49 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.Database.Grants;
 
 /// <summary>
-/// 数据库授予存储（单例）。
+/// 数据库授予存储（单例）
 /// </summary>
 /// <remarks>
-/// 按主体与租户一次查询全局行加该租户的行，结果进有界的 TTL 缓存。读数据库不经管道而是直接开只读工作单元（见 <see cref="GrantInvocation"/>）；数据库故障（连接、超时、事务失败）返回 <see cref="SecurityErrors.StoreUnavailable"/>（HTTP 503）并记警告日志，失败不进缓存，下一次判定重新查库——不能以空集合代替，否则会被判定为不持有（403）。缓存键是（主体种类、主体 ID、租户）；条目按 <see cref="DatabaseSecurityOptions.CacheTimeToLive"/> 过期，条目数达到 <see cref="DatabaseSecurityOptions.CacheSize"/> 时整体清空；<see cref="PermissionGrantRecordStore"/> 写入后对涉及的主体调用 <see cref="Invalidate"/>。
+/// 按主体与租户一次查询全局行加该租户的行，结果进有界的 TTL 缓存。读数据库不经管道而是直接开只读工作单元（见 <see cref="GrantInvocation"/>）；数据库故障（连接、超时、事务失败）返回 <see cref="SecurityErrors.StoreUnavailable"/>（HTTP 503）并记警告日志，失败不进缓存，下一次判定重新查库——不能以空集合代替，否则会被判定为不持有（403）。缓存键是（主体种类、主体 ID、租户）；条目按 <see cref="DatabaseSecurityOptions.CacheTimeToLive"/> 过期，条目数达到 <see cref="DatabaseSecurityOptions.CacheSize"/> 时整体清空；<see cref="PermissionGrantRecordStore"/> 写入后对涉及的主体调用 <see cref="Invalidate"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
 {
     /// <summary>
-    /// 数据库读取。
+    /// 数据库读取
     /// </summary>
     private readonly GrantInvocation _invocation;
 
     /// <summary>
-    /// 选项：容量与存活时间。
+    /// 选项：容量与存活时间
     /// </summary>
     private readonly DatabaseSecurityOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     /// <remarks>
-    /// 判定条目过期。
+    /// 判定条目过期
     /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 保护缓存表与主体索引的锁。
+    /// 保护缓存表与主体索引的锁
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 缓存表：键为主体与租户（<see langword="null"/> 为无租户），值为授予集合与过期时刻。
+    /// 缓存表：键为主体与租户（<see langword="null"/> 为无租户），值为授予集合与过期时刻
     /// </summary>
     private readonly Dictionary<(GrantSubject Subject, string? Tenant), CacheEntry> _entries = [];
 
     /// <summary>
-    /// 主体索引：主体 → 缓存了哪些租户的条目，供按主体失效。
+    /// 主体索引：主体 → 缓存了哪些租户的条目，供按主体失效
     /// </summary>
     private readonly Dictionary<GrantSubject, HashSet<string?>> _tenantsBySubject = [];
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public DatabasePermissionGrantStore(IServiceProvider services, DatabaseSecurityOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -64,7 +64,7 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 当前缓存的条目数（含尚未被访问到的已过期条目）。
+    /// 当前缓存的条目数（含尚未被访问到的已过期条目）
     /// </summary>
     public int CachedEntryCount
     {
@@ -102,7 +102,7 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 使缓存失效：给主体时清掉该主体在所有租户下的条目，不给时清空全部。
+    /// 使缓存失效：给主体时清掉该主体在所有租户下的条目，不给时清空全部
     /// </summary>
     public void Invalidate(GrantSubject? subject = null)
     {
@@ -126,10 +126,10 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 取未过期的缓存条目。
+    /// 取未过期的缓存条目
     /// </summary>
     /// <remarks>
-    /// 过期的条目顺手移除。
+    /// 过期的条目顺手移除
     /// </remarks>
     private bool TryGetCached(GrantSubject subject, string? tenant, out FrozenSet<string> grants)
     {
@@ -157,10 +157,10 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 写入缓存。
+    /// 写入缓存
     /// </summary>
     /// <remarks>
-    /// 新增条目前已满就整体清空（不做逐条淘汰，容量只是防止无界增长）。
+    /// 新增条目前已满就整体清空（不做逐条淘汰，容量只是防止无界增长）
     /// </remarks>
     private void Store(GrantSubject subject, string? tenant, FrozenSet<string> grants)
     {
@@ -185,7 +185,7 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 一条缓存条目：授予集合（不可变，可直接返回给调用方）与过期时刻（<see langword="null"/> 不过期）。
+    /// 一条缓存条目：授予集合（不可变，可直接返回给调用方）与过期时刻（<see langword="null"/> 不过期）
     /// </summary>
     private readonly record struct CacheEntry(FrozenSet<string> Grants, DateTimeOffset? ExpiresAt);
 }

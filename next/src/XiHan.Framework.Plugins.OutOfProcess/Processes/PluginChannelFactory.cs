@@ -9,20 +9,20 @@ using XiHan.Framework.Plugins.Protocol.Handshake;
 namespace XiHan.Framework.Plugins.OutOfProcess.Processes;
 
 /// <summary>
-/// 为本机端点创建 gRPC 通道。
+/// 为本机端点创建 gRPC 通道
 /// </summary>
 /// <remarks>
-/// Unix 域套接字与命名管道经 <see cref="SocketsHttpHandler.ConnectCallback"/> 连接，TCP 直接连接回环地址。
+/// Unix 域套接字与命名管道经 <see cref="SocketsHttpHandler.ConnectCallback"/> 连接，TCP 直接连接回环地址
 /// </remarks>
 internal static class PluginChannelFactory
 {
     /// <summary>
-    /// 命名管道地址前缀。
+    /// 命名管道地址前缀
     /// </summary>
     private const string PipePrefix = @"\\.\pipe\";
 
     /// <summary>
-    /// 创建通道（HTTP/2 明文）。
+    /// 创建通道（HTTP/2 明文）
     /// </summary>
     public static GrpcChannel Create(PluginEndpoint endpoint)
     {

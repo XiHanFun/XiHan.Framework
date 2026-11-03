@@ -6,21 +6,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Serialization;
 
 /// <summary>
-/// 值的序列化。
+/// 值的序列化
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface ICacheSerializer
 {
     /// <summary>
-    /// 序列化。
+    /// 序列化
     /// </summary>
     ReadOnlyMemory<byte> Serialize<T>(T value);
 
     /// <summary>
-    /// 反序列化。
+    /// 反序列化
     /// </summary>
     /// <remarks>
-    /// 数据不能还原为 <typeparamref name="T"/> 时抛出 <see cref="InvalidOperationException"/>。
+    /// 数据不能还原为 <typeparamref name="T"/> 时抛出 <see cref="InvalidOperationException"/>
     /// </remarks>
     T Deserialize<T>(ReadOnlyMemory<byte> data);
 }

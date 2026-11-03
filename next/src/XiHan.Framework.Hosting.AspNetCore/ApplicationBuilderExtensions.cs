@@ -23,19 +23,19 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Hosting.AspNetCore;
 
 /// <summary>
-/// ASP.NET Core 管道与端点的接入点。
+/// ASP.NET Core 管道与端点的接入点
 /// </summary>
 /// <remarks>
-/// <c>AddXiHan()</c> 由内核的 <c>IHostApplicationBuilder</c> 扩展提供。
+/// <c>AddXiHan()</c> 由内核的 <c>IHostApplicationBuilder</c> 扩展提供
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class ApplicationBuilderExtensions
 {
     /// <summary>
-    /// 让其余 ASP.NET Core 管道在内核管道内执行。
+    /// 让其余 ASP.NET Core 管道在内核管道内执行
     /// </summary>
     /// <remarks>
-    /// 请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 与 <see cref="OperationDescriptor"/> 进入上下文（带 <see cref="OperationPayloadBinder"/> 时先绑定载荷），失败结果在响应未开始时以 Problem Details 回写（装配了本地化时 <c>detail</c> 按调用方区域翻译）；成功而端点没有执行（幂等回放）时用端点元数据上的 <see cref="OperationResponseWriter"/> 写出上下文里的响应；应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。宿主建请求管道时（路由已全部映射）核对端点元数据上的授权要求引用的策略都存在，引用了不存在的策略或未登记的权限码即启动失败（<c>SECURITY_VALIDATION_004</c>，ADR-0080）。放在路由之后。
+    /// 请求头翻译为调用上下文，端点元数据上的 <see cref="AuthorizationRequirement"/> 与 <see cref="OperationDescriptor"/> 进入上下文（带 <see cref="OperationPayloadBinder"/> 时先绑定载荷），失败结果在响应未开始时以 Problem Details 回写（装配了本地化时 <c>detail</c> 按调用方区域翻译）；成功而端点没有执行（幂等回放）时用端点元数据上的 <see cref="OperationResponseWriter"/> 写出上下文里的响应；应用未就绪时返回 503。带 <see cref="PipelineBypassMetadata"/> 的端点（含探针）不经过内核管道。宿主建请求管道时（路由已全部映射）核对端点元数据上的授权要求引用的策略都存在，引用了不存在的策略或未登记的权限码即启动失败（<c>SECURITY_VALIDATION_004</c>，ADR-0080）。放在路由之后
     /// </remarks>
     public static IApplicationBuilder UseXiHan(this IApplicationBuilder app)
     {
@@ -52,7 +52,7 @@ public static class ApplicationBuilderExtensions
     }
 
     /// <summary>
-    /// 一次请求经过内核管道。
+    /// 一次请求经过内核管道
     /// </summary>
     private static async Task InvokeAsync(HttpContext httpContext, RequestDelegate next, App xihan)
     {
@@ -117,10 +117,10 @@ public static class ApplicationBuilderExtensions
     }
 
     /// <summary>
-    /// 映射探针端点。
+    /// 映射探针端点
     /// </summary>
     /// <remarks>
-    /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道。
+    /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道
     /// </remarks>
     public static IEndpointRouteBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints, string prefix = "/health")
     {
@@ -135,7 +135,7 @@ public static class ApplicationBuilderExtensions
     }
 
     /// <summary>
-    /// 取应用健康快照，按探针谓词写出 200 或 503 以及 <see cref="HealthResponse"/> 正文。
+    /// 取应用健康快照，按探针谓词写出 200 或 503 以及 <see cref="HealthResponse"/> 正文
     /// </summary>
     private static Task WriteHealthAsync(HttpContext httpContext, App app, Func<HealthSnapshot, bool> probe)
     {
@@ -158,10 +158,10 @@ public static class ApplicationBuilderExtensions
     }
 
     /// <summary>
-    /// 把错误写成 RFC 9457 Problem Details 响应，状态码由错误码的 KIND 段映射。
+    /// 把错误写成 RFC 9457 Problem Details 响应，状态码由错误码的 KIND 段映射
     /// </summary>
     /// <remarks>
-    /// 装配了本地化时 <c>detail</c> 与字段级 <c>errors</c> 按调用方区域翻译并带 <c>Content-Language</c>。
+    /// 装配了本地化时 <c>detail</c> 与字段级 <c>errors</c> 按调用方区域翻译并带 <c>Content-Language</c>
     /// </remarks>
     private static async Task WriteProblemAsync(HttpContext httpContext, Error error, string traceId, InvocationContext? context)
     {

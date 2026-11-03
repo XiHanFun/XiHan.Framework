@@ -6,22 +6,22 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators;
 
 /// <summary>
-/// 生成器的诊断描述。
+/// 生成器的诊断描述
 /// </summary>
 internal static class GeneratorRules
 {
     /// <summary>
-    /// 诊断类别。
+    /// 诊断类别
     /// </summary>
     public const string Category = "XiHan";
 
     /// <summary>
-    /// 帮助链接。
+    /// 帮助链接
     /// </summary>
     private const string HelpLink = "https://github.com/XiHanFun/XiHan.Framework/blob/next/next/src/XiHan.Framework.Kernel.Generators/README.md";
 
     /// <summary>
-    /// XHG001：标注 <c>[Operation]</c> 的类没有实现 <c>IOperation&lt;TRequest, TResponse&gt;</c>。
+    /// XHG001：标注 <c>[Operation]</c> 的类没有实现 <c>IOperation&lt;TRequest, TResponse&gt;</c>
     /// </summary>
     public static readonly DiagnosticDescriptor MissingOperationInterface = new(
         "XHG001",
@@ -33,7 +33,7 @@ internal static class GeneratorRules
         helpLinkUri: HelpLink);
 
     /// <summary>
-    /// XHG002：请求或响应类型没有被任何 <c>JsonSerializerContext</c> 登记。
+    /// XHG002：请求或响应类型没有被任何 <c>JsonSerializerContext</c> 登记
     /// </summary>
     public static readonly DiagnosticDescriptor MissingJsonTypeInfo = new(
         "XHG002",
@@ -45,7 +45,7 @@ internal static class GeneratorRules
         helpLinkUri: HelpLink);
 
     /// <summary>
-    /// XHG003：操作 ID 不符合文法。
+    /// XHG003：操作 ID 不符合文法
     /// </summary>
     public static readonly DiagnosticDescriptor InvalidOperationId = new(
         "XHG003",
@@ -57,10 +57,10 @@ internal static class GeneratorRules
         helpLinkUri: HelpLink);
 
     /// <summary>
-    /// XHG004。
+    /// XHG004
     /// </summary>
     /// <remarks>
-    /// 操作没写 <c>Expose</c>，程序集也没有 <c>[assembly: OperationDefaults]</c>，于是暴露给全部协议。缺省关闭：想强制每个操作写明协议的应用以<c>dotnet_diagnostic.XHG004.severity = error</c> 打开，或声明程序集缺省。
+    /// 操作没写 <c>Expose</c>，程序集也没有 <c>[assembly: OperationDefaults]</c>，于是暴露给全部协议。缺省关闭：想强制每个操作写明协议的应用以<c>dotnet_diagnostic.XHG004.severity = error</c> 打开，或声明程序集缺省
     /// </remarks>
     public static readonly DiagnosticDescriptor ImplicitExposeAll = new(
         "XHG004",
@@ -72,7 +72,7 @@ internal static class GeneratorRules
         helpLinkUri: HelpLink);
 
     /// <summary>
-    /// XHG005：<c>create</c> / <c>update</c> / <c>delete</c> 动词的操作声明了 <c>ReadOnly</c>。
+    /// XHG005：<c>create</c> / <c>update</c> / <c>delete</c> 动词的操作声明了 <c>ReadOnly</c>
     /// </summary>
     public static readonly DiagnosticDescriptor ReadOnlyOnWriteVerb = new(
         "XHG005",

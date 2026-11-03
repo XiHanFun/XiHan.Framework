@@ -11,46 +11,46 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 子流程。
+/// 子流程
 /// </summary>
 /// <remarks>
-/// 按 <c>DefinitionName</c> / <c>DefinitionVersion</c> 启动子实例（变量来自 <c>Variables</c> 字面量与 <c>VariableExpressions</c>），<c>WaitForCompletion</c>（默认真）时以 <c>SubWorkflow</c> 书签等待回调：子实例未完成且 <c>FailOnChildFault</c>（默认真）即故障，否则以子实例状态小写为结果完成，<c>ResultVariable</c> 接收子实例变量。
+/// 按 <c>DefinitionName</c> / <c>DefinitionVersion</c> 启动子实例（变量来自 <c>Variables</c> 字面量与 <c>VariableExpressions</c>），<c>WaitForCompletion</c>（默认真）时以 <c>SubWorkflow</c> 书签等待回调：子实例未完成且 <c>FailOnChildFault</c>（默认真）即故障，否则以子实例状态小写为结果完成，<c>ResultVariable</c> 接收子实例变量
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SubWorkflowActivity : IResumableActivity
 {
     /// <summary>
-    /// 属性：子流程定义名。
+    /// 属性：子流程定义名
     /// </summary>
     public const string DefinitionNameProperty = "DefinitionName";
 
     /// <summary>
-    /// 属性：子流程定义版本。
+    /// 属性：子流程定义版本
     /// </summary>
     public const string DefinitionVersionProperty = "DefinitionVersion";
 
     /// <summary>
-    /// 属性：传给子流程的变量（字面量）。
+    /// 属性：传给子流程的变量（字面量）
     /// </summary>
     public const string VariablesProperty = "Variables";
 
     /// <summary>
-    /// 属性：传给子流程的变量（表达式）。
+    /// 属性：传给子流程的变量（表达式）
     /// </summary>
     public const string VariableExpressionsProperty = "VariableExpressions";
 
     /// <summary>
-    /// 属性：是否等待子流程完成。
+    /// 属性：是否等待子流程完成
     /// </summary>
     public const string WaitForCompletionProperty = "WaitForCompletion";
 
     /// <summary>
-    /// 属性：接收子实例变量的变量名。
+    /// 属性：接收子实例变量的变量名
     /// </summary>
     public const string ResultVariableProperty = "ResultVariable";
 
     /// <summary>
-    /// 属性：子实例未完成是否故障。
+    /// 属性：子实例未完成是否故障
     /// </summary>
     public const string FailOnChildFaultProperty = "FailOnChildFault";
 
@@ -99,7 +99,7 @@ public sealed class SubWorkflowActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 组装子流程启动请求：名字（模板）、版本、字面量变量加表达式变量（再加 <paramref name="extra"/>）。
+    /// 组装子流程启动请求：名字（模板）、版本、字面量变量加表达式变量（再加 <paramref name="extra"/>）
     /// </summary>
     internal static Result<WorkflowStartRequest> BuildStartRequest(ActivityContext context, JsonObject? literals, JsonObject? extra)
     {
@@ -154,7 +154,7 @@ public sealed class SubWorkflowActivity : IResumableActivity
     }
 
     /// <summary>
-    /// 等待回调的书签：键是本节点实例 ID。
+    /// 等待回调的书签：键是本节点实例 ID
     /// </summary>
     internal static BookmarkRequest CallbackBookmark(ActivityContext context) => new() { Kind = BookmarkKinds.SubWorkflow, Key = context.NodeInstance.Id };
 }

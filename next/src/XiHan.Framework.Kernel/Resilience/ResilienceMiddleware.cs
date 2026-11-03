@@ -10,42 +10,42 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Resilience;
 
 /// <summary>
-/// Resilience 阶段的内置中间件（在 <see cref="DeadlineMiddleware"/> 之后）。
+/// Resilience 阶段的内置中间件（在 <see cref="DeadlineMiddleware"/> 之后）
 /// </summary>
 /// <remarks>
-/// 对带操作描述的调用按 <see cref="ResilienceOptions"/> 施加熔断、固定窗口限流与并发上限，拒绝以 UNAVAILABLE 种类的结果返回（<see cref="KernelErrors.CircuitOpen"/>、<see cref="KernelErrors.RateLimited"/>、<see cref="KernelErrors.ConcurrencyExceeded"/>），不进后续阶段。限制实例按操作 ID 各一份（登记表有界，所以这里也有界）；没有操作描述的调用（宿主自定义端点、消息派发）不受限。
+/// 对带操作描述的调用按 <see cref="ResilienceOptions"/> 施加熔断、固定窗口限流与并发上限，拒绝以 UNAVAILABLE 种类的结果返回（<see cref="KernelErrors.CircuitOpen"/>、<see cref="KernelErrors.RateLimited"/>、<see cref="KernelErrors.ConcurrencyExceeded"/>），不进后续阶段。限制实例按操作 ID 各一份（登记表有界，所以这里也有界）；没有操作描述的调用（宿主自定义端点、消息派发）不受限
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ResilienceMiddleware : IPipelineMiddleware, IDisposable
 {
     /// <summary>
-    /// 熔断器计为失败的错误码 KIND。
+    /// 熔断器计为失败的错误码 KIND
     /// </summary>
     /// <remarks>
-    /// 下游不可用、超时、意外；校验、不存在、拒绝等是调用方的问题，不算下游坏了。
+    /// 下游不可用、超时、意外；校验、不存在、拒绝等是调用方的问题，不算下游坏了
     /// </remarks>
     private static readonly string[] _failureKinds = ["UNAVAILABLE", "TIMEOUT", "UNEXPECTED"];
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly ResilienceOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     /// <remarks>
-    /// 熔断器据此判定到期。
+    /// 熔断器据此判定到期
     /// </remarks>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 按操作 ID 的限制实例。
+    /// 按操作 ID 的限制实例
     /// </summary>
     private readonly ConcurrentDictionary<string, OperationLimits> _limits = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public ResilienceMiddleware(ResilienceOptions options, TimeProvider clock)
     {
@@ -123,7 +123,7 @@ public sealed class ResilienceMiddleware : IPipelineMiddleware, IDisposable
     }
 
     /// <summary>
-    /// 执行下游并把结论记给熔断器：异常与基础设施类失败结果算失败，其余算成功。
+    /// 执行下游并把结论记给熔断器：异常与基础设施类失败结果算失败，其余算成功
     /// </summary>
     private static async ValueTask ExecuteAsync(InvocationContext context, PipelineStep nextStep, CircuitBreaker? breaker)
     {
@@ -154,13 +154,13 @@ public sealed class ResilienceMiddleware : IPipelineMiddleware, IDisposable
     }
 
     /// <summary>
-    /// 错误是否属于熔断器关心的基础设施类失败（按错误码的 KIND 段）。
+    /// 错误是否属于熔断器关心的基础设施类失败（按错误码的 KIND 段）
     /// </summary>
     private static bool IsInfrastructureFailure(Error error)
         => Array.IndexOf(_failureKinds, ErrorCode.KindOf(error.Code)) >= 0;
 
     /// <summary>
-    /// 时长按秒向上取整（至少 1 秒），作为 <c>retryAfter</c> 参数。
+    /// 时长按秒向上取整（至少 1 秒），作为 <c>retryAfter</c> 参数
     /// </summary>
     private static int Seconds(TimeSpan duration) => Math.Max(1, (int)Math.Ceiling(duration.TotalSeconds));
 }

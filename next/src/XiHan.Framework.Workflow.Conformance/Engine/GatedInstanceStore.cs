@@ -8,10 +8,10 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 在被标记的启动查未结束实例时停在探针闸门前的实例存储装饰器。
+/// 在被标记的启动查未结束实例时停在探针闸门前的实例存储装饰器
 /// </summary>
 /// <remarks>
-/// 其余调用原样转给 Provider 的存储。
+/// 其余调用原样转给 Provider 的存储
 /// </remarks>
 internal sealed class GatedInstanceStore(IWorkflowInstanceStore inner, StartRaceProbe probe) : IWorkflowInstanceStore
 {

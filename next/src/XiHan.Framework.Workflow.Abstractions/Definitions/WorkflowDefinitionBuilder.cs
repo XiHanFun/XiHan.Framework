@@ -9,76 +9,76 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 流式构造定义。
+/// 流式构造定义
 /// </summary>
 /// <remarks>
-/// 节点、转移、变量；<see cref="Build"/> 得到草稿（ID 与创建时间由目录在 <c>CreateAsync</c> 时分配）。
+/// 节点、转移、变量；<see cref="Build"/> 得到草稿（ID 与创建时间由目录在 <c>CreateAsync</c> 时分配）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowDefinitionBuilder
 {
     /// <summary>
-    /// 节点。
+    /// 节点
     /// </summary>
     private readonly List<WorkflowNode> _nodes = [];
 
     /// <summary>
-    /// 转移。
+    /// 转移
     /// </summary>
     private readonly List<WorkflowTransition> _transitions = [];
 
     /// <summary>
-    /// 变量声明。
+    /// 变量声明
     /// </summary>
     private readonly List<WorkflowVariableDefinition> _variables = [];
 
     /// <summary>
-    /// 名字。
+    /// 名字
     /// </summary>
     private readonly WorkflowName _name;
 
     /// <summary>
-    /// 显示名。
+    /// 显示名
     /// </summary>
     private readonly string? _displayName;
 
     /// <summary>
-    /// 说明。
+    /// 说明
     /// </summary>
     private string? _description;
 
     /// <summary>
-    /// 分类。
+    /// 分类
     /// </summary>
     private string? _category;
 
     /// <summary>
-    /// 启用补偿。
+    /// 启用补偿
     /// </summary>
     private bool _compensation;
 
     /// <summary>
-    /// 故障时也补偿。
+    /// 故障时也补偿
     /// </summary>
     private bool _compensateOnFault;
 
     /// <summary>
-    /// 实例级超时。
+    /// 实例级超时
     /// </summary>
     private TimeSpan? _timeout;
 
     /// <summary>
-    /// 超时动作。
+    /// 超时动作
     /// </summary>
     private WorkflowTimeoutAction _timeoutAction;
 
     /// <summary>
-    /// 扩展属性。
+    /// 扩展属性
     /// </summary>
     private JsonObject? _properties;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     private WorkflowDefinitionBuilder(WorkflowName name, string? displayName)
     {
@@ -87,12 +87,12 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 开始构造。
+    /// 开始构造
     /// </summary>
     public static WorkflowDefinitionBuilder Create(WorkflowName name, string? displayName = null) => new(name, displayName);
 
     /// <summary>
-    /// 说明。
+    /// 说明
     /// </summary>
     public WorkflowDefinitionBuilder WithDescription(string? description)
     {
@@ -101,7 +101,7 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 分类。
+    /// 分类
     /// </summary>
     public WorkflowDefinitionBuilder WithCategory(string? category)
     {
@@ -110,7 +110,7 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 取消时按完成顺序逆序补偿。
+    /// 取消时按完成顺序逆序补偿
     /// </summary>
     public WorkflowDefinitionBuilder WithCompensation(bool enabled = true)
     {
@@ -119,10 +119,10 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 扩展属性。
+    /// 扩展属性
     /// </summary>
     /// <summary>
-    /// 故障时也按完成顺序逆序补偿。
+    /// 故障时也按完成顺序逆序补偿
     /// </summary>
     public WorkflowDefinitionBuilder WithCompensateOnFault(bool enabled = true)
     {
@@ -131,7 +131,7 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 实例级超时与到期动作。
+    /// 实例级超时与到期动作
     /// </summary>
     public WorkflowDefinitionBuilder WithTimeout(TimeSpan timeout, WorkflowTimeoutAction action = WorkflowTimeoutAction.Fault)
     {
@@ -141,7 +141,7 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 定义属性。
+    /// 定义属性
     /// </summary>
     public WorkflowDefinitionBuilder WithProperties(JsonObject? properties)
     {
@@ -150,7 +150,7 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 声明变量。
+    /// 声明变量
     /// </summary>
     public WorkflowDefinitionBuilder AddVariable(string name, bool required = false, JsonNode? defaultValue = null, string? description = null)
     {
@@ -159,7 +159,7 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 加节点。
+    /// 加节点
     /// </summary>
     public WorkflowDefinitionBuilder AddNode(string id, ActivityType activityType, string? displayName = null, Action<WorkflowNodeBuilder>? configure = null)
     {
@@ -170,48 +170,48 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 开始节点。
+    /// 开始节点
     /// </summary>
     public WorkflowDefinitionBuilder AddStart(string id = "start", string? displayName = null) => AddNode(id, ActivityTypes.Start, displayName);
 
     /// <summary>
-    /// 结束节点。
+    /// 结束节点
     /// </summary>
     /// <remarks>
-    /// <paramref name="outcome"/> 非空即带结果结束实例。
+    /// <paramref name="outcome"/> 非空即带结果结束实例
     /// </remarks>
     public WorkflowDefinitionBuilder AddEnd(string id = "end", string? outcome = null, string? displayName = null)
         => AddNode(id, ActivityTypes.End, displayName, outcome is null ? null : builder => builder.WithProperty(EndActivity.OutcomeProperty, outcome));
 
     /// <summary>
-    /// 决策节点。
+    /// 决策节点
     /// </summary>
     public WorkflowDefinitionBuilder AddDecision(string id, string? displayName = null) => AddNode(id, ActivityTypes.Decision, displayName);
 
     /// <summary>
-    /// 并行网关。
+    /// 并行网关
     /// </summary>
     public WorkflowDefinitionBuilder AddParallel(string id, string? displayName = null) => AddNode(id, ActivityTypes.Parallel, displayName);
 
     /// <summary>
-    /// 汇合节点。
+    /// 汇合节点
     /// </summary>
     public WorkflowDefinitionBuilder AddJoin(string id, bool waitAny = false, string? displayName = null)
         => AddNode(id, ActivityTypes.Join, displayName, builder => builder.WithProperty(JoinActivity.ModeProperty, waitAny ? JoinActivity.WaitAny : JoinActivity.WaitAll));
 
     /// <summary>
-    /// 延时节点。
+    /// 延时节点
     /// </summary>
     public WorkflowDefinitionBuilder AddDelay(string id, TimeSpan duration, string? displayName = null)
         => AddNode(id, ActivityTypes.Delay, displayName, builder => builder.WithProperty(DelayActivity.DurationProperty, JsonValue.Create(duration.TotalSeconds)));
 
     /// <summary>
-    /// 用户任务节点。
+    /// 用户任务节点
     /// </summary>
     public WorkflowDefinitionBuilder AddUserTask(string id, string? displayName, Action<WorkflowNodeBuilder> configure) => AddNode(id, ActivityTypes.UserTask, displayName, configure);
 
     /// <summary>
-    /// 事件网关：等待多个信号或超时中先到的一个。
+    /// 事件网关：等待多个信号或超时中先到的一个
     /// </summary>
     public WorkflowDefinitionBuilder AddEventGateway(string id, IReadOnlyList<string> signals, TimeSpan? timeout = null, bool acceptAnyCorrelation = false, string? displayName = null)
         => AddNode(id, ActivityTypes.EventGateway, displayName, builder =>
@@ -226,7 +226,7 @@ public sealed class WorkflowDefinitionBuilder
         });
 
     /// <summary>
-    /// HTTP 请求。
+    /// HTTP 请求
     /// </summary>
     public WorkflowDefinitionBuilder AddHttp(string id, string url, string method = "GET", string? displayName = null, Action<WorkflowNodeBuilder>? configure = null)
         => AddNode(id, ActivityTypes.Http, displayName, builder =>
@@ -236,7 +236,7 @@ public sealed class WorkflowDefinitionBuilder
         });
 
     /// <summary>
-    /// 外部任务。
+    /// 外部任务
     /// </summary>
     public WorkflowDefinitionBuilder AddExternalTask(string id, string topic, JsonObject? payload = null, string? displayName = null)
         => AddNode(id, ActivityTypes.ExternalTask, displayName, builder =>
@@ -249,16 +249,16 @@ public sealed class WorkflowDefinitionBuilder
         });
 
     /// <summary>
-    /// 补偿节点。
+    /// 补偿节点
     /// </summary>
     public WorkflowDefinitionBuilder AddCompensate(string id, IReadOnlyList<string>? nodeIds = null, string? displayName = null)
         => AddNode(id, ActivityTypes.Compensate, displayName, nodeIds is null ? null : builder => builder.WithProperty(CompensateActivity.NodeIdsProperty, new JsonArray(nodeIds.Select(static node => (JsonNode?)JsonValue.Create(node)).ToArray())));
 
     /// <summary>
-    /// 加转移。
+    /// 加转移
     /// </summary>
     /// <remarks>
-    /// ID 为 <c>源->目标#序号</c>。
+    /// ID 为 <c>源->目标#序号</c>
     /// </remarks>
     public WorkflowDefinitionBuilder AddTransition(string sourceNodeId, string targetNodeId, string? condition = null, int priority = 0, string? displayName = null)
     {
@@ -275,7 +275,7 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 加默认转移（其他出边都不匹配时走）。
+    /// 加默认转移（其他出边都不匹配时走）
     /// </summary>
     public WorkflowDefinitionBuilder AddDefaultTransition(string sourceNodeId, string targetNodeId, string? displayName = null)
     {
@@ -292,10 +292,10 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// 生成定义。
+    /// 生成定义
     /// </summary>
     /// <remarks>
-    /// 草稿，版本 1；ID 是新的 UUID v7。
+    /// 草稿，版本 1；ID 是新的 UUID v7
     /// </remarks>
     public WorkflowDefinition Build() => new()
     {
@@ -315,7 +315,7 @@ public sealed class WorkflowDefinitionBuilder
     };
 
     /// <summary>
-    /// 转移 ID：同一对节点之间的第 n 条。
+    /// 转移 ID：同一对节点之间的第 n 条
     /// </summary>
     private string TransitionId(string source, string target)
     {

@@ -7,25 +7,25 @@ using System.Text;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 极简 JSON 文本拼装。
+/// 极简 JSON 文本拼装
 /// </summary>
 /// <remarks>
-/// 生成器运行在 netstandard2.0 的编译器进程里，不依赖 System.Text.Json。
+/// 生成器运行在 netstandard2.0 的编译器进程里，不依赖 System.Text.Json
 /// </remarks>
 internal sealed class JsonText
 {
     /// <summary>
-    /// 输出缓冲。
+    /// 输出缓冲
     /// </summary>
     private readonly StringBuilder _builder = new();
 
     /// <summary>
-    /// 每层容器是否已写过成员（决定是否先写逗号）。
+    /// 每层容器是否已写过成员（决定是否先写逗号）
     /// </summary>
     private readonly Stack<bool> _hasMembers = new();
 
     /// <summary>
-    /// 开始对象。
+    /// 开始对象
     /// </summary>
     public JsonText StartObject(string? name = null)
     {
@@ -36,7 +36,7 @@ internal sealed class JsonText
     }
 
     /// <summary>
-    /// 结束对象。
+    /// 结束对象
     /// </summary>
     public JsonText EndObject()
     {
@@ -46,7 +46,7 @@ internal sealed class JsonText
     }
 
     /// <summary>
-    /// 开始数组。
+    /// 开始数组
     /// </summary>
     public JsonText StartArray(string? name = null)
     {
@@ -57,7 +57,7 @@ internal sealed class JsonText
     }
 
     /// <summary>
-    /// 结束数组。
+    /// 结束数组
     /// </summary>
     public JsonText EndArray()
     {
@@ -67,7 +67,7 @@ internal sealed class JsonText
     }
 
     /// <summary>
-    /// 写字符串成员或数组元素。
+    /// 写字符串成员或数组元素
     /// </summary>
     public JsonText String(string? name, string value)
     {
@@ -77,7 +77,7 @@ internal sealed class JsonText
     }
 
     /// <summary>
-    /// 写布尔成员。
+    /// 写布尔成员
     /// </summary>
     public JsonText Boolean(string name, bool value)
     {
@@ -87,7 +87,7 @@ internal sealed class JsonText
     }
 
     /// <summary>
-    /// 写数字成员或数组元素。
+    /// 写数字成员或数组元素
     /// </summary>
     public JsonText Number(string? name, long value)
     {
@@ -97,7 +97,7 @@ internal sealed class JsonText
     }
 
     /// <summary>
-    /// 写已经是合法 JSON 的片段。
+    /// 写已经是合法 JSON 的片段
     /// </summary>
     public JsonText Raw(string? name, string json)
     {
@@ -110,7 +110,7 @@ internal sealed class JsonText
     public override string ToString() => _builder.ToString();
 
     /// <summary>
-    /// 写逗号与成员名。
+    /// 写逗号与成员名
     /// </summary>
     private void Prefix(string? name)
     {
@@ -133,7 +133,7 @@ internal sealed class JsonText
     }
 
     /// <summary>
-    /// 写带转义的 JSON 字符串。
+    /// 写带转义的 JSON 字符串
     /// </summary>
     private void WriteString(string value)
     {

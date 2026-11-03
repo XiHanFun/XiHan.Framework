@@ -8,36 +8,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 /// <summary>
-/// 作业的计划。
+/// 作业的计划
 /// </summary>
 /// <remarks>
-/// 手动、固定间隔（可限次数）、cron（可指定时区）或一次；任何计划可带起止窗口与排除日历。文本形式可往返（<see cref="ToString"/> / <see cref="Parse"/>），存储以文本持久化。
+/// 手动、固定间隔（可限次数）、cron（可指定时区）或一次；任何计划可带起止窗口与排除日历。文本形式可往返（<see cref="ToString"/> / <see cref="Parse"/>），存储以文本持久化
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record JobSchedule
 {
     /// <summary>
-    /// 文本里的起始时刻选项。
+    /// 文本里的起始时刻选项
     /// </summary>
     private const string StartOption = "start=";
 
     /// <summary>
-    /// 文本里的结束时刻选项。
+    /// 文本里的结束时刻选项
     /// </summary>
     private const string EndOption = "end=";
 
     /// <summary>
-    /// 文本里的日历选项。
+    /// 文本里的日历选项
     /// </summary>
     private const string CalendarOption = "calendar=";
 
     /// <summary>
-    /// 文本里的时区选项（只对 cron）。
+    /// 文本里的时区选项（只对 cron）
     /// </summary>
     private const string TimeZoneOption = "tz=";
 
     /// <summary>
-    /// 由种类与参数创建。
+    /// 由种类与参数创建
     /// </summary>
     private JobSchedule(JobScheduleKind kind, TimeSpan interval, int? repeatCount, CronExpression? cron, string? timeZoneId, DateTimeOffset at)
     {
@@ -50,69 +50,69 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// 只手动触发。
+    /// 只手动触发
     /// </summary>
     public static JobSchedule Manual { get; } = new(JobScheduleKind.Manual, TimeSpan.Zero, null, null, null, default);
 
     /// <summary>
-    /// 种类。
+    /// 种类
     /// </summary>
     public JobScheduleKind Kind { get; }
 
     /// <summary>
-    /// 间隔（只对 <see cref="JobScheduleKind.Interval"/> 有意义）。
+    /// 间隔（只对 <see cref="JobScheduleKind.Interval"/> 有意义）
     /// </summary>
     public TimeSpan Interval { get; }
 
     /// <summary>
-    /// 总运行次数上限（只对 <see cref="JobScheduleKind.Interval"/>）。
+    /// 总运行次数上限（只对 <see cref="JobScheduleKind.Interval"/>）
     /// </summary>
     /// <remarks>
-    /// 空为无限。
+    /// 空为无限
     /// </remarks>
     public int? RepeatCount { get; }
 
     /// <summary>
-    /// cron 表达式（只对 <see cref="JobScheduleKind.Cron"/> 有值）。
+    /// cron 表达式（只对 <see cref="JobScheduleKind.Cron"/> 有值）
     /// </summary>
     public CronExpression? Cron { get; }
 
     /// <summary>
-    /// cron 的时区 ID（<see cref="TimeZoneInfo"/> 的 ID）。
+    /// cron 的时区 ID（<see cref="TimeZoneInfo"/> 的 ID）
     /// </summary>
     /// <remarks>
-    /// 空为 UTC。
+    /// 空为 UTC
     /// </remarks>
     public string? TimeZoneId { get; }
 
     /// <summary>
-    /// 运行时刻（只对 <see cref="JobScheduleKind.Once"/>）。
+    /// 运行时刻（只对 <see cref="JobScheduleKind.Once"/>）
     /// </summary>
     public DateTimeOffset At { get; }
 
     /// <summary>
-    /// 起始时刻：之前不运行（推算下一次时从它开始）。
+    /// 起始时刻：之前不运行（推算下一次时从它开始）
     /// </summary>
     public DateTimeOffset? StartAt { get; init; }
 
     /// <summary>
-    /// 结束时刻：之后没有下一次。
+    /// 结束时刻：之后没有下一次
     /// </summary>
     public DateTimeOffset? EndAt { get; init; }
 
     /// <summary>
-    /// 排除日历的名字（<c>services.AddJobCalendar</c> 登记）。
+    /// 排除日历的名字（<c>services.AddJobCalendar</c> 登记）
     /// </summary>
     /// <remarks>
-    /// 空为不排除。
+    /// 空为不排除
     /// </remarks>
     public string? Calendar { get; init; }
 
     /// <summary>
-    /// 固定间隔。
+    /// 固定间隔
     /// </summary>
     /// <remarks>
-    /// 上一次完成后再等一个间隔；<paramref name="interval"/> 必须为正，<paramref name="repeatCount"/> 为总运行次数（空为无限，否则至少 1）。
+    /// 上一次完成后再等一个间隔；<paramref name="interval"/> 必须为正，<paramref name="repeatCount"/> 为总运行次数（空为无限，否则至少 1）
     /// </remarks>
     public static JobSchedule Every(TimeSpan interval, int? repeatCount = null)
     {
@@ -130,10 +130,10 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// cron 表达式。
+    /// cron 表达式
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。<paramref name="timeZoneId"/> 为 <see cref="TimeZoneInfo"/> 的 ID（IANA 或 Windows），空为 UTC；找不到的时区抛出 <see cref="ArgumentException"/>。
+    /// 不合法抛出 <see cref="ArgumentException"/>。<paramref name="timeZoneId"/> 为 <see cref="TimeZoneInfo"/> 的 ID（IANA 或 Windows），空为 UTC；找不到的时区抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static JobSchedule FromCron(string expression, string? timeZoneId = null)
     {
@@ -147,15 +147,15 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// 在 <paramref name="at"/> 运行一次。
+    /// 在 <paramref name="at"/> 运行一次
     /// </summary>
     public static JobSchedule Once(DateTimeOffset at) => new(JobScheduleKind.Once, TimeSpan.Zero, null, null, null, at);
 
     /// <summary>
-    /// <paramref name="after"/> 之后的下一次运行时刻（不考虑日历）。
+    /// <paramref name="after"/> 之后的下一次运行时刻（不考虑日历）
     /// </summary>
     /// <remarks>
-    /// 手动计划、超过 <see cref="EndAt"/> 或一次性计划已过都无值。间隔计划的 <paramref name="after"/> 应是上一次的完成时刻。
+    /// 手动计划、超过 <see cref="EndAt"/> 或一次性计划已过都无值。间隔计划的 <paramref name="after"/> 应是上一次的完成时刻
     /// </remarks>
     public Maybe<DateTimeOffset> NextRun(DateTimeOffset after)
     {
@@ -176,10 +176,10 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// 解析 <see cref="ToString"/> 产生的文本。
+    /// 解析 <see cref="ToString"/> 产生的文本
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static JobSchedule Parse(string text)
     {
@@ -188,7 +188,7 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// 尝试解析 <see cref="ToString"/> 产生的文本。
+    /// 尝试解析 <see cref="ToString"/> 产生的文本
     /// </summary>
     public static bool TryParse([NotNullWhen(true)] string? text, [NotNullWhen(true)] out JobSchedule? schedule)
     {
@@ -305,16 +305,16 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// 按 ID 找时区。
+    /// 按 ID 找时区
     /// </summary>
     /// <remarks>
-    /// 找不到抛出 <see cref="ArgumentException"/>。
+    /// 找不到抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static TimeZoneInfo ResolveTimeZone(string timeZoneId)
         => TryResolveTimeZone(timeZoneId, out var zone) ? zone : throw new ArgumentException($"Time zone '{timeZoneId}' is unknown.", nameof(timeZoneId));
 
     /// <summary>
-    /// 按 ID 找时区（IANA 与 Windows ID 都接受）。
+    /// 按 ID 找时区（IANA 与 Windows ID 都接受）
     /// </summary>
     private static bool TryResolveTimeZone(string timeZoneId, [NotNullWhen(true)] out TimeZoneInfo? zone)
     {
@@ -328,12 +328,12 @@ public sealed record JobSchedule
     }
 
     /// <summary>
-    /// 时刻的往返格式。
+    /// 时刻的往返格式
     /// </summary>
     private static string Format(DateTimeOffset value) => value.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// 解析往返格式的时刻。
+    /// 解析往返格式的时刻
     /// </summary>
     private static bool TryParseTime(string text, out DateTimeOffset value)
         => DateTimeOffset.TryParseExact(text, "O", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out value);

@@ -12,31 +12,31 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 翻译的批量读写（作用域服务，须在调用的 Transaction 阶段内使用）。
+/// 翻译的批量读写（作用域服务，须在调用的 Transaction 阶段内使用）
 /// </summary>
 /// <remarks>
-/// 一次查询取回已有行，再用仓储的批量方法一次写入。写入后调用 <see cref="MessageTranslationLoader.ReloadAsync"/> 或等待周期刷新才会生效。
+/// 一次查询取回已有行，再用仓储的批量方法一次写入。写入后调用 <see cref="MessageTranslationLoader.ReloadAsync"/> 或等待周期刷新才会生效
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class MessageTranslationStore
 {
     /// <summary>
-    /// 仓储。
+    /// 仓储
     /// </summary>
     private readonly IRepository<MessageTranslation, Guid> _repository;
 
     /// <summary>
-    /// ID 生成器。
+    /// ID 生成器
     /// </summary>
     private readonly IIdGenerator<Guid> _ids;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public MessageTranslationStore(IRepository<MessageTranslation, Guid> repository, IIdGenerator<Guid> ids, TimeProvider clock)
     {
@@ -46,10 +46,10 @@ public sealed class MessageTranslationStore
     }
 
     /// <summary>
-    /// 新增或覆盖，按顺序逐项返回。
+    /// 新增或覆盖，按顺序逐项返回
     /// </summary>
     /// <remarks>
-    /// 已有的 (键, 区域) 更新那一行，没有的新增；重复的键在同一批里后者覆盖前者（同一行只写一次，结果相同）。表上 <c>(Key, Locale)</c> 的唯一索引兜住并发：两个调用同时新增同一个键与区域，后插入的撞上索引，那一批新增的项返回 <c>PERSISTENCE_CONFLICT_003</c>（唯一键重复），调用随后只能回滚；重试时读到先提交的那一行，按更新处理，不会写出第二行。内存持久化不建索引、不校验唯一性。
+    /// 已有的 (键, 区域) 更新那一行，没有的新增；重复的键在同一批里后者覆盖前者（同一行只写一次，结果相同）。表上 <c>(Key, Locale)</c> 的唯一索引兜住并发：两个调用同时新增同一个键与区域，后插入的撞上索引，那一批新增的项返回 <c>PERSISTENCE_CONFLICT_003</c>（唯一键重复），调用随后只能回滚；重试时读到先提交的那一行，按更新处理，不会写出第二行。内存持久化不建索引、不校验唯一性
     /// </remarks>
     public async ValueTask<IReadOnlyList<MessageTranslationResult>> UpsertAsync(IReadOnlyList<MessageTranslationEntry> entries, CancellationToken cancellationToken)
     {
@@ -109,10 +109,10 @@ public sealed class MessageTranslationStore
     }
 
     /// <summary>
-    /// 删除，按顺序逐项返回。
+    /// 删除，按顺序逐项返回
     /// </summary>
     /// <remarks>
-    /// 不存在 → <see cref="LocalizationErrors.TranslationNotFound"/>，同一批里同一键第二次同样不存在。
+    /// 不存在 → <see cref="LocalizationErrors.TranslationNotFound"/>，同一批里同一键第二次同样不存在
     /// </remarks>
     public async ValueTask<IReadOnlyList<MessageTranslationResult>> RemoveAsync(IReadOnlyList<MessageTranslationKey> keys, CancellationToken cancellationToken)
     {
@@ -154,10 +154,10 @@ public sealed class MessageTranslationStore
     }
 
     /// <summary>
-    /// 列出一个区域的全部翻译（为空时列全部），按键排序，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页。
+    /// 列出一个区域的全部翻译（为空时列全部），按键排序，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页
     /// </summary>
     /// <remarks>
-    /// <paramref name="take"/> 超过上限时构造查询抛出携带 <c>PERSISTENCE_VALIDATION_005</c> 的异常，调用里由 Transaction 阶段转为同码的校验结果。
+    /// <paramref name="take"/> 超过上限时构造查询抛出携带 <c>PERSISTENCE_VALIDATION_005</c> 的异常，调用里由 Transaction 阶段转为同码的校验结果
     /// </remarks>
     public Task<IReadOnlyList<MessageTranslation>> ListAsync(string? locale, int skip, int take, CancellationToken cancellationToken)
     {
@@ -172,10 +172,10 @@ public sealed class MessageTranslationStore
     }
 
     /// <summary>
-    /// 按自然键集合查询已有的行。
+    /// 按自然键集合查询已有的行
     /// </summary>
     /// <remarks>
-    /// 键与区域各取集合做 <c>IN</c> 过滤，再在内存里按 (键, 区域) 精确匹配，不逐键查询。键每 <see cref="EntityQuery.DefaultMaxTake"/> 个一批，每批的结果按标识分页读完。
+    /// 键与区域各取集合做 <c>IN</c> 过滤，再在内存里按 (键, 区域) 精确匹配，不逐键查询。键每 <see cref="EntityQuery.DefaultMaxTake"/> 个一批，每批的结果按标识分页读完
     /// </remarks>
     private async Task<Dictionary<MessageTranslationKey, MessageTranslation>> FindManyAsync(IReadOnlyList<MessageTranslationKey> keys, CancellationToken cancellationToken)
     {
@@ -185,7 +185,7 @@ public sealed class MessageTranslationStore
         foreach (var chunk in keys.Select(static k => k.Key).Distinct(StringComparer.Ordinal).Chunk(EntityQuery.DefaultMaxTake))
         {
             var names = chunk.ToList();
-            // 两个 IN 的笛卡尔积可能多取回一些行（键 A 的区域 x 与键 B 的区域 y 都在集合里），精确匹配在内存里完成。
+            // 两个 IN 的笛卡尔积可能多取回一些行（键 A 的区域 x 与键 B 的区域 y 都在集合里），精确匹配在内存里完成
             // 结果必须分页读完：只读第一页时，超出一页的已有行被当成新行再插一遍——表上没有唯一索引时就是同一键与区域的第二行
             var query = EntityQuery.All<MessageTranslation>()
                 .Where(new Specification<MessageTranslation>(t => names.Contains(t.Key) && locales.Contains(t.Locale)))

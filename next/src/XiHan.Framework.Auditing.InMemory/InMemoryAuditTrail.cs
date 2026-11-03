@@ -11,48 +11,48 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.InMemory;
 
 /// <summary>
-/// 有界的内存审计。
+/// 有界的内存审计
 /// </summary>
 /// <remarks>
-/// 环形缓冲保留最近 <see cref="InMemoryAuditingOptions.Capacity"/> 条事件，按写入顺序查询；每条事件可同时写日志（内核日志薄桥）。
+/// 环形缓冲保留最近 <see cref="InMemoryAuditingOptions.Capacity"/> 条事件，按写入顺序查询；每条事件可同时写日志（内核日志薄桥）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class InMemoryAuditTrail : IAuditSink, IAuditTrail
 {
     /// <summary>
-    /// 一条记录：序号用作续页令牌，淘汰最旧的记录后仍然有效。
+    /// 一条记录：序号用作续页令牌，淘汰最旧的记录后仍然有效
     /// </summary>
-    /// <param name="Sequence">序号。</param>
-    /// <param name="Event">事件。</param>
+    /// <param name="Sequence">序号</param>
+    /// <param name="Event">事件</param>
     private sealed record Entry(long Sequence, AuditEvent Event);
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly InMemoryAuditingOptions _options;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 保护缓冲的锁。
+    /// 保护缓冲的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 缓冲，先进先出。
+    /// 缓冲，先进先出
     /// </summary>
     private readonly Queue<Entry> _entries;
 
     /// <summary>
-    /// 最近分配的序号。
+    /// 最近分配的序号
     /// </summary>
     private long _sequence;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryAuditTrail(InMemoryAuditingOptions options, ILoggerFactory loggerFactory)
     {
@@ -63,12 +63,12 @@ public sealed partial class InMemoryAuditTrail : IAuditSink, IAuditTrail
     }
 
     /// <summary>
-    /// 容量。
+    /// 容量
     /// </summary>
     public int Capacity => _options.Capacity;
 
     /// <summary>
-    /// 当前保留的事件数。
+    /// 当前保留的事件数
     /// </summary>
     public int Count
     {
@@ -147,7 +147,7 @@ public sealed partial class InMemoryAuditTrail : IAuditSink, IAuditTrail
     }
 
     /// <summary>
-    /// 一条审计事件。
+    /// 一条审计事件
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Audit {Action} {Outcome} by {PrincipalId} in tenant {TenantId} on {Resource} ({TraceId}).")]
     private static partial void LogAudit(ILogger logger, string action, string outcome, string? principalId, string? tenantId, string? resource, string traceId);

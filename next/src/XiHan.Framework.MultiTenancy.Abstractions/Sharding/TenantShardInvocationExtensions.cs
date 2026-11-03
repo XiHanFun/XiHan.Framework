@@ -7,21 +7,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 
 /// <summary>
-/// 调用上下文里的租户分片：Tenant 阶段写入，之后的阶段与持久化 Provider 只读。
+/// 调用上下文里的租户分片：Tenant 阶段写入，之后的阶段与持久化 Provider 只读
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class TenantShardInvocationExtensions
 {
     /// <summary>
-    /// 分片在上下文条目里的键。
+    /// 分片在上下文条目里的键
     /// </summary>
     private static readonly ContextItemKey<TenantShard> _shardKey = new("xihan.tenant.shard");
 
     /// <summary>
-    /// 当前调用的租户分片。
+    /// 当前调用的租户分片
     /// </summary>
     /// <remarks>
-    /// 没有分片（共库租户或无租户）为空。
+    /// 没有分片（共库租户或无租户）为空
     /// </remarks>
     public static Maybe<TenantShard> GetTenantShard(this InvocationContext context)
     {
@@ -30,7 +30,7 @@ public static class TenantShardInvocationExtensions
     }
 
     /// <summary>
-    /// 写入当前调用的租户分片。
+    /// 写入当前调用的租户分片
     /// </summary>
     public static void SetTenantShard(this InvocationContext context, TenantShard shard)
     {

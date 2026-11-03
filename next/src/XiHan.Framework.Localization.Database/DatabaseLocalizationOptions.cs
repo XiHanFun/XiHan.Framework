@@ -9,24 +9,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database;
 
 /// <summary>
-/// 数据库本地化选项。
+/// 数据库本地化选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Localization:Database</c> 显式读取：<c>RefreshIntervalSeconds</c>（0 关闭周期刷新）、<c>MaxTranslations</c>。
+/// 从配置节 <c>XiHan:Localization:Database</c> 显式读取：<c>RefreshIntervalSeconds</c>（0 关闭周期刷新）、<c>MaxTranslations</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseLocalizationOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Localization:Database";
 
     /// <summary>
-    /// 周期刷新的间隔。
+    /// 周期刷新的间隔
     /// </summary>
     /// <remarks>
-    /// 默认 5 分钟，<see langword="null"/> 只在启动时加载一次（之后靠 <see cref="MessageTranslationLoader.ReloadAsync"/>）。
+    /// 默认 5 分钟，<see langword="null"/> 只在启动时加载一次（之后靠 <see cref="MessageTranslationLoader.ReloadAsync"/>）
     /// </remarks>
     public TimeSpan? RefreshInterval
     {
@@ -35,10 +35,10 @@ public sealed record DatabaseLocalizationOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// 加载的翻译条数上限（有界快照）。
+    /// 加载的翻译条数上限（有界快照）
     /// </summary>
     /// <remarks>
-    /// 默认 100000，超出的部分不加载并记警告。
+    /// 默认 100000，超出的部分不加载并记警告
     /// </remarks>
     public int MaxTranslations
     {
@@ -47,7 +47,7 @@ public sealed record DatabaseLocalizationOptions
     } = 100_000;
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static DatabaseLocalizationOptions FromConfiguration(IConfiguration configuration)
     {

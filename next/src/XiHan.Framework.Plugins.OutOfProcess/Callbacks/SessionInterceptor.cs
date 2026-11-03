@@ -8,15 +8,15 @@ using XiHan.Framework.Plugins.Protocol;
 namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 
 /// <summary>
-/// 宿主回调服务的认证。
+/// 宿主回调服务的认证
 /// </summary>
 /// <remarks>
-/// 每次调用必须带有效的 <c>xihan-plugin-session</c> 元数据，对应的运行时放进调用状态供服务取用。
+/// 每次调用必须带有效的 <c>xihan-plugin-session</c> 元数据，对应的运行时放进调用状态供服务取用
 /// </remarks>
 internal sealed class SessionInterceptor(PluginSessions sessions) : Interceptor
 {
     /// <summary>
-    /// 调用状态里存放运行时的键。
+    /// 调用状态里存放运行时的键
     /// </summary>
     public const string RuntimeKey = "xihan.plugin.runtime";
 

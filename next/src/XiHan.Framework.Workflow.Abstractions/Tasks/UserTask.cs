@@ -9,110 +9,110 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 
 /// <summary>
-/// 用户任务视图。
+/// 用户任务视图
 /// </summary>
 /// <remarks>
-/// 一个 <c>UserTask</c> 书签加所属实例的信息；任务 ID 就是书签 ID。
+/// 一个 <c>UserTask</c> 书签加所属实例的信息；任务 ID 就是书签 ID
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record UserTask
 {
     /// <summary>
-    /// 任务 ID（书签 ID）。
+    /// 任务 ID（书签 ID）
     /// </summary>
     public required string Id { get; init; }
 
     /// <summary>
-    /// 实例 ID。
+    /// 实例 ID
     /// </summary>
     public required string InstanceId { get; init; }
 
     /// <summary>
-    /// 实例显示名。
+    /// 实例显示名
     /// </summary>
     public string? InstanceTitle { get; init; }
 
     /// <summary>
-    /// 定义名。
+    /// 定义名
     /// </summary>
     public required WorkflowName DefinitionName { get; init; }
 
     /// <summary>
-    /// 节点 ID。
+    /// 节点 ID
     /// </summary>
     public required string NodeId { get; init; }
 
     /// <summary>
-    /// 节点实例 ID。
+    /// 节点实例 ID
     /// </summary>
     public required string NodeInstanceId { get; init; }
 
     /// <summary>
-    /// 任务标题。
+    /// 任务标题
     /// </summary>
     public string? Title { get; init; }
 
     /// <summary>
-    /// 指派人。
+    /// 指派人
     /// </summary>
     public required string AssigneeId { get; init; }
 
     /// <summary>
-    /// 认领人（<c>Any</c> 策略下被认领后）。
+    /// 认领人（<c>Any</c> 策略下被认领后）
     /// </summary>
     public string? ClaimedBy { get; init; }
 
     /// <summary>
-    /// 优先级。
+    /// 优先级
     /// </summary>
     public int? Priority { get; init; }
 
     /// <summary>
-    /// 截止时刻。
+    /// 截止时刻
     /// </summary>
     public DateTimeOffset? DueAt { get; init; }
 
     /// <summary>
-    /// 表单键。
+    /// 表单键
     /// </summary>
     public string? FormKey { get; init; }
 
     /// <summary>
-    /// 关联 ID（书签的，否则实例的）。
+    /// 关联 ID（书签的，否则实例的）
     /// </summary>
     public string? CorrelationId { get; init; }
 
     /// <summary>
-    /// 发起人。
+    /// 发起人
     /// </summary>
     public string? StarterId { get; init; }
 
     /// <summary>
-    /// 表单数据。
+    /// 表单数据
     /// </summary>
     public JsonObject? FormData { get; init; }
 
     /// <summary>
-    /// 创建时间。
+    /// 创建时间
     /// </summary>
     public DateTimeOffset CreatedAt { get; init; }
 
     /// <summary>
-    /// 租户。
+    /// 租户
     /// </summary>
     public string? TenantId { get; init; }
 
     /// <summary>
-    /// 载荷里的字符串值。
+    /// 载荷里的字符串值
     /// </summary>
     /// <remarks>
-    /// 没有或不是字符串为空。
+    /// 没有或不是字符串为空
     /// </remarks>
     private static string? Text(JsonObject payload, string key)
         => payload.TryGetPropertyValue(key, out var value) && value is JsonValue scalar ? WorkflowValues.AsString(scalar) : null;
 
     /// <summary>
-    /// 从书签与实例构造。
+    /// 从书签与实例构造
     /// </summary>
     public static UserTask From(WorkflowBookmark bookmark, WorkflowInstance instance)
     {

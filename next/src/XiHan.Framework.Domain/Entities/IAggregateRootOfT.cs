@@ -7,9 +7,9 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Domain.Entities;
 
 /// <summary>
-/// 聚合根：一致性边界，领域事件的来源。
+/// 聚合根：一致性边界，领域事件的来源
 /// </summary>
-/// <typeparam name="TKey">标识类型。</typeparam>
+/// <typeparam name="TKey">标识类型</typeparam>
 [ApiLevel(Stability.Stable, "5.0")]
 public interface IAggregateRoot<out TKey> : IEntity<TKey>, IHasDomainEvents
     where TKey : notnull;

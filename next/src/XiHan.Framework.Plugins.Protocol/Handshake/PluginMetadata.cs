@@ -11,15 +11,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol.Handshake;
 
 /// <summary>
-/// 调用上下文与协议 <c>InvocationMetadata</c> 之间的映射。
+/// 调用上下文与协议 <c>InvocationMetadata</c> 之间的映射
 /// </summary>
 /// <remarks>
-/// RFC-0003、<c>spec/plugin/invocation.md</c>。
+/// RFC-0003、<c>spec/plugin/invocation.md</c>
 /// </remarks>
 internal static partial class PluginMetadata
 {
     /// <summary>
-    /// 上下文 → 元数据：traceparent、绝对截止时间与已登记的 Baggage。
+    /// 上下文 → 元数据：traceparent、绝对截止时间与已登记的 Baggage
     /// </summary>
     public static InvocationMetadata FromContext(InvocationContext context)
     {
@@ -42,16 +42,16 @@ internal static partial class PluginMetadata
     }
 
     /// <summary>
-    /// 调用插件时的 gRPC 调用选项：截止时间与取消令牌都来自上下文。
+    /// 调用插件时的 gRPC 调用选项：截止时间与取消令牌都来自上下文
     /// </summary>
     public static CallOptions CallOptionsFor(InvocationContext context)
         => new(deadline: context.Deadline?.UtcDateTime, cancellationToken: context.CancellationToken);
 
     /// <summary>
-    /// 元数据 → 新的调用上下文（宿主回调时使用）。
+    /// 元数据 → 新的调用上下文（宿主回调时使用）
     /// </summary>
     /// <remarks>
-    /// 不合法的 traceparent 视为缺失，未登记的 Baggage 键剥离，主体 Baggage 覆盖为插件自己的身份。给了 <paramref name="notAfter"/> 时截止时间取它与元数据里的截止时间中较早者（元数据没给时就是它），插件不能借回调把截止时间往后推。
+    /// 不合法的 traceparent 视为缺失，未登记的 Baggage 键剥离，主体 Baggage 覆盖为插件自己的身份。给了 <paramref name="notAfter"/> 时截止时间取它与元数据里的截止时间中较早者（元数据没给时就是它），插件不能借回调把截止时间往后推
     /// </remarks>
     public static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, string principalId, CancellationToken cancellationToken, DateTimeOffset? notAfter = null)
     {
@@ -92,7 +92,7 @@ internal static partial class PluginMetadata
     }
 
     /// <summary>
-    /// W3C traceparent 文法。
+    /// W3C traceparent 文法
     /// </summary>
     [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-[0-9a-f]{2}$")]
     private static partial Regex TraceParent();

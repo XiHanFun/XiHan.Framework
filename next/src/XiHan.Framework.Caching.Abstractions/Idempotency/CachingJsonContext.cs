@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Caching.Abstractions.Idempotency;
 
 /// <summary>
-/// <see cref="IdempotencyRecord"/> 的源生成 JSON 上下文。
+/// <see cref="IdempotencyRecord"/> 的源生成 JSON 上下文
 /// </summary>
 [JsonSerializable(typeof(IdempotencyRecord))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]

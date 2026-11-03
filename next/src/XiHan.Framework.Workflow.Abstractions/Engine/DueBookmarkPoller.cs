@@ -12,59 +12,59 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 到期书签轮询。
+/// 到期书签轮询
 /// </summary>
 /// <remarks>
-/// 覆盖平台与每个租户的分区：每个周期从租户目录（<see cref="ITenantStore"/>，装配了多租户时）取启用的租户，逐个分区取到期书签，合并后按到期时间取一批，逐条在以书签租户开的调用里经引擎恢复——每次恢复一个事务，Tenant 阶段为它绑定租户的分片；实例不在运行中的把到期时间后推 <see cref="WorkflowOptions.NotResumableBackoff"/>。停用的租户不轮询，它的到期书签等重新启用后再接续；新租户在它进入租户目录后的下一个周期纳入。Provider 的特性启动时就起循环，但每个周期（<see cref="RunCycleAsync"/>）先看应用是否在服务状态：启动中与排空中管道不接受调用，这时的周期什么也不做、不记日志；周期开始之后才离开服务状态的，某个分区的调用失败时发现应用已不在服务状态，就停下这个周期，剩下的分区不再调用、不记告警。多实例部署时由 Provider 保证只有一个节点在轮询。
+/// 覆盖平台与每个租户的分区：每个周期从租户目录（<see cref="ITenantStore"/>，装配了多租户时）取启用的租户，逐个分区取到期书签，合并后按到期时间取一批，逐条在以书签租户开的调用里经引擎恢复——每次恢复一个事务，Tenant 阶段为它绑定租户的分片；实例不在运行中的把到期时间后推 <see cref="WorkflowOptions.NotResumableBackoff"/>。停用的租户不轮询，它的到期书签等重新启用后再接续；新租户在它进入租户目录后的下一个周期纳入。Provider 的特性启动时就起循环，但每个周期（<see cref="RunCycleAsync"/>）先看应用是否在服务状态：启动中与排空中管道不接受调用，这时的周期什么也不做、不记日志；周期开始之后才离开服务状态的，某个分区的调用失败时发现应用已不在服务状态，就停下这个周期，剩下的分区不再调用、不记告警。多实例部署时由 Provider 保证只有一个节点在轮询
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DueBookmarkPoller : IDisposable
 {
     /// <summary>
-    /// 根服务提供者。
+    /// 根服务提供者
     /// </summary>
     /// <remarks>
-    /// 每次扫描、恢复与清理都开新作用域、新调用；租户目录从这里取（没有装配多租户时为空）。
+    /// 每次扫描、恢复与清理都开新作用域、新调用；租户目录从这里取（没有装配多租户时为空）
     /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly WorkflowOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 同一时刻只有一次轮询在跑（定时触发与手动触发互斥）。
+    /// 同一时刻只有一次轮询在跑（定时触发与手动触发互斥）
     /// </summary>
     private readonly SemaphoreSlim _polling = new(1, 1);
 
     /// <summary>
-    /// 停止信号。
+    /// 停止信号
     /// </summary>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 轮询循环。
+    /// 轮询循环
     /// </summary>
     private Task? _loop;
 
     /// <summary>
-    /// 上次维护时刻。
+    /// 上次维护时刻
     /// </summary>
     private DateTimeOffset _lastHousekeeping = DateTimeOffset.MinValue;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public DueBookmarkPoller(IServiceProvider services, WorkflowOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -76,12 +76,12 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 是否在轮询。
+    /// 是否在轮询
     /// </summary>
     public bool IsRunning => _loop is not null;
 
     /// <summary>
-    /// 启动循环：每 <paramref name="interval"/> 执行一个周期（<see cref="RunCycleAsync"/>），每次最多恢复 <paramref name="batchSize"/> 条。
+    /// 启动循环：每 <paramref name="interval"/> 执行一个周期（<see cref="RunCycleAsync"/>），每次最多恢复 <paramref name="batchSize"/> 条
     /// </summary>
     public Task StartAsync(TimeSpan interval, int batchSize, CancellationToken cancellationToken)
     {
@@ -98,7 +98,7 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 停止：不再开始新的轮询，等进行中的一次结束。
+    /// 停止：不再开始新的轮询，等进行中的一次结束
     /// </summary>
     public async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -125,10 +125,10 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 一个周期：轮询一次，到了维护周期再按保留期清理。
+    /// 一个周期：轮询一次，到了维护周期再按保留期清理
     /// </summary>
     /// <remarks>
-    /// Provider 自己驱动循环时（例如先判定轮询领导权）每个周期调用它。应用不在服务状态（启动中、排空中）时直接返回 0，不轮询、不清理、不记日志。周期中途离开服务状态（排空在扫描、恢复或清理进行中开始）时，下一个失败的分区调用就让周期停下：不再调用剩下的分区，这些失败不记告警。返回成功恢复的书签数。
+    /// Provider 自己驱动循环时（例如先判定轮询领导权）每个周期调用它。应用不在服务状态（启动中、排空中）时直接返回 0，不轮询、不清理、不记日志。周期中途离开服务状态（排空在扫描、恢复或清理进行中开始）时，下一个失败的分区调用就让周期停下：不再调用剩下的分区，这些失败不记告警。返回成功恢复的书签数
     /// </remarks>
     public async ValueTask<int> RunCycleAsync(int batchSize, CancellationToken cancellationToken)
     {
@@ -146,10 +146,10 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 轮询一次。
+    /// 轮询一次
     /// </summary>
     /// <remarks>
-    /// 逐个分区取最多 <paramref name="batchSize"/> 条到期书签，合并后按到期时间取前 <paramref name="batchSize"/> 条逐条恢复。返回成功恢复的书签数。
+    /// 逐个分区取最多 <paramref name="batchSize"/> 条到期书签，合并后按到期时间取前 <paramref name="batchSize"/> 条逐条恢复。返回成功恢复的书签数
     /// </remarks>
     public ValueTask<int> PollOnceAsync(int batchSize, CancellationToken cancellationToken)
     {
@@ -165,28 +165,28 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 按保留期清理已结束的实例。
+    /// 按保留期清理已结束的实例
     /// </summary>
     /// <remarks>
-    /// 配置了保留期时逐个分区执行，每个分区分批直到没有可删的。每一批是以该分区租户开的一次调用（一个事务）。返回删掉的实例数。
+    /// 配置了保留期时逐个分区执行，每个分区分批直到没有可删的。每一批是以该分区租户开的一次调用（一个事务）。返回删掉的实例数
     /// </remarks>
     public ValueTask<int> HousekeepAsync(CancellationToken cancellationToken) => HousekeepAsync(inCycle: false, cancellationToken);
 
     /// <summary>
-    /// 应用当前是否在服务状态。
+    /// 应用当前是否在服务状态
     /// </summary>
     private bool IsServing => _services.GetRequiredService<App>().State.IsServing();
 
     /// <summary>
-    /// 周期里的一次分区调用失败后，是否该停下这个周期。
+    /// 周期里的一次分区调用失败后，是否该停下这个周期
     /// </summary>
     /// <remarks>
-    /// 周期开始时在服务状态、之后才进入排空：剩下的分区调用都会被管道拒绝，按存储不可达逐个告警只是噪声（库并没有不可达）。手动调用（不在周期里）照实告警。
+    /// 周期开始时在服务状态、之后才进入排空：剩下的分区调用都会被管道拒绝，按存储不可达逐个告警只是噪声（库并没有不可达）。手动调用（不在周期里）照实告警
     /// </remarks>
     private bool LeftService(bool inCycle) => inCycle && !IsServing;
 
     /// <summary>
-    /// 轮询一次，周期里调用时遇到应用离开服务状态即停下。
+    /// 轮询一次，周期里调用时遇到应用离开服务状态即停下
     /// </summary>
     private async ValueTask<int> PollAsync(int batchSize, bool inCycle, CancellationToken cancellationToken)
     {
@@ -213,7 +213,7 @@ public sealed partial class DueBookmarkPoller : IDisposable
                 }, cancellationToken).ConfigureAwait(false);
                 if (scanned.IsFailure)
                 {
-                    // 失败之后才看应用状态，不在每个分区调用之前看：先看再调用之间状态照样会变，而管道拒绝的调用不会有任何写入。
+                    // 失败之后才看应用状态，不在每个分区调用之前看：先看再调用之间状态照样会变，而管道拒绝的调用不会有任何写入
                     // 周期中途离开了服务状态就停下，剩下的分区与恢复都会被拒，不再逐个告警；已扫到的书签留给下一个在服务的周期
                     if (LeftService(inCycle))
                     {
@@ -252,7 +252,7 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 按保留期清理，周期里调用时遇到应用离开服务状态即停下。
+    /// 按保留期清理，周期里调用时遇到应用离开服务状态即停下
     /// </summary>
     private async ValueTask<int> HousekeepAsync(bool inCycle, CancellationToken cancellationToken)
     {
@@ -301,10 +301,10 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 要覆盖的分区：平台（空）加上租户目录里启用的租户。
+    /// 要覆盖的分区：平台（空）加上租户目录里启用的租户
     /// </summary>
     /// <remarks>
-    /// 没有装配多租户时只有平台。租户目录读取失败记日志、本周期只覆盖平台，下个周期再试。
+    /// 没有装配多租户时只有平台。租户目录读取失败记日志、本周期只覆盖平台，下个周期再试
     /// </remarks>
     private async ValueTask<IReadOnlyList<string?>> PartitionsAsync(CancellationToken cancellationToken)
     {
@@ -334,10 +334,10 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 在以书签租户开的一次调用里恢复它。
+    /// 在以书签租户开的一次调用里恢复它
     /// </summary>
     /// <remarks>
-    /// 实例不在运行中时在同一调用里（仍持有实例锁）重读书签并把到期时间后推，免得每个周期都碰它。返回是否恢复成功。
+    /// 实例不在运行中时在同一调用里（仍持有实例锁）重读书签并把到期时间后推，免得每个周期都碰它。返回是否恢复成功
     /// </remarks>
     private async ValueTask<bool> ResumeAsync(WorkflowBookmark bookmark, bool inCycle, CancellationToken cancellationToken)
     {
@@ -382,13 +382,13 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 在新作用域里以 <paramref name="tenantId"/> 开一次调用执行 <paramref name="handler"/>。
+    /// 在新作用域里以 <paramref name="tenantId"/> 开一次调用执行 <paramref name="handler"/>
     /// </summary>
     private ValueTask<Result> InvokeAsync(string? tenantId, string target, Func<IServiceProvider, ValueTask<Result>> handler, CancellationToken cancellationToken)
         => WorkflowInvocations.InvokeAsync(_services.GetRequiredService<IServiceScopeFactory>(), _services.GetRequiredService<App>(), tenantId, target, handler, cancellationToken);
 
     /// <summary>
-    /// 到了维护周期才清理。
+    /// 到了维护周期才清理
     /// </summary>
     private async ValueTask HousekeepIfDueAsync(CancellationToken cancellationToken)
     {
@@ -403,7 +403,7 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 轮询循环。
+    /// 轮询循环
     /// </summary>
     private async Task LoopAsync(TimeSpan interval, int batchSize, CancellationToken stopping)
     {
@@ -434,31 +434,31 @@ public sealed partial class DueBookmarkPoller : IDisposable
     }
 
     /// <summary>
-    /// 清理失败。
+    /// 清理失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Purging ended workflow instances failed with '{ErrorCode}'.")]
     private static partial void LogPollFailed(ILogger logger, string errorCode);
 
     /// <summary>
-    /// 一个分区的扫描失败。
+    /// 一个分区的扫描失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Scanning due workflow bookmarks of tenant '{TenantId}' failed with '{ErrorCode}'; other partitions continue.")]
     private static partial void LogPartitionFailed(ILogger logger, string tenantId, string errorCode);
 
     /// <summary>
-    /// 租户目录读取失败。
+    /// 租户目录读取失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Listing tenants for workflow polling threw; only the platform partition is polled this cycle.")]
     private static partial void LogTenantsFailed(ILogger logger, Exception exception);
 
     /// <summary>
-    /// 恢复失败。
+    /// 恢复失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Resuming due workflow bookmark '{BookmarkId}' failed with '{ErrorCode}'.")]
     private static partial void LogResumeFailed(ILogger logger, string bookmarkId, string errorCode);
 
     /// <summary>
-    /// 轮询抛出异常。
+    /// 轮询抛出异常
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Polling due workflow bookmarks threw.")]
     private static partial void LogPollThrew(ILogger logger, Exception exception);

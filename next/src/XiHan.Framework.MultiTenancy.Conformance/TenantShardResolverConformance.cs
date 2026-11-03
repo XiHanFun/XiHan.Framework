@@ -9,16 +9,16 @@ using Xunit;
 namespace XiHan.Framework.MultiTenancy.Conformance;
 
 /// <summary>
-/// <see cref="ITenantShardResolver"/> 的一致性套件。
+/// <see cref="ITenantShardResolver"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateResolverAsync"/>，全部用例随之执行。
+/// 继承并实现 <see cref="CreateResolverAsync"/>，全部用例随之执行
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class TenantShardResolverConformance
 {
     /// <summary>
-    /// 套件租户：分库，带提供者名与透传属性。
+    /// 套件租户：分库，带提供者名与透传属性
     /// </summary>
     public static TenantInfo Sharded { get; } = new()
     {
@@ -34,23 +34,23 @@ public abstract class TenantShardResolverConformance
     };
 
     /// <summary>
-    /// 套件租户：共库，没有分片属性。
+    /// 套件租户：共库，没有分片属性
     /// </summary>
     public static TenantInfo Shared { get; } = new() { Id = "beta", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { ["Tier"] = "silver" } };
 
     /// <summary>
-    /// 用给定租户创建被测解析器。
+    /// 用给定租户创建被测解析器
     /// </summary>
     /// <remarks>
-    /// 每个用例调用一次。
+    /// 每个用例调用一次
     /// </remarks>
     protected abstract ValueTask<ITenantShardResolver> CreateResolverAsync(IReadOnlyList<TenantInfo> tenants);
 
     /// <summary>
-    /// 用例 1：分库租户解析出分片。
+    /// 用例 1：分库租户解析出分片
     /// </summary>
     /// <remarks>
-    /// 连接串、小写的提供者名与去掉前缀的透传属性；其他租户属性不进分片。
+    /// 连接串、小写的提供者名与去掉前缀的透传属性；其他租户属性不进分片
     /// </remarks>
     [Fact]
     public async Task Resolve_ReturnsShard_ForShardedTenant()
@@ -67,7 +67,7 @@ public abstract class TenantShardResolverConformance
     }
 
     /// <summary>
-    /// 用例 2：共库租户与不存在的租户都解析为无分片（成功、无值），不是失败。
+    /// 用例 2：共库租户与不存在的租户都解析为无分片（成功、无值），不是失败
     /// </summary>
     [Fact]
     public async Task Resolve_ReturnsNone_ForSharedAndUnknownTenants()
@@ -84,10 +84,10 @@ public abstract class TenantShardResolverConformance
     }
 
     /// <summary>
-    /// 用例 3：重复解析结果一致。
+    /// 用例 3：重复解析结果一致
     /// </summary>
     /// <remarks>
-    /// 失效单个或全部租户后再解析仍得到同样的分片。
+    /// 失效单个或全部租户后再解析仍得到同样的分片
     /// </remarks>
     [Fact]
     public async Task Resolve_IsStable_AcrossInvalidate()

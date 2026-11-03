@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Commands;
 
 /// <summary>
-/// 打印框架版本。
+/// 打印框架版本
 /// </summary>
 internal sealed class VersionCommand : ICommand
 {

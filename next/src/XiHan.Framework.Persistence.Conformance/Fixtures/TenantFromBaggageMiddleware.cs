@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 从 Baggage 的 <see cref="BaggageKeys.Tenant"/> 解析租户。
+/// 从 Baggage 的 <see cref="BaggageKeys.Tenant"/> 解析租户
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class TenantFromBaggageMiddleware : IPipelineMiddleware

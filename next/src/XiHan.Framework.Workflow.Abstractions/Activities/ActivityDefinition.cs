@@ -6,16 +6,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 登记的活动：类型名、实现类与出边选择方式。
+/// 登记的活动：类型名、实现类与出边选择方式
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record ActivityDefinition
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// <paramref name="activityClass"/> 必须实现 <see cref="IActivity"/>。
+    /// <paramref name="activityClass"/> 必须实现 <see cref="IActivity"/>
     /// </remarks>
     public ActivityDefinition(ActivityType type, Type activityClass, ActivityOutgoing outgoing = ActivityOutgoing.AllMatched, ActivityDescriptor? descriptor = null)
     {
@@ -31,22 +31,22 @@ public sealed record ActivityDefinition
     }
 
     /// <summary>
-    /// 类型名。
+    /// 类型名
     /// </summary>
     public ActivityType Type { get; }
 
     /// <summary>
-    /// 实现类（作用域服务）。
+    /// 实现类（作用域服务）
     /// </summary>
     public Type ActivityClass { get; }
 
     /// <summary>
-    /// 出边选择方式。
+    /// 出边选择方式
     /// </summary>
     public ActivityOutgoing Outgoing { get; }
 
     /// <summary>
-    /// 面向设计器的描述（显示名、分类、输入属性）。
+    /// 面向设计器的描述（显示名、分类、输入属性）
     /// </summary>
     public ActivityDescriptor Descriptor { get; }
 }

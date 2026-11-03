@@ -9,7 +9,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Protocol.Proxies;
 
 /// <summary>
-/// 插件操作在宿主登记表里的代理：载荷原样搬运，执行时经载体的运行时发给插件。
+/// 插件操作在宿主登记表里的代理：载荷原样搬运，执行时经载体的运行时发给插件
 /// </summary>
 internal sealed class ProxyOperationDescriptor(OperationContract contract, string ownerId, IPluginInvoker invoker, OperationSchema? schema)
     : OperationDescriptor(contract, ownerId, typeof(ProxyOperationDescriptor), typeof(PluginPayload), typeof(PluginPayload), schema)
@@ -26,7 +26,7 @@ internal sealed class ProxyOperationDescriptor(OperationContract contract, strin
 
     /// <inheritdoc />
     /// <remarks>
-    /// 载荷原样包成插件载荷，与 <see cref="EncodeResponse"/> 互逆。
+    /// 载荷原样包成插件载荷，与 <see cref="EncodeResponse"/> 互逆
     /// </remarks>
     public override Result<object> DecodeResponse(ReadOnlyMemory<byte> payload) => Result.Success<object>(new PluginPayload(payload));
 

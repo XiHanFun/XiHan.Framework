@@ -8,18 +8,18 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Testing;
 
 /// <summary>
-/// 记录生命周期事件、可注入行为的特性桩。
+/// 记录生命周期事件、可注入行为的特性桩
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class StubFeature : IHostedFeature
 {
     /// <summary>
-    /// 按发生顺序记录的生命周期事件。
+    /// 按发生顺序记录的生命周期事件
     /// </summary>
     private readonly List<string> _events = [];
 
     /// <summary>
-    /// 创建特性桩。
+    /// 创建特性桩
     /// </summary>
     public StubFeature(Manifest manifest)
     {
@@ -30,22 +30,22 @@ public sealed class StubFeature : IHostedFeature
     public Manifest Manifest { get; }
 
     /// <summary>
-    /// 已记录的事件：<c>configure</c>、<c>start</c>、<c>stop</c>。
+    /// 已记录的事件：<c>configure</c>、<c>start</c>、<c>stop</c>
     /// </summary>
     public IReadOnlyList<string> Events => _events;
 
     /// <summary>
-    /// 配置时执行。
+    /// 配置时执行
     /// </summary>
     public Action<FeatureContext>? OnConfigure { get; init; }
 
     /// <summary>
-    /// 启动时执行。
+    /// 启动时执行
     /// </summary>
     public Func<IServiceProvider, CancellationToken, Task>? OnStart { get; init; }
 
     /// <summary>
-    /// 停止时执行。
+    /// 停止时执行
     /// </summary>
     public Func<CancellationToken, Task>? OnStop { get; init; }
 

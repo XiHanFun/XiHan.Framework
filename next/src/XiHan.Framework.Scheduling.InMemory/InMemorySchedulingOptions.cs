@@ -8,24 +8,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 内存存储的选项（配置节 <c>XiHan:Scheduling:InMemory</c>）。
+/// 内存存储的选项（配置节 <c>XiHan:Scheduling:InMemory</c>）
 /// </summary>
 /// <remarks>
-/// 引擎选项在 <c>XiHan:Scheduling</c>。
+/// 引擎选项在 <c>XiHan:Scheduling</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemorySchedulingOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Scheduling:InMemory";
 
     /// <summary>
-    /// 运行历史上限。
+    /// 运行历史上限
     /// </summary>
     /// <remarks>
-    /// 超出时丢弃最旧的已结束记录。默认 1000。
+    /// 超出时丢弃最旧的已结束记录。默认 1000
     /// </remarks>
     public int MaxRuns
     {
@@ -34,7 +34,7 @@ public sealed record InMemorySchedulingOptions
     } = 1000;
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static InMemorySchedulingOptions FromConfiguration(IConfiguration configuration)
     {

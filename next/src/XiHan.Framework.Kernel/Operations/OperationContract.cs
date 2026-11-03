@@ -6,23 +6,23 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// 操作契约的运行期形态。
+/// 操作契约的运行期形态
 /// </summary>
 /// <remarks>
-/// 操作 ID、稳定性、暴露的协议、授权要求与是否只读。与 <see cref="OperationAttribute"/> 字段一一对应，由登记代码（手写或生成）提供。
+/// 操作 ID、稳定性、暴露的协议、授权要求与是否只读。与 <see cref="OperationAttribute"/> 字段一一对应，由登记代码（手写或生成）提供
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record OperationContract
 {
     /// <summary>
-    /// 创建契约。
+    /// 创建契约
     /// </summary>
-    /// <param name="id">符合 <see cref="OperationId"/> 文法的操作 ID。</param>
-    /// <param name="stability">稳定性。</param>
-    /// <param name="expose">暴露的协议。</param>
-    /// <param name="policy">授权策略名；与 <paramref name="permission"/> 二选一。</param>
-    /// <param name="permission">所需权限码；与 <paramref name="policy"/> 二选一。</param>
-    /// <param name="readOnly">声明非标准动词是只读的；<c>get</c> / <c>list</c> 不需要声明，<c>create</c> / <c>update</c> / <c>delete</c> 不能声明。</param>
+    /// <param name="id">符合 <see cref="OperationId"/> 文法的操作 ID</param>
+    /// <param name="stability">稳定性</param>
+    /// <param name="expose">暴露的协议</param>
+    /// <param name="policy">授权策略名；与 <paramref name="permission"/> 二选一</param>
+    /// <param name="permission">所需权限码；与 <paramref name="policy"/> 二选一</param>
+    /// <param name="readOnly">声明非标准动词是只读的；<c>get</c> / <c>list</c> 不需要声明，<c>create</c> / <c>update</c> / <c>delete</c> 不能声明</param>
     public OperationContract(string id, Stability stability = Stability.Stable, Expose expose = Expose.All, string? policy = null, string? permission = null, bool readOnly = false)
     {
         Id = OperationId.Validate(id);
@@ -54,56 +54,56 @@ public sealed record OperationContract
     }
 
     /// <summary>
-    /// 是否只读（不改变状态、可重复调用）。
+    /// 是否只读（不改变状态、可重复调用）
     /// </summary>
     /// <remarks>
-    /// 动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词。协议据此推导 MCP 行为提示与 HTTP 方法；装配了持久化时 Transaction 阶段据此开只读工作单元（不开数据库事务，写入以 <c>PERSISTENCE_UNEXPECTED_001</c> 拒绝）。
+    /// 动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词。协议据此推导 MCP 行为提示与 HTTP 方法；装配了持久化时 Transaction 阶段据此开只读工作单元（不开数据库事务，写入以 <c>PERSISTENCE_UNEXPECTED_001</c> 拒绝）
     /// </remarks>
     public bool IsReadOnly { get; }
 
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public string Id { get; }
 
     /// <summary>
-    /// 稳定性。
+    /// 稳定性
     /// </summary>
     public Stability Stability { get; }
 
     /// <summary>
-    /// 暴露的协议。
+    /// 暴露的协议
     /// </summary>
     public Expose Expose { get; }
 
     /// <summary>
-    /// 授权策略名。
+    /// 授权策略名
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 时看 <see cref="Permission"/>，都为 <see langword="null"/> 则无授权要求。
+    /// 为 <see langword="null"/> 时看 <see cref="Permission"/>，都为 <see langword="null"/> 则无授权要求
     /// </remarks>
     public string? Policy { get; }
 
     /// <summary>
-    /// 所需权限码。
+    /// 所需权限码
     /// </summary>
     public string? Permission { get; }
 
     /// <summary>
-    /// 资源段。
+    /// 资源段
     /// </summary>
     public string Resource => OperationId.ResourceOf(Id);
 
     /// <summary>
-    /// 动词段。
+    /// 动词段
     /// </summary>
     public string Verb => OperationId.VerbOf(Id);
 
     /// <summary>
-    /// 是否暴露给指定协议。
+    /// 是否暴露给指定协议
     /// </summary>
     /// <remarks>
-    /// <see cref="Operations.Expose.None"/> 永远为 <see langword="false"/>。
+    /// <see cref="Operations.Expose.None"/> 永远为 <see langword="false"/>
     /// </remarks>
     public bool IsExposedTo(Expose protocol) => protocol != Expose.None && (Expose & protocol) == protocol;
 }

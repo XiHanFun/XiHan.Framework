@@ -6,30 +6,30 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 项目里一个 <c>JsonSerializerContext</c> 子类的信息。
+/// 项目里一个 <c>JsonSerializerContext</c> 子类的信息
 /// </summary>
 /// <remarks>
-/// 登记的类型及其 <c>Default.&lt;属性&gt;</c> 名、命名策略、枚举是否按字符串序列化。
+/// 登记的类型及其 <c>Default.&lt;属性&gt;</c> 名、命名策略、枚举是否按字符串序列化
 /// </remarks>
 internal sealed class JsonContextModel
 {
     /// <summary>
-    /// <c>JsonSerializableAttribute</c> 的全名。
+    /// <c>JsonSerializableAttribute</c> 的全名
     /// </summary>
     private const string SerializableAttribute = "System.Text.Json.Serialization.JsonSerializableAttribute";
 
     /// <summary>
-    /// <c>JsonSourceGenerationOptionsAttribute</c> 的全名。
+    /// <c>JsonSourceGenerationOptionsAttribute</c> 的全名
     /// </summary>
     private const string OptionsAttribute = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
     /// <summary>
-    /// 登记的类型 → <c>Default</c> 上的属性名。
+    /// 登记的类型 → <c>Default</c> 上的属性名
     /// </summary>
     private readonly Dictionary<ITypeSymbol, string> _properties = new(SymbolEqualityComparer.Default);
 
     /// <summary>
-    /// 从上下文类型符号读取。
+    /// 从上下文类型符号读取
     /// </summary>
     private JsonContextModel(INamedTypeSymbol type)
     {
@@ -61,27 +61,27 @@ internal sealed class JsonContextModel
     }
 
     /// <summary>
-    /// 上下文类型。
+    /// 上下文类型
     /// </summary>
     public INamedTypeSymbol Type { get; }
 
     /// <summary>
-    /// 属性命名策略。
+    /// 属性命名策略
     /// </summary>
     public JsonNamingPolicyKind NamingPolicy { get; } = JsonNamingPolicyKind.Unspecified;
 
     /// <summary>
-    /// 枚举是否按名字序列化。
+    /// 枚举是否按名字序列化
     /// </summary>
     public bool UseStringEnumConverter { get; }
 
     /// <summary>
-    /// 该类型若已登记，返回 <c>Default</c> 上的属性名。
+    /// 该类型若已登记，返回 <c>Default</c> 上的属性名
     /// </summary>
     public bool TryGetPropertyName(ITypeSymbol type, out string propertyName) => _properties.TryGetValue(type, out propertyName!);
 
     /// <summary>
-    /// 收集编译里全部 <c>JsonSerializerContext</c> 子类。
+    /// 收集编译里全部 <c>JsonSerializerContext</c> 子类
     /// </summary>
     public static List<JsonContextModel> Collect(Compilation compilation)
     {
@@ -115,7 +115,7 @@ internal sealed class JsonContextModel
     }
 
     /// <summary>
-    /// 类型是否（间接）派生自基类。
+    /// 类型是否（间接）派生自基类
     /// </summary>
     private static bool DerivesFrom(INamedTypeSymbol type, INamedTypeSymbol baseType)
     {

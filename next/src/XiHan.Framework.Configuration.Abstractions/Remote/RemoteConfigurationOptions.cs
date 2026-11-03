@@ -6,13 +6,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Remote;
 
 /// <summary>
-/// 远程配置源的选项。
+/// 远程配置源的选项
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record RemoteConfigurationOptions
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public RemoteConfigurationOptions(string @namespace)
     {
@@ -21,20 +21,20 @@ public sealed record RemoteConfigurationOptions
     }
 
     /// <summary>
-    /// 命名空间。
+    /// 命名空间
     /// </summary>
     public string Namespace { get; }
 
     /// <summary>
-    /// 把文档挂到的配置节（如 <c>Remote</c>），为空时挂在根。
+    /// 把文档挂到的配置节（如 <c>Remote</c>），为空时挂在根
     /// </summary>
     public string? Prefix { get; init; }
 
     /// <summary>
-    /// 轮询周期。
+    /// 轮询周期
     /// </summary>
     /// <remarks>
-    /// 默认 30 秒，<see langword="null"/> 关闭轮询。
+    /// 默认 30 秒，<see langword="null"/> 关闭轮询
     /// </remarks>
     public TimeSpan? PollInterval
     {
@@ -43,10 +43,10 @@ public sealed record RemoteConfigurationOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 轮询计时用的时钟。
+    /// 轮询计时用的时钟
     /// </summary>
     /// <remarks>
-    /// 默认系统时钟；测试换成可推进的时钟，轮询由用例触发而不是等真实时间。
+    /// 默认系统时钟；测试换成可推进的时钟，轮询由用例触发而不是等真实时间
     /// </remarks>
     public TimeProvider Clock
     {
@@ -55,10 +55,10 @@ public sealed record RemoteConfigurationOptions
     } = TimeProvider.System;
 
     /// <summary>
-    /// 构建配置时首次加载的超时。
+    /// 构建配置时首次加载的超时
     /// </summary>
     /// <remarks>
-    /// 默认 10 秒。
+    /// 默认 10 秒
     /// </remarks>
     public TimeSpan LoadTimeout
     {
@@ -67,18 +67,18 @@ public sealed record RemoteConfigurationOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 首次加载失败时是否继续（为空）。
+    /// 首次加载失败时是否继续（为空）
     /// </summary>
     /// <remarks>
-    /// 默认 <see langword="false"/>：抛出让启动失败。失败包括客户端返回失败、超时与客户端抛出异常。为 <see langword="true"/> 时该源为空，<see cref="PollInterval"/> 非空时照常轮询，第一次成功即装入。
+    /// 默认 <see langword="false"/>：抛出让启动失败。失败包括客户端返回失败、超时与客户端抛出异常。为 <see langword="true"/> 时该源为空，<see cref="PollInterval"/> 非空时照常轮询，第一次成功即装入
     /// </remarks>
     public bool Optional { get; init; }
 
     /// <summary>
-    /// 加载或轮询失败时的回调（配置在日志之前构建，这里是唯一的报告渠道）。
+    /// 加载或轮询失败时的回调（配置在日志之前构建，这里是唯一的报告渠道）
     /// </summary>
     /// <remarks>
-    /// 回调自己抛出的异常被丢弃：不改变首次加载按 <see cref="Optional"/> 得出的结果，也不终止轮询。
+    /// 回调自己抛出的异常被丢弃：不改变首次加载按 <see cref="Optional"/> 得出的结果，也不终止轮询
     /// </remarks>
     public Action<Error>? OnError { get; init; }
 }

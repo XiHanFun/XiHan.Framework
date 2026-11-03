@@ -7,27 +7,27 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件编译器（无状态，线程安全）。
+/// 条件编译器（无状态，线程安全）
 /// </summary>
 /// <remarks>
-/// 编译是保存前的唯一关卡：属性要登记、运算符要配得上值种类、条件值要解析得了；错误一律是 <see cref="SecurityErrors.ConditionInvalid"/>，消息键说明具体原因。值语法：集合写 JSON 数组或以逗号（含全角逗号）、换行分隔，区间写 <c>a,b</c>、<c>[a,b]</c> 或 <c>{"min":a,"max":b}</c>，标量可写成 JSON 字符串（去掉引号）。
+/// 编译是保存前的唯一关卡：属性要登记、运算符要配得上值种类、条件值要解析得了；错误一律是 <see cref="SecurityErrors.ConditionInvalid"/>，消息键说明具体原因。值语法：集合写 JSON 数组或以逗号（含全角逗号）、换行分隔，区间写 <c>a,b</c>、<c>[a,b]</c> 或 <c>{"min":a,"max":b}</c>，标量可写成 JSON 字符串（去掉引号）
 /// </remarks>
-/// <param name="registry">属性登记表。</param>
+/// <param name="registry">属性登记表</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConditionCompiler(IConditionAttributeRegistry registry) : IConditionCompiler
 {
     /// <summary>
-    /// 集合的分隔符：逗号、全角逗号与换行。
+    /// 集合的分隔符：逗号、全角逗号与换行
     /// </summary>
     private static readonly char[] _listSeparators = [',', '，', '\n', '\r'];
 
     /// <summary>
-    /// 区间的分隔符：逗号与全角逗号。
+    /// 区间的分隔符：逗号与全角逗号
     /// </summary>
     private static readonly char[] _rangeSeparators = [',', '，'];
 
     /// <summary>
-    /// 属性登记表。
+    /// 属性登记表
     /// </summary>
     private readonly IConditionAttributeRegistry _registry = registry ?? throw new ArgumentNullException(nameof(registry));
 
@@ -66,10 +66,10 @@ public sealed class ConditionCompiler(IConditionAttributeRegistry registry) : IC
     }
 
     /// <summary>
-    /// 编译一个子句。
+    /// 编译一个子句
     /// </summary>
     /// <remarks>
-    /// 解析属性（额外登记项优先），检查运算符搭配，按运算符把条件值解析成标量、集合或区间。
+    /// 解析属性（额外登记项优先），检查运算符搭配，按运算符把条件值解析成标量、集合或区间
     /// </remarks>
     private CompiledConditionClause CompileClause(ConditionClause clause, ConditionAttributeRegistry? additional, TimeZoneInfo timeZone)
     {
@@ -138,7 +138,7 @@ public sealed class ConditionCompiler(IConditionAttributeRegistry registry) : IC
     }
 
     /// <summary>
-    /// 集合：JSON 数组或分隔文本，至少一个元素，每个元素按值种类解析（IP 可写网段）。
+    /// 集合：JSON 数组或分隔文本，至少一个元素，每个元素按值种类解析（IP 可写网段）
     /// </summary>
     private static bool TryParseList(string raw, ConditionValueKind kind, TimeZoneInfo timeZone, out IReadOnlyList<object> items, out Error? error)
     {
@@ -171,10 +171,10 @@ public sealed class ConditionCompiler(IConditionAttributeRegistry registry) : IC
     }
 
     /// <summary>
-    /// 区间。
+    /// 区间
     /// </summary>
     /// <remarks>
-    /// <c>{"min","max"}</c> 对象、JSON 数组或分隔文本，正好两个值；下限不得大于上限（时刻例外，表示跨零点）。
+    /// <c>{"min","max"}</c> 对象、JSON 数组或分隔文本，正好两个值；下限不得大于上限（时刻例外，表示跨零点）
     /// </remarks>
     private static bool TryParseRange(string raw, ConditionValueKind kind, TimeZoneInfo timeZone, out (object Min, object Max) range, out Error? error)
     {
@@ -218,10 +218,10 @@ public sealed class ConditionCompiler(IConditionAttributeRegistry registry) : IC
     }
 
     /// <summary>
-    /// 读集合元素。
+    /// 读集合元素
     /// </summary>
     /// <remarks>
-    /// 以 <c>[</c> 开头按 JSON 数组读（元素只能是字符串、数字、布尔），否则按分隔符切分并去掉空项。
+    /// 以 <c>[</c> 开头按 JSON 数组读（元素只能是字符串、数字、布尔），否则按分隔符切分并去掉空项
     /// </remarks>
     private static bool TryReadElements(string raw, char[] separators, out List<string> elements, out Error? error)
     {
@@ -257,7 +257,7 @@ public sealed class ConditionCompiler(IConditionAttributeRegistry registry) : IC
     }
 
     /// <summary>
-    /// 读 <c>{"min":…,"max":…}</c>（键不区分大小写，值可以是字符串、数字或布尔）。
+    /// 读 <c>{"min":…,"max":…}</c>（键不区分大小写，值可以是字符串、数字或布尔）
     /// </summary>
     private static bool TryReadMinMax(string raw, out List<string> bounds)
     {
@@ -299,10 +299,10 @@ public sealed class ConditionCompiler(IConditionAttributeRegistry registry) : IC
     }
 
     /// <summary>
-    /// JSON 标量的文本。
+    /// JSON 标量的文本
     /// </summary>
     /// <remarks>
-    /// 字符串取值，数字与布尔取原文；其他类型不认。
+    /// 字符串取值，数字与布尔取原文；其他类型不认
     /// </remarks>
     private static bool TryReadScalar(JsonElement element, out string text)
     {
@@ -316,10 +316,10 @@ public sealed class ConditionCompiler(IConditionAttributeRegistry registry) : IC
     }
 
     /// <summary>
-    /// 写成 JSON 字符串的标量去掉引号并解开转义。
+    /// 写成 JSON 字符串的标量去掉引号并解开转义
     /// </summary>
     /// <remarks>
-    /// 不是合法 JSON 字符串时原样返回。
+    /// 不是合法 JSON 字符串时原样返回
     /// </remarks>
     private static string UnquoteJsonString(string raw)
     {

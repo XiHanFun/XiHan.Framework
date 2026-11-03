@@ -7,23 +7,23 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 
 /// <summary>
-/// 写入选项：内容类型、自定义元数据（名 <c>^[a-z0-9][a-z0-9-]{0,63}$</c>）、是否允许覆盖。
+/// 写入选项：内容类型、自定义元数据（名 <c>^[a-z0-9][a-z0-9-]{0,63}$</c>）、是否允许覆盖
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial record BlobPutOptions
 {
     /// <summary>
-    /// 默认内容类型。
+    /// 默认内容类型
     /// </summary>
     public const string DefaultContentType = "application/octet-stream";
 
     /// <summary>
-    /// 默认选项：二进制、无元数据、允许覆盖。
+    /// 默认选项：二进制、无元数据、允许覆盖
     /// </summary>
     public static BlobPutOptions Default { get; } = new();
 
     /// <summary>
-    /// 内容类型。
+    /// 内容类型
     /// </summary>
     public string ContentType
     {
@@ -32,10 +32,10 @@ public sealed partial record BlobPutOptions
     } = DefaultContentType;
 
     /// <summary>
-    /// 自定义元数据。
+    /// 自定义元数据
     /// </summary>
     /// <remarks>
-    /// 名须满足 <see cref="IsValidMetadataName"/>。
+    /// 名须满足 <see cref="IsValidMetadataName"/>
     /// </remarks>
     public IReadOnlyDictionary<string, string> Metadata
     {
@@ -58,20 +58,20 @@ public sealed partial record BlobPutOptions
     } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 已存在时是否覆盖。
+    /// 已存在时是否覆盖
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="false"/> 时已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>。
+    /// 为 <see langword="false"/> 时已存在返回 <see cref="ObjectStorageErrors.BlobExists"/>
     /// </remarks>
     public bool Overwrite { get; init; } = true;
 
     /// <summary>
-    /// 自定义元数据名是否合法。
+    /// 自定义元数据名是否合法
     /// </summary>
     public static bool IsValidMetadataName(string? name) => name is not null && MetadataName().IsMatch(name);
 
     /// <summary>
-    /// 元数据名的匹配。
+    /// 元数据名的匹配
     /// </summary>
     [GeneratedRegex("^[a-z0-9][a-z0-9-]{0,63}$")]
     private static partial Regex MetadataName();

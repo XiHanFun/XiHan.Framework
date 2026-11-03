@@ -8,31 +8,31 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 
 /// <summary>
-/// 从 <see cref="ITenantStore"/> 的租户属性推出分片。
+/// 从 <see cref="ITenantStore"/> 的租户属性推出分片
 /// </summary>
 /// <remarks>
-/// <c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。结果按租户缓存（有界，满时整体清空）。
+/// <c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。结果按租户缓存（有界，满时整体清空）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class TenantStoreShardResolver : ITenantShardResolver
 {
     /// <summary>
-    /// 租户存储。
+    /// 租户存储
     /// </summary>
     private readonly ITenantStore _store;
 
     /// <summary>
-    /// 缓存容量。
+    /// 缓存容量
     /// </summary>
     private readonly int _capacity;
 
     /// <summary>
-    /// 租户 ID → 分片（无分片也缓存，避免每次调用都查存储）。
+    /// 租户 ID → 分片（无分片也缓存，避免每次调用都查存储）
     /// </summary>
     private readonly ConcurrentDictionary<string, Maybe<TenantShard>> _cache = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public TenantStoreShardResolver(ITenantStore store, MultiTenancyOptions options)
     {
@@ -42,7 +42,7 @@ public sealed class TenantStoreShardResolver : ITenantShardResolver
     }
 
     /// <summary>
-    /// 已缓存的租户数。
+    /// 已缓存的租户数
     /// </summary>
     public int CachedCount => _cache.Count;
 
@@ -90,10 +90,10 @@ public sealed class TenantStoreShardResolver : ITenantShardResolver
     }
 
     /// <summary>
-    /// 从租户属性建分片。
+    /// 从租户属性建分片
     /// </summary>
     /// <remarks>
-    /// 没有连接串即无分片。
+    /// 没有连接串即无分片
     /// </remarks>
     public static Maybe<TenantShard> FromProperties(TenantInfo tenant)
     {

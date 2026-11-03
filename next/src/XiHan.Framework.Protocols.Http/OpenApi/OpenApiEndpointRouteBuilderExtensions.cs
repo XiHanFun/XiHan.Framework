@@ -14,36 +14,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 发布 OpenAPI 文档端点。
+/// 发布 OpenAPI 文档端点
 /// </summary>
 /// <remarks>
 /// 文档从操作登记表、权限码注册表、已装配的认证处理器与宿主的全部端点按需生成并缓存（输入由 <see cref="OpenApiDocumentSource.FromServices"/> 组装）；
-/// 装配了本地化时按 <c>Accept-Language</c> 协商出的区域分别生成并缓存（文案来自消息目录，响应带 <c>Content-Language</c>）。
-/// 声明了分组时另为每组发一份文档（ADR-0052）。端点不经过内核管道。
+/// 装配了本地化时按 <c>Accept-Language</c> 协商出的区域分别生成并缓存（文案来自消息目录，响应带 <c>Content-Language</c>）
+/// 声明了分组时另为每组发一份文档（ADR-0052）。端点不经过内核管道
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class OpenApiEndpointRouteBuilderExtensions
 {
     /// <summary>
-    /// 默认的文档路径。
+    /// 默认的文档路径
     /// </summary>
     public const string DefaultPattern = "/openapi.json";
 
     /// <summary>
-    /// 全量文档的名字（<see cref="OpenApiDocumentLink.Name"/>）。
+    /// 全量文档的名字（<see cref="OpenApiDocumentLink.Name"/>）
     /// </summary>
     /// <remarks>
-    /// 分组不能用它。
+    /// 分组不能用它
     /// </remarks>
     public const string FullDocumentName = "all";
 
     /// <summary>
-    /// 映射 OpenAPI 3.1 文档端点：全量文档在 <paramref name="pattern"/>，每组一份在 <see cref="GroupPattern"/>。
+    /// 映射 OpenAPI 3.1 文档端点：全量文档在 <paramref name="pattern"/>，每组一份在 <see cref="GroupPattern"/>
     /// </summary>
     /// <remarks>
-    /// 标题、版本、<c>servers</c> 与分组由 <paramref name="options"/> 指定，缺省（或为 <see langword="null"/>）时标题取应用名、版本取框架版本、不写 <c>servers</c>、没有分组。
+    /// 标题、版本、<c>servers</c> 与分组由 <paramref name="options"/> 指定，缺省（或为 <see langword="null"/>）时标题取应用名、版本取框架版本、不写 <c>servers</c>、没有分组
     /// </remarks>
-    /// <returns>全量文档端点的约定构建器。</returns>
+    /// <returns>全量文档端点的约定构建器</returns>
     public static IEndpointConventionBuilder MapXiHanOpenApi(this IEndpointRouteBuilder endpoints, OpenApiOptions? options = null, string pattern = DefaultPattern)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -52,7 +52,7 @@ public static class OpenApiEndpointRouteBuilderExtensions
         var services = endpoints.ServiceProvider;
         var dataSources = endpoints.DataSources;
         var localizer = services.GetService<IMessageLocalizer>();
-        // 文档在第一次请求时按组与区域生成并缓存：此时全部特性已装配、登记表已定型、宿主的端点都已映射。
+        // 文档在第一次请求时按组与区域生成并缓存：此时全部特性已装配、登记表已定型、宿主的端点都已映射
         // 权限码注册表由内核在装配后以单例登记（AppBuilder.Build），特性在配置阶段登记的权限定义都已在其中
         var documents = new ConcurrentDictionary<(string? Group, string Locale), Lazy<byte[]>>();
         byte[] Generate((string? Group, string Locale) key)
@@ -81,11 +81,11 @@ public static class OpenApiEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 列出 <see cref="MapXiHanOpenApi"/> 发布的全部文档：全量文档在前，各组按排序、名字在后。
+    /// 列出 <see cref="MapXiHanOpenApi"/> 发布的全部文档：全量文档在前，各组按排序、名字在后
     /// </summary>
     /// <remarks>
-    /// 标题按本地化的默认区域：全量文档取 <see cref="OpenApiOptions.Title"/>（缺省应用名），分组取 <c>openapi.groups.&lt;组名&gt;.name</c>（没有取组名）。
-    /// 宿主据此把文档登记到文档界面，如 Scalar 的 <c>options.AddDocument(link.Name, link.Title, link.Url)</c>。参数须与 <see cref="MapXiHanOpenApi"/> 的一致。
+    /// 标题按本地化的默认区域：全量文档取 <see cref="OpenApiOptions.Title"/>（缺省应用名），分组取 <c>openapi.groups.&lt;组名&gt;.name</c>（没有取组名）
+    /// 宿主据此把文档登记到文档界面，如 Scalar 的 <c>options.AddDocument(link.Name, link.Title, link.Url)</c>。参数须与 <see cref="MapXiHanOpenApi"/> 的一致
     /// </remarks>
     public static IReadOnlyList<OpenApiDocumentLink> GetXiHanOpenApiDocuments(this IEndpointRouteBuilder endpoints, OpenApiOptions? options = null, string pattern = DefaultPattern)
     {
@@ -109,10 +109,10 @@ public static class OpenApiEndpointRouteBuilderExtensions
     }
 
     /// <summary>
-    /// 分组文档的路径。
+    /// 分组文档的路径
     /// </summary>
     /// <remarks>
-    /// <paramref name="pattern"/> 去掉 <c>.json</c> 后接 <c>/&lt;组名&gt;.json</c>（缺省 <c>/openapi/&lt;组名&gt;.json</c>）。
+    /// <paramref name="pattern"/> 去掉 <c>.json</c> 后接 <c>/&lt;组名&gt;.json</c>（缺省 <c>/openapi/&lt;组名&gt;.json</c>）
     /// </remarks>
     public static string GroupPattern(string pattern, string group)
     {

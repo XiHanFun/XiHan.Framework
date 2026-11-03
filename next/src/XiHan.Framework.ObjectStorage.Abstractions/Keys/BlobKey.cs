@@ -7,37 +7,37 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Keys;
 
 /// <summary>
-/// 对象键。
+/// 对象键
 /// </summary>
 /// <remarks>
-/// <c>/</c> 分段的路径，1 到 <see cref="MaxLength"/> 个字符；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符与 <c>\</c>；首段不是保留段 <see cref="ReservedSegment"/>（框架自己的对象，ADR-0090）。区分大小写。
+/// <c>/</c> 分段的路径，1 到 <see cref="MaxLength"/> 个字符；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符与 <c>\</c>；首段不是保留段 <see cref="ReservedSegment"/>（框架自己的对象，ADR-0090）。区分大小写
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public readonly record struct BlobKey
 {
     /// <summary>
-    /// 最大长度。
+    /// 最大长度
     /// </summary>
     public const int MaxLength = 1024;
 
     /// <summary>
-    /// 段分隔符。
+    /// 段分隔符
     /// </summary>
     public const char Separator = '/';
 
     /// <summary>
-    /// 保留段：首段是它的键留给框架自己的对象。
+    /// 保留段：首段是它的键留给框架自己的对象
     /// </summary>
     /// <remarks>
-    /// 如 S3 的条件写入探测键 <c>.xihan/probe/conditional-write</c>。这样的键（<c>.xihan</c> 本身与 <c>.xihan/…</c>，区分大小写）不在键文法之内：构造时抛出，业务写不进、读不到、删不掉；各 Provider 列举时跳过存储里已有的这类对象（RFC-0012「标识」，ADR-0090）。
+    /// 如 S3 的条件写入探测键 <c>.xihan/probe/conditional-write</c>。这样的键（<c>.xihan</c> 本身与 <c>.xihan/…</c>，区分大小写）不在键文法之内：构造时抛出，业务写不进、读不到、删不掉；各 Provider 列举时跳过存储里已有的这类对象（RFC-0012「标识」，ADR-0090）
     /// </remarks>
     public const string ReservedSegment = ".xihan";
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public BlobKey(string value)
     {
@@ -45,17 +45,17 @@ public readonly record struct BlobKey
     }
 
     /// <summary>
-    /// 键文本。
+    /// 键文本
     /// </summary>
     public string Value { get; }
 
     /// <summary>
-    /// 从字符串隐式创建。
+    /// 从字符串隐式创建
     /// </summary>
     public static implicit operator BlobKey(string value) => new(value);
 
     /// <summary>
-    /// 是否合法。
+    /// 是否合法
     /// </summary>
     public static bool IsValid([NotNullWhen(true)] string? value)
     {
@@ -78,10 +78,10 @@ public readonly record struct BlobKey
     }
 
     /// <summary>
-    /// 是否在保留前缀下：首段是 <see cref="ReservedSegment"/>。
+    /// 是否在保留前缀下：首段是 <see cref="ReservedSegment"/>
     /// </summary>
     /// <remarks>
-    /// 只看首段且区分大小写：<c>.xihanx/a</c>、<c>.XiHan/a</c>、<c>a/.xihan/b</c> 都不是。
+    /// 只看首段且区分大小写：<c>.xihanx/a</c>、<c>.XiHan/a</c>、<c>a/.xihan/b</c> 都不是
     /// </remarks>
     public static bool IsReserved([NotNullWhen(true)] string? value)
         => value is not null
@@ -89,10 +89,10 @@ public readonly record struct BlobKey
             && (value.Length == ReservedSegment.Length || value[ReservedSegment.Length] == Separator);
 
     /// <summary>
-    /// 前缀是否合法：与键同样的字符约束，但允许空串与以 <c>/</c> 结尾。
+    /// 前缀是否合法：与键同样的字符约束，但允许空串与以 <c>/</c> 结尾
     /// </summary>
     /// <remarks>
-    /// 前缀只是筛选，不受保留前缀限制；以它为前缀的列举总是空的。
+    /// 前缀只是筛选，不受保留前缀限制；以它为前缀的列举总是空的
     /// </remarks>
     public static bool IsValidPrefix([NotNullWhen(true)] string? value)
     {
@@ -113,10 +113,10 @@ public readonly record struct BlobKey
     }
 
     /// <summary>
-    /// 校验并返回。
+    /// 校验并返回
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static string Validate(string value)
     {

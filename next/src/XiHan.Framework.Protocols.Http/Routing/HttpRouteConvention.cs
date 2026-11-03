@@ -9,24 +9,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.Routing;
 
 /// <summary>
-/// 操作 ID 到路由的默认推导（<c>spec/conventions/operation-ids.md</c>）。
+/// 操作 ID 到路由的默认推导（<c>spec/conventions/operation-ids.md</c>）
 /// </summary>
 /// <remarks>
-/// <c>create</c> → <c>POST /{resource}</c>，<c>list</c> → <c>GET /{resource}</c>；请求声明了 <c>id</c> 属性时<c>get</c> → <c>GET /{resource}/{id}</c>，<c>update</c> → <c>PUT /{resource}/{id}</c>，<c>delete</c> → <c>DELETE /{resource}/{id}</c>，其他动词 → <c>POST /{resource}/{id}:{verb}</c>；没有 <c>id</c> 时去掉 <c>/{id}</c> 段，落在集合（或单例资源）上：<c>GET /{resource}</c>、<c>PUT /{resource}</c>、<c>DELETE /{resource}</c>、<c>POST /{resource}:{verb}</c>；<c>get</c> / <c>list</c> / <c>delete</c> 的请求带嵌套对象时（GET / DELETE 不读请求体，嵌套对象进不了查询串）改用 POST 自定义动词，如 <c>POST /{resource}:list</c>（ADR-0015）。
+/// <c>create</c> → <c>POST /{resource}</c>，<c>list</c> → <c>GET /{resource}</c>；请求声明了 <c>id</c> 属性时<c>get</c> → <c>GET /{resource}/{id}</c>，<c>update</c> → <c>PUT /{resource}/{id}</c>，<c>delete</c> → <c>DELETE /{resource}/{id}</c>，其他动词 → <c>POST /{resource}/{id}:{verb}</c>；没有 <c>id</c> 时去掉 <c>/{id}</c> 段，落在集合（或单例资源）上：<c>GET /{resource}</c>、<c>PUT /{resource}</c>、<c>DELETE /{resource}</c>、<c>POST /{resource}:{verb}</c>；<c>get</c> / <c>list</c> / <c>delete</c> 的请求带嵌套对象时（GET / DELETE 不读请求体，嵌套对象进不了查询串）改用 POST 自定义动词，如 <c>POST /{resource}:list</c>（ADR-0015）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class HttpRouteConvention
 {
     /// <summary>
-    /// 标识属性的序列化名。
+    /// 标识属性的序列化名
     /// </summary>
     /// <remarks>
-    /// 比较不分大小写。
+    /// 比较不分大小写
     /// </remarks>
     public const string IdentifierProperty = "id";
 
     /// <summary>
-    /// 按约定从操作描述推导路由：自定义动词的实例级 / 集合级由请求的序列化元数据决定。
+    /// 按约定从操作描述推导路由：自定义动词的实例级 / 集合级由请求的序列化元数据决定
     /// </summary>
     public static HttpRoute Derive(OperationDescriptor descriptor)
     {
@@ -35,11 +35,11 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 按约定推导路由。
+    /// 按约定推导路由
     /// </summary>
-    /// <param name="contract">契约。</param>
-    /// <param name="hasIdentifier">请求是否声明 <c>id</c> 属性；有则路由带 <c>/{id}</c> 段，没有则落在集合（或单例资源）上。</param>
-    /// <param name="hasNestedFields">请求是否有嵌套对象字段；有则 <c>get</c> / <c>list</c> / <c>delete</c> 与只读的自定义动词改用 POST。</param>
+    /// <param name="contract">契约</param>
+    /// <param name="hasIdentifier">请求是否声明 <c>id</c> 属性；有则路由带 <c>/{id}</c> 段，没有则落在集合（或单例资源）上</param>
+    /// <param name="hasNestedFields">请求是否有嵌套对象字段；有则 <c>get</c> / <c>list</c> / <c>delete</c> 与只读的自定义动词改用 POST</param>
     public static HttpRoute Derive(OperationContract contract, bool hasIdentifier, bool hasNestedFields = false)
     {
         ArgumentNullException.ThrowIfNull(contract);
@@ -63,10 +63,10 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 请求是否声明了 <see cref="IdentifierProperty"/>。
+    /// 请求是否声明了 <see cref="IdentifierProperty"/>
     /// </summary>
     /// <remarks>
-    /// 先看源生成的序列化元数据（不用反射），没有类型化元数据的描述（插件代理）看请求 Schema 的 <c>properties</c>，两者都没有按集合级处理。
+    /// 先看源生成的序列化元数据（不用反射），没有类型化元数据的描述（插件代理）看请求 Schema 的 <c>properties</c>，两者都没有按集合级处理
     /// </remarks>
     public static bool HasIdentifier(OperationDescriptor descriptor)
     {
@@ -80,10 +80,10 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 请求 Schema 的顶层 <c>properties</c> 是否声明了 <see cref="IdentifierProperty"/>。
+    /// 请求 Schema 的顶层 <c>properties</c> 是否声明了 <see cref="IdentifierProperty"/>
     /// </summary>
     /// <remarks>
-    /// Schema 不是合法 JSON 对象时视为未声明。
+    /// Schema 不是合法 JSON 对象时视为未声明
     /// </remarks>
     private static bool SchemaDeclaresIdentifier(string requestSchema)
     {
@@ -114,10 +114,10 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 请求是否有嵌套对象字段（对象、字典，或元素是对象的集合）。
+    /// 请求是否有嵌套对象字段（对象、字典，或元素是对象的集合）
     /// </summary>
     /// <remarks>
-    /// 先看序列化元数据，没有类型化元数据的描述看请求 Schema；都没有按扁平处理。
+    /// 先看序列化元数据，没有类型化元数据的描述看请求 Schema；都没有按扁平处理
     /// </remarks>
     public static bool HasNestedFields(OperationDescriptor descriptor)
     {
@@ -131,10 +131,10 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 请求类型的序列化元数据里是否有嵌套对象字段。
+    /// 请求类型的序列化元数据里是否有嵌套对象字段
     /// </summary>
     /// <remarks>
-    /// 属性类型的元数据取自同一序列化上下文，不用反射。
+    /// 属性类型的元数据取自同一序列化上下文，不用反射
     /// </remarks>
     public static bool HasNestedFields(JsonTypeInfo requestInfo)
     {
@@ -163,10 +163,10 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 从序列化上下文取类型元数据。
+    /// 从序列化上下文取类型元数据
     /// </summary>
     /// <remarks>
-    /// 上下文不支持该类型时返回 null（按标量处理）。
+    /// 上下文不支持该类型时返回 null（按标量处理）
     /// </remarks>
     private static JsonTypeInfo? TryGetTypeInfo(JsonSerializerOptions options, Type type)
     {
@@ -181,10 +181,10 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 请求 Schema 的顶层属性里是否有对象或元素是对象的数组。
+    /// 请求 Schema 的顶层属性里是否有对象或元素是对象的数组
     /// </summary>
     /// <remarks>
-    /// <c>type: object</c>、<c>properties</c>，或 <c>$ref</c> 到对象定义。Schema 不是合法 JSON 对象时视为没有。
+    /// <c>type: object</c>、<c>properties</c>，或 <c>$ref</c> 到对象定义。Schema 不是合法 JSON 对象时视为没有
     /// </remarks>
     private static bool SchemaDeclaresNestedFields(string requestSchema)
     {
@@ -218,15 +218,15 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 标量定义互相引用时允许的最大跳数。
+    /// 标量定义互相引用时允许的最大跳数
     /// </summary>
     private const int MaxReferenceDepth = 8;
 
     /// <summary>
-    /// 一个属性 Schema 是否描述对象。
+    /// 一个属性 Schema 是否描述对象
     /// </summary>
     /// <remarks>
-    /// <c>$ref</c> 按根 <c>$defs</c> 里的定义判定（字符串枚举这类标量定义不是对象），解析不到的引用按对象处理。
+    /// <c>$ref</c> 按根 <c>$defs</c> 里的定义判定（字符串枚举这类标量定义不是对象），解析不到的引用按对象处理
     /// </remarks>
     private static bool IsObjectSchema(JsonElement root, JsonElement schema, int depth)
     {
@@ -259,7 +259,7 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 解析本地 <c>$ref</c>（只支持 <c>#/$defs/名字</c>）。
+    /// 解析本地 <c>$ref</c>（只支持 <c>#/$defs/名字</c>）
     /// </summary>
     private static bool TryResolve(JsonElement root, JsonElement reference, out JsonElement target)
     {
@@ -274,7 +274,7 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 请求类型的序列化元数据是否声明了 <see cref="IdentifierProperty"/>。
+    /// 请求类型的序列化元数据是否声明了 <see cref="IdentifierProperty"/>
     /// </summary>
     public static bool HasIdentifier(JsonTypeInfo requestInfo)
     {
@@ -291,7 +291,7 @@ public static class HttpRouteConvention
     }
 
     /// <summary>
-    /// 成功时的状态码：<c>create</c> 为 201，其余 200。
+    /// 成功时的状态码：<c>create</c> 为 201，其余 200
     /// </summary>
     public static int SuccessStatusCode(OperationContract contract)
     {

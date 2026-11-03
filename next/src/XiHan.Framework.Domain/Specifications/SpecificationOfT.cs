@@ -7,22 +7,22 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Domain.Specifications;
 
 /// <summary>
-/// 规约基类：持有表达式，惰性编译内存判定，提供 And / Or / Not 组合。
+/// 规约基类：持有表达式，惰性编译内存判定，提供 And / Or / Not 组合
 /// </summary>
-/// <typeparam name="T">候选对象类型。</typeparam>
+/// <typeparam name="T">候选对象类型</typeparam>
 [ApiLevel(Stability.Stable, "5.0")]
 public class Specification<T> : ISpecification<T>
 {
     /// <summary>
-    /// <see cref="Criteria"/> 编译后的委托。
+    /// <see cref="Criteria"/> 编译后的委托
     /// </summary>
     /// <remarks>
-    /// 首次内存判定时才编译，只交给查询提供器翻译的规约不付编译代价。
+    /// 首次内存判定时才编译，只交给查询提供器翻译的规约不付编译代价
     /// </remarks>
     private Func<T, bool>? _predicate;
 
     /// <summary>
-    /// 用表达式创建规约。
+    /// 用表达式创建规约
     /// </summary>
     public Specification(Expression<Func<T, bool>> criteria)
     {
@@ -36,7 +36,7 @@ public class Specification<T> : ISpecification<T>
     public bool IsSatisfiedBy(T candidate) => (_predicate ??= Criteria.Compile())(candidate);
 
     /// <summary>
-    /// 与。
+    /// 与
     /// </summary>
     public Specification<T> And(ISpecification<T> other)
     {
@@ -45,7 +45,7 @@ public class Specification<T> : ISpecification<T>
     }
 
     /// <summary>
-    /// 或。
+    /// 或
     /// </summary>
     public Specification<T> Or(ISpecification<T> other)
     {
@@ -54,13 +54,13 @@ public class Specification<T> : ISpecification<T>
     }
 
     /// <summary>
-    /// 非。
+    /// 非
     /// </summary>
     public Specification<T> Not()
         => new(Expression.Lambda<Func<T, bool>>(Expression.Not(Criteria.Body), Criteria.Parameters));
 
     /// <summary>
-    /// 用 <paramref name="merge"/> 把两个表达式的主体合并成一个新的 lambda。
+    /// 用 <paramref name="merge"/> 把两个表达式的主体合并成一个新的 lambda
     /// </summary>
     private static Expression<Func<T, bool>> Combine(
         Expression<Func<T, bool>> left,
@@ -75,12 +75,12 @@ public class Specification<T> : ISpecification<T>
     }
 
     /// <summary>
-    /// 把表达式树里的参数 <paramref name="from"/> 全部替换为 <paramref name="to"/>。
+    /// 把表达式树里的参数 <paramref name="from"/> 全部替换为 <paramref name="to"/>
     /// </summary>
     private sealed class ParameterReplacer(ParameterExpression from, ParameterExpression to) : ExpressionVisitor
     {
         /// <summary>
-        /// 命中待替换参数时返回目标参数，其余节点交给基类处理。
+        /// 命中待替换参数时返回目标参数，其余节点交给基类处理
         /// </summary>
         protected override Expression VisitParameter(ParameterExpression node) => node == from ? to : base.VisitParameter(node);
     }

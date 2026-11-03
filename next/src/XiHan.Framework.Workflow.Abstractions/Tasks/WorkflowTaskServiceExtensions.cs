@@ -7,13 +7,13 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 
 /// <summary>
-/// 单个任务的操作：批量方法的特例。
+/// 单个任务的操作：批量方法的特例
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class WorkflowTaskServiceExtensions
 {
     /// <summary>
-    /// 完成一个任务。
+    /// 完成一个任务
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> CompleteAsync(this IWorkflowTaskService service, UserTaskCompletion completion, CancellationToken cancellationToken)
     {
@@ -22,7 +22,7 @@ public static class WorkflowTaskServiceExtensions
     }
 
     /// <summary>
-    /// 转办一个任务。
+    /// 转办一个任务
     /// </summary>
     public static async ValueTask<Result> TransferAsync(this IWorkflowTaskService service, UserTaskTransfer transfer, CancellationToken cancellationToken)
     {
@@ -31,7 +31,7 @@ public static class WorkflowTaskServiceExtensions
     }
 
     /// <summary>
-    /// 给一个任务加签。
+    /// 给一个任务加签
     /// </summary>
     public static async ValueTask<Result> AddAssigneesAsync(this IWorkflowTaskService service, UserTaskAddition addition, CancellationToken cancellationToken)
     {
@@ -40,7 +40,7 @@ public static class WorkflowTaskServiceExtensions
     }
 
     /// <summary>
-    /// 认领一个任务。
+    /// 认领一个任务
     /// </summary>
     public static async ValueTask<Result> ClaimAsync(this IWorkflowTaskService service, UserTaskClaim claim, CancellationToken cancellationToken)
     {
@@ -49,7 +49,7 @@ public static class WorkflowTaskServiceExtensions
     }
 
     /// <summary>
-    /// 释放一个任务的认领。
+    /// 释放一个任务的认领
     /// </summary>
     public static async ValueTask<Result> ReleaseAsync(this IWorkflowTaskService service, UserTaskRelease release, CancellationToken cancellationToken)
     {
@@ -58,7 +58,7 @@ public static class WorkflowTaskServiceExtensions
     }
 
     /// <summary>
-    /// 退回一个任务。
+    /// 退回一个任务
     /// </summary>
     public static async ValueTask<Result<WorkflowInstance>> ReturnAsync(this IWorkflowTaskService service, UserTaskReturn request, CancellationToken cancellationToken)
     {
@@ -67,7 +67,7 @@ public static class WorkflowTaskServiceExtensions
     }
 
     /// <summary>
-    /// 催办一个任务。
+    /// 催办一个任务
     /// </summary>
     public static async ValueTask<Result> UrgeAsync(this IWorkflowTaskService service, UserTaskUrge urge, CancellationToken cancellationToken)
     {

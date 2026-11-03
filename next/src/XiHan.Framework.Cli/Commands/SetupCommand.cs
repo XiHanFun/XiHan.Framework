@@ -11,11 +11,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Commands;
 
 /// <summary>
-/// 命令 <c>setup</c>：把知识库 MCP 服务写进编码助手的配置。
+/// 命令 <c>setup</c>：把知识库 MCP 服务写进编码助手的配置
 /// </summary>
 /// <remarks>
-/// 用法：<c>setup --client &lt;claude|cursor|vscode|codex&gt; [--mode &lt;mcp|skill|both&gt;] [--pin &lt;版本&gt;] [--path &lt;目录&gt;] [--dry-run] [--check]</c>。
-/// 版本取 <c>--pin</c>，否则取项目引用的 <c>XiHan.Framework.*</c> 版本，再否则取本工具的版本；重复执行结果相同，JSON 配置只改本服务一项。
+/// 用法：<c>setup --client &lt;claude|cursor|vscode|codex&gt; [--mode &lt;mcp|skill|both&gt;] [--pin &lt;版本&gt;] [--path &lt;目录&gt;] [--dry-run] [--check]</c>
+/// 版本取 <c>--pin</c>，否则取项目引用的 <c>XiHan.Framework.*</c> 版本，再否则取本工具的版本；重复执行结果相同，JSON 配置只改本服务一项
 /// </remarks>
 internal sealed class SetupCommand : ICommand
 {
@@ -88,7 +88,7 @@ internal sealed class SetupCommand : ICommand
     }
 
     /// <summary>
-    /// 一条动作的说明。
+    /// 一条动作的说明
     /// </summary>
     private static string Describe(SetupAction action, bool dryRun) => action.Kind switch
     {
@@ -98,10 +98,10 @@ internal sealed class SetupCommand : ICommand
     };
 
     /// <summary>
-    /// 核对全部动作是否已生效。
+    /// 核对全部动作是否已生效
     /// </summary>
     /// <remarks>
-    /// 都已生效时成功，否则以 <see cref="CliErrors.SetupNotReady"/> 列出未生效的项。
+    /// 都已生效时成功，否则以 <see cref="CliErrors.SetupNotReady"/> 列出未生效的项
     /// </remarks>
     private static async Task<int> CheckAsync(CommandContext context, string client, string version, IReadOnlyList<SetupAction> actions)
     {
@@ -117,13 +117,13 @@ internal sealed class SetupCommand : ICommand
     }
 
     /// <summary>
-    /// 用法错误：按 64 退出。
+    /// 用法错误：按 64 退出
     /// </summary>
     private static Task<int> UsageAsync(CommandContext context, Error error)
         => CommandLineFailure.WriteAsync(context.Error, error, context.Services, null, CommandLineExitCodes.Usage);
 
     /// <summary>
-    /// 写一行到标准输出。
+    /// 写一行到标准输出
     /// </summary>
     private static Task WriteAsync(CommandContext context, string text)
         => context.Output.WriteLineAsync(text.AsMemory(), context.CancellationToken);

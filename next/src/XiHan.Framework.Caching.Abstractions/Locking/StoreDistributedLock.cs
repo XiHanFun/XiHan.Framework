@@ -8,18 +8,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Locking;
 
 /// <summary>
-/// 建立在 <see cref="ICacheStore"/> 的"不存在才写 + 比较删"之上的锁，任何 Provider 都能复用。
+/// 建立在 <see cref="ICacheStore"/> 的"不存在才写 + 比较删"之上的锁，任何 Provider 都能复用
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class StoreDistributedLock(ICacheStore store) : IDistributedLock
 {
     /// <summary>
-    /// 锁条目的键前缀，与普通缓存条目隔开。
+    /// 锁条目的键前缀，与普通缓存条目隔开
     /// </summary>
     private const string Prefix = "lock:";
 
     /// <summary>
-    /// 承载锁条目的字节存储。
+    /// 承载锁条目的字节存储
     /// </summary>
     private readonly ICacheStore _store = store ?? throw new ArgumentNullException(nameof(store));
 

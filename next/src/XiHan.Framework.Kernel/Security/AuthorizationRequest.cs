@@ -6,21 +6,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 一次授权请求：谁（安全上下文）对什么（资源）做什么（动作）。
+/// 一次授权请求：谁（安全上下文）对什么（资源）做什么（动作）
 /// </summary>
-/// <param name="Security">安全上下文。</param>
-/// <param name="Action">动作，通常是操作 ID。</param>
-/// <param name="Resource">资源名；无具体资源时为 <see langword="null"/>。</param>
+/// <param name="Security">安全上下文</param>
+/// <param name="Action">动作，通常是操作 ID</param>
+/// <param name="Resource">资源名；无具体资源时为 <see langword="null"/></param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record AuthorizationRequest(SecurityContext Security, string Action, ResourceName? Resource = null)
 {
     /// <summary>
-    /// 安全上下文。
+    /// 安全上下文
     /// </summary>
     public SecurityContext Security { get; } = Security ?? throw new ArgumentNullException(nameof(Security));
 
     /// <summary>
-    /// 动作。
+    /// 动作
     /// </summary>
     public string Action { get; } = string.IsNullOrWhiteSpace(Action) ? throw new ArgumentException("The action must not be empty.", nameof(Action)) : Action;
 }

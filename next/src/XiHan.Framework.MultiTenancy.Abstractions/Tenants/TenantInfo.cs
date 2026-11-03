@@ -6,18 +6,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 
 /// <summary>
-/// 租户信息。
+/// 租户信息
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record TenantInfo
 {
     /// <summary>
-    /// 共享的空属性表，避免每个租户各建一个空字典。
+    /// 共享的空属性表，避免每个租户各建一个空字典
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> _noProperties = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 租户 ID。
+    /// 租户 ID
     /// </summary>
     public required string Id
     {
@@ -26,20 +26,20 @@ public sealed record TenantInfo
     }
 
     /// <summary>
-    /// 显示名。
+    /// 显示名
     /// </summary>
     public string? DisplayName { get; init; }
 
     /// <summary>
-    /// 是否启用。
+    /// 是否启用
     /// </summary>
     /// <remarks>
-    /// 禁用的租户解析时被拒绝。默认启用。
+    /// 禁用的租户解析时被拒绝。默认启用
     /// </remarks>
     public bool IsEnabled { get; init; } = true;
 
     /// <summary>
-    /// 租户专属属性（连接、配额等），键区分大小写。
+    /// 租户专属属性（连接、配额等），键区分大小写
     /// </summary>
     public IReadOnlyDictionary<string, string> Properties
     {

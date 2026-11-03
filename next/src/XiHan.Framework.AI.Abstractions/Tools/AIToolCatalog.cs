@@ -12,41 +12,41 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tools;
 
 /// <summary>
-/// 工具目录的实现（单例）。
+/// 工具目录的实现（单例）
 /// </summary>
 /// <remarks>
-/// 构造时从登记表与显式登记建表，工具名不合法或重复以 <see cref="AIErrors.RequestInvalid"/> 失败。
+/// 构造时从登记表与显式登记建表，工具名不合法或重复以 <see cref="AIErrors.RequestInvalid"/> 失败
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class AIToolCatalog : IAIToolCatalog
 {
     /// <summary>
-    /// 没有请求 Schema 时的输入 Schema。
+    /// 没有请求 Schema 时的输入 Schema
     /// </summary>
     private const string DefaultInputSchema = """{"type":"object"}""";
 
     /// <summary>
-    /// 名字 → 条目。
+    /// 名字 → 条目
     /// </summary>
     private readonly SortedDictionary<string, Entry> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 调用器。
+    /// 调用器
     /// </summary>
     private readonly IOperationInvoker _invoker;
 
     /// <summary>
-    /// 作用域工厂。
+    /// 作用域工厂
     /// </summary>
     private readonly IServiceScopeFactory _scopes;
 
     /// <summary>
-    /// 本地化器（可无）。
+    /// 本地化器（可无）
     /// </summary>
     private readonly IMessageLocalizer? _localizer;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public AIToolCatalog(AIOptions options, OperationRegistry registry, IOperationInvoker invoker, IServiceScopeFactory scopes, IEnumerable<AITool> registered, IMessageLocalizer? localizer = null)
     {
@@ -99,7 +99,7 @@ public sealed class AIToolCatalog : IAIToolCatalog
     }
 
     /// <summary>
-    /// 加一条，名字重复即失败。
+    /// 加一条，名字重复即失败
     /// </summary>
     private void Add(string name, Entry entry, string owner)
     {
@@ -114,16 +114,16 @@ public sealed class AIToolCatalog : IAIToolCatalog
     }
 
     /// <summary>
-    /// 声明：显式工具原样，操作工具为不可调用的声明。
+    /// 声明：显式工具原样，操作工具为不可调用的声明
     /// </summary>
     private AITool Declare(Entry entry, string? locale)
         => entry.Tool ?? AIFunctionFactory.CreateDeclaration(entry.Name, Describe(entry.Descriptor!, locale), entry.Schema, entry.ReturnSchema);
 
     /// <summary>
-    /// 操作描述。
+    /// 操作描述
     /// </summary>
     /// <remarks>
-    /// 消息目录里 <c>&lt;操作 ID&gt;.description</c> 按区域翻译；没有为空。
+    /// 消息目录里 <c>&lt;操作 ID&gt;.description</c> 按区域翻译；没有为空
     /// </remarks>
     private string? Describe(OperationDescriptor descriptor, string? locale)
     {
@@ -137,12 +137,12 @@ public sealed class AIToolCatalog : IAIToolCatalog
     }
 
     /// <summary>
-    /// 默认区域。
+    /// 默认区域
     /// </summary>
     private string? DefaultLocale() => _localizer?.Options.DefaultLocale;
 
     /// <summary>
-    /// 只接受对象 Schema。
+    /// 只接受对象 Schema
     /// </summary>
     private static JsonElement? ParseObjectSchema(string? schema)
     {
@@ -159,7 +159,7 @@ public sealed class AIToolCatalog : IAIToolCatalog
     }
 
     /// <summary>
-    /// 一条工具：显式工具或操作。
+    /// 一条工具：显式工具或操作
     /// </summary>
     private sealed record Entry(string Name, AITool? Tool, OperationDescriptor? Descriptor, JsonElement Schema, JsonElement? ReturnSchema);
 }

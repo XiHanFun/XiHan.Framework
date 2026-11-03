@@ -10,51 +10,51 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 有界内存的实例与节点实例存储。
+/// 有界内存的实例与节点实例存储
 /// </summary>
 /// <remarks>
-/// 按分区（平台或租户）隔离：键是分区加 ID，节点实例随所属实例的分区。保存与返回都是深拷贝；实例与节点实例分别计容量（全部分区合计）；删实例级联节点实例。没有事务：写入立即生效。
+/// 按分区（平台或租户）隔离：键是分区加 ID，节点实例随所属实例的分区。保存与返回都是深拷贝；实例与节点实例分别计容量（全部分区合计）；删实例级联节点实例。没有事务：写入立即生效
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
 {
     /// <summary>
-    /// 保护表的锁。
+    /// 保护表的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 分区与实例 ID → (实例, 写入序号)。
+    /// 分区与实例 ID → (实例, 写入序号)
     /// </summary>
     private readonly Dictionary<PartitionKey, (WorkflowInstance Instance, long Sequence)> _instances = [];
 
     /// <summary>
-    /// 分区与节点实例 ID → (节点实例, 写入序号)。
+    /// 分区与节点实例 ID → (节点实例, 写入序号)
     /// </summary>
     private readonly Dictionary<PartitionKey, (WorkflowNodeInstance NodeInstance, long Sequence)> _nodeInstances = [];
 
     /// <summary>
-    /// 分区与实例 ID → 它的节点实例 ID。
+    /// 分区与实例 ID → 它的节点实例 ID
     /// </summary>
     private readonly Dictionary<PartitionKey, HashSet<string>> _nodesByInstance = [];
 
     /// <summary>
-    /// 实例容量。
+    /// 实例容量
     /// </summary>
     private readonly int _instanceCapacity;
 
     /// <summary>
-    /// 节点实例容量。
+    /// 节点实例容量
     /// </summary>
     private readonly int _nodeCapacity;
 
     /// <summary>
-    /// 写入序号：同一时刻写入的按先后排序。
+    /// 写入序号：同一时刻写入的按先后排序
     /// </summary>
     private long _sequence;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryWorkflowInstanceStore(InMemoryWorkflowOptions options)
     {
@@ -64,10 +64,10 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 运行中实例的定义名、标题与关联 ID（按实例 ID）。
+    /// 运行中实例的定义名、标题与关联 ID（按实例 ID）
     /// </summary>
     /// <remarks>
-    /// 书签存储的待办查询以此与实例连接（定义名过滤；关键字匹配实例标题、定义名与关联 ID）：不在运行中、不存在或在别的分区的实例不在结果里。
+    /// 书签存储的待办查询以此与实例连接（定义名过滤；关键字匹配实例标题、定义名与关联 ID）：不在运行中、不存在或在别的分区的实例不在结果里
     /// </remarks>
     internal Dictionary<string, (WorkflowName Definition, string Title, string? CorrelationId)> RunningDefinitions(string? tenantId, IEnumerable<string> instanceIds)
     {
@@ -87,7 +87,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 当前实例数（全部分区）。
+    /// 当前实例数（全部分区）
     /// </summary>
     public int Count
     {
@@ -141,15 +141,15 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 没给排序项时的排序：创建时间降序。
+    /// 没给排序项时的排序：创建时间降序
     /// </summary>
     private static readonly WorkflowInstanceSort[] _defaultSorts = [new(WorkflowInstanceSortField.CreatedAt, Descending: true)];
 
     /// <summary>
-    /// 按实例查询的排序项依次排序，再接次序键创建时间降序、写入先后降序。
+    /// 按实例查询的排序项依次排序，再接次序键创建时间降序、写入先后降序
     /// </summary>
     /// <remarks>
-    /// 写入序号在全部分区里唯一，接上它即是全序，分页不重不漏（ADR-0102、ADR-0104）；排序项里有创建时间时不再作次序键，写入先后随它的方向（同刻的先写的在升序里排前面），没有时降序。重复的字段只按第一次出现的排，与数据库实现的 SQL 同一结果（调用方已校验重复）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），结束时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>。
+    /// 写入序号在全部分区里唯一，接上它即是全序，分页不重不漏（ADR-0102、ADR-0104）；排序项里有创建时间时不再作次序键，写入先后随它的方向（同刻的先写的在升序里排前面），没有时降序。重复的字段只按第一次出现的排，与数据库实现的 SQL 同一结果（调用方已校验重复）。文本按序数比较，状态按生命周期的序号（<see cref="WorkflowStatusOrder"/>，ADR-0103），结束时间的空值当作最小（与 <see cref="Comparer{T}.Default"/> 相同），标题按 <see cref="WorkflowSortKeys.Title"/>
     /// </remarks>
     private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Sorted(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, WorkflowInstanceQuery query)
     {
@@ -182,7 +182,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 接上一个排序项：还没有排序时开始排，否则作次级排序。
+    /// 接上一个排序项：还没有排序时开始排，否则作次级排序
     /// </summary>
     private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Then(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)>? sorted, WorkflowInstanceSort sort) => sort.Field switch
     {
@@ -195,7 +195,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     };
 
     /// <summary>
-    /// 按一个键升序或降序排：作主排序或次级排序。
+    /// 按一个键升序或降序排：作主排序或次级排序
     /// </summary>
     private static IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)> Order<TKey>(IEnumerable<(WorkflowInstance Instance, long Sequence)> entries, IOrderedEnumerable<(WorkflowInstance Instance, long Sequence)>? sorted, Func<(WorkflowInstance Instance, long Sequence), TKey> key, IComparer<TKey> comparer, bool descending)
         => sorted is null
@@ -318,7 +318,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 一个分区里的实例（调用方持锁）。
+    /// 一个分区里的实例（调用方持锁）
     /// </summary>
     private IEnumerable<(WorkflowInstance Instance, long Sequence)> InPartition(string? tenantId)
     {
@@ -327,7 +327,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
     }
 
     /// <summary>
-    /// 容量已满。
+    /// 容量已满
     /// </summary>
     private static Error Capacity(string store, int limit)
         => Error.Unavailable(WorkflowErrors.StoreCapacity, WorkflowMessages.StoreCapacity, MessageArguments.Of(("store", store), ("limit", limit)));

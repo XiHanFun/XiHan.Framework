@@ -16,19 +16,19 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Storage;
 
 /// <summary>
-/// 一个分区（平台或租户）的书签表的读写。
+/// 一个分区（平台或租户）的书签表的读写
 /// </summary>
 /// <remarks>
-/// 租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件。到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。待办查询下推到 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列（标题、关联 ID、定义名），写书签时从同一分区的实例行算出，实例新增或这几列变了由 <see cref="SyncAsync"/> 同步；任务标题查询列写书签时从载荷算出。
+/// 租户分区的表由持久化按工作单元的租户过滤，查询里不写租户条件。到期查询按到期时间升序，其余查询按创建时间升序，同刻按写入序号。待办查询下推到 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列（标题、关联 ID、定义名），写书签时从同一分区的实例行算出，实例新增或这几列变了由 <see cref="SyncAsync"/> 同步；任务标题查询列写书签时从载荷算出
 /// </remarks>
-/// <typeparam name="TRow">行类型。</typeparam>
-/// <typeparam name="TInstance">同一分区的实例行类型。</typeparam>
+/// <typeparam name="TRow">行类型</typeparam>
+/// <typeparam name="TInstance">同一分区的实例行类型</typeparam>
 internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> repository, IRepository<TInstance, string> instances, WriteSequence sequence)
     where TRow : WorkflowBookmarkRow, new()
     where TInstance : WorkflowInstanceRow
 {
     /// <summary>
-    /// 按 ID 找。
+    /// 按 ID 找
     /// </summary>
     public async ValueTask<Result<Maybe<WorkflowBookmark>>> FindAsync(string id, CancellationToken cancellationToken)
     {
@@ -37,19 +37,19 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 按 ID 批量找。
+    /// 按 ID 批量找
     /// </summary>
     public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> FindManyAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
         => ToBookmarks(await RecordQueries.FindManyAsync(repository, ids, cancellationToken).ConfigureAwait(false));
 
     /// <summary>
-    /// 实例的全部书签。
+    /// 实例的全部书签
     /// </summary>
     public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByInstanceAsync(string instanceId, CancellationToken cancellationToken)
         => ListAsync(ByCreation(new Specification<TRow>(record => record.InstanceId == instanceId)), null, cancellationToken);
 
     /// <summary>
-    /// 到期的书签。
+    /// 到期的书签
     /// </summary>
     public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> DueAsync(DateTimeOffset now, int limit, CancellationToken cancellationToken)
     {
@@ -68,13 +68,13 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 按种类与键找。
+    /// 按种类与键找
     /// </summary>
     public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ByKindAndKeyAsync(string kind, string key, CancellationToken cancellationToken)
         => ListAsync(ByCreation(new Specification<TRow>(record => record.Kind == kind && record.Key == key)), null, cancellationToken);
 
     /// <summary>
-    /// 此刻可以领取的书签。
+    /// 此刻可以领取的书签
     /// </summary>
     public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> AvailableAsync(string kind, string key, DateTimeOffset now, int limit, CancellationToken cancellationToken)
     {
@@ -89,7 +89,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 信号书签。
+    /// 信号书签
     /// </summary>
     public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> BySignalAsync(string signalName, string? correlationId, CancellationToken cancellationToken)
     {
@@ -102,10 +102,10 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 新增或整体替换。
+    /// 新增或整体替换
     /// </summary>
     /// <remarks>
-    /// 先按 ID 批量取回所属实例的行，把定义名、状态与实例一侧的关键字查询列写进书签行：引擎的写回先写实例再写书签，同一事务里读得到刚写的实例。
+    /// 先按 ID 批量取回所属实例的行，把定义名、状态与实例一侧的关键字查询列写进书签行：引擎的写回先写实例再写书签，同一事务里读得到刚写的实例
     /// </remarks>
     public async ValueTask<Result> SaveAsync(IReadOnlyList<WorkflowBookmark> bookmarks, CancellationToken cancellationToken)
     {
@@ -120,10 +120,10 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 把实例的定义名、状态与实例一侧的关键字查询列同步到它们的书签行。
+    /// 把实例的定义名、状态与实例一侧的关键字查询列同步到它们的书签行
     /// </summary>
     /// <remarks>
-    /// 实例存储在新增实例、实例的状态、定义名或关键字查询列（标题、关联 ID）变化之后调用；只更新与实例不一致的行。
+    /// 实例存储在新增实例、实例的状态、定义名或关键字查询列（标题、关联 ID）变化之后调用；只更新与实例不一致的行
     /// </remarks>
     public async ValueTask<Result> SyncAsync(IReadOnlyList<TInstance> owners, CancellationToken cancellationToken)
     {
@@ -164,10 +164,10 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 待办查询的一页：所属实例运行中的用户任务书签。
+    /// 待办查询的一页：所属实例运行中的用户任务书签
     /// </summary>
     /// <remarks>
-    /// 按创建时间排序，同刻按写入序号，再按 ID 补成全序。
+    /// 按创建时间排序，同刻按写入序号，再按 ID 补成全序
     /// </remarks>
     public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListUserTasksAsync(UserTaskQuery query, CancellationToken cancellationToken)
     {
@@ -182,13 +182,13 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 待办查询的总数。
+    /// 待办查询的总数
     /// </summary>
     public async ValueTask<Result<long>> CountUserTasksAsync(UserTaskQuery query, CancellationToken cancellationToken)
         => await repository.CountAsync(UserTasks(query), cancellationToken).ConfigureAwait(false);
 
     /// <summary>
-    /// 按 ID 删除。
+    /// 按 ID 删除
     /// </summary>
     public async ValueTask<Result> DeleteAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
@@ -197,7 +197,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 删除这些实例的全部书签。
+    /// 删除这些实例的全部书签
     /// </summary>
     public async ValueTask<Result> DeleteByInstanceAsync(IReadOnlyList<string> instanceIds, CancellationToken cancellationToken)
     {
@@ -218,10 +218,10 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 待办查询的过滤条件。
+    /// 待办查询的过滤条件
     /// </summary>
     /// <remarks>
-    /// 每个给出的条件一个规约，由查询取交集；没给的条件不写进 SQL（不写 <c>参数 == null ||</c> 这类条件，SqlSugar 对它的翻译不可靠）。
+    /// 每个给出的条件一个规约，由查询取交集；没给的条件不写进 SQL（不写 <c>参数 == null ||</c> 这类条件，SqlSugar 对它的翻译不可靠）
     /// </remarks>
     private static EntityQuery<TRow> UserTasks(UserTaskQuery query)
     {
@@ -269,28 +269,28 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 创建时间升序、同刻按写入序号升序、再按 ID 补成全序的查询。
+    /// 创建时间升序、同刻按写入序号升序、再按 ID 补成全序的查询
     /// </summary>
     private static EntityQuery<TRow> ByCreation(Specification<TRow> filter)
         => EntityQuery.All<TRow>().Where(filter).OrderBy(static record => record.CreatedAt).OrderBy(static record => record.Sequence).OrderBy(static record => record.Id);
 
     /// <summary>
-    /// 按查询读完（或读到上限）并反序列化。
+    /// 按查询读完（或读到上限）并反序列化
     /// </summary>
     private async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListAsync(EntityQuery<TRow> query, int? limit, CancellationToken cancellationToken)
         => ToBookmarks(await RecordQueries.ListAllAsync(repository, query, limit, cancellationToken).ConfigureAwait(false));
 
     /// <summary>
-    /// 多行 → 书签。
+    /// 多行 → 书签
     /// </summary>
     private static Result<IReadOnlyList<WorkflowBookmark>> ToBookmarks(List<TRow> records)
         => Result.Success<IReadOnlyList<WorkflowBookmark>>(records.Select(static record => WorkflowJson.DeserializeBookmark(record.Document)).ToList());
 
     /// <summary>
-    /// 书签 → 行。
+    /// 书签 → 行
     /// </summary>
     /// <remarks>
-    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它；租户列由持久化在新增时写入。所属实例的行不存在（定义级定时书签）时定义名、状态与实例一侧的关键字查询列为空；任务标题查询列取自载荷的 <c>title</c>。
+    /// 序号只对新增的行生效，替换已有行时 <see cref="Copy"/> 不复制它；租户列由持久化在新增时写入。所属实例的行不存在（定义级定时书签）时定义名、状态与实例一侧的关键字查询列为空；任务标题查询列取自载荷的 <c>title</c>
     /// </remarks>
     private TRow ToRecord(WorkflowBookmark bookmark, TInstance? owner)
     {
@@ -316,25 +316,25 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     }
 
     /// <summary>
-    /// 由所属实例行算出书签行的实例一侧关键字查询列。
+    /// 由所属实例行算出书签行的实例一侧关键字查询列
     /// </summary>
     /// <remarks>
-    /// 实例行的 <c>SearchText</c>（标题与关联 ID）再拼上折叠后的定义名，结果与 <c>WorkflowKeyword.Join(标题, 关联 ID, 定义名)</c> 相同：<c>SearchText</c> 就是前两个字段的 <c>Join</c>，这里只按同一分隔符接上第三个字段，不必从文档取回标题。实例行的 <c>SearchText</c> 为空（升级前写入、还没回填）时为空，与实例列表一样不被关键字匹配。
+    /// 实例行的 <c>SearchText</c>（标题与关联 ID）再拼上折叠后的定义名，结果与 <c>WorkflowKeyword.Join(标题, 关联 ID, 定义名)</c> 相同：<c>SearchText</c> 就是前两个字段的 <c>Join</c>，这里只按同一分隔符接上第三个字段，不必从文档取回标题。实例行的 <c>SearchText</c> 为空（升级前写入、还没回填）时为空，与实例列表一样不被关键字匹配
     /// </remarks>
     private static string? InstanceSearchText(TInstance owner)
         => owner.SearchText is { } text ? string.Join(WorkflowKeyword.FieldSeparator, text, WorkflowKeyword.Fold(owner.DefinitionName)) : null;
 
     /// <summary>
-    /// 用户任务书签载荷里的任务标题。
+    /// 用户任务书签载荷里的任务标题
     /// </summary>
     /// <remarks>
-    /// 与 <c>UserTask.From</c> 取标题的方式相同；没有或不是字符串为空。
+    /// 与 <c>UserTask.From</c> 取标题的方式相同；没有或不是字符串为空
     /// </remarks>
     private static string? TaskTitle(WorkflowBookmark bookmark)
         => bookmark.Payload.TryGetPropertyValue(UserTaskPayloadKeys.Title, out var title) && title is JsonValue value ? WorkflowValues.AsString(value) : null;
 
     /// <summary>
-    /// 把新行的内容复制到已有行上。
+    /// 把新行的内容复制到已有行上
     /// </summary>
     private static void Copy(TRow source, TRow target)
     {

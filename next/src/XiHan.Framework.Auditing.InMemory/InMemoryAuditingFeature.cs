@@ -14,10 +14,10 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Auditing.InMemory;
 
 /// <summary>
-/// 内存审计的能力包入口。
+/// 内存审计的能力包入口
 /// </summary>
 /// <remarks>
-/// 默认提供 <c>auditing.trail@1</c>。被选中时把 <see cref="InMemoryAuditTrail"/> 绑定为接收器与查询，并挂上审计中间件。
+/// 默认提供 <c>auditing.trail@1</c>。被选中时把 <see cref="InMemoryAuditTrail"/> 绑定为接收器与查询，并挂上审计中间件
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryAuditingFeature : IFeature

@@ -7,13 +7,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 活动挂起时请求的书签。
+/// 活动挂起时请求的书签
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record BookmarkRequest
 {
     /// <summary>
-    /// 种类（<see cref="BookmarkKinds"/>）。
+    /// 种类（<see cref="BookmarkKinds"/>）
     /// </summary>
     public required string Kind
     {
@@ -22,22 +22,22 @@ public sealed record BookmarkRequest
     }
 
     /// <summary>
-    /// 键。
+    /// 键
     /// </summary>
     public string? Key { get; init; }
 
     /// <summary>
-    /// 载荷。
+    /// 载荷
     /// </summary>
     public JsonObject? Payload { get; init; }
 
     /// <summary>
-    /// 到期时间。
+    /// 到期时间
     /// </summary>
     public DateTimeOffset? DueAt { get; init; }
 
     /// <summary>
-    /// 关联 ID。
+    /// 关联 ID
     /// </summary>
     public string? CorrelationId { get; init; }
 }

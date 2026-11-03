@@ -6,16 +6,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 
 /// <summary>
-/// 触发器键：作业名 + 触发器名（触发器名与作业名同文法，作业内唯一）。
+/// 触发器键：作业名 + 触发器名（触发器名与作业名同文法，作业内唯一）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public readonly record struct TriggerKey
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// 触发器名不合法抛出 <see cref="ArgumentException"/>。
+    /// 触发器名不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public TriggerKey(JobName job, string trigger)
     {
@@ -24,12 +24,12 @@ public readonly record struct TriggerKey
     }
 
     /// <summary>
-    /// 作业名。
+    /// 作业名
     /// </summary>
     public JobName Job { get; }
 
     /// <summary>
-    /// 触发器名。
+    /// 触发器名
     /// </summary>
     public string Trigger { get; }
 

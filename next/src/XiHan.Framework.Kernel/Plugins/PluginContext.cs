@@ -10,16 +10,16 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Plugins;
 
 /// <summary>
-/// 插件的配置上下文。
+/// 插件的配置上下文
 /// </summary>
 /// <remarks>
-/// 插件拥有隔离的服务集合；是否允许贡献中间件由隔离级别决定。
+/// 插件拥有隔离的服务集合；是否允许贡献中间件由隔离级别决定
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class PluginContext
 {
     /// <summary>
-    /// 创建插件上下文。
+    /// 创建插件上下文
     /// </summary>
     public PluginContext(Manifest manifest, IServiceCollection services, IConfiguration configuration, PermissionGrant permissions, PipelineBuilder? pipeline)
     {
@@ -31,30 +31,30 @@ public sealed class PluginContext
     }
 
     /// <summary>
-    /// 插件清单。
+    /// 插件清单
     /// </summary>
     public Manifest Manifest { get; }
 
     /// <summary>
-    /// 插件自己的服务集合。
+    /// 插件自己的服务集合
     /// </summary>
     public IServiceCollection Services { get; }
 
     /// <summary>
-    /// 宿主配置的只读视图。
+    /// 宿主配置的只读视图
     /// </summary>
     public IConfiguration Configuration { get; }
 
     /// <summary>
-    /// 已授予的权限。
+    /// 已授予的权限
     /// </summary>
     public PermissionGrant Permissions { get; }
 
     /// <summary>
-    /// 可贡献中间件的管道。
+    /// 可贡献中间件的管道
     /// </summary>
     /// <remarks>
-    /// 5.0 的插件宿主都传 <see langword="null"/>：进程内插件拿不到宿主管道，不能贡献中间件。
+    /// 5.0 的插件宿主都传 <see langword="null"/>：进程内插件拿不到宿主管道，不能贡献中间件
     /// </remarks>
     public PipelineBuilder? Pipeline { get; }
 }

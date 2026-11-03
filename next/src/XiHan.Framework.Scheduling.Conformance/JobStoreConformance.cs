@@ -13,21 +13,21 @@ using Xunit;
 namespace XiHan.Framework.Scheduling.Conformance;
 
 /// <summary>
-/// <see cref="IJobStore"/> 的一致性套件。
+/// <see cref="IJobStore"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 查询与排序、抢占的原子性、独占运行与阻塞、历史、节点与恢复。Provider 的测试项目继承并实现 <see cref="CreateAsync"/>。
+/// 查询与排序、抢占的原子性、独占运行与阻塞、历史、节点与恢复。Provider 的测试项目继承并实现 <see cref="CreateAsync"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class JobStoreConformance
 {
     /// <summary>
-    /// 创建被测存储及其释放句柄。
+    /// 创建被测存储及其释放句柄
     /// </summary>
     protected abstract Task<(IJobStore Store, IAsyncDisposable Host)> CreateAsync();
 
     /// <summary>
-    /// 作业的写入、查找、列表、替换、级联删除与快照语义。
+    /// 作业的写入、查找、列表、替换、级联删除与快照语义
     /// </summary>
     [Fact]
     public async Task Jobs_SaveFindListDelete_CascadeTriggers_AndSnapshot()
@@ -80,7 +80,7 @@ public abstract class JobStoreConformance
     }
 
     /// <summary>
-    /// 触发器记录的全部字段往返。
+    /// 触发器记录的全部字段往返
     /// </summary>
     [Fact]
     public async Task Triggers_RoundTripAllFields()
@@ -124,7 +124,7 @@ public abstract class JobStoreConformance
     }
 
     /// <summary>
-    /// 抢占的顺序、原子性与跳过未到期 / 暂停 / 本地 / 阻塞的触发器。
+    /// 抢占的顺序、原子性与跳过未到期 / 暂停 / 本地 / 阻塞的触发器
     /// </summary>
     [Fact]
     public async Task AcquireDue_IsAtomicAcrossNodes_OrderedByDueThenPriority_AndSkipsOthers()
@@ -168,7 +168,7 @@ public abstract class JobStoreConformance
     }
 
     /// <summary>
-    /// 独占开始、完成释放与解除阻塞、历史查询与计数、最近一次、取消请求与清理。
+    /// 独占开始、完成释放与解除阻塞、历史查询与计数、最近一次、取消请求与清理
     /// </summary>
     [Fact]
     public async Task Runs_ExclusiveBegin_CompleteUnblocks_QueryLastCancelPurge()
@@ -245,10 +245,10 @@ public abstract class JobStoreConformance
     }
 
     /// <summary>
-    /// 阻塞只在作业仍被占用时生效。
+    /// 阻塞只在作业仍被占用时生效
     /// </summary>
     /// <remarks>
-    /// 判定被占之后上一次才结束时，它解除阻塞那一刻触发器还没写成阻塞：阻塞写入要看到占用已释放、直接回到等待。
+    /// 判定被占之后上一次才结束时，它解除阻塞那一刻触发器还没写成阻塞：阻塞写入要看到占用已释放、直接回到等待
     /// </remarks>
     [Fact]
     public async Task BlockTrigger_HoldsOnlyWhileOccupied_AndWaitsOnceReleased()
@@ -290,7 +290,7 @@ public abstract class JobStoreConformance
     }
 
     /// <summary>
-    /// 节点心跳、列表与失联恢复。
+    /// 节点心跳、列表与失联恢复
     /// </summary>
     [Fact]
     public async Task Nodes_HeartbeatList_AndRecoverLostNodes()
@@ -333,7 +333,7 @@ public abstract class JobStoreConformance
     }
 
     /// <summary>
-    /// 作业记录样本。
+    /// 作业记录样本
     /// </summary>
     protected static JobRecord Job(string name) => new()
     {
@@ -346,7 +346,7 @@ public abstract class JobStoreConformance
     };
 
     /// <summary>
-    /// 触发器记录样本。
+    /// 触发器记录样本
     /// </summary>
     protected static TriggerRecord Trigger(JobName job, string name, DateTimeOffset nextFireAt, int priority = JobTriggerDefinition.DefaultPriority, TriggerState state = TriggerState.Waiting, bool local = false) => new()
     {
@@ -360,7 +360,7 @@ public abstract class JobStoreConformance
     };
 
     /// <summary>
-    /// 运行记录样本。
+    /// 运行记录样本
     /// </summary>
     protected static JobRunRecord Run(JobName job, string nodeId, DateTimeOffset scheduledAt) => new()
     {

@@ -10,16 +10,16 @@ using Xunit;
 namespace XiHan.Framework.Localization.Conformance;
 
 /// <summary>
-/// <see cref="IMessageLocalizer"/> 的一致性套件（RFC-0010）。
+/// <see cref="IMessageLocalizer"/> 的一致性套件（RFC-0010）
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateLocalizer"/>，全部用例随之执行；实现同时必须是 <see cref="IMessageResolver"/>。
+/// 继承并实现 <see cref="CreateLocalizer"/>，全部用例随之执行；实现同时必须是 <see cref="IMessageResolver"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class MessageLocalizerConformance
 {
     /// <summary>
-    /// 业务目录：区域不齐，用来验证回退链与按区域格式化。
+    /// 业务目录：区域不齐，用来验证回退链与按区域格式化
     /// </summary>
     private static readonly MessageCatalog _orders = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
@@ -36,7 +36,7 @@ public abstract class MessageLocalizerConformance
     });
 
     /// <summary>
-    /// 与业务目录撞键的目录，用来验证注册顺序决定优先级。
+    /// 与业务目录撞键的目录，用来验证注册顺序决定优先级
     /// </summary>
     private static readonly MessageCatalog _override = new("override", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
@@ -44,15 +44,15 @@ public abstract class MessageLocalizerConformance
     });
 
     /// <summary>
-    /// 用给定目录（按注册顺序）与选项创建被测本地化器。
+    /// 用给定目录（按注册顺序）与选项创建被测本地化器
     /// </summary>
     protected abstract IMessageLocalizer CreateLocalizer(IEnumerable<MessageCatalog> catalogs, LocalizationOptions options);
 
     /// <summary>
-    /// 用例 1：回退链为精确区域 → 同语言的启用区域 → 默认区域 → 源语言。
+    /// 用例 1：回退链为精确区域 → 同语言的启用区域 → 默认区域 → 源语言
     /// </summary>
     /// <remarks>
-    /// 非法区域按默认区域处理。
+    /// 非法区域按默认区域处理
     /// </remarks>
     [Fact]
     public void Find_FallsBackExactThenLanguageThenDefaultThenSource()
@@ -75,7 +75,7 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 2：按实际命中区域的文化格式化。
+    /// 用例 2：按实际命中区域的文化格式化
     /// </summary>
     [Fact]
     public void Localize_FormatsWithTheCultureOfTheResolvedLocale()
@@ -93,10 +93,10 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 3：没有模板或占位符缺值时退回键与参数的描述。
+    /// 用例 3：没有模板或占位符缺值时退回键与参数的描述
     /// </summary>
     /// <remarks>
-    /// 解析器接口同样如此。
+    /// 解析器接口同样如此
     /// </remarks>
     [Fact]
     public void Localize_FallsBackToDescription_WhenMissingOrIncomplete()
@@ -113,10 +113,10 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 4：错误按键与细节翻译。
+    /// 用例 4：错误按键与细节翻译
     /// </summary>
     /// <remarks>
-    /// 自由文本错误原样返回；没有模板时返回键。
+    /// 自由文本错误原样返回；没有模板时返回键
     /// </remarks>
     [Fact]
     public void Localize_Error_UsesKeyAndDetails_OrLiteralText()
@@ -133,7 +133,7 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 5：按调用上下文的 Baggage 区域翻译，缺失时用默认区域。
+    /// 用例 5：按调用上下文的 Baggage 区域翻译，缺失时用默认区域
     /// </summary>
     [Fact]
     public void Localize_WithContext_ReadsLocaleBaggage()
@@ -147,7 +147,7 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 6：同一键在多个目录里时，先注册的目录优先。
+    /// 用例 6：同一键在多个目录里时，先注册的目录优先
     /// </summary>
     [Fact]
     public void FirstRegisteredCatalog_WinsForTheSameKey()
@@ -157,10 +157,10 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 7：解析器把调用方区域协商成启用的区域，与按调用上下文翻译是同一个区域。
+    /// 用例 7：解析器把调用方区域协商成启用的区域，与按调用上下文翻译是同一个区域
     /// </summary>
     /// <remarks>
-    /// 内核按它安装调用链的消息作用域；区域不在启用列表时即使有语言文件也不用。
+    /// 内核按它安装调用链的消息作用域；区域不在启用列表时即使有语言文件也不用
     /// </remarks>
     [Fact]
     public void Resolver_NegotiatesTheRequestedLocale_LikeContextLocalization()
@@ -182,7 +182,7 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用给定目录与选项创建本地化器。
+    /// 用给定目录与选项创建本地化器
     /// </summary>
     private IMessageLocalizer Localizer(LocalizationOptions? options, params MessageCatalog[] catalogs) => CreateLocalizer(catalogs, options ?? new LocalizationOptions());
 }

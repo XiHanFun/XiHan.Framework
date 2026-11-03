@@ -7,26 +7,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Envelopes;
 
 /// <summary>
-/// 主题文法：小写字母或数字开头，之后是小写字母、数字、<c>.</c>、<c>_</c>、<c>-</c>，不超过 128 个字符。
+/// 主题文法：小写字母或数字开头，之后是小写字母、数字、<c>.</c>、<c>_</c>、<c>-</c>，不超过 128 个字符
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class TopicName
 {
     /// <summary>
-    /// 最大长度。
+    /// 最大长度
     /// </summary>
     public const int MaxLength = 128;
 
     /// <summary>
-    /// 是否合法。
+    /// 是否合法
     /// </summary>
     public static bool IsValid(string? topic) => topic is not null && Pattern().IsMatch(topic);
 
     /// <summary>
-    /// 校验并返回。
+    /// 校验并返回
     /// </summary>
     /// <remarks>
-    /// 不合法抛出 <see cref="ArgumentException"/>。
+    /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static string Validate(string topic)
     {
@@ -37,7 +37,7 @@ public static partial class TopicName
     }
 
     /// <summary>
-    /// 主题文法的正则：首字符小写字母或数字，总长不超过 <see cref="MaxLength"/>。
+    /// 主题文法的正则：首字符小写字母或数字，总长不超过 <see cref="MaxLength"/>
     /// </summary>
     [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,127}$")]
     private static partial Regex Pattern();

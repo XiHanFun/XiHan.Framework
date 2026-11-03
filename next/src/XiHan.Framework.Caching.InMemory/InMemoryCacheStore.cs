@@ -7,22 +7,22 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.InMemory;
 
 /// <summary>
-/// 有界 LRU 的字节存储。
+/// 有界 LRU 的字节存储
 /// </summary>
 /// <remarks>
-/// 写入复制字节，读取返回不可修改的视图；批量方法一次加锁逐项处理。
+/// 写入复制字节，读取返回不可修改的视图；批量方法一次加锁逐项处理
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
 {
     /// <summary>
-    /// 承载字节条目的有界 LRU 表。
+    /// 承载字节条目的有界 LRU 表
     /// </summary>
     private readonly BoundedLruTable<byte[]> _table;
 
 
     /// <summary>
-    /// 创建存储。
+    /// 创建存储
     /// </summary>
     public InMemoryCacheStore(InMemoryCachingOptions options, TimeProvider timeProvider)
     {
@@ -32,13 +32,13 @@ public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
     }
 
     /// <summary>
-    /// 当前条目数（含尚未清理的过期条目）。
+    /// 当前条目数（含尚未清理的过期条目）
     /// </summary>
     public int Count => _table.Count;
 
     /// <inheritdoc />
     /// <remarks>
-    /// 按键的序数顺序分页，续页标记是上一页最后一个键。每页上限越界返回 <see cref="Abstractions.CachingErrors.ListLimitInvalid"/>。
+    /// 按键的序数顺序分页，续页标记是上一页最后一个键。每页上限越界返回 <see cref="Abstractions.CachingErrors.ListLimitInvalid"/>
     /// </remarks>
     public ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
     {
@@ -124,12 +124,12 @@ public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
         => ValueTask.FromResult(_table.Remove(key.Value, current => expectedValue.Span.SequenceEqual(current)));
 
     /// <summary>
-    /// 清空。
+    /// 清空
     /// </summary>
     public void Clear() => _table.Clear();
 
     /// <summary>
-    /// 取键的字符串形式。
+    /// 取键的字符串形式
     /// </summary>
     private static string[] Names(IReadOnlyList<CacheKey> keys)
     {

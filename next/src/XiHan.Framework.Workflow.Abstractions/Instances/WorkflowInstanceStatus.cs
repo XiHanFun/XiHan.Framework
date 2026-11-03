@@ -7,45 +7,45 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 实例的状态。
+/// 实例的状态
 /// </summary>
 /// <remarks>
-/// <see cref="Completed"/>、<see cref="Canceled"/>、<see cref="Faulted"/>、<see cref="Terminated"/> 是终态（故障可重试）。成员的声明顺序就是生命周期的先后，实例列表按状态排序时照这个顺序（同 4.x，ADR-0103）；新增状态要在 RFC-0021 里定它在顺序里的位置。
+/// <see cref="Completed"/>、<see cref="Canceled"/>、<see cref="Faulted"/>、<see cref="Terminated"/> 是终态（故障可重试）。成员的声明顺序就是生命周期的先后，实例列表按状态排序时照这个顺序（同 4.x，ADR-0103）；新增状态要在 RFC-0021 里定它在顺序里的位置
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowInstanceStatus>))]
 public enum WorkflowInstanceStatus
 {
     /// <summary>
-    /// 运行中（含等待书签）。
+    /// 运行中（含等待书签）
     /// </summary>
     Running = 1,
 
     /// <summary>
-    /// 已挂起：书签保留，到期的书签不恢复。
+    /// 已挂起：书签保留，到期的书签不恢复
     /// </summary>
     Suspended = 2,
 
     /// <summary>
-    /// 已完成。
+    /// 已完成
     /// </summary>
     Completed = 3,
 
     /// <summary>
-    /// 已取消（可能已补偿）。
+    /// 已取消（可能已补偿）
     /// </summary>
     Canceled = 4,
 
     /// <summary>
-    /// 已故障。
+    /// 已故障
     /// </summary>
     /// <remarks>
-    /// 有故障节点时可重试。
+    /// 有故障节点时可重试
     /// </remarks>
     Faulted = 5,
 
     /// <summary>
-    /// 已终止。
+    /// 已终止
     /// </summary>
     Terminated = 6,
 }

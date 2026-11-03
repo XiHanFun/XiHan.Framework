@@ -9,24 +9,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions;
 
 /// <summary>
-/// 消息选项。
+/// 消息选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Messaging</c> 显式读取。
+/// 从配置节 <c>XiHan:Messaging</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial record MessagingOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Messaging";
 
     /// <summary>
-    /// 一条消息最多投递次数（含首次）。
+    /// 一条消息最多投递次数（含首次）
     /// </summary>
     /// <remarks>
-    /// 超过进入死信。默认 3。
+    /// 超过进入死信。默认 3
     /// </remarks>
     public int MaxAttempts
     {
@@ -35,10 +35,10 @@ public sealed partial record MessagingOptions
     } = 3;
 
     /// <summary>
-    /// 死信主题后缀。
+    /// 死信主题后缀
     /// </summary>
     /// <remarks>
-    /// 默认 <c>.dlq</c>。
+    /// 默认 <c>.dlq</c>
     /// </remarks>
     public string DeadLetterSuffix
     {
@@ -47,10 +47,10 @@ public sealed partial record MessagingOptions
     } = ".dlq";
 
     /// <summary>
-    /// 配置的实例标识。
+    /// 配置的实例标识
     /// </summary>
     /// <remarks>
-    /// 为空（缺省）时由 <see cref="MessagingInstance"/> 每次启动生成；给出时就是本实例在消息代理上的标识（RabbitMQ 的广播队列、Kafka 的广播消费组，RFC-0009「订阅方式」第 6 条，ADR-0085）。文法 <c>^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$</c>：1 到 64 个字符，字母或数字开头，不含 <c>@</c>。必须每个同时在线的实例各不相同：重复时 Kafka 的广播退化成同一消费组里的竞争，RabbitMQ 后启动的实例声明同名独占队列失败、启动失败；适合配成 Pod 名这类部署平台保证唯一的值。
+    /// 为空（缺省）时由 <see cref="MessagingInstance"/> 每次启动生成；给出时就是本实例在消息代理上的标识（RabbitMQ 的广播队列、Kafka 的广播消费组，RFC-0009「订阅方式」第 6 条，ADR-0085）。文法 <c>^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$</c>：1 到 64 个字符，字母或数字开头，不含 <c>@</c>。必须每个同时在线的实例各不相同：重复时 Kafka 的广播退化成同一消费组里的竞争，RabbitMQ 后启动的实例声明同名独占队列失败、启动失败；适合配成 Pod 名这类部署平台保证唯一的值
     /// </remarks>
     public string? InstanceId
     {
@@ -61,7 +61,7 @@ public sealed partial record MessagingOptions
     }
 
     /// <summary>
-    /// 从配置读取：<c>MaxAttempts</c>、<c>DeadLetterSuffix</c>、<c>InstanceId</c>。
+    /// 从配置读取：<c>MaxAttempts</c>、<c>DeadLetterSuffix</c>、<c>InstanceId</c>
     /// </summary>
     public static MessagingOptions FromConfiguration(IConfiguration configuration)
     {
@@ -80,7 +80,7 @@ public sealed partial record MessagingOptions
             options = options with { DeadLetterSuffix = suffix };
         }
 
-        // 只记配置值：没有配置时保持为空，由 MessagingInstance 生成随机标识——随机值进了选项，同样的配置就读不出同样的选项。
+        // 只记配置值：没有配置时保持为空，由 MessagingInstance 生成随机标识——随机值进了选项，同样的配置就读不出同样的选项
         // 写了这个键就必须合文法（空字符串同样拒绝），不想固定标识就不写
         if (configuration[$"{ConfigurationSection}:InstanceId"] is { } instance)
         {
@@ -93,18 +93,18 @@ public sealed partial record MessagingOptions
     }
 
     /// <summary>
-    /// 实例标识是否合文法。
+    /// 实例标识是否合文法
     /// </summary>
     /// <remarks>
-    /// 可直接用作 RabbitMQ 队列名与 Kafka 消费组名的一部分；不含 <c>@</c>，它是名字里实例标识前的分隔符。
+    /// 可直接用作 RabbitMQ 队列名与 Kafka 消费组名的一部分；不含 <c>@</c>，它是名字里实例标识前的分隔符
     /// </remarks>
     internal static bool IsValidInstanceId(string value) => InstanceIdPattern().IsMatch(value);
 
     /// <summary>
-    /// 实例标识的正则：字母或数字开头，其余是字母、数字、<c>.</c>、<c>_</c>、<c>-</c>，共 1 到 64 个字符。
+    /// 实例标识的正则：字母或数字开头，其余是字母、数字、<c>.</c>、<c>_</c>、<c>-</c>，共 1 到 64 个字符
     /// </summary>
     /// <remarks>
-    /// 结尾用 <c>\z</c> 而不是 <c>$</c>：<c>$</c> 还匹配结尾换行之前的位置，从文件或环境变量读进来的值带着换行也会被放过。
+    /// 结尾用 <c>\z</c> 而不是 <c>$</c>：<c>$</c> 还匹配结尾换行之前的位置，从文件或环境变量读进来的值带着换行也会被放过
     /// </remarks>
     [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z")]
     private static partial Regex InstanceIdPattern();

@@ -6,37 +6,37 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// 字段的基数。
+/// 字段的基数
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public enum ProtoCardinality
 {
     /// <summary>
-    /// 单值，隐式存在（proto3 默认值不上线）。
+    /// 单值，隐式存在（proto3 默认值不上线）
     /// </summary>
     Singular = 0,
 
     /// <summary>
-    /// 单值，显式存在（<c>optional</c>）。
+    /// 单值，显式存在（<c>optional</c>）
     /// </summary>
     /// <remarks>
-    /// JSON 侧可空。
+    /// JSON 侧可空
     /// </remarks>
     Optional = 1,
 
     /// <summary>
-    /// 重复（<c>repeated</c>）。
+    /// 重复（<c>repeated</c>）
     /// </summary>
     /// <remarks>
-    /// JSON 侧为数组。
+    /// JSON 侧为数组
     /// </remarks>
     Repeated = 2,
 
     /// <summary>
-    /// 字符串键的映射（<c>map&lt;string, T&gt;</c>）。
+    /// 字符串键的映射（<c>map&lt;string, T&gt;</c>）
     /// </summary>
     /// <remarks>
-    /// JSON 侧为对象。
+    /// JSON 侧为对象
     /// </remarks>
     Map = 3,
 }

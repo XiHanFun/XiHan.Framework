@@ -6,18 +6,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Mcp;
 
 /// <summary>
-/// MCP 协议适配器的能力 ID 与接口版本。
+/// MCP 协议适配器的能力 ID 与接口版本
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class McpProtocolCapabilities
 {
     /// <summary>
-    /// MCP 协议：操作作为 tool 经 Model Context Protocol 暴露。
+    /// MCP 协议：操作作为 tool 经 Model Context Protocol 暴露
     /// </summary>
     public const string Mcp = "protocols.mcp";
 
     /// <summary>
-    /// 当前接口版本。
+    /// 当前接口版本
     /// </summary>
     public const int Version = 1;
 }

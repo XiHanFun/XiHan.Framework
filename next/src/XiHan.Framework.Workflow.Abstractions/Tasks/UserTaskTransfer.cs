@@ -6,11 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 
 /// <summary>
-/// 转办一个用户任务：把任务交给另一个指派人。
+/// 转办一个用户任务：把任务交给另一个指派人
 /// </summary>
-/// <param name="TaskId">任务 ID。</param>
-/// <param name="ActorId">操作者（当前指派人）。</param>
-/// <param name="TargetAssigneeId">目标指派人。</param>
-/// <param name="Comment">意见。</param>
+/// <param name="TaskId">任务 ID</param>
+/// <param name="ActorId">操作者（当前指派人）</param>
+/// <param name="TargetAssigneeId">目标指派人</param>
+/// <param name="Comment">意见</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record UserTaskTransfer(string TaskId, string ActorId, string TargetAssigneeId, string? Comment = null);

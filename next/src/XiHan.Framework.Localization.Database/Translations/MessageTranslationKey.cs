@@ -7,16 +7,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 翻译的自然键：消息键与区域。
+/// 翻译的自然键：消息键与区域
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record MessageTranslationKey
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// 区域会规范化大小写。
+    /// 区域会规范化大小写
     /// </remarks>
     public MessageTranslationKey(string key, string locale)
     {
@@ -31,12 +31,12 @@ public sealed record MessageTranslationKey
     }
 
     /// <summary>
-    /// 消息键。
+    /// 消息键
     /// </summary>
     public string Key { get; }
 
     /// <summary>
-    /// 区域（已规范化）。
+    /// 区域（已规范化）
     /// </summary>
     public string Locale { get; }
 }

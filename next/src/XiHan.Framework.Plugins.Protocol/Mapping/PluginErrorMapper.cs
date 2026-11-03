@@ -10,21 +10,21 @@ using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace XiHan.Framework.Plugins.Protocol.Mapping;
 
 /// <summary>
-/// 原语层 <see cref="Error"/> / <see cref="Result"/> 与协议 <c>Error</c> / <c>Status</c> 之间的转换。
+/// 原语层 <see cref="Error"/> / <see cref="Result"/> 与协议 <c>Error</c> / <c>Status</c> 之间的转换
 /// </summary>
 /// <remarks>
-/// 以及 gRPC 状态到宿主错误的映射（<c>spec/plugin/invocation.md</c>）。
+/// 以及 gRPC 状态到宿主错误的映射（<c>spec/plugin/invocation.md</c>）
 /// </remarks>
 internal static class PluginErrorMapper
 {
     /// <summary>
-    /// 结果 → 协议状态。
+    /// 结果 → 协议状态
     /// </summary>
     public static ProtoStatus ToStatus(Result result)
         => result.IsSuccess ? new ProtoStatus { Ok = true } : new ProtoStatus { Ok = false, Error = ToProto(result.Error!) };
 
     /// <summary>
-    /// 错误 → 协议错误（含内部错误链）。
+    /// 错误 → 协议错误（含内部错误链）
     /// </summary>
     public static ProtoError ToProto(Error error)
     {
@@ -44,10 +44,10 @@ internal static class PluginErrorMapper
     }
 
     /// <summary>
-    /// 协议状态 → 结果。
+    /// 协议状态 → 结果
     /// </summary>
     /// <remarks>
-    /// <c>ok</c> 为假却没有错误时按未预期失败处理。
+    /// <c>ok</c> 为假却没有错误时按未预期失败处理
     /// </remarks>
     public static Result FromStatus(ProtoStatus? status, string pluginId, string phase)
     {
@@ -62,10 +62,10 @@ internal static class PluginErrorMapper
     }
 
     /// <summary>
-    /// 协议错误 → 错误。
+    /// 协议错误 → 错误
     /// </summary>
     /// <remarks>
-    /// 有消息键按键还原，否则按文案字面还原；错误码不合法时整体视为插件的未预期失败。
+    /// 有消息键按键还原，否则按文案字面还原；错误码不合法时整体视为插件的未预期失败
     /// </remarks>
     public static Error FromProto(ProtoError error, string pluginId)
     {
@@ -82,10 +82,10 @@ internal static class PluginErrorMapper
     }
 
     /// <summary>
-    /// 调用插件时的 gRPC 异常 → 宿主错误。
+    /// 调用插件时的 gRPC 异常 → 宿主错误
     /// </summary>
     /// <remarks>
-    /// 按 <c>invocation.md</c> §3：<c>Unavailable</c>、连接失败与进程已退出归为插件不可用，截止与取消沿用内核错误码，<c>Unimplemented</c> / <c>InvalidArgument</c> 映射为内核的未知操作 / 载荷不合法，其余状态（含 <c>Internal</c>、<c>Unknown</c>）都是 <c>PLUGINS_UNEXPECTED_001</c>，细节带状态码与消息。<c>Cancelled</c> 一律是取消、不按时钟判断是不是超时：截止时间到了的由 Resilience 阶段的 <c>DeadlineMiddleware</c> 按截止令牌改报超时（RFC-0004）。
+    /// 按 <c>invocation.md</c> §3：<c>Unavailable</c>、连接失败与进程已退出归为插件不可用，截止与取消沿用内核错误码，<c>Unimplemented</c> / <c>InvalidArgument</c> 映射为内核的未知操作 / 载荷不合法，其余状态（含 <c>Internal</c>、<c>Unknown</c>）都是 <c>PLUGINS_UNEXPECTED_001</c>，细节带状态码与消息。<c>Cancelled</c> 一律是取消、不按时钟判断是不是超时：截止时间到了的由 Resilience 阶段的 <c>DeadlineMiddleware</c> 按截止令牌改报超时（RFC-0004）
     /// </remarks>
     public static Error FromRpc(RpcException exception, string pluginId, string phase, LifecycleState state, bool processExited = false) => exception.StatusCode switch
     {

@@ -8,21 +8,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 内存工作流选项（配置节 <c>XiHan:Workflow:InMemory</c>）：各存储容量、轮询周期与批大小。
+/// 内存工作流选项（配置节 <c>XiHan:Workflow:InMemory</c>）：各存储容量、轮询周期与批大小
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record InMemoryWorkflowOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Workflow:InMemory";
 
     /// <summary>
-    /// 定义存储容量。
+    /// 定义存储容量
     /// </summary>
     /// <remarks>
-    /// 默认 1000。
+    /// 默认 1000
     /// </remarks>
     public int MaxDefinitions
     {
@@ -31,10 +31,10 @@ public sealed record InMemoryWorkflowOptions
     } = 1000;
 
     /// <summary>
-    /// 实例存储容量。
+    /// 实例存储容量
     /// </summary>
     /// <remarks>
-    /// 默认 10000。
+    /// 默认 10000
     /// </remarks>
     public int MaxInstances
     {
@@ -43,10 +43,10 @@ public sealed record InMemoryWorkflowOptions
     } = 10_000;
 
     /// <summary>
-    /// 节点实例存储容量。
+    /// 节点实例存储容量
     /// </summary>
     /// <remarks>
-    /// 默认 100000。
+    /// 默认 100000
     /// </remarks>
     public int MaxNodeInstances
     {
@@ -55,10 +55,10 @@ public sealed record InMemoryWorkflowOptions
     } = 100_000;
 
     /// <summary>
-    /// 书签存储容量。
+    /// 书签存储容量
     /// </summary>
     /// <remarks>
-    /// 默认 100000。
+    /// 默认 100000
     /// </remarks>
     public int MaxBookmarks
     {
@@ -67,10 +67,10 @@ public sealed record InMemoryWorkflowOptions
     } = 100_000;
 
     /// <summary>
-    /// 到期书签的轮询周期。
+    /// 到期书签的轮询周期
     /// </summary>
     /// <remarks>
-    /// 默认 1 秒。
+    /// 默认 1 秒
     /// </remarks>
     public TimeSpan PollInterval
     {
@@ -79,10 +79,10 @@ public sealed record InMemoryWorkflowOptions
     } = TimeSpan.FromSeconds(1);
 
     /// <summary>
-    /// 每次轮询最多恢复的书签数。
+    /// 每次轮询最多恢复的书签数
     /// </summary>
     /// <remarks>
-    /// 默认 100。
+    /// 默认 100
     /// </remarks>
     public int BatchSize
     {
@@ -91,10 +91,10 @@ public sealed record InMemoryWorkflowOptions
     } = 100;
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>MaxDefinitions</c>、<c>MaxInstances</c>、<c>MaxNodeInstances</c>、<c>MaxBookmarks</c>、<c>PollIntervalSeconds</c>、<c>BatchSize</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理。
+    /// <c>MaxDefinitions</c>、<c>MaxInstances</c>、<c>MaxNodeInstances</c>、<c>MaxBookmarks</c>、<c>PollIntervalSeconds</c>、<c>BatchSize</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理
     /// </remarks>
     public static InMemoryWorkflowOptions FromConfiguration(IConfiguration configuration)
     {
@@ -134,10 +134,10 @@ public sealed record InMemoryWorkflowOptions
     }
 
     /// <summary>
-    /// 读取整数键。
+    /// 读取整数键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
     /// </remarks>
     private static int? Integer(IConfiguration configuration, string key, int minimum)
     {
@@ -156,10 +156,10 @@ public sealed record InMemoryWorkflowOptions
     }
 
     /// <summary>
-    /// 读取以秒计的正时长键。
+    /// 读取以秒计的正时长键
     /// </summary>
     /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值。
+    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
     /// </remarks>
     private static TimeSpan? Seconds(IConfiguration configuration, string key)
     {

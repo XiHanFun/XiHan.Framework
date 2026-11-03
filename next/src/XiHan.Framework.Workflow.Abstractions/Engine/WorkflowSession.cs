@@ -11,50 +11,50 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 一次锁内操作的会话。
+/// 一次锁内操作的会话
 /// </summary>
 /// <remarks>
-/// 实例、定义图、节点实例与书签的内存副本，记录脏项与删除项供波次结束一次写回；事件与锁外动作也先攒在这里。
+/// 实例、定义图、节点实例与书签的内存副本，记录脏项与删除项供波次结束一次写回；事件与锁外动作也先攒在这里
 /// </remarks>
 internal sealed class WorkflowSession
 {
     /// <summary>
-    /// 节点实例，按 ID。
+    /// 节点实例，按 ID
     /// </summary>
     private readonly Dictionary<string, WorkflowNodeInstance> _nodeInstances = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 节点实例的加载 / 创建顺序。
+    /// 节点实例的加载 / 创建顺序
     /// </summary>
     private readonly List<WorkflowNodeInstance> _nodeInstanceOrder = [];
 
     /// <summary>
-    /// 书签，按 ID。
+    /// 书签，按 ID
     /// </summary>
     private readonly Dictionary<string, WorkflowBookmark> _bookmarks = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 改过的节点实例 ID。
+    /// 改过的节点实例 ID
     /// </summary>
     private readonly HashSet<string> _dirtyNodeInstances = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 改过或新建的书签 ID。
+    /// 改过或新建的书签 ID
     /// </summary>
     private readonly HashSet<string> _dirtyBookmarks = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 删除的书签 ID。
+    /// 删除的书签 ID
     /// </summary>
     private readonly HashSet<string> _deletedBookmarks = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 节点实例状态里记录子实例 ID 的键。
+    /// 节点实例状态里记录子实例 ID 的键
     /// </summary>
     public const string ChildInstanceIdsKey = "childInstanceIds";
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public WorkflowSession(WorkflowDefinition definition, WorkflowInstance instance, IReadOnlyList<WorkflowNodeInstance> nodeInstances, IReadOnlyList<WorkflowBookmark> bookmarks, DateTimeOffset now)
     {
@@ -76,107 +76,107 @@ internal sealed class WorkflowSession
     }
 
     /// <summary>
-    /// 定义。
+    /// 定义
     /// </summary>
     public WorkflowDefinition Definition { get; }
 
     /// <summary>
-    /// 定义图。
+    /// 定义图
     /// </summary>
     public WorkflowDefinitionGraph Graph { get; }
 
     /// <summary>
-    /// 实例。
+    /// 实例
     /// </summary>
     public WorkflowInstance Instance { get; }
 
     /// <summary>
-    /// 变量视图。
+    /// 变量视图
     /// </summary>
     public WorkflowVariables Variables { get; }
 
     /// <summary>
-    /// 本次操作的时刻。
+    /// 本次操作的时刻
     /// </summary>
     public DateTimeOffset Now { get; }
 
     /// <summary>
-    /// 待执行的工作项。
+    /// 待执行的工作项
     /// </summary>
     public Queue<WorkItem> Queue { get; } = new();
 
     /// <summary>
-    /// 是否有节点请求结束实例。
+    /// 是否有节点请求结束实例
     /// </summary>
     public bool EndRequested { get; set; }
 
     /// <summary>
-    /// 本波次已执行的节点数。
+    /// 本波次已执行的节点数
     /// </summary>
     public int Executed { get; set; }
 
     /// <summary>
-    /// 攒下的事件。
+    /// 攒下的事件
     /// </summary>
     public List<PendingEvent> Events { get; } = [];
 
     /// <summary>
-    /// 锁外要启动的子流程。
+    /// 锁外要启动的子流程
     /// </summary>
     public List<WorkflowStartRequest> ChildStarts { get; } = [];
 
     /// <summary>
-    /// 锁外是否通知父实例。
+    /// 锁外是否通知父实例
     /// </summary>
     public bool NotifyParent { get; set; }
 
     /// <summary>
-    /// 锁外级联到子实例的状态。
+    /// 锁外级联到子实例的状态
     /// </summary>
     public WorkflowInstanceStatus? CascadeToChildren { get; set; }
 
     /// <summary>
-    /// 故障时请求了补偿（<see cref="WorkflowDefinition.CompensateOnFault"/>），波次结束后执行。
+    /// 故障时请求了补偿（<see cref="WorkflowDefinition.CompensateOnFault"/>），波次结束后执行
     /// </summary>
     public bool CompensationRequested { get; set; }
 
     /// <summary>
-    /// 节点实例（加载 / 创建顺序）。
+    /// 节点实例（加载 / 创建顺序）
     /// </summary>
     public IReadOnlyList<WorkflowNodeInstance> NodeInstances => _nodeInstanceOrder;
 
     /// <summary>
-    /// 书签。
+    /// 书签
     /// </summary>
     public IEnumerable<WorkflowBookmark> Bookmarks => _bookmarks.Values;
 
     /// <summary>
-    /// 是否还有任何书签。
+    /// 是否还有任何书签
     /// </summary>
     public bool HasBookmarks => _bookmarks.Count > 0;
 
     /// <summary>
-    /// 是否还有节点在等待的书签（实例级超时书签不算：它不代表有节点在等）。
+    /// 是否还有节点在等待的书签（实例级超时书签不算：它不代表有节点在等）
     /// </summary>
     public bool HasActivityBookmarks => _bookmarks.Values.Any(static bookmark => !string.Equals(bookmark.Kind, BookmarkKinds.InstanceTimeout, StringComparison.Ordinal));
 
     /// <summary>
-    /// 按 ID 取节点实例。
+    /// 按 ID 取节点实例
     /// </summary>
     public WorkflowNodeInstance? NodeInstance(string id) => _nodeInstances.GetValueOrDefault(id);
 
     /// <summary>
-    /// 按 ID 取书签。
+    /// 按 ID 取书签
     /// </summary>
     public WorkflowBookmark? Bookmark(string id) => _bookmarks.GetValueOrDefault(id);
 
     /// <summary>
-    /// 某节点实例的书签。
+    /// 某节点实例的书签
     /// </summary>
     public IReadOnlyList<WorkflowBookmark> BookmarksOf(string nodeInstanceId) => _bookmarks.Values.Where(bookmark => string.Equals(bookmark.NodeInstanceId, nodeInstanceId, StringComparison.Ordinal)).ToList();
 
     /// <summary>
-    /// 新建节点实例（运行中）。
+    /// 新建节点实例（运行中）
     /// </summary>
     public WorkflowNodeInstance AddNodeInstance(WorkflowNode node)
     {
@@ -197,20 +197,20 @@ internal sealed class WorkflowSession
     }
 
     /// <summary>
-    /// 标记节点实例已改。
+    /// 标记节点实例已改
     /// </summary>
     public void Touch(WorkflowNodeInstance nodeInstance) => _dirtyNodeInstances.Add(nodeInstance.Id);
 
     /// <summary>
-    /// 为节点实例新建书签。
+    /// 为节点实例新建书签
     /// </summary>
     public WorkflowBookmark AddBookmark(WorkflowNodeInstance nodeInstance, BookmarkRequest request) => AddBookmark(nodeInstance.NodeId, nodeInstance.Id, request);
 
     /// <summary>
-    /// 新建书签。
+    /// 新建书签
     /// </summary>
     /// <remarks>
-    /// 节点 ID 与节点实例 ID 由调用方给出：实例级超时书签的节点实例 ID 是实例 ID。
+    /// 节点 ID 与节点实例 ID 由调用方给出：实例级超时书签的节点实例 ID 是实例 ID
     /// </remarks>
     public WorkflowBookmark AddBookmark(string nodeId, string nodeInstanceId, BookmarkRequest request)
     {
@@ -234,12 +234,12 @@ internal sealed class WorkflowSession
     }
 
     /// <summary>
-    /// 标记书签已改。
+    /// 标记书签已改
     /// </summary>
     public void Touch(WorkflowBookmark bookmark) => _dirtyBookmarks.Add(bookmark.Id);
 
     /// <summary>
-    /// 删除书签。
+    /// 删除书签
     /// </summary>
     public void RemoveBookmark(string id)
     {
@@ -252,7 +252,7 @@ internal sealed class WorkflowSession
     }
 
     /// <summary>
-    /// 删除某节点实例的全部书签。
+    /// 删除某节点实例的全部书签
     /// </summary>
     public void RemoveBookmarksOf(string nodeInstanceId)
     {
@@ -263,10 +263,10 @@ internal sealed class WorkflowSession
     }
 
     /// <summary>
-    /// 删除全部书签。
+    /// 删除全部书签
     /// </summary>
     /// <remarks>
-    /// <paramref name="keepInstanceTimeout"/> 时保留实例级超时书签（跳转后实例仍在运行，超时仍然有效）。
+    /// <paramref name="keepInstanceTimeout"/> 时保留实例级超时书签（跳转后实例仍在运行，超时仍然有效）
     /// </remarks>
     public void RemoveAllBookmarks(bool keepInstanceTimeout = false)
     {
@@ -282,7 +282,7 @@ internal sealed class WorkflowSession
     }
 
     /// <summary>
-    /// 取消全部未结束的节点实例。
+    /// 取消全部未结束的节点实例
     /// </summary>
     public void CancelOpenNodeInstances()
     {
@@ -298,12 +298,12 @@ internal sealed class WorkflowSession
     }
 
     /// <summary>
-    /// 攒一个事件。
+    /// 攒一个事件
     /// </summary>
     public void Publish(string topic, WorkflowEventData data, string? subject = null) => Events.Add(new PendingEvent(topic, data, subject));
 
     /// <summary>
-    /// 事件数据。
+    /// 事件数据
     /// </summary>
     public WorkflowEventData EventData(WorkflowNodeInstance? nodeInstance = null) => new()
     {
@@ -326,28 +326,28 @@ internal sealed class WorkflowSession
     };
 
     /// <summary>
-    /// 改过的节点实例。
+    /// 改过的节点实例
     /// </summary>
     public IReadOnlyList<WorkflowNodeInstance> DirtyNodeInstances() => _dirtyNodeInstances.Select(id => _nodeInstances[id]).ToList();
 
     /// <summary>
-    /// 改过或新建的书签。
+    /// 改过或新建的书签
     /// </summary>
     public IReadOnlyList<WorkflowBookmark> DirtyBookmarks() => _dirtyBookmarks.Where(_bookmarks.ContainsKey).Select(id => _bookmarks[id]).ToList();
 
     /// <summary>
-    /// 删除的书签 ID。
+    /// 删除的书签 ID
     /// </summary>
     public IReadOnlyList<string> DeletedBookmarkIds() => _deletedBookmarks.ToList();
 
     /// <summary>
-    /// 节点实例状态里记录的子实例 ID。
+    /// 节点实例状态里记录的子实例 ID
     /// </summary>
     public static IReadOnlyList<string> ChildInstanceIds(WorkflowNodeInstance nodeInstance)
         => WorkflowValues.ToStringList(nodeInstance.State.TryGetPropertyValue(ChildInstanceIdsKey, out var ids) ? ids : null);
 
     /// <summary>
-    /// 登记要在锁外启动的子流程，并把子实例 ID 记进节点实例状态。
+    /// 登记要在锁外启动的子流程，并把子实例 ID 记进节点实例状态
     /// </summary>
     public void ScheduleChildren(WorkflowNodeInstance nodeInstance, IReadOnlyList<WorkflowStartRequest> children)
     {

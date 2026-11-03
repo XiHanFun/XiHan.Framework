@@ -13,13 +13,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Commands;
 
 /// <summary>
-/// 命令 <c>migrate</c>：按来源版本的规则集改写应用代码。
+/// 命令 <c>migrate</c>：按来源版本的规则集改写应用代码
 /// </summary>
 /// <remarks>
-/// 用法：<c>migrate &lt;来源版本&gt; [--path &lt;目录|.csproj|.slnx&gt;] [--fixers &lt;规则编号,…&gt;] [--dry-run] [--report &lt;文件&gt;]</c>。
-/// 按来源版本的规则集（<c>spec/migration/README.md</c>）改写应用代码，打印每条规则的改动与标记。
+/// 用法：<c>migrate &lt;来源版本&gt; [--path &lt;目录|.csproj|.slnx&gt;] [--fixers &lt;规则编号,…&gt;] [--dry-run] [--report &lt;文件&gt;]</c>
+/// 按来源版本的规则集（<c>spec/migration/README.md</c>）改写应用代码，打印每条规则的改动与标记
 /// </remarks>
-/// <param name="ruleSets">工具认识的规则集；运行时是 <see cref="MigrationRuleSets.All"/>，测试可以换成自己的。</param>
+/// <param name="ruleSets">工具认识的规则集；运行时是 <see cref="MigrationRuleSets.All"/>，测试可以换成自己的</param>
 internal sealed class MigrateCommand(IReadOnlyList<MigrationRuleSet> ruleSets) : ICommand
 {
     /// <inheritdoc />
@@ -86,7 +86,7 @@ internal sealed class MigrateCommand(IReadOnlyList<MigrationRuleSet> ruleSets) :
     }
 
     /// <summary>
-    /// 终端表格：每条规则一行，再列全部标记，最后一行汇总。
+    /// 终端表格：每条规则一行，再列全部标记，最后一行汇总
     /// </summary>
     private static async Task WriteTableAsync(CommandContext context, MigrationReport report)
     {

@@ -8,15 +8,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// 从中立的数据源取 SqlSugar 客户端。
+/// 从中立的数据源取 SqlSugar 客户端
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SqlSugarDataSourceExtensions
 {
     /// <summary>
-    /// 数据源的 SqlSugar 客户端（<see cref="SqlSugarDataSource.Client"/>）。
+    /// 数据源的 SqlSugar 客户端（<see cref="SqlSugarDataSource.Client"/>）
     /// </summary>
-    /// <exception cref="ArgumentException">数据源不是 SqlSugar 建的。</exception>
+    /// <exception cref="ArgumentException">数据源不是 SqlSugar 建的</exception>
     public static ISqlSugarClient GetSqlSugarClient(this IDataSource source)
     {
         ArgumentNullException.ThrowIfNull(source);

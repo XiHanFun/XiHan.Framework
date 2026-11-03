@@ -4,35 +4,35 @@
 namespace XiHan.Framework.Scheduling.Kubernetes.Leases;
 
 /// <summary>
-/// Lease 的规约：持有者、存活秒数、获取与续约时刻（MicroTime 文本）、交接次数。
+/// Lease 的规约：持有者、存活秒数、获取与续约时刻（MicroTime 文本）、交接次数
 /// </summary>
 internal sealed class LeaseSpec
 {
     /// <summary>
-    /// 持有者标识。
+    /// 持有者标识
     /// </summary>
     /// <remarks>
-    /// 空表示无人持有。
+    /// 空表示无人持有
     /// </remarks>
     public string? HolderIdentity { get; set; }
 
     /// <summary>
-    /// 存活秒数（整数）。
+    /// 存活秒数（整数）
     /// </summary>
     public int? LeaseDurationSeconds { get; set; }
 
     /// <summary>
-    /// 获取时刻。
+    /// 获取时刻
     /// </summary>
     public string? AcquireTime { get; set; }
 
     /// <summary>
-    /// 最近续约时刻。
+    /// 最近续约时刻
     /// </summary>
     public string? RenewTime { get; set; }
 
     /// <summary>
-    /// 持有者变更次数。
+    /// 持有者变更次数
     /// </summary>
     public int? LeaseTransitions { get; set; }
 }

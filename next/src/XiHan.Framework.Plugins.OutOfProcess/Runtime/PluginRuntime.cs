@@ -25,107 +25,107 @@ using Status = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace XiHan.Framework.Plugins.OutOfProcess.Runtime;
 
 /// <summary>
-/// 一个进程外插件的运行时。
+/// 一个进程外插件的运行时
 /// </summary>
 /// <remarks>
-/// 进程的启动、握手、配置、启动、健康监视、崩溃重启与停止（<c>spec/plugin/lifecycle.md</c>），以及经它的调用与事件投递。
+/// 进程的启动、握手、配置、启动、健康监视、崩溃重启与停止（<c>spec/plugin/lifecycle.md</c>），以及经它的调用与事件投递
 /// </remarks>
 internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
 {
     /// <summary>
-    /// 重启退避上限。
+    /// 重启退避上限
     /// </summary>
     private static readonly TimeSpan _maxBackoff = TimeSpan.FromSeconds(60);
 
     /// <summary>
-    /// 宿主环境。
+    /// 宿主环境
     /// </summary>
     private readonly PluginHostContext _host;
 
     /// <summary>
-    /// 串行化启动、停止与重启的互斥量。
+    /// 串行化启动、停止与重启的互斥量
     /// </summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 保护状态字段的锁。
+    /// 保护状态字段的锁
     /// </summary>
     private readonly Lock _stateLock = new();
 
     /// <summary>
-    /// 时间窗内的重启时刻。
+    /// 时间窗内的重启时刻
     /// </summary>
     private readonly Queue<DateTimeOffset> _restartTimes = new();
 
     /// <summary>
-    /// 显式停止后取消：终止退避中的重启。
+    /// 显式停止后取消：终止退避中的重启
     /// </summary>
     private readonly CancellationTokenSource _lifetime = new();
 
     /// <summary>
-    /// 当前状态。
+    /// 当前状态
     /// </summary>
     private LifecycleState _state = LifecycleState.Declared;
 
     /// <summary>
-    /// 当前错误。
+    /// 当前错误
     /// </summary>
     private Error? _error;
 
     /// <summary>
-    /// 当前进程。
+    /// 当前进程
     /// </summary>
     /// <remarks>
-    /// 没有运行中的进程为空。
+    /// 没有运行中的进程为空
     /// </remarks>
     private PluginProcess? _process;
 
     /// <summary>
-    /// 当前进程的监视（健康与退出）。
+    /// 当前进程的监视（健康与退出）
     /// </summary>
     /// <remarks>
-    /// 停止时取消，退出监视据此区分有序停止与崩溃。
+    /// 停止时取消，退出监视据此区分有序停止与崩溃
     /// </remarks>
     private CancellationTokenSource? _monitor;
 
     /// <summary>
-    /// 首次成功握手的结果。
+    /// 首次成功握手的结果
     /// </summary>
     /// <remarks>
-    /// 重启后核对。
+    /// 重启后核对
     /// </remarks>
     private HandshakeInfo? _handshake;
 
     /// <summary>
-    /// 累计自动重启次数。
+    /// 累计自动重启次数
     /// </summary>
     private int _restarts;
 
     /// <summary>
-    /// 实例序号，拼进实例 ID。
+    /// 实例序号，拼进实例 ID
     /// </summary>
     private int _instance;
 
     /// <summary>
-    /// 已显式停止，不再启动也不再重启。
+    /// 已显式停止，不再启动也不再重启
     /// </summary>
     private volatile bool _stopping;
 
     /// <summary>
-    /// 已释放。
+    /// 已释放
     /// </summary>
     private bool _disposed;
 
     /// <summary>
-    /// 崩溃后有重启在退避中。
+    /// 崩溃后有重启在退避中
     /// </summary>
     /// <remarks>
-    /// 期间的调用直接按不可用失败，不绕过退避。
+    /// 期间的调用直接按不可用失败，不绕过退避
     /// </remarks>
     private volatile bool _restartPending;
 
     /// <summary>
-    /// 创建运行时。
+    /// 创建运行时
     /// </summary>
     public PluginRuntime(Manifest manifest, string directory, string executable, PermissionGrant permissions, PluginHostContext host, ILogger logger)
     {
@@ -138,64 +138,64 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 清单。
+    /// 清单
     /// </summary>
     public Manifest Manifest { get; }
 
     /// <summary>
-    /// 插件目录。
+    /// 插件目录
     /// </summary>
     public string Directory { get; }
 
     /// <summary>
-    /// 可执行文件绝对路径。
+    /// 可执行文件绝对路径
     /// </summary>
     public string Executable { get; }
 
     /// <summary>
-    /// 授予的权限。
+    /// 授予的权限
     /// </summary>
     public PermissionGrant Permissions { get; }
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     /// <remarks>
-    /// 宿主附着到容器后换成真正的日志工厂产出的实例。
+    /// 宿主附着到容器后换成真正的日志工厂产出的实例
     /// </remarks>
     public ILogger Logger { get; set; }
 
     /// <summary>
-    /// 是否在发现时被拒。
+    /// 是否在发现时被拒
     /// </summary>
     /// <remarks>
-    /// 清单、权限或入口不合格，没有进程可启动：停在 Failed，不启动也不重启（<c>lifecycle.md</c> §1）。
+    /// 清单、权限或入口不合格，没有进程可启动：停在 Failed，不启动也不重启（<c>lifecycle.md</c> §1）
     /// </remarks>
     public bool IsRejected { get; private set; }
 
     /// <summary>
-    /// 首次握手在重试中才成功时交给宿主登记声明。
+    /// 首次握手在重试中才成功时交给宿主登记声明
     /// </summary>
     /// <remarks>
-    /// 发现时握手失败的插件那时还没有声明可登记；返回失败（如与已有操作重名、引用了未登记的权限码）时插件按发现时被拒处理、不再重试。
+    /// 发现时握手失败的插件那时还没有声明可登记；返回失败（如与已有操作重名、引用了未登记的权限码）时插件按发现时被拒处理、不再重试
     /// </remarks>
     public Func<PluginRuntime, Result>? Discovered { get; set; }
 
     /// <summary>
-    /// 是否懒激活：清单 <c>activation</c> 不含 <c>onStartup</c>。
+    /// 是否懒激活：清单 <c>activation</c> 不含 <c>onStartup</c>
     /// </summary>
     public bool IsLazy => !Manifest.Activation.Contains("onStartup", StringComparer.Ordinal);
 
     /// <summary>
-    /// 首次成功握手的结果。
+    /// 首次成功握手的结果
     /// </summary>
     /// <remarks>
-    /// 尚未握手成功为空。
+    /// 尚未握手成功为空
     /// </remarks>
     public HandshakeInfo? Handshake => _handshake;
 
     /// <summary>
-    /// 当前状态。
+    /// 当前状态
     /// </summary>
     public LifecycleState State
     {
@@ -209,7 +209,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 当前错误。
+    /// 当前错误
     /// </summary>
     public Error? Error
     {
@@ -223,7 +223,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 对外的状态快照。
+    /// 对外的状态快照
     /// </summary>
     public PluginStatus Status
     {
@@ -237,24 +237,24 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 进程在运行且处于可服务状态。
+    /// 进程在运行且处于可服务状态
     /// </summary>
     public bool IsServing => _process is { HasExited: false } && State is LifecycleState.Started or LifecycleState.Ready or LifecycleState.Degraded;
 
     /// <summary>
-    /// 诊断快照。
+    /// 诊断快照
     /// </summary>
     public OutOfProcessPluginStatus Describe()
         => new(Status, _process is { HasExited: false } process ? process.ProcessId : null, _handshake?.ProtocolVersion, _restarts, IsLazy);
 
     /// <summary>
-    /// 是否以该方式订阅了该主题与类型。
+    /// 是否以该方式订阅了该主题与类型
     /// </summary>
     public bool IsSubscribedTo(string topic, string messageType, SubscriptionMode mode)
         => _handshake?.Subscriptions.Any(s => s.Matches(topic, messageType, mode)) == true;
 
     /// <summary>
-    /// 以发现时被拒登记：进入 Failed，之后不启动也不重启。
+    /// 以发现时被拒登记：进入 Failed，之后不启动也不重启
     /// </summary>
     public void Reject(Error error)
     {
@@ -265,10 +265,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 启动阶段失败后按重启策略在后台重试。
+    /// 启动阶段失败后按重启策略在后台重试
     /// </summary>
     /// <remarks>
-    /// 握手、<c>Configure</c>、<c>Start</c> 失败与崩溃一样按退避重试并计入次数上限（<c>lifecycle.md</c> §6、<c>handshake.md</c> §5）；首次握手还没成功过的重新探测启动。发现时被拒或已显式停止的什么都不做。
+    /// 握手、<c>Configure</c>、<c>Start</c> 失败与崩溃一样按退避重试并计入次数上限（<c>lifecycle.md</c> §6、<c>handshake.md</c> §5）；首次握手还没成功过的重新探测启动。发现时被拒或已显式停止的什么都不做
     /// </remarks>
     public void ScheduleRestart()
     {
@@ -282,10 +282,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 探测启动。
+    /// 探测启动
     /// </summary>
     /// <remarks>
-    /// 启动进程并握手；懒激活的插件随即停止进程，其余保持运行等待 <see cref="StartAsync"/>。
+    /// 启动进程并握手；懒激活的插件随即停止进程，其余保持运行等待 <see cref="StartAsync"/>
     /// </remarks>
     public async Task<Result<HandshakeInfo>> DiscoverAsync(CancellationToken cancellationToken)
     {
@@ -313,16 +313,16 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 启动（<c>onStartup</c> 的插件）。
+    /// 启动（<c>onStartup</c> 的插件）
     /// </summary>
     /// <remarks>
-    /// 懒激活的插件什么都不做。
+    /// 懒激活的插件什么都不做
     /// </remarks>
     public Task<Result> StartAsync(CancellationToken cancellationToken)
         => IsLazy ? Task.FromResult(Result.Success()) : EnsureRunningAsync(cancellationToken);
 
     /// <summary>
-    /// 显式停止：不再重启，发 <c>Stop</c> 并在宽限内等待退出，超时终止。
+    /// 显式停止：不再重启，发 <c>Stop</c> 并在宽限内等待退出，超时终止
     /// </summary>
     public async Task StopAsync(string reason, CancellationToken cancellationToken)
     {
@@ -345,7 +345,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 调用插件的一个操作。
+    /// 调用插件的一个操作
     /// </summary>
     public async ValueTask<Result<object>> InvokeAsync(string operation, ReadOnlyMemory<byte> payload, InvocationContext context)
     {
@@ -380,7 +380,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 把一条消息投递给插件。
+    /// 把一条消息投递给插件
     /// </summary>
     public async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
     {
@@ -409,10 +409,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 释放同步原语。
+    /// 释放同步原语
     /// </summary>
     /// <remarks>
-    /// 调用前应已 <see cref="StopAsync"/>。
+    /// 调用前应已 <see cref="StopAsync"/>
     /// </remarks>
     public void Dispose()
     {
@@ -428,10 +428,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 取可服务的进程。
+    /// 取可服务的进程
     /// </summary>
     /// <remarks>
-    /// 没有在运行就按需启动（懒激活、停止后的首次调用）；退避中的重启不被绕过。
+    /// 没有在运行就按需启动（懒激活、停止后的首次调用）；退避中的重启不被绕过
     /// </remarks>
     private async Task<Result<PluginProcess>> AcquireAsync(CancellationToken cancellationToken)
     {
@@ -455,7 +455,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 保证进程在运行并已 <c>Start</c>：必要时启动、握手、配置、启动并开始监视。
+    /// 保证进程在运行并已 <c>Start</c>：必要时启动、握手、配置、启动并开始监视
     /// </summary>
     private async Task<Result> EnsureRunningAsync(CancellationToken cancellationToken)
     {
@@ -513,10 +513,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 启动进程并完成 <c>Handshake</c>。
+    /// 启动进程并完成 <c>Handshake</c>
     /// </summary>
     /// <remarks>
-    /// 成功后进程保持运行、状态为 Resolved。
+    /// 成功后进程保持运行、状态为 Resolved
     /// </remarks>
     private async Task<Result<HandshakeInfo>> LaunchAndHandshakeAsync(CancellationToken cancellationToken)
     {
@@ -580,10 +580,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 执行一个生命周期调用（配置 / 启动）。
+    /// 执行一个生命周期调用（配置 / 启动）
     /// </summary>
     /// <remarks>
-    /// gRPC 失败或插件报失败都丢弃进程并记为 Failed。
+    /// gRPC 失败或插件报失败都丢弃进程并记为 Failed
     /// </remarks>
     private async Task<Result> StepAsync<TResponse>(PluginProcess process, string phase, Func<Task<TResponse>> call, Func<TResponse, Status?> status)
     {
@@ -610,10 +610,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 有序停止当前进程。
+    /// 有序停止当前进程
     /// </summary>
     /// <remarks>
-    /// 取消监视、发 <c>Stop</c>、等宽限、必要时终止；最后进入 <paramref name="finalState"/>。
+    /// 取消监视、发 <c>Stop</c>、等宽限、必要时终止；最后进入 <paramref name="finalState"/>
     /// </remarks>
     private async Task ShutdownProcessAsync(string reason, LifecycleState finalState, CancellationToken cancellationToken)
     {
@@ -662,7 +662,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 作废会话并释放进程（仍在运行则终止）。
+    /// 作废会话并释放进程（仍在运行则终止）
     /// </summary>
     private async Task DiscardAsync(PluginProcess process)
     {
@@ -675,7 +675,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 开始监视进程：健康推送 / 轮询与退出。
+    /// 开始监视进程：健康推送 / 轮询与退出
     /// </summary>
     private void StartMonitoring(PluginProcess process)
     {
@@ -686,7 +686,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 等待进程退出：监视未取消即为崩溃，记为 Failed 并按退避重启。
+    /// 等待进程退出：监视未取消即为崩溃，记为 Failed 并按退避重启
     /// </summary>
     private async Task WatchExitAsync(PluginProcess process, CancellationTokenSource monitor)
     {
@@ -719,10 +719,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 退避重启。
+    /// 退避重启
     /// </summary>
     /// <remarks>
-    /// 1 秒起翻倍、上限 60 秒；时间窗内超过 <see cref="OutOfProcessPluginOptions.RestartLimit"/> 次后保持 Failed。
+    /// 1 秒起翻倍、上限 60 秒；时间窗内超过 <see cref="OutOfProcessPluginOptions.RestartLimit"/> 次后保持 Failed
     /// </remarks>
     private async Task RestartAsync()
     {
@@ -793,10 +793,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 一次重试。
+    /// 一次重试
     /// </summary>
     /// <remarks>
-    /// 首次握手还没成功过的先重新探测启动、交宿主登记声明；之后（非懒激活）配置并启动。
+    /// 首次握手还没成功过的先重新探测启动、交宿主登记声明；之后（非懒激活）配置并启动
     /// </remarks>
     private async Task<Result> RecoverAsync(CancellationToken cancellationToken)
     {
@@ -836,10 +836,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 健康监视。
+    /// 健康监视
     /// </summary>
     /// <remarks>
-    /// 先订阅推送，推送断开后回退为轮询；连续失败达到阈值即终止进程交给退出监视处理。
+    /// 先订阅推送，推送断开后回退为轮询；连续失败达到阈值即终止进程交给退出监视处理
     /// </remarks>
     private async Task WatchHealthAsync(PluginProcess process, CancellationToken token)
     {
@@ -893,10 +893,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 采纳一次健康应答。
+    /// 采纳一次健康应答
     /// </summary>
     /// <remarks>
-    /// 插件自报 Failed 时终止进程（退出监视随后按崩溃重启）。返回进程是否仍可继续监视。
+    /// 插件自报 Failed 时终止进程（退出监视随后按崩溃重启）。返回进程是否仍可继续监视
     /// </remarks>
     private bool Apply(PluginProcess process, HealthResponse health)
     {
@@ -934,7 +934,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 组装 <c>Configure</c> 请求：配置节 JSON、已授予权限、已解析绑定与工作目录。
+    /// 组装 <c>Configure</c> 请求：配置节 JSON、已授予权限、已解析绑定与工作目录
     /// </summary>
     private ConfigureRequest BuildConfigure()
     {
@@ -961,7 +961,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 进入某状态。
+    /// 进入某状态
     /// </summary>
     private void SetState(LifecycleState state, Error? error)
     {
@@ -975,90 +975,90 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// 进入 Failed。
+    /// 进入 Failed
     /// </summary>
     private void Fail(Error error) => SetState(LifecycleState.Failed, error);
 
     /// <summary>
-    /// 插件不可用的失败。
+    /// 插件不可用的失败
     /// </summary>
     private Error Unavailable()
         => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", Manifest.Id), ("state", State.ToString())));
 
     /// <summary>
-    /// 某阶段超时。
+    /// 某阶段超时
     /// </summary>
     private Error Timeout(string phase)
         => new(PluginErrors.Timeout, PluginMessages.ProcessTimeout, MessageArguments.Of(("id", Manifest.Id), ("phase", phase)));
 
     /// <summary>
-    /// 记录握手完成。
+    /// 记录握手完成
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin {PluginId} completed the handshake with protocol v{ProtocolVersion}: {Operations} operations, {Subscriptions} subscriptions.")]
     private static partial void LogHandshake(ILogger logger, string pluginId, uint protocolVersion, int operations, int subscriptions);
 
     /// <summary>
-    /// 记录启动完成。
+    /// 记录启动完成
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin {PluginId} started (pid {ProcessId}, sdk {Sdk}).")]
     private static partial void LogStarted(ILogger logger, string pluginId, int processId, string sdk);
 
     /// <summary>
-    /// 记录状态变化。
+    /// 记录状态变化
     /// </summary>
     [LoggerMessage(Level = LogLevel.Debug, Message = "Plugin {PluginId} entered {State}.")]
     private static partial void LogState(ILogger logger, string pluginId, LifecycleState state);
 
     /// <summary>
-    /// 记录崩溃。
+    /// 记录崩溃
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} exited unexpectedly with code {ExitCode}.")]
     private static partial void LogCrashed(ILogger logger, string pluginId, int exitCode);
 
     /// <summary>
-    /// 记录重启排期。
+    /// 记录重启排期
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin {PluginId} will be restarted in {Delay} (attempt {Attempt}).")]
     private static partial void LogRestartScheduled(ILogger logger, string pluginId, TimeSpan delay, int attempt);
 
     /// <summary>
-    /// 记录重启成功。
+    /// 记录重启成功
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Plugin {PluginId} restarted (total restarts: {Restarts}).")]
     private static partial void LogRestarted(ILogger logger, string pluginId, int restarts);
 
     /// <summary>
-    /// 记录重启次数耗尽。
+    /// 记录重启次数耗尽
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} reached the restart limit of {Limit} within {Window}; it stays failed until it is reloaded.")]
     private static partial void LogRestartLimit(ILogger logger, string pluginId, int limit, TimeSpan window);
 
     /// <summary>
-    /// 记录健康推送断开。
+    /// 记录健康推送断开
     /// </summary>
     [LoggerMessage(Level = LogLevel.Debug, Message = "Health stream of plugin {PluginId} ended with {StatusCode}; falling back to polling.")]
     private static partial void LogHealthStreamLost(ILogger logger, string pluginId, StatusCode statusCode);
 
     /// <summary>
-    /// 记录健康探测连续失败。
+    /// 记录健康探测连续失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} failed {Failures} consecutive health probes; terminating the process.")]
     private static partial void LogHealthLost(ILogger logger, string pluginId, int failures);
 
     /// <summary>
-    /// 记录 Stop 调用失败。
+    /// 记录 Stop 调用失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Stop call to plugin {PluginId} failed with {StatusCode}; waiting for the process to exit.")]
     private static partial void LogStopFailed(ILogger logger, string pluginId, StatusCode statusCode);
 
     /// <summary>
-    /// 记录停止超时。
+    /// 记录停止超时
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "Plugin {PluginId} did not exit within {Grace}; sending the termination signal.")]
     private static partial void LogStopTimeout(ILogger logger, string pluginId, TimeSpan grace);
 
     /// <summary>
-    /// 记录停止超时后的终止结局。
+    /// 记录停止超时后的终止结局
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin {PluginId} {Outcome}.")]
     private static partial void LogTerminated(ILogger logger, string pluginId, string outcome);

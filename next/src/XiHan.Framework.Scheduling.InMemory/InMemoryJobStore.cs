@@ -9,51 +9,51 @@ using XiHan.Framework.Scheduling.Abstractions.Storage;
 namespace XiHan.Framework.Scheduling.InMemory;
 
 /// <summary>
-/// 进程内作业存储。
+/// 进程内作业存储
 /// </summary>
 /// <remarks>
-/// 作业、触发器、运行历史（有界，超出丢弃最旧的已结束记录）与节点都在内存里，读出来的是深拷贝。不跨实例共享（<see cref="IsShared"/> 为假）。
+/// 作业、触发器、运行历史（有界，超出丢弃最旧的已结束记录）与节点都在内存里，读出来的是深拷贝。不跨实例共享（<see cref="IsShared"/> 为假）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryJobStore : IJobStore
 {
     /// <summary>
-    /// 保护全部表。
+    /// 保护全部表
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 作业，按名。
+    /// 作业，按名
     /// </summary>
     private readonly SortedDictionary<string, JobRecord> _jobs = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 触发器，按键文本（作业名/触发器名）。
+    /// 触发器，按键文本（作业名/触发器名）
     /// </summary>
     private readonly SortedDictionary<string, TriggerRecord> _triggers = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 运行记录，按运行 ID。
+    /// 运行记录，按运行 ID
     /// </summary>
     private readonly Dictionary<string, JobRunRecord> _runs = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 运行记录的写入顺序，淘汰最旧的已结束记录用。
+    /// 运行记录的写入顺序，淘汰最旧的已结束记录用
     /// </summary>
     private readonly List<string> _runOrder = [];
 
     /// <summary>
-    /// 节点，按 ID。
+    /// 节点，按 ID
     /// </summary>
     private readonly SortedDictionary<string, SchedulerNodeRecord> _nodes = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 运行历史上限。
+    /// 运行历史上限
     /// </summary>
     private readonly int _maxRuns;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public InMemoryJobStore(InMemorySchedulingOptions options)
     {
@@ -65,7 +65,7 @@ public sealed class InMemoryJobStore : IJobStore
     public bool IsShared => false;
 
     /// <summary>
-    /// 运行记录数。
+    /// 运行记录数
     /// </summary>
     public int RunCount
     {
@@ -460,7 +460,7 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <summary>
-    /// 写入或替换运行记录，保持写入顺序。
+    /// 写入或替换运行记录，保持写入顺序
     /// </summary>
     private void Upsert(JobRunRecord run)
     {
@@ -473,10 +473,10 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <summary>
-    /// 淘汰最旧的已结束记录。
+    /// 淘汰最旧的已结束记录
     /// </summary>
     /// <remarks>
-    /// 全部在运行中时无法淘汰。
+    /// 全部在运行中时无法淘汰
     /// </remarks>
     private bool EvictOldestFinished()
     {

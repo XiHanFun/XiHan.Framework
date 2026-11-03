@@ -14,56 +14,56 @@ using XiHan.Framework.Scheduling.Database.Entities;
 namespace XiHan.Framework.Scheduling.Database.Storage;
 
 /// <summary>
-/// 数据库作业存储（单例，跨实例共享）。
+/// 数据库作业存储（单例，跨实例共享）
 /// </summary>
 /// <remarks>
-/// 作业、触发器、运行历史与节点各一张表，每个操作在根提供者的新作用域里经完整管道执行、返回即提交。抢占与独占占用靠并发戳做比较并交换：多个节点同时抢占同一条触发器只有先改成功的拿到。管道失败 → <see cref="SchedulingErrors.StoreUnavailable"/>。
+/// 作业、触发器、运行历史与节点各一张表，每个操作在根提供者的新作用域里经完整管道执行、返回即提交。抢占与独占占用靠并发戳做比较并交换：多个节点同时抢占同一条触发器只有先改成功的拿到。管道失败 → <see cref="SchedulingErrors.StoreUnavailable"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseJobStore : IJobStore
 {
     /// <summary>
-    /// 比较并交换撞上别的节点时的重试次数上限。
+    /// 比较并交换撞上别的节点时的重试次数上限
     /// </summary>
     private const int MaxAttempts = 3;
 
     /// <summary>
-    /// 运行中状态的整数值。
+    /// 运行中状态的整数值
     /// </summary>
     private const int RunningRun = (int)JobRunState.Running;
 
     /// <summary>
-    /// 失联状态的整数值。
+    /// 失联状态的整数值
     /// </summary>
     private const int LostRun = (int)JobRunState.Lost;
 
     /// <summary>
-    /// 等待状态的整数值。
+    /// 等待状态的整数值
     /// </summary>
     private const int WaitingTrigger = (int)TriggerState.Waiting;
 
     /// <summary>
-    /// 已抢占状态的整数值。
+    /// 已抢占状态的整数值
     /// </summary>
     private const int AcquiredTrigger = (int)TriggerState.Acquired;
 
     /// <summary>
-    /// 阻塞状态的整数值。
+    /// 阻塞状态的整数值
     /// </summary>
     private const int BlockedTrigger = (int)TriggerState.Blocked;
 
     /// <summary>
-    /// 管道执行。
+    /// 管道执行
     /// </summary>
     private readonly StoreInvocation _invocation;
 
     /// <summary>
-    /// 运行记录的写入序号。
+    /// 运行记录的写入序号
     /// </summary>
     private readonly WriteSequence _sequence;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public DatabaseJobStore(IServiceProvider services, App app, TimeProvider clock)
     {
@@ -536,10 +536,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 独占占用。
+    /// 独占占用
     /// </summary>
     /// <remarks>
-    /// 作业不存在 → 作业未登记；作业上已有未结束的运行 → <see langword="false"/>；否则带并发戳把占用换成本次运行，撞上别的节点就重读再判，最多 <see cref="MaxAttempts"/> 次。
+    /// 作业不存在 → 作业未登记；作业上已有未结束的运行 → <see langword="false"/>；否则带并发戳把占用换成本次运行，撞上别的节点就重读再判，最多 <see cref="MaxAttempts"/> 次
     /// </remarks>
     private static async ValueTask<Result<bool>> OccupyAsync(IRepository<JobEntity, string> jobs, IRepository<JobRunEntity, string> runs, JobRunRecord run, CancellationToken cancellationToken)
     {
@@ -555,10 +555,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 一次占用尝试。
+    /// 一次占用尝试
     /// </summary>
     /// <remarks>
-    /// 读作业行，占用指向的运行还在进行才算被占（结束了但没清掉的占用视为空闲），否则带并发戳写入本次运行。
+    /// 读作业行，占用指向的运行还在进行才算被占（结束了但没清掉的占用视为空闲），否则带并发戳写入本次运行
     /// </remarks>
     private static async ValueTask<Result<bool>> TryOccupyOnceAsync(IRepository<JobEntity, string> jobs, IRepository<JobRunEntity, string> runs, JobRunRecord run, CancellationToken cancellationToken)
     {
@@ -579,7 +579,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 运行记录是否存在且在运行中。
+    /// 运行记录是否存在且在运行中
     /// </summary>
     private static async ValueTask<bool> IsRunningAsync(IRepository<JobRunEntity, string> runs, string runId, CancellationToken cancellationToken)
     {
@@ -588,10 +588,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 作业仍被占用时带并发戳改写一次作业行。
+    /// 作业仍被占用时带并发戳改写一次作业行
     /// </summary>
     /// <remarks>
-    /// 运行结束（<see cref="CompleteRunAsync"/>）同样带并发戳改写这一行之后才解除阻塞：两边谁后提交谁看到对方，阻塞不会写在解除之后。撞上别的节点就重读再判，最多 <see cref="MaxAttempts"/> 次。作业不存在 → 作业未登记。
+    /// 运行结束（<see cref="CompleteRunAsync"/>）同样带并发戳改写这一行之后才解除阻塞：两边谁后提交谁看到对方，阻塞不会写在解除之后。撞上别的节点就重读再判，最多 <see cref="MaxAttempts"/> 次。作业不存在 → 作业未登记
     /// </remarks>
     private static async ValueTask<Result<bool>> HoldIfOccupiedAsync(IRepository<JobEntity, string> jobs, IRepository<JobRunEntity, string> runs, JobName job, CancellationToken cancellationToken)
     {
@@ -606,10 +606,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 一次确认占用的尝试。
+    /// 一次确认占用的尝试
     /// </summary>
     /// <remarks>
-    /// 占用指向的运行还在进行才算被占（与独占开始同一判定），被占时原样写回作业行换一个并发戳。
+    /// 占用指向的运行还在进行才算被占（与独占开始同一判定），被占时原样写回作业行换一个并发戳
     /// </remarks>
     private static async ValueTask<Result<bool>> TryHoldOnceAsync(IRepository<JobEntity, string> jobs, IRepository<JobRunEntity, string> runs, JobName job, CancellationToken cancellationToken)
     {
@@ -629,10 +629,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 作业的占用指向该运行时清掉。
+    /// 作业的占用指向该运行时清掉
     /// </summary>
     /// <remarks>
-    /// 撞上别的节点就重读再试，最多 <see cref="MaxAttempts"/> 次。作业不存在或占用已不是它都视为已释放。
+    /// 撞上别的节点就重读再试，最多 <see cref="MaxAttempts"/> 次。作业不存在或占用已不是它都视为已释放
     /// </remarks>
     private static async ValueTask<Result> ReleaseJobAsync(IRepository<JobEntity, string> jobs, string job, string runId, CancellationToken cancellationToken)
     {
@@ -647,7 +647,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 一次释放尝试：占用仍指向该运行才带并发戳清掉。
+    /// 一次释放尝试：占用仍指向该运行才带并发戳清掉
     /// </summary>
     private static async ValueTask<Result> TryReleaseOnceAsync(IRepository<JobEntity, string> jobs, string job, string runId, CancellationToken cancellationToken)
     {
@@ -662,7 +662,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 该作业阻塞中的触发器改回等待。
+    /// 该作业阻塞中的触发器改回等待
     /// </summary>
     private static async ValueTask<Result> UnblockAsync(IRepository<TriggerEntity, string> triggers, string job, CancellationToken cancellationToken)
     {
@@ -679,10 +679,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 失联节点上运行中的记录改为 Lost、结束时刻为 <paramref name="now"/>。
+    /// 失联节点上运行中的记录改为 Lost、结束时刻为 <paramref name="now"/>
     /// </summary>
     /// <remarks>
-    /// 返回改成功的行。
+    /// 返回改成功的行
     /// </remarks>
     private static async ValueTask<Result<List<JobRunEntity>>> MarkLostAsync(IRepository<JobRunEntity, string> runs, List<string> dead, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -712,7 +712,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 失联节点抢占的触发器改回等待：清掉抢占者与抢占时刻，没有下一次时刻的补为 <paramref name="now"/>。
+    /// 失联节点抢占的触发器改回等待：清掉抢占者与抢占时刻，没有下一次时刻的补为 <paramref name="now"/>
     /// </summary>
     private static async ValueTask<Result> ResetAcquiredAsync(IRepository<TriggerEntity, string> triggers, List<string> dead, DateTimeOffset now, CancellationToken cancellationToken)
     {
@@ -743,10 +743,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 作业没有占用（或作业已不存在）的阻塞触发器改回等待。
+    /// 作业没有占用（或作业已不存在）的阻塞触发器改回等待
     /// </summary>
     /// <remarks>
-    /// 占用它们的运行已被记为 Lost 或早已结束。
+    /// 占用它们的运行已被记为 Lost 或早已结束
     /// </remarks>
     private static async ValueTask<Result> UnblockOrphansAsync(IRepository<JobEntity, string> jobs, IRepository<TriggerEntity, string> triggers, CancellationToken cancellationToken)
     {
@@ -776,10 +776,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 请求取消一条运行。
+    /// 请求取消一条运行
     /// </summary>
     /// <remarks>
-    /// 不存在或不在运行中 → 运行不存在；运行记录没有并发戳，更新冲突只可能是行刚被删，同样按不在运行中报告。
+    /// 不存在或不在运行中 → 运行不存在；运行记录没有并发戳，更新冲突只可能是行刚被删，同样按不在运行中报告
     /// </remarks>
     private static async ValueTask<Result> RequestCancelOneAsync(IRepository<JobRunEntity, string> repository, string id, CancellationToken cancellationToken)
     {
@@ -800,10 +800,10 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 把查询的过滤项翻译成条件。
+    /// 把查询的过滤项翻译成条件
     /// </summary>
     /// <remarks>
-    /// 作业、触发器名、节点等值，状态集合取 <c>IN</c>，计划时刻按范围比较，有无错误看错误码是否为空。
+    /// 作业、触发器名、节点等值，状态集合取 <c>IN</c>，计划时刻按范围比较，有无错误看错误码是否为空
     /// </remarks>
     private static EntityQuery<JobRunEntity> Filter(JobRunQuery query)
     {
@@ -859,13 +859,13 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <summary>
-    /// 作业未登记。
+    /// 作业未登记
     /// </summary>
     private static Error JobNotFound(JobName name)
         => Error.NotFound(SchedulingErrors.JobNotFound, SchedulingMessages.JobNotFound, MessageArguments.Of(("name", name.Value)));
 
     /// <summary>
-    /// 运行不存在或已结束。
+    /// 运行不存在或已结束
     /// </summary>
     private static Error RunNotFound(string id)
         => Error.NotFound(SchedulingErrors.RunNotFound, SchedulingMessages.RunNotFound, MessageArguments.Of(("id", id)));

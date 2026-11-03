@@ -9,48 +9,48 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// 事务型工作单元。
+/// 事务型工作单元
 /// </summary>
 /// <remarks>
-/// 首次写入时经 <see cref="ITenant"/> 在默认连接与已经取用过的连接上开启数据库事务、此后首次取用的连接再补开（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/> 并同样把工作单元标为失败，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接时只用客户端里那个 <c>ConfigId</c> 的连接：实体必须落在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。
+/// 首次写入时经 <see cref="ITenant"/> 在默认连接与已经取用过的连接上开启数据库事务、此后首次取用的连接再补开（只读调用不开事务），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/> 并同样把工作单元标为失败，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接时只用客户端里那个 <c>ConfigId</c> 的连接：实体必须落在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
 {
     /// <summary>
-    /// 实体落点规则。
+    /// 实体落点规则
     /// </summary>
     private readonly IEntityConnectionSelector _selector;
 
     /// <summary>
-    /// 是否已在客户端连接上开启事务。
+    /// 是否已在客户端连接上开启事务
     /// </summary>
     /// <remarks>
-    /// 为假表示本工作单元尚未写入。
+    /// 为假表示本工作单元尚未写入
     /// </remarks>
     private bool _transactionOpen;
 
     /// <summary>
-    /// 写入阶段记下的失败。
+    /// 写入阶段记下的失败
     /// </summary>
     /// <remarks>
-    /// 非空时提交只回滚并返回它。
+    /// 非空时提交只回滚并返回它
     /// </remarks>
     private Error? _failure;
 
     /// <summary>
-    /// 绑定的命名连接。
+    /// 绑定的命名连接
     /// </summary>
     /// <remarks>
-    /// 以 <see cref="UnitOfWorkOptions.Connection"/> 开启时为客户端里那个 <c>ConfigId</c> 的连接，否则为 <see langword="null"/>。非空时事务只开在它上面，不经 <see cref="ITenant"/> 牵动其他连接。
+    /// 以 <see cref="UnitOfWorkOptions.Connection"/> 开启时为客户端里那个 <c>ConfigId</c> 的连接，否则为 <see langword="null"/>。非空时事务只开在它上面，不经 <see cref="ITenant"/> 牵动其他连接
     /// </remarks>
     private SqlSugarProvider? _bound;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
-    /// <param name="client">本作用域的客户端。</param>
-    /// <param name="selector">实体落点规则。</param>
+    /// <param name="client">本作用域的客户端</param>
+    /// <param name="selector">实体落点规则</param>
     public SqlSugarUnitOfWork(ISqlSugarClient client, IEntityConnectionSelector selector)
     {
         Client = client ?? throw new ArgumentNullException(nameof(client));
@@ -58,10 +58,10 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <summary>
-    /// 本作用域的 SqlSugar 客户端。
+    /// 本作用域的 SqlSugar 客户端
     /// </summary>
     /// <remarks>
-    /// 根连接；多连接时经 <c>AsTenant()</c> 取其他连接。
+    /// 根连接；多连接时经 <c>AsTenant()</c> 取其他连接
     /// </remarks>
     public ISqlSugarClient Client { get; }
 
@@ -78,10 +78,10 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     public DomainEventTracker DomainEvents { get; } = new();
 
     /// <summary>
-    /// 取实体类型应使用的连接。
+    /// 取实体类型应使用的连接
     /// </summary>
     /// <remarks>
-    /// 由 <see cref="IEntityConnectionSelector"/> 决定。仓储的每个操作都经此取连接。绑定了命名连接的工作单元里，实体不落在那个连接上抛出携带 <see cref="PersistenceErrors.UnknownConnection"/> 的 <see cref="FrameworkException"/>。
+    /// 由 <see cref="IEntityConnectionSelector"/> 决定。仓储的每个操作都经此取连接。绑定了命名连接的工作单元里，实体不落在那个连接上抛出携带 <see cref="PersistenceErrors.UnknownConnection"/> 的 <see cref="FrameworkException"/>
     /// </remarks>
     public ISqlSugarClient ConnectionFor(Type entityType)
     {
@@ -124,10 +124,10 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <summary>
-    /// 确保数据库事务已开启。
+    /// 确保数据库事务已开启
     /// </summary>
     /// <remarks>
-    /// 写入的声明：仓储在每次写入前调用，直接用 <see cref="Client"/> 或 <see cref="ConnectionFor"/> 写入（<c>Insertable</c>、<c>Updateable</c>、<c>Deleteable</c> 等）之前也要先调用它，写入才在本工作单元的事务里。只读工作单元里抛出携带 <see cref="PersistenceErrors.ReadOnly"/> 的 <see cref="FrameworkException"/> 并把工作单元记为失败，写入不会执行；Transaction 阶段把它转为同码结果。
+    /// 写入的声明：仓储在每次写入前调用，直接用 <see cref="Client"/> 或 <see cref="ConnectionFor"/> 写入（<c>Insertable</c>、<c>Updateable</c>、<c>Deleteable</c> 等）之前也要先调用它，写入才在本工作单元的事务里。只读工作单元里抛出携带 <see cref="PersistenceErrors.ReadOnly"/> 的 <see cref="FrameworkException"/> 并把工作单元记为失败，写入不会执行；Transaction 阶段把它转为同码结果
     /// </remarks>
     public async ValueTask EnsureTransactionAsync(CancellationToken cancellationToken)
     {
@@ -218,10 +218,10 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <summary>
-    /// 回滚已开启的事务。
+    /// 回滚已开启的事务
     /// </summary>
     /// <remarks>
-    /// 绑定了命名连接时只回滚它，否则经 <see cref="ITenant"/> 回滚全部连接。
+    /// 绑定了命名连接时只回滚它，否则经 <see cref="ITenant"/> 回滚全部连接
     /// </remarks>
     private async Task RollbackTransactionAsync()
     {
@@ -238,15 +238,15 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <summary>
-    /// 连接的 <c>ConfigId</c>（字符串形式）。
+    /// 连接的 <c>ConfigId</c>（字符串形式）
     /// </summary>
     private static string? ConfigIdOf(ISqlSugarClient connection) => Convert.ToString(connection.CurrentConnectionConfig.ConfigId, System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// 标为失败。
+    /// 标为失败
     /// </summary>
     /// <remarks>
-    /// 仓储在写入阶段发现并发新增撞上同一标识、只读工作单元拒绝写入时调用；只记第一次。
+    /// 仓储在写入阶段发现并发新增撞上同一标识、只读工作单元拒绝写入时调用；只记第一次
     /// </remarks>
     internal void Fail(Error error)
     {

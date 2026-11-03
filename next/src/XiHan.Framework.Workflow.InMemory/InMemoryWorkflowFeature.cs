@@ -16,21 +16,21 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory;
 
 /// <summary>
-/// 内存工作流特性（<c>role: default</c>）。
+/// 内存工作流特性（<c>role: default</c>）
 /// </summary>
 /// <remarks>
-/// 提供 <c>workflow.execution@1</c>——有界内存存储（按平台与租户分区）、进程内实例锁、引擎，应用进入服务状态后轮询到期书签。没有事务：写入立即生效，不随调用方提交或回滚；只读的调用里拒绝写入（<see cref="InMemoryWorkflowTransaction"/>）。
+/// 提供 <c>workflow.execution@1</c>——有界内存存储（按平台与租户分区）、进程内实例锁、引擎，应用进入服务状态后轮询到期书签。没有事务：写入立即生效，不随调用方提交或回滚；只读的调用里拒绝写入（<see cref="InMemoryWorkflowTransaction"/>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryWorkflowFeature : IHostedFeature
 {
     /// <summary>
-    /// 启动后保存的轮询器，供停止时使用。
+    /// 启动后保存的轮询器，供停止时使用
     /// </summary>
     private DueBookmarkPoller? _poller;
 
     /// <summary>
-    /// 轮询选项。
+    /// 轮询选项
     /// </summary>
     private InMemoryWorkflowOptions? _options;
 

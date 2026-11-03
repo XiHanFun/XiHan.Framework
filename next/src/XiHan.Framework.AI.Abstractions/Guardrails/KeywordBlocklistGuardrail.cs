@@ -8,18 +8,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Guardrails;
 
 /// <summary>
-/// 内置护栏：<c>User</c> 消息命中禁用关键词或提示注入模式即拦截。
+/// 内置护栏：<c>User</c> 消息命中禁用关键词或提示注入模式即拦截
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KeywordBlocklistGuardrail : IAIGuardrail
 {
     /// <summary>
-    /// 护栏名。
+    /// 护栏名
     /// </summary>
     public const string GuardrailName = "keyword-blocklist";
 
     /// <summary>
-    /// 内置的提示注入模式（中英文）。
+    /// 内置的提示注入模式（中英文）
     /// </summary>
     private static readonly string[] _builtInInjectionPatterns =
     [
@@ -34,17 +34,17 @@ public sealed class KeywordBlocklistGuardrail : IAIGuardrail
     ];
 
     /// <summary>
-    /// 禁用关键词。
+    /// 禁用关键词
     /// </summary>
     private readonly IReadOnlyList<string> _keywords;
 
     /// <summary>
-    /// 注入模式。
+    /// 注入模式
     /// </summary>
     private readonly Regex[] _patterns;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public KeywordBlocklistGuardrail(AIGuardrailOptions options)
     {

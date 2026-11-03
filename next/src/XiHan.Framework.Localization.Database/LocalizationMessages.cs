@@ -7,29 +7,29 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database;
 
 /// <summary>
-/// 数据库本地化 Provider 的消息键。
+/// 数据库本地化 Provider 的消息键
 /// </summary>
 /// <remarks>
-/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>。
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class LocalizationMessages
 {
     /// <summary>
-    /// 目录名。
+    /// 目录名
     /// </summary>
     public const string CatalogName = "localization.database";
 
     /// <summary>
-    /// 数据库里没有这条翻译。
+    /// 数据库里没有这条翻译
     /// </summary>
     /// <remarks>
-    /// 参数：<c>key</c>、<c>locale</c>。
+    /// 参数：<c>key</c>、<c>locale</c>
     /// </remarks>
     public const string TranslationNotFound = "localization.translation.not_found";
 
     /// <summary>
-    /// 本包的消息目录。
+    /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(LocalizationMessages));
 }

@@ -18,56 +18,56 @@ using XiHan.Framework.Protocols.Grpc.Services;
 namespace XiHan.Framework.Protocols.Grpc.Methods;
 
 /// <summary>
-/// 把操作表绑定为 gRPC 一元方法。
+/// 把操作表绑定为 gRPC 一元方法
 /// </summary>
 /// <remarks>
-/// 消息以字节数组进出，处理器里按 Schema 在 protobuf 与 JSON 之间转换，以请求头构造的调用上下文经 <see cref="IOperationInvoker.InvokeAsync(InvocationContext, OperationRequest)"/> 走完整内核管道；失败映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据。端点带 <see cref="PipelineBypassMetadata"/>：响应完全由 gRPC 处理器写出，不经 <c>UseXiHan()</c> 的 Problem Details 回写。
+/// 消息以字节数组进出，处理器里按 Schema 在 protobuf 与 JSON 之间转换，以请求头构造的调用上下文经 <see cref="IOperationInvoker.InvokeAsync(InvocationContext, OperationRequest)"/> 走完整内核管道；失败映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据。端点带 <see cref="PipelineBypassMetadata"/>：响应完全由 gRPC 处理器写出，不经 <c>UseXiHan()</c> 的 Problem Details 回写
 /// </remarks>
 internal sealed class OperationMethodProvider : IServiceMethodProvider<OperationsGrpcService>
 {
     /// <summary>
-    /// 尾部元数据：框架错误码。
+    /// 尾部元数据：框架错误码
     /// </summary>
     private const string ErrorCodeTrailer = "xihan-error-code";
 
     /// <summary>
-    /// 尾部元数据：trace-id。
+    /// 尾部元数据：trace-id
     /// </summary>
     private const string TraceIdTrailer = "xihan-trace-id";
 
     /// <summary>
-    /// 字节数组直通的编组器：protobuf 的编解码在处理器里按 Schema 完成。
+    /// 字节数组直通的编组器：protobuf 的编解码在处理器里按 Schema 完成
     /// </summary>
     private static readonly Marshaller<byte[]> _bytes = Marshallers.Create<byte[]>(static (bytes, context) => context.Complete(bytes), static context => context.PayloadAsNewBuffer());
 
     /// <summary>
-    /// 操作表。
+    /// 操作表
     /// </summary>
     private readonly GrpcOperationTable _table;
 
     /// <summary>
-    /// 应用。
+    /// 应用
     /// </summary>
     /// <remarks>
-    /// 提供服务状态。
+    /// 提供服务状态
     /// </remarks>
     private readonly App _app;
 
     /// <summary>
-    /// 操作调用器。
+    /// 操作调用器
     /// </summary>
     private readonly IOperationInvoker _invoker;
 
     /// <summary>
-    /// 本地化器。
+    /// 本地化器
     /// </summary>
     /// <remarks>
-    /// 未装配本地化时为空，状态文案按进程默认区域。
+    /// 未装配本地化时为空，状态文案按进程默认区域
     /// </remarks>
     private readonly IMessageLocalizer? _localizer;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public OperationMethodProvider(GrpcOperationTable table, App app, IOperationInvoker invoker, IMessageLocalizer? localizer)
     {
@@ -90,7 +90,7 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
     }
 
     /// <summary>
-    /// 处理一次一元调用。
+    /// 处理一次一元调用
     /// </summary>
     private async Task<byte[]> InvokeAsync(GrpcOperation operation, byte[] request, ServerCallContext call)
     {
@@ -143,10 +143,10 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
     }
 
     /// <summary>
-    /// 把失败结果翻译为 gRPC 异常。
+    /// 把失败结果翻译为 gRPC 异常
     /// </summary>
     /// <remarks>
-    /// 状态码按错误 KIND，文案按调用方区域，错误码进尾部元数据。
+    /// 状态码按错误 KIND，文案按调用方区域，错误码进尾部元数据
     /// </remarks>
     private RpcException Fail(ServerCallContext call, InvocationContext context, Error error)
     {

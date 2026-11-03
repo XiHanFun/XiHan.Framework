@@ -9,42 +9,42 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Wasm;
 
 /// <summary>
-/// Wasm 插件宿主选项（配置节 <c>XiHan:Plugins:Wasm</c>）。
+/// Wasm 插件宿主选项（配置节 <c>XiHan:Plugins:Wasm</c>）
 /// </summary>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed record WasmPluginOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Plugins:Wasm";
 
     /// <summary>
-    /// 启动时装载的插件目录（每个目录一个插件，含 <c>xihan.manifest.json</c> 与模块文件）。
+    /// 启动时装载的插件目录（每个目录一个插件，含 <c>xihan.manifest.json</c> 与模块文件）
     /// </summary>
     /// <remarks>
-    /// 相对路径相对当前目录。
+    /// 相对路径相对当前目录
     /// </remarks>
     public IReadOnlyList<string> Directories { get; init; } = [];
 
     /// <summary>
-    /// 按清单 ID 授予的 <c>capability:</c> 权限（配置 <c>Grants:&lt;清单 ID&gt;</c>）。
+    /// 按清单 ID 授予的 <c>capability:</c> 权限（配置 <c>Grants:&lt;清单 ID&gt;</c>）
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Grants { get; init; } = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 按清单 ID 的文件系统映射。
+    /// 按清单 ID 的文件系统映射
     /// </summary>
     /// <remarks>
-    /// 客体路径 → 宿主目录（配置 <c>Mounts:&lt;清单 ID&gt;:&lt;客体路径&gt;</c>）；清单的 <c>fs.read:</c> / <c>fs.write:</c> 权限只在映射了才算授予。
+    /// 客体路径 → 宿主目录（配置 <c>Mounts:&lt;清单 ID&gt;:&lt;客体路径&gt;</c>）；清单的 <c>fs.read:</c> / <c>fs.write:</c> 权限只在映射了才算授予
     /// </remarks>
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Mounts { get; init; } = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 线性内存上限。
+    /// 线性内存上限
     /// </summary>
     /// <remarks>
-    /// 默认 64 MiB。
+    /// 默认 64 MiB
     /// </remarks>
     public long MemoryLimitBytes
     {
@@ -53,10 +53,10 @@ public sealed record WasmPluginOptions
     } = 64L * 1024 * 1024;
 
     /// <summary>
-    /// Wasm 栈上限。
+    /// Wasm 栈上限
     /// </summary>
     /// <remarks>
-    /// 默认 1 MiB。
+    /// 默认 1 MiB
     /// </remarks>
     public int StackLimitBytes
     {
@@ -65,10 +65,10 @@ public sealed record WasmPluginOptions
     } = 1024 * 1024;
 
     /// <summary>
-    /// epoch 递增间隔（CPU 截止时间的粒度）。
+    /// epoch 递增间隔（CPU 截止时间的粒度）
     /// </summary>
     /// <remarks>
-    /// 默认 10 毫秒。
+    /// 默认 10 毫秒
     /// </remarks>
     public TimeSpan EpochInterval
     {
@@ -77,10 +77,10 @@ public sealed record WasmPluginOptions
     } = TimeSpan.FromMilliseconds(10);
 
     /// <summary>
-    /// 生命周期调用（握手、配置、启动、停止、健康）与没有截止时间的调用的时限。
+    /// 生命周期调用（握手、配置、启动、停止、健康）与没有截止时间的调用的时限
     /// </summary>
     /// <remarks>
-    /// 默认 30 秒。
+    /// 默认 30 秒
     /// </remarks>
     public TimeSpan CallTimeout
     {
@@ -89,10 +89,10 @@ public sealed record WasmPluginOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// 中间件钩子每次调用的时限。
+    /// 中间件钩子每次调用的时限
     /// </summary>
     /// <remarks>
-    /// 默认 100 毫秒。
+    /// 默认 100 毫秒
     /// </remarks>
     public TimeSpan MiddlewareTimeout
     {
@@ -101,10 +101,10 @@ public sealed record WasmPluginOptions
     } = TimeSpan.FromMilliseconds(100);
 
     /// <summary>
-    /// 健康轮询间隔。
+    /// 健康轮询间隔
     /// </summary>
     /// <remarks>
-    /// 默认 10 秒。
+    /// 默认 10 秒
     /// </remarks>
     public TimeSpan HealthInterval
     {
@@ -113,10 +113,10 @@ public sealed record WasmPluginOptions
     } = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 连续多少次健康探测失败视为实例失效。
+    /// 连续多少次健康探测失败视为实例失效
     /// </summary>
     /// <remarks>
-    /// 默认 3。
+    /// 默认 3
     /// </remarks>
     public int HealthFailures
     {
@@ -125,10 +125,10 @@ public sealed record WasmPluginOptions
     } = 3;
 
     /// <summary>
-    /// <see cref="RestartWindow"/> 内最多自动重建多少次，之后保持 Failed。
+    /// <see cref="RestartWindow"/> 内最多自动重建多少次，之后保持 Failed
     /// </summary>
     /// <remarks>
-    /// 默认 5。
+    /// 默认 5
     /// </remarks>
     public int RestartLimit
     {
@@ -137,10 +137,10 @@ public sealed record WasmPluginOptions
     } = 5;
 
     /// <summary>
-    /// 统计重建次数的时间窗。
+    /// 统计重建次数的时间窗
     /// </summary>
     /// <remarks>
-    /// 默认 10 分钟。
+    /// 默认 10 分钟
     /// </remarks>
     public TimeSpan RestartWindow
     {
@@ -149,18 +149,18 @@ public sealed record WasmPluginOptions
     } = TimeSpan.FromMinutes(10);
 
     /// <summary>
-    /// 插件工作目录的根（每个插件一个子目录，存放 WASI 的 stdout / stderr）。
+    /// 插件工作目录的根（每个插件一个子目录，存放 WASI 的 stdout / stderr）
     /// </summary>
     /// <remarks>
-    /// 为空时取临时目录下的 <c>xihan-plugins-wasm</c>。
+    /// 为空时取临时目录下的 <c>xihan-plugins-wasm</c>
     /// </remarks>
     public string? WorkDirectory { get; init; }
 
     /// <summary>
-    /// 清单 ID 对应的授予。
+    /// 清单 ID 对应的授予
     /// </summary>
     /// <remarks>
-    /// 未配置为空授予。
+    /// 未配置为空授予
     /// </remarks>
     public PermissionGrant GrantsFor(string manifestId)
     {
@@ -169,10 +169,10 @@ public sealed record WasmPluginOptions
     }
 
     /// <summary>
-    /// 清单 ID 对应的文件系统映射。
+    /// 清单 ID 对应的文件系统映射
     /// </summary>
     /// <remarks>
-    /// 未配置为空。
+    /// 未配置为空
     /// </remarks>
     public IReadOnlyDictionary<string, string> MountsFor(string manifestId)
     {
@@ -181,16 +181,16 @@ public sealed record WasmPluginOptions
     }
 
     /// <summary>
-    /// 工作目录根的绝对路径。
+    /// 工作目录根的绝对路径
     /// </summary>
     public string ResolveWorkDirectory()
         => Path.GetFullPath(WorkDirectory ?? Path.Combine(Path.GetTempPath(), "xihan-plugins-wasm"));
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 时长以秒为单位（<c>CallTimeoutSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）或毫秒为单位（<c>EpochIntervalMilliseconds</c>、<c>MiddlewareTimeoutMilliseconds</c>）。取值范围与属性一致：时长是正数，<c>MemoryLimitBytes</c>、<c>StackLimitBytes</c>、<c>HealthFailures</c> 是正整数，<c>RestartLimit</c> 是非负整数；不合规的值以带配置键的 <see cref="ArgumentException"/> 拒绝。
+    /// 时长以秒为单位（<c>CallTimeoutSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）或毫秒为单位（<c>EpochIntervalMilliseconds</c>、<c>MiddlewareTimeoutMilliseconds</c>）。取值范围与属性一致：时长是正数，<c>MemoryLimitBytes</c>、<c>StackLimitBytes</c>、<c>HealthFailures</c> 是正整数，<c>RestartLimit</c> 是非负整数；不合规的值以带配置键的 <see cref="ArgumentException"/> 拒绝
     /// </remarks>
     public static WasmPluginOptions FromConfiguration(IConfiguration configuration)
     {
@@ -259,10 +259,10 @@ public sealed record WasmPluginOptions
     }
 
     /// <summary>
-    /// 读取一个正数（时长）。
+    /// 读取一个正数（时长）
     /// </summary>
     /// <remarks>
-    /// 未配置为空，不是正数则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致。
+    /// 未配置为空，不是正数则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致
     /// </remarks>
     private static double? Positive(IConfiguration section, string name)
     {
@@ -278,10 +278,10 @@ public sealed record WasmPluginOptions
     }
 
     /// <summary>
-    /// 读取一个整数。
+    /// 读取一个整数
     /// </summary>
     /// <remarks>
-    /// 未配置为空，不是整数或不在 [<paramref name="minimum"/>, <paramref name="maximum"/>] 内则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致。
+    /// 未配置为空，不是整数或不在 [<paramref name="minimum"/>, <paramref name="maximum"/>] 内则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致
     /// </remarks>
     private static long? Integer(IConfiguration section, string name, long minimum, long maximum = long.MaxValue)
     {

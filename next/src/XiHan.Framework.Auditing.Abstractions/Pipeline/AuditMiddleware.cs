@@ -12,41 +12,41 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions.Pipeline;
 
 /// <summary>
-/// Observe 阶段末尾的审计中间件。
+/// Observe 阶段末尾的审计中间件
 /// </summary>
 /// <remarks>
-/// 调用结束后，按显式动作或选择规则决定是否把这次调用写成一条 <see cref="AuditEvent"/>。接收器的故障只记日志，不影响调用结果。主体与租户优先取安全上下文（认证后的 <see cref="Principal"/>、解析后的 <see cref="TenantContext"/>），没有时回退到 Baggage 的 <see cref="BaggageKeys.Principal"/> / <see cref="BaggageKeys.Tenant"/>。
+/// 调用结束后，按显式动作或选择规则决定是否把这次调用写成一条 <see cref="AuditEvent"/>。接收器的故障只记日志，不影响调用结果。主体与租户优先取安全上下文（认证后的 <see cref="Principal"/>、解析后的 <see cref="TenantContext"/>），没有时回退到 Baggage 的 <see cref="BaggageKeys.Principal"/> / <see cref="BaggageKeys.Tenant"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class AuditMiddleware : IPipelineMiddleware
 {
     /// <summary>
-    /// 接收器。
+    /// 接收器
     /// </summary>
     private readonly IAuditSink _sink;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly AuditingOptions _options;
 
     /// <summary>
-    /// 按操作排除的匹配器。
+    /// 按操作排除的匹配器
     /// </summary>
     private readonly AuditExclusions _exclusions;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public AuditMiddleware(IAuditSink sink, AuditingOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -86,7 +86,7 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
     }
 
     /// <summary>
-    /// 决定并写入审计事件。
+    /// 决定并写入审计事件
     /// </summary>
     private async ValueTask RecordAsync(InvocationContext context, Error? thrown)
     {
@@ -139,10 +139,10 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
     }
 
     /// <summary>
-    /// 动作。
+    /// 动作
     /// </summary>
     /// <remarks>
-    /// 显式声明优先；否则按选择规则看当前操作，再去掉按操作排除的。
+    /// 显式声明优先；否则按选择规则看当前操作，再去掉按操作排除的
     /// </remarks>
     private string? ResolveAction(InvocationContext context)
     {
@@ -169,7 +169,7 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
     }
 
     /// <summary>
-    /// 接收器写入失败。
+    /// 接收器写入失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "The audit sink failed to record '{Action}' for invocation '{TraceId}'.")]
     private static partial void LogWriteFailed(ILogger logger, Exception exception, string action, string traceId);

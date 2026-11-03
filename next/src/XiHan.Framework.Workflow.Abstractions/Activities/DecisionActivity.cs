@@ -6,7 +6,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Activities;
 
 /// <summary>
-/// 决策节点：立即完成，由出边（Exclusive）选分支。
+/// 决策节点：立即完成，由出边（Exclusive）选分支
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DecisionActivity : IActivity

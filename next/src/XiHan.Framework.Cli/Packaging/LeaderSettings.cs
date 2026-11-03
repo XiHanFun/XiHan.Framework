@@ -4,12 +4,12 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 领导选举（Kubernetes Lease）。
+/// 领导选举（Kubernetes Lease）
 /// </summary>
 internal sealed record LeaderSettings
 {
     /// <summary>
-    /// Lease 名。
+    /// Lease 名
     /// </summary>
     public string Lease { get; set; } = string.Empty;
 }

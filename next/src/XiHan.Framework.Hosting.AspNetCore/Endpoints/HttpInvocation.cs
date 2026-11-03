@@ -20,34 +20,34 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Hosting.AspNetCore.Endpoints;
 
 /// <summary>
-/// HTTP 请求与调用上下文之间的翻译（RFC-0003 的 HTTP 载体映射）。
+/// HTTP 请求与调用上下文之间的翻译（RFC-0003 的 HTTP 载体映射）
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class HttpInvocation
 {
     /// <summary>
-    /// 截止时间头：RFC 3339，UTC。
+    /// 截止时间头：RFC 3339，UTC
     /// </summary>
     public const string DeadlineHeader = "xihan-deadline";
 
     /// <summary>
-    /// gRPC 的相对超时头。
+    /// gRPC 的相对超时头
     /// </summary>
     /// <remarks>
-    /// <c>{数值}{H|M|S|m|u|n}</c>；没有 <see cref="DeadlineHeader"/> 时按当前时刻换算为截止时间。
+    /// <c>{数值}{H|M|S|m|u|n}</c>；没有 <see cref="DeadlineHeader"/> 时按当前时刻换算为截止时间
     /// </remarks>
     public const string GrpcTimeoutHeader = "grpc-timeout";
 
     /// <summary>
-    /// 调用上下文在 <see cref="HttpContext.Items"/> 里的键。
+    /// 调用上下文在 <see cref="HttpContext.Items"/> 里的键
     /// </summary>
     private const string ContextItemKey = "xihan.invocation-context";
 
     /// <summary>
-    /// 从请求头构造调用上下文。
+    /// 从请求头构造调用上下文
     /// </summary>
     /// <remarks>
-    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留已登记的键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字。
+    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留已登记的键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字
     /// </remarks>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
@@ -58,10 +58,10 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 以同一请求的头部构造另一个调用上下文。
+    /// 以同一请求的头部构造另一个调用上下文
     /// </summary>
     /// <remarks>
-    /// 服务来自给定的作用域，不记录到 <see cref="HttpContext.Items"/>。供协议适配器在一个 HTTP 请求里发起独立的子调用（如 MCP 的 <c>tools/call</c>），每个子调用有自己的作用域、工作单元与管道；也供绕过管道的端点（如 SignalR Hub 以连接的 <c>HttpContext</c>）发起内核调用，凭据随之带上，调用经管道时照常重新认证。
+    /// 服务来自给定的作用域，不记录到 <see cref="HttpContext.Items"/>。供协议适配器在一个 HTTP 请求里发起独立的子调用（如 MCP 的 <c>tools/call</c>），每个子调用有自己的作用域、工作单元与管道；也供绕过管道的端点（如 SignalR Hub 以连接的 <c>HttpContext</c>）发起内核调用，凭据随之带上，调用经管道时照常重新认证
     /// </remarks>
     public static InvocationContext CreateContext(HttpContext httpContext, IServiceProvider services)
     {
@@ -131,10 +131,10 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// HTTP 请求的调用来源。
+    /// HTTP 请求的调用来源
     /// </summary>
     /// <remarks>
-    /// 方法与路径（含 PathBase，不含查询串）、远端地址、User-Agent 与 Referer，以及路由匹配到的端点的路由模板与名字（<c>UseXiHan()</c> 在路由之后，端点已选定）。远端地址取连接上的对端地址：宿主在 <c>UseXiHan()</c> 之前 <c>UseForwardedHeaders()</c> 时即为转发头改写后的客户端地址；IPv4 映射的 IPv6 还原为 IPv4。
+    /// 方法与路径（含 PathBase，不含查询串）、远端地址、User-Agent 与 Referer，以及路由匹配到的端点的路由模板与名字（<c>UseXiHan()</c> 在路由之后，端点已选定）。远端地址取连接上的对端地址：宿主在 <c>UseXiHan()</c> 之前 <c>UseForwardedHeaders()</c> 时即为转发头改写后的客户端地址；IPv4 映射的 IPv6 还原为 IPv4
     /// </remarks>
     private static InvocationOrigin OriginOf(HttpContext httpContext)
     {
@@ -160,10 +160,10 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 请求出示的凭据。
+    /// 请求出示的凭据
     /// </summary>
     /// <remarks>
-    /// 先取 <c>Authorization</c> 头；没有时，请求路径（不含 PathBase）按路径段落在登记的查询串令牌路径前缀下，且查询串 <c>access_token</c> 只有一个非空值，才作为 <c>Bearer</c> 凭据。其他路径的查询串令牌一律忽略。认证方案 <c>XiHan</c> 与 <see cref="CreateContext(HttpContext, IServiceProvider)"/> 共用这一条规则。
+    /// 先取 <c>Authorization</c> 头；没有时，请求路径（不含 PathBase）按路径段落在登记的查询串令牌路径前缀下，且查询串 <c>access_token</c> 只有一个非空值，才作为 <c>Bearer</c> 凭据。其他路径的查询串令牌一律忽略。认证方案 <c>XiHan</c> 与 <see cref="CreateContext(HttpContext, IServiceProvider)"/> 共用这一条规则
     /// </remarks>
     internal static Maybe<AuthenticationCredential> CredentialOf(HttpContext httpContext)
     {
@@ -187,15 +187,15 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 空头值视为没有。
+    /// 空头值视为没有
     /// </summary>
     private static string? HeaderOrNull(string value) => value.Length > 0 ? value : null;
 
     /// <summary>
-    /// 取当前请求的调用上下文。
+    /// 取当前请求的调用上下文
     /// </summary>
     /// <remarks>
-    /// 请求未经过 <c>UseXiHan()</c> 时为无值。
+    /// 请求未经过 <c>UseXiHan()</c> 时为无值
     /// </remarks>
     public static Maybe<InvocationContext> GetXiHanContext(this HttpContext httpContext)
     {
@@ -204,10 +204,10 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 从 <c>Accept-Language</c> 头取候选区域。
+    /// 从 <c>Accept-Language</c> 头取候选区域
     /// </summary>
     /// <remarks>
-    /// 按权重降序（同权重保持原顺序），跳过 <c>*</c>、权重为 0 与格式不合法的项。
+    /// 按权重降序（同权重保持原顺序），跳过 <c>*</c>、权重为 0 与格式不合法的项
     /// </remarks>
     public static IReadOnlyList<string> AcceptedLocales(HttpContext httpContext)
     {
@@ -228,15 +228,15 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 解析 W3C <c>baggage</c> 头，只保留已登记的键。
+    /// 解析 W3C <c>baggage</c> 头，只保留已登记的键
     /// </summary>
     /// <remarks>
-    /// 值按 URL 解码；格式合法但未登记的 <c>xihan.</c> 键与其他键都丢弃（RFC-0003 规则 3）。
+    /// 值按 URL 解码；格式合法但未登记的 <c>xihan.</c> 键与其他键都丢弃（RFC-0003 规则 3）
     /// </remarks>
     public static IReadOnlyDictionary<string, string> ParseBaggage(string? header) => ParseBaggageCore(header);
 
     /// <summary>
-    /// <see cref="ParseBaggage"/> 的可变字典版本，供 <see cref="CreateContext(HttpContext, IServiceProvider)"/> 在构造上下文前补入协商出的区域。
+    /// <see cref="ParseBaggage"/> 的可变字典版本，供 <see cref="CreateContext(HttpContext, IServiceProvider)"/> 在构造上下文前补入协商出的区域
     /// </summary>
     private static Dictionary<string, string> ParseBaggageCore(string? header)
     {
@@ -270,10 +270,10 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// 把 Baggage 编码为 W3C <c>baggage</c> 头的值。
+    /// 把 Baggage 编码为 W3C <c>baggage</c> 头的值
     /// </summary>
     /// <remarks>
-    /// 只写已登记的键，进程内用的其他 <c>xihan.</c> 键不出进程（RFC-0003 规则 3）。
+    /// 只写已登记的键，进程内用的其他 <c>xihan.</c> 键不出进程（RFC-0003 规则 3）
     /// </remarks>
     public static string FormatBaggage(IReadOnlyDictionary<string, string> baggage)
     {
@@ -282,16 +282,16 @@ public static partial class HttpInvocation
     }
 
     /// <summary>
-    /// W3C <c>traceparent</c> 头（版本 00）的匹配。
+    /// W3C <c>traceparent</c> 头（版本 00）的匹配
     /// </summary>
     /// <remarks>
-    /// 捕获 32 位 trace-id、16 位 span-id 与 2 位 trace-flags。
+    /// 捕获 32 位 trace-id、16 位 span-id 与 2 位 trace-flags
     /// </remarks>
     [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$")]
     private static partial Regex TraceParent();
 
     /// <summary>
-    /// gRPC <c>grpc-timeout</c> 头的匹配：最多 8 位数值加单位。
+    /// gRPC <c>grpc-timeout</c> 头的匹配：最多 8 位数值加单位
     /// </summary>
     [GeneratedRegex("^(?<value>[0-9]{1,8})(?<unit>[HMSmun])$")]
     private static partial Regex GrpcTimeout();

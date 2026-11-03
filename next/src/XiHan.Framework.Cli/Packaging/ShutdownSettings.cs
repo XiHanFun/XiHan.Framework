@@ -4,20 +4,20 @@
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 停机。
+/// 停机
 /// </summary>
 internal sealed record ShutdownSettings
 {
     /// <summary>
-    /// 内核 Draining 的宽限（秒），写进 <c>XiHan:Kernel:StopTimeoutSeconds</c>。
+    /// 内核 Draining 的宽限（秒），写进 <c>XiHan:Kernel:StopTimeoutSeconds</c>
     /// </summary>
     /// <remarks>
-    /// k8s 的 <c>terminationGracePeriodSeconds</c> 在此之上多 5 秒。
+    /// k8s 的 <c>terminationGracePeriodSeconds</c> 在此之上多 5 秒
     /// </remarks>
     public int GraceSeconds { get; set; } = 30;
 
     /// <summary>
-    /// kubelet 终止前的宽限（秒）。
+    /// kubelet 终止前的宽限（秒）
     /// </summary>
     public int TerminationGracePeriodSeconds => GraceSeconds + 5;
 }

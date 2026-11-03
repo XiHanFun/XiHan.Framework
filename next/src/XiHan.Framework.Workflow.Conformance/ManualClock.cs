@@ -4,20 +4,20 @@
 namespace XiHan.Framework.Workflow.Conformance;
 
 /// <summary>
-/// 只由用例推进的时钟。
+/// 只由用例推进的时钟
 /// </summary>
 /// <remarks>
-/// 到期类用例据此判定时刻，不依赖墙钟与固定等待；只替换 <see cref="GetUtcNow"/>，计时器仍是系统的，锁的等待照常进行。
+/// 到期类用例据此判定时刻，不依赖墙钟与固定等待；只替换 <see cref="GetUtcNow"/>，计时器仍是系统的，锁的等待照常进行
 /// </remarks>
 internal sealed class ManualClock(DateTimeOffset start) : TimeProvider
 {
     /// <summary>
-    /// 推进与读取的互斥。
+    /// 推进与读取的互斥
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 当前时刻。
+    /// 当前时刻
     /// </summary>
     private DateTimeOffset _now = start;
 
@@ -31,7 +31,7 @@ internal sealed class ManualClock(DateTimeOffset start) : TimeProvider
     }
 
     /// <summary>
-    /// 往后推进。
+    /// 往后推进
     /// </summary>
     public void Advance(TimeSpan by)
     {

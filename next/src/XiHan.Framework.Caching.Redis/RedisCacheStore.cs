@@ -11,17 +11,17 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Redis;
 
 /// <summary>
-/// 基于 StackExchange.Redis 的字节存储。
+/// 基于 StackExchange.Redis 的字节存储
 /// </summary>
 /// <remarks>
-/// 连接与超时失败抛出携带 <see cref="CachingErrors.StoreUnavailable"/> 的 <see cref="FrameworkException"/>。批量读取用 <c>MGET</c>，批量写入与删除把全部命令放进一个批次、一次往返。
-/// 键管理按单个端点的 <c>SCAN</c> 分页；写入与删除后通知本实例的订阅者，并以发后不等的方式向频道 <c>&lt;KeyPrefix&gt;__changes</c> 发布给其他实例（ADR-0055）。
+/// 连接与超时失败抛出携带 <see cref="CachingErrors.StoreUnavailable"/> 的 <see cref="FrameworkException"/>。批量读取用 <c>MGET</c>，批量写入与删除把全部命令放进一个批次、一次往返
+/// 键管理按单个端点的 <c>SCAN</c> 分页；写入与删除后通知本实例的订阅者，并以发后不等的方式向频道 <c>&lt;KeyPrefix&gt;__changes</c> 发布给其他实例（ADR-0055）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCachingOptions options) : ICacheStore, ICacheStoreInspector, ICacheChangeFeed, IDisposable
 {
     /// <summary>
-    /// 服务端比较删脚本：跳过编码头部后比较载荷，相同才删除，整段在 Redis 内原子执行。
+    /// 服务端比较删脚本：跳过编码头部后比较载荷，相同才删除，整段在 Redis 内原子执行
     /// </summary>
     private const string CompareAndDeleteScript = """
         local v = redis.call('GET', KEYS[1])
@@ -33,38 +33,38 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
         """;
 
     /// <summary>
-    /// 由能力包管理生命周期的 Redis 连接。
+    /// 由能力包管理生命周期的 Redis 连接
     /// </summary>
     private readonly IConnectionMultiplexer _connection = connection ?? throw new ArgumentNullException(nameof(connection));
 
     /// <summary>
-    /// 键前缀与默认存活时间。
+    /// 键前缀与默认存活时间
     /// </summary>
     private readonly RedisCachingOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <summary>
-    /// 本实例的标识。
+    /// 本实例的标识
     /// </summary>
     /// <remarks>
-    /// 写进发布的通知，收到自己发的通知时跳过（本实例的订阅者已在写入时同步收到）。
+    /// 写进发布的通知，收到自己发的通知时跳过（本实例的订阅者已在写入时同步收到）
     /// </remarks>
     private readonly string _origin = Guid.NewGuid().ToString("N");
 
     /// <summary>
-    /// 保护订阅表。
+    /// 保护订阅表
     /// </summary>
     private readonly Lock _subscriptions = new();
 
     /// <summary>
-    /// 订阅者。
+    /// 订阅者
     /// </summary>
     /// <remarks>
-    /// 写时复制，通知时不加锁读。
+    /// 写时复制，通知时不加锁读
     /// </remarks>
     private Action<CacheChange>[] _handlers = [];
 
     /// <summary>
-    /// 是否已订阅变更频道。
+    /// 是否已订阅变更频道
     /// </summary>
     private bool _listening;
 
@@ -305,7 +305,7 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
 
     /// <inheritdoc />
     /// <remarks>
-    /// 按单个端点的 <c>SCAN</c> 分页：续页标记是 SCAN 游标，<see cref="CacheKeyQuery.Limit"/> 是提示值，同一个键可能出现在两页；前缀里的 glob 字符转义。每页上限越界返回 <see cref="CachingErrors.ListLimitInvalid"/>，不访问 Redis。
+    /// 按单个端点的 <c>SCAN</c> 分页：续页标记是 SCAN 游标，<see cref="CacheKeyQuery.Limit"/> 是提示值，同一个键可能出现在两页；前缀里的 glob 字符转义。每页上限越界返回 <see cref="CachingErrors.ListLimitInvalid"/>，不访问 Redis
     /// </remarks>
     public async ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
     {
@@ -436,17 +436,17 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// SCAN 一页时的批大小提示。
+    /// SCAN 一页时的批大小提示
     /// </summary>
     private const int ScanBatchSize = 1000;
 
     /// <summary>
-    /// 变更频道。
+    /// 变更频道
     /// </summary>
     private RedisChannel Channel => RedisChannel.Literal(_options.KeyPrefix + "__changes");
 
     /// <summary>
-    /// 按前缀扫一页，返回下一个游标与本页的 Redis 键。
+    /// 按前缀扫一页，返回下一个游标与本页的 Redis 键
     /// </summary>
     private async Task<(string Next, List<RedisKey> Keys)> ScanAsync(string cursor, string prefix, int count)
     {
@@ -457,10 +457,10 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// 去掉配置的前缀，得到缓存键。
+    /// 去掉配置的前缀，得到缓存键
     /// </summary>
     /// <remarks>
-    /// 不是本前缀下的为 <see langword="null"/>。
+    /// 不是本前缀下的为 <see langword="null"/>
     /// </remarks>
     private string? StripPrefix(RedisKey key)
     {
@@ -469,7 +469,7 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// 转义 glob 的特殊字符。
+    /// 转义 glob 的特殊字符
     /// </summary>
     private static string Glob(string literal)
     {
@@ -488,7 +488,7 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// 通知本实例的订阅者，并向其他实例发布。
+    /// 通知本实例的订阅者，并向其他实例发布
     /// </summary>
     private void Notify(CacheChange change)
     {
@@ -513,7 +513,7 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// 收到频道消息：不是本实例发的就交给订阅者。
+    /// 收到频道消息：不是本实例发的就交给订阅者
     /// </summary>
     private void OnMessage(RedisValue message)
     {
@@ -527,10 +527,10 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// 编码通知：发出者、种类（<c>k</c> 键 / <c>p</c> 前缀）与各行内容。
+    /// 编码通知：发出者、种类（<c>k</c> 键 / <c>p</c> 前缀）与各行内容
     /// </summary>
     /// <remarks>
-    /// 键与前缀不含空白，换行即是可靠的分隔符。
+    /// 键与前缀不含空白，换行即是可靠的分隔符
     /// </remarks>
     private string Encode(CacheChange change)
         => change.Prefix is { } prefix
@@ -538,10 +538,10 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
             : _origin + "\nk\n" + string.Join('\n', change.Keys.Select(static key => key.Value));
 
     /// <summary>
-    /// 解码通知。
+    /// 解码通知
     /// </summary>
     /// <remarks>
-    /// 本实例发的或格式不对为 <see langword="null"/>。
+    /// 本实例发的或格式不对为 <see langword="null"/>
     /// </remarks>
     private static CacheChange? Decode(RedisValue message, string origin)
     {
@@ -560,10 +560,10 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// 一个订阅。
+    /// 一个订阅
     /// </summary>
     /// <remarks>
-    /// 释放即退订。
+    /// 释放即退订
     /// </remarks>
     private sealed class Subscription(RedisCacheStore store, Action<CacheChange> handler) : IDisposable
     {
@@ -578,12 +578,12 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// 给缓存键加上配置的前缀，得到 Redis 键。
+    /// 给缓存键加上配置的前缀，得到 Redis 键
     /// </summary>
     private RedisKey Key(CacheKey key) => _options.KeyPrefix + key.Value;
 
     /// <summary>
-    /// 给每个缓存键加前缀。
+    /// 给每个缓存键加前缀
     /// </summary>
     private RedisKey[] Keys(IReadOnlyList<CacheKey> keys)
     {
@@ -597,12 +597,12 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <summary>
-    /// 条目的初始 TTL：依次取绝对存活、滑动窗口、默认存活中第一个有值的。
+    /// 条目的初始 TTL：依次取绝对存活、滑动窗口、默认存活中第一个有值的
     /// </summary>
     private TimeSpan Expiry(CacheEntryOptions options) => options.TimeToLive ?? options.SlidingExpiration ?? _options.DefaultTimeToLive;
 
     /// <summary>
-    /// 把连接或超时异常包装成携带 <see cref="CachingErrors.StoreUnavailable"/> 的框架异常。
+    /// 把连接或超时异常包装成携带 <see cref="CachingErrors.StoreUnavailable"/> 的框架异常
     /// </summary>
     private static FrameworkException Unavailable(Exception exception)
         => new(CachingErrors.StoreUnavailable, $"The Redis operation failed: {exception.Message}", exception);

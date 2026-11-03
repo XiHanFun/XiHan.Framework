@@ -11,31 +11,31 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.DomainEvents;
 
 /// <summary>
-/// 领域事件派发器（<see cref="IDomainEventDispatcher"/> 的 Messaging 实现，作用域）。
+/// 领域事件派发器（<see cref="IDomainEventDispatcher"/> 的 Messaging 实现，作用域）
 /// </summary>
 /// <remarks>
-/// 把聚合里的事件按 <see cref="DomainEventRegistry"/> 映射成 CloudEvents 信封，同一主题一次 <see cref="IMessagePublisher.PublishManyAsync"/>（批量优先），全部成功后清空各聚合的缓冲。当前作用域的发布者是发件箱时，事件随业务写入同一事务。
+/// 把聚合里的事件按 <see cref="DomainEventRegistry"/> 映射成 CloudEvents 信封，同一主题一次 <see cref="IMessagePublisher.PublishManyAsync"/>（批量优先），全部成功后清空各聚合的缓冲。当前作用域的发布者是发件箱时，事件随业务写入同一事务
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DomainEventDispatcher : IDomainEventDispatcher
 {
     /// <summary>
-    /// 登记表。
+    /// 登记表
     /// </summary>
     private readonly DomainEventRegistry _registry;
 
     /// <summary>
-    /// 当前作用域的发布者（直接发布或发件箱）。
+    /// 当前作用域的发布者（直接发布或发件箱）
     /// </summary>
     private readonly IMessagePublisher _publisher;
 
     /// <summary>
-    /// 信封标识的生成器。
+    /// 信封标识的生成器
     /// </summary>
     private readonly IIdGenerator<Guid> _ids;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public DomainEventDispatcher(DomainEventRegistry registry, IMessagePublisher publisher, IIdGenerator<Guid> ids)
     {

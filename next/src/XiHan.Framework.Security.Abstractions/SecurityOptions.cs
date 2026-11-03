@@ -7,32 +7,32 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions;
 
 /// <summary>
-/// 安全选项。
+/// 安全选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Security</c> 显式读取。
+/// 从配置节 <c>XiHan:Security</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record SecurityOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Security";
 
     /// <summary>
-    /// 为真时匿名调用在 Authenticate 阶段被拒绝（<see cref="SecurityErrors.NotAuthenticated"/>）。
+    /// 为真时匿名调用在 Authenticate 阶段被拒绝（<see cref="SecurityErrors.NotAuthenticated"/>）
     /// </summary>
     /// <remarks>
-    /// 默认 <see langword="false"/>：由策略决定。
+    /// 默认 <see langword="false"/>：由策略决定
     /// </remarks>
     public bool RequireAuthentication { get; init; }
 
     /// <summary>
-    /// 承载角色的声明类型。
+    /// 承载角色的声明类型
     /// </summary>
     /// <remarks>
-    /// 默认 <c>role</c>。
+    /// 默认 <c>role</c>
     /// </remarks>
     public string RoleClaim
     {
@@ -41,7 +41,7 @@ public sealed record SecurityOptions
     } = "role";
 
     /// <summary>
-    /// 从配置读取：<c>RequireAuthentication</c>、<c>RoleClaim</c>。
+    /// 从配置读取：<c>RequireAuthentication</c>、<c>RoleClaim</c>
     /// </summary>
     public static SecurityOptions FromConfiguration(IConfiguration configuration)
     {

@@ -14,10 +14,10 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.VectorData;
 
 /// <summary>
-/// 知识库 Provider。
+/// 知识库 Provider
 /// </summary>
 /// <remarks>
-/// 提供 <c>ai.knowledge@1</c>，把 <see cref="IKnowledgeStore"/> 映射到应用注册的 <see cref="VectorStore"/>；启动时容器里没有 <see cref="VectorStore"/> → <see cref="AIErrors.KnowledgeUnavailable"/> 启动失败；同时解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。
+/// 提供 <c>ai.knowledge@1</c>，把 <see cref="IKnowledgeStore"/> 映射到应用注册的 <see cref="VectorStore"/>；启动时容器里没有 <see cref="VectorStore"/> → <see cref="AIErrors.KnowledgeUnavailable"/> 启动失败；同时解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class VectorDataKnowledgeFeature : IHostedFeature

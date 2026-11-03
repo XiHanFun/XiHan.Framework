@@ -7,21 +7,21 @@ using XiHan.Framework.Scheduling.Abstractions.Calendars;
 namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 /// <summary>
-/// 计划推算：在 <see cref="JobSchedule.NextRun"/> 之上套用排除日历与次数上限。
+/// 计划推算：在 <see cref="JobSchedule.NextRun"/> 之上套用排除日历与次数上限
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class JobPlanner
 {
     /// <summary>
-    /// 跳过被排除时刻的最大尝试次数：防止日历排除一切时无限循环。
+    /// 跳过被排除时刻的最大尝试次数：防止日历排除一切时无限循环
     /// </summary>
     private const int MaxCalendarSkips = 10_000;
 
     /// <summary>
-    /// <paramref name="after"/> 之后首个未被 <paramref name="calendar"/> 排除的运行时刻。
+    /// <paramref name="after"/> 之后首个未被 <paramref name="calendar"/> 排除的运行时刻
     /// </summary>
     /// <remarks>
-    /// 已运行 <paramref name="fireCount"/> 次且计划限次用尽时无值。
+    /// 已运行 <paramref name="fireCount"/> 次且计划限次用尽时无值
     /// </remarks>
     public static Maybe<DateTimeOffset> NextFire(JobSchedule schedule, DateTimeOffset after, IJobCalendar? calendar, long fireCount = 0)
     {

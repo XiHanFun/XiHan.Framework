@@ -6,7 +6,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Assignees;
 
 /// <summary>
-/// 规则 <c>User</c>：参数就是指派人，至少一个。
+/// 规则 <c>User</c>：参数就是指派人，至少一个
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class UserAssigneeProvider : IAssigneeProvider

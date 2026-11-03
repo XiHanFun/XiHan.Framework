@@ -8,18 +8,18 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Assignees;
 
 /// <summary>
-/// 规则 <c>Expression</c>：恰好一个表达式，求值为列表或逗号分隔字符串。
+/// 规则 <c>Expression</c>：恰好一个表达式，求值为列表或逗号分隔字符串
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ExpressionAssigneeProvider : IAssigneeProvider
 {
     /// <summary>
-    /// 求值器。
+    /// 求值器
     /// </summary>
     private readonly IWorkflowExpressionEvaluator _evaluator;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public ExpressionAssigneeProvider(IWorkflowExpressionEvaluator evaluator)
     {

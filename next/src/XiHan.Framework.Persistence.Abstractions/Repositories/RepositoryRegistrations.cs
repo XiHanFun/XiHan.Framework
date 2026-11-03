@@ -9,58 +9,58 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Repositories;
 
 /// <summary>
-/// 应用登记的实体集合。
+/// 应用登记的实体集合
 /// </summary>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class RepositoryRegistrations
 {
     /// <summary>
-    /// 按登记顺序保存的注册动作。
+    /// 按登记顺序保存的注册动作
     /// </summary>
     /// <remarks>
-    /// 每个动作把一种实体交给 Provider 注册。
+    /// 每个动作把一种实体交给 Provider 注册
     /// </remarks>
     private readonly List<Action<IServiceCollection, IRepositoryRegistrar>> _registrations = [];
 
     /// <summary>
-    /// 登记过的实体，按首次登记的顺序，同一实体类型只一条。
+    /// 登记过的实体，按首次登记的顺序，同一实体类型只一条
     /// </summary>
     private readonly List<RegisteredEntity> _entities = [];
 
     /// <summary>
-    /// <see cref="ApplyTo"/> 之后记住的服务集合。
+    /// <see cref="ApplyTo"/> 之后记住的服务集合
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 表示 Provider 尚未装配。
+    /// 为 <see langword="null"/> 表示 Provider 尚未装配
     /// </remarks>
     private IServiceCollection? _services;
 
     /// <summary>
-    /// <see cref="ApplyTo"/> 之后记住的 Provider 注册器。
+    /// <see cref="ApplyTo"/> 之后记住的 Provider 注册器
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 表示 Provider 尚未装配。
+    /// 为 <see langword="null"/> 表示 Provider 尚未装配
     /// </remarks>
     private IRepositoryRegistrar? _registrar;
 
     /// <summary>
-    /// 已登记的注册动作。
+    /// 已登记的注册动作
     /// </summary>
     public IReadOnlyList<Action<IServiceCollection, IRepositoryRegistrar>> Items => _registrations;
 
     /// <summary>
-    /// 登记过的实体与标识类型。
+    /// 登记过的实体与标识类型
     /// </summary>
     /// <remarks>
-    /// 按首次登记的顺序，同一实体类型登记多次只一条。实体目录（<see cref="Schema.IEntityCatalog"/>）据此枚举。
+    /// 按首次登记的顺序，同一实体类型登记多次只一条。实体目录（<see cref="Schema.IEntityCatalog"/>）据此枚举
     /// </remarks>
     public IReadOnlyList<RegisteredEntity> Entities => _entities;
 
     /// <summary>
-    /// 实体登记时指定的命名连接。
+    /// 实体登记时指定的命名连接
     /// </summary>
     /// <remarks>
-    /// 没有登记或登记时没有指定为 <see langword="null"/>。Provider 的落点规则据此决定实体落在哪个连接。
+    /// 没有登记或登记时没有指定为 <see langword="null"/>。Provider 的落点规则据此决定实体落在哪个连接
     /// </remarks>
     public string? ConnectionOf(Type entityType)
     {
@@ -69,13 +69,13 @@ public sealed class RepositoryRegistrations
     }
 
     /// <summary>
-    /// 登记实体。
+    /// 登记实体
     /// </summary>
     /// <remarks>
-    /// 同一实体可以登记多次（只记一条），但落点必须相同。
+    /// 同一实体可以登记多次（只记一条），但落点必须相同
     /// </remarks>
-    /// <param name="connection">实体落点的命名连接，见 <see cref="RegisteredEntity.Connection"/>；<see langword="null"/> 是 Provider 的缺省落点。</param>
-    /// <exception cref="ArgumentException"><paramref name="connection"/> 为空白，或实体已登记到另一个连接（含一次为空、一次非空）。</exception>
+    /// <param name="connection">实体落点的命名连接，见 <see cref="RegisteredEntity.Connection"/>；<see langword="null"/> 是 Provider 的缺省落点</param>
+    /// <exception cref="ArgumentException"><paramref name="connection"/> 为空白，或实体已登记到另一个连接（含一次为空、一次非空）</exception>
     public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>(string? connection = null)
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
@@ -102,10 +102,10 @@ public sealed class RepositoryRegistrations
     }
 
     /// <summary>
-    /// 让 Provider 完成全部注册。
+    /// 让 Provider 完成全部注册
     /// </summary>
     /// <remarks>
-    /// 此后再登记的实体立即注册。
+    /// 此后再登记的实体立即注册
     /// </remarks>
     public void ApplyTo(IServiceCollection services, IRepositoryRegistrar registrar)
     {

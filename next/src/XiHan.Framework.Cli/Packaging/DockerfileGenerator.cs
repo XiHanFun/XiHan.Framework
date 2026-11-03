@@ -7,18 +7,18 @@ using System.Text;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 生成多阶段 Dockerfile：SDK 镜像发布，chiseled 运行镜像，非 root。
+/// 生成多阶段 Dockerfile：SDK 镜像发布，chiseled 运行镜像，非 root
 /// </summary>
 /// <remarks>
-/// 构建阶段另外编译就绪探针（<see cref="HealthProbe"/>），复制进运行镜像供 Compose 健康检查使用。
+/// 构建阶段另外编译就绪探针（<see cref="HealthProbe"/>），复制进运行镜像供 Compose 健康检查使用
 /// </remarks>
 internal static class DockerfileGenerator
 {
     /// <summary>
-    /// 生成 <c>Dockerfile</c> 与 <c>Dockerfile.dockerignore</c>。
+    /// 生成 <c>Dockerfile</c> 与 <c>Dockerfile.dockerignore</c>
     /// </summary>
     /// <remarks>
-    /// <paramref name="projectInContext"/> 是项目文件相对构建上下文的路径。
+    /// <paramref name="projectInContext"/> 是项目文件相对构建上下文的路径
     /// </remarks>
     public static IEnumerable<PackOutput> Generate(AppManifest manifest, string projectInContext)
     {
@@ -30,7 +30,7 @@ internal static class DockerfileGenerator
     }
 
     /// <summary>
-    /// Dockerfile 文本。
+    /// Dockerfile 文本
     /// </summary>
     private static string Dockerfile(AppManifest manifest, string projectInContext)
     {

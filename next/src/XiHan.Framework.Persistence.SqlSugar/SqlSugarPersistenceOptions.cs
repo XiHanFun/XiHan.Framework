@@ -9,32 +9,32 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar;
 
 /// <summary>
-/// SqlSugar Provider 选项。
+/// SqlSugar Provider 选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Persistence:SqlSugar</c> 显式读取。
+/// 从配置节 <c>XiHan:Persistence:SqlSugar</c> 显式读取
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record SqlSugarPersistenceOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Persistence:SqlSugar";
 
     /// <summary>
-    /// 启动时用 CodeFirst 为已登记的实体建表（<c>InitTables</c>）。
+    /// 启动时用 CodeFirst 为已登记的实体建表（<c>InitTables</c>）
     /// </summary>
     /// <remarks>
-    /// 只用于开发与测试；生产由应用管理表结构。默认 <see langword="false"/>。
+    /// 只用于开发与测试；生产由应用管理表结构。默认 <see langword="false"/>
     /// </remarks>
     public bool InitTables { get; init; }
 
     /// <summary>
-    /// 健康项 <c>persistence.sqlsugar.database</c> 的重探间隔（也是单次探测的超时）。
+    /// 健康项 <c>persistence.sqlsugar.database</c> 的重探间隔（也是单次探测的超时）
     /// </summary>
     /// <remarks>
-    /// 默认 15 秒。
+    /// 默认 15 秒
     /// </remarks>
     public TimeSpan HealthProbeInterval
     {
@@ -43,10 +43,10 @@ public sealed record SqlSugarPersistenceOptions
     } = TimeSpan.FromSeconds(15);
 
     /// <summary>
-    /// 哪些实体的仓储写入经 SqlSugar 差异日志。
+    /// 哪些实体的仓储写入经 SqlSugar 差异日志
     /// </summary>
     /// <remarks>
-    /// <c>EnableDiffLogEvent</c>，业务数据为 <see cref="SqlSugarDiffLogData"/>。应用在连接配置的 <c>AopEvents.OnDiffLogEvent</c> 上接收。缺省一个都不开。开启的实体每次写入多一次按主键的读取（更新与删除读写前值，插入读写后值），只给需要审计前后值的实体开。不从配置读取，经 <see cref="SqlSugarPersistenceFeature.DiffLog"/> 设置。
+    /// <c>EnableDiffLogEvent</c>，业务数据为 <see cref="SqlSugarDiffLogData"/>。应用在连接配置的 <c>AopEvents.OnDiffLogEvent</c> 上接收。缺省一个都不开。开启的实体每次写入多一次按主键的读取（更新与删除读写前值，插入读写后值），只给需要审计前后值的实体开。不从配置读取，经 <see cref="SqlSugarPersistenceFeature.DiffLog"/> 设置
     /// </remarks>
     public Func<Type, bool> DiffLog
     {
@@ -55,10 +55,10 @@ public sealed record SqlSugarPersistenceOptions
     } = static _ => false;
 
     /// <summary>
-    /// 方式一（特性按回调建客户端）的命名连接：名字 → 连接串。
+    /// 方式一（特性按回调建客户端）的命名连接：名字 → 连接串
     /// </summary>
     /// <remarks>
-    /// 来自 <c>XiHan:Persistence:SqlSugar:Connections:&lt;name&gt;</c>，缺省为空。每个作用域的客户端都带上它们（<c>ConfigId</c> 是名字，排在默认连接之后），供登记到命名连接的实体与绑定连接的工作单元使用（RFC-0005「命名连接」）。名字合 <c>^[a-z0-9][a-z0-9-]{0,63}$</c>，不能是 <see cref="SqlSugarConnections.Default"/> 或 <see cref="SqlSugarConnections.Shard"/>；连接串是机密，不进日志。
+    /// 来自 <c>XiHan:Persistence:SqlSugar:Connections:&lt;name&gt;</c>，缺省为空。每个作用域的客户端都带上它们（<c>ConfigId</c> 是名字，排在默认连接之后），供登记到命名连接的实体与绑定连接的工作单元使用（RFC-0005「命名连接」）。名字合 <c>^[a-z0-9][a-z0-9-]{0,63}$</c>，不能是 <see cref="SqlSugarConnections.Default"/> 或 <see cref="SqlSugarConnections.Shard"/>；连接串是机密，不进日志
     /// </remarks>
     public IReadOnlyDictionary<string, string> Connections
     {
@@ -67,10 +67,10 @@ public sealed record SqlSugarPersistenceOptions
     } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 从配置读取：<c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>、<c>Connections:&lt;name&gt;</c>。
+    /// 从配置读取：<c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>、<c>Connections:&lt;name&gt;</c>
     /// </summary>
     /// <remarks>
-    /// 值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理。
+    /// 值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理
     /// </remarks>
     public static SqlSugarPersistenceOptions FromConfiguration(IConfiguration configuration)
     {
@@ -109,10 +109,10 @@ public sealed record SqlSugarPersistenceOptions
     }
 
     /// <summary>
-    /// 核对命名连接。
+    /// 核对命名连接
     /// </summary>
     /// <remarks>
-    /// 名字不合文法、与约定连接同名、连接串空白都抛出 <see cref="ArgumentException"/>；消息只带名字。返回一份副本。
+    /// 名字不合文法、与约定连接同名、连接串空白都抛出 <see cref="ArgumentException"/>；消息只带名字。返回一份副本
     /// </remarks>
     private static Dictionary<string, string> ValidateConnections(IReadOnlyDictionary<string, string> connections)
     {

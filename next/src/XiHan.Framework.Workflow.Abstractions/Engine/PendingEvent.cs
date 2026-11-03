@@ -6,9 +6,9 @@ using XiHan.Framework.Workflow.Abstractions.Events;
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
 /// <summary>
-/// 等波次结束后发布的事件。
+/// 等波次结束后发布的事件
 /// </summary>
-/// <param name="Topic">主题。</param>
-/// <param name="Data">数据。</param>
-/// <param name="Subject">信封主题（自定义事件的事件名）。</param>
+/// <param name="Topic">主题</param>
+/// <param name="Data">数据</param>
+/// <param name="Subject">信封主题（自定义事件的事件名）</param>
 internal sealed record PendingEvent(string Topic, WorkflowEventData Data, string? Subject = null);

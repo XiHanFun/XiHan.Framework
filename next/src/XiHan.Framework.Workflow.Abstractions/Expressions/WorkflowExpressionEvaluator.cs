@@ -10,26 +10,26 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 默认求值器。
+/// 默认求值器
 /// </summary>
 /// <remarks>
-/// <see cref="ExpressionCompiler"/> 的小语言，编译结果按表达式文本缓存（超过上限整体清空）。
+/// <see cref="ExpressionCompiler"/> 的小语言，编译结果按表达式文本缓存（超过上限整体清空）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
 {
     /// <summary>
-    /// 缓存上限。
+    /// 缓存上限
     /// </summary>
     private readonly int _cacheSize;
 
     /// <summary>
-    /// 表达式文本 → 编译结果。
+    /// 表达式文本 → 编译结果
     /// </summary>
     private readonly ConcurrentDictionary<string, CompiledExpression> _cache = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public WorkflowExpressionEvaluator(WorkflowOptions options)
     {
@@ -128,7 +128,7 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
     }
 
     /// <summary>
-    /// 找占位的 <c>}}</c>，跳过引号里的。
+    /// 找占位的 <c>}}</c>，跳过引号里的
     /// </summary>
     private static int FindClose(string template, int start)
     {
@@ -164,10 +164,10 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
     }
 
     /// <summary>
-    /// 取或编译。
+    /// 取或编译
     /// </summary>
     /// <remarks>
-    /// 缓存超过上限整体清空（表达式集合通常很小，清空比淘汰便宜）。
+    /// 缓存超过上限整体清空（表达式集合通常很小，清空比淘汰便宜）
     /// </remarks>
     private CompiledExpression Get(string expression)
     {

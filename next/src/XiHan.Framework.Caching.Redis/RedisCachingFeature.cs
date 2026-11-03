@@ -21,34 +21,34 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Caching.Redis;
 
 /// <summary>
-/// Redis 缓存的能力包入口。
+/// Redis 缓存的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>caching.distributed@1</c>，注册共享缓存、分布式锁与幂等中间件。启动时建立连接，停止时关闭；健康项 <see cref="HealthName"/> 按 <see cref="RedisCachingOptions.HealthProbeInterval"/> 周期 PING，连不上时条目 Degraded。
+/// 提供 <c>caching.distributed@1</c>，注册共享缓存、分布式锁与幂等中间件。启动时建立连接，停止时关闭；健康项 <see cref="HealthName"/> 按 <see cref="RedisCachingOptions.HealthProbeInterval"/> 周期 PING，连不上时条目 Degraded
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class RedisCachingFeature : IHostedFeature
 {
     /// <summary>
-    /// 连接绑定名：<c>cache</c>，类型 <c>cache:distributed</c>，可选。
+    /// 连接绑定名：<c>cache</c>，类型 <c>cache:distributed</c>，可选
     /// </summary>
     public const string ConnectionBinding = "cache";
 
     /// <summary>
-    /// 健康项名：Redis 连接是否可用（连接已建立且 PING 有应答）。
+    /// 健康项名：Redis 连接是否可用（连接已建立且 PING 有应答）
     /// </summary>
     public const string HealthName = "caching.redis.connection";
 
     /// <summary>
-    /// 启动时取得的连接，停止时关闭。
+    /// 启动时取得的连接，停止时关闭
     /// </summary>
     /// <remarks>
-    /// 未启动或已停止为 <see langword="null"/>。
+    /// 未启动或已停止为 <see langword="null"/>
     /// </remarks>
     private IConnectionMultiplexer? _connection;
 
     /// <summary>
-    /// 启动时起循环的健康探针，停止时结束它。
+    /// 启动时起循环的健康探针，停止时结束它
     /// </summary>
     private PeriodicHealthContributor? _health;
 
@@ -135,10 +135,10 @@ public sealed class RedisCachingFeature : IHostedFeature
     }
 
     /// <summary>
-    /// 按选项建立连接。
+    /// 按选项建立连接
     /// </summary>
     /// <remarks>
-    /// 连接或超时失败包装成携带 <see cref="CachingErrors.StoreUnavailable"/> 的框架异常。
+    /// 连接或超时失败包装成携带 <see cref="CachingErrors.StoreUnavailable"/> 的框架异常
     /// </remarks>
     private static ConnectionMultiplexer Connect(RedisCachingOptions options)
     {
@@ -153,10 +153,10 @@ public sealed class RedisCachingFeature : IHostedFeature
     }
 
     /// <summary>
-    /// 把选项换成客户端的连接选项。
+    /// 把选项换成客户端的连接选项
     /// </summary>
     /// <remarks>
-    /// 连接字符串给出地址与缺省凭据；选项里的用户名与密码（来自绑定的属性，RFC-0016）以属性设置覆盖，不改写字符串。
+    /// 连接字符串给出地址与缺省凭据；选项里的用户名与密码（来自绑定的属性，RFC-0016）以属性设置覆盖，不改写字符串
     /// </remarks>
     internal static ConfigurationOptions ConnectionOptions(RedisCachingOptions options)
     {
@@ -176,10 +176,10 @@ public sealed class RedisCachingFeature : IHostedFeature
     }
 
     /// <summary>
-    /// 连通性探针。
+    /// 连通性探针
     /// </summary>
     /// <remarks>
-    /// 对共享连接发一次 PING。连接断开时 PING 抛出连接或超时异常，由探针宿主记成 Degraded 并带异常消息。
+    /// 对共享连接发一次 PING。连接断开时 PING 抛出连接或超时异常，由探针宿主记成 Degraded 并带异常消息
     /// </remarks>
     private static async ValueTask<Result> ProbeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {

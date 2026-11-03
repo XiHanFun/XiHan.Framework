@@ -12,56 +12,56 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database.Locking;
 
 /// <summary>
-/// 租约式的分布式实例锁（单例）。
+/// 租约式的分布式实例锁（单例）
 /// </summary>
 /// <remarks>
-/// 实例 ID 对应一行 <c>WorkflowLockRecord</c>，拿到后后台每三分之一租约续约一次，释放时删除自己的行；持有者消失时别的节点在租约到期后接管。等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>；不可重入。
+/// 实例 ID 对应一行 <c>WorkflowLockRecord</c>，拿到后后台每三分之一租约续约一次，释放时删除自己的行；持有者消失时别的节点在租约到期后接管。等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>；不可重入
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
 {
     /// <summary>
-    /// 等待的起始间隔。
+    /// 等待的起始间隔
     /// </summary>
     private static readonly TimeSpan _initialDelay = TimeSpan.FromMilliseconds(50);
 
     /// <summary>
-    /// 等待间隔的上限。
+    /// 等待间隔的上限
     /// </summary>
     private static readonly TimeSpan _maxDelay = TimeSpan.FromMilliseconds(500);
 
     /// <summary>
-    /// 租约行操作。
+    /// 租约行操作
     /// </summary>
     private readonly LeaseTable _leases;
 
     /// <summary>
-    /// 等待上限。
+    /// 等待上限
     /// </summary>
     private readonly TimeSpan _timeout;
 
     /// <summary>
-    /// 租约时长。
+    /// 租约时长
     /// </summary>
     private readonly TimeSpan _lease;
 
     /// <summary>
-    /// 本节点的持有者标识。
+    /// 本节点的持有者标识
     /// </summary>
     private readonly string _holderId;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public DatabaseWorkflowInstanceLock(IServiceProvider services, WorkflowOptions options, DatabaseWorkflowOptions databaseOptions, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -121,19 +121,19 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
     }
 
     /// <summary>
-    /// 持久化层的冲突、管道里的意外与租约表暂时不可达当作争用重试。
+    /// 持久化层的冲突、管道里的意外与租约表暂时不可达当作争用重试
     /// </summary>
     /// <remarks>
-    /// 跨节点同时插入同一行时唯一约束可能以异常出现，租约步骤把异常归为存储不可达；连接的短暂中断同样。直到等待超时（超时错误带上最后一次的失败）。其余失败是存储不可达。
+    /// 跨节点同时插入同一行时唯一约束可能以异常出现，租约步骤把异常归为存储不可达；连接的短暂中断同样。直到等待超时（超时错误带上最后一次的失败）。其余失败是存储不可达
     /// </remarks>
     private static bool IsRetryable(Error error)
         => error.Code is PersistenceErrors.Concurrency or PersistenceErrors.Duplicate or PersistenceErrors.NotFound or KernelErrors.Unexpected or WorkflowErrors.StoreUnavailable;
 
     /// <summary>
-    /// 续约循环。
+    /// 续约循环
     /// </summary>
     /// <remarks>
-    /// 每三分之一租约续一次；续约失败只记日志，行被别人接管则停止。
+    /// 每三分之一租约续一次；续约失败只记日志，行被别人接管则停止
     /// </remarks>
     private async Task RenewLoopAsync(string instanceId, string holder, CancellationToken stopping)
     {
@@ -164,10 +164,10 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
     }
 
     /// <summary>
-    /// 释放。
+    /// 释放
     /// </summary>
     /// <remarks>
-    /// 删除自己的行；失败只记日志，租约到期后行自然可被接管。
+    /// 删除自己的行；失败只记日志，租约到期后行自然可被接管
     /// </remarks>
     private async ValueTask ReleaseAsync(string instanceId, string holder)
     {
@@ -179,63 +179,63 @@ public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
     }
 
     /// <summary>
-    /// 续约失败。
+    /// 续约失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Renewing the lease of workflow instance '{InstanceId}' failed with '{ErrorCode}'.")]
     private static partial void LogRenewFailed(ILogger logger, string instanceId, string errorCode);
 
     /// <summary>
-    /// 租约被接管。
+    /// 租约被接管
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "The lease of workflow instance '{InstanceId}' was taken over by another holder; renewal stops.")]
     private static partial void LogLeaseLost(ILogger logger, string instanceId);
 
     /// <summary>
-    /// 释放失败。
+    /// 释放失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Releasing the lease of workflow instance '{InstanceId}' failed with '{ErrorCode}'; it expires on its own.")]
     private static partial void LogReleaseFailed(ILogger logger, string instanceId, string errorCode);
 
     /// <summary>
-    /// 锁句柄。
+    /// 锁句柄
     /// </summary>
     /// <remarks>
-    /// 持有期间后台续约，释放时停止续约并删除自己的行；重复释放无害。
+    /// 持有期间后台续约，释放时停止续约并删除自己的行；重复释放无害
     /// </remarks>
     private sealed class Handle : IAsyncDisposable
     {
         /// <summary>
-        /// 所属锁。
+        /// 所属锁
         /// </summary>
         private readonly DatabaseWorkflowInstanceLock _owner;
 
         /// <summary>
-        /// 实例 ID。
+        /// 实例 ID
         /// </summary>
         private readonly string _instanceId;
 
         /// <summary>
-        /// 本次获取的持有者标记。
+        /// 本次获取的持有者标记
         /// </summary>
         private readonly string _holder;
 
         /// <summary>
-        /// 停止续约的信号。
+        /// 停止续约的信号
         /// </summary>
         private readonly CancellationTokenSource _stopping = new();
 
         /// <summary>
-        /// 续约循环。
+        /// 续约循环
         /// </summary>
         private readonly Task _renewal;
 
         /// <summary>
-        /// 是否已释放（0 未释放，1 已释放）。
+        /// 是否已释放（0 未释放，1 已释放）
         /// </summary>
         private int _released;
 
         /// <summary>
-        /// 创建并开始续约。
+        /// 创建并开始续约
         /// </summary>
         public Handle(DatabaseWorkflowInstanceLock owner, string instanceId, string holder)
         {

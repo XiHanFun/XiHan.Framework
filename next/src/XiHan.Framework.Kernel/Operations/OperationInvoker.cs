@@ -9,36 +9,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Operations;
 
 /// <summary>
-/// <see cref="IOperationInvoker"/> 的内核实现。
+/// <see cref="IOperationInvoker"/> 的内核实现
 /// </summary>
 /// <remarks>
-/// 按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行；成功的响应先经 <see cref="IOperationResponseFilter"/> 过滤再写进上下文（ADR-0061）。
+/// 按登记表找到描述，经 <see cref="App.InvokeAsync"/> 走完整管道，或在当前调用里直接执行；成功的响应先经 <see cref="IOperationResponseFilter"/> 过滤再写进上下文（ADR-0061）
 /// </remarks>
 internal sealed class OperationInvoker : IOperationInvoker
 {
     /// <summary>
-    /// 应用。
+    /// 应用
     /// </summary>
     /// <remarks>
-    /// 提供完整管道。
+    /// 提供完整管道
     /// </remarks>
     private readonly App _app;
 
     /// <summary>
-    /// 操作登记表。
+    /// 操作登记表
     /// </summary>
     private readonly OperationRegistry _registry;
 
     /// <summary>
-    /// 是否登记了响应过滤器。
+    /// 是否登记了响应过滤器
     /// </summary>
     /// <remarks>
-    /// 没有时不解析、不分配。
+    /// 没有时不解析、不分配
     /// </remarks>
     private readonly bool _filtered;
 
     /// <summary>
-    /// 创建调用器。
+    /// 创建调用器
     /// </summary>
     public OperationInvoker(App app, OperationRegistry registry, IServiceProvider services)
     {
@@ -116,10 +116,10 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// Handle 阶段的终点。
+    /// Handle 阶段的终点
     /// </summary>
     /// <remarks>
-    /// Validate 阶段已解码的请求直接执行，否则（没有内置中间件或直接 ExecuteAsync）在这里解码；把结果与响应对象写进上下文。
+    /// Validate 阶段已解码的请求直接执行，否则（没有内置中间件或直接 ExecuteAsync）在这里解码；把结果与响应对象写进上下文
     /// </remarks>
     private async ValueTask DispatchAsync(InvocationContext context, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload)
     {
@@ -139,10 +139,10 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// 执行已解码的请求并记录结果。
+    /// 执行已解码的请求并记录结果
     /// </summary>
     /// <remarks>
-    /// 成功时响应对象经过滤器后进上下文，失败时错误成为调用结果。
+    /// 成功时响应对象经过滤器后进上下文，失败时错误成为调用结果
     /// </remarks>
     private async ValueTask ExecuteTypedAsync(InvocationContext context, OperationDescriptor descriptor, object request)
     {
@@ -164,10 +164,10 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// 按登记顺序经过调用作用域里的全部响应过滤器。
+    /// 按登记顺序经过调用作用域里的全部响应过滤器
     /// </summary>
     /// <remarks>
-    /// 过滤器返回的不是响应类型的实例时抛出 <see cref="InvalidOperationException"/>，由 Observe 阶段翻译为意外错误。
+    /// 过滤器返回的不是响应类型的实例时抛出 <see cref="InvalidOperationException"/>，由 Observe 阶段翻译为意外错误
     /// </remarks>
     private static async ValueTask<object> FilterAsync(InvocationContext context, OperationDescriptor descriptor, object response)
     {
@@ -183,7 +183,7 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// 按类型参数校验描述：请求与响应类型必须与登记的一致。
+    /// 按类型参数校验描述：请求与响应类型必须与登记的一致
     /// </summary>
     private bool TryResolveTyped<TRequest, TResponse>(string operationId, out OperationDescriptor descriptor, out Error error)
     {
@@ -210,7 +210,7 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// 把调用结果与上下文里的响应对象组装成 XGI 响应。
+    /// 把调用结果与上下文里的响应对象组装成 XGI 响应
     /// </summary>
     private static OperationResponse ToResponse(InvocationContext context, OperationDescriptor descriptor, Result outcome)
     {
@@ -224,7 +224,7 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// 把调用结果与上下文里的响应对象转成类型化结果。
+    /// 把调用结果与上下文里的响应对象转成类型化结果
     /// </summary>
     private static Result<TResponse> ToTypedResult<TResponse>(InvocationContext context, OperationDescriptor descriptor, Result outcome)
     {
@@ -239,7 +239,7 @@ internal sealed class OperationInvoker : IOperationInvoker
     }
 
     /// <summary>
-    /// 未登记操作的错误。
+    /// 未登记操作的错误
     /// </summary>
     private static Error Unknown(string operationId)
         => Error.NotFound(KernelErrors.UnknownOperation, KernelMessages.UnknownOperation, MessageArguments.Of(("id", operationId)));

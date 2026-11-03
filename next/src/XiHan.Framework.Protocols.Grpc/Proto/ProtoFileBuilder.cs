@@ -9,16 +9,16 @@ using XiHan.Framework.Protocols.Grpc.Methods;
 namespace XiHan.Framework.Protocols.Grpc.Proto;
 
 /// <summary>
-/// 从 gRPC 操作表生成 <c>.proto</c>（proto3）文本。
+/// 从 gRPC 操作表生成 <c>.proto</c>（proto3）文本
 /// </summary>
 /// <remarks>
-/// 每个消息描述一个 <c>message</c>，每个资源一个 <c>service</c>，每个操作一个一元 <c>rpc</c>。字段名按 JSON 名转 lower_snake_case，proto 默认的 <c>json_name</c> 与 JSON 名不同时写 <c>[json_name = "…"]</c>。同名消息在不同操作里形状必须一致。
+/// 每个消息描述一个 <c>message</c>，每个资源一个 <c>service</c>，每个操作一个一元 <c>rpc</c>。字段名按 JSON 名转 lower_snake_case，proto 默认的 <c>json_name</c> 与 JSON 名不同时写 <c>[json_name = "…"]</c>。同名消息在不同操作里形状必须一致
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ProtoFileBuilder
 {
     /// <summary>
-    /// 生成 <c>.proto</c> 文本。
+    /// 生成 <c>.proto</c> 文本
     /// </summary>
     public static string Build(IReadOnlyList<GrpcOperation> operations, string? package)
     {
@@ -59,7 +59,7 @@ public static class ProtoFileBuilder
     }
 
     /// <summary>
-    /// 一个消息的 <c>message</c> 块。
+    /// 一个消息的 <c>message</c> 块
     /// </summary>
     public static string Render(ProtoMessage message)
     {
@@ -101,10 +101,10 @@ public static class ProtoFileBuilder
     }
 
     /// <summary>
-    /// JSON 名转 proto 字段名。
+    /// JSON 名转 proto 字段名
     /// </summary>
     /// <remarks>
-    /// 大写字母前加下划线并小写，非标识符字符换成下划线，数字开头加下划线。
+    /// 大写字母前加下划线并小写，非标识符字符换成下划线，数字开头加下划线
     /// </remarks>
     public static string ProtoFieldName(string jsonName)
     {
@@ -141,10 +141,10 @@ public static class ProtoFileBuilder
     }
 
     /// <summary>
-    /// 递归收集消息文本。
+    /// 递归收集消息文本
     /// </summary>
     /// <remarks>
-    /// 同名消息形状不同即冲突。
+    /// 同名消息形状不同即冲突
     /// </remarks>
     private static void Collect(ProtoMessage message, SortedDictionary<string, string> messages)
     {
@@ -170,7 +170,7 @@ public static class ProtoFileBuilder
     }
 
     /// <summary>
-    /// 值类型在 <c>.proto</c> 里的名字。
+    /// 值类型在 <c>.proto</c> 里的名字
     /// </summary>
     private static string TypeName(ProtoValueType type) => type.Kind switch
     {
@@ -186,7 +186,7 @@ public static class ProtoFileBuilder
     };
 
     /// <summary>
-    /// proto 对字段名默认推导的 <c>json_name</c>：去掉下划线，其后的字母大写。
+    /// proto 对字段名默认推导的 <c>json_name</c>：去掉下划线，其后的字母大写
     /// </summary>
     private static string DefaultJsonName(string protoName)
     {

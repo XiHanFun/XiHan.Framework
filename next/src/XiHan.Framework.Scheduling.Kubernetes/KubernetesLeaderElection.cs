@@ -11,41 +11,41 @@ using XiHan.Framework.Scheduling.Kubernetes.Leases;
 namespace XiHan.Framework.Scheduling.Kubernetes;
 
 /// <summary>
-/// 以 Kubernetes Lease 实现的领导选举。
+/// 以 Kubernetes Lease 实现的领导选举
 /// </summary>
 /// <remarks>
-/// Lease 不存在就创建，持有者为空或 <c>renewTime + leaseDurationSeconds</c> 已过就接管（交接次数加一），否则返回被占用；并发竞争由 resourceVersion 裁决。存活时间按秒向上取整写进 Lease，本地判定仍用精确值。
+/// Lease 不存在就创建，持有者为空或 <c>renewTime + leaseDurationSeconds</c> 已过就接管（交接次数加一），否则返回被占用；并发竞争由 resourceVersion 裁决。存活时间按秒向上取整写进 Lease，本地判定仍用精确值
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class KubernetesLeaderElection : ILeaderElection
 {
     /// <summary>
-    /// 客户端。
+    /// 客户端
     /// </summary>
     private readonly KubernetesLeaseClient _client;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly KubernetesSchedulingOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 本实例的持有者标识。
+    /// 本实例的持有者标识
     /// </summary>
     private readonly string _holder;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public KubernetesLeaderElection(KubernetesLeaseClient client, KubernetesSchedulingOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -58,7 +58,7 @@ public sealed partial class KubernetesLeaderElection : ILeaderElection
     }
 
     /// <summary>
-    /// 本实例的持有者标识。
+    /// 本实例的持有者标识
     /// </summary>
     public string Holder => _holder;
 
@@ -120,7 +120,7 @@ public sealed partial class KubernetesLeaderElection : ILeaderElection
     }
 
     /// <summary>
-    /// 取得租约。
+    /// 取得租约
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Acquired Kubernetes lease '{Lease}' as '{Holder}'.")]
     private static partial void LogAcquired(ILogger logger, string lease, string holder);

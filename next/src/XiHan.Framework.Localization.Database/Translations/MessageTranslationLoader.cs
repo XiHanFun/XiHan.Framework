@@ -11,75 +11,75 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Database.Translations;
 
 /// <summary>
-/// 把数据库里的翻译装进 <see cref="DatabaseMessageLocalizer"/>。
+/// 把数据库里的翻译装进 <see cref="DatabaseMessageLocalizer"/>
 /// </summary>
 /// <remarks>
-/// 宿主进入服务状态后首次加载，之后按周期刷新；写入翻译后可显式 <see cref="ReloadAsync"/>。读取经完整管道（仓储要求 Transaction 阶段）。同时是健康项 <see cref="DatabaseLocalizationFeature.HealthName"/> 的贡献者：以最近一次加载的结果报告，失败（保留上一份快照）为 Degraded。
+/// 宿主进入服务状态后首次加载，之后按周期刷新；写入翻译后可显式 <see cref="ReloadAsync"/>。读取经完整管道（仓储要求 Transaction 阶段）。同时是健康项 <see cref="DatabaseLocalizationFeature.HealthName"/> 的贡献者：以最近一次加载的结果报告，失败（保留上一份快照）为 Degraded
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class MessageTranslationLoader : IDisposable, IHealthContributor
 {
     /// <summary>
-    /// 根服务提供者。
+    /// 根服务提供者
     /// </summary>
     /// <remarks>
-    /// 每次加载开新作用域。
+    /// 每次加载开新作用域
     /// </remarks>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 应用。
+    /// 应用
     /// </summary>
     /// <remarks>
-    /// 加载经它的管道执行。
+    /// 加载经它的管道执行
     /// </remarks>
     private readonly App _app;
 
     /// <summary>
-    /// 被装载的本地化器。
+    /// 被装载的本地化器
     /// </summary>
     private readonly DatabaseMessageLocalizer _localizer;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly DatabaseLocalizationOptions _options;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 最近一次加载的失败。
+    /// 最近一次加载的失败
     /// </summary>
     /// <remarks>
-    /// 成功后清空。后台循环写、健康采集读，整体替换不加锁。
+    /// 成功后清空。后台循环写、健康采集读，整体替换不加锁
     /// </remarks>
     private volatile Error? _lastError;
 
     /// <summary>
-    /// 是否已成功加载过一次。
+    /// 是否已成功加载过一次
     /// </summary>
     private volatile bool _loaded;
 
     /// <summary>
-    /// 停止信号。
+    /// 停止信号
     /// </summary>
     private CancellationTokenSource? _stopping;
 
     /// <summary>
-    /// 后台循环。
+    /// 后台循环
     /// </summary>
     private Task? _loop;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public MessageTranslationLoader(IServiceProvider services, App app, DatabaseMessageLocalizer localizer, DatabaseLocalizationOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
@@ -93,26 +93,26 @@ public sealed partial class MessageTranslationLoader : IDisposable, IHealthContr
     }
 
     /// <summary>
-    /// 最近一次成功加载的时刻。
+    /// 最近一次成功加载的时刻
     /// </summary>
     /// <remarks>
-    /// 还没有加载过为 <see langword="null"/>。
+    /// 还没有加载过为 <see langword="null"/>
     /// </remarks>
     public DateTimeOffset? LastLoadedAt { get; private set; }
 
     /// <summary>
-    /// 最近一次加载的失败。
+    /// 最近一次加载的失败
     /// </summary>
     /// <remarks>
-    /// 成功后为 <see langword="null"/>。失败时上一份快照仍在生效。
+    /// 成功后为 <see langword="null"/>。失败时上一份快照仍在生效
     /// </remarks>
     public Error? LastError => _lastError;
 
     /// <summary>
-    /// 立即重新加载并替换快照。
+    /// 立即重新加载并替换快照
     /// </summary>
     /// <remarks>
-    /// 只能在宿主服务期间调用；失败时保留上一份快照并返回失败。
+    /// 只能在宿主服务期间调用；失败时保留上一份快照并返回失败
     /// </remarks>
     public async ValueTask<Result> ReloadAsync(CancellationToken cancellationToken)
     {
@@ -184,7 +184,7 @@ public sealed partial class MessageTranslationLoader : IDisposable, IHealthContr
     }
 
     /// <summary>
-    /// 启动后台加载。
+    /// 启动后台加载
     /// </summary>
     internal void Start()
     {
@@ -199,7 +199,7 @@ public sealed partial class MessageTranslationLoader : IDisposable, IHealthContr
     }
 
     /// <summary>
-    /// 停止后台加载。
+    /// 停止后台加载
     /// </summary>
     internal async Task StopAsync()
     {
@@ -224,7 +224,7 @@ public sealed partial class MessageTranslationLoader : IDisposable, IHealthContr
     }
 
     /// <summary>
-    /// 等宿主进入服务状态后首次加载，再按周期刷新。
+    /// 等宿主进入服务状态后首次加载，再按周期刷新
     /// </summary>
     private async Task RunAsync(CancellationToken cancellationToken)
     {
@@ -255,13 +255,13 @@ public sealed partial class MessageTranslationLoader : IDisposable, IHealthContr
     }
 
     /// <summary>
-    /// 加载失败。
+    /// 加载失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Loading message translations failed: {ErrorCode}; the previous snapshot stays in effect.")]
     private static partial void LogLoadFailed(ILogger logger, string errorCode);
 
     /// <summary>
-    /// 达到上限。
+    /// 达到上限
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Only the first {Limit} message translations were loaded; raise XiHan:Localization:Database:MaxTranslations to load the rest.")]
     private static partial void LogLimitReached(ILogger logger, int limit);

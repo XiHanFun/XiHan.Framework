@@ -8,79 +8,79 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
 
 /// <summary>
-/// 节点的一次执行记录。
+/// 节点的一次执行记录
 /// </summary>
 /// <remarks>
-/// 重试复用同一记录并递增 <see cref="Attempt"/>。
+/// 重试复用同一记录并递增 <see cref="Attempt"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowNodeInstance
 {
     /// <summary>
-    /// 节点实例 ID。
+    /// 节点实例 ID
     /// </summary>
     public required string Id { get; set; }
 
     /// <summary>
-    /// 所属实例 ID。
+    /// 所属实例 ID
     /// </summary>
     public required string InstanceId { get; set; }
 
     /// <summary>
-    /// 节点 ID。
+    /// 节点 ID
     /// </summary>
     public required string NodeId { get; set; }
 
     /// <summary>
-    /// 活动类型。
+    /// 活动类型
     /// </summary>
     public required ActivityType ActivityType { get; set; }
 
     /// <summary>
-    /// 状态。
+    /// 状态
     /// </summary>
     public WorkflowNodeInstanceStatus Status { get; set; } = WorkflowNodeInstanceStatus.Running;
 
     /// <summary>
-    /// 第几次尝试，从 1 起。
+    /// 第几次尝试，从 1 起
     /// </summary>
     public int Attempt { get; set; } = 1;
 
     /// <summary>
-    /// 开始时间。
+    /// 开始时间
     /// </summary>
     public DateTimeOffset StartedAt { get; set; }
 
     /// <summary>
-    /// 结束时间。
+    /// 结束时间
     /// </summary>
     public DateTimeOffset? EndedAt { get; set; }
 
     /// <summary>
-    /// 输入（恢复时的输入）。
+    /// 输入（恢复时的输入）
     /// </summary>
     public JsonObject Inputs { get; set; } = [];
 
     /// <summary>
-    /// 输出。
+    /// 输出
     /// </summary>
     /// <remarks>
-    /// 完成时合并进实例变量；<c>outcome</c> 也记在这里。
+    /// 完成时合并进实例变量；<c>outcome</c> 也记在这里
     /// </remarks>
     public JsonObject Outputs { get; set; } = [];
 
     /// <summary>
-    /// 活动的私有状态，跨挂起保留。
+    /// 活动的私有状态，跨挂起保留
     /// </summary>
     public JsonObject State { get; set; } = [];
 
     /// <summary>
-    /// 故障。
+    /// 故障
     /// </summary>
     public WorkflowFault? Fault { get; set; }
 
     /// <summary>
-    /// 补偿时间。
+    /// 补偿时间
     /// </summary>
     public DateTimeOffset? CompensatedAt { get; set; }
 }

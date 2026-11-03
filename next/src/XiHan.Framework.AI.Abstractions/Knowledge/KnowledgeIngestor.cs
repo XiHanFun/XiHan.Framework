@@ -7,49 +7,49 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// <see cref="IKnowledgeIngestor"/> 的实现（单例）。
+/// <see cref="IKnowledgeIngestor"/> 的实现（单例）
 /// </summary>
 /// <remarks>
-/// 每篇文档一次嵌入批调用，受嵌入 Provider 的超时令牌约束（RFC-0022「超时与取消」）。重新摄入先写后删：新块写入成功之后才裁掉旧版本多出来的块，嵌入或写入失败时旧文档照常可检索。
+/// 每篇文档一次嵌入批调用，受嵌入 Provider 的超时令牌约束（RFC-0022「超时与取消」）。重新摄入先写后删：新块写入成功之后才裁掉旧版本多出来的块，嵌入或写入失败时旧文档照常可检索
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class KnowledgeIngestor : IKnowledgeIngestor
 {
     /// <summary>
-    /// AI 选项（实际的默认嵌入 Provider）。
+    /// AI 选项（实际的默认嵌入 Provider）
     /// </summary>
     private readonly AIOptions _ai;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly KnowledgeOptions _options;
 
     /// <summary>
-    /// Provider 目录。
+    /// Provider 目录
     /// </summary>
     private readonly IAIProviderCatalog _providers;
 
     /// <summary>
-    /// 切块策略。
+    /// 切块策略
     /// </summary>
     private readonly IChunkingStrategy _chunking;
 
     /// <summary>
-    /// 时间源。
+    /// 时间源
     /// </summary>
     /// <remarks>
-    /// 嵌入 Provider 的超时令牌按它计时。
+    /// 嵌入 Provider 的超时令牌按它计时
     /// </remarks>
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
-    /// 存储（没有 Provider 时为空）。
+    /// 存储（没有 Provider 时为空）
     /// </summary>
     private readonly IKnowledgeStore? _store;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public KnowledgeIngestor(AIOptions options, IAIProviderCatalog providers, IChunkingStrategy chunking, TimeProvider timeProvider, IKnowledgeStore? store = null)
     {
@@ -85,7 +85,7 @@ public sealed class KnowledgeIngestor : IKnowledgeIngestor
     }
 
     /// <summary>
-    /// 摄入一篇。
+    /// 摄入一篇
     /// </summary>
     private async ValueTask<Result<int>> IngestOneAsync(KnowledgeIngestRequest request, CancellationToken cancellationToken)
     {

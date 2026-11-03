@@ -6,20 +6,20 @@ using Amazon.S3.Model;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// 包住 <see cref="GetObjectResponse"/> 的响应流。
+/// 包住 <see cref="GetObjectResponse"/> 的响应流
 /// </summary>
 /// <remarks>
-/// 读取转发给响应流，释放时连同响应一起释放（响应持有 HTTP 连接）。
+/// 读取转发给响应流，释放时连同响应一起释放（响应持有 HTTP 连接）
 /// </remarks>
 internal sealed class S3ObjectStream : Stream
 {
     /// <summary>
-    /// 被包住的响应。
+    /// 被包住的响应
     /// </summary>
     private readonly GetObjectResponse _response;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public S3ObjectStream(GetObjectResponse response)
     {
@@ -27,7 +27,7 @@ internal sealed class S3ObjectStream : Stream
     }
 
     /// <summary>
-    /// 响应流。
+    /// 响应流
     /// </summary>
     private Stream Inner => _response.ResponseStream;
 

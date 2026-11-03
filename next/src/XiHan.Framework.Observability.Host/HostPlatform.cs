@@ -10,15 +10,15 @@ using XiHan.Framework.Observability.Abstractions;
 namespace XiHan.Framework.Observability.Host;
 
 /// <summary>
-/// 一个平台的读取路径。
+/// 一个平台的读取路径
 /// </summary>
 /// <remarks>
-/// 本类只用 BCL：处理器只有架构与逻辑核心，没有 CPU 时间、内存、GPU 与主板；磁盘按 <see cref="DriveInfo"/>，网卡按 <see cref="NetworkInterface"/>。Linux 与 Windows 的子类覆盖各自读得到的部分（RFC-0023 的平台读取路径）。
+/// 本类只用 BCL：处理器只有架构与逻辑核心，没有 CPU 时间、内存、GPU 与主板；磁盘按 <see cref="DriveInfo"/>，网卡按 <see cref="NetworkInterface"/>。Linux 与 Windows 的子类覆盖各自读得到的部分（RFC-0023 的平台读取路径）
 /// </remarks>
 internal class HostPlatform
 {
     /// <summary>
-    /// 按当前操作系统选择读取路径。
+    /// 按当前操作系统选择读取路径
     /// </summary>
     public static HostPlatform Create()
     {
@@ -31,7 +31,7 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 平台名。
+    /// 平台名
     /// </summary>
     public static string PlatformName()
     {
@@ -54,7 +54,7 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 处理器的静态信息。
+    /// 处理器的静态信息
     /// </summary>
     public virtual ProcessorInfo ReadProcessor() => new()
     {
@@ -63,30 +63,30 @@ internal class HostPlatform
     };
 
     /// <summary>
-    /// 系统 CPU 的累计时间。
+    /// 系统 CPU 的累计时间
     /// </summary>
     public virtual CpuTimes? ReadCpuTimes() => null;
 
     /// <summary>
-    /// 本进程的累计处理器时间。
+    /// 本进程的累计处理器时间
     /// </summary>
     public virtual TimeSpan ReadProcessCpuTime() => Environment.CpuUsage.TotalTime;
 
     /// <summary>
-    /// 物理内存。
+    /// 物理内存
     /// </summary>
     public virtual MemoryInfo ReadMemory() => new();
 
     /// <summary>
-    /// 系统运行时长。
+    /// 系统运行时长
     /// </summary>
     public virtual TimeSpan? ReadSystemUptime() => TimeSpan.FromMilliseconds(Environment.TickCount64);
 
     /// <summary>
-    /// 磁盘。
+    /// 磁盘
     /// </summary>
     /// <remarks>
-    /// 就绪的固定、可移动与网络盘。
+    /// 就绪的固定、可移动与网络盘
     /// </remarks>
     public virtual IReadOnlyList<DiskInfo> ReadDisks()
     {
@@ -113,26 +113,26 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 显卡。
+    /// 显卡
     /// </summary>
     public virtual IReadOnlyList<GpuInfo> ReadGpus() => [];
 
     /// <summary>
-    /// 主板、整机与 BIOS。
+    /// 主板、整机与 BIOS
     /// </summary>
     public virtual BoardInfo ReadBoard() => new();
 
     /// <summary>
-    /// 网卡、地址与累计流量。
+    /// 网卡、地址与累计流量
     /// </summary>
     /// <remarks>
-    /// 不含速率，速率由采样器补上。
+    /// 不含速率，速率由采样器补上
     /// </remarks>
     public virtual IReadOnlyList<NetworkInterfaceInfo> ReadNetworkInterfaces()
         => [.. Interfaces().Select(static nic => Describe(nic)).OfType<NetworkInterfaceInfo>()];
 
     /// <summary>
-    /// 每块网卡的累计收发字节数。
+    /// 每块网卡的累计收发字节数
     /// </summary>
     public virtual IReadOnlyList<NetworkCounters> ReadNetworkCounters()
         => [.. Interfaces().Select(static nic => Statistics(nic) is { } statistics
@@ -140,10 +140,10 @@ internal class HostPlatform
             : new NetworkCounters(nic.Id, null, null))];
 
     /// <summary>
-    /// 一个挂载点的容量。
+    /// 一个挂载点的容量
     /// </summary>
     /// <remarks>
-    /// 未就绪或读不到容量为 <see langword="null"/>。
+    /// 未就绪或读不到容量为 <see langword="null"/>
     /// </remarks>
     protected static DiskInfo? Describe(DriveInfo drive, string? device, string? format)
     {
@@ -175,7 +175,7 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 全部网卡。
+    /// 全部网卡
     /// </summary>
     private static NetworkInterface[] Interfaces()
     {
@@ -190,7 +190,7 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 网卡的收发统计。
+    /// 网卡的收发统计
     /// </summary>
     private static IPInterfaceStatistics? Statistics(NetworkInterface nic)
     {
@@ -205,7 +205,7 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 网卡的 IP 配置。
+    /// 网卡的 IP 配置
     /// </summary>
     private static IPInterfaceProperties? Properties(NetworkInterface nic)
     {
@@ -220,10 +220,10 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 描述一块网卡。
+    /// 描述一块网卡
     /// </summary>
     /// <remarks>
-    /// 连 ID 与名称都读不到时为 <see langword="null"/>。
+    /// 连 ID 与名称都读不到时为 <see langword="null"/>
     /// </remarks>
     private static NetworkInterfaceInfo? Describe(NetworkInterface nic)
     {
@@ -259,7 +259,7 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 读一组地址，平台不支持时为空列表。
+    /// 读一组地址，平台不支持时为空列表
     /// </summary>
     private static IReadOnlyList<TResult> Addresses<TSource, TResult>(Func<IEnumerable<TSource>> read, Func<TSource, TResult> select)
     {
@@ -274,7 +274,7 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 冒号分隔的物理地址。
+    /// 冒号分隔的物理地址
     /// </summary>
     private static string? PhysicalAddressOf(NetworkInterface nic)
     {
@@ -292,10 +292,10 @@ internal class HostPlatform
     }
 
     /// <summary>
-    /// 地址加上前缀长度。
+    /// 地址加上前缀长度
     /// </summary>
     /// <remarks>
-    /// 平台读不到前缀长度时只给地址。
+    /// 平台读不到前缀长度时只给地址
     /// </remarks>
     private static string WithPrefix(UnicastIPAddressInformation address)
         => Readings.Optional(() => address.PrefixLength) is { } prefix ? $"{address.Address}/{prefix.ToString(CultureInfo.InvariantCulture)}" : address.Address.ToString();

@@ -4,43 +4,43 @@
 namespace XiHan.Framework.Caching.Hybrid;
 
 /// <summary>
-/// L1：保存对象引用的有界 LRU 表。
+/// L1：保存对象引用的有界 LRU 表
 /// </summary>
 /// <remarks>
-/// 每个条目带绝对过期时刻；满时淘汰最久未访问的条目；过期条目在访问时清理。单把锁保护，操作都是内存级别的短临界区。
+/// 每个条目带绝对过期时刻；满时淘汰最久未访问的条目；过期条目在访问时清理。单把锁保护，操作都是内存级别的短临界区
 /// </remarks>
 internal sealed class LocalEntryTable
 {
     /// <summary>
-    /// 容量。
+    /// 容量
     /// </summary>
     private readonly int _capacity;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 键 → 链表节点。
+    /// 键 → 链表节点
     /// </summary>
     /// <remarks>
-    /// 节点越靠近链表头越是最近访问。
+    /// 节点越靠近链表头越是最近访问
     /// </remarks>
     private readonly Dictionary<string, LinkedListNode<Entry>> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// LRU 顺序。
+    /// LRU 顺序
     /// </summary>
     private readonly LinkedList<Entry> _order = new();
 
     /// <summary>
-    /// 锁。
+    /// 锁
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public LocalEntryTable(int capacity, TimeProvider clock)
     {
@@ -49,7 +49,7 @@ internal sealed class LocalEntryTable
     }
 
     /// <summary>
-    /// 当前条目数（含尚未清理的过期条目）。
+    /// 当前条目数（含尚未清理的过期条目）
     /// </summary>
     public int Count
     {
@@ -63,10 +63,10 @@ internal sealed class LocalEntryTable
     }
 
     /// <summary>
-    /// 取值。
+    /// 取值
     /// </summary>
     /// <remarks>
-    /// 不存在或已过期为 <see langword="null"/>。命中即移到最近访问。
+    /// 不存在或已过期为 <see langword="null"/>。命中即移到最近访问
     /// </remarks>
     public object? Get(string key)
     {
@@ -92,10 +92,10 @@ internal sealed class LocalEntryTable
     }
 
     /// <summary>
-    /// 写入或覆盖。
+    /// 写入或覆盖
     /// </summary>
     /// <remarks>
-    /// 容量满时先淘汰链表尾部。
+    /// 容量满时先淘汰链表尾部
     /// </remarks>
     public void Set(string key, object value, DateTimeOffset expiresAt)
     {
@@ -121,7 +121,7 @@ internal sealed class LocalEntryTable
     }
 
     /// <summary>
-    /// 删除前缀下的全部条目，返回删除数。
+    /// 删除前缀下的全部条目，返回删除数
     /// </summary>
     public int RemovePrefix(string prefix)
     {
@@ -139,10 +139,10 @@ internal sealed class LocalEntryTable
     }
 
     /// <summary>
-    /// 删除。
+    /// 删除
     /// </summary>
     /// <remarks>
-    /// 返回是否存在过（过期但未清理的也算存在）。
+    /// 返回是否存在过（过期但未清理的也算存在）
     /// </remarks>
     public bool Remove(string key)
     {
@@ -159,7 +159,7 @@ internal sealed class LocalEntryTable
     }
 
     /// <summary>
-    /// 一个条目。
+    /// 一个条目
     /// </summary>
     private sealed record Entry(string Key, object Value, DateTimeOffset ExpiresAt);
 }

@@ -7,68 +7,68 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Mcp;
 
 /// <summary>
-/// MCP 协议适配器的消息键。
+/// MCP 协议适配器的消息键
 /// </summary>
 /// <remarks>
-/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，特性装配时注册 <see cref="Catalog"/>。
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，特性装配时注册 <see cref="Catalog"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class McpMessages
 {
     /// <summary>
-    /// 目录名。
+    /// 目录名
     /// </summary>
     public const string CatalogName = "protocols.mcp";
 
     /// <summary>
-    /// 请求体不是合法的 JSON。
+    /// 请求体不是合法的 JSON
     /// </summary>
     public const string MessageNotJson = "protocols.mcp.message_not_json";
 
     /// <summary>
-    /// 消息不是合法的 JSON-RPC 2.0 请求。
+    /// 消息不是合法的 JSON-RPC 2.0 请求
     /// </summary>
     public const string MessageInvalid = "protocols.mcp.message_invalid";
 
     /// <summary>
-    /// MCP 协议版本不受支持。
+    /// MCP 协议版本不受支持
     /// </summary>
     /// <remarks>
-    /// 参数：<c>version</c>、<c>supported</c>。
+    /// 参数：<c>version</c>、<c>supported</c>
     /// </remarks>
     public const string VersionUnsupported = "protocols.mcp.version_unsupported";
 
     /// <summary>
-    /// 方法不受支持。
+    /// 方法不受支持
     /// </summary>
     /// <remarks>
-    /// 参数：<c>method</c>。
+    /// 参数：<c>method</c>
     /// </remarks>
     public const string MethodUnknown = "protocols.mcp.method_unknown";
 
     /// <summary>
-    /// tool 未登记。
+    /// tool 未登记
     /// </summary>
     /// <remarks>
-    /// 参数：<c>tool</c>。
+    /// 参数：<c>tool</c>
     /// </remarks>
     public const string ToolUnknown = "protocols.mcp.tool_unknown";
 
     /// <summary>
-    /// tool 的参数不是 JSON 对象。
+    /// tool 的参数不是 JSON 对象
     /// </summary>
     /// <remarks>
-    /// 参数：<c>tool</c>。
+    /// 参数：<c>tool</c>
     /// </remarks>
     public const string ArgumentsInvalid = "protocols.mcp.arguments_invalid";
 
     /// <summary>
-    /// 命令行宿主里 <c>mcp</c> 命令（stdio 传输）的说明。
+    /// 命令行宿主里 <c>mcp</c> 命令（stdio 传输）的说明
     /// </summary>
     public const string StdioDescription = "protocols.mcp.stdio_description";
 
     /// <summary>
-    /// 本包的消息目录。
+    /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(McpMessages));
 }

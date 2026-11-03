@@ -9,34 +9,34 @@ using XiHan.Framework.Protocols.CloudEvents.Inbound;
 namespace XiHan.Framework.Protocols.CloudEvents.Outbound;
 
 /// <summary>
-/// 出站 Webhook 发布者。
+/// 出站 Webhook 发布者
 /// </summary>
 /// <remarks>
-/// 把信封以 CloudEvents（binary 或 structured）POST 到主题配置的 URL（<c>XiHan:Protocols:CloudEvents:Webhooks:&lt;主题&gt;</c>）；批量发布多条时用 batch 内容模式一次 POST，响应对整批生效。作为具体类型注册，不替换消息代理的 <see cref="IMessagePublisher"/>；非 2xx 与连接失败都是 UNAVAILABLE，由调用方决定重试（例如经发件箱）。
+/// 把信封以 CloudEvents（binary 或 structured）POST 到主题配置的 URL（<c>XiHan:Protocols:CloudEvents:Webhooks:&lt;主题&gt;</c>）；批量发布多条时用 batch 内容模式一次 POST，响应对整批生效。作为具体类型注册，不替换消息代理的 <see cref="IMessagePublisher"/>；非 2xx 与连接失败都是 UNAVAILABLE，由调用方决定重试（例如经发件箱）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CloudEventsWebhookPublisher : IMessagePublisher
 {
     /// <summary>
-    /// 使用的命名 HttpClient。
+    /// 使用的命名 HttpClient
     /// </summary>
     /// <remarks>
-    /// 应用可按此名配置超时、重试与基地址。主处理器缺省是不写追踪上下文头的 <see cref="SocketsHttpHandler"/>（<see cref="CloudEventsProtocolOptions.PropagateTraceContext"/>）；调连接参数用 <c>UseSocketsHttpHandler</c> 配置同一个处理器，整个替换主处理器则由替换后的处理器决定是否传播。
+    /// 应用可按此名配置超时、重试与基地址。主处理器缺省是不写追踪上下文头的 <see cref="SocketsHttpHandler"/>（<see cref="CloudEventsProtocolOptions.PropagateTraceContext"/>）；调连接参数用 <c>UseSocketsHttpHandler</c> 配置同一个处理器，整个替换主处理器则由替换后的处理器决定是否传播
     /// </remarks>
     public const string HttpClientName = "xihan.protocols.cloudevents";
 
     /// <summary>
-    /// HttpClient 工厂。
+    /// HttpClient 工厂
     /// </summary>
     private readonly IHttpClientFactory _httpClientFactory;
 
     /// <summary>
-    /// 选项。
+    /// 选项
     /// </summary>
     private readonly CloudEventsProtocolOptions _options;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public CloudEventsWebhookPublisher(IHttpClientFactory httpClientFactory, CloudEventsProtocolOptions options)
     {
@@ -86,7 +86,7 @@ public sealed class CloudEventsWebhookPublisher : IMessagePublisher
     }
 
     /// <summary>
-    /// 发送请求：2xx 成功，其余状态码为 Webhook 失败，连不上为不可达。
+    /// 发送请求：2xx 成功，其余状态码为 Webhook 失败，连不上为不可达
     /// </summary>
     private async Task<Result> SendAsync(HttpRequestMessage request, string topic, CancellationToken cancellationToken)
     {
@@ -104,12 +104,12 @@ public sealed class CloudEventsWebhookPublisher : IMessagePublisher
     }
 
     /// <summary>
-    /// 构造主题没有配置 Webhook 的错误。
+    /// 构造主题没有配置 Webhook 的错误
     /// </summary>
     private static Error WebhookMissing(string topic) => Error.NotFound(CloudEventsErrors.WebhookMissing, CloudEventsMessages.WebhookMissing, MessageArguments.Of(("topic", topic)));
 
     /// <summary>
-    /// 同一结果重复给每一项（一次 POST 的响应对整批生效）。
+    /// 同一结果重复给每一项（一次 POST 的响应对整批生效）
     /// </summary>
     private static Result[] Repeat(Result result, int count)
     {

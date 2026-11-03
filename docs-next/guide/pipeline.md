@@ -150,7 +150,7 @@ builder.AddXiHan(xihan => xihan
 应用构建之后，管道可以按归属成组地加进或撤出中间件（RFC-0004「运行期改动」，ADR-0088）。Wasm 插件的运行期加载与卸载就是这样把它贡献的中间件接进、撤出管道的；应用一般用不到这两个方法。
 
 ```csharp
-// pipeline 是装配时拿到的 PipelineBuilder（FeatureContext.Pipeline 或 AppBuilder.Pipeline），应用构建之后仍可以成组改动。
+// pipeline 是装配时拿到的 PipelineBuilder（FeatureContext.Pipeline 或 AppBuilder.Pipeline），应用构建之后仍可以成组改动
 // 一组中间件归属同一个清单 ID：组内只能登记这个归属的中间件，约束只能挂在组内的中间件上（目标可以在组外）
 pipeline.UseOwned("xihan.plugins.audit", group => group
     .UseNamedInstance("xihan.plugins.audit:trail", new AuditTrailMiddleware(), PipelineStage.Observe, owner: "xihan.plugins.audit")

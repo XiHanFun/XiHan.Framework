@@ -7,16 +7,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Localization.Abstractions.Messages;
 
 /// <summary>
-/// 在调用上下文上直接取当前语言文案的便捷入口。
+/// 在调用上下文上直接取当前语言文案的便捷入口
 /// </summary>
 /// <remarks>
-/// <c>context.Localize(OrdersMessages.Placed, MessageArguments.Of(("name", name)))</c>。区域来自上下文的 Baggage，本地化器来自上下文的服务作用域；没有装配本地化时返回键与参数的描述。
+/// <c>context.Localize(OrdersMessages.Placed, MessageArguments.Of(("name", name)))</c>。区域来自上下文的 Baggage，本地化器来自上下文的服务作用域；没有装配本地化时返回键与参数的描述
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class InvocationContextLocalizationExtensions
 {
     /// <summary>
-    /// 按上下文里的区域解析消息键。
+    /// 按上下文里的区域解析消息键
     /// </summary>
     public static string Localize(this InvocationContext context, string key, IReadOnlyDictionary<string, object?>? arguments = null)
     {
@@ -29,7 +29,7 @@ public static class InvocationContextLocalizationExtensions
     }
 
     /// <summary>
-    /// 按上下文里的区域翻译错误。
+    /// 按上下文里的区域翻译错误
     /// </summary>
     public static string Localize(this InvocationContext context, Error failure)
     {

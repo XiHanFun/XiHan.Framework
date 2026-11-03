@@ -9,20 +9,20 @@ using XiHan.Framework.Plugins.OutOfProcess.Runtime;
 namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 
 /// <summary>
-/// 会话令牌 → 插件运行时。
+/// 会话令牌 → 插件运行时
 /// </summary>
 /// <remarks>
-/// 每次启动签发一个随机令牌，插件回调时凭它认证（<c>spec/plugin/handshake.md</c> §4）。
+/// 每次启动签发一个随机令牌，插件回调时凭它认证（<c>spec/plugin/handshake.md</c> §4）
 /// </remarks>
 internal sealed class PluginSessions
 {
     /// <summary>
-    /// 令牌 → 运行时。
+    /// 令牌 → 运行时
     /// </summary>
     private readonly ConcurrentDictionary<string, PluginRuntime> _sessions = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 签发并登记一个新令牌（32 字节随机数，base64url）。
+    /// 签发并登记一个新令牌（32 字节随机数，base64url）
     /// </summary>
     public string Issue(PluginRuntime runtime)
     {
@@ -32,7 +32,7 @@ internal sealed class PluginSessions
     }
 
     /// <summary>
-    /// 作废令牌。
+    /// 作废令牌
     /// </summary>
     public void Revoke(string? token)
     {
@@ -43,7 +43,7 @@ internal sealed class PluginSessions
     }
 
     /// <summary>
-    /// 按令牌找运行时。
+    /// 按令牌找运行时
     /// </summary>
     public bool TryResolve(string? token, out PluginRuntime runtime)
     {

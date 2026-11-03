@@ -6,19 +6,19 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 把文档正文切成块。
+/// 把文档正文切成块
 /// </summary>
 /// <remarks>
-/// 默认 <see cref="FixedWindowChunkingStrategy"/>，应用可替换。
+/// 默认 <see cref="FixedWindowChunkingStrategy"/>，应用可替换
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IChunkingStrategy
 {
     /// <summary>
-    /// 切块。
+    /// 切块
     /// </summary>
     /// <remarks>
-    /// 空白文本返回空列表。
+    /// 空白文本返回空列表
     /// </remarks>
     IReadOnlyList<string> Chunk(string text, ChunkingOptions options);
 }

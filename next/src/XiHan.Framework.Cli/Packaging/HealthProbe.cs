@@ -6,43 +6,43 @@ using System.Globalization;
 namespace XiHan.Framework.Cli.Packaging;
 
 /// <summary>
-/// 随镜像构建的就绪探针。
+/// 随镜像构建的就绪探针
 /// </summary>
 /// <remarks>
-/// chiseled 运行镜像里没有 shell、curl 与 wget，<c>runtime-deps</c> 里连 dotnet 也没有，Compose 的 healthcheck 在容器内执行，只能靠镜像自带的程序（<c>spec/packaging/app-manifest.md</c>「就绪探针」）。Dockerfile 在构建阶段从这里的源码编译它：AOT 时为原生可执行文件，否则为框架依赖的程序集。源码里不出现 <c>$</c> 与反斜杠，Dockerfile 的 heredoc 不会改写它。
+/// chiseled 运行镜像里没有 shell、curl 与 wget，<c>runtime-deps</c> 里连 dotnet 也没有，Compose 的 healthcheck 在容器内执行，只能靠镜像自带的程序（<c>spec/packaging/app-manifest.md</c>「就绪探针」）。Dockerfile 在构建阶段从这里的源码编译它：AOT 时为原生可执行文件，否则为框架依赖的程序集。源码里不出现 <c>$</c> 与反斜杠，Dockerfile 的 heredoc 不会改写它
 /// </remarks>
 internal static class HealthProbe
 {
     /// <summary>
-    /// 运行镜像里的目录。
+    /// 运行镜像里的目录
     /// </summary>
     public const string Directory = "/xihan/healthprobe";
 
     /// <summary>
-    /// 程序名。
+    /// 程序名
     /// </summary>
     public const string Name = "XiHanHealthProbe";
 
     /// <summary>
-    /// 探测的路径。
+    /// 探测的路径
     /// </summary>
     public const string ReadyPath = "/health/ready";
 
     /// <summary>
-    /// 构建阶段的源码目录。
+    /// 构建阶段的源码目录
     /// </summary>
     public const string SourceDirectory = "/xihan/healthprobe-src";
 
     /// <summary>
-    /// 构建阶段的发布目录。
+    /// 构建阶段的发布目录
     /// </summary>
     public const string PublishDirectory = SourceDirectory + "/publish";
 
     /// <summary>
-    /// 入口源码。
+    /// 入口源码
     /// </summary>
     /// <remarks>
-    /// 向本机端口发一次 HTTP/1.1 GET，2xx 退出 0，否则退出 1，参数不合法退出 2。
+    /// 向本机端口发一次 HTTP/1.1 GET，2xx 退出 0，否则退出 1，参数不合法退出 2
     /// </remarks>
     public const string Program = """
         // 由 xihan pack 生成的就绪探针：向 127.0.0.1:<端口><路径> 发一次 HTTP/1.1 GET，2xx 退出 0，否则退出 1，参数不合法退出 2。
@@ -90,10 +90,10 @@ internal static class HealthProbe
         """;
 
     /// <summary>
-    /// 项目文件。
+    /// 项目文件
     /// </summary>
     /// <remarks>
-    /// 不变区域、可空与隐式 using；AOT 镜像在项目里声明 <c>PublishAot</c>（不在命令行传全局属性）。
+    /// 不变区域、可空与隐式 using；AOT 镜像在项目里声明 <c>PublishAot</c>（不在命令行传全局属性）
     /// </remarks>
     public static string Project(bool aot) => $"""
         <Project Sdk="Microsoft.NET.Sdk">
@@ -110,7 +110,7 @@ internal static class HealthProbe
         """;
 
     /// <summary>
-    /// Compose healthcheck 的 <c>test</c>（YAML 流式序列）。
+    /// Compose healthcheck 的 <c>test</c>（YAML 流式序列）
     /// </summary>
     public static string ComposeTest(AppManifest manifest)
     {

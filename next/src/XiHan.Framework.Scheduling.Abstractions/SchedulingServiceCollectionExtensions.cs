@@ -13,23 +13,23 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 namespace XiHan.Framework.Scheduling.Abstractions;
 
 /// <summary>
-/// 作业、作业类型、日历与引擎的登记。
+/// 作业、作业类型、日历与引擎的登记
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class SchedulingServiceCollectionExtensions
 {
     /// <summary>
-    /// 登记一个作业类型（作用域服务），键为类型全名。
+    /// 登记一个作业类型（作用域服务），键为类型全名
     /// </summary>
     /// <remarks>
-    /// 运行时登记的作业引用它。
+    /// 运行时登记的作业引用它
     /// </remarks>
     public static IServiceCollection AddJobType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TJob>(this IServiceCollection services)
         where TJob : class, IJob
         => services.AddJobType<TJob>(JobTypeRegistry.KeyOf(typeof(TJob)));
 
     /// <summary>
-    /// 以指定键登记一个作业类型（作用域服务）。
+    /// 以指定键登记一个作业类型（作用域服务）
     /// </summary>
     public static IServiceCollection AddJobType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TJob>(this IServiceCollection services, string key)
         where TJob : class, IJob
@@ -41,20 +41,20 @@ public static class SchedulingServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记一个代码定义的作业（手动计划即没有触发器）。
+    /// 登记一个代码定义的作业（手动计划即没有触发器）
     /// </summary>
     /// <remarks>
-    /// 作业是作用域服务。
+    /// 作业是作用域服务
     /// </remarks>
     public static IServiceCollection AddJob<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TJob>(this IServiceCollection services, JobName name, JobSchedule schedule)
         where TJob : class, IJob
         => services.AddJob<TJob>(new JobDefinition(name, schedule, typeof(TJob)));
 
     /// <summary>
-    /// 登记一个代码定义的作业。
+    /// 登记一个代码定义的作业
     /// </summary>
     /// <remarks>
-    /// 作业是作用域服务。同名重复登记是编程错误。
+    /// 作业是作用域服务。同名重复登记是编程错误
     /// </remarks>
     public static IServiceCollection AddJob<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TJob>(this IServiceCollection services, JobDefinition definition)
         where TJob : class, IJob
@@ -72,7 +72,7 @@ public static class SchedulingServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记一个排除日历。
+    /// 登记一个排除日历
     /// </summary>
     public static IServiceCollection AddJobCalendar(this IServiceCollection services, string name, IJobCalendar calendar)
     {
@@ -82,28 +82,28 @@ public static class SchedulingServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 取（没有就创建）代码作业登记表。
+    /// 取（没有就创建）代码作业登记表
     /// </summary>
     public static JobRegistry GetJobRegistry(this IServiceCollection services)
         => services.GetOrAddInstance(static () => new JobRegistry());
 
     /// <summary>
-    /// 取（没有就创建）作业类型登记表。
+    /// 取（没有就创建）作业类型登记表
     /// </summary>
     public static JobTypeRegistry GetJobTypeRegistry(this IServiceCollection services)
         => services.GetOrAddInstance(static () => new JobTypeRegistry());
 
     /// <summary>
-    /// 取（没有就创建）日历登记表。
+    /// 取（没有就创建）日历登记表
     /// </summary>
     public static JobCalendars GetJobCalendars(this IServiceCollection services)
         => services.GetOrAddInstance(static () => new JobCalendars());
 
     /// <summary>
-    /// 装配引擎。
+    /// 装配引擎
     /// </summary>
     /// <remarks>
-    /// Provider 在注册了 <c>IJobStore</c> 与 <c>ILeaderElection</c> 后调用；引擎同时作为 <see cref="IJobScheduler"/>。
+    /// Provider 在注册了 <c>IJobStore</c> 与 <c>ILeaderElection</c> 后调用；引擎同时作为 <see cref="IJobScheduler"/>
     /// </remarks>
     public static IServiceCollection AddJobSchedulerEngine(this IServiceCollection services, SchedulerOptions options)
     {
@@ -120,7 +120,7 @@ public static class SchedulingServiceCollectionExtensions
     }
 
     /// <summary>
-    /// 登记表以实例注册，多次调用返回同一对象，特性与应用可以共同填充。
+    /// 登记表以实例注册，多次调用返回同一对象，特性与应用可以共同填充
     /// </summary>
     private static T GetOrAddInstance<T>(this IServiceCollection services, Func<T> create)
         where T : class

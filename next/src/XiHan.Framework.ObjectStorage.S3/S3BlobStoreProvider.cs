@@ -10,49 +10,49 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.S3;
 
 /// <summary>
-/// 命名存储实例的 S3 Provider（名 <c>s3</c>）。
+/// 命名存储实例的 S3 Provider（名 <c>s3</c>）
 /// </summary>
 /// <remarks>
-/// 设置的键同 <see cref="S3ObjectStorageOptions"/>（不含探测间隔），每个实例按自己的端点、区域与密钥建客户端，实例被替换、移除或注册表停止时停止重试并释放客户端。<c>ConditionalWrites</c> 开启（缺省）时建实例时在实例的 <c>HealthBucket</c> 里探一次服务是否认条件写入（含分片上传的条件完成，ADR-0089）：探明不认、被拒绝或探测桶不存在都不建，抛出携带 <c>OBJECTSTORAGE_UNAVAILABLE_003</c>、<c>OBJECTSTORAGE_DENIED_002</c> 或 <c>OBJECTSTORAGE_NOTFOUND_001</c> 的 <see cref="FrameworkException"/>，注册表转成同码的失败结果、不登记实例（ADR-0093）；只有连不上照常建出实例，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>（ADR-0090）；关闭时建实例不发请求。健康探测按实例的 <c>HealthBucket</c> HEAD 桶（没配时列桶），连通之后再看条件写入是否已确认。实例同时是 <c>IBlobMultipartStore</c> 与 <c>IBlobUrlSigner</c>。
+/// 设置的键同 <see cref="S3ObjectStorageOptions"/>（不含探测间隔），每个实例按自己的端点、区域与密钥建客户端，实例被替换、移除或注册表停止时停止重试并释放客户端。<c>ConditionalWrites</c> 开启（缺省）时建实例时在实例的 <c>HealthBucket</c> 里探一次服务是否认条件写入（含分片上传的条件完成，ADR-0089）：探明不认、被拒绝或探测桶不存在都不建，抛出携带 <c>OBJECTSTORAGE_UNAVAILABLE_003</c>、<c>OBJECTSTORAGE_DENIED_002</c> 或 <c>OBJECTSTORAGE_NOTFOUND_001</c> 的 <see cref="FrameworkException"/>，注册表转成同码的失败结果、不登记实例（ADR-0093）；只有连不上照常建出实例，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>（ADR-0090）；关闭时建实例不发请求。健康探测按实例的 <c>HealthBucket</c> HEAD 桶（没配时列桶），连通之后再看条件写入是否已确认。实例同时是 <c>IBlobMultipartStore</c> 与 <c>IBlobUrlSigner</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class S3BlobStoreProvider : IBlobStoreProvider
 {
     /// <summary>
-    /// Provider 名。
+    /// Provider 名
     /// </summary>
     public const string ProviderName = "s3";
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 条件写入状态的日志。
+    /// 条件写入状态的日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 按选项建客户端。
+    /// 按选项建客户端
     /// </summary>
     /// <remarks>
-    /// 缺省是 <see cref="S3ObjectStorageFeature.CreateClient"/>；测试换成替身。
+    /// 缺省是 <see cref="S3ObjectStorageFeature.CreateClient"/>；测试换成替身
     /// </remarks>
     private readonly Func<S3ObjectStorageOptions, IAmazonS3> _clients;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
-    /// <param name="clock">时钟（单次探测的超时、后台重试的退避都按它计时）。</param>
-    /// <param name="loggerFactory">日志工厂（条件写入的状态变化记日志）。</param>
+    /// <param name="clock">时钟（单次探测的超时、后台重试的退避都按它计时）</param>
+    /// <param name="loggerFactory">日志工厂（条件写入的状态变化记日志）</param>
     public S3BlobStoreProvider(TimeProvider clock, ILoggerFactory loggerFactory)
         : this(clock, loggerFactory, S3ObjectStorageFeature.CreateClient)
     {
     }
 
     /// <summary>
-    /// 创建，客户端由 <paramref name="clients"/> 按选项建出。
+    /// 创建，客户端由 <paramref name="clients"/> 按选项建出
     /// </summary>
     internal S3BlobStoreProvider(TimeProvider clock, ILoggerFactory loggerFactory, Func<S3ObjectStorageOptions, IAmazonS3> clients)
     {

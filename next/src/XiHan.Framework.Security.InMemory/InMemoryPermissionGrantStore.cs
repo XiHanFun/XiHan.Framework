@@ -8,34 +8,34 @@ using XiHan.Framework.Security.Abstractions.Permissions;
 namespace XiHan.Framework.Security.InMemory;
 
 /// <summary>
-/// 有界的内存权限授予存储。
+/// 有界的内存权限授予存储
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
 {
     /// <summary>
-    /// 授予表：键为主体种类、主体 ID 与租户（<see langword="null"/> 为全局），值为权限码集合。
+    /// 授予表：键为主体种类、主体 ID 与租户（<see langword="null"/> 为全局），值为权限码集合
     /// </summary>
     private readonly Dictionary<(string Kind, string Id, string? Tenant), HashSet<string>> _grants = [];
 
     /// <summary>
-    /// 保护授予表与计数的锁。
+    /// 保护授予表与计数的锁
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 当前授予总数。
+    /// 当前授予总数
     /// </summary>
     /// <remarks>
-    /// 用于容量检查。
+    /// 用于容量检查
     /// </remarks>
     private int _count;
 
     /// <summary>
-    /// 创建并装载选项里的授予。
+    /// 创建并装载选项里的授予
     /// </summary>
     /// <remarks>
-    /// 超出容量抛出 <see cref="FrameworkException"/>。
+    /// 超出容量抛出 <see cref="FrameworkException"/>
     /// </remarks>
     public InMemoryPermissionGrantStore(InMemorySecurityOptions options)
     {
@@ -48,12 +48,12 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 容量上限。
+    /// 容量上限
     /// </summary>
     public int Capacity { get; }
 
     /// <summary>
-    /// 当前授予数。
+    /// 当前授予数
     /// </summary>
     public int Count
     {
@@ -67,10 +67,10 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 当前持有授予的主体键数。
+    /// 当前持有授予的主体键数
     /// </summary>
     /// <remarks>
-    /// 键是主体种类、主体 ID 与租户的组合，只计至少还有一条授予的键，不会超过 <see cref="Count"/>。
+    /// 键是主体种类、主体 ID 与租户的组合，只计至少还有一条授予的键，不会超过 <see cref="Count"/>
     /// </remarks>
     internal int SubjectCount
     {
@@ -85,7 +85,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
 
     /// <inheritdoc />
     /// <remarks>
-    /// 进程内的表，读取不会失败，总是返回成功。
+    /// 进程内的表，读取不会失败，总是返回成功
     /// </remarks>
     public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
     {
@@ -108,10 +108,10 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 授予。
+    /// 授予
     /// </summary>
     /// <remarks>
-    /// 已存在返回成功且不计数，超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>，被拒绝的授予不留下任何条目。
+    /// 已存在返回成功且不计数，超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>，被拒绝的授予不留下任何条目
     /// </remarks>
     public Result Grant(PermissionGrant grant)
     {
@@ -146,10 +146,10 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 撤销。
+    /// 撤销
     /// </summary>
     /// <remarks>
-    /// 存在返回 <see langword="true"/>；主体在该租户下的最后一条授予被撤销时连同它的键一起移除。
+    /// 存在返回 <see langword="true"/>；主体在该租户下的最后一条授予被撤销时连同它的键一起移除
     /// </remarks>
     public bool Revoke(PermissionGrant grant)
     {

@@ -8,10 +8,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Commands;
 
 /// <summary>
-/// <c>operations</c>。
+/// <c>operations</c>
 /// </summary>
 /// <remarks>
-/// 按行列出登记表里的操作：ID、稳定性、暴露的协议、权限或策略，制表符分隔。
+/// 按行列出登记表里的操作：ID、稳定性、暴露的协议、权限或策略，制表符分隔
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OperationsCommand : ICommand

@@ -17,18 +17,18 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Plugins.OutOfProcess.Processes;
 
 /// <summary>
-/// 一个插件子进程。
+/// 一个插件子进程
 /// </summary>
 /// <remarks>
-/// 启动、读握手行、建立 gRPC 通道、转发 stderr / stdout 到日志、等待退出与终止。
+/// 启动、读握手行、建立 gRPC 通道、转发 stderr / stdout 到日志、等待退出与终止
 /// </remarks>
 internal sealed partial class PluginProcess : IAsyncDisposable
 {
     /// <summary>
-    /// 允许原样传给插件的环境变量。
+    /// 允许原样传给插件的环境变量
     /// </summary>
     /// <remarks>
-    /// PATH、用户目录、临时目录、区域与时区，以及操作系统运行所需的系统变量。
+    /// PATH、用户目录、临时目录、区域与时区，以及操作系统运行所需的系统变量
     /// </remarks>
     private static readonly string[] _inheritedVariables =
     [
@@ -37,53 +37,53 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     ];
 
     /// <summary>
-    /// 允许按前缀传给插件的环境变量。
+    /// 允许按前缀传给插件的环境变量
     /// </summary>
     private static readonly string[] _inheritedPrefixes = ["DOTNET_", "GO"];
 
     /// <summary>
-    /// 进程。
+    /// 进程
     /// </summary>
     private readonly Process _process;
 
     /// <summary>
-    /// 清单 ID（日志用）。
+    /// 清单 ID（日志用）
     /// </summary>
     private readonly string _pluginId;
 
     /// <summary>
-    /// 日志。
+    /// 日志
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 时钟（终止时的等待按它计时）。
+    /// 时钟（终止时的等待按它计时）
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 进程退出时以退出码完成。
+    /// 进程退出时以退出码完成
     /// </summary>
     private readonly TaskCompletionSource<int> _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
-    /// 到插件端点的通道。
+    /// 到插件端点的通道
     /// </summary>
     /// <remarks>
-    /// 握手行之后才有。
+    /// 握手行之后才有
     /// </remarks>
     private GrpcChannel? _channel;
 
     /// <summary>
-    /// 插件服务客户端。
+    /// 插件服务客户端
     /// </summary>
     /// <remarks>
-    /// 握手行之后才有。
+    /// 握手行之后才有
     /// </remarks>
     private Plugin.PluginClient? _client;
 
     /// <summary>
-    /// 创建句柄并开始监视退出与 stderr。
+    /// 创建句柄并开始监视退出与 stderr
     /// </summary>
     private PluginProcess(Process process, string pluginId, string sessionToken, ILogger logger, TimeProvider clock)
     {
@@ -97,43 +97,43 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 本进程的会话令牌。
+    /// 本进程的会话令牌
     /// </summary>
     public string SessionToken { get; }
 
     /// <summary>
-    /// 插件公布的端点。
+    /// 插件公布的端点
     /// </summary>
     /// <remarks>
-    /// 握手行之后才有。
+    /// 握手行之后才有
     /// </remarks>
     public PluginEndpoint? Endpoint { get; private set; }
 
     /// <summary>
-    /// 进程 ID。
+    /// 进程 ID
     /// </summary>
     public int ProcessId => _process.Id;
 
     /// <summary>
-    /// 进程是否已退出。
+    /// 进程是否已退出
     /// </summary>
     public bool HasExited => _exited.Task.IsCompleted;
 
     /// <summary>
-    /// 进程退出时以退出码完成的任务。
+    /// 进程退出时以退出码完成的任务
     /// </summary>
     public Task<int> Exited => _exited.Task;
 
     /// <summary>
-    /// 插件服务客户端。
+    /// 插件服务客户端
     /// </summary>
     public Plugin.PluginClient Client => _client ?? throw new InvalidOperationException("The plugin process has not published its endpoint yet.");
 
     /// <summary>
-    /// 启动进程、读握手行并建立通道。
+    /// 启动进程、读握手行并建立通道
     /// </summary>
     /// <remarks>
-    /// 任一步失败都终止进程并返回错误。
+    /// 任一步失败都终止进程并返回错误
     /// </remarks>
     public static async Task<Result<PluginProcess>> LaunchAsync(PluginLaunch launch, TimeProvider clock, ILogger logger, CancellationToken cancellationToken)
     {
@@ -199,10 +199,10 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 在宽限内等待进程自行退出。
+    /// 在宽限内等待进程自行退出
     /// </summary>
     /// <remarks>
-    /// 返回是否退出。
+    /// 返回是否退出
     /// </remarks>
     public async Task<bool> WaitForExitAsync(TimeSpan grace, TimeProvider clock, CancellationToken cancellationToken)
     {
@@ -211,7 +211,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 关闭 stdin：按约定插件应随之自行退出（<c>handshake.md</c> §1）。
+    /// 关闭 stdin：按约定插件应随之自行退出（<c>handshake.md</c> §1）
     /// </summary>
     public void CloseInput()
     {
@@ -226,20 +226,20 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 终止进程树并等待退出。
+    /// 终止进程树并等待退出
     /// </summary>
     public Task KillAsync() => ProcessTermination.KillAsync(_process, _exited.Task, _clock);
 
     /// <summary>
-    /// 停止超时后的终止：先发终止信号，5 秒内仍未退出再终止进程树（<c>lifecycle.md</c> §5）。
+    /// 停止超时后的终止：先发终止信号，5 秒内仍未退出再终止进程树（<c>lifecycle.md</c> §5）
     /// </summary>
     /// <remarks>
-    /// 终止信号是关闭 stdin，Unix 上同时发 SIGTERM。返回进程是否在信号之后自行退出。
+    /// 终止信号是关闭 stdin，Unix 上同时发 SIGTERM。返回进程是否在信号之后自行退出
     /// </remarks>
     public Task<bool> TerminateAsync() => ProcessTermination.TerminateAsync(_process, _exited.Task, CloseInput, _clock);
 
     /// <summary>
-    /// 关闭 stdin（让插件自行退出）、释放通道、终止仍在运行的进程并释放句柄。
+    /// 关闭 stdin（让插件自行退出）、释放通道、终止仍在运行的进程并释放句柄
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -254,7 +254,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 读 stdout 第一行并解析为端点：超时、进程先退出或行不合法都是失败。
+    /// 读 stdout 第一行并解析为端点：超时、进程先退出或行不合法都是失败
     /// </summary>
     private async Task<Result<PluginEndpoint>> ReadHandshakeLineAsync(TimeSpan timeout, TimeProvider clock, CancellationToken cancellationToken)
     {
@@ -283,7 +283,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 等待进程退出并记录退出码。
+    /// 等待进程退出并记录退出码
     /// </summary>
     private async Task MonitorExitAsync()
     {
@@ -299,10 +299,10 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 逐行把插件输出转为日志。
+    /// 逐行把插件输出转为日志
     /// </summary>
     /// <remarks>
-    /// 以 <c>{</c> 开头且能解析的行按结构化日志（<c>level</c>、<c>message</c>）处理，其余按 Information。
+    /// 以 <c>{</c> 开头且能解析的行按结构化日志（<c>level</c>、<c>message</c>）处理，其余按 Information
     /// </remarks>
     private async Task PumpAsync(StreamReader reader)
     {
@@ -326,7 +326,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 解析一行输出的级别与消息。
+    /// 解析一行输出的级别与消息
     /// </summary>
     private static (LogLevel Level, string Message) Parse(string line)
     {
@@ -366,7 +366,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     }
 
     /// <summary>
-    /// 记录插件输出的一行。
+    /// 记录插件输出的一行
     /// </summary>
     [LoggerMessage(Message = "[plugins.{PluginId}] {Line}")]
     private static partial void LogOutput(ILogger logger, LogLevel level, string pluginId, string line);

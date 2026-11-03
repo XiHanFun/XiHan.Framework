@@ -11,15 +11,15 @@ using XiHan.Framework.Security.Abstractions.Authorization;
 namespace XiHan.Framework.Protocols.Http.OpenApi;
 
 /// <summary>
-/// 从宿主的端点里挑出进文档的普通端点。
+/// 从宿主的端点里挑出进文档的普通端点
 /// </summary>
 /// <remarks>
-/// 有路由模板、不是操作端点（没有 <see cref="OperationDescriptor"/> 元数据）、有 HTTP 方法元数据、带 <see cref="IAcceptsMetadata"/> 或 <see cref="IProducesResponseTypeMetadata"/> 之一、没有标 <see cref="IExcludeFromDescriptionMetadata"/>。Hub、健康探针、重定向、静态资源都没有这两种描述元数据，自然不进，不另做名单。
+/// 有路由模板、不是操作端点（没有 <see cref="OperationDescriptor"/> 元数据）、有 HTTP 方法元数据、带 <see cref="IAcceptsMetadata"/> 或 <see cref="IProducesResponseTypeMetadata"/> 之一、没有标 <see cref="IExcludeFromDescriptionMetadata"/>。Hub、健康探针、重定向、静态资源都没有这两种描述元数据，自然不进，不另做名单
 /// </remarks>
 internal static partial class EndpointReader
 {
     /// <summary>
-    /// 读出进文档的端点，每个 HTTP 方法一条，按模板与方法排序。
+    /// 读出进文档的端点，每个 HTTP 方法一条，按模板与方法排序
     /// </summary>
     public static IReadOnlyList<EndpointDescription> Read(IEnumerable<Endpoint> endpoints)
     {
@@ -72,10 +72,10 @@ internal static partial class EndpointReader
     }
 
     /// <summary>
-    /// 把 ASP.NET Core 路由模板改成 OpenAPI 形式。
+    /// 把 ASP.NET Core 路由模板改成 OpenAPI 形式
     /// </summary>
     /// <remarks>
-    /// 补上开头的斜杠，<c>{id:int}</c>、<c>{id?}</c>、<c>{*path}</c> 都只留 <c>{name}</c>。
+    /// 补上开头的斜杠，<c>{id:int}</c>、<c>{id?}</c>、<c>{*path}</c> 都只留 <c>{name}</c>
     /// </remarks>
     private static string Normalize(string? rawText)
     {
@@ -89,7 +89,7 @@ internal static partial class EndpointReader
     }
 
     /// <summary>
-    /// 路由模板里的参数：可带 <c>*</c> / <c>**</c> 前缀、约束与可选标记。
+    /// 路由模板里的参数：可带 <c>*</c> / <c>**</c> 前缀、约束与可选标记
     /// </summary>
     [GeneratedRegex(@"\{\**(?<name>[A-Za-z_][A-Za-z0-9_]*)[^}]*\}")]
     private static partial Regex RouteParameter();

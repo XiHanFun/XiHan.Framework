@@ -7,10 +7,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 
 /// <summary>
-/// 外部任务完成。
+/// 外部任务完成
 /// </summary>
-/// <param name="TaskId">任务 ID。</param>
-/// <param name="WorkerId">工作者（必须持有锁）。</param>
-/// <param name="Outputs">输出，合并进实例变量。</param>
+/// <param name="TaskId">任务 ID</param>
+/// <param name="WorkerId">工作者（必须持有锁）</param>
+/// <param name="Outputs">输出，合并进实例变量</param>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record ExternalTaskCompletion(string TaskId, string WorkerId, JsonObject? Outputs = null);

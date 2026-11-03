@@ -11,16 +11,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 
 /// <summary>
-/// Tenant 阶段的中间件。
+/// Tenant 阶段的中间件
 /// </summary>
 /// <remarks>
-/// 按注册顺序调用 <see cref="ITenantResolver"/>，取第一个解析结果（没有时用默认租户），校验格式，按选项核对 <see cref="ITenantStore"/>（存在且启用），然后写入安全上下文。失败以结果返回：<see cref="MultiTenancyErrors.InvalidTenantId"/>、<see cref="MultiTenancyErrors.MissingTenant"/>、<see cref="MultiTenancyErrors.NotFound"/>、<see cref="MultiTenancyErrors.Disabled"/>。
+/// 按注册顺序调用 <see cref="ITenantResolver"/>，取第一个解析结果（没有时用默认租户），校验格式，按选项核对 <see cref="ITenantStore"/>（存在且启用），然后写入安全上下文。失败以结果返回：<see cref="MultiTenancyErrors.InvalidTenantId"/>、<see cref="MultiTenancyErrors.MissingTenant"/>、<see cref="MultiTenancyErrors.NotFound"/>、<see cref="MultiTenancyErrors.Disabled"/>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IPipelineMiddleware
 {
     /// <summary>
-    /// 默认租户、是否必须带租户、是否对照存储校验。
+    /// 默认租户、是否必须带租户、是否对照存储校验
     /// </summary>
     private readonly MultiTenancyOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
@@ -100,10 +100,10 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
     }
 
     /// <summary>
-    /// 按注册顺序依次调用解析器，返回第一个解析出的租户 ID。
+    /// 按注册顺序依次调用解析器，返回第一个解析出的租户 ID
     /// </summary>
     /// <remarks>
-    /// 都没有返回 <see langword="null"/>。
+    /// 都没有返回 <see langword="null"/>
     /// </remarks>
     private static async ValueTask<string?> ResolveAsync(InvocationContext context)
     {

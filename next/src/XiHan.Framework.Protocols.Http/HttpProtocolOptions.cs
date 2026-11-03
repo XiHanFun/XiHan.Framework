@@ -8,24 +8,24 @@ using XiHan.Framework.Protocols.Http.Routing;
 namespace XiHan.Framework.Protocols.Http;
 
 /// <summary>
-/// HTTP 协议适配器选项。
+/// HTTP 协议适配器选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Protocols:Http</c> 显式读取：<c>RoutePrefix</c>，<c>Routes:&lt;操作 ID&gt;</c> = <c>METHOD /template</c> 显式覆盖推导的路由。
+/// 从配置节 <c>XiHan:Protocols:Http</c> 显式读取：<c>RoutePrefix</c>，<c>Routes:&lt;操作 ID&gt;</c> = <c>METHOD /template</c> 显式覆盖推导的路由
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record HttpProtocolOptions
 {
     /// <summary>
-    /// 配置节。
+    /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Protocols:Http";
 
     /// <summary>
-    /// 所有操作路由的前缀（如 <c>/api</c>）。
+    /// 所有操作路由的前缀（如 <c>/api</c>）
     /// </summary>
     /// <remarks>
-    /// 空表示无前缀。不能以 <c>/</c> 结尾。
+    /// 空表示无前缀。不能以 <c>/</c> 结尾
     /// </remarks>
     public string RoutePrefix
     {
@@ -43,10 +43,10 @@ public sealed record HttpProtocolOptions
     } = string.Empty;
 
     /// <summary>
-    /// 显式覆盖。
+    /// 显式覆盖
     /// </summary>
     /// <remarks>
-    /// 操作 ID → 路由；未覆盖的操作按 <see cref="HttpRouteConvention"/> 推导。
+    /// 操作 ID → 路由；未覆盖的操作按 <see cref="HttpRouteConvention"/> 推导
     /// </remarks>
     public IReadOnlyDictionary<string, HttpRoute> Routes
     {
@@ -64,7 +64,7 @@ public sealed record HttpProtocolOptions
     } = new Dictionary<string, HttpRoute>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 从配置读取。
+    /// 从配置读取
     /// </summary>
     public static HttpProtocolOptions FromConfiguration(IConfiguration configuration)
     {
@@ -87,10 +87,10 @@ public sealed record HttpProtocolOptions
     }
 
     /// <summary>
-    /// 操作最终的路由。
+    /// 操作最终的路由
     /// </summary>
     /// <remarks>
-    /// 显式覆盖优先，否则按约定推导；都加上前缀。
+    /// 显式覆盖优先，否则按约定推导；都加上前缀
     /// </remarks>
     public HttpRoute RouteFor(XiHan.Framework.Kernel.Operations.OperationDescriptor descriptor)
     {

@@ -10,89 +10,89 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 
 /// <summary>
-/// 命名存储实例的注册表（单例）。
+/// 命名存储实例的注册表（单例）
 /// </summary>
 /// <remarks>
-/// 按 <see cref="BlobStoreDefinition"/> 经对应的 <see cref="IBlobStoreProvider"/> 建实例，按名缓存。实例有两个来源：配置节 <c>XiHan:ObjectStorage:Stores:&lt;name&gt;</c>（<c>Provider</c> 加该 Provider 的设置，首次取用时建出），与应用运行时登记（<see cref="GetOrAddAsync"/>，如存放在库里的存储配置）。同名同定义返回同一实例；定义变了（Provider 或任一设置不同）建新实例替换旧的并释放旧的——替换时仍在旧实例上进行的调用可能失败。缺省的 <see cref="IBlobStore"/> 注入方式不受影响。同时是健康项的贡献者：每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，按 <c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；尚未探过的条目为 Started。
+/// 按 <see cref="BlobStoreDefinition"/> 经对应的 <see cref="IBlobStoreProvider"/> 建实例，按名缓存。实例有两个来源：配置节 <c>XiHan:ObjectStorage:Stores:&lt;name&gt;</c>（<c>Provider</c> 加该 Provider 的设置，首次取用时建出），与应用运行时登记（<see cref="GetOrAddAsync"/>，如存放在库里的存储配置）。同名同定义返回同一实例；定义变了（Provider 或任一设置不同）建新实例替换旧的并释放旧的——替换时仍在旧实例上进行的调用可能失败。缺省的 <see cref="IBlobStore"/> 注入方式不受影响。同时是健康项的贡献者：每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，按 <c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；尚未探过的条目为 Started
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class BlobStores : IHealthContributor, IAsyncDisposable
 {
     /// <summary>
-    /// 配置定义的实例所在的配置节。
+    /// 配置定义的实例所在的配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:ObjectStorage:Stores";
 
     /// <summary>
-    /// 健康项名的前缀。
+    /// 健康项名的前缀
     /// </summary>
     public const string HealthPrefix = "objectstorage.store.";
 
     /// <summary>
-    /// 定义里 Provider 名的配置键。
+    /// 定义里 Provider 名的配置键
     /// </summary>
     private const string ProviderKey = "Provider";
 
     /// <summary>
-    /// Provider，按名（不区分大小写）。
+    /// Provider，按名（不区分大小写）
     /// </summary>
     private readonly Dictionary<string, IBlobStoreProvider> _providers = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 配置。
+    /// 配置
     /// </summary>
     /// <remarks>
-    /// 配置定义的实例从这里读。
+    /// 配置定义的实例从这里读
     /// </remarks>
     private readonly IConfiguration? _configuration;
 
     /// <summary>
-    /// 时钟：健康探测的定时器。
+    /// 时钟：健康探测的定时器
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 探测间隔，也是单次探测的超时。
+    /// 探测间隔，也是单次探测的超时
     /// </summary>
     private readonly TimeSpan _probeInterval;
 
     /// <summary>
-    /// 串行化建、替换与移除。
+    /// 串行化建、替换与移除
     /// </summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 停止时取消进行中的探测。
+    /// 停止时取消进行中的探测
     /// </summary>
     private readonly CancellationTokenSource _stopping = new();
 
     /// <summary>
-    /// 已建的实例，按名。
+    /// 已建的实例，按名
     /// </summary>
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 健康探测的定时器。
+    /// 健康探测的定时器
     /// </summary>
     /// <remarks>
-    /// 建出第一个实例时启动。
+    /// 建出第一个实例时启动
     /// </remarks>
     private ITimer? _timer;
 
     /// <summary>
-    /// 是否正在探测（定时器回调不重叠）。
+    /// 是否正在探测（定时器回调不重叠）
     /// </summary>
     private int _probing;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// 容器解析时 <paramref name="providers"/> 是全部登记的 Provider。
+    /// 容器解析时 <paramref name="providers"/> 是全部登记的 Provider
     /// </remarks>
-    /// <param name="providers">Provider；同名重复是装配错误。</param>
-    /// <param name="clock">时钟。</param>
-    /// <param name="configuration">配置；为 <see langword="null"/> 时没有配置定义的实例。</param>
+    /// <param name="providers">Provider；同名重复是装配错误</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="configuration">配置；为 <see langword="null"/> 时没有配置定义的实例</param>
     public BlobStores(IEnumerable<IBlobStoreProvider> providers, TimeProvider clock, IConfiguration? configuration = null)
     {
         ArgumentNullException.ThrowIfNull(providers);
@@ -116,12 +116,12 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 已登记的 Provider 名。
+    /// 已登记的 Provider 名
     /// </summary>
     public IReadOnlyCollection<string> Providers => _providers.Keys;
 
     /// <summary>
-    /// 已建的与配置里定义的实例名，按序数排序。
+    /// 已建的与配置里定义的实例名，按序数排序
     /// </summary>
     public IReadOnlyList<string> Names
     {
@@ -146,10 +146,10 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 取实例。
+    /// 取实例
     /// </summary>
     /// <remarks>
-    /// 已建的直接返回；配置里有定义的首次取用时建出。都没有返回 <see cref="ObjectStorageErrors.StoreNotFound"/>，配置定义不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>。
+    /// 已建的直接返回；配置里有定义的首次取用时建出。都没有返回 <see cref="ObjectStorageErrors.StoreNotFound"/>，配置定义不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>
     /// </remarks>
     public async ValueTask<Result<IBlobStore>> GetAsync(string name, CancellationToken cancellationToken)
     {
@@ -169,10 +169,10 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 按定义取实例。
+    /// 按定义取实例
     /// </summary>
     /// <remarks>
-    /// 同名同定义返回已有的；没有或定义变了就建（替换并释放旧实例）。Provider 未登记或设置不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>，后端建不出来（I/O 或权限错误）返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，建实例时的探测发现实例不能用返回 Provider 给出的错误码（如 S3 探明服务不认条件写入时 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>，探测被拒绝时 <see cref="ObjectStorageErrors.ProbeDenied"/>，探测桶不存在时 <see cref="ObjectStorageErrors.BlobNotFound"/>）；这些情况已有实例都不受影响。
+    /// 同名同定义返回已有的；没有或定义变了就建（替换并释放旧实例）。Provider 未登记或设置不合法返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>，后端建不出来（I/O 或权限错误）返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>，建实例时的探测发现实例不能用返回 Provider 给出的错误码（如 S3 探明服务不认条件写入时 <see cref="ObjectStorageErrors.ConditionalWriteUnavailable"/>，探测被拒绝时 <see cref="ObjectStorageErrors.ProbeDenied"/>，探测桶不存在时 <see cref="ObjectStorageErrors.BlobNotFound"/>）；这些情况已有实例都不受影响
     /// </remarks>
     public async ValueTask<Result<IBlobStore>> GetOrAddAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
     {
@@ -240,10 +240,10 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 移除并释放实例。
+    /// 移除并释放实例
     /// </summary>
     /// <remarks>
-    /// 返回是否存在过。配置里有定义的实例之后再取用会重新建出。
+    /// 返回是否存在过。配置里有定义的实例之后再取用会重新建出
     /// </remarks>
     public async ValueTask<bool> RemoveAsync(string name, CancellationToken cancellationToken)
     {
@@ -270,7 +270,7 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 立即逐个探测全部已建实例并更新健康项。
+    /// 立即逐个探测全部已建实例并更新健康项
     /// </summary>
     public async ValueTask ProbeAsync(CancellationToken cancellationToken)
     {
@@ -327,10 +327,10 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 配置里的定义。
+    /// 配置里的定义
     /// </summary>
     /// <remarks>
-    /// <c>Provider</c> 必填，其余键（相对路径）作为设置；没有该节时为 <see langword="null"/>。
+    /// <c>Provider</c> 必填，其余键（相对路径）作为设置；没有该节时为 <see langword="null"/>
     /// </remarks>
     private BlobStoreDefinition? Configured(string name)
     {
@@ -353,7 +353,7 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 定时器回调：上一轮还没探完就跳过这一轮。
+    /// 定时器回调：上一轮还没探完就跳过这一轮
     /// </summary>
     private void ProbeInBackground()
     {
@@ -380,10 +380,10 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 探测一个实例（超时为探测间隔）。
+    /// 探测一个实例（超时为探测间隔）
     /// </summary>
     /// <remarks>
-    /// 成功 Ready，失败或抛出 Degraded 并带错误；探测期间实例被替换或移除时结果丢弃。
+    /// 成功 Ready，失败或抛出 Degraded 并带错误；探测期间实例被替换或移除时结果丢弃
     /// </remarks>
     private async Task ProbeEntryAsync(Entry entry, CancellationToken cancellationToken)
     {
@@ -417,7 +417,7 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 释放实例持有的资源。
+    /// 释放实例持有的资源
     /// </summary>
     private static async ValueTask DisposeStoreAsync(IBlobStore store)
     {
@@ -433,27 +433,27 @@ public sealed class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 一个已建的实例。
+    /// 一个已建的实例
     /// </summary>
     private sealed class Entry(BlobStoreDefinition definition, IBlobStoreProvider provider, IBlobStore store, ContributorStatus status)
     {
         /// <summary>
-        /// 定义。
+        /// 定义
         /// </summary>
         public BlobStoreDefinition Definition { get; } = definition;
 
         /// <summary>
-        /// 建它的 Provider。
+        /// 建它的 Provider
         /// </summary>
         public IBlobStoreProvider Provider { get; } = provider;
 
         /// <summary>
-        /// 实例。
+        /// 实例
         /// </summary>
         public IBlobStore Store { get; } = store;
 
         /// <summary>
-        /// 最近一次的健康状态。
+        /// 最近一次的健康状态
         /// </summary>
         public ContributorStatus Status { get; set; } = status;
     }

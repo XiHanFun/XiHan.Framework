@@ -6,36 +6,36 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.DataSources;
 
 /// <summary>
-/// 常用的数据库类型名。
+/// 常用的数据库类型名
 /// </summary>
 /// <remarks>
-/// <see cref="DataSourceDefinition.DatabaseType"/> 不区分大小写；Provider 认得的名字可以更多（SqlSugar 接受它的 <c>DbType</c> 枚举名），不认得的以 <see cref="PersistenceErrors.DataSourceInvalid"/> 拒绝。
+/// <see cref="DataSourceDefinition.DatabaseType"/> 不区分大小写；Provider 认得的名字可以更多（SqlSugar 接受它的 <c>DbType</c> 枚举名），不认得的以 <see cref="PersistenceErrors.DataSourceInvalid"/> 拒绝
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class DatabaseTypes
 {
     /// <summary>
-    /// PostgreSQL。
+    /// PostgreSQL
     /// </summary>
     public const string PostgreSql = "postgresql";
 
     /// <summary>
-    /// MySQL。
+    /// MySQL
     /// </summary>
     public const string MySql = "mysql";
 
     /// <summary>
-    /// SQL Server。
+    /// SQL Server
     /// </summary>
     public const string SqlServer = "sqlserver";
 
     /// <summary>
-    /// SQLite。
+    /// SQLite
     /// </summary>
     public const string Sqlite = "sqlite";
 
     /// <summary>
-    /// Oracle。
+    /// Oracle
     /// </summary>
     public const string Oracle = "oracle";
 }

@@ -7,9 +7,9 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 
 /// <summary>
-/// 套件领域事件：带名字，由 <see cref="ConformanceOrder.Raise"/> 记录。
+/// 套件领域事件：带名字，由 <see cref="ConformanceOrder.Raise"/> 记录
 /// </summary>
-/// <param name="Name">事件名。</param>
-/// <param name="OccurredAt">发生时间。</param>
+/// <param name="Name">事件名</param>
+/// <param name="OccurredAt">发生时间</param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record ConformanceEvent(string Name, DateTimeOffset OccurredAt) : IDomainEvent;

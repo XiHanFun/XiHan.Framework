@@ -9,30 +9,30 @@ using Microsoft.CodeAnalysis;
 namespace XiHan.Framework.Kernel.Generators.Json;
 
 /// <summary>
-/// 从符号的 XML 文档注释取 Schema 的 <c>description</c>。
+/// 从符号的 XML 文档注释取 Schema 的 <c>description</c>
 /// </summary>
 /// <remarks>
-/// 取 <c>&lt;summary&gt;</c> 或某个 <c>&lt;param&gt;</c> 的纯文本：<c>&lt;see cref&gt;</c> 取最后一段名字，<c>&lt;see langword&gt;</c>、<c>&lt;c&gt;</c>、<c>&lt;paramref&gt;</c>、<c>&lt;typeparamref&gt;</c> 取文本，空白折叠成一个空格。
-/// 项目没有生成文档注释、符号没有注释或注释不是合法 XML 时为 <see langword="null"/>。
+/// 取 <c>&lt;summary&gt;</c> 或某个 <c>&lt;param&gt;</c> 的纯文本：<c>&lt;see cref&gt;</c> 取最后一段名字，<c>&lt;see langword&gt;</c>、<c>&lt;c&gt;</c>、<c>&lt;paramref&gt;</c>、<c>&lt;typeparamref&gt;</c> 取文本，空白折叠成一个空格
+/// 项目没有生成文档注释、符号没有注释或注释不是合法 XML 时为 <see langword="null"/>
 /// </remarks>
 internal static class DocumentationText
 {
     /// <summary>
-    /// 符号的 <c>&lt;summary&gt;</c> 文本。
+    /// 符号的 <c>&lt;summary&gt;</c> 文本
     /// </summary>
     public static string? Summary(ISymbol symbol) => Text(Load(symbol)?.Descendants("summary").FirstOrDefault());
 
     /// <summary>
-    /// 类型上某个 <c>&lt;param&gt;</c> 的文本（位置记录的主构造参数）。
+    /// 类型上某个 <c>&lt;param&gt;</c> 的文本（位置记录的主构造参数）
     /// </summary>
     public static string? Parameter(ISymbol type, string name)
         => Text(Load(type)?.Descendants("param").FirstOrDefault(p => string.Equals((string?)p.Attribute("name"), name, StringComparison.Ordinal)));
 
     /// <summary>
-    /// 解析符号的文档注释。
+    /// 解析符号的文档注释
     /// </summary>
     /// <remarks>
-    /// 没有或不合法时为 <see langword="null"/>。
+    /// 没有或不合法时为 <see langword="null"/>
     /// </remarks>
     private static XElement? Load(ISymbol symbol)
     {
@@ -54,10 +54,10 @@ internal static class DocumentationText
     }
 
     /// <summary>
-    /// 元素的纯文本。
+    /// 元素的纯文本
     /// </summary>
     /// <remarks>
-    /// 为空时为 <see langword="null"/>。
+    /// 为空时为 <see langword="null"/>
     /// </remarks>
     private static string? Text(XElement? element)
     {
@@ -95,12 +95,12 @@ internal static class DocumentationText
     }
 
     /// <summary>
-    /// 中日韩字符与全角标点。
+    /// 中日韩字符与全角标点
     /// </summary>
     private static bool IsWide(char ch) => ch is (>= '\u2E80' and <= '\u9FFF') or (>= '\uAC00' and <= '\uD7AF') or (>= '\uF900' and <= '\uFAFF') or (>= '\uFF00' and <= '\uFFEF');
 
     /// <summary>
-    /// 把节点的文本追加进去，按标签取引用的名字或文字。
+    /// 把节点的文本追加进去，按标签取引用的名字或文字
     /// </summary>
     private static void Append(StringBuilder builder, XElement element)
     {
@@ -148,7 +148,7 @@ internal static class DocumentationText
     }
 
     /// <summary>
-    /// <c>cref</c> 的显示名：去掉 <c>T:</c> 等前缀与参数表，取最后一段，泛型元数去掉。
+    /// <c>cref</c> 的显示名：去掉 <c>T:</c> 等前缀与参数表，取最后一段，泛型元数去掉
     /// </summary>
     private static string NameOf(string cref)
     {

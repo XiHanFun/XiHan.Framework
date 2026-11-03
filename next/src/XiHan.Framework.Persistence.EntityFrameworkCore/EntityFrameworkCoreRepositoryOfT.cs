@@ -13,10 +13,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// EF Core 仓储。
+/// EF Core 仓储
 /// </summary>
 /// <remarks>
-/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。更新与删除时创建时间、租户与删除标记回到跟踪实例的原值（调用方改了也不生效）。新增撞上主键约束（检查之后别的事务提交了同一标识）时，<c>SaveChanges</c> 已回到自动建的保存点，在同一事务里核对标识确已存在就按标识重复报告；新增、更新与软删除撞上唯一索引（实体声明的 <c>[EntityIndex(IsUnique = true)]</c> 或模型里别的唯一索引）时同样在保存点之后核对，按唯一键重复报告；两种情况工作单元随后都只能回滚。批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>。
+/// 读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。更新与删除时创建时间、租户与删除标记回到跟踪实例的原值（调用方改了也不生效）。新增撞上主键约束（检查之后别的事务提交了同一标识）时，<c>SaveChanges</c> 已回到自动建的保存点，在同一事务里核对标识确已存在就按标识重复报告；新增、更新与软删除撞上唯一索引（实体声明的 <c>[EntityIndex(IsUnique = true)]</c> 或模型里别的唯一索引）时同样在保存点之后核对，按唯一键重复报告；两种情况工作单元随后都只能回滚。批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFrameworkCoreUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
@@ -24,39 +24,39 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     where TKey : notnull, IEquatable<TKey>
 {
     /// <summary>
-    /// 实体是否实现 <see cref="ISoftDeletable"/>。
+    /// 实体是否实现 <see cref="ISoftDeletable"/>
     /// </summary>
     /// <remarks>
-    /// 按闭合泛型只判断一次，查询过滤据此决定是否追加删除标记条件。
+    /// 按闭合泛型只判断一次，查询过滤据此决定是否追加删除标记条件
     /// </remarks>
     private static readonly bool _isSoftDeletable = typeof(ISoftDeletable).IsAssignableFrom(typeof(TEntity));
 
     /// <summary>
-    /// 实体是否实现 <see cref="IMultiTenant"/>。
+    /// 实体是否实现 <see cref="IMultiTenant"/>
     /// </summary>
     /// <remarks>
-    /// 按闭合泛型只判断一次，查询过滤据此决定是否追加租户条件。
+    /// 按闭合泛型只判断一次，查询过滤据此决定是否追加租户条件
     /// </remarks>
     private static readonly bool _isMultiTenant = typeof(IMultiTenant).IsAssignableFrom(typeof(TEntity));
 
     /// <summary>
-    /// 实体是否实现 <see cref="IHasCreationTime"/>。
+    /// 实体是否实现 <see cref="IHasCreationTime"/>
     /// </summary>
     /// <remarks>
-    /// 按闭合泛型只判断一次，更新时据此决定是否把创建时间恢复为原值。
+    /// 按闭合泛型只判断一次，更新时据此决定是否把创建时间恢复为原值
     /// </remarks>
     private static readonly bool _hasCreationTime = typeof(IHasCreationTime).IsAssignableFrom(typeof(TEntity));
 
     /// <summary>
-    /// 本作用域的工作单元。
+    /// 本作用域的工作单元
     /// </summary>
     /// <remarks>
-    /// 提供 DbContext、事务与当前租户。
+    /// 提供 DbContext、事务与当前租户
     /// </remarks>
     private readonly EntityFrameworkCoreUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     /// <summary>
-    /// 审计字段使用的时间源。
+    /// 审计字段使用的时间源
     /// </summary>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
@@ -400,37 +400,37 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 活动工作单元的 DbContext。
+    /// 活动工作单元的 DbContext
     /// </summary>
     /// <remarks>
-    /// 工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，实体的落点与工作单元的连接不一致时抛出落点错误（见 <see cref="EntityFrameworkCoreUnitOfWork.ContextFor"/>），每个操作都经此校验。
+    /// 工作单元不活动时抛出 <see cref="PersistenceErrors.NoActiveUnitOfWork"/>，实体的落点与工作单元的连接不一致时抛出落点错误（见 <see cref="EntityFrameworkCoreUnitOfWork.ContextFor"/>），每个操作都经此校验
     /// </remarks>
     private DbContext Context => _unitOfWork.State == UnitOfWorkState.Active
         ? _unitOfWork.ContextFor(typeof(TEntity))
         : throw new FrameworkException(PersistenceErrors.NoActiveUnitOfWork, $"The unit of work is in state '{_unitOfWork.State}'; repositories must be used within the Transaction stage.");
 
     /// <summary>
-    /// 实体对应的 DbSet。
+    /// 实体对应的 DbSet
     /// </summary>
     private DbSet<TEntity> Set => Context.Set<TEntity>();
 
     /// <summary>
-    /// 构造实体不存在的错误。
+    /// 构造实体不存在的错误
     /// </summary>
     private static Error NotFound(TKey id) => Error.NotFound(PersistenceErrors.NotFound, PersistenceMessages.NotFound, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
 
     /// <summary>
-    /// 构造标识重复的错误。
+    /// 构造标识重复的错误
     /// </summary>
     private static Error Duplicate(TKey id) => Error.Conflict(PersistenceErrors.Duplicate, PersistenceMessages.Duplicate, MessageArguments.Of(("entity", typeof(TEntity).Name), ("id", id)));
 
     /// <summary>
-    /// 构造唯一键重复的错误。
+    /// 构造唯一键重复的错误
     /// </summary>
     private static Error UniqueKeyConflict(string index) => Error.Conflict(PersistenceErrors.UniqueKeyConflict, PersistenceMessages.UniqueKeyConflict, MessageArguments.Of(("entity", typeof(TEntity).Name), ("index", index)));
 
     /// <summary>
-    /// 同一结果重复给每一项（写入前置条件不满足时整批同一错误）。
+    /// 同一结果重复给每一项（写入前置条件不满足时整批同一错误）
     /// </summary>
     private static Result[] Repeat(Result result, int count)
     {
@@ -440,7 +440,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 去重并保持首次出现的顺序。
+    /// 去重并保持首次出现的顺序
     /// </summary>
     private static List<TKey> Distinct(IEnumerable<TKey> ids)
     {
@@ -459,10 +459,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 一次 <c>IN</c> 查询取回这些标识对应的行。
+    /// 一次 <c>IN</c> 查询取回这些标识对应的行
     /// </summary>
     /// <remarks>
-    /// 不做可见性过滤，与 <see cref="FindAsync"/> 一样在内存里判定。按标识索引。已跟踪的行由 EF 解析为同一实例。
+    /// 不做可见性过滤，与 <see cref="FindAsync"/> 一样在内存里判定。按标识索引。已跟踪的行由 EF 解析为同一实例
     /// </remarks>
     private async Task<Dictionary<TKey, TEntity>> LoadAsync(List<TKey> ids, CancellationToken cancellationToken)
     {
@@ -472,10 +472,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 在跟踪实例上准备一次更新。
+    /// 在跟踪实例上准备一次更新
     /// </summary>
     /// <remarks>
-    /// 传入的是跟踪实例时直接改它；否则先比对并发戳（不同即返回冲突），再把值复制到跟踪实例。之后创建时间、租户与删除标记回到原值，最后刷新审计字段。
+    /// 传入的是跟踪实例时直接改它；否则先比对并发戳（不同即返回冲突），再把值复制到跟踪实例。之后创建时间、租户与删除标记回到原值，最后刷新审计字段
     /// </remarks>
     private Error? Stage(TEntity existing, TEntity entity, DateTimeOffset now)
     {
@@ -497,10 +497,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 在跟踪实例上准备一次删除。
+    /// 在跟踪实例上准备一次删除
     /// </summary>
     /// <remarks>
-    /// 创建时间与租户先回到原值（调用方改过跟踪实例也不生效）。软删除只打标，由 SaveChanges 当作更新；不支持软删除的实体才真正删除。
+    /// 创建时间与租户先回到原值（调用方改过跟踪实例也不生效）。软删除只打标，由 SaveChanges 当作更新；不支持软删除的实体才真正删除
     /// </remarks>
     private void StageRemoval(TEntity existing, DateTimeOffset now)
     {
@@ -512,10 +512,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 把创建时间、租户与删除标记恢复为跟踪实例的原值。
+    /// 把创建时间、租户与删除标记恢复为跟踪实例的原值
     /// </summary>
     /// <remarks>
-    /// 原值是最近一次从数据库读出或保存时的值，即存储里的当前值：这些字段只在新增与删除时由协议写入，调用方实例上的值（游离实例复制过来的，或直接改在跟踪实例上的）一律不生效。
+    /// 原值是最近一次从数据库读出或保存时的值，即存储里的当前值：这些字段只在新增与删除时由协议写入，调用方实例上的值（游离实例复制过来的，或直接改在跟踪实例上的）一律不生效
     /// </remarks>
     private static void KeepStored(EntityEntry<TEntity> entry)
     {
@@ -544,10 +544,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 把跟踪实例上的协议字段复制到调用方的游离实例。
+    /// 把跟踪实例上的协议字段复制到调用方的游离实例
     /// </summary>
     /// <remarks>
-    /// 修改时间、并发戳与软删除标记是这次写入的结果，创建时间与租户是存储里的值：写入成功后调用方实例与存储一致。
+    /// 修改时间、并发戳与软删除标记是这次写入的结果，创建时间与租户是存储里的值：写入成功后调用方实例与存储一致
     /// </remarks>
     private static void CopyAuditBack(TEntity source, TEntity target)
     {
@@ -579,10 +579,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 写入前：要求活动工作单元、拒绝只读、确保事务已开启。
+    /// 写入前：要求活动工作单元、拒绝只读、确保事务已开启
     /// </summary>
     /// <remarks>
-    /// 只读工作单元里返回 <see cref="PersistenceErrors.ReadOnly"/>、不触后端，并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误。
+    /// 只读工作单元里返回 <see cref="PersistenceErrors.ReadOnly"/>、不触后端，并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误
     /// </remarks>
     private async ValueTask<Error?> PrepareWriteAsync(CancellationToken cancellationToken)
     {
@@ -600,10 +600,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 保存一次更新或删除。
+    /// 保存一次更新或删除
     /// </summary>
     /// <remarks>
-    /// 并发令牌不匹配时把 <see cref="DbUpdateConcurrencyException"/> 转为 <see cref="PersistenceErrors.Concurrency"/> 结果。其余保存失败时核对 <paramref name="written"/> 是否撞上了唯一索引（更新把业务键改成别的行已有的值；软删除只在唯一索引的列里显式写了删除标记时撞上同一业务键已删除的行，部分唯一索引不约束已删除的行）：SaveChanges 已回到它自动建的保存点，在同一事务里查（见 <see cref="UniqueKeyConflicts"/>）；撞上就把这些实体移出跟踪（它们的改动没有写进去，之后的保存不再带上），返回唯一键重复并把工作单元标为失败，提交时返回同一错误；没撞上异常原样抛出。
+    /// 并发令牌不匹配时把 <see cref="DbUpdateConcurrencyException"/> 转为 <see cref="PersistenceErrors.Concurrency"/> 结果。其余保存失败时核对 <paramref name="written"/> 是否撞上了唯一索引（更新把业务键改成别的行已有的值；软删除只在唯一索引的列里显式写了删除标记时撞上同一业务键已删除的行，部分唯一索引不约束已删除的行）：SaveChanges 已回到它自动建的保存点，在同一事务里查（见 <see cref="UniqueKeyConflicts"/>）；撞上就把这些实体移出跟踪（它们的改动没有写进去，之后的保存不再带上），返回唯一键重复并把工作单元标为失败，提交时返回同一错误；没撞上异常原样抛出
     /// </remarks>
     private async Task<Result> SaveAsync(IReadOnlyList<TEntity> written, CancellationToken cancellationToken)
     {
@@ -635,10 +635,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 保存一次新增。
+    /// 保存一次新增
     /// </summary>
     /// <remarks>
-    /// 新增前已核对过标识，写入仍可能撞上主键约束：检查之后另一个事务插入并提交了同一标识（PostgreSQL 等在插入时等对方事务结束再报错）。这时 SaveChanges 已回到它自动建的保存点，事务仍可用：把这次新增的实体移出跟踪，在同一事务里查这些标识，有已存在的就返回标识重复（<c>id</c> 是按入参顺序第一个撞上的标识）；没有就核对唯一索引（同一批里两项同键、库里另一行同键，见 <see cref="UniqueKeyConflicts"/>），撞上即返回唯一键重复（<c>index</c> 是第一个撞上的索引）。两种都把工作单元标为失败，提交时返回同一错误；都不是说明是别的原因，异常原样抛出。成功返回 <see langword="null"/>。
+    /// 新增前已核对过标识，写入仍可能撞上主键约束：检查之后另一个事务插入并提交了同一标识（PostgreSQL 等在插入时等对方事务结束再报错）。这时 SaveChanges 已回到它自动建的保存点，事务仍可用：把这次新增的实体移出跟踪，在同一事务里查这些标识，有已存在的就返回标识重复（<c>id</c> 是按入参顺序第一个撞上的标识）；没有就核对唯一索引（同一批里两项同键、库里另一行同键，见 <see cref="UniqueKeyConflicts"/>），撞上即返回唯一键重复（<c>index</c> 是第一个撞上的索引）。两种都把工作单元标为失败，提交时返回同一错误；都不是说明是别的原因，异常原样抛出。成功返回 <see langword="null"/>
     /// </remarks>
     private async Task<Error?> SaveAddedAsync(IReadOnlyList<TEntity> added, CancellationToken cancellationToken)
     {
@@ -678,7 +678,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 在可见性过滤之上追加查询自身的过滤规约。
+    /// 在可见性过滤之上追加查询自身的过滤规约
     /// </summary>
     private IQueryable<TEntity> Filtered(EntityQuery<TEntity> query)
     {
@@ -687,7 +687,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 软删除与租户过滤显式施加在查询上，与 <see cref="IsVisible"/> 对跟踪实体的判定一致。
+    /// 软删除与租户过滤显式施加在查询上，与 <see cref="IsVisible"/> 对跟踪实体的判定一致
     /// </summary>
     private IQueryable<TEntity> Visible(bool includeDeleted)
     {
@@ -709,10 +709,10 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 写入路径上判定跟踪实例对当前调用是否可见：按存储里的租户与删除标记。
+    /// 写入路径上判定跟踪实例对当前调用是否可见：按存储里的租户与删除标记
     /// </summary>
     /// <remarks>
-    /// 跟踪实例可能已被调用方改过（查找拿到的就是它），所以读原值（最近一次读出或保存时的值）而不是当前值；不修改实例。
+    /// 跟踪实例可能已被调用方改过（查找拿到的就是它），所以读原值（最近一次读出或保存时的值）而不是当前值；不修改实例
     /// </remarks>
     private bool IsStoredVisible(TEntity existing)
     {
@@ -726,7 +726,7 @@ public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramework
     }
 
     /// <summary>
-    /// 实体是否对当前调用可见：租户必须匹配，且除非显式包含，已软删除的不可见。
+    /// 实体是否对当前调用可见：租户必须匹配，且除非显式包含，已软删除的不可见
     /// </summary>
     private bool IsVisible(TEntity entity, bool includeDeleted)
         => PersistenceConventions.IsVisibleTo(entity, _unitOfWork.TenantId) && (includeDeleted || !PersistenceConventions.IsDeleted(entity));

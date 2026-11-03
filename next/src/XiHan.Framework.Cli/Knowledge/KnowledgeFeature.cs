@@ -11,35 +11,35 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Cli.Knowledge;
 
 /// <summary>
-/// 登记知识库三个只读操作的特性。
+/// 登记知识库三个只读操作的特性
 /// </summary>
 /// <remarks>
-/// 只在 <c>xihan mcp</c> 启动的内嵌应用里装配：三个操作只暴露给 MCP，tool 名由 <c>XiHan:Protocols:Mcp:Tools</c> 改写成 4.x 沿用的 <c>xihan_framework_*</c>；标题与描述在本工具的消息目录里（<c>cli.info.title</c> 等）。
+/// 只在 <c>xihan mcp</c> 启动的内嵌应用里装配：三个操作只暴露给 MCP，tool 名由 <c>XiHan:Protocols:Mcp:Tools</c> 改写成 4.x 沿用的 <c>xihan_framework_*</c>；标题与描述在本工具的消息目录里（<c>cli.info.title</c> 等）
 /// </remarks>
 internal sealed class KnowledgeFeature : IFeature
 {
     /// <summary>
-    /// MCP 服务端名，也是编码助手配置里的服务名。
+    /// MCP 服务端名，也是编码助手配置里的服务名
     /// </summary>
     public const string ServerName = "xihan-framework";
 
     /// <summary>
-    /// 查包、特性与能力的操作 ID。
+    /// 查包、特性与能力的操作 ID
     /// </summary>
     public const string InfoOperationId = "cli.info";
 
     /// <summary>
-    /// 查配置节的操作 ID。
+    /// 查配置节的操作 ID
     /// </summary>
     public const string ConfigOperationId = "cli.config";
 
     /// <summary>
-    /// 检索文档的操作 ID。
+    /// 检索文档的操作 ID
     /// </summary>
     public const string SearchOperationId = "cli.search";
 
     /// <summary>
-    /// 操作 ID → 发布的 tool 名。
+    /// 操作 ID → 发布的 tool 名
     /// </summary>
     public static IReadOnlyList<(string Operation, string Tool)> Tools { get; } =
     [
@@ -75,7 +75,7 @@ internal sealed class KnowledgeFeature : IFeature
     }
 
     /// <summary>
-    /// 只读、只暴露给 MCP 的契约。
+    /// 只读、只暴露给 MCP 的契约
     /// </summary>
     private static OperationContract Contract(string id) => new(id, Stability.Preview, Expose.Mcp, readOnly: true);
 }

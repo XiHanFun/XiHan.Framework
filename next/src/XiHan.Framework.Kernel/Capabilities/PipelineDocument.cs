@@ -4,30 +4,30 @@
 namespace XiHan.Framework.Kernel.Capabilities;
 
 /// <summary>
-/// <c>xihan.manifest.json</c> 中 <c>contributes.pipeline</c> 一项的 JSON 形态。
+/// <c>xihan.manifest.json</c> 中 <c>contributes.pipeline</c> 一项的 JSON 形态
 /// </summary>
 /// <remarks>
-/// 阶段以清单小写名承载。
+/// 阶段以清单小写名承载
 /// </remarks>
 internal sealed class PipelineDocument
 {
     /// <summary>
-    /// 中间件类型的完全限定名。
+    /// 中间件类型的完全限定名
     /// </summary>
     public string? Middleware { get; set; }
 
     /// <summary>
-    /// 所属阶段的清单小写名。
+    /// 所属阶段的清单小写名
     /// </summary>
     public string? Stage { get; set; }
 
     /// <summary>
-    /// 必须位于这些中间件之前（完全限定名）。
+    /// 必须位于这些中间件之前（完全限定名）
     /// </summary>
     public List<string>? Before { get; set; }
 
     /// <summary>
-    /// 必须位于这些中间件之后（完全限定名）。
+    /// 必须位于这些中间件之后（完全限定名）
     /// </summary>
     public List<string>? After { get; set; }
 }

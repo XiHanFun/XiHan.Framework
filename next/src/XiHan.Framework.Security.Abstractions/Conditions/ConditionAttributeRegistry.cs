@@ -7,34 +7,34 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Conditions;
 
 /// <summary>
-/// 条件属性登记表（不可变，线程安全）。
+/// 条件属性登记表（不可变，线程安全）
 /// </summary>
 /// <remarks>
-/// 容器解析时收到全部经 <see cref="ConditionServiceCollectionExtensions.AddConditionAttributes"/> 登记的项；重名、别名冲突即抛出。
+/// 容器解析时收到全部经 <see cref="ConditionServiceCollectionExtensions.AddConditionAttributes"/> 登记的项；重名、别名冲突即抛出
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConditionAttributeRegistry : IConditionAttributeRegistry
 {
     /// <summary>
-    /// 精确登记名 → 登记项。
+    /// 精确登记名 → 登记项
     /// </summary>
     private readonly Dictionary<string, ConditionAttributeDescriptor> _exact = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 别名 → 登记项。
+    /// 别名 → 登记项
     /// </summary>
     private readonly Dictionary<string, ConditionAttributeDescriptor> _aliases = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 族：前缀（带末尾的点）与登记项，按前缀从长到短。
+    /// 族：前缀（带末尾的点）与登记项，按前缀从长到短
     /// </summary>
     private readonly List<(string Prefix, ConditionAttributeDescriptor Descriptor)> _families = [];
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
-    /// <param name="attributes">登记项。</param>
-    /// <exception cref="InvalidOperationException">登记名为空或含空白、重名，或别名与登记名、其他别名冲突。</exception>
+    /// <param name="attributes">登记项</param>
+    /// <exception cref="InvalidOperationException">登记名为空或含空白、重名，或别名与登记名、其他别名冲突</exception>
     public ConditionAttributeRegistry(IEnumerable<ConditionAttributeDescriptor> attributes)
     {
         ArgumentNullException.ThrowIfNull(attributes);

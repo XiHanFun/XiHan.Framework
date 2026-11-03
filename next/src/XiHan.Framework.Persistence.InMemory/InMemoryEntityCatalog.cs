@@ -9,24 +9,24 @@ using XiHan.Framework.Persistence.Abstractions.Schema;
 namespace XiHan.Framework.Persistence.InMemory;
 
 /// <summary>
-/// 内存实现的实体目录。
+/// 内存实现的实体目录
 /// </summary>
 /// <remarks>
-/// 内存实现没有表：表名取实体类型名，列取有公开 setter 的非集合属性（字符串与字节数组除外），列名即属性名——这是它的存储形态，与 SqlSugar 不加约定时的缺省映射相同。主键是 <c>Id</c>；可空看可空值类型与可空引用类型标注。
+/// 内存实现没有表：表名取实体类型名，列取有公开 setter 的非集合属性（字符串与字节数组除外），列名即属性名——这是它的存储形态，与 SqlSugar 不加约定时的缺省映射相同。主键是 <c>Id</c>；可空看可空值类型与可空引用类型标注
 /// </remarks>
-/// <param name="registrations">登记的实体。</param>
+/// <param name="registrations">登记的实体</param>
 internal sealed class InMemoryEntityCatalog(RepositoryRegistrations registrations) : IEntityCatalog
 {
     /// <summary>
-    /// 判定引用类型属性可空性的上下文。
+    /// 判定引用类型属性可空性的上下文
     /// </summary>
     /// <remarks>
-    /// 不是线程安全的，只在锁里用。
+    /// 不是线程安全的，只在锁里用
     /// </remarks>
     private readonly NullabilityInfoContext _nullability = new();
 
     /// <summary>
-    /// 算好的目录。
+    /// 算好的目录
     /// </summary>
     private IReadOnlyList<EntityMapping>? _mappings;
 
@@ -62,12 +62,12 @@ internal sealed class InMemoryEntityCatalog(RepositoryRegistrations registration
     }
 
     /// <summary>
-    /// 是否是集合（字符串与字节数组不算）。
+    /// 是否是集合（字符串与字节数组不算）
     /// </summary>
     private static bool IsCollection(Type type) => type != typeof(string) && type != typeof(byte[]) && typeof(IEnumerable).IsAssignableFrom(type);
 
     /// <summary>
-    /// 属性的值是否可空。
+    /// 属性的值是否可空
     /// </summary>
     private bool IsNullable(PropertyInfo property)
         => property.PropertyType.IsValueType

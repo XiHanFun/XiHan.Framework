@@ -12,34 +12,34 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database.Locking;
 
 /// <summary>
-/// 租约行的三个原子步骤。
+/// 租约行的三个原子步骤
 /// </summary>
 /// <remarks>
-/// 每一步都在根提供者的新作用域里开自己的可写工作单元、返回即提交，别的节点立刻看得见——与调用方的事务无关：引擎在调用方事务里取锁时，锁行仍走独立的连接与事务，既不等调用方事务里的行锁，也不随它回滚。不经 <c>App.InvokeAsync</c>：锁是平台数据，不受调用租户、管道各阶段与应用是否在服务状态的影响；新作用域里没有调用，也就没有分片，租约表在默认连接（平台库），或 <see cref="DatabaseWorkflowOptions.LockConnection"/> 指定的命名连接——那时工作单元绑定这个连接，事务只开在租约库上，SQLite 上不去等调用方事务占着的业务库写锁。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回 <see cref="PersistenceErrors.Concurrency"/>。
+/// 每一步都在根提供者的新作用域里开自己的可写工作单元、返回即提交，别的节点立刻看得见——与调用方的事务无关：引擎在调用方事务里取锁时，锁行仍走独立的连接与事务，既不等调用方事务里的行锁，也不随它回滚。不经 <c>App.InvokeAsync</c>：锁是平台数据，不受调用租户、管道各阶段与应用是否在服务状态的影响；新作用域里没有调用，也就没有分片，租约表在默认连接（平台库），或 <see cref="DatabaseWorkflowOptions.LockConnection"/> 指定的命名连接——那时工作单元绑定这个连接，事务只开在租约库上，SQLite 上不去等调用方事务占着的业务库写锁。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回 <see cref="PersistenceErrors.Concurrency"/>
 /// </remarks>
 internal sealed class LeaseTable
 {
     /// <summary>
-    /// 根服务提供者：每一步开新作用域。
+    /// 根服务提供者：每一步开新作用域
     /// </summary>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 时钟。
+    /// 时钟
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 每一步开工作单元的选项：可写，绑定 <see cref="DatabaseWorkflowOptions.LockConnection"/>（未配置为缺省落点）。
+    /// 每一步开工作单元的选项：可写，绑定 <see cref="DatabaseWorkflowOptions.LockConnection"/>（未配置为缺省落点）
     /// </summary>
     private readonly UnitOfWorkOptions _unitOfWork;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
-    /// <param name="services">根服务提供者。</param>
-    /// <param name="clock">时钟。</param>
-    /// <param name="lockConnection">租约表的命名连接；<see langword="null"/> 为缺省落点。</param>
+    /// <param name="services">根服务提供者</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="lockConnection">租约表的命名连接；<see langword="null"/> 为缺省落点</param>
     public LeaseTable(IServiceProvider services, TimeProvider clock, string? lockConnection)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
@@ -48,10 +48,10 @@ internal sealed class LeaseTable
     }
 
     /// <summary>
-    /// 尝试一次。
+    /// 尝试一次
     /// </summary>
     /// <remarks>
-    /// 行不存在就插入；存在且已过期就接管；否则 <see cref="LeaseAttempt.Held"/>。持久化冲突归为 <see cref="LeaseAttempt.Contended"/>，其余失败原样返回。
+    /// 行不存在就插入；存在且已过期就接管；否则 <see cref="LeaseAttempt.Held"/>。持久化冲突归为 <see cref="LeaseAttempt.Contended"/>，其余失败原样返回
     /// </remarks>
     public ValueTask<Result<LeaseAttempt>> TryAcquireAsync(string id, string holder, TimeSpan lease, CancellationToken cancellationToken)
         => RunAsync<LeaseAttempt>(async repository =>
@@ -87,10 +87,10 @@ internal sealed class LeaseTable
         }, cancellationToken);
 
     /// <summary>
-    /// 续约。
+    /// 续约
     /// </summary>
     /// <remarks>
-    /// 行仍由 <paramref name="holder"/> 持有时把到期时间推到现在加租约并返回 <see langword="true"/>；行没了或持有者变了返回 <see langword="false"/>。
+    /// 行仍由 <paramref name="holder"/> 持有时把到期时间推到现在加租约并返回 <see langword="true"/>；行没了或持有者变了返回 <see langword="false"/>
     /// </remarks>
     public ValueTask<Result<bool>> RenewAsync(string id, string holder, TimeSpan lease, CancellationToken cancellationToken)
         => RunAsync<bool>(async repository =>
@@ -112,10 +112,10 @@ internal sealed class LeaseTable
         }, cancellationToken);
 
     /// <summary>
-    /// 释放。
+    /// 释放
     /// </summary>
     /// <remarks>
-    /// 只删自己持有的行；行没了或持有者变了视为已释放。
+    /// 只删自己持有的行；行没了或持有者变了视为已释放
     /// </remarks>
     public async ValueTask<Result> ReleaseAsync(string id, string holder, CancellationToken cancellationToken)
     {
@@ -134,10 +134,10 @@ internal sealed class LeaseTable
     }
 
     /// <summary>
-    /// 在新作用域的可写工作单元里执行一步：成功即提交，失败或异常即回滚。
+    /// 在新作用域的可写工作单元里执行一步：成功即提交，失败或异常即回滚
     /// </summary>
     /// <remarks>
-    /// 异常（连接中断、跨节点同时插入在驱动里抛出的唯一约束冲突）归为存储不可达，由实例锁当作可重试的失败直到等锁超时。
+    /// 异常（连接中断、跨节点同时插入在驱动里抛出的唯一约束冲突）归为存储不可达，由实例锁当作可重试的失败直到等锁超时
     /// </remarks>
     private async ValueTask<Result<T>> RunAsync<T>(Func<IRepository<WorkflowLockRecord, string>, ValueTask<Result<T>>> step, CancellationToken cancellationToken)
     {
@@ -179,7 +179,7 @@ internal sealed class LeaseTable
     }
 
     /// <summary>
-    /// 是否是与别的节点的竞争：并发戳冲突或行已被删。
+    /// 是否是与别的节点的竞争：并发戳冲突或行已被删
     /// </summary>
     private static bool IsRace(Error error)
         => error.Code is PersistenceErrors.Concurrency or PersistenceErrors.NotFound;

@@ -18,21 +18,21 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Plugins.Wasm;
 
 /// <summary>
-/// Wasm 插件宿主特性（Experimental）。
+/// Wasm 插件宿主特性（Experimental）
 /// </summary>
 /// <remarks>
-/// 配置阶段按 <c>XiHan:Plugins:Wasm:Directories</c> 发现插件（编译、实例化并握手），把声明的操作登记为代理操作、消息目录与事件订阅接进容器、清单贡献的中间件按名字插进对应阶段（归属为插件的清单 ID，卸载时按归属撤回，ADR-0088）；启动阶段启动 <c>onStartup</c> 的插件；停止阶段停止全部插件。
+/// 配置阶段按 <c>XiHan:Plugins:Wasm:Directories</c> 发现插件（编译、实例化并握手），把声明的操作登记为代理操作、消息目录与事件订阅接进容器、清单贡献的中间件按名字插进对应阶段（归属为插件的清单 ID，卸载时按归属撤回，ADR-0088）；启动阶段启动 <c>onStartup</c> 的插件；停止阶段停止全部插件
 /// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed class WasmPluginsFeature : IHostedFeature
 {
     /// <summary>
-    /// 提供的能力。
+    /// 提供的能力
     /// </summary>
     public const string Capability = "plugins.wasm";
 
     /// <summary>
-    /// 配置阶段创建的宿主。
+    /// 配置阶段创建的宿主
     /// </summary>
     private WasmPluginHost? _host;
 

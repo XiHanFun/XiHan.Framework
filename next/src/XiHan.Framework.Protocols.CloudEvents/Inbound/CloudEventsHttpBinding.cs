@@ -15,44 +15,44 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.CloudEvents.Inbound;
 
 /// <summary>
-/// CloudEvents 1.0 的 HTTP 协议绑定。
+/// CloudEvents 1.0 的 HTTP 协议绑定
 /// </summary>
 /// <remarks>
-/// 读请求（binary / structured / batch）成信封，把信封写进出站请求（单条 binary / structured，多条 batch）。binary 模式的头值按规范百分号编码非可打印 ASCII 字符；structured 与 batch 复用 <see cref="CloudEventsFormat"/> 的结构化 JSON。
+/// 读请求（binary / structured / batch）成信封，把信封写进出站请求（单条 binary / structured，多条 batch）。binary 模式的头值按规范百分号编码非可打印 ASCII 字符；structured 与 batch 复用 <see cref="CloudEventsFormat"/> 的结构化 JSON
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CloudEventsHttpBinding
 {
     /// <summary>
-    /// binary 模式属性头的前缀。
+    /// binary 模式属性头的前缀
     /// </summary>
     public const string HeaderPrefix = "ce-";
 
     /// <summary>
-    /// structured 模式的内容类型。
+    /// structured 模式的内容类型
     /// </summary>
     public const string StructuredContentType = CloudEventsFormat.ContentType;
 
     /// <summary>
-    /// batch 模式的内容类型。
+    /// batch 模式的内容类型
     /// </summary>
     public const string BatchContentType = "application/cloudevents-batch+json";
 
     /// <summary>
-    /// 规范版本头。
+    /// 规范版本头
     /// </summary>
     private const string SpecVersionHeader = HeaderPrefix + "specversion";
 
     /// <summary>
-    /// 不作为扩展属性的核心属性名。
+    /// 不作为扩展属性的核心属性名
     /// </summary>
     private static readonly string[] _coreAttributes = ["specversion", "id", "source", "type", "time", "subject", "datacontenttype"];
 
     /// <summary>
-    /// 判断请求的内容模式。
+    /// 判断请求的内容模式
     /// </summary>
     /// <remarks>
-    /// <c>Content-Type</c> 是结构化或批量格式，否则有 <c>ce-specversion</c> 头即 binary；都不是则无值。
+    /// <c>Content-Type</c> 是结构化或批量格式，否则有 <c>ce-specversion</c> 头即 binary；都不是则无值
     /// </remarks>
     public static Maybe<CloudEventsContentMode> ModeOf(HttpRequest request)
     {
@@ -72,10 +72,10 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 读请求里的事件。
+    /// 读请求里的事件
     /// </summary>
     /// <remarks>
-    /// batch 以外总是一个元素。不是 CloudEvent 返回 <see cref="CloudEventsErrors.UnsupportedContentType"/>，信封不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>。
+    /// batch 以外总是一个元素。不是 CloudEvent 返回 <see cref="CloudEventsErrors.UnsupportedContentType"/>，信封不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>
     /// </remarks>
     public static async ValueTask<Result<IReadOnlyList<MessageEnvelope>>> ReadAsync(HttpRequest request, CancellationToken cancellationToken)
     {
@@ -101,10 +101,10 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 把多个信封以 batch 模式写进出站请求。
+    /// 把多个信封以 batch 模式写进出站请求
     /// </summary>
     /// <remarks>
-    /// <c>application/cloudevents-batch+json</c>，请求体是结构化 JSON 事件的数组，顺序同入参。
+    /// <c>application/cloudevents-batch+json</c>，请求体是结构化 JSON 事件的数组，顺序同入参
     /// </remarks>
     public static void WriteBatch(IReadOnlyList<MessageEnvelope> envelopes, HttpRequestMessage request)
     {
@@ -129,10 +129,10 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 把一个信封写进出站请求。
+    /// 把一个信封写进出站请求
     /// </summary>
     /// <remarks>
-    /// binary 模式写 <c>ce-*</c> 头与数据体，structured 模式写结构化 JSON 体；多条用 <see cref="WriteBatch"/>。
+    /// binary 模式写 <c>ce-*</c> 头与数据体，structured 模式写结构化 JSON 体；多条用 <see cref="WriteBatch"/>
     /// </remarks>
     public static void Write(MessageEnvelope envelope, HttpRequestMessage request, CloudEventsContentMode mode)
     {
@@ -173,10 +173,10 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 按 CloudEvents HTTP 绑定编码头值。
+    /// 按 CloudEvents HTTP 绑定编码头值
     /// </summary>
     /// <remarks>
-    /// 可打印 ASCII（<c>%</c> 除外）原样，其余按 UTF-8 字节百分号编码。
+    /// 可打印 ASCII（<c>%</c> 除外）原样，其余按 UTF-8 字节百分号编码
     /// </remarks>
     public static string EncodeHeaderValue(string value)
     {
@@ -202,7 +202,7 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 解码头值的百分号编码。
+    /// 解码头值的百分号编码
     /// </summary>
     public static string DecodeHeaderValue(string value)
     {
@@ -211,10 +211,10 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// batch。
+    /// batch
     /// </summary>
     /// <remarks>
-    /// JSON 数组，每个元素一个结构化事件；第一个不合法的元素让整批失败。
+    /// JSON 数组，每个元素一个结构化事件；第一个不合法的元素让整批失败
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBatch(byte[] body)
     {
@@ -252,10 +252,10 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// binary。
+    /// binary
     /// </summary>
     /// <remarks>
-    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>、<c>ce-subject</c> 可选，其余 <c>ce-*</c> 是扩展属性；数据内容类型取 <c>Content-Type</c>，数据取请求体。
+    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>、<c>ce-subject</c> 可选，其余 <c>ce-*</c> 是扩展属性；数据内容类型取 <c>Content-Type</c>，数据取请求体
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBinary(HttpRequest request, byte[] body)
     {
@@ -338,16 +338,16 @@ public static class CloudEventsHttpBinding
     }
 
     /// <summary>
-    /// 取 <c>ce-&lt;name&gt;</c> 头并解码。
+    /// 取 <c>ce-&lt;name&gt;</c> 头并解码
     /// </summary>
     /// <remarks>
-    /// 缺失为空串。
+    /// 缺失为空串
     /// </remarks>
     private static string HeaderValue(IHeaderDictionary headers, string name)
         => headers.TryGetValue(HeaderPrefix + name, out var values) ? DecodeHeaderValue(values.ToString()) : string.Empty;
 
     /// <summary>
-    /// <c>Content-Type</c> 的媒体类型段（去掉参数，小写）。
+    /// <c>Content-Type</c> 的媒体类型段（去掉参数，小写）
     /// </summary>
     private static string MediaTypeOf(string? contentType)
         => string.IsNullOrWhiteSpace(contentType) ? string.Empty : contentType.Split(';', 2)[0].Trim().ToLowerInvariant();

@@ -9,80 +9,80 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.DataSources;
 
 /// <summary>
-/// 运行时数据源的注册表（单例）。
+/// 运行时数据源的注册表（单例）
 /// </summary>
 /// <remarks>
-/// <para>按 <see cref="DataSourceDefinition"/> 经认得该数据库类型的 <see cref="IDataSourceProvider"/> 建数据源，按名缓存，登记数不超过 <see cref="DataSourceOptions.MaxCount"/>。同名同定义返回同一实例；定义变了建新实例替换旧的并释放旧的（替换时仍在旧实例上进行的调用可能失败）。运行时数据源与应用自己的连接互不相干：不进作用域客户端、不参与实体落点、不进工作单元。</para>
-/// <para>失效：记录改了、停用或删了调 <see cref="RemoveAsync"/>；每次使用都以记录里当前的定义调 <see cref="GetOrAddAsync"/>，定义变了即替换。注册表是进程内的，别的实例在下一次以新定义取用时替换，只按名字 <see cref="GetAsync"/> 看不到别的实例上的修改。</para>
-/// <para>健康：每个数据源一条 <c>persistence.datasource.&lt;name&gt;</c>，按 <see cref="DataSourceOptions.HealthProbeInterval"/> 在后台逐个打开连接再关闭，新登记的立即探一次；尚未探过 Started，成功 Ready，失败或超时 Degraded。连接串不进日志、错误与健康详情。</para>
-/// <para>没有登记任何 <see cref="IDataSourceProvider"/> 时（EF Core 与内存实现）取用与测试连接返回 <see cref="PersistenceErrors.NotSupported"/>。</para>
+/// <para>按 <see cref="DataSourceDefinition"/> 经认得该数据库类型的 <see cref="IDataSourceProvider"/> 建数据源，按名缓存，登记数不超过 <see cref="DataSourceOptions.MaxCount"/>。同名同定义返回同一实例；定义变了建新实例替换旧的并释放旧的（替换时仍在旧实例上进行的调用可能失败）。运行时数据源与应用自己的连接互不相干：不进作用域客户端、不参与实体落点、不进工作单元</para>
+/// <para>失效：记录改了、停用或删了调 <see cref="RemoveAsync"/>；每次使用都以记录里当前的定义调 <see cref="GetOrAddAsync"/>，定义变了即替换。注册表是进程内的，别的实例在下一次以新定义取用时替换，只按名字 <see cref="GetAsync"/> 看不到别的实例上的修改</para>
+/// <para>健康：每个数据源一条 <c>persistence.datasource.&lt;name&gt;</c>，按 <see cref="DataSourceOptions.HealthProbeInterval"/> 在后台逐个打开连接再关闭，新登记的立即探一次；尚未探过 Started，成功 Ready，失败或超时 Degraded。连接串不进日志、错误与健康详情</para>
+/// <para>没有登记任何 <see cref="IDataSourceProvider"/> 时（EF Core 与内存实现）取用与测试连接返回 <see cref="PersistenceErrors.NotSupported"/></para>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDisposable
 {
     /// <summary>
-    /// 健康项名的前缀。
+    /// 健康项名的前缀
     /// </summary>
     public const string HealthPrefix = "persistence.datasource.";
 
     /// <summary>
-    /// 登记的 Provider，按登记顺序。
+    /// 登记的 Provider，按登记顺序
     /// </summary>
     private readonly IDataSourceProvider[] _providers;
 
     /// <summary>
-    /// 容量与探测间隔。
+    /// 容量与探测间隔
     /// </summary>
     private readonly DataSourceOptions _options;
 
     /// <summary>
-    /// 时钟：健康探测的定时器与探测时刻。
+    /// 时钟：健康探测的定时器与探测时刻
     /// </summary>
     private readonly TimeProvider _clock;
 
     /// <summary>
-    /// 日志：只记名字与数据库类型，不记连接串。
+    /// 日志：只记名字与数据库类型，不记连接串
     /// </summary>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 串行化建、替换与移除。
+    /// 串行化建、替换与移除
     /// </summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>
-    /// 停止时取消进行中的探测。
+    /// 停止时取消进行中的探测
     /// </summary>
     private readonly CancellationTokenSource _stopping = new();
 
     /// <summary>
-    /// 已登记的数据源，按名。
+    /// 已登记的数据源，按名
     /// </summary>
     /// <remarks>
-    /// 读写都在它自己的锁里；建实例、释放与探测在锁外进行。
+    /// 读写都在它自己的锁里；建实例、释放与探测在锁外进行
     /// </remarks>
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 健康探测的定时器。
+    /// 健康探测的定时器
     /// </summary>
     /// <remarks>
-    /// 登记第一个数据源时启动。
+    /// 登记第一个数据源时启动
     /// </remarks>
     private ITimer? _timer;
 
     /// <summary>
-    /// 是否正在探测（定时器回调不重叠）。
+    /// 是否正在探测（定时器回调不重叠）
     /// </summary>
     private int _probing;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
-    /// <param name="providers">Provider；为空表示当前的持久化 Provider 不支持运行时数据源。</param>
-    /// <param name="options">选项。</param>
-    /// <param name="clock">时钟。</param>
-    /// <param name="loggerFactory">日志工厂；为 <see langword="null"/> 时不记日志。</param>
+    /// <param name="providers">Provider；为空表示当前的持久化 Provider 不支持运行时数据源</param>
+    /// <param name="options">选项</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="loggerFactory">日志工厂；为 <see langword="null"/> 时不记日志</param>
     public DataSourceRegistry(IEnumerable<IDataSourceProvider> providers, DataSourceOptions options, TimeProvider clock, ILoggerFactory? loggerFactory = null)
     {
         ArgumentNullException.ThrowIfNull(providers);
@@ -98,12 +98,12 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 是否有支持运行时数据源的 Provider。
+    /// 是否有支持运行时数据源的 Provider
     /// </summary>
     public bool IsSupported => _providers.Length > 0;
 
     /// <summary>
-    /// 已登记的数据源名，按序数排序。
+    /// 已登记的数据源名，按序数排序
     /// </summary>
     public IReadOnlyList<string> Names
     {
@@ -117,10 +117,10 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 取本进程已登记的数据源。
+    /// 取本进程已登记的数据源
     /// </summary>
     /// <remarks>
-    /// 没有登记返回 <see cref="PersistenceErrors.DataSourceNotFound"/>；不支持返回 <see cref="PersistenceErrors.NotSupported"/>。看不到别的实例上的修改：要用记录里当前的连接，调 <see cref="GetOrAddAsync"/>。
+    /// 没有登记返回 <see cref="PersistenceErrors.DataSourceNotFound"/>；不支持返回 <see cref="PersistenceErrors.NotSupported"/>。看不到别的实例上的修改：要用记录里当前的连接，调 <see cref="GetOrAddAsync"/>
     /// </remarks>
     public ValueTask<Result<IDataSource>> GetAsync(string name, CancellationToken cancellationToken)
     {
@@ -143,10 +143,10 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 按定义取数据源。
+    /// 按定义取数据源
     /// </summary>
     /// <remarks>
-    /// 同名同定义返回已有的；没有就建（不连库）；定义变了建新实例替换并释放旧的。数据库类型不认识或连接串格式错返回 <see cref="PersistenceErrors.DataSourceInvalid"/>，登记已满返回 <see cref="PersistenceErrors.DataSourceCapacityExceeded"/>，这几种情况同名的已登记实例都不受影响；不支持返回 <see cref="PersistenceErrors.NotSupported"/>。
+    /// 同名同定义返回已有的；没有就建（不连库）；定义变了建新实例替换并释放旧的。数据库类型不认识或连接串格式错返回 <see cref="PersistenceErrors.DataSourceInvalid"/>，登记已满返回 <see cref="PersistenceErrors.DataSourceCapacityExceeded"/>，这几种情况同名的已登记实例都不受影响；不支持返回 <see cref="PersistenceErrors.NotSupported"/>
     /// </remarks>
     public async ValueTask<Result<IDataSource>> GetOrAddAsync(DataSourceDefinition definition, CancellationToken cancellationToken)
     {
@@ -216,10 +216,10 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 移除并释放数据源（批量）。
+    /// 移除并释放数据源（批量）
     /// </summary>
     /// <remarks>
-    /// 逐项返回该名字是否登记过，与入参一一对应；同一批里重复的名字第二次为 <see langword="false"/>；空集合返回空列表；进入前检查取消。不支持时没有任何登记，逐项为 <see langword="false"/>。数据源记录改了、停用或删了时调用，旧的连接串不再被本进程使用。
+    /// 逐项返回该名字是否登记过，与入参一一对应；同一批里重复的名字第二次为 <see langword="false"/>；空集合返回空列表；进入前检查取消。不支持时没有任何登记，逐项为 <see langword="false"/>。数据源记录改了、停用或删了时调用，旧的连接串不再被本进程使用
     /// </remarks>
     public async ValueTask<IReadOnlyList<bool>> RemoveAsync(IReadOnlyList<string> names, CancellationToken cancellationToken)
     {
@@ -264,10 +264,10 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 测试连接：按定义建临时实例，打开一次连接再关闭，然后释放。
+    /// 测试连接：按定义建临时实例，打开一次连接再关闭，然后释放
     /// </summary>
     /// <remarks>
-    /// 不登记、不占名额、不影响同名的已登记实例。成功返回成功；连不上返回 <see cref="PersistenceErrors.DataSourceUnavailable"/>（参数 <c>name</c>、<c>reason</c>，已脱敏）；定义不合法返回 <see cref="PersistenceErrors.DataSourceInvalid"/>；不支持返回 <see cref="PersistenceErrors.NotSupported"/>。等多久由 <paramref name="cancellationToken"/> 与连接串里驱动自己的连接超时决定。
+    /// 不登记、不占名额、不影响同名的已登记实例。成功返回成功；连不上返回 <see cref="PersistenceErrors.DataSourceUnavailable"/>（参数 <c>name</c>、<c>reason</c>，已脱敏）；定义不合法返回 <see cref="PersistenceErrors.DataSourceInvalid"/>；不支持返回 <see cref="PersistenceErrors.NotSupported"/>。等多久由 <paramref name="cancellationToken"/> 与连接串里驱动自己的连接超时决定
     /// </remarks>
     public async ValueTask<Result> TestAsync(DataSourceDefinition definition, CancellationToken cancellationToken)
     {
@@ -299,7 +299,7 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 立即逐个探测全部已登记的数据源并更新健康项。
+    /// 立即逐个探测全部已登记的数据源并更新健康项
     /// </summary>
     public async ValueTask ProbeAsync(CancellationToken cancellationToken)
     {
@@ -356,10 +356,10 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 选 Provider 并建实例。
+    /// 选 Provider 并建实例
     /// </summary>
     /// <remarks>
-    /// 数据库类型没有 Provider 认得、Provider 以 <see cref="ArgumentException"/> 拒绝连接串，都翻译为 <see cref="PersistenceErrors.DataSourceInvalid"/>；原因经定义脱敏。
+    /// 数据库类型没有 Provider 认得、Provider 以 <see cref="ArgumentException"/> 拒绝连接串，都翻译为 <see cref="PersistenceErrors.DataSourceInvalid"/>；原因经定义脱敏
     /// </remarks>
     private async ValueTask<Result<(IDataSourceProvider Provider, IDataSource Source)>> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken)
     {
@@ -380,18 +380,18 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 不支持运行时数据源。
+    /// 不支持运行时数据源
     /// </summary>
     private static Error NotSupported() => Error.Unavailable(PersistenceErrors.NotSupported, PersistenceMessages.DataSourcesNotSupported);
 
     /// <summary>
-    /// 连不上：原因已脱敏。
+    /// 连不上：原因已脱敏
     /// </summary>
     private static Error Unavailable(DataSourceDefinition definition, string reason)
         => Error.Unavailable(PersistenceErrors.DataSourceUnavailable, PersistenceMessages.DataSourceUnavailable, MessageArguments.Of(("name", definition.Name), ("reason", reason)));
 
     /// <summary>
-    /// 定时器回调：上一轮还没探完就跳过这一轮。
+    /// 定时器回调：上一轮还没探完就跳过这一轮
     /// </summary>
     private void ProbeInBackground()
     {
@@ -418,10 +418,10 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 探测一个数据源（超时为探测间隔）。
+    /// 探测一个数据源（超时为探测间隔）
     /// </summary>
     /// <remarks>
-    /// 成功 Ready，失败、抛出或超时 Degraded 并带脱敏的原因；探测期间数据源被替换或移除时结果丢弃。
+    /// 成功 Ready，失败、抛出或超时 Degraded 并带脱敏的原因；探测期间数据源被替换或移除时结果丢弃
     /// </remarks>
     private async Task ProbeEntryAsync(Entry entry, CancellationToken cancellationToken)
     {
@@ -459,7 +459,7 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 释放数据源持有的资源。
+    /// 释放数据源持有的资源
     /// </summary>
     private static async ValueTask DisposeSourceAsync(IDataSource source)
     {
@@ -475,45 +475,45 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 登记了新数据源。
+    /// 登记了新数据源
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Data source '{Name}' ({DatabaseType}) registered.")]
     private static partial void LogRegistered(ILogger logger, string name, string databaseType);
 
     /// <summary>
-    /// 定义变了，替换了数据源。
+    /// 定义变了，替换了数据源
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Data source '{Name}' ({DatabaseType}) replaced because its definition changed.")]
     private static partial void LogReplaced(ILogger logger, string name, string databaseType);
 
     /// <summary>
-    /// 移除了数据源。
+    /// 移除了数据源
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Data source '{Name}' removed.")]
     private static partial void LogRemoved(ILogger logger, string name);
 
     /// <summary>
-    /// 一个已登记的数据源。
+    /// 一个已登记的数据源
     /// </summary>
     private sealed class Entry(DataSourceDefinition definition, IDataSourceProvider provider, IDataSource source, ContributorStatus status)
     {
         /// <summary>
-        /// 定义。
+        /// 定义
         /// </summary>
         public DataSourceDefinition Definition { get; } = definition;
 
         /// <summary>
-        /// 建它的 Provider。
+        /// 建它的 Provider
         /// </summary>
         public IDataSourceProvider Provider { get; } = provider;
 
         /// <summary>
-        /// 数据源。
+        /// 数据源
         /// </summary>
         public IDataSource Source { get; } = source;
 
         /// <summary>
-        /// 最近一次的健康状态。
+        /// 最近一次的健康状态
         /// </summary>
         public ContributorStatus Status { get; set; } = status;
     }

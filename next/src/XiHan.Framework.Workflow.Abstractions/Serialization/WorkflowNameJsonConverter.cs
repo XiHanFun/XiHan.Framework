@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Serialization;
 
 /// <summary>
-/// <see cref="WorkflowName"/> 以字符串序列化。
+/// <see cref="WorkflowName"/> 以字符串序列化
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowNameJsonConverter : JsonConverter<WorkflowName>

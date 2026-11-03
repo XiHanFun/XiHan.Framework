@@ -13,15 +13,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Database.Trail;
 
 /// <summary>
-/// 事件与存储行的往返映射。
+/// 事件与存储行的往返映射
 /// </summary>
 /// <remarks>
-/// 细节与错误细节手写成 JSON 对象（不经反射，保持 AOT 兼容）：值只允许 JSON 可表示的—— <see langword="null"/>、字符串、布尔、整数与浮点、时刻与 <see cref="Guid"/>（写成字符串）、<see cref="JsonElement"/> / <see cref="JsonNode"/>、嵌套字典与列表，其余按 <see cref="object.ToString"/>；读回时每个值是 <see cref="JsonElement"/>。错误按码与消息键还原，读取方可再按调用方区域翻译；没有键的字面错误用写入时渲染的消息原样还原（线上还原，不再翻译）。
+/// 细节与错误细节手写成 JSON 对象（不经反射，保持 AOT 兼容）：值只允许 JSON 可表示的—— <see langword="null"/>、字符串、布尔、整数与浮点、时刻与 <see cref="Guid"/>（写成字符串）、<see cref="JsonElement"/> / <see cref="JsonNode"/>、嵌套字典与列表，其余按 <see cref="object.ToString"/>；读回时每个值是 <see cref="JsonElement"/>。错误按码与消息键还原，读取方可再按调用方区域翻译；没有键的字面错误用写入时渲染的消息原样还原（线上还原，不再翻译）
 /// </remarks>
 internal static class AuditRecordMapping
 {
     /// <summary>
-    /// 事件 → 存储行。
+    /// 事件 → 存储行
     /// </summary>
     public static AuditRecord ToRecord(AuditEvent auditEvent, Guid id, long sequence)
     {
@@ -47,7 +47,7 @@ internal static class AuditRecordMapping
     }
 
     /// <summary>
-    /// 存储行 → 事件。
+    /// 存储行 → 事件
     /// </summary>
     public static AuditEvent ToEvent(AuditRecord record)
         => new(record.Timestamp, record.Action, ToOutcome(record), record.TraceId)
@@ -59,7 +59,7 @@ internal static class AuditRecordMapping
         };
 
     /// <summary>
-    /// 把细节写成 JSON 对象文本。
+    /// 把细节写成 JSON 对象文本
     /// </summary>
     public static string WriteJson(IReadOnlyDictionary<string, object?> values)
     {
@@ -80,10 +80,10 @@ internal static class AuditRecordMapping
     }
 
     /// <summary>
-    /// 把 JSON 对象文本读成细节。
+    /// 把 JSON 对象文本读成细节
     /// </summary>
     /// <remarks>
-    /// 每个值是脱离文档的 <see cref="JsonElement"/>，不是对象时为空字典。
+    /// 每个值是脱离文档的 <see cref="JsonElement"/>，不是对象时为空字典
     /// </remarks>
     public static IReadOnlyDictionary<string, object?> ReadJson(string json)
     {
@@ -102,7 +102,7 @@ internal static class AuditRecordMapping
     }
 
     /// <summary>
-    /// 还原结果：成功，或按错误码与消息键（没有键时按文本）还原的失败。
+    /// 还原结果：成功，或按错误码与消息键（没有键时按文本）还原的失败
     /// </summary>
     private static Result ToOutcome(AuditRecord record)
     {
@@ -119,7 +119,7 @@ internal static class AuditRecordMapping
     }
 
     /// <summary>
-    /// 写一个细节值。
+    /// 写一个细节值
     /// </summary>
     private static void WriteValue(Utf8JsonWriter writer, object? value)
     {
@@ -176,10 +176,10 @@ internal static class AuditRecordMapping
     }
 
     /// <summary>
-    /// 写数值。
+    /// 写数值
     /// </summary>
     /// <remarks>
-    /// 非有限的浮点数 JSON 表示不了，退回字符串；其余类型按不变文化的 <see cref="object.ToString"/>。
+    /// 非有限的浮点数 JSON 表示不了，退回字符串；其余类型按不变文化的 <see cref="object.ToString"/>
     /// </remarks>
     private static void WriteScalar(Utf8JsonWriter writer, object value)
     {

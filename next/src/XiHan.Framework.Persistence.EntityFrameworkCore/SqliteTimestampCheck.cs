@@ -11,26 +11,26 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// SQLite 上 UTC ticks 时间列的启动核对。
+/// SQLite 上 UTC ticks 时间列的启动核对
 /// </summary>
 /// <remarks>
-/// 约定把 <see cref="DateTimeOffset"/> 映射成 UTC ticks 整数（ADR-0091）之前建出的库，列里存的是 EF Core 的文本；按整数读时 SQLite 把文本开头的年份当整数，旧行被静默读成错误的时刻。这里逐列核对库里的存储形式：列的声明类型不是 INTEGER 亲和性即不符（空表也算），是 INTEGER 亲和性时抽样最早写入的 <see cref="SampleRows"/> 行、查到非整数的值即不符。只读，不改库（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0094）。
+/// 约定把 <see cref="DateTimeOffset"/> 映射成 UTC ticks 整数（ADR-0091）之前建出的库，列里存的是 EF Core 的文本；按整数读时 SQLite 把文本开头的年份当整数，旧行被静默读成错误的时刻。这里逐列核对库里的存储形式：列的声明类型不是 INTEGER 亲和性即不符（空表也算），是 INTEGER 亲和性时抽样最早写入的 <see cref="SampleRows"/> 行、查到非整数的值即不符。只读，不改库（RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0094）
 /// </remarks>
 internal static class SqliteTimestampCheck
 {
     /// <summary>
-    /// 每张表抽样的行数上限。
+    /// 每张表抽样的行数上限
     /// </summary>
     /// <remarks>
-    /// 旧行是最早写入的：重建表时原样搬进来的文本排在最前，抽样最早的行就能查到；上限让核对的开销与表的大小无关。
+    /// 旧行是最早写入的：重建表时原样搬进来的文本排在最前，抽样最早的行就能查到；上限让核对的开销与表的大小无关
     /// </remarks>
     internal const int SampleRows = 1000;
 
     /// <summary>
-    /// 找出存储形式与模型不符的时间列。
+    /// 找出存储形式与模型不符的时间列
     /// </summary>
     /// <remarks>
-    /// <paramref name="placedHere"/> 判定一个实体是否落在 <paramref name="context"/> 所在的连接上：只核对这些实体映射的表。Provider 不是 SQLite、没有要核对的列时返回空列表，库文件还不存在时返回 <see langword="null"/>（没有可核对的），都不打开连接。返回 <c>表.列 (声明类型)</c>，抽样不符的另带查到的存储类。
+    /// <paramref name="placedHere"/> 判定一个实体是否落在 <paramref name="context"/> 所在的连接上：只核对这些实体映射的表。Provider 不是 SQLite、没有要核对的列时返回空列表，库文件还不存在时返回 <see langword="null"/>（没有可核对的），都不打开连接。返回 <c>表.列 (声明类型)</c>，抽样不符的另带查到的存储类
     /// </remarks>
     public static async Task<IReadOnlyList<string>?> FindMismatchesAsync(DbContext context, Func<Type, bool> placedHere, CancellationToken cancellationToken)
     {
@@ -45,7 +45,7 @@ internal static class SqliteTimestampCheck
             return [];
         }
 
-        // 库文件还不存在就没有旧数据；SQLite 打开不存在的文件会建出空库，核对不能有这个副作用，所以先问 EF Core 库在不在。
+        // 库文件还不存在就没有旧数据；SQLite 打开不存在的文件会建出空库，核对不能有这个副作用，所以先问 EF Core 库在不在
         // 与「核对过、没有不符」区分开：租户分片要等库建出之后再核对，不能把还不存在的库记成已核对
         if (!await context.GetService<IRelationalDatabaseCreator>().ExistsAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -100,23 +100,23 @@ internal static class SqliteTimestampCheck
     }
 
     /// <summary>
-    /// 上下文的 Provider 是否是 SQLite。
+    /// 上下文的 Provider 是否是 SQLite
     /// </summary>
     internal static bool IsSqlite(DbContext context) => string.Equals(context.Database.ProviderName, ModelBuilderExtensions.SqliteProvider, StringComparison.Ordinal);
 
     /// <summary>
-    /// 声明类型是否是 INTEGER 亲和性。
+    /// 声明类型是否是 INTEGER 亲和性
     /// </summary>
     /// <remarks>
-    /// SQLite 的亲和性规则第一条：声明类型含 <c>INT</c>（不区分大小写）即 INTEGER 亲和性，先于其余规则。
+    /// SQLite 的亲和性规则第一条：声明类型含 <c>INT</c>（不区分大小写）即 INTEGER 亲和性，先于其余规则
     /// </remarks>
     internal static bool HasIntegerAffinity(string declaredType) => declaredType.Contains("INT", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// 落在这个连接上、由约定映射成 UTC ticks 的列，按表分组。
+    /// 落在这个连接上、由约定映射成 UTC ticks 的列，按表分组
     /// </summary>
     /// <remarks>
-    /// 取关系模型：从属类型、复杂类型与表拆分的列都在表上。表上任一非从属实体落在这个连接上，这张表就归它。只认约定施加的 <see cref="UtcTicksConverter"/>，应用自己配的转换不核对。
+    /// 取关系模型：从属类型、复杂类型与表拆分的列都在表上。表上任一非从属实体落在这个连接上，这张表就归它。只认约定施加的 <see cref="UtcTicksConverter"/>，应用自己配的转换不核对
     /// </remarks>
     private static Dictionary<string, List<string>> TicksColumns(IModel model, Func<Type, bool> placedHere)
     {
@@ -142,10 +142,10 @@ internal static class SqliteTimestampCheck
     }
 
     /// <summary>
-    /// 读库里每张表每列的声明类型。
+    /// 读库里每张表每列的声明类型
     /// </summary>
     /// <remarks>
-    /// 一次查询读完：<c>sqlite_master</c> 联 <c>pragma_table_info</c>，只读库结构，与表里的行数无关。SQLite 的标识符不区分大小写，表名与列名按不区分大小写比较。
+    /// 一次查询读完：<c>sqlite_master</c> 联 <c>pragma_table_info</c>，只读库结构，与表里的行数无关。SQLite 的标识符不区分大小写，表名与列名按不区分大小写比较
     /// </remarks>
     private static async Task<Dictionary<string, Dictionary<string, string>>> DeclaredTypesAsync(DbConnection connection, CancellationToken cancellationToken)
     {
@@ -168,10 +168,10 @@ internal static class SqliteTimestampCheck
     }
 
     /// <summary>
-    /// 抽样一张表最早写入的行，记下存了非整数值的列。
+    /// 抽样一张表最早写入的行，记下存了非整数值的列
     /// </summary>
     /// <remarks>
-    /// 一次查询：子查询 <c>NOT INDEXED</c> 按 rowid 顺序取最早的 <see cref="SampleRows"/> 行——走列上的索引会按值排序，整数排在文本之前，旧行就抽不到了。每列取查到的非整数存储类（<c>text</c>、<c>real</c>、<c>blob</c>），没有就是 NULL。
+    /// 一次查询：子查询 <c>NOT INDEXED</c> 按 rowid 顺序取最早的 <see cref="SampleRows"/> 行——走列上的索引会按值排序，整数排在文本之前，旧行就抽不到了。每列取查到的非整数存储类（<c>text</c>、<c>real</c>、<c>blob</c>），没有就是 NULL
     /// </remarks>
     private static async Task SampleAsync(DbConnection connection, string table, Dictionary<string, string> types, List<string> columns, List<string> mismatches, CancellationToken cancellationToken)
     {

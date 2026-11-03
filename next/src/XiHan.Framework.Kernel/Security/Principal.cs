@@ -6,41 +6,41 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Security;
 
 /// <summary>
-/// 当前操作的主体。
+/// 当前操作的主体
 /// </summary>
 /// <remarks>
-/// 用户、服务或系统。不可变；由 Authenticate 阶段写入上下文。
+/// 用户、服务或系统。不可变；由 Authenticate 阶段写入上下文
 /// </remarks>
-/// <param name="Id">主体 ID；匿名主体为空字符串。</param>
-/// <param name="AuthenticationScheme">认证方案；匿名主体为 <see langword="null"/>。</param>
+/// <param name="Id">主体 ID；匿名主体为空字符串</param>
+/// <param name="AuthenticationScheme">认证方案；匿名主体为 <see langword="null"/></param>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record Principal(string Id, string? AuthenticationScheme)
 {
     /// <summary>
-    /// 匿名主体。
+    /// 匿名主体
     /// </summary>
     public static Principal Anonymous { get; } = new(string.Empty, null);
 
     /// <summary>
-    /// 显示名。
+    /// 显示名
     /// </summary>
     public string? DisplayName { get; init; }
 
     /// <summary>
-    /// 声明集合。
+    /// 声明集合
     /// </summary>
     /// <remarks>
-    /// 同一类型可有多个值。
+    /// 同一类型可有多个值
     /// </remarks>
     public IReadOnlyList<KeyValuePair<string, string>> Claims { get; init; } = [];
 
     /// <summary>
-    /// 是否已认证。
+    /// 是否已认证
     /// </summary>
     public bool IsAuthenticated => AuthenticationScheme is not null && Id.Length > 0;
 
     /// <summary>
-    /// 取指定类型的全部声明值。
+    /// 取指定类型的全部声明值
     /// </summary>
     public IEnumerable<string> ClaimValues(string type)
     {
@@ -49,7 +49,7 @@ public sealed record Principal(string Id, string? AuthenticationScheme)
     }
 
     /// <summary>
-    /// 是否拥有指定类型与值的声明。
+    /// 是否拥有指定类型与值的声明
     /// </summary>
     public bool HasClaim(string type, string value)
     {

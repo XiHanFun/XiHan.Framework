@@ -21,32 +21,32 @@ using Xunit;
 namespace XiHan.Framework.Workflow.Conformance.Engine;
 
 /// <summary>
-/// 用户任务增强与外部任务的一致性套件（RFC-0021）。
+/// 用户任务增强与外部任务的一致性套件（RFC-0021）
 /// </summary>
 /// <remarks>
-/// 会签阈值、认领与释放、退回、催办、条件查询、任务元数据与周期提醒、外部任务的领取 / 完成 / 失败 / 锁。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器。
+/// 会签阈值、认领与释放、退回、催办、条件查询、任务元数据与周期提醒、外部任务的领取 / 完成 / 失败 / 锁。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowTaskConformance
 {
     /// <summary>
-    /// 外部任务用例的主题。
+    /// 外部任务用例的主题
     /// </summary>
     private const string PaymentTopic = "conf.pay";
 
     /// <summary>
-    /// 启动装配了被测 Provider 的宿主。
+    /// 启动装配了被测 Provider 的宿主
     /// </summary>
     /// <remarks>
-    /// <paramref name="configure"/> 登记套件的记录器与活动，必须在宿主构建前应用；<paramref name="configuration"/> 是额外配置。
+    /// <paramref name="configure"/> 登记套件的记录器与活动，必须在宿主构建前应用；<paramref name="configuration"/> 是额外配置
     /// </remarks>
     protected abstract Task<WorkflowEngineHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration = null);
 
     /// <summary>
-    /// 用例 1：会签阈值。
+    /// 用例 1：会签阈值
     /// </summary>
     /// <remarks>
-    /// 人数阈值达到即通过；百分比按指派人数向上取整；剩余人数到不了阈值即拒绝；缺省阈值为全部，一人拒绝立即拒绝。
+    /// 人数阈值达到即通过；百分比按指派人数向上取整；剩余人数到不了阈值即拒绝；缺省阈值为全部，一人拒绝立即拒绝
     /// </remarks>
     [Fact]
     public async Task Threshold_All_CompletesAtCountOrPercent()
@@ -100,10 +100,10 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 2：认领（Any）撤下其他指派人的书签，其他人既不能完成也不能认领。
+    /// 用例 2：认领（Any）撤下其他指派人的书签，其他人既不能完成也不能认领
     /// </summary>
     /// <remarks>
-    /// 认领人加签后新人认领被拒（已被认领）；非认领人释放被拒；释放后其他人重新拿到待办；Sequential 不支持认领；事件记录认领与释放。
+    /// 认领人加签后新人认领被拒（已被认领）；非认领人释放被拒；释放后其他人重新拿到待办；Sequential 不支持认领；事件记录认领与释放
     /// </remarks>
     [Fact]
     public async Task Claim_Release_AndGuards()
@@ -161,10 +161,10 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 3：退回。
+    /// 用例 3：退回
     /// </summary>
     /// <remarks>
-    /// 缺省目标是本节点之前最近完成的用户任务，以跳转实现（本节点实例取消、目标节点新建实例、上游指派人重新拿到待办），节点历史记 <c>returned</c>；指定的目标不存在被拒；没有上游用户任务时退回 <c>Start</c> 之后的首个节点。
+    /// 缺省目标是本节点之前最近完成的用户任务，以跳转实现（本节点实例取消、目标节点新建实例、上游指派人重新拿到待办），节点历史记 <c>returned</c>；指定的目标不存在被拒；没有上游用户任务时退回 <c>Start</c> 之后的首个节点
     /// </remarks>
     [Fact]
     public async Task Return_JumpsBack_AndRecordsHistory()
@@ -231,10 +231,10 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 4：催办只发事件、不改状态。
+    /// 用例 4：催办只发事件、不改状态
     /// </summary>
     /// <remarks>
-    /// 催办人不必是指派人；任务不存在被拒。
+    /// 催办人不必是指派人；任务不存在被拒
     /// </remarks>
     [Fact]
     public async Task Urge_PublishesEvent()
@@ -257,10 +257,10 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 5：条件查询。
+    /// 用例 5：条件查询
     /// </summary>
     /// <remarks>
-    /// 指派人与实例必填其一，分页越界是校验错误；按实例、节点、定义名、创建时间与关键字（任务标题、实例标题、定义名或关联 ID，同 4.x）过滤；按创建时间升序或降序分页，带同条件的总数；只含实例运行中的任务（挂起退出、恢复回来）。
+    /// 指派人与实例必填其一，分页越界是校验错误；按实例、节点、定义名、创建时间与关键字（任务标题、实例标题、定义名或关联 ID，同 4.x）过滤；按创建时间升序或降序分页，带同条件的总数；只含实例运行中的任务（挂起退出、恢复回来）
     /// </remarks>
     [Fact]
     public async Task Query_FiltersAndPages()
@@ -338,10 +338,10 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 6：任务视图带优先级、截止时刻（相对秒数或固定时刻）与渲染后的表单键。
+    /// 用例 6：任务视图带优先级、截止时刻（相对秒数或固定时刻）与渲染后的表单键
     /// </summary>
     /// <remarks>
-    /// <c>ReminderAfterSeconds</c> 周期发布提醒事件，任务完成后不再提醒。
+    /// <c>ReminderAfterSeconds</c> 周期发布提醒事件，任务完成后不再提醒
     /// </remarks>
     [Fact]
     public async Task TaskMetadata_PriorityDueFormKey_AndReminder()
@@ -392,10 +392,10 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 7：外部任务。
+    /// 用例 7：外部任务
     /// </summary>
     /// <remarks>
-    /// 领取上锁（锁未过期时别人领不到、完成与延长锁要求持锁）；完成合并输出；带 <c>RetryAfter</c> 的失败解锁后推、尝试次数加一；不带的失败使节点故障；锁过期由轮询解锁后别人可领；事件记录创建、完成与失败。
+    /// 领取上锁（锁未过期时别人领不到、完成与延长锁要求持锁）；完成合并输出；带 <c>RetryAfter</c> 的失败解锁后推、尝试次数加一；不带的失败使节点故障；锁过期由轮询解锁后别人可领；事件记录创建、完成与失败
     /// </remarks>
     [Fact]
     public async Task ExternalTask_FetchCompleteFailAndLock()
@@ -472,10 +472,10 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 用例 8：外部任务按创建先后领取，每次至多 <c>maxTasks</c> 条。
+    /// 用例 8：外部任务按创建先后领取，每次至多 <c>maxTasks</c> 条
     /// </summary>
     /// <remarks>
-    /// 锁住的不再出现在下一次领取里；别的租户的任务领不到；上限内的 <c>maxTasks</c> 都受理。
+    /// 锁住的不再出现在下一次领取里；别的租户的任务领不到；上限内的 <c>maxTasks</c> 都受理
     /// </remarks>
     [Fact]
     public async Task ExternalTask_FetchTakesTheOldestFirst_UpToMaxTasks()
@@ -512,7 +512,7 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 登记套件的记录器、活动与处理器。
+    /// 登记套件的记录器、活动与处理器
     /// </summary>
     protected static void Register(IServiceCollection services, ConformanceLog log)
     {
@@ -530,10 +530,10 @@ public abstract class WorkflowTaskConformance
     }
 
     /// <summary>
-    /// 一个"开始 → 用户任务 → 决策 → 结束（approved / rejected）"的定义。
+    /// 一个"开始 → 用户任务 → 决策 → 结束（approved / rejected）"的定义
     /// </summary>
     /// <remarks>
-    /// <paramref name="configure"/> 给用户任务节点加属性。
+    /// <paramref name="configure"/> 给用户任务节点加属性
     /// </remarks>
     protected static WorkflowDefinition Approval(string name, UserTaskCompletionPolicy policy, IReadOnlyList<string> assignees, Action<WorkflowNodeBuilder>? configure = null)
         => WorkflowDefinitionBuilder.Create(name)
@@ -553,73 +553,73 @@ public abstract class WorkflowTaskConformance
             .Build();
 
     /// <summary>
-    /// 某人在某实例上的唯一待办。
+    /// 某人在某实例上的唯一待办
     /// </summary>
     private static async ValueTask<UserTask> TaskOfAsync(WorkflowEngineHost host, string assigneeId, string instanceId)
         => Assert.Single((await host.PendingAsync(assigneeId).ConfigureAwait(false)).Where(task => task.InstanceId == instanceId));
 
     /// <summary>
-    /// 对任务服务执行一个操作。
+    /// 对任务服务执行一个操作
     /// </summary>
     private static ValueTask<T> TasksAsync<T>(WorkflowEngineHost host, Func<IWorkflowTaskService, ValueTask<T>> action)
         => host.InScopeAsync(sp => action(sp.GetRequiredService<IWorkflowTaskService>()));
 
     /// <summary>
-    /// 对外部任务服务执行一个操作。
+    /// 对外部任务服务执行一个操作
     /// </summary>
     private static ValueTask<T> ExternalAsync<T>(WorkflowEngineHost host, Func<IWorkflowExternalTaskService, ValueTask<T>> action)
         => host.InScopeAsync(sp => action(sp.GetRequiredService<IWorkflowExternalTaskService>()));
 
     /// <summary>
-    /// 认领。
+    /// 认领
     /// </summary>
     private static ValueTask<Result> ClaimAsync(WorkflowEngineHost host, string taskId, string actorId)
         => TasksAsync(host, service => service.ClaimAsync(new UserTaskClaim(taskId, actorId), CancellationToken.None));
 
     /// <summary>
-    /// 释放认领。
+    /// 释放认领
     /// </summary>
     private static ValueTask<Result> ReleaseAsync(WorkflowEngineHost host, string taskId, string actorId)
         => TasksAsync(host, service => service.ReleaseAsync(new UserTaskRelease(taskId, actorId), CancellationToken.None));
 
     /// <summary>
-    /// 退回。
+    /// 退回
     /// </summary>
     private static ValueTask<Result<WorkflowInstance>> ReturnAsync(WorkflowEngineHost host, string taskId, string actorId, string? targetNodeId = null, string? comment = null)
         => TasksAsync(host, service => service.ReturnAsync(new UserTaskReturn(taskId, actorId, targetNodeId, comment), CancellationToken.None));
 
     /// <summary>
-    /// 催办。
+    /// 催办
     /// </summary>
     private static ValueTask<Result> UrgeAsync(WorkflowEngineHost host, string taskId, string actorId, string? comment = null)
         => TasksAsync(host, service => service.UrgeAsync(new UserTaskUrge(taskId, actorId, comment), CancellationToken.None));
 
     /// <summary>
-    /// 条件查询。
+    /// 条件查询
     /// </summary>
     private static ValueTask<Result<UserTaskPage>> QueryAsync(WorkflowEngineHost host, UserTaskQuery query)
         => TasksAsync(host, service => service.QueryAsync(query, CancellationToken.None));
 
     /// <summary>
-    /// 领取外部任务。
+    /// 领取外部任务
     /// </summary>
     private static ValueTask<Result<IReadOnlyList<ExternalTask>>> FetchAsync(WorkflowEngineHost host, string workerId, TimeSpan lockDuration, int maxTasks = 10)
         => ExternalAsync(host, service => service.FetchAsync(PaymentTopic, workerId, lockDuration, maxTasks, CancellationToken.None));
 
     /// <summary>
-    /// 完成外部任务。
+    /// 完成外部任务
     /// </summary>
     private static ValueTask<Result<WorkflowInstance>> CompleteExternalAsync(WorkflowEngineHost host, string taskId, string workerId, JsonObject? outputs = null)
         => ExternalAsync(host, service => service.CompleteAsync(new ExternalTaskCompletion(taskId, workerId, outputs), CancellationToken.None));
 
     /// <summary>
-    /// 报告外部任务失败。
+    /// 报告外部任务失败
     /// </summary>
     private static ValueTask<Result> FailAsync(WorkflowEngineHost host, string taskId, string workerId, string error, TimeSpan? retryAfter = null)
         => ExternalAsync(host, service => service.FailAsync(new ExternalTaskFailure(taskId, workerId, error, retryAfter), CancellationToken.None));
 
     /// <summary>
-    /// 延长外部任务的锁。
+    /// 延长外部任务的锁
     /// </summary>
     private static ValueTask<Result> ExtendLockAsync(WorkflowEngineHost host, string taskId, string workerId)
         => ExternalAsync(host, service => service.ExtendLockAsync(new ExternalTaskLockExtension(taskId, workerId, TimeSpan.FromMinutes(1)), CancellationToken.None));
