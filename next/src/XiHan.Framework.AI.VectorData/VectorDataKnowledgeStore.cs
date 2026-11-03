@@ -16,7 +16,7 @@ namespace XiHan.Framework.AI.VectorData;
 /// </summary>
 /// <remarks>
 /// 每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成；删除与裁剪按过滤条件分页取键再按键删
-/// 健康项 <see cref="VectorDataKnowledgeFeature.HealthName"/> 的探针也在这里：连接器抛出时错误码与存储操作相同，<c>reason</c> 只写异常类型，完整异常进日志
+/// 连接器抛出时，存储操作与健康项 <see cref="VectorDataKnowledgeFeature.HealthName"/> 的探针报告同一个错误：<c>reason</c> 只写异常类型，完整异常进日志
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
@@ -91,7 +91,7 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Unavailable(exception);
+            return OperationFailed(nameof(UpsertAsync), collection, exception);
         }
     }
 
@@ -122,7 +122,7 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Unavailable(exception);
+            return OperationFailed(nameof(DeleteAsync), collection, exception);
         }
     }
 
@@ -145,7 +145,7 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Unavailable(exception);
+            return OperationFailed(nameof(TrimAsync), collection, exception);
         }
     }
 
@@ -184,7 +184,7 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Unavailable(exception);
+            return OperationFailed(nameof(SearchAsync), collection, exception);
         }
     }
 
@@ -219,8 +219,7 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
 
             _lastProbeFailure = failure;
 
-            // 这个 Provider 接任意连接器，异常消息可能带地址或连接串，健康快照里只写类型；完整异常在上面的日志里
-            return Error.Unavailable(AIErrors.KnowledgeUnavailable, AIMessages.KnowledgeUnavailable, MessageArguments.Of(("reason", failure.FullName ?? failure.Name)));
+            return Unavailable(exception);
         }
     }
 
@@ -317,10 +316,31 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
     };
 
     /// <summary>
+    /// 存储操作失败：记下完整异常，返回存储不可达
+    /// </summary>
+    private Error OperationFailed(string operation, string collection, Exception exception)
+    {
+        LogOperationFailed(_logger, operation, collection, exception);
+        return Unavailable(exception);
+    }
+
+    /// <summary>
     /// 存储不可达
     /// </summary>
+    /// <remarks>
+    /// 这个错误会返回给调用方、写进健康快照，而这个 Provider 接任意连接器，异常消息可能带地址或连接串：<c>reason</c> 只写类型，调用方先把完整异常记进日志
+    /// </remarks>
     private static Error Unavailable(Exception exception)
-        => Error.Unavailable(AIErrors.KnowledgeUnavailable, AIMessages.KnowledgeUnavailable, MessageArguments.Of(("reason", exception.Message)));
+    {
+        var type = exception.GetType();
+        return Error.Unavailable(AIErrors.KnowledgeUnavailable, AIMessages.KnowledgeUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
+    }
+
+    /// <summary>
+    /// 存储操作失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Knowledge store operation '{Operation}' on collection '{Collection}' failed.")]
+    private static partial void LogOperationFailed(ILogger logger, string operation, string collection, Exception exception);
 
     /// <summary>
     /// 探测失败（这一种失败第一次）

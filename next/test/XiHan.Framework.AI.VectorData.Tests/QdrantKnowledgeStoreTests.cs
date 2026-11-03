@@ -68,7 +68,7 @@ public sealed class QdrantKnowledgeStoreTests : KnowledgeStoreConformance
     }
 
     [Fact]
-    public async Task Health_OnAnUnreachableServer_ReportsTheExceptionType_AndLogsTheException()
+    public async Task UnreachableServer_ReportsTheExceptionType_AndLogsTheException()
     {
         Assert.SkipWhen(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(QdrantTestHost.EnvironmentVariable)), $"Set the environment variable '{QdrantTestHost.EnvironmentVariable}' to run the tests against the real connector.");
         var logs = new LogCapture();
@@ -83,5 +83,13 @@ public sealed class QdrantKnowledgeStoreTests : KnowledgeStoreConformance
         var logged = Assert.Single(logs.Entries, static entry => entry.Category == typeof(VectorDataKnowledgeStore).FullName);
         Assert.Equal(LogLevel.Warning, logged.Level);
         Assert.IsType<VectorStoreException>(logged.Exception);
+
+        // 存储操作同样：错误只带类型，完整异常进日志
+        var search = await host.Services.GetRequiredService<IKnowledgeStore>().SearchAsync("knowledge", new float[VectorDataTestHost.Dimensions], 1, null, CancellationToken.None);
+        Assert.Equal(AIErrors.KnowledgeUnavailable, search.Error?.Code);
+        Assert.Equal(typeof(VectorStoreException).FullName, search.Error?.Details?["reason"]);
+        var failed = logs.Entries.Where(static entry => entry.Category == typeof(VectorDataKnowledgeStore).FullName).ToList();
+        Assert.Equal(2, failed.Count);
+        Assert.IsType<VectorStoreException>(failed[1].Exception);
     }
 }

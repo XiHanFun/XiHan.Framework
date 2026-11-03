@@ -176,7 +176,7 @@ public sealed class VectorDataKnowledgeHealthTests
     /// <summary>
     /// 存储记下的探测日志（带异常的条目）
     /// </summary>
-    private static List<(LogLevel Level, string Category, Exception? Exception)> ProbeEntries(LogCapture logs)
+    private static List<(LogLevel Level, string Category, string Message, Exception? Exception)> ProbeEntries(LogCapture logs)
         => logs.Entries.Where(static entry => entry.Category == typeof(VectorDataKnowledgeStore).FullName && entry.Exception is not null).ToList();
 
     /// <summary>

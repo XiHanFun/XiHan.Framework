@@ -129,7 +129,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 - 搜索：集合不存在返回空列表；`DocumentIds` 过滤以常量比较的表达式下推；有元数据过滤时向量库取 `top × 4` 条，在进程内按键值相等过滤后按 `Score` 降序取前 `top` 条，命中稀疏时可能少于 `top` 条。连接器不给分数时按 0 处理。
 - 向量集合的维度在创建后不能改：换嵌入模型时换 `Collection`，或删掉旧集合重新摄入。
 - 不区分租户：要隔离时按集合或元数据区分。
-- 存储操作里连接器抛出的异常转成 `AI_UNAVAILABLE_002`，`reason` 是异常消息；取消照常抛出。
+- 存储操作里连接器抛出的异常转成 `AI_UNAVAILABLE_002`，`reason` 只写异常类型的全名（ADR-0112）：这个错误会返回给调用方，连接器的异常消息可能带地址或连接串。完整异常进日志（类别 `VectorDataKnowledgeStore`），每次失败一条 Warning，带操作名与集合名。取消照常抛出。
 - 健康项 `ai.vectordata.store`（ADR-0030 的连接类写法，ADR-0110）：启动时同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探；探针只问默认集合在不在（`CollectionExistsAsync`，存在与否都算可达），不列集合、不建集合、不读写记录，连接器不理会取消令牌时也按时限结束等待。应答 Ready；连接器抛出 Degraded（`AI_UNAVAILABLE_002`，与存储操作同一个错误）；超时 Degraded（`KERNEL_UNAVAILABLE_005`）；没有 Failed，向量库不可达时应用照常启动与服务。条目不带数据与说明，不写端点或连接信息。
 - 健康项的 `reason` 只写异常类型的全名（ADR-0111），连接器的异常消息可能带地址或连接串，不进健康快照。完整异常进日志（类别 `VectorDataKnowledgeStore`）：同一种失败第一次记 Warning，持续时记 Debug。
 - 通过 `AI.Conformance` 的 `KnowledgeStoreConformance`（写入与排序、`top`、文档与元数据过滤、重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索）。设置 `XIHAN_TEST_QDRANT`（gRPC 地址，如 `http://localhost:6334`）时，套件与摄入、检索用例另在真实 Qdrant 上跑，连接器是 `CommunityToolkit.VectorData.Qdrant`。

@@ -18,11 +18,17 @@ internal sealed class TestVectorCollection : VectorStoreCollection<Guid, Knowled
     private readonly Dictionary<Guid, KnowledgeVectorRecord> _records = [];
 
     /// <summary>
+    /// 取当前要抛出的异常
+    /// </summary>
+    private readonly Func<Exception?> _fault;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public TestVectorCollection(string name)
+    public TestVectorCollection(string name, Func<Exception?> fault)
     {
         Name = name;
+        _fault = fault;
     }
 
     /// <inheritdoc />
@@ -34,11 +40,17 @@ internal sealed class TestVectorCollection : VectorStoreCollection<Guid, Knowled
     public bool Exists { get; private set; }
 
     /// <inheritdoc />
-    public override Task<bool> CollectionExistsAsync(CancellationToken cancellationToken = default) => Task.FromResult(Exists);
+    public override Task<bool> CollectionExistsAsync(CancellationToken cancellationToken = default)
+        => _fault() is { } fault ? Task.FromException<bool>(fault) : Task.FromResult(Exists);
 
     /// <inheritdoc />
     public override Task EnsureCollectionExistsAsync(CancellationToken cancellationToken = default)
     {
+        if (_fault() is { } fault)
+        {
+            return Task.FromException(fault);
+        }
+
         Exists = true;
         return Task.CompletedTask;
     }

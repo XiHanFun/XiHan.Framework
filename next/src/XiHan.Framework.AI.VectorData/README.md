@@ -21,7 +21,7 @@ var prompt = augmenter.Augment("How do I reset my password?", chunks);
 
 健康项 `ai.vectordata.store`（ADR-0030、ADR-0110）：被选为 `ai.knowledge` 时登记，启动时同步探一次、之后按间隔在后台重探；探针只问默认集合（`Knowledge:Collection`）在不在，不列集合、不建集合、不读写记录，连接器不理会取消令牌也按时限结束等待。应答 Ready；连接器抛出 Degraded（`AI_UNAVAILABLE_002`，与存储操作同一个错误）；超时 Degraded（`KERNEL_UNAVAILABLE_005`）；没有 Failed，向量库不可达时应用照常启动与服务。条目不带数据与说明，不写端点或连接信息；应用不必另写向量库的健康检查。
 
-健康项的 `reason` 只写异常类型的全名，完整异常进日志（ADR-0111）。
+连接器抛出时，存储操作与健康项的 `reason` 都只写异常类型的全名，完整异常进日志（ADR-0111、ADR-0112）。
 
 连接器要接受 `Guid` 键；键形状变化之前建的集合要重建（ADR-0111）。Qdrant 用 `CommunityToolkit.VectorData.Qdrant`：`Microsoft.SemanticKernel.Connectors.Qdrant` 1.74.0-preview 与 VectorData 10.11.0 不兼容。
 

@@ -17,12 +17,12 @@ internal sealed class LogCapture : ILoggerFactory
     /// <summary>
     /// 收到的日志
     /// </summary>
-    private readonly ConcurrentQueue<(LogLevel Level, string Category, Exception? Exception)> _entries = new();
+    private readonly ConcurrentQueue<(LogLevel Level, string Category, string Message, Exception? Exception)> _entries = new();
 
     /// <summary>
-    /// 收到的日志（级别、类别、异常），按写入顺序
+    /// 收到的日志（级别、类别、格式化后的消息、异常），按写入顺序
     /// </summary>
-    public IReadOnlyList<(LogLevel Level, string Category, Exception? Exception)> Entries => [.. _entries];
+    public IReadOnlyList<(LogLevel Level, string Category, string Message, Exception? Exception)> Entries => [.. _entries];
 
     /// <inheritdoc />
     public ILogger CreateLogger(string categoryName) => new CapturedLogger(categoryName, _entries);
@@ -38,7 +38,7 @@ internal sealed class LogCapture : ILoggerFactory
     /// <summary>
     /// 一个类别的日志
     /// </summary>
-    private sealed class CapturedLogger(string category, ConcurrentQueue<(LogLevel Level, string Category, Exception? Exception)> entries) : ILogger
+    private sealed class CapturedLogger(string category, ConcurrentQueue<(LogLevel Level, string Category, string Message, Exception? Exception)> entries) : ILogger
     {
         /// <inheritdoc />
         public IDisposable? BeginScope<TState>(TState state)
@@ -49,6 +49,6 @@ internal sealed class LogCapture : ILoggerFactory
 
         /// <inheritdoc />
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-            => entries.Enqueue((logLevel, category, exception));
+            => entries.Enqueue((logLevel, category, formatter(state, exception), exception));
     }
 }

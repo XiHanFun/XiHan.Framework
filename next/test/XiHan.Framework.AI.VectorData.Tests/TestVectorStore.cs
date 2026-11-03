@@ -33,6 +33,14 @@ internal sealed class TestVectorStore : VectorStore
     public Exception? Fault { get; set; }
 
     /// <summary>
+    /// 集合级调用抛出的异常（模拟存储操作时向量库不可达）
+    /// </summary>
+    /// <remarks>
+    /// 空表示照常应答；健康探针只走存储级调用，不受它影响
+    /// </remarks>
+    public Exception? OperationFault { get; set; }
+
+    /// <summary>
     /// 挂起存储级 <see cref="CollectionExistsAsync"/> 的任务源（模拟卡住、不理会取消令牌的连接器）
     /// </summary>
     /// <remarks>
@@ -65,7 +73,7 @@ internal sealed class TestVectorStore : VectorStore
 
         if (!_collections.TryGetValue(name, out var collection))
         {
-            collection = new TestVectorCollection(name);
+            collection = new TestVectorCollection(name, () => OperationFault);
             _collections[name] = collection;
         }
 
