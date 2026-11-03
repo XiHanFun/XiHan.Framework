@@ -9,6 +9,7 @@ using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Localization.Abstractions.Messages;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
@@ -1953,6 +1954,36 @@ public abstract class WorkflowEngineConformance
         Assert.Equal($"工作流实例 '{child.Id}' 已取消，不允许该操作。", In("zh-CN", () => denied.MessageKey!.L(denied.Details)));
         Assert.Equal($"Workflow instance '{child.Id}' has been canceled and does not allow this operation.", In("en-US", () => denied.MessageKey!.L(denied.Details)));
         Assert.Equal(("已取消", "Canceled"), (In("zh-CN", () => WorkflowInstanceStatus.Canceled.Localize()), In("en-US", () => WorkflowInstanceStatus.Canceled.Localize())));
+    }
+
+    /// <summary>
+    /// 用例 41：别的发布端的消息照常确认成功，不当工作流事件解析。
+    /// </summary>
+    /// <remarks>
+    /// 宿主里别的特性（调度、应用自己的事件）也经套件顶替的代理发布：调用之外直接发布，调用里装了发件箱时随事务写进发件箱、提交后由夹具投递。两条都确认成功、记进 <see cref="ConformanceLog.OtherTopics"/>，不出现在工作流事件里；工作流事件照旧记录（ADR-0096 修订）。
+    /// </remarks>
+    [Fact]
+    public async Task OtherPublishers_Messages_AreAcknowledged_NotParsedAsWorkflowEvents()
+    {
+        var log = new ConformanceLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        const string Topic = "conformance.other";
+        static MessageEnvelope Other(string id) => new() { Id = id, Source = "/conformance", Type = Topic, Data = "{\"not\":\"a workflow event\"}"u8.ToArray() };
+
+        var direct = await host.InScopeAsync(static sp => sp.GetRequiredService<IMessagePublisher>().PublishAsync(Topic, Other("conformance-other-1"), CancellationToken.None)).ConfigureAwait(false);
+        Assert.True(direct.IsSuccess, direct.Error?.Code);
+        var transactional = await host.AsTenantAsync(null, static sp => sp.GetRequiredService<IMessagePublisher>().PublishAsync(Topic, Other("conformance-other-2"), CancellationToken.None)).ConfigureAwait(false);
+        Assert.True(transactional.IsSuccess, transactional.Error?.Code);
+
+        await host.PublishAsync(Labeled("conf-other-publishers", "a")).ConfigureAwait(false);
+        var instance = (await host.StartAsync("conf-other-publishers").ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(WorkflowInstanceStatus.Completed, instance.Status);
+
+        // 宿主里别的特性也可能发布（如调度的作业事件），只数本用例的主题
+        Assert.Equal(2, log.OtherTopics.Count(static topic => topic == Topic));
+        Assert.DoesNotContain(log.Events, static pending => pending.Topic == Topic);
+        Assert.Contains(log.EventsOf(WorkflowTopics.InstanceStarted), data => data.InstanceId == instance.Id);
+        Assert.Contains(log.EventsOf(WorkflowTopics.InstanceCompleted), data => data.InstanceId == instance.Id);
     }
 
     /// <summary>
