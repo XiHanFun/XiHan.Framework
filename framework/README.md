@@ -211,7 +211,7 @@ XiHan.Framework/
 
 ## Building and Testing Locally
 
-> Requires the .NET SDK **10.0.3xx** feature band (`global.json` pins it with `rollForward: latestPatch`). With 10.0.4xx installed you will get "SDK not found" and nothing builds.
+> Requires the .NET SDK **10.0.4xx** feature band (`global.json` pins it with `rollForward: latestPatch`). With only another feature band installed you will get "SDK not found" and nothing builds.
 
 ```bash
 # Restore and build

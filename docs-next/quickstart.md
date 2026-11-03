@@ -6,7 +6,7 @@
 
 | 项 | 要求 |
 | --- | --- |
-| .NET SDK | .NET 10 SDK；从源码构建框架时用仓库 `global.json` 锁定的 10.0.3xx 功能带 |
+| .NET SDK | .NET 10 SDK；从源码构建框架时用仓库 `global.json` 锁定的 10.0.4xx 功能带 |
 | Git | 克隆 `XiHan.Framework` 仓库并切到 `next` 分支 |
 | 编辑器 | Visual Studio 2026、Rider 或 VS Code（C# Dev Kit） |
 
