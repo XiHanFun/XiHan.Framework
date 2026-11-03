@@ -1505,7 +1505,9 @@
       "pipeline": [],
       "operations": [],
       "permissions": [],
-      "health": []
+      "health": [
+        "ai.vectordata.store"
+      ]
     },
     {
       "type": "XiHan.Framework.Auditing.Database.DatabaseAuditingFeature",

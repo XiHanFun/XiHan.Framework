@@ -8,14 +8,15 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 | 环层 | Ring 3（实现） |
 | 能力 | 提供 `ai.knowledge@1`（`role: provider`）；依赖 `kernel.hosting@1`、`ai.embedding@1` |
 | 特性入口 | `VectorDataKnowledgeFeature`（清单 `xihan.ai.vectordata`，`IHostedFeature`） |
-| 配置节 | `XiHan:AI`（用到 `Knowledge:Dimensions`） |
+| 配置节 | `XiHan:AI`（用到 `Knowledge:Dimensions`、`Knowledge:Collection`，本包自己的 `VectorData:HealthProbeIntervalSeconds`） |
+| 健康项 | `ai.vectordata.store`（向量存储是否应答） |
 | 依赖 | `XiHan.Framework.AI.Abstractions`；`Microsoft.Extensions.VectorData.Abstractions` 10.11.0 |
 | AOT | 不兼容（VectorData 的记录映射基于反射与表达式，csproj 设 `IsAotCompatible=false`） |
 | 稳定性 | Preview |
 
 ## 概述
 
-特性被选中时把 `VectorDataKnowledgeStore` 登记为 `IKnowledgeStore`；向量存储本身由应用选连接器登记。启动时容器里没有 `VectorStore` 就以 `AI_UNAVAILABLE_002` 启动失败，装配错误不会拖到第一次检索才暴露。
+特性被选中时把 `VectorDataKnowledgeStore` 登记为 `IKnowledgeStore`，并登记健康项 `ai.vectordata.store`；向量存储本身由应用选连接器登记。启动时容器里没有 `VectorStore` 就以 `AI_UNAVAILABLE_002` 启动失败，装配错误不会拖到第一次检索才暴露。
 
 每个知识库集合对应一个向量集合，集合定义按 `XiHan:AI:Knowledge:Dimensions` 构造：
 
@@ -71,7 +72,8 @@ app.Run();
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |
 | `XiHan:AI:Knowledge:Dimensions` | 1536 | 向量集合的维度，必须等于嵌入模型输出的维度 |
-| `XiHan:AI:Knowledge:Collection` | `knowledge` | 不指定集合时用的集合名 |
+| `XiHan:AI:Knowledge:Collection` | `knowledge` | 不指定集合时用的集合名；健康探针问的也是它 |
+| `XiHan:AI:VectorData:HealthProbeIntervalSeconds` | 15 | 健康项的重探间隔（秒），也是单次探测的超时；不是有限的正数时启动失败 |
 
 ```json
 { "XiHan": { "AI": { "Knowledge": { "Collection": "faq", "Dimensions": 768 } } } }
@@ -83,7 +85,8 @@ app.Run();
 
 | 类型 | 说明 |
 | --- | --- |
-| `VectorDataKnowledgeFeature` | 能力包入口；启动时检查容器里有 `VectorStore` |
+| `VectorDataKnowledgeFeature` | 能力包入口；启动时检查容器里有 `VectorStore`；常量 `HealthName`（`ai.vectordata.store`） |
+| `VectorDataKnowledgeOptions` | 本包自己的选项（`XiHan:AI:VectorData`）：`HealthProbeInterval` |
 | `VectorDataKnowledgeStore` | `IKnowledgeStore` 的实现：`UpsertAsync`、`DeleteAsync`、`TrimAsync`、`SearchAsync` |
 | `KnowledgeVectorRecord` | 向量记录；`Definition(dimensions)` 构造集合定义 |
 
@@ -125,6 +128,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 - 向量集合的维度在创建后不能改：换嵌入模型时换 `Collection`，或删掉旧集合重新摄入。
 - 不区分租户：要隔离时按集合或元数据区分。
 - 连接器抛出的异常转成 `AI_UNAVAILABLE_002`，`reason` 是异常消息；取消照常抛出。
+- 健康项 `ai.vectordata.store`（ADR-0030 的连接类写法，ADR-0110）：启动时同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探；探针只问默认集合在不在（`CollectionExistsAsync`，存在与否都算可达），不列集合、不建集合、不读写记录，连接器不理会取消令牌时也按时限结束等待。应答 Ready；连接器抛出 Degraded（`AI_UNAVAILABLE_002`，与存储操作同一个错误）；超时 Degraded（`KERNEL_UNAVAILABLE_005`）；没有 Failed，向量库不可达时应用照常启动与服务。条目不带数据与说明，不写端点或连接信息。
 - 通过 `AI.Conformance` 的 `KnowledgeStoreConformance`（写入与排序、`top`、文档与元数据过滤、重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索）。
 
 ## 相关

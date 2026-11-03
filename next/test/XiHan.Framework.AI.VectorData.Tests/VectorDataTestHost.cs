@@ -25,7 +25,15 @@ internal static class VectorDataTestHost
     /// <remarks>
     /// <paramref name="store"/> 为空时不注册向量存储
     /// </remarks>
-    public static Task<TestHost> StartAsync(VectorStore? store, params (string Key, string Value)[] extra)
+    public static Task<TestHost> StartAsync(VectorStore? store, params (string Key, string Value)[] extra) => StartAsync(store, null, extra);
+
+    /// <summary>
+    /// 按给定的时钟启动
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="clock"/> 为空时用内核登记的系统时钟；健康探针的循环与单次超时都按它计时
+    /// </remarks>
+    public static Task<TestHost> StartAsync(VectorStore? store, TimeProvider? clock, params (string Key, string Value)[] extra)
     {
         (string Key, string Value)[] configuration =
         [
@@ -43,6 +51,11 @@ internal static class VectorDataTestHost
                 if (store is not null)
                 {
                     services.AddSingleton(store);
+                }
+
+                if (clock is not null)
+                {
+                    services.AddSingleton(clock);
                 }
             });
     }

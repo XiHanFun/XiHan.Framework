@@ -19,10 +19,24 @@ XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.Manifest.get -> XiHan.F
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.VectorDataKnowledgeFeature() -> void
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.<Clone>$() -> XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions!
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.Equals(XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions? other) -> bool
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.HealthProbeInterval.init -> void
+XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.VectorDataKnowledgeOptions() -> void
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.DeleteAsync(string! collection, System.Collections.Generic.IReadOnlyList<string!>! documentIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.SearchAsync(string! collection, System.ReadOnlyMemory<float> vector, int top, XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter? filter, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>!>>
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.TrimAsync(string! collection, string! documentId, int chunkCount, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.UpsertAsync(string! collection, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.VectorData.VectorDataKnowledgeStore.VectorDataKnowledgeStore(Microsoft.Extensions.VectorData.VectorStore! store, XiHan.Framework.AI.Abstractions.AIOptions! options) -> void
+const XiHan.Framework.AI.VectorData.VectorDataKnowledgeFeature.HealthName = "ai.vectordata.store" -> string!
+const XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.ConfigurationSection = "XiHan:AI:VectorData" -> string!
+override XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.Equals(object? obj) -> bool
+override XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.GetHashCode() -> int
+override XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.ToString() -> string!
 static XiHan.Framework.AI.VectorData.KnowledgeVectorRecord.Definition(int dimensions) -> Microsoft.Extensions.VectorData.VectorStoreCollectionDefinition!
+static XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions!
+static XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.operator !=(XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions? left, XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions? right) -> bool
+static XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions.operator ==(XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions? left, XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions? right) -> bool

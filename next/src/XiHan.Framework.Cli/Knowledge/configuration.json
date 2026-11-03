@@ -162,6 +162,20 @@
       ]
     },
     {
+      "section": "XiHan:AI:VectorData",
+      "options": "XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions",
+      "package": "XiHan.Framework.AI.VectorData",
+      "keys": [
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 ai.vectordata.store 的重探间隔（秒），也是单次探测的超时；须为有限正数"
+        }
+      ]
+    },
+    {
       "section": "XiHan:Auditing",
       "options": "XiHan.Framework.Auditing.Abstractions.AuditingOptions",
       "package": "XiHan.Framework.Auditing.Abstractions",

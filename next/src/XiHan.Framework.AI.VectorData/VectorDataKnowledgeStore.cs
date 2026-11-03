@@ -15,6 +15,7 @@ namespace XiHan.Framework.AI.VectorData;
 /// </summary>
 /// <remarks>
 /// 每个知识库集合一个向量集合；<c>DocumentIds</c> 过滤下推，元数据过滤取回 <c>top × 4</c> 条后在进程内完成；删除与裁剪按过滤条件分页取键再按键删
+/// 健康项 <see cref="VectorDataKnowledgeFeature.HealthName"/> 的探针也在这里，连接器抛出时与存储操作报告同一个错误
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class VectorDataKnowledgeStore : IKnowledgeStore
@@ -40,6 +41,11 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
     private readonly VectorStoreCollectionDefinition _definition;
 
     /// <summary>
+    /// 健康探针询问的集合：知识库的默认集合
+    /// </summary>
+    private readonly string _probeCollection;
+
+    /// <summary>
     /// 创建
     /// </summary>
     public VectorDataKnowledgeStore(VectorStore store, AIOptions options)
@@ -47,6 +53,7 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
         ArgumentNullException.ThrowIfNull(options);
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _definition = KnowledgeVectorRecord.Definition(options.Knowledge.Dimensions);
+        _probeCollection = options.Knowledge.Collection;
     }
 
     /// <inheritdoc />
@@ -158,6 +165,27 @@ public sealed class VectorDataKnowledgeStore : IKnowledgeStore
             }
 
             return Result.Success<IReadOnlyList<RetrievedChunk>>(hits.OrderByDescending(static hit => hit.Score).Take(top).ToList());
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            return Unavailable(exception);
+        }
+    }
+
+    /// <summary>
+    /// 健康探针：向量存储是否应答
+    /// </summary>
+    /// <remarks>
+    /// 只问默认集合在不在：一次轻量往返，存在与否都说明连得上；不列集合（按租户分集合时集合很多）、不建集合、不读写记录
+    /// 连接器抛出 → <see cref="AIErrors.KnowledgeUnavailable"/>，与存储操作报告的错误相同；取消（含探针宿主的超时）原样抛出，由探针宿主记成超时
+    /// </remarks>
+    internal async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            // 连接器不一定理会取消令牌：按令牌结束等待，卡住的连接也受探针宿主的时限约束，不拖住健康循环与启动
+            await _store.CollectionExistsAsync(_probeCollection, cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
+            return Result.Success();
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

@@ -362,6 +362,13 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 
 `AI.VectorData` 把 `IKnowledgeStore` 映射到应用登记的 `Microsoft.Extensions.VectorData` 的 `VectorStore`，任何连接器都行；容器里没有 `VectorStore` 时启动失败。集合定义、距离函数与过滤的下推方式见 [AI.VectorData 包](../packages/ai-vectordata)。
 
+`AI.VectorData` 自带健康项 `ai.vectordata.store`，应用不必另写向量库的健康检查：
+
+- 启动时同步探一次，之后每隔 `XiHan:AI:VectorData:HealthProbeIntervalSeconds`（缺省 15 秒，也是单次探测的超时）在后台重探。
+- 探针只问默认集合（`XiHan:AI:Knowledge:Collection`）在不在，存在与否都算连得上；不列集合、不建集合、不读写记录。
+- 向量库应答即 Ready。连接器抛出时 Degraded，错误码 `AI_UNAVAILABLE_002`，与检索在这时返回的码相同；探测超时也是 Degraded，错误码 `KERNEL_UNAVAILABLE_005`。
+- 条目 Degraded 时应用照常启动、照常服务，`/health/ready` 仍通过，恢复后条目回到 Ready。条目不带数据与说明，不写端点或连接信息。汇总见[生命周期与健康](./lifecycle#健康条目)。
+
 ## 配置
 
 AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了要重启应用。框架不监听配置变化，`Invalidate` 只丢弃缓存的客户端、按同一份选项重建；提示词目录、工具目录、护栏、知识库选项与提示增强器都在创建时取定。这样做是因为这些配置在启动时校验（工具名、知识库提示词）并被多个单例取用，热更新只会部分生效——例如换了嵌入模型而向量集合的维度没变——AI 配置的改动通常本就伴随部署（ADR-0074）。
@@ -389,6 +396,7 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 | `XiHan:AI:Knowledge:Top` | int，至少 1 | 5 | 默认检索条数 |
 | `XiHan:AI:Knowledge:EmbeddingProvider` | string | 目录的默认嵌入 Provider | 知识库用的嵌入 Provider；请求写了 Provider 时以请求为准 |
 | `XiHan:AI:Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名；启动时校验存在且只用 `{context}`、`{question}` |
+| `XiHan:AI:VectorData:HealthProbeIntervalSeconds` | 有限的数值，大于 0 | 15 | `AI.VectorData` 健康项的重探间隔，也是单次探测的超时 |
 
 ::: warning 配置值写错时启动失败
 读取 `XiHan:AI` 时值不合法即抛出 `ArgumentException`，应用启动失败，异常消息带出完整的配置键与原值：Provider 缺 `Kind`；`Endpoint` 不是绝对的 http(s) 地址（例如漏了 `http://`，写错的端点不会退回官方端点、把 `ApiKey` 发出去）；`EmbeddingDimensions` 与知识库的数值不是要求的整数；`TimeoutSeconds` 不是正数；护栏的两个开关不是 `true` / `false`；提示词缺 `Template`。`Endpoint` 不写或写空串表示官方端点。
@@ -406,7 +414,7 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 | `AI_DENIED_001` | 被护栏拦截，细节带 `guardrail` 与 `reason` |
 | `AI_TIMEOUT_001` | 模型调用超时：Provider 的 `TimeoutSeconds` 到了（调用方同时取消也一样），或 Provider 报告了自己的超时 |
 | `AI_UNAVAILABLE_001` | 模型端点不可达或返回错误 |
-| `AI_UNAVAILABLE_002` | 没有知识库 Provider，或向量存储不可达；`AI.VectorData` 启动时找不到 `VectorStore` 也以此码失败 |
+| `AI_UNAVAILABLE_002` | 没有知识库 Provider，或向量存储不可达；`AI.VectorData` 启动时找不到 `VectorStore` 也以此码失败；健康项 `ai.vectordata.store` 探不到向量库时也是它 |
 | `AI_UNEXPECTED_001` | 护栏抛出异常或返回失败 |
 
 消息目录是 `ai`，键为 `ai.*`，内置 10 种区域的译文。
