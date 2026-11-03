@@ -23,35 +23,35 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 文件系统存储经宿主代收发的预签名地址。
+/// 文件系统存储经宿主代收发的预签名地址
 /// </summary>
 /// <remarks>
-/// 下载（整读、单区间 206、后缀区间、不可满足 416、保存文件名）、上传（限定内容类型）、分片上传的一片，签名不符、方法不符与过期都是 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）；签名器即 <see cref="IBlobUrlSigner"/>，<see cref="HostedBlobUrlSigner.ForStore"/> 签出的地址由端点交给命名实例收发。
+/// 下载（整读、单区间 206、后缀区间、不可满足 416、保存文件名）、上传（限定内容类型）、分片上传的一片，签名不符、方法不符与过期都是 403（<see cref="ObjectStorageErrors.SignatureInvalid"/>）；签名器即 <see cref="IBlobUrlSigner"/>，<see cref="HostedBlobUrlSigner.ForStore"/> 签出的地址由端点交给命名实例收发
 /// </remarks>
 public sealed class HostedBlobUrlTests : IDisposable
 {
     /// <summary>
-    /// 测试用签名密钥（32 字节以上）。
+    /// 测试用签名密钥（32 字节以上）
     /// </summary>
     private const string Secret = "unit-test-signing-secret-with-32-bytes!";
 
     /// <summary>
-    /// 用例的容器。
+    /// 用例的容器
     /// </summary>
     private const string Container = "files";
 
     /// <summary>
-    /// 临时根目录。
+    /// 临时根目录
     /// </summary>
     private readonly TemporaryRoot _root = new();
 
     /// <summary>
-    /// 可拨动的时钟：签名的过期按它判定。
+    /// 可拨动的时钟：签名的过期按它判定
     /// </summary>
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 29, 8, 0, 0, TimeSpan.Zero));
 
     /// <summary>
-    /// 删除临时根目录。
+    /// 删除临时根目录
     /// </summary>
     public void Dispose() => _root.Dispose();
 
@@ -209,10 +209,10 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     /// <summary>
-    /// 启动宿主。
+    /// 启动宿主
     /// </summary>
     /// <remarks>
-    /// 文件系统存储 + 宿主代收发的预签名地址，端点映射在 <c>/blobs</c>，时钟可拨动；<paramref name="configuration"/> 追加配置。
+    /// 文件系统存储 + 宿主代收发的预签名地址，端点映射在 <c>/blobs</c>，时钟可拨动；<paramref name="configuration"/> 追加配置
     /// </remarks>
     private async Task<WebApplication> StartAsync(params KeyValuePair<string, string?>[] configuration)
     {
@@ -234,7 +234,7 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     /// <summary>
-    /// 带 <c>Range</c> 头下载，返回正文与 <c>Content-Range</c>，并断言状态码。
+    /// 带 <c>Range</c> 头下载，返回正文与 <c>Content-Range</c>，并断言状态码
     /// </summary>
     private static async Task<(string Body, string? ContentRange)> RangeAsync(HttpClient client, Uri url, RangeHeaderValue range, HttpStatusCode expected)
     {
@@ -246,7 +246,7 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     /// <summary>
-    /// Problem Details 的错误码。
+    /// Problem Details 的错误码
     /// </summary>
     private static async Task<string?> CodeOf(HttpResponseMessage response)
     {

@@ -13,17 +13,17 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 表达式诊断、活动描述符、状态名与 lastError 的本地化（ADR-0106）。
+/// 表达式诊断、活动描述符、状态名与 lastError 的本地化（ADR-0106）
 /// </summary>
 public sealed class WorkflowLocalizationTests
 {
     /// <summary>
-    /// 测试用的解析器。
+    /// 测试用的解析器
     /// </summary>
     private static readonly WorkflowCatalogResolver _messages = new();
 
     /// <summary>
-    /// 默认选项的求值器。
+    /// 默认选项的求值器
     /// </summary>
     private static readonly WorkflowExpressionEvaluator _evaluator = new(new WorkflowOptions());
 
@@ -137,7 +137,7 @@ public sealed class WorkflowLocalizationTests
     }
 
     /// <summary>
-    /// 在给定区域渲染错误。
+    /// 在给定区域渲染错误
     /// </summary>
     private static string Render(string locale, Error error)
     {

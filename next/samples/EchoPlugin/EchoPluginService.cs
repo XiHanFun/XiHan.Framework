@@ -12,15 +12,15 @@ using Status = XiHan.Framework.Plugins.Protocol.V1.Status;
 namespace EchoPlugin;
 
 /// <summary>
-/// <c>xihan.plugin.v1.Plugin</c> 的实现。
+/// <c>xihan.plugin.v1.Plugin</c> 的实现
 /// </summary>
 /// <remarks>
-/// 四个操作（回显、经宿主回调中继、故意崩溃、列出收到的事件）、一个订阅与一个健康项。
+/// 四个操作（回显、经宿主回调中继、故意崩溃、列出收到的事件）、一个订阅与一个健康项
 /// </remarks>
 internal sealed partial class EchoPluginService(PluginState state, HostClient host, IHostApplicationLifetime lifetime, ILogger<EchoPluginService> logger) : Plugin.PluginBase
 {
     /// <summary>
-    /// 清单 ID。
+    /// 清单 ID
     /// </summary>
     private const string PluginId = "xihan.samples.echo";
 
@@ -171,10 +171,10 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     }
 
     /// <summary>
-    /// 经宿主回调调用 <c>payload.operation</c>，把宿主的结果原样返回。
+    /// 经宿主回调调用 <c>payload.operation</c>，把宿主的结果原样返回
     /// </summary>
     /// <remarks>
-    /// 回调被拒时把尾部元数据里的错误码作为失败返回。
+    /// 回调被拒时把尾部元数据里的错误码作为失败返回
     /// </remarks>
     private async Task<InvokeResponse> RelayAsync(JsonObject payload, InvocationMetadata? metadata, CancellationToken cancellationToken)
     {
@@ -193,7 +193,7 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     }
 
     /// <summary>
-    /// 当前健康：自报状态与一个始终健康的 <c>echo</c> 项。
+    /// 当前健康：自报状态与一个始终健康的 <c>echo</c> 项
     /// </summary>
     private HealthResponse CurrentHealth() => new()
     {
@@ -202,18 +202,18 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     };
 
     /// <summary>
-    /// 成功状态。
+    /// 成功状态
     /// </summary>
     private static Status Ok() => new() { Ok = true };
 
     /// <summary>
-    /// 成功应答，载荷为 JSON 对象。
+    /// 成功应答，载荷为 JSON 对象
     /// </summary>
     private static InvokeResponse Success(JsonObject payload)
         => new() { Status = Ok(), Payload = ByteString.CopyFrom(Encoding.UTF8.GetBytes(payload.ToJsonString())) };
 
     /// <summary>
-    /// 业务失败：错误码 + 消息键（文案在握手时交给宿主的目录里）。
+    /// 业务失败：错误码 + 消息键（文案在握手时交给宿主的目录里）
     /// </summary>
     private static InvokeResponse Failure(string code, string messageKey)
         => new() { Status = new Status { Ok = false, Error = new Error { Code = code, MessageKey = messageKey } } };

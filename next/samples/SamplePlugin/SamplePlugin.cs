@@ -10,15 +10,15 @@ using XiHan.Framework.Primitives.Manifests;
 namespace SamplePlugin;
 
 /// <summary>
-/// 示例进程内插件：拥有自己的服务容器，启动时解析自己的服务。
+/// 示例进程内插件：拥有自己的服务容器，启动时解析自己的服务
 /// </summary>
 public sealed class SamplePlugin : IPlugin
 {
     /// <summary>
-    /// 清单。
+    /// 清单
     /// </summary>
     /// <remarks>
-    /// 与插件目录里的 <c>xihan.manifest.json</c> 保持一致，宿主会核对两者的 ID；<c>Entry</c> 是入口类型的全名。
+    /// 与插件目录里的 <c>xihan.manifest.json</c> 保持一致，宿主会核对两者的 ID；<c>Entry</c> 是入口类型的全名
     /// </remarks>
     public Manifest Manifest { get; } = new()
     {
@@ -35,7 +35,7 @@ public sealed class SamplePlugin : IPlugin
     };
 
     /// <summary>
-    /// 校验宿主授予的权限后，向插件私有容器注册 <see cref="Greeter"/>。
+    /// 校验宿主授予的权限后，向插件私有容器注册 <see cref="Greeter"/>
     /// </summary>
     public void Configure(PluginContext context)
     {
@@ -49,7 +49,7 @@ public sealed class SamplePlugin : IPlugin
     }
 
     /// <summary>
-    /// 从插件私有容器解析 <see cref="Greeter"/> 并问候宿主一次，证明容器与宿主隔离。
+    /// 从插件私有容器解析 <see cref="Greeter"/> 并问候宿主一次，证明容器与宿主隔离
     /// </summary>
     public Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
@@ -58,7 +58,7 @@ public sealed class SamplePlugin : IPlugin
     }
 
     /// <summary>
-    /// 无需清理，直接完成。
+    /// 无需清理，直接完成
     /// </summary>
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

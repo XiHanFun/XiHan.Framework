@@ -8,10 +8,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.Kafka.Tests;
 
 /// <summary>
-/// 健康项 <c>messaging.kafka.connection</c>。
+/// 健康项 <c>messaging.kafka.connection</c>
 /// </summary>
 /// <remarks>
-/// 选项里的探测间隔解析；真实 Kafka 可用时宿主启动后条目 Ready（未设置 <c>XIHAN_TEST_KAFKA</c> 时跳过）。
+/// 选项里的探测间隔解析；真实 Kafka 可用时宿主启动后条目 Ready（未设置 <c>XIHAN_TEST_KAFKA</c> 时跳过）
 /// </remarks>
 public sealed class KafkaMessagingHealthTests
 {

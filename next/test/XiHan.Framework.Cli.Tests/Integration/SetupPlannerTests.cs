@@ -7,13 +7,13 @@ using XiHan.Framework.Cli.Integration;
 namespace XiHan.Framework.Cli.Tests.Integration;
 
 /// <summary>
-/// setup 的动作规划、合并写入与核对。
+/// setup 的动作规划、合并写入与核对
 /// </summary>
 [Collection("Cli")]
 public sealed class SetupPlannerTests
 {
     /// <summary>
-    /// 测试用的技能原文。
+    /// 测试用的技能原文
     /// </summary>
     private const string Skill = "---\nname: xihan-framework\n---\n\n# skill\n";
 

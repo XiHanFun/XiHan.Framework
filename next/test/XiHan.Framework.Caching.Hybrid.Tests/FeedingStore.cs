@@ -8,30 +8,30 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Hybrid.Tests;
 
 /// <summary>
-/// 会发变更通知的字节存储替身。
+/// 会发变更通知的字节存储替身
 /// </summary>
 /// <remarks>
-/// 读写交给内存存储；<see cref="Raise"/> 模拟别的实例经后端转发来的变更。
+/// 读写交给内存存储；<see cref="Raise"/> 模拟别的实例经后端转发来的变更
 /// </remarks>
 internal sealed class FeedingStore(TimeProvider clock) : ICacheStore, ICacheChangeFeed
 {
     /// <summary>
-    /// 真正保存数据的内存存储。
+    /// 真正保存数据的内存存储
     /// </summary>
     private readonly InMemoryCacheStore _inner = new(new InMemoryCachingOptions(), clock);
 
     /// <summary>
-    /// 当前订阅者。
+    /// 当前订阅者
     /// </summary>
     private readonly List<Action<CacheChange>> _handlers = [];
 
     /// <summary>
-    /// 订阅者数。
+    /// 订阅者数
     /// </summary>
     public int SubscriberCount => _handlers.Count;
 
     /// <summary>
-    /// 把一次变更交给全部订阅者。
+    /// 把一次变更交给全部订阅者
     /// </summary>
     public void Raise(CacheChange change)
     {

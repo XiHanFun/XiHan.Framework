@@ -25,10 +25,10 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库实现自己的行为。
+/// 数据库实现自己的行为
 /// </summary>
 /// <remarks>
-/// 租约锁的接管与超时、选项读取、特性清单与领导权轮询、SQLite 上的计数与分页过滤、批量分批、长 JSON 往返、宿主停止后的不可达。
+/// 租约锁的接管与超时、选项读取、特性清单与领导权轮询、SQLite 上的计数与分页过滤、批量分批、长 JSON 往返、宿主停止后的不可达
 /// </remarks>
 public sealed class DatabaseWorkflowTests
 {
@@ -370,7 +370,7 @@ public sealed class DatabaseWorkflowTests
     }
 
     /// <summary>
-    /// 直接写一行租约，模拟别的节点留下的锁。
+    /// 直接写一行租约，模拟别的节点留下的锁
     /// </summary>
     private static async Task SeedLockAsync(TestHost host, string id, string holder, DateTimeOffset expiresAt)
     {
@@ -378,16 +378,16 @@ public sealed class DatabaseWorkflowTests
     }
 
     /// <summary>
-    /// 按手动时钟构造的实例锁。
+    /// 按手动时钟构造的实例锁
     /// </summary>
     /// <remarks>
-    /// 选项与宿主里登记的相同，只有时钟换掉。
+    /// 选项与宿主里登记的相同，只有时钟换掉
     /// </remarks>
     private static DatabaseWorkflowInstanceLock CreateLock(TestHost host, TimeProvider clock)
         => new(host.Services, host.Services.GetRequiredService<WorkflowOptions>(), host.Services.GetRequiredService<DatabaseWorkflowOptions>(), clock, host.Services.GetRequiredService<ILoggerFactory>());
 
     /// <summary>
-    /// 读租约行的到期时刻。
+    /// 读租约行的到期时刻
     /// </summary>
     private static async Task<DateTimeOffset> ExpiresAtAsync(TestHost host, string id)
     {
@@ -397,10 +397,10 @@ public sealed class DatabaseWorkflowTests
     }
 
     /// <summary>
-    /// 读租约行的持有者。
+    /// 读租约行的持有者
     /// </summary>
     /// <remarks>
-    /// 没有行为 <see langword="null"/>。
+    /// 没有行为 <see langword="null"/>
     /// </remarks>
     private static async Task<string?> HolderAsync(TestHost host, string id)
     {
@@ -410,7 +410,7 @@ public sealed class DatabaseWorkflowTests
     }
 
     /// <summary>
-    /// 与租约步骤一样，在调用之外的新作用域里开可写工作单元读写租约表，执行完提交。
+    /// 与租约步骤一样，在调用之外的新作用域里开可写工作单元读写租约表，执行完提交
     /// </summary>
     private static async Task InLeaseScopeAsync(TestHost host, Func<IRepository<WorkflowLockRecord, string>, Task> action)
     {
@@ -423,7 +423,7 @@ public sealed class DatabaseWorkflowTests
     }
 
     /// <summary>
-    /// 轮询直到条件成立，最多 10 秒。
+    /// 轮询直到条件成立，最多 10 秒
     /// </summary>
     private static async Task WaitUntilAsync(Func<ValueTask<bool>> condition)
     {

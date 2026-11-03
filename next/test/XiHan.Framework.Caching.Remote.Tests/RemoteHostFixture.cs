@@ -7,34 +7,34 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Remote.Tests;
 
 /// <summary>
-/// 一个测试类共用的宿主。
+/// 一个测试类共用的宿主
 /// </summary>
 /// <remarks>
-/// 构建并加载 cache-go 一次，各用例通过 <see cref="Store"/> 取远程存储；没有 go 时让用例跳过。
+/// 构建并加载 cache-go 一次，各用例通过 <see cref="Store"/> 取远程存储；没有 go 时让用例跳过
 /// </remarks>
 public sealed class RemoteHostFixture : IAsyncLifetime
 {
     /// <summary>
-    /// 已启动的宿主。
+    /// 已启动的宿主
     /// </summary>
     /// <remarks>
-    /// 跳过时为空。
+    /// 跳过时为空
     /// </remarks>
     private TestHost? _host;
 
     /// <summary>
-    /// 跳过原因。
+    /// 跳过原因
     /// </summary>
     /// <remarks>
-    /// 为空表示宿主可用。
+    /// 为空表示宿主可用
     /// </remarks>
     private string? _skipReason;
 
     /// <summary>
-    /// 远程存储。
+    /// 远程存储
     /// </summary>
     /// <remarks>
-    /// 本机没有 go 时跳过当前用例。
+    /// 本机没有 go 时跳过当前用例
     /// </remarks>
     public RemoteCacheStore Store
     {

@@ -9,13 +9,13 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 只登记权限码的测试特性。
+/// 只登记权限码的测试特性
 /// </summary>
 /// <remarks>
-/// 与登记操作的特性分开装配，验证权限码在装配完成时核对，而不是登记操作的那一刻。
+/// 与登记操作的特性分开装配，验证权限码在装配完成时核对，而不是登记操作的那一刻
 /// </remarks>
-/// <param name="manifestId">清单 ID。</param>
-/// <param name="codes">登记的权限码。</param>
+/// <param name="manifestId">清单 ID</param>
+/// <param name="codes">登记的权限码</param>
 internal sealed class PermissionsFeature(string manifestId, params string[] codes) : IFeature
 {
     /// <inheritdoc />

@@ -6,7 +6,7 @@ using XiHan.Framework.Cli.Packaging;
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
 /// <summary>
-/// 仓库里提交的示例部署产物必须与其清单一致：重新生成后逐文件比较。
+/// 仓库里提交的示例部署产物必须与其清单一致：重新生成后逐文件比较
 /// </summary>
 public sealed class SampleDeployTests
 {

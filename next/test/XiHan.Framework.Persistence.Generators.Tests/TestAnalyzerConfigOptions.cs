@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace XiHan.Framework.Persistence.Generators.Tests;
 
 /// <summary>
-/// 只提供 <c>build_property.RootNamespace</c> 的分析器选项。
+/// 只提供 <c>build_property.RootNamespace</c> 的分析器选项
 /// </summary>
 internal sealed class TestAnalyzerConfigOptions(string rootNamespace) : AnalyzerConfigOptions
 {

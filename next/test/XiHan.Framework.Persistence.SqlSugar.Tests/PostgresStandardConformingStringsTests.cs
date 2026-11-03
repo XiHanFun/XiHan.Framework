@@ -13,20 +13,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 库的缺省字面量规则是 off 时值照样保留（ADR-0100）。
+/// 库的缺省字面量规则是 off 时值照样保留（ADR-0100）
 /// </summary>
 /// <remarks>
-/// 库的缺省 <c>standard_conforming_strings</c> 是 off 时，批量写入与按主键的读取照样保留反斜杠、单引号与换行。环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过。每个用例一个临时库，建库后 <c>ALTER DATABASE … SET standard_conforming_strings = off</c>，之后的新会话都是 off。SqlSugar 在多行写入、批量更新、按主键删除、<c>In</c> 与集合 <c>Contains</c> 里把字符串内联成 <c>'…'</c> 字面量，只把单引号写成两个：off 下普通字面量里的反斜杠是转义符，<c>x\'y</c> 让语句不合法（42601），<c>a\b</c>、<c>line\n</c> 被静默改成退格与换行，按主键的更新、删除与查找静默漏掉行。约定在 PostgreSQL 连接串的启动参数里写 <c>-c standard_conforming_strings=on</c>，会话从建立起就是 on，库与角色上的缺省值不再起作用。
+/// 库的缺省 <c>standard_conforming_strings</c> 是 off 时，批量写入与按主键的读取照样保留反斜杠、单引号与换行。环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过。每个用例一个临时库，建库后 <c>ALTER DATABASE … SET standard_conforming_strings = off</c>，之后的新会话都是 off。SqlSugar 在多行写入、批量更新、按主键删除、<c>In</c> 与集合 <c>Contains</c> 里把字符串内联成 <c>'…'</c> 字面量，只把单引号写成两个：off 下普通字面量里的反斜杠是转义符，<c>x\'y</c> 让语句不合法（42601），<c>a\b</c>、<c>line\n</c> 被静默改成退格与换行，按主键的更新、删除与查找静默漏掉行。约定在 PostgreSQL 连接串的启动参数里写 <c>-c standard_conforming_strings=on</c>，会话从建立起就是 on，库与角色上的缺省值不再起作用
 /// </remarks>
 public sealed class PostgresStandardConformingStringsTests : IDisposable
 {
     /// <summary>
-    /// 反斜杠。
+    /// 反斜杠
     /// </summary>
     private const string Backslash = "\\";
 
     /// <summary>
-    /// 用例值：反斜杠在各个位置、反斜杠后跟单引号、单引号、真换行、两个反斜杠。
+    /// 用例值：反斜杠在各个位置、反斜杠后跟单引号、单引号、真换行、两个反斜杠
     /// </summary>
     private static readonly string[] _samples =
     [
@@ -42,15 +42,15 @@ public sealed class PostgresStandardConformingStringsTests : IDisposable
     ];
 
     /// <summary>
-    /// 本测试实例独占的临时库。
+    /// 本测试实例独占的临时库
     /// </summary>
     /// <remarks>
-    /// 首次访问时建出并把库的缺省设为 off（未设置环境变量时在此跳过用例）。
+    /// 首次访问时建出并把库的缺省设为 off（未设置环境变量时在此跳过用例）
     /// </remarks>
     private PostgresDatabase? _database;
 
     /// <summary>
-    /// 临时库，按需创建。
+    /// 临时库，按需创建
     /// </summary>
     private PostgresDatabase Database => _database ??= CreateDatabase();
 
@@ -118,12 +118,12 @@ public sealed class PostgresStandardConformingStringsTests : IDisposable
     }
 
     /// <summary>
-    /// 测试结束后删库。
+    /// 测试结束后删库
     /// </summary>
     public void Dispose() => _database?.Dispose();
 
     /// <summary>
-    /// 建临时库，并把它的缺省 <c>standard_conforming_strings</c> 设为 off。
+    /// 建临时库，并把它的缺省 <c>standard_conforming_strings</c> 设为 off
     /// </summary>
     private static PostgresDatabase CreateDatabase()
     {
@@ -134,7 +134,7 @@ public sealed class PostgresStandardConformingStringsTests : IDisposable
     }
 
     /// <summary>
-    /// 启动登记了字符串主键实体的宿主。
+    /// 启动登记了字符串主键实体的宿主
     /// </summary>
     private Task<TestHost> StartAsync()
     {
@@ -146,10 +146,10 @@ public sealed class PostgresStandardConformingStringsTests : IDisposable
     }
 
     /// <summary>
-    /// 在新调用里对仓储执行一次批量操作。
+    /// 在新调用里对仓储执行一次批量操作
     /// </summary>
     /// <remarks>
-    /// 返回逐项结果；有失败项时调用以第一个失败结束。
+    /// 返回逐项结果；有失败项时调用以第一个失败结束
     /// </remarks>
     private static async Task<IReadOnlyList<Result>> RunAsync(TestHost host, Func<IRepository<TextKeyRecord, string>, CancellationToken, Task<IReadOnlyList<Result>>> action)
     {
@@ -163,7 +163,7 @@ public sealed class PostgresStandardConformingStringsTests : IDisposable
     }
 
     /// <summary>
-    /// 在新调用里按主键批量查找。
+    /// 在新调用里按主键批量查找
     /// </summary>
     private static async Task<IReadOnlyList<TextKeyRecord>> FindManyAsync(TestHost host, IReadOnlyList<string> ids)
     {
@@ -173,7 +173,7 @@ public sealed class PostgresStandardConformingStringsTests : IDisposable
     }
 
     /// <summary>
-    /// 在新调用里按主键集合计数（规约里的集合 <c>Contains</c>）。
+    /// 在新调用里按主键集合计数（规约里的集合 <c>Contains</c>）
     /// </summary>
     private static async Task<long> CountAsync(TestHost host, IReadOnlyList<string> ids)
     {
@@ -184,7 +184,7 @@ public sealed class PostgresStandardConformingStringsTests : IDisposable
     }
 
     /// <summary>
-    /// 调用作用域里的仓储。
+    /// 调用作用域里的仓储
     /// </summary>
     private static IRepository<TextKeyRecord, string> Records(InvocationContext context) => context.Services.GetRequiredService<IRepository<TextKeyRecord, string>>();
 }

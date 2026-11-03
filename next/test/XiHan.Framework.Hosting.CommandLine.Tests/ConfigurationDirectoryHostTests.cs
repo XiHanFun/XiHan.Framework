@@ -7,16 +7,16 @@ using XiHan.Framework.Kernel.Hosting;
 namespace XiHan.Framework.Hosting.CommandLine.Tests;
 
 /// <summary>
-/// 挂载配置目录在通用宿主上的位置。
+/// 挂载配置目录在通用宿主上的位置
 /// </summary>
 /// <remarks>
-/// <c>XIHAN_CONFIG_PATH</c> 目录里的文件插在 <c>appsettings.{环境}.json</c> 之后、环境变量之前。用例改进程环境变量（挂载目录与一个配置键），归入不并行的集合。
+/// <c>XIHAN_CONFIG_PATH</c> 目录里的文件插在 <c>appsettings.{环境}.json</c> 之后、环境变量之前。用例改进程环境变量（挂载目录与一个配置键），归入不并行的集合
 /// </remarks>
 [Collection(nameof(ProcessEnvironmentGroup))]
 public sealed class ConfigurationDirectoryHostTests
 {
     /// <summary>
-    /// 用例里环境变量形式的配置键（<c>XiHanMountTest:FromEnvironment</c>）。
+    /// 用例里环境变量形式的配置键（<c>XiHanMountTest:FromEnvironment</c>）
     /// </summary>
     private const string EnvironmentKey = "XiHanMountTest__FromEnvironment";
 

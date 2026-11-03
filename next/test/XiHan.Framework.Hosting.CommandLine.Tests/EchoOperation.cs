@@ -8,10 +8,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.CommandLine.Tests;
 
 /// <summary>
-/// 回显操作。
+/// 回显操作
 /// </summary>
 /// <remarks>
-/// 同一实现登记在多个操作 ID 下；名字为 <c>fail</c> 时返回冲突。
+/// 同一实现登记在多个操作 ID 下；名字为 <c>fail</c> 时返回冲突
 /// </remarks>
 internal sealed class EchoOperation : IOperation<EchoRequest, EchoReply>
 {

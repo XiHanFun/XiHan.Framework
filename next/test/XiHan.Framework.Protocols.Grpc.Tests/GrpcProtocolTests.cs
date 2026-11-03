@@ -23,15 +23,15 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Protocols.Grpc.Tests;
 
 /// <summary>
-/// gRPC 协议适配器端到端。
+/// gRPC 协议适配器端到端
 /// </summary>
 /// <remarks>
-/// 真实的 gRPC 客户端经 TestServer 调用一元方法，请求按线格式手工拼出，响应按 Schema 解码；失败映射、尾部元数据、本地化、按契约授权、<c>.proto</c> 端点、启动校验。
+/// 真实的 gRPC 客户端经 TestServer 调用一元方法，请求按线格式手工拼出，响应按 Schema 解码；失败映射、尾部元数据、本地化、按契约授权、<c>.proto</c> 端点、启动校验
 /// </remarks>
 public sealed class GrpcProtocolTests
 {
     /// <summary>
-    /// 两个主体：alice 是 editor（可读写订单），bob 是 viewer（只读）。
+    /// 两个主体：alice 是 editor（可读写订单），bob 是 viewer（只读）
     /// </summary>
     private static readonly (string Key, string Value)[] _security =
     [
@@ -44,12 +44,12 @@ public sealed class GrpcProtocolTests
     ];
 
     /// <summary>
-    /// 字节数组直通的编组器：测试自己拼线格式。
+    /// 字节数组直通的编组器：测试自己拼线格式
     /// </summary>
     private static readonly Marshaller<byte[]> _bytes = Marshallers.Create<byte[]>(static b => b, static b => b);
 
     /// <summary>
-    /// 启动测试宿主：Minimal 组合（本地化）+ 内存安全 + gRPC 适配器 + 订单特性。
+    /// 启动测试宿主：Minimal 组合（本地化）+ 内存安全 + gRPC 适配器 + 订单特性
     /// </summary>
     private static async Task<(WebApplication App, GrpcChannel Channel, HttpClient Client)> StartAsync(Action<AppBuilder>? extra = null, params (string Key, string Value)[] configuration)
     {
@@ -73,7 +73,7 @@ public sealed class GrpcProtocolTests
     }
 
     /// <summary>
-    /// 发起一元调用。
+    /// 发起一元调用
     /// </summary>
     private static AsyncUnaryCall<byte[]> Call(GrpcChannel channel, string service, string method, byte[] request, params (string Name, string Value)[] headers)
     {
@@ -87,7 +87,7 @@ public sealed class GrpcProtocolTests
     }
 
     /// <summary>
-    /// 按响应 Schema 解码为 JSON 元素。
+    /// 按响应 Schema 解码为 JSON 元素
     /// </summary>
     private static JsonElement Reply(byte[] bytes)
     {

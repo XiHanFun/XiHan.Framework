@@ -7,25 +7,25 @@ using RabbitMQ.Client;
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 
 /// <summary>
-/// 打桩的 <see cref="IConnection"/>。
+/// 打桩的 <see cref="IConnection"/>
 /// </summary>
 /// <remarks>
-/// 以 <see cref="DispatchProxy"/> 生成：每次创建通道得到一个新的 <see cref="FakeRabbitChannel"/> 并记下创建选项；第一个通道是代理的发布通道，之后每个订阅主题一个。
+/// 以 <see cref="DispatchProxy"/> 生成：每次创建通道得到一个新的 <see cref="FakeRabbitChannel"/> 并记下创建选项；第一个通道是代理的发布通道，之后每个订阅主题一个
 /// </remarks>
 public class FakeRabbitConnection : DispatchProxy
 {
     /// <summary>
-    /// 创建过的通道，按顺序。
+    /// 创建过的通道，按顺序
     /// </summary>
     public List<FakeRabbitChannel> Channels { get; } = [];
 
     /// <summary>
-    /// 新通道创建后的配置（如设置确认结果）。
+    /// 新通道创建后的配置（如设置确认结果）
     /// </summary>
     public Action<FakeRabbitChannel>? OnChannel { get; set; }
 
     /// <summary>
-    /// 创建一个打桩连接。
+    /// 创建一个打桩连接
     /// </summary>
     public static (IConnection Connection, FakeRabbitConnection Fake) Create()
     {

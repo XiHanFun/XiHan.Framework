@@ -7,17 +7,17 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 
 /// <summary>
-/// 三类查询：包与能力、配置节、文档。
+/// 三类查询：包与能力、配置节、文档
 /// </summary>
 public sealed class KnowledgeQueriesTests
 {
     /// <summary>
-    /// 知识库。
+    /// 知识库
     /// </summary>
     private static readonly Lazy<FrameworkKnowledge> _knowledge = new(FrameworkKnowledge.Load);
 
     /// <summary>
-    /// 知识库。
+    /// 知识库
     /// </summary>
     private static FrameworkKnowledge Knowledge => _knowledge.Value;
 

@@ -8,12 +8,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Kafka.Tests;
 
 /// <summary>
-/// Kafka 选项：配置优先于绑定、默认值、透传属性与校验。
+/// Kafka 选项：配置优先于绑定、默认值、透传属性与校验
 /// </summary>
 public sealed class KafkaMessagingOptionsTests
 {
     /// <summary>
-    /// 用内存键值对构建配置。
+    /// 用内存键值对构建配置
     /// </summary>
     private static IConfiguration Build(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();

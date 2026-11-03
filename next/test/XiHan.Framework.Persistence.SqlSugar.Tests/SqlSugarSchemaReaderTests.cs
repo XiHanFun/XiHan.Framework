@@ -14,25 +14,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// SqlSugar 的库结构读取与实体目录。
+/// SqlSugar 的库结构读取与实体目录
 /// </summary>
 /// <remarks>
-/// SQLite 上的列属性与限制（没有注释、主键归一为不可空、长度与精度取自声明）、分表折叠、实体目录的表名与索引、运行时数据源读外部库与读取失败；PostgreSQL 上的注释、identity、serial 缺省值与大小写混合的表名（<c>XIHAN_TEST_POSTGRES</c>）；MySQL、Oracle、SQL Server 上的类型名、长度只给字符与二进制类型、精度与小数位、主键、自增、注释、缺省值、大小写混合的表名、分表折叠与分页总数（<c>XIHAN_TEST_MYSQL</c>、<c>XIHAN_TEST_ORACLE</c>、<c>XIHAN_TEST_SQLSERVER</c>）。
+/// SQLite 上的列属性与限制（没有注释、主键归一为不可空、长度与精度取自声明）、分表折叠、实体目录的表名与索引、运行时数据源读外部库与读取失败；PostgreSQL 上的注释、identity、serial 缺省值与大小写混合的表名（<c>XIHAN_TEST_POSTGRES</c>）；MySQL、Oracle、SQL Server 上的类型名、长度只给字符与二进制类型、精度与小数位、主键、自增、注释、缺省值、大小写混合的表名、分表折叠与分页总数（<c>XIHAN_TEST_MYSQL</c>、<c>XIHAN_TEST_ORACLE</c>、<c>XIHAN_TEST_SQLSERVER</c>）
 /// </remarks>
 public sealed class SqlSugarSchemaReaderTests : IDisposable
 {
     /// <summary>
-    /// 应用自己的库。
+    /// 应用自己的库
     /// </summary>
     private readonly SqliteDatabase _application = new();
 
     /// <summary>
-    /// 作为外部库的另一个 SQLite 文件。
+    /// 作为外部库的另一个 SQLite 文件
     /// </summary>
     private readonly SqliteDatabase _external = new();
 
     /// <summary>
-    /// 测试结束后删除两个临时库。
+    /// 测试结束后删除两个临时库
     /// </summary>
     public void Dispose()
     {
@@ -296,10 +296,10 @@ public sealed class SqlSugarSchemaReaderTests : IDisposable
     }
 
     /// <summary>
-    /// 核对大小写混合的表与折叠后的分表。
+    /// 核对大小写混合的表与折叠后的分表
     /// </summary>
     /// <remarks>
-    /// <paramref name="batch"/> 依次是项目表、大小写混合的表、分表的逻辑名；分表的列取最新的物理表（多一列 <paramref name="extra"/>）。
+    /// <paramref name="batch"/> 依次是项目表、大小写混合的表、分表的逻辑名；分表的列取最新的物理表（多一列 <paramref name="extra"/>）
     /// </remarks>
     private static void AssertLegacyAndSplit(IReadOnlyList<Result<TableSchema>> batch, string legacy, string title, string extra)
     {
@@ -316,10 +316,10 @@ public sealed class SqlSugarSchemaReaderTests : IDisposable
     }
 
     /// <summary>
-    /// 核对表列表的排序、分页总数与按注释的关键字。
+    /// 核对表列表的排序、分页总数与按注释的关键字
     /// </summary>
     /// <remarks>
-    /// <paramref name="names"/> 是库里按名字（不区分大小写）排好的全部表，分表已折叠。
+    /// <paramref name="names"/> 是库里按名字（不区分大小写）排好的全部表，分表已折叠
     /// </remarks>
     private static async Task AssertPagingAsync(TestHost host, DataSourceDefinition definition, string[] names, string commentKeyword)
     {
@@ -334,7 +334,7 @@ public sealed class SqlSugarSchemaReaderTests : IDisposable
     }
 
     /// <summary>
-    /// 启动以应用库装配的宿主，可再登记实体。
+    /// 启动以应用库装配的宿主，可再登记实体
     /// </summary>
     private Task<TestHost> StartHostAsync(Action<IServiceCollection>? configure = null) => TestHost.StartAsync(
         static builder => builder.UseFeature(SqliteDatabase.CreateFeature()),
@@ -346,17 +346,17 @@ public sealed class SqlSugarSchemaReaderTests : IDisposable
         });
 
     /// <summary>
-    /// 取库结构读取器。
+    /// 取库结构读取器
     /// </summary>
     private static ISchemaReader Reader(TestHost host) => host.Services.GetRequiredService<ISchemaReader>();
 
     /// <summary>
-    /// 取实体目录。
+    /// 取实体目录
     /// </summary>
     private static IEntityCatalog Catalog(TestHost host) => host.Services.GetRequiredService<IEntityCatalog>();
 
     /// <summary>
-    /// 在应用库上执行一条语句（独立作用域，不经管道）。
+    /// 在应用库上执行一条语句（独立作用域，不经管道）
     /// </summary>
     private static async Task ExecuteAsync(TestHost host, string sql)
     {
@@ -365,7 +365,7 @@ public sealed class SqlSugarSchemaReaderTests : IDisposable
     }
 
     /// <summary>
-    /// 经仓储写入一条分表记录。
+    /// 经仓储写入一条分表记录
     /// </summary>
     private static async Task AddAsync(TestHost host, SplitTableRecord record)
         => (await host.InvokeAsync(async context => context.SetOutcome(await context.Services.GetRequiredService<IRepository<SplitTableRecord, Guid>>().AddAsync(record, context.CancellationToken)))).ThrowIfFailure();

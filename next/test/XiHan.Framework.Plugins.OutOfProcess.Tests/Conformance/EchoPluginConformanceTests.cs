@@ -7,7 +7,7 @@ using XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Conformance;
 
 /// <summary>
-/// 示例插件 EchoPlugin 跑协议一致性套件。
+/// 示例插件 EchoPlugin 跑协议一致性套件
 /// </summary>
 public sealed class EchoPluginConformanceTests : PluginProtocolConformance
 {

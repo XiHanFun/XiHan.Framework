@@ -14,30 +14,30 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 命名连接（RFC-0005「命名连接」，ADR-0084）。
+/// 命名连接（RFC-0005「命名连接」，ADR-0084）
 /// </summary>
 /// <remarks>
-/// 方式一在 <c>XiHan:Persistence:SqlSugar:Connections</c> 声明的连接进每个作用域的客户端、回调按 <c>ConfigId</c> 区分；登记到命名连接的实体在那个库建表与读写；绑定连接的工作单元只在它上面开事务——SQLite 上业务事务占着默认库的写锁时照样能提交；落点错误与配置错误在启动或开始时报出。
+/// 方式一在 <c>XiHan:Persistence:SqlSugar:Connections</c> 声明的连接进每个作用域的客户端、回调按 <c>ConfigId</c> 区分；登记到命名连接的实体在那个库建表与读写；绑定连接的工作单元只在它上面开事务——SQLite 上业务事务占着默认库的写锁时照样能提交；落点错误与配置错误在启动或开始时报出
 /// </remarks>
 public sealed class SqlSugarNamedConnectionTests : IDisposable
 {
     /// <summary>
-    /// 命名连接的名字。
+    /// 命名连接的名字
     /// </summary>
     private const string Leases = "leases";
 
     /// <summary>
-    /// 应用默认库。
+    /// 应用默认库
     /// </summary>
     private readonly SqliteDatabase _default = new();
 
     /// <summary>
-    /// 命名连接 <see cref="Leases"/> 的库。
+    /// 命名连接 <see cref="Leases"/> 的库
     /// </summary>
     private readonly SqliteDatabase _named = new();
 
     /// <summary>
-    /// 清空宿主所用连接串的连接池，再删除两个临时数据库文件。
+    /// 清空宿主所用连接串的连接池，再删除两个临时数据库文件
     /// </summary>
     public void Dispose()
     {
@@ -182,11 +182,11 @@ public sealed class SqlSugarNamedConnectionTests : IDisposable
     }
 
     /// <summary>
-    /// 启动方式一的宿主，带命名连接 <see cref="Leases"/>。
+    /// 启动方式一的宿主，带命名连接 <see cref="Leases"/>
     /// </summary>
     /// <remarks>
-    /// 订单落默认连接，条目登记到命名连接，开启建表。
-    /// 两个库的连接串都把忙等上限设为 2 秒：误把两个写者放进同一个库时尽快失败。<paramref name="seen"/> 不为空时记下回调看到的 <c>ConfigId</c>、绑定主值与 <c>provider</c> 属性。
+    /// 订单落默认连接，条目登记到命名连接，开启建表
+    /// 两个库的连接串都把忙等上限设为 2 秒：误把两个写者放进同一个库时尽快失败。<paramref name="seen"/> 不为空时记下回调看到的 <c>ConfigId</c>、绑定主值与 <c>provider</c> 属性
     /// </remarks>
     private Task<TestHost> StartHostAsync(List<(string ConfigId, string? Value, string? Provider)>? seen = null) => TestHost.StartAsync(
         builder => builder.UseFeature(new SqlSugarPersistenceFeature((binding, config) =>
@@ -210,24 +210,24 @@ public sealed class SqlSugarNamedConnectionTests : IDisposable
         });
 
     /// <summary>
-    /// 带 2 秒忙等上限的连接串。
+    /// 带 2 秒忙等上限的连接串
     /// </summary>
     private static string Busy(SqliteDatabase database) => database.ConnectionString + ";Default Timeout=2";
 
     /// <summary>
-    /// 创建指向给定连接串、已施加约定的独立客户端。
+    /// 创建指向给定连接串、已施加约定的独立客户端
     /// </summary>
     private static SqlSugarClient CreateClient(string connectionString)
         => new(SqlSugarConventions.Apply(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = connectionString, IsAutoCloseConnection = true }));
 
     /// <summary>
-    /// 异常链上的全部框架错误码。
+    /// 异常链上的全部框架错误码
     /// </summary>
     private static List<string> Codes(Exception exception)
         => [.. Chain(exception).OfType<FrameworkException>().Select(static framework => framework.Code)];
 
     /// <summary>
-    /// 异常与它的内层异常。
+    /// 异常与它的内层异常
     /// </summary>
     private static IEnumerable<Exception> Chain(Exception? exception)
     {

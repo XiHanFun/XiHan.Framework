@@ -4,7 +4,7 @@
 using EchoPlugin;
 
 // 进程外插件示例（RFC-0017）：以 gRPC 服务端实现 xihan.plugin.v1.Plugin，向 stdout 写一行握手行公布端点，
-// 日志只走 stderr，stdin 关闭时自行退出。只依赖 protobuf 与 gRPC，不引用任何 XiHan 包。
+// 日志只走 stderr，stdin 关闭时自行退出。只依赖 protobuf 与 gRPC，不引用任何 XiHan 包
 var endpoint = PluginListener.Create();
 var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions { Args = args, ApplicationName = "EchoPlugin" });
 builder.WebHost.UseKestrelCore();

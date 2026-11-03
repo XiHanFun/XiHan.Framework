@@ -7,7 +7,7 @@ using XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 namespace XiHan.Framework.AI.OpenAI.Tests;
 
 /// <summary>
-/// OpenAI Provider 对着仿真端点通过 Provider 目录套件。
+/// OpenAI Provider 对着仿真端点通过 Provider 目录套件
 /// </summary>
 public sealed class OpenAIProviderConformanceTests : AIProviderConformance
 {

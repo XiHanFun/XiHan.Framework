@@ -9,10 +9,10 @@ using XiHan.Framework.ObjectStorage.Conformance;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 让 <see cref="S3BlobStore"/> 对真实的 S3 兼容服务跑完整套 <see cref="BlobStoreConformance"/> 用例。
+/// 让 <see cref="S3BlobStore"/> 对真实的 S3 兼容服务跑完整套 <see cref="BlobStoreConformance"/> 用例
 /// </summary>
 /// <remarks>
-/// 未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// 未设置 <c>XIHAN_TEST_S3</c> 时跳过
 /// </remarks>
 public sealed class S3BlobStoreConformanceTests : BlobStoreConformance
 {
@@ -21,7 +21,7 @@ public sealed class S3BlobStoreConformanceTests : BlobStoreConformance
 
     /// <inheritdoc />
     /// <remarks>
-    /// 经共享客户端直接写对象（与条件写入探测写探测键的方式相同）。
+    /// 经共享客户端直接写对象（与条件写入探测写探测键的方式相同）
     /// </remarks>
     protected override async Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content)
     {

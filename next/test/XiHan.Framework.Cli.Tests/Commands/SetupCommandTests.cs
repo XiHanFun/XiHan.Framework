@@ -11,16 +11,16 @@ using XiHan.Framework.Hosting.CommandLine;
 namespace XiHan.Framework.Cli.Tests.Commands;
 
 /// <summary>
-/// <c>xihan setup</c> 端到端：写入、幂等、试运行、核对与失败的退出码。
+/// <c>xihan setup</c> 端到端：写入、幂等、试运行、核对与失败的退出码
 /// </summary>
 /// <remarks>
-/// 与 <see cref="CliHostTests"/> 同一集合：执行命令会设置进程级的默认消息作用域。
+/// 与 <see cref="CliHostTests"/> 同一集合：执行命令会设置进程级的默认消息作用域
 /// </remarks>
 [Collection("Cli")]
 public sealed class SetupCommandTests
 {
     /// <summary>
-    /// 执行一条命令行，返回退出码与两路输出（统一 LF）。
+    /// 执行一条命令行，返回退出码与两路输出（统一 LF）
     /// </summary>
     private static async Task<(int Exit, string Output, string Error)> RunAsync(params string[] args)
     {
@@ -31,7 +31,7 @@ public sealed class SetupCommandTests
     }
 
     /// <summary>
-    /// 读 stderr 第一行的错误码。
+    /// 读 stderr 第一行的错误码
     /// </summary>
     private static string CodeOf(string error)
     {

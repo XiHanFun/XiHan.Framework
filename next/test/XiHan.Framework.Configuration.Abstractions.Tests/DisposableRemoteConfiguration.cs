@@ -7,15 +7,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 记录是否被释放的远程配置客户端。
+/// 记录是否被释放的远程配置客户端
 /// </summary>
 /// <remarks>
-/// 总是返回同一份文档（<c>Greeting = hello</c>，版本 <c>1</c>）；释放之后取值抛出 <see cref="ObjectDisposedException"/>，与持有连接的真实客户端一样。
+/// 总是返回同一份文档（<c>Greeting = hello</c>，版本 <c>1</c>）；释放之后取值抛出 <see cref="ObjectDisposedException"/>，与持有连接的真实客户端一样
 /// </remarks>
 internal sealed class DisposableRemoteConfiguration : IRemoteConfigurationClient, IDisposable
 {
     /// <summary>
-    /// 是否已释放。
+    /// 是否已释放
     /// </summary>
     public bool Disposed { get; private set; }
 

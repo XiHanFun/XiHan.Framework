@@ -8,10 +8,10 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.Redis.Tests;
 
 /// <summary>
-/// Redis 存储的变更通知。
+/// Redis 存储的变更通知
 /// </summary>
 /// <remarks>
-/// 两个连接模拟两个实例：本实例同步收到、别的实例经频道收到、不回送给发出者、按前缀删除带前缀；没有真实 Redis 时跳过。
+/// 两个连接模拟两个实例：本实例同步收到、别的实例经频道收到、不回送给发出者、按前缀删除带前缀；没有真实 Redis 时跳过
 /// </remarks>
 public sealed class RedisChangeFeedTests
 {
@@ -77,10 +77,10 @@ public sealed class RedisChangeFeedTests
     }
 
     /// <summary>
-    /// 等到队列里至少有指定条数。
+    /// 等到队列里至少有指定条数
     /// </summary>
     /// <remarks>
-    /// 五秒内没等到即失败。
+    /// 五秒内没等到即失败
     /// </remarks>
     private static async Task WaitForCountAsync(ConcurrentQueue<CacheChange> changes, int count)
     {

@@ -1,13 +1,13 @@
 <#
 .SYNOPSIS
-    按 PublicAPI 分析器的诊断同步 PublicAPI.Unshipped.txt：RS0016 的符号追加，RS0017 的符号移除。
+    按 PublicAPI 分析器的诊断同步 PublicAPI.Unshipped.txt：RS0016 的符号追加，RS0017 的符号移除
 
 .DESCRIPTION
-    以英文界面语言构建指定项目（Release，不还原），解析 RS0016 / RS0017 诊断中的符号签名，写回项目目录下的 PublicAPI.Unshipped.txt。
-    已发布文件 PublicAPI.Shipped.txt 永不修改；若 RS0017 指向已发布符号，脚本失败，因为那是破坏性变更。
+    以英文界面语言构建指定项目（Release，不还原），解析 RS0016 / RS0017 诊断中的符号签名，写回项目目录下的 PublicAPI.Unshipped.txt
+    已发布文件 PublicAPI.Shipped.txt 永不修改；若 RS0017 指向已发布符号，脚本失败，因为那是破坏性变更
 
 .PARAMETER Project
-    项目文件路径。
+    项目文件路径
 
 .EXAMPLE
     pwsh -File next/scripts/Sync-PublicApi.ps1 -Project next/src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj

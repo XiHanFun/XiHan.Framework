@@ -7,7 +7,7 @@ using XiHan.Framework.Persistence.Abstractions.Identifiers;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="SnowflakeOptions"/>：缺省值、逐键读取、非法值拒绝。
+/// <see cref="SnowflakeOptions"/>：缺省值、逐键读取、非法值拒绝
 /// </summary>
 public sealed class SnowflakeOptionsTests
 {
@@ -63,7 +63,7 @@ public sealed class SnowflakeOptionsTests
     }
 
     /// <summary>
-    /// 在雪花配置节下写入若干键。
+    /// 在雪花配置节下写入若干键
     /// </summary>
     private static IConfiguration Build(params (string Key, string Value)[] entries) =>
         new ConfigurationBuilder()

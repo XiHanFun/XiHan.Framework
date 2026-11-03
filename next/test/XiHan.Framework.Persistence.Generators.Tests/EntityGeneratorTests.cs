@@ -12,15 +12,15 @@ using XiHan.Framework.Persistence.EntityFrameworkCore;
 namespace XiHan.Framework.Persistence.Generators.Tests;
 
 /// <summary>
-/// 持久化生成器：仓储登记、EF Core 实体登记、过滤规约与诊断。
+/// 持久化生成器：仓储登记、EF Core 实体登记、过滤规约与诊断
 /// </summary>
 public sealed class EntityGeneratorTests
 {
     /// <summary>
-    /// 四个实体。
+    /// 四个实体
     /// </summary>
     /// <remarks>
-    /// 聚合根（软删除 + 多租户）、内部实体（int 键）、只软删除的实体、被跳过的抽象类。
+    /// 聚合根（软删除 + 多租户）、内部实体（int 键）、只软删除的实体、被跳过的抽象类
     /// </remarks>
     private const string Source = """
         using System;
@@ -63,10 +63,10 @@ public sealed class EntityGeneratorTests
         """;
 
     /// <summary>
-    /// 运行生成器并把生成的代码编回编译。
+    /// 运行生成器并把生成的代码编回编译
     /// </summary>
     /// <remarks>
-    /// 返回编译错误、生成器诊断与生成的源文本。
+    /// 返回编译错误、生成器诊断与生成的源文本
     /// </remarks>
     private static (ImmutableArray<Diagnostic> Compile, ImmutableArray<Diagnostic> Generator, string Generated) Run(string source, bool withEntityFrameworkCore)
     {

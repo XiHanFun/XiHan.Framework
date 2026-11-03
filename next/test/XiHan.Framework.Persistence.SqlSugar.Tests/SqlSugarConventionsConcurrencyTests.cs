@@ -10,11 +10,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 并发首次建实体映射时约定的线程安全。
+/// 并发首次建实体映射时约定的线程安全
 /// </summary>
 /// <remarks>
 /// 多个客户端会并发地首次建实体映射（并行的请求、并行的测试），约定判定可空引用列用的上下文是共用的；
-/// 不加锁时它的内部字典被并发写坏，建映射抛出“已添加了具有相同键的项”，启动或第一次查询随之失败。
+/// 不加锁时它的内部字典被并发写坏，建映射抛出“已添加了具有相同键的项”，启动或第一次查询随之失败
 /// </remarks>
 public sealed class SqlSugarConventionsConcurrencyTests
 {

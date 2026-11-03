@@ -17,10 +17,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.Abstractions.Tests.Tools;
 
 /// <summary>
-/// 工具目录。
+/// 工具目录
 /// </summary>
 /// <remarks>
-/// 操作桥接的声明与名字、描述按区域、显式工具、绑定后经完整管道执行、名字冲突启动失败。
+/// 操作桥接的声明与名字、描述按区域、显式工具、绑定后经完整管道执行、名字冲突启动失败
 /// </remarks>
 public sealed class AIToolCatalogTests
 {
@@ -126,7 +126,7 @@ public sealed class AIToolCatalogTests
     }
 
     /// <summary>
-    /// 启动失败链里第一个 AI 错误（宿主把特性启动失败包成 KERNEL_HOSTING 错误）。
+    /// 启动失败链里第一个 AI 错误（宿主把特性启动失败包成 KERNEL_HOSTING 错误）
     /// </summary>
     private static FrameworkException AIFailure(Exception exception)
     {
@@ -142,7 +142,7 @@ public sealed class AIToolCatalogTests
     }
 
     /// <summary>
-    /// 启动：本地化 + 工具目录 + 回显操作 + 一个显式工具，并登记描述目录。
+    /// 启动：本地化 + 工具目录 + 回显操作 + 一个显式工具，并登记描述目录
     /// </summary>
     private static Task<TestHost> StartAsync(params (string Key, string Value)[] configuration)
         => TestHost.StartAsync(

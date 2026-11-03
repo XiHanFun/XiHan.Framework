@@ -8,10 +8,10 @@ using XiHan.Framework.Persistence.Abstractions;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// 软删除实体的唯一索引。
+/// 软删除实体的唯一索引
 /// </summary>
 /// <remarks>
-/// 只声明了编码，删除标记由约定加在末尾。
+/// 只声明了编码，删除标记由约定加在末尾
 /// </remarks>
 [EntityIndex(nameof(Code), IsUnique = true)]
 public sealed class SoftDeletedIndexedRow : IEntity<Guid>, ISoftDeletable
@@ -20,7 +20,7 @@ public sealed class SoftDeletedIndexedRow : IEntity<Guid>, ISoftDeletable
     public Guid Id { get; set; }
 
     /// <summary>
-    /// 编码。
+    /// 编码
     /// </summary>
     [StringLength(64)]
     public string Code { get; set; } = string.Empty;

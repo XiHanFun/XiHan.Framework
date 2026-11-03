@@ -4,18 +4,18 @@
 namespace XiHan.Framework.Cli.Tests.Integration;
 
 /// <summary>
-/// 临时目录里的一个项目：git 根、中央包管理与一个子项目。
+/// 临时目录里的一个项目：git 根、中央包管理与一个子项目
 /// </summary>
 /// <remarks>
-/// 释放时删除目录。
+/// 释放时删除目录
 /// </remarks>
 internal sealed class ProjectFixture : IDisposable
 {
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     /// <remarks>
-    /// <paramref name="frameworkVersion"/> 为空时不引用框架包。
+    /// <paramref name="frameworkVersion"/> 为空时不引用框架包
     /// </remarks>
     public ProjectFixture(string? frameworkVersion)
     {
@@ -38,12 +38,12 @@ internal sealed class ProjectFixture : IDisposable
     }
 
     /// <summary>
-    /// 项目根。
+    /// 项目根
     /// </summary>
     public string Root { get; }
 
     /// <summary>
-    /// 根下的子项目目录。
+    /// 根下的子项目目录
     /// </summary>
     public string ProjectDirectory => Path.Combine(Root, "src", "Orders");
 

@@ -7,10 +7,10 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 装了发件箱的宿主上，内存工作流特性照样通过用户任务与外部任务套件。
+/// 装了发件箱的宿主上，内存工作流特性照样通过用户任务与外部任务套件
 /// </summary>
 /// <remarks>
-/// 见 <see cref="InMemoryWorkflowEngineConformanceWithOutboxTests"/>。
+/// 见 <see cref="InMemoryWorkflowEngineConformanceWithOutboxTests"/>
 /// </remarks>
 public sealed class InMemoryWorkflowTaskConformanceWithOutboxTests : WorkflowTaskConformance
 {

@@ -7,15 +7,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 固定几个启用租户的租户目录。
+/// 固定几个启用租户的租户目录
 /// </summary>
 /// <remarks>
-/// 轮询器从它取分区：平台之外每个租户一个分区。
+/// 轮询器从它取分区：平台之外每个租户一个分区
 /// </remarks>
 internal sealed class FixedTenants(params string[] ids) : ITenantStore
 {
     /// <summary>
-    /// 全部租户。
+    /// 全部租户
     /// </summary>
     private readonly IReadOnlyList<TenantInfo> _tenants = [.. ids.Select(static id => new TenantInfo { Id = id })];
 

@@ -7,15 +7,15 @@ using System.Xml.Linq;
 namespace XiHan.Framework.Kernel.Analyzers.Tests;
 
 /// <summary>
-/// 分析器包随带的 MSBuild 资产。
+/// 分析器包随带的 MSBuild 资产
 /// </summary>
 /// <remarks>
-/// 规则范围靠 <c>build_property.*</c> 读 MSBuild 属性，属性必须先声明为 <c>CompilerVisibleProperty</c>：包的使用者不该自己补声明，所以包里要带一份 <c>buildTransitive</c> props，且与分析器实际读取的属性、仓库内的声明保持一致。
+/// 规则范围靠 <c>build_property.*</c> 读 MSBuild 属性，属性必须先声明为 <c>CompilerVisibleProperty</c>：包的使用者不该自己补声明，所以包里要带一份 <c>buildTransitive</c> props，且与分析器实际读取的属性、仓库内的声明保持一致
 /// </remarks>
 public sealed partial class PackageAssetTests
 {
     /// <summary>
-    /// 包 ID，也是 props 的文件名。
+    /// 包 ID，也是 props 的文件名
     /// </summary>
     private const string PackageId = "XiHan.Framework.Kernel.Analyzers";
 
@@ -57,13 +57,13 @@ public sealed partial class PackageAssetTests
     }
 
     /// <summary>
-    /// 一份 MSBuild 文件声明的 <c>CompilerVisibleProperty</c>。
+    /// 一份 MSBuild 文件声明的 <c>CompilerVisibleProperty</c>
     /// </summary>
     private static List<string> CompilerVisibleProperties(string path)
         => XDocument.Load(path).Descendants("CompilerVisibleProperty").Select(static item => (string)item.Attribute("Include")!).ToList();
 
     /// <summary>
-    /// 从测试输出目录向上找 <c>next/</c>（含解决方案文件的目录）。
+    /// 从测试输出目录向上找 <c>next/</c>（含解决方案文件的目录）
     /// </summary>
     private static string FindNextRoot()
     {
@@ -77,7 +77,7 @@ public sealed partial class PackageAssetTests
     }
 
     /// <summary>
-    /// 分析器源码里读取的 <c>build_property.&lt;名字&gt;</c>。
+    /// 分析器源码里读取的 <c>build_property.&lt;名字&gt;</c>
     /// </summary>
     [GeneratedRegex("\"build_property\\.(?<name>[A-Za-z0-9_]+)\"")]
     private static partial Regex BuildProperty();

@@ -16,20 +16,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
 /// <summary>
-/// 卸载按归属撤回插件的登记，之后可以直接再加载。
+/// 卸载按归属撤回插件的登记，之后可以直接再加载
 /// </summary>
 /// <remarks>
-/// 撤回的是代理操作、清单声明的权限码（<c>spec/plugin/invocation.md</c> §1，ADR-0085）与贡献的中间件（<c>spec/plugin/wasm.md</c> §6，ADR-0088）。
+/// 撤回的是代理操作、清单声明的权限码（<c>spec/plugin/invocation.md</c> §1，ADR-0085）与贡献的中间件（<c>spec/plugin/wasm.md</c> §6，ADR-0088）
 /// </remarks>
 public sealed class WasmPluginUnloadTests
 {
     /// <summary>
-    /// 示例插件的中间件在打印的管道里的写法。
+    /// 示例插件的中间件在打印的管道里的写法
     /// </summary>
     private const string Guard = "WasmMiddleware[xihan.samples.echowasm:echo-guard]";
 
     /// <summary>
-    /// 示例插件的中间件拦下租户 <c>blocked</c> 时的错误码。
+    /// 示例插件的中间件拦下租户 <c>blocked</c> 时的错误码
     /// </summary>
     private const string Denied = "ECHOWASM_DENIED_001";
 
@@ -186,18 +186,18 @@ public sealed class WasmPluginUnloadTests
     }
 
     /// <summary>
-    /// 运行期加载示例插件的来源（授予回调权限）。
+    /// 运行期加载示例插件的来源（授予回调权限）
     /// </summary>
     private static PluginSource EchoSource => new(EchoWasmPluginHost.Directory, new PermissionGrant([WasmHostFunctions.PipelinePermission]));
 
     /// <summary>
-    /// 以给定租户经完整管道调用宿主侧操作 <c>pings.create</c>。
+    /// 以给定租户经完整管道调用宿主侧操作 <c>pings.create</c>
     /// </summary>
     private static async Task<Result> PingAsync(TestHost host, string tenant)
         => (await EchoWasmPluginHost.InvokeAsync(host, "pings.create", """{"name":"ping"}""", new Dictionary<string, string> { [BaggageKeys.Tenant] = tenant })).Outcome;
 
     /// <summary>
-    /// 登记宿主侧操作 <c>pings.create</c> 的桩特性。
+    /// 登记宿主侧操作 <c>pings.create</c> 的桩特性
     /// </summary>
     private static StubFeature PingFeature() => new(TestManifests.Create("xihan.app.pings"))
     {

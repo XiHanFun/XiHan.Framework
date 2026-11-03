@@ -13,12 +13,12 @@ using XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 namespace XiHan.Framework.Security.Abstractions.Tests.Authorization;
 
 /// <summary>
-/// 权限检查器、策略目录与授权中间件的契约测试。
+/// 权限检查器、策略目录与授权中间件的契约测试
 /// </summary>
 public sealed class AuthorizationTests
 {
     /// <summary>
-    /// 测试用授予：角色授予、通配授予、用户全局授予与租户专属授予。
+    /// 测试用授予：角色授予、通配授予、用户全局授予与租户专属授予
     /// </summary>
     private static readonly PermissionGrant[] _grants =
     [
@@ -29,7 +29,7 @@ public sealed class AuthorizationTests
     ];
 
     /// <summary>
-    /// 记录是否到达下游的终端步骤。
+    /// 记录是否到达下游的终端步骤
     /// </summary>
     private static PipelineStep Handler(bool[] reached) => _ =>
     {
@@ -38,7 +38,7 @@ public sealed class AuthorizationTests
     };
 
     /// <summary>
-    /// 构造带策略目录的服务：已认证策略、可选的额外策略，权限登记表只含 <c>orders.read</c>。
+    /// 构造带策略目录的服务：已认证策略、可选的额外策略，权限登记表只含 <c>orders.read</c>
     /// </summary>
     private static IServiceProvider Services(IPolicy? extra = null, IPermissionGrantStore? store = null)
     {
@@ -394,7 +394,7 @@ public sealed class AuthorizationTests
     }
 
     /// <summary>
-    /// 把判定委托给回调的策略，用于观察中间件传入的请求。
+    /// 把判定委托给回调的策略，用于观察中间件传入的请求
     /// </summary>
     private sealed class RecordingPolicy(string name, Func<AuthorizationRequest, Result<AuthorizationResult>> evaluate) : IPolicy
     {
@@ -406,7 +406,7 @@ public sealed class AuthorizationTests
     }
 
     /// <summary>
-    /// 带指定契约的操作描述。
+    /// 带指定契约的操作描述
     /// </summary>
     private static OperationDescriptor<NoopOperation, NoopRequest, NoopResponse> Describe(OperationContract contract, string owner = "xihan.test.security")
         => new(contract, owner, NoopJsonContext.Default.NoopRequest, NoopJsonContext.Default.NoopResponse);

@@ -10,7 +10,7 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 
 /// <summary>
-/// 一个暴露给 AI 的回显操作 <c>echoes.create</c>。
+/// 一个暴露给 AI 的回显操作 <c>echoes.create</c>
 /// </summary>
 internal sealed class EchoFeature : IFeature
 {

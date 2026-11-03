@@ -7,10 +7,10 @@ using XiHan.Framework.Messaging.Conformance;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 内存代理跑一致性套件。
+/// 内存代理跑一致性套件
 /// </summary>
 /// <remarks>
-/// 内存代理每个宿主各有一个进程内代理，两个宿主不共用，多实例用例跳过。
+/// 内存代理每个宿主各有一个进程内代理，两个宿主不共用，多实例用例跳过
 /// </remarks>
 public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConformance
 {

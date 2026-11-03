@@ -7,23 +7,23 @@ using XiHan.Framework.Kernel.Hosting;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// PostgreSQL 上字符串按字面匹配。
+/// PostgreSQL 上字符串按字面匹配
 /// </summary>
 /// <remarks>
-/// 环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过。每个用例一个临时库。PostgreSQL 的 <c>LIKE</c> 区分大小写，缺省以反斜杠转义——约定写明 <c>ESCAPE '!'</c>，反斜杠按字面。
+/// 环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过。每个用例一个临时库。PostgreSQL 的 <c>LIKE</c> 区分大小写，缺省以反斜杠转义——约定写明 <c>ESCAPE '!'</c>，反斜杠按字面
 /// </remarks>
 public sealed class PostgresLiteralMatchingTests : SqlSugarLiteralMatchingTests, IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时库。
+    /// 本测试实例独占的临时库
     /// </summary>
     /// <remarks>
-    /// 首次访问时建出（未设置环境变量时在此跳过用例）。
+    /// 首次访问时建出（未设置环境变量时在此跳过用例）
     /// </remarks>
     private PostgresDatabase? _database;
 
     /// <summary>
-    /// 临时库，按需创建。
+    /// 临时库，按需创建
     /// </summary>
     private PostgresDatabase Database => _database ??= PostgresTestServer.CreateDatabase();
 
@@ -43,7 +43,7 @@ public sealed class PostgresLiteralMatchingTests : SqlSugarLiteralMatchingTests,
     [Fact]
     public async Task StandardConformingStringsOff_StillMatchesLiterally()
     {
-        // standard_conforming_strings = off 时普通字符串字面量里的反斜杠是转义符：约定生成的 SQL 里没有反斜杠，结果与缺省设置相同。
+        // standard_conforming_strings = off 时普通字符串字面量里的反斜杠是转义符：约定生成的 SQL 里没有反斜杠，结果与缺省设置相同
         // 建表与写入在缺省设置下做：SqlSugar 的多行写入把值内联成字符串字面量、不转义反斜杠，off 下含反斜杠的值让写入的 SQL 不合法（与查询的翻译无关）；
         // 约定的启动参数（ADR-0100）只定会话的初值，这里会话里自己 SET 的 off 不在它的覆盖之内；
         // 会话里切换设置后在同一连接上查询
@@ -70,7 +70,7 @@ public sealed class PostgresLiteralMatchingTests : SqlSugarLiteralMatchingTests,
     }
 
     /// <summary>
-    /// 测试结束后删库。
+    /// 测试结束后删库
     /// </summary>
     public void Dispose() => _database?.Dispose();
 }

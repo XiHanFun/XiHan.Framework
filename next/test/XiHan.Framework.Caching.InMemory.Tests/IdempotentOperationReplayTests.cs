@@ -15,10 +15,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.InMemory.Tests;
 
 /// <summary>
-/// 幂等回放操作的响应（RFC-0006 幂等第 4 条，ADR-0064）。
+/// 幂等回放操作的响应（RFC-0006 幂等第 4 条，ADR-0064）
 /// </summary>
 /// <remarks>
-/// XGI 入口拿到首次调用的响应载荷，类型化入口拿到首次调用的响应对象，处理器只执行一次；同一个键被另一个操作或非操作调用用过、记录里没有响应时明确失败，不返回空载荷。
+/// XGI 入口拿到首次调用的响应载荷，类型化入口拿到首次调用的响应对象，处理器只执行一次；同一个键被另一个操作或非操作调用用过、记录里没有响应时明确失败，不返回空载荷
 /// </remarks>
 public sealed class IdempotentOperationReplayTests
 {
@@ -133,23 +133,23 @@ public sealed class IdempotentOperationReplayTests
     }
 
     /// <summary>
-    /// 启动装配了内存缓存（含幂等中间件）与取号操作的宿主。
+    /// 启动装配了内存缓存（含幂等中间件）与取号操作的宿主
     /// </summary>
     private static Task<TestHost> StartAsync() => TestHost.StartAsync(static b => b.UseFeature<InMemoryCachingFeature>().UseFeature<TicketsFeature>());
 
     /// <summary>
-    /// 只带幂等键的 Baggage。
+    /// 只带幂等键的 Baggage
     /// </summary>
     private static Dictionary<string, string> Key(string key) => new(StringComparer.Ordinal) { [BaggageKeys.IdempotencyKey] = key };
 
     /// <summary>
-    /// 取号的 XGI 请求。
+    /// 取号的 XGI 请求
     /// </summary>
     private static OperationRequest Request(string operationId, string name)
         => new(operationId, JsonSerializer.SerializeToUtf8Bytes(new TicketRequest(name), TicketsJsonContext.Default.TicketRequest));
 
     /// <summary>
-    /// 解码 XGI 响应载荷。
+    /// 解码 XGI 响应载荷
     /// </summary>
     private static TicketReply? Decode(ReadOnlyMemory<byte> payload) => JsonSerializer.Deserialize(payload.Span, TicketsJsonContext.Default.TicketReply);
 }

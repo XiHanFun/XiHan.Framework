@@ -12,12 +12,12 @@ using XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 namespace XiHan.Framework.Security.Abstractions.Tests.Authentication;
 
 /// <summary>
-/// 凭据解析、认证中间件与安全选项的契约测试。
+/// 凭据解析、认证中间件与安全选项的契约测试
 /// </summary>
 public sealed class AuthenticationTests
 {
     /// <summary>
-    /// 记录是否到达下游的终端步骤。
+    /// 记录是否到达下游的终端步骤
     /// </summary>
     private static PipelineStep Handler(bool[] reached) => _ =>
     {

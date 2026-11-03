@@ -7,10 +7,10 @@ using XiHan.Framework.Persistence.Abstractions.DataSources;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 数据源定义、连接串脱敏与选项读取。
+/// 数据源定义、连接串脱敏与选项读取
 /// </summary>
 /// <remarks>
-/// <see cref="DataSourceDefinition"/>、<see cref="ConnectionStrings"/> 与 <see cref="DataSourceOptions"/>：名字文法与保留名、同一连接的判定、连接串不进字符串表示、脱敏与选项读取。
+/// <see cref="DataSourceDefinition"/>、<see cref="ConnectionStrings"/> 与 <see cref="DataSourceOptions"/>：名字文法与保留名、同一连接的判定、连接串不进字符串表示、脱敏与选项读取
 /// </remarks>
 public sealed class DataSourceDefinitionTests
 {

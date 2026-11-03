@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 回答"我是谁"的操作：回显执行它的主体 ID 与安全上下文里的租户。
+/// 回答"我是谁"的操作：回显执行它的主体 ID 与安全上下文里的租户
 /// </summary>
 internal sealed class WhoAmIOperation : IOperation<EchoRequest, EchoResponse>
 {

@@ -8,17 +8,17 @@ using Microsoft.Extensions.VectorData;
 namespace XiHan.Framework.AI.VectorData.Tests;
 
 /// <summary>
-/// 进程内的向量集合：字典存储，过滤表达式直接编译执行，余弦相似度搜索。
+/// 进程内的向量集合：字典存储，过滤表达式直接编译执行，余弦相似度搜索
 /// </summary>
 internal sealed class TestVectorCollection : VectorStoreCollection<string, KnowledgeVectorRecord>
 {
     /// <summary>
-    /// ID → 记录。
+    /// ID → 记录
     /// </summary>
     private readonly Dictionary<string, KnowledgeVectorRecord> _records = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public TestVectorCollection(string name)
     {
@@ -29,7 +29,7 @@ internal sealed class TestVectorCollection : VectorStoreCollection<string, Knowl
     public override string Name { get; }
 
     /// <summary>
-    /// 是否已创建。
+    /// 是否已创建
     /// </summary>
     public bool Exists { get; private set; }
 
@@ -145,7 +145,7 @@ internal sealed class TestVectorCollection : VectorStoreCollection<string, Knowl
     public override object? GetService(Type serviceType, object? serviceKey = null) => serviceKey is null && serviceType.IsInstanceOfType(this) ? this : null;
 
     /// <summary>
-    /// 复制一条记录，按需去掉向量。
+    /// 复制一条记录，按需去掉向量
     /// </summary>
     private static KnowledgeVectorRecord Clone(KnowledgeVectorRecord record, bool includeVectors) => new()
     {
@@ -158,7 +158,7 @@ internal sealed class TestVectorCollection : VectorStoreCollection<string, Knowl
     };
 
     /// <summary>
-    /// 余弦相似度。
+    /// 余弦相似度
     /// </summary>
     private static double Cosine(ReadOnlySpan<float> a, ReadOnlySpan<float> b)
     {

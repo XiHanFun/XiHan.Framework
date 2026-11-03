@@ -7,20 +7,20 @@ using XiHan.Framework.Configuration.Conformance.Remote;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 让进程内远程配置跑完整套 <see cref="RemoteConfigurationClientConformance"/> 用例。
+/// 让进程内远程配置跑完整套 <see cref="RemoteConfigurationClientConformance"/> 用例
 /// </summary>
 /// <remarks>
-/// 同时验证套件本身。
+/// 同时验证套件本身
 /// </remarks>
 public sealed class InMemoryRemoteConfigurationConformanceTests : RemoteConfigurationClientConformance
 {
     /// <summary>
-    /// 进程内夹具。
+    /// 进程内夹具
     /// </summary>
     private sealed class Fixture : RemoteConfigurationFixture
     {
         /// <summary>
-        /// 被测客户端。
+        /// 被测客户端
         /// </summary>
         private readonly InMemoryRemoteConfiguration _client = new();
 

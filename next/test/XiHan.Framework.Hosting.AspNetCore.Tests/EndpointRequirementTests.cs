@@ -15,15 +15,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// 端点元数据上的授权要求在宿主建请求管道时核对（ADR-0080）。
+/// 端点元数据上的授权要求在宿主建请求管道时核对（ADR-0080）
 /// </summary>
 /// <remarks>
-/// 装配了授权能力时，<c>RequireXiHanPermission</c> 的权限码未登记、<c>RequireXiHanPolicy</c> 的策略未注册，宿主启动即失败，不等到调用时 404；没有装配授权能力时不判定也不核对（见 <see cref="WebHostTests"/>）。
+/// 装配了授权能力时，<c>RequireXiHanPermission</c> 的权限码未登记、<c>RequireXiHanPolicy</c> 的策略未注册，宿主启动即失败，不等到调用时 404；没有装配授权能力时不判定也不核对（见 <see cref="WebHostTests"/>）
 /// </remarks>
 public sealed class EndpointRequirementTests
 {
     /// <summary>
-    /// 按给定名字放行一切的策略。
+    /// 按给定名字放行一切的策略
     /// </summary>
     private sealed class NamedPolicy(string name) : IPolicy
     {
@@ -35,7 +35,7 @@ public sealed class EndpointRequirementTests
     }
 
     /// <summary>
-    /// 装配内存安全与一个登记 <c>orders.read</c> 的特性，可再注册策略。
+    /// 装配内存安全与一个登记 <c>orders.read</c> 的特性，可再注册策略
     /// </summary>
     private static WebApplication Build(Action<IServiceCollection>? services = null)
     {

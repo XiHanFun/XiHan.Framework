@@ -4,12 +4,12 @@
 namespace XiHan.Framework.Primitives.Tests.Results;
 
 /// <summary>
-/// <see cref="Error"/> 与 <see cref="ErrorCode"/> 的行为：格式校验、KIND 段约束、相等语义与文本形式。
+/// <see cref="Error"/> 与 <see cref="ErrorCode"/> 的行为：格式校验、KIND 段约束、相等语义与文本形式
 /// </summary>
 public sealed class ErrorTests
 {
     /// <summary>
-    /// <c>error-codes.json</c> 向量：合法与非法的错误码。
+    /// <c>error-codes.json</c> 向量：合法与非法的错误码
     /// </summary>
     private sealed record ErrorCodeVectors(string[] Valid, string[] Invalid);
 

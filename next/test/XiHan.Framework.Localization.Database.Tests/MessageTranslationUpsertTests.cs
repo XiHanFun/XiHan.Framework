@@ -15,37 +15,37 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Localization.Database.Tests;
 
 /// <summary>
-/// 同一 (键, 区域) 只有一行（ADR-0072）。
+/// 同一 (键, 区域) 只有一行（ADR-0072）
 /// </summary>
 /// <remarks>
-/// 再次写入是更新，并发新增撞上唯一索引时返回明确的冲突。
-/// 已有行超过一页时也按更新处理（之前只读第一页，超出的行被当成新行再插一遍）；两个调用同时新增同一个键与区域，后插入的那一批返回 <c>PERSISTENCE_CONFLICT_003</c>、调用回滚，重试按更新处理。
+/// 再次写入是更新，并发新增撞上唯一索引时返回明确的冲突
+/// 已有行超过一页时也按更新处理（之前只读第一页，超出的行被当成新行再插一遍）；两个调用同时新增同一个键与区域，后插入的那一批返回 <c>PERSISTENCE_CONFLICT_003</c>、调用回滚，重试按更新处理
 /// </remarks>
 public sealed class MessageTranslationUpsertTests : IDisposable
 {
     /// <summary>
-    /// 竞争用例的键。
+    /// 竞争用例的键
     /// </summary>
     private const string RaceKey = "orders.race";
 
     /// <summary>
-    /// 竞争用例的临时数据库文件。
+    /// 竞争用例的临时数据库文件
     /// </summary>
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"xihan-localization-upsert-{Guid.NewGuid():N}.db");
 
     /// <summary>
-    /// 竞争开关：为 1 时让另一个连接抢先提交。
+    /// 竞争开关：为 1 时让另一个连接抢先提交
     /// </summary>
     /// <remarks>
-    /// 下一条按 (键, 区域) 查已有翻译的查询执行完后，另一个连接抢先插入并提交同一个键与区域，用过一次即复位。
+    /// 下一条按 (键, 区域) 查已有翻译的查询执行完后，另一个连接抢先插入并提交同一个键与区域，用过一次即复位
     /// </remarks>
     private int _armed;
 
     /// <summary>
-    /// 清空本库的连接池后删除数据库文件。
+    /// 清空本库的连接池后删除数据库文件
     /// </summary>
     /// <remarks>
-    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败。
+    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败
     /// </remarks>
     public void Dispose()
     {
@@ -133,7 +133,7 @@ public sealed class MessageTranslationUpsertTests : IDisposable
     }
 
     /// <summary>
-    /// 竞争键的全部行：区域与模板。
+    /// 竞争键的全部行：区域与模板
     /// </summary>
     private static async Task<List<(string Locale, string Template)>> RowsAsync(TestHost host)
     {
@@ -143,11 +143,11 @@ public sealed class MessageTranslationUpsertTests : IDisposable
     }
 
     /// <summary>
-    /// 按约定配置、会制造竞争的客户端。
+    /// 按约定配置、会制造竞争的客户端
     /// </summary>
     /// <remarks>
-    /// 开关打开后，按 (键, 区域) 查已有翻译的查询一执行完就让另一个连接抢先插入并提交同一个键与区域。
-    /// 读在工作单元开启事务之前执行，抢先的插入在那之后、本次插入之前提交，本次插入撞上唯一索引。
+    /// 开关打开后，按 (键, 区域) 查已有翻译的查询一执行完就让另一个连接抢先插入并提交同一个键与区域
+    /// 读在工作单元开启事务之前执行，抢先的插入在那之后、本次插入之前提交，本次插入撞上唯一索引
     /// </remarks>
     private SqlSugarClient RacingClient()
     {
@@ -164,13 +164,13 @@ public sealed class MessageTranslationUpsertTests : IDisposable
     }
 
     /// <summary>
-    /// 连到测试数据库、按协议约定配置的客户端。
+    /// 连到测试数据库、按协议约定配置的客户端
     /// </summary>
     private SqlSugarClient Client()
         => new(SqlSugarConventions.Apply(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = $"Data Source={_path}", IsAutoCloseConnection = true }));
 
     /// <summary>
-    /// 启动宿主前把文件切到 WAL 日志：读不阻塞另一个连接的写。
+    /// 启动宿主前把文件切到 WAL 日志：读不阻塞另一个连接的写
     /// </summary>
     private void EnsureWriteAheadLog()
     {

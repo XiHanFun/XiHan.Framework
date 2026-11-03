@@ -7,24 +7,24 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 文件命名门禁（代码规范 §1.3）。
+/// 文件命名门禁（代码规范 §1.3）
 /// </summary>
 /// <remarks>
-/// 正式包、测试与示例里每个源文件至多声明一个顶层类型，文件名等于类型名，泛型类型加 <c>OfT</c> 后缀；嵌套类型留在外层类型的文件里。
+/// 正式包、测试与示例里每个源文件至多声明一个顶层类型，文件名等于类型名，泛型类型加 <c>OfT</c> 后缀；嵌套类型留在外层类型的文件里
 /// </remarks>
 public sealed partial class FileNamingTests
 {
     /// <summary>
-    /// 顶层类型声明：修饰符之后是类型种类与名称，名称后可跟类型参数列表。
+    /// 顶层类型声明：修饰符之后是类型种类与名称，名称后可跟类型参数列表
     /// </summary>
     [GeneratedRegex(@"^(?:(?:public|internal|private|protected|sealed|abstract|static|partial|readonly|ref|unsafe|new)\s+)*(?:class|struct|record(?:\s+struct|\s+class)?|interface|enum|delegate\s+[\w<>\[\],\s?]+?)\s+(?<name>\w+)\s*(?<generic><)?")]
     private static partial Regex TypeDeclaration();
 
     /// <summary>
-    /// 字符串与字符字面量。
+    /// 字符串与字符字面量
     /// </summary>
     /// <remarks>
-    /// 统计花括号前先去掉，免得字面量里的括号打乱配对。
+    /// 统计花括号前先去掉，免得字面量里的括号打乱配对
     /// </remarks>
     [GeneratedRegex(@"""(?:\\.|[^""\\])*""|'(?:\\.|[^'\\])*'")]
     private static partial Regex Literal();
@@ -75,10 +75,10 @@ public sealed partial class FileNamingTests
     }
 
     /// <summary>
-    /// 按花括号深度为 0 的行找出文件里的顶层类型声明。
+    /// 按花括号深度为 0 的行找出文件里的顶层类型声明
     /// </summary>
     /// <remarks>
-    /// 文件级命名空间不增加深度，块级命名空间里的类型按深度 1 识别。
+    /// 文件级命名空间不增加深度，块级命名空间里的类型按深度 1 识别
     /// </remarks>
     private static List<(string Name, bool Generic)> TopLevelTypes(string file)
     {

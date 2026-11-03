@@ -7,81 +7,81 @@ using RabbitMQ.Client;
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 
 /// <summary>
-/// 打桩的 <see cref="IChannel"/>。
+/// 打桩的 <see cref="IChannel"/>
 /// </summary>
 /// <remarks>
-/// 以 <see cref="DispatchProxy"/> 生成，只实现代理用到的成员：记录交换机与队列的声明、绑定、发布、确认与退回，按 <see cref="Confirm"/> 决定每次发布的确认结果，<see cref="HoldConfirms"/> 时确认挂起到 <see cref="ReleaseConfirms"/>。其余成员抛 <see cref="NotSupportedException"/>。
+/// 以 <see cref="DispatchProxy"/> 生成，只实现代理用到的成员：记录交换机与队列的声明、绑定、发布、确认与退回，按 <see cref="Confirm"/> 决定每次发布的确认结果，<see cref="HoldConfirms"/> 时确认挂起到 <see cref="ReleaseConfirms"/>。其余成员抛 <see cref="NotSupportedException"/>
 /// </remarks>
 public class FakeRabbitChannel : DispatchProxy
 {
     /// <summary>
-    /// 放行挂起确认的信号。
+    /// 放行挂起确认的信号
     /// </summary>
     private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
-    /// 本通道的序号，从 0 开始，按连接创建通道的顺序。
+    /// 本通道的序号，从 0 开始，按连接创建通道的顺序
     /// </summary>
     public int Number { get; set; }
 
     /// <summary>
-    /// 创建通道时的选项。
+    /// 创建通道时的选项
     /// </summary>
     public CreateChannelOptions? Options { get; set; }
 
     /// <summary>
-    /// 声明过的队列，按顺序。
+    /// 声明过的队列，按顺序
     /// </summary>
     public List<QueueDeclaration> Declared { get; } = [];
 
     /// <summary>
-    /// 声明过的交换机名与类型，按顺序。
+    /// 声明过的交换机名与类型，按顺序
     /// </summary>
     public List<(string Name, string Type, bool Durable)> Exchanges { get; } = [];
 
     /// <summary>
-    /// 绑定过的队列、交换机与路由键，按顺序。
+    /// 绑定过的队列、交换机与路由键，按顺序
     /// </summary>
     public List<(string Queue, string Exchange, string RoutingKey)> Bindings { get; } = [];
 
     /// <summary>
-    /// 发布记录，按顺序。
+    /// 发布记录，按顺序
     /// </summary>
     public List<PublishedMessage> Published { get; } = [];
 
     /// <summary>
-    /// 确认（ack）过的投递标签。
+    /// 确认（ack）过的投递标签
     /// </summary>
     public List<ulong> Acked { get; } = [];
 
     /// <summary>
-    /// 退回（nack）过的投递标签与是否重新入队。
+    /// 退回（nack）过的投递标签与是否重新入队
     /// </summary>
     public List<(ulong DeliveryTag, bool Requeue)> Nacked { get; } = [];
 
     /// <summary>
-    /// 消费时登记的消费者。
+    /// 消费时登记的消费者
     /// </summary>
     public IAsyncBasicConsumer? Consumer { get; private set; }
 
     /// <summary>
-    /// 每次发布的确认结果。
+    /// 每次发布的确认结果
     /// </summary>
     /// <remarks>
-    /// 参数是发布序号（从 0 开始）与路由键；返回空为确认，否则发布以返回的异常结束。
+    /// 参数是发布序号（从 0 开始）与路由键；返回空为确认，否则发布以返回的异常结束
     /// </remarks>
     public Func<int, string, Exception?> Confirm { get; set; } = static (_, _) => null;
 
     /// <summary>
-    /// 是否挂起确认。
+    /// 是否挂起确认
     /// </summary>
     /// <remarks>
-    /// 为真时发布写出后不完成，直到 <see cref="ReleaseConfirms"/>。
+    /// 为真时发布写出后不完成，直到 <see cref="ReleaseConfirms"/>
     /// </remarks>
     public bool HoldConfirms { get; set; }
 
     /// <summary>
-    /// 放行全部挂起的确认。
+    /// 放行全部挂起的确认
     /// </summary>
     public void ReleaseConfirms() => _release.TrySetResult();
 
@@ -155,7 +155,7 @@ public class FakeRabbitChannel : DispatchProxy
     }
 
     /// <summary>
-    /// 记录一次发布，按 <see cref="Confirm"/> 给出确认结果。
+    /// 记录一次发布，按 <see cref="Confirm"/> 给出确认结果
     /// </summary>
     private Task Publish(string exchange, string routingKey, bool mandatory, IReadOnlyBasicProperties properties, ReadOnlyMemory<byte> body)
     {
@@ -171,7 +171,7 @@ public class FakeRabbitChannel : DispatchProxy
     }
 
     /// <summary>
-    /// 等放行后按结果完成。
+    /// 等放行后按结果完成
     /// </summary>
     private async Task AwaitConfirmAsync(Exception? outcome)
     {

@@ -4,6 +4,6 @@
 namespace SimpleApp.Orders;
 
 /// <summary>
-/// 列出订单的请求：没有输入，空载荷即可。
+/// 列出订单的请求：没有输入，空载荷即可
 /// </summary>
 public sealed record ListOrdersRequest;

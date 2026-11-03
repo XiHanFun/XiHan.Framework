@@ -9,10 +9,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Observability.Host.Tests;
 
 /// <summary>
-/// 能力包装配与选项。
+/// 能力包装配与选项
 /// </summary>
 /// <remarks>
-/// 宿主里取到 <see cref="IHostMonitor"/>，运行信息自洽，采样一个间隔后有 CPU 使用率；选项解析与校验。
+/// 宿主里取到 <see cref="IHostMonitor"/>，运行信息自洽，采样一个间隔后有 CPU 使用率；选项解析与校验
 /// </remarks>
 public sealed class HostObservabilityFeatureTests
 {

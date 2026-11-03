@@ -7,26 +7,26 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 健康项约定（ADR-0030）。
+/// 健康项约定（ADR-0030）
 /// </summary>
 /// <remarks>
-/// 清单 <c>contributes.health</c> 声明的每一项都必须由同一个包实现——名字作为 <c>ContributorStatus(</c> 的条目名或 <c>PeriodicHealthContributor(</c> 的第一个参数出现（字面量或同包常量），且包里有实现 <c>IHealthContributor</c> 的类型或注册了 <c>IHealthContributor</c>；反过来，注册了 <c>IHealthContributor</c> 的包其清单必须声明 <c>Health</c>。静态扫描源码，不实例化特性。
+/// 清单 <c>contributes.health</c> 声明的每一项都必须由同一个包实现——名字作为 <c>ContributorStatus(</c> 的条目名或 <c>PeriodicHealthContributor(</c> 的第一个参数出现（字面量或同包常量），且包里有实现 <c>IHealthContributor</c> 的类型或注册了 <c>IHealthContributor</c>；反过来，注册了 <c>IHealthContributor</c> 的包其清单必须声明 <c>Health</c>。静态扫描源码，不实例化特性
 /// </remarks>
 public sealed partial class HealthContributionTests
 {
     /// <summary>
-    /// 条目名在运行时才确定、清单无法枚举的包。
+    /// 条目名在运行时才确定、清单无法枚举的包
     /// </summary>
     /// <remarks>
-    /// 插件宿主（条目名由插件自己的清单声明，RFC-0017 / RFC-0018 的 <c>contributes.health</c>）与命名存储实例的注册表（每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，ADR-0050）。只豁免反向检查。
+    /// 插件宿主（条目名由插件自己的清单声明，RFC-0017 / RFC-0018 的 <c>contributes.health</c>）与命名存储实例的注册表（每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，ADR-0050）。只豁免反向检查
     /// </remarks>
     private static readonly string[] _dynamicContributors = ["XiHan.Framework.Plugins.OutOfProcess", "XiHan.Framework.Plugins.Wasm", "XiHan.Framework.ObjectStorage.Abstractions"];
 
     /// <summary>
-    /// 每个正式包与示例项目的扫描结果。
+    /// 每个正式包与示例项目的扫描结果
     /// </summary>
     /// <remarks>
-    /// 示例同样是清单的写法范本：它们声明的健康项也必须有实现。
+    /// 示例同样是清单的写法范本：它们声明的健康项也必须有实现
     /// </remarks>
     private static IReadOnlyList<PackageHealth> Packages { get; } = Workspace.SourceProjects.Concat(Workspace.SampleProjects).Select(Scan).ToList();
 
@@ -70,10 +70,10 @@ public sealed partial class HealthContributionTests
     }
 
     /// <summary>
-    /// 扫描一个包。
+    /// 扫描一个包
     /// </summary>
     /// <remarks>
-    /// 清单声明、实现处出现的条目名、常量表、是否实现或注册 <c>IHealthContributor</c>。
+    /// 清单声明、实现处出现的条目名、常量表、是否实现或注册 <c>IHealthContributor</c>
     /// </remarks>
     private static PackageHealth Scan(SourceProject project)
     {
@@ -118,10 +118,10 @@ public sealed partial class HealthContributionTests
     }
 
     /// <summary>
-    /// 把条目名表达式解析成字面量。
+    /// 把条目名表达式解析成字面量
     /// </summary>
     /// <remarks>
-    /// 带引号的取引号内文本，标识符取同包常量（<c>XxxFeature.HealthName</c> 取最后一段）。
+    /// 带引号的取引号内文本，标识符取同包常量（<c>XxxFeature.HealthName</c> 取最后一段）
     /// </remarks>
     private static string? Resolve(string expression, Dictionary<string, string?> constants)
     {
@@ -141,58 +141,58 @@ public sealed partial class HealthContributionTests
     }
 
     /// <summary>
-    /// 按逗号切分集合表达式里的项，忽略空白与尾随逗号。
+    /// 按逗号切分集合表达式里的项，忽略空白与尾随逗号
     /// </summary>
     private static IEnumerable<string> SplitItems(string items)
         => items.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Where(static item => item.Length > 0);
 
     /// <summary>
-    /// 清单里的 <c>Health = [ ... ]</c> 声明。
+    /// 清单里的 <c>Health = [ ... ]</c> 声明
     /// </summary>
     [GeneratedRegex(@"\bHealth\s*=\s*\[(?<items>[^\]]*)\]", RegexOptions.Singleline)]
     private static partial Regex Declaration();
 
     /// <summary>
-    /// 实现处：<c>ContributorStatus(</c> 的条目名或 <c>PeriodicHealthContributor(</c> 的第一个参数。
+    /// 实现处：<c>ContributorStatus(</c> 的条目名或 <c>PeriodicHealthContributor(</c> 的第一个参数
     /// </summary>
     [GeneratedRegex(@"\b(?:ContributorStatus|PeriodicHealthContributor)\(\s*(?<name>[^,\)]+)")]
     private static partial Regex Implementation();
 
     /// <summary>
-    /// <c>const string</c> 常量声明。
+    /// <c>const string</c> 常量声明
     /// </summary>
     [GeneratedRegex(@"\bconst\s+string\s+(?<name>\w+)\s*=\s*""(?<value>[^""]+)""")]
     private static partial Regex Constant();
 
     /// <summary>
-    /// 实现 <c>IHealthContributor</c> 的类型声明（含主构造函数写法）。
+    /// 实现 <c>IHealthContributor</c> 的类型声明（含主构造函数写法）
     /// </summary>
     [GeneratedRegex(@"\bclass\s+\w+(?:<[^>]+>)?\s*(?:\([^)]*\))?\s*:\s*[^{]*\bIHealthContributor\b")]
     private static partial Regex Implementer();
 
     /// <summary>
-    /// 向容器注册 <c>IHealthContributor</c> 的调用。
+    /// 向容器注册 <c>IHealthContributor</c> 的调用
     /// </summary>
     /// <remarks>
-    /// <c>AddSingleton</c> / <c>TryAddSingleton</c> 及带键变体。内核采集用的 <c>GetServices</c> 不算。
+    /// <c>AddSingleton</c> / <c>TryAddSingleton</c> 及带键变体。内核采集用的 <c>GetServices</c> 不算
     /// </remarks>
     [GeneratedRegex(@"\b(?:Try)?Add(?:Keyed)?(?:Singleton|Scoped|Transient)<IHealthContributor>\s*\(")]
     private static partial Regex Registration();
 
     /// <summary>
-    /// 简单或带限定的标识符。
+    /// 简单或带限定的标识符
     /// </summary>
     [GeneratedRegex(@"^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*$")]
     private static partial Regex Identifier();
 
     /// <summary>
-    /// 一个包的健康项事实。
+    /// 一个包的健康项事实
     /// </summary>
-    /// <param name="Id">包 ID。</param>
-    /// <param name="Declared">清单声明的条目名（已解析成字面量）。</param>
-    /// <param name="Unresolved">清单里解析不出来的条目表达式。</param>
-    /// <param name="Implemented">实现处出现的条目名。</param>
-    /// <param name="Implements">是否有实现 <c>IHealthContributor</c> 的类型。</param>
-    /// <param name="Registers">是否注册了 <c>IHealthContributor</c>。</param>
+    /// <param name="Id">包 ID</param>
+    /// <param name="Declared">清单声明的条目名（已解析成字面量）</param>
+    /// <param name="Unresolved">清单里解析不出来的条目表达式</param>
+    /// <param name="Implemented">实现处出现的条目名</param>
+    /// <param name="Implements">是否有实现 <c>IHealthContributor</c> 的类型</param>
+    /// <param name="Registers">是否注册了 <c>IHealthContributor</c></param>
     private sealed record PackageHealth(string Id, IReadOnlySet<string> Declared, IReadOnlyList<string> Unresolved, IReadOnlySet<string> Implemented, bool Implements, bool Registers);
 }

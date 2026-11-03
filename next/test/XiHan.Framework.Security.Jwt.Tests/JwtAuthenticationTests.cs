@@ -15,44 +15,44 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Jwt.Tests;
 
 /// <summary>
-/// JWT 处理器的令牌校验、选项解析与特性装配测试。
+/// JWT 处理器的令牌校验、选项解析与特性装配测试
 /// </summary>
 public sealed class JwtAuthenticationTests
 {
     /// <summary>
-    /// 测试用对称密钥。
+    /// 测试用对称密钥
     /// </summary>
     /// <remarks>
-    /// 满足最小长度。
+    /// 满足最小长度
     /// </remarks>
     private const string Secret = JwtTokens.Secret;
 
     /// <summary>
-    /// 测试用签发者。
+    /// 测试用签发者
     /// </summary>
     private const string Issuer = JwtTokens.Issuer;
 
     /// <summary>
-    /// 测试用受众。
+    /// 测试用受众
     /// </summary>
     private const string Audience = JwtTokens.Audience;
 
     /// <summary>
-    /// 严格选项：校验签发者与受众，时钟偏移为零。
+    /// 严格选项：校验签发者与受众，时钟偏移为零
     /// </summary>
     private static readonly JwtOptions _options = new() { Secret = Secret, Issuer = Issuer, Audience = Audience, ClockSkew = TimeSpan.Zero };
 
     /// <summary>
-    /// 签发 HS256 令牌。
+    /// 签发 HS256 令牌
     /// </summary>
     /// <remarks>
-    /// 默认主体 alice、十分钟有效期，可按场景改密钥、签发者、受众、有效期与声明。
+    /// 默认主体 alice、十分钟有效期，可按场景改密钥、签发者、受众、有效期与声明
     /// </remarks>
     private static string CreateToken(string? subject = "alice", string secret = Secret, string issuer = Issuer, string audience = Audience, TimeSpan? lifetime = null, params (string Type, string Value)[] claims)
         => JwtTokens.Create(subject, secret, issuer, audience, lifetime, claims);
 
     /// <summary>
-    /// 用给定选项（默认严格选项）认证 Bearer 令牌。
+    /// 用给定选项（默认严格选项）认证 Bearer 令牌
     /// </summary>
     private static async Task<Result<Principal>> AuthenticateAsync(string token, JwtOptions? options = null)
         => await new JwtAuthenticationHandler(options ?? _options).AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create(), CancellationToken.None);

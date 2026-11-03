@@ -19,15 +19,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 数据库实现自己的行为。
+/// 数据库实现自己的行为
 /// </summary>
 /// <remarks>
-/// 特性清单与装配、同刻运行的排序、两个节点共用一个库时独占作业不重叠、领导者恢复失联节点、宿主停止后的不可达。
+/// 特性清单与装配、同刻运行的排序、两个节点共用一个库时独占作业不重叠、领导者恢复失联节点、宿主停止后的不可达
 /// </remarks>
 public sealed class DatabaseSchedulingTests
 {
     /// <summary>
-    /// 本文件用例里的作业名。
+    /// 本文件用例里的作业名
     /// </summary>
     private static readonly JobName _exclusive = new("db.exclusive");
 
@@ -143,7 +143,7 @@ public sealed class DatabaseSchedulingTests
         var store = host.Services.GetRequiredService<IJobStore>();
         await WaitUntilAsync(async () => (await store.FindJobAsync(job, CancellationToken.None)).ValueOrThrow().HasValue);
 
-        // 伪造一个很久没心跳的节点：它抢占了一条触发器、独占运行着一次运行。
+        // 伪造一个很久没心跳的节点：它抢占了一条触发器、独占运行着一次运行
         // 心跳最后写：节点记录一出现就可能被领导者判为失联、恢复并删除，那之后才写进去的运行再也没有节点认领
         var now = DateTimeOffset.UtcNow;
         var trigger = new TriggerRecord { Job = job, Name = "ghost", Schedule = JobSchedule.Every(TimeSpan.FromHours(1)), State = TriggerState.Acquired, AcquiredBy = "node-ghost", AcquiredAt = now, NextFireAt = now.AddHours(1) };
@@ -248,7 +248,7 @@ public sealed class DatabaseSchedulingTests
     }
 
     /// <summary>
-    /// 一个节点的引擎配置：节点 ID、轮询周期与 0.2 秒的维护周期。
+    /// 一个节点的引擎配置：节点 ID、轮询周期与 0.2 秒的维护周期
     /// </summary>
     private static List<KeyValuePair<string, string?>> NodeSettings(string nodeId, string pollIntervalSeconds) =>
     [
@@ -258,10 +258,10 @@ public sealed class DatabaseSchedulingTests
     ];
 
     /// <summary>
-    /// 登记多节点用例的记录与作业类型。
+    /// 登记多节点用例的记录与作业类型
     /// </summary>
     /// <remarks>
-    /// 作业本身在两个节点都启动后由用例在运行时登记。
+    /// 作业本身在两个节点都启动后由用例在运行时登记
     /// </remarks>
     private static void Register(IServiceCollection services, OverlapLog log)
     {
@@ -270,7 +270,7 @@ public sealed class DatabaseSchedulingTests
     }
 
     /// <summary>
-    /// 轮询直到条件成立，最多 10 秒。
+    /// 轮询直到条件成立，最多 10 秒
     /// </summary>
     private static async Task WaitUntilAsync(Func<ValueTask<bool>> condition)
     {

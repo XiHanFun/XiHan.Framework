@@ -4,22 +4,22 @@
 namespace KubernetesApp.Heartbeat;
 
 /// <summary>
-/// 心跳作业的运行计数。
+/// 心跳作业的运行计数
 /// </summary>
 public sealed class HeartbeatCounter
 {
     /// <summary>
-    /// 计数。
+    /// 计数
     /// </summary>
     private long _ticks;
 
     /// <summary>
-    /// 已运行次数。
+    /// 已运行次数
     /// </summary>
     public long Ticks => Interlocked.Read(ref _ticks);
 
     /// <summary>
-    /// 加一。
+    /// 加一
     /// </summary>
     public long Increment() => Interlocked.Increment(ref _ticks);
 }

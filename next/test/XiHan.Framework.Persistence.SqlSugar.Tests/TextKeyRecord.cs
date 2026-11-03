@@ -8,10 +8,10 @@ using XiHan.Framework.Domain.Entities;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 字符串主键的实体。
+/// 字符串主键的实体
 /// </summary>
 /// <remarks>
-/// 主键与名字都放反斜杠、单引号与换行：SqlSugar 按主键删除、<c>In</c> 查询与多行写入把它们内联成字面量。
+/// 主键与名字都放反斜杠、单引号与换行：SqlSugar 按主键删除、<c>In</c> 查询与多行写入把它们内联成字面量
 /// </remarks>
 [SugarTable("text_key_record")]
 public sealed class TextKeyRecord : IEntity<string>
@@ -21,7 +21,7 @@ public sealed class TextKeyRecord : IEntity<string>
     public string Id { get; set; } = string.Empty;
 
     /// <summary>
-    /// 名字。
+    /// 名字
     /// </summary>
     [StringLength(64)]
     public string Name { get; set; } = string.Empty;

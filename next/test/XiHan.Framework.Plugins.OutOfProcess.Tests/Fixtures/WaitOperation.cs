@@ -7,10 +7,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 
 /// <summary>
-/// 一直等到被取消的宿主侧操作（最多 30 秒）。
+/// 一直等到被取消的宿主侧操作（最多 30 秒）
 /// </summary>
 /// <remarks>
-/// 插件经 <c>echoes.relay</c> 回调它，插件调用因此一直在进行，用例可以在调用中途触发截止时间或取消。
+/// 插件经 <c>echoes.relay</c> 回调它，插件调用因此一直在进行，用例可以在调用中途触发截止时间或取消
 /// </remarks>
 internal sealed class WaitOperation(CancellationProbe probe) : IOperation<PingRequest, PingResponse>
 {

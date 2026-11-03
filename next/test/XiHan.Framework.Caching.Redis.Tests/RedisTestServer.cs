@@ -6,36 +6,36 @@ using StackExchange.Redis;
 namespace XiHan.Framework.Caching.Redis.Tests;
 
 /// <summary>
-/// 真实 Redis 来自环境变量 <c>XIHAN_TEST_REDIS</c>（如 <c>localhost:6379</c>）。
+/// 真实 Redis 来自环境变量 <c>XIHAN_TEST_REDIS</c>（如 <c>localhost:6379</c>）
 /// </summary>
 /// <remarks>
-/// 未设置时跳过需要它的用例。
+/// 未设置时跳过需要它的用例
 /// </remarks>
 internal static class RedisTestServer
 {
     /// <summary>
-    /// 指向测试 Redis 的环境变量名。
+    /// 指向测试 Redis 的环境变量名
     /// </summary>
     public const string EnvironmentVariable = "XIHAN_TEST_REDIS";
 
     /// <summary>
-    /// 进程内共享的连接，首次使用时建立。
+    /// 进程内共享的连接，首次使用时建立
     /// </summary>
     private static readonly Lazy<IConnectionMultiplexer> _connection = new(() => ConnectionMultiplexer.Connect(Configuration!));
 
     /// <summary>
-    /// 环境变量里的连接字符串。
+    /// 环境变量里的连接字符串
     /// </summary>
     /// <remarks>
-    /// 未设置为 <see langword="null"/>。
+    /// 未设置为 <see langword="null"/>
     /// </remarks>
     public static string? Configuration => Environment.GetEnvironmentVariable(EnvironmentVariable);
 
     /// <summary>
-    /// 返回连接字符串。
+    /// 返回连接字符串
     /// </summary>
     /// <remarks>
-    /// 未设置时跳过当前用例。
+    /// 未设置时跳过当前用例
     /// </remarks>
     public static string RequireConfiguration()
     {
@@ -44,10 +44,10 @@ internal static class RedisTestServer
     }
 
     /// <summary>
-    /// 取得共享连接。
+    /// 取得共享连接
     /// </summary>
     /// <remarks>
-    /// 未设置连接字符串时跳过当前用例。
+    /// 未设置连接字符串时跳过当前用例
     /// </remarks>
     public static IConnectionMultiplexer Connect()
     {
@@ -56,7 +56,7 @@ internal static class RedisTestServer
     }
 
     /// <summary>
-    /// 带随机键前缀的选项，使各用例写入的键互不干扰。
+    /// 带随机键前缀的选项，使各用例写入的键互不干扰
     /// </summary>
     public static RedisCachingOptions Options(string configuration) => new()
     {

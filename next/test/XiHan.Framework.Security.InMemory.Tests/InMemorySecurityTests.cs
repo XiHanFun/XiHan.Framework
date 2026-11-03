@@ -17,15 +17,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.InMemory.Tests;
 
 /// <summary>
-/// 内存安全特性的选项解析、存储容量与端到端认证授权测试。
+/// 内存安全特性的选项解析、存储容量与端到端认证授权测试
 /// </summary>
 public sealed class InMemorySecurityTests
 {
     /// <summary>
-    /// 两个主体与角色、用户授予的配置。
+    /// 两个主体与角色、用户授予的配置
     /// </summary>
     /// <remarks>
-    /// alice 带角色、租户与附加声明，bob 只有 API Key。
+    /// alice 带角色、租户与附加声明，bob 只有 API Key
     /// </remarks>
     private static readonly KeyValuePair<string, string?>[] _configuration =
     [
@@ -40,7 +40,7 @@ public sealed class InMemorySecurityTests
     ];
 
     /// <summary>
-    /// 登记权限码的特性，模拟业务能力包。
+    /// 登记权限码的特性，模拟业务能力包
     /// </summary>
     private sealed class OrdersFeature : IFeature
     {
@@ -239,7 +239,7 @@ public sealed class InMemorySecurityTests
     }
 
     /// <summary>
-    /// 给任何已认证主体固定额外授予的来源。
+    /// 给任何已认证主体固定额外授予的来源
     /// </summary>
     private sealed class FixedGrantSource(params string[] grants) : IPermissionGrantSource
     {
@@ -249,12 +249,12 @@ public sealed class InMemorySecurityTests
     }
 
     /// <summary>
-    /// 一律拒绝并记录被问到的权限码的过滤器。
+    /// 一律拒绝并记录被问到的权限码的过滤器
     /// </summary>
     private sealed class DenyAllPermissionFilter : IPermissionFilter
     {
         /// <summary>
-        /// 被问到的权限码，按调用顺序。
+        /// 被问到的权限码，按调用顺序
         /// </summary>
         public List<string> Permissions { get; } = [];
 
@@ -278,10 +278,10 @@ public sealed class InMemorySecurityTests
     }
 
     /// <summary>
-    /// 在新作用域里经完整管道调用。
+    /// 在新作用域里经完整管道调用
     /// </summary>
     /// <remarks>
-    /// 可选放入 Authorization 头形式的凭据与授权要求，返回结果与处理器看到的主体。
+    /// 可选放入 Authorization 头形式的凭据与授权要求，返回结果与处理器看到的主体
     /// </remarks>
     private static async Task<(Result Result, Principal? Principal)> InvokeAsync(TestHost host, string? authorization, AuthorizationRequirement? requirement)
     {

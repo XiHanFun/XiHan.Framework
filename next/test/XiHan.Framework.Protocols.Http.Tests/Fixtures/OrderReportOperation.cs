@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 集合级自定义动词的测试实现：请求不含 <c>id</c>，回显操作 ID 与绑定到的字段。
+/// 集合级自定义动词的测试实现：请求不含 <c>id</c>，回显操作 ID 与绑定到的字段
 /// </summary>
 internal sealed class OrderReportOperation : IOperation<OrderReportRequest, OrderReply>
 {

@@ -26,18 +26,18 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// OpenAPI 生成器的四项能力。
+/// OpenAPI 生成器的四项能力
 /// </summary>
 /// <remarks>
-/// 标题 / 版本 / <c>servers</c> 可由应用指定；装配 Bearer 认证时发布方案与全局 <c>security</c>；操作标题与说明按 <c>Accept-Language</c> 取消息目录文案并分区域缓存；普通端点按元数据收录（二进制 / 表单 / 文本按内容类型，JSON 只能引用已登记操作的根 Schema，引用不到即失败）。
+/// 标题 / 版本 / <c>servers</c> 可由应用指定；装配 Bearer 认证时发布方案与全局 <c>security</c>；操作标题与说明按 <c>Accept-Language</c> 取消息目录文案并分区域缓存；普通端点按元数据收录（二进制 / 表单 / 文本按内容类型，JSON 只能引用已登记操作的根 Schema，引用不到即失败）
 /// </remarks>
 public sealed class OpenApiExtensionsTests
 {
     /// <summary>
-    /// 操作标题与说明的消息目录。
+    /// 操作标题与说明的消息目录
     /// </summary>
     /// <remarks>
-    /// 只有英文与简体中文，只给 <c>orders.get</c> 与 <c>order-filters.list</c>。
+    /// 只有英文与简体中文，只给 <c>orders.get</c> 与 <c>order-filters.list</c>
     /// </remarks>
     private static readonly MessageCatalog _descriptions = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
@@ -47,10 +47,10 @@ public sealed class OpenApiExtensionsTests
     });
 
     /// <summary>
-    /// 启动装配了 HTTP 协议与订单特性的测试宿主。
+    /// 启动装配了 HTTP 协议与订单特性的测试宿主
     /// </summary>
     /// <remarks>
-    /// 可加本地化、Bearer 认证桩、文档选项与额外端点。
+    /// 可加本地化、Bearer 认证桩、文档选项与额外端点
     /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool localization = false, bool bearer = false, OpenApiOptions? options = null, Action<WebApplication>? map = null)
     {
@@ -81,10 +81,10 @@ public sealed class OpenApiExtensionsTests
     }
 
     /// <summary>
-    /// 取文档。
+    /// 取文档
     /// </summary>
     /// <remarks>
-    /// 可带 <c>Accept-Language</c>。
+    /// 可带 <c>Accept-Language</c>
     /// </remarks>
     private static async Task<(JsonDocument Document, HttpResponseMessage Response)> DocumentOf(HttpClient client, string? acceptLanguage = null)
     {
@@ -100,13 +100,13 @@ public sealed class OpenApiExtensionsTests
     }
 
     /// <summary>
-    /// 以订单请求描述一个契约。
+    /// 以订单请求描述一个契约
     /// </summary>
     private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Describe(OperationContract contract)
         => new(contract, "xihan.test.orders", OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, OrdersFeature.OrderSchema);
 
     /// <summary>
-    /// 手工构造一个带元数据的路由端点。
+    /// 手工构造一个带元数据的路由端点
     /// </summary>
     private static RouteEndpoint Endpoint(string method, string template, params object[] metadata)
         => new(static _ => Task.CompletedTask, RoutePatternFactory.Parse(template), 0, new EndpointMetadataCollection([new HttpMethodMetadata([method]), .. metadata]), $"{method} {template}");

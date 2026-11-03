@@ -11,15 +11,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 健康项 <c>objectstorage.filesystem.capacity</c>。
+/// 健康项 <c>objectstorage.filesystem.capacity</c>
 /// </summary>
 /// <remarks>
-/// 宿主启动后 Ready，已用量达到总配额后 Degraded 并带 <see cref="ObjectStorageErrors.QuotaExceeded"/>。
+/// 宿主启动后 Ready，已用量达到总配额后 Degraded 并带 <see cref="ObjectStorageErrors.QuotaExceeded"/>
 /// </remarks>
 public sealed class FileSystemObjectStorageHealthTests : IDisposable
 {
     /// <summary>
-    /// 本用例的临时根目录。
+    /// 本用例的临时根目录
     /// </summary>
     private readonly TemporaryRoot _root = new();
 

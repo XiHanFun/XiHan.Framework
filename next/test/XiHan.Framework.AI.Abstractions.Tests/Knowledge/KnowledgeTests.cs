@@ -12,15 +12,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.Abstractions.Tests.Knowledge;
 
 /// <summary>
-/// 知识库流水线。
+/// 知识库流水线
 /// </summary>
 /// <remarks>
-/// 切块、摄入与重摄入（先写后删，失败不丢旧文档）、检索与过滤、删除、维度不一致、没有 Provider、提示增强。
+/// 切块、摄入与重摄入（先写后删，失败不丢旧文档）、检索与过滤、删除、维度不一致、没有 Provider、提示增强
 /// </remarks>
 public sealed class KnowledgeTests
 {
     /// <summary>
-    /// 基础配置：哈希嵌入 Provider，64 维，小块。
+    /// 基础配置：哈希嵌入 Provider，64 维，小块
     /// </summary>
     private static readonly (string Key, string Value)[] _configuration =
     [
@@ -33,7 +33,7 @@ public sealed class KnowledgeTests
     ];
 
     /// <summary>
-    /// 提示增强用例的两个检索结果。
+    /// 提示增强用例的两个检索结果
     /// </summary>
     private static readonly RetrievedChunk[] _chunks =
     [
@@ -183,13 +183,13 @@ public sealed class KnowledgeTests
     }
 
     /// <summary>
-    /// 默认集合里的记录（ID 与文本，按 ID 排序）。
+    /// 默认集合里的记录（ID 与文本，按 ID 排序）
     /// </summary>
     private static List<(string Id, string Text)> Snapshot(FakeKnowledgeStore store)
         => store.Records(KnowledgeOptions.DefaultCollection).OrderBy(static record => record.Id, StringComparer.Ordinal).Select(static record => (record.Id, record.Text)).ToList();
 
     /// <summary>
-    /// 启动：哈希嵌入 Provider 与总是失败的嵌入工厂，可选的知识库存储与额外配置。
+    /// 启动：哈希嵌入 Provider 与总是失败的嵌入工厂，可选的知识库存储与额外配置
     /// </summary>
     private static Task<TestHost> StartAsync(FakeKnowledgeStore? store, params (string Key, string Value)[] extra)
         => TestHost.StartAsync(
@@ -205,7 +205,7 @@ public sealed class KnowledgeTests
             });
 
     /// <summary>
-    /// 另装 AI 工具特性启动：它的启动会解析提示增强器、校验配置引用的提示词。
+    /// 另装 AI 工具特性启动：它的启动会解析提示增强器、校验配置引用的提示词
     /// </summary>
     private static Task<TestHost> StartWithToolsAsync(Action<IServiceCollection>? services, params (string Key, string Value)[] extra)
         => TestHost.StartAsync(
@@ -218,7 +218,7 @@ public sealed class KnowledgeTests
             });
 
     /// <summary>
-    /// 启动失败链里第一个 AI 错误（宿主把特性启动失败包成内核错误）。
+    /// 启动失败链里第一个 AI 错误（宿主把特性启动失败包成内核错误）
     /// </summary>
     private static FrameworkException AIFailure(Exception exception)
     {

@@ -9,16 +9,16 @@ using XiHan.Framework.Persistence.SqlSugar;
 namespace XiHan.Framework.Auditing.Database.Tests;
 
 /// <summary>
-/// 审计表的索引（ADR-0072）。
+/// 审计表的索引（ADR-0072）
 /// </summary>
 /// <remarks>
-/// <c>InitTables</c> 在 SQLite 上建出序号、时间、trace-id 与租户 + 序号四个普通索引。
-/// 写入序号不唯一：不同节点的序号只按时钟大致有序，可能相同，两行同号都能写入。
+/// <c>InitTables</c> 在 SQLite 上建出序号、时间、trace-id 与租户 + 序号四个普通索引
+/// 写入序号不唯一：不同节点的序号只按时钟大致有序，可能相同，两行同号都能写入
 /// </remarks>
 public sealed class AuditRecordIndexTests : IDisposable
 {
     /// <summary>
-    /// 列出一张表上显式建出的索引：<c>名字 [unique] 列,列</c>，按名字排序。
+    /// 列出一张表上显式建出的索引：<c>名字 [unique] 列,列</c>，按名字排序
     /// </summary>
     private const string IndexQuery = """
         SELECT m.name
@@ -30,15 +30,15 @@ public sealed class AuditRecordIndexTests : IDisposable
         """;
 
     /// <summary>
-    /// 本测试独占的临时数据库文件。
+    /// 本测试独占的临时数据库文件
     /// </summary>
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"xihan-auditing-index-{Guid.NewGuid():N}.db");
 
     /// <summary>
-    /// 清空本库的连接池后删除数据库文件。
+    /// 清空本库的连接池后删除数据库文件
     /// </summary>
     /// <remarks>
-    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败。
+    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败
     /// </remarks>
     public void Dispose()
     {
@@ -71,7 +71,7 @@ public sealed class AuditRecordIndexTests : IDisposable
     }
 
     /// <summary>
-    /// 一条成功的审计记录。
+    /// 一条成功的审计记录
     /// </summary>
     private static AuditRecord Record(long sequence)
         => new() { Id = Guid.CreateVersion7(), Sequence = sequence, Timestamp = new DateTimeOffset(2026, 11, 1, 8, 0, 0, TimeSpan.Zero), Action = "orders.create", Succeeded = true, TraceId = "0af7651916cd43dd8448eb211c80319c" };

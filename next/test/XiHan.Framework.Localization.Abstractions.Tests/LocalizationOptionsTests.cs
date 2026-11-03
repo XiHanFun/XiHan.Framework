@@ -9,12 +9,12 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Localization.Abstractions.Tests;
 
 /// <summary>
-/// 选项解析与区域协商。
+/// 选项解析与区域协商
 /// </summary>
 public sealed class LocalizationOptionsTests
 {
     /// <summary>
-    /// 用键值对构造配置。
+    /// 用键值对构造配置
     /// </summary>
     private static IConfiguration Build(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();

@@ -11,10 +11,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.InMemory.Tests;
 
 /// <summary>
-/// 让 <see cref="InMemoryLeaderElection"/> 跑完整套 <see cref="LeaderElectionConformance"/> 用例。
+/// 让 <see cref="InMemoryLeaderElection"/> 跑完整套 <see cref="LeaderElectionConformance"/> 用例
 /// </summary>
 /// <remarks>
-/// 应用生命周期用例的节点是装配了内存调度的宿主；进程内的选举只在本进程里有效，竞争者就是节点自己的选举实例——它不分持有者，节点持有时谁再获取都被拒。
+/// 应用生命周期用例的节点是装配了内存调度的宿主；进程内的选举只在本进程里有效，竞争者就是节点自己的选举实例——它不分持有者，节点持有时谁再获取都被拒
 /// </remarks>
 public sealed class InMemoryLeaderElectionConformanceTests : LeaderElectionConformance
 {

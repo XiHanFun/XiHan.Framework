@@ -19,12 +19,12 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.InMemory.Tests;
 
 /// <summary>
-/// 内存实现自己的行为：假时钟上的 cron、不共享存储下的领导语义、历史上限、选项。
+/// 内存实现自己的行为：假时钟上的 cron、不共享存储下的领导语义、历史上限、选项
 /// </summary>
 public sealed class InMemorySchedulingTests
 {
     /// <summary>
-    /// 顶替领导选举的显式 Provider：永远拿不到租约。
+    /// 顶替领导选举的显式 Provider：永远拿不到租约
     /// </summary>
     private sealed class ExplicitLeaderFeature : IFeature
     {
@@ -36,7 +36,7 @@ public sealed class InMemorySchedulingTests
     }
 
     /// <summary>
-    /// 永远拒绝的选举。
+    /// 永远拒绝的选举
     /// </summary>
     private sealed class NeverLeaderElection : ILeaderElection
     {
@@ -204,13 +204,13 @@ public sealed class InMemorySchedulingTests
     }
 
     /// <summary>
-    /// 作业状态。
+    /// 作业状态
     /// </summary>
     private static async Task<JobStatus> StatusAsync(JobSchedulerEngine engine, JobName name)
         => (await engine.StatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
 
     /// <summary>
-    /// 等待条件成立。
+    /// 等待条件成立
     /// </summary>
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

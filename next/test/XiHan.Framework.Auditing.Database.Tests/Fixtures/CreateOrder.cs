@@ -9,13 +9,13 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Database.Tests.Fixtures;
 
 /// <summary>
-/// 声明了权限的创建操作：补充资源与细节后返回成功。
+/// 声明了权限的创建操作：补充资源与细节后返回成功
 /// </summary>
 [Operation(Id, Permission = "orders.write")]
 internal sealed class CreateOrder : IOperation<CreateOrderRequest, OrderResponse>
 {
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public const string Id = "orders.create";
 

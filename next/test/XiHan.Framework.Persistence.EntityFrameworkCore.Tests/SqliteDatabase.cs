@@ -13,25 +13,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// 每个测试一个临时 SQLite 文件。
+/// 每个测试一个临时 SQLite 文件
 /// </summary>
 internal sealed class SqliteDatabase : IDisposable
 {
     /// <summary>
-    /// 数据库文件的完整路径。
+    /// 数据库文件的完整路径
     /// </summary>
     /// <remarks>
-    /// 位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
+    /// 位于系统临时目录，文件名带随机后缀以免测试之间互相干扰
     /// </remarks>
     public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"xihan-efcore-{Guid.NewGuid():N}.db");
 
     /// <summary>
-    /// 指向该文件的 SQLite 连接串。
+    /// 指向该文件的 SQLite 连接串
     /// </summary>
     public string ConnectionString => $"Data Source={Path}";
 
     /// <summary>
-    /// 宿主配置：连接绑定 <c>db</c> 与开启 <c>EnsureCreated</c> 建表。
+    /// 宿主配置：连接绑定 <c>db</c> 与开启 <c>EnsureCreated</c> 建表
     /// </summary>
     public IEnumerable<KeyValuePair<string, string?>> Configuration =>
     [
@@ -40,10 +40,10 @@ internal sealed class SqliteDatabase : IDisposable
     ];
 
     /// <summary>
-    /// 创建以 <see cref="ConformanceDbContext"/> 与 SQLite 装配的 EF Core 特性。
+    /// 创建以 <see cref="ConformanceDbContext"/> 与 SQLite 装配的 EF Core 特性
     /// </summary>
     /// <remarks>
-    /// 连接串来自宿主解析的绑定。给了拦截器就挂到上下文上。
+    /// 连接串来自宿主解析的绑定。给了拦截器就挂到上下文上
     /// </remarks>
     public static IFeature CreateFeature(IInterceptor? interceptor = null)
         => new EntityFrameworkCorePersistenceFeature<ConformanceDbContext>((binding, options) =>
@@ -56,10 +56,10 @@ internal sealed class SqliteDatabase : IDisposable
         });
 
     /// <summary>
-    /// 启动带本数据库、三种套件实体与指定时钟的宿主。
+    /// 启动带本数据库、三种套件实体与指定时钟的宿主
     /// </summary>
     /// <remarks>
-    /// 不传时钟则用系统时钟；给了拦截器就挂到上下文上。
+    /// 不传时钟则用系统时钟；给了拦截器就挂到上下文上
     /// </remarks>
     public Task<TestHost> StartHostAsync(TimeProvider? timeProvider = null, IInterceptor? interceptor = null) => TestHost.StartAsync(
         builder => builder.UseFeature(CreateFeature(interceptor)),
@@ -73,10 +73,10 @@ internal sealed class SqliteDatabase : IDisposable
         });
 
     /// <summary>
-    /// 清空本库的连接池并删除数据库文件及其日志、WAL 与共享内存文件。
+    /// 清空本库的连接池并删除数据库文件及其日志、WAL 与共享内存文件
     /// </summary>
     /// <remarks>
-    /// 用例自己在 <see cref="ConnectionString"/> 后面追加了参数的（连接池按连接串分组），先对那个连接串调用 <see cref="ClearPool"/>。
+    /// 用例自己在 <see cref="ConnectionString"/> 后面追加了参数的（连接池按连接串分组），先对那个连接串调用 <see cref="ClearPool"/>
     /// </remarks>
     public void Dispose()
     {
@@ -89,10 +89,10 @@ internal sealed class SqliteDatabase : IDisposable
     }
 
     /// <summary>
-    /// 清空一个连接串的连接池。
+    /// 清空一个连接串的连接池
     /// </summary>
     /// <remarks>
-    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败——Microsoft.Data.Sqlite 在池锁之外先置活动标记、再记外层连接，清池时回收泄漏连接恰好落在两步之间。
+    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败——Microsoft.Data.Sqlite 在池锁之外先置活动标记、再记外层连接，清池时回收泄漏连接恰好落在两步之间
     /// </remarks>
     public static void ClearPool(string connectionString)
     {

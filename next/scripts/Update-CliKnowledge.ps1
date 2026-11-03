@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    重新生成 xihan 工具离线知识库的包与特性清单索引 next/src/XiHan.Framework.Cli/Knowledge/catalog.json。
+    重新生成 xihan 工具离线知识库的包与特性清单索引 next/src/XiHan.Framework.Cli/Knowledge/catalog.json
 
 .DESCRIPTION
     构建 XiHan.Framework.Cli.Tests（它引用全部正式包），以 XIHAN_UPDATE_CLI_KNOWLEDGE=1 运行一次测试：
-    KnowledgeCatalogTests 从 next/src/*/*.csproj、next/Directory.Packages.props、next/README.md 的包表与各特性的 Manifest 生成索引并写回文件。
-    之后再构建一次让工具嵌入新的索引，并不带变量重跑测试核对。
-    配置节索引 Knowledge/configuration.json 是人工整理的，不由本脚本生成；KnowledgeConfigurationTests 失败时按失败信息逐条改它（ADR-0076）。
+    KnowledgeCatalogTests 从 next/src/*/*.csproj、next/Directory.Packages.props、next/README.md 的包表与各特性的 Manifest 生成索引并写回文件
+    之后再构建一次让工具嵌入新的索引，并不带变量重跑测试核对
+    配置节索引 Knowledge/configuration.json 是人工整理的，不由本脚本生成；KnowledgeConfigurationTests 失败时按失败信息逐条改它（ADR-0076）
 
 .EXAMPLE
     pwsh -File next/scripts/Update-CliKnowledge.ps1

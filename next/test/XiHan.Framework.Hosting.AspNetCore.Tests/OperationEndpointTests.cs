@@ -15,15 +15,15 @@ using XiHan.Framework.Kernel.Operations;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// 操作描述作为端点元数据进入上下文，端点内用 <see cref="IOperationInvoker.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext, OperationRequest)"/> 执行。
+/// 操作描述作为端点元数据进入上下文，端点内用 <see cref="IOperationInvoker.ExecuteAsync(XiHan.Framework.Primitives.InvocationContext, OperationRequest)"/> 执行
 /// </summary>
 /// <remarks>
-/// 失败结果由宿主写成 Problem Details。
+/// 失败结果由宿主写成 Problem Details
 /// </remarks>
 public sealed class OperationEndpointTests
 {
     /// <summary>
-    /// 启动带问候操作端点的测试宿主。
+    /// 启动带问候操作端点的测试宿主
     /// </summary>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync()
     {

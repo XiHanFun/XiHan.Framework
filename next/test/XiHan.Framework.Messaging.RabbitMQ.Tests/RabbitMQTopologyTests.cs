@@ -16,40 +16,40 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 
 /// <summary>
-/// 真实 RabbitMQ 上的拓扑：队列只由订阅方声明（ADR-0079）。
+/// 真实 RabbitMQ 上的拓扑：队列只由订阅方声明（ADR-0079）
 /// </summary>
 /// <remarks>
-/// 未设置 <c>XIHAN_TEST_RABBITMQ</c> 时跳过。每个用例用独立的队列前缀与交换机，结束时删除它们。
+/// 未设置 <c>XIHAN_TEST_RABBITMQ</c> 时跳过。每个用例用独立的队列前缀与交换机，结束时删除它们
 /// </remarks>
 public sealed class RabbitMQTopologyTests : IAsyncLifetime
 {
     /// <summary>
-    /// 订阅的主题。
+    /// 订阅的主题
     /// </summary>
     private const string SubscribedTopic = "orders";
 
     /// <summary>
-    /// 没人订阅的主题。
+    /// 没人订阅的主题
     /// </summary>
     private const string UnsubscribedTopic = "scheduling.job.started";
 
     /// <summary>
-    /// 本用例独有的队列前缀。
+    /// 本用例独有的队列前缀
     /// </summary>
     private readonly string _prefix = $"xihan-test.{Guid.NewGuid():N}.";
 
     /// <summary>
-    /// 本用例独有的交换机。
+    /// 本用例独有的交换机
     /// </summary>
     private readonly string _exchange = $"xihan-test-{Guid.NewGuid():N}";
 
     /// <summary>
-    /// 用来查看拓扑的原始连接。
+    /// 用来查看拓扑的原始连接
     /// </summary>
     private IConnection? _connection;
 
     /// <summary>
-    /// 测试代理的 URI，没有设置环境变量时为空。
+    /// 测试代理的 URI，没有设置环境变量时为空
     /// </summary>
     private static string? Uri => Environment.GetEnvironmentVariable(RabbitMQMessageBrokerConformanceTests.EnvironmentVariable);
 
@@ -163,16 +163,16 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 没有测试代理时跳过。
+    /// 没有测试代理时跳过
     /// </summary>
     private static void SkipWithoutBroker()
         => Assert.SkipWhen(string.IsNullOrWhiteSpace(Uri), $"Set the environment variable {RabbitMQMessageBrokerConformanceTests.EnvironmentVariable} to a RabbitMQ URI to run this test.");
 
     /// <summary>
-    /// 启动一个宿主，<paramref name="log"/> 不为空时以 <paramref name="mode"/> 订阅 <see cref="SubscribedTopic"/>。
+    /// 启动一个宿主，<paramref name="log"/> 不为空时以 <paramref name="mode"/> 订阅 <see cref="SubscribedTopic"/>
     /// </summary>
     /// <remarks>
-    /// <paramref name="instanceId"/> 不为空时配置为 <c>XiHan:Messaging:InstanceId</c>。
+    /// <paramref name="instanceId"/> 不为空时配置为 <c>XiHan:Messaging:InstanceId</c>
     /// </remarks>
     private Task<TestHost> StartAsync(DeliveryLog? log, SubscriptionMode mode = SubscriptionMode.Competing, string? instanceId = null)
         => TestHost.StartAsync(
@@ -193,7 +193,7 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
             });
 
     /// <summary>
-    /// 在新作用域内发布一条。
+    /// 在新作用域内发布一条
     /// </summary>
     private static async Task<Primitives.Result> PublishAsync(TestHost host, string topic, string id)
     {
@@ -202,18 +202,18 @@ public sealed class RabbitMQTopologyTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 被动声明：队列存在为真，不存在（404）为假。
+    /// 被动声明：队列存在为真，不存在（404）为假
     /// </summary>
     /// <remarks>
-    /// 被动声明失败会关闭通道，每次用新通道。
+    /// 被动声明失败会关闭通道，每次用新通道
     /// </remarks>
     private async Task<bool> QueueExistsAsync(string queue) => await QueueStateAsync(queue) == 200;
 
     /// <summary>
-    /// 被动声明的结果：200 为存在，404 为不存在，405 为被别的连接独占。
+    /// 被动声明的结果：200 为存在，404 为不存在，405 为被别的连接独占
     /// </summary>
     /// <remarks>
-    /// 被动声明失败会关闭通道，每次用新通道。
+    /// 被动声明失败会关闭通道，每次用新通道
     /// </remarks>
     private async Task<int> QueueStateAsync(string queue)
     {

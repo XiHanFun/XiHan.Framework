@@ -13,15 +13,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Operations;
 
 /// <summary>
-/// 操作契约与 XGI。
+/// 操作契约与 XGI
 /// </summary>
 /// <remarks>
-/// 登记表、契约校验、JSON 与类型化调用、描述进入上下文、失败与异常翻译、管道内执行。
+/// 登记表、契约校验、JSON 与类型化调用、描述进入上下文、失败与异常翻译、管道内执行
 /// </remarks>
 public sealed class OperationTests
 {
     /// <summary>
-    /// 构建并启动只装配回声特性的应用。
+    /// 构建并启动只装配回声特性的应用
     /// </summary>
     private static async Task<(ServiceProvider Provider, App App)> StartAsync(params IFeature[] features)
     {
@@ -37,12 +37,12 @@ public sealed class OperationTests
     }
 
     /// <summary>
-    /// UTF-8 字节。
+    /// UTF-8 字节
     /// </summary>
     private static ReadOnlyMemory<byte> Utf8(string json) => Encoding.UTF8.GetBytes(json);
 
     /// <summary>
-    /// 解析响应载荷里的字段。
+    /// 解析响应载荷里的字段
     /// </summary>
     private static string Field(OperationResponse response, string name)
     {

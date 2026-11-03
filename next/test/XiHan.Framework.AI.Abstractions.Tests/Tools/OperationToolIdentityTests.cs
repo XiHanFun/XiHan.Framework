@@ -17,15 +17,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.Abstractions.Tests.Tools;
 
 /// <summary>
-/// 操作工具以调用方身份执行。
+/// 操作工具以调用方身份执行
 /// </summary>
 /// <remarks>
-/// 调用方经管道认证后绑定工具：有权限的主体放行、工具里看到的是调用方主体与租户，没有权限的主体与匿名调用被 Authorize 拒绝并以 JSON 错误交给模型。
+/// 调用方经管道认证后绑定工具：有权限的主体放行、工具里看到的是调用方主体与租户，没有权限的主体与匿名调用被 Authorize 拒绝并以 JSON 错误交给模型
 /// </remarks>
 public sealed class OperationToolIdentityTests
 {
     /// <summary>
-    /// 两个主体：alice 是 reader（有 <c>guarded.read</c>），bob 是 guest（没有）。
+    /// 两个主体：alice 是 reader（有 <c>guarded.read</c>），bob 是 guest（没有）
     /// </summary>
     private static readonly (string Key, string Value)[] _configuration =
     [
@@ -62,10 +62,10 @@ public sealed class OperationToolIdentityTests
     }
 
     /// <summary>
-    /// 以给定凭据发起一次经管道认证的调用，在其中绑定并调用 <c>guarded_whoami</c> 工具。
+    /// 以给定凭据发起一次经管道认证的调用，在其中绑定并调用 <c>guarded_whoami</c> 工具
     /// </summary>
     /// <remarks>
-    /// 给了租户时在调用里写入安全上下文，模拟 Tenant 阶段解析出的租户。返回工具结果与调用方的追踪 ID。
+    /// 给了租户时在调用里写入安全上下文，模拟 Tenant 阶段解析出的租户。返回工具结果与调用方的追踪 ID
     /// </remarks>
     private static async Task<(JsonElement Reply, string TraceId)> CallAsync(TestHost host, string? apiKey, string? tenant = null)
     {
@@ -93,7 +93,7 @@ public sealed class OperationToolIdentityTests
     }
 
     /// <summary>
-    /// 启动：本地化 + 内存安全 + 工具目录 + 带权限的操作。
+    /// 启动：本地化 + 内存安全 + 工具目录 + 带权限的操作
     /// </summary>
     private static Task<TestHost> StartAsync()
         => TestHost.StartAsync(

@@ -8,12 +8,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 种类 <c>failing</c> 的嵌入工厂：建出的生成器每次都抛出。
+/// 种类 <c>failing</c> 的嵌入工厂：建出的生成器每次都抛出
 /// </summary>
 internal sealed class FailingEmbeddingGeneratorFactory : IEmbeddingGeneratorFactory
 {
     /// <summary>
-    /// 种类名。
+    /// 种类名
     /// </summary>
     public const string KindName = "failing";
 

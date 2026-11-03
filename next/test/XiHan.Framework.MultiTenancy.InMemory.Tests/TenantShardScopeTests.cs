@@ -12,20 +12,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.InMemory.Tests;
 
 /// <summary>
-/// 管道外的作用域绑定分片。
+/// 管道外的作用域绑定分片
 /// </summary>
 /// <remarks>
-/// 按租户解析并绑定（停用租户也行、共库租户不绑定、解析失败不绑定），客户端建好后不能再绑定或改绑，显式绑定优先于调用上下文（ADR-0057）。
+/// 按租户解析并绑定（停用租户也行、共库租户不绑定、解析失败不绑定），客户端建好后不能再绑定或改绑，显式绑定优先于调用上下文（ADR-0057）
 /// </remarks>
 public sealed class TenantShardScopeTests
 {
     /// <summary>
-    /// 租户 <c>acme</c> 的配置节前缀。
+    /// 租户 <c>acme</c> 的配置节前缀
     /// </summary>
     private const string Acme = "XiHan:MultiTenancy:Tenants:acme:";
 
     /// <summary>
-    /// 原绑定。
+    /// 原绑定
     /// </summary>
     private static readonly Maybe<BindingValue> _fallback = Maybe.Some(new BindingValue("db", "connection:relational", "Host=default", new Dictionary<string, string>(StringComparer.Ordinal)));
 
@@ -109,7 +109,7 @@ public sealed class TenantShardScopeTests
     }
 
     /// <summary>
-    /// 停用的分库租户 <c>acme</c> 与共库租户 <c>beta</c>。
+    /// 停用的分库租户 <c>acme</c> 与共库租户 <c>beta</c>
     /// </summary>
     private static Task<TestHost> StartAsync(params (string Key, string Value)[] extra) => TestHost.StartAsync(
         static b => b.UseFeature<InMemoryMultiTenancyFeature>(),
@@ -121,7 +121,7 @@ public sealed class TenantShardScopeTests
         ]);
 
     /// <summary>
-    /// 读取即抛出的租户存储。
+    /// 读取即抛出的租户存储
     /// </summary>
     private sealed class UnreachableStore : ITenantStore
     {

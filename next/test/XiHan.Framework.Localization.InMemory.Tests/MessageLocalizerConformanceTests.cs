@@ -8,7 +8,7 @@ using XiHan.Framework.Localization.Conformance;
 namespace XiHan.Framework.Localization.InMemory.Tests;
 
 /// <summary>
-/// 让 <see cref="MessageLocalizer"/> 跑完整套 <see cref="MessageLocalizerConformance"/> 用例。
+/// 让 <see cref="MessageLocalizer"/> 跑完整套 <see cref="MessageLocalizerConformance"/> 用例
 /// </summary>
 public sealed class MessageLocalizerConformanceTests : MessageLocalizerConformance
 {

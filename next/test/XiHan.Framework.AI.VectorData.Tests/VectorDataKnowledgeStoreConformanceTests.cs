@@ -8,7 +8,7 @@ using XiHan.Framework.AI.Conformance.Knowledge;
 namespace XiHan.Framework.AI.VectorData.Tests;
 
 /// <summary>
-/// VectorData 知识库存储通过存储套件。
+/// VectorData 知识库存储通过存储套件
 /// </summary>
 public sealed class VectorDataKnowledgeStoreConformanceTests : KnowledgeStoreConformance
 {

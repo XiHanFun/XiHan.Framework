@@ -4,15 +4,15 @@
 namespace XiHan.Framework.Architecture.Tests.Model;
 
 /// <summary>
-/// 从 <c>spec/conventions/vocabulary.md</c> 的表格读取术语表。
+/// 从 <c>spec/conventions/vocabulary.md</c> 的表格读取术语表
 /// </summary>
 /// <remarks>
-/// 规范文件是唯一事实源，测试不另存一份。
+/// 规范文件是唯一事实源，测试不另存一份
 /// </remarks>
 internal static class Vocabulary
 {
     /// <summary>
-    /// 结构词：不是子系统领域，但合法出现在包 ID 中的词。
+    /// 结构词：不是子系统领域，但合法出现在包 ID 中的词
     /// </summary>
     public static readonly IReadOnlySet<string> StructuralWords = new HashSet<string>(StringComparer.Ordinal)
     {
@@ -20,31 +20,31 @@ internal static class Vocabulary
     };
 
     /// <summary>
-    /// 术语表文件路径。
+    /// 术语表文件路径
     /// </summary>
     public static string FilePath => Path.Combine(Workspace.SpecRoot, "conventions", "vocabulary.md");
 
     /// <summary>
-    /// 术语表全部条目，按文件顺序。
+    /// 术语表全部条目，按文件顺序
     /// </summary>
     public static IReadOnlyList<VocabularyEntry> Entries { get; } = Load();
 
     /// <summary>
-    /// 全部领域词。
+    /// 全部领域词
     /// </summary>
     public static IReadOnlySet<string> Words { get; } = Entries.Select(static e => e.Word).ToHashSet(StringComparer.Ordinal);
 
     /// <summary>
-    /// 子系统领域词：领域词中去掉结构词。
+    /// 子系统领域词：领域词中去掉结构词
     /// </summary>
     public static IReadOnlySet<string> SubsystemWords { get; } =
         Words.Where(static w => !StructuralWords.Contains(w)).ToHashSet(StringComparer.Ordinal);
 
     /// <summary>
-    /// 解析 Markdown 表格。
+    /// 解析 Markdown 表格
     /// </summary>
     /// <remarks>
-    /// 只取以 <c>| `</c> 开头的数据行（表头与分隔行不以反引号开头），前四列依次为领域词、能力 ID 前缀、配置节、错误码域。
+    /// 只取以 <c>| `</c> 开头的数据行（表头与分隔行不以反引号开头），前四列依次为领域词、能力 ID 前缀、配置节、错误码域
     /// </remarks>
     private static List<VocabularyEntry> Load()
     {
@@ -74,7 +74,7 @@ internal static class Vocabulary
     }
 
     /// <summary>
-    /// 去掉单元格两端的空白与反引号。
+    /// 去掉单元格两端的空白与反引号
     /// </summary>
     private static string Strip(string cell) => cell.Trim().Trim('`').Trim();
 }

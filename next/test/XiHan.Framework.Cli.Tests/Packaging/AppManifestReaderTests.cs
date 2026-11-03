@@ -6,7 +6,7 @@ using XiHan.Framework.Cli.Packaging;
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
 /// <summary>
-/// 应用清单的读取、缺省值与校验。
+/// 应用清单的读取、缺省值与校验
 /// </summary>
 public sealed class AppManifestReaderTests
 {

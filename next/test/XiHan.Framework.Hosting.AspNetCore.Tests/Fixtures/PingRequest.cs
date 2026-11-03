@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Hosting.AspNetCore.Tests.Fixtures;
 
 /// <summary>
-/// 操作端点测试的请求。
+/// 操作端点测试的请求
 /// </summary>
-/// <param name="Name">名字。</param>
+/// <param name="Name">名字</param>
 internal sealed record PingRequest(string? Name);

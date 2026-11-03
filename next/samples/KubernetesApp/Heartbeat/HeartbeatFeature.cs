@@ -11,7 +11,7 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 namespace KubernetesApp.Heartbeat;
 
 /// <summary>
-/// 登记心跳作业的能力包：依赖调度能力，作业由当前选中的调度器按计划运行。
+/// 登记心跳作业的能力包：依赖调度能力，作业由当前选中的调度器按计划运行
 /// </summary>
 public sealed class HeartbeatFeature : IFeature
 {

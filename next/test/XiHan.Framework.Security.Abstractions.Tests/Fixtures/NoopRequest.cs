@@ -4,6 +4,6 @@
 namespace XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 授权测试用的空请求。
+/// 授权测试用的空请求
 /// </summary>
 internal sealed record NoopRequest;

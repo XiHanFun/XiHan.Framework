@@ -8,20 +8,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
 
 /// <summary>
-/// 记录发布次数的消息发布器桩。
+/// 记录发布次数的消息发布器桩
 /// </summary>
 /// <remarks>
-/// 给了探针时每次批量发布都等到令牌取消（最多 30 秒），用来核对发布受外层截止时间约束。
+/// 给了探针时每次批量发布都等到令牌取消（最多 30 秒），用来核对发布受外层截止时间约束
 /// </remarks>
 internal sealed class ProbePublisher(CancellationProbe? blockUntilCancelled = null) : IMessagePublisher
 {
     /// <summary>
-    /// 发布次数（按信封计）。
+    /// 发布次数（按信封计）
     /// </summary>
     private int _published;
 
     /// <summary>
-    /// 已发布的信封数。
+    /// 已发布的信封数
     /// </summary>
     public int Published => Volatile.Read(ref _published);
 

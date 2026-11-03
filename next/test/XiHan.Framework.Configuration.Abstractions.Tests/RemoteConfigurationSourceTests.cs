@@ -11,7 +11,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 远程配置源：首次加载、前缀、轮询重载、失败语义、回调异常、子键枚举。
+/// 远程配置源：首次加载、前缀、轮询重载、失败语义、回调异常、子键枚举
 /// </summary>
 public sealed class RemoteConfigurationSourceTests
 {
@@ -216,7 +216,7 @@ public sealed class RemoteConfigurationSourceTests
     }
 
     /// <summary>
-    /// 永远不返回的客户端。
+    /// 永远不返回的客户端
     /// </summary>
     private sealed class SlowClient : IRemoteConfigurationClient
     {
@@ -229,7 +229,7 @@ public sealed class RemoteConfigurationSourceTests
     }
 
     /// <summary>
-    /// 推进一个轮询周期，等这次取值开始。
+    /// 推进一个轮询周期，等这次取值开始
     /// </summary>
     private static Task PollAsync(FakeTimeProvider clock, TimeSpan interval, InMemoryRemoteConfiguration remote)
     {
@@ -239,7 +239,7 @@ public sealed class RemoteConfigurationSourceTests
     }
 
     /// <summary>
-    /// 轮询直到条件成立，最多 10 秒。
+    /// 轮询直到条件成立，最多 10 秒
     /// </summary>
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

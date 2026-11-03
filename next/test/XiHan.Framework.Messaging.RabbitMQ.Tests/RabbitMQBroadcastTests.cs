@@ -13,30 +13,30 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 
 /// <summary>
-/// 广播订阅（RFC-0009「订阅方式」，ADR-0079）。
+/// 广播订阅（RFC-0009「订阅方式」，ADR-0079）
 /// </summary>
 /// <remarks>
-/// 对打桩的连接与通道验证：广播订阅声明本实例独占、非持久、随连接删除的队列并以主题的路由键绑定；投递带广播方式；重试定向发回本实例的队列；到上限或无法解码时确认掉、不进死信。不需要真实 RabbitMQ。
+/// 对打桩的连接与通道验证：广播订阅声明本实例独占、非持久、随连接删除的队列并以主题的路由键绑定；投递带广播方式；重试定向发回本实例的队列；到上限或无法解码时确认掉、不进死信。不需要真实 RabbitMQ
 /// </remarks>
 public sealed class RabbitMQBroadcastTests
 {
     /// <summary>
-    /// 测试主题。
+    /// 测试主题
     /// </summary>
     private const string Topic = "sessions.revoked";
 
     /// <summary>
-    /// 主题的路由键（也是竞争订阅的队列）。
+    /// 主题的路由键（也是竞争订阅的队列）
     /// </summary>
     private const string RoutingKey = "xihan.sessions.revoked";
 
     /// <summary>
-    /// 本实例的标识。
+    /// 本实例的标识
     /// </summary>
     private readonly MessagingInstance _instance = new(new MessagingOptions());
 
     /// <summary>
-    /// 本实例的广播队列。
+    /// 本实例的广播队列
     /// </summary>
     private string BroadcastQueue => RoutingKey + "@" + _instance.Id;
 
@@ -114,21 +114,21 @@ public sealed class RabbitMQBroadcastTests
     }
 
     /// <summary>
-    /// 来源 <c>/tests</c>、类型 <c>sessions.revoked</c> 的测试信封。
+    /// 来源 <c>/tests</c>、类型 <c>sessions.revoked</c> 的测试信封
     /// </summary>
     private static MessageEnvelope Envelope(string id) => new() { Id = id, Source = "/tests", Type = "sessions.revoked" };
 
     /// <summary>
-    /// 用打桩连接创建代理。
+    /// 用打桩连接创建代理
     /// </summary>
     /// <remarks>
-    /// <paramref name="instance"/> 为空时用本测试类的实例标识。
+    /// <paramref name="instance"/> 为空时用本测试类的实例标识
     /// </remarks>
     private RabbitMQMessageBroker Broker(TestHost host, IConnection connection, MessagingInstance? instance = null)
         => new(new RabbitMQMessagingOptions { Configuration = "amqp://localhost:5672" }, new MessagingOptions { MaxAttempts = 2 }, instance ?? _instance, host.App, NullLoggerFactory.Instance, _ => Task.FromResult(connection));
 
     /// <summary>
-    /// 让打桩通道上的消费者收到一条投递，等处理完成。
+    /// 让打桩通道上的消费者收到一条投递，等处理完成
     /// </summary>
     private async Task DeliverAsync(FakeRabbitChannel channel, ulong deliveryTag, int attempt, byte[] body)
     {

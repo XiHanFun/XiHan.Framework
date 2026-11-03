@@ -11,12 +11,12 @@ using XiHan.Framework.Protocols.CloudEvents.Inbound;
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 
 /// <summary>
-/// HTTP 绑定本身：三种入站模式的读取、两种出站模式的写出、头值编码。
+/// HTTP 绑定本身：三种入站模式的读取、两种出站模式的写出、头值编码
 /// </summary>
 public sealed class CloudEventsHttpBindingTests
 {
     /// <summary>
-    /// 一个带时间、主题、租户扩展与 JSON 数据的信封。
+    /// 一个带时间、主题、租户扩展与 JSON 数据的信封
     /// </summary>
     private static readonly MessageEnvelope _envelope = new MessageEnvelope
     {
@@ -29,7 +29,7 @@ public sealed class CloudEventsHttpBindingTests
     }.WithExtension(EnvelopeExtensions.Tenant, "acme");
 
     /// <summary>
-    /// 构造一个带头与正文的请求。
+    /// 构造一个带头与正文的请求
     /// </summary>
     private static HttpRequest Request(string? contentType, string body, params (string Name, string Value)[] headers)
     {

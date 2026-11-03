@@ -10,12 +10,12 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 namespace XiHan.Framework.Scheduling.Abstractions.Tests;
 
 /// <summary>
-/// 作业名、定义与登记表。
+/// 作业名、定义与登记表
 /// </summary>
 public sealed class JobRegistryTests
 {
     /// <summary>
-    /// 什么都不做的作业。
+    /// 什么都不做的作业
     /// </summary>
     private sealed class NoopJob : IJob
     {
@@ -24,7 +24,7 @@ public sealed class JobRegistryTests
     }
 
     /// <summary>
-    /// 另一个什么都不做的作业。
+    /// 另一个什么都不做的作业
     /// </summary>
     private sealed class OtherJob : IJob
     {

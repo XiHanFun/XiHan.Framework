@@ -10,10 +10,10 @@ using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 领导租约与应用生命周期（数据库实现）。
+/// 领导租约与应用生命周期（数据库实现）
 /// </summary>
 /// <remarks>
-/// 两个节点共用一个 SQLite 文件与一个由用例推进的时钟，轮询周期 1 小时（后台循环不动作），周期由用例经 <see cref="JobSchedulerEngine.PollOnceAsync"/> 直接执行。停止时删行，另一个节点立刻拿到，不记告警——那时管道已拒绝调用，所以释放不经管道。启动中不拿、排空即释放由一致性套件的应用生命周期用例覆盖（<c>LeaderElectionConformance.Engine_HoldsTheLeaseOnlyWhileTheApplicationServes</c>，<see cref="DatabaseLeaderElectionConformanceTests"/>）。
+/// 两个节点共用一个 SQLite 文件与一个由用例推进的时钟，轮询周期 1 小时（后台循环不动作），周期由用例经 <see cref="JobSchedulerEngine.PollOnceAsync"/> 直接执行。停止时删行，另一个节点立刻拿到，不记告警——那时管道已拒绝调用，所以释放不经管道。启动中不拿、排空即释放由一致性套件的应用生命周期用例覆盖（<c>LeaderElectionConformance.Engine_HoldsTheLeaseOnlyWhileTheApplicationServes</c>，<see cref="DatabaseLeaderElectionConformanceTests"/>）
 /// </remarks>
 public sealed class LeadershipLifecycleTests
 {
@@ -46,7 +46,7 @@ public sealed class LeadershipLifecycleTests
     }
 
     /// <summary>
-    /// 一个节点的配置：节点 ID，轮询周期沿用夹具的 1 小时。
+    /// 一个节点的配置：节点 ID，轮询周期沿用夹具的 1 小时
     /// </summary>
     private static List<KeyValuePair<string, string?>> NodeSettings(string nodeId) =>
     [

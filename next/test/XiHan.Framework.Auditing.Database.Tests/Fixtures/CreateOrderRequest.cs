@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Auditing.Database.Tests.Fixtures;
 
 /// <summary>
-/// 创建请求。
+/// 创建请求
 /// </summary>
-/// <param name="Amount">金额。</param>
+/// <param name="Amount">金额</param>
 internal sealed record CreateOrderRequest(decimal Amount);

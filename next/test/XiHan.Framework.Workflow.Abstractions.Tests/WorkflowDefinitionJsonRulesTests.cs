@@ -11,25 +11,25 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 定义 JSON 里模型会拒绝的值：读入时报带键的问题，与模型的规则逐条对照。
+/// 定义 JSON 里模型会拒绝的值：读入时报带键的问题，与模型的规则逐条对照
 /// </summary>
 /// <remarks>
-/// 每条规则三处对照：读入报出这条问题（路径、消息键，zh-CN 与 en-US 的精确文案）；同一个值直接构造模型会抛出英文异常；边界上合法的文档读入通过、构造不抛出（ADR-0106 修订）。
+/// 每条规则三处对照：读入报出这条问题（路径、消息键，zh-CN 与 en-US 的精确文案）；同一个值直接构造模型会抛出英文异常；边界上合法的文档读入通过、构造不抛出（ADR-0106 修订）
 /// </remarks>
 public sealed class WorkflowDefinitionJsonRulesTests
 {
     /// <summary>
-    /// 测试用的解析器。
+    /// 测试用的解析器
     /// </summary>
     private static readonly WorkflowCatalogResolver _messages = new();
 
     /// <summary>
-    /// 每条规则一行：改坏文档的办法、路径、消息键、两种语言的文案、同一个值构造模型。
+    /// 每条规则一行：改坏文档的办法、路径、消息键、两种语言的文案、同一个值构造模型
     /// </summary>
     public static TheoryData<string> Rules => [.. Cases.Keys];
 
     /// <summary>
-    /// 规则表。
+    /// 规则表
     /// </summary>
     private static Dictionary<string, (Action<JsonObject> Break, string Path, string Key, string Chinese, string English, Action Model)> Cases { get; } = new(StringComparer.Ordinal)
     {
@@ -164,7 +164,7 @@ public sealed class WorkflowDefinitionJsonRulesTests
     }
 
     /// <summary>
-    /// 一份合法的文档：一个带重试策略的开始节点、一条转移、一个变量。
+    /// 一份合法的文档：一个带重试策略的开始节点、一条转移、一个变量
     /// </summary>
     private static JsonObject Valid() => new()
     {
@@ -182,22 +182,22 @@ public sealed class WorkflowDefinitionJsonRulesTests
     };
 
     /// <summary>
-    /// 第一个节点。
+    /// 第一个节点
     /// </summary>
     private static JsonObject Node(JsonObject document) => (JsonObject)document["nodes"]![0]!;
 
     /// <summary>
-    /// 第一个节点的重试策略。
+    /// 第一个节点的重试策略
     /// </summary>
     private static JsonObject Retry(JsonObject document) => (JsonObject)Node(document)["retryPolicy"]!;
 
     /// <summary>
-    /// 第一条转移。
+    /// 第一条转移
     /// </summary>
     private static JsonObject Transition(JsonObject document) => (JsonObject)document["transitions"]![0]!;
 
     /// <summary>
-    /// 读入，取问题列表。
+    /// 读入，取问题列表
     /// </summary>
     private static IReadOnlyList<SchemaViolation> Issues(JsonObject document)
     {
@@ -207,23 +207,23 @@ public sealed class WorkflowDefinitionJsonRulesTests
     }
 
     /// <summary>
-    /// 读入，取唯一的问题。
+    /// 读入，取唯一的问题
     /// </summary>
     private static SchemaViolation SingleIssue(JsonObject document) => Assert.Single(Issues(document));
 
     /// <summary>
-    /// 读入原文，取唯一的问题。
+    /// 读入原文，取唯一的问题
     /// </summary>
     private static SchemaViolation SingleIssue(string json)
         => Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<SchemaViolation>>(WorkflowJson.DeserializeDefinition(json).Error!.Details!["errors"]));
 
     /// <summary>
-    /// 问题的路径与消息键。
+    /// 问题的路径与消息键
     /// </summary>
     private static (string Path, string? Key) Path(SchemaViolation issue) => (issue.Path, issue.MessageKey);
 
     /// <summary>
-    /// 在给定区域渲染一条问题。
+    /// 在给定区域渲染一条问题
     /// </summary>
     private static string Render(string locale, SchemaViolation issue)
     {

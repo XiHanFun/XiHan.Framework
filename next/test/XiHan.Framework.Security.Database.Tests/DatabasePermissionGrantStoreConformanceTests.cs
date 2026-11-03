@@ -13,26 +13,26 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Database.Tests;
 
 /// <summary>
-/// 数据库授予存储跑一致性套件。
+/// 数据库授予存储跑一致性套件
 /// </summary>
 /// <remarks>
-/// 每个用例启动一个装配了内存持久化的宿主，经 <see cref="PermissionGrantRecordStore"/> 种入套件的授予；不可达用例在 SQLite 上启动后断开连接。用例结束后停止宿主。
+/// 每个用例启动一个装配了内存持久化的宿主，经 <see cref="PermissionGrantRecordStore"/> 种入套件的授予；不可达用例在 SQLite 上启动后断开连接。用例结束后停止宿主
 /// </remarks>
 public sealed class DatabasePermissionGrantStoreConformanceTests : PermissionGrantStoreConformance, IAsyncDisposable
 {
     /// <summary>
-    /// 本用例启动的宿主。
+    /// 本用例启动的宿主
     /// </summary>
     /// <remarks>
-    /// 释放时停止。
+    /// 释放时停止
     /// </remarks>
     private readonly List<TestHost> _hosts = [];
 
     /// <summary>
-    /// 不可达用例用的 SQLite 文件。
+    /// 不可达用例用的 SQLite 文件
     /// </summary>
     /// <remarks>
-    /// 释放时停止宿主并删除文件。
+    /// 释放时停止宿主并删除文件
     /// </remarks>
     private readonly List<SqliteDatabase> _databases = [];
 
@@ -52,7 +52,7 @@ public sealed class DatabasePermissionGrantStoreConformanceTests : PermissionGra
 
     /// <inheritdoc />
     /// <remarks>
-    /// 在真实的 SQLite 上建表启动，再把连接切到不存在的目录：开启只读工作单元即失败。
+    /// 在真实的 SQLite 上建表启动，再把连接切到不存在的目录：开启只读工作单元即失败
     /// </remarks>
     protected override async ValueTask<IPermissionGrantStore?> CreateUnavailableStoreAsync()
     {

@@ -6,35 +6,35 @@ using Microsoft.Extensions.AI;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 带自己传输超时、在闸门处停住再观察令牌的嵌入生成器。
+/// 带自己传输超时、在闸门处停住再观察令牌的嵌入生成器
 /// </summary>
 /// <remarks>
-/// 与 <see cref="GatedChatClient"/> 同形：抛出时先看交给它的令牌、再看自己的超时；不抛出时接住取消，交回一条嵌入都没有的结果。
+/// 与 <see cref="GatedChatClient"/> 同形：抛出时先看交给它的令牌、再看自己的超时；不抛出时接住取消，交回一条嵌入都没有的结果
 /// </remarks>
 internal sealed class GatedEmbeddingGenerator : IEmbeddingGenerator<string, Embedding<float>>
 {
     /// <summary>
-    /// 嵌入维度。
+    /// 嵌入维度
     /// </summary>
     public const int Dimensions = 4;
 
     /// <summary>
-    /// 时间源。
+    /// 时间源
     /// </summary>
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
-    /// 自己的传输超时。
+    /// 自己的传输超时
     /// </summary>
     private readonly TimeSpan _timeout;
 
     /// <summary>
-    /// 闸门。
+    /// 闸门
     /// </summary>
     private readonly ProviderGate _gate;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public GatedEmbeddingGenerator(TimeProvider timeProvider, TimeSpan timeout, ProviderGate gate)
     {

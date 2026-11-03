@@ -13,30 +13,30 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 分表。
+/// 分表
 /// </summary>
 /// <remarks>
-/// 带 <c>[SplitTable]</c> 的实体经仓储写入按分表字段落到各月的表，查找跨表、列表与计数按 <c>Within</c> 的时间范围只扫范围内的表，更新 / 删除与批量方法在分表上同样成立。
+/// 带 <c>[SplitTable]</c> 的实体经仓储写入按分表字段落到各月的表，查找跨表、列表与计数按 <c>Within</c> 的时间范围只扫范围内的表，更新 / 删除与批量方法在分表上同样成立
 /// </remarks>
 public sealed class SqlSugarSplitTableTests : IDisposable
 {
     /// <summary>
-    /// 2026 年 1 月 10 日（UTC）。
+    /// 2026 年 1 月 10 日（UTC）
     /// </summary>
     private static readonly DateTime _january = new(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc);
 
     /// <summary>
-    /// 2026 年 2 月 10 日（UTC）。
+    /// 2026 年 2 月 10 日（UTC）
     /// </summary>
     private static readonly DateTime _february = new(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc);
 
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 
@@ -156,7 +156,7 @@ public sealed class SqlSugarSplitTableTests : IDisposable
     }
 
     /// <summary>
-    /// 启动带本数据库、分表实体与 <c>InitTables</c> 的宿主。
+    /// 启动带本数据库、分表实体与 <c>InitTables</c> 的宿主
     /// </summary>
     private Task<TestHost> StartHostAsync() => TestHost.StartAsync(
         static builder => builder.UseFeature(SqliteDatabase.CreateFeature()),
@@ -168,18 +168,18 @@ public sealed class SqlSugarSplitTableTests : IDisposable
         });
 
     /// <summary>
-    /// 取调用作用域内的分表实体仓储。
+    /// 取调用作用域内的分表实体仓储
     /// </summary>
     private static IRepository<SplitTableRecord, Guid> Repository(InvocationContext context)
         => context.Services.GetRequiredService<IRepository<SplitTableRecord, Guid>>();
 
     /// <summary>
-    /// 逐项结果折叠成一个：第一个失败即整体失败。
+    /// 逐项结果折叠成一个：第一个失败即整体失败
     /// </summary>
     private static Result Fold(IReadOnlyList<Result> results) => results.FirstOrDefault(static r => r.IsFailure, Result.Success());
 
     /// <summary>
-    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果。
+    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
     private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)));

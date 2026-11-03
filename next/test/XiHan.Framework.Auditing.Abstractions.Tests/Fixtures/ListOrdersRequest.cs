@@ -4,6 +4,6 @@
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 列表与导出的空请求。
+/// 列表与导出的空请求
 /// </summary>
 internal sealed record ListOrdersRequest;

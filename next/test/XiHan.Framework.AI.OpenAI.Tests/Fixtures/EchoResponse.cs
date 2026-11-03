@@ -4,6 +4,6 @@
 namespace XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 
 /// <summary>
-/// 回显响应。
+/// 回显响应
 /// </summary>
 internal sealed record EchoResponse(string Echo);

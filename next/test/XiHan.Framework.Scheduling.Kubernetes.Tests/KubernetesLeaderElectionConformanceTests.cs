@@ -14,10 +14,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 
 /// <summary>
-/// 让 <see cref="KubernetesLeaderElection"/>跑完整套 <see cref="LeaderElectionConformance"/> 用例。
+/// 让 <see cref="KubernetesLeaderElection"/>跑完整套 <see cref="LeaderElectionConformance"/> 用例
 /// </summary>
 /// <remarks>
-/// 对着内存 API Server 桩。Lease 只有整数秒，存活时间取 1 秒。应用生命周期用例的节点是装配了内存调度与 Kubernetes 选举的宿主（引擎用 Kubernetes 选举），竞争者是同一个桩上另一个持有者的选举。
+/// 对着内存 API Server 桩。Lease 只有整数秒，存活时间取 1 秒。应用生命周期用例的节点是装配了内存调度与 Kubernetes 选举的宿主（引擎用 Kubernetes 选举），竞争者是同一个桩上另一个持有者的选举
 /// </remarks>
 public sealed class KubernetesLeaderElectionConformanceTests : LeaderElectionConformance
 {

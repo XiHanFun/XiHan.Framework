@@ -7,10 +7,10 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace KubernetesApp.Heartbeat;
 
 /// <summary>
-/// 每 10 秒一次的心跳作业。
+/// 每 10 秒一次的心跳作业
 /// </summary>
 /// <remarks>
-/// <c>LeaderOnly</c>（默认）让它只在持有租约的 Pod 上按计划运行。
+/// <c>LeaderOnly</c>（默认）让它只在持有租约的 Pod 上按计划运行
 /// </remarks>
 public sealed partial class HeartbeatJob(HeartbeatCounter counter, ILogger<HeartbeatJob> logger) : IJob
 {
@@ -24,7 +24,7 @@ public sealed partial class HeartbeatJob(HeartbeatCounter counter, ILogger<Heart
     }
 
     /// <summary>
-    /// 一次心跳。
+    /// 一次心跳
     /// </summary>
     [LoggerMessage(Level = LogLevel.Information, Message = "Heartbeat {Tick} (run {RunId}) on {Pod}.")]
     private static partial void LogHeartbeat(ILogger logger, long tick, string runId, string pod);

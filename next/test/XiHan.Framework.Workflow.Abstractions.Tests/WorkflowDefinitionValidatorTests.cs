@@ -13,12 +13,12 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 定义校验：一次返回全部问题，每条带路径、消息键与参数。
+/// 定义校验：一次返回全部问题，每条带路径、消息键与参数
 /// </summary>
 public sealed class WorkflowDefinitionValidatorTests
 {
     /// <summary>
-    /// 测试用的解析器。
+    /// 测试用的解析器
     /// </summary>
     private static readonly WorkflowCatalogResolver _messages = new();
 
@@ -145,7 +145,7 @@ public sealed class WorkflowDefinitionValidatorTests
     }
 
     /// <summary>
-    /// 一个处处有问题的定义。
+    /// 一个处处有问题的定义
     /// </summary>
     private static WorkflowDefinition Broken() => new()
     {
@@ -179,7 +179,7 @@ public sealed class WorkflowDefinitionValidatorTests
     };
 
     /// <summary>
-    /// 唯一一条问题的路径与消息键。
+    /// 唯一一条问题的路径与消息键
     /// </summary>
     private static (string Path, string? Key) Single(IReadOnlyList<SchemaViolation> issues)
     {
@@ -188,7 +188,7 @@ public sealed class WorkflowDefinitionValidatorTests
     }
 
     /// <summary>
-    /// 从容器解析校验器（与引擎相同的活动登记）。
+    /// 从容器解析校验器（与引擎相同的活动登记）
     /// </summary>
     private static ValidatorScope Validator()
     {
@@ -200,12 +200,12 @@ public sealed class WorkflowDefinitionValidatorTests
     }
 
     /// <summary>
-    /// 校验器与它的容器。
+    /// 校验器与它的容器
     /// </summary>
     private sealed class ValidatorScope(ServiceProvider provider, IServiceScope scope, WorkflowDefinitionValidator validator) : IDisposable
     {
         /// <summary>
-        /// 校验器。
+        /// 校验器
         /// </summary>
         public WorkflowDefinitionValidator Validator => validator;
 

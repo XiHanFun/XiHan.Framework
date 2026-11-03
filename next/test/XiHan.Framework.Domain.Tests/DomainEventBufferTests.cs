@@ -6,14 +6,14 @@ using XiHan.Framework.Domain.Events;
 namespace XiHan.Framework.Domain.Tests;
 
 /// <summary>
-/// <see cref="DomainEventBuffer"/> 的记录顺序、清空、容量上限与参数校验。
+/// <see cref="DomainEventBuffer"/> 的记录顺序、清空、容量上限与参数校验
 /// </summary>
 public sealed class DomainEventBufferTests
 {
     /// <summary>
-    /// 只携带发生时间的测试事件。
+    /// 只携带发生时间的测试事件
     /// </summary>
-    /// <param name="OccurredAt">发生时间。</param>
+    /// <param name="OccurredAt">发生时间</param>
     private sealed record Happened(DateTimeOffset OccurredAt) : IDomainEvent;
 
     [Fact]

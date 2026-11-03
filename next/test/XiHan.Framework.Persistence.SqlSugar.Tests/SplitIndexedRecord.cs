@@ -8,7 +8,7 @@ using XiHan.Framework.Persistence.Abstractions;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 声明了中立索引的分表实体：约定不支持，映射时报错。
+/// 声明了中立索引的分表实体：约定不支持，映射时报错
 /// </summary>
 [SugarTable("split_indexed_{year}{month}{day}")]
 [SplitTable(SplitType.Year)]
@@ -19,7 +19,7 @@ public sealed class SplitIndexedRecord : IEntity<Guid>
     public Guid Id { get; set; }
 
     /// <summary>
-    /// 分表字段。
+    /// 分表字段
     /// </summary>
     [SplitField]
     public DateTime RecordedAt { get; set; }

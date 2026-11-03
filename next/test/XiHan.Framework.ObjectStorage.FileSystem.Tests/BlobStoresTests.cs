@@ -15,20 +15,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 命名存储实例的注册表。
+/// 命名存储实例的注册表
 /// </summary>
 /// <remarks>
-/// 配置定义的实例首次取用时建出、设置错误、健康项随实例的状态、替换 / 移除 / 停止时释放实例，以及特性装配后注册表与健康项可用。
+/// 配置定义的实例首次取用时建出、设置错误、健康项随实例的状态、替换 / 移除 / 停止时释放实例，以及特性装配后注册表与健康项可用
 /// </remarks>
 public sealed class BlobStoresTests : IDisposable
 {
     /// <summary>
-    /// 临时根目录。
+    /// 临时根目录
     /// </summary>
     private readonly TemporaryRoot _root = new();
 
     /// <summary>
-    /// 删除临时根目录。
+    /// 删除临时根目录
     /// </summary>
     public void Dispose() => _root.Dispose();
 
@@ -127,25 +127,25 @@ public sealed class BlobStoresTests : IDisposable
     }
 
     /// <summary>
-    /// 内存配置。
+    /// 内存配置
     /// </summary>
     private static IConfiguration Configuration(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
     /// <summary>
-    /// 文件系统 Provider 的定义。
+    /// 文件系统 Provider 的定义
     /// </summary>
     private static BlobStoreDefinition Definition(string name, params (string Key, string Value)[] settings)
         => new(name, FileSystemBlobStoreProvider.ProviderName, settings.ToDictionary(static s => s.Key, static s => s.Value));
 
     /// <summary>
-    /// 计数 Provider 的定义：版本不同即定义不同。
+    /// 计数 Provider 的定义：版本不同即定义不同
     /// </summary>
     private static BlobStoreDefinition Counting(string name, string version)
         => new(name, "counting", new Dictionary<string, string> { ["Version"] = version });
 
     /// <summary>
-    /// 记录释放次数的 Provider：设置原样接受，探测总是成功。
+    /// 记录释放次数的 Provider：设置原样接受，探测总是成功
     /// </summary>
     private sealed class CountingProvider : IBlobStoreProvider
     {
@@ -160,15 +160,15 @@ public sealed class BlobStoresTests : IDisposable
     }
 
     /// <summary>
-    /// 只记录释放次数的存储。
+    /// 只记录释放次数的存储
     /// </summary>
     /// <remarks>
-    /// 读写不会被调用。
+    /// 读写不会被调用
     /// </remarks>
     private sealed class CountingStore : IBlobStore, IDisposable
     {
         /// <summary>
-        /// 释放次数。
+        /// 释放次数
         /// </summary>
         public int Disposed { get; private set; }
 

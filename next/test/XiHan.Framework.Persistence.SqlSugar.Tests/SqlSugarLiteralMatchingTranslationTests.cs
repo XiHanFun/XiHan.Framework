@@ -6,15 +6,15 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 字符串匹配的翻译：不连库，只看 SqlSugar 生成的 SQL 与参数（ADR-0098）。
+/// 字符串匹配的翻译：不连库，只看 SqlSugar 生成的 SQL 与参数（ADR-0098）
 /// </summary>
 /// <remarks>
-/// 实参是值时绑定成参数，值先转义再拼上通配符，SQL 文本里只有参数名与 <c>ESCAPE '!'</c>，不拼接实参；投影与子查询同样经过它；在真实库上验证过的五种数据库之外沿用 SqlSugar 原来的翻译；应用自己登记的同名函数优先；集合的 <c>Contains</c>（<c>IN</c>）不受影响。
+/// 实参是值时绑定成参数，值先转义再拼上通配符，SQL 文本里只有参数名与 <c>ESCAPE '!'</c>，不拼接实参；投影与子查询同样经过它；在真实库上验证过的五种数据库之外沿用 SqlSugar 原来的翻译；应用自己登记的同名函数优先；集合的 <c>Contains</c>（<c>IN</c>）不受影响
 /// </remarks>
 public sealed class SqlSugarLiteralMatchingTranslationTests
 {
     /// <summary>
-    /// 带全部特殊字符的实参。
+    /// 带全部特殊字符的实参
     /// </summary>
     private const string Keyword = "t_2[!%'";
 
@@ -136,10 +136,10 @@ public sealed class SqlSugarLiteralMatchingTranslationTests
     }
 
     /// <summary>
-    /// 施加了约定、不连库的客户端。
+    /// 施加了约定、不连库的客户端
     /// </summary>
     /// <remarks>
-    /// 只用来生成 SQL，连接串不会被打开。
+    /// 只用来生成 SQL，连接串不会被打开
     /// </remarks>
     private static SqlSugarClient Client(DbType dbType) => new(SqlSugarConventions.Apply(new ConnectionConfig
     {

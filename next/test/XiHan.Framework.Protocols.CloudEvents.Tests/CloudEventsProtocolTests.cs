@@ -23,15 +23,15 @@ using XiHan.Framework.Protocols.CloudEvents.Outbound;
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 
 /// <summary>
-/// 入站端点（派发与发布两种模式、主题映射、失败映射）与出站 Webhook 发布者。
+/// 入站端点（派发与发布两种模式、主题映射、失败映射）与出站 Webhook 发布者
 /// </summary>
 public sealed class CloudEventsProtocolTests
 {
     /// <summary>
-    /// 启动测试宿主。
+    /// 启动测试宿主
     /// </summary>
     /// <remarks>
-    /// Minimal 组合 + 内存消息 + CloudEvents 适配器 + 订阅 orders 的特性；出站请求交给捕获处理器。
+    /// Minimal 组合 + 内存消息 + CloudEvents 适配器 + 订阅 orders 的特性；出站请求交给捕获处理器
     /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client, DeliveryLog Log, CapturingHandler Outbound)> StartAsync(params (string Key, string Value)[] configuration)
     {
@@ -52,7 +52,7 @@ public sealed class CloudEventsProtocolTests
     }
 
     /// <summary>
-    /// 发一个 binary 模式的事件。
+    /// 发一个 binary 模式的事件
     /// </summary>
     private static async Task<HttpResponseMessage> PostBinaryAsync(HttpClient client, string type, string id = "evt-1", string? subject = null, params (string Name, string Value)[] extensions)
     {
@@ -75,13 +75,13 @@ public sealed class CloudEventsProtocolTests
     }
 
     /// <summary>
-    /// 发一段指定内容类型的正文。
+    /// 发一段指定内容类型的正文
     /// </summary>
     private static Task<HttpResponseMessage> PostAsync(HttpClient client, string contentType, string body)
         => client.PostAsync("/events", new ByteArrayContent(Encoding.UTF8.GetBytes(body)) { Headers = { ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType) } });
 
     /// <summary>
-    /// 读 Problem Details 的错误码。
+    /// 读 Problem Details 的错误码
     /// </summary>
     private static async Task<string> CodeOf(HttpResponseMessage response)
     {

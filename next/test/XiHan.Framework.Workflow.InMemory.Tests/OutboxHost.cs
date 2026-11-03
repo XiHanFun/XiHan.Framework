@@ -13,15 +13,15 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 装了发件箱的内存工作流宿主。
+/// 装了发件箱的内存工作流宿主
 /// </summary>
 /// <remarks>
-/// 内存持久化、内存消息与 <see cref="OutboxFeature"/> 一起装配：引擎的事件写进发件箱、提交后才投递到代理（ADR-0096 第六节）。发件箱的投递循环照缺省周期运行，与套件主动投递并存。
+/// 内存持久化、内存消息与 <see cref="OutboxFeature"/> 一起装配：引擎的事件写进发件箱、提交后才投递到代理（ADR-0096 第六节）。发件箱的投递循环照缺省周期运行，与套件主动投递并存
 /// </remarks>
 internal static class OutboxHost
 {
     /// <summary>
-    /// 启动宿主并包成引擎套件的夹具。
+    /// 启动宿主并包成引擎套件的夹具
     /// </summary>
     public static async Task<WorkflowEngineHost> StartAsync(Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration)
     {

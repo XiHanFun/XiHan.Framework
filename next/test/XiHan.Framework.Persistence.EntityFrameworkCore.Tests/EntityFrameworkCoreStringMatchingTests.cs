@@ -10,20 +10,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// SQLite 上字符串的包含、前缀与后缀一律译成 <c>LIKE</c>（ADR-0101）。
+/// SQLite 上字符串的包含、前缀与后缀一律译成 <c>LIKE</c>（ADR-0101）
 /// </summary>
 /// <remarks>
-/// EF Core 的 SQLite Provider 原本把 <c>Contains</c> 译成区分大小写的 <c>instr</c>，<c>StartsWith</c> / <c>EndsWith</c> 的值实参译成只对 ASCII 不区分大小写的 <c>LIKE</c>、列实参译成区分的 <c>substr</c> 比较。特性建出的 <c>DbContext</c> 把三个方法都译成 <c>LIKE … ESCAPE '\'</c>：只对 ASCII 字母不区分大小写，与 SqlSugar 在 SQLite 上一样；<c>%</c>、<c>_</c>、反斜杠按字面。用例直接用宿主作用域里的 <c>DbContext</c>（不经仓储），覆盖应用自己写的 LINQ。
+/// EF Core 的 SQLite Provider 原本把 <c>Contains</c> 译成区分大小写的 <c>instr</c>，<c>StartsWith</c> / <c>EndsWith</c> 的值实参译成只对 ASCII 不区分大小写的 <c>LIKE</c>、列实参译成区分的 <c>substr</c> 比较。特性建出的 <c>DbContext</c> 把三个方法都译成 <c>LIKE … ESCAPE '\'</c>：只对 ASCII 字母不区分大小写，与 SqlSugar 在 SQLite 上一样；<c>%</c>、<c>_</c>、反斜杠按字面。用例直接用宿主作用域里的 <c>DbContext</c>（不经仓储），覆盖应用自己写的 LINQ
 /// </remarks>
 public sealed class EntityFrameworkCoreStringMatchingTests : IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 
@@ -156,27 +156,27 @@ public sealed class EntityFrameworkCoreStringMatchingTests : IDisposable
     }
 
     /// <summary>
-    /// 原样交回字符串、SQL 里译不出的方法。
+    /// 原样交回字符串、SQL 里译不出的方法
     /// </summary>
     /// <remarks>
-    /// 让投影的这一部分落到客户端求值。
+    /// 让投影的这一部分落到客户端求值
     /// </remarks>
     private static string Echo(string text) => text;
 
     /// <summary>
-    /// 按条件过滤后的笔记内容，按 SQLite 的二进制排序规则排列。
+    /// 按条件过滤后的笔记内容，按 SQLite 的二进制排序规则排列
     /// </summary>
     /// <remarks>
-    /// 大写字母排在小写之前，非 ASCII 字母排在最后。
+    /// 大写字母排在小写之前，非 ASCII 字母排在最后
     /// </remarks>
     private static async Task<List<string>> TextsAsync(IQueryable<ConformanceNote> notes, Expression<Func<ConformanceNote, bool>> filter)
         => await notes.Where(filter).OrderBy(static n => n.Text).Select(static n => n.Text).ToListAsync();
 
     /// <summary>
-    /// 启动宿主并直接经 <c>DbContext</c> 写入十条笔记。
+    /// 启动宿主并直接经 <c>DbContext</c> 写入十条笔记
     /// </summary>
     /// <remarks>
-    /// 租户列当作列实参：每条笔记的内容与它的租户列只差大小写、或含有 <c>_</c>、<c>%</c>、反斜杠。
+    /// 租户列当作列实参：每条笔记的内容与它的租户列只差大小写、或含有 <c>_</c>、<c>%</c>、反斜杠
     /// </remarks>
     private async Task<TestHost> SeedAsync()
     {
@@ -202,7 +202,7 @@ public sealed class EntityFrameworkCoreStringMatchingTests : IDisposable
     }
 
     /// <summary>
-    /// 按出现顺序记下表达式里字符串匹配方法与标记方法的调用。
+    /// 按出现顺序记下表达式里字符串匹配方法与标记方法的调用
     /// </summary>
     private sealed class CallCollector(List<string> calls) : ExpressionVisitor
     {

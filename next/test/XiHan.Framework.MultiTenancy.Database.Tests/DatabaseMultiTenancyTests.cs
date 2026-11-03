@@ -22,25 +22,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.Database.Tests;
 
 /// <summary>
-/// 数据库 Provider 特有的行为。
+/// 数据库 Provider 特有的行为
 /// </summary>
 /// <remarks>
-/// 显式 Provider 顶替内存实现、Tenant 阶段解析数据库里的租户、目录缓存的命中 / 失效 / 存活时间 / 容量、批量写入与删除及其对分片解析器的失效、枚举上限、基础设施异常原样抛出、选项解析。
+/// 显式 Provider 顶替内存实现、Tenant 阶段解析数据库里的租户、目录缓存的命中 / 失效 / 存活时间 / 容量、批量写入与删除及其对分片解析器的失效、枚举上限、基础设施异常原样抛出、选项解析
 /// </remarks>
 public sealed class DatabaseMultiTenancyTests
 {
     /// <summary>
-    /// 配置节前缀。
+    /// 配置节前缀
     /// </summary>
     private const string Section = DatabaseMultiTenancyOptions.ConfigurationSection + ":";
 
     /// <summary>
-    /// 带 Baggage 租户的调用。
+    /// 带 Baggage 租户的调用
     /// </summary>
     private static Dictionary<string, string> Tenant(string tenantId) => new() { [BaggageKeys.Tenant] = tenantId };
 
     /// <summary>
-    /// 分库或共库的 acme 租户。
+    /// 分库或共库的 acme 租户
     /// </summary>
     private static TenantInfo Acme(string displayName = "Acme", string? connectionString = null)
     {
@@ -54,7 +54,7 @@ public sealed class DatabaseMultiTenancyTests
     }
 
     /// <summary>
-    /// 用内存键值对构建配置。
+    /// 用内存键值对构建配置
     /// </summary>
     private static IConfiguration Build(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(Section + v.Key, v.Value))).Build();

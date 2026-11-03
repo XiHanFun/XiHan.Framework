@@ -19,25 +19,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 发件箱投递循环的尝试上限、退避、死信与保留期（RFC-0009「发件箱」，ADR-0064）。
+/// 发件箱投递循环的尝试上限、退避、死信与保留期（RFC-0009「发件箱」，ADR-0064）
 /// </summary>
 /// <remarks>
-/// 代理抛出与返回失败同样计入见 ADR-0108。以内存持久化存行、脚本代理给结果、可推进的时钟逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/>，不起后台循环、不等真实时间。行用载荷里的事件 ID 区分。
+/// 代理抛出与返回失败同样计入见 ADR-0108。以内存持久化存行、脚本代理给结果、可推进的时钟逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/>，不起后台循环、不等真实时间。行用载荷里的事件 ID 区分
 /// </remarks>
 public sealed class OutboxDispatcherTests
 {
     /// <summary>
-    /// 主题。
+    /// 主题
     /// </summary>
     private const string Topic = "orders";
 
     /// <summary>
-    /// 第二个主题。
+    /// 第二个主题
     /// </summary>
     private const string ShipmentsTopic = "shipments";
 
     /// <summary>
-    /// 时钟起点。
+    /// 时钟起点
     /// </summary>
     private static readonly DateTimeOffset _start = new(2026, 11, 1, 8, 0, 0, TimeSpan.Zero);
 
@@ -150,7 +150,7 @@ public sealed class OutboxDispatcherTests
             clock.Advance(options.PollInterval);
         }
 
-        // 毒消息按与失败结果相同的规则用尽尝试进死信；同一批的好消息与排在后面的消息都已发出，没有一轮整体失败。
+        // 毒消息按与失败结果相同的规则用尽尝试进死信；同一批的好消息与排在后面的消息都已发出，没有一轮整体失败
         // 先整体比一次，失败信息里一眼看全（毒消息尝试次数、毒消息进死信、ok-1 / ok-2 / shipped 已发出、整体失败的轮数）：
         // 修复前是 (0, False, False, False, False, 120)——毒消息从不计次、同批与排在后面的都被拖住、每轮都回滚
         var rows = await RowsAsync(host);
@@ -243,30 +243,30 @@ public sealed class OutboxDispatcherTests
     }
 
     /// <summary>
-    /// 启动只有内存持久化与发件箱仓储的宿主。
+    /// 启动只有内存持久化与发件箱仓储的宿主
     /// </summary>
     /// <remarks>
-    /// 不装配发件箱特性，没有后台循环与本测试争抢。
+    /// 不装配发件箱特性，没有后台循环与本测试争抢
     /// </remarks>
     private static Task<TestHost> StartAsync()
         => TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>(), services: static services => services.AddRepository<OutboxMessage, Guid>());
 
     /// <summary>
-    /// 一条可解码的发件箱行。
+    /// 一条可解码的发件箱行
     /// </summary>
     private static OutboxMessage Row(string id, int order) => Row(id, Topic, order);
 
     /// <summary>
-    /// 一条给定主题、可解码的发件箱行。
+    /// 一条给定主题、可解码的发件箱行
     /// </summary>
     private static OutboxMessage Row(string id, string topic, int order)
         => Row(id, CloudEventsFormat.Encode(new MessageEnvelope { Id = id, Source = "/tests", Type = "orders.placed" }), order, topic);
 
     /// <summary>
-    /// 一条给定载荷的发件箱行。
+    /// 一条给定载荷的发件箱行
     /// </summary>
     /// <remarks>
-    /// 创建时间按序号递增，决定投递顺序。
+    /// 创建时间按序号递增，决定投递顺序
     /// </remarks>
     private static OutboxMessage Row(string id, byte[] payload, int order, string topic = Topic) => new()
     {
@@ -278,7 +278,7 @@ public sealed class OutboxDispatcherTests
     };
 
     /// <summary>
-    /// 在一次调用里写入行。
+    /// 在一次调用里写入行
     /// </summary>
     private static async Task SeedAsync(TestHost host, params OutboxMessage[] rows)
         => (await host.InvokeAsync(async ctx =>
@@ -290,10 +290,10 @@ public sealed class OutboxDispatcherTests
         })).ThrowIfFailure();
 
     /// <summary>
-    /// 读出全部行，按事件 ID 索引。
+    /// 读出全部行，按事件 ID 索引
     /// </summary>
     /// <remarks>
-    /// 按载荷解码取事件 ID，解不开的记作 <c>undecodable</c>。
+    /// 按载荷解码取事件 ID，解不开的记作 <c>undecodable</c>
     /// </remarks>
     private static async Task<Dictionary<string, OutboxMessage>> RowsAsync(TestHost host)
     {
@@ -303,7 +303,7 @@ public sealed class OutboxDispatcherTests
     }
 
     /// <summary>
-    /// 行里记下的失败原因（<c>[错误码] 文案</c>）的错误码。
+    /// 行里记下的失败原因（<c>[错误码] 文案</c>）的错误码
     /// </summary>
     private static string? ErrorCodeOf(OutboxMessage row) => row.LastError is { } error && error.StartsWith('[') ? error[1..error.IndexOf(']', StringComparison.Ordinal)] : null;
 }

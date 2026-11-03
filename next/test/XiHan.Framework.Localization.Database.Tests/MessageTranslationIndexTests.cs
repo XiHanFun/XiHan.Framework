@@ -9,15 +9,15 @@ using XiHan.Framework.Persistence.SqlSugar;
 namespace XiHan.Framework.Localization.Database.Tests;
 
 /// <summary>
-/// 翻译表的唯一索引（ADR-0072）。
+/// 翻译表的唯一索引（ADR-0072）
 /// </summary>
 /// <remarks>
-/// <c>InitTables</c> 在 SQLite 上建出键与区域的唯一索引，同一键同一区域的第二行被拒绝。
+/// <c>InitTables</c> 在 SQLite 上建出键与区域的唯一索引，同一键同一区域的第二行被拒绝
 /// </remarks>
 public sealed class MessageTranslationIndexTests : IDisposable
 {
     /// <summary>
-    /// 列出一张表上显式建出的索引：<c>名字 [unique] 列,列</c>，按名字排序。
+    /// 列出一张表上显式建出的索引：<c>名字 [unique] 列,列</c>，按名字排序
     /// </summary>
     private const string IndexQuery = """
         SELECT m.name
@@ -29,15 +29,15 @@ public sealed class MessageTranslationIndexTests : IDisposable
         """;
 
     /// <summary>
-    /// 本测试独占的临时数据库文件。
+    /// 本测试独占的临时数据库文件
     /// </summary>
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"xihan-localization-index-{Guid.NewGuid():N}.db");
 
     /// <summary>
-    /// 清空本库的连接池后删除数据库文件。
+    /// 清空本库的连接池后删除数据库文件
     /// </summary>
     /// <remarks>
-    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败。
+    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败
     /// </remarks>
     public void Dispose()
     {
@@ -65,7 +65,7 @@ public sealed class MessageTranslationIndexTests : IDisposable
     }
 
     /// <summary>
-    /// 键 <c>orders.not_found</c> 在一个区域里的翻译。
+    /// 键 <c>orders.not_found</c> 在一个区域里的翻译
     /// </summary>
     private static MessageTranslation Translation(string locale)
         => new() { Id = Guid.CreateVersion7(), Key = "orders.not_found", Locale = locale, Template = "{id}" };

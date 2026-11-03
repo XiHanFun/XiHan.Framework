@@ -6,30 +6,30 @@ using XiHan.Framework.Kernel.Diagnostics;
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 记录每条事件的接收器。
+/// 记录每条事件的接收器
 /// </summary>
 /// <remarks>
-/// 可让写入抛出。
+/// 可让写入抛出
 /// </remarks>
 internal sealed class RecordingAuditSink : IAuditSink
 {
     /// <summary>
-    /// 保护记录的锁。
+    /// 保护记录的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 记录。
+    /// 记录
     /// </summary>
     private readonly List<AuditEvent> _events = [];
 
     /// <summary>
-    /// 为真时写入抛出。
+    /// 为真时写入抛出
     /// </summary>
     public bool Throw { get; set; }
 
     /// <summary>
-    /// 已记录的事件快照。
+    /// 已记录的事件快照
     /// </summary>
     public IReadOnlyList<AuditEvent> Events
     {

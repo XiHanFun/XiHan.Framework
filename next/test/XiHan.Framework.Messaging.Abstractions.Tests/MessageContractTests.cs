@@ -18,12 +18,12 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
 /// <summary>
-/// 主题文法、信封、CloudEvents 编码、订阅表、直接发布者与选项解析的契约测试。
+/// 主题文法、信封、CloudEvents 编码、订阅表、直接发布者与选项解析的契约测试
 /// </summary>
 public sealed class MessageContractTests
 {
     /// <summary>
-    /// 什么都不做、总是成功的处理器。
+    /// 什么都不做、总是成功的处理器
     /// </summary>
     private sealed class NoopHandler : IMessageHandler
     {
@@ -32,7 +32,7 @@ public sealed class MessageContractTests
     }
 
     /// <summary>
-    /// 固定返回给定上下文的调用访问器。
+    /// 固定返回给定上下文的调用访问器
     /// </summary>
     private sealed class FixedInvocation(InvocationContext? context) : IInvocationAccessor
     {
@@ -41,12 +41,12 @@ public sealed class MessageContractTests
     }
 
     /// <summary>
-    /// 只记录发布、不消费的代理。
+    /// 只记录发布、不消费的代理
     /// </summary>
     private sealed class RecordingBroker : IMessageBroker
     {
         /// <summary>
-        /// 收到的发布，按顺序。
+        /// 收到的发布，按顺序
         /// </summary>
         public List<(string Topic, MessageEnvelope Envelope)> Published { get; } = [];
 

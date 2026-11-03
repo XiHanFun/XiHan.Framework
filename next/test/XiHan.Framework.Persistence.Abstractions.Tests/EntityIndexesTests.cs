@@ -6,7 +6,7 @@ using XiHan.Framework.Domain.Entities;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="EntityIndexes.Resolve"/>：命名规则、软删除实体的唯一索引、声明错误。
+/// <see cref="EntityIndexes.Resolve"/>：命名规则、软删除实体的唯一索引、声明错误
 /// </summary>
 public sealed class EntityIndexesTests
 {
@@ -94,7 +94,7 @@ public sealed class EntityIndexesTests
     }
 
     /// <summary>
-    /// 普通实体：唯一索引、首字母缩写词、下划线分词。
+    /// 普通实体：唯一索引、首字母缩写词、下划线分词
     /// </summary>
     [EntityIndex(nameof(TenantId), nameof(NextFireAt), IsUnique = true)]
     [EntityIndex(nameof(HTTPServerName))]
@@ -105,33 +105,33 @@ public sealed class EntityIndexesTests
         public Guid Id { get; init; }
 
         /// <summary>
-        /// 租户。
+        /// 租户
         /// </summary>
         public string TenantId { get; set; } = string.Empty;
 
         /// <summary>
-        /// 下一次时刻。
+        /// 下一次时刻
         /// </summary>
         public DateTimeOffset? NextFireAt { get; set; }
 
         /// <summary>
-        /// 连续大写开头的名字：<c>HTTP</c> 与 <c>Server</c> 分成两个词。
+        /// 连续大写开头的名字：<c>HTTP</c> 与 <c>Server</c> 分成两个词
         /// </summary>
         public string HTTPServerName { get; set; } = string.Empty;
 
         /// <summary>
-        /// 单字母词：<c>E</c> 与 <c>Tag</c>。
+        /// 单字母词：<c>E</c> 与 <c>Tag</c>
         /// </summary>
         public string ETag { get; set; } = string.Empty;
 
         /// <summary>
-        /// 下划线分词。
+        /// 下划线分词
         /// </summary>
         public string Legacy_code { get; set; } = string.Empty;
     }
 
     /// <summary>
-    /// 软删除实体。
+    /// 软删除实体
     /// </summary>
     [EntityIndex(nameof(TenantId), nameof(Slug), IsUnique = true)]
     [EntityIndex(nameof(Slug))]
@@ -142,17 +142,17 @@ public sealed class EntityIndexesTests
         public Guid Id { get; init; }
 
         /// <summary>
-        /// 租户。
+        /// 租户
         /// </summary>
         public string TenantId { get; set; } = string.Empty;
 
         /// <summary>
-        /// 路径名。
+        /// 路径名
         /// </summary>
         public string Slug { get; set; } = string.Empty;
 
         /// <summary>
-        /// 编码。
+        /// 编码
         /// </summary>
         public string Code { get; set; } = string.Empty;
 
@@ -164,7 +164,7 @@ public sealed class EntityIndexesTests
     }
 
     /// <summary>
-    /// 没有列的声明。
+    /// 没有列的声明
     /// </summary>
     [EntityIndex]
     private sealed class EmptyDeclaration : IEntity<Guid>
@@ -174,7 +174,7 @@ public sealed class EntityIndexesTests
     }
 
     /// <summary>
-    /// 列名空白的声明。
+    /// 列名空白的声明
     /// </summary>
     [EntityIndex(" ")]
     private sealed class BlankProperty : IEntity<Guid>
@@ -184,7 +184,7 @@ public sealed class EntityIndexesTests
     }
 
     /// <summary>
-    /// 同一列写了两次的声明。
+    /// 同一列写了两次的声明
     /// </summary>
     [EntityIndex(nameof(Code), nameof(Code))]
     private sealed class RepeatedProperty : IEntity<Guid>
@@ -193,13 +193,13 @@ public sealed class EntityIndexesTests
         public Guid Id { get; init; }
 
         /// <summary>
-        /// 编码。
+        /// 编码
         /// </summary>
         public string Code { get; set; } = string.Empty;
     }
 
     /// <summary>
-    /// 引用了不存在的属性的声明。
+    /// 引用了不存在的属性的声明
     /// </summary>
     [EntityIndex("Missing")]
     private sealed class UnknownProperty : IEntity<Guid>
@@ -209,7 +209,7 @@ public sealed class EntityIndexesTests
     }
 
     /// <summary>
-    /// 两列缩写相同（<c>TenantId</c> 与 <c>TemplateId</c> 都是 <c>TeId</c>），索引同名。
+    /// 两列缩写相同（<c>TenantId</c> 与 <c>TemplateId</c> 都是 <c>TeId</c>），索引同名
     /// </summary>
     [EntityIndex(nameof(TenantId))]
     [EntityIndex(nameof(TemplateId))]
@@ -219,18 +219,18 @@ public sealed class EntityIndexesTests
         public Guid Id { get; init; }
 
         /// <summary>
-        /// 租户。
+        /// 租户
         /// </summary>
         public string TenantId { get; set; } = string.Empty;
 
         /// <summary>
-        /// 模板。
+        /// 模板
         /// </summary>
         public string TemplateId { get; set; } = string.Empty;
     }
 
     /// <summary>
-    /// 同一列既声明唯一又声明普通索引。
+    /// 同一列既声明唯一又声明普通索引
     /// </summary>
     [EntityIndex(nameof(Code))]
     [EntityIndex(nameof(Code), IsUnique = true)]
@@ -240,7 +240,7 @@ public sealed class EntityIndexesTests
         public Guid Id { get; init; }
 
         /// <summary>
-        /// 编码。
+        /// 编码
         /// </summary>
         public string Code { get; set; } = string.Empty;
     }

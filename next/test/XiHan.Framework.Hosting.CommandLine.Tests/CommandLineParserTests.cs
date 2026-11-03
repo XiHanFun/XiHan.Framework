@@ -6,7 +6,7 @@ using XiHan.Framework.Hosting.CommandLine.Parsing;
 namespace XiHan.Framework.Hosting.CommandLine.Tests;
 
 /// <summary>
-/// 命令行记号的解析规则。
+/// 命令行记号的解析规则
 /// </summary>
 public sealed class CommandLineParserTests
 {

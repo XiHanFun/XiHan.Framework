@@ -9,10 +9,10 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 扫描到期书签前先调用钩子的书签存储装饰器。
+/// 扫描到期书签前先调用钩子的书签存储装饰器
 /// </summary>
 /// <remarks>
-/// 钩子收到被扫描的分区（空为平台）；用例借它在轮询周期的某个分区扫描进行中切换应用状态。其余调用原样转给 Provider 的存储。
+/// 钩子收到被扫描的分区（空为平台）；用例借它在轮询周期的某个分区扫描进行中切换应用状态。其余调用原样转给 Provider 的存储
 /// </remarks>
 internal sealed class ScanHookBookmarkStore(IWorkflowBookmarkStore inner, Func<string?, ValueTask> onDue) : IWorkflowBookmarkStore
 {

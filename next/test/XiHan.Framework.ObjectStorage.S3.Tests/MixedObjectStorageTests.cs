@@ -17,20 +17,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 文件系统与 S3 混装。
+/// 文件系统与 S3 混装
 /// </summary>
 /// <remarks>
-/// 两种装配顺序下，两个存储包的命名实例 Provider 都登记，与谁被选为缺省存储无关；缺省的 <see cref="IBlobStore"/>、<see cref="IBlobMultipartStore"/> 与 <see cref="IBlobUrlSigner"/> 落在同一存储上：被要求的契约选得不一致时装配失败（<see cref="ObjectStorageErrors.StoreSelectionInvalid"/>），只是兜底选出的不失败，那个存储包按被顶替处理（ADR-0082）。不连接 S3。
+/// 两种装配顺序下，两个存储包的命名实例 Provider 都登记，与谁被选为缺省存储无关；缺省的 <see cref="IBlobStore"/>、<see cref="IBlobMultipartStore"/> 与 <see cref="IBlobUrlSigner"/> 落在同一存储上：被要求的契约选得不一致时装配失败（<see cref="ObjectStorageErrors.StoreSelectionInvalid"/>），只是兜底选出的不失败，那个存储包按被顶替处理（ADR-0082）。不连接 S3
 /// </remarks>
 public sealed class MixedObjectStorageTests : IDisposable
 {
     /// <summary>
-    /// 文件系统存储的临时根目录（缺省实例与命名实例各一个子目录）。
+    /// 文件系统存储的临时根目录（缺省实例与命名实例各一个子目录）
     /// </summary>
     private readonly string _root = Path.Combine(Path.GetTempPath(), "xihan-mixed-" + Guid.NewGuid().ToString("N"));
 
     /// <summary>
-    /// 删除临时根目录。
+    /// 删除临时根目录
     /// </summary>
     public void Dispose()
     {
@@ -157,13 +157,13 @@ public sealed class MixedObjectStorageTests : IDisposable
     }
 
     /// <summary>
-    /// 按给定顺序装配两个存储包（可选再加宿主代收发的签名器），返回图谱与容器。
+    /// 按给定顺序装配两个存储包（可选再加宿主代收发的签名器），返回图谱与容器
     /// </summary>
     private (ResolvedGraph Graph, ServiceProvider Provider) Build(bool fileSystemFirst, bool hostedSigner, params (string Key, string Value)[] values)
         => Build(fileSystemFirst, hostedSigner, [], values);
 
     /// <summary>
-    /// 按给定顺序装配两个存储包，可选再加宿主代收发的签名器与别的特性，返回图谱与容器。
+    /// 按给定顺序装配两个存储包，可选再加宿主代收发的签名器与别的特性，返回图谱与容器
     /// </summary>
     private (ResolvedGraph Graph, ServiceProvider Provider) Build(bool fileSystemFirst, bool hostedSigner, IReadOnlyList<IFeature> extra, params (string Key, string Value)[] values)
     {

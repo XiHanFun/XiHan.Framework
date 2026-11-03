@@ -11,24 +11,24 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.Database.Tests;
 
 /// <summary>
-/// 数据库租户存储上分片解析器的一致性用例。
+/// 数据库租户存储上分片解析器的一致性用例
 /// </summary>
 /// <remarks>
-/// 让架在 <see cref="DatabaseTenantStore"/> 上的 <see cref="TenantStoreShardResolver"/> 跑完整套 <see cref="TenantShardResolverConformance"/> 用例。
-/// 每次一个宿主，用例结束时一并释放。
+/// 让架在 <see cref="DatabaseTenantStore"/> 上的 <see cref="TenantStoreShardResolver"/> 跑完整套 <see cref="TenantShardResolverConformance"/> 用例
+/// 每次一个宿主，用例结束时一并释放
 /// </remarks>
 public sealed class DatabaseTenantShardResolverConformanceTests : TenantShardResolverConformance, IAsyncDisposable
 {
     /// <summary>
-    /// 本用例启动的宿主。
+    /// 本用例启动的宿主
     /// </summary>
     /// <remarks>
-    /// 释放时一并停止。
+    /// 释放时一并停止
     /// </remarks>
     private readonly List<TestHost> _hosts = [];
 
     /// <summary>
-    /// 启动宿主、种入租户，返回宿主里被选中的分片解析器。
+    /// 启动宿主、种入租户，返回宿主里被选中的分片解析器
     /// </summary>
     protected override async ValueTask<ITenantShardResolver> CreateResolverAsync(IReadOnlyList<TenantInfo> tenants)
     {
@@ -39,7 +39,7 @@ public sealed class DatabaseTenantShardResolverConformanceTests : TenantShardRes
     }
 
     /// <summary>
-    /// 停止全部宿主。
+    /// 停止全部宿主
     /// </summary>
     public async ValueTask DisposeAsync()
     {

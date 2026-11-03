@@ -9,16 +9,16 @@ using XiHan.Framework.Persistence.Conformance.Fixtures;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// 在新增落库之前抢先写入同一标识的行。
+/// 在新增落库之前抢先写入同一标识的行
 /// </summary>
 /// <remarks>
-/// 模拟「仓储核对过标识之后、写入之前，别的事务提交了同一标识」：SQLite 单写者，别的连接这时写不进来，所以借同一连接与事务插入，效果与对方已提交相同——仓储的插入撞上主键约束、在同一事务里核对时能看到这一行。只在第一次保存含该标识的新增时抢一次；插入发生在 SaveChanges 建保存点之前，回到保存点不会撤销它。
+/// 模拟「仓储核对过标识之后、写入之前，别的事务提交了同一标识」：SQLite 单写者，别的连接这时写不进来，所以借同一连接与事务插入，效果与对方已提交相同——仓储的插入撞上主键约束、在同一事务里核对时能看到这一行。只在第一次保存含该标识的新增时抢一次；插入发生在 SaveChanges 建保存点之前，回到保存点不会撤销它
 /// </remarks>
-/// <param name="id">要抢的标识。</param>
+/// <param name="id">要抢的标识</param>
 internal sealed class RacingInsertInterceptor(Guid id) : SaveChangesInterceptor
 {
     /// <summary>
-    /// 是否已经抢过。
+    /// 是否已经抢过
     /// </summary>
     private int _raced;
 

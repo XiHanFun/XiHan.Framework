@@ -13,15 +13,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Database.Tests;
 
 /// <summary>
-/// 对着真实数据库（SQLite，<c>Persistence.SqlSugar</c>）。
+/// 对着真实数据库（SQLite，<c>Persistence.SqlSugar</c>）
 /// </summary>
 /// <remarks>
-/// 实体映射、<see cref="DateTimeOffset"/> 按 UTC 往返、各过滤项与续页都是 SQL 条件，停止时刷完的事件另一个宿主能读到。
+/// 实体映射、<see cref="DateTimeOffset"/> 按 UTC 往返、各过滤项与续页都是 SQL 条件，停止时刷完的事件另一个宿主能读到
 /// </remarks>
 public sealed class SqliteAuditTrailTests
 {
     /// <summary>
-    /// 基准时刻。
+    /// 基准时刻
     /// </summary>
     private static readonly DateTimeOffset _epoch = new(2026, 10, 27, 9, 0, 0, TimeSpan.Zero);
 
@@ -125,7 +125,7 @@ public sealed class SqliteAuditTrailTests
     }
 
     /// <summary>
-    /// 基准时刻起第 <paramref name="minute"/> 分钟的事件。
+    /// 基准时刻起第 <paramref name="minute"/> 分钟的事件
     /// </summary>
     private static AuditEvent Event(string trace, int minute, string action, string principal, string tenant, Error? failure = null, IReadOnlyDictionary<string, object?>? details = null)
         => new(_epoch.AddMinutes(minute), action, failure is null ? Result.Success() : Result.Failure(failure), trace)

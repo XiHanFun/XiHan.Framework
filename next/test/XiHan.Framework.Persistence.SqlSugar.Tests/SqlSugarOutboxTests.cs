@@ -16,25 +16,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 发件箱表在 SqlSugar 上的映射与投递循环的查询（ADR-0064）。
+/// 发件箱表在 SqlSugar 上的映射与投递循环的查询（ADR-0064）
 /// </summary>
 /// <remarks>
-/// 主题与失败原因的列长、投递与清理共用的索引、到期判定里的可空比较（下一次投递时间为空视为到期）、死信不再取到、超过保留期的已投递行被删，在 SQLite 上走一遍真实的 SQL 翻译。
+/// 主题与失败原因的列长、投递与清理共用的索引、到期判定里的可空比较（下一次投递时间为空视为到期）、死信不再取到、超过保留期的已投递行被删，在 SQLite 上走一遍真实的 SQL 翻译
 /// </remarks>
 public sealed class SqlSugarOutboxTests : IDisposable
 {
     /// <summary>
-    /// 时钟起点。
+    /// 时钟起点
     /// </summary>
     private static readonly DateTimeOffset _start = new(2026, 11, 1, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 
@@ -98,10 +98,10 @@ public sealed class SqlSugarOutboxTests : IDisposable
     }
 
     /// <summary>
-    /// 一条可解码的发件箱行。
+    /// 一条可解码的发件箱行
     /// </summary>
     /// <remarks>
-    /// 创建时间按序号递增，下一次投递时间为起点。
+    /// 创建时间按序号递增，下一次投递时间为起点
     /// </remarks>
     private static OutboxMessage Row(string id, int order) => new()
     {
@@ -113,12 +113,12 @@ public sealed class SqlSugarOutboxTests : IDisposable
     };
 
     /// <summary>
-    /// 调用作用域里的发件箱仓储。
+    /// 调用作用域里的发件箱仓储
     /// </summary>
     private static IRepository<OutboxMessage, Guid> Repository(InvocationContext context) => context.Services.GetRequiredService<IRepository<OutboxMessage, Guid>>();
 
     /// <summary>
-    /// 读出全部行，按载荷里的事件 ID 索引。
+    /// 读出全部行，按载荷里的事件 ID 索引
     /// </summary>
     private static async Task<Dictionary<string, OutboxMessage>> RowsAsync(TestHost host)
     {

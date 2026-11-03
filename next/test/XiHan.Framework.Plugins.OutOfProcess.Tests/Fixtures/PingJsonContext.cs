@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 
 /// <summary>
-/// 回显操作的序列化上下文。
+/// 回显操作的序列化上下文
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true)]
 [JsonSerializable(typeof(PingRequest))]

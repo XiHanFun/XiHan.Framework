@@ -4,8 +4,8 @@
 namespace XiHan.Framework.Architecture.Tests.Model;
 
 /// <summary>
-/// 项目文件中的一条 <c>PackageReference</c>。
+/// 项目文件中的一条 <c>PackageReference</c>
 /// </summary>
-/// <param name="Id">包 ID。</param>
-/// <param name="IsPrivate">是否 <c>PrivateAssets="all"</c>；私有引用不进入包依赖。</param>
+/// <param name="Id">包 ID</param>
+/// <param name="IsPrivate">是否 <c>PrivateAssets="all"</c>；私有引用不进入包依赖</param>
 internal sealed record PackageReference(string Id, bool IsPrivate);

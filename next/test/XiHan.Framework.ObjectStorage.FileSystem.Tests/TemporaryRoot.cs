@@ -4,12 +4,12 @@
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 每个用例一个临时根目录，释放时递归删除。
+/// 每个用例一个临时根目录，释放时递归删除
 /// </summary>
 internal sealed class TemporaryRoot : IDisposable
 {
     /// <summary>
-    /// 创建并建目录。
+    /// 创建并建目录
     /// </summary>
     public TemporaryRoot()
     {
@@ -18,7 +18,7 @@ internal sealed class TemporaryRoot : IDisposable
     }
 
     /// <summary>
-    /// 根目录路径。
+    /// 根目录路径
     /// </summary>
     public string Path { get; }
 

@@ -7,12 +7,12 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace XiHan.Framework.Persistence.Generators.Tests;
 
 /// <summary>
-/// 把同一份选项用于全局与每个语法树的提供者。
+/// 把同一份选项用于全局与每个语法树的提供者
 /// </summary>
 internal sealed class TestAnalyzerConfigOptionsProvider(string rootNamespace) : AnalyzerConfigOptionsProvider
 {
     /// <summary>
-    /// 全局选项。
+    /// 全局选项
     /// </summary>
     private readonly TestAnalyzerConfigOptions _global = new(rootNamespace);
 

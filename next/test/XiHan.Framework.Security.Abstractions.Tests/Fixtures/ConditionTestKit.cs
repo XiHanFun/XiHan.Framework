@@ -6,17 +6,17 @@ using XiHan.Framework.Security.Abstractions.Conditions;
 namespace XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 条件测试共用的登记表、编译器与求值助手。
+/// 条件测试共用的登记表、编译器与求值助手
 /// </summary>
 internal static class ConditionTestKit
 {
     /// <summary>
-    /// 东八区（自建时区，不依赖运行环境的时区库）。
+    /// 东八区（自建时区，不依赖运行环境的时区库）
     /// </summary>
     public static readonly TimeZoneInfo UtcPlus8 = TimeZoneInfo.CreateCustomTimeZone("test+8", TimeSpan.FromHours(8), "test+8", "test+8");
 
     /// <summary>
-    /// 覆盖各值种类、多值、别名与族的登记项。
+    /// 覆盖各值种类、多值、别名与族的登记项
     /// </summary>
     public static readonly ConditionAttributeDescriptor[] Attributes =
     [
@@ -33,22 +33,22 @@ internal static class ConditionTestKit
     ];
 
     /// <summary>
-    /// 用 <see cref="Attributes"/> 建的编译器。
+    /// 用 <see cref="Attributes"/> 建的编译器
     /// </summary>
     public static ConditionCompiler Compiler { get; } = new(new ConditionAttributeRegistry(Attributes));
 
     /// <summary>
-    /// 求值器。
+    /// 求值器
     /// </summary>
     public static ConditionEvaluator Evaluator { get; } = new();
 
     /// <summary>
-    /// 只含一个子句的条件集。
+    /// 只含一个子句的条件集
     /// </summary>
     public static ConditionSet Single(ConditionClause clause) => new([new ConditionGroup([clause])]);
 
     /// <summary>
-    /// 不区分大小写的属性值字典。
+    /// 不区分大小写的属性值字典
     /// </summary>
     public static Dictionary<string, object?> Values(params (string Name, object? Value)[] values)
     {
@@ -62,7 +62,7 @@ internal static class ConditionTestKit
     }
 
     /// <summary>
-    /// 编译并带说明求值一个子句，返回子句结果。
+    /// 编译并带说明求值一个子句，返回子句结果
     /// </summary>
     public static async Task<ConditionOutcome> EvaluateAsync(ConditionClause clause, Dictionary<string, object?> values, TimeZoneInfo? timeZone = null)
     {

@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
 
 /// <summary>
-/// 一直等到被取消的宿主侧操作（最多 30 秒）。
+/// 一直等到被取消的宿主侧操作（最多 30 秒）
 /// </summary>
 internal sealed class WaitOperation(CancellationProbe probe) : IOperation<PingRequest, PingResponse>
 {

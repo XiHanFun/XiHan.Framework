@@ -12,23 +12,23 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="LeasedWorkerIdSource"/>。
+/// <see cref="LeasedWorkerIdSource"/>
 /// </summary>
 /// <remarks>
-/// 多个实例共用一个锁存储时取最小空位、本地到期、续约保持机器位、空位被抢后重新分配、存储不可达按丢失处理、机器位全被占时启动失败、后台循环按周期续约。
+/// 多个实例共用一个锁存储时取最小空位、本地到期、续约保持机器位、空位被抢后重新分配、存储不可达按丢失处理、机器位全被占时启动失败、后台循环按周期续约
 /// </remarks>
 public sealed class LeasedWorkerIdSourceTests
 {
     /// <summary>
-    /// 用例的起始时刻。
+    /// 用例的起始时刻
     /// </summary>
     private static readonly DateTimeOffset _start = new(2026, 10, 27, 0, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 租约存活时间。
+    /// 租约存活时间
     /// </summary>
     /// <remarks>
-    /// 续约间隔是它的三分之一。
+    /// 续约间隔是它的三分之一
     /// </remarks>
     private static readonly TimeSpan _timeToLive = TimeSpan.FromSeconds(30);
 
@@ -174,18 +174,18 @@ public sealed class LeasedWorkerIdSourceTests
     }
 
     /// <summary>
-    /// 以假时钟计时的内存缓存存储。
+    /// 以假时钟计时的内存缓存存储
     /// </summary>
     private static InMemoryCacheStore Store(TimeProvider clock) => new(new InMemoryCachingOptions(), clock);
 
     /// <summary>
-    /// 架在 <paramref name="store"/> 的分布式锁上的机器位来源。
+    /// 架在 <paramref name="store"/> 的分布式锁上的机器位来源
     /// </summary>
     private static LeasedWorkerIdSource Create(ICacheStore store, TimeProvider clock) =>
         new(new StoreDistributedLock(store), new SnowflakeOptions { LeaseTimeToLive = _timeToLive }, clock, NullLoggerFactory.Instance);
 
     /// <summary>
-    /// 机器位在存储里的锁条目键（<see cref="StoreDistributedLock"/> 的前缀 + 资源名）。
+    /// 机器位在存储里的锁条目键（<see cref="StoreDistributedLock"/> 的前缀 + 资源名）
     /// </summary>
     private static CacheKey LockKey(int workerId) => new("lock:" + LeasedWorkerIdSource.ResourcePrefix + workerId);
 }

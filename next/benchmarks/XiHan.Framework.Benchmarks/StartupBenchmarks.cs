@@ -10,27 +10,27 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Benchmarks;
 
 /// <summary>
-/// 装配与启动开销：目标在宿主基线之上 &lt; 50 ms。
+/// 装配与启动开销：目标在宿主基线之上 &lt; 50 ms
 /// </summary>
 [MemoryDiagnoser]
 public class StartupBenchmarks
 {
     /// <summary>
-    /// 空配置。
+    /// 空配置
     /// </summary>
     /// <remarks>
-    /// 所有迭代共用，不计配置构建时间。
+    /// 所有迭代共用，不计配置构建时间
     /// </remarks>
     private static readonly IConfiguration _configuration = new ConfigurationBuilder().Build();
 
     /// <summary>
-    /// 装配的特性数量。
+    /// 装配的特性数量
     /// </summary>
     [Params(1, 10)]
     public int Features { get; set; }
 
     /// <summary>
-    /// 装配 <see cref="Features"/> 个链式依赖的特性桩，构建容器，启动再停止应用。
+    /// 装配 <see cref="Features"/> 个链式依赖的特性桩，构建容器，启动再停止应用
     /// </summary>
     [Benchmark]
     public async Task BuildAndStart()

@@ -7,17 +7,17 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 回显操作：<c>fail</c> 返回校验错误，<c>throw</c> 抛异常，其余把文本重复 <c>Repeat</c> 次。
+/// 回显操作：<c>fail</c> 返回校验错误，<c>throw</c> 抛异常，其余把文本重复 <c>Repeat</c> 次
 /// </summary>
 internal sealed class EchoOperation : IOperation<EchoRequest, EchoResponse>
 {
     /// <summary>
-    /// 请求 Schema。
+    /// 请求 Schema
     /// </summary>
     public const string RequestSchema = """{"type":"object","properties":{"text":{"type":["string","null"]},"repeat":{"type":"integer"}},"required":["text"]}""";
 
     /// <summary>
-    /// 响应 Schema。
+    /// 响应 Schema
     /// </summary>
     public const string ResponseSchema = """{"type":"object","properties":{"echo":{"type":"string"},"traceId":{"type":"string"},"tenant":{"type":["string","null"]}}}""";
 

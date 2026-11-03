@@ -9,20 +9,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Hybrid.Tests;
 
 /// <summary>
-/// 记录每次调用的 L2 替身。
+/// 记录每次调用的 L2 替身
 /// </summary>
 /// <remarks>
-/// 转发给内存对象缓存，顺便记下操作名与键，让用例断言哪些读写真的到了 L2。
+/// 转发给内存对象缓存，顺便记下操作名与键，让用例断言哪些读写真的到了 L2
 /// </remarks>
 internal sealed class RecordingSharedCache : ISharedCache
 {
     /// <summary>
-    /// 真正保存数据的内存缓存。
+    /// 真正保存数据的内存缓存
     /// </summary>
     private readonly InMemoryObjectCache _inner;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public RecordingSharedCache(TimeProvider clock)
     {
@@ -32,10 +32,10 @@ internal sealed class RecordingSharedCache : ISharedCache
     }
 
     /// <summary>
-    /// 创建，对外的字节存储换成指定的。
+    /// 创建，对外的字节存储换成指定的
     /// </summary>
     /// <remarks>
-    /// 数据仍存在内部的内存缓存里；两级缓存只从 <see cref="Store"/> 订阅变更。
+    /// 数据仍存在内部的内存缓存里；两级缓存只从 <see cref="Store"/> 订阅变更
     /// </remarks>
     public RecordingSharedCache(TimeProvider clock, ICacheStore store)
         : this(clock)
@@ -44,7 +44,7 @@ internal sealed class RecordingSharedCache : ISharedCache
     }
 
     /// <summary>
-    /// 到达 L2 的操作，形如 <c>get:k</c>、<c>getmany:a,b</c>。
+    /// 到达 L2 的操作，形如 <c>get:k</c>、<c>getmany:a,b</c>
     /// </summary>
     public List<string> Operations { get; } = [];
 

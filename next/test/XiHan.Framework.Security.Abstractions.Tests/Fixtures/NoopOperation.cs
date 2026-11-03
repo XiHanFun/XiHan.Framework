@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 什么都不做的操作，只用来给授权中间件一个带契约的描述。
+/// 什么都不做的操作，只用来给授权中间件一个带契约的描述
 /// </summary>
 internal sealed class NoopOperation : IOperation<NoopRequest, NoopResponse>
 {

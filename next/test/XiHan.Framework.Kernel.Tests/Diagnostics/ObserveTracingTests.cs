@@ -11,41 +11,41 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Diagnostics;
 
 /// <summary>
-/// Observe 阶段 <c>xihan.invoke</c> 的父级与采样（RFC-0003 规则 7）。
+/// Observe 阶段 <c>xihan.invoke</c> 的父级与采样（RFC-0003 规则 7）
 /// </summary>
 /// <remarks>
-/// 监听器按 OpenTelemetry 的 ParentBased 规则采样：有父级随父级的采样位，链路的根按用例给定的根规则。同一类里的用例依次执行，监听器在用例结束时移除。
+/// 监听器按 OpenTelemetry 的 ParentBased 规则采样：有父级随父级的采样位，链路的根按用例给定的根规则。同一类里的用例依次执行，监听器在用例结束时移除
 /// </remarks>
 public sealed class ObserveTracingTests
 {
     /// <summary>
-    /// 上游的 trace-id。
+    /// 上游的 trace-id
     /// </summary>
     private const string UpstreamTrace = "4bf92f3577b34da6a3ce929d0e0e4736";
 
     /// <summary>
-    /// 上游的 parent-id。
+    /// 上游的 parent-id
     /// </summary>
     private const string UpstreamSpan = "00f067aa0ba902b7";
 
     /// <summary>
-    /// 扮演宿主的源的名字。
+    /// 扮演宿主的源的名字
     /// </summary>
     /// <remarks>
-    /// 监听器按名字比较：创建源时已有的监听器会立刻被询问，那时静态字段还没赋值。
+    /// 监听器按名字比较：创建源时已有的监听器会立刻被询问，那时静态字段还没赋值
     /// </remarks>
     private const string HostSourceName = "XiHan.Framework.Kernel.Tests.Host";
 
     /// <summary>
-    /// 扮演宿主（如 ASP.NET Core）开请求 Span 的源。
+    /// 扮演宿主（如 ASP.NET Core）开请求 Span 的源
     /// </summary>
     private static readonly ActivitySource _host = new(HostSourceName);
 
     /// <summary>
-    /// 监听内核与测试宿主的源。
+    /// 监听内核与测试宿主的源
     /// </summary>
     /// <remarks>
-    /// 有父级时随父级的采样位，没有父级时按 <paramref name="keepRoots"/>。
+    /// 有父级时随父级的采样位，没有父级时按 <paramref name="keepRoots"/>
     /// </remarks>
     private static ActivityListener Listen(bool keepRoots)
     {
@@ -63,7 +63,7 @@ public sealed class ObserveTracingTests
     }
 
     /// <summary>
-    /// 启动只有内核的应用。
+    /// 启动只有内核的应用
     /// </summary>
     private static async Task<(ServiceProvider Provider, App App)> StartAsync()
     {
@@ -73,10 +73,10 @@ public sealed class ObserveTracingTests
     }
 
     /// <summary>
-    /// 经完整管道调用，返回处理器里看到的 <c>xihan.invoke</c>。
+    /// 经完整管道调用，返回处理器里看到的 <c>xihan.invoke</c>
     /// </summary>
     /// <remarks>
-    /// 没有开启（采样器不要）时返回 <see langword="null"/>。
+    /// 没有开启（采样器不要）时返回 <see langword="null"/>
     /// </remarks>
     private static async Task<Activity?> InvokeAsync(App app, InvocationContext context)
     {

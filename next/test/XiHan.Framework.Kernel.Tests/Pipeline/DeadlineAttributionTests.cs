@@ -10,65 +10,65 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Pipeline;
 
 /// <summary>
-/// <see cref="DeadlineMiddleware"/> 对截止时间与调用方取消的归因。
+/// <see cref="DeadlineMiddleware"/> 对截止时间与调用方取消的归因
 /// </summary>
 /// <remarks>
 /// 下游先挂起、不看令牌，用例按需推进注入的时钟（触发截止令牌）与取消调用方的令牌之后才放行，下游再按令牌抛出取消或写下取消结果：
-/// 下游观察时该触发的令牌都已触发，结果与触发顺序、线程调度无关。截止令牌已触发即超时，调用方同时取消也一样，两条路径同一规则（ADR-0092）。
+/// 下游观察时该触发的令牌都已触发，结果与触发顺序、线程调度无关。截止令牌已触发即超时，调用方同时取消也一样，两条路径同一规则（ADR-0092）
 /// </remarks>
 public sealed class DeadlineAttributionTests
 {
     /// <summary>
-    /// 空容器。
+    /// 空容器
     /// </summary>
     /// <remarks>
-    /// 用例直接调用中间件，不经过容器解析。
+    /// 用例直接调用中间件，不经过容器解析
     /// </remarks>
     private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     /// <summary>
-    /// 截止时间距调用开始的时长。
+    /// 截止时间距调用开始的时长
     /// </summary>
     private static readonly TimeSpan _deadlineAfter = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// 下游观察到取消之前触发了哪些令牌。
+    /// 下游观察到取消之前触发了哪些令牌
     /// </summary>
     public enum Trigger
     {
         /// <summary>
-        /// 只有截止时间到了。
+        /// 只有截止时间到了
         /// </summary>
         DeadlineOnly,
 
         /// <summary>
-        /// 只有调用方取消。
+        /// 只有调用方取消
         /// </summary>
         CallerOnly,
 
         /// <summary>
-        /// 截止时间先到，调用方随后也取消。
+        /// 截止时间先到，调用方随后也取消
         /// </summary>
         DeadlineThenCaller,
 
         /// <summary>
-        /// 调用方先取消，截止时间随后也到。
+        /// 调用方先取消，截止时间随后也到
         /// </summary>
         CallerThenDeadline,
     }
 
     /// <summary>
-    /// 下游如何报告取消。
+    /// 下游如何报告取消
     /// </summary>
     public enum Downstream
     {
         /// <summary>
-        /// 抛出 <see cref="OperationCanceledException"/>。
+        /// 抛出 <see cref="OperationCanceledException"/>
         /// </summary>
         Throws,
 
         /// <summary>
-        /// 接住取消、写下 <see cref="KernelErrors.Cancelled"/> 结果、正常返回（插件运行时的写法）。
+        /// 接住取消、写下 <see cref="KernelErrors.Cancelled"/> 结果、正常返回（插件运行时的写法）
         /// </summary>
         WritesResult,
     }

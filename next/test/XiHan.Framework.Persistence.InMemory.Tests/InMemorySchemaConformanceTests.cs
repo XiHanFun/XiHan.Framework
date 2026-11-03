@@ -8,10 +8,10 @@ using XiHan.Framework.Persistence.Conformance;
 namespace XiHan.Framework.Persistence.InMemory.Tests;
 
 /// <summary>
-/// 内存实现跑库结构读取与实体目录的一致性套件。
+/// 内存实现跑库结构读取与实体目录的一致性套件
 /// </summary>
 /// <remarks>
-/// 实体目录的表名取类型名；库结构读取不支持，返回明确的错误码。
+/// 实体目录的表名取类型名；库结构读取不支持，返回明确的错误码
 /// </remarks>
 public sealed class InMemorySchemaConformanceTests : SchemaConformance
 {

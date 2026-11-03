@@ -15,15 +15,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.InMemory.Tests;
 
 /// <summary>
-/// 内存 Provider 独有的行为。
+/// 内存 Provider 独有的行为
 /// </summary>
 /// <remarks>
-/// 选项解析、容量上限、只读工作单元、状态机、覆盖层回滚、读写都复制、提交时按首次读到的状态校验（并发新增同一标识、行被改或被删）且跨表原子、并发提交。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析、容量上限、只读工作单元、状态机、覆盖层回滚、读写都复制、提交时按首次读到的状态校验（并发新增同一标识、行被改或被删）且跨表原子、并发提交。一致性套件覆盖的通用行为不在此重复
 /// </remarks>
 public sealed class InMemoryPersistenceTests
 {
     /// <summary>
-    /// 不实现任何协议的测试实体。
+    /// 不实现任何协议的测试实体
     /// </summary>
     private sealed class Widget : IEntity<Guid>
     {
@@ -31,27 +31,27 @@ public sealed class InMemoryPersistenceTests
         public Guid Id { get; init; }
 
         /// <summary>
-        /// 名称。
+        /// 名称
         /// </summary>
         /// <remarks>
-        /// 用于验证更新后的值。
+        /// 用于验证更新后的值
         /// </remarks>
         public string Name { get; set; } = string.Empty;
     }
 
     /// <summary>
-    /// 注入仓储的固定时刻。
+    /// 注入仓储的固定时刻
     /// </summary>
     private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 用键值对构造内存配置。
+    /// 用键值对构造内存配置
     /// </summary>
     private static IConfiguration Configuration(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
 
     /// <summary>
-    /// 新建指定容量的存储，并在其上打开一个工作单元与仓储。
+    /// 新建指定容量的存储，并在其上打开一个工作单元与仓储
     /// </summary>
     private static (InMemoryStore Store, InMemoryUnitOfWork UnitOfWork, InMemoryRepository<Widget, Guid> Repository) Arrange(int capacity = 100)
     {
@@ -60,10 +60,10 @@ public sealed class InMemoryPersistenceTests
     }
 
     /// <summary>
-    /// 在已有存储上打开一个新的工作单元与仓储。
+    /// 在已有存储上打开一个新的工作单元与仓储
     /// </summary>
     /// <remarks>
-    /// 用于模拟第二个作用域。
+    /// 用于模拟第二个作用域
     /// </remarks>
     private static (InMemoryStore Store, InMemoryUnitOfWork UnitOfWork, InMemoryRepository<Widget, Guid> Repository) Open(InMemoryStore store)
     {
@@ -72,10 +72,10 @@ public sealed class InMemoryPersistenceTests
     }
 
     /// <summary>
-    /// 在已有工作单元上打开订单仓储。
+    /// 在已有工作单元上打开订单仓储
     /// </summary>
     /// <remarks>
-    /// 订单带并发戳，用来验证提交时的戳校验。
+    /// 订单带并发戳，用来验证提交时的戳校验
     /// </remarks>
     private static InMemoryRepository<ConformanceOrder, Guid> Orders(InMemoryStore store, InMemoryUnitOfWork unitOfWork)
         => new(store, unitOfWork, new FakeTimeProvider(_now));

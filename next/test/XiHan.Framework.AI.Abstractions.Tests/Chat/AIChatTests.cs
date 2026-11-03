@@ -13,15 +13,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.Abstractions.Tests.Chat;
 
 /// <summary>
-/// 聊天入口。
+/// 聊天入口
 /// </summary>
 /// <remarks>
-/// 提示词成系统消息、工具绑定、护栏、Provider 解析与缓存、异常映射、流式。
+/// 提示词成系统消息、工具绑定、护栏、Provider 解析与缓存、异常映射、流式
 /// </remarks>
 public sealed class AIChatTests
 {
     /// <summary>
-    /// 基础配置：一个 fake Provider、一个提示词、开启关键词护栏。
+    /// 基础配置：一个 fake Provider、一个提示词、开启关键词护栏
     /// </summary>
     private static readonly (string Key, string Value)[] _configuration =
     [
@@ -129,7 +129,7 @@ public sealed class AIChatTests
     }
 
     /// <summary>
-    /// 启动：工具目录 + 回显操作，fake 聊天工厂。
+    /// 启动：工具目录 + 回显操作，fake 聊天工厂
     /// </summary>
     private static Task<TestHost> StartAsync(FakeChatClientFactory factory)
         => TestHost.StartAsync(

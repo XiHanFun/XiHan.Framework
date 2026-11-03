@@ -6,7 +6,7 @@ using XiHan.Framework.Cli.Migration;
 namespace XiHan.Framework.Cli.Tests.Migration;
 
 /// <summary>
-/// 测试规则 <c>T5-03</c>：<c>*.legacy.json</c> 转成去掉 <c>.legacy</c> 的同名文件，原文件删除。
+/// 测试规则 <c>T5-03</c>：<c>*.legacy.json</c> 转成去掉 <c>.legacy</c> 的同名文件，原文件删除
 /// </summary>
 internal sealed class LegacyJsonFixer : MigrationFixer
 {

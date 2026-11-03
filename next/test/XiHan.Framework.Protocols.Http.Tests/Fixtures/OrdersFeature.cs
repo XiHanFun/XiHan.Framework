@@ -10,15 +10,15 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 登记测试操作的特性。
+/// 登记测试操作的特性
 /// </summary>
 /// <remarks>
-/// 五个标准动词、一个实例级与一个集合级自定义动词暴露给 HTTP，一个只给 MCP，一个标为内部。
+/// 五个标准动词、一个实例级与一个集合级自定义动词暴露给 HTTP，一个只给 MCP，一个标为内部
 /// </remarks>
 internal sealed class OrdersFeature : IFeature
 {
     /// <summary>
-    /// 暴露给 HTTP 且非内部的操作 ID。
+    /// 暴露给 HTTP 且非内部的操作 ID
     /// </summary>
     public static readonly string[] HttpOperations = ["order-filters.delete", "order-filters.list", "order-searches.list", "orders.cancel", "orders.create", "orders.delete", "orders.export", "orders.get", "orders.list", "orders.report", "orders.update"];
 
@@ -36,7 +36,7 @@ internal sealed class OrdersFeature : IFeature
     };
 
     /// <summary>
-    /// 手写的请求 Schema：带 $defs 的嵌套定义，验证 OpenAPI 把它提升到 components。
+    /// 手写的请求 Schema：带 $defs 的嵌套定义，验证 OpenAPI 把它提升到 components
     /// </summary>
     public static readonly OperationSchema OrderSchema = new(
         """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"OrderRequest","type":"object","properties":{"id":{"type":["string","null"]},"name":{"type":["string","null"]},"page":{"type":"integer","format":"int32"},"tags":{"type":["array","null"],"items":{"type":"string"}},"line":{"$ref":"#/$defs/Line"}},"required":["page"],"$defs":{"Line":{"type":"object","properties":{"sku":{"type":"string"}},"required":["sku"]}}}""",
@@ -67,7 +67,7 @@ internal sealed class OrdersFeature : IFeature
     }
 
     /// <summary>
-    /// 以同一实现登记一个契约。
+    /// 以同一实现登记一个契约
     /// </summary>
     private static void Add(FeatureContext context, OperationContract contract, OperationSchema? schema = null)
         => context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(contract, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, schema);

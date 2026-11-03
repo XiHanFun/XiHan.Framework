@@ -18,15 +18,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 启动时连不上照常启动、后台重试与写入时就地探测。
+/// 启动时连不上照常启动、后台重试与写入时就地探测
 /// </summary>
 /// <remarks>
-/// 尚未确认时的行为（ADR-0090），以及启动之后才被拒绝或缺桶（ADR-0093）。照常启动的只有启动时连不上（启动时被拒绝、缺桶即启动失败，见 <see cref="S3ConditionalWriteTests"/>）。用内存替身 <see cref="FakeS3Client"/> 控制服务何时连得上、何时认条件写入，用 <see cref="FakeTimeProvider"/> 推进退避，不靠真实等待；推进之前先等后台重试排定计时器（<see cref="S3ConditionalWriteGate.WhenRetryScheduledAsync"/>）。等待都带真实时间的上限，只为失败时不挂死。
+/// 尚未确认时的行为（ADR-0090），以及启动之后才被拒绝或缺桶（ADR-0093）。照常启动的只有启动时连不上（启动时被拒绝、缺桶即启动失败，见 <see cref="S3ConditionalWriteTests"/>）。用内存替身 <see cref="FakeS3Client"/> 控制服务何时连得上、何时认条件写入，用 <see cref="FakeTimeProvider"/> 推进退避，不靠真实等待；推进之前先等后台重试排定计时器（<see cref="S3ConditionalWriteGate.WhenRetryScheduledAsync"/>）。等待都带真实时间的上限，只为失败时不挂死
 /// </remarks>
 public sealed class S3ConditionalWriteRetryTests
 {
     /// <summary>
-    /// 替身里的探测桶，也是用例写入的桶。
+    /// 替身里的探测桶，也是用例写入的桶
     /// </summary>
     private const string Bucket = "probe";
 
@@ -317,47 +317,47 @@ public sealed class S3ConditionalWriteRetryTests
     }
 
     /// <summary>
-    /// 命名实例的定义。
+    /// 命名实例的定义
     /// </summary>
     private static BlobStoreDefinition Definition(string name, string serviceUrl)
         => new(name, S3BlobStoreProvider.ProviderName, new Dictionary<string, string> { ["ServiceUrl"] = serviceUrl, ["HealthBucket"] = Bucket });
 
     /// <summary>
-    /// 以不覆盖方式写一个对象。
+    /// 以不覆盖方式写一个对象
     /// </summary>
     private static Task<Result<BlobMetadata>> Put(IBlobStore store, string key)
         => store.PutAsync(Bucket, key, Encoding.UTF8.GetBytes(key), new BlobPutOptions { Overwrite = false }, CancellationToken.None).AsTask();
 
     /// <summary>
-    /// 缺省实例的健康项。
+    /// 缺省实例的健康项
     /// </summary>
     private static ContributorStatus Connection(TestHost host)
         => Assert.Single(host.App.Health().Contributions, static c => c.Name == S3ObjectStorageFeature.HealthName);
 
     /// <summary>
-    /// 等待，最多 30 秒（真实时间，只为失败时不挂死）。
+    /// 等待，最多 30 秒（真实时间，只为失败时不挂死）
     /// </summary>
     private static Task Within(Task task) => task.WaitAsync(TimeSpan.FromSeconds(30));
 
     /// <summary>
-    /// 等待结果，最多 30 秒（真实时间，只为失败时不挂死）。
+    /// 等待结果，最多 30 秒（真实时间，只为失败时不挂死）
     /// </summary>
     private static Task<T> Within<T>(Task<T> task) => task.WaitAsync(TimeSpan.FromSeconds(30));
 
     /// <summary>
-    /// 条件写入状态的日志，按写入顺序。
+    /// 条件写入状态的日志，按写入顺序
     /// </summary>
     private static List<(LogLevel Level, string Category, string Message)> GateLogs(LogCapture logs)
         => [.. logs.Entries.Where(static e => e.Category == typeof(S3ConditionalWriteGate).FullName)];
 
     /// <summary>
-    /// 以替身为客户端、以假时钟启动只装 S3 的宿主。
+    /// 以替身为客户端、以假时钟启动只装 S3 的宿主
     /// </summary>
     private static Task<TestHost> StartAsync(FakeS3Client fake, FakeTimeProvider clock, params (string Key, string Value)[] extra)
         => StartAsync(fake, clock, logs: null, extra);
 
     /// <summary>
-    /// 以替身为客户端、以假时钟启动只装 S3 的宿主，日志收进 <paramref name="logs"/>（为空时用缺省日志）。
+    /// 以替身为客户端、以假时钟启动只装 S3 的宿主，日志收进 <paramref name="logs"/>（为空时用缺省日志）
     /// </summary>
     private static Task<TestHost> StartAsync(FakeS3Client fake, FakeTimeProvider clock, LogCapture? logs, params (string Key, string Value)[] extra)
         => TestHost.StartAsync(

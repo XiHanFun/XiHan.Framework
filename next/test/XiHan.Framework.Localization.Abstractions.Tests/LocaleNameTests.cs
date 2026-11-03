@@ -6,7 +6,7 @@ using XiHan.Framework.Localization.Abstractions.Locales;
 namespace XiHan.Framework.Localization.Abstractions.Tests;
 
 /// <summary>
-/// 区域名文法与规范化。
+/// 区域名文法与规范化
 /// </summary>
 public sealed class LocaleNameTests
 {

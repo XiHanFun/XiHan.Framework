@@ -20,15 +20,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// Problem Details 的扩展成员。
+/// Problem Details 的扩展成员
 /// </summary>
 /// <remarks>
-/// VALIDATION 错误的字段级 <c>errors</c> 按调用方区域翻译（与 <c>detail</c> 同一通道，没有键的文案原样），所有错误的 <c>details</c> 只收标量；没有装配本地化时字段文案是违规的原因。
+/// VALIDATION 错误的字段级 <c>errors</c> 按调用方区域翻译（与 <c>detail</c> 同一通道，没有键的文案原样），所有错误的 <c>details</c> 只收标量；没有装配本地化时字段文案是违规的原因
 /// </remarks>
 public sealed class ProblemExtensionsTests
 {
     /// <summary>
-    /// 业务目录：只有英文与简体中文。
+    /// 业务目录：只有英文与简体中文
     /// </summary>
     private static readonly MessageCatalog _orders = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
@@ -37,10 +37,10 @@ public sealed class ProblemExtensionsTests
     });
 
     /// <summary>
-    /// 带字段级违规的校验错误。
+    /// 带字段级违规的校验错误
     /// </summary>
     /// <remarks>
-    /// 内核键的违规两条（同一字段两条、嵌套路径一条）、应用文案一条；细节另带标量与集合。
+    /// 内核键的违规两条（同一字段两条、嵌套路径一条）、应用文案一条；细节另带标量与集合
     /// </remarks>
     private static Error Invalid()
     {
@@ -54,10 +54,10 @@ public sealed class ProblemExtensionsTests
     }
 
     /// <summary>
-    /// 带各种细节的冲突错误。
+    /// 带各种细节的冲突错误
     /// </summary>
     /// <remarks>
-    /// 标量进 <c>details</c>，对象与集合不进，<c>errors</c> 在非 VALIDATION 错误上不输出。
+    /// 标量进 <c>details</c>，对象与集合不进，<c>errors</c> 在非 VALIDATION 错误上不输出
     /// </remarks>
     private static Error Conflict()
     {
@@ -75,7 +75,7 @@ public sealed class ProblemExtensionsTests
     }
 
     /// <summary>
-    /// 启动测试宿主：<c>/invalid</c> 写校验错误，<c>/conflict</c> 写冲突错误。
+    /// 启动测试宿主：<c>/invalid</c> 写校验错误，<c>/conflict</c> 写冲突错误
     /// </summary>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool localization)
     {
@@ -108,7 +108,7 @@ public sealed class ProblemExtensionsTests
     }
 
     /// <summary>
-    /// 发送 GET 请求，可带 <c>Accept-Language</c>。
+    /// 发送 GET 请求，可带 <c>Accept-Language</c>
     /// </summary>
     private static Task<HttpResponseMessage> GetAsync(HttpClient client, string path, string? acceptLanguage = null)
     {
@@ -122,7 +122,7 @@ public sealed class ProblemExtensionsTests
     }
 
     /// <summary>
-    /// 读响应体为 JSON 文档。
+    /// 读响应体为 JSON 文档
     /// </summary>
     private static async Task<JsonDocument> BodyOf(HttpResponseMessage response)
     {

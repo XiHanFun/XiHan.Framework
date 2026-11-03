@@ -4,6 +4,6 @@
 namespace XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 授权测试用的空响应。
+/// 授权测试用的空响应
 /// </summary>
 internal sealed record NoopResponse;

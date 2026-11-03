@@ -14,15 +14,15 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// HTTP 请求在进入管道前绑定为载荷，Validate 阶段按契约 Schema 拒绝。
+/// HTTP 请求在进入管道前绑定为载荷，Validate 阶段按契约 Schema 拒绝
 /// </summary>
 /// <remarks>
-/// 缺必填、类型不符与嵌套违规都是 400 的 <c>KERNEL_VALIDATION_003</c>，不执行操作；合法请求照常执行；请求体不是 JSON 对象在进管道前就被拒绝。
+/// 缺必填、类型不符与嵌套违规都是 400 的 <c>KERNEL_VALIDATION_003</c>，不执行操作；合法请求照常执行；请求体不是 JSON 对象在进管道前就被拒绝
 /// </remarks>
 public sealed class ValidationStageTests
 {
     /// <summary>
-    /// 启动只装配 HTTP 协议与订单特性的测试宿主。
+    /// 启动只装配 HTTP 协议与订单特性的测试宿主
     /// </summary>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync()
     {
@@ -38,7 +38,7 @@ public sealed class ValidationStageTests
     }
 
     /// <summary>
-    /// 读 Problem Details 的错误码与 <c>detail</c>。
+    /// 读 Problem Details 的错误码与 <c>detail</c>
     /// </summary>
     private static async Task<(string Code, string? Detail)> ProblemOf(HttpResponseMessage response)
     {
@@ -48,7 +48,7 @@ public sealed class ValidationStageTests
     }
 
     /// <summary>
-    /// JSON 请求体。
+    /// JSON 请求体
     /// </summary>
     private static StringContent Json(string json) => new(json, Encoding.UTF8, "application/json");
 

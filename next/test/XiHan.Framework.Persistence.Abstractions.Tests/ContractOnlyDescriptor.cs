@@ -7,12 +7,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 只带契约的操作描述。
+/// 只带契约的操作描述
 /// </summary>
 /// <remarks>
-/// 放进调用上下文，验证 Transaction 阶段按契约的只读标志开工作单元；编解码与执行都不会被调用。
+/// 放进调用上下文，验证 Transaction 阶段按契约的只读标志开工作单元；编解码与执行都不会被调用
 /// </remarks>
-/// <param name="contract">契约。</param>
+/// <param name="contract">契约</param>
 internal sealed class ContractOnlyDescriptor(OperationContract contract)
     : OperationDescriptor(contract, "xihan.test.orders", typeof(ContractOnlyDescriptor), typeof(object), typeof(object), null)
 {

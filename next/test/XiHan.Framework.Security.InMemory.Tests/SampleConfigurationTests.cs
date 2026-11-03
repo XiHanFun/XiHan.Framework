@@ -6,15 +6,15 @@ using Microsoft.Extensions.Configuration;
 namespace XiHan.Framework.Security.InMemory.Tests;
 
 /// <summary>
-/// 示例应用的 appsettings.json 必须能被解析并用于认证。
+/// 示例应用的 appsettings.json 必须能被解析并用于认证
 /// </summary>
 /// <remarks>
-/// 这是 Standard 示例"零外部基础设施运行"的一部分。
+/// 这是 Standard 示例"零外部基础设施运行"的一部分
 /// </remarks>
 public sealed class SampleConfigurationTests
 {
     /// <summary>
-    /// 从测试输出目录向上找到 next 工作区，定位示例应用的 appsettings.json。
+    /// 从测试输出目录向上找到 next 工作区，定位示例应用的 appsettings.json
     /// </summary>
     private static string Locate()
     {

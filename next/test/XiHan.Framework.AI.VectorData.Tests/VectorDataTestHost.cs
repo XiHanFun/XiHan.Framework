@@ -10,20 +10,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.VectorData.Tests;
 
 /// <summary>
-/// 启动装配了哈希嵌入 Provider 与 VectorData 知识库 Provider 的宿主。
+/// 启动装配了哈希嵌入 Provider 与 VectorData 知识库 Provider 的宿主
 /// </summary>
 internal static class VectorDataTestHost
 {
     /// <summary>
-    /// 嵌入维度。
+    /// 嵌入维度
     /// </summary>
     public const int Dimensions = 64;
 
     /// <summary>
-    /// 启动。
+    /// 启动
     /// </summary>
     /// <remarks>
-    /// <paramref name="store"/> 为空时不注册向量存储。
+    /// <paramref name="store"/> 为空时不注册向量存储
     /// </remarks>
     public static Task<TestHost> StartAsync(VectorStore? store, params (string Key, string Value)[] extra)
     {

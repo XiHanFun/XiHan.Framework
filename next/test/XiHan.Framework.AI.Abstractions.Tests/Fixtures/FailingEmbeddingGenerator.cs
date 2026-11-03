@@ -6,7 +6,7 @@ using Microsoft.Extensions.AI;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 每次生成都抛出的嵌入生成器，模拟模型端点不可达。
+/// 每次生成都抛出的嵌入生成器，模拟模型端点不可达
 /// </summary>
 internal sealed class FailingEmbeddingGenerator : IEmbeddingGenerator<string, Embedding<float>>
 {

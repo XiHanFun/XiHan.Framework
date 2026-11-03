@@ -13,16 +13,16 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 撞上唯一索引时返回唯一键重复（ADR-0072）。
+/// 撞上唯一索引时返回唯一键重复（ADR-0072）
 /// </summary>
 /// <remarks>
-/// 仓储返回 <c>PERSISTENCE_CONFLICT_003</c>，不让数据库异常逃出（RFC-0005「索引声明」）。
-/// 新增（同一批两项同键、已提交的另一行同键）、更新把键改成已有的值；之后工作单元只能回滚，调用以同一错误结束，库里不留这次的写入。软删除实体的唯一索引只约束未删除的行（ADR-0081）：同一键删除两次不冲突，未删除的同键行照样冲突，按部分唯一索引的名字报告。PostgreSQL 上语句失败后事务已中止，核对走另开的连接，同样在真实库上验证（<c>XIHAN_TEST_POSTGRES</c>）。
+/// 仓储返回 <c>PERSISTENCE_CONFLICT_003</c>，不让数据库异常逃出（RFC-0005「索引声明」）
+/// 新增（同一批两项同键、已提交的另一行同键）、更新把键改成已有的值；之后工作单元只能回滚，调用以同一错误结束，库里不留这次的写入。软删除实体的唯一索引只约束未删除的行（ADR-0081）：同一键删除两次不冲突，未删除的同键行照样冲突，按部分唯一索引的名字报告。PostgreSQL 上语句失败后事务已中止，核对走另开的连接，同样在真实库上验证（<c>XIHAN_TEST_POSTGRES</c>）
 /// </remarks>
 public sealed class SqlSugarUniqueKeyConflictTests
 {
     /// <summary>
-    /// 固定的时刻。
+    /// 固定的时刻
     /// </summary>
     private static readonly DateTimeOffset _at = new(2026, 11, 1, 8, 0, 0, TimeSpan.Zero);
 
@@ -114,10 +114,10 @@ public sealed class SqlSugarUniqueKeyConflictTests
     }
 
     /// <summary>
-    /// 同一编码建了删、删了建，三轮。
+    /// 同一编码建了删、删了建，三轮
     /// </summary>
     /// <remarks>
-    /// 部分唯一索引不约束已删除的行：每次删除都成功，最后库里三行已删除、没有未删除的。
+    /// 部分唯一索引不约束已删除的行：每次删除都成功，最后库里三行已删除、没有未删除的
     /// </remarks>
     private static async Task DeletesTheSameKeyRepeatedlyAsync(TestHost host)
     {
@@ -135,10 +135,10 @@ public sealed class SqlSugarUniqueKeyConflictTests
     }
 
     /// <summary>
-    /// 删掉的行之外，同一编码再建两行未删除的。
+    /// 删掉的行之外，同一编码再建两行未删除的
     /// </summary>
     /// <remarks>
-    /// 第一行未删除的照常写入（已删除的行不占编码）；第二行撞上部分唯一索引，按它的名字报告唯一键重复，调用回滚。
+    /// 第一行未删除的照常写入（已删除的行不占编码）；第二行撞上部分唯一索引，按它的名字报告唯一键重复，调用回滚
     /// </remarks>
     private static async Task AddsAnUndeletedTwinAsync(TestHost host)
     {
@@ -156,10 +156,10 @@ public sealed class SqlSugarUniqueKeyConflictTests
     }
 
     /// <summary>
-    /// 先提交一行，再在另一次调用里新增同一个键的另一行。
+    /// 先提交一行，再在另一次调用里新增同一个键的另一行
     /// </summary>
     /// <remarks>
-    /// 新增前的标识核对查不到冲突（标识不同），写入时撞上唯一索引，按唯一键重复报告。
+    /// 新增前的标识核对查不到冲突（标识不同），写入时撞上唯一索引，按唯一键重复报告
     /// </remarks>
     private static async Task AddsTheSameKeyTwiceAsync(TestHost host)
     {
@@ -177,7 +177,7 @@ public sealed class SqlSugarUniqueKeyConflictTests
     }
 
     /// <summary>
-    /// 启动只登记了两个索引实体的宿主。
+    /// 启动只登记了两个索引实体的宿主
     /// </summary>
     private static Task<TestHost> StartAsync(IFeature feature, IEnumerable<KeyValuePair<string, string?>> configuration) => TestHost.StartAsync(
         builder => builder.UseFeature(feature),
@@ -189,7 +189,7 @@ public sealed class SqlSugarUniqueKeyConflictTests
         });
 
     /// <summary>
-    /// 表里的行数，绕过仓储直接查。
+    /// 表里的行数，绕过仓储直接查
     /// </summary>
     private static async Task<int> CountAsync(TestHost host)
     {
@@ -198,22 +198,22 @@ public sealed class SqlSugarUniqueKeyConflictTests
     }
 
     /// <summary>
-    /// 有唯一索引的实体的仓储。
+    /// 有唯一索引的实体的仓储
     /// </summary>
     private static IRepository<IndexedRecord, Guid> Records(InvocationContext context) => context.Services.GetRequiredService<IRepository<IndexedRecord, Guid>>();
 
     /// <summary>
-    /// 软删除实体的仓储。
+    /// 软删除实体的仓储
     /// </summary>
     private static IRepository<SoftDeletedIndexedRecord, Guid> Soft(InvocationContext context) => context.Services.GetRequiredService<IRepository<SoftDeletedIndexedRecord, Guid>>();
 
     /// <summary>
-    /// 逐项结果合成一个：有失败取第一个失败。
+    /// 逐项结果合成一个：有失败取第一个失败
     /// </summary>
     private static Result Combine(IReadOnlyList<Result> results) => results.Any(static r => r.IsFailure) ? results.First(static r => r.IsFailure) : Result.Success();
 
     /// <summary>
-    /// 一行记录。
+    /// 一行记录
     /// </summary>
     private static IndexedRecord Record(string tenantId, string code)
         => new() { Id = Guid.CreateVersion7(), TenantId = tenantId, Code = code, Category = "c", At = _at };

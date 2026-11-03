@@ -8,11 +8,11 @@ using XiHan.Framework.Plugins.OutOfProcess.Processes;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 
 /// <summary>
-/// 停止超时后的终止。
+/// 停止超时后的终止
 /// </summary>
 /// <remarks>
-/// <c>spec/plugin/lifecycle.md</c> §5：先发终止信号，5 秒内仍未退出才强制终止进程树。
-/// 用系统自带的程序作被终止的进程：Windows 上终止信号是关闭 stdin（<c>sort</c> 读到 stdin 结束即退出，<c>ping</c> 不读 stdin），Unix 上另发 SIGTERM（<c>sleep</c> 按缺省动作退出，<c>sh</c> 用 <c>trap '' TERM</c> 忽略它）。信号后的等待按可推进的时钟计时。
+/// <c>spec/plugin/lifecycle.md</c> §5：先发终止信号，5 秒内仍未退出才强制终止进程树
+/// 用系统自带的程序作被终止的进程：Windows 上终止信号是关闭 stdin（<c>sort</c> 读到 stdin 结束即退出，<c>ping</c> 不读 stdin），Unix 上另发 SIGTERM（<c>sleep</c> 按缺省动作退出，<c>sh</c> 用 <c>trap '' TERM</c> 忽略它）。信号后的等待按可推进的时钟计时
 /// </remarks>
 public sealed class ProcessTerminationTests
 {
@@ -67,7 +67,7 @@ public sealed class ProcessTerminationTests
     }
 
     /// <summary>
-    /// 启动一个重定向 stdin 的进程，输出被丢弃。
+    /// 启动一个重定向 stdin 的进程，输出被丢弃
     /// </summary>
     private static Process Start((string File, string[] Arguments) command)
     {

@@ -13,16 +13,16 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Hosting.CommandLine.Tests;
 
 /// <summary>
-/// 命令行运行器。
+/// 命令行运行器
 /// </summary>
 /// <remarks>
-/// 帮助、内置命令、invoke 与简写、载荷来源、上下文选项、失败映射与退出码。
+/// 帮助、内置命令、invoke 与简写、载荷来源、上下文选项、失败映射与退出码
 /// </remarks>
 [Collection(nameof(ProcessEnvironmentGroup))]
 public sealed class CommandLineRunnerTests : IAsyncLifetime
 {
     /// <summary>
-    /// 两个主体：alice 是 editor（可读写订单），bob 是 viewer（只读）。
+    /// 两个主体：alice 是 editor（可读写订单），bob 是 viewer（只读）
     /// </summary>
     private static readonly KeyValuePair<string, string?>[] _security =
     [
@@ -35,17 +35,17 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
     ];
 
     /// <summary>
-    /// 已启动的宿主。
+    /// 已启动的宿主
     /// </summary>
     private IHost _host = null!;
 
     /// <summary>
-    /// 运行器。
+    /// 运行器
     /// </summary>
     private CommandLineRunner _runner = null!;
 
     /// <summary>
-    /// 启动宿主：Minimal 组合（本地化）+ 内存安全 + 回显特性 + 命令行宿主。
+    /// 启动宿主：Minimal 组合（本地化）+ 内存安全 + 回显特性 + 命令行宿主
     /// </summary>
     public async ValueTask InitializeAsync()
     {
@@ -67,7 +67,7 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 运行一条命令行，返回退出码、stdout 与 stderr。
+    /// 运行一条命令行，返回退出码、stdout 与 stderr
     /// </summary>
     private async Task<(int ExitCode, string Output, string Error)> RunAsync(params string[] args)
     {
@@ -78,7 +78,7 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// 解析 stdout 里的 JSON。
+    /// 解析 stdout 里的 JSON
     /// </summary>
     private static JsonElement Json(string text)
     {

@@ -8,10 +8,10 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库工作流特性对 PostgreSQL 通过引擎套件。
+/// 数据库工作流特性对 PostgreSQL 通过引擎套件
 /// </summary>
 /// <remarks>
-/// 环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过（<see cref="PostgresDatabase"/>）。后台轮询周期设得很长，由用例主动 <c>PollAsync</c>。
+/// 环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过（<see cref="PostgresDatabase"/>）。后台轮询周期设得很长，由用例主动 <c>PollAsync</c>
 /// </remarks>
 public sealed class PostgresWorkflowEngineConformanceTests : WorkflowEngineConformance
 {

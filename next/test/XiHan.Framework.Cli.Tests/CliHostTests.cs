@@ -11,22 +11,22 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Tests;
 
 /// <summary>
-/// 工具的命令分派。
+/// 工具的命令分派
 /// </summary>
 /// <remarks>
-/// pack 端到端、失败的退出码与 stderr、转发命令、help 与 version、migrate 的规则集选择、入参校验与试运行。与 <see cref="MigrationRunnerTests"/> 同一集合：执行命令会设置进程级的默认消息作用域，文案不能在两组测试之间变。
+/// pack 端到端、失败的退出码与 stderr、转发命令、help 与 version、migrate 的规则集选择、入参校验与试运行。与 <see cref="MigrationRunnerTests"/> 同一集合：执行命令会设置进程级的默认消息作用域，文案不能在两组测试之间变
 /// </remarks>
 [Collection("Cli")]
 public sealed class CliHostTests
 {
     /// <summary>
-    /// 执行一条命令行，返回退出码与两路输出。
+    /// 执行一条命令行，返回退出码与两路输出
     /// </summary>
     private static Task<(int Exit, string Output, string Error)> RunAsync(RecordingLauncher? launcher, params string[] args)
         => RunWithRuleSetsAsync(MigrationRuleSets.All, launcher, args);
 
     /// <summary>
-    /// 以指定的迁移规则集执行一条命令行，返回退出码与两路输出。
+    /// 以指定的迁移规则集执行一条命令行，返回退出码与两路输出
     /// </summary>
     private static async Task<(int Exit, string Output, string Error)> RunWithRuleSetsAsync(IReadOnlyList<MigrationRuleSet> ruleSets, RecordingLauncher? launcher, params string[] args)
     {
@@ -38,7 +38,7 @@ public sealed class CliHostTests
     }
 
     /// <summary>
-    /// 读 stderr 第一行里的一个字段（错误码或文案）。
+    /// 读 stderr 第一行里的一个字段（错误码或文案）
     /// </summary>
     private static string FieldOf(string error, string name)
     {
@@ -47,7 +47,7 @@ public sealed class CliHostTests
     }
 
     /// <summary>
-    /// 读 stderr 第一行的错误码。
+    /// 读 stderr 第一行的错误码
     /// </summary>
     private static string CodeOf(string error) => FieldOf(error, "code");
 

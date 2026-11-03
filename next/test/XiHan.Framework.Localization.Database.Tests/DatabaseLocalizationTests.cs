@@ -16,15 +16,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Localization.Database.Tests;
 
 /// <summary>
-/// 数据库 Provider 特有的行为。
+/// 数据库 Provider 特有的行为
 /// </summary>
 /// <remarks>
-/// 翻译优先于目录、重载与周期刷新、批量写入与删除、上限、顶替内存实现、选项解析。
+/// 翻译优先于目录、重载与周期刷新、批量写入与删除、上限、顶替内存实现、选项解析
 /// </remarks>
 public sealed class DatabaseLocalizationTests
 {
     /// <summary>
-    /// 业务目录。
+    /// 业务目录
     /// </summary>
     private static readonly MessageCatalog _orders = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
@@ -33,7 +33,7 @@ public sealed class DatabaseLocalizationTests
     });
 
     /// <summary>
-    /// 启动装配了内存持久化与数据库本地化的宿主。
+    /// 启动装配了内存持久化与数据库本地化的宿主
     /// </summary>
     private static Task<TestHost> StartAsync(params KeyValuePair<string, string?>[] configuration)
         => TestHost.StartAsync(
@@ -170,7 +170,7 @@ public sealed class DatabaseLocalizationTests
     }
 
     /// <summary>
-    /// 轮询直到条件成立，最多 10 秒。
+    /// 轮询直到条件成立，最多 10 秒
     /// </summary>
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

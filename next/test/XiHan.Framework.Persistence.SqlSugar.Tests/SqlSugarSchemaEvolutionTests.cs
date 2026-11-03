@@ -6,23 +6,23 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// <c>InitTables</c> 给已有行的表加列（ADR-0040）。
+/// <c>InitTables</c> 给已有行的表加列（ADR-0040）
 /// </summary>
 /// <remarks>
-/// PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列靠约定配的 CLR 缺省值回填旧行；SQLite 由 SqlSugar 加成可空列，旧行读回 CLR 缺省值。两种数据库都要求：加列不失败、旧行读回 CLR 缺省值、新行原样往返、再次建表不失败。
+/// PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列靠约定配的 CLR 缺省值回填旧行；SQLite 由 SqlSugar 加成可空列，旧行读回 CLR 缺省值。两种数据库都要求：加列不失败、旧行读回 CLR 缺省值、新行原样往返、再次建表不失败
 /// </remarks>
 public sealed class SqlSugarSchemaEvolutionTests
 {
     /// <summary>
-    /// PostgreSQL 客户端的 ConfigId。
+    /// PostgreSQL 客户端的 ConfigId
     /// </summary>
     /// <remarks>
-    /// SqlSugar 按类型与 ConfigId 缓存实体映射，两种数据库用不同的 ConfigId 才不会串用对方的列定义。
+    /// SqlSugar 按类型与 ConfigId 缓存实体映射，两种数据库用不同的 ConfigId 才不会串用对方的列定义
     /// </remarks>
     private const string PostgresConfigId = "evolution-pg";
 
     /// <summary>
-    /// SQLite 客户端的 ConfigId。
+    /// SQLite 客户端的 ConfigId
     /// </summary>
     private const string SqliteConfigId = "evolution-sqlite";
 
@@ -84,16 +84,16 @@ public sealed class SqlSugarSchemaEvolutionTests
     }
 
     /// <summary>
-    /// 按协议约定配置的客户端。
+    /// 按协议约定配置的客户端
     /// </summary>
     private static SqlSugarClient Client(DbType dbType, string connectionString, string configId)
         => new(SqlSugarConventions.Apply(new ConnectionConfig { DbType = dbType, ConnectionString = connectionString, ConfigId = configId, IsAutoCloseConnection = true }));
 
     /// <summary>
-    /// 先按 V1 建表并写一行，再按 V2 建表。
+    /// 先按 V1 建表并写一行，再按 V2 建表
     /// </summary>
     /// <remarks>
-    /// 旧行读回 CLR 缺省值，新行原样往返，再次建表不失败。
+    /// 旧行读回 CLR 缺省值，新行原样往返，再次建表不失败
     /// </remarks>
     private static void EvolveAndVerify(SqlSugarClient client)
     {

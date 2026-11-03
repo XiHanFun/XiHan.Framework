@@ -8,30 +8,30 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.Hybrid.Tests;
 
 /// <summary>
-/// 两级缓存。
+/// 两级缓存
 /// </summary>
 /// <remarks>
-/// L1 命中不触 L2、未命中回填、批量只把未命中的键交给 L2、写删先远后近、L1 存活时间上限与容量淘汰、取或建、存储变更失效 L1、选项解析。
+/// L1 命中不触 L2、未命中回填、批量只把未命中的键交给 L2、写删先远后近、L1 存活时间上限与容量淘汰、取或建、存储变更失效 L1、选项解析
 /// </remarks>
 public sealed class HybridCacheTests : IDisposable
 {
     /// <summary>
-    /// 固定起点的可控时钟。
+    /// 固定起点的可控时钟
     /// </summary>
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>
-    /// L2 替身。
+    /// L2 替身
     /// </summary>
     private readonly RecordingSharedCache _shared;
 
     /// <summary>
-    /// 被测缓存：L1 容量 3、存活上限 30 秒。
+    /// 被测缓存：L1 容量 3、存活上限 30 秒
     /// </summary>
     private readonly HybridCache _cache;
 
     /// <summary>
-    /// 创建夹具。
+    /// 创建夹具
     /// </summary>
     public HybridCacheTests()
     {

@@ -9,23 +9,23 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.InProcess.Tests;
 
 /// <summary>
-/// 进程内插件宿主的加载、隔离、权限与卸载验证。
+/// 进程内插件宿主的加载、隔离、权限与卸载验证
 /// </summary>
 /// <remarks>
-/// 以已构建的 SamplePlugin 输出目录作为插件源。
+/// 以已构建的 SamplePlugin 输出目录作为插件源
 /// </remarks>
 public sealed class InProcessPluginHostTests
 {
     /// <summary>
-    /// 授予示例插件清单里声明的全部权限。
+    /// 授予示例插件清单里声明的全部权限
     /// </summary>
     private static readonly PermissionGrant _granted = new(["capability:kernel.diagnostics"]);
 
     /// <summary>
-    /// 示例插件的构建输出目录。
+    /// 示例插件的构建输出目录
     /// </summary>
     /// <remarks>
-    /// 与测试自身的配置（Debug/Release）保持一致。
+    /// 与测试自身的配置（Debug/Release）保持一致
     /// </remarks>
     private static string PluginDirectory
     {
@@ -40,7 +40,7 @@ public sealed class InProcessPluginHostTests
     }
 
     /// <summary>
-    /// 以空配置与空日志创建宿主。
+    /// 以空配置与空日志创建宿主
     /// </summary>
     private static InProcessPluginHost CreateHost() =>
         #pragma warning disable IL2026, IL3050 // 测试进程不裁剪、不 AOT
@@ -184,7 +184,7 @@ public sealed class InProcessPluginHostTests
     }
 
     /// <summary>
-    /// 递归复制目录。
+    /// 递归复制目录
     /// </summary>
     private static void CopyTree(string source, string target)
     {
@@ -201,7 +201,7 @@ public sealed class InProcessPluginHostTests
     }
 
     /// <summary>
-    /// 从测试输出目录向上查找 <c>XiHan.Framework.Next.slnx</c> 所在目录，即 <c>next/</c> 根。
+    /// 从测试输出目录向上查找 <c>XiHan.Framework.Next.slnx</c> 所在目录，即 <c>next/</c> 根
     /// </summary>
     private static string LocateRoot(DirectoryInfo start)
     {

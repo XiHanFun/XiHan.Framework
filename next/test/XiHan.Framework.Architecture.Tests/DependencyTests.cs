@@ -7,23 +7,23 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 依赖门禁。
+/// 依赖门禁
 /// </summary>
 /// <remarks>
-/// 只能依赖更低的环（同环只经契约包），Ring 0/1 与抽象包零第三方依赖，公开签名不泄漏第三方类型。
+/// 只能依赖更低的环（同环只经契约包），Ring 0/1 与抽象包零第三方依赖，公开签名不泄漏第三方类型
 /// </remarks>
 public sealed class DependencyTests
 {
     /// <summary>
-    /// Ring 1/2 除 <c>Microsoft.Extensions.*.Abstractions</c> 外额外允许的包。
+    /// Ring 1/2 除 <c>Microsoft.Extensions.*.Abstractions</c> 外额外允许的包
     /// </summary>
     /// <remarks>
-    /// 前两个没有 Abstractions 拆分但本身只含契约与原语；<c>System.Threading.RateLimiting</c> 是 BCL 的限流原语（不在共享框架里、没有其他依赖），内核 Resilience 阶段用它（ADR-0029）。
+    /// 前两个没有 Abstractions 拆分但本身只含契约与原语；<c>System.Threading.RateLimiting</c> 是 BCL 的限流原语（不在共享框架里、没有其他依赖），内核 Resilience 阶段用它（ADR-0029）
     /// </remarks>
     private static readonly string[] _allowedExternalPackages = ["Microsoft.Extensions.Options", "Microsoft.Extensions.Primitives", "System.Threading.RateLimiting"];
 
     /// <summary>
-    /// 公开签名允许引用的程序集名前缀：BCL、Microsoft.Extensions 与框架自身。
+    /// 公开签名允许引用的程序集名前缀：BCL、Microsoft.Extensions 与框架自身
     /// </summary>
     private static readonly string[] _allowedSignatureAssemblyPrefixes = ["System", "netstandard", "mscorlib", "Microsoft.Extensions.", Workspace.PackagePrefix];
 
@@ -37,7 +37,7 @@ public sealed class DependencyTests
             var sourceRing = PackageGrammar.Ring(project.PackageId);
             foreach (var target in project.ProjectReferences)
             {
-                // Profiles（6）与工具链（7）可以引用任何环；其余只能向下，同环必须经契约包。
+                // Profiles（6）与工具链（7）可以引用任何环；其余只能向下，同环必须经契约包
                 var targetRing = PackageGrammar.Ring(target);
                 var ok = sourceRing is 6 or 7
                     || targetRing < sourceRing
@@ -75,7 +75,7 @@ public sealed class DependencyTests
                 continue;
             }
 
-            // PrivateAssets=all 的引用（分析器、构建工具）不进入包依赖，不受此约束。
+            // PrivateAssets=all 的引用（分析器、构建工具）不进入包依赖，不受此约束
             foreach (var reference in project.PackageReferences.Where(static r => !r.IsPrivate))
             {
                 var allowed = (reference.Id.StartsWith("Microsoft.Extensions.", StringComparison.Ordinal)
@@ -133,10 +133,10 @@ public sealed class DependencyTests
     }
 
     /// <summary>
-    /// 枚举成员公开签名里直接出现的类型。
+    /// 枚举成员公开签名里直接出现的类型
     /// </summary>
     /// <remarks>
-    /// 返回类型、参数类型、属性与字段类型、事件处理器类型。
+    /// 返回类型、参数类型、属性与字段类型、事件处理器类型
     /// </remarks>
     private static IEnumerable<Type> ReferencedTypes(MemberInfo member)
     {

@@ -12,35 +12,35 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// SQLite 上 UTC ticks 时间列的启动核对。
+/// SQLite 上 UTC ticks 时间列的启动核对
 /// </summary>
 /// <remarks>
-/// RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0094。约定把时刻映射成 UTC ticks 整数（ADR-0091）之前建出的库，列是 <c>TEXT</c>、存 EF Core 的文本；照读会静默读成错误的时刻。特性启动时逐连接核对：列声明不是 INTEGER（空表也算）或抽样最早写入的行查到非整数的值即启动失败（<see cref="PersistenceErrors.StorageFormatMismatch"/>）；新库、库文件还不存在、按 ADR-0091 的换算式重建过的库照常启动。
+/// RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0094。约定把时刻映射成 UTC ticks 整数（ADR-0091）之前建出的库，列是 <c>TEXT</c>、存 EF Core 的文本；照读会静默读成错误的时刻。特性启动时逐连接核对：列声明不是 INTEGER（空表也算）或抽样最早写入的行查到非整数的值即启动失败（<see cref="PersistenceErrors.StorageFormatMismatch"/>）；新库、库文件还不存在、按 ADR-0091 的换算式重建过的库照常启动
 /// </remarks>
 public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
 {
     /// <summary>
-    /// 开启建表的配置键。
+    /// 开启建表的配置键
     /// </summary>
     private const string EnsureCreatedKey = $"{EntityFrameworkCorePersistenceOptions.ConfigurationSection}:EnsureCreated";
 
     /// <summary>
-    /// 命名连接的名字。
+    /// 命名连接的名字
     /// </summary>
     private const string Archive = "archive";
 
     /// <summary>
-    /// 应用默认库。
+    /// 应用默认库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
     /// <summary>
-    /// 命名连接 <see cref="Archive"/> 的库。
+    /// 命名连接 <see cref="Archive"/> 的库
     /// </summary>
     private readonly SqliteDatabase _archive = new();
 
     /// <summary>
-    /// 旧库里的三行：不同偏移、带小数秒，一行有到期时刻。
+    /// 旧库里的三行：不同偏移、带小数秒，一行有到期时刻
     /// </summary>
     private readonly TimedRow[] _rows =
     [
@@ -50,7 +50,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     ];
 
     /// <summary>
-    /// 删除两个临时数据库文件。
+    /// 删除两个临时数据库文件
     /// </summary>
     public void Dispose()
     {
@@ -199,10 +199,10 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
         => Assert.Equal(expected, SqliteTimestampCheck.HasIntegerAffinity(declaredType));
 
     /// <summary>
-    /// 启动以 <see cref="TimedDbContext"/> 与 SQLite 装配的宿主。
+    /// 启动以 <see cref="TimedDbContext"/> 与 SQLite 装配的宿主
     /// </summary>
     /// <remarks>
-    /// 连接绑定 <c>db</c> 指向 <paramref name="connectionString"/>；<paramref name="settings"/> 与 <paramref name="services"/> 追加配置与服务。
+    /// 连接绑定 <c>db</c> 指向 <paramref name="connectionString"/>；<paramref name="settings"/> 与 <paramref name="services"/> 追加配置与服务
     /// </remarks>
     private static Task<TestHost> StartAsync(string connectionString, bool ensureCreated, IEnumerable<KeyValuePair<string, string?>>? settings = null, Action<IServiceCollection>? services = null) => TestHost.StartAsync(
         static builder => builder.UseFeature(new EntityFrameworkCorePersistenceFeature<TimedDbContext>(static (binding, options) => options.UseSqlite(binding.ValueOrThrow().Value))),
@@ -214,10 +214,10 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
         });
 
     /// <summary>
-    /// 启动应当失败：返回特性启动失败的原因。
+    /// 启动应当失败：返回特性启动失败的原因
     /// </summary>
     /// <remarks>
-    /// 宿主把特性启动失败包成 <c>KERNEL_HOSTING_002</c>，原因在内部异常里。
+    /// 宿主把特性启动失败包成 <c>KERNEL_HOSTING_002</c>，原因在内部异常里
     /// </remarks>
     private static async Task<FrameworkException> StartupFailureAsync(Func<Task<TestHost>> start)
     {
@@ -226,7 +226,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     }
 
     /// <summary>
-    /// 用旧库的 DbContext 建表并写入 <paramref name="rows"/>：时刻列是文本。
+    /// 用旧库的 DbContext 建表并写入 <paramref name="rows"/>：时刻列是文本
     /// </summary>
     internal static async Task CreateLegacyAsync(SqliteDatabase database, IReadOnlyList<TimedRow> rows)
     {
@@ -237,16 +237,16 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     }
 
     /// <summary>
-    /// 连到 <paramref name="database"/>、施加了约定的上下文。
+    /// 连到 <paramref name="database"/>、施加了约定的上下文
     /// </summary>
     private static TimedDbContext Timed(SqliteDatabase database)
         => new(new DbContextOptionsBuilder<TimedDbContext>().UseSqlite(database.ConnectionString).Options);
 
     /// <summary>
-    /// 把 <c>TimedRow</c> 重建成 INTEGER 列的语句：搬数据时每个时刻列套上 <paramref name="convert"/>。
+    /// 把 <c>TimedRow</c> 重建成 INTEGER 列的语句：搬数据时每个时刻列套上 <paramref name="convert"/>
     /// </summary>
     /// <remarks>
-    /// 与 EF Core 在 SQLite 上改列类型的迁移同形：建临时表、<c>INSERT … SELECT</c>、删旧表、改名。
+    /// 与 EF Core 在 SQLite 上改列类型的迁移同形：建临时表、<c>INSERT … SELECT</c>、删旧表、改名
     /// </remarks>
     internal static string Rebuild(Func<string, string> convert) => $"""
         CREATE TABLE "ef_temp_TimedRow" ("Id" TEXT NOT NULL CONSTRAINT "PK_TimedRow" PRIMARY KEY, "At" INTEGER NOT NULL, "Due" INTEGER NULL);
@@ -256,10 +256,10 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
         """;
 
     /// <summary>
-    /// ADR-0091 第三节的换算式：EF Core 的 <see cref="DateTimeOffset"/> 文本换算成 UTC ticks。
+    /// ADR-0091 第三节的换算式：EF Core 的 <see cref="DateTimeOffset"/> 文本换算成 UTC ticks
     /// </summary>
     /// <remarks>
-    /// 文本形如 <c>2026-10-31 20:00:00.1234567-05:00</c>：前 19 位按 UTC 取 Unix 秒，减去偏移，乘 10⁷，加上补足 7 位的小数秒与 0001-01-01 到 Unix 纪元的 ticks。
+    /// 文本形如 <c>2026-10-31 20:00:00.1234567-05:00</c>：前 19 位按 UTC 取 Unix 秒，减去偏移，乘 10⁷，加上补足 7 位的小数秒与 0001-01-01 到 Unix 纪元的 ticks
     /// </remarks>
     internal static string UtcTicksFormula(string column) => $"""
         (unixepoch(substr({column}, 1, 19))
@@ -269,7 +269,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
         """;
 
     /// <summary>
-    /// 追加 <paramref name="count"/> 行按 UTC ticks 存的整数时刻。
+    /// 追加 <paramref name="count"/> 行按 UTC ticks 存的整数时刻
     /// </summary>
     private static void AppendTicks(SqliteDatabase database, int count)
     {
@@ -292,7 +292,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     }
 
     /// <summary>
-    /// 直接连库执行语句。
+    /// 直接连库执行语句
     /// </summary>
     internal static void Execute(SqliteDatabase database, string sql)
     {
@@ -304,7 +304,7 @@ public sealed class EntityFrameworkCoreSqliteTimestampCheckTests : IDisposable
     }
 
     /// <summary>
-    /// 直接连库取一个标量。
+    /// 直接连库取一个标量
     /// </summary>
     private static object? Scalar(SqliteDatabase database, string sql)
     {

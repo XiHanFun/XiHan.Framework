@@ -13,21 +13,21 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// <c>[EntityIndex]</c> 到 EF Core 索引的映射（ADR-0072、ADR-0081）。
+/// <c>[EntityIndex]</c> 到 EF Core 索引的映射（ADR-0072、ADR-0081）
 /// </summary>
 /// <remarks>
-/// 经 <c>ApplyPersistenceConventions(Database)</c> 映射为 <c>HasIndex</c>（RFC-0005「索引声明」）。
-/// 模型里的索引名、列与唯一性与 SqlSugar 建出的一致；<c>EnsureCreated</c> 在 SQLite 上建出，唯一索引真实拒绝重复。软删除实体的唯一索引是只约束未删除行的部分唯一索引（<c>HasFilter</c>，条件按 Provider 写方言）：同一编码可以有任意多行已删除；Provider 不支持部分唯一索引时建模失败、特性启动失败。
+/// 经 <c>ApplyPersistenceConventions(Database)</c> 映射为 <c>HasIndex</c>（RFC-0005「索引声明」）
+/// 模型里的索引名、列与唯一性与 SqlSugar 建出的一致；<c>EnsureCreated</c> 在 SQLite 上建出，唯一索引真实拒绝重复。软删除实体的唯一索引是只约束未删除行的部分唯一索引（<c>HasFilter</c>，条件按 Provider 写方言）：同一编码可以有任意多行已删除；Provider 不支持部分唯一索引时建模失败、特性启动失败
 /// </remarks>
 public sealed class EntityFrameworkCoreIndexTests : IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 
@@ -141,7 +141,7 @@ public sealed class EntityFrameworkCoreIndexTests : IDisposable
     }
 
     /// <summary>
-    /// 按 Provider 名施加约定后，一个实体的部分唯一索引的条件。
+    /// 按 Provider 名施加约定后，一个实体的部分唯一索引的条件
     /// </summary>
     private static string? PartialFilter(string provider, Type entityType)
     {
@@ -153,13 +153,13 @@ public sealed class EntityFrameworkCoreIndexTests : IDisposable
     }
 
     /// <summary>
-    /// 连到本测试数据库的上下文。
+    /// 连到本测试数据库的上下文
     /// </summary>
     private IndexedDbContext Context()
         => new(new DbContextOptionsBuilder<IndexedDbContext>().UseSqlite(_database.ConnectionString).Options);
 
     /// <summary>
-    /// 数据库里一张表上显式建出的索引名（不含主键的自动索引），按名字排序。
+    /// 数据库里一张表上显式建出的索引名（不含主键的自动索引），按名字排序
     /// </summary>
     private async Task<List<string>> IndexNamesAsync(string table)
     {
@@ -179,7 +179,7 @@ public sealed class EntityFrameworkCoreIndexTests : IDisposable
     }
 
     /// <summary>
-    /// 模型里一个实体的索引：名字、是否唯一、逗号分隔的列，按名字排序。
+    /// 模型里一个实体的索引：名字、是否唯一、逗号分隔的列，按名字排序
     /// </summary>
     private static List<(string Name, bool IsUnique, string Columns)> Indexes(DbContext context, Type entityType)
         => [.. context.Model.FindEntityType(entityType)!.GetIndexes()
@@ -187,7 +187,7 @@ public sealed class EntityFrameworkCoreIndexTests : IDisposable
             .OrderBy(static index => index.Name, StringComparer.Ordinal)];
 
     /// <summary>
-    /// 一行记录。
+    /// 一行记录
     /// </summary>
     private static IndexedRow Row(string tenantId, string code)
         => new() { Id = Guid.CreateVersion7(), TenantId = tenantId, Code = code, Category = "c", At = new DateTimeOffset(2026, 11, 1, 8, 0, 0, TimeSpan.Zero) };

@@ -17,10 +17,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 
 /// <summary>
-/// 以 Go 写的 echo-go 子进程验证 .NET 宿主加载第二语言插件（P4-06）。
+/// 以 Go 写的 echo-go 子进程验证 .NET 宿主加载第二语言插件（P4-06）
 /// </summary>
 /// <remarks>
-/// 发现、握手、经管道调用、本地化、回调身份、事件、崩溃重启与停止。
+/// 发现、握手、经管道调用、本地化、回调身份、事件、崩溃重启与停止
 /// </remarks>
 public sealed class EchoGoPluginHostTests
 {
@@ -150,7 +150,7 @@ public sealed class EchoGoPluginHostTests
     }
 
     /// <summary>
-    /// 登记宿主侧操作 pings.create 的桩特性。
+    /// 登记宿主侧操作 pings.create 的桩特性
     /// </summary>
     private static StubFeature PingFeature() => new(TestManifests.Create("xihan.app.pings"))
     {
@@ -158,7 +158,7 @@ public sealed class EchoGoPluginHostTests
     };
 
     /// <summary>
-    /// 进程是否仍在运行。
+    /// 进程是否仍在运行
     /// </summary>
     private static bool IsRunning(int processId)
     {

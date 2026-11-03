@@ -8,20 +8,20 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 namespace XiHan.Framework.Scheduling.Abstractions.Tests.Schedules;
 
 /// <summary>
-/// cron 表达式的解析、下一次匹配与边界。
+/// cron 表达式的解析、下一次匹配与边界
 /// </summary>
 /// <remarks>
-/// 5、6、7 段与 Quartz 式特殊写法。UTC 与指定时区。
+/// 5、6、7 段与 Quartz 式特殊写法。UTC 与指定时区
 /// </remarks>
 public sealed class CronExpressionTests
 {
     /// <summary>
-    /// 2026-10-23 周五 08:30:15 UTC。
+    /// 2026-10-23 周五 08:30:15 UTC
     /// </summary>
     private static readonly DateTimeOffset _friday = new(2026, 10, 23, 8, 30, 15, TimeSpan.Zero);
 
     /// <summary>
-    /// 把 ISO 8601 文本（含 <c>Z</c> 或偏移）解析成时刻。
+    /// 把 ISO 8601 文本（含 <c>Z</c> 或偏移）解析成时刻
     /// </summary>
     private static DateTimeOffset At(string iso)
     {
@@ -29,7 +29,7 @@ public sealed class CronExpressionTests
     }
 
     /// <summary>
-    /// 表达式在 <paramref name="after"/>（默认基准时刻）之后按 UTC 的下一次匹配。
+    /// 表达式在 <paramref name="after"/>（默认基准时刻）之后按 UTC 的下一次匹配
     /// </summary>
     private static DateTimeOffset Next(string expression, DateTimeOffset? after = null)
     {
@@ -37,7 +37,7 @@ public sealed class CronExpressionTests
     }
 
     /// <summary>
-    /// 表达式在 <paramref name="after"/> 之后按指定时区的下一次匹配。
+    /// 表达式在 <paramref name="after"/> 之后按指定时区的下一次匹配
     /// </summary>
     private static DateTimeOffset NextIn(string expression, DateTimeOffset after, TimeZoneInfo timeZone)
     {
@@ -45,7 +45,7 @@ public sealed class CronExpressionTests
     }
 
     /// <summary>
-    /// 断言墙上时间与偏移都相等（<see cref="DateTimeOffset"/> 的相等只比较时刻，不比较偏移）。
+    /// 断言墙上时间与偏移都相等（<see cref="DateTimeOffset"/> 的相等只比较时刻，不比较偏移）
     /// </summary>
     private static void AssertExact(DateTimeOffset expected, DateTimeOffset actual)
     {
@@ -54,10 +54,10 @@ public sealed class CronExpressionTests
     }
 
     /// <summary>
-    /// 按 IANA 标识找时区。
+    /// 按 IANA 标识找时区
     /// </summary>
     /// <remarks>
-    /// 没有 ICU 的 Windows 上退回对应的 Windows 标识。
+    /// 没有 ICU 的 Windows 上退回对应的 Windows 标识
     /// </remarks>
     private static TimeZoneInfo FindTimeZone(string ianaId)
     {

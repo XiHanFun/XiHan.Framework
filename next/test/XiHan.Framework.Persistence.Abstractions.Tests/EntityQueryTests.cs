@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="EntityQuery{T}"/> 的默认值、过滤组合、排序追加、分页与参数校验。
+/// <see cref="EntityQuery{T}"/> 的默认值、过滤组合、排序追加、分页与参数校验
 /// </summary>
 public sealed class EntityQueryTests
 {

@@ -10,10 +10,10 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Caching.Remote.Tests;
 
 /// <summary>
-/// 只登记一个拒绝写入的 <c>cache-entries.set</c> 的测试特性。
+/// 只登记一个拒绝写入的 <c>cache-entries.set</c> 的测试特性
 /// </summary>
 /// <remarks>
-/// 代替进程外插件，验证适配器原样传出插件返回的缓存域错误码。
+/// 代替进程外插件，验证适配器原样传出插件返回的缓存域错误码
 /// </remarks>
 internal sealed class RejectingPluginFeature : IFeature
 {

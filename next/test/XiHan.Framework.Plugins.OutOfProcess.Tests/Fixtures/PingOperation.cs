@@ -8,10 +8,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 
 /// <summary>
-/// 宿主侧的操作：回显调用方主体与截止时间。
+/// 宿主侧的操作：回显调用方主体与截止时间
 /// </summary>
 /// <remarks>
-/// 供插件回调测试断言身份与插件转交的截止时间。
+/// 供插件回调测试断言身份与插件转交的截止时间
 /// </remarks>
 internal sealed class PingOperation : IOperation<PingRequest, PingResponse>
 {

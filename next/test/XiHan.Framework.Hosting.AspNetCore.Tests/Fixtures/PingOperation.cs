@@ -7,12 +7,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests.Fixtures;
 
 /// <summary>
-/// 问候操作：名字为空返回校验失败，否则回显问候与上下文里的操作 ID。
+/// 问候操作：名字为空返回校验失败，否则回显问候与上下文里的操作 ID
 /// </summary>
 internal sealed class PingOperation : IOperation<PingRequest, PingResponse>
 {
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public const string Id = "pings.create";
 

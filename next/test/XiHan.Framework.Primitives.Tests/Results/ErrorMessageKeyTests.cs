@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Primitives.Tests.Results;
 
 /// <summary>
-/// 带消息键的错误：键校验、细节即参数、文本错误、换码与填入译文。
+/// 带消息键的错误：键校验、细节即参数、文本错误、换码与填入译文
 /// </summary>
 public sealed class ErrorMessageKeyTests
 {

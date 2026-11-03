@@ -6,12 +6,12 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 从 SQLite 的系统表读出一张表上的索引。
+/// 从 SQLite 的系统表读出一张表上的索引
 /// </summary>
 internal static class SqliteSchema
 {
     /// <summary>
-    /// 表上显式建出的索引（不含主键的自动索引）：名字、是否唯一、按顺序的列。
+    /// 表上显式建出的索引（不含主键的自动索引）：名字、是否唯一、按顺序的列
     /// </summary>
     public static List<(string Name, bool IsUnique, string[] Columns)> Indexes(ISqlSugarClient client, string table)
     {
@@ -26,10 +26,10 @@ internal static class SqliteSchema
     }
 
     /// <summary>
-    /// 索引的建索引语句（<c>sqlite_master.sql</c>）。
+    /// 索引的建索引语句（<c>sqlite_master.sql</c>）
     /// </summary>
     /// <remarks>
-    /// 部分索引的语句带 <c>WHERE</c>；没有这个索引为 <see langword="null"/>。
+    /// 部分索引的语句带 <c>WHERE</c>；没有这个索引为 <see langword="null"/>
     /// </remarks>
     public static string? Sql(ISqlSugarClient client, string index)
         => client.Ado.SqlQuery<string>("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = @index", new { index }).SingleOrDefault();

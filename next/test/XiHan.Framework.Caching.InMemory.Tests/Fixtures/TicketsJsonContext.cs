@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Caching.InMemory.Tests.Fixtures;
 
 /// <summary>
-/// 取号操作请求与响应的源生成序列化上下文。
+/// 取号操作请求与响应的源生成序列化上下文
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(TicketRequest))]

@@ -22,20 +22,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// 条件写入探测、启动时的配置错误即失败与关闭条件写入。
+/// 条件写入探测、启动时的配置错误即失败与关闭条件写入
 /// </summary>
 /// <remarks>
-/// 启动时探明不认、被拒绝、缺桶都启动失败（ADR-0089、ADR-0090、ADR-0093）。探测的判定与失败原因用内存替身 <see cref="FakeS3Client"/> 核对，不连服务（启动时连不上之后的后台重试见 <see cref="S3ConditionalWriteRetryTests"/>）；对真实服务的用例在设置 <c>XIHAN_TEST_S3</c>（认条件写入，如 RustFS）或 <c>XIHAN_TEST_S3_UNCONDITIONAL</c>（不认，如 Zenko CloudServer）时执行。
+/// 启动时探明不认、被拒绝、缺桶都启动失败（ADR-0089、ADR-0090、ADR-0093）。探测的判定与失败原因用内存替身 <see cref="FakeS3Client"/> 核对，不连服务（启动时连不上之后的后台重试见 <see cref="S3ConditionalWriteRetryTests"/>）；对真实服务的用例在设置 <c>XIHAN_TEST_S3</c>（认条件写入，如 RustFS）或 <c>XIHAN_TEST_S3_UNCONDITIONAL</c>（不认，如 Zenko CloudServer）时执行
 /// </remarks>
 public sealed class S3ConditionalWriteTests
 {
     /// <summary>
-    /// 替身里的探测桶。
+    /// 替身里的探测桶
     /// </summary>
     private const string Bucket = "probe";
 
     /// <summary>
-    /// 探测键。
+    /// 探测键
     /// </summary>
     private const string Key = S3ConditionalWriteProbe.ProbeKey;
 
@@ -417,19 +417,19 @@ public sealed class S3ConditionalWriteTests
     }
 
     /// <summary>
-    /// 对替身探测一次。
+    /// 对替身探测一次
     /// </summary>
     private static async Task<Result> Probe(FakeS3Client fake, bool multipart, bool ensureBuckets = false)
         => await S3ConditionalWriteProbe.RunAsync(fake.AsClient(), Options() with { EnsureBuckets = ensureBuckets }, multipart, TimeProvider.System, CancellationToken.None);
 
     /// <summary>
-    /// 以替身的探测桶为健康桶的选项。
+    /// 以替身的探测桶为健康桶的选项
     /// </summary>
     private static S3ObjectStorageOptions Options(TimeSpan? interval = null)
         => new() { ServiceUrl = "http://localhost:9000", HealthBucket = Bucket, HealthProbeInterval = interval ?? TimeSpan.FromSeconds(15) };
 
     /// <summary>
-    /// 以替身为客户端启动只装 S3 的宿主。
+    /// 以替身为客户端启动只装 S3 的宿主
     /// </summary>
     private static Task<TestHost> StartAsync(FakeS3Client fake, params (string Key, string Value)[] extra)
         => TestHost.StartAsync(
@@ -442,7 +442,7 @@ public sealed class S3ConditionalWriteTests
             services => services.AddSingleton(fake.AsClient()));
 
     /// <summary>
-    /// 以替身为客户端、以假时钟启动只装 S3 的宿主，日志收进 <paramref name="logs"/>（为空时用缺省日志）。
+    /// 以替身为客户端、以假时钟启动只装 S3 的宿主，日志收进 <paramref name="logs"/>（为空时用缺省日志）
     /// </summary>
     private static Task<TestHost> StartAsync(FakeS3Client fake, FakeTimeProvider clock, LogCapture? logs = null)
         => TestHost.StartAsync(
@@ -462,7 +462,7 @@ public sealed class S3ConditionalWriteTests
             });
 
     /// <summary>
-    /// 只装配不启动，返回容器。
+    /// 只装配不启动，返回容器
     /// </summary>
     private static ServiceProvider Build(IEnumerable<KeyValuePair<string, string?>> configuration)
     {

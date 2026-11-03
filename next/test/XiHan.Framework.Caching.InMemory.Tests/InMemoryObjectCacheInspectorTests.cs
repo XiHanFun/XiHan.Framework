@@ -10,30 +10,30 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.InMemory.Tests;
 
 /// <summary>
-/// 对象缓存的键管理。
+/// 对象缓存的键管理
 /// </summary>
 /// <remarks>
-/// 对象条目与字节条目分在两层、各自列出；按前缀分页、类型与剩余存活、查看不延长滑动过期、按前缀删除（ADR-0058）。
+/// 对象条目与字节条目分在两层、各自列出；按前缀分页、类型与剩余存活、查看不延长滑动过期、按前缀删除（ADR-0058）
 /// </remarks>
 public sealed class InMemoryObjectCacheInspectorTests
 {
     /// <summary>
-    /// 假时钟。
+    /// 假时钟
     /// </summary>
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 30, 8, 0, 0, TimeSpan.Zero));
 
     /// <summary>
-    /// 字节存储。
+    /// 字节存储
     /// </summary>
     private readonly InMemoryCacheStore _store;
 
     /// <summary>
-    /// 被测的对象缓存，<see cref="ICache.Store"/> 指向 <see cref="_store"/>。
+    /// 被测的对象缓存，<see cref="ICache.Store"/> 指向 <see cref="_store"/>
     /// </summary>
     private readonly InMemoryObjectCache _cache;
 
     /// <summary>
-    /// 创建夹具：默认存活 5 分钟。
+    /// 创建夹具：默认存活 5 分钟
     /// </summary>
     public InMemoryObjectCacheInspectorTests()
     {
@@ -115,8 +115,8 @@ public sealed class InMemoryObjectCacheInspectorTests
     }
 
     /// <summary>
-    /// 套件用的缓存对象。
+    /// 套件用的缓存对象
     /// </summary>
-    /// <param name="Version">版本。</param>
+    /// <param name="Version">版本</param>
     private sealed record Snapshot(int Version);
 }

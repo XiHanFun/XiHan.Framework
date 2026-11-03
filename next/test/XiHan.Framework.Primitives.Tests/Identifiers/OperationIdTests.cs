@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Primitives.Tests.Identifiers;
 
 /// <summary>
-/// 操作 ID 文法与分段。
+/// 操作 ID 文法与分段
 /// </summary>
 public sealed class OperationIdTests
 {

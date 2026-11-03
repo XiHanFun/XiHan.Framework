@@ -10,7 +10,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 
 /// <summary>
-/// gRPC 状态到宿主错误的映射（<c>spec/plugin/invocation.md</c> §3）。
+/// gRPC 状态到宿主错误的映射（<c>spec/plugin/invocation.md</c> §3）
 /// </summary>
 public sealed class PluginErrorMapperTests
 {

@@ -11,15 +11,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 运行时数据源注册表的复用、替换、失效、容量与健康。
+/// 运行时数据源注册表的复用、替换、失效、容量与健康
 /// </summary>
 /// <remarks>
-/// <see cref="DataSourceRegistry"/>：按定义复用与替换、批量移除、容量、测试连接、健康项、不支持时的明确错误与连接串脱敏。用记录调用的替身 Provider，不连真实数据库；探测由用例直接调 <see cref="DataSourceRegistry.ProbeAsync"/>，不等定时器。
+/// <see cref="DataSourceRegistry"/>：按定义复用与替换、批量移除、容量、测试连接、健康项、不支持时的明确错误与连接串脱敏。用记录调用的替身 Provider，不连真实数据库；探测由用例直接调 <see cref="DataSourceRegistry.ProbeAsync"/>，不等定时器
 /// </remarks>
 public sealed class DataSourceRegistryTests
 {
     /// <summary>
-    /// 替身连接串里的口令。
+    /// 替身连接串里的口令
     /// </summary>
     private const string Secret = "S3cret-Value-9";
 
@@ -215,18 +215,18 @@ public sealed class DataSourceRegistryTests
     }
 
     /// <summary>
-    /// 以替身 Provider 建注册表。
+    /// 以替身 Provider 建注册表
     /// </summary>
     private static DataSourceRegistry Create(FakeProvider provider, DataSourceOptions? options = null)
         => new([provider], options ?? new DataSourceOptions(), TimeProvider.System);
 
     /// <summary>
-    /// 替身数据库类型的定义，连接串带口令。
+    /// 替身数据库类型的定义，连接串带口令
     /// </summary>
     private static DataSourceDefinition Definition(string name, string host = "Host=db") => new(name, "fake", $"{host};Password={Secret}");
 
     /// <summary>
-    /// 错误的消息与参数里都没有口令。
+    /// 错误的消息与参数里都没有口令
     /// </summary>
     private static void AssertNoSecret(Error error)
     {
@@ -235,7 +235,7 @@ public sealed class DataSourceRegistryTests
     }
 
     /// <summary>
-    /// 替身数据源：记录是否被释放。
+    /// 替身数据源：记录是否被释放
     /// </summary>
     private sealed class FakeSource(DataSourceDefinition definition) : IDataSource, IDisposable
     {
@@ -246,12 +246,12 @@ public sealed class DataSourceRegistryTests
         public string DatabaseType { get; } = definition.DatabaseType;
 
         /// <summary>
-        /// 定义（脱敏用）。
+        /// 定义（脱敏用）
         /// </summary>
         public DataSourceDefinition Definition { get; } = definition;
 
         /// <summary>
-        /// 是否已释放。
+        /// 是否已释放
         /// </summary>
         public bool Disposed { get; private set; }
 
@@ -260,37 +260,37 @@ public sealed class DataSourceRegistryTests
     }
 
     /// <summary>
-    /// 替身 Provider：只认数据库类型 <c>fake</c>，按开关拒绝连接串、探测失败或抛出。
+    /// 替身 Provider：只认数据库类型 <c>fake</c>，按开关拒绝连接串、探测失败或抛出
     /// </summary>
     private sealed class FakeProvider : IDataSourceProvider
     {
         /// <summary>
-        /// 建过的数据源。
+        /// 建过的数据源
         /// </summary>
         public List<FakeSource> Sources { get; } = [];
 
         /// <summary>
-        /// 建过几次。
+        /// 建过几次
         /// </summary>
         public int Created => Sources.Count;
 
         /// <summary>
-        /// 非空时建实例以这个消息抛出 <see cref="ArgumentException"/>。
+        /// 非空时建实例以这个消息抛出 <see cref="ArgumentException"/>
         /// </summary>
         public string? RejectWith { get; init; }
 
         /// <summary>
-        /// 非空时探测以这个原因失败。
+        /// 非空时探测以这个原因失败
         /// </summary>
         public string? FailWith { get; set; }
 
         /// <summary>
-        /// 非空时探测以这个消息抛出异常。
+        /// 非空时探测以这个消息抛出异常
         /// </summary>
         public string? ThrowOnProbe { get; init; }
 
         /// <summary>
-        /// 非空时探测等它完成。
+        /// 非空时探测等它完成
         /// </summary>
         public TaskCompletionSource? ProbeGate { get; set; }
 

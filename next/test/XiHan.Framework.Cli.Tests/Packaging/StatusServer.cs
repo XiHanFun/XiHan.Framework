@@ -8,25 +8,25 @@ using System.Text;
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
 /// <summary>
-/// 回环地址上的最小 HTTP/1.1 服务。
+/// 回环地址上的最小 HTTP/1.1 服务
 /// </summary>
 /// <remarks>
-/// 请求 <c>/health/ready</c> 回 200，其余回 503，每个连接应答一次后关闭；端口由系统分配。
+/// 请求 <c>/health/ready</c> 回 200，其余回 503，每个连接应答一次后关闭；端口由系统分配
 /// </remarks>
 internal sealed class StatusServer : IDisposable
 {
     /// <summary>
-    /// 监听器。
+    /// 监听器
     /// </summary>
     private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
 
     /// <summary>
-    /// 停止接受连接。
+    /// 停止接受连接
     /// </summary>
     private readonly CancellationTokenSource _stopping = new();
 
     /// <summary>
-    /// 开始监听。
+    /// 开始监听
     /// </summary>
     public StatusServer()
     {
@@ -36,7 +36,7 @@ internal sealed class StatusServer : IDisposable
     }
 
     /// <summary>
-    /// 监听的端口。
+    /// 监听的端口
     /// </summary>
     public int Port { get; }
 
@@ -50,7 +50,7 @@ internal sealed class StatusServer : IDisposable
     }
 
     /// <summary>
-    /// 逐个接受连接并应答。
+    /// 逐个接受连接并应答
     /// </summary>
     private async Task AcceptAsync()
     {

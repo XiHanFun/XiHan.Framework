@@ -7,72 +7,72 @@ using System.Xml.Linq;
 namespace XiHan.Framework.Architecture.Tests.Model;
 
 /// <summary>
-/// 定位 next 工作区并枚举正式包。
+/// 定位 next 工作区并枚举正式包
 /// </summary>
 /// <remarks>
-/// 所有架构测试都以文件系统为事实源，不依赖已编译的程序集。
+/// 所有架构测试都以文件系统为事实源，不依赖已编译的程序集
 /// </remarks>
 internal static class Workspace
 {
     /// <summary>
-    /// 正式包 ID 的公共前缀。
+    /// 正式包 ID 的公共前缀
     /// </summary>
     public const string PackagePrefix = "XiHan.Framework.";
 
     /// <summary>
-    /// next 工作区根目录。
+    /// next 工作区根目录
     /// </summary>
     public static string Root { get; } = Locate();
 
     /// <summary>
-    /// 正式包所在目录。
+    /// 正式包所在目录
     /// </summary>
     public static string SourceRoot => Path.Combine(Root, "src");
 
     /// <summary>
-    /// 测试项目所在目录。
+    /// 测试项目所在目录
     /// </summary>
     public static string TestRoot => Path.Combine(Root, "test");
 
     /// <summary>
-    /// 规范所在目录。
+    /// 规范所在目录
     /// </summary>
     public static string SpecRoot => Path.Combine(Root, "spec");
 
     /// <summary>
-    /// 全部正式包，按包 ID 排序。
+    /// 全部正式包，按包 ID 排序
     /// </summary>
     public static IReadOnlyList<SourceProject> SourceProjects { get; } = LoadProjects(SourceRoot);
 
     /// <summary>
-    /// 全部测试项目，按项目名排序。
+    /// 全部测试项目，按项目名排序
     /// </summary>
     /// <remarks>
-    /// 目录与子命名空间规则对它们同样生效。
+    /// 目录与子命名空间规则对它们同样生效
     /// </remarks>
     public static IReadOnlyList<SourceProject> TestProjects { get; } = LoadProjects(TestRoot);
 
     /// <summary>
-    /// 全部示例与基准项目（有同名项目文件的目录），按项目名排序。
+    /// 全部示例与基准项目（有同名项目文件的目录），按项目名排序
     /// </summary>
     /// <remarks>
-    /// 目录与子命名空间规则对它们同样生效。
+    /// 目录与子命名空间规则对它们同样生效
     /// </remarks>
     public static IReadOnlyList<SourceProject> SampleProjects { get; } = LoadProjects(Path.Combine(Root, "samples")).Concat(LoadProjects(Path.Combine(Root, "benchmarks"))).ToList();
 
     /// <summary>
-    /// 正式包、测试、示例与基准：命名空间门禁检查的全部项目。
+    /// 正式包、测试、示例与基准：命名空间门禁检查的全部项目
     /// </summary>
     public static IEnumerable<SourceProject> AllProjects => SourceProjects.Concat(TestProjects).Concat(SampleProjects);
 
     /// <summary>
-    /// 枚举目录下的全部 C# 源文件，跳过构建输出。
+    /// 枚举目录下的全部 C# 源文件，跳过构建输出
     /// </summary>
     public static IEnumerable<string> SourceFiles(string directory) =>
         Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories).Where(static f => !IsBuildOutput(f));
 
     /// <summary>
-    /// 安全地加载 XML 文件：禁止 DTD 与外部解析，避免项目文件被当作攻击面。
+    /// 安全地加载 XML 文件：禁止 DTD 与外部解析，避免项目文件被当作攻击面
     /// </summary>
     public static XDocument LoadXml(string path)
     {
@@ -82,12 +82,12 @@ internal static class Workspace
     }
 
     /// <summary>
-    /// 相对于工作区根的路径，统一使用正斜杠以便跨平台比较与输出。
+    /// 相对于工作区根的路径，统一使用正斜杠以便跨平台比较与输出
     /// </summary>
     public static string Relative(string path) => Path.GetRelativePath(Root, path).Replace('\\', '/');
 
     /// <summary>
-    /// 从测试输出目录向上查找 next 工作区根（以 <c>XiHan.Framework.Next.slnx</c> 为标记）。
+    /// 从测试输出目录向上查找 next 工作区根（以 <c>XiHan.Framework.Next.slnx</c> 为标记）
     /// </summary>
     private static string Locate()
     {
@@ -106,10 +106,10 @@ internal static class Workspace
     }
 
     /// <summary>
-    /// 枚举根目录下每个目录中与目录同名的项目文件。
+    /// 枚举根目录下每个目录中与目录同名的项目文件
     /// </summary>
     /// <remarks>
-    /// 没有同名项目文件的目录不算项目。
+    /// 没有同名项目文件的目录不算项目
     /// </remarks>
     private static List<SourceProject> LoadProjects(string root)
     {
@@ -128,7 +128,7 @@ internal static class Workspace
     }
 
     /// <summary>
-    /// 路径是否位于 <c>obj</c> 或 <c>bin</c> 目录内。
+    /// 路径是否位于 <c>obj</c> 或 <c>bin</c> 目录内
     /// </summary>
     private static bool IsBuildOutput(string path)
     {

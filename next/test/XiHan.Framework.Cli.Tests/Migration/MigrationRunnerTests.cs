@@ -7,16 +7,16 @@ using XiHan.Framework.Cli.Migration;
 namespace XiHan.Framework.Cli.Tests.Migration;
 
 /// <summary>
-/// 迁移执行器的通用机制（<c>spec/migration/README.md</c>）。
+/// 迁移执行器的通用机制（<c>spec/migration/README.md</c>）
 /// </summary>
 /// <remarks>
-/// 两遍执行、按序改写与回写（BOM、换行）、跳过构建输出与生成文件、生成 / 删除 / 改名、报告、幂等与试运行。规则用测试规则集 <see cref="TestRuleSets.T5"/>。
+/// 两遍执行、按序改写与回写（BOM、换行）、跳过构建输出与生成文件、生成 / 删除 / 改名、报告、幂等与试运行。规则用测试规则集 <see cref="TestRuleSets.T5"/>
 /// </remarks>
 [Collection("Cli")]
 public sealed class MigrationRunnerTests
 {
     /// <summary>
-    /// 跑一次测试规则集。
+    /// 跑一次测试规则集
     /// </summary>
     private static MigrationReport Run(MigrationFixture fixture, bool dryRun = false)
         => new MigrationRunner(fixture.Root, TestRuleSets.T5.Version, TestRuleSets.T5.Fixers, dryRun).Run(CancellationToken.None);

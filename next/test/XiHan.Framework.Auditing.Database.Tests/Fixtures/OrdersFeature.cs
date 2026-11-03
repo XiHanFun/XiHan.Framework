@@ -9,7 +9,7 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.Database.Tests.Fixtures;
 
 /// <summary>
-/// 登记一个声明了权限的创建操作的测试特性：默认选择规则下它的调用会被审计。
+/// 登记一个声明了权限的创建操作的测试特性：默认选择规则下它的调用会被审计
 /// </summary>
 internal sealed class OrdersFeature : IFeature
 {

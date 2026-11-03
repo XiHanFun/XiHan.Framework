@@ -7,24 +7,24 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 批量优先门禁（<c>spec/conventions/batch-first.md</c>）。
+/// 批量优先门禁（<c>spec/conventions/batch-first.md</c>）
 /// </summary>
 /// <remarks>
-/// 正式包的循环体内不得逐条调用仓储、缓存存储与消息发布的单条方法，处理多个对象时必须用批量方法。
+/// 正式包的循环体内不得逐条调用仓储、缓存存储与消息发布的单条方法，处理多个对象时必须用批量方法
 /// </remarks>
 public sealed partial class BatchFirstTests
 {
     /// <summary>
-    /// 循环语句的头部：<c>foreach</c> / <c>for</c> / <c>while</c> 后接括号，或 <c>do</c> 后接左花括号。
+    /// 循环语句的头部：<c>foreach</c> / <c>for</c> / <c>while</c> 后接括号，或 <c>do</c> 后接左花括号
     /// </summary>
     [GeneratedRegex(@"\b(?:foreach|for|while)\s*\(|\bdo\s*\{")]
     private static partial Regex LoopHeader();
 
     /// <summary>
-    /// 单条方法的调用。
+    /// 单条方法的调用
     /// </summary>
     /// <remarks>
-    /// 仓储的新增 / 更新 / 删除、缓存存储的写入与原子原语、消息的发布；批量方法（<c>AddRangeAsync</c>、<c>SetManyAsync</c> 等）不在其中。
+    /// 仓储的新增 / 更新 / 删除、缓存存储的写入与原子原语、消息的发布；批量方法（<c>AddRangeAsync</c>、<c>SetManyAsync</c> 等）不在其中
     /// </remarks>
     [GeneratedRegex(@"\.(AddAsync|UpdateAsync|RemoveAsync|SetAsync|TryAddAsync|TryRemoveAsync|PublishAsync)\(")]
     private static partial Regex SingleItemCall();
@@ -57,10 +57,10 @@ public sealed partial class BatchFirstTests
     }
 
     /// <summary>
-    /// 定位循环体。
+    /// 定位循环体
     /// </summary>
     /// <remarks>
-    /// 跳过头部的括号对，再按花括号配对找到循环体的起止；没有花括号体（单语句循环）的不检查。
+    /// 跳过头部的括号对，再按花括号配对找到循环体的起止；没有花括号体（单语句循环）的不检查
     /// </remarks>
     private static bool TryFindBody(string text, Match header, out int bodyStart, out int bodyEnd)
     {

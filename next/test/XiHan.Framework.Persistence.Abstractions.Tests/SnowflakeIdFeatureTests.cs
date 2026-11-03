@@ -15,10 +15,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="SnowflakeIdFeature"/> 的装配。
+/// <see cref="SnowflakeIdFeature"/> 的装配
 /// </summary>
 /// <remarks>
-/// 配置了机器位时固定来源、没有配置时经分布式锁租约分配并上报健康项、既没配置也没有锁时启动失败；缓存 Provider 写在后面也先于本特性启动、后于本特性停止；调用里没有机器位或时钟回拨按 UNAVAILABLE 结果结束（HTTP 503），别的异常仍是 <c>KERNEL_UNEXPECTED_001</c>。
+/// 配置了机器位时固定来源、没有配置时经分布式锁租约分配并上报健康项、既没配置也没有锁时启动失败；缓存 Provider 写在后面也先于本特性启动、后于本特性停止；调用里没有机器位或时钟回拨按 UNAVAILABLE 结果结束（HTTP 503），别的异常仍是 <c>KERNEL_UNEXPECTED_001</c>
 /// </remarks>
 public sealed class SnowflakeIdFeatureTests
 {
@@ -148,17 +148,17 @@ public sealed class SnowflakeIdFeatureTests
     }
 
     /// <summary>
-    /// 雪花特性的状态。
+    /// 雪花特性的状态
     /// </summary>
     private static FeatureStatus Feature(TestHost host) => host.App.Health().Features.Single(static f => f.Manifest.Id == "xihan.persistence.snowflake");
 
     /// <summary>
-    /// 机器位在存储里的锁条目键（<see cref="StoreDistributedLock"/> 的前缀 + 资源名）。
+    /// 机器位在存储里的锁条目键（<see cref="StoreDistributedLock"/> 的前缀 + 资源名）
     /// </summary>
     private static CacheKey LockKey(int workerId) => new("lock:" + LeasedWorkerIdSource.ResourcePrefix + workerId);
 
     /// <summary>
-    /// 异常链上的全部框架错误码。
+    /// 异常链上的全部框架错误码
     /// </summary>
     private static IEnumerable<string> Codes(Exception? exception)
     {

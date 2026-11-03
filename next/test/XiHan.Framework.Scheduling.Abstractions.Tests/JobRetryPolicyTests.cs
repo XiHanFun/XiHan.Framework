@@ -7,10 +7,10 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 namespace XiHan.Framework.Scheduling.Abstractions.Tests;
 
 /// <summary>
-/// 重试策略与执行时限的取值。
+/// 重试策略与执行时限的取值
 /// </summary>
 /// <remarks>
-/// 固定与指数退避的等待、上限截断，次数、等待与时限的范围（ADR-0060）。
+/// 固定与指数退避的等待、上限截断，次数、等待与时限的范围（ADR-0060）
 /// </remarks>
 public sealed class JobRetryPolicyTests
 {
@@ -46,7 +46,7 @@ public sealed class JobRetryPolicyTests
     }
 
     /// <summary>
-    /// 什么都不做的作业。
+    /// 什么都不做的作业
     /// </summary>
     private sealed class NoopJob : IJob
     {

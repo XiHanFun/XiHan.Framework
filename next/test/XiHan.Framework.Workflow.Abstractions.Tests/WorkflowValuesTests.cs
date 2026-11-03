@@ -8,7 +8,7 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// JSON 值的转换规则与变量包装。
+/// JSON 值的转换规则与变量包装
 /// </summary>
 public sealed class WorkflowValuesTests
 {

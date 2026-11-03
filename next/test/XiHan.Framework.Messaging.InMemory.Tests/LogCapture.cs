@@ -7,20 +7,20 @@ using Microsoft.Extensions.Logging;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 把日志收进内存的日志工厂。
+/// 把日志收进内存的日志工厂
 /// </summary>
 /// <remarks>
-/// 全部级别都启用；登记为 <see cref="ILoggerFactory"/> 后宿主里的组件都写到这里。
+/// 全部级别都启用；登记为 <see cref="ILoggerFactory"/> 后宿主里的组件都写到这里
 /// </remarks>
 internal sealed class LogCapture : ILoggerFactory
 {
     /// <summary>
-    /// 收到的日志。
+    /// 收到的日志
     /// </summary>
     private readonly ConcurrentQueue<(LogLevel Level, string Category, string Message)> _entries = new();
 
     /// <summary>
-    /// 收到的日志（级别、类别、格式化后的消息），按写入顺序。
+    /// 收到的日志（级别、类别、格式化后的消息），按写入顺序
     /// </summary>
     public IReadOnlyList<(LogLevel Level, string Category, string Message)> Entries => [.. _entries];
 
@@ -36,7 +36,7 @@ internal sealed class LogCapture : ILoggerFactory
     }
 
     /// <summary>
-    /// 一个类别的日志。
+    /// 一个类别的日志
     /// </summary>
     private sealed class CapturedLogger(string category, ConcurrentQueue<(LogLevel Level, string Category, string Message)> entries) : ILogger
     {

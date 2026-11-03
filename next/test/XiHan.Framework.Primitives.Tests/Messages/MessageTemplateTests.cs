@@ -6,7 +6,7 @@ using System.Globalization;
 namespace XiHan.Framework.Primitives.Tests.Messages;
 
 /// <summary>
-/// 消息键文法、模板格式化与参数字典。
+/// 消息键文法、模板格式化与参数字典
 /// </summary>
 public sealed class MessageTemplateTests
 {

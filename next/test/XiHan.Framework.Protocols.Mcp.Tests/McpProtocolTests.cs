@@ -24,15 +24,15 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Protocols.Mcp.Tests;
 
 /// <summary>
-/// MCP 协议适配器。
+/// MCP 协议适配器
 /// </summary>
 /// <remarks>
-/// tool 名推导与覆盖、生命周期与传输规则、tools/list 的 Schema 与本地化描述、tools/call 经管道执行与失败映射、按契约授权。
+/// tool 名推导与覆盖、生命周期与传输规则、tools/list 的 Schema 与本地化描述、tools/call 经管道执行与失败映射、按契约授权
 /// </remarks>
 public sealed class McpProtocolTests
 {
     /// <summary>
-    /// 两个主体：alice 是 editor（可读写订单），bob 是 viewer（只读）。
+    /// 两个主体：alice 是 editor（可读写订单），bob 是 viewer（只读）
     /// </summary>
     private static readonly (string Key, string Value)[] _security =
     [
@@ -45,10 +45,10 @@ public sealed class McpProtocolTests
     ];
 
     /// <summary>
-    /// 启动测试宿主。
+    /// 启动测试宿主
     /// </summary>
     /// <remarks>
-    /// Minimal 组合（本地化）+ 内存安全 + MCP 适配器 + 订单特性，并注册 tool 描述的消息目录。
+    /// Minimal 组合（本地化）+ 内存安全 + MCP 适配器 + 订单特性，并注册 tool 描述的消息目录
     /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync(params (string Key, string Value)[] configuration)
     {
@@ -67,7 +67,7 @@ public sealed class McpProtocolTests
     }
 
     /// <summary>
-    /// 一条 JSON-RPC 请求。
+    /// 一条 JSON-RPC 请求
     /// </summary>
     private static string Rpc(string method, string? parameters = null, int id = 1)
         => parameters is null
@@ -75,7 +75,7 @@ public sealed class McpProtocolTests
             : $$"""{"jsonrpc":"2.0","id":{{id}},"method":"{{method}}","params":{{parameters}}}""";
 
     /// <summary>
-    /// 发一条消息到 /mcp，返回状态码与正文。
+    /// 发一条消息到 /mcp，返回状态码与正文
     /// </summary>
     private static async Task<(HttpStatusCode Status, string Text)> PostAsync(HttpClient client, string json, params (string Name, string Value)[] headers)
     {
@@ -90,7 +90,7 @@ public sealed class McpProtocolTests
     }
 
     /// <summary>
-    /// 解析为独立的 JSON 元素。
+    /// 解析为独立的 JSON 元素
     /// </summary>
     private static JsonElement Root(string text)
     {
@@ -99,7 +99,7 @@ public sealed class McpProtocolTests
     }
 
     /// <summary>
-    /// 发请求并取成功响应的 <c>result</c>。
+    /// 发请求并取成功响应的 <c>result</c>
     /// </summary>
     private static async Task<JsonElement> ResultOf(HttpClient client, string json, params (string Name, string Value)[] headers)
     {
@@ -112,7 +112,7 @@ public sealed class McpProtocolTests
     }
 
     /// <summary>
-    /// 断言一条消息得到 JSON-RPC 错误：HTTP 状态、错误码与 <c>data.code</c> 里的框架错误码。
+    /// 断言一条消息得到 JSON-RPC 错误：HTTP 状态、错误码与 <c>data.code</c> 里的框架错误码
     /// </summary>
     private static async Task<JsonElement> AssertErrorAsync(HttpClient client, string json, HttpStatusCode status, int code, string errorCode)
     {

@@ -10,34 +10,34 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// <c>[EntityIndex]</c> 到 SqlSugar 索引的映射（ADR-0072、ADR-0081）。
+/// <c>[EntityIndex]</c> 到 SqlSugar 索引的映射（ADR-0072、ADR-0081）
 /// </summary>
 /// <remarks>
-/// 经约定映射为 SqlSugar 索引，<c>InitTables</c> 建出（RFC-0005「索引声明」）。
-/// 名字按映射出的表名推出；唯一索引真实拒绝重复；软删除实体的唯一索引是只约束未删除行的部分唯一索引，由 <see cref="SqlSugarConventions.InitTables"/> 补建（SQLite、PostgreSQL、SQL Server），同一编码可以反复删除；再次建表不重复建；不支持部分索引的数据库在建表前与启动时失败；分表实体不支持。
+/// 经约定映射为 SqlSugar 索引，<c>InitTables</c> 建出（RFC-0005「索引声明」）
+/// 名字按映射出的表名推出；唯一索引真实拒绝重复；软删除实体的唯一索引是只约束未删除行的部分唯一索引，由 <see cref="SqlSugarConventions.InitTables"/> 补建（SQLite、PostgreSQL、SQL Server），同一编码可以反复删除；再次建表不重复建；不支持部分索引的数据库在建表前与启动时失败；分表实体不支持
 /// </remarks>
 public sealed class SqlSugarIndexTests
 {
     /// <summary>
-    /// SQLite 客户端的 ConfigId。
+    /// SQLite 客户端的 ConfigId
     /// </summary>
     /// <remarks>
-    /// SqlSugar 按类型与 ConfigId 缓存实体映射，几种数据库用不同的 ConfigId 才不会串用对方的列定义。
+    /// SqlSugar 按类型与 ConfigId 缓存实体映射，几种数据库用不同的 ConfigId 才不会串用对方的列定义
     /// </remarks>
     private const string SqliteConfigId = "index-sqlite";
 
     /// <summary>
-    /// PostgreSQL 客户端的 ConfigId。
+    /// PostgreSQL 客户端的 ConfigId
     /// </summary>
     private const string PostgresConfigId = "index-pg";
 
     /// <summary>
-    /// SQL Server 客户端的 ConfigId。
+    /// SQL Server 客户端的 ConfigId
     /// </summary>
     private const string SqlServerConfigId = "index-mssql";
 
     /// <summary>
-    /// MySQL 客户端的 ConfigId（只取映射、不连库）。
+    /// MySQL 客户端的 ConfigId（只取映射、不连库）
     /// </summary>
     private const string MySqlConfigId = "index-mysql";
 
@@ -218,7 +218,7 @@ public sealed class SqlSugarIndexTests
     }
 
     /// <summary>
-    /// 同一编码：已删除的行任意多行，未删除的行之间唯一。
+    /// 同一编码：已删除的行任意多行，未删除的行之间唯一
     /// </summary>
     private static void ConstrainsUndeletedRowsOnly(SqlSugarClient client)
     {
@@ -233,19 +233,19 @@ public sealed class SqlSugarIndexTests
     }
 
     /// <summary>
-    /// 按协议约定配置的客户端。
+    /// 按协议约定配置的客户端
     /// </summary>
     private static SqlSugarClient Client(DbType dbType, string connectionString, string configId)
         => new(SqlSugarConventions.Apply(new ConnectionConfig { DbType = dbType, ConnectionString = connectionString, ConfigId = configId, IsAutoCloseConnection = true }));
 
     /// <summary>
-    /// 一行记录。
+    /// 一行记录
     /// </summary>
     private static IndexedRecord Record(string tenantId, string code)
         => new() { Id = Guid.CreateVersion7(), TenantId = tenantId, Code = code, Category = "c", At = new DateTimeOffset(2026, 11, 1, 8, 0, 0, TimeSpan.Zero) };
 
     /// <summary>
-    /// 一行软删除实体。
+    /// 一行软删除实体
     /// </summary>
     private static SoftDeletedIndexedRecord Soft(string code, bool deleted)
         => new() { Id = Guid.CreateVersion7(), Code = code, IsDeleted = deleted, DeletedAt = deleted ? new DateTimeOffset(2026, 11, 1, 8, 0, 0, TimeSpan.Zero) : null };

@@ -11,33 +11,33 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 
 /// <summary>
-/// 以已构建的 EchoPlugin 输出目录为插件目录启动测试宿主的辅助。
+/// 以已构建的 EchoPlugin 输出目录为插件目录启动测试宿主的辅助
 /// </summary>
 internal static class EchoPluginHost
 {
     /// <summary>
-    /// 示例插件的清单 ID。
+    /// 示例插件的清单 ID
     /// </summary>
     public const string PluginId = "xihan.samples.echo";
 
     /// <summary>
-    /// 示例插件的输出目录。
+    /// 示例插件的输出目录
     /// </summary>
     /// <remarks>
-    /// 测试输出在 .../bin/&lt;Configuration&gt;/net10.0/，示例在 samples/EchoPlugin/bin/&lt;Configuration&gt;/net10.0/。
+    /// 测试输出在 .../bin/&lt;Configuration&gt;/net10.0/，示例在 samples/EchoPlugin/bin/&lt;Configuration&gt;/net10.0/
     /// </remarks>
     public static string Directory { get; } = Locate();
 
     /// <summary>
-    /// 规范的向量目录。
+    /// 规范的向量目录
     /// </summary>
     public static string VectorsDirectory { get; } = Path.Combine(LocateRoot(), "spec", "conformance", "vectors", "plugin");
 
     /// <summary>
-    /// 宿主配置：插件目录、授予的权限与较短的健康轮询。
+    /// 宿主配置：插件目录、授予的权限与较短的健康轮询
     /// </summary>
     /// <remarks>
-    /// <paramref name="directory"/> 为空时用示例的输出目录。
+    /// <paramref name="directory"/> 为空时用示例的输出目录
     /// </remarks>
     public static IEnumerable<KeyValuePair<string, string?>> Configuration(bool grantPipeline = true, string? directory = null, params (string Key, string Value)[] extra)
     {
@@ -58,10 +58,10 @@ internal static class EchoPluginHost
     }
 
     /// <summary>
-    /// 启动只装配进程外插件特性的宿主。
+    /// 启动只装配进程外插件特性的宿主
     /// </summary>
     /// <remarks>
-    /// <paramref name="directory"/> 为空时用示例的输出目录；<paramref name="services"/> 在装配前注册（如可推进的时钟）。
+    /// <paramref name="directory"/> 为空时用示例的输出目录；<paramref name="services"/> 在装配前注册（如可推进的时钟）
     /// </remarks>
     public static Task<TestHost> StartAsync(Action<AppBuilder>? configure = null, bool grantPipeline = true, string? directory = null, Action<IServiceCollection>? services = null, params (string Key, string Value)[] extra)
         => TestHost.StartAsync(
@@ -74,24 +74,24 @@ internal static class EchoPluginHost
             services);
 
     /// <summary>
-    /// 经内核调用器调用一个操作，载荷为 JSON 文本。
+    /// 经内核调用器调用一个操作，载荷为 JSON 文本
     /// </summary>
     public static async Task<OperationResponse> InvokeAsync(TestHost host, string operation, string json, IReadOnlyDictionary<string, string>? baggage = null)
         => await host.InvokeOperationRawAsync(new OperationRequest(operation, Encoding.UTF8.GetBytes(json)), baggage);
 
     /// <summary>
-    /// 解析响应载荷。
+    /// 解析响应载荷
     /// </summary>
     public static JsonElement Payload(OperationResponse response)
         => JsonDocument.Parse(response.Payload).RootElement.Clone();
 
     /// <summary>
-    /// 当前插件宿主。
+    /// 当前插件宿主
     /// </summary>
     public static OutOfProcessPluginHost PluginHost(TestHost host) => host.Services.GetRequiredService<OutOfProcessPluginHost>();
 
     /// <summary>
-    /// 轮询直到条件成立或超时。
+    /// 轮询直到条件成立或超时
     /// </summary>
     public static async Task<bool> WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
     {
@@ -110,7 +110,7 @@ internal static class EchoPluginHost
     }
 
     /// <summary>
-    /// 从测试输出目录推出示例插件的输出目录。
+    /// 从测试输出目录推出示例插件的输出目录
     /// </summary>
     private static string Locate()
     {
@@ -120,7 +120,7 @@ internal static class EchoPluginHost
     }
 
     /// <summary>
-    /// 向上找到含解决方案文件的目录。
+    /// 向上找到含解决方案文件的目录
     /// </summary>
     private static string LocateRoot()
     {

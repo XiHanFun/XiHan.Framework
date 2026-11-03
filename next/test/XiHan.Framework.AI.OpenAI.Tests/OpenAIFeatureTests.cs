@@ -17,7 +17,7 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.OpenAI.Tests;
 
 /// <summary>
-/// OpenAI Provider：请求形状、工具调用经管道执行、流式、嵌入维度、配置缺失。
+/// OpenAI Provider：请求形状、工具调用经管道执行、流式、嵌入维度、配置缺失
 /// </summary>
 public sealed class OpenAIFeatureTests
 {
@@ -111,16 +111,16 @@ public sealed class OpenAIFeatureTests
     }
 
     /// <summary>
-    /// 只装 OpenAI Provider 启动，请求不触网。
+    /// 只装 OpenAI Provider 启动，请求不触网
     /// </summary>
     private static Task<TestHost> StartOnlyOpenAIAsync(params (string Key, string Value)[] configuration)
         => TestHost.StartAsync(static b => b.UseFeature<OpenAIFeature>(), configuration.Select(static pair => new KeyValuePair<string, string?>(pair.Key, pair.Value)));
 
     /// <summary>
-    /// 只装 OpenAI Provider 与回显操作启动，可再登记一个工具。
+    /// 只装 OpenAI Provider 与回显操作启动，可再登记一个工具
     /// </summary>
     /// <remarks>
-    /// 回显操作暴露给 AI；请求不触网。
+    /// 回显操作暴露给 AI；请求不触网
     /// </remarks>
     private static Task<TestHost> StartOpenAIWithToolsAsync(AITool? tool, params (string Key, string Value)[] configuration)
         => TestHost.StartAsync(
@@ -135,7 +135,7 @@ public sealed class OpenAIFeatureTests
             });
 
     /// <summary>
-    /// 异常链上全部框架错误码（启动失败由内核包一层）。
+    /// 异常链上全部框架错误码（启动失败由内核包一层）
     /// </summary>
     private static List<string> CodesOf(Exception exception)
     {

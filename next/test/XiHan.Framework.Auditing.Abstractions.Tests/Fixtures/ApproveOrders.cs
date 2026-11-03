@@ -7,21 +7,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 只用策略保护的审批操作。
+/// 只用策略保护的审批操作
 /// </summary>
 /// <remarks>
-/// 没有声明权限码、只要求策略 <see cref="Policy"/>：它同样需要授权，默认选择规则下要记审计。
+/// 没有声明权限码、只要求策略 <see cref="Policy"/>：它同样需要授权，默认选择规则下要记审计
 /// </remarks>
 [Operation(Id, Policy = Policy)]
 internal sealed class ApproveOrders : IOperation<ListOrdersRequest, OrderResponse>
 {
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public const string Id = "orders.approve";
 
     /// <summary>
-    /// 要求的策略名。
+    /// 要求的策略名
     /// </summary>
     public const string Policy = "order-approver";
 

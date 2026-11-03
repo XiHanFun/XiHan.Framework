@@ -9,10 +9,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.InMemory.Tests;
 
 /// <summary>
-/// 内存调度特性通过调度器套件。
+/// 内存调度特性通过调度器套件
 /// </summary>
 /// <remarks>
-/// 轮询周期设得很长，后台循环不动作；用例推进套件的时钟、主动轮询。维护间隔按套件时钟 0.2 秒，推进时钟的用例里会穿插执行。
+/// 轮询周期设得很长，后台循环不动作；用例推进套件的时钟、主动轮询。维护间隔按套件时钟 0.2 秒，推进时钟的用例里会穿插执行
 /// </remarks>
 public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConformance
 {

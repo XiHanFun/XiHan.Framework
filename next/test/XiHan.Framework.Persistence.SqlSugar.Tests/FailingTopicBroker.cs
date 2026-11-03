@@ -10,15 +10,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 事件 ID 以 <c>fail</c> 开头的一律失败、其余成功的代理。
+/// 事件 ID 以 <c>fail</c> 开头的一律失败、其余成功的代理
 /// </summary>
 /// <remarks>
-/// 失败原因带一段很长的文本，验证 <c>LastError</c> 是长文本列。不消费。
+/// 失败原因带一段很长的文本，验证 <c>LastError</c> 是长文本列。不消费
 /// </remarks>
 internal sealed class FailingTopicBroker : IMessageBroker
 {
     /// <summary>
-    /// 发布过的事件 ID，按发布顺序。
+    /// 发布过的事件 ID，按发布顺序
     /// </summary>
     public List<string> Published { get; } = [];
 

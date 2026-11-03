@@ -7,23 +7,23 @@ using XiHan.Framework.Persistence.Conformance;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// SqlSugar Provider 以真实 PostgreSQL 跑一致性套件。
+/// SqlSugar Provider 以真实 PostgreSQL 跑一致性套件
 /// </summary>
 /// <remarks>
-/// 环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过。每个用例一个临时库。审计时间用例（新增后读回等于时钟、更新后创建时间不变）在这里才能暴露 Npgsql legacy 模式把 <c>timestamptz</c> 读成本地时间的问题：SQLite 存文本、按 UTC 解析，看不到。
+/// 环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过。每个用例一个临时库。审计时间用例（新增后读回等于时钟、更新后创建时间不变）在这里才能暴露 Npgsql legacy 模式把 <c>timestamptz</c> 读成本地时间的问题：SQLite 存文本、按 UTC 解析，看不到
 /// </remarks>
 public sealed class PostgresRepositoryConformanceTests : RepositoryConformance, IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时库。
+    /// 本测试实例独占的临时库
     /// </summary>
     /// <remarks>
-    /// 首次访问时建出（未设置环境变量时在此跳过用例）。
+    /// 首次访问时建出（未设置环境变量时在此跳过用例）
     /// </remarks>
     private PostgresDatabase? _database;
 
     /// <summary>
-    /// 临时库，按需创建。
+    /// 临时库，按需创建
     /// </summary>
     private PostgresDatabase Database => _database ??= PostgresTestServer.CreateDatabase();
 
@@ -38,7 +38,7 @@ public sealed class PostgresRepositoryConformanceTests : RepositoryConformance, 
     }
 
     /// <summary>
-    /// 测试结束后删库。
+    /// 测试结束后删库
     /// </summary>
     public void Dispose() => _database?.Dispose();
 }

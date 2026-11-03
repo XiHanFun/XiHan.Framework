@@ -14,25 +14,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 租户分库。
+/// 租户分库
 /// </summary>
 /// <remarks>
-/// 带 <c>ConnectionString</c> 属性的租户在作用域内拿到带分片连接的客户端，租户实体落分片连接、平台实体仍落默认连接；其余租户与无租户调用只有默认连接。
+/// 带 <c>ConnectionString</c> 属性的租户在作用域内拿到带分片连接的客户端，租户实体落分片连接、平台实体仍落默认连接；其余租户与无租户调用只有默认连接
 /// </remarks>
 public sealed class SqlSugarTenantShardingTests : IDisposable
 {
     /// <summary>
-    /// 应用默认库。
+    /// 应用默认库
     /// </summary>
     private readonly SqliteDatabase _default = new();
 
     /// <summary>
-    /// 租户 <c>acme</c> 的分片库。
+    /// 租户 <c>acme</c> 的分片库
     /// </summary>
     private readonly SqliteDatabase _shard = new();
 
     /// <summary>
-    /// 删除两个临时数据库文件。
+    /// 删除两个临时数据库文件
     /// </summary>
     public void Dispose()
     {
@@ -106,19 +106,19 @@ public sealed class SqlSugarTenantShardingTests : IDisposable
     }
 
     /// <summary>
-    /// 创建指向给定连接串、已施加约定的独立客户端。
+    /// 创建指向给定连接串、已施加约定的独立客户端
     /// </summary>
     private static SqlSugarClient CreateClient(string connectionString)
         => new(SqlSugarConventions.Apply(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = connectionString, IsAutoCloseConnection = true }));
 
     /// <summary>
-    /// 当前调用作用域内的套件笔记仓储。
+    /// 当前调用作用域内的套件笔记仓储
     /// </summary>
     private static IRepository<ConformanceNote, Guid> Repository(InvocationContext context)
         => context.Services.GetRequiredService<IRepository<ConformanceNote, Guid>>();
 
     /// <summary>
-    /// 以给定租户（经 Baggage 自报）走完整管道执行 <paramref name="action"/>，其返回值作为调用结果。
+    /// 以给定租户（经 Baggage 自报）走完整管道执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
     private static async Task<Result> InvokeAsync(TestHost host, string tenant, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)), baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = tenant });

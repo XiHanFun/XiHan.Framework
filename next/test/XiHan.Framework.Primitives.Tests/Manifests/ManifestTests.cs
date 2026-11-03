@@ -6,22 +6,22 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Primitives.Tests.Manifests;
 
 /// <summary>
-/// 清单对象模型的行为：能力声明与依赖的解析、ID 格式、单字段格式校验与跨字段约束。
+/// 清单对象模型的行为：能力声明与依赖的解析、ID 格式、单字段格式校验与跨字段约束
 /// </summary>
 public sealed class ManifestTests
 {
     /// <summary>
-    /// <c>capability-requirements.json</c> 中的一条合法用例：输入文本与期望解析出的各部分。
+    /// <c>capability-requirements.json</c> 中的一条合法用例：输入文本与期望解析出的各部分
     /// </summary>
     private sealed record RequirementCase(string Input, string Id, int Version, bool Optional);
 
     /// <summary>
-    /// <c>capability-requirements.json</c> 向量：合法用例与非法文本。
+    /// <c>capability-requirements.json</c> 向量：合法用例与非法文本
     /// </summary>
     private sealed record RequirementVectors(RequirementCase[] Valid, string[] Invalid);
 
     /// <summary>
-    /// 创建一份字段齐全、格式合法的 Provider 清单，各测试在其上用 <c>with</c> 改出反例。
+    /// 创建一份字段齐全、格式合法的 Provider 清单，各测试在其上用 <c>with</c> 改出反例
     /// </summary>
     private static Manifest CreateProvider() => new()
     {

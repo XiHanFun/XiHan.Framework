@@ -14,25 +14,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// 租户分库。
+/// 租户分库
 /// </summary>
 /// <remarks>
-/// 带 <c>ConnectionString</c> 属性的租户在作用域内拿到指向分片库的 DbContext，其余租户与无租户调用用应用默认连接。
+/// 带 <c>ConnectionString</c> 属性的租户在作用域内拿到指向分片库的 DbContext，其余租户与无租户调用用应用默认连接
 /// </remarks>
 public sealed class EntityFrameworkCoreTenantShardingTests : IDisposable
 {
     /// <summary>
-    /// 应用默认库。
+    /// 应用默认库
     /// </summary>
     private readonly SqliteDatabase _default = new();
 
     /// <summary>
-    /// 租户 <c>acme</c> 的分片库。
+    /// 租户 <c>acme</c> 的分片库
     /// </summary>
     private readonly SqliteDatabase _shard = new();
 
     /// <summary>
-    /// 删除两个临时数据库文件。
+    /// 删除两个临时数据库文件
     /// </summary>
     public void Dispose()
     {
@@ -100,19 +100,19 @@ public sealed class EntityFrameworkCoreTenantShardingTests : IDisposable
     }
 
     /// <summary>
-    /// 创建指向给定连接串的独立上下文。
+    /// 创建指向给定连接串的独立上下文
     /// </summary>
     private static ConformanceDbContext CreateContext(string connectionString)
         => new(new DbContextOptionsBuilder<ConformanceDbContext>().UseSqlite(connectionString).Options);
 
     /// <summary>
-    /// 当前调用作用域内的套件笔记仓储。
+    /// 当前调用作用域内的套件笔记仓储
     /// </summary>
     private static IRepository<ConformanceNote, Guid> Repository(InvocationContext context)
         => context.Services.GetRequiredService<IRepository<ConformanceNote, Guid>>();
 
     /// <summary>
-    /// 以给定租户（经 Baggage 自报）走完整管道执行 <paramref name="action"/>，其返回值作为调用结果。
+    /// 以给定租户（经 Baggage 自报）走完整管道执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
     private static async Task<Result> InvokeAsync(TestHost host, string tenant, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)), baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = tenant });

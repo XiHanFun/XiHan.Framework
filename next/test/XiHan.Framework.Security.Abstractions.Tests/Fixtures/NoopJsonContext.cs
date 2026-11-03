@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 空请求与空响应的源生成序列化上下文。
+/// 空请求与空响应的源生成序列化上下文
 /// </summary>
 [JsonSerializable(typeof(NoopRequest))]
 [JsonSerializable(typeof(NoopResponse))]

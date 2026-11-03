@@ -12,18 +12,18 @@ using XiHan.Framework.Kernel.Operations;
 namespace XiHan.Framework.Kernel.Generators.Tests;
 
 /// <summary>
-/// 操作源生成器。
+/// 操作源生成器
 /// </summary>
 /// <remarks>
-/// 登记代码、JSON Schema 与诊断。生成的代码必须能在带内核引用的编译里通过编译。
+/// 登记代码、JSON Schema 与诊断。生成的代码必须能在带内核引用的编译里通过编译
 /// </remarks>
 public sealed class OperationGeneratorTests
 {
     /// <summary>
-    /// 一个带嵌套类型、可空、默认值、集合与枚举的操作。
+    /// 一个带嵌套类型、可空、默认值、集合与枚举的操作
     /// </summary>
     /// <remarks>
-    /// 以及手写的序列化上下文桩（生成器只看特性，不需要 STJ 生成器真的运行）。
+    /// 以及手写的序列化上下文桩（生成器只看特性，不需要 STJ 生成器真的运行）
     /// </remarks>
     private const string Source = """
         using System;
@@ -137,10 +137,10 @@ public sealed class OperationGeneratorTests
         """;
 
     /// <summary>
-    /// 运行生成器并把生成的代码编回编译。
+    /// 运行生成器并把生成的代码编回编译
     /// </summary>
     /// <remarks>
-    /// 返回编译诊断、生成器诊断与生成的源文本。
+    /// 返回编译诊断、生成器诊断与生成的源文本
     /// </remarks>
     private static (ImmutableArray<Diagnostic> Compile, ImmutableArray<Diagnostic> Generator, string Generated) Run(string source, string rootNamespace = "Demo.App", IReadOnlyDictionary<string, ReportDiagnostic>? diagnosticOptions = null)
     {
@@ -249,10 +249,10 @@ public sealed class OperationGeneratorTests
     }
 
     /// <summary>
-    /// 程序集缺省与只读声明的源码。
+    /// 程序集缺省与只读声明的源码
     /// </summary>
     /// <remarks>
-    /// <c>[assembly: OperationDefaults]</c> 行由占位符替换，三个操作分别没写 Expose、显式写 Expose、声明只读。
+    /// <c>[assembly: OperationDefaults]</c> 行由占位符替换，三个操作分别没写 Expose、显式写 Expose、声明只读
     /// </remarks>
     private const string DefaultsSource = """
         using System;
@@ -299,7 +299,7 @@ public sealed class OperationGeneratorTests
         """;
 
     /// <summary>
-    /// 生成代码里某个操作的契约构造表达式前缀。
+    /// 生成代码里某个操作的契约构造表达式前缀
     /// </summary>
     private static string ContractOf(string id, int expose)
         => $"new global::XiHan.Framework.Kernel.Operations.OperationContract(@\"{id}\", (global::XiHan.Framework.Primitives.Stability)0, (global::XiHan.Framework.Kernel.Operations.Expose){expose}, null, null";

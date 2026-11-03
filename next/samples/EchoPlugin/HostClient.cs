@@ -12,30 +12,30 @@ using PluginHost = XiHan.Framework.Plugins.Protocol.V1.Host;
 namespace EchoPlugin;
 
 /// <summary>
-/// 回调宿主 <c>Host</c> 服务的客户端：按环境变量连接宿主端点，每次调用带会话令牌。
+/// 回调宿主 <c>Host</c> 服务的客户端：按环境变量连接宿主端点，每次调用带会话令牌
 /// </summary>
 internal sealed class HostClient : IDisposable
 {
     /// <summary>
-    /// 命名管道地址前缀。
+    /// 命名管道地址前缀
     /// </summary>
     private const string PipePrefix = @"\\.\pipe\";
 
     /// <summary>
-    /// 会话令牌。
+    /// 会话令牌
     /// </summary>
     private readonly string _session = Environment.GetEnvironmentVariable("XIHAN_PLUGIN_SESSION") ?? string.Empty;
 
     /// <summary>
-    /// 按需创建的通道。
+    /// 按需创建的通道
     /// </summary>
     private readonly Lazy<GrpcChannel> _channel = new(CreateChannel);
 
     /// <summary>
-    /// 经宿主管道调用一个操作。
+    /// 经宿主管道调用一个操作
     /// </summary>
     /// <remarks>
-    /// 返回宿主的结果与载荷。
+    /// 返回宿主的结果与载荷
     /// </remarks>
     public async Task<InvokeResponse> InvokeAsync(string operation, ByteString payload, InvocationMetadata? metadata, CancellationToken cancellationToken)
     {
@@ -60,7 +60,7 @@ internal sealed class HostClient : IDisposable
     }
 
     /// <summary>
-    /// 从 <c>XIHAN_PLUGIN_HOST_ADDRESS</c>（<c>&lt;network&gt; &lt;address&gt;</c>）建通道。
+    /// 从 <c>XIHAN_PLUGIN_HOST_ADDRESS</c>（<c>&lt;network&gt; &lt;address&gt;</c>）建通道
     /// </summary>
     private static GrpcChannel CreateChannel()
     {

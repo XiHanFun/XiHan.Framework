@@ -10,10 +10,10 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 登记四个回显操作。
+/// 登记四个回显操作
 /// </summary>
 /// <remarks>
-/// <c>echoes.create</c>（AI + HTTP，带 Schema）、<c>echoes.rename</c>（AI，无 Schema）、<c>echoes.secret</c>（只 HTTP）、<c>echoes.audit</c>（Internal）。
+/// <c>echoes.create</c>（AI + HTTP，带 Schema）、<c>echoes.rename</c>（AI，无 Schema）、<c>echoes.secret</c>（只 HTTP）、<c>echoes.audit</c>（Internal）
 /// </remarks>
 internal sealed class EchoFeature : IFeature
 {
@@ -40,7 +40,7 @@ internal sealed class EchoFeature : IFeature
     }
 
     /// <summary>
-    /// 登记一个回显操作。
+    /// 登记一个回显操作
     /// </summary>
     private static void Add(FeatureContext context, OperationContract contract, OperationSchema? schema = null)
         => context.AddOperation<EchoOperation, EchoRequest, EchoResponse>(contract, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse, schema);

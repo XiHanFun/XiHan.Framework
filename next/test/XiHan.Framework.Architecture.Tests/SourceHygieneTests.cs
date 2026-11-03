@@ -7,33 +7,33 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 源码门禁。
+/// 源码门禁
 /// </summary>
 /// <remarks>
-/// 版权头、XML 文档 <c>&lt;summary&gt;</c> 的三行写法与一句话写法、Ring 0/1 零反射、每个正式包的必备文件。
+/// 版权头、XML 文档 <c>&lt;summary&gt;</c> 的三行写法与一句话写法、Ring 0/1 零反射、每个正式包的必备文件
 /// </remarks>
 public sealed partial class SourceHygieneTests
 {
     /// <summary>
-    /// summary 文案的显示宽度上限。
+    /// summary 文案的显示宽度上限
     /// </summary>
     /// <remarks>
-    /// 中日韩字符与全角标点算 1，其余（ASCII 等）算 0.5，向上取整：纯中文即 40 字，带类型名的句子不因标识符长而吃亏。
+    /// 中日韩字符与全角标点算 1，其余（ASCII 等）算 0.5，向上取整：纯中文即 40 字，带类型名的句子不因标识符长而吃亏
     /// </remarks>
     private const int MaxSummaryWidth = 40;
 
     /// <summary>
-    /// 标准版权头第一行。
+    /// 标准版权头第一行
     /// </summary>
     private const string HeaderLine1 = "// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.";
 
     /// <summary>
-    /// 标准版权头第二行。
+    /// 标准版权头第二行
     /// </summary>
     private const string HeaderLine2 = "// See the LICENSE file in the project root for full license text.";
 
     /// <summary>
-    /// 源码中出现即视为使用反射的文本片段。
+    /// 源码中出现即视为使用反射的文本片段
     /// </summary>
     private static readonly string[] _reflectionTokens =
     [
@@ -54,7 +54,7 @@ public sealed partial class SourceHygieneTests
     ];
 
     /// <summary>
-    /// 每个正式包目录必须存在的文件。
+    /// 每个正式包目录必须存在的文件
     /// </summary>
     private static readonly string[] _requiredFiles = ["README.md", "PublicAPI.Shipped.txt", "PublicAPI.Unshipped.txt"];
 
@@ -113,7 +113,7 @@ public sealed partial class SourceHygieneTests
     {
         var failures = new List<string>();
 
-        // summary 只写一句简明说明：正文一行、显示宽度不超过 MaxSummaryWidth、没有分号与句中的句号。
+        // summary 只写一句简明说明：正文一行、显示宽度不超过 MaxSummaryWidth、没有分号与句中的句号
         // 细节、规则与出处写在 <remarks>，参数、返回与异常写在 <param> / <returns> / <exception>
         foreach (var directory in SummaryRoots)
         {
@@ -159,7 +159,7 @@ public sealed partial class SourceHygieneTests
     {
         var failures = new List<string>();
 
-        // 以文本匹配而不是编译后扫描：注释里出现这些片段同样算违规，避免被注释掉的反射代码留在仓库里。
+        // 以文本匹配而不是编译后扫描：注释里出现这些片段同样算违规，避免被注释掉的反射代码留在仓库里
         foreach (var project in Workspace.SourceProjects.Where(static p => PackageGrammar.Ring(p.PackageId) <= 1))
         {
             foreach (var file in Workspace.SourceFiles(project.Directory))
@@ -198,19 +198,19 @@ public sealed partial class SourceHygieneTests
     }
 
     /// <summary>
-    /// 检查 summary 写法的目录。
+    /// 检查 summary 写法的目录
     /// </summary>
     /// <remarks>
-    /// 正式包、测试、示例与基准一视同仁。
+    /// 正式包、测试、示例与基准一视同仁
     /// </remarks>
     private static IEnumerable<string> SummaryRoots
         => new[] { Workspace.SourceRoot, Workspace.TestRoot, Path.Combine(Workspace.Root, "samples"), Path.Combine(Workspace.Root, "benchmarks") }.Where(Directory.Exists);
 
     /// <summary>
-    /// summary 的纯文本。
+    /// summary 的纯文本
     /// </summary>
     /// <remarks>
-    /// <c>&lt;see cref&gt;</c> 取最后一段名字，<c>&lt;see langword&gt;</c>、<c>&lt;paramref&gt;</c>、<c>&lt;typeparamref&gt;</c> 取名字，其余标签去掉，实体还原，空白折叠。
+    /// <c>&lt;see cref&gt;</c> 取最后一段名字，<c>&lt;see langword&gt;</c>、<c>&lt;paramref&gt;</c>、<c>&lt;typeparamref&gt;</c> 取名字，其余标签去掉，实体还原，空白折叠
     /// </remarks>
     private static string PlainText(string xml)
     {
@@ -229,7 +229,7 @@ public sealed partial class SourceHygieneTests
     }
 
     /// <summary>
-    /// 显示宽度：中日韩字符与全角标点算 1，其余算 0.5，向上取整。
+    /// 显示宽度：中日韩字符与全角标点算 1，其余算 0.5，向上取整
     /// </summary>
     private static int Width(string text)
     {
@@ -243,25 +243,25 @@ public sealed partial class SourceHygieneTests
     }
 
     /// <summary>
-    /// <c>&lt;see cref="…"/&gt;</c>。
+    /// <c>&lt;see cref="…"/&gt;</c>
     /// </summary>
     [GeneratedRegex(@"<see\s+cref=""(?:[A-Z]:)?(?<cref>[^""]+)""\s*/>")]
     private static partial Regex SeeCref();
 
     /// <summary>
-    /// <c>&lt;see langword&gt;</c>、<c>&lt;paramref&gt;</c> 与 <c>&lt;typeparamref&gt;</c>。
+    /// <c>&lt;see langword&gt;</c>、<c>&lt;paramref&gt;</c> 与 <c>&lt;typeparamref&gt;</c>
     /// </summary>
     [GeneratedRegex(@"<(?:see\s+langword|paramref\s+name|typeparamref\s+name)=""(?<name>[^""]+)""\s*/>")]
     private static partial Regex NamedReference();
 
     /// <summary>
-    /// 任意标签。
+    /// 任意标签
     /// </summary>
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex AnyTag();
 
     /// <summary>
-    /// 连续空白。
+    /// 连续空白
     /// </summary>
     [GeneratedRegex(@"\s+")]
     private static partial Regex Whitespace();

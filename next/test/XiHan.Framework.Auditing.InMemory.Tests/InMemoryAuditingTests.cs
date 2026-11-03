@@ -13,7 +13,7 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.InMemory.Tests;
 
 /// <summary>
-/// 内存实现特有的行为：容量淘汰、特性装配、选项解析。
+/// 内存实现特有的行为：容量淘汰、特性装配、选项解析
 /// </summary>
 public sealed class InMemoryAuditingTests
 {

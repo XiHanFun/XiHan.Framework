@@ -29,8 +29,8 @@ var builder = WebApplication.CreateBuilder(args);
 // 示例保持 AOT 友好：把源生成的序列化上下文放在解析链最前面，端点返回的类型不走反射序列化
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, SampleJsonContext.Default));
 
-// Standard 组合：五个子系统的内存默认实现；再加 HTTP 协议适配器、事务性发件箱与两个业务能力包。
-// 依赖写在清单里按能力 ID 解析；换 Provider 只需再 UseFeature 一个显式实现。
+// Standard 组合：五个子系统的内存默认实现；再加 HTTP 协议适配器、事务性发件箱与两个业务能力包
+// 依赖写在清单里按能力 ID 解析；换 Provider 只需再 UseFeature 一个显式实现
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<HttpProtocolFeature>()

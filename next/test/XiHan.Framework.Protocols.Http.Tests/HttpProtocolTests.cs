@@ -19,18 +19,18 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// HTTP 协议适配器。
+/// HTTP 协议适配器
 /// </summary>
 /// <remarks>
-/// 路由推导与覆盖、前缀、路由值/请求体/查询串绑定、成功状态码、失败的 Problem Details、不发布的操作、OpenAPI 文档与权限扩展。
+/// 路由推导与覆盖、前缀、路由值/请求体/查询串绑定、成功状态码、失败的 Problem Details、不发布的操作、OpenAPI 文档与权限扩展
 /// </remarks>
 public sealed class HttpProtocolTests
 {
     /// <summary>
-    /// 启动测试宿主。
+    /// 启动测试宿主
     /// </summary>
     /// <remarks>
-    /// 返回映射的端点数。
+    /// 返回映射的端点数
     /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client, int Mapped)> StartAsync(params (string Key, string Value)[] configuration)
     {
@@ -48,35 +48,35 @@ public sealed class HttpProtocolTests
     }
 
     /// <summary>
-    /// 解析响应为订单回复。
+    /// 解析响应为订单回复
     /// </summary>
     private static async Task<OrderReply> ReplyOf(HttpResponseMessage response)
         => JsonSerializer.Deserialize(await response.Content.ReadAsByteArrayAsync(), OrdersJsonContext.Default.OrderReply)!;
 
     /// <summary>
-    /// JSON 请求体。
+    /// JSON 请求体
     /// </summary>
     private static StringContent Json(string json) => new(json, Encoding.UTF8, "application/json");
 
     /// <summary>
-    /// 以订单请求（含 id）描述一个操作。
+    /// 以订单请求（含 id）描述一个操作
     /// </summary>
     private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Describe(string id) => Describe(new OperationContract(id));
 
     /// <summary>
-    /// 以订单请求（含 id）描述一个给定契约的操作。
+    /// 以订单请求（含 id）描述一个给定契约的操作
     /// </summary>
     private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Describe(OperationContract contract)
         => new OperationDescriptor<OrdersOperation, OrderRequest, OrderReply>(contract, "xihan.test.orders", OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
 
     /// <summary>
-    /// 以报表请求（不含 id）描述一个操作。
+    /// 以报表请求（不含 id）描述一个操作
     /// </summary>
     private static OperationDescriptor<OrderReportOperation, OrderReportRequest, OrderReply> DescribeReport(string id)
         => new OperationDescriptor<OrderReportOperation, OrderReportRequest, OrderReply>(new OperationContract(id), "xihan.test.orders", OrdersJsonContext.Default.OrderReportRequest, OrdersJsonContext.Default.OrderReply);
 
     /// <summary>
-    /// 读 Problem Details 的错误码。
+    /// 读 Problem Details 的错误码
     /// </summary>
     private static async Task<string> CodeOf(HttpResponseMessage response)
     {

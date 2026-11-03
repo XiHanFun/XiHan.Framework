@@ -11,15 +11,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.InMemory.Tests;
 
 /// <summary>
-/// 健康项 <c>persistence.inmemory.capacity</c>。
+/// 健康项 <c>persistence.inmemory.capacity</c>
 /// </summary>
 /// <remarks>
-/// 宿主启动后 Ready，某种实体的表填满后 Degraded 并带 <see cref="PersistenceErrors.CapacityExceeded"/>。
+/// 宿主启动后 Ready，某种实体的表填满后 Degraded 并带 <see cref="PersistenceErrors.CapacityExceeded"/>
 /// </remarks>
 public sealed class InMemoryPersistenceHealthTests
 {
     /// <summary>
-    /// 不实现任何协议的测试实体。
+    /// 不实现任何协议的测试实体
     /// </summary>
     private sealed class Widget : IEntity<Guid>
     {

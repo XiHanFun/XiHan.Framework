@@ -6,10 +6,10 @@ using XiHan.Framework.Workflow.Conformance.Storage;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库存储与租约锁对 PostgreSQL 通过存储套件。
+/// 数据库存储与租约锁对 PostgreSQL 通过存储套件
 /// </summary>
 /// <remarks>
-/// 环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过（<see cref="PostgresDatabase"/>）。
+/// 环境变量 <c>XIHAN_TEST_POSTGRES</c>，未设置即跳过（<see cref="PostgresDatabase"/>）
 /// </remarks>
 public sealed class PostgresWorkflowStoreConformanceTests : WorkflowStoreConformance
 {

@@ -7,7 +7,7 @@ using XiHan.Framework.Persistence.Conformance.Fixtures;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 套件领域事件的源生成序列化上下文（camelCase）。
+/// 套件领域事件的源生成序列化上下文（camelCase）
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ConformanceEvent))]

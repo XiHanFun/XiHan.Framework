@@ -10,25 +10,25 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// SqlSugar 的运行时数据源。
+/// SqlSugar 的运行时数据源
 /// </summary>
 /// <remarks>
-/// 按定义连外部库（SQLite 文件、真实 PostgreSQL）、数据库类型名、连接串格式与脱敏、测试连接、健康项、不进应用的作用域客户端。
+/// 按定义连外部库（SQLite 文件、真实 PostgreSQL）、数据库类型名、连接串格式与脱敏、测试连接、健康项、不进应用的作用域客户端
 /// </remarks>
 public sealed class SqlSugarDataSourceTests : IDisposable
 {
     /// <summary>
-    /// 应用自己的库。
+    /// 应用自己的库
     /// </summary>
     private readonly SqliteDatabase _application = new();
 
     /// <summary>
-    /// 作为外部库的另一个 SQLite 文件。
+    /// 作为外部库的另一个 SQLite 文件
     /// </summary>
     private readonly SqliteDatabase _external = new();
 
     /// <summary>
-    /// 测试结束后删除两个临时库。
+    /// 测试结束后删除两个临时库
     /// </summary>
     public void Dispose()
     {

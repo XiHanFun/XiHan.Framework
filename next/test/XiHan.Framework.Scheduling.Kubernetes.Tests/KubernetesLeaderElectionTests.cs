@@ -16,15 +16,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 
 /// <summary>
-/// Lease 语义。
+/// Lease 语义
 /// </summary>
 /// <remarks>
-/// 创建即获取、接管过期租约并累加交接次数、续约带版本、释放清空持有者、API 失败翻译为不可达；选项解析与特性装配。
+/// 创建即获取、接管过期租约并累加交接次数、续约带版本、释放清空持有者、API 失败翻译为不可达；选项解析与特性装配
 /// </remarks>
 public sealed class KubernetesLeaderElectionTests
 {
     /// <summary>
-    /// 两个 Pod 共用一个 API Server 桩。
+    /// 两个 Pod 共用一个 API Server 桩
     /// </summary>
     private static (FakeLeaseApi Api, KubernetesLeaderElection A, KubernetesLeaderElection B, FakeTimeProvider Clock) Cluster()
     {

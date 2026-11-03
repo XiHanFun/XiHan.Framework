@@ -7,7 +7,7 @@ using XiHan.Framework.Scheduling.Conformance;
 namespace XiHan.Framework.Scheduling.InMemory.Tests;
 
 /// <summary>
-/// 内存作业存储通过存储套件。
+/// 内存作业存储通过存储套件
 /// </summary>
 public sealed class InMemoryJobStoreConformanceTests : JobStoreConformance
 {
@@ -16,7 +16,7 @@ public sealed class InMemoryJobStoreConformanceTests : JobStoreConformance
         => Task.FromResult<(IJobStore, IAsyncDisposable)>((new InMemoryJobStore(new InMemorySchedulingOptions()), new NoopDisposable()));
 
     /// <summary>
-    /// 内存存储没有要释放的资源。
+    /// 内存存储没有要释放的资源
     /// </summary>
     private sealed class NoopDisposable : IAsyncDisposable
     {

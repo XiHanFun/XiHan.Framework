@@ -26,10 +26,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
 /// <summary>
-/// Wasm 插件宿主的端到端用例。
+/// Wasm 插件宿主的端到端用例
 /// </summary>
 /// <remarks>
-/// 以 Rust 写的 EchoWasmPlugin 验证发现、握手、调用、中间件、本地化、回调、事件、陷阱重建、截止时间与运行期加载。
+/// 以 Rust 写的 EchoWasmPlugin 验证发现、握手、调用、中间件、本地化、回调、事件、陷阱重建、截止时间与运行期加载
 /// </remarks>
 public sealed class WasmPluginHostTests
 {
@@ -71,7 +71,7 @@ public sealed class WasmPluginHostTests
     [Fact]
     public async Task Middleware_IsOrderedByTheManifestBeforeAndAfter()
     {
-        // 基准次序：宿主的 Marker（归属 xihan.app.marker 排在 xihan.tests.wat 前）、first、second（清单顺序）。
+        // 基准次序：宿主的 Marker（归属 xihan.app.marker 排在 xihan.tests.wat 前）、first、second（清单顺序）
         // first 声明在本插件的 second 之后，second 声明在宿主中间件（类型全名）之前：结果 second、Marker、first
         using var plugin = WatPlugin.WithMiddleware(new JsonArray(
             new JsonObject { ["middleware"] = "first", ["stage"] = "observe", ["after"] = new JsonArray("second") },

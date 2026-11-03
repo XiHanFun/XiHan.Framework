@@ -8,88 +8,88 @@ using System.Text.Json.Nodes;
 namespace XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
 
 /// <summary>
-/// 用 WAT 文本现场生成的最小 Wasm 插件（宿主接受 <c>.wat</c>，只为测试）。
+/// 用 WAT 文本现场生成的最小 Wasm 插件（宿主接受 <c>.wat</c>，只为测试）
 /// </summary>
 /// <remarks>
-/// 一个操作 <c>wat.call</c>：调用一次宿主导入（<c>xihan.invoke</c> 或 <c>xihan.publish</c>），请求是生成时写死的 JSON。经 <c>invoke</c> 时把宿主的 <c>InvokeResponse</c> 原样作为自己的应答，经 <c>publish</c> 时丢弃宿主应答、回成功。其余导出回固定应答；清单的权限由用例决定，用来核对回调的权限与截止时间。释放时删除插件目录。
+/// 一个操作 <c>wat.call</c>：调用一次宿主导入（<c>xihan.invoke</c> 或 <c>xihan.publish</c>），请求是生成时写死的 JSON。经 <c>invoke</c> 时把宿主的 <c>InvokeResponse</c> 原样作为自己的应答，经 <c>publish</c> 时丢弃宿主应答、回成功。其余导出回固定应答；清单的权限由用例决定，用来核对回调的权限与截止时间。释放时删除插件目录
 /// </remarks>
 internal sealed class WatPlugin : IDisposable
 {
     /// <summary>
-    /// 清单 ID。
+    /// 清单 ID
     /// </summary>
     public const string PluginId = "xihan.tests.wat";
 
     /// <summary>
-    /// 唯一的操作。
+    /// 唯一的操作
     /// </summary>
     public const string Operation = "wat.call";
 
     /// <summary>
-    /// 数据段起点。
+    /// 数据段起点
     /// </summary>
     private const int DataStart = 1024;
 
     /// <summary>
-    /// 堆的起点（第二页）：<c>xihan_alloc</c> 从这里线性分配，到线性内存末尾时回卷。
+    /// 堆的起点（第二页）：<c>xihan_alloc</c> 从这里线性分配，到线性内存末尾时回卷
     /// </summary>
     private const int HeapStart = 65536;
 
     /// <summary>
-    /// 线性内存页数。
+    /// 线性内存页数
     /// </summary>
     private const int Pages = 4;
 
     private WatPlugin(string directory) => Directory = directory;
 
     /// <summary>
-    /// 插件目录（含清单与 <c>plugin.wat</c>）。
+    /// 插件目录（含清单与 <c>plugin.wat</c>）
     /// </summary>
     public string Directory { get; }
 
     /// <summary>
-    /// 生成一个经 <c>xihan.invoke</c> 调用宿主操作的插件。
+    /// 生成一个经 <c>xihan.invoke</c> 调用宿主操作的插件
     /// </summary>
     /// <remarks>
-    /// <paramref name="operation"/> 是宿主操作 ID；请求不带元数据，即插件自己不给截止时间。
+    /// <paramref name="operation"/> 是宿主操作 ID；请求不带元数据，即插件自己不给截止时间
     /// </remarks>
     public static WatPlugin Invoking(string operation, IReadOnlyList<string> permissions)
         => Create("invoke", new JsonObject { ["operation"] = operation, ["payload"] = Convert.ToBase64String("""{"name":"wat"}"""u8) }, permissions, null);
 
     /// <summary>
-    /// 生成一个声明 <see cref="Operation"/> 要求权限码 <paramref name="permission"/> 的插件。
+    /// 生成一个声明 <see cref="Operation"/> 要求权限码 <paramref name="permission"/> 的插件
     /// </summary>
     /// <remarks>
-    /// 用来核对宿主拒绝引用了未登记权限码的代理操作；导出与 <see cref="Invoking"/> 相同。
+    /// 用来核对宿主拒绝引用了未登记权限码的代理操作；导出与 <see cref="Invoking"/> 相同
     /// </remarks>
     public static WatPlugin Guarded(string permission)
         => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, permission);
 
     /// <summary>
-    /// 生成一个在清单里声明权限码的插件。
+    /// 生成一个在清单里声明权限码的插件
     /// </summary>
     /// <remarks>
-    /// 清单 <c>contributes.permissions</c> 是 <paramref name="declared"/>，操作要求权限码 <paramref name="permission"/>。用来核对宿主替插件登记它声明的权限码（ADR-0080）；清单 ID 与操作 ID 可换，两个插件才能同时登记。导出与 <see cref="Invoking"/> 相同。
+    /// 清单 <c>contributes.permissions</c> 是 <paramref name="declared"/>，操作要求权限码 <paramref name="permission"/>。用来核对宿主替插件登记它声明的权限码（ADR-0080）；清单 ID 与操作 ID 可换，两个插件才能同时登记。导出与 <see cref="Invoking"/> 相同
     /// </remarks>
-    /// <param name="declared">清单声明的权限码。</param>
-    /// <param name="permission">操作要求的权限码；为空时操作没有权限要求。</param>
-    /// <param name="pluginId">清单 ID。</param>
-    /// <param name="operation">操作 ID。</param>
-    /// <param name="policy">操作要求的策略名；与 <paramref name="permission"/> 二选一。</param>
+    /// <param name="declared">清单声明的权限码</param>
+    /// <param name="permission">操作要求的权限码；为空时操作没有权限要求</param>
+    /// <param name="pluginId">清单 ID</param>
+    /// <param name="operation">操作 ID</param>
+    /// <param name="policy">操作要求的策略名；与 <paramref name="permission"/> 二选一</param>
     public static WatPlugin Declaring(IReadOnlyList<string> declared, string? permission, string pluginId = PluginId, string operation = Operation, string? policy = null)
         => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, permission, declared, pluginId, operation, policy);
 
     /// <summary>
-    /// 生成一个贡献中间件的插件。
+    /// 生成一个贡献中间件的插件
     /// </summary>
     /// <remarks>
-    /// <paramref name="pipeline"/> 是清单的 <c>contributes.pipeline</c>；<c>xihan_middleware</c> 总是回 <c>CONTINUE</c>。
+    /// <paramref name="pipeline"/> 是清单的 <c>contributes.pipeline</c>；<c>xihan_middleware</c> 总是回 <c>CONTINUE</c>
     /// </remarks>
     public static WatPlugin WithMiddleware(JsonArray pipeline)
         => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], pipeline);
 
     /// <summary>
-    /// 生成一个经 <c>xihan.publish</c> 发布一条消息的插件。
+    /// 生成一个经 <c>xihan.publish</c> 发布一条消息的插件
     /// </summary>
     public static WatPlugin Publishing(string topic, IReadOnlyList<string> permissions)
         => Create("publish", new JsonObject
@@ -118,7 +118,7 @@ internal sealed class WatPlugin : IDisposable
     }
 
     /// <summary>
-    /// 写清单与模块文本。
+    /// 写清单与模块文本
     /// </summary>
     private static WatPlugin Create(
         string import,
@@ -227,7 +227,7 @@ internal sealed class WatPlugin : IDisposable
     }
 
     /// <summary>
-    /// 握手里的操作声明：可带权限码或策略名。
+    /// 握手里的操作声明：可带权限码或策略名
     /// </summary>
     private static JsonObject Declaration(string operation, string? permission, string? policy)
     {
@@ -246,7 +246,7 @@ internal sealed class WatPlugin : IDisposable
     }
 
     /// <summary>
-    /// 字节逐个写成 WAT 字符串的 <c>\hh</c> 转义。
+    /// 字节逐个写成 WAT 字符串的 <c>\hh</c> 转义
     /// </summary>
     private static string Escape(byte[] bytes)
     {

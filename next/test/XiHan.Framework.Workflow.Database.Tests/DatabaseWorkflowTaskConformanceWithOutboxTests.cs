@@ -11,10 +11,10 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 装了发件箱的宿主上，数据库工作流特性对 SQLite 照样通过用户任务与外部任务套件。
+/// 装了发件箱的宿主上，数据库工作流特性对 SQLite 照样通过用户任务与外部任务套件
 /// </summary>
 /// <remarks>
-/// 在 <see cref="SqliteDatabase"/> 的装配上再装内存消息与 <see cref="OutboxFeature"/>：引擎的事件随业务事务写进发件箱表，提交后才投递到代理，回滚的不投递（ADR-0096 第六节）。
+/// 在 <see cref="SqliteDatabase"/> 的装配上再装内存消息与 <see cref="OutboxFeature"/>：引擎的事件随业务事务写进发件箱表，提交后才投递到代理，回滚的不投递（ADR-0096 第六节）
 /// </remarks>
 public sealed class DatabaseWorkflowTaskConformanceWithOutboxTests : WorkflowTaskConformance
 {

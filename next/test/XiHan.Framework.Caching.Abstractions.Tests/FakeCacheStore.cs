@@ -8,46 +8,46 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
 /// <summary>
-/// 无过期的字典存储，只用于验证建立在存储之上的组件。
+/// 无过期的字典存储，只用于验证建立在存储之上的组件
 /// </summary>
 internal sealed class FakeCacheStore : ICacheStore
 {
     /// <summary>
-    /// 键到字节的字典。
+    /// 键到字节的字典
     /// </summary>
     /// <remarks>
-    /// 键区分大小写，没有过期。
+    /// 键区分大小写，没有过期
     /// </remarks>
     private readonly ConcurrentDictionary<string, byte[]> _entries = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 使比较删的"读取并比较"与"删除"成为一步。
+    /// 使比较删的"读取并比较"与"删除"成为一步
     /// </summary>
     private readonly Lock _gate = new();
 
     /// <summary>
-    /// 按发生顺序记录的操作（<c>get:</c>、<c>set:</c>、<c>add:</c>、<c>remove:</c>、<c>cad:</c> 加键）。
+    /// 按发生顺序记录的操作（<c>get:</c>、<c>set:</c>、<c>add:</c>、<c>remove:</c>、<c>cad:</c> 加键）
     /// </summary>
     /// <remarks>
-    /// 供测试断言调用序列。
+    /// 供测试断言调用序列
     /// </remarks>
     public List<string> Operations { get; } = [];
 
     /// <summary>
-    /// 当前条目数。
+    /// 当前条目数
     /// </summary>
     public int Count => _entries.Count;
 
     /// <summary>
-    /// 直接按原始键读取字节。
+    /// 直接按原始键读取字节
     /// </summary>
     /// <remarks>
-    /// 不存在为 <see langword="null"/>。
+    /// 不存在为 <see langword="null"/>
     /// </remarks>
     public byte[]? this[string key] => _entries.TryGetValue(key, out var value) ? value : null;
 
     /// <summary>
-    /// 记录 <c>get:</c> 并读取。
+    /// 记录 <c>get:</c> 并读取
     /// </summary>
     public ValueTask<Maybe<ReadOnlyMemory<byte>>> GetAsync(CacheKey key, CancellationToken cancellationToken)
     {
@@ -56,10 +56,10 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>set:</c> 并写入。
+    /// 记录 <c>set:</c> 并写入
     /// </summary>
     /// <remarks>
-    /// 忽略过期选项。
+    /// 忽略过期选项
     /// </remarks>
     public ValueTask SetAsync(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions options, CancellationToken cancellationToken)
     {
@@ -69,7 +69,7 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>add:</c> 并在不存在时写入。
+    /// 记录 <c>add:</c> 并在不存在时写入
     /// </summary>
     public ValueTask<bool> TryAddAsync(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions options, CancellationToken cancellationToken)
     {
@@ -78,7 +78,7 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>remove:</c> 并删除。
+    /// 记录 <c>remove:</c> 并删除
     /// </summary>
     public ValueTask<bool> RemoveAsync(CacheKey key, CancellationToken cancellationToken)
     {
@@ -87,7 +87,7 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>getmany:</c> 并逐键读取。
+    /// 记录 <c>getmany:</c> 并逐键读取
     /// </summary>
     public ValueTask<IReadOnlyList<Maybe<ReadOnlyMemory<byte>>>> GetManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
     {
@@ -102,10 +102,10 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>setmany:</c> 并逐项写入。
+    /// 记录 <c>setmany:</c> 并逐项写入
     /// </summary>
     /// <remarks>
-    /// 忽略过期选项。
+    /// 忽略过期选项
     /// </remarks>
     public ValueTask SetManyAsync(IReadOnlyList<CacheEntry> entries, CancellationToken cancellationToken)
     {
@@ -119,7 +119,7 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>removemany:</c> 并逐键删除。
+    /// 记录 <c>removemany:</c> 并逐键删除
     /// </summary>
     public ValueTask<IReadOnlyList<bool>> RemoveManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
     {
@@ -134,7 +134,7 @@ internal sealed class FakeCacheStore : ICacheStore
     }
 
     /// <summary>
-    /// 记录 <c>cad:</c>，当前值与期望值相同时才删除。
+    /// 记录 <c>cad:</c>，当前值与期望值相同时才删除
     /// </summary>
     public ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken)
     {

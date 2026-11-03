@@ -11,18 +11,18 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.InMemory.Tests;
 
 /// <summary>
-/// 授权能力在启动核对里核对契约按名引用的策略。
+/// 授权能力在启动核对里核对契约按名引用的策略
 /// </summary>
 /// <remarks>
-/// 内存安全特性被选为授权能力时（ADR-0080、ADR-0085）。
+/// 内存安全特性被选为授权能力时（ADR-0080、ADR-0085）
 /// </remarks>
 public sealed class PolicyReferenceTests
 {
     /// <summary>
-    /// 只带契约、不会被调用的操作描述。
+    /// 只带契约、不会被调用的操作描述
     /// </summary>
     /// <remarks>
-    /// 核对只看契约，不需要可执行的操作类型。
+    /// 核对只看契约，不需要可执行的操作类型
     /// </remarks>
     private sealed class ContractOnlyDescriptor(OperationContract contract)
         : OperationDescriptor(contract, "xihan.app.approvals", typeof(ContractOnlyDescriptor), typeof(object), typeof(object), null)
@@ -38,7 +38,7 @@ public sealed class PolicyReferenceTests
     }
 
     /// <summary>
-    /// 按给定名字放行一切的策略。
+    /// 按给定名字放行一切的策略
     /// </summary>
     private sealed class NamedPolicy(string name) : IPolicy
     {
@@ -50,7 +50,7 @@ public sealed class PolicyReferenceTests
     }
 
     /// <summary>
-    /// 登记给定契约的操作的桩特性。
+    /// 登记给定契约的操作的桩特性
     /// </summary>
     private static StubFeature Approvals(params OperationContract[] contracts) => new(TestManifests.Create("xihan.app.approvals", requires: ["security.authorization@1"]))
     {

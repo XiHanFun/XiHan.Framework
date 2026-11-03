@@ -4,8 +4,8 @@
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 测试用分页参数：作为嵌套对象出现在请求里。
+/// 测试用分页参数：作为嵌套对象出现在请求里
 /// </summary>
-/// <param name="Index">页码。</param>
-/// <param name="Size">每页条数。</param>
+/// <param name="Index">页码</param>
+/// <param name="Size">每页条数</param>
 internal sealed record OrderPaging(int Index, int Size);

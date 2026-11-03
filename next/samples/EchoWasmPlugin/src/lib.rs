@@ -1,5 +1,5 @@
 //! XiHan Framework Wasm 插件示例（RFC-0018）：以导出函数 + 线性内存实现 xihan.plugin.v1，
-//! 消息按 proto3 JSON 编码；只依赖 serde_json 与 base64，不依赖任何 XiHan 包。
+//! 消息按 proto3 JSON 编码；只依赖 serde_json 与 base64，不依赖任何 XiHan 包
 
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
@@ -8,20 +8,20 @@ use std::alloc::{alloc, dealloc, Layout};
 use std::cell::RefCell;
 use std::time::Instant;
 
-/// 清单 ID。
+/// 清单 ID
 const PLUGIN_ID: &str = "xihan.samples.echowasm";
 
-/// 清单文本：与插件目录里的文件逐字节相同，握手时原样交给宿主核对。
+/// 清单文本：与插件目录里的文件逐字节相同，握手时原样交给宿主核对
 const MANIFEST: &str = include_str!("../plugin/xihan.manifest.json");
 
-/// 宿主导入（wasm.md §4）。
+/// 宿主导入（wasm.md §4）
 #[link(wasm_import_module = "xihan")]
 extern "C" {
     fn log(level: i32, ptr: i32, len: i32);
     fn invoke(ptr: i32, len: i32) -> i64;
 }
 
-/// 插件状态：配置、收到的事件、中间件计数与自报的生命周期状态。
+/// 插件状态：配置、收到的事件、中间件计数与自报的生命周期状态
 #[derive(Default)]
 struct State {
     greeting: Option<String>,
@@ -63,7 +63,7 @@ pub extern "C" fn xihan_free(ptr: i32, size: i32) {
     unsafe { dealloc(ptr as *mut u8, Layout::from_size_align_unchecked(size as usize, 1)) }
 }
 
-/// 读宿主写入的请求并回收这块内存（wasm.md §2：传入的内存由插件回收）。
+/// 读宿主写入的请求并回收这块内存（wasm.md §2：传入的内存由插件回收）
 fn input(ptr: i32, len: i32) -> Value {
     if ptr == 0 || len <= 0 {
         return Value::Object(Map::new());
@@ -74,7 +74,7 @@ fn input(ptr: i32, len: i32) -> Value {
     value
 }
 
-/// 把响应写进客体内存并以 (ptr << 32) | len 返回。
+/// 把响应写进客体内存并以 (ptr << 32) | len 返回
 fn output(value: &Value) -> i64 {
     let bytes = value.to_string().into_bytes();
     let len = bytes.len() as i32;
@@ -86,7 +86,7 @@ fn output(value: &Value) -> i64 {
     ((ptr as i64) << 32) | (len as i64 & 0xFFFF_FFFF)
 }
 
-/// 读宿主导入函数的响应（宿主经 xihan_alloc 写入，由插件回收）。
+/// 读宿主导入函数的响应（宿主经 xihan_alloc 写入，由插件回收）
 fn import_result(packed: i64) -> Value {
     if packed == 0 {
         return Value::Null;
@@ -94,7 +94,7 @@ fn import_result(packed: i64) -> Value {
     input((packed >> 32) as i32, (packed & 0xFFFF_FFFF) as i32)
 }
 
-/// 写一行日志。
+/// 写一行日志
 fn log_line(level: i32, text: &str) {
     unsafe { log(level, text.as_ptr() as i32, text.len() as i32) }
 }
@@ -115,7 +115,7 @@ fn failure(code: &str, message_key: &str, details: Option<Value>) -> Value {
     json!({ "ok": false, "error": error })
 }
 
-/// 请求载荷：proto3 JSON 里 bytes 是 base64。
+/// 请求载荷：proto3 JSON 里 bytes 是 base64
 fn payload_of(request: &Value) -> Value {
     request["payload"]
         .as_str()

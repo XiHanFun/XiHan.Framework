@@ -4,15 +4,15 @@
 namespace XiHan.Framework.Primitives.Tests.Results;
 
 /// <summary>
-/// <see cref="Result"/> 的行为。
+/// <see cref="Result"/> 的行为
 /// </summary>
 /// <remarks>
-/// 成功与失败的构造、<c>default</c> 视为未初始化失败、短路组合、抛出转换与相等语义。
+/// 成功与失败的构造、<c>default</c> 视为未初始化失败、短路组合、抛出转换与相等语义
 /// </remarks>
 public sealed class ResultTests
 {
     /// <summary>
-    /// 各测试共用的失败样例。
+    /// 各测试共用的失败样例
     /// </summary>
     private static readonly Error _sampleError = Error.Literal("ORDERS_CONFLICT_001", "Order already exists.");
 

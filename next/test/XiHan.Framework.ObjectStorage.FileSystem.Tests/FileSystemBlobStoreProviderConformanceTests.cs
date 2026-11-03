@@ -7,15 +7,15 @@ using XiHan.Framework.ObjectStorage.Conformance;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 让 <see cref="FileSystemBlobStoreProvider"/> 跑完整套 <see cref="BlobStoreProviderConformance"/> 用例。
+/// 让 <see cref="FileSystemBlobStoreProvider"/> 跑完整套 <see cref="BlobStoreProviderConformance"/> 用例
 /// </summary>
 /// <remarks>
-/// 两组设置各用临时根目录下的一个子目录。
+/// 两组设置各用临时根目录下的一个子目录
 /// </remarks>
 public sealed class FileSystemBlobStoreProviderConformanceTests : BlobStoreProviderConformance, IDisposable
 {
     /// <summary>
-    /// 本用例的临时根目录。
+    /// 本用例的临时根目录
     /// </summary>
     private readonly TemporaryRoot _root = new();
 

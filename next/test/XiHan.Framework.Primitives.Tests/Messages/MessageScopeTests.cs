@@ -7,20 +7,20 @@ using System.Globalization;
 namespace XiHan.Framework.Primitives.Tests.Messages;
 
 /// <summary>
-/// 消息作用域。
+/// 消息作用域
 /// </summary>
 /// <remarks>
-/// <c>key.L()</c> 按当前作用域解析，<see cref="Error.Message"/> 按进程默认解析，都没有时退回键与参数的描述。本类会设置进程默认作用域，所以把依赖默认作用域的断言集中在这里并在结束时清除。
+/// <c>key.L()</c> 按当前作用域解析，<see cref="Error.Message"/> 按进程默认解析，都没有时退回键与参数的描述。本类会设置进程默认作用域，所以把依赖默认作用域的断言集中在这里并在结束时清除
 /// </remarks>
 public sealed class MessageScopeTests
 {
     /// <summary>
-    /// 两种语言的字典解析器：区域缺省为 en-US。
+    /// 两种语言的字典解析器：区域缺省为 en-US
     /// </summary>
     private sealed class DictionaryResolver : IMessageResolver
     {
         /// <summary>
-        /// 区域 → 键 → 模板。
+        /// 区域 → 键 → 模板
         /// </summary>
         private static readonly Dictionary<string, Dictionary<string, string>> _templates = new(StringComparer.OrdinalIgnoreCase)
         {

@@ -8,41 +8,41 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 
 /// <summary>
-/// 以 Go 写的示例插件 EchoGoPlugin为插件目录启动测试宿主的辅助。
+/// 以 Go 写的示例插件 EchoGoPlugin为插件目录启动测试宿主的辅助
 /// </summary>
 /// <remarks>
-/// framework-sdk-go。测试运行时用本机的 go 构建它，没有 go 就跳过。
+/// framework-sdk-go。测试运行时用本机的 go 构建它，没有 go 就跳过
 /// </remarks>
 internal static class EchoGoPluginHost
 {
     /// <summary>
-    /// 示例插件的清单 ID。
+    /// 示例插件的清单 ID
     /// </summary>
     public const string PluginId = "xihan.samples.echo-go";
 
     /// <summary>
-    /// 示例源码目录 samples/EchoGoPlugin。
+    /// 示例源码目录 samples/EchoGoPlugin
     /// </summary>
     public static string SourceDirectory { get; } = Path.Combine(LocateRoot(), "samples", "EchoGoPlugin");
 
     /// <summary>
-    /// 构建产物目录：可执行文件与清单。
+    /// 构建产物目录：可执行文件与清单
     /// </summary>
     public static string Directory { get; } = Path.Combine(SourceDirectory, "bin");
 
     /// <summary>
-    /// 只构建一次。
+    /// 只构建一次
     /// </summary>
     /// <remarks>
-    /// 值为空表示成功，否则是跳过原因。
+    /// 值为空表示成功，否则是跳过原因
     /// </remarks>
     private static readonly Lazy<string?> _build = new(Build, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
-    /// 确保示例已构建。
+    /// 确保示例已构建
     /// </summary>
     /// <remarks>
-    /// 本机没有 go 或构建失败时跳过当前测试。
+    /// 本机没有 go 或构建失败时跳过当前测试
     /// </remarks>
     public static void EnsureBuiltOrSkip()
     {
@@ -53,7 +53,7 @@ internal static class EchoGoPluginHost
     }
 
     /// <summary>
-    /// 宿主配置：插件目录、授予的权限、较短的健康轮询与 Echo 配置节。
+    /// 宿主配置：插件目录、授予的权限、较短的健康轮询与 Echo 配置节
     /// </summary>
     public static IEnumerable<KeyValuePair<string, string?>> Configuration(bool grantPipeline = true, params (string Key, string Value)[] extra)
     {
@@ -74,7 +74,7 @@ internal static class EchoGoPluginHost
     }
 
     /// <summary>
-    /// 构建示例后启动只装配进程外插件特性的宿主。
+    /// 构建示例后启动只装配进程外插件特性的宿主
     /// </summary>
     public static Task<TestHost> StartAsync(Action<AppBuilder>? configure = null, bool grantPipeline = true, params (string Key, string Value)[] extra)
     {
@@ -89,7 +89,7 @@ internal static class EchoGoPluginHost
     }
 
     /// <summary>
-    /// 用本机的 go 构建 echo-go 并把清单复制进产物目录。
+    /// 用本机的 go 构建 echo-go 并把清单复制进产物目录
     /// </summary>
     private static string? Build()
     {
@@ -126,7 +126,7 @@ internal static class EchoGoPluginHost
     }
 
     /// <summary>
-    /// 向上找到含解决方案文件的目录。
+    /// 向上找到含解决方案文件的目录
     /// </summary>
     private static string LocateRoot()
     {

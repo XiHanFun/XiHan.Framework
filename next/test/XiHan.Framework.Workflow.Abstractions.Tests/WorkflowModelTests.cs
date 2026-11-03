@@ -11,7 +11,7 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 标识、重试策略、查询、选项、故障与消息目录等小模型的约束。
+/// 标识、重试策略、查询、选项、故障与消息目录等小模型的约束
 /// </summary>
 public sealed class WorkflowModelTests
 {

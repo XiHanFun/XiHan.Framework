@@ -14,20 +14,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.ObjectStorage.S3.Tests;
 
 /// <summary>
-/// S3 命名实例。
+/// S3 命名实例
 /// </summary>
 /// <remarks>
-/// 配置定义的实例经特性登记的注册表取到，自己签预签名地址（直连存储）；探测按实例的健康桶，桶不存在即 Degraded（关闭了条件写入的实例；开启时探测桶不存在不建实例，ADR-0093）。设置错误不建实例。未设置 <c>XIHAN_TEST_S3</c> 时跳过。
+/// 配置定义的实例经特性登记的注册表取到，自己签预签名地址（直连存储）；探测按实例的健康桶，桶不存在即 Degraded（关闭了条件写入的实例；开启时探测桶不存在不建实例，ADR-0093）。设置错误不建实例。未设置 <c>XIHAN_TEST_S3</c> 时跳过
 /// </remarks>
 public sealed class S3NamedStoreTests
 {
     /// <summary>
-    /// 用例的桶。
+    /// 用例的桶
     /// </summary>
     private const string Bucket = "named";
 
     /// <summary>
-    /// 直连存储的客户端：不带任何凭据。
+    /// 直连存储的客户端：不带任何凭据
     /// </summary>
     private static readonly HttpClient _http = new();
 

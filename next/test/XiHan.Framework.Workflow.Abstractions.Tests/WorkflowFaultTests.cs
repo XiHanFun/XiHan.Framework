@@ -9,12 +9,12 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 故障存消息键与参数、按当前消息作用域本地化（ADR-0105）。
+/// 故障存消息键与参数、按当前消息作用域本地化（ADR-0105）
 /// </summary>
 public sealed class WorkflowFaultTests
 {
     /// <summary>
-    /// 测试用的解析器。
+    /// 测试用的解析器
     /// </summary>
     private static readonly WorkflowCatalogResolver _messages = new();
 
@@ -86,7 +86,7 @@ public sealed class WorkflowFaultTests
     }
 
     /// <summary>
-    /// 在给定区域的消息作用域里渲染。
+    /// 在给定区域的消息作用域里渲染
     /// </summary>
     private static string In(string locale, Func<string> render)
     {

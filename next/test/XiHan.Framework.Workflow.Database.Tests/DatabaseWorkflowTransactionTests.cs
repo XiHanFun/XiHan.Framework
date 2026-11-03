@@ -19,10 +19,10 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库实现与业务同事务、随租户分库（ADR-0077）。
+/// 数据库实现与业务同事务、随租户分库（ADR-0077）
 /// </summary>
 /// <remarks>
-/// 结果处理器的业务写入与实例完成一起提交或回滚；租户的记录落在它自己的库里，平台的落平台表；轮询器经 Tenant 阶段绑定分片，覆盖租户库里的到期书签。
+/// 结果处理器的业务写入与实例完成一起提交或回滚；租户的记录落在它自己的库里，平台的落平台表；轮询器经 Tenant 阶段绑定分片，覆盖租户库里的到期书签
 /// </remarks>
 public sealed class DatabaseWorkflowTransactionTests
 {
@@ -120,13 +120,13 @@ public sealed class DatabaseWorkflowTransactionTests
     }
 
     /// <summary>
-    /// 授予的行数。
+    /// 授予的行数
     /// </summary>
     private static async ValueTask<int> GrantsAsync(IServiceProvider services)
         => (int)await services.GetRequiredService<IRepository<ApprovalGrant, string>>().CountAsync(EntityQuery.All<ApprovalGrant>(), CancellationToken.None);
 
     /// <summary>
-    /// 以 Baggage 带租户开一次调用执行 <paramref name="action"/>，返回后提交。
+    /// 以 Baggage 带租户开一次调用执行 <paramref name="action"/>，返回后提交
     /// </summary>
     private static async Task<T> AsTenantAsync<T>(TestHost host, string tenantId, Func<IServiceProvider, Task<T>> action)
     {

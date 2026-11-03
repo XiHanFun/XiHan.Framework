@@ -9,30 +9,30 @@ using System.Text.Json.Nodes;
 namespace XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 
 /// <summary>
-/// 仿真 OpenAI 兼容端点。
+/// 仿真 OpenAI 兼容端点
 /// </summary>
 /// <remarks>
-/// <c>/chat/completions</c>（可流式、可先要求调用工具）与 <c>/embeddings</c>；记录全部请求。
+/// <c>/chat/completions</c>（可流式、可先要求调用工具）与 <c>/embeddings</c>；记录全部请求
 /// </remarks>
 internal sealed class FakeOpenAIHandler : HttpMessageHandler
 {
     /// <summary>
-    /// 收到的请求：(路径, 正文)。
+    /// 收到的请求：(路径, 正文)
     /// </summary>
     public List<(string Path, JsonNode Body)> Requests { get; } = [];
 
     /// <summary>
-    /// 最终应答。
+    /// 最终应答
     /// </summary>
     public string Reply { get; set; } = "pong";
 
     /// <summary>
-    /// 请求带工具且还没有工具结果时，先要求调用这个工具：(名字, 参数 JSON)。
+    /// 请求带工具且还没有工具结果时，先要求调用这个工具：(名字, 参数 JSON)
     /// </summary>
     public (string Name, string Arguments)? ToolToCall { get; set; }
 
     /// <summary>
-    /// 没有指定维度时的嵌入维度。
+    /// 没有指定维度时的嵌入维度
     /// </summary>
     public int DefaultDimensions { get; set; } = 8;
 
@@ -76,7 +76,7 @@ internal sealed class FakeOpenAIHandler : HttpMessageHandler
     }
 
     /// <summary>
-    /// 非流式应答。
+    /// 非流式应答
     /// </summary>
     private static string Completion(string? content, (string Name, string Arguments)? call)
     {
@@ -103,7 +103,7 @@ internal sealed class FakeOpenAIHandler : HttpMessageHandler
     }
 
     /// <summary>
-    /// 流式应答：两个增量与结束标记。
+    /// 流式应答：两个增量与结束标记
     /// </summary>
     private static HttpResponseMessage Sse(string content)
     {
@@ -126,7 +126,7 @@ internal sealed class FakeOpenAIHandler : HttpMessageHandler
     }
 
     /// <summary>
-    /// 嵌入应答：每个输入一个确定性的向量。
+    /// 嵌入应答：每个输入一个确定性的向量
     /// </summary>
     private string Embeddings(JsonNode body)
     {
@@ -154,12 +154,12 @@ internal sealed class FakeOpenAIHandler : HttpMessageHandler
     }
 
     /// <summary>
-    /// JSON 应答。
+    /// JSON 应答
     /// </summary>
     private static HttpResponseMessage Json(string json) => new(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
 
     /// <summary>
-    /// 某条请求里的字符串字段。
+    /// 某条请求里的字符串字段
     /// </summary>
     public static string? Text(JsonNode body, string property) => body[property]?.GetValue<string>()?.ToString(CultureInfo.InvariantCulture);
 }

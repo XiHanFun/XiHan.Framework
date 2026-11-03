@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
 
 /// <summary>
-/// 宿主侧的操作：把调用方主体回显出来，供插件回调测试断言身份。
+/// 宿主侧的操作：把调用方主体回显出来，供插件回调测试断言身份
 /// </summary>
 internal sealed class PingOperation : IOperation<PingRequest, PingResponse>
 {

@@ -8,7 +8,7 @@ using XiHan.Framework.Security.Abstractions.Authentication;
 namespace XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 固定方案名、把认证委托给回调的处理器。
+/// 固定方案名、把认证委托给回调的处理器
 /// </summary>
 internal sealed class StaticHandler(string scheme, Func<AuthenticationCredential, Result<Principal>> authenticate) : IAuthenticationHandler
 {

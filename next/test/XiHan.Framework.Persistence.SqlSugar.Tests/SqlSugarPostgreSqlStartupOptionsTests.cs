@@ -7,15 +7,15 @@ using SqlSugar;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 约定给 PostgreSQL 连接串加上字面量规则的启动参数（ADR-0100）。
+/// 约定给 PostgreSQL 连接串加上字面量规则的启动参数（ADR-0100）
 /// </summary>
 /// <remarks>
-/// 启动参数是 <c>-c standard_conforming_strings=on</c>。不连库，只看 <see cref="SqlSugarConventions.Apply"/> 之后的连接串：已有的启动参数保留、已写 on 的不重复加、写了 off 的装配即失败（不静默改成 on），读写分离的从库连接一样处理，别的数据库不动。
+/// 启动参数是 <c>-c standard_conforming_strings=on</c>。不连库，只看 <see cref="SqlSugarConventions.Apply"/> 之后的连接串：已有的启动参数保留、已写 on 的不重复加、写了 off 的装配即失败（不静默改成 on），读写分离的从库连接一样处理，别的数据库不动
 /// </remarks>
 public sealed class SqlSugarPostgreSqlStartupOptionsTests
 {
     /// <summary>
-    /// 测试用的服务器连接串（带口令，核对异常消息不泄漏）。
+    /// 测试用的服务器连接串（带口令，核对异常消息不泄漏）
     /// </summary>
     private const string Server = "Host=127.0.0.1;Port=5432;Database=app;Username=app;Password=Secret_Pwd_1";
 

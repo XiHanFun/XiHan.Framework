@@ -8,7 +8,7 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 命名门禁：包 ID 文法、命名空间与包 ID 一致、类型名不带前缀、术语表自身合法。
+/// 命名门禁：包 ID 文法、命名空间与包 ID 一致、类型名不带前缀、术语表自身合法
 /// </summary>
 public sealed partial class NamingTests
 {
@@ -26,7 +26,7 @@ public sealed partial class NamingTests
     {
         var failures = new List<string>();
 
-        // 术语表每行的能力 ID 前缀、配置节与错误码域都必须能从领域词机械推出；"—" 表示该领域没有对应形态。
+        // 术语表每行的能力 ID 前缀、配置节与错误码域都必须能从领域词机械推出；"—" 表示该领域没有对应形态
         foreach (var entry in Vocabulary.Entries)
         {
             if (!PascalWord().IsMatch(entry.Word))
@@ -101,7 +101,7 @@ public sealed partial class NamingTests
         {
             foreach (var file in Workspace.SourceFiles(project.Directory).Where(static f => !f.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase)))
             {
-                // 目录即子命名空间：包根目录的文件在包命名空间，一级子目录的文件在同名子命名空间，不允许更深的目录。
+                // 目录即子命名空间：包根目录的文件在包命名空间，一级子目录的文件在同名子命名空间，不允许更深的目录
                 var relative = Path.GetRelativePath(project.Directory, file).Replace('\\', '/');
                 var segments = relative.Split('/');
                 var expected = segments.Length switch
@@ -141,7 +141,7 @@ public sealed partial class NamingTests
             {
                 foreach (Match match in TopLevelNamespaceDeclaration().Matches(File.ReadAllText(file)))
                 {
-                    // 命名空间要么等于包 ID，要么只多一层 PascalCase 子段。
+                    // 命名空间要么等于包 ID，要么只多一层 PascalCase 子段
                     var ns = match.Groups["ns"].Value;
                     var ok = string.Equals(ns, project.PackageId, StringComparison.Ordinal)
                         || (ns.StartsWith(project.PackageId + ".", StringComparison.Ordinal)
@@ -178,10 +178,10 @@ public sealed partial class NamingTests
     }
 
     /// <summary>
-    /// 加载全部正式包的程序集。
+    /// 加载全部正式包的程序集
     /// </summary>
     /// <remarks>
-    /// 分析器与生成器面向编译器运行，不加载。
+    /// 分析器与生成器面向编译器运行，不加载
     /// </remarks>
     internal static IEnumerable<Assembly> LoadSourceAssemblies()
     {
@@ -197,25 +197,25 @@ public sealed partial class NamingTests
     }
 
     /// <summary>
-    /// 错误码登记表一行的正则。
+    /// 错误码登记表一行的正则
     /// </summary>
     /// <remarks>
-    /// 行首单元格是反引号括起的错误码，捕获错误码本身。
+    /// 行首单元格是反引号括起的错误码，捕获错误码本身
     /// </remarks>
     [GeneratedRegex(@"^\|\s*`(?<code>[A-Z]+_[A-Z]+_[0-9]{3})`\s*\|")]
     private static partial Regex RegisteredErrorCode();
 
     /// <summary>
-    /// PascalCase 标识符的正则。
+    /// PascalCase 标识符的正则
     /// </summary>
     [GeneratedRegex("^[A-Z][A-Za-z0-9]*$")]
     private static partial Regex PascalWord();
 
     /// <summary>
-    /// 匹配列首的文件级或块级 <c>namespace</c> 声明并捕获名称。
+    /// 匹配列首的文件级或块级 <c>namespace</c> 声明并捕获名称
     /// </summary>
     /// <remarks>
-    /// 测试里源码片段中缩进的声明不算。
+    /// 测试里源码片段中缩进的声明不算
     /// </remarks>
     [GeneratedRegex(@"^namespace\s+(?<ns>[A-Za-z0-9_.]+)\s*[;{]", RegexOptions.Multiline)]
     private static partial Regex TopLevelNamespaceDeclaration();

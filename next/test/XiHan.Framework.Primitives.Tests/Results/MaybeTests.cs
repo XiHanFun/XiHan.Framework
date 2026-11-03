@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Primitives.Tests.Results;
 
 /// <summary>
-/// <see cref="Maybe{T}"/> 的行为：有值与无值的构造、<c>default</c> 即无值、组合方法对无值的传播。
+/// <see cref="Maybe{T}"/> 的行为：有值与无值的构造、<c>default</c> 即无值、组合方法对无值的传播
 /// </summary>
 public sealed class MaybeTests
 {

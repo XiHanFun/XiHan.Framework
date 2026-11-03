@@ -12,15 +12,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.Database.Tests;
 
 /// <summary>
-/// 测试宿主的装配与种数据。
+/// 测试宿主的装配与种数据
 /// </summary>
 /// <remarks>
-/// 内存持久化 + 内存本地化 + 数据库多租户；写入经完整管道（Transaction 阶段提供工作单元）。
+/// 内存持久化 + 内存本地化 + 数据库多租户；写入经完整管道（Transaction 阶段提供工作单元）
 /// </remarks>
 internal static class TenantHosts
 {
     /// <summary>
-    /// 启动装配了内存持久化、内存本地化与数据库多租户的宿主。
+    /// 启动装配了内存持久化、内存本地化与数据库多租户的宿主
     /// </summary>
     public static Task<TestHost> StartAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<IServiceCollection>? services = null)
         => TestHost.StartAsync(
@@ -29,10 +29,10 @@ internal static class TenantHosts
             services);
 
     /// <summary>
-    /// 经 <see cref="TenantRecordStore.UpsertAsync"/> 在一次调用里种入租户。
+    /// 经 <see cref="TenantRecordStore.UpsertAsync"/> 在一次调用里种入租户
     /// </summary>
     /// <remarks>
-    /// 任一项失败即抛出。
+    /// 任一项失败即抛出
     /// </remarks>
     public static async Task SeedAsync(TestHost host, IReadOnlyList<TenantInfo> tenants)
     {
@@ -48,7 +48,7 @@ internal static class TenantHosts
     }
 
     /// <summary>
-    /// 绕过 <see cref="TenantRecordStore"/> 直接经仓储改一行（不失效缓存），用来验证缓存命中。
+    /// 绕过 <see cref="TenantRecordStore"/> 直接经仓储改一行（不失效缓存），用来验证缓存命中
     /// </summary>
     public static async Task EditRowAsync(TestHost host, string tenantId, Action<TenantRecord> edit)
     {
@@ -63,7 +63,7 @@ internal static class TenantHosts
     }
 
     /// <summary>
-    /// 绕过 <see cref="TenantRecordStore"/> 直接经仓储加一行（不失效缓存）。
+    /// 绕过 <see cref="TenantRecordStore"/> 直接经仓储加一行（不失效缓存）
     /// </summary>
     public static async Task AddRowAsync(TestHost host, TenantRecord row)
     {

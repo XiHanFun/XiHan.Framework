@@ -10,10 +10,10 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 审批通过即写一行 <see cref="ApprovalGrant"/> 的结果处理器。
+/// 审批通过即写一行 <see cref="ApprovalGrant"/> 的结果处理器
 /// </summary>
 /// <remarks>
-/// 经结束节点所在的作用域取仓储：与引擎的写入同一个工作单元。
+/// 经结束节点所在的作用域取仓储：与引擎的写入同一个工作单元
 /// </remarks>
 public sealed class GrantingOutcomeHandler : IWorkflowOutcomeHandler
 {

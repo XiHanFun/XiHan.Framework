@@ -22,15 +22,15 @@ using XiHan.Framework.Protocols.Mcp.Transports;
 namespace XiHan.Framework.Profiles.Full.Tests;
 
 /// <summary>
-/// Full 组合。
+/// Full 组合
 /// </summary>
 /// <remarks>
-/// 零外部基础设施下每个能力都选中默认实现，管道阶段齐全，四种协议的端点都能映射并应答。
+/// 零外部基础设施下每个能力都选中默认实现，管道阶段齐全，四种协议的端点都能映射并应答
 /// </remarks>
 public sealed class FullProfileTests
 {
     /// <summary>
-    /// 每个清单在 Full 组合里应被选中的能力。
+    /// 每个清单在 Full 组合里应被选中的能力
     /// </summary>
     private static readonly Dictionary<string, string[]> _expected = new(StringComparer.Ordinal)
     {

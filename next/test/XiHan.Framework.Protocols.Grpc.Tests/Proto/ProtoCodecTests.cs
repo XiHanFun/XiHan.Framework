@@ -13,15 +13,15 @@ using XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Grpc.Tests.Proto;
 
 /// <summary>
-/// JSON Schema → protobuf 描述、编码与解码、<c>.proto</c> 生成。
+/// JSON Schema → protobuf 描述、编码与解码、<c>.proto</c> 生成
 /// </summary>
 public sealed class ProtoCodecTests
 {
     /// <summary>
-    /// 覆盖全部映射的 Schema。
+    /// 覆盖全部映射的 Schema
     /// </summary>
     /// <remarks>
-    /// 标量与格式、可空、字节、枚举、数组、嵌套与可空嵌套、映射、任意 JSON、snake_case 的 JSON 名。
+    /// 标量与格式、可空、字节、枚举、数组、嵌套与可空嵌套、映射、任意 JSON、snake_case 的 JSON 名
     /// </remarks>
     private const string RichSchema = """
         {"$schema":"https://json-schema.org/draft/2020-12/schema","title":"Rich","type":"object","properties":{
@@ -37,12 +37,12 @@ public sealed class ProtoCodecTests
         """;
 
     /// <summary>
-    /// 一个覆盖全部字段的值。
+    /// 一个覆盖全部字段的值
     /// </summary>
     private const string RichValue = """{"s":"hi","ns":null,"b":true,"i":-5,"l":1234567890123,"f":1.5,"d":2.25,"m":12.50,"big":123456789012345678901234567890,"bytes":"AQID","createdAt":"2026-10-23T00:00:00Z","e":"B","ints":[1,2,300],"names":["x"],"child":{"sku":"a","qty":1},"maybe":null,"children":[{"sku":"b","qty":2}],"prices":{"a":1.5},"byName":{"k":{"sku":"c","qty":3}},"any":{"x":[1,2]},"order_id":"o-1"}""";
 
     /// <summary>
-    /// 编码一个 JSON 文本。
+    /// 编码一个 JSON 文本
     /// </summary>
     private static byte[] Encode(ProtoMessage message, string json)
     {
@@ -53,7 +53,7 @@ public sealed class ProtoCodecTests
     }
 
     /// <summary>
-    /// 解码为 JSON 文本。
+    /// 解码为 JSON 文本
     /// </summary>
     private static string Decode(ProtoMessage message, byte[] bytes)
     {
@@ -248,7 +248,7 @@ public sealed class ProtoCodecTests
     }
 
     /// <summary>
-    /// 一个只有契约与 Schema 的描述，供 <c>.proto</c> 生成测试。
+    /// 一个只有契约与 Schema 的描述，供 <c>.proto</c> 生成测试
     /// </summary>
     private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Descriptor(OperationContract contract)
         => new OperationDescriptor<OrdersOperation, OrderRequest, OrderReply>(contract, "xihan.test.orders", OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, OrdersFeature.OrderSchema);

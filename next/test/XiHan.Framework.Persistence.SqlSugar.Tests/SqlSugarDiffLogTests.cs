@@ -13,30 +13,30 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 差异日志。
+/// 差异日志
 /// </summary>
 /// <remarks>
-/// <see cref="SqlSugarPersistenceFeature.DiffLog"/> 开启的实体，仓储的插入、更新、软删除、物理删除与批量方法（含分表实体）都经 SqlSugar 差异日志，回调拿到操作类型、主键与前后值，业务数据是 <see cref="SqlSugarDiffLogData"/>，并在调用方的执行流里同步触发；没开启的实体不触发。SQLite 必跑，PostgreSQL 按环境变量跑。
+/// <see cref="SqlSugarPersistenceFeature.DiffLog"/> 开启的实体，仓储的插入、更新、软删除、物理删除与批量方法（含分表实体）都经 SqlSugar 差异日志，回调拿到操作类型、主键与前后值，业务数据是 <see cref="SqlSugarDiffLogData"/>，并在调用方的执行流里同步触发；没开启的实体不触发。SQLite 必跑，PostgreSQL 按环境变量跑
 /// </remarks>
 public sealed class SqlSugarDiffLogTests : IDisposable
 {
     /// <summary>
-    /// 2026 年 1 月 10 日（UTC）。
+    /// 2026 年 1 月 10 日（UTC）
     /// </summary>
     private static readonly DateTime _january = new(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc);
 
     /// <summary>
-    /// 2026 年 2 月 10 日（UTC）。
+    /// 2026 年 2 月 10 日（UTC）
     /// </summary>
     private static readonly DateTime _february = new(2026, 2, 10, 0, 0, 0, DateTimeKind.Utc);
 
     /// <summary>
-    /// 本测试建出的临时数据库，结束时删除。
+    /// 本测试建出的临时数据库，结束时删除
     /// </summary>
     private readonly List<IDisposable> _databases = [];
 
     /// <summary>
-    /// 删除临时数据库。
+    /// 删除临时数据库
     /// </summary>
     public void Dispose()
     {
@@ -168,10 +168,10 @@ public sealed class SqlSugarDiffLogTests : IDisposable
     }
 
     /// <summary>
-    /// 启动宿主。
+    /// 启动宿主
     /// </summary>
     /// <remarks>
-    /// 给定数据库（PostgreSQL 没有配置时跳过）、差异日志回调接到 <paramref name="sink"/>、按 <paramref name="diffLog"/> 开启的实体，以及订单、条目与分表三种实体。
+    /// 给定数据库（PostgreSQL 没有配置时跳过）、差异日志回调接到 <paramref name="sink"/>、按 <paramref name="diffLog"/> 开启的实体，以及订单、条目与分表三种实体
     /// </remarks>
     private Task<TestHost> StartHostAsync(DbType dbType, DiffLogSink sink, Func<Type, bool> diffLog)
     {
@@ -212,22 +212,22 @@ public sealed class SqlSugarDiffLogTests : IDisposable
     }
 
     /// <summary>
-    /// 订单仓储（软删除）。
+    /// 订单仓储（软删除）
     /// </summary>
     private static IRepository<ConformanceOrder, Guid> Orders(InvocationContext context) => context.Services.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
 
     /// <summary>
-    /// 条目仓储（物理删除）。
+    /// 条目仓储（物理删除）
     /// </summary>
     private static IRepository<ConformanceItem, int> Items(InvocationContext context) => context.Services.GetRequiredService<IRepository<ConformanceItem, int>>();
 
     /// <summary>
-    /// 分表实体仓储。
+    /// 分表实体仓储
     /// </summary>
     private static IRepository<SplitTableRecord, Guid> Splits(InvocationContext context) => context.Services.GetRequiredService<IRepository<SplitTableRecord, Guid>>();
 
     /// <summary>
-    /// 第一行里名为 <paramref name="name"/> 的列（不区分大小写）。
+    /// 第一行里名为 <paramref name="name"/> 的列（不区分大小写）
     /// </summary>
     private static DiffLogColumnInfo Column(List<DiffLogTableInfo>? rows, string name)
     {
@@ -236,12 +236,12 @@ public sealed class SqlSugarDiffLogTests : IDisposable
     }
 
     /// <summary>
-    /// 第一行里某列的文本值。
+    /// 第一行里某列的文本值
     /// </summary>
     private static string? Text(List<DiffLogTableInfo>? rows, string name) => Column(rows, name).Value?.ToString();
 
     /// <summary>
-    /// 每一行里某列的文本值，按字典序。
+    /// 每一行里某列的文本值，按字典序
     /// </summary>
     private static List<string?> Texts(List<DiffLogTableInfo>? rows, string name)
     {
@@ -250,12 +250,12 @@ public sealed class SqlSugarDiffLogTests : IDisposable
     }
 
     /// <summary>
-    /// 逐项结果折叠成一个：第一个失败即整体失败。
+    /// 逐项结果折叠成一个：第一个失败即整体失败
     /// </summary>
     private static Result Fold(IReadOnlyList<Result> results) => results.FirstOrDefault(static r => r.IsFailure, Result.Success());
 
     /// <summary>
-    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果。
+    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
     private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)));

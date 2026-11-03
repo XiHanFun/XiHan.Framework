@@ -17,10 +17,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
 /// <summary>
-/// 宿主导入 <c>xihan.invoke</c> / <c>xihan.publish</c> 的权限（<c>spec/plugin/wasm.md</c> §4）。
+/// 宿主导入 <c>xihan.invoke</c> / <c>xihan.publish</c> 的权限（<c>spec/plugin/wasm.md</c> §4）
 /// </summary>
 /// <remarks>
-/// 以现场生成的 WAT 插件驱动：清单声明的权限与宿主授予分别可控。
+/// 以现场生成的 WAT 插件驱动：清单声明的权限与宿主授予分别可控
 /// </remarks>
 public sealed class WasmCallbackTests
 {
@@ -76,7 +76,7 @@ public sealed class WasmCallbackTests
     [Fact]
     public async Task Invoke_IsBoundByTheOuterDeadline_WhenTheRequestCarriesNone()
     {
-        // 插件经 xihan.invoke 调用一直等待的宿主操作，请求里没有截止时间：新调用要随外层调用在截止时间被取消（wasm.md §4）。
+        // 插件经 xihan.invoke 调用一直等待的宿主操作，请求里没有截止时间：新调用要随外层调用在截止时间被取消（wasm.md §4）
         // 截止时间按注入的时钟判定，宿主操作开始等待之后才推进时钟，不受墙钟快慢影响；回调上下文的截止时间必须就是外层的那一个
         var clock = new FakeTimeProvider(_clockStart);
         var probe = new CancellationProbe();
@@ -103,7 +103,7 @@ public sealed class WasmCallbackTests
     [InlineData(true, KernelErrors.DeadlineExceeded)]
     public async Task Invoke_CancelledByTheCallerWhileTheCallbackWaits_IsATimeoutOnlyOnceTheDeadlineIsReached(bool deadlineReached, string expected)
     {
-        // 调用方在插件的回调等待期间取消：截止时间没到是取消；截止时间先到、调用方随后也取消，仍是超时（RFC-0004，ADR-0092）。
+        // 调用方在插件的回调等待期间取消：截止时间没到是取消；截止时间先到、调用方随后也取消，仍是超时（RFC-0004，ADR-0092）
         // 运行时原样返回插件写下的结果、不按时钟改写，回调交给插件的结果与外层由截止时间中间件按截止令牌归因
         var clock = new FakeTimeProvider(_clockStart);
         var probe = new CancellationProbe();
@@ -156,23 +156,23 @@ public sealed class WasmCallbackTests
     }
 
     /// <summary>
-    /// 注入时钟的起点：远离墙钟，宿主若有哪处仍按墙钟计时，截止时间的判定就对不上。
+    /// 注入时钟的起点：远离墙钟，宿主若有哪处仍按墙钟计时，截止时间的判定就对不上
     /// </summary>
     private static readonly DateTimeOffset _clockStart = new(2030, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 截止时间距调用开始的时长。
+    /// 截止时间距调用开始的时长
     /// </summary>
     /// <remarks>
-    /// 短于调用时限（缺省 30 秒），回调受外层截止时间约束而不是受调用时限约束。
+    /// 短于调用时限（缺省 30 秒），回调受外层截止时间约束而不是受调用时限约束
     /// </remarks>
     private static readonly TimeSpan _deadlineAfter = TimeSpan.FromSeconds(20);
 
     /// <summary>
-    /// 等到回调到达宿主、开始等待。
+    /// 等到回调到达宿主、开始等待
     /// </summary>
     /// <remarks>
-    /// 调用先结束说明回调没有到达，带上调用结果失败。
+    /// 调用先结束说明回调没有到达，带上调用结果失败
     /// </remarks>
     private static async Task WaitUntilEnteredAsync(CancellationProbe probe, Task<OperationResponse> call)
     {
@@ -184,7 +184,7 @@ public sealed class WasmCallbackTests
     }
 
     /// <summary>
-    /// 只装配 Wasm 插件特性与宿主侧 pings.create 的宿主。
+    /// 只装配 Wasm 插件特性与宿主侧 pings.create 的宿主
     /// </summary>
     private static Task<TestHost> StartAsync(WatPlugin plugin, IReadOnlyList<string> grants, Action<FeatureContext>? configure = null, Action<IServiceCollection>? services = null)
     {
@@ -208,7 +208,7 @@ public sealed class WasmCallbackTests
     }
 
     /// <summary>
-    /// 调用插件唯一的操作。
+    /// 调用插件唯一的操作
     /// </summary>
     private static async Task<OperationResponse> CallAsync(TestHost host, DateTimeOffset? deadline = null)
     {

@@ -10,10 +10,10 @@ using XiHan.Framework.Kernel.Hosting;
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 
 /// <summary>
-/// 包与特性清单的索引与代码一致。
+/// 包与特性清单的索引与代码一致
 /// </summary>
 /// <remarks>
-/// 设环境变量 <see cref="CatalogBuilder.UpdateVariable"/>=1 运行时改写 <c>catalog.json</c>（<c>next/scripts/Update-CliKnowledge.ps1</c>）。
+/// 设环境变量 <see cref="CatalogBuilder.UpdateVariable"/>=1 运行时改写 <c>catalog.json</c>（<c>next/scripts/Update-CliKnowledge.ps1</c>）
 /// </remarks>
 public sealed class KnowledgeCatalogTests
 {

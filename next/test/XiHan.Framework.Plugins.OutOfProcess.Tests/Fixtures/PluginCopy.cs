@@ -4,15 +4,15 @@
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 
 /// <summary>
-/// 示例插件输出目录的一份临时副本。
+/// 示例插件输出目录的一份临时副本
 /// </summary>
 /// <remarks>
-/// 用例在副本上改清单或拿掉文件，不碰示例的构建产物；释放时删除副本（应在宿主停止之后）。EchoPlugin 从自己所在目录读清单，改副本里的清单等于同时改了宿主与插件两边看到的清单。
+/// 用例在副本上改清单或拿掉文件，不碰示例的构建产物；释放时删除副本（应在宿主停止之后）。EchoPlugin 从自己所在目录读清单，改副本里的清单等于同时改了宿主与插件两边看到的清单
 /// </remarks>
 internal sealed class PluginCopy : IDisposable
 {
     /// <summary>
-    /// 复制示例插件的输出目录。
+    /// 复制示例插件的输出目录
     /// </summary>
     public PluginCopy(string source)
     {
@@ -21,17 +21,17 @@ internal sealed class PluginCopy : IDisposable
     }
 
     /// <summary>
-    /// 副本目录。
+    /// 副本目录
     /// </summary>
     public string Directory { get; }
 
     /// <summary>
-    /// 副本里的清单路径。
+    /// 副本里的清单路径
     /// </summary>
     public string ManifestPath => Path.Combine(Directory, "xihan.manifest.json");
 
     /// <summary>
-    /// 改写副本里的清单文本。
+    /// 改写副本里的清单文本
     /// </summary>
     public void EditManifest(Func<string, string> edit)
     {
@@ -60,7 +60,7 @@ internal sealed class PluginCopy : IDisposable
     }
 
     /// <summary>
-    /// 递归复制目录（Unix 上 File.Copy 保留可执行位）。
+    /// 递归复制目录（Unix 上 File.Copy 保留可执行位）
     /// </summary>
     private static void CopyTree(string source, string target)
     {

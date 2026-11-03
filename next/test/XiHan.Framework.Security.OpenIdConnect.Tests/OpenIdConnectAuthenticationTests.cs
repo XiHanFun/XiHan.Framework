@@ -21,15 +21,15 @@ namespace XiHan.Framework.Security.OpenIdConnect.Tests;
 public sealed class OpenIdConnectAuthenticationTests
 {
     /// <summary>
-    /// 严格选项：校验受众，时钟偏移为零。
+    /// 严格选项：校验受众，时钟偏移为零
     /// </summary>
     private static readonly OpenIdConnectOptions _options = new() { Authority = FakeIssuer.Authority, Audience = FakeIssuer.Audience, ClockSkew = TimeSpan.Zero };
 
     /// <summary>
-    /// 用桩签发者组装处理器。
+    /// 用桩签发者组装处理器
     /// </summary>
     /// <remarks>
-    /// 时钟可控，缓存实例一并返回供断言。
+    /// 时钟可控，缓存实例一并返回供断言
     /// </remarks>
     private static (OpenIdConnectAuthenticationHandler Handler, OpenIdConnectMetadataCache Cache, FakeTimeProvider Clock) Create(FakeIssuer issuer, OpenIdConnectOptions? options = null)
     {
@@ -39,7 +39,7 @@ public sealed class OpenIdConnectAuthenticationTests
     }
 
     /// <summary>
-    /// 认证 Bearer 令牌。
+    /// 认证 Bearer 令牌
     /// </summary>
     private static async Task<Result<Principal>> AuthenticateAsync(OpenIdConnectAuthenticationHandler handler, string token)
         => await handler.AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create(), CancellationToken.None);

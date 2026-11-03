@@ -17,30 +17,30 @@ using ErrorCode = Confluent.Kafka.ErrorCode;
 namespace XiHan.Framework.Messaging.Kafka.Tests;
 
 /// <summary>
-/// 投递没有完成时消费循环不退出（RFC-0009「流」第 2 条，ADR-0064）。
+/// 投递没有完成时消费循环不退出（RFC-0009「流」第 2 条，ADR-0064）
 /// </summary>
 /// <remarks>
-/// 打桩的生产者与消费者、可推进的时钟：死信发布没有落盘或抛出时不提交、回退到这条消息，等 <see cref="KafkaMessagingOptions.RedeliveryDelay"/> 后重新投递，恢复后继续消费下一条；消费者本身出错也不退出；停止信号到来照常退出。不需要 Kafka。
+/// 打桩的生产者与消费者、可推进的时钟：死信发布没有落盘或抛出时不提交、回退到这条消息，等 <see cref="KafkaMessagingOptions.RedeliveryDelay"/> 后重新投递，恢复后继续消费下一条；消费者本身出错也不退出；停止信号到来照常退出。不需要 Kafka
 /// </remarks>
 public sealed class KafkaRedeliveryTests
 {
     /// <summary>
-    /// 测试主题。
+    /// 测试主题
     /// </summary>
     private const string Topic = "orders";
 
     /// <summary>
-    /// 主题映射后的死信主题。
+    /// 主题映射后的死信主题
     /// </summary>
     private const string DeadLetterTopic = "xihan.orders.dlq";
 
     /// <summary>
-    /// 重新投递前的等待。
+    /// 重新投递前的等待
     /// </summary>
     private static readonly TimeSpan _delay = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// 等待条件成立的上限。
+    /// 等待条件成立的上限
     /// </summary>
     private static readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
 
@@ -120,7 +120,7 @@ public sealed class KafkaRedeliveryTests
     }
 
     /// <summary>
-    /// 用打桩的生产者与消费者创建代理：最多投递 2 次，重新投递前等 5 秒。
+    /// 用打桩的生产者与消费者创建代理：最多投递 2 次，重新投递前等 5 秒
     /// </summary>
     private static KafkaMessageBroker Broker(TestHost host, TimeProvider clock, IProducer<string?, byte[]> producer, IConsumer<string?, byte[]> consumer)
         => new(
@@ -134,7 +134,7 @@ public sealed class KafkaRedeliveryTests
             _ => consumer);
 
     /// <summary>
-    /// 记录事件 ID 的派发：<c>poison</c> 一律失败，其余成功。
+    /// 记录事件 ID 的派发：<c>poison</c> 一律失败，其余成功
     /// </summary>
     private static MessageDispatch Dispatch(ConcurrentQueue<string> dispatched) => (delivery, _) =>
     {
@@ -143,7 +143,7 @@ public sealed class KafkaRedeliveryTests
     };
 
     /// <summary>
-    /// 编码一个测试信封。
+    /// 编码一个测试信封
     /// </summary>
     private static byte[] Encode(string id) => CloudEventsFormat.Encode(new MessageEnvelope { Id = id, Source = "/tests", Type = "orders.placed" });
 }

@@ -9,15 +9,15 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="CacheStoreDistributedCache"/>。
+/// <see cref="CacheStoreDistributedCache"/>
 /// </summary>
 /// <remarks>
-/// 读写删与续期落到存储、键文法、过期选项的换算与登记扩展的幂等。
+/// 读写删与续期落到存储、键文法、过期选项的换算与登记扩展的幂等
 /// </remarks>
 public sealed class CacheStoreDistributedCacheTests
 {
     /// <summary>
-    /// 固定的"现在"。
+    /// 固定的"现在"
     /// </summary>
     private static readonly DateTimeOffset _now = new(2026, 10, 26, 12, 0, 0, TimeSpan.Zero);
 

@@ -11,15 +11,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 本地化约定（RFC-0010）。
+/// 本地化约定（RFC-0010）
 /// </summary>
 /// <remarks>
-/// 带语言文件的包每种内置区域一个文件且键集一致、占位符与 <c>en-US</c> 一致、键的领域来自术语表、文件以约定逻辑名嵌入；<c>&lt;领域&gt;Messages</c> 常量与 <c>en-US.json</c> 一一对应；正式包里的 <see cref="Error"/> 调用点只用消息键常量。
+/// 带语言文件的包每种内置区域一个文件且键集一致、占位符与 <c>en-US</c> 一致、键的领域来自术语表、文件以约定逻辑名嵌入；<c>&lt;领域&gt;Messages</c> 常量与 <c>en-US.json</c> 一一对应；正式包里的 <see cref="Error"/> 调用点只用消息键常量
 /// </remarks>
 public sealed partial class LocalizationTests
 {
     /// <summary>
-    /// 允许用 <c>Error.Literal</c> 或自由文本的文件：线上还原与异常转换。
+    /// 允许用 <c>Error.Literal</c> 或自由文本的文件：线上还原与异常转换
     /// </summary>
     private static readonly string[] _literalAllowed =
     [
@@ -33,7 +33,7 @@ public sealed partial class LocalizationTests
     ];
 
     /// <summary>
-    /// 带语言文件的正式包：包 ID → 区域 → 键 → 模板。
+    /// 带语言文件的正式包：包 ID → 区域 → 键 → 模板
     /// </summary>
     private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>> Packages { get; } = LoadPackages();
 
@@ -217,7 +217,7 @@ public sealed partial class LocalizationTests
     }
 
     /// <summary>
-    /// 扫描每个正式包目录下的 <c>Localization/*.json</c>，按包 → 区域 → 键 → 模板装载。
+    /// 扫描每个正式包目录下的 <c>Localization/*.json</c>，按包 → 区域 → 键 → 模板装载
     /// </summary>
     private static Dictionary<string, IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>> LoadPackages()
     {
@@ -245,7 +245,7 @@ public sealed partial class LocalizationTests
     }
 
     /// <summary>
-    /// 读取从 <paramref name="start"/>（左括号之后）到配对右括号之间的文本，跳过字符串字面量。
+    /// 读取从 <paramref name="start"/>（左括号之后）到配对右括号之间的文本，跳过字符串字面量
     /// </summary>
     private static string ReadBalanced(string text, int start)
     {
@@ -285,7 +285,7 @@ public sealed partial class LocalizationTests
     }
 
     /// <summary>
-    /// 按顶层逗号切分参数列表，忽略字符串、括号与花括号里的逗号。
+    /// 按顶层逗号切分参数列表，忽略字符串、括号与花括号里的逗号
     /// </summary>
     private static List<string> SplitArguments(string arguments)
     {
@@ -342,13 +342,13 @@ public sealed partial class LocalizationTests
     }
 
     /// <summary>
-    /// 错误构造调用：工厂方法、<c>Literal</c> 或构造函数。
+    /// 错误构造调用：工厂方法、<c>Literal</c> 或构造函数
     /// </summary>
     [GeneratedRegex(@"(?:Error\.(?:Validation|NotFound|Conflict|Denied|Unavailable|Unexpected|Literal)|new Error)\(")]
     private static partial Regex ErrorCall();
 
     /// <summary>
-    /// 消息键常量引用：<c>&lt;领域&gt;Messages.&lt;名称&gt;</c>。
+    /// 消息键常量引用：<c>&lt;领域&gt;Messages.&lt;名称&gt;</c>
     /// </summary>
     [GeneratedRegex(@"^\w+Messages\.\w+$")]
     private static partial Regex MessageConstant();

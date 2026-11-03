@@ -12,10 +12,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Operations;
 
 /// <summary>
-/// 操作响应过滤器。
+/// 操作响应过滤器
 /// </summary>
 /// <remarks>
-/// XGI 与类型化、管道内外四个入口都过滤；按登记顺序串联、作用域服务可用；失败的调用不过滤；返回类型不对是意外错误（ADR-0061）。
+/// XGI 与类型化、管道内外四个入口都过滤；按登记顺序串联、作用域服务可用；失败的调用不过滤；返回类型不对是意外错误（ADR-0061）
 /// </remarks>
 public sealed class OperationResponseFilterTests
 {
@@ -94,7 +94,7 @@ public sealed class OperationResponseFilterTests
     }
 
     /// <summary>
-    /// 启动带回显操作与给定服务的应用。
+    /// 启动带回显操作与给定服务的应用
     /// </summary>
     private static async Task<(ServiceProvider Provider, App App)> StartAsync(Action<IServiceCollection> services)
     {
@@ -108,18 +108,18 @@ public sealed class OperationResponseFilterTests
     }
 
     /// <summary>
-    /// 作用域内被过滤的操作。
+    /// 作用域内被过滤的操作
     /// </summary>
     private sealed class FilterLog
     {
         /// <summary>
-        /// 依次过滤过的操作 ID。
+        /// 依次过滤过的操作 ID
         /// </summary>
         public List<string> Seen { get; } = [];
     }
 
     /// <summary>
-    /// 作用域过滤器：转大写，记下操作。
+    /// 作用域过滤器：转大写，记下操作
     /// </summary>
     private sealed class UpperFilter(FilterLog log) : IOperationResponseFilter
     {
@@ -133,7 +133,7 @@ public sealed class OperationResponseFilterTests
     }
 
     /// <summary>
-    /// 单例过滤器：在前一个的结果后加感叹号。
+    /// 单例过滤器：在前一个的结果后加感叹号
     /// </summary>
     private sealed class ExclaimFilter : IOperationResponseFilter
     {
@@ -143,7 +143,7 @@ public sealed class OperationResponseFilterTests
     }
 
     /// <summary>
-    /// 返回别的类型的过滤器。
+    /// 返回别的类型的过滤器
     /// </summary>
     private sealed class WrongTypeFilter : IOperationResponseFilter
     {

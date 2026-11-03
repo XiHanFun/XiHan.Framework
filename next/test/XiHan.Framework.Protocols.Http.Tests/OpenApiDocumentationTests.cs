@@ -21,23 +21,23 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// OpenAPI 文档的文案、标签、分组与字段说明（ADR-0052）。
+/// OpenAPI 文档的文案、标签、分组与字段说明（ADR-0052）
 /// </summary>
 /// <remarks>
 /// 操作的标题与说明分开取，授权要求按区域附在说明末尾；顶层标签带显示名；分组出各自的文档与全量文档的 <c>x-tagGroups</c>；
-/// Schema 里 XML 注释折进的说明进参数、请求体与响应，可按区域替换。
+/// Schema 里 XML 注释折进的说明进参数、请求体与响应，可按区域替换
 /// </remarks>
 public sealed class OpenApiDocumentationTests
 {
     /// <summary>
-    /// 带说明的请求与响应 Schema（源生成器从 XML 注释折进的形态）。
+    /// 带说明的请求与响应 Schema（源生成器从 XML 注释折进的形态）
     /// </summary>
     private static readonly OperationSchema _schema = new(
         """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"OrderRequest","description":"订单查询。","type":"object","properties":{"id":{"description":"订单 ID。","type":["string","null"]},"name":{"description":"名称。","type":["string","null"]},"page":{"type":"integer","format":"int32"},"line":{"description":"行。","$ref":"#/$defs/OrderLine"}},"required":["page"],"$defs":{"OrderLine":{"description":"订单行。","type":"object","properties":{"skuCode":{"description":"货号。","type":"string"}},"required":["skuCode"]}}}""",
         """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"OrderReply","description":"订单结果。","type":"object","properties":{"operation":{"type":"string"}},"required":["operation"]}""");
 
     /// <summary>
-    /// 文档区域（简体中文）的目录：框架的统一文案、操作、标签、分组与 Schema 覆盖。
+    /// 文档区域（简体中文）的目录：框架的统一文案、操作、标签、分组与 Schema 覆盖
     /// </summary>
     private static readonly Dictionary<string, string> _catalog = new(StringComparer.Ordinal)
     {
@@ -63,10 +63,10 @@ public sealed class OpenApiDocumentationTests
     };
 
     /// <summary>
-    /// 分组。
+    /// 分组
     /// </summary>
     /// <remarks>
-    /// 账单在前（排序 5，额外带 exports 标签让普通端点入组），订单在后；notes 不属于任何组。
+    /// 账单在前（排序 5，额外带 exports 标签让普通端点入组），订单在后；notes 不属于任何组
     /// </remarks>
     private static readonly OpenApiGroup[] _groups = [new("orders", 10, ["xihan.test.orders"]), new("billing", 5, ["xihan.test.billing"], ["exports"])];
 
@@ -220,15 +220,15 @@ public sealed class OpenApiDocumentationTests
     }
 
     /// <summary>
-    /// 生成文档（全量或某一组）。
+    /// 生成文档（全量或某一组）
     /// </summary>
     private static JsonDocument Build(string? group = null) => JsonDocument.Parse(OpenApiDocumentBuilder.Build(Source() with { Group = group }));
 
     /// <summary>
-    /// 文档输入。
+    /// 文档输入
     /// </summary>
     /// <remarks>
-    /// 五个操作分属三个特性、一个带 exports 标签的普通端点、权限注册表与简体中文目录。
+    /// 五个操作分属三个特性、一个带 exports 标签的普通端点、权限注册表与简体中文目录
     /// </remarks>
     private static OpenApiDocumentSource Source()
     {
@@ -259,7 +259,7 @@ public sealed class OpenApiDocumentationTests
     }
 
     /// <summary>
-    /// 以带说明的 Schema 描述一个契约。
+    /// 以带说明的 Schema 描述一个契约
     /// </summary>
     private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> Describe(OperationContract contract, string owner)
         => new(contract, owner, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, _schema);

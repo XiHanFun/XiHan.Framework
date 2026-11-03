@@ -7,12 +7,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Caching.Remote.Tests;
 
 /// <summary>
-/// 给每个键加随机前缀的存储：各用例共用同一个插件进程，前缀让它们互不干扰。
+/// 给每个键加随机前缀的存储：各用例共用同一个插件进程，前缀让它们互不干扰
 /// </summary>
 internal sealed class PrefixedCacheStore(ICacheStore inner) : ICacheStore
 {
     /// <summary>
-    /// 本实例的键前缀。
+    /// 本实例的键前缀
     /// </summary>
     private readonly string _prefix = Guid.NewGuid().ToString("N")[..8] + ":";
 
@@ -42,12 +42,12 @@ internal sealed class PrefixedCacheStore(ICacheStore inner) : ICacheStore
     public ValueTask<IReadOnlyList<bool>> RemoveManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken) => inner.RemoveManyAsync(Prefix(keys), cancellationToken);
 
     /// <summary>
-    /// 加前缀。
+    /// 加前缀
     /// </summary>
     private CacheKey Prefix(CacheKey key) => new(_prefix + key.Value);
 
     /// <summary>
-    /// 给每个键加前缀。
+    /// 给每个键加前缀
     /// </summary>
     private CacheKey[] Prefix(IReadOnlyList<CacheKey> keys) => [.. keys.Select(Prefix)];
 }

@@ -13,17 +13,17 @@ using XiHan.Framework.Security.Abstractions.Tests.Fixtures;
 namespace XiHan.Framework.Security.Abstractions.Tests.Authorization;
 
 /// <summary>
-/// Authorize 阶段按操作契约推导授权要求：权限码、策略名、无要求放行、显式要求优先。
+/// Authorize 阶段按操作契约推导授权要求：权限码、策略名、无要求放行、显式要求优先
 /// </summary>
 public sealed class OperationContractAuthorizationTests
 {
     /// <summary>
-    /// 编辑角色可读订单。
+    /// 编辑角色可读订单
     /// </summary>
     private static readonly PermissionGrant[] _grants = [new(GrantSubject.ForRole("editor"), "orders.read")];
 
     /// <summary>
-    /// 带已认证策略、订单读权限定义与授予的容器。
+    /// 带已认证策略、订单读权限定义与授予的容器
     /// </summary>
     private static IServiceProvider Services()
         => SecurityHosts.Services(s => s.AddSingleton(new PolicyCatalog(
@@ -32,13 +32,13 @@ public sealed class OperationContractAuthorizationTests
             new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions()))));
 
     /// <summary>
-    /// 带指定契约的操作描述。
+    /// 带指定契约的操作描述
     /// </summary>
     private static OperationDescriptor<NoopOperation, NoopRequest, NoopResponse> Descriptor(OperationContract contract)
         => new(contract, "xihan.test.security", NoopJsonContext.Default.NoopRequest, NoopJsonContext.Default.NoopResponse);
 
     /// <summary>
-    /// 带操作描述与可选主体的上下文。
+    /// 带操作描述与可选主体的上下文
     /// </summary>
     private static InvocationContext Context(OperationContract contract, Principal? principal = null)
     {
@@ -53,7 +53,7 @@ public sealed class OperationContractAuthorizationTests
     }
 
     /// <summary>
-    /// 跑授权中间件并返回终点是否到达。
+    /// 跑授权中间件并返回终点是否到达
     /// </summary>
     private static async Task<bool> RunAsync(InvocationContext context)
     {

@@ -24,25 +24,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.Database.Tests;
 
 /// <summary>
-/// 数据库 Provider 特有的行为。
+/// 数据库 Provider 特有的行为
 /// </summary>
 /// <remarks>
-/// 顶替内存实现、经中间件进队列与刷写、错误往返与翻译、队列满丢弃、批满与定时刷写、停止时刷完、落库失败只记日志、选项解析。
+/// 顶替内存实现、经中间件进队列与刷写、错误往返与翻译、队列满丢弃、批满与定时刷写、停止时刷完、落库失败只记日志、选项解析
 /// </remarks>
 public sealed class DatabaseAuditingTests
 {
     /// <summary>
-    /// 固定的起始时刻。
+    /// 固定的起始时刻
     /// </summary>
     private static readonly DateTimeOffset _start = new(2026, 10, 27, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 主体 alice 在租户 acme 的 baggage。
+    /// 主体 alice 在租户 acme 的 baggage
     /// </summary>
     private static readonly Dictionary<string, string> _alice = new(StringComparer.Ordinal) { [BaggageKeys.Principal] = "alice", [BaggageKeys.Tenant] = "acme" };
 
     /// <summary>
-    /// 业务目录：失败结果的消息键有中文译文。
+    /// 业务目录：失败结果的消息键有中文译文
     /// </summary>
     private static readonly MessageCatalog _orders = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {
@@ -264,10 +264,10 @@ public sealed class DatabaseAuditingTests
     }
 
     /// <summary>
-    /// 启动装配了内存持久化、内存本地化、内存审计、数据库审计与订单操作的宿主。
+    /// 启动装配了内存持久化、内存本地化、内存审计、数据库审计与订单操作的宿主
     /// </summary>
     /// <remarks>
-    /// 被顶替。时钟换成假时钟让刷写只由用例驱动，事件日志关闭。
+    /// 被顶替。时钟换成假时钟让刷写只由用例驱动，事件日志关闭
     /// </remarks>
     private static Task<TestHost> StartAsync(TimeProvider clock, Action<IServiceCollection>? services = null, params KeyValuePair<string, string?>[] configuration)
         => TestHost.StartAsync(
@@ -281,12 +281,12 @@ public sealed class DatabaseAuditingTests
             });
 
     /// <summary>
-    /// trace-id 为 <c>t</c> 的成功事件。
+    /// trace-id 为 <c>t</c> 的成功事件
     /// </summary>
     private static AuditEvent Event(string action) => new(_start, action, Result.Success(), "t");
 
     /// <summary>
-    /// 轮询直到条件成立，最多 10 秒。
+    /// 轮询直到条件成立，最多 10 秒
     /// </summary>
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

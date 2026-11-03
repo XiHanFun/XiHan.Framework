@@ -10,7 +10,7 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 定义构建器产出的模型：节点属性、转移 ID 与默认出边、变量与元数据。
+/// 定义构建器产出的模型：节点属性、转移 ID 与默认出边、变量与元数据
 /// </summary>
 public sealed class WorkflowDefinitionBuilderTests
 {

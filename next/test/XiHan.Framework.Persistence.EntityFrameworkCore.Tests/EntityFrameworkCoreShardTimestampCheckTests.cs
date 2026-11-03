@@ -16,65 +16,65 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// SQLite 时间列核对在租户分片上的首次绑定。
+/// SQLite 时间列核对在租户分片上的首次绑定
 /// </summary>
 /// <remarks>
-/// RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0097。分片库启动时枚举不到，工作单元开始时 DbContext 建在分片上、这个分片库还没有核对通过就核对一次：不符即那次工作单元开不起来（<see cref="PersistenceErrors.StorageFormatMismatch"/>，经管道是 <c>KERNEL_UNEXPECTED_001</c>），别的租户照常；核对通过的分片只查一次，并发首绑也只查一次；不符与库还不存在不记下，修好或建出之后下一次绑定再查。
-/// 核对通过的记录有上限（<see cref="EntityFrameworkCorePersistenceOptions.VerifiedShardCapacity"/>）：记满淘汰最早记下的，被淘汰的分片下次绑定重新核对一次，并发再绑同样只查一次。
-/// 处理器不碰库：分片上的连接打开只来自核对，打开次数就是核对次数（<see cref="ShardOpenCounter"/>）。
+/// RFC-0005「EF Core 在 SQLite 上的时间列核对」，ADR-0097。分片库启动时枚举不到，工作单元开始时 DbContext 建在分片上、这个分片库还没有核对通过就核对一次：不符即那次工作单元开不起来（<see cref="PersistenceErrors.StorageFormatMismatch"/>，经管道是 <c>KERNEL_UNEXPECTED_001</c>），别的租户照常；核对通过的分片只查一次，并发首绑也只查一次；不符与库还不存在不记下，修好或建出之后下一次绑定再查
+/// 核对通过的记录有上限（<see cref="EntityFrameworkCorePersistenceOptions.VerifiedShardCapacity"/>）：记满淘汰最早记下的，被淘汰的分片下次绑定重新核对一次，并发再绑同样只查一次
+/// 处理器不碰库：分片上的连接打开只来自核对，打开次数就是核对次数（<see cref="ShardOpenCounter"/>）
 /// </remarks>
 public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
 {
     /// <summary>
-    /// 有分片的租户。
+    /// 有分片的租户
     /// </summary>
     private const string Acme = "acme";
 
     /// <summary>
-    /// 没有分片的租户。
+    /// 没有分片的租户
     /// </summary>
     private const string Beta = "beta";
 
     /// <summary>
-    /// 另一个有分片的租户。
+    /// 另一个有分片的租户
     /// </summary>
     private const string Gamma = "gamma";
 
     /// <summary>
-    /// 并发首绑的个数。
+    /// 并发首绑的个数
     /// </summary>
     private const int Racers = 8;
 
     /// <summary>
-    /// 核对通过的分片记录上限的配置键。
+    /// 核对通过的分片记录上限的配置键
     /// </summary>
     private const string VerifiedShardCapacityKey = $"{EntityFrameworkCorePersistenceOptions.ConfigurationSection}:VerifiedShardCapacity";
 
     /// <summary>
-    /// 应用默认库。
+    /// 应用默认库
     /// </summary>
     private readonly SqliteDatabase _default = new();
 
     /// <summary>
-    /// 租户 <see cref="Acme"/> 的分片库。
+    /// 租户 <see cref="Acme"/> 的分片库
     /// </summary>
     private readonly SqliteDatabase _shard = new();
 
     /// <summary>
-    /// 租户 <see cref="Gamma"/> 的分片库。
+    /// 租户 <see cref="Gamma"/> 的分片库
     /// </summary>
     private readonly SqliteDatabase _other = new();
 
     /// <summary>
-    /// 按分片建 DbContext 的信号。
+    /// 按分片建 DbContext 的信号
     /// </summary>
     /// <remarks>
-    /// 并发用例据此知道首绑都已走到核对这一步。
+    /// 并发用例据此知道首绑都已走到核对这一步
     /// </remarks>
     private readonly BuildSignal _builds = new();
 
     /// <summary>
-    /// 分片库里的两行：不同偏移、带小数秒。
+    /// 分片库里的两行：不同偏移、带小数秒
     /// </summary>
     private readonly TimedRow[] _rows =
     [
@@ -83,7 +83,7 @@ public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
     ];
 
     /// <summary>
-    /// 删除三个临时数据库文件。
+    /// 删除三个临时数据库文件
     /// </summary>
     public void Dispose()
     {
@@ -214,10 +214,10 @@ public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
     }
 
     /// <summary>
-    /// 启动以 <see cref="TimedDbContext"/>、内存多租户与 SQLite 装配的宿主。
+    /// 启动以 <see cref="TimedDbContext"/>、内存多租户与 SQLite 装配的宿主
     /// </summary>
     /// <remarks>
-    /// 默认库开着 <c>EnsureCreated</c>（新建，INTEGER 列）；租户 <see cref="Acme"/> 的分片指向 <see cref="_shard"/>、<see cref="Gamma"/> 的指向 <see cref="_other"/>，<see cref="Beta"/> 没有分片。<paramref name="counters"/> 挂到每个上下文上，<paramref name="settings"/> 追加配置；每次按分片建 DbContext 选项时报给 <see cref="_builds"/>。
+    /// 默认库开着 <c>EnsureCreated</c>（新建，INTEGER 列）；租户 <see cref="Acme"/> 的分片指向 <see cref="_shard"/>、<see cref="Gamma"/> 的指向 <see cref="_other"/>，<see cref="Beta"/> 没有分片。<paramref name="counters"/> 挂到每个上下文上，<paramref name="settings"/> 追加配置；每次按分片建 DbContext 选项时报给 <see cref="_builds"/>
     /// </remarks>
     private Task<TestHost> StartAsync(IReadOnlyList<ShardOpenCounter> counters, IEnumerable<KeyValuePair<string, string?>>? settings = null)
     {
@@ -249,7 +249,7 @@ public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
     }
 
     /// <summary>
-    /// 在 <paramref name="database"/> 建出合格的分片库并写入两行。
+    /// 在 <paramref name="database"/> 建出合格的分片库并写入两行
     /// </summary>
     private async Task CreateConformingAsync(SqliteDatabase database)
     {
@@ -260,10 +260,10 @@ public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
     }
 
     /// <summary>
-    /// 让 <see cref="Racers"/> 个首绑同时到达同一分片。
+    /// 让 <see cref="Racers"/> 个首绑同时到达同一分片
     /// </summary>
     /// <remarks>
-    /// 第一个核对打开连接之后挂起（它持有这个分片的排队门），等全部首绑都建出 DbContext——建出之后紧接着就是核对——才放行。返回每个调用的结果。
+    /// 第一个核对打开连接之后挂起（它持有这个分片的排队门），等全部首绑都建出 DbContext——建出之后紧接着就是核对——才放行。返回每个调用的结果
     /// </remarks>
     private async Task<Result[]> RaceAsync(TestHost host, string tenant, SqliteDatabase database, ShardOpenCounter counter)
     {
@@ -278,10 +278,10 @@ public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
     }
 
     /// <summary>
-    /// 以给定租户（经 Baggage 自报）走完整管道。
+    /// 以给定租户（经 Baggage 自报）走完整管道
     /// </summary>
     /// <remarks>
-    /// 没给 <paramref name="action"/> 时处理器不碰库，直接成功。
+    /// 没给 <paramref name="action"/> 时处理器不碰库，直接成功
     /// </remarks>
     private static async Task<Result> InvokeAsync(TestHost host, string tenant, Func<InvocationContext, Task>? action = null)
         => await host.InvokeAsync(
@@ -297,35 +297,35 @@ public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
             baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = tenant });
 
     /// <summary>
-    /// 按分片建 DbContext 的计数信号。
+    /// 按分片建 DbContext 的计数信号
     /// </summary>
     /// <remarks>
-    /// <see cref="Arm"/> 之后，给定分片上的建出次数到数即完成返回的任务。
+    /// <see cref="Arm"/> 之后，给定分片上的建出次数到数即完成返回的任务
     /// </remarks>
     private sealed class BuildSignal
     {
         /// <summary>
-        /// 保护下面三个字段。
+        /// 保护下面三个字段
         /// </summary>
         private readonly Lock _gate = new();
 
         /// <summary>
-        /// 等的分片连接串。
+        /// 等的分片连接串
         /// </summary>
         private string? _target;
 
         /// <summary>
-        /// 还差几次建出。
+        /// 还差几次建出
         /// </summary>
         private int _remaining;
 
         /// <summary>
-        /// 到数时完成。
+        /// 到数时完成
         /// </summary>
         private TaskCompletionSource? _done;
 
         /// <summary>
-        /// 开始等给定分片上的若干次建出。
+        /// 开始等给定分片上的若干次建出
         /// </summary>
         public Task Arm(string connectionString, int count)
         {
@@ -339,7 +339,7 @@ public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
         }
 
         /// <summary>
-        /// 报一次按给定分片建出 DbContext。
+        /// 报一次按给定分片建出 DbContext
         /// </summary>
         public void Built(string connectionString)
         {

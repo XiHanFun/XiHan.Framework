@@ -8,45 +8,45 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 进程内的远程配置。
+/// 进程内的远程配置
 /// </summary>
 /// <remarks>
-/// 发布即换版本；可让取值失败或抛出。
+/// 发布即换版本；可让取值失败或抛出
 /// </remarks>
 internal sealed class InMemoryRemoteConfiguration : IRemoteConfigurationClient
 {
     /// <summary>
-    /// 保护文档表的锁。
+    /// 保护文档表的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 命名空间 → 文档。
+    /// 命名空间 → 文档
     /// </summary>
     private readonly Dictionary<string, ConfigurationDocument> _documents = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 递增的版本号。
+    /// 递增的版本号
     /// </summary>
     private int _version;
 
     /// <summary>
-    /// 取值次数。
+    /// 取值次数
     /// </summary>
     public int Fetches { get; private set; }
 
     /// <summary>
-    /// 非空时每次取值都返回这个失败。
+    /// 非空时每次取值都返回这个失败
     /// </summary>
     public Error? Fail { get; set; }
 
     /// <summary>
-    /// 为真时每次取值都抛出。
+    /// 为真时每次取值都抛出
     /// </summary>
     public bool Throw { get; set; }
 
     /// <summary>
-    /// 发布（创建或整体替换）。
+    /// 发布（创建或整体替换）
     /// </summary>
     public void Publish(string namespaceName, IReadOnlyDictionary<string, string?> values)
     {

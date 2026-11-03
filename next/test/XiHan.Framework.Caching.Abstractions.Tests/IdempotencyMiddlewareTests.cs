@@ -15,35 +15,35 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="IdempotencyMiddleware"/> 的单元测试。
+/// <see cref="IdempotencyMiddleware"/> 的单元测试
 /// </summary>
 /// <remarks>
-/// 首次执行与回放、处理中冲突、异常清理、租户与主体隔离、键校验。
+/// 首次执行与回放、处理中冲突、异常清理、租户与主体隔离、键校验
 /// </remarks>
 public sealed class IdempotencyMiddlewareTests
 {
     /// <summary>
-    /// 承载幂等记录的假存储，可直接检查写入的键。
+    /// 承载幂等记录的假存储，可直接检查写入的键
     /// </summary>
     private readonly FakeCacheStore _store = new();
 
     /// <summary>
-    /// 使用默认选项的被测中间件。
+    /// 使用默认选项的被测中间件
     /// </summary>
     private readonly IdempotencyMiddleware _middleware = new(new IdempotencyOptions());
 
     /// <summary>
-    /// 只注册了 <see cref="ISharedCache"/> 的服务提供者。
+    /// 只注册了 <see cref="ISharedCache"/> 的服务提供者
     /// </summary>
     private readonly IServiceProvider _services;
 
     /// <summary>
-    /// 处理器实际执行的次数。
+    /// 处理器实际执行的次数
     /// </summary>
     private int _executions;
 
     /// <summary>
-    /// 用假存储与反射版序列化器装配共享缓存。
+    /// 用假存储与反射版序列化器装配共享缓存
     /// </summary>
     public IdempotencyMiddlewareTests()
     {
@@ -51,10 +51,10 @@ public sealed class IdempotencyMiddlewareTests
     }
 
     /// <summary>
-    /// 创建调用上下文。
+    /// 创建调用上下文
     /// </summary>
     /// <remarks>
-    /// <paramref name="key"/> 不为 <see langword="null"/> 时放入幂等键 Baggage，<paramref name="tenant"/> 不为 <see langword="null"/> 时设置租户。
+    /// <paramref name="key"/> 不为 <see langword="null"/> 时放入幂等键 Baggage，<paramref name="tenant"/> 不为 <see langword="null"/> 时设置租户
     /// </remarks>
     private InvocationContext Context(string? key, string? tenant = null)
     {
@@ -68,7 +68,7 @@ public sealed class IdempotencyMiddlewareTests
     }
 
     /// <summary>
-    /// 只计数、不设置结果的处理器。
+    /// 只计数、不设置结果的处理器
     /// </summary>
     private ValueTask Handler(InvocationContext context)
     {

@@ -7,12 +7,12 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 namespace XiHan.Framework.Scheduling.Abstractions.Tests.Schedules;
 
 /// <summary>
-/// 计划：各种类的下一次推算、起止窗口、文本往返与日历。
+/// 计划：各种类的下一次推算、起止窗口、文本往返与日历
 /// </summary>
 public sealed class JobScheduleTests
 {
     /// <summary>
-    /// 2026-10-23 是周五。
+    /// 2026-10-23 是周五
     /// </summary>
     private static readonly DateTimeOffset _friday = new(2026, 10, 23, 10, 30, 0, TimeSpan.Zero);
 

@@ -14,20 +14,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
 /// <summary>
-/// 领域事件派发。
+/// 领域事件派发
 /// </summary>
 /// <remarks>
-/// 登记表的去重与容量、<c>AddDomainEvent</c> 的注册、事件到信封的映射、按主题分组批量发布、未登记与发布失败、成功后清空缓冲。
+/// 登记表的去重与容量、<c>AddDomainEvent</c> 的注册、事件到信封的映射、按主题分组批量发布、未登记与发布失败、成功后清空缓冲
 /// </remarks>
 public sealed class DomainEventDispatcherTests
 {
     /// <summary>
-    /// 基准时刻。
+    /// 基准时刻
     /// </summary>
     private static readonly DateTimeOffset _when = new(2026, 10, 27, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 构造容器：登记两种事件（不同主题）与捕获发布者。
+    /// 构造容器：登记两种事件（不同主题）与捕获发布者
     /// </summary>
     private static (ServiceProvider Provider, CapturingPublisher Publisher) Build()
     {
@@ -135,7 +135,7 @@ public sealed class DomainEventDispatcherTests
     }
 
     /// <summary>
-    /// 没有登记的事件。
+    /// 没有登记的事件
     /// </summary>
     private sealed record UnregisteredEvent(DateTimeOffset OccurredAt) : IDomainEvent;
 }

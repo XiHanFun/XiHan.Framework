@@ -6,7 +6,7 @@ using XiHan.Framework.Domain.Entities;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 不实现任何协议的测试实体，用于验证约定对普通实体不生效。
+/// 不实现任何协议的测试实体，用于验证约定对普通实体不生效
 /// </summary>
 internal sealed class Widget : IEntity<Guid>
 {
@@ -14,18 +14,18 @@ internal sealed class Widget : IEntity<Guid>
     public Guid Id { get; init; }
 
     /// <summary>
-    /// 名称。
+    /// 名称
     /// </summary>
     /// <remarks>
-    /// 查询测试按它过滤与排序。
+    /// 查询测试按它过滤与排序
     /// </remarks>
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
-    /// 排名。
+    /// 排名
     /// </summary>
     /// <remarks>
-    /// 查询测试按它过滤与排序。
+    /// 查询测试按它过滤与排序
     /// </remarks>
     public int Rank { get; set; }
 }

@@ -8,27 +8,27 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// <c>Kind = gated</c> 的聊天工厂：按 Provider 的时限建 <see cref="GatedChatClient"/>。
+/// <c>Kind = gated</c> 的聊天工厂：按 Provider 的时限建 <see cref="GatedChatClient"/>
 /// </summary>
 internal sealed class GatedChatClientFactory : IChatClientFactory
 {
     /// <summary>
-    /// 种类名。
+    /// 种类名
     /// </summary>
     public const string KindName = "gated";
 
     /// <summary>
-    /// 时间源。
+    /// 时间源
     /// </summary>
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
-    /// 闸门。
+    /// 闸门
     /// </summary>
     private readonly ProviderGate _gate;
 
     /// <summary>
-    /// 创建。
+    /// 创建
     /// </summary>
     public GatedChatClientFactory(TimeProvider timeProvider, ProviderGate gate)
     {

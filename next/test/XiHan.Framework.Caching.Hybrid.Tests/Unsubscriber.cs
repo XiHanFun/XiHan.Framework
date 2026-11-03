@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Caching.Hybrid.Tests;
 
 /// <summary>
-/// 释放时退订。
+/// 释放时退订
 /// </summary>
 internal sealed class Unsubscriber(Action unsubscribe) : IDisposable
 {

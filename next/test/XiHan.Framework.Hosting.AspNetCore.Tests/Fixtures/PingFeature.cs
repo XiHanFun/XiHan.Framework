@@ -10,7 +10,7 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests.Fixtures;
 
 /// <summary>
-/// 登记问候操作的测试特性。
+/// 登记问候操作的测试特性
 /// </summary>
 internal sealed class PingFeature : IFeature
 {

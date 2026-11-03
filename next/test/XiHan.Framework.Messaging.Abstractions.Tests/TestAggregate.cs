@@ -6,12 +6,12 @@ using XiHan.Framework.Domain.Events;
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
 /// <summary>
-/// 测试聚合：只持有领域事件缓冲。
+/// 测试聚合：只持有领域事件缓冲
 /// </summary>
 internal sealed class TestAggregate : IHasDomainEvents
 {
     /// <summary>
-    /// 事件缓冲。
+    /// 事件缓冲
     /// </summary>
     private readonly DomainEventBuffer _events = new();
 
@@ -19,7 +19,7 @@ internal sealed class TestAggregate : IHasDomainEvents
     public IReadOnlyList<IDomainEvent> DomainEvents => _events.Items;
 
     /// <summary>
-    /// 记录事件。
+    /// 记录事件
     /// </summary>
     public void Raise(IDomainEvent domainEvent) => _events.Add(domainEvent);
 

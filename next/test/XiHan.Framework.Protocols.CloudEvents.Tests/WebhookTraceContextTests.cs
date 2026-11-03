@@ -15,23 +15,23 @@ using XiHan.Framework.Protocols.CloudEvents.Outbound;
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 
 /// <summary>
-/// 出站 Webhook 的 HTTP 追踪头：缺省不传播，显式配置才写。
+/// 出站 Webhook 的 HTTP 追踪头：缺省不传播，显式配置才写
 /// </summary>
 /// <remarks>
-/// 请求经命名客户端真正的主处理器发到本机的接收方，断言接收方实际收到的请求头。
+/// 请求经命名客户端真正的主处理器发到本机的接收方，断言接收方实际收到的请求头
 /// </remarks>
 public sealed class WebhookTraceContextTests
 {
     /// <summary>
-    /// 追踪上下文的全部请求头：W3C 的三个与 .NET 旧格式的两个。
+    /// 追踪上下文的全部请求头：W3C 的三个与 .NET 旧格式的两个
     /// </summary>
     private static readonly string[] _traceHeaders = ["traceparent", "tracestate", "baggage", "Request-Id", "Correlation-Context"];
 
     /// <summary>
-    /// 启动只装出站所需特性的应用，<c>orders</c> 主题推给接收方。
+    /// 启动只装出站所需特性的应用，<c>orders</c> 主题推给接收方
     /// </summary>
     /// <remarks>
-    /// 不替换命名客户端的主处理器；<paramref name="configureClient"/> 给应用自己对命名客户端的配置。
+    /// 不替换命名客户端的主处理器；<paramref name="configureClient"/> 给应用自己对命名客户端的配置
     /// </remarks>
     private static async Task<WebApplication> StartAsync(WebhookReceiver receiver, string? propagate = null, Action<IHttpClientBuilder>? configureClient = null)
     {
@@ -52,10 +52,10 @@ public sealed class WebhookTraceContextTests
     }
 
     /// <summary>
-    /// 在带追踪上下文的 Activity 里发一条事件。
+    /// 在带追踪上下文的 Activity 里发一条事件
     /// </summary>
     /// <remarks>
-    /// Activity 是 W3C 格式，带 tracestate 与一项 Baggage；返回它的追踪 ID。
+    /// Activity 是 W3C 格式，带 tracestate 与一项 Baggage；返回它的追踪 ID
     /// </remarks>
     private static async Task<string> PublishInsideAnActivityAsync(WebApplication app)
     {

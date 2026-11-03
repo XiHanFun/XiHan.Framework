@@ -9,18 +9,18 @@ using Microsoft.CodeAnalysis.Testing;
 namespace XiHan.Framework.Kernel.Analyzers.Tests;
 
 /// <summary>
-/// 五条规则的端到端验证。
+/// 五条规则的端到端验证
 /// </summary>
 /// <remarks>
-/// 用内联源码与 <c>.globalconfig</c> 模拟框架包、环层与跨程序集引用。
+/// 用内联源码与 <c>.globalconfig</c> 模拟框架包、环层与跨程序集引用
 /// </remarks>
 public sealed class AnalyzerTests
 {
     /// <summary>
-    /// 原语层里 <c>ApiLevelAttribute</c> 与 <c>Stability</c> 的最小替身。
+    /// 原语层里 <c>ApiLevelAttribute</c> 与 <c>Stability</c> 的最小替身
     /// </summary>
     /// <remarks>
-    /// 分析器按元数据名查找，不依赖真实程序集。
+    /// 分析器按元数据名查找，不依赖真实程序集
     /// </remarks>
     private const string ApiLevelSource = """
         namespace XiHan.Framework.Primitives
@@ -38,7 +38,7 @@ public sealed class AnalyzerTests
         """;
 
     /// <summary>
-    /// 以指定的框架包与环层设置运行单个分析器，并核对期望的诊断。
+    /// 以指定的框架包与环层设置运行单个分析器，并核对期望的诊断
     /// </summary>
     private static Task RunAsync<TAnalyzer>(string source, bool frameworkPackage, int ring = -1, params DiagnosticResult[] expected)
         where TAnalyzer : DiagnosticAnalyzer, new()

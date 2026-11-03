@@ -17,7 +17,7 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Observability.OpenTelemetry.Tests;
 
 /// <summary>
-/// OpenTelemetry 特性：内核的 Span 与指标被导出、资源属性、信号开关与选项解析。
+/// OpenTelemetry 特性：内核的 Span 与指标被导出、资源属性、信号开关与选项解析
 /// </summary>
 public sealed class OpenTelemetryObservabilityTests
 {
@@ -153,7 +153,7 @@ public sealed class OpenTelemetryObservabilityTests
     }
 
     /// <summary>
-    /// 组装 <c>XiHan:Observability:OpenTelemetry</c> 节下的配置。
+    /// 组装 <c>XiHan:Observability:OpenTelemetry</c> 节下的配置
     /// </summary>
     private static IConfiguration Configuration(params (string Key, string Value)[] settings)
         => new ConfigurationBuilder().AddInMemoryCollection(settings.ToDictionary(static s => $"{OpenTelemetryOptions.ConfigurationSection}:{s.Key}", static s => (string?)s.Value)).Build();

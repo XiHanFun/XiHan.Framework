@@ -10,16 +10,16 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Cli.Tests.Commands;
 
 /// <summary>
-/// <c>xihan mcp</c> 端到端：经 <c>Protocols.Mcp</c> 的 stdio 传输提供三个只读 tool。
+/// <c>xihan mcp</c> 端到端：经 <c>Protocols.Mcp</c> 的 stdio 传输提供三个只读 tool
 /// </summary>
 /// <remarks>
-/// 与 <see cref="CliHostTests"/> 同4E00集合：执行命令会设置进程级的默认消息作用域。
+/// 与 <see cref="CliHostTests"/> 同4E00集合：执行命令会设置进程级的默认消息作用域
 /// </remarks>
 [Collection("Cli")]
 public sealed class McpCommandTests
 {
     /// <summary>
-    /// 以给定的选项与输入行执行 <c>mcp</c>，返回退出码、stdout 各行与 stderr。
+    /// 以给定的选项与输入行执行 <c>mcp</c>，返回退出码、stdout 各行与 stderr
     /// </summary>
     private static async Task<(int Exit, List<JsonDocument> Replies, string Error)> RunAsync(string[] options, params string[] messages)
     {
@@ -31,13 +31,13 @@ public sealed class McpCommandTests
     }
 
     /// <summary>
-    /// 4E00条 <c>tools/call</c> 请求。
+    /// 4E00条 <c>tools/call</c> 请求
     /// </summary>
     private static string Call(int id, string tool, string arguments)
         => """{"jsonrpc":"2.0","id":""" + id.ToString(System.Globalization.CultureInfo.InvariantCulture) + ""","method":"tools/call","params":{"name":""" + "\"" + tool + "\"" + ""","arguments":""" + arguments + "}}";
 
     /// <summary>
-    /// 结果的 <c>structuredContent</c>。
+    /// 结果的 <c>structuredContent</c>
     /// </summary>
     private static JsonElement Structured(JsonDocument reply) => reply.RootElement.GetProperty("result").GetProperty("structuredContent");
 

@@ -9,15 +9,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// 健康项 <c>persistence.entityframeworkcore.database</c>。
+/// 健康项 <c>persistence.entityframeworkcore.database</c>
 /// </summary>
 /// <remarks>
-/// 选项里的探测间隔解析；数据库可达时 Ready，连接串指向不存在的目录时 Degraded 并带 <see cref="PersistenceErrors.StoreUnavailable"/>，应用仍就绪。
+/// 选项里的探测间隔解析；数据库可达时 Ready，连接串指向不存在的目录时 Degraded 并带 <see cref="PersistenceErrors.StoreUnavailable"/>，应用仍就绪
 /// </remarks>
 public sealed class EntityFrameworkCoreHealthTests : IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 

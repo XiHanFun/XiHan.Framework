@@ -8,25 +8,25 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Database.Tests.Fixtures;
 
 /// <summary>
-/// 要求权限 <c>orders.write</c> 的操作。
+/// 要求权限 <c>orders.write</c> 的操作
 /// </summary>
 /// <remarks>
-/// 到达处理器即返回当前主体与租户，授权在 Authorize 阶段按契约判定。
+/// 到达处理器即返回当前主体与租户，授权在 Authorize 阶段按契约判定
 /// </remarks>
 internal sealed class WriteOrderOperation : IOperation<OrderRequest, OrderResponse>
 {
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public const string Id = "orders.write";
 
     /// <summary>
-    /// 契约要求的权限码。
+    /// 契约要求的权限码
     /// </summary>
     public const string Permission = "orders.write";
 
     /// <summary>
-    /// 运行期契约：权限 <see cref="Permission"/>。
+    /// 运行期契约：权限 <see cref="Permission"/>
     /// </summary>
     public static OperationContract Contract { get; } = new(Id, permission: Permission);
 

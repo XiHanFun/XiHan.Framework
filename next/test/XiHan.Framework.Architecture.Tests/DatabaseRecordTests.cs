@@ -7,15 +7,15 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 数据库 Provider 记录的列约定（ADR-0036）。
+/// 数据库 Provider 记录的列约定（ADR-0036）
 /// </summary>
 /// <remarks>
-/// <c>*.Database</c> 包里实现 <c>IEntity&lt;&gt;</c> / <c>IAggregateRoot&lt;&gt;</c> 的类，每个字符串列都要显式声明长度—— <c>[StringLength(n)]</c> 或长文本的 <c>[LongText]</c>（DataAnnotations 的 <c>[MaxLength]</c> 构造函数带 <c>RequiresUnreferencedCode</c>，正式包不能用）。SqlSugar 的 CodeFirst 对没有长度的字符串在 PostgreSQL 建成 <c>varchar(255)</c>，超长写入整批失败而 SQLite 不校验长度，一致性套件发现不了。
+/// <c>*.Database</c> 包里实现 <c>IEntity&lt;&gt;</c> / <c>IAggregateRoot&lt;&gt;</c> 的类，每个字符串列都要显式声明长度—— <c>[StringLength(n)]</c> 或长文本的 <c>[LongText]</c>（DataAnnotations 的 <c>[MaxLength]</c> 构造函数带 <c>RequiresUnreferencedCode</c>，正式包不能用）。SqlSugar 的 CodeFirst 对没有长度的字符串在 PostgreSQL 建成 <c>varchar(255)</c>，超长写入整批失败而 SQLite 不校验长度，一致性套件发现不了
 /// </remarks>
 public sealed partial class DatabaseRecordTests
 {
     /// <summary>
-    /// 公开的字符串自动属性声明行。
+    /// 公开的字符串自动属性声明行
     /// </summary>
     [GeneratedRegex(@"^\s*public string\??\s+(?<name>[A-Za-z0-9_]+)\s*\{")]
     private static partial Regex StringColumn();
@@ -53,10 +53,10 @@ public sealed partial class DatabaseRecordTests
     }
 
     /// <summary>
-    /// 属性声明之前的特性行里是否有 <c>[StringLength(</c> 或 <c>[LongText]</c>。
+    /// 属性声明之前的特性行里是否有 <c>[StringLength(</c> 或 <c>[LongText]</c>
     /// </summary>
     /// <remarks>
-    /// 跳过文档注释与空行。
+    /// 跳过文档注释与空行
     /// </remarks>
     private static bool HasLengthAttribute(string[] lines, int propertyIndex)
     {

@@ -12,15 +12,15 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 
 /// <summary>
-/// 握手声明的订阅方式（<c>spec/plugin/handshake.md</c> §3.5，RFC-0009「订阅方式」）。
+/// 握手声明的订阅方式（<c>spec/plugin/handshake.md</c> §3.5，RFC-0009「订阅方式」）
 /// </summary>
 /// <remarks>
-/// 直接核对握手响应：<c>mode</c> 为空或 <c>competing</c> 是竞争消费，<c>broadcast</c> 是广播，其他值与同一（主题，类型）以两种方式各声明一次都是 <c>PLUGINS_VALIDATION_004</c>；订阅只命中同一方式的投递。
+/// 直接核对握手响应：<c>mode</c> 为空或 <c>competing</c> 是竞争消费，<c>broadcast</c> 是广播，其他值与同一（主题，类型）以两种方式各声明一次都是 <c>PLUGINS_VALIDATION_004</c>；订阅只命中同一方式的投递
 /// </remarks>
 public sealed class HandshakeSubscriptionTests
 {
     /// <summary>
-    /// 最小的进程外插件清单。
+    /// 最小的进程外插件清单
     /// </summary>
     private const string ManifestJson = """
         {
@@ -71,7 +71,7 @@ public sealed class HandshakeSubscriptionTests
     }
 
     /// <summary>
-    /// 用给定的订阅构造握手响应并核对。
+    /// 用给定的订阅构造握手响应并核对
     /// </summary>
     private static Result<HandshakeInfo> Validate(params Subscription[] subscriptions)
     {

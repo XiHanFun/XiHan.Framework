@@ -4,6 +4,6 @@
 namespace XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 
 /// <summary>
-/// 回显请求。
+/// 回显请求
 /// </summary>
 internal sealed record EchoRequest(string Text, int Repeat = 1);

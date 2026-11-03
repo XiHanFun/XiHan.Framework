@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 只查工作流消息目录的解析器，按给定区域精确查找。
+/// 只查工作流消息目录的解析器，按给定区域精确查找
 /// </summary>
 internal sealed class WorkflowCatalogResolver : IMessageResolver
 {

@@ -7,20 +7,20 @@ using Microsoft.Extensions.Time.Testing;
 namespace XiHan.Framework.Observability.Host.Tests;
 
 /// <summary>
-/// 采样器。
+/// 采样器
 /// </summary>
 /// <remarks>
-/// 两次采样之差：第一次之后为空，系统与进程使用率、网卡速率的换算，计数变小为空，百分比限制在 0–100，后台循环按间隔采样。
+/// 两次采样之差：第一次之后为空，系统与进程使用率、网卡速率的换算，计数变小为空，百分比限制在 0–100，后台循环按间隔采样
 /// </remarks>
 public sealed class HostSamplerTests
 {
     /// <summary>
-    /// 固定起点的可控时钟。
+    /// 固定起点的可控时钟
     /// </summary>
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 30, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>
-    /// 计数替身。
+    /// 计数替身
     /// </summary>
     private readonly FakeHostPlatform _platform = new();
 
@@ -119,15 +119,15 @@ public sealed class HostSamplerTests
     }
 
     /// <summary>
-    /// 4 核、5 秒间隔的采样器。
+    /// 4 核、5 秒间隔的采样器
     /// </summary>
     private HostSampler Create() => new(_platform, TimeSpan.FromSeconds(5), _clock, NullLogger.Instance, logicalCores: 4);
 
     /// <summary>
-    /// 等条件成立。
+    /// 等条件成立
     /// </summary>
     /// <remarks>
-    /// 五秒内不成立即失败。
+    /// 五秒内不成立即失败
     /// </remarks>
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

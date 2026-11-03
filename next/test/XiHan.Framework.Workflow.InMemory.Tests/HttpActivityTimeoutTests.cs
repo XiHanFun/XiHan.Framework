@@ -16,62 +16,62 @@ using XiHan.Framework.Workflow.Abstractions.Instances;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// HTTP 活动的超时与取消归因。
+/// HTTP 活动的超时与取消归因
 /// </summary>
 /// <remarks>
-/// RFC-0021「HTTP 活动的超时与取消」，ADR-0097。活动按引擎时钟给请求计时，归因只看两个令牌：活动自己的超时令牌已触发即超时，不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时按取消处理（抛出 <see cref="OperationCanceledException"/>）。
-/// 探针活动从引擎拿到真实的活动上下文，再以用例控制的调用方令牌执行 HTTP 活动；时钟是注入的假时钟、客户端在用例放行之前一直挂着，两个令牌谁先触发完全由用例决定，不靠真实等待。
+/// RFC-0021「HTTP 活动的超时与取消」，ADR-0097。活动按引擎时钟给请求计时，归因只看两个令牌：活动自己的超时令牌已触发即超时，不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时按取消处理（抛出 <see cref="OperationCanceledException"/>）
+/// 探针活动从引擎拿到真实的活动上下文，再以用例控制的调用方令牌执行 HTTP 活动；时钟是注入的假时钟、客户端在用例放行之前一直挂着，两个令牌谁先触发完全由用例决定，不靠真实等待
 /// </remarks>
 public sealed class HttpActivityTimeoutTests
 {
     /// <summary>
-    /// 探针节点上 HTTP 活动的超时。
+    /// 探针节点上 HTTP 活动的超时
     /// </summary>
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// 两个令牌怎样触发。
+    /// 两个令牌怎样触发
     /// </summary>
     public enum Trigger
     {
         /// <summary>
-        /// 都不触发。
+        /// 都不触发
         /// </summary>
         None,
 
         /// <summary>
-        /// 只有活动的超时。
+        /// 只有活动的超时
         /// </summary>
         Timeout,
 
         /// <summary>
-        /// 只有调用方取消。
+        /// 只有调用方取消
         /// </summary>
         Caller,
 
         /// <summary>
-        /// 先超时、再取消。
+        /// 先超时、再取消
         /// </summary>
         TimeoutThenCaller,
 
         /// <summary>
-        /// 先取消、再超时。
+        /// 先取消、再超时
         /// </summary>
         CallerThenTimeout,
     }
 
     /// <summary>
-    /// 客户端被放行后怎样结束。
+    /// 客户端被放行后怎样结束
     /// </summary>
     public enum Reply
     {
         /// <summary>
-        /// 抛出取消（令牌都没触发时就是客户端自己的超时）。
+        /// 抛出取消（令牌都没触发时就是客户端自己的超时）
         /// </summary>
         Throw,
 
         /// <summary>
-        /// 接住取消、照常交回一个响应。
+        /// 接住取消、照常交回一个响应
         /// </summary>
         Respond,
     }
@@ -123,10 +123,10 @@ public sealed class HttpActivityTimeoutTests
     }
 
     /// <summary>
-    /// 按给定的触发与放行方式执行一次 HTTP 活动。
+    /// 按给定的触发与放行方式执行一次 HTTP 活动
     /// </summary>
     /// <remarks>
-    /// 起一个以假时钟与挂起的客户端装配的内存工作流，按 <paramref name="trigger"/> 触发令牌、按 <paramref name="reply"/> 放行客户端。返回 HTTP 活动的结果（<see cref="Result{T}"/>）或它抛出的异常。<paramref name="failure"/> 给出时客户端抛出它，代替取消。
+    /// 起一个以假时钟与挂起的客户端装配的内存工作流，按 <paramref name="trigger"/> 触发令牌、按 <paramref name="reply"/> 放行客户端。返回 HTTP 活动的结果（<see cref="Result{T}"/>）或它抛出的异常。<paramref name="failure"/> 给出时客户端抛出它，代替取消
     /// </remarks>
     private static async Task<object> RunAsync(Trigger trigger, Reply reply, Func<Exception>? failure = null)
     {
@@ -189,31 +189,31 @@ public sealed class HttpActivityTimeoutTests
     }
 
     /// <summary>
-    /// 探针与用例共享的状态。
+    /// 探针与用例共享的状态
     /// </summary>
     private sealed class ProbeState
     {
         /// <summary>
-        /// 用例控制的调用方令牌。
+        /// 用例控制的调用方令牌
         /// </summary>
         public CancellationTokenSource Caller { get; } = new();
 
         /// <summary>
-        /// HTTP 活动的结果或抛出的异常。
+        /// HTTP 活动的结果或抛出的异常
         /// </summary>
         public TaskCompletionSource<object> Outcome { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     /// <summary>
-    /// 以用例的调用方令牌执行 HTTP 活动的探针。
+    /// 以用例的调用方令牌执行 HTTP 活动的探针
     /// </summary>
     /// <remarks>
-    /// 节点属性就是 HTTP 活动的属性；记下活动的结果或异常后照常完成，引擎的推进与本归因无关。
+    /// 节点属性就是 HTTP 活动的属性；记下活动的结果或异常后照常完成，引擎的推进与本归因无关
     /// </remarks>
     private sealed class ProbeActivity(ProbeState state) : IActivity
     {
         /// <summary>
-        /// 活动类型名。
+        /// 活动类型名
         /// </summary>
         public const string TypeName = "HttpProbe";
 
@@ -234,20 +234,20 @@ public sealed class HttpActivityTimeoutTests
     }
 
     /// <summary>
-    /// 收到请求后挂起、由用例放行的处理器。
+    /// 收到请求后挂起、由用例放行的处理器
     /// </summary>
     /// <remarks>
-    /// 不看令牌等待：令牌在挂起期间触发，放行之后才按 <see cref="Reply"/> 结束，模拟传输在两个令牌都触发之后才报告。
+    /// 不看令牌等待：令牌在挂起期间触发，放行之后才按 <see cref="Reply"/> 结束，模拟传输在两个令牌都触发之后才报告
     /// </remarks>
     private sealed class GatedHandler(Func<Exception>? failure) : HttpMessageHandler
     {
         /// <summary>
-        /// 请求已到。
+        /// 请求已到
         /// </summary>
         public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         /// <summary>
-        /// 放行与结束方式。
+        /// 放行与结束方式
         /// </summary>
         public TaskCompletionSource<Reply> Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 

@@ -9,7 +9,7 @@ using XiHan.Framework.Primitives.Manifests;
 namespace SimpleCli;
 
 /// <summary>
-/// 问候特性：登记由 <c>Kernel.Generators</c> 从 <c>[Operation]</c> 生成的操作。
+/// 问候特性：登记由 <c>Kernel.Generators</c> 从 <c>[Operation]</c> 生成的操作
 /// </summary>
 public sealed class GreetingsFeature : IFeature
 {

@@ -4,15 +4,15 @@
 namespace XiHan.Framework.Observability.Host.Tests;
 
 /// <summary>
-/// Linux 读取路径。
+/// Linux 读取路径
 /// </summary>
 /// <remarks>
-/// 根目录指向夹具，任何系统上都能跑：CPU 型号、核心、频率与缓存，CPU 时间，内存，运行时长，主板，显卡与 <c>pci.ids</c>，挂载表；读不到的项为空。
+/// 根目录指向夹具，任何系统上都能跑：CPU 型号、核心、频率与缓存，CPU 时间，内存，运行时长，主板，显卡与 <c>pci.ids</c>，挂载表；读不到的项为空
 /// </remarks>
 public sealed class LinuxHostPlatformTests : IDisposable
 {
     /// <summary>
-    /// 夹具根目录。
+    /// 夹具根目录
     /// </summary>
     private readonly string _root = Path.Combine(Path.GetTempPath(), "xihan-host-" + Guid.NewGuid().ToString("N"));
 
@@ -200,12 +200,12 @@ public sealed class LinuxHostPlatformTests : IDisposable
     }
 
     /// <summary>
-    /// 指向夹具的读取路径。
+    /// 指向夹具的读取路径
     /// </summary>
     private LinuxHostPlatform Platform() => new(_root);
 
     /// <summary>
-    /// 在夹具里写一个文件。
+    /// 在夹具里写一个文件
     /// </summary>
     private void Write(string relative, string content)
     {

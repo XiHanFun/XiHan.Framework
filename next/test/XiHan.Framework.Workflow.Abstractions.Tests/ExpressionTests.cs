@@ -9,20 +9,20 @@ using XiHan.Framework.Workflow.Abstractions.Values;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 表达式语言。
+/// 表达式语言
 /// </summary>
 /// <remarks>
-/// 算术、比较、逻辑短路、字符串与函数、成员与下标、模板渲染、校验与错误、null 结果是成功的无值。
+/// 算术、比较、逻辑短路、字符串与函数、成员与下标、模板渲染、校验与错误、null 结果是成功的无值
 /// </remarks>
 public sealed class ExpressionTests
 {
     /// <summary>
-    /// 默认选项的求值器。
+    /// 默认选项的求值器
     /// </summary>
     private static readonly WorkflowExpressionEvaluator _evaluator = new(new WorkflowOptions());
 
     /// <summary>
-    /// 固定时钟：2026-10-26 08:00 UTC。
+    /// 固定时钟：2026-10-26 08:00 UTC
     /// </summary>
     private static readonly DateTimeOffset _now = new(2026, 10, 26, 8, 0, 0, TimeSpan.Zero);
 
@@ -140,22 +140,22 @@ public sealed class ExpressionTests
     }
 
     /// <summary>
-    /// 作用域。
+    /// 作用域
     /// </summary>
     private static ExpressionScope Scope(JsonObject variables, TimeProvider? clock = null) => new(variables, clock ?? TimeProvider.System);
 
     /// <summary>
-    /// 求值成数字。
+    /// 求值成数字
     /// </summary>
     private static decimal Number(string expression, ExpressionScope scope) => WorkflowValues.TryConvert<decimal>(_evaluator.Evaluate(expression, scope).ValueOrThrow().ValueOrThrow(), out var number) ? number : throw new InvalidOperationException("Not a number.");
 
     /// <summary>
-    /// 求值成字符串。
+    /// 求值成字符串
     /// </summary>
     private static string Text(string expression, ExpressionScope scope) => _evaluator.Evaluate(expression, scope).ValueOrThrow().ValueOrThrow().GetValue<string>();
 
     /// <summary>
-    /// 求值成条件。
+    /// 求值成条件
     /// </summary>
     private static bool Bool(string expression, ExpressionScope scope) => _evaluator.EvaluateCondition(expression, scope).ValueOrThrow();
 }

@@ -9,18 +9,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Security;
 
 /// <summary>
-/// 安全原语的行为。
+/// 安全原语的行为
 /// </summary>
 /// <remarks>
-/// 资源名解析、主体声明查询、上下文中的安全上下文读写、有界权限注册表与授权结果转换。
+/// 资源名解析、主体声明查询、上下文中的安全上下文读写、有界权限注册表与授权结果转换
 /// </remarks>
 public sealed class SecurityTests
 {
     /// <summary>
-    /// 空容器。
+    /// 空容器
     /// </summary>
     /// <remarks>
-    /// 这些测试只需要一个服务提供器来创建上下文。
+    /// 这些测试只需要一个服务提供器来创建上下文
     /// </remarks>
     private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
@@ -172,17 +172,17 @@ public sealed class SecurityTests
     }
 
     /// <summary>
-    /// 拒绝一切请求的策略。
+    /// 拒绝一切请求的策略
     /// </summary>
     private sealed class DenyAll : IPolicy
     {
         /// <summary>
-        /// 策略名。
+        /// 策略名
         /// </summary>
         public string Name => "deny-all";
 
         /// <summary>
-        /// 总是拒绝。
+        /// 总是拒绝
         /// </summary>
         public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
             => ValueTask.FromResult(Result.Success(AuthorizationResult.Deny(Error.Literal("SECURITY_DENIED_002", "deny-all"))));

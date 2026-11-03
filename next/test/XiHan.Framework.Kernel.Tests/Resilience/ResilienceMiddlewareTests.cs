@@ -14,26 +14,26 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Resilience;
 
 /// <summary>
-/// Resilience 阶段的内置中间件。
+/// Resilience 阶段的内置中间件
 /// </summary>
 /// <remarks>
-/// 管道里紧随截止时间中间件；固定窗口限流、并发上限与熔断按配置拒绝并不进 Handle；按操作覆盖；调用方错误不算熔断失败；关闭内置中间件与非操作调用不受限。
+/// 管道里紧随截止时间中间件；固定窗口限流、并发上限与熔断按配置拒绝并不进 Handle；按操作覆盖；调用方错误不算熔断失败；关闭内置中间件与非操作调用不受限
 /// </remarks>
 public sealed class ResilienceMiddlewareTests
 {
     /// <summary>
-    /// 空容器。
+    /// 空容器
     /// </summary>
     /// <remarks>
-    /// 直接调用中间件的用例用它构造上下文。
+    /// 直接调用中间件的用例用它构造上下文
     /// </remarks>
     private static readonly ServiceProvider _services = new ServiceCollection().BuildServiceProvider();
 
     /// <summary>
-    /// 构建并启动装配了回声特性与 Handle 阶段门闸的应用。
+    /// 构建并启动装配了回声特性与 Handle 阶段门闸的应用
     /// </summary>
     /// <remarks>
-    /// <paramref name="clock"/> 给定时注册为时间源。
+    /// <paramref name="clock"/> 给定时注册为时间源
     /// </remarks>
     private static async Task<(ServiceProvider Provider, App App, GateMiddleware Gate)> StartAsync(FakeTimeProvider? clock = null, params (string Key, string Value)[] settings)
     {
@@ -55,7 +55,7 @@ public sealed class ResilienceMiddlewareTests
     }
 
     /// <summary>
-    /// 在新作用域里调用一次回声操作。
+    /// 在新作用域里调用一次回声操作
     /// </summary>
     private static async Task<OperationResponse> InvokeAsync(ServiceProvider provider, string text = "hi")
     {
@@ -65,7 +65,7 @@ public sealed class ResilienceMiddlewareTests
     }
 
     /// <summary>
-    /// 让下游以不可用结果结束而不进处理器。
+    /// 让下游以不可用结果结束而不进处理器
     /// </summary>
     private static ValueTask FailUnavailable(InvocationContext context, PipelineStep next)
     {

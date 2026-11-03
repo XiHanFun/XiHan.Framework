@@ -8,10 +8,10 @@ using XiHan.Framework.AI.Abstractions.Providers;
 namespace XiHan.Framework.AI.Abstractions.Tests;
 
 /// <summary>
-/// 选项读取与校验。
+/// 选项读取与校验
 /// </summary>
 /// <remarks>
-/// 值不合法即抛出，不按缺省处理。
+/// 值不合法即抛出，不按缺省处理
 /// </remarks>
 public sealed class AIOptionsTests
 {

@@ -11,63 +11,63 @@ using Microsoft.IdentityModel.Tokens;
 namespace XiHan.Framework.Security.OpenIdConnect.Tests;
 
 /// <summary>
-/// 桩签发者。
+/// 桩签发者
 /// </summary>
 /// <remarks>
-/// 以 HTTP 处理器身份应答发现文档与 JWKS，并用当前 RSA 密钥签发令牌；可轮换密钥、下线、改签发者。
+/// 以 HTTP 处理器身份应答发现文档与 JWKS，并用当前 RSA 密钥签发令牌；可轮换密钥、下线、改签发者
 /// </remarks>
 internal sealed class FakeIssuer : HttpMessageHandler
 {
     /// <summary>
-    /// 签发者地址。
+    /// 签发者地址
     /// </summary>
     public const string Authority = "https://issuer.test";
 
     /// <summary>
-    /// 默认受众。
+    /// 默认受众
     /// </summary>
     public const string Audience = "api";
 
     /// <summary>
-    /// JWKS 当前公开的密钥。
+    /// JWKS 当前公开的密钥
     /// </summary>
     /// <remarks>
-    /// 最后一个是签发用的当前密钥。
+    /// 最后一个是签发用的当前密钥
     /// </remarks>
     private readonly List<RsaSecurityKey> _keys = [];
 
     /// <summary>
-    /// 创建并生成第一把密钥。
+    /// 创建并生成第一把密钥
     /// </summary>
     public FakeIssuer() => Rotate();
 
     /// <summary>
-    /// 发现文档里的 <c>issuer</c>。
+    /// 发现文档里的 <c>issuer</c>
     /// </summary>
     public string Issuer { get; set; } = Authority;
 
     /// <summary>
-    /// 为真时所有请求抛连接失败。
+    /// 为真时所有请求抛连接失败
     /// </summary>
     public bool Offline { get; set; }
 
     /// <summary>
-    /// 发现文档被请求的次数。
+    /// 发现文档被请求的次数
     /// </summary>
     public int MetadataRequests { get; private set; }
 
     /// <summary>
-    /// JWKS 被请求的次数。
+    /// JWKS 被请求的次数
     /// </summary>
     public int JwksRequests { get; private set; }
 
     /// <summary>
-    /// 当前签发密钥。
+    /// 当前签发密钥
     /// </summary>
     public RsaSecurityKey CurrentKey => _keys[^1];
 
     /// <summary>
-    /// 轮换：生成新密钥并只公开它（旧密钥从 JWKS 消失）。
+    /// 轮换：生成新密钥并只公开它（旧密钥从 JWKS 消失）
     /// </summary>
     public RsaSecurityKey Rotate()
     {
@@ -78,10 +78,10 @@ internal sealed class FakeIssuer : HttpMessageHandler
     }
 
     /// <summary>
-    /// 签发 RS256 令牌。
+    /// 签发 RS256 令牌
     /// </summary>
     /// <remarks>
-    /// 默认用当前密钥、主体 alice、签发者取发现文档的、十分钟有效期。
+    /// 默认用当前密钥、主体 alice、签发者取发现文档的、十分钟有效期
     /// </remarks>
     public string CreateToken(string? subject = "alice", RsaSecurityKey? key = null, string? issuer = null, string audience = Audience, TimeSpan? lifetime = null, params (string Type, string Value)[] claims)
     {
@@ -143,13 +143,13 @@ internal sealed class FakeIssuer : HttpMessageHandler
     }
 
     /// <summary>
-    /// JSON 应答。
+    /// JSON 应答
     /// </summary>
     private static HttpResponseMessage Json(string body)
         => new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 
     /// <summary>
-    /// 当前公开密钥的 JWKS 文档。
+    /// 当前公开密钥的 JWKS 文档
     /// </summary>
     private string Jwks()
     {

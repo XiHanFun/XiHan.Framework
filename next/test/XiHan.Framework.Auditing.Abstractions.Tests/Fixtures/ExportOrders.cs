@@ -8,18 +8,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 未声明权限但显式声明审计动作的导出操作。
+/// 未声明权限但显式声明审计动作的导出操作
 /// </summary>
 [Operation(Id)]
 internal sealed class ExportOrders : IOperation<ListOrdersRequest, OrderResponse>
 {
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public const string Id = "orders.export";
 
     /// <summary>
-    /// 显式声明的审计动作。
+    /// 显式声明的审计动作
     /// </summary>
     public const string AuditAction = "orders.export-report";
 

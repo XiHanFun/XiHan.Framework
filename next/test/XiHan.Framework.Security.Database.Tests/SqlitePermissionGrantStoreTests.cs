@@ -16,10 +16,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Database.Tests;
 
 /// <summary>
-/// 授予实体在真实数据库（SQLite，经 <c>Persistence.SqlSugar</c> 建表）上的映射。
+/// 授予实体在真实数据库（SQLite，经 <c>Persistence.SqlSugar</c> 建表）上的映射
 /// </summary>
 /// <remarks>
-/// 授予 → 查询（含空字符串租户列）→ 撤销；数据库不可达时整条判定链以 <c>SECURITY_UNAVAILABLE_001</c> 结束。
+/// 授予 → 查询（含空字符串租户列）→ 撤销；数据库不可达时整条判定链以 <c>SECURITY_UNAVAILABLE_001</c> 结束
 /// </remarks>
 public sealed class SqlitePermissionGrantStoreTests
 {
@@ -110,7 +110,7 @@ public sealed class SqlitePermissionGrantStoreTests
     }
 
     /// <summary>
-    /// 以 alice 的 ApiKey 经完整管道调用写订单操作。
+    /// 以 alice 的 ApiKey 经完整管道调用写订单操作
     /// </summary>
     private static async Task<Result<OrderResponse>> WriteOrderAsync(TestHost host)
     {

@@ -24,10 +24,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 
 /// <summary>
-/// 进程外插件宿主的端到端用例。
+/// 进程外插件宿主的端到端用例
 /// </summary>
 /// <remarks>
-/// 以真实的 EchoPlugin 子进程验证发现、握手、调用、本地化、回调、事件、崩溃重启、停止与运行期加载。
+/// 以真实的 EchoPlugin 子进程验证发现、握手、调用、本地化、回调、事件、崩溃重启、停止与运行期加载
 /// </remarks>
 public sealed class OutOfProcessPluginHostTests
 {
@@ -281,7 +281,7 @@ public sealed class OutOfProcessPluginHostTests
     public async Task CancellationDuringAPluginCall_IsAttributedByTheDeadlineToken(bool deadlineReached, bool callerCancels, string expected)
     {
         // 插件调用进行中（echoes.relay 回调一直等待的宿主操作）时到截止时间、调用方取消或两者都发生：运行时把 gRPC 的 Cancelled
-        // 原样写成取消、不按时钟判断，DeadlineMiddleware 按截止令牌归因——截止时间到了即超时，调用方同时取消也一样（RFC-0004）。
+        // 原样写成取消、不按时钟判断，DeadlineMiddleware 按截止令牌归因——截止时间到了即超时，调用方同时取消也一样（RFC-0004）
         // 时钟从当前时刻起步、截止时间在一小时后：gRPC 按墙钟换算的截止时间不会先到，超时只来自宿主按注入时钟落下的定时取消
         var clock = new FakeTimeProvider(DateTimeOffset.UtcNow);
         var probe = new CancellationProbe();
@@ -526,7 +526,7 @@ public sealed class OutOfProcessPluginHostTests
     }
 
     /// <summary>
-    /// 登记宿主侧操作 pings.create 的桩特性。
+    /// 登记宿主侧操作 pings.create 的桩特性
     /// </summary>
     private static StubFeature PingFeature() => new(TestManifests.Create("xihan.app.pings"))
     {
@@ -534,7 +534,7 @@ public sealed class OutOfProcessPluginHostTests
     };
 
     /// <summary>
-    /// 进程是否仍在运行。
+    /// 进程是否仍在运行
     /// </summary>
     private static bool IsRunning(int processId)
     {

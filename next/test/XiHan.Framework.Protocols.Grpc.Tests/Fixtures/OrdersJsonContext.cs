@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 
 /// <summary>
-/// 订单请求与响应的源生成序列化上下文：camelCase 属性名。
+/// 订单请求与响应的源生成序列化上下文：camelCase 属性名
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(OrderRequest))]

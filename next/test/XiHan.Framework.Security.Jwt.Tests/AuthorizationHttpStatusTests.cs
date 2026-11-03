@@ -19,10 +19,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Jwt.Tests;
 
 /// <summary>
-/// 经 ASP.NET Core 宿主的权限判定状态码。
+/// 经 ASP.NET Core 宿主的权限判定状态码
 /// </summary>
 /// <remarks>
-/// 授予存储不可达是 503 + <c>SECURITY_UNAVAILABLE_001</c>，不是 403：读不到授予不能当成没有授予（ADR-0071）；存储可达而缺权限是 403，持有则放行。
+/// 授予存储不可达是 503 + <c>SECURITY_UNAVAILABLE_001</c>，不是 403：读不到授予不能当成没有授予（ADR-0071）；存储可达而缺权限是 403，持有则放行
 /// </remarks>
 public sealed class AuthorizationHttpStatusTests
 {
@@ -77,7 +77,7 @@ public sealed class AuthorizationHttpStatusTests
     }
 
     /// <summary>
-    /// 带 alice 的有效令牌请求 <c>/orders</c>。
+    /// 带 alice 的有效令牌请求 <c>/orders</c>
     /// </summary>
     private static Task<HttpResponseMessage> SendAsync(HttpClient client)
     {
@@ -87,7 +87,7 @@ public sealed class AuthorizationHttpStatusTests
     }
 
     /// <summary>
-    /// Problem Details 的错误码。
+    /// Problem Details 的错误码
     /// </summary>
     private static async Task<string?> CodeOf(HttpResponseMessage response)
     {

@@ -15,15 +15,15 @@ using XiHan.Framework.Persistence.SqlSugar;
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
 /// <summary>
-/// 框架 Provider 清单声明的绑定类型都能打包。
+/// 框架 Provider 清单声明的绑定类型都能打包
 /// </summary>
 /// <remarks>
-/// <c>xihan pack</c> 认识它们，并为每种生成依赖服务。
+/// <c>xihan pack</c> 认识它们，并为每种生成依赖服务
 /// </remarks>
 public sealed class BindingKindTests
 {
     /// <summary>
-    /// 声明了资源绑定的框架 Provider。
+    /// 声明了资源绑定的框架 Provider
     /// </summary>
     private static IFeature[] Providers() =>
     [

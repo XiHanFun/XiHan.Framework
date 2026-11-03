@@ -8,12 +8,12 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// <c>Kind = fake</c> 的聊天工厂：记录创建过的客户端。
+/// <c>Kind = fake</c> 的聊天工厂：记录创建过的客户端
 /// </summary>
 internal sealed class FakeChatClientFactory : IChatClientFactory
 {
     /// <summary>
-    /// 创建过的客户端。
+    /// 创建过的客户端
     /// </summary>
     public List<FakeChatClient> Created { get; } = [];
 

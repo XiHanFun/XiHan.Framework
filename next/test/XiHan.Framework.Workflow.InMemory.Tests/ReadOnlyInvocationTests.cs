@@ -17,10 +17,10 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 内存工作流在只读调用里拒绝写入（ADR-0099）。
+/// 内存工作流在只读调用里拒绝写入（ADR-0099）
 /// </summary>
 /// <remarks>
-/// 宿主只装内存工作流、不装持久化：没有 Transaction 阶段、没有工作单元，判定只看调用的操作契约。装了持久化与发件箱的宿主由一致性套件用例 30 覆盖（与数据库实现同一断言）。
+/// 宿主只装内存工作流、不装持久化：没有 Transaction 阶段、没有工作单元，判定只看调用的操作契约。装了持久化与发件箱的宿主由一致性套件用例 30 覆盖（与数据库实现同一断言）
 /// </remarks>
 public sealed class ReadOnlyInvocationTests
 {
@@ -77,13 +77,13 @@ public sealed class ReadOnlyInvocationTests
     }
 
     /// <summary>
-    /// 断言是只读拒绝。
+    /// 断言是只读拒绝
     /// </summary>
     private static void AssertRejected(Error? error)
         => Assert.Equal((PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly), (error?.Code, error?.MessageKey));
 
     /// <summary>
-    /// 只装内存工作流的宿主（不装持久化），轮询周期拉长、由用例主动轮询。
+    /// 只装内存工作流的宿主（不装持久化），轮询周期拉长、由用例主动轮询
     /// </summary>
     private static async Task<WorkflowEngineHost> StartAsync()
     {
@@ -93,7 +93,7 @@ public sealed class ReadOnlyInvocationTests
     }
 
     /// <summary>
-    /// 开始 → 指派给 alice 的用户任务 → 结束。
+    /// 开始 → 指派给 alice 的用户任务 → 结束
     /// </summary>
     private static WorkflowDefinition Approval()
         => WorkflowDefinitionBuilder.Create("ro-approval")

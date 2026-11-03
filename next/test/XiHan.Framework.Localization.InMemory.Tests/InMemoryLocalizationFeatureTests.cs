@@ -11,12 +11,12 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Localization.InMemory.Tests;
 
 /// <summary>
-/// 内存本地化特性：装载原语层与内核目录，启动后安装进程默认作用域与调用链作用域。
+/// 内存本地化特性：装载原语层与内核目录，启动后安装进程默认作用域与调用链作用域
 /// </summary>
 public sealed class InMemoryLocalizationFeatureTests
 {
     /// <summary>
-    /// 业务目录。
+    /// 业务目录
     /// </summary>
     private static readonly MessageCatalog _orders = new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {

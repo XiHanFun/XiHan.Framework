@@ -7,18 +7,18 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 回声操作：空文本返回校验失败，<c>throw</c> 抛异常，其余把文本重复后连同 trace-id 返回。
+/// 回声操作：空文本返回校验失败，<c>throw</c> 抛异常，其余把文本重复后连同 trace-id 返回
 /// </summary>
 [Operation(Id, Expose = Expose.Http | Expose.Mcp, Permission = "echoes.write")]
 internal sealed class EchoOperation : IOperation<EchoRequest, EchoResponse>
 {
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public const string Id = "echoes.create";
 
     /// <summary>
-    /// 运行期契约，与特性上的声明一致。
+    /// 运行期契约，与特性上的声明一致
     /// </summary>
     public static OperationContract Contract { get; } = new(Id, Stability.Stable, Expose.Http | Expose.Mcp, permission: "echoes.write");
 

@@ -4,6 +4,6 @@
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 
 /// <summary>
-/// 回显操作的请求。
+/// 回显操作的请求
 /// </summary>
 internal sealed record PingRequest(string Name);

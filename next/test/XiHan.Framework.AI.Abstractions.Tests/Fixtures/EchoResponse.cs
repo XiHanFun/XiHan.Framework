@@ -4,6 +4,6 @@
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 回显响应：文本与执行它的调用的追踪 ID。
+/// 回显响应：文本与执行它的调用的追踪 ID
 /// </summary>
 internal sealed record EchoResponse(string Echo, string TraceId, string? Tenant);

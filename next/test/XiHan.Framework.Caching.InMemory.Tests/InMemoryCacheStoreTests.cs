@@ -9,28 +9,28 @@ using XiHan.Framework.Caching.Abstractions.Stores;
 namespace XiHan.Framework.Caching.InMemory.Tests;
 
 /// <summary>
-/// <see cref="InMemoryCacheStore"/> 的单元测试。
+/// <see cref="InMemoryCacheStore"/> 的单元测试
 /// </summary>
 /// <remarks>
-/// 用假时钟验证 LRU 淘汰、默认与滑动过期、不存在才写、字节隔离与选项解析。
+/// 用假时钟验证 LRU 淘汰、默认与滑动过期、不存在才写、字节隔离与选项解析
 /// </remarks>
 public sealed class InMemoryCacheStoreTests
 {
     /// <summary>
-    /// 假时钟的起始时刻。
+    /// 假时钟的起始时刻
     /// </summary>
     private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 文本转 UTF-8 字节。
+    /// 文本转 UTF-8 字节
     /// </summary>
     private static ReadOnlyMemory<byte> Bytes(string text) => Encoding.UTF8.GetBytes(text);
 
     /// <summary>
-    /// 创建带假时钟的存储。
+    /// 创建带假时钟的存储
     /// </summary>
     /// <remarks>
-    /// 默认容量 100、默认存活 5 分钟。
+    /// 默认容量 100、默认存活 5 分钟
     /// </remarks>
     private static (InMemoryCacheStore Store, FakeTimeProvider Clock) Arrange(int maxEntries = 100, TimeSpan? defaultTtl = null)
     {

@@ -8,22 +8,22 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 
 /// <summary>
-/// 启动装配了 OpenAI Provider、工具目录与回显操作的宿主，请求经仿真端点。
+/// 启动装配了 OpenAI Provider、工具目录与回显操作的宿主，请求经仿真端点
 /// </summary>
 internal static class OpenAITestHost
 {
     /// <summary>
-    /// Provider 名。
+    /// Provider 名
     /// </summary>
     public const string ProviderName = "openai";
 
     /// <summary>
-    /// 嵌入维度。
+    /// 嵌入维度
     /// </summary>
     public const int Dimensions = 8;
 
     /// <summary>
-    /// 启动。
+    /// 启动
     /// </summary>
     public static Task<TestHost> StartAsync(FakeOpenAIHandler handler, params (string Key, string Value)[] extra)
     {

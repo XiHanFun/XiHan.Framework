@@ -13,7 +13,7 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 定义 JSON 里没写的成员取模型的初值，与直接构造模型一致（ADR-0107）。
+/// 定义 JSON 里没写的成员取模型的初值，与直接构造模型一致（ADR-0107）
 /// </summary>
 public sealed class WorkflowDefinitionInitialValuesTests
 {
@@ -79,12 +79,12 @@ public sealed class WorkflowDefinitionInitialValuesTests
     }
 
     /// <summary>
-    /// 读入合法的定义。
+    /// 读入合法的定义
     /// </summary>
     private static WorkflowDefinition Read(string json) => WorkflowJson.DeserializeDefinition(json).ValueOrThrow();
 
     /// <summary>
-    /// 逐个序列化成员比较：读出来的与直接构造的值相同。
+    /// 逐个序列化成员比较：读出来的与直接构造的值相同
     /// </summary>
     private static void AssertSameMembers<T>(JsonTypeInfo<T> type, string json, T constructed)
         where T : notnull

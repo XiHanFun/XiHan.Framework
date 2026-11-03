@@ -14,10 +14,10 @@ using XiHan.Framework.Workflow.Abstractions.Storage;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 到期书签轮询与应用生命周期。
+/// 到期书签轮询与应用生命周期
 /// </summary>
 /// <remarks>
-/// 应用启动期间与排空期间不在服务状态，管道不接受调用：轮询的周期什么也不做、不记告警，进入服务状态后照常轮询。用一个排在内存工作流之后启停的探针在这两个阶段各跑一个周期，不靠计时器与真实等待。
+/// 应用启动期间与排空期间不在服务状态，管道不接受调用：轮询的周期什么也不做、不记告警，进入服务状态后照常轮询。用一个排在内存工作流之后启停的探针在这两个阶段各跑一个周期，不靠计时器与真实等待
 /// </remarks>
 public sealed class PollerLifecycleTests
 {

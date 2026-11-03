@@ -6,10 +6,10 @@ using Microsoft.Extensions.Configuration;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests;
 
 /// <summary>
-/// 进程外插件选项的配置读取。
+/// 进程外插件选项的配置读取
 /// </summary>
 /// <remarks>
-/// 配置与属性的取值范围一致：不合规的值以带配置键的 <see cref="ArgumentException"/> 拒绝，而不是在属性赋值时抛出不带键的 <see cref="ArgumentOutOfRangeException"/>。
+/// 配置与属性的取值范围一致：不合规的值以带配置键的 <see cref="ArgumentException"/> 拒绝，而不是在属性赋值时抛出不带键的 <see cref="ArgumentOutOfRangeException"/>
 /// </remarks>
 public sealed class OutOfProcessPluginOptionsTests
 {
@@ -36,7 +36,7 @@ public sealed class OutOfProcessPluginOptionsTests
     }
 
     /// <summary>
-    /// 配置节下的键值。
+    /// 配置节下的键值
     /// </summary>
     private static IConfiguration Configuration(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>($"{OutOfProcessPluginOptions.ConfigurationSection}:{v.Key}", v.Value))).Build();

@@ -8,10 +8,10 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库工作流在 EF Core（SQLite）上跑任务一致性套件。
+/// 数据库工作流在 EF Core（SQLite）上跑任务一致性套件
 /// </summary>
 /// <remarks>
-/// 租约表在命名连接的另一个库文件。
+/// 租约表在命名连接的另一个库文件
 /// </remarks>
 public sealed class EntityFrameworkCoreWorkflowTaskConformanceTests : WorkflowTaskConformance
 {

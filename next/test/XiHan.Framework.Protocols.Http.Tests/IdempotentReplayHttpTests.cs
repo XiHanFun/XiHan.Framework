@@ -14,10 +14,10 @@ using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 namespace XiHan.Framework.Protocols.Http.Tests;
 
 /// <summary>
-/// HTTP 端点的幂等回放（RFC-0006 幂等第 4 条，ADR-0064）。
+/// HTTP 端点的幂等回放（RFC-0006 幂等第 4 条，ADR-0064）
 /// </summary>
 /// <remarks>
-/// 回放时端点不执行，<c>UseXiHan()</c> 用端点元数据上的写出方式写出首次调用的状态码与正文；记录不能回放给本次调用时是 Problem Details。
+/// 回放时端点不执行，<c>UseXiHan()</c> 用端点元数据上的写出方式写出首次调用的状态码与正文；记录不能回放给本次调用时是 Problem Details
 /// </remarks>
 public sealed class IdempotentReplayHttpTests
 {
@@ -58,7 +58,7 @@ public sealed class IdempotentReplayHttpTests
     }
 
     /// <summary>
-    /// 启动装配了 HTTP 协议、内存缓存（含幂等中间件）与订单操作的测试宿主。
+    /// 启动装配了 HTTP 协议、内存缓存（含幂等中间件）与订单操作的测试宿主
     /// </summary>
     private static async Task<(WebApplication App, HttpClient Client)> StartAsync()
     {
@@ -73,7 +73,7 @@ public sealed class IdempotentReplayHttpTests
     }
 
     /// <summary>
-    /// 带幂等键 Baggage 的 POST 请求。
+    /// 带幂等键 Baggage 的 POST 请求
     /// </summary>
     private static HttpRequestMessage Post(string path, string json, string idempotencyKey)
     {

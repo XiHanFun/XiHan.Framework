@@ -8,11 +8,11 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库工作流在 EF Core（SQLite）上跑引擎一致性套件。
+/// 数据库工作流在 EF Core（SQLite）上跑引擎一致性套件
 /// </summary>
 /// <remarks>
-/// 租约表在命名连接的另一个库文件。
-/// 套件里加入调用方事务的用例在业务事务写过之后取实例锁：租约表与业务同一个库文件时，租约的写入要等调用方自己的事务结束，忙等超时后失败（ADR-0087）。
+/// 租约表在命名连接的另一个库文件
+/// 套件里加入调用方事务的用例在业务事务写过之后取实例锁：租约表与业务同一个库文件时，租约的写入要等调用方自己的事务结束，忙等超时后失败（ADR-0087）
 /// </remarks>
 public sealed class EntityFrameworkCoreWorkflowEngineConformanceTests : WorkflowEngineConformance
 {

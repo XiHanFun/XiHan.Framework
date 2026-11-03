@@ -12,35 +12,35 @@ using XiHan.Framework.Protocols.Grpc.Proto;
 namespace XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 
 /// <summary>
-/// 登记测试操作的特性。
+/// 登记测试操作的特性
 /// </summary>
 /// <remarks>
-/// <c>orders.create</c>（带 <c>orders.write</c> 权限）、<c>orders.get</c>、<c>orders.list</c>、<c>order-lines.list</c> 暴露给 gRPC，<c>orders.secret</c> 只给 HTTP，<c>orders.audit</c> 标为内部。请求与响应的 Schema 与 <see cref="OrderRequest"/> / <see cref="OrderReply"/> 一一对应。
+/// <c>orders.create</c>（带 <c>orders.write</c> 权限）、<c>orders.get</c>、<c>orders.list</c>、<c>order-lines.list</c> 暴露给 gRPC，<c>orders.secret</c> 只给 HTTP，<c>orders.audit</c> 标为内部。请求与响应的 Schema 与 <see cref="OrderRequest"/> / <see cref="OrderReply"/> 一一对应
 /// </remarks>
 internal sealed class OrdersFeature : IFeature
 {
     /// <summary>
-    /// 请求 Schema：id = 1，name = 2，page = 3，tags = 4，reason = 5。
+    /// 请求 Schema：id = 1，name = 2，page = 3，tags = 4，reason = 5
     /// </summary>
     public const string RequestSchema = """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"OrderRequest","type":"object","properties":{"id":{"type":["string","null"]},"name":{"type":["string","null"]},"page":{"type":"integer","format":"int32"},"tags":{"type":["array","null"],"items":{"type":"string"}},"reason":{"type":["string","null"]}},"required":["page"]}""";
 
     /// <summary>
-    /// 响应 Schema：operation = 1，id = 2，name = 3，page = 4，tags = 5，reason = 6。
+    /// 响应 Schema：operation = 1，id = 2，name = 3，page = 4，tags = 5，reason = 6
     /// </summary>
     public const string ReplySchema = """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"OrderReply","type":"object","properties":{"operation":{"type":"string"},"id":{"type":["string","null"]},"name":{"type":["string","null"]},"page":{"type":"integer","format":"int32"},"tags":{"type":"array","items":{"type":"string"}},"reason":{"type":["string","null"]}},"required":["operation","page","tags"]}""";
 
     /// <summary>
-    /// 两个 Schema 组成的操作 Schema。
+    /// 两个 Schema 组成的操作 Schema
     /// </summary>
     public static readonly OperationSchema OrderSchema = new(RequestSchema, ReplySchema);
 
     /// <summary>
-    /// 请求的消息描述。
+    /// 请求的消息描述
     /// </summary>
     public static readonly ProtoMessage RequestMessage = ProtoSchema.FromJsonSchema(RequestSchema);
 
     /// <summary>
-    /// 响应的消息描述。
+    /// 响应的消息描述
     /// </summary>
     public static readonly ProtoMessage ReplyMessage = ProtoSchema.FromJsonSchema(ReplySchema);
 
@@ -72,7 +72,7 @@ internal sealed class OrdersFeature : IFeature
     }
 
     /// <summary>
-    /// 以同一实现登记一个契约。
+    /// 以同一实现登记一个契约
     /// </summary>
     private static void Add(FeatureContext context, OperationContract contract, OperationSchema? schema = null)
         => context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(contract, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, schema);

@@ -12,26 +12,26 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// 撞上唯一索引时返回唯一键重复（ADR-0072、ADR-0081）。
+/// 撞上唯一索引时返回唯一键重复（ADR-0072、ADR-0081）
 /// </summary>
 /// <remarks>
-/// 仓储返回 <c>PERSISTENCE_CONFLICT_003</c>，不让 <see cref="DbUpdateException"/> 逃出（RFC-0005「索引声明」）。
-/// 新增（同一批两项同键、另一行同键）、更新把键改成已有的值；之后工作单元只能回滚，调用以同一错误结束。软删除实体的唯一索引只约束未删除的行：同一键删除多次不冲突，未删除的同键行照样冲突，按部分唯一索引的名字报告。
+/// 仓储返回 <c>PERSISTENCE_CONFLICT_003</c>，不让 <see cref="DbUpdateException"/> 逃出（RFC-0005「索引声明」）
+/// 新增（同一批两项同键、另一行同键）、更新把键改成已有的值；之后工作单元只能回滚，调用以同一错误结束。软删除实体的唯一索引只约束未删除的行：同一键删除多次不冲突，未删除的同键行照样冲突，按部分唯一索引的名字报告
 /// </remarks>
 public sealed class EntityFrameworkCoreUniqueKeyConflictTests : IDisposable
 {
     /// <summary>
-    /// 固定的时刻。
+    /// 固定的时刻
     /// </summary>
     private static readonly DateTimeOffset _at = new(2026, 11, 1, 8, 0, 0, TimeSpan.Zero);
 
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 
@@ -125,7 +125,7 @@ public sealed class EntityFrameworkCoreUniqueKeyConflictTests : IDisposable
     }
 
     /// <summary>
-    /// 启动以 <see cref="IndexedDbContext"/> 装配 EF Core 持久化的宿主（启动即建表）。
+    /// 启动以 <see cref="IndexedDbContext"/> 装配 EF Core 持久化的宿主（启动即建表）
     /// </summary>
     private Task<TestHost> StartAsync() => TestHost.StartAsync(
         static builder => builder.UseFeature(new EntityFrameworkCorePersistenceFeature<IndexedDbContext>(static (binding, options) => options.UseSqlite(binding.ValueOrThrow().Value))),
@@ -137,7 +137,7 @@ public sealed class EntityFrameworkCoreUniqueKeyConflictTests : IDisposable
         });
 
     /// <summary>
-    /// 表里的行数，绕过仓储直接查。
+    /// 表里的行数，绕过仓储直接查
     /// </summary>
     private static async Task<int> CountAsync(TestHost host)
     {
@@ -146,22 +146,22 @@ public sealed class EntityFrameworkCoreUniqueKeyConflictTests : IDisposable
     }
 
     /// <summary>
-    /// 有唯一索引的实体的仓储。
+    /// 有唯一索引的实体的仓储
     /// </summary>
     private static IRepository<IndexedRow, Guid> Rows(InvocationContext context) => context.Services.GetRequiredService<IRepository<IndexedRow, Guid>>();
 
     /// <summary>
-    /// 软删除实体的仓储。
+    /// 软删除实体的仓储
     /// </summary>
     private static IRepository<SoftDeletedIndexedRow, Guid> Soft(InvocationContext context) => context.Services.GetRequiredService<IRepository<SoftDeletedIndexedRow, Guid>>();
 
     /// <summary>
-    /// 逐项结果合成一个：有失败取第一个失败。
+    /// 逐项结果合成一个：有失败取第一个失败
     /// </summary>
     private static Result Combine(IReadOnlyList<Result> results) => results.Any(static r => r.IsFailure) ? results.First(static r => r.IsFailure) : Result.Success();
 
     /// <summary>
-    /// 一行记录。
+    /// 一行记录
     /// </summary>
     private static IndexedRow Row(string tenantId, string code)
         => new() { Id = Guid.CreateVersion7(), TenantId = tenantId, Code = code, Category = "c", At = _at };

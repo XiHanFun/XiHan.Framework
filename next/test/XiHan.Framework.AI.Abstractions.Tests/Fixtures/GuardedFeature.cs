@@ -11,15 +11,15 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 登记一个声明了权限的 AI 操作 <c>guarded.whoami</c>。
+/// 登记一个声明了权限的 AI 操作 <c>guarded.whoami</c>
 /// </summary>
 /// <remarks>
-/// 权限码 <c>guarded.read</c>；清单要求授权能力，安全特性据此装配 Authenticate 与 Authorize 阶段。
+/// 权限码 <c>guarded.read</c>；清单要求授权能力，安全特性据此装配 Authenticate 与 Authorize 阶段
 /// </remarks>
 internal sealed class GuardedFeature : IFeature
 {
     /// <summary>
-    /// 操作要求的权限码。
+    /// 操作要求的权限码
     /// </summary>
     public const string Permission = "guarded.read";
 

@@ -7,7 +7,7 @@ using XiHan.Framework.Plugins.Wasm.Tests.Fixtures;
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
 /// <summary>
-/// 示例插件 EchoWasmPlugin 跑 Wasm 载体的一致性套件。
+/// 示例插件 EchoWasmPlugin 跑 Wasm 载体的一致性套件
 /// </summary>
 public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 {

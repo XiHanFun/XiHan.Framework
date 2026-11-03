@@ -11,16 +11,16 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// 挂载配置目录在 ASP.NET Core 宿主上的位置与重载。
+/// 挂载配置目录在 ASP.NET Core 宿主上的位置与重载
 /// </summary>
 /// <remarks>
-/// <c>XIHAN_CONFIG_PATH</c> 目录里的文件插在 <c>appsettings.{环境}.json</c> 之后、环境变量之前，文件变化触发重载。用例改进程环境变量（挂载目录与一个配置键），归入不并行的集合。
+/// <c>XIHAN_CONFIG_PATH</c> 目录里的文件插在 <c>appsettings.{环境}.json</c> 之后、环境变量之前，文件变化触发重载。用例改进程环境变量（挂载目录与一个配置键），归入不并行的集合
 /// </remarks>
 [Collection(nameof(ProcessEnvironmentGroup))]
 public sealed class ConfigurationDirectoryHostTests
 {
     /// <summary>
-    /// 用例里环境变量形式的配置键（<c>XiHanMountTest:FromEnvironment</c>）。
+    /// 用例里环境变量形式的配置键（<c>XiHanMountTest:FromEnvironment</c>）
     /// </summary>
     private const string EnvironmentKey = "XiHanMountTest__FromEnvironment";
 

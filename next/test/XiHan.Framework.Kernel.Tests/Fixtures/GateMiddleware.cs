@@ -7,28 +7,28 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 挂在 Handle 阶段开头的可编程中间件。
+/// 挂在 Handle 阶段开头的可编程中间件
 /// </summary>
 /// <remarks>
-/// 测试用它让下游阻塞、失败或抛异常，并数经过的调用。
+/// 测试用它让下游阻塞、失败或抛异常，并数经过的调用
 /// </remarks>
 internal sealed class GateMiddleware : IPipelineMiddleware
 {
     /// <summary>
-    /// 经过的调用数。
+    /// 经过的调用数
     /// </summary>
     private int _calls;
 
     /// <summary>
-    /// 每次调用的行为。
+    /// 每次调用的行为
     /// </summary>
     /// <remarks>
-    /// 默认直接放行。
+    /// 默认直接放行
     /// </remarks>
     public Func<InvocationContext, PipelineStep, ValueTask> Behavior { get; set; } = static (context, next) => next(context);
 
     /// <summary>
-    /// 经过的调用数。
+    /// 经过的调用数
     /// </summary>
     public int Calls => Volatile.Read(ref _calls);
 

@@ -8,20 +8,20 @@ using XiHan.Framework.Persistence.Conformance;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// SqlSugar Provider 以 SQLite 跑运行时数据源的一致性套件。
+/// SqlSugar Provider 以 SQLite 跑运行时数据源的一致性套件
 /// </summary>
 /// <remarks>
-/// 应用库与外部库各一个临时文件；连不上的定义以只读模式指向不存在的目录。
+/// 应用库与外部库各一个临时文件；连不上的定义以只读模式指向不存在的目录
 /// </remarks>
 public sealed class SqlSugarDataSourceConformanceTests : DataSourceConformance, IDisposable
 {
     /// <summary>
-    /// 应用自己的库。
+    /// 应用自己的库
     /// </summary>
     private readonly SqliteDatabase _application = new();
 
     /// <summary>
-    /// 作为外部库的临时文件。
+    /// 作为外部库的临时文件
     /// </summary>
     private readonly SqliteDatabase _external = new();
 
@@ -39,7 +39,7 @@ public sealed class SqlSugarDataSourceConformanceTests : DataSourceConformance, 
         => new(name, DatabaseTypes.Sqlite, $"Data Source={Path.Combine(Path.GetTempPath(), $"xihan-missing-{Guid.NewGuid():N}", "x.db")};Mode=ReadOnly;Password=Conformance-Secret");
 
     /// <summary>
-    /// 测试结束后删除两个临时库。
+    /// 测试结束后删除两个临时库
     /// </summary>
     public void Dispose()
     {

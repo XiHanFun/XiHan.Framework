@@ -6,7 +6,7 @@ using XiHan.Framework.Cli.Integration;
 namespace XiHan.Framework.Cli.Tests.Integration;
 
 /// <summary>
-/// 项目根与引用的框架版本。
+/// 项目根与引用的框架版本
 /// </summary>
 public sealed class ProjectDetectorTests
 {

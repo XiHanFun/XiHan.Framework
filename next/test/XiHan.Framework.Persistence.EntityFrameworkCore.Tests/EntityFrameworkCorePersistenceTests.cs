@@ -17,25 +17,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// EF Core Provider 独有的行为。
+/// EF Core Provider 独有的行为
 /// </summary>
 /// <remarks>
-/// 选项解析、模型约定、游离实体更新与并发戳、新增撞上主键约束（检查之后同一标识被占）时的标识重复与只能回滚的提交、残余变更不改创建时间、只读工作单元、状态机与建表开关。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析、模型约定、游离实体更新与并发戳、新增撞上主键约束（检查之后同一标识被占）时的标识重复与只能回滚的提交、残余变更不改创建时间、只读工作单元、状态机与建表开关。一致性套件覆盖的通用行为不在此重复
 /// </remarks>
 public sealed class EntityFrameworkCorePersistenceTests : IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 
     /// <summary>
-    /// 用键值对构造内存配置。
+    /// 用键值对构造内存配置
     /// </summary>
     private static IConfiguration Configuration(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
@@ -282,19 +282,19 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
     }
 
     /// <summary>
-    /// 取调用作用域内的订单仓储。
+    /// 取调用作用域内的订单仓储
     /// </summary>
     private static IRepository<ConformanceOrder, Guid> Repository(InvocationContext context)
         => context.Services.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
 
     /// <summary>
-    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果。
+    /// 在一次完整管道调用内执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
     private static async Task<Result> RunAsync(TestHost host, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)));
 
     /// <summary>
-    /// 在新调用内按标识查找订单。
+    /// 在新调用内按标识查找订单
     /// </summary>
     private static async Task<Maybe<ConformanceOrder>> FindAsync(TestHost host, Guid id)
     {
@@ -308,7 +308,7 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
     }
 
     /// <summary>
-    /// 在新调用内列出全部订单（含已软删除）。
+    /// 在新调用内列出全部订单（含已软删除）
     /// </summary>
     private static async Task<IReadOnlyList<ConformanceOrder>> ListAllAsync(TestHost host)
     {

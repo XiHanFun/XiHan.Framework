@@ -7,7 +7,7 @@ using XiHan.Framework.AI.Abstractions.Guardrails;
 namespace XiHan.Framework.AI.Abstractions.Tests.Guardrails;
 
 /// <summary>
-/// 内置关键词护栏：关键词、内置与自定义注入模式、只看用户消息。
+/// 内置关键词护栏：关键词、内置与自定义注入模式、只看用户消息
 /// </summary>
 public sealed class GuardrailTests
 {

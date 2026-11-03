@@ -12,15 +12,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.InMemory.Tests;
 
 /// <summary>
-/// 租户分库。
+/// 租户分库
 /// </summary>
 /// <remarks>
-/// 存储解析器的缓存与容量、存储故障的错误码、Tenant 阶段把分片写进调用上下文，以及分片绑定的合成。
+/// 存储解析器的缓存与容量、存储故障的错误码、Tenant 阶段把分片写进调用上下文，以及分片绑定的合成
 /// </remarks>
 public sealed class TenantShardingTests
 {
     /// <summary>
-    /// 分库租户的配置键前缀。
+    /// 分库租户的配置键前缀
     /// </summary>
     private const string Acme = "XiHan:MultiTenancy:Tenants:acme:";
 
@@ -146,7 +146,7 @@ public sealed class TenantShardingTests
     }
 
     /// <summary>
-    /// 查找即抛异常的租户存储，模拟存储不可达。
+    /// 查找即抛异常的租户存储，模拟存储不可达
     /// </summary>
     private sealed class ThrowingStore : ITenantStore
     {
@@ -162,7 +162,7 @@ public sealed class TenantShardingTests
     }
 
     /// <summary>
-    /// 总是返回不可用的分片解析器，模拟应用自己的分片 Provider 故障。
+    /// 总是返回不可用的分片解析器，模拟应用自己的分片 Provider 故障
     /// </summary>
     private sealed class FailingResolver : ITenantShardResolver
     {

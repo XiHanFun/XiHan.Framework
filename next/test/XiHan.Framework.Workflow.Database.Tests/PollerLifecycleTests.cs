@@ -16,10 +16,10 @@ using XiHan.Framework.Workflow.Database.Storage;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 到期书签轮询与应用生命周期（数据库实现）。
+/// 到期书签轮询与应用生命周期（数据库实现）
 /// </summary>
 /// <remarks>
-/// 领导节点每个周期调用 <see cref="DueBookmarkPoller.RunCycleAsync"/>：应用启动期间与排空期间不在服务状态，周期什么也不做、不记告警，进入服务状态后照常轮询；周期中途进入排空的，剩下的分区不再调用、不告警。轮询循环（<see cref="DueBookmarkPollingLoop.RunCycleAsync"/>）在这两个阶段不拿也不续领导权，持有就释放，另一个实例随即接手。探针排在数据库工作流之后启停，在这两个阶段各跑一个周期，不靠计时器与真实等待。
+/// 领导节点每个周期调用 <see cref="DueBookmarkPoller.RunCycleAsync"/>：应用启动期间与排空期间不在服务状态，周期什么也不做、不记告警，进入服务状态后照常轮询；周期中途进入排空的，剩下的分区不再调用、不告警。轮询循环（<see cref="DueBookmarkPollingLoop.RunCycleAsync"/>）在这两个阶段不拿也不续领导权，持有就释放，另一个实例随即接手。探针排在数据库工作流之后启停，在这两个阶段各跑一个周期，不靠计时器与真实等待
 /// </remarks>
 public sealed class PollerLifecycleTests
 {

@@ -10,7 +10,7 @@ using XiHan.Framework.Plugins.Protocol.Handshake;
 namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Conformance;
 
 /// <summary>
-/// 回放 spec/conformance/vectors/plugin 下的向量，以及选项解析。
+/// 回放 spec/conformance/vectors/plugin 下的向量，以及选项解析
 /// </summary>
 public sealed class ProtocolVectorTests
 {

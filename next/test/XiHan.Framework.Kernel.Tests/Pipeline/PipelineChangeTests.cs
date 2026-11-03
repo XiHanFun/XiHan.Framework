@@ -10,15 +10,15 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Pipeline;
 
 /// <summary>
-/// 管道的成组登记与按归属撤回。
+/// 管道的成组登记与按归属撤回
 /// </summary>
 /// <remarks>
-/// RFC-0004「运行期改动」、ADR-0088：一组全进或全不进、撤回不留下悬空约束、应用构建之后只能成组改动；每次调用按进入管道时的委托走完，之后开始的调用经过改动后的管道。
+/// RFC-0004「运行期改动」、ADR-0088：一组全进或全不进、撤回不留下悬空约束、应用构建之后只能成组改动；每次调用按进入管道时的委托走完，之后开始的调用经过改动后的管道
 /// </remarks>
 public sealed class PipelineChangeTests
 {
     /// <summary>
-    /// 插件的归属。
+    /// 插件的归属
     /// </summary>
     private const string Plugin = "xihan.plugins.p";
 
@@ -187,7 +187,7 @@ public sealed class PipelineChangeTests
     }
 
     /// <summary>
-    /// 在新作用域里经应用的管道执行一次处理器。
+    /// 在新作用域里经应用的管道执行一次处理器
     /// </summary>
     private static async Task<Result> InvokeAsync(IServiceProvider provider, App app, PipelineStep handler)
     {

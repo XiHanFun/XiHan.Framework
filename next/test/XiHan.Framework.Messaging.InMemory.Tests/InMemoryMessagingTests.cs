@@ -23,17 +23,17 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 内存代理的选项解析、容量与死信，以及发件箱与内存持久化配合的测试。
+/// 内存代理的选项解析、容量与死信，以及发件箱与内存持久化配合的测试
 /// </summary>
 public sealed class InMemoryMessagingTests
 {
     /// <summary>
-    /// 测试订阅的主题。
+    /// 测试订阅的主题
     /// </summary>
     private const string Topic = "orders";
 
     /// <summary>
-    /// 来源 <c>/tests</c>、类型 <c>orders.placed</c> 的测试信封。
+    /// 来源 <c>/tests</c>、类型 <c>orders.placed</c> 的测试信封
     /// </summary>
     private static MessageEnvelope Envelope(string id) => new() { Id = id, Source = "/tests", Type = "orders.placed" };
 

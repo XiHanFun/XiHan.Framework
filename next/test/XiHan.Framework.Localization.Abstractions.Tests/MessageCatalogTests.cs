@@ -11,15 +11,15 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Localization.Abstractions.Tests;
 
 /// <summary>
-/// 消息目录：按区域分组装载、语言文件解析、嵌入资源装载，以及同名注册的合并与冲突。
+/// 消息目录：按区域分组装载、语言文件解析、嵌入资源装载，以及同名注册的合并与冲突
 /// </summary>
 public sealed class MessageCatalogTests
 {
     /// <summary>
-    /// 两种语言的目录。
+    /// 两种语言的目录
     /// </summary>
     /// <remarks>
-    /// 区域名故意用小写验证规范化。
+    /// 区域名故意用小写验证规范化
     /// </remarks>
     private static MessageCatalog Orders() => new("orders", new Dictionary<string, IReadOnlyDictionary<string, string>>
     {

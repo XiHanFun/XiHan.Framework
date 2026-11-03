@@ -9,17 +9,17 @@ using XiHan.Framework.Kernel.Diagnostics;
 namespace XiHan.Framework.Auditing.InMemory.Tests;
 
 /// <summary>
-/// 让 <see cref="InMemoryAuditTrail"/> 跑完整套 <see cref="AuditTrailConformance"/> 用例。
+/// 让 <see cref="InMemoryAuditTrail"/> 跑完整套 <see cref="AuditTrailConformance"/> 用例
 /// </summary>
 public sealed class InMemoryAuditTrailConformanceTests : AuditTrailConformance
 {
     /// <summary>
-    /// 内存夹具：接收器与查询是同一个对象。
+    /// 内存夹具：接收器与查询是同一个对象
     /// </summary>
     private sealed class Fixture : AuditTrailFixture
     {
         /// <summary>
-        /// 被测对象。
+        /// 被测对象
         /// </summary>
         private readonly InMemoryAuditTrail _trail = new(new InMemoryAuditingOptions(), NullLoggerFactory.Instance);
 

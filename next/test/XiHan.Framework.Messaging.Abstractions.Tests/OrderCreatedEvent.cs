@@ -6,8 +6,8 @@ using XiHan.Framework.Domain.Events;
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
 /// <summary>
-/// 测试事件：订单已创建。
+/// 测试事件：订单已创建
 /// </summary>
-/// <param name="OrderId">订单 ID。</param>
-/// <param name="OccurredAt">发生时间。</param>
+/// <param name="OrderId">订单 ID</param>
+/// <param name="OccurredAt">发生时间</param>
 internal sealed record OrderCreatedEvent(Guid OrderId, DateTimeOffset OccurredAt) : IDomainEvent;

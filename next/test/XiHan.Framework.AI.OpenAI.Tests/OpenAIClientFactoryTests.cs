@@ -8,10 +8,10 @@ using XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 namespace XiHan.Framework.AI.OpenAI.Tests;
 
 /// <summary>
-/// OpenAI 客户端的传输与超时。
+/// OpenAI 客户端的传输与超时
 /// </summary>
 /// <remarks>
-/// 容器里有 <see cref="IHttpClientFactory"/> 时经它的命名客户端发请求；超时只以 Provider 的 <c>TimeoutSeconds</c> 为准，命名客户端缺省 100 秒的 <see cref="HttpClient.Timeout"/> 不再截断更长的超时。
+/// 容器里有 <see cref="IHttpClientFactory"/> 时经它的命名客户端发请求；超时只以 Provider 的 <c>TimeoutSeconds</c> 为准，命名客户端缺省 100 秒的 <see cref="HttpClient.Timeout"/> 不再截断更长的超时
 /// </remarks>
 public sealed class OpenAIClientFactoryTests
 {

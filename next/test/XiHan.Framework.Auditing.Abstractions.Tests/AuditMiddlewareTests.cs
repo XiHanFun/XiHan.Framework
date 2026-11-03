@@ -16,20 +16,20 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Auditing.Abstractions.Tests;
 
 /// <summary>
-/// 审计中间件经完整管道的行为。
+/// 审计中间件经完整管道的行为
 /// </summary>
 /// <remarks>
-/// 选择规则、显式动作、主体与租户、失败与异常、接收器故障、选项解析。
+/// 选择规则、显式动作、主体与租户、失败与异常、接收器故障、选项解析
 /// </remarks>
 public sealed class AuditMiddlewareTests
 {
     /// <summary>
-    /// 主体 alice 在租户 acme 的 baggage。
+    /// 主体 alice 在租户 acme 的 baggage
     /// </summary>
     private static readonly Dictionary<string, string> _alice = new(StringComparer.Ordinal) { [BaggageKeys.Principal] = "alice", [BaggageKeys.Tenant] = "acme" };
 
     /// <summary>
-    /// 启动装配了记录接收器与订单操作的宿主，可指定 <c>XiHan:Auditing</c> 的选项与排除项。
+    /// 启动装配了记录接收器与订单操作的宿主，可指定 <c>XiHan:Auditing</c> 的选项与排除项
     /// </summary>
     private static Task<TestHost> StartAsync(string? selection = null, string? includeSuccesses = null, IReadOnlyList<string>? exclude = null)
     {

@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Security.Database.Tests.Fixtures;
 
 /// <summary>
-/// 写订单操作请求与响应的源生成序列化上下文。
+/// 写订单操作请求与响应的源生成序列化上下文
 /// </summary>
 [JsonSerializable(typeof(OrderRequest))]
 [JsonSerializable(typeof(OrderResponse))]

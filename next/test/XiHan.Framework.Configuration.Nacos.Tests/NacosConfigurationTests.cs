@@ -12,15 +12,15 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Configuration.Nacos.Tests;
 
 /// <summary>
-/// Nacos Provider 独有的行为。
+/// Nacos Provider 独有的行为
 /// </summary>
 /// <remarks>
-/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、版本即内容 MD5 与地址的上下文路径（HTTP 桩）、接进配置构建器与自建客户端的释放、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复。
+/// 选项解析与绑定、文档展平、格式不合法的错误、properties 格式、版本即内容 MD5 与地址的上下文路径（HTTP 桩）、接进配置构建器与自建客户端的释放、特性在宿主里的装配。一致性套件覆盖的通用行为不在此重复
 /// </remarks>
 public sealed class NacosConfigurationTests
 {
     /// <summary>
-    /// 用键值对构造内存配置。
+    /// 用键值对构造内存配置
     /// </summary>
     private static IConfiguration Build(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();

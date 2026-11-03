@@ -7,17 +7,17 @@ using XiHan.Framework.Configuration.Conformance.Secrets;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 让进程内密钥库跑完整套 <see cref="SecretStoreConformance"/> 用例，同时验证套件本身。
+/// 让进程内密钥库跑完整套 <see cref="SecretStoreConformance"/> 用例，同时验证套件本身
 /// </summary>
 public sealed class InMemorySecretStoreConformanceTests : SecretStoreConformance
 {
     /// <summary>
-    /// 进程内夹具。
+    /// 进程内夹具
     /// </summary>
     private sealed class Fixture : SecretStoreFixture
     {
         /// <summary>
-        /// 被测密钥库。
+        /// 被测密钥库
         /// </summary>
         private readonly InMemorySecretStore _store = new();
 

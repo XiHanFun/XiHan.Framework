@@ -6,15 +6,15 @@ using System.Data;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// <see cref="DateTimeOffsetConverter"/>。
+/// <see cref="DateTimeOffsetConverter"/>
 /// </summary>
 /// <remarks>
-/// 各驱动交出的日期时间形态都还原成同一个 UTC 时刻，参数按 UTC 写入。
+/// 各驱动交出的日期时间形态都还原成同一个 UTC 时刻，参数按 UTC 写入
 /// </remarks>
 public sealed class DateTimeOffsetConverterTests
 {
     /// <summary>
-    /// 一个 UTC 时刻。
+    /// 一个 UTC 时刻
     /// </summary>
     private static readonly DateTimeOffset _moment = new(2026, 10, 27, 19, 34, 39, TimeSpan.Zero);
 
@@ -56,7 +56,7 @@ public sealed class DateTimeOffsetConverterTests
     }
 
     /// <summary>
-    /// 把一个值放进单列单行的表，经 <see cref="DataTableReader"/> 以 <see cref="IDataRecord"/> 的形态交给转换器。
+    /// 把一个值放进单列单行的表，经 <see cref="DataTableReader"/> 以 <see cref="IDataRecord"/> 的形态交给转换器
     /// </summary>
     private static DateTimeOffset Read(DateTimeOffsetConverter converter, object value)
     {

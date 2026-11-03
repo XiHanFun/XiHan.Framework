@@ -8,10 +8,10 @@ using XiHan.Framework.Persistence.Abstractions.Schema;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 库结构读取与实体目录的中立契约。
+/// 库结构读取与实体目录的中立契约
 /// </summary>
 /// <remarks>
-/// 列表查询的取出条数、登记实体的去重、实体映射推出的协议与索引、不支持时的明确错误码。
+/// 列表查询的取出条数、登记实体的去重、实体映射推出的协议与索引、不支持时的明确错误码
 /// </remarks>
 public sealed class SchemaContractTests
 {

@@ -26,18 +26,18 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Security.Database.Tests;
 
 /// <summary>
-/// 数据库授权特性与内存安全特性同时装配。
+/// 数据库授权特性与内存安全特性同时装配
 /// </summary>
 /// <remarks>
-/// 本包顶替授权、内存实现只剩 ApiKey 认证；操作按数据库里的授予放行或拒绝；批量授予 / 撤销的逐项结果与本地化文案；授予缓存的命中、失效、过期与容量；选项解析。
+/// 本包顶替授权、内存实现只剩 ApiKey 认证；操作按数据库里的授予放行或拒绝；批量授予 / 撤销的逐项结果与本地化文案；授予缓存的命中、失效、过期与容量；选项解析
 /// </remarks>
 public sealed class DatabaseSecurityTests
 {
     /// <summary>
-    /// 两个 ApiKey 主体（alice 带角色 editor，bob 没有角色）。
+    /// 两个 ApiKey 主体（alice 带角色 editor，bob 没有角色）
     /// </summary>
     /// <remarks>
-    /// 内存授予配置故意给 editor 授了 orders.write——数据库授权生效时它不起作用。
+    /// 内存授予配置故意给 editor 授了 orders.write——数据库授权生效时它不起作用
     /// </remarks>
     private static readonly KeyValuePair<string, string?>[] _configuration =
     [
@@ -48,17 +48,17 @@ public sealed class DatabaseSecurityTests
     ];
 
     /// <summary>
-    /// 用户 alice。
+    /// 用户 alice
     /// </summary>
     private static readonly GrantSubject _alice = GrantSubject.ForUser("alice");
 
     /// <summary>
-    /// 用户 bob。
+    /// 用户 bob
     /// </summary>
     private static readonly GrantSubject _bob = GrantSubject.ForUser("bob");
 
     /// <summary>
-    /// 角色 editor。
+    /// 角色 editor
     /// </summary>
     private static readonly GrantSubject _editor = GrantSubject.ForRole("editor");
 
@@ -255,10 +255,10 @@ public sealed class DatabaseSecurityTests
     }
 
     /// <summary>
-    /// 启动装配了内存持久化、内存本地化、内存安全（认证）、数据库授权与订单特性的宿主。
+    /// 启动装配了内存持久化、内存本地化、内存安全（认证）、数据库授权与订单特性的宿主
     /// </summary>
     /// <remarks>
-    /// 可换时钟、追加配置。
+    /// 可换时钟、追加配置
     /// </remarks>
     private static Task<TestHost> StartAsync(FakeTimeProvider? clock = null, params KeyValuePair<string, string?>[] extra)
         => TestHost.StartAsync(
@@ -273,7 +273,7 @@ public sealed class DatabaseSecurityTests
             });
 
     /// <summary>
-    /// 以可选的 ApiKey 凭据与租户经完整管道调用写订单操作。
+    /// 以可选的 ApiKey 凭据与租户经完整管道调用写订单操作
     /// </summary>
     private static async Task<Result<OrderResponse>> WriteOrderAsync(TestHost host, string? apiKey, string? tenant = null)
     {
@@ -293,7 +293,7 @@ public sealed class DatabaseSecurityTests
     }
 
     /// <summary>
-    /// 在一次调用（Transaction 阶段内）里批量授予。
+    /// 在一次调用（Transaction 阶段内）里批量授予
     /// </summary>
     private static async Task<IReadOnlyList<PermissionGrantResult>> GrantAsync(TestHost host, params PermissionGrant[] grants)
     {
@@ -303,7 +303,7 @@ public sealed class DatabaseSecurityTests
     }
 
     /// <summary>
-    /// 在一次调用里批量撤销。
+    /// 在一次调用里批量撤销
     /// </summary>
     private static async Task<IReadOnlyList<PermissionGrantResult>> RevokeAsync(TestHost host, params PermissionGrant[] grants)
     {
@@ -313,7 +313,7 @@ public sealed class DatabaseSecurityTests
     }
 
     /// <summary>
-    /// 在一次调用里列出授予行。
+    /// 在一次调用里列出授予行
     /// </summary>
     private static async Task<IReadOnlyList<PermissionGrantRecord>> ListAsync(TestHost host, GrantSubject? subject, string? tenantId, int skip, int take)
     {
@@ -323,7 +323,7 @@ public sealed class DatabaseSecurityTests
     }
 
     /// <summary>
-    /// 绕过记录存储直接向仓储写一行全局授予：不触发缓存失效，用来证明命中时不查库。
+    /// 绕过记录存储直接向仓储写一行全局授予：不触发缓存失效，用来证明命中时不查库
     /// </summary>
     private static async Task InsertRowAsync(TestHost host, GrantSubject subject, string permission)
     {
@@ -337,7 +337,7 @@ public sealed class DatabaseSecurityTests
     }
 
     /// <summary>
-    /// 只含 <c>XiHan:Security:Database</c> 节下给定键值的配置。
+    /// 只含 <c>XiHan:Security:Database</c> 节下给定键值的配置
     /// </summary>
     private static IConfiguration Configuration(params (string Key, string Value)[] pairs)
         => new ConfigurationBuilder().AddInMemoryCollection(pairs.Select(static p => new KeyValuePair<string, string?>($"{DatabaseSecurityOptions.ConfigurationSection}:{p.Key}", p.Value))).Build();

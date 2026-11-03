@@ -22,29 +22,29 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// ASP.NET Core 宿主集成验证。
+/// ASP.NET Core 宿主集成验证
 /// </summary>
 /// <remarks>
-/// 请求头到调用上下文的翻译、Problem Details 回写、探针与应用状态。
+/// 请求头到调用上下文的翻译、Problem Details 回写、探针与应用状态
 /// </remarks>
 public sealed class WebHostTests
 {
     /// <summary>
-    /// 捕获最近一次请求的调用上下文，供测试在响应之后断言。
+    /// 捕获最近一次请求的调用上下文，供测试在响应之后断言
     /// </summary>
     private sealed class Captured
     {
         /// <summary>
-        /// 最近一次经过管道的调用上下文。
+        /// 最近一次经过管道的调用上下文
         /// </summary>
         /// <remarks>
-        /// 尚无请求时为 <c>null</c>。
+        /// 尚无请求时为 <c>null</c>
         /// </remarks>
         public InvocationContext? Context { get; set; }
     }
 
     /// <summary>
-    /// 把调用上下文写入 <see cref="Captured"/> 后放行的中间件。
+    /// 把调用上下文写入 <see cref="Captured"/> 后放行的中间件
     /// </summary>
     private sealed class CaptureMiddleware(Captured captured) : IPipelineMiddleware
     {
@@ -57,10 +57,10 @@ public sealed class WebHostTests
     }
 
     /// <summary>
-    /// 用 TestServer 启动一个装配了捕获中间件与若干测试端点的应用。
+    /// 用 TestServer 启动一个装配了捕获中间件与若干测试端点的应用
     /// </summary>
     /// <remarks>
-    /// 返回应用、客户端与捕获器。
+    /// 返回应用、客户端与捕获器
     /// </remarks>
     private static async Task<(WebApplication App, HttpClient Client, Captured Captured)> StartAsync(Action<AppBuilder>? extra = null, Action<WebApplication>? beforeXiHan = null)
     {

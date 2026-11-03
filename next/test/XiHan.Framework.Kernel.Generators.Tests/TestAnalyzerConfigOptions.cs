@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace XiHan.Framework.Kernel.Generators.Tests;
 
 /// <summary>
-/// 只有一个键的分析器配置。
+/// 只有一个键的分析器配置
 /// </summary>
-/// <param name="rootNamespace">根命名空间。</param>
+/// <param name="rootNamespace">根命名空间</param>
 internal sealed class TestAnalyzerConfigOptions(string rootNamespace) : AnalyzerConfigOptions
 {
     /// <inheritdoc />

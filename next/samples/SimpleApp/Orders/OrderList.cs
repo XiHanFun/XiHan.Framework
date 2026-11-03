@@ -5,7 +5,7 @@
 namespace SimpleApp.Orders;
 
 /// <summary>
-/// 当前租户的订单列表。
+/// 当前租户的订单列表
 /// </summary>
-/// <param name="Items">按创建时间排序的订单。</param>
+/// <param name="Items">按创建时间排序的订单</param>
 public sealed record OrderList(IReadOnlyList<OrderResponse> Items);

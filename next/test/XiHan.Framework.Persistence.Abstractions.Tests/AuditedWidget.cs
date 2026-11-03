@@ -6,7 +6,7 @@ using XiHan.Framework.Domain.Entities;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 实现全部持久化协议的测试实体，用于验证约定会写入每个协议字段。
+/// 实现全部持久化协议的测试实体，用于验证约定会写入每个协议字段
 /// </summary>
 internal sealed class AuditedWidget : IEntity<Guid>, IMultiTenant, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp, ISoftDeletable
 {

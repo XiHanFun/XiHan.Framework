@@ -8,10 +8,10 @@ using XiHan.Framework.Scheduling.InMemory;
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 
 /// <summary>
-/// 示例 samples/KubernetesApp 的调度配置要落到引擎实际读取的键上。
+/// 示例 samples/KubernetesApp 的调度配置要落到引擎实际读取的键上
 /// </summary>
 /// <remarks>
-/// 轮询间隔与租约存活时间属于 <c>XiHan:Scheduling</c>（引擎），<c>XiHan:Scheduling:InMemory</c> 只有内存存储自己的 <c>MaxRuns</c>。
+/// 轮询间隔与租约存活时间属于 <c>XiHan:Scheduling</c>（引擎），<c>XiHan:Scheduling:InMemory</c> 只有内存存储自己的 <c>MaxRuns</c>
 /// </remarks>
 public sealed class KubernetesAppSampleTests
 {
@@ -29,7 +29,7 @@ public sealed class KubernetesAppSampleTests
     }
 
     /// <summary>
-    /// 从测试输出目录向上找 <c>next/</c>（含解决方案文件的目录）。
+    /// 从测试输出目录向上找 <c>next/</c>（含解决方案文件的目录）
     /// </summary>
     private static string FindNextRoot()
     {

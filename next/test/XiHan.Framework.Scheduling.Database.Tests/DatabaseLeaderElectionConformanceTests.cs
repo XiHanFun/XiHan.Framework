@@ -13,25 +13,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 让 <see cref="DatabaseLeaderElection"/>跑完整套 <see cref="LeaderElectionConformance"/> 用例。
+/// 让 <see cref="DatabaseLeaderElection"/>跑完整套 <see cref="LeaderElectionConformance"/> 用例
 /// </summary>
 /// <remarks>
-/// 对着 SQLite。套件不释放宿主，所以每个用例在生命周期钩子里启动与释放自己的宿主；选举用套件给的时钟构造，租约行的到期时刻也按它写。应用生命周期用例另开一个库，起两个共用它与套件时钟的节点：被测节点装配探针，另一个节点的选举作竞争者。
+/// 对着 SQLite。套件不释放宿主，所以每个用例在生命周期钩子里启动与释放自己的宿主；选举用套件给的时钟构造，租约行的到期时刻也按它写。应用生命周期用例另开一个库，起两个共用它与套件时钟的节点：被测节点装配探针，另一个节点的选举作竞争者
 /// </remarks>
 public sealed class DatabaseLeaderElectionConformanceTests : LeaderElectionConformance, IAsyncLifetime
 {
     /// <summary>
-    /// 本用例的数据库与宿主。
+    /// 本用例的数据库与宿主
     /// </summary>
     private SqliteDatabase? _database;
 
     /// <summary>
-    /// 已启动的宿主。
+    /// 已启动的宿主
     /// </summary>
     private TestHost? _host;
 
     /// <summary>
-    /// 启动宿主。
+    /// 启动宿主
     /// </summary>
     public async ValueTask InitializeAsync()
     {
@@ -40,7 +40,7 @@ public sealed class DatabaseLeaderElectionConformanceTests : LeaderElectionConfo
     }
 
     /// <summary>
-    /// 停止宿主并删除数据库文件。
+    /// 停止宿主并删除数据库文件
     /// </summary>
     public async ValueTask DisposeAsync()
     {

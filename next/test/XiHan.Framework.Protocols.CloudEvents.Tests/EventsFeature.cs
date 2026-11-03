@@ -11,25 +11,25 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 
 /// <summary>
-/// 订阅测试主题的测试特性。
+/// 订阅测试主题的测试特性
 /// </summary>
 /// <remarks>
-/// <c>orders</c> 竞争订阅；<c>notices</c> 竞争与广播各一个订阅；<c>caches</c> 只有广播订阅。
+/// <c>orders</c> 竞争订阅；<c>notices</c> 竞争与广播各一个订阅；<c>caches</c> 只有广播订阅
 /// </remarks>
 internal sealed class EventsFeature : IFeature
 {
     /// <summary>
-    /// 订阅的主题。
+    /// 订阅的主题
     /// </summary>
     public const string Topic = "orders";
 
     /// <summary>
-    /// 两种方式都订阅的主题。
+    /// 两种方式都订阅的主题
     /// </summary>
     public const string NoticesTopic = "notices";
 
     /// <summary>
-    /// 只以广播方式订阅的主题。
+    /// 只以广播方式订阅的主题
     /// </summary>
     public const string CachesTopic = "caches";
 

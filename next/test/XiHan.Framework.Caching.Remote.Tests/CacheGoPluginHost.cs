@@ -9,46 +9,46 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Caching.Remote.Tests;
 
 /// <summary>
-/// 以 Go 写的远程缓存插件 CacheGoPlugin为插件目录启动测试宿主的辅助。
+/// 以 Go 写的远程缓存插件 CacheGoPlugin为插件目录启动测试宿主的辅助
 /// </summary>
 /// <remarks>
-/// framework-sdk-go 的 examples/cache。测试运行时用本机的 go 构建它，没有 go 就跳过。
+/// framework-sdk-go 的 examples/cache。测试运行时用本机的 go 构建它，没有 go 就跳过
 /// </remarks>
 internal static class CacheGoPluginHost
 {
     /// <summary>
-    /// 示例插件的清单 ID。
+    /// 示例插件的清单 ID
     /// </summary>
     public const string PluginId = "xihan.samples.cache-go";
 
     /// <summary>
-    /// 示例源码目录 samples/CacheGoPlugin。
+    /// 示例源码目录 samples/CacheGoPlugin
     /// </summary>
     public static string SourceDirectory { get; } = Path.Combine(LocateRoot(), "samples", "CacheGoPlugin");
 
     /// <summary>
-    /// 构建产物目录：可执行文件与清单。
+    /// 构建产物目录：可执行文件与清单
     /// </summary>
     public static string Directory { get; } = Path.Combine(SourceDirectory, "bin");
 
     /// <summary>
-    /// 只构建一次。
+    /// 只构建一次
     /// </summary>
     /// <remarks>
-    /// 值为空表示成功，否则是跳过原因。
+    /// 值为空表示成功，否则是跳过原因
     /// </remarks>
     private static readonly Lazy<string?> _build = new(Build, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>
-    /// 构建结果：空表示已构建，否则是跳过原因。
+    /// 构建结果：空表示已构建，否则是跳过原因
     /// </summary>
     public static string? BuildReason => _build.Value;
 
     /// <summary>
-    /// 确保示例已构建。
+    /// 确保示例已构建
     /// </summary>
     /// <remarks>
-    /// 本机没有 go 或构建失败时跳过当前测试。
+    /// 本机没有 go 或构建失败时跳过当前测试
     /// </remarks>
     public static void EnsureBuiltOrSkip()
     {
@@ -59,7 +59,7 @@ internal static class CacheGoPluginHost
     }
 
     /// <summary>
-    /// 宿主配置：插件目录、较短的健康轮询、插件的 Cache 配置节与适配器超时。
+    /// 宿主配置：插件目录、较短的健康轮询、插件的 Cache 配置节与适配器超时
     /// </summary>
     public static IEnumerable<KeyValuePair<string, string?>> Configuration(params (string Key, string Value)[] extra)
     {
@@ -76,7 +76,7 @@ internal static class CacheGoPluginHost
     }
 
     /// <summary>
-    /// 构建示例后启动装配进程外插件特性与远程缓存特性的宿主。
+    /// 构建示例后启动装配进程外插件特性与远程缓存特性的宿主
     /// </summary>
     public static Task<TestHost> StartAsync(Action<AppBuilder>? configure = null, params (string Key, string Value)[] extra)
     {
@@ -92,7 +92,7 @@ internal static class CacheGoPluginHost
     }
 
     /// <summary>
-    /// 用本机的 go 构建 cache-go 并把清单复制进产物目录。
+    /// 用本机的 go 构建 cache-go 并把清单复制进产物目录
     /// </summary>
     private static string? Build()
     {
@@ -129,7 +129,7 @@ internal static class CacheGoPluginHost
     }
 
     /// <summary>
-    /// 向上找到含解决方案文件的目录。
+    /// 向上找到含解决方案文件的目录
     /// </summary>
     private static string LocateRoot()
     {

@@ -15,11 +15,11 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 数据库工作流在 EF Core（SQLite）上的租约表与业务事务。
+/// 数据库工作流在 EF Core（SQLite）上的租约表与业务事务
 /// </summary>
 /// <remarks>
-/// 租约表放在命名连接的另一个库文件（ADR-0087）。
-/// 引擎在调用方事务里写过业务库之后取实例锁，租约行写在租约库上，不等调用方自己的事务；结果处理器的写入与实例完成一起提交或回滚。
+/// 租约表放在命名连接的另一个库文件（ADR-0087）
+/// 引擎在调用方事务里写过业务库之后取实例锁，租约行写在租约库上，不等调用方自己的事务；结果处理器的写入与实例完成一起提交或回滚
 /// </remarks>
 public sealed class EntityFrameworkCoreWorkflowTests
 {
@@ -66,7 +66,7 @@ public sealed class EntityFrameworkCoreWorkflowTests
     }
 
     /// <summary>
-    /// 直接连库数一张表的行数。
+    /// 直接连库数一张表的行数
     /// </summary>
     private static long Count(string path, string table)
     {

@@ -10,23 +10,23 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.MultiTenancy.Database.Tests;
 
 /// <summary>
-/// 让 <see cref="DatabaseTenantStore"/>（对着内存持久化）跑完整套 <see cref="TenantStoreConformance"/> 用例。
+/// 让 <see cref="DatabaseTenantStore"/>（对着内存持久化）跑完整套 <see cref="TenantStoreConformance"/> 用例
 /// </summary>
 /// <remarks>
-/// 套件每次要一个独立的存储，所以每次启动一个宿主，用例结束时一并释放。
+/// 套件每次要一个独立的存储，所以每次启动一个宿主，用例结束时一并释放
 /// </remarks>
 public sealed class DatabaseTenantStoreConformanceTests : TenantStoreConformance, IAsyncDisposable
 {
     /// <summary>
-    /// 本用例启动的宿主。
+    /// 本用例启动的宿主
     /// </summary>
     /// <remarks>
-    /// 释放时一并停止。
+    /// 释放时一并停止
     /// </remarks>
     private readonly List<TestHost> _hosts = [];
 
     /// <summary>
-    /// 启动宿主、经 <see cref="TenantRecordStore"/> 种入租户，返回宿主里的目录。
+    /// 启动宿主、经 <see cref="TenantRecordStore"/> 种入租户，返回宿主里的目录
     /// </summary>
     protected override async ValueTask<ITenantStore> CreateStoreAsync(IReadOnlyList<TenantInfo> tenants)
     {
@@ -37,7 +37,7 @@ public sealed class DatabaseTenantStoreConformanceTests : TenantStoreConformance
     }
 
     /// <summary>
-    /// 停止全部宿主。
+    /// 停止全部宿主
     /// </summary>
     public async ValueTask DisposeAsync()
     {

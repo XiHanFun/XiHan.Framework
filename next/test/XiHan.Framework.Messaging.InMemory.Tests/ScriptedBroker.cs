@@ -10,47 +10,47 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 按脚本给出逐项结果的代理。
+/// 按脚本给出逐项结果的代理
 /// </summary>
 /// <remarks>
-/// 每次批量发布记一次调用（<see cref="Calls"/>），成功交出的事件 ID 记进 <see cref="Published"/>；<see cref="Outcome"/> 决定每一项的结果，<see cref="Unreachable"/> 时整批抛出携带 <see cref="MessagingErrors.BrokerUnavailable"/> 的异常，<see cref="Throws"/> 为这一批里任一信封给出异常时整批抛出它。不消费。
+/// 每次批量发布记一次调用（<see cref="Calls"/>），成功交出的事件 ID 记进 <see cref="Published"/>；<see cref="Outcome"/> 决定每一项的结果，<see cref="Unreachable"/> 时整批抛出携带 <see cref="MessagingErrors.BrokerUnavailable"/> 的异常，<see cref="Throws"/> 为这一批里任一信封给出异常时整批抛出它。不消费
 /// </remarks>
 internal sealed class ScriptedBroker : IMessageBroker
 {
     /// <summary>
-    /// 发布过的事件 ID，按发布顺序。
+    /// 发布过的事件 ID，按发布顺序
     /// </summary>
     /// <remarks>
-    /// 只含没有抛出的调用里的。
+    /// 只含没有抛出的调用里的
     /// </remarks>
     public List<string> Published { get; } = [];
 
     /// <summary>
-    /// 每次批量发布的事件 ID（逗号连接），按调用顺序。
+    /// 每次批量发布的事件 ID（逗号连接），按调用顺序
     /// </summary>
     /// <remarks>
-    /// 抛出的调用也在内。
+    /// 抛出的调用也在内
     /// </remarks>
     public List<string> Calls { get; } = [];
 
     /// <summary>
-    /// 每一项的结果。
+    /// 每一项的结果
     /// </summary>
     /// <remarks>
-    /// 缺省全部成功。
+    /// 缺省全部成功
     /// </remarks>
     public Func<MessageEnvelope, Result> Outcome { get; set; } = static _ => Result.Success();
 
     /// <summary>
-    /// 让整批抛出的信封。
+    /// 让整批抛出的信封
     /// </summary>
     /// <remarks>
-    /// 返回非空即以它整批抛出，模拟某条消息让代理整批失败（超过消息大小上限、主题不存在等）；缺省都不抛。
+    /// 返回非空即以它整批抛出，模拟某条消息让代理整批失败（超过消息大小上限、主题不存在等）；缺省都不抛
     /// </remarks>
     public Func<MessageEnvelope, Exception?> Throws { get; set; } = static _ => null;
 
     /// <summary>
-    /// 是否模拟代理不可达。
+    /// 是否模拟代理不可达
     /// </summary>
     public bool Unreachable { get; set; }
 

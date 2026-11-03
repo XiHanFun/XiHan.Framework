@@ -6,36 +6,36 @@ using System.Text.Json;
 namespace XiHan.Framework.Configuration.Nacos.Tests;
 
 /// <summary>
-/// 真实 Nacos 来自环境变量 <c>XIHAN_TEST_NACOS</c>（如 <c>http://localhost:8848</c>）。
+/// 真实 Nacos 来自环境变量 <c>XIHAN_TEST_NACOS</c>（如 <c>http://localhost:8848</c>）
 /// </summary>
 /// <remarks>
-/// 鉴权用 <c>XIHAN_TEST_NACOS_USERNAME</c> / <c>XIHAN_TEST_NACOS_PASSWORD</c>。未设置地址时跳过需要它的用例。
+/// 鉴权用 <c>XIHAN_TEST_NACOS_USERNAME</c> / <c>XIHAN_TEST_NACOS_PASSWORD</c>。未设置地址时跳过需要它的用例
 /// </remarks>
 internal static class NacosTestServer
 {
     /// <summary>
-    /// 指向测试 Nacos 的环境变量名。
+    /// 指向测试 Nacos 的环境变量名
     /// </summary>
     public const string EnvironmentVariable = "XIHAN_TEST_NACOS";
 
     /// <summary>
-    /// 发布配置用的共享 HTTP 客户端。
+    /// 发布配置用的共享 HTTP 客户端
     /// </summary>
     private static readonly HttpClient _http = new();
 
     /// <summary>
-    /// 环境变量里的服务地址。
+    /// 环境变量里的服务地址
     /// </summary>
     /// <remarks>
-    /// 未设置为 <see langword="null"/>。
+    /// 未设置为 <see langword="null"/>
     /// </remarks>
     public static string? ServiceUrl => Environment.GetEnvironmentVariable(EnvironmentVariable);
 
     /// <summary>
-    /// 返回服务地址。
+    /// 返回服务地址
     /// </summary>
     /// <remarks>
-    /// 未设置时跳过当前用例。
+    /// 未设置时跳过当前用例
     /// </remarks>
     public static string RequireServiceUrl()
     {
@@ -44,7 +44,7 @@ internal static class NacosTestServer
     }
 
     /// <summary>
-    /// 指向测试服务的选项。
+    /// 指向测试服务的选项
     /// </summary>
     public static NacosOptions Options(NacosConfigFormat format = NacosConfigFormat.Json) => new()
     {
@@ -56,7 +56,7 @@ internal static class NacosTestServer
     };
 
     /// <summary>
-    /// 把键值以 JSON 对象发布为 <paramref name="dataId"/> 的内容（<c>null</c> 值保留为 JSON <c>null</c>）。
+    /// 把键值以 JSON 对象发布为 <paramref name="dataId"/> 的内容（<c>null</c> 值保留为 JSON <c>null</c>）
     /// </summary>
     public static async Task PublishAsync(string dataId, IReadOnlyDictionary<string, string?> values, CancellationToken cancellationToken)
     {
@@ -65,7 +65,7 @@ internal static class NacosTestServer
     }
 
     /// <summary>
-    /// 发布原始内容。
+    /// 发布原始内容
     /// </summary>
     public static async Task PublishRawAsync(string dataId, string content, string type, CancellationToken cancellationToken)
     {
@@ -84,10 +84,10 @@ internal static class NacosTestServer
     }
 
     /// <summary>
-    /// 发布接口返回后内容要经通知落到服务端的本地缓存才可读。
+    /// 发布接口返回后内容要经通知落到服务端的本地缓存才可读
     /// </summary>
     /// <remarks>
-    /// 轮询到取回的内容与发布的一致为止（最多 10 秒），免得用例读到上一版。
+    /// 轮询到取回的内容与发布的一致为止（最多 10 秒），免得用例读到上一版
     /// </remarks>
     private static async Task WaitUntilVisibleAsync(string dataId, string content, CancellationToken cancellationToken)
     {
@@ -108,7 +108,7 @@ internal static class NacosTestServer
     }
 
     /// <summary>
-    /// 开启了鉴权时登录并返回 <c>?accessToken=…</c>，否则为空串。
+    /// 开启了鉴权时登录并返回 <c>?accessToken=…</c>，否则为空串
     /// </summary>
     private static async Task<string> TokenQueryAsync(CancellationToken cancellationToken)
     {

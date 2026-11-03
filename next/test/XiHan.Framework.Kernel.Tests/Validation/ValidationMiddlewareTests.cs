@@ -12,22 +12,22 @@ using XiHan.Framework.Kernel.Validation;
 namespace XiHan.Framework.Kernel.Tests.Validation;
 
 /// <summary>
-/// Validate 阶段的内置中间件。
+/// Validate 阶段的内置中间件
 /// </summary>
 /// <remarks>
-/// 按请求 Schema 拒绝载荷、按 <c>IValidatableObject</c> 拒绝请求对象、合法请求进 Handle、类型化调用同样校验、关闭内置中间件时不校验、非操作调用透传。
+/// 按请求 Schema 拒绝载荷、按 <c>IValidatableObject</c> 拒绝请求对象、合法请求进 Handle、类型化调用同样校验、关闭内置中间件时不校验、非操作调用透传
 /// </remarks>
 public sealed class ValidationMiddlewareTests
 {
     /// <summary>
-    /// 回声请求的 Schema：文本非空、重复次数 1 到 5。
+    /// 回声请求的 Schema：文本非空、重复次数 1 到 5
     /// </summary>
     private static readonly OperationSchema _schema = new(
         """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"EchoRequest","type":"object","properties":{"text":{"type":["string","null"],"minLength":1},"repeat":{"type":"integer","minimum":1,"maximum":5}}}""",
         """{"$schema":"https://json-schema.org/draft/2020-12/schema","title":"EchoResponse","type":"object","properties":{"echo":{"type":"string"},"traceId":{"type":"string"}},"required":["echo","traceId"]}""");
 
     /// <summary>
-    /// 构建并启动装配了带 Schema 的回声特性的应用。
+    /// 构建并启动装配了带 Schema 的回声特性的应用
     /// </summary>
     private static async Task<(ServiceProvider Provider, App App)> StartAsync(bool builtIn = true)
     {
@@ -39,7 +39,7 @@ public sealed class ValidationMiddlewareTests
     }
 
     /// <summary>
-    /// UTF-8 字节。
+    /// UTF-8 字节
     /// </summary>
     private static ReadOnlyMemory<byte> Utf8(string json) => Encoding.UTF8.GetBytes(json);
 

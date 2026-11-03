@@ -6,20 +6,20 @@ using XiHan.Framework.Domain.Specifications;
 namespace XiHan.Framework.Domain.Tests;
 
 /// <summary>
-/// <see cref="Specification{T}"/> 的内存判定、And / Or / Not 组合及其表达式可翻译性。
+/// <see cref="Specification{T}"/> 的内存判定、And / Or / Not 组合及其表达式可翻译性
 /// </summary>
 public sealed class SpecificationTests
 {
     /// <summary>
-    /// 测试用商品。
+    /// 测试用商品
     /// </summary>
-    /// <param name="Name">名称。</param>
-    /// <param name="Price">价格。</param>
-    /// <param name="Active">是否上架。</param>
+    /// <param name="Name">名称</param>
+    /// <param name="Price">价格</param>
+    /// <param name="Active">是否上架</param>
     private sealed record Product(string Name, decimal Price, bool Active);
 
     /// <summary>
-    /// 固定的商品目录：便宜且上架、中价且上架、昂贵且下架。
+    /// 固定的商品目录：便宜且上架、中价且上架、昂贵且下架
     /// </summary>
     private static readonly Product[] _catalog =
     [
@@ -29,12 +29,12 @@ public sealed class SpecificationTests
     ];
 
     /// <summary>
-    /// 价格低于 100 的规约。
+    /// 价格低于 100 的规约
     /// </summary>
     private static readonly Specification<Product> _affordable = new(static p => p.Price < 100m);
 
     /// <summary>
-    /// 上架中的规约。
+    /// 上架中的规约
     /// </summary>
     private static readonly Specification<Product> _isActive = new(static p => p.Active);
 

@@ -9,10 +9,10 @@ using XiHan.Framework.Persistence.Abstractions;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 声明了唯一索引与普通索引的实体。
+/// 声明了唯一索引与普通索引的实体
 /// </summary>
 /// <remarks>
-/// 表名由 <c>[SugarTable]</c> 改成 <c>indexed_record</c>：索引名按映射出的表名推出，不按类型名。
+/// 表名由 <c>[SugarTable]</c> 改成 <c>indexed_record</c>：索引名按映射出的表名推出，不按类型名
 /// </remarks>
 [SugarTable("indexed_record")]
 [EntityIndex(nameof(TenantId), nameof(Code), IsUnique = true)]
@@ -23,25 +23,25 @@ public sealed class IndexedRecord : IEntity<Guid>
     public Guid Id { get; set; }
 
     /// <summary>
-    /// 租户。
+    /// 租户
     /// </summary>
     [StringLength(64)]
     public string TenantId { get; set; } = string.Empty;
 
     /// <summary>
-    /// 编码：与租户共同唯一。
+    /// 编码：与租户共同唯一
     /// </summary>
     [StringLength(64)]
     public string Code { get; set; } = string.Empty;
 
     /// <summary>
-    /// 分类。
+    /// 分类
     /// </summary>
     [StringLength(64)]
     public string Category { get; set; } = string.Empty;
 
     /// <summary>
-    /// 时刻。
+    /// 时刻
     /// </summary>
     public DateTimeOffset At { get; set; }
 }

@@ -8,15 +8,15 @@ using XiHan.Framework.Persistence.Conformance;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// EF Core Provider 跑库结构读取与实体目录的一致性套件。
+/// EF Core Provider 跑库结构读取与实体目录的一致性套件
 /// </summary>
 /// <remarks>
-/// 实体目录取 DbContext 模型；库结构读取不支持，返回明确的错误码。
+/// 实体目录取 DbContext 模型；库结构读取不支持，返回明确的错误码
 /// </remarks>
 public sealed class EntityFrameworkCoreSchemaConformanceTests : SchemaConformance, IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
@@ -33,7 +33,7 @@ public sealed class EntityFrameworkCoreSchemaConformanceTests : SchemaConformanc
     protected override DataSourceDefinition? CreateDefinition(string name) => null;
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 }

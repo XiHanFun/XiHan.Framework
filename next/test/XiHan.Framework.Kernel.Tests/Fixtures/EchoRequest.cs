@@ -6,13 +6,13 @@ using System.ComponentModel.DataAnnotations;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 回声操作的请求。
+/// 回声操作的请求
 /// </summary>
 /// <remarks>
-/// 文本与重复次数。实现自校验：文本为 <c>invalid</c> 时报一条针对 <c>Text</c> 的结果，Validate 阶段据此拒绝。
+/// 文本与重复次数。实现自校验：文本为 <c>invalid</c> 时报一条针对 <c>Text</c> 的结果，Validate 阶段据此拒绝
 /// </remarks>
-/// <param name="Text">要回声的文本；为空时操作返回校验失败。</param>
-/// <param name="Repeat">重复次数。</param>
+/// <param name="Text">要回声的文本；为空时操作返回校验失败</param>
+/// <param name="Repeat">重复次数</param>
 internal sealed record EchoRequest(string? Text, int Repeat = 1) : IValidatableObject
 {
     /// <inheritdoc />

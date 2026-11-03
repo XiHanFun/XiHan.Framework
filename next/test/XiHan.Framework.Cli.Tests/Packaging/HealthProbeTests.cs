@@ -10,10 +10,10 @@ using XiHan.Framework.Cli.Packaging;
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
 /// <summary>
-/// Dockerfile 内联的就绪探针。
+/// Dockerfile 内联的就绪探针
 /// </summary>
 /// <remarks>
-/// 从生成的 Dockerfile 里取出 heredoc 写成项目，用本机 SDK 构建，再对回环地址上的桩服务运行：确认镜像里构建的就是能用的探针（<c>spec/packaging/app-manifest.md</c>「就绪探针」）。
+/// 从生成的 Dockerfile 里取出 heredoc 写成项目，用本机 SDK 构建，再对回环地址上的桩服务运行：确认镜像里构建的就是能用的探针（<c>spec/packaging/app-manifest.md</c>「就绪探针」）
 /// </remarks>
 public sealed partial class HealthProbeTests
 {
@@ -58,15 +58,15 @@ public sealed partial class HealthProbeTests
     }
 
     /// <summary>
-    /// 端口的文本。
+    /// 端口的文本
     /// </summary>
     private static string Port(int port) => port.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>
-    /// 运行 <c>dotnet</c> 并收集输出。
+    /// 运行 <c>dotnet</c> 并收集输出
     /// </summary>
     /// <remarks>
-    /// 不继承 <c>MSBuild*</c> 环境变量，免得测试宿主的构建环境渗进子构建；最多等 3 分钟。
+    /// 不继承 <c>MSBuild*</c> 环境变量，免得测试宿主的构建环境渗进子构建；最多等 3 分钟
     /// </remarks>
     private static async Task<(int ExitCode, string Output)> RunAsync(IReadOnlyList<string> arguments)
     {
@@ -99,7 +99,7 @@ public sealed partial class HealthProbeTests
     }
 
     /// <summary>
-    /// Dockerfile 里的 <c>COPY &lt;&lt;"EOF" 路径</c> heredoc。
+    /// Dockerfile 里的 <c>COPY &lt;&lt;"EOF" 路径</c> heredoc
     /// </summary>
     [GeneratedRegex("^COPY <<\"EOF\" (?<path>\\S+)\\n(?<body>.*?)^EOF$", RegexOptions.Multiline | RegexOptions.Singleline)]
     private static partial Regex Heredoc();

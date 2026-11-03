@@ -7,30 +7,30 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 
 /// <summary>
-/// 进程内的知识库存储：按集合保存记录，余弦相似度搜索。
+/// 进程内的知识库存储：按集合保存记录，余弦相似度搜索
 /// </summary>
 /// <remarks>
-/// 可以让写入或裁剪失败，用来验证摄入在失败时不丢旧文档。
+/// 可以让写入或裁剪失败，用来验证摄入在失败时不丢旧文档
 /// </remarks>
 internal sealed class FakeKnowledgeStore : IKnowledgeStore
 {
     /// <summary>
-    /// 集合 → 记录 ID → 记录。
+    /// 集合 → 记录 ID → 记录
     /// </summary>
     private readonly Dictionary<string, Dictionary<string, KnowledgeRecord>> _collections = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 一个集合里的记录。
+    /// 一个集合里的记录
     /// </summary>
     public IReadOnlyCollection<KnowledgeRecord> Records(string collection) => _collections.TryGetValue(collection, out var records) ? records.Values : [];
 
     /// <summary>
-    /// 为真时写入一条不写、返回失败。
+    /// 为真时写入一条不写、返回失败
     /// </summary>
     public bool FailUpserts { get; set; }
 
     /// <summary>
-    /// 为真时裁剪一条不删、返回失败。
+    /// 为真时裁剪一条不删、返回失败
     /// </summary>
     public bool FailTrims { get; set; }
 
@@ -104,12 +104,12 @@ internal sealed class FakeKnowledgeStore : IKnowledgeStore
     }
 
     /// <summary>
-    /// 存储不可达的错误。
+    /// 存储不可达的错误
     /// </summary>
     private static Error Unreachable() => Error.Unavailable(AIErrors.KnowledgeUnavailable, "fake.store.unreachable");
 
     /// <summary>
-    /// 余弦相似度。
+    /// 余弦相似度
     /// </summary>
     private static double Cosine(ReadOnlySpan<float> a, ReadOnlySpan<float> b)
     {

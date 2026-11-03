@@ -11,35 +11,35 @@ using XiHan.Framework.Kernel.Hosting;
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 
 /// <summary>
-/// 从工作区与已加载的程序集生成 <c>catalog.json</c>。
+/// 从工作区与已加载的程序集生成 <c>catalog.json</c>
 /// </summary>
 /// <remarks>
-/// 包取自 <c>next/src/*/*.csproj</c>（说明、项目引用、包引用与中央包管理的版本）与 <c>next/README.md</c> 的包表；特性取自各包程序集里公开的 <see cref="IFeature"/> 实例的 <c>Manifest</c>。
+/// 包取自 <c>next/src/*/*.csproj</c>（说明、项目引用、包引用与中央包管理的版本）与 <c>next/README.md</c> 的包表；特性取自各包程序集里公开的 <see cref="IFeature"/> 实例的 <c>Manifest</c>
 /// </remarks>
 internal static partial class CatalogBuilder
 {
     /// <summary>
-    /// 设为 <c>1</c> 时测试改写索引文件而不是比对。
+    /// 设为 <c>1</c> 时测试改写索引文件而不是比对
     /// </summary>
     public const string UpdateVariable = "XIHAN_UPDATE_CLI_KNOWLEDGE";
 
     /// <summary>
-    /// 不收进索引的特性：清单由调用方传入，没有固定的清单。
+    /// 不收进索引的特性：清单由调用方传入，没有固定的清单
     /// </summary>
     public static readonly IReadOnlyList<string> ExcludedFeatures = ["XiHan.Framework.Testing.StubFeature"];
 
     /// <summary>
-    /// 本工具自己的包：它的特性只在 <c>xihan mcp</c> 内嵌应用里装配，不是框架包。
+    /// 本工具自己的包：它的特性只在 <c>xihan mcp</c> 内嵌应用里装配，不是框架包
     /// </summary>
     private const string CliPackage = "XiHan.Framework.Cli";
 
     /// <summary>
-    /// 索引文件路径。
+    /// 索引文件路径
     /// </summary>
     public static string CatalogPath => Path.Combine(TestWorkspace.NextRoot, "src", CliPackage, "Knowledge", "catalog.json");
 
     /// <summary>
-    /// 生成。
+    /// 生成
     /// </summary>
     public static CatalogDocument Build()
     {
@@ -98,7 +98,7 @@ internal static partial class CatalogBuilder
     }
 
     /// <summary>
-    /// 一个包里全部公开特性的清单。
+    /// 一个包里全部公开特性的清单
     /// </summary>
     private static IEnumerable<FeatureEntry> FeaturesOf(string package)
     {
@@ -132,10 +132,10 @@ internal static partial class CatalogBuilder
     }
 
     /// <summary>
-    /// 创建特性实例。
+    /// 创建特性实例
     /// </summary>
     /// <remarks>
-    /// 泛型特性以第一个约束类型封闭；只有一个委托参数的构造函数传空操作的委托（清单与构造参数无关）。
+    /// 泛型特性以第一个约束类型封闭；只有一个委托参数的构造函数传空操作的委托（清单与构造参数无关）
     /// </remarks>
     private static IFeature Create(Type type)
     {
@@ -157,14 +157,14 @@ internal static partial class CatalogBuilder
     }
 
     /// <summary>
-    /// 类型的完全限定名，泛型写作 <c>Name&lt;T&gt;</c>。
+    /// 类型的完全限定名，泛型写作 <c>Name&lt;T&gt;</c>
     /// </summary>
     private static string DisplayName(Type type) => type.IsGenericTypeDefinition
         ? type.Namespace + "." + type.Name[..type.Name.IndexOf('`', StringComparison.Ordinal)] + "<" + string.Join(", ", type.GetGenericArguments().Select(static a => a.Name)) + ">"
         : type.FullName!;
 
     /// <summary>
-    /// <c>next/README.md</c> 包表的一行：包 ID、环层、内容。
+    /// <c>next/README.md</c> 包表的一行：包 ID、环层、内容
     /// </summary>
     [GeneratedRegex(@"^\|\s*`(?<id>XiHan\.Framework\.[A-Za-z0-9.]+)`\s*\|(?<ring>[^|]*)\|(?<summary>.*)\|\s*$")]
     private static partial Regex PackageRow();

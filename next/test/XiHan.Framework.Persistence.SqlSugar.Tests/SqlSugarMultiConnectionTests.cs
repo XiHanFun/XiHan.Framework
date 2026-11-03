@@ -16,25 +16,25 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 多库。
+/// 多库
 /// </summary>
 /// <remarks>
-/// 一次调用里平台实体落默认库、租户实体落分片库，失败时两边一起回滚；管道外的作用域显式绑定分片后同样分落两库；<c>[Tenant]</c> 显式落点优先；应用自注册的多连接客户端同样成立；指向不存在连接的 <c>[Tenant]</c> 是配置错误。
+/// 一次调用里平台实体落默认库、租户实体落分片库，失败时两边一起回滚；管道外的作用域显式绑定分片后同样分落两库；<c>[Tenant]</c> 显式落点优先；应用自注册的多连接客户端同样成立；指向不存在连接的 <c>[Tenant]</c> 是配置错误
 /// </remarks>
 public sealed class SqlSugarMultiConnectionTests : IDisposable
 {
     /// <summary>
-    /// 应用默认库。
+    /// 应用默认库
     /// </summary>
     private readonly SqliteDatabase _default = new();
 
     /// <summary>
-    /// 第二个库：作为租户 <c>acme</c> 的分片库，或方式二里的 <c>audit</c> 连接。
+    /// 第二个库：作为租户 <c>acme</c> 的分片库，或方式二里的 <c>audit</c> 连接
     /// </summary>
     private readonly SqliteDatabase _second = new();
 
     /// <summary>
-    /// 删除两个临时数据库文件。
+    /// 删除两个临时数据库文件
     /// </summary>
     public void Dispose()
     {
@@ -208,10 +208,10 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
     }
 
     /// <summary>
-    /// 启动带默认库、租户 <c>acme</c> 分片到第二个库的宿主。
+    /// 启动带默认库、租户 <c>acme</c> 分片到第二个库的宿主
     /// </summary>
     /// <remarks>
-    /// 默认库建两种套件实体的表；<paramref name="disabled"/> 时 <c>acme</c> 是停用的租户。
+    /// 默认库建两种套件实体的表；<paramref name="disabled"/> 时 <c>acme</c> 是停用的租户
     /// </remarks>
     private Task<TestHost> StartShardedHostAsync(bool disabled = false) => TestHost.StartAsync(
         static b => b.UseFeature<InMemoryMultiTenancyFeature>().UseFeature(SqliteDatabase.CreateFeature()),
@@ -228,31 +228,31 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
         });
 
     /// <summary>
-    /// 创建指向给定连接串、已施加约定的独立客户端。
+    /// 创建指向给定连接串、已施加约定的独立客户端
     /// </summary>
     private static SqlSugarClient CreateClient(string connectionString)
         => new(SqlSugarConventions.Apply(new ConnectionConfig { DbType = DbType.Sqlite, ConnectionString = connectionString, IsAutoCloseConnection = true }));
 
     /// <summary>
-    /// 当前调用作用域内的订单（平台实体）仓储。
+    /// 当前调用作用域内的订单（平台实体）仓储
     /// </summary>
     private static IRepository<ConformanceOrder, Guid> Orders(InvocationContext context)
         => context.Services.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
 
     /// <summary>
-    /// 当前调用作用域内的笔记（租户实体）仓储。
+    /// 当前调用作用域内的笔记（租户实体）仓储
     /// </summary>
     private static IRepository<ConformanceNote, Guid> Notes(InvocationContext context)
         => context.Services.GetRequiredService<IRepository<ConformanceNote, Guid>>();
 
     /// <summary>
-    /// 以给定租户（经 Baggage 自报）走完整管道执行 <paramref name="action"/>，其返回值作为调用结果。
+    /// 以给定租户（经 Baggage 自报）走完整管道执行 <paramref name="action"/>，其返回值作为调用结果
     /// </summary>
     private static async Task<Result> InvokeAsync(TestHost host, string tenant, Func<InvocationContext, Task<Result>> action)
         => await host.InvokeAsync(async context => context.SetOutcome(await action(context)), baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = tenant });
 
     /// <summary>
-    /// 异常链上的全部框架错误码。
+    /// 异常链上的全部框架错误码
     /// </summary>
     private static List<string> Codes(Exception? exception)
     {

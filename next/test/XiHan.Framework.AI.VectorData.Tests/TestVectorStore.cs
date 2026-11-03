@@ -6,20 +6,20 @@ using Microsoft.Extensions.VectorData;
 namespace XiHan.Framework.AI.VectorData.Tests;
 
 /// <summary>
-/// 进程内的向量存储。
+/// 进程内的向量存储
 /// </summary>
 /// <remarks>
-/// 只支持 <c>&lt;string, KnowledgeVectorRecord&gt;</c> 集合，供 Provider 测试用。
+/// 只支持 <c>&lt;string, KnowledgeVectorRecord&gt;</c> 集合，供 Provider 测试用
 /// </remarks>
 internal sealed class TestVectorStore : VectorStore
 {
     /// <summary>
-    /// 名字 → 集合。
+    /// 名字 → 集合
     /// </summary>
     private readonly Dictionary<string, TestVectorCollection> _collections = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 已创建的集合名。
+    /// 已创建的集合名
     /// </summary>
     public IReadOnlyCollection<string> Collections => _collections.Where(static pair => pair.Value.Exists).Select(static pair => pair.Key).ToList();
 

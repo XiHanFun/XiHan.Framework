@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.OpenAI.Tests.Fixtures;
 
 /// <summary>
-/// 回显操作：把文本重复 <c>Repeat</c> 次。
+/// 回显操作：把文本重复 <c>Repeat</c> 次
 /// </summary>
 internal sealed class EchoOperation : IOperation<EchoRequest, EchoResponse>
 {

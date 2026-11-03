@@ -6,7 +6,7 @@ using XiHan.Framework.Persistence.Abstractions.Identifiers;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="SnowflakeId"/> 的位布局：拼装与解析互逆、各段边界、负数拒绝。
+/// <see cref="SnowflakeId"/> 的位布局：拼装与解析互逆、各段边界、负数拒绝
 /// </summary>
 public sealed class SnowflakeIdTests
 {

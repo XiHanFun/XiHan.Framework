@@ -4,15 +4,15 @@
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
 /// <summary>
-/// 临时目录里的一份清单与一个空项目文件。
+/// 临时目录里的一份清单与一个空项目文件
 /// </summary>
 /// <remarks>
-/// 释放时删除目录。
+/// 释放时删除目录
 /// </remarks>
 internal sealed class ManifestFixture : IDisposable
 {
     /// <summary>
-    /// 一份用到全部字段的清单。
+    /// 一份用到全部字段的清单
     /// </summary>
     public const string FullManifest = """
         {
@@ -39,7 +39,7 @@ internal sealed class ManifestFixture : IDisposable
         """;
 
     /// <summary>
-    /// 创建目录、项目文件与清单。
+    /// 创建目录、项目文件与清单
     /// </summary>
     public ManifestFixture(string manifest = FullManifest, string project = "Orders.csproj")
     {
@@ -52,22 +52,22 @@ internal sealed class ManifestFixture : IDisposable
     }
 
     /// <summary>
-    /// 临时目录。
+    /// 临时目录
     /// </summary>
     public string Directory { get; }
 
     /// <summary>
-    /// 清单路径。
+    /// 清单路径
     /// </summary>
     public string ManifestPath { get; }
 
     /// <summary>
-    /// 默认输出目录。
+    /// 默认输出目录
     /// </summary>
     public string OutputDirectory => Path.Combine(Directory, "deploy");
 
     /// <summary>
-    /// 读输出目录里的文件。
+    /// 读输出目录里的文件
     /// </summary>
     public string Output(string relative) => File.ReadAllText(Path.Combine(OutputDirectory, relative.Replace('/', Path.DirectorySeparatorChar)));
 

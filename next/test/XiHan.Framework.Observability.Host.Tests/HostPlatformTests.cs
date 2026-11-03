@@ -8,10 +8,10 @@ using System.Text.RegularExpressions;
 namespace XiHan.Framework.Observability.Host.Tests;
 
 /// <summary>
-/// 在真实机器上读。
+/// 在真实机器上读
 /// </summary>
 /// <remarks>
-/// Windows 与 Linux 各一组用例，只在对应系统上运行（Linux 由 CI 运行）；断言只依赖任何机器都满足的性质，不依赖具体硬件。
+/// Windows 与 Linux 各一组用例，只在对应系统上运行（Linux 由 CI 运行）；断言只依赖任何机器都满足的性质，不依赖具体硬件
 /// </remarks>
 public sealed partial class HostPlatformTests
 {
@@ -56,7 +56,7 @@ public sealed partial class HostPlatformTests
     }
 
     /// <summary>
-    /// 两个平台都满足的性质：磁盘、网卡与运行时长。
+    /// 两个平台都满足的性质：磁盘、网卡与运行时长
     /// </summary>
     private static void AssertCommon(HostPlatform platform)
     {
@@ -84,7 +84,7 @@ public sealed partial class HostPlatformTests
     }
 
     /// <summary>
-    /// CPU 时间读得到，且总量不倒退。
+    /// CPU 时间读得到，且总量不倒退
     /// </summary>
     private static void AssertCpuTimesAdvance(HostPlatform platform)
     {
@@ -96,7 +96,7 @@ public sealed partial class HostPlatformTests
     }
 
     /// <summary>
-    /// 物理内存读得到且自洽。
+    /// 物理内存读得到且自洽
     /// </summary>
     private static void AssertMemory(HostPlatform platform)
     {
@@ -107,7 +107,7 @@ public sealed partial class HostPlatformTests
     }
 
     /// <summary>
-    /// 显卡的 ID 格式与非负显存。
+    /// 显卡的 ID 格式与非负显存
     /// </summary>
     private static void AssertGpu(Abstractions.GpuInfo gpu)
     {
@@ -118,13 +118,13 @@ public sealed partial class HostPlatformTests
     }
 
     /// <summary>
-    /// 冒号分隔的大写十六进制物理地址。
+    /// 冒号分隔的大写十六进制物理地址
     /// </summary>
     [GeneratedRegex("^[0-9A-F]{2}(:[0-9A-F]{2})+$")]
     private static partial Regex MacPattern();
 
     /// <summary>
-    /// 四位小写十六进制。
+    /// 四位小写十六进制
     /// </summary>
     [GeneratedRegex("^[0-9a-f]{4}$")]
     private static partial Regex PciIdPattern();

@@ -7,7 +7,7 @@ using XiHan.Framework.Plugins.Wasm.Instances;
 namespace XiHan.Framework.Plugins.Wasm.Tests;
 
 /// <summary>
-/// 影子栈检查：测试进程关闭了 CET 兼容，陷阱要表现为异常而不是进程终止。
+/// 影子栈检查：测试进程关闭了 CET 兼容，陷阱要表现为异常而不是进程终止
 /// </summary>
 public sealed class ShadowStackGuardTests
 {

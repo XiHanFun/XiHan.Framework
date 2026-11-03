@@ -15,31 +15,31 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 
 /// <summary>
-/// HTTP 载体的追踪标志与请求 Activity。
+/// HTTP 载体的追踪标志与请求 Activity
 /// </summary>
 /// <remarks>
-/// <c>traceparent</c> 的采样标志与 ASP.NET Core 请求 Activity（RFC-0003 规则 7）。监听内核与 ASP.NET Core 的源，按 OpenTelemetry 的 ParentBased 规则采样（有父级随父级，根一律采样），在 Activity 开始时记下，按 trace-id 找本用例的 Activity。
+/// <c>traceparent</c> 的采样标志与 ASP.NET Core 请求 Activity（RFC-0003 规则 7）。监听内核与 ASP.NET Core 的源，按 OpenTelemetry 的 ParentBased 规则采样（有父级随父级，根一律采样），在 Activity 开始时记下，按 trace-id 找本用例的 Activity
 /// </remarks>
 public sealed class HttpTracingTests
 {
     /// <summary>
-    /// ASP.NET Core 请求 Activity 所在的源。
+    /// ASP.NET Core 请求 Activity 所在的源
     /// </summary>
     private const string AspNetCoreSource = "Microsoft.AspNetCore";
 
     /// <summary>
-    /// 捕获最近一次请求的调用上下文。
+    /// 捕获最近一次请求的调用上下文
     /// </summary>
     private sealed class Captured
     {
         /// <summary>
-        /// 最近一次经过管道的调用上下文。
+        /// 最近一次经过管道的调用上下文
         /// </summary>
         public InvocationContext? Context { get; set; }
     }
 
     /// <summary>
-    /// 把调用上下文写入 <see cref="Captured"/> 后放行的中间件。
+    /// 把调用上下文写入 <see cref="Captured"/> 后放行的中间件
     /// </summary>
     private sealed class CaptureMiddleware(Captured captured) : IPipelineMiddleware
     {
@@ -52,7 +52,7 @@ public sealed class HttpTracingTests
     }
 
     /// <summary>
-    /// 开始监听，开始的 Activity 记进 <paramref name="started"/>。
+    /// 开始监听，开始的 Activity 记进 <paramref name="started"/>
     /// </summary>
     private static ActivityListener Listen(ConcurrentQueue<Activity> started)
     {
@@ -70,7 +70,7 @@ public sealed class HttpTracingTests
     }
 
     /// <summary>
-    /// 用 TestServer 启动只装配捕获中间件的应用。
+    /// 用 TestServer 启动只装配捕获中间件的应用
     /// </summary>
     private static async Task<(WebApplication App, HttpClient Client, Captured Captured)> StartAsync()
     {

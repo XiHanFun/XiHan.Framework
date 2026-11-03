@@ -9,16 +9,16 @@ using XiHan.Framework.Scheduling.Database.Entities;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 调度表的索引（ADR-0072）。
+/// 调度表的索引（ADR-0072）
 /// </summary>
 /// <remarks>
-/// <c>InitTables</c> 在 SQLite 上建出触发器与运行记录的索引，作业、节点、租约表只有主键。
-/// 触发器的作业 + 名字唯一：同一作业的同名触发器换个标识也写不进第二行。
+/// <c>InitTables</c> 在 SQLite 上建出触发器与运行记录的索引，作业、节点、租约表只有主键
+/// 触发器的作业 + 名字唯一：同一作业的同名触发器换个标识也写不进第二行
 /// </remarks>
 public sealed class SchedulingIndexTests : IDisposable
 {
     /// <summary>
-    /// 列出一张表上显式建出的索引：<c>名字 [unique] 列,列</c>，按名字排序。
+    /// 列出一张表上显式建出的索引：<c>名字 [unique] 列,列</c>，按名字排序
     /// </summary>
     private const string IndexQuery = """
         SELECT m.name
@@ -30,15 +30,15 @@ public sealed class SchedulingIndexTests : IDisposable
         """;
 
     /// <summary>
-    /// 本测试独占的临时数据库文件。
+    /// 本测试独占的临时数据库文件
     /// </summary>
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"xihan-scheduling-index-{Guid.NewGuid():N}.db");
 
     /// <summary>
-    /// 清空本库的连接池后删除数据库文件。
+    /// 清空本库的连接池后删除数据库文件
     /// </summary>
     /// <remarks>
-    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败。
+    /// 只清本库连接串的连接池（连接池按连接串分组）。不用 <c>SqliteConnection.ClearAllPools()</c>：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 <c>ObjectDisposedException</c>（<c>SQLitePCL.sqlite3</c>）失败
     /// </remarks>
     public void Dispose()
     {
@@ -76,12 +76,12 @@ public sealed class SchedulingIndexTests : IDisposable
     }
 
     /// <summary>
-    /// 一张表上的索引。
+    /// 一张表上的索引
     /// </summary>
     private static List<string> Indexes(SqlSugarClient client, string table) => client.Ado.SqlQuery<string>(IndexQuery, new { table });
 
     /// <summary>
-    /// 作业 nightly 的触发器 daily，标识由调用方给。
+    /// 作业 nightly 的触发器 daily，标识由调用方给
     /// </summary>
     private static TriggerEntity Trigger(string id)
         => new() { Id = id, Job = "nightly", Name = "daily", Schedule = "cron:0 0 * * *", ConcurrencyStamp = Guid.NewGuid().ToString("N") };

@@ -9,45 +9,45 @@ using System.Text.Json.Nodes;
 namespace XiHan.Framework.Scheduling.Kubernetes.Tests;
 
 /// <summary>
-/// 内存里的 API Server 桩。
+/// 内存里的 API Server 桩
 /// </summary>
 /// <remarks>
-/// 只实现 Lease 的 GET / POST / PUT，带 resourceVersion 乐观并发、令牌校验，可注入一次失败。
+/// 只实现 Lease 的 GET / POST / PUT，带 resourceVersion 乐观并发、令牌校验，可注入一次失败
 /// </remarks>
 internal sealed class FakeLeaseApi : HttpMessageHandler
 {
     /// <summary>
-    /// 期望的 Bearer 令牌。
+    /// 期望的 Bearer 令牌
     /// </summary>
     public const string Token = "test-token";
 
     /// <summary>
-    /// 保护表的锁。
+    /// 保护表的锁
     /// </summary>
     private readonly Lock _lock = new();
 
     /// <summary>
-    /// 名字 → Lease JSON（含 resourceVersion）。
+    /// 名字 → Lease JSON（含 resourceVersion）
     /// </summary>
     private readonly Dictionary<string, JsonObject> _leases = new(StringComparer.Ordinal);
 
     /// <summary>
-    /// 递增的资源版本。
+    /// 递增的资源版本
     /// </summary>
     private int _version;
 
     /// <summary>
-    /// 为真时下一次请求返回 500。
+    /// 为真时下一次请求返回 500
     /// </summary>
     public bool FailNext { get; set; }
 
     /// <summary>
-    /// 收到的请求数。
+    /// 收到的请求数
     /// </summary>
     public int Requests { get; private set; }
 
     /// <summary>
-    /// 当前 Lease 的 spec（测试断言用）。
+    /// 当前 Lease 的 spec（测试断言用）
     /// </summary>
     public JsonObject? Spec(string name)
     {
@@ -124,13 +124,13 @@ internal sealed class FakeLeaseApi : HttpMessageHandler
     }
 
     /// <summary>
-    /// JSON 应答。
+    /// JSON 应答
     /// </summary>
     private static HttpResponseMessage Json(HttpStatusCode status, JsonObject body)
         => new(status) { Content = new StringContent(body.ToJsonString(), System.Text.Encoding.UTF8, "application/json") };
 
     /// <summary>
-    /// Status 应答。
+    /// Status 应答
     /// </summary>
     private static HttpResponseMessage Status(HttpStatusCode status, string reason, string message)
         => new(status) { Content = new StringContent(JsonSerializer.Serialize(new JsonObject { ["kind"] = "Status", ["reason"] = reason, ["message"] = message }), System.Text.Encoding.UTF8, "application/json") };

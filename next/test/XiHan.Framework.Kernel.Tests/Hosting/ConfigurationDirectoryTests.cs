@@ -6,10 +6,10 @@ using XiHan.Framework.Kernel.Hosting;
 namespace XiHan.Framework.Kernel.Tests.Hosting;
 
 /// <summary>
-/// 挂载配置目录的文件解析。
+/// 挂载配置目录的文件解析
 /// </summary>
 /// <remarks>
-/// 基础文件优先、其余按序数、忽略点开头条目与非 JSON、目录缺失为空；宿主插入位置所认的 appsettings 文件名。
+/// 基础文件优先、其余按序数、忽略点开头条目与非 JSON、目录缺失为空；宿主插入位置所认的 appsettings 文件名
 /// </remarks>
 public sealed class ConfigurationDirectoryTests
 {

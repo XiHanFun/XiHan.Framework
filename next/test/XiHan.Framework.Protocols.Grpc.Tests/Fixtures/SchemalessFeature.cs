@@ -10,7 +10,7 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 
 /// <summary>
-/// 登记一个没有 Schema 却暴露给 gRPC 的操作：gRPC 适配器必须在启动时拒绝。
+/// 登记一个没有 Schema 却暴露给 gRPC 的操作：gRPC 适配器必须在启动时拒绝
 /// </summary>
 internal sealed class SchemalessFeature : IFeature
 {

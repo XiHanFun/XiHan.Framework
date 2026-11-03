@@ -11,20 +11,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Caching.InMemory.Tests.Fixtures;
 
 /// <summary>
-/// 登记取号操作的测试特性。
+/// 登记取号操作的测试特性
 /// </summary>
 /// <remarks>
-/// 同一实现登记为 <c>tickets.create</c> 与 <c>tickets.update</c>，执行计数是单例。
+/// 同一实现登记为 <c>tickets.create</c> 与 <c>tickets.update</c>，执行计数是单例
 /// </remarks>
 internal sealed class TicketsFeature : IFeature
 {
     /// <summary>
-    /// 新建取号的操作 ID。
+    /// 新建取号的操作 ID
     /// </summary>
     public const string Create = "tickets.create";
 
     /// <summary>
-    /// 另一个操作 ID，用来复用同一个幂等键。
+    /// 另一个操作 ID，用来复用同一个幂等键
     /// </summary>
     public const string Update = "tickets.update";
 

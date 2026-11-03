@@ -22,15 +22,15 @@ using XiHan.Framework.Security.InMemory;
 namespace XiHan.Framework.Security.Jwt.Tests;
 
 /// <summary>
-/// 认证方案 <c>XiHan</c>（ADR-0051）。
+/// 认证方案 <c>XiHan</c>（ADR-0051）
 /// </summary>
 /// <remarks>
-/// 绕过内核管道的端点经 ASP.NET Core 认证，凭据交给内核已装配的处理器（JWT 与 ApiKey 同一条路），查询串令牌只在登记的路径前缀下接受，挂点可以拒绝，主体转成带名称与角色的 <see cref="ClaimsPrincipal"/>；在端点里建的调用上下文带着同一凭据，经管道时照常重新认证。
+/// 绕过内核管道的端点经 ASP.NET Core 认证，凭据交给内核已装配的处理器（JWT 与 ApiKey 同一条路），查询串令牌只在登记的路径前缀下接受，挂点可以拒绝，主体转成带名称与角色的 <see cref="ClaimsPrincipal"/>；在端点里建的调用上下文带着同一凭据，经管道时照常重新认证
 /// </remarks>
 public sealed class BypassEndpointAuthenticationTests
 {
     /// <summary>
-    /// 端点的授权：只经 <c>XiHan</c> 方案认证。
+    /// 端点的授权：只经 <c>XiHan</c> 方案认证
     /// </summary>
     private static readonly AuthorizeAttribute _xihan = new() { AuthenticationSchemes = InvocationAuthenticationDefaults.AuthenticationScheme };
 
@@ -159,10 +159,10 @@ public sealed class BypassEndpointAuthenticationTests
     }
 
     /// <summary>
-    /// 启动宿主。
+    /// 启动宿主
     /// </summary>
     /// <remarks>
-    /// 内存安全（ApiKey）+ JWT（<paramref name="jwt"/> 为假时只装内存安全），方案 <c>XiHan</c> 分两次登记（第二次只加路径），挂点拒绝已失效的会话；<c>/hubs/*</c> 与 <c>/other/me</c> 绕过管道，<c>/api/me</c> 是普通端点。
+    /// 内存安全（ApiKey）+ JWT（<paramref name="jwt"/> 为假时只装内存安全），方案 <c>XiHan</c> 分两次登记（第二次只加路径），挂点拒绝已失效的会话；<c>/hubs/*</c> 与 <c>/other/me</c> 绕过管道，<c>/api/me</c> 是普通端点
     /// </remarks>
     private static async Task<WebApplication> StartAsync(bool jwt = true)
     {
@@ -196,10 +196,10 @@ public sealed class BypassEndpointAuthenticationTests
     }
 
     /// <summary>
-    /// 端点里看到的主体。
+    /// 端点里看到的主体
     /// </summary>
     /// <remarks>
-    /// 名称、认证类型、是否在 admin 角色、原始 sub 声明，以及以请求建的调用上下文带着的凭据方案。
+    /// 名称、认证类型、是否在 admin 角色、原始 sub 声明，以及以请求建的调用上下文带着的凭据方案
     /// </remarks>
     private static string Describe(HttpContext http)
     {
@@ -209,7 +209,7 @@ public sealed class BypassEndpointAuthenticationTests
     }
 
     /// <summary>
-    /// 在绕过管道的端点里发起一次内核调用，返回管道认证出的主体 ID。
+    /// 在绕过管道的端点里发起一次内核调用，返回管道认证出的主体 ID
     /// </summary>
     private static async Task<string> InvokeAsync(HttpContext http)
     {
@@ -224,7 +224,7 @@ public sealed class BypassEndpointAuthenticationTests
     }
 
     /// <summary>
-    /// 带凭据请求。
+    /// 带凭据请求
     /// </summary>
     private static Task<HttpResponseMessage> SendAsync(HttpClient client, string path, string? bearer = null, string? scheme = null, string? value = null)
     {
@@ -242,25 +242,25 @@ public sealed class BypassEndpointAuthenticationTests
     }
 
     /// <summary>
-    /// 挂点。
+    /// 挂点
     /// </summary>
     /// <remarks>
-    /// 令牌的 <c>sid</c> 是已失效的会话即拒绝；记录被调用的次数。
+    /// 令牌的 <c>sid</c> 是已失效的会话即拒绝；记录被调用的次数
     /// </remarks>
     private sealed class RevokedSessions : IInvocationAuthenticationFilter
     {
         /// <summary>
-        /// 已失效的会话。
+        /// 已失效的会话
         /// </summary>
         public const string Revoked = "revoked-session";
 
         /// <summary>
-        /// 被调用的次数。
+        /// 被调用的次数
         /// </summary>
         private int _calls;
 
         /// <summary>
-        /// 被调用的次数。
+        /// 被调用的次数
         /// </summary>
         public int Calls => Volatile.Read(ref _calls);
 

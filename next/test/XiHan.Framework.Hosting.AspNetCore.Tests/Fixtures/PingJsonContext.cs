@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace XiHan.Framework.Hosting.AspNetCore.Tests.Fixtures;
 
 /// <summary>
-/// 问候操作请求与响应的源生成序列化上下文。
+/// 问候操作请求与响应的源生成序列化上下文
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(PingRequest))]

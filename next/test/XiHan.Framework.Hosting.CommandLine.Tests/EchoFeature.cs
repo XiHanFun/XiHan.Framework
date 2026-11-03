@@ -11,10 +11,10 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Hosting.CommandLine.Tests;
 
 /// <summary>
-/// 登记测试操作的特性。
+/// 登记测试操作的特性
 /// </summary>
 /// <remarks>
-/// <c>orders.create</c>（命令行 + HTTP，需 <c>orders.write</c>）、<c>orders.get</c>（命令行）、<c>orders.secret</c>（只给 HTTP）、<c>orders.audit</c>（内部）。
+/// <c>orders.create</c>（命令行 + HTTP，需 <c>orders.write</c>）、<c>orders.get</c>（命令行）、<c>orders.secret</c>（只给 HTTP）、<c>orders.audit</c>（内部）
 /// </remarks>
 internal sealed class EchoFeature : IFeature
 {
@@ -43,7 +43,7 @@ internal sealed class EchoFeature : IFeature
     }
 
     /// <summary>
-    /// 以同一实现登记一个契约。
+    /// 以同一实现登记一个契约
     /// </summary>
     private static void Add(FeatureContext context, OperationContract contract)
         => context.AddOperation<EchoOperation, EchoRequest, EchoReply>(contract, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoReply);

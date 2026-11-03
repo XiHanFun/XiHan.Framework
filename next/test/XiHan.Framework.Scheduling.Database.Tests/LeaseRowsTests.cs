@@ -12,15 +12,15 @@ using XiHan.Framework.Scheduling.Database.Storage;
 namespace XiHan.Framework.Scheduling.Database.Tests;
 
 /// <summary>
-/// 租约行。
+/// 租约行
 /// </summary>
 /// <remarks>
-/// 被别的节点占着、令牌不对、行没了都是成功的无值，不是失败；租约被接管后续约是失去租约，不是存储不可达。
+/// 被别的节点占着、令牌不对、行没了都是成功的无值，不是失败；租约被接管后续约是失去租约，不是存储不可达
 /// </remarks>
 public sealed class LeaseRowsTests : IAsyncLifetime
 {
     /// <summary>
-    /// 本用例的数据库与宿主。
+    /// 本用例的数据库与宿主
     /// </summary>
     private readonly SqliteDatabase _database = new();
 

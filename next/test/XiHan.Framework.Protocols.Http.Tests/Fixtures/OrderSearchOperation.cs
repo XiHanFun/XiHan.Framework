@@ -7,7 +7,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 分页查询的测试实现：回显绑定到的请求。
+/// 分页查询的测试实现：回显绑定到的请求
 /// </summary>
 internal sealed class OrderSearchOperation : IOperation<OrderSearchRequest, OrderSearchRequest>
 {

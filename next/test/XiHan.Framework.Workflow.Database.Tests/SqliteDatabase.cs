@@ -13,57 +13,57 @@ using XiHan.Framework.Workflow.Database.Entities;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 每个测试一组临时 SQLite 文件，宿主装配 SqlSugar 持久化与数据库工作流特性。
+/// 每个测试一组临时 SQLite 文件，宿主装配 SqlSugar 持久化与数据库工作流特性
 /// </summary>
 /// <remarks>
-/// SQLite 只有一个写者（库级锁，Microsoft.Data.Sqlite 的事务是 IMMEDIATE）：引擎在调用方事务里写过之后再取实例锁，租约行若与业务在同一个库文件，就要等调用方事务结束——等的正是自己。所以按框架的选项把租约表（<see cref="WorkflowLockRecord"/>）放到另一个库文件：SqlSugar 方式一以 <c>XiHan:Persistence:SqlSugar:Connections</c> 声明命名连接 <see cref="LeaseConnection"/>，<see cref="DatabaseWorkflowOptions.LockConnection"/> 指向它（ADR-0084）；PostgreSQL 等行级锁的数据库不需要这样做。带租户分片的调用由特性按租户属性里的连接串另加 <c>shard</c> 连接。释放时停止宿主并删除全部文件。
+/// SQLite 只有一个写者（库级锁，Microsoft.Data.Sqlite 的事务是 IMMEDIATE）：引擎在调用方事务里写过之后再取实例锁，租约行若与业务在同一个库文件，就要等调用方事务结束——等的正是自己。所以按框架的选项把租约表（<see cref="WorkflowLockRecord"/>）放到另一个库文件：SqlSugar 方式一以 <c>XiHan:Persistence:SqlSugar:Connections</c> 声明命名连接 <see cref="LeaseConnection"/>，<see cref="DatabaseWorkflowOptions.LockConnection"/> 指向它（ADR-0084）；PostgreSQL 等行级锁的数据库不需要这样做。带租户分片的调用由特性按租户属性里的连接串另加 <c>shard</c> 连接。释放时停止宿主并删除全部文件
 /// </remarks>
 internal sealed class SqliteDatabase : IAsyncDisposable
 {
     /// <summary>
-    /// 租约表所在的命名连接（SqlSugar 的 <c>ConfigId</c>）。
+    /// 租约表所在的命名连接（SqlSugar 的 <c>ConfigId</c>）
     /// </summary>
     public const string LeaseConnection = "leases";
 
     /// <summary>
-    /// 已启动的宿主。
+    /// 已启动的宿主
     /// </summary>
     /// <remarks>
-    /// 释放时一并停止。
+    /// 释放时一并停止
     /// </remarks>
     private TestHost? _host;
 
     /// <summary>
-    /// 业务库文件的完整路径。
+    /// 业务库文件的完整路径
     /// </summary>
     /// <remarks>
-    /// 位于系统临时目录，文件名带随机后缀以免测试之间互相干扰。
+    /// 位于系统临时目录，文件名带随机后缀以免测试之间互相干扰
     /// </remarks>
     public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"xihan-workflow-{Guid.NewGuid():N}.db");
 
     /// <summary>
-    /// 租约库文件的完整路径。
+    /// 租约库文件的完整路径
     /// </summary>
     public string LeasePath => Path + ".leases.db";
 
     /// <summary>
-    /// 指向业务库的 SQLite 连接串。
+    /// 指向业务库的 SQLite 连接串
     /// </summary>
     /// <remarks>
-    /// 忙等上限 5 秒：误把两个写者放进同一个库时尽快失败，而不是挂 30 秒。
+    /// 忙等上限 5 秒：误把两个写者放进同一个库时尽快失败，而不是挂 30 秒
     /// </remarks>
     public string ConnectionString => Connection(Path);
 
     /// <summary>
-    /// 本测试另建的库文件（租户独立库），释放时一并删除。
+    /// 本测试另建的库文件（租户独立库），释放时一并删除
     /// </summary>
     public List<string> ExtraFiles { get; } = [];
 
     /// <summary>
-    /// 宿主配置。
+    /// 宿主配置
     /// </summary>
     /// <remarks>
-    /// 业务库绑定 <c>db</c> 与租约库的命名连接，租约表指向它；开启 <c>InitTables</c> 建表（按落点分组，租约表建在租约库上）、关掉后台轮询（周期 1 小时）、实例锁等待上限 0.2 秒。
+    /// 业务库绑定 <c>db</c> 与租约库的命名连接，租约表指向它；开启 <c>InitTables</c> 建表（按落点分组，租约表建在租约库上）、关掉后台轮询（周期 1 小时）、实例锁等待上限 0.2 秒
     /// </remarks>
     public IEnumerable<KeyValuePair<string, string?>> Configuration =>
     [
@@ -76,21 +76,21 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     ];
 
     /// <summary>
-    /// 指向某个库文件的连接串。
+    /// 指向某个库文件的连接串
     /// </summary>
     public static string Connection(string path) => $"Data Source={path};Default Timeout=5";
 
     /// <summary>
-    /// 一个连接配置：SQLite，施加持久化约定。
+    /// 一个连接配置：SQLite，施加持久化约定
     /// </summary>
     public static ConnectionConfig Config(string configId, string connectionString)
         => SqlSugarConventions.Apply(new ConnectionConfig { ConfigId = configId, DbType = DbType.Sqlite, ConnectionString = connectionString, IsAutoCloseConnection = true });
 
     /// <summary>
-    /// 启动装配了本数据库与 <see cref="DatabaseWorkflowFeature"/> 的宿主。
+    /// 启动装配了本数据库与 <see cref="DatabaseWorkflowFeature"/> 的宿主
     /// </summary>
     /// <remarks>
-    /// 后给的配置覆盖默认配置；<paramref name="configure"/> 可以再加特性（多租户等）。
+    /// 后给的配置覆盖默认配置；<paramref name="configure"/> 可以再加特性（多租户等）
     /// </remarks>
     public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<IServiceCollection>? services = null, Action<AppBuilder>? configure = null)
     {
@@ -115,7 +115,7 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     }
 
     /// <summary>
-    /// 停止宿主，清空各库的连接池并删除全部库文件及其日志、WAL 与共享内存文件。
+    /// 停止宿主，清空各库的连接池并删除全部库文件及其日志、WAL 与共享内存文件
     /// </summary>
     public async ValueTask DisposeAsync()
     {
@@ -132,18 +132,18 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     }
 
     /// <summary>
-    /// 删除一个库文件及其附属文件。
+    /// 删除一个库文件及其附属文件
     /// </summary>
     /// <remarks>
-    /// 库文件的连接串都是 <see cref="Connection"/> 给出的。
+    /// 库文件的连接串都是 <see cref="Connection"/> 给出的
     /// </remarks>
     internal static async Task DeleteAsync(string path)
     {
         // SQLite 连接会被池化并持有文件句柄，先清空这个库的连接池，Windows 上才能删除文件；
-        // 宿主停止时还在收尾的连接（释放锁、后台续约的最后一次写）可能仍占着文件，等它们结束再删。
+        // 宿主停止时还在收尾的连接（释放锁、后台续约的最后一次写）可能仍占着文件，等它们结束再删
         // 只清本库连接串的连接池（连接池按连接串分组）。不用 SqliteConnection.ClearAllPools()：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 ObjectDisposedException（SQLitePCL.sqlite3）失败
         // SqlSugar 在 SQLite 上读数据后不释放命令（AdoProvider.GetDataReader 只对别的数据库 Dispose），事务里用过的命令被回收后，
-        // 连接关闭时已够不着它，它的预编译语句要等终结器才 finalize；在此之前 sqlite3_close_v2 把库留成僵尸、文件一直占着。
+        // 连接关闭时已够不着它，它的预编译语句要等终结器才 finalize；在此之前 sqlite3_close_v2 把库留成僵尸、文件一直占着
         // 先回收并等终结器跑完，库才真正关掉
         GC.Collect();
         GC.WaitForPendingFinalizers();

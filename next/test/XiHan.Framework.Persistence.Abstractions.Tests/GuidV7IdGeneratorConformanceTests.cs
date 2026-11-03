@@ -7,7 +7,7 @@ using XiHan.Framework.Persistence.Conformance;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="GuidV7IdGenerator"/> 通过标识生成器一致性套件。
+/// <see cref="GuidV7IdGenerator"/> 通过标识生成器一致性套件
 /// </summary>
 public sealed class GuidV7IdGeneratorConformanceTests : IdGeneratorConformance<Guid>
 {

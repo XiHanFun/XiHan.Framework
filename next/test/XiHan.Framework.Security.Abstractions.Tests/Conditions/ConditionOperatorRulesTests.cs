@@ -7,10 +7,10 @@ using static XiHan.Framework.Security.Abstractions.Tests.Fixtures.ConditionTestK
 namespace XiHan.Framework.Security.Abstractions.Tests.Conditions;
 
 /// <summary>
-/// 运算符与值种类的搭配规则。
+/// 运算符与值种类的搭配规则
 /// </summary>
 /// <remarks>
-/// 编辑界面据此列运算符，编译器据此拒绝不搭配的子句，两边必须一致。
+/// 编辑界面据此列运算符，编译器据此拒绝不搭配的子句，两边必须一致
 /// </remarks>
 public sealed class ConditionOperatorRulesTests
 {

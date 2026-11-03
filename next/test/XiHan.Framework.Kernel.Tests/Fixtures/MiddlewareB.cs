@@ -7,21 +7,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Fixtures;
 
 /// <summary>
-/// 记录进出事件的中间件 B。
+/// 记录进出事件的中间件 B
 /// </summary>
 /// <remarks>
-/// 管道中每个类型只能出现一次，因此用独立类型而不是同一类型的多个实例。
+/// 管道中每个类型只能出现一次，因此用独立类型而不是同一类型的多个实例
 /// </remarks>
-/// <param name="log">事件日志。</param>
+/// <param name="log">事件日志</param>
 internal sealed class MiddlewareB(List<string> log) : IPipelineMiddleware
 {
     /// <summary>
-    /// 实际记录事件的实现，名称为 <c>B</c>。
+    /// 实际记录事件的实现，名称为 <c>B</c>
     /// </summary>
     private readonly TracingMiddleware _inner = new(log, "B");
 
     /// <summary>
-    /// 委托给 <see cref="_inner"/>。
+    /// 委托给 <see cref="_inner"/>
     /// </summary>
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep) => _inner.InvokeAsync(context, nextStep);
 }

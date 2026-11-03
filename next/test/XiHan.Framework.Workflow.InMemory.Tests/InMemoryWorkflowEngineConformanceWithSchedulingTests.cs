@@ -20,39 +20,39 @@ using XiHan.Framework.Workflow.Conformance.Engine;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 同时装了内存调度的宿主上，内存工作流特性照样通过引擎套件。
+/// 同时装了内存调度的宿主上，内存工作流特性照样通过引擎套件
 /// </summary>
 /// <remarks>
-/// 调度经同一个消息发布者发布作业事件（来源 <see cref="SchedulingTopics.Source"/>），套件顶替的代理照常确认、不当工作流事件解析（ADR-0096 修订）。宿主启动时登记一个代码作业，启动后再登记一个运行时作业，用例开始前已发出两条 <see cref="SchedulingTopics.JobScheduled"/>；触发器一年到期一次、调度轮询周期设得很长，用例期间作业不运行。每个用例经 <see cref="SchedulingWarningGuard"/> 释放宿主：调度记了告警就失败。
+/// 调度经同一个消息发布者发布作业事件（来源 <see cref="SchedulingTopics.Source"/>），套件顶替的代理照常确认、不当工作流事件解析（ADR-0096 修订）。宿主启动时登记一个代码作业，启动后再登记一个运行时作业，用例开始前已发出两条 <see cref="SchedulingTopics.JobScheduled"/>；触发器一年到期一次、调度轮询周期设得很长，用例期间作业不运行。每个用例经 <see cref="SchedulingWarningGuard"/> 释放宿主：调度记了告警就失败
 /// </remarks>
 public sealed class InMemoryWorkflowEngineConformanceWithSchedulingTests : WorkflowEngineConformance
 {
     /// <summary>
-    /// 代码登记的作业。
+    /// 代码登记的作业
     /// </summary>
     private static readonly JobName _codeJob = new("conformance.code");
 
     /// <summary>
-    /// 启动后运行时登记的作业。
+    /// 启动后运行时登记的作业
     /// </summary>
     private static readonly JobName _runtimeJob = new("conformance.runtime");
 
     /// <summary>
-    /// 一年到期一次的触发器。
+    /// 一年到期一次的触发器
     /// </summary>
     private static readonly JobSchedule _yearly = JobSchedule.FromCron("0 0 1 1 *");
 
     /// <inheritdoc />
     /// <remarks>
-    /// 内存工作流没有事务：写入立即生效，调用方回滚不撤销。
+    /// 内存工作流没有事务：写入立即生效，调用方回滚不撤销
     /// </remarks>
     protected override bool JoinsCallerTransaction => false;
 
     /// <summary>
-    /// 调度的作业事件照常确认，调度不记告警，工作流事件照旧记录。
+    /// 调度的作业事件照常确认，调度不记告警，工作流事件照旧记录
     /// </summary>
     /// <remarks>
-    /// 修正前套件的代理把作业事件当工作流事件解析而抛异常，调度的发布端每条记一次告警。
+    /// 修正前套件的代理把作业事件当工作流事件解析而抛异常，调度的发布端每条记一次告警
     /// </remarks>
     [Fact]
     public async Task SchedulingEvents_AreAcknowledged_WithoutPublisherWarnings()
@@ -78,7 +78,7 @@ public sealed class InMemoryWorkflowEngineConformanceWithSchedulingTests : Workf
         => StartAsync(new LogCapture(), configure, configuration);
 
     /// <summary>
-    /// 启动装了内存调度的宿主，日志写进 <paramref name="logs"/>。
+    /// 启动装了内存调度的宿主，日志写进 <paramref name="logs"/>
     /// </summary>
     private static async Task<WorkflowEngineHost> StartAsync(LogCapture logs, Action<IServiceCollection> configure, IEnumerable<KeyValuePair<string, string?>>? configuration)
     {

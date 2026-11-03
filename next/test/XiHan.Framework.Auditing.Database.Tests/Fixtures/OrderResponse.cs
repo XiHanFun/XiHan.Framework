@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Auditing.Database.Tests.Fixtures;
 
 /// <summary>
-/// 操作响应。
+/// 操作响应
 /// </summary>
-/// <param name="Id">订单 ID。</param>
+/// <param name="Id">订单 ID</param>
 internal sealed record OrderResponse(string Id);

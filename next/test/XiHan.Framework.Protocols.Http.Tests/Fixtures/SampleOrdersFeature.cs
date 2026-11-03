@@ -11,20 +11,20 @@ using XiHan.Framework.Primitives.Manifests;
 namespace XiHan.Framework.Protocols.Http.Tests.Fixtures;
 
 /// <summary>
-/// 照 <c>samples/SimpleApp</c> 的 <c>OrdersFeature</c> 装配的特性。
+/// 照 <c>samples/SimpleApp</c> 的 <c>OrdersFeature</c> 装配的特性
 /// </summary>
 /// <remarks>
-/// 登记 <c>orders.read</c> / <c>orders.write</c> 两个权限定义，以及按同样契约（Experimental、暴露给 HTTP / gRPC / MCP、按权限码授权）登记的 <c>orders.create</c> 与 <c>orders.list</c>。示例不是库，测试不引用它。
+/// 登记 <c>orders.read</c> / <c>orders.write</c> 两个权限定义，以及按同样契约（Experimental、暴露给 HTTP / gRPC / MCP、按权限码授权）登记的 <c>orders.create</c> 与 <c>orders.list</c>。示例不是库，测试不引用它
 /// </remarks>
 internal sealed class SampleOrdersFeature : IFeature
 {
     /// <summary>
-    /// 读订单权限的显示名，与示例一致。
+    /// 读订单权限的显示名，与示例一致
     /// </summary>
     public const string ReadDisplayName = "Read orders";
 
     /// <summary>
-    /// 下单权限的显示名，与示例一致。
+    /// 下单权限的显示名，与示例一致
     /// </summary>
     public const string WriteDisplayName = "Place orders";
 

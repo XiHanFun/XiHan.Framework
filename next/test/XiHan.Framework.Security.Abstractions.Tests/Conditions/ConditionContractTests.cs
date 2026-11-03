@@ -8,7 +8,7 @@ using static XiHan.Framework.Security.Abstractions.Tests.Fixtures.ConditionTestK
 namespace XiHan.Framework.Security.Abstractions.Tests.Conditions;
 
 /// <summary>
-/// 条件模块的契约：运算符与值种类的整数值、属性取值包装、记忆来源与服务登记。
+/// 条件模块的契约：运算符与值种类的整数值、属性取值包装、记忆来源与服务登记
 /// </summary>
 public sealed class ConditionContractTests
 {
@@ -92,7 +92,7 @@ public sealed class ConditionContractTests
     }
 
     /// <summary>
-    /// 以委托取值的来源。
+    /// 以委托取值的来源
     /// </summary>
     private sealed class DelegateSource(Func<string, ConditionAttributeValue> getter) : IConditionAttributeSource
     {
@@ -101,7 +101,7 @@ public sealed class ConditionContractTests
     }
 
     /// <summary>
-    /// 宿主自带的求值器。
+    /// 宿主自带的求值器
     /// </summary>
     private sealed class StubEvaluator : IConditionEvaluator
     {

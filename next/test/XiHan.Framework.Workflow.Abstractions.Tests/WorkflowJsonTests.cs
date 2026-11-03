@@ -11,7 +11,7 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
 /// <summary>
-/// 模型的 JSON 往返、深拷贝与非法输入。
+/// 模型的 JSON 往返、深拷贝与非法输入
 /// </summary>
 public sealed class WorkflowJsonTests
 {

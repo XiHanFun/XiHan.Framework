@@ -6,7 +6,7 @@ using XiHan.Framework.Architecture.Tests.Model;
 namespace XiHan.Framework.Architecture.Tests;
 
 /// <summary>
-/// 文法本身的正反用例：保证门禁不是"什么都放行"。
+/// 文法本身的正反用例：保证门禁不是"什么都放行"
 /// </summary>
 public sealed class PackageGrammarTests
 {

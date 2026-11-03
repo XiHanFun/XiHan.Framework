@@ -11,7 +11,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Configuration.Abstractions.Tests;
 
 /// <summary>
-/// 密钥配置源：映射、缺失语义、整体失败、重读、回调异常、名字校验。
+/// 密钥配置源：映射、缺失语义、整体失败、重读、回调异常、名字校验
 /// </summary>
 public sealed class SecretsConfigurationSourceTests
 {
@@ -205,7 +205,7 @@ public sealed class SecretsConfigurationSourceTests
     }
 
     /// <summary>
-    /// 推进一个重读周期，等这次重读开始。
+    /// 推进一个重读周期，等这次重读开始
     /// </summary>
     private static Task RefreshAsync(FakeTimeProvider clock, TimeSpan interval, InMemorySecretStore store)
     {
@@ -215,7 +215,7 @@ public sealed class SecretsConfigurationSourceTests
     }
 
     /// <summary>
-    /// 轮询直到条件成立，最多 10 秒。
+    /// 轮询直到条件成立，最多 10 秒
     /// </summary>
     private static async Task WaitUntilAsync(Func<bool> condition)
     {

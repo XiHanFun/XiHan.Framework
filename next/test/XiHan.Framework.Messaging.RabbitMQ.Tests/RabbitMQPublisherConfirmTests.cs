@@ -14,40 +14,40 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 
 /// <summary>
-/// 发布确认（RFC-0009 投递第 6 条）。
+/// 发布确认（RFC-0009 投递第 6 条）
 /// </summary>
 /// <remarks>
-/// 对打桩的连接与通道验证：发布通道开启并跟踪确认，发布方只声明交换机、经它按路由键发布，等到确认才成功，拒绝按失败返回，退回（没有订阅者）丢弃并成功，批量连续发布后一次等待全部确认；订阅方声明并绑定队列；重试与死信经默认交换机定向重新发布，同样等确认，未确认时原消息退回队列而不是被确认掉。不需要真实 RabbitMQ。
+/// 对打桩的连接与通道验证：发布通道开启并跟踪确认，发布方只声明交换机、经它按路由键发布，等到确认才成功，拒绝按失败返回，退回（没有订阅者）丢弃并成功，批量连续发布后一次等待全部确认；订阅方声明并绑定队列；重试与死信经默认交换机定向重新发布，同样等确认，未确认时原消息退回队列而不是被确认掉。不需要真实 RabbitMQ
 /// </remarks>
 public sealed class RabbitMQPublisherConfirmTests
 {
     /// <summary>
-    /// 测试主题。
+    /// 测试主题
     /// </summary>
     private const string Topic = "orders";
 
     /// <summary>
-    /// 主题对应的队列与路由键（缺省前缀 <c>xihan.</c>）。
+    /// 主题对应的队列与路由键（缺省前缀 <c>xihan.</c>）
     /// </summary>
     private const string Queue = "xihan.orders";
 
     /// <summary>
-    /// 缺省的交换机。
+    /// 缺省的交换机
     /// </summary>
     private const string Exchange = "xihan";
 
     /// <summary>
-    /// 等待条件成立的上限。
+    /// 等待条件成立的上限
     /// </summary>
     private static readonly TimeSpan _patience = TimeSpan.FromSeconds(10);
 
     /// <summary>
-    /// 来源 <c>/tests</c>、类型 <c>orders.placed</c> 的测试信封。
+    /// 来源 <c>/tests</c>、类型 <c>orders.placed</c> 的测试信封
     /// </summary>
     private static MessageEnvelope Envelope(string id) => new() { Id = id, Source = "/tests", Type = "orders.placed" };
 
     /// <summary>
-    /// 用打桩连接创建代理。
+    /// 用打桩连接创建代理
     /// </summary>
     private static RabbitMQMessageBroker Broker(TestHost host, IConnection connection, int maxAttempts = 3)
         => new(new RabbitMQMessagingOptions { Configuration = "amqp://localhost:5672" }, new MessagingOptions { MaxAttempts = maxAttempts }, new MessagingInstance(new MessagingOptions()), host.App, NullLoggerFactory.Instance, _ => Task.FromResult(connection));
@@ -282,7 +282,7 @@ public sealed class RabbitMQPublisherConfirmTests
     }
 
     /// <summary>
-    /// 让打桩通道上的消费者收到一条投递，等处理完成。
+    /// 让打桩通道上的消费者收到一条投递，等处理完成
     /// </summary>
     private static async Task DeliverAsync(FakeRabbitChannel channel, ulong deliveryTag, int attempt, byte[] body)
     {

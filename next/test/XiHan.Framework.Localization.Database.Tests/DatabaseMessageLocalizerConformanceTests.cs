@@ -8,10 +8,10 @@ using XiHan.Framework.Localization.Conformance;
 namespace XiHan.Framework.Localization.Database.Tests;
 
 /// <summary>
-/// 没有数据库翻译时。
+/// 没有数据库翻译时
 /// </summary>
 /// <remarks>
-/// <see cref="DatabaseMessageLocalizer"/> 跑完整套 <see cref="MessageLocalizerConformance"/> 用例。
+/// <see cref="DatabaseMessageLocalizer"/> 跑完整套 <see cref="MessageLocalizerConformance"/> 用例
 /// </remarks>
 public sealed class DatabaseMessageLocalizerConformanceTests : MessageLocalizerConformance
 {

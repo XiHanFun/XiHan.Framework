@@ -9,7 +9,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel.Tests.Pipeline;
 
 /// <summary>
-/// 当前调用的上下文访问器：调用内可取、嵌套调用各看到自己的、调用结束后恢复。
+/// 当前调用的上下文访问器：调用内可取、嵌套调用各看到自己的、调用结束后恢复
 /// </summary>
 public sealed class InvocationAccessorTests
 {

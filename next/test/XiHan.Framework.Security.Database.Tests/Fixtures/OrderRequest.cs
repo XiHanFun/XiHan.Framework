@@ -4,7 +4,7 @@
 namespace XiHan.Framework.Security.Database.Tests.Fixtures;
 
 /// <summary>
-/// 写订单操作的请求：订单号。
+/// 写订单操作的请求：订单号
 /// </summary>
-/// <param name="Number">订单号。</param>
+/// <param name="Number">订单号</param>
 internal sealed record OrderRequest(string Number);

@@ -6,8 +6,8 @@ using XiHan.Framework.Domain.Events;
 namespace SimpleApp.Orders;
 
 /// <summary>
-/// 订单已下单的领域事件。
+/// 订单已下单的领域事件
 /// </summary>
-/// <param name="OrderId">订单 ID。</param>
-/// <param name="OccurredAt">下单时间。</param>
+/// <param name="OrderId">订单 ID</param>
+/// <param name="OccurredAt">下单时间</param>
 public sealed record OrderPlaced(Guid OrderId, DateTimeOffset OccurredAt) : IDomainEvent;

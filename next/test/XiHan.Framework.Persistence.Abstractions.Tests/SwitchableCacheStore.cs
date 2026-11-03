@@ -8,21 +8,21 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// 包一层的缓存存储。
+/// 包一层的缓存存储
 /// </summary>
 /// <remarks>
-/// <see cref="Refuse"/> 时"不存在才写"一律失败（模拟机器位全被占），<see cref="Fail"/> 时每个操作都抛存储不可用（模拟锁存储不可达）。
+/// <see cref="Refuse"/> 时"不存在才写"一律失败（模拟机器位全被占），<see cref="Fail"/> 时每个操作都抛存储不可用（模拟锁存储不可达）
 /// </remarks>
-/// <param name="inner">真正的存储。</param>
+/// <param name="inner">真正的存储</param>
 internal sealed class SwitchableCacheStore(ICacheStore inner) : ICacheStore
 {
     /// <summary>
-    /// 为真时 <see cref="TryAddAsync"/> 总是返回 <see langword="false"/>。
+    /// 为真时 <see cref="TryAddAsync"/> 总是返回 <see langword="false"/>
     /// </summary>
     public bool Refuse { get; set; }
 
     /// <summary>
-    /// 为真时每个操作都抛出携带 <see cref="CachingErrors.StoreUnavailable"/> 的异常。
+    /// 为真时每个操作都抛出携带 <see cref="CachingErrors.StoreUnavailable"/> 的异常
     /// </summary>
     public bool Fail { get; set; }
 
@@ -83,7 +83,7 @@ internal sealed class SwitchableCacheStore(ICacheStore inner) : ICacheStore
     }
 
     /// <summary>
-    /// <see cref="Fail"/> 时抛出存储不可用。
+    /// <see cref="Fail"/> 时抛出存储不可用
     /// </summary>
     private void Guard()
     {

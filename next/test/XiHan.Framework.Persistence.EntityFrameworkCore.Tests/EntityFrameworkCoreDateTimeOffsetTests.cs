@@ -8,20 +8,20 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// SQLite 上的 <see cref="DateTimeOffset"/> 存成 UTC ticks 整数（ADR-0091）。
+/// SQLite 上的 <see cref="DateTimeOffset"/> 存成 UTC ticks 整数（ADR-0091）
 /// </summary>
 /// <remarks>
-/// SQLite 的 EF Core Provider 把 <see cref="DateTimeOffset"/> 存成文本，翻译不了大小比较与排序。<c>ApplyPersistenceConventions(Database)</c> 在 SQLite 上把模型里全部这类属性（含可空、复杂类型里的）换成 UTC ticks：比较与排序按时刻、不受写入时的偏移影响，往返保留 100 纳秒精度、读回偏移为零；应用自己配了转换或存储类型的属性不动；别的 Provider 不动。
+/// SQLite 的 EF Core Provider 把 <see cref="DateTimeOffset"/> 存成文本，翻译不了大小比较与排序。<c>ApplyPersistenceConventions(Database)</c> 在 SQLite 上把模型里全部这类属性（含可空、复杂类型里的）换成 UTC ticks：比较与排序按时刻、不受写入时的偏移影响，往返保留 100 纳秒精度、读回偏移为零；应用自己配了转换或存储类型的属性不动；别的 Provider 不动
 /// </remarks>
 public sealed class EntityFrameworkCoreDateTimeOffsetTests : IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 
@@ -116,12 +116,12 @@ public sealed class EntityFrameworkCoreDateTimeOffsetTests : IDisposable
     }
 
     /// <summary>
-    /// 一行：给定发生时刻，没有到期时刻。
+    /// 一行：给定发生时刻，没有到期时刻
     /// </summary>
     private static TimedRow Row(DateTimeOffset at) => new() { Id = Guid.CreateVersion7(), At = at };
 
     /// <summary>
-    /// 连到本测试数据库、只登记 <see cref="TimedRow"/> 的上下文。
+    /// 连到本测试数据库、只登记 <see cref="TimedRow"/> 的上下文
     /// </summary>
     private TimedDbContext Timed()
         => new(new DbContextOptionsBuilder<TimedDbContext>().UseSqlite(_database.ConnectionString).Options);

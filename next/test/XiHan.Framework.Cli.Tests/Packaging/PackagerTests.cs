@@ -6,12 +6,12 @@ using XiHan.Framework.Cli.Packaging;
 namespace XiHan.Framework.Cli.Tests.Packaging;
 
 /// <summary>
-/// 各生成器：Dockerfile、Kustomize、Compose 与 Aspire 的关键内容与条件产物。
+/// 各生成器：Dockerfile、Kustomize、Compose 与 Aspire 的关键内容与条件产物
 /// </summary>
 public sealed class PackagerTests
 {
     /// <summary>
-    /// 从夹具读清单并生成全部产物。
+    /// 从夹具读清单并生成全部产物
     /// </summary>
     private static (AppManifest Manifest, Dictionary<string, string> Files) Generate(ManifestFixture fixture, PackKinds kinds = PackKinds.All)
     {
@@ -215,7 +215,7 @@ public sealed class PackagerTests
     }
 
     /// <summary>
-    /// 用到 Kafka 与 Nacos 两种绑定的清单。
+    /// 用到 Kafka 与 Nacos 两种绑定的清单
     /// </summary>
     private const string StreamAndRemoteConfigurationManifest = """
         {

@@ -9,7 +9,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Testing.Tests;
 
 /// <summary>
-/// 测试宿主、特性桩与独立调用上下文的行为验证。
+/// 测试宿主、特性桩与独立调用上下文的行为验证
 /// </summary>
 public sealed class TestHostTests
 {

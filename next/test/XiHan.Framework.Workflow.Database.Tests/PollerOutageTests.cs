@@ -10,10 +10,10 @@ using XiHan.Framework.Workflow.Database.Polling;
 namespace XiHan.Framework.Workflow.Database.Tests;
 
 /// <summary>
-/// 宿主在服务中而存储被拿走，与先停宿主再拿走存储：轮询器的两种表现。
+/// 宿主在服务中而存储被拿走，与先停宿主再拿走存储：轮询器的两种表现
 /// </summary>
 /// <remarks>
-/// BasicApp 的「存储不可达」用例在完整宿主还在服务时删掉测试库，轮询器去拿领导权，如实报 <c>WORKFLOW_UNAVAILABLE_001</c>；一致性夹具先停宿主（排空、释放领导权、等循环退出）再删库，之后没有告警。前一种是真实的存储故障，不该被压掉；后一种不该有任何告警。
+/// BasicApp 的「存储不可达」用例在完整宿主还在服务时删掉测试库，轮询器去拿领导权，如实报 <c>WORKFLOW_UNAVAILABLE_001</c>；一致性夹具先停宿主（排空、释放领导权、等循环退出）再删库，之后没有告警。前一种是真实的存储故障，不该被压掉；后一种不该有任何告警
 /// </remarks>
 public sealed class PollerOutageTests
 {
@@ -94,7 +94,7 @@ public sealed class PollerOutageTests
     }
 
     /// <summary>
-    /// 把库文件换成同名目录，SQLite 驱动打不开它。
+    /// 把库文件换成同名目录，SQLite 驱动打不开它
     /// </summary>
     private static async Task BlockAsync(string path)
     {
@@ -103,7 +103,7 @@ public sealed class PollerOutageTests
     }
 
     /// <summary>
-    /// 领导权以存储不可达失败的告警。
+    /// 领导权以存储不可达失败的告警
     /// </summary>
     private static bool IsLeadershipWarning((LogLevel Level, string Category, string Message) entry)
         => entry.Level == LogLevel.Warning
@@ -111,7 +111,7 @@ public sealed class PollerOutageTests
             && entry.Message.Contains(WorkflowErrors.StoreUnavailable, StringComparison.Ordinal);
 
     /// <summary>
-    /// 工作流的任何告警或错误。
+    /// 工作流的任何告警或错误
     /// </summary>
     private static bool IsWorkflowWarning((LogLevel Level, string Category, string Message) entry)
         => entry.Level >= LogLevel.Warning && entry.Category.StartsWith("XiHan.Framework.Workflow", StringComparison.Ordinal);

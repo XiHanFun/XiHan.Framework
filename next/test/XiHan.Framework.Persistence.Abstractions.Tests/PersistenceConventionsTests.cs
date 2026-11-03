@@ -7,15 +7,15 @@ using XiHan.Framework.Persistence.Abstractions.Identifiers;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="PersistenceConventions"/> 对各协议字段的写入、软删除、租户可见性。
+/// <see cref="PersistenceConventions"/> 对各协议字段的写入、软删除、租户可见性
 /// </summary>
 /// <remarks>
-/// 以及 <see cref="GuidV7IdGenerator"/> 的时序。
+/// 以及 <see cref="GuidV7IdGenerator"/> 的时序
 /// </remarks>
 public sealed class PersistenceConventionsTests
 {
     /// <summary>
-    /// 约定写入审计字段时使用的固定时刻。
+    /// 约定写入审计字段时使用的固定时刻
     /// </summary>
     private static readonly DateTimeOffset _now = new(2026, 10, 21, 8, 0, 0, TimeSpan.Zero);
 

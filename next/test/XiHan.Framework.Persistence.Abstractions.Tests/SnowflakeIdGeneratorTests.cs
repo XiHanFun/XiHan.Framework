@@ -10,20 +10,20 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="SnowflakeIdGenerator"/>。
+/// <see cref="SnowflakeIdGenerator"/>
 /// </summary>
 /// <remarks>
-/// 编码、同毫秒序列、序列用尽等下一毫秒、回拨等待与拒绝、没有机器位拒绝、并发唯一与吞吐。
+/// 编码、同毫秒序列、序列用尽等下一毫秒、回拨等待与拒绝、没有机器位拒绝、并发唯一与吞吐
 /// </remarks>
 public sealed class SnowflakeIdGeneratorTests
 {
     /// <summary>
-    /// 用例的起始时刻：epoch 之后 5 秒。
+    /// 用例的起始时刻：epoch 之后 5 秒
     /// </summary>
     private static readonly DateTimeOffset _start = SnowflakeOptions.DefaultEpoch.AddSeconds(5);
 
     /// <summary>
-    /// 等待阻塞中的生成完成的上限。
+    /// 等待阻塞中的生成完成的上限
     /// </summary>
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(10);
 
@@ -163,13 +163,13 @@ public sealed class SnowflakeIdGeneratorTests
     }
 
     /// <summary>
-    /// 固定机器位、缺省选项的生成器。
+    /// 固定机器位、缺省选项的生成器
     /// </summary>
     private static SnowflakeIdGenerator Create(TimeProvider clock, int workerId) =>
         new(new SnowflakeOptions(), new FixedWorkerIdSource(workerId), clock);
 
     /// <summary>
-    /// 永远没有机器位的来源。
+    /// 永远没有机器位的来源
     /// </summary>
     private sealed class NoWorkerIdSource : IWorkerIdSource
     {

@@ -15,23 +15,23 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// 字符串的包含、前缀与后缀按字面匹配（ADR-0098）。
+/// 字符串的包含、前缀与后缀按字面匹配（ADR-0098）
 /// </summary>
 /// <remarks>
-/// 子类给出数据库：SQLite 不设门控，PostgreSQL、MySQL、SQL Server、Oracle 各自按环境变量门控。SqlSugar 原本把 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 译成不转义的 <c>LIKE</c>——<c>_</c>、<c>%</c> 是通配符，SQL Server 的 <c>[</c> 开字符类，PostgreSQL 与 MySQL 的 <c>LIKE</c> 缺省以反斜杠转义；约定改了翻译之后，实参里的这些字符（连同转义符 <c>!</c> 与单引号）按字面匹配，经仓储的规约与直接用客户端的查询都一样，实参是闭包变量、常量或另一列也一样。大小写是否敏感照各库，由子类照实给出（<see cref="IgnoresCase"/>）。
+/// 子类给出数据库：SQLite 不设门控，PostgreSQL、MySQL、SQL Server、Oracle 各自按环境变量门控。SqlSugar 原本把 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 译成不转义的 <c>LIKE</c>——<c>_</c>、<c>%</c> 是通配符，SQL Server 的 <c>[</c> 开字符类，PostgreSQL 与 MySQL 的 <c>LIKE</c> 缺省以反斜杠转义；约定改了翻译之后，实参里的这些字符（连同转义符 <c>!</c> 与单引号）按字面匹配，经仓储的规约与直接用客户端的查询都一样，实参是闭包变量、常量或另一列也一样。大小写是否敏感照各库，由子类照实给出（<see cref="IgnoresCase"/>）
 /// </remarks>
 public abstract class SqlSugarLiteralMatchingTests
 {
     /// <summary>
-    /// 反斜杠。
+    /// 反斜杠
     /// </summary>
     private const string Backslash = "\\";
 
     /// <summary>
-    /// 用例数据：名字与作为实参的另一列。
+    /// 用例数据：名字与作为实参的另一列
     /// </summary>
     /// <remarks>
-    /// 每个按字面应当命中的名字都配一个不转义就会误命中的名字：<c>budgetx2026</c>（<c>_</c>）、<c>500 off</c>（<c>%</c>）、<c>ab</c>（反斜杠被当转义符吃掉）、<c>a</c>（SQL Server 的 <c>[a]</c> 字符类）、<c>xy</c>（转义符 <c>!</c> 自己没转义）、<c>its</c>（单引号）。
+    /// 每个按字面应当命中的名字都配一个不转义就会误命中的名字：<c>budgetx2026</c>（<c>_</c>）、<c>500 off</c>（<c>%</c>）、<c>ab</c>（反斜杠被当转义符吃掉）、<c>a</c>（SQL Server 的 <c>[a]</c> 字符类）、<c>xy</c>（转义符 <c>!</c> 自己没转义）、<c>its</c>（单引号）
     /// </remarks>
     private static readonly (string Name, string Fragment)[] _rows =
     [
@@ -51,17 +51,17 @@ public abstract class SqlSugarLiteralMatchingTests
     ];
 
     /// <summary>
-    /// 宿主配置：连接绑定与 <c>InitTables</c>。
+    /// 宿主配置：连接绑定与 <c>InitTables</c>
     /// </summary>
     protected abstract IEnumerable<KeyValuePair<string, string?>> Configuration { get; }
 
     /// <summary>
-    /// 本数据库的 <c>LIKE</c> 是否不区分大小写（库与列的缺省排序规则下）。
+    /// 本数据库的 <c>LIKE</c> 是否不区分大小写（库与列的缺省排序规则下）
     /// </summary>
     protected abstract bool IgnoresCase { get; }
 
     /// <summary>
-    /// 创建以本数据库装配的特性。
+    /// 创建以本数据库装配的特性
     /// </summary>
     protected abstract IFeature CreateFeature();
 
@@ -202,20 +202,20 @@ public abstract class SqlSugarLiteralMatchingTests
     }
 
     /// <summary>
-    /// 一组用例的可读描述：实参与命中的名字。
+    /// 一组用例的可读描述：实参与命中的名字
     /// </summary>
     /// <remarks>
-    /// 断言整组描述，失败时一次列出全部不符的实参。
+    /// 断言整组描述，失败时一次列出全部不符的实参
     /// </remarks>
     private static string Describe(string keyword, IEnumerable<string> names) => $"'{keyword}' -> [{string.Join(" | ", names)}]";
 
     /// <summary>
-    /// 按序数排序的名字。
+    /// 按序数排序的名字
     /// </summary>
     private static List<string> Sorted(IEnumerable<string> names) => [.. names.Order(StringComparer.Ordinal)];
 
     /// <summary>
-    /// 启动宿主并写入用例数据。
+    /// 启动宿主并写入用例数据
     /// </summary>
     private async Task<TestHost> SeedAsync()
     {
@@ -240,7 +240,7 @@ public abstract class SqlSugarLiteralMatchingTests
     }
 
     /// <summary>
-    /// 在新调用里经仓储按规约查询，返回按序数排序的名字。
+    /// 在新调用里经仓储按规约查询，返回按序数排序的名字
     /// </summary>
     private static async Task<List<string>> ListAsync(TestHost host, Expression<Func<LiteralMatchRecord, bool>> criteria)
     {
@@ -251,7 +251,7 @@ public abstract class SqlSugarLiteralMatchingTests
     }
 
     /// <summary>
-    /// 在新调用里经仓储按规约计数。
+    /// 在新调用里经仓储按规约计数
     /// </summary>
     private static async Task<long> CountAsync(TestHost host, Expression<Func<LiteralMatchRecord, bool>> criteria)
     {
@@ -262,7 +262,7 @@ public abstract class SqlSugarLiteralMatchingTests
     }
 
     /// <summary>
-    /// 调用作用域里的仓储。
+    /// 调用作用域里的仓储
     /// </summary>
     private static IRepository<LiteralMatchRecord, Guid> Records(InvocationContext context) => context.Services.GetRequiredService<IRepository<LiteralMatchRecord, Guid>>();
 }

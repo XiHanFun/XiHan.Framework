@@ -7,15 +7,15 @@ using XiHan.Framework.Persistence.Conformance;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// SqlSugar Provider 以 SQLite 跑一致性套件。
+/// SqlSugar Provider 以 SQLite 跑一致性套件
 /// </summary>
 /// <remarks>
-/// 每个用例一个临时数据库文件。
+/// 每个用例一个临时数据库文件
 /// </remarks>
 public sealed class SqlSugarRepositoryConformanceTests : RepositoryConformance, IDisposable
 {
     /// <summary>
-    /// 本测试实例独占的临时 SQLite 数据库。
+    /// 本测试实例独占的临时 SQLite 数据库
     /// </summary>
     private readonly SqliteDatabase _database = new();
 
@@ -26,7 +26,7 @@ public sealed class SqlSugarRepositoryConformanceTests : RepositoryConformance, 
     protected override IFeature CreateFeature() => SqliteDatabase.CreateFeature();
 
     /// <summary>
-    /// 测试结束后删除临时数据库文件。
+    /// 测试结束后删除临时数据库文件
     /// </summary>
     public void Dispose() => _database.Dispose();
 }

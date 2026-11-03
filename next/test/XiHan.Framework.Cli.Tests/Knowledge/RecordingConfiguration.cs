@@ -7,13 +7,13 @@ using Microsoft.Extensions.Primitives;
 namespace XiHan.Framework.Cli.Tests.Knowledge;
 
 /// <summary>
-/// 记录读取路径的配置包装。
+/// 记录读取路径的配置包装
 /// </summary>
 /// <remarks>
-/// 经索引器或 <c>Value</c> 读值都记下完整路径；取子节与子项时返回同样的包装，按名字展开的子节也记得到。
+/// 经索引器或 <c>Value</c> 读值都记下完整路径；取子节与子项时返回同样的包装，按名字展开的子节也记得到
 /// </remarks>
-/// <param name="inner">被包装的配置（根或节）。</param>
-/// <param name="log">读取记录。</param>
+/// <param name="inner">被包装的配置（根或节）</param>
+/// <param name="log">读取记录</param>
 internal sealed class RecordingConfiguration(IConfiguration inner, ReadLog log) : IConfigurationSection
 {
     /// <inheritdoc />

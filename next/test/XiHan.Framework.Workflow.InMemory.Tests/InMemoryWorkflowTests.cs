@@ -16,7 +16,7 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
 /// <summary>
-/// 内存实现自己的行为：容量上限、选项读取、特性清单与轮询器的启停。
+/// 内存实现自己的行为：容量上限、选项读取、特性清单与轮询器的启停
 /// </summary>
 public sealed class InMemoryWorkflowTests
 {
@@ -153,7 +153,7 @@ public sealed class InMemoryWorkflowTests
     }
 
     /// <summary>
-    /// 一个定义。
+    /// 一个定义
     /// </summary>
     private static WorkflowDefinition Definition(string name) => new()
     {
@@ -163,12 +163,12 @@ public sealed class InMemoryWorkflowTests
     };
 
     /// <summary>
-    /// 一个实例。
+    /// 一个实例
     /// </summary>
     private static WorkflowInstance Instance(string id) => new() { Id = id, DefinitionId = "d", DefinitionName = new WorkflowName("cap") };
 
     /// <summary>
-    /// 一个书签。
+    /// 一个书签
     /// </summary>
     private static WorkflowBookmark Bookmark(string instanceId) => new() { Id = WorkflowIdentifiers.NewId(), InstanceId = instanceId, NodeId = "n", NodeInstanceId = "ni", Kind = BookmarkKinds.Timer };
 }

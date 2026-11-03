@@ -13,28 +13,28 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="UnitOfWorkMiddleware"/> 的提交与回滚决策。
+/// <see cref="UnitOfWorkMiddleware"/> 的提交与回滚决策
 /// </summary>
 /// <remarks>
-/// 成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传、按契约开只读工作单元、只读写入与取出条数超限的异常转为结果、同一作用域的嵌套调用。
+/// 成功提交、失败结果回滚、异常回滚并重抛、提交失败覆盖结果、租户透传、按契约开只读工作单元、只读写入与取出条数超限的异常转为结果、同一作用域的嵌套调用
 /// </remarks>
 public sealed class UnitOfWorkMiddlewareTests
 {
     /// <summary>
-    /// 记录调用顺序的工作单元替身。
+    /// 记录调用顺序的工作单元替身
     /// </summary>
     /// <remarks>
-    /// 提交结果可预设，用于验证中间件对各种结果的处理。
+    /// 提交结果可预设，用于验证中间件对各种结果的处理
     /// </remarks>
     private sealed class RecordingUnitOfWork : IUnitOfWork
     {
         /// <summary>
-        /// 按发生顺序记录的调用名：begin、commit、rollback。
+        /// 按发生顺序记录的调用名：begin、commit、rollback
         /// </summary>
         public List<string> Calls { get; } = [];
 
         /// <summary>
-        /// <see cref="CommitAsync"/> 返回的预设结果。
+        /// <see cref="CommitAsync"/> 返回的预设结果
         /// </summary>
         public Result CommitResult { get; init; } = Result.Success();
 
@@ -78,7 +78,7 @@ public sealed class UnitOfWorkMiddlewareTests
     }
 
     /// <summary>
-    /// 构造只注册了替身工作单元的调用上下文。
+    /// 构造只注册了替身工作单元的调用上下文
     /// </summary>
     private static (InvocationContext Context, RecordingUnitOfWork UnitOfWork) Arrange(Result? commitResult = null)
     {

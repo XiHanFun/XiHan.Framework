@@ -7,15 +7,15 @@ using XiHan.Framework.Kernel.Validation;
 namespace XiHan.Framework.Kernel.Tests.Validation;
 
 /// <summary>
-/// JSON Schema 校验器。
+/// JSON Schema 校验器
 /// </summary>
 /// <remarks>
-/// 类型、必填、未声明属性、数组、枚举、常量、引用、组合、数值范围、长度与模式、路径与上限。
+/// 类型、必填、未声明属性、数组、枚举、常量、引用、组合、数值范围、长度与模式、路径与上限
 /// </remarks>
 public sealed class JsonSchemaValidatorTests
 {
     /// <summary>
-    /// 覆盖全部支持关键字的 Schema。
+    /// 覆盖全部支持关键字的 Schema
     /// </summary>
     private const string Schema = """
         {
@@ -42,7 +42,7 @@ public sealed class JsonSchemaValidatorTests
         """;
 
     /// <summary>
-    /// 校验一段 JSON 并返回 <c>路径: 原因</c> 列表。
+    /// 校验一段 JSON 并返回 <c>路径: 原因</c> 列表
     /// </summary>
     private static List<string> Check(string json)
     {

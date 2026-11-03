@@ -4,17 +4,17 @@
 namespace XiHan.Framework.Cli.Tests;
 
 /// <summary>
-/// 测试读取的工作区目录。
+/// 测试读取的工作区目录
 /// </summary>
 internal static class TestWorkspace
 {
     /// <summary>
-    /// <c>next/</c>：从测试输出目录向上找含解决方案文件的目录。
+    /// <c>next/</c>：从测试输出目录向上找含解决方案文件的目录
     /// </summary>
     public static string NextRoot { get; } = Locate();
 
     /// <summary>
-    /// 向上查找。
+    /// 向上查找
     /// </summary>
     private static string Locate()
     {

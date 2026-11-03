@@ -8,7 +8,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Tests.Prompts;
 
 /// <summary>
-/// 提示词模板的渲染与目录的合并规则。
+/// 提示词模板的渲染与目录的合并规则
 /// </summary>
 public sealed class AIPromptTests
 {

@@ -1,6 +1,6 @@
-# 构建 Wasm 插件示例并把产物复制到 plugin/echo.wasm（随仓库提交；测试与一致性套件直接加载它）。
-# 需要：rustup 与 wasm32-wasip1 目标（rustup target add wasm32-wasip1）。
-# -Toolchain 指定 cargo 的工具链；没有 Visual Studio C++ 生成工具时用 stable-x86_64-pc-windows-gnu。
+# 构建 Wasm 插件示例并把产物复制到 plugin/echo.wasm（随仓库提交；测试与一致性套件直接加载它）
+# 需要：rustup 与 wasm32-wasip1 目标（rustup target add wasm32-wasip1）
+# -Toolchain 指定 cargo 的工具链；没有 Visual Studio C++ 生成工具时用 stable-x86_64-pc-windows-gnu
 param([string] $Toolchain = '')
 $ErrorActionPreference = 'Stop'
 Push-Location $PSScriptRoot

@@ -7,12 +7,12 @@ using XiHan.Framework.Persistence.Conformance.Fixtures;
 namespace XiHan.Framework.Persistence.EntityFrameworkCore.Tests;
 
 /// <summary>
-/// 套件实体的 DbContext：显式注册三种实体并应用协议约定。
+/// 套件实体的 DbContext：显式注册三种实体并应用协议约定
 /// </summary>
 public sealed class ConformanceDbContext(DbContextOptions<ConformanceDbContext> options) : DbContext(options)
 {
     /// <summary>
-    /// 注册三种套件实体，再统一应用并发令牌与索引约定。
+    /// 注册三种套件实体，再统一应用并发令牌与索引约定
     /// </summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

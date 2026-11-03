@@ -4,7 +4,7 @@
 namespace SimpleApp.Orders;
 
 /// <summary>
-/// <c>/orders/stats</c> 端点的响应。
+/// <c>/orders/stats</c> 端点的响应
 /// </summary>
-/// <param name="Handled">已处理的订单事件数。</param>
+/// <param name="Handled">已处理的订单事件数</param>
 public sealed record OrderStatistics(long Handled);

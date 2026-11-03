@@ -7,13 +7,13 @@ using XiHan.Framework.Primitives;
 namespace SimpleCli;
 
 /// <summary>
-/// 问候操作：一份契约同时是命令行命令与 MCP tool。
+/// 问候操作：一份契约同时是命令行命令与 MCP tool
 /// </summary>
 [Operation(Id, Stability = Stability.Experimental, Expose = Expose.CommandLine | Expose.Mcp)]
 public sealed class Greet : IOperation<GreetRequest, GreetResponse>
 {
     /// <summary>
-    /// 操作 ID。
+    /// 操作 ID
     /// </summary>
     public const string Id = "greetings.create";
 
