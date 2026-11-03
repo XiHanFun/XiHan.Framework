@@ -45,3 +45,12 @@ BasicApp 6.0 的 N0 冒烟在 `Kernel.Generators` 的 JSON Schema 上发现两�
 - 契约变化（Preview）：封闭泛型的 `title` / 组件名 / 消息名改变（`PageResult` → `PageResultOfUserResponse`），字符串枚举从属性内联变成 `$ref` 到定义；重新导出 `openapi.json` 与 `.proto` 后消费方要重新生成。请求 / 响应 JSON 与 gRPC 线格式不变。
 - 新公开 API：`OpenApiDocumentSource.FromServices`。`JsonSchemaBuilder`、`SchemaNames`、`TypeInfoNames` 是生成器内部类型。
 - 测试：`Kernel.Generators.Tests`（两个 `PageResult<T>` 与嵌套多实参泛型的命名、枚举定义与可空引用、整数枚举仍内联）；`Protocols.Grpc.Tests`（标量定义的映射与线格式往返、两个封闭泛型消息并存且无冲突、宿主 `/operations.proto`、定义成环失败）；`Protocols.Http.Tests`（根与枚举的组件提升、查询参数引用枚举组件、`HasNestedFields` 对 `$ref` 的判定、工厂与端点文档逐字节一致）。
+
+## 修订（2026-11-04）：任意 JSON 与可空标注的识别
+
+缺陷修复，不另立 ADR。生成器按显示字符串比对类型：`ToDisplayString()` 带可空标注，`JsonNode?` 比不上 `"System.Text.Json.Nodes.JsonNode"`，于是 `JsonObject`（实现 `IDictionary<string, JsonNode?>`）、`JsonArray`、`IDictionary<string, JsonNode?>` 与 `JsonNode?` 属性都引用 `$defs/JsonNode`——一个带 `options` / `parent` / `root` 的对象，`JsonValue` 另成一个同形定义，`Uri?` 也被展开成 22 个属性的对象。Validate 阶段因此拒绝 `JsonObject` 里的标量值，OpenAPI 与前端类型跟着错。
+
+- 规范：RFC-0011 写明类型映射（基元、字典、集合、任意 JSON），`JsonObject` 为 `object` + `additionalProperties: {}`、`JsonArray` 为 `array` + `items: {}`，`JsonNode` / `JsonValue` / `JsonElement` / `JsonDocument` / `object` 为 `{}`；可空只加 `null`、不改变形状。`protocol/grpc.md` 写明 `{}` 作数组元素或映射值同样是 JSON 文本。
+- 实现：BCL 类型按所在命名空间与原始定义的元数据名识别（生成器内部的 `KnownTypes`，基元、字典接口、任意 JSON、`[JsonIgnore]` / `[JsonPropertyName]` 与 DataAnnotations），序列化上下文的特性与 `OperationDefaults` 按编译解析出的符号比对；可空标注、别名与泛型实参都不影响识别，别的命名空间里的同名类型仍是普通对象。
+- 影响：带这些类型的操作重新生成后 `openapi.json`、MCP tool 描述与 `.proto` 变化（`$defs/JsonNode`、`$defs/JsonValue`、`$defs/JsonNodeOptions`、`$defs/Uri` 消失；gRPC 上 `JsonObject` 为 `map<string, string>`、`JsonArray` 为 `repeated string`，每个值一段 JSON 文本），请求与响应的 JSON 不变，Validate 阶段不再以 `KERNEL_VALIDATION_003` 拒绝 `JsonObject` / `JsonArray` 里的标量与数组；前端按新文档重新生成类型。
+- 测试：`Kernel.Generators.Tests` 新增 3 例（任意 JSON 与可空标注的形状及 Validate 阶段的接受与拒绝、别的命名空间里的同名类型仍是对象、`[JsonIgnore]` / `[JsonPropertyName]` 含别名写法），`Protocols.Grpc.Tests` 新增 1 例（任意 JSON 的映射与数组以 JSON 文本往返、`.proto` 渲染）。

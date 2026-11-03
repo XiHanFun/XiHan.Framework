@@ -15,9 +15,9 @@ namespace XiHan.Framework.Kernel.Generators.Json;
 internal sealed class PropertyConstraints
 {
     /// <summary>
-    /// DataAnnotations 的命名空间前缀
+    /// DataAnnotations 的命名空间
     /// </summary>
-    private const string Namespace = "System.ComponentModel.DataAnnotations.";
+    private const string Namespace = "System.ComponentModel.DataAnnotations";
 
     /// <summary>
     /// 是否 <c>[Required]</c>：进 <c>required</c> 且不允许 null
@@ -152,14 +152,15 @@ internal sealed class PropertyConstraints
     /// </remarks>
     private void Apply(AttributeData attribute)
     {
-        var name = attribute.AttributeClass?.ToDisplayString();
-        if (name is null || !name.StartsWith(Namespace, StringComparison.Ordinal))
+        // 按命名空间与元数据名识别，不比显示字符串
+        var name = KnownTypes.NameIn(attribute.AttributeClass, Namespace);
+        if (name is null)
         {
             return;
         }
 
         var arguments = attribute.ConstructorArguments;
-        switch (name.Substring(Namespace.Length))
+        switch (name)
         {
             case "RequiredAttribute":
                 Required = true;

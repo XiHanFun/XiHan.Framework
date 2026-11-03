@@ -9,10 +9,15 @@ namespace XiHan.Framework.Kernel.Generators.Json;
 /// 从类型符号生成 JSON Schema（draft 2020-12）
 /// </summary>
 /// <remarks>
-/// 基元类型映射到 <c>type</c>/<c>format</c>，集合为 <c>array</c>，字典为 <c>additionalProperties</c>，对象的公开可读属性按序列化上下文的命名策略成为 <c>properties</c>，非可空且无默认值的成为 <c>required</c>，嵌套对象进 <c>$defs</c> 并以 <c>$ref</c> 引用。根 <c>title</c> 与定义名按 <see cref="SchemaNames"/>（封闭泛型带实参名）；按字符串序列化的枚举进 <c>$defs/&lt;枚举类型名&gt;</c>（<c>type: string</c> + <c>enum</c>）并以 <c>$ref</c> 引用，可空为 <c>anyOf</c> 带 <c>null</c>。属性（或位置记录的主构造参数）上的 DataAnnotations 折进 Schema：<c>[Required]</c> 进 <c>required</c> 并去掉可空（字符串还加 <c>minLength: 1</c>），<c>[Range]</c> → <c>minimum</c> / <c>maximum</c>（<c>MinimumIsExclusive</c> 等 → <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>），<c>[StringLength]</c> / <c>[MinLength]</c> / <c>[MaxLength]</c> / <c>[Length]</c> → 字符串的 <c>minLength</c> / <c>maxLength</c> 或集合的 <c>minItems</c> / <c>maxItems</c>，<c>[RegularExpression]</c> → <c>pattern</c>。XML 文档注释进 <c>description</c>（<see cref="DocumentationText"/>）：根与 <c>$defs</c> 里的对象、枚举取类型的 <c>&lt;summary&gt;</c>，属性取属性的 <c>&lt;summary&gt;</c>，没有时取主构造参数在类型上的 <c>&lt;param&gt;</c>
+/// 基元类型映射到 <c>type</c>/<c>format</c>，集合为 <c>array</c>，字典为 <c>additionalProperties</c>，任意 JSON（<c>object</c>、<c>JsonElement</c>、<c>JsonDocument</c>、<c>JsonNode</c> 与 <c>JsonValue</c>）为不加约束的 <c>{}</c>，<c>JsonObject</c> 按字典、<c>JsonArray</c> 按集合（值与元素是任意 JSON）；类型按原始定义的元数据名识别（<see cref="KnownTypes"/>），可空标注只加 <c>null</c>、不改变形状，对象的公开可读属性按序列化上下文的命名策略成为 <c>properties</c>，非可空且无默认值的成为 <c>required</c>，嵌套对象进 <c>$defs</c> 并以 <c>$ref</c> 引用。根 <c>title</c> 与定义名按 <see cref="SchemaNames"/>（封闭泛型带实参名）；按字符串序列化的枚举进 <c>$defs/&lt;枚举类型名&gt;</c>（<c>type: string</c> + <c>enum</c>）并以 <c>$ref</c> 引用，可空为 <c>anyOf</c> 带 <c>null</c>。属性（或位置记录的主构造参数）上的 DataAnnotations 折进 Schema：<c>[Required]</c> 进 <c>required</c> 并去掉可空（字符串还加 <c>minLength: 1</c>），<c>[Range]</c> → <c>minimum</c> / <c>maximum</c>（<c>MinimumIsExclusive</c> 等 → <c>exclusiveMinimum</c> / <c>exclusiveMaximum</c>），<c>[StringLength]</c> / <c>[MinLength]</c> / <c>[MaxLength]</c> / <c>[Length]</c> → 字符串的 <c>minLength</c> / <c>maxLength</c> 或集合的 <c>minItems</c> / <c>maxItems</c>，<c>[RegularExpression]</c> → <c>pattern</c>。XML 文档注释进 <c>description</c>（<see cref="DocumentationText"/>）：根与 <c>$defs</c> 里的对象、枚举取类型的 <c>&lt;summary&gt;</c>，属性取属性的 <c>&lt;summary&gt;</c>，没有时取主构造参数在类型上的 <c>&lt;param&gt;</c>
 /// </remarks>
 internal sealed class JsonSchemaBuilder
 {
+    /// <summary>
+    /// System.Text.Json 序列化特性所在的命名空间
+    /// </summary>
+    private const string SerializationNamespace = "System.Text.Json.Serialization";
+
     /// <summary>
     /// 命名策略
     /// </summary>
@@ -141,8 +146,8 @@ internal sealed class JsonSchemaBuilder
                 Type(json, "array", nullable);
                 json.Raw("items", SchemaOf(elementType, nullable: false));
                 break;
-            case INamedTypeSymbol named when named.SpecialType == SpecialType.System_Object || named.ToDisplayString() is "System.Text.Json.JsonElement" or "System.Text.Json.Nodes.JsonNode":
-                // 任意 JSON：不加约束
+            case INamedTypeSymbol named when IsAnyJson(named):
+                // 任意 JSON：不加约束，可空也不改变形状（{} 本来就接受 null）。JsonObject / JsonArray 已在上面按字典与集合匹配，元素是任意值
                 break;
             case INamedTypeSymbol named when inline:
                 Type(json, "object", nullable);
@@ -307,7 +312,7 @@ internal sealed class JsonSchemaBuilder
                 }
 
                 // 记录的 EqualityContract 与 [JsonIgnore] 的属性不序列化
-                if (member.Name == "EqualityContract" || member.GetAttributes().Any(static a => a.AttributeClass?.ToDisplayString() == "System.Text.Json.Serialization.JsonIgnoreAttribute"))
+                if (member.Name == "EqualityContract" || member.GetAttributes().Any(static a => KnownTypes.Is(a.AttributeClass, SerializationNamespace, "JsonIgnoreAttribute")))
                 {
                     continue;
                 }
@@ -323,7 +328,7 @@ internal sealed class JsonSchemaBuilder
     private string PropertyName(IPropertySymbol property)
     {
         var explicitName = property.GetAttributes()
-            .FirstOrDefault(static a => a.AttributeClass?.ToDisplayString() == "System.Text.Json.Serialization.JsonPropertyNameAttribute")?
+            .FirstOrDefault(static a => KnownTypes.Is(a.AttributeClass, SerializationNamespace, "JsonPropertyNameAttribute"))?
             .ConstructorArguments.FirstOrDefault().Value as string;
         return explicitName ?? NamingPolicies.Apply(_namingPolicy, property.Name);
     }
@@ -409,17 +414,18 @@ internal sealed class JsonSchemaBuilder
             case SpecialType.System_DateTime:
                 return ("string", "date-time");
             default:
-                return type.ToDisplayString() switch
+                // 按命名空间与元数据名识别：可空标注的引用类型（Uri?）的显示名带 ?，按显示名比对会把它当成普通对象展开
+                return KnownTypes.NameIn(type, "System") switch
                 {
-                    "System.Guid" => ("string", "uuid"),
-                    "System.DateTimeOffset" => ("string", "date-time"),
-                    "System.DateOnly" => ("string", "date"),
-                    "System.TimeOnly" => ("string", "time"),
-                    "System.TimeSpan" => ("string", "duration"),
-                    "System.Uri" => ("string", "uri"),
-                    "System.Int128" or "System.UInt128" or "System.Numerics.BigInteger" => ("integer", null),
-                    "System.Half" => ("number", null),
-                    _ => null,
+                    "Guid" => ("string", "uuid"),
+                    "DateTimeOffset" => ("string", "date-time"),
+                    "DateOnly" => ("string", "date"),
+                    "TimeOnly" => ("string", "time"),
+                    "TimeSpan" => ("string", "duration"),
+                    "Uri" => ("string", "uri"),
+                    "Int128" or "UInt128" => ("integer", null),
+                    "Half" => ("number", null),
+                    _ => KnownTypes.Is(type, "System.Numerics", "BigInteger") ? ("integer", null) : null,
                 };
         }
     }
@@ -431,13 +437,10 @@ internal sealed class JsonSchemaBuilder
     {
         foreach (var candidate in Enumerable.Repeat(type, 1).Concat(type.AllInterfaces))
         {
-            if (candidate.IsGenericType && candidate.TypeArguments.Length == 2 && candidate.TypeArguments[0].SpecialType == SpecialType.System_String)
+            if (candidate.IsGenericType && candidate.TypeArguments.Length == 2 && candidate.TypeArguments[0].SpecialType == SpecialType.System_String
+                && KnownTypes.NameIn(candidate, "System.Collections.Generic") is "IDictionary`2" or "IReadOnlyDictionary`2")
             {
-                var definition = candidate.OriginalDefinition.ToDisplayString();
-                if (definition is "System.Collections.Generic.IDictionary<TKey, TValue>" or "System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>")
-                {
-                    return candidate.TypeArguments[1];
-                }
+                return candidate.TypeArguments[1];
             }
         }
 
@@ -464,4 +467,15 @@ internal sealed class JsonSchemaBuilder
 
         return null;
     }
+
+    /// <summary>
+    /// 是否任意 JSON 值
+    /// </summary>
+    /// <remarks>
+    /// <see cref="object"/>、<c>JsonElement</c>、<c>JsonDocument</c>、<c>JsonNode</c> 及其派生类型（<c>JsonValue</c>）；按原始定义的元数据名比对，可空标注、别名不影响。<c>JsonObject</c> / <c>JsonArray</c> 先按字典与集合匹配，不走到这里
+    /// </remarks>
+    private static bool IsAnyJson(INamedTypeSymbol type)
+        => type.SpecialType == SpecialType.System_Object
+            || KnownTypes.NameIn(type, "System.Text.Json") is "JsonElement" or "JsonDocument"
+            || KnownTypes.IsOrDerivesFrom(type, "System.Text.Json.Nodes", "JsonNode");
 }

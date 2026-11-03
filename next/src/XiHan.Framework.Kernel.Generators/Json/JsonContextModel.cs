@@ -14,12 +14,12 @@ namespace XiHan.Framework.Kernel.Generators.Json;
 internal sealed class JsonContextModel
 {
     /// <summary>
-    /// <c>JsonSerializableAttribute</c> 的全名
+    /// <c>JsonSerializableAttribute</c> 的元数据名
     /// </summary>
     private const string SerializableAttribute = "System.Text.Json.Serialization.JsonSerializableAttribute";
 
     /// <summary>
-    /// <c>JsonSourceGenerationOptionsAttribute</c> 的全名
+    /// <c>JsonSourceGenerationOptionsAttribute</c> 的元数据名
     /// </summary>
     private const string OptionsAttribute = "System.Text.Json.Serialization.JsonSourceGenerationOptionsAttribute";
 
@@ -31,18 +31,23 @@ internal sealed class JsonContextModel
     /// <summary>
     /// 从上下文类型符号读取
     /// </summary>
-    private JsonContextModel(INamedTypeSymbol type)
+    /// <remarks>
+    /// 特性按符号比对（<paramref name="serializable"/> / <paramref name="options"/> 由编译解析），不比显示字符串
+    /// </remarks>
+    /// <param name="type">上下文类型</param>
+    /// <param name="serializable"><c>JsonSerializableAttribute</c> 的符号；编译里没有时为 <see langword="null"/></param>
+    /// <param name="options"><c>JsonSourceGenerationOptionsAttribute</c> 的符号；编译里没有时为 <see langword="null"/></param>
+    private JsonContextModel(INamedTypeSymbol type, INamedTypeSymbol? serializable, INamedTypeSymbol? options)
     {
         Type = type;
         foreach (var attribute in type.GetAttributes())
         {
-            var name = attribute.AttributeClass?.ToDisplayString();
-            if (name == SerializableAttribute && attribute.ConstructorArguments.Length == 1 && attribute.ConstructorArguments[0].Value is ITypeSymbol registered)
+            if (serializable is not null && SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, serializable) && attribute.ConstructorArguments.Length == 1 && attribute.ConstructorArguments[0].Value is ITypeSymbol registered)
             {
                 var explicitName = attribute.NamedArguments.FirstOrDefault(static a => a.Key == "TypeInfoPropertyName").Value.Value as string;
                 _properties[registered] = explicitName ?? TypeInfoNames.DefaultPropertyName(registered);
             }
-            else if (name == OptionsAttribute)
+            else if (options is not null && SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, options))
             {
                 foreach (var argument in attribute.NamedArguments)
                 {
@@ -92,6 +97,9 @@ internal sealed class JsonContextModel
             return contexts;
         }
 
+        var serializable = compilation.GetTypeByMetadataName(SerializableAttribute);
+        var options = compilation.GetTypeByMetadataName(OptionsAttribute);
+
         var stack = new Stack<INamespaceSymbol>();
         stack.Push(compilation.Assembly.GlobalNamespace);
         while (stack.Count > 0)
@@ -105,7 +113,7 @@ internal sealed class JsonContextModel
                         stack.Push(child);
                         break;
                     case INamedTypeSymbol type when DerivesFrom(type, baseType):
-                        contexts.Add(new JsonContextModel(type));
+                        contexts.Add(new JsonContextModel(type, serializable, options));
                         break;
                 }
             }

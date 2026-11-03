@@ -28,6 +28,10 @@ Schema 的生成规则：
 | --- | --- |
 | 属性名 | 按序列化上下文的命名策略（如 `JsonKnownNamingPolicy.CamelCase`） |
 | 可空性与 `required` | 按 C# 类型；嵌套对象进 `$defs` |
+| 基元 | `type` / `format`：`Guid` → `uuid`，`DateTime` / `DateTimeOffset` → `date-time`，`DateOnly` → `date`，`TimeOnly` → `time`，`TimeSpan` → `duration`，`Uri` → `uri`，`byte[]` → `contentEncoding: base64`，整数与浮点按位宽取 `int32` / `int64` / `float` / `double` / `decimal` |
+| 字典与集合 | 键为字符串的字典（`IDictionary<string, T>` / `IReadOnlyDictionary<string, T>`）为 `object` + `additionalProperties`；其他集合为 `array` + `items` |
+| 任意 JSON | `object`、`JsonElement`、`JsonDocument`、`JsonNode` 与 `JsonValue` 为不加约束的 `{}`；`JsonObject` 为 `object` + `additionalProperties: {}`，`JsonArray` 为 `array` + `items: {}`，不按属性展开 |
+| 可空标注 | `JsonNode?`、`Uri?`、`int?` 等只在 `type` 里加 `null`（`$ref` 为 `anyOf` 带 `null`），不改变形状；类型按命名空间与元数据名识别，别名与泛型实参不影响 |
 | 根 `title` 与定义名 | 类型名；封闭泛型为 `<外层名>Of<实参名>`，多个实参以 `And` 连接、嵌套递归，如 `PageResultOfUserResponse` |
 | 按字符串序列化的枚举（`UseStringEnumConverter`） | 进 `$defs/<枚举类型名>`（`type: string` + `enum`）并以 `$ref` 引用，可空为 `anyOf` 带 `null`；整数枚举内联为 `integer` |
 | `[Required]` | 进 `required` 并去掉可空；字符串加 `minLength: 1`（`AllowEmptyStrings = true` 除外） |

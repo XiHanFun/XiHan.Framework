@@ -86,7 +86,7 @@ grpcurl -plaintext -proto operations.proto -H "authorization: ApiKey dev-alice-k
 | `$ref` 到对象定义 | 嵌套消息，允许递归 |
 | `$ref` 到字符串枚举 | `string`，不建 proto `enum`，线格式不变 |
 | 可空（`type` 或 `anyOf` 含 `null`） | `optional` |
-| 无约束（`{}`） | `string`，JSON 文本原样 |
+| 无约束（`{}`） | `string`，JSON 文本原样；作数组元素或映射值时同样（`JsonArray` → `repeated string`，`JsonObject` → `map<string, string>`） |
 
 解码时，线上缺席的布尔、数值、`repeated` 与 `map` 字段按 proto3 默认值补进 JSON（零值、`[]`、`{}`），契约 Schema 的 `required` 因此在 gRPC 上成立；字符串、字节与嵌套消息缺席即缺席。`samples/SimpleApp` 的 `/operations.proto`：
 

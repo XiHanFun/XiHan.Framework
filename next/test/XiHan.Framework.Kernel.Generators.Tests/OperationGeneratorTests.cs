@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using XiHan.Framework.Kernel.Generators.Json;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Validation;
 
 namespace XiHan.Framework.Kernel.Generators.Tests;
 
@@ -448,6 +449,269 @@ public sealed class OperationGeneratorTests
         // $defs 里的对象与字符串枚举取类型的 summary，属性取属性的 summary
         Assert.Contains("\"NoteLine\":{\"description\":\"备注行，见 NoteRequest。\",\"type\":\"object\",\"properties\":{\"text\":{\"description\":\"行文本，可为 null。\",\"type\":[\"string\",\"null\"]}}}", text, StringComparison.Ordinal);
         Assert.Contains("\"NoteStatus\":{\"description\":\"订单状态。\",\"type\":\"string\",\"enum\":[\"Open\",\"Closed\"]}", text, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// 成员是任意 JSON（<c>JsonNode</c> 系列、<c>JsonElement</c> 与 <c>JsonDocument</c>）的操作
+    /// </summary>
+    /// <remarks>
+    /// 可空与不可空、别名、字典与集合里的节点都有；<c>JsonObject</c> / <c>JsonArray</c> 的元素类型在 System.Text.Json 的元数据里是可空标注的 <c>JsonNode?</c>。<c>Uri?</c> 是同一类可空标注的基元
+    /// </remarks>
+    private const string DynamicJsonSource = """
+        using System;
+        using System.Collections.Generic;
+        using System.Text.Json;
+        using System.Text.Json.Nodes;
+        using System.Text.Json.Serialization;
+        using System.Text.Json.Serialization.Metadata;
+        using System.Threading.Tasks;
+        using XiHan.Framework.Kernel.Operations;
+        using XiHan.Framework.Primitives;
+        using JsonBag = System.Text.Json.Nodes.JsonObject;
+
+        namespace Demo.App;
+
+        public sealed record DynamicRequest(
+            JsonNode Node,
+            JsonNode? OptionalNode,
+            JsonObject Object,
+            JsonObject? OptionalObject,
+            JsonArray Array,
+            JsonArray? OptionalArray,
+            JsonValue Value,
+            IDictionary<string, JsonNode?> Bag,
+            IReadOnlyDictionary<string, JsonElement> Elements,
+            JsonElement Element,
+            JsonElement? OptionalElement,
+            Uri Link,
+            Uri? OptionalLink,
+            JsonBag Aliased,
+            Dictionary<string, JsonArray?> Groups,
+            JsonDocument? Document);
+
+        public sealed record DynamicResponse(JsonObject Data, List<JsonNode?> Items);
+
+        [Operation("dynamics.create")]
+        public sealed class CreateDynamic : IOperation<DynamicRequest, DynamicResponse>
+        {
+            public ValueTask<Result<DynamicResponse>> HandleAsync(DynamicRequest request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+        [JsonSerializable(typeof(DynamicRequest))]
+        [JsonSerializable(typeof(DynamicResponse))]
+        internal sealed class DynamicJsonContext : JsonSerializerContext
+        {
+            public static DynamicJsonContext Default { get; } = new();
+            public DynamicJsonContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+            public JsonTypeInfo<DynamicRequest> DynamicRequest => null!;
+            public JsonTypeInfo<DynamicResponse> DynamicResponse => null!;
+        }
+        """;
+
+    /// <summary>
+    /// 取出生成代码里每个操作的请求与响应 Schema 文本
+    /// </summary>
+    private static List<(string Request, string Response)> SchemasOf(string generated)
+        => CSharpSyntaxTree.ParseText(generated).GetRoot().DescendantNodes().OfType<ObjectCreationExpressionSyntax>()
+            .Where(static c => c.Type.ToString().EndsWith("OperationSchema", StringComparison.Ordinal))
+            .Select(static c => c.ArgumentList!.Arguments.Select(static a => ((LiteralExpressionSyntax)a.Expression).Token.ValueText).ToArray())
+            .Select(static pair => (pair[0], pair[1]))
+            .ToList();
+
+    /// <summary>
+    /// 断言 Schema 的每个属性都是期望的 JSON 片段
+    /// </summary>
+    private static void AssertProperties(JsonElement schema, IReadOnlyDictionary<string, string> expected)
+    {
+        var properties = schema.GetProperty("properties");
+        Assert.Equal(expected.Keys, properties.EnumerateObject().Select(static p => p.Name));
+        foreach (var property in properties.EnumerateObject())
+        {
+            Assert.True(expected[property.Name] == property.Value.GetRawText(), $"Property '{property.Name}' is {property.Value.GetRawText()}, expected {expected[property.Name]}.");
+        }
+    }
+
+    [Fact]
+    public void DynamicJson_IsAnyValue_ObjectOrArray_RegardlessOfNullableAnnotations()
+    {
+        var (compile, generator, generated) = Run(DynamicJsonSource);
+
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+        var (requestText, responseText) = Assert.Single(SchemasOf(generated));
+        using var request = JsonDocument.Parse(requestText);
+        using var response = JsonDocument.Parse(responseText);
+
+        // JsonNode / JsonValue / JsonElement / JsonDocument 是任意值（{}，可空也不改变形状）；JsonObject 与键为字符串的节点字典是 object + 任意值的 additionalProperties，
+        // JsonArray 是 array + 任意值的 items，可空的只在 type 里加 null；Uri? 仍是 uri 格式的字符串。节点类型不展开成对象，也不进 $defs
+        AssertProperties(request.RootElement, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["node"] = "{}",
+            ["optionalNode"] = "{}",
+            ["object"] = "{\"type\":\"object\",\"additionalProperties\":{}}",
+            ["optionalObject"] = "{\"type\":[\"object\",\"null\"],\"additionalProperties\":{}}",
+            ["array"] = "{\"type\":\"array\",\"items\":{}}",
+            ["optionalArray"] = "{\"type\":[\"array\",\"null\"],\"items\":{}}",
+            ["value"] = "{}",
+            ["bag"] = "{\"type\":\"object\",\"additionalProperties\":{}}",
+            ["elements"] = "{\"type\":\"object\",\"additionalProperties\":{}}",
+            ["element"] = "{}",
+            ["optionalElement"] = "{}",
+            ["link"] = "{\"type\":\"string\",\"format\":\"uri\"}",
+            ["optionalLink"] = "{\"type\":[\"string\",\"null\"],\"format\":\"uri\"}",
+            ["aliased"] = "{\"type\":\"object\",\"additionalProperties\":{}}",
+            ["groups"] = "{\"type\":\"object\",\"additionalProperties\":{\"type\":[\"array\",\"null\"],\"items\":{}}}",
+            ["document"] = "{}",
+        });
+        Assert.Equal(["node", "object", "array", "value", "bag", "elements", "element", "link", "aliased", "groups"], request.RootElement.GetProperty("required").EnumerateArray().Select(static e => e.GetString()));
+        Assert.False(request.RootElement.TryGetProperty("$defs", out _), requestText);
+
+        AssertProperties(response.RootElement, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["data"] = "{\"type\":\"object\",\"additionalProperties\":{}}",
+            ["items"] = "{\"type\":\"array\",\"items\":{}}",
+        });
+        Assert.False(response.RootElement.TryGetProperty("$defs", out _), responseText);
+
+        // 内核的 Validate 阶段按这份 Schema 接受任意 JSON 值，只约束 JsonObject 是对象、JsonArray 是数组
+        using var valid = JsonDocument.Parse("""
+            {"node":{"a":[1,"x",null]},"optionalNode":null,"object":{"k":{"deep":true},"n":null},"optionalObject":null,"array":[1,"two",{"three":3},null],"optionalArray":null,
+             "value":42,"bag":{"x":"y"},"elements":{"e":[1]},"element":"text","optionalElement":null,"link":"https://example.com/","optionalLink":null,"aliased":{},"groups":{"g":[1,{"a":1}],"h":null},"document":{"any":[1]}}
+            """);
+        Assert.Empty(JsonSchemaValidator.Validate(request.RootElement, valid.RootElement));
+
+        using var invalid = JsonDocument.Parse("""
+            {"node":1,"object":[1],"array":{"a":1},"value":"v","bag":{},"elements":{},"element":true,"link":"https://example.com/","aliased":{},"groups":{}}
+            """);
+        Assert.Equal(["$.array", "$.object"], JsonSchemaValidator.Validate(request.RootElement, invalid.RootElement).Select(static v => v.Path).OrderBy(static p => p, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void LookalikeTypes_InOtherNamespaces_AreObjects()
+    {
+        var (compile, generator, generated) = Run("""
+            using System;
+            using System.Text.Json;
+            using System.Text.Json.Serialization;
+            using System.Text.Json.Serialization.Metadata;
+            using System.Threading.Tasks;
+            using XiHan.Framework.Kernel.Operations;
+            using XiHan.Framework.Primitives;
+
+            namespace Demo.System.Text.Json.Nodes
+            {
+                public sealed class JsonNode
+                {
+                    public string Name { get; set; } = "";
+                }
+            }
+
+            namespace Demo.Lookalike
+            {
+                public sealed class Uri
+                {
+                    public string Href { get; set; } = "";
+                }
+            }
+
+            namespace Demo.App
+            {
+                public sealed record LookalikeRequest(Demo.System.Text.Json.Nodes.JsonNode? Node, Demo.Lookalike.Uri Link);
+
+                [Operation("lookalikes.create")]
+                public sealed class CreateLookalike : IOperation<LookalikeRequest, LookalikeRequest>
+                {
+                    public ValueTask<Result<LookalikeRequest>> HandleAsync(LookalikeRequest request, InvocationContext context) => throw new NotImplementedException();
+                }
+
+                [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+                [JsonSerializable(typeof(LookalikeRequest))]
+                internal sealed class LookalikeJsonContext : JsonSerializerContext
+                {
+                    public static LookalikeJsonContext Default { get; } = new();
+                    public LookalikeJsonContext() : base(null) { }
+                    protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+                    public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+                    public JsonTypeInfo<LookalikeRequest> LookalikeRequest => null!;
+                }
+            }
+            """);
+
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+        using var request = JsonDocument.Parse(Assert.Single(SchemasOf(generated)).Request);
+
+        // 识别按完整命名空间：别的命名空间里同名的 JsonNode / Uri 是普通对象，进 $defs
+        AssertProperties(request.RootElement, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["node"] = "{\"anyOf\":[{\"$ref\":\"#/$defs/JsonNode\"},{\"type\":\"null\"}]}",
+            ["link"] = "{\"$ref\":\"#/$defs/Uri\"}",
+        });
+        var definitions = request.RootElement.GetProperty("$defs");
+        Assert.Equal("{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}", definitions.GetProperty("JsonNode").GetRawText());
+        Assert.Equal("{\"type\":\"object\",\"properties\":{\"href\":{\"type\":\"string\"}}}", definitions.GetProperty("Uri").GetRawText());
+    }
+
+    [Fact]
+    public void JsonAttributes_AreRecognized_IncludingAliases()
+    {
+        var (compile, generator, generated) = Run("""
+            using System;
+            using System.Text.Json;
+            using System.Text.Json.Serialization;
+            using System.Text.Json.Serialization.Metadata;
+            using System.Threading.Tasks;
+            using XiHan.Framework.Kernel.Operations;
+            using XiHan.Framework.Primitives;
+            using Ignore = System.Text.Json.Serialization.JsonIgnoreAttribute;
+
+            namespace Demo.App;
+
+            public sealed class Renamed
+            {
+                [JsonPropertyName("display_name")]
+                public string? DisplayName { get; set; }
+
+                [JsonIgnore]
+                public string? Secret { get; set; }
+
+                [Ignore]
+                public string? Aliased { get; set; }
+
+                public int Kept { get; set; }
+            }
+
+            [Operation("renames.create")]
+            public sealed class CreateRename : IOperation<Renamed, Renamed>
+            {
+                public ValueTask<Result<Renamed>> HandleAsync(Renamed request, InvocationContext context) => throw new NotImplementedException();
+            }
+
+            [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+            [JsonSerializable(typeof(Renamed))]
+            internal sealed class RenameJsonContext : JsonSerializerContext
+            {
+                public static RenameJsonContext Default { get; } = new();
+                public RenameJsonContext() : base(null) { }
+                protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+                public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+                public JsonTypeInfo<Renamed> Renamed => null!;
+            }
+            """);
+
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+        using var request = JsonDocument.Parse(Assert.Single(SchemasOf(generated)).Request);
+
+        // [JsonPropertyName] 覆盖命名策略，[JsonIgnore]（含别名写法）的属性不进 Schema
+        AssertProperties(request.RootElement, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["display_name"] = "{\"type\":[\"string\",\"null\"]}",
+            ["kept"] = "{\"type\":\"integer\",\"format\":\"int32\"}",
+        });
     }
 
     [Fact]

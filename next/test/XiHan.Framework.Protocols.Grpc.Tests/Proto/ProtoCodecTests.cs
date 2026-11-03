@@ -231,6 +231,27 @@ public sealed class ProtoCodecTests
     }
 
     [Fact]
+    public void AnyJsonMapsAndArrays_TravelAsJsonText()
+    {
+        // Kernel.Generators 给 JsonObject / JsonArray / JsonNode 生成的形状：映射的值与数组的元素是不加约束的任意 JSON
+        var message = ProtoSchema.FromJsonSchema("""{"title":"Dynamic","type":"object","properties":{"data":{"type":"object","additionalProperties":{}},"items":{"type":["array","null"],"items":{}},"node":{}},"required":["data"]}""");
+        var fields = message.Fields.ToDictionary(static f => f.JsonName, static f => f, StringComparer.Ordinal);
+
+        Assert.Equal((ProtoKind.Json, ProtoCardinality.Map), (fields["data"].Value.Kind, fields["data"].Cardinality));
+        Assert.Equal((ProtoKind.Json, ProtoCardinality.Repeated), (fields["items"].Value.Kind, fields["items"].Cardinality));
+        Assert.Equal((ProtoKind.Json, ProtoCardinality.Singular), (fields["node"].Value.Kind, fields["node"].Cardinality));
+
+        // 每个值以 JSON 文本上线，往返一致
+        const string value = """{"data":{"a":1,"b":{"c":[true,"x"]}},"items":[1,"two",{"three":3}],"node":"text"}""";
+        var bytes = Encode(message, value);
+        Assert.Contains(ProtoBytes.StringField(3, "\"text\""), bytes);
+        Assert.Equal(value, Decode(message, bytes));
+
+        var proto = ProtoFileBuilder.Build([new(Descriptor(new OperationContract("dynamics.create")), new GrpcMethodName("Dynamics", "Create"), message, message)], null);
+        Assert.Contains("message Dynamic {\n  map<string, string> data = 1;\n  repeated string items = 2;\n  string node = 3;\n}\n", proto, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MethodNames_FollowConvention_AndOptionsValidate()
     {
         Assert.Equal("Orders/Create", GrpcMethodConvention.Derive(new OperationContract("orders.create")).ToString());

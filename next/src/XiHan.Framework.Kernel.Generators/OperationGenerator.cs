@@ -26,7 +26,7 @@ public sealed class OperationGenerator : IIncrementalGenerator
     private const string OperationAttributeName = "XiHan.Framework.Kernel.Operations.OperationAttribute";
 
     /// <summary>
-    /// <c>OperationDefaultsAttribute</c> 的全名
+    /// <c>OperationDefaultsAttribute</c> 的元数据名
     /// </summary>
     private const string OperationDefaultsAttributeName = "XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute";
 
@@ -100,9 +100,16 @@ public sealed class OperationGenerator : IIncrementalGenerator
     /// </remarks>
     private static int? AssemblyDefaultExpose(Compilation compilation)
     {
+        // 按符号比对特性，与 IOperation<,> 的解析一致；没有引用内核时编译里没有这个特性，也就没有程序集缺省
+        var defaults = compilation.GetTypeByMetadataName(OperationDefaultsAttributeName);
+        if (defaults is null)
+        {
+            return null;
+        }
+
         foreach (var attribute in compilation.Assembly.GetAttributes())
         {
-            if (attribute.AttributeClass?.ToDisplayString() != OperationDefaultsAttributeName)
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, defaults))
             {
                 continue;
             }
