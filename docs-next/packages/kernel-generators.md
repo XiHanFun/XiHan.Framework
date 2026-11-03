@@ -29,7 +29,9 @@ Schema 的生成规则：
 | 属性名 | 按序列化上下文的命名策略（如 `JsonKnownNamingPolicy.CamelCase`） |
 | 可空性与 `required` | 按 C# 类型；嵌套对象进 `$defs` |
 | 基元 | `type` / `format`：`Guid` → `uuid`，`DateTime` / `DateTimeOffset` → `date-time`，`DateOnly` → `date`，`TimeOnly` → `time`，`TimeSpan` → `duration`，`Uri` → `uri`，`byte[]` → `contentEncoding: base64`，整数与浮点按位宽取 `int32` / `int64` / `float` / `double` / `decimal` |
-| 字典与集合 | 键为字符串的字典（`IDictionary<string, T>` / `IReadOnlyDictionary<string, T>`）为 `object` + `additionalProperties`；其他集合为 `array` + `items` |
+| 字典与集合 | 字典（`IDictionary<TKey, TValue>` / `IReadOnlyDictionary<TKey, TValue>`，任何键类型）为 `object` + `additionalProperties`，与 System.Text.Json 写出的一样是 JSON 对象；其他集合为 `array` + `items` |
+| 非字符串的字典键 | 键的文本形式写在 `propertyNames`：有符号整数 `pattern: ^-?[0-9]+$`，无符号整数 `^[0-9]+$`，浮点与 `decimal` 为数字文本的 `pattern`，`bool` 为 `enum: ["True", "False"]`，`char` 为单个字符，枚举为成员名（按上下文的 `DictionaryKeyPolicy` 改写），`Guid`、日期时间与 `Uri` 为对应的 `format`；`object`、`Version` 与带 `[JsonConverter]` 的键不加约束。System.Text.Json 不支持的键类型报 `XHG006`，形状照写 |
+| `[JsonIgnore]` 与 `DefaultIgnoreCondition` | 只有 `Always`（不写条件即是）的属性不进 Schema；`WhenWriting` / `WhenReading` 的属性与 `WhenWritingDefault` 的值类型属性留在 `properties` 里但不进 `required`；`WhenWritingNull` 与不可空引用的 `WhenWritingDefault` 按可空契约照常；没有 `[JsonIgnore]` 时取序列化上下文的 `DefaultIgnoreCondition`，`Condition = Never` 覆盖它 |
 | 任意 JSON | `object`、`JsonElement`、`JsonDocument`、`JsonNode` 与 `JsonValue` 为不加约束的 `{}`；`JsonObject` 为 `object` + `additionalProperties: {}`，`JsonArray` 为 `array` + `items: {}`，不按属性展开 |
 | 可空标注 | `JsonNode?`、`Uri?`、`int?` 等只在 `type` 里加 `null`（`$ref` 为 `anyOf` 带 `null`），不改变形状；类型按命名空间与元数据名识别，别名与泛型实参不影响 |
 | 根 `title` 与定义名 | 类型名；封闭泛型为 `<外层名>Of<实参名>`，多个实参以 `And` 连接、嵌套递归，如 `PageResultOfUserResponse` |
@@ -154,6 +156,7 @@ public sealed class NotesFeature : IFeature
 | `XHG003` | Error | 操作 ID 不符合 `<resource>.<verb>` 文法（如 `orders.create`） |
 | `XHG004` | 缺省关闭 | 操作没写 `Expose`、程序集也没有 `[assembly: OperationDefaults]`，于是暴露给全部协议 |
 | `XHG005` | Error | `create` / `update` / `delete` 声明了 `ReadOnly = true` |
+| `XHG006` | Warning | 请求或响应里有 System.Text.Json 不支持的字典键类型（记录、类、`Nullable<T>`、`BigInteger` 等），运行期序列化会抛出；代码与 Schema 照常生成，键类型带 `[JsonConverter]` 或上下文登记了 `Converters` 时不报 |
 
 - `ReadOnly = true` 原样生成为契约的只读标记，协议据此推导（MCP 的 `readOnlyHint`、HTTP 的 `GET`）；`get` / `list` 本来就是只读。
 - 落定的 `Expose` 值写进生成的 `OperationContract`，运行期不再读特性。

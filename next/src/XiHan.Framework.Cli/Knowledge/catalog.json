@@ -416,7 +416,7 @@
     {
       "id": "XiHan.Framework.Kernel.Generators",
       "ring": "工具链",
-      "summary": "源生成器：`[Operation]` → 登记代码与请求/响应 JSON Schema（XHG001–XHG005）",
+      "summary": "源生成器：`[Operation]` → 登记代码与请求/响应 JSON Schema（XHG001–XHG006）",
       "description": "XiHan Framework 的源生成器：从 [Operation] 生成操作登记代码与请求/响应的 JSON Schema（draft 2020-12），供 HTTP、MCP 等协议适配器发布描述。",
       "references": [],
       "dependencies": [],

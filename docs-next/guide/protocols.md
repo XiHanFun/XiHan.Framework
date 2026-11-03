@@ -82,7 +82,7 @@ grpcurl -plaintext -proto operations.proto -H "authorization: ApiKey dev-alice-k
 | `number` + `format: float` / `double` | `float` / `double` |
 | `number` 其他（`decimal`、无格式） | `string`，十进制文本 |
 | `array` | `repeated T`，元素只能是标量或消息 |
-| `object` + `additionalProperties` | `map<string, T>` |
+| `object` + `additionalProperties` | `map<string, T>`；键总是 `string`（JSON 属性名的文本），`Dictionary<int, T>` 也一样，`propertyNames` 不影响映射 |
 | `$ref` 到对象定义 | 嵌套消息，允许递归 |
 | `$ref` 到字符串枚举 | `string`，不建 proto `enum`，线格式不变 |
 | 可空（`type` 或 `anyOf` 含 `null`） | `optional` |

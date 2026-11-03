@@ -148,6 +148,7 @@ public void Configure(FeatureContext context)
 | `XHG003` | 操作 ID 不符合 `<resource>.<verb>` 文法 |
 | `XHG004` | 缺省关闭：操作依赖隐式的 `Expose.All` |
 | `XHG005` | `create` / `update` / `delete` 声明了 `ReadOnly = true` |
+| `XHG006` | 警告：字典的键类型 System.Text.Json 不支持，运行期序列化会抛出 |
 
 不用生成器时手写登记，契约、序列化元数据与 Schema 自己给出：
 

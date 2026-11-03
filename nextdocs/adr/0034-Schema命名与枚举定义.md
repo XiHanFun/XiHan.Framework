@@ -54,3 +54,13 @@ BasicApp 6.0 的 N0 冒烟在 `Kernel.Generators` 的 JSON Schema 上发现两�
 - 实现：BCL 类型按所在命名空间与原始定义的元数据名识别（生成器内部的 `KnownTypes`，基元、字典接口、任意 JSON、`[JsonIgnore]` / `[JsonPropertyName]` 与 DataAnnotations），序列化上下文的特性与 `OperationDefaults` 按编译解析出的符号比对；可空标注、别名与泛型实参都不影响识别，别的命名空间里的同名类型仍是普通对象。
 - 影响：带这些类型的操作重新生成后 `openapi.json`、MCP tool 描述与 `.proto` 变化（`$defs/JsonNode`、`$defs/JsonValue`、`$defs/JsonNodeOptions`、`$defs/Uri` 消失；gRPC 上 `JsonObject` 为 `map<string, string>`、`JsonArray` 为 `repeated string`，每个值一段 JSON 文本），请求与响应的 JSON 不变，Validate 阶段不再以 `KERNEL_VALIDATION_003` 拒绝 `JsonObject` / `JsonArray` 里的标量与数组；前端按新文档重新生成类型。
 - 测试：`Kernel.Generators.Tests` 新增 3 例（任意 JSON 与可空标注的形状及 Validate 阶段的接受与拒绝、别的命名空间里的同名类型仍是对象、`[JsonIgnore]` / `[JsonPropertyName]` 含别名写法），`Protocols.Grpc.Tests` 新增 1 例（任意 JSON 的映射与数组以 JSON 文本往返、`.proto` 渲染）。
+
+## 修订（2026-11-04，二）：忽略条件、非字符串键的字典与关键字转义
+
+缺陷修复，不另立 ADR；来自上一节修订时发现的三处问题。
+
+- `[JsonIgnore]` 原先不看 `Condition`，见到就把属性从 Schema 删掉，可 `WhenWritingDefault` / `WhenWritingNull` / `WhenWriting` / `WhenReading` / `Never` 的属性仍会序列化。改为与 System.Text.Json 一致：条件取 `[JsonIgnore]`（不写即 `Always`），没有时取序列化上下文的 `DefaultIgnoreCondition`；只有 `Always` 不进 Schema，其余照常出现，可能被省略的不进 `required`（`WhenWriting` / `WhenReading` 总有一个方向没有它，`WhenWritingDefault` 的值类型取默认值时不写出；不可空的引用按可空契约不会是 null，`WhenWritingDefault` / `WhenWritingNull` 不改变它的必填）。备选是按请求 / 响应拆两份形状（只读入的属性只在请求里），否决：同一类型在 OpenAPI 组件与 protobuf 消息里按名字合并，拆开会让同名组件形状不同（gRPC 启动即 `PROTOCOLS_CONFLICT_003`）。
+- 键不是字符串的字典原先落进集合分支，输出成 `KeyValuePair` 的数组，与 System.Text.Json 写出的对象不符。改为任何键类型都是 `object` + `additionalProperties`，键的文本形式写在 `propertyNames`（整数与浮点的 `pattern`、`bool` 的 `True` / `False`、`char` 的单字符、枚举成员名并按 `DictionaryKeyPolicy` 改写、`Guid` 与日期时间与 `Uri` 的 `format`，以 .NET 10 的 System.Text.Json 实测为准）。System.Text.Json 不支持的键类型（运行期 `NotSupportedException`）选的是「照写形状 + 生成器警告 `XHG006`」，不是错误：键类型带 `[JsonConverter]` 或上下文登记了 `Converters` 时转换器可能实现了属性名的读写，生成器看不出来，这两种情况不报。Validate 阶段不断言 `propertyNames`，键文本不合法在解码时以 `KERNEL_VALIDATION_001` 失败；gRPC 仍是 `map<string, T>`。
+- `OperationGenerator.Display` 用 `WithMiscellaneousOptions` 整体替换了完整格式的杂项选项，丢了关键字转义，命名空间或类型名是 C# 关键字（`@event`、`@class`）时生成的代码编不过。改为 `AddMiscellaneousOptions`；序列化上下文的属性名与根命名空间的关键字段也加 `@`。`Persistence.Generators` 的过滤规约类命名空间（默认显示格式不转义）与根命名空间同样修了。
+- 影响：PublicAPI 不变；生成器新增诊断 `XHG006`（警告，缺省开启）。带条件忽略属性、非字符串键字典的操作重新生成后 `openapi.json`、MCP tool 描述与 `.proto` 变化（`KeyValuePairOf…` 定义消失，gRPC 由 `repeated KeyValuePairOf…` 变为 `map<string, T>`，线格式随之变化）；生成的登记代码里特殊类型改写成关键字（`global::System.String` → `string`），语义不变。
+- 测试：`Kernel.Generators.Tests` 新增 3 例（忽略条件与上下文缺省、非字符串键的形状与 `DictionaryKeyPolicy` 及 `XHG006`、关键字命名空间与类型名），`Persistence.Generators.Tests` 新增 1 例（关键字命名空间），`Protocols.Grpc.Tests` 新增 1 例（带 `propertyNames` 的映射仍是 `map<string, T>`）。

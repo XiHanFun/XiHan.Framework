@@ -14,7 +14,7 @@
 - **新增** 原语层 `Primitives`：`Result` / `Result<T>`、`Error` 与错误码文法、`Maybe<T>`、`TypedId`、`InvocationContext`、清单模型、`PipelineStage`、`LifecycleState`、`Stability` 与 `[ApiLevel]`，只增不改
 - **新增** 内核 `Kernel`：`AddXiHan` + `UseFeature<T>()` 装配特性，按能力 ID 求解能力图谱，`XiHan:Providers:<能力 ID>` 或 `UseProvider` 选择 Provider，启动日志打印图谱与管道
 - **新增** 十一个阶段的执行管道与内置中间件：截止时间、按操作 ID 的熔断 / 限流 / 并发上限（`XiHan:Kernel:Resilience`）、按 JSON Schema 与 `IValidatableObject` 的契约校验
-- **新增** 操作契约与调用器：`[Operation]`、`IOperation<TRequest, TResponse>`、`OperationRegistry`、`IOperationInvoker`；`Kernel.Generators` 生成登记代码与请求 / 响应 JSON Schema（`XHG001`–`XHG005`），程序集级 `OperationDefaults` 与只读声明
+- **新增** 操作契约与调用器：`[Operation]`、`IOperation<TRequest, TResponse>`、`OperationRegistry`、`IOperationInvoker`；`Kernel.Generators` 生成登记代码与请求 / 响应 JSON Schema（`XHG001`–`XHG006`），程序集级 `OperationDefaults` 与只读声明
 - **新增** 九态生命周期、`/health/startup|ready|live` 探针、`IHealthContributor` 与周期探测的 `PeriodicHealthContributor`，健康条目带说明、检查时刻、耗时与标量数据
 - **新增** 资源绑定（`XiHan:Bindings`、`SERVICE_BINDING_ROOT`）与配置目录 `XIHAN_CONFIG_PATH` 热更新
 - **新增** `IInvocationAccessor` 与调用来源 `InvocationOrigin`（协议、请求目标、远端地址、User-Agent、端点路由与名字）

@@ -252,6 +252,23 @@ public sealed class ProtoCodecTests
     }
 
     [Fact]
+    public void NonStringKeyedMaps_KeepStringKeys_AndIgnorePropertyNames()
+    {
+        // Kernel.Generators 给 Dictionary<int, string> / Dictionary<Color, int> 生成的形状：键的文本形式在 propertyNames，线上仍是 map<string, T>，键是 JSON 里的属性名
+        var message = ProtoSchema.FromJsonSchema("""{"title":"Keyed","type":"object","properties":{"byId":{"type":"object","propertyNames":{"pattern":"^-?[0-9]+$"},"additionalProperties":{"type":"string"}},"byColor":{"type":["object","null"],"propertyNames":{"enum":["Red","Green"]},"additionalProperties":{"type":"integer","format":"int32"}}}}""");
+        var fields = message.Fields.ToDictionary(static f => f.JsonName, static f => f, StringComparer.Ordinal);
+
+        Assert.Equal((ProtoKind.Text, ProtoCardinality.Map), (fields["byId"].Value.Kind, fields["byId"].Cardinality));
+        Assert.Equal((ProtoKind.Varint32, ProtoCardinality.Map), (fields["byColor"].Value.Kind, fields["byColor"].Cardinality));
+
+        const string value = """{"byId":{"1":"a","-2":"b"},"byColor":{"Red":1}}""";
+        Assert.Equal(value, Decode(message, Encode(message, value)));
+
+        var proto = ProtoFileBuilder.Build([new(Descriptor(new OperationContract("keyed.create")), new GrpcMethodName("Keyed", "Create"), message, message)], null);
+        Assert.Contains("message Keyed {\n  map<string, string> by_id = 1;\n  map<string, int32> by_color = 2;\n}\n", proto, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MethodNames_FollowConvention_AndOptionsValidate()
     {
         Assert.Equal("Orders/Create", GrpcMethodConvention.Derive(new OperationContract("orders.create")).ToString());

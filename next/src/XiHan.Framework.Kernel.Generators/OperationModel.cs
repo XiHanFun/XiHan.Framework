@@ -91,4 +91,14 @@ internal sealed class OperationModel
     /// 响应类型在上下文 <c>Default</c> 上的属性名
     /// </summary>
     public string? ResponseProperty { get; set; }
+
+    /// <summary>
+    /// 请求 JSON Schema 文本
+    /// </summary>
+    public string? RequestSchema { get; set; }
+
+    /// <summary>
+    /// 响应 JSON Schema 文本
+    /// </summary>
+    public string? ResponseSchema { get; set; }
 }

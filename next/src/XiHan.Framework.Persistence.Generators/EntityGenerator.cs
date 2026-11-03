@@ -266,7 +266,7 @@ public sealed class EntityGenerator : IIncrementalGenerator
         builder.AppendLine();
         if (!global)
         {
-            builder.Append("namespace ").AppendLine(model.Type.ContainingNamespace.ToDisplayString());
+            builder.Append("namespace ").AppendLine(NamespaceName(model.Type.ContainingNamespace));
             builder.AppendLine("{");
         }
 
@@ -324,14 +324,31 @@ public sealed class EntityGenerator : IIncrementalGenerator
         => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
 
     /// <summary>
+    /// 命名空间声明里的名字
+    /// </summary>
+    /// <remarks>
+    /// 不带 <c>global::</c>，关键字段加 <c>@</c>（<c>Demo.@event</c>）；默认显示格式不转义关键字，生成的命名空间声明会编不过
+    /// </remarks>
+    private static string NamespaceName(INamespaceSymbol ns)
+        => ns.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
+
+    /// <summary>
     /// 把根命名空间整理成合法的命名空间名
     /// </summary>
+    /// <remarks>
+    /// 去掉不能出现在标识符里的字符，数字开头或空段补 <c>_</c>，C# 关键字段加 <c>@</c>（<c>Demo.event</c> → <c>Demo.@event</c>）
+    /// </remarks>
     private static string Sanitize(string value)
     {
         var parts = value.Split('.').Select(static part =>
         {
             var cleaned = new string(part.Where(static c => char.IsLetterOrDigit(c) || c == '_').ToArray());
-            return cleaned.Length == 0 || char.IsDigit(cleaned[0]) ? "_" + cleaned : cleaned;
+            if (cleaned.Length == 0 || char.IsDigit(cleaned[0]))
+            {
+                return "_" + cleaned;
+            }
+
+            return SyntaxFacts.GetKeywordKind(cleaned) == SyntaxKind.None ? cleaned : "@" + cleaned;
         });
         return string.Join(".", parts);
     }

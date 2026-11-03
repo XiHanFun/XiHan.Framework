@@ -714,6 +714,316 @@ public sealed class OperationGeneratorTests
         });
     }
 
+    /// <summary>
+    /// 按根 <c>title</c> 取出某个操作的请求 Schema
+    /// </summary>
+    private static JsonDocument RequestSchemaTitled(string generated, string title)
+        => SchemasOf(generated).Select(static pair => JsonDocument.Parse(pair.Request)).Single(document => document.RootElement.GetProperty("title").GetString() == title);
+
+    /// <summary>
+    /// 带各种 <c>[JsonIgnore]</c> 条件与上下文级 <c>DefaultIgnoreCondition</c> 的操作
+    /// </summary>
+    /// <remarks>
+    /// <c>Always</c>（含不写条件）不序列化；<c>WhenWritingDefault</c> / <c>WhenWritingNull</c> 只在值为默认值 / null 时不写出；<c>WhenWriting</c> 只读不写、<c>WhenReading</c> 只写不读；<c>Never</c> 总是序列化，覆盖上下文的缺省
+    /// </remarks>
+    private const string IgnoreSource = """
+        using System;
+        using System.Text.Json;
+        using System.Text.Json.Serialization;
+        using System.Text.Json.Serialization.Metadata;
+        using System.Threading.Tasks;
+        using XiHan.Framework.Kernel.Operations;
+        using XiHan.Framework.Primitives;
+
+        namespace Demo.App;
+
+        public sealed class IgnoreRequest
+        {
+            [JsonIgnore] public string Hidden { get; init; } = "";
+            [JsonIgnore(Condition = JsonIgnoreCondition.Always)] public string AlsoHidden { get; init; } = "";
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public required int Count { get; init; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] public required string Label { get; init; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public required string Note { get; init; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] public string? Maybe { get; init; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)] public required string Secret { get; init; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)] public required string Computed { get; init; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.Never)] public required string Pinned { get; init; }
+            public required string Plain { get; init; }
+        }
+
+        public sealed record DefaultsRequest(int Count, string Name, [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)] int Pinned, bool Flag, string? Maybe);
+
+        public sealed record NullsRequest(int Count, string Name, string? Maybe);
+
+        [Operation("ignores.create")]
+        public sealed class CreateIgnore : IOperation<IgnoreRequest, IgnoreRequest>
+        {
+            public ValueTask<Result<IgnoreRequest>> HandleAsync(IgnoreRequest request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [Operation("defaults.create")]
+        public sealed class CreateDefaults : IOperation<DefaultsRequest, DefaultsRequest>
+        {
+            public ValueTask<Result<DefaultsRequest>> HandleAsync(DefaultsRequest request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [Operation("nulls.create")]
+        public sealed class CreateNulls : IOperation<NullsRequest, NullsRequest>
+        {
+            public ValueTask<Result<NullsRequest>> HandleAsync(NullsRequest request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+        [JsonSerializable(typeof(IgnoreRequest))]
+        internal sealed class IgnoreJsonContext : JsonSerializerContext
+        {
+            public static IgnoreJsonContext Default { get; } = new();
+            public IgnoreJsonContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+            public JsonTypeInfo<IgnoreRequest> IgnoreRequest => null!;
+        }
+
+        [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)]
+        [JsonSerializable(typeof(DefaultsRequest))]
+        internal sealed class DefaultsJsonContext : JsonSerializerContext
+        {
+            public static DefaultsJsonContext Default { get; } = new();
+            public DefaultsJsonContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+            public JsonTypeInfo<DefaultsRequest> DefaultsRequest => null!;
+        }
+
+        [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonSerializable(typeof(NullsRequest))]
+        internal sealed class NullsJsonContext : JsonSerializerContext
+        {
+            public static NullsJsonContext Default { get; } = new();
+            public NullsJsonContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+            public JsonTypeInfo<NullsRequest> NullsRequest => null!;
+        }
+        """;
+
+    [Fact]
+    public void JsonIgnoreConditions_FollowSystemTextJson()
+    {
+        var (compile, generator, generated) = Run(IgnoreSource);
+
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+
+        // 只有 Always（含不写条件）的属性不进 Schema；条件忽略的保留：WhenWriting / WhenReading 总有一个方向没有它，不必填；
+        // WhenWritingDefault 的值类型取默认值时不写出，不必填，不可空的引用按可空契约不会是 null，照常必填；WhenWritingNull 同理只影响可空的属性；Never 照常
+        using var ignore = RequestSchemaTitled(generated, "IgnoreRequest");
+        AssertProperties(ignore.RootElement, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["count"] = "{\"type\":\"integer\",\"format\":\"int32\"}",
+            ["label"] = "{\"type\":\"string\"}",
+            ["note"] = "{\"type\":\"string\"}",
+            ["maybe"] = "{\"type\":[\"string\",\"null\"]}",
+            ["secret"] = "{\"type\":\"string\"}",
+            ["computed"] = "{\"type\":\"string\"}",
+            ["pinned"] = "{\"type\":\"string\"}",
+            ["plain"] = "{\"type\":\"string\"}",
+        });
+        Assert.Equal(["label", "note", "pinned", "plain"], ignore.RootElement.GetProperty("required").EnumerateArray().Select(static e => e.GetString()));
+
+        // 上下文的 DefaultIgnoreCondition = WhenWritingDefault：没有 [JsonIgnore] 的值类型属性取默认值时不写出，不必填；[JsonIgnore(Condition = Never)] 覆盖缺省
+        using var defaults = RequestSchemaTitled(generated, "DefaultsRequest");
+        Assert.Equal(["count", "name", "pinned", "flag", "maybe"], defaults.RootElement.GetProperty("properties").EnumerateObject().Select(static p => p.Name));
+        Assert.Equal(["name", "pinned"], defaults.RootElement.GetProperty("required").EnumerateArray().Select(static e => e.GetString()));
+
+        // DefaultIgnoreCondition = WhenWritingNull 只省略 null：不可空的值类型与引用照常必填
+        using var nulls = RequestSchemaTitled(generated, "NullsRequest");
+        Assert.Equal(["count", "name"], nulls.RootElement.GetProperty("required").EnumerateArray().Select(static e => e.GetString()));
+    }
+
+    /// <summary>
+    /// 键不是字符串的字典
+    /// </summary>
+    /// <remarks>
+    /// System.Text.Json 把受支持的键写成 JSON 对象的属性名：整数与浮点写成数字文本，<c>bool</c> 写成 <c>True</c> / <c>False</c>，枚举写成成员名（按上下文的 <c>DictionaryKeyPolicy</c> 改写），<c>Guid</c> 与日期时间写成对应格式的文本。不受支持的键（这里是记录与可空值类型）在运行期抛出 <c>NotSupportedException</c>
+    /// </remarks>
+    private const string KeyedSource = """
+        using System;
+        using System.Collections.Generic;
+        using System.Text.Json;
+        using System.Text.Json.Serialization;
+        using System.Text.Json.Serialization.Metadata;
+        using System.Threading.Tasks;
+        using XiHan.Framework.Kernel.Operations;
+        using XiHan.Framework.Primitives;
+
+        namespace Demo.App;
+
+        public enum Color { Red, Green }
+
+        public enum Tone { DeepRed, LightGreen }
+
+        public sealed record Line(string Sku);
+
+        public sealed record Point(int X, int Y);
+
+        [JsonConverter(typeof(SlugConverter))]
+        public readonly record struct Slug(string Value);
+
+        public sealed class SlugConverter : JsonConverter<Slug>
+        {
+            public override Slug Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => new(reader.GetString()!);
+            public override void Write(Utf8JsonWriter writer, Slug value, JsonSerializerOptions options) => writer.WriteStringValue(value.Value);
+        }
+
+        public sealed record KeyedRequest(
+            Dictionary<int, string> ByInt,
+            IReadOnlyDictionary<long, int> ByLong,
+            Dictionary<uint, int> ByUnsigned,
+            Dictionary<Guid, string>? ByGuid,
+            Dictionary<Color, int> ByColor,
+            Dictionary<bool, int> ByFlag,
+            Dictionary<DateOnly, long> ByDay,
+            Dictionary<DateTimeOffset, int> ByMoment,
+            Dictionary<decimal, int> ByPrice,
+            Dictionary<char, int> ByChar,
+            SortedDictionary<int, Line> Lines,
+            Dictionary<string, int> ByName,
+            Dictionary<Slug, int> BySlug);
+
+        public sealed record TonedRequest(Dictionary<Tone, int> ByTone, Dictionary<string, int> ByName);
+
+        public sealed record UnsupportedRequest(Dictionary<Point, int> ByPoint, Dictionary<Point, string> AgainByPoint);
+
+        [Operation("keyed.create")]
+        public sealed class CreateKeyed : IOperation<KeyedRequest, KeyedRequest>
+        {
+            public ValueTask<Result<KeyedRequest>> HandleAsync(KeyedRequest request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [Operation("toned.create")]
+        public sealed class CreateToned : IOperation<TonedRequest, TonedRequest>
+        {
+            public ValueTask<Result<TonedRequest>> HandleAsync(TonedRequest request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [Operation("unsupported.create")]
+        public sealed class CreateUnsupported : IOperation<UnsupportedRequest, UnsupportedRequest>
+        {
+            public ValueTask<Result<UnsupportedRequest>> HandleAsync(UnsupportedRequest request, InvocationContext context) => throw new NotImplementedException();
+        }
+
+        [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+        [JsonSerializable(typeof(KeyedRequest))]
+        [JsonSerializable(typeof(UnsupportedRequest))]
+        internal sealed class KeyedJsonContext : JsonSerializerContext
+        {
+            public static KeyedJsonContext Default { get; } = new();
+            public KeyedJsonContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+            public JsonTypeInfo<KeyedRequest> KeyedRequest => null!;
+            public JsonTypeInfo<UnsupportedRequest> UnsupportedRequest => null!;
+        }
+
+        [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DictionaryKeyPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+        [JsonSerializable(typeof(TonedRequest))]
+        internal sealed class TonedJsonContext : JsonSerializerContext
+        {
+            public static TonedJsonContext Default { get; } = new();
+            public TonedJsonContext() : base(null) { }
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+            public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+            public JsonTypeInfo<TonedRequest> TonedRequest => null!;
+        }
+        """;
+
+    [Fact]
+    public void NonStringDictionaryKeys_AreObjects_WithKeyFormatsInPropertyNames()
+    {
+        var (compile, generator, generated) = Run(KeyedSource);
+
+        Assert.Empty(compile);
+
+        // 与 System.Text.Json 写出的形状一致：对象 + additionalProperties，键的文本形式写在 propertyNames；字符串键与自带转换器的键没有 propertyNames
+        using var keyed = RequestSchemaTitled(generated, "KeyedRequest");
+        AssertProperties(keyed.RootElement, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["byInt"] = """{"type":"object","propertyNames":{"pattern":"^-?[0-9]+$"},"additionalProperties":{"type":"string"}}""",
+            ["byLong"] = """{"type":"object","propertyNames":{"pattern":"^-?[0-9]+$"},"additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["byUnsigned"] = """{"type":"object","propertyNames":{"pattern":"^[0-9]+$"},"additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["byGuid"] = """{"type":["object","null"],"propertyNames":{"format":"uuid"},"additionalProperties":{"type":"string"}}""",
+            ["byColor"] = """{"type":"object","propertyNames":{"enum":["Red","Green"]},"additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["byFlag"] = """{"type":"object","propertyNames":{"enum":["True","False"]},"additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["byDay"] = """{"type":"object","propertyNames":{"format":"date"},"additionalProperties":{"type":"integer","format":"int64"}}""",
+            ["byMoment"] = """{"type":"object","propertyNames":{"format":"date-time"},"additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["byPrice"] = """{"type":"object","propertyNames":{"pattern":"^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$"},"additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["byChar"] = """{"type":"object","propertyNames":{"minLength":1,"maxLength":1},"additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["lines"] = """{"type":"object","propertyNames":{"pattern":"^-?[0-9]+$"},"additionalProperties":{"$ref":"#/$defs/Line"}}""",
+            ["byName"] = """{"type":"object","additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["bySlug"] = """{"type":"object","additionalProperties":{"type":"integer","format":"int32"}}""",
+        });
+        Assert.DoesNotContain("KeyValuePair", keyed.RootElement.GetRawText(), StringComparison.Ordinal);
+
+        // 枚举键按上下文的 DictionaryKeyPolicy 改写成员名；字符串键不受影响
+        using var toned = RequestSchemaTitled(generated, "TonedRequest");
+        AssertProperties(toned.RootElement, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["byTone"] = """{"type":"object","propertyNames":{"enum":["deep_red","light_green"]},"additionalProperties":{"type":"integer","format":"int32"}}""",
+            ["byName"] = """{"type":"object","additionalProperties":{"type":"integer","format":"int32"}}""",
+        });
+
+        // 不受支持的键：形状照写（对象，不写 propertyNames），每个操作每种键类型报一次 XHG006，代码照常生成
+        using var unsupported = RequestSchemaTitled(generated, "UnsupportedRequest");
+        Assert.Equal("""{"type":"object","additionalProperties":{"type":"integer","format":"int32"}}""", unsupported.RootElement.GetProperty("properties").GetProperty("byPoint").GetRawText());
+        var warning = Assert.Single(generator);
+        Assert.Equal(("XHG006", DiagnosticSeverity.Warning), (warning.Id, warning.Severity));
+        Assert.Contains("'Demo.App.Point'", warning.GetMessage(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Contains("'unsupported.create'", warning.GetMessage(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        Assert.Contains("context.AddCreateUnsupported();", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void KeywordNamespacesAndTypeNames_AreEscapedInGeneratedCode()
+    {
+        var (compile, generator, generated) = Run("""
+            using System;
+            using System.Text.Json;
+            using System.Text.Json.Serialization;
+            using System.Text.Json.Serialization.Metadata;
+            using System.Threading.Tasks;
+            using XiHan.Framework.Kernel.Operations;
+            using XiHan.Framework.Primitives;
+
+            namespace Demo.@event;
+
+            public sealed record @class(string Name);
+
+            [Operation("classes.create")]
+            public sealed class @static : IOperation<@class, @class>
+            {
+                public ValueTask<Result<@class>> HandleAsync(@class request, InvocationContext context) => throw new NotImplementedException();
+            }
+
+            [JsonSerializable(typeof(@class))]
+            internal sealed class @namespace : JsonSerializerContext
+            {
+                public static @namespace Default { get; } = new();
+                public @namespace() : base(null) { }
+                protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
+                public override JsonTypeInfo? GetTypeInfo(Type type) => null;
+                public JsonTypeInfo<@class> @class => null!;
+            }
+            """, rootNamespace: "Demo.event");
+
+        // 命名空间、类型名与序列化上下文的属性名是 C# 关键字时加 @，生成的代码能编译
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+        Assert.Contains("namespace Demo.@event;", generated, StringComparison.Ordinal);
+        Assert.Contains("context.AddOperation<global::Demo.@event.@static, global::Demo.@event.@class, global::Demo.@event.@class>(", generated, StringComparison.Ordinal);
+        Assert.Contains("global::Demo.@event.@namespace.Default.@class,", generated, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void FallsBackToAssemblyName_WhenRootNamespaceIsMissing()
     {

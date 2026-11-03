@@ -110,7 +110,7 @@ XiHan Framework 5 由一组可以独立引用的 NuGet 包组成，按环层组�
 
 | 包 | 说明 |
 | --- | --- |
-| [Kernel.Generators](./kernel-generators) | 源生成器：`[Operation]` → 登记代码与请求 / 响应 JSON Schema（XHG001–XHG005） |
+| [Kernel.Generators](./kernel-generators) | 源生成器：`[Operation]` → 登记代码与请求 / 响应 JSON Schema（XHG001–XHG006） |
 | [Kernel.Analyzers](./kernel-analyzers) | Roslyn 分析器：`ApiLevel`、命名、Internal 引用、零反射 |
 | [Persistence.Generators](./persistence-generators) | 源生成器：实体 → 仓储登记、EF Core 实体登记、软删除与租户过滤规约 |
 | [Cli](./cli) | 命令行工具 `xihan`：`pack` 生成部署产物，转发 `graph` / `pipeline` / `operations` / `invoke` |

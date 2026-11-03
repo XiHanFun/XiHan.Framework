@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using XiHan.Framework.Kernel.Generators.Json;
@@ -86,6 +87,20 @@ public sealed class OperationGenerator : IIncrementalGenerator
         if (models.Count == 0)
         {
             return;
+        }
+
+        foreach (var model in models)
+        {
+            // Schema 在渲染之前生成：生成途中发现的 System.Text.Json 不支持的字典键要报到操作上，一个操作每种键类型报一次
+            var request = new JsonSchemaBuilder(model.RequestContext!);
+            model.RequestSchema = request.Build(model.RequestType);
+            var response = new JsonSchemaBuilder(model.ResponseContext!);
+            model.ResponseSchema = response.Build(model.ResponseType);
+            var location = model.OperationType.Locations.FirstOrDefault() ?? Location.None;
+            foreach (var key in request.UnsupportedKeys.Concat(response.UnsupportedKeys).Distinct<ITypeSymbol>(SymbolEqualityComparer.Default))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.UnsupportedDictionaryKey, location, key.ToDisplayString(), model.Id));
+            }
         }
 
         var ns = Sanitize(rootNamespace ?? compilation.AssemblyName ?? "Generated");
@@ -260,8 +275,6 @@ public sealed class OperationGenerator : IIncrementalGenerator
             }
 
             methodNames.Add(methodName);
-            var requestSchema = new JsonSchemaBuilder(model.RequestContext!.NamingPolicy, model.RequestContext.UseStringEnumConverter).Build(model.RequestType);
-            var responseSchema = new JsonSchemaBuilder(model.ResponseContext!.NamingPolicy, model.ResponseContext.UseStringEnumConverter).Build(model.ResponseType);
 
             builder.AppendLine("    /// <summary>");
             builder.Append("    /// 登记操作 <c>").Append(model.Id).Append("</c>（").Append(model.OperationType.Name).AppendLine("）。");
@@ -274,9 +287,9 @@ public sealed class OperationGenerator : IIncrementalGenerator
                 .Append(", ").Append(model.Policy is null ? "null" : Literal(model.Policy))
                 .Append(", ").Append(model.Permission is null ? "null" : Literal(model.Permission))
                 .Append(model.ReadOnly ? ", readOnly: true" : string.Empty).AppendLine("),");
-            builder.Append("            ").Append(Display(model.RequestContext.Type)).Append(".Default.").Append(model.RequestProperty).AppendLine(",");
-            builder.Append("            ").Append(Display(model.ResponseContext.Type)).Append(".Default.").Append(model.ResponseProperty).AppendLine(",");
-            builder.Append("            new global::XiHan.Framework.Kernel.Operations.OperationSchema(").Append(Literal(requestSchema)).Append(", ").Append(Literal(responseSchema)).AppendLine("));");
+            builder.Append("            ").Append(Display(model.RequestContext!.Type)).Append(".Default.").Append(Identifier(model.RequestProperty!)).AppendLine(",");
+            builder.Append("            ").Append(Display(model.ResponseContext!.Type)).Append(".Default.").Append(Identifier(model.ResponseProperty!)).AppendLine(",");
+            builder.Append("            new global::XiHan.Framework.Kernel.Operations.OperationSchema(").Append(Literal(model.RequestSchema!)).Append(", ").Append(Literal(model.ResponseSchema!)).AppendLine("));");
             builder.AppendLine();
         }
 
@@ -299,8 +312,19 @@ public sealed class OperationGenerator : IIncrementalGenerator
     /// <summary>
     /// 带 <c>global::</c> 的完整类型名
     /// </summary>
+    /// <remarks>
+    /// 在完整格式上追加可空标注：保留关键字转义（<c>@event</c>）与特殊类型关键字（<c>int</c>、<c>string</c>），整体替换杂项选项会把转义丢掉，命名空间或类型名是关键字时生成的代码编不过
+    /// </remarks>
     private static string Display(ITypeSymbol type)
-        => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
+        => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
+
+    /// <summary>
+    /// 作为标识符写出的名字，C# 关键字加 <c>@</c>
+    /// </summary>
+    /// <remarks>
+    /// 序列化上下文的属性名来自类型名或 <c>TypeInfoPropertyName</c>，可能正好是关键字（<c>@class</c> 类型的属性名是 <c>class</c>）
+    /// </remarks>
+    private static string Identifier(string name) => SyntaxFacts.GetKeywordKind(name) == SyntaxKind.None ? name : "@" + name;
 
     /// <summary>
     /// C# 字符串字面量（逐字字符串，双写引号）
@@ -310,12 +334,15 @@ public sealed class OperationGenerator : IIncrementalGenerator
     /// <summary>
     /// 把根命名空间整理成合法的命名空间名
     /// </summary>
+    /// <remarks>
+    /// 去掉不能出现在标识符里的字符，数字开头或空段补 <c>_</c>，C# 关键字段加 <c>@</c>（<c>Demo.event</c> → <c>Demo.@event</c>）
+    /// </remarks>
     private static string Sanitize(string value)
     {
         var parts = value.Split('.').Select(static part =>
         {
             var cleaned = new string(part.Where(static c => char.IsLetterOrDigit(c) || c == '_').ToArray());
-            return cleaned.Length == 0 || char.IsDigit(cleaned[0]) ? "_" + cleaned : cleaned;
+            return cleaned.Length == 0 || char.IsDigit(cleaned[0]) ? "_" + cleaned : Identifier(cleaned);
         });
         return string.Join(".", parts);
     }

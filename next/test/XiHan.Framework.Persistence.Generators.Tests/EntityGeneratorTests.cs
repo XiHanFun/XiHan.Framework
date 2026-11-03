@@ -66,9 +66,9 @@ public sealed class EntityGeneratorTests
     /// 运行生成器并把生成的代码编回编译
     /// </summary>
     /// <remarks>
-    /// 返回编译错误、生成器诊断与生成的源文本
+    /// 返回编译错误、生成器诊断与生成的源文本；<paramref name="rootNamespace"/> 是项目的 <c>RootNamespace</c>
     /// </remarks>
-    private static (ImmutableArray<Diagnostic> Compile, ImmutableArray<Diagnostic> Generator, string Generated) Run(string source, bool withEntityFrameworkCore)
+    private static (ImmutableArray<Diagnostic> Compile, ImmutableArray<Diagnostic> Generator, string Generated) Run(string source, bool withEntityFrameworkCore, string rootNamespace = "Demo.App")
     {
         var trustedAssemblies = ((string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES")!).Split(Path.PathSeparator);
         var framework = new[] { typeof(IEntity<>).Assembly, typeof(IRepository<,>).Assembly, typeof(Primitives.Error).Assembly, typeof(Microsoft.Extensions.DependencyInjection.IServiceCollection).Assembly };
@@ -90,7 +90,7 @@ public sealed class EntityGeneratorTests
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
 
-        var driver = CSharpGeneratorDriver.Create([new EntityGenerator().AsSourceGenerator()], optionsProvider: new TestAnalyzerConfigOptionsProvider("Demo.App"));
+        var driver = CSharpGeneratorDriver.Create([new EntityGenerator().AsSourceGenerator()], optionsProvider: new TestAnalyzerConfigOptionsProvider(rootNamespace));
         driver.RunGeneratorsAndUpdateCompilation(compilation, out var output, out var generatorDiagnostics);
         var generated = output.SyntaxTrees.FirstOrDefault(static t => t.FilePath.EndsWith("GeneratedEntities.g.cs", StringComparison.Ordinal))?.ToString() ?? string.Empty;
         return (output.GetDiagnostics().Where(static d => d.Severity == DiagnosticSeverity.Error).ToImmutableArray(), generatorDiagnostics, generated);
@@ -204,5 +204,31 @@ public sealed class EntityGeneratorTests
         Assert.Empty(generator);
         Assert.Empty(compile);
         Assert.Empty(generated);
+    }
+
+    [Fact]
+    public void KeywordNamespaces_AreEscapedInGeneratedCode()
+    {
+        var (compile, generator, generated) = Run("""
+            using System;
+            using XiHan.Framework.Domain.Entities;
+
+            namespace Demo.@event;
+
+            public sealed class @class : IEntity<Guid>, ISoftDeletable
+            {
+                public Guid Id { get; init; }
+                public bool IsDeleted { get; set; }
+                public DateTimeOffset? DeletedAt { get; set; }
+            }
+            """, withEntityFrameworkCore: false, rootNamespace: "Demo.event");
+
+        // 根命名空间、实体所在命名空间与类型名是 C# 关键字时加 @，登记类与过滤规约类都能编译
+        Assert.Empty(generator);
+        Assert.Empty(compile);
+        Assert.Contains("namespace Demo.@event", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("namespace Demo.event", generated, StringComparison.Ordinal);
+        Assert.Contains("AddRepository<global::Demo.@event.@class, global::System.Guid>(services);", generated, StringComparison.Ordinal);
+        Assert.Contains("public static class classFilters", generated, StringComparison.Ordinal);
     }
 }

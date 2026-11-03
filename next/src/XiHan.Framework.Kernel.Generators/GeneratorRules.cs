@@ -82,4 +82,19 @@ internal static class GeneratorRules
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         helpLinkUri: HelpLink);
+
+    /// <summary>
+    /// XHG006：字典的键类型 System.Text.Json 不支持
+    /// </summary>
+    /// <remarks>
+    /// 运行期序列化与反序列化都抛出 <c>NotSupportedException</c>。键类型自带 <c>[JsonConverter]</c> 或上下文登记了转换器时不报（转换器可能实现了属性名的读写）；Schema 照写为对象
+    /// </remarks>
+    public static readonly DiagnosticDescriptor UnsupportedDictionaryKey = new(
+        "XHG006",
+        "Dictionary key type is not supported by System.Text.Json",
+        "Dictionary key type '{0}' used by operation '{1}' is not supported by System.Text.Json and fails at run time; use a string, number, bool, enum, Guid or date and time key, or give the key type a [JsonConverter] that reads and writes property names",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        helpLinkUri: HelpLink);
 }

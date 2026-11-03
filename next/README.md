@@ -81,7 +81,7 @@ next/
 | `XiHan.Framework.Profiles.Standard` | 6 | 组合包：Minimal + Domain + 五个子系统的抽象与内存默认实现，`UseStandardProfile()` |
 | `XiHan.Framework.Profiles.Full` | 6 | 组合包：Standard + 对象存储、调度、审计、工作流的默认实现 + AI 工具桥 + OpenTelemetry 导出与运行信息 + 四种协议适配器，`UseFullProfile()` |
 | `XiHan.Framework.Kernel.Analyzers` | 工具链 | Roslyn 分析器 XH0001–XH0005：ApiLevel、命名、Internal 引用、零反射 |
-| `XiHan.Framework.Kernel.Generators` | 工具链 | 源生成器：`[Operation]` → 登记代码与请求/响应 JSON Schema（XHG001–XHG005） |
+| `XiHan.Framework.Kernel.Generators` | 工具链 | 源生成器：`[Operation]` → 登记代码与请求/响应 JSON Schema（XHG001–XHG006） |
 | `XiHan.Framework.Persistence.Generators` | 工具链 | 源生成器：实体类 → 仓储登记、EF Core 实体登记、软删除 / 租户过滤规约（XHP001–XHP003） |
 | `XiHan.Framework.Cli` | 工具链 | `xihan` 工具：`pack` 从 `xihan.app.json` 生成 Dockerfile / Kustomize / Compose / Aspire 产物，`graph` / `pipeline` / `operations` / `invoke` 转发给应用，`mcp` 以 stdio 提供框架离线知识库（包与特性清单、配置键、文档）的 MCP 服务 |
 | `XiHan.Framework.Testing` | 工具链 | 测试宿主、特性桩、清单与上下文构造 |

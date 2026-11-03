@@ -9,7 +9,7 @@ namespace XiHan.Framework.Kernel.Generators.Json;
 /// 项目里一个 <c>JsonSerializerContext</c> 子类的信息
 /// </summary>
 /// <remarks>
-/// 登记的类型及其 <c>Default.&lt;属性&gt;</c> 名、命名策略、枚举是否按字符串序列化
+/// 登记的类型及其 <c>Default.&lt;属性&gt;</c> 名、命名策略、枚举是否按字符串序列化、字典键的命名策略、缺省的忽略条件与是否登记了转换器
 /// </remarks>
 internal sealed class JsonContextModel
 {
@@ -59,6 +59,16 @@ internal sealed class JsonContextModel
                         case "UseStringEnumConverter" when argument.Value.Value is bool useStrings:
                             UseStringEnumConverter = useStrings;
                             break;
+                        case "DictionaryKeyPolicy" when argument.Value.Value is int keyPolicy:
+                            DictionaryKeyPolicy = (JsonNamingPolicyKind)keyPolicy;
+                            break;
+                        case "DefaultIgnoreCondition" when argument.Value.Value is int condition:
+                            DefaultIgnoreCondition = (JsonIgnoreConditionKind)condition;
+                            break;
+                        case "Converters" when argument.Value.Kind == TypedConstantKind.Array:
+                            // 数组形式的命名参数不能取 Value（会抛出），只看有没有元素
+                            HasConverters = !argument.Value.Values.IsDefaultOrEmpty;
+                            break;
                     }
                 }
             }
@@ -79,6 +89,27 @@ internal sealed class JsonContextModel
     /// 枚举是否按名字序列化
     /// </summary>
     public bool UseStringEnumConverter { get; }
+
+    /// <summary>
+    /// 字典键的命名策略
+    /// </summary>
+    /// <remarks>
+    /// 只在写出时作用于字符串与枚举键（System.Text.Json 的行为）
+    /// </remarks>
+    public JsonNamingPolicyKind DictionaryKeyPolicy { get; } = JsonNamingPolicyKind.Unspecified;
+
+    /// <summary>
+    /// 没有 <c>[JsonIgnore]</c> 的属性的忽略条件
+    /// </summary>
+    public JsonIgnoreConditionKind DefaultIgnoreCondition { get; } = JsonIgnoreConditionKind.Never;
+
+    /// <summary>
+    /// 是否在选项里登记了转换器
+    /// </summary>
+    /// <remarks>
+    /// 登记的转换器可能为某个键类型实现了属性名的读写，生成器看不出来
+    /// </remarks>
+    public bool HasConverters { get; }
 
     /// <summary>
     /// 该类型若已登记，返回 <c>Default</c> 上的属性名
