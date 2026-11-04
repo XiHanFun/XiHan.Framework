@@ -128,3 +128,4 @@
 | [0123](0123-数据库连通性探测走一次往返.md) | 第三十一批：`persistence.sqlsugar.database`、运行时数据源探测与测试连接都走一次数据库往返并按 `HealthProbeIntervalSeconds` 超时，驱动不理令牌也不等；前者的错误码变成 `KERNEL_UNAVAILABLE_005` |
 | [0124](0124-载荷错误只留路径.md) | 第三十一批：`KERNEL_VALIDATION_001` 的 JSON 错误 `reason` 只写路径，不再把请求类型的全名回给调用方 |
 | [0125](0125-宿主代收发端点的响应安全头.md) | 第三十一批：`MapXiHanBlobs` 的响应带 `nosniff`，写出内容时除 PDF 外带沙箱的 CSP，应用已设该头时不覆盖 |
+| [0126](0126-出站地址策略的非HTTP连接入口.md) | 第三十一批：公开 `OutboundAddressPolicy.ConnectAsync(host, port, ct)`，返回连好的 `Socket`，规则与 HTTP 路径相同；BasicApp 的 SMTP 可以换过去 |

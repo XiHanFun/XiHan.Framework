@@ -473,6 +473,7 @@ XiHan.Framework.Kernel.Security.OutboundAddressOptions.Equals(XiHan.Framework.Ke
 XiHan.Framework.Kernel.Security.OutboundAddressOptions.OutboundAddressOptions() -> void
 XiHan.Framework.Kernel.Security.OutboundAddressPolicy
 XiHan.Framework.Kernel.Security.OutboundAddressPolicy.Apply(System.Net.Http.SocketsHttpHandler! handler) -> void
+XiHan.Framework.Kernel.Security.OutboundAddressPolicy.ConnectAsync(string! host, int port, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Net.Sockets.Socket!>
 XiHan.Framework.Kernel.Security.OutboundAddressPolicy.IsAllowed(System.Net.IPAddress! address) -> bool
 XiHan.Framework.Kernel.Security.OutboundAddressPolicy.OutboundAddressPolicy(XiHan.Framework.Kernel.Security.OutboundAddressOptions! options, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Kernel.Security.PermissionDefinition

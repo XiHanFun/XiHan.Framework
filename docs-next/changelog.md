@@ -19,6 +19,7 @@
 - **新增** 资源绑定（`XiHan:Bindings`、`SERVICE_BINDING_ROOT`）与配置目录 `XIHAN_CONFIG_PATH` 热更新
 - **新增** `IInvocationAccessor` 与调用来源 `InvocationOrigin`（协议、请求目标、远端地址、User-Agent、端点路由与名字）
 - **新增** 分析器 `Kernel.Analyzers`（XH0001–XH0005）与测试基座 `Testing`
+- **新增** `OutboundAddressPolicy.ConnectAsync(host, port, ct)`：不是 HTTP 但地址来自用户的连接（SMTP）用同样的规则，返回连好的 `Socket`
 - **修复** `MapXiHanBlobs` 的响应带 `X-Content-Type-Options: nosniff`，写出内容时除 PDF 外带沙箱的 `Content-Security-Policy`，用户上传的 HTML、SVG 不能在应用的源上运行脚本
 - **修复** 载荷解码错误的 `reason` 只写 JSON 路径，不再把请求类型的全名回给调用方
 - **修复** SqlSugar 的数据库健康项与运行时数据源探测走一次数据库往返并按配置超时：连接池里有空闲连接时不再在库宕了之后报健康，服务器不回话时不再卡住启动；`persistence.sqlsugar.database` 的错误码由 `PERSISTENCE_UNAVAILABLE_003` 变成 `KERNEL_UNAVAILABLE_005`；`TestAsync` 单次上限是运行时数据源的 `HealthProbeIntervalSeconds`

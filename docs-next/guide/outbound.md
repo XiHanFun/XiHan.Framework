@@ -160,6 +160,20 @@ catch (HttpRequestException exception) when (exception.InnerException is Outboun
 
 要在保存配置时就提示，可以用 `IsAllowed(IPAddress)` 判断一个 IP。它只是提前给出提示，连接时还会再查，不能代替连接时的检查。
 
+## 不是 HTTP 的连接
+
+地址同样来自用户、但不走 HTTP 时（租户自己填的 SMTP 服务器），用 `ConnectAsync`（ADR-0126）。规则与 HTTP 路径相同，连的就是检查过的地址：
+
+```csharp
+// 连好的套接字由调用方释放；协议库接过去之后自己做 STARTTLS
+using var socket = await addresses.ConnectAsync(host, port, cancellationToken);
+await smtp.ConnectAsync(socket, host, port, SecureSocketOptions.Auto, cancellationToken);
+```
+
+全部地址被拒绝时抛 `OutboundAddressDeniedException`，连不上时抛 `SocketException`。不要先解析再用 `IsAllowed` 判断、再自己连接：两次解析之间就是 DNS 重绑定的窗口。
+
+自己连接的驱动（数据库、消息代理等）不经过这里。
+
 ## 限制
 
 - **代理**：`Apply` 会关掉 `UseProxy`。经代理时连接回调看到的是代理的地址，查不到真正的目标。之后再打开代理就绕过了策略，要用代理就在代理上做这层限制。

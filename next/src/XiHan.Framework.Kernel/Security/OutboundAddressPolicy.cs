@@ -193,32 +193,41 @@ public sealed partial class OutboundAddressPolicy
     }
 
     /// <summary>
-    /// 建立连接：解析主机名，只连策略允许的地址
+    /// 解析主机名，只连策略允许的地址
     /// </summary>
     /// <remarks>
-    /// 这次连接用的就是刚检查过的地址，不会再解析一次，DNS 重绑定没有窗口。处理器的每条新连接都走这里，重定向的目标也一样
+    /// 给不是 HTTP 但地址来自用户的连接（SMTP 这类接受套接字的协议库，ADR-0126）。这次连接用的就是刚检查过的地址，不会再解析一次，DNS 重绑定没有窗口
     /// </remarks>
-    private async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    /// <param name="host">主机名或字面量地址</param>
+    /// <param name="port">端口，1～65535</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>连好的套接字，由调用方释放</returns>
+    /// <exception cref="ArgumentException">主机名空白，或端口不在范围内</exception>
+    /// <exception cref="OutboundAddressDeniedException">解析出的地址全部被拒绝</exception>
+    /// <exception cref="SocketException">主机名解析不到地址，或允许的地址都连不上</exception>
+    public async ValueTask<Socket> ConnectAsync(string host, int port, CancellationToken cancellationToken)
     {
-        var endpoint = context.DnsEndPoint;
-        var resolved = await _resolve(endpoint.Host, cancellationToken).ConfigureAwait(false);
+        ArgumentException.ThrowIfNullOrWhiteSpace(host);
+        ArgumentOutOfRangeException.ThrowIfLessThan(port, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, IPEndPoint.MaxPort);
+        var resolved = await _resolve(host, cancellationToken).ConfigureAwait(false);
         if (resolved.Length == 0)
         {
             throw new SocketException((int)SocketError.HostNotFound);
         }
 
         // 一部分地址被拒绝时只连其余的：连的都是检查过的地址，混入公网地址绕不过去，也不会因为多返回一个内网地址就连不上
-        var allowed = _allowedHosts.Contains(endpoint.Host) ? resolved : Array.FindAll(resolved, IsAllowed);
+        var allowed = _allowedHosts.Contains(host) ? resolved : Array.FindAll(resolved, IsAllowed);
         if (allowed.Length == 0)
         {
-            LogDenied(_logger, endpoint.Host, endpoint.Port, string.Join<IPAddress>(", ", resolved));
-            throw new OutboundAddressDeniedException(endpoint.Host, endpoint.Port);
+            LogDenied(_logger, host, port, string.Join<IPAddress>(", ", resolved));
+            throw new OutboundAddressDeniedException(host, port);
         }
 
         if (allowed.Length < resolved.Length)
         {
             var skipped = string.Join(", ", resolved.Except(allowed));
-            LogPartlyDenied(_logger, endpoint.Host, endpoint.Port, skipped);
+            LogPartlyDenied(_logger, host, port, skipped);
         }
 
         // 与处理器缺省的连接方式一样按顺序逐个试，最后一个的异常原样抛出
@@ -229,8 +238,8 @@ public sealed partial class OutboundAddressPolicy
             {
                 // 建套接字也可能失败：系统没有开 IPv6 时，这个地址跳过，换下一个
                 socket = new Socket(allowed[index].AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-                await socket.ConnectAsync(new IPEndPoint(allowed[index], endpoint.Port), cancellationToken).ConfigureAwait(false);
-                return new NetworkStream(socket, ownsSocket: true);
+                await socket.ConnectAsync(new IPEndPoint(allowed[index], port), cancellationToken).ConfigureAwait(false);
+                return socket;
             }
             catch (SocketException) when (index < allowed.Length - 1)
             {
@@ -242,6 +251,19 @@ public sealed partial class OutboundAddressPolicy
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    /// 处理器的连接回调
+    /// </summary>
+    /// <remarks>
+    /// 处理器的每条新连接都走这里，重定向的目标也一样
+    /// </remarks>
+    private async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    {
+        var endpoint = context.DnsEndPoint;
+        var socket = await ConnectAsync(endpoint.Host, endpoint.Port, cancellationToken).ConfigureAwait(false);
+        return new NetworkStream(socket, ownsSocket: true);
     }
 
     /// <summary>
