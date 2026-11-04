@@ -7,21 +7,31 @@
 | 项 | 要求 |
 | --- | --- |
 | .NET SDK | .NET 10 SDK；从源码构建框架时用仓库 `global.json` 锁定的 10.0.4xx 功能带 |
-| Git | 克隆 `XiHan.Framework` 仓库 |
+| Git | 从源码引用时克隆 `XiHan.Framework` 仓库 |
 | 编辑器 | Visual Studio 2026、Rider 或 VS Code（C# Dev Kit） |
 
 ## 获取预览包
 
-框架尚未发布到 nuget.org。框架源码在 [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) 仓库。两种引用方式任选其一。
+预览包在 nuget.org 上，直接引用即可；要调试框架源码，或者验证还没发布的改动，用后两种方式。框架源码在 [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) 仓库。三种方式任选其一。
 
-### 方式一：源码引用
+### 方式一：NuGet
+
+适合只使用框架、不改框架源码的场景。
+
+```bash
+dotnet add package XiHan.Framework.Profiles.Minimal --prerelease
+dotnet add package XiHan.Framework.Protocols.Http --prerelease
+dotnet add package XiHan.Framework.Kernel.Generators --prerelease
+```
+
+### 方式二：源码引用
 
 适合同时调试框架源码的场景。
 
 1. 克隆仓库：
 
    ```bash
-   git clone https://github.com/XiHanFun/XiHan.Framework.git
+   git clone --branch dev https://github.com/XiHanFun/XiHan.Framework.git
    cd XiHan.Framework
    ```
 
@@ -42,11 +52,11 @@
    </ItemGroup>
    ```
 
-### 方式二：本地包源
+### 方式三：本地包源
 
-适合只使用框架、不改框架源码的场景。
+适合验证还没发布的改动的场景。
 
-1. 在仓库根还原、构建并打包（打包前先按方式一的第 2 步初始化子模块）：
+1. 在仓库根还原、构建并打包（打包前先按方式二的第 2 步初始化子模块）：
 
    ```bash
    dotnet restore framework/XiHan.Framework.slnx

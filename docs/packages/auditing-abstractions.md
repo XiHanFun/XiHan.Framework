@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。两个 Provider 都依赖本包，装配 Provider 即可；`Profiles.Full` 已包含 `Auditing.InMemory`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。两个 Provider 都依赖本包，装配 Provider 即可；`Profiles.Full` 已包含 `Auditing.InMemory`。
 
 ## 配置
 

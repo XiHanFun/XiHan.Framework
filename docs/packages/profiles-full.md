@@ -46,7 +46,7 @@ Full 组合包（元包）：Standard 加对象存储、调度、审计、工作
 dotnet add package XiHan.Framework.Profiles.Full --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

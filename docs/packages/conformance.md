@@ -23,7 +23,7 @@
 dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。依赖真实服务的实现（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos）在框架仓库里以 `XIHAN_TEST_*` 环境变量提供连接，没设置时用 `Assert.SkipWhen` 跳过；自己的 Provider 可以照这个做法。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。依赖真实服务的实现（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos）在框架仓库里以 `XIHAN_TEST_*` 环境变量提供连接，没设置时用 `Assert.SkipWhen` 跳过；自己的 Provider 可以照这个做法。
 
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |

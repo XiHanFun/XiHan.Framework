@@ -42,7 +42,7 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 dotnet add package XiHan.Framework.AI.VectorData --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器：
 
 ```csharp
 using CommunityToolkit.VectorData.InMemory;

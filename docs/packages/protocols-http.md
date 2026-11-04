@@ -31,7 +31,7 @@ HTTP 协议适配器，提供 `protocols.http@1`：按操作 ID 推导路由（�
 dotnet add package XiHan.Framework.Protocols.Http --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包，`UseFullProfile()` 会装配 `HttpProtocolFeature`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包，`UseFullProfile()` 会装配 `HttpProtocolFeature`。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

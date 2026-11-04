@@ -36,7 +36,7 @@
 dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性入口，服务由 Provider 的特性注册。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，服务由 Provider 的特性注册。
 
 ## 配置
 

@@ -41,7 +41,7 @@ dotnet tool install --global XiHan.Framework.Cli --prerelease
 xihan version
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。不安装也可以从源码运行（在仓库根执行）：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。不安装也可以从源码运行（在仓库根执行）：
 
 ```bash
 dotnet run --project framework/src/XiHan.Framework.Cli -- pack --manifest framework/samples/SimpleApp/xihan.app.json --output ./artifacts/simple-app-deploy

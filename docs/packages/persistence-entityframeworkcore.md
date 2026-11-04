@@ -35,7 +35,7 @@ dotnet add package XiHan.Framework.Persistence.EntityFrameworkCore --prerelease
 dotnet add package Microsoft.EntityFrameworkCore.Sqlite
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用最新版的 `Microsoft.EntityFrameworkCore.Sqlite`：它带来的 `Microsoft.Data.Sqlite.Core` 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），修复之前的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用最新版的 `Microsoft.EntityFrameworkCore.Sqlite`：它带来的 `Microsoft.Data.Sqlite.Core` 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），修复之前的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
 
 1. 定义 `DbContext`：登记实体后调用 `ApplyPersistenceConventions(Database)`。
 2. 登记实体：`AddRepository<TEntity, TKey>()`。

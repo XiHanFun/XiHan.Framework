@@ -99,7 +99,7 @@ dotnet add package XiHan.Framework.Protocols.Http --prerelease
 dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```
 
-Until the preview packages are on NuGet, follow the [quickstart](https://framework.docs.xihanfun.com/quickstart) to reference the source or use a local package source.
+To debug the framework source or use a local package source, see the [quickstart](https://framework.docs.xihanfun.com/quickstart).
 
 ### Write an operation contract
 

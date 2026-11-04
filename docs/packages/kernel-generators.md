@@ -56,7 +56,7 @@ Schema 的生成规则：
 dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：
 
 ```xml
 <ProjectReference Include="../../src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

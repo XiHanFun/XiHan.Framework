@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.Testing --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](../guide/testing#测试项目)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](../guide/testing#测试项目)。
 
 ## 主要类型
 

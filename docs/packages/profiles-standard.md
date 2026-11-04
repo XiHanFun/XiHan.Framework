@@ -42,7 +42,7 @@ Standard 组合包（元包）：Minimal 加 `Domain` 与持久化、缓存、�
 dotnet add package XiHan.Framework.Profiles.Standard --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

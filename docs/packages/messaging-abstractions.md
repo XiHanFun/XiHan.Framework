@@ -36,7 +36,7 @@
 dotnet add package XiHan.Framework.Messaging.Abstractions --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。订阅写在特性的 `Configure` 里，或直接写在 `builder.Services` 上；发件箱按需装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。订阅写在特性的 `Configure` 里，或直接写在 `builder.Services` 上；发件箱按需装配：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

@@ -48,7 +48,7 @@
 dotnet add package XiHan.Framework.Scheduling.Kubernetes --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

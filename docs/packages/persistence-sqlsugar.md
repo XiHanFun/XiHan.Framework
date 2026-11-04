@@ -41,7 +41,7 @@ SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元�
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
 
 本包还显式依赖 `Microsoft.Data.Sqlite`（ADR-0097）。`SqlSugarCore` 声明的下限版本带着连接池激活的竞态（dotnet/efcore#39008），NuGet 按下限解析就会用到它：SQLite 上并发打开连接时两个连接可能共用同一个原生连接，报 "cannot start a transaction within a transaction"，清池时正在打开的连接被释放、报 `ObjectDisposedException`。有了这条依赖，引用本包的应用解析到修复后的版本，不用自己钉版本；项目里直接引用了更低版本的，NuGet 报降级 `NU1605`，删掉那条引用或抬到本包要求的版本。
 

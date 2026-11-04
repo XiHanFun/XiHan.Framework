@@ -57,7 +57,7 @@
 
 ## 生成部署产物
 
-框架尚未发布到 nuget.org，工具可以从源码运行（在仓库根执行）：
+工具可以全局安装（`dotnet tool install --global XiHan.Framework.Cli --prerelease`），也可以从源码运行（在仓库根执行）：
 
 ```bash
 dotnet run --project framework/src/XiHan.Framework.Cli -- pack --manifest framework/samples/KubernetesApp/xihan.app.json

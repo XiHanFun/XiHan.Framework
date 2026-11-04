@@ -56,7 +56,7 @@ xihan.persistence.inmemory <版本> (default)
 
 ## 当前限制
 
-- 框架尚未发布到 nuget.org，需要从源码引用或用本地包源，见[快速上手](./quickstart#获取预览包)。
+- 当前只有预览版，安装要带 `--prerelease`，见[快速上手](./quickstart#获取预览包)。
 - 公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整。
 - 框架不提供机器人、消息通知渠道、模板引擎、脚本引擎、搜索引擎、HTTP 客户端封装、网关、SignalR 封装、对象映射，替代做法见[常见问题](./guide/faq#框架不提供哪些能力)。
 - Provider 覆盖面以[包总览](./packages/)列出的为准：持久化有 EF Core 与 SqlSugar，没有 MongoDB；远程配置有 Nacos，没有 Apollo 与 Vault；对象存储有文件系统与 S3 兼容服务。

@@ -41,7 +41,7 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 ```
 
-框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。框架包对分析器的引用带 `PrivateAssets="all"`，不会传递给应用；应用要用 XH0003 时自己引用。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。框架包对分析器的引用带 `PrivateAssets="all"`，不会传递给应用；应用要用 XH0003 时自己引用。
 
 框架包规则与零反射规则只在对应的 MSBuild 属性存在时生效。分析器经 `build_property.*` 读取它们，属性必须声明为编译器可见：包里带的 `buildTransitive/XiHan.Framework.Kernel.Analyzers.props` 已把 `XiHanFrameworkPackage` 与 `XiHanRing` 声明为 `CompilerVisibleProperty`，以包引用分析器的项目只需设置属性（框架仓库内以项目引用分析器，由 `framework/src/Directory.Build.props` 声明同样的两项）：
 

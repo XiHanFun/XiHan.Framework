@@ -99,7 +99,7 @@ dotnet add package XiHan.Framework.Protocols.Http --prerelease
 dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```
 
-预览包发布到 NuGet 之前，按[快速上手](https://framework.docs.xihanfun.com/quickstart)从源码引用或使用本地包源。
+要调试框架源码或使用本地包源，见[快速上手](https://framework.docs.xihanfun.com/quickstart)。
 
 ### 写操作契约
 
