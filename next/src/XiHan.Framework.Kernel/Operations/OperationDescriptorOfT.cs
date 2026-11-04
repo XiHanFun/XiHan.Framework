@@ -70,7 +70,8 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
         }
         catch (JsonException exception)
         {
-            return InvalidPayload(exception.Message);
+            // 只留路径：消息带目标类型的全名，这个错误要回给调用方（ADR-0124）
+            return InvalidPayload(exception.Path ?? "$");
         }
     }
 

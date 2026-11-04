@@ -225,7 +225,7 @@ public sealed class NightlyOrderSeeder(IServiceScopeFactory scopes)
 | 错误码 | 情形 |
 | --- | --- |
 | `KERNEL_NOTFOUND_001` | 操作没有登记，调用不进管道 |
-| `KERNEL_VALIDATION_001` | 载荷不是 JSON、为 `null` 或类型不匹配 |
+| `KERNEL_VALIDATION_001` | 载荷不是 JSON、为 `null` 或类型不匹配。`reason` 是 JSON 路径（`$.quantity`），不带类型名 |
 | `KERNEL_VALIDATION_002` | 类型化调用的请求或响应类型与登记不符 |
 | `KERNEL_VALIDATION_003` / `004` | 不满足请求 Schema / 自校验失败 |
 

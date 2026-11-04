@@ -369,6 +369,26 @@ public sealed class OperationTests
     }
 
     [Fact]
+    public async Task Invoke_InvalidPayload_NamesThePathButNotTheRequestType()
+    {
+        // System.Text.Json 的消息带目标类型的全名，错误会回给调用方：只留路径，调用方靠它定位，内部类型名不外泄
+        var (provider, app) = await StartAsync();
+        await using var _ = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var invoker = provider.GetRequiredService<IOperationInvoker>();
+
+        var mismatch = await invoker.InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(EchoOperation.Id, Utf8("{\"repeat\":\"many\"}")));
+        var malformed = await invoker.InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(EchoOperation.Id, Utf8("not json")));
+
+        Assert.Equal(KernelErrors.InvalidOperationPayload, mismatch.Error!.Code);
+        Assert.Equal("$.repeat", mismatch.Error.Details!["reason"]);
+        Assert.DoesNotContain(nameof(EchoRequest), mismatch.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("System.", mismatch.Error.Message, StringComparison.Ordinal);
+        Assert.Equal("$", malformed.Error!.Details!["reason"]);
+        await app.StopAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public async Task Invoke_Json_EmptyPayloadIsEmptyObject_AndInvalidPayloadIsRejected()
     {
         var (provider, app) = await StartAsync();

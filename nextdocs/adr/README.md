@@ -126,3 +126,4 @@
 | [0121](0121-网络入站不接受自报的租户与主体.md) | 第三十一批：HTTP、gRPC、MCP 入站丢弃 Baggage 里的 `xihan.tenant` 与 `xihan.principal`，网络调用方的租户只来自认证；进程内建上下文时放进去的不受影响；要按主机名或请求头选租户由应用登记自己的 `ITenantResolver` | 已采纳 |
 | [0122](0122-授予与租户目录读主库.md) | 第三十一批：`UnitOfWorkOptions.ReadsPrimary`，只读但读主库，其余仍是只读的语义；授予与租户目录读取设它，撤销授予、停用租户的生效时间不再多出复制延迟。没配从库的部署没有变化 |
 | [0123](0123-数据库连通性探测走一次往返.md) | 第三十一批：`persistence.sqlsugar.database`、运行时数据源探测与测试连接都走一次数据库往返并按 `HealthProbeIntervalSeconds` 超时，驱动不理令牌也不等；前者的错误码变成 `KERNEL_UNAVAILABLE_005` |
+| [0124](0124-载荷错误只留路径.md) | 第三十一批：`KERNEL_VALIDATION_001` 的 JSON 错误 `reason` 只写路径，不再把请求类型的全名回给调用方 |
