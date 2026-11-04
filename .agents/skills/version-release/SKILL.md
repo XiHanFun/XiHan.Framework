@@ -24,7 +24,7 @@ description: 为 XiHan.Framework 准备版本、更新 framework/Directory.Build
 
 ## 发布
 
-1. 快进发布分支：预览版 `git fetch . dev:preview`，正式版 `git fetch . dev:main`（不是快进就停下查），推送并等 CI 全绿。
+1. 快进发布分支：预览版 `git fetch . dev:preview`，正式版 `git fetch . dev:main`（不是快进就停下查），推送并等 CI 全绿。`ci.yml` 按路径触发，只改文档的提交不会自动跑，这时用 `gh workflow run ci.yml --ref preview` 手动触发；文档会嵌进 CLI 包，不能跳过。
 2. 打标签并推送：`git tag -a v<版本> -m "v<版本>" <发布分支>`、`git push origin v<版本>`。
 3. 发布前确认 nuget.org 的可信发布策略覆盖 `release.yml`，新包 ID 也能发。NuGet 上的版本删不掉，只能取消列出，所以发错了只能用下一个号。
 

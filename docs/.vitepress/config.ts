@@ -338,7 +338,7 @@ export default defineXiHanConfig({
   llms: {
     title: "曦寒开发框架",
     summary:
-      "XiHan Framework 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现：原语层与微内核之上，子系统以抽象包、零外部依赖的默认实现与可替换的 Provider 组成；特性在清单里按能力 ID 声明依赖，内核求解能力图谱后显式装配；每次调用经过固定十一个阶段的管道；一份操作契约同时经 HTTP、gRPC、MCP 与命令行暴露。。",
+      "XiHan Framework 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现：原语层与微内核之上，子系统以抽象包、零外部依赖的默认实现与可替换的 Provider 组成；特性在清单里按能力 ID 声明依赖，内核求解能力图谱后显式装配；每次调用经过固定十一个阶段的管道；一份操作契约同时经 HTTP、gRPC、MCP 与命令行暴露。",
     sections: [
       { dir: ".", label: "开始" },
       { dir: "ai", label: "AI 辅助开发" },
