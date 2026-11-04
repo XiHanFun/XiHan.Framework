@@ -162,6 +162,7 @@
     <Project Path="test/XiHan.Framework.Kernel.Generators.Tests/XiHan.Framework.Kernel.Generators.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Persistence.Generators.Tests/XiHan.Framework.Persistence.Generators.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Cli.Tests/XiHan.Framework.Cli.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Samples.Tests/XiHan.Framework.Samples.Tests.csproj" />
   </Folder>
   <Folder Name="/8.Samples/">
     <Project Path="samples/SimpleApp/SimpleApp.csproj" />

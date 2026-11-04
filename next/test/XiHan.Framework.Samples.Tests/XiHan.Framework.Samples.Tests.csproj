@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Samples.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 只保证构建顺序：测试以独立进程启动示例，不引用它的程序集 -->
+    <ProjectReference Include="../../samples/SimpleApp/SimpleApp.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

@@ -61,7 +61,10 @@ app.MapXiHanProto();     // GET /operations.proto：从同一份 Schema 生成�
 app.MapXiHanCloudEvents().RequireXiHanPermission(OrdersFeature.DeliverEventsPermission);
 
 app.MapGet("/", () => $"{FrameworkInfo.Name} {FrameworkInfo.Version}");
-app.MapGet("/greet", (string? name, GreetingCounter counter) => new Greeting($"Hello, {name ?? "XiHan"}!", counter.Count));
+
+// /greet、/orders/stats、/whoami 的 JSON 响应不是操作契约：OpenAPI 只引用已登记操作的 Schema，不另做推导，引用不到时整份文档生成失败（PROTOCOLS_VALIDATION_010），所以不进文档
+app.MapGet("/greet", (string? name, GreetingCounter counter) => new Greeting($"Hello, {name ?? "XiHan"}!", counter.Count)).ExcludeFromDescription();
+
 app.MapGet("/missing", (HttpContext http) =>
 {
     // 把失败结果写进调用上下文，Egress 由宿主翻译为 RFC 9457 Problem Details
@@ -69,12 +72,12 @@ app.MapGet("/missing", (HttpContext http) =>
     return Results.Empty;
 });
 
-app.MapGet("/orders/stats", (OrderEventCounter counter) => new OrderStatistics(counter.Handled)).RequireXiHanAuthentication();
+app.MapGet("/orders/stats", (OrderEventCounter counter) => new OrderStatistics(counter.Handled)).RequireXiHanAuthentication().ExcludeFromDescription();
 
 app.MapGet("/whoami", (HttpContext http) =>
 {
     var security = http.GetXiHanContext().ValueOrThrow().GetSecurity();
     return new WhoAmI(security.Principal.Id, security.Principal.IsAuthenticated, security.Tenant?.Id);
-});
+}).ExcludeFromDescription();
 
 app.Run();
