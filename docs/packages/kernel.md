@@ -9,7 +9,7 @@
 | 能力 | 清单 `xihan.kernel.core` 提供 `kernel.hosting@1`、`kernel.capabilities@1`、`kernel.pipeline@1`、`kernel.diagnostics@1`、`kernel.security@1`、`kernel.plugins@1` |
 | 特性入口 | 内核清单永远参与求解，不需要 `UseFeature` |
 | 配置节 | `XiHan:Kernel`、`XiHan:Kernel:Resilience`、`XiHan:Providers`、`XiHan:Bindings` |
-| 依赖 | `Primitives`；`Microsoft.Extensions.*` 抽象包（Configuration、DependencyInjection、Hosting、Logging、Options）与 `System.Threading.RateLimiting` 10.0.14 |
+| 依赖 | `Primitives`；`Microsoft.Extensions.*` 抽象包（Configuration、DependencyInjection、Hosting、Logging、Options）与 `System.Threading.RateLimiting` |
 | AOT | 兼容，零反射 |
 | 稳定性 | 核心类型 `Stable`（`AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`PipelineBuilder`），其余以各类型的 `[ApiLevel]` 为准 |
 
@@ -38,8 +38,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Kernel" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Kernel --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

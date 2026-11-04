@@ -37,8 +37,8 @@ L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Caching.Hybrid" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Caching.Hybrid --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包需要一个 `caching.distributed` 的提供者作 L2：

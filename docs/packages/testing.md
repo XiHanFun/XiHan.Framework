@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | —（`StubFeature` 是测试用的特性桩） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.Configuration` 10.0.14、`Microsoft.Extensions.DependencyInjection` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection` |
 | AOT | 兼容 |
 | 稳定性 | Stable |
 
@@ -27,8 +27,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Testing" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Testing --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](../guide/testing#测试项目)。

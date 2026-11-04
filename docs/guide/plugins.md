@@ -31,7 +31,7 @@ Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间以
   "$schema": "https://spec.xihanfun.com/manifest/v1.json",
   "id": "xihan.samples.echo",
   "package": "EchoPlugin",
-  "version": "5.0.0-preview.1",
+  "version": "1.0.0",
   "primitives": "1",
   "stability": "experimental",
   "kind": "plugin",

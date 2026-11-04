@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | — |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Google.Protobuf` 3.36.2、`Grpc.Core.Api` 2.85.0（`Grpc.Tools` 2.85.0 只在构建期） |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Google.Protobuf`、`Grpc.Core.Api`（`Grpc.Tools` 只在构建期） |
 | AOT | 不兼容（`Google.Protobuf` 的描述符反射未声明裁剪兼容） |
 | 稳定性 | Preview |
 
@@ -27,8 +27,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Plugins.Protocol" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Plugins.Protocol --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性入口；两个插件宿主特性在 `Configure` 时自己登记消息目录 `PluginMessages.Catalog`（目录名 `plugins.protocol`，10 种区域各一个文件）。

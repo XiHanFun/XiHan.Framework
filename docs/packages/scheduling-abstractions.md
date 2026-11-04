@@ -9,7 +9,7 @@
 | 能力 | 定义 `scheduling.jobs@1`（`SchedulingCapabilities.Jobs`）与 `scheduling.leader@1`（`SchedulingCapabilities.Leader`）的契约，本包不提供能力 |
 | 特性入口 | — |
 | 配置节 | `XiHan:Scheduling`（`SchedulerOptions`，由 Provider 读取） |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
@@ -29,8 +29,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Scheduling.Abstractions" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Scheduling.Abstractions --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业：

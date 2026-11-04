@@ -25,8 +25,8 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Hosting.AspNetCore" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Hosting.AspNetCore --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
@@ -109,7 +109,7 @@ app.MapGet("/me", (HttpContext http) =>
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 
-PipelineBypassMetadata.BypassXiHanPipeline(app.MapGet("/version", () => "5.0.0-preview.1"));
+PipelineBypassMetadata.BypassXiHanPipeline(app.MapGet("/version", () => "1.0.0"));
 ```
 
 SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](../guide/realtime)。

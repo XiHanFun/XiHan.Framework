@@ -37,4 +37,4 @@
 
 ## 状态
 
-P1：公开面已按 RFC-0001 填充，记录在 `PublicAPI.Unshipped.txt`，5.0.0 发布时转入 Shipped 并冻结。
+P1：公开面已按 RFC-0001 填充，记录在 `PublicAPI.Unshipped.txt`，正式版发布时转入 Shipped 并冻结。

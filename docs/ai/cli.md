@@ -35,7 +35,7 @@ dotnet run --project framework/samples/SimpleCli -- invoke greetings.create --js
 `XiHan.Framework.Cli` 是一个 .NET 工具，命令名 `xihan`。框架尚未发布到 nuget.org，从本地包源安装（打包步骤见[快速上手](../quickstart#获取预览包)）：
 
 ```bash
-dotnet tool install --global XiHan.Framework.Cli --version 5.0.0-preview.1 --add-source ./framework/artifacts/packages
+dotnet tool install --global XiHan.Framework.Cli --prerelease --add-source ./framework/artifacts/packages
 ```
 
 | 命令 | 说明 |

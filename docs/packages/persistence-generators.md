@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | — |
 | 配置节 | — |
-| 依赖 | `Microsoft.CodeAnalysis.CSharp` 4.14.0（仅编译期）；生成的代码引用 `XiHan.Framework.Domain` 与 `XiHan.Framework.Persistence.Abstractions` |
+| 依赖 | `Microsoft.CodeAnalysis.CSharp`（仅编译期）；生成的代码引用 `XiHan.Framework.Domain` 与 `XiHan.Framework.Persistence.Abstractions` |
 | AOT | 不兼容（`IsAotCompatible` 为 `false`：生成器在编译期运行，以 `netstandard2.0` 发布）；生成的代码不含反射，可用于 AOT 应用 |
 | 稳定性 | Preview |
 
@@ -33,8 +33,8 @@
 
 以分析器引用，不把生成器程序集带进运行时：
 
-```xml
-<PackageReference Include="XiHan.Framework.Persistence.Generators" Version="5.0.0-preview.1" PrivateAssets="all" />
+```bash
+dotnet add package XiHan.Framework.Persistence.Generators --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。在仓库里以项目引用时写成：

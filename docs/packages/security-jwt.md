@@ -9,7 +9,7 @@
 | 能力 | 提供 `security.authentication@1`；依赖 `kernel.hosting@1` |
 | 特性入口 | `JwtSecurityFeature`（清单 `xihan.security.jwt`，`role: provider`） |
 | 配置节 | `XiHan:Security:Jwt` |
-| 依赖 | `XiHan.Framework.Security.Abstractions`、`Microsoft.IdentityModel.JsonWebTokens` 8.23.0 |
+| 依赖 | `XiHan.Framework.Security.Abstractions`、`Microsoft.IdentityModel.JsonWebTokens` |
 | AOT | 不兼容（`IsAotCompatible` 为 `false`：Microsoft.IdentityModel 未声明 AOT 兼容） |
 | 稳定性 | Preview |
 
@@ -29,8 +29,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Security.Jwt" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Security.Jwt --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

@@ -10,7 +10,7 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 | 特性入口 | `VectorDataKnowledgeFeature`（清单 `xihan.ai.vectordata`，`IHostedFeature`） |
 | 配置节 | `XiHan:AI`（用到 `Knowledge:Dimensions`、`Knowledge:Collection`，本包自己的 `VectorData:HealthProbeIntervalSeconds`） |
 | 健康项 | `ai.vectordata.store`（向量存储是否应答） |
-| 依赖 | `XiHan.Framework.AI.Abstractions`；`Microsoft.Extensions.VectorData.Abstractions` 10.11.0 |
+| 依赖 | `XiHan.Framework.AI.Abstractions`；`Microsoft.Extensions.VectorData.Abstractions` |
 | AOT | 不兼容（VectorData 的记录映射基于反射与表达式，csproj 设 `IsAotCompatible=false`） |
 | 稳定性 | Preview |
 
@@ -34,12 +34,12 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 
 ## 何时使用
 
-需要 RAG、语义检索时。向量库的选择由连接器决定（内存、Qdrant、PostgreSQL pgvector、Redis、Azure AI Search 等），换库只换连接器，一致性套件保证语义相同。连接器要接受 `Guid` 键；Microsoft 的连接器已迁到 `CommunityToolkit.VectorData.*` 包，要选这些包：旧的 `Microsoft.SemanticKernel.Connectors.Qdrant` 1.74.0-preview 与 VectorData 10.11.0 不兼容，搜索时报找不到 `VectorSearchFilter` 类型。本包不进 `Profiles.Full`，因为它需要应用登记向量存储。
+需要 RAG、语义检索时。向量库的选择由连接器决定（内存、Qdrant、PostgreSQL pgvector、Redis、Azure AI Search 等），换库只换连接器，一致性套件保证语义相同。连接器要接受 `Guid` 键；Microsoft 的连接器已迁到 `CommunityToolkit.VectorData.*` 包，要选这些包：旧的 `Microsoft.SemanticKernel.Connectors.Qdrant` 预览包与当前的 VectorData 不兼容，搜索时报找不到 `VectorSearchFilter` 类型。本包不进 `Profiles.Full`，因为它需要应用登记向量存储。
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.AI.VectorData" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.AI.VectorData --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器：

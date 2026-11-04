@@ -9,7 +9,7 @@
 | 能力 | 定义 `persistence.relational@1`（`persistence.document@1` 预留），由 Provider 提供；可选特性 `SnowflakeIdFeature` 依赖 `kernel.hosting@1`，可选依赖 `caching.distributed@1`（只为启停顺序） |
 | 特性入口 | `SnowflakeIdFeature`（可选，雪花标识） |
 | 配置节 | `XiHan:Persistence:Snowflake` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Domain`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Domain`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
 | 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`DomainEventTracker`、`IDomainEventDispatcher`、`TimeRange`、`LongTextAttribute`、`EntityIndexAttribute` / `EntityIndexes` / `EntityIndex` 与雪花标识相关类型为 Preview |
 
@@ -29,8 +29,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Persistence.Abstractions" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Persistence.Abstractions --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已包含本包与内存实现。

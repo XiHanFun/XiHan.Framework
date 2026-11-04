@@ -9,7 +9,7 @@
 | 能力 | 定义 `messaging.queue@1`、`messaging.stream@1`（`MessagingCapabilities`），本包不提供；`OutboxFeature` 依赖 `kernel.hosting@1`、`messaging.queue@1`、`persistence.relational@1` |
 | 特性入口 | `OutboxFeature`（清单 ID `xihan.messaging.outbox`，可选） |
 | 配置节 | `XiHan:Messaging`（`MaxAttempts`、`DeadLetterSuffix`、`InstanceId`，由 Provider 读取）、`XiHan:Messaging:Outbox` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
 | 稳定性 | Stable；`IMessageReplayer` 与领域事件类型（`DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher`）为 Preview |
 
@@ -32,8 +32,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Messaging.Abstractions" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Messaging.Abstractions --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。订阅写在特性的 `Configure` 里，或直接写在 `builder.Services` 上；发件箱按需装配：

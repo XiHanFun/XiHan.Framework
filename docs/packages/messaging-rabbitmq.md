@@ -9,7 +9,7 @@
 | 能力 | 提供 `messaging.queue@1`（`role: provider`）；依赖 `kernel.hosting@1` |
 | 特性入口 | `RabbitMQMessagingFeature`（清单 ID `xihan.messaging.rabbitmq`） |
 | 配置节 | `XiHan:Messaging:RabbitMQ`、`XiHan:Messaging`；可选绑定 `queue`（类型 `queue`） |
-| 依赖 | `XiHan.Framework.Messaging.Abstractions`；`RabbitMQ.Client` 7.2.2 |
+| 依赖 | `XiHan.Framework.Messaging.Abstractions`；`RabbitMQ.Client` |
 | AOT | 不兼容（`IsAotCompatible=false`，RabbitMQ.Client 未声明 AOT 兼容） |
 | 稳定性 | Preview |
 
@@ -37,8 +37,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Messaging.RabbitMQ" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Messaging.RabbitMQ --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

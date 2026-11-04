@@ -11,7 +11,7 @@
 放进项目的 `AGENTS.md`、`CLAUDE.md`、`.cursor/rules` 或 `.github/copilot-instructions.md`：
 
 ```text
-这个项目的后端用 XiHan Framework（5.0.0-preview.1，.NET 10）。写代码前读文档站的 llms.txt，按需取其中列出的页面（页面地址后加 .md 得到 Markdown）。
+这个项目的后端用 XiHan Framework（.NET 10）。写代码前读文档站的 llms.txt，按需取其中列出的页面（页面地址后加 .md 得到 Markdown）。
 
 框架的写法：
 - 装配：特性实现 IFeature，带 Manifest（按能力 ID 声明 Requires），在 Program.cs 用 builder.AddXiHan(x => x.UseFeature<T>()) 显式加入；服务在 Configure 里显式注册。

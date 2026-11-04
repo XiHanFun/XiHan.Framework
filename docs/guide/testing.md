@@ -20,15 +20,15 @@
     <TargetFramework>net10.0</TargetFramework>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
-    <PackageReference Include="xunit.v3" Version="4.0.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
-    <PackageReference Include="XiHan.Framework.Testing" Version="5.0.0-preview.1" />
-  </ItemGroup>
 </Project>
+```
+
+```bash
+dotnet add package Microsoft.NET.Test.Sdk
+dotnet add package xunit.v3
+dotnet add package xunit.runner.visualstudio
+dotnet add package Microsoft.Testing.Extensions.CodeCoverage
+dotnet add package XiHan.Framework.Testing --prerelease
 ```
 
 .NET 10 的 MTP 模式下，`dotnet test` 用 `--solution` 或 `--project` 指定目标（在仓库根执行）：

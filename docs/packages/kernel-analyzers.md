@@ -9,7 +9,7 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 | 能力 | — |
 | 特性入口 | —（分析器 `PublicTypeAnalyzer`、`InternalApiUsageAnalyzer`、`ReflectionUsageAnalyzer`） |
 | 配置节 | —（范围由 MSBuild 属性 `XiHanFrameworkPackage`、`XiHanRing` 控制） |
-| 依赖 | 只在构建期使用 `Microsoft.CodeAnalysis.CSharp` 4.14.0；目标 `netstandard2.0`，开发依赖，不进入运行时 |
+| 依赖 | 只在构建期使用 `Microsoft.CodeAnalysis.CSharp`；目标 `netstandard2.0`，开发依赖，不进入运行时 |
 | AOT | 不适用（编译期组件） |
 | 稳定性 | —（编译期组件，不标注 `[ApiLevel]`；五条规则可用） |
 
@@ -37,10 +37,8 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 
 ## 安装与启用
 
-```xml
-<ItemGroup>
-  <PackageReference Include="XiHan.Framework.Kernel.Analyzers" Version="5.0.0-preview.1" PrivateAssets="all" />
-</ItemGroup>
+```bash
+dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。框架包对分析器的引用带 `PrivateAssets="all"`，不会传递给应用；应用要用 XH0003 时自己引用。

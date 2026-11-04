@@ -129,6 +129,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。能力按环层拆�
 
 - 改变公开 API、默认值、配置、生命周期或使用方式时，同步更新 XML 文档、包 README、示例和文档站。
 - 示例只展示推荐路径，也不把应用专用基础设施包装成框架默认方案。
+- 文档正文（`docs/`、README）不写包版本，依赖和框架自身的都不写，否则每次升级都要改文档：安装写 `dotnet add package <包>`，要表达版本时用 `<版本>` 占位，用 `framework/Directory.Packages.props` 与 `framework/Directory.Build.props` 作为版本出处。规则只管正文，更新日志除外；`docs/package.json`、站点配置与工程文件里的版本都不动。
 - 文档命令在 `docs/` 执行；源码命令在仓库根执行。
 
 ## 发布

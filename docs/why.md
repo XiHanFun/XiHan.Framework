@@ -21,7 +21,7 @@
 多数模块化框架把依赖写在特性或基类上，依赖关系要到运行时才知道。这里每个特性带一份清单，按能力 ID 声明依赖：
 
 ```text
-xihan.persistence.inmemory 5.0.0-preview.1 (default)
+xihan.persistence.inmemory <版本> (default)
   provides persistence.relational@1
   requires kernel.hosting@1 -> xihan.kernel.core
 ```

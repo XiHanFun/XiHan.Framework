@@ -9,7 +9,7 @@
 | 能力 | —（插件清单依赖内核提供的 `kernel.plugins@1`） |
 | 特性入口 | —（应用直接创建 `InProcessPluginHost`） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.DependencyInjection` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.DependencyInjection` |
 | AOT | 不兼容（框架里唯一允许运行期反射的包，构造函数标注 `RequiresDynamicCode` / `RequiresUnreferencedCode`） |
 | 稳定性 | Preview |
 
@@ -29,8 +29,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Plugins.InProcess" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Plugins.InProcess --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性入口，失败结果的文案要由宿主应用注册消息目录（RFC-0010）：

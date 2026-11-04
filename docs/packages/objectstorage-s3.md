@@ -9,7 +9,7 @@
 | 能力 | 提供 `objectstorage.blob@1`、`objectstorage.multipart@1`、`objectstorage.presign@1`（`role: provider`）；依赖 `kernel.hosting@1`；可选绑定 `objectstorage`（`blob`） |
 | 特性入口 | `S3ObjectStorageFeature` |
 | 配置节 | `XiHan:ObjectStorage:S3` |
-| 依赖 | `XiHan.Framework.ObjectStorage.Abstractions`；`AWSSDK.S3` 4.0.104.8 |
+| 依赖 | `XiHan.Framework.ObjectStorage.Abstractions`；`AWSSDK.S3` |
 | AOT | 不兼容（AWS SDK 的请求编组基于运行时反射） |
 | 稳定性 | Preview |
 
@@ -27,8 +27,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.ObjectStorage.S3" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.ObjectStorage.S3 --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

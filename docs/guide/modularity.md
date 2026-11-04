@@ -152,13 +152,13 @@ public sealed class OrdersFeature : IFeature
 已解析图在启动日志（Information 级别）里打印，命令行宿主的 `graph` 命令输出同一份内容，`(default)` 标出以默认角色被选中的节点：
 
 ```text
-xihan.kernel.core 5.0.0-preview.1
+xihan.kernel.core <版本>
   provides kernel.hosting@1
   ...
-xihan.persistence.inmemory 5.0.0-preview.1 (default)
+xihan.persistence.inmemory <版本> (default)
   provides persistence.relational@1
   requires kernel.hosting@1 -> xihan.kernel.core
-xihan.caching.inmemory 5.0.0-preview.1 (default)
+xihan.caching.inmemory <版本> (default)
   provides caching.local@1
   provides caching.distributed@1
   requires kernel.hosting@1 -> xihan.kernel.core

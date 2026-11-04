@@ -9,7 +9,7 @@
 | 能力 | 定义 `objectstorage.blob@1`、`objectstorage.multipart@1`、`objectstorage.presign@1`，由 [ObjectStorage.FileSystem](./objectstorage-filesystem)（默认实现）、[ObjectStorage.S3](./objectstorage-s3) 与 [Hosting.AspNetCore](./hosting-aspnetcore) 提供 |
 | 特性入口 | — |
 | 配置节 | `XiHan:ObjectStorage:Stores`、`XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` 10.0.14、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
@@ -27,8 +27,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.ObjectStorage.Abstractions" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。

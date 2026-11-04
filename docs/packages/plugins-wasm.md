@@ -9,7 +9,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 | 能力 | 提供 `plugins.wasm@1`；依赖 `kernel.hosting@1` |
 | 特性入口 | `WasmPluginsFeature` |
 | 配置节 | `XiHan:Plugins:Wasm` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Plugins.Protocol`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Wasmtime` 48.0.2（含各平台原生库） |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Plugins.Protocol`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Wasmtime`（含各平台原生库） |
 | AOT | 不兼容（wasmtime 原生绑定与 `Google.Protobuf` 都未声明 AOT 兼容） |
 | 稳定性 | Experimental |
 
@@ -30,8 +30,8 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Plugins.Wasm" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Plugins.Wasm --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
@@ -132,7 +132,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 {
   "id": "xihan.samples.echowasm",
   "package": "EchoWasmPlugin",
-  "version": "5.0.0-preview.1",
+  "version": "1.0.0",
   "primitives": "1",
   "stability": "experimental",
   "kind": "plugin",

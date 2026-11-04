@@ -15,7 +15,7 @@
   "project": "KubernetesApp.csproj",
   "profile": "full",
   "build": { "context": "../.." },
-  "image": { "repository": "ghcr.io/xihanfun/kubernetes-app", "tag": "5.0.0-preview.1" },
+  "image": { "repository": "ghcr.io/xihanfun/kubernetes-app", "tag": "1.0.0" },
   "ports": { "http": 8080, "grpc": 8081 },
   "config": { "files": ["appsettings.Production.json"] },
   "probes": { "startupSeconds": 60, "periodSeconds": 10, "timeoutSeconds": 2 },
@@ -302,8 +302,8 @@ SimpleApp 做到可 AOT 发布的写法：项目文件声明 `<PublishAot>true</
 
    ```bash
    cd framework
-   docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1 .
-   kind load docker-image ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1
+   docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:<tag> .   # <tag> 是 xihan.app.json 的 image.tag
+   kind load docker-image ghcr.io/xihanfun/kubernetes-app:<tag>
    ```
 
 4. 部署并转发端口：

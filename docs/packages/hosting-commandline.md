@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | —（`AddXiHanCommandLine()` 登记） |
 | 配置节 | —；环境变量 `XIHAN_CONFIG_PATH`（挂载的配置目录）、`XIHAN_AUTHORIZATION`（缺省凭据） |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Hosting` 10.0.14、`Microsoft.Extensions.Configuration.Json` 10.0.14、`Microsoft.Extensions.Logging.Console` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Hosting`、`Microsoft.Extensions.Configuration.Json`、`Microsoft.Extensions.Logging.Console` |
 | AOT | 兼容（`IsAotCompatible`） |
 | 稳定性 | Preview |
 
@@ -25,8 +25,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Hosting.CommandLine" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Hosting.CommandLine --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

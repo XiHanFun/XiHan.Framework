@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | —（命令名 `xihan`，`PackAsTool`） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Hosting.CommandLine`（解析、帮助、失败输出、退出码）、`XiHan.Framework.Localization.InMemory`（文案）、`XiHan.Framework.Protocols.Mcp`（`mcp` 的协议与 stdio 传输，带入 ASP.NET Core 共享框架）；`Microsoft.CodeAnalysis.CSharp` 4.14.0（`migrate` 的语法树） |
+| 依赖 | `XiHan.Framework.Hosting.CommandLine`（解析、帮助、失败输出、退出码）、`XiHan.Framework.Localization.InMemory`（文案）、`XiHan.Framework.Protocols.Mcp`（`mcp` 的协议与 stdio 传输，带入 ASP.NET Core 共享框架）；`Microsoft.CodeAnalysis.CSharp`（`migrate` 的语法树） |
 | AOT | 不适用（以框架依赖的 .NET 工具运行） |
 | 稳定性 | Preview |
 
@@ -37,7 +37,7 @@
 ## 安装与启用
 
 ```bash
-dotnet tool install --global XiHan.Framework.Cli --version 5.0.0-preview.1
+dotnet tool install --global XiHan.Framework.Cli --prerelease
 xihan version
 ```
 
@@ -86,7 +86,7 @@ xihan migrate <来源版本> [--path <目录|.csproj|.slnx>] [--fixers <规则�
 
 ```bash
 xihan mcp [--path <项目目录>] [--locale <区域>]
-dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- mcp    # 不安装、按版本运行（编码助手配置里的写法）
+dnx XiHan.Framework.Cli@<版本> --yes -- mcp    # 不安装、按版本运行（编码助手配置里的写法）
 ```
 
 以 stdio 提供 MCP 服务（协议版本 `2025-06-18`），stdout 每行一条 JSON-RPC 消息，stdin 关闭即退出。工具内嵌一个最小的 XiHan 应用（内存本地化 + `Protocols.Mcp` + 三个只读、只暴露给 MCP 的操作），协议、`tools/list` 与 `tools/call` 都由 [Protocols.Mcp](./protocols-mcp) 处理；tool 的标题与描述按 `--locale`（或当前 UI 区域）取自工具的消息目录。服务名 `xihan-framework`。
@@ -105,7 +105,7 @@ dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- mcp    # 不安装、按版本�
 
 ```bash
 xihan setup --client <claude|cursor|vscode|codex> [--mode mcp|skill|both] [--pin <版本>] [--path <目录>] [--dry-run] [--check]
-dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- setup --client claude    # 不安装、按版本运行
+dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装、按版本运行
 ```
 
 把 `mcp` 服务（服务名 `xihan-framework`，命令 `dnx XiHan.Framework.Cli@<版本> --yes -- mcp`）写进编码助手的项目配置，并按 `--mode` 写入使用技能：

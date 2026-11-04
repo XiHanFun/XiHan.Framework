@@ -12,7 +12,7 @@
 
 ## 获取预览包
 
-框架尚未发布到 nuget.org。框架源码在 [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) 仓库，包的版本是 `5.0.0-preview.1`。两种引用方式任选其一。
+框架尚未发布到 nuget.org。框架源码在 [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) 仓库。两种引用方式任选其一。
 
 ### 方式一：源码引用
 
@@ -54,7 +54,7 @@
    dotnet pack framework/XiHan.Framework.slnx -c Release --no-build
    ```
 
-   包写到 `framework/artifacts/packages/`，文件名形如 `XiHan.Framework.Kernel.5.0.0-preview.1.nupkg`。
+   包写到 `framework/artifacts/packages/`，文件名形如 `XiHan.Framework.Kernel.<版本>.nupkg`。
 
 2. 在应用的解决方案目录放一个 `nuget.config`，把这个目录登记为包源：
 
@@ -67,14 +67,12 @@
    </configuration>
    ```
 
-3. 应用项目以 `PackageReference` 引用，版本写 `5.0.0-preview.1`：
+3. 在应用项目里添加引用：
 
-   ```xml
-   <ItemGroup>
-     <PackageReference Include="XiHan.Framework.Profiles.Minimal" Version="5.0.0-preview.1" />
-     <PackageReference Include="XiHan.Framework.Protocols.Http" Version="5.0.0-preview.1" />
-     <PackageReference Include="XiHan.Framework.Kernel.Generators" Version="5.0.0-preview.1" PrivateAssets="all" />
-   </ItemGroup>
+   ```bash
+   dotnet add package XiHan.Framework.Profiles.Minimal --prerelease
+   dotnet add package XiHan.Framework.Protocols.Http --prerelease
+   dotnet add package XiHan.Framework.Kernel.Generators --prerelease
    ```
 
 `Kernel.Generators` 是开发期依赖，只在编译时运行，不进入应用的运行时依赖。
@@ -195,13 +193,13 @@ dotnet run --urls http://localhost:5000
 
 ```text
 Capability graph:
-xihan.kernel.core 5.0.0-preview.1
+xihan.kernel.core <版本>
   provides kernel.hosting@1
   ...
-xihan.localization.inmemory 5.0.0-preview.1 (default)
+xihan.localization.inmemory <版本> (default)
   provides localization.resources@1
   requires kernel.hosting@1 -> xihan.kernel.core
-xihan.protocols.http 5.0.0-preview.1
+xihan.protocols.http <版本>
   provides protocols.http@1
   requires kernel.hosting@1 -> xihan.kernel.core
 xihan.hello.greetings 1.0.0

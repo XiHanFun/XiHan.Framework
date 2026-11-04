@@ -9,7 +9,7 @@
 | 能力 | 提供 `plugins.out-of-process@1`；依赖 `kernel.hosting@1` |
 | 特性入口 | `OutOfProcessPluginsFeature` |
 | 配置节 | `XiHan:Plugins:OutOfProcess` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Plugins.Protocol`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；ASP.NET Core 共享框架；`Grpc.AspNetCore.Server` 2.85.0、`Grpc.Net.Client` 2.85.0 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Plugins.Protocol`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；ASP.NET Core 共享框架；`Grpc.AspNetCore.Server`、`Grpc.Net.Client` |
 | AOT | 不兼容（`Google.Protobuf` 的描述符反射未声明裁剪兼容） |
 | 稳定性 | Preview |
 
@@ -30,8 +30,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Plugins.OutOfProcess" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Plugins.OutOfProcess --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

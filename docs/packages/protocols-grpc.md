@@ -9,7 +9,7 @@ gRPC 协议适配器，提供 `protocols.grpc@1`：把 `Expose.Grpc` 的操作�
 | 能力 | 提供 `protocols.grpc@1`；依赖 `kernel.hosting@1` |
 | 特性入口 | `GrpcProtocolFeature` |
 | 配置节 | `XiHan:Protocols:Grpc` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Localization.Abstractions`；`Grpc.AspNetCore.Server` 2.85.0；共享框架 `Microsoft.AspNetCore.App` |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Localization.Abstractions`；`Grpc.AspNetCore.Server`；共享框架 `Microsoft.AspNetCore.App` |
 | AOT | 兼容（`IsAotCompatible`） |
 | 稳定性 | Preview |
 
@@ -25,8 +25,8 @@ gRPC 协议适配器，提供 `protocols.grpc@1`：把 `Expose.Grpc` 的操作�
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Protocols.Grpc" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Protocols.Grpc --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。

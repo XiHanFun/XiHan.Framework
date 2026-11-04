@@ -9,7 +9,7 @@
 | 能力 | 定义 `configuration.remote@1` 与 `configuration.secrets@1`，本包不提供实现 |
 | 特性入口 | — |
 | 配置节 | —（Provider 的配置节在各自包里，如 `XiHan:Configuration:Nacos`） |
-| 依赖 | `XiHan.Framework.Primitives`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` 10.0.14 |
+| 依赖 | `XiHan.Framework.Primitives`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
@@ -30,8 +30,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Configuration.Abstractions" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Configuration.Abstractions --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 引用了本包。

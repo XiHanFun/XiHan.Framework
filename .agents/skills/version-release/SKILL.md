@@ -9,7 +9,7 @@ description: 为 XiHan.Framework 准备版本、更新 framework/Directory.Build
 
 - 工作区干净，无 merge/rebase、冲突或 detached HEAD；目标版本、通道和目标分支明确。
 - `framework/Directory.Build.props` 的 `<Version>` 是所有包的版本真源；tag 使用 `vX.Y.Z[-tag.N]`，且必须与 `<Version>` 完全相等。
-- `docs/changelog.md` 记录用户可感知变化；`docs/package.json` 的站点版本必须与产品版本同步。
+- `docs/changelog.md` 记录用户可感知变化；`docs/package.json` 的站点版本必须与产品版本同步；其余文档不写版本，发版不用改。
 - 发布工作流会打包并推送全部 NuGet 包，不能用它试跑版本选择。
 - 发布分支：预览版从 `preview` 发，正式版从 `main` 发，都由 `dev` 快进；标签打在对应分支的历史上。
 

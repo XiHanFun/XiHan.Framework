@@ -16,8 +16,8 @@ curl -s localhost:5100/leader                            # election = InMemoryLe
 
 ```bash
 cd framework
-docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1 .   # build.context 指向 framework/，镜像里只有发布产物
-kind load docker-image ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1
+docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:<tag> .   # build.context 指向 framework/，镜像里只有发布产物
+kind load docker-image ghcr.io/xihanfun/kubernetes-app:<tag>
 kubectl apply -k samples/KubernetesApp/deploy/kustomize
 kubectl rollout status deployment/kubernetes-app
 kubectl port-forward service/kubernetes-app 8080:8080

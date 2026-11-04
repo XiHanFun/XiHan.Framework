@@ -87,7 +87,7 @@ public sealed class AuditRecord : IEntity<Guid> { … }
 
 依赖 `Persistence.Abstractions`、`MultiTenancy.Abstractions`（分片绑定，能力可选）与 `SqlSugarCore`（自带各数据库驱动）。应用从 `SqlSugarCore` 换成 `SqlSugarCoreNoDrive` + 单个驱动时须整体替换，两者不能并存。
 
-另显式依赖 `Microsoft.Data.Sqlite` 10.0.14（ADR-0097）：`SqlSugarCore` 5.1.4.221 声明的是 `>= 10.0.11`，NuGet 按下限解析，SQLite 上就带着连接池激活的竞态（dotnet/efcore#39008，10.0.13 修复）——并发打开连接时两个连接可能共用一个原生连接（"cannot start a transaction within a transaction"），清池时正在打开的连接被释放（`ObjectDisposedException`）。显式依赖写进本包的 nuspec，引用本包的应用也解析到 10.0.13（连带 `Microsoft.Data.Sqlite.Core` 10.0.13、`SQLitePCLRaw` 2.1.13）；应用自己直接引用了更低版本时 NuGet 报降级 `NU1605`，删掉那个引用或抬到 10.0.13。不用 SQLite 的应用不多出依赖：`SqlSugarCore` 本来就带着它。
+另显式依赖 `Microsoft.Data.Sqlite`（ADR-0097）：`SqlSugarCore` 声明的下限版本带着连接池激活的竞态（dotnet/efcore#39008），NuGet 按下限解析，SQLite 上就会用到它——并发打开连接时两个连接可能共用一个原生连接（"cannot start a transaction within a transaction"），清池时正在打开的连接被释放（`ObjectDisposedException`）。显式依赖写进本包的 nuspec，引用本包的应用也解析到修复后的版本；应用自己直接引用了更低版本时 NuGet 报降级 `NU1605`，删掉那个引用或抬到本包要求的版本。不用 SQLite 的应用不多出依赖：`SqlSugarCore` 本来就带着它。
 
 ## 状态
 

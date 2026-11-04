@@ -9,7 +9,7 @@
 | 能力 | 提供 `configuration.remote@1`（`role: provider`）；依赖 `kernel.hosting@1`；可选绑定 `nacos`（`configuration:remote`） |
 | 特性入口 | `NacosConfigurationFeature` |
 | 配置节 | `XiHan:Configuration:Nacos` |
-| 依赖 | `XiHan.Framework.Configuration.Abstractions`、`XiHan.Framework.Kernel`；`Microsoft.Extensions.Http` 10.0.14 |
+| 依赖 | `XiHan.Framework.Configuration.Abstractions`、`XiHan.Framework.Kernel`；`Microsoft.Extensions.Http` |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
@@ -28,8 +28,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Configuration.Nacos" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Configuration.Nacos --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

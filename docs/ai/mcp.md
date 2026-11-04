@@ -27,7 +27,7 @@ dnx XiHan.Framework.Cli --yes -- setup --client claude    # 或 cursor、vscode�
   "mcpServers": {
     "xihan-framework": {
       "command": "dnx",
-      "args": ["XiHan.Framework.Cli@5.0.0-preview.1", "--yes", "--", "mcp"]
+      "args": ["XiHan.Framework.Cli@<版本>", "--yes", "--", "mcp"]
     }
   }
 }

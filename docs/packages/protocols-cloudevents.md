@@ -29,8 +29,8 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Protocols.CloudEvents" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Protocols.CloudEvents --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。

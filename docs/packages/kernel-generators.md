@@ -9,7 +9,7 @@ Roslyn 源生成器：扫描标注 `[Operation]` 且实现 `IOperation<TRequest,
 | 能力 | — |
 | 特性入口 | —（生成的扩展方法 `AddGeneratedOperations(this FeatureContext)`） |
 | 配置节 | —（输出命名空间取 MSBuild 属性 `RootNamespace`） |
-| 依赖 | 只在构建期使用 `Microsoft.CodeAnalysis.CSharp` 4.14.0；目标 `netstandard2.0`，开发依赖；生成的代码引用 `XiHan.Framework.Kernel` |
+| 依赖 | 只在构建期使用 `Microsoft.CodeAnalysis.CSharp`；目标 `netstandard2.0`，开发依赖；生成的代码引用 `XiHan.Framework.Kernel` |
 | AOT | 生成的代码 AOT 兼容（序列化元数据来自源生成的 `JsonSerializerContext`）；生成器本身是编译期组件 |
 | 稳定性 | —（编译期组件；输入特性 `OperationAttribute` 为 Stable，`OperationDefaultsAttribute` 为 Preview） |
 
@@ -52,8 +52,8 @@ Schema 的生成规则：
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Kernel.Generators" Version="5.0.0-preview.1" PrivateAssets="all" />
+```bash
+dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：

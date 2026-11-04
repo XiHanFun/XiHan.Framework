@@ -23,8 +23,8 @@
 
 一般不单独引用：内核与所有子系统包都依赖它，组合包会带上它。只写共享契约的类库可以单独引用：
 
-```xml
-<PackageReference Include="XiHan.Framework.Primitives" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Primitives --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

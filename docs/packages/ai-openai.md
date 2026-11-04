@@ -9,7 +9,7 @@ AI 的 OpenAI 兼容 Provider：`Kind = openai` 的 Provider 都由本包按配�
 | 能力 | 提供 `ai.chat@1`、`ai.embedding@1`（`role: provider`）；依赖 `kernel.hosting@1` |
 | 特性入口 | `OpenAIFeature`（清单 `xihan.ai.openai`） |
 | 配置节 | `XiHan:AI` |
-| 依赖 | `XiHan.Framework.AI.Abstractions`；`Microsoft.Extensions.AI` 10.11.0、`Microsoft.Extensions.AI.OpenAI` 10.11.0、`Microsoft.Extensions.Http` 10.0.14 |
+| 依赖 | `XiHan.Framework.AI.Abstractions`；`Microsoft.Extensions.AI`、`Microsoft.Extensions.AI.OpenAI`、`Microsoft.Extensions.Http` |
 | AOT | 不兼容（OpenAI SDK 未声明 AOT 兼容，csproj 设 `IsAotCompatible=false`） |
 | 稳定性 | Preview |
 
@@ -28,8 +28,8 @@ AI 的 OpenAI 兼容 Provider：`Kind = openai` 的 Provider 都由本包按配�
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.AI.OpenAI" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.AI.OpenAI --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

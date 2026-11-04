@@ -135,8 +135,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project fra
 
 ```bash
 dotnet run --project framework/samples/KubernetesApp                                  # 本地：进程内选举，http://localhost:5100/leader
-cd framework && docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1 .   # 构建上下文是 framework/（build.context）
-kind load docker-image ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1 && kubectl apply -k framework/samples/KubernetesApp/deploy/kustomize
+cd framework && docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:<tag> .   # 构建上下文是 framework/（build.context）
+kind load docker-image ghcr.io/xihanfun/kubernetes-app:<tag> && kubectl apply -k framework/samples/KubernetesApp/deploy/kustomize
 kubectl get lease kubernetes-app-scheduler                                         # 持有者是其中一个 Pod；删掉它后另一个 Pod 接管
 kubectl edit configmap kubernetes-app-config                                       # 改 Sample:Banner，稍后 /config 返回新值，无需重启
 ```

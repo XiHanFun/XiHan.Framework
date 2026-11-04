@@ -9,7 +9,7 @@
 | 能力 | 定义 `auditing.trail@1`（`AuditingCapabilities.Trail`），本包不提供；Provider 是 `Auditing.InMemory`、`Auditing.Database` |
 | 特性入口 | —（Provider 在装配时调用 `AddAuditing()`） |
 | 配置节 | `XiHan:Auditing` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` |
 | AOT | 兼容 |
 | 稳定性 | Preview（`AuditEvent`、`IAuditSink` 在内核，Stable） |
 
@@ -29,8 +29,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Auditing.Abstractions" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。两个 Provider 都依赖本包，装配 Provider 即可；`Profiles.Full` 已包含 `Auditing.InMemory`。

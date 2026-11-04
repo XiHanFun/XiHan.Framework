@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | —（抽象测试基类） |
 | 配置节 | — |
-| 依赖 | 各领域的 `.Abstractions`（部分套件另引用 `XiHan.Framework.Testing`）；`xunit.v3.assert` 4.0.2、`xunit.v3.extensibility.core` 4.0.2（不引用元包 `xunit.v3`，套件包不是可执行测试项目） |
+| 依赖 | 各领域的 `.Abstractions`（部分套件另引用 `XiHan.Framework.Testing`）；`xunit.v3.assert`、`xunit.v3.extensibility.core`（不引用元包 `xunit.v3`，套件包不是可执行测试项目） |
 | AOT | 不兼容（测试项目不以 AOT 发布） |
 | 稳定性 | 按基类的 `[ApiLevel]`，各节写明 |
 
@@ -19,8 +19,8 @@
 2. 写一个 `public sealed class` 继承套件基类，实现抽象的工厂方法；需要时覆写虚成员（时限、配置、容器）。
 3. `dotnet test --project <测试项目>` 运行，套件的每个 `[Fact]` 都作为这个类的用例出现。
 
-```xml
-<PackageReference Include="XiHan.Framework.Caching.Conformance" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。依赖真实服务的实现（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos）在框架仓库里以 `XIHAN_TEST_*` 环境变量提供连接，没设置时用 `Assert.SkipWhen` 跳过；自己的 Provider 可以照这个做法。
@@ -161,7 +161,7 @@ public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
 
 ## Plugins
 
-包 ID `XiHan.Framework.Plugins.Conformance`（RFC-0017、RFC-0018）：`xihan.plugin.v1` 插件的黑盒套件，以插件的构建产物目录为输入，任何语言写的插件都用它验证。依赖 `Plugins.Protocol`、`Plugins.OutOfProcess`（进程启动）、`Plugins.Wasm`（模块校验与实例）与 `Wasmtime` 48.0.2。
+包 ID `XiHan.Framework.Plugins.Conformance`（RFC-0017、RFC-0018）：`xihan.plugin.v1` 插件的黑盒套件，以插件的构建产物目录为输入，任何语言写的插件都用它验证。依赖 `Plugins.Protocol`、`Plugins.OutOfProcess`（进程启动）、`Plugins.Wasm`（模块校验与实例）与 `Wasmtime`。
 
 | 基类 | 稳定性 | 实现 | 可覆写 |
 | --- | --- | --- | --- |

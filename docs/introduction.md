@@ -3,7 +3,7 @@
 XiHan Framework 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现，以微内核、能力图谱与管道执行为核心。本页说明框架的整体形态、最小写法与文档组织，适合第一次接触框架的读者。
 
 ::: warning 框架处于预览阶段
-当前版本 `5.0.0-preview.1`，尚未发布到 nuget.org，取得方式见[快速上手](./quickstart#获取预览包)。
+框架尚未发布到 nuget.org，取得方式见[快速上手](./quickstart#获取预览包)。
 :::
 
 ## 框架的形态
@@ -149,22 +149,22 @@ app.Run();
 
 ## 技术栈
 
-| 类别 | 技术 | 版本 |
-| --- | --- | --- |
-| 运行时 | .NET | 10.0 |
-| 内核依赖 | `Microsoft.Extensions.*` 抽象包、`System.Threading.RateLimiting` | 10.0.14 |
-| 序列化 | System.Text.Json 源生成 | 随 .NET 10 |
-| ORM Provider | EF Core / SqlSugar | 10.0.14 / 5.1.4.221 |
-| 缓存 Provider | StackExchange.Redis | 3.4.31 |
-| 消息 Provider | RabbitMQ.Client / Confluent.Kafka | 7.2.2 / 2.16.0 |
-| 对象存储 Provider | AWSSDK.S3 | 4.0.104.8 |
-| 认证 Provider | Microsoft.IdentityModel.JsonWebTokens | 8.23.0 |
-| AI | Microsoft.Extensions.AI / VectorData | 10.11.0 |
-| gRPC | Grpc.AspNetCore.Server | 2.85.0 |
-| 可观测性 | OpenTelemetry | 1.20.1 |
-| Wasm 插件 | Wasmtime | 48.0.2 |
+| 类别 | 技术 |
+| --- | --- |
+| 运行时 | .NET 10 |
+| 内核依赖 | `Microsoft.Extensions.*` 抽象包、`System.Threading.RateLimiting` |
+| 序列化 | System.Text.Json 源生成 |
+| ORM Provider | EF Core / SqlSugar |
+| 缓存 Provider | StackExchange.Redis |
+| 消息 Provider | RabbitMQ.Client / Confluent.Kafka |
+| 对象存储 Provider | AWSSDK.S3 |
+| 认证 Provider | Microsoft.IdentityModel.JsonWebTokens |
+| AI | Microsoft.Extensions.AI / VectorData |
+| gRPC | Grpc.AspNetCore.Server |
+| 可观测性 | OpenTelemetry |
+| Wasm 插件 | Wasmtime |
 
-原语层、内核与全部抽象包不引用第三方库；第三方库只出现在按技术命名的 Provider 包里。
+具体版本以 `framework/Directory.Packages.props` 为准。原语层、内核与全部抽象包不引用第三方库；第三方库只出现在按技术命名的 Provider 包里。
 
 ## 社区资源
 

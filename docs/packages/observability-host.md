@@ -9,7 +9,7 @@
 | 能力 | 提供 `observability.host@1`（`role: default`）；依赖 `kernel.hosting@1` |
 | 特性入口 | `HostObservabilityFeature`（清单 `xihan.observability.host`，`IHostedFeature`） |
 | 配置节 | `XiHan:Observability:Host` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`；`Microsoft.Extensions.Logging.Abstractions` 10.0.14；没有其他第三方包 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`；`Microsoft.Extensions.Logging.Abstractions`；没有其他第三方包 |
 | AOT | 兼容（系统调用经 `LibraryImport` 源生成） |
 | 稳定性 | Preview |
 
@@ -33,8 +33,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Observability.Host" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Observability.Host --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。

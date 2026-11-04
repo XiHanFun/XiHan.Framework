@@ -23,7 +23,7 @@ var prompt = augmenter.Augment("How do I reset my password?", chunks);
 
 连接器抛出时，存储操作与健康项的 `reason` 都只写异常类型的全名，完整异常进日志（ADR-0111、ADR-0112）。
 
-连接器要接受 `Guid` 键；键形状变化之前建的集合要重建（ADR-0111）。Qdrant 用 `CommunityToolkit.VectorData.Qdrant`：`Microsoft.SemanticKernel.Connectors.Qdrant` 1.74.0-preview 与 VectorData 10.11.0 不兼容。
+连接器要接受 `Guid` 键；键形状变化之前建的集合要重建（ADR-0111）。Qdrant 用 `CommunityToolkit.VectorData.Qdrant`：`Microsoft.SemanticKernel.Connectors.Qdrant` 预览包与当前的 VectorData 不兼容。
 
 向量集合的维度在创建后不能改：换嵌入模型要换 `Collection` 或删掉旧集合。知识库配置在装配时读一次、不热更新，改了要重启应用（ADR-0074）。通过 `AI.Conformance` 的 `KnowledgeStoreConformance`。
 

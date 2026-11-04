@@ -9,7 +9,7 @@
 | 能力 | 定义 `localization.resources@1`，由 [Localization.InMemory](./localization-inmemory)（默认实现）或 [Localization.Database](./localization-database) 提供 |
 | 特性入口 | — |
 | 配置节 | `XiHan:Localization` |
-| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.Configuration.Abstractions` 10.0.14、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.14 |
+| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容（语言文件经源生成的 JSON 上下文解析） |
 | 稳定性 | Stable |
 
@@ -35,8 +35,8 @@
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Localization.Abstractions" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Localization.Abstractions --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Minimal`（以及包含它的 `Standard`、`Full`）已引用本包与默认实现。

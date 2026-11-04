@@ -94,7 +94,7 @@ Egress：Result 与 Error 翻译回协议（HTTP 为 RFC 9457 Problem Details，
 
 ## 稳定性分级
 
-公开类型都带 `[ApiLevel(Stability, "5.0")]`，公开面以各包的 `PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt` 为准：
+公开类型都带 `[ApiLevel(Stability, <引入版本>)]`，公开面以各包的 `PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt` 为准：
 
 | 级别 | 含义 |
 | --- | --- |
@@ -108,7 +108,7 @@ Egress：Result 与 Error 翻译回协议（HTTP 为 RFC 9457 Problem Details，
 
 ## 版本与兼容
 
-- 全部包共享一条版本线，当前为 `5.0.0-preview.1`。
+- 全部包共享一条版本线。
 - 目标框架 `net10.0`；版本号遵循 SemVer 2.0。
 - 每个子系统的 Provider 接口单独版本化（`persistence.relational@1`），接口变更只加新版本并存。
 

@@ -9,7 +9,7 @@
 | 能力 | 提供 `observability.export@1`（`role: default`）；依赖 `kernel.hosting@1` |
 | 特性入口 | `OpenTelemetryObservabilityFeature`（清单 `xihan.observability.opentelemetry`） |
 | 配置节 | `XiHan:Observability:OpenTelemetry` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`；`OpenTelemetry.Extensions.Hosting`、`OpenTelemetry.Exporter.OpenTelemetryProtocol`、`OpenTelemetry.Exporter.Console`，均为 1.20.1 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`；`OpenTelemetry.Extensions.Hosting`、`OpenTelemetry.Exporter.OpenTelemetryProtocol`、`OpenTelemetry.Exporter.Console` |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
@@ -31,8 +31,8 @@ ASP.NET Core 与 `HttpClient` 不装检测包，按名字订阅它们原生发�
 
 ## 安装与启用
 
-```xml
-<PackageReference Include="XiHan.Framework.Observability.OpenTelemetry" Version="5.0.0-preview.1" />
+```bash
+dotnet add package XiHan.Framework.Observability.OpenTelemetry --prerelease
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
