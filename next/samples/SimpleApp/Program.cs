@@ -56,7 +56,9 @@ app.MapXiHanOpenApi();   // 从登记表与生成的 Schema 发布 /openapi.json
 app.MapXiHanMcp();       // POST /mcp：同一份契约作为 MCP tool（orders_create / orders_list），描述取自消息目录
 app.MapXiHanGrpc();      // gRPC：Orders/Create、Orders/List（appsettings 里 5001 端口 h2c），protobuf 由 Schema 推出
 app.MapXiHanProto();     // GET /operations.proto：从同一份 Schema 生成的 .proto
-app.MapXiHanCloudEvents();   // POST /events：外部 CloudEvent（orders.placed → 主题 orders）经管道交给 OrderPlacedHandler
+// POST /events：外部 CloudEvent（orders.placed → 主题 orders）经管道交给 OrderPlacedHandler
+// 框架不给这个端点加要求，事件的 xihantenant 是发送方给的，能调它就能选租户，所以只开给持有这个权限的服务账号（ADR-0121）
+app.MapXiHanCloudEvents().RequireXiHanPermission(OrdersFeature.DeliverEventsPermission);
 
 app.MapGet("/", () => $"{FrameworkInfo.Name} {FrameworkInfo.Version}");
 app.MapGet("/greet", (string? name, GreetingCounter counter) => new Greeting($"Hello, {name ?? "XiHan"}!", counter.Count));

@@ -30,6 +30,14 @@ public sealed class OrdersFeature : IFeature
     public const string Topic = "orders";
 
     /// <summary>
+    /// 向 CloudEvents 入站端点投递事件的权限
+    /// </summary>
+    /// <remarks>
+    /// 事件的 <c>xihantenant</c> 是发送方给的，持有者能选任意租户，所以只授给服务账号（ADR-0121）
+    /// </remarks>
+    public const string DeliverEventsPermission = "events.deliver";
+
+    /// <summary>
     /// 清单：依赖持久化、消息、授权与多租户四个能力，并声明贡献的权限码
     /// </summary>
     public Manifest Manifest { get; } = new()
@@ -48,7 +56,7 @@ public sealed class OrdersFeature : IFeature
             new CapabilityRequirement(SecurityCapabilities.Authorization, SecurityCapabilities.Version),
             new CapabilityRequirement(MultiTenancyCapabilities.Context, MultiTenancyCapabilities.Version),
         ],
-        Contributes = new Contributions { Permissions = ["orders.read", "orders.write"] },
+        Contributes = new Contributions { Permissions = ["orders.read", "orders.write", DeliverEventsPermission] },
         Entry = typeof(OrdersFeature).FullName,
     };
 
@@ -56,7 +64,7 @@ public sealed class OrdersFeature : IFeature
     /// 登记订单特性的服务、消息处理与权限
     /// </summary>
     /// <remarks>
-    /// 登记订单仓储、<see cref="OrderPlaced"/> 领域事件的消息映射、事件计数器、<see cref="Topic"/> 的消息处理器、清单里声明的两个权限
+    /// 登记订单仓储、<see cref="OrderPlaced"/> 领域事件的消息映射、事件计数器、<see cref="Topic"/> 的消息处理器、清单里声明的三个权限
     /// 以及两个操作契约
     /// </remarks>
     public void Configure(FeatureContext context)
@@ -72,6 +80,7 @@ public sealed class OrdersFeature : IFeature
         // 端点上引用的权限码与策略在宿主建请求管道时核对，契约的策略名在授权能力启动时核对，不存在同样启动失败（SECURITY_VALIDATION_004）
         context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
         context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
+        context.AddPermission(new PermissionDefinition(DeliverEventsPermission, "Deliver events"));
 
         // 操作契约：类型即 Schema。登记代码由 Kernel.Generators 从 [Operation] 生成（含请求/响应 JSON Schema），
         // HTTP 适配器按操作 ID 推导路由并发布 OpenAPI，Authorize 阶段按契约的权限判定

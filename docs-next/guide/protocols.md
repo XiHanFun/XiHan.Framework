@@ -311,11 +311,12 @@ batch 先把每个事件的类型解析成主题，任一事件没有映射时�
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" -X POST localhost:5000/events \
+  -H "Authorization: ApiKey dev-relay-key" \
   -H "ce-specversion: 1.0" -H "ce-id: evt-1" -H "ce-source: /external" -H "ce-type: orders.placed" \
   -H "ce-xihantenant: acme" -H "Content-Type: application/json" -d '{"id":"evt-1"}'
 ```
 
-`samples/SimpleApp` 把 `orders.placed` 映射到主题 `orders`，事件交给 `OrderPlacedHandler`，返回 202。
+`samples/SimpleApp` 把 `orders.placed` 映射到主题 `orders`，事件交给 `OrderPlacedHandler`，返回 202。端点要求 `events.deliver`，只有服务账号 `relay`（`dev-relay-key`，不属于任何租户）持有：匿名 401，`alice`、`bob` 403。
 
 | 情形 | 状态码 | 错误码 |
 | --- | --- | --- |

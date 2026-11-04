@@ -347,7 +347,7 @@ public sealed class NotesFeature : IFeature
 }
 ```
 
-操作类与序列化上下文的写法见 [Kernel.Generators](../packages/kernel-generators#使用示例)，完整的业务能力包示例是 `samples/SimpleApp/Orders/OrdersFeature.cs`（依赖四个能力，登记仓储、领域事件到消息的映射、消息处理器、两个权限码与两个操作）。应用能力包通常不写 `Provides`；要让别的能力包按能力 ID 依赖它时再声明，能力 ID 的文法见下一节。
+操作类与序列化上下文的写法见 [Kernel.Generators](../packages/kernel-generators#使用示例)，完整的业务能力包示例是 `samples/SimpleApp/Orders/OrdersFeature.cs`（依赖四个能力，登记仓储、领域事件到消息的映射、消息处理器、三个权限码与两个操作）。应用能力包通常不写 `Provides`；要让别的能力包按能力 ID 依赖它时再声明，能力 ID 的文法见下一节。
 
 ## 命名规则
 

@@ -164,7 +164,8 @@ context.AddStartupCheck(static services => services.GetRequiredService<PolicyCat
         "Grants": {
           "role": {
             "editor": "orders.read,orders.write",
-            "viewer": "orders.read"
+            "viewer": "orders.read",
+            "event-relay": "events.deliver"
           }
         }
       }

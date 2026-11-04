@@ -93,10 +93,11 @@ app.Run();
 
 ## 使用示例
 
-外部系统以 binary 模式推一个事件（`samples/SimpleApp`，主题 `orders` 上有 `OrderPlacedHandler`）：
+外部系统以 binary 模式推一个事件（`samples/SimpleApp`，主题 `orders` 上有 `OrderPlacedHandler`，端点要求 `events.deliver`，只有服务账号 `relay` 持有）：
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" -X POST localhost:5000/events \
+  -H "Authorization: ApiKey dev-relay-key" \
   -H "ce-specversion: 1.0" -H "ce-id: evt-1" -H "ce-source: /external" -H "ce-type: orders.placed" \
   -H "ce-xihantenant: acme" -H "Content-Type: application/json" -d '{"id":"evt-1"}'
 ```

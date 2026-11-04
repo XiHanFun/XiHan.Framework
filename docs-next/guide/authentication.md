@@ -104,7 +104,8 @@ public static class CallerInfo
       "InMemory": {
         "Principals": {
           "alice": { "ApiKey": "dev-alice-key", "DisplayName": "Alice", "Roles": "editor", "Tenant": "acme" },
-          "bob": { "ApiKey": "dev-bob-key", "DisplayName": "Bob", "Roles": "viewer", "Tenant": "acme" }
+          "bob": { "ApiKey": "dev-bob-key", "DisplayName": "Bob", "Roles": "viewer", "Tenant": "acme" },
+          "relay": { "ApiKey": "dev-relay-key", "DisplayName": "Event Relay", "Roles": "event-relay" }
         }
       }
     }

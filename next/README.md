@@ -118,7 +118,7 @@ dotnet run --project next/src/XiHan.Framework.Cli -- pack --manifest next/sample
 curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'   # 同一份契约作为 MCP tool，描述取自消息目录
 curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Authorization: ApiKey dev-alice-key" -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"orders_create","arguments":{"name":"widget","amount":3}}}'
 curl -s localhost:5000/operations.proto                                         # 从同一份 Schema 生成的 .proto；gRPC 调用示例：grpcurl -plaintext -proto operations.proto -H "authorization: ApiKey dev-alice-key" localhost:5001 Orders/List
-curl -s -o /dev/null -w "%{http_code}\n" -X POST localhost:5000/events -H "ce-specversion: 1.0" -H "ce-id: evt-1" -H "ce-source: /external" -H "ce-type: orders.placed" -H "ce-xihantenant: acme" -H "Content-Type: application/json" -d '{"id":"evt-1"}'   # 入站 CloudEvent（binary 模式）→ 主题 orders → OrderPlacedHandler，202；再看 /orders/stats
+curl -s -o /dev/null -w "%{http_code}\n" -X POST localhost:5000/events -H "Authorization: ApiKey dev-relay-key" -H "ce-specversion: 1.0" -H "ce-id: evt-1" -H "ce-source: /external" -H "ce-type: orders.placed" -H "ce-xihantenant: acme" -H "Content-Type: application/json" -d '{"id":"evt-1"}'   # 入站 CloudEvent（binary 模式）→ 主题 orders → OrderPlacedHandler，202；端点要求 events.deliver，只有服务账号 relay 持有，匿名 401，alice、bob 403；再看 /orders/stats
 ```
 
 `samples/SimpleCli` 用 Minimal 组合把同一份契约放到命令行与 MCP stdio 上：

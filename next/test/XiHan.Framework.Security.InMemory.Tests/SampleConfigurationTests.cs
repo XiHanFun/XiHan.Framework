@@ -41,4 +41,15 @@ public sealed class SampleConfigurationTests
         Assert.Equal("bob", store.FindByApiKey("dev-bob-key").ValueOrThrow().Id);
         Assert.False(store.FindByApiKey("dev-alice-key ").HasValue);
     }
+
+    [Fact]
+    public void SimpleAppSettings_GrantEventDeliveryOnlyToATenantlessServiceAccount()
+    {
+        var options = InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddJsonFile(Locate(), optional: false).Build());
+
+        // 事件的 xihantenant 是发送方给的，持有 events.deliver 就能选任意租户（ADR-0121），不能授给租户里的角色
+        var grant = Assert.Single(options.Grants, static g => g.Permission == "events.deliver");
+        var holder = Assert.Single(options.Principals, p => p.Roles.Contains(grant.Subject.Id));
+        Assert.Equal(("relay", "dev-relay-key", null), (holder.Id, holder.ApiKey, holder.Tenant));
+    }
 }
