@@ -12,7 +12,7 @@
 
 `Protocols.Http` 的 `MapXiHanOpenApi()` 从 `OperationRegistry` 生成 OpenAPI 3.1 文档，操作对象上除标准字段外只有 `x-xihan-stability`。操作契约（`OperationContract`）里的授权要求——权限码 `Permission` 或策略名 `Policy`（二选一）——以及特性经 `FeatureContext.AddPermission` 登记进 `PermissionRegistry` 的权限定义（`Code`、`DisplayName`、`Description`）都不在文档里。
 
-前端（next-ui）接 5.0 时需要两件事：按操作的权限码隐藏当前用户无权的入口；按应用的权限定义生成授权界面（角色勾选权限）。这两份数据都在后端的登记表里，没有协议把它们带给前端。用户于 2026-10-27 决定在框架里实现，而不是由 BasicApp 另开接口绕过。
+前端接入时需要两件事：按操作的权限码隐藏当前用户无权的入口；按应用的权限定义生成授权界面（角色勾选权限）。这两份数据都在后端的登记表里，没有协议把它们带给前端。用户于 2026-10-27 决定在框架里实现，而不是由 BasicApp 另开接口绕过。
 
 ## 备选
 
@@ -63,4 +63,4 @@
 - `Protocols.Http`：`Build` 签名变化（`PublicAPI.Unshipped.txt` 同步）；README 的 OpenAPI 说明补两项扩展与 `components.x-xihan-permissions` 的形状。
 - `spec/protocol/http.md` 的 OpenAPI 一节由主会话修订，登记这三个扩展键。
 - `Protocols.Grpc` / `Protocols.Mcp` 不受影响：gRPC 的 `.proto` 与 MCP 的 `tools/list` 没有对应的扩展位，权限信息仍以 HTTP 的 OpenAPI 文档为准。
-- next-ui 据 `x-xihan-permission` 隐藏入口、据 `components.x-xihan-permissions` 生成授权界面；`x-xihan-policy` 只作展示，策略判定仍在后端。
+- 前端据 `x-xihan-permission` 隐藏入口、据 `components.x-xihan-permissions` 生成授权界面；`x-xihan-policy` 只作展示，策略判定仍在后端。

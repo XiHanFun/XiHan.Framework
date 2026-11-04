@@ -1,8 +1,8 @@
 # 操作契约
 
-本章说明 5.0 对外暴露业务的方式：用 `[Operation]` 与 `IOperation<TRequest, TResponse>` 声明操作，由源生成器产出登记代码与 JSON Schema，再由协议适配器把同一份契约发布到 HTTP、gRPC、MCP 与命令行。适用于写业务接口的开发者。
+本章说明框架对外暴露业务的方式：用 `[Operation]` 与 `IOperation<TRequest, TResponse>` 声明操作，由源生成器产出登记代码与 JSON Schema，再由协议适配器把同一份契约发布到 HTTP、gRPC、MCP 与命令行。适用于写业务接口的开发者。
 
-操作契约取代 4.x 的动态 API：不再从应用服务的方法名推导路由，一个操作就是一个类。
+路由不从应用服务的方法名推导，一个操作就是一个类。
 
 完整 API 见 [Kernel 包](../packages/kernel)与 [Kernel.Generators 包](../packages/kernel-generators)。
 

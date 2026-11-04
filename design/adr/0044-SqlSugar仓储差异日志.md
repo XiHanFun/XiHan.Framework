@@ -43,6 +43,6 @@ SqlSugar 的约束（对照 5.1.4.207 源码与实测）：
 
 ## 影响
 
-- 公开 API：`SqlSugarPersistenceFeature.DiffLog`、`SqlSugarPersistenceOptions.DiffLog`、`SqlSugarDiffLogData`；`SqlSugarRepository` 构造函数增加 `SqlSugarPersistenceOptions` 与 `IServiceProvider`（由容器注入，5.0 尚未发布）。
+- 公开 API：`SqlSugarPersistenceFeature.DiffLog`、`SqlSugarPersistenceOptions.DiffLog`、`SqlSugarDiffLogData`；`SqlSugarRepository` 构造函数增加 `SqlSugarPersistenceOptions` 与 `IServiceProvider`（由容器注入，尚未发布）。
 - 行为：只影响开启的实体，每次写入多一次读并触发回调；没装回调时只多一次读。
 - 测试：`SqlSugarDiffLogTests`（SQLite 与 PostgreSQL）：插入 / 更新 / 软删除的前后值、主键标记、业务数据与作用域、AsyncLocal；批量插入 / 更新 / 物理删除各一条事件；没开启的实体不触发；分表实体跨月插入、按表更新与分表删除。

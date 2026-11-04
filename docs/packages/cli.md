@@ -41,10 +41,10 @@ dotnet tool install --global XiHan.Framework.Cli --version 5.0.0-preview.1
 xihan version
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。不安装也可以从源码运行（在仓库根执行）：
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。不安装也可以从源码运行（在仓库根执行）：
 
 ```bash
-dotnet run --project next/src/XiHan.Framework.Cli -- pack --manifest next/samples/SimpleApp/xihan.app.json --output ./artifacts/simple-app-deploy
+dotnet run --project framework/src/XiHan.Framework.Cli -- pack --manifest framework/samples/SimpleApp/xihan.app.json --output ./artifacts/simple-app-deploy
 ```
 
 ## 命令
@@ -80,7 +80,7 @@ xihan orders create --name widget --amount 3
 xihan migrate <来源版本> [--path <目录|.csproj|.slnx>] [--fixers <规则编号,…>] [--dry-run] [--report <文件>]
 ```
 
-这一版工具没有登记任何规则集：4.x 单独维护，5.0 不提供 4.x → 5.0 的迁移规则（ADR-0021），所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给 5.x 之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。从 4.x 迁移的做法见[从 4.x 迁移](../guide/upgrade)。
+工具当前没有登记任何规则集，所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。
 
 ### mcp
 
@@ -161,6 +161,6 @@ dnx XiHan.Framework.Cli@5.0.0-preview.1 --yes -- setup --client claude    # 不�
 
 ## 相关
 
-- [部署与打包](../guide/deployment)、[命令行宿主](../guide/command-line)、[从 4.x 迁移](../guide/upgrade)
+- [部署与打包](../guide/deployment)、[命令行宿主](../guide/command-line)
 - [Hosting.CommandLine](./hosting-commandline)
-- 规范：RFC-0016《应用清单与打包》、RFC-0020《版本迁移》；ADR-0021
+- 规范：RFC-0016《应用清单与打包》、RFC-0020《版本迁移》

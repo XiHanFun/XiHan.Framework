@@ -1,6 +1,6 @@
 # MCP Server
 
-本页说明两种 MCP 服务端怎样接入 Claude Code、Cursor、VS Code、Codex 等 AI 工具：框架自带的知识库服务 `xihan mcp`，让 AI 工具按版本查证包、能力、配置键与文档；以及把基于 5.0 的应用作为 MCP 服务端，让 AI 工具在开发过程中直接调用应用的操作。4.x 的 `xihan-framework mcp` 只描述 4.x，不适用于 5.0。
+本页说明两种 MCP 服务端怎样接入 Claude Code、Cursor、VS Code、Codex 等 AI 工具：框架自带的知识库服务 `xihan mcp`，让 AI 工具按版本查证包、能力、配置键与文档；以及把基于本框架的应用作为 MCP 服务端，让 AI 工具在开发过程中直接调用应用的操作。
 
 ## 框架知识库：xihan mcp
 
@@ -67,7 +67,7 @@ app.MapXiHanMcp();   // POST /mcp
 app.Run();
 ```
 
-stdio 传输的命令行应用（仓库示例 `next/samples/SimpleCli`）：
+stdio 传输的命令行应用（仓库示例 `framework/samples/SimpleCli`）：
 
 ```csharp
 using Microsoft.Extensions.Hosting;
@@ -88,7 +88,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 验证 stdio 服务端：
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
 ```
 
 stdio 传输下 stdout 每行一条 JSON-RPC 消息，日志只写 stderr。`mcp` 命令接受与 `invoke` 相同的上下文选项：`--authorization`（或环境变量 `XIHAN_AUTHORIZATION`）、`--tenant`、`--correlation`、`--locale`、`--timeout`，作用于会话里的每个 `tools/call`。

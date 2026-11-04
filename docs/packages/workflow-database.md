@@ -43,7 +43,7 @@
 <PackageReference Include="XiHan.Framework.Persistence.SqlSugar" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Workflow.InMemory`：
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Workflow.InMemory`：
 
 ```csharp
 using SqlSugar;
@@ -82,7 +82,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 }
 ```
 
-到期书签与实例列表按时间过滤和排序，EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本时翻译不了：这由框架代办，SQLite 上 `ApplyPersistenceConventions(Database)` 把它存成 UTC ticks 整数（ADR-0091，见 [EF Core 的行为与限制](./persistence-entityframeworkcore#行为与限制)），应用不用自己配；原来照旧文档在 `ConfigureConventions` 里配了 `DateTimeOffsetToBinaryConverter` 的，显式配置保留、库不用动。租约表照下文「SQLite 上的租约表」放到另一个库文件。
+到期书签与实例列表按时间过滤和排序，EF Core 的 SQLite Provider 把 `DateTimeOffset` 存成文本时翻译不了：这由框架代办，SQLite 上 `ApplyPersistenceConventions(Database)` 把它存成 UTC ticks 整数（ADR-0091，见 [EF Core 的行为与限制](./persistence-entityframeworkcore#行为与限制)），应用不用自己配；应用自己在 `ConfigureConventions` 里配了 `DateTimeOffsetToBinaryConverter` 的，显式配置保留、库不用动。租约表照下文「SQLite 上的租约表」放到另一个库文件。
 
 ## 配置
 
@@ -134,9 +134,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 ## 行为与限制
 
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
-- 实例列表的每个过滤项都是 SQL 条件，按排序项 `Sorts` 依次（空时创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102、ADR-0104，排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）；`SearchText` 可空只为给已有行的表加列，升级前写入的行要回填 `WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列），没回填的行不被关键字匹配。
-- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](../guide/workflow#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，升级前写入的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
-- 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（同 4.x，ADR-0096、ADR-0099），升级前写入的书签行要回填这两列。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
+- 实例列表的每个过滤项都是 SQL 条件，按排序项 `Sorts` 依次（空时创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102、ADR-0104，排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）；`SearchText` 可空只为给已有行的表加列，已有的行要回填 `WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列），没回填的行不被关键字匹配。
+- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](../guide/workflow#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，已有的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
+- 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（ADR-0096、ADR-0099），已有的书签行要回填这两列。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。
 - 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
 - 租约行与业务写入不在同一个事务里：SQLite 上要把租约表放到另一个库文件，见下文「SQLite 上的租约表」；PostgreSQL 等行锁数据库不需要。
@@ -164,24 +164,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 - SqlSugar 方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明连接，回调按 `config.ConfigId` 区分；方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端。连接不在客户端里时启动即失败（`PERSISTENCE_VALIDATION_004`）。
 - EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明这个连接（ADR-0087）：租约的每一步与健康探针本来就在自己的作用域里开绑定连接的工作单元，作用域里的 `DbContext` 按租约库的连接串建出；连接没有声明时装配即失败（`PERSISTENCE_VALIDATION_004`）。`DbContext` 里照常登记租约表 `WorkflowLockRecord`。
 - 内存持久化不支持命名连接，配了 `LockConnection` 即装配失败（`PERSISTENCE_UNAVAILABLE_008`）。
-- 不配置时租约表照旧在平台库（默认连接），行为与以前相同；PostgreSQL、SQL Server、MySQL 等行级锁的数据库不需要配。
+- 不配置时租约表在平台库（默认连接）；PostgreSQL、SQL Server、MySQL 等行级锁的数据库不需要配。
 - 多个节点共用租约库：租约库的连接串在各节点上要指向同一个库，SQLite 文件只适合单机的开发与集成测试。
 
-## 从上一版升级
+## 排序与查询列
 
-表结构与数据要迁移（ADR-0077）：
+下面这些列由存储维护，都可空，给已有行的表加列时按这里回填。
 
-- 新建四张 `Platform*` 表；`WorkflowNodeInstanceRecord` 新增非空 `TenantId` 列（取所属实例的租户回填）。
-- 两张书签表新增可空列 `NodeId`、`DefinitionName`、`InstanceStatus`，回填：`NodeId` 取 `Document` 里的 `nodeId`，后两列取所属实例行的 `DefinitionName` 与 `Status`。不回填的行在待办查询里看不到，直到所属实例下一次改状态。
-- `TenantId` 为 NULL 的定义、实例、书签与这些实例的节点实例搬到对应的 `Platform*` 表（同列复制，不带 `TenantId`）。平台定义搬过去之前先查 `(Name, Version)` 重复：旧索引不约束 NULL 行，可能已有重复。
-- 有独立库的租户，把它的行从平台库搬到它自己的库。
-- 删掉旧的单列索引 `IX_WorkflowInstanceRecord_EnAt`、`IX_WorkflowInstanceRecord_CrAt`、`IX_WorkflowBookmarkRecord_DuAt`，建带租户前缀的新索引（`InitTables` 只建不删）。
+待办查询用的书签列（ADR-0077）：
+
+- 两张书签表带可空列 `NodeId`、`DefinitionName`、`InstanceStatus`，回填：`NodeId` 取 `Document` 里的 `nodeId`，后两列取所属实例行的 `DefinitionName` 与 `Status`。不回填的行在待办查询里看不到，直到所属实例下一次改状态。
 
 状态序号列（ADR-0103）：
 
-- 定义表与实例表（租户与平台，独立库的租户库同样要加）新增可空列 `StatusOrder`（整数：SqlSugar `int`、EF Core `INTEGER` / `integer`），值是状态在生命周期里的序号——定义 `Draft` 0、`Published` 1、`Disabled` 2、`Archived` 3，实例 `Running` 1、`Suspended` 2、`Completed` 3、`Canceled` 4、`Faulted` 5、`Terminated` 6（即 4.x 状态枚举的整数值）。按状态排序时对它 `ORDER BY`；存储每次整行写入时随 `Status` 一起写（新增、状态变更、迁移、跳转、重试都经整行写入），是存储内部的细节。
-- 可空是为了 `InitTables` 能给已有行的表加上（RFC-0005：SqlSugar 只在 PostgreSQL 上给非空数值列带缺省值，别的库给已有行的表加非空列会失败）；没有新索引（按状态排序是对过滤后的行排序，实例按状态过滤已有 `Status` 列）。
-- 回填（升级前写入的行；没回填的行按状态排序时位置照数据库的空值规则，下一次整行写入时自愈）：只靠 `Status` 列即可，SQL 写法（表名、列名按应用的命名规则换）：
+- 定义表与实例表（租户与平台，独立库的租户库同样要有）带可空列 `StatusOrder`（整数：SqlSugar `int`、EF Core `INTEGER` / `integer`），值是状态在生命周期里的序号——定义 `Draft` 0、`Published` 1、`Disabled` 2、`Archived` 3，实例 `Running` 1、`Suspended` 2、`Completed` 3、`Canceled` 4、`Faulted` 5、`Terminated` 6。按状态排序时对它 `ORDER BY`；存储每次整行写入时随 `Status` 一起写（新增、状态变更、迁移、跳转、重试都经整行写入），是存储内部的细节。
+- 可空是为了 `InitTables` 能给已有行的表加上（RFC-0005：SqlSugar 只在 PostgreSQL 上给非空数值列带缺省值，别的库给已有行的表加非空列会失败）；没有单独的索引（按状态排序是对过滤后的行排序，实例按状态过滤已有 `Status` 列）。
+- 回填（没回填的行按状态排序时位置照数据库的空值规则，下一次整行写入时自愈）：只靠 `Status` 列即可，SQL 写法（表名、列名按应用的命名规则换）：
 
 ```sql
 UPDATE WorkflowDefinitionRecord SET StatusOrder = CASE Status WHEN 'Draft' THEN 0 WHEN 'Published' THEN 1 WHEN 'Disabled' THEN 2 WHEN 'Archived' THEN 3 END WHERE StatusOrder IS NULL;
@@ -191,13 +189,12 @@ UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 
 
 排序用的标题列（ADR-0102）：
 
-- 定义表与实例表（租户与平台）新增可空列 `Title`（varchar(256)），`InitTables` 照常给已有行的表加上；没有新索引（定义每个分区的行少；实例按创建时间、结束时间排序仍走 `(TenantId, CreatedAt)`、`(TenantId, EndedAt)`，按标题、状态、定义名排序是对过滤后的行排序）。
+- 定义表与实例表（租户与平台）带可空列 `Title`（varchar(256)），`InitTables` 照常给已有行的表加上；没有单独的索引（定义每个分区的行少；实例按创建时间、结束时间排序走 `(TenantId, CreatedAt)`、`(TenantId, EndedAt)`，按标题、状态、定义名排序是对过滤后的行排序）。
 - 回填：定义行 `Title = WorkflowSortKeys.Title(displayName 为空取 name)`，实例行 `Title = WorkflowSortKeys.Title(displayName 为空取 definitionName)`（都从 `Document` 取）。没回填的行按标题排序时，空值排在哪头照数据库；存储整体替换一行时写上，下一次保存即自愈。
 
 关键字查询列（ADR-0096、ADR-0099、ADR-0101）：
 
-- 实例表（租户与平台）的 `SearchTitle` 改名 `SearchText`，两张书签表的 `SearchInstanceTitle` 改名 `SearchInstanceText`，列名已定（ADR-0101），表结构基线按新列名生成。`InitTables` 只加列不删列：它会加上新列，旧列留着（可空、框架不再读写），可以手工删掉。
-- 第八批的全角替换撤销（ADR-0099 第四节）：折叠只剩不变文化小写，`%`、`_`、`[`、反斜杠不再换成全角。升级前写入的查询列——定义行 `SearchText`、书签行 `SearchTitle`，以及第八批的实例行 `SearchTitle` 与书签行 `SearchInstanceTitle`（已改名，见上一条）——里这四个字符存的是全角，按半角关键字搜不到；不含这四个字符的行不受影响，但值无法从旧列反推（原文本里的全角字符与替换出来的分不开），所以按下一条从 `Document` 重算，不要在旧值上做字符替换。
+- 定义行与实例行的 `SearchText`、书签行的 `SearchTitle` 与 `SearchInstanceText` 都是折叠后的值，折叠只做不变文化小写，`%`、`_`、`[`、反斜杠原样保留（ADR-0099 第四节）。
 - 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 .NET 的 `ToLowerInvariant` 加字符替换，SQL 的 `lower()` 在 SQLite 上只管 ASCII，用应用代码回填。没回填的行不被关键字匹配。
 
 ## 相关

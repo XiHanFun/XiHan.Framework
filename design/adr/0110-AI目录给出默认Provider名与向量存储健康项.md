@@ -41,7 +41,7 @@ BasicApp 只能每次调用都显式传 Provider 名。用 `ProviderDefaultTests
 - `AIProviderConformance` 补三例（用例 3–5）：
   - 有默认（`StartAsync` 的夹具，被测 Provider 是聊天与嵌入的默认）：两个默认名都是它，不写名字的解析与写名字的是同一实例，`IAIChat` 不写 Provider 由它应答。
   - 无默认（新增抽象方法 `StartWithoutDefaultAsync`）：两个默认名为 `null`，不写名字的解析与 `IAIChat` 都是 `AI_NOTFOUND_001` 带上面两个键，写了名字照常。
-  - 聊天与嵌入分开的默认（新增虚方法 `StartWithSeparateDefaultsAsync`，`AIProviderHost.EmbeddingProviderName` 给出默认嵌入名）：各按各的默认解析；不覆写（返回 `null`）即跳过，只支持一个默认的目录（BasicApp 4.x 的提供商表只有一个 `IsDefault`）不必伪造。
+  - 聊天与嵌入分开的默认（新增虚方法 `StartWithSeparateDefaultsAsync`，`AIProviderHost.EmbeddingProviderName` 给出默认嵌入名）：各按各的默认解析；不覆写（返回 `null`）即跳过，只支持一个默认的目录（如提供商表只有一个 `IsDefault` 的应用）不必伪造。
 
 ### 理由
 
@@ -62,7 +62,7 @@ BasicApp 只能每次调用都显式传 Provider 名。用 `ProviderDefaultTests
 
 ### 背景
 
-`VectorDataKnowledgeFeature` 的清单没有 `contributes.health`，向量库不可达时 `/health/ready` 看不到任何条目，只有检索返回 `AI_UNAVAILABLE_002`。4.x 宿主有自写的 `QdrantHealthCheck`；按 ADR-0030，健康项由 Provider 自带，BasicApp 6.0 不另写，于是 6.0 没有向量库的健康项。
+`VectorDataKnowledgeFeature` 的清单没有 `contributes.health`，向量库不可达时 `/health/ready` 看不到任何条目，只有检索返回 `AI_UNAVAILABLE_002`。按 ADR-0030，健康项由 Provider 自带，BasicApp 不另写，于是没有向量库的健康项。
 
 ### 备选
 

@@ -2,7 +2,7 @@
 
 ## 状态
 
-已采纳（`spec/rfcs/0005-persistence.md` 随之修订：「仓储」下新增「规约里的字符串匹配」，Provider 表 SqlSugar 一行与「一致性」段同步）。不修订已有 ADR。工作流为绕开本缺陷在库里存的折叠值（ADR-0096 的 `WorkflowKeyword`）不在本 ADR 处理，由第九批 m-wf 分区在本项合入 `next` 之后评估能否撤销。
+已采纳（`spec/rfcs/0005-persistence.md` 随之修订：「仓储」下新增「规约里的字符串匹配」，Provider 表 SqlSugar 一行与「一致性」段同步）。不修订已有 ADR。工作流为绕开本缺陷在库里存的折叠值（ADR-0096 的 `WorkflowKeyword`）不在本 ADR 处理，由第九批 m-wf 分区在本项合入之后评估能否撤销。
 
 ## 日期
 

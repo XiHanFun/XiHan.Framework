@@ -40,7 +40,7 @@
 
 - 缓存后端由别的语言实现，或团队已有 Go 等语言的存储客户端，想替换 [Caching.Redis](./caching-redis) 而不写 .NET 代码。
 - 后端就是 Redis 时直接用 Caching.Redis：它多了键管理与变更通知，少一次进程间往返。
-- 本包是 Experimental，契约可能在 5.0 正式版前调整。
+- 本包是 Experimental，契约可能在正式版前调整。
 
 ## 安装与启用
 
@@ -48,7 +48,7 @@
 <PackageReference Include="XiHan.Framework.Caching.Remote" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
 
 ```csharp
 using XiHan.Framework.Caching.Remote;
@@ -80,7 +80,7 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
-插件自己的配置由插件读取，例如 `next/samples/CacheGoPlugin` 读 `XiHan:Cache:DefaultTimeToLiveSeconds`（默认 300）与 `XiHan:Cache:MaxEntries`（默认 100000）。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
+插件自己的配置由插件读取，例如 `framework/samples/CacheGoPlugin` 读 `XiHan:Cache:DefaultTimeToLiveSeconds`（默认 300）与 `XiHan:Cache:MaxEntries`（默认 100000）。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
 
 ## 主要类型
 
@@ -94,7 +94,7 @@ builder.AddXiHan(xihan => xihan
 
 ## 使用示例
 
-插件可以用 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 的 `caching` 包实现（`Store` 接口、`MemoryStore` 与 `RegisterOperations`，示例在 SDK 的 `examples/cache`）。仓库里的 `next/samples/CacheGoPlugin` 是同一个示例的可执行入口，在该目录构建：
+插件可以用 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 的 `caching` 包实现（`Store` 接口、`MemoryStore` 与 `RegisterOperations`，示例在 SDK 的 `examples/cache`）。仓库里的 `framework/samples/CacheGoPlugin` 是同一个示例的可执行入口，在该目录构建：
 
 ```bash
 ./build.ps1

@@ -10,24 +10,18 @@
 
 ## 背景
 
-用户要求生成的 OpenAPI 与 4.x 一样支持标签、分组与描述，否则 Scalar 里看着很乱。现状有五处不足：
+用户要求生成的 OpenAPI 支持标签、分组与描述，否则 Scalar 里看着很乱。现状有五处不足：
 
 - 操作的 `summary` 取 `<操作 ID>.description` 整句，BasicApp 的文案里还手写了「需要 X 权限。」。
 - `tags` 只有资源码，没有顶层 `tags` 说明。
 - 只有一份文档，没有分组。
 - 参数与字段没有说明。
 
-4.x（`XiHan.Framework.Web.Docs`）的做法：
-
-- 文案来自 XML 注释：`summary` 取 `<summary>`，`description` 取 `<remarks>`，参数取 `<param>`，响应取 `<returns>`。
-- `[DynamicApi(Group, GroupName, Tag)]` 给中文标签。
-- 每个 Group 一份文档，Scalar 列出「API V1」加各组。
-
 ## 备选
 
-1. 全部照 4.x 取 XML 注释：
-   - 操作文案在 5.0 已按 D9 放进消息目录（MCP 的 tool 描述按区域取）；改回 XML 就只有一种语言。
-   - 标签与分组在 6.0 没有对应的注解。
+1. 全部取 XML 注释（`summary` 取 `<summary>`，`description` 取 `<remarks>`，参数取 `<param>`，响应取 `<returns>`）：
+   - 操作文案已按 D9 放进消息目录（MCP 的 tool 描述按区域取）；改用 XML 就只有一种语言。
+   - 标签与分组没有对应的注解。
 2. 全部走消息目录：字段说明要为每个 DTO 属性写十种区域，量太大。
 3. 分开处理：
    - 操作、标签与分组的文案走消息目录（按区域）。

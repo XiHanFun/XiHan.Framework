@@ -31,7 +31,7 @@
 <PackageReference Include="XiHan.Framework.Plugins.Protocol" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性入口；两个插件宿主特性在 `Configure` 时自己登记消息目录 `PluginMessages.Catalog`（目录名 `plugins.protocol`，10 种区域各一个文件）。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性入口；两个插件宿主特性在 `Configure` 时自己登记消息目录 `PluginMessages.Catalog`（目录名 `plugins.protocol`，10 种区域各一个文件）。
 
 ## 主要类型
 

@@ -2,7 +2,7 @@
 
 本章说明 Validate 阶段如何校验操作的请求：按生成的 JSON Schema 校验载荷，再对实现 `IValidatableObject` 的请求执行自校验，失败时以字段级错误返回。适用于给操作请求加约束的开发者。
 
-5.0 不在运行期反射读取 DataAnnotations，也不集成第三方校验库；注解在编译期由源生成器折进 Schema。
+框架不在运行期反射读取 DataAnnotations，也不集成第三方校验库；注解在编译期由源生成器折进 Schema。
 
 完整 API 见 [Kernel 包](../packages/kernel)。
 

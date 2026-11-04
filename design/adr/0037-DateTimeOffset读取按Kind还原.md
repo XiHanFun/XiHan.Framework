@@ -23,7 +23,7 @@ BasicApp 6.0 的 N1 第三批（Tenancy）在 PostgreSQL 开发库上发现：�
 ## 决策
 
 - 采用 2：`QueryConverter` 的 `DateTime` 分支先匹配 `{ Kind: DateTimeKind.Local }` 换回 UTC；其余 Kind 不变。写入路径不动。
-- 采用 3 的两项：`DateTimeOffsetConverterTests` 覆盖 Local / Utc / Unspecified / `DateTimeOffset` / 文本 / 空与参数写入；`PostgresRepositoryConformanceTests` 以 `XIHAN_TEST_POSTGRES`（服务器连接串，不含 `Database`）门控跑完整 `RepositoryConformance`，每个用例建一个随机名的临时库、结束 `DROP DATABASE … WITH (FORCE)`，未设置即跳过（与 Redis / RabbitMQ 同一套路）。套件里"新增后读回等于时钟"与"更新后创建时间不变"两条断言在真库上直接暴露本问题。CI 的 `next-ci` 加 PostgreSQL 服务并设置该变量。
+- 采用 3 的两项：`DateTimeOffsetConverterTests` 覆盖 Local / Utc / Unspecified / `DateTimeOffset` / 文本 / 空与参数写入；`PostgresRepositoryConformanceTests` 以 `XIHAN_TEST_POSTGRES`（服务器连接串，不含 `Database`）门控跑完整 `RepositoryConformance`，每个用例建一个随机名的临时库、结束 `DROP DATABASE … WITH (FORCE)`，未设置即跳过（与 Redis / RabbitMQ 同一套路）。套件里"新增后读回等于时钟"与"更新后创建时间不变"两条断言在真库上直接暴露本问题。CI 加 PostgreSQL 服务并设置该变量。
 
 ## 理由
 

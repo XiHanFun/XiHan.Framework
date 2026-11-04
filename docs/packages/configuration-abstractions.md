@@ -15,7 +15,7 @@
 
 ## 概述
 
-5.0 不另造配置模型，默认的配置来源就是 .NET 原生的文件、环境变量与命令行，所以配置子系统没有默认实现包。本包只补两类 .NET 没有统一契约的来源：
+框架不另造配置模型，默认的配置来源就是 .NET 原生的文件、环境变量与命令行，所以配置子系统没有默认实现包。本包只补两类 .NET 没有统一契约的来源：
 
 - 远程配置（`configuration.remote@1`）：按命名空间取整份带版本的文档，键已展平成 `A:B:C`。`AddXiHanRemoteConfiguration` 构建配置时同步加载一次，之后按周期带已知版本轮询，版本变化时整体替换并触发重载令牌，失败保留最后一份成功的数据。它有两个重载：传入现成的客户端（由调用方持有），或传入工厂（客户端归配置源，随配置根释放）。
 - 密钥（`configuration.secrets@1`）：按名字批量读取，只读，逐项返回结果；`SecretValue.ToString()` 固定返回遮蔽文本。`AddXiHanSecrets(store, options)` 把密钥映射到配置键，构建时一次批量读取，可周期重读。
@@ -25,7 +25,7 @@
 ## 何时使用
 
 - 用 Nacos 做配置中心：装 [Configuration.Nacos](./configuration-nacos)，它实现 `IRemoteConfigurationClient`，本包随之引入。
-- 接入其他配置中心或密钥库（Apollo、Consul、Vault、Key Vault 等）：5.0 没有提供这些 Provider，应用实现本包的接口，并用一致性套件验证。
+- 接入其他配置中心或密钥库（Apollo、Consul、Vault、Key Vault 等）：框架没有提供这些 Provider，应用实现本包的接口，并用一致性套件验证。
 - 只用文件与环境变量：不需要本包，见[配置与选项](../guide/configuration)。
 
 ## 安装与启用
@@ -34,7 +34,7 @@
 <PackageReference Include="XiHan.Framework.Configuration.Abstractions" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 引用了本包。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 引用了本包。
 
 本包没有特性。配置源加在 `builder.Configuration` 上，并且要在 `AddXiHan` 之前，框架在 `AddXiHan` 里读取各包选项与绑定。应用自己实现的 Provider 要让错误按调用方语言翻译时，注册本包的消息目录：
 

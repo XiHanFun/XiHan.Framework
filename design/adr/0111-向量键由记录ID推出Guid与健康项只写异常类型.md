@@ -23,7 +23,7 @@ ADR-0110 的 Docker 实测发现，`VectorDataKnowledgeStore` 在 Qdrant 上写�
 
 1. **键改成由记录 ID 确定性推出的 `Guid`，记录 ID 另存字段**（采纳）。
 2. **键类型做成选项，按连接器选 `string` 或 `Guid`**：存储里的泛型要分两路，配错了到运行时才发现，多一个配置键换不来别的好处。否决。
-3. **维持 `string`，不支持 Qdrant**：BasicApp 4.x 就在用 Qdrant。否决。
+3. **维持 `string`，不支持 Qdrant**：BasicApp 用 Qdrant。否决。
 4. **键用随机 `Guid`**：重写入不再覆盖旧记录，得先查后写。否决。
 
 ### 决策
@@ -39,7 +39,7 @@ ADR-0110 的 Docker 实测发现，`VectorDataKnowledgeStore` 在 Qdrant 上写�
 
 ### 影响
 
-- 已有集合的键形状不同，要重建。5.0 还没有发布，不做迁移。
+- 已有集合的键形状不同，要重建。还没有发布，不做迁移。
 - 连接器要接受 `Guid` 键。按官方文档，Qdrant、PostgreSQL、Redis、Azure AI Search 的 .NET 连接器都接受；不接受的连接器，写入与搜索返回 `AI_UNAVAILABLE_002`，`reason` 是连接器的消息。
 - 公开 API：`KnowledgeVectorRecord` 去掉 `Id`，新增 `Key`、`RecordId`、`KeyOf(string)`。
 - 接 Qdrant 的应用要引用 `CommunityToolkit.VectorData.Qdrant`，不能用 `Microsoft.SemanticKernel.Connectors.Qdrant`。

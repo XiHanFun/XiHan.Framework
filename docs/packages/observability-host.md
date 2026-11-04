@@ -37,7 +37,7 @@
 <PackageReference Include="XiHan.Framework.Observability.Host" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -130,7 +130,7 @@ public sealed class MonitorTests
 | GPU | `/sys/class/drm/card<N>/device`，名称与厂商名查 `pci.ids`（`/usr/share/hwdata`、`/usr/share/misc`、`/usr/share`） | 注册表显示适配器类 `{4d36e968-e325-11ce-bfc1-08002be10318}` 下 `MatchingDeviceId` 以 `pci` 开头的子键 | 空列表 |
 | 主板 | `/sys/class/dmi/id/` 的 `board_*`、`sys_vendor`、`product_name`、`bios_*` | 注册表 `HKLM\HARDWARE\DESCRIPTION\System\BIOS`（没有序列号） | 空 |
 
-已知的取舍：没有 NVIDIA 专有驱动的显存与温度、GPU 与显存使用率；Windows 没有 GPU 温度与主板序列号、没有空闲内存；Linux 的 `board_serial` 只有 root 读得到；容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额，逻辑核心数是 .NET 看到的可用核心数。完整的 4.x 差异列在 RFC-0023。
+已知的取舍：没有 NVIDIA 专有驱动的显存与温度、GPU 与显存使用率；Windows 没有 GPU 温度与主板序列号、没有空闲内存；Linux 的 `board_serial` 只有 root 读得到；容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额，逻辑核心数是 .NET 看到的可用核心数。完整的取舍列在 RFC-0023。
 
 ## 相关
 

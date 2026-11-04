@@ -324,7 +324,7 @@ curl -X POST http://localhost:5000/orders \
 回放不比对请求内容，同一个键配不同的请求体照样拿回首次的响应；键要按「一次业务意图一个键」生成。记录不能回放给本次调用时返回 `CACHING_CONFLICT_003`（HTTP 409）：
 
 - 同一个键被另一个操作用过，或在操作与非操作调用之间复用（消息键 `caching.idempotency.key_reused`，参数 `operation`、`recorded`）。
-- 记录里没有响应，或响应按当前的响应类型解码不了（`caching.idempotency.response_unavailable`）。升级前写下的成功记录不带操作与响应，升级后 24 小时内用同一个键重放会得到这个冲突，换一个键即可。
+- 记录里没有响应，或响应按当前的响应类型解码不了（`caching.idempotency.response_unavailable`），换一个键即可。
 
 响应随记录保存 `TimeToLive`，响应很大的操作带幂等键时要考虑共享缓存的容量。Idempotency 阶段在 Authenticate、Tenant、Authorize、Validate 之后，被这些阶段拒绝的调用不会写入记录；在 Transaction 之前，所以记录的是提交之后的最终结果。阶段顺序见[执行管道](./pipeline)。
 
@@ -455,7 +455,7 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
-每次操作带 `TimeoutMilliseconds`（默认 5000）的截止时间。插件返回的缓存域错误（`CACHING_VALIDATION_00x`）原样成为 `FrameworkException`；插件未加载、操作未登记、进程不可达、超时都映射为 `CACHING_UNAVAILABLE_001`。Go 实现见 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 的 `caching` 包，示例插件在 `next/samples/CacheGoPlugin`。远程 Provider 是 Experimental，没有键管理与变更通知；插件机制见[插件](./plugins)。
+每次操作带 `TimeoutMilliseconds`（默认 5000）的截止时间。插件返回的缓存域错误（`CACHING_VALIDATION_00x`）原样成为 `FrameworkException`；插件未加载、操作未登记、进程不可达、超时都映射为 `CACHING_UNAVAILABLE_001`。Go 实现见 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 的 `caching` 包，示例插件在 `framework/samples/CacheGoPlugin`。远程 Provider 是 Experimental，没有键管理与变更通知；插件机制见[插件](./plugins)。
 
 ## 配置
 

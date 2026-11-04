@@ -57,10 +57,10 @@
 
 ## 生成部署产物
 
-5.0 尚未发布到 nuget.org，工具可以从源码运行（在仓库根执行）：
+框架尚未发布到 nuget.org，工具可以从源码运行（在仓库根执行）：
 
 ```bash
-dotnet run --project next/src/XiHan.Framework.Cli -- pack --manifest next/samples/KubernetesApp/xihan.app.json
+dotnet run --project framework/src/XiHan.Framework.Cli -- pack --manifest framework/samples/KubernetesApp/xihan.app.json
 ```
 
 取得预览包后作为 .NET 工具安装（来源见[快速上手](../quickstart#获取预览包)），在清单所在目录执行：
@@ -275,7 +275,7 @@ app.Run();
 ```bash
 # Linux 上先装原生工具链
 sudo apt-get install -y clang zlib1g-dev
-dotnet publish next/samples/SimpleApp/SimpleApp.csproj --configuration Release -o ./artifacts/aot
+dotnet publish framework/samples/SimpleApp/SimpleApp.csproj --configuration Release -o ./artifacts/aot
 ```
 
 SimpleApp 做到可 AOT 发布的写法：项目文件声明 `<PublishAot>true</PublishAot>`，不在命令行传，以免这个全局属性传给 netstandard2.0 的分析器与生成器项目（NETSDK1207）；项目设 `<EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>`，把最小 API 的端点委托改为编译期生成；源生成的 `JsonSerializerContext` 插在 `ConfigureHttpJsonOptions` 解析链最前面；操作契约经 `Kernel.Generators` 在编译期生成登记代码与 JSON Schema（[Kernel.Generators](../packages/kernel-generators)）。容器里以 AOT 运行时，在应用清单里设 `"image": { "aot": true }`，生成的 Dockerfile 自动换成原生构建与 `runtime-deps` 镜像。
@@ -287,7 +287,7 @@ SimpleApp 做到可 AOT 发布的写法：项目文件声明 `<PublishAot>true</
 1. 本地运行，确认端点：
 
    ```bash
-   dotnet run --project next/samples/KubernetesApp
+   dotnet run --project framework/samples/KubernetesApp
    curl -s localhost:5100/config      # banner 来自 appsettings.json，configPath 为空
    curl -s localhost:5100/leader      # election 为 InMemoryLeaderElection，isLeader 为 true
    ```
@@ -295,13 +295,13 @@ SimpleApp 做到可 AOT 发布的写法：项目文件声明 `<PublishAot>true</
 2. 改了 `xihan.app.json` 后重新生成产物：
 
    ```bash
-   dotnet run --project next/src/XiHan.Framework.Cli -- pack --manifest next/samples/KubernetesApp/xihan.app.json
+   dotnet run --project framework/src/XiHan.Framework.Cli -- pack --manifest framework/samples/KubernetesApp/xihan.app.json
    ```
 
-3. 构建镜像（`build.context` 是 `next/`）并载入 kind：
+3. 构建镜像（`build.context` 是 `framework/`）并载入 kind：
 
    ```bash
-   cd next
+   cd framework
    docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1 .
    kind load docker-image ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1
    ```

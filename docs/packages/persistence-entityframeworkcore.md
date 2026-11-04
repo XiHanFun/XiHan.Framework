@@ -26,7 +26,7 @@
 - 新项目，或已经用 EF Core 的应用。
 - 表结构用 EF Core 迁移管理，复杂查询直接写在 `DbContext` 上。
 
-已有大量 SqlSugar 代码、需要一次调用写多个库或按时间分表时用 [Persistence.SqlSugar](./persistence-sqlsugar)；两个关系型 Provider 的 `IsAotCompatible` 都是 `false`，5.0 里标注为 AOT 兼容的持久化实现只有 [Persistence.InMemory](./persistence-inmemory)，AOT 发布的整体要求见[序列化与 Native AOT](../guide/aot)。
+已有大量 SqlSugar 代码、需要一次调用写多个库或按时间分表时用 [Persistence.SqlSugar](./persistence-sqlsugar)；两个关系型 Provider 的 `IsAotCompatible` 都是 `false`，标注为 AOT 兼容的持久化实现只有 [Persistence.InMemory](./persistence-inmemory)，AOT 发布的整体要求见[序列化与 Native AOT](../guide/aot)。
 
 ## 安装与启用
 
@@ -35,7 +35,7 @@
 <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用 `Microsoft.EntityFrameworkCore.Sqlite` 10.0.13 或更高：它带来的 `Microsoft.Data.Sqlite.Core` 10.0.13 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），更低的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用 `Microsoft.EntityFrameworkCore.Sqlite` 10.0.13 或更高：它带来的 `Microsoft.Data.Sqlite.Core` 10.0.13 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），更低的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
 
 1. 定义 `DbContext`：登记实体后调用 `ApplyPersistenceConventions(Database)`。
 2. 登记实体：`AddRepository<TEntity, TKey>()`。

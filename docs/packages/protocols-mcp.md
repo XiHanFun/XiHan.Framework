@@ -34,7 +34,7 @@ MCP 协议版本 `2025-06-18`。`McpProtocolFeature` 登记选项、本包的消
 <PackageReference Include="XiHan.Framework.Protocols.Mcp" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -99,7 +99,7 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Authorization: ApiKey dev-alice-key" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"orders_create","arguments":{"name":"widget","amount":3}}}'
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
 ```
 
 tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MCP 与 CloudEvents](../guide/protocols#mcp)。

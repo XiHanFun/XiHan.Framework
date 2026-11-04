@@ -34,7 +34,7 @@
 
 上例把框架日志调到 Warning，同时保留审计事件的 Information 日志。
 
-5.0 不包装 Serilog 或其他日志库，4.x 的「日志」一章并入本章：应用照常注入 `ILogger<T>`，需要第三方日志库时按该库的文档接到 `Microsoft.Extensions.Logging`。装配 `Observability.OpenTelemetry` 且 `Logging` 开启时，日志经 OpenTelemetry 的日志提供者与追踪、指标一起导出。
+框架不包装 Serilog 或其他日志库：应用照常注入 `ILogger<T>`，需要第三方日志库时按该库的文档接到 `Microsoft.Extensions.Logging`。装配 `Observability.OpenTelemetry` 且 `Logging` 开启时，日志经 OpenTelemetry 的日志提供者与追踪、指标一起导出。
 
 应用自己的日志也建议用 `[LoggerMessage]`：模板在编译期解析，不装箱，Native AOT 下可用。
 
@@ -172,7 +172,7 @@ public sealed partial class OrderExporter(ILogger<OrderExporter> logger)
 - 使用率与速率是两次采样之差，由后台采样器负责：启动时同步采一次，之后每 `SampleIntervalSeconds`（缺省 5，取值 (0, 3600]）采一次；读取只返回最近算出的值，不睡眠、不等待，启动后第一个间隔内为 `null`。一次采样失败记一条警告，保留上一次的值。
 - 不暴露命令行参数、环境变量与当前目录。
 
-Linux 与 Windows 读全部项；macOS 等其他平台只有 BCL 读得到的部分，CPU 型号与使用率、内存、GPU、主板为 `null`。容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额。与 4.x 的差异（NVIDIA 显存与温度、GPU 使用率、Windows 主板序列号等）列在 RFC-0023。
+Linux 与 Windows 读全部项；macOS 等其他平台只有 BCL 读得到的部分，CPU 型号与使用率、内存、GPU、主板为 `null`。容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额。读不到的项（NVIDIA 显存与温度、GPU 使用率、Windows 主板序列号等）列在 RFC-0023。
 
 把运行信息暴露给服务监控页：
 

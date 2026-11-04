@@ -41,7 +41,7 @@
 <PackageReference Include="XiHan.Framework.Messaging.RabbitMQ" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -145,16 +145,6 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 
 ## 升级说明
 
-- 先前版本由发布方建出、没有人订阅的队列（如 `xihan.scheduling.job.started` 等调度事件 `scheduling.job.*` 的队列）不再收到新消息，框架不删除它们，已经堆积的消息留在原处。确认没有消费者后由运维删除：
-
-  ```bash
-  # 找出没有消费者的队列（consumers 为 0）
-  rabbitmqctl list_queues name messages consumers
-  # 确认是框架主题、没有服务订阅后删除
-  rabbitmqctl delete_queue xihan.scheduling.job.started
-  ```
-
-- 订阅方用到的队列名与参数不变：升级后第一次启动即补上到交换机的绑定，积压照常消费。
 - 滚动升级：发布方已是新版本、订阅方仍是旧版本的那段时间里，新版本发出的消息没有绑定可走，按「没有订阅者」丢弃。先升级订阅方，或让一个新版本的订阅实例先启动一次建好绑定；同一个应用的实例既发布又订阅，第一个新版本实例启动即建好绑定。
 - 希望订阅方上线之前就留存消息的部署，由运维预先声明持久队列 `<QueuePrefix><topic>` 并以同名路由键绑定到交换机。
 

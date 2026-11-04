@@ -15,7 +15,7 @@
 
 ## 概述
 
-本包是显式 Provider，装配后顶替默认的文件系统存储，三个能力都由同一个 `S3BlobStore` 实例提供。客户端由特性按选项创建，停止时释放；应用自己注册了 `IAmazonS3`（自定义凭据链、代理、重试策略）时沿用应用的。各家兼容服务共用这一个包，不再为每家云单独做包。
+本包是显式 Provider，装配后顶替默认的文件系统存储，三个能力都由同一个 `S3BlobStore` 实例提供。客户端由特性按选项创建，停止时释放；应用自己注册了 `IAmazonS3`（自定义凭据链、代理、重试策略）时沿用应用的。各家兼容服务共用这一个包，不为每家云单独做包。
 
 `ServiceUrl` 为空时按 `Region` 访问 Amazon S3；有值时指向兼容服务，`Region` 作签名区域，并只在服务端要求时计算与校验校验和（多数兼容服务不支持分块尾部校验和）。`AccessKey` 与 `SecretKey` 都为空时走 SDK 的默认凭据链（环境变量、配置文件、实例角色）。
 
@@ -31,7 +31,7 @@
 <PackageReference Include="XiHan.Framework.ObjectStorage.S3" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeature>());
@@ -179,7 +179,7 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 - 没有配额，由桶策略管理。调用方的取消原样抛出。
 - 健康项 `objectstorage.s3.connection`：启动时与条件写入探测并行同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果（只做 HEAD 或列桶）；失败或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 只写异常类型，完整异常进日志），应用仍在服务。条件写入的状态即时并入：数据 `conditionalWrites` 为 `confirmed` / `unconfirmed` / `unsupported` / `disabled`，连不上 Degraded，启动之后才被拒绝或缺桶 Failed（`OBJECTSTORAGE_DENIED_002` / `OBJECTSTORAGE_NOTFOUND_001`），探明不认 Failed（`OBJECTSTORAGE_UNAVAILABLE_003`）。
 - 命名实例建出时探测条件写入（探明不认、被拒绝、探测桶不存在都不建；只有连不上的照常建出、后台重试；`ConditionalWrites` 关闭时不探测、建实例不发请求），被替换、移除或应用停止时停止重试、释放各自的客户端；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；健康探测对实例的 `HealthBucket` 做 HEAD（没配时列桶），连通之后再看条件写入，尚未确认或不认时 Degraded。
-- 通过 `ObjectStorage.Conformance` 全部用例（对 RustFS 1.0.4 验证，此前对 MinIO 验证；其余兼容服务的实测差异见 ADR-0086）。测试项目在设置 `XIHAN_TEST_S3`（如 `http://localhost:9000`）时对真实服务运行，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `rustfsadmin`（RustFS 镜像不设密钥时的根凭据）；未设置时跳过。`XIHAN_TEST_S3_UNCONDITIONAL` 指向不认条件写入的兼容服务（如 Zenko CloudServer）时，另核对启动与命名实例的建出都以 `OBJECTSTORAGE_UNAVAILABLE_003` 失败（2026-11-02 在 Zenko CloudServer 8.2.7 上补跑通过，ADR-0093）；对 RustFS 另核对密钥错、探测桶不存在让启动与命名实例的建出失败。
+- 通过 `ObjectStorage.Conformance` 全部用例（对 RustFS 1.0.4 验证，也对 MinIO 验证过；其余兼容服务的实测差异见 ADR-0086）。测试项目在设置 `XIHAN_TEST_S3`（如 `http://localhost:9000`）时对真实服务运行，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `rustfsadmin`（RustFS 镜像不设密钥时的根凭据）；未设置时跳过。`XIHAN_TEST_S3_UNCONDITIONAL` 指向不认条件写入的兼容服务（如 Zenko CloudServer）时，另核对启动与命名实例的建出都以 `OBJECTSTORAGE_UNAVAILABLE_003` 失败（2026-11-02 在 Zenko CloudServer 8.2.7 上补跑通过，ADR-0093）；对 RustFS 另核对密钥错、探测桶不存在让启动与命名实例的建出失败。
 
 | 错误码 | 含义 |
 | --- | --- |

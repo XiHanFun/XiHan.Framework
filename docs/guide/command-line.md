@@ -54,7 +54,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 没有命令时（包括只写了 `--help`）把用法写到 stderr 并返回 64；写了命令再带 `--help` 时把用法写到 stdout 并返回 0。
 
 ```bash
-dotnet run --project next/samples/SimpleCli -- operations
+dotnet run --project framework/samples/SimpleCli -- operations
 ```
 
 ```text
@@ -80,7 +80,7 @@ greetings.create	Experimental	Mcp, CommandLine	-
 参数的解析规则：第一个不是选项的记号是命令名，其余是位置参数；`--name value` 与 `--name=value` 等价；后面不跟值的 `--flag` 记为 `"true"`；`--` 之后全是位置参数。标志后面要接位置参数时写 `--flag=true`，或把标志放到最后。
 
 ```bash
-dotnet run --project next/samples/SimpleCli -- greetings create --name Ada --times 2
+dotnet run --project framework/samples/SimpleCli -- greetings create --name Ada --times 2
 ```
 
 ```json
@@ -111,7 +111,7 @@ app orders create --name widget --amount 3 --tenant acme --locale zh-CN --timeou
 成功时把响应 JSON 写一行到 stdout，退出码 0。失败时把一行 JSON 写到 stderr：`{"code":"<错误码>","detail":"<文案>","traceId":"<trace-id>"}`，`detail` 按 `--locale` 或默认区域翻译；还没有建出调用上下文的失败（用法错误、操作未暴露）没有 `traceId`。
 
 ```bash
-dotnet run --project next/samples/SimpleCli -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $?
+dotnet run --project framework/samples/SimpleCli -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $?
 ```
 
 ```text
@@ -177,13 +177,13 @@ builder.Services.AddXiHanCommand<VersionCommand>();
 装配了 `McpProtocolFeature` 时，`mcp` 命令以 stdio 提供 MCP 服务端：stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，stdin 关闭即结束会话。stdin 按 UTF-8 解码，与控制台代码页无关；答复只含 ASCII（非 ASCII 字符按 JSON 转义）。MCP 客户端以子进程方式启动应用：
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
 ```
 
 答复里的 tool `greetings_create` 带消息目录里的本地化描述。`mcp` 命令接受与 `invoke` 相同的上下文选项，作用于整个会话里的每个 `tools/call`：凭据 `--authorization '<scheme> <value>'` 或环境变量 `XIHAN_AUTHORIZATION`（选项优先，MCP 规范要求 stdio 服务端从运行环境取凭据），`--tenant`、`--correlation`、`--locale`（`tools/list` 的标题与描述、失败文案按它翻译），`--timeout <秒>` 是每个 `tools/call` 的时限。每个 `tools/call` 经完整管道，凭据在这次调用的 Authenticate 阶段认证；stdio 没有外层认证，凭据无效时需要认证的 tool 得到 `isError`（`SECURITY_DENIED_003`），会话继续。选项不合法（凭据不是 `<scheme> <value>`、时限不是正数）时不进入会话，stderr 写一行用法错误，退出码 64。
 
 ```bash
-XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project next/samples/SimpleCli -- mcp --tenant acme --locale zh-CN
+XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/samples/SimpleCli -- mcp --tenant acme --locale zh-CN
 ```
 
 tool 的规则见 [gRPC、MCP 与 CloudEvents](./protocols#mcp)。

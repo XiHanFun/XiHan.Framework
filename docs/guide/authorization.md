@@ -19,7 +19,7 @@
 
 权限是 `PermissionDefinition`：权限码、显示名、可选说明。权限码小写、点分、至少两段，每段以小写字母开头，可含数字与连字符，如 `orders.read`。特性在 `Configure` 里用 `FeatureContext.AddPermission` 登记到内核的 `PermissionRegistry`；权限码重复（`KERNEL_SECURITY_001`）或登记表已满（容量 10000，`KERNEL_SECURITY_002`）在装配时抛出。
 
-下面的特性改写自 `next/samples/SimpleApp/Orders/OrdersFeature.cs`，只保留授权相关的部分：
+下面的特性改写自 `framework/samples/SimpleApp/Orders/OrdersFeature.cs`，只保留授权相关的部分：
 
 ```csharp
 using XiHan.Framework.Kernel;
@@ -72,7 +72,7 @@ public sealed class OrdersFeature : IFeature
 | 普通端点 | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource?)`、`RequireXiHanPolicy(name, resource?)` | 挂在端点元数据上，`UseXiHan()` 构造调用上下文时放进去 |
 | 中间件 | `context.RequireAuthorization(requirement)` | Authorize 阶段之前的中间件设置 |
 
-`next/samples/SimpleApp` 的 `CreateOrder` 在契约上写了 `Permission = "orders.write"`，`ListOrders` 写了 `Permission = "orders.read"`；同一份契约经 HTTP、gRPC、MCP 与命令行调用，判定都在 Authorize 阶段完成一次。端点上的写法：
+`framework/samples/SimpleApp` 的 `CreateOrder` 在契约上写了 `Permission = "orders.write"`，`ListOrders` 写了 `Permission = "orders.read"`；同一份契约经 HTTP、gRPC、MCP 与命令行调用，判定都在 Authorize 阶段完成一次。端点上的写法：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

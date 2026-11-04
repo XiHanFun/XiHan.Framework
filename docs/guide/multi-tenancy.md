@@ -1,10 +1,10 @@
 # 多租户
 
-本章讲 5.0 怎样在一次调用里确定租户、租户存在哪里、租户数据怎样隔离到各自的库，适用于做 SaaS 或需要按租户隔离数据的应用。完整 API 见 [MultiTenancy.Abstractions](../packages/multitenancy-abstractions)、[MultiTenancy.InMemory](../packages/multitenancy-inmemory) 与 [MultiTenancy.Database](../packages/multitenancy-database) 三个包页。
+本章讲框架怎样在一次调用里确定租户、租户存在哪里、租户数据怎样隔离到各自的库，适用于做 SaaS 或需要按租户隔离数据的应用。完整 API 见 [MultiTenancy.Abstractions](../packages/multitenancy-abstractions)、[MultiTenancy.InMemory](../packages/multitenancy-inmemory) 与 [MultiTenancy.Database](../packages/multitenancy-database) 三个包页。
 
 ## 租户在调用里的位置
 
-租户是调用上下文的一部分。管道的 Tenant 阶段（`TenantResolutionMiddleware`）在每次调用里解析一次租户、核对后写进安全上下文 `SecurityContext.Tenant`，之后的阶段只读它：Authorize 阶段按租户取授予，Transaction 阶段用租户开工作单元，幂等键与审计记录带上租户。5.0 没有环境态的"当前租户"访问器，读租户只有一个入口：`context.GetSecurity().Tenant`。
+租户是调用上下文的一部分。管道的 Tenant 阶段（`TenantResolutionMiddleware`）在每次调用里解析一次租户、核对后写进安全上下文 `SecurityContext.Tenant`，之后的阶段只读它：Authorize 阶段按租户取授予，Transaction 阶段用租户开工作单元，幂等键与审计记录带上租户。框架没有环境态的"当前租户"访问器，读租户只有一个入口：`context.GetSecurity().Tenant`。
 
 阶段顺序决定了租户能用到什么：`Authenticate → Tenant → Authorize`。Tenant 阶段在认证之后，所以能读已认证主体的租户声明；在授权之前，所以租户专属的授予在判权时已经生效。
 
@@ -34,7 +34,7 @@
 
 ## 启用
 
-内存实现从配置装载租户。下面是 `next/samples/SimpleApp` 的配置：`acme` 启用，`globex` 已禁用。
+内存实现从配置装载租户。下面是 `framework/samples/SimpleApp` 的配置：`acme` 启用，`globex` 已禁用。
 
 ```json
 {
@@ -187,7 +187,7 @@ Transaction 阶段的 `UnitOfWorkMiddleware` 用安全上下文里的租户开�
 
 ## 租户分片
 
-分片（ADR-0018）是 `multitenancy.sharding@1`：按租户把数据落到租户自己的库。5.0 只做库级隔离；行级隔离就是上一节的租户过滤，Schema 级隔离由应用经透传属性自行处理。
+分片（ADR-0018）是 `multitenancy.sharding@1`：按租户把数据落到租户自己的库。框架只做库级隔离；行级隔离就是上一节的租户过滤，Schema 级隔离由应用经透传属性自行处理。
 
 分片解析器契约是 `ITenantShardResolver`：`ResolveAsync(tenantId)` 返回 `Result<Maybe<TenantShard>>`，共库租户与未知租户是成功且无值，租户存储不可达返回 `MULTITENANCY_UNAVAILABLE_002`；`Invalidate(tenantId?)` 丢弃缓存，参数为 `null` 时清空全部。`TenantShard` 带租户 ID、连接串、可选的提供者名（转成小写，如 `postgresql`）与透传属性。
 

@@ -10,7 +10,7 @@
 
 ## 背景
 
-ADR-0018 把租户分片契约与默认解析器放进 `MultiTenancy.Abstractions`，并写明"`MultiTenancy.Database`（租户目录进数据库）另行按需做，分片不依赖它"。BasicApp 6.0 的租户目录在数据库里（4.x 的 `SysTenant` 表：ID、名称、启用状态、连接串等），默认的 `MultiTenancy.InMemory` 只能从配置装载、容量有界，应用要么自己实现 `ITenantStore`，要么把全部租户抄进配置。用户 2026-10-27 决定在框架里实现这个 Provider，而不是由 BasicApp 自己绕过。
+ADR-0018 把租户分片契约与默认解析器放进 `MultiTenancy.Abstractions`，并写明"`MultiTenancy.Database`（租户目录进数据库）另行按需做，分片不依赖它"。BasicApp 6.0 的租户目录在数据库里（`SysTenant` 表：ID、名称、启用状态、连接串等），默认的 `MultiTenancy.InMemory` 只能从配置装载、容量有界，应用要么自己实现 `ITenantStore`，要么把全部租户抄进配置。用户 2026-10-27 决定在框架里实现这个 Provider，而不是由 BasicApp 自己绕过。
 
 难点在于目录的读取方式。仓储只能在活动的工作单元里使用，应用调用里由 Transaction 阶段的 `UnitOfWorkMiddleware` 开启；而 `ITenantStore` 是 Tenant 阶段（在 Transaction 之前）要查的东西，还会被分片解析器与后台线程调用。
 
@@ -44,6 +44,6 @@ ADR-0018 把租户分片契约与默认解析器放进 `MultiTenancy.Abstraction
 ## 影响
 
 - 新包 `MultiTenancy.Database` 与测试项目 `MultiTenancy.Database.Tests`（`TenantStoreConformance` 与 `TenantShardResolverConformance` 对内存持久化全部通过；对 SQLite（`Persistence.SqlSugar`）验证实体映射与属性往返）。
-- `next/README.md` 包表加一行；RFC-0007 的 Provider 表由主会话修订。
+- `framework/README.md` 包表加一行；RFC-0007 的 Provider 表由主会话修订。
 - 待内核决定：能力图的拓扑排序是否该在可选依赖处断环（可选边只用于 Degraded 判定与排序偏好，不是硬依赖）。若断环，本包可把 `persistence.relational@1` 写回 `requires` 并去掉启动期核对；在此之前，任何"需要持久化、又被持久化 Provider 可选依赖"的 Provider 都只能用同样的方式。
 - BasicApp 6.0 的租户目录改为 `TenantRecord` 表（或在迁移里把 `SysTenant` 投影成它），管理操作经 `TenantRecordStore` 写入；连接串放进属性 `ConnectionString`，分片语义不变。

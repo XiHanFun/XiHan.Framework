@@ -56,7 +56,7 @@ Schema 的生成规则：
 <PackageReference Include="XiHan.Framework.Kernel.Generators" Version="5.0.0-preview.1" PrivateAssets="all" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：
 
 ```xml
 <ProjectReference Include="../../src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
@@ -161,7 +161,7 @@ public sealed class NotesFeature : IFeature
 - `ReadOnly = true` 原样生成为契约的只读标记，协议据此推导（MCP 的 `readOnlyHint`、HTTP 的 `GET`）；`get` / `list` 本来就是只读。
 - 落定的 `Expose` 值写进生成的 `OperationContract`，运行期不再读特性。
 - 生成器只处理当前项目里的操作与序列化上下文，引用的其他程序集里的 `JsonSerializerContext` 不参与解析（XHG002）。
-- 清单的源生成（`[Capability]` → `Manifest` 属性与嵌入的 `xihan.manifest.json`）顺延，5.0 未提供：每个特性在 `Manifest` 属性里手写清单（[能力包与清单](../guide/modularity)，ADR-0075）。
+- 清单的源生成（`[Capability]` → `Manifest` 属性与嵌入的 `xihan.manifest.json`）顺延，尚未提供：每个特性在 `Manifest` 属性里手写清单（[能力包与清单](../guide/modularity)，ADR-0075）。
 
 ## 相关
 

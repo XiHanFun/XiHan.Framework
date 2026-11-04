@@ -1,8 +1,8 @@
 # 序列化与 Native AOT
 
-本章说明 5.0 为什么要求源生成的序列化、哪些地方需要登记 `JsonSerializerContext`、哪些包兼容 Native AOT，以及发布 AOT 应用的步骤。适用于所有写操作、领域事件与缓存的开发者，以及要以 Native AOT 发布的团队。
+本章说明框架为什么要求源生成的序列化、哪些地方需要登记 `JsonSerializerContext`、哪些包兼容 Native AOT，以及发布 AOT 应用的步骤。适用于所有写操作、领域事件与缓存的开发者，以及要以 Native AOT 发布的团队。
 
-4.x 的对象映射与序列化封装在 5.0 不再提供，序列化直接使用 System.Text.Json。
+框架不提供对象映射与序列化封装，序列化直接使用 System.Text.Json。
 
 ## 零反射的约束
 
@@ -56,7 +56,7 @@ internal sealed partial class ShopJsonContext : JsonSerializerContext;
 
 ## 发布 AOT 应用
 
-仓库的 `next/samples/SimpleApp` 是 AOT 冒烟项目，项目文件里声明了 `PublishAot`，CI 每次都以 Native AOT 发布它。按它的写法：
+仓库的 `framework/samples/SimpleApp` 是 AOT 冒烟项目，项目文件里声明了 `PublishAot`，CI 每次都以 Native AOT 发布它。按它的写法：
 
 1. 只引用兼容 AOT 的包，持久化用 `Persistence.InMemory` 或自己实现兼容 AOT 的 Provider。
 2. 项目文件声明 `PublishAot`，并打开最小 API 的请求委托生成器，去掉端点参数绑定里的反射：
@@ -88,7 +88,7 @@ internal sealed partial class ShopJsonContext : JsonSerializerContext;
 
 ## 对象映射
 
-5.0 不提供对象映射组件。实体与响应之间的转换写成显式的构造或静态方法，例如 `new OrderResponse(order.Id, order.Name, order.Amount)`；需要大量映射时选用编译期生成代码的映射库，保持零反射。
+框架不提供对象映射组件。实体与响应之间的转换写成显式的构造或静态方法，例如 `new OrderResponse(order.Id, order.Name, order.Amount)`；需要大量映射时选用编译期生成代码的映射库，保持零反射。
 
 ## 相关
 

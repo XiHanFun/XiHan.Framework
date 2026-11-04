@@ -153,10 +153,6 @@ ADR-0105 让运行期的失败原因按调用方区域本地化，留了三处�
     - 新增 `WorkflowLocalizationTests`：表达式诊断、描述符的渲染与回退、全部状态都有键、`lastError` 的新旧形状。
   - 用例 10 里 `lastError.code == 'WORKFLOW_UNEXPECTED_001'` 的判断照旧通过。
 
-## 4.x 对照
-
-4.x 的定义校验与受理人规则的问题是写在代码里的中文文本（只读查看 `framework/src/XiHan.Framework.Workflow/Definitions/WorkflowDefinitionValidator.cs`、`Assignees/WorkflowAssigneeResolver.cs`），不随调用方的区域变化。5.0 不对齐 4.x，按 RFC-0010 统一处理。
-
 > 修订（2026-11-03，第十六批）：「定义 JSON」一节里模型 `init` 拒绝的值不再报 `json_value_invalid`（该键删除）。`WorkflowJson.DeserializeDefinition` 在构造模型之前按与模型同一份规则核对文档，问题以 `workflow.definition.invalid`（参数 `count`）与 `details.errors` 的违规列表返回，形状同发布时的校验：
 >
 > - 规则只在一处：值的规则是内部的 `WorkflowDefinitionRules`（定义 ID、版本、分类长度、超时、变量名、重试策略的三项），加上已有的 `WorkflowName.IsValid`、`ActivityType.IsValid`、`WorkflowIdentifiers.IsValidElementId`；模型的 `init` 与读入的核对（内部的 `WorkflowDefinitionPrecheck`）都调用它们。必填成员取自序列化器元数据里的 `IsRequired`（即模型的 `required`），成员名按序列化器同一命名策略由属性名得出。

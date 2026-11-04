@@ -55,7 +55,7 @@ ADR-0087 第二节让 EF Core 支持命名连接，只做了「绑定连接的�
 
 ### 决策
 
-不补，维持明确报错（用户拍板）。RFC-0005「命名连接」的 EF Core 一行、Provider 表、`error-codes.md` 的 `PERSISTENCE_UNAVAILABLE_008`、docs-next 持久化指南与 EF Core 包页、EF Core 包 README 写明已定：不做每个连接一个 `DbContext`、跨上下文顺序提交的多上下文工作单元；要在业务事务里一起读写命名连接上的实体，用 SqlSugar Provider。顺带改正 docs-next `persistence-abstractions` 页里「只有 SqlSugar 支持命名连接」的旧说法。
+不补，维持明确报错（用户拍板）。RFC-0005「命名连接」的 EF Core 一行、Provider 表、`error-codes.md` 的 `PERSISTENCE_UNAVAILABLE_008`、docs 持久化指南与 EF Core 包页、EF Core 包 README 写明已定：不做每个连接一个 `DbContext`、跨上下文顺序提交的多上下文工作单元；要在业务事务里一起读写命名连接上的实体，用 SqlSugar Provider。顺带改正 docs `persistence-abstractions` 页里「只有 SqlSugar 支持命名连接」的旧说法。
 
 ### 理由
 

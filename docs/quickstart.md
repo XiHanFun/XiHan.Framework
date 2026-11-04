@@ -1,44 +1,43 @@
 # 快速上手
 
-本页从取得 5.0 预览包开始，建一个 ASP.NET Core 应用，写一个操作契约并经 HTTP 调用它，再换成 Standard 组合观察能力图谱与管道。适合第一次使用 5.0 的开发者，全程约 15 分钟。
+本页从取得预览包开始，建一个 ASP.NET Core 应用，写一个操作契约并经 HTTP 调用它，再换成 Standard 组合观察能力图谱与管道。适合第一次使用框架的开发者，全程约 15 分钟。
 
 ## 环境准备
 
 | 项 | 要求 |
 | --- | --- |
 | .NET SDK | .NET 10 SDK；从源码构建框架时用仓库 `global.json` 锁定的 10.0.4xx 功能带 |
-| Git | 克隆 `XiHan.Framework` 仓库并切到 `next` 分支 |
+| Git | 克隆 `XiHan.Framework` 仓库 |
 | 编辑器 | Visual Studio 2026、Rider 或 VS Code（C# Dev Kit） |
 
 ## 获取预览包
 
-5.0 尚未发布到 nuget.org。框架源码在 [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) 仓库的 `next` 分支，包的版本是 `5.0.0-preview.1`。两种引用方式任选其一。
+框架尚未发布到 nuget.org。框架源码在 [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) 仓库，包的版本是 `5.0.0-preview.1`。两种引用方式任选其一。
 
 ### 方式一：源码引用
 
 适合同时调试框架源码的场景。
 
-1. 克隆仓库并切到 `next` 分支：
+1. 克隆仓库：
 
    ```bash
    git clone https://github.com/XiHanFun/XiHan.Framework.git
    cd XiHan.Framework
-   git switch next
    ```
 
-2. 需要构建整个解决方案时初始化规范子模块（`Plugins.Protocol` 从 `next/spec/plugin/plugin.proto` 生成代码）：
+2. 需要构建整个解决方案时初始化规范子模块（`Plugins.Protocol` 从 `framework/spec/plugin/plugin.proto` 生成代码）：
 
    ```bash
-   git submodule update --init next/spec
+   git submodule update --init framework/spec
    ```
 
-3. 应用项目以 `ProjectReference` 引用 `next/src` 下的项目，源生成器按分析器引用：
+3. 应用项目以 `ProjectReference` 引用 `framework/src` 下的项目，源生成器按分析器引用：
 
    ```xml
    <ItemGroup>
-     <ProjectReference Include="../XiHan.Framework/next/src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
-     <ProjectReference Include="../XiHan.Framework/next/src/XiHan.Framework.Protocols.Http/XiHan.Framework.Protocols.Http.csproj" />
-     <ProjectReference Include="../XiHan.Framework/next/src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj"
+     <ProjectReference Include="../XiHan.Framework/framework/src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
+     <ProjectReference Include="../XiHan.Framework/framework/src/XiHan.Framework.Protocols.Http/XiHan.Framework.Protocols.Http.csproj" />
+     <ProjectReference Include="../XiHan.Framework/framework/src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj"
                        OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
    </ItemGroup>
    ```
@@ -50,12 +49,12 @@
 1. 在仓库根还原、构建并打包（打包前先按方式一的第 2 步初始化子模块）：
 
    ```bash
-   dotnet restore next/XiHan.Framework.Next.slnx
-   dotnet build next/XiHan.Framework.Next.slnx -c Release --no-restore
-   dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build
+   dotnet restore framework/XiHan.Framework.slnx
+   dotnet build framework/XiHan.Framework.slnx -c Release --no-restore
+   dotnet pack framework/XiHan.Framework.slnx -c Release --no-build
    ```
 
-   包写到 `next/artifacts/packages/`，文件名形如 `XiHan.Framework.Kernel.5.0.0-preview.1.nupkg`。
+   包写到 `framework/artifacts/packages/`，文件名形如 `XiHan.Framework.Kernel.5.0.0-preview.1.nupkg`。
 
 2. 在应用的解决方案目录放一个 `nuget.config`，把这个目录登记为包源：
 
@@ -63,7 +62,7 @@
    <?xml version="1.0" encoding="utf-8"?>
    <configuration>
      <packageSources>
-       <add key="xihan-next-local" value="../XiHan.Framework/next/artifacts/packages" />
+       <add key="xihan-local" value="../XiHan.Framework/framework/artifacts/packages" />
      </packageSources>
    </configuration>
    ```
@@ -291,7 +290,7 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 
 ## 完整示例
 
-仓库的 `next/samples` 下有几个零外部设施即可运行的示例：
+仓库的 `framework/samples` 下有几个零外部设施即可运行的示例：
 
 | 示例 | 内容 |
 | --- | --- |
@@ -301,7 +300,7 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 | `SamplePlugin`、`EchoPlugin`、`EchoWasmPlugin`、`EchoGoPlugin`、`CacheGoPlugin` | 进程内、进程外（.NET、Go）与 Wasm 插件 |
 
 ```bash
-dotnet run --project next/samples/SimpleApp
+dotnet run --project framework/samples/SimpleApp
 curl -s -X POST localhost:5000/orders -H "Authorization: ApiKey dev-alice-key" -H "Content-Type: application/json" -d '{"name":"widget","amount":3}'
 ```
 

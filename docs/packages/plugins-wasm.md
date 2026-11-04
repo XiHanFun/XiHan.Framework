@@ -26,7 +26,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 - 插件代码不受信任，需要内存、CPU 与文件系统边界：用本包。
 - 插件要在 Authenticate、Tenant、Observe 等阶段插入逻辑（审计、租户拦截、补充 Baggage）：只有本包支持插件贡献中间件。
 - 插件需要网络访问、流式操作或多实例并发：ABI v1 不支持，用 [Plugins.OutOfProcess](./plugins-outofprocess)。
-- 生产环境需要稳定的 ABI：本包是 Experimental，ABI 只增不改但 5.x 内不承诺不升版本。
+- 生产环境需要稳定的 ABI：本包是 Experimental，ABI 只增不改但当前大版本内不承诺不升版本。
 
 ## 安装与启用
 
@@ -34,7 +34,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 <PackageReference Include="XiHan.Framework.Plugins.Wasm" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -154,7 +154,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 
 ```bash
 rustup target add wasm32-wasip1
-cd next/samples/EchoWasmPlugin
+cd framework/samples/EchoWasmPlugin
 cargo build --release --target wasm32-wasip1
 cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 ```

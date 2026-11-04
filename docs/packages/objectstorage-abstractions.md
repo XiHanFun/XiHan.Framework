@@ -31,7 +31,7 @@
 <PackageReference Include="XiHan.Framework.ObjectStorage.Abstractions" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。
 
 ## 配置
 
@@ -134,7 +134,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 }
 ```
 
-`AzureBlobStore` 与 `TestSettings` 代表应用自己的实现与测试设置，5.0 没有提供 Azure Blob Provider。命名实例的 Provider 另继承 `BlobStoreProviderConformance`，实现 `CreateProvider()`、`ValidSettings()` 与 `OtherValidSettings()`。
+`AzureBlobStore` 与 `TestSettings` 代表应用自己的实现与测试设置，框架没有提供 Azure Blob Provider。命名实例的 Provider 另继承 `BlobStoreProviderConformance`，实现 `CreateProvider()`、`ValidSettings()` 与 `OtherValidSettings()`。
 
 ## 行为与限制
 

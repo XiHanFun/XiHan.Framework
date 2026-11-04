@@ -29,7 +29,7 @@
 <PackageReference Include="XiHan.Framework.Domain" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性，不需要 `UseFeature`。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性，不需要 `UseFeature`。
 
 ## 主要类型
 

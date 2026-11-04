@@ -14,15 +14,15 @@
 
 ### 背景
 
-ADR-0099 第一节把关键字的匹配范围对齐 4.x 时，顺带把实例行的 `SearchTitle` 改名 `SearchText`（实例标题 + 关联 ID）、书签行的 `SearchInstanceTitle` 改名 `SearchInstanceText`（实例标题 + 关联 ID + 定义名）。改名是分区自定的，第九批收口时列为待定：若想保留旧列名，只要改回两个属性名与 PublicAPI。
+ADR-0099 第一节扩大关键字的匹配范围时，顺带把实例行的 `SearchTitle` 改名 `SearchText`（实例标题 + 关联 ID）、书签行的 `SearchInstanceTitle` 改名 `SearchInstanceText`（实例标题 + 关联 ID + 定义名）。改名是分区自定的，第九批收口时列为待定：若想保留旧列名，只要改回两个属性名与 PublicAPI。
 
 ### 决策
 
-用户拍板接受改名，定为已定，不改代码。RFC-0021 的 `Workflow.Database` 一段写明两处列名已定；docs-next 的 Workflow.Database 包页「从上一版升级」一段同步。
+用户拍板接受改名，定为已定，不改代码。RFC-0021 的 `Workflow.Database` 一段写明两处列名已定；docs 的 Workflow.Database 包页「从上一版升级」一段同步。
 
 ### 理由
 
-列里已经不只是标题，旧名会误导回填与排查；5.0 还在预览、BasicApp 的 6.0.0 基线还没发布，改名的代价只是重新生成基线。
+列里已经不只是标题，旧名会误导回填与排查；框架还在预览、BasicApp 的 6.0.0 基线还没发布，改名的代价只是重新生成基线。
 
 ### 影响
 
@@ -47,7 +47,7 @@ ADR-0098 让 SqlSugar 的 `string.Contains` / `StartsWith` / `EndsWith` 在 SQLi
 - 兼容库与其余数据库维持 SqlSugar 原来的翻译，按通配匹配：实参里的 `%`、`_` 是通配符，PostgreSQL 系的兼容库上以反斜杠结尾的实参可能报错。某个库在真实库上验证了 `ESCAPE '!'` 与转义规则之后再加进名单（`LiteralStringMatching` 按 `DbType` 判断的那一处），与部分唯一索引（ADR-0081、ADR-0084）的名单同一做法。
 - 运行时数据源的客户端不施加约定，同样按通配匹配，不为它单独登记外部函数。
 - 工作流不另做绕法：兼容库上的关键字与应用自己实体的 `Contains` 查询一样，随持久化把库加进名单一并解决（ADR-0099 第四节的结论定为已定）。
-- RFC-0005「规约里的字符串匹配」的「字面匹配」一行写明这个例外；SqlSugar 段落、Provider 表、RFC-0021 关键字一段、SqlSugar 包 README 与 docs-next 的持久化指南、SqlSugar 包页、工作流指南写成已定。
+- RFC-0005「规约里的字符串匹配」的「字面匹配」一行写明这个例外；SqlSugar 段落、Provider 表、RFC-0021 关键字一段、SqlSugar 包 README 与 docs 的持久化指南、SqlSugar 包页、工作流指南写成已定。
 
 ### 理由
 

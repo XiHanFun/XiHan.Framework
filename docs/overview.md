@@ -1,6 +1,6 @@
 # 框架概述
 
-本页说明 XiHan Framework 5 的设计原则、环层与依赖规则、一次调用的执行路径、命名约定、稳定性分级与环境要求，供做技术评估与写扩展的读者参考。
+本页说明 XiHan Framework 的设计原则、环层与依赖规则、一次调用的执行路径、命名约定、稳定性分级与环境要求，供做技术评估与写扩展的读者参考。
 
 ## 三层承诺
 
@@ -45,7 +45,7 @@ Ring 0  原语层          Primitives
 5. 原语层与内核零反射；反射只允许出现在 `Plugins.InProcess`，并标注 `RequiresDynamicCode`。
 6. 工具链可以引用任何环。
 
-规则由 `next/test/XiHan.Framework.Architecture.Tests` 执行，违反即 CI 失败。
+规则由 `framework/test/XiHan.Framework.Architecture.Tests` 执行，违反即 CI 失败。
 
 ## 一次调用的路径
 
@@ -108,10 +108,9 @@ Egress：Result 与 Error 翻译回协议（HTTP 为 RFC 9457 Problem Details，
 
 ## 版本与兼容
 
-- 全部包共享一条版本线，从 `5.0.0` 起，当前为 `5.0.0-preview.1`。
+- 全部包共享一条版本线，当前为 `5.0.0-preview.1`。
 - 目标框架 `net10.0`；版本号遵循 SemVer 2.0。
 - 每个子系统的 Provider 接口单独版本化（`persistence.relational@1`），接口变更只加新版本并存。
-- 4.x 在 `framework/` 单独维护，与 5.0 互不引用。
 
 ## 环境要求
 

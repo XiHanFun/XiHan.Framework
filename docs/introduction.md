@@ -1,9 +1,9 @@
-# XiHan Framework 5
+# XiHan Framework
 
-XiHan Framework 5 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现，以微内核、能力图谱与管道执行为核心。本页说明框架的整体形态、最小写法与文档组织，适合第一次接触 5.0 的读者。
+XiHan Framework 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现，以微内核、能力图谱与管道执行为核心。本页说明框架的整体形态、最小写法与文档组织，适合第一次接触框架的读者。
 
-::: warning 5.0 处于预览阶段
-当前版本 `5.0.0-preview.1`，尚未发布到 nuget.org，取得方式见[快速上手](./quickstart#获取预览包)。5.0 在 `next` 分支从零重写，与 4.x 互不引用；4.x 单独维护，不提供 4.x 到 5.0 的迁移工具，差异见[从 4.x 迁移](./guide/upgrade)。
+::: warning 框架处于预览阶段
+当前版本 `5.0.0-preview.1`，尚未发布到 nuget.org，取得方式见[快速上手](./quickstart#获取预览包)。
 :::
 
 ## 框架的形态
@@ -112,12 +112,12 @@ app.Run();
 | 6–10 | 宿主与 Web 应用 · 操作契约 · HTTP 与 OpenAPI · gRPC、MCP 与 CloudEvents · 命令行宿主 |
 | 11–12 | 结果与错误 · 数据校验 |
 | 13–16 | 领域模型 · 持久化 · 工作单元与事务 · 多租户 |
-| 17–18 | 认证 · 授权 |
-| 19–23 | 缓存与分布式锁 · 消息与事件 · 调度与后台作业 · 工作流 · 实时通信 |
-| 24–27 | 对象存储 · 国际化 · 审计 · 可观测性 |
-| 28–31 | 序列化与 Native AOT · 标识生成 · AI · 弹性与限流 |
-| 32–34 | 插件 · 部署与打包 · 测试与一致性套件 |
-| 35–37 | 从 4.x 迁移 · 扩展与二次开发 · 常见问题 |
+| 17–19 | 认证 · 授权 · 出站地址策略 |
+| 20–24 | 缓存与分布式锁 · 消息与事件 · 调度与后台作业 · 工作流 · 实时通信 |
+| 25–28 | 对象存储 · 国际化 · 审计 · 可观测性 |
+| 29–32 | 序列化与 Native AOT · 标识生成 · AI · 弹性与限流 |
+| 33–35 | 插件 · 部署与打包 · 测试与一致性套件 |
+| 36–37 | 扩展与二次开发 · 常见问题 |
 
 ## 环层一览
 
@@ -168,8 +168,8 @@ app.Run();
 
 ## 社区资源
 
-- [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework)（5.0 在 `next` 分支） · [Gitee 镜像](https://gitee.com/XiHanFun/XiHan.Framework)
+- [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) · [Gitee 镜像](https://gitee.com/XiHanFun/XiHan.Framework)
 - [XiHan Spec](https://github.com/XiHanFun/framework-spec)：RFC、术语表、能力 ID、错误码与一致性向量
 - [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go)：Go SDK，用于编写进程外插件
-- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp)：基于本框架的企业级中后台，6.0 正在接入 5.0
+- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp)：基于本框架的企业级中后台
 - [问题反馈](https://github.com/XiHanFun/XiHan.Framework/issues) · QQ 群 462371834

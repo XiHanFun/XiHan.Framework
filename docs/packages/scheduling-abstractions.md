@@ -33,7 +33,7 @@
 <PackageReference Include="XiHan.Framework.Scheduling.Abstractions" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业：
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业：
 
 ```csharp
 using XiHan.Framework.Primitives;

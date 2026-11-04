@@ -33,7 +33,7 @@
 <PackageReference Include="XiHan.Framework.Plugins.InProcess" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性入口，失败结果的文案要由宿主应用注册消息目录（RFC-0010）：
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包没有特性入口，失败结果的文案要由宿主应用注册消息目录（RFC-0010）：
 
 ```csharp
 using XiHan.Framework.Localization.Abstractions;

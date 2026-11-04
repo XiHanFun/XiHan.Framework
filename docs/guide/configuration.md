@@ -1,12 +1,12 @@
 # 配置与选项
 
-本章讲 5.0 应用与框架怎样读配置：.NET 原生配置源与选项、`XiHan:<领域>` 配置节、挂载的配置目录与热更新、资源绑定、远程配置与密钥。适用于编写特性、准备部署配置的开发者。
+本章讲应用与框架怎样读配置：.NET 原生配置源与选项、`XiHan:<领域>` 配置节、挂载的配置目录与热更新、资源绑定、远程配置与密钥。适用于编写特性、准备部署配置的开发者。
 
 完整 API 见 [Configuration.Abstractions](../packages/configuration-abstractions) 与 [Configuration.Nacos](../packages/configuration-nacos) 包页。
 
 ## 配置模型
 
-5.0 不另造配置模型。应用与框架都读 `Microsoft.Extensions.Configuration` 的 `IConfiguration`，配置源仍是 `appsettings.json`、`appsettings.<环境>.json`、环境变量与命令行这些 .NET 原生来源，没有「默认配置包」。`Configuration.Abstractions` 只定义两个 Provider 契约（远程配置客户端与密钥库）和把它们接进 `IConfigurationBuilder` 的配置源。
+框架不另造配置模型。应用与框架都读 `Microsoft.Extensions.Configuration` 的 `IConfiguration`，配置源仍是 `appsettings.json`、`appsettings.<环境>.json`、环境变量与命令行这些 .NET 原生来源，没有「默认配置包」。`Configuration.Abstractions` 只定义两个 Provider 契约（远程配置客户端与密钥库）和把它们接进 `IConfigurationBuilder` 的配置源。
 
 框架包的选项是带 `ConfigurationSection` 常量的 record（`KernelOptions`、`LocalizationOptions`、`FileSystemObjectStorageOptions` 等），由各自的静态方法 `FromConfiguration(IConfiguration)` 逐键读取，不经反射绑定，因而在 Native AOT 下照常工作。特性在装配时读取一次并登记为单例：`AddXiHan` 返回之后再改 `XiHan:*` 下的键，要重启才对框架生效。命名存储实例是例外，它的定义在首次取用时才从 `XiHan:ObjectStorage:Stores:<name>` 读取（见[对象存储](./storage)）。
 
@@ -206,7 +206,7 @@ public sealed record LedgerConnection(string ConnectionString);
 
 ### Nacos
 
-5.0 提供的远程配置 Provider 是 [Configuration.Nacos](../packages/configuration-nacos)：直接调用 Nacos 的 HTTP 配置接口（v1，与 Nacos 2.x 兼容），命名空间参数就是 `dataId`，版本是服务端给出的内容 MD5，`knownVersion` 非空时先长轮询监听，服务端报告变化才取整份文档。下面把 `dataId` 为 `orders` 的 JSON 文档挂到 `Orders` 节下，服务地址等连接设置从 `XiHan:Configuration:Nacos` 读：
+框架提供的远程配置 Provider 是 [Configuration.Nacos](../packages/configuration-nacos)：直接调用 Nacos 的 HTTP 配置接口（v1，与 Nacos 2.x 兼容），命名空间参数就是 `dataId`，版本是服务端给出的内容 MD5，`knownVersion` 非空时先长轮询监听，服务端报告变化才取整份文档。下面把 `dataId` 为 `orders` 的 JSON 文档挂到 `Orders` 节下，服务地址等连接设置从 `XiHan:Configuration:Nacos` 读：
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions.Remote;
@@ -274,7 +274,7 @@ public sealed class OrderLimits
 | `Optional` | `bool` | `false` | 首次读取缺失或失败的项是否跳过（整体失败时该源为空，照常重读） |
 | `OnError` | `Action<Error>?` | `null` | 每个失败的项回调一次，整体失败回调一次，它抛出的异常被丢弃 |
 
-5.0 没有提供密钥库 Provider（Vault、Key Vault 等），应用按自己的密钥来源实现 `ISecretStore`，并让测试项目继承 `Configuration.Conformance` 的 `SecretStoreConformance` 验证语义。下面的实现从一个目录读文件，每个密钥一个文件：
+框架没有提供密钥库 Provider（Vault、Key Vault 等），应用按自己的密钥来源实现 `ISecretStore`，并让测试项目继承 `Configuration.Conformance` 的 `SecretStoreConformance` 验证语义。下面的实现从一个目录读文件，每个密钥一个文件：
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions;
@@ -366,7 +366,7 @@ builder.Configuration.AddXiHanSecrets(
 
 ## 配置节一览
 
-下表列出 5.0 各包在代码里读取的配置节（`ConfigurationSection` 常量与 `FromConfiguration` 读取的键）。`XiHan:Providers:<能力 ID>` 指定某个能力由哪份清单提供，原理见[能力包与清单](./modularity)。
+下表列出各包在代码里读取的配置节（`ConfigurationSection` 常量与 `FromConfiguration` 读取的键）。`XiHan:Providers:<能力 ID>` 指定某个能力由哪份清单提供，原理见[能力包与清单](./modularity)。
 
 | 配置节 | 所属包 | 用途 |
 | --- | --- | --- |

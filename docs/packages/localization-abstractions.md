@@ -39,7 +39,7 @@
 <PackageReference Include="XiHan.Framework.Localization.Abstractions" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Minimal`（以及包含它的 `Standard`、`Full`）已引用本包与默认实现。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Minimal`（以及包含它的 `Standard`、`Full`）已引用本包与默认实现。
 
 应用的语言文件以固定逻辑名嵌入：
 

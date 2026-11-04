@@ -10,7 +10,7 @@
 
 ## 背景
 
-ADR-0006 把 `Plugins.Wasm` 定为 5.0 的 Experimental 隔离级别。Wasm 插件要与进程外插件共用 `xihan.plugin.v1` 的消息，并额外能在管道阶段贡献中间件。需要决定模块形态（核心模块还是组件模型）、消息编码（protobuf 二进制还是 JSON）与宿主运行时。
+ADR-0006 把 `Plugins.Wasm` 定为 Experimental 隔离级别。Wasm 插件要与进程外插件共用 `xihan.plugin.v1` 的消息，并额外能在管道阶段贡献中间件。需要决定模块形态（核心模块还是组件模型）、消息编码（protobuf 二进制还是 JSON）与宿主运行时。
 
 ## 备选
 

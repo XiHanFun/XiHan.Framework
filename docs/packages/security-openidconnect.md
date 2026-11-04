@@ -33,7 +33,7 @@
 <PackageReference Include="XiHan.Framework.Security.OpenIdConnect" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

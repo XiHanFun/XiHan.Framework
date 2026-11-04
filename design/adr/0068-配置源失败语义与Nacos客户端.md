@@ -10,7 +10,7 @@
 
 ## 背景
 
-写 5.0 文档站的配置一章时，对照代码发现 `Configuration.Abstractions` 的两个配置源与 `Configuration.Nacos` 有几处行为与 RFC-0014 不一致，或者在失败时丢掉报告、停掉后台工作。本 ADR 记录修正时做出的设计决定，按条目分节。
+写文档站的配置一章时，对照代码发现 `Configuration.Abstractions` 的两个配置源与 `Configuration.Nacos` 有几处行为与 RFC-0014 不一致，或者在失败时丢掉报告、停掉后台工作。本 ADR 记录修正时做出的设计决定，按条目分节。
 
 ### 1. 加载与重读的失败处理前后不一
 
@@ -33,7 +33,7 @@ RFC-0014 规定 Nacos 的版本是内容 MD5，与监听接口的约定一致。
 
 ### 4. 地址里的路径被丢掉
 
-客户端用 `new UriBuilder(address) { Path = "/nacos/v1/cs/configs" }` 拼接口地址，整体替换了地址的路径。Nacos 改了上下文路径（`server.servlet.contextPath`），或经网关挂在某个前缀下时，地址里写的路径被悄悄丢掉，请求打到 `/nacos/...`，得到 404，被当作 `dataId` 不存在（`CONFIGURATION_NOTFOUND_001`）。包 README 没有写这条限制，docs-next 写了「不适用」。
+客户端用 `new UriBuilder(address) { Path = "/nacos/v1/cs/configs" }` 拼接口地址，整体替换了地址的路径。Nacos 改了上下文路径（`server.servlet.contextPath`），或经网关挂在某个前缀下时，地址里写的路径被悄悄丢掉，请求打到 `/nacos/...`，得到 404，被当作 `dataId` 不存在（`CONFIGURATION_NOTFOUND_001`）。包 README 没有写这条限制，docs 写了「不适用」。
 
 ## 备选
 

@@ -1,6 +1,6 @@
 # 对象存储
 
-本章讲 5.0 的对象存储：容器与键、批量写入与删除、按键读取与范围读取、按前缀分页列举、分片上传、预签名地址与命名存储实例，以及文件系统与 S3 两个实现怎么选。适用于在应用里存取文件、附件与大对象的开发者。
+本章讲框架的对象存储：容器与键、批量写入与删除、按键读取与范围读取、按前缀分页列举、分片上传、预签名地址与命名存储实例，以及文件系统与 S3 两个实现怎么选。适用于在应用里存取文件、附件与大对象的开发者。
 
 完整 API 见 [ObjectStorage.Abstractions](../packages/objectstorage-abstractions)、[ObjectStorage.FileSystem](../packages/objectstorage-filesystem) 与 [ObjectStorage.S3](../packages/objectstorage-s3) 包页。
 
@@ -16,7 +16,7 @@
 | `objectstorage.multipart@1` | `IBlobMultipartStore`：分片上传 | 提供（暂存目录） | 提供（原生 multipart） |
 | `objectstorage.presign@1` | `IBlobUrlSigner`：预签名地址 | 由 `Hosting.AspNetCore` 的宿主代收发提供 | 提供（客户端直连存储） |
 
-4.x 的虚拟文件系统在 5.0 不提供。读应用自带的只读文件（模板、静态数据）用 .NET 的 `IFileProvider`（`PhysicalFileProvider`、`ManifestEmbeddedFileProvider`）或程序集的嵌入资源；用户上传、需要按键存取的内容放对象存储。
+框架不提供虚拟文件系统。读应用自带的只读文件（模板、静态数据）用 .NET 的 `IFileProvider`（`PhysicalFileProvider`、`ManifestEmbeddedFileProvider`）或程序集的嵌入资源；用户上传、需要按键存取的内容放对象存储。
 
 ## 启用
 

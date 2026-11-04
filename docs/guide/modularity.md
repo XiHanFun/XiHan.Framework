@@ -1,6 +1,6 @@
 # 能力包与清单
 
-本章说明 5.0 的装配单元：特性（`IFeature`）、清单（`Manifest`）、能力 ID 与能力图谱的求解，以及同一能力有多个实现时如何选择 Provider。适用于所有在 5.0 上写应用或扩展的开发者。
+本章说明框架的装配单元：特性（`IFeature`）、清单（`Manifest`）、能力 ID 与能力图谱的求解，以及同一能力有多个实现时如何选择 Provider。适用于所有基于框架写应用或扩展的开发者。
 
 完整 API 见 [Kernel 包](../packages/kernel)与 [Primitives 包](../packages/primitives)。
 
@@ -41,7 +41,7 @@ app.Run();
 
 ## 清单
 
-清单是装配的事实源，特性以 `Manifest` 属性给出，内核在构建期校验格式（`Manifest.Validate()`）。5.0 的清单都是手写的：RFC-0002 设想的 `[Capability]` 清单生成器顺延，内核里的 `CapabilityAttribute` 运行期不读。字段与 XiHan Spec 的 `manifest.schema.json` 一一对应：
+清单是装配的事实源，特性以 `Manifest` 属性给出，内核在构建期校验格式（`Manifest.Validate()`）。清单都是手写的：RFC-0002 设想的 `[Capability]` 清单生成器顺延，内核里的 `CapabilityAttribute` 运行期不读。字段与 XiHan Spec 的 `manifest.schema.json` 一一对应：
 
 | 字段 | 必填 | 含义 |
 | --- | --- | --- |
@@ -124,7 +124,7 @@ public sealed class OrdersFeature : IFeature
 | `ai.chat` / `ai.embedding` / `ai.tools` / `ai.knowledge` | AI 端口 | `ai.tools` 由 `AIToolsFeature` 提供 |
 | `protocols.http` 等 `protocols.*` | 协议适配器 | 对应的 `Protocols.*` 包 |
 
-完整的已登记能力见[包总览](../packages/)。引用能力时带整数接口版本，写作 `persistence.relational@1`；求解时接口版本必须相等。接口变更只增加新版本并存（`@2`），不改旧版本的语义，因此按 `@1` 写的 Provider 在 5.x 全程可用。
+完整的已登记能力见[包总览](../packages/)。引用能力时带整数接口版本，写作 `persistence.relational@1`；求解时接口版本必须相等。接口变更只增加新版本并存（`@2`），不改旧版本的语义，因此按 `@1` 写的 Provider 在当前大版本内始终可用。
 
 依赖标为可选（`optional: true`）时，缺失不阻止启动，声明它的特性进入 `Degraded`，在健康端点报告。
 

@@ -37,7 +37,7 @@
 <PackageReference Include="XiHan.Framework.Persistence.Generators" Version="5.0.0-preview.1" PrivateAssets="all" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。在仓库里以项目引用时写成：
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。在仓库里以项目引用时写成：
 
 ```xml
 <ProjectReference Include="../../src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

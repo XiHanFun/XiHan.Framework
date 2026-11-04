@@ -34,7 +34,7 @@
 <PackageReference Include="XiHan.Framework.Localization.Database" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan
@@ -123,10 +123,10 @@ if (reloaded.IsFailure)
 - 刷新：按 `RefreshInterval` 周期重读；`ReloadAsync` 立即重读，只能在宿主服务期间调用。
 - 失败：加载失败时保留上一份快照，失败记在 `LastError` 并写一条警告日志。
 - 健康项 `localization.database.translations` 由加载器按最近一次加载的结果报告，不另起探测：还没加载过为 Started，成功为 Ready，最近一次失败为 Degraded（携带那次的错误），应用仍在服务。
-- 写入：`UpsertAsync` 先按 (键, 区域) 取回已有的行（键每 1000 个一批、结果分页读完），已有的更新、没有的新增，再用仓储的批量方法写入；同一批里重复的键与区域后者覆盖前者，各项结果指向同一行。同一键与区域再写一次是更新，不会写出第二行（早先只读第一页，已有行超过 1000 条时超出的被当成新行再插一遍）。表上的唯一索引 `UX_MessageTranslation_Ke_Lo`（`(Key, Locale)`）兜住并发：两个调用同时新增同一个键与区域，后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试按更新处理；内存持久化不建索引、不校验唯一性。按旧版本写出过重复行的库，补建唯一索引前先去重（每个键与区域留一行）。`RemoveAsync` 按顺序逐项删除，同一批里同一个键第二次出现时报告不存在。`ListAsync(locale, skip, take)` 按键排序分页，`locale` 为 `null` 时列全部，一页最多 1000 条。
+- 写入：`UpsertAsync` 先按 (键, 区域) 取回已有的行（键每 1000 个一批、结果分页读完），已有的更新、没有的新增，再用仓储的批量方法写入；同一批里重复的键与区域后者覆盖前者，各项结果指向同一行。同一键与区域再写一次是更新，不会写出第二行。表上的唯一索引 `UX_MessageTranslation_Ke_Lo`（`(Key, Locale)`）兜住并发：两个调用同时新增同一个键与区域，后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试按更新处理；内存持久化不建索引、不校验唯一性。已有重复行的库，补建唯一索引前先去重（每个键与区域留一行）。`RemoveAsync` 按顺序逐项删除，同一批里同一个键第二次出现时报告不存在。`ListAsync(locale, skip, take)` 按键排序分页，`locale` 为 `null` 时列全部，一页最多 1000 条。
 - 写入在调用的事务提交后才落库，要等下一次刷新或在调用返回之后 `ReloadAsync` 才生效；在同一个操作里紧接着 `ReloadAsync` 读不到未提交的行。
 - 校验：`MessageTranslationEntry` 要求键符合消息键文法、模板非空白，区域规范化大小写，不合法抛出 `ArgumentException`。`Locale` 列最长 35 个字符，与区域名文法的上限 `LocaleName.MaxLength` 一致，合法的区域名都能写入。
-- 已有库的 `Locale` 列：早先的版本把这一列声明为 16 个字符，17 到 35 个字符的合法区域名（如 `sr-Latn-RS-ekavsk`）在校验长度的数据库上写入失败。SqlSugar 的 `InitTables` 只建缺表、加缺列，不改已有列的长度，EF Core 的 `EnsureCreated` 也不改已有表，所以按旧版本建过表的库要手工放宽这一列，例如 PostgreSQL 上 `ALTER TABLE <翻译表> ALTER COLUMN <区域列> TYPE varchar(35);`（表名与列名以实际建表结果为准）；用 EF Core 迁移的应用生成一次迁移即可。SQLite 不校验长度，不用处理。
+- 已有表的 `Locale` 列：这一列声明为 35 个字符，更短的列在校验长度的数据库上写不进 17 到 35 个字符的合法区域名（如 `sr-Latn-RS-ekavsk`）。SqlSugar 的 `InitTables` 只建缺表、加缺列，不改已有列的长度，EF Core 的 `EnsureCreated` 也不改已有表，所以这样的表要手工放宽这一列，例如 PostgreSQL 上 `ALTER TABLE <翻译表> ALTER COLUMN <区域列> TYPE varchar(35);`（表名与列名以实际建表结果为准）；用 EF Core 迁移的应用生成一次迁移即可。SQLite 不校验长度，不用处理。
 - 通过 `Localization.Conformance` 的 `MessageLocalizerConformance`。
 
 | 错误码 | 含义 |

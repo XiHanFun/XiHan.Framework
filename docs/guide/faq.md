@@ -1,6 +1,6 @@
 # 常见问题
 
-本页收集使用 5.0 时最常遇到的问题与排查方法，按装配、操作与协议、数据与安全、版本与迁移分组。
+本页收集使用框架时最常遇到的问题与排查方法，按装配、操作与协议、数据与安全、版本与能力范围分组。
 
 ## 装配
 
@@ -83,20 +83,30 @@
 
 实体实现了 `IMultiTenant`，但当前调用没有租户。检查认证主体是否带租户声明、调用方是否在 Baggage 里给出租户，或把配置 `XiHan:MultiTenancy:RequireTenant` 打开，让没有租户的调用在 Tenant 阶段就被拒绝，见[多租户](./multi-tenancy)。
 
-## 版本与迁移
+## 版本与能力范围
 
-### 5.0 能用于生产吗
+### 框架能用于生产吗
 
-5.0 当前是 `5.0.0-preview.1`，尚未发布到 nuget.org，公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整。评估与新项目试点可以使用；需要稳定版本的生产系统继续使用 4.x。
+当前版本是 `5.0.0-preview.1`，尚未发布到 nuget.org，公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整。评估与新项目试点可以使用；需要稳定版本的生产系统等正式版。
 
-### 4.x 与 5.0 能在一个应用里混用吗
+### 框架不提供哪些能力
 
-不能。两条版本线互不引用，部分包 ID 相同而主版本不同，同一个应用只能引用其中一条。
+下列能力不由框架包装，原因是它们属于应用层需求，或 .NET 与成熟的专门组件已经覆盖。开发指南不为它们设章节。
 
-### 4.x 的某个模块在 5.0 里找不到
-
-对照表与不再提供的能力见[从 4.x 迁移](./upgrade)。
-
-### 有没有 4.x 到 5.0 的自动迁移工具
-
-没有。`xihan migrate` 只保留通用机制，当前没有登记任何规则集。
+| 能力 | 做法 |
+| --- | --- |
+| 机器人与消息通知渠道（邮件、短信、Telegram、钉钉、飞书、企业微信） | 应用直接使用各渠道的 SDK 或 HTTP 接口，封装成应用自己的服务；需要异步发送时经消息子系统投递。`Messaging` 是队列、流与发布订阅子系统，不是通知渠道 |
+| 实时通信（SignalR 封装） | 直接使用 ASP.NET Core SignalR，Hub 的认证经 `XiHan` 认证方案交给内核，见[实时通信](./realtime) |
+| 网关与流量治理 | 反向代理与转发用 YARP 等专门组件；按操作的熔断、限流、并发上限由内核的 Resilience 阶段提供，见[弹性与限流](./resilience) |
+| 模板引擎 | 直接使用 Scriban、Fluid 等模板库 |
+| 脚本引擎 | 不提供。需要隔离执行第三方逻辑时用插件，见[插件](./plugins) |
+| 搜索引擎 | 直接使用 Elasticsearch、OpenSearch 等的官方客户端 |
+| HTTP 客户端封装 | 使用 `IHttpClientFactory` 与 `Microsoft.Extensions.Http.Resilience` |
+| 数据加解密 | 使用 `System.Security.Cryptography` 与 ASP.NET Core Data Protection。`Security` 是认证与授权子系统 |
+| 对象映射 | 显式映射，或编译期生成代码的映射库，见[序列化与 Native AOT](./aot#对象映射) |
+| 序列化封装 | 直接使用 System.Text.Json 的源生成上下文 |
+| 虚拟文件系统 | 使用 .NET 的 `IFileProvider` 与嵌入资源 |
+| 设置 | 使用 .NET 配置与 `IOptionsMonitor`，远程配置见[配置与选项](./configuration) |
+| 声明式缓存特性 | 不提供，用 `ICacheStore`、`ICache`、`ISharedCache` 显式读写，见[缓存与分布式锁](./caching) |
+| 版本升级编排 | 由应用实现，需要单点执行时用调度子系统的领导选举 |
+| 开发工具 | 命令行宿主的 `graph`、`pipeline`、`operations`、`invoke` 与 `xihan` 工具，见[命令行宿主](./command-line) |

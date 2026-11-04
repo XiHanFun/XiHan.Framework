@@ -132,7 +132,7 @@ public sealed class ShipmentNotifier(IMessagePublisher publisher, TimeProvider c
 
 ## 订阅与处理
 
-处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic)` 订阅；处理器注册为作用域服务，每条消息在新作用域里解析。下面的处理器仿照 `next/samples/SimpleApp` 的 `OrderPlacedHandler`，加上了解码数据与读取租户：
+处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic)` 订阅；处理器注册为作用域服务，每条消息在新作用域里解析。下面的处理器仿照 `framework/samples/SimpleApp` 的 `OrderPlacedHandler`，加上了解码数据与读取租户：
 
 ```csharp
 using System.Text.Json;
@@ -245,7 +245,7 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 
 ## 领域事件
 
-聚合在工作单元里记录的领域事件由消息子系统派发（ADR-0025）。应用显式登记每种事件：主题、CloudEvents `type`、源生成的序列化元数据与可选的 `subject` 选择器。下面两行取自 `next/samples/SimpleApp` 的 `OrdersFeature`：
+聚合在工作单元里记录的领域事件由消息子系统派发（ADR-0025）。应用显式登记每种事件：主题、CloudEvents `type`、源生成的序列化元数据与可选的 `subject` 选择器。下面两行取自 `framework/samples/SimpleApp` 的 `OrdersFeature`：
 
 ```csharp
 // 聚合记录的 OrderPlaced 在提交前发到 orders 主题，类型 orders.placed，subject 是订单
@@ -278,7 +278,7 @@ context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 
 ## 事务性发件箱
 
-`OutboxFeature` 把「写业务数据」与「发消息」放进同一个工作单元。它在 `Messaging.Abstractions` 里，需要 `messaging.queue@1` 与 `persistence.relational@1`，不在任何组合包里，按需装配（`next/samples/SimpleApp` 的写法）：
+`OutboxFeature` 把「写业务数据」与「发消息」放进同一个工作单元。它在 `Messaging.Abstractions` 里，需要 `messaging.queue@1` 与 `persistence.relational@1`，不在任何组合包里，按需装配（`framework/samples/SimpleApp` 的写法）：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -357,7 +357,7 @@ Kafka 缺省开启 `auto.create.topics.enable`，发布或订阅到不存在的�
 
 ## 与 CloudEvents 协议的关系
 
-`Protocols.CloudEvents` 是信封在 HTTP 上的 CloudEvents 协议绑定：入站端点 `MapXiHanCloudEvents()` 接收 binary / structured / batch 三种内容模式，按 `XiHan:Protocols:CloudEvents:Topics:<事件类型>` 映射到主题，缺省在请求内经同一个 `MessageDispatcher` 派发给处理器（也可以只发布到代理）；出站的 `CloudEventsWebhookPublisher` 把信封推送到配置的 Webhook。`next/samples/SimpleApp` 的 `POST /events` 就是把外部的 `orders.placed` 事件交给 `OrderPlacedHandler`。细节见 [gRPC、MCP 与 CloudEvents](./protocols) 与 [Protocols.CloudEvents](../packages/protocols-cloudevents)。
+`Protocols.CloudEvents` 是信封在 HTTP 上的 CloudEvents 协议绑定：入站端点 `MapXiHanCloudEvents()` 接收 binary / structured / batch 三种内容模式，按 `XiHan:Protocols:CloudEvents:Topics:<事件类型>` 映射到主题，缺省在请求内经同一个 `MessageDispatcher` 派发给处理器（也可以只发布到代理）；出站的 `CloudEventsWebhookPublisher` 把信封推送到配置的 Webhook。`framework/samples/SimpleApp` 的 `POST /events` 就是把外部的 `orders.placed` 事件交给 `OrderPlacedHandler`。细节见 [gRPC、MCP 与 CloudEvents](./protocols) 与 [Protocols.CloudEvents](../packages/protocols-cloudevents)。
 
 ## 配置
 

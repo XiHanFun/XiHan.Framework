@@ -29,7 +29,7 @@
 <PackageReference Include="XiHan.Framework.Hosting.CommandLine" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。
 
 ```csharp
 using Microsoft.Extensions.Hosting;
@@ -63,9 +63,9 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 ## 使用示例
 
 ```bash
-dotnet run --project next/samples/SimpleCli -- greetings create --name Ada --times 2
-dotnet run --project next/samples/SimpleCli -- invoke greetings.create --json '{"name":"Ada"}' --locale zh-CN
-XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project next/samples/SimpleCli -- greetings create --name Ada
+dotnet run --project framework/samples/SimpleCli -- greetings create --name Ada --times 2
+dotnet run --project framework/samples/SimpleCli -- invoke greetings.create --json '{"name":"Ada"}' --locale zh-CN
+XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/samples/SimpleCli -- greetings create --name Ada
 ```
 
 自定义命令与选项的完整说明见[命令行宿主](../guide/command-line)。

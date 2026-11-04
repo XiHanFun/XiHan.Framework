@@ -1,6 +1,6 @@
 # CLI
 
-本页说明 AI 工具与开发者如何用命令行核对一个 5.0 应用：应用自带的命令行宿主命令，以及转发这些命令、生成部署产物的 `xihan` 工具。完整的包说明见 [Cli 包](../packages/cli)与[命令行宿主](../guide/command-line)。
+本页说明 AI 工具与开发者如何用命令行核对一个基于本框架的应用：应用自带的命令行宿主命令，以及转发这些命令、生成部署产物的 `xihan` 工具。完整的包说明见 [Cli 包](../packages/cli)与[命令行宿主](../guide/command-line)。
 
 ## 特点
 
@@ -23,19 +23,19 @@
 | `mcp` | 加入 `McpProtocolFeature` 后可用：以 stdio 提供 MCP 服务端 |
 
 ```bash
-dotnet run --project next/samples/SimpleCli -- operations
-dotnet run --project next/samples/SimpleCli -- greetings create --name Ada --times 2
-dotnet run --project next/samples/SimpleCli -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $?
+dotnet run --project framework/samples/SimpleCli -- operations
+dotnet run --project framework/samples/SimpleCli -- greetings create --name Ada --times 2
+dotnet run --project framework/samples/SimpleCli -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $?
 ```
 
 第三条的 `times` 超出范围，stderr 输出 Problem JSON，退出码为 2。`--tenant`、`--locale`、`--authorization`、`--timeout`、`--correlation` 把租户、区域、凭据、超时与关联 ID 放进调用上下文。
 
 ## xihan 工具
 
-`XiHan.Framework.Cli` 是一个 .NET 工具，命令名 `xihan`。5.0 尚未发布到 nuget.org，从本地包源安装（打包步骤见[快速上手](../quickstart#获取预览包)）：
+`XiHan.Framework.Cli` 是一个 .NET 工具，命令名 `xihan`。框架尚未发布到 nuget.org，从本地包源安装（打包步骤见[快速上手](../quickstart#获取预览包)）：
 
 ```bash
-dotnet tool install --global XiHan.Framework.Cli --version 5.0.0-preview.1 --add-source ./next/artifacts/packages
+dotnet tool install --global XiHan.Framework.Cli --version 5.0.0-preview.1 --add-source ./framework/artifacts/packages
 ```
 
 | 命令 | 说明 |

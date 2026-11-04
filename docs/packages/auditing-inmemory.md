@@ -29,7 +29,7 @@
 <PackageReference Include="XiHan.Framework.Auditing.InMemory" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包；用其他组合时：
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包；用其他组合时：
 
 ```csharp
 using XiHan.Framework.Auditing.InMemory;

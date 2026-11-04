@@ -5,7 +5,7 @@ import { defineXiHanConfig } from "@xihanfun/vitepress-theme/config";
 // 导航末项显示的版本号取自本站 package.json，发版时只改那一处
 const { version } = createRequire(import.meta.url)("../package.json");
 
-const title: string = "曦寒开发框架 5 文档";
+const title: string = "曦寒开发框架文档";
 const description: string = "语言中立的应用框架规范及其 .NET 参考实现";
 const keywords: string =
   "曦寒,曦寒懿,开发框架,DotNet,微内核,能力图谱,操作契约,官方文档,开源,XiHanFun,XiHan.Framework";
@@ -25,8 +25,8 @@ function chapter(
 }
 
 // 每章一页，全部落在 guide/ 下；包文档是另一册（参考手册），章末链接过去。
-// 4.x 的机器人、消息通知、模板引擎、脚本引擎、搜索、HTTP 客户端、网关、加解密、对象映射在 5.0 不再由框架包装，
-// 不设章节，去向写在「从 4.x 迁移」
+// 机器人、消息通知、模板引擎、脚本引擎、搜索、HTTP 客户端、网关、加解密、对象映射不由框架包装，
+// 不设章节，替代做法写在「常见问题」
 const guideChapters: [text: string, name: string][] = [
   ["能力包与清单", "modularity"],
   ["生命周期与健康", "lifecycle"],
@@ -63,7 +63,6 @@ const guideChapters: [text: string, name: string][] = [
   ["插件", "plugins"],
   ["部署与打包", "deployment"],
   ["测试与一致性套件", "testing"],
-  ["从 4.x 迁移", "upgrade"],
   ["扩展与二次开发", "extending"],
   ["常见问题", "faq"],
 ];
@@ -267,7 +266,6 @@ const nav: DefaultTheme.NavItem[] = [
         text: "深入",
         items: [
           { text: "开发指南", link: "/guide/modularity" },
-          { text: "从 4.x 迁移", link: "/guide/upgrade" },
         ],
       },
       {
@@ -322,7 +320,6 @@ const nav: DefaultTheme.NavItem[] = [
     text: `v${version}`,
     items: [
       { text: "更新日志", link: "/changelog" },
-      { text: "4.x 文档", link: "https://framework.docs.xihanfun.com" },
     ],
   },
 ];
@@ -333,15 +330,15 @@ export default defineXiHanConfig({
   keywords,
   repo: "XiHan.Framework",
   banner: {
-    id: "2026-10-framework-5-preview",
-    text: "XiHan Framework 5 处于预览阶段，尚未发布到 nuget.org",
+    id: "2026-10-framework-preview",
+    text: "XiHan Framework 处于预览阶段，尚未发布到 nuget.org",
     link: "/quickstart#获取预览包",
     linkText: "查看获取方式",
   },
   llms: {
-    title: "曦寒开发框架 5",
+    title: "曦寒开发框架",
     summary:
-      "XiHan Framework 5 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现：原语层与微内核之上，子系统以抽象包、零外部依赖的默认实现与可替换的 Provider 组成；特性在清单里按能力 ID 声明依赖，内核求解能力图谱后显式装配；每次调用经过固定十一个阶段的管道；一份操作契约同时经 HTTP、gRPC、MCP 与命令行暴露。5.0 处于预览阶段，尚未发布到 nuget.org。",
+      "XiHan Framework 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现：原语层与微内核之上，子系统以抽象包、零外部依赖的默认实现与可替换的 Provider 组成；特性在清单里按能力 ID 声明依赖，内核求解能力图谱后显式装配；每次调用经过固定十一个阶段的管道；一份操作契约同时经 HTTP、gRPC、MCP 与命令行暴露。框架处于预览阶段，尚未发布到 nuget.org。",
     sections: [
       { dir: ".", label: "开始" },
       { dir: "ai", label: "AI 辅助开发" },
@@ -356,10 +353,10 @@ export default defineXiHanConfig({
   themeConfig: {
     nav,
     sidebar,
-    // 5.0 的文档在 next 分支的 docs-next/ 下，主题按 main 分支 docs/ 推出的编辑链接不适用
+    // 文档在 dev 分支的 docs/ 下，主题按 main 分支 docs/ 推出的编辑链接不适用
     editLink: {
       text: "在 GitHub 上编辑此页",
-      pattern: "https://github.com/XiHanFun/XiHan.Framework/tree/next/docs-next/:path",
+      pattern: "https://github.com/XiHanFun/XiHan.Framework/tree/dev/docs/:path",
     },
   },
 });

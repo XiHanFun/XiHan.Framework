@@ -33,7 +33,7 @@
 <PackageReference Include="XiHan.Framework.Persistence.Abstractions" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已包含本包与内存实现。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已包含本包与内存实现。
 
 本包的契约不需要启用；雪花标识需要显式装配：
 

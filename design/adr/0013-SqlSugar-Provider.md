@@ -10,7 +10,7 @@
 
 ## 背景
 
-ADR-0005 把 `Persistence.SqlSugar` 留到 P5 随迁移提供。[06-BasicApp迁移清查](../architecture/06-BasicApp迁移清查.md) 查出 BasicApp 的数据层全是 SqlSugar 原生 API（1975 处），所以它从可选升为 P5-03 前置项。要决定依赖包、客户端归属、实体映射方式与并发策略。
+ADR-0005 把 `Persistence.SqlSugar` 留到 P5 提供。BasicApp 的数据层全是 SqlSugar 原生 API（1975 处），所以它是 P5-03 前置项。要决定依赖包、客户端归属、实体映射方式与并发策略。
 
 ## 备选
 
@@ -22,7 +22,7 @@ ADR-0005 把 `Persistence.SqlSugar` 留到 P5 随迁移提供。[06-BasicApp迁�
 
 采用备选 2。
 
-- 包依赖 `SqlSugarCore`（存量应用用的就是它，与 `SqlSugarCoreNoDrive` 同名程序集不能并存）。
+- 包依赖 `SqlSugarCore`（BasicApp 用的就是它，与 `SqlSugarCoreNoDrive` 同名程序集不能并存）。
 - `SqlSugarPersistenceFeature(configure)` 创建作用域内的 `SqlSugarClient` 并自动应用 `SqlSugarConventions`；`SqlSugarPersistenceFeature()` 使用应用注册的 `ISqlSugarClient`（`SqlSugarScope`、多库、分表等保持应用自管），应用在创建前调用 `SqlSugarConventions.Apply(config)`。
 - 约定：`Id` 主键不自增、`ConcurrencyStamp` 长度 32、可空引用类型列可空、无公开 setter 与集合属性忽略；实体与 EF Core Provider 共用同一套领域类型。
 - 软删除与租户以表达式按属性名显式施加在每个查询上（不用 SqlSugar 全局过滤器，避免与应用的过滤器互相覆盖）。
@@ -32,7 +32,7 @@ ADR-0005 把 `Persistence.SqlSugar` 留到 P5 随迁移提供。[06-BasicApp迁�
 
 ## 理由
 
-- 存量迁移的核心诉求是"实体与数据访问不推倒重来"：协议接口加约定让同一实体类在 EF Core 与 SqlSugar 两个 Provider 上都能跑一致性套件。
+- 协议接口加约定让同一实体类在 EF Core 与 SqlSugar 两个 Provider 上都能跑一致性套件，换 Provider 时实体与数据访问不必推倒重来。
 - SqlSugar 的版本列机制会接管戳的生成与格式，与 `PersistenceConventions.NewStamp` 的 32 位十六进制及跨 Provider 的并发语义冲突。
 - 批量优先（ADR-0012）在 SqlSugar 上天然成立：`Insertable(list)`、`Updateable(list)`、`Deleteable().In(ids)` 都是一次调用。
 
@@ -40,7 +40,7 @@ ADR-0005 把 `Persistence.SqlSugar` 留到 P5 随迁移提供。[06-BasicApp迁�
 
 - 新包 `XiHan.Framework.Persistence.SqlSugar`（Ring 3，`persistence.relational@1`，Preview）与测试 `Persistence.SqlSugar.Tests`（SQLite 跑 `Persistence.Conformance` 全部用例）。
 - 规范 `package-ids.md` 的技术名加 `SqlSugar`，RFC-0005 的 Provider 表加一行。
-- BasicApp 迁移（P5-04）先以方式二接入既有客户端，再逐模块把原生 SqlSugar 查询收进仓储。
+- BasicApp（P5-04）先以方式二接入既有客户端，再逐模块把原生 SqlSugar 查询收进仓储。
 
 ## 修订说明（2026-11-01）
 

@@ -6,7 +6,7 @@
 
 认证分三步，分属三个角色。宿主在 Ingress 阶段把协议里的凭据原样放进调用上下文（`SetCredential`），自己不解释它；Authenticate 阶段的 `AuthenticationMiddleware` 按方案名找到 `IAuthenticationHandler`，由它把凭据变成主体 `Principal`；主体写进安全上下文 `SecurityContext.Principal`，之后的阶段只读。认证是能力 `security.authentication@1`，换认证方式就是换 Provider，宿主与业务代码不动。
 
-5.0 的认证在内核管道里完成，不依赖 ASP.NET Core 的认证中间件；同一个处理器服务 HTTP、gRPC、MCP 与命令行。ASP.NET Core 的认证只在[绕过管道的端点](#绕过管道的端点)上用到。
+认证在内核管道里完成，不依赖 ASP.NET Core 的认证中间件；同一个处理器服务 HTTP、gRPC、MCP 与命令行。ASP.NET Core 的认证只在[绕过管道的端点](#绕过管道的端点)上用到。
 
 凭据是 `AuthenticationCredential`：方案（`Scheme`，如 `Bearer`、`ApiKey`，比较时不区分大小写）与值（`Value`）。`AuthenticationCredential.TryParse` 解析 `<scheme> <value>` 形式，方案或值为空都不算凭据；`ToString()` 把值显示为 `***`。
 
@@ -91,11 +91,11 @@ public static class CallerInfo
 
 `Security.InMemory` 同时提供认证与授权。装配 `Security.Jwt` 或 `Security.OpenIdConnect` 后，它让出认证、只保留授权（RBAC 授予存储）。`Security.Jwt` 与 `Security.OpenIdConnect` 都提供 `security.authentication@1`，同一时刻只装配其一。
 
-5.0 的 JWT 与 OpenID Connect Provider 只校验令牌，不签发令牌；令牌由应用的登录服务或外部身份提供方签发。
+JWT 与 OpenID Connect Provider 只校验令牌，不签发令牌；令牌由应用的登录服务或外部身份提供方签发。
 
 ## ApiKey（内存）
 
-主体与 API Key 写在配置里，凭据是 `Authorization: ApiKey <key>`。下面的主体来自 `next/samples/SimpleApp`：
+主体与 API Key 写在配置里，凭据是 `Authorization: ApiKey <key>`。下面的主体来自 `framework/samples/SimpleApp`：
 
 ```json
 {

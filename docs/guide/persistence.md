@@ -8,7 +8,7 @@
 
 仓储只在活动的工作单元里工作。管道的 Transaction 阶段为每次调用开启工作单元，操作契约里注入的仓储直接可用；在 Transaction 阶段之外使用仓储是装配错误，每个方法都抛出携带 `PERSISTENCE_UNAVAILABLE_001` 的 `FrameworkException`。在后台任务里读写见[工作单元与事务](./uow#在管道外开工作单元)。
 
-持久化能力的 ID 是 `persistence.relational@1`，由 Provider 提供；`persistence.document@1` 是预留的能力 ID，5.0 没有提供它的 Provider。
+持久化能力的 ID 是 `persistence.relational@1`，由 Provider 提供；`persistence.document@1` 是预留的能力 ID，框架没有提供它的 Provider。
 
 ## 选择 Provider
 
@@ -131,7 +131,7 @@ var lastMonth = EntityQuery.All<Order>().Within(DateTimeOffset.UtcNow.AddMonths(
 | Provider | 大小写 |
 | --- | --- |
 | `Persistence.InMemory` | 按序数比较，区分大小写 |
-| `Persistence.EntityFrameworkCore` | SQLite 上三个方法一律译成 `LIKE … ESCAPE '\'`，只对 ASCII 字母不区分，与 SqlSugar 相同（原来 `Contains` 是区分大小写的 `instr`，ADR-0101）；PostgreSQL 与 Oracle 区分，SQL Server 按排序规则，照 EF Core 数据库 Provider 的翻译 |
+| `Persistence.EntityFrameworkCore` | SQLite 上三个方法一律译成 `LIKE … ESCAPE '\'`，只对 ASCII 字母不区分，与 SqlSugar 相同（EF Core 的 SQLite Provider 缺省把 `Contains` 译成区分大小写的 `instr`，ADR-0101）；PostgreSQL 与 Oracle 区分，SQL Server 按排序规则，照 EF Core 数据库 Provider 的翻译 |
 | `Persistence.SqlSugar` | `LIKE … ESCAPE '!'`：SQLite 只对 ASCII 字母不区分；PostgreSQL 与 Oracle 区分（PostgreSQL 开了 `MoreSettings.EnableILike` 时不区分）；MySQL 与 SQL Server 按列的排序规则，缺省不区分（MySQL 的缺省还不区分重音） |
 
 要跨库一致地不区分大小写，存一列折叠后的值（如 `ToLowerInvariant()`）并对它匹配。要通配时不用这三个方法：SqlSugar 用 `SqlFunc.Like`，EF Core 用 `EF.Functions.Like`，模式由调用方给出、不转义。

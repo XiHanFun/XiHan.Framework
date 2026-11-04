@@ -1,11 +1,10 @@
-# 更新日志 · XiHan Framework 5
+# 更新日志 · XiHan Framework
 
-本页记录 XiHan Framework 5 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。4.x 的变更记录在 4.x 文档站。
+本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
 ## v5.0.0-preview.1（未发布）
 
-::: warning 升级须知
-- 5.0 在 `next` 分支从零重写，与 4.x 互不引用，不提供 4.x 到 5.0 的迁移工具与规则集，迁移按[从 4.x 迁移](./guide/upgrade)重写装配层与对外接口
+::: warning 预览须知
 - 预览包尚未发布到 nuget.org，从源码引用或用本地包源取得，见[快速上手](./quickstart#获取预览包)
 :::
 
@@ -53,7 +52,3 @@
 - **新增** 插件协议 `xihan.plugin.v1` 与三种宿主：`Plugins.InProcess`、`Plugins.OutOfProcess`、`Plugins.Wasm`（Experimental），黑盒套件 `Plugins.Conformance`
 - **新增** 组合包 `Profiles.Minimal`、`Profiles.Standard`、`Profiles.Full`
 - **新增** 命令行工具 `xihan`：`pack` 从 `xihan.app.json` 生成 Dockerfile、Kustomize、Compose 与 Aspire 产物，`graph` / `pipeline` / `operations` / `invoke` 转发给应用
-
-### 移除
-
-- **移除** 4.x 的模块基类与生命周期钩子、`[DependsOn]`、Castle 动态代理、动态 API、`Utils`，以及机器人、消息通知渠道、模板引擎、脚本引擎、搜索引擎、HTTP 客户端封装、网关、SignalR 封装、对象映射、升级引擎、虚拟文件系统、开发工具等包；替代做法见[从 4.x 迁移](./guide/upgrade)

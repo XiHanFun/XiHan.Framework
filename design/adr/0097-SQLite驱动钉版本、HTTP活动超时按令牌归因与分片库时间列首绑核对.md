@@ -23,15 +23,15 @@
 
 ### 备选
 
-1. 只在 `next/Directory.Packages.props` 钉版本：仓库里开着中央传递固定（`CentralPackageTransitivePinningEnabled`），框架自己的项目会解析到 10.0.13，打包时固定的传递依赖也会进 nuspec；但这依赖一个仓库级开关的打包副作用，意图不在包的依赖声明里。
+1. 只在 `framework/Directory.Packages.props` 钉版本：仓库里开着中央传递固定（`CentralPackageTransitivePinningEnabled`），框架自己的项目会解析到 10.0.13，打包时固定的传递依赖也会进 nuspec；但这依赖一个仓库级开关的打包副作用，意图不在包的依赖声明里。
 2. 钉版本，并由 `Persistence.SqlSugar` 显式引用 `Microsoft.Data.Sqlite`（采纳）。
 3. 同时让 `Persistence.EntityFrameworkCore` 依赖 `Microsoft.Data.Sqlite.Core` 10.0.13：用 SQL Server、PostgreSQL 的 EF Core 应用平白多一个 SQLite 程序集与 `SQLitePCLRaw.core`。
 4. 不动，文档让应用自己钉：SqlSugar + SQLite 的应用多半不知道要钉。
 
 ### 决策
 
-- `next/Directory.Packages.props` 新增 `Microsoft.Data.Sqlite` 10.0.13；`Persistence.SqlSugar` 显式引用它（`SqlSugarCore` 依赖的就是这个元包，不是 `.Core`）。打出的 `XiHan.Framework.Persistence.SqlSugar` nuspec 依赖里有 `Microsoft.Data.Sqlite` 10.0.13；引用本包的应用解析到 10.0.13，连带 `Microsoft.Data.Sqlite.Core` 10.0.13 与 `SQLitePCLRaw` 2.1.13（都是 `Microsoft.Data.Sqlite` 10.0.13 自己声明的依赖，没有升级别的包）。
-- `Persistence.EntityFrameworkCore` 不加 SQLite 依赖；README 与 docs-next 包页写明 SQLite 用 `Microsoft.EntityFrameworkCore.Sqlite` 10.0.13 或更高。
+- `framework/Directory.Packages.props` 新增 `Microsoft.Data.Sqlite` 10.0.13；`Persistence.SqlSugar` 显式引用它（`SqlSugarCore` 依赖的就是这个元包，不是 `.Core`）。打出的 `XiHan.Framework.Persistence.SqlSugar` nuspec 依赖里有 `Microsoft.Data.Sqlite` 10.0.13；引用本包的应用解析到 10.0.13，连带 `Microsoft.Data.Sqlite.Core` 10.0.13 与 `SQLitePCLRaw` 2.1.13（都是 `Microsoft.Data.Sqlite` 10.0.13 自己声明的依赖，没有升级别的包）。
+- `Persistence.EntityFrameworkCore` 不加 SQLite 依赖；README 与 docs 包页写明 SQLite 用 `Microsoft.EntityFrameworkCore.Sqlite` 10.0.13 或更高。
 - 不进规范：依赖的版本下限是打包事实，不是契约。
 
 ### 理由
@@ -60,7 +60,7 @@ ADR-0095 第二节给 `IAIChat.StreamAsync` 加了框架的计时：等每个更
 
 ### 决策
 
-保留，不改代码。RFC-0022「超时与取消」、docs-next AI 指南、AI.Abstractions 包页与 README 写明已定；要限制一次对话的总时长，由调用方给自己的取消令牌或调用的截止时间。
+保留，不改代码。RFC-0022「超时与取消」、docs AI 指南、AI.Abstractions 包页与 README 写明已定；要限制一次对话的总时长，由调用方给自己的取消令牌或调用的截止时间。
 
 ### 理由
 
@@ -116,7 +116,7 @@ ADR-0093 第一节把启动或建实例时的被拒绝、缺桶恢复为启动�
 
 ### 决策
 
-维持，不改代码。RFC-0012「S3 的条件写入探测」、docs-next 存储指南与 S3 包页、S3 README 写明已定。命名实例的健康项按注册表的规则一律 Degraded（ADR-0090 已记），不为此改注册表。
+维持，不改代码。RFC-0012「S3 的条件写入探测」、docs 存储指南与 S3 包页、S3 README 写明已定。命名实例的健康项按注册表的规则一律 Degraded（ADR-0090 已记），不为此改注册表。
 
 ### 理由
 

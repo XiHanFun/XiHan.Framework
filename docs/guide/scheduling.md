@@ -10,7 +10,7 @@
 
 运行与一次请求同构。`JobDispatcher` 为每次运行创建新的 DI 作用域和新的调用上下文，经应用的完整管道执行 `IJob.RunAsync`，所以租户、授权、审计、追踪中间件对作业照常生效。上下文的关联 ID（`xihan.correlation`）就是运行 ID，来源是 `InvocationProtocols.Job`，目标是作业名，日志和追踪里能按运行 ID 串起一次执行。作业返回失败的 `Result` 记为失败；抛出的异常被翻译成 `SCHEDULING_UNEXPECTED_001`，同样记为失败。
 
-引擎和这些规则都在抽象包里（ADR-0020）：计划推算、misfire、并发阻塞、重试、失联恢复、历史只实现一份。Provider 只需实现作业存储 `IJobStore` 与领导选举 `ILeaderElection`，内存实现和数据库实现因此行为一致，并且通过同一个一致性套件。5.0 不引入 Quartz.NET，cron、日历、misfire、集群分发都是自实现的，也没有 `Scheduling.Quartz` 包。
+引擎和这些规则都在抽象包里（ADR-0020）：计划推算、misfire、并发阻塞、重试、失联恢复、历史只实现一份。Provider 只需实现作业存储 `IJobStore` 与领导选举 `ILeaderElection`，内存实现和数据库实现因此行为一致，并且通过同一个一致性套件。框架不引入 Quartz.NET，cron、日历、misfire、集群分发都是自实现的，也没有 `Scheduling.Quartz` 包。
 
 ## 选择 Provider
 
@@ -216,7 +216,7 @@ public sealed class CleanupJob : IJob
 
 ## 重试与执行时限
 
-`JobDefinition.Retry` 与 `Timeout` 对应 4.x 任务的最大重试次数与超时（ADR-0060）。
+`JobDefinition.Retry` 与 `Timeout` 是任务的最大重试次数与超时（ADR-0060）。
 
 重试策略 `JobRetryPolicy`：
 
@@ -389,7 +389,7 @@ public sealed class IndexRebuilder(ILeaderElection election)
 }
 ```
 
-在 Kubernetes 上，示例应用 `next/samples/KubernetesApp` 在 Pod 内装配 `KubernetesSchedulingFeature`，在本地退回 Full 组合自带的进程内选举，并用 `/leader` 端点展示 `JobSchedulerEngine.IsLeader`：
+在 Kubernetes 上，示例应用 `framework/samples/KubernetesApp` 在 Pod 内装配 `KubernetesSchedulingFeature`，在本地退回 Full 组合自带的进程内选举，并用 `/leader` 端点展示 `JobSchedulerEngine.IsLeader`：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -497,7 +497,6 @@ Lease 名缺省是 `xihan-scheduler`，用 `XiHan:Scheduling:Kubernetes:Lease` �
 - 工作流的 `Delay` 活动与 `Start` 节点的定时启动复用本包的 `CronExpression`，文法相同，见[工作流](./workflow)。
 - 数据库 Provider 经 `persistence.relational@1` 的仓储读写，每个存储操作是一次独立的管道调用与事务，不加入调用方的工作单元，见[持久化](./persistence)。
 - 作业运行经过完整管道，多租户、授权、审计的行为与[执行管道](./pipeline)一致。
-- 4.x 的 `IJobWorker` 换成 `IJob`，`LeaderOnly` 取反后是 `RunOnEveryInstance`，4.x 任务的最大重试次数与超时对应 `Retry` 与 `Timeout`；完整对照见[从 4.x 迁移](./upgrade)。
 
 ## 相关
 

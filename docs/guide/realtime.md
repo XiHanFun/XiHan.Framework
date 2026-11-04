@@ -1,10 +1,10 @@
 # 实时通信
 
-本页讲 5.0 下怎样做实时推送：直接使用 ASP.NET Core SignalR，Hub 的认证交给内核已装配的认证处理器，适用于要在 XiHan 应用里接 WebSocket、Server-Sent Events 一类长连接的项目。用到的 API 都在 [Hosting.AspNetCore 包](../packages/hosting-aspnetcore)。
+本页讲怎样做实时推送：直接使用 ASP.NET Core SignalR，Hub 的认证交给内核已装配的认证处理器，适用于要在 XiHan 应用里接 WebSocket、Server-Sent Events 一类长连接的项目。用到的 API 都在 [Hosting.AspNetCore 包](../packages/hosting-aspnetcore)。
 
-## 5.0 的做法
+## 做法
 
-5.0 不包装 SignalR，框架里没有 Hub 基类、连接登记表、推送抽象或背板。应用直接用 ASP.NET Core 共享框架自带的 SignalR（`AddSignalR`、`MapHub`、`IHubContext<THub>`），不需要额外的框架包。
+框架不包装 SignalR，框架里没有 Hub 基类、连接登记表、推送抽象或背板。应用直接用 ASP.NET Core 共享框架自带的 SignalR（`AddSignalR`、`MapHub`、`IHubContext<THub>`），不需要额外的框架包。
 
 框架只解决衔接上的两件事：
 
@@ -118,7 +118,7 @@ public sealed class OrdersHub(IOperationInvoker operations, IServiceProvider ser
 
 `IHubContext<THub>` 只能推给连在本实例上的连接。多实例部署时：
 
-- 推到其他实例上的连接要靠 SignalR 自己的横向扩展，如 Redis 背板或托管的 SignalR 服务；5.0 不提供背板。
+- 推到其他实例上的连接要靠 SignalR 自己的横向扩展，如 Redis 背板或托管的 SignalR 服务；框架不提供背板。
 - 业务事件借消息子系统跨进程送达。缺省的竞争订阅是工作队列，每条消息只交给一个实例的处理器（至少一次），这个实例经 `IHubContext<THub>` 推送，背板再转给其他实例上的连接。事件随业务数据在同一事务里写出时，用发件箱。
 
 ```csharp

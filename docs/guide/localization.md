@@ -1,6 +1,6 @@
 # 国际化
 
-本章讲 5.0 的文案与多语言：消息键、每种语言一个文件的语言文件、`key.L()` 与调用方区域、错误在 Egress 的翻译、`Accept-Language` 协商，以及把翻译放进数据库。适用于给应用加多语言文案、或给能力包写错误消息的开发者。
+本章讲框架的文案与多语言：消息键、每种语言一个文件的语言文件、`key.L()` 与调用方区域、错误在 Egress 的翻译、`Accept-Language` 协商，以及把翻译放进数据库。适用于给应用加多语言文案、或给能力包写错误消息的开发者。
 
 完整 API 见 [Localization.Abstractions](../packages/localization-abstractions)、[Localization.InMemory](../packages/localization-inmemory) 与 [Localization.Database](../packages/localization-database) 包页。
 
@@ -8,7 +8,7 @@
 
 面向人的文案不写在代码里。代码只引用消息键（如 `security.token.subject_missing`），文案按语言放在 `Localization/<区域>.json`，任何地方用 `key.L()` 取当前语言的文本。`Error` 只携带消息键与参数，由宿主在 Egress 按调用方语言翻译。默认语言是英文 `en-US`，它也是所有语言文件的基准。
 
-调用的语言不靠线程文化传递：5.0 不设置 `CultureInfo.CurrentUICulture`，也不替换 `IStringLocalizerFactory`。区域是调用上下文 Baggage 里的 `xihan.locale`，HTTP 宿主从 `Accept-Language` 协商写入，内核在每次调用入口把它经本地化器协商成启用的区域（与 `context.Localize`、Problem Details 用的规则相同），再据此安装一个消息作用域 `MessageScope`，于是同一调用链里任何位置的 `key.L()` 都得到调用方语言，且与失败文案是同一种语言，下游服务经 Baggage 拿到同一个区域。Baggage 里的区域不在启用列表时（上游 `baggage` 头、命令行 `--locale` 原样带进来的），即使有它的语言文件也不用，按同语言的启用区域或默认区域出文案。
+调用的语言不靠线程文化传递：框架不设置 `CultureInfo.CurrentUICulture`，也不替换 `IStringLocalizerFactory`。区域是调用上下文 Baggage 里的 `xihan.locale`，HTTP 宿主从 `Accept-Language` 协商写入，内核在每次调用入口把它经本地化器协商成启用的区域（与 `context.Localize`、Problem Details 用的规则相同），再据此安装一个消息作用域 `MessageScope`，于是同一调用链里任何位置的 `key.L()` 都得到调用方语言，且与失败文案是同一种语言，下游服务经 Baggage 拿到同一个区域。Baggage 里的区域不在启用列表时（上游 `baggage` 头、命令行 `--locale` 原样带进来的），即使有它的语言文件也不用，按同语言的启用区域或默认区域出文案。
 
 装配本地化的是能力 `localization.resources@1`。`Profiles.Minimal` 与 `Profiles.Standard` 都装配默认实现 `InMemoryLocalizationFeature`；需要运营人员在线改译文时换成 `DatabaseLocalizationFeature`。没有装配本地化时，文案退回键与参数的描述，代码照常运行。
 
@@ -243,7 +243,7 @@ app.MapGet("/missing", (HttpContext http) =>
 ```
 
 ```bash
-# 在仓库根运行 SimpleApp（dotnet run --project next/samples/SimpleApp）后
+# 在仓库根运行 SimpleApp（dotnet run --project framework/samples/SimpleApp）后
 curl -si -H "Accept-Language: zh-CN" http://localhost:5000/missing
 # 404，响应头 Content-Language: zh-CN，detail 为「示例资源不存在。」
 ```
@@ -320,7 +320,7 @@ modelBuilder.ApplyPersistenceConventions(Database);
 2. 之后按 `RefreshIntervalSeconds` 周期刷新，`0` 关闭周期刷新。
 3. 加载失败时保留上一份快照，失败记到 `LastError`，健康项 `localization.database.translations` 报 Degraded，应用仍在服务。
 
-`MessageTranslation.Locale` 列最长 35 个字符，与区域名文法的上限一致。早先的版本把它声明为 16，按旧版本建过表的库要手工放宽这一列（SqlSugar 的 `InitTables` 不改已有列的长度），做法见 [Localization.Database](../packages/localization-database#行为与限制)。
+`MessageTranslation.Locale` 列最长 35 个字符，与区域名文法的上限一致。已有表的这一列更短时要手工放宽（SqlSugar 的 `InitTables` 不改已有列的长度），做法见 [Localization.Database](../packages/localization-database#行为与限制)。
 
 写入用作用域服务 `MessageTranslationStore`，它经仓储读写，只能在调用的 Transaction 阶段内使用，所以放在操作里：
 

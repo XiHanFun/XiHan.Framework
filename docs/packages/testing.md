@@ -31,7 +31,7 @@
 <PackageReference Include="XiHan.Framework.Testing" Version="5.0.0-preview.1" />
 ```
 
-5.0 尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](../guide/testing#测试项目)。
+框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](../guide/testing#测试项目)。
 
 ## 主要类型
 

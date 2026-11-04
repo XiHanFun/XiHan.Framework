@@ -326,7 +326,7 @@ JSON 类型引用不到任何操作的 Schema 时，文档生成以 `PROTOCOLS_V
 
 ## HTTP 客户端
 
-5.0 不提供 HTTP 客户端封装。调用其他服务用 ASP.NET Core 的 `IHttpClientFactory`（`AddHttpClient`），超时、重试与熔断按 .NET 的方式配置；服务之间的事件推送见 [CloudEvents](./protocols#cloudevents)。
+框架不提供 HTTP 客户端封装。调用其他服务用 ASP.NET Core 的 `IHttpClientFactory`（`AddHttpClient`），超时、重试与熔断按 .NET 的方式配置；服务之间的事件推送见 [CloudEvents](./protocols#cloudevents)。
 
 ## 相关
 

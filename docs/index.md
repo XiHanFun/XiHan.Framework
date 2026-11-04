@@ -1,10 +1,10 @@
 ---
 layout: home
-title: 曦寒开发框架 5
+title: 曦寒开发框架
 titleTemplate: 语言中立的应用框架规范与 .NET 参考实现
 
 hero:
-  name: 曦寒开发框架 5
+  name: 曦寒开发框架
   text: 微内核、能力图谱与管道执行
   tagline: XiHan Spec 规范与 .NET 10 参考实现 · 一份操作契约经 HTTP、gRPC、MCP 与命令行暴露
   image:

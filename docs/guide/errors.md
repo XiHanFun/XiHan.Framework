@@ -1,8 +1,8 @@
 # 结果与错误
 
-本章说明 5.0 如何表达成功与失败：原语层的 `Result`、`Error` 与 `Maybe`，错误码文法与种类，错误为什么只携带消息键，以及宿主如何把错误翻译成 HTTP Problem Details 等协议形态。适用于写操作、中间件与 Provider 的开发者，也供对接 API 的客户端参考。
+本章说明框架如何表达成功与失败：原语层的 `Result`、`Error` 与 `Maybe`，错误码文法与种类，错误为什么只携带消息键，以及宿主如何把错误翻译成 HTTP Problem Details 等协议形态。适用于写操作、中间件与 Provider 的开发者，也供对接 API 的客户端参考。
 
-5.0 不再有 4.x 的统一响应信封，成功直接返回响应对象，失败返回 RFC 9457 Problem Details。
+框架没有统一响应信封，成功直接返回响应对象，失败返回 RFC 9457 Problem Details。
 
 完整 API 见 [Primitives 包](../packages/primitives)。
 
@@ -134,7 +134,7 @@ Sequence  = 三位数字，域内唯一，发布后不复用
 | `CANCELLED` | 408 |
 | `UNEXPECTED` 与其他 | 500 |
 
-截止时间到了一律是 `KERNEL_TIMEOUT_001`（504），调用方同时取消、下游把取消写成 `KERNEL_CANCELLED_001` 结果也一样；408 只表示调用方在截止时间到达之前自己取消（2026-11-01 起的行为变化，见[韧性](./resilience#截止时间)）。
+截止时间到了一律是 `KERNEL_TIMEOUT_001`（504），调用方同时取消、下游把取消写成 `KERNEL_CANCELLED_001` 结果也一样；408 只表示调用方在截止时间到达之前自己取消（见[韧性](./resilience#截止时间)）。
 
 Problem Details 的字段：
 

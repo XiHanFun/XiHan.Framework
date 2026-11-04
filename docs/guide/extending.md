@@ -1,6 +1,6 @@
 # 扩展与二次开发
 
-本页讲 5.0 的三条扩展轴各写什么，以及写一个 Provider、一个管道中间件、一个应用能力包的完整步骤和命名规则，适用于给框架补实现、写业务能力包或维护框架扩展包的人。清单与能力图谱见[能力包与清单](./modularity)，测试做法见[测试与一致性套件](./testing)。
+本页讲框架的三条扩展轴各写什么，以及写一个 Provider、一个管道中间件、一个应用能力包的完整步骤和命名规则，适用于给框架补实现、写业务能力包或维护框架扩展包的人。清单与能力图谱见[能力包与清单](./modularity)，测试做法见[测试与一致性套件](./testing)。
 
 ## 三条扩展轴
 
@@ -10,7 +10,7 @@
 | 插件 | `kind: plugin` 的独立制品：进程内程序集、Wasm 模块或任意语言的子进程 | 运行期按目录发现、宿主授予权限、隔离运行（[插件](./plugins)） | 第三方代码、不可信代码、跨语言实现、远程 Provider |
 | 协议 | 协议适配器 `Protocols.*`：把操作登记表里的契约发布到一种线协议上 | 作为能力包装配，在宿主上映射端点 | 需要 HTTP、gRPC、MCP、CloudEvents 之外的线协议 |
 
-能力包是主轴：Provider 与业务代码都是特性，差别只在清单。插件不进入能力图谱，靠握手声明的操作、订阅与（Wasm 的）中间件接进宿主。协议适配器读 `OperationRegistry` 里的 `OperationDescriptor`（契约与 JSON Schema），按 `OperationContract.IsExposedTo(...)` 或 `OperationRegistry.ExposedTo(...)` 过滤，把请求解码为 XGI 的 `OperationRequest`，经 `IOperationInvoker.InvokeAsync` 走完整管道，再把 `OperationResponse` 编码回线协议；`Expose` 的协议标志是固定枚举（`Http`、`Grpc`、`Mcp`、`CommandLine`、`Ai`），5.0 没有为第三方协议预留标志位。
+能力包是主轴：Provider 与业务代码都是特性，差别只在清单。插件不进入能力图谱，靠握手声明的操作、订阅与（Wasm 的）中间件接进宿主。协议适配器读 `OperationRegistry` 里的 `OperationDescriptor`（契约与 JSON Schema），按 `OperationContract.IsExposedTo(...)` 或 `OperationRegistry.ExposedTo(...)` 过滤，把请求解码为 XGI 的 `OperationRequest`，经 `IOperationInvoker.InvokeAsync` 走完整管道，再把 `OperationResponse` 编码回线协议；`Expose` 的协议标志是固定枚举（`Http`、`Grpc`、`Mcp`、`CommandLine`、`Ai`），没有为第三方协议预留标志位。
 
 ## 写一个 Provider
 

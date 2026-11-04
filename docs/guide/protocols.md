@@ -232,7 +232,7 @@ MCP 协议版本 `2025-06-18`，消息为 JSON-RPC 2.0，HTTP 上是 Streamable 
 命令行宿主里同一个服务端经 stdio 提供：装配了 `McpProtocolFeature` 与 `AddXiHanCommandLine()` 后运行 `mcp` 命令，stdin 与 stdout 每行一条 JSON-RPC 消息，日志只写 stderr，MCP 客户端以子进程方式连接。stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8。
 
 ```bash
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project next/samples/SimpleCli -- mcp
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
 ```
 
 `mcp` 命令接受与 `invoke` 相同的上下文选项，作用于整个会话里的每个 `tools/call`：凭据 `--authorization '<scheme> <value>'` 或环境变量 `XIHAN_AUTHORIZATION`（选项优先，MCP 规范要求 stdio 服务端从运行环境取凭据），`--tenant`、`--correlation`、`--locale`（`tools/list` 的标题与描述、失败文案按它翻译），`--timeout <秒>` 是每个 `tools/call` 的时限。每个 `tools/call` 经完整管道，凭据在这次调用的 Authenticate 阶段认证；stdio 没有外层认证，凭据无效时需要认证的 tool 得到 `isError`（`SECURITY_DENIED_003`），会话继续。选项不合法（凭据不是 `<scheme> <value>`、时限不是正数）时不进入会话，stderr 写一行用法错误，退出码 64。调用来源只有协议 `mcp` 与 tool 名。宿主的写法见[命令行宿主](./command-line)。

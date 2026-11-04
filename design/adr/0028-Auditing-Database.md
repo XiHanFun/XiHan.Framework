@@ -44,7 +44,7 @@ RFC-0015 定义了审计子系统：内核的 `IAuditSink`（契约要求有界�
 
 ## 影响
 
-- 新包 `Auditing.Database` 与测试项目进解决方案、架构测试引用与 `next/README.md` 包表；`LocalizationTests._literalAllowed` 增加 `XiHan.Framework.Auditing.Database/Trail/AuditRecordMapping.cs`。
+- 新包 `Auditing.Database` 与测试项目进解决方案、架构测试引用与 `framework/README.md` 包表；`LocalizationTests._literalAllowed` 增加 `XiHan.Framework.Auditing.Database/Trail/AuditRecordMapping.cs`。
 - `Auditing.InMemory` 不变，仍是默认实现；装配 `DatabaseAuditingFeature` 即顶替。
 - BasicApp 6.0 的操作日志直接用本包：应用在自己的 `DbContext` / SqlSugar 表结构里登记 `AuditRecord`，JSON 与消息列用长文本类型，建议索引 `(Sequence)` 唯一、`(TraceId)`、`(Timestamp)`。
 - RFC-0015 的"参考实现"应补上本包（规范修订由主会话统一做）。

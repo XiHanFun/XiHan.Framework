@@ -1,10 +1,10 @@
 # AI
 
-本章讲 5.0 的 AI 端口：按名字解析模型客户端、带提示词与护栏的聊天入口、把操作契约变成模型可调用的工具，以及切块、嵌入、检索与提示增强的知识库流水线，适用于要在业务里接入大模型的应用。完整 API 见 [AI.Abstractions 包](../packages/ai-abstractions)。
+本章讲框架的 AI 端口：按名字解析模型客户端、带提示词与护栏的聊天入口、把操作契约变成模型可调用的工具，以及切块、嵌入、检索与提示增强的知识库流水线，适用于要在业务里接入大模型的应用。完整 API 见 [AI.Abstractions 包](../packages/ai-abstractions)。
 
 ## 以 Microsoft.Extensions.AI 为线格式
 
-5.0 不另造模型接口。公开签名直接使用 `Microsoft.Extensions.AI.Abstractions`（10.11.0）的 `IChatClient`、`IEmbeddingGenerator<string, Embedding<float>>`、`ChatMessage`、`AITool`，以及 `Microsoft.Extensions.VectorData.Abstractions` 的 `VectorStore`；框架只做目录、提示词、护栏、工具与知识库（ADR-0017）。从目录解析出的客户端就是标准的 `IChatClient`，应用可以在上面叠加任何 Microsoft.Extensions.AI 中间件。
+框架不另造模型接口。公开签名直接使用 `Microsoft.Extensions.AI.Abstractions`（10.11.0）的 `IChatClient`、`IEmbeddingGenerator<string, Embedding<float>>`、`ChatMessage`、`AITool`，以及 `Microsoft.Extensions.VectorData.Abstractions` 的 `VectorStore`；框架只做目录、提示词、护栏、工具与知识库（ADR-0017）。从目录解析出的客户端就是标准的 `IChatClient`，应用可以在上面叠加任何 Microsoft.Extensions.AI 中间件。
 
 | 能力 | 含义 | 实现 |
 | --- | --- | --- |
@@ -425,7 +425,7 @@ AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了
 - 执行管道：工具调用是一次完整的管道调用，审计、事务、校验都照常生效，审计事件与发起聊天的调用共享 trace-id，见[执行管道](./pipeline)。
 - 操作契约：`Expose.Ai` 是 `Expose` 的一个标志位，`Expose.All` 包含它，见[操作契约](./operations)。
 - 测试：`AI.Conformance` 提供 `KnowledgeStoreConformance`、`AIProviderConformance` 与确定性的 `HashingEmbeddingGenerator`，测试不依赖外部模型，见[测试与一致性套件](./testing)。自写目录的应用继承 `AIProviderConformance`，实现 `StartAsync`（被测 Provider 是默认）与 `StartWithoutDefaultAsync`（没有默认），能把聊天与嵌入的默认分开时再覆写 `StartWithSeparateDefaultsAsync`。
-- 4.x：4.x 的 Agent 工厂不迁移，等 `Microsoft.Agents.AI` 稳定后另立规范；其余对照见[从 4.x 迁移](./upgrade)。
+- 不提供 Agent 工厂，等 `Microsoft.Agents.AI` 稳定后另立规范。
 
 ## 相关
 

@@ -24,7 +24,7 @@ ADR-0092 让 `DeadlineMiddleware` 的两条路径（下游抛出的取消、下�
 ### 决策
 
 - `DeadlineMiddleware` 不变：只认截止令牌，截止令牌没有触发、调用方令牌已触发即 `KERNEL_CANCELLED_001`，不论时钟读数。
-- RFC-0004 `DeadlineMiddleware` 一条补「归因不看时钟」，「行为变化」小节新增「不看时钟」一条写明间隙里的情形、代价与收益；docs-next 韧性指南与 Kernel README 同步。不改代码。
+- RFC-0004 `DeadlineMiddleware` 一条补「归因不看时钟」，「行为变化」小节新增「不看时钟」一条写明间隙里的情形、代价与收益；docs 韧性指南与 Kernel README 同步。不改代码。
 
 ### 理由
 
@@ -97,7 +97,7 @@ ADR-0092 第一节让 .NET 的进程外与进程内插件宿主在发现或加�
 
 - `Manifest.Validate`：`kind` 为 `plugin`、`isolation` 不是 `wasm` 且 `contributes.pipeline` 非空时返回 `PRIMITIVES_VALIDATION_001`（Go 侧清单校验统一的错误码），消息带清单 ID、隔离级别与声明的中间件名。`manifest.Read`、`ReadFile`、`Write` 与 `plugin.Serve`（启动时读清单）都因此拒绝。能力包、Provider 与 Wasm 插件照常可以写，空列表不算贡献。
 - 与 Go SDK 先前校验配置节文法、权限码的做法一致（后者见 ADR-0085）：宿主在发现时拒绝的，Go 侧读清单时同样拒绝。
-- 在 framework-sdk-go 本地提交，不动它的 `spec/` 子模块指针；规范不改（RFC-0017「范围」已写明只有 Wasm 插件能贡献中间件），docs-next 插件指南写明 Go SDK 的本地拒绝。
+- 在 framework-sdk-go 本地提交，不动它的 `spec/` 子模块指针；规范不改（RFC-0017「范围」已写明只有 Wasm 插件能贡献中间件），docs 插件指南写明 Go SDK 的本地拒绝。
 
 ### 理由
 

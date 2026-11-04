@@ -35,13 +35,13 @@
 
 ```bash
 # 整个解决方案
-dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --no-build
+dotnet test --solution framework/XiHan.Framework.slnx --configuration Release --no-build
 
 # 单个测试项目
-dotnet test --project next/test/XiHan.Framework.Caching.InMemory.Tests/XiHan.Framework.Caching.InMemory.Tests.csproj --configuration Release
+dotnet test --project framework/test/XiHan.Framework.Caching.InMemory.Tests/XiHan.Framework.Caching.InMemory.Tests.csproj --configuration Release
 
 # 与 CI 相同：采集 Cobertura 覆盖率
-dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --no-build -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
+dotnet test --solution framework/XiHan.Framework.slnx --configuration Release --no-build -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
 ```
 
 ::: warning MTP 模式不要退回 VSTest
@@ -241,7 +241,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 }
 ```
 
-各套件的基类、工厂方法与用例覆盖面见 [Conformance 一致性套件](../packages/conformance)。依赖真实服务的套件（Redis、RabbitMQ、Kafka、PostgreSQL、S3、Nacos 等）只在设置了对应环境变量（`XIHAN_TEST_REDIS`、`XIHAN_TEST_RABBITMQ`、`XIHAN_TEST_KAFKA`、`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`、`XIHAN_TEST_S3`、`XIHAN_TEST_NACOS`、`XIHAN_TEST_QDRANT` 等）时运行，没有就跳过；CI 以服务容器提供 Redis、PostgreSQL、SQL Server、MySQL、RabbitMQ 与 Qdrant（`.github/workflows/next-ci.yml` 的主作业）；Oracle 镜像大、冷启动慢，单独一个与主作业并行的 `oracle` 作业起 `gvenzl/oracle-free:23-slim-faststart`，只构建并测试 `Persistence.SqlSugar.Tests`（ADR-0087）。
+各套件的基类、工厂方法与用例覆盖面见 [Conformance 一致性套件](../packages/conformance)。依赖真实服务的套件（Redis、RabbitMQ、Kafka、PostgreSQL、S3、Nacos 等）只在设置了对应环境变量（`XIHAN_TEST_REDIS`、`XIHAN_TEST_RABBITMQ`、`XIHAN_TEST_KAFKA`、`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_ORACLE`、`XIHAN_TEST_S3`、`XIHAN_TEST_NACOS`、`XIHAN_TEST_QDRANT` 等）时运行，没有就跳过；CI 的主作业以服务容器提供 Redis、PostgreSQL、SQL Server、MySQL、RabbitMQ 与 Qdrant；Oracle 镜像大、冷启动慢，单独一个与主作业并行的 `oracle` 作业起 `gvenzl/oracle-free:23-slim-faststart`，只构建并测试 `Persistence.SqlSugar.Tests`（ADR-0087）。
 
 ## Plugins.Conformance 与 xihan-conformance
 
@@ -291,14 +291,14 @@ xihan-conformance vectors
 
 ## 架构测试与门禁
 
-这一节面向向框架仓库提交扩展的人：`next/` 下的每个正式包都要通过下列门禁，CI（`.github/workflows/next-ci.yml`）全部是必过项，不放宽、不绕过、不加 `NoWarn`。
+这一节面向向框架仓库提交扩展的人：`framework/` 下的每个正式包都要通过下列门禁，CI 全部是必过项，不放宽、不绕过、不加 `NoWarn`。
 
 | 门禁 | 位置 | 检查什么 |
 | --- | --- | --- |
-| 编译 | `next/Directory.Build.props` | `TreatWarningsAsErrors`、Nullable、`AnalysisLevel=latest-recommended`、`EnforceCodeStyleInBuild`（命名 IDE1006 与未使用 using IDE0005 在构建期即错误）、NuGet 高危 / 严重漏洞（NU1903 / NU1904）中断构建 |
-| 公开面与包 | `next/src/Directory.Build.props` | `PublicAPI.Shipped.txt` / `PublicAPI.Unshipped.txt` 必须与公开面一致、包验证、AOT 分析（`IsAotCompatible` 缺省为真） |
+| 编译 | `framework/Directory.Build.props` | `TreatWarningsAsErrors`、Nullable、`AnalysisLevel=latest-recommended`、`EnforceCodeStyleInBuild`（命名 IDE1006 与未使用 using IDE0005 在构建期即错误）、NuGet 高危 / 严重漏洞（NU1903 / NU1904）中断构建 |
+| 公开面与包 | `framework/src/Directory.Build.props` | `PublicAPI.Shipped.txt` / `PublicAPI.Unshipped.txt` 必须与公开面一致、包验证、AOT 分析（`IsAotCompatible` 缺省为真） |
 | 分析器 | `Kernel.Analyzers` | XH0001–XH0005：`[ApiLevel]`、`XiHan` 前缀、禁用词、Internal API、Ring 0/1 零反射（[Kernel.Analyzers](../packages/kernel-analyzers)） |
-| 架构测试 | `next/test/XiHan.Framework.Architecture.Tests` | 见下表 |
+| 架构测试 | `framework/test/XiHan.Framework.Architecture.Tests` | 见下表 |
 | 冒烟 | CI | `dotnet pack` 触发包验证；`samples/SimpleApp` 以 Native AOT 发布 |
 
 架构测试扫描源码目录与项目文件，按包 ID 推出环层再判定：

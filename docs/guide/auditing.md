@@ -1,6 +1,6 @@
 # 审计
 
-本章讲 5.0 怎样把一次调用记成审计事件、在处理器里补充动作与资源、按条件分页查询，以及内存与数据库两种存储的取舍，适用于需要操作日志的应用。完整 API 见 [Auditing.Abstractions 包](../packages/auditing-abstractions)。
+本章讲框架怎样把一次调用记成审计事件、在处理器里补充动作与资源、按条件分页查询，以及内存与数据库两种存储的取舍，适用于需要操作日志的应用。完整 API 见 [Auditing.Abstractions 包](../packages/auditing-abstractions)。
 
 ## 审计事件与接收器
 
@@ -73,7 +73,7 @@ app.Run();
 
 - 每项是操作 ID（精确匹配），或以 `*` 结尾的前缀：`profile.*` 是资源 `profile` 的全部操作，`my-*` 是资源名以 `my-` 开头的全部操作；按序数比较，区分大小写。
 - 只作用于按 `Selection` 挑出的操作：处理器调用了 `SetAuditAction` 的调用照样记录，排除不压掉代码要求留痕的动作。
-- 不配置、或列表为空，与以前完全一样。
+- 不配置、或列表为空时不排除任何操作。
 - 必须写成列表（环境变量写 `XiHan__Auditing__Exclude__0`）；写成单个值、某一项是空白、单独的 `*`、`*` 不在末尾、大写或其他字符，读选项时抛出 `ArgumentException`（消息指出配置键与那一项），应用启动失败。
 - 不核对操作是否已登记：模块可以按配置开关，插件的操作可能在启动之后才登记，列了不存在的操作只是不命中。
 
@@ -346,7 +346,7 @@ builder.AddXiHan(xihan => xihan
 - 可观测性：`LogEvents` 的日志经 `Microsoft.Extensions.Logging` 输出，装配 OpenTelemetry 导出后随日志信号一起导出，见[可观测性](./observability)；数据库存储的四个计数可以接到应用自己的 `Meter`，示例见 [Auditing.Database 包](../packages/auditing-database#使用示例)。
 - 多租户：审计不参与租户分片，见[多租户](./multi-tenancy)。
 - 测试：自写 Provider 继承 `Auditing.Conformance` 的 `AuditTrailConformance` 并通过全部用例，见[测试与一致性套件](./testing)。
-- 4.x：5.0 只有管道产生的这一种审计事件，4.x 的对照见[从 4.x 迁移](./upgrade)。
+- 审计事件只有管道产生的这一种。
 
 ## 相关
 

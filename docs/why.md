@@ -1,6 +1,6 @@
 # 为什么选择曦寒
 
-本页是选型说明：XiHan Framework 5 适合什么项目、换来什么、付出什么，以及在当前预览阶段的限制。适合正在评估后端框架的团队阅读。
+本页是选型说明：XiHan Framework 适合什么项目、换来什么、付出什么，以及在当前预览阶段的限制。适合正在评估后端框架的团队阅读。
 
 ## 结论
 
@@ -12,13 +12,13 @@
 | 需要第三方用其他语言写插件，或要求插件崩溃不拖垮宿主 | 适合 |
 | 目标是 Native AOT 发布或冷启动敏感的服务 | 适合，非 AOT 的 Provider 需替换或接受 JIT |
 | 短期项目，只要几个 CRUD 接口 | 直接用 ASP.NET Core 最小 API 更省事 |
-| 必须马上上生产、需要 nuget.org 上的正式版 | 5.0 仍是预览，见下文「当前限制」；可评估 4.x |
+| 必须马上上生产、需要 nuget.org 上的正式版 | 框架仍是预览，见下文「当前限制」 |
 
 ## 它解决的问题
 
 ### 装配可检查
 
-4.x 与多数模块化框架把依赖写在特性或基类上，依赖关系要到运行时才知道。5.0 的每个特性带一份清单，按能力 ID 声明依赖：
+多数模块化框架把依赖写在特性或基类上，依赖关系要到运行时才知道。这里每个特性带一份清单，按能力 ID 声明依赖：
 
 ```text
 xihan.persistence.inmemory 5.0.0-preview.1 (default)
@@ -56,16 +56,15 @@ xihan.persistence.inmemory 5.0.0-preview.1 (default)
 
 ## 当前限制
 
-- 5.0 尚未发布到 nuget.org，需要从源码引用或用本地包源，见[快速上手](./quickstart#获取预览包)。
+- 框架尚未发布到 nuget.org，需要从源码引用或用本地包源，见[快速上手](./quickstart#获取预览包)。
 - 公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整。
-- 不提供 4.x 到 5.0 的迁移工具，4.x 应用迁移需要重写装配层，见[从 4.x 迁移](./guide/upgrade)。
-- 4.x 的机器人、消息通知渠道、模板引擎、脚本引擎、搜索引擎、HTTP 客户端封装、网关、SignalR 封装、对象映射在 5.0 不再由框架提供。
+- 框架不提供机器人、消息通知渠道、模板引擎、脚本引擎、搜索引擎、HTTP 客户端封装、网关、SignalR 封装、对象映射，替代做法见[常见问题](./guide/faq#框架不提供哪些能力)。
 - Provider 覆盖面以[包总览](./packages/)列出的为准：持久化有 EF Core 与 SqlSugar，没有 MongoDB；远程配置有 Nacos，没有 Apollo 与 Vault；对象存储有文件系统与 S3 兼容服务。
 
 ## 用最小成本验证
 
 1. 按[快速上手](./quickstart)写一个操作，确认装配、管道与 Problem Details 的行为。
-2. 运行仓库里的 `next/samples/SimpleApp`：同一份订单契约同时在 HTTP、gRPC、MCP 上服务，入站 CloudEvents 经管道交给消息处理器，带租户、ApiKey 认证、权限、事务与发件箱，零外部设施。
+2. 运行仓库里的 `framework/samples/SimpleApp`：同一份订单契约同时在 HTTP、gRPC、MCP 上服务，入站 CloudEvents 经管道交给消息处理器，带租户、ApiKey 认证、权限、事务与发件箱，零外部设施。
 3. 把其中一个默认实现换成团队要用的 Provider（如 `Persistence.EntityFrameworkCore` 或 `Caching.Redis`），确认业务代码不需要改。
 
 ## 下一步

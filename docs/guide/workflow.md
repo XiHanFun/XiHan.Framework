@@ -181,7 +181,7 @@ var definition = parsed.ValueOrThrow();
 | `All` | 取全部出边 | `Parallel` |
 | `None` | 不流出 | `End`、`Terminate`、`Fault` |
 
-`AllMatched` 与 `Exclusive` 一条也选不到时实例故障。默认出边只作兜底，有条件成立时不走它（4.x 在 `AllMatched` 下总是流出默认边）。条件引用了未知变量是表达式错误，实例故障，不会悄悄当成假。
+`AllMatched` 与 `Exclusive` 一条也选不到时实例故障。默认出边只作兜底，有条件成立时不走它。条件引用了未知变量是表达式错误，实例故障，不会悄悄当成假。
 
 ### 校验
 
@@ -230,7 +230,7 @@ var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
     Status = WorkflowDefinitionStatus.Published,
     CreatedFrom = monthStart,
     CreatedTo = monthStart.AddMonths(1),
-    // 状态升序（生命周期），同状态的创建时间降序——同 4.x 先点「状态」、再按住 Shift 点「创建时间」两次
+    // 状态升序（生命周期），同状态的创建时间降序
     Sorts = [new(WorkflowDefinitionSortField.Status), new(WorkflowDefinitionSortField.CreatedAt, Descending: true)],
     Skip = 0,
     Limit = 20,
@@ -240,7 +240,7 @@ var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
 
 ### 列表排序
 
-定义查询与实例查询各有一个有序的排序项列表 `Sorts`（`WorkflowDefinitionSort` / `WorkflowInstanceSort`：白名单里的字段 `Field` 加方向 `Descending`，缺省升序），以 4.x 两个列表能排的列为参照（ADR-0102），可以多个字段（ADR-0104，同 4.x 列表里按住 Shift 点列追加次级排序）：第一项是主排序字段，第一项相同的按第二项，依此类推。排序在存储里执行（数据库实现是 SQL 的 `ORDER BY`），全部排序项之后接固定的次序键，同值的行在各页之间不重不漏。
+定义查询与实例查询各有一个有序的排序项列表 `Sorts`（`WorkflowDefinitionSort` / `WorkflowInstanceSort`：白名单里的字段 `Field` 加方向 `Descending`，缺省升序，ADR-0102），可以多个字段（ADR-0104）：第一项是主排序字段，第一项相同的按第二项，依此类推。排序在存储里执行（数据库实现是 SQL 的 `ORDER BY`），全部排序项之后接固定的次序键，同值的行在各页之间不重不漏。
 
 | 查询 | 排序项的字段 | `Sorts` 为空或没给 | 次序键（排序项里已有的跳过） | 项数上限 |
 | --- | --- | --- | --- | --- |
@@ -262,10 +262,10 @@ var query = new WorkflowInstanceQuery
 };
 ```
 
-- 空列表与没给一样是缺省排序（与加排序之前相同）；每一项的方向缺省升序，实例列表要最新的在前得写 `new(WorkflowInstanceSortField.CreatedAt, Descending: true)`。
+- 空列表与没给一样是缺省排序；每一项的方向缺省升序，实例列表要最新的在前得写 `new(WorkflowInstanceSortField.CreatedAt, Descending: true)`。
 - 排序项不合法时 `QueryAsync` / `ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；按这个顺序检查、报第一个：项数超过上限（消息键 `workflow.definition.query_sorts_too_many` / `workflow.instance.query_sorts_too_many`，参数 `count`、`max`），某项为空或字段不在白名单——请求里给了越界的数字（`…query_sort_invalid`，参数 `sort`），同一字段出现两次、不论方向（`…query_sort_duplicate`，参数 `sort`）。`CountInstancesAsync` 不看排序。请求里给不认识的字段名（如 `{"field": "starter"}`）在反序列化时就被拒绝。
 - 文本（名字、标题、定义名）按数据库列的排序规则比较，内存实现按序数：大小写、标点与中文的先后可能随库不同。
-- 状态按生命周期的先后（同 4.x，ADR-0103）：定义 `Draft` → `Published` → `Disabled` → `Archived`；实例 `Running` → `Suspended` → `Completed` → `Canceled` → `Faulted` → `Terminated`。升序是这个顺序、降序反过来，同状态按后面的排序项与次序键；状态变了（发布、停用、挂起、恢复、取消、终止、重试……）位置随之变化。
+- 状态按生命周期的先后（ADR-0103）：定义 `Draft` → `Published` → `Disabled` → `Archived`；实例 `Running` → `Suspended` → `Completed` → `Canceled` → `Faulted` → `Terminated`。升序是这个顺序、降序反过来，同状态按后面的排序项与次序键；状态变了（发布、停用、挂起、恢复、取消、终止、重试……）位置随之变化。
 - 没发布过的定义 `PublishedAt` 为空、没结束的实例 `EndedAt` 为空：空值排在哪头照数据库（PostgreSQL、Oracle 当作最大，SQLite、MySQL、SQL Server 当作最小），内存实现当作最小。
 - 标题按前 256 个字符比较（`WorkflowSortKeys.Title`）。
 
@@ -273,11 +273,7 @@ var query = new WorkflowInstanceQuery
 
 列表查询的 `Keyword` 都按同一套规则匹配（`WorkflowKeyword`）：去掉首尾空白，为空或只有空白不过滤；关键字与被搜的文本先折叠成不变文化的小写，再判断包含，任一被搜字段包含即匹配，不跨字段。关键字里的 `%`、`_`、`[`、`\` 按字面匹配，与全角的 `％`、`＿`、`［`、`＼` 是不同的字符；内存实现与各数据库 Provider 的结果一致——按字面由持久化保证（[持久化](./persistence)里规约的字符串匹配，ADR-0098），小写折叠抹平各库大小写规则的差异。数据库的排序规则另有放宽（如 MySQL 缺省排序规则不区分重音）时以排序规则为准。SqlSugar 在兼容库（达梦、人大金仓、openGauss、TiDB 等）上维持原来的翻译，那里关键字里的 `%`、`_` 会当通配，与应用自己实体的查询相同；这是已定的，这些库在真实库上验证之后由持久化加进名单，工作流不另做绕法（ADR-0101）。
 
-::: tip 第八批的全角替换已撤销（ADR-0099）
-第八批为绕开 SqlSugar 不转义的 `LIKE`，把这四个字符换成全角存进查询列、两者视为相同。现在只做小写折叠：升级前写入的查询列里存的是全角，按半角关键字搜不到含这四个字符的行，要按 [Workflow.Database 的升级说明](../packages/workflow-database#从上一版升级)重算。
-:::
-
-三处查询各自匹配的字段与 4.x 对齐（ADR-0099）：
+三处查询各自匹配的字段（ADR-0099）：
 
 | 查询 | 匹配的字段 |
 | --- | --- |
@@ -650,7 +646,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 | `Http` | AllMatched | `Url`、`Method`、`Headers`、`Body`、`ContentType`、`TimeoutSeconds`、`ResultVariable`（缺省 `http`）、`FailOnErrorStatus`（缺省 `true`）；输出 `{ status, headers, body }`，JSON 响应解析为对象 |
 | `ExternalTask` | AllMatched | `Topic`、`Payload`；锁的时长由领取方在 `FetchAsync` 里给出 |
 
-`Http` 经单例 `WorkflowHttpClient` 发请求，超时缺省 `XiHan:Workflow:HttpTimeoutSeconds`（30 秒）。需要代理或认证处理器时，在装配前注册自己的实例 `new WorkflowHttpClient(httpClient)` 替换它（`HttpClient.Timeout` 设成无限，超时由活动给出）。5.0 不提供 `Script` 活动：表达式语言与 `SetVariable` 覆盖了常见场景，脚本引擎属于第三方依赖。
+`Http` 经单例 `WorkflowHttpClient` 发请求，超时缺省 `XiHan:Workflow:HttpTimeoutSeconds`（30 秒）。需要代理或认证处理器时，在装配前注册自己的实例 `new WorkflowHttpClient(httpClient)` 替换它（`HttpClient.Timeout` 设成无限，超时由活动给出）。框架不提供 `Script` 活动：表达式语言与 `SetVariable` 覆盖了常见场景，脚本引擎属于第三方依赖。
 
 地址由流程定义给出，不可信：缺省的客户端过[出站地址策略](./outbound)，只能连公网地址，重定向的目标同样检查。目标被拒绝时节点故障 `WORKFLOW_UNEXPECTED_001`，消息键 `workflow.http.address_denied`，参数 `host` 是请求里的主机名。流程要调内网服务时，把服务写进 `XiHan:Security:Outbound:AllowedHosts`。注册自己的 `WorkflowHttpClient` 之后，由它决定能连哪里。
 
@@ -697,7 +693,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 节点失败（活动返回失败的 `Result`，或抛出异常并被翻译为 `WORKFLOW_UNEXPECTED_001`）时按顺序处理：
 
 1. 有重试策略且未用尽：节点记为 `Faulted`，插入 `Retry` 书签，第 n 次尝试失败后等 `FirstDelay × BackoffFactor^(n−1)`，实例保持运行。`WorkflowRetryPolicy.MaxAttempts` 含首次（至少 1，1 为不重试），`FirstDelay` 缺省 10 秒，`BackoffFactor` 至少 1、缺省 2。
-2. `ContinueOnError`：节点记为 `Faulted`，变量 `lastError` 写入这次错误的故障结构（`code`、`message`、`messageKey`、`arguments`、`inner`），以 `outcome = "error"` 流出。表达式照旧按 `lastError.code` 判断（`message` 是按进程默认区域渲染的文本，只适合判空）；展示用 `WorkflowJson.DeserializeFault(instance.Variables[WorkflowEngine.LastErrorVariable])?.Localize()`。
+2. `ContinueOnError`：节点记为 `Faulted`，变量 `lastError` 写入这次错误的故障结构（`code`、`message`、`messageKey`、`arguments`、`inner`），以 `outcome = "error"` 流出。表达式按 `lastError.code` 判断（`message` 是按进程默认区域渲染的文本，只适合判空）；展示用 `WorkflowJson.DeserializeFault(instance.Variables[WorkflowEngine.LastErrorVariable])?.Localize()`。
 3. 否则实例 `Faulted`，记录 `Fault`、`FaultNodeId`、`FaultNodeInstanceId`；`CompensateOnFault` 时执行补偿。之后可以 `RetryAsync` 从故障节点重来，或 `JumpAsync` 改走别的节点。
 
 补偿按完成顺序的逆序调用已完成节点的 `ICompensableActivity.CompensateAsync`，节点状态改为 `Compensated`。三个入口：`EnableCompensation` 的定义被取消时、`CompensateOnFault` 的定义故障时、流程走到 `Compensate` 节点时（BPMN 的补偿抛出事件）。
@@ -714,7 +710,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 | 把故障作为错误返回给调用方 | `instance.Fault.ToError()`：带键、参数与内层的错误，宿主在 Egress 按调用方的区域翻译 |
 | 在调用之外按收件人的区域渲染（通知、邮件） | `using (MessageScope.Use(null, recipientLocale)) { text = fault.Localize(); }` |
 
-引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。活动抛出时 `reason` 只写异常类型的全名，完整异常进日志（ADR-0115）；要让调用方看到说明，活动返回失败，不靠抛异常。应用或第三方给的文本——HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息——原样放在参数里，外层的键照常本地化。表达式在运行期出错（未知变量、除以零、类型不符等）时，故障的消息键就是表达式诊断的键（`workflow.expression.*`，参数带表达式本身）。子流程没有正常完成时，父节点的故障按子实例的状态各一个键（`workflow.child.faulted`、`canceled`、`terminated`），状态名不进文案，参数 `status` 是枚举名。升级前写入的故障没有消息键，`Localize()` 返回 `Message` 原文。
+引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。活动抛出时 `reason` 只写异常类型的全名，完整异常进日志（ADR-0115）；要让调用方看到说明，活动返回失败，不靠抛异常。应用或第三方给的文本——HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息——原样放在参数里，外层的键照常本地化。表达式在运行期出错（未知变量、除以零、类型不符等）时，故障的消息键就是表达式诊断的键（`workflow.expression.*`，参数带表达式本身）。子流程没有正常完成时，父节点的故障按子实例的状态各一个键（`workflow.child.faulted`、`canceled`、`terminated`），状态名不进文案，参数 `status` 是枚举名。没有消息键的故障，`Localize()` 返回 `Message` 原文。
 
 ### 设计期诊断
 
@@ -735,7 +731,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 
 ### 状态的展示名
 
-状态在模型、查询结果、事件与回调输入里都是枚举值，程序照旧按枚举判断。给人看时用 `WorkflowStatusMessages`：`KeyOf(status)` 给消息键（`workflow.instance_status.*`、`workflow.node_status.*`、`workflow.definition_status.*`），`status.Localize()` 按当前区域渲染。状态不允许操作的错误（`WORKFLOW_CONFLICT_001` / `_002`）按状态各一句（`workflow.instance.is_running` … `is_terminated`、`workflow.definition.is_draft` … `is_archived`），参数 `status` 是枚举名。
+状态在模型、查询结果、事件与回调输入里都是枚举值，程序按枚举判断。给人看时用 `WorkflowStatusMessages`：`KeyOf(status)` 给消息键（`workflow.instance_status.*`、`workflow.node_status.*`、`workflow.definition_status.*`），`status.Localize()` 按当前区域渲染。状态不允许操作的错误（`WORKFLOW_CONFLICT_001` / `_002`）按状态各一句（`workflow.instance.is_running` … `is_terminated`、`workflow.definition.is_draft` … `is_archived`），参数 `status` 是枚举名。
 
 ## 自定义活动
 
@@ -880,7 +876,6 @@ Provider 实现五个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceSto
 - `Delay` 的 `Cron` 与 `Start` 的定时启动复用调度子系统的 `CronExpression`，文法见[调度与后台作业](./scheduling#cron-文法)；工作流自己的到期书签由轮询器推进，不占用调度器的作业。
 - 引擎在调用里加入调用方的事务，在调用之外自己经完整管道开调用，租户、授权、审计与追踪的行为与[执行管道](./pipeline)一致；分区与分库见[多租户](./multi-tenancy)。
 - 数据库实现经 `persistence.relational@1` 的仓储读写，见[持久化](./persistence)。
-- 4.x 的 `IWorkflowDefinitionManager` 换成 `IWorkflowDefinitionCatalog`，`IWorkflowUserTaskService` 换成 `IWorkflowTaskService`，变量从 `Dictionary<string, object?>` 换成 `JsonObject`，异常换成 `Result`；完整对照见[从 4.x 迁移](./upgrade)。
 
 ## 相关
 

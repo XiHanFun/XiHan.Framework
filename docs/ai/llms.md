@@ -27,7 +27,7 @@
 | GitHub Copilot | 写进 `.github/copilot-instructions.md` |
 | Windsurf | 写进 `.windsurf/rules` |
 
-可以直接使用的提示词见 [For Agents](./agents)。在 XiHan.Framework 仓库内工作的工具可以不经网络，直接读 `docs-next/` 下的 Markdown 源文件。
+可以直接使用的提示词见 [For Agents](./agents)。在 XiHan.Framework 仓库内工作的工具可以不经网络，直接读 `docs/` 下的 Markdown 源文件。
 
 ## 相关
 
