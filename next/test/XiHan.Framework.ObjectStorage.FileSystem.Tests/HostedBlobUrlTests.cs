@@ -41,6 +41,11 @@ public sealed class HostedBlobUrlTests : IDisposable
     private const string Container = "files";
 
     /// <summary>
+    /// 端点给非 PDF 内容的策略
+    /// </summary>
+    private const string SandboxPolicy = "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'";
+
+    /// <summary>
     /// 临时根目录
     /// </summary>
     private readonly TemporaryRoot _root = new();
@@ -195,6 +200,90 @@ public sealed class HostedBlobUrlTests : IDisposable
         Assert.Throws<ArgumentOutOfRangeException>(static () => BlobUrlRequest.ForDownload(TimeSpan.FromDays(8)));
     }
 
+    [Theory]
+    [InlineData("text/html")]
+    [InlineData("image/svg+xml")]
+    [InlineData("image/png")]
+    [InlineData("application/octet-stream")]
+    public async Task Downloads_RunInASandbox_AndCannotBeSniffed(string contentType)
+    {
+        // 端点常与应用同源，内容是用户上传的：标成 HTML 的上传不能在应用的源上运行脚本
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var url = await UploadAsync(app, "up/file", contentType);
+
+        var response = await client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(["nosniff"], response.Headers.GetValues("X-Content-Type-Options"));
+        Assert.Equal([SandboxPolicy], response.Headers.GetValues("Content-Security-Policy"));
+    }
+
+    [Theory]
+    [InlineData("application/pdf")]
+    [InlineData("application/PDF")]
+    [InlineData("application/pdf; name=report.pdf")]
+    public async Task PdfDownloads_StayOutOfTheSandbox_ButCannotBeSniffed(string contentType)
+    {
+        // 浏览器内置的 PDF 阅读器在沙箱里打不开；有 nosniff，标成 PDF 的 HTML 也不会按 HTML 解析
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var url = await UploadAsync(app, "up/report", contentType);
+
+        var response = await client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(["nosniff"], response.Headers.GetValues("X-Content-Type-Options"));
+        Assert.False(response.Headers.Contains("Content-Security-Policy"));
+    }
+
+    [Fact]
+    public async Task RangedDownloads_CarryTheSameHeaders()
+    {
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var url = await UploadAsync(app, "up/page", "text/html");
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Range = new RangeHeaderValue(0, 1);
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.PartialContent, response.StatusCode);
+        Assert.Equal(["nosniff"], response.Headers.GetValues("X-Content-Type-Options"));
+        Assert.Equal([SandboxPolicy], response.Headers.GetValues("Content-Security-Policy"));
+    }
+
+    [Fact]
+    public async Task ErrorResponses_CannotBeSniffed()
+    {
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var url = await UploadAsync(app, "up/late", "text/plain");
+        _clock.Advance(BlobUrlRequest.DefaultExpiresIn + TimeSpan.FromSeconds(1));
+
+        var response = await client.GetAsync(url);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(["nosniff"], response.Headers.GetValues("X-Content-Type-Options"));
+    }
+
+    [Fact]
+    public async Task ApplicationPolicy_IsKept()
+    {
+        // 要换策略的应用在 UseXiHan 之前设自己的头，端点不覆盖
+        await using var app = await StartWithAsync(static web => web.Use(static (http, next) =>
+        {
+            http.Response.Headers.ContentSecurityPolicy = "default-src 'self'";
+            return next(http);
+        }));
+        using var client = app.GetTestClient();
+        var url = await UploadAsync(app, "up/app", "text/html");
+
+        var response = await client.GetAsync(url);
+
+        Assert.Equal(["default-src 'self'"], response.Headers.GetValues("Content-Security-Policy"));
+    }
+
     [Fact]
     public async Task MapXiHanBlobs_WithoutTheFeature_FailsAtStartup()
     {
@@ -214,7 +303,12 @@ public sealed class HostedBlobUrlTests : IDisposable
     /// <remarks>
     /// 文件系统存储 + 宿主代收发的预签名地址，端点映射在 <c>/blobs</c>，时钟可拨动；<paramref name="configuration"/> 追加配置
     /// </remarks>
-    private async Task<WebApplication> StartAsync(params KeyValuePair<string, string?>[] configuration)
+    private Task<WebApplication> StartAsync(params KeyValuePair<string, string?>[] configuration) => StartWithAsync(static _ => { }, configuration);
+
+    /// <summary>
+    /// 启动宿主，<paramref name="before"/> 在 <c>UseXiHan</c> 之前加中间件
+    /// </summary>
+    private async Task<WebApplication> StartWithAsync(Action<WebApplication> before, params KeyValuePair<string, string?>[] configuration)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -227,10 +321,22 @@ public sealed class HostedBlobUrlTests : IDisposable
         builder.Services.AddSingleton<TimeProvider>(_clock);
         builder.AddXiHan(static xihan => xihan.UseFeature<FileSystemObjectStorageFeature>().UseFeature<HostedBlobUrlFeature>());
         var app = builder.Build();
+        before(app);
         app.UseXiHan();
         app.MapXiHanBlobs();
         await app.StartAsync();
         return app;
+    }
+
+    /// <summary>
+    /// 存一个对象并签出下载地址
+    /// </summary>
+    private static async Task<Uri> UploadAsync(WebApplication app, string key, string contentType)
+    {
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+        Assert.True((await store.PutAsync(Container, key, Encoding.UTF8.GetBytes("<script>1</script>"), new BlobPutOptions { ContentType = contentType }, CancellationToken.None)).IsSuccess);
+        return (await signer.SignAsync(Container, key, BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow().Url;
     }
 
     /// <summary>

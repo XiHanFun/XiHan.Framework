@@ -85,7 +85,7 @@ app.Run();
 | `Authentication.InvocationAuthenticationOptions` | `QueryTokenPaths`：接受查询串 `access_token` 的路径前缀 |
 | `Authentication.IInvocationAuthenticationFilter` | 方案 `XiHan` 认证成功后的挂点（会话门禁） |
 | `Authentication.InvocationAuthenticationDefaults` | 常量：方案名 `XiHan`、参数名 `access_token`、令牌方案 `Bearer` |
-| `Blobs.HostedBlobUrlFeature`、`Blobs.HostedBlobUrlSigner`、`Blobs.BlobEndpointRouteBuilderExtensions` | 托管的预签名地址：特性、签名器（`ForStore(name)` 给命名实例签）、`MapXiHanBlobs()` |
+| `Blobs.HostedBlobUrlFeature`、`Blobs.HostedBlobUrlSigner`、`Blobs.BlobEndpointRouteBuilderExtensions` | 托管的预签名地址：特性、签名器（`ForStore(name)` 给命名实例签）、`MapXiHanBlobs()`（响应带 `nosniff`，内容除 PDF 外进沙箱，ADR-0125） |
 
 ## 使用示例
 

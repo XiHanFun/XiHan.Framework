@@ -127,3 +127,4 @@
 | [0122](0122-授予与租户目录读主库.md) | 第三十一批：`UnitOfWorkOptions.ReadsPrimary`，只读但读主库，其余仍是只读的语义；授予与租户目录读取设它，撤销授予、停用租户的生效时间不再多出复制延迟。没配从库的部署没有变化 |
 | [0123](0123-数据库连通性探测走一次往返.md) | 第三十一批：`persistence.sqlsugar.database`、运行时数据源探测与测试连接都走一次数据库往返并按 `HealthProbeIntervalSeconds` 超时，驱动不理令牌也不等；前者的错误码变成 `KERNEL_UNAVAILABLE_005` |
 | [0124](0124-载荷错误只留路径.md) | 第三十一批：`KERNEL_VALIDATION_001` 的 JSON 错误 `reason` 只写路径，不再把请求类型的全名回给调用方 |
+| [0125](0125-宿主代收发端点的响应安全头.md) | 第三十一批：`MapXiHanBlobs` 的响应带 `nosniff`，写出内容时除 PDF 外带沙箱的 CSP，应用已设该头时不覆盖 |

@@ -31,6 +31,14 @@ namespace XiHan.Framework.Hosting.AspNetCore.Blobs;
 public static class BlobEndpointRouteBuilderExtensions
 {
     /// <summary>
+    /// 写出内容时的内容安全策略
+    /// </summary>
+    /// <remarks>
+    /// 端点常与应用同源，内容是用户上传的：放进沙箱，页面脚本拿不到应用的源。后面几项让浏览器能显示图片、媒体和它给这些内容生成的页面（ADR-0125）
+    /// </remarks>
+    private const string SandboxPolicy = "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'";
+
+    /// <summary>
     /// 映射端点
     /// </summary>
     /// <remarks>
@@ -49,6 +57,21 @@ public static class BlobEndpointRouteBuilderExtensions
     }
 
     /// <summary>
+    /// 给写出的内容设内容安全策略
+    /// </summary>
+    /// <remarks>
+    /// 应用在管道前面设了自己的策略时不覆盖。PDF 不进沙箱：浏览器内置的阅读器在沙箱里打不开，它本身跑不了页面脚本，有 nosniff 时标成 PDF 的 HTML 也不会按 HTML 解析
+    /// </remarks>
+    private static void ApplyContentPolicy(HttpResponse response, string? contentType)
+    {
+        var isPdf = MediaTypeHeaderValue.TryParse(contentType, out var parsed) && parsed.MediaType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase);
+        if (!isPdf && !response.Headers.ContainsKey(HeaderNames.ContentSecurityPolicy))
+        {
+            response.Headers.ContentSecurityPolicy = SandboxPolicy;
+        }
+    }
+
+    /// <summary>
     /// 路由值的文本
     /// </summary>
     /// <remarks>
@@ -61,6 +84,7 @@ public static class BlobEndpointRouteBuilderExtensions
     /// </summary>
     private static async Task DownloadAsync(HttpContext http, HostedBlobUrlSigner signer, string container, string key)
     {
+        http.Response.Headers.XContentTypeOptions = "nosniff";
         var context = Context(http);
         if (!ContainerName.IsValid(container) || !BlobKey.IsValid(key))
         {
@@ -111,6 +135,7 @@ public static class BlobEndpointRouteBuilderExtensions
             var response = http.Response;
             var metadata = blob.Metadata;
             response.ContentType = metadata.ContentType;
+            ApplyContentPolicy(response, metadata.ContentType);
             response.Headers.ETag = new EntityTagHeaderValue("\"" + metadata.ETag + "\"").ToString();
             response.Headers.LastModified = metadata.LastModified.ToString("R", CultureInfo.InvariantCulture);
             response.Headers.AcceptRanges = "bytes";
@@ -143,6 +168,7 @@ public static class BlobEndpointRouteBuilderExtensions
     /// </remarks>
     private static async Task UploadAsync(HttpContext http, HostedBlobUrlSigner signer, string container, string key)
     {
+        http.Response.Headers.XContentTypeOptions = "nosniff";
         var context = Context(http);
         if (!ContainerName.IsValid(container) || !BlobKey.IsValid(key))
         {
