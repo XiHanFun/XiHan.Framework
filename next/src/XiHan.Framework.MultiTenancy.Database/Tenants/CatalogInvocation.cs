@@ -17,9 +17,12 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 internal sealed class CatalogInvocation
 {
     /// <summary>
-    /// 只读、无租户的工作单元选项：目录只读不写，Provider 不必开写事务
+    /// 只读、无租户、读主库的工作单元选项
     /// </summary>
-    private static readonly UnitOfWorkOptions _readOnly = new(IsReadOnly: true);
+    /// <remarks>
+    /// 目录只读不写，Provider 不必开写事务。目录决定租户进不进得来：读到落后的从库，停用就要多等复制延迟，读回来的旧值还要再缓存一轮（ADR-0122）
+    /// </remarks>
+    private static readonly UnitOfWorkOptions _readOnly = new(IsReadOnly: true) { ReadsPrimary = true };
 
     /// <summary>
     /// 根服务提供者

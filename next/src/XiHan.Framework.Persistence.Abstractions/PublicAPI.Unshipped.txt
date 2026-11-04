@@ -309,6 +309,8 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Deconstruc
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? other) -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.IsReadOnly.init -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ReadsPrimary.get -> bool
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ReadsPrimary.init -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.TenantId.get -> string?
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.TenantId.init -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly = false, string? Connection = null) -> void

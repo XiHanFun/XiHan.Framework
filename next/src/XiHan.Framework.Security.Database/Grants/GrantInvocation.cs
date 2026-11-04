@@ -19,9 +19,12 @@ namespace XiHan.Framework.Security.Database.Grants;
 internal sealed partial class GrantInvocation
 {
     /// <summary>
-    /// 只读、无租户的工作单元选项
+    /// 只读、无租户、读主库的工作单元选项
     /// </summary>
-    private static readonly UnitOfWorkOptions _readOnly = new(IsReadOnly: true);
+    /// <remarks>
+    /// 授予决定放不放行：读到落后的从库，撤销就要多等复制延迟，读回来的旧值还要再缓存一轮（ADR-0122）
+    /// </remarks>
+    private static readonly UnitOfWorkOptions _readOnly = new(IsReadOnly: true) { ReadsPrimary = true };
 
     /// <summary>
     /// 根服务提供者

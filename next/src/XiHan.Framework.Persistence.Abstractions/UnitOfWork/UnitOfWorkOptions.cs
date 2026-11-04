@@ -33,6 +33,14 @@ public sealed record UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly 
     } = Validate(Connection);
 
     /// <summary>
+    /// 只读工作单元也读主库
+    /// </summary>
+    /// <remarks>
+    /// 缺省为假：配了从库的 Provider 让只读工作单元读从库。读到落后的数据会放行不该放行的调用时设它（框架的授予与租户目录读取，ADR-0122）。只读的其余语义不变：不开事务，写入照样拒绝。可写工作单元本来就读主库，没有从库的 Provider 上也没有作用
+    /// </remarks>
+    public bool ReadsPrimary { get; init; }
+
+    /// <summary>
     /// 核对连接名：<see langword="null"/> 或非空白
     /// </summary>
     private static string? Validate(string? connection)

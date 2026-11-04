@@ -1431,6 +1431,18 @@ public abstract class RepositoryConformance
         Assert.False(manual.HasTransaction);
         Assert.Equal(PersistenceErrors.ReadOnly, (await manual.CommitAsync(CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         Assert.False(manual.HasTransaction);
+
+        // 读主库的只读工作单元仍是只读的；没有从库的 Provider 上这个选项没有作用
+        await using var pinnedScope = host.Services.CreateAsyncScope();
+        var pinned = pinnedScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        await pinned.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true) { ReadsPrimary = true }, CancellationToken.None).ConfigureAwait(false);
+        var pinnedOrders = pinnedScope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
+        Assert.True(pinned.IsReadOnly);
+        Assert.True((await pinnedOrders.FindAsync(existing, CancellationToken.None).ConfigureAwait(false)).HasValue);
+        Assert.Equal(PersistenceErrors.ReadOnly, (await pinnedOrders.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        Assert.False(pinned.HasTransaction);
+        Assert.Equal(PersistenceErrors.ReadOnly, (await pinned.CommitAsync(CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+
         Assert.Equal(1, await CountAsync<ConformanceOrder, Guid>(host, EntityQuery.All<ConformanceOrder>()).ConfigureAwait(false));
     }
 

@@ -69,6 +69,29 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     }
 
     /// <summary>
+    /// 启动以本库为主库、配了从库的宿主
+    /// </summary>
+    /// <remarks>
+    /// 客户端由特性按连接配置建，读写路由与真实部署相同；建表只开在主库上
+    /// </remarks>
+    /// <param name="replica">从库，表要先由它自己的宿主建好</param>
+    public async Task<TestHost> StartReplicatedHostAsync(SqliteDatabase replica)
+    {
+        EnsureWriteAheadLog();
+        var feature = new SqlSugarPersistenceFeature((binding, config) =>
+        {
+            config.DbType = DbType.Sqlite;
+            config.ConnectionString = binding.ValueOrThrow().Value;
+            config.SlaveConnectionConfigs = [new SlaveConnectionConfig { ConnectionString = replica.ConnectionString, HitRate = 10 }];
+        });
+        var host = await TestHost.StartAsync(
+            b => b.UseFeature(feature).UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseMultiTenancyFeature>(),
+            [new("XiHan:Bindings:db", ConnectionString), new("XiHan:Persistence:SqlSugar:InitTables", "true")]);
+        _hosts.Add(host);
+        return host;
+    }
+
+    /// <summary>
     /// 停止全部宿主，清空本库的连接池并删除数据库文件及其日志、WAL 与共享内存文件
     /// </summary>
     public async ValueTask DisposeAsync()

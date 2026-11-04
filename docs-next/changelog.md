@@ -19,6 +19,7 @@
 - **新增** 资源绑定（`XiHan:Bindings`、`SERVICE_BINDING_ROOT`）与配置目录 `XIHAN_CONFIG_PATH` 热更新
 - **新增** `IInvocationAccessor` 与调用来源 `InvocationOrigin`（协议、请求目标、远端地址、User-Agent、端点路由与名字）
 - **新增** 分析器 `Kernel.Analyzers`（XH0001–XH0005）与测试基座 `Testing`
+- **修复** 配了从库时授予与租户目录读主库，撤销授予、停用租户的生效时间不再多出复制延迟；新增 `UnitOfWorkOptions.ReadsPrimary`
 - **调整** HTTP、gRPC、MCP 入站丢弃 Baggage 里的 `xihan.tenant` 与 `xihan.principal`，网络调用方的租户只来自认证；要按主机名或请求头选租户时登记自己的 `ITenantResolver`
 - **新增** 出站地址策略 `OutboundAddressPolicy`：工作流 `Http` 活动、CloudEvents Webhook 与 S3 命名实例缺省只能连公网地址，连接时按实际 IP 判定；连本机或内网要在 `XiHan:Security:Outbound` 放行，本地开发写 `AllowLoopback: true`（见[出站地址策略](./guide/outbound)）
 

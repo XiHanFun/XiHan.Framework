@@ -17,7 +17,7 @@
 
 本包只换存储：解析顺序、`DefaultTenant` / `RequireTenant` / `ValidateAgainstStore` 与分片语义都在 `MultiTenancy.Abstractions`，与内存实现一致（RFC-0007，ADR-0026）。读写分成两个类型：
 
-- `DatabaseTenantStore` 是单例 `ITenantStore`，Tenant 阶段查它。它在根提供者的新作用域里直接开只读工作单元读仓储，不经 `App.InvokeAsync`：目录是 Tenant 阶段自己要查的东西，嵌套调用会再过一遍 Tenant 与 Authorize 阶段，`RequireTenant` 为真时没有租户就失败，而且启动期读不了。查找结果按租户缓存（"不存在"也缓存），每条带存活时间。
+- `DatabaseTenantStore` 是单例 `ITenantStore`，Tenant 阶段查它。它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库，ADR-0122），不经 `App.InvokeAsync`：目录是 Tenant 阶段自己要查的东西，嵌套调用会再过一遍 Tenant 与 Authorize 阶段，`RequireTenant` 为真时没有租户就失败，而且启动期读不了。查找结果按租户缓存（"不存在"也缓存），每条带存活时间。
 - `TenantRecordStore` 是作用域服务，在调用的 Transaction 阶段内用调用方的工作单元批量写入，逐项返回结果，写入后立即失效目录与分片解析器的缓存。
 
 清单不声明 `persistence.relational@1`：持久化 Provider 以可选依赖引用 `multitenancy.sharding@1` 来按分片选连接，内核把满足了的可选依赖也当作排序边，再声明持久化就成环。实际依赖改在 `StartAsync` 核对，能力图谱里没有持久化 Provider 时以 `KERNEL_CAPABILITY_001` 中断启动。

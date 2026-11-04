@@ -377,11 +377,18 @@ new SqlSugarPersistenceFeature((binding, config) =>
 | 读写 | 走哪里 |
 | --- | --- |
 | 只读工作单元（动词 `get`、`list`，或 `UnitOfWorkOptions(IsReadOnly: true)`）的读 | 从库 |
+| 设了 `ReadsPrimary` 的只读工作单元的读 | 主库，其余仍是只读的语义 |
 | 其余工作单元的读写，第一次写入之前的读也一样 | 主库。提交之后同一作用域的读也在主库上，读得到刚写的 |
 | 工作单元之外直接用客户端 | 事务内与写入走主库，事务外的读走从库 |
 | 分片连接（租户独立库） | 默认没有从库，读写都走租户自己的主库 |
 
-跨调用读己之写不保证：写完马上发起的只读调用可能读到落后的从库。框架自己的只读工作单元（授予、租户目录、租约探测）也走从库。
+跨调用读己之写不保证：写完马上发起的只读调用可能读到落后的从库。
+
+框架读授予和租户目录时读主库（ADR-0122）：它们决定放不放行，撤销授予、停用租户不能再多等复制延迟。审计查询和租约探测走从库。自己开工作单元的代码有同样的需要时这样写：
+
+```csharp
+await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true) { ReadsPrimary = true }, cancellationToken);
+```
 
 从库宕机时：周期探测把它摘除，新的调用不再读它；全部不可读时读回到主库；恢复之后要过了冷却窗口才放回读流量。健康项 `persistence.sqlsugar.replicas` 能看到每个从库的状态，有从库不可读时是 Degraded，应用仍然就绪。只探连通，不看复制延迟。
 

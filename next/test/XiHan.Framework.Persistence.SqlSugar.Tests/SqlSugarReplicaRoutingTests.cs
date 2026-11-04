@@ -7,6 +7,7 @@ using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.Conformance.Fixtures;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
@@ -69,6 +70,42 @@ public sealed class SqlSugarReplicaRoutingTests : IDisposable
 
         Assert.Equal("replica-a", unitOfWork.ConnectionFor(typeof(ConformanceOrder)).Ado.GetString(ReplicatedSqlite.ReadMarker));
         Assert.Equal("replica-a", unitOfWork.Client.Ado.GetString(ReplicatedSqlite.ReadMarker));
+    }
+
+    [Fact]
+    public async Task ReadsPrimary_ReadsThePrimary_AndStaysReadOnly()
+    {
+        // 授予与租户目录决定放不放行，读到落后的从库等于撤销还没生效；只改读哪里，只读的其余语义不变
+        await using var host = await StartAsync();
+        await using var scope = host.Services.CreateAsyncScope();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true) { ReadsPrimary = true }, CancellationToken.None);
+
+        Assert.Equal("primary", unitOfWork.ConnectionFor(typeof(ConformanceOrder)).Ado.GetString(ReplicatedSqlite.ReadMarker));
+        Assert.Equal("primary", unitOfWork.Client.Ado.GetString(ReplicatedSqlite.ReadMarker));
+        Assert.True(unitOfWork.IsReadOnly);
+        Assert.False(unitOfWork.HasTransaction);
+        var refused = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.EnsureTransactionAsync(CancellationToken.None));
+        Assert.Equal(PersistenceErrors.ReadOnly, refused.ToError().Code);
+        Assert.False(unitOfWork.HasTransaction);
+    }
+
+    [Fact]
+    public async Task ReadsPrimary_DoesNotLeakIntoTheNextScope()
+    {
+        // 钉主库的标记留在这个作用域的客户端上：下一个只读作用域照常读从库
+        await using var host = await StartAsync();
+        await using (var pinned = host.Services.CreateAsyncScope())
+        {
+            var unitOfWork = pinned.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true) { ReadsPrimary = true }, CancellationToken.None);
+            Assert.Equal("primary", unitOfWork.Client.Ado.GetString(ReplicatedSqlite.ReadMarker));
+        }
+
+        await using var scope = host.Services.CreateAsyncScope();
+        var next = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
+        await next.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+        Assert.Equal("replica-a", next.Client.Ado.GetString(ReplicatedSqlite.ReadMarker));
     }
 
     [Fact]
