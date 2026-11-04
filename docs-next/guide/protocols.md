@@ -291,6 +291,8 @@ app.MapXiHanCloudEvents();   // POST /events
 
 事件类型先查 `Topics:<事件类型>`，没有映射时类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
 
+扩展属性里的租户是事件发送方给的，能调这个端点的人就能选租户：与 HTTP 的 `baggage` 头不同，这是这个协议的设计（ADR-0121）。入站端点要用权限把关，只开给可信的内部服务。
+
 `Inbound` 决定事件的去向：
 
 - `Dispatch`（缺省）：在请求内经 `MessageDispatcher` 派发给主题的处理器，以新的作用域与上下文经完整管道执行，处理器的结果就是响应：成功 202、无正文，失败按错误 KIND 写 Problem Details，发送方据此重试。

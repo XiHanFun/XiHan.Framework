@@ -102,6 +102,25 @@ public sealed class GrpcProtocolTests
     }
 
     [Fact]
+    public async Task UnaryCall_DropsTheTenantAndPrincipal_TheCallerClaimsInBaggage()
+    {
+        // 调用方自报的租户与主体不进上下文，其余已登记的键照常进（RFC-0003 规则 3、ADR-0121）
+        var (app, channel, _) = await StartAsync();
+        await using var host = app;
+        using var scope = channel;
+        var request = ProtoBytes.Concat(ProtoBytes.StringField(1, "42"), ProtoBytes.VarintField(3, 2));
+
+        using var call = Call(channel, "Orders", "Get", request, ("baggage", "xihan.tenant=acme,xihan.principal=mallory,xihan.correlation=c-1"));
+        await call.ResponseAsync;
+
+        var baggage = app.Services.GetRequiredService<OriginLog>().LastBaggage;
+        Assert.NotNull(baggage);
+        Assert.False(baggage.ContainsKey(BaggageKeys.Tenant));
+        Assert.False(baggage.ContainsKey(BaggageKeys.Principal));
+        Assert.Equal("c-1", baggage[BaggageKeys.Correlation]);
+    }
+
+    [Fact]
     public async Task UnaryCall_DecodesRequest_RunsThePipeline_AndEncodesResponse()
     {
         var (app, channel, _) = await StartAsync();

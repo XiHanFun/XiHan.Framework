@@ -6,8 +6,11 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 
 /// <summary>
-/// 从 Baggage 的 <see cref="BaggageKeys.Tenant"/> 解析租户：客户端或上游服务自报的租户
+/// 从 Baggage 的 <see cref="BaggageKeys.Tenant"/> 解析租户
 /// </summary>
+/// <remarks>
+/// 值由进程内建上下文的地方放进去：消息派发、作业、工作流、命令行宿主。HTTP、gRPC、MCP 的入站不收这个键（ADR-0121），网络调用方选不了租户
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class BaggageTenantResolver : ITenantResolver
 {
@@ -15,7 +18,7 @@ public sealed class BaggageTenantResolver : ITenantResolver
     public ValueTask<Maybe<string>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        // Baggage 是调用方自报的，这里只取值不信任；是否存在、是否启用由中间件对照存储核对
+        // 这里只取值不信任；是否存在、是否启用由中间件对照存储核对
         return ValueTask.FromResult(context.TryGetBaggage(BaggageKeys.Tenant, out var tenantId) ? Maybe.Some(tenantId) : default);
     }
 }

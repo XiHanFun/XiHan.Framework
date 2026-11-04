@@ -138,7 +138,7 @@ public sealed class WebHostTests
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/ok");
         request.Headers.Add("traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01");
-        request.Headers.Add("baggage", "xihan.tenant=t-42,ignored=1,xihan.locale=zh-CN;prop=x");
+        request.Headers.Add("baggage", "xihan.correlation=c-42,ignored=1,xihan.locale=zh-CN;prop=x");
         var response = await client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -146,7 +146,7 @@ public sealed class WebHostTests
         Assert.NotNull(captured.Context);
         Assert.Equal("4bf92f3577b34da6a3ce929d0e0e4736", captured.Context.TraceId);
         Assert.Equal("00f067aa0ba902b7", captured.Context.SpanId);
-        Assert.Equal("t-42", captured.Context.Baggage[BaggageKeys.Tenant]);
+        Assert.Equal("c-42", captured.Context.Baggage[BaggageKeys.Correlation]);
         Assert.Equal("zh-CN", captured.Context.Baggage[BaggageKeys.Locale]);
         Assert.False(captured.Context.Baggage.ContainsKey("ignored"));
     }
@@ -312,15 +312,15 @@ public sealed class WebHostTests
 
         // 入站：格式合法但未登记的 xihan. 键与别的系统的键都不进上下文（RFC-0003 规则 3，与插件协议、消息扩展属性一致）
         using var request = new HttpRequestMessage(HttpMethod.Get, "/ok");
-        request.Headers.Add("baggage", "xihan.tenant=t-1,xihan.custom=x,xihan.principal=p-1,other=1");
+        request.Headers.Add("baggage", "xihan.correlation=c-1,xihan.custom=x,xihan.locale=zh-CN,other=1");
         Assert.Equal(HttpStatusCode.OK, (await client.SendAsync(request)).StatusCode);
-        Assert.Equal(new Dictionary<string, string> { [BaggageKeys.Tenant] = "t-1", [BaggageKeys.Principal] = "p-1" }, captured.Context!.Baggage);
+        Assert.Equal(new Dictionary<string, string> { [BaggageKeys.Correlation] = "c-1", [BaggageKeys.Locale] = "zh-CN" }, captured.Context!.Baggage);
         Assert.False(HttpInvocation.ParseBaggage("xihan.custom=x").ContainsKey("xihan.custom"));
 
         // 出站：进程内用的未登记键不写进 baggage 头
         var inProcess = captured.Context.WithBaggage("xihan.custom", "x");
         Assert.Equal("x", inProcess.Baggage["xihan.custom"]);
-        Assert.Equal("xihan.tenant=t-1,xihan.principal=p-1", HttpInvocation.FormatBaggage(inProcess.Baggage));
+        Assert.Equal("xihan.correlation=c-1,xihan.locale=zh-CN", HttpInvocation.FormatBaggage(inProcess.Baggage));
     }
 
     [Fact]

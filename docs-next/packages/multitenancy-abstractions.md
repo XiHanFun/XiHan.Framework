@@ -67,7 +67,7 @@
 | `Tenants.ITenantStore` | 租户存储：`FindAsync`、`ListAsync`；ID 区分大小写，基础设施失败抛异常 |
 | `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选，只解析不校验 |
 | `Resolution.ClaimTenantResolver` | 读已认证主体的租户声明（第一个值）；未认证主体跳过 |
-| `Resolution.BaggageTenantResolver` | 读 Baggage `xihan.tenant`，即调用方自报的租户 |
+| `Resolution.BaggageTenantResolver` | 读 Baggage `xihan.tenant`，由进程内建上下文的地方放进去；HTTP、gRPC、MCP 入站不收这个键（ADR-0121） |
 | `Resolution.TenantResolutionMiddleware` | Tenant 阶段的中间件 |
 | `MultiTenancyOptions` | 选项，见上表 |
 | `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantId?)` |

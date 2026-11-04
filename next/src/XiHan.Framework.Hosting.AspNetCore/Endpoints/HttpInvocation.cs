@@ -47,7 +47,7 @@ public static partial class HttpInvocation
     /// 从请求头构造调用上下文
     /// </summary>
     /// <remarks>
-    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留已登记的键）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字
+    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留已登记的键，其中 <see cref="BaggageKeys.Tenant"/> 与 <see cref="BaggageKeys.Principal"/> 不收：它们不能由调用方自报）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字
     /// </remarks>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
@@ -105,6 +105,11 @@ public static partial class HttpInvocation
         }
 
         var baggage = ParseBaggageCore(headers["baggage"].ToString());
+
+        // 这个头是调用方自己写的。租户解析器只核对租户存在且启用，不核对调用方属不属于它：留着 xihan.tenant，
+        // 任何没有租户声明的令牌都能进入任意租户；xihan.principal 同理，审计会把它当作没认证调用的主体（ADR-0121）
+        baggage.Remove(BaggageKeys.Tenant);
+        baggage.Remove(BaggageKeys.Principal);
 
         // Accept-Language 只在调用方没有显式给出 xihan.locale 时生效：按权重排序的候选经本地化选项协商成启用的区域；
         // 没有装配本地化时取第一个合法值并规范化，让下游服务仍能拿到调用方语言
@@ -231,7 +236,7 @@ public static partial class HttpInvocation
     /// 解析 W3C <c>baggage</c> 头，只保留已登记的键
     /// </summary>
     /// <remarks>
-    /// 值按 URL 解码；格式合法但未登记的 <c>xihan.</c> 键与其他键都丢弃（RFC-0003 规则 3）
+    /// 值按 URL 解码；格式合法但未登记的 <c>xihan.</c> 键与其他键都丢弃（RFC-0003 规则 3）。这里只管格式，入站的取舍在 <see cref="CreateContext(HttpContext, IServiceProvider)"/>：调用方自报的租户与主体不进调用上下文
     /// </remarks>
     public static IReadOnlyDictionary<string, string> ParseBaggage(string? header) => ParseBaggageCore(header);
 

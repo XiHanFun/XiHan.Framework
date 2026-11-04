@@ -58,12 +58,27 @@ public sealed class McpProtocolTests
         builder.AddXiHan(static xihan => xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<McpProtocolFeature>().UseFeature<OrdersFeature>());
         builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("orders", typeof(OrdersFeature)));
         builder.Services.AddSingleton<OriginLog>();
+        builder.Services.AddSingleton<CallLog>();
 
         var app = builder.Build();
         app.UseXiHan();
         app.MapXiHanMcp();
         await app.StartAsync();
         return (app, app.GetTestClient());
+    }
+
+    [Fact]
+    public async Task ToolCall_OverHttp_DropsTheTenantAndPrincipal_TheCallerClaimsInBaggage()
+    {
+        // HTTP 传输的 Baggage 来自请求头：调用方自报的租户与主体不进上下文（RFC-0003 规则 3、ADR-0121）。stdio 的 --tenant 是本机操作者给的，不受影响
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        await ResultOf(client, Rpc("tools/call", """{"name":"orders_get","arguments":{"id":"42","page":1}}"""), ("baggage", "xihan.tenant=acme,xihan.principal=mallory,xihan.correlation=c-1"));
+
+        var call = Assert.Single(app.Services.GetRequiredService<CallLog>().Calls);
+        Assert.Null(call.Tenant);
+        Assert.Equal("c-1", call.Correlation);
     }
 
     /// <summary>

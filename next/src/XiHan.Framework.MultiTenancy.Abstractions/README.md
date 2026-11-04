@@ -13,7 +13,7 @@
 | `TenantShardInvocationExtensions`、`TenantShardBinding` | 调用上下文里的分片（`GetTenantShard` / `SetTenantShard`）与持久化 Provider 在作用域内用的分片连接绑定（主值是分片连接串，属性并入分片属性与 `tenant` / `provider`；先看 `TenantShardScope` 的显式绑定，再看当前调用） |
 | `TenantShardScope` | 管道外的作用域显式绑定分片（ADR-0057）：`BindTenantAsync(tenantId)` 经分片解析器解析并绑定（不看租户是否启用、不受应用状态影响，共库租户不绑定），`Bind(shard)` 直接绑定；须在作用域首次创建持久化客户端之前，之后再绑定或改绑抛出 `InvalidOperationException`。多租户 Provider 登记为作用域服务 |
 
-解析顺序由 Provider 注册决定，默认先主体声明后 Baggage：已认证主体所属的租户优先于客户端自报的租户。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
+解析顺序由 Provider 注册决定，默认先主体声明后 Baggage。Baggage 里的租户只来自进程内建上下文的地方（消息派发、作业、工作流、命令行宿主），HTTP、gRPC、MCP 的网络入站不收这个键（ADR-0121），网络调用方的租户只来自认证。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
 
 分库：租户属性 `ConnectionString` 有值即分库，Tenant 阶段解析一次写进调用上下文，持久化 Provider（SqlSugar、EF Core）在作用域内按分片选连接；解析失败返回 `MULTITENANCY_UNAVAILABLE_002`，不降级为共库。租户连接变更后调用 `ITenantShardResolver.Invalidate`。分片库的表结构由应用管理。
 

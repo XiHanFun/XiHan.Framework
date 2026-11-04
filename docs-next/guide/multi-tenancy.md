@@ -89,15 +89,27 @@ Tenant 阶段按下面的顺序处理，任一步失败即以结果结束调用�
 | 顺序 | 解析器 | 读什么 |
 | --- | --- | --- |
 | 1 | `ClaimTenantResolver` | 已认证主体的租户声明（类型由 `TenantClaim` 决定，缺省 `tenant`），同类声明有多个时取第一个；未认证主体直接跳过 |
-| 2 | `BaggageTenantResolver` | 调用上下文的 Baggage `xihan.tenant`，即调用方自报的租户 |
+| 2 | `BaggageTenantResolver` | 调用上下文的 Baggage `xihan.tenant`，由进程内建上下文的地方放进去 |
 
 应用登记自己的 `ITenantResolver` 会排在这两个之后。解析器只负责给出候选 ID，校验都在中间件里。
 
-调用方按协议把租户放进 Baggage：HTTP 用 W3C `baggage` 头，gRPC 用同名元数据，命令行宿主用 `--tenant`，CloudEvents 用扩展属性 `xihantenant`。宿主只搬运 Baggage，不直接写租户。
+Baggage 里的租户只来自进程内：消息派发时取信封的扩展属性 `xihantenant`，作业与工作流带上发起时的租户，命令行宿主用 `--tenant`。
 
-```bash
-# SimpleApp 运行后，匿名调用自报租户
-curl -H "baggage: xihan.tenant=acme" http://localhost:5000/whoami
+HTTP、gRPC、MCP 的网络入站**不收** `xihan.tenant` 与 `xihan.principal`（ADR-0121）：`baggage` 头是调用方自己写的，解析器只核对租户存在且启用，不核对调用方属不属于它。所以网络调用方的租户只来自认证（令牌或 ApiKey 的租户声明）。
+
+要按主机名或请求头选租户时，登记自己的解析器，由它决定信什么、核对什么：
+
+```csharp
+public sealed class SubdomainTenantResolver(IHttpContextAccessor http) : ITenantResolver
+{
+    public ValueTask<Maybe<string>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+    {
+        // acme.example.com → acme；中间件接着核对租户存在且启用
+        var host = http.HttpContext?.Request.Host.Host;
+        var tenant = host?.Split('.')[0];
+        return ValueTask.FromResult(string.IsNullOrEmpty(tenant) ? default : Maybe.Some(tenant));
+    }
+}
 ```
 
 ## 配置
@@ -134,17 +146,16 @@ curl -H "baggage: xihan.tenant=acme" http://localhost:5000/whoami
 | `Security.InMemory` 的 ApiKey | 主体记录的 `Tenant`，写成类型为 `TenantClaim` 的声明（读同一个配置键 `XiHan:MultiTenancy:TenantClaim`） |
 | `Security.Jwt` / `Security.OpenIdConnect` | 令牌里类型等于 `TenantClaim` 的声明，声明按原始类型名保留 |
 
-因为声明解析器排在 Baggage 之前，已认证且带租户声明的主体不能用 Baggage 换到别的租户。以 SimpleApp 为例（`alice` 的记录是 `Tenant: acme`）：
+网络调用方的租户只来自声明。以 SimpleApp 为例（`alice` 的记录是 `Tenant: acme`）：
 
 | 调用 | 结果 |
 | --- | --- |
-| `alice` 的 ApiKey，不带 Baggage | 租户 `acme` |
-| `alice` 的 ApiKey，Baggage `xihan.tenant=globex` | 租户仍是 `acme`，声明优先 |
-| 匿名，Baggage `xihan.tenant=acme` | 租户 `acme` |
-| 匿名，Baggage `xihan.tenant=globex` | `MULTITENANCY_DENIED_001`（租户已禁用，HTTP 403） |
-| 匿名，不带 Baggage，`RequireTenant` 为假 | 无租户 |
+| `alice` 的 ApiKey | 租户 `acme` |
+| `alice` 的 ApiKey，请求头 `baggage: xihan.tenant=globex` | 租户仍是 `acme`，这个键入站不收 |
+| 匿名，请求头 `baggage: xihan.tenant=acme` | 无租户，这个键入站不收 |
+| 匿名，`RequireTenant` 为真 | `MULTITENANCY_VALIDATION_002` |
 
-主体没有租户声明时（匿名调用、平台级账号），Baggage 自报的租户只经过文法与存储核对，框架不判断这个主体是否属于该租户。需要限制时在授权里判断，[授权](./authorization#自定义策略)一章给出了一个按租户声明核对的策略。
+主体没有租户声明时（匿名调用、平台级账号）就没有租户。平台账号要进入某个租户，由应用换发带租户声明的令牌，并在换发时核对成员关系。
 
 ## 持久化层的租户过滤
 
