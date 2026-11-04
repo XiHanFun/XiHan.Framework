@@ -9,7 +9,7 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 /// 从 Baggage 的 <see cref="BaggageKeys.Tenant"/> 解析租户
 /// </summary>
 /// <remarks>
-/// 值由进程内建上下文的地方放进去：消息派发、作业、工作流、命令行宿主。HTTP、gRPC、MCP 的入站不收这个键（ADR-0121），网络调用方选不了租户
+/// 值由进程内建上下文的地方放进去：消息派发、作业、工作流、命令行宿主。HTTP、gRPC、MCP 的入站不收这个键（ADR-0121），这些调用方选不了租户；CloudEvents 入站的 <c>xihantenant</c> 经消息派发进来，由宿主给端点加的权限把关
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class BaggageTenantResolver : ITenantResolver

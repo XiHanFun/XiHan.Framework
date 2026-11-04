@@ -95,7 +95,9 @@ Tenant 阶段按下面的顺序处理，任一步失败即以结果结束调用�
 
 Baggage 里的租户只来自进程内：消息派发时取信封的扩展属性 `xihantenant`，作业与工作流带上发起时的租户，命令行宿主用 `--tenant`。
 
-HTTP、gRPC、MCP 的网络入站**不收** `xihan.tenant` 与 `xihan.principal`（ADR-0121）：`baggage` 头是调用方自己写的，解析器只核对租户存在且启用，不核对调用方属不属于它。所以网络调用方的租户只来自认证（令牌或 ApiKey 的租户声明）。
+HTTP、gRPC、MCP 的网络入站**不收** `xihan.tenant` 与 `xihan.principal`（ADR-0121）：`baggage` 头是调用方自己写的，解析器只核对租户存在且启用，不核对调用方属不属于它。所以这些调用方的租户只来自认证（令牌或 ApiKey 的租户声明）。
+
+CloudEvents 入站端点是例外：事件的 `xihantenant` 由发送方给，经消息派发进 Baggage，不和请求的身份核对。这个端点的权限要由宿主自己加，见 [CloudEvents](./protocols#cloudevents)（ADR-0121）。
 
 要按主机名或请求头选租户时，登记自己的解析器，由它决定信什么、核对什么：
 
@@ -146,7 +148,7 @@ public sealed class SubdomainTenantResolver(IHttpContextAccessor http) : ITenant
 | `Security.InMemory` 的 ApiKey | 主体记录的 `Tenant`，写成类型为 `TenantClaim` 的声明（读同一个配置键 `XiHan:MultiTenancy:TenantClaim`） |
 | `Security.Jwt` / `Security.OpenIdConnect` | 令牌里类型等于 `TenantClaim` 的声明，声明按原始类型名保留 |
 
-网络调用方的租户只来自声明。以 SimpleApp 为例（`alice` 的记录是 `Tenant: acme`）：
+HTTP 调用方的租户只来自声明。以 SimpleApp 为例（`alice` 的记录是 `Tenant: acme`）：
 
 | 调用 | 结果 |
 | --- | --- |

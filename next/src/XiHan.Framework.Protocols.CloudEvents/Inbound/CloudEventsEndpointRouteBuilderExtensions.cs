@@ -19,7 +19,7 @@ namespace XiHan.Framework.Protocols.CloudEvents.Inbound;
 /// 入站 CloudEvents 端点
 /// </summary>
 /// <remarks>
-/// <c>POST</c> 收 binary / structured / batch 事件，按类型映射到主题，派发模式下在请求内经内核管道交给主题的处理器，发布模式下按主题分组批量交给消息代理；全部成功回 202。端点经过 <c>UseXiHan()</c>：请求的凭据先在外层认证，失败结果写成 Problem Details；可用 <c>RequireXiHanAuthentication()</c> 等约定限制调用方。必须放在 <c>UseXiHan()</c> 之后
+/// <c>POST</c> 收 binary / structured / batch 事件，按类型映射到主题，派发模式下在请求内经内核管道交给主题的处理器，发布模式下按主题分组批量交给消息代理；全部成功回 202。端点经过 <c>UseXiHan()</c>：请求的凭据先在外层认证，失败结果写成 Problem Details；限制调用方由宿主负责，见 <see cref="MapXiHanCloudEvents"/>。必须放在 <c>UseXiHan()</c> 之后
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class CloudEventsEndpointRouteBuilderExtensions
@@ -33,7 +33,7 @@ public static class CloudEventsEndpointRouteBuilderExtensions
     /// 映射入站端点
     /// </summary>
     /// <remarks>
-    /// 需要 <see cref="CloudEventsProtocolFeature"/> 已装配
+    /// 需要 <see cref="CloudEventsProtocolFeature"/> 已装配。框架不给端点加任何要求，权限要由宿主在返回的构建器上挂 <c>RequireXiHanPermission(...)</c>：扩展属性 <c>xihantenant</c>、<c>xihanprincipal</c> 是发送方给的，能调端点的人就能选租户、写审计主体（ADR-0121）
     /// </remarks>
     public static IEndpointConventionBuilder MapXiHanCloudEvents(this IEndpointRouteBuilder endpoints, string pattern = "/events")
     {

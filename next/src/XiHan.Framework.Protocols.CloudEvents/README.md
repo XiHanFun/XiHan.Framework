@@ -23,7 +23,7 @@ app.MapXiHanCloudEvents();   // POST /events：binary / structured / batch 事�
 - 出站不外推内部标识（已定，ADR-0074）：Webhook 发布者不像内部发布者那样从当前调用补扩展，`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 都不由框架加到信封上。接收方是第三方，租户、主体、关联是本系统的内部标识，推出去会暴露内部结构与身份并让第三方依赖内部 ID；追踪链是否跨出组织边界由调用方决定。要给接收方的扩展由调用方显式写进信封。
 - 过出站地址策略（已定，RFC-0008、ADR-0117）：地址是运维配的，但接收方是第三方，它的 3xx 能把请求引到内网，所以这个命名客户端的连接与重定向都检查。接收方在内网时写进 `XiHan:Security:Outbound:AllowedHosts`；被拒绝按连接失败报告 `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名。
 - HTTP 追踪头缺省不传播（已定，ADR-0083）：启用了追踪时 .NET 的 HttpClient 本会按当前 Activity 写 W3C 的 `traceparent`、`tracestate` 与 `baggage` 头（不是信封扩展），同样会把内部追踪 ID 与 Baggage 推给第三方，所以命名客户端 `xihan.protocols.cloudevents` 的主处理器缺省是关掉传播器的 `SocketsHttpHandler`（`ActivityHeadersPropagator = null`）。`XiHan:Protocols:CloudEvents:PropagateTraceContext` = `true` 显式打开，按 .NET 的全局传播器写；只影响这个客户端，不改进程全局的传播，出站请求的客户端跨度照常记录。调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器（设置保留）；用 `ConfigurePrimaryHttpMessageHandler` 整个替换主处理器时，由替换后的处理器决定是否传播。
-- 入站端点经过 `UseXiHan()`：请求凭据在外层认证，可用端点约定（如 `RequireXiHanAuthentication()`）限制调用方。
+- 入站端点经过 `UseXiHan()`，请求凭据在外层认证。框架不给端点加任何要求，权限要由宿主自己加（已定，ADR-0121）：`MapXiHanCloudEvents().RequireXiHanPermission(...)`，只授给平台的服务账号或服务角色。扩展属性 `xihantenant`、`xihanprincipal` 是发送方给的，派发时不和请求的身份核对，能调端点的人就能选租户、写审计主体；权限也不按租户收窄。没有装配 `security.authorization@1` 时要求只进入上下文、不被判定，端点等于敞开。
 
 ## 依赖方向
 

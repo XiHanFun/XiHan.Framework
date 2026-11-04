@@ -24,7 +24,7 @@
 - **修复** 载荷解码错误的 `reason` 只写 JSON 路径，不再把请求类型的全名回给调用方
 - **修复** SqlSugar 的数据库健康项与运行时数据源探测走一次数据库往返并按配置超时：连接池里有空闲连接时不再在库宕了之后报健康，服务器不回话时不再卡住启动；`persistence.sqlsugar.database` 的错误码由 `PERSISTENCE_UNAVAILABLE_003` 变成 `KERNEL_UNAVAILABLE_005`；`TestAsync` 单次上限是运行时数据源的 `HealthProbeIntervalSeconds`
 - **修复** 配了从库时授予与租户目录读主库，撤销授予、停用租户的生效时间不再多出复制延迟；新增 `UnitOfWorkOptions.ReadsPrimary`
-- **调整** HTTP、gRPC、MCP 入站丢弃 Baggage 里的 `xihan.tenant` 与 `xihan.principal`，网络调用方的租户只来自认证；要按主机名或请求头选租户时登记自己的 `ITenantResolver`
+- **调整** HTTP、gRPC、MCP 入站丢弃 Baggage 里的 `xihan.tenant` 与 `xihan.principal`，这些调用方的租户只来自认证（CloudEvents 入站不变，端点权限由宿主自己加）；要按主机名或请求头选租户时登记自己的 `ITenantResolver`
 - **新增** 出站地址策略 `OutboundAddressPolicy`：工作流 `Http` 活动、CloudEvents Webhook 与 S3 命名实例缺省只能连公网地址，连接时按实际 IP 判定；连本机或内网要在 `XiHan:Security:Outbound` 放行，本地开发写 `AllowLoopback: true`（见[出站地址策略](./guide/outbound)）
 
 ### 子系统

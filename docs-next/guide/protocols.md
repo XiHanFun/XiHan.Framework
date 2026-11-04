@@ -266,7 +266,16 @@ using XiHan.Framework.Protocols.CloudEvents.Inbound;
 app.MapXiHanCloudEvents();   // POST /events
 ```
 
-入站端点经过 `UseXiHan()`：请求凭据在外层认证，要限制调用方时在返回的约定构建器上挂 `RequireXiHanAuthentication()` 或 `RequireXiHanPermission(...)`。
+入站端点经过 `UseXiHan()`，请求凭据在外层认证。框架不给它加任何要求，**权限要由宿主自己加**：
+
+```csharp
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+
+// 权限码由某个特性用 FeatureContext.AddPermission 登记
+app.MapXiHanCloudEvents().RequireXiHanPermission("events.deliver");
+```
+
+没有装配 `security.authorization@1` 时，这个要求只进入上下文、不被判定，端点等于敞开。
 
 ```json
 {
@@ -291,7 +300,7 @@ app.MapXiHanCloudEvents();   // POST /events
 
 事件类型先查 `Topics:<事件类型>`，没有映射时类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
 
-扩展属性里的租户是事件发送方给的，能调这个端点的人就能选租户：与 HTTP 的 `baggage` 头不同，这是这个协议的设计（ADR-0121）。入站端点要用权限把关，只开给可信的内部服务。
+扩展属性里的租户与主体是事件发送方给的，派发时不和请求的身份核对，能调这个端点的人就能选租户、写审计主体：与 HTTP 的 `baggage` 头不同，这是这个协议的设计，框架不收紧（ADR-0121）。权限也不按租户收窄，只授给平台的服务账号或服务角色，不要授给租户里的角色。
 
 `Inbound` 决定事件的去向：
 
