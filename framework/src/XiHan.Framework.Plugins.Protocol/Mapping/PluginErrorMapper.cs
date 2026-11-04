@@ -85,12 +85,14 @@ internal static class PluginErrorMapper
     /// 调用插件时的 gRPC 异常 → 宿主错误
     /// </summary>
     /// <remarks>
-    /// 按 <c>invocation.md</c> §3：<c>Unavailable</c>、连接失败与进程已退出归为插件不可用，截止与取消沿用内核错误码，<c>Unimplemented</c> / <c>InvalidArgument</c> 映射为内核的未知操作 / 载荷不合法，其余状态（含 <c>Internal</c>、<c>Unknown</c>）都是 <c>PLUGINS_UNEXPECTED_001</c>，细节带状态码与消息。<c>Cancelled</c> 一律是取消、不按时钟判断是不是超时：截止时间到了的由 Resilience 阶段的 <c>DeadlineMiddleware</c> 按截止令牌改报超时（RFC-0004）
+    /// 按 <c>invocation.md</c> §3：<c>Unavailable</c>、连接失败与进程已退出归为插件不可用，截止沿用内核错误码，<c>Unimplemented</c> / <c>InvalidArgument</c> 映射为内核的未知操作 / 载荷不合法，其余状态（含 <c>Internal</c>、<c>Unknown</c>）都是 <c>PLUGINS_UNEXPECTED_001</c>，细节带状态码与消息。<c>Cancelled</c> 看调用方的令牌：已触发是取消，不按时钟判断是不是超时，截止时间到了的由 Resilience 阶段的 <c>DeadlineMiddleware</c> 按截止令牌改报超时（RFC-0004）；没触发是插件停机或连接释放切断了调用，归为插件不可用（ADR-0127）
     /// </remarks>
-    public static Error FromRpc(RpcException exception, string pluginId, string phase, LifecycleState state, bool processExited = false) => exception.StatusCode switch
+    public static Error FromRpc(RpcException exception, string pluginId, string phase, LifecycleState state, bool processExited = false, bool callerCancelled = false) => exception.StatusCode switch
     {
         StatusCode.DeadlineExceeded => new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded),
-        StatusCode.Cancelled => new Error(KernelErrors.Cancelled, KernelMessages.Cancelled),
+        StatusCode.Cancelled when callerCancelled => new Error(KernelErrors.Cancelled, KernelMessages.Cancelled),
+        // 调用方没取消：调用是被插件停机或连接释放切断的，调用方可以重试，说成取消会误导它
+        StatusCode.Cancelled => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", pluginId), ("state", state.ToString()))),
         // 进程已经退出时连接上报出的任何状态都只是退出的后果
         _ when processExited => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", pluginId), ("state", state.ToString()))),
         StatusCode.Unimplemented => Error.NotFound(KernelErrors.UnknownOperation, KernelMessages.UnknownOperation, MessageArguments.Of(("id", phase))),

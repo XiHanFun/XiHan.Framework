@@ -126,3 +126,4 @@
 | [0124](0124-载荷错误只留路径.md) | 第三十一批：`KERNEL_VALIDATION_001` 的 JSON 错误 `reason` 只写路径，不再把请求类型的全名回给调用方 |
 | [0125](0125-宿主代收发端点的响应安全头.md) | 第三十一批：`MapXiHanBlobs` 的响应带 `nosniff`，写出内容时除 PDF 外带沙箱的 CSP，应用已设该头时不覆盖 |
 | [0126](0126-出站地址策略的非HTTP连接入口.md) | 第三十一批：公开 `OutboundAddressPolicy.ConnectAsync(host, port, ct)`，返回连好的 `Socket`，规则与 HTTP 路径相同；BasicApp 的 SMTP 可以换过去 |
+| [0127](0127-调用方没取消时的gRPC取消报插件不可用.md) | gRPC 的 `Cancelled` 按调用方令牌区分：已触发是 `KERNEL_CANCELLED_001`，没触发（插件停机、通道释放切断调用）是 `PLUGINS_UNAVAILABLE_001`，与 ADR-0085 的承诺一致 | 已采纳 |

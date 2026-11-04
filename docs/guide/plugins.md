@@ -258,8 +258,8 @@ await app.RunAsync();
 
 | 插件侧 | 宿主错误码 |
 | --- | --- |
-| 插件未就绪、正在停止、进程已退出或不可达 | `PLUGINS_UNAVAILABLE_001` |
-| 截止时间到（插件那边报的是取消、调用方同时取消也一样：宿主运行时把 gRPC 的 `Cancelled` 与插件写下的取消原样写成取消，不按时钟判断，宿主的 `DeadlineMiddleware` 按截止令牌一律改报超时，见[韧性](./resilience#截止时间)） | `KERNEL_TIMEOUT_001` |
+| 插件未就绪、正在停止、进程已退出或不可达；调用方没取消，进行中的调用被插件停机切断 | `PLUGINS_UNAVAILABLE_001` |
+| 截止时间到（插件那边报的是取消、调用方同时取消也一样：调用方的令牌触发时，宿主运行时把 gRPC 的 `Cancelled` 与插件写下的取消写成取消，不按时钟判断，宿主的 `DeadlineMiddleware` 按截止令牌一律改报超时，见[韧性](./resilience#截止时间)） | `KERNEL_TIMEOUT_001` |
 | 截止时间到达之前调用方取消 | `KERNEL_CANCELLED_001` |
 | 插件未实现该操作（gRPC `Unimplemented`；Wasm 返回 `KERNEL_NOTFOUND_001` 状态） | `KERNEL_NOTFOUND_001` |
 | 载荷或帧序不合法（gRPC `InvalidArgument`） | `KERNEL_VALIDATION_001` |

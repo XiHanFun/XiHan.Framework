@@ -17,7 +17,7 @@ public sealed class PluginErrorMapperTests
     [Theory]
     [InlineData(StatusCode.Unavailable, PluginErrors.Unavailable)]
     [InlineData(StatusCode.DeadlineExceeded, KernelErrors.DeadlineExceeded)]
-    [InlineData(StatusCode.Cancelled, KernelErrors.Cancelled)]
+    [InlineData(StatusCode.Cancelled, PluginErrors.Unavailable)]
     [InlineData(StatusCode.Unimplemented, KernelErrors.UnknownOperation)]
     [InlineData(StatusCode.InvalidArgument, KernelErrors.InvalidOperationPayload)]
     [InlineData(StatusCode.Internal, PluginErrors.Unexpected)]
@@ -54,13 +54,32 @@ public sealed class PluginErrorMapperTests
     }
 
     [Theory]
-    [InlineData(StatusCode.Cancelled, KernelErrors.Cancelled)]
-    [InlineData(StatusCode.DeadlineExceeded, KernelErrors.DeadlineExceeded)]
-    public void FromRpc_KeepsCancellationAndDeadline_EvenWhenTheProcessHasExited(StatusCode status, string expected)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FromRpc_KeepsCancelled_WhenTheCallerCancelled(bool processExited)
     {
-        // 取消原样是取消：映射不按时钟判断是不是超时，截止时间到了的由 DeadlineMiddleware 按截止令牌改报超时（RFC-0004）
-        var error = PluginErrorMapper.FromRpc(new RpcException(new Grpc.Core.Status(status, "cancelled")), "xihan.samples.echo", "echoes.create", LifecycleState.Ready, processExited: true);
+        // 令牌已触发才是取消：映射不按时钟判断是不是超时，截止时间到了的由 DeadlineMiddleware 按截止令牌改报超时（RFC-0004）
+        var error = PluginErrorMapper.FromRpc(new RpcException(new Grpc.Core.Status(StatusCode.Cancelled, "cancelled")), "xihan.samples.echo", "echoes.create", LifecycleState.Ready, processExited, callerCancelled: true);
 
-        Assert.Equal(expected, error.Code);
+        Assert.Equal(KernelErrors.Cancelled, error.Code);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FromRpc_ReportsUnavailable_WhenCancelledWithoutTheCaller(bool processExited)
+    {
+        // 调用方没取消：插件停机或通道释放切断了调用，进程退没退都一样（ADR-0127）
+        var error = PluginErrorMapper.FromRpc(new RpcException(new Grpc.Core.Status(StatusCode.Cancelled, "gRPC call disposed.")), "xihan.samples.echo", "echoes.create", LifecycleState.Draining, processExited, callerCancelled: false);
+
+        Assert.Equal(PluginErrors.Unavailable, error.Code);
+    }
+
+    [Fact]
+    public void FromRpc_KeepsDeadline_EvenWhenTheProcessHasExited()
+    {
+        var error = PluginErrorMapper.FromRpc(new RpcException(new Grpc.Core.Status(StatusCode.DeadlineExceeded, "deadline")), "xihan.samples.echo", "echoes.create", LifecycleState.Ready, processExited: true);
+
+        Assert.Equal(KernelErrors.DeadlineExceeded, error.Code);
     }
 }

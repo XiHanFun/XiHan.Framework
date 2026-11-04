@@ -373,9 +373,10 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         }
         catch (RpcException exception)
         {
-            // gRPC 的 Cancelled 原样写成取消，不按时钟判断是不是超时：定时器可能早于时钟读数到达截止时间，按时钟判断会把超时报成取消，
+            // 令牌已触发时 gRPC 的 Cancelled 写成取消，不按时钟判断是不是超时：定时器可能早于时钟读数到达截止时间，按时钟判断会把超时报成取消，
             // 晚于时也会在调用方取消时报成超时；截止令牌是谁触发的只有 Resilience 阶段的 DeadlineMiddleware 知道，由它统一归因（RFC-0004）
-            return PluginErrorMapper.FromRpc(exception, Manifest.Id, operation, State, processExited: process.HasExited);
+            // 令牌没触发就是插件停机或通道释放切断了调用，映射成不可用（ADR-0127）
+            return PluginErrorMapper.FromRpc(exception, Manifest.Id, operation, State, processExited: process.HasExited, callerCancelled: context.CancellationToken.IsCancellationRequested);
         }
     }
 
@@ -404,7 +405,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         catch (RpcException exception)
         {
             // 同上：取消交给 DeadlineMiddleware 归因
-            return PluginErrorMapper.FromRpc(exception, Manifest.Id, "event", State, processExited: process.HasExited);
+            return PluginErrorMapper.FromRpc(exception, Manifest.Id, "event", State, processExited: process.HasExited, callerCancelled: context.CancellationToken.IsCancellationRequested);
         }
     }
 
@@ -487,14 +488,14 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             }
 
             var process = _process!;
-            var configured = await StepAsync(process, "configure", () => process.Client.ConfigureAsync(BuildConfigure(), deadline: DateTime.UtcNow + _host.Options.StartTimeout, cancellationToken: cancellationToken).ResponseAsync, static r => r.Status).ConfigureAwait(false);
+            var configured = await StepAsync(process, "configure", () => process.Client.ConfigureAsync(BuildConfigure(), deadline: DateTime.UtcNow + _host.Options.StartTimeout, cancellationToken: cancellationToken).ResponseAsync, static r => r.Status, cancellationToken).ConfigureAwait(false);
             if (configured.IsFailure)
             {
                 return configured;
             }
 
             SetState(LifecycleState.Configured, null);
-            var started = await StepAsync(process, "start", () => process.Client.StartAsync(new StartRequest(), deadline: DateTime.UtcNow + _host.Options.StartTimeout, cancellationToken: cancellationToken).ResponseAsync, static r => r.Status).ConfigureAwait(false);
+            var started = await StepAsync(process, "start", () => process.Client.StartAsync(new StartRequest(), deadline: DateTime.UtcNow + _host.Options.StartTimeout, cancellationToken: cancellationToken).ResponseAsync, static r => r.Status, cancellationToken).ConfigureAwait(false);
             if (started.IsFailure)
             {
                 return started;
@@ -585,7 +586,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// <remarks>
     /// gRPC 失败或插件报失败都丢弃进程并记为 Failed
     /// </remarks>
-    private async Task<Result> StepAsync<TResponse>(PluginProcess process, string phase, Func<Task<TResponse>> call, Func<TResponse, Status?> status)
+    private async Task<Result> StepAsync<TResponse>(PluginProcess process, string phase, Func<Task<TResponse>> call, Func<TResponse, Status?> status, CancellationToken cancellationToken)
     {
         Error error;
         try
@@ -601,7 +602,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         }
         catch (RpcException exception)
         {
-            error = exception.StatusCode == StatusCode.DeadlineExceeded ? Timeout(phase) : PluginErrorMapper.FromRpc(exception, Manifest.Id, phase, State, processExited: process.HasExited);
+            error = exception.StatusCode == StatusCode.DeadlineExceeded ? Timeout(phase) : PluginErrorMapper.FromRpc(exception, Manifest.Id, phase, State, processExited: process.HasExited, callerCancelled: cancellationToken.IsCancellationRequested);
         }
 
         await DiscardAsync(process).ConfigureAwait(false);
