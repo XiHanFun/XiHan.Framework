@@ -4,9 +4,9 @@
 namespace XiHan.Framework.Cli.Migration;
 
 /// <summary>
-/// 一次迁移的报告（<c>spec/migration/v4.md</c> §5）
+/// 一次迁移的报告（<c>spec/migration/README.md</c> §5）
 /// </summary>
-/// <param name="Version">迁移来源，<c>v4</c></param>
+/// <param name="Version">迁移来源，规则集登记的来源版本</param>
 /// <param name="Path">处理的根目录</param>
 /// <param name="DryRun">是否只报告不写文件</param>
 /// <param name="Rules">每条规则的结果，按编号；没有命中的也在</param>

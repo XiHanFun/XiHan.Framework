@@ -9,9 +9,9 @@ namespace XiHan.Framework.Cli.Tests;
 internal static class TestWorkspace
 {
     /// <summary>
-    /// <c>next/</c>：从测试输出目录向上找含解决方案文件的目录
+    /// <c>framework/</c>：从测试输出目录向上找含解决方案文件的目录
     /// </summary>
-    public static string NextRoot { get; } = Locate();
+    public static string FrameworkRoot { get; } = Locate();
 
     /// <summary>
     /// 向上查找
@@ -19,11 +19,11 @@ internal static class TestWorkspace
     private static string Locate()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
         {
             directory = directory.Parent;
         }
 
-        return directory?.FullName ?? throw new InvalidOperationException("The next/ workspace root was not found above the test output directory.");
+        return directory?.FullName ?? throw new InvalidOperationException("The framework/ workspace root was not found above the test output directory.");
     }
 }

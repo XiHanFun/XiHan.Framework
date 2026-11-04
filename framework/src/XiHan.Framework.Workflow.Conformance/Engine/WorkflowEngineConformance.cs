@@ -1479,7 +1479,7 @@ public abstract class WorkflowEngineConformance
     /// 用例 34：实例查询只取顶层、按一组关联 ID 与关键字过滤
     /// </summary>
     /// <remarks>
-    /// 子流程继承父实例的发起人与关联 ID，只取顶层把它们排除（「我发起的」、按单据查进度）；关键字匹配实例标题或关联 ID（同 4.x，ADR-0099），标题是启动时给的显示名，没给取定义的显示名。关联 ID 集合超过上限或有空白是 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.instance.query_correlations_invalid</c>），列表与计数都校验；空集合列表为空、计数为 0（ADR-0096）
+    /// 子流程继承父实例的发起人与关联 ID，只取顶层把它们排除（「我发起的」、按单据查进度）；关键字匹配实例标题或关联 ID（ADR-0099），标题是启动时给的显示名，没给取定义的显示名。关联 ID 集合超过上限或有空白是 <see cref="WorkflowErrors.InputInvalid"/>（消息键 <c>workflow.instance.query_correlations_invalid</c>），列表与计数都校验；空集合列表为空、计数为 0（ADR-0096）
     /// </remarks>
     [Fact]
     public async Task Instances_Query_TopLevelCorrelationSetAndTitleKeyword()
@@ -1677,7 +1677,7 @@ public abstract class WorkflowEngineConformance
     /// 用例 37：按状态排序是生命周期的先后，经目录与引擎改了状态之后位置随之变化
     /// </summary>
     /// <remarks>
-    /// 同 4.x 按状态枚举的整数值排（ADR-0103）：定义草稿、已发布、已停用、已归档；实例运行中、已挂起、已完成、已取消、故障、已终止。定义经目录发布、停用、归档，实例经引擎挂起、取消、终止、恢复；升序是生命周期的顺序，降序反过来，同状态按次序键。名字的字母序、状态名的字母序都与生命周期不同，排错了用例就失败
+    /// 按状态枚举的整数值排（ADR-0103）：定义草稿、已发布、已停用、已归档；实例运行中、已挂起、已完成、已取消、故障、已终止。定义经目录发布、停用、归档，实例经引擎挂起、取消、终止、恢复；升序是生命周期的顺序，降序反过来，同状态按次序键。名字的字母序、状态名的字母序都与生命周期不同，排错了用例就失败
     /// </remarks>
     [Fact]
     public async Task SortByStatus_FollowsTheLifecycle_AsTheCatalogAndEngineChangeStates()

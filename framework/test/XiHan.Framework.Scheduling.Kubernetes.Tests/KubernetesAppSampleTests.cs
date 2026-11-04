@@ -18,7 +18,7 @@ public sealed class KubernetesAppSampleTests
     [Fact]
     public void Appsettings_SetsPollIntervalAndLeaseTimeToLive_OnTheEngine()
     {
-        var configuration = new ConfigurationBuilder().AddJsonFile(Path.Combine(FindNextRoot(), "samples", "KubernetesApp", "appsettings.json"), optional: false, reloadOnChange: false).Build();
+        var configuration = new ConfigurationBuilder().AddJsonFile(Path.Combine(FindFrameworkRoot(), "samples", "KubernetesApp", "appsettings.json"), optional: false, reloadOnChange: false).Build();
 
         var options = SchedulerOptions.FromConfiguration(configuration);
 
@@ -29,16 +29,16 @@ public sealed class KubernetesAppSampleTests
     }
 
     /// <summary>
-    /// 从测试输出目录向上找 <c>next/</c>（含解决方案文件的目录）
+    /// 从测试输出目录向上找 <c>framework/</c>（含解决方案文件的目录）
     /// </summary>
-    private static string FindNextRoot()
+    private static string FindFrameworkRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
         {
             directory = directory.Parent;
         }
 
-        return directory?.FullName ?? throw new InvalidOperationException("The next/ workspace root was not found above the test output directory.");
+        return directory?.FullName ?? throw new InvalidOperationException("The framework/ workspace root was not found above the test output directory.");
     }
 }

@@ -1,5 +1,5 @@
 <Project>
-  <!-- 下一代所有包共享一条版本线；本文件不导入仓库根的任何 props，next 工作区自成一体 -->
+  <!-- 所有包共享一条版本线；本文件不导入仓库根的任何 props，framework 目录自成一体 -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>latest</LangVersion>

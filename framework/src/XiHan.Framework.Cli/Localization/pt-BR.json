@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "Tipo de artefato desconhecido '{kind}'; esperado dockerfile, kustomize, compose ou aspire.",
   "cli.pack.written": "{count} arquivos gravados em '{output}'.",
   "cli.pipeline.description": "Imprime o pipeline da aplicação (encaminha para 'dotnet run -- pipeline').",
-  "cli.search.description": "Pesquisa 'query' na documentação do XiHan Framework (páginas de guia e de pacotes, RFCs e convenções, READMEs dos pacotes); todos os termos separados por espaço devem aparecer, e os resultados vêm ordenados por relevância com um trecho. Passe 'page' para ler uma página inteira: um caminho do repositório (docs-next/guide/caching.md ou guide/caching), uma RFC (0006 ou 0006-caching) ou um ID de pacote para o seu README. 'limit' vai de 1 a 50, 10 por padrão.",
+  "cli.search.description": "Pesquisa 'query' na documentação do XiHan Framework (páginas de guia e de pacotes, RFCs e convenções, READMEs dos pacotes); todos os termos separados por espaço devem aparecer, e os resultados vêm ordenados por relevância com um trecho. Passe 'page' para ler uma página inteira: um caminho do repositório (docs/guide/caching.md ou guide/caching), uma RFC (0006 ou 0006-caching) ou um ID de pacote para o seu README. 'limit' vai de 1 a 50, 10 por padrão.",
   "cli.search.title": "Pesquisar na documentação",
   "cli.setup.client_invalid": "--client deve ser um de {known}, mas era '{client}'.",
   "cli.setup.config_invalid": "Não foi possível analisar '{path}' ({reason}); nenhum arquivo foi alterado. Mescle manualmente o trecho exibido por --dry-run.",

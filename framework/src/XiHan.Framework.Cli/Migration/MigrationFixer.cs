@@ -12,7 +12,7 @@ namespace XiHan.Framework.Cli.Migration;
 internal abstract class MigrationFixer
 {
     /// <summary>
-    /// 规则编号，如 <c>V5-01</c>
+    /// 规则编号，如 <c>V1-01</c>
     /// </summary>
     /// <remarks>
     /// 同一编号可以由多个规则实例承担，报告按编号合并

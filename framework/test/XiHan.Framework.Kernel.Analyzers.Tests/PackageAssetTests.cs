@@ -22,7 +22,7 @@ public sealed partial class PackageAssetTests
     [Fact]
     public void BuildTransitiveProps_DeclaresEveryPropertyTheRulesRead()
     {
-        var source = Path.Combine(FindNextRoot(), "src", PackageId);
+        var source = Path.Combine(FindFrameworkRoot(), "src", PackageId);
         var declared = CompilerVisibleProperties(Path.Combine(source, "buildTransitive", PackageId + ".props"));
         var read = Directory.EnumerateFiles(source, "*.cs")
             .SelectMany(static file => BuildProperty().Matches(File.ReadAllText(file)).Select(static match => match.Groups["name"].Value))
@@ -35,9 +35,9 @@ public sealed partial class PackageAssetTests
     [Fact]
     public void BuildTransitiveProps_MatchesTheRepositoryDeclarations()
     {
-        var next = FindNextRoot();
-        var packaged = CompilerVisibleProperties(Path.Combine(next, "src", PackageId, "buildTransitive", PackageId + ".props"));
-        var repository = CompilerVisibleProperties(Path.Combine(next, "src", "Directory.Build.props"));
+        var framework = FindFrameworkRoot();
+        var packaged = CompilerVisibleProperties(Path.Combine(framework, "src", PackageId, "buildTransitive", PackageId + ".props"));
+        var repository = CompilerVisibleProperties(Path.Combine(framework, "src", "Directory.Build.props"));
 
         Assert.Equal(repository.Order(StringComparer.Ordinal), packaged.Order(StringComparer.Ordinal));
     }
@@ -45,7 +45,7 @@ public sealed partial class PackageAssetTests
     [Fact]
     public void Project_PacksThePropsIntoBuildTransitive()
     {
-        var project = XDocument.Load(Path.Combine(FindNextRoot(), "src", PackageId, PackageId + ".csproj"));
+        var project = XDocument.Load(Path.Combine(FindFrameworkRoot(), "src", PackageId, PackageId + ".csproj"));
 
         var packed = project.Descendants("None")
             .Where(static item => (string?)item.Attribute("Pack") == "true" && (string?)item.Attribute("PackagePath") == "buildTransitive/")
@@ -63,17 +63,17 @@ public sealed partial class PackageAssetTests
         => XDocument.Load(path).Descendants("CompilerVisibleProperty").Select(static item => (string)item.Attribute("Include")!).ToList();
 
     /// <summary>
-    /// 从测试输出目录向上找 <c>next/</c>（含解决方案文件的目录）
+    /// 从测试输出目录向上找 <c>framework/</c>（含解决方案文件的目录）
     /// </summary>
-    private static string FindNextRoot()
+    private static string FindFrameworkRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
         {
             directory = directory.Parent;
         }
 
-        return directory?.FullName ?? throw new InvalidOperationException("The next/ workspace root was not found above the test output directory.");
+        return directory?.FullName ?? throw new InvalidOperationException("The framework/ workspace root was not found above the test output directory.");
     }
 
     /// <summary>

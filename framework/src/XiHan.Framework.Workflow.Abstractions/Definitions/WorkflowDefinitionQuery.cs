@@ -67,7 +67,7 @@ public sealed record WorkflowDefinitionQuery
     /// 排序项，有序：第一项是主排序字段，后面依次是次级排序字段
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 或空列表时按名字升序（与原来相同）。全部排序项之后接次序键名字升序、版本降序（排序项里已有的字段跳过；名字与版本在分区里唯一，已是全序，数据库实现最后再按 ID），同值的行分页不重不漏（ADR-0102、ADR-0104）。文本按数据库列的排序规则比较，内存实现按序数；状态按生命周期的先后（草稿、已发布、已停用、已归档，ADR-0103）；没发布过的定义发布时间为空，空值的位置照数据库（内存实现当作最小）。不合法时 <see cref="IWorkflowDefinitionCatalog.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>，按顺序检查：项数超过 <see cref="MaxSorts"/>（消息键 <c>workflow.definition.query_sorts_too_many</c>），某项为空或字段不是 <see cref="WorkflowDefinitionSortField"/> 里定义的值（<c>workflow.definition.query_sort_invalid</c>），同一字段出现两次（<c>workflow.definition.query_sort_duplicate</c>）
+    /// 为 <see langword="null"/> 或空列表时按名字升序。全部排序项之后接次序键名字升序、版本降序（排序项里已有的字段跳过；名字与版本在分区里唯一，已是全序，数据库实现最后再按 ID），同值的行分页不重不漏（ADR-0102、ADR-0104）。文本按数据库列的排序规则比较，内存实现按序数；状态按生命周期的先后（草稿、已发布、已停用、已归档，ADR-0103）；没发布过的定义发布时间为空，空值的位置照数据库（内存实现当作最小）。不合法时 <see cref="IWorkflowDefinitionCatalog.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>，按顺序检查：项数超过 <see cref="MaxSorts"/>（消息键 <c>workflow.definition.query_sorts_too_many</c>），某项为空或字段不是 <see cref="WorkflowDefinitionSortField"/> 里定义的值（<c>workflow.definition.query_sort_invalid</c>），同一字段出现两次（<c>workflow.definition.query_sort_duplicate</c>）
     /// </remarks>
     public IReadOnlyList<WorkflowDefinitionSort>? Sorts { get; init; }
 

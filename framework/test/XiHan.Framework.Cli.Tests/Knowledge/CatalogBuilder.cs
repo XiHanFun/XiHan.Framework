@@ -14,7 +14,7 @@ namespace XiHan.Framework.Cli.Tests.Knowledge;
 /// 从工作区与已加载的程序集生成 <c>catalog.json</c>
 /// </summary>
 /// <remarks>
-/// 包取自 <c>next/src/*/*.csproj</c>（说明、项目引用、包引用与中央包管理的版本）与 <c>next/README.md</c> 的包表；特性取自各包程序集里公开的 <see cref="IFeature"/> 实例的 <c>Manifest</c>
+/// 包取自 <c>framework/src/*/*.csproj</c>（说明、项目引用、包引用与中央包管理的版本）与 <c>framework/README.md</c> 的包表；特性取自各包程序集里公开的 <see cref="IFeature"/> 实例的 <c>Manifest</c>
 /// </remarks>
 internal static partial class CatalogBuilder
 {
@@ -36,14 +36,14 @@ internal static partial class CatalogBuilder
     /// <summary>
     /// 索引文件路径
     /// </summary>
-    public static string CatalogPath => Path.Combine(TestWorkspace.NextRoot, "src", CliPackage, "Knowledge", "catalog.json");
+    public static string CatalogPath => Path.Combine(TestWorkspace.FrameworkRoot, "src", CliPackage, "Knowledge", "catalog.json");
 
     /// <summary>
     /// 生成
     /// </summary>
     public static CatalogDocument Build()
     {
-        var root = TestWorkspace.NextRoot;
+        var root = TestWorkspace.FrameworkRoot;
         var versions = XDocument.Load(Path.Combine(root, "Directory.Packages.props"))
             .Descendants("PackageVersion")
             .ToDictionary(static e => (string)e.Attribute("Include")!, static e => (string)e.Attribute("Version")!, StringComparer.Ordinal);
@@ -164,7 +164,7 @@ internal static partial class CatalogBuilder
         : type.FullName!;
 
     /// <summary>
-    /// <c>next/README.md</c> 包表的一行：包 ID、环层、内容
+    /// <c>framework/README.md</c> 包表的一行：包 ID、环层、内容
     /// </summary>
     [GeneratedRegex(@"^\|\s*`(?<id>XiHan\.Framework\.[A-Za-z0-9.]+)`\s*\|(?<ring>[^|]*)\|(?<summary>.*)\|\s*$")]
     private static partial Regex PackageRow();

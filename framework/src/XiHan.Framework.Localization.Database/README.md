@@ -29,7 +29,7 @@ var reloaded = await loader.ReloadAsync(cancellationToken);
 - 健康项 `localization.database.translations`（加载器自己实现，以最近一次加载的结果上报，不另起探测循环）：还没加载过为 Started，加载成功为 Ready，最近一次加载失败为 Degraded（错误是那次加载的失败），应用仍在服务。
 - `MessageTranslationStore`（作用域）：`UpsertAsync` / `RemoveAsync` 批量逐项结果（不存在 → `LOCALIZATION_NOTFOUND_001`），`ListAsync` 分页；只能在调用的 Transaction 阶段内使用。`UpsertAsync` 先按 (键, 区域) 查已有的行（键每 1000 个一批、结果按标识分页读完），已有的更新、没有的新增——同一键与区域再写一次是更新，不会写出第二行（早先只读第一页，已有行超过 1000 条时超出的被当成新行再插一遍）。两个调用同时新增同一个键与区域：后插入的撞上唯一索引，那一批新增的项返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即按更新处理（ADR-0072）；内存持久化不建索引、不校验唯一性。
 - 键须符合消息键文法，区域规范化大小写；重复的键与区域由唯一索引 `UX_MessageTranslation_Ke_Lo`（`(Key, Locale)`，实体上的 `[EntityIndex]`，ADR-0072）约束，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建；已有的库按此名字补建（表里有重复行时先去重）。
-- `Locale` 列长取 `LocaleName.MaxLength`（35），合法的区域名都能写入。早先的版本声明为 16：SqlSugar 的 `InitTables` 与 EF Core 的 `EnsureCreated` 都不改已有列的长度，按旧版本建过表的库要手工放宽（如 PostgreSQL `ALTER TABLE <翻译表> ALTER COLUMN <区域列> TYPE varchar(35);`）或走一次迁移；SQLite 不校验长度。
+- `Locale` 列长取 `LocaleName.MaxLength`（35），合法的区域名都能写入。SqlSugar 的 `InitTables` 与 EF Core 的 `EnsureCreated` 都不改已有列的长度，已有的表里这一列更窄时要手工放宽（如 PostgreSQL `ALTER TABLE <翻译表> ALTER COLUMN <区域列> TYPE varchar(35);`）或走一次迁移；SQLite 不校验长度。
 
 ## 依赖方向
 

@@ -65,7 +65,7 @@ public sealed class McpCommandTests
         Assert.Equal(FrameworkInfo.Version, initialized.GetProperty("serverInfo").GetProperty("version").GetString());
         Assert.Contains("xihan_framework_config", initialized.GetProperty("instructions").GetString(), StringComparison.Ordinal);
 
-        // tool 名沿用 4.x；标题与描述按会话区域取自本工具的消息目录；都只读、幂等
+        // tool 名固定；标题与描述按会话区域取自本工具的消息目录；都只读、幂等
         var tools = replies[1].RootElement.GetProperty("result").GetProperty("tools").EnumerateArray().ToList();
         Assert.Equal(["xihan_framework_config", "xihan_framework_info", "xihan_framework_search"], tools.Select(static t => t.GetProperty("name").GetString()));
         Assert.Equal("包、特性与能力", tools[1].GetProperty("title").GetString());
@@ -88,7 +88,7 @@ public sealed class McpCommandTests
         Assert.Equal("XiHan:Messaging:Kafka:GroupId", key.GetProperty("path").GetString());
         Assert.Equal("xihan", key.GetProperty("default").GetString());
 
-        Assert.Equal("next/spec/rfcs/0016-packaging.md", Structured(replies[4]).GetProperty("page").GetProperty("path").GetString());
+        Assert.Equal("framework/spec/rfcs/0016-packaging.md", Structured(replies[4]).GetProperty("page").GetProperty("path").GetString());
 
         // 查不到与参数不合法都是 isError 结果，文本为「错误码: 文案」
         var missing = replies[5].RootElement.GetProperty("result");
@@ -100,13 +100,13 @@ public sealed class McpCommandTests
     [Fact]
     public async Task Mcp_ProjectOnAnotherFrameworkVersion_WritesTheNoticeToStderrAndInstructions()
     {
-        using var project = new ProjectFixture("4.6.0");
+        using var project = new ProjectFixture("1.6.0");
         var (exit, replies, error) = await RunAsync(
             ["--locale", "en-US", "--path", project.ProjectDirectory],
             """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}""");
 
         Assert.Equal(CommandLineExitCodes.Success, exit);
-        Assert.Contains("dnx XiHan.Framework.Cli@4.6.0 --yes -- mcp", error, StringComparison.Ordinal);
-        Assert.Contains("XiHan.Framework 4.6.0", replies[0].RootElement.GetProperty("result").GetProperty("instructions").GetString(), StringComparison.Ordinal);
+        Assert.Contains("dnx XiHan.Framework.Cli@1.6.0 --yes -- mcp", error, StringComparison.Ordinal);
+        Assert.Contains("XiHan.Framework 1.6.0", replies[0].RootElement.GetProperty("result").GetProperty("instructions").GetString(), StringComparison.Ordinal);
     }
 }

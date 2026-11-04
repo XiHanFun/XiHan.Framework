@@ -30,7 +30,7 @@ internal static class Rules
     /// <summary>
     /// 诊断的帮助链接，指向分析器 README 中的规则表
     /// </summary>
-    private const string HelpLink = "https://github.com/XiHanFun/XiHan.Framework/blob/next/next/src/XiHan.Framework.Kernel.Analyzers/README.md";
+    private const string HelpLink = "https://github.com/XiHanFun/XiHan.Framework/blob/dev/framework/src/XiHan.Framework.Kernel.Analyzers/README.md";
 
     /// <summary>
     /// XH0001：框架包里的公开类型缺少 <c>[ApiLevel]</c> 标注

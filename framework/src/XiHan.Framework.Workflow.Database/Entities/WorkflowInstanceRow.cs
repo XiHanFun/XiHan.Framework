@@ -49,7 +49,7 @@ public abstract class WorkflowInstanceRow : IEntity<string>
     /// 状态在生命周期里的序号
     /// </summary>
     /// <remarks>
-    /// <c>Running</c> 1、<c>Suspended</c> 2、<c>Completed</c> 3、<c>Canceled</c> 4、<c>Faulted</c> 5、<c>Terminated</c> 6（同 4.x 按状态枚举的整数值排，ADR-0103）。按状态排序时 SQL 对它 <c>ORDER BY</c>，而不是对状态名（那是字母序）。存储每次整行写入时随 <see cref="Status"/> 一起写（新增、状态变更、迁移、跳转、重试都经整行写入），是存储内部的细节，不是公开常量。可空只为给已有行的表加列：升级前写入的行为空，迁移时按 <see cref="Status"/> 回填，没回填的行按状态排序时位置照数据库的空值规则
+    /// <c>Running</c> 1、<c>Suspended</c> 2、<c>Completed</c> 3、<c>Canceled</c> 4、<c>Faulted</c> 5、<c>Terminated</c> 6（ADR-0103）。按状态排序时 SQL 对它 <c>ORDER BY</c>，而不是对状态名（那是字母序）。存储每次整行写入时随 <see cref="Status"/> 一起写（新增、状态变更、迁移、跳转、重试都经整行写入），是存储内部的细节，不是公开常量。可空只为给已有行的表加列：升级前写入的行为空，迁移时按 <see cref="Status"/> 回填，没回填的行按状态排序时位置照数据库的空值规则
     /// </remarks>
     public int? StatusOrder { get; set; }
 
@@ -75,7 +75,7 @@ public abstract class WorkflowInstanceRow : IEntity<string>
     /// 关键字查询列
     /// </summary>
     /// <remarks>
-    /// 实例标题（显示名，没有取定义名）与关联 ID 各自折叠后以 U+001F 拼成（<c>WorkflowKeyword.Join</c>，关联 ID 为空按空串拼入），实例列表的关键字在 SQL 里对它做包含判断（同 4.x 匹配实例名称与关联 ID，ADR-0099）；书签行的 <c>SearchInstanceText</c> 由它再拼上折叠后的定义名。存储写入的行总有值；可空只为给已有行的表加列（升级前写入的行为空，迁移时从文档回填，ADR-0096）
+    /// 实例标题（显示名，没有取定义名）与关联 ID 各自折叠后以 U+001F 拼成（<c>WorkflowKeyword.Join</c>，关联 ID 为空按空串拼入），实例列表的关键字在 SQL 里对它做包含判断（ADR-0099）；书签行的 <c>SearchInstanceText</c> 由它再拼上折叠后的定义名。存储写入的行总有值；可空只为给已有行的表加列（升级前写入的行为空，迁移时从文档回填，ADR-0096）
     /// </remarks>
     [LongText]
     public string? SearchText { get; set; }

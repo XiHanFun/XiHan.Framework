@@ -13,7 +13,7 @@ namespace XiHan.Framework.Cli.Tests.Knowledge;
 /// 包与特性清单的索引与代码一致
 /// </summary>
 /// <remarks>
-/// 设环境变量 <see cref="CatalogBuilder.UpdateVariable"/>=1 运行时改写 <c>catalog.json</c>（<c>next/scripts/Update-CliKnowledge.ps1</c>）
+/// 设环境变量 <see cref="CatalogBuilder.UpdateVariable"/>=1 运行时改写 <c>catalog.json</c>（<c>framework/scripts/Update-CliKnowledge.ps1</c>）
 /// </remarks>
 public sealed class KnowledgeCatalogTests
 {
@@ -28,7 +28,7 @@ public sealed class KnowledgeCatalogTests
         }
 
         var actual = File.ReadAllText(CatalogBuilder.CatalogPath).Replace("\r\n", "\n", StringComparison.Ordinal);
-        Assert.True(expected == actual, $"'{CatalogBuilder.CatalogPath}' is out of date; run next/scripts/Update-CliKnowledge.ps1.");
+        Assert.True(expected == actual, $"'{CatalogBuilder.CatalogPath}' is out of date; run framework/scripts/Update-CliKnowledge.ps1.");
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public sealed class KnowledgeCatalogTests
     public void Catalog_CoversEveryPackageAndFeature()
     {
         var knowledge = FrameworkKnowledge.Load();
-        var projects = Directory.GetDirectories(Path.Combine(TestWorkspace.NextRoot, "src")).Where(static d => File.Exists(Path.Combine(d, Path.GetFileName(d) + ".csproj"))).Select(Path.GetFileName).Order(StringComparer.Ordinal);
+        var projects = Directory.GetDirectories(Path.Combine(TestWorkspace.FrameworkRoot, "src")).Where(static d => File.Exists(Path.Combine(d, Path.GetFileName(d) + ".csproj"))).Select(Path.GetFileName).Order(StringComparer.Ordinal);
 
         Assert.Equal(projects, knowledge.Packages.Select(static p => p.Id));
         Assert.Contains(knowledge.Features, static f => f.Type == "XiHan.Framework.Messaging.Kafka.KafkaMessagingFeature" && f.Provides.SequenceEqual(["messaging.queue@1", "messaging.stream@1"]));

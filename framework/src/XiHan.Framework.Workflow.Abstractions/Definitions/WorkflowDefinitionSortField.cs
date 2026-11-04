@@ -10,19 +10,19 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// 定义列表可以按哪个字段排序
 /// </summary>
 /// <remarks>
-/// 白名单，以 4.x 定义列表能排的列为参照（ADR-0102）；不在其中的值（如请求里给了越界的数字）由 <see cref="IWorkflowDefinitionCatalog.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>。排序字段之后接次序键名字升序、版本降序，放进 <see cref="WorkflowDefinitionSort"/>，规则见 <see cref="WorkflowDefinitionQuery.Sorts"/>
+/// 白名单，取定义列表常用的排序列（ADR-0102）；不在其中的值（如请求里给了越界的数字）由 <see cref="IWorkflowDefinitionCatalog.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>。排序字段之后接次序键名字升序、版本降序，放进 <see cref="WorkflowDefinitionSort"/>，规则见 <see cref="WorkflowDefinitionQuery.Sorts"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowDefinitionSortField>))]
 public enum WorkflowDefinitionSortField
 {
     /// <summary>
-    /// 名字（4.x 的编码）
+    /// 名字
     /// </summary>
     Name = 0,
 
     /// <summary>
-    /// 标题：显示名，没有取名字（4.x 的名称）
+    /// 标题：显示名，没有取名字
     /// </summary>
     /// <remarks>
     /// 按前 <see cref="WorkflowSortKeys.MaxTitleLength"/> 个字符比较（<see cref="WorkflowSortKeys.Title"/>）
@@ -38,7 +38,7 @@ public enum WorkflowDefinitionSortField
     /// 状态
     /// </summary>
     /// <remarks>
-    /// 按生命周期的先后：<see cref="WorkflowDefinitionStatus.Draft"/> → <see cref="WorkflowDefinitionStatus.Published"/> → <see cref="WorkflowDefinitionStatus.Disabled"/> → <see cref="WorkflowDefinitionStatus.Archived"/>，同 4.x（ADR-0103）
+    /// 按生命周期的先后：<see cref="WorkflowDefinitionStatus.Draft"/> → <see cref="WorkflowDefinitionStatus.Published"/> → <see cref="WorkflowDefinitionStatus.Disabled"/> → <see cref="WorkflowDefinitionStatus.Archived"/>（ADR-0103）
     /// </remarks>
     Status = 3,
 

@@ -108,7 +108,7 @@ public sealed class InMemoryMessagingTests
     public async Task Start_ConsumesEverySubscribedTopic_WithoutATopicLimit()
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
-        // 比原来的缺省上限（1000）多一个主题：主题数只由订阅表决定，不再有上限
+        // 超过 1000 个主题：主题数只由订阅表决定，没有上限
         var subscriptions = new MessageSubscriptions();
         for (var i = 0; i <= 1_000; i++)
         {

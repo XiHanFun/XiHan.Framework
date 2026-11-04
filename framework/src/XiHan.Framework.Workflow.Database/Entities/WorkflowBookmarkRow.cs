@@ -73,7 +73,7 @@ public abstract class WorkflowBookmarkRow : IEntity<string>
     /// 所属实例一侧的关键字查询列
     /// </summary>
     /// <remarks>
-    /// 实例标题、关联 ID、定义名各自折叠后以 U+001F 拼成：实例行的 <c>SearchText</c>（标题与关联 ID）再拼上折叠后的定义名（同 4.x 的待办匹配实例名称、定义编码与关联 ID，ADR-0099）。写书签时从实例行算出，实例新增或这几个字段变了由实例存储同步（与定义名、实例状态同一路径）；所属实例的行不存在、或实例行的 <c>SearchText</c> 还没回填时为空
+    /// 实例标题、关联 ID、定义名各自折叠后以 U+001F 拼成：实例行的 <c>SearchText</c>（标题与关联 ID）再拼上折叠后的定义名（ADR-0099）。写书签时从实例行算出，实例新增或这几个字段变了由实例存储同步（与定义名、实例状态同一路径）；所属实例的行不存在、或实例行的 <c>SearchText</c> 还没回填时为空
     /// </remarks>
     [LongText]
     public string? SearchInstanceText { get; set; }

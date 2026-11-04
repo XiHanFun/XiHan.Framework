@@ -19,10 +19,10 @@ builder.AddXiHan(x => x.UseFeature<RabbitMQMessagingFeature>());
 - 连接与通道异常抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。
 - 健康项 `messaging.rabbitmq.connection`：启动后按 `XiHan:Messaging:RabbitMQ:HealthProbeIntervalSeconds`（默认 15）在后台检查连接与发布通道是否打开并缓存结果；断开时条目 Degraded（`MESSAGING_UNAVAILABLE_001`，`reason` 是代理给出的关闭原因），应用仍在服务。
 
-## 升级说明
+## 部署与升级
 
-- 先前版本由发布方建出的队列：没有人订阅的主题（如 `xihan.scheduling.job.started` 等 `scheduling.job.*`）的队列不再收到新消息，框架也不删除它们，已经堆积的消息留在原处。确认没有消费者后由运维删除：`rabbitmqctl list_queues name messages consumers` 找出 `consumers` 为 0 的框架主题队列，再 `rabbitmqctl delete_queue <队列>`（或在管理界面删除）。
-- 订阅方的队列名与参数不变：升级后第一次启动即补上到交换机的绑定，积压照常消费。
+- 没有订阅者的主题队列（如 `xihan.scheduling.job.started` 等 `scheduling.job.*`）：收不到新消息，框架也不删除它们，已经堆积的消息留在原处。确认没有消费者后由运维删除：`rabbitmqctl list_queues name messages consumers` 找出 `consumers` 为 0 的框架主题队列，再 `rabbitmqctl delete_queue <队列>`（或在管理界面删除）。
+- 订阅方每次启动都声明队列并绑定到交换机：已有的同名队列照常可用，积压照常消费。
 - 滚动升级：发布方已是新版本、订阅方仍是旧版本时，新版本发出的消息没有绑定可走，会按「没有订阅者」丢弃。先升级订阅方，或让一个新版本的订阅实例先启动一次建好绑定；同一个应用的实例既发布又订阅，第一个新版本实例启动即建好绑定。
 - 希望订阅方上线之前就留存消息的部署，由运维预先声明持久队列 `<QueuePrefix><topic>` 并以同名路由键绑定到交换机 `Exchange`。
 - 发布方与订阅方的 `QueuePrefix`、`Exchange` 要一致，否则消息到不了订阅方的队列。

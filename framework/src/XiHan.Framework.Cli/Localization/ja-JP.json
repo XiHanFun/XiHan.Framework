@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "不明な成果物の種類 '{kind}' です。dockerfile、kustomize、compose、aspire のいずれかを指定してください。",
   "cli.pack.written": "{count} 個のファイルを '{output}' に書き出しました。",
   "cli.pipeline.description": "アプリケーションのパイプラインを出力します（'dotnet run -- pipeline' に転送）。",
-  "cli.search.description": "XiHan Framework のドキュメント（ガイドとパッケージページ、RFC と規約、各パッケージの README）を query で検索します。空白で区切った語はすべて含まれる必要があり、結果は関連度順で抜粋付きです。代わりに page を渡すとページ全文を読めます：リポジトリ内パス（docs-next/guide/caching.md または guide/caching）、RFC（0006 または 0006-caching）、パッケージ ID（その README）。limit は 1-50、既定は 10 です。",
+  "cli.search.description": "XiHan Framework のドキュメント（ガイドとパッケージページ、RFC と規約、各パッケージの README）を query で検索します。空白で区切った語はすべて含まれる必要があり、結果は関連度順で抜粋付きです。代わりに page を渡すとページ全文を読めます：リポジトリ内パス（docs/guide/caching.md または guide/caching）、RFC（0006 または 0006-caching）、パッケージ ID（その README）。limit は 1-50、既定は 10 です。",
   "cli.search.title": "ドキュメント検索",
   "cli.setup.client_invalid": "--client は {known} のいずれかを指定してください（指定値：'{client}'）。",
   "cli.setup.config_invalid": "'{path}' を解析できません（{reason}）。ファイルは変更していません。--dry-run が出力する断片を手動でマージしてください。",

@@ -142,7 +142,7 @@ public sealed class CliHostTests
     [Fact]
     public async Task Migrate_WithoutRuleSets_RejectsEveryVersion()
     {
-        var (exit, _, error) = await RunAsync(null, "migrate", "v4", "--locale", "en-US");
+        var (exit, _, error) = await RunAsync(null, "migrate", "v1", "--locale", "en-US");
 
         Assert.Equal(CommandLineExitCodes.Usage, exit);
         Assert.Equal(CliErrors.MigrateVersionUnknown, CodeOf(error));

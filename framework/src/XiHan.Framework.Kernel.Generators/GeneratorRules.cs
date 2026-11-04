@@ -18,7 +18,7 @@ internal static class GeneratorRules
     /// <summary>
     /// 帮助链接
     /// </summary>
-    private const string HelpLink = "https://github.com/XiHanFun/XiHan.Framework/blob/next/next/src/XiHan.Framework.Kernel.Generators/README.md";
+    private const string HelpLink = "https://github.com/XiHanFun/XiHan.Framework/blob/dev/framework/src/XiHan.Framework.Kernel.Generators/README.md";
 
     /// <summary>
     /// XHG001：标注 <c>[Operation]</c> 的类没有实现 <c>IOperation&lt;TRequest, TResponse&gt;</c>

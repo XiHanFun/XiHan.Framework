@@ -147,7 +147,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
             _connection.Bind(connection);
         }
 
-        // 开始即建出 DbContext，与此前在构造时建出一样落在 Transaction 阶段（带分片的调用在这时按租户分片建）；建不出时工作单元保持未开始
+        // 开始即建出 DbContext，落在 Transaction 阶段（带分片的调用在这时按租户分片建）；建不出时工作单元保持未开始
         _ = Context;
         // 建在租户分片上：分片库启动时枚举不到，在首次绑定时核对时间列，不符即抛出、工作单元保持未开始
         // 命名连接的绑定优先于分片，DbContext 建在命名连接上时没有分片要核对

@@ -36,14 +36,14 @@ internal static class ConformanceVectors
     }
 
     /// <summary>
-    /// 从测试输出目录向上查找 next 工作区根（以 <c>XiHan.Framework.Next.slnx</c> 为标记）
+    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
     /// </summary>
     private static string LocateRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
             {
                 return directory.FullName;
             }
@@ -51,6 +51,6 @@ internal static class ConformanceVectors
             directory = directory.Parent;
         }
 
-        throw new InvalidOperationException("Could not locate 'XiHan.Framework.Next.slnx'.");
+        throw new InvalidOperationException("Could not locate 'XiHan.Framework.slnx'.");
     }
 }

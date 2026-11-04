@@ -10,7 +10,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 /// 要签的地址
 /// </summary>
 /// <remarks>
-/// 方法、有效期（缺省 <see cref="DefaultExpiresIn"/>，与 4.x 一致），下载可带保存的文件名，上传可限定内容类型，或者是某次分片上传的某一片。用 <see cref="ForDownload"/>、<see cref="ForUpload"/>、<see cref="ForPart"/> 构造
+/// 方法、有效期（缺省 <see cref="DefaultExpiresIn"/>），下载可带保存的文件名，上传可限定内容类型，或者是某次分片上传的某一片。用 <see cref="ForDownload"/>、<see cref="ForUpload"/>、<see cref="ForPart"/> 构造
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record BlobUrlRequest

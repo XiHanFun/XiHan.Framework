@@ -18,7 +18,7 @@ public static class WorkflowSortKeys
     /// 标题排序键的最大长度（UTF-16 字符）
     /// </summary>
     /// <remarks>
-    /// 与 4.x 的名称列（200）同一量级；数据库实现的 <c>Title</c> 列就是这个宽度
+    /// 数据库实现的 <c>Title</c> 列就是这个宽度
     /// </remarks>
     public const int MaxTitleLength = 256;
 

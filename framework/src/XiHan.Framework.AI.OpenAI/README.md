@@ -30,4 +30,4 @@ AI 的 OpenAI 兼容 Provider（Ring 3，RFC-0022）：提供 `ai.chat@1` 与 `a
 
 ## 状态
 
-5.x P0：可用（Preview）。
+P0：可用（Preview）。

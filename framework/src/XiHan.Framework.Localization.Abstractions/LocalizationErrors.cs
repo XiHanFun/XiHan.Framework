@@ -9,7 +9,7 @@ namespace XiHan.Framework.Localization.Abstractions;
 /// 本地化错误码
 /// </summary>
 /// <remarks>
-/// 登记在 <c>spec/conventions/error-codes.md</c>。区域名不合法不占用错误码：传给 API 或写在选项里的是编程或配置错误，在调用处抛出 <see cref="ArgumentException"/>，目录里的归 <see cref="InvalidCatalog"/>。原先登记的 <c>LOCALIZATION_VALIDATION_001</c> 已撤销，序号不复用
+/// 登记在 <c>spec/conventions/error-codes.md</c>。区域名不合法不占用错误码：传给 API 或写在选项里的是编程或配置错误，在调用处抛出 <see cref="ArgumentException"/>，目录里的归 <see cref="InvalidCatalog"/>。<c>LOCALIZATION_VALIDATION_001</c> 保留不用
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class LocalizationErrors

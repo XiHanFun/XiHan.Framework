@@ -106,7 +106,7 @@ internal static class EchoWasmPluginHost
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
             {
                 return directory.FullName;
             }

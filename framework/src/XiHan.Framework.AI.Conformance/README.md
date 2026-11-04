@@ -29,4 +29,4 @@ public sealed class VectorDataKnowledgeStoreConformanceTests : KnowledgeStoreCon
 
 ## 状态
 
-5.x P0：可用（Preview）。
+P0：可用（Preview）。

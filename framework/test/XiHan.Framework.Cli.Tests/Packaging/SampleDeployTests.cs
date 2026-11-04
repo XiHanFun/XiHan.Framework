@@ -13,8 +13,8 @@ public sealed class SampleDeployTests
     [Fact]
     public void KubernetesSample_CommittedDeployFolder_MatchesItsManifest()
     {
-        var next = TestWorkspace.NextRoot;
-        var sample = Path.Combine(next, "samples", "KubernetesApp");
+        var framework = TestWorkspace.FrameworkRoot;
+        var sample = Path.Combine(framework, "samples", "KubernetesApp");
         var manifest = AppManifestReader.Read(Path.Combine(sample, "xihan.app.json")).ValueOrThrow();
         var outputDirectory = Path.Combine(sample, "deploy");
         var outputs = Packager.Generate(manifest, sample, outputDirectory, PackKinds.All);

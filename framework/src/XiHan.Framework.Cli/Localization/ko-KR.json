@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "알 수 없는 산출물 종류 '{kind}'입니다. dockerfile, kustomize, compose, aspire 중 하나여야 합니다.",
   "cli.pack.written": "{count}개 파일을 '{output}'에 썼습니다.",
   "cli.pipeline.description": "애플리케이션의 파이프라인을 출력합니다('dotnet run -- pipeline'으로 전달).",
-  "cli.search.description": "XiHan Framework 문서(가이드와 패키지 페이지, RFC와 규약, 패키지 README)에서 query를 검색합니다. 공백으로 구분한 단어가 모두 나타나야 하며, 결과는 관련도순으로 발췌와 함께 반환됩니다. 대신 page를 주면 페이지 전체를 읽습니다: 저장소 경로(docs-next/guide/caching.md 또는 guide/caching), RFC(0006 또는 0006-caching), 패키지 ID(해당 README). limit은 1-50이며 기본값은 10입니다.",
+  "cli.search.description": "XiHan Framework 문서(가이드와 패키지 페이지, RFC와 규약, 패키지 README)에서 query를 검색합니다. 공백으로 구분한 단어가 모두 나타나야 하며, 결과는 관련도순으로 발췌와 함께 반환됩니다. 대신 page를 주면 페이지 전체를 읽습니다: 저장소 경로(docs/guide/caching.md 또는 guide/caching), RFC(0006 또는 0006-caching), 패키지 ID(해당 README). limit은 1-50이며 기본값은 10입니다.",
   "cli.search.title": "문서 검색",
   "cli.setup.client_invalid": "--client는 {known} 중 하나여야 하지만 '{client}'입니다.",
   "cli.setup.config_invalid": "'{path}'을(를) 해석할 수 없습니다({reason}). 파일을 변경하지 않았습니다. --dry-run이 출력한 조각을 직접 병합하세요.",

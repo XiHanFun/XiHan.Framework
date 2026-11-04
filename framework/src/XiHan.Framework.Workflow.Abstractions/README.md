@@ -7,7 +7,7 @@
 | 契约 | 用途 |
 | --- | --- |
 | `WorkflowName`、`ActivityType`、`WorkflowIdentifiers` | 定义名（主题文法）、活动类型名、节点 / 转移 ID 文法与 UUID v7 标识 |
-| `WorkflowDefinitionSort`、`WorkflowInstanceSort` | 列表的一个排序项：白名单字段加方向（缺省升序）；放进查询的 `Sorts`，列表的顺序就是排序的先后（多字段，同 4.x，ADR-0104） |
+| `WorkflowDefinitionSort`、`WorkflowInstanceSort` | 列表的一个排序项：白名单字段加方向（缺省升序）；放进查询的 `Sorts`，列表的顺序就是排序的先后（多字段，ADR-0104） |
 | `WorkflowSortKeys` | 列表按标题排序的键：标题的前 256 个字符，不拆开代理对（数据库实现存进定长的 `Title` 列，内存实现按同一个键比较，ADR-0102） |
 | `WorkflowKeyword` | 列表查询关键字的规则：去首尾空白，不变文化小写后按序数包含，任一字段匹配、不跨字段（ADR-0096）；`%` `_` `[` `\` 按字面、与全角字符不同（按字面由持久化的 `Contains` 保证，ADR-0098、ADR-0099 第四节）；数据库实现以它写查询列 |
 | `WorkflowDefinition`、`WorkflowNode`、`WorkflowTransition`、`WorkflowVariableDefinition`、`WorkflowRetryPolicy` | 定义：图、节点属性（`JsonObject`，字符串支持 `{{ 表达式 }}`）、输出映射、条件出边与默认出边、变量声明、重试、实例级超时（`Timeout` / `TimeoutAction`）、补偿（取消时 / 故障时） |
@@ -16,8 +16,8 @@
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityOutcome` | 活动是作用域服务，在引擎这次操作的调用里执行（同一作用域、同一事务）；返回完成 / 挂起 / 结束 / 终止，失败的 `Result` 即故障 |
 | `ActivityTypes` 与内置活动 | `Start`（信号 / 定时启动、延迟启动）、`End`、`Terminate`、`SetVariable`、`Decision`、`Parallel`、`Join`、`Delay`（时长 / 时刻 / cron）、`UserTask`、`PublishEvent`、`WaitSignal`、`EventGateway`、`SubWorkflow`、`ForEach`、`Log`、`Fault`、`Compensate`、`Http`（`WorkflowHttpClient`，应用可替换）、`ExternalTask` |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds` | 实例与节点实例（状态、变量、输入输出、私有状态），书签（用户任务 / 定时 / 信号 / 子流程 / 重试 / 节点超时 / 外部任务 / 提醒 / 实例级超时 / 定义级定时） |
-| `IWorkflowEngine`、`WorkflowEngine` | 启动（`StartAt` 延迟、`ReusePolicy` 幂等：查重与写入在同一把实例锁里，并发启动也只建一个）、消费书签、信号（恢复 + 信号启动），批量挂起 / 恢复 / 取消 / 终止 / 重试 / 改变量 / 跳转 / 迁移 / 清理，实例查询（列表、计数、详情、节点轨迹、全部等待点 `BookmarksAsync` → `WorkflowBookmarkSummary`（不含载荷，ADR-0096）；`WorkflowInstanceQuery` 可给一组关联 ID `CorrelationIds`（空集合不匹配、最多 1000 个）、只取顶层 `TopLevelOnly`、关键字 `Keyword`（实例标题或关联 ID，同 4.x，ADR-0099），排序项 `Sorts`（`WorkflowInstanceSort`：`WorkflowInstanceSortField` 白名单字段加方向，有序、可多个、最多 5 项，空时创建时间降序，ADR-0102、ADR-0104），过滤、排序与分页下推到存储，ADR-0096；`Skip` / `Limit`、关联 ID 集合与 `WorkflowPurgeRequest.Limit` 越界不在构造时抛出，`ListInstancesAsync` / `CountInstancesAsync` / `PurgeAsync` 返回 `WORKFLOW_VALIDATION_002`）；只看得到、操作得了调用方分区的实例与书签；波次执行、一次批量写回、事件在事务里经作用域的发布者发出 |
-| `IWorkflowTaskService`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion` … | 待办与查询（`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，同 4.x，ADR-0096、ADR-0099）、排序与分页下推到存储，返回一页与总数，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002`）、完成（Any / All 按阈值 / Sequential）、转办、加签、认领 / 释放、退回、催办；优先级、截止、表单键、提醒 |
+| `IWorkflowEngine`、`WorkflowEngine` | 启动（`StartAt` 延迟、`ReusePolicy` 幂等：查重与写入在同一把实例锁里，并发启动也只建一个）、消费书签、信号（恢复 + 信号启动），批量挂起 / 恢复 / 取消 / 终止 / 重试 / 改变量 / 跳转 / 迁移 / 清理，实例查询（列表、计数、详情、节点轨迹、全部等待点 `BookmarksAsync` → `WorkflowBookmarkSummary`（不含载荷，ADR-0096）；`WorkflowInstanceQuery` 可给一组关联 ID `CorrelationIds`（空集合不匹配、最多 1000 个）、只取顶层 `TopLevelOnly`、关键字 `Keyword`（实例标题或关联 ID，ADR-0099），排序项 `Sorts`（`WorkflowInstanceSort`：`WorkflowInstanceSortField` 白名单字段加方向，有序、可多个、最多 5 项，空时创建时间降序，ADR-0102、ADR-0104），过滤、排序与分页下推到存储，ADR-0096；`Skip` / `Limit`、关联 ID 集合与 `WorkflowPurgeRequest.Limit` 越界不在构造时抛出，`ListInstancesAsync` / `CountInstancesAsync` / `PurgeAsync` 返回 `WORKFLOW_VALIDATION_002`）；只看得到、操作得了调用方分区的实例与书签；波次执行、一次批量写回、事件在事务里经作用域的发布者发出 |
+| `IWorkflowTaskService`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion` … | 待办与查询（`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，ADR-0096、ADR-0099）、排序与分页下推到存储，返回一页与总数，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002`）、完成（Any / All 按阈值 / Sequential）、转办、加签、认领 / 释放、退回、催办；优先级、截止、表单键、提醒 |
 | `IWorkflowExternalTaskService`、`ExternalTask` … | 外部工作者按主题领取（加锁）、完成、失败（重试或故障）、延长锁 |
 | `IAssigneeProvider`、`AssigneeResolver`、`AssigneeRuleTypes` | 指派规则：内置 `User` / `Starter` / `Expression`，应用登记自己的类型 |
 | `IWorkflowExpressionEvaluator`、`ExpressionScope` | 无依赖的小语言：比较、算术、成员与索引、内置函数，`{{ }}` 模板；最长 4000 个字符，嵌套最多 64 层（ADR-0120）；`Evaluate` 与 `ActivityContext.EvaluateProperty` 返回 `Result<Maybe<JsonNode>>`，结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串（ADR-0059） |
@@ -66,4 +66,4 @@ await tasks.CompleteAsync(new UserTaskCompletion(todo.ValueOrThrow()[0].Id, "man
 
 ## 状态
 
-5.x P0 + P5-11 补齐：可用（Preview）。
+P0 + P5-11 补齐：可用（Preview）。

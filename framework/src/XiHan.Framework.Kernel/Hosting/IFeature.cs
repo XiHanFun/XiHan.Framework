@@ -19,7 +19,7 @@ public interface IFeature
     /// 清单
     /// </summary>
     /// <remarks>
-    /// 5.0 由特性手写；从 <see cref="Capabilities.CapabilityAttribute"/> 生成此属性的源生成器顺延（RFC-0002）
+    /// 当前由特性手写；从 <see cref="Capabilities.CapabilityAttribute"/> 生成此属性的源生成器顺延（RFC-0002）
     /// </remarks>
     Manifest Manifest { get; }
 

@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "Unknown artifact kind '{kind}'; expected dockerfile, kustomize, compose or aspire.",
   "cli.pack.written": "{count} files written to '{output}'.",
   "cli.pipeline.description": "Print the application's pipeline (forwards to 'dotnet run -- pipeline').",
-  "cli.search.description": "Search the XiHan Framework docs (guide and package pages, RFCs and conventions, package READMEs) for 'query'; space-separated terms must all appear, and results are ranked with a snippet. Pass 'page' instead to read a whole page: a repository path (docs-next/guide/caching.md or guide/caching), an RFC (0006 or 0006-caching) or a package ID for its README. 'limit' is 1-50, 10 by default.",
+  "cli.search.description": "Search the XiHan Framework docs (guide and package pages, RFCs and conventions, package READMEs) for 'query'; space-separated terms must all appear, and results are ranked with a snippet. Pass 'page' instead to read a whole page: a repository path (docs/guide/caching.md or guide/caching), an RFC (0006 or 0006-caching) or a package ID for its README. 'limit' is 1-50, 10 by default.",
   "cli.search.title": "Search the docs",
   "cli.setup.client_invalid": "--client must be one of {known}, but was '{client}'.",
   "cli.setup.config_invalid": "Cannot parse '{path}' ({reason}); no file was changed. Merge the snippet printed by --dry-run by hand.",

@@ -24,7 +24,7 @@ public sealed class ProjectDetectorTests
     [Fact]
     public void Detect_TakesTheMostReferencedVersion_AndSkipsBuildOutput()
     {
-        using var project = new ProjectFixture("4.6.0");
+        using var project = new ProjectFixture("1.6.0");
         File.WriteAllText(Path.Combine(project.ProjectDirectory, "Orders.csproj"), """
             <Project Sdk="Microsoft.NET.Sdk">
               <ItemGroup>

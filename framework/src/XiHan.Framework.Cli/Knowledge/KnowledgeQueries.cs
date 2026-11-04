@@ -226,12 +226,12 @@ internal static class KnowledgeQueries
         [
             path,
             path + ".md",
-            "docs-next/" + path,
-            "docs-next/" + path + ".md",
-            "next/spec/rfcs/" + path,
-            "next/spec/rfcs/" + path + ".md",
-            "next/spec/conventions/" + path,
-            "next/spec/conventions/" + path + ".md",
+            "docs/" + path,
+            "docs/" + path + ".md",
+            "framework/spec/rfcs/" + path,
+            "framework/spec/rfcs/" + path + ".md",
+            "framework/spec/conventions/" + path,
+            "framework/spec/conventions/" + path + ".md",
         ];
         foreach (var candidate in candidates)
         {
@@ -253,7 +253,7 @@ internal static class KnowledgeQueries
         var tail = knowledge.Pages
             .Where(p => p.Path.EndsWith("/" + path, StringComparison.OrdinalIgnoreCase)
                 || p.Path.EndsWith("/" + path + ".md", StringComparison.OrdinalIgnoreCase)
-                || (number.Length == 4 && number.All(char.IsAsciiDigit) && p.Path.StartsWith("next/spec/rfcs/" + number + "-", StringComparison.Ordinal)))
+                || (number.Length == 4 && number.All(char.IsAsciiDigit) && p.Path.StartsWith("framework/spec/rfcs/" + number + "-", StringComparison.Ordinal)))
             .ToList();
         if (tail.Count == 1)
         {
@@ -271,19 +271,19 @@ internal static class KnowledgeQueries
     /// <summary>
     /// 包 README 的路径
     /// </summary>
-    public static string ReadmePath(string packageId) => "next/src/" + packageId + "/README.md";
+    public static string ReadmePath(string packageId) => "framework/src/" + packageId + "/README.md";
 
     /// <summary>
     /// 包在文档站的参考页路径
     /// </summary>
     /// <remarks>
-    /// <c>XiHan.Framework.Caching.Redis</c> → <c>docs-next/packages/caching-redis.md</c>
+    /// <c>XiHan.Framework.Caching.Redis</c> → <c>docs/packages/caching-redis.md</c>
     /// </remarks>
     public static string PackagePagePath(string packageId)
     {
         ArgumentNullException.ThrowIfNull(packageId);
         var name = packageId.StartsWith(PackagePrefix, StringComparison.Ordinal) ? packageId[PackagePrefix.Length..] : packageId;
-        return "docs-next/packages/" + name.Replace('.', '-').ToLowerInvariant() + ".md";
+        return "docs/packages/" + name.Replace('.', '-').ToLowerInvariant() + ".md";
     }
 
     /// <summary>

@@ -7,7 +7,7 @@ namespace XiHan.Framework.Cli.Knowledge;
 /// 一个正式包
 /// </summary>
 /// <remarks>
-/// 包 ID、说明与依赖取自项目文件，环层与一句话定位取自 <c>next/README.md</c> 的包表
+/// 包 ID、说明与依赖取自项目文件，环层与一句话定位取自 <c>framework/README.md</c> 的包表
 /// </remarks>
 internal sealed record PackageEntry
 {

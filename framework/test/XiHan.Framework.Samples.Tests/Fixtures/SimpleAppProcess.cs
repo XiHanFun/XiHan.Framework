@@ -151,12 +151,12 @@ public sealed class SimpleAppProcess : IAsyncLifetime
         var testOutput = new DirectoryInfo(AppContext.BaseDirectory);
         var configuration = testOutput.Parent?.Name ?? throw new InvalidOperationException("The test output directory has no configuration segment.");
         var directory = testOutput;
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
         {
             directory = directory.Parent;
         }
 
-        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("The next workspace could not be located."), "samples", "SimpleApp", "bin", configuration, testOutput.Name);
+        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("The framework workspace could not be located."), "samples", "SimpleApp", "bin", configuration, testOutput.Name);
     }
 
     /// <summary>

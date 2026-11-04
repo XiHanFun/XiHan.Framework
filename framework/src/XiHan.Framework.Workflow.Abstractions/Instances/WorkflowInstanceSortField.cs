@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 /// 实例列表可以按哪个字段排序
 /// </summary>
 /// <remarks>
-/// 白名单，以 4.x 实例列表能排的列为参照（ADR-0102）；不在其中的值（如请求里给了越界的数字）由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>。排序字段之后接次序键创建时间降序、写入先后降序，放进 <see cref="WorkflowInstanceSort"/>，规则见 <see cref="WorkflowInstanceQuery.Sorts"/>
+/// 白名单，取实例列表常用的排序列（ADR-0102）；不在其中的值（如请求里给了越界的数字）由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>。排序字段之后接次序键创建时间降序、写入先后降序，放进 <see cref="WorkflowInstanceSort"/>，规则见 <see cref="WorkflowInstanceQuery.Sorts"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowInstanceSortField>))]
@@ -33,17 +33,17 @@ public enum WorkflowInstanceSortField
     /// 状态
     /// </summary>
     /// <remarks>
-    /// 按生命周期的先后：<see cref="WorkflowInstanceStatus.Running"/> → <see cref="WorkflowInstanceStatus.Suspended"/> → <see cref="WorkflowInstanceStatus.Completed"/> → <see cref="WorkflowInstanceStatus.Canceled"/> → <see cref="WorkflowInstanceStatus.Faulted"/> → <see cref="WorkflowInstanceStatus.Terminated"/>，同 4.x（ADR-0103）
+    /// 按生命周期的先后：<see cref="WorkflowInstanceStatus.Running"/> → <see cref="WorkflowInstanceStatus.Suspended"/> → <see cref="WorkflowInstanceStatus.Completed"/> → <see cref="WorkflowInstanceStatus.Canceled"/> → <see cref="WorkflowInstanceStatus.Faulted"/> → <see cref="WorkflowInstanceStatus.Terminated"/>（ADR-0103）
     /// </remarks>
     Status = 2,
 
     /// <summary>
-    /// 定义名（4.x 的定义编码）
+    /// 定义名
     /// </summary>
     DefinitionName = 3,
 
     /// <summary>
-    /// 实例标题（4.x 的实例名称）
+    /// 实例标题
     /// </summary>
     /// <remarks>
     /// 按前 <see cref="WorkflowSortKeys.MaxTitleLength"/> 个字符比较（<see cref="WorkflowSortKeys.Title"/>）

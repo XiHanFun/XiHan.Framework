@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "Неизвестный вид артефакта '{kind}'; ожидается dockerfile, kustomize, compose или aspire.",
   "cli.pack.written": "Записано файлов: {count} в '{output}'.",
   "cli.pipeline.description": "Выводит конвейер приложения (передаётся в 'dotnet run -- pipeline').",
-  "cli.search.description": "Ищет 'query' в документации XiHan Framework (страницы руководства и пакетов, RFC и соглашения, README пакетов); все слова через пробел должны встречаться, результаты упорядочены по релевантности и содержат фрагмент. Вместо этого передайте 'page', чтобы прочитать страницу целиком: путь в репозитории (docs-next/guide/caching.md или guide/caching), RFC (0006 или 0006-caching) или ID пакета для его README. 'limit' от 1 до 50, по умолчанию 10.",
+  "cli.search.description": "Ищет 'query' в документации XiHan Framework (страницы руководства и пакетов, RFC и соглашения, README пакетов); все слова через пробел должны встречаться, результаты упорядочены по релевантности и содержат фрагмент. Вместо этого передайте 'page', чтобы прочитать страницу целиком: путь в репозитории (docs/guide/caching.md или guide/caching), RFC (0006 или 0006-caching) или ID пакета для его README. 'limit' от 1 до 50, по умолчанию 10.",
   "cli.search.title": "Поиск по документации",
   "cli.setup.client_invalid": "--client должен быть одним из {known}, а получено '{client}'.",
   "cli.setup.config_invalid": "Не удалось разобрать '{path}' ({reason}); файлы не изменены. Объедините вручную фрагмент, который выводит --dry-run.",

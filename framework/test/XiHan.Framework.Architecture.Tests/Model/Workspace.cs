@@ -7,7 +7,7 @@ using System.Xml.Linq;
 namespace XiHan.Framework.Architecture.Tests.Model;
 
 /// <summary>
-/// 定位 next 工作区并枚举正式包
+/// 定位框架工作区并枚举正式包
 /// </summary>
 /// <remarks>
 /// 所有架构测试都以文件系统为事实源，不依赖已编译的程序集
@@ -20,7 +20,7 @@ internal static class Workspace
     public const string PackagePrefix = "XiHan.Framework.";
 
     /// <summary>
-    /// next 工作区根目录
+    /// 框架工作区根目录
     /// </summary>
     public static string Root { get; } = Locate();
 
@@ -87,14 +87,14 @@ internal static class Workspace
     public static string Relative(string path) => Path.GetRelativePath(Root, path).Replace('\\', '/');
 
     /// <summary>
-    /// 从测试输出目录向上查找 next 工作区根（以 <c>XiHan.Framework.Next.slnx</c> 为标记）
+    /// 从测试输出目录向上查找框架工作区根（以 <c>XiHan.Framework.slnx</c> 为标记）
     /// </summary>
     private static string Locate()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
             {
                 return directory.FullName;
             }
@@ -102,7 +102,7 @@ internal static class Workspace
             directory = directory.Parent;
         }
 
-        throw new InvalidOperationException("Could not locate 'XiHan.Framework.Next.slnx'; the architecture tests must run inside the next workspace.");
+        throw new InvalidOperationException("Could not locate 'XiHan.Framework.slnx'; the architecture tests must run inside the framework workspace.");
     }
 
     /// <summary>

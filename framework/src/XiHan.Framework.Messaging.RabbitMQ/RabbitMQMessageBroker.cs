@@ -669,7 +669,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// 声明持久、非独占、不自动删除的队列，并以同名路由键绑定到交换机
     /// </summary>
     /// <remarks>
-    /// 声明与绑定都是幂等的：订阅方每次启动都执行，先前版本建出的同名队列照常可用
+    /// 声明与绑定都是幂等的：订阅方每次启动都执行，已有的同名队列照常可用
     /// </remarks>
     private async Task DeclareDurableAsync(IChannel channel, string queue, CancellationToken cancellationToken)
     {

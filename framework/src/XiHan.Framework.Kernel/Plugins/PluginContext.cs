@@ -54,7 +54,7 @@ public sealed class PluginContext
     /// 可贡献中间件的管道
     /// </summary>
     /// <remarks>
-    /// 5.0 的插件宿主都传 <see langword="null"/>：进程内插件拿不到宿主管道，不能贡献中间件
+    /// 当前的插件宿主都传 <see langword="null"/>：进程内插件拿不到宿主管道，不能贡献中间件
     /// </remarks>
     public PipelineBuilder? Pipeline { get; }
 }

@@ -37,4 +37,4 @@ public sealed class InMemoryWorkflowEngineConformanceTests : WorkflowEngineConfo
 
 ## 状态
 
-5.x P0：可用（Preview）。
+P0：可用（Preview）。

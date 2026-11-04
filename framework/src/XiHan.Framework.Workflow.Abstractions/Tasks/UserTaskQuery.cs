@@ -38,7 +38,7 @@ public sealed record UserTaskQuery
     /// 关键字
     /// </summary>
     /// <remarks>
-    /// 不区分大小写地包含在任务标题（<see cref="UserTask.Title"/>：节点 <c>Title</c> 模板渲染的结果，缺省节点名）、所属实例的标题（<see cref="UserTask.InstanceTitle"/>）、定义名（<see cref="UserTask.DefinitionName"/>）或关联 ID（所属实例的 <see cref="Instances.WorkflowInstance.CorrelationId"/>；用户任务书签的关联 ID 就取自所属实例，与 <see cref="UserTask.CorrelationId"/> 相同）任一里即匹配，同 4.x 的待办，规则见 <see cref="WorkflowKeyword"/>；为 <see langword="null"/>、空或只有空白时不过滤（ADR-0096、ADR-0099）
+    /// 不区分大小写地包含在任务标题（<see cref="UserTask.Title"/>：节点 <c>Title</c> 模板渲染的结果，缺省节点名）、所属实例的标题（<see cref="UserTask.InstanceTitle"/>）、定义名（<see cref="UserTask.DefinitionName"/>）或关联 ID（所属实例的 <see cref="Instances.WorkflowInstance.CorrelationId"/>；用户任务书签的关联 ID 就取自所属实例，与 <see cref="UserTask.CorrelationId"/> 相同）任一里即匹配，规则见 <see cref="WorkflowKeyword"/>；为 <see langword="null"/>、空或只有空白时不过滤（ADR-0096、ADR-0099）
     /// </remarks>
     public string? Keyword { get; init; }
 

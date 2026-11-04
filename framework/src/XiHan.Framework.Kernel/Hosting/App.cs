@@ -241,7 +241,7 @@ public sealed partial class App : IDisposable
         ActivityTraceFlags? flags;
         if (traceId is not null)
         {
-            // 载体给了 trace：标志随它；只给 trace-id 不给标志的创建方按上游已采样处理，与引入标志之前的行为一致
+            // 载体给了 trace：标志随它；只给 trace-id 不给标志的创建方按上游已采样处理
             flags = traceFlags ?? ActivityTraceFlags.Recorded;
         }
         else if (Activity.Current is { IdFormat: ActivityIdFormat.W3C } current)

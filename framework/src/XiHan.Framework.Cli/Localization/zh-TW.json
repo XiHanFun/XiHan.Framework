@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "不認識的產物種類 '{kind}'；可選 dockerfile、kustomize、compose、aspire。",
   "cli.pack.written": "已寫出 {count} 個檔案到 '{output}'。",
   "cli.pipeline.description": "列印應用的管線（轉送給 'dotnet run -- pipeline'）。",
-  "cli.search.description": "在 XiHan Framework 文件（指南與套件參考頁、RFC 與約定、各套件 README）裡檢索 query：空格分開的詞須同時出現，結果依相關度排序並附摘錄。改傳 page 讀整頁：儲存庫內路徑（docs-next/guide/caching.md 或 guide/caching）、RFC（0006 或 0006-caching）或套件 ID（讀它的 README）。limit 為 1-50，預設 10。",
+  "cli.search.description": "在 XiHan Framework 文件（指南與套件參考頁、RFC 與約定、各套件 README）裡檢索 query：空格分開的詞須同時出現，結果依相關度排序並附摘錄。改傳 page 讀整頁：儲存庫內路徑（docs/guide/caching.md 或 guide/caching）、RFC（0006 或 0006-caching）或套件 ID（讀它的 README）。limit 為 1-50，預設 10。",
   "cli.search.title": "檢索文件",
   "cli.setup.client_invalid": "--client 只能是 {known} 之一，實際為 '{client}'。",
   "cli.setup.config_invalid": "無法解析 '{path}'（{reason}），沒有改動任何檔案。請依 --dry-run 印出的片段手動合併。",

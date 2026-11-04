@@ -14,17 +14,17 @@ namespace XiHan.Framework.Security.InMemory.Tests;
 public sealed class SampleConfigurationTests
 {
     /// <summary>
-    /// 从测试输出目录向上找到 next 工作区，定位示例应用的 appsettings.json
+    /// 从测试输出目录向上找到框架工作区，定位示例应用的 appsettings.json
     /// </summary>
     private static string Locate()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
         {
             directory = directory.Parent;
         }
 
-        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("The next workspace could not be located."), "samples", "SimpleApp", "appsettings.json");
+        return Path.Combine(directory?.FullName ?? throw new InvalidOperationException("The framework workspace could not be located."), "samples", "SimpleApp", "appsettings.json");
     }
 
     [Fact]

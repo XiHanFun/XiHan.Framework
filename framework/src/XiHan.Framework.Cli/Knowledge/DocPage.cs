@@ -7,9 +7,9 @@ namespace XiHan.Framework.Cli.Knowledge;
 /// 一页文档
 /// </summary>
 /// <remarks>
-/// 来源：文档站 <c>docs-next/</c>、规范 <c>next/spec/rfcs</c> 与 <c>next/spec/conventions</c>、各包 README
+/// 来源：文档站 <c>docs/</c>、规范 <c>framework/spec/rfcs</c> 与 <c>framework/spec/conventions</c>、各包 README
 /// </remarks>
-/// <param name="Path">仓库内路径，如 <c>docs-next/guide/caching.md</c></param>
+/// <param name="Path">仓库内路径，如 <c>docs/guide/caching.md</c></param>
 /// <param name="Title">一级标题</param>
 /// <param name="Summary">首段摘要</param>
 /// <param name="Markdown">正文（去掉 frontmatter）</param>

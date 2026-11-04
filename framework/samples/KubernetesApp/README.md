@@ -5,7 +5,7 @@ Full 组合在 Kubernetes 上的落地示例（P3-12）：探针、优雅停机�
 ## 本地运行
 
 ```bash
-dotnet run --project next/samples/KubernetesApp          # http://localhost:5100
+dotnet run --project framework/samples/KubernetesApp          # http://localhost:5100
 curl -s localhost:5100/config                            # banner 来自 appsettings.json，configPath 为空
 curl -s localhost:5100/leader                            # election = InMemoryLeaderElection，isLeader = true，ticks 每 10 秒加一
 ```
@@ -15,8 +15,8 @@ curl -s localhost:5100/leader                            # election = InMemoryLe
 ## 部署到集群（kind）
 
 ```bash
-cd next
-docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1 .   # build.context 指向 next/，镜像里只有发布产物
+cd framework
+docker build -f samples/KubernetesApp/deploy/Dockerfile -t ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1 .   # build.context 指向 framework/，镜像里只有发布产物
 kind load docker-image ghcr.io/xihanfun/kubernetes-app:5.0.0-preview.1
 kubectl apply -k samples/KubernetesApp/deploy/kustomize
 kubectl rollout status deployment/kubernetes-app
@@ -34,6 +34,6 @@ kubectl port-forward service/kubernetes-app 8080:8080
 
 ## 清单到产物的对应
 
-`xihan.app.json` 里 `shutdown.graceSeconds: 25` 同时写进 Dockerfile 的 `ENV XiHan__Kernel__StopTimeoutSeconds` 与 Deployment 的 `terminationGracePeriodSeconds: 30`；`leader.lease` 生成 ServiceAccount、只含该 Lease 的 Role 与 `XiHan__Scheduling__Kubernetes__Lease`；`config.files` 生成 ConfigMap 并挂到 `/etc/xihan`；`scaling` 生成 HPA、`replicas: 2` 生成 PDB。完整映射见 `next/spec/packaging/app-manifest.md`。
+`xihan.app.json` 里 `shutdown.graceSeconds: 25` 同时写进 Dockerfile 的 `ENV XiHan__Kernel__StopTimeoutSeconds` 与 Deployment 的 `terminationGracePeriodSeconds: 30`；`leader.lease` 生成 ServiceAccount、只含该 Lease 的 Role 与 `XiHan__Scheduling__Kubernetes__Lease`；`config.files` 生成 ConfigMap 并挂到 `/etc/xihan`；`scaling` 生成 HPA、`replicas: 2` 生成 PDB。完整映射见 `framework/spec/packaging/app-manifest.md`。
 
-重新生成：`dotnet run --project next/src/XiHan.Framework.Cli -- pack --manifest next/samples/KubernetesApp/xihan.app.json`。
+重新生成：`dotnet run --project framework/src/XiHan.Framework.Cli -- pack --manifest framework/samples/KubernetesApp/xihan.app.json`。

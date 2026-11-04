@@ -20,7 +20,7 @@ internal sealed record SearchRequest
     /// 要读全文的文档页
     /// </summary>
     /// <remarks>
-    /// 仓库内路径（可省略 <c>.md</c> 与 <c>docs-next/</c>）、RFC 文件名或包 ID（取它的 README）
+    /// 仓库内路径（可省略 <c>.md</c> 与 <c>docs/</c>）、RFC 文件名或包 ID（取它的 README）
     /// </remarks>
     public string? Page { get; set; }
 

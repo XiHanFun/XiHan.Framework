@@ -18,7 +18,7 @@ internal static class GeneratorRules
     /// <summary>
     /// 帮助链接
     /// </summary>
-    private const string HelpLink = "https://github.com/XiHanFun/XiHan.Framework/blob/next/next/src/XiHan.Framework.Persistence.Generators/README.md";
+    private const string HelpLink = "https://github.com/XiHanFun/XiHan.Framework/blob/dev/framework/src/XiHan.Framework.Persistence.Generators/README.md";
 
     /// <summary>
     /// XHP001：实体类通过多个 <c>IEntity&lt;TKey&gt;</c> 声明了不同的键类型

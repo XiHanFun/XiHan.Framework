@@ -18,7 +18,7 @@ public enum ConditionValueKind
     /// <summary>
     /// 字符串（按序数比较，不区分大小写）
     /// </summary>
-    [SuppressMessage("Naming", "CA1720:标识符包含类型名称", Justification = "值种类的名字就是它描述的类型；与 4.x 及应用存储的取值一一对应。")]
+    [SuppressMessage("Naming", "CA1720:标识符包含类型名称", Justification = "值种类的名字就是它描述的类型；与应用存储的取值一一对应。")]
     String = 0,
 
     /// <summary>

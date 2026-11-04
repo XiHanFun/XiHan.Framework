@@ -7,7 +7,7 @@ namespace XiHan.Framework.Cli.Knowledge;
 /// 包与特性清单的索引文件 <c>catalog.json</c>
 /// </summary>
 /// <remarks>
-/// 由测试从工作区的项目文件与各特性的 <c>Manifest</c> 生成（<c>next/scripts/Update-CliKnowledge.ps1</c>），与代码不一致时测试失败
+/// 由测试从工作区的项目文件与各特性的 <c>Manifest</c> 生成（<c>framework/scripts/Update-CliKnowledge.ps1</c>），与代码不一致时测试失败
 /// </remarks>
 internal sealed record CatalogDocument
 {

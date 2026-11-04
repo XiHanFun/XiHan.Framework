@@ -153,7 +153,7 @@ public sealed class InProcessPluginHostTests
         var directory = Path.Combine(Path.GetTempPath(), "xihan-plugin-" + Guid.NewGuid().ToString("N"));
         try
         {
-            // 完整的示例插件副本，只在清单里加一项中间件贡献：以前照常加载、这一项被静默忽略（PluginContext.Pipeline 恒为空）
+            // 完整的示例插件副本，只在清单里加一项中间件贡献：不能照常加载、把这一项静默忽略（PluginContext.Pipeline 恒为空）
             CopyTree(PluginDirectory, directory);
             var manifestPath = Path.Combine(directory, "xihan.manifest.json");
             var json = await File.ReadAllTextAsync(manifestPath);
@@ -201,14 +201,14 @@ public sealed class InProcessPluginHostTests
     }
 
     /// <summary>
-    /// 从测试输出目录向上查找 <c>XiHan.Framework.Next.slnx</c> 所在目录，即 <c>next/</c> 根
+    /// 从测试输出目录向上查找 <c>XiHan.Framework.slnx</c> 所在目录，即 <c>framework/</c> 目录
     /// </summary>
     private static string LocateRoot(DirectoryInfo start)
     {
         var directory = start;
         while (directory is not null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.Next.slnx")))
+            if (File.Exists(Path.Combine(directory.FullName, "XiHan.Framework.slnx")))
             {
                 return directory.FullName;
             }
@@ -216,6 +216,6 @@ public sealed class InProcessPluginHostTests
             directory = directory.Parent;
         }
 
-        throw new InvalidOperationException("Could not locate 'XiHan.Framework.Next.slnx' in any parent directory of the test output.");
+        throw new InvalidOperationException("Could not locate 'XiHan.Framework.slnx' in any parent directory of the test output.");
     }
 }

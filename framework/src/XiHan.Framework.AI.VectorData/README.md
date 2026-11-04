@@ -33,4 +33,4 @@ var prompt = augmenter.Augment("How do I reset my password?", chunks);
 
 ## 状态
 
-5.x P0：可用（Preview）。
+P0：可用（Preview）。

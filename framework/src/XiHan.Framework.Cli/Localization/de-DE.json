@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "Unbekannte Artefaktart '{kind}'; erwartet werden dockerfile, kustomize, compose oder aspire.",
   "cli.pack.written": "{count} Dateien nach '{output}' geschrieben.",
   "cli.pipeline.description": "Gibt die Pipeline der Anwendung aus (leitet an 'dotnet run -- pipeline' weiter).",
-  "cli.search.description": "Durchsucht die Dokumentation von XiHan Framework (Leitfaden- und Paketseiten, RFCs und Konventionen, Paket-READMEs) nach 'query'; durch Leerzeichen getrennte Begriffe müssen alle vorkommen, die Ergebnisse sind nach Relevanz sortiert und enthalten einen Auszug. Mit 'page' statt dessen eine ganze Seite lesen: ein Repository-Pfad (docs-next/guide/caching.md oder guide/caching), ein RFC (0006 oder 0006-caching) oder eine Paket-ID für deren README. 'limit' ist 1-50, standardmäßig 10.",
+  "cli.search.description": "Durchsucht die Dokumentation von XiHan Framework (Leitfaden- und Paketseiten, RFCs und Konventionen, Paket-READMEs) nach 'query'; durch Leerzeichen getrennte Begriffe müssen alle vorkommen, die Ergebnisse sind nach Relevanz sortiert und enthalten einen Auszug. Mit 'page' statt dessen eine ganze Seite lesen: ein Repository-Pfad (docs/guide/caching.md oder guide/caching), ein RFC (0006 oder 0006-caching) oder eine Paket-ID für deren README. 'limit' ist 1-50, standardmäßig 10.",
   "cli.search.title": "Dokumentation durchsuchen",
   "cli.setup.client_invalid": "--client muss einer von {known} sein, war aber '{client}'.",
   "cli.setup.config_invalid": "'{path}' kann nicht gelesen werden ({reason}); es wurde keine Datei geändert. Führen Sie den von --dry-run ausgegebenen Ausschnitt von Hand zusammen.",

@@ -10,7 +10,7 @@
     项目文件路径
 
 .EXAMPLE
-    pwsh -File next/scripts/Sync-PublicApi.ps1 -Project next/src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj
+    pwsh -File framework/scripts/Sync-PublicApi.ps1 -Project framework/src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj
 #>
 param(
     [Parameter(Mandatory = $true)]

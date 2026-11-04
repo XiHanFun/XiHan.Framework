@@ -81,7 +81,7 @@ public sealed record WorkflowInstanceQuery
     /// 关键字
     /// </summary>
     /// <remarks>
-    /// 不区分大小写地包含在实例标题（<see cref="WorkflowInstance.Title"/>：启动时给的显示名，没给取定义的显示名，再没有取定义名）或关联 ID（<see cref="WorkflowInstance.CorrelationId"/>）里即匹配，同 4.x 的实例列表（ADR-0099），规则见 <see cref="WorkflowKeyword"/>；为 <see langword="null"/>、空或只有空白时不过滤
+    /// 不区分大小写地包含在实例标题（<see cref="WorkflowInstance.Title"/>：启动时给的显示名，没给取定义的显示名，再没有取定义名）或关联 ID（<see cref="WorkflowInstance.CorrelationId"/>）里即匹配（ADR-0099），规则见 <see cref="WorkflowKeyword"/>；为 <see langword="null"/>、空或只有空白时不过滤
     /// </remarks>
     public string? Keyword { get; init; }
 
@@ -112,7 +112,7 @@ public sealed record WorkflowInstanceQuery
     /// 排序项，有序：第一项是主排序字段，后面依次是次级排序字段
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 或空列表时按创建时间降序（最新的在前，与原来相同）。每项的方向缺省升序。全部排序项之后接次序键创建时间降序、写入先后降序（数据库实现最后再按 ID 降序；排序项里已有创建时间时跳过它，写入先后与 ID 随它的方向），同值的行分页不重不漏（ADR-0102、ADR-0104）。文本按数据库列的排序规则比较，内存实现按序数；状态按生命周期的先后（运行中、已挂起、已完成、已取消、故障、已终止，ADR-0103）；没结束的实例结束时间为空，空值的位置照数据库（内存实现当作最小）。不合法时 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>，按顺序检查：项数超过 <see cref="MaxSorts"/>（消息键 <c>workflow.instance.query_sorts_too_many</c>），某项为空或字段不是 <see cref="WorkflowInstanceSortField"/> 里定义的值（<c>workflow.instance.query_sort_invalid</c>），同一字段出现两次（<c>workflow.instance.query_sort_duplicate</c>）；计数不看排序
+    /// 为 <see langword="null"/> 或空列表时按创建时间降序（最新的在前）。每项的方向缺省升序。全部排序项之后接次序键创建时间降序、写入先后降序（数据库实现最后再按 ID 降序；排序项里已有创建时间时跳过它，写入先后与 ID 随它的方向），同值的行分页不重不漏（ADR-0102、ADR-0104）。文本按数据库列的排序规则比较，内存实现按序数；状态按生命周期的先后（运行中、已挂起、已完成、已取消、故障、已终止，ADR-0103）；没结束的实例结束时间为空，空值的位置照数据库（内存实现当作最小）。不合法时 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>，按顺序检查：项数超过 <see cref="MaxSorts"/>（消息键 <c>workflow.instance.query_sorts_too_many</c>），某项为空或字段不是 <see cref="WorkflowInstanceSortField"/> 里定义的值（<c>workflow.instance.query_sort_invalid</c>），同一字段出现两次（<c>workflow.instance.query_sort_duplicate</c>）；计数不看排序
     /// </remarks>
     public IReadOnlyList<WorkflowInstanceSort>? Sorts { get; init; }
 

@@ -41,4 +41,4 @@ builder.AddXiHan(xihan => xihan.UseFeature<S3ObjectStorageFeature>());
 
 ## 状态
 
-P5：可用，通过 `ObjectStorage.Conformance`（RustFS 1.0.4，此前 MinIO）。
+P5：可用，通过 `ObjectStorage.Conformance`（RustFS 1.0.4、MinIO）。

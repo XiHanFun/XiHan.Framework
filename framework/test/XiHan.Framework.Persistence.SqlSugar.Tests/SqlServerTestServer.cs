@@ -11,7 +11,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// </summary>
 /// <remarks>
 /// 服务器连接串，不含 <c>Database</c>，如 <c>Server=127.0.0.1,14333;User Id=sa;Password=…;TrustServerCertificate=True</c>。未设置时跳过需要它的用例
-/// 用于 SQL Server 方言独有的语句（筛选索引）、库结构读取与一致性套件在真实库上的验证；CI 以服务容器提供 SQL Server（`next-ci.yml`）
+/// 用于 SQL Server 方言独有的语句（筛选索引）、库结构读取与一致性套件在真实库上的验证；CI 以服务容器提供 SQL Server
 /// </remarks>
 internal static class SqlServerTestServer
 {

@@ -43,7 +43,7 @@ public abstract class WorkflowDefinitionRow : IEntity<string>
     /// 状态在生命周期里的序号
     /// </summary>
     /// <remarks>
-    /// <c>Draft</c> 0、<c>Published</c> 1、<c>Disabled</c> 2、<c>Archived</c> 3（同 4.x 按状态枚举的整数值排，ADR-0103）。按状态排序时 SQL 对它 <c>ORDER BY</c>，而不是对状态名（那是字母序）。存储每次整行写入时随 <see cref="Status"/> 一起写（新增、状态变更、迁移、跳转、重试都经整行写入），是存储内部的细节，不是公开常量。可空只为给已有行的表加列：升级前写入的行为空，迁移时按 <see cref="Status"/> 回填，没回填的行按状态排序时位置照数据库的空值规则
+    /// <c>Draft</c> 0、<c>Published</c> 1、<c>Disabled</c> 2、<c>Archived</c> 3（ADR-0103）。按状态排序时 SQL 对它 <c>ORDER BY</c>，而不是对状态名（那是字母序）。存储每次整行写入时随 <see cref="Status"/> 一起写（新增、状态变更、迁移、跳转、重试都经整行写入），是存储内部的细节，不是公开常量。可空只为给已有行的表加列：升级前写入的行为空，迁移时按 <see cref="Status"/> 回填，没回填的行按状态排序时位置照数据库的空值规则
     /// </remarks>
     public int? StatusOrder { get; set; }
 

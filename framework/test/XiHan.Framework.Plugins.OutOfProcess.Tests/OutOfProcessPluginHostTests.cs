@@ -479,7 +479,7 @@ public sealed class OutOfProcessPluginHostTests
         Assert.False(permissions.Find("echoes.audit").HasValue);
         Assert.Equal(KernelErrors.UnknownOperation, (await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"gone"}""")).Outcome.Error?.Code);
 
-        // 同一插件直接再加载：重新登记，不撞上自己上一次留下的操作与码（以前是 KERNEL_OPERATION_001 / KERNEL_SECURITY_001，只能重启宿主）
+        // 同一插件直接再加载：重新登记，不撞上自己上一次留下的操作与码（KERNEL_OPERATION_001 / KERNEL_SECURITY_001）
         var reloaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
         Assert.Equal(LifecycleState.Ready, reloaded.ValueOrThrow().State);
         Assert.Equal(4, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));

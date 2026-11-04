@@ -70,7 +70,7 @@ public sealed class OpenTelemetryObservabilityTests
             services => services.ConfigureOpenTelemetryTracerProvider((_, tracing) => tracing.AddInMemoryExporter(activities)));
         var tracer = host.Services.GetRequiredService<TracerProvider>();
 
-        // 没有上游的调用是链路的根：比例 0 不采样（以前固定的采样位让它总被导出）
+        // 没有上游的调用是链路的根：比例 0 不采样
         (await host.InvokeAsync(static _ => ValueTask.CompletedTask)).ThrowIfFailure();
 
         // 有上游的调用沿用上游决定：采样的导出、不采样的不导出，与比例无关

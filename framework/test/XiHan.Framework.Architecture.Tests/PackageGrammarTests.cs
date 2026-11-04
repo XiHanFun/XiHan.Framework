@@ -60,7 +60,7 @@ public sealed class PackageGrammarTests
     [InlineData("XiHan.Framework.Hosting.Worker")]
     [InlineData("XiHan.Framework.Kernel.Hosting")]
     [InlineData("XiHan.Framework.Persistence.EntityFrameworkCore.SqlServer")]
-    [InlineData("XiHan.Framework.Compat.V4")]
+    [InlineData("XiHan.Framework.Compat.Shim")]
     [InlineData("XiHan.Persistence.Abstractions")]
     public void TryValidate_RejectsIllFormedIds(string packageId)
     {

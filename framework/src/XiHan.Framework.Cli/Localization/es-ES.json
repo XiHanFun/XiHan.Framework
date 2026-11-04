@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "Tipo de artefacto desconocido '{kind}'; se esperaba dockerfile, kustomize, compose o aspire.",
   "cli.pack.written": "{count} archivos escritos en '{output}'.",
   "cli.pipeline.description": "Imprime la canalización de la aplicación (reenvía a 'dotnet run -- pipeline').",
-  "cli.search.description": "Busca 'query' en la documentación de XiHan Framework (páginas de guía y de paquetes, RFC y convenciones, README de los paquetes); todos los términos separados por espacios deben aparecer y los resultados se ordenan por relevancia con un extracto. Pasa 'page' en su lugar para leer una página completa: una ruta del repositorio (docs-next/guide/caching.md o guide/caching), un RFC (0006 o 0006-caching) o un ID de paquete para su README. 'limit' va de 1 a 50, 10 por defecto.",
+  "cli.search.description": "Busca 'query' en la documentación de XiHan Framework (páginas de guía y de paquetes, RFC y convenciones, README de los paquetes); todos los términos separados por espacios deben aparecer y los resultados se ordenan por relevancia con un extracto. Pasa 'page' en su lugar para leer una página completa: una ruta del repositorio (docs/guide/caching.md o guide/caching), un RFC (0006 o 0006-caching) o un ID de paquete para su README. 'limit' va de 1 a 50, 10 por defecto.",
   "cli.search.title": "Buscar en la documentación",
   "cli.setup.client_invalid": "--client debe ser uno de {known}, pero era '{client}'.",
   "cli.setup.config_invalid": "No se puede analizar '{path}' ({reason}); no se modificó ningún archivo. Combina a mano el fragmento que imprime --dry-run.",

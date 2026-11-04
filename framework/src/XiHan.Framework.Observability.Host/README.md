@@ -17,7 +17,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<HostObservabilit
 - CPU 型号与核心、GPU、主板首次读取后缓存；内存、磁盘、网卡、运行时每次当场读。
 - 使用率与速率由后台采样器求两次采样之差：启动时同步采一次，之后每 `SampleIntervalSeconds`（默认 5，取值 (0, 3600]）采一次；读取只返回最近的值，不睡眠、不等待，启动后第一个间隔内为 `null`。
 - 平台：Linux 与 Windows 读全部项（各自的读取路径见 RFC-0023）；macOS 等只有 BCL 读得到的部分，CPU 型号与使用率、内存、GPU、主板为 `null`。
-- 与 4.x `HardwareInfos` 的已知差异（NVIDIA 显存与温度、GPU 使用率与显示模式、Windows 主板序列号等）列在 RFC-0023。
+- 已知限制：不启动外部命令就读不到的项（NVIDIA 显存与温度、GPU 使用率与显示模式、Windows 主板序列号等）列在 RFC-0023。
 
 ## 测试
 

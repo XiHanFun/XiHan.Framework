@@ -14,7 +14,7 @@ namespace XiHan.Framework.Cli.Knowledge;
 /// 登记知识库三个只读操作的特性
 /// </summary>
 /// <remarks>
-/// 只在 <c>xihan mcp</c> 启动的内嵌应用里装配：三个操作只暴露给 MCP，tool 名由 <c>XiHan:Protocols:Mcp:Tools</c> 改写成 4.x 沿用的 <c>xihan_framework_*</c>；标题与描述在本工具的消息目录里（<c>cli.info.title</c> 等）
+/// 只在 <c>xihan mcp</c> 启动的内嵌应用里装配：三个操作只暴露给 MCP，tool 名由 <c>XiHan:Protocols:Mcp:Tools</c> 改写成 <c>xihan_framework_*</c>；标题与描述在本工具的消息目录里（<c>cli.info.title</c> 等）
 /// </remarks>
 internal sealed class KnowledgeFeature : IFeature
 {

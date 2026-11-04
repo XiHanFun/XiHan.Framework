@@ -96,7 +96,7 @@ public sealed class AuthorizationTests
         Assert.False((await checker.HasPermissionAsync(SecurityContext.Anonymous, "orders.read", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(before, edition.Calls.Count);
 
-        // 没有过滤器与过滤器为空集合时行为同原来；集合里有 null 是编程错误
+        // 没有过滤器与过滤器为空集合时授予即通过；集合里有 null 是编程错误
         Assert.True((await new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), []).HasPermissionAsync(root, "orders.delete", CancellationToken.None)).ValueOrThrow());
         Assert.Throws<ArgumentException>(() => new PermissionChecker(new DictionaryGrantStore(_grants), new SecurityOptions(), [edition, null!]));
     }

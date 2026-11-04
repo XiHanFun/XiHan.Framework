@@ -26,12 +26,12 @@ public sealed class KnowledgeQueriesTests
     {
         var paths = Knowledge.Pages.Select(static p => p.Path).ToList();
 
-        Assert.Contains("docs-next/guide/deployment.md", paths);
-        Assert.Contains("next/spec/rfcs/0016-packaging.md", paths);
-        Assert.Contains("next/spec/conventions/error-codes.md", paths);
-        Assert.Contains("next/src/XiHan.Framework.Messaging.Kafka/README.md", paths);
+        Assert.Contains("docs/guide/deployment.md", paths);
+        Assert.Contains("framework/spec/rfcs/0016-packaging.md", paths);
+        Assert.Contains("framework/spec/conventions/error-codes.md", paths);
+        Assert.Contains("framework/src/XiHan.Framework.Messaging.Kafka/README.md", paths);
         Assert.DoesNotContain(paths, static p => p.Contains("node_modules", StringComparison.Ordinal) || p.Contains(".vitepress", StringComparison.Ordinal));
-        var deployment = Knowledge.Pages.Single(static p => p.Path == "docs-next/guide/deployment.md");
+        var deployment = Knowledge.Pages.Single(static p => p.Path == "docs/guide/deployment.md");
         Assert.Equal("部署与打包", deployment.Title);
         Assert.False(string.IsNullOrEmpty(deployment.Summary));
     }
@@ -67,7 +67,7 @@ public sealed class KnowledgeQueriesTests
         Assert.Equal("stream", Assert.Single(feature.Bindings).Name);
         Assert.Equal(["messaging.kafka.connection"], feature.Health);
         Assert.Equal(["XiHan:Messaging:Kafka"], package.Sections);
-        Assert.Equal(["docs-next/packages/messaging-kafka.md", "next/src/XiHan.Framework.Messaging.Kafka/README.md"], package.Docs);
+        Assert.Equal(["docs/packages/messaging-kafka.md", "framework/src/XiHan.Framework.Messaging.Kafka/README.md"], package.Docs);
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public sealed class KnowledgeQueriesTests
         var results = KnowledgeQueries.Search(Knowledge, "KRaft Nacos", null, 5).ValueOrThrow().Results!;
 
         Assert.InRange(results.Count, 1, 5);
-        Assert.Contains(results, static r => r.Path == "docs-next/guide/deployment.md");
+        Assert.Contains(results, static r => r.Path == "docs/guide/deployment.md");
         Assert.All(results, r =>
         {
             var page = Knowledge.Pages.Single(p => p.Path == r.Path);
@@ -184,12 +184,12 @@ public sealed class KnowledgeQueriesTests
     }
 
     [Theory]
-    [InlineData("guide/deployment", "docs-next/guide/deployment.md")]
-    [InlineData("docs-next/guide/deployment.md", "docs-next/guide/deployment.md")]
-    [InlineData("0016", "next/spec/rfcs/0016-packaging.md")]
-    [InlineData("0016-packaging", "next/spec/rfcs/0016-packaging.md")]
-    [InlineData("error-codes", "next/spec/conventions/error-codes.md")]
-    [InlineData("XiHan.Framework.Cli", "next/src/XiHan.Framework.Cli/README.md")]
+    [InlineData("guide/deployment", "docs/guide/deployment.md")]
+    [InlineData("docs/guide/deployment.md", "docs/guide/deployment.md")]
+    [InlineData("0016", "framework/spec/rfcs/0016-packaging.md")]
+    [InlineData("0016-packaging", "framework/spec/rfcs/0016-packaging.md")]
+    [InlineData("error-codes", "framework/spec/conventions/error-codes.md")]
+    [InlineData("XiHan.Framework.Cli", "framework/src/XiHan.Framework.Cli/README.md")]
     public void Search_Page_ReadsAWholePage(string name, string path)
     {
         var page = KnowledgeQueries.Search(Knowledge, null, name, null).ValueOrThrow().Page!;

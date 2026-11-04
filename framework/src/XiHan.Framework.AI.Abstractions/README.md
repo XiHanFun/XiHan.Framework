@@ -41,4 +41,4 @@ AI 配置不热更新（ADR-0074）：`XiHan:AI` 的全部配置——Provider�
 
 ## 状态
 
-5.x P0：可用（Preview）。
+P0：可用（Preview）。

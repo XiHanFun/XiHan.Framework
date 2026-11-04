@@ -30,7 +30,7 @@
   "cli.pack.kind_unknown": "Type d'artefact inconnu '{kind}' ; attendu : dockerfile, kustomize, compose ou aspire.",
   "cli.pack.written": "{count} fichiers écrits dans '{output}'.",
   "cli.pipeline.description": "Affiche le pipeline de l'application (transmis à 'dotnet run -- pipeline').",
-  "cli.search.description": "Recherche 'query' dans la documentation de XiHan Framework (pages de guide et de paquets, RFC et conventions, README des paquets) ; tous les termes séparés par des espaces doivent apparaître, et les résultats sont classés par pertinence avec un extrait. Passez plutôt 'page' pour lire une page entière : un chemin du dépôt (docs-next/guide/caching.md ou guide/caching), une RFC (0006 ou 0006-caching) ou un ID de paquet pour son README. 'limit' vaut de 1 à 50, 10 par défaut.",
+  "cli.search.description": "Recherche 'query' dans la documentation de XiHan Framework (pages de guide et de paquets, RFC et conventions, README des paquets) ; tous les termes séparés par des espaces doivent apparaître, et les résultats sont classés par pertinence avec un extrait. Passez plutôt 'page' pour lire une page entière : un chemin du dépôt (docs/guide/caching.md ou guide/caching), une RFC (0006 ou 0006-caching) ou un ID de paquet pour son README. 'limit' vaut de 1 à 50, 10 par défaut.",
   "cli.search.title": "Rechercher dans la documentation",
   "cli.setup.client_invalid": "--client doit être l'un de {known}, mais valait '{client}'.",
   "cli.setup.config_invalid": "Impossible d'analyser '{path}' ({reason}) ; aucun fichier n'a été modifié. Fusionnez à la main l'extrait affiché par --dry-run.",

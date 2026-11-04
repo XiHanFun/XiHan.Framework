@@ -12,7 +12,7 @@ namespace XiHan.Framework.Samples.Tests;
 /// 真正运行 SimpleApp，验证 README 列出的命令
 /// </summary>
 /// <remarks>
-/// 只发布不运行发现不了配置与端点声明的问题：<c>/openapi.json</c> 曾经一直返回 500
+/// 只发布不运行发现不了配置与端点声明的问题，比如 <c>/openapi.json</c> 一直返回 500
 /// </remarks>
 public sealed class SimpleAppTests(SimpleAppProcess app) : IClassFixture<SimpleAppProcess>
 {
