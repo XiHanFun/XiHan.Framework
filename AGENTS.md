@@ -137,6 +137,8 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 - `framework/props/nuget.props` 默认可在构建时生成包，日常验证应显式关闭 `GeneratePackageOnBuild`，避免制造无关包产物。
 - 版本脚本、包撤销脚本、打标签和 NuGet 发布都属于外部状态变更，只有用户明确要求时才能执行。
 - 发布前以 `.github/workflows/ci.yml` 和 `.github/workflows/release.yml` 为最终事实源，完成 Release 构建、MTP 测试和包清单核对。
+- 发布分支：预览版（`X.Y.Z-preview.N` 这类带预发布后缀的版本）从 `preview` 分支发，由 `next` 快进（`git fetch . next:preview`，不是快进就停下查）；正式版从 `main` 发，由 `dev` 快进。这两个分支只接收发版，修复先进开发分支，再快进过来。
+- 预览版现在还发不出去：`release.yml` 的 guard 只放行 `main` 上的标签，构建的也是 4.x 的 `framework/`，版本读 `framework/props/version.props`；`next-ci.yml` 也不跑 `preview`。这几处改好之后删掉这一条。
 
 ## 分支与 worktree
 
@@ -152,6 +154,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 - 任务对应 Issue 或 PR 编号时归入 `issue/`、`pr/` 并以编号命名；其余按改动性质取 `feat/` 或 `fix/`，后缀沿用 worktree 目录名。
 - 进入 worktree 后先看 `git branch --show-current`。分支是工具生成的 `claude/<名>` 等形式时，在首次提交前就地改名：`git branch -m <分组>/<名>`；worktree 目录名不变。改名后上游若指向 `main` 等别的分支，执行 `git branch --unset-upstream`。分支已推送到远端时不改名，先向用户说明。
 - 自行创建时直接带分组：`git worktree add -b feat/<名> .claude/worktrees/<名> dev`。审阅他人 PR 时先 `git fetch origin pull/<编号>/head:pr/<编号>-review`，再 `git worktree add .claude/worktrees/pr-<编号> pr/<编号>-review`。
+- `preview` 与 `main` 是发布分支，日常改动不提交到这两个分支，worktree 也不以它们为基线。
 - 基线默认是本地 `dev`；热修复以对应 `hotfix/v<主版本>` 为基线，用户指定 `next` 或 `release/*` 时以其为准。工具从 `main` 或 `origin/main` 切出且还没有提交时，用 `git merge --ff-only dev` 对齐；不能快进就停下说明，不 reset。
 - 一个 worktree 只承载一项任务、一条分支。并行任务会改到同一文件、同一公共 API 或同一包元数据时，先说明冲突风险再动手。
 - 新 worktree 没有还原结果和构建产物，先执行 `dotnet restore framework/XiHan.Framework.slnx`，改文档时再安装 `docs/` 依赖；涉及 `next/` 时先 `git submodule update --init next/spec`（规范是 `XiHanFun/framework-spec` 的 submodule，改规范先在那边提交再更新指针）。

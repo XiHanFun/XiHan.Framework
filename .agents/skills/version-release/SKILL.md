@@ -11,6 +11,8 @@ description: 为 XiHan.Framework 准备版本、更新 version.props、整理发
 - `framework/props/version.props` 是程序集与 NuGet 版本真源；tag 使用 `vX.Y.Z[-tag.N]`，且必须与 `<Version>` 完全相等。
 - `docs/changelog.md` 记录用户可感知变化；`docs/package.json` 的站点版本必须与正式产品版本同步。
 - 发布工作流会构建并推送全部 NuGet 包，不能用它试跑版本选择。
+- 发布分支：预览版从 `preview` 发（由 `next` 快进），正式版从 `main` 发（由 `dev` 快进）；标签打在对应分支的历史上。
+- 5.x（`next/`）的版本真源是 `next/Directory.Build.props` 的 `<Version>`，`VersionUpgrade.ps1` 只管 4.x 的 `version.props`。
 
 ## 准备版本
 
@@ -18,9 +20,11 @@ description: 为 XiHan.Framework 准备版本、更新 version.props、整理发
 2. 运行交互脚本 `pwsh -File framework/scripts/nuget/VersionUpgrade.ps1`；不替用户预选版本级别或发布通道。
 3. 核对 `AssemblyVersion`、`FileVersion`、`Version`、文档版本和 changelog 标题。
 4. 执行 Release 还原、构建和 MTP 测试，检查 `framework/nupkgs` 包数量、版本与内容。
-5. 版本提交使用 `build: vX.Y.Z`，并确认提交进入预期发布分支。
+5. 版本提交使用 `build: vX.Y.Z`，并确认提交进入对应的发布分支：预览版 `preview`，正式版 `main`。
 
 ## 发布
+
+预览版现在还发不出去：`release.yml` 的 guard 只放行 `main` 上的标签，构建的也是 4.x 的 `framework/`。这一节写的是 4.x 在 `main` 上的流程，工作流改好之后再补 5.x 的。
 
 只有用户明确要求发布，才可创建并推送版本标签或手动触发 `.github/workflows/release.yml`（手动运行须选中版本标签，选分支会被拒）。推标签前先确认标签提交属于预期 `main` 历史且版本与 `version.props` 完全一致——工作流的 guard 两条都查，任一不满足拒发。
 
