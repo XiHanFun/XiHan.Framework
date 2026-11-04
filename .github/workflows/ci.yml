@@ -1,127 +1,214 @@
 name: CI
 
-# 构建 + 测试（MTP 模式）+ 覆盖率门禁。NuGet 发布由 release.yml 负责（正式版只收 main 上、与 version.props 一致的 v* 标签）。
+# 框架的构建、测试与门禁。只在 framework/ 或本文件变动时触发；NuGet 发布由 release.yml 负责。
 on:
   push:
-    branches: [main, dev]
+    branches: [dev, next, preview, main]
+    paths:
+      - "framework/**"
+      - ".github/workflows/ci.yml"
   pull_request:
-    branches: [main, dev]
-  # 允许手工触发，便于验证流水线本身
+    branches: [dev, next, preview, main]
+    paths:
+      - "framework/**"
+      - ".github/workflows/ci.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# 同一分支的新推送取消尚在排队/运行的旧任务，避免堆积
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # preview 上每个提交都要跑出完整结论，发版时以它为据
+  cancel-in-progress: ${{ github.ref != 'refs/heads/preview' }}
 
 jobs:
   build:
-    name: 构建与测试
+    name: 构建、测试与门禁
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      sqlserver:
+        # Persistence.SqlSugar 的 SQL Server 用例（筛选索引、库结构读取与一致性套件）；口令只给 CI 的一次性容器用
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: XiHan_Test_2026
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P XiHan_Test_2026 -Q 'SELECT 1' -b -o /dev/null"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+      mysql:
+        # Persistence.SqlSugar 的 MySQL 用例（库结构读取与一致性套件，每个用例建删一个库）；9.7 是 LTS，镜像小、起得快，放在主作业里
+        image: mysql:9.7
+        env:
+          MYSQL_ROOT_PASSWORD: XiHan_Test_2026
+        ports:
+          - 3306:3306
+        # 走 TCP（-h 127.0.0.1）：镜像初始化期间的临时服务器不开网络，初始化完、正式服务器起来之后才报健康
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pXiHan_Test_2026 --silent"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 30
+      rabbitmq:
+        image: rabbitmq:4-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+      qdrant:
+        # AI.VectorData 的真实 Qdrant 用例（一致性套件与摄入、检索）。镜像里没有 curl、wget，不配健康检查；用到它之前的还原与构建要几分钟，够它就绪
+        image: qdrant/qdrant:v1.18.2
+        ports:
+          - 6334:6334
     runs-on: ubuntu-latest
 
     steps:
       - name: 检出
         uses: actions/checkout@v7
+        with:
+          # framework/spec 是 framework-spec 的 submodule
+          submodules: true
 
       - name: 安装 .NET SDK
         uses: actions/setup-dotnet@v6
         with:
-          # global.json 锁定 10.0.4xx 功能带（latestPatch）并启用 MTP 测试运行器，
-          # setup-dotnet 会按其精确安装对应补丁。
           global-json-file: global.json
 
+      - name: 安装 Go
+        # Plugins.OutOfProcess.Tests 在运行时构建 samples/EchoGoPlugin（Go 插件端到端）；没有 go 会跳过
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: framework/samples/EchoGoPlugin/go.mod
+          cache-dependency-path: framework/samples/EchoGoPlugin/go.sum
+
       - name: 还原
-        # 传递依赖中的高危/严重漏洞已由 common.props 的
-        # WarningsAsErrors(NU1903/NU1904) 门禁在构建阶段拦截。
+        # NU1903/NU1904 在 framework/Directory.Build.props 中升级为错误，高危漏洞在此中断
         run: dotnet restore framework/XiHan.Framework.slnx
 
       - name: 构建
-        # GeneratePackageOnBuild 在本仓默认开启，CI 不需要产包，关掉省时间
-        run: >
-          dotnet build framework/XiHan.Framework.slnx
-          --configuration Release
-          --no-restore
-          -p:GeneratePackageOnBuild=false
+        # TreatWarningsAsErrors + latest-recommended 分析器 + PublicAPI 分析器 + AOT 分析器
+        run: dotnet build framework/XiHan.Framework.slnx --configuration Release --no-restore
 
       - name: 测试（MTP 模式，采集覆盖率）
-        # dotnet test 由 global.json 的 test.runner 直接驱动 Microsoft.Testing.Platform
-        # 测试应用；--coverage 经 TestingPlatformCommandLineArguments 透传给每个测试程序，
-        # 覆盖率文件产出到工作目录下的 TestResults/。失败即中断。
-        # MTP 模式下解决方案必须经 --solution 传入，位置参数会被直接拒绝。
+        env:
+          # Caching.Redis、Messaging.RabbitMQ、Persistence.SqlSugar（PostgreSQL、SQL Server、MySQL）与 Workflow.Database（PostgreSQL）的门控用例只在设置了这些变量时运行；
+          # Oracle 的门控用例（XIHAN_TEST_ORACLE）在下面单独的 oracle 作业里跑，这里不设、跳过
+          XIHAN_TEST_REDIS: localhost:6379
+          XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672
+          XIHAN_TEST_QDRANT: http://localhost:6334
+          XIHAN_TEST_POSTGRES: Host=localhost;Port=5432;Username=postgres;Password=postgres
+          XIHAN_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=XiHan_Test_2026;TrustServerCertificate=True
+          XIHAN_TEST_MYSQL: Server=localhost;Port=3306;User Id=root;Password=XiHan_Test_2026
+        # 含架构测试：依赖方向、包 ID 文法、命名空间、零反射、第三方类型泄漏、版权头
         run: >
           dotnet test --solution framework/XiHan.Framework.slnx
           --configuration Release
           --no-build
           -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
 
-      - name: 合并覆盖率报告
-        # 覆盖率产物并不落在 dotnet test 的工作目录，而是每个测试工程各自的
-        # bin/<配置>/<TFM>/TestResults/ 下，因此必须递归匹配。
-        # 早先这里只在仓库根的 TestResults/ 里找，一个文件都匹配不到，
-        # 合并出来的 Summary.json 是空的，下面的门禁等于从未生效。
-        run: |
-          dotnet tool install --global dotnet-reportgenerator-globaltool
-          reportgenerator \
-            "-reports:framework/test/**/TestResults/*.cobertura.xml" \
-            "-targetdir:${{ runner.temp }}/coverage" \
-            "-reporttypes:JsonSummary;Html"
+      - name: 打包（触发包验证与 README 检查）
+        run: dotnet pack framework/XiHan.Framework.slnx --configuration Release --no-build
 
-      - name: 覆盖率门禁
-        # 基线取自 CI run 33190021582（2026-08-29，dev 分支）：
-        # 行覆盖率 45.1%、覆盖 34236 行、可覆盖 75774 行、分支覆盖 43.6%、66 个程序集。
-        # 阈值只做「防止大幅回退」：覆盖行数与百分比双下限，各留约一成裕度，随测试补齐逐步上调。
-        #
-        # 重新标定一律以本步骤在 CI 上打印的值为准，并把来源 run 号写进本注释；
-        # 不要拿本机跑出来的数字设阈值——上一版 41% / 44000 行就是这么来的：
-        # 它在 CI 上从未通过过一次（设定它的那次运行自己在测试步就失败、门禁步被 skip），
-        # 而 44000 比 CI 实测高出 28.5%，结构上不可能通过。
-        run: |
-          python3 - <<'PY'
-          import json
-          with open("${{ runner.temp }}/coverage/Summary.json", encoding="utf-8") as f:
-              data = json.load(f)
-          summary = data["summary"]
-          parser = summary["parser"]
-          assemblies = int(summary["assemblies"])
-          line_coverage = float(summary["linecoverage"])
-          covered_lines = int(summary["coveredlines"])
-          coverable_lines = int(summary["coverablelines"])
-          branch_coverage = float(summary["branchcoverage"])
-          min_covered_lines = 30000
-          min_line_coverage = 41.0
-          # 分母（可覆盖行）与程序集数一并打印：只看分子无法区分「测试变差」与「统计范围缩小」，
-          # 这两种故障的百分比表现可以完全一样。
-          print(f"Parser: {parser}, assemblies: {assemblies}")
-          print(f"Line coverage: {line_coverage}%, covered lines: {covered_lines}, coverable lines: {coverable_lines}")
-          print(f"Branch coverage: {branch_coverage}%")
-          print(f"Thresholds: >= {min_line_coverage}% and >= {min_covered_lines} covered lines")
-          failures = []
-          if line_coverage < min_line_coverage:
-              failures.append(f"行覆盖率 {line_coverage}% 低于下限 {min_line_coverage}%")
-          if covered_lines < min_covered_lines:
-              failures.append(f"覆盖行数 {covered_lines} 低于下限 {min_covered_lines}")
-          if failures:
-              raise SystemExit("覆盖率门禁未通过：" + "；".join(failures))
-          PY
+      - name: 依赖漏洞清单
+        run: dotnet list framework/XiHan.Framework.slnx package --vulnerable --include-transitive
 
-      - name: 上传测试结果与覆盖率
+      - name: 安装 Native AOT 工具链
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: AOT 发布冒烟
+        # 内核零反射、源生成序列化：示例必须能以 Native AOT 发布
+        # PublishAot 由 SimpleApp 项目声明；不在命令行传，否则作为全局属性传给 netstandard2.0 的分析器与生成器（NETSDK1207）
+        run: dotnet publish framework/samples/SimpleApp/SimpleApp.csproj --configuration Release -o ${{ runner.temp }}/aot
+
+      - name: 上传测试结果与包
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: test-results
+          name: ci-artifacts
           path: |
             framework/test/**/TestResults/
+            framework/artifacts/packages/
           if-no-files-found: ignore
 
-      - name: 上传合并后的覆盖率报告
-        # 门禁一红就得有据可查：没有这份合并报告，排查只能回到本机复现，
-        # 而本机复现正是上一版错误基线的来源。
+  oracle:
+    # Persistence.SqlSugar 的 Oracle 门控用例（库结构读取与一致性套件，每个用例建删一个用户）。Oracle 镜像大、冷启动慢，
+    # 单独一个作业与主作业并行：只还原、构建、测试这一个测试项目，拉镜像与启动的时间不压在主作业上
+    name: Oracle 门控用例
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      oracle:
+        # slim-faststart：裁掉了不用的组件、库在镜像里已经建好，启动只要打开实例，不用现建库；与本机验证所用相同
+        image: gvenzl/oracle-free:23-slim-faststart
+        env:
+          ORACLE_PASSWORD: XiHan_Test_2026
+        ports:
+          - 1521:1521
+        # healthcheck.sh 是镜像自带的就绪检查（可插拔库 FREEPDB1 打开后才成功）
+        options: >-
+          --health-cmd healthcheck.sh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-start-period 20s
+          --health-retries 30
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: 还原
+        run: dotnet restore framework/test/XiHan.Framework.Persistence.SqlSugar.Tests/XiHan.Framework.Persistence.SqlSugar.Tests.csproj
+
+      - name: 构建
+        run: dotnet build framework/test/XiHan.Framework.Persistence.SqlSugar.Tests/XiHan.Framework.Persistence.SqlSugar.Tests.csproj --configuration Release --no-restore
+
+      - name: 测试（Oracle）
+        env:
+          # SYSTEM 能建删用户；只设这一个变量，其余数据库的门控用例在主作业里跑，这里跳过
+          XIHAN_TEST_ORACLE: User Id=system;Password=XiHan_Test_2026;Data Source=localhost:1521/FREEPDB1
+        run: >
+          dotnet test --project framework/test/XiHan.Framework.Persistence.SqlSugar.Tests/XiHan.Framework.Persistence.SqlSugar.Tests.csproj
+          --configuration Release
+          --no-build
+
+      - name: 上传测试结果
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-report
-          path: ${{ runner.temp }}/coverage/
+          name: oracle-artifacts
+          path: framework/test/XiHan.Framework.Persistence.SqlSugar.Tests/TestResults/
           if-no-files-found: ignore

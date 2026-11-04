@@ -26,7 +26,7 @@ labels: bug
 3.
 
 ```csharp
-// 最小复现代码（含模块定义 [DependsOn]）
+// 最小复现代码（含用到的特性组合）
 ```
 
 ## 期望行为
@@ -39,22 +39,22 @@ labels: bug
 
 ## 所属层
 
-<!-- 公共层 Utils / 元数据 Metadata / 核心层 Core / 领域层 Domain / 应用层 Application / 基础设施层 / Web 层 / 测试 / 文档 / 构建 -->
+<!-- 原语层 Primitives / 内核 Kernel / 领域与抽象 / 实现与 Provider / 宿主 Hosting / 协议与插件 / 工具链 / 测试 / 文档 / 构建 -->
 
-## 相关模块 / 包名
+## 相关包名
 
-<!-- 如 XiHan.Framework.Data -->
+<!-- 如 XiHan.Framework.Persistence.Abstractions -->
 
 ## 版本
 
-<!-- 出现问题的 NuGet 包版本或 commit，如 2.5.0 -->
+<!-- 出现问题的 NuGet 包版本或 commit，如 1.2.0 -->
 
 ## 运行环境
 
 - 操作系统（Windows / Linux / macOS）：
 - .NET SDK：
 - 相关 NuGet 包及版本：
-- 数据库（如涉及 Data，PostgreSQL / MySQL + 版本）：
+- 数据库（如涉及持久化，PostgreSQL / MySQL + 版本）：
 - Redis（如涉及 Caching）：
 
 ## 日志 / 异常堆栈

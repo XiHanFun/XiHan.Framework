@@ -1,17 +1,16 @@
 name: 发布 NuGet
 
-# 推送 v* 标签（如 v5.0.0-preview.1、v4.3.0）触发，按标签分两条线，统一推送 nuget.org（--skip-duplicate 幂等）：
-# - v4.*：版本取自 framework/props/version.props，构建 framework/XiHan.Framework.slnx，包在 framework/nupkgs/
-# - 其余（5.x 起）：版本取自 next/Directory.Build.props，打包 next/XiHan.Framework.Next.slnx，包在 next/artifacts/packages/
+# 推送 v* 标签（如 vX.Y.Z-preview.N、vX.Y.Z）触发，打包 framework/XiHan.Framework.slnx，
+# 包在 framework/artifacts/packages/，统一推送 nuget.org（--skip-duplicate 幂等）。
 #
 # 发包必须同时满足两条，由 guard job 把关，缺一不发：
 # ① 标签指向的提交在发布分支的历史里：带预发布后缀的是预览版，看 preview；不带的是正式版，看 main。
 #    标签本身不带分支信息，所以要查祖先关系——打在别处的 v* 标签一律拒发。
-# ② 标签号就是这条线的 <Version>——否则发出去的不是你以为的那个版本，
+# ② 标签号就是 framework/Directory.Build.props 的 <Version>——否则发出去的不是你以为的那个版本，
 #    而 --skip-duplicate 还会把这种错静默吞掉。
 # 手动 Run workflow 时必须选中一个版本标签；选分支会被 ① 拦下。
 #
-# 只管发布，不跑测试：测试与覆盖率门禁在 ci.yml、next-ci.yml，提交进发布分支时已经跑过；
+# 只管发布，不跑测试：测试门禁在 ci.yml，提交进发布分支时已经跑过；
 # 这里只留产包与推送本身绕不开的步骤。
 #
 # 认证走 NuGet 可信发布（OIDC），无长期 API Key。
@@ -33,9 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    outputs:
-      line: ${{ steps.line.outputs.line }}
-      packages: ${{ steps.line.outputs.packages }}
 
     steps:
       - name: 检出
@@ -62,36 +58,18 @@ jobs:
           fi
           echo "标签 $GITHUB_REF_NAME 在 $branch 上，放行"
 
-      - name: 按标签选发布线
-        id: line
-        run: |
-          case "$GITHUB_REF_NAME" in
-            v4.*)
-              echo "line=framework" >> "$GITHUB_OUTPUT"
-              echo "packages=framework/nupkgs" >> "$GITHUB_OUTPUT"
-              echo "version_file=framework/props/version.props" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "line=next" >> "$GITHUB_OUTPUT"
-              echo "packages=next/artifacts/packages" >> "$GITHUB_OUTPUT"
-              echo "version_file=next/Directory.Build.props" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
-
       - name: 标签号与 <Version> 对账
-        env:
-          VERSION_FILE: ${{ steps.line.outputs.version_file }}
         run: |
-          version="$(grep -oP '(?<=<Version>)[^<]+' "$VERSION_FILE")"
+          version="$(grep -oP '(?<=<Version>)[^<]+' framework/Directory.Build.props)"
           if [ -z "$version" ]; then
-            echo "::error::$VERSION_FILE 里没读到 <Version>，拒绝发布。"
+            echo "::error::framework/Directory.Build.props 里没读到 <Version>，拒绝发布。"
             exit 1
           fi
           if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::标签 $GITHUB_REF_NAME 与 framework/props/version.props 的 <Version>$version</Version> 不一致，拒绝发布。先用 VersionUpgrade.ps1 把版本提到位并合进 main，再在那个提交上打 v$version。"
+            echo "::error::标签 $GITHUB_REF_NAME 与 framework/Directory.Build.props 的 <Version>$version</Version> 不一致，拒绝发布。先把版本提到位并快进到发布分支，再在那个提交上打 v$version。"
             exit 1
           fi
-          echo "标签 $GITHUB_REF_NAME 与 version.props 的 $version 一致，放行"
+          echo "标签 $GITHUB_REF_NAME 与 <Version> 的 $version 一致，放行"
 
   publish:
     name: 构建并推送 NuGet 包
@@ -105,31 +83,17 @@ jobs:
       - name: 检出
         uses: actions/checkout@v7
         with:
-          # next/spec 是 framework-spec 的 submodule
-          submodules: ${{ needs.guard.outputs.line == 'next' }}
+          # framework/spec 是 framework-spec 的 submodule
+          submodules: true
 
       - name: 安装 .NET SDK
         uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
-      - name: 还原（4.x）
-        if: needs.guard.outputs.line == 'framework'
-        run: dotnet restore framework/XiHan.Framework.slnx
-
-      - name: 构建（含打包，4.x）
-        if: needs.guard.outputs.line == 'framework'
-        # GeneratePackageOnBuild 默认开启（nuget.props），包统一输出到 framework/nupkgs/；
-        # 高危/严重依赖漏洞由 common.props 的 NU1903/NU1904 门禁在构建期拦截。
-        run: >
-          dotnet build framework/XiHan.Framework.slnx
-          --configuration Release
-          --no-restore
-
-      - name: 打包（5.x）
-        if: needs.guard.outputs.line == 'next'
-        # 包统一输出到 next/artifacts/packages/；包验证与 README 检查在打包时执行。
-        run: dotnet pack next/XiHan.Framework.Next.slnx --configuration Release
+      - name: 打包
+        # 包统一输出到 framework/artifacts/packages/；包验证与 README 检查在打包时执行。
+        run: dotnet pack framework/XiHan.Framework.slnx --configuration Release
 
       - name: NuGet 可信发布登录（OIDC 换临时 API Key）
         # 经 nuget.org 受信任发布策略校验后返回 1 小时有效的临时 Key，无长期机密。
@@ -142,9 +106,8 @@ jobs:
         # dotnet nuget push 一次只接受一个包，逐个循环推送；--skip-duplicate 保证重跑幂等。
         env:
           NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
-          PACKAGES: ${{ needs.guard.outputs.packages }}
         run: |
-          for pkg in "$PACKAGES"/*.nupkg; do
+          for pkg in framework/artifacts/packages/*.nupkg; do
             dotnet nuget push "$pkg" \
               --api-key "$NUGET_API_KEY" \
               --source https://api.nuget.org/v3/index.json \
@@ -156,5 +119,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: nupkgs
-          path: ${{ needs.guard.outputs.packages }}/*.nupkg
+          path: framework/artifacts/packages/*.nupkg
           if-no-files-found: ignore
