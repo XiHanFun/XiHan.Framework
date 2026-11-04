@@ -3,12 +3,12 @@ name: CI
 # 框架的构建、测试与门禁。只在 framework/ 或本文件变动时触发；NuGet 发布由 release.yml 负责。
 on:
   push:
-    branches: [dev, next, preview, main]
+    branches: [dev, preview, main]
     paths:
       - "framework/**"
       - ".github/workflows/ci.yml"
   pull_request:
-    branches: [dev, next, preview, main]
+    branches: [dev, preview, main]
     paths:
       - "framework/**"
       - ".github/workflows/ci.yml"
