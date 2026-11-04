@@ -1,0 +1,7 @@
+interface:
+  display_name: "XiHan.Framework 开发"
+  short_description: "设计和实现 XiHan.Framework 的包、特性、操作与公共 API"
+  default_prompt: "使用 $xihan-framework-development 实现并验证一项框架能力。"
+
+policy:
+  allow_implicit_invocation: true

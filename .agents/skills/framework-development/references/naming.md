@@ -1,6 +1,6 @@
 # 命名速查
 
-事实源：`next/spec/conventions/vocabulary.md`（术语表）与 `next/spec/conventions/package-ids.md`（文法）。架构测试直接解析术语表，新增领域词走 RFC。
+事实源：`framework/spec/conventions/vocabulary.md`（术语表）与 `framework/spec/conventions/package-ids.md`（文法）。架构测试直接解析术语表，新增领域词走 RFC。
 
 ## 包 ID
 

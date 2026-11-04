@@ -4,46 +4,50 @@
 
 ## 仓库概览
 
-XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模块、显式依赖和统一生命周期为核心，公共默认实现保持零外部基础设施依赖，具体数据库、缓存和消息实现由应用层提供。
+XiHan.Framework 是面向 .NET 10 的模块化应用框架。能力按环层拆成独立的包，依赖按能力 ID 声明在清单里，业务接口是与协议无关的操作契约。每个抽象配一个零外部基础设施的默认实现，数据库、缓存和消息等具体实现由 Provider 包提供。
 
 ### 技术栈
 
 | 技术 | 要求 | 用途 |
 | --- | --- | --- |
 | .NET SDK | `global.json` 锁定的 10.0.4xx 功能带 | 编译与运行 |
-| C# | Nullable + ImplicitUsings | 框架源码 |
+| C# | Nullable + ImplicitUsings，警告即错误 | 框架源码 |
 | Microsoft.Testing.Platform | 由 `global.json` 启用 | 测试运行器 |
-| xUnit v3 | 以 `framework/props/test.props` 为准 | 单元与集成测试 |
+| xUnit v3 | 以 `framework/Directory.Packages.props` 为准 | 单元、集成与一致性测试 |
 | VitePress | 以 `docs/package.json` 为准 | 文档站 |
 
 ## 开始前必须做
 
-1. 按任务读取对应技能：模块、分层与公共 API 读取 `.agents/skills/module-development/SKILL.md`；缓存、队列和外部资源读取 `.agents/skills/resource-governance/SKILL.md`；测试、文档、打包和发布读取 `.agents/skills/testing-release/SKILL.md`；下一代框架（`next/`、`nextdocs/`）读取 `.agents/skills/next-generation/SKILL.md`。
+1. 按任务读取对应技能：包、特性、操作、Provider、协议、规范与公共 API 读取 `.agents/skills/framework-development/SKILL.md`；缓存、队列和外部资源读取 `.agents/skills/resource-governance/SKILL.md`；测试、文档和打包读取 `.agents/skills/testing-release/SKILL.md`；发版读取 `.agents/skills/version-release/SKILL.md`。
 2. 同时涉及多个职责时加载对应多个技能，不要一次读取无关资料。
 3. 检查当前分支、`git status` 和最近提交；保留用户已有改动。在 worktree 中还要按「分支与 worktree」核对分支分组和基线。
-4. 阅读目标模块及其直接依赖的 README、项目文件、Module 类和相邻实现。
-5. 先确认能力应归属 Utils、Metadata、Core、Domain、Application、Infrastructure 还是 Web 层，再创建代码。
+4. 阅读目标包及其直接依赖的 README、项目文件、`<名称>Feature`、PublicAPI 文件和相邻实现。
+5. 先确认能力归属哪个环层、哪个子系统，是契约还是实现，再创建代码。
 6. 查找已有接口、默认实现、扩展方法与测试，不重复建设相同能力。
+
+设计问题按顺序读 `design/框架总体方案.md`、`design/architecture/01–05`、相关 RFC（`framework/spec/rfcs`）与 ADR（`design/adr`），只读与任务相关的部分。
 
 ## 目录结构
 
 ```text
 /
 ├─ AGENTS.md
-├─ .agents/skills/                 # 按模块、资源和发布分类的仓库技能
+├─ .agents/skills/                 # 按开发、资源、测试和发布分类的仓库技能
 ├─ .claude/skills -> ../.agents/skills
 ├─ CLAUDE.md -> AGENTS.md
+├─ design/                         # 设计文档：总体方案、architecture/、adr/
 ├─ docs/                           # VitePress 文档站
-├─ framework/
-│  ├─ XiHan.Framework.slnx         # 主解决方案
-│  ├─ props/                       # 公共构建、测试、包元数据
-│  ├─ scripts/                     # 项目维护与 NuGet 脚本
-│  ├─ src/                         # 正式模块
-│  ├─ test/                        # 单元与集成测试
-│  ├─ sample/                      # 示例
-│  └─ tool/                        # 工具项目
-├─ next/                           # 下一代框架（XiHan Framework 5）工作区：spec/（framework-spec 的 submodule）、src/、test/；见 next/README.md
-└─ nextdocs/                       # 下一代设计文档：总体方案、architecture/01–05、adr/
+└─ framework/
+   ├─ XiHan.Framework.slnx         # 解决方案，目录按环层分组
+   ├─ Directory.Build.props        # 版本、Nullable、警告即错误、文档文件
+   ├─ Directory.Packages.props     # 中央包版本
+   ├─ spec/                        # 规范（XiHanFun/framework-spec 的 submodule）：RFC、术语表、清单 Schema、协议映射
+   ├─ src/                         # 正式包，物理目录扁平，包名由术语表 + 文法推出
+   ├─ test/                        # 单元、架构、集成测试
+   ├─ samples/                     # 示例
+   ├─ benchmarks/                  # 基准
+   ├─ incubator/                   # 实验包，只能标 Experimental
+   └─ scripts/                     # 维护脚本
 ```
 
 ## 常用命令
@@ -52,15 +56,13 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 
 | 任务 | 命令 |
 | --- | --- |
+| 初始化规范 | `git submodule update --init framework/spec` |
 | 还原 | `dotnet restore framework/XiHan.Framework.slnx` |
-| 常规构建 | `dotnet build framework/XiHan.Framework.slnx -c Release --no-restore -p:GeneratePackageOnBuild=false` |
-| CI 同形测试 | `dotnet test --solution framework/XiHan.Framework.slnx --configuration Release --no-build -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"` |
+| 构建 | `dotnet build framework/XiHan.Framework.slnx -c Release --no-restore` |
+| 测试 | `dotnet test --solution framework/XiHan.Framework.slnx --configuration Release --no-build` |
+| 打包验证 | `dotnet pack framework/XiHan.Framework.slnx -c Release --no-build` |
 | 文档安装 | `pnpm --dir docs install --frozen-lockfile` |
 | 文档构建 | `pnpm --dir docs build` |
-| 下一代还原 | `dotnet restore next/XiHan.Framework.Next.slnx` |
-| 下一代构建 | `dotnet build next/XiHan.Framework.Next.slnx -c Release --no-restore` |
-| 下一代测试 | `dotnet test --solution next/XiHan.Framework.Next.slnx --configuration Release --no-build` |
-| 下一代打包验证 | `dotnet pack next/XiHan.Framework.Next.slnx -c Release --no-build` |
 
 `global.json` 已选择 Microsoft.Testing.Platform。不要改回 VSTest 形式，也不要删除 `--solution` 来规避测试运行错误。
 
@@ -68,81 +70,78 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 
 ### 依赖方向
 
-- 基础能力按 `Utils → Metadata → Core → Domain → Application/Contracts → Infrastructure → Web` 单向演进。
-- 模块通过 `[DependsOn]` 声明依赖；不得通过静态服务定位、反射探测或复制代码形成隐式依赖。
-- 抽象与契约放在下层或 `.Abstractions` 项目，具体 Provider 放在上层实现项目。
-- 不允许为了复用少量代码让底层模块反向引用 Web、数据库、Redis 或应用模块。
+- 环层只能向下依赖：Primitives → Kernel → Domain 与 `.Abstractions` → 实现 → Hosting → Protocols 与 Plugins → Profiles。同环之间只经契约包（`.Abstractions`，以及纯契约的 `Domain`）。
+- Ring 0/1 与抽象包零第三方依赖，Ring 0/1 零反射；反射只允许在 `Plugins.InProcess` 并标注 `RequiresDynamicCode`。
+- 工具链（Analyzers、Generators、Conformance、Testing、Cli）可引用任何环。
+- 依赖按能力 ID 声明在清单里，不按包名；管道按固定阶段插入中间件。
 
-### 模块与生命周期
+### 特性与能力
 
-- 模块命名遵循 `XiHan.Framework.<Module>`；抽象、Provider 和 Web 集成沿用现有后缀。
-- 新模块或依赖变化必须检查完整拓扑，不制造环依赖。
-- 初始化与关闭逻辑放入现有模块生命周期钩子；保持异步、顺序和异常语义一致。
-- 服务注册应显式、幂等，并通过模块扩展方法组织；不要膨胀应用入口。
+- 包名由 `framework/spec/conventions/vocabulary.md` 的术语表与 `package-ids.md` 的文法推出；类型名不带 `XiHan` 前缀；实现包按机制或技术命名，`Default` 不进包名，默认角色写在清单 `role`。
+- 能力包入口是 `<名称>Feature : IFeature`，在清单里声明提供与依赖的能力，在 `Configure` 里显式登记；不靠扫描、标记接口或拦截器。
+- 业务接口是操作：`[Operation(Id, Expose = …)]` 的类实现 `IOperation<TRequest, TResponse>`，同一份契约服务 HTTP、gRPC、MCP 与命令行。
+- 可恢复的失败返回 `Result` / `Error`，不抛异常。
 
 ### 公共 API
 
-- 公开类型、成员和选项必须有准确 XML 文档。
+- 公开类型有 `[ApiLevel]` 与准确的 XML 文档，`PublicAPI.Unshipped.txt` 同步更新；已发布行不改。
 - Nullable 是契约的一部分；不要用 `!`、空字符串或默认实例掩盖非法状态。
 - 异步 API 接受并传递 `CancellationToken`；不阻塞异步调用，不吞异常。
 - 破坏性 API 变更必须明确说明迁移方式，不保留推测性兼容别名或静默兜底。
 - 优先使用 .NET 内建能力；新增依赖必须有明确的框架级收益和依赖边界。
+- 规范先于实现：公开契约先进 `framework/spec/rfcs`，再写 `design/adr`，再写代码与一致性向量。
 
 ### 批量优先
 
 - 文件上传与对已有对象按标识执行的操作（删除、状态变更、撤销等）必须提供批量方法，以集合为入参、一次调用完成；单条是批量的特例。
-- 框架内部与示例处理多个对象时调用批量方法，不在调用方循环单条方法或并发发出多个单条请求。
+- 框架内部与示例处理多个对象时调用批量方法，不在调用方循环单条方法或并发发出多个单条请求。架构测试 `BatchFirstTests` 守护这一条。
 - 批量方法明确部分失败语义（逐项结果或汇总异常）、空集合与重复项处理、取消时机，并在测试中覆盖；默认实现可逐项转调单条方法，Provider 可覆写为原生批量接口。
-- 动态 API 暴露批量入口时，集合参数在 `POST`/`PUT`/`PATCH` 上从请求体绑定、在 `GET`/`DELETE` 上从查询串绑定、与文件同处时从表单绑定；需要兼容旧版本绑定时把集合包进 DTO。
 
 ### 默认实现与外部资源
 
-- 框架默认实现命名为 `DefaultXxx`，必须可独立工作、边界明确且有容量上限。
+- 每个抽象配一个 `role: default` 的默认实现，包名按机制命名（`InMemory`、`FileSystem`），必须可独立工作、边界明确且有容量上限，并通过一致性套件。
 - 默认实现不得要求 Redis、数据库、消息队列或应用配置才能启动。
-- 分布式与持久化实现由消费应用提供，框架只定义稳定契约和必要扩展点。
+- 分布式与持久化实现放在 Provider 包，框架只定义稳定契约和必要扩展点。
 - 缓存、队列、会话和注册表不得无界增长；容量、过期、清理与并发语义必须测试。
 
-## 下一代开发（XiHan Framework 5）
+### 代码规范
 
-`next/` 与 `nextdocs/` 承载从零重写的下一代框架，在 `next` 分支开发，与 `framework/`（4.x）互不引用；上面「架构约束」中的分层与 `DefaultXxx` 命名只适用于 4.x。涉及下一代的任务先读 `.agents/skills/next-generation/SKILL.md`，再按顺序读 `nextdocs/下一代框架总体方案.md` 与 `nextdocs/architecture/01–05`。
+细则见 `design/architecture/03-代码规范.md`。
 
-- 环层只能向下依赖：Primitives → Kernel → Domain 与 `.Abstractions` → 实现 → Hosting → Protocols 与 Plugins → Profiles；Ring 0/1 与抽象包零第三方依赖，Ring 0/1 零反射。
-- 包名由 `next/spec/conventions/vocabulary.md` 的术语表与 `package-ids.md` 的文法推出；类型名不带 `XiHan` 前缀；实现包按机制或技术命名，`Default` 不进包名，默认角色写在清单 `role`。
-- 规范先于实现：公开契约先进 `next/spec/rfcs`，再写 `nextdocs/adr`，再写代码与一致性向量。
-- `TreatWarningsAsErrors`、PublicAPI 文件、包验证、AOT 分析器与 `next/test/XiHan.Framework.Architecture.Tests` 都是 CI 必过项；不放宽、不绕过、不加 `NoWarn`。
-- 不把 4.x 的 `XiHanModule`、生命周期钩子、`[DependsOn]`、Castle 代理、`DefaultXxx`、`Utils` 带进 `next/`；旧代码只作设计参照，4.x 单独维护、不做 4.x → 5.0 迁移（ADR-0021）。
-- 阶段按 `nextdocs/architecture/05-开发计划.md` 的门槛推进，当前阶段写在 `next/README.md`。
-- 代码规范（细则见 `nextdocs/architecture/03-代码规范.md`）：一个类型一个文件，泛型类型文件名加 `OfT`，只有嵌套类型留在外层类型的文件里；所有类型与成员，含 private / internal / protected、字段、常量、嵌套类型与测试辅助类型，都写中文 `/// <summary>`（`[Fact]` / `[Theory]` 方法除外，实现接口与重写用 `<inheritdoc />`）；方法内部的关键逻辑（锁与临界区、状态转移、回退链、容量与并发判定、安全判定顺序、延迟开启的事务）写中文 `//` 注释说明为什么。
+- 一个类型一个文件，泛型类型文件名加 `OfT`，只有嵌套类型留在外层类型的文件里。
+- 所有类型与成员，含 private / internal / protected、字段、常量、嵌套类型与测试辅助类型，都写中文 `/// <summary>`（`[Fact]` / `[Theory]` 方法除外，实现接口与重写用 `<inheritdoc />`）。`<summary>` 三行、只写一句，细节进 `<remarks>`。
+- 方法内部的关键逻辑（锁与临界区、状态转移、回退链、容量与并发判定、安全判定顺序、延迟开启的事务）写中文 `//` 注释说明为什么。注释句末不加「。」。
 - 面向人的文案不写在代码里（RFC-0010）：代码只引用消息键常量（`<领域>Messages`，键如 `security.token.subject_missing`），每种语言一个文件 `Localization/<区域>.json`（含 `en-US.json`，键 → 模板，`{name}` 或 `{0}` 占位符，可带 `:format`），以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入；内置与 XiHan.UI 相同的 10 种区域（`en-US` 默认、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`、`de-DE`、`es-ES`、`fr-FR`、`pt-BR`、`ru-RU`），新增键必须同时补 10 个文件。任何地方取文案用 `key.L()` / `key.L(("id", id))` / `key.L(a, b)`（按 `MessageScope` 的当前区域：调用链里是调用方语言，否则是默认语言）；`Error` 用 `Error.NotFound(code, OrdersMessages.NotFound, MessageArguments.Of(...))` 只携带键与参数，宿主在 Egress 翻译成调用方语言；`Error.Literal` 只用于线上还原与异常转换。架构测试 `LocalizationTests` 核对文件齐全、占位符一致、常量与 `en-US.json` 一一对应、调用点只用常量。
 - 其余运行时英文：`FrameworkException` / `ArgumentException` 的消息（配置与编程错误，不本地化）、`LoggerMessage` 模板、分析器诊断、一致性套件与测试里的断言与夹具文本、`RequiresUnreferencedCode` / `RequiresDynamicCode` 的消息；句子以句号结尾，标识符与 ID 用单引号（分析器标题与单句消息按 RS1031 / RS1032 不加句号）。XML 文档、`//` 注释、README、RFC 与提交说明保持中文。
-- 命名与样式在构建期执行（`EnforceCodeStyleInBuild`，IDE1006 / IDE0005 警告即错误）：私有实例与私有静态字段 `_camelCase`，私有常量 PascalCase，未使用的 using 必须删除（批量清理用 `dotnet format style next/XiHan.Framework.Next.slnx --diagnostics IDE0005 --severity warn`）；不降低 `.editorconfig` 的 severity，不加 `NoWarn`。
+- 命名与样式在构建期执行（`EnforceCodeStyleInBuild`，IDE1006 / IDE0005 警告即错误）：私有实例与私有静态字段 `_camelCase`，私有常量 PascalCase，未使用的 using 必须删除（批量清理用 `dotnet format style framework/XiHan.Framework.slnx --diagnostics IDE0005 --severity warn`）；不降低 `.editorconfig` 的 severity，不加 `NoWarn`。
+- `TreatWarningsAsErrors`、PublicAPI 文件、包验证、AOT 分析器与 `framework/test/XiHan.Framework.Architecture.Tests` 都是 CI 必过项，不放宽、不绕过。
 
 ## 测试
 
-- 修改哪个正式模块，就在对应测试项目添加或更新测试。
+- 修改哪个正式包，就在对应测试项目添加或更新测试。
 - 优先验证公开可观察行为、错误、取消、并发、边界容量和生命周期顺序。
 - 修复缺陷先写能复现问题的测试，再改实现。
-- 涉及模块发现、依赖排序、配置绑定、动态代理或序列化时，补充跨项目集成验证。
+- 默认实现与 Provider 必须通过所属子系统的一致性套件；涉及能力解析、管道次序、配置绑定或序列化时，补充跨包集成验证。
 - 不以覆盖率数字代替有效断言，不删除测试或放宽 CI 阈值来通过门禁。
 - 资源受限且明确出现系统资源不足时，才可临时使用 `/m:4 /nr:false` 控制 MSBuild 并发；这不是默认命令。
 
 ## 文档与示例
 
-- 改变公开 API、默认值、配置、生命周期或使用方式时，同步更新 XML 文档、模块 README、示例和文档站。
-- 示例只展示推荐路径，不保留已废弃做法，也不把应用专用基础设施包装成框架默认方案。
-- 文档命令在 `docs/` 执行；源码命令在仓库根或 `framework/` 对应位置执行。
+- 改变公开 API、默认值、配置、生命周期或使用方式时，同步更新 XML 文档、包 README、示例和文档站。
+- 示例只展示推荐路径，也不把应用专用基础设施包装成框架默认方案。
+- 文档命令在 `docs/` 执行；源码命令在仓库根执行。
 
 ## 发布
 
-- `framework/props/nuget.props` 默认可在构建时生成包，日常验证应显式关闭 `GeneratePackageOnBuild`，避免制造无关包产物。
-- 版本脚本、包撤销脚本、打标签和 NuGet 发布都属于外部状态变更，只有用户明确要求时才能执行。
+- 版本真源是 `framework/Directory.Build.props` 的 `<Version>`，所有包共享一条版本线。
+- 打标签和 NuGet 发布都属于外部状态变更，只有用户明确要求时才能执行。
 - 发布前以 `.github/workflows/ci.yml` 和 `.github/workflows/release.yml` 为最终事实源，完成 Release 构建、MTP 测试和包清单核对。
-- 发布分支：预览版（`X.Y.Z-preview.N` 这类带预发布后缀的版本）从 `preview` 分支发，由 `next` 快进（`git fetch . next:preview`，不是快进就停下查）；正式版从 `main` 发，由 `dev` 快进。这两个分支只接收发版，修复先进开发分支，再快进过来。
-- `release.yml` 的 guard 按标签查发布分支：带预发布后缀的看 `preview`，不带的看 `main`。`v4.*` 标签走 `framework/`，其余走 `next/`（版本读 `next/Directory.Build.props`）。`next-ci.yml` 跑 `preview`，`ci.yml` 只管 4.x。
+- 发布分支：预览版（`X.Y.Z-preview.N` 这类带预发布后缀的版本）从 `preview` 发，正式版从 `main` 发，都由 `dev` 快进（`git fetch . dev:preview`，不是快进就停下查）。这两个分支只接收发版，修复先进 `dev`，再快进过来。
+- `release.yml` 的 guard 按标签查发布分支：带预发布后缀的看 `preview`，不带的看 `main`；标签号必须等于 `<Version>`。
 
 ## 分支与 worktree
 
-在主检出上的日常改动直接提交到当前分支（通常是 `dev`；下一代 `next/`、`nextdocs/` 的改动提交到 `next`），不另开分支。新功能或并行开发开启 worktree 时，分支按用途分组命名，不保留工具生成的 `claude/<名>`、`codex/<名>` 等前缀：
+在主检出上的日常改动直接提交到 `dev`，不另开分支。新功能或并行开发开启 worktree 时，分支按用途分组命名，不保留工具生成的 `claude/<名>`、`codex/<名>` 等前缀：
 
 | 分组 | 用途 | 分支名 |
 | --- | --- | --- |
@@ -155,24 +154,24 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 - 进入 worktree 后先看 `git branch --show-current`。分支是工具生成的 `claude/<名>` 等形式时，在首次提交前就地改名：`git branch -m <分组>/<名>`；worktree 目录名不变。改名后上游若指向 `main` 等别的分支，执行 `git branch --unset-upstream`。分支已推送到远端时不改名，先向用户说明。
 - 自行创建时直接带分组：`git worktree add -b feat/<名> .claude/worktrees/<名> dev`。审阅他人 PR 时先 `git fetch origin pull/<编号>/head:pr/<编号>-review`，再 `git worktree add .claude/worktrees/pr-<编号> pr/<编号>-review`。
 - `preview` 与 `main` 是发布分支，日常改动不提交到这两个分支，worktree 也不以它们为基线。
-- 基线默认是本地 `dev`；热修复以对应 `hotfix/v<主版本>` 为基线，用户指定 `next` 或 `release/*` 时以其为准。工具从 `main` 或 `origin/main` 切出且还没有提交时，用 `git merge --ff-only dev` 对齐；不能快进就停下说明，不 reset。
+- 基线默认是本地 `dev`，用户指定别的基线时以其为准。工具从 `main` 或 `origin/main` 切出且还没有提交时，用 `git merge --ff-only dev` 对齐；不能快进就停下说明，不 reset。
 - 一个 worktree 只承载一项任务、一条分支。并行任务会改到同一文件、同一公共 API 或同一包元数据时，先说明冲突风险再动手。
-- 新 worktree 没有还原结果和构建产物，先执行 `dotnet restore framework/XiHan.Framework.slnx`，改文档时再安装 `docs/` 依赖；涉及 `next/` 时先 `git submodule update --init next/spec`（规范是 `XiHanFun/framework-spec` 的 submodule，改规范先在那边提交再更新指针）。
+- 新 worktree 没有还原结果和构建产物，先执行 `git submodule update --init framework/spec` 与 `dotnet restore framework/XiHan.Framework.slnx`，改文档时再安装 `docs/` 依赖。规范是 `XiHanFun/framework-spec` 的 submodule，改规范先在那边提交再更新指针。
 - worktree 分支的合并、推送、创建 PR 以及 worktree 和分支的删除，只在用户明确要求时执行。
 
 ## Git 与提交
 
 - 保留用户已有和无关改动；不要 reset、checkout 或清理它们。
-- 使用 Conventional Commits：`<type>(<scope>): <中文说明>`。
-- 每个模块能力或独立修复单独提交；契约、实现、测试和文档属于同一闭环时放在同一提交。
+- 使用 Conventional Commits：`<type>(<scope>): <中文说明>`，scope 用术语表领域词小写或 `spec`、`docs`、`build`。
+- 每项能力或独立修复单独提交；契约、实现、测试和文档属于同一闭环时放在同一提交。
 - 提交前检查 `git diff --check`、相关测试和必要的 Release 构建。
 - 不推送、不发布、不创建远程 PR，除非用户明确要求。
 
 ## 禁止事项
 
-- 不跨层放置实现，不以“方便”绕过模块依赖。
+- 不跨环放置实现，不以“方便”绕过依赖方向。
 - 不添加静默兜底、无限重试或无界内存集合。
 - 不把 BasicApp 或其他应用的具体存储实现放入框架默认路径。
-- 不猜测 API、版本、模块数量或 CI 命令；以当前检出为准。
+- 不猜测 API、版本、包数量或 CI 命令；以当前检出为准。
 - 不手改构建产物、包目录或生成文件代替修改真源。
-- 不运行版本升级、NuGet 撤销、发布或其他破坏性脚本，除非用户明确授权。
+- 不运行发布或其他破坏性脚本，除非用户明确授权。

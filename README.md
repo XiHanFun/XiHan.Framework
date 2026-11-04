@@ -5,7 +5,7 @@
 
 <p><b>A fast, lightweight, efficient and thoughtfully built modern modular framework for .NET</b></p>
 
-<p>Built on .NET · modular packages · <code>[DependsOn]</code> declarations · topologically sorted loading</p>
+<p>Built on .NET · capability-based composition · one operation contract for many protocols · defaults with no external infrastructure</p>
 
 <p><b>English</b> | <a href="./README_cn.md">简体中文</a></p>
 
@@ -17,8 +17,8 @@
 <p>
   <img alt=".NET" src="https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white" />
   <img alt="C#" src="https://img.shields.io/badge/C%23-Latest-239120?style=flat-square" />
-  <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/v/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
-  <a href="https://www.nuget.org/packages/XiHan.Framework.Core"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Core?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
+  <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/vpre/XiHan.Framework.Kernel?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
+  <a href="https://www.nuget.org/packages/XiHan.Framework.Kernel"><img alt="Downloads" src="https://img.shields.io/nuget/dt/XiHan.Framework.Kernel?style=flat-square&logo=nuget&logoColor=white&label=Downloads&color=004880" /></a>
 </p>
 
 
@@ -46,153 +46,160 @@
 
 ## Overview
 
-XiHan.Framework is a modular backend framework for enterprise applications, designed for ASP.NET Core services in a decoupled frontend/backend setup. It prefers what .NET already provides over third-party libraries, and puts the emphasis on clear module boundaries, controlled dependencies and maintainable extension points. Modules declare their dependencies with the `[DependsOn]` attribute and are loaded in topological order; application services plus dynamic API conventions give every module the same way to expose its endpoints.
+XiHan.Framework is a modular .NET framework for enterprise applications. Capabilities are split into independent packages by ring, dependencies are declared by capability ID in each feature's manifest, and a business endpoint is a single protocol-agnostic operation contract served over HTTP, gRPC, MCP and the command line. Every abstraction ships with a default implementation that needs no external infrastructure; switching to another provider only changes package references and configuration.
 
 ## Documentation
 
 | Destination | Contents |
 | --- | --- |
 | [Documentation site](https://framework.docs.xihanfun.com) | Full guides and per-package API docs |
-| [Framework engineering notes](./framework/README.md) | Layered architecture, module catalog, directory layout, dependencies |
+| [Framework engineering notes](./framework/README.md) | Package catalog, samples, gates, directory layout |
+| [Design documents](./design/框架总体方案.md) | Overall design, architecture notes, ADRs |
+| [Specification](https://github.com/XiHanFun/framework-spec) | RFCs, vocabulary, manifest schema, protocol mappings, conformance vectors |
 | [Changelog](https://framework.docs.xihanfun.com/changelog) | Release notes and upgrade advisories |
-| [Contributing guide](./CONTRIBUTING.md) | Branch conventions, commit rules, local build and test |
+| [Contributing guide](https://docs.xihanfun.com/cosmos/contributing) | Branch conventions, commit rules, local build and test |
 
 ## Design Principles
 
-- **Layered architecture** — follow clear layering, no circular dependencies
-- **Dependency inversion** — higher layers do not depend on lower ones; both depend on abstractions
-- **Single responsibility** — each package owns exactly one functional area
-- **Open/closed** — open for extension, closed for modification, customizable through interfaces and base classes
-- **.NET native first** — use the built-ins (DI, logging, serialization) and reach for third-party libraries only when necessary
-- **Performance** — built on the high-performance features of modern .NET; AOT is out of scope (SqlSugar / Castle DynamicProxy, plus Newtonsoft.Json pulled in transitively by SqlSugar, are not trimming-compatible yet)
+- **Ring dependencies** — primitives → kernel → abstractions → implementations → hosting → protocols and plugins → profiles; dependencies only point downward
+- **Capability-based composition** — a feature's manifest declares what it provides and requires, and the capability graph is resolved at startup instead of coupling to package names
+- **Protocol-agnostic** — one operation contract serves many protocols through one pipeline and one schema
+- **Self-sufficient defaults** — every abstraction has an in-memory or file-system implementation that is bounded and passes the conformance suite
+- **Specification first** — public contracts go into an RFC before the code and conformance vectors
+- **Failures are values** — recoverable failures return `Result<T>` instead of throwing
+- **AOT friendly** — the kernel uses no reflection and source-generated serialization, and the SimpleApp sample publishes as Native AOT; providers that need reflection say so in their package notes
 
 ## Tech Stack
 
 | Category | Technology |
 | --- | --- |
-| Runtime | .NET |
+| Runtime | .NET 10 |
 | Language | C# |
-| ORM | SqlSugarCore |
-| Logging | Serilog.AspNetCore |
-| Caching | Microsoft.Extensions.Caching.Hybrid + StackExchangeRedis |
-| AOP | Castle.Core (DynamicProxy) |
-| Cryptography | BouncyCastle.Cryptography |
-| Serialization | System.Text.Json (built-in) |
-| Templating | Scriban |
-| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP |
-| HTTP resilience | Microsoft.Extensions.Http.Polly |
-| gRPC | Grpc.AspNetCore |
-| Realtime | ASP.NET Core SignalR |
-| API docs | Scalar.AspNetCore + Swashbuckle.AspNetCore |
-| IP geolocation | IP2Region.Net |
-| Notifications | MailKit + Telegram.Bot |
-| Search | Elastic.Clients.Elasticsearch |
-| Testing | xunit.v3 + Microsoft.Testing.Platform (with the CodeCoverage extension) |
+| Persistence | In-memory, Entity Framework Core, SqlSugar |
+| Caching | In-memory, Redis, two-level cache |
+| Messaging | In-memory, RabbitMQ, Kafka, CloudEvents envelope |
+| Object storage | File system, S3-compatible services |
+| Security | API key, JWT, OpenID Connect, RBAC |
+| Configuration | .NET configuration, Nacos |
+| Observability | OpenTelemetry |
+| AI | Microsoft.Extensions.AI, Microsoft.Extensions.VectorData |
+| Protocols | HTTP (OpenAPI 3.1), gRPC, MCP, CloudEvents, command line |
+| Plugins | In-process (AssemblyLoadContext), out-of-process (gRPC), Wasm (wasmtime) |
+| Testing | xunit.v3 + Microsoft.Testing.Platform |
 
-Exact versions live in the `PackageReference` entries under `framework/src`.
+Exact versions are in `framework/Directory.Packages.props`.
 
 ## Getting Started
 
 ### Install
 
-Install the modules you need from NuGet:
-
 ```bash
-# Core module
-dotnet add package XiHan.Framework.Core
-
-# Web API module (includes the full middleware pipeline)
-dotnet add package XiHan.Framework.Web.Api
-
-# API documentation module
-dotnet add package XiHan.Framework.Web.Docs
-
-# Data access module
-dotnet add package XiHan.Framework.Data
+dotnet add package XiHan.Framework.Profiles.Minimal --prerelease
+dotnet add package XiHan.Framework.Protocols.Http --prerelease
+dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```
 
-### Define a Module
+Until the preview packages are on NuGet, follow the [quickstart](https://framework.docs.xihanfun.com/quickstart) to reference the source or use a local package source.
 
-Every module derives from `XiHanModule` and declares its dependencies with `[DependsOn]`:
+### Write an operation contract
+
+In the operation ID `greetings.create`, the resource is `greetings` and the verb is `create`, so the HTTP adapter derives `POST /greetings`. The kernel does not serialize through reflection, so request and response types are registered in a source-generated serializer context:
 
 ```csharp
-using XiHan.Framework.Core.Modularity;
-using XiHan.Framework.Web.Api;
-using XiHan.Framework.Data;
-
-[DependsOn(
-    typeof(XiHanWebApiModule),
-    typeof(XiHanDataModule)
-)]
-public class MyAppModule : XiHanModule
+[Operation(Id, Stability = Stability.Experimental, Expose = Expose.Http)]
+public sealed class Greet : IOperation<GreetRequest, GreetResponse>
 {
-    public override Task ConfigureServicesAsync(ServiceConfigurationContext context)
-    {
-        // Register services
-        return Task.CompletedTask;
-    }
+    public const string Id = "greetings.create";
 
-    public override Task OnApplicationInitializationAsync(ApplicationInitializationContext context)
+    public ValueTask<Result<GreetResponse>> HandleAsync(GreetRequest request, InvocationContext context)
+        => ValueTask.FromResult(Result.Success(new GreetResponse($"Hello, {request.Name}!", context.TraceId)));
+}
+
+public sealed record GreetRequest(string Name);
+
+public sealed record GreetResponse(string Message, string TraceId);
+
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(GreetRequest))]
+[JsonSerializable(typeof(GreetResponse))]
+internal sealed partial class AppJsonContext : JsonSerializerContext;
+```
+
+### Write a feature
+
+The manifest declares that this feature requires the kernel's hosting capability, and `Configure` calls the registration method produced by the source generator:
+
+```csharp
+public sealed class GreetingsFeature : IFeature
+{
+    public Manifest Manifest { get; } = new()
     {
-        // Initialize the application
-        return Task.CompletedTask;
-    }
+        Id = "xihan.hello.greetings",
+        Package = "HelloXiHan",
+        Version = "1.0.0",
+        Primitives = 1,
+        Stability = Stability.Experimental,
+        Kind = ManifestKind.Capability,
+        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
+        Entry = typeof(GreetingsFeature).FullName,
+    };
+
+    public void Configure(FeatureContext context) => context.AddGeneratedOperations();
 }
 ```
 
-### Bootstrap the Application
+### Start the application
 
 ```csharp
-using XiHan.Framework.Core.Extensions.DependencyInjection;
-using XiHan.Framework.Web.Core.Extensions.DependencyInjection;
-
 var builder = WebApplication.CreateBuilder(args);
-await builder.AddApplicationAsync<MyAppModule>();
+
+// Hand the features to the kernel: it resolves the capability graph and calls each Configure in topological order
+builder.AddXiHan(xihan => xihan
+    .UseMinimalProfile()
+    .UseFeature<HttpProtocolFeature>()
+    .UseFeature<GreetingsFeature>());
 
 var app = builder.Build();
-await app.InitializeApplicationAsync();
-await app.RunAsync();
+
+app.UseXiHan();            // HTTP requests enter the kernel pipeline
+app.MapXiHanHealth();      // /health/startup, /health/ready, /health/live
+app.MapXiHanOperations();  // Map routes from the operation registry
+
+app.Run();
 ```
 
-### Module Lifecycle
+### Lifecycle and pipeline
 
-Each module exposes 7 lifecycle hooks, executed in topological order:
+The application starts and stops through a state machine, and a failure at any step moves it to `Failed`:
 
 ```text
-Service registration                  Application initialization
-┌──────────────────────┐            ┌────────────────────────────────┐
-│ PreConfigureServices │            │ OnPreApplicationInitialization │
-│ ConfigureServices    │     →      │ OnApplicationInitialization    │
-│ PostConfigureServices│            │ OnPostApplicationInitialization│
-└──────────────────────┘            └────────────────────────────────┘
-                                                  ↓
-                                    ┌────────────────────────────────┐
-                                    │ OnApplicationShutdown          │
-                                    └────────────────────────────────┘
+Declared → Resolved → Configured → Started → Ready → (Degraded) → Draining → Stopped
+```
+
+Every invocation goes through the same pipeline of fixed stages:
+
+```text
+ingress → observe → resilience → authenticate → tenant → authorize → validate → idempotency → transaction → handle → egress
 ```
 
 ## NuGet Packages
 
-Every module is published to [NuGet.org](https://www.nuget.org/packages?q=XiHan.Framework); package names match project names:
-
-```bash
-# Search all XiHan.Framework packages
-dotnet package search XiHan.Framework
-```
+All packages are published to [NuGet.org](https://www.nuget.org/packages?q=XiHan.Framework) under the same name as their project.
 
 | Common package | Purpose |
 | --- | --- |
-| `XiHan.Framework.Core` | Modularity core (required) |
-| `XiHan.Framework.Web.Api` | Full Web API middleware pipeline |
-| `XiHan.Framework.Web.Docs` | Scalar + Swagger documentation |
-| `XiHan.Framework.Data` | SqlSugar data access |
-| `XiHan.Framework.Caching` | HybridCache + Redis |
-| `XiHan.Framework.Authentication` | JWT / OAuth2 authentication |
-| `XiHan.Framework.Authorization` | RBAC authorization |
-| `XiHan.Framework.EventBus` | Event bus + outbox |
-| `XiHan.Framework.AI` | Microsoft.Extensions.AI + MCP |
+| `XiHan.Framework.Profiles.Minimal` | Profile: primitives + kernel + ASP.NET Core host + in-memory localization |
+| `XiHan.Framework.Profiles.Standard` | Profile: Minimal + domain + abstractions and in-memory defaults of five subsystems |
+| `XiHan.Framework.Profiles.Full` | Profile: Standard + object storage, scheduling, auditing, workflow, AI tool bridge, OpenTelemetry and four protocol adapters |
+| `XiHan.Framework.Protocols.Http` | HTTP protocol adapter: routes derived from operation IDs, OpenAPI |
+| `XiHan.Framework.Kernel.Generators` | Source generator: `[Operation]` → registration code and JSON Schema |
+| `XiHan.Framework.Persistence.EntityFrameworkCore` | EF Core provider |
+| `XiHan.Framework.Persistence.SqlSugar` | SqlSugar provider |
+| `XiHan.Framework.Caching.Redis` | Redis provider: shared cache, distributed lock, idempotency |
+| `XiHan.Framework.Messaging.RabbitMQ` | RabbitMQ provider |
+| `XiHan.Framework.Security.Jwt` | JWT Bearer authentication provider |
 
-The full module catalog lives in the [framework engineering notes](./framework/README.md#module-catalog).
+The full catalog is in the [framework engineering notes](./framework/README.md#正式包).
 
 ## Requirements
 
@@ -210,7 +217,7 @@ The full module catalog lives in the [framework engineering notes](./framework/R
 
 ## Contributing
 
-Issues and pull requests are welcome — see the [contributing guide](./CONTRIBUTING.md).
+Issues and pull requests are welcome — see the [contributing guide](https://docs.xihanfun.com/cosmos/contributing).
 
 ## Acknowledgements
 
