@@ -1,379 +1,90 @@
-# 升级与迁移
+# 从 4.x 迁移
 
-新版本部署上去之后，谁来跑那批 SQL、多个节点怎么保证只有一个跑、跑的时候要不要挡住请求——`XiHan.Framework.Upgrade` 把这套动作编排成一条固定流水线。这章讲怎么把它接起来，以及哪几个环节**框架只给了抽象、必须你自己实现**。
+本章面向维护 4.x 应用、考虑转到 5.0 的团队：说明两条版本线的关系、4.x 概念在 5.0 里的对应写法，以及 4.x 中不再由框架提供的能力的替代做法。
 
-## 它做什么，不做什么
+## 两条版本线
 
-升级模块是**编排骨架 + 扩展点**，不是开箱即用的迁移工具。
+5.0 在 `next` 分支从零重写，与 4.x（`framework/`）互不引用，包 ID 前缀相同但版本线从 `5.0.0` 起。4.x 单独维护、继续发布补丁，不提供 4.x 到 5.0 的迁移工具：
 
-| 环节 | 框架提供 | 生产可用性 |
+- 不提供兼容垫片（ADR-0014）：垫片只能省掉模块骨架，省不下迁移的主要工作量。
+- 不提供迁移规则集（ADR-0021）：命令行工具 `xihan migrate <来源版本>` 只保留通用机制，当前没有登记任何规则集，`xihan migrate v4` 返回 `CLI_VALIDATION_002`。
+
+迁移按应用分层重写：装配层（模块 → 特性）与对外接口（动态 API → 操作契约）必须重写；领域模型与数据访问在保留同一 ORM 的前提下改动较小，例如继续用 SqlSugar 时改用 `Persistence.SqlSugar`，SqlSugar 的实体与查询写法可以沿用。
+
+## 概念对照
+
+| 4.x | 5.0 | 详见 |
 | --- | --- | --- |
-| 版本比对与流程编排 | `UpgradeEngine` | 可用 |
-| 脚本发现（按版本目录扫 `*.sql`） | `FileSystemUpgradeScriptProvider` | 可用 |
-| 后台触发与进程内防重入 | `UpgradeCoordinator` | 可用 |
-| 状态查询 | `UpgradeStatusService` | 可用 |
-| **版本存储** | `DefaultUpgradeVersionStore`（进程级静态字典，最多 10000 个租户、每租户 10000 条历史，超限抛 `InvalidOperationException`） | **必须换成数据库实现** |
-| **分布式锁** | `DefaultUpgradeLockProvider`（进程内，最多 10000 个锁条目，满载时获取失败、引擎报「升级锁已被占用」） | **多节点必须换** |
-| **迁移执行器** | `DefaultUpgradeMigrationExecutor` | **必须换**，默认直接抛异常 |
-| 维护模式 | `DefaultUpgradeMaintenanceModeManager` | 只写日志，不拦请求 |
-| 程序文件替换 / 滚动重启 | `NullUpgradeFileUpdater` / `NullRollingRestartCoordinator` | 空实现 |
-| 多租户遍历 | `DefaultUpgradeTenantProvider` | 只返回**当前**租户，不遍历租户库 |
+| `XiHanModule` 基类 | 实现 `IFeature` 的类，带 `Manifest` | [能力包与清单](./modularity) |
+| `[DependsOn(typeof(XxxModule))]` | 清单 `Requires`：按能力 ID 与接口版本声明依赖 | [能力包与清单](./modularity) |
+| `ConfigureServicesAsync` 等 7 个生命周期钩子 | `Configure(FeatureContext)` 一个方法；启动与停止实现 `IHostedFeature` | [生命周期与健康](./lifecycle) |
+| `AddApplicationAsync<TModule>()` + `InitializeApplicationAsync()` | `builder.AddXiHan(x => x.UseFeature<T>())` + `app.UseXiHan()` | [宿主与 Web 应用](./web) |
+| `ITransientDependency` 等注入标记接口、约定注册 | 在 `Configure` 里显式注册；仓储与操作的登记由源生成器生成 | [依赖注入](./dependency-injection) |
+| Castle 动态代理、拦截器、AOP 特性 | 固定阶段的管道中间件 | [执行管道](./pipeline) |
+| `[DynamicApi]` 应用服务、`ApplicationServiceBase` | 一个操作一个类：`[Operation]` + `IOperation<TRequest, TResponse>`，一份契约经 HTTP / gRPC / MCP / 命令行暴露 | [操作契约](./operations) |
+| 统一响应信封与返回码 | 成功直接返回响应对象；失败返回 `Error`，宿主翻译成 RFC 9457 Problem Details | [结果与错误](./errors) |
+| 运行期 DataAnnotations 校验 | 注解在编译期折进 JSON Schema，Validate 阶段执行，加 `IValidatableObject` 自校验 | [数据校验](./validation) |
+| 实体基类（多层继承） | 实体协议接口组合：`IEntity<TKey>`、`IAggregateRoot<TKey>`、`IMultiTenant`、`ISoftDeletable`、`IHasCreationTime` 等 | [领域模型](./domain) |
+| `Data` 包（绑定 SqlSugar） | `Persistence.Abstractions` 的仓储与查询，Provider 选 `InMemory`、`EntityFrameworkCore` 或 `SqlSugar` | [持久化](./persistence) |
+| `Data` 的 `IDynamicConnectionRegistrar`、`IDatabaseMetadataProvider`；扫描 `[SugarTable]` 认出已有实体 | `Persistence.Abstractions` 的 `DataSourceRegistry`（运行时数据源：按定义登记、定义变了替换、`RemoveAsync` 失效、测试连接）、`ISchemaReader`（表与列、分表折叠）、`IEntityCatalog`（已登记实体的表、列、协议、索引）；SqlSugar 实现 | [持久化](./persistence#运行时数据源) |
+| `[UnitOfWork]`、`IUnitOfWorkManager` | Transaction 阶段：每次操作调用一个工作单元；管道外显式开启 `IUnitOfWork` | [工作单元与事务](./uow) |
+| `ICurrentUser`、`ICurrentTenant` | 调用上下文：`context.GetSecurity()` 的主体与租户；调用链深处用 `IInvocationAccessor` | [依赖注入](./dependency-injection#取得当前调用的上下文) |
+| `[PermissionAuthorize]`、`[Authorize]` | 操作契约的 `Permission` / `Policy`，Authorize 阶段判定；权限码先用 `AddPermission` 登记 | [授权](./authorization) |
+| `Authentication` 包（JWT 等） | `Security.Jwt`、`Security.OpenIdConnect`，或应用自己实现认证处理器 | [认证](./authentication) |
+| `MultiTenancy` 包 | `MultiTenancy.*`：Tenant 阶段、租户存储、租户分片 | [多租户](./multi-tenancy) |
+| `Caching`（HybridCache、`IDistributedCache<T>`、`[Cacheable]`） | `Caching.*`：`ICacheStore`、`ICache`、`ISharedCache`、分布式锁、两级缓存；声明式缓存特性不再提供 | [缓存与分布式锁](./caching) |
+| `EventBus`、`ILocalEventBus`、`ILocalEventHandler<T>` | `Messaging.*`：`IMessagePublisher`、`IMessageHandler`、发件箱；领域事件经 `AddDomainEvent` 映射成消息 | [消息与事件](./messaging) |
+| `Tasks`（后台任务、作业） | `Scheduling.*`：作业与触发器、cron、集群分发、领导选举 | [调度与后台作业](./scheduling) |
+| `Workflow` | `Workflow.*`：JSON 定义模型、引擎、用户任务 | [工作流](./workflow) |
+| `ObjectStorage` | `ObjectStorage.*`：`IBlobStore`、文件系统与 S3 | [对象存储](./storage) |
+| `Localization`（`{ resource, culture, texts }` 资源文件） | 每种语言一个 `Localization/<区域>.json`，平铺消息键；代码只引用键常量 | [国际化](./localization) |
+| `Auditing` | `Auditing.*`：Observe 阶段审计中间件与查询 | [审计](./auditing) |
+| `Logging`（Serilog）、`Observability` | `Microsoft.Extensions.Logging` 与 `System.Diagnostics`；导出用 `Observability.OpenTelemetry` | [可观测性](./observability) |
+| `DistributedIds` | `IIdGenerator<T>`，雪花标识 `SnowflakeIdGenerator` | [标识生成](./distributed-ids) |
+| `AI` 与 `Web.Mcp` | `AI.*`（基于 `Microsoft.Extensions.AI`）与 `Protocols.Mcp` | [AI](./ai) |
+| `Web.Grpc` | `Protocols.Grpc`：由操作的 Schema 推出 protobuf | [gRPC、MCP 与 CloudEvents](./protocols) |
+| `Web.Docs`（Scalar、Swagger UI） | `Protocols.Http` 的 `MapXiHanOpenApi()` 发布 OpenAPI 3.1；文档界面由应用自选 | [HTTP 与 OpenAPI](./http) |
+| `IClock` | `TimeProvider` | [依赖注入](./dependency-injection#时间与测试替身) |
+| `Utils`、`Threading`、`Timing` | .NET 基础类库 | — |
 
-::: danger 不实现迁移执行器就等于没启用
-`DefaultUpgradeMigrationExecutor.ExecuteAsync` 的唯一行为是抛 `InvalidOperationException`（"未配置 IUpgradeMigrationExecutor 实现…"）。只要有一个待执行脚本，升级就会失败并置为 `Failed`。
-:::
+## 不再由框架提供的能力
 
-它和 `DbInitializer` 的分工要分清：建库建表用 `DbInitializer`（表存在就跳过、**从不补列**，见 [数据访问](./data)），**结构变更只能靠这里的迁移脚本**。
+下列能力在 5.0 不再包装，原因是它们属于应用层需求，或 .NET 与成熟的专门组件已经覆盖。开发指南不再为它们设章节。
 
-## 安装与启用
-
-```bash
-dotnet add package XiHan.Framework.Upgrade
-```
-
-```csharp
-[DependsOn(typeof(XiHanUpgradeModule))]
-public class MyAppModule : XiHanModule { }
-```
-
-模块的 `ConfigureServices` 调 `AddXiHanUpgrade(config)`，绑定配置节 `XiHan:Upgrade`，并对全部扩展点做 `TryAdd` 注册——所以你只需要 `Replace` 想换的那几个。
-
-## 组织迁移脚本
-
-默认脚本源扫描 `MigrationsRootPath`（默认 `migrations`；相对路径基于 `AppContext.BaseDirectory`，绝对路径原样使用）：
-
-```text
-migrations/
-├── 1.0.0/
-│   ├── 001_init.sql
-│   └── 002_seed.sql
-├── 1.1.0/
-│   └── 001_add_column.sql
-└── 2.0.0/
-    └── 001_refactor.sql
-```
-
-约定与判定规则：
-
-| 规则 | 说明 |
+| 4.x 能力 | 5.0 的替代做法 |
 | --- | --- |
-| 一级子目录名 = 版本号 | 必须能被 `SemanticVersion.TryParse` 解析，**解析不了的目录直接跳过，不报错** |
-| 只取版本目录下的 `*.sql` | `TopDirectoryOnly`，版本目录内的**再下一级子目录不会被扫描** |
-| 排序 | 先按版本语义排，同版本内按文件名 `OrdinalIgnoreCase` 排 |
-| 事务粒度 | 一个脚本一次 `IUpgradeMigrationExecutor.ExecuteAsync`，**同版本内多个脚本不是同一个事务** |
-
-::: warning 目录名不能带 `v` 前缀
-`SemanticVersion.TryParse` 只认 `主.次.修订` 三段数字，缺省段补 0（`1.2` → `1.2.0`），`-` 后的预发布后缀被截断丢弃。`v1.2.0` 里的 `v1` 解析失败 → 整个目录被静默跳过。
-:::
-
-需要从数据库、嵌入资源等别处取脚本时，实现 `IUpgradeScriptProvider` 并用 `AddUpgradeScriptProvider<T>()` 追加——引擎会**合并所有 provider** 的脚本一起排序。
-
-## 触发一次升级
-
-两种入口，语义不同：
-
-| 入口 | 行为 | 用在哪 |
-| --- | --- | --- |
-| `IUpgradeEngine.ExecuteAsync(ct)` | **同步等完**，返回真实结果 | 运维脚本、可控的启动流程 |
-| `IUpgradeCoordinator.StartAsync()` | `Task.Run` 后台跑，**立即返回** `Started=true` / `Status=Upgrading` | 管理端接口（HTTP 不能挂住等迁移） |
-
-```csharp
-public class UpgradeAppService(
-    IUpgradeCoordinator coordinator,
-    IUpgradeStatusService statusService)
-{
-    // 触发：立即返回，真实结果只写日志
-    public Task<UpgradeStartResult> StartAsync() => coordinator.StartAsync();
-
-    // 轮询：前端拿这个查进度
-    public Task<UpgradeVersionSnapshot> GetSnapshotAsync(string? clientVersion = null)
-        => statusService.GetVersionSnapshotAsync(clientVersion);
-}
-```
-
-::: tip 协调器的返回值不代表升级成功
-`StartAsync` 只告诉你「任务起没起来」。引擎的执行结果（完成 / 失败 / 无需升级）只落到日志，**调用方必须靠 `IUpgradeStatusService` 轮询**。上一次任务未完成时再调，返回 `Started=false` / `Message="升级任务正在执行"`，不会并发起第二个。这是**进程内**防重入，跨节点靠分布式锁。
-:::
-
-## 关键机制
-
-### 三个版本，两个判定
-
-| 名字 | 来源 |
-| --- | --- |
-| 当前应用版本 | `AppVersion` 选项；为空取入口程序集版本 `ToString(3)`，再取不到用 `0.0.0` |
-| 记录的应用版本 / 数据库版本 | `IUpgradeVersionStore.GetOrCreateAsync` 返回的 `UpgradeVersionState` |
-| 最新脚本版本 | 所有 provider 脚本里的最大版本；无脚本时为 `0.0.0` |
-
-```text
-needDbUpgrade  = 记录DbVersion  < 最新脚本版本
-needAppUpgrade = 记录AppVersion < 当前应用版本
-需要升级 = 二者任一为真
-```
-
-两者都为假就直接返回 `Started=false` / `Status=Normal` / `"无需升级"`，连锁都不抢。只有应用版本变、没有新脚本时，流程照走一遍，只是不执行迁移、单纯把记录的 `AppVersion` 推上去。
-
-`MinSupportVersion` **不参与**上面的判定。它只有两个用处：写进版本记录；以及 `GetVersionSnapshotAsync(clientVersion)` 里拿 `clientVersion` 跟它比，得出 `ForceUpgrade` / `IsCompatible`——那是给**客户端**（前端、App）做版本门禁的，和服务端自身升不升级无关。
-
-### 分布式锁与多节点协调
-
-节点进入升级前要过两道门：
-
-1. **主节点门控**：配了 `PrimaryNodeName` 且当前节点名不匹配 → 直接返回 `Normal` / `"当前节点非主节点，等待升级"`。不配则每个节点都视为主节点。
-2. **抢锁**：`TryAcquireLockAsync(resourceKey, LockExpirySeconds, nodeName)`。资源键为 `LockResourceKey`；版本记录的 `TenantId` 大于 0（即当前处于某个业务租户）时追加 `:Tenant_{租户Id}` 后缀，平台（`null` 或 `0`）共用 `LockResourceKey` 本身，与 `EnableMultiTenantIsolation` 开没开无关。
-
-节点名的解析顺序是 `NodeName` 选项 → `机器名-实例Id`。实例 Id 每次进程启动都会变，所以**要用 `PrimaryNodeName` 就必须同时显式配 `NodeName`**，否则永远匹配不上，谁都不升级。
-
-::: warning 「其余节点等待」是不执行，不是阻塞等
-抢锁是**单次尝试、不阻塞、不重试**。抢不到的节点立刻返回 `Started=false` / `Status=Upgrading` / `"升级锁已被占用"` 就结束了——它不会等迁移完再继续，也没有任何就绪门禁拦着它对着尚未迁移的库提供服务。要「等」得自己在启动流程里轮询 `IUpgradeStatusService.GetUpgradeStatusAsync()`。
-:::
-
-锁令牌是 `IAsyncDisposable`：引擎用 `await using` 兜底，正常路径和异常路径都会显式 `ReleaseAsync()`（幂等）。`LockExpirySeconds`（默认 600）是防止持有者崩溃后死锁的兜底过期，**迁移比它慢就会被别的节点抢走**——大批量脚本要调大。
-
-### 幂等靠迁移历史，不靠版本号
-
-引擎先按 `脚本版本 > 当前DbVersion` 粗筛，再逐条问 `HasMigrationHistoryAsync(version, scriptName)`，命中就跳过。执行完成或失败**都会**写一条 `UpgradeMigrationHistory`（失败的带 `ErrorMessage`），随后按版本分组推进 `UpdateDbVersionAsync`。
-
-::: danger 已发布版本目录里的脚本内容不能改
-去重键是 `(版本, 脚本名)`，**不看内容**。改了内容不改文件名，只会被判定为已执行而跳过。要补改动就加新脚本、新版本目录。
-:::
-
-内置内存实现只把 `Success = true` 的记录算作「已执行」，所以失败的脚本重跑时会**重来一遍**——自定义存储实现应保持同一语义，同时脚本本身要写成可重入的。
-
-一个脚本抛异常即整体中止：置 `Failed` 状态、退出维护模式、释放锁。已成功的脚本靠历史去重不会重跑，`DbVersion` 停在最后一个**完整完成**的版本组上。
-
-### 实现 `IUpgradeVersionStore` 的隐性契约
-
-引擎在迁移结束后是这样回写完成状态的：
-
-```csharp
-await _versionStore.SetUpgradeCompletedAsync(version, currentAppVersion, version.DbVersion, cancellationToken);
-```
-
-第三个参数取自**传进去的那个 `UpgradeVersionState` 实例**。
-
-::: danger 存储实现必须把新值写回入参实例
-如果 `UpdateDbVersionAsync` 只更新了数据库、没有同步修改传入的 `version` 对象，那么 `version.DbVersion` 仍是本轮开始时的旧值，完成时会被原样写回去——数据库版本永远推不上去，每次启动都判定「需要升级」。内置实现通过把状态复制回入参来满足这一点，自定义实现照做。
-
-同理，`GetOrCreateAsync` 必须**按当前租户上下文分区**（内置实现用 `tenant:{id}` / `host` 作键），否则多租户下版本记录会串。平台就是 0 号租户：无租户上下文与 `Change(0)` 必须落同一个平台分区（内置实现都落 `host`，记录的 `TenantId` 为 0），与升级锁同一口径，否则平台会出现两份版本记录与迁移历史。
-:::
-
-### 维护模式
-
-`EnableMaintenanceMode`（默认 `true`）决定是否在迁移前后调 `EnterAsync` / `ExitAsync`。默认实现只打一行日志，**没有任何请求被拦下**——真要挡流量得自己实现管理器加中间件：
-
-```csharp
-public sealed class MaintenanceFlag
-{
-    private int _value;
-    public bool IsOn => Volatile.Read(ref _value) == 1;
-    public void Set(bool on) => Volatile.Write(ref _value, on ? 1 : 0);
-}
-
-public class FlagMaintenanceModeManager(MaintenanceFlag flag) : IUpgradeMaintenanceModeManager
-{
-    public Task EnterAsync(CancellationToken cancellationToken = default)
-    {
-        flag.Set(true);
-        return Task.CompletedTask;
-    }
-
-    public Task ExitAsync(CancellationToken cancellationToken = default)
-    {
-        flag.Set(false);
-        return Task.CompletedTask;
-    }
-}
-```
-
-::: warning 进程内标志只挡得住执行升级的那个节点
-`EnterAsync` 只在抢到锁的节点上被调用。要全集群进维护模式，标志必须放共享存储（缓存 / 数据库），并让每个节点自己读。
-:::
-
-退出时机固定在「迁移完成、版本回写、可选文件替换之后，释放锁之前」；异常路径也会退出维护模式。`EnableFileUpdate`（默认 `false`）和 `EnableRollingRestart`（默认 `false`）对应的两个默认实现都是空的，开了也不会发生任何事——需要就自己实现 `IUpgradeFileUpdater` / `IRollingRestartCoordinator`。
-
-### 与数据库初始化的先后
-
-建表只建缺失的表、不改已存在的表，存量表的新列靠升级脚本补；而种子按最新实体读写。升级模块自己在 `OnPostApplicationInitializationAsync` 里跑（见下文「启动自动升级」），那时种子早已执行完——存量库上新加的列还没补，种子一查就失败。
-
-同时用了数据模块的建表与播种时，把升级引擎接到数据模块的 `IDbSchemaUpgrader` 上：数据库初始化会在「全部连接建表之后、任何播种之前」调它，升级模块稍后再检查一次时版本已是最新、空转。
-
-```csharp
-public sealed class AppSchemaUpgrader(IUpgradeStatusService status, IUpgradeEngine engine) : IDbSchemaUpgrader
-{
-    public async Task UpgradeAsync(DbSchemaUpgradeContext context, CancellationToken cancellationToken = default)
-    {
-        // 本次从零建出全部实体表的库本就是最新结构：登记为最新版本，不补跑历史脚本
-        if (context.IsFresh("Default"))
-        {
-            _ = await engine.BaselineAsync(cancellationToken);
-        }
-
-        await status.EnsureInitializedAsync();
-        var result = await engine.ExecuteAsync(cancellationToken);
-        if (result.Status == UpgradeStatus.Failed)
-        {
-            throw new InvalidOperationException(result.Message);
-        }
-    }
-}
-```
-
-新建的库（`DbSchemaUpgradeContext.IsFresh`）要先 `BaselineAsync` 再 `EnsureInitializedAsync`：后者对没有版本记录的库按 `0.0.0` 建记录，引擎随即把全部历史脚本在最新结构上跑一遍。登记之后，历史脚本只在它所属版本之前建的库上执行，脚本按当时的结构写即可，不能依赖种子数据。
-
-### 启动自动升级
-
-`EnableAutoCheckOnStartup`（默认 `true`）门控的是 `XiHanUpgradeModule.OnPostApplicationInitializationAsync`：它建一个 Scope，解析 `IUpgradeVersionStore` 与 `IUpgradeStatusService`（任一缺失即返回），调 `EnsureInitializedAsync()` 建出版本记录，再同步执行 `IUpgradeEngine.ExecuteAsync`。
-
-::: warning 升级失败即中断启动
-这里走引擎而不是 `IUpgradeCoordinator`：后者把执行丢进 `Task.Run` 且吞掉异常，应用会带着半迁移的结构对外服务。引擎返回 `Failed` 时直接抛出，启动中断。
-:::
-
-### 多租户隔离升级
-
-`EnableMultiTenantIsolation`（默认 `false`）为真时，引擎遍历 `IUpgradeTenantProvider.GetTenants()`，逐个 `ICurrentTenant.Change(TenantId, Name)` 后跑完整流程，任一租户 `Failed` 立即中止并返回该结果。
-
-两个要注意的地方：
-
-- 默认 `DefaultUpgradeTenantProvider` 返回的是**一条**记录——当前 `ICurrentTenant` 的 Id 与名称（平台即 `(null, null)`）。要「逐全体租户」批量升级，必须自己实现 `IUpgradeTenantProvider` 从租户仓储读全量列表。
-- 全部租户跑完后返回的固定是 `Started=true` / `Completed` / `"多租户升级完成"`，**即使每个租户实际都是「无需升级」或「锁被占用」**。要判断实情看日志与各租户状态。
-
-## 配置
-
-配置节 `XiHan:Upgrade`（`XiHanUpgradeOptions.SectionName`）。按决策看，只有这几组需要你想清楚：
-
-| 决策 | 相关键 | 说明 |
-| --- | --- | --- |
-| 版本从哪来 | `AppVersion` | 留空则取入口程序集版本；CI 里想精确控制就显式配 |
-| 脚本放哪 | `MigrationsRootPath` | 默认 `migrations`，相对于 `AppContext.BaseDirectory`。记得让 `.sql` 随发布输出 |
-| 谁来升 | `NodeName` + `PrimaryNodeName` | 要指定主节点就**两个一起配**；不配 `PrimaryNodeName` 则全员候选、靠锁串行 |
-| 锁多久过期 | `LockResourceKey`、`LockExpirySeconds` | 默认 `SystemUpgrade` / 600 秒；迁移可能更久就调大 |
-| 升级时的运维动作 | `EnableMaintenanceMode`、`EnableFileUpdate`、`EnableRollingRestart` | 后两个默认关；开之前先确认对应实现已替换 |
-| 多租户 | `EnableMultiTenantIsolation` | 开之前先换掉 `IUpgradeTenantProvider` |
-
-```json
-{
-  "XiHan": {
-    "Upgrade": {
-      "MigrationsRootPath": "migrations",
-      "NodeName": "node-01",
-      "PrimaryNodeName": "node-01",
-      "LockExpirySeconds": 1800,
-      "EnableAutoCheckOnStartup": true,
-      "EnableMaintenanceMode": true
-    }
-  }
-}
-```
-
-::: tip `ConnectionConfigId` 是留给你读的
-这个键在升级包内部**没有任何消费方**。它的用途是让你在自己的 `IUpgradeMigrationExecutor` / `IUpgradeVersionStore` 实现里读出来，决定连哪个库。
-:::
-
-完整配置项与 API 清单见 [Upgrade 包](../packages/upgrade)。
-
-## 接上生产必需的三件
-
-### 迁移执行器
-
-默认注册是 **Singleton**，而实现通常要依赖 Scoped 的数据访问服务——用 Scoped 描述符替换即可（`IUpgradeEngine` 本身是 Scoped，能消费）：
-
-```csharp
-public class SqlSugarUpgradeMigrationExecutor(
-    ISqlSugarClientResolver resolver,
-    IOptions<XiHanUpgradeOptions> options) : IUpgradeMigrationExecutor
-{
-    public async Task ExecuteAsync(string sql, CancellationToken cancellationToken = default)
-    {
-        var configId = options.Value.ConnectionConfigId;
-        var client = string.IsNullOrWhiteSpace(configId)
-            ? resolver.GetCurrentClient()
-            : resolver.GetClient(configId);
-
-        await client.Ado.BeginTranAsync();
-        try
-        {
-            await client.Ado.ExecuteCommandAsync(sql);
-            await client.Ado.CommitTranAsync();
-        }
-        catch
-        {
-            await client.Ado.RollbackTranAsync();
-            throw;
-        }
-    }
-}
-```
-
-```csharp
-services.Replace(ServiceDescriptor.Scoped<IUpgradeMigrationExecutor, SqlSugarUpgradeMigrationExecutor>());
-```
-
-### 分布式锁
-
-`IUpgradeLockProvider` 和缓存包的 `IDistributedLock` 形状几乎一致，写个适配器即可（升级包不依赖缓存包，适配器放应用层）：
-
-```csharp
-public class DistributedUpgradeLockProvider(IDistributedLock distributedLock) : IUpgradeLockProvider
-{
-    public async Task<IUpgradeLockToken?> TryAcquireLockAsync(
-        string resourceKey, TimeSpan expiry, string nodeName, CancellationToken cancellationToken = default)
-    {
-        var handle = await distributedLock.TryAcquireAsync(resourceKey, expiry, cancellationToken);
-        return handle is null ? null : new Token(handle);
-    }
-
-    private sealed class Token(IDistributedLockHandle handle) : IUpgradeLockToken
-    {
-        public string ResourceKey => handle.ResourceKey;
-        public string LockId => handle.LockId;
-        public bool IsReleased => handle.IsReleased;
-        public Task ReleaseAsync() => handle.ReleaseAsync();
-        public ValueTask DisposeAsync() => handle.DisposeAsync();
-    }
-}
-```
-
-```csharp
-services.Replace(ServiceDescriptor.Singleton<IUpgradeLockProvider, DistributedUpgradeLockProvider>());
-```
-
-::: warning 没接 Redis 时 `IDistributedLock` 本身也会退化成进程内锁
-换了适配器不等于就有分布式锁了，底座得真接上 Redis。见 [缓存与分布式锁](./caching)。
-:::
-
-### 版本存储
-
-实现 `IUpgradeVersionStore` 的 10 个方法（含新库基线登记用的 `TryCreateBaselineAsync`），把版本状态和迁移历史落库，并遵守上面那条「写回入参实例 + 按租户分区」的契约：
-
-```csharp
-services.Replace(ServiceDescriptor.Scoped<IUpgradeVersionStore, SqlSugarUpgradeVersionStore>());
-```
-
-::: danger 默认存储进程重启即丢
-`DefaultUpgradeVersionStore` 虽然注册为 Scoped，内部却是有界 `static` 字典（最多 10000 个租户、每租户 10000 条迁移历史，按 `tenant:{id}` / `host` 分区，租户 Id 为 `null` 与 `0` 同落 `host`）——同进程内跨请求可见，但进程一停全部归零，下次启动会把所有脚本当成没跑过（此时只有脚本自身的可重入性兜底）。
-:::
-
-## 常见问题
-
-| 现象 | 原因 |
-| --- | --- |
-| 升级失败，日志写「未配置 IUpgradeMigrationExecutor 实现」 | 没替换迁移执行器 |
-| 启动没报错，但库结构没变 | 启动自动检查只建版本记录，得显式触发升级 |
-| 脚本目录明明有文件却一条都不执行 | 版本目录名解析不了（带 `v` 前缀、非数字段）而被静默跳过；或脚本没随发布输出到 `AppContext.BaseDirectory` |
-| 每次启动都判定「需要升级」 | 存储实现的 `UpdateDbVersionAsync` 没把新版本写回入参 `UpgradeVersionState` |
-| 改了已发布脚本的内容，重新部署没生效 | 去重键是 `(版本, 脚本名)`，不看内容。加新脚本 |
-| 配了 `PrimaryNodeName` 后谁都不升级 | 没同时配 `NodeName`，默认节点名里的实例 Id 每次启动都变 |
-| 多节点同时启动，几个节点都在跑迁移 | 锁还是默认的进程内实现 |
-| 迁移跑到一半被另一个节点抢了锁 | 迁移耗时超过 `LockExpirySeconds` |
-| 维护模式开了但请求照进 | 默认管理器只写日志；且进程内标志只对执行升级的那个节点生效 |
-| 状态一直是 `Failed` | 最新一条迁移历史是失败记录，需要新的成功记录才会翻转 |
-| 多租户模式返回「多租户升级完成」但什么都没做 | 该返回值是固定的，逐租户实情看日志；默认租户提供者也只返回当前一个租户 |
-
-## 下一步
-
-- [数据访问](./data)：`DbInitializer` 建表边界，为什么结构变更要走脚本
-- [多租户](./multi-tenancy)：`ICurrentTenant.Change` 与租户上下文
-- [缓存与分布式锁](./caching)：`IDistributedLock` 的行为与退化条件
-- [模块生命周期](./lifecycle)：`OnPostApplicationInitializationAsync` 的执行时机
-- [Upgrade 包](../packages/upgrade)：完整 API 与配置表
+| 机器人 `Bot` 与六个渠道（邮件、短信、Telegram、钉钉、飞书、企业微信） | 应用直接使用各渠道的 SDK 或 HTTP 接口，封装成应用自己的服务；需要异步发送时经消息子系统投递 |
+| 消息通知 `Messaging`（4.x 的通知渠道） | 同上。5.0 的 `Messaging` 是队列、流与发布订阅子系统，不是通知渠道 |
+| 实时通信 `Web.RealTime`（SignalR 封装） | 直接使用 ASP.NET Core SignalR，Hub 的认证经 `XiHan` 认证方案交给内核，见[实时通信](./realtime) |
+| 网关 `Web.Gateway` 与流量治理 `Traffic` | 反向代理与转发用 YARP 等专门组件；按操作的熔断、限流、并发上限由内核的 Resilience 阶段提供，见[弹性与限流](./resilience) |
+| 模板引擎 `Templating` | 直接使用 Scriban、Fluid 等模板库 |
+| 脚本引擎 `Script` | 不提供。需要隔离执行第三方逻辑时用插件，见[插件](./plugins) |
+| 搜索引擎 `SearchEngines` | 5.0 未提供，直接使用 Elasticsearch、OpenSearch 等的官方客户端 |
+| HTTP 客户端 `Http` | 使用 `IHttpClientFactory` 与 `Microsoft.Extensions.Http.Resilience` |
+| 数据加解密 `Security`（4.x 的加密工具） | 使用 `System.Security.Cryptography` 与 ASP.NET Core Data Protection。5.0 的 `Security` 是认证与授权子系统 |
+| 对象映射 `ObjectMapping` | 显式映射，或编译期生成代码的映射库，见[序列化与 Native AOT](./aot#对象映射) |
+| 序列化封装 `Serialization` | 直接使用 System.Text.Json 的源生成上下文 |
+| 虚拟文件系统 `VirtualFileSystem` | 使用 .NET 的 `IFileProvider` 与嵌入资源 |
+| 设置 `Settings` | 使用 .NET 配置与 `IOptionsMonitor`，远程配置见[配置与选项](./configuration) |
+| 升级引擎 `Upgrade` | 版本升级编排由应用实现，需要单点执行时用调度子系统的领导选举 |
+| 开发工具 `DevTools` | 命令行宿主的 `graph`、`pipeline`、`operations`、`invoke` 与 `xihan` 工具，见[命令行宿主](./command-line) |
+
+## 迁移顺序建议
+
+1. 清理 4.x 应用里只出现在 `[DependsOn]`、代码并未使用的模块引用，减少迁移面。
+2. 选定持久化 Provider。保留 SqlSugar 时先接 `Persistence.SqlSugar`，数据层改动最小。
+3. 每个 4.x 模块改写成一个特性：清单按能力 ID 写依赖，`Configure` 里显式注册原来靠约定注册的服务。
+4. 实体改为实现 5.0 的实体协议接口；4.x 的应用层基类可以保留，只替换它们实现的框架接口与字段名（如创建时间改为 `CreatedAt`、租户标识改为字符串）。
+5. 动态 API 的每个公开方法改写成一个操作类，DTO 原样作为请求与响应类型，登记到 `JsonSerializerContext`；`[PermissionAuthorize]` 的权限码进 `[Operation(Permission = ...)]`。
+6. `ICurrentUser` / `ICurrentTenant` 的调用点保留，在应用层写一层基于 `IInvocationAccessor` 的同名包装。
+7. 本地事件处理器改为 `IMessageHandler`，领域事件用 `AddDomainEvent` 登记主题。
+8. 本地化资源转换成每种语言一个 JSON 文件，代码里的字符串文案换成消息键常量。
+9. 从 Standard 组合跑通全部操作后，再逐个换上生产用的 Provider。
+
+基于 4.x 构建的 XiHan.BasicApp 6.0 正在按这个顺序接入 5.0，可作为参照。
+
+## 相关
+
+- [框架概述](../overview)
+- [更新日志](../changelog)
+- 设计记录：ADR-0014《取消 V4 垫片》、ADR-0021《撤掉 4.x 迁移规则集》

@@ -1,36 +1,41 @@
 # XiHan.Framework.Localization.Abstractions
 
-## 概述
-XiHan.Framework.Localization.Abstractions 提供本地化能力的抽象契约，定义资源获取、文化信息与本地化服务接口。
+本地化契约（Ring 2）。能力 `localization.resources@1` 由 Provider 提供。默认语言英文（`en-US`），内置与 XiHan.UI 相同的 10 种区域（RFC-0010）。
 
-## 核心能力
-- 本地化资源访问的统一接口
-- 文化信息与语言切换的基础约定
-- 与应用层服务的协作契约
+| 契约 | 用途 |
+| --- | --- |
+| `SupportedLocales` | 10 种内置区域：`en-US`（默认）、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`、`de-DE`、`es-ES`、`fr-FR`、`pt-BR`、`ru-RU` |
+| `LocaleName` | BCP 47 形态的区域名文法与规范化（`zh-cn` → `zh-CN`） |
+| `LocalizationOptions` | 默认区域、启用的区域列表、从候选（Baggage `xihan.locale`、`Accept-Language`）协商区域 |
+| `MessageCatalog` | 消息键 → 区域 → 模板的只读目录；`FromEmbeddedResources` 装载一个程序集嵌入的全部 `Localization/<区域>.json` |
+| `IMessageLocalizer` | 显式区域的解析入口：`Resolve` 给出文案与实际命中的区域，`Localize` 退回键与参数的描述；回退链：精确区域 → 同语言 → 默认区域 → `en-US` |
+| `LocalizedText` | 一次解析的文案与命中区域，宿主据此设置 `Content-Language` |
+| `context.Localize(key, arguments)` | 在调用上下文上按其区域解析（没有装配本地化时返回描述） |
+| `AddMessageCatalog` | 注册目录：同名目录合并为一份（内容相同不变，互为补充取并集），同一键同一区域的模板不同抛出 `LOCALIZATION_CONFLICT_001`（启动失败） |
 
-## 依赖关系
-- 通过 `XiHanLocalizationAbstractionsModule` 参与模块化生命周期
-- 依赖关系通过 `DependsOn` 进行组合，具体依赖以模块类声明为准
+消息键、模板语法、`key.L()` 与 `MessageScope` 在原语层：
 
-## 配置与约定
-- 抽象层不包含具体资源实现
-- 资源命名与组织规范由业务模块统一约定
-
-## 使用方式
 ```csharp
-[DependsOn(typeof(XiHanLocalizationAbstractionsModule))]
-public class MyModule : XiHanModule
+public static class OrdersMessages                     // 只定义键，文案在 Localization/<区域>.json
 {
+    public const string NotFound = "orders.order.not_found";
 }
+
+// Localization/en-US.json: { "orders.order.not_found": "Order '{id}' was not found." }
+// Localization/zh-CN.json: { "orders.order.not_found": "订单 '{id}' 不存在。" }
+
+services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("orders", typeof(OrdersMessages)));
+
+var text = OrdersMessages.NotFound.L(("id", id));      // 调用链里是调用方语言，其他地方是默认语言
+return Error.NotFound("ORDERS_NOTFOUND_001", OrdersMessages.NotFound, MessageArguments.Of(("id", id)));  // 宿主在 Egress 翻译
 ```
 
-## 扩展点
-- 本地化资源提供者实现
-- 自定义文化解析与回退策略
+区域名不合法没有单独的错误码：API 参数与选项里的是编程或配置错误，抛出 `ArgumentException`；语言文件名不合法归 `LOCALIZATION_VALIDATION_002`；Baggage 与 `Accept-Language` 里的在协商中忽略（RFC-0010，ADR-0070）。
 
-## 目录结构
-```text
-XiHan.Framework.Localization.Abstractions/
-  README.md
-  XiHanLocalizationAbstractionsModule.cs
-```
+## 依赖方向
+
+依赖 `XiHan.Framework.Kernel`。被各子系统的抽象包、`Hosting.AspNetCore` 与 `Profiles.Minimal` 引用。
+
+## 状态
+
+P2：可用。

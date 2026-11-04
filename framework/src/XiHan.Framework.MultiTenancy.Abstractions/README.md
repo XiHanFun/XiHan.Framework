@@ -1,36 +1,26 @@
 # XiHan.Framework.MultiTenancy.Abstractions
 
-## 概述
-XiHan.Framework.MultiTenancy.Abstractions 提供多租户能力的抽象契约，包括租户上下文、解析与隔离的接口定义。
+多租户契约（Ring 2）。能力 `multitenancy.context@1`（租户解析、校验与存储）与 `multitenancy.sharding@1`（按租户选择数据连接）由 Provider 提供。
 
-## 核心能力
-- 当前租户上下文与切换接口
-- 租户解析与识别的基础契约
-- 多租户相关特性与配置模型
+| 契约 | 用途 |
+| --- | --- |
+| `TenantInfo`、`TenantIdentifier` | 租户信息（ID、显示名、是否启用、属性）与 ID 文法 |
+| `ITenantStore` | 按 ID 查找与枚举租户；Provider 实现它 |
+| `ITenantResolver`、`ClaimTenantResolver`、`BaggageTenantResolver` | 从调用上下文解析租户 ID 候选；按注册顺序，先解析出的生效 |
+| `MultiTenancyOptions` | 默认租户、是否必须有租户、是否核对存储、租户声明类型、分片缓存容量 |
+| `TenantResolutionMiddleware` | Tenant 阶段：解析 → 校验格式 → 核对存储（存在且启用）→ 写入安全上下文 → 解析分片写入调用上下文（装配了解析器时；失败即调用失败） |
+| `ITenantShardResolver`、`TenantShard`、`TenantShardKeys`、`TenantStoreShardResolver` | 租户分片：解析器契约（`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate`）、分片（连接串、小写提供者名、透传属性）、租户属性键（`ConnectionString`、`DatabaseProvider`、`Shard.*`）与从 `ITenantStore` 推出分片的默认解析器（按租户有界缓存） |
+| `TenantShardInvocationExtensions`、`TenantShardBinding` | 调用上下文里的分片（`GetTenantShard` / `SetTenantShard`）与持久化 Provider 在作用域内用的分片连接绑定（主值是分片连接串，属性并入分片属性与 `tenant` / `provider`；先看 `TenantShardScope` 的显式绑定，再看当前调用） |
+| `TenantShardScope` | 管道外的作用域显式绑定分片（ADR-0057）：`BindTenantAsync(tenantId)` 经分片解析器解析并绑定（不看租户是否启用、不受应用状态影响，共库租户不绑定），`Bind(shard)` 直接绑定；须在作用域首次创建持久化客户端之前，之后再绑定或改绑抛出 `InvalidOperationException`。多租户 Provider 登记为作用域服务 |
 
-## 依赖关系
-- 通过 `XiHanMultiTenancyAbstractionsModule` 参与模块化生命周期
-- 依赖关系通过 `DependsOn` 进行组合，具体依赖以模块类声明为准
+解析顺序由 Provider 注册决定，默认先主体声明后 Baggage。Baggage 里的租户只来自进程内建上下文的地方（消息派发、作业、工作流、命令行宿主），HTTP、gRPC、MCP 的网络入站不收这个键（ADR-0121），这些调用方的租户只来自认证；CloudEvents 入站的 `xihantenant` 经消息派发进来，由宿主给端点加的权限把关。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
 
-## 配置与约定
-- 抽象层不包含具体解析实现
-- 租户识别策略由业务模块统一定义
+分库：租户属性 `ConnectionString` 有值即分库，Tenant 阶段解析一次写进调用上下文，持久化 Provider（SqlSugar、EF Core）在作用域内按分片选连接；解析失败返回 `MULTITENANCY_UNAVAILABLE_002`，不降级为共库。租户连接变更后调用 `ITenantShardResolver.Invalidate`。分片库的表结构由应用管理。
 
-## 使用方式
-```csharp
-[DependsOn(typeof(XiHanMultiTenancyAbstractionsModule))]
-public class MyModule : XiHanModule
-{
-}
-```
+## 依赖方向
 
-## 扩展点
-- 自定义租户解析贡献者
-- 自定义租户上下文实现
+依赖 `XiHan.Framework.Kernel`。被 `MultiTenancy.InMemory` 等实现包引用。
 
-## 目录结构
-```text
-XiHan.Framework.MultiTenancy.Abstractions/
-  README.md
-  XiHanMultiTenancyAbstractionsModule.cs
-```
+## 状态
+
+P2：可用；P5 加入分片。

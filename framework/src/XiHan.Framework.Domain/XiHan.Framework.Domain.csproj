@@ -1,20 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Domain</PackageId>
+    <RootNamespace>XiHan.Framework.Domain</RootNamespace>
+    <Description>XiHan Framework 领域契约（Ring 2）：实体协议、值对象、领域事件、规约。纯契约与零依赖的组合器，无基类层级。</Description>
+    <PackageTags>xihan;framework;domain;ddd</PackageTags>
+  </PropertyGroup>
 
-	<Import Project="..\..\props\netcore.props" />
-	<Import Project="..\..\props\common.props" />
-	<Import Project="..\..\props\version.props" />
-	<Import Project="..\..\props\nuget.props" />
-
-	<PropertyGroup>
-		<Title>XiHan.Framework.Domain</Title>
-		<AssemblyName>XiHan.Framework.Domain</AssemblyName>
-		<PackageId>XiHan.Framework.Domain</PackageId>
-		<Description>曦寒框架领域驱动设计库</Description>
-		<OutputType>Library</OutputType>
-	</PropertyGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\XiHan.Framework.Domain.Shared\XiHan.Framework.Domain.Shared.csproj" />
-	</ItemGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+  </ItemGroup>
 </Project>

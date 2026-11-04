@@ -1,146 +1,175 @@
-# XiHan.Framework 开发框架
+# XiHan Framework 5
 
-快速、轻量、高效、用心的 **.NET 现代模块化开发框架**。面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖，强调模块清晰、依赖可控、扩展可维护。
+XiHan Framework 5 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现，以微内核、能力图谱与管道执行为核心。本页说明框架的整体形态、最小写法与文档组织，适合第一次接触 5.0 的读者。
 
-## 一分钟了解它
+::: warning 5.0 处于预览阶段
+当前版本 `5.0.0-preview.1`，尚未发布到 nuget.org，取得方式见[快速上手](./quickstart#获取预览包)。5.0 在 `next` 分支从零重写，与 4.x 互不引用；4.x 单独维护，不提供 4.x 到 5.0 的迁移工具，差异见[从 4.x 迁移](./guide/upgrade)。
+:::
 
-XiHan.Framework 把一套后端能力拆成许多**可独立安装的小模块**（NuGet 包），你按需引用。模块之间用一个 `[DependsOn]` 特性声明依赖，框架启动时**自动拓扑排序、依次加载**，你不用手写一长串 `AddXxx`。
+## 框架的形态
+
+应用由若干特性组成。特性是实现 `IFeature` 的类，带一份清单（`Manifest`），清单写明它提供哪些能力、依赖哪些能力，依赖以能力 ID（如 `persistence.relational@1`）声明，不按包名或类型。应用在启动时把特性交给内核，内核求解能力图谱、按拓扑顺序调用各特性的 `Configure` 注册服务与中间件，构建期就能发现缺失的依赖、版本冲突与循环。
+
+每次调用都经过一条固定十一个阶段的管道：`Ingress → Observe → Resilience → Authenticate → Tenant → Authorize → Validate → Idempotency → Transaction → Handle → Egress`。认证、租户解析、授权、契约校验、幂等与工作单元都是某个阶段里的中间件，由对应子系统的特性贡献。
+
+业务以操作契约声明：一个类实现 `IOperation<TRequest, TResponse>` 并标注 `[Operation]`，源生成器产出登记代码与请求、响应的 JSON Schema。协议适配器把 HTTP 请求、gRPC 调用、MCP 的 `tools/call` 与命令行参数翻译成同一种调用，交给同一条管道执行。
+
+持久化、缓存、消息、安全、多租户等子系统各有一个抽象包（`<领域>.Abstractions`），配一个零外部依赖、容量有界的默认实现（`InMemory`、`FileSystem`），再由 Provider 包接入 EF Core、SqlSugar、Redis、RabbitMQ、Kafka、S3 等外部设施。换 Provider 只加包、加一行 `UseFeature`，业务代码不变。
+
+## 最小写法
+
+下面三段代码组成一个可运行的 Web 应用：一个操作、一个特性、一个入口。完整步骤与项目文件见[快速上手](./quickstart)。
 
 ```csharp
-// 一个"模块"就是一个类，声明它依赖哪些模块
-[DependsOn(
-    typeof(XiHanWebApiModule),   // 动态 API + 完整中间件管道
-    typeof(XiHanDataModule)      // SqlSugar 数据访问
-)]
-public class MyAppModule : XiHanModule
+using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Primitives;
+
+namespace HelloXiHan;
+
+// 操作 ID greetings.create 经 HTTP 适配器推导为 POST /greetings
+[Operation(Id, Stability = Stability.Experimental, Expose = Expose.Http)]
+public sealed class Greet : IOperation<GreetRequest, GreetResponse>
 {
-    public override Task ConfigureServicesAsync(ServiceConfigurationContext context)
+    public const string Id = "greetings.create";
+
+    public ValueTask<Result<GreetResponse>> HandleAsync(GreetRequest request, InvocationContext context)
+        => ValueTask.FromResult(Result.Success(new GreetResponse($"Hello, {request.Name}!", context.TraceId)));
+}
+
+public sealed record GreetRequest(string Name);
+
+public sealed record GreetResponse(string Message, string TraceId);
+```
+
+```csharp
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
+
+namespace HelloXiHan;
+
+// 特性：清单声明依赖内核宿主能力，Configure 登记源生成器产出的操作
+public sealed class GreetingsFeature : IFeature
+{
+    public Manifest Manifest { get; } = new()
     {
-        // 在这里注册你自己的服务
-        return Task.CompletedTask;
-    }
+        Id = "xihan.hello.greetings",
+        Package = "HelloXiHan",
+        Version = "1.0.0",
+        Primitives = 1,
+        Stability = Stability.Experimental,
+        Kind = ManifestKind.Capability,
+        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
+        Entry = typeof(GreetingsFeature).FullName,
+    };
+
+    public void Configure(FeatureContext context) => context.AddGeneratedOperations();
 }
 ```
 
 ```csharp
-// Program.cs —— 三行启动
+using HelloXiHan;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Profiles.Minimal;
+using XiHan.Framework.Protocols.Http;
+using XiHan.Framework.Protocols.Http.Routing;
+
 var builder = WebApplication.CreateBuilder(args);
-await builder.AddApplicationAsync<MyAppModule>();   // 加载模块树
+
+builder.AddXiHan(xihan => xihan
+    .UseMinimalProfile()
+    .UseFeature<HttpProtocolFeature>()
+    .UseFeature<GreetingsFeature>());
+
 var app = builder.Build();
-await app.InitializeApplicationAsync();             // 触发初始化钩子
-await app.RunAsync();
+
+app.UseXiHan();            // HTTP 请求进入内核管道
+app.MapXiHanHealth();      // /health/startup、/health/ready、/health/live
+app.MapXiHanOperations();  // 按登记表映射操作路由
+
+app.Run();
 ```
 
-就这么多。你引用的每个模块都会把自己的服务、中间件、后台任务挂到正确的位置。
-
-## 从这里开始
-
-<div class="tip custom-block" style="padding-top: 8px">
-
-还在做技术选型？先读 [**为什么选择曦寒**](./why) —— 它适合什么项目、代价是什么、和其它路线有什么区别。
-
-已经决定动手？按顺序读这三篇，20 分钟就能跑起一个接口：
-
-1. [**快速上手**](./quickstart) —— 5 分钟建一个能返回数据的 Web API
-2. [**开发指南 · 模块系统**](./guide/modularity) —— 搞懂框架怎么装配
-3. [**模块总览**](./packages/) —— 按需查阅你要用的每个包
-
-</div>
+操作需要的 `JsonSerializerContext`（`[JsonSerializable(typeof(GreetRequest))]` 等）在快速上手里给出：内核不经反射序列化，源生成器据此检查请求与响应类型已登记。
 
 ## 文档怎么组织
 
-分两册，各自解决不同的问题：
+文档分两册：
 
 | 册 | 定位 | 什么时候看 |
 | --- | --- | --- |
-| **[开发指南](./guide/modularity)** | **按能力域编号**的任务式文档 | 「我要做 X」——数据访问、事务、认证、缓存、多租户… |
-| **[模块总览](./packages/)** | 按 NuGet 包组织的**参考手册**（每包一页） | 「这个包有什么」——完整配置项、API 清单、注意事项 |
+| [开发指南](./guide/modularity) | 按能力域编号的任务式文档 | 要做某件事：装配特性、写操作、接数据库、做授权、发消息 |
+| [包总览](./packages/) | 按 NuGet 包组织的参考手册，每包一页 | 要查某个包：提供什么能力、配置键、主要类型、限制 |
 
-开发指南的章节会指向对应的包页看细节，两册互补而不重复。
-
-给 AI 工具读时，文档站在构建期另外产出几份纯文本，与本站同源：
-
-| 地址 | 内容 |
-| --- | --- |
-| [`/llms.txt`](https://framework.docs.xihanfun.com/llms.txt) | 全站索引，每行一页 |
-| [`/llms-full.txt`](https://framework.docs.xihanfun.com/llms-full.txt) | 全站正文 |
-| [`/llms-guide.txt`](https://framework.docs.xihanfun.com/llms-guide.txt) | 开发指南全部章节 |
-| [`/llms-packages.txt`](https://framework.docs.xihanfun.com/llms-packages.txt) | 模块总览与全部包页 |
-
-只需要一页时，把地址后缀改为 `.md`，如 `https://framework.docs.xihanfun.com/guide/modularity.md`；每页正文右上角的「取本页 Markdown」指向的也是它。
+指南章节链接到对应的包页，两册不重复大段内容。给 AI 工具读取的纯文本版本见 [LLMs.txt](./ai/llms)。
 
 ## 开发指南速览
 
 | 章 | 内容 |
 | --- | --- |
-| 1–4 | 模块系统 · 模块生命周期 · 依赖注入 · AOP 与拦截器 |
-| 5–9 | 配置与选项 · Web 应用开发 · 动态 API · 统一响应与异常 · 数据校验 |
-| 10–11 | 数据访问 · 工作单元与事务 |
-| 12–15 | 多租户 · 认证 · 授权 · 数据加解密 |
-| 16–19 | 缓存与分布式锁 · 事件总线 · 定时任务与后台作业 · 工作流 |
-| 20–22 | 消息通知 · 机器人 · 实时通信 |
-| 23–25 | 对象存储与虚拟文件 · 国际化 · 模板引擎 |
-| 26–28 | 日志 · 审计 · 可观测性 |
-| 29–32 | HTTP 远程请求 · 对象映射与序列化 · 分布式 ID · 搜索引擎 |
-| 33–35 | AI 与 MCP · 网关与流量治理 · 脚本引擎 |
-| 36–38 | 升级与迁移 · 扩展与二次开发 · 常见问题 |
+| 1–5 | 能力包与清单 · 生命周期与健康 · 依赖注入 · 执行管道 · 配置与选项 |
+| 6–10 | 宿主与 Web 应用 · 操作契约 · HTTP 与 OpenAPI · gRPC、MCP 与 CloudEvents · 命令行宿主 |
+| 11–12 | 结果与错误 · 数据校验 |
+| 13–16 | 领域模型 · 持久化 · 工作单元与事务 · 多租户 |
+| 17–18 | 认证 · 授权 |
+| 19–23 | 缓存与分布式锁 · 消息与事件 · 调度与后台作业 · 工作流 · 实时通信 |
+| 24–27 | 对象存储 · 国际化 · 审计 · 可观测性 |
+| 28–31 | 序列化与 Native AOT · 标识生成 · AI · 弹性与限流 |
+| 32–34 | 插件 · 部署与打包 · 测试与一致性套件 |
+| 35–37 | 从 4.x 迁移 · 扩展与二次开发 · 常见问题 |
 
-## 其它
+## 环层一览
 
-| 板块 | 内容 |
-| --- | --- |
-| [为什么选择曦寒](./why) | 选型指南：适合什么项目、四条技术路线的取舍、它的短板 |
-| [框架概述](./overview) | 设计理念、分层架构、技术栈、版本与兼容性 |
-| [快速上手](./quickstart) | 环境准备、安装、第一个 Web API |
-| [更新日志](./changelog) | 各版本变更记录 |
-
-## 分层架构一览
-
-框架按严格的分层组织，下层不依赖上层，全部依赖抽象接口：
+包按环层组织，依赖只能指向更低的环，同环之间只经抽象包往来，规则由架构测试执行：
 
 ```text
-┌───────────────────────────────────────────────────────────┐
-│  7. Web 层    Web.Api / Web.Docs / Web.Gateway / Web.Grpc  │
-│               Web.RealTime / Web.Core                       │
-├───────────────────────────────────────────────────────────┤
-│  6. 基础设施  Data 认证 授权 缓存 事件总线 AI Bot 任务       │
-│               日志 存储 搜索 脚本 可观测性 …                 │
-├───────────────────────────────────────────────────────────┤
-│  5. 应用层    Application → Application.Contracts            │
-│               MultiTenancy / Validation / Settings          │
-├───────────────────────────────────────────────────────────┤
-│  4. 领域层    Domain → Domain.Shared                        │
-├───────────────────────────────────────────────────────────┤
-│  3. 核心层    Core（模块系统 / DI / 生命周期 / 异常处理）    │
-├───────────────────────────────────────────────────────────┤
-│  2. 元数据层  Metadata（框架信息 / 版本 / 平台）             │
-├───────────────────────────────────────────────────────────┤
-│  1. 公共层    Utils（零依赖通用工具库）                      │
-└───────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ Ring 6  组合包          Profiles.Minimal / Standard / Full             │
+├──────────────────────────────────────────────────────────────────────┤
+│ Ring 5  协议与插件      Protocols.Http / Grpc / Mcp / CloudEvents       │
+│                        Plugins.InProcess / OutOfProcess / Wasm         │
+├──────────────────────────────────────────────────────────────────────┤
+│ Ring 4  宿主            Hosting.AspNetCore / Hosting.CommandLine        │
+├──────────────────────────────────────────────────────────────────────┤
+│ Ring 3  实现            <领域>.InMemory 等默认实现与 Redis、EF Core 等 Provider │
+├──────────────────────────────────────────────────────────────────────┤
+│ Ring 2  抽象            Domain 与 <领域>.Abstractions                    │
+├──────────────────────────────────────────────────────────────────────┤
+│ Ring 1  内核            Kernel：Hosting / Capabilities / Pipeline /      │
+│                        Operations / Security / Plugins 等命名空间        │
+├──────────────────────────────────────────────────────────────────────┤
+│ Ring 0  原语层          Primitives：Result / Error / Maybe /             │
+│                        InvocationContext / 清单模型 / 管道阶段           │
+└──────────────────────────────────────────────────────────────────────┘
+  工具链（Analyzers、Generators、Conformance、Testing、Cli）可引用任何环
 ```
 
-想看每一层里都有什么，去 [模块总览](./packages/)。
+每个包所在的环与提供的能力见[包总览](./packages/)。
 
 ## 技术栈
 
 | 类别 | 技术 | 版本 |
 | --- | --- | --- |
 | 运行时 | .NET | 10.0 |
-| ORM | SqlSugar | 5.1.4.217 |
-| 日志 | Serilog | 10.0.0 |
-| 缓存 | HybridCache + StackExchange.Redis | 10.9.0 / 10.0.11 |
-| AOP | Castle DynamicProxy | 5.2.1 |
-| 加密 | BouncyCastle | 2.7.0 |
-| 序列化 | System.Text.Json | 10.0 |
-| 模板引擎 | Scriban | 7.2.6 |
-| AI | Microsoft.Extensions.AI + Microsoft.Agents.AI + MCP | 10.9.0 / 1.17.0 / 2.2.0 |
-| HTTP 韧性 | Polly | 10.0.11 |
-| gRPC | Grpc.AspNetCore | 2.83.0 |
-| API 文档 | Scalar + Swashbuckle | 2.16.20 / 10.2.3 |
+| 内核依赖 | `Microsoft.Extensions.*` 抽象包、`System.Threading.RateLimiting` | 10.0.13 |
+| 序列化 | System.Text.Json 源生成 | 随 .NET 10 |
+| ORM Provider | EF Core / SqlSugar | 10.0.13 / 5.1.4.221 |
+| 缓存 Provider | StackExchange.Redis | 3.4.5 |
+| 消息 Provider | RabbitMQ.Client / Confluent.Kafka | 7.2.2 / 2.16.0 |
+| 对象存储 Provider | AWSSDK.S3 | 4.0.102.3 |
+| 认证 Provider | Microsoft.IdentityModel.JsonWebTokens | 8.23.0 |
+| AI | Microsoft.Extensions.AI / VectorData | 10.11.0 |
+| gRPC | Grpc.AspNetCore.Server | 2.84.0 |
+| 可观测性 | OpenTelemetry | 1.20.1 |
+| Wasm 插件 | Wasmtime | 48.0.2 |
+
+原语层、内核与全部抽象包不引用第三方库；第三方库只出现在按技术命名的 Provider 包里。
 
 ## 社区资源
 
-- [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) · [Gitee 镜像](https://gitee.com/XiHanFun/XiHan.Framework)
-- [NuGet 包列表](https://www.nuget.org/packages?q=XiHan.Framework)
-- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) —— 基于本框架构建的企业级中后台，最完整的实战参考
+- [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework)（5.0 在 `next` 分支） · [Gitee 镜像](https://gitee.com/XiHanFun/XiHan.Framework)
+- [XiHan Spec](https://github.com/XiHanFun/framework-spec)：RFC、术语表、能力 ID、错误码与一致性向量
+- [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go)：Go SDK，用于编写进程外插件
+- [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp)：基于本框架的企业级中后台，6.0 正在接入 5.0
 - [问题反馈](https://github.com/XiHanFun/XiHan.Framework/issues) · QQ 群 462371834

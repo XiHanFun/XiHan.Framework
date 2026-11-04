@@ -1,23 +1,16 @@
-import { copyFile, mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
 import type { DefaultTheme } from "vitepress";
 import { defineXiHanConfig } from "@xihanfun/vitepress-theme/config";
 
 // 导航末项显示的版本号取自本站 package.json，发版时只改那一处
 const { version } = createRequire(import.meta.url)("../package.json");
 
-// XiHan.Framework 使用技能的真源在 CLI 工具里
-const skillPath = fileURLToPath(
-  new URL("../../framework/tool/XiHan.Framework.Cli/skills/xihan-framework/SKILL.md", import.meta.url),
-);
-
-const title: string = "曦寒开发框架文档";
-const description: string = "基于 DotNet 的模块化开发框架";
+const title: string = "曦寒开发框架 5 文档";
+const description: string = "语言中立的应用框架规范及其 .NET 参考实现";
 const keywords: string =
-  "曦寒,曦寒懿,开发框架,DotNet,模块化,官方文档,开源,XiHanFun,XiHan.Framework";
+  "曦寒,曦寒懿,开发框架,DotNet,微内核,能力图谱,操作契约,官方文档,开源,XiHanFun,XiHan.Framework";
 
-// 生成单个模块包文档条目
+// 生成单个包文档条目
 function pkg(text: string, name: string): DefaultTheme.SidebarItem {
   return { text, link: `/packages/${name}` };
 }
@@ -31,44 +24,46 @@ function chapter(
   return { text: `${index}. ${text}`, link: `/${link}` };
 }
 
-// 每章一页，全部落在 guide/ 下；包文档是另一册（参考手册），章末链接过去
+// 每章一页，全部落在 guide/ 下；包文档是另一册（参考手册），章末链接过去。
+// 4.x 的机器人、消息通知、模板引擎、脚本引擎、搜索、HTTP 客户端、网关、加解密、对象映射在 5.0 不再由框架包装，
+// 不设章节，去向写在「从 4.x 迁移」
 const guideChapters: [text: string, name: string][] = [
-  ["模块系统", "modularity"],
-  ["模块生命周期", "lifecycle"],
+  ["能力包与清单", "modularity"],
+  ["生命周期与健康", "lifecycle"],
   ["依赖注入", "dependency-injection"],
-  ["AOP 与拦截器", "aop"],
+  ["执行管道", "pipeline"],
   ["配置与选项", "configuration"],
-  ["Web 应用开发", "web"],
-  ["动态 API", "dynamic-api"],
-  ["统一响应与异常", "response"],
+  ["宿主与 Web 应用", "web"],
+  ["操作契约", "operations"],
+  ["HTTP 与 OpenAPI", "http"],
+  ["gRPC、MCP 与 CloudEvents", "protocols"],
+  ["命令行宿主", "command-line"],
+  ["结果与错误", "errors"],
   ["数据校验", "validation"],
-  ["数据访问", "data"],
+  ["领域模型", "domain"],
+  ["持久化", "persistence"],
   ["工作单元与事务", "uow"],
   ["多租户", "multi-tenancy"],
   ["认证", "authentication"],
   ["授权", "authorization"],
-  ["数据加解密", "security"],
+  ["出站地址策略", "outbound"],
   ["缓存与分布式锁", "caching"],
-  ["事件总线", "event-bus"],
-  ["定时任务与后台作业", "tasks"],
+  ["消息与事件", "messaging"],
+  ["调度与后台作业", "scheduling"],
   ["工作流", "workflow"],
-  ["消息通知", "messaging"],
-  ["机器人", "bot"],
   ["实时通信", "realtime"],
-  ["对象存储与虚拟文件", "storage"],
+  ["对象存储", "storage"],
   ["国际化", "localization"],
-  ["模板引擎", "templating"],
-  ["日志", "logging"],
   ["审计", "auditing"],
   ["可观测性", "observability"],
-  ["HTTP 远程请求", "http"],
-  ["对象映射与序列化", "mapping"],
-  ["分布式 ID", "distributed-ids"],
-  ["搜索引擎", "search"],
-  ["AI 与 MCP", "ai"],
-  ["网关与流量治理", "gateway"],
-  ["脚本引擎", "script"],
-  ["升级与迁移", "upgrade"],
+  ["序列化与 Native AOT", "aot"],
+  ["标识生成", "distributed-ids"],
+  ["AI", "ai"],
+  ["弹性与限流", "resilience"],
+  ["插件", "plugins"],
+  ["部署与打包", "deployment"],
+  ["测试与一致性套件", "testing"],
+  ["从 4.x 迁移", "upgrade"],
   ["扩展与二次开发", "extending"],
   ["常见问题", "faq"],
 ];
@@ -107,136 +102,139 @@ const guideSidebar: DefaultTheme.SidebarItem[] = [
   },
 ];
 
+// 包按领域分组：每组先列抽象包，再列默认实现与 Provider；环层写在各包页的信息表里
 const packagesSidebar: DefaultTheme.SidebarItem[] = [
   {
-    text: "模块总览",
+    text: "包总览",
     link: "/packages/",
     collapsed: false,
     items: [
       {
-        text: "公共与核心",
+        text: "原语与内核",
         collapsed: true,
         items: [
-          pkg("Utils 通用工具", "utils"),
-          pkg("Metadata 元数据", "metadata"),
-          pkg("Core 模块化核心", "core"),
-          pkg("Analyzers 分析器", "analyzers"),
+          pkg("Primitives 原语层", "primitives"),
+          pkg("Kernel 内核", "kernel"),
+          pkg("Kernel.Generators 操作生成器", "kernel-generators"),
+          pkg("Kernel.Analyzers 分析器", "kernel-analyzers"),
         ],
       },
       {
-        text: "领域与应用",
+        text: "领域与持久化",
         collapsed: true,
         items: [
-          pkg("Domain.Shared", "domain-shared"),
-          pkg("Domain 领域层", "domain"),
-          pkg("Application.Contracts", "application-contracts"),
-          pkg("Application 应用层", "application"),
+          pkg("Domain 领域模型", "domain"),
+          pkg("Persistence.Abstractions", "persistence-abstractions"),
+          pkg("Persistence.InMemory", "persistence-inmemory"),
+          pkg("Persistence.EntityFrameworkCore", "persistence-entityframeworkcore"),
+          pkg("Persistence.SqlSugar", "persistence-sqlsugar"),
+          pkg("Persistence.Generators", "persistence-generators"),
         ],
       },
       {
-        text: "数据与持久化",
-        collapsed: true,
-        items: [
-          pkg("Data 数据访问", "data"),
-          pkg("Uow 工作单元", "uow"),
-          pkg("Caching 缓存", "caching"),
-        ],
-      },
-      {
-        text: "安全 · 认证 · 授权",
-        collapsed: true,
-        items: [
-          pkg("Security 安全加密", "security"),
-          pkg("Authentication 认证", "authentication"),
-          pkg("Authorization 授权", "authorization"),
-        ],
-      },
-      {
-        text: "多租户 · 配置 · 校验",
+        text: "多租户 · 安全",
         collapsed: true,
         items: [
           pkg("MultiTenancy.Abstractions", "multitenancy-abstractions"),
-          pkg("MultiTenancy 多租户", "multitenancy"),
-          pkg("Settings 设置", "settings"),
-          pkg("Validation.Abstractions", "validation-abstractions"),
-          pkg("Validation 校验", "validation"),
+          pkg("MultiTenancy.InMemory", "multitenancy-inmemory"),
+          pkg("MultiTenancy.Database", "multitenancy-database"),
+          pkg("Security.Abstractions", "security-abstractions"),
+          pkg("Security.InMemory", "security-inmemory"),
+          pkg("Security.Database", "security-database"),
+          pkg("Security.Jwt", "security-jwt"),
+          pkg("Security.OpenIdConnect", "security-openidconnect"),
+          pkg("Security.Ip2Region", "security-ip2region"),
         ],
       },
       {
-        text: "事件 · 消息 · 通信",
+        text: "缓存 · 消息",
         collapsed: true,
         items: [
-          pkg("EventBus.Abstractions", "eventbus-abstractions"),
-          pkg("EventBus 事件总线", "eventbus"),
-          pkg("EventBus.RabbitMQ", "eventbus-rabbitmq"),
-          pkg("EventBus.Kafka", "eventbus-kafka"),
-          pkg("EventBus.Redis", "eventbus-redis"),
-          pkg("Messaging 消息", "messaging"),
-          pkg("Http 客户端", "http"),
+          pkg("Caching.Abstractions", "caching-abstractions"),
+          pkg("Caching.InMemory", "caching-inmemory"),
+          pkg("Caching.Redis", "caching-redis"),
+          pkg("Caching.Hybrid", "caching-hybrid"),
+          pkg("Caching.Remote", "caching-remote"),
+          pkg("Messaging.Abstractions", "messaging-abstractions"),
+          pkg("Messaging.InMemory", "messaging-inmemory"),
+          pkg("Messaging.RabbitMQ", "messaging-rabbitmq"),
+          pkg("Messaging.Kafka", "messaging-kafka"),
         ],
       },
       {
-        text: "通用基础设施",
+        text: "调度 · 工作流",
         collapsed: true,
         items: [
-          pkg("Serialization 序列化", "serialization"),
-          pkg("ObjectMapping 对象映射", "objectmapping"),
-          pkg("Localization.Abstractions", "localization-abstractions"),
-          pkg("Localization 国际化", "localization"),
-          pkg("Logging 日志", "logging"),
-          pkg("Auditing 审计日志", "auditing"),
-          pkg("Castle AOP", "castle"),
-          pkg("Threading 并发", "threading"),
-          pkg("Timing 时间", "timing"),
-          pkg("DistributedIds 分布式 ID", "distributed-ids"),
-        ],
-      },
-      {
-        text: "存储 · 模板 · 任务 · 治理",
-        collapsed: true,
-        items: [
-          pkg("ObjectStorage 对象存储", "object-storage"),
-          pkg("VirtualFileSystem 虚拟文件", "virtual-file-system"),
-          pkg("Templating 模板", "templating"),
-          pkg("Tasks 定时任务", "tasks"),
-          pkg("Traffic 流量治理", "traffic"),
-          pkg("Upgrade 升级引擎", "upgrade"),
-          pkg("Script 脚本引擎", "script"),
+          pkg("Scheduling.Abstractions", "scheduling-abstractions"),
+          pkg("Scheduling.InMemory", "scheduling-inmemory"),
+          pkg("Scheduling.Database", "scheduling-database"),
+          pkg("Scheduling.Kubernetes", "scheduling-kubernetes"),
           pkg("Workflow.Abstractions", "workflow-abstractions"),
-          pkg("Workflow 工作流", "workflow"),
-          pkg("SearchEngines.Abstractions", "search-engines-abstractions"),
-          pkg("SearchEngines 搜索", "search-engines"),
-          pkg("SearchEngines.Elasticsearch", "search-engines-elasticsearch"),
-          pkg("Observability 可观测性", "observability"),
-          pkg("DevTools 开发工具", "devtools"),
+          pkg("Workflow.InMemory", "workflow-inmemory"),
+          pkg("Workflow.Database", "workflow-database"),
         ],
       },
       {
-        text: "AI 与机器人",
+        text: "本地化 · 存储 · 配置",
         collapsed: true,
         items: [
+          pkg("Localization.Abstractions", "localization-abstractions"),
+          pkg("Localization.InMemory", "localization-inmemory"),
+          pkg("Localization.Database", "localization-database"),
+          pkg("ObjectStorage.Abstractions", "objectstorage-abstractions"),
+          pkg("ObjectStorage.FileSystem", "objectstorage-filesystem"),
+          pkg("ObjectStorage.S3", "objectstorage-s3"),
+          pkg("Configuration.Abstractions", "configuration-abstractions"),
+          pkg("Configuration.Nacos", "configuration-nacos"),
+        ],
+      },
+      {
+        text: "审计 · 可观测性 · AI",
+        collapsed: true,
+        items: [
+          pkg("Auditing.Abstractions", "auditing-abstractions"),
+          pkg("Auditing.InMemory", "auditing-inmemory"),
+          pkg("Auditing.Database", "auditing-database"),
+          pkg("Observability.Abstractions", "observability-abstractions"),
+          pkg("Observability.Host", "observability-host"),
+          pkg("Observability.OpenTelemetry", "observability-opentelemetry"),
           pkg("AI.Abstractions", "ai-abstractions"),
-          pkg("AI 集成", "ai"),
-          pkg("Bot 机器人核心", "bot"),
-          pkg("Bot.Email 邮件", "bot-email"),
-          pkg("Bot.Sms 短信", "bot-sms"),
-          pkg("Bot.Telegram", "bot-telegram"),
-          pkg("Bot.DingTalk 钉钉", "bot-dingtalk"),
-          pkg("Bot.Lark 飞书", "bot-lark"),
-          pkg("Bot.WeCom 企业微信", "bot-wecom"),
+          pkg("AI.OpenAI", "ai-openai"),
+          pkg("AI.VectorData", "ai-vectordata"),
         ],
       },
       {
-        text: "Web 层",
+        text: "宿主与协议",
         collapsed: true,
         items: [
-          pkg("Web.Core Web 核心", "web-core"),
-          pkg("Web.Api 动态 API", "web-api"),
-          pkg("Web.Docs API 文档", "web-docs"),
-          pkg("Web.Gateway 网关", "web-gateway"),
-          pkg("Web.Grpc gRPC", "web-grpc"),
-          pkg("Web.RealTime 实时通信", "web-realtime"),
-          pkg("Web.Mcp MCP 服务端", "web-mcp"),
+          pkg("Hosting.AspNetCore", "hosting-aspnetcore"),
+          pkg("Hosting.CommandLine", "hosting-commandline"),
+          pkg("Protocols.Http", "protocols-http"),
+          pkg("Protocols.Grpc", "protocols-grpc"),
+          pkg("Protocols.Mcp", "protocols-mcp"),
+          pkg("Protocols.CloudEvents", "protocols-cloudevents"),
+        ],
+      },
+      {
+        text: "插件",
+        collapsed: true,
+        items: [
+          pkg("Plugins.Protocol", "plugins-protocol"),
+          pkg("Plugins.InProcess", "plugins-inprocess"),
+          pkg("Plugins.OutOfProcess", "plugins-outofprocess"),
+          pkg("Plugins.Wasm", "plugins-wasm"),
+        ],
+      },
+      {
+        text: "组合包与工具链",
+        collapsed: true,
+        items: [
+          pkg("Profiles.Minimal", "profiles-minimal"),
+          pkg("Profiles.Standard", "profiles-standard"),
+          pkg("Profiles.Full", "profiles-full"),
+          pkg("Cli 命令行工具", "cli"),
+          pkg("Testing 测试基座", "testing"),
+          pkg("Conformance 一致性套件", "conformance"),
         ],
       },
     ],
@@ -267,7 +265,10 @@ const nav: DefaultTheme.NavItem[] = [
       },
       {
         text: "深入",
-        items: [{ text: "开发指南", link: "/guide/modularity" }],
+        items: [
+          { text: "开发指南", link: "/guide/modularity" },
+          { text: "从 4.x 迁移", link: "/guide/upgrade" },
+        ],
       },
       {
         text: "AI 辅助开发",
@@ -279,7 +280,7 @@ const nav: DefaultTheme.NavItem[] = [
       },
     ],
   },
-  { text: "模块", link: "/packages/", activeMatch: "/packages/" },
+  { text: "包", link: "/packages/", activeMatch: "/packages/" },
   {
     text: "生态",
     items: [
@@ -289,6 +290,13 @@ const nav: DefaultTheme.NavItem[] = [
           { text: "开发框架", link: "/" },
           { text: "视图组件", link: "https://ui.docs.xihanfun.com" },
           { text: "基础应用", link: "https://basicapp.docs.xihanfun.com" },
+        ],
+      },
+      {
+        text: "规范与 SDK",
+        items: [
+          { text: "XiHan Spec", link: "https://github.com/XiHanFun/framework-spec" },
+          { text: "Go SDK", link: "https://github.com/XiHanFun/framework-sdk-go" },
         ],
       },
       {
@@ -314,7 +322,7 @@ const nav: DefaultTheme.NavItem[] = [
     text: `v${version}`,
     items: [
       { text: "更新日志", link: "/changelog" },
-      { text: "NuGet", link: "https://www.nuget.org/profiles/XiHanFun" },
+      { text: "4.x 文档", link: "https://framework.docs.xihanfun.com" },
     ],
   },
 ];
@@ -325,34 +333,33 @@ export default defineXiHanConfig({
   keywords,
   repo: "XiHan.Framework",
   banner: {
-    id: "2026-10-designers-rc",
-    text: "生态产品多个设计器现已发布候选版本",
-    link: "https://docs.xihanfun.com/cosmos/ecosystem",
-    linkText: "查看生态总览",
+    id: "2026-10-framework-5-preview",
+    text: "XiHan Framework 5 处于预览阶段，尚未发布到 nuget.org",
+    link: "/quickstart#获取预览包",
+    linkText: "查看获取方式",
   },
   llms: {
-    title: "曦寒开发框架",
+    title: "曦寒开发框架 5",
     summary:
-      "快速、轻量、高效、用心的 .NET 模块化开发框架：面向前后端分离的企业级 ASP.NET Core 应用，优先使用 .NET 原生能力、减少第三方依赖；按职责拆成可独立引用的 NuGet 包，模块以 `[DependsOn]` 显式声明依赖，共享统一的生命周期。",
+      "XiHan Framework 5 是一套语言中立的应用框架规范（XiHan Spec）及其 .NET 10 参考实现：原语层与微内核之上，子系统以抽象包、零外部依赖的默认实现与可替换的 Provider 组成；特性在清单里按能力 ID 声明依赖，内核求解能力图谱后显式装配；每次调用经过固定十一个阶段的管道；一份操作契约同时经 HTTP、gRPC、MCP 与命令行暴露。5.0 处于预览阶段，尚未发布到 nuget.org。",
     sections: [
       { dir: ".", label: "开始" },
       { dir: "ai", label: "AI 辅助开发" },
       { dir: "guide", label: "开发指南" },
-      { dir: "packages", label: "模块总览" },
+      { dir: "packages", label: "包总览" },
     ],
     bundles: [
       { name: "guide", label: "开发指南", dirs: ["guide"] },
-      { name: "packages", label: "模块总览", dirs: ["packages"] },
+      { name: "packages", label: "包总览", dirs: ["packages"] },
     ],
-    // 使用技能随 CLI 工具发布，文档站另发一份可下载的副本
-    async assets({ outDir }) {
-      await mkdir(`${outDir}/ai`, { recursive: true });
-      await copyFile(skillPath, `${outDir}/ai/SKILL.md`);
-      return [{ name: "ai/SKILL.md", description: "给 AI 编程工具的 XiHan.Framework 使用规范，可放进项目的技能目录" }];
-    },
   },
   themeConfig: {
     nav,
     sidebar,
+    // 5.0 的文档在 next 分支的 docs-next/ 下，主题按 main 分支 docs/ 推出的编辑链接不适用
+    editLink: {
+      text: "在 GitHub 上编辑此页",
+      pattern: "https://github.com/XiHanFun/XiHan.Framework/tree/next/docs-next/:path",
+    },
   },
 });

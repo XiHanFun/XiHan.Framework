@@ -1,263 +1,405 @@
-# 消息通知
+# 消息与事件
 
-给「发一条通知」定义统一的模型和入口：业务代码只组装一个信封、指定通道，具体走邮件、短信还是站内信由路由决定。框架这一层**只做路由**，不含任何通道实现，也不替你排队和重试。
+本章讲消息子系统：CloudEvents 信封、发布与订阅（竞争与广播）、重试与死信、领域事件、事务性发件箱，以及队列与流两个能力，适用于在特性之间或服务之间传递事件的开发者。完整 API 见 [Messaging.Abstractions 包](../packages/messaging-abstractions)。
 
-完整 API 与全部字段见 [Messaging 包](../packages/messaging)。
+## 能力与 Provider
 
-## 三个角色
+消息是跨进程的调用：信封用 CloudEvents 1.0，投递经过与请求相同的内核管道，传输只负责至少一次投递、重试与死信（RFC-0009《消息、CloudEvents 信封与发件箱》）。
 
-| 角色 | 类型 | 职责 |
-| --- | --- | --- |
-| 信封 | `MessageEnvelope` | 一条消息的全部内容：通道、主题、正文、模板编码与参数、接收人集合、元数据 |
-| 调度器 | `IMessageDispatcher` | 按信封的 `Channel` 挑一个发送器，**逐个接收人**调用它，汇总结果 |
-| 发送器 | `IMessageSender` | 真正干活的一端：`CanHandle(channel)` 声明自己吃哪个通道，`SendAsync` 投递给单个接收人 |
+| 能力 | 含义 | 默认实现 | 显式 Provider |
+| --- | --- | --- | --- |
+| `messaging.queue@1` | 工作队列：发布、按主题消费、至少一次、重试、死信 | `Messaging.InMemory`（单进程） | `Messaging.RabbitMQ`、`Messaging.Kafka` |
+| `messaging.stream@1` | 有序分区流：在队列之上按分区键有序、按消费组保存位点、按时刻重放 | — | `Messaging.Kafka` |
 
-调度器与发送器的分工是这一章的核心：
-
-- 调度器**不知道**任何通道细节。它不认识 SMTP、不认识短信签名，只做「选谁」和「循环调」。
-- 发送器**不关心**批量与容错策略。它只处理「这一条信封发给这一个人」，成败通过 `MessageSendResult` 返回。
-- 所以框架里**没有内置任何真实发送器**。包里唯一的实现是兜底用的 `NotConfiguredMessageSender`，它对任何通道都返回「未配置发送器」的失败结果。
-
-::: tip 选型：什么时候值得引入这一层
-只有一个通道、且调用点很少时，直接注入你自己的服务更简单。当出现「同一段业务要按用户偏好走不同通道」或「通道实现将来会换」时，再让业务改为面向 `IMessageDispatcher` 编程。
-:::
-
-## 安装与启用
-
-```bash
-dotnet add package XiHan.Framework.Messaging
-```
+`Profiles.Standard` 装配了 `Messaging.InMemory`，不加 Provider 时消息只在本进程内流转、进程退出即丢失；内存代理只为本进程订阅了的主题缓冲消息，发布到没人订阅的主题直接丢弃（记 Debug 日志，发布照常成功）。再 `UseFeature` 一个显式 Provider 就顶替它：`RabbitMQMessagingFeature` 只提供队列，`KafkaMessagingFeature` 同时提供队列与流。两个显式 Provider 同时提供 `messaging.queue` 时能力求解报 `KERNEL_CAPABILITY_004`，用 `XiHan:Providers:messaging.queue` 写清单 ID（`xihan.messaging.rabbitmq`、`xihan.messaging.kafka`）指定一个，规则见[能力包与清单](./modularity)。
 
 ```csharp
-[DependsOn(typeof(XiHanMessagingModule))]
-public class MyModule : XiHanModule { }
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Messaging.RabbitMQ;
+using XiHan.Framework.Profiles.Standard;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// RabbitMQ 顶替内存代理；订阅与发布的代码不变
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<RabbitMQMessagingFeature>());
 ```
 
-模块的 `ConfigureServices` 只调用一次 `services.AddXiHanMessaging()`，注册两样东西：
-
-| 注册 | 方式 | 说明 |
-| --- | --- | --- |
-| `IMessageDispatcher` → `DefaultMessageDispatcher` | `TryAddSingleton` | 默认路由实现 |
-| `IMessageSender` 集合追加 `NotConfiguredMessageSender` | `TryAddEnumerable` 单例 | 兜底项，不会遮蔽你注册的真实发送器 |
-
-::: warning 引入事件总线会顺带启用它
-`XiHanEventBusModule` 依赖 `XiHanMessagingModule`，所以用了事件总线就一定装上了消息路由。但事件总线**不通过** `IMessageDispatcher` 投递事件，两条链路互不相干，别把它们混为一谈。
-:::
-
-## 写一个发送器
-
-接通道 = 实现 `IMessageSender` + 注册进容器，没有别的接线点。
-
-```csharp
-public class SiteMessageSender : IMessageSender
-{
-    // 通道名建议用不区分大小写比较，调度器只帮你 Trim，不做大小写归一
-    public bool CanHandle(string channel)
-        => string.Equals(channel, "site", StringComparison.OrdinalIgnoreCase);
-
-    public async Task<MessageSendResult> SendAsync(
-        MessageEnvelope envelope,
-        MessageRecipient recipient,
-        CancellationToken cancellationToken = default)
-    {
-        // 站内信落库；envelope.TenantId / CorrelationId 由发送器自行取用
-        await _repository.InsertAsync(...);
-
-        return new MessageSendResult
-        {
-            MessageId = envelope.MessageId,
-            Channel = envelope.Channel,
-            RecipientAddress = recipient.Address,
-            IsSuccess = true
-        };
-    }
-}
+```json
+{ "XiHan": { "Messaging": { "RabbitMQ": { "Configuration": "amqp://guest:guest@localhost:5672" } } } }
 ```
 
-注册时**追加**到集合，而不是覆盖：
+连接配置缺失时装配失败，启动时连不上代理时启动失败（`MESSAGING_UNAVAILABLE_001`），不退回内存代理。Kafka 的配置见 [Messaging.Kafka](../packages/messaging-kafka)。
 
-```csharp
-services.AddSingleton<IMessageSender, SiteMessageSender>();
-```
+## 信封
 
-## 发一条消息
+`MessageEnvelope` 是 CloudEvents 1.0 信封，数据是字节：
 
-```csharp
-public class NoticeAppService
-{
-    private readonly IMessageDispatcher _dispatcher;
-
-    public NoticeAppService(IMessageDispatcher dispatcher) => _dispatcher = dispatcher;
-
-    public async Task NotifyAsync(IReadOnlyList<string> userIds, CancellationToken ct)
-    {
-        var envelope = new MessageEnvelope
-        {
-            Channel = "site",
-            Subject = "系统通知",
-            Content = "您有一条新消息",
-            Recipients = userIds
-                .Select(id => new MessageRecipient { ReceiverId = id, Address = id })
-                .ToArray()
-        };
-
-        IReadOnlyList<MessageSendResult> results = await _dispatcher.DispatchAsync(envelope, ct);
-
-        var failed = results.Where(item => !item.IsSuccess).ToArray();
-        // failed[i].ErrorMessage 给出每个接收人的失败原因
-    }
-}
-```
-
-`MessageRecipient.Address` 是**通道相关**的地址：邮箱、手机号、用户 Id 都塞这里，怎么解释由发送器决定。`ReceiverId` 是业务侧的接收人主键，可选。
-
-## 路由是怎么选的
-
-`DefaultMessageDispatcher.DispatchAsync` 的流程：
-
-| 步骤 | 动作 | 异常路径 |
-| --- | --- | --- |
-| 1 | 校验信封非空、`Channel` 非空白 | 分别抛 `ArgumentNullException` / `InvalidOperationException` |
-| 2 | 接收人为空则直接返回空集合 | —— |
-| 3 | `Channel.Trim()` 后先找**非兜底**且 `CanHandle` 的发送器 | —— |
-| 4 | 找不到再回退到任意 `CanHandle` 的（即兜底） | —— |
-| 5 | 仍然没有 | 按 `ThrowWhenNoSender` 抛异常，或给每个接收人返回失败结果。默认注册下兜底发送器恒匹配，这一步只有把 `NotConfiguredMessageSender` 从集合里移除后才可达 |
-| 6 | 逐接收人 `SendAsync`，回填结果里缺省的字段 | 失败或抛异常时按 `ContinueOnError` 决定继续还是中断 |
-
-几个必须知道的细节：
-
-| 细节 | 行为 |
+| 属性 | 说明 |
 | --- | --- |
-| 兜底优先级 | `NotConfiguredMessageSender.CanHandle` 恒为 `true`，调度器做**两段式选择**：先找非兜底的，找不到才回退，所以它永远不会挡住真实发送器 |
-| 同通道多个发送器 | 只命中**第一个**匹配的（按注册顺序），不会依次尝试、也不会广播 |
-| 结果回填 | 发送器返回的 `MessageId` / `Channel` / `RecipientAddress` 为空时，调度器用信封和接收人的值补上；你在发送器里可以只填 `IsSuccess` 和 `ErrorMessage` |
-| 异常收敛 | 发送器抛出的异常会被捕获、记 `LogError`，转成一条 `IsSuccess = false` 的结果，**不向外抛** |
-| 通道名匹配 | 调度器只对 `Channel` 做 `Trim()`，大小写是否敏感取决于各发送器的 `CanHandle` 实现 |
+| `Id` | 必填，事件 ID，与 `Source` 一起唯一 |
+| `Source` | 必填，来源 URI 引用（如 `/orders`） |
+| `Type` | 必填，事件类型（如 `orders.placed`） |
+| `Time` | 可选，发生时间 |
+| `Subject` | 可选，事件所涉的对象（如 `order/42`） |
+| `DataContentType` | 数据内容类型，缺省 `application/json` |
+| `Data` | 数据字节 |
+| `Extensions` | 扩展属性，名称只含小写字母与数字、1 到 20 个字符；用 `WithExtension(name, value)` 派生、`Extension(name)` 读取 |
 
-::: warning 循环中的取消不会抛出
-`DispatchAsync` 只在进入循环**前**做一次 `ThrowIfCancellationRequested()`。循环里发送器因取消抛出的 `OperationCanceledException` 会被同一个 `catch` 吞掉、变成失败结果。判定「是否被取消」要看结果里的 `ErrorMessage`，别指望 catch 到取消异常。
-:::
+框架约定的扩展属性（`EnvelopeExtensions`）：
 
-## 框架不做后台异步发送
-
-这是最容易误解的一点：`DispatchAsync` 是**同步语义的即时投递**——在你的调用线程上逐个接收人跑完才返回。框架这一层**不提供**：
-
-| 不提供的能力 | 后果 | 该由谁做 |
+| 扩展 | 常量 | 投递时的作用 |
 | --- | --- | --- |
-| 入队 / 后台发送 | 接收人多时会拖长当前请求 | 业务层：提交后入队，后台服务拉取消费 |
-| 重试 | 一次失败就是失败 | 发送器内部，或上层队列的重试机制 |
-| 持久化 / 发件箱 | 进程退出未发的消息就没了 | 业务层落库 + 补偿 |
-| 去重 | 同一条可能被重复投递 | 业务层按 `MessageId` 幂等 |
-| 定时发送 | `ScheduledTime` / `ExpireTime` 调度器**根本不读** | 上层队列或调度器自行解释 |
+| `xihantenant` | `Tenant` | 进入 Baggage `xihan.tenant`；装配了多租户 Provider 时 Tenant 阶段据此解析租户 |
+| `xihanprincipal` | `Principal` | 进入 Baggage `xihan.principal`（只是发起者的 ID，不是凭据：处理器的调用仍是匿名主体，审计把它记为主体） |
+| `xihancorrelation` | `Correlation` | 进入 Baggage `xihan.correlation` |
+| `xihanlocale` | `Locale` | 进入 Baggage `xihan.locale`，处理器里 `key.L()` 按这个区域取文案 |
+| `traceparent` | `TraceParent` | W3C Trace Context，成为处理器调用的追踪 ID、父跨度与采样标志（上游「不采样」原样保留） |
+| `xihankey` | `PartitionKey` | 流能力的分区键，见[队列与流](#队列与流) |
 
-::: danger 信封上的字段不等于框架会处理
-`ScheduledTime`、`ExpireTime`、`TenantId`、`CorrelationId`、`TemplateCode`、`TemplateParams` 都只是**随信封携带的数据**。`DefaultMessageDispatcher` 一个都不解释——模板不会被渲染、过期时间不会被检查。要生效就得在你的 `IMessageSender` 里自己读。
-:::
+前四个扩展与 Baggage 键的对应是 `EnvelopeExtensions.BaggageMappings`（`spec/conventions/baggage-keys.md` 的 CloudEvents 载体）。幂等键 `xihan.idempotency-key` 不进入消息：派发不写幂等键，带上它会让同一请求发出的几条消息与同一条消息的重试被幂等中间件当成同一次调用。
 
-正确的异步姿势是：业务侧把待发消息入队（框架提供了 `IRedisDelayQueue<T>` 这类基础设施），后台服务拉取后再调 `IMessageDispatcher`。见 [缓存与分布式锁](./caching)。
+主题名满足 `^[a-z0-9][a-z0-9._-]{0,127}$`（`TopicName.IsValid` / `Validate`）；RabbitMQ 与 Kafka 的死信目标是映射后的名字加 `DeadLetterSuffix`（缺省 `.dlq`）。线上编码是结构化 JSON（`CloudEventsFormat`，`application/cloudevents+json`）：JSON 数据内联在 `data`，其他数据放 `data_base64`，扩展属性是顶层成员。
 
-## 与 Bot 各通道的关系
+## 发布消息
 
-框架里有两套并行的发送栈，**没有默认打通**：
+应用经 `IMessagePublisher` 发布，它是作用域服务（缺省 `DirectPublisher` 直接交给代理；装配了发件箱时是 `OutboxPublisher`）。`IMessageBroker` 是 Provider 实现的传输，应用不直接调用。
 
-| | Messaging | Bot |
-| --- | --- | --- |
-| 入口 | `IMessageDispatcher` | `IBotClient` |
-| 扩展点 | `IMessageSender` | `IBotProvider` |
-| 目标形态 | 面向「接收人」的一对一投递 | 面向「渠道 / 群机器人」的推送 |
-| 内置实现 | 无（只有兜底） | 钉钉、飞书、企业微信、Telegram、邮件、短信 |
-| 附加能力 | 无 | 策略（广播 / 故障转移 / 优先级）、管道（日志 / 重试 / 限流 / 环境过滤）、模板引擎 |
+| 方法 | 结果 |
+| --- | --- |
+| `PublishAsync(topic, envelope, ct)` | `Result` |
+| `PublishManyAsync(topic, envelopes, ct)` | 与入参等长、顺序一致的 `IReadOnlyList<Result>`；单条是它的特例 |
 
-Bot 的六个提供者包实现的是 `IBotProvider`，**不是** `IMessageSender`——所以装了 Bot 并不会让 `Channel = "email"` 的信封自动走 Bot 的邮件提供者。要打通就自己写一个桥接发送器：
+批量发布遵循批量优先约定（ADR-0012）：同一主题内保持入参顺序，空集合不触代理，重复的 `Id` 照发（去重是消费端的事）；主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；内存代理容量不足时整批返回 `MESSAGING_UNAVAILABLE_002`，不写入半批；代理不可达时整批抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。Provider 用代理的原生批量：RabbitMQ 在开启了发布确认的通道上连续发布、一次等待全部确认（代理拒绝的项返回 `MESSAGING_UNAVAILABLE_001`），Kafka 交给客户端合并成批次后一次等待全部投递报告，内存代理一次入队。
+
+发布到没人订阅的主题照常成功：内存代理与 RabbitMQ 丢弃消息（RabbitMQ 的发布方只声明交换机，队列由订阅方声明并绑定，消息被退回即说明没有订阅者），记 Debug 日志；Kafka 的消息进主题、按保留期清理。调度、工作流等框架事件发到应用不一定订阅的主题，这是常态，不会让发件箱重试到死信（ADR-0074、ADR-0079）。
+
+在调用内发布时（操作、消息处理器、作业里），`DirectPublisher` 与 `OutboxPublisher` 先从当前调用（`IInvocationAccessor`）给每个信封补上缺失的扩展，处理器就在发布方的追踪链上，带着同样的租户、主体、关联 ID 与区域：
+
+| 扩展 | 取值 |
+| --- | --- |
+| `traceparent` | `00-<TraceId>-<父跨度>-<标志>`：当前 Activity（Observe 阶段的 `xihan.invoke` 或它的子 Span）与调用同一 trace 时父跨度与标志取它的，消费端是它的子 Span；否则取调用的 `SpanId` 与 `TraceFlags`，上游「不采样」写 `00`，链路的根写 `01` |
+| `xihantenant` | 安全上下文的租户，没有再取 Baggage `xihan.tenant` |
+| `xihanprincipal` | 已认证主体的 ID，匿名时取 Baggage `xihan.principal` |
+| `xihancorrelation`、`xihanlocale` | Baggage `xihan.correlation`、`xihan.locale` |
+
+信封上已有的扩展保持不变，要换成别的值就自己 `WithExtension`；不在调用内（单例的后台循环、自己建的作用域）发布时不补。经发件箱时写进表里的就是补齐后的信封，投递循环原样发出，链路不断。下面的发布方只管业务字段：
 
 ```csharp
-public class BotMessageSender : IMessageSender
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Publishing;
+using XiHan.Framework.Primitives;
+
+public sealed record OrderShipped(Guid OrderId, string Carrier);
+
+[JsonSerializable(typeof(OrderShipped))]
+internal sealed partial class ShippingJsonContext : JsonSerializerContext;
+
+public sealed class ShipmentNotifier(IMessagePublisher publisher, TimeProvider clock)
 {
-    private readonly IBotClient _botClient;
+    public const string Topic = "shipments";
 
-    public BotMessageSender(IBotClient botClient) => _botClient = botClient;
-
-    public bool CanHandle(string channel)
-        => string.Equals(channel, "bot", StringComparison.OrdinalIgnoreCase);
-
-    public async Task<MessageSendResult> SendAsync(
-        MessageEnvelope envelope,
-        MessageRecipient recipient,
-        CancellationToken cancellationToken = default)
+    public async ValueTask<Result> NotifyAsync(IReadOnlyList<OrderShipped> shipments, InvocationContext context)
     {
-        var message = new BotMessage
+        var envelopes = shipments.Select(shipped => new MessageEnvelope
         {
-            Title = envelope.Subject,
-            Content = envelope.Content ?? string.Empty
-        };
+            Id = Guid.CreateVersion7().ToString("N"),
+            Source = "/shipping",
+            Type = "shipping.order-shipped",
+            Time = clock.GetUtcNow(),
+            Subject = $"order/{shipped.OrderId:N}",
+            Data = JsonSerializer.SerializeToUtf8Bytes(shipped, ShippingJsonContext.Default.OrderShipped),
+        }).ToList();
 
-        // 这里把 Address 约定为 Bot 渠道名（对应 XiHanBotOptions.Channels 的键）
-        var dispatch = await _botClient.SendAsync(message, [recipient.Address], cancellationToken);
-
-        return new MessageSendResult
+        // 一次批量发布；租户、关联 ID 与追踪由发布者从当前调用补齐；逐项结果与入参一一对应，返回第一个失败
+        foreach (var result in await publisher.PublishManyAsync(Topic, envelopes, context.CancellationToken))
         {
-            MessageId = envelope.MessageId,
-            Channel = envelope.Channel,
-            RecipientAddress = recipient.Address,
-            IsSuccess = dispatch.IsSuccess,
-            ErrorMessage = dispatch.ErrorMessage
-        };
+            if (result.IsFailure)
+            {
+                return result;
+            }
+        }
+
+        return Result.Success();
     }
 }
 ```
 
-::: tip 桥接时注意语义差
-`BotDispatchResult.IsSuccess` 的含义是「至少有一个提供者结果且全部成功」，被管道跳过（`IsSkipped`）算作**不成功**。如果你的业务把「环境过滤跳过」视为正常，桥接时要把 `IsSkipped` 单独拆出来处理，别一律当失败。
+`ShipmentNotifier` 依赖作用域服务 `IMessagePublisher`，登记成作用域（`AddScoped`），在操作或消息处理器里调用。在单例的后台服务里发布时先 `CreateAsyncScope()` 再取发布者。领域事件不需要手写信封，见[领域事件](#领域事件)。
+
+## 订阅与处理
+
+处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic)` 订阅；处理器注册为作用域服务，每条消息在新作用域里解析。下面的处理器仿照 `next/samples/SimpleApp` 的 `OrderPlacedHandler`，加上了解码数据与读取租户：
+
+```csharp
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Domain.Events;
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
+using XiHan.Framework.Primitives;
+
+public sealed record OrderPlaced(Guid OrderId, DateTimeOffset OccurredAt) : IDomainEvent;
+
+[JsonSerializable(typeof(OrderPlaced))]
+internal sealed partial class OrdersJsonContext : JsonSerializerContext;
+
+public sealed class OrderPlacedHandler(ILogger<OrderPlacedHandler> logger) : IMessageHandler
+{
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    {
+        if (JsonSerializer.Deserialize(delivery.Envelope.Data.Span, OrdersJsonContext.Default.OrderPlaced) is not { } placed)
+        {
+            // 抛出异常与返回失败一样算投递失败：代理重试到上限后进死信
+            throw new InvalidOperationException("The orders.placed event has no data.");
+        }
+
+        // 装配了多租户 Provider 时，信封的 xihantenant 已在 Tenant 阶段解析成当前租户，这次调用里的仓储按它过滤
+        logger.LogInformation("Order {OrderId} placed for tenant {TenantId} (attempt {Attempt}).", placed.OrderId, context.GetSecurity().Tenant?.Id, delivery.Attempt);
+        return ValueTask.FromResult(Result.Success());
+    }
+}
+```
+
+```csharp
+// 特性的 Configure 里订阅；同一主题可以订阅多个处理器
+context.Services.AddMessageHandler<OrderPlacedHandler>("orders");
+```
+
+`MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）、第几次尝试（`Attempt`，从 1 起）与订阅方式（`Mode`，见[订阅方式](#订阅方式)）。派发器 `MessageDispatcher` 为每条消息：
+
+1. 开新的作用域，用信封的扩展属性构造调用上下文：`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 进 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志（不合法视为缺失，与 HTTP 入站一致），调用来源（`InvocationOrigin`）的协议是 `InvocationProtocols.Messaging`、目标是主题。
+2. 经完整管道执行（`Ingress → Observe → Resilience → Authenticate → Tenant → Authorize → Validate → Idempotency → Transaction → Handle → Egress`），按订阅顺序依次执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。
+
+所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入随它提交或回滚；装配了发件箱时处理器发布的消息也先写进发件箱，随它一起提交。中间件里可以用 `MessageDispatcher.GetDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。
+
+消息没有凭据，Authenticate 阶段得到的是匿名主体；派发不写幂等键，Idempotency 阶段直接放行。
+
+## 订阅方式
+
+订阅登记带订阅方式 `SubscriptionMode`（RFC-0009「订阅方式」，ADR-0079）：
+
+| 方式 | 谁收到 | 失败到上限 | 适合 |
+| --- | --- | --- | --- |
+| `Competing`（缺省） | 订阅了这个主题的实例里只有一个收到 | 进死信 | 业务事件、领域事件、只该处理一次的工作 |
+| `Broadcast` | 每个在线实例各收到一份 | 丢弃并记 Warning 日志 | 断开本实例上的连接、清本地缓存这类每个节点都要做的事 |
+
+```csharp
+using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
+
+// 竞争：多实例部署时每条消息只有一个实例的处理器执行（不写方式即竞争）
+context.Services.AddMessageHandler<OrderPlacedHandler>("orders");
+
+// 广播：每个实例都执行，各自断开连在自己身上的会话连接
+context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", SubscriptionMode.Broadcast);
+```
+
+同一主题可以两种方式都订阅：订阅表按（主题，方式）分组，代理各消费一份，一条消息到达一个实例的竞争订阅与广播订阅是两次独立的投递，各自计尝试次数、各自重试，派发器只执行与投递同一方式的处理器。插件在握手的 `Subscription.mode` 里声明（[插件](./plugins#事件投递)）。
+
+广播的语义边界：
+
+- 尽力而为：只有订阅时在线、与代理连着的实例收到；实例不在线、重启中、与代理断开期间发布的消息收不到，上线后也不回放历史。要不丢就用竞争订阅。
+- 没有死信：在本实例内按 `MaxAttempts` 重试，到上限后丢弃并记 Warning 日志；无法解码的消息同样丢弃。
+- 不共享去重：每个实例各自执行处理器，派发不写幂等键；代理重投时同一实例可能收到重复的投递。
+- Kafka 的重放（`IMessageReplayer`）只投给竞争订阅。
+
+各 Provider 怎么实现：
+
+| Provider | 广播订阅 |
+| --- | --- |
+| `Messaging.InMemory` | 单进程就是一个实例：竞争与广播各收到一次（各一次投递），没有跨进程的语义 |
+| `Messaging.RabbitMQ` | 每个实例声明独占、非持久、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`，以主题的路由键绑定到交换机 |
+| `Messaging.Kafka` | 本实例独占的消费组 `<GroupId>@<InstanceId>`，从最新位点开始、不提交位点；启动后要等消费组分到分区（通常几秒）才开始收 |
+
+实例标识是 `MessagingInstance.Id`（消息装配登记的单例，每个宿主一个）。缺省每次启动生成（机器名、进程 ID 与 8 位随机十六进制）；要在 RabbitMQ 管理界面与 Kafka 消费组列表里认出实例，可以用 `XiHan:Messaging:InstanceId` 配一个固定值：
+
+```json
+{ "XiHan": { "Messaging": { "InstanceId": "orders-api-0" } } }
+```
+
+- 文法：1 到 64 个字母、数字、`.`、`_`、`-`，字母或数字开头（不含 `@`）。写了但不合文法（含空字符串）在装配时抛 `ArgumentException`；不想固定就不写这个键。
+- 必须每个同时在线的实例都不同。Kafka 上两个实例同一标识就是同一个广播消费组，组内分摊分区，广播静默退化成竞争（每条只有一个实例收到）；RabbitMQ 上后启动的实例声明同名独占队列被代理拒绝，启动失败（`MESSAGING_UNAVAILABLE_001`）。
+- 多副本部署配成部署平台保证唯一的值，例如 Kubernetes 用下行 API 把 Pod 名设进环境变量（见 [部署](./deployment#消息代理)）；多个副本共用的配置文件里不要写死。
+- 固定标识不改变广播语义：重启后仍不回放历史。代价是旧连接没有及时断开时（节点失联、进程被冻结），用同一标识重启的实例要等代理发现：RabbitMQ 在旧连接心跳超时前启动失败，Kafka 在旧成员会话超时（`session.timeout.ms`）前收不到广播。缺省的生成值每次都不同，没有这个问题。
+
+## 重试与死信
+
+处理器返回失败或抛出异常都算投递失败。代理重试到 `XiHan:Messaging:MaxAttempts`（缺省 3，含首次），竞争订阅仍失败就进死信，广播订阅丢弃并记日志；重试之间不等待。
+
+| Provider | 重试 | 死信 |
+| --- | --- | --- |
+| `Messaging.InMemory` | 以下一次尝试号重新入队到队尾；入队时队列已满则直接死信 | 该主题的有界死信列表 `DeadLetters(topic)`，满时丢弃最旧 |
+| `Messaging.RabbitMQ` | 尝试次数放在消息头 `x-xihan-attempt`，重新发布到队尾、得到代理确认后才确认原消息（未确认时原消息退回队列） | 队列 `<QueuePrefix><topic><DeadLetterSuffix>`；无法解码的消息直接进死信 |
+| `Messaging.Kafka` | 在原位重试，不重新入队，分区内顺序不变 | 主题 `<TopicPrefix><topic><DeadLetterSuffix>`；无法解码的消息直接进死信；死信发布失败时不提交，回退到这条消息，`RedeliveryDelaySeconds`（缺省 5）后重新投递 |
+
+::: warning 处理器必须能承受重复投递
+投递是至少一次：重试、重放、代理重投与发件箱的崩溃恢复都会让同一条消息再到达处理器。派发不经过幂等键，去重由处理器按信封的 `Id` + `Source` 自理。
 :::
 
-Bot 自身的渠道映射、策略与管道配置见 [Bot 包](../packages/bot)。
+内存代理与 RabbitMQ 的重试排到队尾，同一主题后面的消息先于重试被处理；需要严格有序时用 Kafka 并给消息设分区键。
+
+## 领域事件
+
+聚合在工作单元里记录的领域事件由消息子系统派发（ADR-0025）。应用显式登记每种事件：主题、CloudEvents `type`、源生成的序列化元数据与可选的 `subject` 选择器。下面两行取自 `next/samples/SimpleApp` 的 `OrdersFeature`：
+
+```csharp
+// 聚合记录的 OrderPlaced 在提交前发到 orders 主题，类型 orders.placed，subject 是订单
+context.Services.AddDomainEvent<OrderPlaced>(Topic, "orders.placed", SampleJsonContext.Default.OrderPlaced, static placed => $"order/{placed.OrderId:N}");
+context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
+```
+
+派发由 Transaction 阶段决定时机：处理器成功后、提交前，`UnitOfWorkMiddleware` 把工作单元登记的、带有未派发事件的聚合交给 `IDomainEventDispatcher`（首次 `AddDomainEvent` 时注册为 `DomainEventDispatcher`）。事件映射成信封：
+
+| 信封属性 | 取值 |
+| --- | --- |
+| `Id` | 新的 UUID v7（`N` 格式） |
+| `Source` | `/<topic>` |
+| `Type` | 登记的类型 |
+| `Subject` | 选择器的结果，没有选择器时省略 |
+| `Time` | `IDomainEvent.OccurredAt` |
+| `Data` | 用登记的 `JsonTypeInfo` 序列化的事件 |
+| `xihantenant` | 工作单元有租户时带上 |
+| 其余扩展 | `traceparent`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 由发布者从当前调用补齐，见[发布消息](#发布消息) |
+
+同一主题的事件一次 `PublishManyAsync`，主题按首次出现的顺序；任一项失败即派发失败，工作单元回滚，聚合的缓冲保留；全部成功后清空每个聚合的缓冲再提交。
+
+| 情况 | 结果 |
+| --- | --- |
+| 事件类型没有登记 | 调用以 `MESSAGING_VALIDATION_003` 结束并回滚，一条也不发 |
+| 同一事件类型登记两次，或登记表满（10000 种） | 装配时抛 `FrameworkException`（`MESSAGING_VALIDATION_004`） |
+| 有事件但没有任何 `AddDomainEvent`（没有派发器） | 调用以 `PERSISTENCE_VALIDATION_003` 结束并回滚 |
+
+没有发件箱时，事件在提交前直接发到代理：提交失败时消息已经发出。要让事件与业务数据一起提交或回滚，装配[事务性发件箱](#事务性发件箱)，事件会随业务写入落进发件箱表。聚合与 `DomainEventBuffer` 的写法见[领域模型](./domain)，工作单元见[工作单元与事务](./uow)。
+
+## 事务性发件箱
+
+`OutboxFeature` 把「写业务数据」与「发消息」放进同一个工作单元。它在 `Messaging.Abstractions` 里，需要 `messaging.queue@1` 与 `persistence.relational@1`，不在任何组合包里，按需装配（`next/samples/SimpleApp` 的写法）：
+
+```csharp
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Messaging.Abstractions.Outbox;
+using XiHan.Framework.Profiles.Standard;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<OutboxFeature>());
+```
+
+```json
+{ "XiHan": { "Messaging": { "Outbox": { "PollIntervalSeconds": 0.5, "BatchSize": 100 } } } }
+```
+
+装配后 `IMessagePublisher` 被替换成 `OutboxPublisher`：
+
+1. 有活动工作单元时（操作与消息处理器的 Transaction 阶段都开着），发布写成 `OutboxMessage` 行（主题、CloudEvents 结构化 JSON、创建时间，`NextAttemptAt` 等于创建时间），批量发布用仓储的 `AddRangeAsync` 一次写入，随业务事务提交或回滚。没有活动工作单元时直接发布到代理。
+2. 后台的 `OutboxDispatcher` 每隔 `PollInterval` 跑一轮，每轮一个工作单元：按创建时间取最多 `BatchSize` 条到期的消息（未投递、未进死信、`NextAttemptAt` 为空或已到），首次投递的按主题分组各一次 `PublishManyAsync`，重试的（`Attempts` 不为 0）逐条各一次，最后一次批量写回。工作单元只覆盖发件箱行，代理不在事务里。
+3. 删掉超过保留期的已投递行，每轮最多 `BatchSize` 行，与投递同一工作单元。
+4. 存储失败（读不出、写不回、提交失败）让本轮回滚，记日志后继续下一轮，只有停止才退出循环。
+
+每条发布过的消息计一次尝试（`Attempts`），结果写回行上：
+
+| 结果 | 行的变化 |
+| --- | --- |
+| 发布成功 | 记 `DispatchedAt`，清掉 `LastError`；`DispatchedRetention` 为 0 时当场删除 |
+| 发布失败，次数未用尽 | 记 `LastError`，`NextAttemptAt` 推后 `RetryDelay × 2^(Attempts − 1)`，不超过 `MaxRetryDelay` |
+| 发布失败，次数达到 `MaxAttempts` | 记 `DeadLetteredAt` 进死信，日志 Error 级别 |
+| 载荷无法解码 | 直接进死信（重试也解不开），`LastError` 是 `MESSAGING_VALIDATION_002` |
+| 代理抛出（不可达，或某条消息让整批失败） | 这次调用里的每条按「发布失败」处理（计一次尝试、退避或进死信），`LastError` 是 `MESSAGING_UNAVAILABLE_001`，原因取框架异常的消息（别的异常只写类型名；Kafka 与 RabbitMQ 的框架异常不拼代理的文字，代理的异常在 `InnerException`，ADR-0115）；记一条 Warning；本轮停止发布，余下的不计尝试、留到下一轮 |
+| 宿主停止（调用方取消） | 本轮回滚，不计尝试、不进死信，本轮已发出的下一轮重发 |
+
+退避中与死信的消息不占批次，几条永久失败的消息不会挡住后面的消息。重试逐条发布：代理整批抛出时分不出是哪一条，单独重试后让整批失败的那条只拖累它自己，同批的别的消息随即发出（ADR-0108）。代理不可达时一轮只有一次调用抛出，积压的消息累计尝试比逐条失败慢；要更长的停机容忍度，调大 `MaxAttempts` 或 `MaxRetryDelaySeconds`（如 15 次、3600 秒约 5.4 小时）。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。缺省参数下一条消息要连续失败约 20 分钟才进死信，代理短暂拒收不会把消息成批送进死信。
+
+投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信行不自动删除，由应用按 `DeadLetteredAt` 清理或重投。用 EF Core 时 `OutboxMessage` 要像其他实体一样进应用 `DbContext` 的模型（`modelBuilder.Entity<OutboxMessage>()`），见[持久化](./persistence)。表结构：`Topic` 长 128，`LastError` 为长文本，`NextAttemptAt` 与 `DeadLetteredAt` 可空（加在已有数据的表上时旧行为空，视为到期、未进死信）；索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`）由实体上的 `[EntityIndex]` 声明，同时服务取到期消息与保留期清理，EF Core 应用在 `modelBuilder.Entity<OutboxMessage>()` 之后调用 `ApplyPersistenceConventions(Database)` 即得到它。
+
+## 队列与流
+
+`messaging.queue@1` 只承诺至少一次与按主题消费；`messaging.stream@1`（Kafka）在此之上多三条保证：
+
+1. 分区键：信封扩展 `xihankey`（`EnvelopeExtensions.PartitionKey`）决定分区，同一主题内同键的消息按发布顺序投递；没有键的消息由 Kafka 分配分区，只在主题只有一个分区时全局有序。
+2. 消费位点：按消费组（`GroupId`，缺省 `xihan`）保存，投递完成（成功、重试耗尽进死信、无法解码进死信）后才提交；重启续接，仍是至少一次。死信发布没有得到确认时投递未完成：不提交，回退到这条消息，`RedeliveryDelaySeconds`（缺省 5）后重新投递，期间这个分区不往后读，消费循环只在停止时退出。
+3. 重放：`IMessageReplayer.ReplayAsync(topic, since, ct)` 用独立的消费位点把该时刻起的消息重新投递给当前竞争订阅的处理器（广播订阅不回放），经完整管道、按同样的重试与死信规则，不影响正常消费的位点。
+
+```csharp
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Messaging.Abstractions.Publishing;
+using XiHan.Framework.Primitives;
+
+public sealed class OrderStream(IMessagePublisher publisher, IMessageReplayer replayer)
+{
+    // 同一订单的事件用订单 ID 作分区键，消费端按发布顺序收到
+    public ValueTask<Result> PublishAsync(Guid orderId, MessageEnvelope envelope, CancellationToken cancellationToken)
+        => publisher.PublishAsync("orders", envelope.WithExtension(EnvelopeExtensions.PartitionKey, orderId.ToString("N")), cancellationToken);
+
+    // 修复处理器的缺陷后，把最近一小时的消息重新跑一遍；处理器要能去重
+    public ValueTask<Result> ReplayLastHourAsync(CancellationToken cancellationToken)
+        => replayer.ReplayAsync("orders", DateTimeOffset.UtcNow.AddHours(-1), cancellationToken);
+}
+```
+
+`IMessageReplayer` 只在 Kafka 被选中提供 `messaging.stream` 时登记；依赖它的特性在清单里声明 `messaging.stream@1`。主题不存在或该时刻之后没有消息时重放成功返回；代理不可达返回 `MESSAGING_UNAVAILABLE_001`。
+
+::: warning Kafka 关了自动建主题时要预建主题
+Kafka 缺省开启 `auto.create.topics.enable`，发布或订阅到不存在的主题时由 broker 建出来。生产集群常把它关掉，这时主题不存在是部署错误，框架不替你建，也不把它当作「没有订阅者」丢弃（那样主题名或 `TopicPrefix` 写错也会被吞掉）：
+
+- 发布约 30 秒后失败（`MESSAGING_UNAVAILABLE_001`）；经发件箱的按发件箱规则退避重试，到上限进死信。
+- 订阅记 Warning 日志并一直等，主题建好之后才开始收。
+- 死信主题不存在时死信发布失败，消息回退重投，这个分区停在原地。
+
+所以要预先建好（名字都带 `TopicPrefix`，缺省 `xihan.`）：应用发布与订阅的主题、被订阅主题的死信主题 `<topic>.dlq`，以及框架自己发布的事件主题——装配了调度时的 9 个（[调度事件](./scheduling#事件)：`scheduling.job.scheduled|unscheduled|paused|resumed`、`scheduling.run.started|succeeded|failed|canceled|lost`），装配了工作流时的 `workflow.*`（[工作流事件](./workflow#事件)），没人订阅的也要建。清单与建主题的命令见 [Messaging.Kafka](../packages/messaging-kafka#主题)。
+:::
+
+## 与 CloudEvents 协议的关系
+
+`Protocols.CloudEvents` 是信封在 HTTP 上的 CloudEvents 协议绑定：入站端点 `MapXiHanCloudEvents()` 接收 binary / structured / batch 三种内容模式，按 `XiHan:Protocols:CloudEvents:Topics:<事件类型>` 映射到主题，缺省在请求内经同一个 `MessageDispatcher` 派发给处理器（也可以只发布到代理）；出站的 `CloudEventsWebhookPublisher` 把信封推送到配置的 Webhook。`next/samples/SimpleApp` 的 `POST /events` 就是把外部的 `orders.placed` 事件交给 `OrderPlacedHandler`。细节见 [gRPC、MCP 与 CloudEvents](./protocols) 与 [Protocols.CloudEvents](../packages/protocols-cloudevents)。
 
 ## 配置
 
-`XiHanMessagingOptions` **没有配置节**，不能从 `appsettings.json` 读，只能用代码配置：
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 一条消息最多投递次数（含首次） |
+| `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题 / 队列后缀 |
+| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 本实例在代理上的标识（广播订阅的队列名与消费组名用它）；1 到 64 个字母、数字、`.`、`_`、`-`，字母或数字开头；必须每个同时在线的实例唯一，见[订阅方式](#订阅方式) |
+| `XiHan:Messaging:Outbox:PollIntervalSeconds` | 正数 | 1 | 发件箱投递循环的轮询间隔 |
+| `XiHan:Messaging:Outbox:BatchSize` | 1 到 1000 的整数 | 100 | 发件箱每轮最多投递条数，也是每轮最多删除的已投递行数；按它分页查发件箱表，不能超过查询的取出上限 `EntityQuery.DefaultMaxTake` |
+| `XiHan:Messaging:Outbox:MaxAttempts` | 正整数 | 10 | 一条消息最多尝试投递的次数（含首次），用尽进死信 |
+| `XiHan:Messaging:Outbox:RetryDelaySeconds` | 正数 | 5 | 第一次失败后的重试间隔，之后每失败一次翻倍 |
+| `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限 |
+| `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
+| `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 内存代理每个主题（及其死信列表）的条目上限 |
+| `XiHan:Messaging:RabbitMQ:*` | — | — | 连接、队列前缀、交换机、预取数，见 [Messaging.RabbitMQ](../packages/messaging-rabbitmq#配置) |
+| `XiHan:Messaging:Kafka:*` | — | — | 引导地址、消费组、主题前缀、透传配置，见 [Messaging.Kafka](../packages/messaging-kafka#配置) |
 
-```csharp
-public override void ConfigureServices(ServiceConfigurationContext context)
-{
-    context.Services.Configure<XiHanMessagingOptions>(options =>
-    {
-        options.ContinueOnError = false;
-        options.ThrowWhenNoSender = true;
-    });
-}
-```
+非法值在装配时抛 `ArgumentException`。
 
-| 选项 | 默认值 | 含义 |
+## 健康项与错误码
+
+| 健康项 | 来源 | Degraded 的条件 |
 | --- | --- | --- |
-| `ContinueOnError` | `true` | 单个接收人失败后是否继续发给后面的人。设为 `false` 时遇到第一个失败就中断，已产生的结果照常返回 |
-| `ThrowWhenNoSender` | `false` | 一个发送器都匹配不到时是否抛 `InvalidOperationException`。`false` 则给每个接收人返回失败结果 |
+| `messaging.inmemory.capacity` | `Messaging.InMemory` | 任一主题的队列排满（`MESSAGING_UNAVAILABLE_002`） |
+| `messaging.rabbitmq.connection` | `Messaging.RabbitMQ` | 连接或发布通道关闭（`MESSAGING_UNAVAILABLE_001`） |
+| `messaging.kafka.connection` | `Messaging.Kafka` | 集群不可达或超时（`KERNEL_UNAVAILABLE_005`） |
 
-::: warning `ThrowWhenNoSender` 在默认注册下不会触发
-`AddXiHanMessaging()` 注册的 `NotConfiguredMessageSender` 的 `CanHandle` 恒为 `true`，调度器总能选到它，`sender is null` 这个分支永远走不到。所以打开 `ThrowWhenNoSender` 并不会让「通道没接好」抛异常——它仍然表现为兜底发送器返回的「消息通道 'xxx' 未配置发送器」失败结果。想让它生效，得先把兜底项从 `IMessageSender` 集合里移除。
-:::
+| 错误码 | 含义 |
+| --- | --- |
+| `MESSAGING_VALIDATION_001` | 主题不合法，发布者逐项返回 |
+| `MESSAGING_VALIDATION_002` | 信封不合法或无法解码 |
+| `MESSAGING_VALIDATION_003` | 领域事件类型没有用 `AddDomainEvent` 登记 |
+| `MESSAGING_VALIDATION_004` | 领域事件类型重复登记或登记表已满（装配时抛出） |
+| `MESSAGING_UNAVAILABLE_001` | 代理不可达或操作失败；发布时以 `FrameworkException` 抛出，重放时作为失败结果返回 |
+| `MESSAGING_UNAVAILABLE_002` | 内存代理的主题队列已满 |
+| `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常，代理记为一次失败的投递 |
 
-::: tip 开关的取舍
-批量通知类场景保持默认（`ContinueOnError = true`），别让一个坏邮箱堵住整批。要在联调期让「通道没接好」立刻可见，靠的是检查每条结果的 `IsSuccess` / `ErrorMessage`，而不是这两个开关。
-:::
+## 相关
 
-## 常见问题
-
-| 现象 | 原因 | 处理 |
-| --- | --- | --- |
-| 结果里全是「消息通道 'xxx' 未配置发送器」 | 没有任何真实发送器的 `CanHandle` 认这个通道，命中了兜底 | 检查发送器是否注册、`CanHandle` 的比较是否大小写敏感 |
-| 注册了发送器但没被调用 | 同通道有多个匹配的发送器，只命中注册顺序里的第一个 | 一个通道只留一个发送器，或在 `CanHandle` 里收窄条件 |
-| `DispatchAsync` 返回空集合 | `Recipients` 为空时直接返回 `[]`，不算失败 | 调用前校验接收人；别用 `results.All(r => r.IsSuccess)` 判成功——空集合恒为 `true` |
-| 抛 `InvalidOperationException: 消息通道不能为空` | `Channel` 为 `null` / 空白。这个校验与 `ThrowWhenNoSender` 无关，一定抛 | 显式设置 `Channel`（默认值是 `"default"`，通常没有发送器认它） |
-| 模板没渲染、`ScheduledTime` 没生效 | 调度器不解释这些字段 | 在发送器里读取并自行处理 |
-| 发送器抛的异常在上层 catch 不到 | 调度器已捕获并转为失败结果 | 看 `MessageSendResult.ErrorMessage`，或看发送器打的 `LogError` |
-| 换了自己的 `IMessageDispatcher` 不生效 | 被依赖模块先执行，`TryAddSingleton` 已占位 | 用 `services.Replace(ServiceDescriptor.Singleton<IMessageDispatcher, MyDispatcher>())` |
-| 大批量接收人时接口变慢 | 逐接收人串行投递，且在调用线程上完成 | 改为入队 + 后台消费，见上文「框架不做后台异步发送」 |
-
-## 下一步
-
-- [缓存与分布式锁](./caching)——延迟队列，做后台异步发送的基础设施
-- [事件总线](../packages/eventbus)——用领域事件解耦「业务动作」与「发通知」
-- [多租户](./multi-tenancy)——发送器里读 `TenantId` 前先弄清当前租户上下文
-- [扩展与二次开发](./extending)——替换框架默认实现的通用做法
-- [Messaging 包](../packages/messaging)——完整 API 清单与 `MessageEnvelope` 全字段表
-- [Bot 包](../packages/bot)——机器人推送栈的渠道、策略与管道
+- [Messaging.Abstractions](../packages/messaging-abstractions)、[Messaging.InMemory](../packages/messaging-inmemory)、[Messaging.RabbitMQ](../packages/messaging-rabbitmq)、[Messaging.Kafka](../packages/messaging-kafka)
+- [执行管道](./pipeline)、[多租户](./multi-tenancy)、[工作单元与事务](./uow)、[领域模型](./domain)
+- [gRPC、MCP 与 CloudEvents](./protocols)
+- [测试与一致性套件](./testing)：Provider 必须通过 `MessageBrokerConformance`，流 Provider 还要通过 `MessageStreamConformance`
+- 规范：RFC-0009《消息、CloudEvents 信封与发件箱》；ADR-0012、ADR-0019、ADR-0025

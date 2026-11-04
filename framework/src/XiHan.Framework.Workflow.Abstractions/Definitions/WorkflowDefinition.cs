@@ -1,85 +1,213 @@
-// Copyright (c) 2021-Present XiHanFun and contributors.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 流程定义（某编码某版本的不可变模板，实例永远绑定具体版本）
+/// 工作流定义
 /// </summary>
-public class WorkflowDefinition
+/// <remarks>
+/// 一张有向图加变量声明；同名多版本，只有已发布的版本能启动实例
+/// </remarks>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed record WorkflowDefinition
 {
     /// <summary>
-    /// 定义标识
+    /// 定义 ID
     /// </summary>
-    public string Id { get; set; } = string.Empty;
+    public required string Id
+    {
+        get => field;
+        init => field = WorkflowDefinitionRules.IsValidDefinitionId(value) ? value : throw new ArgumentException("The definition ID must not be empty.", nameof(value));
+    }
 
     /// <summary>
-    /// 流程编码（同编码可存在多个版本）
+    /// 定义名
     /// </summary>
-    public string Code { get; set; } = string.Empty;
+    /// <remarks>
+    /// 一个名字下多个版本
+    /// </remarks>
+    public required WorkflowName Name { get; init; }
 
     /// <summary>
-    /// 流程名称
+    /// 版本号，从 1 起
     /// </summary>
-    public string Name { get; set; } = string.Empty;
+    /// <remarks>
+    /// JSON 里没写时取初值 1（ADR-0107）
+    /// </remarks>
+    [JsonIgnore]
+    public int Version
+    {
+        get => field;
+        init => field = WorkflowDefinitionRules.IsValidVersion(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The version must be at least 1.");
+    } = 1;
 
     /// <summary>
-    /// 版本号（同编码内自增，从 1 开始）
+    /// 序列化用的 <see cref="Version"/>
     /// </summary>
-    public int Version { get; set; } = 1;
+    /// <remarks>
+    /// 源生成的序列化器把不在场的 init 成员设成类型的默认值、盖掉初值（ADR-0107）：经这一层可空的成员，不在场或给 <see langword="null"/> 时什么也不赋，定义保留 <see cref="Version"/> 的初值；给了值照常经 <see cref="Version"/> 的校验。写出时总是写出当前值
+    /// </remarks>
+    [JsonInclude]
+    [JsonPropertyName("version")]
+    internal int? VersionJson
+    {
+        get => Version;
+        init
+        {
+            if (value is { } given)
+            {
+                Version = given;
+            }
+        }
+    }
 
     /// <summary>
-    /// 描述
+    /// 显示名
     /// </summary>
-    public string? Description { get; set; }
+    public string? DisplayName { get; init; }
+
+    /// <summary>
+    /// 说明
+    /// </summary>
+    public string? Description { get; init; }
+
+    /// <summary>
+    /// 分类的最大长度
+    /// </summary>
+    /// <remarks>
+    /// 与数据库实现的分类列同宽（ADR-0096）
+    /// </remarks>
+    public const int MaxCategoryLength = 128;
 
     /// <summary>
     /// 分类
     /// </summary>
-    public string? Category { get; set; }
+    /// <remarks>
+    /// 定义列表按它精确过滤（<see cref="WorkflowDefinitionQuery.Category"/>）。最多 <see cref="MaxCategoryLength"/> 个字符，超长抛出 <see cref="ArgumentException"/>；从 JSON 读入时 <c>WorkflowJson.DeserializeDefinition</c> 把它转成 <c>WORKFLOW_VALIDATION_001</c>
+    /// </remarks>
+    public string? Category
+    {
+        get => field;
+        init => field = WorkflowDefinitionRules.IsValidCategory(value) ? value : throw new ArgumentException($"The category must be at most {MaxCategoryLength} characters.", nameof(value));
+    }
 
     /// <summary>
     /// 状态
     /// </summary>
-    public WorkflowDefinitionStatus Status { get; set; } = WorkflowDefinitionStatus.Draft;
+    public WorkflowDefinitionStatus Status { get; init; } = WorkflowDefinitionStatus.Draft;
 
     /// <summary>
-    /// 是否启用补偿（实例被取消时按执行逆序执行可补偿活动的补偿逻辑）
+    /// 取消实例时是否按完成顺序逆序调用可补偿活动
     /// </summary>
-    public bool EnableCompensation { get; set; }
+    public bool EnableCompensation { get; init; }
 
     /// <summary>
-    /// 节点集合
+    /// 故障时也按完成顺序逆序补偿已完成的节点
     /// </summary>
-    public List<WorkflowNode> Nodes { get; set; } = [];
+    public bool CompensateOnFault { get; init; }
 
     /// <summary>
-    /// 连线集合
+    /// 实例级超时
     /// </summary>
-    public List<WorkflowTransition> Transitions { get; set; } = [];
+    /// <remarks>
+    /// 启动后超过它即按 <see cref="TimeoutAction"/> 处理；空为不限
+    /// </remarks>
+    public TimeSpan? Timeout
+    {
+        get => field;
+        init => field = WorkflowDefinitionRules.IsValidTimeout(value) ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The timeout must be positive.");
+    }
 
     /// <summary>
-    /// 启动变量声明
+    /// 实例级超时到期的处理
     /// </summary>
-    public List<WorkflowVariableDefinition> Variables { get; set; } = [];
+    /// <remarks>
+    /// 默认故障
+    /// </remarks>
+    public WorkflowTimeoutAction TimeoutAction { get; init; }
 
     /// <summary>
-    /// 租户标识（为空表示平台级定义）
+    /// 节点
     /// </summary>
-    public long? TenantId { get; set; }
+    /// <remarks>
+    /// 总是非空：JSON 里缺省或显式 null 都按空集合处理
+    /// </remarks>
+    public IReadOnlyList<WorkflowNode> Nodes
+    {
+        get => field;
+        init => field = value ?? [];
+    } = [];
+
+    /// <summary>
+    /// 转移
+    /// </summary>
+    /// <remarks>
+    /// 总是非空：JSON 里缺省或显式 null 都按空集合处理
+    /// </remarks>
+    public IReadOnlyList<WorkflowTransition> Transitions
+    {
+        get => field;
+        init => field = value ?? [];
+    } = [];
+
+    /// <summary>
+    /// 变量声明
+    /// </summary>
+    /// <remarks>
+    /// 总是非空：JSON 里缺省或显式 null 都按空集合处理
+    /// </remarks>
+    public IReadOnlyList<WorkflowVariableDefinition> Variables
+    {
+        get => field;
+        init => field = value ?? [];
+    } = [];
+
+    /// <summary>
+    /// 所属租户
+    /// </summary>
+    /// <remarks>
+    /// 平台级为 <see langword="null"/>
+    /// </remarks>
+    public string? TenantId { get; init; }
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    public DateTime CreationTime { get; set; }
+    public DateTimeOffset CreatedAt { get; init; }
 
     /// <summary>
     /// 发布时间
     /// </summary>
-    public DateTime? PublishTime { get; set; }
+    public DateTimeOffset? PublishedAt { get; init; }
 
     /// <summary>
-    /// 扩展属性（设计器画布布局等附加数据）
+    /// 应用扩展属性
     /// </summary>
-    public Dictionary<string, string> ExtraProperties { get; set; } = [];
+    public JsonObject? Properties { get; init; }
+
+    /// <summary>
+    /// 显示名或名字
+    /// </summary>
+    public string Title => string.IsNullOrWhiteSpace(DisplayName) ? Name.Value : DisplayName;
+
+    /// <summary>
+    /// 按 ID 找节点
+    /// </summary>
+    public Maybe<WorkflowNode> FindNode(string nodeId)
+    {
+        foreach (var node in Nodes)
+        {
+            if (string.Equals(node.Id, nodeId, StringComparison.Ordinal))
+            {
+                return Maybe.Some(node);
+            }
+        }
+
+        return default;
+    }
 }

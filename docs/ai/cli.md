@@ -1,90 +1,72 @@
 # CLI
 
-`XiHan.Framework.Cli` 是 XiHan.Framework 的命令行工具：在终端里查包、模块类与依赖、配置节、文档与更新日志，也是 [MCP 服务端](./mcp) 的载体。命令名 `xihan-framework`。
+本页说明 AI 工具与开发者如何用命令行核对一个 5.0 应用：应用自带的命令行宿主命令，以及转发这些命令、生成部署产物的 `xihan` 工具。完整的包说明见 [Cli 包](../packages/cli)与[命令行宿主](../guide/command-line)。
 
 ## 特点
 
-- **离线**：整站文档、各包的项目文件、模块类与选项类在打包时嵌进工具，查询不联网。
-- **与版本一致**：工具与框架各包同号发布。在项目里运行时，工具扫描项目文件与 props 里的 `XiHan.Framework.*` 包引用，版本与自身不一致时在 stderr 提示改用同号的工具。
-- **配置键从源码读**：配置节、属性、类型与缺省值取自选项类的 `SectionName` 常量与属性声明，说明取自 XML 文档注释，不靠手抄。
-- **给机器读**：所有查询命令都可输出 JSON；查不到时给出候选。
+- 命令读的是应用自己装配出的能力图谱、管道与操作登记表，结果与运行时一致，不依赖文档版本。
+- 输出是纯文本或 JSON，失败时 Problem JSON 写到 stderr、退出码按错误种类区分，适合脚本与 AI 工具判断结果。
+- 不需要启动 HTTP 服务，也不需要外部设施。
 
-## 安装
+## 应用自带的命令
 
-不安装，用 .NET 10 SDK 自带的 `dnx` 按版本直接运行：
+应用接入命令行宿主（`Hosting.CommandLine`）后，以下命令直接可用：
 
-```bash
-dnx XiHan.Framework.Cli@<版本> --yes -- info Caching
-```
-
-装成全局工具：
-
-```bash
-dotnet tool install --global XiHan.Framework.Cli --version <版本>
-xihan-framework info Caching
-```
-
-或者装成仓库的本地工具，版本记在 `.config/dotnet-tools.json` 里随项目一起升级：
+| 命令 | 输出 |
+| --- | --- |
+| `help` | 用法与命令列表 |
+| `graph` | 已解析的能力图谱：每个特性提供与依赖的能力、选中的提供者 |
+| `pipeline` | 管道的最终顺序：一行一个中间件，阶段名与类型全名 |
+| `operations` | 登记的操作：操作 ID、稳定性、暴露的协议、授权要求 |
+| `invoke <操作 ID> --json '<载荷>'` | 经完整管道调用一个操作 |
+| `<resource> <verb> --字段 值` | `invoke` 的简写 |
+| `mcp` | 加入 `McpProtocolFeature` 后可用：以 stdio 提供 MCP 服务端 |
 
 ```bash
-dotnet new tool-manifest
-dotnet tool install XiHan.Framework.Cli --version <版本>
-dotnet xihan-framework info Caching
+dotnet run --project next/samples/SimpleCli -- operations
+dotnet run --project next/samples/SimpleCli -- greetings create --name Ada --times 2
+dotnet run --project next/samples/SimpleCli -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $?
 ```
 
-需要 .NET 10 SDK。
+第三条的 `times` 超出范围，stderr 输出 Problem JSON，退出码为 2。`--tenant`、`--locale`、`--authorization`、`--timeout`、`--correlation` 把租户、区域、凭据、超时与关联 ID 放进调用上下文。
 
-## 快速开始
+## xihan 工具
+
+`XiHan.Framework.Cli` 是一个 .NET 工具，命令名 `xihan`。5.0 尚未发布到 nuget.org，从本地包源安装（打包步骤见[快速上手](../quickstart#获取预览包)）：
 
 ```bash
-xihan-framework list --layer Web                # Web 层的包
-xihan-framework info XiHanWebApiModule          # 按模块类名查包
-xihan-framework config Authentication           # 认证包的全部配置节
-xihan-framework config XiHan:Authentication:Jwt # 一个配置节的属性与缺省值
-xihan-framework search 工作单元 事务            # 同时提到两个词的页面
-xihan-framework doc guide/uow                   # 指南全文
+dotnet tool install --global XiHan.Framework.Cli --version 5.0.0-preview.1 --add-source ./next/artifacts/packages
 ```
 
-## 命令
+| 命令 | 说明 |
+| --- | --- |
+| `xihan graph` / `pipeline` / `operations` / `invoke` | 转发给应用：`dotnet run --project <项目> --configuration Release -- <命令>`；项目取 `--project`，否则取当前目录 `xihan.app.json` 的 `project` |
+| `xihan <resource> <verb> ...` | 转发 `invoke` 的简写 |
+| `xihan pack` | 读 `xihan.app.json`，生成 Dockerfile、Kustomize、Compose 与 Aspire 产物，见[部署与打包](../guide/deployment) |
+| `xihan migrate <来源版本>` | 通用的代码迁移机制；当前没有登记任何规则集，任何来源版本都返回 `CLI_VALIDATION_002` |
+| `xihan mcp` | 以 stdio 提供框架离线知识库的 MCP 服务（包与特性清单、配置键、文档），见 [MCP Server](./mcp) |
+| `xihan setup --client <claude\|cursor\|vscode\|codex>` | 把 `mcp` 服务与使用技能写进编码助手的项目配置，`--check` 核对是否就绪 |
+| `xihan version` | 框架版本 |
+| `xihan help` | 命令列表 |
 
-### 查询
-
-| 命令 | 参数 | 说明 |
-| --- | --- | --- |
-| `list` | `--layer <层>` `--query <关键字>` | 按所在层列出包与模块类 |
-| `info` | `<包\|模块>` | 安装命令、模块类与 `[DependsOn]`、引用的框架包与第三方包、绑定的配置节 |
-| `doc` | `[<页面\|包>]` | 文档页全文；写包名时取它的参考页；不带参数列出全部页面 |
-| `config` | `[<配置节\|包\|选项类>]` | 不带参数列出全部配置节；带参数时逐项列出属性、类型、缺省值与说明，并给出按缺省值写出的 appsettings 片段 |
-| `search` | `<关键字…>` | 在全部文档里检索，多个词需同时出现，按相关度排序 |
-| `changelog` | `[<版本> [<版本>]]` `--keyword <词>` | 不带版本取最近一版；一个版本取这一版；两个版本取两者之间（不含较早的那一版）；`--keyword` 只留提到它的条目，可写包名 |
-
-### 集成
-
-| 命令 | 参数 | 说明 |
-| --- | --- | --- |
-| `mcp` | — | 以 stdio 启动 MCP 服务端，见 [MCP Server](./mcp) |
-| `setup` | `--client <claude\|cursor\|vscode\|codex>` `--mode <mcp\|skill\|both>` `--pin <版本>` `--dry-run` `--check` | 把钉住版本的 MCP 配置与使用技能写进项目 |
-
-### 包名
-
-包名可以写全名（`XiHan.Framework.Caching`）、短名（`Caching`、`Web.Api`、`web-api`）或模块类名（`XiHanCachingModule`）。文档页写站内路径，如 `guide/caching`、`quickstart`、`packages/web-api`。
-
-## 全局选项
-
-| 选项 | 说明 | 缺省 |
-| --- | --- | --- |
-| `--format <markdown\|json>` | 输出格式 | `markdown` |
-| `-v, --version` | 打印版本 | — |
-| `-h, --help` | 打印帮助 | — |
+```bash
+xihan graph --project src/Shop.Cli
+xihan pack --manifest src/Shop/xihan.app.json --output deploy/shop --only dockerfile,kustomize
+```
 
 ## 退出码
 
 | 退出码 | 含义 |
 | --- | --- |
 | `0` | 成功 |
-| `1` | 查不到（stderr 给出候选）或配置核对未通过 |
-| `2` | 用法错误：未知命令、缺参数、选项取值不合法 |
+| `2` | 校验失败（VALIDATION），如载荷不满足契约、应用清单不合法 |
+| `3` | 不存在（NOTFOUND），如操作未登记、`xihan.app.json` 不存在 |
+| `64` | 用法错误 |
+| 其他 | 按错误 KIND 映射，完整对照见[命令行宿主](../guide/command-line) |
+
+转发的命令原样返回应用进程的退出码。
 
 ## 相关
 
 - [For Agents](./agents) · [MCP Server](./mcp) · [LLMs.txt](./llms)
+- [Cli 包](../packages/cli) · [Hosting.CommandLine 包](../packages/hosting-commandline)

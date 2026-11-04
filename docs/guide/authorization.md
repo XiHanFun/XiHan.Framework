@@ -1,337 +1,438 @@
 # 授权
 
-认证解决「你是谁」，授权解决「你能做什么」。这一章讲怎么用一个权限码把接口保护起来、权限判定实际走了哪条链路、以及为什么真实项目**几乎总要**换掉框架的默认判定器。
+本章讲一次调用怎样被判定能否执行：权限的定义与登记、操作契约与端点上的授权要求、Authorize 阶段、RBAC 授予与授予存储、策略目录、收窄过滤器与授予来源、条件引擎与 IP 归属地，适用于需要按角色、权限或属性控制访问的应用。完整 API 见 [Security.Abstractions](../packages/security-abstractions)，授予存储见 [Security.InMemory](../packages/security-inmemory) 与 [Security.Database](../packages/security-database)。
 
-完整 API 清单见 [Authorization 包](../packages/authorization)。
+## 判定模型
 
-## 和认证的分工
+一次调用最多带一个授权要求 `AuthorizationRequirement`：策略名加可选的资源名。Authorize 阶段的 `AuthorizationMiddleware` 按策略名在 `PolicyCatalog` 里找到 `IPolicy`，以 `AuthorizationRequest`（安全上下文、策略名、资源）调用它，得到允许或带原因的拒绝。权限是一种特殊的策略：策略名 `permission:<code>` 映射为 `PermissionPolicy`，由 `IPermissionChecker` 按 RBAC 授予判定。
 
-两件事分属两个包、在管道里也是两段，中间还夹着租户解析与会话闸门：
+授权是能力 `security.authorization@1`。它读 Authenticate 阶段写入的主体与 Tenant 阶段写入的租户，所以租户专属的授予在判权时已经生效。
 
-```text
-UseAuthentication → 租户解析 → 会话闸门 → UseAuthorization → 端点
-   你是谁              哪个租户    会话还有效吗   你能做什么
-```
-
-| 关注点 | 认证 | 授权 |
+| 包 | 清单角色 | 授予存在哪里 |
 | --- | --- | --- |
-| 回答的问题 | 你是谁 | 你能做什么 |
-| 输入 | 令牌 / Cookie | 已解析的 `ClaimsPrincipal` + 权限数据 |
-| 产物 | `ClaimsPrincipal` 上的身份声明 | 通过 / 不通过 |
-| 失败状态码 | `401`（未认证） | `403`（已认证但权限不足） |
-| 主要扩展点 | `IJwtTokenService` 等 | `IPermissionChecker` |
+| `XiHan.Framework.Security.InMemory` | `default` | 配置 `XiHan:Security:InMemory:Grants` 与进程内存；`Profiles.Standard` 已包含 |
+| `XiHan.Framework.Security.Database` | `provider` | 数据库表（`PermissionGrantRecord`），经装配的持久化 Provider 读写 |
 
-::: tip 身份放令牌，权限别放令牌
-令牌里只放身份信息（用户、会话、租户、角色），权限一律服务端实时判定。框架的授权处理器就是这么做的——它不读令牌里的权限声明，每次都问 `IPermissionChecker`，所以授权/回收、账号禁用、会话注销都能立刻生效，不用等令牌过期。
-:::
+两个 Provider 登记的是同一套组件：`PermissionChecker`、`authenticated` 策略、`PolicyCatalog` 与 Authorize 阶段的 `AuthorizationMiddleware`，区别只在授予存储。
 
-## 安装与启用
+## 定义与登记权限
 
-```bash
-dotnet add package XiHan.Framework.Authorization
-```
+权限是 `PermissionDefinition`：权限码、显示名、可选说明。权限码小写、点分、至少两段，每段以小写字母开头，可含数字与连字符，如 `orders.read`。特性在 `Configure` 里用 `FeatureContext.AddPermission` 登记到内核的 `PermissionRegistry`；权限码重复（`KERNEL_SECURITY_001`）或登记表已满（容量 10000，`KERNEL_SECURITY_002`）在装配时抛出。
 
-框架里没有任何模块自动依赖它，必须在你的模块上显式声明：
+下面的特性改写自 `next/samples/SimpleApp/Orders/OrdersFeature.cs`，只保留授权相关的部分：
 
 ```csharp
-[DependsOn(
-    typeof(XiHanAuthorizationModule),
-    typeof(XiHanWebApiModule)
-)]
-public class MyAppModule : XiHanModule
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Security.Abstractions;
+
+public sealed class OrdersFeature : IFeature
 {
+    public Manifest Manifest { get; } = new()
+    {
+        Id = "xihan.samples.orders",
+        Package = "SimpleApp",
+        Version = FrameworkInfo.Version,
+        Primitives = 1,
+        Stability = Stability.Experimental,
+        Kind = ManifestKind.Capability,
+        Requires =
+        [
+            new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
+            new CapabilityRequirement(SecurityCapabilities.Authorization, SecurityCapabilities.Version),
+        ],
+        // 清单声明本包贡献的权限码，供清单的读者与工具使用
+        Contributes = new Contributions { Permissions = ["orders.read", "orders.write"] },
+        Entry = typeof(OrdersFeature).FullName,
+    };
+
+    public void Configure(FeatureContext context)
+    {
+        // 运行时只认登记表里的权限码
+        context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
+        context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
+    }
 }
 ```
 
-`XiHanAuthorizationModule` 依赖 `XiHanAuthenticationModule`，`ConfigureServices` 里调 `AddXiHanAuthorization(config)`，用 `TryAdd` 把整套判定件注册进容器：存储（`IPermissionStore` / `IRoleStore` / `IPolicyStore`）、判定（`IPermissionChecker` / `IPolicyEvaluator` / `IAbacAttributeCollector` / `IAbacEvaluator`）、门面（`IAuthorizationService`），以及 ASP.NET Core 集成件 `HybridPermissionPolicyProvider` 与 `HybridPermissionAuthorizationHandler`。
+特性清单的 `Contributes.Permissions` 是声明，`AddPermission` 是登记，内核不核对两者是否一致，应用自己保持同步。插件不同：进程外与 Wasm 宿主按插件清单的 `contributes.permissions` 替插件登记（ADR-0080），只登记清单声明了的，与已登记的码重复即冲突（`KERNEL_SECURITY_001`），见[插件](./plugins#插件定义的权限码)。
 
-`UseAuthorization()` 由 `XiHanWebApiModule` 编排在管道里，不需要你自己调。
+操作契约的 `Permission` 引用的权限码必须已登记：全部特性配置完、装配完成时一次核对，有未登记的即抛出 `KERNEL_VALIDATION_005`（一次列出全部），应用启动失败（ADR-0071）。核对在装配完成时而不是登记操作时，所以权限码可以由别的特性登记。装配完成之后才登记的操作（进程外 / Wasm 插件握手之后）在登记时核对，引用了未登记的权限码，插件整体登记失败。插件清单声明的码在配置阶段就随它的代理操作登记，装配完成时的核对看得到它们。策略目录只为登记过的权限码创建权限策略；HTTP 协议适配器发布 OpenAPI 时，`components.x-xihan-permissions` 也取登记表里的显示名与说明。
 
-::: warning 漏掉 DependsOn 的表现很不直观
-没依赖这个模块时，`HybridPermissionPolicyProvider` 不会注册，`[PermissionAuthorize]` 生成的策略名在默认提供器里找不到，请求期直接抛 `InvalidOperationException`（提示策略 `xihan.hybrid:p=...` 未找到），不是 403。
-:::
+## 声明授权要求
 
-## 用特性保护接口
+授权要求有三个来源，Authorize 阶段先看调用上下文里显式设置的要求，没有时再从当前操作的契约推导，都没有则直接放行：
 
-`PermissionAuthorizeAttribute` 继承自 ASP.NET Core 的 `AuthorizeAttribute`，可以标在类或方法上，`AllowMultiple = true`、`Inherited = true`。动态 API 把应用服务本身当作 Controller，所以直接标在应用服务方法上即可：
-
-```csharp
-public class InvoiceAppService : ApplicationServiceBase, IInvoiceAppService
-{
-    [PermissionAuthorize(InvoicePermissionCodes.Read)]
-    public Task<InvoiceDto> GetAsync(long id) { … }
-
-    [PermissionAuthorize(InvoicePermissionCodes.Create)]
-    public Task<InvoiceDto> CreateAsync(InvoiceCreateDto input) { … }
-}
-```
-
-多个授权特性叠加是 **AND**：类上标一个、方法上再标一个，两个都得通过。
-
-```csharp
-// 类上打底：进这个服务先要有读权限
-[PermissionAuthorize(InvoicePermissionCodes.Read)]
-public class InvoiceAppService : ApplicationServiceBase
-{
-    // 这个方法额外要求导出权限：Read + Export 都要有
-    [PermissionAuthorize(InvoicePermissionCodes.Export)]
-    public Task<FileDto> ExportAsync(InvoiceQueryDto input) { … }
-}
-```
-
-## 权限码约定
-
-框架**不解析权限码的结构**——`DefaultPermissionChecker` 是按名称做序数比较（区分大小写），层级、通配、继承都不是框架行为。所以格式由你定，只要全项目一致即可。推荐 `资源:操作`，跨模块可能重名时加模块前缀：
-
-| 形态 | 例子 | 适用 |
+| 来源 | 写法 | 说明 |
 | --- | --- | --- |
-| `资源:操作` | `invoice:create`、`code_gen:read` | 资源名在全局唯一时 |
-| `模块:资源:操作` | `saas:tenant:create` | 同名资源分属多个模块时 |
+| 操作契约 | `[Operation(Id, Permission = "orders.write")]` 或 `Policy = "<name>"` | 两者只能写一个，同时写在契约构造时抛出；契约推导出的要求不带资源 |
+| 普通端点 | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource?)`、`RequireXiHanPolicy(name, resource?)` | 挂在端点元数据上，`UseXiHan()` 构造调用上下文时放进去 |
+| 中间件 | `context.RequireAuthorization(requirement)` | Authorize 阶段之前的中间件设置 |
 
-::: tip 权限码必须有单一事实源
-把权限码定义成常量集中在一个类里，代码里一律引用常量：
+`next/samples/SimpleApp` 的 `CreateOrder` 在契约上写了 `Permission = "orders.write"`，`ListOrders` 写了 `Permission = "orders.read"`；同一份契约经 HTTP、gRPC、MCP 与命令行调用，判定都在 Authorize 阶段完成一次。端点上的写法：
 
 ```csharp
-public static class InvoicePermissionCodes
-{
-    public const string Resource = "invoice";
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Profiles.Standard;
 
-    public const string Read = "invoice:read";
-    public const string Create = "invoice:create";
-    public const string Update = "invoice:update";
-    public const string Delete = "invoice:delete";
-    public const string Export = "invoice:export";
-}
+var builder = WebApplication.CreateBuilder(args);
+builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<OrdersFeature>());
+
+var app = builder.Build();
+app.UseXiHan();
+
+app.MapGet("/profile", () => "ok").RequireXiHanAuthentication();
+app.MapGet("/orders/summary", () => "ok").RequireXiHanPermission("orders.read");
+app.MapGet("/orders/export", () => "ok").RequireXiHanPolicy(TenantMemberPolicy.PolicyName);
+
+app.Run();
 ```
 
-内联字符串拼错不会编译报错，只会在运行时静默鉴权失败——排查成本极高。
+`TenantMemberPolicy` 见[自定义策略](#自定义策略)。
+
+::: warning 没有授权要求的操作对匿名调用开放
+契约既没写 `Permission` 也没写 `Policy`、端点也没挂要求时，Authorize 阶段直接放行。除非 `XiHan:Security:RequireAuthentication` 为真，匿名调用也能执行它。
 :::
 
-超级管理员的通配 `*` **不是框架能力**：`DefaultPermissionChecker` 里没有任何通配处理。要支持它，就在你自己的 `IPermissionChecker` 实现里判定（例如权限集合里含 `*` 即放行）。
+## Authorize 阶段
 
-## 在代码里手动判定
+`AuthorizationMiddleware` 的处理顺序：
 
-特性覆盖不到的场景（判定结果要影响返回内容、要按数据行判定、要在领域服务里判定）直接注入 `IPermissionChecker`：
+1. 取授权要求：显式要求优先，其次是操作契约（权限码优先于策略名）；都没有则放行。
+2. 在 `PolicyCatalog` 里按名查找策略。先找登记的 `IPolicy`（策略名区分大小写）；没有时，名字形如 `permission:<code>` 且权限码已登记，就动态创建 `PermissionPolicy`。
+3. 找不到策略返回 `SECURITY_NOTFOUND_001`。配置错误按拒绝处理，不会变成越权。按名引用的策略大多已在启动时核对（见下一节），走到这里的只剩启动时看不到的要求：应用代码以 `RequireAuthorization` 显式写入的、启动之后才加进来的端点，以及插件卸载时撤回、还没重新登记的权限码。
+4. 调用策略。`IPolicy.EvaluateAsync` 返回 `Result<AuthorizationResult>`：成功是允许或拒绝；失败是无法判定（授予存储读不到等），调用以该失败结束，既不放行，也不改写成拒绝。拒绝时返回策略给出的原因；策略返回未初始化的结果（`default`）按拒绝处理，原因为 `SECURITY_DENIED_002`。
+
+### 启动时核对策略引用
+
+引用了不存在的策略是编程错误，与未登记的权限码一样在启动时报出来，不等到调用时 404（ADR-0080）：
+
+| 引用 | 什么时候核对 | 失败 |
+| --- | --- | --- |
+| 操作契约的 `Permission` | 装配完成时（`AppBuilder.Build`），之后登记的操作（插件握手之后）在登记时 | `KERNEL_VALIDATION_005` |
+| 操作契约的 `Policy` | 授权能力（`Security.InMemory` / `Security.Database`）登记的启动核对：容器建好之后、任何特性启动之前，经 `PolicyCatalog.EnforceOn` 一次核对已登记的全部操作；之后登记的操作在登记时逐个核对 | `SECURITY_VALIDATION_004`：宿主启动失败，不论失败策略（`IsolateFeature` 也一样，ADR-0085）；插件整体登记失败 |
+| 端点上的 `RequireXiHanPermission` / `RequireXiHanPolicy` / `RequireXiHanAuthentication` | `UseXiHan()` 在宿主建请求管道时（路由已全部映射） | `SECURITY_VALIDATION_004`：宿主启动失败（`app.StartAsync` / `app.Run` 抛出） |
+
+- 异常一次列出全部违规项，如 `'orders.approve' of 'xihan.app.orders' requires policy 'approvers'`、`'HTTP: GET /orders/purge' requires permission 'orders.purge', which is not registered`。
+- 策略名在容器建好之后才知道（`IPolicy` 是容器里的服务），所以契约的策略在启动核对里而不是装配时核对；配置阶段发现的插件的操作与它声明的权限码此时都已登记，`permission:<插件声明的码>` 能通过。
+- 启动核对不归内核的失败策略管（[生命周期与健康](./lifecycle#启动核对)）：坏的策略名是装配错误，隔离授权特性修不好它，只会让应用带着坏契约降级运行，所以 `XiHan:Kernel:FailurePolicy = IsolateFeature` 时同样拒绝启动。异常就是 `SECURITY_VALIDATION_004` 本身，不包成 `KERNEL_HOSTING_002`。
+- 没有装配授权能力（容器里没有 `PolicyCatalog`）时都不核对：此时 Authorize 阶段也不判定任何要求。
+- 自己实现 `security.authorization@1` 的 Provider，被选中时要在 `Configure` 里同样登记启动核对：
 
 ```csharp
-public class InvoiceExporter
-{
-    private readonly IPermissionChecker _permissionChecker;
-
-    public InvoiceExporter(IPermissionChecker permissionChecker)
-    {
-        _permissionChecker = permissionChecker;
-    }
-
-    public async Task<ExportResult> ExportAsync(string userId, CancellationToken ct)
-    {
-        // 单个
-        var canExport = await _permissionChecker.IsGrantedAsync(userId, InvoicePermissionCodes.Export, ct);
-
-        // 任一：审计员或财务都能看金额列
-        var canSeeAmount = await _permissionChecker.IsAnyGrantedAsync(
-            userId,
-            [InvoicePermissionCodes.Read, "audit:read"],
-            ct);
-
-        // 全部
-        var canArchive = await _permissionChecker.IsAllGrantedAsync(
-            userId,
-            [InvoicePermissionCodes.Read, InvoicePermissionCodes.Delete],
-            ct);
-
-        // 该用户全部权限码（做前端菜单/按钮级控制时用）
-        var all = await _permissionChecker.GetGrantedPermissionsAsync(userId, ct);
-        …
-    }
-}
+context.AddStartupCheck(static services => services.GetRequiredService<PolicyCatalog>().EnforceOn(services.GetRequiredService<OperationRegistry>()));
 ```
 
-契约共五个方法，判定用户的四个都按 `userId` 字符串传入，不依赖当前请求上下文；`PermissionExistsAsync` 不接收 `userId`：
+内置两种策略：
 
-| 方法 | 语义 |
-| --- | --- |
-| `IsGrantedAsync(userId, permissionName, ct)` | 单个权限码 |
-| `IsAnyGrantedAsync(userId, names, ct)` | 任一命中即通过 |
-| `IsAllGrantedAsync(userId, names, ct)` | 全部命中才通过 |
-| `GetGrantedPermissionsAsync(userId, ct)` | 该用户的全部权限码 |
-| `PermissionExistsAsync(permissionName, ct)` | 权限定义是否存在（判定定义，不判定授予） |
+| 策略名 | 类型 | 判定 |
+| --- | --- | --- |
+| `authenticated` | `AuthenticatedPolicy` | 主体已认证；匿名返回 `SECURITY_DENIED_001` |
+| `permission:<code>` | `PermissionPolicy` | 匿名先返回 `SECURITY_DENIED_001`，调用方据此区分未登录与越权；已认证但不持有权限返回 `SECURITY_DENIED_004`；检查器失败（授予读不到）原样作为判定失败，调用以 `SECURITY_UNAVAILABLE_001`（503）结束 |
 
-::: warning 空列表一律返回 false
-`IsAnyGrantedAsync` 和 `IsAllGrantedAsync` 传入空列表都返回 `false`（fail-closed）。别把「没配权限要求」写成传空列表，那是拒绝，不是放行。
+`AuthorizationRequirement.Authenticated` 与 `AuthorizationRequirement.Permission(code, resource?)` 是这两种要求的快捷写法，`PermissionPolicy.NameFor(code)` 给出权限码对应的策略名。
+
+## RBAC 授予与检查
+
+授予是 `PermissionGrant`：主体、权限码、可选租户。主体是 `GrantSubject`，种类只有用户（`GrantSubject.ForUser(id)`，即 `user:<id>`）与角色（`GrantSubject.ForRole(name)`，即 `role:<name>`）。租户为 `null` 的授予对任何租户生效，租户专属授予只对该租户生效；权限码写 `*`（`PermissionGrant.All`）匹配任何权限。主体 ID、角色名与权限码都区分大小写。
+
+`PermissionChecker` 判定"主体是否持有权限"的顺序：
+
+1. 匿名主体直接不持有，不访问存储。
+2. 查用户本身的授予（全局授予加当前租户的授予）。
+3. 逐个查主体的角色授予，角色取类型为 `XiHan:Security:RoleClaim`（缺省 `role`）的声明值。
+4. 存储都没命中时，按登记顺序查询各 `IPermissionGrantSource`。
+5. 任一步命中即算授予命中，之后按登记顺序调用全部 `IPermissionFilter`，全部放行才算持有。
+
+存储、来源、过滤器、检查器都返回 `Result`：`GetGrantsAsync` 是 `Result<IReadOnlyCollection<string>>`，`AllowsAsync` 与 `HasPermissionAsync` 是 `Result<bool>`。没有授予是成功的空集合，读不到是失败。检查器遇到第一个失败即原样返回，不再读后面的角色、来源或过滤器。
+
+::: warning 读不到不是没有
+授予存储、来源或过滤器读不到数据时返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束。不要用空集合或 `false` 代替：那会被判定为不持有，调用方拿到 403，客户端会以为权限被收回，网关也不会重试（ADR-0071）。自己调用 `HasPermissionAsync` 的地方（按权限隐藏部件、裁剪响应）同样要处理失败，不能把失败当作不持有。
 :::
 
-想要带失败原因的结果对象（`Succeeded` / `FailureReason` / `FailedRequirements`）而不是裸 `bool`，用门面 `IAuthorizationService`，它内部就是转调 `IPermissionChecker`：
+内存实现从配置装载授予。配置里的授予都是全局的，值是逗号分隔的权限码；下面是 SimpleApp 的授予：
 
-```csharp
-var result = await _authorizationService.AuthorizeAsync(userId, InvoicePermissionCodes.Export);
-if (!result.Succeeded)
+```json
 {
-    _logger.LogWarning("拒绝导出：{Reason}", result.FailureReason);
+  "XiHan": {
+    "Security": {
+      "InMemory": {
+        "Grants": {
+          "role": {
+            "editor": "orders.read,orders.write",
+            "viewer": "orders.read",
+            "event-relay": "events.deliver"
+          }
+        }
+      }
+    }
+  }
 }
 ```
 
-## 换成自己的判定器
+以 SimpleApp 为例：`alice`（角色 `editor`）调用 `orders.create` 通过；`bob`（角色 `viewer`）调用 `orders.create` 得到 `SECURITY_DENIED_004`（HTTP 403）；匿名调用得到 `SECURITY_DENIED_001`（HTTP 401）。
 
-框架默认的 `DefaultPermissionChecker` 读 `IPermissionStore` / `IRoleStore`，而这两个默认实现是**纯内存**的（`ConcurrentDictionary`）：不持久化、不预置任何数据。而且它们注册为 **Scoped**，字典是实例字段，随请求作用域新建——这一个请求里写进去的授权，下一个请求就读不到了。也就是说，**不换实现的话，对真实用户的所有判定都返回 false**。它的定位是参考实现与开发期占位。
+| | `Security.InMemory` | `Security.Database` |
+| --- | --- | --- |
+| 装载 | 启动时读配置，运行时 `InMemoryPermissionGrantStore.Grant` / `Revoke` 增删，租户专属授予只能这样添加 | 数据库表，管理操作经 `PermissionGrantRecordStore` 批量授予、撤销 |
+| 上限 | `XiHan:Security:InMemory:MaxGrants`，缺省 10000 | 无条数上限；缓存 `CacheSize` 缺省 10000 条 |
+| 读取 | 进程内查表 | 按（主体，租户）一次查询全局行加该租户的行，结果缓存 `CacheTimeToLiveSeconds`（缺省 30 秒） |
+| 撤销不存在的授予 | `Revoke` 返回 `false` | 逐项结果 `SECURITY_NOTFOUND_002` |
 
-生产做法是自己实现 `IPermissionChecker`，读一份按用户缓存的授权快照：
+数据库授予是平台数据，不受当前租户过滤；`PermissionGrantRecordStore` 写入后立即失效涉及主体的缓存，其他实例的缓存靠存活时间收敛。数据库故障（连接、超时、事务失败）时授予存储返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束；失败不进缓存，数据库恢复后下一次判定立即重新查库。装配与示例见 [Security.Database](../packages/security-database)。
+
+## 收窄：IPermissionFilter
+
+`IPermissionFilter`（ADR-0039）在授予命中之后再判定一次，返回成功的 `false` 即视为不持有。它只能拿走权限、不能给出权限，用于套餐白名单、显式拒绝、委托到期这类授予之外的约束。被收窄的权限在权限策略上同样返回 `SECURITY_DENIED_004`，调用方不需要区分"没授予"与"被收窄"。
 
 ```csharp
-public sealed class SnapshotPermissionChecker : IPermissionChecker
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions.Permissions;
+
+public sealed class EditionPermissionFilter : IPermissionFilter
 {
-    private const string Wildcard = "*";
+    // 基础版套餐只开放查询；真实应用按租户从套餐表读取并缓存
+    private static readonly HashSet<string> _basicEdition = new(StringComparer.Ordinal) { "orders.read" };
 
-    private readonly IAuthorizationSnapshotService _snapshots;
+    public ValueTask<Result<bool>> AllowsAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(security.Tenant is null || _basicEdition.Contains(permission)));
+}
+```
 
-    public SnapshotPermissionChecker(IAuthorizationSnapshotService snapshots)
+在特性的 `Configure` 里按单例登记：`context.Services.AddSingleton<IPermissionFilter, EditionPermissionFilter>()`。
+
+- 检查器按登记顺序逐个调用，任一返回 `false` 即不持有，后面的不再调用。
+- 匿名主体与授予未命中时不调用过滤器，过滤器里查库或查缓存的开销只花在命中的判定上。
+- 过滤器收到的是具体权限码；主体持有 `*` 时同样会被收窄。
+- 套餐表读不到时返回失败（`Error.Unavailable(SecurityErrors.StoreUnavailable, ...)`），检查器原样返回、调用以 503 结束；跳过它等于放行，返回 `false` 又会变成 403。抛出的异常照常传播。
+
+## 授予来源：IPermissionGrantSource
+
+`IPermissionGrantSource`（ADR-0045）与过滤器对称：给出主体在授予存储之外的额外授予（权限码或 `*`），用于角色继承、限时委托这类不落在主体自己授予行上的授予。来源只能加，给出的授予（包括 `*`）同样经过全部过滤器收窄。
+
+```csharp
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Permissions;
+
+public sealed class ManagerInheritsEditorGrantSource(SecurityOptions options) : IPermissionGrantSource
+{
+    // manager 角色继承 editor 的权限；继承关系通常来自应用的角色表
+    private static readonly IReadOnlyCollection<string> _editorPermissions = ["orders.read", "orders.write"];
+
+    public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(SecurityContext security, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(security.Principal.HasClaim(options.RoleClaim, "manager") ? _editorPermissions : []));
+}
+```
+
+同样按单例登记：`context.Services.AddSingleton<IPermissionGrantSource, ManagerInheritsEditorGrantSource>()`。检查器只在用户与角色的存储授予都没命中时才查询来源，任一来源命中即止；匿名主体不查询。继承关系或委托表读不到时返回失败，不要返回空集合。来源拿到整个安全上下文，继承关系或委托一改就生效，不依赖令牌刷新。
+
+应用替换 `IPermissionChecker` 时，必须同样并上全部授予来源、并在授予命中之后施加全部过滤器（RFC-0008）。
+
+## 自定义策略
+
+权限之外的规则写成 `IPolicy`。下面的策略要求主体的租户声明与本次调用解析出的租户一致，用来挡住没有租户声明的主体借 Baggage 进入某个租户（见[多租户](./multi-tenancy#租户与主体声明)）：
+
+```csharp
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
+
+public sealed class TenantMemberPolicy : IPolicy
+{
+    public const string PolicyName = "tenant-member";
+
+    public string Name => PolicyName;
+
+    public ValueTask<Result<AuthorizationResult>> EvaluateAsync(AuthorizationRequest request, CancellationToken cancellationToken)
     {
-        _snapshots = snapshots;
-    }
-
-    public async Task<bool> IsGrantedAsync(string userId, string permissionName, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(permissionName))
+        var security = request.Security;
+        if (!security.Principal.IsAuthenticated)
         {
+            return ValueTask.FromResult(Result.Success(AuthorizationResult.Deny(Error.Denied(SecurityErrors.NotAuthenticated, SecurityMessages.AuthenticationRequired))));
+        }
+
+        // 声明类型与 XiHan:MultiTenancy:TenantClaim 保持一致（缺省 tenant）
+        var member = security.Tenant is { } tenant && security.Principal.HasClaim("tenant", tenant.Id);
+        return ValueTask.FromResult(Result.Success(member
+            ? AuthorizationResult.Allow()
+            : AuthorizationResult.Deny(Error.Denied(SecurityErrors.PolicyDenied, KernelMessages.DeniedByPolicy))));
+    }
+}
+```
+
+在特性里登记 `context.Services.AddSingleton<IPolicy, TenantMemberPolicy>()`，契约上写 `Policy = TenantMemberPolicy.PolicyName`，端点上写 `RequireXiHanPolicy(TenantMemberPolicy.PolicyName)`。
+
+- 策略按名索引，名字重复在 `PolicyCatalog` 构造时抛出 `ArgumentException`。
+- 策略是单例，判定时拿到的是 `AuthorizationRequest`：`Security`（主体与租户）、`Action`（策略名）、`Resource`（资源名），不是调用上下文。
+- 拒绝原因用错误码加消息键（RFC-0010），HTTP 状态码按错误码种类映射：`DENIED` 为 403（`SECURITY_DENIED_001` 与 `SECURITY_DENIED_003` 除外，为 401）。
+- 判定依赖的数据读不到时返回失败（`Result` 的失败，不是 `Deny`），调用以该失败结束：`UNAVAILABLE` 种类为 503。
+
+## 资源名
+
+资源名 `ResourceName` 是 `xrn:<partition>:<service>:<tenant>:<type>/<id>`，用于策略判定与审计，例如 `xrn:cn:shop:acme:order/42`。分区、服务、类型段只允许小写字母、数字与连字符；租户段可以为空（全局资源），否则与[租户 ID](./multi-tenancy) 同一文法：字母或数字开头，之后是字母、数字、`.`、`_`、`-`，不超过 64 个字符，区分大小写，所以 `Acme`、`acme.cn` 这样的租户 ID 都能原样放进去；ID 段不含 `/` 与空白。`ResourceName.Parse` 不合法时抛出 `ArgumentException`，`ResourceName.TryParse` 返回 `false`。
+
+资源经 `RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)` 或 `AuthorizationRequirement` 的构造参数进入请求，策略在 `request.Resource` 上读到它：
+
+```csharp
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Security.Abstractions.Authorization;
+
+public static class OrderRequirements
+{
+    public static AuthorizationRequirement ReadOrder(string tenantId, string orderId)
+        => AuthorizationRequirement.Permission("orders.read", ResourceName.Parse($"xrn:cn:shop:{tenantId}:order/{orderId}"));
+}
+```
+
+内置的 `PermissionPolicy` 只看权限码、不看资源；按资源判定要写自定义策略。操作契约推导出的要求不带资源。
+
+## 条件引擎
+
+条件（ADR-0046）是访问策略、权限条件与约束规则共用的属性判定，引擎在 `XiHan.Framework.Security.Abstractions.Conditions`，与存储无关：应用提供属性来源与条件的存储，引擎负责登记、编译、求值。框架没有把条件接进 Authorize 阶段，应用在自己的策略、过滤器或中间件里调用编译器与求值器。
+
+条件集 `ConditionSet` 由组 `ConditionGroup` 构成，组由子句 `ConditionClause`（属性名、运算符、条件值原文、是否取反、标识）构成；组内是"且"，组间是"或"。没有非空组的条件集是"无条件"，求值恒为命中，需要拒绝空条件的场景在保存时拦下。
+
+运算符与值种类的整数值是持久化契约，不会调整：
+
+| 运算符 | 值 | 可用于 |
+| --- | --- | --- |
+| `Equals`、`NotEquals` | 0、1 | 任何属性 |
+| `GreaterThan`、`GreaterThanOrEquals`、`LessThan`、`LessThanOrEquals` | 2、3、4、5 | 数字、日期时间、日期、时刻 |
+| `Contains`、`NotContains` | 6、7 | 多值属性与字符串（单值字符串按子串） |
+| `In`、`NotIn` | 8、9 | 任何属性 |
+| `Between` | 10 | 数字、日期时间、日期、时刻 |
+| `StartsWith`、`EndsWith` | 11、12 | 字符串 |
+| `IsNull`、`IsNotNull` | 13、14 | 任何属性 |
+
+| 值种类 | 值 | 比较与写法 |
+| --- | --- | --- |
+| `String` | 0 | 不区分大小写的序数比较 |
+| `Number` | 1 | 十进制 |
+| `Boolean` | 2 | `true` / `false` / `1` / `0` |
+| `DateTime` | 3 | ISO 8601；不带偏移的按编译时区的墙钟解释 |
+| `Date` | 4 | 日期 |
+| `TimeOfDay` | 5 | `HH:mm[:ss]`；区间下限大于上限表示跨零点 |
+| `IpAddress` | 6 | IPv4 只收四段点分，IPv4 映射的 IPv6 还原为 IPv4；集合可写 CIDR，主机位必须为零 |
+
+集合写 JSON 数组，或用逗号、全角逗号、换行分隔；区间写 `下限,上限`、`[下限,上限]` 或 `{"min":下限,"max":上限}`。`ConditionOperatorRules.AllowedFor(descriptor)` 给出某个属性能用的运算符，条件编辑界面据此列出选项。
+
+属性用 `services.AddConditionAttributes(...)` 登记，它同时确保 `IConditionAttributeRegistry`、`IConditionCompiler`、`IConditionEvaluator` 三项单例已登记，各特性可以各自调用。登记名不区分大小写，可带别名；以 `.*` 结尾的是一族属性（如 `resource.route.*`），按最长前缀匹配，精确登记优先；重名与别名冲突在登记表首次解析时抛出。
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Security.Abstractions.Conditions;
+
+public static class OfficeHoursCondition
+{
+    public static void Register(IServiceCollection services)
+        => services.AddConditionAttributes(
+            new ConditionAttributeDescriptor("environment.ip", ConditionValueKind.IpAddress),
+            new ConditionAttributeDescriptor("environment.time", ConditionValueKind.TimeOfDay),
+            new ConditionAttributeDescriptor("subject.roleCodes", ConditionValueKind.String, IsMultiValued: true));
+
+    // 内网或 auditor 角色，且在 09:00–18:00 之间：组内为且，组间为或
+    public static readonly ConditionSet Conditions = new(
+    [
+        new ConditionGroup([
+            new ConditionClause("environment.ip", ConditionOperator.In, "10.0.0.0/8, 192.168.0.0/16"),
+            new ConditionClause("environment.time", ConditionOperator.Between, "09:00,18:00"),
+        ]),
+        new ConditionGroup([
+            new ConditionClause("subject.roleCodes", ConditionOperator.Contains, "auditor"),
+            new ConditionClause("environment.time", ConditionOperator.Between, "09:00,18:00"),
+        ]),
+    ]);
+
+    public static async ValueTask<bool> TryAsync(IConditionCompiler compiler, IConditionEvaluator evaluator, IReadOnlyDictionary<string, object?> values, CancellationToken cancellationToken)
+    {
+        var compiled = compiler.Compile(Conditions, new ConditionCompileOptions { TimeZone = TimeZoneInfo.Local });
+        if (compiled.Errors.Count > 0)
+        {
+            // 保存前据编译错误拒绝；每条错误的 Error 带 SECURITY_VALIDATION_002 与说明原因的消息键
             return false;
         }
 
-        var permissions = await _snapshots.GetPermissionsAsync(userId, cancellationToken);
-        return permissions.Contains(Wildcard, StringComparer.OrdinalIgnoreCase)
-            || permissions.Contains(permissionName.Trim(), StringComparer.OrdinalIgnoreCase);
+        var result = await evaluator.EvaluateAsync(compiled, new DictionaryConditionAttributeSource(values), explain: false, cancellationToken);
+        return result.IsMatched;
     }
-
-    // IsAnyGrantedAsync / IsAllGrantedAsync / GetGrantedPermissionsAsync / PermissionExistsAsync 同理
-    …
 }
 ```
 
-注册**必须用 `Replace`**：
+`DictionaryConditionAttributeSource` 用于试算与测试；运行时应用实现 `IConditionAttributeSource`，按规范名返回 `ConditionAttributeValue.Of(value)`、`ConditionAttributeValue.Missing`（取不到）或 `ConditionAttributeValue.Deferred`（暂不可得），`MemoizingConditionAttributeSource` 让同一次求值里每个属性只取一次。求值只向来源取被引用的属性（`CompiledConditionSet.ReferencedAttributes`）。
+
+求值结果：
+
+| 结果 | 子句 | 组 | 条件集 |
+| --- | --- | --- | --- |
+| `Matched` 命中 | 判定成立 | 全部子句命中 | 任一组命中 |
+| `NotMatched` 不命中 | 判定不成立 | 任一子句不命中或无法判定 | 没有组命中也没有组待定 |
+| `Indeterminate` 无法判定 | 属性取不到（`SECURITY_NOTFOUND_003`）或值不是登记的种类（`SECURITY_VALIDATION_003`）；按不命中计，取反不翻转 | — | — |
+| `Pending` 待定 | 属性暂不可得（`SECURITY_UNAVAILABLE_004`） | 没有不命中、有待定 | 没有组命中、有组待定 |
+
+`IsNull` / `IsNotNull` 把取不到、空列表、全是空白的字符串当空，可以取反。多值属性按任一元素判定，否定运算符按"没有元素满足"判定。编译出错的子句保留在编译结果里、求值恒为无法判定，库里的脏数据不会让整个条件集失效。`explain: true` 时逐组逐子句给出结果、取到的属性值与原因，用于条件编辑界面的试算。
+
+## IP 归属地
+
+IP 归属地（ADR-0047）是能力 `security.ip-region@1`：`IIpRegionResolver.Resolve(IPAddress)` 返回 `Maybe<IpRegion>`，含国家、省份、城市、运营商与两位国家代码，各段可能缺失，`Location` 是展示文本。条件属性 `environment.geo.*`、登录日志与命中记录的归属地列用它。
+
+宿主可以不装。容器里没有 `IIpRegionResolver` 时，调用方把归属地当作取不到，引用它的条件子句为无法判定，`IsNull` / `IsNotNull` 照常判定。参考实现是离线库 Provider [Security.Ip2Region](../packages/security-ip2region)，不访问网络；回环、私有网段、保留地址与查不到的地址都返回无值，不抛出。
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Security.Abstractions.Network;
 
-public class MyAppModule : XiHanModule
+public static class GeoAttributes
 {
-    public override void ConfigureServices(ServiceConfigurationContext context)
-    {
-        context.Services.Replace(
-            ServiceDescriptor.Scoped<IPermissionChecker, SnapshotPermissionChecker>());
-    }
+    // 给条件属性来源用：没装归属地 Provider 或查不到时返回 null，属性按取不到处理
+    public static string? CountryCode(IServiceProvider services, IPAddress address)
+        => services.GetService<IIpRegionResolver>() is { } resolver && resolver.Resolve(address).TryGetValue(out var region)
+            ? region.CountryCode
+            : null;
 }
 ```
 
-::: danger 用 TryAdd 会被静默忽略
-`AddXiHanAuthorization` 已经用 `TryAddScoped` 占了位。你再 `TryAdd` 一次不会报错、不会告警，鉴权照旧走默认实现——线上表现就是「权限配了但一直 403」或「换了实现毫无变化」。同理适用于 `IPermissionStore` / `IRoleStore` / `IPolicyStore` / `IAbacEvaluator`。
-:::
+## 错误码
 
-::: tip 判定器是请求期热路径
-默认注册是 Scoped。一次请求里可能触发多次判定，实现里做请求级记忆化（字段缓存本次请求已构建的快照），避免同一请求反复查库。
-:::
+| 错误码 | 含义 | HTTP |
+| --- | --- | --- |
+| `SECURITY_DENIED_001` | 未认证：权限策略或 `authenticated` 策略遇到匿名主体 | 401 |
+| `SECURITY_DENIED_002` | 策略拒绝（策略返回未初始化的结果，或自定义策略以它为原因） | 403 |
+| `SECURITY_DENIED_004` | 缺少权限，含被 `IPermissionFilter` 收窄 | 403 |
+| `SECURITY_NOTFOUND_001` | 调用时才看到的要求（`RequireAuthorization` 显式写入的、启动之后才加进来的端点）引用的策略不存在，或其中 `permission:<code>` 的权限码未登记 | 404 |
+| `SECURITY_VALIDATION_004` | 操作契约的 `Policy`、端点上的要求引用了不存在的策略或未登记的权限码：启动时抛出、启动失败；授权能力启动之后登记的操作（插件握手之后）在登记时返回，插件登记失败 | — |
+| `SECURITY_NOTFOUND_002` | 要撤销的授予不存在（`Security.Database` 的逐项结果） | — |
+| `SECURITY_UNAVAILABLE_001` | 授予存储、授予来源或收窄过滤器读不到数据（数据库授予存储的连接、超时、事务失败），不当作不持有 | 503 |
+| `SECURITY_UNAVAILABLE_002` | 内存授予存储容量已满（`Grant` 与健康项 `security.inmemory.capacity`） | — |
+| `SECURITY_VALIDATION_002` | 条件无效：属性未登记、运算符与值种类不搭配、条件值解析不了 | — |
+| `SECURITY_VALIDATION_003` | 条件属性的值不是登记的值种类 | — |
+| `SECURITY_NOTFOUND_003` | 取不到条件属性的值 | — |
+| `SECURITY_UNAVAILABLE_004` | 条件属性暂不可得，补齐后再求值 | — |
+| `KERNEL_SECURITY_001` / `KERNEL_SECURITY_002` | 权限码重复 / 权限登记表已满，装配时抛出 | — |
+| `KERNEL_VALIDATION_005` | 操作契约引用了未登记的权限码：装配完成时抛出、启动失败；插件握手之后登记的操作在登记时返回，插件登记失败 | — |
 
-如果只想换数据来源、保留框架的「用户直授 + 角色继承」合并逻辑，那就不动 `IPermissionChecker`，改为 `Replace` 掉 `IPermissionStore` 和 `IRoleStore`：`DefaultPermissionChecker.IsGrantedAsync` 会先查用户直接权限，再遍历用户的启用角色查角色权限，任一命中且 `IsEnabled` 即通过。
+条件相关的四个错误码出现在编译结果与说明里，不直接成为调用结果。
 
-## 关键机制
+## 与其他能力的关系
 
-### 混合策略名
+- [认证](./authentication)：策略读认证写入的主体，角色来自 `RoleClaim` 声明。
+- [多租户](./multi-tenancy)：检查器按安全上下文里的租户取租户专属授予。
+- [操作契约](./operations)：契约的 `Permission` / `Policy` 是授权要求的主要来源。
+- [HTTP 与 OpenAPI](./http)：OpenAPI 文档以 `x-xihan-permission`、`x-xihan-policy` 与 `components.x-xihan-permissions` 发布授权要求。
+- [审计](./auditing)：Full 组合包的审计中间件缺省只记需要授权的操作（契约声明了权限码或策略名）。
 
-`[PermissionAuthorize]` 在构造时就把「权限码 + ABAC 策略码」编码进一个 ASP.NET Core 策略名：
+## 相关
 
-```text
-xihan.hybrid:p={URL编码的权限码};a={URL编码的ABAC策略码}
-```
-
-`HybridPermissionPolicyProvider` 拦截 `xihan.hybrid:` 前缀的策略名，解析出两个编码后**动态构建**一条含 `HybridPermissionRequirement` 的策略；其余策略名回落到 `DefaultAuthorizationPolicyProvider`。
-
-这带来一个实用后果：**任何权限码都不需要预先 `AddPolicy` 注册**，写上特性就能用。代价是策略名里出现了 `;`、`=` 等字符（含这些字符的权限码会被 `Uri.EscapeDataString` 转义），所以别手写策略名，用特性。
-
-### 判定顺序
-
-`HybridPermissionAuthorizationHandler` 的执行顺序是固定的：
-
-1. 从主体声明取 userId：取声明集合里**第一条**类型命中 `NameIdentifier` / `sub` / `userid` / `user_id`（大小写不敏感）的声明。取不到就直接不通过。
-2. 若有权限码，调 `IPermissionChecker.IsGrantedAsync` 实时判定；不通过则终止（不再评估 ABAC）。
-3. 若没有 ABAC 策略码，到此通过。
-4. 若有 ABAC 策略码，`IAbacAttributeCollector` 收集主体 / 资源 / 环境属性，交 `IAbacEvaluator` 评估，允许才通过。
-
-全程 fail-closed：任何一步拿不到结论都是拒绝。传给判定器的 `userId` 是声明里的**原始字符串**，实现里自己转成业务的 ID 类型。
-
-### 叠加属性约束（ABAC）
-
-权限码只能回答「能不能做这类事」，回答不了「能不能对**这一条**做」。`PermissionAuthorizeAttribute` 的第二个参数接一个 ABAC 策略码，在权限码之上再加一层属性约束：
-
-```csharp
-// 有读权限，且资源与当前用户同租户
-[PermissionAuthorize(InvoicePermissionCodes.Read, "same_tenant")]
-public Task<InvoiceDto> GetAsync(long id) { … }
-
-// 只判属性、不判权限码，用 AbacAuthorize
-// 参数名就是属性键，必须写成 user_id（见下方属性键说明）
-[AbacAuthorize("self_only")]
-public Task<ProfileDto> GetMyProfileAsync(long user_id) { … }
-```
-
-`DefaultAbacEvaluator` 内置的常用策略码（大小写不敏感）：
-
-| 策略码 | 判定 |
-| --- | --- |
-| `allow` | 无条件允许 |
-| `same_tenant` / `tenant_match` | 主体 `tenant_id` 与资源的 `tenant_id` 等任一来源相等 |
-| `self_only` / `owner_match` | 主体 `user_id` 与资源的 `user_id` / `owner_user_id` 等任一来源相等 |
-| 比较表达式 | 如 `subject.tenant_id == resource.tenant_id`，支持 `==` / `!=` / `=` |
-| 其它 | 拒绝（不支持的策略码） |
-
-属性从哪来：主体属性来自声明；资源属性来自授权 `resource` 对象的公共属性，若能从中解析出 `HttpContext` 还会带上 `route.*` / `query.*`；环境属性含权限码、策略码、UTC 时间、请求路径等。完整属性键与策略词汇见[包文档](../packages/authorization#默认-abac-策略词汇)。
-
-::: warning ABAC 拿不到资源属性就等于拒绝
-`same_tenant` / `self_only` 依赖资源侧的属性。如果既没有可解析的 `HttpContext`（路由/查询参数里没有 `tenant_id`、`user_id`），又没有把资源对象传进授权流程，属性字典里就没有对应键，判定结果是拒绝。要么把标识放进路由（`/invoices/{tenant_id}/...`），要么实现 `IAbacAttributeCollector` 补齐领域属性。
-
-属性键只做 `ToLowerInvariant()` 归一化，不做驼峰转下划线：路由参数写成 `{tenantId}` 得到的键是 `route.tenantid`，与默认评估器要找的 `route.tenant_id` 对不上，判定照样拒绝。走默认策略词汇时，路由/查询参数就得直接命名为 `tenant_id`、`user_id`。
-:::
-
-需要更复杂的规则（时间窗、IP 段、组织树、外部策略引擎）时，实现 `IAbacEvaluator` 并 `Replace` 掉默认实现，特性侧的写法完全不变。
-
-### Policy 子系统
-
-除了「权限码 + ABAC」这条主线，包里还有一套独立的 Policy 判定：`PolicyDefinition` 可以组合所需角色（任一命中）、所需权限（全部命中）、所需声明（键值匹配）和自定义要求，由 `IPolicyEvaluator` 评估，入口是 `IAuthorizationService.AuthorizePolicyAsync(userId, policyName, resource)`。策略定义放在 `IPolicyStore` 里，适合把「一组判定条件」做成可配置的命名策略。
-
-::: warning 两个同名的 IAuthorizationRequirement
-`XiHan.Framework.Authorization.Policies.IAuthorizationRequirement` 是 Policy 子系统的自定义要求接口（有 `Name` 和 `EvaluateAsync`），和 ASP.NET Core 的标记接口 `Microsoft.AspNetCore.Authorization.IAuthorizationRequirement` 同名不同物。写自定义要求时看清 using。
-:::
-
-自定义要求里读声明要注意：`DefaultPolicyEvaluator` 的声明来自 `ICurrentUser`，也就是**当前请求的主体**，不是参数里那个 `userId` 的声明。给别人的 userId 做离线判定时，声明类要求会判失败。
-
-## 配置
-
-这个包没有配置节。`AddXiHanAuthorization` 虽然接收 `IConfiguration` 参数，但注册过程不读任何配置键——所有行为差异都通过替换实现来表达，不通过配置开关。
-
-需要留意的只有两处环境前提：
-
-| 前提 | 说明 |
-| --- | --- |
-| 模块依赖 | 你的模块必须 `[DependsOn(typeof(XiHanAuthorizationModule))]` |
-| 管道顺序 | `UseAuthorization()` 由 `XiHanWebApiModule` 编排在认证、租户解析、会话闸门之后，自己插中间件时别插到它后面还指望能读到授权结果 |
-
-## 常见问题
-
-| 现象 | 原因 |
-| --- | --- |
-| 换了 `IPermissionChecker` 毫无变化 | 用了 `TryAdd`，框架已占位；必须用 `Replace` |
-| 所有权限判定恒为 `false` | 没换实现，默认内存存储不预置任何数据 |
-| 权限码明明配了还是 403 | 默认判定器按序数比较、区分大小写；权限码常量与种子数据里的字符串必须逐字一致 |
-| 超管也被拦 | 通配 `*` 不是框架行为，要在自己的 `IPermissionChecker` 实现里判 |
-| 抛 `InvalidOperationException` 说策略未找到 | 模块没 `DependsOn(typeof(XiHanAuthorizationModule))`，策略提供器未注册 |
-| 该 403 却收到 401 | 请求根本没通过认证；授权只在认证成功后才有 403 可言 |
-| 授权改了要重新登录才生效 | 判定器读的是登录时冻结的数据；改成读可失效的授权快照 |
-| 传空列表却被拒绝 | `IsAnyGrantedAsync` / `IsAllGrantedAsync` 对空列表返回 `false` |
-| `same_tenant` 恒拒绝 | 资源属性里没有 `tenant_id`：没传资源对象，路由/查询里也没有该参数 |
-| 类和方法上各标一个特性后接口进不去 | 多个授权特性是 AND 关系，两个权限码都要有 |
-
-## 下一步
-
-- [认证](./authentication)：身份、令牌与会话闸门
-- [多租户](./multi-tenancy)：租户上下文，ABAC 的 `same_tenant` 依赖它
-- [Web 应用开发](./web)：中间件管道全貌
-- [扩展与二次开发](./extending)：替换框架默认实现的通用套路
-- [Authorization 包](../packages/authorization)：完整 API 与配置清单
-- [BasicApp 权限模型](https://basicapp.docs.xihanfun.com/backend/permission)：权限码、数据范围与字段脱敏的应用层落地
+- [Security.Abstractions](../packages/security-abstractions)
+- [Security.InMemory](../packages/security-inmemory)
+- [Security.Database](../packages/security-database)
+- [Security.Ip2Region](../packages/security-ip2region)
+- 规范：RFC-0008《认证与授权》；ADR-0027、ADR-0039、ADR-0045、ADR-0046、ADR-0047

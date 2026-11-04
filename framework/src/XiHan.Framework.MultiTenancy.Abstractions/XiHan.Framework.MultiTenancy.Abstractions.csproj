@@ -1,20 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.MultiTenancy.Abstractions</PackageId>
+    <RootNamespace>XiHan.Framework.MultiTenancy.Abstractions</RootNamespace>
+    <Description>XiHan Framework 多租户契约（Ring 2）：租户信息、租户存储、租户解析器与 Tenant 阶段中间件。</Description>
+    <PackageTags>xihan;framework;multitenancy;tenant</PackageTags>
+  </PropertyGroup>
 
-    <Import Project="..\..\props\netcore.props" />
-    <Import Project="..\..\props\common.props" />
-    <Import Project="..\..\props\version.props" />
-    <Import Project="..\..\props\nuget.props" />
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
 
-    <PropertyGroup>
-        <Title>XiHan.Framework.MultiTenancy.Abstractions</Title>
-        <AssemblyName>XiHan.Framework.MultiTenancy.Abstractions</AssemblyName>
-        <PackageId>XiHan.Framework.MultiTenancy.Abstractions</PackageId>
-        <Description>曦寒框架多租户抽象包</Description>
-        <OutputType>Library</OutputType>
-    </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-    </ItemGroup>
-
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

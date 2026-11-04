@@ -1,373 +1,436 @@
-# AI 与 MCP
+# AI
 
-框架把大模型接入收敛成三件事：按名解析 provider 拿到一个 `IChatClient`、把应用能力登记成「技能」、再决定这些技能是内部工具调用还是对外 MCP tool。本章讲这三条链路怎么串、配置放哪、以及哪些开关不打开就等于没有。
+本章讲 5.0 的 AI 端口：按名字解析模型客户端、带提示词与护栏的聊天入口、把操作契约变成模型可调用的工具，以及切块、嵌入、检索与提示增强的知识库流水线，适用于要在业务里接入大模型的应用。完整 API 见 [AI.Abstractions 包](../packages/ai-abstractions)。
 
-完整 API 与全部配置项见 [AI 包](../packages/ai)、[AI.Abstractions 包](../packages/ai-abstractions)、[Web.Mcp 包](../packages/web-mcp)。
+## 以 Microsoft.Extensions.AI 为线格式
 
-## 三个包的分工
+5.0 不另造模型接口。公开签名直接使用 `Microsoft.Extensions.AI.Abstractions`（10.11.0）的 `IChatClient`、`IEmbeddingGenerator<string, Embedding<float>>`、`ChatMessage`、`AITool`，以及 `Microsoft.Extensions.VectorData.Abstractions` 的 `VectorStore`；框架只做目录、提示词、护栏、工具与知识库（ADR-0017）。从目录解析出的客户端就是标准的 `IChatClient`，应用可以在上面叠加任何 Microsoft.Extensions.AI 中间件。
 
-| 包 | 模块类 | 职责 |
+| 能力 | 含义 | 实现 |
 | --- | --- | --- |
-| `XiHan.Framework.AI.Abstractions` | 无（纯契约） | 接口与 Options：`IXiHanAiService`、`IAiProviderConfigStore`、`IAiSkill`、RAG 契约、护栏契约 |
-| `XiHan.Framework.AI` | `XiHanAIModule` | 默认实现：OpenAI 兼容工厂、解析器、护栏、技能注册表、Agent 工厂、RAG |
-| `XiHan.Framework.Web.Mcp` | `XiHanWebMcpModule` | 把技能经 HTTP 暴露成 MCP Server 端点，并做 key 鉴权 |
+| `ai.chat@1` | 按名字解析 `IChatClient`；`IAIChat` 在其上叠加提示词、护栏与工具 | [AI.OpenAI](../packages/ai-openai) |
+| `ai.embedding@1` | 按名字解析 `IEmbeddingGenerator<string, Embedding<float>>` | [AI.OpenAI](../packages/ai-openai) |
+| `ai.tools@1` | 工具目录：显式登记的 `AITool` 与 `Expose.Ai` 的操作 | `AI.Abstractions` 的 `AIToolsFeature`（`role: default`，进 `Profiles.Full`） |
+| `ai.knowledge@1` | 知识库存储 `IKnowledgeStore` | [AI.VectorData](../packages/ai-vectordata) |
 
-底座是 `Microsoft.Extensions.AI`（会话与嵌入）、`Microsoft.Agents.AI`（Agent）、`ModelContextProtocol`（MCP）、`Microsoft.Extensions.VectorData.Abstractions`（向量数据契约）。框架只在其上加「多 provider 选择 + 可插拔配置源 + 技能」这层语义，会话本身不做二次包装。
+模型端点与向量存储都是外部资源，`ai.chat`、`ai.embedding`、`ai.knowledge` 没有默认实现，框架不伪造；只有进程内的工具目录有默认实现。
 
-## 安装与启用
+## 启用
 
-```bash
-dotnet add package XiHan.Framework.AI
-```
-
-```csharp
-[DependsOn(typeof(XiHanAIModule))]
-public class MyModule : XiHanModule { }
-```
-
-`XiHanAIModule.ConfigureServices` 只做两件事：`AddXiHanAI()` 与 `AddXiHanRAG()`。两者注册的实现**全部走 `TryAdd*`**，所以应用层在任何位置显式注册同一接口都能顶掉默认实现。唯一例外是护栏 `IAiGuardrail`——它走 `TryAddEnumerable`，应用层注册的是追加而非顶替。
-
-`XiHanAIModule` 依赖 `XiHanHttpModule`。要对外暴露 MCP 端点则改依赖 `XiHanWebMcpModule`（它已 `DependsOn` AI 模块与 Web.Core 模块）。
-
-## 第一步：配 provider，发起对话
-
-`XiHan:AI` 节里，`Providers` 是一张「provider 名 → 配置」的字典（键大小写不敏感），`DefaultProvider` 指定不显式传名时用哪一个。
+1. 引用 `XiHan.Framework.AI.OpenAI`；要知识库时再引用 `XiHan.Framework.AI.VectorData` 与所选向量库的连接器包。
+2. 在 `XiHan:AI` 下配置 Provider、提示词与护栏。
+3. 装配 `AIToolsFeature`（`Profiles.Full` 已包含）、`OpenAIFeature` 与业务特性。
 
 ```json
 {
   "XiHan": {
     "AI": {
-      "DefaultProvider": "DeepSeek",
+      "DefaultProvider": "local",
       "Providers": {
-        "DeepSeek": {
-          "BaseUrl": "https://api.deepseek.com/v1",
-          "ApiKey": "sk-xxx",
-          "Model": "deepseek-chat",
-          "EmbeddingModel": "text-embedding-3-small"
+        "local": {
+          "Kind": "openai",
+          "Endpoint": "http://localhost:11434/v1",
+          "ChatModel": "qwen2.5",
+          "EmbeddingModel": "nomic-embed-text",
+          "TimeoutSeconds": 300
         },
-        "Local": {
-          "BaseUrl": "http://localhost:11434/v1",
-          "Model": "qwen2.5"
+        "cloud": {
+          "Kind": "openai",
+          "ApiKey": "dev-openai-key",
+          "ChatModel": "gpt-4o-mini"
         }
-      }
+      },
+      "Prompts": {
+        "assistant": { "Template": "You are the order assistant of {company}. Answer briefly.", "Description": "Order assistant" }
+      },
+      "Guardrails": { "Enabled": true, "BlockedKeywords": [ "password" ] },
+      "Knowledge": { "Dimensions": 768 }
     }
   }
 }
 ```
 
 ```csharp
-public sealed class AskService(IXiHanAiService ai)
-{
-    public async Task<string?> AskAsync(string question, CancellationToken ct)
-    {
-        ChatMessage[] messages =
-        [
-            new(ChatRole.System, "你是简洁的助理。"),
-            new(ChatRole.User, question)
-        ];
+using MyApp.Assistants;
+using MyApp.Orders;
+using XiHan.Framework.AI.Abstractions;
+using XiHan.Framework.AI.OpenAI;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Profiles.Standard;
+using XiHan.Framework.Protocols.Http;
+using XiHan.Framework.Protocols.Http.Routing;
 
-        // Provider 为 null 时用 DefaultProvider
-        var response = await ai.ChatAsync(messages, new XiHanChatOptions { Provider = "Local" }, ct);
-        return response.Text;
-    }
-}
+var builder = WebApplication.CreateBuilder(args);
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<HttpProtocolFeature>()
+    .UseFeature<AIToolsFeature>()
+    .UseFeature<OpenAIFeature>()
+    .UseFeature<OrdersFeature>()
+    .UseFeature<AssistantsFeature>());
+
+var app = builder.Build();
+app.UseXiHan();
+app.MapXiHanOperations();
+app.Run();
 ```
 
-流式用 `ChatStreamAsync`，逐条拿 `ChatResponseUpdate`：
+`OrdersFeature` 登记订单操作，写法见[审计](./auditing#记录调用来源)一章；`AssistantsFeature` 与两个特性用到的操作在本章后面定义。`OpenAIFeature` 的装配与启动不访问网络，Provider 配置错误在第一次解析客户端或调用模型时才暴露；知识库配置引用的提示词则在启动时校验（见下文「知识库」）。
 
-```csharp
-await foreach (var update in ai.ChatStreamAsync(messages, options, ct))
-{
-    Console.Write(update.Text);
-}
-```
+## Provider 目录
 
-::: tip 一个适配器覆盖多数厂商
-`OpenAiCompatibleChatClientFactory` 只用 OpenAI 兼容协议建客户端。云端服务、本地推理服务、自训模型只要提供 OpenAI 兼容端点，都是「`BaseUrl` + `Model` + `ApiKey`」三个字段的事，不需要为每家写适配器。`ApiKey` 留空时会用占位串 `no-key`，方便本地端点不校验密钥的场景。
-:::
+`IAIProviderCatalog` 按名字解析客户端：`ResolveChatClient(name)`、`ResolveEmbeddingGenerator(name)` 返回 `Result`，名字为空时取目录的默认 Provider。
 
-::: warning 采样参数不在 provider 配置里生效
-`AiProviderOptions` 上的 `MaxOutputTokens`、`Temperature`、`TimeoutSeconds`、`ExtraJson` **当前没有任何实现读取**——工厂建客户端时只用 `Model` / `ApiKey` / `BaseUrl`。要控制温度、最大输出、工具集，请走 `XiHanChatOptions.ChatOptions`（原生 `ChatOptions`），它会被门面透传下去。
-:::
+默认名也由目录给出：`DefaultProvider` 是默认聊天 Provider，`DefaultEmbeddingProvider` 是默认嵌入 Provider，`null` 表示没有默认。两者是同步属性，读的是目录当前的状态，不做 I/O。框架自带的目录从配置推出它们：
 
-## 配置源怎么选
+- `DefaultProvider` 取配置的 `XiHan:AI:DefaultProvider`；没写且只配了一个 Provider 时就是它，否则没有默认。
+- `DefaultEmbeddingProvider` 取配置的 `XiHan:AI:DefaultEmbeddingProvider`，没写时同 `DefaultProvider`。
 
-`IAiProviderConfigStore` 是 provider 配置的唯一入口，框架给了两种用法：
+`IAIChat` 与知识库在请求没写 Provider 时只问目录的这两个属性，不读配置。应用用自己的目录替换框架的实现（例如 Provider 存在库里、在界面上设默认）时，默认名随它走，不必在配置里再写一份。没有默认又没写名字时返回 `AI_NOTFOUND_001`，消息键聊天是 `ai.provider.default_missing`、嵌入是 `ai.provider.embedding_default_missing`。默认名不在 Provider 表里（例如配置写错）时，与其他未配置的名字一样报 `ai.provider.not_found`。
 
-| 方案 | 实现 | 适用 |
-| --- | --- | --- |
-| Options 兜底（默认） | `OptionsAiProviderConfigStore` 读 `IOptionsMonitor<XiHanAiOptions>` | 单部署、密钥由运维管、不需要租户各配各的 |
-| 应用 store 化 | 应用自实现，`AddSingleton<IAiProviderConfigStore, X>()` 覆盖 | 密钥落库并加密、后台页面维护、按租户给不同 provider |
+每个 Provider 有一个种类 `Kind`（必填，转成小写），由登记的 `IChatClientFactory` / `IEmbeddingGeneratorFactory` 的 `Kind` 匹配；Provider 包以 `AddAIChatClientFactory<T>()`、`AddAIEmbeddingGeneratorFactory<T>()` 登记工厂，同一种类登记两次以后者为准。Provider 名字、提示词名字与 `XiHan:AI:Knowledge:Collection` 的文法是 `^[a-z0-9][a-z0-9._-]{0,63}$`，不合法时构造选项抛出 `ArgumentException`。
 
-覆盖是透明的：解析器、Agent 工厂、RAG 都只认这个接口，换源不改任何调用方。默认实现里键即 provider 名——`AiProviderOptions.Provider` 没显式填时会被回填成字典键。
+解析结果按名字缓存，同名并发解析只建一个实例。`Invalidate(name)` 释放缓存的实例，下次解析重建；`name` 为空时清全部。选项在装配时从配置读一次，`Invalidate` 用的仍是这份选项，改了 `XiHan:AI:Providers` 要重启应用才生效。
 
-## 热切换：改了配置必须 Invalidate
+直接从目录取 `IChatClient` 的调用不经提示词、护栏与工具绑定，需要这些时走 `IAIChat`。
 
-`AiChatClientResolver` 和 `AiEmbeddingGeneratorResolver` 都按 provider 名把构建好的客户端缓存在 `ConcurrentDictionary` 里，首次 `Resolve` 才读配置源。**缓存不会感知外部变更**，所以 store 化之后，写完配置必须主动使缓存失效：
+## 聊天入口
 
-```csharp
-public sealed class ProviderAdmin(
-    IAiChatClientResolver chatResolver,
-    IAiEmbeddingGeneratorResolver embeddingResolver)
-{
-    public void OnProviderUpdated(string providerName)
-    {
-        chatResolver.Invalidate(providerName);
-        embeddingResolver.Invalidate(providerName);
-    }
-}
-```
+`IAIChat` 是作用域服务，`CompleteAsync` 返回 `Result<ChatResponse>`，`StreamAsync` 返回 `Result<IAsyncEnumerable<ChatResponseUpdate>>`。一次请求按以下顺序准备：
 
-`Invalidate` 的语义：
+1. 提示词：`Prompt` 不为空时按 `PromptArguments` 渲染模板，结果作为首条 `System` 消息。
+2. 工具：`Tools` 列出的名字从工具目录绑定到当前调用；`Options.Tools` 会被绑定结果覆盖。
+3. 护栏：`SkipGuardrails` 为假时按登记顺序检查全部消息，任一拦截即返回。
+4. Provider：`Provider` 为空取目录的 `DefaultProvider`（没有即 `AI_NOTFOUND_001`），解析客户端。
+5. 调用模型。
 
-- 传 provider 名 → 移除该名下的客户端，**同时移除默认槽**（默认 provider 可能正指向它）；
-- 传 `null` 或空 → 清空全部；
-- 被移除的客户端会被 `Dispose`，下次 `Resolve` 用最新配置重建。
-
-::: warning 两个解析器要分别失效
-会话客户端与嵌入生成器是两份独立缓存。只调会话侧的 `Invalidate`，RAG 仍会用旧密钥/旧端点。
-:::
-
-## 会话管道：三个开关默认全关
-
-`OpenAiCompatibleChatClientFactory` 建客户端时按 `XiHan:AI:Pipeline` 逐项叠加中间件。注册顺序即由外到内：
-
-| 层 | 开关 | 行为 |
-| --- | --- | --- |
-| 内容护栏 | `EnableGuardrail` | 最外层，先见原始输入；拦截即不下发内层 |
-| 遥测 | `EnableTelemetry` | `UseOpenTelemetry`，源名取 `TelemetrySourceName`（默认 `XiHan.AI`） |
-| 响应缓存 | `EnableResponseCache` | `UseDistributedCache`，需 DI 里有 `IDistributedCache` |
-| 工具调用 | 无开关，**恒定挂载** | `UseFunctionInvocation`，最内层 |
-
-`Pipeline` 是全局配置，不是按 provider 配的；三个开关默认 `false`。
-
-::: danger 工具会自动执行，没有人工批准环节
-`UseFunctionInvocation` 恒挂在最内层，Agent 侧的 `ChatClientAgent` 内部也自带函数调用中间件。模型决定调工具就直接调，没有确认步骤。只读型技能（检索、查询）无所谓；一旦技能有副作用（写库、发消息、调外部接口），批准与审计必须由技能自己实现。
-:::
-
-::: warning 缓存开在工具调用之外
-`EnableResponseCache` 位于 `UseFunctionInvocation` 外层，命中缓存会连工具调用一起跳过，相同输入恒返回同一答案。创造性/高温场景不要开。
-:::
-
-遥测开关只负责挂中间件，未接 `TracerProvider` / `MeterProvider` 与导出器时它是静默空操作，看不到任何数据。`EnableSensitiveTelemetry` 控制是否把 prompt 与响应原文记进遥测，默认关。
-
-## 内容护栏
-
-护栏是 `IAiGuardrail` 列表，`GuardrailChatClient`（一个 `DelegatingChatClient`）逐个跑 `InspectInputAsync`：
-
-- 任一护栏返回拦截 → 直接回 `RefusalMessage`，不下发内层；
-- 护栏自身抛异常 → 同样按拦截处理（fail-closed，避免护栏故障时误放行）；
-- 流式与非流式行为一致，拦截时流里只吐一条拒绝话术。
-
-默认实现 `KeywordBlocklistGuardrail` 是薄自包含实现：`BlockedKeywords` 做大小写不敏感子串匹配，`InjectionPatterns` 加上内置的中英注入启发式正则做匹配，**只检查 `ChatRole.User` 消息**。它定位「第一道防线」，混淆、多语言改写、编码绕过都能穿过去。
-
-追加护栏用 `AddSingleton<IAiGuardrail, XxxGuardrail>()`——默认护栏是 `TryAddEnumerable` 注册的，不会被顶掉，多个护栏全部放行才算通过。要接真正的内容安全检测服务，实现这个接口挂进去即可，管道不用动。
-
-::: warning 只做输入侧
-当前护栏不检查模型输出，没有输出脱敏。输出侧的合规处理需要自己在调用方做。
-:::
-
-## 技能注册表
-
-「技能」是应用供给的一个命名能力单元，接口只有三个成员：
-
-```csharp
-public sealed class SearchDocSkill : IAiSkill
-{
-    public string Name => "search_doc";
-
-    public string Description => "在项目文档中检索关键词，返回最相关的片段。";
-
-    public AIFunction AsFunction() => AIFunctionFactory.Create(
-        (string keyword) => Search(keyword),
-        name: Name,
-        description: Description);
-}
-```
-
-```csharp
-services.AddSingleton<IAiSkill, SearchDocSkill>();
-```
-
-`DefaultAiSkillRegistry` 构造时把 DI 里所有 `IAiSkill` 一次性收纳进来（线程安全、按名索引、同名覆盖），也支持运行期 `Register` 追加。注册表的价值在于**一次登记、两条交付通道**：
-
-| 通道 | 怎么用 |
+| `AIChatRequest` 成员 | 说明 |
 | --- | --- |
-| 对话工具 | `skill.AsFunction()` 放进 `ChatOptions.Tools` 或 Agent 的 `tools` |
-| MCP tool | 由 `SkillMcpToolsConfigurator` 自动投影，外部 AI 客户端可见 |
+| `Messages` | 必填，对话消息 |
+| `Provider` | Provider 名，空取目录的默认聊天 Provider |
+| `Prompt`、`PromptArguments` | 提示词模板名与参数 |
+| `Tools` | 要带上的工具名（目录里的名字），空表示不带工具 |
+| `Options` | `ChatOptions`，温度、最大令牌数等原样传给模型 |
+| `SkipGuardrails` | 跳过护栏，缺省 `false` |
 
-::: tip 框架不内置任何技能
-框架只提供接口与注册表，一个内置技能都没有。不注册技能时注册表是空的——MCP 端点即使开了也是零工具。
-:::
-
-## Agent 门面
-
-`IXiHanAgentFactory` 是对 Agent 框架的薄封装，只加「按 provider 名选模型」这一层，返回的是原生 `AIAgent`：
+下面的操作把用户问题交给模型，并允许模型调用 `orders_list` 工具：
 
 ```csharp
-public sealed class AgentSample(IXiHanAgentFactory factory, IAiSkillRegistry skills)
+using Microsoft.Extensions.AI;
+using XiHan.Framework.AI.Abstractions.Chat;
+using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Primitives;
+
+namespace MyApp.Assistants;
+
+public sealed record AskRequest(string Question);
+
+public sealed record AskResponse(string Answer);
+
+[Operation("assistants.ask", Expose = Expose.Http)]
+public sealed class AskAssistant(IAIChat chat) : IOperation<AskRequest, AskResponse>
 {
-    public async Task<string> RunAsync(string task, CancellationToken ct)
+    public async ValueTask<Result<AskResponse>> HandleAsync(AskRequest request, InvocationContext context)
     {
-        var tools = skills.All.Select(s => (AITool)s.AsFunction()).ToList();
-        var agent = factory.Create(
-            instructions: "你是项目助理，回答前先用工具查证。",
-            name: "assistant",
-            tools: tools,
-            providerName: null);
-
-        var response = await agent.RunAsync(task, cancellationToken: ct);
-        return response.Text;
-    }
-}
-```
-
-多轮对话与记忆走原生会话对象，框架不再包一层：
-
-```csharp
-var session = await agent.CreateSessionAsync(ct);
-var first = await agent.RunAsync("帮我看下这个模块", session, cancellationToken: ct);
-var second = await agent.RunAsync("那第二点怎么改？", session, cancellationToken: ct);
-```
-
-流式用 `RunStreamingAsync`。工厂本身不缓存 Agent——每次 `Create` 都新建一个，底下的 `IChatClient` 才是被解析器缓存的那个。
-
-## MCP Server：暴露与守门
-
-`XiHanWebMcpModule` 让外部 AI 客户端通过 MCP 协议调用你的技能。它由 `XiHan:AI:Mcp` 节门控，**默认不暴露**：
-
-```json
-{
-  "XiHan": {
-    "AI": {
-      "Mcp": {
-        "Enabled": true,
-        "ApiKey": "替换为足够长的随机密钥",
-        "Path": "/mcp",
-        "HeaderName": "X-Api-Key",
-        "Stateless": true
-      }
-    }
-  }
-}
-```
-
-判定集中在 `XiHanMcpOptions.IsExposable`（`Enabled` 且 `ApiKey` 非空），并且在两处都生效：
-
-| 阶段 | 未就绪时的行为 |
-| --- | --- |
-| `AddXiHanWebMcp(configuration)` | 只绑定选项，**不注册** MCP Server 与 HTTP 传输 |
-| `MapXiHanMcp(options)` | 直接返回，**不映射任何端点** |
-
-端点映射后做了两步：`AllowAnonymous()` 绕开框架的全局鉴权兜底策略，再挂 `McpApiKeyEndpointFilter` 用应用管理的 key 守门。过滤器先读 `HeaderName` 指定的请求头，为空则回退读 `Authorization: Bearer`，比较用定长比较防时序侧信道，不匹配直接 401。
-
-::: danger key 是平台级凭据，不是用户身份
-它只表示「这个 MCP 客户端可以访问本应用」。经 MCP 进来的调用**没有用户上下文，也没有租户上下文**——技能内部不要假设 `ICurrentUser` / `ICurrentTenant` 有值；涉及租户数据的技能必须自己决定取哪个租户的数据，或干脆拒绝在无上下文时执行。
-:::
-
-::: warning 部署侧两件事
-`/mcp` 是 SSE 长连接：走反向代理要关闭响应缓冲并放宽超时。若启用了开放接口签名校验之类的前置中间件，把 `/mcp` 加进它的忽略路径。
-:::
-
-## RAG
-
-`AddXiHanRAG()` 注册四件默认实现，链路是固定的：
-
-| 环节 | 接口 | 默认实现 |
-| --- | --- | --- |
-| 切片 | `IChunkingStrategy` | `FixedWindowChunkingStrategy`（固定字符窗口 + 重叠，唯一策略） |
-| 摄取 | `IKnowledgeIngestor` | 切片 → 批量嵌入 → upsert 向量库 |
-| 检索 | `IKnowledgeRetriever` | query 嵌入 → 向量检索 → 映射 `RetrievedChunk` |
-| 提示增强 | `IRagPromptAugmenter` | 约束语 + 编号片段 + 问题的纯字符串拼接 |
-
-```csharp
-public sealed class KnowledgeSample(
-    IKnowledgeIngestor ingestor,
-    IKnowledgeRetriever retriever,
-    IRagPromptAugmenter augmenter,
-    IXiHanAiService ai)
-{
-    public Task<int> ImportAsync(string docId, string text, CancellationToken ct) =>
-        ingestor.IngestAsync(new KnowledgeIngestRequest
+        var reply = await chat.CompleteAsync(new AIChatRequest
         {
-            DocumentId = docId,
-            Text = text,
-            Title = "产品手册",
-            Source = "manual.md",
-            TenantId = 0,
-            Chunking = new ChunkingOptions { MaxChunkSize = 800, Overlap = 80 }
-        }, ct);
+            Messages = [new ChatMessage(ChatRole.User, request.Question)],
+            Prompt = "assistant",
+            PromptArguments = new Dictionary<string, object?> { ["company"] = "Acme" },
+            Tools = ["orders_list"],
+        }, context.CancellationToken);
 
-    public async Task<string?> AskAsync(string question, CancellationToken ct)
+        // 护栏拦截、模型不可达、超时都以 Result 返回，由宿主翻译成调用方语言
+        return reply.Map(static response => new AskResponse(response.Text));
+    }
+}
+```
+
+`StreamAsync` 在返回流之前完成提示词、工具、护栏与 Provider 解析，这些失败以 `Result` 返回；流开始后模型端点的异常在枚举时抛出。模型端点不可达或返回错误记 `AI_UNAVAILABLE_001`，`reason` 只写异常类型的全名，完整异常进日志（每次失败一条 Warning，带 Provider 名，ADR-0113）；超时记 `AI_TIMEOUT_001`。
+
+### 超时与取消
+
+`IAIChat` 与知识库流水线调用 Provider 时，把这个 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌，与调用方的取消令牌链接后交给 Provider：
+
+| 调用 | 时限的范围 |
+| --- | --- |
+| `CompleteAsync` | 从调用 Provider 起到它返回，含 Provider 自己的函数调用循环与其中的工具调用 |
+| 摄入、检索 | 每一次嵌入批调用 |
+| `StreamAsync` | 等每个更新（含第一个）的时长：只在等 Provider 时计时，调用方处理更新的时间不算，流的总时长不限 |
+
+流式按每次更新计时是已定的做法（ADR-0097）：不改成整条流的总时限——那会把正常输出的长回答、调用方处理得慢的流截断；也不退回不计时——卡住的连接就没有上限，流里的超时也没有归因。要限制一次对话的总时长，给 `StreamAsync` 传自己的取消令牌，或给调用设截止时间（只有调用方取消时枚举抛出 `OperationCanceledException`）。
+
+归因只看令牌，Provider 抛出与接住取消后正常返回是同一个回答：
+
+| 触发的令牌 | `CompleteAsync`、摄入、检索 | `StreamAsync` 的枚举 |
+| --- | --- | --- |
+| Provider 的超时令牌（调用方是否也取消不论） | `AI_TIMEOUT_001` | 抛出 `TimeoutException` |
+| 只有调用方取消 | 抛出 `OperationCanceledException`，经管道时按调用的截止时间归因（截止时间没到即 `KERNEL_CANCELLED_001`） | 抛出 `OperationCanceledException` |
+| 都没有触发，Provider 却抛出取消或 `TimeoutException`（它自己的传输超时） | `AI_TIMEOUT_001` | 抛出 `TimeoutException` |
+
+Provider 接住取消、交回截断的应答、条数不全的嵌入或提前结束的流时，框架按触发的令牌改报超时或取消，不把截断的结果当作成功。直接从目录解析的客户端不经这一层。完整应答的时限覆盖整个函数调用循环，工具调用多、总时长可能超过 `TimeoutSeconds` 的应用要调大它。
+
+## 提示词模板
+
+`AIPromptTemplate(name, template, description)` 的占位符写成 `{name}`，连写两个左花括号（或两个右花括号）输出一个字面的花括号，示例见 [AI.Abstractions 包](../packages/ai-abstractions#使用示例)。`Render(arguments)` 按不变文化把值转成字符串，`null` 为空串；缺参数返回 `AI_VALIDATION_001`。参数值原样拼入，不会再被当作模板解析。
+
+提示词目录合并两处来源：配置 `XiHan:AI:Prompts:<name>:Template` 与 `:Description`（也可以把模板直接写成 `XiHan:AI:Prompts:<name>` 的值），以及 `AddAIPrompt(template)` 的显式登记；同名时显式登记优先。
+
+## 护栏
+
+护栏实现 `IAIGuardrail`，返回 `GuardrailVerdict.Allow()` 或 `GuardrailVerdict.Block(reasonKey, reasonArguments)`。原因是消息键加参数，`IAIChat` 拦截时返回 `AI_DENIED_001`，错误细节带 `guardrail`（护栏名）与 `reason`（按当前区域渲染的原因）。护栏抛出异常或返回失败时记 `AI_UNEXPECTED_001`：抛出时 `reason` 只写异常类型的全名，完整异常进日志（每次一条 Error，带护栏名，ADR-0114）；返回失败时 `reason` 是那个错误的文案。
+
+```csharp
+using Microsoft.Extensions.AI;
+using XiHan.Framework.AI.Abstractions.Guardrails;
+using XiHan.Framework.Primitives;
+
+namespace MyApp.Assistants;
+
+public sealed class QuestionLengthGuardrail : IAIGuardrail
+{
+    // 应用自己消息目录里的键，模板如 "The question is longer than {limit} characters."
+    public const string TooLong = "assistants.question.too_long";
+
+    private const int Limit = 4000;
+
+    public string Name => "question-length";
+
+    public ValueTask<Result<GuardrailVerdict>> InspectAsync(IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken)
     {
-        var chunks = await retriever.RetrieveAsync(
-            question,
-            topK: 5,
-            filter: new RetrievalFilter { TenantId = 0 },
-            cancellationToken: ct);
+        var tooLong = messages.Any(static message => message.Role == ChatRole.User && message.Text.Length > Limit);
+        var verdict = tooLong ? GuardrailVerdict.Block(TooLong, MessageArguments.Of(("limit", Limit))) : GuardrailVerdict.Allow();
+        return ValueTask.FromResult(Result.Success(verdict));
+    }
+}
+```
+
+护栏以 `AddAIGuardrail<T>()` 登记，按登记顺序执行，收到的是包括渲染后系统提示在内的全部消息。内置的 `KeywordBlocklistGuardrail`（名字 `keyword-blocklist`）在 `XiHan:AI:Guardrails:Enabled` 为 `true` 时登记，只检查 `User` 消息：
+
+| 键 | 缺省 | 说明 |
+| --- | --- | --- |
+| `XiHan:AI:Guardrails:Enabled` | `false` | 是否登记内置护栏 |
+| `XiHan:AI:Guardrails:BlockedKeywords` | 空 | 禁用关键词，不区分大小写的子串匹配 |
+| `XiHan:AI:Guardrails:InjectionPatterns` | 空 | 追加的提示注入正则，不区分大小写，单次匹配超时 250 毫秒 |
+| `XiHan:AI:Guardrails:UseBuiltInInjectionHeuristics` | `true` | 是否启用内置的中英文提示注入模式（如「ignore previous instructions」「忽略以上指令」） |
+
+## 工具
+
+工具目录 `IAIToolCatalog` 合并两处来源：`AddAITool(AITool)` 显式登记的工具原样返回；登记表里 `Expose` 含 `Ai`、稳定性不是 `Stability.Internal` 的操作，各桥接成一个 `OperationAIFunction`。`All()` 与 `Find(name)` 返回声明（名字、描述、输入与输出 Schema），`Bind(caller)` 返回绑定到调用方上下文、可以执行的工具；`IAIChat` 会自动绑定到当前调用。
+
+```csharp
+using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Primitives;
+
+namespace MyApp.Orders;
+
+public sealed record ListOrdersRequest(string? Status);
+
+public sealed record OrderSummary(string Id, string Status, decimal Amount);
+
+public sealed record OrderList(IReadOnlyList<OrderSummary> Orders);
+
+// Expose.Ai：工具目录把它桥接成名为 orders_list 的模型工具
+[Operation("orders.list", Expose = Expose.Http | Expose.Ai)]
+public sealed class ListOrders : IOperation<ListOrdersRequest, OrderList>
+{
+    private static readonly OrderSummary[] _orders = [new("o-1", "pending", 12.5m), new("o-2", "shipped", 99m)];
+
+    public ValueTask<Result<OrderList>> HandleAsync(ListOrdersRequest request, InvocationContext context)
+    {
+        var matched = _orders.Where(order => request.Status is null || order.Status == request.Status).ToList();
+        return ValueTask.FromResult(Result.Success(new OrderList(matched)));
+    }
+}
+```
+
+`OrdersFeature` 以 `context.AddGeneratedOperations()` 登记它，写法同[审计](./auditing#记录调用来源)一章；三个请求与响应类型登记在项目的 `JsonSerializerContext` 里。操作工具的规则：
+
+| 项 | 规则 |
+| --- | --- |
+| 名字 | `<resource>_<verb>`，`-` 与 `.` 换成 `_`；超过 64 个字符时取前 55 个字符加 `_` 与 SHA-256 的前 8 位十六进制；`XiHan:AI:Tools:<操作 ID>` 覆盖 |
+| 名字校验 | 必须匹配 `^[A-Za-z0-9_-]{1,64}$`，不合法或重名时启动失败（`AI_VALIDATION_001`）：`AIToolsFeature` 与 `OpenAIFeature` 启动时都构建工具目录，只装其中任何一个也一样 |
+| 描述 | 消息目录里的 `<操作 ID>.description`（ID 里的 `-` 换成 `_`），按调用方区域翻译；没有时为空 |
+| 输入 Schema | 操作的请求 Schema，没有时 `{"type":"object"}` |
+| 输出 Schema | 操作的响应 Schema |
+
+工具被调用时，参数序列化成请求 JSON，在新作用域、新 `InvocationContext` 里经完整管道执行：trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，Validate、Authorize、Transaction 等阶段照常生效；新上下文不带调用来源，`GetOrigin()` 为无值。成功返回响应 JSON；失败返回 `{"error":"<错误码>","message":"<按调用方区域翻译的文案>"}` 交给模型处理，不抛异常。`AI.OpenAI` 的聊天客户端带函数调用循环，模型发起的工具调用在客户端里自动执行。
+
+::: tip 工具以调用方身份执行
+工具调用沿用调用方此刻的主体与租户：调用方已在自己的管道里认证过，凭据不复制，Authenticate 阶段没有凭据可认证即保留这个主体。Authorize 阶段以调用方主体按契约判定，契约声明了 `Permission` 的操作，调用方持有该权限才放行；没有权限得到 `SECURITY_DENIED_004`、匿名调用得到 `SECURITY_DENIED_001`，错误以 JSON 交给模型。模型能做的事不超过发起聊天的用户本人能做的事。
+:::
+
+显式工具用 `AIFunctionFactory` 创建，在特性里登记，护栏也在这里登记：
+
+```csharp
+using Microsoft.Extensions.AI;
+using XiHan.Framework.AI.Abstractions;
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
+
+namespace MyApp.Assistants;
+
+public sealed class AssistantsFeature : IFeature
+{
+    public Manifest Manifest { get; } = new()
+    {
+        Id = "xihan.myapp.assistants",
+        Package = "MyApp",
+        Version = "1.0.0",
+        Primitives = 1,
+        Stability = Stability.Experimental,
+        Kind = ManifestKind.Capability,
+        Requires =
+        [
+            new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
+            new CapabilityRequirement(AICapabilities.Chat, AICapabilities.Version),
+            new CapabilityRequirement(AICapabilities.Tools, AICapabilities.Version),
+        ],
+        Entry = typeof(AssistantsFeature).FullName,
+    };
+
+    public void Configure(FeatureContext context)
+    {
+        context.Services.AddAIGuardrail<QuestionLengthGuardrail>();
+        context.Services.AddAITool(AIFunctionFactory.Create(static () => DateTimeOffset.UtcNow.ToString("O"), "clock_now", "Current UTC time in ISO 8601."));
+    }
+}
+```
+
+同一份操作契约暴露成 MCP tool 由 `Protocols.Mcp` 负责，见 [gRPC、MCP 与 CloudEvents](./protocols)。
+
+## 知识库
+
+知识库流水线是「切块 → 嵌入 → 写入存储 → 检索 → 提示增强」。切块、嵌入、检索与增强在 `AI.Abstractions` 里，与存储无关；Provider 只实现 `IKnowledgeStore` 的写入、按文档删除与向量搜索。
+
+| 服务 | 作用 |
+| --- | --- |
+| `IKnowledgeIngestor` | `IngestAsync(requests)` 批量摄入，每篇文档一个 `Result<int>`（写入的块数）；`RemoveAsync(collection, documentIds)` 按文档删除 |
+| `IChunkingStrategy` | 内置 `FixedWindowChunkingStrategy`：按字符的固定窗口，重叠裁到 `[0, MaxChunkSize − 1]`，换行统一为 `\n`，空白块丢弃 |
+| `IKnowledgeRetriever` | `RetrieveAsync(query)`：问题嵌入 → 向量搜索 → 按 `MinScore` 过滤 |
+| `IRagPromptAugmenter` | `Augment(question, chunks)`：把检索结果编号拼进提示词，返回 `string`（模板在启动时校验过，增强本身不会失败） |
+
+```csharp
+using Microsoft.Extensions.AI;
+using XiHan.Framework.AI.Abstractions.Chat;
+using XiHan.Framework.AI.Abstractions.Knowledge;
+using XiHan.Framework.Primitives;
+
+namespace MyApp.Assistants;
+
+public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetriever retriever, IRagPromptAugmenter augmenter, IAIChat chat)
+{
+    public async ValueTask<IReadOnlyList<Result<int>>> ImportAsync(IReadOnlyDictionary<string, string> documents, CancellationToken cancellationToken)
+    {
+        // 批量摄入：每篇文档一个结果（写入的块数），同一文档重新摄入先写新块、再删多余的旧块
+        var requests = documents
+            .Select(static document => new KnowledgeIngestRequest
+            {
+                DocumentId = document.Key,
+                Text = document.Value,
+                Metadata = new Dictionary<string, string> { [KnowledgeMetadataKeys.Source] = "faq" },
+            })
+            .ToList();
+        return await ingestor.IngestAsync(requests, cancellationToken);
+    }
+
+    public async ValueTask<Result<string>> AnswerAsync(string question, CancellationToken cancellationToken)
+    {
+        var found = await retriever.RetrieveAsync(new KnowledgeQuery { Text = question, Top = 3, MinScore = 0.3 }, cancellationToken);
+        if (!found.TryGetValue(out var chunks))
+        {
+            return found.Error!;
+        }
 
         var prompt = augmenter.Augment(question, chunks);
-        var response = await ai.ChatAsync([new ChatMessage(ChatRole.User, prompt)], null, ct);
-        return response.Text;
+        var reply = await chat.CompleteAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, prompt)] }, cancellationToken);
+        return reply.Map(static response => response.Text);
     }
 }
 ```
 
-::: danger 向量库必须由应用自己注册
-`AddXiHanRAG()` **不注册任何 `VectorStore`**——选哪个向量库属于部署决策，框架只依赖 `Microsoft.Extensions.VectorData` 的抽象。应用侧不登记具体连接器，解析 `IKnowledgeIngestor` / `IKnowledgeRetriever` 时就会因缺少 `VectorStore` 依赖而失败。
+`FaqKnowledge` 以 `builder.Services.AddScoped<FaqKnowledge>()` 登记（`IAIChat` 是作用域服务）。流水线的规则：
+
+- 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入先写后删：新块全部嵌入、校验维度并写入成功后，才删掉旧版本多出来的块（块序号不小于新块数的），同 ID 的块由写入覆盖。嵌入、维度校验或写入失败时不删任何旧块，旧文档照常可检索；写入中途失败最多留下新旧混合的块，按返回的错误重试摄入即恢复一致。删多余旧块这一步失败时返回该错误，新块已经在库里。新文本切不出块时整篇删除，返回 0。
+- 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度，并换一个集合。
+- 摄入与检索的嵌入 Provider 依次取请求的 `Provider`、`XiHan:AI:Knowledge:EmbeddingProvider`、目录的 `DefaultEmbeddingProvider`，都没有时返回 `AI_NOTFOUND_001`（`ai.provider.embedding_default_missing`）。
+- 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`；`Filter` 的 `DocumentIds` 与 `Metadata`（键值相等）取交集；`MinScore` 在存储返回后过滤。
+- `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`，配置里的或 `AddAIPrompt` 登记的都行），没配置时用内置英文模板。模板在启动时校验：`AIToolsFeature`、`VectorDataKnowledgeFeature` 与 `OpenAIFeature` 启动时都解析增强器（只装其中任何一个也一样），模板不存在（`AI_NOTFOUND_002`）或引用了这两个以外的占位符、用代表性参数试渲染失败（`AI_VALIDATION_001`）即启动失败，不会悄悄换成内置模板。校验之后增强只用这份模板、只给这两个参数，不会再失败，所以返回 `string`。
+- `{context}` 里每个片段一段：先是 `[序号] Source: 来源` 一行，再是片段文本。来源依次取块元数据的 `KnowledgeMetadataKeys.Title`（`title`）、`KnowledgeMetadataKeys.Source`（`source`），都没有时取文档 ID。文档 ID 多半是 Guid，模型拿它说不清依据，所以摄入时最好带上标题。
+- 没有装配 `ai.knowledge` Provider 时，摄入、删除与检索都返回 `AI_UNAVAILABLE_002`。
+
+`AI.VectorData` 把 `IKnowledgeStore` 映射到应用登记的 `Microsoft.Extensions.VectorData` 的 `VectorStore`，任何连接器都行；容器里没有 `VectorStore` 时启动失败。集合定义、距离函数与过滤的下推方式见 [AI.VectorData 包](../packages/ai-vectordata)。
+
+`AI.VectorData` 自带健康项 `ai.vectordata.store`，应用不必另写向量库的健康检查：
+
+- 启动时同步探一次，之后每隔 `XiHan:AI:VectorData:HealthProbeIntervalSeconds`（缺省 15 秒，也是单次探测的超时）在后台重探。
+- 探针只问默认集合（`XiHan:AI:Knowledge:Collection`）在不在，存在与否都算连得上；不列集合、不建集合、不读写记录。
+- 向量库应答即 Ready。连接器抛出时 Degraded，错误码 `AI_UNAVAILABLE_002`，与检索在这时返回的码相同；探测超时也是 Degraded，错误码 `KERNEL_UNAVAILABLE_005`。
+- 条目 Degraded 时应用照常启动、照常服务，`/health/ready` 仍通过，恢复后条目回到 Ready。条目不带数据与说明，不写端点或连接信息。汇总见[生命周期与健康](./lifecycle#健康条目)。
+
+## 配置
+
+AI 配置不热更新：`XiHan:AI` 下的全部键在装配时读一次，改了要重启应用。框架不监听配置变化，`Invalidate` 只丢弃缓存的客户端、按同一份选项重建；提示词目录、工具目录、护栏、知识库选项与提示增强器都在创建时取定。这样做是因为这些配置在启动时校验（工具名、知识库提示词）并被多个单例取用，热更新只会部分生效——例如换了嵌入模型而向量集合的维度没变——AI 配置的改动通常本就伴随部署（ADR-0074）。
+
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `XiHan:AI:DefaultProvider` | string | 只有一个 Provider 时取它 | 框架自带目录的默认聊天 Provider；替换了目录时不起作用 |
+| `XiHan:AI:DefaultEmbeddingProvider` | string | 同 `DefaultProvider` | 框架自带目录的默认嵌入 Provider |
+| `XiHan:AI:Providers:<name>:Kind` | string | 必填 | Provider 种类，转成小写后匹配工厂 |
+| `XiHan:AI:Providers:<name>:Endpoint` | 绝对的 http(s) 地址 | 空，即 Provider 的官方端点 | 模型端点 |
+| `XiHan:AI:Providers:<name>:ApiKey` | string | 空 | API 密钥；空时由 Provider 决定 |
+| `XiHan:AI:Providers:<name>:ChatModel` | string | — | 聊天模型，解析聊天客户端时必填 |
+| `XiHan:AI:Providers:<name>:EmbeddingModel` | string | — | 嵌入模型，解析嵌入生成器时必填 |
+| `XiHan:AI:Providers:<name>:EmbeddingDimensions` | int，至少 1 | 模型缺省维度 | 请求的嵌入维度 |
+| `XiHan:AI:Providers:<name>:TimeoutSeconds` | 数值，大于 0 | 100 | Provider 调用的时限，范围与归因见[超时与取消](#超时与取消) |
+| `XiHan:AI:Providers:<name>:Properties:<key>` | string | — | 原样透传给工厂 |
+| `XiHan:AI:Tools:<操作 ID>` | string | 按约定推导 | 覆盖操作工具名 |
+| `XiHan:AI:Prompts:<name>:Template` | string | — | 提示词模板 |
+| `XiHan:AI:Prompts:<name>:Description` | string | — | 提示词说明 |
+| `XiHan:AI:Guardrails:*` | — | — | 见[护栏](#护栏) |
+| `XiHan:AI:Knowledge:Collection` | string | `knowledge` | 默认集合 |
+| `XiHan:AI:Knowledge:Dimensions` | int，至少 1 | 1536 | 嵌入维度 |
+| `XiHan:AI:Knowledge:ChunkSize` | int，至少 1 | 1000 | 切块大小（字符） |
+| `XiHan:AI:Knowledge:ChunkOverlap` | int，不小于 0 | 100 | 相邻块的重叠（字符） |
+| `XiHan:AI:Knowledge:Top` | int，至少 1 | 5 | 默认检索条数 |
+| `XiHan:AI:Knowledge:EmbeddingProvider` | string | 目录的默认嵌入 Provider | 知识库用的嵌入 Provider；请求写了 Provider 时以请求为准 |
+| `XiHan:AI:Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名；启动时校验存在且只用 `{context}`、`{question}` |
+| `XiHan:AI:VectorData:HealthProbeIntervalSeconds` | 有限的数值，大于 0 | 15 | `AI.VectorData` 健康项的重探间隔，也是单次探测的超时 |
+
+::: warning 配置值写错时启动失败
+读取 `XiHan:AI` 时值不合法即抛出 `ArgumentException`，应用启动失败，异常消息带出完整的配置键与原值：Provider 缺 `Kind`；`Endpoint` 不是绝对的 http(s) 地址（例如漏了 `http://`，写错的端点不会退回官方端点、把 `ApiKey` 发出去）；`EmbeddingDimensions` 与知识库的数值不是要求的整数；`TimeoutSeconds` 不是正数；护栏的两个开关不是 `true` / `false`；提示词缺 `Template`。`Endpoint` 不写或写空串表示官方端点。
 :::
 
-几个必须知道的约定：
+## 错误码
 
-- **维度必须与嵌入模型一致**。`KnowledgeVectorOptions` 默认集合名 `default_knowledge`、维度 `1536`。维度对不上时摄取与检索都会在 upsert / 向量检索**之前**抛出明确异常（`EnsureDimensions`），而不是丢一个驱动层报错。换模型要同时改维度并更换集合名或删除原集合重建。
-- **这份 Options 不绑配置节**。`AddXiHanRAG(Action<KnowledgeVectorOptions>)` 只接受代码配置；要从 appsettings 读，应用侧自行 `services.Configure<KnowledgeVectorOptions>(configuration.GetSection("..."))`。
-- **切片主键是确定性的**。由 `documentId:index` 派生，重复摄取同一文档即覆盖，天然幂等。
-- **删除要传原切片数**。`RemoveDocumentAsync(documentId, chunkCount)` 靠枚举 `0..chunkCount-1` 生成键来删，`chunkCount` 传小了会留孤儿向量——摄取返回的切片数要存下来。
-- **过滤只作用于两个索引字段**。`RetrievalFilter` 只有 `TenantId` 与 `DocumentId`，它们在集合定义里标了索引，作为 pre-filter 下推到向量库。租户谓词恒存在：检索只在一个租户内进行（平台为 0，`filter` 为空即平台），不存在不限租户的检索。
-- **嵌入模型单独配**。取 `AiProviderOptions.EmbeddingModel`，与会话共用同一端点和密钥；该字段为空时解析嵌入生成器会抛异常。
-
-::: tip 故障可读
-向量库连不上会被翻译成 `ServiceUnavailableException`（503），嵌入端点的 401/404/429/5xx 也被翻译成带 provider 名与模型名的可操作消息。请求本身的问题（如 400 内容超长、维度不符）原样抛出——那类失败重试没用，报成 503 反而掩盖真实缺陷。
-:::
-
-## 配置速查
-
-| 配置节 | Options 类 | 管什么 |
-| --- | --- | --- |
-| `XiHan:AI` | `XiHanAiOptions` | `DefaultProvider`、`Providers`、`Pipeline`、`Prompts` |
-| `XiHan:AI:Pipeline` | `AiPipelineOptions` | 护栏/遥测/缓存三开关，默认全 `false` |
-| `XiHan:AI:Guardrail` | `AiGuardrailOptions` | 敏感词、注入正则、内置启发式开关、拒绝话术 |
-| `XiHan:AI:Mcp` | `XiHanMcpOptions` | MCP 端点开关、密钥、请求头名、路径、无状态传输 |
-
-提示词模板走 `IAiPromptStore`：默认实现 `OptionsAiPromptStore` 读 `XiHan:AI:Prompts`，按 `Name` + 可选 `Version` 查；应用层可覆盖成落库版本，对上层同样透明。
-
-全部字段的类型与默认值见 [AI 包](../packages/ai) 与 [Web.Mcp 包](../packages/web-mcp)。
-
-## 常见问题
-
-| 现象 | 原因 |
+| 错误码 | 何时出现 |
 | --- | --- |
-| 抛「未找到 AI Provider 配置」 | `DefaultProvider` 没配，或传的 provider 名不在 `Providers` 字典里 |
-| 改了数据库里的密钥仍用旧的 | 没调 `Invalidate`，解析器缓存不感知外部变更 |
-| 换了密钥后会话正常但 RAG 报鉴权失败 | 只失效了会话解析器，嵌入解析器还是旧客户端 |
-| 配了 `Temperature` / `MaxOutputTokens` 不起作用 | 这些字段当前无实现读取，改用 `XiHanChatOptions.ChatOptions` |
-| 护栏没拦住任何东西 | `Pipeline.EnableGuardrail` 默认关；或内容不在 `ChatRole.User` 消息里 |
-| 开了遥测但没有任何数据 | 未接 `TracerProvider` / `MeterProvider` 与导出器，中间件是空操作 |
-| 相同问题总是同一个答案 | 开了 `EnableResponseCache`，命中缓存连工具调用一起跳过 |
-| `/mcp` 返回 404 | `Enabled` 为 false 或 `ApiKey` 为空，端点根本没被映射 |
-| `/mcp` 返回 401 | 请求头名与 `HeaderName` 不一致，或没走 `Authorization: Bearer` |
-| MCP 连上了但看不到工具 | 没有任何 `IAiSkill` 注册，框架不内置技能 |
-| 解析 `IKnowledgeIngestor` 失败 | 应用没注册 `VectorStore`，框架不提供具体连接器 |
-| 摄取时报维度不匹配 | 嵌入模型输出维度与 `KnowledgeVectorOptions.Dimensions` 不一致 |
-| 删了文档但还能检索到 | `RemoveDocumentAsync` 的 `chunkCount` 小于实际切片数 |
-| 向量库故障返回 503 | 连接类故障被统一翻译，原始异常在内部异常里 |
+| `AI_VALIDATION_001` | 请求不合法：Provider 缺 `ChatModel` / `EmbeddingModel`、提示词缺参数、摄入的文档 ID 为空、检索的问题为空、工具参数序列化不了（交给模型的 JSON 错误）、工具名不合法或重名（启动失败） |
+| `AI_VALIDATION_002` | 嵌入维度与 `XiHan:AI:Knowledge:Dimensions` 不一致 |
+| `AI_NOTFOUND_001` | Provider 未配置，或它的种类没有登记工厂；没写 Provider 名而目录没有默认 |
+| `AI_NOTFOUND_002` | 提示词模板不存在 |
+| `AI_NOTFOUND_003` | 请求里的工具名不在目录里 |
+| `AI_DENIED_001` | 被护栏拦截，细节带 `guardrail` 与 `reason` |
+| `AI_TIMEOUT_001` | 模型调用超时：Provider 的 `TimeoutSeconds` 到了（调用方同时取消也一样），或 Provider 报告了自己的超时 |
+| `AI_UNAVAILABLE_001` | 模型端点不可达或返回错误 |
+| `AI_UNAVAILABLE_002` | 没有知识库 Provider，或向量存储不可达；`AI.VectorData` 启动时找不到 `VectorStore` 也以此码失败；健康项 `ai.vectordata.store` 探不到向量库时也是它 |
+| `AI_UNEXPECTED_001` | 护栏抛出异常或返回失败 |
 
-## 下一步
+消息目录是 `ai`，键为 `ai.*`，内置 10 种区域的译文。
 
-- [配置与选项](./configuration)：Options 绑定与覆盖顺序
-- [依赖注入](./dependency-injection)：`TryAdd` 覆盖默认实现的时机
-- [Web 应用开发](./web)：端点鉴权与全局兜底策略
-- [缓存与分布式锁](./caching)：响应缓存依赖的 `IDistributedCache`
-- [AI 包](../packages/ai)：完整 API 与全部配置项
-- [AI.Abstractions 包](../packages/ai-abstractions)：接口与契约
-- [Web.Mcp 包](../packages/web-mcp)：MCP 端点与鉴权细节
+## 与其他能力的关系
+
+- 执行管道：工具调用是一次完整的管道调用，审计、事务、校验都照常生效，审计事件与发起聊天的调用共享 trace-id，见[执行管道](./pipeline)。
+- 操作契约：`Expose.Ai` 是 `Expose` 的一个标志位，`Expose.All` 包含它，见[操作契约](./operations)。
+- 测试：`AI.Conformance` 提供 `KnowledgeStoreConformance`、`AIProviderConformance` 与确定性的 `HashingEmbeddingGenerator`，测试不依赖外部模型，见[测试与一致性套件](./testing)。自写目录的应用继承 `AIProviderConformance`，实现 `StartAsync`（被测 Provider 是默认）与 `StartWithoutDefaultAsync`（没有默认），能把聊天与嵌入的默认分开时再覆写 `StartWithSeparateDefaultsAsync`。
+- 4.x：4.x 的 Agent 工厂不迁移，等 `Microsoft.Agents.AI` 稳定后另立规范；其余对照见[从 4.x 迁移](./upgrade)。
+
+## 相关
+
+- [AI.Abstractions 包](../packages/ai-abstractions)
+- [AI.OpenAI 包](../packages/ai-openai)
+- [AI.VectorData 包](../packages/ai-vectordata)
+- [gRPC、MCP 与 CloudEvents](./protocols)
+- 规范：RFC-0022《AI：聊天、嵌入、工具与知识》

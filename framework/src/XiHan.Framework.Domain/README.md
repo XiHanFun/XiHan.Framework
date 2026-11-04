@@ -1,36 +1,33 @@
 # XiHan.Framework.Domain
 
-## 概述
-XiHan.Framework.Domain 提供领域层基础设施与领域模型组织方式，规范聚合、实体与领域服务的实现边界。
+领域契约（Ring 2）。只有接口协议与零依赖的规约组合器，没有实体基类；实体按需组合协议。
 
-## 核心能力
-- 领域层基础抽象与通用约定
-- 领域模型组织与聚合根支持
-- 与数据层、事件总线等模块协同
+| 契约 | 用途 |
+| --- | --- |
+| `IEntity<TKey>`、`IAggregateRoot<TKey>` | 标识与聚合根 |
+| `IHasDomainEvents`、`IDomainEvent`、`DomainEventBuffer` | 领域事件的收集与清空 |
+| `ISoftDeletable`、`IHasCreationTime`、`IHasModificationTime`、`IMultiTenant`、`IHasConcurrencyStamp` | 持久化子系统按协议自动维护的字段 |
+| `IValueObject` | 值对象标记（用 `record` 获得值相等） |
+| `ISpecification<T>`、`Specification<T>`、`Specification.All<T>()` / `Specification.Of<T>()` | 查询规约与 And / Or / Not 组合 |
 
-## 依赖关系
-- 通过 `XiHanDomainModule` 参与模块化生命周期
-- 依赖关系通过 `DependsOn` 进行组合，具体依赖以模块类声明为准
-
-## 配置与约定
-- 领域模型遵循聚合与边界上下文约定
-- 领域服务与应用服务分层清晰
-
-## 使用方式
 ```csharp
-[DependsOn(typeof(XiHanDomainModule))]
-public class MyModule : XiHanModule
+public sealed class Order : IAggregateRoot<Guid>, IMultiTenant, ISoftDeletable, IHasCreationTime
 {
+    private readonly DomainEventBuffer _events = new();
+    public Guid Id { get; init; }
+    public string TenantId { get; set; } = string.Empty;
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public IReadOnlyList<IDomainEvent> DomainEvents => _events.Items;
+    public void ClearDomainEvents() => _events.Clear();
 }
 ```
 
-## 扩展点
-- 自定义领域服务与领域事件
-- 聚合根的仓储与生命周期管理
+## 依赖方向
 
-## 目录结构
-```text
-XiHan.Framework.Domain/
-  README.md
-  XiHanDomainModule.cs
-```
+依赖 `XiHan.Framework.Primitives`。被持久化等子系统的抽象包引用。没有能力清单：纯编译期契约。
+
+## 状态
+
+P2：可用。

@@ -1,63 +1,43 @@
-// Copyright (c) 2021-Present XiHanFun and contributors.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using System.Text.Json.Nodes;
+using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
 /// <summary>
-/// 工作流表达式求值器
+/// 表达式求值器
 /// </summary>
 /// <remarks>
-/// 默认实现为内置轻量表达式语言：变量引用（含点号导航与索引）、字面量、
-/// 算术/比较/逻辑运算、内置函数；应用侧可替换为脚本引擎实现。
+/// 条件、属性表达式与 <c>{{ 表达式 }}</c> 模板。语法或求值失败 → <see cref="WorkflowErrors.ExpressionInvalid"/>
 /// </remarks>
+[ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowExpressionEvaluator
 {
     /// <summary>
-    /// 求值表达式
+    /// 校验语法
     /// </summary>
-    /// <param name="expression">表达式</param>
-    /// <param name="variables">变量上下文</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>求值结果</returns>
-    Task<object?> EvaluateAsync(
-        string expression,
-        IReadOnlyDictionary<string, object?> variables,
-        CancellationToken cancellationToken = default);
+    Result Validate(string expression);
 
     /// <summary>
-    /// 求值表达式并转换为目标类型
+    /// 求值
     /// </summary>
-    /// <typeparam name="T">目标类型</typeparam>
-    /// <param name="expression">表达式</param>
-    /// <param name="variables">变量上下文</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>求值结果</returns>
-    Task<T?> EvaluateAsync<T>(
-        string expression,
-        IReadOnlyDictionary<string, object?> variables,
-        CancellationToken cancellationToken = default);
+    /// <remarks>
+    /// 结果是 <see langword="null"/>（字面量 <c>null</c>、缺少的成员或键、值为 null 的变量）时是成功的无值，不是失败（ADR-0059）
+    /// </remarks>
+    Result<Maybe<JsonNode>> Evaluate(string expression, ExpressionScope scope);
 
     /// <summary>
-    /// 求值条件表达式（结果必须为布尔值，否则视为定义错误抛出异常）
+    /// 求布尔值
     /// </summary>
-    /// <param name="expression">条件表达式</param>
-    /// <param name="variables">变量上下文</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>条件结果</returns>
-    Task<bool> EvaluateConditionAsync(
-        string expression,
-        IReadOnlyDictionary<string, object?> variables,
-        CancellationToken cancellationToken = default);
+    /// <remarks>
+    /// 结果不是布尔（含无值）即失败
+    /// </remarks>
+    Result<bool> EvaluateCondition(string expression, ExpressionScope scope);
 
     /// <summary>
-    /// 渲染模板（把文本中的 <c>{{ 表达式 }}</c> 占位替换为求值结果）
+    /// 渲染模板：<c>{{ 表达式 }}</c> 占位替换为求值结果的文本（无值为空串，容器为 JSON）
     /// </summary>
-    /// <param name="template">模板文本</param>
-    /// <param name="variables">变量上下文</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>渲染结果</returns>
-    Task<string> RenderTemplateAsync(
-        string template,
-        IReadOnlyDictionary<string, object?> variables,
-        CancellationToken cancellationToken = default);
+    Result<string> Render(string source, ExpressionScope scope);
 }

@@ -1,301 +1,183 @@
 # 实时通信
 
-服务端要主动把消息推到浏览器——通知、聊天、任务进度、强制下线——走 `XiHan.Framework.Web.RealTime` 提供的 SignalR 集成。本章讲怎么定义 Hub、怎么从业务代码推送、连接是怎么被找到的，以及一条最容易翻车的载荷约定。
+本页讲 5.0 下怎样做实时推送：直接使用 ASP.NET Core SignalR，Hub 的认证交给内核已装配的认证处理器，适用于要在 XiHan 应用里接 WebSocket、Server-Sent Events 一类长连接的项目。用到的 API 都在 [Hosting.AspNetCore 包](../packages/hosting-aspnetcore)。
 
-完整 API 清单与全部配置项见 [Web.RealTime 包](../packages/web-realtime)。
+## 5.0 的做法
 
-## 什么时候用
+5.0 不包装 SignalR，框架里没有 Hub 基类、连接登记表、推送抽象或背板。应用直接用 ASP.NET Core 共享框架自带的 SignalR（`AddSignalR`、`MapHub`、`IHubContext<THub>`），不需要额外的框架包。
 
-| 需求 | 选择 |
-| --- | --- |
-| 服务端有事就通知前端，前端不知道什么时候会有 | Hub 推送 |
-| 前端定期刷新一份数据，能接受几秒延迟 | 普通 HTTP 轮询，不必上 Hub |
-| 一次长耗时操作要报进度 | Hub 推送 `TaskProgress` |
-| 同账号多端状态同步（偏好、被踢下线） | Hub 推送，按用户点发 |
+框架只解决衔接上的两件事：
 
-Hub 是有状态长连接，会占住连接数、跨实例还要额外考虑路由。能用请求-响应解决的事就别开 Hub。
+- 认证。Hub 是长连接，不经内核管道（不受截止时间约束，内核停止时也不被 503 打断），管道的 Authenticate 阶段管不到它。`Hosting.AspNetCore` 提供 ASP.NET Core 认证方案 `XiHan`，把凭据交给内核已装配的 `IAuthenticationHandler`，与管道里是同一个处理器，JWT、OpenID Connect、ApiKey 不用各接一遍（ADR-0051）。
+- 在 Hub 里发起内核调用。`HttpInvocation.CreateContext(httpContext, services)` 以连接的 `HttpContext` 建调用上下文，凭据随之带上，调用经管道时照常重新认证、按契约授权。
 
-## 启用
+## 接入 Hub
 
-```bash
-dotnet add package XiHan.Framework.Web.RealTime
-```
+1. `AddSignalR()`，并用 `AddAuthentication().AddXiHan(...)` 登记方案 `XiHan`；浏览器的 WebSocket 与 EventSource 带不了请求头，把 Hub 的路径前缀登记进 `QueryTokenPaths`。
+2. `UseAuthentication()`、`UseAuthorization()` 放在 `UseXiHan()` 之前。
+3. 映射 Hub 时用 `PipelineBypassMetadata.BypassXiHanPipeline(...)` 标注绕过内核管道，授权策略指定方案 `XiHan`。
 
 ```csharp
-[DependsOn(typeof(XiHanWebRealTimeModule))]
-public class MyAppModule : XiHanModule { }
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Hosting.AspNetCore.Authentication;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Profiles.Standard;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.AddXiHan(xihan => xihan.UseStandardProfile());
+
+builder.Services.AddSignalR();
+// 查询串 access_token 只在 /hubs 下接受：查询串会进访问日志与代理日志
+builder.Services.AddAuthentication().AddXiHan(options => options.QueryTokenPaths.Add("/hubs"));
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseXiHan();
+
+PipelineBypassMetadata.BypassXiHanPipeline(app.MapHub<NotificationHub>("/hubs/notifications"))
+    .RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = InvocationAuthenticationDefaults.AuthenticationScheme });
+
+app.Run();
+
+public sealed class NotificationHub : Hub;
 ```
 
-`XiHanWebRealTimeModule` 依赖 `XiHanWebCoreModule` 与 `XiHanAuthenticationModule`，在 `ConfigureServices` 里调用 `AddXiHanSignalRWithJson(config)`，一次性完成：
+方案 `XiHan` 的规则：
 
-| 动作 | 说明 |
+| 项 | 行为 |
 | --- | --- |
-| `AddSignalR().AddJsonProtocol(...)` | JSON 协议：`PropertyNamingPolicy = CamelCase`、`WriteIndented = false` |
-| 绑定 `XiHanSignalROptions` | 读配置节 `XiHan:Web:RealTime:SignalR` |
-| 桥接到 `HubOptions` | 保活/超时/握手/消息大小等运行时从 DI 取值 |
-| 注册 `IConnectionManager` → `ConnectionManager` | `Singleton`，进程内连接表 |
-| 注册 `IUserIdProvider` / `IXiHanUserIdProvider` → `XiHanUserIdProvider` | `Singleton` |
-| 注册 `IRealtimeNotificationService<>` → `RealtimeNotificationService<>` | `Scoped` |
+| 生效范围 | 只认带 `PipelineBypassMetadata` 的端点；普通请求由内核管道认证，方案对它们返回未认证，不重复认证 |
+| 凭据 | 先取 `Authorization` 头；没有时，请求路径（相对 PathBase）按路径段、不区分大小写落在 `QueryTokenPaths` 的某个前缀下，且 `access_token` 只有一个非空值，才作为 `Bearer` 凭据；其他路径的查询串令牌一律忽略 |
+| 路径前缀 | 不能为空也不能是 `/`，方案初始化时校验，违反时抛出 `ArgumentException` |
+| 认证 | 交给方案名匹配的内核认证处理器；方案不支持、凭据无效都是 401，质询与管道一致（Bearer 带 `error="invalid_token"`） |
+| 主体 | 转成认证类型为 `XiHan` 的 `ClaimsPrincipal`：声明保留原始类型名，另加 `ClaimTypes.NameIdentifier` 承载主体 ID 并作名称声明（SignalR 的 `UserIdentifier` 随之可用），角色声明类型取 `XiHan:Security:RoleClaim`（缺省 `role`） |
+| 登记 | `AddXiHan` 可以多次调用，方案只登记一次、各次的配置依次生效；不设为缺省方案 |
 
-::: warning 端点不会自动映射
-模块只注册服务，**不映射任何 Hub 端点**——包括内置示例 `NotificationHub`。路径由你在应用侧决定。
-:::
+## 会话门禁
 
-## 定义 Hub
-
-继承 `XiHanHub`，构造函数接 `IConnectionManager` 传给基类：
+令牌在有效期内、但对应的会话已经注销时，方案 `XiHan` 本身认不出来。应用实现 `IInvocationAuthenticationFilter` 做这类核对：内核处理器认证成功后按登记顺序调用，任一返回失败即 401。框架不判定会话，会话状态由应用提供。
 
 ```csharp
-using XiHan.Framework.Web.RealTime.Attributes;
-using XiHan.Framework.Web.RealTime.Hubs;
-using XiHan.Framework.Web.RealTime.Services;
+using XiHan.Framework.Hosting.AspNetCore.Authentication;
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
 
-[AuthorizeHub]
-public class ChatHub : XiHanHub
+public interface ISessionStatus
 {
-    public ChatHub(IConnectionManager connectionManager) : base(connectionManager)
-    {
-    }
-
-    // 参数一律用 string 接收，原因见「载荷不走 MVC 的 JSON 管道」
-    public Task JoinConversation(string conversationId)
-    {
-        return Groups.AddToGroupAsync(ConnectionId!, $"conversation:{conversationId}");
-    }
+    bool IsActive(string sessionId);
 }
-```
 
-`XiHanHub` 在基类里提供三个只读属性和一个受保护成员：
-
-| 成员 | 来源 |
-| --- | --- |
-| `ConnectionId` | `Context.ConnectionId` |
-| `UserId` | `ClaimTypes.NameIdentifier` claim |
-| `UserName` | `ClaimTypes.Name` claim |
-| `ConnectionManager`（`protected`） | 注入的 `IConnectionManager` |
-
-`AuthorizeHubAttribute` 继承自 `AuthorizeAttribute`，可打在类或方法上，可重复标注，也可带策略名：`[AuthorizeHub("MyPolicy")]`。
-
-### 映射端点
-
-在模块的 `OnApplicationInitialization` 里映射：
-
-```csharp
-public override void OnApplicationInitialization(ApplicationInitializationContext context)
+public sealed class SessionGate(ISessionStatus sessions) : IInvocationAuthenticationFilter
 {
-    var app = context.GetApplicationBuilder();
-    app.UseEndpoints(endpoints =>
+    public ValueTask<Result> AuthenticatedAsync(Principal principal, InvocationContext context, CancellationToken cancellationToken)
     {
-        endpoints.MapXiHanHub<ChatHub>("/hubs/chat");
-        endpoints.MapXiHanHub<NotificationHub>(SignalRConstants.HubPaths.Notification);
-    });
-}
-```
-
-`MapXiHanHub<THub>` 有两个重载，第二个接 `Action<HttpConnectionDispatcherOptions>`，用来单独调传输方式、缓冲区等。泛型约束是 `where THub : XiHanHub`——直接继承 `Hub` 的类型用不了这个扩展。
-
-`SignalRConstants.HubPaths` 里预置了三个路径常量：`Notification`（`/hubs/notification`）、`Chat`（`/hubs/chat`）、`Data`（`/hubs/data`）。
-
-## 从业务代码推送
-
-业务侧不碰 Hub 实例，注入按 Hub 泛型化的 `IRealtimeNotificationService<THub>`：
-
-```csharp
-public class OrderNotifier(IRealtimeNotificationService<ChatHub> realtime)
-{
-    public Task NotifyCreatedAsync(long userId, long orderId)
-    {
-        // long 显式转 string，见下节
-        return realtime.SendToUserAsync(
-            userId.ToString(),
-            SignalRConstants.ClientMethods.ReceiveNotification,
-            new { orderId = orderId.ToString(), title = "订单已创建" });
+        // 会话已注销按凭据无效拒绝：客户端据 401 重新登录
+        var active = principal.ClaimValues("sid").All(sessions.IsActive);
+        return ValueTask.FromResult(active ? Result.Success() : Result.Failure(Error.Denied(SecurityErrors.InvalidCredential, SecurityMessages.InvalidToken)));
     }
 }
 ```
 
-泛型参数决定推到哪条 Hub，推错 Hub 是编译期错误。六个方法：
-
-| 方法 | 目标 |
-| --- | --- |
-| `SendToUserAsync(userId, method, args)` | 单个用户的全部连接 |
-| `SendToUsersAsync(userIds, method, args)` | 一批用户的全部连接 |
-| `SendToGroupAsync(groupName, method, args)` | SignalR 组 |
-| `SendToAllAsync(method, args)` | 全体连接 |
-| `AddToGroupAsync(userId, groupName)` | 把该用户当前的所有连接加进组 |
-| `RemoveFromGroupAsync(userId, groupName)` | 反向操作 |
-
-::: warning `args` 是 `params object[]`，没有 `CancellationToken` 重载
-把 `CancellationToken` 顺手当最后一个参数传进去，它会被当成一条业务载荷序列化发给客户端。要传就只传真正的载荷。
-:::
-
-::: tip 服务是 `Scoped`
-从 `BackgroundService`、`IHostedService` 这类单例里用它，需要先 `CreateScope()`；或者直接注入 `IHubContext<THub>` 自己发。
-:::
-
-## 关键机制
-
-### 连接是怎么被登记的
-
-`XiHanHub.OnConnectedAsync` / `OnDisconnectedAsync` 已经重写好：**当 `ConnectionId` 与 `UserId` 都非空时**，调 `IConnectionManager` 登记 / 注销「用户 ID → 连接 ID 集合」。
-
-::: danger 匿名连接推不到
-`UserId` 取的是 `NameIdentifier` claim。匿名连上来的客户端拿不到这个 claim，**不会进连接表**，后续 `SendToUserAsync` 永远找不到它。要点对点推送，Hub 就得打 `[AuthorizeHub]`，且令牌里必须有 `NameIdentifier`。
-:::
-
-如果你在派生 Hub 里重写了这两个方法，**必须调 `base.OnConnectedAsync()` / `base.OnDisconnectedAsync(exception)`**，否则登记逻辑被整条跳过。
-
-### 哪些方法依赖连接表
-
-这是多实例部署时唯一需要记住的分界：
-
-| 方法 | 是否查 `IConnectionManager` |
-| --- | --- |
-| `SendToUserAsync` / `SendToUsersAsync` | 是 |
-| `AddToGroupAsync` / `RemoveFromGroupAsync` | 是 |
-| `SendToGroupAsync` / `SendToAllAsync` | 否，直接走 SignalR 的 `Group` / `All` |
-
-默认的 `ConnectionManager` 是**进程内**实现（`ConcurrentDictionary` + 锁，用户连接清空后自动删条目）。多实例下：
-
-- 用户连在 A 实例，B 实例上的 `SendToUserAsync` 查不到连接，静默什么都不发；
-- 接了 SignalR backplane 之后，`SendToGroupAsync` / `SendToAllAsync` 能跨实例，`SendToUserAsync` 仍然不行——它依赖的是本进程的连接表。
-
-两条出路：
-
-1. 直接注入 `IHubContext<THub>` 用 `Clients.User(userId)`——它走 `IUserIdProvider`，而 `XiHanUserIdProvider` 取的正是 `NameIdentifier`（缺失时回退 `Name`），与 `SendToUserAsync` 的用户键一致；
-2. 用共享存储实现 `IConnectionManager`，在模块注册之后覆盖那条 `Singleton` 注册。
-
-### 组只对「调用那一刻已存在的连接」生效
-
-`AddToGroupAsync(userId, groupName)` 会遍历该用户当时的连接逐个入组。用户之后新开的标签页不会自动进组。需要「用户级常驻组」就在 `OnConnectedAsync` 里补入组。
-
-### 载荷不走 MVC 的 JSON 管道
-
-::: danger 这是最容易踩的一条
-SignalR 的 JSON 协议在框架里**只**配了两件事：camelCase 命名、不缩进。MVC 那套 `long` → 字符串、枚举 → 成员名、按 `X-Timezone` 换算时间的转换器，全都挂在 MVC 的 JSON 选项上，**对 Hub 载荷不生效**。
-
-后果：直接推一个含雪花 ID 的对象，前端拿到的是会丢精度的 Number；推枚举拿到的是数字。
-:::
-
-两条约定：
-
-1. **推送前手动投影**——ID `ToString()`，枚举转成约定字符串，时间自己决定格式；
-2. **Hub 方法参数用 `string` 接收 ID**，服务端自行解析。内置示例 `NotificationHub` 的方法参数全是 `string`，就是这个原因。
-
-写新推送时先问一句「这个 payload 里有 `long` 或枚举吗」，有就先投影。
-
-框架提供的 `NotificationMessage` 模型（`Id` / `SenderId` / `ReceiverId` / `Type` / `Title` / `Content` / `Data` / `CreatedTime` / `IsRead`）是个现成的载荷形状，但它的 `Data` 是 `object?`——用它也一样要自己投影里面的内容。
-
-### 方法名用常量
-
-客户端方法名是字符串，`SignalRConstants` 里集中了内置的一批：
-
-- `ClientMethods`：`ReceiveMessage`、`ReceiveNotification`、`UserJoined`、`UserLeft`、`Connected`、`Disconnected`、`Error`、`ForceLogout`、`TaskProgress`、`UserSettingChanged`
-- `ServerMethods`：`SendMessage`、`SendMessageToUser`、`SendMessageToAll`、`JoinGroup`、`LeaveGroup`、`SendMessageToGroup`、`GetOnlineUserCount`、`IsUserOnline`
-- `Groups`：`Admin`、`Users`、`Notifications`
-
-其中 `TaskProgress` 与 `UserSettingChanged` 在源码里带载荷约定注释：前者是 `taskId` / `label` / `detail` / `state`（`loading` \| `success` \| `error` \| `info`）/ `progress`（0-100）/ `link`；后者是 `scene` / `settingKey` / `settingValue` / `sourceClientId`。业务自己新增的方法名，也建一个常量类，别内联字符串。
-
-### 在线状态
-
-`IConnectionManager` 顺带就是在线状态的数据源：
-
 ```csharp
-await connectionManager.IsUserOnlineAsync(userId);     // 该用户是否有活跃连接
-await connectionManager.GetOnlineUserCountAsync();     // 在线用户数（不是连接数）
-await connectionManager.GetOnlineUsersAsync();         // 在线用户 ID 列表
-await connectionManager.GetConnectionsAsync(userId);   // 该用户的连接 ID 列表
+builder.Services.AddSingleton<IInvocationAuthenticationFilter, SessionGate>();
 ```
 
-注意 `GetOnlineUserCountAsync` 数的是**用户**，一个用户开三个标签页仍然只算一个。同样受进程内实现的限制。
+`ISessionStatus` 是应用自己的接口，示例只说明挂点的写法。
 
-## Hub 路径前缀
+## 在 Hub 里调用操作
 
-Hub 路径挂在哪里不是随便定的，Web.Api 侧有两处按前缀判断的逻辑，默认都是 `/hubs`：
-
-| 配置键 | 默认 | 作用 |
-| --- | --- | --- |
-| `XiHan:Web:Api:Auth:SignalRHubPathPrefix` | `/hubs` | 命中该前缀时，才从 query string 的 `access_token` 取 JWT |
-| `XiHan:Web:SessionState:SignalRHubPathPrefix` | `/hubs` | 命中该前缀时，会话闸门中间件整体跳过 |
-
-前一条是必需的：WebSocket / SSE 握手带不了 `Authorization` 头，令牌只能走 query，连接地址形如 `/hubs/chat?access_token=<jwt>`。后一条是为了避免长连接被 401 / 423 直接切断——客户端会陷入重连死循环，而且这条连接本身还要用来接收「你被踢下线了」的推送；Hub 的方法级拦截交给 `IHubFilter` 做。
-
-::: warning Hub 挂到前缀之外要两处一起改
-把 Hub 映射到 `/realtime/chat` 这种路径，上面两个配置都得跟着改，否则表现是「连不上（401）」或者「连上了但过一会被闸门切断」。
-:::
-
-## 异常过滤器
-
-`HubExceptionFilter` 实现 `IHubFilter`，统一记录方法调用 / 连接 / 断开三处的异常，并把方法异常替换成脱敏后的 `HubException`（只回 `调用方法 {方法名} 时发生错误`，不外泄堆栈）。
-
-它**不是自动生效的**，需要自己挂：
+Hub 方法不在内核管道里，`HttpContext.GetXiHanContext()` 在这里是无值。要执行操作时以连接的 `HttpContext` 建调用上下文，再交给 `IOperationInvoker`：
 
 ```csharp
-public override void ConfigureServices(ServiceConfigurationContext context)
+using Microsoft.AspNetCore.SignalR;
+using SimpleApp.Orders;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Kernel.Operations;
+
+public sealed class OrdersHub(IOperationInvoker operations, IServiceProvider services) : Hub
 {
-    // 全局挂到所有 Hub
-    context.Services.Configure<HubOptions>(options => options.AddFilter<HubExceptionFilter>());
-}
-```
-
-## 配置
-
-配置节 `XiHan:Web:RealTime:SignalR`（常量 `XiHanSignalROptions.SectionName`），值会被桥接进 SignalR 的 `HubOptions`：
-
-```json
-{
-  "XiHan": {
-    "Web": {
-      "RealTime": {
-        "SignalR": {
-          "EnableDetailedErrors": false,
-          "KeepAliveInterval": "00:00:15",
-          "ClientTimeoutInterval": "00:00:30",
-          "HandshakeTimeout": "00:00:15",
-          "MaximumReceiveMessageSize": 32768,
-          "StreamBufferCapacity": 10,
-          "MaximumParallelInvocationsPerClient": 1
-        }
-      }
+    public async Task<OrderList> GetOrders()
+    {
+        var http = Context.GetHttpContext() ?? throw new HubException("The connection has no HTTP context.");
+        // 凭据按方案 XiHan 的同一规则带上；调用经完整管道：重新认证、按契约授权、记审计
+        var call = HttpInvocation.CreateContext(http, services);
+        var result = await operations.InvokeAsync<ListOrdersRequest, OrderList>(call, ListOrders.Id, new ListOrdersRequest());
+        return result.TryGetValue(out var orders) ? orders : throw new HubException(result.Error?.Code);
     }
-  }
 }
 ```
 
-几个要拿捏的：
+`ListOrders`、`ListOrdersRequest`、`OrderList` 来自 `samples/SimpleApp`。上下文用 Hub 方法自己的服务作用域（构造函数注入的 `IServiceProvider`），不记入 `HttpContext.Items`。每次调用都重新认证，长连接上的令牌过期后，新的调用会被拒绝。
 
-| 键 | 默认 | 拿捏点 |
-| --- | --- | --- |
-| `EnableDetailedErrors` | `false` | 打开会把服务端异常原文发给客户端，**生产别开** |
-| `KeepAliveInterval` | `15s` | 服务端心跳间隔 |
-| `ClientTimeoutInterval` | `30s` | 保持在保活间隔的约 **2 倍**，调小容易误判掉线 |
-| `MaximumReceiveMessageSize` | `32768`（32KB） | 客户端→服务端单条消息上限，富文本/附件元数据可能顶到 |
-| `MaximumParallelInvocationsPerClient` | `1` | 默认串行，同一连接上的慢方法会阻塞后续调用；调大前先确认 Hub 方法是并发安全的 |
+## 跨实例推送
 
-`XiHanSignalROptions` 里还有一个 `EnableConnectionMetrics`（默认 `true`），当前只是一个选项位，没有代码读取它。
+`IHubContext<THub>` 只能推给连在本实例上的连接。多实例部署时：
 
-完整字段表见 [Web.RealTime 包](../packages/web-realtime)。
+- 推到其他实例上的连接要靠 SignalR 自己的横向扩展，如 Redis 背板或托管的 SignalR 服务；5.0 不提供背板。
+- 业务事件借消息子系统跨进程送达。缺省的竞争订阅是工作队列，每条消息只交给一个实例的处理器（至少一次），这个实例经 `IHubContext<THub>` 推送，背板再转给其他实例上的连接。事件随业务数据在同一事务里写出时，用发件箱。
 
-## 常见问题
+```csharp
+using Microsoft.AspNetCore.SignalR;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
+using XiHan.Framework.Primitives;
 
-| 现象 | 原因 | 处理 |
-| --- | --- | --- |
-| 握手直接 401 | Hub 路径不在 `SignalRHubPathPrefix` 下，或客户端没带 `access_token` query | 把 Hub 挂到 `/hubs` 下，或同步改两处前缀配置 |
-| 连上了，但 `SendToUserAsync` 收不到 | 连接是匿名的，没进连接表 | Hub 打 `[AuthorizeHub]`，确认令牌带 `NameIdentifier` |
-| 重写了 `OnConnectedAsync` 后点对点推送全失效 | 漏调 `base.OnConnectedAsync()` | 补上基类调用 |
-| 前端拿到的 ID 与后端对不上 | 载荷里的 `long` 没投影，JS Number 溢出 | 推送前 `ToString()` |
-| 前端拿到的枚举是数字 | Hub 载荷不走 MVC 的枚举转换器 | 推送前转成约定字符串 |
-| 多实例部署后点对点推送时灵时不灵 | 连接表是进程内的 | 改用 `Clients.User(userId)`，或替换 `IConnectionManager` |
-| 同一份消息收到两遍 | `SendToUsersAsync` 的入参里有重复 `userId`，连接会被重复收集 | 调用前对 `userIds` 去重 |
-| `AddToGroupAsync` 之后新开的标签页收不到组消息 | 只对调用时已存在的连接生效 | 在 `OnConnectedAsync` 里补入组 |
-| Hub 异常没有统一日志 | `HubExceptionFilter` 没注册 | 用 `HubOptions.AddFilter` 挂上 |
-| 消息能到但延迟高、CPU 偏高 | 反向代理没放行 `Upgrade` / `Connection`，退回 SSE / LongPolling | 改反代配置，确认协商结果是 WebSockets |
-| 客户端反复掉线重连 | `ClientTimeoutInterval` 相对 `KeepAliveInterval` 太小 | 恢复到约 2 倍关系 |
+public sealed class OrderPushHandler(IHubContext<NotificationHub> hub) : IMessageHandler
+{
+    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    {
+        await hub.Clients.All.SendAsync("orderPlaced", delivery.Envelope.Subject, cancellationToken);
+        return Result.Success();
+    }
+}
+```
 
-## 下一步
+```csharp
+using XiHan.Framework.Messaging.Abstractions;
 
-- [Web 应用开发](./web)：中间件管道，以及 MVC 侧的 JSON 序列化约定（与 Hub 的差异就在这）
-- [认证与授权](./authentication)：JWT 与 claim 来源，Hub 的 `UserId` 从这里来
-- [配置](./configuration)：配置节总览与绑定方式
-- [Web.RealTime 包](../packages/web-realtime)：完整 API 与全部配置项
-- [Web.Api 包](../packages/web-api)：`SignalRHubPathPrefix` 与会话闸门所在
+builder.Services.AddMessageHandler<OrderPushHandler>("orders");
+```
+
+消息处理器经完整管道执行，信封扩展属性里的租户在这里已经进入调用上下文，按租户分组推送时从 `context` 取。主题、处理器与发件箱见[消息与事件](./messaging)。
+
+有些事要在每个实例上各做一次，例如吊销会话后断开连在各个实例上的连接、清掉各实例的本地缓存：背板只转发推送，断不了别的实例上的连接。用广播订阅（`SubscriptionMode.Broadcast`，[订阅方式](./messaging#订阅方式)）：发起的实例发布一条消息，每个在线实例的处理器各收到一份，各自处理连在自己身上的连接。
+
+```csharp
+using XiHan.Framework.Messaging.Abstractions.Handlers;
+using XiHan.Framework.Primitives;
+
+// 应用自己的连接登记：断开本实例上属于这些会话的连接
+public interface ILocalConnections
+{
+    ValueTask DisconnectAsync(IReadOnlyCollection<string> sessionIds, CancellationToken cancellationToken);
+}
+
+public sealed class SessionsRevokedHandler(ILocalConnections connections) : IMessageHandler
+{
+    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    {
+        // 数据是被吊销的会话 ID；每个实例只断自己的连接，没有连接时什么也不做
+        var sessionIds = System.Text.Json.JsonSerializer.Deserialize(delivery.Envelope.Data.Span, RealtimeJsonContext.Default.StringArray) ?? [];
+        await connections.DisconnectAsync(sessionIds, cancellationToken);
+        return Result.Success();
+    }
+}
+```
+
+```csharp
+builder.Services.AddMessageHandler<SessionsRevokedHandler>("sessions.revoked", SubscriptionMode.Broadcast);
+```
+
+`RealtimeJsonContext` 是应用的源生成序列化上下文。广播是尽力而为：发布时不在线的实例收不到（它上线时本来也没有这些连接），失败到上限丢弃不进死信；只装了内存代理的单实例部署里，广播就是本进程收到一次。
+
+## 相关
+
+- [Hosting.AspNetCore 包](../packages/hosting-aspnetcore)
+- [宿主与 Web 应用](./web)：内核管道与绕过管道的端点
+- [认证](./authentication)：内核认证处理器与 Provider
+- [消息与事件](./messaging)
+- 规范：RFC-0008《认证与授权》的「绕过管道的端点」一节；ADR-0051
