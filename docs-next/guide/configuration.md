@@ -376,7 +376,7 @@ builder.Configuration.AddXiHanSecrets(
 | `XiHan:Kernel:Resilience` | [Kernel](../packages/kernel) | Resilience 阶段的默认策略，`Operations:<操作 ID>` 按操作覆盖 |
 | `XiHan:Persistence:InMemory` | [Persistence.InMemory](../packages/persistence-inmemory) | `MaxEntitiesPerType` |
 | `XiHan:Persistence:EntityFrameworkCore` | [Persistence.EntityFrameworkCore](../packages/persistence-entityframeworkcore) | `EnsureCreated`、`HealthProbeIntervalSeconds` |
-| `XiHan:Persistence:SqlSugar` | [Persistence.SqlSugar](../packages/persistence-sqlsugar) | `InitTables`、`Replicas:*`（从库的权重与健康探测）、`HealthProbeIntervalSeconds` |
+| `XiHan:Persistence:SqlSugar` | [Persistence.SqlSugar](../packages/persistence-sqlsugar) | `InitTables`、`CommandTimeoutSeconds`、`Replicas:*`（从库的权重与健康探测）、`HealthProbeIntervalSeconds` |
 | `XiHan:Persistence:Snowflake` | [Persistence.Abstractions](../packages/persistence-abstractions) | 雪花标识：`WorkerId`、`Epoch`、`LeaseTimeToLiveSeconds`、`ClockDriftToleranceMilliseconds` |
 | `XiHan:MultiTenancy` | [MultiTenancy.Abstractions](../packages/multitenancy-abstractions) | `DefaultTenant`、`RequireTenant`、`TenantClaim`、`ValidateAgainstStore` |
 | `XiHan:MultiTenancy:InMemory` | [MultiTenancy.InMemory](../packages/multitenancy-inmemory) | `MaxTenants` |

@@ -23,6 +23,14 @@ public sealed record SqlSugarPersistenceOptions
     public const string ConfigurationSection = "XiHan:Persistence:SqlSugar";
 
     /// <summary>
+    /// <see cref="CommandTimeoutSeconds"/> 的缺省值
+    /// </summary>
+    /// <remarks>
+    /// 与 SqlSugar 自己的缺省值相同，不配时行为不变
+    /// </remarks>
+    public const int StandardCommandTimeoutSeconds = 300;
+
+    /// <summary>
     /// 启动时用 CodeFirst 为已登记的实体建表（<c>InitTables</c>）
     /// </summary>
     /// <remarks>
@@ -67,6 +75,18 @@ public sealed record SqlSugarPersistenceOptions
     } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
+    /// 命令超时（秒）
+    /// </summary>
+    /// <remarks>
+    /// 默认 <see cref="StandardCommandTimeoutSeconds"/>。特性建的客户端的每个连接都设上；应用自己注册客户端时不适用。必须是正数：ADO.NET 的 0 是无限等待。个别长任务在调用点用 <c>Ado.CommandTimeOut</c> 临时调大
+    /// </remarks>
+    public int CommandTimeoutSeconds
+    {
+        get => field;
+        init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The command timeout must be positive.");
+    } = StandardCommandTimeoutSeconds;
+
+    /// <summary>
     /// 从库的权重与健康探测
     /// </summary>
     /// <remarks>
@@ -82,7 +102,7 @@ public sealed record SqlSugarPersistenceOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>、<c>Connections:&lt;name&gt;</c>，以及 <c>Replicas</c> 下的 <c>DefaultHitRate</c>、<c>HealthCheck</c>、<c>HealthCheckIntervalSeconds</c>、<c>FailureCooldownSeconds</c>
+    /// <c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>、<c>CommandTimeoutSeconds</c>、<c>Connections:&lt;name&gt;</c>，以及 <c>Replicas</c> 下的 <c>DefaultHitRate</c>、<c>HealthCheck</c>、<c>HealthCheckIntervalSeconds</c>、<c>FailureCooldownSeconds</c>
     /// </remarks>
     /// <remarks>
     /// 值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理
@@ -105,6 +125,15 @@ public sealed record SqlSugarPersistenceOptions
             options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
                 ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
                 : throw new ArgumentException($"'{ConfigurationSection}:HealthProbeIntervalSeconds' must be a positive number, but was '{probe}'.");
+        }
+
+        // 0 不是「不覆盖」：ADO.NET 的 0 是无限等待，写错了也不能悄悄按没配处理
+        var commandTimeout = configuration[$"{ConfigurationSection}:CommandTimeoutSeconds"];
+        if (commandTimeout is not null)
+        {
+            options = int.TryParse(commandTimeout, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? options with { CommandTimeoutSeconds = seconds }
+                : throw new ArgumentException($"'{ConfigurationSection}:CommandTimeoutSeconds' must be a positive integer, but was '{commandTimeout}'.");
         }
 
         var named = configuration.GetSection($"{ConfigurationSection}:Connections").GetChildren().ToList();

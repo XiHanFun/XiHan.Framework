@@ -1241,6 +1241,13 @@
           "summary": "健康项 persistence.sqlsugar.database 的重探间隔与单次探测超时（秒）"
         },
         {
+          "key": "CommandTimeoutSeconds",
+          "type": "integer",
+          "default": "300",
+          "minimum": 1,
+          "summary": "命令超时（秒），设在特性建的客户端的每个连接上；0 不接受，应用自己注册客户端时不适用"
+        },
+        {
           "key": "Connections:{name}",
           "type": "string",
           "sample": "Data Source=leases.db",

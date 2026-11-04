@@ -92,6 +92,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Bindings:db` | 字符串 | — | 方式一的连接绑定主值 |
 | `XiHan:Persistence:SqlSugar:Connections:<name>` | 字符串 | — | 方式一的命名连接，值是连接串（见下文「命名连接」）；方式二写了这一节装配即失败 |
+| `XiHan:Persistence:SqlSugar:CommandTimeoutSeconds` | 正整数 | `300` | 命令超时（秒），设在特性建的客户端的每个连接上；不是正整数即启动失败，应用自己注册客户端时不适用。个别长任务在调用点用 `Ado.CommandTimeOut` 临时调大 |
 | `XiHan:Persistence:SqlSugar:Replicas:DefaultHitRate` | 正整数 | `10` | 权重不大于 0 的从库归一化成的权重 |
 | `XiHan:Persistence:SqlSugar:Replicas:HealthCheck` | 布尔 | `true` | 是否周期探测从库；配了从库才有探测 |
 | `XiHan:Persistence:SqlSugar:Replicas:HealthCheckIntervalSeconds` | 正数 | `30` | 从库的探测间隔 |

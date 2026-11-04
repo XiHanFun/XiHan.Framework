@@ -121,3 +121,4 @@
 | [0116](0116-提示增强里片段的来源.md) | 第二十九批：提示增强里片段的来源照 4.x 口径，依次取块元数据的 `title`、`source`，都没有才取文档 ID，键名是公开常量 `KnowledgeMetadataKeys`；片段头从 `[n] (document: …, chunk: …)` 改成 `[n] Source: …`，内置模板的英文指令不动 | 已采纳 |
 | [0117](0117-出站地址策略.md) | 第二十九批：内核 `Kernel.Security.OutboundAddressPolicy`，缺省只能连公网地址，回环、私网、链路本地与其余不可公网路由的地址都拒绝，经 `XiHan:Security:Outbound` 放行；检查放在 `SocketsHttpHandler.ConnectCallback`，按解析出的实际 IP 判，DNS 重绑定与重定向都覆盖；工作流 `Http` 活动、CloudEvents Webhook、S3 命名实例接入，OpenID Connect、OpenAI、S3 缺省实例、Nacos、Kubernetes 不接并写明原因 | 已采纳 |
 | [0118](0118-SqlSugar读写分离与从库健康探测.md) | 第三十批：配了从库的连接每个作用域一份配置副本（SqlSugar 读从库时改配置上的连接串，共用时写入会落到从库上）；只读工作单元读从库，其余工作单元读写都走主库；权重归一化、周期探测（打开连接并执行语句）、不可读的摘除、全部不可读时读回主库，健康项 `persistence.sqlsugar.replicas`；主库不同的连接共用从库即失败，分片连接的从库不探测 | 已采纳 |
+| [0119](0119-SqlSugar命令超时配置.md) | 第三十批：`XiHan:Persistence:SqlSugar:CommandTimeoutSeconds`，缺省 300，与 SqlSugar 的缺省值相同，设在特性建的客户端的每个连接上；不是正整数即启动失败，0 不接受；应用自己注册客户端时配了与缺省不同的值也启动失败 | 已采纳 |

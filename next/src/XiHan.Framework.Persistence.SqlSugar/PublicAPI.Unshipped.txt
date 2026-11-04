@@ -33,6 +33,8 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.StartAsync(Syste
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.<Clone>$() -> XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.CommandTimeoutSeconds.get -> int
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.CommandTimeoutSeconds.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Connections.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Connections.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.DiffLog.get -> System.Func<System.Type!, bool>!
@@ -89,6 +91,7 @@ const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.Connection
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.HealthName = "persistence.sqlsugar.database" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.ReplicaHealthName = "persistence.sqlsugar.replicas" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.ConfigurationSection = "XiHan:Persistence:SqlSugar" -> string!
+const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.StandardCommandTimeoutSeconds = 300 -> int
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.StandardHitRate = 10 -> int
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarDataSource.ToString() -> string!
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Equals(object? obj) -> bool
