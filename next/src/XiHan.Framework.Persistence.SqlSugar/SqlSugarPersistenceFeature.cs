@@ -355,15 +355,15 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// 连通性探针
     /// </summary>
     /// <remarks>
-    /// 在独立作用域里取客户端，对默认连接打开再关闭；不开工作单元，不经管道。连不上返回 <see cref="PersistenceErrors.StoreUnavailable"/>
+    /// 对默认连接走一次数据库往返（ADR-0123）；不开工作单元，不经管道。失败时异常原样抛出，由 <see cref="PeriodicHealthContributor"/> 记成 Degraded：原因只写类型，完整异常进日志
     /// </remarks>
     private static async ValueTask<Result> ProbeAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         await using var scope = services.CreateAsyncScope();
         var client = scope.ServiceProvider.GetRequiredService<ISqlSugarClient>();
-        // IsValidConnection 自己吞掉打开失败只返回 false，所以这里给出固定的不可达错误而不是异常消息
-        return client.Ado.IsValidConnection() ? Result.Success() : Error.Unavailable(PersistenceErrors.StoreUnavailable, PersistenceMessages.StoreUnavailable);
+        await SqlSugarRoundTrip.RunAsync(client.CurrentConnectionConfig, cancellationToken).ConfigureAwait(false);
+        return Result.Success();
     }
 
     /// <summary>

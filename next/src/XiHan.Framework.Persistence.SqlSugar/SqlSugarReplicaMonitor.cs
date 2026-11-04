@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Data.Common;
 using Microsoft.Extensions.Logging;
 using SqlSugar;
 using XiHan.Framework.Persistence.Abstractions;
@@ -145,7 +144,7 @@ internal sealed partial class SqlSugarReplicaMonitor
     /// 探测一个从库，返回失败的异常，成功为空
     /// </summary>
     /// <remarks>
-    /// 执行一条语句而不只是打开连接：连接池会把空闲连接直接交出来，从库已经宕了也打得开。自己打开原生连接拿驱动的异常，<c>IsValidConnection</c> 会把它吞掉。整体取消（停止）照常抛出
+    /// 走一次数据库往返而不只是打开连接：连接池会把空闲连接直接交出来，从库已经宕了也打得开。自己打开原生连接拿驱动的异常，<c>IsValidConnection</c> 会把它吞掉。整体取消（停止）照常抛出
     /// </remarks>
     private async Task<Exception?> TryProbeAsync(DbType dbType, string connectionString, CancellationToken cancellationToken)
     {
@@ -153,23 +152,7 @@ internal sealed partial class SqlSugarReplicaMonitor
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
         try
         {
-            using var client = new SqlSugarClient(new ConnectionConfig { DbType = dbType, ConnectionString = connectionString, IsAutoCloseConnection = true });
-            var connection = client.Ado.Connection;
-            if (connection is DbConnection database)
-            {
-                await database.OpenAsync(linked.Token).ConfigureAwait(false);
-                await using var command = database.CreateCommand();
-                command.CommandText = ProbeSql(dbType);
-                await command.ExecuteScalarAsync(linked.Token).ConfigureAwait(false);
-            }
-            else
-            {
-                connection.Open();
-                using var command = connection.CreateCommand();
-                command.CommandText = ProbeSql(dbType);
-                command.ExecuteScalar();
-            }
-
+            await SqlSugarRoundTrip.RunAsync(new ConnectionConfig { DbType = dbType, ConnectionString = connectionString, IsAutoCloseConnection = true }, linked.Token).ConfigureAwait(false);
             return null;
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
@@ -249,11 +232,6 @@ internal sealed partial class SqlSugarReplicaMonitor
 
         return null;
     }
-
-    /// <summary>
-    /// 探测用的语句
-    /// </summary>
-    private static string ProbeSql(DbType dbType) => dbType is DbType.Oracle or DbType.Dm ? "SELECT 1 FROM DUAL" : "SELECT 1";
 
     /// <summary>
     /// 状态在健康数据里的写法

@@ -60,21 +60,8 @@ internal sealed class SqlSugarDataSourceProvider : IDataSourceProvider
         var sugar = source as SqlSugarDataSource ?? throw new ArgumentException($"Data source '{source.Name}' was not created by the SqlSugar provider.", nameof(source));
         try
         {
-            // 另建客户端探测：不碰共享客户端所在调用链上的事务；打开原生连接拿到驱动自己的错误，SqlSugar 的 IsValidConnection 会吞掉原因
-            using var client = sugar.CreateClient();
-            var connection = client.Ado.Connection;
-            if (connection is DbConnection db)
-            {
-                await db.OpenAsync(cancellationToken).ConfigureAwait(false);
-                await db.CloseAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                connection.Open();
-                connection.Close();
-            }
-
+            // 另建客户端探测：不碰共享客户端所在调用链上的事务。走一次往返：连接池里有空闲连接时只打开连接探不出库宕了（ADR-0123）
+            await SqlSugarRoundTrip.RunAsync(CreateConfig(sugar.Definition, sugar.SugarType), cancellationToken).ConfigureAwait(false);
             return Result.Success();
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

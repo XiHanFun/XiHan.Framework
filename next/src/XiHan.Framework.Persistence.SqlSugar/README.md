@@ -81,7 +81,7 @@ public sealed class AuditRecord : IEntity<Guid> { … }
   - 其余数据库（MySQL、PostgreSQL、Oracle 的兼容库——TiDB、OceanBase、openGauss、GaussDB、人大金仓、达梦等——与 ClickHouse 等）没有在真实库上验证，维持 SqlSugar 原来的翻译，按通配匹配（`%`、`_` 是通配符，PostgreSQL 系的兼容库上以反斜杠结尾的实参可能报错）；某个库在真实库上验证了 `ESCAPE '!'` 与转义规则之后再加进名单，与部分唯一索引的名单同一做法。运行时数据源不施加约定，同样按通配匹配。这两条是已定的（ADR-0101）。应用在调用 `Apply` 之前自己登记了同名外部函数的，以应用的为准；之后整体替换 `SqlFuncServices` 列表会丢掉这三个翻译。
   - 一致性套件 `List_StringContainsStartsWithEndsWith_MatchWildcardCharactersLiterally` 覆盖 SQLite 与 PostgreSQL；本包测试在 SQLite（不设门控）与 PostgreSQL、MySQL、SQL Server、Oracle（`XIHAN_TEST_*` 门控）上跑经仓储与经客户端的同一组用例，另验证 PostgreSQL 的 `standard_conforming_strings = off` 与 MySQL 的 `NO_BACKSLASH_ESCAPES` 会话。
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它们绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
-- 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按 `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果——在独立作用域里取客户端对默认连接 `Ado.IsValidConnection()`，不开工作单元、不经管道；连不上条目 Degraded（`PERSISTENCE_UNAVAILABLE_003`，消息键 `persistence.store.unavailable`），应用仍在服务。
+- 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按 `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds`（默认 15）在后台重探并缓存结果——对默认连接走一次数据库往返（打开连接并执行一条语句，ADR-0123），不开工作单元、不经管道；连不上条目 Degraded（`PERSISTENCE_UNAVAILABLE_003`，消息键 `persistence.store.unavailable`），应用仍在服务。
 
 ## 依赖方向
 

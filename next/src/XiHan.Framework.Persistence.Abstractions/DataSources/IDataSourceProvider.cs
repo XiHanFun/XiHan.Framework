@@ -33,10 +33,10 @@ public interface IDataSourceProvider
     ValueTask<IDataSource> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 打开一次连接再关闭
+    /// 探一次连通性
     /// </summary>
     /// <remarks>
-    /// 可用返回成功；连不上返回 <see cref="PersistenceErrors.DataSourceUnavailable"/>（参数 <c>name</c>、<c>reason</c>，原因已脱敏）。取消时抛出 <see cref="OperationCanceledException"/>。健康探测与测试连接都经它
+    /// 关系型 Provider 要走一次数据库往返：连接池把空闲连接直接交出来，只打开连接探不出库宕了（ADR-0123）。可用返回成功；连不上返回 <see cref="PersistenceErrors.DataSourceUnavailable"/>（参数 <c>name</c>、<c>reason</c>，原因已脱敏）。取消时抛出 <see cref="OperationCanceledException"/>。健康探测与测试连接都经它
     /// </remarks>
     ValueTask<Result> ProbeAsync(IDataSource source, CancellationToken cancellationToken);
 }

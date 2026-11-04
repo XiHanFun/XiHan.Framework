@@ -39,7 +39,7 @@ public sealed record DataSourceOptions
     } = 64;
 
     /// <summary>
-    /// 健康项 <c>persistence.datasource.&lt;name&gt;</c> 的重探间隔（也是单次探测的超时）
+    /// 健康项 <c>persistence.datasource.&lt;name&gt;</c> 的重探间隔（也是单次探测与测试连接的超时）
     /// </summary>
     /// <remarks>
     /// 缺省 15 秒

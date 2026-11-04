@@ -405,7 +405,7 @@ public sealed class CodeGenDataSources(DataSourceRegistry registry)
 {
     // 记录里读出的定义：名字用记录的标识，连接串里放解密后的口令
     public ValueTask<Result> TestAsync(DataSourceDefinition definition, CancellationToken ct)
-        => registry.TestAsync(definition, ct);                      // 打开一次连接再关闭，不登记
+        => registry.TestAsync(definition, ct);                      // 走一次数据库往返，不登记
 
     public async Task<Result<ISqlSugarClient>> ClientAsync(DataSourceDefinition definition, CancellationToken ct)
         => (await registry.GetOrAddAsync(definition, ct)).Map(static s => s.GetSqlSugarClient());
@@ -421,8 +421,8 @@ public sealed class CodeGenDataSources(DataSourceRegistry registry)
 | 取用 | `GetOrAddAsync(definition)`：同名同定义复用；定义变了建新实例替换旧的并释放旧的。建实例不连库，连不上的库照样登记，使用时报告 |
 | 失效 | 显式 `RemoveAsync(names)`（批量，逐项返回是否登记过）加定义比对，不用配置变化令牌。注册表是进程内的：每次使用都以记录里当前的定义调 `GetOrAddAsync`，别的实例改了记录，本实例下一次取用即替换；只按名字 `GetAsync` 看不到别的实例上的修改 |
 | 容量 | `XiHan:Persistence:DataSources:MaxCount`（缺省 64），满了再登记新名字返回 `PERSISTENCE_UNAVAILABLE_007`，不淘汰已有的 |
-| 测试连接 | `TestAsync(definition)`：建临时实例、打开一次连接再关闭、释放；不登记、不占名额。等多久由取消令牌与连接串里驱动的连接超时决定 |
-| 健康 | 每个数据源一条 `persistence.datasource.<name>`，后台按间隔打开连接再关闭；连不上 Degraded，不影响 readiness |
+| 测试连接 | `TestAsync(definition)`：建临时实例、走一次数据库往返、释放；不登记、不占名额。单次上限是运行时数据源的 `HealthProbeIntervalSeconds`（缺省 15 秒），冷启动慢的库要调大；调用方取消照常抛出 |
+| 健康 | 每个数据源一条 `persistence.datasource.<name>`，后台按间隔走一次数据库往返；连不上或超时 Degraded，不影响 readiness |
 | 机密 | 连接串不进日志、错误与健康详情：错误原因是驱动异常的消息链，整串连接串与口令类键（`password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机、端口、库名、用户名保留，排查要用（已定，选项打印遮蔽登录用户名不扩到这里，ADR-0084、ADR-0093） |
 | Provider | SqlSugar 支持（数据库类型是 SqlSugar `DbType` 的名字，`DatabaseTypes` 列出常用的；客户端是每个数据源一个的 `SqlSugarScope`，不施加实体约定、PostgreSQL 不自动转小写、Oracle 不自动转大写）。EF Core 与内存实现不支持（已定，不计划支持），取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008` |
 
@@ -468,7 +468,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `XiHan:Persistence:SqlSugar:InitTables` | 布尔 | `false` | 启动时建表与加列 |
 | `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项重探间隔，也是单次探测的超时 |
 | `XiHan:Persistence:DataSources:MaxCount` | 1–1024 | `64` | 运行时数据源的登记数上限 |
-| `XiHan:Persistence:DataSources:HealthProbeIntervalSeconds` | 正数 | `15` | 运行时数据源健康项的重探间隔，也是单次探测的超时 |
+| `XiHan:Persistence:DataSources:HealthProbeIntervalSeconds` | 正数 | `15` | 运行时数据源健康项的重探间隔，也是单次探测与 `TestAsync` 的超时 |
 | `XiHan:Bindings:db` | 字符串 | — | 连接绑定的主值，见上文 |
 
 非法值在启动配置阶段抛出 `ArgumentException`，不回退到缺省值。雪花标识的配置节 `XiHan:Persistence:Snowflake` 见[标识生成](./distributed-ids#配置)。
@@ -495,7 +495,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `PERSISTENCE_CONFLICT_003` | 写入撞上实体声明的唯一索引（关系型 Provider） | `Result`，工作单元随后只能回滚 |
 | `PERSISTENCE_UNAVAILABLE_001` | 仓储在 Transaction 阶段之外使用 | `FrameworkException` |
 | `PERSISTENCE_UNAVAILABLE_002` | 内存实现的表已满 | 提交结果、健康项 |
-| `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达 | 健康项 |
+| `PERSISTENCE_UNAVAILABLE_003` | 数据库不可达（EF Core）。SqlSugar 的健康项是 `KERNEL_UNAVAILABLE_005`，`reason` 写异常类型 | 健康项 |
 | `PERSISTENCE_UNAVAILABLE_006` | 数据源连不上或读取失败（测试连接、健康探测、库结构读取），参数 `name`、`reason`（已脱敏） | `Result`、健康项 |
 | `PERSISTENCE_UNAVAILABLE_007` | 运行时数据源登记已满 | `Result` |
 | `PERSISTENCE_UNAVAILABLE_008` | 当前的持久化 Provider 不支持该能力（EF Core 与内存实现的运行时数据源与库结构读取；内存实现的命名连接；EF Core 普通工作单元里取用登记到命名连接的实体，已定不支持） | `Result`；命名连接相关的抛 `FrameworkException` |

@@ -14,7 +14,7 @@ namespace XiHan.Framework.Persistence.Abstractions.DataSources;
 /// <remarks>
 /// <para>按 <see cref="DataSourceDefinition"/> 经认得该数据库类型的 <see cref="IDataSourceProvider"/> 建数据源，按名缓存，登记数不超过 <see cref="DataSourceOptions.MaxCount"/>。同名同定义返回同一实例；定义变了建新实例替换旧的并释放旧的（替换时仍在旧实例上进行的调用可能失败）。运行时数据源与应用自己的连接互不相干：不进作用域客户端、不参与实体落点、不进工作单元</para>
 /// <para>失效：记录改了、停用或删了调 <see cref="RemoveAsync"/>；每次使用都以记录里当前的定义调 <see cref="GetOrAddAsync"/>，定义变了即替换。注册表是进程内的，别的实例在下一次以新定义取用时替换，只按名字 <see cref="GetAsync"/> 看不到别的实例上的修改</para>
-/// <para>健康：每个数据源一条 <c>persistence.datasource.&lt;name&gt;</c>，按 <see cref="DataSourceOptions.HealthProbeInterval"/> 在后台逐个打开连接再关闭，新登记的立即探一次；尚未探过 Started，成功 Ready，失败或超时 Degraded。连接串不进日志、错误与健康详情</para>
+/// <para>健康：每个数据源一条 <c>persistence.datasource.&lt;name&gt;</c>，按 <see cref="DataSourceOptions.HealthProbeInterval"/> 在后台逐个探一次连通性，新登记的立即探一次；尚未探过 Started，成功 Ready，失败或超时 Degraded。连接串不进日志、错误与健康详情</para>
 /// <para>没有登记任何 <see cref="IDataSourceProvider"/> 时（EF Core 与内存实现）取用与测试连接返回 <see cref="PersistenceErrors.NotSupported"/></para>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -264,7 +264,7 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     }
 
     /// <summary>
-    /// 测试连接：按定义建临时实例，打开一次连接再关闭，然后释放
+    /// 测试连接：按定义建临时实例，探一次连通性，然后释放
     /// </summary>
     /// <remarks>
     /// 不登记、不占名额、不影响同名的已登记实例。成功返回成功；连不上返回 <see cref="PersistenceErrors.DataSourceUnavailable"/>（参数 <c>name</c>、<c>reason</c>，已脱敏）；定义不合法返回 <see cref="PersistenceErrors.DataSourceInvalid"/>；不支持返回 <see cref="PersistenceErrors.NotSupported"/>。等多久由 <paramref name="cancellationToken"/> 与连接串里驱动自己的连接超时决定
@@ -283,9 +283,16 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
             return created.Error!;
         }
 
+        // 单次上限与健康探测相同：驱动的连接超时可以配得很长，不能由它决定调用方等多久（ADR-0123）
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(_options.HealthProbeInterval);
         try
         {
-            return await pair.Provider.ProbeAsync(pair.Source, cancellationToken).ConfigureAwait(false);
+            return await pair.Provider.ProbeAsync(pair.Source, timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return Unavailable(definition, ProbeTimedOut());
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -443,7 +450,7 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
         {
             // 超时（探测自己的取消）与漏网的异常都按连不上报告；原因脱敏后才进健康详情
             var reason = exception is OperationCanceledException
-                ? $"The probe did not finish within {_options.HealthProbeInterval.TotalSeconds} seconds."
+                ? ProbeTimedOut()
                 : ConnectionStrings.Describe(exception, entry.Definition.ConnectionString);
             status = entry.Status with { State = LifecycleState.Degraded, Error = Unavailable(entry.Definition, reason) };
         }
@@ -457,6 +464,11 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
             }
         }
     }
+
+    /// <summary>
+    /// 探测超时的原因
+    /// </summary>
+    private string ProbeTimedOut() => $"The probe did not finish within {_options.HealthProbeInterval.TotalSeconds} seconds.";
 
     /// <summary>
     /// 释放数据源持有的资源

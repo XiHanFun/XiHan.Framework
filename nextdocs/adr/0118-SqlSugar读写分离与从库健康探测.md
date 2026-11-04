@@ -55,4 +55,4 @@
 
 ### 探针之外发现的同类问题
 
-默认连接的健康项 `persistence.sqlsugar.database` 用 `IsValidConnection`、运行时数据源的探测用 `OpenAsync`，都只打开连接。按决策 4 的实验，连接池里有空闲连接时它们同样可能在数据库宕了之后报 Ready。没有在本批改。
+默认连接的健康项 `persistence.sqlsugar.database` 用 `IsValidConnection`、运行时数据源的探测用 `OpenAsync`，都只打开连接。按决策 4 的实验，连接池里有空闲连接时它们同样可能在数据库宕了之后报 Ready。没有在本批改，第三十一批改了（ADR-0123）。
