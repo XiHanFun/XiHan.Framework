@@ -30,7 +30,7 @@ public sealed record BoardInfo
     /// 主板序列号
     /// </summary>
     /// <remarks>
-    /// Linux 只有 root 读得到，Windows 不提供（RFC-0023 的已知差异）
+    /// Linux 只有 root 读得到，Windows 不提供（见 RFC-0023「取不到的项」）
     /// </remarks>
     public string? SerialNumber { get; init; }
 

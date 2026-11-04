@@ -63,7 +63,7 @@ internal sealed partial class WindowsHostPlatform : HostPlatform
 
     /// <inheritdoc />
     /// <remarks>
-    /// 没有空闲字节数（RFC-0023 的已知差异）
+    /// 没有空闲字节数（见 RFC-0023「取不到的项」）
     /// </remarks>
     public override MemoryInfo ReadMemory()
     {
@@ -118,7 +118,7 @@ internal sealed partial class WindowsHostPlatform : HostPlatform
 
     /// <inheritdoc />
     /// <remarks>
-    /// <c>HKLM\HARDWARE\DESCRIPTION\System\BIOS</c>；没有序列号（RFC-0023 的已知差异）
+    /// <c>HKLM\HARDWARE\DESCRIPTION\System\BIOS</c>；没有序列号（见 RFC-0023「取不到的项」）
     /// </remarks>
     public override BoardInfo ReadBoard()
     {
