@@ -135,7 +135,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 - 多地址：每次请求按 `ServerAddresses` 的顺序尝试，连接失败或超时换下一个，全部失败时返回不可达。
 - 版本：服务端没有给出 `Content-MD5`（例如中间的代理去掉了这个头）时，客户端按 Nacos 的算法自己算，即内容按 UTF-8 编码的 MD5（小写十六进制），监听接口照样认得这个版本，长轮询不受影响。
 - 上下文路径：地址的路径就是 Nacos 的上下文路径（`server.servlet.contextPath`），登录、取配置、监听的接口路径（`/v1/auth/login`、`/v1/cs/configs`、`/v1/cs/configs/listener`）接在它后面；地址没有路径（或只有 `/`）时用 Nacos 的缺省值 `/nacos`，所以 `http://nacos:8848` 与 `http://nacos:8848/nacos` 等价。Nacos 改了上下文路径时写 `http://nacos:8848/config`；经网关挂在前缀下时把网关前缀连同上下文路径写全，例如网关把 `/config-center/` 转发到 Nacos 的根上，就写 `http://gateway/config-center/nacos`。上下文路径设成根（`/`）的 Nacos 无法用地址表达，不受支持。
-- 一致性：通过 `Configuration.Conformance` 的 `RemoteConfigurationClientConformance`（Nacos 2.5.1）。测试需要真实服务，设置 `XIHAN_TEST_NACOS`（如 `http://localhost:8848`）后运行，开启鉴权的服务再设 `XIHAN_TEST_NACOS_USERNAME` / `XIHAN_TEST_NACOS_PASSWORD`。Nacos 3.x 默认开启鉴权且 v1 接口不再可用，未验证。
+- 一致性：通过 `Configuration.Conformance` 的 `RemoteConfigurationClientConformance`（Nacos 2.5.1）。测试需要真实服务，本地可用 `docker run -d -p 8848:8848 -e MODE=standalone nacos/nacos-server:v2.5.1` 启动（3.x 镜像默认开启鉴权且 v1 接口不再可用，未验证），设置 `XIHAN_TEST_NACOS`（如 `http://localhost:8848`）后运行，开启鉴权的服务再设 `XIHAN_TEST_NACOS_USERNAME` / `XIHAN_TEST_NACOS_PASSWORD`。Nacos 3.x 默认开启鉴权且 v1 接口不再可用，未验证。
 
 | 错误码 | 含义 |
 | --- | --- |

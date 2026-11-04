@@ -1,40 +1,66 @@
 # XiHan.Framework.Primitives
 
-原语层（Ring 0）。零行为、零依赖的原语与契约，跨语言语义由 XiHan Spec（RFC-0001）定义。
+## 关于
 
-## 责任边界
+`XiHan.Framework.Primitives` 原语层：零行为、零依赖的原语与契约，如 `Result`、`Error`、`Maybe`、强类型标识、调用上下文与清单模型。框架里所有包都引用它，一般由其他包带入，只写共享契约的类库可以单独引用。
 
-| 类型 | 用途 |
-| --- | --- |
-| `Result` / `Result<T>` | 成功或携带 `Error` 的失败；用 `Result.Success(value)`、`Result.Failure<T>(error)` 创建，值与错误可隐式转换；`default` 视为未初始化失败 |
-| `Error` / `ErrorCode` | 错误码 `<领域>_<KIND>_<NNN>`、消息键与参数、内部错误；工厂方法校验 KIND 段；`Literal` 承载线上还原与异常转换的自由文本 |
-| `MessageTemplate` / `MessageArguments` / `MessageKeyExtensions` | 消息键文法、`{name}` / `{0}` 模板格式化、参数字典、`key.L()` 按当前区域取文案（RFC-0010） |
-| `IMessageResolver` / `MessageScope` | 解析器契约与环境作用域：内核把调用的 Baggage 区域经 `IMessageResolver.Negotiate` 协商后安装，本地化特性设进程默认 |
-| `ManifestMessages` / `ResultMessages` | 本包的消息键常量；文案在 `Localization/<区域>.json` |
-| `Maybe` / `Maybe<T>` | 类型层面的"可能没有值"；`default` 即无值 |
-| `ITypedId<TValue>` / `TypedId<TTag, TValue>` | 强类型标识，线上编码为底层值 |
-| `InvocationContext` / `BaggageKeys` | 取消、截止、W3C Trace、Baggage、作用域对象袋与服务 |
-| `Stability` / `ApiLevelAttribute` | 稳定性分级 |
-| `LifecycleState` / `LifecycleStateExtensions` | 九态与合法迁移表 |
-| `PipelineStage` / `PipelineStageExtensions` | 固定的十一个管道阶段及其清单名 |
-| `FrameworkException` / `FrameworkInfo` | 带错误码的异常基类；框架身份（版本由构建期常量提供，不经反射） |
-| `Redaction` | 机密遮蔽：`Mask`（`***`）与 `Redact(value)`（null 原样返回，其余一律 `***`）；选项与携带凭据的记录在 `ToString()` 里以它打印口令、密钥、令牌与整串连接串（RFC-0014） |
-| `Manifests.*` | `xihan.manifest.json` 的对象模型与格式校验：`Manifest`、`CapabilityDeclaration`、`CapabilityRequirement`、`Binding`、`Contributions`、`PipelineContribution`、`ConfigContribution`、`CapabilityId`、`ManifestId` |
+## 主要特性
 
-不包含：任何实现、基类、宿主、依赖注入、反射、序列化代码。线上 JSON 编码由协议适配器与生成器实现。语言文件只是嵌入资源，由 `Localization.InMemory` 代为装载。
+* `Result` / `Error`：可恢复失败用结果返回，错误码形如 `<领域>_<KIND>_<NNN>`
+* 消息键与模板，`key.L()` 按当前区域取文案
+* 公开面只增不改，跨大版本不破坏
 
-## 依赖方向
+## 如何使用
 
-不依赖任何包。被 `XiHan.Framework.Kernel` 及其上所有环引用。
+### 安装
 
-## 承诺
+```bash
+dotnet add package XiHan.Framework.Primitives --prerelease
+```
 
-只增不改。公开面以 `PublicAPI.Shipped.txt` 为准，已发布行禁止修改；若必须破坏，发布新包 ID 并存。
+### 使用
 
-## 一致性向量
+返回 `Result` 而不是抛异常来表达可预期的失败：
 
-`spec/conformance/vectors/primitives/`：错误码格式、生命周期迁移、能力依赖文本、Baggage 键。单元测试直接回放。
+```csharp
+using XiHan.Framework.Primitives;
 
-## 状态
+public sealed class StockLedger
+{
+    private int _available = 10;
 
-P1：公开面已按 RFC-0001 填充，记录在 `PublicAPI.Unshipped.txt`，正式版发布时转入 Shipped 并冻结。
+    public Result Reserve(int quantity)
+    {
+        if (quantity > _available)
+        {
+            return Error.Conflict("SHOP_CONFLICT_001", "shop.inventory.out_of_stock",
+                MessageArguments.Of(("requested", quantity), ("available", _available)));
+        }
+
+        _available -= quantity;
+        return Result.Success();
+    }
+}
+```
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `Result` / `Result<T>`、`Error`：成功或携带错误的失败
+* `Maybe<T>`、`TypedId<TTag, TValue>`：可选值与强类型标识
+* `InvocationContext`：取消、截止、Trace、Baggage 与作用域服务
+* `MessageTemplate`、`MessageArguments`：消息键与模板
+* `Manifest`：`xihan.manifest.json` 的对象模型
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/primitives)
+
+## 相关包
+
+* 内核：[XiHan.Framework.Kernel](https://www.nuget.org/packages/XiHan.Framework.Kernel)
+
+## 反馈与贡献
+
+`XiHan.Framework.Primitives` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

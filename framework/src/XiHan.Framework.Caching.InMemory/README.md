@@ -1,22 +1,57 @@
 # XiHan.Framework.Caching.InMemory
 
-内存缓存。清单 `role: default`，提供 `caching.local@1` 与 `caching.distributed@1`：没有显式 Provider 时，进程内缓存与"共享"缓存都由它承担（只在单实例部署下正确）。
+## 关于
 
-## 语义
+`XiHan.Framework.Caching.InMemory` 是缓存的默认实现：没有显式提供程序时，进程内缓存与「共享」缓存都由它承担。只在单实例部署下正确，适合开发、测试与单进程应用。
 
-- 有界 LRU：`XiHan:Caching:InMemory:MaxEntries`（默认 10000），满时淘汰最久未访问的条目。
-- 过期：绝对存活或滑动过期；都不设时用 `XiHan:Caching:InMemory:DefaultTimeToLiveSeconds`（默认 300）。过期条目在访问时清理。
-- 对象缓存 `InMemoryObjectCache` 实现 `ICacheInspector`（ADR-0058）：对象条目在它自己的表里、不在字节存储里，按同样的序数分页列出，查看给出对象的类型全名、剩余存活与滑动窗口（不读出值、不延长滑动过期），按前缀删除只删对象条目。
-- 字节存储实现 `ICacheStoreInspector`（ADR-0055）：按键的序数顺序分页列出（续页标记是上一页最后一个键），读载荷字节数、剩余存活与滑动窗口（不更新访问顺序与滑动过期），按前缀删除返回其中仍存活的条数。
-- 字节存储写入复制字节，读取返回不可修改的视图；类型化缓存（`ICache` / `ISharedCache`）直接存对象引用、不序列化，调用方不得修改取回的对象。
-- 被选中提供 `caching.distributed` 时注册 `ISharedCache`、`ICacheStore`（字节级契约，指向同一个存储）、分布式锁与幂等中间件；当另一个显式 Provider（如 `Caching.Redis`）被选中提供 `caching.distributed` 时，本包只注册 `ICache`。
+## 主要特性
 
-- 健康项 `caching.inmemory.capacity`（`InMemoryCacheHealthContributor`，同步计算）：两张表任一条目数达到 `MaxEntries` 即 Degraded（`CACHING_UNAVAILABLE_002`，缓存仍可用但每次写入都在淘汰），否则 Ready。
+* 有界 LRU，满时淘汰最久未访问的条目
+* 绝对或滑动过期，都不设时用缺省存活时间
+* 同时提供分布式锁与幂等中间件
+* 健康项在条目数达到上限时报告降级
 
-## 依赖方向
+## 如何使用
 
-依赖 `XiHan.Framework.Caching.Abstractions`。
+### 安装
 
-## 状态
+```bash
+dotnet add package XiHan.Framework.Caching.InMemory --prerelease
+```
 
-P2：可用，通过 `Caching.Conformance` 套件。
+### 使用
+
+启用特性（`Profiles.Full` 已包含）：
+
+```csharp
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<InMemoryCachingFeature>());
+```
+
+```json
+{ "XiHan": { "Caching": { "InMemory": { "MaxEntries": 10000, "DefaultTimeToLiveSeconds": 300 } } } }
+```
+
+类型化缓存直接存对象引用、不序列化，调用方不得修改取回的对象。多实例部署换 `Caching.Redis`。
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `InMemoryCachingFeature`：启用入口
+* `InMemoryCacheStore`：字节存储
+* `InMemoryObjectCache`：类型化缓存
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/caching-inmemory)
+
+## 相关包
+
+* 缓存抽象：[XiHan.Framework.Caching.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Caching.Abstractions)
+* Redis 实现：[XiHan.Framework.Caching.Redis](https://www.nuget.org/packages/XiHan.Framework.Caching.Redis)
+
+## 反馈与贡献
+
+`XiHan.Framework.Caching.InMemory` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

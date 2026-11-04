@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.AI.OpenAI</PackageId>
     <RootNamespace>XiHan.Framework.AI.OpenAI</RootNamespace>
-    <Description>XiHan Framework AI 的 OpenAI 兼容 Provider：按配置创建聊天客户端与嵌入生成器，工具调用在客户端循环里自动执行，基于 Microsoft.Extensions.AI.OpenAI。</Description>
+    <Description>曦寒框架 AI 的 OpenAI 兼容提供程序</Description>
     <PackageTags>xihan;framework;ai;openai;chat;embedding</PackageTags>
     <!-- OpenAI SDK 未声明 AOT 兼容；Native AOT 场景另行验证 -->
     <IsAotCompatible>false</IsAotCompatible>

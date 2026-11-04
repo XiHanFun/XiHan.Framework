@@ -1,22 +1,53 @@
 # XiHan.Framework.Profiles.Standard
 
-Standard 组合包（Ring 6）：Minimal（含本地化）+ `Domain` + 五个子系统的抽象与内存默认实现。大多数业务服务从这里开始，零外部基础设施即可运行。
+## 关于
+
+`XiHan.Framework.Profiles.Standard` Standard 组合包：Minimal 加上 `Domain` 与持久化、缓存、多租户、安全、消息五个子系统的抽象和内存默认实现。大多数业务服务从这里开始，零外部基础设施即可运行。
+
+## 主要特性
+
+* `UseStandardProfile()` 一次装配五个内存默认实现
+* 再 `UseFeature` 一个显式 Provider（如 Redis 缓存、JWT 安全）即顶替对应默认实现
+* 内存实现进程重启即丢数据，上线前按需换 Provider
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Profiles.Standard --prerelease
+```
+
+### 使用
+
+装配组合，再加上业务能力包与需要的协议适配器。
 
 ```csharp
 builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()                 // Minimal + 五个子系统的内存默认实现（role: default）
-    .UseFeature<OutboxFeature>()          // 可选：事务性发件箱
-    .UseFeature<OrdersFeature>());        // 业务能力包
+    .UseStandardProfile()
+    .UseFeature<HttpProtocolFeature>()
+    .UseFeature<OutboxFeature>());   // 可选：事务性发件箱
+
+var app = builder.Build();
+app.UseXiHan();
+app.MapXiHanOperations();
 ```
 
-`UseStandardProfile()` 装配：Minimal 的全部（含 `InMemoryLocalizationFeature`）、`InMemoryPersistenceFeature`、`InMemoryCachingFeature`、`InMemoryMultiTenancyFeature`、`InMemorySecurityFeature`、`InMemoryMessagingFeature`。它们都是 `role: default`：再 `UseFeature` 一个显式 Provider（`EntityFrameworkCorePersistenceFeature`、`RedisCachingFeature`、`JwtSecurityFeature`、`RabbitMQMessagingFeature`）即顶替对应能力，被顶替的默认实现不装配、不启动（RFC-0002 第 4 条）。
+## 主要类型
 
-管道阶段由这些特性填满：Authenticate（ApiKey / JWT）→ Tenant（声明或 Baggage）→ Authorize（策略与权限）→ Idempotency（幂等键）→ Transaction（工作单元）。本地化不占阶段：宿主在 Ingress 把 `Accept-Language` 协商进 Baggage `xihan.locale`，在 Egress 用 `IMessageLocalizer` 把失败结果翻译成 Problem Details 的 `detail`（默认英文，内置 10 种语言，RFC-0010）。
+此库提供的主要类型：
 
-## 依赖方向
+* `StandardProfile`：静态类，扩展方法 `UseStandardProfile`
 
-组合包可引用任何环；被应用引用。`Profiles.Full` 在此之上加 ObjectStorage、Scheduling、Auditing 的默认实现、OpenTelemetry 导出与四种协议适配器。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/profiles-standard)
 
-P2：可用。
+## 相关包
+
+* 最小组合：[XiHan.Framework.Profiles.Minimal](https://www.nuget.org/packages/XiHan.Framework.Profiles.Minimal)
+* 完整组合：[XiHan.Framework.Profiles.Full](https://www.nuget.org/packages/XiHan.Framework.Profiles.Full)
+
+## 反馈与贡献
+
+`XiHan.Framework.Profiles.Standard` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Profiles.Minimal</PackageId>
     <RootNamespace>XiHan.Framework.Profiles.Minimal</RootNamespace>
-    <Description>XiHan Framework Minimal 组合包（Ring 6）：原语层 + 内核 + ASP.NET Core 宿主 + 内存本地化。边缘服务、工具与插件宿主用。</Description>
+    <Description>曦寒框架 Minimal 组合包</Description>
     <PackageTags>xihan;framework;profile;minimal</PackageTags>
   </PropertyGroup>
 

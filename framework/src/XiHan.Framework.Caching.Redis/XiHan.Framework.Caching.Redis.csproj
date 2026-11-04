@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Caching.Redis</PackageId>
     <RootNamespace>XiHan.Framework.Caching.Redis</RootNamespace>
-    <Description>XiHan Framework 缓存的 Redis Provider：提供跨进程共享缓存、分布式锁与幂等去重，基于 StackExchange.Redis。</Description>
+    <Description>曦寒框架缓存的 Redis 提供程序</Description>
     <PackageTags>xihan;framework;caching;redis;distributed-lock</PackageTags>
     <!-- StackExchange.Redis 未声明 AOT 兼容；Native AOT 场景另行验证 -->
     <IsAotCompatible>false</IsAotCompatible>

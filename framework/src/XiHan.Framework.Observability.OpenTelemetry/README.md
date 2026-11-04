@@ -1,32 +1,60 @@
 # XiHan.Framework.Observability.OpenTelemetry
 
-可观测性导出（Ring 3，`role: default`）。提供 `observability.export@1`。内核只依赖 `System.Diagnostics`（`FrameworkDiagnostics.ActivitySource` / `Meter`：`xihan.invoke` Span、`xihan.invocations` 与 `xihan.invocation.duration`）与 `Microsoft.Extensions.Logging`；本包把它们和 .NET、ASP.NET Core 内置的源与仪表接到 OpenTelemetry，并按配置装配导出器。
+## 关于
+
+`XiHan.Framework.Observability.OpenTelemetry` 把框架与 .NET、ASP.NET Core 内置的追踪、指标和日志接到 OpenTelemetry，并按配置启用 OTLP 或控制台导出器、采样与资源属性。要把数据送进 Collector、Jaeger 等后端时使用。
+
+## 主要特性
+
+* 追踪、指标、日志三类信号各有开关，缺省全开
+* 配置了 OTLP 端点或标准环境变量才导出，没有配置就不导出
+* 支持按比例采样与追加订阅自己的 Activity 源和 Meter
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Observability.OpenTelemetry --prerelease
+```
+
+### 使用
+
+注册特性，再在配置里写 OTLP 端点。
 
 ```csharp
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<OpenTelemetryObservabilityFeature>());
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<OpenTelemetryObservabilityFeature>());
 ```
 
 ```json
 {
   "XiHan": { "Observability": { "OpenTelemetry": {
-    "ServiceName": "orders", "SamplingRatio": 0.2,
-    "Otlp": { "Endpoint": "http://otel-collector:4317", "Protocol": "Grpc" },
-    "Console": false, "Sources": "MyCompany.Orders", "Meters": "MyCompany.Orders"
+    "ServiceName": "orders",
+    "SamplingRatio": 0.2,
+    "Otlp": { "Endpoint": "http://localhost:4317", "Protocol": "Grpc" }
   } } }
 }
 ```
 
-## 规则
+## 主要类型
 
-- 追踪、指标、日志三类信号各有开关（默认全开）；默认订阅 `XiHan.Framework`、`Microsoft.AspNetCore`、`System.Net.Http` 源与 `XiHan.Framework`、`Microsoft.AspNetCore.Hosting`、`Microsoft.AspNetCore.Server.Kestrel`、`System.Net.Http`、`System.Runtime` 仪表，`Sources` / `Meters` 追加。
-- OTLP 导出器在配置了 `Otlp:Endpoint` 或环境变量 `OTEL_EXPORTER_OTLP_ENDPOINT` 时自动启用，`Otlp:Enabled` 可强制开关；没有端点时按标准环境变量与默认端口（gRPC 4317 / HTTP 4318）决定；`Otlp:Protocol` 只能与 `Otlp:Endpoint` 一起写，只写协议时装配失败（RFC-0023）。没有配置就不导出，不会向本机空端口重试。
-- `SamplingRatio` 只作用于根 Span，有上游 trace 的沿用上游决定；内核的 `xihan.invoke` 同样遵守：有上游（`traceparent`、当前 Activity）时随它，没有上游时是根 Span 并按比例采样（RFC-0003 规则 7）；资源属性 `service.name` / `service.version` 默认取入口程序集，`service.instance.id` 取机器名。
-- 没有 ASP.NET Core 或 HttpClient 检测包：.NET 8 起它们原生发出 Activity 与 Meter，按名字订阅即可。
+此库提供的主要类型：
 
-## 依赖方向
+* `OpenTelemetryObservabilityFeature`：能力包入口
+* `OpenTelemetryOptions`：服务名、采样比例、OTLP、控制台导出、追加订阅的源与仪表
+* `OtlpProtocol`：`Grpc` 或 `HttpProtobuf`
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`（能力 ID）、`OpenTelemetry.Extensions.Hosting`、`OpenTelemetry.Exporter.OpenTelemetryProtocol` 与 `OpenTelemetry.Exporter.Console`。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/observability-opentelemetry)
 
-P3：可用。
+## 相关包
+
+* 运行信息：[XiHan.Framework.Observability.Host](https://www.nuget.org/packages/XiHan.Framework.Observability.Host)
+* 可观测性抽象：[XiHan.Framework.Observability.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Observability.Abstractions)
+
+## 反馈与贡献
+
+`XiHan.Framework.Observability.OpenTelemetry` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

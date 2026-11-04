@@ -1,29 +1,57 @@
 # XiHan.Framework.Scheduling.Kubernetes
 
-`scheduling.leader@1` 的 Kubernetes Provider（Ring 3，`role: provider`，RFC-0013）。以 `coordination.k8s.io/v1` 的 Lease 做跨 Pod 的领导选举，直接调用 API Server，不依赖客户端库。装配后顶替 `Scheduling.InMemory` 的进程内选举；作业调度仍由抽象包的引擎 + 内存作业存储承担，不共享的存储下只有持有 Lease 的 Pod 按计划运行集群唯一（`RunOnEveryInstance = false`）的作业。多实例需要持久化与分发时换 `Scheduling.Database`。
+## 关于
+
+`XiHan.Framework.Scheduling.Kubernetes` 用 Kubernetes 的 Lease 在多个 Pod 之间选出领导，替换 `Scheduling.InMemory` 的进程内选举。直接调用 API Server，不依赖 Kubernetes 客户端库。
+
+## 主要特性
+
+* 集群唯一的作业（`RunOnEveryInstance = false`）只在持有 Lease 的 Pod 上按计划运行
+* Pod 正常停止时释放 Lease，另一个 Pod 随即接手
+* 只替换领导选举，作业存储仍在各 Pod 内存里；需要共享存储与失联恢复请用 `Scheduling.Database`
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Scheduling.Kubernetes --prerelease
+```
+
+### 使用
+
+在 Pod 里启用特性，与 `Scheduling.InMemory`（`UseFullProfile()` 已含）一起使用：
 
 ```csharp
 builder.AddXiHan(x => x.UseFullProfile().UseFeature<KubernetesSchedulingFeature>());
 ```
 
+Lease 名缺省为 `xihan-scheduler`，可改：
+
 ```json
 { "XiHan": { "Scheduling": { "Kubernetes": { "Lease": "orders-scheduler" } } } }
 ```
 
-## 规则
+Pod 的 ServiceAccount 需要 `coordination.k8s.io` 下 `leases` 的 `get`、`update`、`patch`、`create` 权限。
 
-- 调度器的默认资源 `scheduling.jobs` 映射到 `Lease`；其他资源映射到 `<Lease>-<资源>`。`xihan pack` 的 `leader.lease` 写进 `XiHan__Scheduling__Kubernetes__Lease`，并生成只含该 Lease 的 Role。
-- 获取：Lease 不存在就创建；持有者为空或 `renewTime + leaseDurationSeconds` 已过就接管（`leaseTransitions` 加一）；否则 `SCHEDULING_CONFLICT_002`。并发由 resourceVersion 裁决（409 → 被占用）。续约写 `renewTime`，释放清空 `holderIdentity`。
-- 存活时间按秒向上取整写进 Lease（Kubernetes 只有整数秒），本地判定仍用精确值。
-- 命名空间、持有者与 API Server 按 Pod 内约定解析（ServiceAccount 挂载、`POD_NAMESPACE`、`XIHAN_POD_NAME` / `HOSTNAME`、`KUBERNETES_SERVICE_HOST`）；令牌每次请求从挂载文件读取以跟上轮换；CA 存在时作为唯一信任根。
-- API Server 不可达或超时 → `SCHEDULING_UNAVAILABLE_002`，引擎下个周期重试。
+## 主要类型
 
-RBAC 最小权限：`coordination.k8s.io` 的 `leases` 资源 `get` / `update` / `patch`（限定 `resourceNames`）与 `create`。
+此库提供的主要类型：
 
-## 依赖方向
+* `KubernetesSchedulingFeature`：启用 Kubernetes 领导选举的特性
+* `KubernetesLeaderElection`：基于 Lease 的领导选举
+* `KubernetesSchedulingOptions`：配置项，对应 `XiHan:Scheduling:Kubernetes`
 
-依赖 `XiHan.Framework.Scheduling.Abstractions`。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/scheduling-kubernetes)
 
-P3：可用，通过 `Scheduling.Conformance` 的 `LeaderElectionConformance`（以内存 API Server 桩验证，含应用生命周期用例，ADR-0094）。
+## 相关包
+
+* 调度抽象与引擎：[XiHan.Framework.Scheduling.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Scheduling.Abstractions)
+* 内存实现：[XiHan.Framework.Scheduling.InMemory](https://www.nuget.org/packages/XiHan.Framework.Scheduling.InMemory)
+* 数据库实现：[XiHan.Framework.Scheduling.Database](https://www.nuget.org/packages/XiHan.Framework.Scheduling.Database)
+
+## 反馈与贡献
+
+`XiHan.Framework.Scheduling.Kubernetes` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

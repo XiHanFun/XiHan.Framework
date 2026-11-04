@@ -1,33 +1,54 @@
 # XiHan.Framework.MultiTenancy.InMemory
 
-内存租户存储。清单 `role: default`，提供 `multitenancy.context@1` 与 `multitenancy.sharding@1`。
+## 关于
 
-```json
-{
-  "XiHan": {
-    "MultiTenancy": {
-      "RequireTenant": false,
-      "Tenants": {
-        "acme": { "DisplayName": "Acme", "IsEnabled": true, "Properties": { "ConnectionString": "Host=acme-db;Database=app", "DatabaseProvider": "postgresql" } },
-        "beta": { "IsEnabled": false }
-      }
-    }
-  }
-}
+`XiHan.Framework.MultiTenancy.InMemory` 是多租户的默认实现：租户从配置装载到内存。适合开发、测试与租户数量少且固定的应用，进程重启后以配置为准。
+
+## 主要特性
+
+* 租户来自 `XiHan:MultiTenancy:Tenants`，运行时可用 `InMemoryTenantStore.Set` / `Remove` 增删
+* 先从主体声明、再从 Baggage 解析租户
+* 属性 `ConnectionString` 有值即分库
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.MultiTenancy.InMemory --prerelease
 ```
 
-## 语义
+### 使用
 
-- 启动时从 `XiHan:MultiTenancy:Tenants` 装载；运行时可用 `InMemoryTenantStore.Set` / `Remove` 增删，上限 `XiHan:MultiTenancy:InMemory:MaxTenants`（默认 1000），超出返回 `MULTITENANCY_UNAVAILABLE_001`。
-- 注册解析器顺序：`ClaimTenantResolver`（已认证主体的 `tenant` 声明）→ `BaggageTenantResolver`（`xihan.tenant`）。
-- 在 Tenant 阶段加入 `TenantResolutionMiddleware`。存储、解析器、中间件与健康项只在租户上下文能力被选中时注册：应用自带的 Provider 只提供 `multitenancy.context@1` 时它们都归那个 Provider，本包只提供分片（RFC-0007「存储」）。
-- 分片能力被选中时注册 `TenantStoreShardResolver`：租户属性 `ConnectionString` 有值即分库，`DatabaseProvider` 为提供者名，`Shard.<key>` 透传；结果按租户缓存（`XiHan:MultiTenancy:ShardCacheSize`，正整数，默认 10000，由 `MultiTenancyOptions.FromConfiguration` 读取），`Set` / `Remove` 改了租户连接后调用 `ITenantShardResolver.Invalidate`。
-- 健康项 `multitenancy.inmemory.capacity`（存储自己实现，同步计算）：租户数达到 `MaxTenants` 即 Degraded（`MULTITENANCY_UNAVAILABLE_001`），否则 Ready。
+`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时：
 
-## 依赖方向
+```csharp
+builder.AddXiHan(xihan => xihan.UseFeature<InMemoryMultiTenancyFeature>());
+```
 
-依赖 `XiHan.Framework.MultiTenancy.Abstractions`。
+```json
+{ "XiHan": { "MultiTenancy": { "RequireTenant": false, "Tenants": {
+  "acme": { "DisplayName": "Acme", "IsEnabled": true, "Properties": { "ConnectionString": "<connection-string>", "DatabaseProvider": "postgresql" } },
+  "beta": { "IsEnabled": false } } } } }
+```
 
-## 状态
+## 主要类型
 
-P2：可用，通过 `MultiTenancy.Conformance` 套件。
+此库提供的主要类型：
+
+* `InMemoryMultiTenancyFeature`：特性入口
+* `InMemoryMultiTenancyOptions`：租户列表与容量上限
+* `InMemoryTenantStore`：内存租户存储
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/multitenancy-inmemory)
+
+## 相关包
+
+* 多租户契约：[XiHan.Framework.MultiTenancy.Abstractions](https://www.nuget.org/packages/XiHan.Framework.MultiTenancy.Abstractions)
+* 数据库实现：[XiHan.Framework.MultiTenancy.Database](https://www.nuget.org/packages/XiHan.Framework.MultiTenancy.Database)
+
+## 反馈与贡献
+
+`XiHan.Framework.MultiTenancy.InMemory` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

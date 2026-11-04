@@ -148,6 +148,10 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 - `PolicyCatalog.EnforceOn(OperationRegistry)`：核对已登记的全部操作契约的 `Policy` 都在目录里（`permission:<code>` 要求权限码已登记），不在即抛出 `SECURITY_VALIDATION_004`（`FrameworkException`，一次列出全部）；同时经 `OperationRegistry.Enforce` 挂到登记表上，此后登记的操作（插件握手之后）引用了不存在的策略，登记时返回同一错误码（消息键 `security.policy.operation_unregistered`，参数 `id`、`owner`、`policy`），整组不登记。`security.authorization@1` 的 Provider 被选中时在 `Configure` 里经 `FeatureContext.AddStartupCheck` 把它登记为启动核对（容器建好之后、任何特性启动之前执行，不论失败策略，抛出即终止启动，ADR-0085）；`Security.InMemory` 与 `Security.Database` 被选为授权能力时这样登记。
 - 权限判定：匿名主体不持有任何权限，不访问存储；授予按序数精确匹配或 `*`；顺序是用户授予 → 角色授予 → 授予来源 → 过滤器，命中即止。存储、来源或过滤器返回的失败原样返回（不当作不持有，ADR-0071），抛出的异常照常传播。替换 `IPermissionChecker` 的实现须同样并上全部来源并施加全部过滤器。
 - `PermissionChecker` 的构造函数接收全部登记的 `IPermissionFilter` 与 `IPermissionGrantSource`（可为空集合），集合里出现 `null` 抛出 `ArgumentException`。
+- 失败到 HTTP 的映射（ADR-0042、ADR-0071）：`SECURITY_DENIED_001` 与 `SECURITY_DENIED_003` 是 401 并带 `WWW-Authenticate`（Bearer 被拒时为 `Bearer error="invalid_token"`），其余 `DENIED` 是 403，`SECURITY_UNAVAILABLE_001` 是 503，任何一环读不到都不能落到 403；认证处理器内部的基础设施失败抛异常。
+- 收窄过滤器与授予来源：过滤器收到的是具体权限码，持 `*` 也会被收窄；匿名与未命中授予不调用过滤器；收窄拒绝时权限策略返回 `SECURITY_DENIED_004`。授予来源在用户与角色的存储授予都没命中时按登记顺序逐个查询，任一命中即算授予命中，之后照常经全部过滤器；匿名不查询。两者都按单例登记（如 `services.AddSingleton<IPermissionFilter, EditionPermissionFilter>()`），用于套餐白名单、显式拒绝、委托到期、角色继承、限时委托。
+- 条件引擎（ADR-0046）：`ConditionSet` / `ConditionGroup` / `ConditionClause`，组内且、组间或；十五个运算符与七种值种类（整数值是持久化契约），`ConditionOperatorRules` 给出搭配规则；属性按精确名、别名、最长前缀的族解析；编译错误是 `SECURITY_VALIDATION_002`（消息键说明原因，出错子句保留）；求值结果为命中、不命中、无法判定或待定，说明模式逐组逐子句；属性来源 `IConditionAttributeSource` 由应用提供，自带 `DictionaryConditionAttributeSource`（试算）与 `MemoizingConditionAttributeSource`；`AddConditionAttributes(...)` 登记属性并确保三项单例服务。
+- `IIpRegionResolver.Resolve(IPAddress)` 对回环、私有网段与查不到返回无值；不装 Provider 时容器里没有本服务，调用方把归属地当作取不到。
 - 条件引擎的登记表在首次解析时建好，重名与别名冲突即抛出；`MemoizingConditionAttributeSource` 按单次调用使用，不是线程安全的。
 
 | 错误码 | 含义 |

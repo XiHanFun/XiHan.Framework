@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.ObjectStorage.FileSystem</PackageId>
     <RootNamespace>XiHan.Framework.ObjectStorage.FileSystem</RootNamespace>
-    <Description>XiHan Framework 文件系统对象存储（默认实现）：本地目录按容器与键存放内容与元数据，原子替换写入，SHA-256 ETag，总量与单对象配额。</Description>
+    <Description>曦寒框架对象存储的文件系统默认实现</Description>
     <PackageTags>xihan;framework;objectstorage;filesystem;blob</PackageTags>
   </PropertyGroup>
 

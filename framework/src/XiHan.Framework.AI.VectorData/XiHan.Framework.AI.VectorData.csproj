@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.AI.VectorData</PackageId>
     <RootNamespace>XiHan.Framework.AI.VectorData</RootNamespace>
-    <Description>XiHan Framework AI 的知识库 Provider：把 IKnowledgeStore 映射到应用注册的 Microsoft.Extensions.VectorData 向量存储（任意连接器）。</Description>
+    <Description>曦寒框架 AI 知识库的向量存储提供程序</Description>
     <PackageTags>xihan;framework;ai;knowledge;rag;vectordata</PackageTags>
     <!-- VectorData 的记录映射基于反射与表达式；Native AOT 场景另行验证 -->
     <IsAotCompatible>false</IsAotCompatible>

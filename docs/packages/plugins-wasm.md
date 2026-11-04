@@ -182,6 +182,9 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 - 重建次数在 `RestartWindowSeconds` 内超过 `RestartLimit` 后保持 `Failed`；每个插件是健康条目 `plugins.<清单 ID>`，`Failed` / `Degraded` 让应用进入 `Degraded`。
 - 中间件只看得到元数据、操作 ID 与结果，看不到载荷；before 的 `CONTINUE` 可改写已登记的 Baggage（`xihan.principal` 除外），after 只观察。中间件以 `<清单 ID>:<middleware>` 为名登记在所在阶段末尾，清单的 `before` / `after` 按 RFC-0004 参与排序：先按本插件的中间件名解析，否则作为管道里的中间件名（另一个插件的 `<清单 ID>:<middleware>` 或只登记一次的宿主中间件类型全名）；目标未登记、有歧义或跨阶段为 `KERNEL_PIPELINE_003`，成环为 `KERNEL_PIPELINE_001`。
 - 不负责：组件模型 / WIT（ABI v2）、流式操作、多实例并发、`net.outbound`。
+- 事件订阅与进程外插件相同：握手的 `Subscription.mode` 为空或 `competing` 是竞争消费，`broadcast` 是广播（每个宿主实例都交给自己的插件实例，RFC-0009「订阅方式」）；宿主只把投递交给以同一方式订阅了主题的插件，`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
+- 清单的 `contributes.config` 声明 `XiHan:Plugins:Wasm`。宿主另读 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域），属于本地化领域，不在清单里（RFC-0002「配置节」）；每个插件收到的是它自己清单声明的配置节。
+- 运行期加载时中间件经 `PipelineBuilder.UseOwned` 成组登记并立即核对次序约束，卸载时经 `PipelineBuilder.RemoveOwnedBy` 按清单 ID 撤出管道。
 
 ::: warning Windows 上可执行项目必须设 CETCompat=false
 .NET 9 起 apphost 默认开启 CET 兼容，影子栈强制时 wasmtime 的第一次陷阱就让进程 fail-fast（退出码 `0xC0000409`），到不了宿主的崩溃处理。宿主应用、测试项目与跑一致性套件的项目都要设 `<CETCompat>false</CETCompat>`。

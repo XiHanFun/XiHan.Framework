@@ -1,26 +1,54 @@
 # XiHan.Framework.Security.Jwt
 
-`security.authentication@1` 的 JWT Provider（Ring 3，`role: provider`）。注册后顶替内存实现的认证部分；授权仍由被选中的授权 Provider（默认 `Security.InMemory`）承担。
+## 关于
+
+`XiHan.Framework.Security.Jwt` 是认证的 JWT 提供程序：校验 HS256 对称密钥签名的 `Bearer` 令牌，把令牌映射为主体。它替换 `Security.InMemory` 的认证部分，授权仍由原授权提供程序承担。只校验令牌，不签发。
+
+## 主要特性
+
+* 校验签名、有效期，配置了才校验签发者与受众
+* 声明按 JWT 原始类型名进入主体
+* 校验失败统一返回 401，不对外暴露具体原因
+* 需要非对称密钥或签发者发现时，改用 `Security.OpenIdConnect`（两者同一时刻只装配其一）
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Security.Jwt --prerelease
+```
+
+### 使用
 
 ```csharp
 builder.AddXiHan(x => x.UseFeature<InMemorySecurityFeature>().UseFeature<JwtSecurityFeature>());
 ```
 
+密钥至少 32 字节，生产环境从环境变量或密钥库注入，不要提交到仓库：
+
 ```json
-{ "XiHan": { "Security": { "Jwt": { "Secret": "至少 32 字节的对称密钥", "Issuer": "https://issuer", "Audience": "api", "ClockSkewSeconds": 60 } } } }
+{ "XiHan": { "Security": { "Jwt": { "Secret": "<至少 32 字节的密钥>", "Issuer": "https://issuer", "Audience": "api" } } } }
 ```
 
-## 语义
+## 主要类型
 
-- 凭据方案 `Bearer`；HS256 对称密钥（`Secret`，至少 32 字节）。签发者与受众配置了才校验；必须有过期时间；时钟偏移默认 60 秒。
-- 主体 ID 取 `NameClaim`（默认 `sub`）；全部声明按原始类型名保留（不做 .NET 长声明类型映射），角色声明类型由 `XiHan:Security:RoleClaim` 决定。
-- 校验失败返回 `SECURITY_DENIED_003`，不区分原因对外暴露；经 ASP.NET Core 宿主是 401 并带 `WWW-Authenticate: Bearer error="invalid_token"`（RFC 6750 §3.1），没有令牌时是 401 并带 `WWW-Authenticate: Bearer`（ADR-0042）。
-- 非对称密钥与签发者发现（发现文档与 JWKS）用 `Security.OpenIdConnect`；两者同一时刻只装配其一。
+此库提供的主要类型：
 
-## 依赖方向
+* `JwtSecurityFeature`：启用 JWT 认证的特性
+* `JwtOptions`：配置项，对应 `XiHan:Security:Jwt`
+* `JwtAuthenticationHandler`：`Bearer` 方案的认证处理器
 
-依赖 `Security.Abstractions` 与 `Microsoft.IdentityModel.JsonWebTokens`。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/security-jwt)
 
-P2：可用。
+## 相关包
+
+* 安全抽象：[XiHan.Framework.Security.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Security.Abstractions)
+* OpenID Connect 认证：[XiHan.Framework.Security.OpenIdConnect](https://www.nuget.org/packages/XiHan.Framework.Security.OpenIdConnect)
+* 内存实现：[XiHan.Framework.Security.InMemory](https://www.nuget.org/packages/XiHan.Framework.Security.InMemory)
+
+## 反馈与贡献
+
+`XiHan.Framework.Security.Jwt` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

@@ -187,6 +187,11 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 - 本包不做持久化：运行时登记的作业、历史、节点放在哪里由 `IJobStore` 决定。`IJobStore.IsShared` 为假时，集群唯一的作业只在持有领导租约的实例上按计划运行。
 - 引擎在应用不在服务状态时（进入服务状态之前、开始排空之后）不按计划运行，领导租约也不拿不续，持有就立即释放，另一个实例下一个周期接手（ADR-0091）；停止时等待进行中的运行，宿主停止令牌触发后取消它们并再等它们收尾，最后释放租约。`ILeaderElection` 的 Provider 要保证应用不在服务状态时 `LeaderLease.ReleaseAsync` 照样生效。
 - 执行时限靠取消令牌实现，不响应取消的作业要等它返回才结束。
+- 一次运行用到的数据按「作业数据 ← 触发器数据 ← 手动触发数据」逐键覆盖；超过 `Timeout` 取消令牌，作业返回之前时限已过的运行记为 `SCHEDULING_TIMEOUT_001`。
+- 重试：被取消与失联的运行不重试；重试是新的一次运行，`JobRun.Trigger` 为 `Retry`、`Attempt` 加一、`RetryOf` 指向首次运行。集群唯一的作业把重试写成存储里的一次性触发器，`RunOnEveryInstance` 的作业在本实例进程内等待后重试。
+- cron 是 Quartz 风格的文法（5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时），但不是 Quartz 的超集：星期数字按 Unix 约定（0 / 7 = 周日、1 = 周一，Quartz 是 1 = 周日、7 = 周六）；周段单独的 `L`（Quartz 里是周六）与反向范围（如 `FRI-MON`、`22-2`，Quartz 跨界回绕）不支持、解析报错；多了 5 段写法，日与周同时限定时取并集。
+- 代码登记的作业被运行时 `ScheduleAsync` 改过后来源是 `Overridden`：启动同步时代码定义没变（指纹 `CodeFingerprint` 相同）就保留运行时的修改，代码改了以代码为准并记警告；`RestoreAsync` 随时恢复为代码定义（ADR-0053）。
+- 每次运行在新作用域、新调用上下文里经完整内核管道执行，`JobDispatcher` 把关联 ID 设为运行 ID。
 - 事件只在装配了消息能力时发布，发布失败只记日志。
 
 | 错误码 | 含义 |

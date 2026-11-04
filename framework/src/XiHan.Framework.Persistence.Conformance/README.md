@@ -1,6 +1,26 @@
 # XiHan.Framework.Persistence.Conformance
 
-持久化一致性套件。任何提供 `persistence.relational@1` 的 Provider 都必须继承 `RepositoryConformance` 并通过全部用例；这是"换 Provider 只改配置与包引用"的保证。
+## 关于
+
+`XiHan.Framework.Persistence.Conformance` 持久化的一致性套件，给写 Provider 的人用：任何提供关系型持久化的 Provider 都应继承 `RepositoryConformance` 并通过全部用例，这是「换 Provider 只改配置与包引用」的保证。
+
+## 主要特性
+
+* `RepositoryConformance`：仓储与工作单元语义，含事务、并发、软删除、租户、查询与只读操作
+* `DataSourceConformance`、`SchemaConformance`：运行时数据源与库结构读取
+* `IdGeneratorConformance<TKey>`：标识生成器，自定义的 `IIdGenerator<TKey>` 也应继承它
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Persistence.Conformance --prerelease
+```
+
+### 使用
+
+测试项目引用被测实现与本包，写一个继承套件基类的类，全部用例随之执行。
 
 ```csharp
 public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
@@ -9,23 +29,24 @@ public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
 }
 ```
 
-套件覆盖：读己之写与提交可见性、回滚不留痕迹、标识重复（含两个工作单元并发新增同一标识）、审计字段与并发戳、更新沿用存储的创建时间、租户与删除标记、软删除与物理删除、租户必填与隔离、过滤排序分页与计数（含可空值类型与 null 的相等 / 不等按 `IS NULL` 语义过滤，判空与取反嵌套在与 / 或条件里照常过滤；规约里字符串的 `Contains` / `StartsWith` / `EndsWith` 按字面匹配，实参里的 `%`、`_`、`[`、反斜杠、`!` 与单引号不是通配符或转义符，不断言大小写；三个方法与闭包变量、常量、列三种实参在 ASCII 字母的大小写上一致，全都区分或全都不区分；一次最多取 `EntityQuery.DefaultMaxTake` 条，更大的取出条数以 `PERSISTENCE_VALIDATION_005` 拒绝，调用里是校验结果、已做的写入回滚）、失败结果与异常回滚、Transaction 阶段之外使用仓储抛错、只读操作拒绝全部写入（单条与批量，忽略拒绝的调用仍以 `PERSISTENCE_UNEXPECTED_001` 结束）、只读操作在新作用域里调用写操作照常提交、同一作用域的嵌套调用以 `PERSISTENCE_VALIDATION_002` 结束、`IUnitOfWork.HasTransaction` 的取值（开始与读取后为假，第一次写入后为真，提交与回滚后为假，只读工作单元恒为假）、标识生成器。只读与嵌套的用例经套件特性 `ConformanceFeature` 登记的两个操作（只读的 `conformance-scripts.get`、可写的 `conformance-scripts.run`）走真实的操作契约。
+## 主要类型
 
-两个可选钩子覆盖 Provider 特有的入口（ADR-0109），不覆写的用例跳过：
+此库提供的主要类型：
 
-- `EnsureTransaction`：Provider 的直接写入入口，如 `static (unitOfWork, ct) => ((SqlSugarUnitOfWork)unitOfWork).EnsureTransactionAsync(ct)`；用例验证它开启事务、提交与回滚后复位、只读工作单元里抛出 `PERSISTENCE_UNEXPECTED_001` 且仍不开事务。
-- `NamedConnection`：套件可用的命名连接名，子类在 `Configuration` 里声明它（SQLite 上是另一个库文件）；套件把实体 `ConformanceLease` 登记到这个连接（EF Core 的 `DbContext` 模型要包含它），用例验证绑定它的工作单元只报告那个连接、与业务调用的工作单元各报各的。
+* `RepositoryConformance`：仓储套件，需要实现 `CreateFeature()`
+* `DataSourceConformance`：运行时数据源套件
+* `SchemaConformance`：库结构读取与实体目录套件
+* `IdGeneratorConformance<TKey>`：标识生成器套件
 
-`DataSourceConformance` 是运行时数据源的套件（ADR-0078），每个 Provider 也都继承它：实现 `CreateDefinition(name)`（连得上，连接串末尾加分号仍连得上）与 `CreateUnreachableDefinition(name)`（连不上、带口令），用例验证测试连接成功且不登记、同定义复用 / 定义变了替换 / 批量移除逐项报告、连不上返回 `PERSISTENCE_UNAVAILABLE_006` 且错误里没有连接串与口令、每个数据源一条健康项；不支持的 Provider（EF Core、内存实现）两个方法都返回 `null`，用例断言取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。SqlSugar 在 SQLite 与 PostgreSQL（`XIHAN_TEST_POSTGRES`）上都跑。
+## 更多文档
 
-`SchemaConformance` 是库结构读取与实体目录的套件（ADR-0078），每个 Provider 都继承它：设 `ReadsSchema`、实现 `CreateDefinition(name)`（指向应用自己库的运行时数据源，不支持时 `null`）。宿主登记套件的三种实体（订单登记两次），用例验证实体目录每个实体一条、标识类型 / 协议 / 主键列对、领域事件不列；读结构的 Provider 列出三张表、关键字与分页、表列表的分页越界以结果返回（`Skip` = -1、`Take` = 0 → `PERSISTENCE_VALIDATION_007`，`Take` = 1001 → `PERSISTENCE_VALIDATION_005`，经运行时数据源时不登记）而边界值照常、读到不可空的主键列、不存在的表该项 `PERSISTENCE_NOTFOUND_003`、超过 100 张整批 `PERSISTENCE_VALIDATION_005`、空集合空列表、经运行时数据源读到的结果与缺省连接一致；不读结构的断言 `PERSISTENCE_UNAVAILABLE_008`。
+* [概念文档](https://framework.docs.xihanfun.com/packages/conformance)
 
-`IdGeneratorConformance<TKey>` 是标识生成器自己的套件（`TKey : IComparable<TKey>`）：实现 `CreateGenerator(TimeProvider clock)`，用例验证顺序生成与 8 线程并发生成不重复（真实时钟）、时钟前进后标识更大（`ConformanceClock`）；`GuidV7IdGenerator` 与 `SnowflakeIdGenerator` 都通过，应用自定义的 `IIdGenerator<TKey>` 也应继承它。
+## 相关包
 
-## 依赖方向
+* 持久化抽象：[XiHan.Framework.Persistence.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Persistence.Abstractions)
+* 内存实现：[XiHan.Framework.Persistence.InMemory](https://www.nuget.org/packages/XiHan.Framework.Persistence.InMemory)
 
-依赖 `Persistence.Abstractions`、`Testing` 与 xUnit 核心包。工具链包，可引用任何环。
+## 反馈与贡献
 
-## 状态
-
-P2：可用。
+`XiHan.Framework.Persistence.Conformance` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

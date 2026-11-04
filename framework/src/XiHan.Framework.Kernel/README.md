@@ -1,34 +1,57 @@
 # XiHan.Framework.Kernel
 
-微内核（Ring 1）。单包，子命名空间表达职责：
+## 关于
 
-| 命名空间 | 职责 |
-| --- | --- |
-| `Hosting` | `AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`IShadowAwareFeature`（能力全部被顶替时内核改调 `ConfigureShadowed`，只登记与能力选择无关的服务，如命名存储实例的 Provider；不注册契约、不贡献中间件、不启动）、`FeatureContext`（`AddStartupCheck` 登记启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归 `KernelOptions.FailurePolicy` 管，ADR-0085）、`KernelOptions`、`BindingResolver`、`HealthSnapshot`、`IHealthContributor`（额外健康条目，如插件；条目 Degraded / Failed 让应用 Degraded 但不退出）、`PeriodicHealthContributor`（Provider 连通性探针的宿主：后台按间隔重探、缓存最近结果，`Check()` 立即返回；探针异常记为 `KERNEL_UNAVAILABLE_005`；条目带检查时刻、耗时与可选的说明）、`ContributorStatus`（名字、状态、错误，以及说明 / 检查时刻 / 耗时 / 标量数据，ADR-0054）、`AddXiHan()` |
-| `Capabilities` | `[Capability]`（清单生成器顺延，运行期不读；当前清单在 `IFeature.Manifest` 里手写）、`CapabilityResolver`、`ResolvedGraph`、`ResolvedNode`（`IsSelectedFor` 被选中，`IsRequestedFor` 被要求：有依赖或经配置 / 代码指定，区别于兜底选出） |
-| `Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`（按类型 `UseAt` / 按实例 `UseInstance` / 同类型多实例按名 `UseNamedInstance`，命名实例的次序约束用按名字的 `Before(名字, 目标)` / `After(名字, 目标)`；应用构建之后只能经 `UseOwned(归属, 回调)` 成组登记、经 `RemoveOwnedBy(归属)` 按归属撤回，两者都立即核对、全进或全不进，管道按版本构建，在途调用按进入时的管道走完，RFC-0004「运行期改动」、ADR-0088）、`PipelineStep`、`PipelineStage`（原语层）、`Placement`、内置中间件 `ObserveMiddleware`、`DeadlineMiddleware`（只看令牌归因：截止令牌已触发一律报 `KERNEL_TIMEOUT_001`，调用方同时取消也一样，下游抛出的取消与写下的 `KERNEL_CANCELLED_001` 结果同一规则，2026-11-01 起的行为变化，ADR-0088、ADR-0092；不另看时钟，截止令牌还没触发时调用方的取消仍报取消，ADR-0095；`Resilience` 区的 `ResilienceMiddleware`、`Validation` 区的 `ValidationMiddleware` 也是内置）；`IInvocationAccessor`（作用域服务，调用链深处不传上下文的服务取当前调用的上下文，调用之外为无值）；`InvocationOrigin` / `InvocationProtocols` 与 `GetOrigin()` / `SetOrigin()`（调用来源：协议、请求目标、远端地址、User-Agent、来源页、端点的路由模板与名字，由协议适配器建上下文时写入，内部调用没有，RFC-0003 规则 6，ADR-0043 / ADR-0048）。阶段内基准次序按 `Placement`、归属清单 ID 字典序、注册序号，只保证可复现、不表达依赖：要用到别的包中间件产出的（如认证后的主体、解析后的租户）必须显式 `Before` / `After` 约束，例如应用的会话门禁要声明 `After<SessionGateMiddleware, AuthenticationMiddleware>()` |
-| `Diagnostics` | `ActivitySource` / `Meter` 桥（`xihan.invoke` 的父级与采样按 RFC-0003 规则 7）、`IAuditSink` |
-| `Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`（`EvaluateAsync` 返回 `Result<AuthorizationResult>`：成功是允许或拒绝，失败是无法判定，如授予存储不可达）、`AuthorizationResult`、`PermissionRegistry`（每个码记下归属；`AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回） |
-| `Security`（出站） | `OutboundAddressPolicy`、`OutboundAddressOptions`、`OutboundAddressDeniedException`：向用户给的地址发请求时按实际 IP 判定能否连接，缺省只能连公网地址，配置节 `XiHan:Security:Outbound`（RFC-0008、ADR-0117）。`Apply(SocketsHttpHandler)` 接到处理器上，`ConnectAsync(host, port, ct)` 给不是 HTTP 的连接（ADR-0126），宿主总是登记为单例 |
-| `Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PermissionGrant` 抽象；具体隔离机制在 `Plugins.*` 包 |
-| `Validation` | Validate 阶段的契约校验（RFC-0011、ADR-0024）：`ValidationMiddleware` 按 `OperationDescriptor.Schema` 的请求 Schema 校验载荷（`KERNEL_VALIDATION_003`）、解码后对实现 `IValidatableObject` 的请求执行自校验（`KERNEL_VALIDATION_004`），不通过不进 Handle；`JsonSchemaValidator`（draft 2020-12 的生成器子集：类型、必填、未声明属性、数组、枚举 / 常量、`$ref`、组合、数值范围、长度与模式、元素数；违规 32 条、深度 64 上限）、`SchemaViolation`（`$.path: reason`，另带 `kernel.validation.*` 消息键与参数供宿主按调用方区域翻译成字段级错误，`Field` 是去掉根 `$` 的点分字段键；`required` 违规挂在缺失属性自己的路径上）。失败结果的细节：`id`、`reason`、`violations`（文本）、`errors`（违规对象）。自校验的结果没有键，文案由应用给（`key.L()` 即得调用方语言），成员名按 camelCase 转成序列化名。类型化调用按 `RequestInfo` 编码一次再校验；原始载荷与解码后的请求都记录在上下文（`GetOperationPayload` / `GetOperationRequest`）。DataAnnotations 由 `Kernel.Generators` 折进 Schema，不在运行期反射 |
-| `Resilience` | Resilience 阶段的限制（RFC-0004、ADR-0029）：`ResilienceMiddleware`（内置，紧随 `DeadlineMiddleware`）对带操作描述的调用按 `ResilienceOptions`（配置节 `XiHan:Kernel:Resilience`；`Operations:<操作 ID>` 按操作覆盖，缺省键沿用默认策略）施加熔断（连续 `FailureThreshold` 次失败打开 `BreakDuration`，到期半开只放一次试探；只有 KIND 为 UNAVAILABLE / TIMEOUT / UNEXPECTED 的结果与未处理异常算失败）、固定窗口限流（`PermitLimit` / `Window` / `QueueLimit`）与并发上限（`ConcurrencyLimit` / `ConcurrencyQueueLimit`），判定顺序熔断 → 限流 → 并发，拒绝以 `KERNEL_UNAVAILABLE_004` / `002` / `003` 返回且不进后续阶段（`details` 带 `id`，限流与熔断带 `retryAfter` 秒）；限制实例按操作 ID 各一份，没有操作描述的调用与没有任何限制的操作直接透传；排队受调用的取消令牌约束。限流与并发用 BCL 的 `System.Threading.RateLimiting`，熔断是内核自己的三态状态机；`ResiliencePolicy` 是一组限制的值对象 |
-| `Operations` | 操作契约与 XGI（RFC-0011）：`[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`OperationRequest` / `OperationResponse`、`IOperationInvoker`、`IOperationResponseFilter`（成功响应写进上下文前按登记顺序过滤，四个调用入口与各协议编码都拿过滤后的结果，ADR-0061）；特性用 `FeatureContext.AddOperation` 登记（通常由 `Kernel.Generators` 生成的 `AddGeneratedOperations` 代劳），协议适配器按登记表发布；契约引用的权限码在装配完成时核对，未登记即启动失败（`KERNEL_VALIDATION_005`），装配之后的登记（插件握手之后）逐个核对；登记表构造时绑定 `PermissionRegistry`，`OperationRegistry.AddRange(owner, operations, permissions)` 一次登记一个归属的一组操作连同它定义的权限码、全进或全不进（ADR-0071、ADR-0080；插件宿主经它登记代理操作与插件清单声明的权限码）；`OperationRegistry.RemoveOwnedBy(owner)` 在锁里一次撤回该归属的全部操作与权限码（插件卸载时用，之后可以再登记，ADR-0085）；`OperationRegistry.Enforce(check)` 供容器建好才有判定依据的子系统挂核对（授权能力在启动核对里核对契约的策略名），核对已登记的并让此后每次登记都经过它 |
+`XiHan.Framework.Kernel` 是框架的微内核：应用构建、能力图谱求解、执行管道与内置中间件、操作契约与调用器、安全原语、健康与插件抽象。所有应用都经它装配；它不处理 HTTP，不含具体的子系统实现。
 
-## 责任边界
+## 主要特性
 
-- 不处理 HTTP，不含任何子系统抽象，不含具体插件加载器；协议适配器把线上消息翻译成 `OperationRequest` 交给 `IOperationInvoker`，内核只负责解码、经管道执行与编码。
-- 零反射；零第三方依赖，只引用 `Microsoft.Extensions.*` 抽象包与 BCL 扩展包 `System.Threading.RateLimiting`（Resilience 阶段的限流原语，不在共享框架里，架构测试允许名单登记）。
-- 失败结果只携带消息键（`KernelMessages`）与参数，文案在 `Localization/<区域>.json`（10 种区域各一个文件，由 `Localization.InMemory` 装载）；`App.InvokeAsync` 把 Baggage `xihan.locale` 经 `IMessageResolver.Negotiate` 协商后安装 `MessageScope`，让 `key.L()` 在调用链里得到调用方语言，与 Problem Details 等按上下文解析的文案同一区域（RFC-0010）。启动期的 `FrameworkException` 不本地化。
+* `AddXiHan` 收集特性、求解能力图谱，并按拓扑顺序装配
+* 带阶段与次序约束的执行管道，内置观测、截止时间、弹性（熔断、限流、并发）与契约校验中间件
+* 操作契约 `[Operation]` 与 `IOperationInvoker`，协议适配器按登记表发布
+* `Principal`、`TenantContext`、权限登记与出站地址策略等安全原语
+* 健康快照与 `IHealthContributor`；失败结果只带消息键，按调用方区域翻译
 
-## 依赖方向
+## 如何使用
 
-依赖 `XiHan.Framework.Primitives`。被子系统、宿主、协议、插件包引用。
+### 安装
 
-## 预算
+```bash
+dotnet add package XiHan.Framework.Kernel --prerelease
+```
 
-公开类型 ≤ 120；启动额外开销 < 50 ms；空应用常驻内存 < 30 MB。
+### 使用
 
-## 状态
+通常经 `Hosting.AspNetCore` 或 `Hosting.CommandLine` 间接使用。在通用宿主上直接使用内核：
 
-P1：内核已实现，公开面记录在 `PublicAPI.Unshipped.txt`。
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+builder.AddXiHan(xihan => xihan.UseFeature<WorkerFeature>());   // WorkerFeature 是应用自己的特性
+await builder.Build().RunAsync();
+```
+
+常用配置节：`XiHan:Kernel`（启动与停止超时、失败策略）、`XiHan:Kernel:Resilience`（按操作的限制）、`XiHan:Providers`（指定能力提供者）。
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `AppBuilder`、`App`：装配入口与运行中的应用
+* `IFeature`、`IHostedFeature`、`FeatureContext`：特性与它的装配入口
+* `PipelineBuilder`、`IPipelineMiddleware`、`PipelineStage`：执行管道
+* `OperationAttribute`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`：操作契约与调用
+* `SecurityContext`、`Principal`、`PermissionRegistry`：安全上下文与权限登记
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/kernel)
+
+## 相关包
+
+* 原语层：[XiHan.Framework.Primitives](https://www.nuget.org/packages/XiHan.Framework.Primitives)
+* 操作登记与 Schema 的源生成器：[XiHan.Framework.Kernel.Generators](https://www.nuget.org/packages/XiHan.Framework.Kernel.Generators)
+* 命名与稳定性规则分析器：[XiHan.Framework.Kernel.Analyzers](https://www.nuget.org/packages/XiHan.Framework.Kernel.Analyzers)
+
+## 反馈与贡献
+
+`XiHan.Framework.Kernel` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

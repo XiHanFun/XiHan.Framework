@@ -108,6 +108,7 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 
 - `tools/list` 不分页；`inputSchema` 在请求 Schema 的 `type` 不是 `object` 或没有 Schema 时为 `{"type":"object"}`，`outputSchema` 只在响应 Schema 是对象时给出。
 - `tools/call` 成功时 `content[0].text` 是响应 JSON，响应是对象时同时给 `structuredContent`。
+- `tools/call` 的调用来源记 `mcp` 与 tool 名，HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求（ADR-0043）；stdio 的答复只含 ASCII，`mcp` 命令按 UTF-8 解码 stdin、不随控制台代码页，直接调用 `McpStdioTransport` 时自己按 UTF-8 构造读取器。
 - 不开 SSE 流、不建会话（不发 `Mcp-Session-Id`），`GET` / `DELETE` 为 405；`MCP-Protocol-Version` 不受支持时 400，缺失按当前版本处理。
 - stdio 调用以匿名主体执行，要求权限或登录的操作总是得到 `isError` 结果。
 

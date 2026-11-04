@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Scheduling.Kubernetes</PackageId>
     <RootNamespace>XiHan.Framework.Scheduling.Kubernetes</RootNamespace>
-    <Description>XiHan Framework 调度的 Kubernetes Provider：以 coordination.k8s.io Lease 实现跨 Pod 的领导选举，直接调用 API Server，不依赖客户端库。</Description>
+    <Description>曦寒框架调度的 Kubernetes 提供程序</Description>
     <PackageTags>xihan;framework;scheduling;kubernetes;lease;leader-election</PackageTags>
   </PropertyGroup>
 

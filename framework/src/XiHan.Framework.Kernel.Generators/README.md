@@ -1,34 +1,55 @@
 # XiHan.Framework.Kernel.Generators
 
-Roslyn 源生成器（工具链）。扫描标注 `[Operation]` 且实现 `IOperation<TRequest, TResponse>` 的类，生成：
+## 关于
 
-- `GeneratedOperations` 静态类（命名空间为项目的 `RootNamespace`）：每个操作一个 `Add<类名>(this FeatureContext)`，以及登记全部操作的 `AddGeneratedOperations(this FeatureContext)`；契约取自特性（ID、稳定性、`Expose`、策略/权限），序列化元数据取自项目里标注 `[JsonSerializable]` 的 `JsonSerializerContext`。
-- 每个操作的请求与响应 JSON Schema（draft 2020-12），随登记一起放进 `OperationDescriptor.Schema`，供 `Protocols.Http` 的 OpenAPI 与 `Protocols.Mcp` 的 tool 描述使用，内核的 Validate 阶段按请求 Schema 校验载荷（ADR-0024）。属性名按序列化上下文的命名策略，可空性与 `required` 按 C# 类型；嵌套对象进 `$defs`。类型映射按 RFC-0011：基元按 `type` / `format`（`Guid` → `uuid`、`DateTimeOffset` → `date-time`、`Uri` → `uri` 等），字典（任何键类型，与 System.Text.Json 一样写成 JSON 对象）为 `object` + `additionalProperties`，键不是字符串时在 `propertyNames` 写明键的文本形式（整数与浮点的 `pattern`、`bool` 的 `True` / `False`、枚举成员名并按 `DictionaryKeyPolicy` 改写、`Guid` 与日期时间的 `format`），其他集合为 `array` + `items`，任意 JSON（`object`、`JsonElement`、`JsonDocument`、`JsonNode` 与 `JsonValue`）为不加约束的 `{}`，`JsonObject` 为 `object` + `additionalProperties: {}`，`JsonArray` 为 `array` + `items: {}`；类型按所在命名空间与元数据名识别，可空标注（`JsonNode?`、`Uri?`）只加 `null`、不改变形状，别名与泛型实参不影响识别。`[JsonIgnore]` 按条件处理（没有时取序列化上下文的 `DefaultIgnoreCondition`）：只有 `Always`（不写条件即是）的属性不进 Schema；`WhenWriting` / `WhenReading` 的属性与 `WhenWritingDefault` 的值类型属性留在 `properties` 里但不进 `required`；`WhenWritingNull` 与不可空引用的 `WhenWritingDefault` 按可空契约照常。生成的代码里命名空间、类型名与序列化上下文的属性名是 C# 关键字时带 `@`。根 `title` 与定义名取类型名，封闭泛型为 `<外层名>Of<实参名>`（多个实参以 `And` 连接、嵌套递归，如 `PageResultOfUserResponse`、`EnvelopeOfListOfUserResponseAndInt32`），不同实参的同一泛型是不同的 Schema；按字符串序列化的枚举（`UseStringEnumConverter`）进 `$defs/<枚举类型名>`（`type: string` + `enum`）并以 `$ref` 引用，可空为 `anyOf` 带 `null`，整数枚举仍内联为 `integer`（ADR-0034）。属性（或位置记录的主构造参数）上的 DataAnnotations 折进 Schema：`[Required]` 进 `required` 并去掉可空（字符串加 `minLength: 1`，`AllowEmptyStrings = true` 除外），`[Range]` → `minimum` / `maximum`（`MinimumIsExclusive` / `MaximumIsExclusive` → 开区间），`[StringLength]` / `[MinLength]` / `[MaxLength]` / `[Length]` → 字符串的 `minLength` / `maxLength` 或集合的 `minItems` / `maxItems`，`[RegularExpression]` → `pattern`；`[EmailAddress]` 等其他注解不折。XML 文档注释折进 `description`（ADR-0052）：类型的 `<summary>` 进根与 `$defs`，属性的 `<summary>` 进属性，没有时取位置记录主构造参数在类型上的 `<param>`；`<see cref>` 取名字，空白折叠（中文换行处直接相连），`<remarks>` 不进；项目没开 `GenerateDocumentationFile` 时没有。
+`XiHan.Framework.Kernel.Generators` 是 Roslyn 源生成器：扫描标注 `[Operation]` 且实现 `IOperation<TRequest, TResponse>` 的类，在编译期生成操作登记代码与每个操作的请求、响应 JSON Schema，不需要运行期反射。
+
+## 主要特性
+
+* 生成 `GeneratedOperations`：每个操作一个 `Add<类名>`，以及登记全部操作的 `AddGeneratedOperations`
+* 生成 JSON Schema（draft 2020-12），供 HTTP 的 OpenAPI、MCP 的 tool 描述与内核的契约校验使用
+* `[Required]`、`[Range]`、`[StringLength]`、XML 文档注释折进 Schema
+* `XHG001`–`XHG006` 诊断：缺接口、缺序列化登记、操作 ID 文法等
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Kernel.Generators --prerelease
+```
+
+### 使用
+
+项目里用 `[JsonSerializable]` 登记请求与响应类型，在特性的 `Configure` 里调用生成的登记方法：
 
 ```csharp
 [Operation("orders.create", Expose = Expose.Http | Expose.Mcp, Permission = "orders.write")]
-public sealed class CreateOrder(...) : IOperation<PlaceOrderRequest, OrderResponse> { … }
+public sealed class CreateOrder(...) : IOperation<PlaceOrderRequest, OrderResponse> { ... }
 
-public void Configure(FeatureContext context) => context.AddGeneratedOperations();   // 生成的登记代码
+public void Configure(FeatureContext context) => context.AddGeneratedOperations();
 ```
 
-| 规则 | 含义 |
-| --- | --- |
-| `XHG001` | 标注 `[Operation]` 的类必须实现 `IOperation<TRequest, TResponse>` |
-| `XHG002` | 请求或响应类型没有任何 `JsonSerializerContext` 用 `[JsonSerializable]` 登记 |
-| `XHG003` | 操作 ID 不符合 `<resource>.<verb>` 文法 |
-| `XHG004` | 缺省关闭：操作没写 `Expose`、程序集也没有 `[assembly: OperationDefaults]`，于是暴露给全部协议；以 `dotnet_diagnostic.XHG004.severity = error` 打开即强制写明 |
-| `XHG005` | `create` / `update` / `delete` 声明了 `ReadOnly = true` |
-| `XHG006` | 警告：请求或响应里有 System.Text.Json 不支持的字典键类型（记录、类、`Nullable<T>`、`BigInteger` 等），运行期序列化会抛出；代码与 Schema 照常生成，键类型带 `[JsonConverter]` 或上下文登记了 `Converters` 时不报 |
+用 NuGet 包时按分析器引用，不进入运行时依赖。程序集级 `[assembly: OperationDefaults(Expose = Expose.Http)]` 设置没写 `Expose` 的操作的缺省暴露协议。
 
-暴露协议的缺省（ADR-0041）：操作没写 `Expose` 时取程序集级 `[assembly: OperationDefaults(Expose = Expose.Http)]` 的值，再没有就是 `Expose.All`；落定的值写进生成的 `OperationContract`。`ReadOnly = true` 原样生成为契约的 `readOnly: true`。
+## 主要类型
 
-引用方式：`<ProjectReference Include="…/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />`，或 NuGet 包（分析器形式，不进入运行时依赖）。
+此库提供的主要类型：
 
-## 依赖方向
+* `OperationAttribute`：声明操作的 ID、稳定性、暴露协议与权限
+* `OperationDefaultsAttribute`：程序集级的暴露协议缺省
+* `GeneratedOperations`（生成）：`AddGeneratedOperations(this FeatureContext)`
 
-只依赖 `Microsoft.CodeAnalysis.CSharp`；生成的代码引用 `XiHan.Framework.Kernel`。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/kernel-generators)
 
-P3：操作登记与 JSON Schema 可用，`Protocols.Http` 的 OpenAPI、`Protocols.Mcp` 的 tool 描述与 `Protocols.Grpc` 的 protobuf 描述及 `.proto` 都从这份 Schema 产出；`[Capability]` 清单生成顺延（ADR-0075）：当前每个特性在 `Manifest` 属性里手写清单，RFC-0002 写明了现状。
+## 相关包
+
+* 内核：[XiHan.Framework.Kernel](https://www.nuget.org/packages/XiHan.Framework.Kernel)
+* 命名与稳定性规则分析器：[XiHan.Framework.Kernel.Analyzers](https://www.nuget.org/packages/XiHan.Framework.Kernel.Analyzers)
+* 实体与仓储登记的源生成器：[XiHan.Framework.Persistence.Generators](https://www.nuget.org/packages/XiHan.Framework.Persistence.Generators)
+
+## 反馈与贡献
+
+`XiHan.Framework.Kernel.Generators` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

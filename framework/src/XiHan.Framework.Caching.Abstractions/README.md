@@ -1,31 +1,62 @@
 # XiHan.Framework.Caching.Abstractions
 
-缓存契约（Ring 2）。能力 `caching.local@1`（进程内）与 `caching.distributed@1`（跨进程共享）由 Provider 提供。
+## 关于
 
-| 契约 | 用途 |
-| --- | --- |
-| `ICacheStore` | 字节级存储：读、写、不存在才写、删、比较删，以及批量读 / 写 / 删（`GetManyAsync` / `SetManyAsync` / `RemoveManyAsync`：一次往返，结果与入参顺序一一对应）；Provider 实现它，被选中提供 `caching.distributed` 的 Provider 把它登记为接口，应用可在这些原语上搭自己的租约与续约 |
-| `ICache` / `ISharedCache` | 类型化门面：`GetAsync<T>`、`SetAsync<T>`、`GetOrCreateAsync<T>` 与批量的 `GetManyAsync<T>`、`SetManyAsync<T>`、`RemoveManyAsync`；`ISharedCache` 是跨进程的那一个 |
-| `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 共享缓存的值序列化；`JsonCacheSerializer` 要求 `JsonSerializerOptions` 带 `TypeInfoResolver`（源生成上下文），`CreateReflectionBased()` 只用于允许反射的运行时；Provider 按"已注册的 `ICacheSerializer` → 已注册的 `JsonSerializerOptions`"顺序取序列化器 |
-| `CacheKey`、`CacheEntryOptions`、`CacheEntry` | 键（非空、无空白与控制字符、≤ 512；`IsValidPrefix` 校验前缀，可以为空）、过期（绝对或滑动，二选一）与批量写入的一项 |
-| `ICacheStoreInspector`、`CacheKeyQuery`、`CacheKeyPage`、`CacheEntryInfo` | 可选的键管理（ADR-0055）：按前缀分页列键（`ListKeysAsync` 返回 `Result<CacheKeyPage>`；`Limit` 1–1000，越界不在构造时抛出、返回 `CACHING_VALIDATION_003`；`Continuation` 续页）、读条目的载荷字节数 / 剩余存活 / 滑动窗口、按前缀删除（前缀不能为空）；管理界面把 `ICacheStore` 转成它使用，内存与 Redis 存储实现，远程插件不实现 |
-| `ICacheInspector`、`CachedObjectInfo` | 可选的对象条目键管理（ADR-0058）：进程内对象缓存的条目不在字节存储里，按前缀分页列键、看类型全名与剩余存活、按前缀删除；管理界面把缓存转成它、再把 `Store` 转成 `ICacheStoreInspector`，两份合起来是全部条目 |
-| `ICacheChangeFeed`、`CacheChange` | 可选的变更通知（ADR-0055）：本实例与其他实例对共享存储的写入与删除（键列表，或按前缀删除时的前缀），用来失效本地副本；本实例同步通知、其他实例经后端转发且不回送，尽力而为 |
-| `IDistributedLock`、`StoreDistributedLock`、`LockHandle`、`DistributedLockExtensions` | 建立在"不存在才写 + 比较删"之上的租约锁；`TryAcquireAsync` 被占用时无值，结果式的 `AcquireAsync` 被占用时返回 `CACHING_CONFLICT_001` |
-| `IdempotencyMiddleware`、`IdempotencyOptions`、`IdempotencyRecord` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，处理中返回冲突，完成后回放结果；操作调用还记下操作 ID 与成功的响应，回放时还原响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064） |
-| `CacheStoreDistributedCache`、`AddXiHanDistributedCache` | .NET `IDistributedCache` 架在 `ICacheStore` 上：键须满足 `CacheKey` 文法，绝对过期换算成 TTL（与滑动同时给时绝对优先），都不给时用存储的默认存活时间（内存与 Redis 缺省 5 分钟），`Refresh` 是一次读取，同步成员在边界阻塞；提供 `caching.distributed` 的 Provider 被选中时登记，应用自己的登记优先 |
+`XiHan.Framework.Caching.Abstractions` 定义缓存的契约：字节存储 `ICacheStore`、类型化缓存 `ICache` / `ISharedCache`、序列化器、分布式锁，以及按幂等键去重的 Idempotency 中间件。不包含存储实现。
+
+## 主要特性
+
+* 进程内缓存与跨进程共享缓存两套门面，支持批量读写与 `GetOrCreateAsync`
+* 绝对或滑动过期
+* 基于存储的分布式租约锁
+* `IDistributedCache` 适配与操作调用的幂等去重
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
+```
+
+### 使用
+
+通常由实现包带入；写业务代码或自定义缓存提供程序时才直接引用。实现包有 `Caching.InMemory`、`Caching.Redis`、`Caching.Remote`、`Caching.Hybrid`。业务代码里这样用：
 
 ```csharp
 var cache = context.Services.GetRequiredService<ISharedCache>();
-var profile = await cache.GetOrCreateAsync(new CacheKey($"profile:{id}"), ct => LoadAsync(id, ct), CacheEntryOptions.Expires(TimeSpan.FromMinutes(5)), ct);
+var profile = await cache.GetOrCreateAsync(
+    new CacheKey($"profile:{id}"),
+    ct => LoadAsync(id, ct),
+    CacheEntryOptions.Expires(TimeSpan.FromMinutes(5)),
+    ct);
 ```
 
-基础设施失败（存储不可达）抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不伪装成未命中。
+存储不可达时抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不会伪装成未命中。
 
-## 依赖方向
+## 主要类型
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`（消息目录）与 `Microsoft.Extensions.Caching.Abstractions`。被 `Caching.InMemory`、`Caching.Redis`、`Caching.Remote`、`Caching.Hybrid` 引用。
+此库提供的主要类型：
 
-## 状态
+* `ICache`、`ISharedCache`：类型化缓存门面
+* `ICacheStore`：字节级存储，提供程序实现它
+* `CacheKey`、`CacheEntryOptions`：键与过期选项
+* `IDistributedLock`、`LockHandle`：分布式锁
+* `ICacheSerializer`、`JsonCacheSerializer`：共享缓存的值序列化
+* `IdempotencyMiddleware`：按幂等键去重
 
-P2：可用。
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/caching-abstractions)
+
+
+## 相关包
+
+* 内存实现：[XiHan.Framework.Caching.InMemory](https://www.nuget.org/packages/XiHan.Framework.Caching.InMemory)
+* Redis 实现：[XiHan.Framework.Caching.Redis](https://www.nuget.org/packages/XiHan.Framework.Caching.Redis)
+* 两级缓存：[XiHan.Framework.Caching.Hybrid](https://www.nuget.org/packages/XiHan.Framework.Caching.Hybrid)
+* 一致性套件：[XiHan.Framework.Caching.Conformance](https://www.nuget.org/packages/XiHan.Framework.Caching.Conformance)
+
+## 反馈与贡献
+
+`XiHan.Framework.Caching.Abstractions` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

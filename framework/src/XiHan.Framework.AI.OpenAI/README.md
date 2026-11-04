@@ -1,33 +1,65 @@
 # XiHan.Framework.AI.OpenAI
 
-AI 的 OpenAI 兼容 Provider（Ring 3，RFC-0022）：提供 `ai.chat@1` 与 `ai.embedding@1`，`Kind = openai` 的 Provider 都由本包创建——OpenAI 官方、Azure OpenAI 兼容网关、Ollama / vLLM / LM Studio 等本地兼容端点。
+## 关于
 
-| 类型 | 用途 |
-| --- | --- |
-| `OpenAIFeature` | 登记两个工厂并装配 AI 核心服务；装配与启动不触网；启动时构建工具目录并解析提示增强器：工具名不合法或重名（`AI_VALIDATION_001`）、知识库配置引用的提示词找不到或渲染不了即启动失败（只装本特性时也一样） |
-| `OpenAIChatClientFactory` | `GetChatClient(ChatModel).AsIChatClient()` + 函数调用循环（`UseFunctionInvocation`），工具调用自动执行 |
-| `OpenAIEmbeddingGeneratorFactory` | `GetEmbeddingClient(EmbeddingModel).AsIEmbeddingGenerator(EmbeddingDimensions)` |
+`XiHan.Framework.AI.OpenAI` 是 AI 的 OpenAI 兼容提供程序：`Kind = openai` 的模型都由它创建聊天客户端与嵌入生成器，覆盖 OpenAI 官方端点，以及 Ollama、vLLM、LM Studio 等兼容端点。
+
+## 主要特性
+
+* 聊天与嵌入模型，按配置创建并缓存
+* 聊天内置函数调用循环，模型发起的工具调用自动执行
+* `Endpoint` 留空走官方端点，本地端点不校验密钥
+* 装配与启动不访问网络
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.AI.OpenAI --prerelease
+```
+
+### 使用
+
+启用特性，并在 `XiHan:AI:Providers` 下配置模型（`ApiKey` 换成你自己的密钥）：
+
+```csharp
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<AIToolsFeature>()
+    .UseFeature<OpenAIFeature>());
+```
 
 ```json
 {
   "XiHan": { "AI": {
-    "DefaultProvider": "openai",
+    "DefaultProvider": "cloud",
     "Providers": {
-      "openai": { "Kind": "openai", "ApiKey": "sk-…", "ChatModel": "gpt-4o-mini", "EmbeddingModel": "text-embedding-3-small", "EmbeddingDimensions": 1536 },
-      "local": { "Kind": "openai", "Endpoint": "http://localhost:11434/v1", "ChatModel": "qwen2.5", "TimeoutSeconds": 300 }
+      "cloud": { "Kind": "openai", "ApiKey": "<your-api-key>", "ChatModel": "gpt-4o-mini", "EmbeddingModel": "text-embedding-3-small" },
+      "local": { "Kind": "openai", "Endpoint": "http://localhost:11434/v1", "ChatModel": "qwen2.5", "TimeoutSeconds": 90 }
     }
   } }
 }
 ```
 
-`Endpoint` 为空用官方端点；`ApiKey` 为空用占位凭据（本地端点不校验）。网络超时只以 `TimeoutSeconds` 为准（缺省 100 秒，示例里的 300 秒照样生效）。容器里有 `IHttpClientFactory` 时（应用在任何地方调用过 `AddHttpClient`）经名为 `xihan.ai.openai` 的客户端发请求，没有专门配置这个名字时是工厂的缺省客户端；可以用 `services.AddHttpClient("xihan.ai.openai")` 给它配置代理与处理器，但它的 `Timeout` 由本包置为不限，限时请改 `TimeoutSeconds`。经 `IAIChat` 与知识库流水线的调用另由框架按同一个 `TimeoutSeconds` 落成超时令牌（覆盖整次调用，含函数调用循环），超时与调用方取消同时发生时报 `AI_TIMEOUT_001`（RFC-0022「超时与取消」）。缺 `ChatModel` / `EmbeddingModel` → `AI_VALIDATION_001`。Provider 配置在装配时读一次、不热更新，改了要重启应用（ADR-0074）。
+## 主要类型
 
-框架的端点来自配置，不过出站地址策略（RFC-0008、ADR-0117）。应用的提供商目录让用户填端点时，给命名客户端 `OpenAIFeature.HttpClientName` 接上：`services.AddHttpClient(OpenAIFeature.HttpClientName).UseSocketsHttpHandler(static (handler, sp) => sp.GetRequiredService<OutboundAddressPolicy>().Apply(handler))`。
+此库提供的主要类型：
 
-## 依赖方向
+* `OpenAIFeature`：启用入口
+* `OpenAIChatClientFactory`：聊天客户端工厂
+* `OpenAIEmbeddingGeneratorFactory`：嵌入生成器工厂
 
-依赖 `XiHan.Framework.AI.Abstractions`、`Microsoft.Extensions.AI`、`Microsoft.Extensions.AI.OpenAI`、`Microsoft.Extensions.Http`。不进 `Profiles.Full`（需要外部端点）。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/ai-openai)
+* [AI 指南](https://framework.docs.xihanfun.com/guide/ai)
 
-P0：可用（Preview）。
+## 相关包
+
+* AI 抽象：[XiHan.Framework.AI.Abstractions](https://www.nuget.org/packages/XiHan.Framework.AI.Abstractions)
+* 向量知识库：[XiHan.Framework.AI.VectorData](https://www.nuget.org/packages/XiHan.Framework.AI.VectorData)
+
+## 反馈与贡献
+
+`XiHan.Framework.AI.OpenAI` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

@@ -33,7 +33,7 @@ dotnet run -c Release --project framework/benchmarks/XiHan.Framework.Benchmarks 
 ## 新建正式包的步骤
 
 1. 用术语表与文法确定包 ID；目录 `framework/src/<包 ID>/`。
-2. 放入 `<包 ID>.csproj`（`PackageId`、`RootNamespace`、`Description`、`PackageTags`）、`README.md`（定位、责任边界、依赖方向、不负责的内容、状态）、`PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`（首行 `#nullable enable`）。
+2. 放入 `<包 ID>.csproj`（`PackageId`、`RootNamespace`、`Description`、`PackageTags`）、`README.md`（给 NuGet 使用者看，结构照微软官方包：关于、主要特性、如何使用、主要类型、更多文档、相关包、反馈与贡献；不写版本，细节写进 `docs/packages/`）、`PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`（首行 `#nullable enable`）。
 3. 加进 `XiHan.Framework.slnx` 对应环层目录，加进架构测试项目的引用。
 4. 若引入新能力 ID 或错误码，登记到 `framework/spec/conventions/`。
 5. 有面向人的文案时：`<领域>Messages` 加键常量，`Localization/<区域>.json` 10 个文件各加一行，csproj 加 `<EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />`，Ring ≥2 的包用 `MessageCatalog.FromEmbeddedResources(名, typeof(<领域>Messages))` 暴露 `Catalog`，Provider 的 `Configure` 第一行 `AddMessageCatalog`。

@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <PackageId>XiHan.Framework.Cli</PackageId>
     <RootNamespace>XiHan.Framework.Cli</RootNamespace>
-    <Description>XiHan Framework 命令行工具 xihan：xihan pack 从 xihan.app.json 生成 Dockerfile、Kustomize、Compose 与 Aspire 产物；graph / pipeline / operations / invoke 转发给应用的命令行宿主；xihan mcp 以 stdio 提供框架离线知识库（包与特性清单、配置键与缺省值、文档）的 MCP 服务。</Description>
+    <Description>曦寒框架命令行工具</Description>
     <PackageTags>xihan;framework;cli;tool;pack;docker;kubernetes;aspire;mcp</PackageTags>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>xihan</ToolCommandName>

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.AI.Abstractions</PackageId>
     <RootNamespace>XiHan.Framework.AI.Abstractions</RootNamespace>
-    <Description>XiHan Framework AI 契约：基于 Microsoft.Extensions.AI 的 Provider 目录、带提示词 / 护栏 / 工具的聊天入口、操作契约桥接成模型工具的目录、知识库流水线与存储契约。</Description>
+    <Description>曦寒框架 AI 抽象包</Description>
     <PackageTags>xihan;framework;ai;chat;embedding;tools;rag;knowledge</PackageTags>
   </PropertyGroup>
 

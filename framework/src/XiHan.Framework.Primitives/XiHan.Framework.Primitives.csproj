@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Primitives</PackageId>
     <RootNamespace>XiHan.Framework.Primitives</RootNamespace>
-    <Description>XiHan Framework 原语层（Ring 0）：Result、Error、Maybe、TypedId、调用上下文契约、清单模型与稳定性标记。只增不改。</Description>
+    <Description>曦寒框架原语包</Description>
     <PackageTags>xihan;framework;primitives</PackageTags>
     <!-- Ring 0：分析器据此禁止反射 -->
     <XiHanRing>0</XiHanRing>

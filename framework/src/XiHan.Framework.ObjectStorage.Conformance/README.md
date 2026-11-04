@@ -1,22 +1,56 @@
 # XiHan.Framework.ObjectStorage.Conformance
 
-对象存储一致性套件（RFC-0012）。Provider 的测试项目继承 `BlobStoreConformance`、实现 `CreateStore()` 与 `PlantOutsideContractAsync(container, key, content)`（绕过契约直接在底层存储里写一个对象，键可以不符合键文法），全部用例随之执行：读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功（8 个写入方同时写同一个新键，ADR-0089）、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过经钩子放入的这类对象（ADR-0090）、键的区分大小写与嵌套段、批量写入的逐项结果、批量删除的逐项结果、按前缀分页列举、范围读取（`GetRange`）、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，1 与上限照常列举）、不存在的错误、大对象流式读写。
+## 关于
+
+`XiHan.Framework.ObjectStorage.Conformance` 是对象存储的一致性测试套件，给写对象存储提供程序的人验证实现用，不是业务代码的依赖。
+
+## 主要特性
+
+* `BlobStoreConformance`：读写往返、覆盖与不覆盖、并发写入、分页列举、范围读取、分片上传
+* `BlobStoreProviderConformance`：命名实例的建出、复用、替换与移除
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.ObjectStorage.Conformance --prerelease
+```
+
+### 使用
+
+继承 `BlobStoreConformance`，实现 `CreateStore()` 与 `PlantOutsideContractAsync`（绕过契约直接在底层存储写一个对象）：
 
 ```csharp
 public sealed class FileSystemBlobStoreConformanceTests : BlobStoreConformance
 {
-    protected override IBlobStore CreateStore() => new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = TempDirectory() }, TimeProvider.System);
+    protected override IBlobStore CreateStore()
+        => new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = TempDirectory() }, TimeProvider.System);
 
-    protected override Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content) => WriteUnderDataDirectoryAsync(container, key, content);
+    protected override Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content)
+        => WriteUnderDataDirectoryAsync(container, key, content);
 }
 ```
 
-命名实例的 Provider（ADR-0050）继承 `BlobStoreProviderConformance`，实现 `CreateProvider()` 与两组可用的设置：按定义建出的实例可读写且探测通过、未知的设置键被拒绝、经注册表同定义复用 / 定义变了替换 / 移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例。
+支持命名实例的提供程序再继承 `BlobStoreProviderConformance`。
 
-## 依赖方向
+## 主要类型
 
-依赖 `XiHan.Framework.ObjectStorage.Abstractions` 与 xunit 的断言与扩展核心包。
+此库提供的主要类型：
 
-## 状态
+* `BlobStoreConformance`
+* `BlobStoreProviderConformance`
 
-P3：可用。
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/conformance)
+
+## 相关包
+
+* 对象存储契约：[XiHan.Framework.ObjectStorage.Abstractions](https://www.nuget.org/packages/XiHan.Framework.ObjectStorage.Abstractions)
+* 文件系统实现：[XiHan.Framework.ObjectStorage.FileSystem](https://www.nuget.org/packages/XiHan.Framework.ObjectStorage.FileSystem)
+* S3 实现：[XiHan.Framework.ObjectStorage.S3](https://www.nuget.org/packages/XiHan.Framework.ObjectStorage.S3)
+
+## 反馈与贡献
+
+`XiHan.Framework.ObjectStorage.Conformance` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

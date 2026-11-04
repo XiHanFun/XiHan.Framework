@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Hosting.AspNetCore</PackageId>
     <RootNamespace>XiHan.Framework.Hosting.AspNetCore</RootNamespace>
-    <Description>XiHan Framework 的 ASP.NET Core 宿主适配（Ring 4）：把 HTTP 请求翻译为调用上下文并经过内核管道，映射探针端点，用 RFC 9457 Problem Details 回写失败结果。</Description>
+    <Description>曦寒框架 ASP.NET Core 宿主</Description>
     <PackageTags>xihan;framework;hosting;aspnetcore</PackageTags>
   </PropertyGroup>
 

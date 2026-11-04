@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Scheduling.Abstractions</PackageId>
     <RootNamespace>XiHan.Framework.Scheduling.Abstractions</RootNamespace>
-    <Description>XiHan Framework 调度契约与引擎（Ring 2，RFC-0013）：作业与触发器、计划（间隔、Quartz 文法 cron、一次、手动）、日历、misfire、经内核管道的派发、作业存储契约 IJobStore、集群分发引擎 JobSchedulerEngine 与租约式领导选举 ILeaderElection。</Description>
+    <Description>曦寒框架调度抽象包</Description>
     <PackageTags>xihan;framework;scheduling;jobs;cron;quartz;leader-election</PackageTags>
   </PropertyGroup>
 

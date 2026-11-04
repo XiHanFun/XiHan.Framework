@@ -130,6 +130,8 @@ public static class ShardInfo
 - 默认租户同样经过文法与存储校验；关闭存储核对后安全上下文里没有显示名。
 - 分片解析失败（租户存储不可达）返回 `MULTITENANCY_UNAVAILABLE_002`，调用失败，不降级为共库。
 - `TenantStoreShardResolver` 缓存"无分片"与未知租户的结果；条目数达到 `ShardCacheSize` 时整体清空，不逐条淘汰；租户连接变更后调用 `Invalidate`。
+- Baggage 里的租户只来自进程内建上下文的地方（消息派发、作业、工作流、命令行宿主）；HTTP、gRPC、MCP 的网络入站不收这个键（ADR-0121），这些调用方的租户只来自认证。CloudEvents 入站的 `xihantenant` 经消息派发进来，由宿主给端点加的权限把关。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
+- 分库的表结构由应用管理；租户属性 `ConnectionString` 有值即分库，`Shard.<key>` 透传。
 - `TenantShardScope` 必须在作用域首次创建持久化客户端之前绑定；之后再绑定或改绑另一分片抛出 `InvalidOperationException`，同一分片重复绑定无副作用。`BindTenantAsync` 不看租户是否启用、不受应用状态影响；没有分片解析器时成功且不绑定。
 
 | 错误码 | 含义 |

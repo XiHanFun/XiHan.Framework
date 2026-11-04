@@ -1,6 +1,25 @@
 # XiHan.Framework.MultiTenancy.Conformance
 
-多租户一致性套件。任何 `ITenantStore` 实现都必须继承 `TenantStoreConformance`、任何 `ITenantShardResolver` 实现都必须继承 `TenantShardResolverConformance`，并通过全部用例。
+## 关于
+
+`XiHan.Framework.MultiTenancy.Conformance` 是多租户的一致性测试套件，给写租户存储与分片解析提供程序的人验证实现用，不是业务代码的依赖。
+
+## 主要特性
+
+* `TenantStoreConformance`：按 ID 查找、启用标记与属性往返、枚举
+* `TenantShardResolverConformance`：分库解析、共库为无值、失效后一致
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.MultiTenancy.Conformance --prerelease
+```
+
+### 使用
+
+继承对应基类并实现工厂方法：
 
 ```csharp
 public sealed class InMemoryTenantStoreConformanceTests : TenantStoreConformance
@@ -10,14 +29,25 @@ public sealed class InMemoryTenantStoreConformanceTests : TenantStoreConformance
 }
 ```
 
-套件覆盖：按 ID 查找、不存在为无值、ID 区分大小写、显示名、启用标记与属性完整往返、枚举全部租户。
+分片解析器的实现继承 `TenantShardResolverConformance` 并实现 `CreateResolverAsync`。
 
-`ITenantShardResolver` 实现继承 `TenantShardResolverConformance` 并实现 `CreateResolverAsync`：分库租户解析出连接串、小写的提供者名与去前缀的透传属性；共库与未知租户为成功无值；失效单个或全部后重解析结果一致。
+## 主要类型
 
-## 依赖方向
+此库提供的主要类型：
 
-依赖 `MultiTenancy.Abstractions` 与 xUnit 核心包。工具链包。
+* `TenantStoreConformance`
+* `TenantShardResolverConformance`
 
-## 状态
+## 更多文档
 
-P2：可用。
+* [概念文档](https://framework.docs.xihanfun.com/packages/conformance)
+
+## 相关包
+
+* 多租户契约：[XiHan.Framework.MultiTenancy.Abstractions](https://www.nuget.org/packages/XiHan.Framework.MultiTenancy.Abstractions)
+* 内存实现：[XiHan.Framework.MultiTenancy.InMemory](https://www.nuget.org/packages/XiHan.Framework.MultiTenancy.InMemory)
+* 数据库实现：[XiHan.Framework.MultiTenancy.Database](https://www.nuget.org/packages/XiHan.Framework.MultiTenancy.Database)
+
+## 反馈与贡献
+
+`XiHan.Framework.MultiTenancy.Conformance` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

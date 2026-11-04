@@ -15,7 +15,7 @@ IP 归属地的 ip2region 离线库 Provider：按宿主提供的 IPv4 / IPv6 xd
 
 ## 概述
 
-`Ip2RegionSecurityFeature` 以单例 `Ip2RegionResolver` 实现 `IIpRegionResolver`（ADR-0047）。IPv4 与 IPv6 各一个 xdb 文件，首次用到某个地址族时整库读进内存（`CachePolicy.Content`，线程安全），之后的查询都在内存里完成；按 README 的记载，IPv4 库约 11 MB、IPv6 库约 37 MB。
+`Ip2RegionSecurityFeature` 以单例 `Ip2RegionResolver` 实现 `IIpRegionResolver`（ADR-0047）。IPv4 与 IPv6 各一个 xdb 文件，首次用到某个地址族时整库读进内存（`CachePolicy.Content`，线程安全），之后的查询都在内存里完成；IPv4 库约 11 MB、IPv6 库约 37 MB，之后每次查询约百纳秒。
 
 框架包不带数据文件，xdb 由宿主提供（下载或生成方式见 ip2region 项目）。某个地址族的文件不存在或加载失败时记一条警告，之后该族一律无值，应用照常运行。
 

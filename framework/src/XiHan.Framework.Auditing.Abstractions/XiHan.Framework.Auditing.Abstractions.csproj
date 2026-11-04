@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Auditing.Abstractions</PackageId>
     <RootNamespace>XiHan.Framework.Auditing.Abstractions</RootNamespace>
-    <Description>XiHan Framework 审计契约（Ring 2）：Observe 阶段的审计中间件、调用上下文的动作 / 资源 / 细节扩展、查询契约 IAuditTrail 与选项。</Description>
+    <Description>曦寒框架审计抽象包</Description>
     <PackageTags>xihan;framework;auditing;audit-trail</PackageTags>
   </PropertyGroup>
 

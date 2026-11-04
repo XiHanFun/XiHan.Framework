@@ -1,6 +1,27 @@
 # XiHan.Framework.ObjectStorage.FileSystem
 
-文件系统对象存储（Ring 3，默认实现，`role: default`）。提供 `objectstorage.blob@1` 与 `objectstorage.multipart@1`（RFC-0012）；预签名地址装 `Hosting.AspNetCore` 的 `HostedBlobUrlFeature` 并 `MapXiHanBlobs()`，由宿主代收发。
+## 关于
+
+`XiHan.Framework.ObjectStorage.FileSystem` 是对象存储的默认实现：本地目录按容器与键存放内容与元数据，带总量与单对象配额。适用于开发、测试、单实例部署，以及挂了共享卷的小规模部署；多实例、对象量大或需要客户端直连时用 S3。
+
+## 主要特性
+
+* 原子替换写入，读取方要么看到旧对象要么看到完整的新对象
+* 不覆盖写入原子，多进程共享目录也只有一个成功
+* 总量与单对象配额，达到上限健康项 Degraded
+* 支持分片上传与命名实例
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.ObjectStorage.FileSystem --prerelease
+```
+
+### 使用
+
+启用后即可注入 `IBlobStore`：
 
 ```csharp
 builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
@@ -10,26 +31,26 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 { "XiHan": { "ObjectStorage": { "FileSystem": { "RootPath": "/var/lib/app/blobs", "MaxTotalBytes": 1073741824, "MaxBlobBytes": 268435456 } } } }
 ```
 
-```json
-{ "XiHan": { "ObjectStorage": { "Stores": { "archive": { "Provider": "filesystem", "RootPath": "/var/lib/app/archive" } } } } }
-```
+预签名地址需要装配 `Hosting.AspNetCore` 的 `HostedBlobUrlFeature` 并 `MapXiHanBlobs()`，由宿主代收发。
 
-## 规则
+## 主要类型
 
-- 布局：`<RootPath>/<container>/data/<key>` 存内容，`<RootPath>/<container>/meta/<key>.json` 存元数据；根目录默认 `<AppContext.BaseDirectory>/blobs`；容器目录按需创建。
-- 写入先落同目录的临时文件（名含 `.xihan-tmp-`），复制完成后原子替换，再写元数据；读取方要么看到旧对象要么看到完整的新对象。不覆盖的写入（含分片上传的完成）以不替换的移动原子占位：内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`，并发的不覆盖写入（含共享目录的多个进程）只有一个成功，不会先查再写让后写的静默覆盖（ADR-0089）。`ETag` 是内容的 SHA-256。
-- 配额：`MaxTotalBytes`（默认 1 GiB）与 `MaxBlobBytes`（默认 256 MiB），复制过程中逐段检查，超限的项返回 `OBJECTSTORAGE_UNAVAILABLE_002` 且不留下内容。启动时扫描目录得到已用量并清理残留临时文件，之后在进程内计量；多进程共享同一目录时配额只是近似。
-- 列举：遍历容器目录、序数排序、按前缀过滤，续页标记是上一页最后一个键；元数据缺失（外部直接放进目录的文件）按文件信息补一份；文件名还原出的键不符合键文法的（含保留前缀 `.xihan` 下的，ADR-0090）跳过。
-- 范围读取（ADR-0049）：打开内容文件后定位到起点，只交出该段。
-- 分片上传：每次上传一个目录 `<container>/uploads/<上传标识>/`，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256（同一编号重传先落新文件再删旧的）；完成时按清单拼接成对象同目录的临时文件再原子替换，计入配额后删掉上传目录。暂存的分片不计入配额，单片与拼接后的对象受 `MaxBlobBytes` 约束；`MultipartExpiryHours`（默认 168）之前发起、仍未完成的上传在启动扫描时清掉。上传标识只认本实现发出的 32 位小写十六进制。
-- 健康项 `objectstorage.filesystem.capacity`（存储自己实现，同步计算）：已用量达到 `MaxTotalBytes` 即 Degraded（`OBJECTSTORAGE_UNAVAILABLE_002`，消息键 `objectstorage.quota.reached`），否则 Ready。
-- 命名实例（ADR-0050）：特性总是登记 Provider `FileSystemBlobStoreProvider`（名 `filesystem`）——能力全部被 S3 等存储顶替时经 `IShadowAwareFeature.ConfigureShadowed` 只登记它，不读本配置节、不建缺省实例、不启动（ADR-0075）；设置的键同本配置节，`RootPath` 必填（不给就会和缺省实例落到同一目录），未知键报错；建出时即建目录并扫描用量，探测同上面的健康项口径。预签名用宿主签名器的 `ForStore(name)`。
-- 缺省实例的一致性（ADR-0075、ADR-0082）：缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，只约束被要求的契约（有特性依赖，或 `XiHan:Providers` / `UseProvider` 指定）。存储包被要求提供分片上传或预签名却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`（`BlobStoreSelection.ProvidesDefaultInstance`），应用启动失败；只是兜底选出的不失败，那个存储包按被顶替处理。与 S3 混装、以文件系统为缺省实例时指定 `XiHan:Providers:objectstorage.blob` = `xihan.objectstorage.filesystem` 即可；要缺省的分片上传再把 `objectstorage.multipart` 指定给本包，要缺省的预签名装配 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 设为 `xihan.hosting.blob-urls`。
+此库提供的主要类型：
 
-## 依赖方向
+* `FileSystemObjectStorageFeature`：特性入口
+* `FileSystemObjectStorageOptions`：根目录与配额
+* `FileSystemBlobStore`：`IBlobStore` 与 `IBlobMultipartStore` 的实现
 
-依赖 `XiHan.Framework.ObjectStorage.Abstractions`。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/objectstorage-filesystem)
 
-P3：可用，通过 `ObjectStorage.Conformance`（`BlobStoreConformance` 与 `BlobStoreProviderConformance`）。
+## 相关包
+
+* 对象存储契约：[XiHan.Framework.ObjectStorage.Abstractions](https://www.nuget.org/packages/XiHan.Framework.ObjectStorage.Abstractions)
+* S3 实现：[XiHan.Framework.ObjectStorage.S3](https://www.nuget.org/packages/XiHan.Framework.ObjectStorage.S3)
+* 宿主：[XiHan.Framework.Hosting.AspNetCore](https://www.nuget.org/packages/XiHan.Framework.Hosting.AspNetCore)
+
+## 反馈与贡献
+
+`XiHan.Framework.ObjectStorage.FileSystem` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

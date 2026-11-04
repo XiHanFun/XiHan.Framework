@@ -1,6 +1,26 @@
 # XiHan.Framework.Profiles.Full
 
-Full 组合包（Ring 6）：Standard + `ObjectStorage` / `Scheduling` / `Auditing` / `Workflow` 的抽象与默认实现 + AI 工具桥（`AI.Abstractions`）+ `Configuration` 抽象 + `Observability.OpenTelemetry` 与 `Observability.Host` + `Protocols.Http` / `.Grpc` / `.Mcp` / `.CloudEvents`。中后台与 SaaS 服务从这里开始：一份操作契约同时在 HTTP、gRPC、MCP 上服务，零外部基础设施即可运行。
+## 关于
+
+`XiHan.Framework.Profiles.Full` Full 组合包：在 Standard 之上加上对象存储、调度、审计、工作流的默认实现，AI 工具目录，OpenTelemetry 导出与运行信息，以及 HTTP、gRPC、MCP、CloudEvents 四种协议适配器。一份操作契约同时经多种协议服务，零外部基础设施即可运行，适合中后台与 SaaS 服务。
+
+## 主要特性
+
+* `UseFullProfile()` 一次装配以上全部能力
+* 默认实现都可被显式 Provider 顶替
+* 协议适配器只登记能力，端点仍要在宿主上映射
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Profiles.Full --prerelease
+```
+
+### 使用
+
+装配组合并映射各协议端点。
 
 ```csharp
 builder.AddXiHan(xihan => xihan
@@ -12,20 +32,26 @@ app.UseXiHan();
 app.MapXiHanHealth();
 app.MapXiHanOperations();   // HTTP
 app.MapXiHanOpenApi();      // /openapi.json
-app.MapXiHanGrpc();         // gRPC（需要 Kestrel 的 HTTP/2 端点）
-app.MapXiHanProto();        // /operations.proto
+app.MapXiHanGrpc();         // gRPC，需要 Kestrel 的 HTTP/2 端点
 app.MapXiHanMcp();          // /mcp
 app.MapXiHanCloudEvents();  // /events
 ```
 
-`UseFullProfile()` 在 Standard 之上装配：`FileSystemObjectStorageFeature`、`InMemorySchedulingFeature`、`InMemoryAuditingFeature`、`InMemoryWorkflowFeature`、`AIToolsFeature`、`OpenTelemetryObservabilityFeature`（没有配置端点就不导出）、`HostObservabilityFeature`（运行信息）、`HttpProtocolFeature`、`GrpcProtocolFeature`、`McpProtocolFeature`、`CloudEventsProtocolFeature`。默认实现都是 `role: default`：再 `UseFeature` 一个显式 Provider（如 `DatabaseLocalizationFeature`、S3 对象存储、Kubernetes Lease 领导选举）即顶替对应能力。远程配置与密钥（`Configuration.Abstractions`）没有默认 Provider：.NET 原生的文件与环境变量就是默认，按需在 `IConfigurationBuilder` 上 `AddXiHanRemoteConfiguration` / `AddXiHanSecrets`。
+## 主要类型
 
-管道在 Standard 之上多了 Observe 末尾的 `AuditMiddleware`（默认只记需要授权的操作：声明了权限码或策略名）。
+此库提供的主要类型：
 
-## 依赖方向
+* `FullProfile`：静态类，扩展方法 `UseFullProfile`
 
-组合包可引用任何环；被应用引用。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/profiles-full)
 
-P3：可用。
+## 相关包
+
+* 标准组合：[XiHan.Framework.Profiles.Standard](https://www.nuget.org/packages/XiHan.Framework.Profiles.Standard)
+* 最小组合：[XiHan.Framework.Profiles.Minimal](https://www.nuget.org/packages/XiHan.Framework.Profiles.Minimal)
+
+## 反馈与贡献
+
+`XiHan.Framework.Profiles.Full` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

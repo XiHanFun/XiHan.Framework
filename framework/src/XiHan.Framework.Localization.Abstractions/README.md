@@ -1,41 +1,65 @@
 # XiHan.Framework.Localization.Abstractions
 
-本地化契约（Ring 2）。能力 `localization.resources@1` 由 Provider 提供。默认语言英文（`en-US`），内置与 XiHan.UI 相同的 10 种区域（RFC-0010）。
+## 关于
 
-| 契约 | 用途 |
-| --- | --- |
-| `SupportedLocales` | 10 种内置区域：`en-US`（默认）、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`、`de-DE`、`es-ES`、`fr-FR`、`pt-BR`、`ru-RU` |
-| `LocaleName` | BCP 47 形态的区域名文法与规范化（`zh-cn` → `zh-CN`） |
-| `LocalizationOptions` | 默认区域、启用的区域列表、从候选（Baggage `xihan.locale`、`Accept-Language`）协商区域 |
-| `MessageCatalog` | 消息键 → 区域 → 模板的只读目录；`FromEmbeddedResources` 装载一个程序集嵌入的全部 `Localization/<区域>.json` |
-| `IMessageLocalizer` | 显式区域的解析入口：`Resolve` 给出文案与实际命中的区域，`Localize` 退回键与参数的描述；回退链：精确区域 → 同语言 → 默认区域 → `en-US` |
-| `LocalizedText` | 一次解析的文案与命中区域，宿主据此设置 `Content-Language` |
-| `context.Localize(key, arguments)` | 在调用上下文上按其区域解析（没有装配本地化时返回描述） |
-| `AddMessageCatalog` | 注册目录：同名目录合并为一份（内容相同不变，互为补充取并集），同一键同一区域的模板不同抛出 `LOCALIZATION_CONFLICT_001`（启动失败） |
+`XiHan.Framework.Localization.Abstractions` 定义本地化契约：区域名与内置的 10 种区域、按键与区域取模板的消息目录、显式区域的解析接口。不含本地化器实现，实现由 `Localization.InMemory` 或 `Localization.Database` 提供。
 
-消息键、模板语法、`key.L()` 与 `MessageScope` 在原语层：
+## 主要特性
+
+* 内置 `en-US`（默认）、`zh-CN`、`zh-TW`、`ja-JP`、`ko-KR`、`de-DE`、`es-ES`、`fr-FR`、`pt-BR`、`ru-RU`
+* `MessageCatalog` 装载程序集嵌入的 `Localization/<区域>.json`
+* 回退链：精确区域、同语言、默认区域、`en-US`
+* 从 Baggage 与 `Accept-Language` 协商调用方区域
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Localization.Abstractions --prerelease
+```
+
+### 使用
+
+一般由实现包或组合包带入；应用或能力包有自己的文案时才直接引用。定义键、嵌入语言文件并注册目录：
 
 ```csharp
-public static class OrdersMessages                     // 只定义键，文案在 Localization/<区域>.json
+public static class OrdersMessages
 {
-    public const string NotFound = "orders.order.not_found";
+    public const string NotFound = "orders.order.not_found";   // 文案在 Localization/<区域>.json
 }
-
-// Localization/en-US.json: { "orders.order.not_found": "Order '{id}' was not found." }
-// Localization/zh-CN.json: { "orders.order.not_found": "订单 '{id}' 不存在。" }
 
 services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("orders", typeof(OrdersMessages)));
 
-var text = OrdersMessages.NotFound.L(("id", id));      // 调用链里是调用方语言，其他地方是默认语言
-return Error.NotFound("ORDERS_NOTFOUND_001", OrdersMessages.NotFound, MessageArguments.Of(("id", id)));  // 宿主在 Egress 翻译
+var text = OrdersMessages.NotFound.L(("id", id));   // 调用链里是调用方语言
 ```
 
-区域名不合法没有单独的错误码：API 参数与选项里的是编程或配置错误，抛出 `ArgumentException`；语言文件名不合法归 `LOCALIZATION_VALIDATION_002`；Baggage 与 `Accept-Language` 里的在协商中忽略（RFC-0010，ADR-0070）。
+```xml
+<EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+```
 
-## 依赖方向
+配置键 `XiHan:Localization:DefaultLocale` 与 `XiHan:Localization:Locales`（逗号分隔）。
 
-依赖 `XiHan.Framework.Kernel`。被各子系统的抽象包、`Hosting.AspNetCore` 与 `Profiles.Minimal` 引用。
+## 主要类型
 
-## 状态
+此库提供的主要类型：
 
-P2：可用。
+* `SupportedLocales`、`LocaleName`：内置区域与区域名规范化
+* `LocalizationOptions`：默认区域、启用列表、区域协商
+* `MessageCatalog`：消息键、区域、模板的只读目录
+* `IMessageLocalizer`、`LocalizedText`：按显式区域解析
+* `AddMessageCatalog`：注册目录
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/localization-abstractions)
+
+## 相关包
+
+* 默认的内存实现：[XiHan.Framework.Localization.InMemory](https://www.nuget.org/packages/XiHan.Framework.Localization.InMemory)
+* 数据库实现：[XiHan.Framework.Localization.Database](https://www.nuget.org/packages/XiHan.Framework.Localization.Database)
+* 一致性套件：[XiHan.Framework.Localization.Conformance](https://www.nuget.org/packages/XiHan.Framework.Localization.Conformance)
+
+## 反馈与贡献
+
+`XiHan.Framework.Localization.Abstractions` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

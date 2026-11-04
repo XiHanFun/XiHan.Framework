@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Plugins.OutOfProcess</PackageId>
     <RootNamespace>XiHan.Framework.Plugins.OutOfProcess</RootNamespace>
-    <Description>XiHan Framework 进程外插件宿主（Ring 5）：按 xihan.plugin.v1 协议启动、握手、配置、监控与重启插件子进程，把插件声明的操作登记为代理操作经完整管道调用、把订阅的消息投递给插件，并为插件提供受权限约束的宿主回调。</Description>
+    <Description>曦寒框架进程外插件宿主</Description>
     <PackageTags>xihan;framework;plugins;out-of-process;grpc</PackageTags>
     <!-- Google.Protobuf 的描述符反射未声明裁剪兼容 -->
     <IsAotCompatible>false</IsAotCompatible>

@@ -149,6 +149,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 - 每个存储操作一个事务：读是快照，写在动作返回时提交，动作内任一非竞争失败整体回滚。管道失败（应用不在服务状态、仓储异常、提交失败）→ `SCHEDULING_UNAVAILABLE_003`，原错误在 `Inner`；调度语义的错误（作业不存在、运行不存在）原样返回。
 - 租约存储不可达 → `SCHEDULING_UNAVAILABLE_002`，不改变持有状态；持有与否按本地时钟与本地记录的到期时刻判断。
+- 管道失败 `SCHEDULING_UNAVAILABLE_003` 的 `reason` 是原错误码或异常消息。
+- 租约：不可重入；续约比对本次获取的令牌后推后到期时刻，令牌不符（已释放、已被接管）即失效并返回 `SCHEDULING_CONFLICT_002`；释放只删自己的行，幂等。
+- 失联恢复：失联节点运行中的记录结束时刻记为恢复当时；它抢占的触发器改回等待时清掉抢占者，没有下一次时刻的补为当时；作业已无占用的阻塞触发器改回等待；要求恢复的作业由引擎以恢复触发器重新入队。心跳超过 `NodeTimeout` 即失联，本节点自己不算。
+- 阻塞与完成都带并发戳改写作业行之后才继续，两边谁后提交谁看到对方（ADR-0062）；独占开始中「结束了但没清掉的占用」视为空闲。
+- 保存的并发戳留在取回的实例里，不与上一次读到的版本比对；同一批里同一标识后者覆盖前者；按标识批量查找每 1000 个一批，列表按全序排序分页读完。
+- 运行历史：状态集合是 `IN`，计划时刻按范围比较；运行中的按开始时刻升序；每个作业最近一次已结束的运行按结束时刻取；清理返回删除条数。可空时间列的条件不写 `!= null`（SQL 的 `NULL <= 值` 本就不成立）。
+- `JobEntity.Source`、`TriggerEntity.State` / `MisfirePolicy` / `RunAs`、`JobRunEntity.State` / `Trigger` 存枚举整数值，`Data` 是 JSON 文本；重试策略与执行时限在作业行上是五个可空列，触发器行与运行行另有可空的 `Attempt`（空按 1）与 `RetryOf`。
 - 保存是「新增或整体替换」：按标识批量取回已有行（每 1000 个一批），有的更新、没有的新增，与别的节点撞上的项重读后再写，最多三轮。
 - 运行历史的每个过滤项都是 SQL 条件，按计划时刻降序、同刻按写入序号降序分页；清理删除 `CompletedAt` 早于保留期的行。
 - 表结构由应用管理，`InitTables` 只用于开发与测试。`Data` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建（ADR-0072）：`IX_TriggerEntity_St_Lo_NeFiAt`（`(State, Local, NextFireAt)`，到期抢占的轮询）、`UX_TriggerEntity_Jo_Na`（`(Job, Name)` 唯一）、`IX_JobRunEntity_St_NoId`（`(State, NodeId)`，取消请求的轮询、失联节点的运行）、`IX_JobRunEntity_Jo_CoAt`（`(Job, CompletedAt)`，每个作业最近一次结束的运行）、`IX_JobRunEntity_CoAt`（`CompletedAt`，保留期清理）、`IX_JobRunEntity_ScAt`（`ScheduledAt`，运行记录倒序分页）；作业、节点、租约表只按主键读写。

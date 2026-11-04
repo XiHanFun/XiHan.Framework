@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Localization.Database</PackageId>
     <RootNamespace>XiHan.Framework.Localization.Database</RootNamespace>
-    <Description>XiHan Framework 数据库本地化 Provider：翻译以实体经仓储读写，启动后加载并按周期刷新，数据库里的翻译优先于嵌入的语言文件。</Description>
+    <Description>曦寒框架本地化的数据库提供程序</Description>
     <PackageTags>xihan;framework;localization;database;translations</PackageTags>
   </PropertyGroup>
 

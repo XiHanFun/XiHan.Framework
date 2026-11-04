@@ -1,32 +1,64 @@
 # XiHan.Framework.AI.Conformance
 
-AI 一致性套件（工具链，RFC-0022）：Provider 继承抽象测试类并实现夹具，通过全部用例。
+## 关于
 
-| 类型 | 用途 |
-| --- | --- |
-| `KnowledgeStoreConformance` + `KnowledgeStoreHost` | `IKnowledgeStore`：写入与按相似度排序、`top`、文档与元数据过滤、同 ID 重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索 |
-| `AIProviderConformance` + `AIProviderHost` | `IAIProviderCatalog` 上的聊天与嵌入 Provider：应答、嵌入维度与批量条数、缓存与 `Invalidate`、未知名字 `AI_NOTFOUND_001`；默认名——`StartAsync` 的夹具里被测 Provider 是聊天与嵌入的默认，`StartWithoutDefaultAsync` 的夹具没有默认（不写名字即 `AI_NOTFOUND_001`），能把两种默认分开的目录覆写 `StartWithSeparateDefaultsAsync`（`AIProviderHost.EmbeddingProviderName` 给出默认嵌入 Provider），不覆写时该例跳过 |
-| `HashingEmbeddingGenerator`、`HashingEmbeddingGeneratorFactory`、`HashingEmbeddingFeature` | 确定性的词袋哈希嵌入（`Kind = hashing`）与提供 `ai.embedding@1` 的特性，让知识库 Provider 的测试不依赖外部模型 |
+`XiHan.Framework.AI.Conformance` 是 AI 提供程序的一致性测试套件，给写提供程序的人用：继承抽象测试类并实现夹具，就能验证自己的知识库存储或模型提供程序与框架语义一致。
 
-下面是 `AI.VectorData` 自己的一致性测试的写法。`TestVectorStore` 是测试项目里写的进程内 `VectorStore` 替身（`test/XiHan.Framework.AI.VectorData.Tests/TestVectorStore.cs`），仓库不引用任何向量库连接器；验证真实连接器时换成它的 `VectorStore`，并在测试项目里引用连接器的包。
+## 主要特性
+
+* `KnowledgeStoreConformance`：验证 `IKnowledgeStore`
+* `AIProviderConformance`：验证聊天与嵌入提供程序
+* 确定性的哈希嵌入，测试不依赖外部模型
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.AI.Conformance --prerelease
+```
+
+### 使用
+
+在提供程序的测试项目里引用本包与 xUnit v3，继承基类并返回夹具：
 
 ```csharp
 public sealed class VectorDataKnowledgeStoreConformanceTests : KnowledgeStoreConformance
 {
     protected override async Task<KnowledgeStoreHost> StartAsync()
     {
-        var host = await TestHost.StartAsync(static b => b.UseFeature<HashingEmbeddingFeature>().UseFeature<VectorDataKnowledgeFeature>(),
-            [new("XiHan:AI:Providers:hash:Kind", "hashing"), new("XiHan:AI:Providers:hash:EmbeddingDimensions", "64"), new("XiHan:AI:Knowledge:Dimensions", "64")],
+        var host = await TestHost.StartAsync(static b => b
+                .UseFeature<HashingEmbeddingFeature>()
+                .UseFeature<VectorDataKnowledgeFeature>(),
+            [new("XiHan:AI:Providers:hash:Kind", "hashing"),
+             new("XiHan:AI:Providers:hash:EmbeddingDimensions", "64"),
+             new("XiHan:AI:Knowledge:Dimensions", "64")],
             services => services.AddSingleton<VectorStore>(new TestVectorStore()));
         return new KnowledgeStoreHost(host.Services.GetRequiredService<IKnowledgeStore>(), 64, host);
     }
 }
 ```
 
-## 依赖方向
+`TestVectorStore` 是测试项目里自写的进程内 `VectorStore` 替身；验证真实连接器时换成它的 `VectorStore`。
 
-依赖 `XiHan.Framework.AI.Abstractions` 与 xUnit v3。被各 Provider 的测试项目引用。
+## 主要类型
 
-## 状态
+此库提供的主要类型：
 
-P0：可用（Preview）。
+* `KnowledgeStoreConformance`、`KnowledgeStoreHost`
+* `AIProviderConformance`、`AIProviderHost`
+* `HashingEmbeddingFeature`、`HashingEmbeddingGenerator`：`Kind = hashing` 的确定性嵌入
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/conformance)
+* [一致性套件文档](https://framework.docs.xihanfun.com/packages/conformance)
+
+## 相关包
+
+* 抽象包：[XiHan.Framework.AI.Abstractions](https://www.nuget.org/packages/XiHan.Framework.AI.Abstractions)
+* 向量知识库提供程序：[XiHan.Framework.AI.VectorData](https://www.nuget.org/packages/XiHan.Framework.AI.VectorData)
+
+## 反馈与贡献
+
+`XiHan.Framework.AI.Conformance` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Localization.Conformance</PackageId>
     <RootNamespace>XiHan.Framework.Localization.Conformance</RootNamespace>
-    <Description>XiHan Framework 本地化一致性套件：任何 IMessageLocalizer 实现都必须通过的 xUnit 抽象测试类（回退链、按区域格式化、错误翻译、目录优先级）。</Description>
+    <Description>曦寒框架本地化一致性测试套件</Description>
     <PackageTags>xihan;framework;localization;conformance;xunit</PackageTags>
     <IsAotCompatible>false</IsAotCompatible>
     <!-- CA1707：用例名沿用测试项目的下划线分段约定 -->

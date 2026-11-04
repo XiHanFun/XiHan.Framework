@@ -1,27 +1,55 @@
 # XiHan.Framework.Security.Ip2Region
 
-`security.ip-region@1` 的 ip2region 离线库 Provider（Ring 3，`role: provider`）：按宿主提供的 xdb 文件把 IP 解析为国家、省份、城市与运营商，不访问网络。条件属性 `environment.geo.*`、登录日志与命中记录的归属地列用它（ADR-0047）。
+## 关于
+
+`XiHan.Framework.Security.Ip2Region` 是 IP 归属地的 ip2region 离线库提供程序：按宿主提供的 xdb 文件把 IP 解析为国家、省份、城市与运营商，不访问网络。登录日志与风控条件（`environment.geo.*`）等需要归属地的地方会用到它。
+
+## 主要特性
+
+* 同时支持 IPv4 与 IPv6
+* 回环、内网与查不到的地址返回无值，不抛异常
+* 某个地址族的库文件缺失时只记警告，应用照常运行
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Security.Ip2Region --prerelease
+```
+
+### 使用
+
+包里不带数据，xdb 文件由应用提供并随应用发布：
 
 ```csharp
 builder.AddXiHan(x => x.UseFeature<Ip2RegionSecurityFeature>());
 ```
 
+路径相对应用根目录，缺省如下：
+
 ```json
 { "XiHan": { "Security": { "Ip2Region": { "V4Database": "IpDatabases/ip2region_v4.xdb", "V6Database": "IpDatabases/ip2region_v6.xdb" } } } }
 ```
 
-## 语义
+使用时注入 `IIpRegionResolver`，调用 `Resolve(IPAddress)`。
 
-- `IIpRegionResolver.Resolve(IPAddress)` 返回 `Maybe<IpRegion>`：IPv4 映射的 IPv6 地址按 IPv4 查；回环与私有网段（IPv4 的 10/8、172.16/12、192.168/16，IPv6 的链路本地、站点本地、组播）、保留地址、查不到都是无值，不抛出。
-- xdb 文件由宿主提供（框架包不带数据，下载或生成见 ip2region 项目），相对路径按 `AppContext.BaseDirectory` 解析；缺省 `IpDatabases/ip2region_v4.xdb` 与 `IpDatabases/ip2region_v6.xdb`。某个地址族的文件不存在或加载失败时记一条警告，之后该族一律无值，应用照常运行。
-- 首次用到某个地址族时整库读进内存（`CachePolicy.Content`，线程安全，IPv4 约 11 MB、IPv6 约 37 MB），之后每次查询约百纳秒。
-- 记录格式兼容两版：新版"国家|省份|城市|运营商|国家代码"，旧版"国家|区域|省份|城市|运营商"；`0` 与空段为未知。
-- 不装本特性时容器里没有 `IIpRegionResolver`，调用方把归属地当作取不到。
+## 主要类型
 
-## 依赖方向
+此库提供的主要类型：
 
-依赖 `Security.Abstractions` 与 `IP2Region.Net`；公开面不暴露第三方类型。
+* `Ip2RegionSecurityFeature`：启用 ip2region 归属地的特性
+* `Ip2RegionResolver`：`IIpRegionResolver` 的实现
+* `Ip2RegionOptions`：配置项，对应 `XiHan:Security:Ip2Region`
 
-## 状态
+## 更多文档
 
-P5：可用。
+* [概念文档](https://framework.docs.xihanfun.com/packages/security-ip2region)
+
+## 相关包
+
+* 安全抽象（含 IP 归属地契约）：[XiHan.Framework.Security.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Security.Abstractions)
+
+## 反馈与贡献
+
+`XiHan.Framework.Security.Ip2Region` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

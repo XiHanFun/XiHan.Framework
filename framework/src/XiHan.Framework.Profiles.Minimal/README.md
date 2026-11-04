@@ -1,17 +1,51 @@
 # XiHan.Framework.Profiles.Minimal
 
-Minimal 组合包（Ring 6）：`Primitives` + `Kernel` + `Hosting.AspNetCore` + `Localization.InMemory`。一个包引用即得到内核管道、探针、Problem Details 与默认语言文案；没有任何业务子系统。
+## 关于
 
-```csharp
-builder.AddXiHan(xihan => xihan.UseMinimalProfile().UseFeature<MyFeature>());
+`XiHan.Framework.Profiles.Minimal` Minimal 组合包：一个包引用得到原语层、内核、ASP.NET Core 宿主与内存本地化，没有任何业务子系统。适合边缘服务、命令行工具与插件宿主。
+
+## 主要特性
+
+* 内核管道、健康探针与 Problem Details
+* 默认语言文案（缺省 `en-US`，内置 10 种区域）
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Profiles.Minimal --prerelease
 ```
 
-`UseMinimalProfile()` 装配 `InMemoryLocalizationFeature`：注册原语层与内核的语言文件目录并设置进程默认消息作用域，于是 `KernelMessages.ManifestEmpty.L()`、`Error.Message` 与 Problem Details 的 `detail` 都有文案（默认 `en-US`，内置 10 种区域，RFC-0010）。
+### 使用
 
-## 依赖方向
+`UseMinimalProfile()` 只装配内存本地化，其余能力按需 `UseFeature`。
 
-组合包可引用任何环；被应用引用。
+```csharp
+builder.AddXiHan(xihan => xihan
+    .UseMinimalProfile()
+    .UseFeature<MyFeature>());
 
-## 状态
+var app = builder.Build();
+app.UseXiHan();
+app.MapXiHanHealth();
+```
 
-P2：可用。
+## 主要类型
+
+此库提供的主要类型：
+
+* `MinimalProfile`：静态类，扩展方法 `UseMinimalProfile`
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/profiles-minimal)
+
+## 相关包
+
+* 标准组合：[XiHan.Framework.Profiles.Standard](https://www.nuget.org/packages/XiHan.Framework.Profiles.Standard)
+* 完整组合：[XiHan.Framework.Profiles.Full](https://www.nuget.org/packages/XiHan.Framework.Profiles.Full)
+
+## 反馈与贡献
+
+`XiHan.Framework.Profiles.Minimal` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

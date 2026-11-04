@@ -54,6 +54,7 @@ app.Run();
 
 - 装配的 `InMemoryLocalizationFeature` 是 `role: default`：再 `UseFeature` 一个显式的本地化 Provider（如 `Localization.Database`）即顶替它，被顶替的默认实现不装配、不启动。
 - 组合包不读配置，也不改任何默认值；各特性的配置节照常生效。
+- 有了默认本地化，`KernelMessages.ManifestEmpty.L()`、`Error.Message` 与 Problem Details 的 `detail` 都有文案，缺省区域 `en-US`，内置 10 种区域（RFC-0010）。
 
 ## 相关
 

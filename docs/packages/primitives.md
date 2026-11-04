@@ -115,6 +115,8 @@ var text = InventoryMessages.OutOfStock.L(("requested", 3), ("available", 1));
 | 消息键文法 | `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$`，首段是领域，最长 128 个字符（`MessageTemplate.MaxKeyLength`） |
 | Baggage 键 | 键名格式 `xihan.<name>`（`BaggageKeys.IsWellFormed`），登记表见 `BaggageKeys.Registered`；各载体入站只收已登记的键、出站只写已登记的键（`BaggageKeys.IsRegistered`），格式合法的其他键只在进程内可用；主体只传 ID，敏感信息不进 Baggage |
 | 清单校验 | `Manifest.Validate()` 校验字段格式与跨字段约束，失败为 `PRIMITIVES_VALIDATION_001` |
+| 消息文案 | `ManifestMessages` 与 `ResultMessages` 是本包的消息键常量，文案在 `Localization/<区域>.json`，只是嵌入资源，由 `Localization.InMemory` 代为装载；`IMessageResolver.Negotiate` 协商出的区域由内核按调用的 Baggage 安装，本地化特性设进程默认 |
+| 遮蔽 | `Redaction` 供选项与携带凭据的记录在 `ToString()` 里打印口令、密钥、令牌与整串连接串（RFC-0014） |
 
 | 错误码 | 情形 |
 | --- | --- |

@@ -72,6 +72,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 
 ## 行为与限制
 
+- 解析：第一个非选项记号是命令名；`--name value`、`--name=value`、无值的 `--flag` 记为 `true`；`--` 之后全是位置参数；载荷按 `--json`（须为对象）> `--data <file>`（可写 `@file`）> 字段选项的顺序取，字段选项重复时成数组。
 - 参数值不做类型转换，字段选项进载荷都是字符串；请求类型要从字符串读数字，序列化上下文需要 `NumberHandling = JsonNumberHandling.AllowReadingFromString`。
 - 保留选项 `json`、`data`、`authorization`、`tenant`、`correlation`、`locale`、`timeout`、`help` 不进载荷。
 - `--authorization` 与 `XIHAN_AUTHORIZATION` 只作用于 `invoke`；`mcp` 命令的调用以匿名主体执行。

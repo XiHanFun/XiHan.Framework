@@ -1,32 +1,56 @@
 # XiHan.Framework.Observability.Host
 
-运行信息（Ring 3，`role: default`，RFC-0023）。提供 `observability.host@1`：单例 `IHostMonitor` 读进程与所在主机的 CPU、内存、磁盘、网卡、GPU、主板与运行时长，供管理界面的服务监控使用。
+## 关于
+
+`XiHan.Framework.Observability.Host` 运行信息的默认实现：提供单例 `IHostMonitor`，读取进程与所在主机的 CPU、内存、磁盘、网卡、GPU、主板与运行时长，供管理界面的服务监控使用。
+
+## 主要特性
+
+* Linux 与 Windows 读全部项，其他系统读 BCL 能读到的部分
+* 不启动任何外部命令，单项读取失败不影响其他项
+* 后台采样 CPU 使用率与网卡速率，间隔可配置
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Observability.Host --prerelease
+```
+
+### 使用
+
+注册特性后即可注入 `IHostMonitor`。
 
 ```csharp
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<HostObservabilityFeature>());
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<HostObservabilityFeature>());
 ```
+
+可选配置采样间隔（秒，缺省 5，取值 (0, 3600]）：
 
 ```json
 { "XiHan": { "Observability": { "Host": { "SampleIntervalSeconds": 5 } } } }
 ```
 
-## 规则
+## 主要类型
 
-- 不启动外部命令：只读 BCL、`/proc` 与 `/sys`、`pci.ids`、注册表与 kernel32（`GetSystemTimes`、`GetLogicalProcessorInformation`、`K32GetPerformanceInfo`），不用 WMI、PowerShell、`dmidecode`、`lspci`、`nvidia-smi`、`top`。
-- 读不到的项为 `null`；单项失败不影响其他项，读取不抛出。
-- CPU 型号与核心、GPU、主板首次读取后缓存；内存、磁盘、网卡、运行时每次当场读。
-- 使用率与速率由后台采样器求两次采样之差：启动时同步采一次，之后每 `SampleIntervalSeconds`（默认 5，取值 (0, 3600]）采一次；读取只返回最近的值，不睡眠、不等待，启动后第一个间隔内为 `null`。
-- 平台：Linux 与 Windows 读全部项（各自的读取路径见 RFC-0023）；macOS 等只有 BCL 读得到的部分，CPU 型号与使用率、内存、GPU、主板为 `null`。
-- 已知限制：不启动外部命令就读不到的项（NVIDIA 显存与温度、GPU 使用率与显示模式、Windows 主板序列号等）列在 RFC-0023。
+此库提供的主要类型：
 
-## 测试
+* `HostObservabilityFeature`：能力包入口，启动时采第一次样并起后台采样
+* `HostObservabilityOptions`：采样间隔选项
+* `IHostMonitor`：读取接口，来自 `Observability.Abstractions`
 
-Linux 的读取路径以根目录为参数，夹具用例在任何系统上运行；真实机器上的用例分 Windows 与 Linux，只在对应系统上运行。
+## 更多文档
 
-## 依赖方向
+* [概念文档](https://framework.docs.xihanfun.com/packages/observability-host)
 
-依赖 `XiHan.Framework.Kernel` 与 `XiHan.Framework.Observability.Abstractions`，没有第三方包。
+## 相关包
 
-## 状态
+* 抽象与记录类型：[XiHan.Framework.Observability.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Observability.Abstractions)
+* 指标与链路导出：[XiHan.Framework.Observability.OpenTelemetry](https://www.nuget.org/packages/XiHan.Framework.Observability.OpenTelemetry)
 
-P5：可用。
+## 反馈与贡献
+
+`XiHan.Framework.Observability.Host` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

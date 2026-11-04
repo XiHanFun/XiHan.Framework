@@ -78,6 +78,7 @@ app.Run();
 
 - 内存默认实现都有容量上限，进程重启即丢数据，适合开发、测试与单进程场景；上线前按需换 Provider，各默认实现的容量与语义见其包页。
 - `Security.InMemory` 从配置装载 ApiKey 主体与授予，配置里的密钥只用开发值。
+- 宿主在 Ingress 把 `Accept-Language` 协商进 Baggage `xihan.locale`，在 Egress 用 `IMessageLocalizer` 把失败结果翻译成 Problem Details 的 `detail`，缺省英文，内置 10 种语言（RFC-0010）。
 - 组合包不读配置，也不改任何默认值；各特性的配置节照常生效。
 
 ## 相关

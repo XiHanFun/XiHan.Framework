@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageId>XiHan.Framework.Persistence.Generators</PackageId>
     <RootNamespace>XiHan.Framework.Persistence.Generators</RootNamespace>
-    <Description>XiHan Framework 的持久化源生成器：从实现 IEntity&lt;TKey&gt; 的实体类生成仓储登记、EF Core 实体登记与软删除 / 租户过滤规约。</Description>
+    <Description>曦寒框架持久化源生成器</Description>
     <PackageTags>xihan;framework;generators;roslyn;persistence;repository</PackageTags>
     <!-- 生成器以 netstandard2.0 发布，不适用 AOT 与可空注解以外的运行时属性 -->
     <IsAotCompatible>false</IsAotCompatible>

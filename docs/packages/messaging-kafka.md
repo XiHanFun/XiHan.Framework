@@ -155,6 +155,7 @@ public sealed class LedgerStream(IMessagePublisher publisher, IMessageReplayer r
 - 原位重试会阻塞所在分区：一条消息重试期间，同分区后面的消息等待；重试之间不等待。
 - 重放与重试都是有意的重复投递，处理器按 `Id` + `Source` 去重。
 - 主题不存在（ADR-0079、ADR-0085）：集群开着自动建主题时由 broker 建出，没人订阅的主题里的消息只留到保留期；关了自动建主题时发布约 30 秒后失败、订阅一直等、死信发布回退重投，要预建主题，清单见[主题](#主题)。
+- 测试：重投路径（`KafkaRedeliveryTests`）与广播（`KafkaBroadcastTests`）用打桩的生产者与消费者覆盖，不需要 Kafka。
 - 测试：一致性套件（含 `MessageStreamConformance` 的同键有序与按时刻重放）需要真实 Kafka，设置环境变量 `XIHAN_TEST_KAFKA`（如 `localhost:9092`）后运行，未设置时跳过；本地可以用单节点 KRaft 容器：
 
 ```bash

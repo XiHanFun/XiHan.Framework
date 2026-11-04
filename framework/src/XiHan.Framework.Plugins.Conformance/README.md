@@ -1,58 +1,52 @@
 # XiHan.Framework.Plugins.Conformance
 
-插件协议 `xihan.plugin.v1` 的黑盒一致性套件：进程外载体继承 `PluginProtocolConformance`（RFC-0017，`spec/plugin/invocation.md` §7），Wasm 载体继承 `WasmPluginConformance`（RFC-0018，`spec/plugin/wasm.md` §7）。
+## 关于
 
-## 进程外载体
+`XiHan.Framework.Plugins.Conformance` 插件协议 `xihan.plugin.v1` 的黑盒一致性套件，给写插件的人用：以插件的构建产物目录为输入，任何语言写的插件都可以用它验证。
 
-任何语言写的插件都以其构建产物目录继承 `PluginProtocolConformance` 运行，套件以宿主身份启动进程并核对：
+## 主要特性
 
-1. 握手行合法、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅在清单声明范围内；清单不写 `contributes.pipeline`（进程外插件不能贡献中间件，宿主在发现时拒绝）。
-2. 没有共同协议版本时以 `FailedPrecondition` 拒绝。
-3. `Configure` 与 `Start` 成功；`Health` 与 `WatchHealth` 报可服务状态且健康项都已在清单声明；`Stop` 成功后进程在宽限内退出。
-4. 未声明的操作以 gRPC `Unimplemented` 结束。
-5. 每个声明的一元操作都返回带 `status` 的应答：成功时载荷是 JSON，失败时错误码合法。
-6. 向声明的订阅投递消息得到确认。
-7. stdin 关闭后进程自行退出。
+* `PluginProtocolConformance`：进程外插件，套件以宿主身份启动进程并核对握手、生命周期、操作、订阅与健康
+* `WasmPluginConformance`：Wasm 插件，套件在进程内实例化模块并核对 ABI、操作、中间件与陷阱后重建
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Plugins.Conformance --prerelease
+```
+
+### 使用
+
+测试项目继承套件基类并指向插件目录，全部用例随之执行。Wasm 套件在 Windows 上要求测试项目设 `<CETCompat>false</CETCompat>`。
 
 ```csharp
 public sealed class EchoPluginConformanceTests : PluginProtocolConformance
 {
     protected override string PluginDirectory => "<EchoPlugin 的输出目录>";
     protected override IReadOnlySet<string> ExcludedOperations => new HashSet<string> { "echoes.crash" };
-    protected override IReadOnlyDictionary<string, string> SampleRequests => new Dictionary<string, string> { ["echoes.create"] = """{"text":"conformance"}""" };
 }
 ```
 
-可覆写 `Timeout`、`ConfigurationJson`、`SampleRequests`（没有示例的操作以 `{}` 调用）与 `ExcludedOperations`（故意崩溃或依赖宿主回调的操作）。套件不提供宿主回调服务，`Host.Invoke` / `Host.Publish` 由 `Plugins.OutOfProcess` 的测试覆盖。
+## 主要类型
 
-## Wasm 载体
+此库提供的主要类型：
 
-以含清单与模块文件的目录继承 `WasmPluginConformance`，套件在进程内实例化模块并核对（Windows 上测试项目须设 `<CETCompat>false</CETCompat>`：套件会故意触发陷阱，影子栈强制时整个进程会 fail-fast，套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝）：
+* `PluginProtocolConformance`：进程外插件套件
+* `WasmPluginConformance`：Wasm 插件套件，`TrapOperation` 指定故意陷阱的操作
+* `SampleRequests`、`ExcludedOperations`：为操作提供样例请求、排除故意崩溃的操作
 
-1. 模块是 reactor、导出表与导入表符合 ABI v1、`xihan_abi_version` 返回 1。
-2. 握手协商出版本 1、清单与文件一致、操作与订阅在清单声明范围内、没有流式操作；声明了订阅 / 中间件就导出了对应函数。
-3. `xihan_configure` / `xihan_start` 成功，`xihan_health` 报可服务状态且健康项已在清单声明，`xihan_stop` 成功。
-4. 未声明的操作以 `KERNEL_NOTFOUND_001` 的失败状态应答。
-5. 每个声明的操作都返回带 `status` 的应答。
-6. 向声明的订阅投递消息得到确认。
-7. 每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果），在 after 阶段也应答。
-8. 陷阱之后从同一个模块重建实例：重走握手的声明与首次相同，配置、启动之后报可服务状态并照常应答（`wasm.md` §5）。用 `TrapOperation` 指定故意陷阱的操作；不指定时跳过。
+## 更多文档
 
-```csharp
-public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
-{
-    protected override string PluginDirectory => "<EchoWasmPlugin 的 plugin 目录>";
-    protected override IReadOnlySet<string> ExcludedOperations => new HashSet<string> { "echoes.trap", "echoes.spin" };
-    protected override string? TrapOperation => "echoes.trap";
-}
-```
+* [概念文档](https://framework.docs.xihanfun.com/packages/conformance)
 
-套件提供的宿主导入只有 `xihan.log`；`xihan.invoke` / `xihan.publish` 在没有宿主容器时返回不可用状态。
+## 相关包
 
-## 依赖方向
+* 进程外插件宿主：[XiHan.Framework.Plugins.OutOfProcess](https://www.nuget.org/packages/XiHan.Framework.Plugins.OutOfProcess)
+* Wasm 插件宿主：[XiHan.Framework.Plugins.Wasm](https://www.nuget.org/packages/XiHan.Framework.Plugins.Wasm)
+* 协议类型：[XiHan.Framework.Plugins.Protocol](https://www.nuget.org/packages/XiHan.Framework.Plugins.Protocol)
 
-依赖 `XiHan.Framework.Plugins.Protocol`（协议桩、握手核对）、`XiHan.Framework.Plugins.OutOfProcess`（进程启动）、`XiHan.Framework.Plugins.Wasm`（模块校验与实例）与 xunit 的断言与扩展核心包。
+## 反馈与贡献
 
-## 状态
-
-P4-04：可用；`samples/EchoPlugin` 通过进程外用例，`samples/EchoWasmPlugin` 通过 Wasm 用例。
+`XiHan.Framework.Plugins.Conformance` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

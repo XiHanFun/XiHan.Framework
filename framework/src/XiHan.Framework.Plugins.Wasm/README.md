@@ -1,56 +1,59 @@
 # XiHan.Framework.Plugins.Wasm
 
-Wasm 插件宿主（Ring 5，`isolation: wasm`，RFC-0018，**Experimental**）。插件是 WASI preview 1 的 reactor 核心模块，宿主用 wasmtime 在进程内沙箱里运行，消息与进程外插件相同（`xihan.plugin.v1`），编码为 proto3 JSON，经导出函数 + 线性内存传递（`spec/plugin/wasm.md`）。Rust 示例见 `samples/EchoWasmPlugin`。
+## 关于
+
+`XiHan.Framework.Plugins.Wasm` Wasm 插件宿主（实验性）：插件是 WASI preview 1 的 reactor 模块，宿主用 wasmtime 在进程内沙箱里运行，限制内存、栈与 CPU 时间，没有网络，文件系统只有映射的目录。适合不受信任的插件，也是唯一支持插件贡献管道中间件的载体。
+
+## 主要特性
+
+* 沙箱隔离：内存与栈上限、按时限强制中断
+* 插件可贡献管道中间件，运行期可加载与卸载
+* 陷阱或超时后自动退避重建实例
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Plugins.Wasm --prerelease
+```
+
+### 使用
+
+注册特性并配置插件目录。Windows 上宿主可执行项目要关闭 CET 兼容，否则 wasmtime 的陷阱会让进程退出。
 
 ```csharp
-builder.AddXiHan(x => x.UseStandardProfile().UseFeature<WasmPluginsFeature>());
+builder.AddXiHan(x => x
+    .UseStandardProfile()
+    .UseFeature<WasmPluginsFeature>());
 ```
 
 ```xml
-<!-- 宿主可执行项目（Windows）：wasmtime 的陷阱处理与 .NET 9 起默认开启的 CET 影子栈冲突 -->
 <CETCompat>false</CETCompat>
 ```
 
 ```json
-{
-  "XiHan": {
-    "Plugins": {
-      "Wasm": {
-        "Directories": ["plugins/echo-wasm"],
-        "Grants": { "xihan.samples.echowasm": ["capability:kernel.pipeline"] },
-        "Mounts": { "xihan.samples.echowasm": { "/data": "C:/plugins/echo-wasm/data" } },
-        "MemoryLimitBytes": 67108864, "StackLimitBytes": 1048576, "EpochIntervalMilliseconds": 10,
-        "CallTimeoutSeconds": 30, "MiddlewareTimeoutMilliseconds": 100, "HealthIntervalSeconds": 10, "HealthFailures": 3,
-        "RestartLimit": 5, "RestartWindowSeconds": 600
-      }
-    }
-  }
-}
+{ "XiHan": { "Plugins": { "Wasm": { "Directories": ["plugins/echo-wasm"] } } } }
 ```
 
-清单的 `contributes.config` 声明 `XiHan:Plugins:Wasm`。宿主另读 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域），属于本地化领域，不在清单里（RFC-0002「配置节」）；每个插件收到的是它自己清单声明的配置节。
+## 主要类型
 
-## 责任边界
+此库提供的主要类型：
 
-- 配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`、校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予）、编译模块并校验导出 / 导入表、实例化并 `xihan_handshake`、核对清单。声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码连同代理操作一次登记（ADR-0080）（权限码进 `PermissionRegistry`、同组操作可以引用；声明的码与已登记的重复 `KERNEL_SECURITY_001`、操作重名或引用了未登记的权限码，全组不进，配置阶段即启动失败；操作的 `policy` 在授权能力启动时核对、之后登记的在登记时核对，`SECURITY_VALIDATION_004`），消息目录接进本地化器，订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（`handle` 阶段不允许），`before` / `after` 按 RFC-0004 参与排序（先按本插件的中间件名解析，否则作为管道里的中间件名，`spec/plugin/wasm.md` §6）。发现失败的插件以 `Failed` 留在宿主里：清单、权限或模块文件不合格的不实例化，同样可描述、是健康条目（清单读不出来时为 `plugins.<目录名>`），宿主附着到容器时逐个记错误日志（`spec/plugin/lifecycle.md` §1）。
-- 启动阶段启动 `onStartup` 的插件（`xihan_configure` → `xihan_start` → 健康轮询）；`onOperation:` / `onEvent:` 的插件在握手后丢弃实例，首次调用时再实例化。
-- 运行期：每插件一个实例、调用串行；调用在上下文剩余时间（没有时取 `CallTimeout`）内经 epoch 中断强制停止；回调 `xihan.invoke` / `xihan.publish` 以插件身份执行，所需权限须在清单声明且已授予，受当前调用的截止时间与取消约束（新调用的截止时间取请求元数据与当前调用中较早者，发布随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一执行线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
-- 中间件：进入下游前后各调一次 `xihan_middleware`，before 可短路（必须给出失败）或改写已登记 Baggage，after 只观察；陷阱、超时或无响应都关闭调用（`PLUGINS_UNAVAILABLE_001`）。
-- 陷阱、超时与无响应把插件记为 `Failed` 并按 1 秒起翻倍、上限 60 秒的退避重建实例，`RestartWindow` 内超过 `RestartLimit` 次后保持 `Failed`；每个插件是应用的健康条目 `plugins.<清单 ID>`。
-- 沙箱：线性内存与栈上限、无网络、文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写到工作目录的 `stdout.log` / `stderr.log`，日志应走 `xihan.log`。
-- 宿主进程（Windows）：影子栈强制时第一次陷阱就让整个进程 fail-fast（退出码 `0xC0000409`），所以宿主、测试与一致性套件的可执行项目都要设 `<CETCompat>false</CETCompat>`；创建宿主时检测进程的影子栈策略，强制时以 `PLUGINS_UNAVAILABLE_003` 抛出 `FrameworkException`。
-- `IPluginHost.LoadAsync` / `UnloadAsync` 可在运行期加载与卸载插件，含贡献中间件的插件（ADR-0088）。加载时代理操作、声明的权限码与中间件一次登记、全进或全不进：中间件经 `PipelineBuilder.UseOwned` 成组登记并立即核对次序约束，不过（`KERNEL_PIPELINE_003` / `KERNEL_PIPELINE_001`）就整个插件不登记、管道不变。卸载先按归属（清单 ID）把中间件撤出管道（`PipelineBuilder.RemoveOwnedBy`），再撤回代理操作与声明的权限码、停止实例，等在途调用离开后释放（ADR-0085、ADR-0088）：之后开始的调用不再经过它的中间件、调用它的操作返回 `KERNEL_NOTFOUND_001`；卸载之前已经进入管道的调用按进入时的管道走完，插件停止后钩子失败即关闭（`PLUGINS_UNAVAILABLE_001`）；别的中间件以次序约束引用了它的中间件时卸载被拒（`KERNEL_PIPELINE_003`），什么都不撤。同一插件可以直接再加载、中间件回到原来的位置，不用重启宿主。
+* `WasmPluginsFeature`：特性入口
+* `WasmPluginHost`：实现 `IPluginHost`，`Describe` 返回诊断快照
+* `WasmPluginOptions`：目录、授予、挂载、资源上限与超时、重启策略
 
-不负责：组件模型 / WIT（ABI v2）、流式操作、多实例并发、`net.outbound`。
+## 更多文档
 
-## 事件订阅
+* [概念文档](https://framework.docs.xihanfun.com/packages/plugins-wasm)
 
-与进程外插件相同：握手的 `Subscription.mode` 为空或 `competing` 是竞争消费，`broadcast` 是广播（每个宿主实例都交给自己的插件实例，RFC-0009「订阅方式」）；宿主只把投递交给以同一方式订阅了主题的插件，`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
+## 相关包
 
-## 依赖方向
+* 协议类型：[XiHan.Framework.Plugins.Protocol](https://www.nuget.org/packages/XiHan.Framework.Plugins.Protocol)
+* 进程外插件宿主：[XiHan.Framework.Plugins.OutOfProcess](https://www.nuget.org/packages/XiHan.Framework.Plugins.OutOfProcess)
+* 一致性套件：[XiHan.Framework.Plugins.Conformance](https://www.nuget.org/packages/XiHan.Framework.Plugins.Conformance)
 
-依赖 `Plugins.Protocol`、`Kernel`、`Messaging.Abstractions`、`Localization.Abstractions` 与 NuGet `Wasmtime`（含各平台原生库）。非 AOT。
+## 反馈与贡献
 
-## 状态
-
-P4-03：Experimental；`samples/EchoWasmPlugin` 通过宿主测试与协议一致性套件。
+`XiHan.Framework.Plugins.Wasm` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

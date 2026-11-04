@@ -1,26 +1,59 @@
 # XiHan.Framework.MultiTenancy.Abstractions
 
-多租户契约（Ring 2）。能力 `multitenancy.context@1`（租户解析、校验与存储）与 `multitenancy.sharding@1`（按租户选择数据连接）由 Provider 提供。
+## 关于
 
-| 契约 | 用途 |
-| --- | --- |
-| `TenantInfo`、`TenantIdentifier` | 租户信息（ID、显示名、是否启用、属性）与 ID 文法 |
-| `ITenantStore` | 按 ID 查找与枚举租户；Provider 实现它 |
-| `ITenantResolver`、`ClaimTenantResolver`、`BaggageTenantResolver` | 从调用上下文解析租户 ID 候选；按注册顺序，先解析出的生效 |
-| `MultiTenancyOptions` | 默认租户、是否必须有租户、是否核对存储、租户声明类型、分片缓存容量 |
-| `TenantResolutionMiddleware` | Tenant 阶段：解析 → 校验格式 → 核对存储（存在且启用）→ 写入安全上下文 → 解析分片写入调用上下文（装配了解析器时；失败即调用失败） |
-| `ITenantShardResolver`、`TenantShard`、`TenantShardKeys`、`TenantStoreShardResolver` | 租户分片：解析器契约（`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate`）、分片（连接串、小写提供者名、透传属性）、租户属性键（`ConnectionString`、`DatabaseProvider`、`Shard.*`）与从 `ITenantStore` 推出分片的默认解析器（按租户有界缓存） |
-| `TenantShardInvocationExtensions`、`TenantShardBinding` | 调用上下文里的分片（`GetTenantShard` / `SetTenantShard`）与持久化 Provider 在作用域内用的分片连接绑定（主值是分片连接串，属性并入分片属性与 `tenant` / `provider`；先看 `TenantShardScope` 的显式绑定，再看当前调用） |
-| `TenantShardScope` | 管道外的作用域显式绑定分片（ADR-0057）：`BindTenantAsync(tenantId)` 经分片解析器解析并绑定（不看租户是否启用、不受应用状态影响，共库租户不绑定），`Bind(shard)` 直接绑定；须在作用域首次创建持久化客户端之前，之后再绑定或改绑抛出 `InvalidOperationException`。多租户 Provider 登记为作用域服务 |
+`XiHan.Framework.MultiTenancy.Abstractions` 定义多租户契约：租户信息与存储、租户解析、Tenant 阶段中间件，以及按租户选择数据连接的分片解析。不含存储实现，由内存或数据库提供程序提供。
 
-解析顺序由 Provider 注册决定，默认先主体声明后 Baggage。Baggage 里的租户只来自进程内建上下文的地方（消息派发、作业、工作流、命令行宿主），HTTP、gRPC、MCP 的网络入站不收这个键（ADR-0121），这些调用方的租户只来自认证；CloudEvents 入站的 `xihantenant` 经消息派发进来，由宿主给端点加的权限把关。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
+## 主要特性
 
-分库：租户属性 `ConnectionString` 有值即分库，Tenant 阶段解析一次写进调用上下文，持久化 Provider（SqlSugar、EF Core）在作用域内按分片选连接；解析失败返回 `MULTITENANCY_UNAVAILABLE_002`，不降级为共库。租户连接变更后调用 `ITenantShardResolver.Invalidate`。分片库的表结构由应用管理。
+* 从已认证主体的声明与 Baggage 解析租户，按注册顺序先到先得
+* Tenant 阶段校验格式、核对存储（存在且启用）并写入安全上下文
+* 租户属性 `ConnectionString` 有值即分库，解析失败不降级为共库
+* `TenantShardScope` 在管道外显式绑定分片
 
-## 依赖方向
+## 如何使用
 
-依赖 `XiHan.Framework.Kernel`。被 `MultiTenancy.InMemory` 等实现包引用。
+### 安装
 
-## 状态
+```bash
+dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
+```
 
-P2：可用；P5 加入分片。
+### 使用
+
+一般由实现包带入；写自定义租户存储或需要在管道外绑定分片时直接引用。当前租户经安全上下文读取：
+
+```csharp
+var tenant = context.GetSecurity().Tenant;
+
+// 管道外（如后台任务）绑定租户的分库
+await shardScope.BindTenantAsync("acme", cancellationToken);
+```
+
+```json
+{ "XiHan": { "MultiTenancy": { "RequireTenant": false, "ShardCacheSize": 10000 } } }
+```
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `TenantInfo`：租户 ID、显示名、启用标记与属性
+* `ITenantStore`：按 ID 查找与枚举租户
+* `ITenantResolver`：从调用上下文解析租户 ID
+* `MultiTenancyOptions`：默认租户、是否必须有租户、是否核对存储
+* `ITenantShardResolver`、`TenantShardScope`：租户分片
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/multitenancy-abstractions)
+
+## 相关包
+
+* 内存实现：[XiHan.Framework.MultiTenancy.InMemory](https://www.nuget.org/packages/XiHan.Framework.MultiTenancy.InMemory)
+* 数据库实现：[XiHan.Framework.MultiTenancy.Database](https://www.nuget.org/packages/XiHan.Framework.MultiTenancy.Database)
+* 一致性套件：[XiHan.Framework.MultiTenancy.Conformance](https://www.nuget.org/packages/XiHan.Framework.MultiTenancy.Conformance)
+
+## 反馈与贡献
+
+`XiHan.Framework.MultiTenancy.Abstractions` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

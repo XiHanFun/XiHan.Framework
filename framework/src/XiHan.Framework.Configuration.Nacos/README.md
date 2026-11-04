@@ -1,40 +1,58 @@
 # XiHan.Framework.Configuration.Nacos
 
-`configuration.remote@1` 的 Nacos Provider（Ring 3，`role: provider`，RFC-0014「Nacos Provider」）。直接用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），不依赖 SDK。
+## 关于
+
+`XiHan.Framework.Configuration.Nacos` 是远程配置的 Nacos 提供程序，直接使用 Nacos 的 HTTP 配置接口（v1，Nacos 2.x 兼容），不依赖 SDK。把 Nacos 的 `dataId` 挂到配置树上，变化时自动重载。
+
+## 主要特性
+
+* 长轮询感知变化，整份配置替换并触发重载
+* 支持 `Json` 与 `Properties` 格式
+* 支持用户名密码登录与多个服务地址按序尝试
+* 地址与凭据可来自资源绑定 `nacos`
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Configuration.Nacos --prerelease
+```
+
+### 使用
+
+在构建配置时挂接；`dataId` 为 `orders` 的内容出现在 `Orders` 节下：
 
 ```csharp
-// 配置构建期：把 dataId "orders" 挂到 Orders 节下，每 15 秒以已知版本长轮询一次
 builder.Configuration.AddXiHanNacos(
-    new NacosOptions { ServerAddresses = ["http://localhost:8848"], Username = "nacos", Password = "nacos" },
+    new NacosOptions { ServerAddresses = ["http://localhost:8848"], Username = "nacos", Password = "<password>" },
     new RemoteConfigurationOptions("orders") { Prefix = "Orders", PollInterval = TimeSpan.FromSeconds(15) });
 
-// 运行期：登记 IRemoteConfigurationClient 供其他组件取用
+// 需要在容器里取用 IRemoteConfigurationClient 时
 builder.AddXiHan(x => x.UseFeature<NacosConfigurationFeature>());
 ```
 
 ```json
-{ "XiHan": { "Configuration": { "Nacos": { "ServerAddresses": "http://nacos-a:8848,http://nacos-b:8848", "Group": "DEFAULT_GROUP", "Tenant": "", "Username": "nacos", "Password": "nacos", "Format": "Json", "LongPollTimeoutSeconds": 30, "RequestTimeoutSeconds": 10 } } } }
+{ "XiHan": { "Configuration": { "Nacos": { "ServerAddresses": "http://nacos-a:8848,http://nacos-b:8848", "Group": "DEFAULT_GROUP", "Format": "Json" } } } }
 ```
 
-服务地址来自绑定 `nacos`（`configuration:remote`）的主值，没有绑定时取 `XiHan:Configuration:Nacos:ServerAddresses`：两者都给时绑定优先；绑定的属性 `username` / `password` 各自覆盖 `Username` / `Password`；分组、格式等其余键照读配置节，空白的主值与属性不算给出（RFC-0016「资源绑定与配置节」）。地址的路径是 Nacos 的上下文路径（`server.servlet.contextPath`，经网关转发时连同网关前缀），接口路径接在它后面；没有路径时用缺省的 `/nacos`，`http://host:8848` 与 `http://host:8848/nacos` 等价，改过上下文路径写 `http://host:8848/config`，经网关写 `http://gateway/config-center/nacos`。上下文路径设成根的 Nacos 不受支持。
+## 主要类型
 
-## 语义
+此库提供的主要类型：
 
-- 命名空间参数即 Nacos 的 `dataId`；`Group`（默认 `DEFAULT_GROUP`）与 `Tenant`（Nacos 命名空间 ID，默认公共）来自选项。
-- 版本是内容的 MD5（小写十六进制），与 Nacos 监听接口的约定一致：取配置响应的 `Content-MD5` 头原文（它是内容头），没有这个头时按服务端的算法自己算（内容按 UTF-8 编码的 MD5），不换成别的摘要，监听才认得。`knownVersion` 非空时先以该 MD5 长轮询（`LongPollTimeout`，默认 30 秒）：服务端报告变化才取整份文档，窗口到期或取消返回无值。
-- 格式 `Format`：`Json`（默认，根须是对象，嵌套对象按 `A:B`、数组按下标展平，`null` 保留为空值）或 `Properties`（`a.b=c` → `a:b`，`#` / `!` 行是注释）；不合法返回 `CONFIGURATION_VALIDATION_001`。
-- `AddXiHanNacos` 经 `AddXiHanRemoteConfiguration` 的工厂重载自建客户端（自带 `HttpClient`），每个 Provider 一个，配置根释放时一并释放；特性登记进容器的客户端归容器。
-- 配置了 `Username` / `Password` 时先登录取 `accessToken`，到期前一分钟自动续；多个地址按序尝试，连接失败或超时换下一个。
-- `dataId` 不存在 → `CONFIGURATION_NOTFOUND_001`；不可达、超时、非 2xx → `CONFIGURATION_UNAVAILABLE_001`。
+* `AddXiHanNacos`：配置源扩展方法
+* `NacosOptions`：服务地址、分组、命名空间、格式、凭据与超时
+* `NacosConfigurationFeature`：登记 `IRemoteConfigurationClient`
 
-## 测试
+## 更多文档
 
-一致性套件需要真实 Nacos：设置环境变量 `XIHAN_TEST_NACOS`（如 `http://localhost:8848`）后运行，开启了鉴权的服务再设 `XIHAN_TEST_NACOS_USERNAME` / `XIHAN_TEST_NACOS_PASSWORD`；未设置时跳过。本地 `docker run -d -p 8848:8848 -e MODE=standalone nacos/nacos-server:v2.5.1` 即可（3.x 镜像默认开启鉴权且 v1 接口不再可用，未验证）。
+* [概念文档](https://framework.docs.xihanfun.com/packages/configuration-nacos)
 
-## 依赖方向
+## 相关包
 
-依赖 `Configuration.Abstractions`、`Kernel`（绑定与清单）与 `Microsoft.Extensions.Http`。
+* 配置抽象：[XiHan.Framework.Configuration.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Configuration.Abstractions)
+* 一致性套件：[XiHan.Framework.Configuration.Conformance](https://www.nuget.org/packages/XiHan.Framework.Configuration.Conformance)
 
-## 状态
+## 反馈与贡献
 
-P5：可用，通过 `Configuration.Conformance` 套件（Nacos 2.5.1）。
+`XiHan.Framework.Configuration.Nacos` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Persistence.EntityFrameworkCore</PackageId>
     <RootNamespace>XiHan.Framework.Persistence.EntityFrameworkCore</RootNamespace>
-    <Description>XiHan Framework 持久化的 Entity Framework Core Provider：以应用自有的 DbContext 实现仓储与事务型工作单元，按实体协议配置并发戳、租户与软删除。</Description>
+    <Description>曦寒框架持久化的 Entity Framework Core 提供程序</Description>
     <PackageTags>xihan;framework;persistence;efcore;entity-framework</PackageTags>
     <!-- EF Core 的运行时模型构建尚不满足 AOT 分析器；AOT 场景用编译模型另行验证 -->
     <IsAotCompatible>false</IsAotCompatible>

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Protocols.Mcp</PackageId>
     <RootNamespace>XiHan.Framework.Protocols.Mcp</RootNamespace>
-    <Description>XiHan Framework MCP 协议适配器（Ring 5）：把标记为 Expose.Mcp 的操作契约发布为 Model Context Protocol 的 tool（JSON-RPC 2.0，Streamable HTTP 传输）；tools/list 复用操作的 JSON Schema 与消息目录里的描述，tools/call 以独立调用经内核管道执行操作，失败按 isError 返回。</Description>
+    <Description>曦寒框架 MCP 协议适配器</Description>
     <PackageTags>xihan;framework;protocols;mcp;model-context-protocol;json-rpc</PackageTags>
   </PropertyGroup>
 

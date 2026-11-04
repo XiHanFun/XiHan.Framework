@@ -1,33 +1,56 @@
 # XiHan.Framework.Persistence.Generators
 
-Roslyn 源生成器（工具链）。扫描本程序集里实现 `IEntity<TKey>`（含经 `IAggregateRoot<TKey>`）的非抽象顶层类（含 `record` / `record class`），生成：
+## 关于
 
-- `GeneratedEntities` 静态类（命名空间为项目的 `RootNamespace`）：`AddGeneratedRepositories(this IServiceCollection)` 为每个实体调用 `AddRepository<TEntity, TKey>()`；项目引用了 EF Core 时再生成 `ApplyGeneratedEntities(this ModelBuilder)`，把每个实体 `Entity<T>()` 进模型；引用了 `Persistence.EntityFrameworkCore` 时签名多一个 `DatabaseFacade database`（`ApplyGeneratedEntities(this ModelBuilder, DatabaseFacade)`），接着 `ApplyPersistenceConventions(database)`——约定按 Provider 写软删除实体部分唯一索引的条件。
-- 每个实现 `ISoftDeletable` 或 `IMultiTenant` 的实体一个 `<实体>Filters` 静态类（与实体同命名空间、同可访问性）：`NotDeleted`、`ForTenant(tenantId)`、两者都有时 `ActiveFor(tenantId)`，都是 `Specification<T>`，可直接传给 `EntityQuery<T>.Where(...)`。
+`XiHan.Framework.Persistence.Generators` 持久化的 Roslyn 源生成器：从实现 `IEntity<TKey>` 的实体类生成仓储登记、EF Core 实体登记与软删除、租户过滤规约，省去逐个手写 `AddRepository`。以分析器形式引用，不进入运行时依赖。
+
+## 主要特性
+
+* `AddGeneratedRepositories`：为每个实体登记仓储
+* `ApplyGeneratedEntities`：为每个实体配置 EF Core 模型（项目引用了 EF Core 时生成）
+* `<实体>Filters`：软删除、多租户实体的 `NotDeleted`、`ForTenant`、`ActiveFor` 规约
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Persistence.Generators --prerelease
+```
+
+### 使用
+
+引用本包后，实体类实现 `IEntity<TKey>`（或 `IAggregateRoot<TKey>`）即会触发生成。
 
 ```csharp
 public sealed class Order : IAggregateRoot<Guid>, IMultiTenant, ISoftDeletable { … }
 
-public void Configure(FeatureContext context) => context.Services.AddGeneratedRepositories();   // 生成的登记代码
+// 能力包的 Configure 里登记全部实体的仓储
+context.Services.AddGeneratedRepositories();
 
-protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyGeneratedEntities(Database);   // EF Core 应用（引用了 Persistence.EntityFrameworkCore）
+// EF Core 应用的 OnModelCreating
+modelBuilder.ApplyGeneratedEntities(Database);
 
 var active = await repository.ListAsync(EntityQuery.All<Order>().Where(OrderFilters.ActiveFor(tenantId)), ct);
 ```
 
-| 规则 | 含义 |
-| --- | --- |
-| `XHP001` | 实体类通过多个 `IEntity<TKey>` 声明了不同的键类型 |
-| `XHP002` | 实体类是嵌套类型或不是 public / internal |
-| `XHP003` | 要生成的 `<实体>Filters` 与已有类型同名，跳过该实体的过滤规约（警告） |
-| `XHP004` | 值类型（`struct`、`record struct`）实现了 `IEntity<TKey>`：仓储要求实体是类，编译失败（错误，ADR-0072） |
+## 主要类型
 
-引用方式：`<ProjectReference Include="…/XiHan.Framework.Persistence.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />`，或 NuGet 包（分析器形式，不进入运行时依赖）。
+此库提供的主要类型：
 
-## 依赖方向
+* `GeneratedEntities`：生成的静态类，含 `AddGeneratedRepositories`、`ApplyGeneratedEntities`
+* `<实体>Filters`：生成的过滤规约，可传给 `EntityQuery<T>.Where`
+* `XHP001` 到 `XHP004`：实体声明不合法时的编译诊断
 
-只依赖 `Microsoft.CodeAnalysis.CSharp`；生成的代码引用 `XiHan.Framework.Domain` 与 `XiHan.Framework.Persistence.Abstractions`，EF Core 部分只在项目自己引用了 EF Core 时生成。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/persistence-generators)
 
-P3：可用。
+## 相关包
+
+* 持久化抽象：[XiHan.Framework.Persistence.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Persistence.Abstractions)
+* EF Core 实现：[XiHan.Framework.Persistence.EntityFrameworkCore](https://www.nuget.org/packages/XiHan.Framework.Persistence.EntityFrameworkCore)
+
+## 反馈与贡献
+
+`XiHan.Framework.Persistence.Generators` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

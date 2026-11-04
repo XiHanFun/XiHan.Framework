@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Caching.Abstractions</PackageId>
     <RootNamespace>XiHan.Framework.Caching.Abstractions</RootNamespace>
-    <Description>XiHan Framework 缓存契约（Ring 2）：字节存储、类型化缓存、序列化器、分布式锁与 Idempotency 阶段中间件。</Description>
+    <Description>曦寒框架缓存抽象包</Description>
     <PackageTags>xihan;framework;caching;idempotency;distributed-lock</PackageTags>
   </PropertyGroup>
 

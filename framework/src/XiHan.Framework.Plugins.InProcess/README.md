@@ -1,19 +1,52 @@
 # XiHan.Framework.Plugins.InProcess
 
-进程内插件宿主（Ring 5，`isolation: in-process`）。
+## 关于
 
-## 责任边界
+`XiHan.Framework.Plugins.InProcess` 进程内插件宿主：从目录读取 `xihan.manifest.json`，用可收集的 `AssemblyLoadContext` 加载受信任的 .NET 插件程序集，为每个插件建立隔离的服务容器，负责启动、停止、卸载与状态上报。不适用于 Native AOT 应用。
 
-- `InProcessPluginHost`：从目录读取 `xihan.manifest.json`，校验种类、隔离级别与授予的权限，用可收集的 `AssemblyLoadContext` 加载程序集，按 `entry` 实例化 `IPlugin`，为插件建立隔离的服务容器，启动、停止、卸载并上报状态。
-- 框架类型（`XiHan.Framework.*`、`Microsoft.Extensions.*`、`System.*`）与宿主共享，插件的私有依赖隔离在自己的加载上下文中。
-- 插件失败以 `Result` 返回，不抛出到宿主；崩溃的插件记为 `Failed`。失败结果的消息键在 `PluginMessages`，文案在本包的 `Localization/<区域>.json`；本包没有特性入口，宿主应用用 `services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("plugins", typeof(PluginMessages)))` 注册目录（RFC-0010）。
+## 主要特性
 
-不负责：插件中间件——宿主传给插件的 `PluginContext.Pipeline` 恒为 `null`，进程内插件不能向宿主管道贡献中间件，也不能登记操作（需要中间件时写成能力包，或用 `Plugins.Wasm` 的插件中间件）；清单写了 `contributes.pipeline` 的在加载任何代码之前以 `PLUGINS_VALIDATION_001` 拒绝（消息键 `plugins.manifest.pipeline_unsupported`），不静默忽略（ADR-0092）。热重载、插件市场。
+* 插件的私有依赖隔离在自己的加载上下文，框架类型与宿主共享
+* 加载前核对清单权限，失败以 `Result` 返回、不抛到宿主
+* 进程内插件不能贡献中间件，需要时用 Wasm 插件
 
-## 依赖方向
+## 如何使用
 
-依赖 `XiHan.Framework.Kernel` 与 `Microsoft.Extensions.DependencyInjection`。这是框架中唯一允许运行期反射的包，构造函数标注 `RequiresDynamicCode`，Native AOT 应用不应使用。
+### 安装
 
-## 状态
+```bash
+dotnet add package XiHan.Framework.Plugins.InProcess --prerelease
+```
 
-P1：加载、启动、停止、卸载可用。
+### 使用
+
+本包没有特性入口：应用注册消息目录后直接创建 `InProcessPluginHost` 加载插件。
+
+```csharp
+builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("plugins", typeof(PluginMessages)));
+
+await using var host = new InProcessPluginHost(configuration, loggerFactory);
+var loaded = await host.LoadAsync(new PluginSource("plugins/report", PermissionGrant.Empty), ct);
+var unloaded = await host.UnloadAsync("xihan.reports.plugin", ct);
+```
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `InProcessPluginHost`：`LoadAsync`、`UnloadAsync`、`Plugins`
+* `PluginErrors`、`PluginMessages`：错误码与消息键
+* `IPlugin`、`PluginContext`、`PluginSource`、`PermissionGrant`：来自 `Kernel`，插件契约与授予的权限
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/plugins-inprocess)
+
+## 相关包
+
+* 进程外插件宿主：[XiHan.Framework.Plugins.OutOfProcess](https://www.nuget.org/packages/XiHan.Framework.Plugins.OutOfProcess)
+* Wasm 插件宿主：[XiHan.Framework.Plugins.Wasm](https://www.nuget.org/packages/XiHan.Framework.Plugins.Wasm)
+
+## 反馈与贡献
+
+`XiHan.Framework.Plugins.InProcess` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

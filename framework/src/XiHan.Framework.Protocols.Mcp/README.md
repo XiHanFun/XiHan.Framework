@@ -1,28 +1,56 @@
 # XiHan.Framework.Protocols.Mcp
 
-MCP（Model Context Protocol）协议适配器（Ring 5）。提供 `protocols.mcp@1`，把登记表里标记为 `Expose.Mcp` 的操作发布为 MCP tool（RFC-0011、`spec/protocol/mcp.md`）：JSON-RPC 2.0，Streamable HTTP 传输，协议版本 `2025-06-18`。
+## 关于
 
-```csharp
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<McpProtocolFeature>().UseFeature<OrdersFeature>());
-var app = builder.Build();
-app.UseXiHan();        // 构造上下文、认证请求凭据、回写 Problem Details
-app.MapXiHanMcp();     // POST /mcp：initialize、ping、tools/list、tools/call
+`XiHan.Framework.Protocols.Mcp` MCP（Model Context Protocol）协议适配器：把标记为 `Expose.Mcp` 的操作发布为 MCP tool，JSON-RPC 2.0，Streamable HTTP 传输，命令行宿主里也可经 stdio 提供。AI 客户端据此直接调用你的业务操作。
+
+## 主要特性
+
+* `tools/list` 的输入输出 Schema 取自操作契约，说明文案按区域翻译
+* `tools/call` 经完整内核管道，认证、授权、事务照常生效
+* HTTP 与 stdio 两种传输
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Protocols.Mcp --prerelease
 ```
 
-命令行宿主里同一个服务端经 stdio 提供：`builder.Services.AddXiHanCommandLine()` 后运行 `app mcp`（`McpStdioCommand`），MCP 客户端以子进程方式连接。会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`（`spec/protocol/mcp.md`）。
+### 使用
 
-## 规则
+注册特性并映射端点。
 
-- tool 名：`{resource}_{verb}`（`orders.create` → `orders_create`），显式覆盖 `XiHan:Protocols:Mcp:Tools:<操作 ID>`；文法 `^[A-Za-z0-9_-]{1,64}$`，不合法或重复即启动失败。`Stability.Internal` 与 `Expose` 不含 `Mcp` 的操作不发布。
-- `tools/list`：`inputSchema` 取操作的请求 Schema（`Kernel.Generators` 产出，`type` 必须是 `object`，否则为 `{"type":"object"}`），`outputSchema` 取响应 Schema（仅对象类型）；`annotations` 按契约推导（只读契约——`get` / `list` 或以 `ReadOnly = true` 声明的非标准动词——只读幂等，`delete` 破坏性，`create` 不幂等；ADR-0041）；`title` 与 `description` 来自消息目录里的 `<操作 ID>.title` / `<操作 ID>.description`（ID 里的 `-` 换成 `_`），按 `Accept-Language` 翻译，没有就不给。不分页。
-- `tools/call`：`arguments`（缺省为 `{}`）作为 XGI 载荷，以新的调用上下文经完整内核管道执行（认证、按契约授权、事务；调用来源记 `mcp` 与 tool 名，HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求，ADR-0043）；成功时 `content[0].text` 是响应 JSON，响应为对象时同时给 `structuredContent`；操作失败以 `isError: true` 返回，文本为 `错误码: 文案`。未登记的 tool、非对象参数是 JSON-RPC 错误（-32602）。
-- 传输：`POST` 一条消息一个答复（`application/json`）；通知回 202；非 JSON 或非 JSON-RPC 2.0 的消息回 400；`MCP-Protocol-Version` 头不受支持时回 400；不开 SSE 流、不建会话，`GET` / `DELETE` 为 405。请求凭据由 `UseXiHan()` 在外层认证，凭据无效时整个请求以 Problem Details 拒绝。
-- 选项 `XiHan:Protocols:Mcp`：`ServerName`（默认应用名）、`ServerVersion`（默认框架版本）、`Instructions`、`Tools:<操作 ID>`。
+```csharp
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<McpProtocolFeature>());
+var app = builder.Build();
+app.UseXiHan();
+app.MapXiHanMcp();   // POST /mcp
+```
 
-## 依赖方向
+命令行宿主里 `builder.Services.AddXiHanCommandLine()` 后运行 `app mcp`，MCP 客户端以子进程方式连接。可选配置在 `XiHan:Protocols:Mcp`：`ServerName`、`ServerVersion`、`Instructions`、`Tools:<操作 ID>`。
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Hosting.CommandLine`（`mcp` 命令）与 `XiHan.Framework.Localization.Abstractions`，以及 `Microsoft.AspNetCore.App`。协议适配器在宿主之上（Ring 5）。
+## 主要类型
 
-## 状态
+此库提供的主要类型：
 
-P3：可用。传输：Streamable HTTP（`MapXiHanMcp()`）与 stdio（命令行宿主的 `mcp` 命令，`McpStdioTransport`：stdin / stdout 每行一条 JSON-RPC 消息，日志走 stderr；`mcp` 命令按 UTF-8 解码 stdin、不随控制台代码页，答复只含 ASCII，直接调用 `McpStdioTransport` 时自己按 UTF-8 构造读取器）。
+* `McpProtocolFeature`：特性入口
+* `McpProtocolOptions`：服务名、版本、说明与 tool 名覆盖
+* `McpStdioCommand`、`McpStdioTransport`：stdio 传输
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/protocols-mcp)
+
+## 相关包
+
+* HTTP 协议适配器：[XiHan.Framework.Protocols.Http](https://www.nuget.org/packages/XiHan.Framework.Protocols.Http)
+* gRPC 协议适配器：[XiHan.Framework.Protocols.Grpc](https://www.nuget.org/packages/XiHan.Framework.Protocols.Grpc)
+* CloudEvents 协议适配器：[XiHan.Framework.Protocols.CloudEvents](https://www.nuget.org/packages/XiHan.Framework.Protocols.CloudEvents)
+
+## 反馈与贡献
+
+`XiHan.Framework.Protocols.Mcp` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

@@ -1,19 +1,51 @@
 # XiHan.Framework.Localization.InMemory
 
-内存本地化。清单 `role: default`，提供 `localization.resources@1`；`Profiles.Minimal` 与 `Profiles.Standard` 都装配它。
+## 关于
 
-## 语义
+`XiHan.Framework.Localization.InMemory` 是本地化的默认实现：汇集容器里的全部消息目录，按回退链取模板并格式化，并让 `key.L()` 在任何地方可用。文案随程序集发布，改译文就重新发布。
 
-- `MessageLocalizer` 汇集 DI 里的全部 `MessageCatalog`，既是 `IMessageLocalizer`（显式区域）也是 `IMessageResolver`（环境作用域）；同一键先注册的目录优先。
-- 回退链：精确区域 → 启用列表里同语言的其他区域 → 默认区域 → 源语言 `en-US`；占位符按命中区域的文化格式化（`{amount:N2}` 在 `de-DE` 得到 `1.234,50`）。
-- 找不到键或占位符缺值时整条模板不采用，退回键与参数的描述（`kernel.feature.start_failed (id=…, reason=…)`）。
-- 装配时注册原语层与内核的语言文件目录；启动时把本地化器设为进程默认 `MessageScope`（默认区域），于是 `KernelMessages.ManifestEmpty.L()`、`Error.Message` 在任何地方都有默认语言文案；内核在每次调用入口把 Baggage `xihan.locale` 经 `Negotiate` 协商成启用的区域再安装作用域，与 `context.Localize`、Problem Details 同一区域。
-- 选项 `XiHan:Localization:DefaultLocale`（默认 `en-US`）与 `XiHan:Localization:Locales`（逗号分隔，默认内置 10 种）。
+## 主要特性
 
-## 依赖方向
+* 回退链：精确区域、同语言、默认区域、`en-US`
+* 占位符按命中区域的文化格式化
+* 找不到键或占位符缺值时退回键与参数的描述
 
-依赖 `XiHan.Framework.Localization.Abstractions`。
+## 如何使用
 
-## 状态
+### 安装
 
-P2：可用。
+```bash
+dotnet add package XiHan.Framework.Localization.InMemory --prerelease
+```
+
+### 使用
+
+`Profiles.Minimal` 与 `Profiles.Standard` 已装配本包；只用内核时显式加入：
+
+```csharp
+builder.AddXiHan(xihan => xihan.UseFeature<InMemoryLocalizationFeature>());
+```
+
+```json
+{ "XiHan": { "Localization": { "DefaultLocale": "en-US", "Locales": "en-US,zh-CN" } } }
+```
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `InMemoryLocalizationFeature`：特性入口
+* `MessageLocalizer`：同时实现 `IMessageLocalizer` 与 `IMessageResolver`，测试里可直接创建
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/localization-inmemory)
+
+## 相关包
+
+* 本地化契约：[XiHan.Framework.Localization.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Localization.Abstractions)
+* 数据库实现：[XiHan.Framework.Localization.Database](https://www.nuget.org/packages/XiHan.Framework.Localization.Database)
+
+## 反馈与贡献
+
+`XiHan.Framework.Localization.InMemory` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

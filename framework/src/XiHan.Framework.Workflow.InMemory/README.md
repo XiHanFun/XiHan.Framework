@@ -1,23 +1,51 @@
 # XiHan.Framework.Workflow.InMemory
 
-内存工作流默认实现（Ring 3，`role: default`，RFC-0021）：提供 `workflow.execution@1`。
+## 关于
 
-| 类型 | 用途 |
-| --- | --- |
-| `InMemoryWorkflowFeature` | 装配存储、实例锁与引擎，启动时起 `DueBookmarkPoller` 的循环（应用不在服务状态的周期什么也不做、不记告警），停止时等进行中的轮询结束 |
-| `InMemoryWorkflowDefinitionStore` / `InMemoryWorkflowInstanceStore` / `InMemoryWorkflowBookmarkStore` | 有界内存表，按分区（平台 / 租户）存放，互不可见；保存与返回都是深拷贝（读己之写）；容量满 → `WORKFLOW_UNAVAILABLE_002` |
-| `InMemoryWorkflowTransaction` | `IWorkflowTransaction`：在调用里即可加入；没有事务，写入立即生效、调用回滚不撤销；只读的调用（操作契约只读）里写入在取锁、执行活动之前以 `PERSISTENCE_UNEXPECTED_001` 拒绝，与数据库实现相同，没装持久化也一样（ADR-0099） |
-| `InMemoryWorkflowInstanceLock` | 每个实例一个进程内信号量，没人用时回收；等待超时 → `WORKFLOW_TIMEOUT_001` |
-| `InMemoryWorkflowOptions` | `XiHan:Workflow:InMemory`：`MaxDefinitions`（1000）、`MaxInstances`（10000）、`MaxNodeInstances`（100000）、`MaxBookmarks`（100000）、`PollIntervalSeconds`（1）、`BatchSize`（100） |
+`XiHan.Framework.Workflow.InMemory` 是工作流的默认实现：有界内存的定义、实例与书签存储，进程内实例锁，单进程轮询到期书签。没有外部依赖。
 
-引擎选项在 `XiHan:Workflow`（`MaxNodeExecutionsPerBurst`、`MaxSubWorkflowDepth`、`LockTimeoutSeconds`、`NotResumableBackoffSeconds`、`ExpressionCacheSize`、`RetentionDays`、`HousekeepingIntervalSeconds`、`HttpTimeoutSeconds`），见 `Workflow.Abstractions`。两处选项的值写错都在启动时抛出。
+## 主要特性
 
-单进程：实例锁与轮询只在本进程内有效，多实例部署换 `Workflow.Database`（租约行实例锁、领导节点轮询）。非事务：业务回滚不撤销引擎写入，要求"写申请并发起流程"原子的应用换 `Workflow.Database`。列表排序在内存里做，文本按序数比较、状态按生命周期的先后（ADR-0103）、空时间当作最小（数据库实现按列的排序规则与库的空值规则，ADR-0102）。通过 `Workflow.Conformance` 全部用例（事务相关的用例以 `JoinsCallerTransaction = false` 断言，只读调用的用例与数据库实现同一断言）。特性另登记持久化的消息目录（`PersistenceMessages.Catalog`），只读拒绝的消息在没装持久化的宿主上也能翻译。
+* 零外部基础设施，适合单实例部署、开发与测试
+* 容量满时写入失败而不是淘汰旧数据；可配置 `XiHan:Workflow:RetentionDays` 自动清理已结束实例
+* 没有事务，也不跨进程：进程重启后定义与实例全部丢失，多实例或要求与业务写入原子请换 `Workflow.Database`
 
-## 依赖方向
+## 如何使用
 
-依赖 `XiHan.Framework.Workflow.Abstractions` 与 `XiHan.Framework.Persistence.Abstractions`（只读拒绝的错误码与消息键）。被 `Profiles.Full` 引用。
+### 安装
 
-## 状态
+```bash
+dotnet add package XiHan.Framework.Workflow.InMemory --prerelease
+```
 
-P0：可用（Preview）。通过 `Workflow.Conformance` 的存储、引擎与任务全部用例；加内存持久化、内存消息与发件箱的宿主也通过引擎与任务全部用例（ADR-0096 第六节）。
+### 使用
+
+```csharp
+builder.AddXiHan(xihan => xihan.UseFeature<InMemoryWorkflowFeature>());
+```
+
+容量与轮询可调（以下为缺省值）：
+
+```json
+{ "XiHan": { "Workflow": { "InMemory": { "MaxInstances": 10000, "PollIntervalSeconds": 1, "BatchSize": 100 } } } }
+```
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `InMemoryWorkflowFeature`：启用内存工作流的特性
+* `InMemoryWorkflowOptions`：容量、轮询周期与批量，对应 `XiHan:Workflow:InMemory`
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/workflow-inmemory)
+
+## 相关包
+
+* 工作流抽象与引擎：[XiHan.Framework.Workflow.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Workflow.Abstractions)
+* 数据库实现：[XiHan.Framework.Workflow.Database](https://www.nuget.org/packages/XiHan.Framework.Workflow.Database)
+
+## 反馈与贡献
+
+`XiHan.Framework.Workflow.InMemory` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

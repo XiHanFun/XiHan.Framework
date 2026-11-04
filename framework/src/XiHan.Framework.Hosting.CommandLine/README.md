@@ -1,39 +1,59 @@
 # XiHan.Framework.Hosting.CommandLine
 
-命令行宿主（Ring 4）。在通用宿主（`Host.CreateApplicationBuilder`）里把命令行参数翻译为内核调用：一份操作契约在命令行上也能服务（RFC-0011，`spec/protocol/commandline.md`）。
+## 关于
+
+`XiHan.Framework.Hosting.CommandLine` 是命令行宿主：在通用宿主里把命令行参数翻译成内核调用，一份操作契约在命令行上也能服务。适合运维工具与批处理脚本。
+
+## 主要特性
+
+* 内置 `help`、`graph`、`pipeline`、`operations`、`invoke` 命令
+* `invoke` 的字段选项、`--json`、`--data` 拼成载荷，经完整内核管道与授权
+* 成功输出 JSON 到 stdout，失败输出错误到 stderr，退出码按错误种类
+* 可实现 `ICommand` 扩展自定义命令
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Hosting.CommandLine --prerelease
+```
+
+### 使用
+
+在通用宿主里启用：
 
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
-builder.AddXiHan(xihan => xihan.UseMinimalProfile().UseFeature<McpProtocolFeature>().UseFeature<GreetingsFeature>());
+builder.AddXiHan(xihan => xihan.UseMinimalProfile().UseFeature<GreetingsFeature>());
 builder.Services.AddXiHanCommandLine();
 return await builder.Build().RunXiHanCommandLineAsync(args);
 ```
 
 ```bash
-app help                                   # 用法与命令列表
-app graph                                  # 能力图谱（App.DescribeGraph）
-app pipeline                               # 管道阶段与中间件（App.DescribePipeline）
-app operations                             # 登记表：ID、稳定性、暴露的协议、权限或策略
-app invoke greetings.create --name Ada     # 字段选项拼成载荷；或 --json '{"name":"Ada"}'、--data request.json
-app greetings create --name Ada --times 2  # <resource> <verb> 是 invoke 的简写
-app mcp --tenant acme                      # Protocols.Mcp 注册的 stdio 传输，上下文选项同 invoke
+app operations                             # 登记表
+app invoke greetings.create --name Ada     # 字段选项拼成载荷
+app greetings create --name Ada            # <resource> <verb> 是 invoke 的简写
 ```
 
-## 规则
+`GreetingsFeature` 是你自己的能力包。
 
-- 解析：第一个非选项记号是命令名；`--name value`、`--name=value`、无值的 `--flag` 记为 `true`；`--` 之后全是位置参数；值不做类型转换。
-- `invoke`：只接受 `Expose` 含 `CommandLine` 且非 `Stability.Internal` 的操作。载荷按 `--json`（须为对象）> `--data <file>`（可写 `@file`）> 其余 `--<field> <value>` 选项（字符串，重复成数组）的顺序取；请求类型从字符串读数字需启用 `NumberHandling = AllowReadingFromString`。
-- 上下文：`--tenant`、`--correlation`、`--locale` 进 Baggage；`--timeout <秒>` 换算为截止时间；`--authorization '<scheme> <value>'`（或环境变量 `XIHAN_AUTHORIZATION`）进入凭据由 Authenticate 阶段解释；调用来源记 `cli` 与操作 ID（ADR-0043）。调用经完整内核管道，Authorize 阶段按契约判定。
-- 输出：成功把响应 JSON 写到 stdout；失败把 `{"code","detail","traceId"}` 写到 stderr（`detail` 按 `--locale` 或默认区域翻译），退出码按错误 KIND：VALIDATION 2、NOTFOUND 3、DENIED 4、CONFLICT 5、UNAVAILABLE 6、TIMEOUT 7、CANCELLED 8、其他 1；用法错误 64。
-- 日志：`AddXiHanCommandLine()` 把日志改为只写 stderr，stdout 只承载命令输出。
-- 扩展：实现 `ICommand`（名字、说明的消息键、执行）并 `AddXiHanCommand<T>()`；命令名重复在启动时失败。
+## 主要类型
 
-`AddXiHan(this HostApplicationBuilder, …)` 与 ASP.NET Core 宿主一样先装载 `XIHAN_CONFIG_PATH` 目录里的 JSON 文件（可重载），紧接 `appsettings.{环境}.json` 插入：覆盖 appsettings，环境变量与命令行参数覆盖它（RFC-0016）。
+此库提供的主要类型：
 
-## 依赖方向
+* `AddXiHanCommandLine`、`RunXiHanCommandLineAsync`：启用与运行入口
+* `ICommand`、`AddXiHanCommand<T>`：自定义命令
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`，以及 `Microsoft.Extensions.Hosting`、`Microsoft.Extensions.Configuration.Json` 与 `Microsoft.Extensions.Logging.Console`。被 `Protocols.Mcp`（`mcp` 命令）引用。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/hosting-commandline)
 
-P3：可用。`xihan graph` / `xihan pipeline`（P1-19）由本宿主的 `graph` / `pipeline` 命令提供，`xihan` 工具转发到应用。
+## 相关包
+
+* ASP.NET Core 宿主：[XiHan.Framework.Hosting.AspNetCore](https://www.nuget.org/packages/XiHan.Framework.Hosting.AspNetCore)
+* 命令行工具：[XiHan.Framework.Cli](https://www.nuget.org/packages/XiHan.Framework.Cli)
+
+## 反馈与贡献
+
+`XiHan.Framework.Hosting.CommandLine` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

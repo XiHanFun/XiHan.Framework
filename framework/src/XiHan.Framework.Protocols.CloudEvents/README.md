@@ -1,34 +1,64 @@
 # XiHan.Framework.Protocols.CloudEvents
 
-CloudEvents 协议适配器（Ring 5）。提供 `protocols.cloudevents@1`，是消息子系统信封（RFC-0009，`MessageEnvelope`）的 CloudEvents 1.0 HTTP 协议绑定（`spec/protocol/cloudevents.md`）：入站端点把 HTTP 上的事件变成信封交给消息子系统，出站 Webhook 发布者把信封推送到别的服务。需要 `messaging.queue@1`。
+## 关于
+
+`XiHan.Framework.Protocols.CloudEvents` CloudEvents 1.0 的 HTTP 协议适配器：入站端点把 HTTP 上的事件变成消息信封交给消息子系统，出站 Webhook 发布者把信封推送到别的服务。需要消息队列能力（`UseStandardProfile()` 已提供）。
+
+## 主要特性
+
+* 入站支持 binary、structured、batch 三种内容模式
+* 入站可在请求内派发给处理器，也可发布到消息代理
+* 出站 Webhook 按主题配置地址，不外推租户、主体等内部标识
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Protocols.CloudEvents --prerelease
+```
+
+### 使用
+
+注册特性、映射端点，并在配置里把事件类型映射到主题、给主题配置 Webhook。
 
 ```csharp
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<CloudEventsProtocolFeature>().UseFeature<OrdersFeature>());
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<CloudEventsProtocolFeature>());
 var app = builder.Build();
 app.UseXiHan();
-app.MapXiHanCloudEvents();   // POST /events：binary / structured / batch 事件 → 按类型映射主题 → 派发给处理器
+app.MapXiHanCloudEvents();   // POST /events
 ```
 
 ```json
-{ "XiHan": { "Protocols": { "CloudEvents": { "Topics": { "orders.placed": "orders" }, "Webhooks": { "orders": "https://hooks.example.com/orders" }, "PropagateTraceContext": false } } } }
+{ "XiHan": { "Protocols": { "CloudEvents": {
+  "Topics": { "orders.placed": "orders" },
+  "Webhooks": { "orders": "https://hooks.example.com/orders" }
+} } } }
 ```
 
-## 规则
+入站端点框架不加任何权限要求，需要由宿主自己 `RequireXiHanPermission(...)`。
 
-- 入站内容模式：`Content-Type: application/cloudevents+json`（structured）、`application/cloudevents-batch+json`（batch，事件数组）、否则有 `ce-specversion` 头即 binary（属性在 `ce-*` 头，`Content-Type` 是数据内容类型，请求体是数据，头值按规范百分号解码）；都不是 → 400 `PROTOCOLS_VALIDATION_008`。信封不合法 → 400 `MESSAGING_VALIDATION_002`。
-- 主题：`XiHan:Protocols:CloudEvents:Topics:<事件类型>` 显式映射，否则事件类型本身须是合法主题（`orders.placed` 可以直接当主题），都不是 → 400 `PROTOCOLS_VALIDATION_009`。
-- `Inbound = Dispatch`（默认）：在请求内经内核管道派发给主题的处理器（`MessageDispatcher`：新作用域，租户 / 关联 / 追踪从扩展属性进入上下文），处理器的结果就是响应，失败按错误 KIND 写 Problem Details，发送方据此重试；本实例里竞争订阅与广播订阅（RFC-0009「订阅方式」）各一次投递、先竞争后广播，派发只发生在接收请求的实例，要让广播订阅到达每个实例用 `Publish`；两种方式都没有处理器 → 404 `PROTOCOLS_NOTFOUND_003`。`Inbound = Publish`：发布到消息代理后立即 202，重试与死信由代理负责。
-- batch：先把每个事件的类型解析成主题，任一事件没有映射整批 400、不处理任何事件；派发模式按顺序处理、第一个失败即停止并作为响应，发布模式按主题分组一次批量发布、第一个失败的结果作为响应；已处理的事件不回滚，发送方重试整批时处理器按 `id` + `source` 去重。
-- 出站：`CloudEventsWebhookPublisher`（实现 `IMessagePublisher`，按具体类型注入，不替换代理的发布者）把信封原样 POST 到 `Webhooks:<主题>`，`Outbound` 为 `Binary`（默认）或 `Structured`；批量发布多条时用 batch 内容模式（`application/cloudevents-batch+json`）一次 POST，接收方须支持该模式，一个响应对整批生效；没有配置 → NOTFOUND，非 2xx → `PROTOCOLS_UNAVAILABLE_001`，连不上 → `PROTOCOLS_UNAVAILABLE_002`。命名 HttpClient `xihan.protocols.cloudevents` 可配置超时与重试。
-- 出站不外推内部标识（已定，ADR-0074）：Webhook 发布者不像内部发布者那样从当前调用补扩展，`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 都不由框架加到信封上。接收方是第三方，租户、主体、关联是本系统的内部标识，推出去会暴露内部结构与身份并让第三方依赖内部 ID；追踪链是否跨出组织边界由调用方决定。要给接收方的扩展由调用方显式写进信封。
-- 过出站地址策略（已定，RFC-0008、ADR-0117）：地址是运维配的，但接收方是第三方，它的 3xx 能把请求引到内网，所以这个命名客户端的连接与重定向都检查。接收方在内网时写进 `XiHan:Security:Outbound:AllowedHosts`；被拒绝按连接失败报告 `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名。
-- HTTP 追踪头缺省不传播（已定，ADR-0083）：启用了追踪时 .NET 的 HttpClient 本会按当前 Activity 写 W3C 的 `traceparent`、`tracestate` 与 `baggage` 头（不是信封扩展），同样会把内部追踪 ID 与 Baggage 推给第三方，所以命名客户端 `xihan.protocols.cloudevents` 的主处理器缺省是关掉传播器的 `SocketsHttpHandler`（`ActivityHeadersPropagator = null`）。`XiHan:Protocols:CloudEvents:PropagateTraceContext` = `true` 显式打开，按 .NET 的全局传播器写；只影响这个客户端，不改进程全局的传播，出站请求的客户端跨度照常记录。调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器（设置保留）；用 `ConfigurePrimaryHttpMessageHandler` 整个替换主处理器时，由替换后的处理器决定是否传播。
-- 入站端点经过 `UseXiHan()`，请求凭据在外层认证。框架不给端点加任何要求，权限要由宿主自己加（已定，ADR-0121）：`MapXiHanCloudEvents().RequireXiHanPermission(...)`，只授给平台的服务账号或服务角色。扩展属性 `xihantenant`、`xihanprincipal` 是发送方给的，派发时不和请求的身份核对，能调端点的人就能选租户、写审计主体；权限也不按租户收窄。没有装配 `security.authorization@1` 时要求只进入上下文、不被判定，端点等于敞开。
+## 主要类型
 
-## 依赖方向
+此库提供的主要类型：
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions` 与 `Microsoft.AspNetCore.App`。协议适配器在宿主之上（Ring 5）。
+* `CloudEventsProtocolFeature`：特性入口
+* `CloudEventsProtocolOptions`：`Inbound`、`Outbound`、`Topics`、`Webhooks`
+* `CloudEventsEndpointRouteBuilderExtensions`：`MapXiHanCloudEvents`
+* `CloudEventsWebhookPublisher`：出站 Webhook 发布者
 
-## 状态
+## 更多文档
 
-P3：可用（HTTP 绑定三种入站模式、两种出站模式）。
+* [概念文档](https://framework.docs.xihanfun.com/packages/protocols-cloudevents)
+
+## 相关包
+
+* HTTP 协议适配器：[XiHan.Framework.Protocols.Http](https://www.nuget.org/packages/XiHan.Framework.Protocols.Http)
+* gRPC 协议适配器：[XiHan.Framework.Protocols.Grpc](https://www.nuget.org/packages/XiHan.Framework.Protocols.Grpc)
+* MCP 协议适配器：[XiHan.Framework.Protocols.Mcp](https://www.nuget.org/packages/XiHan.Framework.Protocols.Mcp)
+
+## 反馈与贡献
+
+`XiHan.Framework.Protocols.CloudEvents` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

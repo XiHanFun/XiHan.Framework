@@ -4,7 +4,7 @@
       "id": "XiHan.Framework.AI.Abstractions",
       "ring": "2",
       "summary": "AI 契约：基于 `Microsoft.Extensions.AI` 的 Provider 目录、带提示词 / 护栏 / 工具的 `IAIChat`、`Expose.Ai` 操作桥接成模型工具的目录（`AIToolsFeature` 默认提供 `ai.tools@1`）、知识库流水线与 `IKnowledgeStore` 契约",
-      "description": "XiHan Framework AI 契约：基于 Microsoft.Extensions.AI 的 Provider 目录、带提示词 / 护栏 / 工具的聊天入口、操作契约桥接成模型工具的目录、知识库流水线与存储契约。",
+      "description": "曦寒框架 AI 抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions"
@@ -33,7 +33,7 @@
       "id": "XiHan.Framework.AI.Conformance",
       "ring": "工具链",
       "summary": "知识库存储与模型 Provider 目录必须通过的 xUnit 套件，含确定性的哈希嵌入",
-      "description": "XiHan Framework AI 一致性套件：知识库存储与模型 Provider 目录必须通过的 xUnit 抽象测试类，含确定性的哈希嵌入生成器。",
+      "description": "曦寒框架 AI 一致性测试套件",
       "references": [
         "XiHan.Framework.AI.Abstractions"
       ],
@@ -57,7 +57,7 @@
       "id": "XiHan.Framework.AI.OpenAI",
       "ring": "3",
       "summary": "OpenAI 兼容端点的 `ai.chat@1` / `ai.embedding@1` Provider：按配置创建客户端，工具调用在客户端循环里自动执行",
-      "description": "XiHan Framework AI 的 OpenAI 兼容 Provider：按配置创建聊天客户端与嵌入生成器，工具调用在客户端循环里自动执行，基于 Microsoft.Extensions.AI.OpenAI。",
+      "description": "曦寒框架 AI 的 OpenAI 兼容提供程序",
       "references": [
         "XiHan.Framework.AI.Abstractions"
       ],
@@ -81,7 +81,7 @@
       "id": "XiHan.Framework.AI.VectorData",
       "ring": "3",
       "summary": "`ai.knowledge@1` Provider：把 `IKnowledgeStore` 映射到应用注册的 `Microsoft.Extensions.VectorData` 向量存储",
-      "description": "XiHan Framework AI 的知识库 Provider：把 IKnowledgeStore 映射到应用注册的 Microsoft.Extensions.VectorData 向量存储（任意连接器）。",
+      "description": "曦寒框架 AI 知识库的向量存储提供程序",
       "references": [
         "XiHan.Framework.AI.Abstractions"
       ],
@@ -97,7 +97,7 @@
       "id": "XiHan.Framework.Auditing.Abstractions",
       "ring": "2",
       "summary": "Observe 阶段审计中间件、调用上下文的动作 / 资源 / 细节扩展、审计查询契约",
-      "description": "XiHan Framework 审计契约（Ring 2）：Observe 阶段的审计中间件、调用上下文的动作 / 资源 / 细节扩展、查询契约 IAuditTrail 与选项。",
+      "description": "曦寒框架审计抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions"
@@ -114,7 +114,7 @@
       "id": "XiHan.Framework.Auditing.Conformance",
       "ring": "工具链",
       "summary": "`IAuditSink` + `IAuditTrail` 实现必须通过的 xUnit 套件",
-      "description": "XiHan Framework 审计一致性套件：任何 IAuditSink + IAuditTrail 实现都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架审计一致性测试套件",
       "references": [
         "XiHan.Framework.Auditing.Abstractions"
       ],
@@ -134,7 +134,7 @@
       "id": "XiHan.Framework.Auditing.Database",
       "ring": "3",
       "summary": "数据库 Provider：审计事件经有界队列后台批量落库（满了丢弃并计数、失败只记日志不重试），`AuditRecord` 经仓储读写，按进程写入序号分页查询、续页令牌是序号",
-      "description": "XiHan Framework 数据库审计 Provider：审计事件经有界队列后台批量落库，按进程写入序号分页查询，记录以实体经 persistence.relational@1 的仓储读写。",
+      "description": "曦寒框架审计的数据库提供程序",
       "references": [
         "XiHan.Framework.Auditing.Abstractions",
         "XiHan.Framework.Persistence.Abstractions"
@@ -146,7 +146,7 @@
       "id": "XiHan.Framework.Auditing.InMemory",
       "ring": "3",
       "summary": "内存审计默认实现：有界环形缓冲、可查询、每条事件写日志",
-      "description": "XiHan Framework 内存审计（默认实现）：有界环形缓冲的接收器与查询，每条事件同时写日志。",
+      "description": "曦寒框架审计的内存默认实现",
       "references": [
         "XiHan.Framework.Auditing.Abstractions"
       ],
@@ -157,7 +157,7 @@
       "id": "XiHan.Framework.Caching.Abstractions",
       "ring": "2",
       "summary": "字节存储、类型化缓存、序列化器、分布式锁、Idempotency 阶段中间件、`IDistributedCache` 适配",
-      "description": "XiHan Framework 缓存契约（Ring 2）：字节存储、类型化缓存、序列化器、分布式锁与 Idempotency 阶段中间件。",
+      "description": "曦寒框架缓存抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions"
@@ -178,7 +178,7 @@
       "id": "XiHan.Framework.Caching.Conformance",
       "ring": "工具链",
       "summary": "`ICacheStore` 实现必须通过的 xUnit 套件",
-      "description": "XiHan Framework 缓存一致性套件：任何 ICacheStore 实现都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架缓存一致性测试套件",
       "references": [
         "XiHan.Framework.Caching.Abstractions"
       ],
@@ -198,7 +198,7 @@
       "id": "XiHan.Framework.Caching.Hybrid",
       "ring": "3",
       "summary": "两级缓存 Provider：L1 进程内对象 LRU + L2 被选中的共享缓存，读穿透回填、写删先远后近、L1 存活上限",
-      "description": "XiHan Framework 缓存的两级 Provider：进程内对象缓存（有界 LRU）在前、被选中的共享缓存在后，读穿透回填、写与删先远后近，L1 存活时间有上限。",
+      "description": "曦寒框架缓存的两级缓存提供程序",
       "references": [
         "XiHan.Framework.Caching.Abstractions"
       ],
@@ -209,7 +209,7 @@
       "id": "XiHan.Framework.Caching.InMemory",
       "ring": "3",
       "summary": "内存缓存默认实现：有界 LRU、绝对与滑动过期，兼任单进程共享缓存",
-      "description": "XiHan Framework 内存缓存（默认实现）：有界 LRU、绝对与滑动过期、原子的不存在才写与比较删；同时充当单进程的共享缓存。",
+      "description": "曦寒框架缓存的内存默认实现",
       "references": [
         "XiHan.Framework.Caching.Abstractions"
       ],
@@ -220,7 +220,7 @@
       "id": "XiHan.Framework.Caching.Redis",
       "ring": "3",
       "summary": "Redis Provider：共享缓存、分布式锁、幂等（非 AOT）",
-      "description": "XiHan Framework 缓存的 Redis Provider：提供跨进程共享缓存、分布式锁与幂等去重，基于 StackExchange.Redis。",
+      "description": "曦寒框架缓存的 Redis 提供程序",
       "references": [
         "XiHan.Framework.Caching.Abstractions"
       ],
@@ -236,7 +236,7 @@
       "id": "XiHan.Framework.Caching.Remote",
       "ring": "3",
       "summary": "远程 Provider 适配器（RFC-0019，Experimental）：`caching.distributed` 由实现操作集 `cache-entries.*` 的进程外插件提供（非 AOT）",
-      "description": "XiHan Framework 缓存的远程 Provider 适配器（RFC-0019）：caching.distributed 由任意语言写的进程外插件经固定操作集 cache-entries.* 提供，本包把它接成共享缓存、分布式锁与幂等去重。",
+      "description": "曦寒框架缓存的远程插件提供程序",
       "references": [
         "XiHan.Framework.Caching.Abstractions"
       ],
@@ -247,7 +247,7 @@
       "id": "XiHan.Framework.Cli",
       "ring": "工具链",
       "summary": "`xihan` 工具：`pack` 从 `xihan.app.json` 生成 Dockerfile / Kustomize / Compose / Aspire 产物，`graph` / `pipeline` / `operations` / `invoke` 转发给应用，`mcp` 以 stdio 提供框架离线知识库（包与特性清单、配置键、文档）的 MCP 服务",
-      "description": "XiHan Framework 命令行工具 xihan：xihan pack 从 xihan.app.json 生成 Dockerfile、Kustomize、Compose 与 Aspire 产物；graph / pipeline / operations / invoke 转发给应用的命令行宿主；xihan mcp 以 stdio 提供框架离线知识库（包与特性清单、配置键与缺省值、文档）的 MCP 服务。",
+      "description": "曦寒框架命令行工具",
       "references": [
         "XiHan.Framework.Hosting.CommandLine",
         "XiHan.Framework.Localization.InMemory",
@@ -265,7 +265,7 @@
       "id": "XiHan.Framework.Configuration.Abstractions",
       "ring": "2",
       "summary": "远程配置客户端与密钥库契约，以及接进 `IConfigurationBuilder` 的配置源（轮询重载、失败保留最后一份）",
-      "description": "XiHan Framework 配置契约（Ring 2）：远程配置客户端与密钥库的 Provider 契约，以及把它们接进 Microsoft.Extensions.Configuration 的配置源。",
+      "description": "曦寒框架配置抽象包",
       "references": [
         "XiHan.Framework.Primitives",
         "XiHan.Framework.Localization.Abstractions"
@@ -282,7 +282,7 @@
       "id": "XiHan.Framework.Configuration.Conformance",
       "ring": "工具链",
       "summary": "`IRemoteConfigurationClient` 与 `ISecretStore` 实现必须通过的 xUnit 套件",
-      "description": "XiHan Framework 配置一致性套件：任何 IRemoteConfigurationClient 与 ISecretStore 实现都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架配置一致性测试套件",
       "references": [
         "XiHan.Framework.Configuration.Abstractions"
       ],
@@ -302,7 +302,7 @@
       "id": "XiHan.Framework.Configuration.Nacos",
       "ring": "3",
       "summary": "Nacos Provider：HTTP 接口直连取整份文档，`Content-MD5` 为版本并长轮询，JSON / properties 展平，登录续令牌，多地址",
-      "description": "XiHan Framework 远程配置的 Nacos Provider：直接用 Nacos 的 HTTP 配置接口取整份文档并按内容 MD5 长轮询，支持 JSON 与 properties 格式、用户名密码登录与多地址，不依赖 SDK。",
+      "description": "曦寒框架配置的 Nacos 提供程序",
       "references": [
         "XiHan.Framework.Configuration.Abstractions",
         "XiHan.Framework.Kernel"
@@ -319,7 +319,7 @@
       "id": "XiHan.Framework.Domain",
       "ring": "2",
       "summary": "实体协议、值对象、领域事件缓冲、规约；纯契约",
-      "description": "XiHan Framework 领域契约（Ring 2）：实体协议、值对象、领域事件、规约。纯契约与零依赖的组合器，无基类层级。",
+      "description": "曦寒框架领域驱动设计库",
       "references": [
         "XiHan.Framework.Primitives"
       ],
@@ -330,7 +330,7 @@
       "id": "XiHan.Framework.Hosting.AspNetCore",
       "ring": "4",
       "summary": "HTTP 请求桥接、`Accept-Language` 协商、探针端点、本地化的 Problem Details",
-      "description": "XiHan Framework 的 ASP.NET Core 宿主适配（Ring 4）：把 HTTP 请求翻译为调用上下文并经过内核管道，映射探针端点，用 RFC 9457 Problem Details 回写失败结果。",
+      "description": "曦寒框架 ASP.NET Core 宿主",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Security.Abstractions",
@@ -346,7 +346,7 @@
       "id": "XiHan.Framework.Hosting.CommandLine",
       "ring": "4",
       "summary": "命令行宿主：`help` / `graph` / `pipeline` / `operations` / `invoke`，按错误 KIND 的退出码，Problem 写 stderr",
-      "description": "XiHan Framework 命令行宿主（Ring 4）：在通用宿主里把命令行参数翻译为内核调用。内置 help、graph、pipeline、operations、invoke 命令，`<resource> <verb>` 是 invoke 的简写；操作结果以 JSON 写到 stdout，失败以错误码映射为退出码并把 Problem 写到 stderr，日志只走 stderr；其他包可注册自己的命令（如 MCP 的 stdio 传输）。",
+      "description": "曦寒框架命令行宿主",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Security.Abstractions",
@@ -372,7 +372,7 @@
       "id": "XiHan.Framework.Kernel",
       "ring": "1",
       "summary": "宿主、能力图谱、管道、诊断薄桥、安全原语、插件抽象、操作契约与 XGI 调用器、Resilience 阶段的截止时间与按操作 ID 的熔断 / 限流 / 并发上限、Validate 阶段的契约校验（JSON Schema 子集 + `IValidatableObject`）",
-      "description": "XiHan Framework 微内核（Ring 1）：宿主、能力图谱、执行管道、诊断薄桥、安全原语、插件宿主抽象。",
+      "description": "曦寒框架微内核",
       "references": [
         "XiHan.Framework.Primitives"
       ],
@@ -408,7 +408,7 @@
       "id": "XiHan.Framework.Kernel.Analyzers",
       "ring": "工具链",
       "summary": "Roslyn 分析器 XH0001–XH0005：ApiLevel、命名、Internal 引用、零反射",
-      "description": "XiHan Framework 的 Roslyn 分析器：公开类型必须标注 ApiLevel、类型名不带 XiHan 前缀与禁用词、不得引用 Internal 稳定性的 API、Ring 0/1 零反射。",
+      "description": "曦寒框架 Roslyn 分析器",
       "references": [],
       "dependencies": [],
       "frameworkReferences": []
@@ -417,7 +417,7 @@
       "id": "XiHan.Framework.Kernel.Generators",
       "ring": "工具链",
       "summary": "源生成器：`[Operation]` → 登记代码与请求/响应 JSON Schema（XHG001–XHG006）",
-      "description": "XiHan Framework 的源生成器：从 [Operation] 生成操作登记代码与请求/响应的 JSON Schema（draft 2020-12），供 HTTP、MCP 等协议适配器发布描述。",
+      "description": "曦寒框架操作契约源生成器",
       "references": [],
       "dependencies": [],
       "frameworkReferences": []
@@ -426,7 +426,7 @@
       "id": "XiHan.Framework.Localization.Abstractions",
       "ring": "2",
       "summary": "区域名、内置 10 种区域（默认 `en-US`）、消息目录（每种语言一个文件）、显式区域的本地化接口；消息键、模板与 `key.L()` 在原语层",
-      "description": "XiHan Framework 本地化契约（Ring 2）：区域名、内置 10 种区域、按键与区域取模板的消息目录、消息本地化接口与目录注册。",
+      "description": "曦寒框架本地化抽象包",
       "references": [
         "XiHan.Framework.Kernel"
       ],
@@ -446,7 +446,7 @@
       "id": "XiHan.Framework.Localization.Conformance",
       "ring": "工具链",
       "summary": "`IMessageLocalizer` 实现必须通过的 xUnit 套件",
-      "description": "XiHan Framework 本地化一致性套件：任何 IMessageLocalizer 实现都必须通过的 xUnit 抽象测试类（回退链、按区域格式化、错误翻译、目录优先级）。",
+      "description": "曦寒框架本地化一致性测试套件",
       "references": [
         "XiHan.Framework.Localization.Abstractions",
         "XiHan.Framework.Testing"
@@ -467,7 +467,7 @@
       "id": "XiHan.Framework.Localization.Database",
       "ring": "3",
       "summary": "数据库本地化 Provider：翻译经仓储读写，启动后加载并周期刷新，优先于嵌入目录",
-      "description": "XiHan Framework 数据库本地化 Provider：翻译以实体经仓储读写，启动后加载并按周期刷新，数据库里的翻译优先于嵌入的语言文件。",
+      "description": "曦寒框架本地化的数据库提供程序",
       "references": [
         "XiHan.Framework.Localization.Abstractions",
         "XiHan.Framework.Persistence.Abstractions"
@@ -479,7 +479,7 @@
       "id": "XiHan.Framework.Localization.InMemory",
       "ring": "3",
       "summary": "内存本地化默认实现：汇集各包目录，精确区域 → 同语言 → 默认区域 → `en-US` 回退，设进程默认消息作用域",
-      "description": "XiHan Framework 内存本地化（默认实现）：汇集各包注册的消息目录，按精确区域、同语言、默认区域的回退链取文案并格式化。",
+      "description": "曦寒框架本地化的内存默认实现",
       "references": [
         "XiHan.Framework.Localization.Abstractions"
       ],
@@ -490,7 +490,7 @@
       "id": "XiHan.Framework.Messaging.Abstractions",
       "ring": "2",
       "summary": "CloudEvents 信封、代理与发布者、处理器订阅、经管道的派发、事务性发件箱、领域事件到消息的登记与派发",
-      "description": "XiHan Framework 消息契约（Ring 2）：CloudEvents 信封、代理与发布者、处理器订阅、经内核管道的派发、事务性发件箱。",
+      "description": "曦寒框架消息抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions",
@@ -516,7 +516,7 @@
       "id": "XiHan.Framework.Messaging.Conformance",
       "ring": "工具链",
       "summary": "`messaging.queue` Provider 必须通过的 xUnit 套件",
-      "description": "XiHan Framework 消息一致性套件：任何 messaging.queue Provider 都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架消息一致性测试套件",
       "references": [
         "XiHan.Framework.Messaging.Abstractions",
         "XiHan.Framework.Testing"
@@ -541,7 +541,7 @@
       "id": "XiHan.Framework.Messaging.InMemory",
       "ring": "3",
       "summary": "内存消息代理默认实现：有界通道、顺序投递、重试与死信",
-      "description": "XiHan Framework 内存消息代理（默认实现，仅单进程）：每主题一条有界通道、单消费者顺序投递、重试与死信。",
+      "description": "曦寒框架消息的内存默认实现",
       "references": [
         "XiHan.Framework.Messaging.Abstractions"
       ],
@@ -552,7 +552,7 @@
       "id": "XiHan.Framework.Messaging.Kafka",
       "ring": "3",
       "summary": "Kafka Provider：队列与流，幂等生产者、消费组位点、`xihankey` 分区键有序、按时刻重放、原位重试与死信主题（非 AOT）",
-      "description": "XiHan Framework 消息的 Kafka Provider：提供队列与流能力，幂等生产者、按消费组提交位点、分区键有序、按时刻重放、重试与死信主题，基于 Confluent.Kafka。",
+      "description": "曦寒框架消息的 Kafka 提供程序",
       "references": [
         "XiHan.Framework.Messaging.Abstractions"
       ],
@@ -568,7 +568,7 @@
       "id": "XiHan.Framework.Messaging.RabbitMQ",
       "ring": "3",
       "summary": "RabbitMQ Provider：持久队列、手动确认、重试与死信队列（非 AOT）",
-      "description": "XiHan Framework 消息的 RabbitMQ Provider：每主题一个持久队列，手动确认、重试与死信队列，基于 RabbitMQ.Client 7。",
+      "description": "曦寒框架消息的 RabbitMQ 提供程序",
       "references": [
         "XiHan.Framework.Messaging.Abstractions"
       ],
@@ -584,7 +584,7 @@
       "id": "XiHan.Framework.MultiTenancy.Abstractions",
       "ring": "2",
       "summary": "租户信息与存储、租户解析器、租户分片契约与默认解析器、Tenant 阶段中间件",
-      "description": "XiHan Framework 多租户契约（Ring 2）：租户信息、租户存储、租户解析器与 Tenant 阶段中间件。",
+      "description": "曦寒框架多租户抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions"
@@ -601,7 +601,7 @@
       "id": "XiHan.Framework.MultiTenancy.Conformance",
       "ring": "工具链",
       "summary": "`ITenantStore` 实现必须通过的 xUnit 套件",
-      "description": "XiHan Framework 多租户一致性套件：任何 ITenantStore 实现都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架多租户一致性测试套件",
       "references": [
         "XiHan.Framework.MultiTenancy.Abstractions"
       ],
@@ -621,7 +621,7 @@
       "id": "XiHan.Framework.MultiTenancy.Database",
       "ring": "3",
       "summary": "数据库租户目录 Provider：租户以实体经仓储读写，单例目录直接开工作单元读取并按租户有界缓存（带存活时间、写入即失效），分片从租户属性推出",
-      "description": "XiHan Framework 数据库租户目录 Provider：租户以实体经 persistence.relational@1 的仓储读写，单例目录直接开工作单元读取并按租户有界缓存，附默认解析器、Tenant 阶段中间件与从租户属性推出的分片解析器。",
+      "description": "曦寒框架多租户的数据库提供程序",
       "references": [
         "XiHan.Framework.MultiTenancy.Abstractions",
         "XiHan.Framework.Persistence.Abstractions"
@@ -633,7 +633,7 @@
       "id": "XiHan.Framework.MultiTenancy.InMemory",
       "ring": "3",
       "summary": "内存租户存储默认实现：从配置装载、有界",
-      "description": "XiHan Framework 内存租户存储（默认实现）：从配置装载租户、有界、可编程增删，附默认解析器与 Tenant 阶段中间件。",
+      "description": "曦寒框架多租户的内存默认实现",
       "references": [
         "XiHan.Framework.MultiTenancy.Abstractions"
       ],
@@ -644,7 +644,7 @@
       "id": "XiHan.Framework.ObjectStorage.Abstractions",
       "ring": "2",
       "summary": "对象存储契约：容器与键文法、批量写入与删除、按键读取、按前缀分页列举",
-      "description": "XiHan Framework 对象存储契约（Ring 2）：容器、键、元数据与 IBlobStore（批量写入与删除、按键读取、按前缀分页列举）。",
+      "description": "曦寒框架对象存储抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions"
@@ -665,7 +665,7 @@
       "id": "XiHan.Framework.ObjectStorage.Conformance",
       "ring": "工具链",
       "summary": "`IBlobStore` 实现必须通过的 xUnit 套件",
-      "description": "XiHan Framework 对象存储一致性套件：任何 IBlobStore 实现都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架对象存储一致性测试套件",
       "references": [
         "XiHan.Framework.ObjectStorage.Abstractions"
       ],
@@ -685,7 +685,7 @@
       "id": "XiHan.Framework.ObjectStorage.FileSystem",
       "ring": "3",
       "summary": "文件系统对象存储默认实现：原子替换写入、SHA-256 ETag、总量与单对象配额、范围读取、分片上传",
-      "description": "XiHan Framework 文件系统对象存储（默认实现）：本地目录按容器与键存放内容与元数据，原子替换写入，SHA-256 ETag，总量与单对象配额。",
+      "description": "曦寒框架对象存储的文件系统默认实现",
       "references": [
         "XiHan.Framework.ObjectStorage.Abstractions"
       ],
@@ -696,7 +696,7 @@
       "id": "XiHan.Framework.ObjectStorage.S3",
       "ring": "3",
       "summary": "S3 Provider：Amazon S3 与兼容服务（MinIO / OSS / COS / R2），条件写入实现不覆盖，批量删除一次请求（非 AOT）",
-      "description": "XiHan Framework 对象存储的 S3 Provider：容器即桶，经 AWS SDK 访问 Amazon S3 与兼容服务（MinIO、阿里云 OSS、腾讯云 COS 等），条件写入实现不覆盖，批量删除一次请求。",
+      "description": "曦寒框架对象存储的 S3 提供程序",
       "references": [
         "XiHan.Framework.ObjectStorage.Abstractions"
       ],
@@ -710,7 +710,7 @@
     },
     {
       "id": "XiHan.Framework.Observability.Abstractions",
-      "description": "XiHan Framework 可观测性契约（Ring 2）：能力 ID，以及进程与主机的运行信息（CPU、内存、磁盘、网卡、GPU、主板与运行时长）。",
+      "description": "曦寒框架可观测性抽象包",
       "references": [
         "XiHan.Framework.Primitives"
       ],
@@ -719,7 +719,7 @@
     },
     {
       "id": "XiHan.Framework.Observability.Host",
-      "description": "XiHan Framework 运行信息：读进程与所在主机的 CPU、内存、磁盘、网卡、GPU、主板与运行时长，后台采样 CPU 使用率与网卡速率；只读 BCL、/proc 与 /sys、注册表与系统调用，不启动外部命令。",
+      "description": "曦寒框架进程与主机运行信息库",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Observability.Abstractions"
@@ -736,7 +736,7 @@
       "id": "XiHan.Framework.Observability.OpenTelemetry",
       "ring": "3",
       "summary": "OpenTelemetry 导出：内核与运行时的追踪、指标、日志，OTLP 与控制台导出器",
-      "description": "XiHan Framework 可观测性（OpenTelemetry）：把内核与运行时的 Activity、Meter 与日志接到 OpenTelemetry，按配置启用 OTLP 与控制台导出器、采样与资源属性。",
+      "description": "曦寒框架可观测性的 OpenTelemetry 提供程序",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Observability.Abstractions"
@@ -761,7 +761,7 @@
       "id": "XiHan.Framework.Persistence.Abstractions",
       "ring": "2",
       "summary": "仓储、工作单元（登记写过的聚合）、查询（含时间范围提示）、标识生成、Transaction 阶段中间件（提交前经 `IDomainEventDispatcher` 派发领域事件）、实体登记",
-      "description": "XiHan Framework 持久化契约（Ring 2）：仓储、工作单元、查询、标识生成、Transaction 阶段中间件与实体协议约定。",
+      "description": "曦寒框架持久化抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Caching.Abstractions",
@@ -780,7 +780,7 @@
       "id": "XiHan.Framework.Persistence.Conformance",
       "ring": "工具链",
       "summary": "`persistence.relational` Provider 必须通过的 xUnit 套件",
-      "description": "XiHan Framework 持久化一致性套件：任何 persistence.relational Provider 都必须通过的 xUnit 抽象测试类与样例实体。",
+      "description": "曦寒框架持久化一致性测试套件",
       "references": [
         "XiHan.Framework.Persistence.Abstractions",
         "XiHan.Framework.Testing"
@@ -801,7 +801,7 @@
       "id": "XiHan.Framework.Persistence.EntityFrameworkCore",
       "ring": "3",
       "summary": "EF Core Provider：应用自有 DbContext、事务型工作单元、协议约定（非 AOT）",
-      "description": "XiHan Framework 持久化的 Entity Framework Core Provider：以应用自有的 DbContext 实现仓储与事务型工作单元，按实体协议配置并发戳、租户与软删除。",
+      "description": "曦寒框架持久化的 Entity Framework Core 提供程序",
       "references": [
         "XiHan.Framework.MultiTenancy.Abstractions",
         "XiHan.Framework.Persistence.Abstractions"
@@ -822,7 +822,7 @@
       "id": "XiHan.Framework.Persistence.Generators",
       "ring": "工具链",
       "summary": "源生成器：实体类 → 仓储登记、EF Core 实体登记、软删除 / 租户过滤规约（XHP001–XHP003）",
-      "description": "XiHan Framework 的持久化源生成器：从实现 IEntity<TKey> 的实体类生成仓储登记、EF Core 实体登记与软删除 / 租户过滤规约。",
+      "description": "曦寒框架持久化源生成器",
       "references": [],
       "dependencies": [],
       "frameworkReferences": []
@@ -831,7 +831,7 @@
       "id": "XiHan.Framework.Persistence.InMemory",
       "ring": "3",
       "summary": "内存持久化默认实现（`role: default`）：有界、读己之写、软删除与租户隔离",
-      "description": "XiHan Framework 内存持久化（默认实现，仅开发与测试）：有界存储、读己之写的工作单元、软删除与租户隔离。",
+      "description": "曦寒框架持久化的内存默认实现",
       "references": [
         "XiHan.Framework.Persistence.Abstractions"
       ],
@@ -840,7 +840,7 @@
     },
     {
       "id": "XiHan.Framework.Persistence.SqlSugar",
-      "description": "XiHan Framework 持久化的 SqlSugar Provider：以应用自有的 ISqlSugarClient 实现仓储与事务型工作单元，按实体协议配置主键、并发戳、租户与软删除，批量写入用 SqlSugar 原生批量。",
+      "description": "曦寒框架持久化的 SqlSugar 提供程序",
       "references": [
         "XiHan.Framework.MultiTenancy.Abstractions",
         "XiHan.Framework.Persistence.Abstractions"
@@ -861,7 +861,7 @@
       "id": "XiHan.Framework.Plugins.Conformance",
       "ring": "工具链",
       "summary": "任何语言实现的 `xihan.plugin.v1` 进程外插件必须通过的 xUnit 黑盒套件",
-      "description": "XiHan Framework 插件协议一致性套件：任何语言实现的 xihan.plugin.v1 插件都必须通过的 xUnit 抽象测试类——进程外载体（启动进程、握手、生命周期、调用、事件、退出）与 Wasm 载体（导出表、握手、生命周期、调用、事件、中间件钩子）。",
+      "description": "曦寒框架插件协议一致性测试套件",
       "references": [
         "XiHan.Framework.Plugins.Protocol",
         "XiHan.Framework.Plugins.OutOfProcess",
@@ -887,7 +887,7 @@
       "id": "XiHan.Framework.Plugins.InProcess",
       "ring": "5",
       "summary": "可收集 AssemblyLoadContext 的插件宿主（非 AOT）",
-      "description": "XiHan Framework 进程内插件宿主（Ring 5）：用可收集的 AssemblyLoadContext 加载、启动、停止、卸载插件。需要运行期反射，不支持 Native AOT。",
+      "description": "曦寒框架进程内插件宿主",
       "references": [
         "XiHan.Framework.Kernel"
       ],
@@ -903,7 +903,7 @@
       "id": "XiHan.Framework.Plugins.OutOfProcess",
       "ring": "5",
       "summary": "进程外插件宿主：按 `xihan.plugin.v1` 启动、握手、监视与重启子进程，代理操作、事件投递、受权限约束的回调（非 AOT）",
-      "description": "XiHan Framework 进程外插件宿主（Ring 5）：按 xihan.plugin.v1 协议启动、握手、配置、监控与重启插件子进程，把插件声明的操作登记为代理操作经完整管道调用、把订阅的消息投递给插件，并为插件提供受权限约束的宿主回调。",
+      "description": "曦寒框架进程外插件宿主",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Plugins.Protocol",
@@ -928,7 +928,7 @@
       "id": "XiHan.Framework.Plugins.Protocol",
       "ring": "3",
       "summary": "插件协议 `xihan.plugin.v1` 的 .NET 类型：生成的消息与桩、错误码与消息键、握手核对与映射，各隔离级别的宿主共用（非 AOT）",
-      "description": "XiHan Framework 插件协议 xihan.plugin.v1 的 .NET 类型（Ring 3）：从规范 .proto 生成的消息与桩、错误码与消息键、端点与版本协商、握手核对、上下文 / 错误 / 信封映射与代理操作；进程外与 Wasm 宿主共用。",
+      "description": "曦寒框架插件协议包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Messaging.Abstractions",
@@ -950,7 +950,7 @@
       "id": "XiHan.Framework.Plugins.Wasm",
       "ring": "5",
       "summary": "Wasm 插件宿主（Experimental）：wasmtime 沙箱里的 WASI reactor 模块，同一套消息按 JSON 经导出函数 + 线性内存，可贡献中间件，内存 / CPU 上限与崩溃重建（非 AOT）",
-      "description": "XiHan Framework Wasm 插件宿主（Ring 5，Experimental）：用 wasmtime 在进程内沙箱里加载 WASI preview 1 核心模块，按 xihan.plugin.v1 的 Wasm 载体（导出函数 + 线性内存，JSON 编码）握手、配置、调用、投递事件、贡献中间件，带内存 / CPU 上限、崩溃重建与健康上报。",
+      "description": "曦寒框架 Wasm 插件宿主",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Plugins.Protocol",
@@ -969,7 +969,7 @@
       "id": "XiHan.Framework.Primitives",
       "ring": "0",
       "summary": "原语与契约，只增不改",
-      "description": "XiHan Framework 原语层（Ring 0）：Result、Error、Maybe、TypedId、调用上下文契约、清单模型与稳定性标记。只增不改。",
+      "description": "曦寒框架原语包",
       "references": [],
       "dependencies": [],
       "frameworkReferences": []
@@ -978,7 +978,7 @@
       "id": "XiHan.Framework.Profiles.Full",
       "ring": "6",
       "summary": "组合包：Standard + 对象存储、调度、审计、工作流的默认实现 + AI 工具桥 + OpenTelemetry 导出与运行信息 + 四种协议适配器，`UseFullProfile()`",
-      "description": "XiHan Framework Full 组合包：Standard + ObjectStorage / Scheduling / Configuration / Auditing / Workflow 的抽象与默认实现 + AI 工具桥 + OpenTelemetry 导出与运行信息 + HTTP / gRPC / MCP / CloudEvents 协议适配器。",
+      "description": "曦寒框架 Full 组合包",
       "references": [
         "XiHan.Framework.Profiles.Standard",
         "XiHan.Framework.ObjectStorage.Abstractions",
@@ -1005,7 +1005,7 @@
       "id": "XiHan.Framework.Profiles.Minimal",
       "ring": "6",
       "summary": "组合包：原语层 + 内核 + ASP.NET Core 宿主 + 内存本地化",
-      "description": "XiHan Framework Minimal 组合包（Ring 6）：原语层 + 内核 + ASP.NET Core 宿主 + 内存本地化。边缘服务、工具与插件宿主用。",
+      "description": "曦寒框架 Minimal 组合包",
       "references": [
         "XiHan.Framework.Primitives",
         "XiHan.Framework.Kernel",
@@ -1020,7 +1020,7 @@
       "id": "XiHan.Framework.Profiles.Standard",
       "ring": "6",
       "summary": "组合包：Minimal + Domain + 五个子系统的抽象与内存默认实现，`UseStandardProfile()`",
-      "description": "XiHan Framework Standard 组合包（Ring 6）：Minimal（含本地化）+ Domain + Persistence / Caching / MultiTenancy / Security / Messaging 的抽象与内存默认实现。零外部基础设施即可运行，换 Provider 只加包与配置。",
+      "description": "曦寒框架 Standard 组合包",
       "references": [
         "XiHan.Framework.Profiles.Minimal",
         "XiHan.Framework.Domain",
@@ -1042,7 +1042,7 @@
       "id": "XiHan.Framework.Protocols.CloudEvents",
       "ring": "5",
       "summary": "CloudEvents 1.0 HTTP 绑定：入站 `/events` 派发或发布，出站 Webhook 发布者",
-      "description": "XiHan Framework CloudEvents 协议适配器（Ring 5）：CloudEvents 1.0 的 HTTP 协议绑定。入站端点接收 binary / structured / batch 三种内容模式的事件，按类型映射到主题后经内核管道派发给消息处理器或发布到消息代理；出站 Webhook 发布者把消息子系统的信封以 CloudEvents 推送到配置的 HTTP 端点。",
+      "description": "曦寒框架 CloudEvents 协议适配器",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Hosting.AspNetCore",
@@ -1058,7 +1058,7 @@
       "id": "XiHan.Framework.Protocols.Grpc",
       "ring": "5",
       "summary": "gRPC 协议适配器：操作成为一元方法，protobuf 线格式由 JSON Schema 推出，`/operations.proto` 发布",
-      "description": "XiHan Framework gRPC 协议适配器（Ring 5）：把标记为 Expose.Grpc 的操作契约发布为 gRPC 一元方法（服务 {Resource}、方法 {Verb}），以操作的 JSON Schema 作为 protobuf 描述在 JSON 与 protobuf 线格式之间转换，生成并发布 .proto 文件；上下文走请求元数据，失败映射为 gRPC 状态与 xihan-error-code 尾部元数据。",
+      "description": "曦寒框架 gRPC 协议适配器",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Hosting.AspNetCore",
@@ -1078,7 +1078,7 @@
       "id": "XiHan.Framework.Protocols.Http",
       "ring": "5",
       "summary": "HTTP 协议适配器：操作 ID 推导路由（可覆盖）、路由值/请求体/查询串绑定为 XGI 载荷、`MapXiHanOperations()`、OpenAPI 带权限扩展",
-      "description": "XiHan Framework HTTP 协议适配器（Ring 5）：按操作 ID 推导路由（可显式覆盖），把路由值、查询串与 JSON 请求体绑定为 XGI 请求，在 ASP.NET Core 宿主的内核管道内执行操作，失败结果用 RFC 9457 Problem Details 回写。",
+      "description": "曦寒框架 HTTP 协议适配器",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Hosting.AspNetCore",
@@ -1093,7 +1093,7 @@
       "id": "XiHan.Framework.Protocols.Mcp",
       "ring": "5",
       "summary": "MCP 协议适配器：操作成为 tool，JSON-RPC 2.0 + Streamable HTTP 与 stdio 传输",
-      "description": "XiHan Framework MCP 协议适配器（Ring 5）：把标记为 Expose.Mcp 的操作契约发布为 Model Context Protocol 的 tool（JSON-RPC 2.0，Streamable HTTP 传输）；tools/list 复用操作的 JSON Schema 与消息目录里的描述，tools/call 以独立调用经内核管道执行操作，失败按 isError 返回。",
+      "description": "曦寒框架 MCP 协议适配器",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Hosting.AspNetCore",
@@ -1109,7 +1109,7 @@
       "id": "XiHan.Framework.Scheduling.Abstractions",
       "ring": "2",
       "summary": "调度契约与引擎：作业与触发器、计划（间隔 / Quartz 文法 cron / 一次 / 手动，起止窗口与日历）、misfire 策略、经管道的派发、作业存储契约 `IJobStore`、集群分发引擎 `JobSchedulerEngine`（抢占、独占、失联恢复、历史）、租约式领导选举",
-      "description": "XiHan Framework 调度契约与引擎（Ring 2，RFC-0013）：作业与触发器、计划（间隔、Quartz 文法 cron、一次、手动）、日历、misfire、经内核管道的派发、作业存储契约 IJobStore、集群分发引擎 JobSchedulerEngine 与租约式领导选举 ILeaderElection。",
+      "description": "曦寒框架调度抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions",
@@ -1135,7 +1135,7 @@
       "id": "XiHan.Framework.Scheduling.Conformance",
       "ring": "工具链",
       "summary": "`IJobScheduler` 与 `ILeaderElection` 实现必须通过的 xUnit 套件",
-      "description": "XiHan Framework 调度一致性套件：任何 IJobScheduler 与 ILeaderElection 实现都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架调度一致性测试套件",
       "references": [
         "XiHan.Framework.Scheduling.Abstractions"
       ],
@@ -1159,7 +1159,7 @@
       "id": "XiHan.Framework.Scheduling.Database",
       "ring": "3",
       "summary": "数据库 Provider：作业 / 触发器 / 运行 / 节点 / 租约五张表经仓储读写，并发戳 CAS 抢占的集群分发、节点心跳与失联恢复、数据库领导租约",
-      "description": "XiHan Framework 数据库调度 Provider：作业、触发器、运行历史与节点以实体经 persistence.relational@1 的仓储读写，触发器抢占与领导租约以并发戳做跨进程的比较并交换，多节点共用一个数据库。",
+      "description": "曦寒框架调度的数据库提供程序",
       "references": [
         "XiHan.Framework.Scheduling.Abstractions",
         "XiHan.Framework.Persistence.Abstractions"
@@ -1171,7 +1171,7 @@
       "id": "XiHan.Framework.Scheduling.InMemory",
       "ring": "3",
       "summary": "内存调度默认实现：进程内作业存储（有界历史）+ 抽象包引擎、进程内租约领导选举",
-      "description": "XiHan Framework 内存调度（默认实现）：单进程轮询调度器按间隔或 cron 运行作业、手动触发与状态，进程内租约式领导选举。",
+      "description": "曦寒框架调度的内存默认实现",
       "references": [
         "XiHan.Framework.Scheduling.Abstractions"
       ],
@@ -1182,7 +1182,7 @@
       "id": "XiHan.Framework.Scheduling.Kubernetes",
       "ring": "3",
       "summary": "Kubernetes Provider：以 Lease 做跨 Pod 的领导选举，直接调用 API Server，无客户端库",
-      "description": "XiHan Framework 调度的 Kubernetes Provider：以 coordination.k8s.io Lease 实现跨 Pod 的领导选举，直接调用 API Server，不依赖客户端库。",
+      "description": "曦寒框架调度的 Kubernetes 提供程序",
       "references": [
         "XiHan.Framework.Scheduling.Abstractions"
       ],
@@ -1193,7 +1193,7 @@
       "id": "XiHan.Framework.Security.Abstractions",
       "ring": "2",
       "summary": "凭据与认证处理器、授权要求与策略目录、RBAC 授予，Authenticate / Authorize 阶段中间件",
-      "description": "XiHan Framework 安全契约（Ring 2）：凭据与认证处理器、授权要求与策略目录、权限授予存储与检查器，Authenticate / Authorize 阶段中间件。",
+      "description": "曦寒框架安全抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions"
@@ -1214,7 +1214,7 @@
       "id": "XiHan.Framework.Security.Conformance",
       "ring": "工具链",
       "summary": "`IPermissionGrantStore` 实现必须通过的 xUnit 套件",
-      "description": "XiHan Framework 安全一致性套件：任何 IPermissionGrantStore 实现都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架安全一致性测试套件",
       "references": [
         "XiHan.Framework.Security.Abstractions"
       ],
@@ -1234,7 +1234,7 @@
       "id": "XiHan.Framework.Security.Database",
       "ring": "3",
       "summary": "数据库授权 Provider：只提供 `security.authorization@1`，授予以实体经仓储读写（全局授予以空字符串租户列落库），授予存储带有界 TTL 缓存，`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果",
-      "description": "XiHan Framework 数据库授权 Provider：权限授予以实体经 persistence.relational@1 的仓储读写，授予存储带有界 TTL 缓存，附批量授予 / 撤销的存储 API 与 Authorize 阶段中间件。",
+      "description": "曦寒框架授权的数据库提供程序",
       "references": [
         "XiHan.Framework.Security.Abstractions",
         "XiHan.Framework.Persistence.Abstractions"
@@ -1246,7 +1246,7 @@
       "id": "XiHan.Framework.Security.InMemory",
       "ring": "3",
       "summary": "内存安全默认实现：ApiKey 主体与 RBAC 授予，从配置装载",
-      "description": "XiHan Framework 内存安全（默认实现，仅开发与测试）：从配置装载的 API Key 主体与权限授予，附 Authenticate / Authorize 阶段中间件。",
+      "description": "曦寒框架安全的内存默认实现",
       "references": [
         "XiHan.Framework.Security.Abstractions"
       ],
@@ -1257,7 +1257,7 @@
       "id": "XiHan.Framework.Security.Ip2Region",
       "ring": "3",
       "summary": "IP 归属地 Provider（`security.ip-region@1`）：ip2region 离线库，IPv4 / IPv6 xdb 由宿主提供，缺失只记警告",
-      "description": "XiHan Framework IP 归属地的 ip2region 离线库 Provider：按宿主提供的 IPv4 / IPv6 xdb 文件解析国家、省份、城市与运营商，不访问网络。",
+      "description": "曦寒框架 IP 归属地的 ip2region 提供程序",
       "references": [
         "XiHan.Framework.Security.Abstractions"
       ],
@@ -1277,7 +1277,7 @@
       "id": "XiHan.Framework.Security.Jwt",
       "ring": "3",
       "summary": "JWT Bearer 认证 Provider（非 AOT）",
-      "description": "XiHan Framework 认证的 JWT Provider：校验 Bearer 令牌（对称密钥、签发者、受众、有效期）并映射为主体。",
+      "description": "曦寒框架认证的 JWT 提供程序",
       "references": [
         "XiHan.Framework.Security.Abstractions"
       ],
@@ -1293,7 +1293,7 @@
       "id": "XiHan.Framework.Security.OpenIdConnect",
       "ring": "3",
       "summary": "OpenID Connect Bearer 认证 Provider：发现文档 + JWKS，密钥轮换时限速刷新（非 AOT）",
-      "description": "XiHan Framework 认证的 OpenID Connect Provider：从签发者的发现文档与 JWKS 取签名密钥校验 Bearer 令牌（非对称签名、签发者、受众、有效期），密钥轮换时按需刷新并映射为主体。",
+      "description": "曦寒框架认证的 OpenID Connect 提供程序",
       "references": [
         "XiHan.Framework.Security.Abstractions"
       ],
@@ -1309,7 +1309,7 @@
       "id": "XiHan.Framework.Testing",
       "ring": "工具链",
       "summary": "测试宿主、特性桩、清单与上下文构造",
-      "description": "XiHan Framework 测试基座：无 HTTP 的测试宿主、特性桩、清单与调用上下文的构造工具。",
+      "description": "曦寒框架测试工具库",
       "references": [
         "XiHan.Framework.Kernel"
       ],
@@ -1329,7 +1329,7 @@
       "id": "XiHan.Framework.Workflow.Abstractions",
       "ring": "2",
       "summary": "工作流契约与引擎：JSON 定义模型、校验与目录、活动（经完整管道执行的 19 个内置活动，含事件网关 / 补偿 / Http / 外部任务）、实例 / 书签 / 故障、用户任务服务、表达式、`workflow.*` 事件、存储 / 事务 / 实例锁契约；引擎随调用方事务提交或回滚，数据按平台 / 租户分区隔离，待办查询下推到存储并带总数",
-      "description": "XiHan Framework 工作流契约与引擎（Ring 2，RFC-0021）：定义、活动、实例、书签、用户任务、表达式、存储契约，以及经内核管道执行活动的引擎与到期书签轮询器。",
+      "description": "曦寒框架工作流抽象包",
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions",
@@ -1357,7 +1357,7 @@
       "id": "XiHan.Framework.Workflow.Conformance",
       "ring": "工具链",
       "summary": "工作流存储 / 实例锁与引擎装配必须通过的 xUnit 套件",
-      "description": "XiHan Framework 工作流一致性套件：任何工作流存储、实例锁与引擎装配都必须通过的 xUnit 抽象测试类。",
+      "description": "曦寒框架工作流一致性测试套件",
       "references": [
         "XiHan.Framework.Workflow.Abstractions",
         "XiHan.Framework.MultiTenancy.Abstractions"
@@ -1382,7 +1382,7 @@
       "id": "XiHan.Framework.Workflow.Database",
       "ring": "3",
       "summary": "数据库 Provider：定义 / 实例 / 节点实例 / 书签以 JSON 文档加查询列在调用方的工作单元里经仓储读写（随业务提交或回滚），租户的记录随租户分库，租约行实例锁（续约、CAS 接管），轮询只在持有租约的节点上逐个分区进行",
-      "description": "XiHan Framework 数据库工作流 Provider：定义、实例、节点实例与书签以实体经 persistence.relational@1 的仓储读写（过滤列加 JSON 文档），实例锁与到期书签轮询的领导权以租约行实现，多节点共用一个数据库。",
+      "description": "曦寒框架工作流的数据库提供程序",
       "references": [
         "XiHan.Framework.Workflow.Abstractions",
         "XiHan.Framework.Persistence.Abstractions",
@@ -1395,7 +1395,7 @@
       "id": "XiHan.Framework.Workflow.InMemory",
       "ring": "3",
       "summary": "内存工作流默认实现：按分区的有界内存定义 / 实例 / 书签存储（非事务）、进程内实例锁、单进程到期书签轮询",
-      "description": "XiHan Framework 内存工作流（默认实现）：有界内存的定义、实例与书签存储，进程内实例锁，单进程到期书签轮询。",
+      "description": "曦寒框架工作流的内存默认实现",
       "references": [
         "XiHan.Framework.Persistence.Abstractions",
         "XiHan.Framework.Workflow.Abstractions"

@@ -145,6 +145,14 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 | `IdGeneratorConformance<TKey>` | Preview | `CreateGenerator(TimeProvider clock)` 返回 `IIdGenerator<TKey>`（`TKey : IComparable<TKey>`） | 顺序生成与 8 线程并发生成不重复（真实时钟）、时钟前进后标识更大（`ConformanceClock`） |
 
 `Fixtures` 命名空间里的 `ConformanceOrder`、`ConformanceNote`、`ConformanceItem` 等是套件自带的实体，`ConformanceFeature` 登记它们；EF Core、SqlSugar 这类需要映射的 Provider 在 `ConfigureServices` / `ConfigureApp` 里为这些实体建模。`ConformanceLease` 只在给出 `NamedConnection` 时登记到那个连接，EF Core 的 `DbContext` 模型要包含它。`RunAsync`、`FindAsync`、`ListAsync`、`CountAsync` 等静态辅助方法供派生类补充用例。
+只读与嵌套的用例经 `ConformanceFeature` 登记的两个操作（只读的 `conformance-scripts.get`、可写的 `conformance-scripts.run`）走真实的操作契约。
+
+`DataSourceConformance` 是运行时数据源的套件（ADR-0078），每个 Provider 也都继承它：实现 `CreateDefinition(name)`（连得上，连接串末尾加分号仍连得上）与 `CreateUnreachableDefinition(name)`（连不上、带口令）。用例验证测试连接成功且不登记、同定义复用 / 定义变了替换 / 批量移除逐项报告、连不上返回 `PERSISTENCE_UNAVAILABLE_006` 且错误里没有连接串与口令、每个数据源一条健康项；不支持的 Provider（EF Core、内存实现）两个方法都返回 `null`，用例断言取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。SqlSugar 在 SQLite 与 PostgreSQL（`XIHAN_TEST_POSTGRES`）上都跑。
+
+`SchemaConformance` 是库结构读取与实体目录的套件（ADR-0078），每个 Provider 都继承它：设 `ReadsSchema`、实现 `CreateDefinition(name)`（指向应用自己库的运行时数据源，不支持时 `null`）。宿主登记套件的三种实体（订单登记两次），用例验证实体目录每个实体一条、标识类型 / 协议 / 主键列对、领域事件不列；读结构的 Provider 列出三张表、关键字与分页，表列表的分页越界以结果返回（`Skip` = -1、`Take` = 0 → `PERSISTENCE_VALIDATION_007`，`Take` = 1001 → `PERSISTENCE_VALIDATION_005`，经运行时数据源时不登记）而边界值照常，读到不可空的主键列，不存在的表该项 `PERSISTENCE_NOTFOUND_003`，超过 100 张整批 `PERSISTENCE_VALIDATION_005`，空集合空列表，经运行时数据源读到的结果与缺省连接一致；不读结构的 Provider 断言 `PERSISTENCE_UNAVAILABLE_008`。
+
+`IdGeneratorConformance<TKey>` 是标识生成器自己的套件：应用自定义的 `IIdGenerator<TKey>` 也应继承它。
+
 
 ```csharp
 using XiHan.Framework.Kernel.Hosting;
@@ -169,6 +177,8 @@ public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
 | `WasmPluginConformance` | Experimental | `PluginDirectory`：含清单与模块文件 | `ConfigurationJson`、`SampleRequests`、`ExcludedOperations`、`TrapOperation`（故意陷阱的操作，给出时才跑陷阱后重建用例） |
 
 进程外用例（以宿主身份启动进程）：握手行合法、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅在清单声明范围内；没有共同协议版本时以 `FailedPrecondition` 拒绝；`Configure` 与 `Start` 成功，`Health` 与 `WatchHealth` 报可服务状态且健康项都已声明，`Stop` 后进程在宽限内退出；未声明的操作以 gRPC `Unimplemented` 结束；每个声明的一元操作都返回带 `status` 的应答（成功时载荷是 JSON，失败时错误码合法）；向声明的订阅投递消息得到确认；stdin 关闭后进程自行退出。
+进程外用例还要求清单不写 `contributes.pipeline`（进程外插件不能贡献中间件，宿主在发现时拒绝）。Wasm 套件会故意触发陷阱，Windows 上影子栈强制时整个进程会 fail-fast，所以套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝；陷阱之后从同一个模块重建实例，重走握手的声明与首次相同（`wasm.md` §5）。
+
 
 Wasm 用例（在进程内实例化模块）：模块是 reactor、导出与导入表符合 ABI v1、`xihan_abi_version` 返回 1；握手协商出版本 1、清单一致、声明在范围内、没有流式操作，声明了订阅 / 中间件就导出了对应函数；`xihan_configure` / `xihan_start` 成功、`xihan_health` 报可服务状态、`xihan_stop` 成功；未声明的操作以 `KERNEL_NOTFOUND_001` 的失败状态应答；每个声明的操作都返回带 `status` 的应答；订阅投递得到确认；每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果），在 after 阶段也应答；`TrapOperation` 陷阱之后，从同一个模块重建的实例重走握手、声明与首次相同，配置、启动后报可服务状态并照常应答。
 
@@ -199,7 +209,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 | `JobStoreConformance` | `CreateAsync()` 返回 `(IJobStore Store, IAsyncDisposable Host)` | 作业写入 / 查找 / 列表 / 替换 / 级联删除与快照语义、触发器全字段往返、到期抢占跨节点原子且按到期时刻与优先级排序、独占运行与阻塞 / 完成解除 / 查询 / 取消 / 清理、节点心跳与失联恢复 |
 | `LeaderElectionConformance` | `CreateElection(clock)` 返回 `ILeaderElection`，选举与它产生的租约按传入的时钟判定到期（用例推进时钟，不等真实时间）；可覆写 `LeaseTimeToLive`（缺省 400 毫秒，整数秒粒度的 Provider 如 Kubernetes Lease 改为 1 秒）；`StartNodeAsync(clock, probe)` 返回 `(ILeaderElection Competitor, IAsyncDisposable Host)`：起一个调度引擎用被测选举的节点（登记套件的时钟、轮询周期设得很长、`UseFeature(probe)` 装配套件给的探针特性），`Competitor` 是与节点争同一租约、节点启动到停止期间都在服务的另一个持有者（数据库实现是同一个库上的另一个节点，进程内实现是节点自己的选举），`Host` 释放这一切（节点可能已被用例停止） | 获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期；应用生命周期（ADR-0094）：启动中的周期不拿租约，进入服务后竞争者放手即由节点拿到，排空中的周期释放、竞争者在租约到期之前就拿到 |
 
-调度器用例由用例驱动时间（ADR-0074）：套件登记一个只由用例推进的时钟（`FakeTimeProvider`），引擎的到期判定、领导租约、作业的停留与执行时限都按它计时；用例推进时钟、调用 `JobSchedulerHost.PollAsync` 轮询一次再断言，不靠后台循环、也不按墙钟等待，结果与机器快慢和负载无关。等作业开始用 `RecordingJobLog.WaitAsync`，由作业的记录唤醒。`RecordingJob` 认运行数据里的 `failBeforeAttempt` 与 `delayMilliseconds`（按注入的时钟停留），用来构造重试与超时场景。`Scheduling.InMemory`、`Scheduling.Database` 通过三套用例，`Scheduling.Kubernetes` 通过领导选举用例（以内存 API Server 桩验证，应用生命周期用例的节点装配内存调度与 Kubernetes 选举）。领导选举的应用生命周期用例要求 `Release` 在应用不在服务状态时也真正生效：经管道释放的实现（排空与停止时管道拒绝调用）过不了。
+调度器用例由用例驱动时间（ADR-0074）：套件登记一个只由用例推进的时钟（`FakeTimeProvider`），引擎的到期判定、领导租约、作业的停留与执行时限都按它计时；用例推进时钟、调用 `JobSchedulerHost.PollAsync` 轮询一次再断言，不靠后台循环、也不按墙钟等待，结果与机器快慢和负载无关。等作业开始用 `RecordingJobLog.WaitAsync`，由作业的记录唤醒。`RecordingJob` 认运行数据里的 `failBeforeAttempt` 与 `delayMilliseconds`（按注入的时钟停留），用来构造重试与超时场景。`Scheduling.InMemory`、`Scheduling.Database` 通过三套用例，`Scheduling.Kubernetes` 通过领导选举用例（以内存 API Server 桩验证，应用生命周期用例的节点装配内存调度与 Kubernetes 选举）。领导选举的应用生命周期用例要求 `Release` 在应用不在服务状态时也真正生效：经管道释放的实现（排空与停止时管道拒绝调用）过不了。作业要等时钟推进才结束时（停留、执行时限），先发起轮询或触发，等作业开始，再推进时钟，最后等调用完成。
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
@@ -225,6 +235,8 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、全局授予对任何租户生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
 
+`GetGrantsAsync` 返回 `Result<IReadOnlyCollection<string>>`：没有授予是成功的空集合，存储故障是失败。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
+
 在完整的应用宿主上给不可达的存储时，不要让整个宿主的库不可达（删库、断开默认连接）：宿主里别的子系统的后台循环——工作流轮询与它的领导权、发件箱、调度、翻译加载——在服务状态下会如实报存储不可达（如 `WORKFLOW_UNAVAILABLE_001`），那是真实的故障信号。用只装被测特性的最小宿主（框架 `Security.Database` 的测试就是这样），或只让被测存储用的连接不可达。
 
 ## Workflow
@@ -238,6 +250,8 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 | `WorkflowTaskConformance` | 同 `WorkflowEngineConformance` 的 `StartAsync` | 会签阈值（按人数或百分比）、认领与释放、退回与历史、催办事件、条件查询的分页结果与总数（越界是校验错误、挂起的实例的任务不出现）、任务元数据（优先级、到期、表单键）与周期提醒、外部任务的领取 / 完成 / 失败 / 锁、按创建先后限量领取与条数上限 |
 
 `ConformanceLog`（兼消息代理）、`RecordActivity`、`RecordingOutcomeHandler` 是套件登记进容器的记录器、活动与结果处理器。自写宿主跑套件时，`WorkflowEngineHost` / `WorkflowStoreHost` 的释放句柄要先停宿主（应用排空：数据库工作流的轮询器释放领导权、后台循环退出，ADR-0087）再删库或删库文件；先删库再停，还在服务的宿主会如实报 `WORKFLOW_UNAVAILABLE_001`。`Workflow.InMemory` 与 `Workflow.Database` 通过三套用例，引擎与任务两套在装了发件箱的宿主上也通过，引擎套件在同时装了调度的宿主上也通过（调度不记告警）。
+
+租户相关的用例经 `ITenantStore` 取租户：套件以 `TryAdd` 登记一份固定的租户目录（`t1`、`t2`、`t-other` 启用，`t-off` 停用），夹具不必装配多租户。`WorkflowEngineHost` 的 `AsTenantAsync` 以租户开一次调用（可选回滚），`PublishManyAsync` 在一个分区里批量发布。延时启动、外部任务的锁到期与重试时刻由用例推进时钟判定：`configure` 里登记手动推进的 `TimeProvider`，Provider 的引擎、存储与轮询器须从容器取时钟，不读墙钟。只读调用的用例两种 Provider 同一断言：写入在执行活动之前以 `PERSISTENCE_UNEXPECTED_001` 拒绝，调用本身成功（ADR-0099）。
 
 事件在代理一侧记录（ADR-0096 第六节）：`Register` 把 `ConformanceLog` 登记成 `IMessageBroker`——消息 Provider 以 `TryAdd` 登记代理与直接发布者（框架的内存、RabbitMQ、Kafka 都是），先登记的记录器不被顶替；没装消息 Provider 的宿主由套件补上 `DirectPublisher`。宿主装了发件箱（`OutboxFeature`）也照常：事件随事务写进发件箱，夹具的 `InScopeAsync`、`AsTenantAsync` 在操作结束之后、`PollAsync` 在轮询之后调 `WorkflowEngineHost.DrainOutboxAsync`，把已提交的事件立即投递给记录器，回滚的不送达；同一信封按 ID 只记一次。所以应用可以在自己装着发件箱的真实宿主上跑这两个套件，不用另起不装发件箱的宿主。记录器只把工作流事件（信封来源是 `WorkflowTopics.Source`，即 `/workflow`）解析进 `Events`；宿主里别的发布端（调度的作业事件、应用自己的消息）送来的照常确认成功、不解析，主题按送达顺序记进 `OtherTopics`（ADR-0096 修订）——调度等发布端不会因套件记告警，发件箱的投递轮次也不会因别的主题失败。记录器只记录、不消费：套件运行时宿主别的消息订阅仍收不到消息。在夹具之外操作引擎后要读事件，先调 `DrainOutboxAsync`。
 

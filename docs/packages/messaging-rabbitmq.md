@@ -146,6 +146,9 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 ## 升级说明
 
 - 滚动升级：发布方已是新版本、订阅方仍是旧版本的那段时间里，新版本发出的消息没有绑定可走，按「没有订阅者」丢弃。先升级订阅方，或让一个新版本的订阅实例先启动一次建好绑定；同一个应用的实例既发布又订阅，第一个新版本实例启动即建好绑定。
+- 没有订阅者的主题队列（如 `xihan.scheduling.job.started` 等 `scheduling.job.*`）：收不到新消息，框架也不删除它们，已经堆积的消息留在原处。确认没有消费者后由运维删除：`rabbitmqctl list_queues name messages consumers` 找出 `consumers` 为 0 的框架主题队列，再 `rabbitmqctl delete_queue <队列>`（或在管理界面删除）。
+- 订阅方每次启动都声明队列并绑定到交换机：已有的同名队列照常可用，积压照常消费。发布方与订阅方的 `QueuePrefix`、`Exchange` 要一致，否则消息到不了订阅方的队列。
+- 凭据不进日志与错误消息。
 - 希望订阅方上线之前就留存消息的部署，由运维预先声明持久队列 `<QueuePrefix><topic>` 并以同名路由键绑定到交换机。
 
 ## 相关

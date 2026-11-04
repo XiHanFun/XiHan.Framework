@@ -92,7 +92,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Bindings:db` | 字符串 | — | 方式一的连接绑定主值 |
 | `XiHan:Persistence:SqlSugar:Connections:<name>` | 字符串 | — | 方式一的命名连接，值是连接串（见下文「命名连接」）；方式二写了这一节装配即失败 |
-| `XiHan:Persistence:SqlSugar:CommandTimeoutSeconds` | 正整数 | `300` | 命令超时（秒），设在特性建的客户端的每个连接上；不是正整数即启动失败，应用自己注册客户端时不适用。个别长任务在调用点用 `Ado.CommandTimeOut` 临时调大 |
+| `XiHan:Persistence:SqlSugar:CommandTimeoutSeconds` | 正整数 | `300` | 命令超时（秒），设在特性建的客户端的每个连接上；不是正整数即启动失败；应用自己注册客户端时这个键不起作用，配了与缺省不同的值也启动失败。个别长任务在调用点用 `Ado.CommandTimeOut` 临时调大 |
 | `XiHan:Persistence:SqlSugar:Replicas:DefaultHitRate` | 正整数 | `10` | 权重不大于 0 的从库归一化成的权重 |
 | `XiHan:Persistence:SqlSugar:Replicas:HealthCheck` | 布尔 | `true` | 是否周期探测从库；配了从库才有探测 |
 | `XiHan:Persistence:SqlSugar:Replicas:HealthCheckIntervalSeconds` | 正数 | `30` | 从库的探测间隔 |
@@ -318,6 +318,21 @@ public sealed class ChangeBuffer
 | 作用范围 | 只管实体：声明在 `System.*` 类型上的属性原样交还 |
 
 - `InitTables` 建缺表、加缺列，按落点分组：启动时没有调用也就没有分片，租户实体在默认连接建表；带 `[Tenant]` 或登记到命名连接的实体在各自的连接上建表。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。给已有行的表加非可空列：PostgreSQL 上数值 / 枚举 / 布尔 / Guid 列由约定回填缺省值，代价是此后每次 `InitTables` 都对这些列重发一次 `SET DEFAULT`；SQLite 由 SqlSugar 加成可空列；非可空字符串、日期时间列与其他数据库不受支持，新列声明成可空，或重建开发库、走迁移脚本。
+- 默认的 `SqlSugarConnectionSelector` 构造时收 `RepositoryRegistrations`。绑定连接的工作单元在 `GetConnection(name)` 上直接 `Ado.BeginTran` / `CommitTran` / `RollbackTran`，不经 `AsTenant()`。绑定 `db`（`connection:relational`）可选，缺失时回调自行决定连接；分片库的表结构由应用管理。
+- 索引的转换：`[EntityIndex]` 经 `ConfigureExternalServices.EntityNameService` 转成 `SugarIndexAttribute`，已有回调先执行，表名以它们改过的为准；名字与列由 `EntityIndexes.Resolve(type, 表名)` 推出、全部升序。`InitTables` 建表后按名字查不到才 `CREATE [UNIQUE] INDEX`，已有的不改不删，再次建表不重复建（PostgreSQL 把不加引号的名字折成小写，SqlSugar 按不区分大小写查，同样幂等）。表里已有重复数据时唯一索引建不出来，`InitTables` 失败、启动失败。实体自己的 `[SugarIndex]` 与之同名时以实体的为准。分表实体声明 `[EntityIndex]` 抛 `NotSupportedException`：SqlSugar 按分表改写索引名时就地改动缓存的特性，名字随建表次数变化；分表实体直接用 `[SugarIndex]` 与 `{split_table}` 占位符。应用自己组合回调时用 `SqlSugarConventions.ConfigureIndexes(type, entityInfo)`。
+- 部分唯一索引的细节：PostgreSQL、SQLite 的 SQL 是 `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE "IsDeleted" = false / 0`（PostgreSQL 上名字同样是小写），SQL Server 先查 `sys.indexes` 再建筛选索引 `WHERE [IsDeleted] = 0`；已有同名的不改不删。特性开着 `InitTables` 时经它建表；应用自己建表（租户独立库、迁移工具）也要调 `SqlSugarConventions.InitTables`，直接调 `CodeFirst.InitTables` 建不出部分唯一索引。不支持的数据库包括 MySQL 系（含 TiDB、OceanBase、Doris、GoldenDB、TDSQL）、Oracle 系（含达梦、OceanBase Oracle 模式）、ClickHouse、QuestDB、TDengine、DuckDB、Access、DB2、HANA，以及源自 PostgreSQL 的人大金仓、openGauss、GaussDB、瀚高、Vastbase、PolarDB（没有验证过，在真实库上验证后才加进名单，已定，ADR-0084）。已登记的软删除实体声明了唯一索引（列里没有 `IsDeleted`）而它落的连接是这些数据库时，启动即失败，一次列出全部实体，不论是否开着 `InitTables`；`InitTables(client, …)` 在建任何表之前同样抛出。库里已有同名的带 `IsDeleted` 列的唯一索引时，`IF NOT EXISTS` 会跳过，要先手动删掉那个索引。
+- 唯一键重复的核对范围还包括实体自己的唯一 `[SugarIndex]`；分表实体不核对。
+- 差异日志的回调在写入执行后同步触发、不等提交，调用方的 AsyncLocal 可读，当前调用经 `Services` 里的 `IInvocationAccessor` 取；事务回滚由应用按调用缓冲后再落库，缓冲时在回调里复制值。分表写入路径不加行锁，靠并发戳；分表字段写入后不要再改。
+- `InitTables` 加列的补充：SQLite 不配 CLR 缺省值（SqlSugar 本来就加可空列、旧行读回 CLR 缺省值；配了反而走重建列流程、布尔列读回失败）。约定只管实体，声明在 BCL 类型（`System.*`）上的属性原样交还：SqlSugar 对承载字典更新的 `Dictionary<string, object>` 也调用实体服务，否则其 `Count` 被标成忽略列，字典更新里名为 `count` 的列被丢掉。
+- 命令超时 `CommandTimeoutSeconds`：0 不接受（ADO.NET 的 0 是无限等待）；应用自己注册客户端时配了与缺省不同的值也启动失败，要在自己的客户端上设 `Ado.CommandTimeOut`。
+- 读写分离的补充：配了从库的连接每个作用域一份配置副本，因为 SqlSugar 读从库时会改配置上的连接串，共用时别的作用域的写入会落到从库上；提交之后同一作用域的读也在主库上；回调只给从库所属的连接（看 `ConfigId`）。
+- 读结构的实现：读表 `DbMaintenance.GetTableInfoList`、读列 `GetColumnInfosByTableName`；分表模板里 `{year}` 四位，`{month}`、`{day}` 两位，不区分大小写；驱动异常翻译为 `PERSISTENCE_UNAVAILABLE_006`（消息键 `persistence.schema.read_failed`），其余异常原样抛出；实体目录不连库。缺省值原文在 MySQL 是 `x`、SQL Server `('x')`、Oracle `'x'`，SQL Server 报告的 `int` 10 / `float` 53 不算长度。实测用 `XIHAN_TEST_MYSQL`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_ORACLE` 门控。Oracle 读列查 `USER_TAB_COLUMNS`、`USER_COL_COMMENTS`、`USER_CONSTRAINTS` / `USER_CONS_COLUMNS`（`OracleColumns`），字符类型按字符数。
+- PostgreSQL 会话的补充（ADR-0100）：SqlSugar 内联字面量在 off 时的后果是含 `'` 的值报 42601，`a`、`line
+` 被静默写成退格与换行、主键随之变成别的值，批量更新、删除与 `In` 静默漏行。启动参数由服务器在建连时施加，连接池复用时的重置也回到它。连接串经 `DbConnectionStringBuilder` 重新序列化（键变成小写、含分号的值加引号），Npgsql 解析结果相同；方式二要在 `Apply` 之前设好数据库类型与连接串。原来设成 off 的库上，原生 SQL 普通字面量里的反斜杠不再是转义符（要转义用 `E'…'`）。PgBouncer 按其文档 1.20 起接受启动参数 `options`，没有实测，更早的版本拒绝。参数化的路径（单行插入与更新、`UseParameter()`、`Fastest` 的 `COPY`、规约里的比较与字符串匹配）本来就不受影响。
+- MySQL 已知限制的实测：`mysql:9.7` 缺省模式下 `In` 与三种按主键删除 4 个值只命中 2 个、集合 `Contains` 4 个都对；`NO_BACKSLASH_ESCAPES` 下反过来。
+- 规约改写的补充：可空值类型与 null 的比较改写覆盖字面量 null、闭包里求值为 null 的变量或静态成员、左右互换，与非 null 值的比较不动；`!(a == b)` 换成 `a != b`，下推后的形式在 SQL 三值逻辑下等价。一致性套件 `List_NullableValueTypeComparedWithNull_FiltersByPresence` 与 `List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten` 覆盖 SQLite，PostgreSQL 由同一套件按配置跑。
+- 字符串匹配的补充：SqlSugar 解析方法调用时先按名字查外部函数，所以接管对所有路径生效；实参是列或表达式时的拼接写法与原来相同（PostgreSQL / MySQL `concat`，SQL Server `+`，SQLite / Oracle `||`），实参为 NULL 的结果不变；Oracle 的转义符后面只能跟 `%`、`_` 或它自己（ORA-01424），其余库不转义 `[`；带 `StringComparison` 的重载照 SqlSugar 原样忽略比较方式；SQLite 上 SqlSugar 原有的启发式（值里有 `%` 或 `_` 时加 `escape ''`）不再生效，`%` 按字面是两个字符；应用之后整体替换 `SqlFuncServices` 列表会丢掉这三个翻译。一致性套件 `List_StringContainsStartsWithEndsWith_MatchWildcardCharactersLiterally` 覆盖 SQLite 与 PostgreSQL；本包测试在 SQLite（不设门控）与 PostgreSQL、MySQL、SQL Server、Oracle（`XIHAN_TEST_*` 门控）上跑经仓储与经客户端的同一组用例。
+- 实测过的数据库：字符串按字面匹配在 SQLite、PostgreSQL 17、MySQL 9.7、SQL Server 2022、Oracle Free 23 上验证；索引在 SQLite 与 PostgreSQL 上验证建出、再次建表不重复、唯一索引拒绝重复；PostgreSQL 库与整个服务器设成 `standard_conforming_strings = off` 时批量写入、按主键的查找与删除照样保留反斜杠、单引号与换行；本包通过 `Persistence.Conformance` 套件（SQLite）。
 - 行锁：更新与删除的读取带 `TranLock`（`FOR UPDATE` / `UPDLOCK`）；SQLite 不支持行锁，由它的数据库级写锁保证；分表实体不加行锁。
 - 游离实例更新：并发戳与当前行不同返回 `PERSISTENCE_CONFLICT_001`；通过后把调用方的实例整行写入，创建时间、租户与删除标记取当前行的值，调用方实例上的这几个值不生效，写入后调用方实例拿到它们。按主键更新影响 0 行（行在加锁前已被删除）也返回 `PERSISTENCE_CONFLICT_001`。
 - 并发新增同一标识：检查之后别的事务提交了同一标识，PostgreSQL 在插入时等对方提交后报主键冲突。PostgreSQL 系语句失败后整个事务进入中止状态，仓储另开一个不在事务里的连接（`CopyNew`，同一份连接配置）核对这些标识：确已存在就返回 `PERSISTENCE_CONFLICT_002`，批量时这次写入的项统一报告；否则异常原样抛出。之后工作单元只能回滚：处理器忽略失败返回成功时，提交回滚并返回同一错误，不会对一个已中止的事务执行 `COMMIT`（PostgreSQL 会静默回滚，调用方看到的成功是假的）。

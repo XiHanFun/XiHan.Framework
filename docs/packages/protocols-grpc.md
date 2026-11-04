@@ -111,6 +111,9 @@ JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 C
 ## 行为与限制
 
 - 暴露给 gRPC 的操作必须有 Schema；名字、Schema 与消息形状的问题都在映射时失败，应用启动不起来。
+- 方法名：服务 = 资源段的 PascalCase（`order-lines` → `OrderLines`），方法 = 动词的 PascalCase；`XiHan:Protocols:Grpc:Methods:<操作 ID>` = `Service/Method` 显式覆盖；包名 `XiHan:Protocols:Grpc:Package` 写进 `.proto` 的 `package`，也是路径前缀（`/{package}.Orders/Create`）。名字不合法或重复即启动失败。发布范围是 `Expose` 含 `Grpc` 且非 `Stability.Internal` 的操作。
+- 消息映射（`ProtoSchema`）：消息名取 Schema 的 `title`（封闭泛型带实参名，如 `PageResultOfUserResponse`，ADR-0034），`$defs` 里的每个对象定义一个消息；字段号按 Schema 属性顺序从 1 起；`string` → string（base64 → bytes）、`boolean` → bool、`integer` 按 `format` int32 / int64（无格式 → 十进制文本）、`number` 按 `format` float / double（decimal、无格式 → 十进制文本）、数组 → repeated、`additionalProperties` → map<string, T>、`$ref` → 嵌套消息（指向字符串枚举这类标量定义时按该标量映射为 string，不建消息也不建 proto enum）、可空 → optional、无约束 → JSON 文本。嵌套数组与映射里的映射不可表示，启动失败。`.proto` 文件由同一份描述生成并经 `MapXiHanProto()`（`GET /operations.proto`）发布给客户端。
+- 调用来源记 `grpc` 与方法全名，远端地址与 User-Agent 沿用 HTTP/2 请求（ADR-0043）；端点绕过 `UseXiHan()` 的回写，响应完全由 gRPC 处理器产出。流式方法与 gRPC 反射服务未提供。
 - 线上缺席的布尔、数值、`repeated`、`map` 字段按 proto3 默认值补进 JSON；字符串、字节、嵌套消息缺席即缺席。
 - 字符串枚举映射为 `string`，不建 proto `enum`；`integer` 无格式与 `decimal` 映射为十进制文本。
 - 应用未就绪（启动中或正在停止）时以 `Unavailable` 拒绝、不进管道：尾部元数据带 `xihan-error-code: KERNEL_UNAVAILABLE_001` 与 `xihan-trace-id`，`grpc-message` 按 `accept-language` 翻译。

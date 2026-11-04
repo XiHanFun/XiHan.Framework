@@ -1,36 +1,58 @@
 # XiHan.Framework.Messaging.Kafka
 
-`messaging.queue@1` 与 `messaging.stream@1` 的 Kafka Provider（Ring 3，`role: provider`，RFC-0009「流」）。注册后顶替内存代理。
+## 关于
+
+`XiHan.Framework.Messaging.Kafka` 是消息的 Kafka 提供程序，同时提供队列与流：顶替内存代理，并支持按分区键有序、按消费组保存位点、按时刻重放。
+
+## 主要特性
+
+* 队列语义：竞争订阅在同一消费组分摊分区，广播订阅用本实例独占的消费组
+* 按分区键有序，`IMessageReplayer` 按时刻重放
+* 位点在投递完成后才提交，至少一次
+* 失败原位重试，仍失败发布到死信主题
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Messaging.Kafka --prerelease
+```
+
+### 使用
+
+注册后顶替内存代理，必需配置是引导地址：
 
 ```csharp
-builder.AddXiHan(x => x.UseFeature<KafkaMessagingFeature>());
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<KafkaMessagingFeature>());
 ```
 
 ```json
-{ "XiHan": { "Messaging": { "Kafka": { "BootstrapServers": "localhost:9092", "GroupId": "orders", "TopicPrefix": "xihan.", "Properties": { "security.protocol": "SASL_SSL", "sasl.mechanism": "PLAIN", "sasl.username": "…", "sasl.password": "…" } } } } }
+{ "XiHan": { "Messaging": { "Kafka": { "BootstrapServers": "localhost:9092", "GroupId": "orders", "TopicPrefix": "xihan.", "Properties": { "security.protocol": "SASL_SSL", "sasl.mechanism": "PLAIN", "sasl.username": "<user>", "sasl.password": "<password>" } } } } }
 ```
 
-引导地址来自绑定 `stream`（`stream`）的主值，没有绑定时取 `XiHan:Messaging:Kafka:BootstrapServers`：两者都给时绑定优先，其余键照读配置节（RFC-0016「资源绑定与配置节」）；两者都没有时装配失败。`Properties:<key>` 原样透传给 librdkafka（生产者与消费者共用）；绑定的属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 各自覆盖其中的同名键（空白不算给出），其余绑定属性不透传。
+`Properties` 原样透传给 librdkafka。引导地址也可以来自资源绑定 `stream`。关闭了自动建主题的集群要预建主题，清单见概念文档。
 
-## 语义
+## 主要类型
 
-- 主题映射为 `<TopicPrefix><topic>`（前缀默认 `xihan.`）；消息值是 CloudEvents 结构化 JSON，头 `content-type` 为 `application/cloudevents+json`、`x-xihan-attempt` 为尝试次数；消息键取信封扩展属性 `xihankey`（分区键），没有时由 Kafka 分配分区——主题只有一个分区时全局有序，多分区的主题靠分区键换取同键有序。
-- 生产者幂等且 `acks=all`；批量发布连续交给客户端本地队列、合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
-- 每个订阅（主题加方式）一个消费者。竞争订阅在同一消费组 `GroupId`（默认 `xihan`）里分摊分区，从最早位点开始（订阅前发布的消息也收到）。广播订阅（RFC-0009「订阅方式」）用本实例独占的消费组 `<GroupId>@<InstanceId>`（`MessagingInstance.Id`，组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点（实例标识缺省每次生成、是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变但从未提交），不回放历史；分区分配是异步的，启动后要等几秒才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。以 `GroupId` 为前缀的消费组 ACL 同样覆盖广播消费组。两种订阅都，单线程按分区顺序派发；处理失败在原位重试到 `MaxAttempts`（不重新入队，顺序不变），仍失败发布到死信主题 `<topic><DeadLetterSuffix>`；无法解码的消息直接进死信。投递完成后才提交位点，停止时未完成的消息重启后重新投递（至少一次）。死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，回退到这条消息，等 `XiHan:Messaging:Kafka:RedeliveryDelaySeconds`（默认 5）后重新投递；消费者本身出错同样等一会儿再取，消费循环只在停止时退出（ADR-0064）。打桩的生产者与消费者覆盖这条路径（`KafkaRedeliveryTests`），不需要 Kafka。
-- 重放 `IMessageReplayer.ReplayAsync(topic, since)`（只投给竞争订阅）：用独立消费组从该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍，不提交位点、不影响正常消费；主题不存在或该时刻之后没有消息时成功返回；死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
-- 启动时向集群取一次元数据，连不上即启动失败（`MESSAGING_UNAVAILABLE_001`）。
-- 主题不存在：broker 开着 `auto.create.topics.enable`（缺省）时由它自动建主题，没人订阅的主题里的消息只留到保留期（`retention.ms`，缺省 7 天），没有消费组就没有积压（ADR-0079）。关了自动建主题时主题不存在是部署错误，框架不建主题、也不当作没有订阅者丢弃（ADR-0085）：发布在客户端判定主题不存在后失败（`MESSAGING_UNAVAILABLE_001`，`topic.metadata.propagation.max.ms`，缺省 30 秒），订阅记 Warning 并一直等，死信主题不存在时回退重投、分区停在原地。这类部署要预建（都带 `TopicPrefix`）：应用发布与订阅的主题、被竞争订阅主题的死信主题 `<topic><DeadLetterSuffix>`、装配了调度时的 9 个 `scheduling.job.*` / `scheduling.run.*`、装配了工作流时的 `workflow.*`（`SchedulingTopics`、`WorkflowTopics`），没人订阅的也要建。
-- 健康项 `messaging.kafka.connection`：启动后按 `XiHan:Messaging:Kafka:HealthProbeIntervalSeconds`（默认 15）在后台以生产者的连接描述集群（从属管理客户端，不另开连接）并缓存结果；集群不可达或超时条目 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
-- 不满足 AOT 分析器（librdkafka 本机库）。
+此库提供的主要类型：
 
-## 测试
+* `KafkaMessagingFeature`：特性入口
+* `KafkaMessagingOptions`：引导地址、消费组、主题前缀等
+* `KafkaMessageBroker`：同时实现 `IMessageBroker` 与 `IMessageReplayer`
 
-一致性套件需要真实 Kafka：设置环境变量 `XIHAN_TEST_KAFKA`（如 `localhost:9092`）后运行，`MessageStreamConformance` 含队列套件全部用例（含两个实例的广播与竞争用例）与流的两个用例；广播的打桩用例在 `KafkaBroadcastTests`；未设置时跳过。本地 `docker run -d -p 9092:9092 apache/kafka` 即可（单节点 KRaft，自动建主题）。
+## 更多文档
 
-## 依赖方向
+* [概念文档](https://framework.docs.xihanfun.com/packages/messaging-kafka)
 
-依赖 `Messaging.Abstractions` 与 `Confluent.Kafka`（自带 librdkafka）。
+## 相关包
 
-## 状态
+* 消息契约：[XiHan.Framework.Messaging.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Messaging.Abstractions)
+* 内存实现：[XiHan.Framework.Messaging.InMemory](https://www.nuget.org/packages/XiHan.Framework.Messaging.InMemory)
+* RabbitMQ 实现：[XiHan.Framework.Messaging.RabbitMQ](https://www.nuget.org/packages/XiHan.Framework.Messaging.RabbitMQ)
 
-P5：可用，通过 `Messaging.Conformance` 的队列与流套件。
+## 反馈与贡献
+
+`XiHan.Framework.Messaging.Kafka` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

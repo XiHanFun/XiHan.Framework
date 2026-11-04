@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Configuration.Abstractions</PackageId>
     <RootNamespace>XiHan.Framework.Configuration.Abstractions</RootNamespace>
-    <Description>XiHan Framework 配置契约（Ring 2）：远程配置客户端与密钥库的 Provider 契约，以及把它们接进 Microsoft.Extensions.Configuration 的配置源。</Description>
+    <Description>曦寒框架配置抽象包</Description>
     <PackageTags>xihan;framework;configuration;secrets;remote-configuration</PackageTags>
   </PropertyGroup>
 

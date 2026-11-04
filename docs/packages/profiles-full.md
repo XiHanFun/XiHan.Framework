@@ -85,6 +85,8 @@ app.Run();
 - gRPC 端点需要 HTTP/2：Kestrel 要有一个 `Protocols: Http2` 的端点（h2c），`xihan pack` 在清单写了 `ports.grpc` 时生成它。
 - `FileSystemObjectStorageFeature` 写本地目录；容器里根文件系统只读时把它的根目录配到可写卷（KubernetesApp 配成 `/tmp` 下）。
 - 内存默认实现进程重启即丢数据，多副本之间不共享；上线前按需换 Provider。
+- 管道在 Standard 之上多了 Observe 末尾的 `AuditMiddleware`，缺省只记需要授权的操作（声明了权限码或策略名）。
+- 远程配置与密钥（`Configuration.Abstractions`）没有默认 Provider：.NET 原生的文件与环境变量就是默认，按需在 `IConfigurationBuilder` 上 `AddXiHanRemoteConfiguration` / `AddXiHanSecrets`。
 
 ## 相关
 

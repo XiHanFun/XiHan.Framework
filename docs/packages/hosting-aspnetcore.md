@@ -120,6 +120,13 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](../guide/realti
 - 成功的调用不改动响应；失败时只有响应尚未开始写出才写 Problem Details，端点已写正文时保留端点的内容。
 - `baggage` 只保留已登记的键，其中 `xihan.tenant` 与 `xihan.principal` 不收（ADR-0121），`HttpInvocation.FormatBaggage` 出站也只写已登记的键（RFC-0003 规则 3）；`traceparent` 的采样标志进 `TraceFlags`，缺失或不合法时并入 ASP.NET Core 当前的请求 Activity（同一 trace-id），也没有时生成新的 trace-id；`xihan-deadline` 解析失败视为没有截止时间。
 - 查询串令牌只在 `QueryTokenPaths` 登记的前缀下接受，前缀不能为空或 `/`；方案 `XiHan` 只认带 `PipelineBypassMetadata` 的端点。
+- 调用来源 `InvocationOrigin` 记 `http`、方法与路径（含 PathBase，不含查询串）、连接对端地址、`User-Agent` 与 `Referer`，以及匹配到的端点的路由模板（`Route`）与名字（`EndpointName`，即 `WithName`），普通端点据此在 Observe 阶段被识别（ADR-0048）。
+- 健康探针的响应体含各特性状态与 `IHealthContributor` 条目（如每个进程外插件）的状态；条目另带 `description`、`checkedAt`、`durationMs` 与 `data`，有才写（ADR-0054）。
+- 预签名端点 `GET <BaseUrl>/{container}/{**key}` 下载（单个 `Range` 区间回 206，不可满足回 416，可带保存文件名），`PUT` 上传整个对象或分片的一片（响应 `ETag`）；上传解除请求体大小上限，单对象上限由存储把关；端点经内核管道、不要求凭据。命名实例用 `HostedBlobUrlSigner.ForStore(name)` 签，地址带 `x-store=<name>`，实例名在签名里，实例不存在回 404（`OBJECTSTORAGE_NOTFOUND_003`，ADR-0050）。存储能自己签名（S3）时不要装本特性。
+- 在绕过管道的端点（SignalR Hub、Server-Sent Events）里发起内核调用用 `HttpInvocation.CreateContext(httpContext, services)`：`Authorization` 头经 `SetCredential` 带上，经管道时重新认证。
+- `Accept-Language` 在调用方没有显式 `xihan.locale` Baggage 时按权重协商进该 Baggage（装配了本地化时协商到启用的区域，否则取第一个合法值）；Problem Details 的 `Content-Language` 是实际命中的区域（可能是回退链上的区域），`code` 不变。
+- VALIDATION 种类的 Problem Details 带 `errors`（字段键 → 消息数组），所有错误按白名单带 `details`：`Error.Details` 里的字符串、布尔、数值、`Guid`、时间等标量，集合与对象不输出（ADR-0024）。
+- 挂载目录与用户机密的次序：配置源从低到高依次是 `appsettings.json`、`appsettings.{环境}.json`、`XIHAN_CONFIG_PATH` 挂载目录、用户机密（仅开发环境）、环境变量、命令行参数、应用自己添加的配置源；构建器没有 appsettings 文件源时挂载目录追加在末尾。`xihan pack` 生成的清单同时设 `DOTNET_USE_POLLING_FILE_WATCHER=1`（ConfigMap 以符号链接切换更新）。
 - Problem Details 由 `ProblemResponse.WriteTo` 手写、探针由源生成上下文序列化，不经反射。
 
 | 情形 | 状态码 | 错误码 |

@@ -1,28 +1,59 @@
 # XiHan.Framework.Auditing.Abstractions
 
-审计契约（Ring 2，RFC-0015）。内核已有 `AuditEvent` 与 `IAuditSink`（默认丢弃）；本包补上产生事件的中间件、调用期间的补充信息与查询契约。能力 `auditing.trail@1` 由 Provider 提供（同时实现 `IAuditSink` 与 `IAuditTrail`）；默认实现 `Auditing.InMemory`。
+## 关于
 
-| 契约 | 用途 |
-| --- | --- |
-| `AuditMiddleware`、`AuditingOptions` | Observe 阶段末尾：主体与租户优先取安全上下文（认证后的 `Principal.Id`、解析后的 `TenantContext.Id`），没有时回退到 Baggage 的 `xihan.principal` / `xihan.tenant`（ADR-0036）；按显式动作或 `Selection`（`Protected` 默认只记需要授权的操作——契约声明了权限码或策略名，ADR-0071 / `All` / `None`）决定是否记录，`Exclude` 列出的操作 ID 或 `*` 结尾的前缀（`profile.*`）不记、显式动作照记（ADR-0080）；结果取管道 outcome，异常按 `KERNEL_UNEXPECTED_001` 记失败；`IncludeSuccesses` 为假只记失败；接收器故障只记日志 |
-| `SetAuditAction` / `SetAuditResource` / `AddAuditDetail` | 调用期间补充动作（让非操作调用也被记录）、资源名（`xrn:`）与细节 |
-| `IAuditTrail`、`AuditQuery`、`AuditPage` | 按时间、动作、主体、租户、trace-id、成败过滤，按写入顺序升序分页（`PageSize` 1 到 1000，不透明续页令牌） |
-| `AddAuditing(this FeatureContext)` | Provider 注册接收器后调用：注册消息目录与选项、挂中间件 |
+`XiHan.Framework.Auditing.Abstractions` 定义审计的契约：记录操作调用的审计中间件、在处理器里补充动作与细节的扩展，以及按条件分页查询的 `IAuditTrail`。它不存储任何东西，存储由提供程序实现。
+
+## 主要特性
+
+* 受保护操作自动留痕，可用 `Selection` 与 `Exclude` 调整范围
+* 处理器里补充动作、资源与细节
+* 按时间、动作、主体、租户、trace-id、成败过滤并分页查询
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
+```
+
+### 使用
+
+通常由实现包带入；写业务代码或自定义提供程序时才直接引用。在处理器里补充审计信息：
 
 ```csharp
 public ValueTask<Result<ExportResponse>> HandleAsync(ExportRequest request, InvocationContext context)
 {
     context.SetAuditAction("orders.export");
-    context.SetAuditResource(ResourceName.Parse("xrn:global:orders:acme:report/2026-10"));
     context.AddAuditDetail("rows", 1200);
-    ...
+    // ...
 }
 ```
 
-## 依赖方向
+```json
+{ "XiHan": { "Auditing": { "Selection": "Protected", "IncludeSuccesses": true, "Exclude": ["profile.*"] } } }
+```
 
-依赖 `XiHan.Framework.Kernel` 与 `XiHan.Framework.Localization.Abstractions`。被 `Auditing.InMemory`、`Auditing.Conformance` 引用。
+## 主要类型
 
-## 状态
+此库提供的主要类型：
 
-P3：可用。
+* `AuditMiddleware`、`AuditingOptions`：审计中间件与选项
+* `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`：调用期间补充信息
+* `IAuditTrail`、`AuditQuery`、`AuditPage`：查询契约
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/auditing-abstractions)
+* [审计指南](https://framework.docs.xihanfun.com/guide/auditing)
+
+## 相关包
+
+* 内存实现：[XiHan.Framework.Auditing.InMemory](https://www.nuget.org/packages/XiHan.Framework.Auditing.InMemory)
+* 数据库实现：[XiHan.Framework.Auditing.Database](https://www.nuget.org/packages/XiHan.Framework.Auditing.Database)
+* 一致性套件：[XiHan.Framework.Auditing.Conformance](https://www.nuget.org/packages/XiHan.Framework.Auditing.Conformance)
+
+## 反馈与贡献
+
+`XiHan.Framework.Auditing.Abstractions` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

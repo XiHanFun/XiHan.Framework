@@ -1,30 +1,62 @@
 # XiHan.Framework.Security.Abstractions
 
-安全契约（Ring 2）。能力 `security.authentication@1`（凭据 → 主体）与 `security.authorization@1`（策略判定）由 Provider 提供；主体、租户、授权请求与策略接口等原语在 `Kernel.Security`。
+## 关于
 
-| 契约 | 用途 |
-| --- | --- |
-| `AuthenticationCredential`、`IAuthenticationHandler` | 宿主把协议凭据（如 `Authorization: Bearer …`）放进上下文；按方案匹配的处理器把它变成 `Principal` |
-| `AuthenticationMiddleware` | Authenticate 阶段：无凭据则匿名，不支持的方案或无效凭据以结果拒绝，`RequireAuthentication` 时拒绝匿名 |
-| `AuthorizationRequirement`、`PolicyCatalog`、`AuthenticatedPolicy`、`PermissionPolicy` | 调用要求的策略；按名查找，`permission:<code>` 动态映射为权限策略，未定义的权限码按策略不存在拒绝；操作契约的权限码在装配时由内核核对（`KERNEL_VALIDATION_005`）；`PolicyCatalog.EnforceOn(OperationRegistry)` 由授权 Provider 经 `FeatureContext.AddStartupCheck` 登记为启动核对（任何特性启动之前执行，不论失败策略），核对契约的 `Policy` 并挂到登记表上，不存在即 `SECURITY_VALIDATION_004`（启动失败；之后登记的操作在登记时被拒，ADR-0080、ADR-0085）；端点元数据由 `UseXiHan()` 在建请求管道时核对；调用时找不到策略（显式写入的要求）仍按策略不存在拒绝 |
-| `AuthorizationMiddleware` | Authorize 阶段：有要求才判定，策略不存在或拒绝以结果返回；策略判定失败（`IPolicy.EvaluateAsync` 返回失败，如授予存储不可达）以该失败结束调用，不改写成拒绝 |
-| `IPermissionGrantStore`、`PermissionGrant`、`GrantSubject`、`IPermissionChecker`、`PermissionChecker` | RBAC：用户与角色（来自 `role` 声明）的授予之并集，`*` 表示全部；租户专属授予只对该租户生效。`GetGrantsAsync` 返回 `Result<IReadOnlyCollection<string>>`、`HasPermissionAsync` 返回 `Result<bool>`：存储不可达是 `SECURITY_UNAVAILABLE_001` 失败（HTTP 503），不是空集合或不持有（ADR-0071） |
-| `IPermissionFilter` | 权限收窄（ADR-0039）：授予命中之后 `PermissionChecker` 按登记顺序逐个调用，任一拒绝即不持有（权限策略返回 `SECURITY_DENIED_004`）；匿名与未命中不调用；收到的是具体权限码，持 `*` 也会被收窄。`AllowsAsync` 返回 `Result<bool>`：依赖的数据读不到时返回失败，检查器原样返回、调用以 503 结束（ADR-0071）。按单例登记：`services.AddSingleton<IPermissionFilter, EditionPermissionFilter>()`。用于套餐白名单、显式拒绝、委托到期；替换 `IPermissionChecker` 的实现须同样施加 |
-| `IPermissionGrantSource` | 授予来源（ADR-0045）：与收窄对称，给出主体在授予存储之外的额外授予（权限码或 `*`）。`PermissionChecker` 在用户与角色的存储授予都没命中时按登记顺序逐个查询，任一命中即算授予命中，之后照常经全部过滤器收窄；匿名不查询。`GetGrantsAsync` 返回 `Result<IReadOnlyCollection<string>>`：读不到时返回失败，不当作没有授予（ADR-0071）。按单例登记：`services.AddSingleton<IPermissionGrantSource, RoleInheritanceGrantSource>()`。用于角色继承、限时委托；替换 `IPermissionChecker` 的实现须同样并上 |
-| `Conditions` | 条件引擎（ADR-0046，RFC-0008「条件」）：`ConditionSet` / `ConditionGroup` / `ConditionClause`（组内且、组间或），十五个运算符与七种值种类（整数值是持久化契约），`ConditionOperatorRules` 搭配规则；`IConditionAttributeRegistry`（精确名 → 别名 → 最长前缀的族）、`IConditionCompiler`（编译错误 `SECURITY_VALIDATION_002`，消息键说明原因，出错子句保留）、`IConditionEvaluator`（命中 / 不命中 / 无法判定 / 待定，说明模式逐组逐子句）；属性来源 `IConditionAttributeSource` 由应用提供，自带 `DictionaryConditionAttributeSource`（试算）与 `MemoizingConditionAttributeSource`。`services.AddConditionAttributes(...)` 登记属性并确保三项单例服务 |
-| `Network` | IP 归属地契约（ADR-0047，能力 `security.ip-region@1`）：`IIpRegionResolver.Resolve(IPAddress)` 返回 `Maybe<IpRegion>`（国家、省份、城市、运营商、国家代码，`Location` 为展示文本），回环、私有网段、查不到都是无值；实现见 `Security.Ip2Region`，不装时容器里没有本服务，调用方把归属地当作取不到 |
-| `SecurityOptions` | `RequireAuthentication`、`RoleClaim` |
+`XiHan.Framework.Security.Abstractions` 定义认证与授权的契约：凭据与认证处理器、授权要求与策略目录、RBAC 授予存储与权限检查器、Authenticate / Authorize 阶段的中间件，以及条件引擎与 IP 归属地契约。它不包含具体的认证或授权实现。
 
-```csharp
-context.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));   // 宿主或操作契约在 Authorize 阶段之前设置
+## 主要特性
+
+* 认证处理器按方案匹配凭据，把凭据变成主体
+* 授权按策略名判定，`permission:<code>` 自动映射为权限策略
+* 权限检查支持授予来源与收窄过滤器扩展
+* 条件引擎与 IP 归属地契约，供应用自己的策略使用
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 ```
 
-认证与授权失败都以 `Result` 返回，宿主翻译为 401 / 403 / 503：`SECURITY_DENIED_001`（未认证）与 `SECURITY_DENIED_003`（凭据无效、过期或签名不符）是 401 并带 `WWW-Authenticate`（Bearer 被拒时为 `Bearer error="invalid_token"`），其余 DENIED 是 403（ADR-0042）；授予存储、授予来源或收窄过滤器不可达是 `SECURITY_UNAVAILABLE_001`（503，ADR-0071），任何一环读不到都不能落到 403；认证处理器内部的基础设施失败抛异常。
+### 使用
 
-## 依赖方向
+一般由 `Security.InMemory`、`Security.Jwt`、`Security.OpenIdConnect`、`Security.Database` 带入，写自定义认证处理器或授权组件时才直接引用。例如实现一个认证方案，再登记为单例：
 
-依赖 `XiHan.Framework.Kernel`。被 `Security.InMemory`、`Security.Jwt`、`Hosting.AspNetCore` 引用。
+```csharp
+public sealed class ServiceTokenHandler : IAuthenticationHandler
+{
+    public string Scheme => "Service";
 
-## 状态
+    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(new Principal("svc-billing", Scheme)));
+}
 
-P2：可用。
+services.AddSingleton<IAuthenticationHandler, ServiceTokenHandler>();
+```
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `IAuthenticationHandler`、`AuthenticationCredential`：认证处理器与凭据
+* `AuthorizationRequirement`、`PolicyCatalog`：授权要求与策略目录
+* `IPermissionGrantStore`、`IPermissionChecker`：授予存储与权限检查器
+* `IPermissionFilter`、`IPermissionGrantSource`：收窄与额外授予的扩展点
+* `IIpRegionResolver`：IP 归属地解析
+* `SecurityOptions`：`XiHan:Security` 配置项
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/security-abstractions)
+
+## 相关包
+
+* 内存实现：[XiHan.Framework.Security.InMemory](https://www.nuget.org/packages/XiHan.Framework.Security.InMemory)
+* JWT 认证：[XiHan.Framework.Security.Jwt](https://www.nuget.org/packages/XiHan.Framework.Security.Jwt)
+* OpenID Connect 认证：[XiHan.Framework.Security.OpenIdConnect](https://www.nuget.org/packages/XiHan.Framework.Security.OpenIdConnect)
+* 数据库授权：[XiHan.Framework.Security.Database](https://www.nuget.org/packages/XiHan.Framework.Security.Database)
+
+## 反馈与贡献
+
+`XiHan.Framework.Security.Abstractions` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

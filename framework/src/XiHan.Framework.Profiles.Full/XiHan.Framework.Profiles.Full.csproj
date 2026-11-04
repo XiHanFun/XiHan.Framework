@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Profiles.Full</PackageId>
     <RootNamespace>XiHan.Framework.Profiles.Full</RootNamespace>
-    <Description>XiHan Framework Full 组合包：Standard + ObjectStorage / Scheduling / Configuration / Auditing / Workflow 的抽象与默认实现 + AI 工具桥 + OpenTelemetry 导出与运行信息 + HTTP / gRPC / MCP / CloudEvents 协议适配器。</Description>
+    <Description>曦寒框架 Full 组合包</Description>
     <PackageTags>xihan;framework;profile;full</PackageTags>
   </PropertyGroup>
 

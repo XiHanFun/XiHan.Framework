@@ -90,7 +90,7 @@ builder.AddXiHan(xihan => xihan
 | `RemoteCachingOptions` | `Timeout`；`FromConfiguration` 读 `TimeoutMilliseconds` |
 | `RemoteCacheStore` | 经操作集实现的 `ICacheStore` |
 | `RemoteCacheOperations` | 八个操作 ID 常量与 `All`，以及请求、响应记录（`KeyRequest`、`GetResponse`、`SetRequest`、`AddedResponse`、`RemovedResponse`、`TryRemoveRequest`、`KeysRequest`、`GetManyResponse`、`SetManyRequest`、`RemovedManyResponse`、`EmptyResponse`） |
-| `RemoteCachingMessages` | 插件侧错误的消息键 `caching.remote.*` 与消息目录（10 种区域的译文随本包嵌入；插件握手带来的同名目录与它合并为一份） |
+| `RemoteCachingMessages` | 插件侧错误的消息键 `caching.remote.*` 与消息目录（10 种区域的译文随本包嵌入；插件握手带来的同名目录与它合并为一份；同一键同一区域的模板不同则启动失败，`LOCALIZATION_CONFLICT_001`） |
 
 ## 使用示例
 

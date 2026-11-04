@@ -61,7 +61,7 @@ xihan pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,com
 | `--output` | 清单所在目录下的 `deploy/` | 输出目录，产物整份覆盖写入（UTF-8 无 BOM、LF 换行） |
 | `--only` | 全部 | 逗号分隔的产物种类，不区分大小写；不认识的种类为 `CLI_VALIDATION_001`，退出码 64 |
 
-产物与清单字段的映射见[部署与打包](../guide/deployment#生成部署产物)。
+产物与清单字段的映射见[部署与打包](../guide/deployment#生成部署产物)。写出的文件包括 `Dockerfile` 与 `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`，逐行输出写出的文件；Kafka、Nacos 这类依赖服务在 Kustomize 里只出 Secret 示例，不在集群里起服务。
 
 ### graph、pipeline、operations、invoke
 
@@ -99,7 +99,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- mcp    # 不安装、按版本运行�
 
 结果是结构化 JSON（`structuredContent` 与文本内容相同）。查不到时 `isError`，文本 `CLI_NOTFOUND_003: …` 带最接近的候选；检索既没给 `query` 也没给 `page`、或 `limit` 越界为 `CLI_VALIDATION_004`。
 
-数据随工具一起构建，与工具版本一致：包与特性清单、各 Options 读取的配置键（有测试逐条核对与代码一致），以及文档站、RFC 与约定、各包 README 的全文。`--path`（缺省当前目录）所在项目引用的 `XiHan.Framework.*` 版本与工具不同时，stderr 与服务端说明里提示改用 `dnx XiHan.Framework.Cli@<项目版本> --yes -- mcp`。
+数据随工具一起构建，与工具版本一致：包与特性清单、各 Options 读取的配置键（有测试逐条核对与代码一致），以及文档站、RFC 与约定、各包 README 的全文。包与特性清单（`Knowledge/catalog.json`）由 `XiHan.Framework.Cli.Tests` 从项目文件、`framework/README.md` 包表与各特性的 `Manifest` 生成，与代码不一致时 `KnowledgeCatalogTests` 失败，运行 `pwsh framework/scripts/Update-CliKnowledge.ps1` 重新生成；配置键索引（`Knowledge/configuration.json`）人工整理，改了 Options 后 `KnowledgeConfigurationTests` 失败，按失败信息改索引；文档与 README 在构建时嵌入程序集。`--path`（缺省当前目录）所在项目引用的 `XiHan.Framework.*` 版本与工具不同时，stderr 与服务端说明里提示改用 `dnx XiHan.Framework.Cli@<项目版本> --yes -- mcp`。
 
 ### setup
 

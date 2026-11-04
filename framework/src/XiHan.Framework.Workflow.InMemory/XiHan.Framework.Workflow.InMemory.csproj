@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Workflow.InMemory</PackageId>
     <RootNamespace>XiHan.Framework.Workflow.InMemory</RootNamespace>
-    <Description>XiHan Framework 内存工作流（默认实现）：有界内存的定义、实例与书签存储，进程内实例锁，单进程到期书签轮询。</Description>
+    <Description>曦寒框架工作流的内存默认实现</Description>
     <PackageTags>xihan;framework;workflow;in-memory</PackageTags>
   </PropertyGroup>
 

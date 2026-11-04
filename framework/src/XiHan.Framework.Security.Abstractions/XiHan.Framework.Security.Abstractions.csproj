@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Security.Abstractions</PackageId>
     <RootNamespace>XiHan.Framework.Security.Abstractions</RootNamespace>
-    <Description>XiHan Framework 安全契约（Ring 2）：凭据与认证处理器、授权要求与策略目录、权限授予存储与检查器，Authenticate / Authorize 阶段中间件。</Description>
+    <Description>曦寒框架安全抽象包</Description>
     <PackageTags>xihan;framework;security;authentication;authorization;rbac</PackageTags>
   </PropertyGroup>
 

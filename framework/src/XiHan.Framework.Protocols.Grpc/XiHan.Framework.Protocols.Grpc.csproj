@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Protocols.Grpc</PackageId>
     <RootNamespace>XiHan.Framework.Protocols.Grpc</RootNamespace>
-    <Description>XiHan Framework gRPC 协议适配器（Ring 5）：把标记为 Expose.Grpc 的操作契约发布为 gRPC 一元方法（服务 {Resource}、方法 {Verb}），以操作的 JSON Schema 作为 protobuf 描述在 JSON 与 protobuf 线格式之间转换，生成并发布 .proto 文件；上下文走请求元数据，失败映射为 gRPC 状态与 xihan-error-code 尾部元数据。</Description>
+    <Description>曦寒框架 gRPC 协议适配器</Description>
     <PackageTags>xihan;framework;protocols;grpc;protobuf</PackageTags>
   </PropertyGroup>
 

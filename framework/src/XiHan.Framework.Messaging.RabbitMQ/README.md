@@ -1,40 +1,57 @@
 # XiHan.Framework.Messaging.RabbitMQ
 
-`messaging.queue@1` 的 RabbitMQ Provider（Ring 3，`role: provider`）。注册后顶替内存代理。
+## 关于
 
-```csharp
-builder.AddXiHan(x => x.UseFeature<RabbitMQMessagingFeature>());
+`XiHan.Framework.Messaging.RabbitMQ` 是消息的 RabbitMQ 提供程序：顶替内存代理，适用于多实例部署下的工作队列。
+
+## 主要特性
+
+* 发布到持久的 direct 交换机，订阅方声明持久队列
+* 发布确认，手动确认，失败重试后进死信队列
+* 广播订阅用每个实例独占的队列
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Messaging.RabbitMQ --prerelease
 ```
 
-连接来自绑定 `queue`（`queue`）的主值，没有绑定时取 `XiHan:Messaging:RabbitMQ:Configuration`（AMQP URI）：两者都给时绑定优先；绑定的属性 `username` / `password` 各自覆盖 URI 里的用户名与密码（选项 `UserName` / `Password`，连接时设置在 `ConnectionFactory` 上，不改写 URI）；其余键照读配置节，空白的主值与属性不算给出（RFC-0016「资源绑定与配置节」）；连接两者都没有时装配失败。凭据不进日志与错误消息。
+### 使用
 
-## 语义
+注册后顶替内存代理，必需配置是 AMQP 连接串：
 
-- 发布方只声明交换机（ADR-0079）：消息发到持久的 direct 交换机 `Exchange`（默认 `xihan`），路由键 `<QueuePrefix><topic>`（前缀默认 `xihan.`），发布方不声明队列；消息持久化，`content_type` 为 `application/cloudevents+json`，`message_id` 为事件 ID。
-- 队列只由订阅方声明：订阅方启动时声明持久队列 `<QueuePrefix><topic>` 并以同名路由键绑定到交换机；订阅方第一次启动之后，它离线期间的消息留在队列里。每个订阅主题一个通道与一个消费者，预取 `PrefetchCount`（默认 16），手动确认，单线程派发保证主题内顺序。
-- 广播订阅（RFC-0009「订阅方式」）：每个实例声明独占、非持久、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`（`MessagingInstance.Id`），以主题的路由键绑定到交换机，交换机给竞争队列与每个实例的广播队列各一份。实例与代理断开时队列随连接删除（客户端自动恢复连接时重新声明），断开期间的消息收不到；重试定向发回本实例的广播队列，到上限或无法解码时确认掉、记 Warning 日志，不进死信。实例标识配了 `XiHan:Messaging:InstanceId` 时取配置值：两个同时在线的实例配了同一个值，后启动的那个声明同名独占队列被拒（`RESOURCE_LOCKED`），启动失败（`MESSAGING_UNAVAILABLE_001`，ADR-0085）。
-- 发布确认：发布通道开启发布确认并由客户端跟踪，发布以 `mandatory` 发出，等到代理确认才返回成功；代理拒绝（nack）返回 `MESSAGING_UNAVAILABLE_001`（批量发布逐项）。批量发布连续写出整批后一次等待全部确认。
-- 没有订阅者：发到交换机的消息被退回（路由键上没有队列绑定）时丢弃，发布照常成功（批量逐项成功），记一条 Debug 日志——与内存代理一致，发件箱不为它重试、不记死信。调度、工作流等框架事件发到应用没有订阅的主题，不再建出没人消费的队列。
-- 处理失败：尝试次数（头 `x-xihan-attempt`）小于 `MaxAttempts` 时经默认交换机重新发布到所消费队列的队尾，否则发布到死信队列 `<queue><DeadLetterSuffix>`（由死信的一方声明为持久队列并以同名路由键绑定，即主题加后缀的竞争队列）；重新发布得到确认后才确认原消息，未被确认、被退回（队列已不存在）或失败时把原消息 nack 并重新入队，由 RabbitMQ 再投递。无法解码的消息直接进死信（同样等确认）。
-- 连接与通道异常抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。
-- 健康项 `messaging.rabbitmq.connection`：启动后按 `XiHan:Messaging:RabbitMQ:HealthProbeIntervalSeconds`（默认 15）在后台检查连接与发布通道是否打开并缓存结果；断开时条目 Degraded（`MESSAGING_UNAVAILABLE_001`，`reason` 是代理给出的关闭原因），应用仍在服务。
+```csharp
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<RabbitMQMessagingFeature>());
+```
 
-## 部署与升级
+```json
+{ "XiHan": { "Messaging": { "RabbitMQ": { "Configuration": "amqp://<user>:<password>@localhost:5672", "Exchange": "xihan", "QueuePrefix": "xihan.", "PrefetchCount": 16 } } } }
+```
 
-- 没有订阅者的主题队列（如 `xihan.scheduling.job.started` 等 `scheduling.job.*`）：收不到新消息，框架也不删除它们，已经堆积的消息留在原处。确认没有消费者后由运维删除：`rabbitmqctl list_queues name messages consumers` 找出 `consumers` 为 0 的框架主题队列，再 `rabbitmqctl delete_queue <队列>`（或在管理界面删除）。
-- 订阅方每次启动都声明队列并绑定到交换机：已有的同名队列照常可用，积压照常消费。
-- 滚动升级：发布方已是新版本、订阅方仍是旧版本时，新版本发出的消息没有绑定可走，会按「没有订阅者」丢弃。先升级订阅方，或让一个新版本的订阅实例先启动一次建好绑定；同一个应用的实例既发布又订阅，第一个新版本实例启动即建好绑定。
-- 希望订阅方上线之前就留存消息的部署，由运维预先声明持久队列 `<QueuePrefix><topic>` 并以同名路由键绑定到交换机 `Exchange`。
-- 发布方与订阅方的 `QueuePrefix`、`Exchange` 要一致，否则消息到不了订阅方的队列。
+连接也可以来自资源绑定 `queue`。发布方与订阅方的 `Exchange`、`QueuePrefix` 要一致；滚动升级时先升级订阅方。
 
-## 测试
+## 主要类型
 
-发布确认、拓扑、广播队列与重新发布的确认用打桩的连接与通道覆盖（`RabbitMQPublisherConfirmTests`、`RabbitMQBroadcastTests`），不需要 RabbitMQ。一致性套件（含两个实例的广播与竞争用例）与拓扑用例（`RabbitMQTopologyTests`：没人订阅的主题没有队列、订阅方的队列在它离线期间留存消息、广播队列只属于本实例且随实例下线删除）需要真实 RabbitMQ：设置环境变量 `XIHAN_TEST_RABBITMQ`（如 `amqp://guest:guest@localhost:5672`）后运行；未设置时用例跳过。CI 用服务容器运行。
+此库提供的主要类型：
 
-## 依赖方向
+* `RabbitMQMessagingFeature`：特性入口
+* `RabbitMQMessagingOptions`：连接、交换机、队列前缀与预取
+* `RabbitMQMessageBroker`：`IMessageBroker` 的实现
 
-依赖 `Messaging.Abstractions` 与 `RabbitMQ.Client`。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/messaging-rabbitmq)
 
-P2：可用，通过 `Messaging.Conformance` 套件。
+## 相关包
+
+* 消息契约：[XiHan.Framework.Messaging.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Messaging.Abstractions)
+* 内存实现：[XiHan.Framework.Messaging.InMemory](https://www.nuget.org/packages/XiHan.Framework.Messaging.InMemory)
+* Kafka 实现：[XiHan.Framework.Messaging.Kafka](https://www.nuget.org/packages/XiHan.Framework.Messaging.Kafka)
+
+## 反馈与贡献
+
+`XiHan.Framework.Messaging.RabbitMQ` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

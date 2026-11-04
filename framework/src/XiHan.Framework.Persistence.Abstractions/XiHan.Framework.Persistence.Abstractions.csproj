@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Persistence.Abstractions</PackageId>
     <RootNamespace>XiHan.Framework.Persistence.Abstractions</RootNamespace>
-    <Description>XiHan Framework 持久化契约（Ring 2）：仓储、工作单元、查询、标识生成、Transaction 阶段中间件与实体协议约定。</Description>
+    <Description>曦寒框架持久化抽象包</Description>
     <PackageTags>xihan;framework;persistence;repository;unit-of-work</PackageTags>
   </PropertyGroup>
 

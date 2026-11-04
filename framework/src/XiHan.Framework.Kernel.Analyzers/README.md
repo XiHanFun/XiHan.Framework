@@ -1,21 +1,60 @@
 # XiHan.Framework.Kernel.Analyzers
 
-Roslyn 分析器（工具链），把命名与稳定性规则交给编译器执行。
+## 关于
 
-| 规则 | 范围 | 含义 |
-| --- | --- | --- |
-| `XH0001` | 框架包 | 公开类型必须标注 `[ApiLevel]` |
-| `XH0002` | 框架包 | 公开类型名不得以 `XiHan` 开头 |
-| `XH0003` | 所有引用者 | 不得在程序集之外使用标注为 `Stability.Internal` 的 API |
-| `XH0004` | 框架包 | 公开类型名不得使用禁用词：`Manager`、`Helper`、`Util`、`Utils`、`Common`、`Shared`、`Impl`、`Base` 后缀与 `Default` 前缀 |
-| `XH0005` | Ring 0/1 | 不得使用反射 API（`System.Reflection`、`Activator`、`Type` 的成员查找） |
+`XiHan.Framework.Kernel.Analyzers` 是 Roslyn 分析器：把公开 API 的稳定性标注、类型命名与零反射规则交给编译器执行。写框架扩展包的人可以在自己的项目里启用同一套规则；应用引用它即可在编译期挡住对内部 API 的使用。
 
-范围由 MSBuild 属性控制：`XiHanFrameworkPackage=true` 启用框架包规则，`XiHanRing=0|1` 启用零反射规则。分析器经 `build_property.*` 读取，属性须声明为 `CompilerVisibleProperty`：包里带 `buildTransitive/XiHan.Framework.Kernel.Analyzers.props` 声明这两项，以包引用的项目只需设置属性；仓库内以项目引用分析器的正式包由 `framework/src/Directory.Build.props` 声明并设置。
+## 主要特性
 
-## 依赖方向
+* `XH0001`：公开类型必须标注 `[ApiLevel]`
+* `XH0002` / `XH0004`：公开类型名不得以 `XiHan` 开头，不得使用 `Manager`、`Helper`、`Default` 等禁用词
+* `XH0003`：不得在程序集之外使用标注为 `Stability.Internal` 的 API
+* `XH0005`：原语层与内核不得使用反射 API
 
-只依赖 `Microsoft.CodeAnalysis.CSharp`。以分析器形式被所有正式包引用，不进入运行时依赖。
+## 如何使用
 
-## 状态
+### 安装
 
-P1：五条规则可用，附单元测试。
+```bash
+dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
+```
+
+### 使用
+
+引用后 `XH0003` 对所有引用者生效；命名与零反射规则由 MSBuild 属性开启（包里已把它们声明为编译器可见）：
+
+```xml
+<PropertyGroup>
+  <XiHanFrameworkPackage>true</XiHanFrameworkPackage>   <!-- 启用 XH0001 / XH0002 / XH0004 -->
+  <XiHanRing>1</XiHanRing>                              <!-- 启用 XH0005，仅原语层与内核 -->
+</PropertyGroup>
+```
+
+触发示例（缺少稳定性标注，报 `XH0001`）：
+
+```csharp
+public sealed class ReportExporter;   // XH0001
+```
+
+分析器是开发依赖，不进入运行时。
+
+## 主要类型
+
+此库提供的主要类型：
+
+* `PublicTypeAnalyzer`：`XH0001`、`XH0002`、`XH0004`
+* `InternalApiUsageAnalyzer`：`XH0003`
+* `ReflectionUsageAnalyzer`：`XH0005`
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/kernel-analyzers)
+
+## 相关包
+
+* 操作登记的源生成器：[XiHan.Framework.Kernel.Generators](https://www.nuget.org/packages/XiHan.Framework.Kernel.Generators)
+* 内核：[XiHan.Framework.Kernel](https://www.nuget.org/packages/XiHan.Framework.Kernel)
+
+## 反馈与贡献
+
+`XiHan.Framework.Kernel.Analyzers` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

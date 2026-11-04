@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Plugins.Protocol</PackageId>
     <RootNamespace>XiHan.Framework.Plugins.Protocol</RootNamespace>
-    <Description>XiHan Framework 插件协议 xihan.plugin.v1 的 .NET 类型（Ring 3）：从规范 .proto 生成的消息与桩、错误码与消息键、端点与版本协商、握手核对、上下文 / 错误 / 信封映射与代理操作；进程外与 Wasm 宿主共用。</Description>
+    <Description>曦寒框架插件协议包</Description>
     <PackageTags>xihan;framework;plugins;protocol;grpc;protobuf</PackageTags>
     <!-- Google.Protobuf 的描述符反射未声明裁剪兼容 -->
     <IsAotCompatible>false</IsAotCompatible>

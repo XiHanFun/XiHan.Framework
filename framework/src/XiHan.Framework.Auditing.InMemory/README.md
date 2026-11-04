@@ -1,27 +1,55 @@
 # XiHan.Framework.Auditing.InMemory
 
-内存审计（Ring 3，默认实现，`role: default`）。提供 `auditing.trail@1`（RFC-0015）。
+## 关于
+
+`XiHan.Framework.Auditing.InMemory` 是审计的默认实现：用有界环形缓冲保存最近的审计事件。只在单进程内有效，重启即失，适合开发、测试与单实例应用。
+
+## 主要特性
+
+* 保留最近 `Capacity` 条事件，满了丢最旧的
+* 每条事件可同时写一条日志
+* 要持久化时换 `Auditing.Database`
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Auditing.InMemory --prerelease
+```
+
+### 使用
+
+启用特性（`Profiles.Full` 已包含）：
 
 ```csharp
-builder.AddXiHan(xihan => xihan.UseFeature<InMemoryAuditingFeature>());
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<InMemoryAuditingFeature>());
 ```
 
 ```json
-{ "XiHan": { "Auditing": { "Selection": "Protected", "IncludeSuccesses": true, "InMemory": { "Capacity": 10000, "LogEvents": true } } } }
+{ "XiHan": { "Auditing": { "InMemory": { "Capacity": 10000, "LogEvents": true } } } }
 ```
 
-## 规则
+## 主要类型
 
-- 环形缓冲保留最近 `Capacity` 条事件（默认 10000），满了丢最旧的；续页令牌是序号，淘汰后仍然有效。
-- 按写入顺序升序查询；过滤项见 `AuditQuery`；不合法的查询 → `AUDITING_VALIDATION_001`。
-- `LogEvents` 为真时每条事件以 Information 级写日志（内核日志薄桥），字段：动作、结果、主体、租户、资源、trace-id。
-- 被选中时挂 `AuditMiddleware`（Observe 末尾）；另有显式 Provider 提供 `auditing.trail` 时本包不绑定也不挂中间件。
-- 单进程、重启即失；生产持久化换 `Auditing.Database`，或自写实现 `IAuditSink` 与 `IAuditTrail` 的 Provider。
+此库提供的主要类型：
 
-## 依赖方向
+* `InMemoryAuditingFeature`：启用入口
+* `InMemoryAuditTrail`：接收器与查询
+* `InMemoryAuditingOptions`：`Capacity`、`LogEvents`
 
-依赖 `XiHan.Framework.Auditing.Abstractions`。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/auditing-inmemory)
+* [审计指南](https://framework.docs.xihanfun.com/guide/auditing)
 
-P3：可用，通过 `Auditing.Conformance`。
+## 相关包
+
+* 审计抽象：[XiHan.Framework.Auditing.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Auditing.Abstractions)
+* 数据库实现：[XiHan.Framework.Auditing.Database](https://www.nuget.org/packages/XiHan.Framework.Auditing.Database)
+
+## 反馈与贡献
+
+`XiHan.Framework.Auditing.InMemory` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

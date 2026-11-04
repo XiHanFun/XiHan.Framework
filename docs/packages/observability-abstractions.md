@@ -88,6 +88,7 @@ public sealed class CapacityCheck(IHostMonitor monitor)
 - 契约只规定读取的语义；平台读取路径、采样与缓存由实现决定，内置实现的规则见 [Observability.Host](./observability-host#行为与限制)。
 - 百分比在 0 到 100 之间、不取整；收发速率 `ReceiveBytesPerSecond` / `SendBytesPerSecond` 的单位是字节每秒，网卡链路速率 `SpeedBitsPerSecond` 的单位是 bit/s。
 - 记录不包含命令行参数、环境变量与当前目录。
+- `RuntimeInfo.UserName` 是运行进程的系统账户，不是登录凭据，`ToString()` 照常打印（ADR-0093）。
 
 ## 相关
 

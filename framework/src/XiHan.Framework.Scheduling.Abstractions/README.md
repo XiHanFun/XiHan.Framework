@@ -1,47 +1,57 @@
 # XiHan.Framework.Scheduling.Abstractions
 
-调度契约与引擎（Ring 2，RFC-0013，ADR-0020）。能力 `scheduling.jobs@1`（作业）与 `scheduling.leader@1`（领导选举）由 Provider 提供：引擎在本包，Provider 只实现作业存储 `IJobStore` 与领导选举；默认实现 `Scheduling.InMemory`，多实例换 `Scheduling.Database`。
+## 关于
 
-| 契约 | 用途 |
-| --- | --- |
-| `JobName`、`TriggerKey`、`JobDefinition`、`JobTriggerDefinition` | 作业名（主题文法）；作业（类型、触发器、数据、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`、`Retry`、`Timeout`）与触发器（计划、数据、优先级、misfire 策略） |
-| `JobRetryPolicy`、`JobRetryBackoff` | 失败运行的重试（ADR-0060）：`MaxRetries` 1–100、`Delay`、固定或指数退避与 `MaxDelay` 上限（等待最长 30 天）；被取消与失联的运行不重试；重试是新运行，`Trigger` 为 `Retry`、`Attempt` 加一、`RetryOf` 指向首次运行；集群唯一的作业写成存储里的一次性触发器，每个实例各自运行的作业在本实例进程内等待 |
-| `JobSchedule`、`CronExpression`、`MisfirePolicy` | 计划：`Manual` / `Every(interval, repeatCount)` / `FromCron(expr, timeZoneId)` / `Once(at)`，可带 `StartAt` / `EndAt` / `Calendar`，文本往返；cron 是 Quartz 风格的文法（5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时），不是 Quartz 的超集：星期数字按 Unix 约定（0 / 7 = 周日、1 = 周一，Quartz 是 1 = 周日、7 = 周六），周段单独的 `L`（Quartz 里是周六）与反向范围（如 `FRI-MON`、`22-2`，Quartz 跨界回绕）不支持、解析报错；另一方面多了 5 段写法，日与周同时限定时取并集 |
-| `IJobCalendar`、`JobCalendars`、`HolidayCalendar` / `WeeklyCalendar` / `DailyCalendar` / `CronCalendar` / `CompositeCalendar`、`JobPlanner` | 排除日历按名登记（`AddJobCalendar`），推算下一次时跳过被排除的时刻 |
-| `IJob`、`AddJob<TJob>(...)`、`AddJobType<TJob>()`、`JobRegistry`、`JobTypeRegistry` | 作业是作用域服务；代码登记的作业启动时写入存储；运行时登记的作业引用类型键；`JobTypeRegistry.Keys` 列出可选类型（ADR-0053） |
-| `JobDispatcher`、`JobRun` | 每次运行在新作用域、新上下文（关联 ID = 运行 ID）里经完整内核管道执行；`Data` = 作业数据 ← 触发器数据 ← 手动数据；`Attempt` / `RetryOf` 标出第几次尝试；异常翻译为 `SCHEDULING_UNEXPECTED_001`；超过 `Timeout` 取消令牌、作业返回之前时限已过记为 `SCHEDULING_TIMEOUT_001` |
-| `IJobScheduler`、`JobStatus`、`JobTriggerStatus`、`JobRunRecord`、`JobRunQuery` | 全批量：登记 / 删除 / 暂停 / 恢复（作业与触发器两级）、本地触发并等待、入队给集群、取消运行、状态、运行历史（按作业、状态、时间、触发器、节点、有无错误筛选，`CountRunsAsync` 给总数）、`RestoreAsync` 把运行时改过的代码作业恢复为代码定义 |
-| `IJobStore`、`JobRecord`、`TriggerRecord`、`SchedulerNodeRecord` | Provider 契约：原子抢占到期触发器、独占开始运行、完成释放并解除阻塞、与释放互斥的阻塞写入、历史与节点、失联恢复 |
-| `JobSchedulerEngine`、`SchedulerOptions` | 引擎（Provider 装配并启停）：轮询周期、节点 ID、并发上限、misfire 阈值、租约、节点失联、维护周期、历史保留；`PollOnceAsync` 供测试与一致性套件执行一个周期，并等本周期起的运行连同收尾结束 |
-| `ILeaderElection`、`LeaderLease` | 租约式领导选举：获取、续约、释放、过期。引擎只在应用处于服务状态时拿或续租约；启动中、排空中的周期什么也不做、持有就立即释放，停止时同样释放（ADR-0091），所以 Provider 的释放在应用不在服务状态时也要生效 |
-| `SchedulingTopics`、`SchedulingEventData` | 装配了消息能力时发布 `scheduling.job.*` / `scheduling.run.*` 事件 |
+`XiHan.Framework.Scheduling.Abstractions` 定义调度的契约并包含调度引擎：作业、触发器、计划、排除日历、失败重试，以及运行时管理作业的 `IJobScheduler`。它不包含作业存储与领导选举的实现，单独引用不会运行任何作业。
 
-```csharp
-builder.Services.AddJob<NightlyCleanup>("cleanup.nightly", JobSchedule.FromCron("0 0 3 * * *", "Asia/Shanghai"));
-builder.Services.AddJobCalendar("holidays", new HolidayCalendar([new DateOnly(2026, 10, 1)]));
-builder.Services.AddJob<Report>(new JobDefinition("report", typeof(Report))
-{
-    Triggers = [new JobTriggerDefinition("weekly", JobSchedule.FromCron("0 0 9 * * MON") with { Calendar = "holidays" }) { MisfirePolicy = MisfirePolicy.RunOnce }],
-    Data = new JsonObject { ["format"] = "pdf" },
-    RequestsRecovery = true,
-});
+## 主要特性
 
-// 运行时登记（持久化在存储里，集群其他节点下个周期看到）
-await scheduler.ScheduleAsync(new JobDefinition("tenant-42.sync", JobSchedule.Every(TimeSpan.FromMinutes(10)), typeof(TenantSync)) { Data = new JsonObject { ["tenant"] = "42" } }, ct);
-await scheduler.PauseAsync("tenant-42.sync", ct);
-var outcome = await scheduler.TriggerAsync("cleanup.nightly", ct);      // 本实例立即运行并等待结果
-var runs = await scheduler.RunsAsync(new JobRunQuery { Job = "report", Limit = 20 }, ct);
-var failed = await scheduler.CountRunsAsync(new JobRunQuery { Job = "report", HasError = true }, ct);
+* 计划支持固定间隔、cron（5 / 6 / 7 段、时区）、一次性与手动触发
+* 排除日历、misfire 策略、失败重试与执行时限
+* 运行时登记、暂停、恢复、触发、取消作业，并查询运行历史
+* 作业存储与领导选举是窄契约，由提供程序实现
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Scheduling.Abstractions --prerelease
 ```
 
-代码登记的作业被运行时 `ScheduleAsync` 改过后来源是 `Overridden`：启动同步时代码定义没变（指纹 `CodeFingerprint` 相同）就保留运行时的修改，代码改了以代码为准并记警告；`RestoreAsync` 随时恢复为代码定义（ADR-0053）。
+### 使用
 
-未登记 → `SCHEDULING_NOTFOUND_001`；类型未登记 → `_002`；触发器不存在 → `_003`；运行不存在 → `_004`；没有代码定义（不能恢复）→ `_005`；定义不合法 → `SCHEDULING_VALIDATION_001`；运行历史查询的分页越界（`Skip` 为负、`Limit` 不在 1～1000，不在构造时抛出）→ `_002`（HTTP 400）；运行中且不允许并发 → `SCHEDULING_CONFLICT_001`；租约被占用 → `_002`；运行被取消 → `_003`；存储不可达 → `SCHEDULING_UNAVAILABLE_003`。
+一般由实现包带入，写作业或自定义提供程序时才直接引用；运行作业需要同时装配 `Scheduling.InMemory` 或 `Scheduling.Database`。写一个 `IJob` 并登记计划：
 
-## 依赖方向
+```csharp
+builder.Services.AddJob<CleanupJob>("cleanup.nightly", JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`。被 `Scheduling.InMemory`、`Scheduling.Database`、`Scheduling.Kubernetes`、`Scheduling.Conformance`、`Workflow.Abstractions`（cron）引用。
+public sealed class CleanupJob : IJob
+{
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success());
+}
+```
 
-## 状态
+## 主要类型
 
-P5：可用（Preview）。
+此库提供的主要类型：
+
+* `IJob`：作业，每次运行在新的作用域里执行
+* `JobDefinition`、`JobTriggerDefinition`、`JobSchedule`：作业、触发器与计划
+* `IJobScheduler`：运行时登记、暂停、恢复、触发与查询运行历史
+* `IJobStore`、`ILeaderElection`：写自定义提供程序时实现的契约
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/scheduling-abstractions)
+
+## 相关包
+
+* 内存实现：[XiHan.Framework.Scheduling.InMemory](https://www.nuget.org/packages/XiHan.Framework.Scheduling.InMemory)
+* 数据库实现：[XiHan.Framework.Scheduling.Database](https://www.nuget.org/packages/XiHan.Framework.Scheduling.Database)
+* 一致性套件：[XiHan.Framework.Scheduling.Conformance](https://www.nuget.org/packages/XiHan.Framework.Scheduling.Conformance)
+
+## 反馈与贡献
+
+`XiHan.Framework.Scheduling.Abstractions` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Plugins.InProcess</PackageId>
     <RootNamespace>XiHan.Framework.Plugins.InProcess</RootNamespace>
-    <Description>XiHan Framework 进程内插件宿主（Ring 5）：用可收集的 AssemblyLoadContext 加载、启动、停止、卸载插件。需要运行期反射，不支持 Native AOT。</Description>
+    <Description>曦寒框架进程内插件宿主</Description>
     <PackageTags>xihan;framework;plugins;in-process</PackageTags>
     <!-- 整个框架里唯一允许反射的包：插件按清单中的类型名实例化 -->
     <IsAotCompatible>false</IsAotCompatible>

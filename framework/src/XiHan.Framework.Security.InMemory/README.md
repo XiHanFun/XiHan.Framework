@@ -1,36 +1,61 @@
 # XiHan.Framework.Security.InMemory
 
-内存安全。清单 `role: default`，提供 `security.authentication@1`（`ApiKey` 方案）与 `security.authorization@1`（RBAC 授予存储）。只用于开发、原型与测试。被选为授权能力时，特性在 `Configure` 里经 `FeatureContext.AddStartupCheck` 登记启动核对 `PolicyCatalog.EnforceOn`，核对操作契约按名引用的策略：内核在容器建好之后、任何特性启动之前执行它，不存在（含 `permission:<code>` 的权限码未登记）即抛出 `SECURITY_VALIDATION_004`、宿主启动失败，不论失败策略（ADR-0085）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080）。
+## 关于
+
+`XiHan.Framework.Security.InMemory` 是安全的默认实现：从配置装载 API Key 主体与权限授予，提供 `ApiKey` 方案的认证与 RBAC 授权。只用于开发、原型与测试。
+
+## 主要特性
+
+* 配置里写主体、API Key、角色与授予，零外部依赖
+* 运行时可增删租户专属授予
+* 装配 JWT 或 OpenID Connect 后只提供授权，装配数据库授权后只提供认证
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Security.InMemory --prerelease
+```
+
+### 使用
+
+```csharp
+builder.AddXiHan(xihan => xihan.UseFeature<InMemorySecurityFeature>());
+```
+
+主体与授予写在配置里（API Key 明文随配置分发，只用开发值）：
 
 ```json
 {
-  "XiHan": {
-    "Security": {
-      "InMemory": {
-        "Principals": {
-          "alice": { "ApiKey": "dev-alice", "DisplayName": "Alice", "Roles": "admin,editor", "Tenant": "acme", "Claims": { "email": "alice@example.com" } }
-        },
-        "Grants": {
-          "role": { "admin": "*", "editor": "orders.read,orders.write" },
-          "user": { "alice": "reports.read" }
-        }
-      }
-    }
-  }
+  "XiHan": { "Security": { "InMemory": {
+    "Principals": { "alice": { "ApiKey": "dev-alice-key", "Roles": "admin,editor", "Tenant": "acme" } },
+    "Grants": { "role": { "admin": "*", "editor": "orders.read,orders.write" }, "user": { "alice": "reports.read" } }
+  } } }
 }
 ```
 
-## 语义
+调用时带 `Authorization: ApiKey dev-alice-key`。
 
-- `ApiKeyAuthenticationHandler`：凭据 `ApiKey <key>` 对应一个主体；键比较常量时间，不匹配返回 `SECURITY_DENIED_003`。主体记录的租户写成声明，类型取 `XiHan:MultiTenancy:TenantClaim`（缺省 `tenant`），与多租户的声明解析器读同一个键（RFC-0008 认证第 4 条）。
-- `InMemoryPermissionGrantStore`：配置里的授予是全局的；运行时可用 `Grant` / `Revoke` 增加租户专属授予。上限 `XiHan:Security:InMemory:MaxPrincipals`（1000）与 `MaxGrants`（10000）。被容量拒绝的授予不留下条目，撤销主体在某租户下的最后一条授予时连同这一组移除。
-- 当另一个显式 Provider（如 `Security.Jwt`）被选中提供 `security.authentication` 时，本包只提供授权部分。
-- 健康项 `security.inmemory.capacity`（`InMemorySecurityHealthContributor`，同步计算）：主体存储或授予存储任一达到上限即 Degraded（`SECURITY_UNAVAILABLE_002`，先报主体存储），否则 Ready；被顶替的能力对应的存储不参与判定。
+## 主要类型
 
-## 依赖方向
+此库提供的主要类型：
 
-依赖 `XiHan.Framework.Security.Abstractions`。
+* `InMemorySecurityFeature`：启用内存安全的特性
+* `ApiKeyAuthenticationHandler`：`ApiKey` 方案的认证处理器
+* `InMemoryPermissionGrantStore`：授予存储，可在运行时 `Grant` / `Revoke`
+* `InMemorySecurityOptions`：配置项，对应 `XiHan:Security:InMemory`
 
-## 状态
+## 更多文档
 
-P2：可用，通过 `Security.Conformance` 套件。
+* [概念文档](https://framework.docs.xihanfun.com/packages/security-inmemory)
+
+## 相关包
+
+* 安全抽象：[XiHan.Framework.Security.Abstractions](https://www.nuget.org/packages/XiHan.Framework.Security.Abstractions)
+* JWT 认证：[XiHan.Framework.Security.Jwt](https://www.nuget.org/packages/XiHan.Framework.Security.Jwt)
+* 数据库授权：[XiHan.Framework.Security.Database](https://www.nuget.org/packages/XiHan.Framework.Security.Database)
+
+## 反馈与贡献
+
+`XiHan.Framework.Security.InMemory` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

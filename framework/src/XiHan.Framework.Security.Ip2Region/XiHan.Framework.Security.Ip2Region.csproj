@@ -2,7 +2,7 @@
   <PropertyGroup>
     <PackageId>XiHan.Framework.Security.Ip2Region</PackageId>
     <RootNamespace>XiHan.Framework.Security.Ip2Region</RootNamespace>
-    <Description>XiHan Framework IP 归属地的 ip2region 离线库 Provider：按宿主提供的 IPv4 / IPv6 xdb 文件解析国家、省份、城市与运营商，不访问网络。</Description>
+    <Description>曦寒框架 IP 归属地的 ip2region 提供程序</Description>
     <PackageTags>xihan;framework;security;ip2region;geoip</PackageTags>
   </PropertyGroup>
 

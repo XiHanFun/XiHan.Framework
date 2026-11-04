@@ -1,31 +1,59 @@
 # XiHan.Framework.Protocols.Grpc
 
-gRPC 协议适配器（Ring 5）。提供 `protocols.grpc@1`，把登记表里标记为 `Expose.Grpc` 的操作发布为 gRPC 一元方法（RFC-0011、`spec/protocol/grpc.md`）。protobuf 线格式由操作的 JSON Schema（`Kernel.Generators` 产出）推出，服务端在 JSON 与 protobuf 之间转换，不需要 `.proto` 编译，也不依赖 `Google.Protobuf`；`.proto` 文件由同一份描述生成并经端点发布给客户端。
+## 关于
+
+`XiHan.Framework.Protocols.Grpc` gRPC 协议适配器：把标记为 `Expose.Grpc` 的操作发布为 gRPC 一元方法。protobuf 线格式由操作的 JSON Schema 推出，不需要编译 `.proto`，`.proto` 文件由同一份描述生成并经端点发布给客户端。
+
+## 主要特性
+
+* 一份操作契约同时在 gRPC 上服务，经完整内核管道
+* 错误按 KIND 映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据
+* `GET /operations.proto` 发布 `.proto` 文件
+
+## 如何使用
+
+### 安装
+
+```bash
+dotnet add package XiHan.Framework.Protocols.Grpc --prerelease
+```
+
+### 使用
+
+注册特性并映射端点；gRPC 需要 Kestrel 的 HTTP/2 端点。
 
 ```csharp
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<GrpcProtocolFeature>().UseFeature<OrdersFeature>());
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<GrpcProtocolFeature>());
 var app = builder.Build();
 app.UseXiHan();
-app.MapXiHanGrpc();    // /Orders/Create、/Orders/List …（有 Package 时 /{package}.Orders/Create）
+app.MapXiHanGrpc();    // /Orders/Create、/Orders/List …
 app.MapXiHanProto();   // GET /operations.proto
 ```
 
 ```json
-{ "Kestrel": { "Endpoints": { "Http": { "Url": "http://localhost:5000" }, "Grpc": { "Url": "http://localhost:5001", "Protocols": "Http2" } } } }
+{ "Kestrel": { "Endpoints": { "Grpc": { "Url": "http://localhost:5001", "Protocols": "Http2" } } } }
 ```
 
-## 规则
+## 主要类型
 
-- 方法名：服务 = 资源段的 PascalCase（`order-lines` → `OrderLines`），方法 = 动词的 PascalCase；显式覆盖 `XiHan:Protocols:Grpc:Methods:<操作 ID>` = `Service/Method`；包名 `XiHan:Protocols:Grpc:Package`（写进 `.proto` 的 `package`，也是路径前缀）。名字不合法或重复即启动失败。
-- 发布范围：`Expose` 含 `Grpc` 且非 `Stability.Internal` 的操作；它们必须有 `OperationSchema`（用生成器登记，或手动传入），否则启动失败。
-- 消息映射（`ProtoSchema`）：消息名取 Schema 的 `title`（封闭泛型带实参名，如 `PageResultOfUserResponse`，ADR-0034），`$defs` 里的每个对象定义一个消息；字段号按 Schema 属性顺序从 1 起；`string` → string（base64 → bytes）、`boolean` → bool、`integer` 按 `format` int32 / int64（无格式 → 十进制文本）、`number` 按 `format` float / double（decimal、无格式 → 十进制文本）、数组 → repeated、`additionalProperties` → map<string, T>、`$ref` → 嵌套消息（指向字符串枚举这类标量定义时按该标量映射为 string，不建消息也不建 proto enum）、可空 → optional、无约束 → JSON 文本。嵌套数组与映射里的映射不可表示，启动失败。
-- 调用：请求按 Schema 解码为 JSON 载荷（线上缺席的布尔 / 数值 / 重复 / 映射字段按 proto3 默认值补出，字符串与消息不补），以请求头构造的上下文（`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline` 或 `grpc-timeout`；调用来源记 `grpc` 与方法全名，远端地址与 User-Agent 沿用 HTTP/2 请求，ADR-0043）经完整内核管道执行，响应按 Schema 编码。端点绕过 `UseXiHan()` 的回写，响应完全由 gRPC 处理器产出。
-- 失败：VALIDATION → `InvalidArgument`，NOTFOUND → `NotFound`，CONFLICT → `Aborted`，DENIED → `PermissionDenied`（`SECURITY_DENIED_001` 未认证与 `SECURITY_DENIED_003` 凭据无效 → `Unauthenticated`，ADR-0042），UNAVAILABLE → `Unavailable`，TIMEOUT → `DeadlineExceeded`，CANCELLED → `Cancelled`，其他 → `Internal`；`grpc-message` 为按 `accept-language` 翻译的文案；尾部元数据 `xihan-error-code`、`xihan-trace-id`（成功时也有 trace-id）。请求不是合法 protobuf → `InvalidArgument` + `PROTOCOLS_VALIDATION_005`；应用未就绪 → `Unavailable` + `KERNEL_UNAVAILABLE_001`（不进管道，同样带两个尾部元数据）。
+此库提供的主要类型：
 
-## 依赖方向
+* `GrpcProtocolFeature`：特性入口
+* `GrpcProtocolOptions`：`Package`、`Methods`（覆盖推导出的服务与方法名）
+* `OperationGrpcEndpointRouteBuilderExtensions`：`MapXiHanGrpc`、`MapXiHanProto`
 
-依赖 `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.AspNetCore.App` 与 `Grpc.AspNetCore.Server`（方法由 `IServiceMethodProvider` 动态绑定）。协议适配器在宿主之上（Ring 5）。
+## 更多文档
 
-## 状态
+* [概念文档](https://framework.docs.xihanfun.com/packages/protocols-grpc)
 
-P3：可用（一元方法、JSON Schema 驱动的 protobuf 编解码、`.proto` 发布）。流式方法与 gRPC 反射服务未提供。
+## 相关包
+
+* HTTP 协议适配器：[XiHan.Framework.Protocols.Http](https://www.nuget.org/packages/XiHan.Framework.Protocols.Http)
+* MCP 协议适配器：[XiHan.Framework.Protocols.Mcp](https://www.nuget.org/packages/XiHan.Framework.Protocols.Mcp)
+* CloudEvents 协议适配器：[XiHan.Framework.Protocols.CloudEvents](https://www.nuget.org/packages/XiHan.Framework.Protocols.CloudEvents)
+
+## 反馈与贡献
+
+`XiHan.Framework.Protocols.Grpc` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。
