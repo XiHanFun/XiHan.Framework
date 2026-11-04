@@ -42,7 +42,21 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.HealthProbeInter
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.InitTables.get -> bool
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.InitTables.init -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Replicas.get -> XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Replicas.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.SqlSugarPersistenceOptions() -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.<Clone>$() -> XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions!
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.DefaultHitRate.get -> int
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.DefaultHitRate.init -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.Equals(XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions? other) -> bool
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.FailureCooldown.get -> System.TimeSpan
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.FailureCooldown.init -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.HealthCheck.get -> bool
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.HealthCheck.init -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.HealthCheckInterval.get -> System.TimeSpan
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.HealthCheckInterval.init -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.SqlSugarReplicaOptions() -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>
 XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
@@ -73,7 +87,9 @@ const XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections.Default = "defaul
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarConnections.Shard = "shard" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.ConnectionBinding = "db" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.HealthName = "persistence.sqlsugar.database" -> string!
+const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.ReplicaHealthName = "persistence.sqlsugar.replicas" -> string!
 const XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.ConfigurationSection = "XiHan:Persistence:SqlSugar" -> string!
+const XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.StandardHitRate = 10 -> int
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarDataSource.ToString() -> string!
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.GetHashCode() -> int
@@ -81,6 +97,9 @@ override XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.ToString() -> 
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.GetHashCode() -> int
 override XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.ToString() -> string!
+override XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.GetHashCode() -> int
+override XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.ToString() -> string!
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions.Apply(SqlSugar.ConnectionConfig! config) -> SqlSugar.ConnectionConfig!
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions.Configure(System.Reflection.PropertyInfo! property, SqlSugar.EntityColumnInfo! column) -> void
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarConventions.ConfigureIndexes(System.Type! entityType, SqlSugar.EntityInfo! entity) -> void
@@ -91,3 +110,5 @@ static XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.operator ==(XiHa
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions!
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.operator !=(XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? right) -> bool
 static XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions.operator ==(XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions? right) -> bool
+static XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.operator !=(XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions? right) -> bool
+static XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions.operator ==(XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions? left, XiHan.Framework.Persistence.SqlSugar.SqlSugarReplicaOptions? right) -> bool

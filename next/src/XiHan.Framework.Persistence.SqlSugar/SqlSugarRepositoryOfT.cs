@@ -571,6 +571,19 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
     }
 
     /// <summary>
+    /// 另开一个读主库的连接
+    /// </summary>
+    /// <remarks>
+    /// 写入撞上约束后事务已中止，要另开连接查是谁撞了。副本上带着从库，不钉住就读到还没复制到的从库，把冲突判断错
+    /// </remarks>
+    private SqlSugarClient FreshOnPrimary()
+    {
+        var fresh = Client.CopyNew();
+        fresh.Ado.IsDisableMasterSlaveSeparation = true;
+        return fresh;
+    }
+
+    /// <summary>
     /// 写入路径的读取
     /// </summary>
     /// <remarks>
@@ -615,7 +628,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         {
             var ids = Distinct(written.Select(static e => e.Id));
             Error conflict;
-            using (var fresh = Client.CopyNew())
+            using (var fresh = FreshOnPrimary())
             {
                 var taken = await Split(fresh.Queryable<TEntity>().In(ids)).ToListAsync(EntityExpressions.Id<TEntity, TKey>()).ConfigureAwait(false);
                 var collided = ids.FindIndex(taken.Contains);
@@ -653,7 +666,7 @@ public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfW
         catch (DbException)
         {
             string? index;
-            using (var fresh = Client.CopyNew())
+            using (var fresh = FreshOnPrimary())
             {
                 index = _isSplitTable ? null : await UniqueKeyConflicts.FindAsync<TEntity, TKey>(Client, fresh, written).ConfigureAwait(false);
             }

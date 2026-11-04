@@ -2289,7 +2289,8 @@
       "operations": [],
       "permissions": [],
       "health": [
-        "persistence.sqlsugar.database"
+        "persistence.sqlsugar.database",
+        "persistence.sqlsugar.replicas"
       ]
     },
     {

@@ -349,6 +349,46 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 
 SQLite 只有一个写者：业务事务写过之后，同一个库文件上的另一个事务要等它结束。工作流的租约表就是这种数据，SQLite 上要配 `XiHan:Workflow:Database:LockConnection` 把它放到另一个库文件，见 [Workflow.Database](../packages/workflow-database#sqlite-上的租约表)。SqlSugar 方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明命名连接（见 [SqlSugar 的命名连接](../packages/persistence-sqlsugar#命名连接)）。EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明（ADR-0087）：一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上，所以登记到命名连接的实体只能在绑定那个连接的工作单元里读写，普通工作单元里取用以 `PERSISTENCE_UNAVAILABLE_008` 失败（见 [EF Core 的行为与限制](../packages/persistence-entityframeworkcore#行为与限制)）。这一半是已定的（ADR-0091）：EF Core 不做「每个连接一个 `DbContext`、跨上下文顺序提交」的多上下文工作单元，普通工作单元里取用命名连接上的实体维持明确报错；要在业务事务里一起读写命名连接上的实体，用 `Persistence.SqlSugar`。内存实现没有连接，登记到命名连接在装配时、绑定连接的工作单元在开始时以 `PERSISTENCE_UNAVAILABLE_008` 失败。
 
+### 读写分离
+
+SqlSugar Provider 支持从库（RFC-0005「读写分离」，ADR-0118）。从库在配置回调里给，回调对每个连接都调用，所以要看 `ConfigId`，只给它所属的连接：
+
+```csharp
+using SqlSugar;
+using XiHan.Framework.Persistence.SqlSugar;
+
+new SqlSugarPersistenceFeature((binding, config) =>
+{
+    config.DbType = DbType.PostgreSQL;
+    config.ConnectionString = binding.ValueOrThrow().Value;
+    if (Equals(config.ConfigId, SqlSugarConnections.Default))
+    {
+        config.SlaveConnectionConfigs =
+        [
+            new SlaveConnectionConfig { ConnectionString = replicaA, HitRate = 10 },
+            new SlaveConnectionConfig { ConnectionString = replicaB, HitRate = 10 },
+        ];
+    }
+});
+```
+
+`HitRate` 是字段，配置绑定绑不上，从配置读时自己赋值。不大于 0 的权重按 `XiHan:Persistence:SqlSugar:Replicas:DefaultHitRate`（缺省 10）归一化。
+
+| 读写 | 走哪里 |
+| --- | --- |
+| 只读工作单元（动词 `get`、`list`，或 `UnitOfWorkOptions(IsReadOnly: true)`）的读 | 从库 |
+| 其余工作单元的读写，第一次写入之前的读也一样 | 主库。提交之后同一作用域的读也在主库上，读得到刚写的 |
+| 工作单元之外直接用客户端 | 事务内与写入走主库，事务外的读走从库 |
+| 分片连接（租户独立库） | 默认没有从库，读写都走租户自己的主库 |
+
+跨调用读己之写不保证：写完马上发起的只读调用可能读到落后的从库。框架自己的只读工作单元（授予、租户目录、租约探测）也走从库。
+
+从库宕机时：周期探测把它摘除，新的调用不再读它；全部不可读时读回到主库；恢复之后要过了冷却窗口才放回读流量。健康项 `persistence.sqlsugar.replicas` 能看到每个从库的状态，有从库不可读时是 Degraded，应用仍然就绪。只探连通，不看复制延迟。
+
+主库不同的连接共用同一个从库是装配错误（`PERSISTENCE_VALIDATION_009`）：回调不看 `ConfigId` 时，租户的读会读到平台库。默认连接与命名连接在启动时失败，分片连接在那次调用失败。
+
+应用自己注册 `ISqlSugarClient` 时，框架不探测它，而且要自己保证每个作用域用一份配置副本（`UtilMethods.CopyConfig`；`SqlSugarScope` 自己会复制）：SqlSugar 读从库时会改配置上的连接串，配置共用时别的作用域的写入会落到从库上。
+
 ## 运行时数据源
 
 应用在运行时按自己的记录（名字、数据库类型、连接串，通常存在应用自己的库里、口令加密保存）连外部库，比如代码生成要导入的外部数据源、零代码运行时要查的外部表。这些连接由单例 `DataSourceRegistry` 管，与上面的约定连接 `default` / `shard`、租户分库互不相干：不进作用域客户端、不参与实体落点、不进工作单元。
@@ -438,6 +478,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `PERSISTENCE_VALIDATION_007` | 表列表的 `Skip` 为负或 `Take` 小于 1，参数 `skip`、`take` | `Result`（HTTP 400） |
 | `PERSISTENCE_VALIDATION_006` | 运行时数据源的数据库类型 Provider 不认识、连接串格式错 | `Result` |
 | `PERSISTENCE_VALIDATION_008` | EF Core + SQLite：由约定映射成 UTC ticks 整数的时间列在库里还是旧的文本形式（列声明不是 INTEGER，或抽样到非整数的值），参数 `connection`、`columns`（[EF Core 的已有 SQLite 库](../packages/persistence-entityframeworkcore#已有-sqlite-库的时间列)，ADR-0094）；租户分片库在首次绑定时核对，参数 `tenant`、`columns`（ADR-0097） | 启动失败；租户分片上那次工作单元开不起来，调用得到 `KERNEL_UNEXPECTED_001`（HTTP 500，原因是本码；已定，不按 400 回给调用方，ADR-0099） |
+| `PERSISTENCE_VALIDATION_009` | 主库不同的连接共用同一个从库（以异常抛出）：默认连接与命名连接启动时核对，分片连接在作用域取客户端时核对 |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
 | `PERSISTENCE_NOTFOUND_002` | 运行时数据源没有在本进程登记（`GetAsync`） | `Result` |
 | `PERSISTENCE_NOTFOUND_003` | 要读结构的表不在库里 | 逐项 `Result` |
@@ -451,6 +492,7 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | `PERSISTENCE_UNAVAILABLE_006` | 数据源连不上或读取失败（测试连接、健康探测、库结构读取），参数 `name`、`reason`（已脱敏） | `Result`、健康项 |
 | `PERSISTENCE_UNAVAILABLE_007` | 运行时数据源登记已满 | `Result` |
 | `PERSISTENCE_UNAVAILABLE_008` | 当前的持久化 Provider 不支持该能力（EF Core 与内存实现的运行时数据源与库结构读取；内存实现的命名连接；EF Core 普通工作单元里取用登记到命名连接的实体，已定不支持） | `Result`；命名连接相关的抛 `FrameworkException` |
+| `PERSISTENCE_UNAVAILABLE_009` | 从库不可读：只出现在健康项 `persistence.sqlsugar.replicas` 里，读落到别的从库或主库上，调用不受影响 |
 
 `PERSISTENCE_UNAVAILABLE_004` 与 `005` 属于雪花标识生成器，见[标识生成](./distributed-ids#失败与错误码)。错误怎样经协议适配器变成 HTTP 状态与 Problem Details，见[结果与错误](./errors)。
 

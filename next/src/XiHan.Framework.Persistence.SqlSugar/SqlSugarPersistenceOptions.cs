@@ -67,8 +67,23 @@ public sealed record SqlSugarPersistenceOptions
     } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 从配置读取：<c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>、<c>Connections:&lt;name&gt;</c>
+    /// 从库的权重与健康探测
     /// </summary>
+    /// <remarks>
+    /// 来自 <c>XiHan:Persistence:SqlSugar:Replicas</c>
+    /// </remarks>
+    public SqlSugarReplicaOptions Replicas
+    {
+        get => field;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = new();
+
+    /// <summary>
+    /// 从配置读取
+    /// </summary>
+    /// <remarks>
+    /// <c>InitTables</c>、<c>HealthProbeIntervalSeconds</c>、<c>Connections:&lt;name&gt;</c>，以及 <c>Replicas</c> 下的 <c>DefaultHitRate</c>、<c>HealthCheck</c>、<c>HealthCheckIntervalSeconds</c>、<c>FailureCooldownSeconds</c>
+    /// </remarks>
     /// <remarks>
     /// 值不合法抛出 <see cref="ArgumentException"/>（消息带配置键，不带连接串），不按缺省处理
     /// </remarks>
@@ -105,7 +120,45 @@ public sealed record SqlSugarPersistenceOptions
             options = options with { Connections = connections };
         }
 
-        return options;
+        return options with { Replicas = ReadReplicas(configuration) };
+    }
+
+    /// <summary>
+    /// 读从库的权重与健康探测选项
+    /// </summary>
+    private static SqlSugarReplicaOptions ReadReplicas(IConfiguration configuration)
+    {
+        var replicas = new SqlSugarReplicaOptions();
+        var section = $"{ConfigurationSection}:Replicas";
+        if (configuration[$"{section}:DefaultHitRate"] is { } hitRate)
+        {
+            replicas = int.TryParse(hitRate, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value > 0
+                ? replicas with { DefaultHitRate = value }
+                : throw new ArgumentException($"'{section}:DefaultHitRate' must be a positive integer, but was '{hitRate}'.");
+        }
+
+        if (configuration[$"{section}:HealthCheck"] is { } healthCheck)
+        {
+            replicas = bool.TryParse(healthCheck, out var value)
+                ? replicas with { HealthCheck = value }
+                : throw new ArgumentException($"'{section}:HealthCheck' must be 'true' or 'false', but was '{healthCheck}'.");
+        }
+
+        if (configuration[$"{section}:HealthCheckIntervalSeconds"] is { } interval)
+        {
+            replicas = double.TryParse(interval, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? replicas with { HealthCheckInterval = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"'{section}:HealthCheckIntervalSeconds' must be a positive number, but was '{interval}'.");
+        }
+
+        if (configuration[$"{section}:FailureCooldownSeconds"] is { } cooldown)
+        {
+            replicas = double.TryParse(cooldown, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
+                ? replicas with { FailureCooldown = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"'{section}:FailureCooldownSeconds' must not be negative, but was '{cooldown}'.");
+        }
+
+        return replicas;
     }
 
     /// <summary>

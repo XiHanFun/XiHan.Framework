@@ -135,6 +135,8 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
 
         await using var scope = services.CreateAsyncScope();
         using var copy = scope.ServiceProvider.GetRequiredService<ISqlSugarClient>().CopyNew();
+        // 库结构以主库为准：迁移刚跑完时从库可能还没复制到
+        copy.Ado.IsDisableMasterSlaveSeparation = true;
         return Run(copy, read, DataSourceDefinition.DefaultName, copy.CurrentConnectionConfig.ConnectionString ?? string.Empty, cancellationToken);
     }
 

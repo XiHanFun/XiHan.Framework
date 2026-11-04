@@ -12,6 +12,7 @@
   "persistence.entity.tenant_required": "實體 '{entity}' 是多租戶實體，但目前呼叫沒有租戶。",
   "persistence.entity.unique_key_conflict": "實體 '{entity}' 在唯一索引 '{index}' 上已有相同鍵的項目。",
   "persistence.query.take_exceeded": "查詢要取 {take} 列，超過一次最多可讀的 {max} 列；請分頁讀取，每頁最多 {max} 列。",
+  "persistence.replica.unavailable": "連線 {connection} 的從庫 {index} 不提供讀取：{reason}",
   "persistence.schema.list_page_invalid": "資料表清單的分頁越界：略過筆數 {skip} 不能為負，取出筆數 {take} 至少為 1。",
   "persistence.schema.not_supported": "目前的持久化 Provider 無法讀取資料庫結構。",
   "persistence.schema.read_failed": "讀取資料來源 '{name}' 的資料庫結構失敗：{reason}",

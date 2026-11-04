@@ -26,6 +26,7 @@
 - **新增** 本地化：消息键与 `key.L()`、每种语言一个 `Localization/<区域>.json`、内置 10 种区域（默认 `en-US`）、宿主按 `Accept-Language` 翻译 Problem Details；`Localization.InMemory` 与 `Localization.Database`
 - **新增** 领域模型 `Domain`：实体协议接口、值对象、领域事件缓冲与规约
 - **新增** 持久化：仓储、查询、工作单元与 Transaction 阶段、批量方法、雪花标识生成器；`Persistence.InMemory`、`Persistence.EntityFrameworkCore`、`Persistence.SqlSugar`（多库、分表、差异日志）与 `Persistence.Generators`
+- **新增** SqlSugar 读写分离：只读工作单元读从库，其余读写走主库；从库权重归一化与周期探测，不可读的自动摘除、全部不可读时读回到主库，健康项 `persistence.sqlsugar.replicas`（见[持久化](./guide/persistence#读写分离)）
 - **新增** 缓存：字节存储、类型化缓存、分布式锁、Idempotency 阶段、`IDistributedCache` 适配、键管理；`Caching.InMemory`、`Caching.Redis`、`Caching.Hybrid`、`Caching.Remote`（Experimental）
 - **新增** 多租户：租户解析与 Tenant 阶段、租户分片与管道外的 `TenantShardScope`；`MultiTenancy.InMemory`、`MultiTenancy.Database`
 - **新增** 安全：认证处理器与 Authenticate 阶段、权限与策略、RBAC 授予、权限收窄过滤器、授予来源、条件引擎、IP 归属地；`Security.InMemory`、`Security.Database`、`Security.Jwt`、`Security.OpenIdConnect`、`Security.Ip2Region`

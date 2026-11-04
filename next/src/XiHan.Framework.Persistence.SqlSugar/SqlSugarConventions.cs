@@ -55,6 +55,15 @@ public static class SqlSugarConventions
             }
         }
 
+        // 权重全为 0 时 SqlSugar 的读路由对空集合取随机数直接抛异常；HitRate 是字段，从配置绑定的列表也可能带着 0
+        foreach (var replica in config.SlaveConnectionConfigs ?? [])
+        {
+            if (replica.HitRate <= 0)
+            {
+                replica.HitRate = SqlSugarReplicaOptions.StandardHitRate;
+            }
+        }
+
         config.ConfigureExternalServices ??= new ConfigureExternalServices();
         // SqlSugar 把这三个方法译成不转义的 LIKE，实参里的通配符会误匹配；同名外部函数先于内置翻译被查到（ADR-0098）
         LiteralStringMatching.Register(config.ConfigureExternalServices);

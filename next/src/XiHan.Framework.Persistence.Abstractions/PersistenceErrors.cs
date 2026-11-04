@@ -112,6 +112,14 @@ public static class PersistenceErrors
     public const string StorageFormatMismatch = "PERSISTENCE_VALIDATION_008";
 
     /// <summary>
+    /// 连接用了别的库的从库
+    /// </summary>
+    /// <remarks>
+    /// 装配错误，以异常抛出：主库不同的连接共用同一个从库，读会读到别的库的数据。固定连接在启动时核对，分片连接在作用域取客户端时核对
+    /// </remarks>
+    public const string ReplicaMisplaced = "PERSISTENCE_VALIDATION_009";
+
+    /// <summary>
     /// 没有活动的工作单元
     /// </summary>
     public const string NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001";
@@ -162,6 +170,14 @@ public static class PersistenceErrors
     /// 运行时数据源与库结构读取、命名连接（实体登记到命名连接、绑定连接的工作单元）：EF Core 与内存实现。软删除实体声明了唯一索引（部分唯一索引）而所连数据库不支持部分索引：Provider 在启动时以异常抛出（SqlSugar 只支持 PostgreSQL、SQLite、SQL Server，EF Core 只支持 Npgsql、SQLite、SQL Server 的 Provider）
     /// </remarks>
     public const string NotSupported = "PERSISTENCE_UNAVAILABLE_008";
+
+    /// <summary>
+    /// 从库不可读
+    /// </summary>
+    /// <remarks>
+    /// 只出现在健康条目里，读落到别的从库或主库上，调用不受影响；参数 <c>connection</c>、<c>index</c>、<c>reason</c>（异常类型）
+    /// </remarks>
+    public const string ReplicaUnavailable = "PERSISTENCE_UNAVAILABLE_009";
 
     /// <summary>
     /// 只读工作单元拒绝写入：操作实现的缺陷

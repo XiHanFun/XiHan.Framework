@@ -1245,6 +1245,33 @@
           "type": "string",
           "sample": "Data Source=leases.db",
           "summary": "方式一的命名连接：值是连接串，名字合 ^[a-z0-9][a-z0-9-]{0,63}$、不能是 default 或 shard；每个作用域的客户端都带上，回调按 ConfigId 区分；登记到命名连接的实体与绑定连接的工作单元使用"
+        },
+        {
+          "key": "Replicas:DefaultHitRate",
+          "type": "integer",
+          "default": "10",
+          "minimum": 1,
+          "summary": "权重不大于 0 的从库归一化成的权重"
+        },
+        {
+          "key": "Replicas:HealthCheck",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否周期探测从库；配了从库才有探测，关掉后宕机的从库照常接读流量"
+        },
+        {
+          "key": "Replicas:HealthCheckIntervalSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "从库的探测间隔（秒）"
+        },
+        {
+          "key": "Replicas:FailureCooldownSeconds",
+          "type": "number",
+          "default": "120",
+          "minimum": 0,
+          "summary": "从库最后一次失败之后，过了这段时间（秒）并且探通才恢复读流量"
         }
       ]
     },

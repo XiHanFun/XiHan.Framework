@@ -122,6 +122,14 @@ public static class PersistenceMessages
     public const string StoreUnavailable = "persistence.store.unavailable";
 
     /// <summary>
+    /// 从库不可读（健康条目）
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>connection</c>、<c>index</c>、<c>reason</c>（异常类型）
+    /// </remarks>
+    public const string ReplicaUnavailable = "persistence.replica.unavailable";
+
+    /// <summary>
     /// 雪花标识的机器位租约尚未取得或已丢失
     /// </summary>
     /// <remarks>

@@ -12,6 +12,7 @@
   "persistence.entity.tenant_required": "엔터티 '{entity}'은(는) 다중 테넌트이지만 현재 호출에 테넌트가 없습니다.",
   "persistence.entity.unique_key_conflict": "엔터티 '{entity}'의 고유 인덱스 '{index}'에 같은 키의 항목이 이미 있습니다.",
   "persistence.query.take_exceeded": "쿼리가 {take}개 행을 요청했지만 한 번에 읽을 수 있는 행은 최대 {max}개입니다. 페이지당 최대 {max}개 행으로 나누어 읽으십시오.",
+  "persistence.replica.unavailable": "연결 {connection}의 복제본 {index}이(가) 읽기를 제공하지 않습니다: {reason}",
   "persistence.schema.list_page_invalid": "테이블 목록의 페이지 범위를 벗어났습니다. 건너뛸 개수 {skip}은(는) 음수일 수 없고, 가져올 개수 {take}은(는) 1 이상이어야 합니다.",
   "persistence.schema.not_supported": "현재 영속성 공급자는 데이터베이스 스키마를 읽을 수 없습니다.",
   "persistence.schema.read_failed": "데이터 원본 '{name}'의 스키마를 읽지 못했습니다: {reason}",

@@ -27,6 +27,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// </summary>
 /// <remarks>
 /// 提供 <c>persistence.relational@1</c>，以作用域内的 <see cref="ISqlSugarClient"/> 实现仓储与工作单元。客户端有两种来源：由本特性按配置回调创建（自动应用 <see cref="SqlSugarConventions"/>；默认连接 <c>ConfigId</c> 为 <see cref="SqlSugarConnections.Default"/>，<see cref="SqlSugarPersistenceOptions.Connections"/> 的命名连接随后，带租户分片的调用再加一个 <see cref="SqlSugarConnections.Shard"/> 连接），或由应用自己注册（应用须先对连接配置调用 <see cref="SqlSugarConventions.Apply"/>，多连接时自己决定 <c>ConfigId</c>）。实体落在哪个连接由 <see cref="IEntityConnectionSelector"/> 决定。健康项 <see cref="HealthName"/> 按 <see cref="SqlSugarPersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里打开再关闭默认连接
+/// 回调在 <c>ConnectionConfig.SlaveConnectionConfigs</c> 上给出从库时读写分离（RFC-0005「读写分离」，ADR-0118）：只读工作单元读从库，会写的工作单元读写都走主库；固定连接的从库周期探测，不可读的摘除，全部不可读时读回到主库，见健康项 <see cref="ReplicaHealthName"/>。回调对每个连接都调用，从库只给它所属的连接（看 <c>ConfigId</c>），主库不同的连接共用从库是 <see cref="PersistenceErrors.ReplicaMisplaced"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegistrar
@@ -40,6 +41,14 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// 健康项名：默认连接的数据库是否可达
     /// </summary>
     public const string HealthName = "persistence.sqlsugar.database";
+
+    /// <summary>
+    /// 健康项名：从库能否提供读取
+    /// </summary>
+    /// <remarks>
+    /// 只在固定连接配了从库且没有关掉探测时存在
+    /// </remarks>
+    public const string ReplicaHealthName = "persistence.sqlsugar.replicas";
 
     /// <summary>
     /// 连接绑定的类型
@@ -74,6 +83,14 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// 启动时起循环的健康探针，停止时结束它
     /// </summary>
     private PeriodicHealthContributor? _health;
+
+    /// <summary>
+    /// 从库的健康探针
+    /// </summary>
+    /// <remarks>
+    /// 没配从库或关掉探测时为空
+    /// </remarks>
+    private PeriodicHealthContributor? _replicaHealth;
 
     /// <summary>
     /// 以应用自己注册的 <see cref="ISqlSugarClient"/>（作用域或 <c>SqlSugarScope</c>）装配
@@ -127,7 +144,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
             Pipeline = [new PipelineContribution(typeof(UnitOfWorkMiddleware).FullName!, PipelineStage.Transaction)],
             // 读本包的 XiHan:Persistence:SqlSugar 与运行时数据源的 XiHan:Persistence:DataSources，写两者的最近公共节（ADR-0075）
             Config = new ConfigContribution("XiHan:Persistence"),
-            Health = [HealthName],
+            Health = [HealthName, ReplicaHealthName],
         },
         Entry = typeof(SqlSugarPersistenceFeature).FullName,
     };
@@ -152,22 +169,36 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
             // 应用默认连接的配置只建一份供所有作用域共用；带租户分片的调用在作用域内按分片绑定另建一个 shard 连接的配置，约定同样施加
             // 默认连接始终在客户端里：平台目录表落默认连接、租户表落分片连接，由 IEntityConnectionSelector 决定，两者在同一客户端里由 AsTenant() 统一开事务
             var binding = context.TryGetBinding(ConnectionBinding);
-            var shared = CreateConfig(configure, binding, SqlSugarConnections.Default);
+            var defaultHitRate = _options.Replicas.DefaultHitRate;
+            var shared = CreateConfig(configure, binding, SqlSugarConnections.Default, defaultHitRate);
             // 命名连接（RFC-0005「命名连接」）同样只建一份配置：回调按 ConfigId 区分，绑定的主值换成该连接串、属性沿用 db 绑定（库类型等）
             // 它们排在默认连接之后，根连接仍是默认连接；工作单元只在触及的连接上开事务，业务调用不碰命名连接时那个库不被业务事务锁住
-            var named = _options.Connections.Select(pair => CreateConfig(configure, NamedBinding(binding, pair.Value), pair.Key)).ToList();
+            var named = _options.Connections.Select(pair => CreateConfig(configure, NamedBinding(binding, pair.Value), pair.Key, defaultHitRate)).ToList();
+            // 配了从库才有下面这些：没配时作用域直接用共享的配置，没有探测、没有健康条目，也不多一次分配（RFC-0005「读写分离」）
+            var replicated = new[] { shared }.Concat(named).Where(SqlSugarReplicaRules.HasReplicas).ToList();
+            var owners = SqlSugarReplicaRules.Owners(replicated);
+            if (replicated.Count > 0)
+            {
+                RegisterReplicas(context.Services, replicated);
+            }
+
             context.Services.AddScoped<ISqlSugarClient>(sp =>
             {
                 var shard = TenantShardBinding.Resolve(sp, ConnectionBinding, ConnectionBindingType, binding);
+                var replicas = replicated.Count > 0 ? sp.GetRequiredService<SqlSugarReplicaMonitor>() : null;
+                var root = replicas?.ForScope(shared) ?? shared;
                 if (!shard.HasValue && named.Count == 0)
                 {
-                    return new SqlSugarClient(shared);
+                    return new SqlSugarClient(root);
                 }
 
-                List<ConnectionConfig> configs = [shared, .. named];
+                List<ConnectionConfig> configs = [root, .. named.Select(config => replicas?.ForScope(config) ?? config)];
                 if (shard.HasValue)
                 {
-                    configs.Add(CreateConfig(configure, shard, SqlSugarConnections.Shard));
+                    // 分片连接的配置本来就是这个作用域现建的，从库由回调按分片绑定给出；核对它没有拿别的库的从库，分片不探测
+                    var config = CreateConfig(configure, shard, SqlSugarConnections.Shard, defaultHitRate);
+                    SqlSugarReplicaRules.EnsureOwn(config, owners);
+                    configs.Add(config);
                 }
 
                 return new SqlSugarClient(configs);
@@ -211,6 +242,12 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
 
         _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);
         await _health.StartAsync(cancellationToken).ConfigureAwait(false);
+        // 首探在这里完成：宿主 Ready 时读已经绕开了连不上的从库
+        _replicaHealth = services.GetKeyedService<PeriodicHealthContributor>(ReplicaHealthName);
+        if (_replicaHealth is not null)
+        {
+            await _replicaHealth.StartAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 
     /// <inheritdoc />
@@ -220,6 +257,12 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         {
             await _health.StopAsync(cancellationToken).ConfigureAwait(false);
             _health = null;
+        }
+
+        if (_replicaHealth is not null)
+        {
+            await _replicaHealth.StopAsync(cancellationToken).ConfigureAwait(false);
+            _replicaHealth = null;
         }
     }
 
@@ -334,12 +377,30 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// <remarks>
     /// 应用回调设置数据库类型与连接串，然后施加协议约定；<c>ConfigId</c> 由本特性决定，它是落点规则的依据，回调改了也以特性为准
     /// </remarks>
-    private static ConnectionConfig CreateConfig(Action<Maybe<BindingValue>, ConnectionConfig> configure, Maybe<BindingValue> binding, string configId)
+    private static ConnectionConfig CreateConfig(Action<Maybe<BindingValue>, ConnectionConfig> configure, Maybe<BindingValue> binding, string configId, int defaultHitRate)
     {
         var config = new ConnectionConfig { ConfigId = configId, IsAutoCloseConnection = true };
         configure(binding, config);
         config.ConfigId = configId;
+        SqlSugarReplicaRules.Normalize(config, defaultHitRate);
         return SqlSugarConventions.Apply(config);
+    }
+
+    /// <summary>
+    /// 登记从库的路由与健康探测
+    /// </summary>
+    /// <remarks>
+    /// 关掉探测时只有路由：权重不再变化，也没有健康条目
+    /// </remarks>
+    private void RegisterReplicas(IServiceCollection services, List<ConnectionConfig> replicated)
+    {
+        var options = _options.Replicas;
+        services.AddSingleton(sp => new SqlSugarReplicaMonitor(replicated, options, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
+        if (options.HealthCheck)
+        {
+            services.AddKeyedSingleton(ReplicaHealthName, (sp, _) => new PeriodicHealthContributor(ReplicaHealthName, ct => sp.GetRequiredService<SqlSugarReplicaMonitor>().ProbeAsync(ct), options.HealthCheckInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
+            services.AddSingleton<IHealthContributor>(static sp => new SqlSugarReplicaHealth(sp.GetRequiredKeyedService<PeriodicHealthContributor>(ReplicaHealthName), sp.GetRequiredService<SqlSugarReplicaMonitor>()));
+        }
     }
 
     /// <inheritdoc />
