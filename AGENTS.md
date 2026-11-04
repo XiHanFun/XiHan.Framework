@@ -138,7 +138,7 @@ XiHan.Framework 是面向 .NET 10 的模块化应用框架。仓库以分层模�
 - 版本脚本、包撤销脚本、打标签和 NuGet 发布都属于外部状态变更，只有用户明确要求时才能执行。
 - 发布前以 `.github/workflows/ci.yml` 和 `.github/workflows/release.yml` 为最终事实源，完成 Release 构建、MTP 测试和包清单核对。
 - 发布分支：预览版（`X.Y.Z-preview.N` 这类带预发布后缀的版本）从 `preview` 分支发，由 `next` 快进（`git fetch . next:preview`，不是快进就停下查）；正式版从 `main` 发，由 `dev` 快进。这两个分支只接收发版，修复先进开发分支，再快进过来。
-- 预览版现在还发不出去：`release.yml` 的 guard 只放行 `main` 上的标签，构建的也是 4.x 的 `framework/`，版本读 `framework/props/version.props`；`next-ci.yml` 也不跑 `preview`。这几处改好之后删掉这一条。
+- `release.yml` 的 guard 按标签查发布分支：带预发布后缀的看 `preview`，不带的看 `main`。`v4.*` 标签走 `framework/`，其余走 `next/`（版本读 `next/Directory.Build.props`）。`next-ci.yml` 跑 `preview`，`ci.yml` 只管 4.x。
 
 ## 分支与 worktree
 

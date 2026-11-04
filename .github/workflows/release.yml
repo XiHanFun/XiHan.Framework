@@ -1,16 +1,17 @@
 name: 发布 NuGet
 
-# 推送 v* 标签（如 v4.3.0）触发。版本号取自 framework/props/version.props，
-# 构建产出 67 个包（66 个框架包与 XiHan.Framework.Cli 工具）到 framework/nupkgs/，统一推送 nuget.org（--skip-duplicate 幂等）。
+# 推送 v* 标签（如 v5.0.0-preview.1、v4.3.0）触发，按标签分两条线，统一推送 nuget.org（--skip-duplicate 幂等）：
+# - v4.*：版本取自 framework/props/version.props，构建 framework/XiHan.Framework.slnx，包在 framework/nupkgs/
+# - 其余（5.x 起）：版本取自 next/Directory.Build.props，打包 next/XiHan.Framework.Next.slnx，包在 next/artifacts/packages/
 #
 # 发包必须同时满足两条，由 guard job 把关，缺一不发：
-# ① 标签指向的提交在 main 的历史里。标签本身不带分支信息，所以要查祖先关系——
-#    打在 dev 或任何别处的 v* 标签一律拒发。
-# ② 标签号就是 version.props 里写着的 <Version>——否则发出去的不是你以为的那个版本，
+# ① 标签指向的提交在发布分支的历史里：带预发布后缀的是预览版，看 preview；不带的是正式版，看 main。
+#    标签本身不带分支信息，所以要查祖先关系——打在别处的 v* 标签一律拒发。
+# ② 标签号就是这条线的 <Version>——否则发出去的不是你以为的那个版本，
 #    而 --skip-duplicate 还会把这种错静默吞掉。
 # 手动 Run workflow 时必须选中一个版本标签；选分支会被 ① 拦下。
 #
-# 只管发布，不跑测试：测试与覆盖率门禁在 ci.yml，提交进 main 时已经跑过；
+# 只管发布，不跑测试：测试与覆盖率门禁在 ci.yml、next-ci.yml，提交进发布分支时已经跑过；
 # 这里只留产包与推送本身绕不开的步骤。
 #
 # 认证走 NuGet 可信发布（OIDC），无长期 API Key。
@@ -32,6 +33,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      line: ${{ steps.line.outputs.line }}
+      packages: ${{ steps.line.outputs.packages }}
 
     steps:
       - name: 检出
@@ -40,24 +44,47 @@ jobs:
           # 要拿完整历史才能判断祖先关系
           fetch-depth: 0
 
-      - name: 只放行 main 上的版本标签
+      - name: 预览版标签只放行 preview，正式版标签只放行 main
         run: |
           if [ "$GITHUB_REF_TYPE" != "tag" ]; then
             echo "::error::发布只接受版本标签触发，收到 $GITHUB_REF_TYPE $GITHUB_REF_NAME"
             exit 1
           fi
-          git fetch --no-tags origin main:refs/remotes/origin/main
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
-            echo "::error::标签 $GITHUB_REF_NAME 指向的提交 $GITHUB_SHA 不在 main 的历史里，拒绝发布。请先把要发布的提交合进 main，再在 main 上打标签。"
+          # 带预发布后缀（v1.0.0-rc.1）的是预览版
+          case "$GITHUB_REF_NAME" in
+            *-*) branch=preview ;;
+            *) branch=main ;;
+          esac
+          git fetch --no-tags origin "$branch:refs/remotes/origin/$branch"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "refs/remotes/origin/$branch"; then
+            echo "::error::标签 $GITHUB_REF_NAME 指向的提交 $GITHUB_SHA 不在 $branch 的历史里，拒绝发布。先把要发布的提交快进到 $branch，再在上面打标签。"
             exit 1
           fi
-          echo "标签 $GITHUB_REF_NAME 在 main 上，放行"
+          echo "标签 $GITHUB_REF_NAME 在 $branch 上，放行"
 
-      - name: 标签号与 version.props 对账
+      - name: 按标签选发布线
+        id: line
         run: |
-          version="$(grep -oP '(?<=<Version>)[^<]+' framework/props/version.props)"
+          case "$GITHUB_REF_NAME" in
+            v4.*)
+              echo "line=framework" >> "$GITHUB_OUTPUT"
+              echo "packages=framework/nupkgs" >> "$GITHUB_OUTPUT"
+              echo "version_file=framework/props/version.props" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "line=next" >> "$GITHUB_OUTPUT"
+              echo "packages=next/artifacts/packages" >> "$GITHUB_OUTPUT"
+              echo "version_file=next/Directory.Build.props" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: 标签号与 <Version> 对账
+        env:
+          VERSION_FILE: ${{ steps.line.outputs.version_file }}
+        run: |
+          version="$(grep -oP '(?<=<Version>)[^<]+' "$VERSION_FILE")"
           if [ -z "$version" ]; then
-            echo "::error::framework/props/version.props 里没读到 <Version>，拒绝发布。"
+            echo "::error::$VERSION_FILE 里没读到 <Version>，拒绝发布。"
             exit 1
           fi
           if [ "v$version" != "$GITHUB_REF_NAME" ]; then
@@ -77,22 +104,32 @@ jobs:
     steps:
       - name: 检出
         uses: actions/checkout@v7
+        with:
+          # next/spec 是 framework-spec 的 submodule
+          submodules: ${{ needs.guard.outputs.line == 'next' }}
 
       - name: 安装 .NET SDK
         uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
-      - name: 还原
+      - name: 还原（4.x）
+        if: needs.guard.outputs.line == 'framework'
         run: dotnet restore framework/XiHan.Framework.slnx
 
-      - name: 构建（含打包）
-        # GeneratePackageOnBuild 默认开启（nuget.props），67 个包统一输出到 framework/nupkgs/；
+      - name: 构建（含打包，4.x）
+        if: needs.guard.outputs.line == 'framework'
+        # GeneratePackageOnBuild 默认开启（nuget.props），包统一输出到 framework/nupkgs/；
         # 高危/严重依赖漏洞由 common.props 的 NU1903/NU1904 门禁在构建期拦截。
         run: >
           dotnet build framework/XiHan.Framework.slnx
           --configuration Release
           --no-restore
+
+      - name: 打包（5.x）
+        if: needs.guard.outputs.line == 'next'
+        # 包统一输出到 next/artifacts/packages/；包验证与 README 检查在打包时执行。
+        run: dotnet pack next/XiHan.Framework.Next.slnx --configuration Release
 
       - name: NuGet 可信发布登录（OIDC 换临时 API Key）
         # 经 nuget.org 受信任发布策略校验后返回 1 小时有效的临时 Key，无长期机密。
@@ -105,8 +142,9 @@ jobs:
         # dotnet nuget push 一次只接受一个包，逐个循环推送；--skip-duplicate 保证重跑幂等。
         env:
           NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+          PACKAGES: ${{ needs.guard.outputs.packages }}
         run: |
-          for pkg in framework/nupkgs/*.nupkg; do
+          for pkg in "$PACKAGES"/*.nupkg; do
             dotnet nuget push "$pkg" \
               --api-key "$NUGET_API_KEY" \
               --source https://api.nuget.org/v3/index.json \
@@ -118,5 +156,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: nupkgs
-          path: framework/nupkgs/*.nupkg
+          path: ${{ needs.guard.outputs.packages }}/*.nupkg
           if-no-files-found: ignore

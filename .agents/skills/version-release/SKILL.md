@@ -24,7 +24,14 @@ description: 为 XiHan.Framework 准备版本、更新 version.props、整理发
 
 ## 发布
 
-预览版现在还发不出去：`release.yml` 的 guard 只放行 `main` 上的标签，构建的也是 4.x 的 `framework/`。这一节写的是 4.x 在 `main` 上的流程，工作流改好之后再补 5.x 的。
+`release.yml` 按标签分两条线：`v4.*` 构建 `framework/`，其余打包 `next/`。guard 查两条：带预发布后缀的标签要在 `preview` 的历史里，不带的要在 `main` 的历史里；标签号等于这条线的 `<Version>`。
+
+发 5.x 预览版，每一步都在用户要求之后才做：
+
+1. 在 `next` 上改 `next/Directory.Build.props` 的 `<Version>`，在 `docs-next/changelog.md` 补这一版，跑构建、测试与打包，提交 `build: v<版本>`；推 `next`，等 `next-ci.yml` 全绿。
+2. `git fetch . next:preview` 快进（不是快进就停下查），推 `preview`，等 CI 全绿。
+3. 打标签并推送：`git tag -a v<版本> -m "v<版本>" preview`、`git push origin v<版本>`。
+4. 发布前确认 nuget.org 的可信发布策略覆盖 `release.yml`，新包 ID 也能发。NuGet 上的版本删不掉，只能取消列出，所以发错了只能用下一个号。
 
 只有用户明确要求发布，才可创建并推送版本标签或手动触发 `.github/workflows/release.yml`（手动运行须选中版本标签，选分支会被拒）。推标签前先确认标签提交属于预期 `main` 历史且版本与 `version.props` 完全一致——工作流的 guard 两条都查，任一不满足拒发。
 
