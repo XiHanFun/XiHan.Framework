@@ -152,15 +152,15 @@ app.Run();
 | 类别 | 技术 | 版本 |
 | --- | --- | --- |
 | 运行时 | .NET | 10.0 |
-| 内核依赖 | `Microsoft.Extensions.*` 抽象包、`System.Threading.RateLimiting` | 10.0.13 |
+| 内核依赖 | `Microsoft.Extensions.*` 抽象包、`System.Threading.RateLimiting` | 10.0.14 |
 | 序列化 | System.Text.Json 源生成 | 随 .NET 10 |
-| ORM Provider | EF Core / SqlSugar | 10.0.13 / 5.1.4.221 |
-| 缓存 Provider | StackExchange.Redis | 3.4.5 |
+| ORM Provider | EF Core / SqlSugar | 10.0.14 / 5.1.4.221 |
+| 缓存 Provider | StackExchange.Redis | 3.4.31 |
 | 消息 Provider | RabbitMQ.Client / Confluent.Kafka | 7.2.2 / 2.16.0 |
-| 对象存储 Provider | AWSSDK.S3 | 4.0.102.3 |
+| 对象存储 Provider | AWSSDK.S3 | 4.0.104.8 |
 | 认证 Provider | Microsoft.IdentityModel.JsonWebTokens | 8.23.0 |
 | AI | Microsoft.Extensions.AI / VectorData | 10.11.0 |
-| gRPC | Grpc.AspNetCore.Server | 2.84.0 |
+| gRPC | Grpc.AspNetCore.Server | 2.85.0 |
 | 可观测性 | OpenTelemetry | 1.20.1 |
 | Wasm 插件 | Wasmtime | 48.0.2 |
 

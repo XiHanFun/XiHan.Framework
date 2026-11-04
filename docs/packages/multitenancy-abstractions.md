@@ -9,7 +9,7 @@
 | 能力 | 定义 `multitenancy.context@1`、`multitenancy.sharding@1`（`MultiTenancyCapabilities`），本包不提供 |
 | 特性入口 | — |
 | 配置节 | `XiHan:MultiTenancy`（`MultiTenancyOptions`，由 Provider 读取） |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Stable；分片相关类型（`Sharding` 命名空间）为 Preview |
 

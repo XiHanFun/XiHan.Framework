@@ -9,7 +9,7 @@
 | 能力 | 提供 `caching.distributed@1`（`role: provider`）；依赖 `kernel.hosting@1` |
 | 特性入口 | `RedisCachingFeature`（清单 ID `xihan.caching.redis`） |
 | 配置节 | `XiHan:Caching:Redis`、`XiHan:Caching:Idempotency`；可选绑定 `cache`（类型 `cache:distributed`） |
-| 依赖 | `XiHan.Framework.Caching.Abstractions`；`StackExchange.Redis` 3.4.5 |
+| 依赖 | `XiHan.Framework.Caching.Abstractions`；`StackExchange.Redis` 3.4.31 |
 | AOT | 不兼容（`IsAotCompatible=false`，StackExchange.Redis 未声明 AOT 兼容） |
 | 稳定性 | Preview |
 

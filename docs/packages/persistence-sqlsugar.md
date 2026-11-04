@@ -9,7 +9,7 @@
 | 能力 | 提供 `persistence.relational@1`（`role: provider`）；依赖 `kernel.hosting@1`，可选依赖 `multitenancy.sharding@1`；绑定 `db`（`connection:relational`，可选） |
 | 特性入口 | `SqlSugarPersistenceFeature` |
 | 配置节 | `XiHan:Persistence:SqlSugar` |
-| 依赖 | `XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`、`SqlSugarCore` 5.1.4.221（自带各数据库驱动）、`Microsoft.Data.Sqlite` 10.0.13 |
+| 依赖 | `XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`、`SqlSugarCore` 5.1.4.221（自带各数据库驱动）、`Microsoft.Data.Sqlite` 10.0.14 |
 | AOT | 不兼容（SqlSugar 的实体映射与表达式翻译基于运行时反射） |
 | 稳定性 | Preview |
 
@@ -43,7 +43,7 @@ SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元�
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
 
-本包还显式依赖 `Microsoft.Data.Sqlite` 10.0.13（ADR-0097）。`SqlSugarCore` 5.1.4.221 只声明 `>= 10.0.11`，NuGet 按下限解析到的 10.0.11 带着连接池激活的竞态（dotnet/efcore#39008，10.0.13 修复）：SQLite 上并发打开连接时两个连接可能共用同一个原生连接，报 "cannot start a transaction within a transaction"，清池时正在打开的连接被释放、报 `ObjectDisposedException`。有了这条依赖，引用本包的应用解析到 10.0.13（连带 `Microsoft.Data.Sqlite.Core` 10.0.13 与 `SQLitePCLRaw` 2.1.13），不用自己钉版本；项目里直接引用了更低版本的，NuGet 报降级 `NU1605`，删掉那条引用或抬到 10.0.13。
+本包还显式依赖 `Microsoft.Data.Sqlite` 10.0.14（ADR-0097）。`SqlSugarCore` 5.1.4.221 只声明 `>= 10.0.11`，NuGet 按下限解析到的 10.0.11 带着连接池激活的竞态（dotnet/efcore#39008，10.0.13 修复）：SQLite 上并发打开连接时两个连接可能共用同一个原生连接，报 "cannot start a transaction within a transaction"，清池时正在打开的连接被释放、报 `ObjectDisposedException`。有了这条依赖，引用本包的应用解析到 10.0.13（连带 `Microsoft.Data.Sqlite.Core` 10.0.13 与 `SQLitePCLRaw` 2.1.13），不用自己钉版本；项目里直接引用了更低版本的，NuGet 报降级 `NU1605`，删掉那条引用或抬到 10.0.13。
 
 方式一，特性按回调创建客户端，连接串来自绑定 `db`：
 

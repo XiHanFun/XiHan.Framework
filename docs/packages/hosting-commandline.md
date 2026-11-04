@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | —（`AddXiHanCommandLine()` 登记） |
 | 配置节 | —；环境变量 `XIHAN_CONFIG_PATH`（挂载的配置目录）、`XIHAN_AUTHORIZATION`（缺省凭据） |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Hosting` 10.0.13、`Microsoft.Extensions.Configuration.Json` 10.0.13、`Microsoft.Extensions.Logging.Console` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Hosting` 10.0.14、`Microsoft.Extensions.Configuration.Json` 10.0.14、`Microsoft.Extensions.Logging.Console` 10.0.14 |
 | AOT | 兼容（`IsAotCompatible`） |
 | 稳定性 | Preview |
 

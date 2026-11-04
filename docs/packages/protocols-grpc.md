@@ -9,7 +9,7 @@ gRPC 协议适配器，提供 `protocols.grpc@1`：把 `Expose.Grpc` 的操作�
 | 能力 | 提供 `protocols.grpc@1`；依赖 `kernel.hosting@1` |
 | 特性入口 | `GrpcProtocolFeature` |
 | 配置节 | `XiHan:Protocols:Grpc` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Localization.Abstractions`；`Grpc.AspNetCore.Server` 2.84.0；共享框架 `Microsoft.AspNetCore.App` |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Localization.Abstractions`；`Grpc.AspNetCore.Server` 2.85.0；共享框架 `Microsoft.AspNetCore.App` |
 | AOT | 兼容（`IsAotCompatible`） |
 | 稳定性 | Preview |
 

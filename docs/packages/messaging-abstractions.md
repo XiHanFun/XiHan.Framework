@@ -9,7 +9,7 @@
 | 能力 | 定义 `messaging.queue@1`、`messaging.stream@1`（`MessagingCapabilities`），本包不提供；`OutboxFeature` 依赖 `kernel.hosting@1`、`messaging.queue@1`、`persistence.relational@1` |
 | 特性入口 | `OutboxFeature`（清单 ID `xihan.messaging.outbox`，可选） |
 | 配置节 | `XiHan:Messaging`（`MaxAttempts`、`DeadLetterSuffix`、`InstanceId`，由 Provider 读取）、`XiHan:Messaging:Outbox` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Stable；`IMessageReplayer` 与领域事件类型（`DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher`）为 Preview |
 

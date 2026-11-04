@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | — |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Google.Protobuf` 3.35.1、`Grpc.Core.Api` 2.84.0（`Grpc.Tools` 2.84.0 只在构建期） |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Google.Protobuf` 3.36.2、`Grpc.Core.Api` 2.85.0（`Grpc.Tools` 2.85.0 只在构建期） |
 | AOT | 不兼容（`Google.Protobuf` 的描述符反射未声明裁剪兼容） |
 | 稳定性 | Preview |
 

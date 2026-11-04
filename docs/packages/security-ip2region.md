@@ -9,7 +9,7 @@ IP 归属地的 ip2region 离线库 Provider：按宿主提供的 IPv4 / IPv6 xd
 | 能力 | 提供 `security.ip-region@1`；依赖 `kernel.hosting@1` |
 | 特性入口 | `Ip2RegionSecurityFeature`（清单 `xihan.security.ip2region`，`role: provider`） |
 | 配置节 | `XiHan:Security:Ip2Region` |
-| 依赖 | `XiHan.Framework.Security.Abstractions`、`IP2Region.Net` 3.0.2、`Microsoft.Extensions.Logging.Abstractions` 10.0.13；公开面不暴露第三方类型 |
+| 依赖 | `XiHan.Framework.Security.Abstractions`、`IP2Region.Net` 3.0.2、`Microsoft.Extensions.Logging.Abstractions` 10.0.14；公开面不暴露第三方类型 |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 

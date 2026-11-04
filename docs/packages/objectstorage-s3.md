@@ -9,7 +9,7 @@
 | 能力 | 提供 `objectstorage.blob@1`、`objectstorage.multipart@1`、`objectstorage.presign@1`（`role: provider`）；依赖 `kernel.hosting@1`；可选绑定 `objectstorage`（`blob`） |
 | 特性入口 | `S3ObjectStorageFeature` |
 | 配置节 | `XiHan:ObjectStorage:S3` |
-| 依赖 | `XiHan.Framework.ObjectStorage.Abstractions`；`AWSSDK.S3` 4.0.102.3 |
+| 依赖 | `XiHan.Framework.ObjectStorage.Abstractions`；`AWSSDK.S3` 4.0.104.8 |
 | AOT | 不兼容（AWS SDK 的请求编组基于运行时反射） |
 | 稳定性 | Preview |
 

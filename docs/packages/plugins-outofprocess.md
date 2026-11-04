@@ -9,7 +9,7 @@
 | 能力 | 提供 `plugins.out-of-process@1`；依赖 `kernel.hosting@1` |
 | 特性入口 | `OutOfProcessPluginsFeature` |
 | 配置节 | `XiHan:Plugins:OutOfProcess` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Plugins.Protocol`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；ASP.NET Core 共享框架；`Grpc.AspNetCore.Server` 2.84.0、`Grpc.Net.Client` 2.84.0 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Plugins.Protocol`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.Localization.Abstractions`；ASP.NET Core 共享框架；`Grpc.AspNetCore.Server` 2.85.0、`Grpc.Net.Client` 2.85.0 |
 | AOT | 不兼容（`Google.Protobuf` 的描述符反射未声明裁剪兼容） |
 | 稳定性 | Preview |
 

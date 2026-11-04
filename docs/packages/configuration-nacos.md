@@ -9,7 +9,7 @@
 | 能力 | 提供 `configuration.remote@1`（`role: provider`）；依赖 `kernel.hosting@1`；可选绑定 `nacos`（`configuration:remote`） |
 | 特性入口 | `NacosConfigurationFeature` |
 | 配置节 | `XiHan:Configuration:Nacos` |
-| 依赖 | `XiHan.Framework.Configuration.Abstractions`、`XiHan.Framework.Kernel`；`Microsoft.Extensions.Http` 10.0.13 |
+| 依赖 | `XiHan.Framework.Configuration.Abstractions`、`XiHan.Framework.Kernel`；`Microsoft.Extensions.Http` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 

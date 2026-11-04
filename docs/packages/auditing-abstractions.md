@@ -9,7 +9,7 @@
 | 能力 | 定义 `auditing.trail@1`（`AuditingCapabilities.Trail`），本包不提供；Provider 是 `Auditing.InMemory`、`Auditing.Database` |
 | 特性入口 | —（Provider 在装配时调用 `AddAuditing()`） |
 | 配置节 | `XiHan:Auditing` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Preview（`AuditEvent`、`IAuditSink` 在内核，Stable） |
 

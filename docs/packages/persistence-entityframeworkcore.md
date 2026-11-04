@@ -9,7 +9,7 @@
 | 能力 | 提供 `persistence.relational@1`（`role: provider`）；依赖 `kernel.hosting@1`，可选依赖 `multitenancy.sharding@1`；绑定 `db`（`connection:relational`，可选） |
 | 特性入口 | `EntityFrameworkCorePersistenceFeature<TContext>` |
 | 配置节 | `XiHan:Persistence:EntityFrameworkCore` |
-| 依赖 | `XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`、`Microsoft.EntityFrameworkCore` 10.0.13；数据库驱动包由应用引用 |
+| 依赖 | `XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`、`Microsoft.EntityFrameworkCore` 10.0.14；数据库驱动包由应用引用 |
 | AOT | 不兼容（EF Core 的运行时模型构建不满足 AOT 分析器） |
 | 稳定性 | Preview |
 
@@ -32,7 +32,7 @@
 
 ```xml
 <PackageReference Include="XiHan.Framework.Persistence.EntityFrameworkCore" Version="5.0.0-preview.1" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
+<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
 ```
 
 框架尚未发布到 nuget.org，预览包的取得方式见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用 `Microsoft.EntityFrameworkCore.Sqlite` 10.0.13 或更高：它带来的 `Microsoft.Data.Sqlite.Core` 10.0.13 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），更低的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。

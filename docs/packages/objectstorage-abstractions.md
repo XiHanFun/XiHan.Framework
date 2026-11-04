@@ -9,7 +9,7 @@
 | 能力 | 定义 `objectstorage.blob@1`、`objectstorage.multipart@1`、`objectstorage.presign@1`，由 [ObjectStorage.FileSystem](./objectstorage-filesystem)（默认实现）、[ObjectStorage.S3](./objectstorage-s3) 与 [Hosting.AspNetCore](./hosting-aspnetcore) 提供 |
 | 特性入口 | — |
 | 配置节 | `XiHan:ObjectStorage:Stores`、`XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` 10.0.13、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` 10.0.14、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 

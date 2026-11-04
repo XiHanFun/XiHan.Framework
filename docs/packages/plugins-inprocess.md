@@ -9,7 +9,7 @@
 | 能力 | —（插件清单依赖内核提供的 `kernel.plugins@1`） |
 | 特性入口 | —（应用直接创建 `InProcessPluginHost`） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.DependencyInjection` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.DependencyInjection` 10.0.14 |
 | AOT | 不兼容（框架里唯一允许运行期反射的包，构造函数标注 `RequiresDynamicCode` / `RequiresUnreferencedCode`） |
 | 稳定性 | Preview |
 

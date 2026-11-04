@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="SqlSugarCore" />
-    <!-- SqlSugarCore 依赖 Microsoft.Data.Sqlite >= 10.0.11，NuGet 按下限解析：显式引用把 10.0.13（修复连接池激活竞态 dotnet/efcore#39008）写进本包的依赖，引用本包的应用也解析到它（ADR-0097） -->
+    <!-- SqlSugarCore 依赖 Microsoft.Data.Sqlite >= 10.0.11，NuGet 按下限解析：显式引用把修复了连接池激活竞态（dotnet/efcore#39008，10.0.13 起）的版本写进本包的依赖，引用本包的应用也解析到它（ADR-0097） -->
     <PackageReference Include="Microsoft.Data.Sqlite" />
   </ItemGroup>
 </Project>

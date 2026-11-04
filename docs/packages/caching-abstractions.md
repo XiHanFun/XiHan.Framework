@@ -9,7 +9,7 @@
 | 能力 | 定义 `caching.local@1`、`caching.distributed@1`（`CachingCapabilities`），本包不提供 |
 | 特性入口 | — |
 | 配置节 | `XiHan:Caching:Idempotency`（由提供 `caching.distributed` 的 Provider 读取） |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Caching.Abstractions` 10.0.13、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Caching.Abstractions` 10.0.14、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.14 |
 | AOT | 兼容；`JsonCacheSerializer.CreateReflectionBased()` 标了 `RequiresUnreferencedCode` / `RequiresDynamicCode`，AOT 下不可用 |
 | 稳定性 | Stable；`CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions`、键管理与变更通知类型为 Preview |
 

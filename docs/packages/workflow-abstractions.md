@@ -9,7 +9,7 @@
 | 能力 | 定义 `workflow.execution@1`（`WorkflowCapabilities.Execution`）的契约，本包不提供能力 |
 | 特性入口 | — |
 | 配置节 | `XiHan:Workflow`（`WorkflowOptions`，由 Provider 读取） |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`（租户目录）、`XiHan.Framework.Scheduling.Abstractions`（cron）；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`（租户目录）、`XiHan.Framework.Scheduling.Abstractions`（cron）；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 

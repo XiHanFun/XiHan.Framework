@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | —（`StubFeature` 是测试用的特性桩） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.Configuration` 10.0.13、`Microsoft.Extensions.DependencyInjection` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.Configuration` 10.0.14、`Microsoft.Extensions.DependencyInjection` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Stable |
 

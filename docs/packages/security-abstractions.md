@@ -9,7 +9,7 @@
 | 能力 | 定义 `security.authentication@1`、`security.authorization@1`、`security.ip-region@1`（`SecurityCapabilities`），本包不提供 |
 | 特性入口 | — |
 | 配置节 | `XiHan:Security`（`SecurityOptions`，由 Provider 读取） |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.Configuration.Abstractions` 10.0.13、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.Configuration.Abstractions` 10.0.14、`Microsoft.Extensions.DependencyInjection.Abstractions` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Stable；`Conditions` 与 `Network` 命名空间为 Preview |
 

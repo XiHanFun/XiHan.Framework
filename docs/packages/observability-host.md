@@ -9,7 +9,7 @@
 | 能力 | 提供 `observability.host@1`（`role: default`）；依赖 `kernel.hosting@1` |
 | 特性入口 | `HostObservabilityFeature`（清单 `xihan.observability.host`，`IHostedFeature`） |
 | 配置节 | `XiHan:Observability:Host` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`；`Microsoft.Extensions.Logging.Abstractions` 10.0.13；没有其他第三方包 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`；`Microsoft.Extensions.Logging.Abstractions` 10.0.14；没有其他第三方包 |
 | AOT | 兼容（系统调用经 `LibraryImport` 源生成） |
 | 稳定性 | Preview |
 

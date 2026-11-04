@@ -9,7 +9,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 | 能力 | 提供 `ai.tools@1`（`AIToolsFeature`，`role: default`）；定义 `ai.chat@1`、`ai.embedding@1`、`ai.knowledge@1`；`AIToolsFeature` 依赖 `kernel.hosting@1` |
 | 特性入口 | `AIToolsFeature`（清单 `xihan.ai.tools`，`IHostedFeature`） |
 | 配置节 | `XiHan:AI` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.AI.Abstractions` 10.11.0，`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.13 |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.AI.Abstractions` 10.11.0，`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` 10.0.14 |
 | AOT | 兼容 |
 | 稳定性 | Preview |
 
