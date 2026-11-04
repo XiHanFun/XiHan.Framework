@@ -139,6 +139,8 @@
   "workflow.expression.operands_not_numeric": "Expression '{expression}': operator '{operator}' needs numeric operands.",
   "workflow.expression.operands_not_scalar": "Expression '{expression}': operator '{operator}' needs two scalar operands.",
   "workflow.expression.token_expected": "Expression '{expression}': '{token}' is expected at character {position}.",
+  "workflow.expression.too_deep": "Expression '{expression}' is nested more than {max} levels deep.",
+  "workflow.expression.too_long": "The expression is {length} characters long, over the limit of {max}.",
   "workflow.expression.unexpected_character": "Expression '{expression}': unexpected '{character}' at character {position}.",
   "workflow.expression.unexpected_end": "Expression '{expression}' ends unexpectedly.",
   "workflow.expression.unknown_function": "Expression '{expression}': function '{function}' is unknown.",

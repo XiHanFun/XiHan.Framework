@@ -139,6 +139,8 @@
   "workflow.expression.operands_not_numeric": "式 '{expression}': 演算子 '{operator}' には数値のオペランドが必要です。",
   "workflow.expression.operands_not_scalar": "式 '{expression}': 演算子 '{operator}' には 2 つのスカラー オペランドが必要です。",
   "workflow.expression.token_expected": "式 '{expression}' の {position} 文字目に '{token}' が必要です。",
+  "workflow.expression.too_deep": "式 {expression} のネストが {max} 階層を超えています。",
+  "workflow.expression.too_long": "式の長さは {length} 文字で、上限 {max} を超えています。",
   "workflow.expression.unexpected_character": "式 '{expression}' の {position} 文字目に予期しない '{character}' があります。",
   "workflow.expression.unexpected_end": "式 '{expression}' が途中で終わっています。",
   "workflow.expression.unknown_function": "式 '{expression}' の関数 '{function}' は不明です。",

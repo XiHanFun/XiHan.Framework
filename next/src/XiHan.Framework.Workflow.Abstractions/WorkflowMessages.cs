@@ -768,6 +768,22 @@ public static class WorkflowMessages
     public const string ExpressionEmpty = "workflow.expression.empty";
 
     /// <summary>
+    /// 表达式超过长度上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>（截断的）、<c>length</c>、<c>max</c>
+    /// </remarks>
+    public const string ExpressionTooLong = "workflow.expression.too_long";
+
+    /// <summary>
+    /// 表达式超过嵌套上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>（截断的）、<c>max</c>
+    /// </remarks>
+    public const string ExpressionTooDeep = "workflow.expression.too_deep";
+
+    /// <summary>
     /// 表达式里出现意外的字符
     /// </summary>
     /// <remarks>

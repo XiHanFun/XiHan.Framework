@@ -139,6 +139,8 @@
   "workflow.expression.operands_not_numeric": "運算式 '{expression}'：運算子 '{operator}' 需要數值運算元。",
   "workflow.expression.operands_not_scalar": "運算式 '{expression}'：運算子 '{operator}' 需要兩個純量運算元。",
   "workflow.expression.token_expected": "運算式 '{expression}' 的第 {position} 個字元處缺少 '{token}'。",
+  "workflow.expression.too_deep": "運算式 {expression} 的巢狀超過 {max} 層。",
+  "workflow.expression.too_long": "運算式長度為 {length} 個字元，超過上限 {max}。",
   "workflow.expression.unexpected_character": "運算式 '{expression}' 的第 {position} 個字元處出現意外的 '{character}'。",
   "workflow.expression.unexpected_end": "運算式 '{expression}' 意外結束。",
   "workflow.expression.unknown_function": "運算式 '{expression}' 參照了未知函式 '{function}'。",

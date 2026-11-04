@@ -14,6 +14,11 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 internal sealed class ExpressionException : Exception
 {
     /// <summary>
+    /// 错误里带上的表达式文本长度上限
+    /// </summary>
+    private const int MaxEchoLength = 200;
+
+    /// <summary>
     /// 创建
     /// </summary>
     public ExpressionException(string messageKey, IReadOnlyDictionary<string, object?>? arguments = null)
@@ -36,9 +41,13 @@ internal sealed class ExpressionException : Exception
     /// <summary>
     /// 转成错误：表达式文本放在参数 <c>expression</c>，其余参数随后
     /// </summary>
+    /// <remarks>
+    /// 错误会进校验结果、响应和实例故障，表达式文本最多带 <see cref="MaxEchoLength"/> 个字符
+    /// </remarks>
     public Error ToError(string expression)
     {
-        var details = new Dictionary<string, object?>(StringComparer.Ordinal) { ["expression"] = expression };
+        var echoed = expression.Length > MaxEchoLength ? string.Concat(expression.AsSpan(0, MaxEchoLength), "…") : expression;
+        var details = new Dictionary<string, object?>(StringComparer.Ordinal) { ["expression"] = echoed };
         foreach (var (name, value) in Arguments ?? new Dictionary<string, object?>())
         {
             details[name] = value;

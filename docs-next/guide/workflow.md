@@ -688,6 +688,8 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 - `Render` 把无值渲染成空串。
 - 写回变量、输出与子流程变量时，无值写成 JSON 的 `null`。
 
+表达式最长 4000 个字符，嵌套最多 64 层（括号、函数实参、索引、一元运算符都算，`a + b + c` 这样的链不算）。超限在发布时进校验结果，运行时是 `WORKFLOW_VALIDATION_003`（`workflow.expression.too_long`、`workflow.expression.too_deep`）。
+
 **未知的根变量是错误，不是无值**：`amount > 100` 在没有 `amount` 变量时返回 `WORKFLOW_VALIDATION_003`，实例故障；判断可选变量用在启动时给默认值，或者把它放进对象里按成员访问。已解析的表达式按文本缓存，上限 `ExpressionCacheSize`（缺省 10000），满了整体清空重来。
 
 ## 故障、重试与补偿

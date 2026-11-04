@@ -139,6 +139,8 @@
   "workflow.expression.operands_not_numeric": "Expressão '{expression}': o operador '{operator}' precisa de operandos numéricos.",
   "workflow.expression.operands_not_scalar": "Expressão '{expression}': o operador '{operator}' precisa de dois operandos escalares.",
   "workflow.expression.token_expected": "Expressão '{expression}': era esperado '{token}' no caractere {position}.",
+  "workflow.expression.too_deep": "A expressão {expression} tem mais de {max} níveis de aninhamento.",
+  "workflow.expression.too_long": "A expressão tem {length} caracteres e ultrapassa o limite de {max}.",
   "workflow.expression.unexpected_character": "Expressão '{expression}': '{character}' inesperado no caractere {position}.",
   "workflow.expression.unexpected_end": "A expressão '{expression}' termina inesperadamente.",
   "workflow.expression.unknown_function": "Expressão '{expression}': a função '{function}' é desconhecida.",

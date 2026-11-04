@@ -14,9 +14,23 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// </summary>
 /// <remarks>
 /// 递归下降解析成闭包树。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；<c>==</c> 跨数字类型宽松、字符串序数比较；未知根变量是错误，缺少的成员或键是 null
+/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）
 /// </remarks>
 internal sealed class ExpressionCompiler
 {
+    /// <summary>
+    /// 表达式的长度上限（字符，空白也算）
+    /// </summary>
+    /// <remarks>
+    /// 也压住了求值的深度：链（<c>a + b + c</c>、<c>a.b.c</c>）解析时是循环，求值时闭包一层套一层，这个长度下是两千层左右
+    /// </remarks>
+    public const int MaxLength = 4000;
+
+    /// <summary>
+    /// 嵌套层数上限：括号、函数实参、索引、一元运算符都算
+    /// </summary>
+    public const int MaxDepth = 64;
+
     /// <summary>
     /// 源文本
     /// </summary>
@@ -26,6 +40,11 @@ internal sealed class ExpressionCompiler
     /// 当前位置
     /// </summary>
     private int _position;
+
+    /// <summary>
+    /// 当前的嵌套层数
+    /// </summary>
+    private int _depth;
 
     /// <summary>
     /// 创建
@@ -44,6 +63,11 @@ internal sealed class ExpressionCompiler
     public static CompiledExpression Compile(string expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
+        if (expression.Length > MaxLength)
+        {
+            throw new ExpressionException(WorkflowMessages.ExpressionTooLong, MessageArguments.Of(("length", expression.Length), ("max", MaxLength)));
+        }
+
         var compiler = new ExpressionCompiler(expression);
         compiler.SkipWhitespace();
         if (compiler._position >= expression.Length)
@@ -236,13 +260,17 @@ internal sealed class ExpressionCompiler
     {
         if (TryConsume("!"))
         {
+            EnterNesting();
             var operand = ParseUnary();
+            _depth--;
             return scope => Boolean(operand(scope), "!") ? False : True;
         }
 
         if (TryConsume("-"))
         {
+            EnterNesting();
             var operand = ParseUnary();
+            _depth--;
             return scope => JsonValue.Create(-Number(operand(scope), "-"));
         }
 
@@ -266,7 +294,9 @@ internal sealed class ExpressionCompiler
             }
             else if (TryConsume("["))
             {
+                EnterNesting();
                 var index = ParseOr();
+                _depth--;
                 SkipWhitespace();
                 if (!TryConsume("]"))
                 {
@@ -298,7 +328,9 @@ internal sealed class ExpressionCompiler
         if (c == '(')
         {
             _position++;
+            EnterNesting();
             var inner = ParseOr();
+            _depth--;
             SkipWhitespace();
             if (!TryConsume(")"))
             {
@@ -339,12 +371,14 @@ internal sealed class ExpressionCompiler
             SkipWhitespace();
             if (!TryConsume(")"))
             {
+                EnterNesting();
                 do
                 {
                     arguments.Add(ParseOr());
                     SkipWhitespace();
                 }
                 while (TryConsume(","));
+                _depth--;
                 if (!TryConsume(")"))
                 {
                     throw new ExpressionException(WorkflowMessages.ExpressionTokenExpected, MessageArguments.Of(("token", ")"), ("position", _position + 1)));
@@ -605,6 +639,20 @@ internal sealed class ExpressionCompiler
     /// 是否字符串标量
     /// </summary>
     private static bool IsString(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out _);
+
+    /// <summary>
+    /// 进入一层嵌套
+    /// </summary>
+    /// <remarks>
+    /// 解析是递归下降，每层嵌套要走完整条优先级链。不限层数时持流程定义权限的用户写几千层括号就能撑爆线程栈，栈溢出接不住，整个进程退出。调用方解析完这一层把 <see cref="_depth"/> 减回去；抛出时整个编译结束，不用恢复
+    /// </remarks>
+    private void EnterNesting()
+    {
+        if (++_depth > MaxDepth)
+        {
+            throw new ExpressionException(WorkflowMessages.ExpressionTooDeep, MessageArguments.Of(("max", MaxDepth)));
+        }
+    }
 
     /// <summary>
     /// 跳过空白

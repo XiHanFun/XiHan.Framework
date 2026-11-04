@@ -139,6 +139,8 @@
   "workflow.expression.operands_not_numeric": "Выражение '{expression}': оператору '{operator}' нужны числовые операнды.",
   "workflow.expression.operands_not_scalar": "Выражение '{expression}': оператору '{operator}' нужны два скалярных операнда.",
   "workflow.expression.token_expected": "Выражение '{expression}': в позиции {position} ожидается '{token}'.",
+  "workflow.expression.too_deep": "Вложенность выражения {expression} превышает {max} уровней.",
+  "workflow.expression.too_long": "Длина выражения — {length} символов, это больше предела {max}.",
   "workflow.expression.unexpected_character": "Выражение '{expression}': неожиданный символ '{character}' в позиции {position}.",
   "workflow.expression.unexpected_end": "Выражение '{expression}' неожиданно обрывается.",
   "workflow.expression.unknown_function": "Выражение '{expression}': неизвестная функция '{function}'.",

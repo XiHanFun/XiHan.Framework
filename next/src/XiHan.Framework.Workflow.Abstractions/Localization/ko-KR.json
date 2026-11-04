@@ -139,6 +139,8 @@
   "workflow.expression.operands_not_numeric": "식 '{expression}': 연산자 '{operator}'에는 숫자 피연산자가 필요합니다.",
   "workflow.expression.operands_not_scalar": "식 '{expression}': 연산자 '{operator}'에는 스칼라 피연산자 두 개가 필요합니다.",
   "workflow.expression.token_expected": "식 '{expression}'의 {position}번째 문자에 '{token}'이(가) 필요합니다.",
+  "workflow.expression.too_deep": "식 {expression}의 중첩이 {max}단계를 초과합니다.",
+  "workflow.expression.too_long": "식의 길이가 {length}자로 상한 {max}을(를) 초과합니다.",
   "workflow.expression.unexpected_character": "식 '{expression}'의 {position}번째 문자에 예상치 못한 '{character}'이(가) 있습니다.",
   "workflow.expression.unexpected_end": "식 '{expression}'이(가) 예기치 않게 끝났습니다.",
   "workflow.expression.unknown_function": "식 '{expression}'의 함수 '{function}'을(를) 알 수 없습니다.",

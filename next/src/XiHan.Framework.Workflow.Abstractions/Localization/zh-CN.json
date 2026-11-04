@@ -139,6 +139,8 @@
   "workflow.expression.operands_not_numeric": "表达式 '{expression}'：运算符 '{operator}' 需要数值操作数。",
   "workflow.expression.operands_not_scalar": "表达式 '{expression}'：运算符 '{operator}' 需要两个标量操作数。",
   "workflow.expression.token_expected": "表达式 '{expression}' 的第 {position} 个字符处缺少 '{token}'。",
+  "workflow.expression.too_deep": "表达式 {expression} 的嵌套超过 {max} 层。",
+  "workflow.expression.too_long": "表达式长度为 {length} 个字符，超过上限 {max}。",
   "workflow.expression.unexpected_character": "表达式 '{expression}' 的第 {position} 个字符处出现意外的 '{character}'。",
   "workflow.expression.unexpected_end": "表达式 '{expression}' 意外结束。",
   "workflow.expression.unknown_function": "表达式 '{expression}' 引用了未知函数 '{function}'。",
