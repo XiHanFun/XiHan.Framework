@@ -33,7 +33,7 @@ var removed = await store.RemoveAsync(["beta"], ct);
 
 ## 规则
 
-- 目录是 Tenant 阶段自己要查的东西，所以读取不经 `App.InvokeAsync` 再走一遍管道（嵌套调用会再过 Tenant / Authorize 阶段，`RequireTenant` 时无租户即失败，而且启动期读不了），而是在根提供者的新作用域里直接开只读工作单元取仓储；租户是平台级数据，工作单元不带租户。
+- 目录是 Tenant 阶段自己要查的东西，所以读取不经 `App.InvokeAsync` 再走一遍管道（嵌套调用会再过 Tenant / Authorize 阶段，`RequireTenant` 时无租户即失败，而且启动期读不了），而是在根提供者的新作用域里直接开只读工作单元取仓储，配了从库也读主库（ADR-0122）；租户是平台级数据，工作单元不带租户。
 - 基础设施异常（连接不上、提交失败）按 `ITenantStore` 契约原样抛出，不伪装成不存在；Tenant 阶段据此让调用失败，分片解析器把它映射为 `MULTITENANCY_UNAVAILABLE_002`。
 - `TenantRecordStore` 的写入在调用方事务提交后才可见；它在写入时就失效缓存，失效与提交之间的窗口由 `CacheTimeToLive` 收敛。绕过 `TenantRecordStore` 直接改表时自行调用 `DatabaseTenantStore.Invalidate` 与 `ITenantShardResolver.Invalidate`，或等存活时间到期。
 - 同一批里同一租户后者整份覆盖前者（同一行只写一次）；删除对不存在与重复出现的 ID 逐项返回不存在；不合法的租户 ID 是编程错误，整批在触库前抛出。

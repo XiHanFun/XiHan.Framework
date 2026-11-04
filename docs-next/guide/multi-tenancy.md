@@ -298,7 +298,7 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 
 读写分成两个类型：
 
-- `DatabaseTenantStore`（单例 `ITenantStore`）：Tenant 阶段查它。读取不经管道，而是在根提供者的新作用域里开只读工作单元，因为嵌套调用会再过一遍 Tenant 阶段，`RequireTenant` 为真时会自我拒绝，启动期也读不了。查找结果按租户缓存，"不存在"也缓存。
+- `DatabaseTenantStore`（单例 `ITenantStore`）：Tenant 阶段查它。读取不经管道，而是在根提供者的新作用域里开只读工作单元（配了从库也读主库，ADR-0122），因为嵌套调用会再过一遍 Tenant 阶段，`RequireTenant` 为真时会自我拒绝，启动期也读不了。查找结果按租户缓存，"不存在"也缓存。
 - `TenantRecordStore`（作用域服务）：管理操作在 Transaction 阶段内用它批量新增、覆盖、删除租户，逐项返回结果；写入后立即失效目录与分片解析器的缓存。
 
 缓存与枚举的配置在 `XiHan:MultiTenancy:Database`：

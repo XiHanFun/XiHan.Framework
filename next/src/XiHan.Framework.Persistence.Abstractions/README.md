@@ -49,7 +49,7 @@ if (services.GetService<IUnitOfWork>() is { HasTransaction: true })
 - 仓储的新增、更新、删除（含批量，空集合除外）返回 `PERSISTENCE_UNEXPECTED_001`（消息键 `persistence.unit_of_work.read_only`，HTTP 500：只读操作写数据是代码缺陷，不是调用方的输入或权限），并把工作单元记为失败：处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束。
 - Provider 的直接写入入口（EF Core / SqlSugar 工作单元的 `EnsureTransactionAsync`）在只读工作单元里抛出携带同一码的 `FrameworkException`，Transaction 阶段回滚并转为同码结果。
 - 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。用同一个服务作用域再经管道时，作用域的工作单元已经开始过，内层以 `PERSISTENCE_VALIDATION_002`（消息键 `persistence.unit_of_work.nested`）结束、处理器不执行。
-- 管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 决定，`UnitOfWorkOptions.Default` 可写、不绑定连接。
+- 管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 决定，`UnitOfWorkOptions.Default` 可写、不绑定连接。`ReadsPrimary` 让只读工作单元读主库，其余仍是只读的语义，没有从库的 Provider 上没有作用（ADR-0122）。
 
 ## 命名连接
 
