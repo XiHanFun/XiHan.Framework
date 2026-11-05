@@ -73,9 +73,22 @@ greetings.create	Experimental	Mcp, CommandLine	-
 | --- | --- | --- |
 | `--json` | `--json '{"name":"Ada","times":2}'` | 必须是 JSON 对象 |
 | `--data` | `--data request.json` 或 `--data @request.json` | 文件内容必须是 JSON 对象 |
-| 字段选项 | `--name Ada --times 2` | 其余非保留选项拼成对象：值都是字符串，重复的选项成数组，没有字段时为 `{}` |
+| 字段选项 | `--name Ada --times 2` | 其余非保留选项拼成对象：值按操作的请求 Schema 写成对应类型，重复的选项成数组，没有字段时为 `{}` |
 
-字段选项的值不做类型转换，`--times 2` 进载荷是 `"times":"2"`；请求类型要从字符串读数字，序列化上下文需要 `NumberHandling = JsonNumberHandling.AllowReadingFromString`（示例的 `CliJsonContext` 就是这样写的）。保留选项不进载荷：`json`、`data`、`authorization`、`tenant`、`correlation`、`locale`、`timeout`、`help`。
+保留选项不进载荷：`json`、`data`、`authorization`、`tenant`、`correlation`、`locale`、`timeout`、`help`。
+
+字段选项的值按操作的请求 JSON Schema 转换，所以 `--times 2` 进载荷是 `"times":2`：
+
+| Schema 声明 | 写成 |
+| --- | --- |
+| `string`，或没有约束类型 | 字符串，`--name 42` 仍是 `"name":"42"` |
+| `boolean` | `true` 或 `false`，不跟值的 `--flag` 是 `true` |
+| `integer`、`number` | JSON 数字 |
+| `array` | 数组，元素按 `items` 转换，单个值也是一元数组 |
+
+对象字段不从文本解析，要传嵌套对象就用 `--json` 或 `--data`，这两种载荷都原样进入、不做转换。转换不了的值（如 `--times abc`）不是用法错误：它留成字符串进管道，由 Validate 阶段报 `KERNEL_VALIDATION_003`，退出码 2。
+
+操作没有 Schema（手写 `AddOperation` 时没传 `OperationSchema`）时值都写字符串。这时请求类型要从字符串读数字，序列化上下文需要 `NumberHandling = JsonNumberHandling.AllowReadingFromString`。
 
 参数的解析规则：第一个不是选项的记号是命令名，其余是位置参数；`--name value` 与 `--name=value` 等价；后面不跟值的 `--flag` 记为 `"true"`；`--` 之后全是位置参数。标志后面要接位置参数时写 `--flag=true`，或把标志放到最后。
 

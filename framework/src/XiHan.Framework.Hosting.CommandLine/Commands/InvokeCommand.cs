@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +14,7 @@ namespace XiHan.Framework.Hosting.CommandLine.Commands;
 /// <c>invoke &lt;operation-id&gt;</c>
 /// </summary>
 /// <remarks>
-/// 把命令行翻译为 XGI 调用。载荷来自 <c>--json</c>（JSON 对象）、<c>--data &lt;file&gt;</c>（文件里的 JSON 对象）或其余 <c>--&lt;field&gt; &lt;value&gt;</c> 选项（字符串值，重复的选项成数组；请求类型从字符串读数字需启用 <c>NumberHandling = AllowReadingFromString</c>）。调用经完整内核管道；成功把响应 JSON 写到 stdout，失败把 Problem 写到 stderr 并按错误 KIND 返回退出码。只接受暴露给命令行且非内部的操作
+/// 把命令行翻译为 XGI 调用。载荷来自 <c>--json</c>（JSON 对象）、<c>--data &lt;file&gt;</c>（文件里的 JSON 对象）或其余 <c>--&lt;field&gt; &lt;value&gt;</c> 选项（按操作的请求 Schema 写成对应类型，重复的选项成数组；操作没有 Schema 时值都写字符串）。调用经完整内核管道；成功把响应 JSON 写到 stdout，失败把 Problem 写到 stderr 并按错误 KIND 返回退出码。只接受暴露给命令行且非内部的操作
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class InvokeCommand : ICommand
@@ -42,7 +41,7 @@ public sealed class InvokeCommand : ICommand
             return await CommandLineFailure.WriteAsync(context.Error, Error.NotFound(CommandLineErrors.OperationNotExposed, CommandLineMessages.OperationNotExposed, MessageArguments.Of(("id", id))), context.Services, null).ConfigureAwait(false);
         }
 
-        var payload = await PayloadAsync(context).ConfigureAwait(false);
+        var payload = await PayloadAsync(context, descriptor).ConfigureAwait(false);
         if (!payload.TryGetValue(out var bytes))
         {
             return await CommandLineFailure.WriteAsync(context.Error, payload.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
@@ -70,7 +69,7 @@ public sealed class InvokeCommand : ICommand
     /// <remarks>
     /// <c>--json</c> 优先，其次 <c>--data</c> 文件，否则由字段选项拼成对象（没有任何字段时为空对象）
     /// </remarks>
-    private static async ValueTask<Result<ReadOnlyMemory<byte>>> PayloadAsync(CommandContext context)
+    private static async ValueTask<Result<ReadOnlyMemory<byte>>> PayloadAsync(CommandContext context, OperationDescriptor descriptor)
     {
         if (context.Option("json").TryGetValue(out var json))
         {
@@ -89,38 +88,7 @@ public sealed class InvokeCommand : ICommand
             return ObjectOrError(await File.ReadAllBytesAsync(path, context.CancellationToken).ConfigureAwait(false));
         }
 
-        var buffer = new ArrayBufferWriter<byte>();
-        using (var writer = new Utf8JsonWriter(buffer))
-        {
-            writer.WriteStartObject();
-            foreach (var (name, values) in context.CommandLine.Options)
-            {
-                if (CommandLineInvocation.ReservedOptions.Contains(name))
-                {
-                    continue;
-                }
-
-                // 重复的选项是数组，单个是字符串；类型转换交给请求类型的序列化上下文
-                if (values.Count > 1)
-                {
-                    writer.WriteStartArray(name);
-                    foreach (var value in values)
-                    {
-                        writer.WriteStringValue(value);
-                    }
-
-                    writer.WriteEndArray();
-                }
-                else
-                {
-                    writer.WriteString(name, values[0]);
-                }
-            }
-
-            writer.WriteEndObject();
-        }
-
-        return Result.Success(buffer.WrittenMemory);
+        return Result.Success(FieldOptionPayload.Write(context.CommandLine, descriptor.Schema));
     }
 
     /// <summary>

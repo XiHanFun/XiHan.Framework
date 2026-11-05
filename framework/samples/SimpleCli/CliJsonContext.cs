@@ -9,9 +9,9 @@ namespace SimpleCli;
 /// 源生成的序列化上下文
 /// </summary>
 /// <remarks>
-/// camelCase 属性名、不区分大小写、允许从字符串读数字（命令行选项的值都是字符串）
+/// camelCase 属性名、不区分大小写。不需要从字符串读数字：命令行宿主按操作的请求 Schema 把字段选项写成对应类型
 /// </remarks>
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, NumberHandling = JsonNumberHandling.AllowReadingFromString)]
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true)]
 [JsonSerializable(typeof(GreetRequest))]
 [JsonSerializable(typeof(GreetResponse))]
 public sealed partial class CliJsonContext : JsonSerializerContext;

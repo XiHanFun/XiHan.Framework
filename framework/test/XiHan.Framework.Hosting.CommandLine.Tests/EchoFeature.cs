@@ -14,7 +14,7 @@ namespace XiHan.Framework.Hosting.CommandLine.Tests;
 /// 登记测试操作的特性
 /// </summary>
 /// <remarks>
-/// <c>orders.create</c>（命令行 + HTTP，需 <c>orders.write</c>）、<c>orders.get</c>（命令行）、<c>orders.secret</c>（只给 HTTP）、<c>orders.audit</c>（内部）
+/// <c>orders.create</c>（命令行 + HTTP，需 <c>orders.write</c>）、<c>orders.get</c>（命令行）、<c>orders.secret</c>（只给 HTTP）、<c>orders.audit</c>（内部）都没有 Schema；<c>orders.typed</c>（命令行）带请求 Schema
 /// </remarks>
 internal sealed class EchoFeature : IFeature
 {
@@ -40,6 +40,7 @@ internal sealed class EchoFeature : IFeature
         Add(context, new OperationContract("orders.get", expose: Expose.CommandLine));
         Add(context, new OperationContract("orders.secret", expose: Expose.Http));
         Add(context, new OperationContract("orders.audit", Stability.Internal, Expose.All));
+        context.AddOperation<TypedOperation, TypedRequest, TypedRequest>(new OperationContract("orders.typed", expose: Expose.CommandLine), TypedJsonContext.Default.TypedRequest, TypedJsonContext.Default.TypedRequest, new OperationSchema(TypedOperation.RequestSchema, TypedOperation.ResponseSchema));
     }
 
     /// <summary>

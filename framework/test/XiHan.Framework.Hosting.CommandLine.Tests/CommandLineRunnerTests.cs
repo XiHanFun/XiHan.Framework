@@ -145,6 +145,52 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Invoke_WritesFieldOptionsAsTheTypesOfTheRequestSchema()
+    {
+        // 数字样的值进字符串字段不变；超出 double 精度的整数不丢位；无值的标志是 true；单值进数组字段是一元数组；引用定义与 anyOf 都展开
+        var (code, output, error) = await RunAsync("orders", "typed", "--name", "42", "--times", "2", "--total", "9007199254740993", "--ratio", "1e3", "--verbose", "--level", "3", "--tone", "warm", "--sizes", "1", "--tags", "7", "--notes", "5");
+        Assert.Equal((CommandLineExitCodes.Success, string.Empty), (code, error));
+        var reply = Json(output);
+        Assert.Equal(("42", 2, 9007199254740993L, 1000d, true, 3, "warm"), (reply.GetProperty("name").GetString(), reply.GetProperty("times").GetInt32(), reply.GetProperty("total").GetInt64(), reply.GetProperty("ratio").GetDouble(), reply.GetProperty("verbose").GetBoolean(), reply.GetProperty("level").GetInt32(), reply.GetProperty("tone").GetString()));
+        Assert.Equal([1], reply.GetProperty("sizes").EnumerateArray().Select(static s => s.GetInt32()));
+        Assert.Equal(["7"], reply.GetProperty("tags").EnumerateArray().Select(static t => t.GetString()));
+        Assert.Equal("5", reply.GetProperty("notes").GetString());
+
+        // 重复的选项成数组且元素按 items；布尔可显式写 false；未声明的属性按 additionalProperties
+        (code, output, error) = await RunAsync("orders", "typed", "--name", "Ada", "--sizes", "1", "--sizes", "2", "--verbose=false", "--extra", "5");
+        Assert.Equal((CommandLineExitCodes.Success, string.Empty), (code, error));
+        reply = Json(output);
+        Assert.Equal([1, 2], reply.GetProperty("sizes").EnumerateArray().Select(static s => s.GetInt32()));
+        Assert.False(reply.GetProperty("verbose").GetBoolean());
+
+        // --json 的载荷原样进入，字符串的数字仍被 Schema 拒绝
+        var (json, _, jsonError) = await RunAsync("invoke", "orders.typed", "--json", """{"name":"Ada","times":"2"}""", "--locale", "en-US");
+        Assert.Equal(CommandLineExitCodes.Validation, json);
+        Assert.Contains("$.times: expected type 'integer' but found string", Json(jsonError).GetProperty("detail").GetString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("$.times: expected type 'integer' but found string", "--times", "abc")]
+    [InlineData("$.times: expected type 'integer' but found string", "--times", "1.5")]
+    [InlineData("$.times: expected type 'integer' but found array", "--times", "2", "--times", "3")]
+    [InlineData("$.times: value must be <= 10", "--times", "99")]
+    [InlineData("$.verbose: expected type 'boolean' but found string", "--verbose", "maybe")]
+    [InlineData("$.ratio: expected type 'number' or 'null' but found string", "--ratio", "NaN")]
+    [InlineData("$.sizes[0]: expected type 'integer' but found string", "--sizes", "x")]
+    [InlineData("$.name: expected type 'string' but found array", "--name", "again")]
+    [InlineData("$.tone: value matches none of the allowed schemas", "--tone", "hot")]
+    [InlineData("$.extra: expected type 'integer' but found string", "--extra", "abc")]
+    public async Task Invoke_LeavesUnconvertibleFieldOptionsToTheValidateStage(string violation, params string[] options)
+    {
+        // 转换不了不是用法错误：值留字符串进管道，由 Validate 阶段报字段级违规，退出码 2；已转换的值按 Schema 的范围报
+        var (code, _, error) = await RunAsync(["orders", "typed", "--name", "Ada", "--locale", "en-US", .. options]);
+        Assert.Equal(CommandLineExitCodes.Validation, code);
+        var problem = Json(error);
+        Assert.Equal("KERNEL_VALIDATION_003", problem.GetProperty("code").GetString());
+        Assert.Contains(violation, problem.GetProperty("detail").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Invoke_MapsFailuresToExitCodes_AndLocalizesDetail()
     {
         // 操作失败：CONFLICT → 5，stderr 为 JSON
