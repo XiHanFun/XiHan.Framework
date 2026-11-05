@@ -2,260 +2,113 @@
 
 # 常见问题
 
-框架层面的高频故障速查。这些坑的共同点是**没有异常、没有日志、静默失效**——知道去哪儿看就能秒解，不知道就能耗一天。每条都对照框架源码核实。
+本页收集使用框架时最常遇到的问题与排查方法，按装配、操作与协议、数据与安全、版本与能力范围分组。
 
+## 装配
 
----
+### 启动时报 KERNEL_CAPABILITY_004，说某个能力有多个候选
 
-## 模块与装配
+同一能力有两个以上显式 Provider，内核无法替应用选择。在配置里指定提供者，或在代码里调用 `UseProvider`：
 
-### 我的模块写好了，但服务一个都没注册
+```json
+{ "XiHan": { "Providers": { "caching.distributed": "xihan.caching.redis" } } }
+```
 
-`ConfigureServices` 只会被框架在**依赖图内**调用。检查两点：
+清单 ID 写在各包页的信息表里；规则见[能力包与清单](./modularity#选择-provider)。
 
-1. 你的模块有没有出现在启动模块（或其某个上游模块）的 `[DependsOn]` 里。不在依赖图里的模块类，框架根本不认识它。
-2. 有没有在宿主里额外手写 `services.AddMyModule(...)`。模块自己的 `ConfigureServices` 已经会跑一次，宿主再调一次就是**重复注册**。宿主只用 `[DependsOn]` 挂模块，不重复接线。
+### 启动时报 KERNEL_CAPABILITY_001，说依赖没有提供者
 
-### `[DependsOn]` 要把间接依赖也列上吗
+某个特性的 `Requires` 里有一个必需能力，但应用没有加入任何提供它的特性。错误信息给出需求方与能力 ID，加入对应的默认实现或 Provider（`UseFeature<...>()`）即可；不需要它时把依赖标为可选。
 
-不用。**只写直接依赖**——间接依赖由被依赖模块自己声明，框架按依赖图拓扑排序装配，重复列举没有收益，只会让依赖关系失真。
+### 引用了 Provider 包，但运行时仍在用内存实现
 
-### 启动时抛出动态 API 装配异常
+只引用包不会生效，还要在 `AddXiHan` 里 `UseFeature<...>()` 加入它的特性。加入后看启动日志里的能力图谱：被顶替的默认实现不再出现在该能力下，完全没有被选中的节点不装配。
 
-这是**故意的**。`DynamicApiOptions.ThrowOnGenerationFailure` 默认 `true`：任一应用服务生成控制器失败就中断装配并抛聚合异常，异常信息里有具体是哪个服务、哪个方法。
+### 中间件第一次调用时报「没有注册服务」
 
-设成 `false` 会改为只记日志并跳过——该服务的全部端点就从路由表里静默消失，前端拿到 404 却查不出所以然。**不建议**关掉。
+用 `AppBuilder.ConfigurePipeline` 或 `Pipeline.UseAt<T>` 登记的中间件，内核不替应用注册类型，需要自己 `builder.Services.AddSingleton<T>()`。在特性里用 `context.AddMiddleware<T>()` 登记则由内核一并注册。
 
-### 代码该写在哪个生命周期钩子里
+### 中间件里取不到主体或租户
 
-| 你要做的事 | 钩子 |
+主体在 Authenticate 阶段、租户在 Tenant 阶段之后才写入上下文。中间件要放在这些阶段之后；同一阶段内依赖另一个包中间件的产出时，必须用 `After<TMiddleware, TOther>()` 声明次序，不能依赖归属字典序。见[执行管道](./pipeline#排序规则)。
+
+### 怎样查看最终的能力图谱与管道顺序
+
+启动日志在 Information 级别打印两者。接了命令行宿主时运行 `graph` 与 `pipeline` 命令；代码里用 `App.DescribeGraph()` 与 `App.DescribePipeline()`。
+
+## 操作与协议
+
+### 编译报 XHG002
+
+操作的请求或响应类型没有登记到任何 `JsonSerializerContext`。在项目的序列化上下文上加 `[JsonSerializable(typeof(...))]`，见[操作契约](./operations#登记序列化类型与-schema)。
+
+### 操作没有出现在 HTTP 路由或 OpenAPI 里
+
+逐项检查：
+
+1. 特性的 `Configure` 调用了 `context.AddGeneratedOperations()`，项目引用了 `Kernel.Generators`（以分析器方式）。
+2. 操作的 `Expose` 包含 `Expose.Http`；没写 `Expose` 时看程序集级 `OperationDefaults`。
+3. 操作的 `Stability` 不是 `Internal`。
+4. 应用加入了 `HttpProtocolFeature`，并在 `app.UseXiHan()` 之后调用了 `app.MapXiHanOperations()`。
+
+### 两个操作启动时报 PROTOCOLS_CONFLICT_002
+
+两个操作推导出了同一条 HTTP 路由或同一个 gRPC 方法名，典型情况是请求都不含 `id` 的 `get` 与 `list`。按操作覆盖其中一条路由，见 [HTTP 与 OpenAPI](./http)。
+
+### 调用返回 503 与 KERNEL_UNAVAILABLE_001
+
+应用还没有就绪或正在停止。看 `/health/startup` 与 `/health/ready` 的响应，找出状态不是 `Ready` 的特性；启动失败的原因记录在启动日志里。
+
+### 返回 503 与 KERNEL_UNAVAILABLE_002、003 或 004
+
+分别是限流、并发上限与熔断拒绝，来自 `XiHan:Kernel:Resilience` 的配置。响应的 `details.retryAfter` 给出建议的重试秒数，见[弹性与限流](./resilience)。
+
+### Problem Details 的 detail 总是英文
+
+宿主按请求头 `Accept-Language` 选择区域，没有指定时用默认区域 `en-US`。应用自己的消息键要在对应语言的 `Localization/<区域>.json` 里有译文，并用 `AddMessageCatalog` 登记目录，见[国际化](./localization)。
+
+### 什么时候是 401，什么时候是 403
+
+`SECURITY_DENIED_001`（未认证）与 `SECURITY_DENIED_003`（凭据无效、过期或签名不符）是 401，并带 `WWW-Authenticate` 质询；已认证但缺少权限（`SECURITY_DENIED_004`）或被策略拒绝（`SECURITY_DENIED_002`）是 403。
+
+## 数据与安全
+
+### 在后台任务里使用仓储报 PERSISTENCE_UNAVAILABLE_001
+
+仓储只能在活动的工作单元内使用。操作调用由 Transaction 阶段自动开启工作单元；管道之外（后台循环、`IHostedFeature.StartAsync`、单例服务）要自己创建作用域并开启工作单元，写法见[工作单元与事务](./uow)。
+
+### 重启后内存里的数据都没了
+
+`Persistence.InMemory` 是开发与测试用的默认实现，数据只在进程内且容量有界。生产环境加入 `Persistence.EntityFrameworkCore` 或 `Persistence.SqlSugar`。
+
+### 新增多租户实体时报 PERSISTENCE_VALIDATION_001
+
+实体实现了 `IMultiTenant`，但当前调用没有租户。检查认证主体是否带租户声明、调用方是否在 Baggage 里给出租户，或把配置 `XiHan:MultiTenancy:RequireTenant` 打开，让没有租户的调用在 Tenant 阶段就被拒绝，见[多租户](./multi-tenancy)。
+
+## 版本与能力范围
+
+### 框架能用于生产吗
+
+框架还在预览阶段，公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整。评估与新项目试点可以使用；需要稳定版本的生产系统等正式版。
+
+### 框架不提供哪些能力
+
+下列能力不由框架包装，原因是它们属于应用层需求，或 .NET 与成熟的专门组件已经覆盖。开发指南不为它们设章节。
+
+| 能力 | 做法 |
 | --- | --- |
-| 注册服务、绑定选项 | `ConfigureServices` |
-| 挂拦截器注册器、预设其他模块要读的选项 | `PreConfigureServices` |
-| 所有模块注册完后做最终覆盖 | `PostConfigureServices` |
-| 接中间件、映射端点 | `OnApplicationInitialization` |
-| 要插在管道最前面（如 Webhook 校验） | `OnPreApplicationInitialization` |
-| 一切就绪后再做（如把库里的任务同步进调度器） | `OnPostApplicationInitialization` |
-| 释放资源 | `OnApplicationShutdown`（**逆序**执行，与其余六个钩子相反） |
-
-拿 `IApplicationBuilder` 的 `context.GetApplicationBuilder()` 等扩展方法来自 `XiHan.Framework.Web.Core`，纯类库模块里没有。
-
----
-
-## 依赖注入
-
-### 运行期抛「无法解析服务」
-
-最常见的是**领域服务**。领域服务接口通常不带 `ITransientDependency` / `IScopedDependency` / `ISingletonDependency` 标记接口，约定注册扫不到，必须手写：
-
-```csharp
-services.AddScoped<IInvoiceDomainService, InvoiceDomainService>();
-```
-
-对比：应用服务（`ApplicationServiceBase` 已实现 `ITransientDependency`）与仓储（基类带 `IScopedDependency`）都会被自动注册，不用手写。
-
-### 我实现了同一个接口，但用的还是框架的默认实现
-
-框架用 **`TryAdd`** 注册默认实现，且**先于**你的模块执行。你再 `TryAdd`（包括很多 `AddXxx` 扩展方法内部就是 `TryAdd`）会被**静默忽略**。
-
-覆盖必须用 `Replace`：
-
-```csharp
-services.Replace(ServiceDescriptor.Singleton<IAiProviderConfigStore, DbAiProviderConfigStore>());
-```
-
-或走特性：`[Dependency(ServiceLifetime.Scoped, ReplaceServices = true)]`。
-
-替换时**生命周期要与被替换者一致**，否则解析时抛作用域校验异常（Singleton 依赖 Scoped 是非法的）。
-
-### 一个实现类实现了多个接口，只有一个能注入
-
-约定注册默认只把实现类暴露为「类名去掉前导 `I` 后同名」的那个接口（`OrderService` → `IOrderService`）。要额外暴露：
-
-```csharp
-[ExposeServices(typeof(INotifiable), IncludeDefaults = true)]
-public class OrderService : IOrderService, INotifiable, IScopedDependency { }
-```
-
-同接口多实现按 key 区分用 `[ExposeKeyedService<IPaymentGateway>("alipay")]`，消费侧 `[FromKeyedServices("alipay")]`。
-
-### 想让某个类完全不被自动注册
-
-类上加 `[DisableConventionalRegistration]`，然后自己手写注册。
-
----
-
-## AOP 与拦截器
-
-### `[UnitOfWork]` / `[Cacheable]` 标了没生效
-
-**最可能的原因：服务的注册类型不是接口。**
-
-框架的 AOP 走 Castle 的 `CreateInterfaceProxyWithTarget`，`AddCastleDynamicProxy` 只处理 `ServiceType.IsInterface` 为真的服务描述器。所以：
-
-```csharp
-services.AddScoped<MyService>();               // ❌ 注册为自身类型 → 不会被代理，特性静默失效
-services.AddScoped<IMyService, MyService>();   // ✅ 接口 → 会被代理
-```
-
-其次检查：类型有没有被列进 `DynamicProxyIgnoreTypes`。
-
-
-### 匿名端点调用应用服务时永久挂起
-
-匿名端点（Minimal API、OAuth 回调等）不经过工作单元中间件，而应用服务被 Castle 代理包着，拦截器会急切开事务从而死锁。
-
-解法是**绕开代理**：注入真正的依赖直连，或用 `ProxyHelper.UnProxy(service)` 取真实目标实例再调。
-
-### 怎么加自己的拦截器
-
-写一个 `IXiHanInterceptor` 实现 + 一个决定「拦谁」的注册器，在 `PreConfigureServices` 里 `services.OnRegistered(注册器)` 挂上。完整示例见 [扩展与二次开发 · 自定义 AOP 拦截器](./extending#配方-c-自定义-aop-拦截器)。
-
----
-
-## 工作单元与事务
-
-### 我的应用服务方法没有事务
-
-**没标 `[UnitOfWork]` 就没有环境工作单元。** 框架判定「这个类型要不要被工作单元拦截」的条件是：类或任一方法上有 `[UnitOfWork]`，**或者**类型实现了 `IUnitOfWorkEnabled`。而 `IUnitOfWorkEnabled` 在框架里**没有任何实现者**，`ApplicationServiceBase` 也没实现它。
-
-所以写操作要事务，就在方法（或类）上显式标注：
-
-```csharp
-[UnitOfWork(true)]   // true = 需要事务
-public async Task<InvoiceDto> CreateInvoiceAsync(InvoiceCreateDto input) { … }
-```
-
-标注在 HTTP 与进程内两条路径上都生效：HTTP 请求由 `XiHanUnitOfWorkFilter` 在 MVC 动作外层开启工作单元，进程内互调由 Castle 接口代理的 `UnitOfWorkInterceptor` 开启。两条路径的判定规则一致，详见 [工作单元与事务](./uow#两条生效路径-aop-代理与-mvc-过滤器)。
-
-### 内层调了 `RollbackAsync`，外层还能提交吗
-
-不能。回滚之后再提交会抛 `XiHanException`。
-
-父子工作单元共用同一物理事务，内层判定失败回滚就意味着整体终止——让外层若无其事地提交会产出「接口返回 200 但数据一行没写」。
-
-同理 `SqlSugarClientResolver` 的钉住连接判定包含「是否已回滚」：检出已回滚的事务型工作单元会抛出并提示改用 `Begin(requiresNew: true)`，避免回滚之后的写入落在一条已无事务的连接上被逐条自动提交。
-
-### `requiresNew` 到底给不给我一个独立事务
-
-给。`requiresNew` 同时意味着**新的逻辑工作单元**和**新的物理连接**——两者缺一，内层就还是跑在外层的连接和事务上。
-
-用的时候记住语义代价：内层提交后**不再受外层回滚影响**。所以**不要在已经修改过某些行的事务里，再用 `requiresNew` 去改同一批行**——两条独立连接改同一批行，轻则互相覆盖，重则死锁。
-
-### 本地事件和分布式事件的发布时机有什么区别
-
-时机不同，且这个差别是有意为之：
-
-- **本地事件**：**提交前**发布。其处理器可能继续写库，这些写入必须落在同一个事务里。
-- **分布式事件**：循环内只累积，**事务提交成功后**再按 `EventOrder` 统一发布。这样事务回滚时下游不会收到一份从未落库的数据。
-
-代价是提交成功后若投递失败事件会丢。发件箱是进程内实现，进程一停即丢——要强投递保证请自行接持久化发件箱。
-
----
-
-## 动态 API
-
-### 生成的路由和我预期的不一样
-
-三条最容易忘的规则：
-
-1. **动词前缀会被剥离**：`GetUserPageAsync` → 动作名 `UserPage`（不是 `GetUserPage`），`Async` 后缀也去掉。
-2. **没有匹配动词前缀时默认 POST**：`SwitchTenantAsync` → `POST /api/Auth/SwitchTenant`。
-3. **路由段只由显式 `[FromRoute]` 参数产生**。普通参数一律落到查询串或请求体，**不会**自动变成 `/{id}` 路径段。
-
-前缀匹配要求**词边界**（前缀之后必须是大写字母或下划线），所以 `AddressBook` 不会被 `Add` 命中而变成 `POST /ressBook`，`EditorTemplate` 也不会被 `Edit` 命中。
-
-完整动词表见 [动态 API](./dynamic-api)。
-
-### 分页方法收不到请求体
-
-方法名以 `Get` 开头会被推导为 GET，请求体自然绑不上。**分页方法必须显式标 `[HttpPost]`**。方法上显式标注的 `[HttpGet]` / `[HttpPost]` 优先于前缀推导。
-
-### 一次上传多个文件
-
-参数写成 `List<IFormFile>`、`IFormFile[]`、`IFormFileCollection`，或放进 DTO 的 `List<IFormFile>` 属性，前端把多个文件追加到同一个 `FormData` 字段即可，不必逐个调用接口。
-
-```csharp
-public Task<List<FileDto>> UploadFilesAsync(List<IFormFile> files, FileUploadOptionsDto options)
-```
-
-同一方法里的 DTO 与集合参数随表单一起提交，字段直接用属性名。`string remark` 这类简单参数默认走查询字符串，要放进表单就标 `[FromForm]`。不要给与文件同处的参数标 `[FromBody]`：表单请求没有 JSON 请求体，框架会在启动时报错。
-
-### 改了动词映射表，前端全 404 了
-
-改 `Conventions.HttpMethodConventions`、`PreserveRoutePredicate`、`UseLowercaseRoutes`、`Routes.*` 中任何一个，都会让**已有接口的 URL 变化**。上线后再动这些开关等于一次破坏性变更，前端必须同步改。
-
----
-
-## 数据访问
-
-### 给实体加了字段，部署后报「列不存在」
-
-`DbInitializer` **表存在就跳过建表**（日志里是「表已存在，跳过创建」），它**从不为已有表补列**。
-
-要么重建数据库，要么手动 `ALTER TABLE` 补列。框架的定位是「首次启动自动建表 + 播种」，不是迁移工具。
-
-### 实体变更日志（Diff）一条都没有
-
-两个条件必须同时成立：
-
-1. 配置 **`XiHan:Data:SqlSugarCore:EnableDiffLog` 设为 `true`**——**默认是 `false`**，不开则 Diff AOP 根本不挂载，收集到的差异被直接丢弃；
-2. 写操作走仓储并调用了 `.EnableDiffLogEvent(businessData)`。
-
-生产的 `appsettings` 常被 gitignore，最容易漏的就是第一条。
-
-### 写操作报 `Parameter '@constant1001' already been defined`
-
-仓储里**显式调用了 `.EnableQueryFilter()`**。
-
-框架默认 `EnableAutoUpdateQueryFilter` / `EnableAutoDeleteQueryFilter` 均为 `true`，SqlSugar 的 `Updateable<T>()` / `Deleteable<T>()` 工厂内部**已经自动挂了一次**过滤。你再显式挂一次，同一份过滤会被烘进 WHERE 两遍、生成同名参数；一旦叠加 Diff 的 `GetDiffTable` 重查旧值就崩（MySQL 驱动直接抛，PG 驱动容忍重名故不崩，但仍是冗余死条件）。
-
-**解法：把仓储里所有显式 `.EnableQueryFilter()` 删掉。** `.EnableDiffLogEvent()` 保留，它单独用是安全的。
-
-### 租户上下文里改不了全局数据
-
-这是**有意的写路径边界**：全局租户过滤器为「读共享」放行 `TenantId=0` 的平台全局行，但**写路径不复用这个口径**——每个作用域只能改写/删除本作用域的行，预读守卫会校验取回行的 `TenantId`，条件写会自动追加当前作用域的 Where。
-
-全局数据在平台（0 号租户，无租户上下文与 `Change(0)` 同义）作用域里维护；某个租户的数据切入该租户（`Change(tenantId)`）维护。平台同样只能改写 `TenantId=0` 的行，不存在「平台写全部」。
-
----
-
-## 缓存与事件
-
-### 本地事件处理器不触发
-
-事件总线只自动发现「**以接口为服务类型**」的注册。裸 `services.AddTransient<MyHandler>()`（注册为具体类）**不会被订阅，静默失败**。
-
-处理器必须显式加入 `XiHanLocalEventBusOptions.Handlers`：
-
-```csharp
-services.AddTransient<MyHandler>();
-services.Configure<XiHanLocalEventBusOptions>(o => o.Handlers.AddIfNotContains(typeof(MyHandler)));
-```
-
-BasicApp 把这两步封装成了 `AddSaasLocalEventHandler<T>()`。
-
-### 怎么在缓存上执行 Lua 脚本
-
-Lua 执行不在 `IDistributedCache` 这个通用契约上，而是**可选能力接口** `ICacheSupportsLuaScript`——通用缓存抽象不应该焊上某个客户端的类型。
-
-用法是先做类型判断：
-
-```csharp
-if (cache is ICacheSupportsLuaScript lua)
-{
-    CacheScriptResult result = await lua.ScriptEvaluateAsync(script, keys, args);
-}
-```
-
-入参是中立的 `object?[]`，返回 `CacheScriptResult`（支持标量、整数、布尔与嵌套数组）。`IRedisDelayQueue` / `IRedisStreamQueue` 是名字里就带 Redis 的专用抽象，直接用即可。
-
----
-
-## 还没解决？
-
-- [扩展与二次开发](./extending)：模块、替换默认实现、拦截器、动态 API 定制的完整配方
-- [模块系统](./modularity) / [生命周期](./lifecycle) / [依赖注入](./dependency-injection)：机制本身
-- [模块总览](../packages/)：逐包的配置项、API 与注意事项
-- [BasicApp 常见问题](https://basicapp.docs.xihanfun.com/faq)：业务系统层面的坑（认证、权限、菜单、前端）
-- 仍未解决可到 [GitHub Issues](https://github.com/XiHanFun/XiHan.Framework/issues) 提问
+| 机器人与消息通知渠道（邮件、短信、Telegram、钉钉、飞书、企业微信） | 应用直接使用各渠道的 SDK 或 HTTP 接口，封装成应用自己的服务；需要异步发送时经消息子系统投递。`Messaging` 是队列、流与发布订阅子系统，不是通知渠道 |
+| 实时通信（SignalR 封装） | 直接使用 ASP.NET Core SignalR，Hub 的认证经 `XiHan` 认证方案交给内核，见[实时通信](./realtime) |
+| 网关与流量治理 | 反向代理与转发用 YARP 等专门组件；按操作的熔断、限流、并发上限由内核的 Resilience 阶段提供，见[弹性与限流](./resilience) |
+| 模板引擎 | 直接使用 Scriban、Fluid 等模板库 |
+| 脚本引擎 | 不提供。需要隔离执行第三方逻辑时用插件，见[插件](./plugins) |
+| 搜索引擎 | 直接使用 Elasticsearch、OpenSearch 等的官方客户端 |
+| HTTP 客户端封装 | 使用 `IHttpClientFactory` 与 `Microsoft.Extensions.Http.Resilience` |
+| 数据加解密 | 使用 `System.Security.Cryptography` 与 ASP.NET Core Data Protection。`Security` 是认证与授权子系统 |
+| 对象映射 | 显式映射，或编译期生成代码的映射库，见[序列化与 Native AOT](./aot#对象映射) |
+| 序列化封装 | 直接使用 System.Text.Json 的源生成上下文 |
+| 虚拟文件系统 | 使用 .NET 的 `IFileProvider` 与嵌入资源 |
+| 设置 | 使用 .NET 配置与 `IOptionsMonitor`，远程配置见[配置与选项](./configuration) |
+| 声明式缓存特性 | 不提供，用 `ICacheStore`、`ICache`、`ISharedCache` 显式读写，见[缓存与分布式锁](./caching) |
+| 版本升级编排 | 由应用实现，需要单点执行时用调度子系统的领导选举 |
+| 开发工具 | 命令行宿主的 `graph`、`pipeline`、`operations`、`invoke` 与 `xihan` 工具，见[命令行宿主](./command-line) |

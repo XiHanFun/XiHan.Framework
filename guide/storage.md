@@ -1,455 +1,457 @@
 来源：https://framework.docs.xihanfun.com/guide/storage
 
-# 对象存储与虚拟文件
+# 对象存储
 
-业务要存文件，但不该被绑死在某一家云厂商上；程序自己也要读文件（模板、配置、内置资源），但这些文件既可能在磁盘上也可能编译进了程序集。框架把这两件事拆成两个互不相干的包：`ObjectStorage` 管**业务文件的读写与生命周期**，`VirtualFileSystem` 管**程序自身资源的只读访问**。
+本章讲框架的对象存储：容器与键、批量写入与删除、按键读取与范围读取、按前缀分页列举、分片上传、预签名地址与命名存储实例，以及文件系统与 S3 两个实现怎么选。适用于在应用里存取文件、附件与大对象的开发者。
 
-## 先分清用哪个
+完整 API 见 [ObjectStorage.Abstractions](../packages/objectstorage-abstractions)、[ObjectStorage.FileSystem](../packages/objectstorage-filesystem) 与 [ObjectStorage.S3](../packages/objectstorage-s3) 包页。
 
-| | XiHan.Framework.ObjectStorage | XiHan.Framework.VirtualFileSystem |
-| --- | --- | --- |
-| 面向 | 用户上传的业务文件 | 程序自带的资源 |
-| 典型对象 | 头像、附件、导出文件 | 邮件模板、代码生成模板、内置 JSON |
-| 后端 | 本地磁盘 / MinIO / 阿里云 OSS / 腾讯云 COS | 物理目录 + 程序集嵌入资源 |
-| 读写 | 读写、删除、复制、移动 | **只读** |
-| 核心入口 | `IFileStorageRouter`、`IFileStorageProviderManager` | `IVirtualFileSystem` |
+## 概念
 
-::: tip 判断标准
-文件是不是运行期由用户产生的？是就用 ObjectStorage，不是就用 VirtualFileSystem。
-:::
+对象存储只定义一个字节流级的契约 `IBlobStore`：容器里按键存放字节与元数据。写入与删除以批量为主，单条是批量的特例；读取按键，可以只读一段；列举按前缀分页。对象写入后整体替换，读取方要么看到旧对象，要么看到完整的新对象。容器由存储按需创建（文件系统）或由基础设施预先建好（S3 的桶），契约不管理容器。
 
----
+子系统分成三个能力，各 Provider 提供其中一部分或全部：
 
-## 对象存储
-
-### 安装与启用
-
-```bash
-dotnet add package XiHan.Framework.ObjectStorage
-```
-
-```csharp
-[DependsOn(typeof(XiHanObjectStorageModule))]
-public class MyModule : XiHanModule { }
-```
-
-`XiHanObjectStorageModule` 在 `ConfigureServices` 里调 `services.AddXiHanObjectStorage(config)`，完成三件事：绑定 `XiHan:ObjectStorage` 及其四个子节；`TryAddSingleton` 注册 `IFileStorageProviderManager` 与 `IFileStorageRouter`；按 `EnabledProviders` + `DefaultProvider` 自动注册被启用的后端。两者都为空时回退到 `Local`。
-
-### 上传一个文件
-
-```csharp
-public class AvatarAppService
-{
-    private readonly IFileStorageRouter _router;
-
-    public AvatarAppService(IFileStorageRouter router) => _router = router;
-
-    public async Task<string?> UploadAsync(Stream stream, string fileName)
-    {
-        // 按业务路由键选后端，未命中映射时回退 DefaultProvider
-        var provider = _router.Route(routeKey: "avatar");
-
-        var result = await provider.UploadAsync(new FileUploadRequest
-        {
-            FileStream = stream,
-            FileName = fileName,
-            StoragePath = $"avatars/{Guid.NewGuid():N}/{fileName}",
-            ContentType = "image/png",
-            Overwrite = true
-        });
-
-        // 必须检查 Success —— 失败不会抛异常
-        return result.Success ? result.Url : null;
-    }
-}
-```
-
-::: danger 上传失败不抛异常
-`FileStorageProviderBase.UploadAsync` 把子类 `UploadCoreAsync` 的异常统一收敛成 `FileUploadResult { Success = false, ErrorMessage = ... }`，顺带记下 `DurationMs`。
-
-只写 `try/catch` 而不判 `result.Success`，失败会被当成成功继续往下走。**其余方法（下载、删除、元数据）则是正常抛异常的**，只有上传这一条路径特殊。
-:::
-
-### 后端怎么选
-
-四个后端实现同一个 `IFileStorageProvider`，但能力不齐：
-
-| 提供程序 | `ProviderName` | 分片上传 | 预签名 URL |
+| 能力 | 契约 | 文件系统（默认实现） | S3 |
 | --- | --- | --- | --- |
-| `LocalFileStorageProvider` | `Local` | 支持（临时目录合并） | 返回静态直链，`expiresIn` 被忽略 |
-| `AliyunOssStorageProvider` | `AliyunOSS` | 支持 | 真实签名 |
-| `TencentCosStorageProvider` | `TencentCOS` | 声明支持，分片方法有坑（见下） | 真实签名 |
-| `MinioFileStorageProvider` | `MinIO` | **不支持** | 真实签名 |
+| `objectstorage.blob@1` | `IBlobStore`：读写、删除、列举、范围读取 | 提供 | 提供 |
+| `objectstorage.multipart@1` | `IBlobMultipartStore`：分片上传 | 提供（暂存目录） | 提供（原生 multipart） |
+| `objectstorage.presign@1` | `IBlobUrlSigner`：预签名地址 | 由 `Hosting.AspNetCore` 的宿主代收发提供 | 提供（客户端直连存储） |
 
-::: warning MinIO 的分片方法是占位实现
-`MinioFileStorageProvider.SupportChunkedUpload` 为 `false`，但它**覆盖了**四个分片方法而不是让基类抛 `NotSupportedException`：`InitiateChunkedUploadAsync` 返回一个随便生成的 GUID，`UploadChunkAsync` 直接返回 `Success = true` 和形如 `chunk-1` 的假 ETag（**分片数据被丢弃**），`CompleteChunkedUploadAsync` 才返回 `Success = false`。
+框架不提供虚拟文件系统。读应用自带的只读文件（模板、静态数据）用 .NET 的 `IFileProvider`（`PhysicalFileProvider`、`ManifestEmbeddedFileProvider`）或程序集的嵌入资源；用户上传、需要按键存取的内容放对象存储。
 
-也就是说前面每一步都"成功"，最后一步才失败。走 MinIO 上传大文件请直接用 `UploadAsync`，由 SDK 自行处理分片。
+## 启用
 
-**调分片方法前一律先判 `provider.SupportChunkedUpload`。**
-:::
-
-::: warning 腾讯云 COS 的 UploadChunkAsync 不写分片数据
-`TencentCosStorageProvider.SupportChunkedUpload` 为 `true`，`InitiateChunkedUploadAsync` / `CompleteChunkedUploadAsync` 走的也是真实的 `InitMultipartUpload` / `CompleteMultiUpload`，但 `UploadChunkAsync` 调的是 `PutObject(bucket, key, request.StoragePath)`——既没用 `UploadPart`，也没读 `ChunkData`，而是把 `StoragePath` 当成本地文件路径整份上传。
-
-走 COS 上传大文件同样请用 `UploadAsync`。
-:::
-
-### 分片上传流程
-
-支持分片的后端按四步走，分片序号**从 1 开始**：
+`Profiles.Full` 已装配文件系统存储；其他情况显式加入：
 
 ```csharp
-var provider = _router.Route(routeKey: "attachment");
-if (!provider.SupportChunkedUpload)
-{
-    // 退回整体上传
-}
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.ObjectStorage.FileSystem;
+using XiHan.Framework.Profiles.Standard;
 
-var uploadId = await provider.InitiateChunkedUploadAsync(new ChunkedUploadInitRequest
-{
-    FileName = fileName,
-    StoragePath = storagePath,
-    TotalSize = totalSize,
-    ChunkSize = 5 * 1024 * 1024   // 默认即 5MB
-});
-
-var chunkInfos = new List<ChunkInfo>();
-foreach (var (chunkStream, index) in chunks)   // index 从 1 开始
-{
-    var chunk = await provider.UploadChunkAsync(new ChunkUploadRequest
-    {
-        UploadId = uploadId,
-        StoragePath = storagePath,
-        ChunkNumber = index,
-        ChunkData = chunkStream,
-        ChunkSize = chunkStream.Length,
-        TotalSize = totalSize,
-        TotalChunks = totalChunks
-    });
-
-    if (!chunk.Success)
-    {
-        await provider.AbortChunkedUploadAsync(uploadId);
-        throw new UserFriendlyException(chunk.ErrorMessage ?? "分片上传失败");
-    }
-
-    chunkInfos.Add(new ChunkInfo { ChunkNumber = chunk.ChunkNumber, ETag = chunk.ETag });
-}
-
-var result = await provider.CompleteChunkedUploadAsync(new ChunkedUploadCompleteRequest
-{
-    UploadId = uploadId,
-    StoragePath = storagePath,
-    ChunkInfos = chunkInfos
-});
+var builder = WebApplication.CreateBuilder(args);
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<FileSystemObjectStorageFeature>());
 ```
 
-失败路径务必调 `AbortChunkedUploadAsync` 收尾。本地存储的分片落在系统临时目录 `chunked-uploads/{uploadId}` 下，`Complete` 或 `Abort` 都会清掉它；两个都不调时，会话在最后一次活动 24 小时后、于下一次 `InitiateChunkedUploadAsync` 时被回收并删除临时目录（惰性回收，没有新上传就不触发；进程重启前的残留目录需自行清理）。
+```json
+{ "XiHan": { "ObjectStorage": { "FileSystem": { "RootPath": "/var/lib/app/blobs" } } } }
+```
 
-::: warning 分片会话在进程内存里
-Local / OSS / COS 的上传会话都存在进程内存中，24 小时无活动即被回收。进程重启、会话已被回收，或多实例部署时分片请求被打到另一个实例，都会报会话不存在（Local 为 `Upload session not found`，OSS / COS 为「上传会话不存在」）。多实例下的分片上传需要会话粘滞。
-:::
+换成 S3 或兼容服务时改装 `S3ObjectStorageFeature`。它是显式 Provider，与文件系统同时出现时顶替文件系统，业务代码注入的仍是 `IBlobStore`：
 
-### 后端是怎么被选中的
-
-`IFileStorageRouter.ResolveProviderName` 是一条三级瀑布：
-
-| 优先级 | 来源 | 行为 |
-| --- | --- | --- |
-| 1 | 显式传入的 `providerName` | 非空即用，不再往下 |
-| 2 | `routeKey` 查 `RouteProviderMappings` | 大小写不敏感，命中即用 |
-| 3 | `DefaultProvider` | 兜底 |
-
-第 2 步未命中时，`StrictRouteMatch = true` 会抛 `InvalidOperationException`，默认的 `false` 则静默回退到 `DefaultProvider`。
-
-取到名字后交给 `IFileStorageProviderManager.GetProvider`：查 `XiHanObjectStorageProviderOptions.ProviderTypes` 拿类型，没登记就抛 `InvalidOperationException`；实例从容器解析出来后缓存进字典，后续复用。要静默判断用 `TryGetProvider`。
-
-这套设计的意义是：**本地开发写磁盘、生产切云端，只改配置不改代码**。
+```csharp
+builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeature>());
+```
 
 ```json
 {
   "XiHan": {
     "ObjectStorage": {
-      "DefaultProvider": "Local",
-      "EnabledProviders": [ "Local", "AliyunOSS" ],
-      "RouteProviderMappings": {
-        "avatar": "Local",
-        "attachment": "AliyunOSS"
+      "S3": {
+        "ServiceUrl": "http://localhost:9000",
+        "Region": "us-east-1",
+        "AccessKey": "dev-access-key",
+        "SecretKey": "dev-secret-key",
+        "ForcePathStyle": true,
+        "HealthBucket": "uploads"
       }
     }
   }
 }
 ```
 
-::: danger 配置节名 ≠ 提供程序名
-配置**节**是 `Local` / `Minio` / `AliyunOss` / `TencentCos`（各 Options 的 `SectionName`）；提供程序**名**是 `Local` / `MinIO` / `AliyunOSS` / `TencentCOS`（`ObjectStorageProviderNames` 常量，用于 `EnabledProviders`、`DefaultProvider` 和映射值）。
+## 标识
 
-拼写不同，别互抄。`EnabledProviders` 里写了识别不了的名字，启动期直接抛 `InvalidOperationException`。
-:::
-
-### 路径与存储桶
-
-`StoragePath` 一律是**对象键**，不含桶名。桶由 `BucketName` 决定，为空则用该后端配置里的 `DefaultBucket`：
-
-- `UploadAsync` 读 `FileUploadRequest.BucketName`；
-- `DeleteAsync` / `ExistsAsync` / `GetMetadataAsync` 各有一个带 `bucketName` 参数的重载；基类的默认实现忽略该参数、转调单参版本，只有真正实现了它的后端才生效。
-
-腾讯云 COS 的桶名会自动拼成 `{DefaultBucket}-{AppId}`，配置里填不带 AppId 的部分。阿里云 OSS 与腾讯云 COS 配了 `CdnDomain` 时，返回的 URL 走 `https://{CdnDomain}/{objectKey}`，不再走桶域名。
-
----
-
-## 本地存储：RootPath、UrlPrefix 与静态文件挂载
-
-本地存储是默认后端，也是最容易配错的一个，因为它牵扯两个各自独立读配置的组件。
-
-### 两个字段
-
-`LocalStorageOptions`（配置节 `XiHan:ObjectStorage:Local`）只有两个字段：
-
-| 字段 | 默认值 | 作用 |
+| 标识 | 规则 | 例子 |
 | --- | --- | --- |
-| `RootPath` | `wwwroot/Uploads` | 文件真正落盘的目录 |
-| `UrlPrefix` | `/uploads` | 拼 `FileUploadResult.Url` 用的路径前缀 |
+| 容器 `ContainerName` | `^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`，与 S3 桶名兼容 | `invoices` |
+| 键 `BlobKey` | `/` 分段，1 到 1024 个字符；每段非空、不是 `.` 或 `..`；不含空白、控制字符与 `\`；首段不是 `.xihan`（保留给框架）；区分大小写 | `2026/10/inv-1.pdf` |
+| 自定义元数据名 | `^[a-z0-9][a-z0-9-]{0,63}$`，值为任意字符串 | `uploaded-by` |
 
-`LocalFileStorageProvider` 构造时把 `RootPath` 过一遍 `Path.GetFullPath`，目录不存在就创建；`UrlPrefix` 归一化成 `"/" + 去掉首尾斜杠`。
+`ContainerName` 与 `BlobKey` 都能从 `string` 隐式转换，不合法在构造时抛出 `ArgumentException`，不会进入 Provider。来自用户输入的键先用 `BlobKey.IsValid` 判断。
 
-于是 `StoragePath = "avatars/a.png"` 落盘在 `{RootPath}/avatars/a.png`，`Url` 是 `/uploads/avatars/a.png`。
+首段是 `.xihan` 的键（`BlobKey.ReservedSegment`，`.xihan` 本身与 `.xihan/…`，区分大小写）保留给框架自己的对象，例如 S3 的条件写入探测键 `.xihan/probe/conditional-write`：业务写不进、读不到、删不掉，各存储列举时跳过存储里已有的这类对象，所以它们不会混进业务列举（ADR-0090）。以 `.xihan` 开头的查询前缀不报错，列举结果总是空的。
 
-### 静态文件是自动挂上的
+## 读写
 
-`XiHanWebApiModule` 在管线里替你挂好了这个目录，无需自己写 `UseStaticFiles`：
+### 写入
 
-```
-UseCors()
-  → 本地对象存储静态文件服务   ← 在这里
-  → UseAuthentication()
-  → UseAuthorization()
-```
-
-它经 `IConfiguration` 直接读 `XiHan:ObjectStorage:Local:RootPath` 和 `:UrlPrefix`（这样 Web.Api 不必编译期依赖 ObjectStorage 包），然后以 `PhysicalFileProvider` + `RequestPath = UrlPrefix` 调 `UseStaticFiles`。
-
-::: warning 显式配置 RootPath
-`LocalStorageOptions` 3.10.1 的默认落盘目录是 `wwwroot/Uploads`，但 Web.Api 在完全没有该配置节时仍回退到 `wwwroot/uploads`。在 Linux 等区分大小写的文件系统上，这会成为两个目录。Web 应用应显式配置 `RootPath`，并确保对象存储与静态文件挂载读取同一个值。
-:::
-
-::: warning 挂在鉴权之前，意味着匿名可读
-这个位置是有意的——头像之类的公开资源要能匿名直链。反过来说，**落进 `RootPath` 的所有文件都是公开的**。
-
-`FileUploadRequest.AccessControl` 对本地存储不起作用：本地提供程序压根不读这个字段（阿里云 OSS 会把它翻成 `public-read` / `private` 的 ACL，腾讯云 COS 原样交给 `SetCosACL`）。私密文件不要放本地存储的 `UrlPrefix` 目录下。
-:::
-
-### 三个易错点
-
-::: danger 相对路径的基准不一致
-提供程序用 `Path.GetFullPath(RootPath)` 解析——基准是**进程当前工作目录**；静态文件中间件用 `Path.Combine(ContentRootPath, RootPath)`——基准是**内容根目录**。
-
-平时两者相同，但以 systemd、容器 `WORKDIR` 或 Windows 服务方式启动、工作目录被设成别处时，就会出现"文件明明写进去了，URL 访问却 404"。**生产环境把 `RootPath` 配成绝对路径**，两边就都不会猜。
-:::
-
-::: warning 未知扩展名一律 404
-静态文件以 `ServeUnknownFileTypes = false` 挂载，MIME 类型识别不出来的文件不会被返回。上传前统一扩展名，或者让这类文件走后端下载接口而不是静态直链。
-:::
-
-::: warning UrlPrefix 不能配成 "/"
-归一化后等于 `/` 时，挂载逻辑直接跳过，静态直链整体失效。
-:::
-
-### 一个顺手的机制
-
-`NormalizeLocalPath` 会把路径开头的 `UrlPrefix` 段剥掉。所以 `FileUploadResult.Url`（`/uploads/avatars/a.png`）可以原样回传给 `DeleteAsync` / `ExistsAsync`，不用先手工去前缀：
+单条写入用扩展方法 `PutAsync`，它转调批量方法。写入选项 `BlobPutOptions` 有内容类型（缺省 `application/octet-stream`）、自定义元数据与 `Overwrite`（缺省 `true`）。下面的端点把请求体存成一个对象，失败结果交给宿主写成 Problem Details：
 
 ```csharp
-await provider.DeleteAsync(result.Url!);   // 与传 "avatars/a.png" 等价
-```
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
+using XiHan.Framework.Primitives;
 
-另外两点：`FileUploadRequest.Overwrite` 默认 `false`，目标已存在会返回 `Success = false` + `"File already exists"`；设置了 `ProgressCallback` 时，回调的第二个参数取自 `FileStream.Length`，所以传进来的流必须能取长度。
-
----
-
-## 虚拟文件系统
-
-### 解决什么问题
-
-模板、内置配置这类程序自带的资源，有两种存在形式：磁盘上的物理文件，和编译进程序集的嵌入资源。虚拟文件系统把它们叠成一个统一的路径空间——同一个 `/Templates/mail.html`，先查磁盘，磁盘没有再取程序集内置的。
-
-这天然形成一个覆盖机制：**框架包内置一份默认模板，宿主应用在磁盘上放同名文件就能覆盖它**，不用改代码也不用重新打包。
-
-### 安装与启用
-
-```bash
-dotnet add package XiHan.Framework.VirtualFileSystem
-```
-
-```csharp
-[DependsOn(typeof(XiHanVirtualFileSystemModule))]
-public class MyModule : XiHanModule { }
-```
-
-`IVirtualFileSystem` 以单例注册，直接注入即可。
-
-### 默认挂载与优先级
-
-无需任何配置，构造时就挂好了这些提供程序（**数值越大越优先**）：
-
-| 优先级 | 来源 | 开关 |
-| --- | --- | --- |
-| 100 | 当前工作目录 | `IncludeCurrentDirectory`，默认 `true` |
-| 90 | `AdditionalPhysicalPaths` 里的每个目录 | 默认空 |
-| 80 | 应用基目录（`AppContext.BaseDirectory`） | `IncludeAppBaseDirectory`，默认 `true` |
-| 50 | `AddEmbedded` 注册的程序集 | 需显式添加 |
-
-`GetFile` 按优先级从高到低逐个问，第一个命中的就返回——所以物理目录天然压过嵌入资源。物理目录不存在时会被自动创建。
-
-追加自己的来源有两种写法：
-
-```csharp
-// 启动期：在模块里配置
-services.Configure<VirtualFileSystemOptions>(options =>
+app.MapPut("/files/{name}", async (string name, HttpContext http, IBlobStore store, CancellationToken ct) =>
 {
-    options.AddPhysical("./templates", priority: 120);
-    options.AddEmbedded<MyModule>(priority: 50);
-});
-
-// 运行期：动态挂载/卸载
-_virtualFileSystem.Mount(new PhysicalFileProvider("/data/skins"), priority: 200);
-_virtualFileSystem.Unmount(provider);
-```
-
-同一个物理目录或同一个程序集重复添加会覆盖前一次，不会挂两遍。
-
-### 读取与枚举
-
-```csharp
-public class MailTemplateProvider
-{
-    private readonly IVirtualFileSystem _vfs;
-
-    public MailTemplateProvider(IVirtualFileSystem vfs) => _vfs = vfs;
-
-    public async Task<string> ReadAsync(string name)
+    var key = $"inbox/{name}";
+    if (!BlobKey.IsValid(key))
     {
-        var file = _vfs.GetFile($"~/Templates/{name}.html");
-        if (!file.Exists)
-        {
-            throw new FileNotFoundException(name);
-        }
-
-        using var stream = file.CreateReadStream();
-        using var reader = new StreamReader(stream);
-        return await reader.ReadToEndAsync();
+        return Results.BadRequest();
     }
 
-    // 递归列出全部 json，返回虚拟路径集合
-    public IReadOnlyList<string> ListConfigs()
-        => _vfs.EnumerateFiles("/Configs", "*.json", recursive: true);
+    var options = new BlobPutOptions
+    {
+        ContentType = http.Request.ContentType ?? BlobPutOptions.DefaultContentType,
+        // 不覆盖：同名对象已存在时返回 OBJECTSTORAGE_CONFLICT_001，宿主映射为 409
+        Overwrite = false,
+    };
+    var put = await store.PutAsync("uploads", key, http.Request.Body, options, ct);
+    if (!put.TryGetValue(out var metadata))
+    {
+        http.GetXiHanContext().ValueOrThrow().SetOutcome(put.Error!);
+        return Results.Empty;
+    }
+
+    return Results.Ok(new { metadata.ETag, metadata.Length });
+});
+```
+
+批量写入按顺序逐项执行，返回与入参同序的逐项结果；两项之间检查取消，已完成的项不回滚。空列表返回空，重复的键按顺序各执行一次：
+
+```csharp
+var results = await store.PutAsync("invoices",
+[
+    new BlobUpload("2026/10/inv-1.pdf", first, new BlobPutOptions { ContentType = "application/pdf" }),
+    new BlobUpload("2026/10/inv-2.pdf", second, new BlobPutOptions { ContentType = "application/pdf" }),
+], cancellationToken);
+
+foreach (var result in results.Where(static r => r.Outcome.IsFailure))
+{
+    logger.LogWarning("Storing {Key} failed: {Code}", result.Key, result.Outcome.Error!.Code);
 }
 ```
 
-`GetFile` 找不到时返回 `NotFoundFileInfo` 而不是抛异常，判 `file.Exists` 即可；`GetDirectoryContents` 同样不抛异常，返回的是 `PrioritizedDirectoryContents` 包装，目录不存在时 `Exists` 为 `false`。
+### 读取
 
-路径写法由 `PathResolver` 统一处理：
-
-| 写法 | 解析结果 |
-| --- | --- |
-| `/Templates/a.html` | 原样归一化 |
-| `~/Templates/a.html` | 去掉 `~`，等价于上一行 |
-| `embedded://MyAssembly/Templates/a.html` | 剥掉协议头与**第一段**，得到 `/Templates/a.html` |
-| `memory://a.json`、`mem://a.json` | 剥掉协议头，得到 `/a.json` |
-
-::: warning embedded:// 里的程序集名只是标记
-`ResolveEmbeddedPath` 剥掉的是协议头到第一个斜杠之间的整段，剩下的路径仍按优先级在**全部**已挂载的提供程序里查找。写 `embedded://A/x.html` 不代表只在程序集 A 里找，物理目录里有同路径文件照样会先命中。
-:::
-
-### 嵌入资源
-
-`AddEmbedded` 建立在 `EmbeddedFileProvider` 之上，未指定基命名空间，因此虚拟路径 `/Templates/mail.html` 对应资源名 `{程序集名}.Templates.mail.html`。文件必须真的被打包进去：
-
-```xml
-<ItemGroup>
-  <EmbeddedResource Include="Templates/**/*.html" />
-</ItemGroup>
-```
-
-漏了这行，`AddEmbedded` 注册成功但永远取不到文件。
-
-### 变更监听
+`GetAsync` 打开内容流与元数据，返回的 `BlobContent` 要释放（释放时关闭流，S3 一并释放响应）。只要元数据时用 `HeadAsync`，只判断存在用 `ExistsAsync`，小对象一次读进内存用 `ReadAllBytesAsync`：
 
 ```csharp
-_vfs.OnFileChanged += (_, e) =>
+app.MapGet("/files/{**key}", async (string key, HttpContext http, IBlobStore store, CancellationToken ct) =>
 {
-    // e.FilePath、e.ChangeType（Created / Modified / Deleted）
-    _cache.Remove(e.FilePath);
-};
+    if (!BlobKey.IsValid(key))
+    {
+        return Results.NotFound();
+    }
 
-// 关键：不调 Watch 就不会有任何事件
-_vfs.Watch("**/*.json");
+    var opened = await store.GetAsync("uploads", key, ct);
+    if (!opened.TryGetValue(out var blob))
+    {
+        http.GetXiHanContext().ValueOrThrow().SetOutcome(opened.Error!);
+        return Results.Empty;
+    }
+
+    // 响应结束时释放 BlobContent，内容流随之关闭
+    http.Response.RegisterForDisposeAsync(blob);
+    return Results.Stream(blob.Content, blob.Metadata.ContentType);
+});
 ```
 
-::: danger 只订阅事件不生效
-`OnFileChanged` 的触发链是挂在 `Watch(filter)` 注册的回调上的。只订阅事件、从不调 `Watch`，事件永远不会触发。
-:::
+元数据 `BlobMetadata` 有键、长度、内容类型、`ETag`（内容变化即变化）、最后修改时间与自定义元数据。不存在返回 `OBJECTSTORAGE_NOTFOUND_001`。
 
-通配符规则：`**` 匹配任意层级，`*` 匹配单层内任意字符，`?` 匹配单字符；`*` 和 `**/*` 会短路成"全部匹配"。事件带防抖，间隔取 `ChangeDebounceMilliseconds`（默认 500）与 50 的较大值。不需要监听时把 `EnableChangeTracking` 设为 `false`——它会在挂载物理目录时递归扫描全部文件建立基线快照，目录大时启动开销可观。
+### 删除
 
-### 文件版本快照
+`DeleteAsync` 批量删除，逐项结果的 `Outcome` 为 `true` 表示存在过并已删除，`false` 表示本来就不存在，失败时带错误。同一批里重复的键第二次报告不存在：
 
-`IFileVersioningService` 提供 `Snapshot(IFileInfo)` 与 `Rollback(path, steps)`，把文件内容整份压进栈里，回滚时弹出并写回磁盘。
+```csharp
+var deleted = await store.DeleteAsync("invoices", ["2026/10/inv-1.pdf", "2026/10/inv-2.pdf"], cancellationToken);
+var removed = deleted.Count(static d => d.Outcome.ValueOr(false));
+```
 
-::: warning 进程内、不持久化
-版本栈是内存里的 `ConcurrentDictionary`，进程重启即丢，且完整内容常驻内存。`Snapshot` 要求 `file.PhysicalPath` 非空（嵌入资源没有物理路径，会抛 `ArgumentNullException`），`Rollback` 也要求目标文件仍存在。它适合"改配置前留个后悔药"这类短周期场景，不是版本管理方案。
-:::
+单条删除用扩展方法 `DeleteAsync(container, key, cancellationToken)`。
 
----
+### 列举
 
-## 配置速查
+`ListAsync` 按键前缀列举，键的序数顺序，`PageSize` 为 1 到 1000（缺省 1000）；越界不在构造 `BlobQuery` 时抛出，列举返回 `OBJECTSTORAGE_VALIDATION_005`（HTTP 400），不访问存储——页大小常由请求绑定而来，越界是调用方可以改正的输入（ADR-0082）。续页标记 `ContinuationToken` 不透明，原样带回下一次查询：
 
-对象存储 `XiHan:ObjectStorage`：
+```csharp
+var query = new BlobQuery { Prefix = "2026/10/", PageSize = 100 };
+while (true)
+{
+    var page = (await store.ListAsync("invoices", query, cancellationToken)).ValueOrThrow();
+    foreach (var item in page.Items)
+    {
+        Console.WriteLine($"{item.Key} {item.Length}");
+    }
 
-| 键 | 默认值 | 说明 |
-| --- | --- | --- |
-| `DefaultProvider` | `Local` | 默认后端名 |
-| `EnabledProviders` | `["Local"]` | 启用哪些后端，值必须是可识别的名字 |
-| `RouteProviderMappings` | 空 | 业务路由键 → 后端名，大小写不敏感 |
-| `StrictRouteMatch` | `false` | 路由键未命中时抛异常还是回退默认 |
+    if (page.ContinuationToken is null)
+    {
+        break;
+    }
 
-子节：`:Local`（`RootPath`、`UrlPrefix`）、`:Minio`（`Endpoint`、`AccessKey`、`SecretKey`、`DefaultBucket`、`UseSSL`、`Region`）、`:AliyunOss`（`AccessKeyId`、`AccessKeySecret`、`Endpoint`、`DefaultBucket`、`CdnDomain`、`UseInternal`）、`:TencentCos`（`SecretId`、`SecretKey`、`AppId`、`Region`、`DefaultBucket`、`CdnDomain`）。
+    query = query with { ContinuationToken = page.ContinuationToken };
+}
+```
 
-虚拟文件系统 `XiHan:VirtualFileSystem`：
+S3 的列举条目只有键、长度、`ETag` 与修改时间，内容类型为缺省值、自定义元数据为空，需要时再 `HeadAsync`。
 
-| 键 | 默认值 | 说明 |
-| --- | --- | --- |
-| `IncludeCurrentDirectory` | `true` | 自动挂载当前工作目录（优先级 100） |
-| `IncludeAppBaseDirectory` | `true` | 自动挂载应用基目录（优先级 80） |
-| `AdditionalPhysicalPaths` | 空 | 追加的物理目录（优先级 90） |
-| `EnableChangeTracking` | `true` | 是否启用变更追踪 |
-| `ChangeDebounceMilliseconds` | `500` | 变更事件防抖，实际取值不低于 50 |
+## 范围读取
 
-完整配置项见 [ObjectStorage 包](../packages/object-storage) 与 [VirtualFileSystem 包](../packages/virtual-file-system)。
+音视频拖动、断点续传下载只读一段：
 
-## 常见问题
+```csharp
+var opened = await store.GetAsync("videos", "raw/intro.mp4", new BlobRange(offset: 1_048_576, length: 65_536), cancellationToken);
+if (opened.TryGetValue(out var part))
+{
+    await using (part)
+    {
+        // Range 是实际读到的范围；Metadata.Length 仍是对象总长
+        var range = part.Range!;
+        Console.WriteLine($"bytes {range.Offset}-{range.Last}/{range.TotalLength}");
+    }
+}
+```
 
-| 现象 | 原因 |
+长度为空时读到末尾，超出末尾时截断。起点不在对象内（含空对象）返回 `OBJECTSTORAGE_VALIDATION_001`。
+
+## 分片上传
+
+大文件分片上传、断点续传用 `IBlobMultipartStore`（能力 `objectstorage.multipart@1`），限制与 S3 一致：
+
+1. `StartAsync(container, key, options)` 发起上传，得到 `BlobMultipartUpload`（容器、键、上传标识、是否覆盖）。它可以持久化，跨请求、跨进程续传时用同样的四个值重建。
+2. `UploadPartAsync(upload, partNumber, stream)` 上传编号 1 到 10000 的一片，可乱序、可重传（后一次覆盖），返回该片的 `BlobPart`（编号与 ETag）。
+3. `ListPartsAsync(upload)` 按编号升序列出已上传的分片，续传时据此跳过已完成的片。
+4. `CompleteAsync(upload, parts)` 用编号严格升序、ETag 与已上传一致的清单拼成对象；除最后一片外每片至少 5 MiB（`BlobMultipart.MinPartBytes`）。完成前对象不可见，完成是原子的。
+5. `AbortAsync(upload)` 丢弃上传，上传不存在也成功。
+
+| 情况 | 结果 |
 | --- | --- |
-| 上传失败但没有异常 | `UploadAsync` 把异常收敛进 `ErrorMessage`，必须判 `result.Success` |
-| 文件写进去了，URL 却 404 | `RootPath` 用了相对路径而工作目录 ≠ 内容根；或扩展名 MIME 识别不出被 `ServeUnknownFileTypes = false` 拦掉 |
-| 静态直链整体失效 | `UrlPrefix` 归一化后等于 `/`，挂载逻辑直接跳过 |
-| 本地存储设了 `AccessControl` 仍能匿名访问 | 本地提供程序不读该字段，`UrlPrefix` 目录挂在鉴权之前，一律匿名可读 |
-| MinIO 分片每步都成功，最后失败 | 分片方法是占位实现、数据被丢弃；改用 `UploadAsync` |
-| 腾讯云 COS 分片上传报本地文件找不到 | `UploadChunkAsync` 把 `StoragePath` 当本地文件路径调 `PutObject`，从不读 `ChunkData`；改用 `UploadAsync` |
-| 分片上传报 `Upload session not found` / 「上传会话不存在」 | 会话在进程内存里：进程重启、会话 24 小时无活动已被回收，或请求被打到别的实例 |
-| `GetProvider` 抛 `InvalidOperationException` | 该名字不在 `EnabledProviders` / `DefaultProvider` 中，也没经 `AddFileStorageProvider` 注册 |
-| 启动期抛"不支持的对象存储提供程序" | `EnabledProviders` 里的名字拼错，与配置节名混用了 |
-| 本地 `GetMetadataAsync` 的 `ContentType` 回落成 `application/octet-stream` | 本地提供程序只内置 jpg/jpeg、png、gif、webp、pdf、zip、mp4、mp3 的映射，其余扩展名一律回落 |
-| 预签名 URL 在本地存储上没有时效 | 本地返回的是静态直链，`expiresIn` 被忽略 |
-| 虚拟文件读到的是另一个目录里的同名文件 | 优先级高的先命中：工作目录 100 > 附加目录 90 > 基目录 80 > 嵌入资源 50 |
-| `AddEmbedded` 后取不到文件 | 文件没配 `EmbeddedResource`，或资源名与 `{程序集名}.{目录}.{文件名}` 对不上 |
-| 订阅了 `OnFileChanged` 却从不触发 | 没调 `Watch(filter)`，事件链没挂上 |
+| 清单为空、乱序、含未上传的片、ETag 不符或非末片过小 | `OBJECTSTORAGE_VALIDATION_002`，上传保留，可修正清单后再完成 |
+| 上传不存在或已结束 | `OBJECTSTORAGE_NOTFOUND_002` |
+| `Overwrite = false` 且对象已存在 | 发起与完成都返回 `OBJECTSTORAGE_CONFLICT_001` |
 
-## 下一步
+文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片不计入配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传在启动扫描时清掉；S3 直接映射原生 multipart。
 
-- [Web 应用开发](./web)：静态文件挂载所在的中间件管线
-- [配置与选项](./configuration)：配置节绑定与 Options 模式
-- [模块系统](./modularity)：`DependsOn` 与模块装配
-- [ObjectStorage 包](../packages/object-storage)：完整 API 清单与全部配置项
-- [VirtualFileSystem 包](../packages/virtual-file-system)：完整 API 清单与全部配置项
+## 预签名地址
+
+`IBlobUrlSigner`（能力 `objectstorage.presign@1`）签出限时地址，客户端不带凭据直接下载或上传：
+
+| 请求 | 方法 | 用途 |
+| --- | --- | --- |
+| `BlobUrlRequest.ForDownload(expiresIn, downloadFileName)` | `GET` | 下载，支持 `Range`；可带保存的文件名（`Content-Disposition`） |
+| `BlobUrlRequest.ForUpload(expiresIn, contentType)` | `PUT` | 上传整个对象，可限定内容类型 |
+| `BlobUrlRequest.ForPart(upload, partNumber, expiresIn)` | `PUT` | 上传分片上传的某一片，响应头 `ETag` 就是这一片的 ETag |
+
+有效期缺省 30 分钟（`BlobUrlRequest.DefaultExpiresIn`），范围 1 秒到 7 天，超出时构造请求抛出 `ArgumentOutOfRangeException`。签出的 `BlobSignedUrl` 带地址、方法、失效时刻与 `Headers`：客户端必须原样发送这些请求头（例如限定的 `Content-Type`），否则验签不过。签名在本地计算，不检查对象是否存在。
+
+```csharp
+var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlRequest.ForDownload(downloadFileName: "发票.pdf"), cancellationToken)).ValueOrThrow();
+// link.Url 交给前端；link.ExpiresAt 之后失效
+```
+
+S3 由存储自己签名（签名 V4），客户端直连存储。文件系统没有原生签名，由宿主代收发：装配 `HostedBlobUrlFeature` 并映射端点，签名是对方法、容器、键、过期时刻与各限定项的 HMAC-SHA256，无状态，持有同一密钥的多个实例互认。
+
+```csharp
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Hosting.AspNetCore.Blobs;
+using XiHan.Framework.ObjectStorage.FileSystem;
+
+builder.AddXiHan(xihan => xihan
+    .UseFeature<FileSystemObjectStorageFeature>()
+    .UseFeature<HostedBlobUrlFeature>());
+
+var app = builder.Build();
+app.UseXiHan();
+app.MapXiHanBlobs();   // GET / PUT <BaseUrl>/{container}/{**key}
+```
+
+```json
+{
+  "XiHan": {
+    "ObjectStorage": {
+      "SignedUrls": {
+        "BaseUrl": "/blobs",
+        "Secret": "dev-signing-secret-at-least-32-bytes"
+      }
+    }
+  }
+}
+```
+
+| 键 | 缺省 | 说明 |
+| --- | --- | --- |
+| `XiHan:ObjectStorage:SignedUrls:BaseUrl` | `/blobs` | 签出地址的前缀：以 `/` 开头的路径（相对应用的源）或绝对地址；端点的路由前缀取它的路径部分 |
+| `XiHan:ObjectStorage:SignedUrls:Secret` | 无，必填 | 签名密钥，UTF-8 至少 32 字节；多实例部署必须一致；缺失或过短时装配抛出 `ArgumentException` |
+
+端点的响应都带 `X-Content-Type-Options: nosniff`。写出内容时还带沙箱的 `Content-Security-Policy`（ADR-0125）：用户上传的 HTML、SVG 在这里跑不了脚本，图片、视频和 PDF 照常预览。把这个地址上的 HTML 当网页用的应用，在 `UseXiHan` 之前的中间件里设自己的 `Content-Security-Policy`，端点不覆盖。S3 直传直下的地址不经宿主，不受这一条影响。
+
+宿主端点 `GET` 支持单个 `Range` 区间（206 与 `Content-Range`，不可满足回 416），`PUT` 写整个对象或一片并在响应头带 `ETag`。端点经内核管道，Observe 照常记录，不要求凭据，签名即授权；上传解除了请求体大小上限，单对象上限由存储把关。签名不符或过期回 403（`OBJECTSTORAGE_DENIED_001`）。没有装配 `HostedBlobUrlFeature` 就调用 `MapXiHanBlobs()`，调用处抛出 `FrameworkException`（`KERNEL_HOSTING_004`）。
+
+::: warning 不要同时装 S3 与宿主代收发
+`S3ObjectStorageFeature` 与 `HostedBlobUrlFeature` 都提供 `objectstorage.presign@1`，同时装配时要用 `XiHan:Providers:objectstorage.presign` 指定一个，否则启动失败。S3 自己能签名，用 S3 时不装 `HostedBlobUrlFeature`。
+:::
+
+### 大文件直传
+
+服务端发起分片上传并签出各片地址，客户端按片直接传给存储（或宿主端点），最后由服务端完成。业务服务器不经手文件内容：
+
+```csharp
+using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
+using XiHan.Framework.ObjectStorage.Abstractions.Signing;
+
+// 1. 发起：返回上传标识与每一片的签名地址
+app.MapPost("/videos/{name}/uploads", async (string name, int parts, IBlobMultipartStore multipart, IBlobUrlSigner signer, CancellationToken ct) =>
+{
+    var upload = (await multipart.StartAsync("videos", $"raw/{name}", new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
+    var urls = new List<string>(parts);
+    for (var number = 1; number <= parts; number++)
+    {
+        var signed = (await signer.SignAsync(upload.Container, upload.Key, BlobUrlRequest.ForPart(upload, number), ct)).ValueOrThrow();
+        urls.Add(signed.Url.ToString());
+    }
+
+    return new UploadTicket(upload.UploadId, urls);
+});
+
+// 2. 客户端逐片 PUT 到签名地址，记下每个响应的 ETag
+
+// 3. 完成：上传标识可持久化，这里按同样的容器与键重建
+app.MapPost("/videos/{name}/uploads/{uploadId}/complete", async (string name, string uploadId, CompletedPart[] completed, IBlobMultipartStore multipart, CancellationToken ct) =>
+{
+    var upload = new BlobMultipartUpload("videos", $"raw/{name}", uploadId);
+    var parts = completed.OrderBy(static p => p.Number).Select(static p => new BlobPart(p.Number, p.ETag)).ToList();
+    var done = (await multipart.CompleteAsync(upload, parts, ct)).ValueOrThrow();
+    return new { Key = done.Key.Value, done.Length, done.ETag };
+});
+
+public sealed record UploadTicket(string UploadId, IReadOnlyList<string> PartUrls);
+
+public sealed record CompletedPart(int Number, string ETag);
+```
+
+用 Native AOT 发布时，`UploadTicket`、`CompletedPart` 要加进应用的 `JsonSerializerContext`，见[序列化与 Native AOT](./aot)。
+
+## 命名存储实例
+
+一个应用同时用多个存储（按租户或按用途各配一个桶，各有自己的端点与密钥）时，用注册表 `BlobStores` 管理命名实例。装配任一存储包就有这个单例，装配了的存储包都登记自己的命名实例 Provider，与它是否被选为缺省实例无关；缺省的 `IBlobStore` 注入方式不变，命名实例与缺省实例互不相干。
+
+实例的定义 `BlobStoreDefinition` 是实例名（`^[a-z0-9][a-z0-9-]{0,63}$`）、Provider 名（`filesystem` 或 `s3`，不区分大小写）与设置。设置的键与该 Provider 的配置节相同、不区分大小写，未知的键是错误，拼错的键不会被静默忽略。定义有两个来源：
+
+- 配置节 `XiHan:ObjectStorage:Stores:<name>`：`Provider` 加设置，首次取用时建出。
+- 运行时登记：`GetOrAddAsync(definition)`，定义可以来自应用自己的库。
+
+```json
+{
+  "XiHan": {
+    "ObjectStorage": {
+      "Stores": {
+        "archive": { "Provider": "filesystem", "RootPath": "/var/lib/app/archive" },
+        "media": { "Provider": "s3", "ServiceUrl": "http://localhost:9000", "AccessKey": "dev-access-key", "SecretKey": "dev-secret-key", "ForcePathStyle": "true", "HealthBucket": "media" }
+      }
+    }
+  }
+}
+```
+
+```csharp
+using XiHan.Framework.ObjectStorage.Abstractions.Stores;
+
+// 配置里定义的实例
+var archive = (await stores.GetAsync("archive", cancellationToken)).ValueOrThrow();
+
+// 来自应用库的存储配置：同名同定义复用同一实例，定义变了就建新实例并释放旧的
+var definition = new BlobStoreDefinition("tenant-42", "s3", new Dictionary<string, string>
+{
+    ["ServiceUrl"] = tenant.StorageEndpoint,
+    ["AccessKey"] = tenant.StorageAccessKey,
+    ["SecretKey"] = tenant.StorageSecretKey,
+});
+var tenantStore = (await stores.GetOrAddAsync(definition, cancellationToken)).ValueOrThrow();
+```
+
+`tenant` 是应用自己的租户存储配置。注册表的语义：
+
+| 操作 | 结果 |
+| --- | --- |
+| `GetAsync(name)` | 已建的直接返回；配置里有定义的首次取用时建出；都没有 → `OBJECTSTORAGE_NOTFOUND_003` |
+| `GetOrAddAsync(definition)` | Provider 名与设置完全相同时返回已有实例；定义变了建新实例替换并释放旧的，替换时仍在旧实例上的调用可能失败 |
+| Provider 未登记或设置不合法 | `OBJECTSTORAGE_VALIDATION_003`，已有的同名实例不受影响 |
+| 后端此刻建不出来（目录无权限、磁盘错误） | `OBJECTSTORAGE_UNAVAILABLE_001`，已有的同名实例不受影响 |
+| 建实例时的探测发现实例不能用（S3 探明服务不认条件写入、探测被拒绝或探测桶不存在） | Provider 给出的错误码（`OBJECTSTORAGE_UNAVAILABLE_003`、`OBJECTSTORAGE_DENIED_002`、`OBJECTSTORAGE_NOTFOUND_001`），不登记，下次取用重新探测，已有的同名实例不受影响；S3 只是暂时连不上时照常建出，后台重试 |
+| `RemoveAsync(name)` | 移除并释放，返回是否存在过；配置里有定义的实例之后再取用会重新建出 |
+
+文件系统的命名实例必须给 `RootPath`，否则会与缺省实例落在同一目录。S3 的命名实例各建各的客户端，不读连接绑定，建出时在实例的 `HealthBucket` 里探测服务是否认条件写入（见[ObjectStorage.S3](../packages/objectstorage-s3#条件写入探测)；探明不认、被拒绝、探测桶不存在都不建，只有连不上的照常建出、后台重试），实例被替换、移除或应用停止时停止重试、释放客户端。命名实例的能力随实例本身：S3 实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；文件系统实例实现分片，预签名经宿主签名器的 `ForStore(name)`，签出的地址带 `x-store=<name>`，实例名在签名里，改成别的实例或去掉都验签不过：
+
+```csharp
+var signer = app.Services.GetRequiredService<HostedBlobUrlSigner>().ForStore("archive");
+var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownload(), cancellationToken)).ValueOrThrow().Url;
+```
+
+每个实例一条健康项 `objectstorage.store.<name>`，按 `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds`（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；还没探过为 Started，探测失败为 Degraded，实例仍可取用。文件系统看总配额是否还有余量，S3 对实例的 `HealthBucket` 做 HEAD（没配时列桶），连通之后再看条件写入，尚未确认或不认时 Degraded。
+
+::: warning 混装文件系统与 S3 时怎样指定缺省存储
+缺省的 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 必须落在同一存储上，这条规则只约束被要求的契约：有特性在清单里依赖了这项能力，或 `XiHan:Providers` / `UseProvider` 指定了它的提供者。不指定时 S3 是显式 Provider，三项都归 S3，文件系统被顶替，但它的命名实例 Provider 照样登记（被顶替的存储包只登记命名实例，不建缺省实例、不启动）。
+
+以文件系统为缺省实例、只用 S3 的命名实例时，指定对象存储一项就够：
+
+```json
+{
+  "XiHan": {
+    "Providers": {
+      "objectstorage.blob": "xihan.objectstorage.filesystem"
+    }
+  }
+}
+```
+
+这时 S3 的分片上传与预签名只是兜底选出（没人依赖、没人指定），S3 按被顶替处理，只登记命名实例；容器里没有缺省的 `IBlobMultipartStore` 与 `IBlobUrlSigner`，也不必装 `HostedBlobUrlFeature`。要用缺省的分片上传，再指定 `"objectstorage.multipart": "xihan.objectstorage.filesystem"`；要用缺省的预签名，装配 `HostedBlobUrlFeature` 并指定 `"objectstorage.presign": "xihan.hosting.blob-urls"`（它与 S3 都是显式 Provider，不指定本来就是 `KERNEL_CAPABILITY_004`）。
+
+存储包被要求提供分片上传或预签名、却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`，应用启动失败，消息列出被要求的能力与要改的键：比如只指定了对象存储，而应用的某个特性依赖 `objectstorage.presign`，预签名就解析到 S3 且是被要求的。选择规则见[能力包与清单](./modularity)。
+:::
+
+S3 命名实例的定义可能来自应用的库，端点可能是租户填的，所以它的客户端过[出站地址策略](./outbound)，缺省只能连公网地址。自建的 MinIO 等要放行，比如把主机名写进 `XiHan:Security:Outbound:AllowedHosts`。被拒绝与连不上同样处理：建实例时的探测只算尚未确认，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`，日志里有一条 Warning。缺省实例的端点是运维配的，不过策略。
+
+## 两个实现
+
+| | 文件系统 | S3 |
+| --- | --- | --- |
+| 清单角色 | `role: default`，`Profiles.Full` 装配 | `role: provider` |
+| 布局 | `<RootPath>/<container>/data/<key>` 存内容，`meta/<key>.json` 存元数据 | 容器即桶，键即对象键 |
+| 原子性 | 先写同目录临时文件再原子替换；不覆盖写入以不替换的移动原子占位 | 服务端保证；不覆盖写入带 `If-None-Match: *`，服务是否认它先探明（启动时探一次，没探明就后台重试，探明之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`） |
+| `ETag` | 内容的 SHA-256 | 服务端给出 |
+| 配额 | `MaxTotalBytes`（缺省 1 GiB）、`MaxBlobBytes`（缺省 256 MiB），超限 `OBJECTSTORAGE_UNAVAILABLE_002` | 无，由桶策略管理 |
+| 健康项 | `objectstorage.filesystem.capacity`：用量达到总配额为 Degraded | `objectstorage.s3.connection`：按 `HealthProbeIntervalSeconds`（缺省 15 秒）重探连通性，并入条件写入的状态（连不上 Degraded；不认，以及启动之后才被拒绝或缺桶 Failed） |
+| 预签名 | 宿主代收发 | 原生，客户端直连 |
+| AOT | 兼容 | 不兼容（AWS SDK 基于运行时反射） |
+
+不覆盖写入在两个实现上都是原子的：多个写入方同时以 `Overwrite = false` 写同一个新键，只有一个成功，其余 `OBJECTSTORAGE_CONFLICT_001`（一致性套件核对）。S3 靠服务端的条件写入：不认条件写入的兼容服务、被拒的凭据、不存在的探测桶在启动时即启动失败（配置问题要早暴露）；只有启动时连不上照常启动，探明之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`；之后才探明不认的不覆盖写入一律 `OBJECTSTORAGE_UNAVAILABLE_003`（ADR-0089、ADR-0090、ADR-0093）。
+
+文件系统存储单进程正确：启动时扫描目录得到已用量，之后在进程内计量，多个进程共享同一目录时配额只是近似。S3 Provider 覆盖 Amazon S3 与兼容服务（MinIO、阿里云 OSS、腾讯云 COS、Cloudflare R2 等），`ServiceUrl` 为空时按 `Region` 访问 Amazon S3；各兼容服务对路径式与虚拟主机式寻址的支持不同，按服务商的说明设置 `ForcePathStyle`。阿里云 OSS、腾讯云 COS、Cloudflare R2 也只用这一个包，不为各家的私有禁止覆盖头做适配：它们是否认标准的 `If-None-Match: *` 框架没有实测，接入前要实测（缺省的条件写入探测即实测，或照 [ObjectStorage.S3](../packages/objectstorage-s3#云厂商的兼容服务) 用 curl 发两次条件写入），不认就关 `ConditionalWrites`——关掉后这个存储上 `Overwrite = false` 的写入一律 `OBJECTSTORAGE_UNAVAILABLE_003`，"只在不存在时写入"的业务要改用不冲突的键或覆盖写入（ADR-0090）。两个实现的细节见各自包页。
+
+## 错误码
+
+| 错误码 | 含义 |
+| --- | --- |
+| `OBJECTSTORAGE_NOTFOUND_001` | 对象不存在 |
+| `OBJECTSTORAGE_NOTFOUND_002` | 分片上传不存在或已结束 |
+| `OBJECTSTORAGE_NOTFOUND_003` | 命名存储实例不存在 |
+| `OBJECTSTORAGE_VALIDATION_001` | 读取范围的起点不在对象内 |
+| `OBJECTSTORAGE_VALIDATION_002` | 完成分片上传时的分片清单不合法 |
+| `OBJECTSTORAGE_VALIDATION_003` | 命名存储实例的定义不合法（Provider 未登记或设置不合法） |
+| `OBJECTSTORAGE_VALIDATION_004` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
+| `OBJECTSTORAGE_VALIDATION_005` | 列举的页大小不在 1 到 1000 之间（HTTP 400） |
+| `OBJECTSTORAGE_DENIED_001` | 预签名地址无效或已过期 |
+| `OBJECTSTORAGE_DENIED_002` | 条件写入探测被存储拒绝（S3：凭据无效、只读或无权写探测键；启动或建实例时即失败，启动之后才被拒时健康项 Failed、后台照常重试，已定，ADR-0097） |
+| `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
+| `OBJECTSTORAGE_UNAVAILABLE_001` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
+| `OBJECTSTORAGE_UNAVAILABLE_002` | 配额或单对象大小超限 |
+| `OBJECTSTORAGE_UNAVAILABLE_003` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或存储关闭了条件写入（`ConditionalWrites = false`） |
+| `OBJECTSTORAGE_UNAVAILABLE_004` | 不覆盖写入暂不可用：S3 兼容服务是否认条件写入尚未确认（启动时连不上，后台在重试；之后的探测被拒绝或缺桶时同样返回它；HTTP 503，探测通过后自动恢复） |
+
+HTTP 宿主按错误码的类别段映射状态码，见[结果与错误](./errors)。标识不合法属于编程错误，构造时抛出 `ArgumentException`。
+
+## 相关
+
+- [配置与选项](./configuration)
+- [能力包与清单](./modularity)
+- [宿主与 Web 应用](./web)
+- [ObjectStorage.Abstractions](../packages/objectstorage-abstractions)
+- [ObjectStorage.FileSystem](../packages/objectstorage-filesystem)
+- [ObjectStorage.S3](../packages/objectstorage-s3)
+- 规范：RFC-0012《对象存储》、ADR-0049、ADR-0050

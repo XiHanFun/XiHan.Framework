@@ -2,88 +2,57 @@
 
 # For Agents
 
-给 Claude Code、Cursor、Codex、GitHub Copilot 这类 AI 编程工具的入口：一段可以直接粘贴的提示词，加上 XiHan.Framework 为 AI 准备的全部资料从哪里取。
+本页给 Claude Code、Cursor、Codex、GitHub Copilot 这类 AI 编程工具使用：一段可以直接放进项目说明文件的提示词，以及框架为 AI 工具准备的资料从哪里取。
 
-::: tip 和「AI 与 MCP」不是一回事
-本册讲的是**用 AI 工具写基于 XiHan.Framework 的代码**。要在自己的应用里接入大模型、把应用能力暴露成 MCP 工具，见开发指南的 [AI 与 MCP](../guide/ai)。
+::: tip 和指南里的「AI」章不是一回事
+本册讲的是用 AI 工具写基于 XiHan Framework 的代码。要在应用里接入大模型、把操作暴露成模型工具，见开发指南的 [AI](../guide/ai) 与 [gRPC、MCP 与 CloudEvents](../guide/protocols)。
 :::
 
 ## 复制这段提示词
 
-把下面这段放进对话，或写进项目的 `AGENTS.md` / `CLAUDE.md` / `.cursor/rules`：
+放进项目的 `AGENTS.md`、`CLAUDE.md`、`.cursor/rules` 或 `.github/copilot-instructions.md`：
 
 ```text
-这个项目用 XiHan.Framework 写后端。写代码前先读这两份文档并按其中的规范执行：
-- https://framework.docs.xihanfun.com/ai/agents.md
-- https://framework.docs.xihanfun.com/ai/SKILL.md
+这个项目的后端用 XiHan Framework（.NET 10）。写代码前读文档站的 llms.txt，按需取其中列出的页面（页面地址后加 .md 得到 Markdown）。
 
-XiHan.Framework 的包名、模块类名、配置键与 API 以项目引用的版本为准，可能与你记得的不同，也不要套用别的框架的写法。
-不确定时用 CLI 查证（数据随工具离线，版本与项目对齐，需要 .NET 10 SDK）：
-  dnx XiHan.Framework.Cli@<版本> --yes -- info <包或模块>      安装命令、模块类与依赖
-  dnx XiHan.Framework.Cli@<版本> --yes -- config <配置节或包>  配置键、类型与缺省值
-  dnx XiHan.Framework.Cli@<版本> --yes -- search <关键字>      在文档里检索
-支持 MCP 时，运行 dnx XiHan.Framework.Cli@<版本> --yes -- setup --client <claude|cursor|vscode|codex> 接入 XiHan.Framework 的 MCP 服务端。
+框架的写法：
+- 装配：特性实现 IFeature，带 Manifest（按能力 ID 声明 Requires），在 Program.cs 用 builder.AddXiHan(x => x.UseFeature<T>()) 显式加入；服务在 Configure 里显式注册。
+- 接口：一个操作一个类，[Operation("<资源复数>.<动词>")] + IOperation<TRequest, TResponse>，请求与响应登记到 JsonSerializerContext，特性里调用 context.AddGeneratedOperations()。
+- 失败：返回 Result / Error，不抛异常；错误码 <域>_<KIND>_<NNN>，Error 的第二个参数是消息键常量，文案写在 Localization/<区域>.json（10 种区域各一个文件）。
+- 横切逻辑：写 IPipelineMiddleware，按 PipelineStage 登记；跨包依赖用 After/Before 声明次序。
+
+包名、能力 ID、配置键与缺省值用 xihan-framework MCP 工具查（xihan_framework_info / xihan_framework_config / xihan_framework_search）；类型、成员与命名空间以项目引用的框架源码或包的 PublicAPI.Shipped.txt / PublicAPI.Unshipped.txt 为准，不确定时先查，不要凭记忆补全。
+改完后运行应用的 graph、pipeline、operations 命令（或 xihan graph --project <项目>）核对能力图谱、管道顺序与操作登记。
 ```
 
-`<版本>` 写项目里 `XiHan.Framework.*` 包引用的版本。
+文档站地址以部署为准；在 XiHan.Framework 仓库内工作时，直接读 `docs/` 下的 Markdown 源文件，内容与站点相同。
 
-## Agent 能拿到什么
+## AI 工具能拿到什么
 
-### CLI：离线、与版本一致的知识库
-
-[`XiHan.Framework.Cli`](./cli) 是一个 .NET 工具，把全部包的模块类与 `[DependsOn]` 依赖、包依赖、全部配置节（属性、类型、缺省值与说明）、整站文档与更新日志打包在 NuGet 包里，不联网，查到的内容与工具的版本一致；它与框架各包同号发布。
-
-```bash
-xihan-framework list                          # 按层列出包与模块类
-xihan-framework info Caching                  # 安装命令、模块依赖、包依赖、配置节
-xihan-framework config XiHan:Caching:Redis    # 配置节的属性、类型、缺省值与配置片段
-xihan-framework search 分布式锁               # 在全部文档里检索
-xihan-framework doc guide/dynamic-api         # 指南全文
-xihan-framework changelog 4.6.0 4.6.2         # 两版之间的变更
-```
-
-不想安装时把 `xihan-framework` 换成 `dnx XiHan.Framework.Cli@<版本> --yes --`。
-
-### MCP Server：把 CLI 接进 AI 工具
-
-`xihan-framework mcp` 以 stdio 启动 [MCP 服务端](./mcp)，AI 工具可以直接调用 `xihan_framework_info`、`xihan_framework_config`、`xihan_framework_search` 等工具。
-
-```json
-{
-  "mcpServers": {
-    "xihan-framework": {
-      "command": "dnx",
-      "args": ["XiHan.Framework.Cli@<版本>", "--yes", "--", "mcp"]
-    }
-  }
-}
-```
-
-在项目里运行 `setup` 会读出项目引用的框架版本，并把配置写到所在 git 仓库的根目录。
-
-### 技能：XiHan.Framework 的使用规范
-
-[`SKILL.md`](https://framework.docs.xihanfun.com/ai/SKILL.md) 是写给 AI 的使用规范：先查证再写代码、应用骨架、模块与 `[DependsOn]`、动态 API 应用服务、配置节与基础设施、常见错误。它随工具发布，`setup --mode skill` 把它写进项目：Claude Code 写到 `.claude/skills/xihan-framework/`，其余工具写到 `.agents/skills/xihan-framework/`。MCP 提示词 `xihan-framework-expert` 用的也是这一份。
-
-### LLMs.txt：直接放进上下文的文档
-
-文档站构建时产出 [机读资产](./llms)：`llms.txt` 索引、`llms-full.txt` 全站正文、`llms-guide.txt` 开发指南、`llms-packages.txt` 模块总览，以及每一页的 Markdown（站点地址后加 `.md`，如 [guide/caching.md](https://framework.docs.xihanfun.com/guide/caching.md)）。
-
-## 各部分的关系
-
-| 部分 | 回答什么 | 什么时候用 |
+| 资料 | 内容 | 位置 |
 | --- | --- | --- |
-| 提示词与技能 | 规范：该怎么写、不该怎么写 | 每次会话开头，或长期写进项目的 Agent 规则 |
-| CLI | 事实：某个包有哪些模块、依赖与配置键 | 加包引用、写 `[DependsOn]`、写 appsettings 之前 |
-| MCP Server | 同上，以工具的形式交给 AI | AI 工具支持 MCP 时，替代手动跑 CLI |
-| LLMs.txt | 整份文档 | 工具不能运行命令、只能读网页时 |
+| LLMs.txt | 全站索引、全文与分册的纯文本版本 | 见 [LLMs.txt](./llms) |
+| 单页 Markdown | 任一页面地址后加 `.md` | 每页正文上方的「取本页 Markdown」 |
+| 公开 API 清单 | 每个包的 `PublicAPI.Shipped.txt` 与 `PublicAPI.Unshipped.txt`，逐行列出公开类型与成员 | 框架源码 `framework/src/<包 ID>/` |
+| 规范 | RFC、术语表、能力 ID、错误码、Baggage 键、操作 ID 文法 | [XiHan Spec](https://github.com/XiHanFun/framework-spec) |
+| 应用自省命令 | `graph`、`pipeline`、`operations`、`invoke` | 应用的命令行宿主，或 [`xihan` 工具](./cli)转发 |
+| 框架知识库 MCP | `xihan_framework_info`（包、特性、能力）、`xihan_framework_config`（配置键与缺省值）、`xihan_framework_search`（文档检索与全文） | `xihan mcp`，见 [MCP Server](./mcp) |
+| 应用的 MCP 端点 | 把应用自己的操作作为 MCP tool 交给 AI 工具调用 | 见 [MCP Server](./mcp) |
 
-CLI、MCP 与技能都离线且跟随版本；LLMs.txt 在文档站上，内容对应最新发布的版本。
+框架知识库的 MCP 服务 `xihan mcp`（`dnx XiHan.Framework.Cli@<版本> --yes -- mcp`）按工具版本提供包、特性清单、能力、配置键与文档的查询，在项目根运行 `dnx XiHan.Framework.Cli --yes -- setup --client <claude|cursor|vscode|codex>` 即可写好配置与使用技能，配法见 [MCP Server](./mcp#框架知识库-xihan-mcp)。
 
-## 前端与整套应用
+## 给 AI 工具的检查清单
 
-前端用 XiHan.UI 时，它有自己的 CLI 与 MCP 服务端，见 [视图组件的 AI 辅助开发](https://ui.docs.xihanfun.com/ai/agents)。基于 XiHan.BasicApp 二次开发时，两边一起接入，见 [基础应用的 AI 辅助开发](https://basicapp.docs.xihanfun.com/ai/agents)。
+AI 工具写完代码后，按这几项自查最容易出错的地方：
+
+1. 每个新特性都在 `AddXiHan` 里 `UseFeature` 了，清单 ID 唯一，`Requires` 用 `<领域>Capabilities` 常量。
+2. 每个操作的请求与响应类型都登记到了 `JsonSerializerContext`（否则编译报 `XHG002`）。
+3. 操作的 `Permission` 引用的权限码在特性里用 `AddPermission` 登记过（没登记启动即失败，`KERNEL_VALIDATION_005`）；操作的 `Policy` 与端点上 `RequireXiHanPolicy` / `RequireXiHanPermission` 引用的策略存在、权限码已登记（不存在启动即失败，`SECURITY_VALIDATION_004`）。
+4. 新增的消息键在 10 个语言文件里各有一行，占位符与 `en-US.json` 一致。
+5. 管道外使用仓储时自己开启了工作单元。
+6. 没有引入反射、`dynamic` 或运行期程序集扫描。
 
 ## 相关
 
-- [快速上手](../quickstart) · [模块系统](../guide/modularity) · [配置与选项](../guide/configuration)
+- [LLMs.txt](./llms) · [MCP Server](./mcp) · [CLI](./cli)
+- [快速上手](../quickstart)

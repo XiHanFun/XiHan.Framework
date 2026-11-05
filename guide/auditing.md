@@ -2,355 +2,358 @@
 
 # 审计
 
-审计日志回答的是「谁、在什么时候、对什么做了什么」——请求访问、业务操作、异常、开放接口调用、登录、实体字段级变更。框架负责**采集、异步化、脱敏**，但不决定存到哪张表：落库由你实现的写入器完成。
+本章讲框架怎样把一次调用记成审计事件、在处理器里补充动作与资源、按条件分页查询，以及内存与数据库两种存储的取舍，适用于需要操作日志的应用。完整 API 见 [Auditing.Abstractions 包](../packages/auditing-abstractions)。
 
-本章讲这条链路怎么接通、哪些环节是自动的、哪些必须你自己写。完整 API 清单与配置全表见 [Auditing 包文档](../packages/auditing)。
+## 审计事件与接收器
 
-## 审计日志不是运行日志
+内核定义了审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认注册的 `NullAuditSink` 丢弃全部事件。审计子系统在此之上补三件事：挂在 Observe 阶段的 `AuditMiddleware` 在调用结束时决定是否生成事件；调用上下文上的 `SetAuditAction`、`SetAuditResource`、`AddAuditDetail` 让处理器补充信息；查询契约 `IAuditTrail` 按条件分页读回。
 
-两者经常被混为一谈，但在框架里是完全独立的两套东西：
+能力 `auditing.trail@1` 的 Provider 同时实现 `IAuditSink` 与 `IAuditTrail`。被能力图谱选中时，Provider 先占住 `IAuditSink`，再调用 `AddAuditing()` 注册消息目录与选项，并把 `AuditMiddleware` 挂到 Observe 阶段末尾，也就是内核的 `ObserveMiddleware` 之内。Observe 之后的各阶段都在它里面执行，所以认证、授权、校验阶段的拒绝也会以结果的形式被它看到。
 
-| | 运行日志（`ILogger`） | 审计日志 |
-| --- | --- | --- |
-| 目的 | 排障、观察 | 追责、合规、业务回溯 |
-| 去处 | 控制台 / 文件 / 日志系统 | 业务库表（由写入器决定） |
-| 触发 | 代码显式写 | 中间件 / 过滤器 / ORM AOP 自动采集 |
-| 内容 | 自由文本 + 结构化字段 | 固定记录模型（6 类） |
-| 脱敏 | 无 | 采集点强制脱敏 |
+一条事件的字段与来源：
 
-「请求开始 / 请求结束」这类 `ILogger` 输出属于运行日志，和审计日志表是两条互不相干的路径。
-
-## 六类记录与它们的采集点
-
-| 记录模型 | 谁采集 | 触发条件 |
-| --- | --- | --- |
-| `AccessLogRecord` | `XiHanRequestLoggingMiddleware`（Web.Api） | 每个未命中 `IgnoredPathPrefixes` 的请求 |
-| `OperationLogRecord` | `XiHanActionLoggingFilter`（全局 MVC 过滤器） | Action 执行完成，且请求方法不是 GET / HEAD / OPTIONS |
-| `ExceptionLogRecord` | `ExceptionLogReporter`（由 `XiHanApiResponseResultFilter` 与 `XiHanExceptionLoggingMiddleware` 调用） | 未处理异常 |
-| `ApiLogRecord` | `XiHanApiLoggingMiddleware` | **仅当**请求携带开放接口安全头（AccessKey / Signature） |
-| `LoginLogRecord` | 无 | 由应用自己调 `ILoginLogPipeline` |
-| `EntityDiffLogRecord` | `SqlSugarDiffLogAop`（Data 包） | 仓储写操作，且 `EnableDiffLog = true` |
-
-::: warning 登录日志没有自动采集方
-框架只提供 `LoginLogRecord` 与 `ILoginLogPipeline`，没有任何中间件会去填它。登录日志需要应用在登录成功 / 失败的分支里自己写：
-
-```csharp
-await loginLogPipeline.WriteAsync(new LoginLogRecord
-{
-    UserId = user.Id,
-    UserName = user.UserName,
-    LoginResult = 0,          // 语义由应用定义：0 = 成功
-    Message = "登录成功",
-    LoginIp = ip,
-    LoginTime = DateTimeOffset.UtcNow
-});
-```
-:::
-
-## 采集链路
-
-```text
-中间件 / 过滤器 / ORM AOP
-   └→ IXxxLogPipeline.WriteAsync(record)          （Scoped）
-        ├ EnableXxxLogQueue = false（默认）
-        │     └→ 直接 await IXxxLogWriter.WriteAsync(record)      ← 同步落库，计入请求耗时
-        └ EnableXxxLogQueue = true
-              └→ ILogQueue<TRecord>（Singleton，有界 Channel）
-                    └→ XxxLogQueueWorker（HostedService）攒批
-                          └→ 新建 DI 作用域 → 逐条 IXxxLogWriter.WriteAsync
-```
-
-三段职责很清楚：
-
-- **管道**决定「同步写还是入队」；
-- **队列**只提供两种语义明确的入队方式（`TryEnqueue` 满时返回 `false`，`EnqueueAsync` 满时等待），丢不丢由管道按 `DropOnFull` 选；
-- **消费者**攒批（`BatchSize` 条或距上次 flush 超过 `BatchDelayMilliseconds` 即 flush），在新作用域里**逐条**调用写入器，写入异常只记 `LogWarning`、不重试。
-
-::: warning 队列默认全部关闭
-5 个 `EnableXxxLogQueue` 默认都是 `false`。此时管道**同步 await 写入器**——写库耗时直接计入接口响应时间，且传的是 `CancellationToken.None`（客户端断连也会把这条日志写完）。生产环境建议逐类打开队列。
-:::
-
-## 安装与启用
-
-用 [Web.Api](../packages/web-api) 或 [Data](../packages/data) 时，`XiHanAuditingModule` 已作为传递依赖引入，无需单独安装。只在非 Web、非数据场景单独用时才需要显式依赖：
-
-```csharp
-[DependsOn(typeof(XiHanAuditingModule))]
-public class MyModule : XiHanModule;
-```
-
-模块的 `ConfigureServices` 调 `services.AddXiHanAuditing(config)`，一次性装好：配置绑定（`XiHan:Auditing:LogQueue`）、开放泛型队列 `ILogQueue<>` → `ChannelLogQueue<>`（单例）、5 个后台消费者、5 个采集管道，以及**默认为空实现**的写入器契约。
-
-## 让日志真正落库
-
-::: danger 不实现写入器 = 日志静默丢弃
-5 个 `IXxxLogWriter` 与 `IEntityDiffLogWriter` 的默认实现全是空实现（`NullXxxLogWriter`），采集到就扔掉——不报错、不告警。排查「日志页面恒空」时，第一件事是确认你的写入器有没有进容器。
-:::
-
-写入器契约用 `TryAddScoped` 注册，所以应用侧注册同接口实现即可生效：
-
-```csharp
-public class OperationLogWriter : IOperationLogWriter, IScopedDependency
-{
-    private readonly IRepositoryBase<SysOperationLog, long> _repository;
-
-    public OperationLogWriter(IRepositoryBase<SysOperationLog, long> repository)
-    {
-        _repository = repository;
-    }
-
-    public async Task WriteAsync(OperationLogRecord record, CancellationToken cancellationToken = default)
-    {
-        await _repository.AddAsync(new SysOperationLog
-        {
-            TraceId = record.TraceId,
-            UserId = record.UserId,
-            UserName = record.UserName,
-            ControllerName = record.ControllerName,
-            ActionName = record.ActionName,
-            Method = record.Method,
-            Path = record.Path,
-            RequestParams = record.RequestParams,
-            StatusCode = record.StatusCode,
-            ElapsedMilliseconds = record.ElapsedMilliseconds
-        }, cancellationToken);
-    }
-}
-```
-
-两种注册方式都行：
-
-| 方式 | 写法 | 说明 |
-| --- | --- | --- |
-| 约定注册 | 实现类同时标记 `IScopedDependency` | 框架的空实现先注册，你的实现后注册，解析时后者胜出 |
-| 显式替换 | `context.Services.Replace(ServiceDescriptor.Scoped<IOperationLogWriter, OperationLogWriter>())` | 容器里只留一条，意图最明确 |
-
-也可以在实现类上加 `[Dependency(ReplaceServices = true)]`，由约定注册器走 `Replace`。
-
-## 实体变更审计
-
-这是唯一不经 HTTP 层的一类，走的是 SqlSugar 原生 `Aop.OnDiffLogEvent`。要产生记录，**三个条件缺一不可**：
-
-1. 配置 `XiHan:Data:SqlSugarCore:EnableDiffLog = true`（默认 `false`，不开则 AOP 根本不挂）；
-2. 应用实现并注册 `IEntityDiffLogWriter`；
-3. 写操作走框架仓储——仓储的 Insert / Update / Delete 已经内建 `.EnableDiffLogEvent(typeof(TEntity))`，业务代码不用改。
-
-裸 SQL、直接用 `ISqlSugarClient` 绕过仓储的写入**不会**产生变更记录。
-
-### AOP 产出什么
-
-| 方面 | 行为 |
+| 字段 | 来源 |
 | --- | --- |
-| 记录粒度 | **每个受影响的行一条** `EntityDiffLogRecord`，按主键值配对前后镜像（不按下标） |
-| `OperationType` | `Create` / `Delete` / `Update`；更新时若 `Is_Deleted` 由 false 翻 true 记为 `Delete`、由 true 翻 false 记为 `Restore` |
-| `ChangedFields` | `{Field, Before, After}` 数组；前后镜像都在且无字段变更的行被跳过 |
-| 快照裁剪 | 单列值超 1000 字符先截断；整条快照 JSON 超 8000 字符时产出**合法的**截断标记对象，不会从中间切断出非法 JSON |
-| 失败处理 | AOP 内部整体 try/catch，审计失败只记错误日志，绝不影响主业务 |
+| `Timestamp` | 调用结束时 `TimeProvider` 的 UTC 时刻 |
+| `Action` | 显式声明的动作；没有时是当前操作的 ID |
+| `Outcome` | 管道写入的结果，见[结果怎么取](#结果怎么取) |
+| `TraceId` | 调用上下文的 trace-id |
+| `Resource` | `SetAuditResource` 写入的 `xrn:` 资源名 |
+| `PrincipalId` | 认证后的主体 ID，没有时取 Baggage `xihan.principal` |
+| `TenantId` | 解析出的租户 ID，没有时取 Baggage `xihan.tenant` |
+| `Details` | `AddAuditDetail` 追加的键值，只允许 JSON 可表示的值 |
 
-### 写入器的事务契约
+## 启用
 
-```csharp
-public class EntityDiffLogWriter : IEntityDiffLogWriter, IScopedDependency
-{
-    private readonly ISqlSugarClientResolver _clientResolver;
-
-    public EntityDiffLogWriter(ISqlSugarClientResolver clientResolver)
-    {
-        _clientResolver = clientResolver;
-    }
-
-    public async Task WriteAsync(EntityDiffLogRecord record, CancellationToken cancellationToken = default)
-    {
-        // 必须用当前工作单元的连接，与业务写在同一事务里
-        await _clientResolver.GetCurrentClient()
-            .Insertable(new SysDiffLog
-            {
-                OperationType = record.OperationType,
-                EntityType = record.EntityType,
-                EntityId = record.EntityId,
-                BeforeData = record.BeforeData,
-                AfterData = record.AfterData,
-                ChangedFields = record.ChangedFields,
-                UserId = record.UserId,
-                TenantId = record.TenantId
-            })
-            .ExecuteCommandAsync(cancellationToken);
-    }
-}
-```
-
-::: danger 不要在差异日志写入器里另开连接
-必须经 `ISqlSugarClientResolver.GetCurrentClient()` 使用当前工作单元连接：业务回滚时审计行随之回滚。改用 `CopyNew()` 或独立连接，会在业务回滚后留下「从未生效的变更」的幽灵记录。
-:::
-
-同时，写入器要走**裸 `Insertable`、不挂 `EnableDiffLogEvent`**，否则写审计的 SQL 会再次触发 Diff 事件。`IEntityAuditContextProvider.ShouldAudit` 的默认排除名单（`XiHan.Framework.Auditing` 命名空间、类型全名含 `AuditLog` / `DiffLog`）是第二道保险。
-
-### 自定义审计上下文
-
-`IEntityAuditContextProvider` 决定「审计哪些实体」和「记录哪些上下文字段」。默认实现 `DefaultEntityAuditContextProvider` 只从 `ICurrentUser` / `ICurrentTenant` 填 `UserId` / `UserName` / `TenantId`。要补 HTTP 上下文就自己实现：
+`Profiles.Full` 已经装配默认实现 `InMemoryAuditingFeature`。用 `Profiles.Standard` 或自己组合时显式装配：
 
 ```csharp
-public class HttpEntityAuditContextProvider : IEntityAuditContextProvider, IScopedDependency
-{
-    private readonly IHttpContextAccessor _accessor;
+using MyApp.Orders;
+using XiHan.Framework.Auditing.InMemory;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Profiles.Standard;
 
-    public HttpEntityAuditContextProvider(IHttpContextAccessor accessor) => _accessor = accessor;
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<FailureStatistics>();
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<InMemoryAuditingFeature>()
+    .UseFeature<OrdersFeature>());
 
-    public EntityDiffLogRecord CreateBaseRecord()
-    {
-        var http = _accessor.HttpContext;
-        return new EntityDiffLogRecord
-        {
-            RequestPath = http?.Request.Path,
-            RequestMethod = http?.Request.Method,
-            OperationIp = http?.Connection.RemoteIpAddress?.ToString()
-        };
-    }
-
-    public bool ShouldAudit(Type entityType) =>
-        entityType.Namespace?.StartsWith("MyApp.Domain") == true;
-}
+var app = builder.Build();
+app.UseXiHan();
+app.Run();
 ```
 
-覆盖 `ShouldAudit` 时**务必把审计表自己排除掉**，否则写审计的写入器一旦走了仓储，就会自我触发。
+`OrdersFeature` 与 `FailureStatistics` 是本章后面定义的应用类型。要持久化时换成 `DatabaseAuditingFeature`，见[数据库存储](#数据库存储)。两个实现同时装配时，显式 Provider 顶替 `role: default` 的内存实现，内存实现既不绑定接收器也不挂中间件。
 
-## 审计与 AOP 的关系
+## 哪些调用会被记录
 
-「审计」在框架里用了三种完全不同的机制，别混着理解：
+中间件先找动作：处理器调用过 `SetAuditAction` 的，无论选择规则如何都记录；否则只看操作调用（上下文里有操作描述），按 `XiHan:Auditing:Selection` 决定。经 `UseXiHan()` 的普通端点、消息派发、作业运行这类不是操作的调用，没有显式动作就不记录。
 
-| 机制 | 用在哪 | 是不是 Castle 拦截器 |
-| --- | --- | --- |
-| 中间件 + MVC 过滤器 | 访问 / 操作 / 异常 / 接口日志 | 否，是 ASP.NET Core 管线 |
-| SqlSugar `Aop.OnDiffLogEvent` | 实体变更日志 | 否，是 ORM 原生事件 |
-| SqlSugar `DataExecuting` | 审计**字段**（`CreatedTime` / `ModifiedTime` / `TenantId`）自动赋值 | 否，同样是 ORM 事件 |
-
-也就是说，审计链路**不依赖动态代理**，不需要接口虚方法、不受代理失效影响。第三项虽然也叫「审计字段」，但它只是在写库时补列值，和审计日志表毫无关系，详见 [数据访问](./data)。
-
-::: warning 写路径别叠 `.EnableQueryFilter()`
-框架仓储的 `Updateable` / `Deleteable` 已经自动挂了一次全局过滤器。再显式挂一次会把同一份过滤烘进 WHERE 两遍、生成同名参数，叠上 Diff 的重查即崩。
-:::
-
-## 脱敏
-
-`LogSanitizer` 是静态类，也是全框架敏感判定的唯一入口。判定分两步：**名字归一化后命中敏感词**，且**不以元数据后缀结尾**。
-
-- 归一化 = 只保留字母数字并转小写，于是 `X-Api-Key`、`Connection_String`、`apiKey` 都能命中同一份规则；
-- 命中即**整体掩码**为 `***`（`LogSanitizer.Mask`），不保留片段——`Authorization: Bearer …` 这类值留一半也等同泄露；
-- 元数据后缀豁免：`Token_Type`、`Last_Password_Change_Time`、`Max_Output_Tokens` 这种「关于秘密的元数据」**不掩**，掩掉它们等于把审计价值一起掩掉；
-- 值层面另外识别 15 / 18 位身份证号，按「保留首尾各 3 位、掩中段」处理。
-
-| 方法 | 用途 |
+| `Selection` | 记录的操作 |
 | --- | --- |
-| `MaskSensitiveData(string?)` | JSON / 表单文本，正则掩敏感键的字面量值（字符串 / 数字 / 布尔 / null），嵌套对象与数组掩不掉 |
-| `MaskQueryString(string?)` | URL 查询串 |
-| `MaskJsonFields(string?)` | 解析 JSON 对象逐键掩码，敏感键的值是嵌套对象 / 数组时也能整体掩掉；根不是对象或解析失败时回落到正则 |
-| `MaskHeaders(...)` | 请求头，头名敏感则整体掩，其余头的值再走一遍通用脱敏 |
-| `MaskFieldValue(name, value)` | 字段级：名字敏感返回掩码，否则原值 |
-| `IsSensitiveName(string?)` | 只做判定，供自定义脱敏逻辑复用 |
+| `Protected`（缺省） | 需要授权的操作：契约声明了 `Permission` 或 `Policy`（只用策略保护的操作同样记录，ADR-0071） |
+| `All` | 全部操作 |
+| `None` | 只记显式声明了动作的调用 |
 
-框架已经在这些位置内建了脱敏，你不必重复处理：
+`IncludeSuccesses` 缺省为 `true`；设为 `false` 后成功的调用不再记录，只留失败。两个键的值不区分大小写，取值不合法时装配阶段抛出 `ArgumentException`，应用启动失败。
 
-| 位置 | 处理 |
-| --- | --- |
-| 请求体 / 查询串 | 在 `XiHanRequestLoggingMiddleware` 捕获点即脱敏并存入 `HttpContext.Items`，访问 / 接口 / 异常日志复用同一份副本 |
-| 响应体 | `XiHanApiLoggingMiddleware` 落库前脱敏（仅 JSON / XML / text 类型转文本，有界捕获 4096 字节） |
-| 操作日志参数与结果 | `XiHanActionLoggingFilter` 序列化后脱敏 |
-| 异常日志请求头 | `ExceptionLogReporter` 走 `MaskHeaders` |
-| 实体快照列值 | `SqlSugarDiffLogAop` 按列名走 `MaskFieldValue` |
+### 按操作排除
 
-自己组装记录（比如登录日志）时，需要自己调用相应方法。
-
-::: tip 变更判定用原值，掩码在之后
-差异日志比较字段是否变更时用的是**原值**，掩码发生在写进 `ChangedFields` 之后。否则改密码前后都成 `***`，会被判定为「未变更」而完全不留痕迹。
-:::
-
-## 与多租户的配合
-
-6 类记录都自带 `TenantId`（`null` 即平台）。`EntityDiffLogRecord` 由 `DefaultEntityAuditContextProvider` 取 `ICurrentUser.TenantId ?? ICurrentTenant?.Id` 填充；访问、操作、异常、API 四类日志由 Web.Api 的采集点取请求所属租户——租户解析完成后定型写回 `RequestContext` 的那个值，已认证请求即令牌里的租户；登录日志由产生它的应用在采集时填。写入器按 record 上的 `TenantId` 落戳，不要再读环境上下文，原因见下面这条。
-
-::: danger 队列模式下写入器读不到当前用户 / 租户
-后台消费者在自己的线程上用 `IServiceScopeFactory.CreateScope()` 新建作用域：没有 `HttpContext`，AsyncLocal 的租户上下文也不流到那里。写入器里读 `ICurrentUser` / `ICurrentTenant` 会得到空值。
-
-凡是写入器需要的身份信息，必须在**采集点**放进 record。
-:::
-
-两种模式行为不同，别依赖「碰巧能读到」：
-
-| 模式 | 写入器执行位置 | 能否读到用户 / 租户上下文 |
-| --- | --- | --- |
-| 队列关闭（默认） | 请求作用域内同步执行 | 能 |
-| 队列开启 | 后台线程新作用域 | 不能 |
-| 实体差异日志 AOP | 请求线程内同步执行 | 能 |
-
-审计表本身按你自己的实体定义走既有多租户规则：平台只看平台自己的审计，跨租户查审计要显式清租户过滤（`ClearTenantFilter()`），见 [多租户](./multi-tenancy)。
-
-## 配置
-
-审计的行为由两个配置节共同决定：
-
-| 配置键 | 默认 | 说明 |
-| --- | --- | --- |
-| `XiHan:Auditing:LogQueue:IgnoredPathPrefixes` | `["/hubs"]` | 完全不记请求日志的路径前缀（不区分大小写） |
-| `XiHan:Auditing:LogQueue:EnableAccessLogQueue` 等 5 项 | `false` | 各类日志是否走异步队列；关闭 = 同步写 |
-| `XiHan:Auditing:LogQueue:QueueCapacity` | `10000` | 有界 Channel 容量 |
-| `XiHan:Auditing:LogQueue:DropOnFull` | `false` | `false` = 队列满时等待（反压请求线程）；`true` = 丢弃并记一条 `LogWarning` |
-| `XiHan:Auditing:LogQueue:BatchSize` | `100` | 攒批条数阈值 |
-| `XiHan:Auditing:LogQueue:BatchDelayMilliseconds` | `200` | 攒批时间阈值 |
-| `XiHan:Data:SqlSugarCore:EnableDiffLog` | `false` | 实体变更日志总开关（属于 Data 包配置节） |
+`Protected` 会把只用 `authenticated` 策略保护的只读查询也记下来（当前用户的权限、会话角色、我的登录日志……），前端每次加载都调的接口会让审计表涨得很快。`XiHan:Auditing:Exclude` 列出不想记的操作（ADR-0080）：
 
 ```json
 {
   "XiHan": {
     "Auditing": {
-      "LogQueue": {
-        "IgnoredPathPrefixes": ["/hubs", "/health"],
-        "EnableAccessLogQueue": true,
-        "EnableOperationLogQueue": true,
-        "EnableExceptionLogQueue": true,
-        "EnableApiLogQueue": true,
-        "EnableLoginLogQueue": true,
-        "QueueCapacity": 10000,
-        "DropOnFull": false,
-        "BatchSize": 100,
-        "BatchDelayMilliseconds": 200
-      }
-    },
-    "Data": {
-      "SqlSugarCore": {
-        "EnableDiffLog": true
-      }
+      "Exclude": [ "permissions.current", "profile.*", "my-*" ]
     }
   }
 }
 ```
 
-完整字段表见 [Auditing 包文档](../packages/auditing)。
+- 每项是操作 ID（精确匹配），或以 `*` 结尾的前缀：`profile.*` 是资源 `profile` 的全部操作，`my-*` 是资源名以 `my-` 开头的全部操作；按序数比较，区分大小写。
+- 只作用于按 `Selection` 挑出的操作：处理器调用了 `SetAuditAction` 的调用照样记录，排除不压掉代码要求留痕的动作。
+- 不配置、或列表为空时不排除任何操作。
+- 必须写成列表（环境变量写 `XiHan__Auditing__Exclude__0`）；写成单个值、某一项是空白、单独的 `*`、`*` 不在末尾、大写或其他字符，读选项时抛出 `ArgumentException`（消息指出配置键与那一项），应用启动失败。
+- 不核对操作是否已登记：模块可以按配置开关，插件的操作可能在启动之后才登记，列了不存在的操作只是不命中。
 
-## 常见问题
+## 结果怎么取
 
-| 现象 | 原因 |
+事件的 `Outcome` 按以下顺序确定：
+
+1. 管道里已经写入结果的，用写入的结果。被授权拒绝、校验失败、处理器返回失败的调用都在这一步，错误码就是管道里的错误码。
+2. 没有写入结果而抛出了异常的，记为失败：取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`。异常继续向外抛给 `ObserveMiddleware`，由它转成调用结果。
+3. 正常返回却没有写结果的，记为成功。
+
+写接收器时不带调用的取消令牌，被取消的调用同样留下记录。接收器抛出的异常只以 Error 级写一条日志，不改变调用结果；`IAuditSink` 的契约要求实现有界、不阻塞调用路径，两个内置实现的写入都不等待存储。
+
+## 补充动作、资源与细节
+
+处理器在调用期间写入，中间件在调用结束时读出。下例把导出报表记成单独的动作，带上资源名与行数：
+
+```csharp
+using XiHan.Framework.Auditing.Abstractions.Pipeline;
+using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
+
+namespace MyApp.Orders;
+
+public sealed record ExportOrdersRequest(string Month);
+
+public sealed record ExportOrdersResponse(int Rows);
+
+[Operation("orders.export", Expose = Expose.Http, Permission = "orders.read")]
+public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersResponse>
+{
+    public ValueTask<Result<ExportOrdersResponse>> HandleAsync(ExportOrdersRequest request, InvocationContext context)
+    {
+        var rows = 1200;
+
+        // 动作缺省是操作 ID；导出报表单独命名，查询时按动作区分
+        context.SetAuditAction("orders.export-report");
+        context.SetAuditResource(new ResourceName("global", "orders", context.GetSecurity().Tenant?.Id ?? string.Empty, "report", request.Month));
+        context.AddAuditDetail("month", request.Month);
+        context.AddAuditDetail("rows", rows);
+
+        return ValueTask.FromResult(Result.Success(new ExportOrdersResponse(rows)));
+    }
+}
+```
+
+请求与响应类型要登记到项目里的 `JsonSerializerContext`，操作由 `Kernel.Generators` 生成登记代码，写法见[操作契约](./operations)。三个扩展的规则：
+
+| 扩展 | 规则 |
 | --- | --- |
-| 日志页面恒空 | 写入器没注册，默认空实现把记录丢掉了 |
-| 数据变更日志恒空 | `EnableDiffLog` 没开（默认 `false`），或 `IEntityDiffLogWriter` 没实现 |
-| 登录日志一条没有 | 框架不采集登录日志，要自己调 `ILoginLogPipeline` |
-| 接口日志一条没有 | 只在请求携带开放接口安全头时才采集 |
-| GET 请求没有操作日志 | 过滤器有意跳过 GET / HEAD / OPTIONS |
-| SignalR 请求没有访问日志 | `/hubs` 在 `IgnoredPathPrefixes` 默认值里 |
-| 接口响应变慢 | 队列默认关闭，写入器是同步执行的 |
-| 高峰期请求线程被拖住 | `DropOnFull = false` 时队列满会等待空位 |
-| 写入器里 `ICurrentUser` 为空 | 队列模式在后台新作用域执行，身份要在采集点写进 record |
-| 批量更新产生 N 条变更记录 | 每个受影响行一条，是预期行为 |
-| 更新了但没有变更记录 | 前后镜像都在且没有字段真正变化的行会被跳过 |
-| 不敏感的字段被掩成 `***` | 名字归一化后命中了敏感词子串 |
-| `Token_Type` 之类没被掩 | 元数据后缀豁免，故意保留审计价值 |
-| 写库失败但没人告诉我 | 消费者的写入异常只记 `LogWarning`，不重试 |
-| 绕过仓储的写没有变更记录 | 差异日志只覆盖走仓储的写操作 |
+| `SetAuditAction(action)` | 动作不能为空白；声明后这次调用一定记录，非操作调用也一样 |
+| `SetAuditResource(resource)` | 参数是 `ResourceName`，事件里存它的 `xrn:<partition>:<service>:<tenant>:<type>/<id>` 文本；租户段可以为空 |
+| `AddAuditDetail(key, value)` | 键不能为空白，同名覆盖；值只用 JSON 可表示的类型，数据库存储按类型写成 JSON |
 
-## 下一步
+## 主体与租户从哪里来
 
-- [数据访问](./data)：仓储写路径、审计字段自动赋值
-- [工作单元与事务](./uow)：差异日志与业务同事务的前提
-- [多租户](./multi-tenancy)：租户上下文与平台（0 号租户）
-- [Web 应用开发](./web)：中间件与过滤器在管线里的位置
-- [Auditing 包文档](../packages/auditing)：完整 API 与配置表
-- [Logging 包文档](../packages/logging)：结构化运行日志（与审计日志是两回事）
+事件在调用结束时构造，此时 Authenticate 与 Tenant 阶段已经把安全上下文写好。中间件先看安全上下文：主体已认证时取 `Principal.Id`，否则回退到 Baggage 的 `xihan.principal`；解析出租户时取 `TenantContext.Id`，否则回退到 Baggage 的 `xihan.tenant`（ADR-0036）。HTTP 加 JWT 或 API Key 的调用走第一条路；插件协议、消息派发、命令行这类只带 Baggage 的调用走回退路径。认证中间件不把主体回写到 Baggage：Baggage 是跨进程传播的载体，不是进程内状态的副本。
+
+## 记录调用来源
+
+协议适配器与派发器在建上下文时写入一次调用来源 `InvocationOrigin`，之后只读、不跨进程传播（RFC-0003《调用上下文》规则 6，ADR-0043、ADR-0048）。审计事件本身不带来源字段，需要远端地址、User-Agent 或路由模板时，由应用写进细节。
+
+| `InvocationOrigin` 成员 | 含义 |
+| --- | --- |
+| `Protocol` | `InvocationProtocols` 的值：`http`、`grpc`、`mcp`、`cli`、`messaging`、`job`、`workflow` |
+| `Target` | HTTP 为方法与路径（不含查询串），gRPC 为方法全名，MCP 为工具名，命令行为操作 ID，消息为主题，作业为作业名，工作流为操作名（如 `workflow.start`；引擎在调用之外自己开调用时） |
+| `RemoteAddress` | 客户端 IP，不含端口；经反向代理时取宿主转发头中间件改写后的值，没有网络对端时为空 |
+| `UserAgent`、`Referer` | 对应的请求头，没有时为空 |
+| `Route`、`EndpointName` | 匹配到的端点的路由模板与 `WithName` 名字，没有匹配到端点或协议没有端点时为空 |
+
+缓存回源、存储维护这类内部调用没有来源，`GetOrigin()` 返回无值。下面的中间件放在 Ingress 阶段开头，被认证或授权拒绝的调用也能带上来源：
+
+```csharp
+using XiHan.Framework.Auditing.Abstractions.Pipeline;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Primitives;
+
+namespace MyApp.Orders;
+
+public sealed class AuditOriginMiddleware : IPipelineMiddleware
+{
+    public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
+    {
+        // 审计事件不带调用来源；需要远端地址与 User-Agent 时写进细节
+        if (context.GetOrigin().TryGetValue(out var origin))
+        {
+            context.AddAuditDetail("protocol", origin.Protocol);
+            context.AddAuditDetail("target", origin.Target);
+            context.AddAuditDetail("remoteAddress", origin.RemoteAddress);
+            context.AddAuditDetail("userAgent", origin.UserAgent);
+        }
+
+        return nextStep(context);
+    }
+}
+```
+
+在特性里登记中间件、权限与生成的操作：
+
+```csharp
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
+
+namespace MyApp.Orders;
+
+public sealed class OrdersFeature : IFeature
+{
+    public Manifest Manifest { get; } = new()
+    {
+        Id = "xihan.myapp.orders",
+        Package = "MyApp",
+        Version = "1.0.0",
+        Primitives = 1,
+        Stability = Stability.Experimental,
+        Kind = ManifestKind.Capability,
+        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
+        Contributes = new Contributions { Permissions = ["orders.read"] },
+        Entry = typeof(OrdersFeature).FullName,
+    };
+
+    public void Configure(FeatureContext context)
+    {
+        context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
+        // Ingress 在 Observe 之外：被认证或授权拒绝的调用也带上来源细节
+        context.AddMiddleware<AuditOriginMiddleware>(PipelineStage.Ingress, Placement.Beginning);
+        context.AddGeneratedOperations();
+    }
+}
+```
+
+`AddGeneratedOperations()` 由 `Kernel.Generators` 生成在项目的根命名空间（这里是 `MyApp`）。
+
+## 查询
+
+`IAuditTrail.QueryAsync(AuditQuery, CancellationToken)` 返回 `Result<AuditPage>`。过滤项全部可选、取交集，结果按写入顺序升序；`AuditPage.ContinuationToken` 不透明，没有下一页时为 `null`，把它原样放进下一次查询的 `ContinuationToken` 即可续读。
+
+| `AuditQuery` 成员 | 说明 |
+| --- | --- |
+| `From`、`To` | 时间范围，两端都包含；`From` 晚于 `To` 时查询不合法 |
+| `Action`、`PrincipalId`、`TenantId`、`TraceId` | 区分大小写的精确匹配 |
+| `Succeeded` | `true` 只取成功，`false` 只取失败 |
+| `PageSize` | 缺省 100，取值 1 到 `AuditQuery.MaxPageSize`（1000） |
+| `ContinuationToken` | 上一页返回的续页令牌 |
+
+下例逐页统计某租户一段时间内失败调用的动作分布，只保留计数：
+
+```csharp
+using XiHan.Framework.Auditing.Abstractions.Trail;
+using XiHan.Framework.Primitives;
+
+namespace MyApp.Orders;
+
+public sealed class FailureStatistics(IAuditTrail trail)
+{
+    // 逐页读取，只保留按动作的计数，不把整段审计装进内存
+    public async ValueTask<Result<IReadOnlyDictionary<string, int>>> CountByActionAsync(string tenantId, DateTimeOffset from, DateTimeOffset to, CancellationToken cancellationToken)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        string? token = null;
+        do
+        {
+            var query = new AuditQuery { TenantId = tenantId, From = from, To = to, Succeeded = false, PageSize = AuditQuery.MaxPageSize, ContinuationToken = token };
+            var page = await trail.QueryAsync(query, cancellationToken);
+            if (!page.TryGetValue(out var current))
+            {
+                return page.Error!;
+            }
+
+            foreach (var auditEvent in current.Events)
+            {
+                counts[auditEvent.Action] = counts.GetValueOrDefault(auditEvent.Action) + 1;
+            }
+
+            token = current.ContinuationToken;
+        }
+        while (token is not null);
+
+        return Result.Success<IReadOnlyDictionary<string, int>>(counts);
+    }
+}
+```
+
+::: warning 审计记录是平台级数据
+审计记录不实现 `IMultiTenant`，`IAuditTrail` 不按当前租户自动过滤。给租户管理员看的界面必须显式传 `TenantId`；数据库存储里独立库租户的记录也落在应用的默认连接，靠租户列区分（RFC-0015，ADR-0057）。
+:::
+
+## 内存存储
+
+`Auditing.InMemory` 是默认实现：一个有界环形缓冲保留最近 `Capacity` 条事件（缺省 10000），满了丢最旧的。序号持续递增并用作续页令牌，最旧的记录被淘汰后已发出的令牌仍然有效。`LogEvents` 缺省开启，每条事件以 Information 级写一条日志，字段是动作、结果（成功为 `success`，失败为错误码）、主体、租户、资源与 trace-id。数据只在单个进程里，重启即失，适合开发、测试与单实例的短期留痕。
+
+## 数据库存储
+
+`Auditing.Database` 依赖 `persistence.relational@1`，事件以 `AuditRecord` 经仓储落库，装配后顶替内存实现：
+
+```csharp
+using SqlSugar;
+using XiHan.Framework.Auditing.Database;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Persistence.SqlSugar;
+using XiHan.Framework.Profiles.Standard;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature(new SqlSugarPersistenceFeature(static (binding, config) =>
+    {
+        config.DbType = DbType.PostgreSQL;
+        config.ConnectionString = binding.ValueOrThrow().Value;
+    }))
+    .UseFeature<DatabaseAuditingFeature>());
+```
+
+连接串来自绑定 `db`，写法见[持久化](./persistence)。写入与落库的过程：
+
+1. `WriteAsync` 只把事件放进容量为 `QueueCapacity`（缺省 10000）的队列，不等待、不抛出。队列满了或特性已停止时，新到的事件被丢弃并计入 `DroppedCount`，警告每 10 秒最多记一条并附累计数。
+2. 后台循环攒够 `BatchSize`（缺省 100）条或到 `FlushIntervalSeconds`（缺省 1 秒）就取出一批，一次 `AddRangeAsync` 写入。
+3. 整批异常或逐项被仓储拒绝都只记 Error 日志、计入 `FailedCount` 并丢弃该批，不重试：存储不可用时重试只会堆积，审计不能反过来拖垮业务。
+4. 停止时先停循环、再停止接收，然后把队列里剩余的事件刷完。
+
+每条记录在出队时分配写入序号 `Sequence`，取上一个加一与时钟 UTC 刻度的较大者：同一节点严格递增并与提交顺序一致，不同节点之间只按时钟大致有序。查询按 `Sequence` 升序、多取一条判断下一页，续页令牌就是本页最后一条的序号。
+
+读写都不经管道：每次在根提供者的新作用域里直接开一个不带租户的工作单元，返回即提交，不加入调用方的事务。审计在调用结束后才知道结果，此时 Transaction 阶段已经提交或回滚，失败的调用同样要记。
+
+`Error.Inner` 不持久化；带消息键的错误按 `ErrorCode` 与 `ErrorMessageKey` 还原，读取方可以再按调用方区域翻译。表结构、长文本列与索引见 [Auditing.Database 包](../packages/auditing-database)。
+
+## 配置
+
+```json
+{
+  "XiHan": {
+    "Auditing": {
+      "Selection": "Protected",
+      "IncludeSuccesses": true,
+      "Exclude": [ "permissions.current" ],
+      "InMemory": { "Capacity": 10000, "LogEvents": true },
+      "Database": { "QueueCapacity": 10000, "BatchSize": 100, "FlushIntervalSeconds": 1, "LogEvents": true }
+    }
+  }
+}
+```
+
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `XiHan:Auditing:Selection` | `Protected` / `All` / `None` | `Protected` | 没有显式动作时记哪些操作 |
+| `XiHan:Auditing:IncludeSuccesses` | bool | `true` | 为 `false` 只记失败 |
+| `XiHan:Auditing:Exclude` | 字符串列表：操作 ID 或 `*` 结尾的前缀 | 空 | 按选择规则挑出的操作命中即不记，显式动作照记，见[按操作排除](#按操作排除) |
+| `XiHan:Auditing:InMemory:Capacity` | int，大于 0 | 10000 | 内存存储保留的事件数 |
+| `XiHan:Auditing:InMemory:LogEvents` | bool | `true` | 每条事件写一条 Information 日志 |
+| `XiHan:Auditing:Database:QueueCapacity` | int，大于 0 | 10000 | 等待落库的事件数上限 |
+| `XiHan:Auditing:Database:BatchSize` | int，大于 0 | 100 | 一批落库的事件数上限 |
+| `XiHan:Auditing:Database:FlushIntervalSeconds` | 数值，大于 0 | 1 | 不足一批时的刷写周期（秒） |
+| `XiHan:Auditing:Database:LogEvents` | bool | `true` | 每条事件（含被丢弃的）写一条 Information 日志 |
+
+## 错误码
+
+| 错误码 | 何时出现 |
+| --- | --- |
+| `AUDITING_VALIDATION_001` | 查询不合法：页大小越界、起止颠倒、续页令牌不可识别 |
+| `AUDITING_UNAVAILABLE_001` | 审计存储不可达（数据库存储的查询抛出基础设施异常，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）） |
+| `KERNEL_CANCELLED_001` | 事件的结果：调用被取消且管道没有写入结果 |
+| `KERNEL_UNEXPECTED_001` | 事件的结果：调用抛出未处理异常且管道没有写入结果 |
+
+## 与其他能力的关系
+
+- 可观测性：`LogEvents` 的日志经 `Microsoft.Extensions.Logging` 输出，装配 OpenTelemetry 导出后随日志信号一起导出，见[可观测性](./observability)；数据库存储的四个计数可以接到应用自己的 `Meter`，示例见 [Auditing.Database 包](../packages/auditing-database#使用示例)。
+- 多租户：审计不参与租户分片，见[多租户](./multi-tenancy)。
+- 测试：自写 Provider 继承 `Auditing.Conformance` 的 `AuditTrailConformance` 并通过全部用例，见[测试与一致性套件](./testing)。
+- 审计事件只有管道产生的这一种。
+
+## 相关
+
+- [Auditing.Abstractions 包](../packages/auditing-abstractions)
+- [Auditing.InMemory 包](../packages/auditing-inmemory)
+- [Auditing.Database 包](../packages/auditing-database)
+- [执行管道](./pipeline)
+- 规范：RFC-0015《审计》、RFC-0003《调用上下文》

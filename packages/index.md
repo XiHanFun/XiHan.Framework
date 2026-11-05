@@ -1,176 +1,122 @@
 来源：https://framework.docs.xihanfun.com/packages/
 
-# 模块总览
+# 包总览
 
-XiHan.Framework 由一组**可独立引用的 NuGet 包**组成，按分层组织。本册是**参考手册**——每个包一页，写完整的 API 清单与配置项全表。
+XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织。本册是参考手册，每个包一页，列出它提供的能力、配置节、主要类型、限制与错误码；要完成某件事时先读[开发指南](../guide/modularity)。
 
 ::: tip 先看指南还是先看这里
-文档分两册，解决的问题不同：
-
-| 你的问题 | 去哪 |
+| 问题 | 去处 |
 | --- | --- |
-| 「**我要做 X**」——数据访问、事务、认证、缓存、多租户… | [开发指南](../guide/modularity)（38 章，按能力域组织） |
-| 「**这个包有什么**」——完整 API、全部配置项、类型清单 | **本册** |
-
-指南章节末尾都会链到对应的包页。不确定从哪开始就先读[快速上手](../quickstart)。
+| 要做某件事：装配特性、写操作、接数据库、做授权、发消息 | [开发指南](../guide/modularity) |
+| 某个包有什么：能力 ID、配置键、主要类型、AOT 与限制 | 本册 |
 :::
 
-> 命名约定：`XiHan.Framework.[模块名]` 为通用类库，`XiHan.Framework.Web.[模块名]` 为 Web 功能。安装即 `dotnet add package <包名>`。
+当前是预览版，全部包共享一条版本线，取得方式见[快速上手](../quickstart#获取预览包)。
 
-## 如何选择要装哪些包
+## 命名规则
 
-- 只想跑个 Web API？→ `Web.Api` + `Web.Docs`（依赖会自动带上 Core 等底层）
-- 要读写数据库？→ 加 `Data`
-- 要缓存/认证/授权？→ 按需加 `Caching` / `Authentication` / `Authorization`
+包 ID 由术语表与文法推出：`XiHan.Framework.<领域>[.<角色>]`。
 
-大多数包无需单独安装——它们会作为上层包的 `[DependsOn]` 依赖被自动引入。
+| 后缀 | 角色 | 示例 |
+| --- | --- | --- |
+| `.Abstractions` | 抽象包：接口、契约、阶段中间件，零第三方依赖 | `Caching.Abstractions` |
+| 机制名 | 默认实现：零外部设施、容量有界，清单角色为 `default` | `Caching.InMemory`、`ObjectStorage.FileSystem` |
+| `.Database` | 经持久化子系统的仓储读写的 Provider，数据库由应用选中的持久化 Provider 决定 | `Security.Database` |
+| 技术名 | 接外部设施的 Provider | `Caching.Redis`、`Persistence.EntityFrameworkCore` |
+| `.Conformance` | 一致性套件：实现必须通过的 xUnit 测试 | `Caching.Conformance` |
+| `.Generators` / `.Analyzers` | 源生成器与分析器，开发期依赖 | `Kernel.Generators` |
 
----
+默认是清单里的 `role`，不是包名：没有显式 Provider 时默认实现被选中，加入 Provider 后自动让位。
 
-## 1. 公共与核心
+## 怎样选包
 
-框架的地基，几乎所有上层模块都依赖它们。
+1. 先选组合包：`Profiles.Minimal`（内核、ASP.NET Core 宿主、内存本地化）、`Profiles.Standard`（再加持久化、缓存、多租户、安全、消息的内存默认实现）、`Profiles.Full`（再加对象存储、调度、审计、工作流、AI 工具目录、OpenTelemetry、运行信息与四种协议适配器）。
+2. 按对外暴露的方式加协议适配器：`Protocols.Http`、`Protocols.Grpc`、`Protocols.Mcp`、`Protocols.CloudEvents`，或换成命令行宿主 `Hosting.CommandLine`。
+3. 按生产环境的外部设施加 Provider：`Persistence.EntityFrameworkCore` / `Persistence.SqlSugar`、`Caching.Redis`、`Messaging.RabbitMQ` / `Messaging.Kafka`、`Security.Jwt` / `Security.OpenIdConnect`、`ObjectStorage.S3` 等，每个都要 `UseFeature` 加入。
+4. 开发期依赖：`Kernel.Generators`（操作契约）与 `Persistence.Generators`（仓储登记）。
 
-| 模块 | 说明 |
+## Ring 0–1 原语与内核
+
+| 包 | 说明 |
 | --- | --- |
-| [Utils](./utils) | 零依赖通用工具库：字符串、加密、异步、序列化、集合、反射、网络、文件 IO、数学、时间等 |
-| [Metadata](./metadata) | 框架元数据：名称、版本、作者、组织、支持平台等静态信息 |
-| [Core](./core) | 模块化引擎核心：`XiHanModule`、`[DependsOn]`、拓扑排序加载、生命周期钩子、DI 扩展、选项模式、异常处理 |
-| [Analyzers](./analyzers) | Roslyn 代码分析器：编译期规范检查 |
+| [Primitives](./primitives) | 原语与契约：`Result`、`Error`、`Maybe`、`InvocationContext`、清单模型、管道阶段、生命周期状态、消息键；只增不改 |
+| [Kernel](./kernel) | 微内核：应用构建、能力图谱、管道与内置中间件、操作契约与调用器、安全原语、健康、插件抽象 |
 
-## 2. 领域与应用
+## Ring 2 领域与抽象
 
-DDD 分层与应用服务契约。
-
-| 模块 | 说明 |
+| 包 | 说明 |
 | --- | --- |
-| [Domain.Shared](./domain-shared) | 领域共享模型：基础实体类型、枚举、常量、值对象、异常 |
-| [Domain](./domain) | DDD 领域层：聚合根、实体、领域服务、领域事件、规约、仓储抽象、业务规则引擎 |
-| [Application.Contracts](./application-contracts) | 应用服务契约：DTO 定义、应用服务接口 |
-| [Application](./application) | 应用层实现：应用服务基类、CRUD 基类、DTO 映射、动态 API 特性 |
+| [Domain](./domain) | 实体协议接口、值对象、领域事件缓冲、规约；纯契约 |
+| [Persistence.Abstractions](./persistence-abstractions) | 仓储、查询、工作单元与 Transaction 阶段、标识生成、领域事件派发 |
+| [Caching.Abstractions](./caching-abstractions) | 字节存储、类型化缓存、序列化器、分布式锁、Idempotency 阶段、`IDistributedCache` 适配、键管理 |
+| [MultiTenancy.Abstractions](./multitenancy-abstractions) | 租户信息与存储、租户解析器与 Tenant 阶段、租户分片 |
+| [Security.Abstractions](./security-abstractions) | 凭据与认证处理器、权限与策略、RBAC 授予、Authenticate / Authorize 阶段、条件引擎、IP 归属地契约 |
+| [Messaging.Abstractions](./messaging-abstractions) | CloudEvents 信封、发布与订阅、经管道的派发、发件箱、领域事件映射 |
+| [Localization.Abstractions](./localization-abstractions) | 区域、消息目录、显式区域的本地化接口 |
+| [ObjectStorage.Abstractions](./objectstorage-abstractions) | 对象存储契约：批量写入与删除、按前缀列举、范围读取、分片上传、预签名 |
+| [Scheduling.Abstractions](./scheduling-abstractions) | 作业、触发器、计划、调度引擎与作业存储契约、领导选举 |
+| [Configuration.Abstractions](./configuration-abstractions) | 远程配置与密钥契约、接入 `IConfigurationBuilder` 的配置源 |
+| [Auditing.Abstractions](./auditing-abstractions) | Observe 阶段审计中间件、审计扩展与查询契约 |
+| [Observability.Abstractions](./observability-abstractions) | 进程与主机运行信息的契约 |
+| [Workflow.Abstractions](./workflow-abstractions) | 工作流定义模型、目录、引擎、内置活动、用户任务、存储契约 |
+| [AI.Abstractions](./ai-abstractions) | 基于 `Microsoft.Extensions.AI` 的 Provider 目录、`IAIChat`、护栏、工具目录、知识库 |
 
-## 3. 数据与持久化
+## Ring 3 默认实现与 Provider
 
-| 模块 | 说明 |
+| 领域 | 默认实现 | Provider |
+| --- | --- | --- |
+| 持久化 | [Persistence.InMemory](./persistence-inmemory) | [EntityFrameworkCore](./persistence-entityframeworkcore)、[SqlSugar](./persistence-sqlsugar) |
+| 缓存 | [Caching.InMemory](./caching-inmemory) | [Redis](./caching-redis)、[Hybrid](./caching-hybrid)、[Remote](./caching-remote)（Experimental） |
+| 多租户 | [MultiTenancy.InMemory](./multitenancy-inmemory) | [Database](./multitenancy-database) |
+| 安全 | [Security.InMemory](./security-inmemory) | [Database](./security-database)、[Jwt](./security-jwt)、[OpenIdConnect](./security-openidconnect)、[Ip2Region](./security-ip2region) |
+| 消息 | [Messaging.InMemory](./messaging-inmemory) | [RabbitMQ](./messaging-rabbitmq)、[Kafka](./messaging-kafka) |
+| 本地化 | [Localization.InMemory](./localization-inmemory) | [Database](./localization-database) |
+| 对象存储 | [ObjectStorage.FileSystem](./objectstorage-filesystem) | [S3](./objectstorage-s3) |
+| 调度 | [Scheduling.InMemory](./scheduling-inmemory) | [Database](./scheduling-database)、[Kubernetes](./scheduling-kubernetes) |
+| 配置 | .NET 原生的文件与环境变量，无包 | [Nacos](./configuration-nacos) |
+| 审计 | [Auditing.InMemory](./auditing-inmemory) | [Database](./auditing-database) |
+| 可观测性 | [Observability.Host](./observability-host)（运行信息） | [OpenTelemetry](./observability-opentelemetry)（导出） |
+| 工作流 | [Workflow.InMemory](./workflow-inmemory) | [Database](./workflow-database) |
+| AI | 工具目录由 `AI.Abstractions` 的 `AIToolsFeature` 提供 | [OpenAI](./ai-openai)、[VectorData](./ai-vectordata) |
+
+插件协议的 .NET 类型 [Plugins.Protocol](./plugins-protocol) 也在 Ring 3，由各隔离级别的插件宿主共用。
+
+## Ring 4 宿主
+
+| 包 | 说明 |
 | --- | --- |
-| [Data](./data) | SqlSugar 数据访问：仓储模式、工作单元集成、多租户数据隔离、启动自动建表 |
-| [Uow](./uow) | 工作单元：AOP 拦截器自动管理事务边界 |
-| [Caching](./caching) | 混合缓存：HybridCache（内存 + Redis）、缓存拦截器、租户感知 |
+| [Hosting.AspNetCore](./hosting-aspnetcore) | HTTP 请求桥接进管道、`Accept-Language` 协商、探针端点、本地化的 Problem Details、`XiHan` 认证方案 |
+| [Hosting.CommandLine](./hosting-commandline) | 命令行宿主：`help` / `graph` / `pipeline` / `operations` / `invoke`，按错误 KIND 的退出码 |
 
-## 4. 安全 · 认证 · 授权
+## Ring 5 协议与插件
 
-| 模块 | 说明 |
+| 包 | 说明 |
 | --- | --- |
-| [Security](./security) | 安全与加密：BouncyCastle 企业级密码学、密钥管理、密码哈希、数据保护 |
-| [Authentication](./authentication) | 认证：JWT / OAuth2 / OIDC、令牌工厂、MFA、SSO |
-| [Authorization](./authorization) | 授权：RBAC、策略授权、声明授权 |
+| [Protocols.Http](./protocols-http) | 操作 ID 推导路由、载荷绑定、OpenAPI 3.1 |
+| [Protocols.Grpc](./protocols-grpc) | 操作成为一元方法，protobuf 由 JSON Schema 推出，发布 `/operations.proto` |
+| [Protocols.Mcp](./protocols-mcp) | 操作成为 MCP tool，Streamable HTTP 与 stdio 传输 |
+| [Protocols.CloudEvents](./protocols-cloudevents) | CloudEvents 1.0 HTTP 绑定：入站 `/events` 与出站 Webhook |
+| [Plugins.InProcess](./plugins-inprocess) | 可收集 `AssemblyLoadContext` 的进程内插件宿主 |
+| [Plugins.OutOfProcess](./plugins-outofprocess) | 按 `xihan.plugin.v1` 启动与监视子进程的插件宿主，插件可用任意语言编写 |
+| [Plugins.Wasm](./plugins-wasm) | wasmtime 沙箱里的 Wasm 插件宿主（Experimental） |
 
-## 5. 多租户 · 配置 · 校验
+## Ring 6 组合包
 
-| 模块 | 说明 |
+| 包 | 内容 |
 | --- | --- |
-| [MultiTenancy.Abstractions](./multitenancy-abstractions) | 多租户抽象：租户上下文接口、解析链 |
-| [MultiTenancy](./multitenancy) | 多租户：租户解析中间件、数据隔离、租户配置管理、生命周期 |
-| [Settings](./settings) | 设置管理：设置定义提供者模式、动态配置、多来源（租户级别） |
-| [Validation.Abstractions](./validation-abstractions) | 校验抽象：校验异常与错误承载接口 |
-| [Validation](./validation) | 数据校验：当前为薄占位，核心类型在抽象包 |
+| [Profiles.Minimal](./profiles-minimal) | Primitives + Kernel + Hosting.AspNetCore + Localization.InMemory，`UseMinimalProfile()` |
+| [Profiles.Standard](./profiles-standard) | Minimal + Domain + 五个子系统的抽象与内存默认实现，`UseStandardProfile()` |
+| [Profiles.Full](./profiles-full) | Standard + 对象存储、调度、审计、工作流、AI 工具、OpenTelemetry、运行信息与四种协议适配器，`UseFullProfile()` |
 
-## 6. 事件 · 消息 · 通信
+## 工具链
 
-| 模块 | 说明 |
+| 包 | 说明 |
 | --- | --- |
-| [EventBus.Abstractions](./eventbus-abstractions) | 事件总线抽象：发布/订阅接口、事件处理管道 |
-| [EventBus](./eventbus) | 事件总线：本地/分布式事件、Outbox 模式、事件存储 |
-| [EventBus.RabbitMQ](./eventbus-rabbitmq) | 分布式事件总线的 RabbitMQ 提供程序：direct 交换机 + 事件名路由键、队列竞争消费 |
-| [EventBus.Kafka](./eventbus-kafka) | 分布式事件总线的 Kafka 提供程序：单主题 + 事件名作 Key、消费者组竞争消费 |
-| [EventBus.Redis](./eventbus-redis) | 分布式事件总线的 Redis Streams 提供程序：`XADD` / `XREADGROUP` 消费者组竞争消费 |
-| [Messaging](./messaging) | 消息处理：消息代理抽象（发布/消费/路由） |
-| [Http](./http) | HTTP 客户端：Polly 韧性策略（重试/熔断）、请求管道 |
+| [Kernel.Generators](./kernel-generators) | 源生成器：`[Operation]` → 登记代码与请求 / 响应 JSON Schema（XHG001–XHG006） |
+| [Kernel.Analyzers](./kernel-analyzers) | Roslyn 分析器：`ApiLevel`、命名、Internal 引用、零反射 |
+| [Persistence.Generators](./persistence-generators) | 源生成器：实体 → 仓储登记、EF Core 实体登记、软删除与租户过滤规约 |
+| [Cli](./cli) | 命令行工具 `xihan`：`pack` 生成部署产物，转发 `graph` / `pipeline` / `operations` / `invoke` |
+| [Testing](./testing) | 测试宿主、特性桩、清单与上下文构造 |
+| [Conformance](./conformance) | 各领域的一致性套件与插件协议黑盒套件 |
 
-## 7. 通用基础设施
-
-| 模块 | 说明 |
-| --- | --- |
-| [Serialization](./serialization) | 序列化：基于 System.Text.Json 的动态 JSON 操作、序列化选项组合 |
-| [ObjectMapping](./objectmapping) | 对象映射：Mapster 集成 |
-| [Localization.Abstractions](./localization-abstractions) | 国际化抽象：`IStringLocalizer` 抽象层 |
-| [Localization](./localization) | 国际化：多语言资源文件、动态文化切换 |
-| [Logging](./logging) | 结构化日志：Serilog 集成、文件/控制台输出、异步写入 |
-| [Auditing](./auditing) | 审计日志：6 类日志记录、Channel 异步队列 + 批量消费者、脱敏器、写入器契约（默认空实现） |
-| [Castle](./castle) | AOP 动态代理：Castle DynamicProxy 集成、服务拦截器注册 |
-| [Threading](./threading) | 并发辅助：取消令牌提供者、基于 AsyncLocal 的环境作用域 |
-| [Timing](./timing) | 时间策略：时区管理、时间抽象 |
-| [DistributedIds](./distributed-ids) | 分布式 ID：Snowflake / NanoId / SequentialGuid / Sqids 多方案 |
-
-## 8. 存储 · 模板 · 任务 · 治理
-
-| 模块 | 说明 |
-| --- | --- |
-| [ObjectStorage](./object-storage) | 对象存储：统一抽象 + 本地 / 阿里云 OSS / MinIO / 腾讯 COS 适配 |
-| [VirtualFileSystem](./virtual-file-system) | 虚拟文件系统：本地目录 + 程序集嵌入资源统一挂载、内存版本快照 |
-| [Templating](./templating) | 模板渲染：默认简单占位替换引擎 + 可选 Scriban、模板注册表 |
-| [Tasks](./tasks) | 定时任务：调度引擎（Cron/间隔/延迟）、后台服务基类、多租户感知 |
-| [Traffic](./traffic) | 流量治理：灰度路由（百分比/用户/租户/请求头）、限流与熔断策略接口 |
-| [Upgrade](./upgrade) | 升级引擎：版本存储、迁移执行、分布式锁、启动自动检查 |
-| [Script](./script) | 脚本引擎：基于 Roslyn 的 C# 动态脚本、编译校验与超时 |
-| [Workflow.Abstractions](./workflow-abstractions) | 工作流抽象：流程定义模型、活动契约、书签与存储端口 |
-| [Workflow](./workflow) | 工作流引擎：图执行、17 个内置活动、人工任务（审批）、表达式、定时器 |
-| [SearchEngines.Abstractions](./search-engines-abstractions) | 搜索抽象：索引/文档/检索契约，零第三方依赖 |
-| [SearchEngines](./search-engines) | 搜索默认实现：进程内引擎（开发与测试兜底） |
-| [SearchEngines.Elasticsearch](./search-engines-elasticsearch) | 搜索实现：Elasticsearch（生产推荐） |
-| [Observability](./observability) | 可观测性：OpenTelemetry、指标采集、性能监控、运行时诊断与内存健康检查 |
-| [DevTools](./devtools) | 开发工具：自研命令行（CLI）框架，开发期辅助 |
-
-## 9. AI 与机器人
-
-| 模块 | 说明 |
-| --- | --- |
-| [AI.Abstractions](./ai-abstractions) | AI 抽象：AI 服务接口与契约 |
-| [AI](./ai) | AI 集成：LLM 接入（OpenAI 兼容）、智能代理、MCP 协议、RAG |
-| [Bot](./bot) | 机器人核心：多平台消息接入的统一抽象 |
-| [Bot.Email](./bot-email) | 邮件通道：MailKit 集成 |
-| [Bot.Sms](./bot-sms) | 短信通道 |
-| [Bot.Telegram](./bot-telegram) | Telegram 机器人 |
-| [Bot.DingTalk](./bot-dingtalk) | 钉钉机器人 |
-| [Bot.Lark](./bot-lark) | 飞书机器人 |
-| [Bot.WeCom](./bot-wecom) | 企业微信机器人 |
-
-## 10. Web 层
-
-| 模块 | 说明 |
-| --- | --- |
-| [Web.Core](./web-core) | Web 基础设施：托管环境、中间件管道、CORS、IP 地理定位（ip2region）、UA 解析 |
-| [Web.Api](./web-api) | 动态 API：自动 API 发现与注册、OpenAPI 安全、完整中间件管道 |
-| [Web.Docs](./web-docs) | API 文档：Scalar UI + Swagger UI、动态 API 分组发现 |
-| [Web.Gateway](./web-gateway) | API 网关：灰度路由（依赖 Traffic）、请求追踪、限流熔断 |
-| [Web.Grpc](./web-grpc) | gRPC 服务集成 |
-| [Web.Mcp](./web-mcp) | MCP Server：把 AI 技能暴露为 HTTP MCP tools，并以 API Key fail-closed 鉴权 |
-| [Web.RealTime](./web-realtime) | 实时通信：SignalR 集成、JSON 序列化 |
-
----
-
-## 依赖关系速览
-
-核心依赖链（从底层到上层）：
-
-```text
-Utils（零依赖）
-  └ Metadata
-      └ Core
-          ├ Serialization
-          ├ Security → Authentication → Authorization
-          │     └ Auditing（+ MultiTenancy.Abstractions）
-          ├ Threading / Timing / DistributedIds
-          ├ VirtualFileSystem → Localization
-          ├ Uow → Caching(+Redis) / EventBus
-          │                          └ EventBus.RabbitMQ / EventBus.Kafka / EventBus.Redis
-          ├ Domain.Shared → Domain → Data(SqlSugar)
-          │     └ Application.Contracts → Application
-          ├ MultiTenancy.Abstractions → MultiTenancy → Tasks / Traffic / Upgrade
-          │     └ Workflow.Abstractions → Workflow(+Caching/EventBus/Script/Timing)
-          ├ SearchEngines.Abstractions → SearchEngines → SearchEngines.Elasticsearch
-          ├ Http(+Polly) → AI(Agents.AI + MCP) → Bot(MailKit + Telegram)
-          └ Web.Core → Web.Api → Web.Docs / Web.Gateway / Web.Grpc / Web.Mcp / Web.RealTime
-```
-
-> 你只需在应用模块上 `[DependsOn]` 顶层包，整条依赖链会被框架自动装配。详见 [核心概念 · 模块系统](../guide/modularity)。
+工具链包可以引用任何环；源生成器与分析器只在编译期运行，不进入应用的运行时依赖。
