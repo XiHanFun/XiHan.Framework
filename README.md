@@ -29,8 +29,6 @@
 
 </div>
 
-> **Preview**: only preview releases are published so far. Install with `--prerelease`, and expect public APIs to change before the first stable release.
-
 XiHan.Framework is a .NET framework for backends that have to be maintained for years. It is built around a microkernel, a capability graph and an execution pipeline. Business logic is written as protocol-agnostic operations, protocol adapters expose them, and every invocation runs through the same pipeline. Persistence, caching, messaging, tenancy and permissions are replaceable packages: development needs no external infrastructure, and going to production means switching providers without touching business code.
 
 It is also the .NET reference implementation of [XiHan Spec](https://github.com/XiHanFun/framework-spec), a language-neutral specification that other languages implement against the same conformance vectors.
@@ -318,14 +316,20 @@ curl -X POST localhost:5000/orders -H "Authorization: ApiKey dev-alice-key" \
 
 ## When to use it
 
-| A good fit | Not a good fit |
-| --- | --- |
-| Medium to large backends maintained by a team for years, where dependency boundaries and replaceability matter | Short-lived projects with a few CRUD endpoints: ASP.NET Core minimal APIs are simpler |
-| Multi-tenant SaaS and admin systems that need tenancy, permissions, auditing, workflow and scheduling | Projects that must ship to production now on a stable release: the framework is still in preview |
-| One business capability served over REST, gRPC, MCP tools or the command line | Teams that do not want manifests or `Result`-style code: this approach is more explicit and has more concepts |
-| Third-party plugins in other languages, or plugins that must not take the host down when they crash | Projects that want templating, search, a gateway or object mapping in the box: the framework does not provide them, see the [FAQ](https://framework.docs.xihanfun.com/guide/faq) for alternatives |
+**A good fit:**
 
-The trade-offs and current limits are in [Why XiHan](https://framework.docs.xihanfun.com/why).
+- Medium to large backends maintained by a team for years, where dependency boundaries and replaceability matter
+- Multi-tenant SaaS and admin systems that need tenancy, permissions, auditing, workflow and scheduling
+- One business capability served over REST, gRPC, MCP tools or the command line
+- Third-party plugins in other languages, or plugins that must not take the host down when they crash
+
+**Not a good fit:**
+
+- Short-lived projects with a few CRUD endpoints: ASP.NET Core minimal APIs are simpler
+- Teams that do not want manifests or `Result`-style code: this approach is more explicit and has more concepts
+- Projects that want templating, search, a gateway or object mapping in the box: the framework does not provide them, see the [FAQ](https://framework.docs.xihanfun.com/guide/faq) for alternatives
+
+The trade-offs and limits are in [Why XiHan](https://framework.docs.xihanfun.com/why).
 
 ## Quality and stability
 
@@ -337,7 +341,7 @@ The trade-offs and current limits are in [Why XiHan](https://framework.docs.xiha
 
 ## Roadmap
 
-The bar for the first stable release is in the [development plan](./design/architecture/05-开发计划.md) (in Chinese): BasicApp's core modules run entirely on the framework, all gates pass and the performance targets are met. After that, the direction includes stable Wasm plugins, a TypeScript SDK, realtime and gateway packages, and more providers such as MongoDB and NATS.
+Next up: stable Wasm plugins, a TypeScript SDK, realtime and gateway packages, and more providers such as MongoDB and NATS. See the [development plan](./design/architecture/05-开发计划.md) (in Chinese).
 
 ## Ecosystem
 

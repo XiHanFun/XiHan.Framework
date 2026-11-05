@@ -29,8 +29,6 @@
 
 </div>
 
-> **预览阶段**：目前只发布了预览版，安装要带 `--prerelease`，公开 API 在正式版前仍可能调整。
-
 XiHan.Framework 是为长期维护的 .NET 后端设计的开发框架，核心是微内核、能力图谱和管道执行。业务写成与协议无关的操作，协议适配器负责把它暴露出去，每次调用都走同一条管道；持久化、缓存、消息、租户和权限都是可替换的包，开发时不需要任何外部设施，上线时换 Provider，业务代码不动。
 
 它同时是语言中立规范 [XiHan Spec](https://github.com/XiHanFun/framework-spec) 的 .NET 参考实现，其他语言按同一份规范和一致性向量实现。
@@ -318,14 +316,20 @@ curl -X POST localhost:5000/orders -H "Authorization: ApiKey dev-alice-key" \
 
 ## 适合什么项目
 
-| 适合 | 不太适合 |
-| --- | --- |
-| 中大型、长期维护、多人协作的后端，重视依赖边界和可替换性 | 短期项目，只要几个 CRUD 接口：直接用 ASP.NET Core 最小 API 更省事 |
-| 多租户 SaaS、企业中后台，需要租户、权限、审计、工作流、调度 | 必须马上上生产、只能用正式版：框架还在预览阶段 |
-| 同一业务要同时提供 REST、gRPC、MCP tool 或命令行 | 团队不想写清单、不接受 `Result` 风格：这套写法更显式，概念也更多 |
-| 需要第三方用其他语言写插件，或者要求插件崩溃不拖垮宿主 | 想要模板引擎、搜索、网关、对象映射这类全家桶：框架不提供，替代做法见[常见问题](https://framework.docs.xihanfun.com/guide/faq) |
+**适合：**
 
-代价和当前限制都写在[为什么选择曦寒](https://framework.docs.xihanfun.com/why)里。
+- 中大型、长期维护、多人协作的后端，重视依赖边界和可替换性
+- 多租户 SaaS、企业中后台，需要租户、权限、审计、工作流、调度
+- 同一业务要同时提供 REST、gRPC、MCP tool 或命令行
+- 需要第三方用其他语言写插件，或者要求插件崩溃不拖垮宿主
+
+**不太适合：**
+
+- 短期项目，只要几个 CRUD 接口：直接用 ASP.NET Core 最小 API 更省事
+- 团队不想写清单、不接受 `Result` 风格：这套写法更显式，概念也更多
+- 想要模板引擎、搜索、网关、对象映射这类全家桶：框架不提供，替代做法见[常见问题](https://framework.docs.xihanfun.com/guide/faq)
+
+代价和限制都写在[为什么选择曦寒](https://framework.docs.xihanfun.com/why)里。
 
 ## 质量与稳定性
 
@@ -337,7 +341,7 @@ curl -X POST localhost:5000/orders -H "Authorization: ApiKey dev-alice-key" \
 
 ## 路线
 
-正式版的门槛写在[开发计划](./design/architecture/05-开发计划.md)里：BasicApp 核心模块全量跑在框架上，全部门禁通过，性能目标达标。之后的方向包括 Wasm 插件转正、TypeScript SDK、实时通信与网关包，以及 MongoDB、NATS 等更多 Provider。
+接下来的方向包括 Wasm 插件转正、TypeScript SDK、实时通信与网关包，以及 MongoDB、NATS 等更多 Provider，详见[开发计划](./design/architecture/05-开发计划.md)。
 
 ## 生态
 
