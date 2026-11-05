@@ -1,0 +1,4 @@
+{
+  "greetings.create.description": "按名字问候某人，可以重复多次。",
+  "samples.greet.times_invalid": "问候次数必须在 1 到 10 之间，给的是 {times}。"
+}

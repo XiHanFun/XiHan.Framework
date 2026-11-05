@@ -1,0 +1,300 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Primitives;
+
+namespace XiHan.Framework.Kernel.Hosting;
+
+/// <summary>
+/// 周期探测、缓存结果的健康贡献者
+/// </summary>
+/// <remarks>
+/// Provider 把连通性探针（PING、HEAD、打开连接）交给它，由它在后台按 <see cref="Interval"/> 重探并缓存最近一次结果，<see cref="Check"/> 只返回缓存、立即返回且不抛出。<see cref="StartAsync"/> 先同步探一次（超时取 <see cref="Interval"/>）再起循环，探针抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/>；探针返回的失败结果原样作为条目错误
+/// </remarks>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsyncDisposable
+{
+    /// <summary>
+    /// 探针
+    /// </summary>
+    private readonly Func<CancellationToken, ValueTask<Result>> _probe;
+
+    /// <summary>
+    /// 时钟
+    /// </summary>
+    /// <remarks>
+    /// 循环的计时器与每次探测的超时都按它计时
+    /// </remarks>
+    private readonly TimeProvider _clock;
+
+    /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
+    /// 上一次探针抛出的异常类型
+    /// </summary>
+    /// <remarks>
+    /// 探针没有抛出后为空。探测由循环逐次执行，这个字段不需要同步：万一并发，最多多记一条日志
+    /// </remarks>
+    private Type? _lastFailure;
+
+    /// <summary>
+    /// 最近一次结果
+    /// </summary>
+    /// <remarks>
+    /// 探测完成后整体替换，<see cref="Check"/> 读它不加锁
+    /// </remarks>
+    private volatile ContributorStatus _status;
+
+    /// <summary>
+    /// 停止信号
+    /// </summary>
+    /// <remarks>
+    /// 非空表示循环在跑
+    /// </remarks>
+    private CancellationTokenSource? _stopping;
+
+    /// <summary>
+    /// 后台循环
+    /// </summary>
+    private Task? _loop;
+
+    /// <summary>
+    /// 创建
+    /// </summary>
+    /// <param name="name">条目名，即清单 <c>contributes.health</c> 里声明的名字</param>
+    /// <param name="probe">探针：成功表示可达，失败结果原样作为条目错误，抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/></param>
+    /// <param name="interval">重探间隔，也是单次探测的超时；必须为正</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="loggerFactory">日志工厂</param>
+    /// <param name="description">条目检查的是什么；可空</param>
+    public PeriodicHealthContributor(string name, Func<CancellationToken, ValueTask<Result>> probe, TimeSpan interval, TimeProvider clock, ILoggerFactory loggerFactory, string? description = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(probe);
+        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        if (interval <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(interval), interval, "The probe interval must be positive.");
+        }
+
+        Name = name;
+        Interval = interval;
+        _probe = probe;
+        _clock = clock;
+        _logger = loggerFactory.CreateLogger<PeriodicHealthContributor>();
+        Description = description;
+        _status = new ContributorStatus(name, LifecycleState.Started) { Description = description };
+    }
+
+    /// <summary>
+    /// 条目名
+    /// </summary>
+    public string Name { get; }
+
+    /// <summary>
+    /// 重探间隔，也是单次探测的超时
+    /// </summary>
+    public TimeSpan Interval { get; }
+
+    /// <summary>
+    /// 条目检查的是什么
+    /// </summary>
+    public string? Description { get; }
+
+    /// <summary>
+    /// 最近一次探测完成的时刻
+    /// </summary>
+    /// <remarks>
+    /// 还没探过为 <see langword="null"/>
+    /// </remarks>
+    public DateTimeOffset? LastProbedAt { get; private set; }
+
+    /// <summary>
+    /// 同步探一次（受 <see cref="Interval"/> 上限约束的超时），然后起后台循环按 <see cref="Interval"/> 重探
+    /// </summary>
+    /// <remarks>
+    /// 重复调用不再起第二个循环
+    /// </remarks>
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        if (_loop is not null)
+        {
+            return;
+        }
+
+        // 首探同步完成：宿主 Ready 时条目已是真实状态，不会先报一轮 Started
+        await ProbeAsync(cancellationToken).ConfigureAwait(false);
+        _stopping = new CancellationTokenSource();
+        var stopping = _stopping.Token;
+        // 计时器在这里同步创建而不是在循环里：循环任务还没被调度时时钟已经推进（假时钟）也不会丢掉第一个周期
+        var timer = new PeriodicTimer(Interval, _clock);
+        _loop = Task.Run(() => LoopAsync(timer, stopping), CancellationToken.None);
+    }
+
+    /// <summary>
+    /// 停止后台循环
+    /// </summary>
+    /// <remarks>
+    /// 缓存的最近结果保留
+    /// </remarks>
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (_loop is null || _stopping is null)
+        {
+            return;
+        }
+
+        await _stopping.CancelAsync().ConfigureAwait(false);
+        try
+        {
+            await _loop.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // 循环按取消退出，或调用方等不及：两种情况都不再探测
+        }
+
+        _stopping.Dispose();
+        _stopping = null;
+        _loop = null;
+    }
+
+    /// <summary>
+    /// 立即探测一次并更新缓存
+    /// </summary>
+    /// <remarks>
+    /// 探针抛出的异常（含超时）不传播，记为 <see cref="LifecycleState.Degraded"/>；只有 <paramref name="cancellationToken"/> 被取消时才抛出
+    /// </remarks>
+    public async ValueTask ProbeAsync(CancellationToken cancellationToken)
+    {
+        // 每次探测各有超时：探针卡住不能拖住循环，也不能让首探拖住宿主启动；超时与间隔取同一个值
+        using var timeout = new CancellationTokenSource(Interval, _clock);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+        var started = _clock.GetTimestamp();
+        Result outcome;
+        try
+        {
+            outcome = await _probe(linked.Token).ConfigureAwait(false);
+            _lastFailure = null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 停止或调用方取消：不改缓存，按异步约定抛出
+            throw;
+        }
+        catch (Exception exception)
+        {
+            // 超时与探针异常都是"探不到"：条目 Degraded；应用仍在服务
+            // 探针接任意外部服务，异常消息可能带地址或连接串：reason 只写类型，完整异常只进日志
+            // 同一种失败只记一次 Warning，持续时记 Debug：每个探测周期一条带堆栈的 Warning 会淹没日志
+            var failure = exception.GetType();
+            if (failure == _lastFailure)
+            {
+                LogProbeStillThrowing(_logger, Name, exception);
+            }
+            else
+            {
+                LogProbeThrew(_logger, Name, exception);
+            }
+
+            _lastFailure = failure;
+            outcome = Error.Unavailable(KernelErrors.HealthProbeFailed, KernelMessages.HealthProbeFailed, MessageArguments.Of(("name", Name), ("reason", failure.FullName ?? failure.Name)));
+        }
+
+        Apply(outcome, _clock.GetElapsedTime(started));
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<ContributorStatus> Check() => [_status];
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        await StopAsync(CancellationToken.None).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 把探测结果写成条目状态
+    /// </summary>
+    /// <remarks>
+    /// 成功 Ready、失败 Degraded；状态或错误码变化时记日志
+    /// </remarks>
+    private void Apply(Result outcome, TimeSpan duration)
+    {
+        var previous = _status;
+        var now = _clock.GetUtcNow();
+        var current = (outcome.IsSuccess
+            ? new ContributorStatus(Name, LifecycleState.Ready)
+            : new ContributorStatus(Name, LifecycleState.Degraded, outcome.Error)) with { Description = Description, CheckedAt = now, Duration = duration };
+        _status = current;
+        LastProbedAt = now;
+
+        // 只在状态或错误码变化时记日志，稳定的失败不刷屏
+        if (previous.State == current.State && string.Equals(previous.Error?.Code, current.Error?.Code, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (current.State == LifecycleState.Degraded)
+        {
+            LogDegraded(_logger, Name, previous.State, current.Error!.Code, current.Error.Message);
+        }
+        else
+        {
+            LogRecovered(_logger, Name, previous.State);
+        }
+    }
+
+    /// <summary>
+    /// 按间隔重探，直到停止
+    /// </summary>
+    /// <remarks>
+    /// 计时器由本方法释放
+    /// </remarks>
+    private async Task LoopAsync(PeriodicTimer timer, CancellationToken stopping)
+    {
+        using (timer)
+        {
+            try
+            {
+                while (await timer.WaitForNextTickAsync(stopping).ConfigureAwait(false))
+                {
+                    await ProbeAsync(stopping).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 停止
+            }
+        }
+    }
+
+    /// <summary>
+    /// 条目进入 Degraded
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Health item '{Name}' changed from {Previous} to Degraded: {Code} {Message}")]
+    private static partial void LogDegraded(ILogger logger, string name, LifecycleState previous, string code, string message);
+
+    /// <summary>
+    /// 条目回到 Ready
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Information, Message = "Health item '{Name}' changed from {Previous} to Ready.")]
+    private static partial void LogRecovered(ILogger logger, string name, LifecycleState previous);
+
+    /// <summary>
+    /// 探针抛出（这一种失败第一次）
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The health probe of '{Name}' threw.")]
+    private static partial void LogProbeThrew(ILogger logger, string name, Exception exception);
+
+    /// <summary>
+    /// 探针持续抛出
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Debug, Message = "The health probe of '{Name}' still throws.")]
+    private static partial void LogProbeStillThrowing(ILogger logger, string name, Exception exception);
+}

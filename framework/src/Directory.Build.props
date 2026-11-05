@@ -1,0 +1,34 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- 正式包：可打包、AOT 分析、包验证、公开面文件化 -->
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>logo.png</PackageIcon>
+    <PackageReleaseNotes>https://framework.docs.xihanfun.com/changelog</PackageReleaseNotes>
+    <!-- 启用 XiHan.Framework.Kernel.Analyzers 的框架包规则（XH0001/0002/0004）；XiHanRing 由 Ring 0/1 的项目自行设置 -->
+    <XiHanFrameworkPackage>true</XiHanFrameworkPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <CompilerVisibleProperty Include="XiHanFrameworkPackage" />
+    <CompilerVisibleProperty Include="XiHanRing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <None Include="$(MSBuildThisFileDirectory)../../assets/logo.png" Pack="true" PackagePath="/" Visible="false" />
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+
+  <!-- 每个正式包都以分析器形式引用自研分析器；分析器自身除外 -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' != 'XiHan.Framework.Kernel.Analyzers' and '$(MSBuildProjectName)' != 'XiHan.Framework.Kernel.Generators' and '$(MSBuildProjectName)' != 'XiHan.Framework.Persistence.Generators'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)XiHan.Framework.Kernel.Analyzers/XiHan.Framework.Kernel.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

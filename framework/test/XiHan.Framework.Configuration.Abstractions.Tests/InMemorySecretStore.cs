@@ -1,0 +1,114 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using System.Globalization;
+using XiHan.Framework.Configuration.Abstractions.Secrets;
+using XiHan.Framework.Primitives;
+
+namespace XiHan.Framework.Configuration.Abstractions.Tests;
+
+/// <summary>
+/// 进程内的密钥库
+/// </summary>
+/// <remarks>
+/// 每次写入换版本；可让某个名字返回拒绝、整体抛出、挂起到取消，或少返回一项
+/// </remarks>
+internal sealed class InMemorySecretStore : ISecretStore
+{
+    /// <summary>
+    /// 保护表的锁
+    /// </summary>
+    private readonly Lock _lock = new();
+
+    /// <summary>
+    /// 名字 → 值
+    /// </summary>
+    private readonly Dictionary<string, SecretValue> _secrets = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 递增的版本号
+    /// </summary>
+    private int _version;
+
+    /// <summary>
+    /// 读取次数
+    /// </summary>
+    public int Reads { get; private set; }
+
+    /// <summary>
+    /// 返回拒绝的名字
+    /// </summary>
+    public HashSet<string> Denied { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 为真时每次读取都抛出
+    /// </summary>
+    public bool Throw { get; set; }
+
+    /// <summary>
+    /// 为真时每次读取都挂起，直到被取消
+    /// </summary>
+    public bool Hang { get; set; }
+
+    /// <summary>
+    /// 为真时每次读取都少返回最后一项（条数与请求不一致）
+    /// </summary>
+    public bool Short { get; set; }
+
+    /// <summary>
+    /// 写入
+    /// </summary>
+    public void Put(SecretName name, string value)
+    {
+        lock (_lock)
+        {
+            _version++;
+            _secrets[name.Value] = new SecretValue(value, _version.ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<SecretLookup>> GetAsync(IReadOnlyList<SecretName> names, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+        {
+            Reads++;
+            if (Throw)
+            {
+                throw new InvalidOperationException("The secret store is broken.");
+            }
+
+            if (Hang)
+            {
+                return new ValueTask<IReadOnlyList<SecretLookup>>(HangAsync(cancellationToken));
+            }
+
+            var lookups = new List<SecretLookup>(names.Count);
+            foreach (var name in names)
+            {
+                Result<SecretValue> result = Denied.Contains(name.Value)
+                    ? Error.Denied(ConfigurationErrors.SecretDenied, ConfigurationMessages.SecretDenied, MessageArguments.Of(("name", name.Value)))
+                    : _secrets.TryGetValue(name.Value, out var secret)
+                        ? Result.Success(secret)
+                        : Error.NotFound(ConfigurationErrors.SecretNotFound, ConfigurationMessages.SecretNotFound, MessageArguments.Of(("name", name.Value)));
+                lookups.Add(new SecretLookup(name, result));
+            }
+
+            if (Short && lookups.Count > 0)
+            {
+                lookups.RemoveAt(lookups.Count - 1);
+            }
+
+            return ValueTask.FromResult<IReadOnlyList<SecretLookup>>(lookups);
+        }
+    }
+
+    /// <summary>
+    /// 挂起到取消
+    /// </summary>
+    private static async Task<IReadOnlyList<SecretLookup>> HangAsync(CancellationToken cancellationToken)
+    {
+        await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
+        return [];
+    }
+}

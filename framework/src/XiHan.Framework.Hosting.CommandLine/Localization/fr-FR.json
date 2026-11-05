@@ -1,0 +1,17 @@
+{
+  "hosting.commandline.command_unknown": "Commande inconnue '{command}'. Exécutez 'help' pour lister les commandes.",
+  "hosting.commandline.commands": "Commandes :",
+  "hosting.commandline.graph_description": "Affiche le graphe des capacités.",
+  "hosting.commandline.help_description": "Affiche les commandes.",
+  "hosting.commandline.invoke_authorization_invalid": "La valeur de --authorization doit être '<schéma> <valeur>'.",
+  "hosting.commandline.invoke_data_missing": "Le fichier de données '{path}' n'existe pas.",
+  "hosting.commandline.invoke_description": "Invoque une opération exposée à la ligne de commande : invoke <id d'opération> [--json <objet> | --data <fichier>] [--<champ> <valeur> ...] [--authorization '<schéma> <valeur>'] [--tenant <id>] [--locale <locale>] [--correlation <id>] [--timeout <secondes>].",
+  "hosting.commandline.invoke_json_invalid": "La valeur de --json doit être un objet JSON : {reason}",
+  "hosting.commandline.invoke_operation_missing": "Un id d'opération est requis : invoke <id d'opération>.",
+  "hosting.commandline.invoke_timeout_invalid": "La valeur de --timeout doit être un nombre positif de secondes.",
+  "hosting.commandline.operation_not_exposed": "L'opération '{id}' n'est pas enregistrée ou n'est pas exposée à la ligne de commande.",
+  "hosting.commandline.operation_shorthand": "<ressource> <verbe> [...] : raccourci pour 'invoke <ressource>.<verbe>'.",
+  "hosting.commandline.operations_description": "Liste les opérations enregistrées.",
+  "hosting.commandline.pipeline_description": "Affiche les étapes et les intergiciels du pipeline.",
+  "hosting.commandline.usage": "Utilisation : {program} <commande> [arguments] [--option <valeur> ...]"
+}

@@ -401,3 +401,8 @@ FodyWeavers.xsd
 
 #wwwroot
 wwwroot/
+# Rust Wasm 插件示例的构建产物目录
+framework/samples/EchoWasmPlugin/target/
+# Go 插件示例的构建产物目录（测试运行时用本机 go 构建）
+framework/samples/EchoGoPlugin/bin/
+framework/samples/CacheGoPlugin/bin/

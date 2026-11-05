@@ -1,0 +1,4 @@
+{
+  "protocols.grpc.request_malformed": "操作 '{operation}' のリクエストは有効な protobuf メッセージではありません: {reason}",
+  "protocols.grpc.response_unencodable": "操作 '{operation}' のレスポンスを protobuf にエンコードできませんでした。"
+}

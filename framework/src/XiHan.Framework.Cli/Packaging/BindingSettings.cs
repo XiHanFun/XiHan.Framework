@@ -1,0 +1,26 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+namespace XiHan.Framework.Cli.Packaging;
+
+/// <summary>
+/// 一个资源绑定
+/// </summary>
+internal sealed record BindingSettings
+{
+    /// <summary>
+    /// 绑定类型
+    /// </summary>
+    /// <remarks>
+    /// <c>connection:relational</c>、<c>cache:distributed</c>、<c>queue</c>、<c>blob</c>、<c>stream</c>、<c>configuration:remote</c>，见 <see cref="BindingKind.All"/>
+    /// </remarks>
+    public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// k8s Secret 名
+    /// </summary>
+    /// <remarks>
+    /// 为空时用 <c>&lt;应用&gt;-&lt;绑定&gt;</c>
+    /// </remarks>
+    public string? Secret { get; set; }
+}

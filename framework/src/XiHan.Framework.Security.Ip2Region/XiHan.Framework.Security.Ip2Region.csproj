@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Security.Ip2Region</PackageId>
+    <RootNamespace>XiHan.Framework.Security.Ip2Region</RootNamespace>
+    <Description>曦寒框架 IP 归属地的 ip2region 提供程序</Description>
+    <PackageTags>xihan;framework;security;ip2region;geoip</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IP2Region.Net" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XiHan.Framework.Security.Ip2Region.Tests" />
+  </ItemGroup>
+</Project>

@@ -20,4 +20,4 @@ description: 收集 XiHan.Framework 两个版本或引用之间的用户可感�
 - 跨多个模块的同一底层修复合并描述；只有不同用户影响才拆分。
 - 依赖升级仅在带来可感知行为、安全或兼容性变化时说明。
 
-开发阶段先维护 `## 未发布`；正式版本形成 `## vX.Y.Z (YYYY-MM-DD)`。版本脚本可以提供提交范围线索，但本技能不运行 VersionUpgrade、不改 `version.props`、不构建和不发布。
+开发阶段先维护 `## 未发布`；正式版本形成 `## vX.Y.Z (YYYY-MM-DD)`。本技能不改 `framework/Directory.Build.props` 的版本、不构建和不发布。

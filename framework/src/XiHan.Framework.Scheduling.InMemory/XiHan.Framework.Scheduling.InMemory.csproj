@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Scheduling.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Scheduling.InMemory</RootNamespace>
+    <Description>曦寒框架调度的内存默认实现</Description>
+    <PackageTags>xihan;framework;scheduling;in-memory;cron;leader-election</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

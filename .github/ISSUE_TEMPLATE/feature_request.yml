@@ -25,7 +25,7 @@ body:
     attributes:
       label: 需求背景 / 痛点
       description: 你遇到了什么问题，或当前有哪些不便？这个建议想解决什么？
-      placeholder: 例如：EventBus 目前只支持 A/B 两种 Broker，希望增加对 C 的支持…
+      placeholder: 例如：Messaging 目前只支持 A/B 两种 Broker，希望增加对 C 的支持…
     validations:
       required: true
 
@@ -43,14 +43,14 @@ body:
       label: 所属层
       description: 该建议主要涉及的架构层
       options:
-        - 公共层（Utils）
-        - 元数据层（Metadata）
-        - 核心层（Core / 模块系统 / DI / 生命周期）
-        - 领域层（Domain / Domain.Shared）
-        - 应用层（Application / Contracts / MultiTenancy / Validation / Settings）
-        - 基础设施层（Data / Caching / Auth / EventBus / AI / Bot / Tasks 等）
-        - Web 层（Web.Core / Web.Api / Web.Docs / Gateway / Grpc / RealTime）
-        - 新模块（现有分层之外）
+        - 原语层（Primitives）
+        - 内核（Kernel / 能力图谱 / 管道 / 操作 / 生命周期）
+        - 领域与子系统抽象（Domain / *.Abstractions）
+        - 实现与 Provider（Persistence / Caching / Security / Messaging / Workflow / AI 等）
+        - 宿主（Hosting.AspNetCore / Hosting.CommandLine）
+        - 协议与插件（Protocols / Plugins）
+        - 工具链（Analyzers / Generators / Conformance / Testing / Cli）
+        - 新的包（现有环层之外）
         - 测试 / 文档 / 构建
         - 其他 / 不确定
     validations:
@@ -59,9 +59,9 @@ body:
   - type: input
     id: module
     attributes:
-      label: 相关模块 / 包名
-      description: 具体的模块或 NuGet 包名（如为新模块可留空）
-      placeholder: XiHan.Framework.EventBus
+      label: 相关包名
+      description: 具体的 NuGet 包名（如为新包可留空）
+      placeholder: XiHan.Framework.Messaging.Abstractions
     validations:
       required: false
 

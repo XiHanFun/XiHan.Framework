@@ -6,7 +6,7 @@
 
 ```bash
 dotnet restore framework/XiHan.Framework.slnx
-dotnet build framework/XiHan.Framework.slnx -c Release --no-restore -p:GeneratePackageOnBuild=false
+dotnet build framework/XiHan.Framework.slnx -c Release --no-restore
 dotnet test --solution framework/XiHan.Framework.slnx --configuration Release --no-build -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
 ```
 
@@ -18,7 +18,7 @@ dotnet test --solution framework/XiHan.Framework.slnx --configuration Release --
 ## 测试质量
 
 - 单元测试覆盖纯逻辑、边界和失败语义。
-- 集成测试覆盖模块依赖、DI、配置、生命周期、代理、序列化和 Provider 接线。
+- 集成测试覆盖能力解析、管道次序、DI、配置、生命周期、序列化和 Provider 接线；默认实现与 Provider 跑所属子系统的一致性套件。
 - 并发测试验证可观察不变量，不依赖脆弱的固定延时。
 - 修复回归先保留失败用例，再实现修复。
 - 不删除断言、忽略失败或扩大超时来制造绿色结果。
@@ -32,12 +32,12 @@ pnpm --dir docs install --frozen-lockfile
 pnpm --dir docs build
 ```
 
-公开 API、配置、默认值或生命周期变化必须同步 XML 文档、模块 README、示例和文档站。示例只保留当前推荐路径。
+公开 API、配置、默认值或生命周期变化必须同步 XML 文档、包 README、示例和文档站。示例只保留当前推荐路径。
 
 ## 包与发布
 
-- `framework/props/nuget.props` 管理包元数据和输出；日常构建关闭 `GeneratePackageOnBuild`。
+- `framework/Directory.Build.props` 与 `framework/src/Directory.Build.props` 管理包元数据和输出，包在 `framework/artifacts/packages/`。
 - 发布前核对 `.github/workflows/ci.yml`、`.github/workflows/release.yml` 和实际生成包清单。
-- VersionUpgrade、NuGet unlist、标签、推送和发布会改变外部状态，只在用户明确要求时执行。
-- 不手工修改 `nupkgs` 或构建产物；修正源项目和 props 后重新生成。
+- NuGet unlist、标签、推送和发布会改变外部状态，只在用户明确要求时执行。
+- 不手工修改包或构建产物；修正源项目和 props 后重新生成。
 - 一个版本内的契约、实现、测试、文档和包元数据必须一致。

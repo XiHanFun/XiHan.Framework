@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Auditing.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Auditing.InMemory</RootNamespace>
+    <Description>曦寒框架审计的内存默认实现</Description>
+    <PackageTags>xihan;framework;auditing;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

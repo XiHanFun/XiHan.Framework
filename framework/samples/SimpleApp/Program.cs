@@ -1,0 +1,83 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using SimpleApp;
+using SimpleApp.Greetings;
+using SimpleApp.Orders;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Localization.Abstractions.Messages;
+using XiHan.Framework.Messaging.Abstractions.Outbox;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Profiles.Standard;
+using XiHan.Framework.Protocols.CloudEvents;
+using XiHan.Framework.Protocols.CloudEvents.Inbound;
+using XiHan.Framework.Protocols.Grpc;
+using XiHan.Framework.Protocols.Grpc.Services;
+using XiHan.Framework.Protocols.Http;
+using XiHan.Framework.Protocols.Http.OpenApi;
+using XiHan.Framework.Protocols.Http.Routing;
+using XiHan.Framework.Protocols.Mcp;
+using XiHan.Framework.Protocols.Mcp.Transports;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 示例保持 AOT 友好：把源生成的序列化上下文放在解析链最前面，端点返回的类型不走反射序列化
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, SampleJsonContext.Default));
+
+// Standard 组合：五个子系统的内存默认实现；再加 HTTP 协议适配器、事务性发件箱与两个业务能力包
+// 依赖写在清单里按能力 ID 解析；换 Provider 只需再 UseFeature 一个显式实现
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<HttpProtocolFeature>()
+    .UseFeature<McpProtocolFeature>()
+    .UseFeature<GrpcProtocolFeature>()
+    .UseFeature<CloudEventsProtocolFeature>()
+    .UseFeature<OutboxFeature>()
+    .UseFeature<GreetingFeature>()
+    .UseFeature<OrdersFeature>());
+
+// 应用自己的消息模板（SampleMessages）与译文（嵌入的 Localization/<区域>.json）；Problem Details 的 detail 按 Accept-Language 翻译，默认英文
+builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("samples", typeof(SampleMessages)));
+
+var app = builder.Build();
+
+// 其余端点在内核管道的 Handle 阶段内执行；探针直接映射应用状态机
+app.UseXiHan();
+app.MapXiHanHealth();
+
+// 操作契约经 HTTP 暴露：orders.create → POST /orders（201），orders.list → GET /orders；授权按契约里的权限码判定
+app.MapXiHanOperations();
+app.MapXiHanOpenApi();   // 从登记表与生成的 Schema 发布 /openapi.json
+app.MapXiHanMcp();       // POST /mcp：同一份契约作为 MCP tool（orders_create / orders_list），描述取自消息目录
+app.MapXiHanGrpc();      // gRPC：Orders/Create、Orders/List（appsettings 里 5001 端口 h2c），protobuf 由 Schema 推出
+app.MapXiHanProto();     // GET /operations.proto：从同一份 Schema 生成的 .proto
+// POST /events：外部 CloudEvent（orders.placed → 主题 orders）经管道交给 OrderPlacedHandler
+// 框架不给这个端点加要求，事件的 xihantenant 是发送方给的，能调它就能选租户，所以只开给持有这个权限的服务账号（ADR-0121）
+app.MapXiHanCloudEvents().RequireXiHanPermission(OrdersFeature.DeliverEventsPermission);
+
+app.MapGet("/", () => $"{FrameworkInfo.Name} {FrameworkInfo.Version}");
+
+// /greet、/orders/stats、/whoami 的 JSON 响应不是操作契约：OpenAPI 只引用已登记操作的 Schema，不另做推导，引用不到时整份文档生成失败（PROTOCOLS_VALIDATION_010），所以不进文档
+app.MapGet("/greet", (string? name, GreetingCounter counter) => new Greeting($"Hello, {name ?? "XiHan"}!", counter.Count)).ExcludeFromDescription();
+
+app.MapGet("/missing", (HttpContext http) =>
+{
+    // 把失败结果写进调用上下文，Egress 由宿主翻译为 RFC 9457 Problem Details
+    http.GetXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("SAMPLES_NOTFOUND_001", SampleMessages.ResourceMissing));
+    return Results.Empty;
+});
+
+app.MapGet("/orders/stats", (OrderEventCounter counter) => new OrderStatistics(counter.Handled)).RequireXiHanAuthentication().ExcludeFromDescription();
+
+app.MapGet("/whoami", (HttpContext http) =>
+{
+    var security = http.GetXiHanContext().ValueOrThrow().GetSecurity();
+    return new WhoAmI(security.Principal.Id, security.Principal.IsAuthenticated, security.Tenant?.Id);
+}).ExcludeFromDescription();
+
+app.Run();

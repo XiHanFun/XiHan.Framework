@@ -1,0 +1,150 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.MultiTenancy.Abstractions;
+using XiHan.Framework.Persistence.Abstractions;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Workflow.Abstractions;
+using XiHan.Framework.Workflow.Abstractions.Storage;
+using XiHan.Framework.Workflow.Database.Entities;
+using XiHan.Framework.Workflow.Database.Locking;
+using XiHan.Framework.Workflow.Database.Polling;
+using XiHan.Framework.Workflow.Database.Storage;
+
+namespace XiHan.Framework.Workflow.Database;
+
+/// <summary>
+/// 数据库工作流特性（<c>role: provider</c>）
+/// </summary>
+/// <remarks>
+/// 提供 <c>workflow.execution@1</c>，依赖 <c>persistence.relational@1</c>——定义、实例、节点实例与书签在调用方的工作单元里经仓储读写（随业务提交或回滚），按分区落表：租户的记录实现 <c>IMultiTenant</c>、随租户分库，平台的记录在平台库；实例锁与轮询领导权以平台库里的租约行实现，应用进入服务状态后由持有领导权的节点逐个分区（平台与租户目录里启用的租户）轮询到期书签。可选依赖 <c>multitenancy.context@1</c>：装配了多租户时轮询器从它的租户目录取租户。装配后顶替默认的内存工作流。健康项 <see cref="HealthName"/> 按 <see cref="DatabaseWorkflowOptions.HealthProbeInterval"/> 周期读一次轮询领导权的租约行，租约表不可达时条目 Degraded
+/// </remarks>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed class DatabaseWorkflowFeature : IHostedFeature
+{
+    /// <summary>
+    /// 健康项名：轮询领导权的租约存储是否可达
+    /// </summary>
+    public const string HealthName = "workflow.database.poller";
+
+    /// <summary>
+    /// 启动后保存的轮询循环，供停止时使用
+    /// </summary>
+    private DueBookmarkPollingLoop? _loop;
+
+    /// <summary>
+    /// 启动时起循环的健康探针，停止时结束它
+    /// </summary>
+    private PeriodicHealthContributor? _health;
+
+    /// <inheritdoc />
+    public Manifest Manifest { get; } = new()
+    {
+        Id = "xihan.workflow.database",
+        Package = "XiHan.Framework.Workflow.Database",
+        Version = FrameworkInfo.Version,
+        Primitives = 1,
+        Stability = Stability.Preview,
+        Kind = ManifestKind.Provider,
+        Role = ManifestRole.Provider,
+        Provides = [new CapabilityDeclaration(WorkflowCapabilities.Execution, WorkflowCapabilities.Version)],
+        Requires =
+        [
+            new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
+            new CapabilityRequirement(PersistenceCapabilities.Relational, PersistenceCapabilities.Version),
+            // 轮询器要从租户目录取租户：装配了多租户时排在它之后启动；没有装配时只轮询平台
+            new CapabilityRequirement(MultiTenancyCapabilities.Context, MultiTenancyCapabilities.Version, optional: true),
+        ],
+        Contributes = new Contributions
+        {
+            Config = new ConfigContribution(WorkflowOptions.ConfigurationSection),
+            Health = [HealthName],
+        },
+        Entry = typeof(DatabaseWorkflowFeature).FullName,
+    };
+
+    /// <inheritdoc />
+    public void Configure(FeatureContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        context.Services.AddMessageCatalog(WorkflowMessages.Catalog);
+        var options = DatabaseWorkflowOptions.FromConfiguration(context.Configuration);
+        var engineOptions = WorkflowOptions.FromConfiguration(context.Configuration);
+        context.Services.AddSingleton(options);
+        // 实例锁的等待上限来自引擎选项；几个 Provider 读的是同一份配置，谁先注册都一样
+        context.Services.TryAddSingleton(engineOptions);
+        // 租户分区的四张表实现 IMultiTenant（随租户分库），平台分区的四张表落平台库；租约表落平台库，或配置的命名连接（SQLite 上放到另一个库文件）
+        context.Services.AddRepository<WorkflowDefinitionRecord, string>();
+        context.Services.AddRepository<WorkflowInstanceRecord, string>();
+        context.Services.AddRepository<WorkflowNodeInstanceRecord, string>();
+        context.Services.AddRepository<WorkflowBookmarkRecord, string>();
+        context.Services.AddRepository<PlatformWorkflowDefinitionRecord, string>();
+        context.Services.AddRepository<PlatformWorkflowInstanceRecord, string>();
+        context.Services.AddRepository<PlatformWorkflowNodeInstanceRecord, string>();
+        context.Services.AddRepository<PlatformWorkflowBookmarkRecord, string>();
+        context.Services.AddRepository<WorkflowLockRecord, string>(options.LockConnection);
+        // 写入序号进程内一份：不同作用域的写入也严格递增，同刻的行才按写入顺序排
+        context.Services.AddSingleton<WriteSequence>();
+        // 存储在调用方的工作单元里读写，按作用域；锁的租约行走自己的工作单元，单例
+        context.Services.AddScoped<DatabaseWorkflowDefinitionStore>();
+        context.Services.AddScoped<DatabaseWorkflowInstanceStore>();
+        context.Services.AddScoped<DatabaseWorkflowBookmarkStore>();
+        context.Services.AddScoped<DatabaseWorkflowTransaction>();
+        context.Services.AddSingleton<DatabaseWorkflowInstanceLock>();
+        // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集；无论能力是否被选中，租约表都是本包的存储
+        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, new PollerLeaseProbe(sp, options).ProbeAsync, options.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
+        context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName));
+        if (!context.Node.IsSelectedFor(WorkflowCapabilities.Execution))
+        {
+            return;
+        }
+
+        // 被选中才把契约指向本包的实现并装配引擎与轮询；被别的显式 Provider 顶替时只留本包自己的类型
+        context.Services.TryAddScoped<IWorkflowDefinitionStore>(static sp => sp.GetRequiredService<DatabaseWorkflowDefinitionStore>());
+        context.Services.TryAddScoped<IWorkflowInstanceStore>(static sp => sp.GetRequiredService<DatabaseWorkflowInstanceStore>());
+        context.Services.TryAddScoped<IWorkflowBookmarkStore>(static sp => sp.GetRequiredService<DatabaseWorkflowBookmarkStore>());
+        context.Services.TryAddScoped<IWorkflowTransaction>(static sp => sp.GetRequiredService<DatabaseWorkflowTransaction>());
+        context.Services.TryAddSingleton<IWorkflowInstanceLock>(static sp => sp.GetRequiredService<DatabaseWorkflowInstanceLock>());
+        context.Services.AddWorkflowEngine(engineOptions);
+        context.Services.AddSingleton<PollerLeadership>();
+        context.Services.AddSingleton<DueBookmarkPollingLoop>();
+    }
+
+    /// <inheritdoc />
+    public async Task StartAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        _loop = services.GetService<DueBookmarkPollingLoop>();
+        if (_loop is not null)
+        {
+            await _loop.StartAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        _health = services.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName);
+        await _health.StartAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        if (_health is not null)
+        {
+            await _health.StopAsync(cancellationToken).ConfigureAwait(false);
+            _health = null;
+        }
+
+        if (_loop is not null)
+        {
+            await _loop.StopAsync(cancellationToken).ConfigureAwait(false);
+            _loop = null;
+        }
+    }
+}

@@ -1,340 +1,255 @@
 # 可观测性
 
-线上出问题时要能回答三个问题：这次请求走过哪些环节、哪一步慢、进程现在什么状态。框架把这件事拆成链路追踪、指标、进程内性能统计与诊断、健康检查四块，其中链路与指标基于 OpenTelemetry，**默认全部关闭**。
+本章讲内核发出的追踪与指标、框架与应用怎样写日志、怎样用 `Observability.OpenTelemetry` 导出到后端，以及用 `Observability.Host` 读取进程与主机的运行信息，适用于要接入监控与服务监控页的应用。完整 API 见 [Observability.OpenTelemetry 包](../packages/observability-opentelemetry)与 [Observability.Host 包](../packages/observability-host)。
 
-完整 API 与配置全表见 [Observability 包](../packages/observability)。
+## 内核发出什么
 
-## 四块能力，两种数据去向
+内核只依赖 `System.Diagnostics` 与 `Microsoft.Extensions.Logging.Abstractions`，不包装自己的追踪或指标接口。`FrameworkDiagnostics` 持有一个 `ActivitySource` 与一个 `Meter`，名字都是 `XiHan.Framework`（`FrameworkDiagnostics.SourceName`），版本是框架版本。Observe 阶段的内置中间件 `ObserveMiddleware` 为每次调用产生以下信号：
 
-| 能力 | 入口类型 | 受 `Enabled` 门控 | 数据去向 |
-| --- | --- | --- | --- |
-| 链路追踪 | `ActivitySource`（`XiHanActivitySources`） | 是 | OTLP / 控制台导出器 |
-| 指标 | `IMetricsCollector` | 记录随时可调，**导出**受门控 | OTLP / 控制台导出器，进程内不留存 |
-| 性能统计 | `IPerformanceMonitor` | 否 | 进程内内存，只能用 API 读 |
-| 运行时诊断 | `IDiagnosticsService` | 否 | 即时读取，不留存 |
-| 健康检查 | `Microsoft.Extensions.Diagnostics.HealthChecks` | 否 | 需要自己映射端点 |
+| 信号 | 名字 | 内容 |
+| --- | --- | --- |
+| Span | `xihan.invoke` | `ActivityKind.Internal`；父级见下文「采样」；标签 `xihan.outcome`；失败时状态为 Error，描述是错误码 |
+| 计数器 | `xihan.invocations` | 单位 `{invocation}`，每次调用加一，标签 `xihan.outcome` |
+| 直方图 | `xihan.invocation.duration` | 单位 `ms`，调用耗时，标签 `xihan.outcome` |
 
-::: warning 本包不含任何采集后端
-它只负责按 OTLP 标准协议把 trace / metrics 发出去。采集端与可视化面板要自行部署，框架不内置、也不代管。
-:::
+`xihan.outcome` 取 `success`、`failure` 或 `unset`；`unset` 表示管道走完也没有写入结果，用来发现漏写结果的处理器。成功、失败与取消都会记指标。调用期间的未处理异常由 `ObserveMiddleware` 以 Error 级记一条日志（`Unhandled exception during invocation '{TraceId}'.`），并转成 `KERNEL_UNEXPECTED_001` 结果；取消不在这里吞掉，由 Resilience 阶段区分超时与外部取消。
 
-## 启用
+没有任何监听者时，`StartActivity` 返回 `null`，计数与直方图的记录也几乎没有开销。接收这些信号的是 OpenTelemetry 或任何订阅同名源与仪表的工具，内核不关心是谁。
 
-没有任何框架模块 `DependsOn` 可观测性模块——它必须由宿主模块自己声明：
+## 日志
 
-```csharp
-[DependsOn(typeof(XiHanObservabilityModule))]
-public class MyWebHostModule : XiHanModule { }
-```
-
-模块的 `ConfigureServices` 只做一件事：调用 `services.AddXiHanObservability(configuration)`。这个扩展方法按顺序执行：
-
-1. 把配置节 `XiHan:Observability` 绑定到 `XiHanObservabilityOptions`；
-2. `services.AddHealthChecks()` 注册健康检查基础设施；
-3. 单例注册 `IMetricsCollector` / `IPerformanceMonitor` / `IDiagnosticsService`；
-4. **若 `Enabled` 为 `false`（默认值），到此 `return`**；
-5. 否则 `services.AddOpenTelemetry()`，配置 Resource，再按 `EnableTracing` / `EnableMetrics` 分别装配。
-
-::: danger 只挂模块不改配置 = 什么都不会发生
-`Enabled` 默认 `false`，OTel SDK 根本不装配。此时 `IMetricsCollector` 的调用是「装配即孤儿」——数据既不落内存也不导出，唯一开销是方法调用本身。链路那侧同理，各处 span 代码会被 `HasListeners()` 短路。
-:::
-
-## 打开 OpenTelemetry
-
-开发环境（全采样 + 控制台看效果）：
+框架内部全部用 `Microsoft.Extensions.Logging`，日志点以 `[LoggerMessage]` 源生成，模板是英文；类别名是类型全名，按命名空间前缀调级别即可：
 
 ```json
 {
-  "XiHan": {
-    "Observability": {
-      "Enabled": true,
-      "ServiceName": "XiHan.BasicApp",
-      "ServiceVersion": "1.0.0",
-      "EnableTracing": true,
-      "EnableMetrics": true,
-      "SamplingRatio": 1.0,
-      "ConsoleExporter": true
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "XiHan.Framework": "Warning",
+      "XiHan.Framework.Auditing": "Information"
     }
   }
 }
 ```
 
-生产环境（降采样 + 只发 OTLP）：
+上例把框架日志调到 Warning，同时保留审计事件的 Information 日志。
+
+框架不包装 Serilog 或其他日志库：应用照常注入 `ILogger<T>`，需要第三方日志库时按该库的文档接到 `Microsoft.Extensions.Logging`。装配 `Observability.OpenTelemetry` 且 `Logging` 开启时，日志经 OpenTelemetry 的日志提供者与追踪、指标一起导出。
+
+应用自己的日志也建议用 `[LoggerMessage]`：模板在编译期解析，不装箱，Native AOT 下可用。
+
+## 导出到 OpenTelemetry
+
+`Observability.OpenTelemetry` 提供 `observability.export@1`（`role: default`），把内核与 .NET、ASP.NET Core 内置的源与仪表接到 OpenTelemetry，再按配置装配导出器。`Profiles.Full` 已包含它；其他组合显式装配：
+
+```csharp
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Observability.OpenTelemetry;
+using XiHan.Framework.Profiles.Standard;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<OpenTelemetryObservabilityFeature>());
+
+var app = builder.Build();
+app.UseXiHan();
+app.Run();
+```
 
 ```json
 {
   "XiHan": {
     "Observability": {
-      "Enabled": true,
-      "ServiceName": "XiHan.BasicApp",
-      "EnableTracing": true,
-      "EnableMetrics": true,
-      "SamplingRatio": 0.1,
-      "ConsoleExporter": false,
-      "OtlpEndpoint": "http://otel-collector:4317",
-      "AdditionalSources": ["MyApp.Custom"]
+      "OpenTelemetry": {
+        "ServiceName": "orders",
+        "SamplingRatio": 0.2,
+        "Otlp": { "Endpoint": "http://localhost:4317", "Protocol": "Grpc" },
+        "Console": false,
+        "Sources": "MyApp.Orders",
+        "Meters": "MyApp.Orders,MyApp.Auditing"
+      }
     }
   }
 }
 ```
 
-开关与实际装配的对应关系：
+导出器的启用规则：
 
-| 开关 | 装配了什么 |
-| --- | --- |
-| `EnableTracing`（默认 `true`） | `SetSampler(ParentBased(TraceIdRatioBased))` + `AddSource(XiHanActivitySources.All)` + `AddAspNetCoreInstrumentation()` + `AddHttpClientInstrumentation()`，再追加 `AdditionalSources` |
-| `EnableMetrics`（默认 `false`） | `AddMeter(MetricsCollector.MeterName)`，即 `"XiHan.Metrics"` |
-| `ConsoleExporter` | 给已启用的 Tracing / Metrics 各加一个控制台导出器 |
-| `OtlpEndpoint` 非空 | 给已启用的 Tracing / Metrics 各加一个 OTLP 导出器，`Endpoint` 取该值 |
-| `EnableLogging` | **占位**，扩展方法中没有对应的 `WithLogging(...)` 装配代码 |
+1. `Otlp:Enabled` 显式为 `true` / `false` 时按它。
+2. 没写 `Otlp:Enabled` 时，配置了 `Otlp:Endpoint` 或设置了环境变量 `OTEL_EXPORTER_OTLP_ENDPOINT` 就启用 OTLP 导出器，否则不导出，也不会向本机的空端口反复重试。
+3. 有 `Otlp:Endpoint` 时按它与 `Otlp:Protocol`（`Grpc` 或 `HttpProtobuf`）建一个跨三类信号的导出器；只靠环境变量时，端点与协议都按 OpenTelemetry 的标准环境变量与默认端口（gRPC 4317、HTTP 4318）决定；写了 `Otlp:Protocol` 却没写 `Otlp:Endpoint` 时装配失败（`ArgumentException`），不会被静默忽略。
+4. `Console` 为 `true` 时三类信号同时写到控制台导出器，只用于开发。
 
-::: warning 两个默认值方向相反
-`EnableTracing` 默认 `true`、`EnableMetrics` 默认 `false`。只把 `Enabled` 打开，你会拿到链路但拿不到指标。
-:::
+容器与 Kubernetes 里通常只给环境变量：
 
-::: danger 采了不等于发得出去
-`ConsoleExporter` 与 `OtlpEndpoint` 都不配时，SDK 装配完成但没有任何出口，表现是「开关全开却一条数据都看不到」。二者至少配一个。
-:::
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 dotnet run
+```
 
-## 采样率的实际语义
+### 订阅的源与仪表
 
-采样器是 `ParentBasedSampler(new TraceIdRatioBasedSampler(Math.Clamp(SamplingRatio, 0d, 1d)))`。两层含义：
-
-- **`ParentBased`**：请求带了 `traceparent` 且上游已标记采样时，本服务跟随上游决定，不重新掷骰；
-- **`TraceIdRatioBased`**：只有作为链路根（没有远端父级）时，才按比例决定整条链路采不采。
-
-::: warning 采样是链路级的，不是 span 级的
-`SamplingRatio: 0.1` 的意思是「本服务发起的新链路里保留一成」，被选中的链路整条完整保留，没选中的整条丢弃。它不会让你「每种 span 都看到 10%」。同理，把本服务调低而上游仍是 1.0，上游进来的请求依旧全量落盘。
-:::
-
-`SamplingRatio` 会被 `Math.Clamp` 到 `0~1`，配成 `5` 或 `-1` 不会报错，等价于 `1` 和 `0`。
-
-## 框架内置的 Span 源
-
-`ActivitySource` 的名字与实例集中在 `XiHan.Framework.Core.Tracing.XiHanActivitySources`（放在 Core 而非本包，是为了让 Data / EventBus / Cache 这些只依赖 Core 的层也能发 span 而不产生环依赖）。`All` 汇总全部源名，装配时一次性 `AddSource`。
-
-| 源名 | 常量 / 实例 | 当前谁在发 span |
+| 类别 | 缺省订阅 | 追加 |
 | --- | --- | --- |
-| `XiHan.App` | `App` / `AppSource` | 框架自身不发，留给业务层打点 |
-| `XiHan.Data` | `Data` / `DataSource` | SqlSugar 执行回调，span 名 `db.query`，`ActivityKind.Client`，带 `db.system` / `db.statement` 标签，异常时置 Error 状态 |
-| `XiHan.EventBus` | `EventBus` / `EventBusSource` | Broker 分布式事件消费入口，span 名 `eventbus.consume {事件名}`，`ActivityKind.Consumer` |
-| `XiHan.Cache` | `Cache` / `CacheSource` | Redis 缓存的批量 / 模式匹配 / Lua 异步操作，`ActivityKind.Client`，带 `db.system=redis` |
-| `XiHan.Grpc` | `Grpc` / `GrpcSource` | 常量与实例已定义并纳入 `All`，但**框架内暂无代码在此源上创建 span** |
-| `XiHan.AI` | `Ai`（只有名字常量，无静态实例） | 由 AI 会话管道的 `UseOpenTelemetry` 中间件产出，源名取自 `AiPipelineOptions.TelemetrySourceName` |
+| Activity 源 | `XiHan.Framework`、`Microsoft.AspNetCore`、`System.Net.Http` | `Sources`，逗号分隔 |
+| Meter | `XiHan.Framework`、`Microsoft.AspNetCore.Hosting`、`Microsoft.AspNetCore.Server.Kestrel`、`System.Net.Http`、`System.Runtime` | `Meters`，逗号分隔 |
 
-::: tip 未开启时零开销的实现方式
-Data / Cache / EventBus 的 span 代码开头都是 `source.HasListeners()` 判断，没有监听者直接 return。这是「默认关闭不付代价」的落点，也意味着这些 span 的有无完全由 `EnableTracing` 决定。
-:::
+ASP.NET Core 与 `HttpClient` 不装检测包，按名字订阅它们原生发出的 Activity 与 Meter。资源属性 `service.name` 缺省取入口程序集名（取不到时为 `xihan`），`service.version` 取入口程序集版本，`service.instance.id` 取机器名。
 
-::: warning AI 的 span 要开两处开关
-`XiHan.AI` 源已在 `All` 里被 `AddSource`，但真正产出 span 的是 AI 管道中间件，需要 `XiHan:AI:Pipeline:EnableTelemetry` 也为 `true`。默认它是关的。
-:::
+### 采样
 
-## 业务代码打点
+采样器是 `ParentBasedSampler(TraceIdRatioBasedSampler(SamplingRatio))`：没有父级的根 Span 按 `SamplingRatio`（0 到 1，缺省 1）的比例采样，有父级的沿用父级的决定。`xihan.invoke` 的父级与采样按 RFC-0003 规则 7：当前 Activity（ASP.NET Core 的请求 Span、外层调用）与调用上下文同一 trace 时是它的子 Span；否则调用上下文带着上游 `traceparent` 的标志时以上游为远端父级，上游「不采样」就不采样；没有上游时是链路的根 Span，trace-id 用调用上下文的（与 Problem Details、审计、日志一致），按 `SamplingRatio` 采样。没有 `traceparent` 的 HTTP 请求并入 ASP.NET Core 的请求 Span，两者同一 trace-id。消息沿用同一套规则：发布时信封的 `traceparent` 带发布方的采样标志（父级是发布时的 `xihan.invoke`），处理器的调用从它还原，上游「不采样」的链路在消费端也不采样。
 
-用内置的应用源：
+## 业务打点
+
+应用的追踪与指标直接用 BCL 的 `ActivitySource` 与 `Meter`，把名字加进 `Sources` 与 `Meters` 才会被导出：
 
 ```csharp
-using var activity = XiHanActivitySources.AppSource.StartActivity("PlaceOrder");
-activity?.SetTag("order.id", orderId);
-activity?.SetTag("order.channel", "web");
-```
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
-::: warning 必须用 `activity?.`
-没有监听者时 `StartActivity` 返回 `null`。写成 `activity.SetTag(...)` 在 OTel 关闭的环境里会直接空引用崩溃。
-:::
+namespace MyApp.Diagnostics;
 
-自定义源要额外声明才会被采集：
-
-```csharp
-public static class MyAppSources
+public static class OrderDiagnostics
 {
-    public const string Custom = "MyApp.Custom";
-    public static readonly ActivitySource CustomSource = new(Custom);
+    // 名字要与 XiHan:Observability:OpenTelemetry 的 Sources / Meters 一致才会被导出
+    public const string Name = "MyApp.Orders";
+
+    public static ActivitySource ActivitySource { get; } = new(Name);
+
+    public static Meter Meter { get; } = new(Name);
+
+    public static Counter<long> Exported { get; } = Meter.CreateCounter<long>("myapp.orders.exported", "{order}", "Orders written to export files.");
 }
 ```
 
-```json
-{ "XiHan": { "Observability": { "AdditionalSources": ["MyApp.Custom"] } } }
-```
-
-框架内置的六个源由 `XiHanActivitySources.All` 自动纳入，不要在 `AdditionalSources` 里重复写。
-
-## TraceId 与 W3C Activity
-
-框架的 `TraceId` 不是自己造的编号，而是**优先取 `Activity.Current.TraceId`**。理解这条链，才能解释「为什么开了 OTel 之后日志里的 TraceId 长得不一样了」。
-
-产出侧，`XiHanTraceIdMiddleware` 位于 Web.Api 管线最前（仅次于 `UseForwardedHeaders`），按优先级取值：
-
-| 顺序 | 来源 | 形态 |
-| --- | --- | --- |
-| 1 | `Activity.Current.TraceId.ToHexString()` | W3C 32 位十六进制 |
-| 2 | 入站请求头 `X-Trace-Id` | 调用方给什么就是什么 |
-| 3 | `HttpContext.TraceIdentifier` | Kestrel 的「连接 ID:请求序号」 |
-
-取到后写入 `HttpContext.Items["__XiHanTraceId"]`，并回写响应头 `X-Trace-Id`。
-
-消费侧，同一个值散落在这些地方：
-
-| 消费方 | 取值途径 |
-| --- | --- |
-| 统一响应体 `ApiResponse.TraceId` | Web.Api 响应过滤器 |
-| 审计五表（访问 / 接口 / 操作 / 异常 / 登录日志）的 `TraceId` 字段 | 各中间件与过滤器 |
-| `ITraceIdProvider`（实现 `HttpTraceIdProvider`） | 给不依赖 ASP.NET Core 的层用；同样先看 `Activity.Current`，再回退 Items / `TraceIdentifier` |
-| 实体的 `ITraceableEntity.TraceId` | 数据层写入拦截时经 `ITraceIdProvider` 自动填充 |
-| `ICorrelationIdProvider` | 先看 `Activity.Current.TraceId`，无 Activity 时回退 `Change()` 显式设置的值 |
-| 日志模板中的 `{TraceId}` / `{SpanId}` | Serilog 从 `Activity.Current` 自动填充，无链路时渲染为空 |
-
-::: warning 开启 OTel 会改变 TraceId 的形态
-未启用时 TraceId 通常是 `HttpContext.TraceIdentifier`（形如 `0HN7...:00000001`）；启用后 ASP.NET Core instrumentation 会为每个请求建 Activity，TraceId 变成 32 位十六进制，与追踪后端里的链路可直接 join。如果你的日志检索规则、告警正则按旧格式写死，要一并调整。
-:::
-
-跨进程的异步链路也串得上：分布式事件发布时把 `ICorrelationIdProvider.Get()`（即当前 TraceId）作为 `correlationId` 随消息带走；消费端拿它重建一个 `isRemote: true` 的 `ActivityContext` 作为父级，消费 span 因此归入同一条 trace。值不是合法 32-hex 时退化为新的根 span，不会报错。
-
-::: tip 发布时没有 Activity 就串不起来
-后台作业、定时任务里发布事件时，若没有环境 Activity，`correlationId` 取到的是 `Change()` 设置的值或 `null`，消费端会开新链路。需要串联时在作业入口自己 `StartActivity`。
-:::
-
-## 指标
-
-`IMetricsCollector` 是单例，底层是一个 `Meter("XiHan.Metrics")`：
-
 ```csharp
-metricsCollector.RecordCounter("orders.created");
-metricsCollector.RecordCounter("orders.created", 5, new() { ["channel"] = "web" });
-metricsCollector.RecordHistogram("order.amount", 199.9);
+using Microsoft.Extensions.Logging;
 
-using (metricsCollector.BeginTimer("order.handle"))
+namespace MyApp.Diagnostics;
+
+public sealed partial class OrderExporter(ILogger<OrderExporter> logger)
 {
-    // 业务处理；Dispose 时记录直方图 `order.handle.duration`（毫秒）
-}
-```
-
-::: danger `GetMetrics()` 恒返回空列表
-`MetricsCollector` 直出 `Meter`，进程内不留存任何指标；`GetMetrics()` 返回空集合、`Clear()` 是空操作，两者仅为接口成员保留。想做一个「读 `GetMetrics()` 渲染指标面板」的接口，拿不到任何数据——指标只能通过导出器看。
-:::
-
-::: warning `RecordMeasurement` 实际记的是直方图
-没有 pull 型 gauge 的回调上下文，`RecordMeasurement` 内部直接委托给 `RecordHistogram`，分布与百分位交给后端聚合。`MetricType` 枚举里的 `Gauge` / `Summary` 当前没有对应的记录路径。
-:::
-
-## 性能统计与运行时诊断
-
-这两块与 OTel 开关无关，`Enabled=false` 时照样可用。
-
-```csharp
-using (var tracker = performanceMonitor.BeginOperation("PlaceOrder"))
-{
-    tracker.AddTag("channel", "web");
-    tracker.Checkpoint("validated");
-    // ... 处理 ...
-    tracker.Checkpoint("persisted");
-}
-
-var stats = performanceMonitor.GetStatistics();        // 总数/成功/失败、平均/最小/最大、P50/P95/P99，并按操作名分组
-var slow = performanceMonitor.GetSlowOperations(500);  // 耗时 ≥ 500ms，按耗时倒序
-```
-
-::: warning 只保留最近 10000 条记录
-`PerformanceMonitor` 的记录存在进程内队列，超过 10000 条自动丢弃最旧的，`GetStatistics()` / `GetSlowOperations()` 只反映这部分；进程重启即全丢，`Clear()` 可主动清空。它适合排查期临时观察，不适合当常驻监控——常驻请走 OTel 指标与链路。
-:::
-
-`IDiagnosticsService` 读进程当下状态，全部基于 BCL，无副作用（除 GC 那个方法外）：
-
-| 方法 | 内容 |
-| --- | --- |
-| `GetSystemInfo()` | 操作系统描述与版本、机器名、CPU 核数、系统启动时间、用户名 |
-| `GetRuntimeInfo()` | .NET 版本、进程 ID、应用启动时间与运行秒数、是否 64 位 |
-| `GetMemoryInfo()` | 已分配字节（最近一次 GC 结束时的堆大小减碎片）、工作集、私有内存，以及各代 GC 次数与暂停占比 |
-| `GetThreadInfo()` | 线程池线程数、可用/最大工作线程与 IO 线程、待处理工作项数 |
-| `GetDiagnosticsReport()` | 上述四项一次性汇总 |
-| `ForceGarbageCollection()` | 两轮 `GC.Collect()` 中间夹一次 `WaitForPendingFinalizers()` |
-
-::: danger 不要把 `ForceGarbageCollection` 挂到匿名端点
-它是真的强制回收并等待终结器，会造成停顿。只在受权限保护的运维接口里暴露，且不要给任何自动化调用。
-:::
-
-## 健康检查
-
-`AddXiHanObservability` 只调了 `AddHealthChecks()` 注册基础设施，**一个检查项都没注册**。包内自带的唯一实现是 `MemoryHealthCheck`：
-
-```csharp
-services.AddHealthChecks()
-        .AddCheck("memory", new MemoryHealthCheck(thresholdMb: 512));
-```
-
-它读最近一次 GC 结束时的托管堆大小减碎片（`GC.GetGCMemoryInfo()` 的 `HeapSizeBytes - FragmentedBytes`，即回收后对象实际占用的字节数，不含尚未回收的垃圾），超过阈值返回 `Degraded`（不是 `Unhealthy`），两种结果都附带各代 GC 次数与内存负载阈值明细。默认阈值 1024MB。读数是 GC 快照：进程还没发生过 GC 时为 0，空闲期间保持上一次回收的值。
-
-其余检查项（数据库、Redis、向量库等）需要由应用实现 `IHealthCheck` 并注册。下面以应用自己的检查类型为例，再在模块初始化时映射端点：
-
-```csharp
-public override void ConfigureServices(ServiceConfigurationContext context)
-{
-    context.Services.AddHealthChecks()
-        .AddCheck<MyDatabaseHealthCheck>("database")
-        .AddCheck<MyRedisHealthCheck>("redis");
-}
-
-public override void OnApplicationInitialization(ApplicationInitializationContext context)
-{
-    var app = context.GetApplicationBuilder();
-    var options = new HealthCheckOptions { ResponseWriter = WriteMinimalHealthResponseAsync };
-    if (app is IEndpointRouteBuilder endpoints)
+    public async Task ExportAsync(string month, CancellationToken cancellationToken)
     {
-        endpoints.MapHealthChecks("/health", options).AllowAnonymous();
+        // 没有监听者时 StartActivity 返回 null，打点没有额外开销
+        using var activity = OrderDiagnostics.ActivitySource.StartActivity("orders.export");
+        activity?.SetTag("myapp.month", month);
+
+        await Task.Delay(10, cancellationToken);
+        var rows = 1200;
+
+        OrderDiagnostics.Exported.Add(rows);
+        LogExported(logger, month, rows);
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Exported {Rows} orders for {Month}.")]
+    private static partial void LogExported(ILogger logger, string month, int rows);
 }
 ```
 
-::: danger 开了 FallbackPolicy 时 `/health` 不加 `AllowAnonymous()` 会 401
-`XiHan:Web:Api:Auth:RequireAuthenticatedUser`（默认 `false`）设为 `true` 时，Web.Api 才装配鉴权 FallbackPolicy，此时未标记匿名的端点一律被授权中间件拦下。另外，开放接口签名中间件（`XiHan:Web:Api:OpenApiSecurity:IsEnabled`）的 `ProtectedPathPrefixes` 默认是 `["/api"]`、不覆盖 `/health`；若把它改成覆盖 `/health` 的前缀（或置空表示全路径），还要把 `/health` 加进 `IgnoredPathPrefixes`。
-:::
+有监听者时，操作处理器里的 `Activity.Current` 就是 `xihan.invoke`，业务 Span 自动成为它的子 Span。
 
-::: warning 默认响应体会外泄细节
-标准健康检查响应包含每项的 `description` 与异常信息，连接串很容易顺着异常消息暴露。自定义 `ResponseWriter`，只回总状态与各项名称/状态。
-:::
+## 运行信息
 
-## 关键配置
+`Observability.Host` 提供 `observability.host@1`（`role: default`，RFC-0023，ADR-0056）：单例 `IHostMonitor` 读进程与所在主机的 CPU、内存、磁盘、网卡、GPU、主板与运行时长，供管理界面的服务监控使用。契约在 `Observability.Abstractions`，只依赖原语层。
 
-配置节 `XiHan:Observability`，最常调的几项：
+| 方法 | 返回 |
+| --- | --- |
+| `ReadRuntime()` | `RuntimeInfo`：操作系统、.NET 与 RID、机器名与用户名、进程 ID / 名称 / 启动时刻 / 运行时长、系统启动时刻 / 运行时长、工作集、私有字节、托管堆、线程数、句柄数、三代 GC 次数、进程 CPU 使用率（用户名是运行进程的系统账户，不是登录凭据，`ToString()` 照常打印，ADR-0093） |
+| `ReadProcessor()` | `ProcessorInfo`：型号、厂商、架构、物理与逻辑核心、标称频率（MHz）、最后一级缓存、系统 CPU 使用率 |
+| `ReadMemory()` | `MemoryInfo`：总量、可用、空闲、缓存，以及已用与使用率 |
+| `ReadDisks()` | `DiskInfo` 列表：挂载点或盘符、设备、卷标、文件系统、类型、总量、空闲、当前用户可用，以及已用与使用率 |
+| `ReadNetworkInterfaces()` | `NetworkInterfaceInfo` 列表：ID、名称、描述、类型、状态、速率、物理地址、IPv4 / IPv6 地址、网关、DNS、累计收发字节与包数、收发速率 |
+| `ReadGpus()` | `GpuInfo` 列表：名称、厂商、PCI 厂商与设备 ID、驱动与版本、显存、温度 |
+| `ReadBoard()` | `BoardInfo`：主板、整机与 BIOS 的厂商、型号、版本、序列号与日期 |
 
-| 键 | 默认值 | 说明 |
-| --- | --- | --- |
-| `Enabled` | `false` | OTel 总开关，关闭则整个 SDK 不装配 |
-| `EnableTracing` | `true` | 链路追踪，仅在 `Enabled=true` 时生效 |
-| `EnableMetrics` | `false` | 指标导出，仅在 `Enabled=true` 时生效 |
-| `SamplingRatio` | `1.0` | 根链路采样比例，自动 Clamp 到 `0~1` |
-| `OtlpEndpoint` | `null` | OTLP 端点，为空则不装 OTLP 导出器 |
-| `ConsoleExporter` | `false` | 控制台导出器，生产关闭 |
+读取的约定：
 
-`ServiceName`（默认 `"XiHan.App"`）、`ServiceVersion`、`EnableLogging`、`AdditionalSources` 见 [Observability 包](../packages/observability) 的完整配置表。
+- 不启动外部命令：只读 BCL、`/proc` 与 `/sys`、`pci.ids`、注册表与 kernel32 的 `GetSystemTimes`、`GetLogicalProcessorInformation`、`K32GetPerformanceInfo`，不用 WMI、PowerShell、`dmidecode`、`lspci`、`nvidia-smi`。读取不会挂起，也没有命令注入面。
+- 读不到的项为 `null`，列表读不到为空列表，不以 0 或空串顶替，界面据此区分「没有」与「为零」。单项失败只让该项为空，读取不抛出。
+- CPU 型号与核心、GPU、主板首次读取后缓存；内存、磁盘、网卡与运行时每次当场读。
+- 使用率与速率是两次采样之差，由后台采样器负责：启动时同步采一次，之后每 `SampleIntervalSeconds`（缺省 5，取值 (0, 3600]）采一次；读取只返回最近算出的值，不睡眠、不等待，启动后第一个间隔内为 `null`。一次采样失败记一条警告，保留上一次的值。
+- 不暴露命令行参数、环境变量与当前目录。
 
-## 常见问题
+Linux 与 Windows 读全部项；macOS 等其他平台只有 BCL 读得到的部分，CPU 型号与使用率、内存、GPU、主板为 `null`。容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额。读不到的项（NVIDIA 显存与温度、GPU 使用率、Windows 主板序列号等）列在 RFC-0023。
 
-| 现象 | 原因 | 处理 |
-| --- | --- | --- |
-| 一条 trace 都没有 | `Enabled` 默认 `false`，OTel 未装配 | 在 `XiHan:Observability` 显式打开 |
-| `Enabled` 开了仍无数据 | 既没配 `OtlpEndpoint` 也没开 `ConsoleExporter`，没有出口 | 二者至少配一个 |
-| 有链路但没有指标 | `EnableMetrics` 默认 `false` | 显式设为 `true` |
-| `EnableLogging` 开了没有日志导出 | 扩展方法未接入 `WithLogging`，该项为占位 | 日志走 Logging 包的落地方式 |
-| 看不到 `db.query` span | `EnableTracing=false` 时 `DataSource` 无监听者，代码被 `HasListeners()` 短路 | 开启 `EnableTracing` |
-| gRPC 没有 span | `XiHan.Grpc` 源已注册但框架内无代码在其上发 span | 需要则自行用 `GrpcSource` 打点 |
-| AI 调用没有 span | 还需 `XiHan:AI:Pipeline:EnableTelemetry=true` | 两处开关一起开 |
-| `GetMetrics()` 返回空 | 设计如此，指标不在进程内留存 | 通过导出器查看 |
-| 日志里 TraceId 格式变了 | 开启 OTel 后从 `TraceIdentifier` 变为 W3C 32-hex | 同步调整日志检索与告警规则 |
-| 日志 TraceId 为空 | 当前上下文没有 Activity（如未走 HTTP 管线的后台线程） | 在入口自行 `StartActivity` |
-| 消费端与发布端不在同一条 trace | 发布时没有环境 Activity，`correlationId` 非法或为空 | 在作业/任务入口建 Activity |
-| 早期的慢操作查不到、统计总数不再增长 | `PerformanceMonitor` 只保留最近 10000 条 | 需要全量历史改用 OTel 指标 |
-| `/health` 返回 401 | `RequireAuthenticatedUser=true` 时装配的鉴权 FallbackPolicy 拦截 | `MapHealthChecks(...).AllowAnonymous()` |
-| `/health` 200 但没有任何检查项 | 模块只注册基础设施，不含检查项 | 应用侧 `AddCheck` |
-| `StartActivity` 处空引用 | OTel 关闭时返回 `null` | 一律用 `activity?.` |
+把运行信息暴露给服务监控页：
 
-## 下一步
+```csharp
+using MyApp.Diagnostics;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Observability.Abstractions;
+using XiHan.Framework.Observability.Host;
+using XiHan.Framework.Profiles.Standard;
 
-- [日志](../packages/logging) — `{TraceId}` / `{SpanId}` 输出模板与落地方式
-- [审计](../packages/auditing) — 五类审计记录中的 `TraceId` 字段
-- [数据访问](./data) — `db.query` span 与 `ITraceableEntity` 的填充时机
-- [缓存与分布式锁](./caching) — Redis 操作 span 的覆盖范围
-- [Web 应用开发](./web) — 中间件管线顺序与统一响应体
-- [Observability 包](../packages/observability) — 完整 API 清单与全部配置项
-- [Core 包](../packages/core) — `XiHanActivitySources` 与 `ICorrelationIdProvider` 的定义位置
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, MonitorJsonContext.Default));
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<HostObservabilityFeature>());
+
+var app = builder.Build();
+app.UseXiHan();
+
+// 读取只返回后台采样的最近值，不阻塞请求线程；机器信息只给认证过的调用方
+var monitor = app.MapGroup("/monitor").RequireXiHanAuthentication();
+monitor.MapGet("/runtime", (IHostMonitor host) => host.ReadRuntime());
+monitor.MapGet("/cpu", (IHostMonitor host) => host.ReadProcessor());
+monitor.MapGet("/memory", (IHostMonitor host) => host.ReadMemory());
+monitor.MapGet("/disks", (IHostMonitor host) => host.ReadDisks());
+
+app.Run();
+```
+
+```csharp
+using System.Text.Json.Serialization;
+using XiHan.Framework.Observability.Abstractions;
+
+namespace MyApp.Diagnostics;
+
+// 源生成的序列化上下文，端点返回运行信息时不走反射
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(RuntimeInfo))]
+[JsonSerializable(typeof(ProcessorInfo))]
+[JsonSerializable(typeof(MemoryInfo))]
+[JsonSerializable(typeof(IReadOnlyList<DiskInfo>))]
+internal sealed partial class MonitorJsonContext : JsonSerializerContext;
+```
+
+`Profiles.Full` 已装配 `HostObservabilityFeature`，后台采样循环默认每 5 秒读一次 CPU 时间与网卡计数。
+
+## 配置
+
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `XiHan:Observability:OpenTelemetry:ServiceName` | string | 入口程序集名 | 资源属性 `service.name` |
+| `XiHan:Observability:OpenTelemetry:ServiceVersion` | string | 入口程序集版本 | 资源属性 `service.version` |
+| `XiHan:Observability:OpenTelemetry:Tracing` | bool | `true` | 是否接入追踪 |
+| `XiHan:Observability:OpenTelemetry:Metrics` | bool | `true` | 是否接入指标 |
+| `XiHan:Observability:OpenTelemetry:Logging` | bool | `true` | 是否把日志经 OpenTelemetry 导出 |
+| `XiHan:Observability:OpenTelemetry:SamplingRatio` | 0 到 1 | 1 | 根 Span 的采样比例 |
+| `XiHan:Observability:OpenTelemetry:Otlp:Enabled` | bool | 自动 | 强制开关 OTLP 导出器 |
+| `XiHan:Observability:OpenTelemetry:Otlp:Endpoint` | 绝对 URI | — | OTLP 端点 |
+| `XiHan:Observability:OpenTelemetry:Otlp:Protocol` | `Grpc` / `HttpProtobuf` | `Grpc` | OTLP 协议，只能与 `Otlp:Endpoint` 一起写 |
+| `XiHan:Observability:OpenTelemetry:Console` | bool | `false` | 同时写控制台导出器 |
+| `XiHan:Observability:OpenTelemetry:Sources` | 逗号分隔 | — | 追加订阅的 Activity 源 |
+| `XiHan:Observability:OpenTelemetry:Meters` | 逗号分隔 | — | 追加订阅的 Meter |
+| `XiHan:Observability:Host:SampleIntervalSeconds` | 数值，(0, 3600] | 5 | 运行信息的采样间隔（秒） |
+
+取值不合法时（比例越界、端点不是绝对 URI、布尔不是 `true` / `false`、采样间隔越界）装配阶段抛出 `ArgumentException`，应用启动失败。
+
+## 与其他能力的关系
+
+- 健康与探针：特性的健康条目、`/health/startup`、`/health/ready`、`/health/live` 三个探针在[生命周期与健康](./lifecycle)一章，本章不重复。
+- 审计：日志、追踪与指标面向运维；谁在什么时候做了什么，是业务记录，见[审计](./auditing)。两者共享同一个 trace-id，可以从审计事件跳到链路。
+- 执行管道：Observe 是管道的第二个阶段，见[执行管道](./pipeline)。
+
+## 相关
+
+- [Observability.OpenTelemetry 包](../packages/observability-opentelemetry)
+- [Observability.Abstractions 包](../packages/observability-abstractions)
+- [Observability.Host 包](../packages/observability-host)
+- [Kernel 内核](../packages/kernel)
+- 规范：RFC-0023《可观测性：导出与运行信息》

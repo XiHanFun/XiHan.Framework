@@ -1,129 +1,154 @@
 # XiHan.Framework.MultiTenancy.Abstractions
 
-> 多租户抽象：当前租户上下文、多租户实体标记、租户解析链契约与 URL 提供者接口
+多租户的抽象包：定义租户信息、租户存储、租户解析器、Tenant 阶段中间件与租户分片契约，能力 `multitenancy.context@1` 与 `multitenancy.sharding@1` 由多租户 Provider 提供。实现自己的租户存储或分片解析器时引用它。
 
-- **NuGet**：`XiHan.Framework.MultiTenancy.Abstractions`
-- **模块类**：`XiHanMultiTenancyAbstractionsModule`
-- **所在层**：应用层
-- **关键依赖**：仅 .NET 原生 + 框架内部依赖（`XiHan.Framework.Core`）
+| 项 | 内容 |
+| --- | --- |
+| 包 ID | `XiHan.Framework.MultiTenancy.Abstractions` |
+| 环层 | Ring 2（抽象） |
+| 能力 | 定义 `multitenancy.context@1`、`multitenancy.sharding@1`（`MultiTenancyCapabilities`），本包不提供 |
+| 特性入口 | — |
+| 配置节 | `XiHan:MultiTenancy`（`MultiTenancyOptions`，由 Provider 读取） |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
+| AOT | 兼容 |
+| 稳定性 | Stable；分片相关类型（`Sharding` 命名空间）为 Preview |
 
 ## 概述
 
-本包是多租户能力的**抽象层**，只定义接口与基础模型，不含任何实现逻辑。它约定了三件核心的事：「当前请求属于哪个租户」（`ICurrentTenant`）、「哪些实体归属租户」（`IMultiTenant`）、「如何从请求中解析出租户」（`ITenantResolveContributor` / `ITenantResolveContext`）。上层领域/应用代码依赖这些接口而非具体实现，从而与落地方式解耦。真正的实现由 [XiHan.Framework.MultiTenancy](./multitenancy) 提供，二者通过依赖倒置组合。
+租户是调用上下文的一部分。`TenantResolutionMiddleware` 在 Tenant 阶段按注册顺序调用 `ITenantResolver`，取第一个结果（没有时用默认租户），校验文法，按选项核对 `ITenantStore`（存在且启用），然后写进安全上下文 `SecurityContext.Tenant`；容器里有 `ITenantShardResolver` 时再解析分片写进调用上下文。失败以结果返回，不抛异常。没有环境态的租户访问器，读租户用 `context.GetSecurity().Tenant`。
 
-模块类 `XiHanMultiTenancyAbstractionsModule` 本身是**空实现**——它不注册任何服务，只作为模块依赖锚点存在，让实现包与上层模块通过 `[DependsOn]` 统一引入抽象契约。
+本包还带两个解析器（主体声明、Baggage）与从租户属性推出分片的缺省解析器 `TenantStoreShardResolver`，多租户 Provider 直接注册它们，只实现存储。持久化 Provider 经 `TenantShardBinding.Resolve` 读分片选连接，管道外的作用域经 `TenantShardScope` 显式绑定分片（ADR-0057）。
 
 ## 何时使用
 
-- 你的领域/应用代码想读取当前租户信息，但不想耦合具体实现——注入 `ICurrentTenant` 即可
-- 你要定义支持租户隔离的实体——实现 `IMultiTenant`（暴露 `long? TenantId`）
-- 你要编写自定义的租户解析逻辑——实现 `ITenantResolveContributor`
-- 你需要标记某段代码/实体忽略多租户过滤——`IgnoreMultiTenancyAttribute`
-- 你需要按租户生成/解析 URL——实现或依赖 `IMultiTenantUrlProvider`
-
-通常无需单独引用本包：引用实现包 [XiHan.Framework.MultiTenancy](./multitenancy) 时会自动带上这些抽象。
+- 写自己的租户存储（`ITenantStore`）或分片解析器（`ITenantShardResolver`）时引用本包，并用 `MultiTenancy.Conformance` 验证。
+- 业务代码要读分片、在管道外绑定分片、校验租户 ID 时引用本包。
+- 只是启用多租户时直接装 [MultiTenancy.InMemory](./multitenancy-inmemory) 或 [MultiTenancy.Database](./multitenancy-database)，它们会带上本包。
 
 ## 安装与启用
 
 ```bash
-dotnet add package XiHan.Framework.MultiTenancy.Abstractions
+dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 ```
 
-```csharp
-[DependsOn(typeof(XiHanMultiTenancyAbstractionsModule))]
-public class MyModule : XiHanModule { }
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
+
+## 配置
+
+`MultiTenancyOptions.FromConfiguration` 读取 `XiHan:MultiTenancy` 下的五个键：
+
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `DefaultTenant` | `string` | 无 | 解析器都没给出值时使用，同样经过文法与存储校验；空字符串表示清除 |
+| `RequireTenant` | `bool` | `false` | 没有租户的调用返回 `MULTITENANCY_VALIDATION_002` |
+| `ValidateAgainstStore` | `bool` | `true` | 租户必须在存储中存在且启用；关闭后只校验文法 |
+| `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型 |
+| `ShardCacheSize` | `int` | 10000 | `TenantStoreShardResolver` 按租户缓存分片结果的条目上限，满时整体清空；必须是正整数 |
+
+```json
+{
+  "XiHan": {
+    "MultiTenancy": {
+      "DefaultTenant": "acme",
+      "RequireTenant": false,
+      "ValidateAgainstStore": true,
+      "TenantClaim": "tenant"
+    }
+  }
+}
 ```
 
-模块类不注册任何服务；真正的服务注册（当前租户访问器、租户存储、解析链等）在实现包 [XiHan.Framework.MultiTenancy](./multitenancy) 中完成。
-
-## 核心能力
-
-- **当前租户契约**：`ICurrentTenant` 提供 `Id`（`long?`）、`Name`、`IsAvailable`，以及用 `using` 临时切换租户的 `Change(...)`
-- **租户信息载体与访问器**：`BasicTenantInfo` 承载租户 Id/Name，`ICurrentTenantAccessor` 读写「当前」`BasicTenantInfo`
-- **多租户实体标记**：`IMultiTenant` 暴露 `long? TenantId`，`null` 与 `0` 同义，表示平台（0 号租户）/公共数据
-- **租户解析链契约**：`ITenantResolveContributor` + `ITenantResolveContext`，把请求中的标识/名称解析成租户
-- **忽略多租户**：`IgnoreMultiTenancyAttribute`
-- **租户 URL 契约**：`IMultiTenantUrlProvider` 按租户模板生成 URL
-
-## 主要 API / 类型
-
-### 当前租户上下文
+## 主要类型
 
 | 类型 | 说明 |
 | --- | --- |
-| `ICurrentTenant` | 当前租户上下文。属性 `bool IsAvailable`、`long? Id`、`string? Name`；方法 `IDisposable Change(long? id, string? name = null)`（临时切换，`Dispose` 时恢复上一层） |
-| `ICurrentTenantAccessor` | 当前租户信息读写访问器。属性 `BasicTenantInfo? Current { get; set; }` |
-| `BasicTenantInfo` | 只读租户信息载体。构造 `BasicTenantInfo(long? tenantId, string? name = null)`；属性 `long? TenantId`、`string? Name` |
-
-### 多租户实体与解析链
-
-| 类型 | 说明 |
-| --- | --- |
-| `IMultiTenant` | 多租户实体接口，暴露 `long? TenantId { get; }`（`null` 与 `0` 同义：平台 / 公共数据） |
-| `ITenantResolveContributor` | 租户解析贡献者。属性 `string Name`；方法 `Task ResolveAsync(ITenantResolveContext context)` |
-| `ITenantResolveContext` | 解析上下文（继承 `IServiceProviderAccessor`）。属性 `string? TenantIdOrName { get; set; }`、`bool Handled { get; set; }` |
-| `IMultiTenantUrlProvider` | 按租户生成 URL 的契约。方法 `Task<string> GetUrlAsync(string templateUrl)` |
-| `IgnoreMultiTenancyAttribute` | 标记忽略多租户过滤（`AttributeUsage = AttributeTargets.All`，无成员） |
-
-> `ITenantResolveContext` 继承自 `XiHan.Framework.Core.DependencyInjection.IServiceProviderAccessor`，因此解析贡献者可通过 `context.ServiceProvider` 取到当前请求的服务（如 `IHttpContextAccessor`、`ICurrentUser`）来完成解析。
+| `Tenants.TenantInfo` | 租户：`Id`、`DisplayName`、`IsEnabled`（缺省 `true`）、`Properties`（键区分大小写） |
+| `Tenants.TenantIdentifier` | 租户 ID 文法 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：`IsValid`、`Validate`、`MaxLength`（64） |
+| `Tenants.ITenantStore` | 租户存储：`FindAsync`、`ListAsync`；ID 区分大小写，基础设施失败抛异常 |
+| `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选，只解析不校验 |
+| `Resolution.ClaimTenantResolver` | 读已认证主体的租户声明（第一个值）；未认证主体跳过 |
+| `Resolution.BaggageTenantResolver` | 读 Baggage `xihan.tenant`，由进程内建上下文的地方放进去；HTTP、gRPC、MCP 入站不收这个键（ADR-0121） |
+| `Resolution.TenantResolutionMiddleware` | Tenant 阶段的中间件 |
+| `MultiTenancyOptions` | 选项，见上表 |
+| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantId?)` |
+| `Sharding.TenantShard` | 分片：`TenantId`、`ConnectionString`、`Provider`（转小写，可空）、`Properties` |
+| `Sharding.TenantStoreShardResolver` | 从租户属性推出分片的缺省解析器，按租户有界缓存；`FromProperties(tenant)` 不带缓存地推出单个租户的分片 |
+| `Sharding.TenantShardKeys` | 租户属性键 `ConnectionString`、`DatabaseProvider`、前缀 `Shard.`，绑定属性键 `tenant`、`provider` |
+| `Sharding.TenantShardInvocationExtensions` | `GetTenantShard()` / `SetTenantShard(shard)`：调用上下文里的分片 |
+| `Sharding.TenantShardBinding` | `Resolve(scopedServices, bindingName, bindingType, fallback)`：持久化 Provider 创建客户端时取分片连接绑定 |
+| `Sharding.TenantShardScope` | 作用域服务，管道外显式绑定分片：`BindTenantAsync`、`Bind`、`Shard`、`IsConnected` |
+| `MultiTenancyCapabilities` | 能力 ID 常量 `Context`、`Sharding` 与 `Version`（1） |
+| `MultiTenancyErrors` / `MultiTenancyMessages` | 错误码与消息键常量，消息目录 `MultiTenancyMessages.Catalog` |
 
 ## 使用示例
 
-### 读取与临时切换当前租户
+自定义租户存储，例如从应用已有的组织服务读租户：
 
 ```csharp
-public class ReportService
+using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
+using XiHan.Framework.Primitives;
+
+public sealed class FixedTenantStore : ITenantStore
 {
-    private readonly ICurrentTenant _currentTenant;
-
-    public ReportService(ICurrentTenant currentTenant)
+    private readonly Dictionary<string, TenantInfo> _tenants = new(StringComparer.Ordinal)
     {
-        _currentTenant = currentTenant;
-    }
+        ["acme"] = new TenantInfo { Id = "acme", DisplayName = "Acme Corp" },
+        ["globex"] = new TenantInfo { Id = "globex", DisplayName = "Globex", IsEnabled = false },
+    };
 
-    public void Run(long tenantId)
-    {
-        // 临时切换到指定租户，using 结束后自动恢复到上一层
-        using (_currentTenant.Change(tenantId, "Acme"))
-        {
-            var id = _currentTenant.Id;          // 当前作用域内为 tenantId
-            var available = _currentTenant.IsAvailable; // tenantId 大于 0 时为 true；Change(0) 即平台，为 false
-        }
-    }
+    public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
+        => ValueTask.FromResult(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : Maybe.None<TenantInfo>());
+
+    public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken)
+        => ValueTask.FromResult<IReadOnlyList<TenantInfo>>([.. _tenants.Values.OrderBy(static t => t.Id, StringComparer.Ordinal)]);
 }
 ```
 
-### 定义多租户实体
+多租户 Provider 以 `TryAddSingleton<ITenantStore>` 注册自己的存储，应用在装配前登记 `services.AddSingleton<ITenantStore, FixedTenantStore>()` 即可顶替；解析器、中间件与分片解析器沿用 Provider 注册的。
+
+在处理器里读分片，例如按租户库决定是否执行某项迁移：
 
 ```csharp
-public class Order : IMultiTenant
-{
-    public long Id { get; set; }
+using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
+using XiHan.Framework.Primitives;
 
-    // null 与 0 同义：平台（0 号租户）/ 公共数据；大于 0 表示归属某业务租户
-    public long? TenantId { get; set; }
+public static class ShardInfo
+{
+    // 共库租户与无租户的调用没有分片
+    public static string Describe(InvocationContext context)
+        => context.GetTenantShard().TryGetValue(out var shard)
+            ? $"{shard.TenantId} -> {shard.Provider ?? "default"}"
+            : "shared";
 }
 ```
 
-## 扩展点 / 自定义
+管道外的作用域绑定分片的完整示例见[多租户 · 管道外绑定分片](../guide/multi-tenancy#管道外绑定分片)。
 
-- **自定义租户解析贡献者**：实现 `ITenantResolveContributor`（或继承实现包提供的 `TenantResolveContributorBase`），在 `ResolveAsync` 里把解析出的标识写入 `context.TenantIdOrName` 并置 `context.Handled = true` 短路后续贡献者。
-- **自定义 URL 策略**：实现 `IMultiTenantUrlProvider`，按租户把模板 URL 渲染成最终地址（如 `{tenant}.example.com`）。
+## 行为与限制
 
-## 注意事项与最佳实践
+- 解析顺序就是 `ITenantResolver` 的注册顺序。Provider 先注册 `ClaimTenantResolver` 再注册 `BaggageTenantResolver`，已认证主体所属的租户优先于调用方自报的租户；主体没有租户声明时 Baggage 生效，中间件只核对文法与存储，不判断主体是否属于该租户。
+- 默认租户同样经过文法与存储校验；关闭存储核对后安全上下文里没有显示名。
+- 分片解析失败（租户存储不可达）返回 `MULTITENANCY_UNAVAILABLE_002`，调用失败，不降级为共库。
+- `TenantStoreShardResolver` 缓存"无分片"与未知租户的结果；条目数达到 `ShardCacheSize` 时整体清空，不逐条淘汰；租户连接变更后调用 `Invalidate`。
+- Baggage 里的租户只来自进程内建上下文的地方（消息派发、作业、工作流、命令行宿主）；HTTP、gRPC、MCP 的网络入站不收这个键（ADR-0121），这些调用方的租户只来自认证。CloudEvents 入站的 `xihantenant` 经消息派发进来，由宿主给端点加的权限把关。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
+- 分库的表结构由应用管理；租户属性 `ConnectionString` 有值即分库，`Shard.<key>` 透传。
+- `TenantShardScope` 必须在作用域首次创建持久化客户端之前绑定；之后再绑定或改绑另一分片抛出 `InvalidOperationException`，同一分片重复绑定无副作用。`BindTenantAsync` 不看租户是否启用、不受应用状态影响；没有分片解析器时成功且不绑定。
 
-- **平台就是 0 号租户**：`ICurrentTenant.Id` 为 `long?`，`null` 与 `0` 同义，都表示平台；多租户实体上平台行一律落 `TenantId = 0`，数据过滤、写边界、连接解析、缓存键都按这一口径处理。
-- **`IsAvailable` 语义**：表示「当前处于某个业务租户」，实现包中等价于 `Id is > 0`；平台（`null` 或 `0`）下为 `false`。
-- **抽象包无副作用**：本包只有接口/模型，模块类不注册服务；不要指望单独引用它就能获得当前租户，必须引用实现包。
+| 错误码 | 含义 |
+| --- | --- |
+| `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |
+| `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 |
+| `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
+| `MULTITENANCY_DENIED_001` | 租户已禁用 |
+| `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
+| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
 
-## 依赖模块
+六个消息键（`multitenancy.tenant.*`、`multitenancy.store.capacity_exceeded`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
 
-- [XiHan.Framework.Core](./core)（模块化与 DI 抽象，`IServiceProviderAccessor` 来源）
+## 相关
 
-仅依赖 Core 与 BCL，不引入任何第三方库。
-
-## 相关模块
-
-- [XiHan.Framework.MultiTenancy](./multitenancy)（本抽象的实现包）
-- [XiHan.Framework.Settings](./settings)（租户级设置来源）
-- [XiHan.Framework.Data](./data)（按租户过滤/路由数据）
+- [多租户](../guide/multi-tenancy)
+- [MultiTenancy.InMemory](./multitenancy-inmemory)
+- [MultiTenancy.Database](./multitenancy-database)
+- [Conformance 一致性套件](./conformance)
+- 规范：RFC-0007《多租户》；ADR-0018、ADR-0057

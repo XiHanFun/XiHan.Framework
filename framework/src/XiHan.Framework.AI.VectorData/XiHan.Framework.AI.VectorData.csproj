@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.AI.VectorData</PackageId>
+    <RootNamespace>XiHan.Framework.AI.VectorData</RootNamespace>
+    <Description>曦寒框架 AI 知识库的向量存储提供程序</Description>
+    <PackageTags>xihan;framework;ai;knowledge;rag;vectordata</PackageTags>
+    <!-- VectorData 的记录映射基于反射与表达式；Native AOT 场景另行验证 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.AI.Abstractions/XiHan.Framework.AI.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.VectorData.Abstractions" />
+  </ItemGroup>
+</Project>

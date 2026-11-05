@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Plugins.OutOfProcess</PackageId>
+    <RootNamespace>XiHan.Framework.Plugins.OutOfProcess</RootNamespace>
+    <Description>曦寒框架进程外插件宿主</Description>
+    <PackageTags>xihan;framework;plugins;out-of-process;grpc</PackageTags>
+    <!-- Google.Protobuf 的描述符反射未声明裁剪兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- ProcessTermination 向插件进程发 SIGTERM 的 LibraryImport 生成代码需要 unsafe；源码本身不写 unsafe -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 一致性套件复用进程启动 -->
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.Conformance" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore.Server" />
+    <PackageReference Include="Grpc.Net.Client" />
+  </ItemGroup>
+</Project>

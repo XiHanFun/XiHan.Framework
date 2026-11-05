@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.MultiTenancy.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.MultiTenancy.InMemory</RootNamespace>
+    <Description>曦寒框架多租户的内存默认实现</Description>
+    <PackageTags>xihan;framework;multitenancy;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

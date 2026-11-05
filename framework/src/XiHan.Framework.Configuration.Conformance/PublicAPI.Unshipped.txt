@@ -1,0 +1,21 @@
+#nullable enable
+XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationClientConformance
+XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationClientConformance.Fetch_AfterRepublish_ReturnsNewVersion() -> System.Threading.Tasks.Task!
+XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationClientConformance.Fetch_ReturnsPublishedDocument_AndUnchangedForKnownVersion() -> System.Threading.Tasks.Task!
+XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationClientConformance.Fetch_UnknownNamespace_IsNotFound() -> System.Threading.Tasks.Task!
+XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationClientConformance.RemoteConfigurationClientConformance() -> void
+XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationFixture
+XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationFixture.RemoteConfigurationFixture() -> void
+XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreConformance
+XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreConformance.Get_AfterOverwrite_ReturnsNewValue() -> System.Threading.Tasks.Task!
+XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreConformance.Get_ReturnsPerItemInOrder_AndMissingIsNotFound() -> System.Threading.Tasks.Task!
+XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreConformance.SecretStoreConformance() -> void
+XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreFixture
+XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreFixture.SecretStoreFixture() -> void
+abstract XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationClientConformance.CreateFixtureAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationFixture!>!
+abstract XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationFixture.Client.get -> XiHan.Framework.Configuration.Abstractions.Remote.IRemoteConfigurationClient!
+abstract XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationFixture.PublishAsync(string! namespaceName, System.Collections.Generic.IReadOnlyDictionary<string!, string?>! values, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+abstract XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreConformance.CreateFixtureAsync() -> System.Threading.Tasks.Task<XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreFixture!>!
+abstract XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreFixture.PutAsync(XiHan.Framework.Configuration.Abstractions.Secrets.SecretName name, string! value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+abstract XiHan.Framework.Configuration.Conformance.Secrets.SecretStoreFixture.Store.get -> XiHan.Framework.Configuration.Abstractions.Secrets.ISecretStore!
+virtual XiHan.Framework.Configuration.Conformance.Remote.RemoteConfigurationClientConformance.UnchangedWait.get -> System.TimeSpan

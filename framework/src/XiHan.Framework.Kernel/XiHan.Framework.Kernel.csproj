@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Kernel</PackageId>
+    <RootNamespace>XiHan.Framework.Kernel</RootNamespace>
+    <Description>曦寒框架微内核</Description>
+    <PackageTags>xihan;framework;kernel</PackageTags>
+    <!-- Ring 1：分析器据此禁止反射 -->
+    <XiHanRing>1</XiHanRing>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <!-- Resilience 阶段的限流与并发原语（固定窗口 / 并发限流器）：BCL 的一部分但不在共享框架里，架构测试允许名单登记 -->
+    <PackageReference Include="System.Threading.RateLimiting" />
+  </ItemGroup>
+</Project>

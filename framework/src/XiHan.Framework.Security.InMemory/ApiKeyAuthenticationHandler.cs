@@ -1,0 +1,72 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
+
+namespace XiHan.Framework.Security.InMemory;
+
+/// <summary>
+/// <c>ApiKey</c> 方案的认证处理器
+/// </summary>
+/// <remarks>
+/// 把配置里的主体记录变成 <see cref="Principal"/>（角色声明、租户声明与附加声明）；角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>，租户声明类型取 <see cref="InMemorySecurityOptions.TenantClaim"/>
+/// </remarks>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, SecurityOptions options, InMemorySecurityOptions inMemoryOptions) : IAuthenticationHandler
+{
+    /// <summary>
+    /// 方案名 <c>ApiKey</c>
+    /// </summary>
+    public const string SchemeName = "ApiKey";
+
+    /// <summary>
+    /// 主体存储
+    /// </summary>
+    /// <remarks>
+    /// 按 API Key 查找记录
+    /// </remarks>
+    private readonly InMemoryPrincipalStore _store = store ?? throw new ArgumentNullException(nameof(store));
+
+    /// <summary>
+    /// 安全选项
+    /// </summary>
+    /// <remarks>
+    /// 提供角色声明类型
+    /// </remarks>
+    private readonly SecurityOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+
+    /// <summary>
+    /// 租户声明类型
+    /// </summary>
+    /// <remarks>
+    /// 与多租户选项的 <c>TenantClaim</c> 读同一个配置键
+    /// </remarks>
+    private readonly string _tenantClaim = (inMemoryOptions ?? throw new ArgumentNullException(nameof(inMemoryOptions))).TenantClaim;
+
+    /// <inheritdoc />
+    public string Scheme => SchemeName;
+
+    /// <inheritdoc />
+    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(credential);
+        if (!_store.FindByApiKey(credential.Value).TryGetValue(out var record))
+        {
+            return ValueTask.FromResult(Result.Failure<Principal>(Error.Denied(SecurityErrors.InvalidCredential, SecurityMessages.InvalidApiKey)));
+        }
+
+        // 角色写成 RoleClaim 声明、租户写成 TenantClaim 声明（Tenant 阶段的声明解析器按同一类型读），再附加记录里的其他声明；顺序固定便于断言
+        var claims = new List<KeyValuePair<string, string>>(record.Roles.Count + record.Claims.Count + 1);
+        claims.AddRange(record.Roles.Select(role => new KeyValuePair<string, string>(_options.RoleClaim, role)));
+        if (record.Tenant is not null)
+        {
+            claims.Add(new KeyValuePair<string, string>(_tenantClaim, record.Tenant));
+        }
+
+        claims.AddRange(record.Claims);
+        return ValueTask.FromResult(Result.Success(new Principal(record.Id, SchemeName) { DisplayName = record.DisplayName, Claims = claims }));
+    }
+}

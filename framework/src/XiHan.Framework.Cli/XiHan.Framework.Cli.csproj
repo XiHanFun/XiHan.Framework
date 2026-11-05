@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PackageId>XiHan.Framework.Cli</PackageId>
+    <RootNamespace>XiHan.Framework.Cli</RootNamespace>
+    <Description>曦寒框架命令行工具</Description>
+    <PackageTags>xihan;framework;cli;tool;pack;docker;kubernetes;aspire;mcp</PackageTags>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>xihan</ToolCommandName>
+    <!-- 工具包没有库程序集，包验证不适用 -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Hosting.CommandLine/XiHan.Framework.Hosting.CommandLine.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+    <!-- xihan mcp 内嵌一个最小的 XiHan 应用，由 MCP 协议适配器处理 JSON-RPC 与 stdio 传输 -->
+    <ProjectReference Include="../XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
+    <!-- migrate 做语法级重写：只用语法树，不加载 MSBuild 工作区 -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XiHan.Framework.Cli.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010） -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- 离线知识库（ADR-0076）：包与特性清单、配置节索引，以及构建时的文档站、规范与各包 README，随工具一起发布 -->
+  <ItemGroup>
+    <EmbeddedResource Include="Knowledge/catalog.json" LogicalName="knowledge/catalog.json" />
+    <EmbeddedResource Include="Knowledge/configuration.json" LogicalName="knowledge/configuration.json" />
+    <EmbeddedResource Include="skills/xihan-framework/SKILL.md" LogicalName="skills/xihan-framework/SKILL.md" WithCulture="false" />
+    <EmbeddedResource Include="../../../docs/**/*.md" Exclude="../../../docs/node_modules/**;../../../docs/.vitepress/**;../../../docs/public/**" LogicalName="docs/docs/%(RecursiveDir)%(Filename)%(Extension)" WithCulture="false" Visible="false" />
+    <EmbeddedResource Include="../../spec/rfcs/*.md" LogicalName="docs/framework/spec/rfcs/%(Filename)%(Extension)" WithCulture="false" Visible="false" />
+    <EmbeddedResource Include="../../spec/conventions/*.md" LogicalName="docs/framework/spec/conventions/%(Filename)%(Extension)" WithCulture="false" Visible="false" />
+    <EmbeddedResource Include="../*/README.md" LogicalName="docs/framework/src/%(RecursiveDir)%(Filename)%(Extension)" WithCulture="false" Visible="false" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Scheduling.Database</PackageId>
+    <RootNamespace>XiHan.Framework.Scheduling.Database</RootNamespace>
+    <Description>曦寒框架调度的数据库提供程序</Description>
+    <PackageTags>xihan;framework;scheduling;database;persistence;cron;leader-election</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

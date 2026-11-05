@@ -1,155 +1,146 @@
 # 依赖注入
 
-XiHan.Framework 直接使用 **.NET 内置的依赖注入容器**（`IServiceCollection` / `IServiceProvider`），没有另造一套。在此之上，它加了两样让日常开发更省心的东西：**约定式自动注册**和**选项模式封装**。
+本章说明框架如何使用 .NET 原生的依赖注入：服务在哪里注册、框架登记的类型是什么生命周期、调用作用域如何划分，以及调用链深处如何取得当前调用的上下文。适用于所有写特性、操作与中间件的开发者。
 
-## 两种注册方式
+## 原生容器，显式注册
 
-### 方式一：约定式自动注册（推荐）
+框架直接使用 `Microsoft.Extensions.DependencyInjection`，不包装容器，不扫描程序集，没有按接口或特性自动注册的约定，也没有属性注入与拦截器。服务在两个位置注册：
 
-给你的服务实现一个**标记接口**，框架会自动扫描并按对应生命周期注册进容器——你**不用**写 `services.AddXxx`：
+| 位置 | 适用 |
+| --- | --- |
+| 特性的 `Configure(FeatureContext context)` 里的 `context.Services` | 属于某个能力包的服务：仓储、处理器、领域服务、选项 |
+| 应用入口的 `builder.Services` | 应用级的宿主设置：消息目录、JSON 选项、ASP.NET Core 服务 |
 
-```csharp
-using XiHan.Framework.Core.DependencyInjection.ServiceLifetimes;
-
-// 瞬时：每次解析都新建
-public class SmsSender : ISmsSender, ITransientDependency { }
-
-// 作用域：每个请求一个实例
-public class OrderService : IOrderService, IScopedDependency { }
-
-// 单例：全应用一个实例
-public class ConfigCache : IConfigCache, ISingletonDependency { }
-```
-
-| 标记接口 | 生命周期 | 等价于 |
-| --- | --- | --- |
-| `ITransientDependency` | Transient | `AddTransient` |
-| `IScopedDependency` | Scoped | `AddScoped` |
-| `ISingletonDependency` | Singleton | `AddSingleton` |
-
-框架会自动把实现类注册为它实现的接口。**应用服务基类 `ApplicationServiceBase` 已经实现了 `ITransientDependency`**，所以你写的应用服务天然会被注册（见 [动态 API](./dynamic-api)）。
-
-### 精细控制：`DependencyAttribute`
-
-标记接口能覆盖大多数场景，但遇到下面这些情况，可以在类上叠加 `[Dependency(...)]` 特性做更精细的控制：
+`AddXiHan` 的回调结束时内核立即按能力图谱的拓扑顺序调用各特性的 `Configure`，因此被依赖的特性先完成注册。
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Core.DependencyInjection;
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
 
-// 显式指定生命周期，优先级高于标记接口推断出的结果
-[Dependency(ServiceLifetime.Singleton)]
-public class ConfigCache : IConfigCache { }
+namespace Shop.Pricing;
 
-// 替换掉之前已注册的同接口实现（内部走 services.Replace）
-[Dependency(ServiceLifetime.Scoped, ReplaceServices = true)]
-public class OrderService : IOrderService, IScopedDependency { }
-
-// 已存在同接口注册时跳过，不重复添加（内部走 services.TryAdd）
-[Dependency(TryRegister = true)]
-public class DefaultCache : ICache, ISingletonDependency { }
-```
-
-- `Lifetime` 的优先级高于标记接口（`ITransientDependency` 等）推断出的生命周期；
-- `ReplaceServices = true` 时用 `services.Replace(...)` 覆盖同接口的既有注册；
-- `TryRegister = true` 时用 `services.TryAdd(...)`，同接口已注册就不再重复添加；
-- 想让某个类彻底跳过约定式扫描（比如打算完全手写注册），在类上加 `[DisableConventionalRegistration]` 即可。
-
-### 控制暴露的服务类型：`ExposeServicesAttribute`
-
-默认情况下，约定式注册只把实现类暴露为"类名去掉前导 `I` 后同名"的接口（例如 `OrderService : IOrderService` 会被注册为 `IOrderService`）。想额外暴露成别的接口、暴露成自身类型，或者暴露成 .NET 的键控服务（Keyed Service），用：
-
-```csharp
-using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Core.DependencyInjection;
-
-// 额外暴露为 INotifiable，同时保留默认推断出的接口
-[ExposeServices(typeof(INotifiable), IncludeDefaults = true)]
-public class OrderService : IOrderService, INotifiable, IScopedDependency { }
-
-// 键控服务：同一接口按 key 注册多个实现
-[ExposeKeyedService<IPaymentGateway>("alipay")]
-public class AlipayGateway : IPaymentGateway, ISingletonDependency { }
-```
-
-消费键控服务时用 `[FromKeyedServices("alipay")]` 构造函数参数，或 `serviceProvider.GetKeyedService<IPaymentGateway>("alipay")`。
-
-### 方式二：手动注册
-
-需要更精细的控制时，在模块的 `ConfigureServices` 里照常手写：
-
-```csharp
-public override void ConfigureServices(ServiceConfigurationContext context)
+public sealed class PricingFeature : IFeature
 {
-    context.Services.AddSingleton<IClock, SystemClock>();
-    context.Services.AddHttpClient<IWeatherApi, WeatherApi>();
-}
-```
-
-`context.Services` 就是标准的 `IServiceCollection`，所有你熟悉的 .NET DI 扩展方法都能用。
-
-> 有些领域服务（尤其是需要特定构造参数或工厂的）**必须手写注册**——约定式注册只覆盖能无参解析接口的常规场景。
-
-## 注入依赖
-
-和标准 .NET 一样，构造函数注入：
-
-```csharp
-public class OrderService : IOrderService, IScopedDependency
-{
-    private readonly IRepositoryBase<Order, long> _orders;
-    private readonly ISmsSender _sms;
-
-    public OrderService(IRepositoryBase<Order, long> orders, ISmsSender sms)
+    public Manifest Manifest { get; } = new()
     {
-        _orders = orders;
-        _sms = sms;
+        Id = "xihan.shop.pricing",
+        Version = "1.0.0",
+        Primitives = 1,
+        Stability = Stability.Preview,
+        Kind = ManifestKind.Capability,
+        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
+        Entry = typeof(PricingFeature).FullName,
+    };
+
+    public void Configure(FeatureContext context)
+    {
+        context.Services.AddSingleton<PriceList>();
+        context.Services.AddScoped<DiscountCalculator>();
+    }
+}
+
+public sealed class PriceList;
+
+public sealed class DiscountCalculator(PriceList prices, TimeProvider clock);
+```
+
+源生成器产出的登记代码同样要显式调用：`Kernel.Generators` 生成 `context.AddGeneratedOperations()`，`Persistence.Generators` 生成 `context.Services.AddGeneratedRepositories()`。生成器只省去手写登记，不改变「显式调用才生效」的规则。
+
+替换某个能力的实现不靠覆盖容器注册，而是加入另一个 Provider 特性，由能力图谱选择，见[能力包与清单](./modularity#选择-provider)。
+
+## 框架登记的生命周期
+
+| 类型 | 生命周期 | 登记方 |
+| --- | --- | --- |
+| 操作（`IOperation<TRequest, TResponse>` 的实现） | 作用域 | `FeatureContext.AddOperation`，每次调用解析一个新实例 |
+| 管道中间件 | 单例 | `FeatureContext.AddMiddleware<T>` 以 `TryAddSingleton` 登记 |
+| `IInvocationAccessor` | 作用域 | 内核 |
+| `App`、`ResolvedGraph`、`KernelOptions`、`OperationRegistry`、`PermissionRegistry` | 单例 | 内核 |
+| `TimeProvider` | 单例 | 内核在宿主没有注册时补 `TimeProvider.System` |
+| `ILoggerFactory`、`IAuditSink` | 单例 | 内核在宿主没有注册时补空实现 |
+
+中间件是单例，构造函数只能依赖单例服务；需要作用域服务时，在 `InvokeAsync` 里从 `context.Services`（本次调用的作用域服务提供器）取得：
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Primitives;
+
+namespace Shop.Pricing;
+
+public sealed class PriceAuditMiddleware(TimeProvider clock) : IPipelineMiddleware
+{
+    public async ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
+    {
+        // 作用域服务按调用解析，不进构造函数
+        var calculator = context.Services.GetRequiredService<DiscountCalculator>();
+        var startedAt = clock.GetUtcNow();
+        await nextStep(context);
     }
 }
 ```
 
-> 极少数无法走构造函数注入的场景（比如遗留类型的属性/字段），可以用 `[AutowiredService]` 标记，再配合 `AutowiredServiceHandler.Autowired(this)` 手动触发装配。这只是兜底手段，**日常开发请优先用构造函数注入**。
+应用自己用 `AppBuilder.ConfigurePipeline` 或 `AppBuilder.Pipeline.UseAt<T>` 登记中间件时，内核不会替它注册类型，要同时在容器里注册（通常是 `AddSingleton<T>()`），否则第一次调用时解析失败。用 `FeatureContext.AddMiddleware<T>` 则由内核一并注册。
 
-## 选项模式
+## 调用作用域
 
-框架在 `XiHanModule` 上封装了 `Configure<T>` / `PreConfigure<T>` / `PostConfigure<T>`，简化配置对象的绑定：
+每次调用对应一个服务作用域：ASP.NET Core 宿主沿用请求作用域，命令行宿主、消息派发、作业派发与测试基座为每次调用创建一个作用域。`InvocationContext.Services` 就是这个作用域的服务提供器，同一次调用里的操作、仓储、工作单元共享它。
+
+在调用之外运行的代码（`IHostedFeature.StartAsync`、后台循环、单例服务里的定时任务）没有调用作用域，需要作用域服务时自己创建：
 
 ```csharp
-public override void ConfigureServices(ServiceConfigurationContext context)
-{
-    // 直接配置
-    Configure<MyOptions>(o => o.Retries = 3);
+using Microsoft.Extensions.DependencyInjection;
 
-    // 从配置节绑定
-    Configure<MyOptions>(context.Services
-        .GetConfiguration()
-        .GetSection("XiHan:MyModule"));
+namespace Shop.Pricing;
+
+public sealed class PriceListRefresher(IServiceScopeFactory scopes)
+{
+    public async Task RefreshAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var calculator = scope.ServiceProvider.GetRequiredService<DiscountCalculator>();
+        await Task.CompletedTask;
+    }
 }
 ```
 
-消费时注入 `IOptions<MyOptions>` / `IOptionsMonitor<MyOptions>`：
+在这样的作用域里使用仓储，还要自己开启工作单元，写法见[工作单元与事务](./uow)。
+
+## 取得当前调用的上下文
+
+操作与中间件通过参数拿到 `InvocationContext`。调用链深处不方便传参的服务（领域服务、仓储装饰器、当前用户的包装）注入作用域服务 `IInvocationAccessor`：
 
 ```csharp
-public class MyService(IOptions<MyOptions> options) : ITransientDependency
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Security;
+
+namespace Shop.Pricing;
+
+public sealed class CurrentShopper(IInvocationAccessor accessor)
 {
-    private readonly MyOptions _options = options.Value;
+    // 不在调用内（后台任务、作用域刚创建、调用已结束）时为无值
+    public string? Id => accessor.Current.TryGetValue(out var context)
+        ? context.GetSecurity().Principal.Id
+        : null;
+
+    public string? TenantId => accessor.Current.TryGetValue(out var context)
+        ? context.GetSecurity().Tenant?.Id
+        : null;
 }
 ```
 
-- `PreConfigure<T>` —— 在正式配置**之前**预设值，供后续模块读取
-- `PostConfigure<T>` —— 在所有模块配置**之后**做最终覆盖
+内核在调用进入管道前设置 `Current`，离开时恢复上一层；同一作用域内的嵌套调用各自看到自己的上下文。`CurrentShopper` 要注册为作用域服务（`AddScoped`）。访问器不是传播载体：跨进程传递租户、主体等信息由调用上下文的 Baggage 负责。
 
-它们对应生命周期里的 `PreConfigureServices` / `PostConfigureServices`（见 [生命周期](./lifecycle)）。
+## 时间与测试替身
 
-## 小结
+需要当前时间的代码注入 `TimeProvider`，不直接读 `DateTimeOffset.UtcNow`。截止时间、缓存过期、调度与租约都基于容器里的 `TimeProvider`，测试里注册 `Microsoft.Extensions.TimeProvider.Testing` 的 `FakeTimeProvider` 就能控制时间推进。测试宿主与特性桩见[测试与一致性套件](./testing)。
 
-- 优先用**标记接口**自动注册，减少样板
-- 生命周期/替换/跳过等精细控制交给 `[Dependency(...)]`，暴露类型/键控服务交给 `[ExposeServices]` / `[ExposeKeyedService<T>]`
-- 需要更彻底的控制时在 `ConfigureServices` 里手写，或用 `[DisableConventionalRegistration]` 退出扫描
-- 用 `Configure<T>` 绑定选项，用 `IOptions<T>` 消费
-- 一切都建立在标准 .NET DI 之上，没有魔法黑箱
+## 相关
 
-## 下一步
-
-- [动态 API](./dynamic-api)：应用服务如何自动变成接口
-- [模块系统](./modularity)：模块如何被装配
+- [能力包与清单](./modularity)
+- [执行管道](./pipeline)
+- [工作单元与事务](./uow)
+- 规范：RFC-0003《调用上下文与传播》

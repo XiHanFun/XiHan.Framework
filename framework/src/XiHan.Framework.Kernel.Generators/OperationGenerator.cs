@@ -1,0 +1,349 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using System.Collections.Immutable;
+using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
+using XiHan.Framework.Kernel.Generators.Json;
+
+namespace XiHan.Framework.Kernel.Generators;
+
+/// <summary>
+/// 从 <c>[Operation]</c> 类生成登记代码与 JSON Schema
+/// </summary>
+/// <remarks>
+/// 输出 <c>GeneratedOperations</c> 静态类，含每个操作的 <c>Add&lt;类名&gt;</c> 与登记全部操作的 <c>AddGeneratedOperations</c>
+/// </remarks>
+[Generator(LanguageNames.CSharp)]
+public sealed class OperationGenerator : IIncrementalGenerator
+{
+    /// <summary>
+    /// <c>OperationAttribute</c> 的全名
+    /// </summary>
+    private const string OperationAttributeName = "XiHan.Framework.Kernel.Operations.OperationAttribute";
+
+    /// <summary>
+    /// <c>OperationDefaultsAttribute</c> 的元数据名
+    /// </summary>
+    private const string OperationDefaultsAttributeName = "XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute";
+
+    /// <summary>
+    /// <c>Expose.All</c> 的数值：Http | Grpc | Mcp | CommandLine | Ai（与内核枚举同步）
+    /// </summary>
+    private const int ExposeAll = 31;
+
+    /// <summary>
+    /// <c>IOperation&lt;,&gt;</c> 的元数据名
+    /// </summary>
+    private const string OperationInterfaceName = "XiHan.Framework.Kernel.Operations.IOperation`2";
+
+    /// <summary>
+    /// 操作 ID 文法，与原语层 <c>OperationId</c> 一致
+    /// </summary>
+    private static readonly Regex _operationId = new("^[a-z][a-z0-9]*(-[a-z0-9]+)*\\.[a-z][a-z0-9]*(-[a-z0-9]+)*$", RegexOptions.Compiled);
+
+    /// <inheritdoc />
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var operations = context.SyntaxProvider.ForAttributeWithMetadataName(
+            OperationAttributeName,
+            static (node, _) => node is ClassDeclarationSyntax,
+            static (syntaxContext, _) => (Symbol: (INamedTypeSymbol)syntaxContext.TargetSymbol, Attribute: syntaxContext.Attributes[0]));
+
+        var rootNamespace = context.AnalyzerConfigOptionsProvider.Select(static (provider, _) =>
+            provider.GlobalOptions.TryGetValue("build_property.RootNamespace", out var value) && !string.IsNullOrWhiteSpace(value) ? value : null);
+
+        var input = operations.Collect().Combine(context.CompilationProvider).Combine(rootNamespace);
+        context.RegisterSourceOutput(input, static (productionContext, data) => Emit(productionContext, data.Left.Left, data.Left.Right, data.Right));
+    }
+
+    /// <summary>
+    /// 校验每个操作、解析序列化上下文并输出源文件
+    /// </summary>
+    private static void Emit(SourceProductionContext context, ImmutableArray<(INamedTypeSymbol Symbol, AttributeData Attribute)> candidates, Compilation compilation, string? rootNamespace)
+    {
+        if (candidates.IsDefaultOrEmpty)
+        {
+            return;
+        }
+
+        var operationInterface = compilation.GetTypeByMetadataName(OperationInterfaceName);
+        var contexts = JsonContextModel.Collect(compilation);
+        var defaultExpose = AssemblyDefaultExpose(compilation);
+        var models = new List<OperationModel>();
+        foreach (var (symbol, attribute) in candidates.OrderBy(static c => c.Symbol.ToDisplayString(), StringComparer.Ordinal))
+        {
+            var model = CreateModel(context, symbol, attribute, operationInterface, contexts, defaultExpose);
+            if (model is not null)
+            {
+                models.Add(model);
+            }
+        }
+
+        if (models.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var model in models)
+        {
+            // Schema 在渲染之前生成：生成途中发现的 System.Text.Json 不支持的字典键要报到操作上，一个操作每种键类型报一次
+            var request = new JsonSchemaBuilder(model.RequestContext!);
+            model.RequestSchema = request.Build(model.RequestType);
+            var response = new JsonSchemaBuilder(model.ResponseContext!);
+            model.ResponseSchema = response.Build(model.ResponseType);
+            var location = model.OperationType.Locations.FirstOrDefault() ?? Location.None;
+            foreach (var key in request.UnsupportedKeys.Concat(response.UnsupportedKeys).Distinct<ITypeSymbol>(SymbolEqualityComparer.Default))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.UnsupportedDictionaryKey, location, key.ToDisplayString(), model.Id));
+            }
+        }
+
+        var ns = Sanitize(rootNamespace ?? compilation.AssemblyName ?? "Generated");
+        context.AddSource("GeneratedOperations.g.cs", SourceText.From(Render(ns, models), Encoding.UTF8));
+    }
+
+    /// <summary>
+    /// 程序集级缺省暴露协议
+    /// </summary>
+    /// <remarks>
+    /// <c>[assembly: OperationDefaults(Expose = ...)]</c> 的值；没有该特性（或没写 <c>Expose</c>）时为 <see langword="null"/>
+    /// </remarks>
+    private static int? AssemblyDefaultExpose(Compilation compilation)
+    {
+        // 按符号比对特性，与 IOperation<,> 的解析一致；没有引用内核时编译里没有这个特性，也就没有程序集缺省
+        var defaults = compilation.GetTypeByMetadataName(OperationDefaultsAttributeName);
+        if (defaults is null)
+        {
+            return null;
+        }
+
+        foreach (var attribute in compilation.Assembly.GetAttributes())
+        {
+            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, defaults))
+            {
+                continue;
+            }
+
+            // 写了特性却没写 Expose：等于声明"缺省就是 All"，同样视为有程序集缺省
+            var expose = attribute.NamedArguments.FirstOrDefault(static a => a.Key == "Expose").Value.Value;
+            return expose is int value ? value : ExposeAll;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 读取特性与接口、解析上下文
+    /// </summary>
+    /// <remarks>
+    /// 有问题的操作报诊断并跳过。没写 <c>Expose</c> 的操作取程序集缺省 <paramref name="defaultExpose"/>，再没有就是全部协议
+    /// </remarks>
+    private static OperationModel? CreateModel(SourceProductionContext context, INamedTypeSymbol symbol, AttributeData attribute, INamedTypeSymbol? operationInterface, List<JsonContextModel> contexts, int? defaultExpose)
+    {
+        var location = symbol.Locations.FirstOrDefault() ?? Location.None;
+        var id = attribute.ConstructorArguments.Length == 1 ? attribute.ConstructorArguments[0].Value as string : null;
+        if (id is null || !_operationId.IsMatch(id))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.InvalidOperationId, location, id ?? string.Empty, symbol.Name));
+            return null;
+        }
+
+        var implemented = operationInterface is null
+            ? null
+            : symbol.AllInterfaces.FirstOrDefault(i => SymbolEqualityComparer.Default.Equals(i.OriginalDefinition, operationInterface));
+        if (implemented is null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.MissingOperationInterface, location, symbol.Name));
+            return null;
+        }
+
+        var stability = 0;
+        int? explicitExpose = null;
+        string? policy = null;
+        string? permission = null;
+        var readOnly = false;
+        foreach (var argument in attribute.NamedArguments)
+        {
+            switch (argument.Key)
+            {
+                case "Stability" when argument.Value.Value is int s:
+                    stability = s;
+                    break;
+                case "Expose" when argument.Value.Value is int e:
+                    explicitExpose = e;
+                    break;
+                case "Policy":
+                    policy = argument.Value.Value as string;
+                    break;
+                case "Permission":
+                    permission = argument.Value.Value as string;
+                    break;
+                case "ReadOnly" when argument.Value.Value is bool r:
+                    readOnly = r;
+                    break;
+            }
+        }
+
+        // 写操作的动词不能声明只读：契约构造会在运行期抛出，这里提前到编译期
+        var verb = id.Substring(id.IndexOf('.') + 1);
+        if (readOnly && verb is "create" or "update" or "delete")
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.ReadOnlyOnWriteVerb, location, id, verb));
+            return null;
+        }
+
+        if (explicitExpose is null && defaultExpose is null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.ImplicitExposeAll, location, id));
+        }
+
+        var expose = explicitExpose ?? defaultExpose ?? ExposeAll;
+        var model = new OperationModel(symbol, id, stability, expose, policy, permission, readOnly, implemented.TypeArguments[0], implemented.TypeArguments[1]);
+        if (!Resolve(contexts, model.RequestType, out var requestContext, out var requestProperty))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.MissingJsonTypeInfo, location, model.RequestType.ToDisplayString(), id));
+            return null;
+        }
+
+        if (!Resolve(contexts, model.ResponseType, out var responseContext, out var responseProperty))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(GeneratorRules.MissingJsonTypeInfo, location, model.ResponseType.ToDisplayString(), id));
+            return null;
+        }
+
+        model.RequestContext = requestContext;
+        model.RequestProperty = requestProperty;
+        model.ResponseContext = responseContext;
+        model.ResponseProperty = responseProperty;
+        return model;
+    }
+
+    /// <summary>
+    /// 在全部上下文里找登记了该类型的那个
+    /// </summary>
+    private static bool Resolve(List<JsonContextModel> contexts, ITypeSymbol type, out JsonContextModel? found, out string? property)
+    {
+        foreach (var candidate in contexts)
+        {
+            if (candidate.TryGetPropertyName(type, out var name))
+            {
+                found = candidate;
+                property = name;
+                return true;
+            }
+        }
+
+        found = null;
+        property = null;
+        return false;
+    }
+
+    /// <summary>
+    /// 渲染源文件
+    /// </summary>
+    private static string Render(string ns, List<OperationModel> models)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("// <auto-generated/>");
+        builder.AppendLine("// 由 XiHan.Framework.Kernel.Generators 从 [Operation] 生成：操作登记代码与请求/响应 JSON Schema。");
+        builder.AppendLine("#nullable enable");
+        builder.AppendLine();
+        builder.Append("namespace ").Append(ns).AppendLine(";");
+        builder.AppendLine();
+        builder.AppendLine("/// <summary>");
+        builder.AppendLine("/// 本程序集全部 <c>[Operation]</c> 的登记入口与 Schema。");
+        builder.AppendLine("/// </summary>");
+        builder.AppendLine("[global::System.CodeDom.Compiler.GeneratedCode(\"XiHan.Framework.Kernel.Generators\", \"5.0\")]");
+        builder.AppendLine("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");
+        builder.AppendLine("public static class GeneratedOperations");
+        builder.AppendLine("{");
+
+        var methodNames = new List<string>();
+        var usedNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var model in models)
+        {
+            var methodName = "Add" + model.OperationType.Name;
+            var index = 2;
+            while (!usedNames.Add(methodName))
+            {
+                methodName = "Add" + model.OperationType.Name + index++;
+            }
+
+            methodNames.Add(methodName);
+
+            builder.AppendLine("    /// <summary>");
+            builder.Append("    /// 登记操作 <c>").Append(model.Id).Append("</c>（").Append(model.OperationType.Name).AppendLine("）。");
+            builder.AppendLine("    /// </summary>");
+            builder.Append("    public static global::XiHan.Framework.Kernel.Hosting.FeatureContext ").Append(methodName).AppendLine("(this global::XiHan.Framework.Kernel.Hosting.FeatureContext context)");
+            builder.Append("        => context.AddOperation<").Append(Display(model.OperationType)).Append(", ").Append(Display(model.RequestType)).Append(", ").Append(Display(model.ResponseType)).AppendLine(">(");
+            builder.Append("            new global::XiHan.Framework.Kernel.Operations.OperationContract(").Append(Literal(model.Id))
+                .Append(", (global::XiHan.Framework.Primitives.Stability)").Append(model.Stability)
+                .Append(", (global::XiHan.Framework.Kernel.Operations.Expose)").Append(model.Expose)
+                .Append(", ").Append(model.Policy is null ? "null" : Literal(model.Policy))
+                .Append(", ").Append(model.Permission is null ? "null" : Literal(model.Permission))
+                .Append(model.ReadOnly ? ", readOnly: true" : string.Empty).AppendLine("),");
+            builder.Append("            ").Append(Display(model.RequestContext!.Type)).Append(".Default.").Append(Identifier(model.RequestProperty!)).AppendLine(",");
+            builder.Append("            ").Append(Display(model.ResponseContext!.Type)).Append(".Default.").Append(Identifier(model.ResponseProperty!)).AppendLine(",");
+            builder.Append("            new global::XiHan.Framework.Kernel.Operations.OperationSchema(").Append(Literal(model.RequestSchema!)).Append(", ").Append(Literal(model.ResponseSchema!)).AppendLine("));");
+            builder.AppendLine();
+        }
+
+        builder.AppendLine("    /// <summary>");
+        builder.AppendLine("    /// 登记本程序集的全部操作。");
+        builder.AppendLine("    /// </summary>");
+        builder.AppendLine("    public static global::XiHan.Framework.Kernel.Hosting.FeatureContext AddGeneratedOperations(this global::XiHan.Framework.Kernel.Hosting.FeatureContext context)");
+        builder.AppendLine("    {");
+        foreach (var methodName in methodNames)
+        {
+            builder.Append("        context.").Append(methodName).AppendLine("();");
+        }
+
+        builder.AppendLine("        return context;");
+        builder.AppendLine("    }");
+        builder.AppendLine("}");
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// 带 <c>global::</c> 的完整类型名
+    /// </summary>
+    /// <remarks>
+    /// 在完整格式上追加可空标注：保留关键字转义（<c>@event</c>）与特殊类型关键字（<c>int</c>、<c>string</c>），整体替换杂项选项会把转义丢掉，命名空间或类型名是关键字时生成的代码编不过
+    /// </remarks>
+    private static string Display(ITypeSymbol type)
+        => type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.AddMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier));
+
+    /// <summary>
+    /// 作为标识符写出的名字，C# 关键字加 <c>@</c>
+    /// </summary>
+    /// <remarks>
+    /// 序列化上下文的属性名来自类型名或 <c>TypeInfoPropertyName</c>，可能正好是关键字（<c>@class</c> 类型的属性名是 <c>class</c>）
+    /// </remarks>
+    private static string Identifier(string name) => SyntaxFacts.GetKeywordKind(name) == SyntaxKind.None ? name : "@" + name;
+
+    /// <summary>
+    /// C# 字符串字面量（逐字字符串，双写引号）
+    /// </summary>
+    private static string Literal(string value) => "@\"" + value.Replace("\"", "\"\"") + "\"";
+
+    /// <summary>
+    /// 把根命名空间整理成合法的命名空间名
+    /// </summary>
+    /// <remarks>
+    /// 去掉不能出现在标识符里的字符，数字开头或空段补 <c>_</c>，C# 关键字段加 <c>@</c>（<c>Demo.event</c> → <c>Demo.@event</c>）
+    /// </remarks>
+    private static string Sanitize(string value)
+    {
+        var parts = value.Split('.').Select(static part =>
+        {
+            var cleaned = new string(part.Where(static c => char.IsLetterOrDigit(c) || c == '_').ToArray());
+            return cleaned.Length == 0 || char.IsDigit(cleaned[0]) ? "_" + cleaned : Identifier(cleaned);
+        });
+        return string.Join(".", parts);
+    }
+}

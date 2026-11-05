@@ -1,0 +1,7 @@
+<Project>
+  <!-- README 与 PublicAPI 文件留在包目录，打包、分析器和离线知识库都从这里读，只是不在解决方案资源管理器里显示 -->
+  <ItemGroup>
+    <None Update="README.md;PublicAPI.Shipped.txt;PublicAPI.Unshipped.txt" Visible="false" />
+    <AdditionalFiles Update="PublicAPI.Shipped.txt;PublicAPI.Unshipped.txt" Visible="false" />
+  </ItemGroup>
+</Project>

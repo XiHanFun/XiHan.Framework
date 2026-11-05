@@ -22,11 +22,11 @@ labels: enhancement
 
 ## 所属层
 
-<!-- 公共 / 核心 / 领域 / 应用 / 基础设施 / Web / 新模块 / 测试 / 文档 / 构建 -->
+<!-- 原语 / 内核 / 领域与抽象 / 实现与 Provider / 宿主 / 协议与插件 / 工具链 / 新的包 / 测试 / 文档 / 构建 -->
 
-## 相关模块 / 包名
+## 相关包名
 
-<!-- 如 XiHan.Framework.EventBus；如为新模块可留空 -->
+<!-- 如 XiHan.Framework.Messaging.Abstractions；如为新包可留空 -->
 
 ## 替代方案
 

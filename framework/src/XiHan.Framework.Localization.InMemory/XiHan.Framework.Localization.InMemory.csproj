@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Localization.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Localization.InMemory</RootNamespace>
+    <Description>曦寒框架本地化的内存默认实现</Description>
+    <PackageTags>xihan;framework;localization;i18n;in-memory</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

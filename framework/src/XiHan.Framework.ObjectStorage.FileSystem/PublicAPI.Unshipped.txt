@@ -1,0 +1,52 @@
+#nullable enable
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.AbortAsync(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload! upload, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.CompleteAsync(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload! upload, System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart!>! parts, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata!>>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.DeleteAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobDeleteResult!>!>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.FileSystemBlobStore(XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.GetAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobContent!>>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.GetAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange! range, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobContent!>>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.HeadAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata!>>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.InitializeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.ListAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage!>>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.ListPartsAsync(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload! upload, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart!>!>>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.PutAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobUpload!>! uploads, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutResult!>!>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.RootPath.get -> string!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.StartAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload!>>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.UploadPartAsync(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload! upload, int partNumber, System.IO.Stream! content, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart!>>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStore.UsedBytes.get -> long
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.CreateAsync(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.FileSystemBlobStoreProvider(System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.Name.get -> string!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.ProbeAsync(XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.ConfigureShadowed(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.FileSystemObjectStorageFeature() -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.<Clone>$() -> XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.Equals(XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? other) -> bool
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.FileSystemObjectStorageOptions() -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxBlobBytes.get -> long
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxBlobBytes.init -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxTotalBytes.get -> long
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxTotalBytes.init -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MultipartExpiry.get -> System.TimeSpan
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MultipartExpiry.init -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.RootPath.get -> string!
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.RootPath.init -> void
+const XiHan.Framework.ObjectStorage.FileSystem.FileSystemBlobStoreProvider.ProviderName = "filesystem" -> string!
+const XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageFeature.HealthName = "objectstorage.filesystem.capacity" -> string!
+const XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.ConfigurationSection = "XiHan:ObjectStorage:FileSystem" -> string!
+override XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.Equals(object? obj) -> bool
+override XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.GetHashCode() -> int
+override XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.ToString() -> string!
+static XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions!
+static XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.FromSettings(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! settings) -> XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions!
+static XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.operator !=(XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? left, XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? right) -> bool
+static XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.operator ==(XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? left, XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions? right) -> bool

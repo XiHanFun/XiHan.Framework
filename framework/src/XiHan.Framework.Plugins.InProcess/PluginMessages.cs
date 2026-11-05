@@ -1,0 +1,120 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using XiHan.Framework.Primitives;
+
+namespace XiHan.Framework.Plugins.InProcess;
+
+/// <summary>
+/// 进程内插件宿主的消息键
+/// </summary>
+/// <remarks>
+/// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，宿主应用用 <c>MessageCatalog.FromEmbeddedResources("plugins", typeof(PluginMessages))</c> 注册
+/// </remarks>
+[ApiLevel(Stability.Preview, "5.0")]
+public static class PluginMessages
+{
+    /// <summary>
+    /// 插件目录里的清单不合法
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>directory</c>、<c>reason</c>
+    /// </remarks>
+    public const string ManifestInvalid = "plugins.manifest.invalid";
+
+    /// <summary>
+    /// 清单描述的不是进程内插件
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>kind</c>、<c>isolation</c>
+    /// </remarks>
+    public const string NotInProcess = "plugins.manifest.not_in_process";
+
+    /// <summary>
+    /// 进程内插件的清单写了 <c>contributes.pipeline</c>
+    /// </summary>
+    /// <remarks>
+    /// 只有 Wasm 插件能贡献中间件（RFC-0002 <c>contributes</c>）。参数：<c>id</c>、<c>middleware</c>（声明的中间件名，逗号分隔）
+    /// </remarks>
+    public const string PipelineUnsupported = "plugins.manifest.pipeline_unsupported";
+
+    /// <summary>
+    /// 插件声明的权限未被授予
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>permissions</c>
+    /// </remarks>
+    public const string PermissionsNotGranted = "plugins.permission.not_granted";
+
+    /// <summary>
+    /// 清单缺少 <c>package</c> 或 <c>entry</c>
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>
+    /// </remarks>
+    public const string EntryRequired = "plugins.manifest.entry_required";
+
+    /// <summary>
+    /// 插件程序集不存在
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>path</c>
+    /// </remarks>
+    public const string AssemblyMissing = "plugins.assembly.missing";
+
+    /// <summary>
+    /// 插件已加载
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>
+    /// </remarks>
+    public const string AlreadyLoaded = "plugins.plugin.already_loaded";
+
+    /// <summary>
+    /// 插件未加载
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>
+    /// </remarks>
+    public const string NotLoaded = "plugins.plugin.not_loaded";
+
+    /// <summary>
+    /// 入口类型不存在
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>entry</c>、<c>package</c>
+    /// </remarks>
+    public const string EntryNotFound = "plugins.entry.not_found";
+
+    /// <summary>
+    /// 入口类型未实现 <c>IPlugin</c>
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>entry</c>
+    /// </remarks>
+    public const string EntryNotPlugin = "plugins.entry.not_plugin";
+
+    /// <summary>
+    /// 入口类型的清单 ID 与清单文件不一致
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>actual</c>、<c>expected</c>
+    /// </remarks>
+    public const string EntryManifestMismatch = "plugins.entry.manifest_mismatch";
+
+    /// <summary>
+    /// 插件加载失败
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>reason</c>
+    /// </remarks>
+    public const string LoadFailed = "plugins.plugin.load_failed";
+
+    /// <summary>
+    /// 插件停止失败
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>reason</c>
+    /// </remarks>
+    public const string StopFailed = "plugins.plugin.stop_failed";
+}

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Hosting.AspNetCore.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Hosting.AspNetCore/XiHan.Framework.Hosting.AspNetCore.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
+    <!-- 端点授权要求的启动核对要有授权能力（策略目录） -->
+    <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+  </ItemGroup>
+</Project>

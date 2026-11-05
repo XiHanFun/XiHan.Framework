@@ -1,0 +1,9 @@
+{
+  "protocols.http.openapi_authentication_required": "로그인이 필요합니다.",
+  "protocols.http.openapi_error": "오류",
+  "protocols.http.openapi_permission_code_required": "{permission} 권한이 필요합니다.",
+  "protocols.http.openapi_permission_required": "{permission}({name}) 권한이 필요합니다.",
+  "protocols.http.openapi_policy_required": "{policy} 정책이 필요합니다.",
+  "protocols.http.openapi_success": "성공",
+  "protocols.http.openapi_ungrouped": "기타"
+}

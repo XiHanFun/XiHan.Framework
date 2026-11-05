@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Caching.Hybrid</PackageId>
+    <RootNamespace>XiHan.Framework.Caching.Hybrid</RootNamespace>
+    <Description>曦寒框架缓存的两级缓存提供程序</Description>
+    <PackageTags>xihan;framework;caching;hybrid;two-tier</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+{
+  "protocols.cloudevents.content_type_unsupported": "リクエストは CloudEvent ではありません: コンテンツタイプ '{contentType}' は CloudEvents の構造化形式でもバッチ形式でもなく、'ce-specversion' ヘッダーもありません。",
+  "protocols.cloudevents.no_subscriber": "トピック '{topic}' を購読しているハンドラーがありません。",
+  "protocols.cloudevents.topic_unresolved": "イベントタイプ '{type}' にトピックが設定されておらず、タイプ自体も有効なトピックではありません。",
+  "protocols.cloudevents.webhook_failed": "トピック '{topic}' の Webhook が HTTP {status} を返しました。",
+  "protocols.cloudevents.webhook_missing": "トピック '{topic}' に Webhook が設定されていません。",
+  "protocols.cloudevents.webhook_unreachable": "トピック '{topic}' の Webhook に接続できません: {reason}"
+}

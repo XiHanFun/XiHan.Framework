@@ -1,0 +1,4 @@
+{
+  "auditing.query.invalid": "監査クエリが無効です: {reason}",
+  "auditing.trail.unavailable": "監査証跡は利用できません: {reason}"
+}

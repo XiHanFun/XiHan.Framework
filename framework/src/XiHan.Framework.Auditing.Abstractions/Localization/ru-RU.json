@@ -1,0 +1,4 @@
+{
+  "auditing.query.invalid": "Запрос аудита недопустим: {reason}",
+  "auditing.trail.unavailable": "Журнал аудита недоступен: {reason}"
+}

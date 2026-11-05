@@ -1,0 +1,4 @@
+{
+  "greetings.create.description": "Grüßt jemanden mit Namen, optional mehrmals.",
+  "samples.greet.times_invalid": "Die Anzahl der Grüße muss zwischen 1 und 10 liegen, angegeben wurde {times}."
+}

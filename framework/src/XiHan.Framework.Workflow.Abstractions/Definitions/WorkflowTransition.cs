@@ -1,45 +1,58 @@
-// Copyright (c) 2021-Present XiHanFun and contributors.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 
 /// <summary>
-/// 流程连线（节点间转移）
+/// 两个节点之间的转移：条件为空即无条件，默认出边只在没有其他出边匹配时走
 /// </summary>
-public class WorkflowTransition
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed record WorkflowTransition
 {
     /// <summary>
-    /// 连线标识（流程定义内唯一）
+    /// 转移 ID，定义内唯一
     /// </summary>
-    public string Id { get; set; } = string.Empty;
+    public required string Id
+    {
+        get => field;
+        init => field = WorkflowIdentifiers.IsValidElementId(value) ? value : throw new ArgumentException($"Transition ID '{value}' is invalid.", nameof(value));
+    }
 
     /// <summary>
-    /// 连线名称
+    /// 源节点 ID
     /// </summary>
-    public string? Name { get; set; }
+    public required string SourceNodeId { get; init; }
 
     /// <summary>
-    /// 源节点标识
+    /// 目标节点 ID
     /// </summary>
-    public string SourceNodeId { get; set; } = string.Empty;
+    public required string TargetNodeId { get; init; }
 
     /// <summary>
-    /// 目标节点标识
+    /// 条件表达式
     /// </summary>
-    public string TargetNodeId { get; set; } = string.Empty;
+    /// <remarks>
+    /// 空为无条件。作用域是实例变量加 <c>outcome</c>
+    /// </remarks>
+    public string? Condition { get; init; }
 
     /// <summary>
-    /// 转移条件表达式（为空表示无条件；求值上下文为实例变量 + outcome 活动结果变量）
+    /// 优先级，小者先评估
     /// </summary>
-    public string? Condition { get; set; }
+    /// <remarks>
+    /// 默认 0
+    /// </remarks>
+    public int Priority { get; init; }
 
     /// <summary>
-    /// 优先级（独占网关按数值升序逐条求值，取第一条满足的连线）
+    /// 是否默认出边：没有其他出边匹配时走它
     /// </summary>
-    public int Priority { get; set; }
+    public bool IsDefault { get; init; }
 
     /// <summary>
-    /// 是否默认连线（独占网关所有条件连线均不满足时的兜底分支）
+    /// 显示名
     /// </summary>
-    public bool IsDefault { get; set; }
+    public string? DisplayName { get; init; }
 }

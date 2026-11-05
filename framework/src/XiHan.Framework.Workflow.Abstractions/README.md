@@ -1,80 +1,65 @@
 # XiHan.Framework.Workflow.Abstractions
 
-曦寒框架工作流抽象包。
+## 关于
 
-## 概述
+`XiHan.Framework.Workflow.Abstractions` 定义工作流的契约并包含工作流引擎：流程定义与校验、定义目录、内置活动、实例与书签、用户任务与外部任务、表达式语言，以及到期书签的轮询器。它不包含存储的实现，单独引用不能运行流程。
 
-定义通用工作流引擎的全部契约与被动模型，不含任何实现。业务包或第三方扩展包只需引用本包即可：
+## 主要特性
 
-- 编写自定义活动（`IWorkflowActivity` / `IResumableWorkflowActivity` / `ICompensableWorkflowActivity`）；
-- 订阅流程生命周期事件（`Events/` 下的事件记录）；
-- 替换存储实现（`IWorkflowDefinitionStore` / `IWorkflowInstanceStore` / `IWorkflowBookmarkStore`）；
-- 替换表达式求值器（`IWorkflowExpressionEvaluator`）；
-- 注册受理人解析器（`IWorkflowAssigneeProvider`），为人工任务提供角色、部门、主管等规则类型；
-- 注册结果处理器（`IWorkflowOutcomeHandler`），在结果结束节点把审批结论回写业务。
+* 流式构造流程定义：用户任务、决策、并行与汇合、延时、信号、子流程、HTTP 调用等
+* 流程实例随业务事务提交或回滚，数据按平台与租户分区隔离
+* 用户任务支持会签、转办、加签、认领与催办
+* 存储、事务与实例锁是窄契约，由提供程序实现
 
-## 核心能力
+## 如何使用
 
-| 分组 | 内容 |
-| --- | --- |
-| Definitions | 流程定义模型：`WorkflowDefinition`（编码 + 版本 + 状态）、`WorkflowNode`（活动类型 + 属性 + 重试/超时/失败续行）、`WorkflowTransition`（条件 + 优先级 + 默认边）、`IWorkflowDefinitionManager`（草稿/发布/版本管理） |
-| Runtime | 运行时模型：`WorkflowInstance`（变量 + 汇聚波次 + 父子链接）、`WorkflowNodeInstance`（执行历史 + 活动私有状态）、`WorkflowBookmark`（可恢复等待点）、`WorkflowVariables`（类型安全变量容器）、`WorkflowValueConverter`（JSON 持久化往返归一化） |
-| Activities | 活动契约：执行/恢复/补偿接口、`WorkflowActivityAttribute`（类型编码 + 出边流转行为）、`ActivityExecutionResult`（完成/挂起/故障/结束整个实例） |
-| Engine | `IWorkflowEngine`：启动、书签恢复、信号发布、挂起/恢复、取消、终止、重试 |
-| Stores | 三个存储契约，查询语义以 XML 注释形式随接口声明 |
-| Expressions | `IWorkflowExpressionEvaluator`：表达式求值、条件求值（fail-closed）、`{{ }}` 模板渲染 |
-| UserTasks | `IWorkflowUserTaskService`：待办查询、办理、转办、加签；`UserTaskCompletionPolicy`：或签/会签/依次审批；`UserTaskEmptyAssigneeStrategy`：受理人为空时故障/自动通过/自动驳回/兜底 |
-| Assignees | `WorkflowAssigneeRule`（`{ type, values }`）、内置类型 `WorkflowAssigneeRuleTypes`、解析器契约 `IWorkflowAssigneeProvider` 与解析门面 `IWorkflowAssigneeResolver` |
-| Outcomes | `IWorkflowOutcomeHandler`：结果结束节点执行时同步回调，失败即节点故障、重试再次回调 |
-| Events | 实例/节点/人工任务生命周期事件记录 |
+### 安装
 
-## 依赖关系
-
-仅依赖 `XiHan.Framework.Core`。
-
-## 配置与约定
-
-本包不含配置项（选项类位于实现包 `XiHan.Framework.Workflow`）。契约层约定：
-
-- 条件表达式求值 fail-closed：结果必须为布尔值，未知变量、非法语法一律抛出异常而非静默跳过；
-- 存储接口的查询语义（过滤、排序、上限）以 XML 注释形式随方法声明，持久化实现必须遵守；
-- 存储查询不做租户过滤，租户隔离由引擎与任务服务在查询结果上按环境租户执行；
-- 书签一经消费即失效，恢复必须携带幂等语义（引擎在实例锁内二次校验）；
-- 变量值经 JSON 持久化往返后为 `JsonElement`，统一经 `WorkflowValueConverter` 归一化后使用。
-
-## 使用方式
-
-业务模块声明依赖：
-
-```csharp
-[DependsOn(
-    typeof(XiHanWorkflowAbstractionsModule)
-)]
-public class YourModule : XiHanModule
-{
-}
+```bash
+dotnet add package XiHan.Framework.Workflow.Abstractions --prerelease
 ```
 
-完整引擎请引用实现包 `XiHan.Framework.Workflow`。
+### 使用
 
-## 扩展点
+一般由实现包带入，定义流程或写自定义活动与存储提供程序时才直接引用；运行流程需要同时装配 `Workflow.InMemory` 或 `Workflow.Database`。登记自定义活动，并定义、发布、启动流程：
 
-- 自定义活动：实现 `IWorkflowActivity` 并标注 `[WorkflowActivity("YourType")]`，在实现包选项中注册；
-- 自定义存储：实现三个存储接口后以 `Replace` 方式覆盖默认内存实现；
-- 自定义表达式语言：替换 `IWorkflowExpressionEvaluator` 注册；
-- 受理人规则类型：实现 `IWorkflowAssigneeProvider`，用实现包的 `AddXiHanWorkflowAssigneeProvider<T>()` 注册；
-- 结果回写：实现 `IWorkflowOutcomeHandler` 并注册进 DI。
+```csharp
+builder.Services.AddActivity<AuditActivity>("Audit");
 
-## 目录结构
+var definition = WorkflowDefinitionBuilder.Create("demo.greeting")
+    .AddVariable("name", required: true)
+    .AddStart()
+    .AddNode("greet", ActivityTypes.SetVariable, configure: node => node
+        .WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["greeting"] = "'hello ' + upper(name)" }))
+    .AddEnd()
+    .AddTransition("start", "greet").AddTransition("greet", "end")
+    .Build();
+var draft = (await catalog.CreateAsync(definition, ct)).ValueOrThrow();
+await catalog.PublishAsync(draft.Id, ct);
+var instance = await engine.StartAsync(new WorkflowStartRequest { Name = "demo.greeting", Variables = new JsonObject { ["name"] = "alice" } }, ct);
+```
 
-- `Definitions/`：流程定义模型与定义管理器契约
-- `Runtime/`：实例、节点实例、书签、变量容器与值转换器
-- `Activities/`：活动契约、执行上下文与执行结果
-- `Engine/`：工作流引擎契约
-- `Stores/`：定义/实例/书签存储契约
-- `Expressions/`：表达式求值契约
-- `UserTasks/`：人工任务服务契约、待办视图与完成/空受理人策略
-- `Assignees/`：受理人规则、解析器与解析门面契约
-- `Outcomes/`：流程结果处理器契约与上下文
-- `Events/`：实例/节点/人工任务生命周期事件
-- `Exceptions/`：工作流异常与定义校验异常
+## 主要类型
+
+此库提供的主要类型：
+
+* `WorkflowDefinitionBuilder`：流式构造流程定义
+* `IWorkflowDefinitionCatalog`：定义的创建、发布、停用与查询
+* `IWorkflowEngine`：启动实例、发信号、挂起、恢复、取消与查询
+* `IWorkflowTaskService`、`IWorkflowExternalTaskService`：用户任务与外部任务
+* `IActivity`、`IAssigneeProvider`：自定义活动与指派规则
+* `WorkflowOptions`：`XiHan:Workflow` 配置项
+
+## 更多文档
+
+* [概念文档](https://framework.docs.xihanfun.com/packages/workflow-abstractions)
+
+## 相关包
+
+* 内存实现：[XiHan.Framework.Workflow.InMemory](https://www.nuget.org/packages/XiHan.Framework.Workflow.InMemory)
+* 数据库实现：[XiHan.Framework.Workflow.Database](https://www.nuget.org/packages/XiHan.Framework.Workflow.Database)
+* 一致性套件：[XiHan.Framework.Workflow.Conformance](https://www.nuget.org/packages/XiHan.Framework.Workflow.Conformance)
+
+## 反馈与贡献
+
+`XiHan.Framework.Workflow.Abstractions` 以 [MIT 许可证](https://licenses.nuget.org/MIT) 开源。欢迎到 [GitHub 仓库](https://github.com/XiHanFun/XiHan.Framework) 提交问题和贡献。

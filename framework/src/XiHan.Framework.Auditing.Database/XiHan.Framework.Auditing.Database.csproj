@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Auditing.Database</PackageId>
+    <RootNamespace>XiHan.Framework.Auditing.Database</RootNamespace>
+    <Description>曦寒框架审计的数据库提供程序</Description>
+    <PackageTags>xihan;framework;auditing;database;audit-trail</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

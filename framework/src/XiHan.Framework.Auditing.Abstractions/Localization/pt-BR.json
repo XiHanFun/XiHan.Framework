@@ -1,0 +1,4 @@
+{
+  "auditing.query.invalid": "A consulta de auditoria é inválida: {reason}",
+  "auditing.trail.unavailable": "A trilha de auditoria está indisponível: {reason}"
+}

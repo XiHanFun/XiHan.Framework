@@ -1,0 +1,17 @@
+{
+  "hosting.commandline.command_unknown": "Unknown command '{command}'. Run 'help' to list the commands.",
+  "hosting.commandline.commands": "Commands:",
+  "hosting.commandline.graph_description": "Print the capability graph.",
+  "hosting.commandline.help_description": "Show the commands.",
+  "hosting.commandline.invoke_authorization_invalid": "The value of --authorization must be '<scheme> <value>'.",
+  "hosting.commandline.invoke_data_missing": "The data file '{path}' does not exist.",
+  "hosting.commandline.invoke_description": "Invoke an operation exposed to the command line: invoke <operation-id> [--json <object> | --data <file>] [--<field> <value> ...] [--authorization '<scheme> <value>'] [--tenant <id>] [--locale <locale>] [--correlation <id>] [--timeout <seconds>].",
+  "hosting.commandline.invoke_json_invalid": "The value of --json must be a JSON object: {reason}",
+  "hosting.commandline.invoke_operation_missing": "An operation ID is required: invoke <operation-id>.",
+  "hosting.commandline.invoke_timeout_invalid": "The value of --timeout must be a positive number of seconds.",
+  "hosting.commandline.operation_not_exposed": "Operation '{id}' is not registered or not exposed to the command line.",
+  "hosting.commandline.operation_shorthand": "<resource> <verb> [...]: shorthand for 'invoke <resource>.<verb>'.",
+  "hosting.commandline.operations_description": "List the registered operations.",
+  "hosting.commandline.pipeline_description": "Print the pipeline stages and middleware.",
+  "hosting.commandline.usage": "Usage: {program} <command> [arguments] [--option <value> ...]"
+}

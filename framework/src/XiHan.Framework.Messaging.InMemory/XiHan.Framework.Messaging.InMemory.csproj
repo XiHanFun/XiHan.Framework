@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Messaging.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Messaging.InMemory</RootNamespace>
+    <Description>曦寒框架消息的内存默认实现</Description>
+    <PackageTags>xihan;framework;messaging;in-memory;channels</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

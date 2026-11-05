@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Security.InMemory</PackageId>
+    <RootNamespace>XiHan.Framework.Security.InMemory</RootNamespace>
+    <Description>曦寒框架安全的内存默认实现</Description>
+    <PackageTags>xihan;framework;security;in-memory;api-key;rbac</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

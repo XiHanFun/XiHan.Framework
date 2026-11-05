@@ -1,0 +1,8 @@
+{
+  "protocols.cloudevents.content_type_unsupported": "請求不是 CloudEvent：內容類型 '{contentType}' 既不是 CloudEvents 的結構化格式也不是批次格式，也沒有 'ce-specversion' 標頭。",
+  "protocols.cloudevents.no_subscriber": "沒有處理器訂閱主題 '{topic}'。",
+  "protocols.cloudevents.topic_unresolved": "事件類型 '{type}' 沒有設定主題，類型本身也不是合法的主題。",
+  "protocols.cloudevents.webhook_failed": "主題 '{topic}' 的 Webhook 回傳了 HTTP {status}。",
+  "protocols.cloudevents.webhook_missing": "主題 '{topic}' 沒有設定 Webhook。",
+  "protocols.cloudevents.webhook_unreachable": "無法連線主題 '{topic}' 的 Webhook：{reason}"
+}

@@ -1,0 +1,10 @@
+{
+  "caching.idempotency.in_progress": "A call with the same idempotency key is still in progress.",
+  "caching.idempotency.invalid_key": "The idempotency key is invalid: it must be non-empty and contain no whitespace or control characters.",
+  "caching.idempotency.key_reused": "The idempotency key was already used by a different call ('{recorded}'); its result cannot be replayed for '{operation}'.",
+  "caching.idempotency.recently_completed": "A call with the same idempotency key has just completed or is still in progress; retry later.",
+  "caching.idempotency.response_unavailable": "The recorded response of operation '{operation}' cannot be replayed: {reason}",
+  "caching.inspector.limit_invalid": "The key listing limit {limit} must be between 1 and {max}.",
+  "caching.lock.held": "The lock on resource '{resource}' is held by another owner.",
+  "caching.store.capacity_reached": "The in-memory cache has reached its capacity of {capacity} entries."
+}

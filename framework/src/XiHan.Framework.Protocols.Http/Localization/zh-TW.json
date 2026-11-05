@@ -1,0 +1,9 @@
+{
+  "protocols.http.openapi_authentication_required": "需要登入。",
+  "protocols.http.openapi_error": "錯誤",
+  "protocols.http.openapi_permission_code_required": "需要權限 {permission}。",
+  "protocols.http.openapi_permission_required": "需要權限 {permission}（{name}）。",
+  "protocols.http.openapi_policy_required": "需要原則 {policy}。",
+  "protocols.http.openapi_success": "成功",
+  "protocols.http.openapi_ungrouped": "其他"
+}

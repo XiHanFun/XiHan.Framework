@@ -1,8 +1,8 @@
 {
   "name": "xihan-framework-docs",
-  "version": "4.8.0",
+  "version": "5.0.0-preview.1",
   "type": "module",
-  "description": "XiHan.Framework document site. Fast, lightweight, efficient, and dedicated modular development framework built on DotNet.",
+  "description": "XiHan Framework document site. Language-neutral application framework specification and its .NET reference implementation.",
   "author": {
     "name": "XiHanFun"
   },

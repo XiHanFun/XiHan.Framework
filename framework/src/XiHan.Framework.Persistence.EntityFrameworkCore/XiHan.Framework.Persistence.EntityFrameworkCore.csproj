@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Persistence.EntityFrameworkCore</PackageId>
+    <RootNamespace>XiHan.Framework.Persistence.EntityFrameworkCore</RootNamespace>
+    <Description>曦寒框架持久化的 Entity Framework Core 提供程序</Description>
+    <PackageTags>xihan;framework;persistence;efcore;entity-framework</PackageTags>
+    <!-- EF Core 的运行时模型构建尚不满足 AOT 分析器；AOT 场景用编译模型另行验证 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <!-- 索引名与表名（HasDatabaseName、GetTableName）是关系型元数据：capability 是 persistence.relational，各关系型数据库的 EF Core Provider 本来就依赖它 -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+  </ItemGroup>
+</Project>

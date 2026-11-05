@@ -1,0 +1,4 @@
+{
+  "protocols.grpc.request_malformed": "A requisição da operação '{operation}' não é uma mensagem protobuf válida: {reason}",
+  "protocols.grpc.response_unencodable": "A resposta da operação '{operation}' não pôde ser codificada como protobuf."
+}

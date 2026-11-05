@@ -1,0 +1,6 @@
+{
+  "caching.remote.key_invalid": "缓存键“{key}”不合法：必须非空、不含空白与控制字符、不超过 512 个字符。",
+  "caching.remote.options_invalid": "缓存条目选项不合法：{reason}。",
+  "caching.remote.store_unavailable": "缓存存储不可用：{reason}。",
+  "caching.remote.capacity_reached": "缓存存储已满（{capacity} 个条目）。"
+}

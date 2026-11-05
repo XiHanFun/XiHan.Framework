@@ -1,20 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Workflow.Abstractions</PackageId>
+    <RootNamespace>XiHan.Framework.Workflow.Abstractions</RootNamespace>
+    <Description>曦寒框架工作流抽象包</Description>
+    <PackageTags>xihan;framework;workflow;bpm;user-task;bookmark</PackageTags>
+  </PropertyGroup>
 
-    <Import Project="..\..\props\netcore.props" />
-    <Import Project="..\..\props\common.props" />
-    <Import Project="..\..\props\version.props" />
-    <Import Project="..\..\props\nuget.props" />
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Localization.Abstractions/XiHan.Framework.Localization.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
+  </ItemGroup>
 
-    <PropertyGroup>
-        <Title>XiHan.Framework.Workflow.Abstractions</Title>
-        <AssemblyName>XiHan.Framework.Workflow.Abstractions</AssemblyName>
-        <PackageId>XiHan.Framework.Workflow.Abstractions</PackageId>
-        <Description>曦寒框架工作流抽象包</Description>
-        <OutputType>Library</OutputType>
-    </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\XiHan.Framework.Core\XiHan.Framework.Core.csproj" />
-    </ItemGroup>
-
+  <ItemGroup>
+    <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
+    <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

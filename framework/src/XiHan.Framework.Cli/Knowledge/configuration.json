@@ -1,0 +1,2155 @@
+{
+  "sections": [
+    {
+      "section": "XiHan:AI",
+      "options": "XiHan.Framework.AI.Abstractions.AIOptions",
+      "package": "XiHan.Framework.AI.Abstractions",
+      "placeholders": {
+        "provider": "openai",
+        "prompt": "summarize"
+      },
+      "keys": [
+        {
+          "key": "Providers:{provider}:Properties:{key}",
+          "type": "string",
+          "sample": "value",
+          "summary": "原样透传给该 Provider 工厂的属性"
+        },
+        {
+          "key": "Providers:{provider}:Kind",
+          "type": "string",
+          "sample": "openai",
+          "summary": "Provider 种类（按小写匹配工厂），每个 Provider 必填；名字为小写字母数字与 ._-"
+        },
+        {
+          "key": "Providers:{provider}:Endpoint",
+          "type": "string",
+          "sample": "https://api.openai.com/v1",
+          "summary": "端点，须为绝对 http(s) 地址；空表示 Provider 官方端点"
+        },
+        {
+          "key": "Providers:{provider}:ApiKey",
+          "type": "string",
+          "sample": "sk-test",
+          "summary": "API 密钥；空时由 Provider 决定"
+        },
+        {
+          "key": "Providers:{provider}:ChatModel",
+          "type": "string",
+          "sample": "gpt-4o-mini",
+          "summary": "聊天模型"
+        },
+        {
+          "key": "Providers:{provider}:EmbeddingModel",
+          "type": "string",
+          "sample": "text-embedding-3-small",
+          "summary": "嵌入模型"
+        },
+        {
+          "key": "Providers:{provider}:EmbeddingDimensions",
+          "type": "integer",
+          "minimum": 1,
+          "sample": "1536",
+          "summary": "嵌入维度；不写用模型默认维度"
+        },
+        {
+          "key": "Providers:{provider}:TimeoutSeconds",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "sample": "100",
+          "summary": "Provider 调用的时限（秒），须为有限正数；不写为 100 秒。IAIChat 与知识库流水线按它落成超时令牌：完整应答覆盖整次调用（含函数调用循环），流式按等每个更新计时，与调用方取消同时触发时报超时"
+        },
+        {
+          "key": "Tools:{operation}",
+          "type": "string",
+          "sample": "create_order",
+          "summary": "操作工具名覆盖：键为操作 ID，值为工具名"
+        },
+        {
+          "key": "Prompts:{prompt}:Template",
+          "type": "string",
+          "sample": "Summarize the following text: {input}",
+          "summary": "提示词模板，每个提示词必填；也可直接写成 Prompts:{prompt} 的值"
+        },
+        {
+          "key": "Prompts:{prompt}:Description",
+          "type": "string",
+          "sample": "Summarizes a document.",
+          "summary": "提示词说明"
+        },
+        {
+          "key": "DefaultProvider",
+          "type": "string",
+          "sample": "openai",
+          "summary": "框架自带目录的默认聊天 Provider；不写且只有一个 Provider 时取它。IAIChat 与知识库在请求没写 Provider 时问目录，应用替换了目录时这一项不起作用"
+        },
+        {
+          "key": "DefaultEmbeddingProvider",
+          "type": "string",
+          "sample": "openai",
+          "summary": "框架自带目录的默认嵌入 Provider；不写时同 DefaultProvider"
+        },
+        {
+          "key": "Guardrails:Enabled",
+          "type": "boolean",
+          "default": "false",
+          "summary": "是否登记内置关键词护栏"
+        },
+        {
+          "key": "Guardrails:BlockedKeywords:{index}",
+          "type": "string",
+          "sample": "jailbreak",
+          "summary": "被禁止的关键词（不区分大小写的子串），空白项忽略"
+        },
+        {
+          "key": "Guardrails:InjectionPatterns:{index}",
+          "type": "string",
+          "sample": "ignore\\s+previous",
+          "summary": "提示注入的正则模式（不区分大小写），空白项忽略"
+        },
+        {
+          "key": "Guardrails:UseBuiltInInjectionHeuristics",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否启用内置的中英文提示注入模式"
+        },
+        {
+          "key": "Knowledge:EmbeddingProvider",
+          "type": "string",
+          "sample": "openai",
+          "summary": "知识库的嵌入 Provider；不写用目录的默认嵌入 Provider，请求写了 Provider 时以请求为准"
+        },
+        {
+          "key": "Knowledge:PromptName",
+          "type": "string",
+          "sample": "summarize",
+          "summary": "提示增强用的提示词模板名；不写用内置模板"
+        },
+        {
+          "key": "Knowledge:Collection",
+          "type": "string",
+          "default": "knowledge",
+          "summary": "默认集合名，须合 ^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        {
+          "key": "Knowledge:Dimensions",
+          "type": "integer",
+          "default": "1536",
+          "minimum": 1,
+          "summary": "知识库嵌入维度"
+        },
+        {
+          "key": "Knowledge:ChunkSize",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 1,
+          "summary": "切块大小（字符）"
+        },
+        {
+          "key": "Knowledge:ChunkOverlap",
+          "type": "integer",
+          "default": "100",
+          "minimum": 0,
+          "summary": "相邻块的重叠（字符）"
+        },
+        {
+          "key": "Knowledge:Top",
+          "type": "integer",
+          "default": "5",
+          "minimum": 1,
+          "summary": "默认检索条数"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:AI:VectorData",
+      "options": "XiHan.Framework.AI.VectorData.VectorDataKnowledgeOptions",
+      "package": "XiHan.Framework.AI.VectorData",
+      "keys": [
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 ai.vectordata.store 的重探间隔（秒），也是单次探测的超时；须为有限正数"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Auditing",
+      "options": "XiHan.Framework.Auditing.Abstractions.AuditingOptions",
+      "package": "XiHan.Framework.Auditing.Abstractions",
+      "keys": [
+        {
+          "key": "Selection",
+          "type": "enum",
+          "default": "Protected",
+          "values": [
+            "Protected",
+            "All",
+            "None"
+          ],
+          "summary": "没有显式动作时记哪些操作：声明了权限的、全部或不记（不区分大小写）"
+        },
+        {
+          "key": "IncludeSuccesses",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否记录成功的调用；为 false 时只记失败"
+        },
+        {
+          "key": "Exclude:{index}",
+          "type": "string",
+          "sample": "permissions.current",
+          "summary": "按操作排除：操作 ID，或以 * 结尾的前缀（profile.*、my-*）；按选择规则挑出的操作命中即不记，显式动作照记；须写成列表，某一项不合法或写成单个值时启动失败"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Auditing:Database",
+      "options": "XiHan.Framework.Auditing.Database.DatabaseAuditingOptions",
+      "package": "XiHan.Framework.Auditing.Database",
+      "keys": [
+        {
+          "key": "QueueCapacity",
+          "type": "integer",
+          "default": "10000",
+          "exclusiveMinimum": 0,
+          "summary": "等待落库的事件数上限，满了丢弃新事件并计数"
+        },
+        {
+          "key": "BatchSize",
+          "type": "integer",
+          "default": "100",
+          "exclusiveMinimum": 0,
+          "summary": "一批落库的事件数上限，攒够即刷写"
+        },
+        {
+          "key": "FlushIntervalSeconds",
+          "type": "number",
+          "default": "1",
+          "exclusiveMinimum": 0,
+          "summary": "刷写间隔（秒），不足一批也按此周期刷写"
+        },
+        {
+          "key": "LogEvents",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否把每条事件写进日志（Information 级）"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Auditing:InMemory",
+      "options": "XiHan.Framework.Auditing.InMemory.InMemoryAuditingOptions",
+      "package": "XiHan.Framework.Auditing.InMemory",
+      "keys": [
+        {
+          "key": "Capacity",
+          "type": "integer",
+          "default": "10000",
+          "exclusiveMinimum": 0,
+          "summary": "保留的事件数上限，满了丢最旧的"
+        },
+        {
+          "key": "LogEvents",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否把每条事件写进日志（Information 级）"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Caching:Hybrid",
+      "options": "XiHan.Framework.Caching.Hybrid.HybridCachingOptions",
+      "package": "XiHan.Framework.Caching.Hybrid",
+      "keys": [
+        {
+          "key": "LocalCapacity",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "L1 条目上限，满时淘汰最久未访问的条目"
+        },
+        {
+          "key": "LocalTimeToLiveSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "L1 存活时间上限（秒），也是别的实例写入的最长可见延迟"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Caching:Idempotency",
+      "options": "XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions",
+      "package": "XiHan.Framework.Caching.Abstractions",
+      "keys": [
+        {
+          "key": "TimeToLiveSeconds",
+          "type": "number",
+          "default": "86400",
+          "exclusiveMinimum": 0,
+          "summary": "已完成结果的保留时间（秒），默认 24 小时"
+        },
+        {
+          "key": "InProgressTimeToLiveSeconds",
+          "type": "number",
+          "default": "60",
+          "exclusiveMinimum": 0,
+          "summary": "处理中标记的保留时间（秒），处理器崩溃时的最长封锁"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Caching:InMemory",
+      "options": "XiHan.Framework.Caching.InMemory.InMemoryCachingOptions",
+      "package": "XiHan.Framework.Caching.InMemory",
+      "keys": [
+        {
+          "key": "MaxEntries",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "每张表（字节存储、对象缓存各一张）的条目上限"
+        },
+        {
+          "key": "DefaultTimeToLiveSeconds",
+          "type": "number",
+          "default": "300",
+          "exclusiveMinimum": 0,
+          "summary": "未指定过期时的存活时间（秒）"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Caching:Redis",
+      "options": "XiHan.Framework.Caching.Redis.RedisCachingOptions",
+      "package": "XiHan.Framework.Caching.Redis",
+      "binding": "cache",
+      "keys": [
+        {
+          "key": "Configuration",
+          "type": "string",
+          "required": true,
+          "sample": "localhost:6379",
+          "summary": "StackExchange.Redis 连接字符串，不能为空白；绑定 cache 的值优先，没有绑定或其值为空时读本键；绑定的属性 username / password 覆盖其中的 user / password"
+        },
+        {
+          "key": "KeyPrefix",
+          "type": "string",
+          "default": "xihan:",
+          "summary": "键前缀"
+        },
+        {
+          "key": "PublishChanges",
+          "type": "boolean",
+          "default": "true",
+          "summary": "写入与删除后是否发布变更通知，供其他实例的两级缓存失效 L1"
+        },
+        {
+          "key": "DefaultTimeToLiveSeconds",
+          "type": "number",
+          "default": "300",
+          "exclusiveMinimum": 0,
+          "summary": "未指定过期时的存活时间（秒）"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 caching.redis.connection 的重探间隔（秒），也是单次探测的超时"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Caching:Remote",
+      "options": "XiHan.Framework.Caching.Remote.RemoteCachingOptions",
+      "package": "XiHan.Framework.Caching.Remote",
+      "keys": [
+        {
+          "key": "TimeoutMilliseconds",
+          "type": "integer",
+          "default": "5000",
+          "exclusiveMinimum": 0,
+          "summary": "每次操作的截止时间（毫秒），超时按存储不可用处理"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Configuration:Nacos",
+      "options": "XiHan.Framework.Configuration.Nacos.NacosOptions",
+      "package": "XiHan.Framework.Configuration.Nacos",
+      "binding": "nacos",
+      "keys": [
+        {
+          "key": "ServerAddresses",
+          "type": "string",
+          "required": true,
+          "sample": "http://localhost:8848",
+          "summary": "服务地址，逗号或分号分隔的绝对 http(s) URL，按序尝试；绑定 nacos 的值优先，没有绑定或其值为空时读本键"
+        },
+        {
+          "key": "Username",
+          "type": "string",
+          "sample": "nacos",
+          "summary": "登录用户名；与 Password 都给出时先登录取令牌；空白视为没有；绑定 nacos 的属性 username 优先"
+        },
+        {
+          "key": "Password",
+          "type": "string",
+          "sample": "nacos",
+          "summary": "登录密码；与 Username 一起给出时生效；绑定 nacos 的属性 password 优先"
+        },
+        {
+          "key": "Tenant",
+          "type": "string",
+          "sample": "dev",
+          "summary": "Nacos 命名空间 ID（租户）；没有或空白表示公共命名空间"
+        },
+        {
+          "key": "Group",
+          "type": "string",
+          "default": "DEFAULT_GROUP",
+          "summary": "配置分组；空白视为未配置"
+        },
+        {
+          "key": "Format",
+          "type": "enum",
+          "default": "Json",
+          "values": [
+            "Json",
+            "Properties"
+          ],
+          "summary": "配置内容的格式，决定怎样展平成配置键；不区分大小写"
+        },
+        {
+          "key": "LongPollTimeoutSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "长轮询窗口（秒）"
+        },
+        {
+          "key": "RequestTimeoutSeconds",
+          "type": "number",
+          "default": "10",
+          "exclusiveMinimum": 0,
+          "summary": "单次请求（取文档、登录）的超时（秒）"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Kernel",
+      "options": "XiHan.Framework.Kernel.Hosting.KernelOptions",
+      "package": "XiHan.Framework.Kernel",
+      "keys": [
+        {
+          "key": "StartTimeoutSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "单个特性的启动超时（秒）"
+        },
+        {
+          "key": "StopTimeoutSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "单个特性的停止超时（秒）"
+        },
+        {
+          "key": "FailurePolicy",
+          "type": "enum",
+          "default": "TerminateStartup",
+          "values": [
+            "TerminateStartup",
+            "IsolateFeature"
+          ],
+          "summary": "特性启动失败时终止启动还是隔离该特性（不区分大小写）"
+        },
+        {
+          "key": "UseBuiltInMiddleware",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否自动加入内核的内置中间件（Observe、Resilience 阶段）"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Kernel:Resilience",
+      "options": "XiHan.Framework.Kernel.Resilience.ResilienceOptions",
+      "package": "XiHan.Framework.Kernel",
+      "placeholders": {
+        "operation": "orders.create"
+      },
+      "keys": [
+        {
+          "key": "PermitLimit",
+          "type": "integer",
+          "minimum": 1,
+          "sample": "100",
+          "summary": "默认策略：固定窗口内允许的调用数；不写不限流"
+        },
+        {
+          "key": "WindowSeconds",
+          "type": "number",
+          "default": "1",
+          "exclusiveMinimum": 0,
+          "summary": "默认策略：限流窗口（秒）"
+        },
+        {
+          "key": "QueueLimit",
+          "type": "integer",
+          "default": "0",
+          "minimum": 0,
+          "summary": "默认策略：窗口用尽时最多排队等待的调用数，0 为直接拒绝"
+        },
+        {
+          "key": "ConcurrencyLimit",
+          "type": "integer",
+          "minimum": 1,
+          "sample": "16",
+          "summary": "默认策略：同时执行的调用数上限；不写不限"
+        },
+        {
+          "key": "ConcurrencyQueueLimit",
+          "type": "integer",
+          "default": "0",
+          "minimum": 0,
+          "summary": "默认策略：并发用尽时最多排队等待的调用数，0 为直接拒绝"
+        },
+        {
+          "key": "FailureThreshold",
+          "type": "integer",
+          "minimum": 1,
+          "sample": "5",
+          "summary": "默认策略：连续失败多少次后熔断；不写不熔断"
+        },
+        {
+          "key": "BreakSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "默认策略：熔断后拒绝调用的时长（秒），到期放一次试探"
+        },
+        {
+          "key": "Operations:{operation}:PermitLimit",
+          "type": "integer",
+          "minimum": 1,
+          "sample": "50",
+          "summary": "按操作覆盖 PermitLimit，键为合法操作 ID；不写沿用默认策略"
+        },
+        {
+          "key": "Operations:{operation}:WindowSeconds",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "sample": "1",
+          "summary": "按操作覆盖 WindowSeconds（秒）；不写沿用默认策略"
+        },
+        {
+          "key": "Operations:{operation}:QueueLimit",
+          "type": "integer",
+          "minimum": 0,
+          "sample": "0",
+          "summary": "按操作覆盖 QueueLimit；不写沿用默认策略"
+        },
+        {
+          "key": "Operations:{operation}:ConcurrencyLimit",
+          "type": "integer",
+          "minimum": 1,
+          "sample": "8",
+          "summary": "按操作覆盖 ConcurrencyLimit；不写沿用默认策略"
+        },
+        {
+          "key": "Operations:{operation}:ConcurrencyQueueLimit",
+          "type": "integer",
+          "minimum": 0,
+          "sample": "0",
+          "summary": "按操作覆盖 ConcurrencyQueueLimit；不写沿用默认策略"
+        },
+        {
+          "key": "Operations:{operation}:FailureThreshold",
+          "type": "integer",
+          "minimum": 1,
+          "sample": "3",
+          "summary": "按操作覆盖 FailureThreshold；不写沿用默认策略"
+        },
+        {
+          "key": "Operations:{operation}:BreakSeconds",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "sample": "30",
+          "summary": "按操作覆盖 BreakSeconds（秒）；不写沿用默认策略"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Localization",
+      "options": "XiHan.Framework.Localization.Abstractions.LocalizationOptions",
+      "package": "XiHan.Framework.Localization.Abstractions",
+      "keys": [
+        {
+          "key": "Locales",
+          "type": "string",
+          "default": "en-US,zh-CN,zh-TW,ja-JP,ko-KR,de-DE,es-ES,fr-FR,pt-BR,ru-RU",
+          "summary": "启用的区域，逗号分隔、按优先级排列，至少一个，须为 BCP 47 标签"
+        },
+        {
+          "key": "DefaultLocale",
+          "type": "string",
+          "default": "en-US",
+          "summary": "协商不到时使用的默认区域，必须在 Locales 里"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Localization:Database",
+      "options": "XiHan.Framework.Localization.Database.DatabaseLocalizationOptions",
+      "package": "XiHan.Framework.Localization.Database",
+      "keys": [
+        {
+          "key": "RefreshIntervalSeconds",
+          "type": "number",
+          "default": "300",
+          "minimum": 0,
+          "summary": "周期刷新翻译的间隔（秒）；0 关闭周期刷新，只在启动时加载"
+        },
+        {
+          "key": "MaxTranslations",
+          "type": "integer",
+          "default": "100000",
+          "exclusiveMinimum": 0,
+          "summary": "加载的翻译条数上限，超出部分不加载并记警告"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Messaging",
+      "options": "XiHan.Framework.Messaging.Abstractions.MessagingOptions",
+      "package": "XiHan.Framework.Messaging.Abstractions",
+      "keys": [
+        {
+          "key": "MaxAttempts",
+          "type": "integer",
+          "default": "3",
+          "minimum": 1,
+          "summary": "一条消息最多投递次数（含首次），超过进入死信"
+        },
+        {
+          "key": "DeadLetterSuffix",
+          "type": "string",
+          "default": ".dlq",
+          "summary": "死信主题后缀；不能为空白"
+        },
+        {
+          "key": "InstanceId",
+          "type": "string",
+          "sample": "orders-api-0",
+          "summary": "本实例在消息代理上的标识（广播订阅的 RabbitMQ 独占队列与 Kafka 消费组用它）；不写时每次启动随机生成。1 到 64 个字母、数字、.、_、-，字母或数字开头，不合文法启动失败；必须每个同时在线的实例唯一（如 Pod 名），重复时 Kafka 广播退化成竞争、RabbitMQ 后启动的实例启动失败"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Messaging:InMemory",
+      "options": "XiHan.Framework.Messaging.InMemory.InMemoryMessagingOptions",
+      "package": "XiHan.Framework.Messaging.InMemory",
+      "keys": [
+        {
+          "key": "MaxQueuedMessages",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "每个主题（含其死信列表）的条目上限"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Messaging:Kafka",
+      "options": "XiHan.Framework.Messaging.Kafka.KafkaMessagingOptions",
+      "package": "XiHan.Framework.Messaging.Kafka",
+      "binding": "stream",
+      "keys": [
+        {
+          "key": "BootstrapServers",
+          "type": "string",
+          "required": true,
+          "sample": "localhost:9092",
+          "summary": "引导地址，逗号分隔的 host:port；绑定 stream 的值优先，没有绑定或其值为空时读本键"
+        },
+        {
+          "key": "GroupId",
+          "type": "string",
+          "default": "xihan",
+          "summary": "消费组；同一组的实例分摊分区"
+        },
+        {
+          "key": "TopicPrefix",
+          "type": "string",
+          "default": "xihan.",
+          "summary": "主题前缀"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 messaging.kafka.connection 的重探间隔（秒），也是单次探测的超时"
+        },
+        {
+          "key": "RedeliveryDelaySeconds",
+          "type": "number",
+          "default": "5",
+          "exclusiveMinimum": 0,
+          "summary": "投递没有完成时重新投递前的等待（秒），期间该分区不往后读"
+        },
+        {
+          "key": "Properties:{key}",
+          "type": "string",
+          "sample": "SASL_SSL",
+          "summary": "原样透传给 librdkafka 的配置（生产者与消费者共用），如 security.protocol；绑定 stream 的属性 security.protocol、sasl.mechanism、sasl.username、sasl.password 覆盖同名键"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Messaging:Outbox",
+      "options": "XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions",
+      "package": "XiHan.Framework.Messaging.Abstractions",
+      "keys": [
+        {
+          "key": "PollIntervalSeconds",
+          "type": "number",
+          "default": "1",
+          "exclusiveMinimum": 0,
+          "summary": "发件箱轮询间隔（秒）"
+        },
+        {
+          "key": "BatchSize",
+          "type": "integer",
+          "default": "100",
+          "minimum": 1,
+          "maximum": 1000,
+          "summary": "每轮最多投递条数，也是每轮最多清理的已投递行数"
+        },
+        {
+          "key": "MaxAttempts",
+          "type": "integer",
+          "default": "10",
+          "minimum": 1,
+          "summary": "一条消息最多尝试投递次数（含首次），用尽后进死信"
+        },
+        {
+          "key": "RetryDelaySeconds",
+          "type": "number",
+          "default": "5",
+          "exclusiveMinimum": 0,
+          "summary": "第一次失败后的重试间隔（秒），之后每次翻倍，不超过 MaxRetryDelaySeconds"
+        },
+        {
+          "key": "MaxRetryDelaySeconds",
+          "type": "number",
+          "default": "300",
+          "exclusiveMinimum": 0,
+          "summary": "重试间隔的上限（秒）"
+        },
+        {
+          "key": "DispatchedRetentionSeconds",
+          "type": "number",
+          "default": "86400",
+          "minimum": 0,
+          "summary": "投递成功的行保留多久（秒）；0 表示投递成功即删除，死信行不自动删"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Messaging:RabbitMQ",
+      "options": "XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions",
+      "package": "XiHan.Framework.Messaging.RabbitMQ",
+      "binding": "queue",
+      "keys": [
+        {
+          "key": "Configuration",
+          "type": "string",
+          "required": true,
+          "sample": "amqp://localhost:5672",
+          "summary": "AMQP URI（amqp:// 或 amqps://）；绑定 queue 的值优先，没有绑定或其值为空时读本键；绑定的属性 username / password 覆盖其中的用户名与密码"
+        },
+        {
+          "key": "QueuePrefix",
+          "type": "string",
+          "default": "xihan.",
+          "summary": "队列名与路由键的前缀"
+        },
+        {
+          "key": "Exchange",
+          "type": "string",
+          "default": "xihan",
+          "summary": "发布用的 direct 交换机；不能为空、不能以 amq. 开头，发布方与订阅方要一致"
+        },
+        {
+          "key": "PrefetchCount",
+          "type": "integer",
+          "default": "16",
+          "minimum": 1,
+          "maximum": 65535,
+          "summary": "每个消费者的预取数"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 messaging.rabbitmq.connection 的重探间隔（秒），也是单次探测的超时"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:MultiTenancy",
+      "options": "XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions",
+      "package": "XiHan.Framework.MultiTenancy.Abstractions",
+      "keys": [
+        {
+          "key": "DefaultTenant",
+          "type": "string",
+          "sample": "acme",
+          "summary": "没有解析到租户时用的默认租户 ID（字母或数字开头，≤64 字符）；空串表示没有"
+        },
+        {
+          "key": "RequireTenant",
+          "type": "boolean",
+          "default": "false",
+          "summary": "调用必须带租户；没解析到且没有默认租户时返回缺少租户错误"
+        },
+        {
+          "key": "ValidateAgainstStore",
+          "type": "boolean",
+          "default": "true",
+          "summary": "解析出的租户必须在存储中存在且启用；关闭后只校验格式"
+        },
+        {
+          "key": "TenantClaim",
+          "type": "string",
+          "default": "tenant",
+          "summary": "承载租户 ID 的声明类型"
+        },
+        {
+          "key": "ShardCacheSize",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "TenantStoreShardResolver 的缓存容量（租户数），满时整体清空"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:MultiTenancy:Database",
+      "options": "XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions",
+      "package": "XiHan.Framework.MultiTenancy.Database",
+      "keys": [
+        {
+          "key": "CacheSize",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "DatabaseTenantStore 的缓存容量（租户数，不存在的租户也占一条），满时整体清空"
+        },
+        {
+          "key": "CacheTimeToLiveSeconds",
+          "type": "number",
+          "default": "30",
+          "minimum": 0,
+          "summary": "缓存条目的存活时间（秒）；0 表示不过期，只靠 Invalidate 失效"
+        },
+        {
+          "key": "MaxListedTenants",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "ListAsync 返回的租户数上限，超出部分不返回并记警告"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:MultiTenancy:InMemory",
+      "options": "XiHan.Framework.MultiTenancy.InMemory.InMemoryMultiTenancyOptions",
+      "package": "XiHan.Framework.MultiTenancy.InMemory",
+      "keys": [
+        {
+          "key": "MaxTenants",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 1,
+          "summary": "内存租户存储的租户上限；启动装载超出即失败，达到上限时健康降级"
+        },
+        {
+          "key": "XiHan:MultiTenancy:Tenants:{tenant}:DisplayName",
+          "type": "string",
+          "sample": "Acme",
+          "summary": "内存租户目录里一个租户的显示名；子节名即租户 ID（须合租户 ID 文法）"
+        },
+        {
+          "key": "XiHan:MultiTenancy:Tenants:{tenant}:IsEnabled",
+          "type": "boolean",
+          "default": "true",
+          "summary": "该租户是否启用；不是 true / false 时启动失败"
+        },
+        {
+          "key": "XiHan:MultiTenancy:Tenants:{tenant}:Properties:{key}",
+          "type": "string",
+          "sample": "value",
+          "summary": "该租户的扩展属性，空值忽略"
+        }
+      ],
+      "placeholders": {
+        "tenant": "acme"
+      }
+    },
+    {
+      "section": "XiHan:ObjectStorage:FileSystem",
+      "options": "XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions",
+      "package": "XiHan.Framework.ObjectStorage.FileSystem",
+      "keys": [
+        {
+          "key": "RootPath",
+          "type": "string",
+          "sample": "data/blobs",
+          "summary": "根目录；缺省 <应用目录>/blobs，相对路径按当前目录解析，空白视为未配置"
+        },
+        {
+          "key": "MaxTotalBytes",
+          "type": "integer",
+          "default": "1073741824",
+          "minimum": 1,
+          "summary": "全部对象的总字节上限（缺省 1 GiB）"
+        },
+        {
+          "key": "MaxBlobBytes",
+          "type": "integer",
+          "default": "268435456",
+          "minimum": 1,
+          "summary": "单个对象的字节上限（缺省 256 MiB）"
+        },
+        {
+          "key": "MultipartExpiryHours",
+          "type": "number",
+          "default": "168",
+          "exclusiveMinimum": 0,
+          "summary": "未完成的分片上传保留多久（小时），启动扫描时清掉更早发起的"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:ObjectStorage:S3",
+      "options": "XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions",
+      "package": "XiHan.Framework.ObjectStorage.S3",
+      "binding": "objectstorage",
+      "keys": [
+        {
+          "key": "ServiceUrl",
+          "type": "string",
+          "sample": "http://localhost:9000",
+          "summary": "服务端点，绝对 http(s) URL；没有时按 Region 访问 S3；绑定 objectstorage 的值优先"
+        },
+        {
+          "key": "AccessKey",
+          "type": "string",
+          "sample": "rustfsadmin",
+          "summary": "访问密钥 ID；与 SecretKey 都没有时用 AWS SDK 默认凭据链；绑定属性 accessKey 优先（空白不算）"
+        },
+        {
+          "key": "SecretKey",
+          "type": "string",
+          "sample": "rustfsadmin",
+          "summary": "访问密钥；绑定属性 secretKey 优先（空白不算）"
+        },
+        {
+          "key": "HealthBucket",
+          "type": "string",
+          "sample": "uploads",
+          "summary": "框架探测用的桶：健康项对它 HEAD；ConditionalWrites 开启时启动、建实例与后台重试时在其中写探测键 .xihan/probe/conditional-write，此时必填"
+        },
+        {
+          "key": "ConditionalWrites",
+          "type": "boolean",
+          "default": "true",
+          "summary": "不覆盖写入由条件写入（If-None-Match）保证：开启时启动探测，探明不认、凭据被拒或探测桶不存在即启动失败；只有连不上照常启动、后台重试，探明之前 Overwrite = false 的写入返回 OBJECTSTORAGE_UNAVAILABLE_004；关闭时一律 OBJECTSTORAGE_UNAVAILABLE_003"
+        },
+        {
+          "key": "Region",
+          "type": "string",
+          "default": "us-east-1",
+          "summary": "区域：访问 Amazon S3 时选端点，访问兼容服务时作签名区域；绑定属性 region 优先"
+        },
+        {
+          "key": "ForcePathStyle",
+          "type": "boolean",
+          "default": "true",
+          "summary": "桶名放在路径而不是主机名里；绑定属性 forcePathStyle 优先"
+        },
+        {
+          "key": "EnsureBuckets",
+          "type": "boolean",
+          "default": "false",
+          "summary": "写入时桶不存在就创建"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 objectstorage.s3.connection 的重探间隔（秒），也是单次探测的超时"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:ObjectStorage:SignedUrls",
+      "options": "XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions",
+      "package": "XiHan.Framework.Hosting.AspNetCore",
+      "keys": [
+        {
+          "key": "Secret",
+          "type": "string",
+          "required": true,
+          "sample": "replace-with-a-random-secret-of-32-bytes",
+          "summary": "预签名地址的 HMAC-SHA256 密钥，UTF-8 至少 32 字节；多实例部署须一致"
+        },
+        {
+          "key": "BaseUrl",
+          "type": "string",
+          "default": "/blobs",
+          "summary": "地址前缀：不带查询串的绝对 http(s) 地址或以 / 开头的路径，末尾 / 去掉"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Observability:Host",
+      "options": "XiHan.Framework.Observability.Host.HostObservabilityOptions",
+      "package": "XiHan.Framework.Observability.Host",
+      "keys": [
+        {
+          "key": "SampleIntervalSeconds",
+          "type": "number",
+          "default": "5",
+          "exclusiveMinimum": 0,
+          "maximum": 3600,
+          "summary": "采样间隔（秒）；CPU 使用率与网卡速率是相邻两次采样之差"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Observability:OpenTelemetry",
+      "options": "XiHan.Framework.Observability.OpenTelemetry.OpenTelemetryOptions",
+      "package": "XiHan.Framework.Observability.OpenTelemetry",
+      "keys": [
+        {
+          "key": "ServiceName",
+          "type": "string",
+          "sample": "orders-api",
+          "summary": "资源属性 service.name；缺省取入口程序集名"
+        },
+        {
+          "key": "ServiceVersion",
+          "type": "string",
+          "sample": "1.0.0",
+          "summary": "资源属性 service.version；缺省取入口程序集版本"
+        },
+        {
+          "key": "Tracing",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否导出追踪"
+        },
+        {
+          "key": "Metrics",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否导出指标"
+        },
+        {
+          "key": "Logging",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否把 Microsoft.Extensions.Logging 的日志经 OpenTelemetry 导出"
+        },
+        {
+          "key": "Console",
+          "type": "boolean",
+          "default": "false",
+          "summary": "是否同时写到控制台导出器（开发用）"
+        },
+        {
+          "key": "SamplingRatio",
+          "type": "number",
+          "default": "1",
+          "minimum": 0,
+          "maximum": 1,
+          "summary": "根 Span 的采样比例；有上游决定的沿用上游"
+        },
+        {
+          "key": "Otlp:Enabled",
+          "type": "boolean",
+          "sample": "true",
+          "summary": "启用 OTLP 导出；缺省自动：配了端点（键或环境变量）即启用"
+        },
+        {
+          "key": "Otlp:Endpoint",
+          "type": "string",
+          "sample": "http://localhost:4317",
+          "summary": "OTLP 端点（绝对 URI）；没有时导出器按标准环境变量与默认端口决定"
+        },
+        {
+          "key": "Otlp:Protocol",
+          "type": "enum",
+          "sample": "Grpc",
+          "summary": "OTLP 协议 Grpc 或 HttpProtobuf，缺省 Grpc；须与 Otlp:Endpoint 同时配置"
+        },
+        {
+          "key": "Sources",
+          "type": "string",
+          "sample": "MyCompany.Orders",
+          "summary": "默认之外额外订阅的 Activity 源，逗号分隔"
+        },
+        {
+          "key": "Meters",
+          "type": "string",
+          "sample": "MyCompany.Orders",
+          "summary": "默认之外额外订阅的 Meter，逗号分隔"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Persistence:DataSources",
+      "options": "XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions",
+      "package": "XiHan.Framework.Persistence.Abstractions",
+      "keys": [
+        {
+          "key": "MaxCount",
+          "type": "integer",
+          "default": "64",
+          "minimum": 1,
+          "maximum": 1024,
+          "summary": "运行时数据源的登记数上限；满了再登记新名字返回 PERSISTENCE_UNAVAILABLE_007，不淘汰已有的"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 persistence.datasource.<name> 的重探间隔与单次探测超时（秒）"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Persistence:EntityFrameworkCore",
+      "options": "XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions",
+      "package": "XiHan.Framework.Persistence.EntityFrameworkCore",
+      "keys": [
+        {
+          "key": "EnsureCreated",
+          "type": "boolean",
+          "default": "false",
+          "summary": "启动时调用 EnsureCreated 建表；只用于开发与测试，生产用迁移"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 persistence.entityframeworkcore.database 的重探间隔与单次探测超时（秒）"
+        },
+        {
+          "key": "VerifiedShardCapacity",
+          "type": "integer",
+          "default": "1024",
+          "minimum": 1,
+          "summary": "SQLite 上核对通过的租户分片库最多记多少个；记满淘汰最早记下的，被淘汰的分片下次绑定时重新核对时间列"
+        },
+        {
+          "key": "Connections:{name}",
+          "type": "string",
+          "sample": "Data Source=leases.db",
+          "summary": "命名连接：值是连接串，名字合 ^[a-z0-9][a-z0-9-]{0,63}$、不能是 default 或 shard；绑定它的工作单元所在作用域的 DbContext 建在这个连接上，登记到它的实体只在这样的工作单元里读写"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Persistence:InMemory",
+      "options": "XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions",
+      "package": "XiHan.Framework.Persistence.InMemory",
+      "keys": [
+        {
+          "key": "MaxEntitiesPerType",
+          "type": "integer",
+          "default": "100000",
+          "minimum": 1,
+          "summary": "每种实体的容量上限"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Persistence:Snowflake",
+      "options": "XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions",
+      "package": "XiHan.Framework.Persistence.Abstractions",
+      "keys": [
+        {
+          "key": "Epoch",
+          "type": "string",
+          "default": "2026-01-01T00:00:00Z",
+          "summary": "时间戳起点，ISO 8601，没有时区按 UTC；数据写入后不得再改"
+        },
+        {
+          "key": "WorkerId",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1023,
+          "sample": "1",
+          "summary": "显式指定的机器位（0–1023）；不写时启动经分布式锁租约分配"
+        },
+        {
+          "key": "ClockDriftToleranceMilliseconds",
+          "type": "integer",
+          "default": "100",
+          "minimum": 0,
+          "summary": "时钟回拨容忍上限（毫秒）：不超过时等待追平，超过则生成失败"
+        },
+        {
+          "key": "LeaseTimeToLiveSeconds",
+          "type": "integer",
+          "default": "30",
+          "minimum": 1,
+          "summary": "租约分配时机器位租约的存活时间（秒），每三分之一存活时间续约一次"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Persistence:SqlSugar",
+      "options": "XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceOptions",
+      "package": "XiHan.Framework.Persistence.SqlSugar",
+      "keys": [
+        {
+          "key": "InitTables",
+          "type": "boolean",
+          "default": "false",
+          "summary": "启动时用 CodeFirst 为已登记实体建表；只用于开发与测试"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 persistence.sqlsugar.database 的重探间隔与单次探测超时（秒）"
+        },
+        {
+          "key": "CommandTimeoutSeconds",
+          "type": "integer",
+          "default": "300",
+          "minimum": 1,
+          "summary": "命令超时（秒），设在特性建的客户端的每个连接上；0 不接受，应用自己注册客户端时不适用"
+        },
+        {
+          "key": "Connections:{name}",
+          "type": "string",
+          "sample": "Data Source=leases.db",
+          "summary": "方式一的命名连接：值是连接串，名字合 ^[a-z0-9][a-z0-9-]{0,63}$、不能是 default 或 shard；每个作用域的客户端都带上，回调按 ConfigId 区分；登记到命名连接的实体与绑定连接的工作单元使用"
+        },
+        {
+          "key": "Replicas:DefaultHitRate",
+          "type": "integer",
+          "default": "10",
+          "minimum": 1,
+          "summary": "权重不大于 0 的从库归一化成的权重"
+        },
+        {
+          "key": "Replicas:HealthCheck",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否周期探测从库；配了从库才有探测，关掉后宕机的从库照常接读流量"
+        },
+        {
+          "key": "Replicas:HealthCheckIntervalSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "从库的探测间隔（秒）"
+        },
+        {
+          "key": "Replicas:FailureCooldownSeconds",
+          "type": "number",
+          "default": "120",
+          "minimum": 0,
+          "summary": "从库最后一次失败之后，过了这段时间（秒）并且探通才恢复读流量"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Plugins:OutOfProcess",
+      "options": "XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions",
+      "package": "XiHan.Framework.Plugins.OutOfProcess",
+      "keys": [
+        {
+          "key": "Directories:{index}",
+          "type": "string",
+          "sample": "plugins/orders",
+          "summary": "启动时装载的插件目录，每个含 xihan.manifest.json；相对当前目录，空白项忽略"
+        },
+        {
+          "key": "Grants:{manifest}:{index}",
+          "type": "string",
+          "sample": "capability:messaging.queue",
+          "summary": "按清单 ID 授予插件的权限；未配置的插件为空授予"
+        },
+        {
+          "key": "WorkDirectory",
+          "type": "string",
+          "sample": "plugins-work",
+          "summary": "插件工作目录的根，每个插件一个子目录；不写时取临时目录下的 xihan-plugins"
+        },
+        {
+          "key": "HandshakeTimeoutSeconds",
+          "type": "number",
+          "default": "10",
+          "exclusiveMinimum": 0,
+          "summary": "读到握手行并完成 Handshake 的时限（秒）"
+        },
+        {
+          "key": "StartTimeoutSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "Configure 与 Start 各自的时限（秒）"
+        },
+        {
+          "key": "StopGraceSeconds",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "sample": "30",
+          "summary": "停止宽限（秒）；不写时取内核的 XiHan:Kernel:StopTimeoutSeconds"
+        },
+        {
+          "key": "HealthIntervalSeconds",
+          "type": "number",
+          "default": "10",
+          "exclusiveMinimum": 0,
+          "summary": "健康推送不可用时的轮询间隔（秒）"
+        },
+        {
+          "key": "RestartWindowSeconds",
+          "type": "number",
+          "default": "600",
+          "exclusiveMinimum": 0,
+          "summary": "统计自动重启次数的时间窗（秒）"
+        },
+        {
+          "key": "HealthFailures",
+          "type": "integer",
+          "default": "3",
+          "minimum": 1,
+          "summary": "连续多少次健康探测失败视为进程失效"
+        },
+        {
+          "key": "RestartLimit",
+          "type": "integer",
+          "default": "5",
+          "minimum": 0,
+          "summary": "RestartWindowSeconds 时间窗内最多自动重启次数，之后保持 Failed"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Plugins:Wasm",
+      "options": "XiHan.Framework.Plugins.Wasm.WasmPluginOptions",
+      "package": "XiHan.Framework.Plugins.Wasm",
+      "keys": [
+        {
+          "key": "Directories:{index}",
+          "type": "string",
+          "sample": "plugins/orders",
+          "summary": "启动时装载的插件目录，含清单与模块文件；相对当前目录，空白项忽略"
+        },
+        {
+          "key": "Grants:{manifest}:{index}",
+          "type": "string",
+          "sample": "capability:messaging.queue",
+          "summary": "按清单 ID 授予的 capability: 权限；未配置的插件为空授予"
+        },
+        {
+          "key": "Mounts:{manifest}:{path}",
+          "type": "string",
+          "sample": "plugin-data",
+          "summary": "清单 ID 下客体路径映射到的宿主目录；fs.read:/fs.write: 权限只在映射了才算授予"
+        },
+        {
+          "key": "WorkDirectory",
+          "type": "string",
+          "sample": "plugins-work",
+          "summary": "插件工作目录的根，存放 WASI 输出；不写时取临时目录下的 xihan-plugins-wasm"
+        },
+        {
+          "key": "MemoryLimitBytes",
+          "type": "integer",
+          "default": "67108864",
+          "minimum": 1,
+          "summary": "线性内存上限（字节），默认 64 MiB"
+        },
+        {
+          "key": "StackLimitBytes",
+          "type": "integer",
+          "default": "1048576",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "summary": "Wasm 栈上限（字节），默认 1 MiB"
+        },
+        {
+          "key": "EpochIntervalMilliseconds",
+          "type": "number",
+          "default": "10",
+          "exclusiveMinimum": 0,
+          "summary": "epoch 递增间隔（毫秒），即 CPU 截止时间的粒度"
+        },
+        {
+          "key": "CallTimeoutSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "生命周期调用与没有截止时间的调用的时限（秒）"
+        },
+        {
+          "key": "MiddlewareTimeoutMilliseconds",
+          "type": "number",
+          "default": "100",
+          "exclusiveMinimum": 0,
+          "summary": "中间件钩子每次调用的时限（毫秒）"
+        },
+        {
+          "key": "HealthIntervalSeconds",
+          "type": "number",
+          "default": "10",
+          "exclusiveMinimum": 0,
+          "summary": "健康轮询间隔（秒）"
+        },
+        {
+          "key": "RestartWindowSeconds",
+          "type": "number",
+          "default": "600",
+          "exclusiveMinimum": 0,
+          "summary": "统计自动重建次数的时间窗（秒）"
+        },
+        {
+          "key": "HealthFailures",
+          "type": "integer",
+          "default": "3",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "summary": "连续多少次健康探测失败视为实例失效"
+        },
+        {
+          "key": "RestartLimit",
+          "type": "integer",
+          "default": "5",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "summary": "RestartWindowSeconds 时间窗内最多自动重建次数，之后保持 Failed"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Protocols:CloudEvents",
+      "options": "XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions",
+      "package": "XiHan.Framework.Protocols.CloudEvents",
+      "keys": [
+        {
+          "key": "Topics:{type}",
+          "type": "string",
+          "sample": "orders.created",
+          "summary": "事件类型映射到的主题，须是合法主题名；未映射的类型本身合法时直接作主题"
+        },
+        {
+          "key": "Webhooks:{topic}",
+          "type": "string",
+          "sample": "https://hooks.example.com/orders",
+          "summary": "主题（键须是合法主题名）对应的出站 Webhook 地址，须是绝对 http(s) URL"
+        },
+        {
+          "key": "Inbound",
+          "type": "enum",
+          "default": "Dispatch",
+          "values": [
+            "Dispatch",
+            "Publish"
+          ],
+          "summary": "入站处理方式：Dispatch 在请求内派发，Publish 发布到代理后立即 202；不区分大小写"
+        },
+        {
+          "key": "Outbound",
+          "type": "enum",
+          "default": "Binary",
+          "values": [
+            "Binary",
+            "Structured"
+          ],
+          "summary": "出站 Webhook 的内容模式，不区分大小写；Batch 只用于入站，配置它会抛异常"
+        },
+        {
+          "key": "PropagateTraceContext",
+          "type": "boolean",
+          "default": "false",
+          "summary": "出站 Webhook 是否在 HTTP 头里写追踪上下文（traceparent、tracestate、baggage）；缺省不写，只作用于 Webhook 的命名客户端"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Protocols:Grpc",
+      "options": "XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions",
+      "package": "XiHan.Framework.Protocols.Grpc",
+      "placeholders": {
+        "operation": "orders.create"
+      },
+      "keys": [
+        {
+          "key": "Methods:{operation}",
+          "type": "string",
+          "sample": "Orders/Create",
+          "summary": "操作 ID 对应的 gRPC 方法名，写作 Service/Method（protobuf 标识符），覆盖约定推导"
+        },
+        {
+          "key": "Package",
+          "type": "string",
+          "sample": "acme.orders",
+          "summary": "protobuf 包名（点分小写标识符），也是服务路径前缀；不写或空白表示没有包"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Protocols:Http",
+      "options": "XiHan.Framework.Protocols.Http.HttpProtocolOptions",
+      "package": "XiHan.Framework.Protocols.Http",
+      "placeholders": {
+        "operation": "orders.create"
+      },
+      "keys": [
+        {
+          "key": "Routes:{operation}",
+          "type": "string",
+          "sample": "POST /orders:export",
+          "summary": "操作 ID 对应的路由 METHOD /template，方法限 GET/POST/PUT/PATCH/DELETE"
+        },
+        {
+          "key": "RoutePrefix",
+          "type": "string",
+          "sample": "/api",
+          "summary": "所有操作路由的前缀，须以 / 开头、不以 / 结尾；不写或为空表示无前缀"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Protocols:Mcp",
+      "options": "XiHan.Framework.Protocols.Mcp.McpProtocolOptions",
+      "package": "XiHan.Framework.Protocols.Mcp",
+      "placeholders": {
+        "operation": "orders.create"
+      },
+      "keys": [
+        {
+          "key": "Tools:{operation}",
+          "type": "string",
+          "sample": "orders_create",
+          "summary": "操作 ID 对应的 MCP tool 名（字母、数字、_、-，1–64 个字符），覆盖约定推导"
+        },
+        {
+          "key": "ServerName",
+          "type": "string",
+          "sample": "orders-service",
+          "summary": "initialize 答复里的服务端名；不写时用应用名"
+        },
+        {
+          "key": "ServerVersion",
+          "type": "string",
+          "sample": "1.0.0",
+          "summary": "initialize 答复里的服务端版本，不能为空白；不写时为框架版本"
+        },
+        {
+          "key": "Instructions",
+          "type": "string",
+          "sample": "Use orders_create to place an order.",
+          "summary": "initialize 答复里给客户端模型的使用说明；不写表示不给"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Scheduling",
+      "options": "XiHan.Framework.Scheduling.Abstractions.Schedulers.SchedulerOptions",
+      "package": "XiHan.Framework.Scheduling.Abstractions",
+      "keys": [
+        {
+          "key": "PollIntervalSeconds",
+          "type": "number",
+          "default": "1",
+          "exclusiveMinimum": 0,
+          "summary": "引擎轮询周期（秒）"
+        },
+        {
+          "key": "NodeId",
+          "type": "string",
+          "sample": "node-1",
+          "summary": "本节点 ID；空白视为未配置，缺省为机器名:进程 ID:8 位随机十六进制"
+        },
+        {
+          "key": "MaxConcurrentRuns",
+          "type": "integer",
+          "default": "32",
+          "minimum": 1,
+          "summary": "本节点同时运行的作业上限"
+        },
+        {
+          "key": "AcquireBatchSize",
+          "type": "integer",
+          "default": "16",
+          "minimum": 1,
+          "summary": "一个轮询周期最多抢占的触发器数"
+        },
+        {
+          "key": "MisfireThresholdSeconds",
+          "type": "number",
+          "default": "60",
+          "minimum": 0,
+          "summary": "misfire 阈值（秒）：到期时刻落后当前时刻超过它才算 misfire"
+        },
+        {
+          "key": "LeaseResource",
+          "type": "string",
+          "default": "scheduling.jobs",
+          "summary": "领导租约的资源名，须合作业名文法 ^[a-z0-9][a-z0-9._-]{0,127}$；空白视为未配置"
+        },
+        {
+          "key": "LeaseTimeToLiveSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "领导租约的存活时间（秒）"
+        },
+        {
+          "key": "NodeTimeoutSeconds",
+          "type": "number",
+          "default": "90",
+          "exclusiveMinimum": 0,
+          "summary": "节点失联判定（秒）：心跳超过它即视为失联"
+        },
+        {
+          "key": "HousekeepingIntervalSeconds",
+          "type": "number",
+          "default": "60",
+          "exclusiveMinimum": 0,
+          "summary": "领导者维护（失联恢复、历史清理）的周期（秒）"
+        },
+        {
+          "key": "HistoryRetentionDays",
+          "type": "number",
+          "default": "7",
+          "minimum": 0,
+          "summary": "运行历史保留期（天，可带小数）；0 为不删"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Scheduling:Database",
+      "options": "XiHan.Framework.Scheduling.Database.DatabaseSchedulingOptions",
+      "package": "XiHan.Framework.Scheduling.Database",
+      "keys": [
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 scheduling.database.leader 的重探间隔（秒），也是单次探测的超时"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Scheduling:InMemory",
+      "options": "XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions",
+      "package": "XiHan.Framework.Scheduling.InMemory",
+      "keys": [
+        {
+          "key": "MaxRuns",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 1,
+          "summary": "运行历史上限，超出时丢弃最旧的已结束记录"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Scheduling:Kubernetes",
+      "options": "XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions",
+      "package": "XiHan.Framework.Scheduling.Kubernetes",
+      "keys": [
+        {
+          "key": "Lease",
+          "type": "string",
+          "default": "xihan-scheduler",
+          "summary": "调度器租约的 Lease 名，须为 DNS 标签；其他资源用 <Lease>-<资源>；空白视为未配置"
+        },
+        {
+          "key": "Namespace",
+          "type": "string",
+          "sample": "xihan",
+          "summary": "命名空间；未配置时依次取 ServiceAccount 挂载、POD_NAMESPACE，最后 default"
+        },
+        {
+          "key": "Holder",
+          "type": "string",
+          "sample": "scheduler-0",
+          "summary": "持有者标识；未配置时依次取 XIHAN_POD_NAME、HOSTNAME，最后机器名"
+        },
+        {
+          "key": "ApiServer",
+          "type": "string",
+          "sample": "https://kubernetes.default.svc",
+          "summary": "API Server 的绝对 URI；未配置时由 KUBERNETES_SERVICE_HOST / PORT 推出"
+        },
+        {
+          "key": "TokenPath",
+          "type": "string",
+          "default": "/var/run/secrets/kubernetes.io/serviceaccount/token",
+          "summary": "ServiceAccount 令牌文件，每次请求重读以跟上令牌轮换；空白视为未配置"
+        },
+        {
+          "key": "CertificateAuthorityPath",
+          "type": "string",
+          "default": "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+          "summary": "API Server 的 CA 证书文件，不存在时用系统信任；空白视为未配置"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Security",
+      "options": "XiHan.Framework.Security.Abstractions.SecurityOptions",
+      "package": "XiHan.Framework.Security.Abstractions",
+      "keys": [
+        {
+          "key": "RequireAuthentication",
+          "type": "boolean",
+          "default": "false",
+          "summary": "为 true 时匿名调用在 Authenticate 阶段被拒绝；false 时由策略决定"
+        },
+        {
+          "key": "RoleClaim",
+          "type": "string",
+          "default": "role",
+          "summary": "承载角色的声明类型，不能为空"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Security:Database",
+      "options": "XiHan.Framework.Security.Database.DatabaseSecurityOptions",
+      "package": "XiHan.Framework.Security.Database",
+      "keys": [
+        {
+          "key": "CacheSize",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "授予缓存条目上限（每个主体与租户组合一条），满时整体清空"
+        },
+        {
+          "key": "CacheTimeToLiveSeconds",
+          "type": "number",
+          "default": "30",
+          "minimum": 0,
+          "summary": "授予缓存条目的存活时间（秒）；0 为不过期"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Security:InMemory",
+      "options": "XiHan.Framework.Security.InMemory.InMemorySecurityOptions",
+      "package": "XiHan.Framework.Security.InMemory",
+      "placeholders": {
+        "name": "ops-bot",
+        "claim": "department",
+        "role": "admin",
+        "user": "ops-bot"
+      },
+      "keys": [
+        {
+          "key": "MaxPrincipals",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 1,
+          "summary": "主体数上限"
+        },
+        {
+          "key": "MaxGrants",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "授予数上限"
+        },
+        {
+          "key": "Principals:{name}:ApiKey",
+          "type": "string",
+          "sample": "dev-api-key-0001",
+          "summary": "主体 {name} 的 API Key，至少 8 个字符；该主体出现时必填"
+        },
+        {
+          "key": "Principals:{name}:DisplayName",
+          "type": "string",
+          "sample": "Ops Bot",
+          "summary": "主体的显示名"
+        },
+        {
+          "key": "Principals:{name}:Roles",
+          "type": "string",
+          "sample": "admin,auditor",
+          "summary": "主体的角色，逗号分隔"
+        },
+        {
+          "key": "Principals:{name}:Tenant",
+          "type": "string",
+          "sample": "tenant-a",
+          "summary": "主体所属租户"
+        },
+        {
+          "key": "Principals:{name}:Claims:{claim}",
+          "type": "string",
+          "sample": "platform",
+          "summary": "主体的附加声明，键为声明类型、值为声明值"
+        },
+        {
+          "key": "Grants:role:{role}",
+          "type": "string",
+          "sample": "orders.read,orders.write",
+          "summary": "授予角色的全局权限码，逗号分隔；* 为全部权限"
+        },
+        {
+          "key": "Grants:user:{user}",
+          "type": "string",
+          "sample": "orders.read",
+          "summary": "授予用户的全局权限码，逗号分隔；* 为全部权限"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Security:Ip2Region",
+      "options": "XiHan.Framework.Security.Ip2Region.Ip2RegionOptions",
+      "package": "XiHan.Framework.Security.Ip2Region",
+      "keys": [
+        {
+          "key": "V4Database",
+          "type": "string",
+          "sample": "IpDatabases/ip2region_v4.xdb",
+          "summary": "IPv4 xdb 文件，相对路径按应用目录；缺省 IpDatabases/ip2region_v4.xdb，不存在不解析"
+        },
+        {
+          "key": "V6Database",
+          "type": "string",
+          "sample": "IpDatabases/ip2region_v6.xdb",
+          "summary": "IPv6 xdb 文件，相对路径按应用目录；缺省 IpDatabases/ip2region_v6.xdb，不存在不解析"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Security:Jwt",
+      "options": "XiHan.Framework.Security.Jwt.JwtOptions",
+      "package": "XiHan.Framework.Security.Jwt",
+      "keys": [
+        {
+          "key": "Secret",
+          "type": "string",
+          "required": true,
+          "sample": "dev-only-jwt-secret-change-me-0123456789",
+          "summary": "HS256 对称密钥，UTF-8 编码至少 32 字节"
+        },
+        {
+          "key": "Issuer",
+          "type": "string",
+          "sample": "https://auth.example.com",
+          "summary": "期望的签发者；未配置时不校验"
+        },
+        {
+          "key": "Audience",
+          "type": "string",
+          "sample": "shop-api",
+          "summary": "期望的受众；未配置时不校验"
+        },
+        {
+          "key": "ClockSkewSeconds",
+          "type": "number",
+          "default": "60",
+          "minimum": 0,
+          "summary": "校验有效期时允许的时钟偏移（秒）"
+        },
+        {
+          "key": "NameClaim",
+          "type": "string",
+          "default": "sub",
+          "summary": "作为主体 ID 的声明类型，不能为空"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Security:OpenIdConnect",
+      "options": "XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions",
+      "package": "XiHan.Framework.Security.OpenIdConnect",
+      "keys": [
+        {
+          "key": "Authority",
+          "type": "string",
+          "required": true,
+          "sample": "https://login.example.com/realms/shop",
+          "summary": "签发者地址，绝对 http/https URI；RequireHttpsMetadata 为 true 时须 https"
+        },
+        {
+          "key": "MetadataAddress",
+          "type": "string",
+          "sample": "https://login.example.com/realms/shop/.well-known/openid-configuration",
+          "summary": "发现文档地址（绝对 http/https URI，同受 HTTPS 要求）；未配置时由 Authority 推出"
+        },
+        {
+          "key": "Issuer",
+          "type": "string",
+          "sample": "https://login.example.com/realms/shop",
+          "summary": "期望的签发者；未配置时取发现文档里的 issuer"
+        },
+        {
+          "key": "Audience",
+          "type": "string",
+          "sample": "shop-api",
+          "summary": "期望的受众；未配置时不校验"
+        },
+        {
+          "key": "RequireHttpsMetadata",
+          "type": "boolean",
+          "default": "true",
+          "summary": "发现文档与 JWKS 是否必须经 HTTPS 取得；只在本地开发时关闭"
+        },
+        {
+          "key": "ClockSkewSeconds",
+          "type": "number",
+          "default": "60",
+          "minimum": 0,
+          "summary": "校验有效期时允许的时钟偏移（秒）"
+        },
+        {
+          "key": "RefreshIntervalSeconds",
+          "type": "number",
+          "default": "43200",
+          "exclusiveMinimum": 0,
+          "summary": "元数据的自动刷新间隔（秒）"
+        },
+        {
+          "key": "MinimumRefreshIntervalSeconds",
+          "type": "number",
+          "default": "300",
+          "exclusiveMinimum": 0,
+          "summary": "两次按需刷新的最短间隔（秒），也是刷新失败后沿用旧密钥的时长"
+        },
+        {
+          "key": "BackchannelTimeoutSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "取发现文档或 JWKS 的 HTTP 超时（秒）"
+        },
+        {
+          "key": "NameClaim",
+          "type": "string",
+          "default": "sub",
+          "summary": "作为主体 ID 的声明类型，不能为空"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Security:Outbound",
+      "options": "XiHan.Framework.Kernel.Security.OutboundAddressOptions",
+      "package": "XiHan.Framework.Kernel",
+      "keys": [
+        {
+          "key": "AllowLoopback",
+          "type": "boolean",
+          "default": "false",
+          "summary": "放行回环地址（127.0.0.0/8、::1）；本地开发用，生产环境不要打开"
+        },
+        {
+          "key": "AllowPrivateNetwork",
+          "type": "boolean",
+          "default": "false",
+          "summary": "放行私网地址（10.0.0.0/8、172.16.0.0/12、192.168.0.0/16、fc00::/7）；不含链路本地、运营商级 NAT 与云元数据地址"
+        },
+        {
+          "key": "AllowedNetworks:{index}",
+          "type": "string",
+          "sample": "10.1.0.0/16",
+          "summary": "放行的网段，CIDR 写法，主机位必须为零；优先于全部拒绝规则"
+        },
+        {
+          "key": "AllowedHosts:{index}",
+          "type": "string",
+          "sample": "minio",
+          "summary": "放行的主机名，不区分大小写，整名相等，不带协议和端口；只看请求里写的名字，不再看它解析到哪里"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Workflow",
+      "options": "XiHan.Framework.Workflow.Abstractions.WorkflowOptions",
+      "package": "XiHan.Framework.Workflow.Abstractions",
+      "keys": [
+        {
+          "key": "MaxNodeExecutionsPerBurst",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 1,
+          "summary": "一个波次最多执行的节点数，超过即实例故障（防死循环）"
+        },
+        {
+          "key": "MaxSubWorkflowDepth",
+          "type": "integer",
+          "default": "16",
+          "minimum": 0,
+          "summary": "子流程最大深度"
+        },
+        {
+          "key": "LockTimeoutSeconds",
+          "type": "number",
+          "default": "10",
+          "exclusiveMinimum": 0,
+          "summary": "等实例锁的上限（秒）"
+        },
+        {
+          "key": "NotResumableBackoffSeconds",
+          "type": "number",
+          "default": "300",
+          "exclusiveMinimum": 0,
+          "summary": "到期书签因实例不在运行中而不能恢复时，到期时间后推的秒数"
+        },
+        {
+          "key": "ExpressionCacheSize",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "表达式缓存上限"
+        },
+        {
+          "key": "RetentionDays",
+          "type": "number",
+          "default": "0",
+          "minimum": 0,
+          "summary": "已结束实例的保留期（天，可带小数）；0 为不自动清理"
+        },
+        {
+          "key": "HousekeepingIntervalSeconds",
+          "type": "number",
+          "default": "3600",
+          "exclusiveMinimum": 0,
+          "summary": "轮询器维护（按保留期清理）的周期（秒）"
+        },
+        {
+          "key": "HttpTimeoutSeconds",
+          "type": "number",
+          "default": "30",
+          "exclusiveMinimum": 0,
+          "summary": "Http 活动的默认超时（秒）"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Workflow:Database",
+      "options": "XiHan.Framework.Workflow.Database.DatabaseWorkflowOptions",
+      "package": "XiHan.Framework.Workflow.Database",
+      "keys": [
+        {
+          "key": "PollIntervalSeconds",
+          "type": "number",
+          "default": "1",
+          "exclusiveMinimum": 0,
+          "summary": "到期书签的轮询周期（秒）"
+        },
+        {
+          "key": "BatchSize",
+          "type": "integer",
+          "default": "100",
+          "minimum": 1,
+          "summary": "每次轮询最多恢复的书签数"
+        },
+        {
+          "key": "LockLeaseSeconds",
+          "type": "number",
+          "default": "60",
+          "exclusiveMinimum": 0,
+          "summary": "实例锁与轮询领导权的租约时长（秒），持有者每三分之一租约续约一次"
+        },
+        {
+          "key": "HolderId",
+          "type": "string",
+          "sample": "workflow-node-1",
+          "summary": "本节点写进租约行的持有者标识；空白视为未配置，缺省机器名:进程 ID:8 位随机十六进制"
+        },
+        {
+          "key": "LockConnection",
+          "type": "string",
+          "sample": "leases",
+          "summary": "租约表的命名连接（SqlSugar 是同名 ConfigId）；SQLite 上必须配到另一个库文件，否则调用方事务里取实例锁会等自己的事务而超时；空白视为未配置，缺省在平台库"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 workflow.database.poller 的重探间隔（秒），也是单次探测的超时"
+        }
+      ]
+    },
+    {
+      "section": "XiHan:Workflow:InMemory",
+      "options": "XiHan.Framework.Workflow.InMemory.InMemoryWorkflowOptions",
+      "package": "XiHan.Framework.Workflow.InMemory",
+      "keys": [
+        {
+          "key": "MaxDefinitions",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 1,
+          "summary": "定义存储容量"
+        },
+        {
+          "key": "MaxInstances",
+          "type": "integer",
+          "default": "10000",
+          "minimum": 1,
+          "summary": "实例存储容量"
+        },
+        {
+          "key": "MaxNodeInstances",
+          "type": "integer",
+          "default": "100000",
+          "minimum": 1,
+          "summary": "节点实例存储容量"
+        },
+        {
+          "key": "MaxBookmarks",
+          "type": "integer",
+          "default": "100000",
+          "minimum": 1,
+          "summary": "书签存储容量"
+        },
+        {
+          "key": "PollIntervalSeconds",
+          "type": "number",
+          "default": "1",
+          "exclusiveMinimum": 0,
+          "summary": "到期书签的轮询周期（秒）"
+        },
+        {
+          "key": "BatchSize",
+          "type": "integer",
+          "default": "100",
+          "minimum": 1,
+          "summary": "每次轮询最多恢复的书签数"
+        }
+      ]
+    }
+  ]
+}

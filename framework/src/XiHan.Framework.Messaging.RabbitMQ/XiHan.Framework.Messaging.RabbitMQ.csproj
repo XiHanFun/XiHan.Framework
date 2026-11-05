@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Messaging.RabbitMQ</PackageId>
+    <RootNamespace>XiHan.Framework.Messaging.RabbitMQ</RootNamespace>
+    <Description>曦寒框架消息的 RabbitMQ 提供程序</Description>
+    <PackageTags>xihan;framework;messaging;rabbitmq;amqp</PackageTags>
+    <!-- RabbitMQ.Client 未声明 AOT 兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="RabbitMQ.Client" />
+  </ItemGroup>
+</Project>

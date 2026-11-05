@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Security.OpenIdConnect</PackageId>
+    <RootNamespace>XiHan.Framework.Security.OpenIdConnect</RootNamespace>
+    <Description>曦寒框架认证的 OpenID Connect 提供程序</Description>
+    <PackageTags>xihan;framework;security;openid-connect;oidc;jwks;bearer</PackageTags>
+    <!-- Microsoft.IdentityModel 未声明 AOT 兼容 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
+  </ItemGroup>
+</Project>

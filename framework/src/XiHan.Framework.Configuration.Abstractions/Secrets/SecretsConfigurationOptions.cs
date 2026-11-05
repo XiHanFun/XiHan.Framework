@@ -1,0 +1,95 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using XiHan.Framework.Primitives;
+
+namespace XiHan.Framework.Configuration.Abstractions.Secrets;
+
+/// <summary>
+/// 密钥配置源的选项：把配置键映射到密钥名
+/// </summary>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed record SecretsConfigurationOptions
+{
+    /// <summary>
+    /// 创建
+    /// </summary>
+    /// <remarks>
+    /// 映射不能为空
+    /// </remarks>
+    public SecretsConfigurationOptions(IReadOnlyDictionary<string, SecretName> mappings)
+    {
+        ArgumentNullException.ThrowIfNull(mappings);
+        if (mappings.Count == 0)
+        {
+            throw new ArgumentException("At least one configuration key must be mapped to a secret.", nameof(mappings));
+        }
+
+        foreach (var key in mappings.Keys)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new ArgumentException("Configuration keys must not be empty.", nameof(mappings));
+            }
+        }
+
+        Mappings = mappings;
+    }
+
+    /// <summary>
+    /// 配置键 → 密钥名
+    /// </summary>
+    public IReadOnlyDictionary<string, SecretName> Mappings { get; }
+
+    /// <summary>
+    /// 构建配置时读取的超时
+    /// </summary>
+    /// <remarks>
+    /// 默认 10 秒
+    /// </remarks>
+    public TimeSpan LoadTimeout
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The load timeout must be positive.");
+    } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// 周期性重读的间隔
+    /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="null"/> 不重读
+    /// </remarks>
+    public TimeSpan? RefreshInterval
+    {
+        get => field;
+        init => field = value is null || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The refresh interval must be positive.");
+    }
+
+    /// <summary>
+    /// 重读计时用的时钟
+    /// </summary>
+    /// <remarks>
+    /// 默认系统时钟；测试换成可推进的时钟，重读由用例触发而不是等真实时间
+    /// </remarks>
+    public TimeProvider Clock
+    {
+        get => field;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = TimeProvider.System;
+
+    /// <summary>
+    /// 首次读取缺失或失败的项是否跳过
+    /// </summary>
+    /// <remarks>
+    /// 默认 <see langword="false"/>：抛出让启动失败。为 <see langword="true"/> 时跳过失败的项，整体失败（超时、密钥库抛出、条数与请求不一致）时该源为空，<see cref="RefreshInterval"/> 非空时照常重读
+    /// </remarks>
+    public bool Optional { get; init; }
+
+    /// <summary>
+    /// 读取失败时的回调（每个失败的项一次）
+    /// </summary>
+    /// <remarks>
+    /// 整体失败（超时、密钥库抛出、条数与请求不一致）回调一次 <c>CONFIGURATION_UNAVAILABLE_002</c>。回调自己抛出的异常被丢弃：不改变首次读取按 <see cref="Optional"/> 得出的结果，也不终止重读
+    /// </remarks>
+    public Action<Error>? OnError { get; init; }
+}

@@ -1,116 +1,154 @@
 # XiHan.Framework.Localization.Abstractions
 
-> 国际化抽象层：可本地化字符串与枚举本地化的接口契约，实现由 XiHan.Framework.Localization 提供。
+本地化的抽象包：区域名与内置 10 种区域、按键与区域取模板的消息目录 `MessageCatalog`、显式区域的解析接口 `IMessageLocalizer` 与目录注册。各子系统的抽象包、宿主与应用都经它注册语言文件、取调用方语言的文案。
 
-- **NuGet**：`XiHan.Framework.Localization.Abstractions`
-- **模块类**：`XiHanLocalizationAbstractionsModule`
-- **所在层**：基础设施层
-- **关键依赖**：`Microsoft.Extensions.Localization.Abstractions`（复用其 `IStringLocalizerFactory`、`IStringLocalizer`、`LocalizedString` 标准抽象）+ 框架内部依赖 `XiHan.Framework.Core`
+| 项 | 内容 |
+| --- | --- |
+| 包 ID | `XiHan.Framework.Localization.Abstractions` |
+| 环层 | Ring 2（抽象） |
+| 能力 | 定义 `localization.resources@1`，由 [Localization.InMemory](./localization-inmemory)（默认实现）或 [Localization.Database](./localization-database) 提供 |
+| 特性入口 | — |
+| 配置节 | `XiHan:Localization` |
+| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
+| AOT | 兼容（语言文件经源生成的 JSON 上下文解析） |
+| 稳定性 | Stable |
 
 ## 概述
 
-本包是国际化能力的**薄抽象层**：只定义接口和数据模型（可本地化字符串、枚举本地化查询与结果），不含任何资源加载、文化解析、JSON 解析等具体逻辑。它建立在微软标准的 `Microsoft.Extensions.Localization.Abstractions` 之上——`ILocalizableString.Localize` 直接接受微软的 `IStringLocalizerFactory` 并返回 `LocalizedString`，因此与 ASP.NET Core 原生本地化基础设施天然互通。真正的实现（JSON 优先加载、请求文化中间件、枚举本地化服务）由 [XiHan.Framework.Localization](./localization) 提供。上层模块（如 [XiHan.Framework.ObjectMapping](./objectmapping)）只依赖这个薄抽象包，即可在契约层描述"可本地化文本"而不牵连完整实现。
+消息键文法、模板语法、`key.L()` 与 `MessageScope` 在原语层（`XiHan.Framework.Primitives`），本包在其上补齐区域与目录：
+
+- `SupportedLocales` 列出内置的 10 种区域（与 XiHan.UI 相同），`Default` 是 `en-US`。
+- `LocaleName` 定义区域名文法 `^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$`（最长 35 个字符）与大小写规范化。
+- `MessageCatalog` 是消息键 → 区域 → 模板的只读目录，`FromEmbeddedResources` 装载一个程序集嵌入的全部 `Localization/<区域>.json`。目录只做精确查找，回退由 `IMessageLocalizer` 负责。
+- `LocalizationOptions` 持有默认区域与启用列表，给出回退链 `FallbackChain`，并从候选区域协商出启用的区域（`Negotiate`、`Resolve`）。
+- `IMessageLocalizer` 按显式区域解析并给出实际命中的区域（`LocalizedText`），宿主据此设置 `Content-Language`。
+
+本包没有特性，也不注册本地化器；装配 `localization.resources@1` 的 Provider 才登记 `IMessageLocalizer` 与 `IMessageResolver`。
 
 ## 何时使用
 
-- 你的模块只想引用本地化的**接口契约**，而不想直接依赖具体实现包。
-- 需要用一个可能带多语言的文本占位，用 `ILocalizableString` 表达（延迟到有 `IStringLocalizerFactory` 时再解析）。
-- 定义"标识名 + 可本地化显示名"分离的对象（`IHasNameWithLocalizableDisplayName`），例如权限、菜单、功能项。
-- 需要枚举字段级本地化的**查询契约**（`IEnumLocalizationService`），而实现放在下游。
+- 应用或能力包有自己的文案：定义 `<领域>Messages` 键常量、写语言文件、用 `AddMessageCatalog` 注册目录。
+- 需要在调用链之外按指定区域取文案，或要知道命中的区域：注入 `IMessageLocalizer`。
+- 实现新的本地化 Provider：实现 `IMessageLocalizer` 与 `IMessageResolver`，并通过 `Localization.Conformance`。
+
+用法与回退规则的完整讲解见[国际化](../guide/localization)。
 
 ## 安装与启用
 
 ```bash
-dotnet add package XiHan.Framework.Localization.Abstractions
+dotnet add package XiHan.Framework.Localization.Abstractions --prerelease
 ```
 
-```csharp
-[DependsOn(typeof(XiHanLocalizationAbstractionsModule))]
-public class MyModule : XiHanModule { }
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Minimal`（以及包含它的 `Standard`、`Full`）已引用本包与默认实现。
+
+应用的语言文件以固定逻辑名嵌入：
+
+```xml
+<ItemGroup>
+  <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
+</ItemGroup>
 ```
 
-`XiHanLocalizationAbstractionsModule.ConfigureServices` **不注册任何具体服务**（仅作为纯抽象声明入口存在）。要实际取值，必须引入实现包 [XiHan.Framework.Localization](./localization)——它提供 `IEnumLocalizationService` 与 `IStringLocalizerFactory` 的真实实现。
+## 配置
 
-## 核心能力
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `DefaultLocale` | `string` | `en-US` | 协商不到时的区域；进程默认作用域用它 |
+| `Locales` | `string`（逗号分隔） | 内置 10 种 | 启用的区域，按优先级排列；去重并规范化 |
 
-- **可本地化字符串抽象**：`ILocalizableString` 定义单一契约 `Localize(IStringLocalizerFactory) -> LocalizedString`，把"如何取值"延迟到运行期。
-- **两种内置实现**：`ResourceLocalizableString`（按资源类型/资源名 + 键解析，支持格式化参数）与 `FixedLocalizableString`（固定文本，直接原样返回，`ResourceNotFound=false`）。
-- **名称与显示名分离**：`IHasNameWithLocalizableDisplayName` 约定不本地化的标识名 `Name` 与可本地化的显示名 `DisplayName`。
-- **取值/回退扩展**：`LocalizableStringExtensions` 提供缺失资源时的降级取值与显示名便捷方法。
-- **枚举本地化契约与模型**：`IEnumLocalizationService` 及 `EnumLocalizationQuery` / `LocalizedEnumItem` / `LocalizedEnumDefinition` 描述枚举字段级本地化的查询参数与结果结构。
+```json
+{ "XiHan": { "Localization": { "DefaultLocale": "zh-CN", "Locales": "zh-CN,zh-TW,en-US" } } }
+```
 
-## 主要 API / 类型
+`LocalizationOptions.FromConfiguration` 读取这两个键并调用 `Validated()`：默认区域必须在启用列表里，区域名必须合法，启用列表不能为空，否则抛出 `ArgumentException`。
 
-### 可本地化字符串
+## 主要类型
 
 | 类型 | 说明 |
 | --- | --- |
-| `ILocalizableString` | 核心契约。方法 `LocalizedString Localize(IStringLocalizerFactory stringLocalizerFactory)` |
-| `ResourceLocalizableString` | 按资源解析。两种构造：`(Type resourceType, string name, params object[] arguments)` 与 `(string resourceName, string name, params object[] arguments)`；属性 `ResourceType`、`ResourceName`、`Name`、`Arguments` |
-| `FixedLocalizableString` | 固定文本实现。构造 `(string value)`，属性 `Value`；`Localize` 返回 `new LocalizedString(Value, Value, resourceNotFound: false)` |
-| `IHasNameWithLocalizableDisplayName` | 分离契约：`string Name { get; }`、`ILocalizableString? DisplayName { get; }` |
-
-`LocalizableStringExtensions`（静态扩展）：
-
-| 方法 | 签名与说明 |
-| --- | --- |
-| `LocalizeOrFallback` | `string LocalizeOrFallback(this ILocalizableString? localizableString, IStringLocalizerFactory factory, string? fallback = null)`。源为 `null` 返回 `fallback ?? string.Empty`；命中但 `ResourceNotFound` 且有 `fallback` 则用 `fallback`，否则返回本地化值 |
-| `GetLocalizedDisplayName` | `string GetLocalizedDisplayName(this IHasNameWithLocalizableDisplayName source, IStringLocalizerFactory factory)`。优先本地化 `DisplayName`，缺失时回退到 `source.Name` |
-| `ToFixedLocalizableString` | `ILocalizableString ToFixedLocalizableString(this string value)`。把普通字符串包装为固定文本本地化字符串 |
-
-### 枚举本地化契约
-
-`IEnumLocalizationService`（实现见 [localization](./localization) 的 `EnumLocalizationService`）：
-
-| 方法 | 说明 |
-| --- | --- |
-| `LocalizedEnumDefinition Get(Type enumType, EnumLocalizationQuery? query = null)` | 按类型读取 |
-| `LocalizedEnumDefinition Get(string enumTypeName, EnumLocalizationQuery? query = null)` | 按类型名读取（支持短名或完整名） |
-| `IReadOnlyDictionary<string, LocalizedEnumDefinition> GetMany(IEnumerable<string> enumTypeNames, EnumLocalizationQuery? query = null)` | 批量读取，键为传入的类型名 |
-| `bool TryGet(string enumTypeName, out LocalizedEnumDefinition? result, EnumLocalizationQuery? query = null)` | 容错读取，未找到返回 `false` |
-
-枚举本地化数据模型（命名空间 `XiHan.Framework.Localization.Abstractions.Enums`）：
-
-| 类型 | 关键字段 |
-| --- | --- |
-| `EnumLocalizationQuery` | `string? CultureName`（未指定用当前 UI 文化）、`bool IncludeHidden`、`bool Ordered = true` |
-| `LocalizedEnumItem` | `Name`、`Value`（`object`）、`ValueText`、`Label`（优先本地化）、`Description`、`Theme?`、`Icon?`、`Order`、`Hidden`、`Disabled`、`ResourceName?`、`LocalizationKey?`、`Extra`（`IReadOnlyDictionary<string, object>?`） |
-| `LocalizedEnumDefinition` | `EnumName`、`FullName`、`DisplayName`、`CultureName`、`IsFlags`、`UnderlyingTypeName`、`ResourceName?`、`Items`（`IReadOnlyList<LocalizedEnumItem>`） |
+| `Locales.SupportedLocales` | `All` 与各区域常量（`EnglishUnitedStates`、`ChineseSimplified`、`ChineseTraditional`、`Japanese`、`Korean`、`German`、`Spanish`、`French`、`PortugueseBrazil`、`Russian`），`Default` = `en-US` |
+| `Locales.LocaleName` | `IsValid`、`Validate`、`Normalize`（`zh-cn` → `zh-CN`）、`LanguageOf`（`zh-CN` → `zh`）、`CultureOf`、`AreEqual`；`MaxLength` = 35 |
+| `LocalizationOptions` | `DefaultLocale`、`Locales`、`FallbackChain(locale)`、`Negotiate(candidates)`、`Resolve(context)`、`FromConfiguration`、`Validated()` |
+| `Messages.MessageCatalog` | 构造（目录名 + 区域 → 键 → 模板）、`FromEmbeddedResources(name, anchor, prefix)`、`ParseLocaleFile`、`Find(key, locale)`（精确匹配）、`Keys`、`Locales`、`LocalesOf(key)`；`DefaultResourcePrefix` = `Localization/` |
+| `Messages.IMessageLocalizer` | `Find`、`Resolve(key, locale, arguments)`、`Localize(...)`、`Resolve(error, locale)`、`Localize(error, ...)`、`Options` |
+| `Messages.LocalizedText` | 一次解析的 `Text` 与实际命中的 `Locale` |
+| `Messages.InvocationContextLocalizationExtensions` | `context.Localize(key, arguments)`、`context.Localize(error)`；没有装配本地化时退回描述与 `Error.Message` |
+| `LocalizationServiceCollectionExtensions` | `AddMessageCatalog(catalog)`：同名目录合并为一份，同一键同一区域的模板不同时抛出 `LOCALIZATION_CONFLICT_001` |
+| `LocalizationCapabilities` | 能力 ID `Resources` 与接口版本 `Version` |
+| `LocalizationErrors` | 错误码常量 |
 
 ## 使用示例
 
-用 `ILocalizableString` 描述一个"标识名 + 可本地化显示名"的对象，取值时再传入工厂：
+定义键、注册目录、取文案：
 
 ```csharp
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Localization.Abstractions;
-using Microsoft.Extensions.Localization;
+using XiHan.Framework.Localization.Abstractions.Messages;
+using XiHan.Framework.Primitives;
 
-public sealed class MenuItem : IHasNameWithLocalizableDisplayName
+namespace Orders;
+
+// 只定义键，文案在 Localization/<区域>.json
+public static class OrdersMessages
 {
-    public string Name { get; } = "Dashboard";
-
-    // 按资源名 + 键，延迟解析
-    public ILocalizableString? DisplayName { get; }
-        = new ResourceLocalizableString("Menu", "Menu.Dashboard");
+    /// <summary>订单不存在。占位符：<c>id</c></summary>
+    public const string NotFound = "orders.order.not_found";
 }
 
-// 有了 IStringLocalizerFactory（由实现包注入）后：
-public string Render(MenuItem item, IStringLocalizerFactory factory)
-    => item.GetLocalizedDisplayName(factory); // 缺失时回退到 item.Name
+public static class OrdersLocalization
+{
+    public static IServiceCollection AddOrdersMessages(this IServiceCollection services)
+        => services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("orders", typeof(OrdersMessages)));
+
+    public static Error OrderNotFound(Guid id)
+        // 只带键与参数，宿主在 Egress 按调用方语言翻译
+        => Error.NotFound("ORDERS_NOTFOUND_001", OrdersMessages.NotFound, MessageArguments.Of(("id", id)));
+}
 ```
 
-固定文本包装（无需资源文件）：
+```json
+{ "orders.order.not_found": "Order '{id}' was not found." }
+```
+
+```json
+{ "orders.order.not_found": "订单 '{id}' 不存在。" }
+```
+
+按显式区域解析并取命中的区域：
 
 ```csharp
-ILocalizableString title = "订单中心".ToFixedLocalizableString();
+var resolved = localizer.Resolve(OrdersMessages.NotFound, "zh-HK", MessageArguments.Of(("id", 42)));
+var header = resolved.TryGetValue(out var text) ? text.Locale : localizer.Options.DefaultLocale;   // "zh-CN"
 ```
 
-## 依赖模块
+从 `Accept-Language` 一类的候选里协商区域：
 
-- 内部依赖：[XiHan.Framework.Core](./core)。
-- 第三方核心：`Microsoft.Extensions.Localization.Abstractions`。
+```csharp
+var options = LocalizationOptions.FromConfiguration(configuration);
+var locale = options.Negotiate(["fr-CA", "de-DE"]);   // 精确命中优先："de-DE"
+var chain = options.FallbackChain("zh-HK");          // zh-HK, zh-CN, zh-TW, en-US
+```
 
-## 相关模块
+## 行为与限制
 
-- [XiHan.Framework.Localization](./localization) — 本抽象层的具体实现包（JSON 资源加载、请求文化中间件、枚举本地化服务）。
-- [XiHan.Framework.ObjectMapping](./objectmapping) — 依赖本抽象包以表达扩展属性的可本地化显示名。
+- 目录装载：`FromEmbeddedResources` 只认逻辑名为 `<前缀><区域>.json` 的资源，文件名必须是合法区域名；每个文件是键 → 模板的平面 JSON 对象。JSON 不合法、键不符合消息键文法、模板为 `null`、程序集里一个语言文件都没有时，抛出 `FrameworkException`（`LOCALIZATION_VALIDATION_002`）。
+- 区域名在装载时规范化，查找不区分大小写；同一目录里一个区域只能出现一次。
+- `AddMessageCatalog` 把同名目录合并为一份，留在先注册的位置：内容相同（例如多个 Provider 都带同一个抽象包的目录）时什么都不变；互为补充（例如插件握手带来两种语言、宿主包带全部十种）时区域与键取并集；同一键同一区域的模板不同则抛出 `FrameworkException`（`LOCALIZATION_CONFLICT_001`），应用启动失败。任何一份都不会被静默丢弃。
+- 区域名不合法没有单独的错误码：传给 `LocaleName.Validate`、构造函数或写在 `XiHan:Localization` 里的不合法区域名是编程或配置错误，抛出 `ArgumentException`；语言文件名不是合法区域名归 `LOCALIZATION_VALIDATION_002`；Baggage 与 `Accept-Language` 里的不合法区域名在协商中忽略。
+- `Negotiate` 先找任一候选的精确命中，再按语言子标签命中启用列表里第一个同语言区域（`zh` 或 `zh-HK` 命中 `zh-CN`），都没有时返回默认区域；不合法的候选忽略。
+- `FallbackChain` 的顺序是请求区域 → 启用列表里同语言的区域 → 默认区域 → `en-US`，去重。
+
+| 错误码 | 常量 | 含义 |
+| --- | --- | --- |
+| `LOCALIZATION_VALIDATION_002` | `InvalidCatalog` | 消息目录不合法（JSON、键或区域名错误） |
+| `LOCALIZATION_NOTFOUND_001` | `TranslationNotFound` | 数据库里没有这条翻译（`Localization.Database` 使用） |
+| `LOCALIZATION_CONFLICT_001` | `DuplicateCatalog` | 同名消息目录里同一键同一区域的模板不一致，`AddMessageCatalog` 抛出，启动失败 |
+
+## 相关
+
+- [国际化](../guide/localization)
+- [Localization.InMemory](./localization-inmemory)
+- [Localization.Database](./localization-database)
+- [Primitives 原语层](./primitives)
+- 规范：RFC-0010《本地化》

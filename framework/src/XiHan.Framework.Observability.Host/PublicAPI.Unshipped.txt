@@ -1,0 +1,20 @@
+XiHan.Framework.Observability.Host.HostObservabilityFeature
+XiHan.Framework.Observability.Host.HostObservabilityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Observability.Host.HostObservabilityFeature.HostObservabilityFeature() -> void
+XiHan.Framework.Observability.Host.HostObservabilityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Observability.Host.HostObservabilityFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Observability.Host.HostObservabilityFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Observability.Host.HostObservabilityOptions
+XiHan.Framework.Observability.Host.HostObservabilityOptions.<Clone>$() -> XiHan.Framework.Observability.Host.HostObservabilityOptions!
+XiHan.Framework.Observability.Host.HostObservabilityOptions.Equals(XiHan.Framework.Observability.Host.HostObservabilityOptions? other) -> bool
+XiHan.Framework.Observability.Host.HostObservabilityOptions.HostObservabilityOptions() -> void
+XiHan.Framework.Observability.Host.HostObservabilityOptions.SampleInterval.get -> System.TimeSpan
+XiHan.Framework.Observability.Host.HostObservabilityOptions.SampleInterval.init -> void
+const XiHan.Framework.Observability.Host.HostObservabilityOptions.ConfigurationSection = "XiHan:Observability:Host" -> string!
+override XiHan.Framework.Observability.Host.HostObservabilityOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Observability.Host.HostObservabilityOptions.GetHashCode() -> int
+override XiHan.Framework.Observability.Host.HostObservabilityOptions.ToString() -> string!
+static XiHan.Framework.Observability.Host.HostObservabilityOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Observability.Host.HostObservabilityOptions!
+static XiHan.Framework.Observability.Host.HostObservabilityOptions.operator !=(XiHan.Framework.Observability.Host.HostObservabilityOptions? left, XiHan.Framework.Observability.Host.HostObservabilityOptions? right) -> bool
+static XiHan.Framework.Observability.Host.HostObservabilityOptions.operator ==(XiHan.Framework.Observability.Host.HostObservabilityOptions? left, XiHan.Framework.Observability.Host.HostObservabilityOptions? right) -> bool
+static readonly XiHan.Framework.Observability.Host.HostObservabilityOptions.MaxSampleInterval -> System.TimeSpan

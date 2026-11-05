@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Scheduling.Kubernetes</PackageId>
+    <RootNamespace>XiHan.Framework.Scheduling.Kubernetes</RootNamespace>
+    <Description>曦寒框架调度的 Kubernetes 提供程序</Description>
+    <PackageTags>xihan;framework;scheduling;kubernetes;lease;leader-election</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Scheduling.Abstractions/XiHan.Framework.Scheduling.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

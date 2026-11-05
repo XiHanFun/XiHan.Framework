@@ -1,0 +1,4 @@
+{
+  "protocols.grpc.request_malformed": "操作 '{operation}' 的請求不是合法的 protobuf 訊息：{reason}",
+  "protocols.grpc.response_unencodable": "操作 '{operation}' 的回應無法編碼為 protobuf。"
+}

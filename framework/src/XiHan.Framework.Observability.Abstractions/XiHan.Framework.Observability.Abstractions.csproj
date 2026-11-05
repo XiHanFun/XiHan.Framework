@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Observability.Abstractions</PackageId>
+    <RootNamespace>XiHan.Framework.Observability.Abstractions</RootNamespace>
+    <Description>曦寒框架可观测性抽象包</Description>
+    <PackageTags>xihan;framework;observability;monitoring;system-info</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Primitives/XiHan.Framework.Primitives.csproj" />
+  </ItemGroup>
+</Project>

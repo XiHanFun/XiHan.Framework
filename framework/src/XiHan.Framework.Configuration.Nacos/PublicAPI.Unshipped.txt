@@ -1,0 +1,46 @@
+#nullable enable
+XiHan.Framework.Configuration.Nacos.NacosConfigFormat
+XiHan.Framework.Configuration.Nacos.NacosConfigFormat.Json = 0 -> XiHan.Framework.Configuration.Nacos.NacosConfigFormat
+XiHan.Framework.Configuration.Nacos.NacosConfigFormat.Properties = 1 -> XiHan.Framework.Configuration.Nacos.NacosConfigFormat
+XiHan.Framework.Configuration.Nacos.NacosConfigurationBuilderExtensions
+XiHan.Framework.Configuration.Nacos.NacosConfigurationClient
+XiHan.Framework.Configuration.Nacos.NacosConfigurationClient.Dispose() -> void
+XiHan.Framework.Configuration.Nacos.NacosConfigurationClient.FetchAsync(string! namespaceName, string? knownVersion, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Configuration.Abstractions.Remote.ConfigurationDocument!>>>
+XiHan.Framework.Configuration.Nacos.NacosConfigurationClient.NacosConfigurationClient(XiHan.Framework.Configuration.Nacos.NacosOptions! options, System.Net.Http.HttpClient! httpClient, System.TimeProvider! clock) -> void
+XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature
+XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.NacosConfigurationFeature() -> void
+XiHan.Framework.Configuration.Nacos.NacosDocumentParser
+XiHan.Framework.Configuration.Nacos.NacosOptions
+XiHan.Framework.Configuration.Nacos.NacosOptions.<Clone>$() -> XiHan.Framework.Configuration.Nacos.NacosOptions!
+XiHan.Framework.Configuration.Nacos.NacosOptions.Equals(XiHan.Framework.Configuration.Nacos.NacosOptions? other) -> bool
+XiHan.Framework.Configuration.Nacos.NacosOptions.Format.get -> XiHan.Framework.Configuration.Nacos.NacosConfigFormat
+XiHan.Framework.Configuration.Nacos.NacosOptions.Format.init -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.Group.get -> string!
+XiHan.Framework.Configuration.Nacos.NacosOptions.Group.init -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.LongPollTimeout.get -> System.TimeSpan
+XiHan.Framework.Configuration.Nacos.NacosOptions.LongPollTimeout.init -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.NacosOptions() -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.Password.get -> string?
+XiHan.Framework.Configuration.Nacos.NacosOptions.Password.init -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.RequestTimeout.get -> System.TimeSpan
+XiHan.Framework.Configuration.Nacos.NacosOptions.RequestTimeout.init -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.ServerAddresses.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Configuration.Nacos.NacosOptions.ServerAddresses.init -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.Tenant.get -> string!
+XiHan.Framework.Configuration.Nacos.NacosOptions.Tenant.init -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.Username.get -> string?
+XiHan.Framework.Configuration.Nacos.NacosOptions.Username.init -> void
+const XiHan.Framework.Configuration.Nacos.NacosConfigurationClient.HttpClientName = "xihan.configuration.nacos" -> string!
+const XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.ConnectionBinding = "nacos" -> string!
+const XiHan.Framework.Configuration.Nacos.NacosOptions.ConfigurationSection = "XiHan:Configuration:Nacos" -> string!
+override XiHan.Framework.Configuration.Nacos.NacosOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Configuration.Nacos.NacosOptions.GetHashCode() -> int
+override XiHan.Framework.Configuration.Nacos.NacosOptions.ToString() -> string!
+static XiHan.Framework.Configuration.Nacos.NacosConfigurationBuilderExtensions.AddXiHanNacos(this Microsoft.Extensions.Configuration.IConfigurationBuilder! builder, XiHan.Framework.Configuration.Nacos.NacosOptions! options, XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions! remote) -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
+static XiHan.Framework.Configuration.Nacos.NacosConfigurationClient.Create(XiHan.Framework.Configuration.Nacos.NacosOptions! options, System.TimeProvider? clock = null) -> XiHan.Framework.Configuration.Nacos.NacosConfigurationClient!
+static XiHan.Framework.Configuration.Nacos.NacosDocumentParser.Parse(string! content, XiHan.Framework.Configuration.Nacos.NacosConfigFormat format) -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
+static XiHan.Framework.Configuration.Nacos.NacosOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!> binding = default(XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!>)) -> XiHan.Framework.Configuration.Nacos.NacosOptions!
+static XiHan.Framework.Configuration.Nacos.NacosOptions.operator !=(XiHan.Framework.Configuration.Nacos.NacosOptions? left, XiHan.Framework.Configuration.Nacos.NacosOptions? right) -> bool
+static XiHan.Framework.Configuration.Nacos.NacosOptions.operator ==(XiHan.Framework.Configuration.Nacos.NacosOptions? left, XiHan.Framework.Configuration.Nacos.NacosOptions? right) -> bool

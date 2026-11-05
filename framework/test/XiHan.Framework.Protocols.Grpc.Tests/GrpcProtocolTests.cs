@@ -1,0 +1,285 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using System.Buffers;
+using System.Text.Json;
+using Grpc.Core;
+using Grpc.Net.Client;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Profiles.Minimal;
+using XiHan.Framework.Protocols.Grpc.Proto;
+using XiHan.Framework.Protocols.Grpc.Services;
+using XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
+using XiHan.Framework.Security.InMemory;
+
+namespace XiHan.Framework.Protocols.Grpc.Tests;
+
+/// <summary>
+/// gRPC 协议适配器端到端
+/// </summary>
+/// <remarks>
+/// 真实的 gRPC 客户端经 TestServer 调用一元方法，请求按线格式手工拼出，响应按 Schema 解码；失败映射、尾部元数据、本地化、按契约授权、<c>.proto</c> 端点、启动校验
+/// </remarks>
+public sealed class GrpcProtocolTests
+{
+    /// <summary>
+    /// 两个主体：alice 是 editor（可读写订单），bob 是 viewer（只读）
+    /// </summary>
+    private static readonly (string Key, string Value)[] _security =
+    [
+        ("XiHan:Security:InMemory:Principals:alice:ApiKey", "dev-alice-key"),
+        ("XiHan:Security:InMemory:Principals:alice:Roles", "editor"),
+        ("XiHan:Security:InMemory:Principals:bob:ApiKey", "dev-bob-key"),
+        ("XiHan:Security:InMemory:Principals:bob:Roles", "viewer"),
+        ("XiHan:Security:InMemory:Grants:role:editor", "orders.read,orders.write"),
+        ("XiHan:Security:InMemory:Grants:role:viewer", "orders.read"),
+    ];
+
+    /// <summary>
+    /// 字节数组直通的编组器：测试自己拼线格式
+    /// </summary>
+    private static readonly Marshaller<byte[]> _bytes = Marshallers.Create<byte[]>(static b => b, static b => b);
+
+    /// <summary>
+    /// 启动测试宿主：Minimal 组合（本地化）+ 内存安全 + gRPC 适配器 + 订单特性
+    /// </summary>
+    private static async Task<(WebApplication App, GrpcChannel Channel, HttpClient Client)> StartAsync(Action<AppBuilder>? extra = null, params (string Key, string Value)[] configuration)
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Configuration.AddInMemoryCollection(_security.Concat(configuration).Select(static c => new KeyValuePair<string, string?>(c.Key, c.Value)));
+        builder.Services.AddSingleton<OriginLog>();
+        builder.AddXiHan(xihan =>
+        {
+            xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<GrpcProtocolFeature>().UseFeature<OrdersFeature>();
+            extra?.Invoke(xihan);
+        });
+
+        var app = builder.Build();
+        app.UseXiHan();
+        app.MapXiHanGrpc();
+        app.MapXiHanProto();
+        await app.StartAsync();
+        var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions { HttpHandler = app.GetTestServer().CreateHandler() });
+        return (app, channel, app.GetTestClient());
+    }
+
+    /// <summary>
+    /// 发起一元调用
+    /// </summary>
+    private static AsyncUnaryCall<byte[]> Call(GrpcChannel channel, string service, string method, byte[] request, params (string Name, string Value)[] headers)
+    {
+        var metadata = new Metadata();
+        foreach (var (name, value) in headers)
+        {
+            metadata.Add(name, value);
+        }
+
+        return channel.CreateCallInvoker().AsyncUnaryCall(new Method<byte[], byte[]>(MethodType.Unary, service, method, _bytes, _bytes), null, new CallOptions(metadata), request);
+    }
+
+    /// <summary>
+    /// 按响应 Schema 解码为 JSON 元素
+    /// </summary>
+    private static JsonElement Reply(byte[] bytes)
+    {
+        var output = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(output))
+        {
+            ProtoDecoder.Decode(OrdersFeature.ReplyMessage, bytes, writer);
+        }
+
+        using var document = JsonDocument.Parse(output.WrittenMemory);
+        return document.RootElement.Clone();
+    }
+
+    [Fact]
+    public async Task UnaryCall_DropsTheTenantAndPrincipal_TheCallerClaimsInBaggage()
+    {
+        // 调用方自报的租户与主体不进上下文，其余已登记的键照常进（RFC-0003 规则 3、ADR-0121）
+        var (app, channel, _) = await StartAsync();
+        await using var host = app;
+        using var scope = channel;
+        var request = ProtoBytes.Concat(ProtoBytes.StringField(1, "42"), ProtoBytes.VarintField(3, 2));
+
+        using var call = Call(channel, "Orders", "Get", request, ("baggage", "xihan.tenant=acme,xihan.principal=mallory,xihan.correlation=c-1"));
+        await call.ResponseAsync;
+
+        var baggage = app.Services.GetRequiredService<OriginLog>().LastBaggage;
+        Assert.NotNull(baggage);
+        Assert.False(baggage.ContainsKey(BaggageKeys.Tenant));
+        Assert.False(baggage.ContainsKey(BaggageKeys.Principal));
+        Assert.Equal("c-1", baggage[BaggageKeys.Correlation]);
+    }
+
+    [Fact]
+    public async Task UnaryCall_DecodesRequest_RunsThePipeline_AndEncodesResponse()
+    {
+        var (app, channel, _) = await StartAsync();
+        await using var host = app;
+        using var scope = channel;
+
+        // 手工拼出的请求：id = "42"，page = 2，tags = ["a", "b"]
+        var request = ProtoBytes.Concat(ProtoBytes.StringField(1, "42"), ProtoBytes.VarintField(3, 2), ProtoBytes.StringField(4, "a"), ProtoBytes.StringField(4, "b"));
+        using var call = Call(channel, "Orders", "Get", request);
+        var response = await call.ResponseAsync;
+
+        // 响应线格式：operation = 1 是第一个字段
+        Assert.True(response.AsSpan().StartsWith(ProtoBytes.StringField(1, "orders.get")));
+        var reply = Reply(response);
+        Assert.Equal("orders.get", reply.GetProperty("operation").GetString());
+        Assert.Equal("42", reply.GetProperty("id").GetString());
+        Assert.Equal(2, reply.GetProperty("page").GetInt32());
+        Assert.Equal(["a", "b"], reply.GetProperty("tags").EnumerateArray().Select(static t => t.GetString()));
+        Assert.False(reply.TryGetProperty("name", out _));
+        Assert.Equal(32, call.GetTrailers().GetValue("xihan-trace-id")!.Length);
+
+        // 调用来源：协议 grpc、目标是方法全名，User-Agent 沿用承载它的 HTTP/2 请求
+        var origin = Assert.Single(app.Services.GetRequiredService<OriginLog>().Origins);
+        Assert.Equal((InvocationProtocols.Grpc, "/Orders/Get"), (origin?.Protocol, origin?.Target));
+        Assert.StartsWith("grpc-dotnet/", origin!.UserAgent, StringComparison.Ordinal);
+
+        // 空请求：proto3 默认值；连字符资源成 PascalCase 服务
+        using var empty = Call(channel, "OrderLines", "List", []);
+        Assert.Equal("order-lines.list", Reply(await empty.ResponseAsync).GetProperty("operation").GetString());
+    }
+
+    [Fact]
+    public async Task Failures_BecomeStatuses_WithErrorCodeTrailers_AndLocalizedDetail()
+    {
+        var (app, channel, _) = await StartAsync();
+        await using var host = app;
+        using var scope = channel;
+
+        // 操作返回的失败：CONFLICT → Aborted，错误码在尾部元数据
+        var conflict = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Get", ProtoBytes.StringField(2, "fail")).ResponseAsync);
+        Assert.Equal(StatusCode.Aborted, conflict.StatusCode);
+        Assert.Equal("ORDERS_CONFLICT_001", conflict.Trailers.GetValue("xihan-error-code"));
+        Assert.NotNull(conflict.Trailers.GetValue("xihan-trace-id"));
+
+        // 不是合法 protobuf：InvalidArgument + 协议错误码
+        var malformed = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Get", [0x0A, 0x05, 0x61]).ResponseAsync);
+        Assert.Equal(StatusCode.InvalidArgument, malformed.StatusCode);
+        Assert.Equal(GrpcErrors.RequestMalformed, malformed.Trailers.GetValue("xihan-error-code"));
+        Assert.Contains("orders.get", malformed.Status.Detail, StringComparison.Ordinal);
+
+        // 未登记的方法：只给 HTTP 的、内部的、不存在的服务
+        Assert.Equal(StatusCode.Unimplemented, (await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Secret", []).ResponseAsync)).StatusCode);
+        Assert.Equal(StatusCode.Unimplemented, (await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Audit", []).ResponseAsync)).StatusCode);
+        Assert.Equal(StatusCode.Unimplemented, (await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Nope", "Get", []).ResponseAsync)).StatusCode);
+
+        // 文案按 accept-language 翻译
+        var denied = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Create", [], ("authorization", "ApiKey dev-bob-key"), ("accept-language", "ja-JP")).ResponseAsync);
+        Assert.Equal(StatusCode.PermissionDenied, denied.StatusCode);
+        Assert.Equal("権限 'orders.write' がありません。", denied.Status.Detail);
+    }
+
+    [Fact]
+    public async Task NotServing_IsUnavailable_WithErrorCodeAndTraceIdTrailers()
+    {
+        var (app, channel, _) = await StartAsync();
+        await using var host = app;
+        using var scope = channel;
+
+        // 内核停止后 ASP.NET Core 仍在收请求：gRPC 方法绕过 UseXiHan()，由适配器自己拒绝
+        await app.Services.GetRequiredService<App>().StopAsync(CancellationToken.None);
+        var stopped = await Assert.ThrowsAsync<RpcException>(async () => await Call(
+            channel,
+            "Orders",
+            "Get",
+            ProtoBytes.StringField(1, "42"),
+            ("traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"),
+            ("accept-language", "zh-CN")).ResponseAsync);
+
+        Assert.Equal(StatusCode.Unavailable, stopped.StatusCode);
+        Assert.Equal(KernelErrors.NotServing, stopped.Trailers.GetValue("xihan-error-code"));
+        Assert.Equal("4bf92f3577b34da6a3ce929d0e0e4736", stopped.Trailers.GetValue("xihan-trace-id"));
+        // 文案按 accept-language 翻译；调用没有进管道，操作没有执行
+        Assert.Equal($"应用处于 {app.Services.GetRequiredService<App>().State} 状态，暂不接收请求。", stopped.Status.Detail);
+        Assert.Empty(app.Services.GetRequiredService<OriginLog>().Origins);
+    }
+
+    [Fact]
+    public async Task Authorization_FollowsTheContract()
+    {
+        var (app, channel, _) = await StartAsync();
+        await using var host = app;
+        using var scope = channel;
+        var request = ProtoBytes.StringField(2, "widget");
+
+        var anonymous = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Create", request).ResponseAsync);
+        Assert.Equal(StatusCode.Unauthenticated, anonymous.StatusCode);
+        Assert.Equal("SECURITY_DENIED_001", anonymous.Trailers.GetValue("xihan-error-code"));
+
+        var bob = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Create", request, ("authorization", "ApiKey dev-bob-key")).ResponseAsync);
+        Assert.Equal(StatusCode.PermissionDenied, bob.StatusCode);
+        Assert.Equal("SECURITY_DENIED_004", bob.Trailers.GetValue("xihan-error-code"));
+
+        // 凭据无效也是认证失败：与 HTTP 的 401 对应为 Unauthenticated，不是 PermissionDenied
+        var invalid = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Create", request, ("authorization", "ApiKey nope")).ResponseAsync);
+        Assert.Equal(StatusCode.Unauthenticated, invalid.StatusCode);
+        Assert.Equal("SECURITY_DENIED_003", invalid.Trailers.GetValue("xihan-error-code"));
+
+        using var alice = Call(channel, "Orders", "Create", request, ("authorization", "ApiKey dev-alice-key"));
+        Assert.Equal(("orders.create", "widget"), Reply(await alice.ResponseAsync).Let(static r => (r.GetProperty("operation").GetString(), r.GetProperty("name").GetString())));
+    }
+
+    [Fact]
+    public async Task ProtoEndpoint_ServesTheGeneratedFile_WithPackageAndOverrides()
+    {
+        var (app, channel, client) = await StartAsync(null, ("XiHan:Protocols:Grpc:Package", "acme.orders"), ("XiHan:Protocols:Grpc:Methods:orders.list", "Orders/ListAll"));
+        await using var host = app;
+        using var scope = channel;
+
+        var proto = await client.GetStringAsync("/operations.proto");
+        Assert.Contains("package acme.orders;", proto, StringComparison.Ordinal);
+        Assert.Contains("message OrderRequest {", proto, StringComparison.Ordinal);
+        Assert.Contains("message OrderReply {", proto, StringComparison.Ordinal);
+        Assert.Contains("service OrderLines {\n  // order-lines.list\n  rpc List (OrderRequest) returns (OrderReply);\n}", proto, StringComparison.Ordinal);
+        Assert.Contains("  rpc ListAll (OrderRequest) returns (OrderReply);", proto, StringComparison.Ordinal);
+        Assert.DoesNotContain("Secret", proto, StringComparison.Ordinal);
+        Assert.DoesNotContain("Audit", proto, StringComparison.Ordinal);
+
+        // 有包名时方法路径带包前缀
+        using var call = Call(channel, "acme.orders.Orders", "ListAll", []);
+        Assert.Equal("orders.list", Reply(await call.ResponseAsync).GetProperty("operation").GetString());
+        Assert.Equal(StatusCode.Unimplemented, (await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "ListAll", []).ResponseAsync)).StatusCode);
+    }
+
+    [Fact]
+    public async Task ProtoEndpoint_KeepsClosedGenericMessagesApart_AndMapsStringEnumsToString()
+    {
+        // 同一登记表里两个 PageResult<T> 操作同时暴露给 gRPC：消息名带实参名，启动不再以 PROTOCOLS_CONFLICT_003 失败
+        var (app, channel, client) = await StartAsync(static xihan => xihan.UseFeature<PagedFeature>());
+        await using var host = app;
+        using var scope = channel;
+
+        var proto = await client.GetStringAsync("/operations.proto");
+        Assert.Contains("message PageResultOfUserResponse {\n  repeated UserResponse items = 1;\n  int64 total = 2;\n}\n", proto, StringComparison.Ordinal);
+        Assert.Contains("message PageResultOfRoleResponse {\n  repeated RoleResponse items = 1;\n  int64 total = 2;\n}\n", proto, StringComparison.Ordinal);
+        Assert.Contains("  string status = 2;\n  optional string previous_status = 3;\n", proto, StringComparison.Ordinal);
+        Assert.Contains("service Roles {\n  // roles.list\n  rpc List (PageQuery) returns (PageResultOfRoleResponse);\n}", proto, StringComparison.Ordinal);
+        Assert.Contains("service Users {\n  // users.list\n  rpc List (PageQuery) returns (PageResultOfUserResponse);\n}", proto, StringComparison.Ordinal);
+        Assert.DoesNotContain("UserStatus", proto, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SchemalessOrDuplicateOperations_FailAtStartup()
+    {
+        var schemaless = await Assert.ThrowsAsync<FrameworkException>(static () => StartAsync(static xihan => xihan.UseFeature<SchemalessFeature>()));
+        Assert.Equal(GrpcErrors.SchemaUnsupported, schemaless.Code);
+
+        var duplicate = await Assert.ThrowsAsync<FrameworkException>(static () => StartAsync(null, ("XiHan:Protocols:Grpc:Methods:orders.get", "Orders/List")));
+        Assert.Equal(GrpcErrors.DuplicateMethod, duplicate.Code);
+        // 与 HTTP 的路由重复（PROTOCOLS_CONFLICT_002）是不同的失败，序号不能共用
+        Assert.Equal("PROTOCOLS_CONFLICT_004", duplicate.Code);
+    }
+}

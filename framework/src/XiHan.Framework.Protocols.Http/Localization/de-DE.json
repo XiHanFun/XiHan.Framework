@@ -1,0 +1,9 @@
+{
+  "protocols.http.openapi_authentication_required": "Erfordert eine Anmeldung.",
+  "protocols.http.openapi_error": "Fehler",
+  "protocols.http.openapi_permission_code_required": "Erfordert die Berechtigung {permission}.",
+  "protocols.http.openapi_permission_required": "Erfordert die Berechtigung {permission} ({name}).",
+  "protocols.http.openapi_policy_required": "Erfordert die Richtlinie {policy}.",
+  "protocols.http.openapi_success": "Erfolg",
+  "protocols.http.openapi_ungrouped": "Sonstiges"
+}

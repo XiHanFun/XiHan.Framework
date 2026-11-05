@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Plugins.Conformance</PackageId>
+    <RootNamespace>XiHan.Framework.Plugins.Conformance</RootNamespace>
+    <Description>曦寒框架插件协议一致性测试套件</Description>
+    <PackageTags>xihan;framework;plugins;conformance;xunit;grpc</PackageTags>
+    <IsAotCompatible>false</IsAotCompatible>
+    <!-- CA1707：用例名沿用测试项目的下划线分段约定 -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.Wasm/XiHan.Framework.Plugins.Wasm.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Wasm 用例直接使用引擎与 WASI 配置 -->
+    <PackageReference Include="Wasmtime" />
+    <PackageReference Include="xunit.v3.assert" />
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+</Project>

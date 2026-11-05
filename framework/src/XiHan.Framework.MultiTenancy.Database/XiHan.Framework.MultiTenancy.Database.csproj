@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.MultiTenancy.Database</PackageId>
+    <RootNamespace>XiHan.Framework.MultiTenancy.Database</RootNamespace>
+    <Description>曦寒框架多租户的数据库提供程序</Description>
+    <PackageTags>xihan;framework;multitenancy;database;tenants</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.MultiTenancy.Abstractions/XiHan.Framework.MultiTenancy.Abstractions.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Persistence.Abstractions/XiHan.Framework.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

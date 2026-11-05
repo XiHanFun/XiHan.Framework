@@ -1,0 +1,97 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Localization.Abstractions;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authentication;
+using XiHan.Framework.Security.Abstractions.Authorization;
+using XiHan.Framework.Security.Abstractions.Permissions;
+
+namespace XiHan.Framework.Security.InMemory;
+
+/// <summary>
+/// 内存安全的能力包入口
+/// </summary>
+/// <remarks>
+/// 默认提供 <c>security.authentication@1</c>（ApiKey）与 <c>security.authorization@1</c>（RBAC 授予）。只为被选中的能力注册服务与中间件；被选为授权能力时登记启动核对，核对操作契约引用的策略（ADR-0080、ADR-0085）
+/// </remarks>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed class InMemorySecurityFeature : IFeature
+{
+    /// <summary>
+    /// 健康项名：主体与授予存储是否都还有余量
+    /// </summary>
+    public const string HealthName = "security.inmemory.capacity";
+
+    /// <inheritdoc />
+    public Manifest Manifest { get; } = new()
+    {
+        Id = "xihan.security.inmemory",
+        Package = "XiHan.Framework.Security.InMemory",
+        Version = FrameworkInfo.Version,
+        Primitives = 1,
+        Stability = Stability.Preview,
+        Kind = ManifestKind.Provider,
+        Role = ManifestRole.Default,
+        Provides =
+        [
+            new CapabilityDeclaration(SecurityCapabilities.Authentication, SecurityCapabilities.Version),
+            new CapabilityDeclaration(SecurityCapabilities.Authorization, SecurityCapabilities.Version),
+        ],
+        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
+        Contributes = new Contributions
+        {
+            Pipeline =
+            [
+                new PipelineContribution(typeof(AuthenticationMiddleware).FullName!, PipelineStage.Authenticate),
+                new PipelineContribution(typeof(AuthorizationMiddleware).FullName!, PipelineStage.Authorize),
+            ],
+            Config = new ConfigContribution("XiHan:Security"),
+            Health = [HealthName],
+        },
+        Entry = typeof(InMemorySecurityFeature).FullName,
+    };
+
+    /// <inheritdoc />
+    public void Configure(FeatureContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
+        context.Services.AddMessageCatalog(SecurityMessages.Catalog);
+        // SecurityOptions 用 TryAdd：与 Jwt 等其他安全特性共存时只注册一次
+        context.Services.TryAddSingleton(SecurityOptions.FromConfiguration(context.Configuration));
+        context.Services.AddSingleton(InMemorySecurityOptions.FromConfiguration(context.Configuration));
+        // 健康项看两个存储的用量；哪个能力没被选中，对应的存储就不存在，取到 null 即不参与判定
+        context.Services.AddSingleton<IHealthContributor>(static sp => new InMemorySecurityHealthContributor(sp.GetService<InMemoryPrincipalStore>(), sp.GetService<InMemoryPermissionGrantStore>()));
+
+        // 只为解析器选中本特性的能力注册服务与中间件；显式 Provider 胜出时本特性让出对应能力
+        if (context.Node.IsSelectedFor(SecurityCapabilities.Authentication))
+        {
+            context.Services.AddSingleton<InMemoryPrincipalStore>();
+            context.Services.AddSingleton<IAuthenticationHandler, ApiKeyAuthenticationHandler>();
+            context.AddMiddleware<AuthenticationMiddleware>(PipelineStage.Authenticate);
+        }
+
+        if (context.Node.IsSelectedFor(SecurityCapabilities.Authorization))
+        {
+            context.Services.AddSingleton<InMemoryPermissionGrantStore>();
+            context.Services.TryAddSingleton<IPermissionGrantStore>(static sp => sp.GetRequiredService<InMemoryPermissionGrantStore>());
+            context.Services.TryAddSingleton<IPermissionChecker, PermissionChecker>();
+            context.Services.AddSingleton<IPolicy, AuthenticatedPolicy>();
+            context.Services.TryAddSingleton<PolicyCatalog>();
+            context.AddMiddleware<AuthorizationMiddleware>(PipelineStage.Authorize);
+            // 契约按名引用的策略在启动核对里核对（ADR-0085）：策略是容器里的 IPolicy，容器建好才知道全部策略名；
+            // 启动核对在任何特性启动之前执行、不归失败策略管——引用了不存在的策略在隔离策略下也拒绝启动
+            // 核对同时挂到登记表上，此后插件握手登记的操作在登记时逐个核对，引用了不存在的策略整组被拒
+            context.AddStartupCheck(static services => services.GetRequiredService<PolicyCatalog>().EnforceOn(services.GetRequiredService<OperationRegistry>()));
+        }
+    }
+}

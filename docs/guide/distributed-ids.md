@@ -1,329 +1,251 @@
-# 分布式 ID
+# 标识生成
 
-主键、消息标识、对外短码各需要不同形状的唯一标识。这一章讲四种方案怎么选，以及雪花算法里那几个**上线后改不动**的配置。
+本页讲标识生成端口 `IIdGenerator<TKey>`、各持久化 Provider 缺省注册的 UUID v7 生成器，以及可选的雪花 `long` 标识（位布局、机器位分配、时钟回拨、错误码与解析），适用于在应用侧为实体分配主键的开发者。完整 API 见 [Persistence.Abstractions 包](../packages/persistence-abstractions)。
 
-完整 API 与全部配置项见 [DistributedIds 包](../packages/distributed-ids)。
+## 标识生成端口
 
-## 四种方案
+`IIdGenerator<TKey>` 只有一个方法 `NewId()`。实体的标识在应用侧生成，写进 `Id` 后再交给仓储新增，不依赖数据库自增：SqlSugar 约定把 `Id` 设为主键但不自增；EF Core 按约定把整数主键当作数据库生成的值，应用自己生成整数标识时在模型里配 `ValueGeneratedNever()`（一致性套件的 `DbContext` 就是这样配的）。
 
-| 方案 | 类型 | 产物 | 能否反解 | 需要节点配置 |
-| --- | --- | --- | --- | --- |
-| Snowflake | `SnowflakeIdGenerator` | `long`，时间有序 | 可提取时间 / 机器码 / 序列号 | **必须**，`WorkerId` 全局唯一 |
-| SequentialGuid | `SequentialGuidGenerator` | `Guid`，毫秒级有序 | 可提取时间 | 不需要 |
-| NanoId | `NanoIdGenerator` | 随机字符串 | 不可 | 不需要 |
-| Sqids | `SqidsEncoder<T>` | 数字的短码 | 可解回原数字（同一实例内） | 不需要 |
+| 生成器 | 标识类型 | 怎样得到 | 说明 |
+| --- | --- | --- | --- |
+| `GuidV7IdGenerator` | `Guid` | 每个持久化 Provider 都注册为 `IIdGenerator<Guid>` | UUID 版本 7：前 48 位是毫秒时间戳，按时间有序；不需要任何协调 |
+| `SnowflakeIdGenerator` | `long` | 应用显式装配 `SnowflakeIdFeature` 后注册为 `IIdGenerator<long>` | 41 位毫秒时间戳 + 10 位机器位 + 12 位序列；需要独占的机器位 |
 
-前三个都实现 `IDistributedIdGenerator<TKey>`（`TKey` 是 `long` 或 `Guid`），可以注入。Sqids 是**编码器不是生成器**——它不产生新 ID，只把你已有的数字换个样子。
+Provider 与 `SnowflakeIdFeature` 都用 `TryAddSingleton` 注册生成器，应用在 `AddXiHan()` 之前自己注册的 `IIdGenerator<TKey>` 优先。
 
-选型走这条链：
-
-| 问题 | 选择 |
-| --- | --- |
-| 主键是 `long`，想按时间排序、想从 ID 反查生成时间 | Snowflake |
-| 主键是 `Guid`，只想让索引写入友好 | SequentialGuid |
-| 要一段猜不出来的短串（邀请码、分享链接、外部令牌串），不需要还原 | NanoId |
-| 已有自增/雪花数字 ID，只想对外藏住真实数值和数据量 | Sqids |
-
-::: warning 只有两个生成器在 DI 里
-`AddXiHanDistributedIds` 只注册 `IDistributedIdGenerator<Guid>`（SequentialGuid）和 `IDistributedIdGenerator<long>`（Snowflake）。
-
-NanoId 和 Sqids 的 Options 虽然也绑定了配置节，但**没有任何服务消费它们**——要用得自己经 `IdGeneratorFactory` / `new SqidsEncoder<T>(...)` 构造。
-:::
-
-## 安装与启用
-
-```bash
-dotnet add package XiHan.Framework.DistributedIds
-```
+SimpleApp 的下单操作注入 `IIdGenerator<Guid>`，在创建实体时分配标识：
 
 ```csharp
-[DependsOn(typeof(XiHanDistributedIdsModule))]
-public class MyModule : XiHanModule { }
-```
+using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Persistence.Abstractions.Identifiers;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Primitives;
 
-多数应用不用手写这行——`XiHanApplicationModule`、`XiHanDataModule`、`XiHanEventBusModule`、`XiHanWorkflowModule` 都已经 `DependsOn` 了它。
+namespace SimpleApp.Orders;
 
-启用后拿到的两个默认生成器：
-
-| 注入类型 | 实现 | 选项来源 |
-| --- | --- | --- |
-| `IDistributedIdGenerator<Guid>` | `SequentialGuidGenerator` | `XiHan:DistributedIds:SequentialGuid`，未配置时用 `SequentialAtEnd` |
-| `IDistributedIdGenerator<long>` | `SnowflakeIdGenerator` | 基线（`WorkerIdBitLength=6`、`SeqBitLength=12`、`WorkerId=1`）再由 `XiHan:DistributedIds:SnowflakeId` 覆盖 |
-
-基线只是「配置没写这个键时的取值」，写了的键真正生效。
-
-## 核心用法
-
-### 注入生成器
-
-```csharp
-public class OrderService(
-    IDistributedIdGenerator<long> idGenerator,
-    IDistributedIdGenerator<Guid> guidGenerator)
+[Operation(Id, Expose = Expose.Http | Expose.Grpc | Expose.Mcp, Permission = "orders.write")]
+public sealed class CreateOrder(IRepository<Order, Guid> orders, IIdGenerator<Guid> ids, TimeProvider clock) : IOperation<PlaceOrderRequest, OrderResponse>
 {
-    public long NewOrderNo() => idGenerator.NextId();
+    public const string Id = "orders.create";
 
-    public Guid NewRowId() => guidGenerator.NextId();
+    public async ValueTask<Result<OrderResponse>> HandleAsync(PlaceOrderRequest request, InvocationContext context)
+    {
+        // 标识在应用侧生成，领域事件里就能带上它
+        var order = new Order { Id = ids.NewId(), Name = request.Name, Amount = request.Amount };
+        order.Place(clock.GetUtcNow());
 
-    public Task<long[]> PreallocateAsync(int count) => idGenerator.NextIdsAsync(count);
-
-    // 从雪花 ID 反查生成时间
-    public DateTime WhenCreated(long orderNo) => idGenerator.ExtractTime(orderNo);
+        var added = await orders.AddAsync(order, context.CancellationToken);
+        return added.IsFailure ? added.Error! : new OrderResponse(order.Id, order.Name, order.Amount, order.CreatedAt);
+    }
 }
 ```
 
-同步方法之外还有 `NextIdAsync` / `NextIdStringAsync` / `NextIdsAsync` / `NextIdStringsAsync`，实现都是 `Task.FromResult` 包装同步逻辑——它们是为了签名统一，不会带来并发收益。
+`PlaceOrderRequest`、`OrderResponse` 与 `Order` 都来自 SimpleApp。
 
-### 实体主键自动填充
+## 选 Guid 还是 long
 
-数据层已经接好了雪花生成器：SqlSugar 的 `DataExecuting` 事件在插入时调用 `TrySetSnowflakeId`，**四个条件同时满足**才会写入。
+缺省用 `Guid`：任何 Provider 都已注册，实例之间不需要协调，前端按字符串处理也没有精度问题。需要 64 位整数主键时用雪花标识，例如表的主键已经是 `bigint`、索引体积敏感，或与其他系统约定了整数标识。
 
-| 条件 | 不满足时 |
-| --- | --- |
-| 该列是主键 | 跳过 |
-| 该列不是数据库自增（`IsIdentity`） | 跳过，交给数据库 |
-| 属性类型是 `long` 或 `long?` | 跳过，`Guid` 主键不由这里填 |
-| 当前值是默认值（0 / null） | 跳过，尊重你手动赋的值 |
+| | `GuidV7IdGenerator` | `SnowflakeIdGenerator` |
+| --- | --- | --- |
+| 长度 | 128 位 | 64 位 |
+| 顺序 | 按毫秒时间有序，同一毫秒内由随机位决定 | 按毫秒时间有序，同一毫秒内按序列递增 |
+| 依赖 | 只需 `TimeProvider` | 固定机器位，或一个 `caching.distributed` Provider 提供的 `IDistributedLock` |
+| 单实例数量限制 | 没有每毫秒的数量限制 | 每毫秒最多 4096 个，用尽等下一毫秒 |
+| 失败 | 不涉及机器位与时钟回拨 | 时钟回拨超过容忍阈值或没有机器位时抛出异常 |
+| JSON 与前端 | 字符串 | number，超过 2^53 后在 JavaScript 里丢精度 |
 
-所以 `long` 主键实体直接 `InsertAsync` 就有 ID，不用手动 `NextId()`；`Guid` 主键需要自己注入 `IDistributedIdGenerator<Guid>` 赋值。
+## 启用雪花标识
 
-### 按场景构造 NanoId
+Profile 不装配雪花标识，应用显式选用：
+
+1. 决定机器位的来源：配置 `XiHan:Persistence:Snowflake:WorkerId` 固定一个值，或装配一个 `caching.distributed` 的 Provider（如 `Caching.Redis`）由分布式锁租约分配。
+2. `UseFeature<SnowflakeIdFeature>()`。它的清单声明可选依赖 `caching.distributed@1`：装配了缓存 Provider 时，能力图谱把它排在雪花特性之前，先启动、后停止，租约在锁存储可用时取得、停止时先释放，与两者 `UseFeature` 的先后无关。
+3. 在需要的地方注入 `IIdGenerator<long>`（或具体类型 `SnowflakeIdGenerator`）。
 
 ```csharp
-// URL 安全字符集，长度 21
-var nano = IdGeneratorFactory.CreateNanoIdGenerator_UrlSafe(21);
-string inviteCode = nano.NextIdString();
+using XiHan.Framework.Caching.Redis;
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Persistence.Abstractions.Identifiers;
+using XiHan.Framework.Profiles.Standard;
 
-// 去掉易混字符（1/l/I、0/O/o 等），适合人工抄写
-var readable = IdGeneratorFactory.CreateNanoIdGenerator_Safe(12);
-string pickupCode = readable.NextIdString();
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddXiHan(x => x
+    .UseStandardProfile()
+    // Redis 锁跨实例协调机器位；它先于雪花特性启动、后于它停止，与这里的先后无关
+    .UseFeature<RedisCachingFeature>()
+    .UseFeature<SnowflakeIdFeature>());
 ```
-
-工厂里还有 `_Numeric` / `_Lowercase` / `_Uppercase` / `_Hex` / `_Custom(alphabet, size)`。
-
-::: danger NanoId 的 `NextId()` 不是分布式唯一
-`NextIdString()` 才是 NanoId——加密安全随机串。
-
-`NextId()` 返回的 `long` 是 `(时间戳 << 22) | 进程内序列`，**不含任何节点标识**，多实例部署下不同进程会算出相同的值。别拿它当分布式主键。
-:::
-
-### Sqids 短码
-
-```csharp
-var encoder = new SqidsEncoder<long>(new SqidsOptions { MinLength = 8 });
-
-string code = encoder.Encode(orderId);      // 对外展示
-long[] back = encoder.Decode(code);         // 解回原值，失败返回空数组
-
-// 一次编多个数字（例如 租户 + 主键）
-string packed = encoder.Encode(tenantId, orderId);
-```
-
-也有便捷扩展方法 `1234L.ToSqid()` / `code.FromSqidToInt64()`，但它们走的是内部静态编码器（默认选项），**不读 `XiHan:DistributedIds:Sqids` 配置节**。
-
-## 关键机制
-
-### 雪花的位布局
-
-64 位从高到低：时间戳 → 数据中心码 → 机器码 → 序列号。
-
-| 段 | 位长来源 | 说明 |
-| --- | --- | --- |
-| 时间戳 | `TimestampType` 决定：`Milliseconds` 41 位（约 69 年）、`Seconds` 32 位（约 136 年） | 存的是「当前时间 − `BaseTime`」的偏移量 |
-| 数据中心码 | `DataCenterIdBitLength`，默认 5 | 传统雪花模式才参与反解 |
-| 机器码 | `WorkerIdBitLength`，默认 6（即 `WorkerId` 取值 0–63） | 必须全局唯一 |
-| 序列号 | `SeqBitLength`，默认基线 12 | 同一时间片内的自增计数 |
-
-硬约束：`WorkerIdBitLength + SeqBitLength ≤ 22`，越界抛 `ArgumentException`。`WorkerIdBitLength` 范围 1–15，`SeqBitLength` 范围 3–21。
-
-### 单时间片的实际上限由 MaxSeqNumber 决定
-
-这是最容易误判吞吐的地方。`SeqBitLength=12` 看上去每毫秒能发 4096 个，但生成器真正用的上限是 `MaxSeqNumber`（**默认 63**），只有把它显式配成 `0` 才会回落成 `2^SeqBitLength - 1`（负数会被选项校验拒绝）。
-
-序列从 `MinSeqNumber`（默认 5）起步，到 `MaxSeqNumber` 为止——默认配置下单节点每毫秒约 59 个 ID。要放开就显式配 `MaxSeqNumber`，取值上限是 `2^SeqBitLength - 1`。
-
-序列耗尽后的行为看 `LoopedSequence`：
-
-| 取值 | 行为 |
-| --- | --- |
-| `false`（默认） | 自旋等待下一个时间片，吞吐被限住但 ID 不重复 |
-| `true` | 序列直接绕回 `MinSeqNumber`，**时间片不变** |
-
-::: danger LoopedSequence 会发出重复 ID
-回绕时时间戳、机器码都没变，序列号又回到起点——同一毫秒内前后两个 ID 完全相同。除非你清楚自己在做什么，否则保持默认 `false`。
-:::
-
-### 时钟回拨
-
-| 算法 | `SnowflakeIdType` | 回拨时的行为 |
-| --- | --- | --- |
-| 雪花漂移（默认） | `SnowFlakeMethod` | `Thread.Sleep(5)` 后重试；回拨幅度超过 `MaxBackwardToleranceMs`（默认 10000）抛异常；重试次数超过 `TopOverCostCount`（默认 2000）抛异常 |
-| 传统雪花 | `ClassicSnowFlakeMethod` | 直接抛异常，不等待 |
-
-两种模式都不会静默发出可能重复的 ID，代价是回拨期间调用方会阻塞或收到异常。生产环境把 NTP 校时配成缓步调整（slew），别让系统时间跳变。
-
-### 反解的适用范围
-
-`ExtractTime` / `ExtractWorkerId` / `ExtractSequence` / `ExtractDataCenterId` 是接口的统一签名，但不是每个实现都有意义：
-
-| 生成器 | ExtractTime | ExtractWorkerId | ExtractSequence | ExtractDataCenterId |
-| --- | --- | --- | --- | --- |
-| Snowflake（漂移） | 有效 | 有效 | 有效 | **恒返回 0** |
-| Snowflake（传统） | 有效 | 有效 | 有效 | 有效 |
-| SequentialGuid | 有效 | 恒 0 | 恒 0 | 恒 0 |
-| NanoId | 对 `NextId()` 的 `long` 有效 | 恒 0 | 有效 | 恒 0 |
-
-反解用的是**当前生成器实例的配置**去拆位。配置和生成时不一致，解出来就是错的时间，而且不会报错。
-
-### SequentialGuid 的三种排序模式
-
-生成的 Guid = 6 字节毫秒时间戳 + 10 字节加密安全随机数，区别只在时间戳放哪儿、字节序怎么排。
-
-| `SequentialGuidType` | 时间戳位置 | 适用 |
-| --- | --- | --- |
-| `SequentialAsString` | 前 6 字节，小端系统上前 4 字节与随后 2 字节各自反转 | 按字符串比较排序的场景 |
-| `SequentialAsBinary` | 前 6 字节，不反转 | 按二进制排序的数据库 |
-| `SequentialAtEnd` | 后 6 字节 | SQL Server 聚集索引，**框架默认** |
-
-::: warning 有序性只到毫秒
-同一毫秒内生成的多个 Guid 之间没有单调计数器，先后顺序由随机部分决定。它保证的是「批量插入落在相邻页」，不是「严格递增」。
-
-另外 `ExtractTime` 按当前 `DefaultSequentialGuidType` 拆字节——排序模式改过之后，历史 Guid 的时间解不出来。
-:::
-
-### Sqids 的短码不跨进程稳定
-
-`SqidsEncoder` 构造时会用 `_options.GetHashCode()` 当种子洗牌字母表。`SqidsOptions` 没有重写 `GetHashCode`，拿到的是**对象引用哈希**——每个 encoder 实例、每次进程启动都不一样。
-
-| 场景 | 是否可靠 |
-| --- | --- |
-| 同一个 encoder 实例内 `Encode` → `Decode` 往返 | 可靠 |
-| 进程内经扩展方法 `ToSqid()` / `FromSqidToInt64()` 往返（走同一个静态实例） | 可靠 |
-| 应用重启后解码重启前发出的短码 | **不可靠** |
-| 两个不同的 encoder 实例互相解码 | **不可靠** |
-
-::: danger 不要把 Sqids 短码落库或写进长期链接
-短码只适合「本次会话内生成、立刻使用」的一次性展示。需要长期稳定的对外标识，用 NanoId 生成一个真实存在的列，别指望从数字算出来。
-:::
-
-另外两点：`Encode` 不接受负数（抛 `ArgumentException`）；`Decode` 遇到字母表以外的字符**静默返回空数组**，扩展方法则返回 `0`——解码结果要自己判空。
-
-## 配置
-
-四个配置节，各自独立：
-
-| Options | 配置节 |
-| --- | --- |
-| `SnowflakeIdOptions` | `XiHan:DistributedIds:SnowflakeId` |
-| `SequentialGuidOptions` | `XiHan:DistributedIds:SequentialGuid` |
-| `NanoIdOptions` | `XiHan:DistributedIds:NanoId` |
-| `SqidsOptions` | `XiHan:DistributedIds:Sqids` |
-
-上线前必须想清楚的雪花键（其余键见[包文档](../packages/distributed-ids)）：
-
-| 键 | 默认 | 上线后可改吗 |
-| --- | --- | --- |
-| `WorkerId` | 基线 1 | 可改，但每个实例必须互不相同 |
-| `WorkerIdBitLength` | 6 | **不可改**，改了位布局就变了 |
-| `SeqBitLength` | 基线 12 | **不可改**，同上 |
-| `BaseTime` | `2026-01-01 UTC` | **不可改** |
-| `TimestampType` | `Milliseconds` | **不可改**，41 位与 32 位布局不同 |
-| `SnowflakeIdType` | `SnowFlakeMethod` | **不可改**，两种算法位段划分不同 |
-| `MaxSeqNumber` | 63 | 可改，决定单时间片吞吐 |
-| `MaxBackwardToleranceMs` | 10000 | 可改 |
 
 ```json
 {
   "XiHan": {
-    "DistributedIds": {
-      "SnowflakeId": {
-        "WorkerId": 1,
-        "WorkerIdBitLength": 6,
-        "SeqBitLength": 12,
-        "MaxSeqNumber": 4095,
-        "TimestampType": "Milliseconds"
-      },
-      "SequentialGuid": {
-        "DefaultSequentialGuidType": "SequentialAtEnd"
+    "Bindings": {
+      "cache": "localhost:6379"
+    }
+  }
+}
+```
+
+固定机器位时不需要缓存 Provider，只配置 `WorkerId`。没有装配任何 `caching.distributed` Provider 时，可选依赖缺失，雪花特性的状态是 Degraded（应用从 Ready 压成 Degraded，探针不受影响），生成照常：
+
+```json
+{
+  "XiHan": {
+    "Persistence": {
+      "Snowflake": {
+        "WorkerId": 7
       }
     }
   }
 }
 ```
 
-### WorkerId 必须逐实例分配
-
-::: danger 这是最常见的重复 ID 来源
-不配置 `WorkerId` 时，所有实例都拿基线值 `1`。两个副本在同一毫秒生成，序列号各自从 5 开始——**直接撞主键**。
-
-容器/多副本部署必须给每个实例注入不同的值，例如环境变量：
-
-```bash
-XiHan__DistributedIds__SnowflakeId__WorkerId=3
-```
-
-有状态副本（StatefulSet 序号）、注册中心分配、或按主机名映射都可以，关键是同一时刻集群内不重号，且实例重建后不要立刻把号让给别人。
+::: danger 多实例部署不能用进程内的锁分配机器位
+`Profiles.Standard` 里的 `InMemoryCachingFeature` 也提供 `caching.distributed`，但它的锁只在一个进程内有效。只装配它时，每个实例都会租到机器位 0，不同实例生成的标识会重复。多实例部署时装配跨进程的缓存 Provider（如 `Caching.Redis`），或为每个实例配置互不相同的 `WorkerId`（如 Kubernetes StatefulSet 的序号）。
 :::
 
-::: warning 超过 64 个节点时别只靠配置绑定
-`WorkerId` 的合法上限由**赋值那一刻**已生效的 `WorkerIdBitLength` 决定，而选项是「先落基线位长 6，再套配置」。所以在同一配置节里同时写大 `WorkerIdBitLength` 和大于 63 的 `WorkerId`，可能在绑定阶段就抛「工作机器唯一标识必须在 0-63 之间」。
-
-需要更多节点时，用 `IdGeneratorFactory.CreateSnowflakeIdGenerator(options)` 自己构造选项对象（顺序自己控制）并 `Replace` 掉默认注册。
-:::
-
-### BaseTime 与位长为什么不能改
-
-雪花 ID 里存的不是绝对时间，是相对 `BaseTime` 的偏移量；每一段占多少位由 `WorkerIdBitLength` / `SeqBitLength` / `TimestampType` 决定。
-
-| 改了什么 | 后果 |
-| --- | --- |
-| `BaseTime` 往后调 | 偏移量整体变小，新 ID 落回历史 ID 已用过的数值区间 |
-| `BaseTime` 往前调 | 新 ID 变大，暂时不撞，但所有历史 ID 的 `ExtractTime` 全部解错 |
-| 任一位长 / `TimestampType` / `SnowflakeIdType` | 位段边界移动，新旧 ID 之间既不保证有序也不保证不撞，反解全错 |
-
-这几个键属于「建库时定好，之后当成常量」。生成器构造时只会校验 `BaseTime` 不晚于当前系统时间，不会替你发现「和历史数据对不上」。
-
-::: tip UseCustomEpoch 目前不起作用
-`SnowflakeIdOptions.UseCustomEpoch` 这个属性存在，但生成器没有读取它——纪元起点始终取 `BaseTime`。配它没有效果。
-:::
-
-### 替换默认生成器
-
-模块用 `AddSingleton` 的工厂委托注册（不是 `TryAdd`），要换实现在自己模块里 `Replace`：
+用 `long` 作主键的实体：
 
 ```csharp
-public override void ConfigureServices(ServiceConfigurationContext context)
+using System.ComponentModel.DataAnnotations;
+using XiHan.Framework.Domain.Entities;
+
+namespace SimpleApp.Billing;
+
+public sealed class Invoice : IEntity<long>, IHasCreationTime
 {
-    context.Services.Replace(ServiceDescriptor.Singleton(
-        IdGeneratorFactory.CreateSnowflakeIdGenerator_Classic(workerId: 3, dataCenterId: 1)));
+    public long Id { get; init; }
+
+    [StringLength(64)]
+    public string Number { get; set; } = string.Empty;
+
+    public DateTimeOffset CreatedAt { get; set; }
 }
 ```
 
-自定义算法实现 `IDistributedIdGenerator<TKey>` 后同样注册即可，接口与内置实现之间没有耦合。
+EF Core 的 `DbContext` 里为它配置 `modelBuilder.Entity<Invoice>(static e => e.Property(static i => i.Id).ValueGeneratedNever());`，SqlSugar 不需要额外配置。
 
-## 常见问题
+## 位布局
 
-| 现象 | 原因 |
-| --- | --- |
-| 多实例部署出现重复主键 | `WorkerId` 没有逐实例分配，全都是基线值 1 |
-| 单节点吞吐上不去、插入偶发变慢 | `MaxSeqNumber` 默认 63，序列耗尽后自旋等下一毫秒；调大 `SeqBitLength` 不会自动放开这个上限 |
-| 开了 `LoopedSequence` 之后出现重复 ID | 序列回绕但不换时间片，见上文 |
-| 抛「时钟回拨太多」 | 回拨幅度超过 `MaxBackwardToleranceMs`；检查 NTP 是否在跳变式校时 |
-| 传统雪花模式下回拨直接抛异常 | `ClassicSnowFlakeMethod` 不做等待重试，这是预期行为 |
-| `ExtractDataCenterId` 恒为 0 | 漂移模式不反解数据中心，只有 `ClassicSnowFlakeMethod` 有意义 |
-| `ExtractTime` 解出的时间不对 | 当前配置的 `BaseTime` / 位长 / `TimestampType` 与生成时不一致 |
-| SequentialGuid 的 `ExtractTime` 解不出来 | `DefaultSequentialGuidType` 改过，字节位置对不上 |
-| 同一毫秒的 Guid 顺序不严格递增 | 毫秒内由随机部分决定，设计如此 |
-| NanoId 的 `NextId()` 跨实例撞了 | 那个 `long` 不含节点标识，只有 `NextIdString()` 是 NanoId |
-| 应用重启后旧的 Sqids 短码解不回来 | 字母表种子随 encoder 实例变化 |
-| 改了 `XiHan:DistributedIds:Sqids` 但 `ToSqid()` 没变化 | 扩展方法用内部静态编码器，走默认选项 |
-| `Decode` 返回空数组 / `FromSqidTo*` 返回 0 | 短码含字母表以外的字符，静默失败不抛异常 |
-| 注入 `IDistributedIdGenerator<long>` 报未注册 | 模块没有 `DependsOn(typeof(XiHanDistributedIdsModule))` |
-| 注入 NanoId / Sqids 失败 | 它们不在 DI 里，只能自己构造 |
+| 位 | 含义 | 范围 |
+| --- | --- | --- |
+| 63 | 符号位，恒为 0 | — |
+| 62–22（41 位） | 自 epoch 起的毫秒数 | 约 69.7 年 |
+| 21–12（10 位） | 机器位 | 0–1023 |
+| 11–0（12 位） | 同一毫秒内的序列 | 0–4095 |
 
-## 下一步
+这些位宽与上限是 `SnowflakeId` 上的常量：`TimestampBits`、`WorkerIdBits`、`SequenceBits`、`MaxWorkerId`、`MaxSequence`、`MaxTimestamp`。缺省 epoch 是 `2026-01-01T00:00:00Z`，41 位毫秒可用到 2095 年前后；用尽时 `NewId()` 抛出 `InvalidOperationException`。
 
-- [数据访问](./data)：`long` 主键的自动填充发生在哪一层
-- [配置与选项](./configuration)：配置节绑定与环境变量覆盖规则
-- [事件总线](../packages/eventbus)：消息标识用的就是 `IDistributedIdGenerator<Guid>`
-- [DistributedIds 包](../packages/distributed-ids)：完整 API 清单、全部配置项、`GuidHelper` 工具箱
+## 配置
+
+配置节 `XiHan:Persistence:Snowflake`，逐键读取：
+
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `Epoch` | ISO 8601 日期时间 | `2026-01-01T00:00:00Z` | 时间戳起点，没有时区按 UTC；同一套数据一经写入不得再改，否则已有标识解析出的时间会错位 |
+| `WorkerId` | 0–1023 的整数 | 无 | 指定即固定机器位，运维保证集群内不重复；不指定则启动时经分布式锁租约分配 |
+| `ClockDriftToleranceMilliseconds` | 非负整数 | `100` | 时钟回拨不超过它时等待时钟追平，超过时拒绝生成 |
+| `LeaseTimeToLiveSeconds` | 正整数 | `30` | 租约分配时每个机器位租约的存活时间，每三分之一续约一次 |
+
+非法值（`WorkerId` 越界或带符号、`Epoch` 不是日期时间）在配置阶段抛出 `ArgumentException`，启动失败。epoch 晚于当前时钟也是配置错误：特性在启动时构造生成器，构造即抛出 `ArgumentException`，不会等到第一次生成。
+
+## 机器位分配
+
+雪花标识的唯一性完全依赖机器位独占，分配的每一步都选择拒绝生成而不是冒重复的风险。
+
+- 固定机器位（`FixedWorkerIdSource`）：取配置的 `WorkerId`，不登记健康项。
+- 租约分配（`LeasedWorkerIdSource`）：启动时从 0 起逐个尝试锁资源 `persistence:snowflake:worker:<n>`，取第一个空位；1024 个都被占用时启动失败。之后每三分之一存活时间（缺省 10 秒）续约一次；分布式锁本身不续约，续约就是释放再获取同一机器位。
+- 续约时空位被别的实例拿走，或锁存储不可达，都按租约丢失处理，下一轮重新分配，新机器位可能与原来不同。
+- 本地按获取时刻加存活时间判定租约有效。获取时刻取在请求发出之前，本地到期不晚于存储侧到期；到期还没续上，生成器就没有机器位，`NewId()` 抛出 `PERSISTENCE_UNAVAILABLE_005`。
+- 应用停止时释放租约。
+- 租约状态以健康项 `persistence.snowflake.worker` 上报：持有为 Ready，没有为 Degraded（`PERSISTENCE_UNAVAILABLE_005`）。
+
+容器里没有 `IDistributedLock`、又没有配置 `WorkerId` 时，启动以 `PERSISTENCE_UNAVAILABLE_005` 中断，异常消息提示配置 `WorkerId` 或装配 `caching.distributed` 的 Provider。框架不做随机机器位。
+
+## 序列与时钟回拨
+
+生成器线程安全，内部用一把锁保护上一个时间戳与序列：
+
+- 同一毫秒内序列从 0 递增到 4095；用尽时自旋等待下一毫秒。
+- 时钟回拨不超过 `ClockDriftToleranceMilliseconds`（缺省 100 毫秒）时，在锁内等待时钟追上上一个时间戳再生成；其余线程排队。
+- 回拨超过阈值（或等待期间再次回拨超过阈值）时抛出 `PERSISTENCE_UNAVAILABLE_004`，不发出可能重复的标识；时钟追上之后自动恢复。
+
+缺省 100 毫秒的依据是 NTP 对小偏差做渐变调整，只有步进校正才让时钟倒走，通常超过 128 毫秒；100 毫秒以内的回拨视为抖动（ADR-0033）。
+
+## 失败与错误码
+
+`NewId()` 返回 `long`，没有 `Result` 可走，失败以携带错误码的 `FrameworkException` 抛出。
+
+调用里抛出时，`SnowflakeIdFeature` 登记在 Resilience 阶段末尾的中间件把这两个错误码转成同码的 UNAVAILABLE 结果，消息键分别是 `persistence.snowflake.clock_moved_backwards` 与 `persistence.snowflake.worker_unavailable`。HTTP 上是 503，gRPC 是 `Unavailable`，调用方可以重试。
+
+- 中间件在幂等与工作单元之外：异常经过内层时，工作单元已回滚，幂等标记已清除，带同一幂等键重试会重新执行。
+- 截止时间与熔断在它外层，照常计数。
+- 别的异常不受影响，仍由 Observe 阶段转成 `KERNEL_UNEXPECTED_001`。
+- 管道之外（后台任务直接调用生成器）仍是异常，调用方自己处理。
+
+| 错误码 | 何时出现 | 怎样恢复 |
+| --- | --- | --- |
+| `PERSISTENCE_UNAVAILABLE_004` | 时钟回拨超过容忍阈值（调用里是 503） | 时钟追上上一个时间戳后自动恢复 |
+| `PERSISTENCE_UNAVAILABLE_005` | 没有机器位：未配置 `WorkerId` 且没有分布式锁、1024 个机器位都被占用（启动时）；租约尚未取得或已丢失（生成时，调用里是 503） | 启动时的情况修正装配后重启；租约丢失由续约循环重新分配 |
+
+## 解析标识
+
+排障时把标识还原成生成时刻、机器位与序列。进程内用生成器自己的 epoch，离线用配置里的 epoch：
+
+```csharp
+using XiHan.Framework.Persistence.Abstractions.Identifiers;
+
+// 生成器按自己的 epoch 解析
+var parsed = generator.Parse(id);
+Console.WriteLine($"{parsed.Timestamp:O} worker={parsed.WorkerId} sequence={parsed.Sequence}");
+
+// 没有生成器实例时显式给出 epoch，必须与生成时一致
+var offline = SnowflakeId.Parse(id, SnowflakeOptions.DefaultEpoch);
+```
+
+`generator` 是注入的 `SnowflakeIdGenerator`，`id` 是一个已有的雪花标识；负数不是雪花标识，`Parse` 抛出 `ArgumentOutOfRangeException`。`SnowflakeId.Compose(timestamp, workerId, sequence)` 按同一布局拼出标识，任一段越界抛出 `ArgumentOutOfRangeException`。
+
+## 前端精度
+
+标识在 JSON 里保持 number，框架不加字符串转换器。超过 2^53（约 9.007 × 10^15）的整数在 JavaScript 的 `number` 里会丢精度，而雪花标识从 epoch 之后约 25 天起就全部超过 2^53：缺省 epoch 下，现在生成的每一个标识都超过。
+
+::: warning 前端必须按大整数处理雪花标识
+前端用能保留大整数的方式解析响应（`JSON.parse` 的 BigInt reviver，或按字符串读取原文），以字符串或 `BigInt` 保存与回传，不能用 `Number()` 换算。
+:::
+
+## 自定义生成器
+
+应用自己的 `IIdGenerator<TKey>` 应通过一致性套件 `IdGeneratorConformance<TKey>`（`TKey : IComparable<TKey>`）：顺序生成 10000 个与 8 线程并发生成不重复、时钟前进后生成的标识更大。框架的两个生成器都通过同一套用例：
+
+```csharp
+using XiHan.Framework.Persistence.Abstractions.Identifiers;
+using XiHan.Framework.Persistence.Conformance;
+
+namespace SimpleApp.Tests;
+
+public sealed class SnowflakeConformanceTests : IdGeneratorConformance<long>
+{
+    // 套件注入自己的时钟，用来验证时钟前进后标识更大
+    protected override IIdGenerator<long> CreateGenerator(TimeProvider clock) =>
+        new SnowflakeIdGenerator(new SnowflakeOptions(), new FixedWorkerIdSource(3), clock);
+}
+```
+
+一致性套件的引用方式见[测试与一致性套件](./testing)。
+
+## 与其他能力的关系
+
+- 分布式锁与缓存 Provider：[缓存与分布式锁](./caching)。
+- 实体协议与主键：[领域模型](./domain#实体协议)。
+- 健康项的汇总：[生命周期与健康](./lifecycle)。
+
+## 相关
+
+- [Persistence.Abstractions 包](../packages/persistence-abstractions)
+- [Caching.Abstractions 包](../packages/caching-abstractions)
+- [Caching.Redis 包](../packages/caching-redis)
+- [Conformance 一致性套件](../packages/conformance)
+- 规范：RFC-0005《领域协议与持久化》的「标识生成」一节
+- 决策：ADR-0033

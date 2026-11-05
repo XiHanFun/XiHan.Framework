@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>XiHan.Framework.Kernel.Analyzers</PackageId>
+    <RootNamespace>XiHan.Framework.Kernel.Analyzers</RootNamespace>
+    <Description>曦寒框架 Roslyn 分析器</Description>
+    <PackageTags>xihan;framework;analyzers;roslyn</PackageTags>
+    <!-- 分析器以 netstandard2.0 发布，不适用 AOT 与可空注解以外的运行时属性 -->
+    <IsAotCompatible>false</IsAotCompatible>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <!-- 包的使用者设置 XiHanFrameworkPackage / XiHanRing 时，分析器要能经 build_property.* 读到：随包带上 CompilerVisibleProperty 声明 -->
+    <None Include="buildTransitive/$(PackageId).props" Pack="true" PackagePath="buildTransitive/" />
+  </ItemGroup>
+</Project>

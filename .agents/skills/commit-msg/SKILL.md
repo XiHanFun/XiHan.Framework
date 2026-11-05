@@ -11,6 +11,6 @@ description: 根据 XiHan.Framework 当前暂存区生成一行提交信息时�
 
 格式：`<type>(<scope>): <中文说明>`。type 使用 `feat`、`fix`、`refactor`、`perf`、`docs`、`style`、`test`、`build`、`ci`、`chore`、`revert`。
 
-scope 优先使用受影响模块的简短名称，如 `core`、`data`、`caching`、`authentication`、`eventbus`、`web-api`、`workflow`、`tooling`、`docs`；跨模块基础能力可省略 scope，不逐项目罗列。
+scope 优先使用术语表领域词小写，如 `kernel`、`persistence`、`caching`、`security`、`messaging`、`workflow`、`ai`、`cli`，或 `spec`、`docs`、`build`；跨子系统的基础能力可省略 scope，不逐项目罗列。
 
 删除、改名或改变公共 API、配置键、默认实现和持久化语义时使用 `!`。只要求消息时最终只输出一行标题，不附解释或候选列表。
