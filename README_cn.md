@@ -145,10 +145,6 @@ dotnet run --project framework/samples/SimpleApp
 - **一致性**：默认实现与 Provider 共用测试套件，CI 连接 PostgreSQL、SQL Server、MySQL、Oracle、Redis、RabbitMQ 与 Qdrant 运行。
 - **决策**：公开契约先入 RFC，重要决策记入 [ADR](./design/adr/README.md)。
 
-## 路线
-
-Wasm 插件转正、TypeScript SDK、实时通信与网关包、MongoDB 与 NATS 等 Provider。详见[开发计划](./design/architecture/05-开发计划.md)。
-
 ## 生态
 
 | 项目 | 说明 |

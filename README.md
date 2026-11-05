@@ -145,10 +145,6 @@ See [Why XiHan](https://framework.docs.xihanfun.com/why) for selection criteria.
 - **Conformance**: defaults and providers share test suites, run in CI against PostgreSQL, SQL Server, MySQL, Oracle, Redis, RabbitMQ and Qdrant.
 - **Decisions**: public contracts begin as RFCs, and major decisions are recorded as [ADRs](./design/adr/README.md).
 
-## Roadmap
-
-Stable Wasm plugins, a TypeScript SDK, realtime and gateway packages, and more providers such as MongoDB and NATS. See the [development plan](./design/architecture/05-开发计划.md) (in Chinese).
-
 ## Ecosystem
 
 | Project | Description |
