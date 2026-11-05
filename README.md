@@ -379,11 +379,110 @@ You can also ask an AI directly: [Zread](https://zread.ai/XiHanFun/XiHan.Framewo
 
 ## Acknowledgements
 
-| Project | Thanks for |
+This framework stands on the shoulders of many projects and ideas. [Abp](https://github.com/abpframework/abp) is the project that started it all: parts of the architecture and design were inspired by it, and its completeness in multi-tenancy, auditing and permissions is the checklist for our subsystems. The other influences are listed below by source. Only what actually landed in the framework is listed; the full matrix from the design phase is in the [overall design](./design/框架总体方案.md#3-借鉴矩阵) (in Chinese). Thanks also to all the third-party dependencies this project is built upon.
+
+### Operating systems
+
+| Source | What we borrowed | Where it landed |
+| --- | --- | --- |
+| **Linux** | The "don't break userspace" system call ABI | Primitives only grow, with package validation against a baseline in CI |
+|  | VFS: one interface, pluggable file systems | Each subsystem is an abstraction with several providers, and callers only see the abstraction |
+|  | `modprobe` / `depmod` and symbol versions | Manifests resolve by capability ID and version, and missing or conflicting ones fail at startup |
+|  | netfilter hook points | The fixed pipeline stages: features add middleware to a stage without knowing about other middleware |
+|  | cgroups / namespaces | Capacity, expiry and concurrency are bounded in every default, and the tenant is a first-class isolation dimension |
+|  | Kconfig | Configuration declarations in manifests, with profiles as preset configurations |
+| **Windows NT** | Executive subsystems and the HAL | Subsystems evolve independently, and providers absorb the differences underneath |
+|  | WDK and HLK certification | Provider development with conformance suites, `<Domain>.Conformance` |
+| **macOS / Darwin** | XNU: microkernel primitives plus a ready-to-use BSD layer | Microkernel abstractions plus defaults, so nobody faces a pile of empty interfaces |
+|  | launchd: start by dependency, activate on demand | The feature lifecycle state machine, and activation events in plugin manifests |
+|  | XPC and App Sandbox | Out-of-process plugin communication, with permissions declared in the manifest and granted by the host |
+| **Android** | Project Treble: vendor interfaces versioned independently | Provider interfaces versioned on their own, such as `persistence.relational@1` |
+|  | Permissions declared in the manifest, granted at runtime | The plugin permission model |
+|  | Intent: call by intent rather than type | Operations are called by operation ID, and protocol adapters only translate |
+|  | Explicit component lifecycle states | The state machine: Declared → Resolved → Configured → Started → Ready → Degraded → Draining → Stopped |
+| **HarmonyOS / OpenHarmony** | System ability registration and discovery, transparent locally and remotely | A capability can be provided in-process, by a plugin or by a remote provider |
+|  | Subsystem sets tailored to device form factors | The Minimal / Standard / Full profiles |
+|  | Develop once, deploy everywhere | One operation contract, exposed over many protocols |
+
+### Languages and frameworks
+
+| Source | What we borrowed | Where it landed |
+| --- | --- | --- |
+| **C# / .NET** | Generic Host, Options, source generators, Native AOT, `TimeProvider`, `Microsoft.Extensions.AI` | Extend rather than wrap: the kernel only depends on `Microsoft.Extensions.*` abstractions and `System.Threading.RateLimiting` |
+| **Java / Spring Cloud** | Conditional wiring with `@ConditionalOnMissingBean` | A default only applies when no explicit provider is present |
+|  | OSGi (as a cautionary tale) | No runtime module bus or dynamic service registry |
+| **Go** | Small interfaces and composition | Entities compose interfaces such as `IEntity` and `ISoftDeletable` instead of base classes |
+|  | `context.Context` carrying cancellation, deadlines and values | `InvocationContext` carries cancellation, deadline, tracing and baggage |
+|  | Semantic import versioning | If the primitives ever must break, a new package ID lives alongside the old one |
+| **Rust** | The `core` / `std` split | Primitives do not depend on a host, and the kernel runs without ASP.NET Core |
+|  | Private by default, public explicitly | `internal` by default, with the public surface held to `PublicAPI` files |
+|  | `Result` / `Option` | `Result<T>` / `Maybe<T>`: recoverable failures are values |
+| **PHP** | PHP-FIG interoperability standards (PSR) | The role of XiHan Spec: SDKs in each language implement the same semantics |
+|  | Laravel service providers | Features register services in `Configure` |
+| **Python** | FastAPI: types are the contract | Types generate the schema, which produces OpenAPI, `.proto` and MCP tools |
+|  | ASGI: a protocol between servers and applications | XGI: the message contract between protocol adapters and the pipeline |
+| **Vue** | Progressive and compositional | From Minimal to Full, install only what you use, composed with `UseXxx()` |
+| **React** | One-way data flow, error boundaries | The pipeline is one-way, and plugin failures stay inside a boundary so the host survives |
+| **Next.js** | Conventions with escape hatches | Routes derive from operation IDs and can be overridden explicitly |
+| **Actix-web** | Typed extractors | Operation inputs are bound from route values, the request body and the query string |
+
+### Orchestration and cloud
+
+| Source | What we borrowed | Where it landed |
+| --- | --- | --- |
+| **OCI / Docker** | A standard packaging format | `xihan pack` generates a Dockerfile from `xihan.app.json` |
+| **Kubernetes** | Startup, readiness and liveness probes | `/health/startup`, `/health/ready` and `/health/live` map directly to the state machine |
+|  | SIGTERM and the grace period | The Draining state, with features stopped in reverse order |
+|  | ConfigMap hot reload | A `XIHAN_CONFIG_PATH` mounted directory plus `IOptionsMonitor` |
+|  | gRPC plugin interfaces in CRI, CNI and CSI | The out-of-process plugin protocol uses gRPC and is defined in the specification |
+| **Service Binding** | Workloads declare the resources they need and the platform injects them | Manifest `bindings` and `SERVICE_BINDING_ROOT` |
+| **.NET Aspire** | Local orchestration | `xihan pack` generates AppHost registration, with no runtime dependency |
+| **12-Factor** | Configuration from the environment, stateless processes | The default behavior |
+
+### Open source projects and products
+
+| Source | What we borrowed | Where it landed |
+| --- | --- | --- |
+| **OpenTelemetry** | Specification, semantic conventions, SDKs per language and conformance tests | How XiHan Spec is organized |
+| **MCP** | Protocol first, tool schemas | One of the protocol adapters: operations become MCP tools directly |
+| **CloudEvents** | A standard event envelope | The envelope of the messaging subsystem |
+| **Dapr** | Building blocks, pluggable components over gRPC | The set of subsystem capabilities, and remote providers |
+| **Terraform / go-plugin** | Cross-language plugins as subprocesses over gRPC | The out-of-process plugin protocol |
+| **VS Code** | Contribution points, activation events, extension host isolation | `contributes` and activation events in plugin manifests, and the out-of-process plugin host |
+| **Envoy** | Filter chains, Wasm filters | Pipeline stages, and Wasm plugins that contribute middleware |
+| **Roslyn** | PublicAPI analyzers, source generators | A documented public surface, and generators instead of reflection |
+| **Vite** | Plugin hooks with `enforce: pre / post` | Relative middleware positions with `Before` / `After` |
+| **Cloudflare Workers** | Bindings, isolated Wasm execution | Manifest `bindings`, and the Wasm plugin isolation level |
+| **Alibaba Cloud / AWS** | Uniform resource names and policy languages | `xrn:` resource names and the authorization condition engine |
+| **Google SRE** | Error budgets | The budget for breaking changes within a major version is 0 |
+| **Microsoft** | A shared version line for `Microsoft.Extensions.*`, implementation packages named by mechanism | All packages share one version line, and implementation packages are named by mechanism or technology |
+
+### Algorithms
+
+| Source | Where it landed |
 | --- | --- |
-| [Abp](https://github.com/abpframework/abp) | Inspiring parts of the architecture and design |
-| Dapr, OpenTelemetry, MCP, FastAPI, NestJS, Rust, Linux | Capability abstractions, specifications with conformance tests, contract-driven design, zero-cost abstractions and the promise not to break userspace, which shaped many ideas here |
-| Other third-party dependencies | Being the foundation this project is built upon |
+| Directed acyclic graphs and topological sorting | Capability graph resolution, feature startup order, pipeline ordering |
+| Version constraint solving | Manifest version conflicts report both sides |
+| Circuit breaker state machines, exponential backoff | Circuit breaking in the Resilience stage, and backoff restarts after a plugin crash |
+| Tiered caching | The two-level cache: L1 in process, L2 shared |
+| Batching | Batch first: repositories, caches and messaging have batch methods, and architecture tests forbid calling single-item methods in loops |
+| Entropy and conservation | Every collection is bounded, and idempotency keys give "at least once plus idempotent" rather than promising "exactly once" |
+
+### Chinese philosophy
+
+| Idea | Engineering constraint |
+| --- | --- |
+| *I Ching*: the unchanging, the simple, the changing | Three tiers of promise: primitives never break, the kernel does not break within a major version, everything else evolves |
+| Taoism: non-action, simplicity | The kernel does not auto-register, scan or infer, and defaults work with zero configuration |
+| Taoism: the highest good is like water | The kernel does not know the shape of its host: it runs on the web and on the command line |
+| Confucianism: rectification of names | Capability IDs, error codes and operation IDs follow a naming grammar, and package names derive from the vocabulary |
+| Confucianism: ritual | The specification is the ritual that every language and implementation observes, checked by conformance tests |
+| Confucianism: harmony without uniformity | Provider implementations may differ, but contract semantics must match |
+| Legalism: rule by law | Rules are enforced by analyzers and architecture tests, not by reviewers |
+| Mohism: frugality, non-aggression | Resources are bounded, abstractions do not expose third-party types, and there is no vendor lock-in |
+| Sun Tzu: engage with the regular, win with the unexpected | A stable mainline plus an incubator whose packages can only be `Experimental` |
+
+These ideas only become engineering constraints. They never appear as identifiers in the code.
 
 ## Sponsorship
 
