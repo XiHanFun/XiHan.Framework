@@ -377,110 +377,16 @@ dnx XiHan.Framework.Cli --yes -- setup --client claude
 
 ## 致谢
 
-这个框架站在很多项目和思想的肩膀上。[Abp](https://github.com/abpframework/abp) 是启蒙项目，部分架构和逻辑的灵感来自它，它在多租户、审计、权限上的完整度也是子系统能力的对照表。其他借鉴按来源列在下面，只列已经落到框架里的，设计阶段的完整矩阵见[框架总体方案](./design/框架总体方案.md#3-借鉴矩阵)。第三方依赖是项目功能丰富与拓展的基石，一并感谢。
-
-### 操作系统
-
-| 来源 | 借鉴 | 落到哪 |
-| --- | --- | --- |
-| **Linux** | 「不破坏用户态」的系统调用 ABI | 原语层只增不改，CI 的包验证做基线比对 |
-|  | VFS：统一接口、可插拔文件系统 | 每个子系统是抽象加多个 Provider，调用方只见抽象 |
-|  | `modprobe` / `depmod` 与符号版本 | 清单按能力 ID 和版本解析，缺失或冲突在启动期失败 |
-|  | netfilter 钩子点 | 管道的固定阶段，特性按阶段插入中间件，不需要知道其他中间件 |
-|  | cgroups / namespaces | 默认实现的容量、过期和并发都有界，租户是一等隔离维度 |
-|  | Kconfig | 清单里的配置声明，组合包相当于预设配置 |
-| **Windows NT** | 执行体子系统与 HAL | 子系统各自演进，底层差异由 Provider 吸收 |
-|  | WDK 与 HLK 认证 | Provider 开发加一致性套件 `<领域>.Conformance` |
-| **macOS / Darwin** | XNU：微内核原语加开箱即用的 BSD 层 | 微内核抽象加默认实现，不让使用者面对一堆空接口 |
-|  | launchd：按依赖启动、按需激活 | 特性生命周期状态机，插件清单声明激活事件 |
-|  | XPC 与 App Sandbox | 进程外插件通信，插件清单声明权限、由宿主授予 |
-| **Android** | Project Treble：供应商接口独立版本化 | Provider 接口单独版本化，如 `persistence.relational@1` |
-|  | 清单声明权限、运行时授予 | 插件权限模型 |
-|  | Intent：按意图而不是类型调用 | 操作按操作 ID 调用，协议适配器只做翻译 |
-|  | 组件生命周期的明确状态 | 状态机：Declared → Resolved → Configured → Started → Ready → Degraded → Draining → Stopped |
-| **鸿蒙 / OpenHarmony** | 系统能力注册与发现，本地远程透明 | 同一能力可由同进程、插件或远程 Provider 提供 |
-|  | 子系统集按设备形态裁剪 | 组合包 Minimal / Standard / Full |
-|  | 一次开发多端部署 | 一份操作契约，多协议暴露 |
-
-### 语言与框架
-
-| 来源 | 借鉴 | 落到哪 |
-| --- | --- | --- |
-| **C# / .NET** | Generic Host、Options、源生成器、Native AOT、`TimeProvider`、`Microsoft.Extensions.AI` | 只扩展不包装，内核只依赖 `Microsoft.Extensions.*` 抽象包和 `System.Threading.RateLimiting` |
-| **Java / Spring Cloud** | 条件装配 `@ConditionalOnMissingBean` | 默认实现只在没有显式 Provider 时生效 |
-|  | OSGi（反面教材） | 不做运行时模块总线和动态服务注册中心 |
-| **Go** | 小接口加组合 | 实体按 `IEntity`、`ISoftDeletable` 这类接口组合，不用基类 |
-|  | `context.Context` 传播取消、截止时间和值 | `InvocationContext` 带取消、截止时间、追踪和 Baggage |
-|  | 语义化导入版本 | 原语层必须破坏时，用新包 ID 并存 |
-| **Rust** | `core` / `std` 分层 | 原语层不依赖宿主，内核可以脱离 ASP.NET Core 运行 |
-|  | 默认私有、显式公开 | 默认 `internal`，公开面受 `PublicAPI` 文件约束 |
-|  | `Result` / `Option` | `Result<T>` / `Maybe<T>`，可恢复的失败是值 |
-| **PHP** | PHP-FIG 互操作标准（PSR） | XiHan Spec 的定位，各语言 SDK 实现同一语义 |
-|  | Laravel Service Provider | 特性在 `Configure` 里注册服务 |
-| **Python** | FastAPI：类型即契约 | 由类型生成 Schema，再产出 OpenAPI、`.proto` 和 MCP tool |
-|  | ASGI：服务器与应用之间的协议 | XGI：协议适配器与管道之间的消息契约 |
-| **Vue** | 渐进式、组合式 | 从 Minimal 到 Full 用多少装多少，`UseXxx()` 组合 |
-| **React** | 单向数据流、Error Boundary | 管道单向，插件失败隔离在边界内，宿主不崩 |
-| **Next.js** | 约定加逃生舱 | 操作 ID 推导路由，允许显式覆盖 |
-| **Actix-web** | 类型化提取器 | 操作入参由绑定器从路由值、请求体和查询串提取 |
-
-### 编排与云
-
-| 来源 | 借鉴 | 落到哪 |
-| --- | --- | --- |
-| **OCI / Docker** | 规范化打包格式 | `xihan pack` 从 `xihan.app.json` 生成 Dockerfile |
-| **Kubernetes** | startup / readiness / liveness 探针 | `/health/startup`、`/health/ready`、`/health/live` 直接映射状态机 |
-|  | SIGTERM 与宽限期 | Draining 状态，特性逆序停止 |
-|  | ConfigMap 热更新 | `XIHAN_CONFIG_PATH` 挂载目录加 `IOptionsMonitor` |
-|  | CRI / CNI / CSI 的 gRPC 插件接口 | 进程外插件协议用 gRPC，定义在规范里 |
-| **Service Binding** | 工作负载声明需要的资源，平台注入 | 清单 `bindings` 和 `SERVICE_BINDING_ROOT` |
-| **.NET Aspire** | 本地编排 | `xihan pack` 生成 AppHost 登记，不作为运行时依赖 |
-| **12-Factor** | 配置来自环境、进程无状态 | 默认行为 |
-
-### 开源项目与产品
-
-| 来源 | 借鉴 | 落到哪 |
-| --- | --- | --- |
-| **OpenTelemetry** | 规范、语义约定、各语言 SDK 和一致性测试 | XiHan Spec 的组织方式 |
-| **MCP** | 协议优先、工具 Schema | 协议适配器之一，操作直接成为 MCP tool |
-| **CloudEvents** | 事件信封标准 | 消息子系统的信封 |
-| **Dapr** | Building Blocks，可插拔组件走 gRPC | 子系统的能力集合，远程 Provider |
-| **Terraform / go-plugin** | 子进程加 gRPC 的跨语言插件 | 进程外插件协议 |
-| **VS Code** | 贡献点、激活事件、扩展宿主隔离 | 插件清单的 `contributes` 和激活事件，进程外插件宿主 |
-| **Envoy** | 过滤器链、Wasm 过滤器 | 管道阶段，Wasm 插件可以贡献中间件 |
-| **Roslyn** | PublicAPI 分析器、源生成器 | 公开面文件化，生成器替代反射 |
-| **Vite** | 插件钩子的 `enforce: pre / post` | 中间件的相对位置 `Before` / `After` |
-| **Cloudflare Workers** | bindings、Wasm 隔离执行 | 清单 `bindings`，Wasm 插件隔离级别 |
-| **阿里云 / AWS** | 统一资源名与策略语言 | `xrn:` 资源名和授权条件引擎 |
-| **Google SRE** | 错误预算 | 大版本内破坏性变更的预算是 0 |
-| **微软** | `Microsoft.Extensions.*` 共享版本线，实现包按机制命名 | 所有包共享一条版本线，实现包按机制或技术命名 |
-
-### 算法
-
-| 来源 | 落到哪 |
+| 项目 | 致谢 |
 | --- | --- |
-| 有向无环图与拓扑排序 | 能力图谱解析、特性启动顺序、管道排序 |
-| 版本约束求解 | 清单版本冲突时带双方版本报错 |
-| 熔断状态机、指数退避 | Resilience 阶段的熔断，插件崩溃后的退避重启 |
-| 分层缓存 | 两级缓存：L1 进程内、L2 共享缓存 |
-| 批处理 | 批量优先：仓储、缓存和消息都有批量方法，架构测试禁止在循环里调单条方法 |
-| 熵与守恒 | 所有集合有界；幂等键保证「至少一次加幂等」，不承诺「恰好一次」 |
+| [Abp](https://github.com/abpframework/abp) | 启蒙项目，部分架构和逻辑的灵感来源；它在多租户、审计、权限上的完整度是子系统能力的对照表 |
+| [Linux](https://www.kernel.org) | 「不破坏用户态」的承诺和 netfilter 钩子点，对应只增不改的原语层和管道的固定阶段 |
+| [Go](https://go.dev) | 小接口组合和 `context.Context`，对应按接口组合的实体和带取消、截止时间、追踪的调用上下文 |
+| [Rust](https://www.rust-lang.org) | `core` / `std` 分层、默认私有和 `Result`，对应不依赖宿主的原语层、默认 `internal` 和「失败是值」 |
+| [FastAPI](https://github.com/fastapi/fastapi) | 类型即契约，对应由类型生成 Schema，再产出 OpenAPI、`.proto` 和 MCP tool 的操作契约 |
+| [OpenTelemetry](https://opentelemetry.io) | 规范、各语言 SDK 加一致性测试的组织方式，对应 XiHan Spec 和一致性向量 |
 
-### 诸子百家
-
-| 思想 | 工程约束 |
-| --- | --- |
-| 《易》不易、简易、变易 | 三层承诺：原语层永不破坏，内核大版本内不破坏，其余各自演进 |
-| 道家 无为、大道至简 | 内核不自动注册、不扫描、不推断，默认实现零配置可用 |
-| 道家 上善若水 | 内核不感知宿主形态，Web 和命令行都能跑 |
-| 儒家 正名 | 能力 ID、错误码、操作 ID 规范命名，包名由术语表推出 |
-| 儒家 礼 | 规范就是跨语言、跨实现共同遵守的礼，由一致性测试检验 |
-| 儒家 和而不同 | Provider 的实现可以不同，契约语义必须一致 |
-| 法家 以法治 | 规则由分析器和架构测试执行，不靠人审 |
-| 墨家 节用、非攻 | 资源有界，抽象包不暴露第三方类型，不锁定供应商 |
-| 兵家 以正合，以奇胜 | 稳定主线加孵化区，孵化包只能标 `Experimental` |
-
-思想只变成工程约束，不进标识符，代码里不会出现这些词。
+更多借鉴见[框架总体方案](./design/框架总体方案.md#3-借鉴矩阵)。第三方依赖是项目功能丰富与拓展的基石，一并感谢。
 
 ## 赞助
 
