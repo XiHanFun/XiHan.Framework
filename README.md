@@ -4,8 +4,6 @@
 
 <h3>One operation contract, served over HTTP, gRPC, MCP and the command line</h3>
 
-<p>Compose what you need · No external infrastructure by default · Reflection-free kernel, Native AOT · Plugins in any language</p>
-
 <p>
   <a href="https://github.com/XiHanFun/XiHan.Framework/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/XiHanFun/XiHan.Framework/ci.yml?branch=dev&style=flat-square&label=CI" /></a>
   <a href="https://www.nuget.org/packages?q=XiHan.Framework"><img alt="NuGet" src="https://img.shields.io/nuget/vpre/XiHan.Framework.Kernel?style=flat-square&logo=nuget&logoColor=white&label=NuGet&color=004880" /></a>
@@ -29,208 +27,44 @@
 
 </div>
 
-XiHan.Framework is a .NET framework for backends that have to be maintained for years. It is built around a microkernel, a capability graph and an execution pipeline. Business logic is written as protocol-agnostic operations, protocol adapters expose them, and every invocation runs through the same pipeline. Persistence, caching, messaging, tenancy and permissions are replaceable packages: development needs no external infrastructure, and going to production means switching providers without touching business code.
+XiHan.Framework is a .NET application framework for long-lived systems, built on a microkernel, a capability graph and an execution pipeline. It is also the reference implementation of the language-neutral [XiHan Spec](https://github.com/XiHanFun/framework-spec).
 
-It is also the .NET reference implementation of [XiHan Spec](https://github.com/XiHanFun/framework-spec), a language-neutral specification that other languages implement against the same conformance vectors.
+## Features
 
-## One contract, many protocols
-
-Write the business logic once. This operation, excerpted from [SimpleApp](./framework/samples/SimpleApp/Orders/CreateOrder.cs), declares the protocols it is exposed on and the permission it requires:
-
-```csharp
-[Operation("orders.create", Stability = Stability.Experimental,
-    Expose = Expose.Http | Expose.Grpc | Expose.Mcp, Permission = "orders.write")]
-public sealed class CreateOrder(IRepository<Order, Guid> orders, IIdGenerator<Guid> ids, TimeProvider clock)
-    : IOperation<PlaceOrderRequest, OrderResponse>
-{
-    public async ValueTask<Result<OrderResponse>> HandleAsync(PlaceOrderRequest request, InvocationContext context)
-    {
-        var order = new Order { Id = ids.NewId(), Name = request.Name, Amount = request.Amount };
-        order.Place(clock.GetUtcNow());
-
-        var added = await orders.AddAsync(order, context.CancellationToken);
-        return added.IsFailure ? added.Error! : new OrderResponse(order.Id, order.Name, order.Amount, order.CreatedAt);
-    }
-}
-```
-
-A source generator produces the registration code and JSON Schema, and every protocol entry point is derived from this one contract:
-
-| Protocol | Entry point | What you also get |
-| --- | --- | --- |
-| HTTP | `POST /orders` | OpenAPI 3.1 (`/openapi.json`), RFC 9457 Problem Details |
-| gRPC | `Orders/Create` | A `.proto` file (`/operations.proto`), with the protobuf wire format derived from the schema |
-| MCP | tool `orders_create` | Description and input schema in `tools/list`, over Streamable HTTP and stdio |
-| Command line | `greetings create --name Ada` ([SimpleCli](./framework/samples/SimpleCli)) | Exit codes by error kind, Problem JSON on stderr when it fails |
-| AI tools | `Expose.Ai` | A model tool that runs through the full pipeline |
-
-Authentication, tenancy, authorization, validation, idempotency and transactions all live in the pipeline, so switching protocols cannot skip them. The same principal without the `orders.write` permission gets the same error code over HTTP and MCP:
-
-```text
-$ curl -i -X POST localhost:5000/orders -H "Authorization: ApiKey dev-bob-key" \
-    -H "Content-Type: application/json" -d '{"name":"x","amount":1}'
-HTTP/1.1 403 Forbidden
-{"type":"urn:xihan:error:SECURITY_DENIED_004","status":403,"detail":"Permission 'orders.write' is missing.",…}
-
-$ curl -X POST localhost:5000/mcp -H "Authorization: ApiKey dev-bob-key" -H "Content-Type: application/json" \
-    -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"orders_create","arguments":{"name":"x","amount":1}}}'
-{"jsonrpc":"2.0","id":2,"result":{"content":[{"type":"text","text":"SECURITY_DENIED_004: Permission 'orders.write' is missing."}],"isError":true}}
-```
-
-## Highlights
-
-- **Composition errors surface before startup**: every feature carries a manifest that declares what it provides and requires by capability ID. The kernel resolves the capability graph before starting, and missing dependencies, cycles, version conflicts and ambiguous candidates all fail right away, for example `'xihan.hello.greetings' requires 'caching.distributed@1', but no manifest provides it.` The resolved graph is printed to the log. [Features and manifests](https://framework.docs.xihanfun.com/guide/modularity)
-- **Cross-cutting logic has a fixed place**: each invocation passes through eleven fixed stages. Middleware only cares about its own stage, and the order is deterministic, printable and testable, with no dynamic proxies. [Pipeline](https://framework.docs.xihanfun.com/guide/pipeline)
-- **No dependencies in development, providers in production**: every abstraction has a bounded default implementation, so an application runs without a database or Redis. In production, add a package and one `UseFeature` line and the default steps aside. Providers and defaults pass the same conformance suite. [Packages](https://framework.docs.xihanfun.com/packages/)
-- **No reflection, ready for Native AOT**: the primitives and the kernel use no runtime reflection, registration and schemas are generated at compile time, and CI runs an AOT publish smoke test on every build. Providers that do not support AOT say so on their package page. [Serialization and Native AOT](https://framework.docs.xihanfun.com/guide/aot)
-- **Plugins do not have to be trusted**: three isolation levels, in-process, Wasm and out-of-process. Out-of-process plugins speak a gRPC protocol and can be written in any language (a Go SDK is available). A crash degrades the application and triggers a backoff restart, and never takes the host down. [Plugins](https://framework.docs.xihanfun.com/guide/plugins)
-- **Built for AI tooling**: operations become MCP tools and model tools directly, and `xihan mcp` gives coding assistants an offline knowledge base of the framework's packages, configuration keys and documentation. [MCP server](https://framework.docs.xihanfun.com/ai/mcp)
-- **Boundaries are enforced by machines**: dependency direction, naming grammar, zero reflection, third-party type leaks and public API baselines are checked by analyzers and architecture tests, not by reviewers' memory. See [Quality and stability](#quality-and-stability).
+| Feature | Description |
+| --- | --- |
+| [Operation contracts](https://framework.docs.xihanfun.com/guide/operations) | Declared once, exposed over many protocols, sharing schema, authorization and error codes |
+| [Capability graph](https://framework.docs.xihanfun.com/guide/modularity) | Dependencies declared by capability ID, resolved and validated before startup |
+| [Execution pipeline](https://framework.docs.xihanfun.com/guide/pipeline) | Eleven fixed stages for authentication, tenancy, authorization, validation, idempotency and transactions |
+| [Replaceable implementations](https://framework.docs.xihanfun.com/packages/) | Defaults with no external dependencies; providers pass the same conformance suite |
+| [Native AOT](https://framework.docs.xihanfun.com/guide/aot) | Reflection-free kernel, with registration code and schemas generated at compile time |
+| [Plugins](https://framework.docs.xihanfun.com/guide/plugins) | In-process, Wasm and out-of-process isolation, in multiple languages, with failures contained from the host |
+| [AI integration](https://framework.docs.xihanfun.com/ai/mcp) | Operations as MCP tools and model tools, plus an offline knowledge base for coding assistants |
 
 ## Getting Started
 
-You need the [.NET 10 SDK](https://dotnet.microsoft.com/download). Create a project and add three packages:
-
 ```bash
-dotnet new web -n HelloXiHan
-cd HelloXiHan
 dotnet add package XiHan.Framework.Profiles.Minimal --prerelease
 dotnet add package XiHan.Framework.Protocols.Http --prerelease
 dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```
 
-Replace `Program.cs` with the following. The entry point, the operation and the feature all live here:
-
 ```csharp
-using System.Text.Json.Serialization;
-using HelloXiHan; // The generated AddGeneratedOperations lives in the project's root namespace
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Kernel;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Operations;
-using XiHan.Framework.Primitives;
-using XiHan.Framework.Primitives.Manifests;
-using XiHan.Framework.Profiles.Minimal;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Hand the features to the kernel: it resolves the capability graph and calls each Configure in topological order
-builder.AddXiHan(xihan => xihan
-    .UseMinimalProfile()
-    .UseFeature<HttpProtocolFeature>()
-    .UseFeature<GreetingsFeature>());
-
-var app = builder.Build();
-
-app.UseXiHan();            // HTTP requests enter the kernel pipeline
-app.MapXiHanHealth();      // /health/startup, /health/ready, /health/live
-app.MapXiHanOperations();  // Map routes from the operation registry
-
-app.Run();
-
-// Operation: the resource of greetings.create is greetings and the verb is create, so HTTP derives POST /greetings
-[Operation("greetings.create", Stability = Stability.Experimental, Expose = Expose.Http)]
+[Operation("greetings.create")]
 public sealed class Greet : IOperation<GreetRequest, GreetResponse>
 {
     public ValueTask<Result<GreetResponse>> HandleAsync(GreetRequest request, InvocationContext context)
         => ValueTask.FromResult(Result.Success(new GreetResponse($"Hello, {request.Name}!")));
 }
-
-public sealed record GreetRequest(string Name);
-
-public sealed record GreetResponse(string Message);
-
-// The kernel does not serialize through reflection, so request and response types go in a source-generated context
-[JsonSourceGenerationOptions(
-    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    PropertyNameCaseInsensitive = true)]
-[JsonSerializable(typeof(GreetRequest))]
-[JsonSerializable(typeof(GreetResponse))]
-internal sealed partial class AppJsonContext : JsonSerializerContext;
-
-// Feature: the manifest requires the kernel's hosting capability, and Configure registers the generated operations
-public sealed class GreetingsFeature : IFeature
-{
-    public Manifest Manifest { get; } = new()
-    {
-        Id = "xihan.hello.greetings",
-        Package = "HelloXiHan",
-        Version = "1.0.0",
-        Primitives = 1,
-        Stability = Stability.Experimental,
-        Kind = ManifestKind.Capability,
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Entry = typeof(GreetingsFeature).FullName,
-    };
-
-    public void Configure(FeatureContext context) => context.AddGeneratedOperations();
-}
 ```
 
-Run it and call it:
+Protocol entry points derive from the contract and take effect once the matching protocol package is added:
 
-```bash
-dotnet run --urls http://localhost:5000
-```
+| HTTP | gRPC | MCP | Command line |
+| --- | --- | --- | --- |
+| `POST /greetings` | `Greetings/Create` | `greetings_create` | `greetings create --name Ada` |
 
-```bash
-curl -X POST http://localhost:5000/greetings -H "Content-Type: application/json" -d '{"name":"Ada"}'
-```
-
-```json
-{"message":"Hello, Ada!"}
-```
-
-<details>
-<summary>The startup log prints the capability graph and the pipeline order</summary>
-
-```text
-Capability graph:
-xihan.kernel.core <version>
-  provides kernel.hosting@1
-  ...
-xihan.localization.inmemory <version> (default)
-  provides localization.resources@1
-  requires kernel.hosting@1 -> xihan.kernel.core
-xihan.protocols.http <version>
-  provides protocols.http@1
-  requires kernel.hosting@1 -> xihan.kernel.core
-xihan.hello.greetings 1.0.0
-  requires kernel.hosting@1 -> xihan.kernel.core
-
-Pipeline:
-observe      XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware
-resilience   XiHan.Framework.Kernel.Pipeline.DeadlineMiddleware
-resilience   XiHan.Framework.Kernel.Resilience.ResilienceMiddleware
-validate     XiHan.Framework.Kernel.Validation.ValidationMiddleware
-```
-
-</details>
-
-<details>
-<summary>A request that breaks the contract gets Problem Details, translated by Accept-Language</summary>
-
-```bash
-curl -i -X POST http://localhost:5000/greetings -H "Content-Type: application/json" -d '{}'
-```
-
-```text
-HTTP/1.1 400 Bad Request
-Content-Type: application/problem+json
-Content-Language: en-US
-
-{"type":"urn:xihan:error:KERNEL_VALIDATION_003","title":"VALIDATION","status":400,
- "detail":"The request of operation 'greetings.create' does not match its contract: $.name: required property 'name' is missing",
- "instance":"/greetings","code":"KERNEL_VALIDATION_003","traceId":"…",
- "errors":{"name":["required property 'name' is missing"]},
- "details":{"id":"greetings.create","reason":"$.name: required property 'name' is missing"}}
-```
-
-</details>
-
-Next, the [quickstart](https://framework.docs.xihanfun.com/quickstart) switches to the Standard profile, where authentication, tenancy, authorization, idempotency and transactions appear in the pipeline.
+The feature manifest, serializer context and application entry point are covered in the [quickstart](https://framework.docs.xihanfun.com/quickstart).
 
 ## Architecture
 
@@ -254,47 +88,35 @@ flowchart TB
     protocols --> pipeline --> operation --> capabilities
 ```
 
-The framework makes three tiers of promise, named after the three meanings of change in the I Ching: the unchanging (不易), the simple (简易) and the changing (变易). Only a very small layer is frozen and everything else can be replaced. Dependencies only point to lower rings, enforced by architecture tests.
+Three tiers of promise, after the I Ching's unchanging (不易), simple (简易) and changing (变易). Dependencies point only to lower rings, enforced by architecture tests. See the [overall design](./design/框架总体方案.md) (in Chinese).
 
-| Promise | Ring | Contents |
+| Tier | Scope | Promise |
 | --- | --- | --- |
-| **Unchanging**: never breaks, only grows | Ring 0 | `Primitives`: `Result`, `Error`, invocation context, manifest model, pipeline stages |
-| **Simple**: no breaking changes within a major version | Ring 1 | `Kernel`: hosting, capability graph, pipeline, operation contracts, diagnostics, security primitives |
-| **Changing**: evolves freely, compatible once it passes the conformance suite | Ring 2–6 | Abstractions, default implementations and providers, hosts, protocols and plugins, profiles |
+| Unchanging | `Primitives` | Never breaks, only grows |
+| Simple | `Kernel` | No breaking changes within a major version |
+| Changing | Abstractions, implementations, hosts, protocols, plugins, profiles | Evolves independently, with compatibility held by conformance tests |
 
-The reasoning is in the [overall design](./design/框架总体方案.md) and the [design philosophy](./design/architecture/02-框架设计哲学.md) (both in Chinese).
+## Capabilities
 
-## What's in the box
-
-| Capability | Default (no external infrastructure) | Providers |
+| Capability | Default | Providers |
 | --- | --- | --- |
 | [Persistence](https://framework.docs.xihanfun.com/guide/persistence) | In-memory | EF Core, SqlSugar |
 | [Caching and distributed locks](https://framework.docs.xihanfun.com/guide/caching) | In-memory | Redis, two-level cache, remote plugin |
-| [Messaging and events](https://framework.docs.xihanfun.com/guide/messaging) | In-memory, with outbox | RabbitMQ, Kafka, CloudEvents webhook |
+| [Messaging](https://framework.docs.xihanfun.com/guide/messaging) | In-memory, with outbox | RabbitMQ, Kafka, CloudEvents webhook |
 | [Multi-tenancy](https://framework.docs.xihanfun.com/guide/multi-tenancy) | In-memory | Database, with per-tenant databases |
-| [Authentication](https://framework.docs.xihanfun.com/guide/authentication) and [authorization](https://framework.docs.xihanfun.com/guide/authorization) | In-memory (API key, RBAC) | JWT, OpenID Connect, database grants |
-| [Scheduling](https://framework.docs.xihanfun.com/guide/scheduling) | In-memory | Database (clustered dispatch), Kubernetes (leader election) |
+| [Authentication](https://framework.docs.xihanfun.com/guide/authentication) and [authorization](https://framework.docs.xihanfun.com/guide/authorization) | In-memory (API key, RBAC) | JWT, OpenID Connect, database |
+| [Scheduling](https://framework.docs.xihanfun.com/guide/scheduling) | In-memory | Database (clustered), Kubernetes (leader election) |
 | [Workflow](https://framework.docs.xihanfun.com/guide/workflow) | In-memory | Database |
-| [Object storage](https://framework.docs.xihanfun.com/guide/storage) | File system | S3 and compatible services (MinIO, OSS, COS, R2) |
+| [Object storage](https://framework.docs.xihanfun.com/guide/storage) | File system | S3 and compatible services |
 | [Auditing](https://framework.docs.xihanfun.com/guide/auditing) | In-memory | Database |
-| [Localization](https://framework.docs.xihanfun.com/guide/localization) | In-memory (10 built-in locales) | Database |
+| [Localization](https://framework.docs.xihanfun.com/guide/localization) | In-memory (10 locales) | Database |
 | [Configuration](https://framework.docs.xihanfun.com/guide/configuration) | .NET configuration | Nacos |
 | [Observability](https://framework.docs.xihanfun.com/guide/observability) | `System.Diagnostics` | OpenTelemetry |
-| [AI](https://framework.docs.xihanfun.com/guide/ai) | Tool bridge (`Expose.Ai`) | OpenAI-compatible endpoints, `Microsoft.Extensions.VectorData` |
+| [AI](https://framework.docs.xihanfun.com/guide/ai) | Tool bridge | OpenAI-compatible endpoints, VectorData |
 
-If you would rather not pick packages one by one, use a profile:
-
-| Profile | Contents | Good for |
-| --- | --- | --- |
-| `XiHan.Framework.Profiles.Minimal` | Primitives, kernel, ASP.NET Core host, in-memory localization | Edge services, tools, plugin hosts |
-| `XiHan.Framework.Profiles.Standard` | Minimal, plus the domain model and the abstractions and defaults of five subsystems | Most business services |
-| `XiHan.Framework.Profiles.Full` | Standard, plus object storage, scheduling, auditing, workflow, the AI tool bridge, OpenTelemetry and four protocol adapters | Admin systems, SaaS |
-
-Every package is listed in the [package overview](https://framework.docs.xihanfun.com/packages/) and the [framework engineering notes](./framework/README.md#正式包).
+Profiles: `Profiles.Minimal` (kernel and host), `Profiles.Standard` (adds the domain model and five subsystems), `Profiles.Full` (adds the remaining subsystems and four protocol adapters).
 
 ## Samples
-
-None of them need external infrastructure. Clone and run:
 
 ```bash
 git clone --recurse-submodules --branch dev https://github.com/XiHanFun/XiHan.Framework.git
@@ -302,55 +124,39 @@ cd XiHan.Framework
 dotnet run --project framework/samples/SimpleApp
 ```
 
-```bash
-curl -X POST localhost:5000/orders -H "Authorization: ApiKey dev-alice-key" \
-  -H "Content-Type: application/json" -d '{"name":"widget","amount":3}'
-```
-
 | Sample | Contents |
 | --- | --- |
-| [SimpleApp](./framework/samples/SimpleApp) | Standard profile: one order contract over HTTP, gRPC and MCP, inbound CloudEvents handed to a message handler, with tenancy, API key authentication, permissions, transactions, domain events and an outbox. Also the Native AOT smoke test |
-| [SimpleCli](./framework/samples/SimpleCli) | Minimal profile: one contract as a command-line command and an MCP stdio tool |
-| [KubernetesApp](./framework/samples/KubernetesApp) | Full profile: probes, graceful shutdown, ConfigMap hot reload, Lease leader election and deployment artifacts generated by `xihan pack` |
-| [Plugin samples](./framework/samples) | `SamplePlugin` (in-process), `EchoPlugin` (out-of-process .NET), `EchoWasmPlugin` (Wasm in Rust), `EchoGoPlugin` and `CacheGoPlugin` (out-of-process plugin and remote provider in Go) |
+| [SimpleApp](./framework/samples/SimpleApp) | Standard profile: a multi-protocol order service with tenancy, authentication, permissions, transactions and an outbox; the Native AOT smoke test |
+| [SimpleCli](./framework/samples/SimpleCli) | Minimal profile: command line and MCP stdio |
+| [KubernetesApp](./framework/samples/KubernetesApp) | Full profile: probes, graceful shutdown, configuration hot reload, leader election |
+| [Plugin samples](./framework/samples) | In-process, out-of-process (.NET, Go) and Wasm (Rust) |
 
-## When to use it
+## Use Cases
 
-**A good fit:**
+- **Suited to**: medium to large backends with long maintenance horizons; multi-tenant SaaS and enterprise admin systems; services exposed over several protocols; third-party plugins in multiple languages.
+- **Not suited to**: short-lived CRUD projects; projects that need built-in templating, search or a gateway.
 
-- Medium to large backends maintained by a team for years, where dependency boundaries and replaceability matter
-- Multi-tenant SaaS and admin systems that need tenancy, permissions, auditing, workflow and scheduling
-- One business capability served over REST, gRPC, MCP tools or the command line
-- Third-party plugins in other languages, or plugins that must not take the host down when they crash
+See [Why XiHan](https://framework.docs.xihanfun.com/why) for selection criteria.
 
-**Not a good fit:**
+## Quality
 
-- Short-lived projects with a few CRUD endpoints: ASP.NET Core minimal APIs are simpler
-- Teams that do not want manifests or `Result`-style code: this approach is more explicit and has more concepts
-- Projects that want templating, search, a gateway or object mapping in the box: the framework does not provide them, see the [FAQ](https://framework.docs.xihanfun.com/guide/faq) for alternatives
-
-The trade-offs and limits are in [Why XiHan](https://framework.docs.xihanfun.com/why).
-
-## Quality and stability
-
-- **Boundaries are gates**: warnings are errors, and dependency direction, package ID grammar, namespaces, zero reflection, third-party type leaks and XML docs are enforced by architecture tests and Roslyn analyzers.
-- **Public APIs have baselines**: each package has `PublicAPI` files and package validation, and public types are marked `Stable`, `Preview`, `Experimental`, `Internal` or `Deprecated`.
-- **Providers have conformance suites**: each subsystem has a suite, and defaults and providers run the same cases. CI runs against real PostgreSQL, SQL Server, MySQL, Oracle, Redis, RabbitMQ and Qdrant, with more than 1,600 test methods across the repository.
-- **Specification first**: public contracts go into an RFC before the code and conformance vectors. There are 23 [RFCs](https://github.com/XiHanFun/framework-spec/tree/main/rfcs) and more than 120 [ADRs](./design/adr/README.md), so the reasoning behind each major decision can be looked up.
-- **Proven by a real application**: [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) is the framework's reference application, and many of the framework's capabilities and fixes came from building it.
+- **Gates**: warnings as errors; architecture tests and analyzers enforce dependency direction, naming, reflection and third-party type leaks.
+- **Public API**: `PublicAPI` baselines, package validation and stability levels.
+- **Conformance**: defaults and providers share test suites, run in CI against PostgreSQL, SQL Server, MySQL, Oracle, Redis, RabbitMQ and Qdrant.
+- **Decisions**: public contracts begin as RFCs, and major decisions are recorded as [ADRs](./design/adr/README.md).
 
 ## Roadmap
 
-Next up: stable Wasm plugins, a TypeScript SDK, realtime and gateway packages, and more providers such as MongoDB and NATS. See the [development plan](./design/architecture/05-开发计划.md) (in Chinese).
+Stable Wasm plugins, a TypeScript SDK, realtime and gateway packages, and more providers such as MongoDB and NATS. See the [development plan](./design/architecture/05-开发计划.md) (in Chinese).
 
 ## Ecosystem
 
 | Project | Description |
 | --- | --- |
-| [framework-spec](https://github.com/XiHanFun/framework-spec) | XiHan Spec: RFCs, vocabulary, manifest schema, protocol mappings, conformance vectors and a black-box runner |
+| [framework-spec](https://github.com/XiHanFun/framework-spec) | XiHan Spec: RFCs, vocabulary, protocol mappings and conformance vectors |
 | [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) | Go SDK for out-of-process plugins and remote providers |
 | [XiHan.UI](https://github.com/XiHanFun/XiHan.UI) | A fast, lightweight, efficient and thoughtfully built framework-agnostic headless UI component library |
-| [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) | A beautifully crafted general-purpose admin kernel built on XiHan.Framework and XiHan.UI |
+| [XiHan.BasicApp](https://github.com/XiHanFun/XiHan.BasicApp) | A beautifully crafted general-purpose admin kernel built on XiHan.Framework and XiHan.UI, and the framework's reference application |
 
 ## Documentation
 
@@ -358,44 +164,37 @@ The documentation site and design documents are written in Chinese.
 
 | Destination | Contents |
 | --- | --- |
-| [Quickstart](https://framework.docs.xihanfun.com/quickstart) | From installation to your first operation, then the Standard profile |
-| [Guides](https://framework.docs.xihanfun.com/guide/modularity) | Task-oriented docs organized by capability |
-| [Packages](https://framework.docs.xihanfun.com/packages/) | One page per package: capabilities, configuration keys, main types, limits |
-| [Design documents](./design/框架总体方案.md) | Overall design, architecture notes, development plan and ADRs |
-| [Framework engineering notes](./framework/README.md) | Package catalog, sample commands, gates and directory layout |
+| [Quickstart](https://framework.docs.xihanfun.com/quickstart) | From installation to the first operation |
+| [Guides](https://framework.docs.xihanfun.com/guide/modularity) | Task-oriented docs by capability |
+| [Packages](https://framework.docs.xihanfun.com/packages/) | One page per package: capabilities, configuration keys, main types |
+| [Design documents](./design/框架总体方案.md) | Overall design, architecture notes and ADRs |
 | [Changelog](https://framework.docs.xihanfun.com/changelog) | Release notes and upgrade advisories |
 
-If you work with a coding assistant, run this in your project root to connect the framework's offline knowledge base as an MCP server (`cursor`, `vscode` and `codex` also work):
+Connect a coding assistant (`cursor`, `vscode` and `codex` are also supported):
 
 ```bash
 dnx XiHan.Framework.Cli --yes -- setup --client claude
 ```
 
-You can also ask an AI directly: [Zread](https://zread.ai/XiHanFun/XiHan.Framework) · [DeepWiki](https://deepwiki.com/XiHanFun/XiHan.Framework).
+Ask an AI: [Zread](https://zread.ai/XiHanFun/XiHan.Framework) · [DeepWiki](https://deepwiki.com/XiHanFun/XiHan.Framework)
 
 ## Contributing
 
-[Issues](https://github.com/XiHanFun/XiHan.Framework/issues) and pull requests are welcome. Branch conventions, commit rules and local builds are in the [contributing guide](https://docs.xihanfun.com/cosmos/contributing). You can also join QQ group [462371834](https://qm.qq.com/q/qYp1Urv3z2).
+[Issues](https://github.com/XiHanFun/XiHan.Framework/issues) and pull requests are welcome; see the [contributing guide](https://docs.xihanfun.com/cosmos/contributing). Community: QQ group [462371834](https://qm.qq.com/q/qYp1Urv3z2). Support the project: [sponsorship page](https://docs.xihanfun.com/cosmos/sponsor).
 
 ## Acknowledgements
 
-| Project | Thanks for |
+| Project | Influence |
 | --- | --- |
-| [Abp](https://github.com/abpframework/abp) | The project that started it all: it inspired parts of the architecture and design, and its completeness in multi-tenancy, auditing and permissions is the checklist for our subsystems |
-| [Linux](https://www.kernel.org) | The "don't break userspace" promise and netfilter hook points, behind the grow-only primitives and the fixed pipeline stages |
-| [Go](https://go.dev) | Small interfaces and `context.Context`, behind entities composed from interfaces and an invocation context carrying cancellation, deadlines and tracing |
-| [Rust](https://www.rust-lang.org) | The `core` / `std` split, private by default and `Result`, behind host-independent primitives, `internal` by default and failures as values |
-| [FastAPI](https://github.com/fastapi/fastapi) | Types as the contract, behind operation contracts whose types generate the schema, OpenAPI, `.proto` and MCP tools |
-| [OpenTelemetry](https://opentelemetry.io) | A specification, SDKs per language and conformance tests, behind XiHan Spec and its conformance vectors |
+| [Abp](https://github.com/abpframework/abp) | The project that started it all, and the inspiration for parts of the architecture and design |
+| [Linux](https://www.kernel.org) | "Don't break userspace" and netfilter hook points: grow-only primitives and fixed pipeline stages |
+| [Go](https://go.dev) | Small interfaces and `context.Context`: entities composed from interfaces, and an invocation context carrying cancellation, deadlines and tracing |
+| [Rust](https://www.rust-lang.org) | The `core` / `std` split, private by default and `Result`: host-independent primitives and failures as values |
+| [FastAPI](https://github.com/fastapi/fastapi) | Types as the contract: schemas generated from types, producing OpenAPI, `.proto` and MCP tools |
+| [OpenTelemetry](https://opentelemetry.io) | Specification, multi-language SDKs and conformance tests: how XiHan Spec is organized |
 
-More influences are in the [overall design](./design/框架总体方案.md#3-借鉴矩阵) (in Chinese). Thanks also to all the third-party dependencies this project is built upon.
-
-## Sponsorship
-
-If this project helps your work, feel free to buy the author a coffee: [sponsorship page](https://docs.xihanfun.com/cosmos/sponsor).
+Other influences are listed in the [overall design](./design/框架总体方案.md#3-借鉴矩阵) (in Chinese).
 
 ## License
 
-Copyright (c) 2021-Present XiHanFun and contributors.
-
-Released under the [MIT](./LICENSE) license. The XiHan.Framework logo and name belong to the author; third-party dependencies and services are governed by their own licenses and terms.
+[MIT](./LICENSE) © 2021-Present XiHanFun and contributors. The XiHan.Framework logo and name belong to the author.
