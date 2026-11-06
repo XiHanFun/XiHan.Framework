@@ -354,13 +354,9 @@ public sealed class OutOfProcessPluginHostTests
         Assert.Equal(LifecycleState.Degraded, host.App.State);
         Assert.False(registry.Find("echoes.create").HasValue);
 
-        // 依赖放回后，按宿主时钟推进退避（1 秒起）直到重试成功：不是一次失败就永远放弃（handshake.md §5）
+        // 依赖放回后，把宿主时钟推过退避（1 秒起），第一次重试就成功：不是一次失败就永远放弃（handshake.md §5）
         File.Move(dependency + ".off", dependency);
-        Assert.True(await EchoPluginHost.WaitUntilAsync(() =>
-        {
-            clock.Advance(TimeSpan.FromSeconds(1));
-            return plugins.Describe(EchoPluginHost.PluginId)!.Status.State == LifecycleState.Ready;
-        }, TimeSpan.FromSeconds(60)));
+        Assert.True(await RecoversAfterBackoffAsync(plugins, clock, TimeSpan.FromSeconds(60)));
         Assert.Equal(1, plugins.Describe(EchoPluginHost.PluginId)!.Restarts);
         Assert.Equal(LifecycleState.Ready, host.App.State);
 
@@ -386,11 +382,12 @@ public sealed class OutOfProcessPluginHostTests
         Assert.Equal(PluginErrors.Crashed, loaded.Error?.Code);
         Assert.Equal(LifecycleState.Failed, Assert.Single(plugins.Plugins).State);
         File.Move(dependency + ".off", dependency);
-        Assert.True(await EchoPluginHost.WaitUntilAsync(() =>
-        {
-            clock.Advance(TimeSpan.FromSeconds(1));
-            return Assert.Single(plugins.Plugins).State == LifecycleState.Ready;
-        }, TimeSpan.FromSeconds(60)));
+        var diagnostics = EchoPluginHost.PluginHost(host);
+        Assert.True(await RecoversAfterBackoffAsync(diagnostics, clock, TimeSpan.FromSeconds(60)));
+        Assert.Equal(LifecycleState.Ready, Assert.Single(plugins.Plugins).State);
+
+        // 退避只过了一次：依赖放回后的第一次重试就成功
+        Assert.Equal(1, diagnostics.Describe(EchoPluginHost.PluginId)!.Restarts);
         var response = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"late"}""");
         Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
     }
@@ -532,6 +529,31 @@ public sealed class OutOfProcessPluginHostTests
     {
         OnConfigure = static ctx => ctx.AddOperation<PingOperation, PingRequest, PingResponse>(new OperationContract("pings.create"), PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse),
     };
+
+    /// <summary>
+    /// 把宿主时钟推过一次重启退避，再按真实时间等插件回到 Ready
+    /// </summary>
+    /// <remarks>
+    /// 重启退避与读握手行的时限按同一个宿主时钟计时，而重试拉起插件进程耗的是真实时间：重试开始后还推进，时钟会在进程启动期间走完握手时限，这次重试被记成握手超时、多重启一次。返回插件是否在 <paramref name="timeout"/> 内回到 Ready
+    /// </remarks>
+    private static async Task<bool> RecoversAfterBackoffAsync(OutOfProcessPluginHost plugins, FakeTimeProvider clock, TimeSpan timeout)
+    {
+        var restarts = plugins.Describe(EchoPluginHost.PluginId)!.Restarts;
+
+        // 重启计数在退避结束后、拉起进程前递增：计数没变就还在退避里，只在这时推进时钟
+        var retried = await EchoPluginHost.WaitUntilAsync(() =>
+        {
+            if (plugins.Describe(EchoPluginHost.PluginId)!.Restarts == restarts)
+            {
+                clock.Advance(TimeSpan.FromSeconds(1));
+            }
+
+            return plugins.Describe(EchoPluginHost.PluginId)!.Restarts != restarts;
+        }, timeout);
+
+        // 重试已经开始：时钟停住，握手时限不会被推过，按真实时间等这次重试的结果
+        return retried && await EchoPluginHost.WaitUntilAsync(() => plugins.Describe(EchoPluginHost.PluginId)!.Status.State == LifecycleState.Ready, timeout);
+    }
 
     /// <summary>
     /// 进程是否仍在运行
