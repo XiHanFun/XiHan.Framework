@@ -1,6 +1,6 @@
 {
   "name": "xihan-framework-docs",
-  "version": "5.0.0-preview.1",
+  "version": "5.0.0-preview.2",
   "type": "module",
   "description": "XiHan Framework document site. Language-neutral application framework specification and its .NET reference implementation.",
   "author": {
