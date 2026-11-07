@@ -12,12 +12,12 @@ description: 设计、实现、重构或审查 XiHan.Framework 时使用：原�
 ```bash
 git status --short --branch
 git log -5 --oneline
-ls framework/src framework/spec/rfcs design/adr
+ls framework/src framework/spec/rfcs plans/adr
 ```
 
 在 worktree 中先按 `AGENTS.md`「分支与 worktree」核对分支分组和基线。
 
-按顺序读：`design/框架总体方案.md` → `design/architecture/01–05` → 相关 RFC 与 ADR → 目标包的 README 与 PublicAPI 文件。只读与任务相关的部分。
+按顺序读：`plans/框架总体方案.md` → `plans/architecture/01–05` → 相关 RFC 与 ADR → 目标包的 README 与 PublicAPI 文件。只读与任务相关的部分。
 
 ## 架构边界
 
@@ -27,12 +27,12 @@ ls framework/src framework/spec/rfcs design/adr
 - 原语层只增不改；破坏即新包 `Primitives.V2` 并存。
 - 每个抽象配一个 `role: default` 的默认实现，包名按机制命名（`InMemory`、`FileSystem`），零外部基础设施、容量有界、通过一致性套件。
 - 依赖按能力 ID 声明在清单里，不按包名；管道按固定阶段插入中间件。
-- 规范先于实现：公开契约先进 `framework/spec/rfcs`，再写 ADR（`design/adr`），再写代码与一致性向量。
+- 规范先于实现：公开契约先进 `framework/spec/rfcs`，再写 ADR（`plans/adr`），再写代码与一致性向量。
 - 借鉴只能落成规则与约束，不落成类名；标识符里不出现哲学词汇。
 
 ## 代码规范
 
-细则在 `design/architecture/03-代码规范.md`；`.editorconfig` 的命名与样式规则在构建期执行（`EnforceCodeStyleInBuild`，IDE1006 / IDE0005 警告即错误），不降 severity、不加 `NoWarn`。
+细则在 `plans/architecture/03-代码规范.md`；`.editorconfig` 的命名与样式规则在构建期执行（`EnforceCodeStyleInBuild`，IDE1006 / IDE0005 警告即错误），不降 severity、不加 `NoWarn`。
 
 - 一个类型一个文件：类、记录、接口、枚举、委托都算；泛型类型文件名加 `OfT`（`MaybeOfT.cs`、`EntityQueryOfT.cs`），同名非泛型工厂类留在无后缀文件；只有嵌套类型留在外层类型的文件里。
 - XML 文档：所有类型与成员，含 private / internal / protected、字段、常量、`[GeneratedRegex]` 方法、嵌套类型、测试类与测试辅助类型，都写中文 `/// <summary>`（三行、只写一句，细节进 `<remarks>`）；`[Fact]` / `[Theory]` 方法除外；实现接口与重写用 `<inheritdoc />`；局部函数用 `//`。

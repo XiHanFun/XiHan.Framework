@@ -1,6 +1,6 @@
 # XiHan Framework
 
-XiHan Framework 的 .NET 参考实现。设计文档在仓库根的 [`design/`](../design/框架总体方案.md)，规范草案在本目录 `spec/`。
+XiHan Framework 的 .NET 参考实现。设计文档在仓库根的 [`plans/`](../plans/框架总体方案.md)，规范草案在本目录 `spec/`。
 
 ## 布局
 
@@ -242,4 +242,4 @@ P5 进行中：
 - P5-41 作业重试与执行时限已完成（2026-10-31，ADR-0060）：失败的运行按策略重试为新运行，超过时限取消并记超时。
 - P5-42 操作响应过滤已完成（2026-10-31，ADR-0061）：成功的响应在编码之前可按调用者裁剪。
 
-各阶段退出条件见 [`design/architecture/05-开发计划.md`](../design/architecture/05-开发计划.md)。
+各阶段退出条件见 [`plans/architecture/05-开发计划.md`](../plans/architecture/05-开发计划.md)。

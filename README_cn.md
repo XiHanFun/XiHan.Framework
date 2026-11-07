@@ -88,7 +88,7 @@ flowchart TB
     protocols --> pipeline --> operation --> capabilities
 ```
 
-依《易》之不易、简易、变易分为三层承诺，依赖仅可指向更低的环，由架构测试强制。详见[框架总体方案](./design/框架总体方案.md)。
+依《易》之不易、简易、变易分为三层承诺，依赖仅可指向更低的环，由架构测试强制。详见[框架总体方案](./plans/框架总体方案.md)。
 
 | 层 | 范围 | 承诺 |
 | --- | --- | --- |
@@ -143,7 +143,7 @@ dotnet run --project framework/samples/SimpleApp
 - **门禁**：警告即错误；架构测试与分析器约束依赖方向、命名、反射与第三方类型泄漏。
 - **公开 API**：`PublicAPI` 基线、包验证与稳定性分级。
 - **一致性**：默认实现与 Provider 共用测试套件，CI 连接 PostgreSQL、SQL Server、MySQL、Oracle、Redis、RabbitMQ 与 Qdrant 运行。
-- **决策**：公开契约先入 RFC，重要决策记入 [ADR](./design/adr/README.md)。
+- **决策**：公开契约先入 RFC，重要决策记入 [ADR](./plans/adr/README.md)。
 
 ## 生态
 
@@ -161,7 +161,7 @@ dotnet run --project framework/samples/SimpleApp
 | [快速上手](https://framework.docs.xihanfun.com/quickstart) | 从安装到首个操作 |
 | [开发指南](https://framework.docs.xihanfun.com/guide/modularity) | 按能力域组织的任务式文档 |
 | [包总览](https://framework.docs.xihanfun.com/packages/) | 每包一页：能力、配置键、主要类型 |
-| [设计文档](./design/框架总体方案.md) | 总体方案、架构说明与 ADR |
+| [设计文档](./plans/框架总体方案.md) | 总体方案、架构说明与 ADR |
 | [更新日志](https://framework.docs.xihanfun.com/changelog) | 版本变更与升级须知 |
 
 接入编码助手（亦支持 `cursor`、`vscode`、`codex`）：
@@ -187,7 +187,7 @@ AI 问答：[Zread](https://zread.ai/XiHanFun/XiHan.Framework) · [DeepWiki](htt
 | [FastAPI](https://github.com/fastapi/fastapi) | 类型即契约：由类型生成 Schema，进而产出 OpenAPI、`.proto` 与 MCP tool |
 | [OpenTelemetry](https://opentelemetry.io) | 规范、多语言 SDK 与一致性测试：XiHan Spec 的组织方式 |
 
-其余借鉴见[框架总体方案](./design/框架总体方案.md#3-借鉴矩阵)。
+其余借鉴见[框架总体方案](./plans/框架总体方案.md#3-借鉴矩阵)。
 
 ## 许可证
 

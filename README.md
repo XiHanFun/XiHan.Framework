@@ -88,7 +88,7 @@ flowchart TB
     protocols --> pipeline --> operation --> capabilities
 ```
 
-Three tiers of promise, after the I Ching's unchanging (不易), simple (简易) and changing (变易). Dependencies point only to lower rings, enforced by architecture tests. See the [overall design](./design/框架总体方案.md) (in Chinese).
+Three tiers of promise, after the I Ching's unchanging (不易), simple (简易) and changing (变易). Dependencies point only to lower rings, enforced by architecture tests. See the [overall design](./plans/框架总体方案.md) (in Chinese).
 
 | Tier | Scope | Promise |
 | --- | --- | --- |
@@ -143,7 +143,7 @@ See [Why XiHan](https://framework.docs.xihanfun.com/why) for selection criteria.
 - **Gates**: warnings as errors; architecture tests and analyzers enforce dependency direction, naming, reflection and third-party type leaks.
 - **Public API**: `PublicAPI` baselines, package validation and stability levels.
 - **Conformance**: defaults and providers share test suites, run in CI against PostgreSQL, SQL Server, MySQL, Oracle, Redis, RabbitMQ and Qdrant.
-- **Decisions**: public contracts begin as RFCs, and major decisions are recorded as [ADRs](./design/adr/README.md).
+- **Decisions**: public contracts begin as RFCs, and major decisions are recorded as [ADRs](./plans/adr/README.md).
 
 ## Ecosystem
 
@@ -163,7 +163,7 @@ The documentation site and design documents are written in Chinese.
 | [Quickstart](https://framework.docs.xihanfun.com/quickstart) | From installation to the first operation |
 | [Guides](https://framework.docs.xihanfun.com/guide/modularity) | Task-oriented docs by capability |
 | [Packages](https://framework.docs.xihanfun.com/packages/) | One page per package: capabilities, configuration keys, main types |
-| [Design documents](./design/框架总体方案.md) | Overall design, architecture notes and ADRs |
+| [Design documents](./plans/框架总体方案.md) | Overall design, architecture notes and ADRs |
 | [Changelog](https://framework.docs.xihanfun.com/changelog) | Release notes and upgrade advisories |
 
 Connect a coding assistant (`cursor`, `vscode` and `codex` are also supported):
@@ -189,7 +189,7 @@ Ask an AI: [Zread](https://zread.ai/XiHanFun/XiHan.Framework) · [DeepWiki](http
 | [FastAPI](https://github.com/fastapi/fastapi) | Types as the contract: schemas generated from types, producing OpenAPI, `.proto` and MCP tools |
 | [OpenTelemetry](https://opentelemetry.io) | Specification, multi-language SDKs and conformance tests: how XiHan Spec is organized |
 
-Other influences are listed in the [overall design](./design/框架总体方案.md#3-借鉴矩阵) (in Chinese).
+Other influences are listed in the [overall design](./plans/框架总体方案.md#3-借鉴矩阵) (in Chinese).
 
 ## License
 

@@ -50,4 +50,4 @@ dotnet run -c Release --project framework/benchmarks/XiHan.Framework.Benchmarks 
 | P4 插件与跨语言 | Go 插件在 .NET 宿主中服务一个操作；Go SDK 通过全部一致性向量；Spec 仓库公开 |
 | P5 GA | BasicApp 全量跑在本框架上 |
 
-详细任务清单在 `design/architecture/05-开发计划.md`。
+详细任务清单在 `plans/architecture/05-开发计划.md`。

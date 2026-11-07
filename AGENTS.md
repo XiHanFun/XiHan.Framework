@@ -25,7 +25,7 @@ XiHan.Framework 是面向 .NET 10 的微内核应用框架。能力按环层拆�
 5. 先确认能力归属哪个环层、哪个子系统，是契约还是实现，再创建代码。
 6. 查找已有接口、默认实现、扩展方法与测试，不重复建设相同能力。
 
-设计问题按顺序读 `design/框架总体方案.md`、`design/architecture/01–05`、相关 RFC（`framework/spec/rfcs`）与 ADR（`design/adr`），只读与任务相关的部分。
+设计问题按顺序读 `plans/框架总体方案.md`、`plans/architecture/01–05`、相关 RFC（`framework/spec/rfcs`）与 ADR（`plans/adr`），只读与任务相关的部分。
 
 ## 目录结构
 
@@ -35,7 +35,7 @@ XiHan.Framework 是面向 .NET 10 的微内核应用框架。能力按环层拆�
 ├─ .agents/skills/                 # 按开发、资源、测试和发布分类的仓库技能
 ├─ .claude/skills -> ../.agents/skills
 ├─ CLAUDE.md -> AGENTS.md
-├─ design/                         # 设计文档：总体方案、architecture/、adr/
+├─ plans/                          # 设计文档：总体方案、architecture/、adr/
 ├─ docs/                           # VitePress 文档站
 └─ framework/
    ├─ XiHan.Framework.slnx         # 解决方案，目录按环层分组
@@ -89,7 +89,7 @@ XiHan.Framework 是面向 .NET 10 的微内核应用框架。能力按环层拆�
 - 异步 API 接受并传递 `CancellationToken`；不阻塞异步调用，不吞异常。
 - 破坏性 API 变更必须明确说明迁移方式，不保留推测性兼容别名或静默兜底。
 - 优先使用 .NET 内建能力；新增依赖必须有明确的框架级收益和依赖边界。
-- 规范先于实现：公开契约先进 `framework/spec/rfcs`，再写 `design/adr`，再写代码与一致性向量。
+- 规范先于实现：公开契约先进 `framework/spec/rfcs`，再写 `plans/adr`，再写代码与一致性向量。
 
 ### 批量优先
 
@@ -106,7 +106,7 @@ XiHan.Framework 是面向 .NET 10 的微内核应用框架。能力按环层拆�
 
 ### 代码规范
 
-细则见 `design/architecture/03-代码规范.md`。
+细则见 `plans/architecture/03-代码规范.md`。
 
 - 一个类型一个文件，泛型类型文件名加 `OfT`，只有嵌套类型留在外层类型的文件里。
 - 所有类型与成员，含 private / internal / protected、字段、常量、嵌套类型与测试辅助类型，都写中文 `/// <summary>`（`[Fact]` / `[Theory]` 方法除外，实现接口与重写用 `<inheritdoc />`）。`<summary>` 三行、只写一句，细节进 `<remarks>`。
