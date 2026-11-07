@@ -35,7 +35,7 @@
 dotnet add package XiHan.Framework.Security.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包必须和一个持久化 Provider 一起装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配：
 
 ```csharp
 using SqlSugar;
@@ -155,7 +155,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
 
 ## 相关
 
-- [授权](../guide/authorization)
+- [授权](/security/authorization)
 - [Security.Abstractions](./security-abstractions)
 - [Security.InMemory](./security-inmemory)
 - [Persistence.SqlSugar](./persistence-sqlsugar)

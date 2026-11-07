@@ -29,7 +29,7 @@
 dotnet add package XiHan.Framework.Domain --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性，不需要 `UseFeature`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性，不需要 `UseFeature`。
 
 ## 主要类型
 
@@ -104,14 +104,14 @@ var matched = largeOrOld.IsSatisfiedBy(payment);   // true：不是近 7 天的
 - `DomainEventBuffer` 的容量小于 1 时构造抛出 `ArgumentOutOfRangeException`；已达容量时 `Add` 抛出 `InvalidOperationException`，不丢弃事件。缓冲不是线程安全的，聚合在一个调用里使用。
 - `Specification<T>` 第一次 `IsSatisfiedBy` 时编译 `Criteria` 并缓存委托；只交给查询提供器的规约不编译。`And` / `Or` 把右侧表达式的参数替换为左侧参数，组合结果只有一个参数，能被 EF Core 等 LINQ 提供器翻译。
 - 规约里只用目标 Provider 能翻译的成员与运算；可空值类型与 `null` 的比较在三个持久化 Provider 上都按是否有值判定。
-- 接口只描述字段，不含行为：字段何时写入、怎样过滤由持久化 Provider 按 RFC-0005 执行，见[持久化](../guide/persistence)。
+- 接口只描述字段，不含行为：字段何时写入、怎样过滤由持久化 Provider 按 RFC-0005 执行，见[持久化](/persistence/overview)。
 - `IValueObject` 不参与任何持久化映射。
 
 ## 相关
 
-- [领域模型](../guide/domain)
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
+- [领域模型](/persistence/domain)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.Generators](./persistence-generators)
 - 规范：RFC-0005《领域协议与持久化》

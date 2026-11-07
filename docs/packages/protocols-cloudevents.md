@@ -17,7 +17,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 ## 概述
 
-`CloudEventsProtocolFeature` 登记选项、本包的消息目录、命名 HttpClient `xihan.protocols.cloudevents`（过[出站地址策略](../guide/outbound)）与 `CloudEventsWebhookPublisher`。
+`CloudEventsProtocolFeature` 登记选项、本包的消息目录、命名 HttpClient `xihan.protocols.cloudevents`（过[出站地址策略](/security/outbound)）与 `CloudEventsWebhookPublisher`。
 
 入站：`MapXiHanCloudEvents()` 映射 `POST /events`，按 `Content-Type` 与 `ce-specversion` 头识别内容模式，把事件读成 `MessageEnvelope`，事件类型经 `Topics` 映射到主题（没有映射时类型本身须是合法主题）。`Inbound = Dispatch`（缺省）时在请求内经 `MessageDispatcher` 派发给本实例里主题的处理器（竞争订阅与广播订阅各一次投递，先竞争后广播），处理器的结果就是响应，要让广播订阅到达每个实例用 `Publish`；`Inbound = Publish` 时发布到消息代理后立即 202。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文。入站端点经过 `UseXiHan()`，请求凭据在外层认证。框架不给端点加任何要求，权限要由宿主自己加（`MapXiHanCloudEvents().RequireXiHanPermission(...)`）：扩展属性里的租户与主体是发送方给的，能调端点的人就能选租户（ADR-0121）。
 
@@ -25,7 +25,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 ## 何时使用
 
-外部系统（SaaS 的 Webhook、事件网关、其他语言的服务）以 CloudEvents 推事件进来，或应用要把消息以 CloudEvents 推给外部 HTTP 端点时用它。服务内部的消息传递直接用消息子系统，见[消息与事件](../guide/messaging)。
+外部系统（SaaS 的 Webhook、事件网关、其他语言的服务）以 CloudEvents 推事件进来，或应用要把消息以 CloudEvents 推给外部 HTTP 端点时用它。服务内部的消息传递直接用消息子系统，见[消息与事件](/messaging/pubsub)。
 
 ## 安装与启用
 
@@ -33,7 +33,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 dotnet add package XiHan.Framework.Protocols.CloudEvents --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -116,7 +116,7 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 }
 ```
 
-内容模式、batch 语义与派发模式的完整说明见 [gRPC、MCP 与 CloudEvents](../guide/protocols#cloudevents)。
+内容模式、batch 语义与派发模式的完整说明见 [gRPC、MCP 与 CloudEvents](/protocols/cloudevents)。
 
 ## 行为与限制
 
@@ -141,6 +141,6 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 
 ## 相关
 
-- [gRPC、MCP 与 CloudEvents](../guide/protocols)、[消息与事件](../guide/messaging)
+- [gRPC、MCP 与 CloudEvents](/protocols/grpc)、[消息与事件](/messaging/pubsub)
 - [Messaging.Abstractions](./messaging-abstractions)、[Hosting.AspNetCore](./hosting-aspnetcore)
 - 规范：`spec/protocol/cloudevents.md`《CloudEvents 载体》、RFC-0009《消息、CloudEvents 信封与发件箱》

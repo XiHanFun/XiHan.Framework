@@ -37,7 +37,7 @@
 dotnet add package XiHan.Framework.Persistence.Generators --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。在仓库里以项目引用时写成：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。在仓库里以项目引用时写成：
 
 ```xml
 <ProjectReference Include="../../src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
@@ -112,8 +112,8 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 
 ## 相关
 
-- [持久化](../guide/persistence#登记实体)
-- [领域模型](../guide/domain#规约)
+- [持久化](/persistence/overview)
+- [领域模型](/persistence/domain)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - [Kernel.Generators 操作生成器](./kernel-generators)

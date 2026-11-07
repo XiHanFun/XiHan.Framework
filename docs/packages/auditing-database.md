@@ -36,7 +36,7 @@
 dotnet add package XiHan.Framework.Auditing.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包要求 `persistence.relational@1`，与一个持久化 Provider 一起装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包要求 `persistence.relational@1`，与一个持久化 Provider 一起装配：
 
 ```csharp
 using SqlSugar;
@@ -196,9 +196,9 @@ public static class AuditTestExtensions
 
 ## 相关
 
-- [审计](../guide/auditing)
+- [审计](/auditing/)
 - [Auditing.Abstractions](./auditing-abstractions)
 - [Auditing.InMemory](./auditing-inmemory)
-- [持久化](../guide/persistence)
+- [持久化](/persistence/overview)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
 - 规范：RFC-0015《审计》

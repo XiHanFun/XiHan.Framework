@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Security.OpenIdConnect --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -130,7 +130,7 @@ app.Run();
 
 ## 相关
 
-- [认证](../guide/authentication)
+- [认证](/security/authentication)
 - [Security.Abstractions](./security-abstractions)
 - [Security.Jwt](./security-jwt)
 - [Security.InMemory](./security-inmemory)

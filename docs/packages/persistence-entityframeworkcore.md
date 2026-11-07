@@ -26,7 +26,7 @@
 - 新项目，或已经用 EF Core 的应用。
 - 表结构用 EF Core 迁移管理，复杂查询直接写在 `DbContext` 上。
 
-已有大量 SqlSugar 代码、需要一次调用写多个库或按时间分表时用 [Persistence.SqlSugar](./persistence-sqlsugar)；两个关系型 Provider 的 `IsAotCompatible` 都是 `false`，标注为 AOT 兼容的持久化实现只有 [Persistence.InMemory](./persistence-inmemory)，AOT 发布的整体要求见[序列化与 Native AOT](../guide/aot)。
+已有大量 SqlSugar 代码、需要一次调用写多个库或按时间分表时用 [Persistence.SqlSugar](./persistence-sqlsugar)；两个关系型 Provider 的 `IsAotCompatible` 都是 `false`，标注为 AOT 兼容的持久化实现只有 [Persistence.InMemory](./persistence-inmemory)，AOT 发布的整体要求见[序列化与 Native AOT](/serialization/)。
 
 ## 安装与启用
 
@@ -35,7 +35,7 @@ dotnet add package XiHan.Framework.Persistence.EntityFrameworkCore --prerelease
 dotnet add package Microsoft.EntityFrameworkCore.Sqlite
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用最新版的 `Microsoft.EntityFrameworkCore.Sqlite`：它带来的 `Microsoft.Data.Sqlite.Core` 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），修复之前的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用最新版的 `Microsoft.EntityFrameworkCore.Sqlite`：它带来的 `Microsoft.Data.Sqlite.Core` 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），修复之前的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
 
 1. 定义 `DbContext`：登记实体后调用 `ApplyPersistenceConventions(Database)`。
 2. 登记实体：`AddRepository<TEntity, TKey>()`。
@@ -131,7 +131,7 @@ public sealed class OrderReports(AppDbContext db)
 }
 ```
 
-用 `builder.Services.AddScoped<OrderReports>()` 注册后在操作里注入。在管道外使用时同样要先开工作单元，见[工作单元与事务](../guide/uow#在管道外开工作单元)。
+用 `builder.Services.AddScoped<OrderReports>()` 注册后在操作里注入。在管道外使用时同样要先开工作单元，见[工作单元与事务](/persistence/unit-of-work)。
 
 ## 行为与限制
 
@@ -151,7 +151,7 @@ public sealed class OrderReports(AppDbContext db)
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 租户分库：装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。没有 SqlSugar Provider 那样按实体分库的落点规则。
 - 健康项 `persistence.entityframeworkcore.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测在独立作用域里对默认连接 `CanConnect`，不开工作单元、不经管道。连不上为 Degraded（`PERSISTENCE_UNAVAILABLE_003`），应用仍在服务。
-- 整数主键按 EF Core 约定由数据库生成；应用自己生成整数标识时配 `ValueGeneratedNever()`，见[标识生成](../guide/distributed-ids)。
+- 整数主键按 EF Core 约定由数据库生成；应用自己生成整数标识时配 `ValueGeneratedNever()`，见[标识生成](/persistence/identifiers)。
 - 实体目录（ADR-0078）取 DbContext 模型（`GetTableName()`、`GetColumnName(表)`，影子属性不列）；库结构读取不支持，返回 `PERSISTENCE_UNAVAILABLE_008`——跨数据库读结构在 EF Core 里是设计期脚手架服务，`DbConnection.GetSchema` 各驱动不一致、SQLite 驱动不实现。
 - 索引与实体目录的补充：`ApplyPersistenceConventions(Database)` 的索引名取调用时的 `GetTableName()`，`ToTable` 要在它之前配置；从属类型与共享类型实体跳过。框架的数据库记录（授予、翻译、审计、调度、工作流、发件箱）在 `modelBuilder.Entity<T>()` 之后调用它即得到索引，不用再手写 `HasIndex`。实体目录的表名在没有映射到表时取类型名，从属类型不列，登记了却不在模型里的实体抛 `InvalidOperationException`；库结构读取在 EF Core 里对应的设计期脚手架服务是 `Microsoft.EntityFrameworkCore.Design` 的 `IDatabaseModelFactory`（按数据库 Provider 程序集反射发现）。
 - 命名连接（ADR-0087）：在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，值是连接串（名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`，值不能空白、不能写成子节，否则装配即 `ArgumentException`）。一个 `DbContext` 一个连接、建出后不换：`UnitOfWorkOptions(Connection: name)` 开启的工作单元先记下连接、再建本作用域的 `DbContext`，回调收到的绑定主值是那个连接串、属性沿用 `db` 绑定，事务只开在那个库上。所以登记到命名连接的实体（`AddRepository<TEntity, TKey>(connection)`）只能在绑定那个连接的工作单元里读写：普通工作单元里取用它的仓储抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，绑定连接的工作单元里取用落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。这一半是已定的（ADR-0091）：EF Core 不做「每个连接一个 `DbContext`、跨上下文顺序提交」的多上下文工作单元，普通工作单元里取用命名连接上的实体维持明确报错；要在业务事务里一起读写命名连接上的实体，用 `Persistence.SqlSugar`。登记到没有声明的连接装配即失败、绑定没有声明的连接 `BeginAsync` 抛出，都是 `PERSISTENCE_VALIDATION_004`；作用域里已经按别的连接建出 `DbContext`（先取用了它）再绑定，`BeginAsync` 抛 `PERSISTENCE_VALIDATION_002`，在新作用域里绑定即可。`EnsureCreated` 对登记了实体的每个命名连接各执行一次，按整个模型建表（那个库里多出的空表不用）。命名连接与默认连接用同一个配置回调，是同一种数据库 Provider。工作流的租约表就这样放到另一个库：SQLite 上 `XiHan:Workflow:Database:LockConnection` 指向这里声明的连接，调用方事务里取锁不再等自己的事务。
@@ -195,9 +195,9 @@ ALTER TABLE "ef_temp_TimedRow" RENAME TO "TimedRow";
 
 ## 相关
 
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
-- [多租户](../guide/multi-tenancy)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
+- [多租户](/multi-tenancy/resolution)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
 - [Persistence.Generators](./persistence-generators)

@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.ObjectStorage.S3 --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeature>());
@@ -80,9 +80,9 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 /bindings/objectstorage/secretKey     dev-secret-key
 ```
 
-绑定的解析规则见[配置与选项](../guide/configuration#资源绑定)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
+绑定的解析规则见[配置与选项](/configuration/options)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
 
-命名实例的客户端过[出站地址策略](../guide/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。缺省实例的端点是运维配的，不过策略。
+命名实例的客户端过[出站地址策略](/security/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。缺省实例的端点是运维配的，不过策略。
 
 ## 条件写入探测
 
@@ -195,8 +195,8 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 
 ## 相关
 
-- [对象存储](../guide/storage)
-- [配置与选项](../guide/configuration)
+- [对象存储](/object-storage/basics)
+- [配置与选项](/configuration/options)
 - [ObjectStorage.Abstractions](./objectstorage-abstractions)
 - [ObjectStorage.FileSystem](./objectstorage-filesystem)
 - 规范：RFC-0012《对象存储》、ADR-0049、ADR-0050、ADR-0089

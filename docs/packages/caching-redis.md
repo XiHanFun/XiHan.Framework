@@ -43,7 +43,7 @@
 dotnet add package XiHan.Framework.Caching.Redis --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Caching.Redis;
@@ -80,7 +80,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<RedisCachingFeat
 }
 ```
 
-值的序列化器按「已登记的 `ICacheSerializer` → 已登记的 `JsonSerializerOptions`（须带 `TypeInfoResolver`）→ 反射版 `JsonCacheSerializer`」的顺序选，在 `AddXiHan` 装配时决定，所以要在 `AddXiHan` 之前登记，见[序列化器](../guide/caching#序列化器)。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
+值的序列化器按「已登记的 `ICacheSerializer` → 已登记的 `JsonSerializerOptions`（须带 `TypeInfoResolver`）→ 反射版 `JsonCacheSerializer`」的顺序选，在 `AddXiHan` 装配时决定，所以要在 `AddXiHan` 之前登记，见[序列化器](/caching/basics)。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
 
 ## 主要类型
 
@@ -149,7 +149,7 @@ public sealed class LocalMirror : IDisposable
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching)
+- [缓存与分布式锁](/caching/basics)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.InMemory](./caching-inmemory)、[Caching.Hybrid](./caching-hybrid)
-- [部署与打包](../guide/deployment)：绑定 `cache` 的来源
+- [部署与打包](/deployment/pack)：绑定 `cache` 的来源
 - 规范：RFC-0006《缓存、分布式锁与幂等》；ADR-0055

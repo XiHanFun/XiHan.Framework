@@ -34,7 +34,7 @@
 dotnet add package XiHan.Framework.Plugins.OutOfProcess --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -148,7 +148,7 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 
 ## 相关
 
-- [插件](../guide/plugins)
+- [插件](/plugins/overview)
 - [Plugins.Protocol](./plugins-protocol)、[Plugins.Wasm](./plugins-wasm)、[Caching.Remote](./caching-remote)
 - [Conformance 一致性套件](./conformance#plugins)
 - 规范：RFC-0017《进程外插件协议》、RFC-0019《远程 Provider》

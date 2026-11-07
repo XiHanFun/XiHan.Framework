@@ -15,7 +15,7 @@
 
 ## 概述
 
-`xihan` 用 `Hosting.CommandLine` 的解析器、帮助与失败输出：失败时把 Problem JSON 写到 stderr，退出码按错误码的 KIND 段映射（[命令行宿主](../guide/command-line)）。文案按 `--locale` 或当前 UI 区域协商，内置与框架相同的 10 种区域。工具包的公开面只有消息键常量 `CliMessages`，命令本身是 `internal` 的，不作为库使用。
+`xihan` 用 `Hosting.CommandLine` 的解析器、帮助与失败输出：失败时把 Problem JSON 写到 stderr，退出码按错误码的 KIND 段映射（[命令行宿主](/protocols/command-line)）。文案按 `--locale` 或当前 UI 区域协商，内置与框架相同的 10 种区域。工具包的公开面只有消息键常量 `CliMessages`，命令本身是 `internal` 的，不作为库使用。
 
 | 命令 | 说明 |
 | --- | --- |
@@ -29,9 +29,9 @@
 
 ## 何时使用
 
-- 生成容器与 Kubernetes 产物：`xihan pack`，写法见[部署与打包](../guide/deployment)。
+- 生成容器与 Kubernetes 产物：`xihan pack`，写法见[部署与打包](/deployment/pack)。
 - 在仓库根或清单目录里查看应用的能力图谱、管道与操作：`xihan graph` 等转发命令，省去手写 `dotnet run --project … --`。
-- 让 Claude Code、Cursor、VS Code、Codex 等编码助手查证包名、能力 ID、配置键与缺省值：把 `xihan mcp` 配成它们的 MCP 服务，见 [MCP Server](../ai/mcp)。
+- 让 Claude Code、Cursor、VS Code、Codex 等编码助手查证包名、能力 ID、配置键与缺省值：把 `xihan mcp` 配成它们的 MCP 服务，见 [MCP Server](/agents/mcp)。
 - 不需要工具也能做同样的事：转发命令等价于 `dotnet run --project <项目> -- <命令>`，应用要装配 `Hosting.CommandLine`。
 
 ## 安装与启用
@@ -41,7 +41,7 @@ dotnet tool install --global XiHan.Framework.Cli --prerelease
 xihan version
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。不安装也可以从源码运行（在仓库根执行）：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。不安装也可以从源码运行（在仓库根执行）：
 
 ```bash
 dotnet run --project framework/src/XiHan.Framework.Cli -- pack --manifest framework/samples/SimpleApp/xihan.app.json --output ./artifacts/simple-app-deploy
@@ -61,7 +61,7 @@ xihan pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,com
 | `--output` | 清单所在目录下的 `deploy/` | 输出目录，产物整份覆盖写入（UTF-8 无 BOM、LF 换行） |
 | `--only` | 全部 | 逗号分隔的产物种类，不区分大小写；不认识的种类为 `CLI_VALIDATION_001`，退出码 64 |
 
-产物与清单字段的映射见[部署与打包](../guide/deployment#生成部署产物)。写出的文件包括 `Dockerfile` 与 `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`，逐行输出写出的文件；Kafka、Nacos 这类依赖服务在 Kustomize 里只出 Secret 示例，不在集群里起服务。
+产物与清单字段的映射见[部署与打包](/deployment/pack)。写出的文件包括 `Dockerfile` 与 `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`，逐行输出写出的文件；Kafka、Nacos 这类依赖服务在 Kustomize 里只出 Secret 示例，不在集群里起服务。
 
 ### graph、pipeline、operations、invoke
 
@@ -161,6 +161,6 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 
 ## 相关
 
-- [部署与打包](../guide/deployment)、[命令行宿主](../guide/command-line)
+- [部署与打包](/deployment/pack)、[命令行宿主](/protocols/command-line)
 - [Hosting.CommandLine](./hosting-commandline)
 - 规范：RFC-0016《应用清单与打包》、RFC-0020《版本迁移》

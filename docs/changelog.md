@@ -10,7 +10,7 @@
 
 ### 宿主、协议与插件
 
-- **修复** `invoke` 的字段选项按操作的请求 Schema 写成布尔、数字与数组，`--times 2` 进载荷是 `"times":2`；操作没有 Schema 时值仍是字符串（见[命令行](./guide/command-line)）
+- **修复** `invoke` 的字段选项按操作的请求 Schema 写成布尔、数字与数组，`--times 2` 进载荷是 `"times":2`；操作没有 Schema 时值仍是字符串（见[命令行](/protocols/command-line)）
 
 ### 包
 
@@ -38,14 +38,14 @@
 - **修复** SqlSugar 的数据库健康项与运行时数据源探测走一次数据库往返并按配置超时：连接池里有空闲连接时不再在库宕了之后报健康，服务器不回话时不再卡住启动；`persistence.sqlsugar.database` 的错误码由 `PERSISTENCE_UNAVAILABLE_003` 变成 `KERNEL_UNAVAILABLE_005`；`TestAsync` 单次上限是运行时数据源的 `HealthProbeIntervalSeconds`
 - **修复** 配了从库时授予与租户目录读主库，撤销授予、停用租户的生效时间不再多出复制延迟；新增 `UnitOfWorkOptions.ReadsPrimary`
 - **调整** HTTP、gRPC、MCP 入站丢弃 Baggage 里的 `xihan.tenant` 与 `xihan.principal`，这些调用方的租户只来自认证（CloudEvents 入站不变，端点权限由宿主自己加）；要按主机名或请求头选租户时登记自己的 `ITenantResolver`
-- **新增** 出站地址策略 `OutboundAddressPolicy`：工作流 `Http` 活动、CloudEvents Webhook 与 S3 命名实例缺省只能连公网地址，连接时按实际 IP 判定；连本机或内网要在 `XiHan:Security:Outbound` 放行，本地开发写 `AllowLoopback: true`（见[出站地址策略](./guide/outbound)）
+- **新增** 出站地址策略 `OutboundAddressPolicy`：工作流 `Http` 活动、CloudEvents Webhook 与 S3 命名实例缺省只能连公网地址，连接时按实际 IP 判定；连本机或内网要在 `XiHan:Security:Outbound` 放行，本地开发写 `AllowLoopback: true`（见[出站地址策略](/security/outbound)）
 
 ### 子系统
 
 - **新增** 本地化：消息键与 `key.L()`、每种语言一个 `Localization/<区域>.json`、内置 10 种区域（默认 `en-US`）、宿主按 `Accept-Language` 翻译 Problem Details；`Localization.InMemory` 与 `Localization.Database`
 - **新增** 领域模型 `Domain`：实体协议接口、值对象、领域事件缓冲与规约
 - **新增** 持久化：仓储、查询、工作单元与 Transaction 阶段、批量方法、雪花标识生成器；`Persistence.InMemory`、`Persistence.EntityFrameworkCore`、`Persistence.SqlSugar`（多库、分表、差异日志）与 `Persistence.Generators`
-- **新增** SqlSugar 读写分离：只读工作单元读从库，其余读写走主库；从库权重归一化与周期探测，不可读的自动摘除、全部不可读时读回到主库，健康项 `persistence.sqlsugar.replicas`（见[持久化](./guide/persistence#读写分离)）
+- **新增** SqlSugar 读写分离：只读工作单元读从库，其余读写走主库；从库权重归一化与周期探测，不可读的自动摘除、全部不可读时读回到主库，健康项 `persistence.sqlsugar.replicas`（见[持久化](/persistence/sqlsugar)）
 - **新增** 缓存：字节存储、类型化缓存、分布式锁、Idempotency 阶段、`IDistributedCache` 适配、键管理；`Caching.InMemory`、`Caching.Redis`、`Caching.Hybrid`、`Caching.Remote`（Experimental）
 - **新增** 多租户：租户解析与 Tenant 阶段、租户分片与管道外的 `TenantShardScope`；`MultiTenancy.InMemory`、`MultiTenancy.Database`
 - **新增** 安全：认证处理器与 Authenticate 阶段、权限与策略、RBAC 授予、权限收窄过滤器、授予来源、条件引擎、IP 归属地；`Security.InMemory`、`Security.Database`、`Security.Jwt`、`Security.OpenIdConnect`、`Security.Ip2Region`

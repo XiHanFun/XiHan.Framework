@@ -34,7 +34,7 @@
 dotnet add package XiHan.Framework.MultiTenancy.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -142,7 +142,7 @@ public sealed class TenantAdministration(InMemoryTenantStore store, ITenantShard
 
 ## 相关
 
-- [多租户](../guide/multi-tenancy)
+- [多租户](/multi-tenancy/resolution)
 - [MultiTenancy.Abstractions](./multitenancy-abstractions)
 - [MultiTenancy.Database](./multitenancy-database)
 - [Profiles.Standard](./profiles-standard)

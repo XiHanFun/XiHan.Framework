@@ -22,7 +22,7 @@
 - 消息持久化投递，`content_type` 为 `application/cloudevents+json`，`message_id` 为事件 ID，消息体是 CloudEvents 结构化 JSON。
 - 发布共用一条发布通道，用信号量串行化；通道开启发布确认并由客户端跟踪，消息以 `mandatory` 发出，代理确认后发布才返回成功，代理拒绝（nack）返回 `MESSAGING_UNAVAILABLE_001`。批量发布在这条通道上连续写出整批（一次持锁），再一次等待全部确认，结果逐项对应。
 - 没有订阅者：消息被退回（路由键上没有队列绑定）时丢弃，发布照常成功（批量逐项成功），记一条 Debug 日志，与内存代理一致；发件箱不为它重试，也不记进死信。
-- 广播订阅（[订阅方式](../guide/messaging#订阅方式)）：每个实例声明独占、非持久、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`，以主题的路由键绑定到交换机，交换机给竞争队列与每个实例的广播队列各一份。实例与代理断开时队列随连接删除（客户端自动恢复连接时重新声明），断开期间的消息收不到；重试定向发回本实例的广播队列，到上限或无法解码时确认掉并记 Warning 日志，不进死信。实例下线不留下队列。队列名里的实例标识缺省每次启动生成；配了 `XiHan:Messaging:InstanceId` 时取配置值，两个同时在线的实例配了同一个值，后启动的那个声明同名独占队列被代理拒绝（`RESOURCE_LOCKED`），启动失败（`MESSAGING_UNAVAILABLE_001`），见[订阅方式](../guide/messaging#订阅方式)。
+- 广播订阅（[订阅方式](/messaging/pubsub)）：每个实例声明独占、非持久、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`，以主题的路由键绑定到交换机，交换机给竞争队列与每个实例的广播队列各一份。实例与代理断开时队列随连接删除（客户端自动恢复连接时重新声明），断开期间的消息收不到；重试定向发回本实例的广播队列，到上限或无法解码时确认掉并记 Warning 日志，不进死信。实例下线不留下队列。队列名里的实例标识缺省每次启动生成；配了 `XiHan:Messaging:InstanceId` 时取配置值，两个同时在线的实例配了同一个值，后启动的那个声明同名独占队列被代理拒绝（`RESOURCE_LOCKED`），启动失败（`MESSAGING_UNAVAILABLE_001`），见[订阅方式](/messaging/pubsub)。
 - 每个订阅（主题加方式）一个通道与一个消费者，预取 `PrefetchCount`（缺省 16），手动确认，单线程派发。
 - 处理失败：尝试次数（消息头 `x-xihan-attempt`）小于 `MaxAttempts` 时经默认交换机重新发布到所消费队列的队尾，否则发布到死信队列 `<QueuePrefix><topic><DeadLetterSuffix>`（由死信的一方声明为持久队列并绑定到交换机，即主题加后缀的竞争队列）；重新发布同样等确认，确认了才确认原消息，未被确认、被退回（队列已不存在）或发布失败时把原消息 nack 并重新入队，由 RabbitMQ 再投递。无法解码的消息不重试，原样进死信队列（同样等确认）。
 - 停止时取消消费者；正在处理的消息不确认，连接关闭后由 RabbitMQ 重新投递。
@@ -41,7 +41,7 @@
 dotnet add package XiHan.Framework.Messaging.RabbitMQ --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -153,7 +153,7 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 
 ## 相关
 
-- [消息与事件](../guide/messaging)
+- [消息与事件](/messaging/pubsub)
 - [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Kafka](./messaging-kafka)
-- [部署与打包](../guide/deployment)：绑定 `queue` 的来源
+- [部署与打包](/deployment/pack)：绑定 `queue` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》

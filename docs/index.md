@@ -13,30 +13,30 @@ hero:
   actions:
     - theme: brand
       text: 快速上手
-      link: /quickstart
+      link: /getting-started/first-app
 
     - theme: alt
       text: 框架简介
-      link: /introduction
+      link: /appendix/introduction
 
     - theme: alt
       text: 为什么选择曦寒
-      link: /why
+      link: /appendix/why
 
 features:
   - title: 按能力 ID 装配
     details: 特性在清单里声明提供与依赖的能力，内核在启动前求解能力图谱、拓扑排序并打印结果。同一能力有多个 Provider 时按配置或清单角色选出一个，缺失与冲突在启动期报错。
-    link: /guide/modularity
+    link: /startup/features
     linkText: 能力包与清单
 
   - title: 固定阶段的管道
     details: 每次调用依次经过 Ingress 到 Egress 十一个阶段。认证、租户、授权、校验、幂等、事务都是阶段里的中间件，顺序确定、可打印、可单独测试。
-    link: /guide/pipeline
+    link: /startup/pipeline
     linkText: 执行管道
 
   - title: 一份契约多协议
     details: 用 [Operation] 声明一次操作，源生成器产出登记代码与 JSON Schema；HTTP、gRPC、MCP 与命令行共用同一份 Schema、授权要求与错误码。
-    link: /guide/operations
+    link: /web/operations
     linkText: 操作契约
 
   - title: 默认实现零外部依赖
@@ -46,11 +46,11 @@ features:
 
   - title: 零反射与 Native AOT
     details: 原语层与内核不使用运行时反射，注册与 Schema 在编译期生成。示例应用以 Native AOT 发布作为 CI 冒烟项，非 AOT 的 Provider 在包页注明。
-    link: /guide/aot
+    link: /serialization/
     linkText: 序列化与 Native AOT
 
   - title: 规范先于实现
     details: 原语、清单、调用上下文、管道阶段、协议映射与插件协议写在 XiHan Spec。Go SDK 与 .NET 参考实现通过同一套一致性向量，插件可用任意语言编写。
-    link: /guide/plugins
+    link: /plugins/overview
     linkText: 插件
 ---

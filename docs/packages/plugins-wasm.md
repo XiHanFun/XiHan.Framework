@@ -34,7 +34,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 dotnet add package XiHan.Framework.Plugins.Wasm --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -192,7 +192,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 
 ## 相关
 
-- [插件](../guide/plugins#wasm-插件贡献中间件)
+- [插件](/plugins/wasm)
 - [Plugins.Protocol](./plugins-protocol)、[Plugins.OutOfProcess](./plugins-outofprocess)
 - [Conformance 一致性套件](./conformance#plugins)
 - 规范：RFC-0018《Wasm 插件 ABI》；ADR-0009

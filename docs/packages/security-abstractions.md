@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
 
 ## 配置
 
@@ -139,7 +139,7 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 
 在特性里加到 Authorize 之前的阶段：`context.AddMiddleware<AuthenticatedByDefaultMiddleware>(PipelineStage.Tenant)`。
 
-收窄过滤器、授予来源、自定义策略与条件引擎的示例见[授权](../guide/authorization)。
+收窄过滤器、授予来源、自定义策略与条件引擎的示例见[授权](/security/authorization)。
 
 ## 行为与限制
 
@@ -176,8 +176,8 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 
 ## 相关
 
-- [认证](../guide/authentication)
-- [授权](../guide/authorization)
+- [认证](/security/authentication)
+- [授权](/security/authorization)
 - [Security.InMemory](./security-inmemory)
 - [Security.Database](./security-database)
 - [Kernel 内核](./kernel)

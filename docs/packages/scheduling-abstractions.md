@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Scheduling.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业：
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -215,7 +215,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 
 ## 相关
 
-- [调度与后台作业](../guide/scheduling)
+- [调度与后台作业](/scheduling/jobs)
 - [Scheduling.InMemory](./scheduling-inmemory)
 - [Scheduling.Database](./scheduling-database)
 - [Scheduling.Kubernetes](./scheduling-kubernetes)

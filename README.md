@@ -33,13 +33,13 @@ XiHan.Framework is a .NET application framework for long-lived systems, built on
 
 | Feature | Description |
 | --- | --- |
-| [Operation contracts](https://framework.docs.xihanfun.com/guide/operations) | Declared once, exposed over many protocols, sharing schema, authorization and error codes |
-| [Capability graph](https://framework.docs.xihanfun.com/guide/modularity) | Dependencies declared by capability ID, resolved and validated before startup |
-| [Execution pipeline](https://framework.docs.xihanfun.com/guide/pipeline) | Eleven fixed stages for authentication, tenancy, authorization, validation, idempotency and transactions |
+| [Operation contracts](https://framework.docs.xihanfun.com/web/operations) | Declared once, exposed over many protocols, sharing schema, authorization and error codes |
+| [Capability graph](https://framework.docs.xihanfun.com/startup/features) | Dependencies declared by capability ID, resolved and validated before startup |
+| [Execution pipeline](https://framework.docs.xihanfun.com/startup/pipeline) | Eleven fixed stages for authentication, tenancy, authorization, validation, idempotency and transactions |
 | [Replaceable implementations](https://framework.docs.xihanfun.com/packages/) | Defaults with no external dependencies; providers pass the same conformance suite |
-| [Native AOT](https://framework.docs.xihanfun.com/guide/aot) | Reflection-free kernel, with registration code and schemas generated at compile time |
-| [Plugins](https://framework.docs.xihanfun.com/guide/plugins) | In-process, Wasm and out-of-process isolation, in multiple languages, with failures contained from the host |
-| [AI integration](https://framework.docs.xihanfun.com/ai/mcp) | Operations as MCP tools and model tools, plus an offline knowledge base for coding assistants |
+| [Native AOT](https://framework.docs.xihanfun.com/serialization/) | Reflection-free kernel, with registration code and schemas generated at compile time |
+| [Plugins](https://framework.docs.xihanfun.com/plugins/overview) | In-process, Wasm and out-of-process isolation, in multiple languages, with failures contained from the host |
+| [AI integration](https://framework.docs.xihanfun.com/agents/mcp) | Operations as MCP tools and model tools, plus an offline knowledge base for coding assistants |
 
 ## Getting Started
 
@@ -64,7 +64,7 @@ Protocol entry points derive from the contract and take effect once the matching
 | --- | --- | --- | --- |
 | `POST /greetings` | `Greetings/Create` | `greetings_create` | `greetings create --name Ada` |
 
-The feature manifest, serializer context and application entry point are covered in the [quickstart](https://framework.docs.xihanfun.com/quickstart).
+The feature manifest, serializer context and application entry point are covered in the [quickstart](https://framework.docs.xihanfun.com/getting-started/first-app).
 
 ## Architecture
 
@@ -100,19 +100,19 @@ Three tiers of promise, after the I Ching's unchanging (不易), simple (简易)
 
 | Capability | Default | Providers |
 | --- | --- | --- |
-| [Persistence](https://framework.docs.xihanfun.com/guide/persistence) | In-memory | EF Core, SqlSugar |
-| [Caching and distributed locks](https://framework.docs.xihanfun.com/guide/caching) | In-memory | Redis, two-level cache, remote plugin |
-| [Messaging](https://framework.docs.xihanfun.com/guide/messaging) | In-memory, with outbox | RabbitMQ, Kafka, CloudEvents webhook |
-| [Multi-tenancy](https://framework.docs.xihanfun.com/guide/multi-tenancy) | In-memory | Database, with per-tenant databases |
-| [Authentication](https://framework.docs.xihanfun.com/guide/authentication) and [authorization](https://framework.docs.xihanfun.com/guide/authorization) | In-memory (API key, RBAC) | JWT, OpenID Connect, database |
-| [Scheduling](https://framework.docs.xihanfun.com/guide/scheduling) | In-memory | Database (clustered), Kubernetes (leader election) |
-| [Workflow](https://framework.docs.xihanfun.com/guide/workflow) | In-memory | Database |
-| [Object storage](https://framework.docs.xihanfun.com/guide/storage) | File system | S3 and compatible services |
-| [Auditing](https://framework.docs.xihanfun.com/guide/auditing) | In-memory | Database |
-| [Localization](https://framework.docs.xihanfun.com/guide/localization) | In-memory (10 locales) | Database |
-| [Configuration](https://framework.docs.xihanfun.com/guide/configuration) | .NET configuration | Nacos |
-| [Observability](https://framework.docs.xihanfun.com/guide/observability) | `System.Diagnostics` | OpenTelemetry |
-| [AI](https://framework.docs.xihanfun.com/guide/ai) | Tool bridge | OpenAI-compatible endpoints, VectorData |
+| [Persistence](https://framework.docs.xihanfun.com/persistence/overview) | In-memory | EF Core, SqlSugar |
+| [Caching and distributed locks](https://framework.docs.xihanfun.com/caching/basics) | In-memory | Redis, two-level cache, remote plugin |
+| [Messaging](https://framework.docs.xihanfun.com/messaging/pubsub) | In-memory, with outbox | RabbitMQ, Kafka, CloudEvents webhook |
+| [Multi-tenancy](https://framework.docs.xihanfun.com/multi-tenancy/resolution) | In-memory | Database, with per-tenant databases |
+| [Authentication](https://framework.docs.xihanfun.com/security/authentication) and [authorization](https://framework.docs.xihanfun.com/security/authorization) | In-memory (API key, RBAC) | JWT, OpenID Connect, database |
+| [Scheduling](https://framework.docs.xihanfun.com/scheduling/jobs) | In-memory | Database (clustered), Kubernetes (leader election) |
+| [Workflow](https://framework.docs.xihanfun.com/workflow/definitions) | In-memory | Database |
+| [Object storage](https://framework.docs.xihanfun.com/object-storage/basics) | File system | S3 and compatible services |
+| [Auditing](https://framework.docs.xihanfun.com/auditing/) | In-memory | Database |
+| [Localization](https://framework.docs.xihanfun.com/localization/) | In-memory (10 locales) | Database |
+| [Configuration](https://framework.docs.xihanfun.com/configuration/options) | .NET configuration | Nacos |
+| [Observability](https://framework.docs.xihanfun.com/observability/) | `System.Diagnostics` | OpenTelemetry |
+| [AI](https://framework.docs.xihanfun.com/ai/chat) | Tool bridge | OpenAI-compatible endpoints, VectorData |
 
 Profiles: `Profiles.Minimal` (kernel and host), `Profiles.Standard` (adds the domain model and five subsystems), `Profiles.Full` (adds the remaining subsystems and four protocol adapters).
 
@@ -136,7 +136,7 @@ dotnet run --project framework/samples/SimpleApp
 - **Suited to**: medium to large backends with long maintenance horizons; multi-tenant SaaS and enterprise admin systems; services exposed over several protocols; third-party plugins in multiple languages.
 - **Not suited to**: short-lived CRUD projects; projects that need built-in templating, search or a gateway.
 
-See [Why XiHan](https://framework.docs.xihanfun.com/why) for selection criteria.
+See [Why XiHan](https://framework.docs.xihanfun.com/appendix/why) for selection criteria.
 
 ## Quality
 
@@ -160,8 +160,8 @@ The documentation site and design documents are written in Chinese.
 
 | Destination | Contents |
 | --- | --- |
-| [Quickstart](https://framework.docs.xihanfun.com/quickstart) | From installation to the first operation |
-| [Guides](https://framework.docs.xihanfun.com/guide/modularity) | Task-oriented docs by capability |
+| [Quickstart](https://framework.docs.xihanfun.com/getting-started/first-app) | From installation to the first operation |
+| [Guides](https://framework.docs.xihanfun.com/startup/features) | Task-oriented docs by capability |
 | [Packages](https://framework.docs.xihanfun.com/packages/) | One page per package: capabilities, configuration keys, main types |
 | [Design documents](./plans/框架总体方案.md) | Overall design, architecture notes and ADRs |
 | [Changelog](https://framework.docs.xihanfun.com/changelog) | Release notes and upgrade advisories |

@@ -25,7 +25,7 @@
 
 ## 何时使用
 
-写操作契约、领域服务、后台任务等需要读写实体的代码引用本包。装配哪个 Provider 是应用入口的事，见[持久化](../guide/persistence#选择-provider)。实现自己的 Provider 时实现 `IRepository<TEntity, TKey>`、`IUnitOfWork` 与 `IRepositoryRegistrar`，并通过 [Conformance 一致性套件](./conformance)。
+写操作契约、领域服务、后台任务等需要读写实体的代码引用本包。装配哪个 Provider 是应用入口的事，见[持久化](/persistence/overview)。实现自己的 Provider 时实现 `IRepository<TEntity, TKey>`、`IUnitOfWork` 与 `IRepositoryRegistrar`，并通过 [Conformance 一致性套件](./conformance)。
 
 ## 安装与启用
 
@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Persistence.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已包含本包与内存实现。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已包含本包与内存实现。
 
 本包的契约不需要启用；雪花标识需要显式装配：
 
@@ -41,7 +41,7 @@ dotnet add package XiHan.Framework.Persistence.Abstractions --prerelease
 builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 ```
 
-这样装配时机器位经 Standard 里 `InMemoryCachingFeature` 的进程内锁租约分配，只适合单实例。多实例部署配置 `WorkerId`，或装配 Redis 等跨进程的缓存 Provider（先后不限，能力图谱让它先启后停），见[标识生成](../guide/distributed-ids#启用雪花标识)。
+这样装配时机器位经 Standard 里 `InMemoryCachingFeature` 的进程内锁租约分配，只适合单实例。多实例部署配置 `WorkerId`，或装配 Redis 等跨进程的缓存 Provider（先后不限，能力图谱让它先启后停），见[标识生成](/persistence/identifiers)。
 
 ## 配置
 
@@ -146,7 +146,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 }
 ```
 
-`ImportAsync` 接受部分成功：通过校验的订单随调用提交。要全有或全无，把失败项作为操作结果返回，见[持久化](../guide/persistence#批量方法)；管道外的工作单元写法见[工作单元与事务](../guide/uow#在管道外开工作单元)。
+`ImportAsync` 接受部分成功：通过校验的订单随调用提交。要全有或全无，把失败项作为操作结果返回，见[持久化](/persistence/repositories)；管道外的工作单元写法见[工作单元与事务](/persistence/unit-of-work)。
 
 ## 行为与限制
 
@@ -157,7 +157,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073、ADR-0081）。
 - 不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元；只读工作单元拒绝写入的错误消息键是 `persistence.unit_of_work.read_only`，处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束；空集合的批量写入不算写入。
 - 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 决定，`ReadsPrimary` 让只读工作单元读主库，其余仍是只读的语义，没有从库的 Provider 上没有作用（ADR-0122）。
-- 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109）：可写工作单元里仓储的单条写入或非空批量写入一经调用即为真（不论结果），`EnsureTransactionAsync` 同样；提交（成功或返回失败）与回滚后为假，只读工作单元恒为假；多连接一个值，绑定命名连接的工作单元只报告那个连接；内存实现第一次写入调用起同样为真。调用里要立即对外产生、不随回滚撤回的副作用之前据此判断，见[工作单元与事务](../guide/uow#是否已开数据库事务)。
+- 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109）：可写工作单元里仓储的单条写入或非空批量写入一经调用即为真（不论结果），`EnsureTransactionAsync` 同样；提交（成功或返回失败）与回滚后为假，只读工作单元恒为假；多连接一个值，绑定命名连接的工作单元只报告那个连接；内存实现第一次写入调用起同样为真。调用里要立即对外产生、不随回滚撤回的副作用之前据此判断，见[工作单元与事务](/persistence/unit-of-work)。
 - `HasTransaction` 的边界：查找、查询、计数与空批量不开事务；不同服务作用域的工作单元各报各的；不经仓储、也不经 `EnsureTransactionAsync` 直接对客户端执行的写入不在事务里，也不让它变真。
 - 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
 - 领域事件在处理器成功后、提交前由中间件把带有未派发事件的聚合交给 `IDomainEventDispatcher`（Messaging 子系统实现，用发件箱时与业务写入同事务），成功即清空缓冲、失败即回滚。
@@ -174,13 +174,13 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 启停顺序：清单声明可选依赖 `caching.distributed@1`，装配了缓存 Provider 时它先于雪花特性启动、后于雪花特性停止，租约在锁存储可用时取得与释放，与 `UseFeature` 的先后无关；固定机器位又没有任何 `caching.distributed` Provider 时按可选依赖缺失处理，特性是 Degraded，生成不受影响。
 - 雪花失败的转换：`NewId()` 返回 `long`，失败只能抛出 `FrameworkException`；回拨超过阈值在时钟追上后自动恢复。转换成结果的中间件由本特性登记在 Resilience 阶段末尾，在幂等与工作单元之外，工作单元已回滚、幂等标记已清除；消息键 `persistence.snowflake.clock_moved_backwards` / `persistence.snowflake.worker_unavailable`，HTTP 映射为可重试的 503、gRPC 为 `Unavailable`。管道之外直接调用生成器仍是异常（ADR-0063）。
 - 雪花标识在 JSON 里保持 number（后端标准类型，不加字符串转换器）。超过 2^53（约 9.007 × 10^15）的整数在 JavaScript 的 `number` 里会丢精度，而雪花标识从 epoch 之后约 25 天起就全部超过 2^53：前端必须用能保留大整数的方式解析（`JSON.parse` 的 BigInt reviver、按字符串读取原文），以字符串或 `BigInt` 保存与回传，不能 `Number()` 换算。
-- 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。SqlSugar 两样都支持；EF Core 只支持绑定连接的工作单元（ADR-0087），普通工作单元里取用命名连接上的实体抛 `PERSISTENCE_UNAVAILABLE_008`（已定，ADR-0091）；内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 命名连接](../guide/persistence#命名连接)。
+- 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。SqlSugar 两样都支持；EF Core 只支持绑定连接的工作单元（ADR-0087），普通工作单元里取用命名连接上的实体抛 `PERSISTENCE_UNAVAILABLE_008`（已定，ADR-0091）；内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 命名连接](/persistence/connections)。
 - 命名连接的细节：SQLite 只有一个写者，业务事务写过之后同一个库文件上的另一个事务要等它结束，所以工作流的租约行要放在另一个库文件。`AddRepository<TEntity, TKey>(connection)` 里 `null` 是 Provider 的缺省落点，非空不能是空白；同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取登记的连接。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。`UnitOfWorkOptions(Connection: name)` 的连接名空白抛 `ArgumentException`，实体不落在它上面时 `PERSISTENCE_VALIDATION_004`，事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。SqlSugar 的命名连接是客户端里同名 `ConfigId` 的连接（特性创建客户端时在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上。
-- 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](../guide/persistence#运行时数据源)。
+- 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](/persistence/connections)。
 - 运行时数据源的约定：Provider 经 `AddDataSourceProvider<T>(configuration)` 登记 `IDataSourceProvider`（目前是 SqlSugar）；名字 `^[a-z0-9][a-z0-9-]{0,63}$`，`default` 保留给缺省连接；数据库类型不区分大小写，认得哪些由 Provider 决定；`DataSourceDefinition.Describes` 比名字、类型（不区分大小写）与连接串（区分大小写）。注册表是进程内的，多实例时别的实例在下一次以新定义 `GetOrAddAsync` 时替换，所以每次使用都以记录里当前的定义 `GetOrAddAsync`，不要只按名字 `GetAsync`；约定连接 `default` / `shard` 与租户分片照旧。
 - 运行时数据源的健康与失败：健康项数据 `databaseType`、`provider`，在后台按 `HealthProbeIntervalSeconds` 探连通性（关系型 Provider 走一次数据库往返，ADR-0123）；尚未探过 Started，成功 Ready，失败或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness。连不上 `PERSISTENCE_UNAVAILABLE_006`（参数 `name`、`reason`）；数据库类型不认识或连接串格式错 `PERSISTENCE_VALIDATION_006`，同名的已登记实例不受影响；`GetAsync` 没有登记 `PERSISTENCE_NOTFOUND_002`；替换同名的不占名额。
 - 运行时数据源的机密：`reason` 取驱动异常的消息链，经 `ConnectionStrings.Redact` / `Describe` 把整串连接串与口令类键（键名含 `password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机名、端口、库名、用户名不算机密，驱动消息里有就保留（脱敏范围已定，ADR-0084；选项打印遮蔽登录用户名不扩到这里，ADR-0093）。日志只记名字与数据库类型。
-- 库结构读取与实体目录（ADR-0078）：读结构一次最多 100 张表、列表 `Take` 最多 1000；分表按已登记实体的模板折叠；实体目录按登记顺序、重复登记只一条。EF Core 与内存实现读结构返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 库结构读取与实体目录](../guide/persistence#库结构读取与实体目录)。
+- 库结构读取与实体目录（ADR-0078）：读结构一次最多 100 张表、列表 `Take` 最多 1000；分表按已登记实体的模板折叠；实体目录按登记顺序、重复登记只一条。EF Core 与内存实现读结构返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 库结构读取与实体目录](/persistence/connections)。
 - 读结构的细节：列表按名字排序，`Keyword` 在名字与注释里包含匹配，返回过滤后的总数；分页越界不在构造 `TableListQuery` 时抛出，读结构的 Provider 先经 `Validate()` 核对（都是 400 的结果，不连库、不登记数据源，ADR-0084）。批量读超过 100 张整批 `PERSISTENCE_VALIDATION_005`，逐项结果与入参一一对应，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`（原因已脱敏）；空集合不连库；`GetTableAsync` 是单项特例。读运行时数据源的结构先按定义登记再读，`dataSource` 传 `null` 读应用的缺省连接。
 - 列的内容：类型名（不含长度与精度）、序号、主键（一律不可空）、自增、可空、长度（只给字符与二进制类型的声明长度；没有上限的与其余类型为 null）、精度与小数位（`decimal` / `numeric` / `number` / `money` 族）、注释、缺省值原文；数据库没有的项为 null。已登记的分表实体（SqlSugar `[SplitTable]`）按表名模板把物理表折叠成一张逻辑表（`Order_{year}{month}{day}` → `Order`），`PhysicalTables` 新到旧，列取最新的物理表。实体目录里表名与列名是映射声明的写法，分表是逻辑名；`Protocols` 标出聚合根、创建 / 修改时间、并发戳、软删除、多租户。
 
@@ -216,9 +216,9 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 
 ## 相关
 
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
-- [标识生成](../guide/distributed-ids)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
+- [标识生成](/persistence/identifiers)
 - [Domain](./domain)
 - [Persistence.InMemory](./persistence-inmemory)、[Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)、[Persistence.SqlSugar](./persistence-sqlsugar)
 - [Persistence.Generators](./persistence-generators)

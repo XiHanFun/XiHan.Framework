@@ -33,13 +33,13 @@ XiHan.Framework 是面向长期演进系统的 .NET 应用框架，以微内核�
 
 | 特性 | 说明 |
 | --- | --- |
-| [操作契约](https://framework.docs.xihanfun.com/guide/operations) | 一次声明，多协议暴露，共用 Schema、授权与错误码 |
-| [能力图谱](https://framework.docs.xihanfun.com/guide/modularity) | 依赖按能力 ID 声明，启动前完成求解与校验 |
-| [执行管道](https://framework.docs.xihanfun.com/guide/pipeline) | 十一个固定阶段承载认证、租户、授权、校验、幂等与事务 |
+| [操作契约](https://framework.docs.xihanfun.com/web/operations) | 一次声明，多协议暴露，共用 Schema、授权与错误码 |
+| [能力图谱](https://framework.docs.xihanfun.com/startup/features) | 依赖按能力 ID 声明，启动前完成求解与校验 |
+| [执行管道](https://framework.docs.xihanfun.com/startup/pipeline) | 十一个固定阶段承载认证、租户、授权、校验、幂等与事务 |
 | [可替换实现](https://framework.docs.xihanfun.com/packages/) | 默认实现零外部依赖，Provider 通过同一套一致性测试 |
-| [Native AOT](https://framework.docs.xihanfun.com/guide/aot) | 内核零反射，注册代码与 Schema 于编译期生成 |
-| [插件](https://framework.docs.xihanfun.com/guide/plugins) | 进程内、Wasm、进程外三级隔离，支持多语言，故障不影响宿主 |
-| [AI 集成](https://framework.docs.xihanfun.com/ai/mcp) | 操作可作为 MCP tool 与模型工具，内置离线知识库服务编码助手 |
+| [Native AOT](https://framework.docs.xihanfun.com/serialization/) | 内核零反射，注册代码与 Schema 于编译期生成 |
+| [插件](https://framework.docs.xihanfun.com/plugins/overview) | 进程内、Wasm、进程外三级隔离，支持多语言，故障不影响宿主 |
+| [AI 集成](https://framework.docs.xihanfun.com/agents/mcp) | 操作可作为 MCP tool 与模型工具，内置离线知识库服务编码助手 |
 
 ## 快速开始
 
@@ -64,7 +64,7 @@ public sealed class Greet : IOperation<GreetRequest, GreetResponse>
 | --- | --- | --- | --- |
 | `POST /greetings` | `Greetings/Create` | `greetings_create` | `greetings create --name Ada` |
 
-特性清单、序列化上下文与应用入口见[快速上手](https://framework.docs.xihanfun.com/quickstart)。
+特性清单、序列化上下文与应用入口见[快速上手](https://framework.docs.xihanfun.com/getting-started/first-app)。
 
 ## 架构
 
@@ -100,19 +100,19 @@ flowchart TB
 
 | 能力 | 默认实现 | Provider |
 | --- | --- | --- |
-| [持久化](https://framework.docs.xihanfun.com/guide/persistence) | 内存 | EF Core、SqlSugar |
-| [缓存与分布式锁](https://framework.docs.xihanfun.com/guide/caching) | 内存 | Redis、两级缓存、远程插件 |
-| [消息](https://framework.docs.xihanfun.com/guide/messaging) | 内存（含发件箱） | RabbitMQ、Kafka、CloudEvents Webhook |
-| [多租户](https://framework.docs.xihanfun.com/guide/multi-tenancy) | 内存 | 数据库（支持分库） |
-| [认证](https://framework.docs.xihanfun.com/guide/authentication)与[授权](https://framework.docs.xihanfun.com/guide/authorization) | 内存（API Key、RBAC） | JWT、OpenID Connect、数据库 |
-| [调度](https://framework.docs.xihanfun.com/guide/scheduling) | 内存 | 数据库（集群）、Kubernetes（选主） |
-| [工作流](https://framework.docs.xihanfun.com/guide/workflow) | 内存 | 数据库 |
-| [对象存储](https://framework.docs.xihanfun.com/guide/storage) | 文件系统 | S3 及兼容服务 |
-| [审计](https://framework.docs.xihanfun.com/guide/auditing) | 内存 | 数据库 |
-| [国际化](https://framework.docs.xihanfun.com/guide/localization) | 内存（10 种区域） | 数据库 |
-| [配置](https://framework.docs.xihanfun.com/guide/configuration) | .NET 配置 | Nacos |
-| [可观测性](https://framework.docs.xihanfun.com/guide/observability) | `System.Diagnostics` | OpenTelemetry |
-| [AI](https://framework.docs.xihanfun.com/guide/ai) | 工具桥 | OpenAI 兼容端点、VectorData |
+| [持久化](https://framework.docs.xihanfun.com/persistence/overview) | 内存 | EF Core、SqlSugar |
+| [缓存与分布式锁](https://framework.docs.xihanfun.com/caching/basics) | 内存 | Redis、两级缓存、远程插件 |
+| [消息](https://framework.docs.xihanfun.com/messaging/pubsub) | 内存（含发件箱） | RabbitMQ、Kafka、CloudEvents Webhook |
+| [多租户](https://framework.docs.xihanfun.com/multi-tenancy/resolution) | 内存 | 数据库（支持分库） |
+| [认证](https://framework.docs.xihanfun.com/security/authentication)与[授权](https://framework.docs.xihanfun.com/security/authorization) | 内存（API Key、RBAC） | JWT、OpenID Connect、数据库 |
+| [调度](https://framework.docs.xihanfun.com/scheduling/jobs) | 内存 | 数据库（集群）、Kubernetes（选主） |
+| [工作流](https://framework.docs.xihanfun.com/workflow/definitions) | 内存 | 数据库 |
+| [对象存储](https://framework.docs.xihanfun.com/object-storage/basics) | 文件系统 | S3 及兼容服务 |
+| [审计](https://framework.docs.xihanfun.com/auditing/) | 内存 | 数据库 |
+| [国际化](https://framework.docs.xihanfun.com/localization/) | 内存（10 种区域） | 数据库 |
+| [配置](https://framework.docs.xihanfun.com/configuration/options) | .NET 配置 | Nacos |
+| [可观测性](https://framework.docs.xihanfun.com/observability/) | `System.Diagnostics` | OpenTelemetry |
+| [AI](https://framework.docs.xihanfun.com/ai/chat) | 工具桥 | OpenAI 兼容端点、VectorData |
 
 组合包：`Profiles.Minimal`（内核与宿主）、`Profiles.Standard`（增加领域模型与五个子系统）、`Profiles.Full`（增加其余子系统与四种协议适配器）。
 
@@ -136,7 +136,7 @@ dotnet run --project framework/samples/SimpleApp
 - **适用**：长期维护的中大型后端；多租户 SaaS 与企业中后台；同一业务需多协议服务；需第三方多语言插件。
 - **不适用**：短期 CRUD 项目；需模板引擎、搜索、网关等内置能力的项目。
 
-选型依据见[为什么选择曦寒](https://framework.docs.xihanfun.com/why)。
+选型依据见[为什么选择曦寒](https://framework.docs.xihanfun.com/appendix/why)。
 
 ## 质量保障
 
@@ -158,8 +158,8 @@ dotnet run --project framework/samples/SimpleApp
 
 | 去处 | 内容 |
 | --- | --- |
-| [快速上手](https://framework.docs.xihanfun.com/quickstart) | 从安装到首个操作 |
-| [开发指南](https://framework.docs.xihanfun.com/guide/modularity) | 按能力域组织的任务式文档 |
+| [快速上手](https://framework.docs.xihanfun.com/getting-started/first-app) | 从安装到首个操作 |
+| [开发指南](https://framework.docs.xihanfun.com/startup/features) | 按能力域组织的任务式文档 |
 | [包总览](https://framework.docs.xihanfun.com/packages/) | 每包一页：能力、配置键、主要类型 |
 | [设计文档](./plans/框架总体方案.md) | 总体方案、架构说明与 ADR |
 | [更新日志](https://framework.docs.xihanfun.com/changelog) | 版本变更与升级须知 |

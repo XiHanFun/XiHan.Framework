@@ -26,7 +26,7 @@
 
 - 用 Nacos 做配置中心：装 [Configuration.Nacos](./configuration-nacos)，它实现 `IRemoteConfigurationClient`，本包随之引入。
 - 接入其他配置中心或密钥库（Apollo、Consul、Vault、Key Vault 等）：框架没有提供这些 Provider，应用实现本包的接口，并用一致性套件验证。
-- 只用文件与环境变量：不需要本包，见[配置与选项](../guide/configuration)。
+- 只用文件与环境变量：不需要本包，见[配置与选项](/configuration/options)。
 
 ## 安装与启用
 
@@ -34,7 +34,7 @@
 dotnet add package XiHan.Framework.Configuration.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 引用了本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 引用了本包。
 
 本包没有特性。配置源加在 `builder.Configuration` 上，并且要在 `AddXiHan` 之前，框架在 `AddXiHan` 里读取各包选项与绑定。应用自己实现的 Provider 要让错误按调用方语言翻译时，注册本包的消息目录：
 
@@ -110,7 +110,7 @@ builder.Configuration
     }));
 ```
 
-`DirectorySecretStore` 的完整实现见[配置与选项](../guide/configuration#密钥)。自己实现的密钥库用一致性套件验证，测试项目引用 `XiHan.Framework.Configuration.Conformance`：
+`DirectorySecretStore` 的完整实现见[配置与选项](/configuration/options)。自己实现的密钥库用一致性套件验证，测试项目引用 `XiHan.Framework.Configuration.Conformance`：
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions.Secrets;
@@ -172,7 +172,7 @@ if (secret.TryGetValue(out var value))
 
 ## 相关
 
-- [配置与选项](../guide/configuration)
+- [配置与选项](/configuration/options)
 - [Configuration.Nacos](./configuration-nacos)
 - [Conformance 一致性套件](./conformance)
 - 规范：RFC-0014《远程配置与密钥》

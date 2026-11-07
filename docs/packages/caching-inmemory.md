@@ -42,7 +42,7 @@
 dotnet add package XiHan.Framework.Caching.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
 
 ```csharp
 using XiHan.Framework.Caching.InMemory;
@@ -124,7 +124,7 @@ public sealed class ObjectEntries(ICache cache)
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching)
+- [缓存与分布式锁](/caching/basics)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.Redis](./caching-redis)、[Caching.Hybrid](./caching-hybrid)
 - [Profiles.Standard](./profiles-standard)
 - 规范：RFC-0006《缓存、分布式锁与幂等》；ADR-0055、ADR-0058

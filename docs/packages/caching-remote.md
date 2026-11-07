@@ -48,7 +48,7 @@
 dotnet add package XiHan.Framework.Caching.Remote --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
 
 ```csharp
 using XiHan.Framework.Caching.Remote;
@@ -137,7 +137,7 @@ xihan-conformance plugin --dir bin --sample 'cache-entries.set={"key":"k","value
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching#远程-provider)
-- [插件](../guide/plugins)、[Plugins.OutOfProcess](./plugins-outofprocess)
+- [缓存与分布式锁](/caching/hybrid)
+- [插件](/plugins/overview)、[Plugins.OutOfProcess](./plugins-outofprocess)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.Redis](./caching-redis)
 - 规范：RFC-0019《远程 Provider》、RFC-0006《缓存、分布式锁与幂等》；ADR-0011、ADR-0012

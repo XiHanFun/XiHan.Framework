@@ -29,7 +29,7 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 dotnet add package XiHan.Framework.Hosting.AspNetCore --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -112,7 +112,7 @@ using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 PipelineBypassMetadata.BypassXiHanPipeline(app.MapGet("/version", () => "1.0.0"));
 ```
 
-SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](../guide/realtime)。
+SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)。
 
 ## 行为与限制
 
@@ -138,11 +138,11 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](../guide/realti
 | 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
 | 预签名地址无效或已过期 | 403 | `OBJECTSTORAGE_DENIED_001` |
 
-状态码按错误码 KIND 的完整映射见 [HTTP 与 OpenAPI](../guide/http#状态码与错误映射)。
+状态码按错误码 KIND 的完整映射见 [HTTP 与 OpenAPI](/web/routing)。
 
 ## 相关
 
-- [宿主与 Web 应用](../guide/web)、[实时通信](../guide/realtime)、[对象存储](../guide/storage)
+- [宿主与 Web 应用](/web/hosting)、[实时通信](/web/realtime)、[对象存储](/object-storage/basics)
 - [Protocols.Http](./protocols-http)、[Protocols.Grpc](./protocols-grpc)、[Protocols.Mcp](./protocols-mcp)、[Protocols.CloudEvents](./protocols-cloudevents)
 - [Hosting.CommandLine](./hosting-commandline)、[Kernel](./kernel)
 - 规范：`spec/protocol/http.md`《HTTP 载体》、RFC-0003《调用上下文与传播》、RFC-0008《认证与授权》、RFC-0010《本地化》

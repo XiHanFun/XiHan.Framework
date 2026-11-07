@@ -29,7 +29,7 @@ gRPC 协议适配器，提供 `protocols.grpc@1`：把 `Expose.Grpc` 的操作�
 dotnet add package XiHan.Framework.Protocols.Grpc --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -106,7 +106,7 @@ grpcurl -plaintext -proto operations.proto -H "authorization: ApiKey dev-alice-k
   -d '{"name":"widget","amount":3}' localhost:5001 Orders/Create
 ```
 
-JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 CloudEvents](../guide/protocols#grpc)。
+JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 CloudEvents](/protocols/grpc)。
 
 ## 行为与限制
 
@@ -142,6 +142,6 @@ JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 C
 
 ## 相关
 
-- [gRPC、MCP 与 CloudEvents](../guide/protocols)、[操作契约](../guide/operations)
+- [gRPC、MCP 与 CloudEvents](/protocols/grpc)、[操作契约](/web/operations)
 - [Hosting.AspNetCore](./hosting-aspnetcore)、[Protocols.Http](./protocols-http)、[Kernel.Generators](./kernel-generators)
 - 规范：`spec/protocol/grpc.md`《gRPC 载体》、RFC-0011《操作契约与 XGI》

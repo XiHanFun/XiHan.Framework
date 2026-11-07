@@ -34,7 +34,7 @@ MCP 协议版本 `2025-06-18`。`McpProtocolFeature` 登记选项、本包的消
 dotnet add package XiHan.Framework.Protocols.Mcp --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -51,7 +51,7 @@ app.MapXiHanMcp();      // POST /mcp
 app.Run();
 ```
 
-命令行宿主里装配 `McpProtocolFeature` 并调用 `AddXiHanCommandLine()` 后，`mcp` 命令即可用，见[命令行宿主](../guide/command-line#mcp-stdio)。
+命令行宿主里装配 `McpProtocolFeature` 并调用 `AddXiHanCommandLine()` 后，`mcp` 命令即可用，见[命令行宿主](/protocols/command-line)。
 
 ## 配置
 
@@ -102,7 +102,7 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Autho
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
 ```
 
-tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MCP 与 CloudEvents](../guide/protocols#mcp)。
+tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MCP 与 CloudEvents](/protocols/mcp)。
 
 ## 行为与限制
 
@@ -126,6 +126,6 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 
 ## 相关
 
-- [gRPC、MCP 与 CloudEvents](../guide/protocols)、[命令行宿主](../guide/command-line)、[操作契约](../guide/operations)
+- [gRPC、MCP 与 CloudEvents](/protocols/grpc)、[命令行宿主](/protocols/command-line)、[操作契约](/web/operations)
 - [Hosting.AspNetCore](./hosting-aspnetcore)、[Hosting.CommandLine](./hosting-commandline)、[Protocols.Http](./protocols-http)
 - 规范：`spec/protocol/mcp.md`《MCP 载体》、RFC-0011《操作契约与 XGI》

@@ -21,7 +21,7 @@
 - 消息键取信封扩展属性 `xihankey`（`EnvelopeExtensions.PartitionKey`）：同键进同一分区，按发布顺序投递；没有键时由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 - 生产者幂等（`EnableIdempotence`）且 `acks=all`。批量发布连续交给客户端本地队列、合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
 - 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `GroupId`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
-- 广播订阅（[订阅方式](../guide/messaging#订阅方式)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](../guide/messaging#订阅方式)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
+- 广播订阅（[订阅方式](/messaging/pubsub)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](/messaging/pubsub)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
 - 处理失败在原位重试到 `MaxAttempts`，不重新入队，分区内顺序不变；竞争订阅仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。无法解码的消息直接进死信。
 - 竞争订阅投递完成（成功或进死信）后才提交位点；停止时未完成的消息在重启后重新投递，仍是至少一次。
 - 死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，消费者回退到这条消息，等 `RedeliveryDelaySeconds` 后重新投递（处理器重新执行），期间这个分区不往后读；消费者本身出错同样等一会儿再取。消费循环只在停止时退出，每次重投记 Error 日志。
@@ -40,7 +40,7 @@
 dotnet add package XiHan.Framework.Messaging.Kafka --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -88,7 +88,7 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
-凭据只作开发示例，生产环境从密钥来源注入，见[配置与选项](../guide/configuration)。
+凭据只作开发示例，生产环境从密钥来源注入，见[配置与选项](/configuration/options)。
 
 ## 主题
 
@@ -106,8 +106,8 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | 应用发布与订阅的主题 | 总是 |
 | 被竞争订阅的主题加 `DeadLetterSuffix`（缺省 `.dlq`） | 有竞争订阅时；广播订阅不发布死信 |
-| `scheduling.job.scheduled`、`scheduling.job.unscheduled`、`scheduling.job.paused`、`scheduling.job.resumed`、`scheduling.run.started`、`scheduling.run.succeeded`、`scheduling.run.failed`、`scheduling.run.canceled`、`scheduling.run.lost` | 装配了调度（`SchedulingTopics`，[调度事件](../guide/scheduling#事件)），没人订阅也要建 |
-| `workflow.instance.started`、`.completed`、`.faulted`、`.canceled`、`.terminated`、`.suspended`、`.resumed`、`.jumped`、`.migrated`、`.timedout`；`workflow.node.executing`、`.executed`、`.faulted`；`workflow.task.created`、`.completed`、`.transferred`、`.claimed`、`.released`、`.returned`、`.urged`、`.reminder`；`workflow.external.created`、`.completed`、`.failed`；`workflow.custom` | 装配了工作流（`WorkflowTopics`，[工作流事件](../guide/workflow#事件)），没人订阅也要建 |
+| `scheduling.job.scheduled`、`scheduling.job.unscheduled`、`scheduling.job.paused`、`scheduling.job.resumed`、`scheduling.run.started`、`scheduling.run.succeeded`、`scheduling.run.failed`、`scheduling.run.canceled`、`scheduling.run.lost` | 装配了调度（`SchedulingTopics`，[调度事件](/scheduling/jobs)），没人订阅也要建 |
+| `workflow.instance.started`、`.completed`、`.faulted`、`.canceled`、`.terminated`、`.suspended`、`.resumed`、`.jumped`、`.migrated`、`.timedout`；`workflow.node.executing`、`.executed`、`.faulted`；`workflow.task.created`、`.completed`、`.transferred`、`.claimed`、`.released`、`.returned`、`.urged`、`.reminder`；`workflow.external.created`、`.completed`、`.failed`；`workflow.custom` | 装配了工作流（`WorkflowTopics`，[工作流事件](/workflow/definitions)），没人订阅也要建 |
 
 重放用临时消费组读已有的主题，不建主题；广播订阅只多出消费组，不多出主题。用 Kafka 自带的脚本建主题（分区数与副本数按集群定）：
 
@@ -168,7 +168,7 @@ docker run -d -p 9092:9092 apache/kafka
 
 ## 相关
 
-- [消息与事件](../guide/messaging#队列与流)
+- [消息与事件](/messaging/streams)
 - [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.InMemory](./messaging-inmemory)
-- [部署与打包](../guide/deployment)：绑定 `stream` 的来源
+- [部署与打包](/deployment/pack)：绑定 `stream` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》「流」；ADR-0019

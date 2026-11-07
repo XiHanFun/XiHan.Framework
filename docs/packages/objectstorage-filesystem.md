@@ -25,7 +25,7 @@
 
 键的各段经编码后作为路径，大小写不敏感的文件系统上键仍区分大小写；容器目录按需创建。写入先落同目录的临时文件（名字含 `.xihan-tmp-`），复制完成后原子替换，再写元数据。配额在进程内计量：启动时扫描目录得到已用量并清理残留的临时文件，之后每次写入与删除更新。
 
-预签名不是文件系统的能力。需要限时地址时装 `Hosting.AspNetCore` 的 `HostedBlobUrlFeature` 并 `MapXiHanBlobs()`，由宿主代收发，见[对象存储](../guide/storage#预签名地址)。
+预签名不是文件系统的能力。需要限时地址时装 `Hosting.AspNetCore` 的 `HostedBlobUrlFeature` 并 `MapXiHanBlobs()`，由宿主代收发，见[对象存储](/object-storage/advanced)。
 
 ## 何时使用
 
@@ -38,7 +38,7 @@
 dotnet add package XiHan.Framework.ObjectStorage.FileSystem --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
@@ -105,7 +105,7 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 - 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片不计入配额。上传标识只认本实现发出的 32 位小写十六进制。
 - 健康项 `objectstorage.filesystem.capacity` 由存储同步计算：已用量达到 `MaxTotalBytes` 即 Degraded（`OBJECTSTORAGE_UNAVAILABLE_002`），否则 Ready。命名实例的探测用同一口径。
 - 命名实例建出时即建目录并扫描用量，预签名用宿主签名器的 `ForStore(name)`。本包被别的存储顶替时仍登记 `filesystem` Provider，命名实例照常可用。
-- 与 S3 混装、以本包为缺省实例时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可，S3 只登记命名实例；要缺省的分片上传再把 `objectstorage.multipart` 指定给本包，要缺省的预签名装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。有特性依赖分片上传或预签名却没指定时，那项能力解析到 S3 且是被要求的，`OBJECTSTORAGE_VALIDATION_004` 启动失败（见[对象存储](../guide/storage#命名存储实例)）。
+- 与 S3 混装、以本包为缺省实例时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可，S3 只登记命名实例；要缺省的分片上传再把 `objectstorage.multipart` 指定给本包，要缺省的预签名装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。有特性依赖分片上传或预签名却没指定时，那项能力解析到 S3 且是被要求的，`OBJECTSTORAGE_VALIDATION_004` 启动失败（见[对象存储](/object-storage/advanced)）。
 - 通过 `ObjectStorage.Conformance` 的 `BlobStoreConformance` 与 `BlobStoreProviderConformance`。
 
 | 错误码 | 含义 |
@@ -120,7 +120,7 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 
 ## 相关
 
-- [对象存储](../guide/storage)
+- [对象存储](/object-storage/basics)
 - [ObjectStorage.Abstractions](./objectstorage-abstractions)
 - [ObjectStorage.S3](./objectstorage-s3)
 - [Hosting.AspNetCore](./hosting-aspnetcore)
