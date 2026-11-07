@@ -1,8 +1,8 @@
-# 5.3 HTTP 路由与载荷
+# HTTP 路由与载荷
 
 这页讲 HTTP 协议适配器 `Protocols.Http` 怎样把操作契约发布成 REST 端点：路由由操作 ID 与请求形状推导、怎样覆盖与加前缀、一次请求的载荷从路由值、请求体与查询串怎样合并、成功与失败各写什么状态码。读完这页，我们能预判任何一个操作在 HTTP 上的路由，并且看懂一条 Problem Details 响应。
 
-前置知识：[操作契约](/web/operations)与 [ASP.NET Core 宿主](/web/hosting)。从同一份契约生成 OpenAPI 文档放在[规范化接口文档](/openapi/)。
+前置知识：[操作契约](/web/operations)与 [ASP.NET Core 宿主](/web/hosting)。从同一份契约生成 OpenAPI 文档放在[规范化接口文档](/web/openapi)。
 
 ## 为什么需要
 
@@ -166,7 +166,7 @@ curl -s -X POST "localhost:5000/orders/0f8fad5b-d9cb-469f-a165-70867728950e:canc
 | Validate | 请求对象自校验（`IValidatableObject`）失败 | `KERNEL_VALIDATION_004` |
 | Validate | 载荷解码失败（类型不符、`null`） | `KERNEL_VALIDATION_001` |
 
-没有登记 Schema 的操作不做 Schema 校验，解码失败仍是 `KERNEL_VALIDATION_001`。字段级 `errors` 的形状见 [ASP.NET Core 宿主](/web/hosting)的「Problem Details」，校验规则见[数据校验](/validation/)。
+没有登记 Schema 的操作不做 Schema 校验，解码失败仍是 `KERNEL_VALIDATION_001`。字段级 `errors` 的形状见 [ASP.NET Core 宿主](/web/hosting)的「Problem Details」，校验规则见[数据校验](/web/validation)。
 
 ## 状态码与错误映射
 
@@ -208,7 +208,7 @@ curl -s -X POST localhost:5000/orders -H "Authorization: ApiKey dev-bob-key" \
 }
 ```
 
-不带 `Authorization` 头时同一请求得到 401 `SECURITY_DENIED_001`，响应头 `WWW-Authenticate: ApiKey`。访问日志等需要状态码的地方用框架写响应时的同一映射：失败按 `ProblemResponse.StatusCodeFor(error)`，成功按 `HttpRouteConvention.SuccessStatusCode(contract)`。错误码的文法与 `Error` 的构造见[结果与错误处理](/errors/)。
+不带 `Authorization` 头时同一请求得到 401 `SECURITY_DENIED_001`，响应头 `WWW-Authenticate: ApiKey`。访问日志等需要状态码的地方用框架写响应时的同一映射：失败按 `ProblemResponse.StatusCodeFor(error)`，成功按 `HttpRouteConvention.SuccessStatusCode(contract)`。错误码的文法与 `Error` 的构造见[结果与错误处理](/web/errors)。
 
 ## HTTP 客户端
 
@@ -230,7 +230,7 @@ curl -s -X POST localhost:5000/orders -H "Authorization: ApiKey dev-bob-key" \
 
 ### 怎样给全部接口加 `/api` 前缀，又保留探针与 OpenAPI 的路径
 
-`RoutePrefix` 只作用于 `MapXiHanOperations()` 映射的操作端点，`MapXiHanHealth()`、`MapXiHanOpenApi()` 与应用自己的最小 API 端点不受影响，所以把 `XiHan:Protocols:Http:RoutePrefix` 设成 `/api` 即可。要让 OpenAPI 文档也换路径，给 `MapXiHanOpenApi` 传 `pattern` 参数，见[规范化接口文档](/openapi/)。
+`RoutePrefix` 只作用于 `MapXiHanOperations()` 映射的操作端点，`MapXiHanHealth()`、`MapXiHanOpenApi()` 与应用自己的最小 API 端点不受影响，所以把 `XiHan:Protocols:Http:RoutePrefix` 设成 `/api` 即可。要让 OpenAPI 文档也换路径，给 `MapXiHanOpenApi` 传 `pattern` 参数，见[规范化接口文档](/web/openapi)。
 
 ### 能不能在 Problem Details 里多带几个字段
 
@@ -240,6 +240,6 @@ curl -s -X POST localhost:5000/orders -H "Authorization: ApiKey dev-bob-key" \
 
 - 相关包：[Protocols.Http](/packages/protocols-http)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)、[Kernel](/packages/kernel)、[Kernel.Generators](/packages/kernel-generators)
 - 下一步：[端点里使用框架](/web/endpoints)，在不是操作的最小 API 端点里读调用上下文、返回框架错误、挂授权要求
-- 同一份契约的其他载体：[规范化接口文档](/openapi/)、[gRPC](/protocols/grpc)、[MCP](/protocols/mcp)
-- 相关章节：[数据校验](/validation/)、[授权与权限](/security/authorization)、[结果与错误处理](/errors/)
+- 同一份契约的其他载体：[规范化接口文档](/web/openapi)、[gRPC](/protocols/grpc)、[MCP](/protocols/mcp)
+- 相关章节：[数据校验](/web/validation)、[授权与权限](/security/authorization)、[结果与错误处理](/web/errors)
 - 规范：HTTP 载体规范、`conventions/operation-ids.md`《操作 ID》、RFC-0011《操作契约与 XGI》

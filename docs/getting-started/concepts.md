@@ -1,4 +1,4 @@
-# 2.3 核心概念
+# 核心概念
 
 这一页把框架的核心概念一次讲清：特性与清单、能力图谱、执行管道、操作契约、默认实现与 Provider、结果与错误、环层与命名。它是后面所有章节的词汇表。读完[第一个应用](/getting-started/first-app)再读这一页效果最好，因为每个概念你都已经在代码里碰过。
 
@@ -83,11 +83,11 @@ Egress：Result 与 Error 翻译回协议（HTTP 为 RFC 9457 Problem Details，
 
 ## 结果与错误
 
-可恢复的失败用 `Result` 与 `Error` 表达，不抛异常。错误码的形式是 `<领域大写>_<KIND>_<三位序号>`，如 `PERSISTENCE_CONFLICT_001`、`SECURITY_DENIED_004`；KIND 决定 HTTP 状态码、gRPC 状态与命令行退出码。`Error` 只携带消息键与参数，宿主在 Egress 阶段按调用方的区域翻译成文案。配置与编程错误才抛异常。详见[结果与错误处理](/errors/)。
+可恢复的失败用 `Result` 与 `Error` 表达，不抛异常。错误码的形式是 `<领域大写>_<KIND>_<三位序号>`，如 `PERSISTENCE_CONFLICT_001`、`SECURITY_DENIED_004`；KIND 决定 HTTP 状态码、gRPC 状态与命令行退出码。`Error` 只携带消息键与参数，宿主在 Egress 阶段按调用方的区域翻译成文案。配置与编程错误才抛异常。详见[结果与错误处理](/web/errors)。
 
 ## 本地化
 
-面向人的文案不写在代码里。代码只引用消息键常量，每种语言一个文件 `Localization/<区域>.json`，内置十种区域，默认 `en-US`。取文案用 `key.L()`，按当前调用的区域渲染。详见[全球化和本地化](/localization/)。
+面向人的文案不写在代码里。代码只引用消息键常量，每种语言一个文件 `Localization/<区域>.json`，内置十种区域，默认 `en-US`。取文案用 `key.L()`，按当前调用的区域渲染。详见[全球化和本地化](/common/localization)。
 
 ## 环层与依赖规则
 

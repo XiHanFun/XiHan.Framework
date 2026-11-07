@@ -1,4 +1,4 @@
-# 7. 结果与错误处理
+# 结果与错误处理
 
 这一章讲框架怎样表达成功与失败：什么时候抛异常、什么时候返回 `Result`，错误码的文法与种类，`Error` 为什么只携带消息键而不是文案，以及宿主怎样把同一个错误翻译成 HTTP 状态、gRPC 状态与命令行退出码。读完你能在操作里正确地返回一个「找不到」，并知道客户端会收到什么。前置知识是[操作契约](/web/operations)与[执行管道](/startup/pipeline)。
 
@@ -103,7 +103,7 @@ HTTP 的映射在 `Hosting.AspNetCore` 的 `ProblemResponse.StatusCodeFor`，命
 Error.NotFound(OrderErrors.NotFound, OrderMessages.NotFound, MessageArguments.Of(("id", id)))
 ```
 
-三个参数分别是：错误码常量（`SHOP_NOTFOUND_001`）、消息键常量（`shop.order.not_found`）、模板参数。消息键文法、语言文件格式与 10 种内置区域见[全球化和本地化](/localization/)。
+三个参数分别是：错误码常量（`SHOP_NOTFOUND_001`）、消息键常量（`shop.order.not_found`）、模板参数。消息键文法、语言文件格式与 10 种内置区域见[全球化和本地化](/common/localization)。
 
 ### Error.Literal 的边界
 
@@ -128,7 +128,7 @@ public static class OrderMessages
 }
 ```
 
-语言文件 `Localization/en-US.json` 与 `Localization/zh-CN.json`（其余八种区域各一份，见[全球化和本地化](/localization/)）：
+语言文件 `Localization/en-US.json` 与 `Localization/zh-CN.json`（其余八种区域各一份，见[全球化和本地化](/common/localization)）：
 
 ```json
 { "shop.order.not_found": "Order '{id}' does not exist." }
@@ -236,12 +236,12 @@ curl -i -H "Accept-Language: zh-CN" localhost:5000/orders/0f8fad5b-d9cb-469f-a16
 | `instance` | 请求路径 |
 | `code` | 错误码 |
 | `traceId` | 本次调用的 W3C trace-id |
-| `errors` | 只在校验错误时出现：字段名到文案列表，见[数据校验](/validation/) |
+| `errors` | 只在校验错误时出现：字段名到文案列表，见[数据校验](/web/validation) |
 | `details` | `Error.Details` 里的标量项 |
 
 gRPC 以状态码加 `xihan-error-code` 尾部元数据表达，`grpc-message` 是翻译后的文案，见 [gRPC](/protocols/grpc)；MCP 以 `isError` 结果表达，见 [MCP](/protocols/mcp)；命令行以按 KIND 的退出码加 stderr 上的一行 JSON（`code`、`detail`、`traceId`）表达，见[命令行宿主](/protocols/command-line)。
 
-截止时间到了一律是 `KERNEL_TIMEOUT_001`（504），调用方同时取消、下游把取消写成 `KERNEL_CANCELLED_001` 结果也一样；408 只表示调用方在截止时间到达之前自己取消，见[弹性与限流](/resilience/)。
+截止时间到了一律是 `KERNEL_TIMEOUT_001`（504），调用方同时取消、下游把取消写成 `KERNEL_CANCELLED_001` 结果也一样；408 只表示调用方在截止时间到达之前自己取消，见[弹性与限流](/common/resilience)。
 
 ## 在端点里返回错误
 
@@ -307,4 +307,4 @@ app.Run();
 - [Kernel](/packages/kernel)：`SetOutcome` 与内核错误码
 - [Hosting.AspNetCore](/packages/hosting-aspnetcore)：`ProblemResponse` 与 HTTP 映射
 - 规范：RFC-0001《原语》、`conventions/error-codes.md`
-- 下一章：[8. 数据校验](/validation/)
+- 下一页：[数据校验](/web/validation)

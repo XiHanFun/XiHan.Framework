@@ -1,4 +1,4 @@
-# 2.4 组合包与选包
+# 组合包与选包
 
 框架有六十多个包。这一页告诉你不用记住它们：先选一个组合包，再按对外暴露的方式加协议适配器，最后按生产环境的外部设施加 Provider。读完它，你能为任何一个项目列出要引用的包。
 
@@ -152,7 +152,7 @@ dotnet add package XiHan.Framework.Persistence.Generators --prerelease
 
 ### 哪些包不能 Native AOT
 
-接外部设施的 Provider 多数依赖的第三方库不支持 AOT（EF Core、SqlSugar、Redis、RabbitMQ、Kafka、S3、JWT、OIDC、插件宿主）。各包页标注了是否 AOT 兼容，见[JSON 序列化与 Native AOT](/serialization/)。
+接外部设施的 Provider 多数依赖的第三方库不支持 AOT（EF Core、SqlSugar、Redis、RabbitMQ、Kafka、S3、JWT、OIDC、插件宿主）。各包页标注了是否 AOT 兼容，见[JSON 序列化与 Native AOT](/common/serialization)。
 
 ## 下一步
 

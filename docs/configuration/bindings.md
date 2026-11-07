@@ -1,6 +1,6 @@
-# 4.3 资源绑定
+# 资源绑定
 
-这一页讲特性怎样拿到数据库、Redis、消息代理这类外部资源的连接信息：在清单里声明一个绑定，由宿主在装配时从 Service Binding 目录或配置节解析出来，特性用名字取用。读完你能给自己的特性声明一个必需绑定，并知道缺了它应用为什么在启动期就失败。前置知识是 [4.1 配置模型与选项](/configuration/options)与[特性与清单](/startup/features)。
+这一页讲特性怎样拿到数据库、Redis、消息代理这类外部资源的连接信息：在清单里声明一个绑定，由宿主在装配时从 Service Binding 目录或配置节解析出来，特性用名字取用。读完你能给自己的特性声明一个必需绑定，并知道缺了它应用为什么在启动期就失败。前置知识是 [配置模型与选项](/configuration/options)与[特性与清单](/startup/features)。
 
 ## 为什么需要
 
@@ -125,7 +125,7 @@ app.Run();
 | 可选绑定（`required: false`）缺失 | 不报错，特性用 `TryGetBinding` 自行处理 |
 | `GetBinding` 取一个不存在的绑定 | 抛出 `KERNEL_HOSTING_001` |
 
-这正是「配置与编程错误抛异常、可恢复失败返回 `Result`」的分界：缺绑定是部署错误，不应该带着它运行，见[结果与错误处理](/errors/)。
+这正是「配置与编程错误抛异常、可恢复失败返回 `Result`」的分界：缺绑定是部署错误，不应该带着它运行，见[结果与错误处理](/web/errors)。
 
 ## 内置包声明的绑定
 
@@ -160,7 +160,7 @@ app.Run();
 
 ### 绑定的主值会出现在日志里吗
 
-不会。`BindingValue.ToString()` 把 `Value` 打印成 `***`，Provider 的选项记录也遮蔽连接字符串与口令，见 [4.4 远程配置与密钥](/configuration/remote)的「选项打印时遮蔽凭据」。
+不会。`BindingValue.ToString()` 把 `Value` 打印成 `***`，Provider 的选项记录也遮蔽连接字符串与口令，见 [远程配置与密钥](/configuration/remote)的「选项打印时遮蔽凭据」。
 
 ### 绑定的值能热更新吗
 
@@ -171,4 +171,4 @@ app.Run();
 - [Kernel](/packages/kernel)：`BindingResolver`、`BindingValue`、`FeatureContext.GetBinding`
 - [Primitives](/packages/primitives)：清单模型 `Manifest` 与 `Binding`
 - [应用清单与 xihan pack](/deployment/pack)：按绑定名生成 Secret 与环境变量
-- 下一页：[4.4 远程配置与密钥](/configuration/remote)
+- 下一页：[远程配置与密钥](/configuration/remote)

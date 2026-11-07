@@ -1,4 +1,4 @@
-# 11.2 授权与权限
+# 授权与权限
 
 这一页讲一次调用怎样被判定能否执行：权限的定义与登记、操作契约与端点上怎样声明授权要求、Authorize 阶段的处理顺序、启动时怎样核对策略引用、怎样写自定义策略与资源名。读完你能给自己的操作加上权限码，让 SimpleApp 的 `alice` 能下单而 `bob` 只能查看，并在启动时就发现拼错的权限码。阅读前先读[认证](/security/authentication)与[操作契约](/web/operations)。授予怎样存、怎样收窄与扩展在下一页 [RBAC 授予与条件](/security/grants)。
 
@@ -249,11 +249,11 @@ public static class OrderRequirements
 
 ### OpenAPI 文档里能看到授权要求吗
 
-能。HTTP 协议适配器以 `x-xihan-permission`、`x-xihan-policy` 发布每个操作的要求，`components.x-xihan-permissions` 列出登记表里的权限码与显示名，见[规范化接口文档](/openapi/)。
+能。HTTP 协议适配器以 `x-xihan-permission`、`x-xihan-policy` 发布每个操作的要求，`components.x-xihan-permissions` 列出登记表里的权限码与显示名，见[规范化接口文档](/web/openapi)。
 
 ## 相关包与下一步
 
 - 包参考：[Security.Abstractions](/packages/security-abstractions)、[Security.InMemory](/packages/security-inmemory)、[Security.Database](/packages/security-database)
 - 规范：RFC-0008《认证与授权》、RFC-0010《消息与本地化》
-- 相关章节：[操作契约](/web/operations)、[端点里使用框架](/web/endpoints)、[规范化接口文档](/openapi/)、[审计](/auditing/)
+- 相关章节：[操作契约](/web/operations)、[端点里使用框架](/web/endpoints)、[规范化接口文档](/web/openapi)、[审计](/common/auditing)
 - 下一步：[RBAC 授予与条件](/security/grants)

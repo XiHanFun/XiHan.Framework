@@ -1,4 +1,4 @@
-# 25.2 Kubernetes
+# Kubernetes
 
 这一页讲 `xihan pack` 生成的 Deployment 在集群里怎样与框架对齐：三个探针与有序停机、ConfigMap 配置热更新、用 Lease 做领导选举，以及怎样在本机的 kind 集群上逐项验证。读完你能把一个多副本应用部署到 Kubernetes，并确认探针、停机、热更新与选举都按预期工作。前置知识是[应用清单与 xihan pack](/deployment/pack)与[生命周期与健康](/startup/lifecycle)。
 

@@ -1,4 +1,4 @@
-# 26.1 单元与集成测试
+# 单元与集成测试
 
 这一页讲怎样给 XiHan 应用建测试项目，怎样用 `Testing` 包的测试宿主在内存里装配应用并经完整管道调用，怎样测一个中间件、测一个操作，以及用 SQLite 文件库时要注意什么。读完你能不起 HTTP 服务就把特性、中间件与操作的行为测出来。前置知识是[执行管道](/startup/pipeline)与[操作契约](/web/operations)：测试宿主调用的正是这两页讲的东西。
 
@@ -277,5 +277,5 @@ File.Delete(path);
 ## 相关包与下一步
 
 - 包参考：[Testing](/packages/testing)、[Kernel](/packages/kernel)、[Kernel.Generators](/packages/kernel-generators)
-- 相关章节：[执行管道](/startup/pipeline)、[操作契约](/web/operations)、[结果与错误处理](/errors/)、[出站地址策略](/security/outbound)
+- 相关章节：[执行管道](/startup/pipeline)、[操作契约](/web/operations)、[结果与错误处理](/web/errors)、[出站地址策略](/security/outbound)
 - 下一步：[一致性套件与门禁](/testing/conformance)讲怎样让 Provider 与插件跑同一套用例，以及框架仓库的架构门禁

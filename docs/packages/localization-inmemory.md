@@ -93,7 +93,7 @@ using (MessageScope.Use(localizer, "ja-JP"))
 
 ## 相关
 
-- [国际化](/localization/)
+- [国际化](/common/localization)
 - [Localization.Abstractions](./localization-abstractions)
 - [Localization.Database](./localization-database)
 - [Profiles.Minimal](./profiles-minimal)

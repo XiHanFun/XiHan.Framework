@@ -1,4 +1,4 @@
-# 23. JSON 序列化与 Native AOT
+# JSON 序列化与 Native AOT
 
 这一章讲框架为什么要求源生成的序列化、哪些地方需要登记 `JsonSerializerContext`、怎样把上下文插进 HTTP 的解析链、缓存与领域事件对序列化器的要求、哪些包能以 Native AOT 发布，以及发布 AOT 应用的步骤。读完你能把一个用 Standard 组合的应用发布成单个原生可执行文件。前置知识是[操作契约](/web/operations)与[配置模型与选项](/configuration/options)。
 
@@ -195,4 +195,4 @@ Database 包本身兼容，但它们经仓储访问数据库，实际能否 AOT 
 - [Caching.Abstractions](/packages/caching-abstractions)：`ICacheSerializer` 与 `JsonCacheSerializer`
 - [Messaging.Abstractions](/packages/messaging-abstractions)：`AddDomainEvent`
 - [Hosting.AspNetCore](/packages/hosting-aspnetcore)：Web 宿主的 AOT 兼容性
-- 下一章：[24.1 隔离级别与清单](/plugins/overview)
+- 下一章：[AI：模型与对话](/ai/chat)

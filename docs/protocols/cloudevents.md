@@ -1,4 +1,4 @@
-# 14.3 CloudEvents
+# CloudEvents
 
 这一页讲 CloudEvents 适配器：入站端点怎样把 HTTP 上的事件（structured、batch、binary 三种内容模式）变成消息信封交给消息子系统，事件类型怎样映射到主题，Dispatch 与 Publish 两种模式的区别，为什么入站端点必须由宿主自己加权限要求；再讲出站 Webhook 发布者怎样把信封推给别的服务。读完你能接收第三方系统推来的事件，也能把自己的消息按 CloudEvents 格式推出去。前置知识是[发布与订阅](/messaging/pubsub)与 [gRPC](/protocols/grpc) 开头的「一份契约，多个载体」。
 

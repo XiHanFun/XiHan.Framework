@@ -1,4 +1,4 @@
-# 29. 常见问题
+# 常见问题
 
 本页收集使用框架时最常遇到的问题与排查方法，按装配、操作与协议、数据与安全、版本与能力范围分组。
 
@@ -59,11 +59,11 @@
 
 ### 返回 503 与 KERNEL_UNAVAILABLE_002、003 或 004
 
-分别是限流、并发上限与熔断拒绝，来自 `XiHan:Kernel:Resilience` 的配置。响应的 `details.retryAfter` 给出建议的重试秒数，见[弹性与限流](/resilience/)。
+分别是限流、并发上限与熔断拒绝，来自 `XiHan:Kernel:Resilience` 的配置。响应的 `details.retryAfter` 给出建议的重试秒数，见[弹性与限流](/common/resilience)。
 
 ### Problem Details 的 detail 总是英文
 
-宿主按请求头 `Accept-Language` 选择区域，没有指定时用默认区域 `en-US`。应用自己的消息键要在对应语言的 `Localization/<区域>.json` 里有译文，并用 `AddMessageCatalog` 登记目录，见[国际化](/localization/)。
+宿主按请求头 `Accept-Language` 选择区域，没有指定时用默认区域 `en-US`。应用自己的消息键要在对应语言的 `Localization/<区域>.json` 里有译文，并用 `AddMessageCatalog` 登记目录，见[国际化](/common/localization)。
 
 ### 什么时候是 401，什么时候是 403
 
@@ -97,13 +97,13 @@
 | --- | --- |
 | 机器人与消息通知渠道（邮件、短信、Telegram、钉钉、飞书、企业微信） | 应用直接使用各渠道的 SDK 或 HTTP 接口，封装成应用自己的服务；需要异步发送时经消息子系统投递。`Messaging` 是队列、流与发布订阅子系统，不是通知渠道 |
 | 实时通信（SignalR 封装） | 直接使用 ASP.NET Core SignalR，Hub 的认证经 `XiHan` 认证方案交给内核，见[实时通信](/web/realtime) |
-| 网关与流量治理 | 反向代理与转发用 YARP 等专门组件；按操作的熔断、限流、并发上限由内核的 Resilience 阶段提供，见[弹性与限流](/resilience/) |
+| 网关与流量治理 | 反向代理与转发用 YARP 等专门组件；按操作的熔断、限流、并发上限由内核的 Resilience 阶段提供，见[弹性与限流](/common/resilience) |
 | 模板引擎 | 直接使用 Scriban、Fluid 等模板库 |
 | 脚本引擎 | 不提供。需要隔离执行第三方逻辑时用插件，见[插件](/plugins/overview) |
 | 搜索引擎 | 直接使用 Elasticsearch、OpenSearch 等的官方客户端 |
 | HTTP 客户端封装 | 使用 `IHttpClientFactory` 与 `Microsoft.Extensions.Http.Resilience` |
 | 数据加解密 | 使用 `System.Security.Cryptography` 与 ASP.NET Core Data Protection。`Security` 是认证与授权子系统 |
-| 对象映射 | 显式映射，或编译期生成代码的映射库，见[序列化与 Native AOT](/serialization/) |
+| 对象映射 | 显式映射，或编译期生成代码的映射库，见[序列化与 Native AOT](/common/serialization) |
 | 序列化封装 | 直接使用 System.Text.Json 的源生成上下文 |
 | 虚拟文件系统 | 使用 .NET 的 `IFileProvider` 与嵌入资源 |
 | 设置 | 使用 .NET 配置与 `IOptionsMonitor`，远程配置见[配置与选项](/configuration/options) |
@@ -113,5 +113,5 @@
 
 ## 下一步
 
-- [贡献指南](/contributing/)：想补充一条问答，或发现文档与行为不符
+- [贡献指南](/appendix/contributing)：想补充一条问答，或发现文档与行为不符
 - [支持曦寒](/appendix/support)：问题没有列在这里时去哪里问

@@ -1,4 +1,4 @@
-# 28.1 For Agents
+# For Agents
 
 本页给 Claude Code、Cursor、Codex、GitHub Copilot 这类 AI 编程工具使用：一段可以直接放进项目说明文件的提示词，以及框架为 AI 工具准备的资料从哪里取。
 

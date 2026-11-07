@@ -1,4 +1,4 @@
-# 24.2 进程外插件
+# 进程外插件
 
 进程外插件是宿主启动的子进程，经本机 gRPC 按协议 `xihan.plugin.v1` 与宿主通信。这一页讲协议的组成、握手与生命周期、插件声明的操作如何成为宿主的代理操作并经完整管道执行、事件投递、回调、失败降级，然后用 Go SDK 写一个能跑的插件，最后讲远程 Provider 与配置节。读完你能写一个任意语言的插件并接进 .NET 宿主。前置知识是[隔离级别与清单](/plugins/overview)。
 
@@ -30,11 +30,11 @@
 | `XIHAN_PLUGIN_PROTOCOL_VERSIONS` | 宿主支持的协议版本，逗号分隔、升序，当前为 `1` |
 | `XIHAN_PLUGIN_PRIMITIVES` | 宿主的原语层大版本 |
 | `XIHAN_PLUGIN_SESSION` | 本次启动的会话令牌，回调时放在元数据 `xihan-plugin-session` |
-| `XIHAN_PLUGIN_HOST_ADDRESS` | 宿主回调端点 `<network> <address>`：Windows 上是命名管道，其他系统是 Unix 域套接字 |
+| `XIHAN_PLUGIN_HOST_ADDRESS` | 宿主回调端点 `<network> <address>`（Windows 命名管道，其他系统 Unix 域套接字） |
 | `XIHAN_PLUGIN_INSTANCE` | 实例 ID |
 | `XIHAN_PLUGIN_LOCALE` | 宿主默认区域 |
 
-插件启动 gRPC 服务端后向 stdout 写一行握手行 `xihan-plugin/1 <network> <address>`（`network` 为 `unix`、`tcp` 或 `npipe`，`tcp` 只能是回环地址），宿主连上后调用 `Handshake`：取双方都支持的最高协议版本（没有交集时插件以 gRPC `FailedPrecondition` 拒绝），核对原语层大版本，比对清单，交换声明。stdin 在插件停止前保持打开，插件必须在 stdin 关闭时自行退出，不留孤儿进程；stderr 是插件日志，宿主逐行转成来源 `plugins.<清单 ID>` 的日志，以 `{` 开头的 JSON 行按结构化日志处理。
+插件启动 gRPC 服务端后向 stdout 写一行握手行 `xihan-plugin/1 <network> <address>`（`network` 为 `unix`、`tcp` 或 `npipe`，`tcp` 只能是回环地址），宿主连上后调用 `Handshake`：取双方都支持的最高协议版本（没有交集时插件以 gRPC `FailedPrecondition` 拒绝），核对原语层大版本，比对清单，交换声明。stdin 在插件停止前保持打开，插件必须在 stdin 关闭时自行退出；stderr 是插件日志，宿主逐行转成来源 `plugins.<清单 ID>` 的日志，以 `{` 开头的 JSON 行按结构化日志处理。
 
 生命周期状态与原语层的 `LifecycleState` 一致：
 
@@ -64,9 +64,9 @@
 
 ## 最小示例
 
-用 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 写一个回声插件。SDK 的 `plugin` 包提供运行时 `plugin.Serve`：读环境变量、监听、写握手行、实现 `xihan.plugin.v1` 服务端、生命周期与健康推送、事件投递、宿主回调客户端和 stderr 结构化日志。
+用 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 写一个回声插件。SDK 的 `plugin.Serve` 包掉协议的全部机械部分：读环境变量、监听、写握手行、实现服务端、生命周期与健康推送、事件投递、宿主回调客户端和 stderr 结构化日志。
 
-第一步，写清单 `xihan.manifest.json`。不写 `contributes.pipeline`：只有 Wasm 插件能贡献中间件，SDK 读到非空即返回错误、插件不启动，宿主在发现时也以 `PLUGINS_VALIDATION_001` 拒绝。
+第一步，写清单 `xihan.manifest.json`。不写 `contributes.pipeline`：只有 Wasm 插件能贡献中间件，SDK 读到非空即报错不启动，宿主也以 `PLUGINS_VALIDATION_001` 拒绝。
 
 ```json
 {
@@ -151,20 +151,20 @@ go install github.com/xihanfun/framework-spec/conformance/cmd/xihan-conformance@
 xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 ```
 
-第四步，在宿主的 `XiHan:Plugins:OutOfProcess:Directories` 里指向 `bin`（宿主装配见[隔离级别与清单](/plugins/overview)的最小示例）。启动后 `POST /echoes` 带 `{"text":"hi"}`，应答里有 `text` 与调用方的租户；`/health/ready` 里出现 `plugins.xihan.contoso.echo`。
+第四步，在宿主的 `XiHan:Plugins:OutOfProcess:Directories` 里指向 `bin`（宿主装配见[隔离级别与清单](/plugins/overview)）。启动后 `POST /echoes` 带 `{"text":"hi"}` 得到带租户的回声，`/health/ready` 里出现 `plugins.xihan.contoso.echo`。
 
-更完整的写法见 SDK 的 `examples/echo`：订阅、生命周期回调与健康项经 `plugin.Options` 的 `Subscriptions`、`Hooks`、`Catalogs` 接入；`Hooks.Configure` 里用 `configuration.Decode(&settings)` 读清单声明的配置节；操作里用 `plugin.HostOf(ctx)` 取回调客户端；业务失败返回 `primitives.Fail`，文案只带消息键。仓库里的 `samples/EchoGoPlugin` 就是在 .NET 宿主里端到端运行的这个示例。SDK 不提供流式操作，不覆盖 Wasm 载体。用 .NET 写进程外插件不引用任何 XiHan 包，只需 protobuf 与 gRPC 从 `plugin.proto` 生成桩，自己写握手行与 stdin 监听，见 `samples/EchoPlugin`。
+更完整的写法见 SDK 的 `examples/echo`（仓库里的 `samples/EchoGoPlugin` 就是它在 .NET 宿主里的端到端运行）：订阅、生命周期回调与健康项经 `plugin.Options` 的 `Subscriptions`、`Hooks`、`Catalogs` 接入；`Hooks.Configure` 里用 `configuration.Decode(&settings)` 读清单声明的配置节；操作里用 `plugin.HostOf(ctx)` 取回调客户端；业务失败返回 `primitives.Fail`，文案只带消息键。SDK 不提供流式操作，不覆盖 Wasm 载体。用 .NET 写进程外插件不引用任何 XiHan 包，只需 protobuf 与 gRPC 从 `plugin.proto` 生成桩，见 `samples/EchoPlugin`。
 
 ## 代理操作经完整管道
 
 握手声明的每个操作在宿主的 `OperationRegistry` 里登记为代理操作，归属是插件清单 ID，契约（`stability`、`expose`、权限码或策略）与 Schema 取自声明。代理操作和本地[操作契约](/web/operations)没有区别：协议适配器按 `expose` 发布，调用经宿主完整[管道](/startup/pipeline)，Authorize 阶段按契约判定，Handle 阶段把 JSON 载荷与上下文发给插件。
 
-上下文平铺为元数据：`traceparent` / `tracestate`、截止时间（同时设为 gRPC 调用的截止时间）、只含已登记 `xihan.*` 键的 Baggage；`Items` 与服务不传播。插件返回的业务失败原样成为调用结果，宿主用握手时拿到的消息目录翻译消息键（[全球化和本地化](/localization/)）；传输层失败按下表映射：
+上下文平铺为元数据：`traceparent` / `tracestate`、截止时间（同时设为 gRPC 调用的截止时间）、只含已登记 `xihan.*` 键的 Baggage；`Items` 与服务不传播。插件返回的业务失败原样成为调用结果，宿主用握手时拿到的消息目录翻译消息键（[全球化和本地化](/common/localization)）；传输层失败按下表映射：
 
 | 插件侧 | 宿主错误码 |
 | --- | --- |
 | 插件未就绪、正在停止、进程已退出或不可达；进行中的调用被插件停机切断 | `PLUGINS_UNAVAILABLE_001` |
-| 截止时间到（宿主的 `DeadlineMiddleware` 按截止令牌一律改报超时，见[弹性与限流](/resilience/)） | `KERNEL_TIMEOUT_001` |
+| 截止时间到（宿主的 `DeadlineMiddleware` 按截止令牌一律改报超时，见[弹性与限流](/common/resilience)） | `KERNEL_TIMEOUT_001` |
 | 截止时间到达之前调用方取消 | `KERNEL_CANCELLED_001` |
 | 插件未实现该操作（gRPC `Unimplemented`） | `KERNEL_NOTFOUND_001` |
 | 载荷或帧序不合法（gRPC `InvalidArgument`） | `KERNEL_VALIDATION_001` |
@@ -178,16 +178,16 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 
 插件可以反过来调用宿主：
 
-| 回调 | RPC | 权限 | 语义 |
+| 回调 | RPC | 权限（须在清单声明且已授予） | 语义 |
 | --- | --- | --- | --- |
-| 调用操作 | `Host.Invoke` | `capability:kernel.pipeline`（须在清单声明且已授予） | 以新的调用经宿主完整管道执行操作，未登记的操作为 `KERNEL_NOTFOUND_001` |
-| 发布消息 | `Host.Publish` | `capability:messaging.queue`（同上） | 按主题分组批量经宿主消息发布器发布，逐项返回结果；宿主没有发布器时每项为 `PLUGINS_UNAVAILABLE_001` |
+| 调用操作 | `Host.Invoke` | `capability:kernel.pipeline` | 以新的调用经宿主完整管道执行操作，未登记的操作为 `KERNEL_NOTFOUND_001` |
+| 发布消息 | `Host.Publish` | `capability:messaging.queue` | 按主题分组批量经宿主消息发布器发布，逐项返回结果；宿主没有发布器时每项为 `PLUGINS_UNAVAILABLE_001` |
 
 回调必须带 `xihan-plugin-session` 元数据，令牌缺失或不匹配为 gRPC `Unauthenticated`（`PLUGINS_DENIED_002`）；令牌只对本次进程有效，宿主端点只接受本机连接。权限未声明或未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002`。回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`），元数据里的 `xihan.principal` 被忽略，`xihan.tenant` 等已登记的 Baggage 照常采用；Authorize 阶段按目标操作的契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予相应权限码。
 
 ## 失败降级
 
-插件故障的结果是降级而不是退出：每个插件是一个健康条目 `plugins.<清单 ID>`，条目 `Failed` 或 `Degraded` 只把应用从 `Ready` 压成 `Degraded`，`/health/ready` 仍按宿主自己的就绪规则应答（[生命周期与健康](/startup/lifecycle)）。
+插件故障的结果是降级而不是退出：每个插件是一个健康条目 `plugins.<清单 ID>`，`Failed` 或 `Degraded` 只把应用压成 `Degraded`，`/health/ready` 仍按宿主自己的就绪规则应答（[生命周期与健康](/startup/lifecycle)）。
 
 | 故障 | 插件状态 | 调用方看到 |
 | --- | --- | --- |
@@ -243,7 +243,7 @@ builder.AddXiHan(xihan => xihan
 
 ### 插件进程起来了，宿主却报握手超时
 
-宿主在 `HandshakeTimeoutSeconds` 内要读到 stdout 的握手行并完成 `Handshake`。常见原因：插件把日志也写到了 stdout（日志只能走 stderr）、监听的 `tcp` 地址不是回环地址、握手里发回的清单与目录里的文件不一致。用 `xihan-conformance plugin --dir <目录>` 的 `handshake` 用例能直接定位。
+宿主要在 `HandshakeTimeoutSeconds` 内读到 stdout 的握手行并完成 `Handshake`。常见原因：日志写到了 stdout（只能走 stderr）、`tcp` 地址不是回环地址、握手发回的清单与目录里的文件不一致。`xihan-conformance plugin --dir <目录>` 的 `handshake` 用例能直接定位。
 
 ### 插件崩溃后多久恢复，一直崩会怎样
 
@@ -251,11 +251,11 @@ builder.AddXiHan(xihan => xihan
 
 ### 插件的操作能不能像本地操作一样出现在 OpenAPI 与 MCP 里
 
-能。配置阶段发现的插件，其操作在协议适配器发布路由与文档时已经在登记表里（[规范化接口文档](/openapi/)、[MCP](/protocols/mcp)）。只有运行期 `LoadAsync` 的插件例外：路由已经发布完，它的操作只对 `IOperationInvoker` 可见。
+能。配置阶段发现的插件，其操作在协议适配器发布路由与文档时已经在登记表里（[规范化接口文档](/web/openapi)、[MCP](/protocols/mcp)）。只有运行期 `LoadAsync` 的插件例外：路由已经发布完，它的操作只对 `IOperationInvoker` 可见。
 
 ### 能用 gRPC 流式操作吗
 
-协议定义了 `InvokeStream`，但 .NET 宿主暂不发布流式操作，Go SDK 也不提供。需要流式结果时把它拆成多次一元调用或经消息投递。
+协议定义了 `InvokeStream`，但 .NET 宿主暂不发布流式操作，Go SDK 也不提供。需要流式结果时拆成多次一元调用或经消息投递。
 
 ## 相关包与下一步
 

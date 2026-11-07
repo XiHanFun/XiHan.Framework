@@ -1,4 +1,4 @@
-# 11.1 认证
+# 认证
 
 这一页讲调用凭据怎样变成主体：凭据与认证处理器、Authenticate 阶段的处理顺序、怎样在代码里读主体、三种认证 Provider（ApiKey、JWT、OpenID Connect）怎样选和配，以及认证失败时协议上怎样质询。读完你能让 SimpleApp 识别出调用方是谁，把开发用的 ApiKey 换成生产用的 JWT 或外部身份提供方的令牌，并看懂 401 响应里的内容。阅读前先了解[执行管道](/startup/pipeline)与[调用上下文](/startup/invocation-context)。
 

@@ -1,4 +1,4 @@
-# 1.11 规范与多语言
+# 规范与多语言
 
 XiHan Framework 的本体不是 .NET 代码，而是一份语言中立的规范：XiHan Spec。.NET 实现是它的参考实现，Go SDK 是第二个实现，其他语言按同一份规范实现并通过同一套一致性测试。这一页讲规范怎样组织、哪些内容是规范性的、一致性测试怎样工作，以及各语言 SDK 的现状。要写插件或另一种语言的 SDK 的读者需要读它；只用 .NET 的读者了解即可。
 
@@ -115,4 +115,4 @@ SDK 按成熟度分级：Reference（.NET）、Stable（通过全部向量）、
 
 - [核心概念](/getting-started/concepts)：这些规范在 .NET 实现里对应什么
 - [进程外插件](/plugins/out-of-process)：用任意语言按规范写插件
-- [贡献指南](/contributing/)：怎样提一个 RFC
+- [贡献指南](/appendix/contributing)：怎样提一个 RFC

@@ -1,4 +1,4 @@
-# 27.1 写一个 Provider
+# 写一个 Provider
 
 Provider 是为某个子系统能力提供另一种实现的特性：Redis 缓存、PostgreSQL 持久化、Kubernetes 领导选举都是 Provider。这一页用一个从 JSON 文件读授予的授权 Provider 走完五步：实现抽象接口、写特性与清单、补消息目录 / 健康 / AOT、通过一致性套件、让应用使用。读完你能给任何子系统补一个与默认实现语义一致、能被应用一行装配的实现。前置知识是[能力图谱与 Provider](/startup/capabilities)与[一致性套件与门禁](/testing/conformance)。
 
@@ -184,7 +184,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 
 ## 消息目录、健康与 AOT
 
-- 文案不写在代码里（规范 RFC-0010）：错误只携带消息键常量与参数。Provider 用的是子系统已有的错误码时，注册子系统的目录（如 `SecurityMessages.Catalog`）；有自己的错误码时，定义 `<领域>Messages` 常量类，在包里放 10 种区域的 `Localization/<区域>.json`（`en-US` 必须有），以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入，用 `MessageCatalog.FromEmbeddedResources(name, typeof(...))` 建目录并 `AddMessageCatalog`。配置错误与编程错误（如上面缺少 `Path`）抛 `FrameworkException`，消息用英文、不本地化（[全球化和本地化](/localization/)）。
+- 文案不写在代码里（规范 RFC-0010）：错误只携带消息键常量与参数。Provider 用的是子系统已有的错误码时，注册子系统的目录（如 `SecurityMessages.Catalog`）；有自己的错误码时，定义 `<领域>Messages` 常量类，在包里放 10 种区域的 `Localization/<区域>.json`（`en-US` 必须有），以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入，用 `MessageCatalog.FromEmbeddedResources(name, typeof(...))` 建目录并 `AddMessageCatalog`。配置错误与编程错误（如上面缺少 `Path`）抛 `FrameworkException`，消息用英文、不本地化（[全球化和本地化](/common/localization)）。
 - 连接类 Provider（数据库、缓存、消息代理、对象存储）用 `PeriodicHealthContributor(name, probe, interval, clock, loggerFactory, description)`：启动时同步探一次，之后按间隔重探，探针失败或抛出记 `KERNEL_UNAVAILABLE_005` 并报 Degraded，恢复后报 Ready，应用只从 Ready 压成 Degraded 而不退出。容量类实现（内存存储、队列）同步上报，达到容量即 Degraded。间隔的配置键按惯例叫 `HealthProbeIntervalSeconds`，缺省 15（[生命周期与健康](/startup/lifecycle)）。
 - 外部资源的连接串经绑定取得：清单 `Bindings` 声明绑定名与类型，`Configure` 里用 `context.GetBinding(name)` / `TryGetBinding(name)` 读值，同一个 Provider 在 Compose 里读环境变量、在 Kubernetes 里读 Secret（[资源绑定](/configuration/bindings)）。
 - AOT：包缺省按 AOT 兼容写（`<IsAotCompatible>true</IsAotCompatible>`，序列化走源生成）。依赖的第三方库不兼容时设为 `false` 并在 README 写明；必须用反射的入口标 `RequiresDynamicCode` / `RequiresUnreferencedCode`，把警告交给调用方。
@@ -261,7 +261,7 @@ app.Run();
 }
 ```
 
-启动后 `xihan graph` 能看到 `security.authorization@1` 由 `xihan.security.files` 提供；`/health/ready` 里多出条目 `security.files.grants`，把 `grants.json` 改成不可读，条目在下一次探测后变 Degraded，应用仍在服务。
+启动后 `xihan graph` 能看到 `security.authorization@1` 由 `xihan.security.files` 提供；`/health/ready` 里多出条目 `security.files.grants`，把 `grants.json` 改成不可读，下一次探测后条目变 Degraded，应用仍在服务。
 
 ## 远程 Provider
 
@@ -279,7 +279,7 @@ app.Run();
 
 ### 配置应该抛异常还是返回 Result
 
-配置缺失、格式错误是编程错误，启动时抛 `FrameworkException`（英文消息、带错误码）让应用立刻失败；运行期的外部资源故障是可恢复失败，返回带领域错误码的 `Result`，由健康条目报 Degraded。
+配置缺失、格式错误是编程错误，启动时抛 `FrameworkException` 让应用立刻失败；运行期的外部资源故障是可恢复失败，返回带领域错误码的 `Result`，由健康条目报 Degraded。
 
 ### 包名和清单 ID 怎么取
 
@@ -288,6 +288,6 @@ app.Run();
 ## 相关包与下一步
 
 - 包参考：[Kernel](/packages/kernel)、[Conformance](/packages/conformance)、[Testing](/packages/testing)、[Caching.Remote](/packages/caching-remote)
-- 相关章节：[能力图谱与 Provider](/startup/capabilities)、[特性与清单](/startup/features)、[生命周期与健康](/startup/lifecycle)、[全球化和本地化](/localization/)、[一致性套件与门禁](/testing/conformance)、[资源绑定](/configuration/bindings)
+- 相关章节：[能力图谱与 Provider](/startup/capabilities)、[特性与清单](/startup/features)、[生命周期与健康](/startup/lifecycle)、[全球化和本地化](/common/localization)、[一致性套件与门禁](/testing/conformance)、[资源绑定](/configuration/bindings)
 - 规范：RFC-0002《清单》、RFC-0010《本地化》、RFC-0019《远程 Provider》
-- 下一步：[能力包与中间件](/extending/feature)讲应用自己的能力包、管道中间件与命名规则
+- 下一步：[能力包与中间件](/extending/feature)

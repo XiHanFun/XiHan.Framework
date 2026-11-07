@@ -1,4 +1,4 @@
-# 5.1 ASP.NET Core 宿主
+# ASP.NET Core 宿主
 
 这页讲 `Hosting.AspNetCore` 怎样把一个 ASP.NET Core 应用变成 XiHan 应用：在 `WebApplicationBuilder` 上装配特性，把每个 HTTP 请求翻译成调用上下文并送进内核管道，映射探针，把失败写成 Problem Details，按 `Accept-Language` 协商区域，以及 Native AOT 发布要做的两件事。读完这页，我们能用 `WebApplication` 承载一个 XiHan 应用，并且说得出一个请求从进入 Kestrel 到写出响应中间经过了什么。
 
@@ -156,12 +156,12 @@ curl -s localhost:5000/missing -H "Accept-Language: zh-CN"
 ```
 
 ::: v-pre
-`errors` 的键是字段键：请求属性的序列化名，嵌套用点分路径与下标（`lines[0].sku`），根级为空串。值有两种来源：内核校验器按 Schema 产生的违规带 `kernel.validation.*` 消息键，与 `detail` 走同一条翻译通道；应用自校验（`IValidatableObject`）返回的文案原样输出。示例应用的下单请求名称为空、金额为 0 时，响应里的这一段是 `{"errors":{"name":["长度必须 >= 1"],"amount":["值必须 >= 1"]}}`。校验的写法见[数据校验](/validation/)。
+`errors` 的键是字段键：请求属性的序列化名，嵌套用点分路径与下标（`lines[0].sku`），根级为空串。值有两种来源：内核校验器按 Schema 产生的违规带 `kernel.validation.*` 消息键，与 `detail` 走同一条翻译通道；应用自校验（`IValidatableObject`）返回的文案原样输出。示例应用的下单请求名称为空、金额为 0 时，响应里的这一段是 `{"errors":{"name":["长度必须 >= 1"],"amount":["值必须 >= 1"]}}`。校验的写法见[数据校验](/web/validation)。
 :::
 
 401 响应另带 `WWW-Authenticate` 质询，规则见 [HTTP 路由与载荷](/web/routing)。
 
-`ProblemResponse` 公开了这套规则：`FromError` 构造响应体，`StatusCodeFor` 给出状态码，`WriteTo` 写出 JSON。绕过管道的端点要自己写错误、或访问日志要记状态码时用它们，结果与宿主写出的一致。`Result` 与 `Error` 本身的用法见[结果与错误处理](/errors/)。
+`ProblemResponse` 公开了这套规则：`FromError` 构造响应体，`StatusCodeFor` 给出状态码，`WriteTo` 写出 JSON。绕过管道的端点要自己写错误、或访问日志要记状态码时用它们，结果与宿主写出的一致。`Result` 与 `Error` 本身的用法见[结果与错误处理](/web/errors)。
 
 ## 区域协商与本地化
 
@@ -186,7 +186,7 @@ builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("samples
 </ItemGroup>
 ```
 
-`SampleMessages` 是放消息键常量的静态类，`Localization/zh-CN.json` 这类文件里是键到模板的映射。消息键、区域配置与回退链见[全球化和本地化](/localization/)。
+`SampleMessages` 是放消息键常量的静态类，`Localization/zh-CN.json` 这类文件里是键到模板的映射。消息键、区域配置与回退链见[全球化和本地化](/common/localization)。
 
 ## Native AOT
 
@@ -217,7 +217,7 @@ internal sealed partial class AppJsonContext : JsonSerializerContext;
 public sealed record WhoAmI(string Principal, bool IsAuthenticated, string? Tenant);
 ```
 
-操作契约的请求与响应类型也登记在同一个上下文里，操作的 JSON Schema 由 `Kernel.Generators` 在编译期生成。示例应用就是这样以 Native AOT 发布的，它同时装配了 HTTP、gRPC、MCP 与 CloudEvents 四个协议适配器。序列化与裁剪的完整要求见 [JSON 序列化与 Native AOT](/serialization/)。
+操作契约的请求与响应类型也登记在同一个上下文里，操作的 JSON Schema 由 `Kernel.Generators` 在编译期生成。示例应用就是这样以 Native AOT 发布的，它同时装配了 HTTP、gRPC、MCP 与 CloudEvents 四个协议适配器。序列化与裁剪的完整要求见 [JSON 序列化与 Native AOT](/common/serialization)。
 
 ## 行为与错误码
 

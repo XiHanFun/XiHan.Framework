@@ -127,8 +127,8 @@ var text = InventoryMessages.OutOfStock.L(("requested", 3), ("available", 1));
 
 ## 相关
 
-- [结果与错误](/errors/)
-- [国际化](/localization/)
+- [结果与错误](/web/errors)
+- [国际化](/common/localization)
 - [生命周期与健康](/startup/lifecycle)
 - [Kernel](./kernel)
 - 规范：RFC-0001《原语》、RFC-0003《调用上下文与传播》、RFC-0010《本地化》

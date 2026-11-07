@@ -1,4 +1,4 @@
-# 18.2 分片、预签名与命名实例
+# 分片、预签名与命名实例
 
 这一页讲对象存储的进阶能力：只读一段的范围读取、大文件的分片上传与断点续传、让客户端不带凭据直接上传下载的预签名地址（S3 原生签名与宿主代收发）、服务端只发票不经手内容的大文件直传，以及一个应用同时用多个存储时的命名存储实例。读完后，我们能做出视频拖动、断点续传和按租户分桶的存储方案。前置知识是[读写与列举](/object-storage/basics)与[ASP.NET Core 宿主](/web/hosting)。
 
@@ -168,7 +168,7 @@ public sealed record UploadTicket(string UploadId, IReadOnlyList<string> PartUrl
 public sealed record CompletedPart(int Number, string ETag);
 ```
 
-用 Native AOT 发布时，`UploadTicket`、`CompletedPart` 要加进应用的 `JsonSerializerContext`，见[JSON 序列化与 Native AOT](/serialization/)。
+用 Native AOT 发布时，`UploadTicket`、`CompletedPart` 要加进应用的 `JsonSerializerContext`，见[JSON 序列化与 Native AOT](/common/serialization)。
 
 ## 命名存储实例
 
@@ -277,4 +277,4 @@ S3 命名实例的定义可能来自应用的库，端点可能是租户填的�
 - [ObjectStorage.Abstractions](/packages/objectstorage-abstractions)：分片、签名与命名实例的契约
 - [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)、[ObjectStorage.S3](/packages/objectstorage-s3)：两个实现的配置与行为
 - [Hosting.AspNetCore](/packages/hosting-aspnetcore)：`HostedBlobUrlFeature` 与 `MapXiHanBlobs`
-- 下一步：[审计](/auditing/)
+- 下一章：[全球化和本地化](/common/localization)

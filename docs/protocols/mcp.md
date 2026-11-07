@@ -1,4 +1,4 @@
-# 14.2 MCP
+# MCP
 
 这一页讲 MCP（Model Context Protocol）适配器：怎样把操作发布成大模型可调用的 tool，`tools/list` 里的名字、Schema、标题描述与注解从哪里来，`tools/call` 怎样经过完整管道并区分业务失败与协议错误，HTTP 与 stdio 两种传输各自的规则，以及可配置的选项。读完你能让 Claude、Cursor 这类 MCP 客户端直接调用你的业务操作，而不另写一个 MCP 服务端。前置知识是[操作契约](/web/operations)与上一页 [gRPC](/protocols/grpc) 开头的「一份契约，多个载体」。
 
@@ -38,7 +38,7 @@ tool 名按 `{resource}_{verb}` 推导（`orders.create` → `orders_create`）�
 dotnet add package XiHan.Framework.Protocols.Mcp --prerelease
 ```
 
-操作在 `Expose` 里带上 `Mcp`（上一页的 `CreateOrder` 已经带了）。标题与描述放在应用的语言文件里，每种语言一个文件，写法见[全球化和本地化](/localization/)。这是 `Localization/en-US.json`：
+操作在 `Expose` 里带上 `Mcp`（上一页的 `CreateOrder` 已经带了）。标题与描述放在应用的语言文件里，每种语言一个文件，写法见[全球化和本地化](/common/localization)。这是 `Localization/en-US.json`：
 
 ```json
 {
@@ -189,7 +189,7 @@ MCP 客户端按 `destructiveHint` 决定是否确认。只有 `get`、`list` �
 ## 相关包与下一步
 
 - 包参考：[Protocols.Mcp](/packages/protocols-mcp)、[Hosting.CommandLine](/packages/hosting-commandline)
-- 标题与描述的来源：[全球化和本地化](/localization/)
+- 标题与描述的来源：[全球化和本地化](/common/localization)
 - 契约与 Schema：[操作契约](/web/operations)
 - 用 MCP 开发框架本身（给 Agent 的 MCP Server）：[MCP Server](/agents/mcp)
 - 规范：RFC-0011《操作契约与 XGI》

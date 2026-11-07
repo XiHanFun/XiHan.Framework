@@ -1,6 +1,6 @@
-# 15. 全球化和本地化
+# 全球化和本地化
 
-这一章讲框架的文案与多语言：消息键、每种语言一个文件的语言文件、`key.L()` 怎样拿到调用方语言的文案、`Error` 怎样只带键与参数而由宿主在出口翻译、`Accept-Language` 怎样协商成启用的区域，以及怎样把翻译放进数据库让运营人员在线修改。读完你能给应用加多语言文案，也能给自己的能力包写出可翻译的错误消息。前置知识是[结果与错误处理](/errors/)与[调用上下文](/startup/invocation-context)。
+这一章讲框架的文案与多语言：消息键、每种语言一个文件的语言文件、`key.L()` 怎样拿到调用方语言的文案、`Error` 怎样只带键与参数而由宿主在出口翻译、`Accept-Language` 怎样协商成启用的区域，以及怎样把翻译放进数据库让运营人员在线修改。读完你能给应用加多语言文案，也能给自己的能力包写出可翻译的错误消息。前置知识是[结果与错误处理](/web/errors)与[调用上下文](/startup/invocation-context)。
 
 ## 为什么需要
 
@@ -260,7 +260,7 @@ return Error.NotFound("ORDERS_NOTFOUND_001", OrdersMessages.NotFound, MessageArg
 - 幂等记录保存消息键与字符串化的参数，回放时仍按回放请求的区域翻译。
 - `FrameworkException`（配置与编程错误）的消息是英文，不走消息键。
 
-gRPC 的 `grpc-message`、MCP 的 `isError` 文本、命令行的 stderr 一行 JSON 都按同一规则翻译，见[多协议暴露](/protocols/grpc)。错误码的分类与 Problem Details 的结构见[结果与错误处理](/errors/)。
+gRPC 的 `grpc-message`、MCP 的 `isError` 文本、命令行的 stderr 一行 JSON 都按同一规则翻译，见[多协议暴露](/protocols/grpc)。错误码的分类与 Problem Details 的结构见[结果与错误处理](/web/errors)。
 
 ## 区域协商
 
@@ -306,7 +306,7 @@ Baggage 随调用传播：HTTP 的 `baggage` 头、CloudEvents 的扩展属性�
 | `openapi.tags.<资源段>.name` / `.description` | OpenAPI 顶层 `tags` 的显示名与说明 |
 | `openapi.groups.<组名>.name` / `.description` | OpenAPI 分组的显示名与说明 |
 
-说明里不写授权要求，适配器按契约里的权限统一呈现。SimpleApp 的 `orders.create.title`、`orders.create.description` 就是这类键，十种语言文件各有一份；没有的键对应的字段不输出。各协议的细节见[规范化接口文档](/openapi/)与 [MCP](/protocols/mcp)。
+说明里不写授权要求，适配器按契约里的权限统一呈现。SimpleApp 的 `orders.create.title`、`orders.create.description` 就是这类键，十种语言文件各有一份；没有的键对应的字段不输出。各协议的细节见[规范化接口文档](/web/openapi)与 [MCP](/protocols/mcp)。
 
 ## 数据库翻译 Provider
 
@@ -412,8 +412,8 @@ public sealed class SetTranslations(MessageTranslationStore store) : IOperation<
 ## 相关包与下一步
 
 - 包参考：[Localization.Abstractions](/packages/localization-abstractions)、[Localization.InMemory](/packages/localization-inmemory)、[Localization.Database](/packages/localization-database)
-- 错误与 Problem Details：[结果与错误处理](/errors/)
-- 文案出现的地方：[规范化接口文档](/openapi/)、[MCP](/protocols/mcp)、[命令行宿主](/protocols/command-line)
+- 错误与 Problem Details：[结果与错误处理](/web/errors)
+- 文案出现的地方：[规范化接口文档](/web/openapi)、[MCP](/protocols/mcp)、[命令行宿主](/protocols/command-line)
 - 数据库 Provider 依赖的持久化：[持久化与 Provider](/persistence/overview)
 - 规范：RFC-0010《本地化》
-- 下一步：[作业与计划](/scheduling/jobs)，按计划运行后台工作
+- 下一页：[审计](/common/auditing)

@@ -1,6 +1,6 @@
-# 21.1 模型与对话
+# 模型与对话
 
-这一页讲 AI 子系统的基础：框架为什么直接以 Microsoft.Extensions.AI 为线格式、怎样配置 OpenAI 兼容的 Provider 并按名字解析模型客户端、聊天入口 `IAIChat` 怎样把提示词、护栏与工具叠在模型调用之上、超时与取消怎样归因、配置与错误码。读完后，我们能在一个操作里把用户问题交给模型并把回答以 `Result` 返回。前置知识是[操作契约](/web/operations)、[结果与错误处理](/errors/)与[配置模型与选项](/configuration/options)；工具与知识库在[下一页](/ai/tools)。
+这一页讲 AI 子系统的基础：框架为什么直接以 Microsoft.Extensions.AI 为线格式、怎样配置 OpenAI 兼容的 Provider 并按名字解析模型客户端、聊天入口 `IAIChat` 怎样把提示词、护栏与工具叠在模型调用之上、超时与取消怎样归因、配置与错误码。读完后，我们能在一个操作里把用户问题交给模型并把回答以 `Result` 返回。前置知识是[操作契约](/web/operations)、[结果与错误处理](/web/errors)与[配置模型与选项](/configuration/options)；工具与知识库在[下一页](/ai/tools)。
 
 ## 为什么需要
 
@@ -220,7 +220,7 @@ public sealed class QuestionLengthGuardrail : IAIGuardrail
 }
 ```
 
-护栏以 `AddAIGuardrail<T>()` 登记（下一页的 `AssistantsFeature` 里有示例），按登记顺序执行，收到的是包括渲染后系统提示在内的全部消息。消息键的写法见[全球化和本地化](/localization/)。内置的 `KeywordBlocklistGuardrail`（名字 `keyword-blocklist`）在 `XiHan:AI:Guardrails:Enabled` 为 `true` 时登记，只检查 `User` 消息：
+护栏以 `AddAIGuardrail<T>()` 登记（下一页的 `AssistantsFeature` 里有示例），按登记顺序执行，收到的是包括渲染后系统提示在内的全部消息。消息键的写法见[全球化和本地化](/common/localization)。内置的 `KeywordBlocklistGuardrail`（名字 `keyword-blocklist`）在 `XiHan:AI:Guardrails:Enabled` 为 `true` 时登记，只检查 `User` 消息：
 
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |

@@ -367,7 +367,7 @@ public sealed class ChangeBuffer
 - [持久化](/persistence/overview)
 - [工作单元与事务](/persistence/unit-of-work)
 - [多租户](/multi-tenancy/resolution)
-- [审计](/auditing/)
+- [审计](/common/auditing)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - 规范：RFC-0005《领域协议与持久化》

@@ -1,6 +1,6 @@
-# 4.2 配置目录与热更新
+# 配置目录与热更新
 
-这一页讲宿主怎样装载一个挂载的配置目录：环境变量 `XIHAN_CONFIG_PATH` 指向哪里、目录里的文件按什么顺序装载、它们与 appsettings 和环境变量谁覆盖谁、文件改了之后哪些值会跟着变，以及容器里为什么要开轮询式文件监视。读完你能在本机模拟 Kubernetes 的 ConfigMap 挂载并看到热更新生效。前置知识是 [4.1 配置模型与选项](/configuration/options)。
+这一页讲宿主怎样装载一个挂载的配置目录：环境变量 `XIHAN_CONFIG_PATH` 指向哪里、目录里的文件按什么顺序装载、它们与 appsettings 和环境变量谁覆盖谁、文件改了之后哪些值会跟着变，以及容器里为什么要开轮询式文件监视。读完你能在本机模拟 Kubernetes 的 ConfigMap 挂载并看到热更新生效。前置知识是 [配置模型与选项](/configuration/options)。
 
 ## 为什么需要
 
@@ -43,7 +43,7 @@
 
 ## 最小示例
 
-我们在本机模拟一次挂载：建一个目录放配置文件，用环境变量指向它，运行应用后改文件看结果。`BannerOptions` 沿用 [4.1](/configuration/options) 的写法。
+我们在本机模拟一次挂载：建一个目录放配置文件，用环境变量指向它，运行应用后改文件看结果。`BannerOptions` 沿用[配置模型与选项](/configuration/options)的写法。
 
 ```csharp
 // Program.cs
@@ -92,7 +92,7 @@ dotnet run
 {"banner":"Hello from mounted file","stopTimeout":"20","configPath":"/path/to/mounted"}
 ```
 
-不停应用，把文件里的 `Banner` 改成 `Changed`，保存后再请求一次，`banner` 已经是 `Changed`，而 `stopTimeout` 即使改了也只是配置树里的值变了：内核在装配时已经读过 `KernelOptions`，停止超时仍是 20 秒。要以 Native AOT 发布这个示例，`ConfigView` 需要登记到 `JsonSerializerContext`，见 [JSON 序列化与 Native AOT](/serialization/)。
+不停应用，把文件里的 `Banner` 改成 `Changed`，保存后再请求一次，`banner` 已经是 `Changed`，而 `stopTimeout` 即使改了也只是配置树里的值变了：内核在装配时已经读过 `KernelOptions`，停止超时仍是 20 秒。要以 Native AOT 发布这个示例，`ConfigView` 需要登记到 `JsonSerializerContext`，见 [JSON 序列化与 Native AOT](/common/serialization)。
 
 ## 容器与 Kubernetes 里的热更新
 
@@ -155,4 +155,4 @@ kubelet 同步 ConfigMap 有延迟，`kubectl edit configmap` 之后通常要一
 - [Kernel](/packages/kernel)：`ConfigurationDirectory` 与 `KernelOptions`
 - [Hosting.AspNetCore](/packages/hosting-aspnetcore)、[Hosting.CommandLine](/packages/hosting-commandline)：装载配置目录的两个宿主
 - [应用清单与 xihan pack](/deployment/pack)：`config.files` 与 `config.mountPath`
-- 下一页：[4.3 资源绑定](/configuration/bindings)
+- 下一页：[资源绑定](/configuration/bindings)

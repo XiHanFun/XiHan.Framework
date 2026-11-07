@@ -37,7 +37,7 @@ XiHan.Framework is a .NET application framework for long-lived systems, built on
 | [Capability graph](https://framework.docs.xihanfun.com/startup/features) | Dependencies declared by capability ID, resolved and validated before startup |
 | [Execution pipeline](https://framework.docs.xihanfun.com/startup/pipeline) | Eleven fixed stages for authentication, tenancy, authorization, validation, idempotency and transactions |
 | [Replaceable implementations](https://framework.docs.xihanfun.com/packages/) | Defaults with no external dependencies; providers pass the same conformance suite |
-| [Native AOT](https://framework.docs.xihanfun.com/serialization/) | Reflection-free kernel, with registration code and schemas generated at compile time |
+| [Native AOT](https://framework.docs.xihanfun.com/common/serialization) | Reflection-free kernel, with registration code and schemas generated at compile time |
 | [Plugins](https://framework.docs.xihanfun.com/plugins/overview) | In-process, Wasm and out-of-process isolation, in multiple languages, with failures contained from the host |
 | [AI integration](https://framework.docs.xihanfun.com/agents/mcp) | Operations as MCP tools and model tools, plus an offline knowledge base for coding assistants |
 
@@ -108,10 +108,10 @@ Three tiers of promise, after the I Ching's unchanging (不易), simple (简易)
 | [Scheduling](https://framework.docs.xihanfun.com/scheduling/jobs) | In-memory | Database (clustered), Kubernetes (leader election) |
 | [Workflow](https://framework.docs.xihanfun.com/workflow/definitions) | In-memory | Database |
 | [Object storage](https://framework.docs.xihanfun.com/object-storage/basics) | File system | S3 and compatible services |
-| [Auditing](https://framework.docs.xihanfun.com/auditing/) | In-memory | Database |
-| [Localization](https://framework.docs.xihanfun.com/localization/) | In-memory (10 locales) | Database |
+| [Auditing](https://framework.docs.xihanfun.com/common/auditing) | In-memory | Database |
+| [Localization](https://framework.docs.xihanfun.com/common/localization) | In-memory (10 locales) | Database |
 | [Configuration](https://framework.docs.xihanfun.com/configuration/options) | .NET configuration | Nacos |
-| [Observability](https://framework.docs.xihanfun.com/observability/) | `System.Diagnostics` | OpenTelemetry |
+| [Observability](https://framework.docs.xihanfun.com/common/observability) | `System.Diagnostics` | OpenTelemetry |
 | [AI](https://framework.docs.xihanfun.com/ai/chat) | Tool bridge | OpenAI-compatible endpoints, VectorData |
 
 Profiles: `Profiles.Minimal` (kernel and host), `Profiles.Standard` (adds the domain model and five subsystems), `Profiles.Full` (adds the remaining subsystems and four protocol adapters).

@@ -37,7 +37,7 @@ XiHan.Framework 是面向长期演进系统的 .NET 应用框架，以微内核�
 | [能力图谱](https://framework.docs.xihanfun.com/startup/features) | 依赖按能力 ID 声明，启动前完成求解与校验 |
 | [执行管道](https://framework.docs.xihanfun.com/startup/pipeline) | 十一个固定阶段承载认证、租户、授权、校验、幂等与事务 |
 | [可替换实现](https://framework.docs.xihanfun.com/packages/) | 默认实现零外部依赖，Provider 通过同一套一致性测试 |
-| [Native AOT](https://framework.docs.xihanfun.com/serialization/) | 内核零反射，注册代码与 Schema 于编译期生成 |
+| [Native AOT](https://framework.docs.xihanfun.com/common/serialization) | 内核零反射，注册代码与 Schema 于编译期生成 |
 | [插件](https://framework.docs.xihanfun.com/plugins/overview) | 进程内、Wasm、进程外三级隔离，支持多语言，故障不影响宿主 |
 | [AI 集成](https://framework.docs.xihanfun.com/agents/mcp) | 操作可作为 MCP tool 与模型工具，内置离线知识库服务编码助手 |
 
@@ -108,10 +108,10 @@ flowchart TB
 | [调度](https://framework.docs.xihanfun.com/scheduling/jobs) | 内存 | 数据库（集群）、Kubernetes（选主） |
 | [工作流](https://framework.docs.xihanfun.com/workflow/definitions) | 内存 | 数据库 |
 | [对象存储](https://framework.docs.xihanfun.com/object-storage/basics) | 文件系统 | S3 及兼容服务 |
-| [审计](https://framework.docs.xihanfun.com/auditing/) | 内存 | 数据库 |
-| [国际化](https://framework.docs.xihanfun.com/localization/) | 内存（10 种区域） | 数据库 |
+| [审计](https://framework.docs.xihanfun.com/common/auditing) | 内存 | 数据库 |
+| [国际化](https://framework.docs.xihanfun.com/common/localization) | 内存（10 种区域） | 数据库 |
 | [配置](https://framework.docs.xihanfun.com/configuration/options) | .NET 配置 | Nacos |
-| [可观测性](https://framework.docs.xihanfun.com/observability/) | `System.Diagnostics` | OpenTelemetry |
+| [可观测性](https://framework.docs.xihanfun.com/common/observability) | `System.Diagnostics` | OpenTelemetry |
 | [AI](https://framework.docs.xihanfun.com/ai/chat) | 工具桥 | OpenAI 兼容端点、VectorData |
 
 组合包：`Profiles.Minimal`（内核与宿主）、`Profiles.Standard`（增加领域模型与五个子系统）、`Profiles.Full`（增加其余子系统与四种协议适配器）。

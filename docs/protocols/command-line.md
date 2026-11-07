@@ -1,4 +1,4 @@
-# 14.4 命令行宿主
+# 命令行宿主
 
 这一页讲命令行宿主：它怎样把命令行参数翻译成内核调用，怎样启用，内置命令有哪些，调用操作时载荷从哪里来、上下文选项有哪些，输出与退出码的约定，怎样写自己的命令，以及怎样经 stdio 提供 MCP。读完你能把同一份操作契约做成运维工具或批处理脚本里的命令，并让 MCP 客户端以子进程方式连接你的应用。前置知识是[装配入口](/startup/bootstrap)与[操作契约](/web/operations)。
 
@@ -65,7 +65,7 @@ public sealed class Greet : IOperation<GreetRequest, GreetResponse>
 }
 ```
 
-`CliMessages.TimesInvalid` 是消息键常量，文案在 `Localization/<区域>.json` 里，写法见[全球化和本地化](/localization/)。`GreetingsFeature` 是最小的能力包，`Configure` 里只调用 `context.AddGeneratedOperations()` 登记生成器产出的操作。`Program.cs`：
+`CliMessages.TimesInvalid` 是消息键常量，文案在 `Localization/<区域>.json` 里，写法见[全球化和本地化](/common/localization)。`GreetingsFeature` 是最小的能力包，`Configure` 里只调用 `context.AddGeneratedOperations()` 登记生成器产出的操作。`Program.cs`：
 
 ```csharp
 using Microsoft.Extensions.Hosting;
@@ -177,7 +177,7 @@ dotnet run -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $
 | 其他（含 `UNEXPECTED`） | 1 | `Unexpected` |
 | 用法错误 | 64 | `Usage` |
 
-用法错误包括：没有命令、未知命令（`HOSTING_NOTFOUND_002`）、`invoke` 缺操作 ID、`--json` 不是 JSON 对象、`--data` 文件不存在、`--timeout` 或 `--authorization` 格式不对（都是 `HOSTING_VALIDATION_001`）。认证失败与缺少权限都是 `DENIED`，退出码 4，不区分 HTTP 上的 401 与 403。错误码与 KIND 的全貌见[结果与错误处理](/errors/)。
+用法错误包括：没有命令、未知命令（`HOSTING_NOTFOUND_002`）、`invoke` 缺操作 ID、`--json` 不是 JSON 对象、`--data` 文件不存在、`--timeout` 或 `--authorization` 格式不对（都是 `HOSTING_VALIDATION_001`）。认证失败与缺少权限都是 `DENIED`，退出码 4，不区分 HTTP 上的 401 与 403。错误码与 KIND 的全貌见[结果与错误处理](/web/errors)。
 
 ## 自定义命令
 
@@ -257,6 +257,6 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run -- mcp --tenant acme --loc
 
 - 包参考：[Hosting.CommandLine](/packages/hosting-commandline)、[Protocols.Mcp](/packages/protocols-mcp)
 - 同一份契约的 HTTP 宿主：[ASP.NET Core 宿主](/web/hosting)、[操作契约](/web/operations)
-- 错误码与 KIND：[结果与错误处理](/errors/)
+- 错误码与 KIND：[结果与错误处理](/web/errors)
 - 规范：RFC-0011《操作契约与 XGI》
-- 下一步：[全球化和本地化](/localization/)，命令说明、失败文案与 tool 描述都从消息目录来
+- 下一章：[作业与计划](/scheduling/jobs)，按计划运行后台工作

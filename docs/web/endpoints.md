@@ -1,4 +1,4 @@
-# 5.4 端点里使用框架
+# 端点里使用框架
 
 这页讲不是操作契约的普通最小 API 端点怎样使用框架：它们在 `UseXiHan()` 之后处于管道的 Handle 阶段内，可以读调用上下文里的主体与租户、把失败结果交给宿主写成 Problem Details、挂上由 Authorize 阶段判定的授权要求，也可以选择绕过管道并改用 ASP.NET Core 认证方案 `XiHan`。读完这页，我们能判断一个端点该写成操作还是普通端点，并在普通端点里正确地拿到框架的东西。
 
@@ -109,7 +109,7 @@ app.MapGet("/reports/{id}", (string id, HttpContext http) =>
 
 - `SetOutcome` 接受 `Result`，`Error` 隐式转换成失败结果；调用后端点返回 `Results.Empty` 即可，宿主在响应还没开始写出时写 Problem Details。端点已经写出正文后再 `SetOutcome`，宿主保留端点的内容，只有结果记入日志与审计。
 - 状态码由错误码的 KIND 段映射（`NOTFOUND` 是 404），对照表见 [HTTP 路由与载荷](/web/routing)；`detail` 按调用方区域翻译，`details` 带标量参数。
-- `Error` 只携带消息键与参数，不带文案；键与各语言文件的约定见[结果与错误处理](/errors/)与[全球化和本地化](/localization/)。
+- `Error` 只携带消息键与参数，不带文案；键与各语言文件的约定见[结果与错误处理](/web/errors)与[全球化和本地化](/common/localization)。
 - 操作契约不需要这样做：`HandleAsync` 返回的 `Result` 就是调用结果。
 
 绕过管道的端点没有上下文，要自己写错误时用 `ProblemResponse`：`FromError(error, instance, traceId)` 构造响应体，`StatusCodeFor(error)` 给出状态码，`WriteTo(writer)` 写出 JSON，结果与宿主写出的一致。
@@ -142,7 +142,7 @@ app.MapGet("/orders/export", () => Results.Text("id,name"))
 
 `MapXiHanOpenApi()` 生成的文档也会收录普通端点，条件是端点有 HTTP 方法元数据、带 `Accepts` 或 `Produces` 描述元数据之一，并且没有 `ExcludeFromDescription()`。最小 API 为返回类型自动加上 `Produces` 元数据，所以返回 JSON 对象的端点缺省会进文档，而文档对 JSON 类型只引用已登记操作的 Schema，不另做推导：引用不到时整份文档生成失败（`PROTOCOLS_VALIDATION_010`）。
 
-因此示例里 `/whoami`、`/orders/stats` 这类返回自定义 JSON 的端点都加了 `ExcludeFromDescription()`；`/missing` 返回 `Results.Empty`，没有响应类型，不进文档。响应正文确实与某个操作的请求或响应同形时，用 `WithXiHanOperationSchema(request:, response:)` 声明引用，端点就能进文档并共用组件。规则与写法见[规范化接口文档](/openapi/)。
+因此示例里 `/whoami`、`/orders/stats` 这类返回自定义 JSON 的端点都加了 `ExcludeFromDescription()`；`/missing` 返回 `Results.Empty`，没有响应类型，不进文档。响应正文确实与某个操作的请求或响应同形时，用 `WithXiHanOperationSchema(request:, response:)` 声明引用，端点就能进文档并共用组件。规则与写法见[规范化接口文档](/web/openapi)。
 
 ## 绕过管道的端点
 
@@ -220,5 +220,5 @@ app.Run();
 
 - 相关包：[Hosting.AspNetCore](/packages/hosting-aspnetcore)、[Protocols.Http](/packages/protocols-http)、[Kernel](/packages/kernel)
 - 下一步：[实时通信](/web/realtime)，用 SignalR 做推送，Hub 的认证交给方案 `XiHan`
-- 相关章节：[调用上下文](/startup/invocation-context)、[结果与错误处理](/errors/)、[认证](/security/authentication)、[授权与权限](/security/authorization)、[规范化接口文档](/openapi/)
+- 相关章节：[调用上下文](/startup/invocation-context)、[结果与错误处理](/web/errors)、[认证](/security/authentication)、[授权与权限](/security/authorization)、[规范化接口文档](/web/openapi)
 - 规范：RFC-0008《认证与授权》的「绕过管道的端点」一节

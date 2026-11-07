@@ -1,4 +1,4 @@
-# 3.6 执行管道
+# 执行管道
 
 这一页讲每次调用经过的十一个固定阶段、各阶段由谁提供中间件、中间件的写法与登记方式、同一阶段内的排序规则、应用构建之后成组改动管道的办法，以及怎样打印最终顺序。读完这页，你能在认证、租户、授权、事务等环节前后插入自己的逻辑，并确定它一定排在你期望的位置。前置知识是[依赖注入](/startup/dependency-injection)。
 
@@ -48,7 +48,7 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 4. 处理器在所有中间件之内执行，结果写进上下文。
 5. 管道返回后，宿主读取 `context.GetOutcome()`，把 `Result` 与 `Error` 翻译回协议：HTTP 为 RFC 9457 Problem Details，gRPC 为状态码与 `xihan-error-code` 尾部元数据，命令行为退出码与 stderr。
 
-`ObserveMiddleware` 为每次调用开启名为 `xihan.invoke` 的 Activity，记录 `xihan.invocations` 计数与 `xihan.invocation.duration` 耗时（毫秒），并把未处理异常转成 `KERNEL_UNEXPECTED_001` 结果；取消不在这里吞掉，由 `DeadlineMiddleware` 区分超时（`KERNEL_TIMEOUT_001`）与外部取消（`KERNEL_CANCELLED_001`）。采样规则见[日志与可观测性](/observability/)。
+`ObserveMiddleware` 为每次调用开启名为 `xihan.invoke` 的 Activity，记录 `xihan.invocations` 计数与 `xihan.invocation.duration` 耗时（毫秒），并把未处理异常转成 `KERNEL_UNEXPECTED_001` 结果；取消不在这里吞掉，由 `DeadlineMiddleware` 区分超时（`KERNEL_TIMEOUT_001`）与外部取消（`KERNEL_CANCELLED_001`）。采样规则见[日志与可观测性](/common/observability)。
 
 ## 最小示例
 
@@ -111,12 +111,12 @@ Content-Type: application/problem+json
  "detail":"...","instance":"/orders","code":"SHOP_UNAVAILABLE_001","traceId":"..."}
 ```
 
-`detail` 的文案来自消息键 `shop.maintenance.read_only`，放在应用消息目录的 `Localization/<区域>.json` 里，见[全球化和本地化](/localization/)。
+`detail` 的文案来自消息键 `shop.maintenance.read_only`，放在应用消息目录的 `Localization/<区域>.json` 里，见[全球化和本地化](/common/localization)。
 
 写中间件的规则：
 
 - 中间件在每次调用时从 `context.Services` 解析，不缓存调用级状态；需要作用域服务时在 `InvokeAsync` 里从 `context.Services` 取。
-- 失败用 `Error` 表达并写进上下文，不抛异常；错误码按 `<域>_<KIND>_<NNN>` 文法，文案以消息键引用，见[结果与错误处理](/errors/)。
+- 失败用 `Error` 表达并写进上下文，不抛异常；错误码按 `<域>_<KIND>_<NNN>` 文法，文案以消息键引用，见[结果与错误处理](/web/errors)。
 - `nextStep` 之后的代码在下游全部完成后执行，可以读 `context.GetOutcome()` 观察结果，但不要改写别的阶段已经写入的结果。
 - 调用上下文的安全信息（`context.GetSecurity()`）在 Authenticate 与 Tenant 阶段之后才有值，之前读到的是匿名上下文。
 
@@ -223,4 +223,4 @@ ASP.NET Core 宿主里，`app.UseXiHan()` 之后映射的最小 API 端点在 Ha
 
 - 包参考：[Kernel](/packages/kernel)、[Primitives](/packages/primitives)
 - 下一页：[调用上下文](/startup/invocation-context)，看中间件与处理器共享的那个对象里有什么
-- 各阶段的细节：[数据校验](/validation/)（Validate）、[弹性与限流](/resilience/)（Resilience）、[工作单元与事务](/persistence/unit-of-work)（Transaction）、[分布式锁与幂等](/caching/locks)（Idempotency）、[审计](/auditing/)（Observe）
+- 各阶段的细节：[数据校验](/web/validation)（Validate）、[弹性与限流](/common/resilience)（Resilience）、[工作单元与事务](/persistence/unit-of-work)（Transaction）、[分布式锁与幂等](/caching/locks)（Idempotency）、[审计](/common/auditing)（Observe）

@@ -1,4 +1,4 @@
-# 6. 规范化接口文档（OpenAPI）
+# 规范化接口文档（OpenAPI）
 
 这页讲怎样从操作契约发布 OpenAPI 文档：`MapXiHanOpenApi()` 从哪些输入生成文档、文档里的权限与认证方案怎样表达、面向人的文案从哪里来、怎样把一个大应用的文档拆成几组、普通端点怎样进文档、怎样接 Scalar 或 Swagger UI 这类查看器，以及不启动 HTTP 服务怎样导出同一份文档。读完这页，我们能发布一份与实际路由逐字一致、带权限标注、按调用方语言翻译的接口文档，并把它交给前端与生成客户端代码的工具。
 
@@ -289,7 +289,7 @@ Schema 的属性名按序列化上下文的命名策略生成，示例用的是 
 ## 相关包与下一步
 
 - 相关包：[Protocols.Http](/packages/protocols-http)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)、[Kernel](/packages/kernel)、[Kernel.Generators](/packages/kernel-generators)
-- 下一步：[结果与错误处理](/errors/)，文档里的 `default` 响应就是它的 Problem Details 形状
+- 下一页：[结果与错误处理](/web/errors)，文档里的 `default` 响应就是它的 Problem Details 形状
 - 同一份契约的其他载体：[gRPC](/protocols/grpc)、[MCP](/protocols/mcp)、[命令行宿主](/protocols/command-line)
-- 相关章节：[操作契约](/web/operations)、[HTTP 路由与载荷](/web/routing)、[端点里使用框架](/web/endpoints)、[授权与权限](/security/authorization)、[全球化和本地化](/localization/)
+- 相关章节：[操作契约](/web/operations)、[HTTP 路由与载荷](/web/routing)、[端点里使用框架](/web/endpoints)、[授权与权限](/security/authorization)、[全球化和本地化](/common/localization)
 - 规范：HTTP 载体规范的 OpenAPI 一节、RFC-0011《操作契约与 XGI》

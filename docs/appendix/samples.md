@@ -1,4 +1,4 @@
-# 1.3 示例说明
+# 示例说明
 
 框架仓库的 `framework/samples/` 目录下有八个示例。它们不是演示用的玩具：每个都在 CI 里构建、测试或冒烟，文档里的代码片段大多出自这里。这一页说明每个示例演示什么、怎样运行，以及读教程时该在什么时候打开哪一个。
 
@@ -44,8 +44,8 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -d '{"jso
 | [操作契约](/web/operations) | `Orders/CreateOrder.cs`、`Orders/ListOrders.cs`：一份契约三种协议 |
 | [领域模型](/persistence/domain) | `Orders/Order.cs`：接口组合的聚合根，带领域事件缓冲 |
 | [领域事件与发件箱](/messaging/domain-events) | `Orders/OrderPlacedHandler.cs` 与 `Program.cs` 里的 `OutboxFeature` |
-| [全球化和本地化](/localization/) | `SampleMessages.cs` 与 `Localization/*.json`：十种区域各一个文件 |
-| [JSON 序列化与 Native AOT](/serialization/) | `SampleJsonContext.cs` 与项目文件里的 `PublishAot` |
+| [全球化和本地化](/common/localization) | `SampleMessages.cs` 与 `Localization/*.json`：十种区域各一个文件 |
+| [JSON 序列化与 Native AOT](/common/serialization) | `SampleJsonContext.cs` 与项目文件里的 `PublishAot` |
 
 ## SimpleCli
 

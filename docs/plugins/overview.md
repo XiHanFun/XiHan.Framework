@@ -1,4 +1,4 @@
-# 24.1 隔离级别与清单
+# 隔离级别与清单
 
 插件是在运行期装载、与宿主隔离的代码。这一页讲三种隔离级别怎么选、插件清单 `xihan.manifest.json` 写什么、权限如何声明与授予、宿主怎样按目录发现插件和在运行期加载与卸载，以及进程内宿主的用法。读完你能在应用里装配一个插件宿主、授予插件权限并看懂它的失败结果。前置知识是[特性与清单](/startup/features)与[能力图谱与 Provider](/startup/capabilities)：插件与能力包共用同一份清单格式，但装配时机和信任边界不同。
 
@@ -19,8 +19,8 @@
 三者的信任边界不同，选型主要看这一点：
 
 - 进程内插件与宿主同进程，框架与 `Microsoft.Extensions.*`、`System.*` 程序集共享，私有依赖按插件自己的 `.deps.json` 隔离解析。它能访问进程里的一切，宿主只在加载前核对权限，所以只用于受信任的 .NET 扩展；加载要用反射，Native AOT 应用不能使用。进程内宿主只给插件独立的服务容器和宿主配置的只读视图，`PluginContext.Pipeline` 恒为 `null`，插件不能向宿主登记操作或中间件。
-- Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间强制停下，没有网络，文件系统只有宿主映射的目录。它适合运行不可信代码，也是唯一能在管道阶段插入中间件的插件，见 [Wasm 插件](/plugins/wasm)。
-- 进程外插件是独立进程，崩溃与依赖冲突都不会波及宿主，任意语言只要有 protobuf、gRPC 与 JSON 就能实现。宿主不做操作系统级沙箱，插件能做的事等同于运行它的系统账户，见[进程外插件](/plugins/out-of-process)。
+- Wasm 插件在沙箱里运行：线性内存与栈有上限，按截止时间强制停下，没有网络，文件系统只有宿主映射的目录。它适合运行不可信代码，也是唯一能在管道阶段插入中间件的插件（[Wasm 插件](/plugins/wasm)）。
+- 进程外插件是独立进程，崩溃与依赖冲突都不会波及宿主，任意语言只要有 protobuf、gRPC 与 JSON 就能实现；宿主不做操作系统级沙箱，插件能做的事等同于运行它的系统账户（[进程外插件](/plugins/out-of-process)）。
 
 ## 插件清单
 
@@ -63,16 +63,12 @@
 
 ## 权限：声明、授予与强制
 
-权限是 `<种类>:<对象>` 形式的字符串，种类只有四个：`capability:`、`fs.read:`、`fs.write:`、`net.outbound:`。插件在清单里声明需要什么，宿主在配置里按清单 ID 授予；声明了而未授予的权限一项也不能少，宿主在运行任何插件代码之前核对，缺一项即以 `PLUGINS_DENIED_001` 拒绝加载。
+权限是 `<种类>:<对象>` 形式的字符串，种类只有四个：`capability:`、`fs.read:`、`fs.write:`、`net.outbound:`。插件在清单里声明需要什么，宿主在配置里按清单 ID 授予；宿主在运行任何插件代码之前核对，声明了而未授予的缺一项即以 `PLUGINS_DENIED_001` 拒绝加载。
 
 ```json
 {
   "XiHan": {
     "Plugins": {
-      "OutOfProcess": {
-        "Directories": [ "plugins/echo" ],
-        "Grants": { "xihan.samples.echo": [ "capability:kernel.pipeline" ] }
-      },
       "Wasm": {
         "Directories": [ "plugins/echo-wasm" ],
         "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline" ] },
@@ -83,7 +79,7 @@
 }
 ```
 
-加载之后，各宿主对权限的强制方式不同。回调权限按「清单声明且已被授予」判定：清单是插件权限的唯一事实源，宿主授予了而清单没有声明的权限不生效，不能靠多授予让插件获得清单里没写的回调能力。
+进程外宿主的 `XiHan:Plugins:OutOfProcess` 节同样有 `Directories` 与 `Grants`。加载之后，各宿主对权限的强制方式不同。回调权限按「清单声明且已被授予」判定：宿主授予了而清单没有声明的权限不生效，不能靠多授予让插件获得清单里没写的回调能力。
 
 | 权限 | 进程外 | Wasm |
 | --- | --- | --- |
@@ -96,7 +92,7 @@
 
 ### 插件定义的权限码
 
-上面的权限是插件向宿主要的能力；插件自己的操作要求调用方持有的权限码是另一回事。清单 `contributes.permissions` 写插件定义的权限码（文法同[授权与权限](/security/authorization)：小写、点分、至少两段，不重复），进程外与 Wasm 宿主登记插件的代理操作时替它把这些码一并登记进 `PermissionRegistry`，显示名取码本身，插件可以在握手的消息目录里给 `permissions.<码>.name` / `.description` 的译文：
+上面的权限是插件向宿主要的能力；插件自己的操作要求调用方持有的权限码是另一回事。清单 `contributes.permissions` 写插件定义的权限码（文法同[授权与权限](/security/authorization)），进程外与 Wasm 宿主登记代理操作时替它把这些码一并登记进 `PermissionRegistry`，显示名取码本身，译文可在握手的消息目录里以 `permissions.<码>.name` / `.description` 给出：
 
 ```json
 "contributes": {
@@ -156,7 +152,7 @@ app.Run();
 }
 ```
 
-把 `samples/EchoPlugin` 的构建输出（可执行文件加 `xihan.manifest.json`）放到 `plugins/echo`，启动应用：`echoes.create` 按 HTTP 路由约定成为 `POST /echoes`，请求体 `{"text":"hi"}` 得到插件的回声；`/health/ready` 里多出健康条目 `plugins.xihan.samples.echo`；插件进程的 stderr 以同名来源进入宿主日志。两个特性都依赖 `kernel.hosting@1`，分别提供 `plugins.out-of-process@1` 与 `plugins.wasm@1`。
+把 `samples/EchoPlugin` 的构建输出（可执行文件加 `xihan.manifest.json`）放到 `plugins/echo`，启动应用：`echoes.create` 按 HTTP 路由约定成为 `POST /echoes`，请求体 `{"text":"hi"}` 得到插件的回声；`/health/ready` 里多出健康条目 `plugins.xihan.samples.echo`；插件进程的 stderr 以同名来源进入宿主日志。两个特性分别提供 `plugins.out-of-process@1` 与 `plugins.wasm@1`。
 
 ## 发现与加载
 
@@ -174,7 +170,7 @@ app.Run();
 | --- | --- |
 | 清单不合法（含进程外插件写了 `contributes.pipeline`）、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（`PLUGINS_VALIDATION_001` / `PLUGINS_DENIED_001` / `PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主记错误日志；清单读不出来时健康条目为 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
 | 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，应用进入 `Degraded`。进程外插件按重启策略重试（1 秒起翻倍，计入 `RestartLimit`），重试成功后代理操作按运行期加载补登记；Wasm 插件的这类失败不重试 |
-| 声明的权限码与已登记的重复、声明的操作与应用已有操作重名，或操作的 `permission` / `policy` 不存在 | 配置错误，应用启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005` / `SECURITY_VALIDATION_004`）；装配完成之后才登记的插件整体登记失败，一个权限码与代理操作都不留下 |
+| 声明的权限码与已登记的重复、声明的操作与应用已有操作重名，或操作的 `permission` / `policy` 不存在 | 配置错误，应用启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005` / `SECURITY_VALIDATION_004`）；装配完成之后才登记的插件整体登记失败 |
 
 ### 运行期加载与卸载
 
@@ -198,7 +194,7 @@ static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken can
 
 ## 进程内宿主
 
-`Plugins.InProcess` 没有特性入口，应用注册它的消息目录后自己创建并持有 `InProcessPluginHost`：
+`Plugins.InProcess` 没有特性入口，应用注册它的消息目录后自己创建并持有宿主：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -216,13 +212,12 @@ builder.AddXiHan(xihan => xihan.UseMinimalProfile());
 var app = builder.Build();
 app.UseXiHan();
 
-// 插件目录：SamplePlugin.dll + xihan.manifest.json + 私有依赖
+// 插件目录：SamplePlugin.dll + xihan.manifest.json + 私有依赖；加载失败以结果返回，应用照常运行
 await using var plugins = new InProcessPluginHost(app.Configuration, app.Services.GetRequiredService<ILoggerFactory>());
 var source = new PluginSource(Path.Combine(AppContext.BaseDirectory, "plugins", "sample"), new PermissionGrant(["capability:kernel.diagnostics"]));
 var loaded = await plugins.LoadAsync(source, CancellationToken.None);
 if (loaded.IsFailure)
 {
-    // 加载失败以结果返回，应用照常运行
     app.Logger.LogWarning("Plugin was not loaded: {Code}", loaded.Error!.Code);
 }
 
@@ -237,7 +232,7 @@ await app.RunAsync();
 
 ### 能力包与插件怎么选
 
-自己写、随应用一起编译、要进入能力图谱被别的包按能力 ID 依赖的，写能力包（[能力包与中间件](/extending/feature)）。第三方交付、运行期才知道有没有、需要权限边界或别的语言实现的，写插件。插件不进入能力图谱，靠握手声明的操作、订阅与（Wasm 的）中间件接进宿主。
+自己写、随应用一起编译、要进入能力图谱的，写能力包（[能力包与中间件](/extending/feature)）。第三方交付、运行期才知道有没有、需要权限边界或别的语言实现的，写插件；插件不进入能力图谱，靠握手声明的操作、订阅与（Wasm 的）中间件接进宿主。
 
 ### 插件加载失败，应用会退出吗
 
@@ -245,11 +240,11 @@ await app.RunAsync();
 
 ### 授予了权限，插件回调仍被拒绝
 
-回调权限按「清单声明且已授予」判定。先看插件清单的 `permissions` 里有没有 `capability:kernel.pipeline`（或 `capability:messaging.queue`），再看宿主 `Grants:<清单 ID>` 里是否授予；两边都有，再检查插件主体在授权里是否被授予了目标操作要求的权限码，因为回调经完整管道，Authorize 阶段照常判定。
+回调权限按「清单声明且已授予」判定：先看插件清单的 `permissions` 有没有 `capability:kernel.pipeline`（或 `capability:messaging.queue`），再看宿主 `Grants:<清单 ID>` 是否授予；两边都有，再检查插件主体是否被授予了目标操作要求的权限码，因为回调经完整管道，Authorize 阶段照常判定。
 
 ### Native AOT 应用能用插件吗
 
-不能：`Plugins.*` 包都不兼容 AOT，进程内宿主必须用反射。要在 AOT 应用里扩展能力，用能力包（[序列化与 Native AOT](/serialization/)）。
+不能：`Plugins.*` 包都不兼容 AOT，进程内宿主必须用反射。要在 AOT 应用里扩展能力，用能力包（[序列化与 Native AOT](/common/serialization)）。
 
 ## 相关包与下一步
 

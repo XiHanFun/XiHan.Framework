@@ -1,4 +1,4 @@
-# 16.2 集群与管理
+# 集群与管理
 
 这一页接着[作业与计划](/scheduling/jobs)讲两件事：一是运行时管理，用 `IJobScheduler` 登记、暂停、恢复、触发、取消作业，查运行历史，恢复改过的代码作业；二是多实例部署，引擎怎样轮询与抢占、`IJobStore` 共享与否的差别、三种领导选举、调度事件、配置与错误码。读完你能给管理界面提供完整的作业操作，并把调度部署到多个实例上而不重复运行。
 
@@ -223,7 +223,7 @@ Lease 名缺省是 `xihan-scheduler`，用 `XiHan:Scheduling:Kubernetes:Lease` �
 | `SCHEDULING_TIMEOUT_001` | 运行超过作业的执行时限 |
 | `SCHEDULING_UNEXPECTED_001` | 作业抛出未处理异常 |
 
-错误文案在消息目录 `scheduling` 里，十种区域都有译文，见[全球化和本地化](/localization/)。
+错误文案在消息目录 `scheduling` 里，十种区域都有译文，见[全球化和本地化](/common/localization)。
 
 ## 常见问题
 

@@ -1,4 +1,4 @@
-# 3.7 调用上下文
+# 调用上下文
 
 这一页讲贯穿一次调用的那个对象：`InvocationContext` 自带的成员、Baggage 与五个已登记的键、内核与安全子系统附加在它上面的信息（安全上下文、结果、调用来源、类型化条目）、各协议怎样从请求构造它、以及 Baggage 跨进程传播时落在哪些载体上。读完这页，你能在操作、中间件与调用链深处的服务里正确地读写上下文，也能为自己发起的调用建出一个合格的上下文。前置知识是[执行管道](/startup/pipeline)。
 
@@ -211,7 +211,7 @@ public sealed class AuditOriginMiddleware : IPipelineMiddleware
 }
 ```
 
-`AddAuditDetail` 来自审计抽象包，见[审计](/auditing/)。
+`AddAuditDetail` 来自审计抽象包，见[审计](/common/auditing)。
 
 ## 调用链深处取上下文
 
@@ -270,4 +270,4 @@ HTTP 入站只接受 `xihan.correlation`、`xihan.idempotency-key`、`xihan.loca
 
 - 包参考：[Primitives](/packages/primitives)（`InvocationContext`、`BaggageKeys`）、[Kernel](/packages/kernel)（扩展方法、`InvocationOrigin`、`IInvocationAccessor`）、[Hosting.AspNetCore](/packages/hosting-aspnetcore)、[Hosting.CommandLine](/packages/hosting-commandline)
 - 下一章：[配置模型与选项](/configuration/options)，看 `XiHan:*` 配置节怎样绑定到选项
-- 延伸：[审计](/auditing/)、[日志与可观测性](/observability/)、[全球化和本地化](/localization/)
+- 延伸：[审计](/common/auditing)、[日志与可观测性](/common/observability)、[全球化和本地化](/common/localization)

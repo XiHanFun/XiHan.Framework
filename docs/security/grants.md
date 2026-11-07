@@ -1,4 +1,4 @@
-# 11.3 RBAC 授予与条件
+# RBAC 授予与条件
 
 这一页讲权限怎样落到主体身上：授予 `PermissionGrant` 与检查器的判定顺序、内存与数据库两种授予存储、用 `IPermissionFilter` 收窄与用 `IPermissionGrantSource` 扩展授予，以及与存储无关的条件引擎。读完你能把 SimpleApp 的角色授予搬进数据库、给套餐做权限白名单、让角色继承权限，并写出按 IP 与时间判定的条件。阅读前先读[授权与权限](/security/authorization)。
 
@@ -276,7 +276,7 @@ public static class OfficeHoursCondition
 
 ### 条件保存时怎样提示用户写错了
 
-先 `IConditionCompiler.Compile`，`Errors` 非空就拒绝保存，每条错误带 `SECURITY_VALIDATION_002` 与具体原因的消息键，翻译后展示，见[全球化和本地化](/localization/)。
+先 `IConditionCompiler.Compile`，`Errors` 非空就拒绝保存，每条错误带 `SECURITY_VALIDATION_002` 与具体原因的消息键，翻译后展示，见[全球化和本地化](/common/localization)。
 
 ## 相关包与下一步
 

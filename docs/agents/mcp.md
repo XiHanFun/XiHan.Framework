@@ -1,4 +1,4 @@
-# 28.2 MCP Server
+# MCP Server
 
 本页说明两种 MCP 服务端怎样接入 Claude Code、Cursor、VS Code、Codex 等 AI 工具：框架自带的知识库服务 `xihan mcp`，让 AI 工具按版本查证包、能力、配置键与文档；以及把基于本框架的应用作为 MCP 服务端，让 AI 工具在开发过程中直接调用应用的操作。
 

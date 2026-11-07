@@ -1,6 +1,6 @@
-# 4.4 远程配置与密钥
+# 远程配置与密钥
 
-这一页讲把配置中心与密钥库接进 `IConfiguration` 的两个契约：`IRemoteConfigurationClient` 与 `ISecretStore`，以及对应的配置源 `AddXiHanRemoteConfiguration` / `AddXiHanSecrets`、框架自带的 Nacos Provider、加载失败时的行为与错误码、凭据怎样避免进入日志。读完你能把一份 Nacos 文档挂到配置树上并随变化重载，也能为自己的密钥来源写一个 `ISecretStore`。前置知识是 [4.1 配置模型与选项](/configuration/options)与 [4.3 资源绑定](/configuration/bindings)。
+这一页讲把配置中心与密钥库接进 `IConfiguration` 的两个契约：`IRemoteConfigurationClient` 与 `ISecretStore`，以及对应的配置源 `AddXiHanRemoteConfiguration` / `AddXiHanSecrets`、框架自带的 Nacos Provider、加载失败时的行为与错误码、凭据怎样避免进入日志。读完你能把一份 Nacos 文档挂到配置树上并随变化重载，也能为自己的密钥来源写一个 `ISecretStore`。前置知识是 [配置模型与选项](/configuration/options)与 [资源绑定](/configuration/bindings)。
 
 ## 为什么需要
 
@@ -256,4 +256,4 @@ builder.Configuration.AddXiHanSecrets(
 - [Configuration.Abstractions](/packages/configuration-abstractions)：两个契约与两个配置源
 - [Configuration.Nacos](/packages/configuration-nacos)：Nacos Provider 的连接选项、长轮询与登录细节
 - [Primitives](/packages/primitives)：`Result`、`Error` 与 `Redaction`
-- 下一章：[5.1 ASP.NET Core 宿主](/web/hosting)
+- 下一章：[ASP.NET Core 宿主](/web/hosting)

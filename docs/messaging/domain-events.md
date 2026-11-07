@@ -1,4 +1,4 @@
-# 13.2 领域事件与发件箱
+# 领域事件与发件箱
 
 这一页讲聚合里记录的领域事件怎样变成消息：事件缓冲在聚合里、用 `AddDomainEvent` 登记映射、Transaction 阶段在提交前派发；再讲事务性发件箱 `OutboxFeature` 怎样让「写业务数据」与「发消息」落进同一个事务。读完你能让下单这样的操作在不手写任何发布代码的情况下发出 `orders.placed` 事件，并保证事件只随成功提交的写入发出。前置知识是[领域模型](/persistence/domain)、[工作单元与事务](/persistence/unit-of-work)与[发布与订阅](/messaging/pubsub)。
 
@@ -262,7 +262,7 @@ if (pending.Count > 0)
 
 ### 为什么 AddDomainEvent 要传源生成的 JsonTypeInfo
 
-事件要序列化成信封的 `Data`。传 `JsonTypeInfo<TEvent>` 既让序列化不走反射、兼容 Native AOT，也让登记时就确定每种事件的编码方式。把事件类型加进 `[JsonSerializable]` 上下文即可，见[JSON 序列化与 Native AOT](/serialization/)。
+事件要序列化成信封的 `Data`。传 `JsonTypeInfo<TEvent>` 既让序列化不走反射、兼容 Native AOT，也让登记时就确定每种事件的编码方式。把事件类型加进 `[JsonSerializable]` 上下文即可，见[JSON 序列化与 Native AOT](/common/serialization)。
 
 ### 发件箱能用在非关系型存储上吗
 

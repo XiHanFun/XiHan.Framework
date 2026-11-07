@@ -1,4 +1,4 @@
-# 12.2 分布式锁与幂等
+# 分布式锁与幂等
 
 这一页讲建立在共享缓存存储之上的两样东西：`IDistributedLock` 租约锁，以及按幂等键给调用去重、回放首次结果的 Idempotency 阶段；最后说明怎样让沿用 .NET `IDistributedCache` 的代码接到同一个存储上。读完你能让多实例中只有一个实例执行某项工作，让客户端重试同一个请求时拿回首次的响应。前置知识是[缓存读写](/caching/basics)（`ICacheStore` 的原子原语与 `caching.distributed` 能力）与[执行管道](/startup/pipeline)（Idempotency 阶段的位置）。
 
@@ -153,7 +153,7 @@ curl -X POST http://localhost:5000/orders \
 | `CACHING_VALIDATION_001` | 幂等键拼出的存储键不合法，Idempotency 阶段以校验错误结束调用 |
 | `CACHING_UNAVAILABLE_001` | 存储不可达；锁与幂等中间件都以 `FrameworkException` 抛出，不会当作「没拿到锁」或「没有记录」 |
 
-错误怎样变成 HTTP 状态码与 Problem Details 见[结果与错误处理](/errors/)。
+错误怎样变成 HTTP 状态码与 Problem Details 见[结果与错误处理](/web/errors)。
 
 ## 常见问题
 

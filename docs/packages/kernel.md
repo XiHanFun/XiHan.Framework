@@ -65,7 +65,7 @@ await builder.Build().RunAsync();
 | `XiHan:Kernel:StopTimeoutSeconds` | `30` | 每个特性停止的超时 |
 | `XiHan:Kernel:FailurePolicy` | `TerminateStartup` | 特性启动失败时终止启动，或 `IsolateFeature` 只隔离该特性 |
 | `XiHan:Kernel:UseBuiltInMiddleware` | `true` | 是否登记 Observe、截止时间、Resilience、Validate 四个内置中间件 |
-| `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](/resilience/) |
+| `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](/common/resilience) |
 | `XiHan:Security:Outbound:*` | 只能连公网地址 | [出站地址策略](/security/outbound)的放行项：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Providers:<能力 ID>` | — | 指定某能力的提供者清单 ID |
 | `XiHan:Bindings:<名字>` | — | 资源绑定；另读环境变量 `SERVICE_BINDING_ROOT` 指向的 Service Binding 目录 |

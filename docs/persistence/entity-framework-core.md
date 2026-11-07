@@ -1,4 +1,4 @@
-# 9.5 EF Core Provider
+# EF Core Provider
 
 这一页讲 `XiHan.Framework.Persistence.EntityFrameworkCore`：怎样让应用自己的 `DbContext` 接入框架的仓储与工作单元、`ApplyPersistenceConventions` 与生成的 `ApplyGeneratedEntities` 各做什么、事务为什么在首次写入时才开、命名连接怎样声明、SQLite 上有哪些要注意的地方。读完它，你能把前几页在内存实现上跑通的应用切到 EF Core，并知道直接用 `DbContext` 时要自己补上什么。前置知识是[持久化与 Provider](/persistence/overview)与[工作单元与事务](/persistence/unit-of-work)。
 
@@ -21,7 +21,7 @@ EF Core 是 .NET 上最常用的 ORM，有迁移、变更跟踪与完整的 LINQ
 
 ## 最小示例
 
-安装本包与一个数据库驱动（SQLite 用最新版的 `Microsoft.EntityFrameworkCore.Sqlite`，它带来的 `Microsoft.Data.Sqlite.Core` 修复了并发打开连接时的连接池竞态；本包不依赖任何 SQLite 包，版本由应用的驱动引用决定）：
+安装本包与一个数据库驱动（本包不依赖任何 SQLite 包，版本由应用的驱动引用决定；SQLite 用最新版的 `Microsoft.EntityFrameworkCore.Sqlite`，它修复了并发打开连接时的连接池竞态）：
 
 ```bash
 dotnet add package XiHan.Framework.Persistence.EntityFrameworkCore --prerelease
@@ -197,7 +197,7 @@ SQLite 只有一个写者：业务事务写过之后，同一个库文件上的�
 
 ## Native AOT 与不支持的能力
 
-本包的 `IsAotCompatible` 是 `false`：EF Core 的运行时模型构建不满足 AOT 分析器。标注为 AOT 兼容的持久化实现只有内存实现；AOT 发布的整体要求见 [JSON 序列化与 Native AOT](/serialization/)。
+本包的 `IsAotCompatible` 是 `false`：EF Core 的运行时模型构建不满足 AOT 分析器。标注为 AOT 兼容的持久化实现只有内存实现；AOT 发布的整体要求见 [JSON 序列化与 Native AOT](/common/serialization)。
 
 运行时数据源与库结构读取在 EF Core 上不支持，也不计划支持：数据库 Provider 由应用选、本包不引用，按数据库类型建不出连接；跨数据库读结构在 EF Core 里是设计期脚手架服务，各驱动不一致。`DataSourceRegistry` 的取用与测试连接、`ISchemaReader` 都返回 `PERSISTENCE_UNAVAILABLE_008`；实体目录 `IEntityCatalog` 取 `DbContext` 模型，可用。需要这两项的应用用 [SqlSugar Provider](/persistence/sqlsugar)。
 
@@ -210,10 +210,6 @@ SQLite 只有一个写者：业务事务写过之后，同一个库文件上的�
 ### 为什么我直接 `db.Set<Order>()` 查到了别的租户的数据
 
 仓储的软删除与租户过滤是显式施加在仓储查询上的，不是全局查询过滤器，`DbContext` 上的 LINQ 不带它们。直接查询时自己写条件，或用生成的 `OrderFilters.ActiveFor(tenantId).Criteria`。
-
-### 用 EF Core 迁移还是 `EnsureCreated`
-
-开发与测试可以开 `EnsureCreated`，省去迁移。生产用迁移：`EnsureCreated` 不能演进已有表，也不记录版本。索引与并发令牌都由 `ApplyPersistenceConventions` 加进模型，迁移会把它们一起生成。
 
 ### 启动报 `PERSISTENCE_VALIDATION_008`
 

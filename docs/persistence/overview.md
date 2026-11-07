@@ -1,4 +1,4 @@
-# 9.2 持久化与 Provider
+# 持久化与 Provider
 
 这一页讲持久化子系统的骨架：仓储与工作单元是什么、能力 `persistence.relational` 由谁提供、内存、EF Core、SqlSugar 三个 Provider 怎么选怎么启用、实体怎样登记、配置节与错误码一览。读完它，你能让一个带实体的应用在内存实现上跑起来，并知道换成真实数据库要改哪几行。前置知识是上一页[领域模型](/persistence/domain)与[能力图谱与 Provider](/startup/capabilities)。
 
@@ -17,9 +17,7 @@
 | 协议约定 | `PersistenceConventions` | Provider 共用的规则：按实体实现的接口写创建时间、修改时间、租户、并发戳，执行软删除与租户匹配 |
 | 能力 ID | `persistence.relational@1` | 由 Provider 提供，业务特性在清单里声明依赖它；`persistence.document@1` 预留，框架没有它的 Provider |
 
-仓储按实体实现的协议维护公共字段（见[领域模型](/persistence/domain)），可恢复的失败（标识重复、不存在、并发冲突、缺租户）以 `Result` 返回，不抛异常。复杂查询交给 Provider 专属的入口（EF Core 的 `DbContext`、SqlSugar 的 `ISqlSugarClient`），它们与仓储共享同一个事务。
-
-仓储只在活动的工作单元里工作。管道的 Transaction 阶段为每次调用开启工作单元，操作契约里注入的仓储直接可用；在 Transaction 阶段之外使用仓储是装配错误，每个方法都抛出携带 `PERSISTENCE_UNAVAILABLE_001` 的 `FrameworkException`。后台任务里怎样自己开工作单元见[工作单元与事务](/persistence/unit-of-work)。
+仓储按实体实现的协议维护公共字段，可恢复的失败（标识重复、不存在、并发冲突、缺租户）以 `Result` 返回，不抛异常。复杂查询交给 Provider 专属的入口（EF Core 的 `DbContext`、SqlSugar 的 `ISqlSugarClient`），它们与仓储共享同一个事务。仓储只在活动的工作单元里工作：管道的 Transaction 阶段为每次调用开启工作单元，操作契约里注入的仓储直接可用；在它之外使用仓储抛出携带 `PERSISTENCE_UNAVAILABLE_001` 的 `FrameworkException`，后台任务里怎样自己开工作单元见[工作单元与事务](/persistence/unit-of-work)。
 
 ## 选择 Provider
 
@@ -32,7 +30,7 @@
 `Profiles.Standard` 已包含内存实现。应用再 `UseFeature` 一个显式 Provider 就顶替它，被顶替的默认实现不装配、不启动。三个 Provider 通过同一套 `Persistence.Conformance` 用例，业务代码（实体、仓储调用、查询）换 Provider 时不改。
 
 ::: warning 内存仓储只用于开发与测试
-内存实现每种实体一张有界的表（缺省 100000 条），数据只在进程内。读写交出与存入的都是浅复制的副本，集合、嵌套对象等引用类型字段在副本之间共享，不在隔离范围内。生产环境装配 EF Core 或 SqlSugar Provider。
+内存实现每种实体一张有界的表（缺省 100000 条），数据只在进程内；读写交出与存入的都是浅复制的副本，引用类型字段不在隔离范围内。生产环境装配 EF Core 或 SqlSugar Provider。
 :::
 
 ### 启用内存实现
@@ -97,7 +95,7 @@ public void Configure(FeatureContext context)
 }
 ```
 
-生成器以分析器形式引用（`dotnet add package XiHan.Framework.Persistence.Generators --prerelease`），不进入运行时依赖。它扫描本项目里实现 `IEntity<TKey>` 的非抽象、非静态顶层类（含 `record class`），生成：
+生成器以分析器形式引用（`dotnet add package XiHan.Framework.Persistence.Generators --prerelease`），不进入运行时依赖。它扫描本项目里实现 `IEntity<TKey>` 的非抽象顶层类，生成：
 
 | 生成物 | 内容 |
 | --- | --- |
@@ -116,7 +114,7 @@ public void Configure(FeatureContext context)
 
 ## 最小示例
 
-把上一页的 `Order` 聚合、一个下单操作和 `Program.cs` 组合起来，就是一个能跑的持久化应用。`PlaceOrderRequest`（`Name`、`Amount`）与 `OrderResponse`（`Id`、`Name`、`Amount`、`CreatedAt`）是 SimpleApp 里的请求与响应记录，请求上的校验写法见[数据校验](/validation/)。
+把上一页的 `Order` 聚合、一个下单操作和 `Program.cs` 组合起来，就是一个能跑的持久化应用。`PlaceOrderRequest`（`Name`、`Amount`）与 `OrderResponse`（`Id`、`Name`、`Amount`、`CreatedAt`）是 SimpleApp 里的请求与响应记录，请求上的校验写法见[数据校验](/web/validation)。
 
 ```csharp
 using XiHan.Framework.Kernel.Operations;
@@ -209,7 +207,7 @@ app.Run();
 | `PERSISTENCE_UNAVAILABLE_008` | 当前 Provider 不支持该能力（EF Core 与内存实现的运行时数据源与库结构读取；内存实现的命名连接；EF Core 普通工作单元里取用命名连接上的实体） | `Result`；命名连接相关的抛 `FrameworkException` |
 | `PERSISTENCE_UNAVAILABLE_009` | 从库不可读，只出现在健康项里 | 健康项 |
 
-错误码常量在 `PersistenceErrors`，消息键在 `PersistenceMessages`，10 种区域的译文嵌入在 `Persistence.Abstractions`。错误怎样经协议适配器变成 HTTP 状态与 Problem Details，见[结果与错误处理](/errors/)。
+错误码常量在 `PersistenceErrors`，消息键在 `PersistenceMessages`，10 种区域的译文嵌入在 `Persistence.Abstractions`。错误怎样经协议适配器变成 HTTP 状态与 Problem Details，见[结果与错误处理](/web/errors)。
 
 每个 Provider 还登记一个健康项：内存实现 `persistence.inmemory.capacity`（任一张表满即 Degraded），EF Core `persistence.entityframeworkcore.database` 与 SqlSugar `persistence.sqlsugar.database`（启动时探一次，之后按间隔在后台重探，连不上即 Degraded，应用仍在服务）。健康项的汇总见[生命周期与健康](/startup/lifecycle)。
 
@@ -226,10 +224,6 @@ app.Run();
 ### 我该选哪个 Provider
 
 开发与测试用内存实现，不用改任何代码。生产环境二选一：新项目、习惯 EF Core 迁移管理表结构的选 EF Core；已有 SqlSugar 代码、需要一次调用写多个库、按时间分表、差异日志、读写分离或运行时连外部库的选 SqlSugar。两者都不兼容 Native AOT。
-
-### 能不能同时装配两个关系型 Provider
-
-不能。`persistence.relational@1` 只能有一个提供者，能力图谱在启动前就会报多候选错误。一个应用连多个库用同一个 Provider 的多库能力（SqlSugar 的多连接、两个 Provider 的命名连接），见[连接与运行时数据源](/persistence/connections)。
 
 ### 为什么不暴露 `IQueryable`
 

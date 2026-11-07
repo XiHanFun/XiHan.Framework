@@ -1,4 +1,4 @@
-# 20. 日志与可观测性
+# 日志与可观测性
 
 这一章讲内核为每次调用发出的追踪与指标、框架与应用怎样写日志、怎样用 `Observability.OpenTelemetry` 把三类信号导出到后端并控制采样、怎样给业务打点，以及用 `Observability.Host` 读取进程与主机的运行信息做服务监控页。读完后，我们能把应用接进 OTLP 后端，并在管理界面上看到 CPU、内存与磁盘。前置知识是[执行管道](/startup/pipeline)与[生命周期与健康](/startup/lifecycle)。
 
@@ -259,9 +259,9 @@ internal sealed partial class MonitorJsonContext : JsonSerializerContext;
 ## 与其他能力的关系
 
 - 健康与探针：特性的健康条目、`/health/startup`、`/health/ready`、`/health/live` 三个探针在[生命周期与健康](/startup/lifecycle)，本章不重复。
-- 审计：日志、追踪与指标面向运维；谁在什么时候做了什么，是业务记录，见[审计](/auditing/)。两者共享同一个 trace-id，可以从审计事件跳到链路。
+- 审计：日志、追踪与指标面向运维；谁在什么时候做了什么，是业务记录，见[审计](/common/auditing)。两者共享同一个 trace-id，可以从审计事件跳到链路。
 - 执行管道：Observe 是管道的第二个阶段，见[执行管道](/startup/pipeline)。
-- 弹性：取消与超时的区分由 Resilience 阶段完成，见[弹性与限流](/resilience/)。
+- 弹性：取消与超时的区分由 Resilience 阶段完成，见[弹性与限流](/common/resilience)。
 
 ## 常见问题
 
@@ -291,4 +291,4 @@ internal sealed partial class MonitorJsonContext : JsonSerializerContext;
 - [Observability.OpenTelemetry](/packages/observability-opentelemetry)：导出器、采样与配置
 - [Observability.Host](/packages/observability-host)：运行信息的采样与平台支持
 - [Kernel](/packages/kernel)：`FrameworkDiagnostics` 与 `ObserveMiddleware`
-- 下一步：[AI：模型与对话](/ai/chat)
+- 下一页：[弹性与限流](/common/resilience)

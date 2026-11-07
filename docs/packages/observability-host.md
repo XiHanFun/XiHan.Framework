@@ -76,7 +76,7 @@ app.Run();
 
 ## 使用示例
 
-服务监控页的端点见[可观测性](/observability/#运行信息)。在测试里等第一次使用率出来再断言：
+服务监控页的端点见[可观测性](/common/observability#运行信息)。在测试里等第一次使用率出来再断言：
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
@@ -134,7 +134,7 @@ public sealed class MonitorTests
 
 ## 相关
 
-- [可观测性](/observability/#运行信息)
+- [可观测性](/common/observability#运行信息)
 - [Observability.Abstractions](./observability-abstractions)
 - [Observability.OpenTelemetry](./observability-opentelemetry)
 - [Profiles.Full](./profiles-full)

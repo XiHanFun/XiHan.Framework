@@ -1,4 +1,4 @@
-# 21.2 工具与知识库
+# 工具与知识库
 
 这一页讲怎样让模型「做事」和「有依据」：`Expose.Ai` 把已有的操作契约变成模型可调用的工具，工具经完整管道执行、失败以 JSON 交给模型；知识库流水线把文档切块、嵌入、写入向量存储，检索后拼进提示词；`AI.VectorData` 把 `IKnowledgeStore` 适配到 `Microsoft.Extensions.VectorData` 的任何连接器，并自带健康项；最后说明它与 MCP 的关系。读完后，我们能让上一页的助手调用订单查询、并按 FAQ 文档回答问题。前置知识是[模型与对话](/ai/chat)、[操作契约](/web/operations)与[执行管道](/startup/pipeline)。
 
@@ -47,7 +47,7 @@ public sealed class ListOrders : IOperation<ListOrdersRequest, OrderList>
 }
 ```
 
-`OrdersFeature` 以 `context.AddGeneratedOperations()` 登记它，写法见[审计](/auditing/#记录调用来源)；三个请求与响应类型登记在项目的 `JsonSerializerContext` 里。然后是助手特性，声明对聊天与工具能力的依赖，登记上一页的护栏与一个用 `AIFunctionFactory` 创建的显式工具：
+`OrdersFeature` 以 `context.AddGeneratedOperations()` 登记它，写法见[审计](/common/auditing#记录调用来源)；三个请求与响应类型登记在项目的 `JsonSerializerContext` 里。然后是助手特性，声明对聊天与工具能力的依赖，登记上一页的护栏与一个用 `AIFunctionFactory` 创建的显式工具：
 
 ```csharp
 using Microsoft.Extensions.AI;
@@ -219,7 +219,7 @@ Provider、提示词与护栏的键见[模型与对话](/ai/chat#配置)。与�
 
 ## 与其他能力的关系
 
-- 执行管道：工具调用是一次完整的管道调用，审计、事务、校验都照常生效，审计事件与发起聊天的调用共享 trace-id，见[执行管道](/startup/pipeline)与[审计](/auditing/)。
+- 执行管道：工具调用是一次完整的管道调用，审计、事务、校验都照常生效，审计事件与发起聊天的调用共享 trace-id，见[执行管道](/startup/pipeline)与[审计](/common/auditing)。
 - 操作契约：`Expose.Ai` 是 `Expose` 的一个标志位，`Expose.All` 包含它，见[操作契约](/web/operations)。
 - 测试：`AI.Conformance` 提供 `KnowledgeStoreConformance`、`AIProviderConformance` 与确定性的 `HashingEmbeddingGenerator`，测试不依赖外部模型，见[一致性套件与门禁](/testing/conformance)。自写目录的应用继承 `AIProviderConformance`，实现 `StartAsync`（被测 Provider 是默认）与 `StartWithoutDefaultAsync`（没有默认），能把聊天与嵌入的默认分开时再覆写 `StartWithSeparateDefaultsAsync`。
 - 框架不提供 Agent 工厂，等 `Microsoft.Agents.AI` 稳定后另立规范。
@@ -252,4 +252,4 @@ Provider、提示词与护栏的键见[模型与对话](/ai/chat#配置)。与�
 - [AI.OpenAI](/packages/ai-openai)：带函数调用循环的聊天客户端与嵌入生成器
 - [AI.VectorData](/packages/ai-vectordata)：`IKnowledgeStore` 的向量库适配与健康项
 - [Protocols.Mcp](/packages/protocols-mcp)：把操作暴露成 MCP tool
-- 下一步：[弹性与限流](/resilience/)
+- 下一章：[插件：隔离级别与清单](/plugins/overview)

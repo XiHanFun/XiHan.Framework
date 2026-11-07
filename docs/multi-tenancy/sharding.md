@@ -1,4 +1,4 @@
-# 10.2 租户分片与分库
+# 租户分片与分库
 
 这一页讲怎样把每个租户的数据落到租户自己的数据库：分片契约 `ITenantShardResolver` 与 `TenantShard`，缺省实现怎样从租户属性推出分片，持久化 Provider 怎样按分片选连接，以及不经管道的代码怎样用 `TenantShardScope` 显式绑定分片。读完你能给某个租户配一条独立连接串，让它的多租户实体读写都落到独立库，而平台表仍在默认库。阅读前先读[租户解析与隔离](/multi-tenancy/resolution)与[持久化与 Provider](/persistence/overview)。
 

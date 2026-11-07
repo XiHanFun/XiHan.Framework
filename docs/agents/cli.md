@@ -1,4 +1,4 @@
-# 28.3 xihan 工具
+# xihan 工具
 
 本页说明 AI 工具与开发者如何用命令行核对一个基于本框架的应用：应用自带的命令行宿主命令，以及转发这些命令、生成部署产物的 `xihan` 工具。完整的包说明见 [Cli 包](/packages/cli)与[命令行宿主](/protocols/command-line)。
 

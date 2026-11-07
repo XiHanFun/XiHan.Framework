@@ -196,7 +196,7 @@ public static class AuditTestExtensions
 
 ## 相关
 
-- [审计](/auditing/)
+- [审计](/common/auditing)
 - [Auditing.Abstractions](./auditing-abstractions)
 - [Auditing.InMemory](./auditing-inmemory)
 - [持久化](/persistence/overview)

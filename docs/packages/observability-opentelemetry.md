@@ -155,7 +155,7 @@ public sealed class TracingTests
 
 ## 相关
 
-- [可观测性](/observability/#导出到-opentelemetry)
+- [可观测性](/common/observability#导出到-opentelemetry)
 - [Observability.Abstractions](./observability-abstractions)
 - [Observability.Host](./observability-host)
 - [Kernel 内核](./kernel)

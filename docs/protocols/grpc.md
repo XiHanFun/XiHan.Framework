@@ -1,4 +1,4 @@
-# 14.1 gRPC
+# gRPC
 
 这一章讲 HTTP 之外的协议载体。这一页先用一小节说清「一份契约，多个载体」的总体思路，再专讲 gRPC 适配器：怎样启用、服务名与方法名怎么推出、protobuf 线格式怎样由 JSON Schema 推出、`/operations.proto` 怎样发给客户端、调用上下文与错误怎样映射到 gRPC，最后用 grpcurl 调一次。读完你能把已有的操作发布成 gRPC 一元方法，并让任何语言的客户端按 `.proto` 生成桩代码。前置知识是[操作契约](/web/operations)与 [HTTP 路由与载荷](/web/routing)。
 
@@ -202,7 +202,7 @@ gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用：
 | `CANCELLED` | `Cancelled` |
 | 其他 | `Internal` |
 
-`grpc-message` 是按 `accept-language` 翻译的文案；尾部元数据 `xihan-error-code` 是框架错误码，`xihan-trace-id` 是 trace-id，成功时也有。客户端排障时拿着 `xihan-trace-id` 去日志里查，拿着 `xihan-error-code` 对照[结果与错误处理](/errors/)。
+`grpc-message` 是按 `accept-language` 翻译的文案；尾部元数据 `xihan-error-code` 是框架错误码，`xihan-trace-id` 是 trace-id，成功时也有。客户端排障时拿着 `xihan-trace-id` 去日志里查，拿着 `xihan-error-code` 对照[结果与错误处理](/web/errors)。
 
 适配器自己的失败：
 
@@ -238,7 +238,7 @@ protobuf 没有十进制小数类型，`int64` 之外的整数范围也无法表
 ## 相关包与下一步
 
 - 包参考：[Protocols.Grpc](/packages/protocols-grpc)、[Protocols.Http](/packages/protocols-http)
-- 契约与 Schema 的来源：[操作契约](/web/operations)、[规范化接口文档](/openapi/)
-- 错误码与 KIND：[结果与错误处理](/errors/)
+- 契约与 Schema 的来源：[操作契约](/web/operations)、[规范化接口文档](/web/openapi)
+- 错误码与 KIND：[结果与错误处理](/web/errors)
 - 规范：RFC-0011《操作契约与 XGI》
 - 下一步：[MCP](/protocols/mcp)，把同一份契约发布成大模型可调用的 tool

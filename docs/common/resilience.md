@@ -1,6 +1,6 @@
-# 22. 弹性与限流
+# 弹性与限流
 
-这一章讲 Resilience 阶段的四件事：截止时间、熔断、固定窗口限流与并发上限，以及怎样按操作配置它们。读完你能给一个昂贵的操作限制并发与频率、给不稳定的下游加熔断，并分得清 504 与 408 各代表什么。前置知识是[执行管道](/startup/pipeline)与[结果与错误处理](/errors/)。
+这一章讲 Resilience 阶段的四件事：截止时间、熔断、固定窗口限流与并发上限，以及怎样按操作配置它们。读完你能给一个昂贵的操作限制并发与频率、给不稳定的下游加熔断，并分得清 504 与 408 各代表什么。前置知识是[执行管道](/startup/pipeline)与[结果与错误处理](/web/errors)。
 
 ## 为什么需要
 
@@ -200,4 +200,4 @@ HTTP 层面的连接数、请求体大小与反向代理限流仍用 ASP.NET Cor
 - [Primitives](/packages/primitives)：`InvocationContext.Deadline` 与 `BaggageKeys`
 - [Hosting.AspNetCore](/packages/hosting-aspnetcore)：`xihan-deadline` 请求头与状态映射
 - 规范：RFC-0004《管道阶段与排序》的「Resilience 阶段」一节
-- 下一章：[23. JSON 序列化与 Native AOT](/serialization/)
+- 下一页：[JSON 序列化与 Native AOT](/common/serialization)

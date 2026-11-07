@@ -1,4 +1,4 @@
-# 12.3 两级缓存与键管理
+# 两级缓存与键管理
 
 这一页讲三件进阶的事：`Caching.Hybrid` 把进程内缓存与共享缓存叠成两级、读少一次网络往返；`ICacheStoreInspector` / `ICacheInspector` / `ICacheChangeFeed` 给管理界面列键、看元数据、按前缀删除与订阅变更；`Caching.Remote` 让任意语言写的进程外插件承担共享缓存。读完你能在多实例部署下压低缓存读延迟、写出缓存管理页面，并知道远程 Provider 的边界。前置知识是[缓存读写](/caching/basics)。
 

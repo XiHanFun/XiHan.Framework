@@ -31,7 +31,7 @@
 - 需要在调用链之外按指定区域取文案，或要知道命中的区域：注入 `IMessageLocalizer`。
 - 实现新的本地化 Provider：实现 `IMessageLocalizer` 与 `IMessageResolver`，并通过 `Localization.Conformance`。
 
-用法与回退规则的完整讲解见[国际化](/localization/)。
+用法与回退规则的完整讲解见[国际化](/common/localization)。
 
 ## 安装与启用
 
@@ -147,7 +147,7 @@ var chain = options.FallbackChain("zh-HK");          // zh-HK, zh-CN, zh-TW, en-
 
 ## 相关
 
-- [国际化](/localization/)
+- [国际化](/common/localization)
 - [Localization.InMemory](./localization-inmemory)
 - [Localization.Database](./localization-database)
 - [Primitives 原语层](./primitives)

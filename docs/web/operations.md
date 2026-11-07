@@ -1,4 +1,4 @@
-# 5.2 操作契约
+# 操作契约
 
 这页讲框架对外暴露业务的方式：用 `[Operation]` 与 `IOperation<TRequest, TResponse>` 把一个业务动作声明成操作，由源生成器产出登记代码与 JSON Schema，再由协议适配器把同一份契约发布到 HTTP、gRPC、MCP 与命令行。读完这页，我们能写出一个带权限要求的操作，让它出现在 `POST /orders` 上，并且知道一次调用在管道里经过了哪些阶段。
 
@@ -59,7 +59,7 @@ orders.create    orders.get    orders.list    order-lines.delete    orders.cance
 
 `HandleAsync` 的约定：
 
-- 返回 `Result<TResponse>`，成功值不能为 `null`；可恢复的失败返回 `Error`，不抛异常，写法见[结果与错误处理](/errors/)。
+- 返回 `Result<TResponse>`，成功值不能为 `null`；可恢复的失败返回 `Error`，不抛异常，写法见[结果与错误处理](/web/errors)。
 - 取消令牌用 `context.CancellationToken`，它同时受调用方取消与截止时间约束。
 - 操作类按作用域注册，构造函数注入所需服务；每次调用一个新实例。
 
@@ -230,7 +230,7 @@ using XiHan.Framework.Kernel.Operations;
 | `[StringLength]`、`[MinLength]`、`[MaxLength]`、`[Length]` | 字符串的 `minLength` / `maxLength`，集合的 `minItems` / `maxItems` |
 | `[RegularExpression]` | `pattern` |
 
-其他注解（如 `[EmailAddress]`）不折进 Schema，需要时在请求类型上实现 `IValidatableObject`，见[数据校验](/validation/)。项目开启 `GenerateDocumentationFile` 时，类型与属性的 XML `<summary>`（位置记录取主构造参数的 `<param>`）折进 Schema 的 `description`，OpenAPI 与 MCP 的字段说明由此而来。
+其他注解（如 `[EmailAddress]`）不折进 Schema，需要时在请求类型上实现 `IValidatableObject`，见[数据校验](/web/validation)。项目开启 `GenerateDocumentationFile` 时，类型与属性的 XML `<summary>`（位置记录取主构造参数的 `<param>`）折进 Schema 的 `description`，OpenAPI 与 MCP 的字段说明由此而来。
 
 ## 登记操作与生成器诊断
 
@@ -258,7 +258,7 @@ using XiHan.Framework.Kernel.Operations;
 | `<操作 ID>.title` | 短语，如「下单」；MCP tool 的 `title`、OpenAPI 的 `summary` |
 | `<操作 ID>.description` | 行为与规则；MCP tool 的 `description`、OpenAPI 的 `description` |
 
-键里操作 ID 的 `-` 换成 `_`（`order_lines.list.description`）。描述不写授权要求，适配器按契约统一呈现。文案写在应用的 `Localization/<区域>.json` 里，登记方式见 [ASP.NET Core 宿主](/web/hosting)的「区域协商与本地化」，消息键的约定见[全球化和本地化](/localization/)：
+键里操作 ID 的 `-` 换成 `_`（`order_lines.list.description`）。描述不写授权要求，适配器按契约统一呈现。文案写在应用的 `Localization/<区域>.json` 里，登记方式见 [ASP.NET Core 宿主](/web/hosting)的「区域协商与本地化」，消息键的约定见[全球化和本地化](/common/localization)：
 
 ```json
 {
@@ -320,7 +320,7 @@ public sealed class NightlyOrderSeeder(IServiceScopeFactory scopes)
 
 ### `HandleAsync` 里能不能抛异常表示业务失败
 
-不要。可恢复的失败（找不到、冲突、校验不过、无权）返回 `Error`，宿主按错误码的 KIND 段映射状态码并写 Problem Details；抛出的异常由内核翻译成 `KERNEL_UNEXPECTED_001`、HTTP 500，并按缺陷记录。`Error` 的构造与错误码规则见[结果与错误处理](/errors/)。
+不要。可恢复的失败（找不到、冲突、校验不过、无权）返回 `Error`，宿主按错误码的 KIND 段映射状态码并写 Problem Details；抛出的异常由内核翻译成 `KERNEL_UNEXPECTED_001`、HTTP 500，并按缺陷记录。`Error` 的构造与错误码规则见[结果与错误处理](/web/errors)。
 
 ### 请求类型没有任何字段怎么写
 
@@ -335,5 +335,5 @@ public sealed class NightlyOrderSeeder(IServiceScopeFactory scopes)
 - 相关包：[Kernel](/packages/kernel)、[Kernel.Generators](/packages/kernel-generators)、[Protocols.Http](/packages/protocols-http)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)
 - 下一步：[HTTP 路由与载荷](/web/routing)，看操作 ID 与请求形状怎样决定 HTTP 路由，以及载荷从哪里来
 - 同一份契约的其他载体：[gRPC](/protocols/grpc)、[MCP](/protocols/mcp)、[命令行宿主](/protocols/command-line)、[工具与知识库](/ai/tools)
-- 相关章节：[授权与权限](/security/authorization)、[数据校验](/validation/)、[结果与错误处理](/errors/)
+- 相关章节：[授权与权限](/security/authorization)、[数据校验](/web/validation)、[结果与错误处理](/web/errors)
 - 规范：RFC-0011《操作契约与 XGI》、`conventions/operation-ids.md`《操作 ID》

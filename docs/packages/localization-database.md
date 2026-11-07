@@ -92,7 +92,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 ## 使用示例
 
-写入与删除放在操作里（`MessageTranslationStore` 只能在调用的 Transaction 阶段内使用），完整的操作写法见[国际化](/localization/#数据库翻译)：
+写入与删除放在操作里（`MessageTranslationStore` 只能在调用的 Transaction 阶段内使用），完整的操作写法见[国际化](/common/localization#数据库翻译)：
 
 ```csharp
 // 在操作的 HandleAsync 里：一次批量写入，逐项结果与入参同序
@@ -135,7 +135,7 @@ if (reloaded.IsFailure)
 
 ## 相关
 
-- [国际化](/localization/)
+- [国际化](/common/localization)
 - [持久化](/persistence/overview)
 - [Localization.Abstractions](./localization-abstractions)
 - [Localization.InMemory](./localization-inmemory)

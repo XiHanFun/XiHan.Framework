@@ -1,4 +1,4 @@
-# 27.2 能力包与中间件
+# 能力包与中间件
 
 这一页讲框架的三条扩展轴各写什么，然后动手写一个应用自己的能力包（清单、权限码、操作登记）和一个管道中间件（`IPipelineMiddleware`、阶段与位置、相对次序），最后讲包 ID、清单 ID、能力 ID、错误码与健康项的命名规则。读完你能把业务代码按能力包组织，并在管道的任一阶段插入自己的逻辑。前置知识是[特性与清单](/startup/features)、[执行管道](/startup/pipeline)与[写一个 Provider](/extending/provider)。
 
@@ -98,7 +98,7 @@ public sealed class NotesFeature : IFeature
 }
 ```
 
-应用里 `builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NotesFeature>())`，再 `app.MapXiHanOperations()`：`notes.create` 按路由约定成为 `POST /notes`，同一份契约也出现在 MCP 的 tool 列表里；`xihan graph` 能看到 `xihan.contoso.notes` 依赖的三个能力分别由谁提供；没有 `notes.write` 权限的主体在 Authorize 阶段被拒；`title` 超过 80 个字符在 Validate 阶段按 Schema 拒绝（[数据校验](/validation/)）。完整的业务能力包示例是 `samples/SimpleApp/Orders/OrdersFeature.cs`：依赖四个能力，登记生成的仓储、领域事件到消息的映射、消息处理器、三个权限码与两个操作。应用能力包通常不写 `Provides`；要让别的能力包按能力 ID 依赖它时再声明，能力 ID 的文法见下文。
+应用里 `builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NotesFeature>())`，再 `app.MapXiHanOperations()`：`notes.create` 按路由约定成为 `POST /notes`，同一份契约也出现在 MCP 的 tool 列表里；`xihan graph` 能看到 `xihan.contoso.notes` 依赖的三个能力分别由谁提供；没有 `notes.write` 权限的主体在 Authorize 阶段被拒；`title` 超过 80 个字符在 Validate 阶段按 Schema 拒绝（[数据校验](/web/validation)）。完整的业务能力包示例是 `samples/SimpleApp/Orders/OrdersFeature.cs`：依赖四个能力，登记生成的仓储、领域事件到消息的映射、消息处理器、三个权限码与两个操作。应用能力包通常不写 `Provides`；要让别的能力包按能力 ID 依赖它时再声明，能力 ID 的文法见下文。
 
 ## 写一个管道中间件
 
@@ -142,7 +142,7 @@ public sealed class RequireCorrelationMiddleware : IPipelineMiddleware
 3. 在清单 `Contributes.Pipeline` 里声明 `new PipelineContribution(typeof(T).FullName!, stage)`，与第 2 步的阶段一致；`xihan pipeline` 据此展示。
 4. 用测试宿主分别验证放行与短路（[单元与集成测试](/testing/basics)）。
 
-`Error.Validation(code, messageKey, details)` 只携带键与参数，宿主在 Egress 按调用方区域翻译；应用的 `CorrelationMessages.Missing` 要在应用自己的消息目录里有译文（[全球化和本地化](/localization/)）。阶段的选择按职责：补充 Baggage 或观测放 Observe，与身份有关的放 Authenticate 之后，与请求形状有关的放 Validate；不要把业务逻辑写进中间件，它看得到上下文与结果，但不该解析载荷，需要载荷的逻辑写成操作。Wasm 插件也能贡献中间件，语义是 before / after 两次钩子、看不到载荷、失败即关闭（[Wasm 插件](/plugins/wasm)）。
+`Error.Validation(code, messageKey, details)` 只携带键与参数，宿主在 Egress 按调用方区域翻译；应用的 `CorrelationMessages.Missing` 要在应用自己的消息目录里有译文（[全球化和本地化](/common/localization)）。阶段的选择按职责：补充 Baggage 或观测放 Observe，与身份有关的放 Authenticate 之后，与请求形状有关的放 Validate；不要把业务逻辑写进中间件，它看得到上下文与结果，但不该解析载荷，需要载荷的逻辑写成操作。Wasm 插件也能贡献中间件，语义是 before / after 两次钩子、看不到载荷、失败即关闭（[Wasm 插件](/plugins/wasm)）。
 
 ## 命名规则
 
@@ -185,7 +185,7 @@ Role      = "Abstractions" | "Conformance" | "Generators" | Mechanism | Technolo
 
 ### 中间件能拿到请求体吗
 
-能力包里的 .NET 中间件在 Handle 之前运行，`InvocationContext` 里有元数据、Baggage 与操作 ID，载荷在 Handle 阶段才解码成请求类型。需要按请求内容判断的逻辑写在操作里或请求类型的自校验里（[数据校验](/validation/)），不要在中间件里解析 JSON。
+能力包里的 .NET 中间件在 Handle 之前运行，`InvocationContext` 里有元数据、Baggage 与操作 ID，载荷在 Handle 阶段才解码成请求类型。需要按请求内容判断的逻辑写在操作里或请求类型的自校验里（[数据校验](/web/validation)），不要在中间件里解析 JSON。
 
 ### 中间件的次序约束指向的目标不存在
 
@@ -198,6 +198,6 @@ Role      = "Abstractions" | "Conformance" | "Generators" | Mechanism | Technolo
 ## 相关包与下一步
 
 - 包参考：[Kernel](/packages/kernel)、[Kernel.Generators](/packages/kernel-generators)、[Kernel.Analyzers](/packages/kernel-analyzers)、[Testing](/packages/testing)
-- 相关章节：[特性与清单](/startup/features)、[执行管道](/startup/pipeline)、[操作契约](/web/operations)、[授权与权限](/security/authorization)、[全球化和本地化](/localization/)、[写一个 Provider](/extending/provider)
+- 相关章节：[特性与清单](/startup/features)、[执行管道](/startup/pipeline)、[操作契约](/web/operations)、[授权与权限](/security/authorization)、[全球化和本地化](/common/localization)、[写一个 Provider](/extending/provider)
 - 规范：RFC-0002《清单》、RFC-0004《管道阶段与排序》、RFC-0010《本地化》
 - 下一步：[For Agents](/agents/agents)讲怎样让编码助手按版本查证框架、用 MCP 与 `xihan` 工具开发

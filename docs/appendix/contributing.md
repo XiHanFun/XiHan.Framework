@@ -1,4 +1,4 @@
-# 30. 贡献指南
+# 贡献指南
 
 这一页写给想为 XiHan Framework 贡献代码、文档、示例或一致性向量的读者：从哪里开始、改动要走什么流程、代码要符合哪些规范、提交前要过哪些门禁。组织层面共用的贡献约定见[如何为项目贡献代码](https://docs.xihanfun.com/cosmos/contributing)与[贡献者公约](https://docs.xihanfun.com/cosmos/code-of-conduct)，本页只讲框架仓库特有的部分。
 

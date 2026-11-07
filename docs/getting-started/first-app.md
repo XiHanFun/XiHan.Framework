@@ -1,4 +1,4 @@
-# 2.2 第一个应用
+# 第一个应用
 
 这一页从一个空的 ASP.NET Core 项目开始，写一个操作契约并经 HTTP 调用它，再换成 Standard 组合观察能力图谱与管道。全程约十五分钟，不需要任何数据库或中间件。前置条件是[环境与安装](/getting-started/installation)里的 .NET 10 SDK。
 
@@ -44,7 +44,7 @@ public sealed record GreetResponse(string Message, string TraceId);
 
 三件事值得注意：
 
-- `HandleAsync` 返回 `Result<GreetResponse>`。可恢复的失败返回 `Error`，不抛异常，见[结果与错误处理](/errors/)。
+- `HandleAsync` 返回 `Result<GreetResponse>`。可恢复的失败返回 `Error`，不抛异常，见[结果与错误处理](/web/errors)。
 - `InvocationContext` 是这次调用的上下文：取消令牌、截止时间、Trace、租户与主体都从这里取，见[调用上下文](/startup/invocation-context)。
 - `Expose = Expose.Http` 声明这个操作只经 HTTP 暴露。加上 `Expose.Grpc`、`Expose.Mcp` 就能同时成为 gRPC 方法与 MCP tool，见[操作契约](/web/operations)。
 

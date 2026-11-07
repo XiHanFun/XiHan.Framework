@@ -121,7 +121,7 @@ public sealed class AuditTrailTests
 
 ## 相关
 
-- [审计](/auditing/)
+- [审计](/common/auditing)
 - [Auditing.Abstractions](./auditing-abstractions)
 - [Auditing.Database](./auditing-database)
 - [Profiles.Full](./profiles-full)

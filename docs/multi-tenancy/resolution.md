@@ -1,4 +1,4 @@
-# 10.1 租户解析与隔离
+# 租户解析与隔离
 
 这一页讲框架怎样在一次调用里确定租户、租户信息存在哪里、怎样启用多租户，以及租户确定之后持久化层怎样把数据隔开。读完你能让 SimpleApp 这样的应用按调用方身份识别出租户，知道解析在管道的哪一步发生、失败时拿到什么错误码，并让自己的实体只对本租户可见。阅读前先了解[执行管道](/startup/pipeline)与[调用上下文](/startup/invocation-context)；租户来自主体的声明，[认证](/security/authentication)一章可以之后再读。
 
@@ -235,7 +235,7 @@ Transaction 阶段的 `UnitOfWorkMiddleware` 用安全上下文里的租户开�
 | `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达） | 503 |
 | `PERSISTENCE_VALIDATION_001` | 多租户实体在没有租户的调用中新增 | 400 |
 
-HTTP 状态码按错误码的种类段映射，与其他子系统一致，见[结果与错误处理](/errors/)。
+HTTP 状态码按错误码的种类段映射，与其他子系统一致，见[结果与错误处理](/web/errors)。
 
 ## 常见问题
 
@@ -263,5 +263,5 @@ Tenant 阶段核对存储时发现 `IsEnabled` 为假，调用以 `MULTITENANCY_
 
 - 包参考：[MultiTenancy.Abstractions](/packages/multitenancy-abstractions)、[MultiTenancy.InMemory](/packages/multitenancy-inmemory)、[MultiTenancy.Database](/packages/multitenancy-database)
 - 规范：RFC-0007《多租户》
-- 相关章节：[执行管道](/startup/pipeline)、[认证](/security/authentication)、[授权与权限](/security/authorization)、[仓储读写](/persistence/repositories)、[审计](/auditing/)
+- 相关章节：[执行管道](/startup/pipeline)、[认证](/security/authentication)、[授权与权限](/security/authorization)、[仓储读写](/persistence/repositories)、[审计](/common/auditing)
 - 下一步：[租户分片与分库](/multi-tenancy/sharding)

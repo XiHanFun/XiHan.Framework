@@ -1,10 +1,10 @@
-# 9.4 工作单元与事务
+# 工作单元与事务
 
-这一页讲 `IUnitOfWork`：它的状态与成员、Transaction 阶段怎样为每次调用开启、提交与回滚、数据库事务为什么延迟到第一次写入、领域事件在提交前怎样派发，以及在管道之外（单例服务、后台任务、停机刷写）自己开工作单元的写法。读完它，你能判断一次调用里哪些写入会一起提交、失败时会回滚什么，并能在后台任务里正确地读写数据。前置知识是[仓储读写](/persistence/repositories)与[执行管道](/startup/pipeline)。
+这一页讲 `IUnitOfWork`：它的状态与成员、Transaction 阶段怎样为每次调用开启、提交与回滚、数据库事务为什么延迟到第一次写入、领域事件在提交前怎样派发，以及在管道之外自己开工作单元的写法。读完它，你能判断一次调用里哪些写入会一起提交、失败时会回滚什么，并能在后台任务里正确地读写数据。前置知识是[仓储读写](/persistence/repositories)与[执行管道](/startup/pipeline)。
 
 ## 为什么需要
 
-没有工作单元时，每个操作都要自己开事务、自己决定什么时候提交、异常时记得回滚，忘了任何一步都会留下半截数据；领域事件什么时候发也没有统一答案，发早了事务可能回滚，发晚了又可能丢。框架把事务边界放进管道的 Transaction 阶段：每次调用一个工作单元，处理器只决定成败，提交与回滚由中间件按固定顺序执行，领域事件在提交前派发。数据库事务延迟到第一次写入才开，只读调用不占事务，SQLite 这类单写者数据库上多个只读调用与一个写入调用能并存。
+没有工作单元时，每个操作都要自己开事务、决定何时提交、异常时记得回滚，忘了任何一步都会留下半截数据；领域事件发早了事务可能回滚，发晚了又可能丢。框架把事务边界放进管道的 Transaction 阶段：每次调用一个工作单元，处理器只决定成败，提交与回滚由中间件按固定顺序执行，领域事件在提交前派发。数据库事务延迟到第一次写入才开，只读调用不占事务。
 
 ## 概念
 
@@ -21,15 +21,7 @@
 | `CommitAsync(ct)` | 提交，返回 `Result`；并发冲突、标识重复、容量已满以失败结果返回 |
 | `RollbackAsync(ct)` | 回滚 |
 
-`UnitOfWorkOptions` 是开启选项：
-
-| 成员 | 缺省 | 说明 |
-| --- | --- | --- |
-| `TenantId` | `null` | 当前租户 |
-| `IsReadOnly` | `false` | 只读工作单元：不开事务、拒绝写入 |
-| `Connection` | `null` | 绑定一个命名连接，只在它上面读写、开事务，见[连接与运行时数据源](/persistence/connections) |
-| `ReadsPrimary` | `false` | 只读但读主库（配了从库的 SqlSugar），其余仍是只读的语义 |
-| `UnitOfWorkOptions.Default` | — | 无租户、可写、不绑定连接 |
+`UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 是开启选项：`TenantId` 是当前租户；`IsReadOnly` 开只读工作单元（不开事务、拒绝写入）；`Connection` 绑定一个命名连接，只在它上面读写、开事务（见[连接与运行时数据源](/persistence/connections)）；`ReadsPrimary` 让只读工作单元读主库；`UnitOfWorkOptions.Default` 是无租户、可写、不绑定连接。
 
 工作单元由持久化 Provider 实现并注册；Provider 的特性同时把 `UnitOfWorkMiddleware` 登记到 Transaction 阶段。
 
@@ -37,12 +29,12 @@
 
 经管道的每次调用（HTTP、gRPC、MCP、命令行、消息派发）都经过 Transaction 阶段，`UnitOfWorkMiddleware` 按下面的顺序处理：
 
-1. 从调用的作用域取 `IUnitOfWork`。它已经开始过（同一个服务作用域里再经管道的嵌套调用）时，以 `PERSISTENCE_VALIDATION_002` 结束本次调用，不执行处理器。
+1. 从调用的作用域取 `IUnitOfWork`。它已经开始过（同一个服务作用域里的嵌套调用）时，以 `PERSISTENCE_VALIDATION_002` 结束本次调用，不执行处理器。
 2. 以 Tenant 阶段写入安全上下文的租户开始它：操作契约只读（动词 `get` / `list`，或 `ReadOnly = true`）时开只读工作单元，其余开可写工作单元。
 3. 调用 Handle 阶段的处理器。
-4. 处理器抛出异常：用 `CancellationToken.None` 回滚，异常原样抛出，由内核转为 Unexpected 结果；只读工作单元里直接写入入口抛出的 `PERSISTENCE_UNEXPECTED_001` 例外，回滚后转为同码的结果。
+4. 处理器抛出异常：用 `CancellationToken.None` 回滚，异常原样抛出，由内核转为 Unexpected 结果。
 5. 调用结果是失败：回滚，保留原失败结果。
-6. 有聚合带着未派发的领域事件：没有注册 `IDomainEventDispatcher` 时以 `PERSISTENCE_VALIDATION_003` 结束并回滚；派发器返回失败时回滚，调用以该失败结束；派发成功清空登记，进入提交。
+6. 有聚合带着未派发的领域事件：没有派发器时以 `PERSISTENCE_VALIDATION_003` 结束并回滚；派发失败时回滚，调用以该失败结束；派发成功清空登记。
 7. 提交；提交失败时用它覆盖调用结果，调用方看到真实的持久化错误。
 
 所以操作代码不调用提交，只决定成败：返回 `Result` 失败或抛出异常，本次调用的全部写入都回滚，包括批量方法里已通过校验的项。
@@ -100,7 +92,7 @@ public sealed class AdjustAmount(IRepository<Order, Guid> orders) : IOperation<A
 | 只读工作单元拒绝过写入、`EnsureTransactionAsync` 抛出、EF Core 有未保存的跟踪变更 | 回滚 | `PERSISTENCE_UNEXPECTED_001` |
 | 同一服务作用域里再经管道的嵌套调用 | 不动外层的工作单元 | `PERSISTENCE_VALIDATION_002`（只结束内层） |
 
-标识重复在 `AddAsync` / `AddRangeAsync` 时就按项返回 `PERSISTENCE_CONFLICT_002`，不留到提交；并发新增同一标识的后到者在关系型 Provider 上于写入时得到它，在内存实现上于提交时得到它，见[仓储读写](/persistence/repositories)。
+标识重复通常在 `AddAsync` 时就按项返回，只有并发新增同一标识的后到者在内存实现上于提交时得到它，见[仓储读写](/persistence/repositories)。
 
 ## 各 Provider 的事务
 
@@ -114,14 +106,7 @@ public sealed class AdjustAmount(IRepository<Order, Guid> orders) : IOperation<A
 
 仓储在新增、更新、删除（单条与批量里通过校验的项）成功后，把实现 `IHasDomainEvents` 的实体登记到 `IUnitOfWork.DomainEvents`。处理器成功后、提交前，中间件取出带有未派发事件的聚合（`DomainEventTracker.Pending()`），连同工作单元的租户交给 `IDomainEventDispatcher.DispatchAsync`。
 
-派发器由 Messaging 子系统实现：`AddDomainEvent<TEvent>(...)` 登记一种事件的主题、CloudEvents 类型、源生成的 `JsonTypeInfo` 与可选的 `subject`，并注册派发器。SimpleApp 的 `OrdersFeature` 这样登记 `OrderPlaced`：
-
-```csharp
-// 聚合记录的 OrderPlaced 在提交前发到 orders 主题，类型 orders.placed，subject 是订单
-context.Services.AddDomainEvent<OrderPlaced>(Topic, "orders.placed", SampleJsonContext.Default.OrderPlaced, static placed => $"order/{placed.OrderId:N}");
-```
-
-派发发生在提交之前，事件去向取决于是否装配了发件箱：
+派发器由 Messaging 子系统实现：`AddDomainEvent<TEvent>(topic, type, jsonTypeInfo, subject)` 登记一种事件的主题、CloudEvents 类型、源生成的 `JsonTypeInfo` 与可选的 `subject`，并注册派发器；SimpleApp 的 `OrdersFeature` 就这样登记 `OrderPlaced`。派发发生在提交之前，事件去向取决于是否装配了发件箱：
 
 | 装配 | 事件的去向 | 与业务写入的关系 |
 | --- | --- | --- |
@@ -132,14 +117,12 @@ context.Services.AddDomainEvent<OrderPlaced>(Topic, "orders.placed", SampleJsonC
 
 ## 在管道外开工作单元
 
-单例服务、`IHostedFeature` 的启动与停止、后台循环、定时清理这些代码不经管道，没有 Transaction 阶段替它们开工作单元。框架自己的发件箱投递循环与审计记录落库就是这样做的：每次操作建一个服务作用域，在里面开一个工作单元。
+单例服务、`IHostedFeature` 的启动与停止、后台循环、定时清理这些代码不经管道，没有 Transaction 阶段替它们开工作单元。框架自己的发件箱投递循环与审计落库就是这样做的：每次操作建一个服务作用域，在里面开一个工作单元。
 
-1. 从根服务提供者 `CreateAsyncScope()`，一个作用域只承载一个工作单元。
-2. 按租户分库时，先用 `TenantShardScope.BindTenantAsync(tenantId, ct)` 绑定分片，再解析任何持久化服务。
-3. 取 `IUnitOfWork`，`BeginAsync(UnitOfWorkOptions.Default, ct)`；读写租户数据时传 `new UnitOfWorkOptions(tenantId)`。
-4. 取仓储，读写。
-5. `CommitAsync` 并检查返回的 `Result`。
-6. 提交前任何一步抛出异常时，若工作单元仍是 `Active`，用 `CancellationToken.None` 回滚。
+1. 从根服务提供者 `CreateAsyncScope()`，一个作用域只承载一个工作单元；按租户分库时先用 `TenantShardScope.BindTenantAsync(tenantId, ct)` 绑定分片。
+2. 取 `IUnitOfWork`，`BeginAsync(UnitOfWorkOptions.Default, ct)`；读写租户数据时传 `new UnitOfWorkOptions(tenantId)`。
+3. 取仓储读写，`CommitAsync` 并检查返回的 `Result`。
+4. 提交前任何一步抛出异常时，若工作单元仍是 `Active`，用 `CancellationToken.None` 回滚。
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
@@ -188,7 +171,7 @@ public sealed class OrderPurger(IServiceProvider services, TimeProvider clock)
 
 登记为单例：`builder.Services.AddSingleton<OrderPurger>();`。`Result.ThrowIfFailure()` 把失败转成携带同一错误码的 `FrameworkException`，进入 `catch` 回滚。
 
-按租户分库时，绑定必须在作用域里第一次创建持久化客户端之前完成，客户端建好后再绑定或改绑，`TenantShardScope` 抛出 `InvalidOperationException`；绑定只选连接，工作单元的 `TenantId` 仍由 `UnitOfWorkOptions` 给出，两者应一致。`TenantShardScope` 在 `XiHan.Framework.MultiTenancy.Abstractions.Sharding` 命名空间，用法见[租户分片与分库](/multi-tenancy/sharding)。
+按租户分库时，绑定必须在作用域里第一次创建持久化客户端之前完成；绑定只选连接，工作单元的 `TenantId` 仍由 `UnitOfWorkOptions` 给出，两者应一致。见[租户分片与分库](/multi-tenancy/sharding)。
 
 ::: warning 管道外的写入不自动派发领域事件
 领域事件只由 Transaction 阶段的中间件派发。管道外写入带事件的聚合时，调用方在提交前自己派发，否则事件留在聚合的缓冲里，不会发出。
@@ -213,13 +196,13 @@ if (pending.Count > 0)
 只读操作，也就是动词是 `get` / `list`，或以 `[Operation(..., ReadOnly = true)]` 声明的查询变体（`departments.tree`、`users.list-online`），在 Transaction 阶段得到只读工作单元。管道外用 `new UnitOfWorkOptions(IsReadOnly: true)` 开启的也一样：
 
 - 不开数据库事务；查找、查询、计数照常。
-- 仓储的新增、更新、删除与批量形式在写入时就拒绝、不碰后端，返回 `PERSISTENCE_UNEXPECTED_001`（批量逐项都是它；空集合不算写入）。拒绝同时把工作单元记为失败：处理器忽略这个失败、照常返回成功时，提交回滚并返回同一错误，误写不会被悄悄吞掉。
-- 直接用 `DbContext` 或 SqlSugar 客户端写入之前要调用工作单元的 `EnsureTransactionAsync`：只读工作单元里它抛出携带 `PERSISTENCE_UNEXPECTED_001` 的 `FrameworkException`，Transaction 阶段把它转为同码的结果。不经 `EnsureTransactionAsync` 直接执行的写入不在守卫之内，也不在事务里。
-- EF Core 提交时还查变更跟踪器：只读操作里把读出的实体改了却没保存，同样以 `PERSISTENCE_UNEXPECTED_001` 回滚。只读操作里不要把读出的实体当草稿修改，要变换就映射成响应对象。
+- 仓储的新增、更新、删除与批量形式在写入时就拒绝、不碰后端，返回 `PERSISTENCE_UNEXPECTED_001`，并把工作单元记为失败：处理器忽略这个失败、照常返回成功时，提交回滚并返回同一错误，误写不会被悄悄吞掉。
+- 直接用 `DbContext` 或 SqlSugar 客户端写入之前要调用工作单元的 `EnsureTransactionAsync`：只读工作单元里它抛出同码的 `FrameworkException`，Transaction 阶段转为结果。不经它直接执行的写入不在守卫之内，也不在事务里。
+- EF Core 提交时还查变更跟踪器：只读操作里把读出的实体改了却没保存，同样以 `PERSISTENCE_UNEXPECTED_001` 回滚。只读操作里要变换就映射成响应对象，不要把读出的实体当草稿改。
 
-`PERSISTENCE_UNEXPECTED_001` 是操作实现的缺陷，不是调用方能改正的输入：HTTP 500、gRPC `Internal`，与其他服务端缺陷一起进 5xx 告警。修正的办法是让操作不再写入，或者它本来就要写，就去掉只读声明、换一个非只读的动词，或把写入放进新服务作用域里的另一次调用。
+`PERSISTENCE_UNEXPECTED_001` 是操作实现的缺陷，不是调用方能改正的输入：HTTP 500、gRPC `Internal`。修正的办法是让操作不再写入，或者它本来就要写，就换一个非只读的动词，或把写入放进新服务作用域里的另一次调用。
 
-框架读取租户目录与权限授予、审计查询、调度与工作流探测租约时自己开只读工作单元，其中租户目录与权限授予设了 `ReadsPrimary`，配了从库也读主库；后台的统计、报表这类只读路径也建议用它：
+框架读取租户目录与权限授予、审计查询、探测租约时自己开只读工作单元；后台的统计、报表这类只读路径也建议用它，配了从库又要读主库时设 `ReadsPrimary`：
 
 ```csharp
 await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true) { ReadsPrimary = true }, cancellationToken);
@@ -238,7 +221,7 @@ var recorded = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>
     .InvokeAsync<RecordViewRequest, RecordViewResponse>(call, RecordView.Id, new RecordViewRequest(request.Id));
 ```
 
-只读不向内、也不向外传播：只读操作里调用的写操作在自己的可写工作单元里写入、成功即自行提交，外层随后失败也不会把它回滚；要与外层同进退的写入不应拆成嵌套调用。用同一个服务作用域再经管道（传入外层的 `context` 或由它派生的上下文）时，作用域里的工作单元已经开始过，内层以 `PERSISTENCE_VALIDATION_002`（消息键 `persistence.unit_of_work.nested`）结束，处理器不执行，外层不受影响。AI 工具与 MCP 的每次 `tools/call` 都按这个方式执行，各自一个服务作用域。
+只读不向内、也不向外传播：只读操作里调用的写操作在自己的可写工作单元里提交，外层随后失败也不会把它回滚；要与外层同进退的写入不应拆成嵌套调用。用同一个服务作用域再经管道（传入外层的 `context`）时，内层以 `PERSISTENCE_VALIDATION_002` 结束，处理器不执行，外层不受影响。AI 工具与 MCP 的每次 `tools/call` 都按这个方式执行。
 
 ## 错误码
 
@@ -249,10 +232,6 @@ var recorded = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>
 ### 我需要在操作里手动调 `CommitAsync` 吗
 
 不需要，也不应该。Transaction 阶段在处理器成功返回后提交、失败或异常时回滚，操作里只返回 `Result`。手动提交会让中间件的提交撞上 `PERSISTENCE_VALIDATION_002`。
-
-### 操作里写了两个实体，一个成功一个失败，怎样保证都不落库
-
-把失败作为操作结果返回（或抛异常）。整个工作单元回滚，已写进本次事务的第一个实体也不会提交。批量方法同理，遇到失败项就 `return result.Error!`。
 
 ### 为什么我的 `GET` 操作写入时得到 500
 

@@ -1,4 +1,4 @@
-# 26.2 一致性套件与门禁
+# 一致性套件与门禁
 
 这一页讲每个子系统的 `<领域>.Conformance` 包怎么用（继承抽象套件类、提供实现），插件协议的两份黑盒套件 `Plugins.Conformance` 与 `xihan-conformance`，以及框架仓库的架构测试与 CI 门禁。读完你能让自己写的 Provider 或插件跑完框架同一套用例，并知道向框架仓库提交代码要过哪些关。前置知识是[单元与集成测试](/testing/basics)。
 
@@ -122,7 +122,7 @@ xihan-conformance vectors
 
 ## 架构测试与门禁
 
-这一节面向向框架仓库提交扩展的人（[贡献指南](/contributing/)）：`framework/` 下的每个正式包都要通过下列门禁，CI 全部是必过项，不放宽、不绕过、不加 `NoWarn`。
+这一节面向向框架仓库提交扩展的人（[贡献指南](/appendix/contributing)）：`framework/` 下的每个正式包都要通过下列门禁，CI 全部是必过项，不放宽、不绕过、不加 `NoWarn`。
 
 | 门禁 | 位置 | 检查什么 |
 | --- | --- | --- |
@@ -146,7 +146,7 @@ xihan-conformance vectors
 | `SourceFiles_DeclareOneTopLevelType_NamedLikeTheFile`、`SourceFiles_StartWithCopyrightHeader` | 一个文件一个顶层类型、文件名与类型名一致（泛型加 `OfT`）；版权头 |
 | `XmlSummaries_UseTheThreeLineForm`、`XmlSummaries_AreOneConciseSentence` | `<summary>` 三行写法、一句话，细节放 `<remarks>` |
 | `EverySourceProject_HasReadmeAndPublicApiFiles`、`EverySourceProject_IsReferencedByArchitectureTests` | 每个正式包都有 `README.md` 与两个 PublicAPI 文件，并加进架构测试项目的引用 |
-| `EveryLocalizedPackage_HasOneFilePerLocale_WithConsistentKeys`、`LocaleFiles_AreEmbeddedWithTheConventionalLogicalName`、`MessageConstants_MatchTheEnglishLocaleFile`、`ErrorCallSites_UseMessageKeyConstants` | 本地化：10 种区域的语言文件齐全、占位符一致、按约定嵌入、消息键常量与 `en-US.json` 一一对应、错误调用点只用常量（[全球化和本地化](/localization/)） |
+| `EveryLocalizedPackage_HasOneFilePerLocale_WithConsistentKeys`、`LocaleFiles_AreEmbeddedWithTheConventionalLogicalName`、`MessageConstants_MatchTheEnglishLocaleFile`、`ErrorCallSites_UseMessageKeyConstants` | 本地化：10 种区域的语言文件齐全、占位符一致、按约定嵌入、消息键常量与 `en-US.json` 一一对应、错误调用点只用常量（[全球化和本地化](/common/localization)） |
 | `ErrorCodes_AreRegisteredOnce` | 错误码全仓库唯一 |
 | `DeclaredHealthItems_AreImplementedInTheSamePackage`、`PackagesRegisteringContributors_DeclareHealthItems` | 清单 `contributes.health` 的条目由同一个包实现，登记了 `IHealthContributor` 的包必须声明条目（插件宿主例外）；`samples/` 下的示例项目同样受检 |
 | `SourceProjects_DoNotCallSingleItemMethodsInsideLoops` | 批量优先：不在循环里调用仓储、缓存存储、消息发布的单条方法，改用批量方法 |
@@ -174,6 +174,6 @@ xihan-conformance vectors
 ## 相关包与下一步
 
 - 包参考：[Conformance](/packages/conformance)、[Testing](/packages/testing)、[Kernel.Analyzers](/packages/kernel-analyzers)、[Kernel.Generators](/packages/kernel-generators)
-- 相关章节：[单元与集成测试](/testing/basics)、[进程外插件](/plugins/out-of-process)、[Wasm 插件](/plugins/wasm)、[贡献指南](/contributing/)
+- 相关章节：[单元与集成测试](/testing/basics)、[进程外插件](/plugins/out-of-process)、[Wasm 插件](/plugins/wasm)、[贡献指南](/appendix/contributing)
 - 规范：RFC-0017《进程外插件协议》、RFC-0018《Wasm 插件 ABI》；规范仓库 [framework-spec](https://github.com/XiHanFun/framework-spec)
 - 下一步：[写一个 Provider](/extending/provider)把一致性套件用在自己的实现上

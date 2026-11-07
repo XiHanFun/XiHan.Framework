@@ -1,6 +1,6 @@
-# 8. 数据校验
+# 数据校验
 
-这一章讲 Validate 阶段怎样校验操作的请求：先按编译期生成的 JSON Schema 校验载荷，再对实现 `IValidatableObject` 的请求执行自校验，失败时以字段级错误返回。读完你能给请求加约束、写一条 Schema 表达不了的业务规则，并看懂客户端收到的 400 响应。前置知识是[操作契约](/web/operations)与[结果与错误处理](/errors/)。
+这一章讲 Validate 阶段怎样校验操作的请求：先按编译期生成的 JSON Schema 校验载荷，再对实现 `IValidatableObject` 的请求执行自校验，失败时以字段级错误返回。读完你能给请求加约束、写一条 Schema 表达不了的业务规则，并看懂客户端收到的 400 响应。前置知识是[操作契约](/web/operations)与[结果与错误处理](/web/errors)。
 
 ## 为什么需要
 
@@ -46,7 +46,7 @@ public sealed record PlaceOrderRequest(
 }
 ```
 
-消息键与语言文件（`Localization/en-US.json`、`Localization/zh-CN.json`，其余区域各一份，以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入，见[全球化和本地化](/localization/)）：
+消息键与语言文件（`Localization/en-US.json`、`Localization/zh-CN.json`，其余区域各一份，以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入，见[全球化和本地化](/common/localization)）：
 
 ```csharp
 // ShopMessages.cs
@@ -87,7 +87,7 @@ public sealed class CreateOrder : IOperation<PlaceOrderRequest, OrderResponse>
 public sealed record OrderResponse(Guid Id, string Name, int Amount);
 ```
 
-请求与响应登记到 `JsonSerializerContext`，特性里调用生成的 `AddGeneratedOperations()`，`Program.cs` 装配 `HttpProtocolFeature`、注册消息目录并 `MapXiHanOperations()`，写法与[结果与错误处理](/errors/)的最小示例相同。运行后发一个坏请求：
+请求与响应登记到 `JsonSerializerContext`，特性里调用生成的 `AddGeneratedOperations()`，`Program.cs` 装配 `HttpProtocolFeature`、注册消息目录并 `MapXiHanOperations()`，写法与[结果与错误处理](/web/errors)的最小示例相同。运行后发一个坏请求：
 
 ```bash
 curl -i -X POST localhost:5000/orders -H "Content-Type: application/json" -H "Accept-Language: zh-CN" -d '{"amount":0}'
@@ -155,7 +155,7 @@ Schema 表达不了的规则（字段之间的关系、业务上的黑名单、�
 | `KERNEL_VALIDATION_003` | 载荷不满足请求 Schema |
 | `KERNEL_VALIDATION_004` | `IValidatableObject` 自校验失败 |
 
-gRPC 上这些失败是 `InvalidArgument`，命令行上退出码 2，MCP 上是 `isError` 结果，映射表见[结果与错误处理](/errors/)。
+gRPC 上这些失败是 `InvalidArgument`，命令行上退出码 2，MCP 上是 `isError` 结果，映射表见[结果与错误处理](/web/errors)。
 
 ## 不经过校验的路径
 
@@ -201,4 +201,4 @@ Schema 校验一次最多报告 32 条违规；自校验的每条 `ValidationRes
 - [Kernel.Generators](/packages/kernel-generators)：注解折进 Schema 的生成器
 - [Primitives](/packages/primitives)：`Error.Validation` 与 `MessageKeyExtensions.L`
 - 规范：RFC-0011《操作契约与 XGI》的「校验」一节
-- 下一章：[9.1 领域模型](/persistence/domain)
+- 下一章：[领域模型](/persistence/domain)

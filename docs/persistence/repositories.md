@@ -1,4 +1,4 @@
-# 9.3 仓储读写
+# 仓储读写
 
 这一页讲 `IRepository<TEntity, TKey>` 的每个方法：怎样查找与查询、怎样分页、新增更新删除各写哪些字段、批量方法的逐项结果与部分失败语义，以及软删除与租户过滤是怎样施加的。读完它，你能在操作契约里完成一个实体的全部读写，并正确处理并发冲突与批量失败。前置知识是[持久化与 Provider](/persistence/overview)，操作契约的写法见[操作契约](/web/operations)。
 
@@ -85,7 +85,7 @@ public sealed class SearchOrders(IRepository<Order, Guid> orders) : IOperation<S
 
 更新时**修改查找得到的实例再写回**。也可以传一个自己构造的游离实例：三个 Provider 都按它写入业务字段；实现 `IHasConcurrencyStamp` 的实体会先比对并发戳，戳不同即冲突。协议字段只由 Provider 写：创建时间、租户与删除标记沿用存储里当前行的值，调用方实例上的这些值一律不生效，更新不能把实体改到别的租户或改掉创建时间。已软删除的实体对仓储不可见，再更新或删除都返回 `PERSISTENCE_NOTFOUND_001`。
 
-下例的错误码与消息键 `SampleMessages.ResourceMissing` 是 SimpleApp 自己定义的，文案怎样走消息键见[全球化和本地化](/localization/)。
+下例的错误码与消息键 `SampleMessages.ResourceMissing` 是 SimpleApp 自己定义的，文案怎样走消息键见[全球化和本地化](/common/localization)。
 
 ```csharp
 using XiHan.Framework.Kernel.Operations;

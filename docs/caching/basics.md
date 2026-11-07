@@ -1,4 +1,4 @@
-# 12.1 缓存读写
+# 缓存读写
 
 这一页讲缓存子系统最常用的部分：它提供哪两个能力、字节存储与类型化缓存是什么关系、怎样启用内存与 Redis 实现、怎样读写、设置过期、批量操作、挑选序列化器，以及对应的配置、健康项与错误码。读完你能给自己的特性加上一层缓存，并在单实例与多实例部署之间切换 Provider 而不改业务代码。前置知识是[特性与清单](/startup/features)与[能力图谱与 Provider](/startup/capabilities)：缓存和别的子系统一样，按能力 ID 声明依赖、按清单选实现。
 
@@ -243,7 +243,7 @@ public sealed record ProductView(Guid Id, string Name, int Price);
 internal sealed partial class CacheJsonContext : JsonSerializerContext;
 ```
 
-内存实现不序列化，所以只在内存缓存下跑过的代码换成 Redis 后，值类型第一次需要能被序列化；不在上下文里的类型会在那时抛出。源生成上下文的写法见[JSON 序列化与 Native AOT](/serialization/)。
+内存实现不序列化，所以只在内存缓存下跑过的代码换成 Redis 后，值类型第一次需要能被序列化；不在上下文里的类型会在那时抛出。源生成上下文的写法见[JSON 序列化与 Native AOT](/common/serialization)。
 
 ## 配置
 

@@ -21,7 +21,7 @@
 - `AuditInvocationExtensions` 让处理器在调用期间写入动作、资源名与细节。
 - `IAuditTrail` 按时间、动作、主体、租户、trace-id、成败过滤，按写入顺序升序分页。
 
-本包不存储任何东西，存储由 Provider 实现。用法与行为细节见[审计](/auditing/)。
+本包不存储任何东西，存储由 Provider 实现。用法与行为细节见[审计](/common/auditing)。
 
 ## 何时使用
 
@@ -107,7 +107,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 - 结果：管道写入的 outcome 优先；没写入而抛出了异常时，取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`，异常照常向外抛；正常返回却没写结果视为成功。
 - 接收器的写入不带调用的取消令牌，被取消的调用同样记录；接收器抛出的异常以 Error 级记一条日志，不影响调用结果。
 - 细节只允许 JSON 可表示的值，同名覆盖；资源名以 `xrn:` 文本保存。
-- 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](/auditing/#记录调用来源)。
+- 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](/common/auditing#记录调用来源)。
 - 查询页大小 1 到 1000，缺省 100；续页令牌由实现自行校验。
 
 | 错误码 | 消息键 | 含义 |
@@ -117,7 +117,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 
 ## 相关
 
-- [审计](/auditing/)
+- [审计](/common/auditing)
 - [Auditing.InMemory](./auditing-inmemory)
 - [Auditing.Database](./auditing-database)
 - [Kernel 内核](./kernel)

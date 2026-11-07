@@ -1,4 +1,4 @@
-# 1.4 支持曦寒
+# 支持曦寒
 
 XiHan Framework 与整个曦寒懿生态自发布以来一直采用 MIT 协议：核心能力永久免费，个人与企业都可以使用和商用，开源版本完整可用、不做削弱，已经以 MIT 公开的能力不会再改成收费。这一页说明你可以怎样支持这个项目，以及遇到问题时去哪里。
 
@@ -21,7 +21,7 @@ XiHan Framework 与整个曦寒懿生态自发布以来一直采用 MIT 协议�
 
 ## 参与贡献
 
-贡献代码、文档、示例与一致性向量都欢迎。流程与规范见[贡献指南](/contributing/)，组织层面的公约见[贡献者公约](https://docs.xihanfun.com/cosmos/code-of-conduct)。
+贡献代码、文档、示例与一致性向量都欢迎。流程与规范见[贡献指南](/appendix/contributing)，组织层面的公约见[贡献者公约](https://docs.xihanfun.com/cosmos/code-of-conduct)。
 
 几类特别欢迎的贡献：
 

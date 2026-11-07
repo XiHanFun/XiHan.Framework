@@ -1,4 +1,4 @@
-# 25.1 应用清单与 xihan pack
+# 应用清单与 xihan pack
 
 这一页讲怎样用应用清单 `xihan.app.json` 描述一个可部署的应用，再用命令行工具 `xihan pack` 生成 Dockerfile、Kustomize、Compose 与 Aspire 产物，以及资源绑定、消息代理与 Native AOT 在打包时要定下的事。读完你能从一份清单得到能构建、能本地联调、能部署到 Kubernetes 的全套文件。前置知识是[配置目录与热更新](/configuration/config-directory)与[资源绑定](/configuration/bindings)。
 
@@ -93,7 +93,7 @@ xihan pack                                        # 读 ./xihan.app.json，写�
 xihan pack --output deploy/orders --only dockerfile,kustomize
 ```
 
-成功时逐行输出写出的文件（相对输出目录），最后一行是写出的文件数与输出目录，退出码 0。`deploy/` 下会出现 `Dockerfile`、`Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、`bindings.example.yaml`、`kustomization.yaml`）、`compose.yaml` 与 `aspire/XiHanAppHost.g.cs`。接下来 `docker build -f deploy/Dockerfile .` 构建镜像，`docker compose -f deploy/compose.yaml up` 在本地连同 PostgreSQL 一起启动应用，`kubectl apply -k deploy/kustomize` 部署到集群（Secret 按 `bindings.example.yaml` 另行创建）。
+成功时逐行输出写出的文件（相对输出目录），最后一行是文件数与输出目录，退出码 0。`deploy/` 下会出现 `Dockerfile`、`Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、`bindings.example.yaml`、`kustomization.yaml`）、`compose.yaml` 与 `aspire/XiHanAppHost.g.cs`。接下来 `docker build -f deploy/Dockerfile .` 构建镜像，`docker compose -f deploy/compose.yaml up` 在本地连同 PostgreSQL 一起启动，`kubectl apply -k deploy/kustomize` 部署到集群（Secret 按样板另行创建）。
 
 | 选项 | 缺省 | 说明 |
 | --- | --- | --- |
@@ -114,7 +114,7 @@ xihan pack --output deploy/orders --only dockerfile,kustomize
 
 ### Dockerfile
 
-生成的 Dockerfile 以官方 .NET SDK 镜像发布，运行阶段用 chiseled 的 `aspnet` 镜像（没有 shell 与包管理器），以 `USER $APP_UID` 非 root 运行；Kestrel 端点与内核停止超时以环境变量写入。chiseled 镜像里没有 `curl` 与 `wget`，构建阶段因此从内联源码另外编译一个就绪探针，复制到运行镜像的 `/xihan/healthprobe`，供 Compose 的 healthcheck 使用。示例的 Dockerfile 主干（探针的内联源码与发布步骤略去，镜像标签以 `<版本>` 代替）：
+生成的 Dockerfile 以官方 .NET SDK 镜像发布，运行阶段用 chiseled 的 `aspnet` 镜像（没有 shell 与包管理器），以 `USER $APP_UID` 非 root 运行；Kestrel 端点与内核停止超时以环境变量写入。chiseled 镜像里没有 `curl` 与 `wget`，构建阶段因此从内联源码编译一个就绪探针放到 `/xihan/healthprobe`，供 Compose 的 healthcheck 使用。示例的 Dockerfile 主干（探针部分略去，镜像标签以 `<版本>` 代替）：
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -145,7 +145,7 @@ Kustomize 产物只包含应用自己，不在集群里起依赖服务：六种�
 
 ### Compose 与 Aspire
 
-Compose 用于本地联调：应用服务的 `stop_grace_period` 取 `shutdown.graceSeconds`，每个绑定一个依赖服务，以 `XiHan__Bindings__<绑定名>__type` / `__value` 注入，依赖服务健康后应用才启动。Aspire 片段把应用登记为项目资源，按绑定添加资源并把连接串注入 `XiHan__Bindings__<绑定名>__value`。
+Compose 用于本地联调：`stop_grace_period` 取 `shutdown.graceSeconds`，每个绑定一个依赖服务，以 `XiHan__Bindings__<绑定名>__type` / `__value` 注入，依赖服务健康后应用才启动。Aspire 片段把应用登记为项目资源，按绑定添加资源并注入 `XiHan__Bindings__<绑定名>__value`。
 
 | 绑定类型 | Compose 依赖服务 | 注入的 `value` | Aspire |
 | --- | --- | --- | --- |
@@ -195,7 +195,7 @@ Kafka 主题：框架不建主题。集群开着 `auto.create.topics.enable`（C
 
 ## Native AOT 发布
 
-内核与原语层零反射，序列化走源生成，标为 AOT 兼容的包可以随应用以 Native AOT 发布；不兼容的包（`Plugins.*`、EF Core、Redis、RabbitMQ、JWT 等 Provider）在各自包页的信息表里标明，选型见[序列化与 Native AOT](/serialization/)。`samples/SimpleApp` 是 AOT 冒烟示例：
+内核与原语层零反射，序列化走源生成，标为 AOT 兼容的包可以随应用以 Native AOT 发布；不兼容的包（`Plugins.*`、EF Core、Redis、RabbitMQ、JWT 等 Provider）在各自包页的信息表里标明，选型见[序列化与 Native AOT](/common/serialization)。`samples/SimpleApp` 是 AOT 冒烟示例：
 
 ```bash
 # Linux 上先装原生工具链
@@ -221,11 +221,11 @@ dotnet publish framework/samples/SimpleApp/SimpleApp.csproj --configuration Rele
 
 ### `image.aot` 为真却构建失败
 
-应用引用了不兼容 AOT 的包，或项目里还有反射序列化。先在本机 `dotnet publish` 看 AOT 分析警告，按[序列化与 Native AOT](/serialization/)排除；`Plugins.*` 宿主无法进 AOT 应用。
+应用引用了不兼容 AOT 的包，或项目里还有反射序列化。先在本机 `dotnet publish` 看 AOT 分析警告，按[序列化与 Native AOT](/common/serialization)排除；`Plugins.*` 宿主无法进 AOT 应用。
 
 ## 相关包与下一步
 
 - 包参考：[Cli](/packages/cli)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)、[Profiles.Full](/packages/profiles-full)、[Messaging.Kafka](/packages/messaging-kafka)
-- 相关章节：[配置目录与热更新](/configuration/config-directory)、[资源绑定](/configuration/bindings)、[生命周期与健康](/startup/lifecycle)、[序列化与 Native AOT](/serialization/)、[xihan 工具](/agents/cli)
+- 相关章节：[配置目录与热更新](/configuration/config-directory)、[资源绑定](/configuration/bindings)、[生命周期与健康](/startup/lifecycle)、[序列化与 Native AOT](/common/serialization)、[xihan 工具](/agents/cli)
 - 规范：RFC-0016《应用清单与打包》
-- 下一步：[Kubernetes](/deployment/kubernetes)讲探针、停机、ConfigMap 热更新与 Lease 领导选举在集群里的验证
+- 下一步：[Kubernetes](/deployment/kubernetes)

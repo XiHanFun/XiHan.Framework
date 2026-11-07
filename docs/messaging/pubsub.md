@@ -1,4 +1,4 @@
-# 13.1 发布与订阅
+# 发布与订阅
 
 这一页讲消息子系统的基本用法：它提供哪些能力与 Provider、消息的 CloudEvents 信封长什么样、怎样用 `IMessagePublisher` 发布、怎样写 `IMessageHandler` 并订阅主题、消息怎样经管道派发、竞争与广播两种订阅方式有什么区别，以及重试、死信、配置、健康项与错误码。读完你能让两个特性或两个服务之间通过消息解耦，并在单进程与 RabbitMQ、Kafka 之间切换而不改业务代码。前置知识是[特性与清单](/startup/features)与[执行管道](/startup/pipeline)。
 
@@ -259,6 +259,6 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 ## 相关包与下一步
 
 - 包参考：[Messaging.Abstractions](/packages/messaging-abstractions)、[Messaging.InMemory](/packages/messaging-inmemory)、[Messaging.RabbitMQ](/packages/messaging-rabbitmq)、[Messaging.Kafka](/packages/messaging-kafka)
-- 处理器的调用上下文、Baggage 与追踪见[调用上下文](/startup/invocation-context)与[日志与可观测性](/observability/)；租户解析见[租户解析与隔离](/multi-tenancy/resolution)
+- 处理器的调用上下文、Baggage 与追踪见[调用上下文](/startup/invocation-context)与[日志与可观测性](/common/observability)；租户解析见[租户解析与隔离](/multi-tenancy/resolution)
 - Provider 要通过的一致性套件见[一致性套件与门禁](/testing/conformance)
 - 下一步：[领域事件与发件箱](/messaging/domain-events)，让聚合里记录的事件随事务一起发出

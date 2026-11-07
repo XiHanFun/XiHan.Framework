@@ -92,7 +92,7 @@ public sealed class CapacityCheck(IHostMonitor monitor)
 
 ## 相关
 
-- [可观测性](/observability/#运行信息)
+- [可观测性](/common/observability#运行信息)
 - [Observability.Host](./observability-host)
 - [Observability.OpenTelemetry](./observability-opentelemetry)
 - 规范：RFC-0023《可观测性：导出与运行信息》

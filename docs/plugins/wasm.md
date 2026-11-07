@@ -1,4 +1,4 @@
-# 24.3 Wasm 插件
+# Wasm 插件
 
 Wasm 插件是在宿主进程内、由 wasmtime 沙箱运行的 WebAssembly 模块。这一页讲 ABI v1 的模块形态、线性内存与 JSON 消息约定、用 Rust 写并构建一个插件、插件如何向宿主管道贡献中间件、内存与 CPU 上限和崩溃重建，以及 Windows 上宿主项目的 `CETCompat` 要求与当前限制。读完你能把一个不可信的插件放进应用，并在管道阶段插入它的逻辑。前置知识是[隔离级别与清单](/plugins/overview)与[进程外插件](/plugins/out-of-process)：Wasm 载体复用同一套 `xihan.plugin.v1` 消息。
 

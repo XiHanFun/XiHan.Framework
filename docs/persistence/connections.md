@@ -1,4 +1,4 @@
-# 9.8 连接与运行时数据源
+# 连接与运行时数据源
 
 这一页讲持久化的「连到哪个库」：默认连接怎样经绑定 `db` 配置、命名连接给谁用、运行时按应用自己的记录连外部库的 `DataSourceRegistry`、读库结构的 `ISchemaReader` 与实体目录 `IEntityCatalog`。读完它，你能为应用配置主库、把一部分平台数据放到另一个库，并在代码生成这类场景里连上用户登记的外部数据源。前置知识是[持久化与 Provider](/persistence/overview)与[资源绑定](/configuration/bindings)。
 

@@ -1,4 +1,4 @@
-# 9.7 建表约定与索引
+# 建表约定与索引
 
 这一页讲实体怎样映射成表：主键、并发戳、时间列、可空列与字符串长度的约定，`[EntityIndex]` 怎样声明索引、索引名怎样推出、软删除实体的唯一索引为什么是部分唯一索引，以及三个 Provider 各自怎样建表。读完它，你能写出一个在 EF Core 与 SqlSugar 上建出相同表结构与索引的实体。前置知识是[领域模型](/persistence/domain)，Provider 的差异见 [EF Core Provider](/persistence/entity-framework-core) 与 [SqlSugar Provider](/persistence/sqlsugar)。
 

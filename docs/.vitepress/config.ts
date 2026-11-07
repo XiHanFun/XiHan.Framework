@@ -10,33 +10,33 @@ const description: string = "语言中立的应用框架规范及其 .NET 参考
 const keywords: string =
   "曦寒,曦寒懿,开发框架,DotNet,微内核,能力图谱,操作契约,官方文档,开源,XiHanFun,XiHan.Framework";
 
-/** 一章：一个目录；多页章节列出各页，单页章节只有目录下的 index.md */
+/** 一章：一个目录，侧栏里是一个可折叠分组 */
 interface Chapter {
-  /** 章名，不带编号；编号由数组顺序生成 */
+  /** 章名 */
   text: string;
   /** 目录名，页面都在 docs/<dir>/ 下 */
   dir: string;
-  /** 多页章节的页：[标题, 文件名]；文件名以 / 开头时是站内绝对链接（如更新日志） */
-  pages?: [text: string, name: string][];
+  /** 本章的页：[标题, 文件名]，按阅读顺序排列 */
+  pages: [text: string, name: string][];
 }
 
-// 编号目录：侧栏一级编号与页面 H1 的编号必须一致；插入章节时同步改对应页面的 H1
+// 教程目录：每章都是一个分组，不放单篇文章；页面 H1 与条目标题一致，不带编号
 const chapters: Chapter[] = [
   {
     text: "附录",
     dir: "appendix",
     pages: [
       ["介绍", "introduction"],
-      ["关于作者", "author"],
       ["示例说明", "samples"],
       ["支持曦寒", "support"],
-      ["更新日志", "/changelog"],
       ["发展大事记", "milestones"],
       ["路线图", "roadmap"],
       ["框架定位", "positioning"],
       ["为什么是曦寒", "why"],
       ["设计哲学", "philosophy"],
       ["规范与多语言", "spec"],
+      ["常见问题", "faq"],
+      ["贡献指南", "contributing"],
     ],
   },
   {
@@ -82,11 +82,11 @@ const chapters: Chapter[] = [
       ["HTTP 路由与载荷", "routing"],
       ["端点里使用框架", "endpoints"],
       ["实时通信", "realtime"],
+      ["规范化接口文档（OpenAPI）", "openapi"],
+      ["结果与错误处理", "errors"],
+      ["数据校验", "validation"],
     ],
   },
-  { text: "规范化接口文档（OpenAPI）", dir: "openapi" },
-  { text: "结果与错误处理", dir: "errors" },
-  { text: "数据校验", dir: "validation" },
   {
     text: "数据库操作指南",
     dir: "persistence",
@@ -150,7 +150,6 @@ const chapters: Chapter[] = [
       ["命令行宿主", "command-line"],
     ],
   },
-  { text: "全球化和本地化", dir: "localization" },
   {
     text: "定时任务",
     dir: "scheduling",
@@ -176,8 +175,17 @@ const chapters: Chapter[] = [
       ["分片、预签名与命名实例", "advanced"],
     ],
   },
-  { text: "审计", dir: "auditing" },
-  { text: "日志与可观测性", dir: "observability" },
+  {
+    text: "通用能力",
+    dir: "common",
+    pages: [
+      ["全球化和本地化", "localization"],
+      ["审计", "auditing"],
+      ["日志与可观测性", "observability"],
+      ["弹性与限流", "resilience"],
+      ["JSON 序列化与 Native AOT", "serialization"],
+    ],
+  },
   {
     text: "AI",
     dir: "ai",
@@ -186,8 +194,6 @@ const chapters: Chapter[] = [
       ["工具与知识库", "tools"],
     ],
   },
-  { text: "弹性与限流", dir: "resilience" },
-  { text: "JSON 序列化与 Native AOT", dir: "serialization" },
   {
     text: "插件",
     dir: "plugins",
@@ -231,21 +237,14 @@ const chapters: Chapter[] = [
       ["LLMs.txt", "llms"],
     ],
   },
-  { text: "常见问题", dir: "faq" },
-  { text: "贡献指南", dir: "contributing" },
 ];
 
-// 生成章节的侧栏项：多页章节是可折叠分组，单页章节是一个链接；编号从 1 起按数组顺序
-function chapterItem(chapter: Chapter, index: number): DefaultTheme.SidebarItem {
-  const number = index + 1;
-  if (!chapter.pages) return { text: `${number}. ${chapter.text}`, link: `/${chapter.dir}/` };
+// 生成章节的侧栏分组：标题即章名，条目即页名，都不带编号
+function chapterItem(chapter: Chapter): DefaultTheme.SidebarItem {
   return {
-    text: `${number}. ${chapter.text}`,
+    text: chapter.text,
     collapsed: true,
-    items: chapter.pages.map(([text, name], i) => ({
-      text: `${number}.${i + 1} ${text}`,
-      link: name.startsWith("/") ? name : `/${chapter.dir}/${name}`,
-    })),
+    items: chapter.pages.map(([text, name]) => ({ text, link: `/${chapter.dir}/${name}` })),
   };
 }
 
@@ -258,7 +257,6 @@ function pkg(text: string, name: string): DefaultTheme.SidebarItem {
 const packagesGroup: DefaultTheme.SidebarItem = {
   text: "包参考",
   link: "/packages/",
-  collapsed: true,
   items: [
     {
       text: "原语与内核",
@@ -391,11 +389,12 @@ const packagesGroup: DefaultTheme.SidebarItem = {
   ],
 };
 
-// 整站一份侧栏：编号章节在前，包参考作为最后一组；首页是 layout: home，不落侧栏
-const sidebar: DefaultTheme.SidebarItem[] = [
-  ...chapters.map(chapterItem),
-  packagesGroup,
-];
+// 侧栏按路径分开：/packages/ 下只显示包参考（顶部导航「包」进入），其余页面显示教程章节；
+// VitePress 按路径深度优先匹配，/packages/ 先于 / 生效；首页是 layout: home，不落侧栏
+const sidebar: DefaultTheme.Sidebar = {
+  "/packages/": [packagesGroup],
+  "/": chapters.map(chapterItem),
+};
 
 const nav: DefaultTheme.NavItem[] = [
   {
@@ -419,7 +418,7 @@ const nav: DefaultTheme.NavItem[] = [
           { text: "数据库操作指南", link: "/persistence/domain" },
           { text: "安全鉴权", link: "/security/authentication" },
           { text: "插件", link: "/plugins/overview" },
-          { text: "常见问题", link: "/faq/" },
+          { text: "常见问题", link: "/appendix/faq" },
         ],
       },
       {
@@ -479,10 +478,10 @@ const nav: DefaultTheme.NavItem[] = [
   },
 ];
 
-// llms.txt 的栏目按章节顺序登记，栏目名带编号与侧栏一致；根目录只有首页与更新日志
+// llms.txt 的栏目按章节顺序登记，栏目名与侧栏分组一致；根目录只有首页与更新日志
 const llmsSections = [
   { dir: ".", label: "首页与更新日志" },
-  ...chapters.map((chapter, i) => ({ dir: chapter.dir, label: `${i + 1}. ${chapter.text}` })),
+  ...chapters.map((chapter) => ({ dir: chapter.dir, label: chapter.text })),
   { dir: "packages", label: "包参考" },
 ];
 

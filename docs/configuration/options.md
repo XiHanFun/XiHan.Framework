@@ -1,4 +1,4 @@
-# 4.1 配置模型与选项
+# 配置模型与选项
 
 这一页讲应用与框架怎样读配置：框架沿用哪套配置模型、`XiHan:<领域>` 配置节怎样命名、应用自己的选项怎样绑定与校验、哪些值能在运行中更新。读完你能给应用加一组自己的选项，并知道框架各包从哪个配置节读取什么。前置知识是[装配入口](/startup/bootstrap)：你需要知道 `AddXiHan` 在什么时候执行、做了什么。
 
@@ -16,7 +16,7 @@ XiHan.Framework 因此不另造配置模型：应用与框架都读同一个 `IC
 | 配置节 | 树上的一个子树，层级以 `:` 分隔，例如 `XiHan:Kernel` |
 | 框架选项 | 各包里带 `ConfigurationSection` 常量的 record（`KernelOptions`、`ResilienceOptions`、`NacosOptions` 等），由静态方法 `FromConfiguration(IConfiguration)` 逐键读取 |
 | 应用选项 | 应用自己的类或 record，用 `IOptions<T>` / `IOptionsMonitor<T>` 绑定 |
-| `Configuration.Abstractions` | 只定义两个 Provider 契约（远程配置客户端与密钥库）以及把它们接进 `IConfigurationBuilder` 的配置源，见 [4.4 远程配置与密钥](/configuration/remote) |
+| `Configuration.Abstractions` | 只定义两个 Provider 契约（远程配置客户端与密钥库）以及把它们接进 `IConfigurationBuilder` 的配置源，见 [远程配置与密钥](/configuration/remote) |
 
 框架没有「默认配置包」：不装任何配置相关的包，`appsettings.json` 与环境变量就是全部来源。
 
@@ -108,7 +108,7 @@ app.Run();
 | 注入类型 | 何时取值 | 适用 |
 | --- | --- | --- |
 | `IOptions<T>` | 首次取用时绑定一次，之后不变 | 启动后不再变化的值 |
-| `IOptionsMonitor<T>` | `CurrentValue` 每次返回当前值，配置源重载后更新；`OnChange` 可注册回调 | 需要热更新的值，见 [4.2 配置目录与热更新](/configuration/config-directory) |
+| `IOptionsMonitor<T>` | `CurrentValue` 每次返回当前值，配置源重载后更新；`OnChange` 可注册回调 | 需要热更新的值，见 [配置目录与热更新](/configuration/config-directory) |
 | `IOptionsSnapshot<T>` | 每个服务作用域绑定一次 | 一次调用内保持一致、跨调用可变 |
 
 ### 校验
@@ -122,7 +122,7 @@ builder.Services.AddOptions<BannerOptions>()
     .ValidateOnStart();
 ```
 
-这与框架选项的做法一致：配置错误属于编程与部署错误，应用启动失败，而不是带着坏值运行。这类消息面向开发与运维，用英文，不走本地化，区分方式见[结果与错误处理](/errors/)。
+这与框架选项的做法一致：配置错误属于编程与部署错误，应用启动失败，而不是带着坏值运行。这类消息面向开发与运维，用英文，不走本地化，区分方式见[结果与错误处理](/web/errors)。
 
 ### Native AOT 下的绑定
 
@@ -134,18 +134,18 @@ builder.Services.AddOptions<BannerOptions>()
 </PropertyGroup>
 ```
 
-也可以像框架一样按键读取、不绑定。AOT 的完整要求见 [JSON 序列化与 Native AOT](/serialization/)。
+也可以像框架一样按键读取、不绑定。AOT 的完整要求见 [JSON 序列化与 Native AOT](/common/serialization)。
 
 ## 配置节一览
 
-下表列出各包在代码里读取的配置节（`ConfigurationSection` 常量与 `FromConfiguration` 读取的键）。`XiHan:Providers:<能力 ID>` 指定某个能力由哪份清单提供，原理见[能力图谱与 Provider](/startup/capabilities)；`XiHan:Bindings` 见 [4.3 资源绑定](/configuration/bindings)。
+下表列出各包在代码里读取的配置节（`ConfigurationSection` 常量与 `FromConfiguration` 读取的键）。`XiHan:Providers:<能力 ID>` 指定某个能力由哪份清单提供，原理见[能力图谱与 Provider](/startup/capabilities)；`XiHan:Bindings` 见 [资源绑定](/configuration/bindings)。
 
 | 配置节 | 所属包 | 用途 |
 | --- | --- | --- |
 | `XiHan:Providers` | [Kernel](/packages/kernel) | `<能力 ID>` → 清单 ID，指定能力的提供者 |
 | `XiHan:Bindings` | [Kernel](/packages/kernel) | 资源绑定 |
 | `XiHan:Kernel` | [Kernel](/packages/kernel) | `StartTimeoutSeconds`、`StopTimeoutSeconds`、`FailurePolicy`、`UseBuiltInMiddleware` |
-| `XiHan:Kernel:Resilience` | [Kernel](/packages/kernel) | Resilience 阶段的默认策略，`Operations:<操作 ID>` 按操作覆盖，见[弹性与限流](/resilience/) |
+| `XiHan:Kernel:Resilience` | [Kernel](/packages/kernel) | Resilience 阶段的默认策略，`Operations:<操作 ID>` 按操作覆盖，见[弹性与限流](/common/resilience) |
 | `XiHan:Persistence:InMemory` | [Persistence.InMemory](/packages/persistence-inmemory) | `MaxEntitiesPerType` |
 | `XiHan:Persistence:EntityFrameworkCore` | [Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore) | `EnsureCreated`、`HealthProbeIntervalSeconds` |
 | `XiHan:Persistence:SqlSugar` | [Persistence.SqlSugar](/packages/persistence-sqlsugar) | `InitTables`、`CommandTimeoutSeconds`、`Replicas:*`（从库的权重与健康探测）、`HealthProbeIntervalSeconds` |
@@ -221,11 +221,11 @@ builder.Services.AddOptions<BannerOptions>()
 
 ### 远程配置里的键能覆盖 appsettings 吗
 
-能，前提是它在 `AddXiHan` 之前加进 `builder.Configuration`：后加入的配置源覆盖先加入的。完整顺序见 [4.2 配置目录与热更新](/configuration/config-directory)的「配置源的优先级」。
+能，前提是它在 `AddXiHan` 之前加进 `builder.Configuration`：后加入的配置源覆盖先加入的。完整顺序见 [配置目录与热更新](/configuration/config-directory)的「配置源的优先级」。
 
 ## 相关包与下一步
 
 - [Kernel](/packages/kernel)：`KernelOptions`、`ResilienceOptions` 与 `XiHan:Kernel` 配置节
 - [Configuration.Abstractions](/packages/configuration-abstractions)：远程配置与密钥的契约
 - [Hosting.AspNetCore](/packages/hosting-aspnetcore)：装载配置目录的 Web 宿主
-- 下一页：[4.2 配置目录与热更新](/configuration/config-directory)
+- 下一页：[配置目录与热更新](/configuration/config-directory)

@@ -165,6 +165,6 @@ public sealed class NotesFeature : IFeature
 
 ## 相关
 
-- [操作契约](/web/operations)、[HTTP 与 OpenAPI](/web/routing)、[序列化与 Native AOT](/serialization/)
+- [操作契约](/web/operations)、[HTTP 与 OpenAPI](/web/routing)、[序列化与 Native AOT](/common/serialization)
 - [Kernel](./kernel)、[Kernel.Analyzers](./kernel-analyzers)、[Persistence.Generators](./persistence-generators)
 - 规范：RFC-0011《操作契约与 XGI》

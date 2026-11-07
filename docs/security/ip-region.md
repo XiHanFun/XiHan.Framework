@@ -1,4 +1,4 @@
-# 11.4 IP 归属地
+# IP 归属地
 
 这一页讲怎样把调用方的 IP 地址解析成国家、省份、城市与运营商：契约 `IIpRegionResolver` 与结果 `IpRegion`，离线库 Provider `Security.Ip2Region` 的装配与 xdb 文件配置，怎样在操作里拿到调用来源的远端地址去解析，以及它与条件引擎的配合。读完你能在登录日志里记下归属地，并在风控条件里按国家或省份判定。阅读前先读 [RBAC 授予与条件](/security/grants)与[调用上下文](/startup/invocation-context)。
 
@@ -202,5 +202,5 @@ public static class GeoAttributes
 
 - 包参考：[Security.Ip2Region](/packages/security-ip2region)、[Security.Abstractions](/packages/security-abstractions)
 - 规范：RFC-0008《认证与授权》
-- 相关章节：[调用上下文](/startup/invocation-context)、[RBAC 授予与条件](/security/grants)、[审计](/auditing/)
+- 相关章节：[调用上下文](/startup/invocation-context)、[RBAC 授予与条件](/security/grants)、[审计](/common/auditing)
 - 下一步：[出站地址策略](/security/outbound)

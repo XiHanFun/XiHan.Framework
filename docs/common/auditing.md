@@ -1,4 +1,4 @@
-# 19. 审计
+# 审计
 
 这一章讲框架怎样把一次调用记成审计事件、哪些调用会被记录、处理器怎样补充动作与资源、怎样记录调用来源、怎样按条件分页查询，以及内存与数据库两种存储的取舍。读完后，我们能给应用加上「谁在什么时候对什么做了什么、结果如何」的操作日志。前置知识是[执行管道](/startup/pipeline)、[操作契约](/web/operations)与[调用上下文](/startup/invocation-context)。
 
@@ -356,7 +356,7 @@ builder.AddXiHan(xihan => xihan
 
 ## 与其他能力的关系
 
-- 可观测性：`LogEvents` 的日志经 `Microsoft.Extensions.Logging` 输出，装配 OpenTelemetry 导出后随日志信号一起导出，见[日志与可观测性](/observability/)；审计事件与链路共享同一个 trace-id，可以从审计事件跳到链路。数据库存储的四个计数可以接到应用自己的 `Meter`，示例见 [Auditing.Database](/packages/auditing-database#使用示例)。
+- 可观测性：`LogEvents` 的日志经 `Microsoft.Extensions.Logging` 输出，装配 OpenTelemetry 导出后随日志信号一起导出，见[日志与可观测性](/common/observability)；审计事件与链路共享同一个 trace-id，可以从审计事件跳到链路。数据库存储的四个计数可以接到应用自己的 `Meter`，示例见 [Auditing.Database](/packages/auditing-database#使用示例)。
 - 多租户：审计不参与租户分片，见[租户分片与分库](/multi-tenancy/sharding)。
 - 测试：自写 Provider 继承 `Auditing.Conformance` 的 `AuditTrailConformance` 并通过全部用例，见[一致性套件与门禁](/testing/conformance)。
 - 审计事件只有管道产生的这一种，没有实体变更审计：要记录字段级的改动，由应用在处理器里用 `AddAuditDetail` 写进细节，或在领域事件里自行实现。
@@ -388,4 +388,4 @@ Problem Details、日志与审计事件共用 trace-id：拿到请求返回的 t
 - [Auditing.Abstractions](/packages/auditing-abstractions)：事件、扩展、查询契约与选项
 - [Auditing.InMemory](/packages/auditing-inmemory)：默认实现与容量
 - [Auditing.Database](/packages/auditing-database)：数据库实现、表结构与计数
-- 下一步：[日志与可观测性](/observability/)
+- 下一页：[日志与可观测性](/common/observability)

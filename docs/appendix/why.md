@@ -1,4 +1,4 @@
-# 1.9 为什么是曦寒
+# 为什么是曦寒
 
 .NET 上不缺应用框架。这一页回答两个问题：XiHan Framework 解决了哪些别的框架没解决好的问题，以及为此你要付出什么代价。它是选型说明，适合正在评估后端框架的团队；已经决定使用的读者可以直接去[入门指南](/getting-started/installation)。
 
@@ -98,7 +98,7 @@ xihan.persistence.inmemory <版本> (default)
 
 - 当前只有预览版，安装要带 `--prerelease`，见[环境与安装](/getting-started/installation)。
 - 公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整。
-- 框架不提供机器人、消息通知渠道、模板引擎、脚本引擎、搜索引擎、HTTP 客户端封装、网关、SignalR 封装、对象映射，替代做法见[常见问题](/faq/)。
+- 框架不提供机器人、消息通知渠道、模板引擎、脚本引擎、搜索引擎、HTTP 客户端封装、网关、SignalR 封装、对象映射，替代做法见[常见问题](/appendix/faq)。
 - Provider 覆盖面以[包参考](/packages/)列出的为准：持久化有 EF Core 与 SqlSugar，没有 MongoDB；远程配置有 Nacos，没有 Apollo 与 Vault；对象存储有文件系统与 S3 兼容服务。
 
 ## 用最小成本验证

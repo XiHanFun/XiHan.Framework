@@ -31,7 +31,7 @@ Full 组合包（元包）：Standard 加对象存储、调度、审计、工作
 | `McpProtocolFeature` | `Protocols.Mcp` | `protocols.mcp@1` |
 | `CloudEventsProtocolFeature` | `Protocols.CloudEvents` | `protocols.cloudevents@1` |
 
-默认实现都可被显式 Provider 顶替：再 `UseFeature` 一个声明同一能力的特性（如 `DatabaseLocalizationFeature`、S3 对象存储、`KubernetesSchedulingFeature`），能力全部被顶替的默认实现不装配、不启动；还有能力被选中的照常装配，例如加入 `KubernetesSchedulingFeature` 后 `Scheduling.InMemory` 只让出 `scheduling.leader`，仍提供 `scheduling.jobs`。`Configuration.Abstractions` 只随包带进来，没有默认 Provider：.NET 原生的文件与环境变量就是缺省，按需在 `IConfigurationBuilder` 上接远程配置与密钥（[配置与选项](/configuration/options)）。管道在 Standard 之上多了 Observe 阶段末尾的审计中间件（缺省只记声明了权限的操作，[审计](/auditing/)）。
+默认实现都可被显式 Provider 顶替：再 `UseFeature` 一个声明同一能力的特性（如 `DatabaseLocalizationFeature`、S3 对象存储、`KubernetesSchedulingFeature`），能力全部被顶替的默认实现不装配、不启动；还有能力被选中的照常装配，例如加入 `KubernetesSchedulingFeature` 后 `Scheduling.InMemory` 只让出 `scheduling.leader`，仍提供 `scheduling.jobs`。`Configuration.Abstractions` 只随包带进来，没有默认 Provider：.NET 原生的文件与环境变量就是缺省，按需在 `IConfigurationBuilder` 上接远程配置与密钥（[配置与选项](/configuration/options)）。管道在 Standard 之上多了 Observe 阶段末尾的审计中间件（缺省只记声明了权限的操作，[审计](/common/auditing)）。
 
 协议适配器只登记能力与服务，端点仍要在宿主上映射。
 

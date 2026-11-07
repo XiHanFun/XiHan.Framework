@@ -1,4 +1,4 @@
-# 5.5 实时通信
+# 实时通信
 
 这页讲怎样在 XiHan 应用里做实时推送：直接使用 ASP.NET Core SignalR，Hub 的认证交给内核已装配的认证处理器，Hub 方法里照常调用操作，多实例部署时用消息子系统把事件送到持有连接的实例。读完这页，我们能接入一个带认证的 Hub，并知道框架在这件事上做了什么、没做什么。
 
@@ -214,6 +214,6 @@ builder.Services.AddMessageHandler<SessionsRevokedHandler>("sessions.revoked", S
 ## 相关包与下一步
 
 - 相关包：[Hosting.AspNetCore](/packages/hosting-aspnetcore)、[Messaging.Abstractions](/packages/messaging-abstractions)、[Security.Jwt](/packages/security-jwt)
-- 下一步：[规范化接口文档](/openapi/)，从同一份操作契约发布 OpenAPI 文档
+- 下一页：[规范化接口文档](/web/openapi)，从同一份操作契约发布 OpenAPI 文档
 - 相关章节：[端点里使用框架](/web/endpoints)、[认证](/security/authentication)、[发布与订阅](/messaging/pubsub)、[领域事件与发件箱](/messaging/domain-events)
 - 规范：RFC-0008《认证与授权》的「绕过管道的端点」一节

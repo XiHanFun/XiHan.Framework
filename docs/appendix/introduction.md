@@ -1,4 +1,4 @@
-# 1.1 介绍
+# 介绍
 
 让 .NET 应用的边界清楚十年。
 
@@ -75,26 +75,26 @@
 
 | 模块 | 内容 | 章节 |
 | --- | --- | --- |
-| 应用启动 | 装配、特性与清单、能力图谱、生命周期与健康、依赖注入、管道、调用上下文 | [3. 应用启动](/startup/bootstrap) |
-| 配置 | 配置节、选项、配置目录热更新、资源绑定、远程配置与密钥 | [4. 配置与选项](/configuration/options) |
-| Web | ASP.NET Core 宿主、操作契约、HTTP 路由、端点、实时通信、OpenAPI | [5. Web 应用开发](/web/hosting) |
-| 结果与校验 | `Result` 与 `Error`、错误码、Problem Details、契约校验 | [7.](/errors/) 与 [8.](/validation/) |
-| 数据 | 领域模型、仓储、工作单元、EF Core、SqlSugar、建表约定、连接、标识生成 | [9. 数据库操作指南](/persistence/domain) |
-| 多租户 | 租户解析与隔离、分片与分库、数据库租户目录 | [10. SaaS 多租户](/multi-tenancy/resolution) |
-| 安全 | 认证、授权、RBAC 授予、条件引擎、IP 归属地、出站地址策略 | [11. 安全鉴权](/security/authentication) |
-| 缓存 | 缓存读写、分布式锁、幂等、两级缓存、键管理 | [12. 分布式缓存](/caching/basics) |
-| 消息 | 发布订阅、领域事件、发件箱、队列与流 | [13. 消息与事件](/messaging/pubsub) |
-| 协议 | gRPC、MCP、CloudEvents、命令行宿主 | [14. 多协议暴露](/protocols/grpc) |
-| 本地化 | 消息键、十种内置区域、回退链、数据库翻译 | [15. 全球化和本地化](/localization/) |
-| 调度 | 作业、cron、集群分发、领导选举 | [16. 定时任务](/scheduling/jobs) |
-| 工作流 | 定义、实例、用户任务、活动、补偿 | [17. 工作流](/workflow/definitions) |
-| 对象存储 | 读写列举、分片上传、预签名、命名实例 | [18. 对象存储](/object-storage/basics) |
-| 审计与可观测性 | 审计事件与查询、追踪、指标、日志、运行信息 | [19.](/auditing/) 与 [20.](/observability/) |
-| AI | 模型与对话、护栏、操作即工具、知识库 | [21. AI](/ai/chat) |
-| 弹性 | 截止时间、熔断、限流、并发上限 | [22. 弹性与限流](/resilience/) |
-| 插件 | 进程内、进程外、Wasm 三级隔离，Go SDK | [24. 插件](/plugins/overview) |
-| 部署 | 应用清单、`xihan pack`、Kubernetes | [25. 托管、部署、发布](/deployment/pack) |
-| 测试 | 测试宿主、一致性套件、架构门禁 | [26. 测试指南](/testing/basics) |
+| 应用启动 | 装配、特性与清单、能力图谱、生命周期与健康、依赖注入、管道、调用上下文 | [应用启动](/startup/bootstrap) |
+| 配置 | 配置节、选项、配置目录热更新、资源绑定、远程配置与密钥 | [配置与选项](/configuration/options) |
+| Web | ASP.NET Core 宿主、操作契约、HTTP 路由、端点、实时通信、OpenAPI | [Web 应用开发](/web/hosting) |
+| 结果与校验 | `Result` 与 `Error`、错误码、Problem Details、契约校验 | [结果与错误处理](/web/errors)与[数据校验](/web/validation) |
+| 数据 | 领域模型、仓储、工作单元、EF Core、SqlSugar、建表约定、连接、标识生成 | [数据库操作指南](/persistence/domain) |
+| 多租户 | 租户解析与隔离、分片与分库、数据库租户目录 | [SaaS 多租户](/multi-tenancy/resolution) |
+| 安全 | 认证、授权、RBAC 授予、条件引擎、IP 归属地、出站地址策略 | [安全鉴权](/security/authentication) |
+| 缓存 | 缓存读写、分布式锁、幂等、两级缓存、键管理 | [分布式缓存](/caching/basics) |
+| 消息 | 发布订阅、领域事件、发件箱、队列与流 | [消息与事件](/messaging/pubsub) |
+| 协议 | gRPC、MCP、CloudEvents、命令行宿主 | [多协议暴露](/protocols/grpc) |
+| 本地化 | 消息键、十种内置区域、回退链、数据库翻译 | [全球化和本地化](/common/localization) |
+| 调度 | 作业、cron、集群分发、领导选举 | [定时任务](/scheduling/jobs) |
+| 工作流 | 定义、实例、用户任务、活动、补偿 | [工作流](/workflow/definitions) |
+| 对象存储 | 读写列举、分片上传、预签名、命名实例 | [对象存储](/object-storage/basics) |
+| 审计与可观测性 | 审计事件与查询、追踪、指标、日志、运行信息 | [审计](/common/auditing)与[日志与可观测性](/common/observability) |
+| AI | 模型与对话、护栏、操作即工具、知识库 | [AI](/ai/chat) |
+| 弹性 | 截止时间、熔断、限流、并发上限 | [弹性与限流](/common/resilience) |
+| 插件 | 进程内、进程外、Wasm 三级隔离，Go SDK | [插件](/plugins/overview) |
+| 部署 | 应用清单、`xihan pack`、Kubernetes | [托管、部署、发布](/deployment/pack) |
+| 测试 | 测试宿主、一致性套件、架构门禁 | [测试指南](/testing/basics) |
 
 ## 框架依赖
 
@@ -145,9 +145,8 @@ Wasm 插件宿主在 Windows 上要求宿主可执行项目设置 `CETCompat=fal
 
 ## 贡献代码
 
-框架遵循 MIT 协议，欢迎提交 Pull Request 与 Issue。流程、代码规范与门禁见[贡献指南](/contributing/)。感谢每一位为框架贡献代码、文档与一致性向量的朋友。
+框架遵循 MIT 协议，欢迎提交 Pull Request 与 Issue。流程、代码规范与门禁见[贡献指南](/appendix/contributing)。感谢每一位为框架贡献代码、文档与一致性向量的朋友。
 
 ## 下一步
 
-- [关于作者](/appendix/author)
 - [环境与安装](/getting-started/installation)：开始使用
