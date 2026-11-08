@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Testing --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](../guide/testing#测试项目)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](/testing/basics)。
 
 ## 主要类型
 
@@ -105,7 +105,7 @@ var context = TestInvocationContext.Create(deadline: DateTimeOffset.UtcNow.AddSe
 Console.WriteLine(context.TraceId.Length);
 ```
 
-中间件与操作的完整测试写法见[测试与一致性套件](../guide/testing#测一个中间件)。
+中间件与操作的完整测试写法见[测试与一致性套件](/testing/basics)。
 
 ## 行为与限制
 
@@ -116,5 +116,5 @@ Console.WriteLine(context.TraceId.Length);
 
 ## 相关
 
-- [测试与一致性套件](../guide/testing)
+- [测试与一致性套件](/testing/basics)
 - [Conformance 一致性套件](./conformance)、[Kernel](./kernel)

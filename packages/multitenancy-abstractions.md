@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
 
 ## 配置
 
@@ -124,7 +124,7 @@ public static class ShardInfo
 }
 ```
 
-管道外的作用域绑定分片的完整示例见[多租户 · 管道外绑定分片](../guide/multi-tenancy#管道外绑定分片)。
+管道外的作用域绑定分片的完整示例见[多租户 · 管道外绑定分片](/multi-tenancy/sharding)。
 
 ## 行为与限制
 
@@ -149,7 +149,7 @@ public static class ShardInfo
 
 ## 相关
 
-- [多租户](../guide/multi-tenancy)
+- [多租户](/multi-tenancy/resolution)
 - [MultiTenancy.InMemory](./multitenancy-inmemory)
 - [MultiTenancy.Database](./multitenancy-database)
 - [Conformance 一致性套件](./conformance)

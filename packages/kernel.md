@@ -44,7 +44,7 @@
 dotnet add package XiHan.Framework.Kernel --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 在通用宿主上直接使用内核（没有 HTTP）：
 
@@ -57,7 +57,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<WorkerFeature>());
 await builder.Build().RunAsync();
 ```
 
-`WorkerFeature` 是应用自己的特性，写法见[能力包与清单](../guide/modularity)。
+`WorkerFeature` 是应用自己的特性，写法见[能力包与清单](/startup/features)。
 
 ## 配置
 
@@ -67,8 +67,8 @@ await builder.Build().RunAsync();
 | `XiHan:Kernel:StopTimeoutSeconds` | `30` | 每个特性停止的超时 |
 | `XiHan:Kernel:FailurePolicy` | `TerminateStartup` | 特性启动失败时终止启动，或 `IsolateFeature` 只隔离该特性 |
 | `XiHan:Kernel:UseBuiltInMiddleware` | `true` | 是否登记 Observe、截止时间、Resilience、Validate 四个内置中间件 |
-| `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](../guide/resilience) |
-| `XiHan:Security:Outbound:*` | 只能连公网地址 | [出站地址策略](../guide/outbound)的放行项：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
+| `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](/common/resilience) |
+| `XiHan:Security:Outbound:*` | 只能连公网地址 | [出站地址策略](/security/outbound)的放行项：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Providers:<能力 ID>` | — | 指定某能力的提供者清单 ID |
 | `XiHan:Bindings:<名字>` | — | 资源绑定；另读环境变量 `SERVICE_BINDING_ROOT` 指向的 Service Binding 目录 |
 
@@ -93,7 +93,7 @@ await builder.Build().RunAsync();
 | `IOperationInvoker` / `OperationRegistry` / `OperationDescriptor` | 操作调用与登记；`OperationRegistry(permissions)` 绑定核对用的权限登记表，`AddRange(owner, operations, permissions)` 一个归属的一组操作连同它定义的权限码全进或全不进；`RemoveOwnedBy(owner)` 在锁里一次撤回该归属的全部操作与权限码（插件卸载时用，之后可以再登记，ADR-0085）；`Enforce(check)` 核对已登记的操作并挂上核对，此后每次登记都经过它（授权能力用它核对契约的策略名，ADR-0080） |
 | `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous` |
 | `PermissionDefinition` / `PermissionRegistry` | 权限码登记，每个码记下归属（特性或插件的清单 ID）；`Add(owner, permission)` / `AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回，写入与撤回在锁内（插件运行期加载与卸载也会登记、撤回） |
-| `OutboundAddressPolicy` / `OutboundAddressOptions` / `OutboundAddressDeniedException` | [出站地址策略](../guide/outbound)：宿主登记的单例，`Apply(SocketsHttpHandler)` 让连接按实际 IP 过策略，`ConnectAsync(host, port, ct)` 给不是 HTTP 的连接，`IsAllowed(IPAddress)` 判断一个 IP |
+| `OutboundAddressPolicy` / `OutboundAddressOptions` / `OutboundAddressDeniedException` | [出站地址策略](/security/outbound)：宿主登记的单例，`Apply(SocketsHttpHandler)` 让连接按实际 IP 过策略，`ConnectAsync(host, port, ct)` 给不是 HTTP 的连接，`IsAllowed(IPAddress)` 判断一个 IP |
 | `KernelCapabilities` | 能力 ID 常量与内核清单 |
 
 ## 使用示例
@@ -117,7 +117,7 @@ app.MapGet("/diagnostics/state", (App xihan) => xihan.Health().State.ToString())
 app.Run();
 ```
 
-对外暴露这类端点时要加认证约束（`RequireXiHanAuthentication`），见[宿主与 Web 应用](../guide/web)。
+对外暴露这类端点时要加认证约束（`RequireXiHanAuthentication`），见[宿主与 Web 应用](/web/hosting)。
 
 ## 行为与限制
 
@@ -164,9 +164,9 @@ app.Run();
 
 ## 相关
 
-- [能力包与清单](../guide/modularity)
-- [生命周期与健康](../guide/lifecycle)
-- [执行管道](../guide/pipeline)
-- [操作契约](../guide/operations)
+- [能力包与清单](/startup/features)
+- [生命周期与健康](/startup/lifecycle)
+- [执行管道](/startup/pipeline)
+- [操作契约](/web/operations)
 - [Primitives](./primitives)、[Kernel.Generators](./kernel-generators)、[Kernel.Analyzers](./kernel-analyzers)
 - 规范：RFC-0002《清单》、RFC-0003《调用上下文与传播》、RFC-0004《管道阶段与排序》、RFC-0011《操作契约与 XGI》

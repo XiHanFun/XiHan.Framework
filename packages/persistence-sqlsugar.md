@@ -43,7 +43,7 @@ SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元�
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
 
 本包还显式依赖 `Microsoft.Data.Sqlite`（ADR-0097）。`SqlSugarCore` 声明的下限版本带着连接池激活的竞态（dotnet/efcore#39008），NuGet 按下限解析就会用到它：SQLite 上并发打开连接时两个连接可能共用同一个原生连接，报 "cannot start a transaction within a transaction"，清池时正在打开的连接被释放、报 `ObjectDisposedException`。有了这条依赖，引用本包的应用解析到修复后的版本，不用自己钉版本；项目里直接引用了更低版本的，NuGet 报降级 `NU1605`，删掉那条引用或抬到本包要求的版本。
 
@@ -344,7 +344,7 @@ public sealed class ChangeBuffer
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
 - 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
-- 读写分离（ADR-0118）：回调在 `SlaveConnectionConfigs` 上给出从库，用法见[持久化](../guide/persistence#读写分离)。配了从库的连接每个作用域一份配置副本；只读工作单元读从库，设了 `UnitOfWorkOptions.ReadsPrimary` 的除外（ADR-0122），其余工作单元读写都走主库。默认连接与命名连接的从库周期探测（走一次数据库往返，只探连通），不可读的摘除，全部不可读时读回到主库，见健康项 `SqlSugarPersistenceFeature.ReplicaHealthName`（`persistence.sqlsugar.replicas`）。分片连接的从库由回调按分片绑定给出，不探测。主库不同的连接共用从库是 `PERSISTENCE_VALIDATION_009`。没配从库时没有任何额外开销。
+- 读写分离（ADR-0118）：回调在 `SlaveConnectionConfigs` 上给出从库，用法见[持久化](/persistence/sqlsugar)。配了从库的连接每个作用域一份配置副本；只读工作单元读从库，设了 `UnitOfWorkOptions.ReadsPrimary` 的除外（ADR-0122），其余工作单元读写都走主库。默认连接与命名连接的从库周期探测（走一次数据库往返，只探连通），不可读的摘除，全部不可读时读回到主库，见健康项 `SqlSugarPersistenceFeature.ReplicaHealthName`（`persistence.sqlsugar.replicas`）。分片连接的从库由回调按分片绑定给出，不探测。主库不同的连接共用从库是 `PERSISTENCE_VALIDATION_009`。没配从库时没有任何额外开销。
 - 运行时数据源（ADR-0078）：特性登记 SqlSugar 的数据源 Provider，数据库类型是 `DbType` 的名字（不区分大小写，`Custom` 与数字不认）。登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`；客户端是每个数据源一个的 `SqlSugarScope`（`IsAutoCloseConnection`），不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写；测试连接与健康探测另建客户端、打开原生 `DbConnection` 再关闭。运行时数据源不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。
 - 库结构读取与实体目录（ADR-0078）：读表与读列经 `DbMaintenance`（同步 API）；缺省连接 `CopyNew` 另开不在事务里的连接，运行时数据源按定义登记后另建客户端；分表按已登记实体的模板折叠；驱动与 SqlSugar 的异常翻译为 `PERSISTENCE_UNAVAILABLE_006`。实体目录取 `EntityMaintenance.GetEntityInfo`。SQLite 没有注释，`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；PostgreSQL 的注释、identity、serial 缺省值与加引号的大小写混合表名都能读到。MySQL、SQL Server、Oracle 在真实库上实测过（ADR-0084）：注释、自增、主键、缺省值原文、大小写混合的表名、分表折叠与分页总数都对；长度只给字符与二进制类型（`tinyint(1)`、`datetime(6)`、SQL Server `int` 的 10 这类显示宽度或精度不算长度）。Oracle 的读列不走 SqlSugar（它给 CLR 类型名、读不到 identity、缺省值错位、大小写混合的表名查不到），改查连接用户自己的数据字典，要 Oracle 12c 及以上；运行时数据源在 Oracle 上不自动转大写。不支持（已定，ADR-0087）：Oracle 11g 及更早的版本读列以 `PERSISTENCE_UNAVAILABLE_006` 失败（数据字典没有 `IDENTITY_COLUMN`），不做 11g 的分支；达梦、OceanBase Oracle 模式等 Oracle 兼容库走 SqlSugar 原来的读列（类型名可能是 CLR 类型名，identity、缺省值、大小写混合的表名可能读不对），没有验证，读到的结构不作保证。
 - MySQL 上的已知限制（SqlSugar 上游缺陷，已报上游 [DotNetNext/SqlSugar#1460](https://github.com/DotNetNext/SqlSugar/issues/1460)，待上游修复；ADR-0100 修订）：两个及以上值的 `In(…)`、按实体删除（单个实体也是）与 `Deleteable<T>().In(…)` 把字符串内联成只转义单引号的字面量，集合 `Contains` 则把反斜杠写成两个。MySQL 缺省 sql_mode 下前一组对含反斜杠的值静默漏行（值里有 `\'` 时报语法错误），开了 `NO_BACKSLASH_ESCAPES` 时后一组静默漏行；逐个 `==`、只有一个值的 `In`、单行写入与多行插入用参数，两种模式都对。仓储里受影响的是 `FindManyAsync`（两个及以上标识）、`AddRangeAsync` 的标识预查、`UpdateRangeAsync` / `RemoveRangeAsync` 的加锁取回、物理删除的 `RemoveAsync` / `RemoveRangeAsync`（缺省模式），以及规约里的集合 `Contains`（`NO_BACKSLASH_ESCAPES`）。框架自己的字符串主键（租户、调度、工作流定义）是不含反斜杠与引号的受限标识符，Guid 与整数主键也不受影响；框架不在仓储里绕开。应用的字符串主键首选不含反斜杠（写入前按 `^[A-Za-z0-9][A-Za-z0-9._-]*$` 这类规则校验）；做不到时改用参数化的写法：
@@ -366,10 +366,10 @@ public sealed class ChangeBuffer
 
 ## 相关
 
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
-- [多租户](../guide/multi-tenancy)
-- [审计](../guide/auditing)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
+- [多租户](/multi-tenancy/resolution)
+- [审计](/common/auditing)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - 规范：RFC-0005《领域协议与持久化》

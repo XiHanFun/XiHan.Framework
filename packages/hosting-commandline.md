@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.Hosting.CommandLine --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using Microsoft.Extensions.Hosting;
@@ -70,7 +70,7 @@ dotnet run --project framework/samples/SimpleCli -- invoke greetings.create --js
 XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/samples/SimpleCli -- greetings create --name Ada
 ```
 
-自定义命令与选项的完整说明见[命令行宿主](../guide/command-line)。
+自定义命令与选项的完整说明见[命令行宿主](/protocols/command-line)。
 
 ## 行为与限制
 
@@ -95,7 +95,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 
 ## 相关
 
-- [命令行宿主](../guide/command-line)、[操作契约](../guide/operations)
+- [命令行宿主](/protocols/command-line)、[操作契约](/web/operations)
 - [Protocols.Mcp](./protocols-mcp)：`mcp` 命令
 - [Hosting.AspNetCore](./hosting-aspnetcore)、[Cli 命令行工具](./cli)
 - 规范：`spec/protocol/commandline.md`《命令行载体》、RFC-0011《操作契约与 XGI》

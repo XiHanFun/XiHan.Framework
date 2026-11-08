@@ -44,7 +44,7 @@
 dotnet add package XiHan.Framework.Scheduling.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -126,7 +126,7 @@ public sealed class HeartbeatJob(ILogger<HeartbeatJob> logger) : IJob
 
 ## 相关
 
-- [调度与后台作业](../guide/scheduling)
+- [调度与后台作业](/scheduling/jobs)
 - [Scheduling.Abstractions](./scheduling-abstractions)
 - [Scheduling.Database](./scheduling-database)
 - [Scheduling.Kubernetes](./scheduling-kubernetes)

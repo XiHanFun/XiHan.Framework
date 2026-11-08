@@ -44,7 +44,7 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 dotnet add package XiHan.Framework.AI.VectorData --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器：
 
 ```csharp
 using CommunityToolkit.VectorData.InMemory;
@@ -120,7 +120,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 }
 ```
 
-完整的问答示例见 [AI](../guide/ai#知识库)。
+完整的问答示例见 [AI](/ai/tools)。
 
 ## 行为与限制
 
@@ -138,7 +138,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 
 ## 相关
 
-- [AI](../guide/ai#知识库)
+- [AI](/ai/tools)
 - [AI.Abstractions](./ai-abstractions)
 - [AI.OpenAI](./ai-openai)
 - [Conformance 一致性套件](./conformance)

@@ -35,7 +35,7 @@
 dotnet add package XiHan.Framework.Plugins.InProcess --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，失败结果的文案要由宿主应用注册消息目录（RFC-0010）：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，失败结果的文案要由宿主应用注册消息目录（RFC-0010）：
 
 ```csharp
 using XiHan.Framework.Localization.Abstractions;
@@ -147,7 +147,7 @@ Console.WriteLine(unloaded.IsSuccess);
 
 ## 相关
 
-- [插件](../guide/plugins#进程内宿主)
+- [插件](/plugins/overview)
 - [Plugins.OutOfProcess](./plugins-outofprocess)、[Plugins.Wasm](./plugins-wasm)
 - [Kernel](./kernel)
 - 规范：RFC-0002《清单》

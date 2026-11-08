@@ -23,7 +23,7 @@
 - 发布到没人订阅的主题：消息直接丢弃，发布照常成功（批量逐项成功），不建通道，每次发布记一条 Debug 日志（`Dropped {Count} message(s) published to topic ...`）。调度、工作流等框架事件照常发布到应用不一定订阅的主题，这是常态，所以不按 Warning 记；主题名写错时打开 `XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker` 类别的 Debug 日志排查。
 - 主题数不另设上限：通道只为订阅表里的主题创建，订阅表在装配时定好、之后只读，不随发布增长（ADR-0082）。
 - 应用启动时为每个订阅了的主题起一个消费循环，按入队顺序逐条交给 `MessageDispatcher`；应用进入服务状态之前不投递，启动前发布到被订阅主题的消息留在通道里，启动后投递。
-- 订阅方式：单进程就是一个实例。一条消息给主题的每种订阅方式各入队一份投递（各占通道的一个位置），竞争订阅与广播订阅各收到一次、各自重试；没有跨进程的语义（[订阅方式](../guide/messaging#订阅方式)）。
+- 订阅方式：单进程就是一个实例。一条消息给主题的每种订阅方式各入队一份投递（各占通道的一个位置），竞争订阅与广播订阅各收到一次、各自重试；没有跨进程的语义（[订阅方式](/messaging/pubsub)）。
 - 失败按 `XiHan:Messaging:MaxAttempts` 以下一次尝试号重新入队到队尾（只给失败的那种方式）；达到上限、或重新入队时通道已满，竞争投递进入该主题的死信列表，广播投递丢弃并记 Warning 日志。死信列表同样有界，超过 `MaxQueuedMessages` 时丢弃最旧的。`DeliveredCount` 每种方式各算一次。
 - 停止时取消消费循环，把正在处理的那条放回通道，并等待循环结束。
 
@@ -41,7 +41,7 @@
 dotnet add package XiHan.Framework.Messaging.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -104,7 +104,7 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 
 ## 相关
 
-- [消息与事件](../guide/messaging)
+- [消息与事件](/messaging/pubsub)
 - [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)
 - [Profiles.Standard](./profiles-standard)
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》

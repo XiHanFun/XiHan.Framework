@@ -50,7 +50,7 @@
 dotnet add package XiHan.Framework.Scheduling.Kubernetes --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -87,7 +87,7 @@ rules:
     verbs: ["create"]
 ```
 
-`xihan pack` 把应用清单 `xihan.app.json` 里的 `leader.lease` 写进环境变量 `XiHan__Scheduling__Kubernetes__Lease`，并生成 ServiceAccount、只含该 Lease 的 Role 与 RoleBinding，见[部署与打包](../guide/deployment)。
+`xihan pack` 把应用清单 `xihan.app.json` 里的 `leader.lease` 写进环境变量 `XiHan__Scheduling__Kubernetes__Lease`，并生成 ServiceAccount、只含该 Lease 的 Role 与 RoleBinding，见[部署与打包](/deployment/pack)。
 
 ## 配置
 
@@ -136,14 +136,14 @@ public sealed record LeaderView(string Holder, bool IsLeader);
 
 - 只提供领导选举。运行时登记的作业、暂停状态与运行历史仍在各 Pod 的内存里，不在副本间共享，也没有失联恢复。
 - Lease 存活时间以整秒写入，小于 1 秒的存活时间在 API Server 上按 1 秒处理。
-- 与 `Scheduling.Database` 同时装配时，两个显式 Provider 都提供 `scheduling.leader`，需要用 `XiHan:Providers:scheduling.leader` 指定一个，规则见[能力包与清单](../guide/modularity)。
+- 与 `Scheduling.Database` 同时装配时，两个显式 Provider 都提供 `scheduling.leader`，需要用 `XiHan:Providers:scheduling.leader` 指定一个，规则见[能力包与清单](/startup/features)。
 - 通过 `Scheduling.Conformance` 的 `LeaderElectionConformance`（以内存 API Server 桩验证），含应用生命周期用例：排空中的节点释放 Lease，另一个 Pod 在租约到期之前就接手（ADR-0094）。
 
 ## 相关
 
-- [调度与后台作业](../guide/scheduling)
+- [调度与后台作业](/scheduling/jobs)
 - [Scheduling.Abstractions](./scheduling-abstractions)
 - [Scheduling.InMemory](./scheduling-inmemory)
 - [Scheduling.Database](./scheduling-database)
-- [部署与打包](../guide/deployment)
+- [部署与打包](/deployment/pack)
 - 规范：RFC-0013《调度与领导选举》

@@ -38,7 +38,7 @@
 dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，服务由 Provider 的特性注册。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，服务由 Provider 的特性注册。
 
 ## 配置
 
@@ -95,7 +95,7 @@ public sealed class OneShotGate(ICacheStore store)
 }
 ```
 
-`ICacheStore` 由内存与 Redis Provider 登记在容器里；用远程 Provider 时从 `ISharedCache.Store` 取。缓存读写、批量、锁与幂等键的完整示例见[缓存与分布式锁](../guide/caching)。
+`ICacheStore` 由内存与 Redis Provider 登记在容器里；用远程 Provider 时从 `ISharedCache.Store` 取。缓存读写、批量、锁与幂等键的完整示例见[缓存与分布式锁](/caching/basics)。
 
 ## 行为与限制
 
@@ -121,7 +121,7 @@ public sealed class OneShotGate(ICacheStore store)
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching)
+- [缓存与分布式锁](/caching/basics)
 - [Caching.InMemory](./caching-inmemory)、[Caching.Redis](./caching-redis)、[Caching.Hybrid](./caching-hybrid)、[Caching.Remote](./caching-remote)
 - [Conformance 一致性套件](./conformance)
 - 规范：RFC-0006《缓存、分布式锁与幂等》；ADR-0012、ADR-0055、ADR-0058

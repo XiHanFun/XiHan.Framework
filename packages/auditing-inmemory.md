@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.Auditing.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包；用其他组合时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包；用其他组合时：
 
 ```csharp
 using XiHan.Framework.Auditing.InMemory;
@@ -123,7 +123,7 @@ public sealed class AuditTrailTests
 
 ## 相关
 
-- [审计](../guide/auditing)
+- [审计](/common/auditing)
 - [Auditing.Abstractions](./auditing-abstractions)
 - [Auditing.Database](./auditing-database)
 - [Profiles.Full](./profiles-full)

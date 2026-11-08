@@ -35,7 +35,7 @@
 dotnet add package XiHan.Framework.Security.Jwt --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -124,11 +124,11 @@ public static class TokenCheck
 - 任何校验失败都返回 `SECURITY_DENIED_003`（消息键 `security.token.invalid`），不区分原因对外暴露；令牌没有 `NameClaim` 声明同样返回 `SECURITY_DENIED_003`（消息键 `security.token.subject_missing`）。
 - 经 ASP.NET Core 宿主时，无效令牌是 401 并带 `WWW-Authenticate: Bearer error="invalid_token"`，没有令牌时是 401 并带 `WWW-Authenticate: Bearer`（ADR-0042）。
 - 容器里有 `Bearer` 方案的处理器时，`Protocols.Http` 发布的 OpenAPI 文档带 `components.securitySchemes.bearer` 与全局 `security`。
-- 绕过管道的端点（SignalR Hub 等）经 ASP.NET Core 方案 `XiHan` 复用本处理器，见[认证 · 绕过管道的端点](../guide/authentication#绕过管道的端点)。
+- 绕过管道的端点（SignalR Hub 等）经 ASP.NET Core 方案 `XiHan` 复用本处理器，见[认证 · 绕过管道的端点](/web/endpoints)。
 
 ## 相关
 
-- [认证](../guide/authentication)
+- [认证](/security/authentication)
 - [Security.Abstractions](./security-abstractions)
 - [Security.OpenIdConnect](./security-openidconnect)
 - [Security.InMemory](./security-inmemory)

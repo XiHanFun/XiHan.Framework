@@ -28,7 +28,7 @@ Standard 组合包（元包）：Minimal 加 `Domain` 与持久化、缓存、�
 | `InMemorySecurityFeature` | `Security.InMemory` | `security.authentication@1`、`security.authorization@1` |
 | `InMemoryMessagingFeature` | `Messaging.InMemory` | `messaging.queue@1` |
 
-它们都是清单里的 `role: default`。再 `UseFeature` 一个声明同一能力的显式 Provider（`EntityFrameworkCorePersistenceFeature<TContext>`、`RedisCachingFeature`、`JwtSecurityFeature`、`RabbitMQMessagingFeature` 等），能力求解就选中 Provider。默认实现提供的能力全部被顶替时不装配、不启动；还有能力被选中时照常装配，只为被选中的能力注册服务，例如加入 `RedisCachingFeature` 后 `Caching.InMemory` 仍提供 `caching.local`，加入 `JwtSecurityFeature` 后 `Security.InMemory` 仍提供授权（RFC-0002，[能力包与清单](../guide/modularity)）。换 Provider 只加包引用、`UseFeature` 与配置，业务代码不变。
+它们都是清单里的 `role: default`。再 `UseFeature` 一个声明同一能力的显式 Provider（`EntityFrameworkCorePersistenceFeature<TContext>`、`RedisCachingFeature`、`JwtSecurityFeature`、`RabbitMQMessagingFeature` 等），能力求解就选中 Provider。默认实现提供的能力全部被顶替时不装配、不启动；还有能力被选中时照常装配，只为被选中的能力注册服务，例如加入 `RedisCachingFeature` 后 `Caching.InMemory` 仍提供 `caching.local`，加入 `JwtSecurityFeature` 后 `Security.InMemory` 仍提供授权（RFC-0002，[能力包与清单](/startup/features)）。换 Provider 只加包引用、`UseFeature` 与配置，业务代码不变。
 
 这些特性填满管道的中段：Authenticate（ApiKey）→ Tenant（声明或 Baggage）→ Authorize（策略与权限）→ Idempotency（幂等键）→ Transaction（工作单元）。本地化不占阶段：宿主在 Ingress 把 `Accept-Language` 协商进 Baggage `xihan.locale`，在 Egress 把失败结果翻译成 Problem Details 的 `detail`。
 
@@ -44,7 +44,7 @@ Standard 组合包（元包）：Minimal 加 `Domain` 与持久化、缓存、�
 dotnet add package XiHan.Framework.Profiles.Standard --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -85,6 +85,6 @@ app.Run();
 
 ## 相关
 
-- [能力包与清单](../guide/modularity)、[执行管道](../guide/pipeline)
+- [能力包与清单](/startup/features)、[执行管道](/startup/pipeline)
 - [Profiles.Minimal](./profiles-minimal)、[Profiles.Full](./profiles-full)
 - [Persistence.InMemory](./persistence-inmemory)、[Caching.InMemory](./caching-inmemory)、[MultiTenancy.InMemory](./multitenancy-inmemory)、[Security.InMemory](./security-inmemory)、[Messaging.InMemory](./messaging-inmemory)

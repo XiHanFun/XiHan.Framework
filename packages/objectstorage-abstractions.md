@@ -25,7 +25,7 @@
 
 ## 何时使用
 
-业务代码注入 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 或 `BlobStores` 时引用本包；具体后端装 [ObjectStorage.FileSystem](./objectstorage-filesystem) 或 [ObjectStorage.S3](./objectstorage-s3)。实现新的存储后端时实现本包的接口，并通过 `ObjectStorage.Conformance`。用法讲解见[对象存储](../guide/storage)。
+业务代码注入 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 或 `BlobStores` 时引用本包；具体后端装 [ObjectStorage.FileSystem](./objectstorage-filesystem) 或 [ObjectStorage.S3](./objectstorage-s3)。实现新的存储后端时实现本包的接口，并通过 `ObjectStorage.Conformance`。用法讲解见[对象存储](/object-storage/basics)。
 
 ## 安装与启用
 
@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。
 
 ## 配置
 
@@ -168,7 +168,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 
 ## 相关
 
-- [对象存储](../guide/storage)
+- [对象存储](/object-storage/basics)
 - [ObjectStorage.FileSystem](./objectstorage-filesystem)
 - [ObjectStorage.S3](./objectstorage-s3)
 - [Hosting.AspNetCore](./hosting-aspnetcore)

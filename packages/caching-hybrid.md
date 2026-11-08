@@ -43,7 +43,7 @@ L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive
 dotnet add package XiHan.Framework.Caching.Hybrid --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包需要一个 `caching.distributed` 的提供者作 L2：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包需要一个 `caching.distributed` 的提供者作 L2：
 
 ```csharp
 using XiHan.Framework.Caching.Hybrid;
@@ -104,7 +104,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 }
 ```
 
-读写本身与任何 `ICache` 相同，见[缓存与分布式锁](../guide/caching#读写缓存)。
+读写本身与任何 `ICache` 相同，见[缓存与分布式锁](/caching/basics)。
 
 ## 行为与限制
 
@@ -116,6 +116,6 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching#两级缓存)
+- [缓存与分布式锁](/caching/hybrid)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.Redis](./caching-redis)、[Caching.InMemory](./caching-inmemory)
 - 规范：RFC-0006《缓存、分布式锁与幂等》「两级缓存」；ADR-0019、ADR-0055、ADR-0058

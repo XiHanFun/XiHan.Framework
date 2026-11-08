@@ -37,7 +37,7 @@
 dotnet add package XiHan.Framework.Workflow.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -85,7 +85,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryWorkflowFeature>());
 
 ## 使用示例
 
-不需要额外代码：装配特性后注入 `IWorkflowDefinitionCatalog`、`IWorkflowEngine`、`IWorkflowTaskService` 使用，写法见[工作流](../guide/workflow)。测试里想立即推进定时与超时，可以从容器取 `DueBookmarkPoller` 手动轮询一次：
+不需要额外代码：装配特性后注入 `IWorkflowDefinitionCatalog`、`IWorkflowEngine`、`IWorkflowTaskService` 使用，写法见[工作流](/workflow/definitions)。测试里想立即推进定时与超时，可以从容器取 `DueBookmarkPoller` 手动轮询一次：
 
 ```csharp
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -112,7 +112,7 @@ public sealed class WorkflowClock(DueBookmarkPoller poller)
 
 ## 相关
 
-- [工作流](../guide/workflow)
+- [工作流](/workflow/definitions)
 - [Workflow.Abstractions](./workflow-abstractions)
 - [Workflow.Database](./workflow-database)
 - [Profiles.Full](./profiles-full)

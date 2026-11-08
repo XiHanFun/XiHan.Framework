@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.Observability.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。两个实现包都依赖本包，`Profiles.Full` 已包含。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。两个实现包都依赖本包，`Profiles.Full` 已包含。
 
 ## 主要类型
 
@@ -94,7 +94,7 @@ public sealed class CapacityCheck(IHostMonitor monitor)
 
 ## 相关
 
-- [可观测性](../guide/observability#运行信息)
+- [可观测性](/common/observability#运行信息)
 - [Observability.Host](./observability-host)
 - [Observability.OpenTelemetry](./observability-opentelemetry)
 - 规范：RFC-0023《可观测性：导出与运行信息》

@@ -26,7 +26,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 - 工具目录 `IAIToolCatalog`：`AddAITool` 的工具加上 `Expose.Ai` 的操作，后者在新作用域经完整管道执行。
 - 知识库流水线：`IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy`，以及 Provider 契约 `IKnowledgeStore`。
 
-`AddAI(configuration)` 幂等地登记以上全部服务、选项与消息目录 `ai`；`AIToolsFeature`、`OpenAIFeature`、`VectorDataKnowledgeFeature` 都调用它。`AIToolsFeature` 与 `OpenAIFeature` 在启动时构建工具目录，工具名不合法或重名即启动失败（只装 `OpenAIFeature` 也一样）；它与 `OpenAIFeature`、`VectorDataKnowledgeFeature` 启动时都解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。用法见 [AI](../guide/ai)。
+`AddAI(configuration)` 幂等地登记以上全部服务、选项与消息目录 `ai`；`AIToolsFeature`、`OpenAIFeature`、`VectorDataKnowledgeFeature` 都调用它。`AIToolsFeature` 与 `OpenAIFeature` 在启动时构建工具目录，工具名不合法或重名即启动失败（只装 `OpenAIFeature` 也一样）；它与 `OpenAIFeature`、`VectorDataKnowledgeFeature` 启动时都解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。用法见 [AI](/ai/chat)。
 
 ## 何时使用
 
@@ -38,7 +38,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已装配 `AIToolsFeature`；其他组合里 `UseFeature<AIToolsFeature>()`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已装配 `AIToolsFeature`；其他组合里 `UseFeature<AIToolsFeature>()`。
 
 ## 配置
 
@@ -167,7 +167,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 }
 ```
 
-聊天、护栏、工具与知识库的完整示例见 [AI](../guide/ai)。
+聊天、护栏、工具与知识库的完整示例见 [AI](/ai/chat)。
 
 ## 行为与限制
 
@@ -179,7 +179,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 - 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，以调用方身份按契约授权；凭据不复制、不重新认证；失败以 `{"error","message"}` JSON 交给模型。
 - 同一文档重新摄入先写新块、写入成功后再删多余的旧块：嵌入、维度校验或写入失败时旧文档照常可检索，存储没有事务，写入中途失败可能留下新旧混合的块，重试摄入即恢复一致；嵌入维度必须等于 `Knowledge:Dimensions`。
 - 没有 `IKnowledgeStore` 时流水线返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
-- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长（已定，ADR-0097：不设整条流的总时限，总时长由调用方的取消令牌或截止时间限制）。超时令牌已触发即超时（`AI_TIMEOUT_001`，流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`。见 [AI 指南的超时与取消](../guide/ai#超时与取消)。
+- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长（已定，ADR-0097：不设整条流的总时限，总时长由调用方的取消令牌或截止时间限制）。超时令牌已触发即超时（`AI_TIMEOUT_001`，流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`。见 [AI 指南的超时与取消](/ai/chat)。
 
 | 错误码 | 何时出现 |
 | --- | --- |
@@ -196,7 +196,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 
 ## 相关
 
-- [AI](../guide/ai)
+- [AI](/ai/chat)
 - [AI.OpenAI](./ai-openai)
 - [AI.VectorData](./ai-vectordata)
 - [Protocols.Mcp](./protocols-mcp)

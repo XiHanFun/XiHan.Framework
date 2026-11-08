@@ -23,7 +23,7 @@
 - `AuditInvocationExtensions` 让处理器在调用期间写入动作、资源名与细节。
 - `IAuditTrail` 按时间、动作、主体、租户、trace-id、成败过滤，按写入顺序升序分页。
 
-本包不存储任何东西，存储由 Provider 实现。用法与行为细节见[审计](../guide/auditing)。
+本包不存储任何东西，存储由 Provider 实现。用法与行为细节见[审计](/common/auditing)。
 
 ## 何时使用
 
@@ -35,7 +35,7 @@
 dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。两个 Provider 都依赖本包，装配 Provider 即可；`Profiles.Full` 已包含 `Auditing.InMemory`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。两个 Provider 都依赖本包，装配 Provider 即可；`Profiles.Full` 已包含 `Auditing.InMemory`。
 
 ## 配置
 
@@ -97,7 +97,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 
 自写存储 Provider 的装配步骤，与 `InMemoryAuditingFeature` 相同：
 
-1. 清单声明 `Provides = [new CapabilityDeclaration(AuditingCapabilities.Trail, AuditingCapabilities.Version)]`，`Role = ManifestRole.Provider`，写法见[能力包与清单](../guide/modularity)。
+1. 清单声明 `Provides = [new CapabilityDeclaration(AuditingCapabilities.Trail, AuditingCapabilities.Version)]`，`Role = ManifestRole.Provider`，写法见[能力包与清单](/startup/features)。
 2. `Configure` 里把存储登记为单例；`context.Node.IsSelectedFor(AuditingCapabilities.Trail)` 为真时，用 `TryAddSingleton` 把同一个实例登记为 `IAuditSink` 与 `IAuditTrail`。特性先于内核的默认注册配置，所以 `TryAdd` 能先于 `NullAuditSink` 占住接收器。
 3. 同一分支里调用 `context.AddAuditing()`，注册消息目录与选项并挂上中间件；没被选中时不要调用，否则中间件会挂两次。
 4. `WriteAsync` 必须有界、不阻塞调用路径；`QueryAsync` 先调用 `query.Validate()`，续页令牌不可识别时返回 `AUDITING_VALIDATION_001`。
@@ -109,7 +109,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 - 结果：管道写入的 outcome 优先；没写入而抛出了异常时，取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`，异常照常向外抛；正常返回却没写结果视为成功。
 - 接收器的写入不带调用的取消令牌，被取消的调用同样记录；接收器抛出的异常以 Error 级记一条日志，不影响调用结果。
 - 细节只允许 JSON 可表示的值，同名覆盖；资源名以 `xrn:` 文本保存。
-- 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](../guide/auditing#记录调用来源)。
+- 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](/common/auditing#记录调用来源)。
 - 查询页大小 1 到 1000，缺省 100；续页令牌由实现自行校验。
 
 | 错误码 | 消息键 | 含义 |
@@ -119,7 +119,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 
 ## 相关
 
-- [审计](../guide/auditing)
+- [审计](/common/auditing)
 - [Auditing.InMemory](./auditing-inmemory)
 - [Auditing.Database](./auditing-database)
 - [Kernel 内核](./kernel)

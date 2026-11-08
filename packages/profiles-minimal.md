@@ -17,7 +17,7 @@ Minimal 组合包（元包）：一个包引用带上原语层、内核、ASP.NE
 
 ## 概述
 
-组合包本身没有特性与清单，只做两件事：用包引用把一组包一次带进来，用一个 `AppBuilder` 扩展方法装配其中的默认实现。`UseMinimalProfile()` 只调用 `UseFeature<InMemoryLocalizationFeature>()`：它注册原语层与内核的语言文件目录并设置进程默认消息作用域，于是 `key.L()`、`Error.Message` 与 Problem Details 的 `detail` 在最小组合下就有文案（缺省 `en-US`，内置 10 种区域，[国际化](../guide/localization)）。内核与宿主由 `AddXiHan()` / `UseXiHan()` 提供，管道、探针与 Problem Details 随宿主可用。
+组合包本身没有特性与清单，只做两件事：用包引用把一组包一次带进来，用一个 `AppBuilder` 扩展方法装配其中的默认实现。`UseMinimalProfile()` 只调用 `UseFeature<InMemoryLocalizationFeature>()`：它注册原语层与内核的语言文件目录并设置进程默认消息作用域，于是 `key.L()`、`Error.Message` 与 Problem Details 的 `detail` 在最小组合下就有文案（缺省 `en-US`，内置 10 种区域，[国际化](/common/localization)）。内核与宿主由 `AddXiHan()` / `UseXiHan()` 提供，管道、探针与 Problem Details 随宿主可用。
 
 ## 何时使用
 
@@ -31,7 +31,7 @@ Minimal 组合包（元包）：一个包引用带上原语层、内核、ASP.NE
 dotnet add package XiHan.Framework.Profiles.Minimal --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -60,5 +60,5 @@ app.Run();
 
 ## 相关
 
-- [能力包与清单](../guide/modularity)、[宿主与 Web 应用](../guide/web)
+- [能力包与清单](/startup/features)、[宿主与 Web 应用](/web/hosting)
 - [Profiles.Standard](./profiles-standard)、[Profiles.Full](./profiles-full)、[Localization.InMemory](./localization-inmemory)

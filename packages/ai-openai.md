@@ -34,7 +34,7 @@ AI 的 OpenAI 兼容 Provider：`Kind = openai` 的 Provider 都由本包按配�
 dotnet add package XiHan.Framework.AI.OpenAI --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.AI.Abstractions;
@@ -119,22 +119,22 @@ builder.Services.AddHttpClient("xihan.ai.openai")
 
 `AddHttpClient` 来自 `Microsoft.Extensions.Http`。这个名字也是公开常量 `OpenAIFeature.HttpClientName`。
 
-框架的端点来自 `XiHan:AI:Providers`，是运维配的，不过[出站地址策略](../guide/outbound)。应用替换提供商目录、让用户填端点时，给这个名字接上策略，写法见那一章。
+框架的端点来自 `XiHan:AI:Providers`，是运维配的，不过[出站地址策略](/security/outbound)。应用替换提供商目录、让用户填端点时，给这个名字接上策略，写法见那一章。
 
-聊天、工具与护栏的用法见 [AI](../guide/ai#聊天入口)。
+聊天、工具与护栏的用法见 [AI](/ai/chat)。
 
 ## 行为与限制
 
 - 容器里有 `IHttpClientFactory` 时（应用在任何地方调用过 `AddHttpClient`），本包就从它取名为 `xihan.ai.openai` 的客户端发请求，没有专门配置这个名字时取到的是工厂的缺省客户端，应用用 `ConfigureHttpClientDefaults` 给全部客户端加的处理器（如弹性处理器）同样作用于它。
 - 超时只以 `TimeoutSeconds` 为准：取到的客户端的 `HttpClient.Timeout` 由本包置为不限，与 SDK 自己的传输一样，不会被缺省的 100 秒截断；在 `AddHttpClient` 里设的 `Timeout` 不生效。
 - 端点返回错误或不可达记 `AI_UNAVAILABLE_001`（`reason` 只写异常类型，完整异常进日志），超时记 `AI_TIMEOUT_001`；这两项在 `IAIChat` 与知识库流水线里映射，直接从目录取客户端的调用拿到的是 SDK 的原始异常。
-- 经 `IAIChat` 与知识库流水线的调用另有框架的超时令牌（同取 `TimeoutSeconds`，按容器的 `TimeProvider` 计时），覆盖整次调用，含函数调用循环；SDK 的 `NetworkTimeout` 照常作用于每次网络请求。两者同时触发、或超时与调用方取消同时发生时，SDK 报的是调用方的取消，框架按自己的令牌报 `AI_TIMEOUT_001`（[超时与取消](../guide/ai#超时与取消)）。
+- 经 `IAIChat` 与知识库流水线的调用另有框架的超时令牌（同取 `TimeoutSeconds`，按容器的 `TimeProvider` 计时），覆盖整次调用，含函数调用循环；SDK 的 `NetworkTimeout` 照常作用于每次网络请求。两者同时触发、或超时与调用方取消同时发生时，SDK 报的是调用方的取消，框架按自己的令牌报 `AI_TIMEOUT_001`（[超时与取消](/ai/chat)）。
 - 缓存、遥测等横切逻辑可以叠加在目录解析出的客户端上，用 Microsoft.Extensions.AI 自己的中间件。
 - 通过 `AI.Conformance` 的 `AIProviderConformance`。
 
 ## 相关
 
-- [AI](../guide/ai)
+- [AI](/ai/chat)
 - [AI.Abstractions](./ai-abstractions)
 - [AI.VectorData](./ai-vectordata)
 - 规范：RFC-0022《AI：聊天、嵌入、工具与知识》

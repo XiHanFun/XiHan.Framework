@@ -45,7 +45,7 @@ dotnet add package XiHan.Framework.Workflow.Database --prerelease
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Workflow.InMemory`：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Workflow.InMemory`：
 
 ```csharp
 using SqlSugar;
@@ -137,7 +137,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
 - 实例列表的每个过滤项都是 SQL 条件，按排序项 `Sorts` 依次（空时创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102、ADR-0104，排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）；`SearchText` 可空只为给已有行的表加列，已有的行要回填 `WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列），没回填的行不被关键字匹配。
-- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](../guide/workflow#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，已有的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
+- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](/workflow/definitions)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，已有的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（ADR-0096、ADR-0099），已有的书签行要回填这两列。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 读出来的模型来自 JSON 反序列化，天然是快照；按 ID 批量查找每 1000 个一批，列表与级联查询按全序排序分页读完。删除对不存在的 ID 忽略，`DeleteByInstanceAsync` 删该实例全部书签；写入的记录的 `TenantId` 不等于分区时抛 `ArgumentException`。
 - 可空时间列的条件不写 `!= null`：SQL 的 `NULL <= 值` 本就不成立，而 SqlSugar 会把它翻译成 `<> @参数(NULL)`。
@@ -205,7 +205,7 @@ UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 
 
 ## 相关
 
-- [工作流](../guide/workflow)
+- [工作流](/workflow/definitions)
 - [Workflow.Abstractions](./workflow-abstractions)
 - [Workflow.InMemory](./workflow-inmemory)
 - [Scheduling.Database](./scheduling-database)

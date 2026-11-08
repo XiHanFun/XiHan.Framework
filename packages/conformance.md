@@ -17,7 +17,7 @@
 
 ## 用法
 
-1. 新建测试项目，引用被测实现、对应的 Conformance 包与 `xunit.v3`，测试项目的其余配置见[测试与一致性套件](../guide/testing#测试项目)。
+1. 新建测试项目，引用被测实现、对应的 Conformance 包与 `xunit.v3`，测试项目的其余配置见[测试与一致性套件](/testing/basics)。
 2. 写一个 `public sealed class` 继承套件基类，实现抽象的工厂方法；需要时覆写虚成员（时限、配置、容器）。
 3. `dotnet test --project <测试项目>` 运行，套件的每个 `[Fact]` 都作为这个类的用例出现。
 
@@ -25,7 +25,7 @@
 dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。依赖真实服务的实现（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos）在框架仓库里以 `XIHAN_TEST_*` 环境变量提供连接，没设置时用 `Assert.SkipWhen` 跳过；自己的 Provider 可以照这个做法。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。依赖真实服务的实现（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos）在框架仓库里以 `XIHAN_TEST_*` 环境变量提供连接，没设置时用 `Assert.SkipWhen` 跳过；自己的 Provider 可以照这个做法。
 
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |
@@ -199,7 +199,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 }
 ```
 
-两套用例都不提供宿主回调服务：Wasm 套件提供的宿主导入只有 `xihan.log`，`xihan.invoke` / `xihan.publish` 返回不可用状态；回调的令牌与权限、崩溃重启由宿主实现的测试覆盖。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`，否则套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝。.NET 之外的插件也可以用规范仓库的 Go 运行器 `xihan-conformance`，用例相同（[测试与一致性套件](../guide/testing#plugins-conformance-与-xihan-conformance)）。`samples/EchoPlugin`、`samples/EchoGoPlugin` 通过进程外用例，`samples/EchoWasmPlugin` 通过 Wasm 用例。
+两套用例都不提供宿主回调服务：Wasm 套件提供的宿主导入只有 `xihan.log`，`xihan.invoke` / `xihan.publish` 返回不可用状态；回调的令牌与权限、崩溃重启由宿主实现的测试覆盖。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`，否则套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝。.NET 之外的插件也可以用规范仓库的 Go 运行器 `xihan-conformance`，用例相同（[测试与一致性套件](/testing/conformance)）。`samples/EchoPlugin`、`samples/EchoGoPlugin` 通过进程外用例，`samples/EchoWasmPlugin` 通过 Wasm 用例。
 
 ## Scheduling
 
@@ -259,5 +259,5 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 ## 相关
 
-- [测试与一致性套件](../guide/testing)、[扩展与二次开发](../guide/extending)
+- [测试与一致性套件](/testing/basics)、[扩展与二次开发](/extending/provider)
 - [Testing 测试基座](./testing)

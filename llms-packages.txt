@@ -1,4 +1,4 @@
-# 曦寒开发框架 · 包总览
+# 曦寒开发框架 · 包参考
 
 共 69 页。索引见 https://framework.docs.xihanfun.com/llms.txt
 
@@ -32,7 +32,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 - 工具目录 `IAIToolCatalog`：`AddAITool` 的工具加上 `Expose.Ai` 的操作，后者在新作用域经完整管道执行。
 - 知识库流水线：`IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy`，以及 Provider 契约 `IKnowledgeStore`。
 
-`AddAI(configuration)` 幂等地登记以上全部服务、选项与消息目录 `ai`；`AIToolsFeature`、`OpenAIFeature`、`VectorDataKnowledgeFeature` 都调用它。`AIToolsFeature` 与 `OpenAIFeature` 在启动时构建工具目录，工具名不合法或重名即启动失败（只装 `OpenAIFeature` 也一样）；它与 `OpenAIFeature`、`VectorDataKnowledgeFeature` 启动时都解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。用法见 [AI](../guide/ai)。
+`AddAI(configuration)` 幂等地登记以上全部服务、选项与消息目录 `ai`；`AIToolsFeature`、`OpenAIFeature`、`VectorDataKnowledgeFeature` 都调用它。`AIToolsFeature` 与 `OpenAIFeature` 在启动时构建工具目录，工具名不合法或重名即启动失败（只装 `OpenAIFeature` 也一样）；它与 `OpenAIFeature`、`VectorDataKnowledgeFeature` 启动时都解析提示增强器，知识库配置引用的提示词找不到或渲染不了即启动失败。用法见 [AI](/ai/chat)。
 
 ## 何时使用
 
@@ -44,7 +44,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已装配 `AIToolsFeature`；其他组合里 `UseFeature<AIToolsFeature>()`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已装配 `AIToolsFeature`；其他组合里 `UseFeature<AIToolsFeature>()`。
 
 ## 配置
 
@@ -173,7 +173,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 }
 ```
 
-聊天、护栏、工具与知识库的完整示例见 [AI](../guide/ai)。
+聊天、护栏、工具与知识库的完整示例见 [AI](/ai/chat)。
 
 ## 行为与限制
 
@@ -185,7 +185,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 - 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，以调用方身份按契约授权；凭据不复制、不重新认证；失败以 `{"error","message"}` JSON 交给模型。
 - 同一文档重新摄入先写新块、写入成功后再删多余的旧块：嵌入、维度校验或写入失败时旧文档照常可检索，存储没有事务，写入中途失败可能留下新旧混合的块，重试摄入即恢复一致；嵌入维度必须等于 `Knowledge:Dimensions`。
 - 没有 `IKnowledgeStore` 时流水线返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
-- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长（已定，ADR-0097：不设整条流的总时限，总时长由调用方的取消令牌或截止时间限制）。超时令牌已触发即超时（`AI_TIMEOUT_001`，流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`。见 [AI 指南的超时与取消](../guide/ai#超时与取消)。
+- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长（已定，ADR-0097：不设整条流的总时限，总时长由调用方的取消令牌或截止时间限制）。超时令牌已触发即超时（`AI_TIMEOUT_001`，流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`。见 [AI 指南的超时与取消](/ai/chat)。
 
 | 错误码 | 何时出现 |
 | --- | --- |
@@ -202,7 +202,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 
 ## 相关
 
-- [AI](../guide/ai)
+- [AI](/ai/chat)
 - [AI.OpenAI](./ai-openai)
 - [AI.VectorData](./ai-vectordata)
 - [Protocols.Mcp](./protocols-mcp)
@@ -246,7 +246,7 @@ AI 的 OpenAI 兼容 Provider：`Kind = openai` 的 Provider 都由本包按配�
 dotnet add package XiHan.Framework.AI.OpenAI --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.AI.Abstractions;
@@ -331,22 +331,22 @@ builder.Services.AddHttpClient("xihan.ai.openai")
 
 `AddHttpClient` 来自 `Microsoft.Extensions.Http`。这个名字也是公开常量 `OpenAIFeature.HttpClientName`。
 
-框架的端点来自 `XiHan:AI:Providers`，是运维配的，不过[出站地址策略](../guide/outbound)。应用替换提供商目录、让用户填端点时，给这个名字接上策略，写法见那一章。
+框架的端点来自 `XiHan:AI:Providers`，是运维配的，不过[出站地址策略](/security/outbound)。应用替换提供商目录、让用户填端点时，给这个名字接上策略，写法见那一章。
 
-聊天、工具与护栏的用法见 [AI](../guide/ai#聊天入口)。
+聊天、工具与护栏的用法见 [AI](/ai/chat)。
 
 ## 行为与限制
 
 - 容器里有 `IHttpClientFactory` 时（应用在任何地方调用过 `AddHttpClient`），本包就从它取名为 `xihan.ai.openai` 的客户端发请求，没有专门配置这个名字时取到的是工厂的缺省客户端，应用用 `ConfigureHttpClientDefaults` 给全部客户端加的处理器（如弹性处理器）同样作用于它。
 - 超时只以 `TimeoutSeconds` 为准：取到的客户端的 `HttpClient.Timeout` 由本包置为不限，与 SDK 自己的传输一样，不会被缺省的 100 秒截断；在 `AddHttpClient` 里设的 `Timeout` 不生效。
 - 端点返回错误或不可达记 `AI_UNAVAILABLE_001`（`reason` 只写异常类型，完整异常进日志），超时记 `AI_TIMEOUT_001`；这两项在 `IAIChat` 与知识库流水线里映射，直接从目录取客户端的调用拿到的是 SDK 的原始异常。
-- 经 `IAIChat` 与知识库流水线的调用另有框架的超时令牌（同取 `TimeoutSeconds`，按容器的 `TimeProvider` 计时），覆盖整次调用，含函数调用循环；SDK 的 `NetworkTimeout` 照常作用于每次网络请求。两者同时触发、或超时与调用方取消同时发生时，SDK 报的是调用方的取消，框架按自己的令牌报 `AI_TIMEOUT_001`（[超时与取消](../guide/ai#超时与取消)）。
+- 经 `IAIChat` 与知识库流水线的调用另有框架的超时令牌（同取 `TimeoutSeconds`，按容器的 `TimeProvider` 计时），覆盖整次调用，含函数调用循环；SDK 的 `NetworkTimeout` 照常作用于每次网络请求。两者同时触发、或超时与调用方取消同时发生时，SDK 报的是调用方的取消，框架按自己的令牌报 `AI_TIMEOUT_001`（[超时与取消](/ai/chat)）。
 - 缓存、遥测等横切逻辑可以叠加在目录解析出的客户端上，用 Microsoft.Extensions.AI 自己的中间件。
 - 通过 `AI.Conformance` 的 `AIProviderConformance`。
 
 ## 相关
 
-- [AI](../guide/ai)
+- [AI](/ai/chat)
 - [AI.Abstractions](./ai-abstractions)
 - [AI.VectorData](./ai-vectordata)
 - 规范：RFC-0022《AI：聊天、嵌入、工具与知识》
@@ -399,7 +399,7 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 dotnet add package XiHan.Framework.AI.VectorData --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器：
 
 ```csharp
 using CommunityToolkit.VectorData.InMemory;
@@ -475,7 +475,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 }
 ```
 
-完整的问答示例见 [AI](../guide/ai#知识库)。
+完整的问答示例见 [AI](/ai/tools)。
 
 ## 行为与限制
 
@@ -493,7 +493,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 
 ## 相关
 
-- [AI](../guide/ai#知识库)
+- [AI](/ai/tools)
 - [AI.Abstractions](./ai-abstractions)
 - [AI.OpenAI](./ai-openai)
 - [Conformance 一致性套件](./conformance)
@@ -526,7 +526,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 - `AuditInvocationExtensions` 让处理器在调用期间写入动作、资源名与细节。
 - `IAuditTrail` 按时间、动作、主体、租户、trace-id、成败过滤，按写入顺序升序分页。
 
-本包不存储任何东西，存储由 Provider 实现。用法与行为细节见[审计](../guide/auditing)。
+本包不存储任何东西，存储由 Provider 实现。用法与行为细节见[审计](/common/auditing)。
 
 ## 何时使用
 
@@ -538,7 +538,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。两个 Provider 都依赖本包，装配 Provider 即可；`Profiles.Full` 已包含 `Auditing.InMemory`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。两个 Provider 都依赖本包，装配 Provider 即可；`Profiles.Full` 已包含 `Auditing.InMemory`。
 
 ## 配置
 
@@ -600,7 +600,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 
 自写存储 Provider 的装配步骤，与 `InMemoryAuditingFeature` 相同：
 
-1. 清单声明 `Provides = [new CapabilityDeclaration(AuditingCapabilities.Trail, AuditingCapabilities.Version)]`，`Role = ManifestRole.Provider`，写法见[能力包与清单](../guide/modularity)。
+1. 清单声明 `Provides = [new CapabilityDeclaration(AuditingCapabilities.Trail, AuditingCapabilities.Version)]`，`Role = ManifestRole.Provider`，写法见[能力包与清单](/startup/features)。
 2. `Configure` 里把存储登记为单例；`context.Node.IsSelectedFor(AuditingCapabilities.Trail)` 为真时，用 `TryAddSingleton` 把同一个实例登记为 `IAuditSink` 与 `IAuditTrail`。特性先于内核的默认注册配置，所以 `TryAdd` 能先于 `NullAuditSink` 占住接收器。
 3. 同一分支里调用 `context.AddAuditing()`，注册消息目录与选项并挂上中间件；没被选中时不要调用，否则中间件会挂两次。
 4. `WriteAsync` 必须有界、不阻塞调用路径；`QueryAsync` 先调用 `query.Validate()`，续页令牌不可识别时返回 `AUDITING_VALIDATION_001`。
@@ -612,7 +612,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 - 结果：管道写入的 outcome 优先；没写入而抛出了异常时，取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`，异常照常向外抛；正常返回却没写结果视为成功。
 - 接收器的写入不带调用的取消令牌，被取消的调用同样记录；接收器抛出的异常以 Error 级记一条日志，不影响调用结果。
 - 细节只允许 JSON 可表示的值，同名覆盖；资源名以 `xrn:` 文本保存。
-- 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](../guide/auditing#记录调用来源)。
+- 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](/common/auditing#记录调用来源)。
 - 查询页大小 1 到 1000，缺省 100；续页令牌由实现自行校验。
 
 | 错误码 | 消息键 | 含义 |
@@ -622,7 +622,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 
 ## 相关
 
-- [审计](../guide/auditing)
+- [审计](/common/auditing)
 - [Auditing.InMemory](./auditing-inmemory)
 - [Auditing.Database](./auditing-database)
 - [Kernel 内核](./kernel)
@@ -670,7 +670,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 dotnet add package XiHan.Framework.Auditing.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包要求 `persistence.relational@1`，与一个持久化 Provider 一起装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包要求 `persistence.relational@1`，与一个持久化 Provider 一起装配：
 
 ```csharp
 using SqlSugar;
@@ -830,10 +830,10 @@ public static class AuditTestExtensions
 
 ## 相关
 
-- [审计](../guide/auditing)
+- [审计](/common/auditing)
 - [Auditing.Abstractions](./auditing-abstractions)
 - [Auditing.InMemory](./auditing-inmemory)
-- [持久化](../guide/persistence)
+- [持久化](/persistence/overview)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
 - 规范：RFC-0015《审计》
 
@@ -872,7 +872,7 @@ public static class AuditTestExtensions
 dotnet add package XiHan.Framework.Auditing.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包；用其他组合时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包；用其他组合时：
 
 ```csharp
 using XiHan.Framework.Auditing.InMemory;
@@ -964,7 +964,7 @@ public sealed class AuditTrailTests
 
 ## 相关
 
-- [审计](../guide/auditing)
+- [审计](/common/auditing)
 - [Auditing.Abstractions](./auditing-abstractions)
 - [Auditing.Database](./auditing-database)
 - [Profiles.Full](./profiles-full)
@@ -1012,7 +1012,7 @@ public sealed class AuditTrailTests
 dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，服务由 Provider 的特性注册。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，服务由 Provider 的特性注册。
 
 ## 配置
 
@@ -1069,7 +1069,7 @@ public sealed class OneShotGate(ICacheStore store)
 }
 ```
 
-`ICacheStore` 由内存与 Redis Provider 登记在容器里；用远程 Provider 时从 `ISharedCache.Store` 取。缓存读写、批量、锁与幂等键的完整示例见[缓存与分布式锁](../guide/caching)。
+`ICacheStore` 由内存与 Redis Provider 登记在容器里；用远程 Provider 时从 `ISharedCache.Store` 取。缓存读写、批量、锁与幂等键的完整示例见[缓存与分布式锁](/caching/basics)。
 
 ## 行为与限制
 
@@ -1095,7 +1095,7 @@ public sealed class OneShotGate(ICacheStore store)
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching)
+- [缓存与分布式锁](/caching/basics)
 - [Caching.InMemory](./caching-inmemory)、[Caching.Redis](./caching-redis)、[Caching.Hybrid](./caching-hybrid)、[Caching.Remote](./caching-remote)
 - [Conformance 一致性套件](./conformance)
 - 规范：RFC-0006《缓存、分布式锁与幂等》；ADR-0012、ADR-0055、ADR-0058
@@ -1147,7 +1147,7 @@ L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive
 dotnet add package XiHan.Framework.Caching.Hybrid --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包需要一个 `caching.distributed` 的提供者作 L2：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包需要一个 `caching.distributed` 的提供者作 L2：
 
 ```csharp
 using XiHan.Framework.Caching.Hybrid;
@@ -1208,7 +1208,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 }
 ```
 
-读写本身与任何 `ICache` 相同，见[缓存与分布式锁](../guide/caching#读写缓存)。
+读写本身与任何 `ICache` 相同，见[缓存与分布式锁](/caching/basics)。
 
 ## 行为与限制
 
@@ -1220,7 +1220,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching#两级缓存)
+- [缓存与分布式锁](/caching/hybrid)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.Redis](./caching-redis)、[Caching.InMemory](./caching-inmemory)
 - 规范：RFC-0006《缓存、分布式锁与幂等》「两级缓存」；ADR-0019、ADR-0055、ADR-0058
 
@@ -1272,7 +1272,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 dotnet add package XiHan.Framework.Caching.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
 
 ```csharp
 using XiHan.Framework.Caching.InMemory;
@@ -1354,7 +1354,7 @@ public sealed class ObjectEntries(ICache cache)
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching)
+- [缓存与分布式锁](/caching/basics)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.Redis](./caching-redis)、[Caching.Hybrid](./caching-hybrid)
 - [Profiles.Standard](./profiles-standard)
 - 规范：RFC-0006《缓存、分布式锁与幂等》；ADR-0055、ADR-0058
@@ -1408,7 +1408,7 @@ public sealed class ObjectEntries(ICache cache)
 dotnet add package XiHan.Framework.Caching.Redis --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Caching.Redis;
@@ -1445,7 +1445,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<RedisCachingFeat
 }
 ```
 
-值的序列化器按「已登记的 `ICacheSerializer` → 已登记的 `JsonSerializerOptions`（须带 `TypeInfoResolver`）→ 反射版 `JsonCacheSerializer`」的顺序选，在 `AddXiHan` 装配时决定，所以要在 `AddXiHan` 之前登记，见[序列化器](../guide/caching#序列化器)。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
+值的序列化器按「已登记的 `ICacheSerializer` → 已登记的 `JsonSerializerOptions`（须带 `TypeInfoResolver`）→ 反射版 `JsonCacheSerializer`」的顺序选，在 `AddXiHan` 装配时决定，所以要在 `AddXiHan` 之前登记，见[序列化器](/caching/basics)。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
 
 ## 主要类型
 
@@ -1514,9 +1514,9 @@ public sealed class LocalMirror : IDisposable
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching)
+- [缓存与分布式锁](/caching/basics)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.InMemory](./caching-inmemory)、[Caching.Hybrid](./caching-hybrid)
-- [部署与打包](../guide/deployment)：绑定 `cache` 的来源
+- [部署与打包](/deployment/pack)：绑定 `cache` 的来源
 - 规范：RFC-0006《缓存、分布式锁与幂等》；ADR-0055
 
 ---
@@ -1573,7 +1573,7 @@ public sealed class LocalMirror : IDisposable
 dotnet add package XiHan.Framework.Caching.Remote --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
 
 ```csharp
 using XiHan.Framework.Caching.Remote;
@@ -1662,8 +1662,8 @@ xihan-conformance plugin --dir bin --sample 'cache-entries.set={"key":"k","value
 
 ## 相关
 
-- [缓存与分布式锁](../guide/caching#远程-provider)
-- [插件](../guide/plugins)、[Plugins.OutOfProcess](./plugins-outofprocess)
+- [缓存与分布式锁](/caching/hybrid)
+- [插件](/plugins/overview)、[Plugins.OutOfProcess](./plugins-outofprocess)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.Redis](./caching-redis)
 - 规范：RFC-0019《远程 Provider》、RFC-0006《缓存、分布式锁与幂等》；ADR-0011、ADR-0012
 
@@ -1688,7 +1688,7 @@ xihan-conformance plugin --dir bin --sample 'cache-entries.set={"key":"k","value
 
 ## 概述
 
-`xihan` 用 `Hosting.CommandLine` 的解析器、帮助与失败输出：失败时把 Problem JSON 写到 stderr，退出码按错误码的 KIND 段映射（[命令行宿主](../guide/command-line)）。文案按 `--locale` 或当前 UI 区域协商，内置与框架相同的 10 种区域。工具包的公开面只有消息键常量 `CliMessages`，命令本身是 `internal` 的，不作为库使用。
+`xihan` 用 `Hosting.CommandLine` 的解析器、帮助与失败输出：失败时把 Problem JSON 写到 stderr，退出码按错误码的 KIND 段映射（[命令行宿主](/protocols/command-line)）。文案按 `--locale` 或当前 UI 区域协商，内置与框架相同的 10 种区域。工具包的公开面只有消息键常量 `CliMessages`，命令本身是 `internal` 的，不作为库使用。
 
 | 命令 | 说明 |
 | --- | --- |
@@ -1702,9 +1702,9 @@ xihan-conformance plugin --dir bin --sample 'cache-entries.set={"key":"k","value
 
 ## 何时使用
 
-- 生成容器与 Kubernetes 产物：`xihan pack`，写法见[部署与打包](../guide/deployment)。
+- 生成容器与 Kubernetes 产物：`xihan pack`，写法见[部署与打包](/deployment/pack)。
 - 在仓库根或清单目录里查看应用的能力图谱、管道与操作：`xihan graph` 等转发命令，省去手写 `dotnet run --project … --`。
-- 让 Claude Code、Cursor、VS Code、Codex 等编码助手查证包名、能力 ID、配置键与缺省值：把 `xihan mcp` 配成它们的 MCP 服务，见 [MCP Server](../ai/mcp)。
+- 让 Claude Code、Cursor、VS Code、Codex 等编码助手查证包名、能力 ID、配置键与缺省值：把 `xihan mcp` 配成它们的 MCP 服务，见 [MCP Server](/agents/mcp)。
 - 不需要工具也能做同样的事：转发命令等价于 `dotnet run --project <项目> -- <命令>`，应用要装配 `Hosting.CommandLine`。
 
 ## 安装与启用
@@ -1714,7 +1714,7 @@ dotnet tool install --global XiHan.Framework.Cli --prerelease
 xihan version
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。不安装也可以从源码运行（在仓库根执行）：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。不安装也可以从源码运行（在仓库根执行）：
 
 ```bash
 dotnet run --project framework/src/XiHan.Framework.Cli -- pack --manifest framework/samples/SimpleApp/xihan.app.json --output ./artifacts/simple-app-deploy
@@ -1734,7 +1734,7 @@ xihan pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,com
 | `--output` | 清单所在目录下的 `deploy/` | 输出目录，产物整份覆盖写入（UTF-8 无 BOM、LF 换行） |
 | `--only` | 全部 | 逗号分隔的产物种类，不区分大小写；不认识的种类为 `CLI_VALIDATION_001`，退出码 64 |
 
-产物与清单字段的映射见[部署与打包](../guide/deployment#生成部署产物)。写出的文件包括 `Dockerfile` 与 `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`，逐行输出写出的文件；Kafka、Nacos 这类依赖服务在 Kustomize 里只出 Secret 示例，不在集群里起服务。
+产物与清单字段的映射见[部署与打包](/deployment/pack)。写出的文件包括 `Dockerfile` 与 `Dockerfile.dockerignore`、`kustomize/`（Deployment、Service、ConfigMap、HPA、PDB、Lease 的 RBAC、Secret 示例与 kustomization）、`compose.yaml`、`aspire/XiHanAppHost.g.cs`，逐行输出写出的文件；Kafka、Nacos 这类依赖服务在 Kustomize 里只出 Secret 示例，不在集群里起服务。
 
 ### graph、pipeline、operations、invoke
 
@@ -1834,7 +1834,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 
 ## 相关
 
-- [部署与打包](../guide/deployment)、[命令行宿主](../guide/command-line)
+- [部署与打包](/deployment/pack)、[命令行宿主](/protocols/command-line)
 - [Hosting.CommandLine](./hosting-commandline)
 - 规范：RFC-0016《应用清单与打包》、RFC-0020《版本迁移》
 
@@ -1870,7 +1870,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 
 - 用 Nacos 做配置中心：装 [Configuration.Nacos](./configuration-nacos)，它实现 `IRemoteConfigurationClient`，本包随之引入。
 - 接入其他配置中心或密钥库（Apollo、Consul、Vault、Key Vault 等）：框架没有提供这些 Provider，应用实现本包的接口，并用一致性套件验证。
-- 只用文件与环境变量：不需要本包，见[配置与选项](../guide/configuration)。
+- 只用文件与环境变量：不需要本包，见[配置与选项](/configuration/options)。
 
 ## 安装与启用
 
@@ -1878,7 +1878,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 dotnet add package XiHan.Framework.Configuration.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 引用了本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 引用了本包。
 
 本包没有特性。配置源加在 `builder.Configuration` 上，并且要在 `AddXiHan` 之前，框架在 `AddXiHan` 里读取各包选项与绑定。应用自己实现的 Provider 要让错误按调用方语言翻译时，注册本包的消息目录：
 
@@ -1954,7 +1954,7 @@ builder.Configuration
     }));
 ```
 
-`DirectorySecretStore` 的完整实现见[配置与选项](../guide/configuration#密钥)。自己实现的密钥库用一致性套件验证，测试项目引用 `XiHan.Framework.Configuration.Conformance`：
+`DirectorySecretStore` 的完整实现见[配置与选项](/configuration/options)。自己实现的密钥库用一致性套件验证，测试项目引用 `XiHan.Framework.Configuration.Conformance`：
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions.Secrets;
@@ -2016,7 +2016,7 @@ if (secret.TryGetValue(out var value))
 
 ## 相关
 
-- [配置与选项](../guide/configuration)
+- [配置与选项](/configuration/options)
 - [Configuration.Nacos](./configuration-nacos)
 - [Conformance 一致性套件](./conformance)
 - 规范：RFC-0014《远程配置与密钥》
@@ -2051,7 +2051,7 @@ if (secret.TryGetValue(out var value))
 
 ## 何时使用
 
-配置放在 Nacos 里、希望改了以后应用不重启就生效时使用。配置在 Kubernetes ConfigMap 里时用宿主自带的挂载目录（`XIHAN_CONFIG_PATH`）即可，见[配置与选项](../guide/configuration)。Apollo、Consul 等其他配置中心没有提供 Provider，需要应用实现 `IRemoteConfigurationClient`。
+配置放在 Nacos 里、希望改了以后应用不重启就生效时使用。配置在 Kubernetes ConfigMap 里时用宿主自带的挂载目录（`XIHAN_CONFIG_PATH`）即可，见[配置与选项](/configuration/options)。Apollo、Consul 等其他配置中心没有提供 Provider，需要应用实现 `IRemoteConfigurationClient`。
 
 ## 安装与启用
 
@@ -2059,7 +2059,7 @@ if (secret.TryGetValue(out var value))
 dotnet add package XiHan.Framework.Configuration.Nacos --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions.Remote;
@@ -2172,7 +2172,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 
 ## 相关
 
-- [配置与选项](../guide/configuration)
+- [配置与选项](/configuration/options)
 - [Configuration.Abstractions](./configuration-abstractions)
 - 规范：RFC-0014《远程配置与密钥》、ADR-0019
 
@@ -2197,7 +2197,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 
 ## 用法
 
-1. 新建测试项目，引用被测实现、对应的 Conformance 包与 `xunit.v3`，测试项目的其余配置见[测试与一致性套件](../guide/testing#测试项目)。
+1. 新建测试项目，引用被测实现、对应的 Conformance 包与 `xunit.v3`，测试项目的其余配置见[测试与一致性套件](/testing/basics)。
 2. 写一个 `public sealed class` 继承套件基类，实现抽象的工厂方法；需要时覆写虚成员（时限、配置、容器）。
 3. `dotnet test --project <测试项目>` 运行，套件的每个 `[Fact]` 都作为这个类的用例出现。
 
@@ -2205,7 +2205,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。依赖真实服务的实现（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos）在框架仓库里以 `XIHAN_TEST_*` 环境变量提供连接，没设置时用 `Assert.SkipWhen` 跳过；自己的 Provider 可以照这个做法。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。依赖真实服务的实现（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos）在框架仓库里以 `XIHAN_TEST_*` 环境变量提供连接，没设置时用 `Assert.SkipWhen` 跳过；自己的 Provider 可以照这个做法。
 
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |
@@ -2379,7 +2379,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 }
 ```
 
-两套用例都不提供宿主回调服务：Wasm 套件提供的宿主导入只有 `xihan.log`，`xihan.invoke` / `xihan.publish` 返回不可用状态；回调的令牌与权限、崩溃重启由宿主实现的测试覆盖。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`，否则套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝。.NET 之外的插件也可以用规范仓库的 Go 运行器 `xihan-conformance`，用例相同（[测试与一致性套件](../guide/testing#plugins-conformance-与-xihan-conformance)）。`samples/EchoPlugin`、`samples/EchoGoPlugin` 通过进程外用例，`samples/EchoWasmPlugin` 通过 Wasm 用例。
+两套用例都不提供宿主回调服务：Wasm 套件提供的宿主导入只有 `xihan.log`，`xihan.invoke` / `xihan.publish` 返回不可用状态；回调的令牌与权限、崩溃重启由宿主实现的测试覆盖。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`，否则套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝。.NET 之外的插件也可以用规范仓库的 Go 运行器 `xihan-conformance`，用例相同（[测试与一致性套件](/testing/conformance)）。`samples/EchoPlugin`、`samples/EchoGoPlugin` 通过进程外用例，`samples/EchoWasmPlugin` 通过 Wasm 用例。
 
 ## Scheduling
 
@@ -2439,7 +2439,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 ## 相关
 
-- [测试与一致性套件](../guide/testing)、[扩展与二次开发](../guide/extending)
+- [测试与一致性套件](/testing/basics)、[扩展与二次开发](/extending/provider)
 - [Testing 测试基座](./testing)
 
 ---
@@ -2477,7 +2477,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 dotnet add package XiHan.Framework.Domain --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性，不需要 `UseFeature`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性，不需要 `UseFeature`。
 
 ## 主要类型
 
@@ -2552,14 +2552,14 @@ var matched = largeOrOld.IsSatisfiedBy(payment);   // true：不是近 7 天的
 - `DomainEventBuffer` 的容量小于 1 时构造抛出 `ArgumentOutOfRangeException`；已达容量时 `Add` 抛出 `InvalidOperationException`，不丢弃事件。缓冲不是线程安全的，聚合在一个调用里使用。
 - `Specification<T>` 第一次 `IsSatisfiedBy` 时编译 `Criteria` 并缓存委托；只交给查询提供器的规约不编译。`And` / `Or` 把右侧表达式的参数替换为左侧参数，组合结果只有一个参数，能被 EF Core 等 LINQ 提供器翻译。
 - 规约里只用目标 Provider 能翻译的成员与运算；可空值类型与 `null` 的比较在三个持久化 Provider 上都按是否有值判定。
-- 接口只描述字段，不含行为：字段何时写入、怎样过滤由持久化 Provider 按 RFC-0005 执行，见[持久化](../guide/persistence)。
+- 接口只描述字段，不含行为：字段何时写入、怎样过滤由持久化 Provider 按 RFC-0005 执行，见[持久化](/persistence/overview)。
 - `IValueObject` 不参与任何持久化映射。
 
 ## 相关
 
-- [领域模型](../guide/domain)
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
+- [领域模型](/persistence/domain)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.Generators](./persistence-generators)
 - 规范：RFC-0005《领域协议与持久化》
@@ -2599,7 +2599,7 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 dotnet add package XiHan.Framework.Hosting.AspNetCore --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -2682,7 +2682,7 @@ using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 PipelineBypassMetadata.BypassXiHanPipeline(app.MapGet("/version", () => "1.0.0"));
 ```
 
-SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](../guide/realtime)。
+SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)。
 
 ## 行为与限制
 
@@ -2708,11 +2708,11 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](../guide/realti
 | 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
 | 预签名地址无效或已过期 | 403 | `OBJECTSTORAGE_DENIED_001` |
 
-状态码按错误码 KIND 的完整映射见 [HTTP 与 OpenAPI](../guide/http#状态码与错误映射)。
+状态码按错误码 KIND 的完整映射见 [HTTP 与 OpenAPI](/web/routing)。
 
 ## 相关
 
-- [宿主与 Web 应用](../guide/web)、[实时通信](../guide/realtime)、[对象存储](../guide/storage)
+- [宿主与 Web 应用](/web/hosting)、[实时通信](/web/realtime)、[对象存储](/object-storage/basics)
 - [Protocols.Http](./protocols-http)、[Protocols.Grpc](./protocols-grpc)、[Protocols.Mcp](./protocols-mcp)、[Protocols.CloudEvents](./protocols-cloudevents)
 - [Hosting.CommandLine](./hosting-commandline)、[Kernel](./kernel)
 - 规范：`spec/protocol/http.md`《HTTP 载体》、RFC-0003《调用上下文与传播》、RFC-0008《认证与授权》、RFC-0010《本地化》
@@ -2752,7 +2752,7 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](../guide/realti
 dotnet add package XiHan.Framework.Hosting.CommandLine --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using Microsoft.Extensions.Hosting;
@@ -2791,7 +2791,7 @@ dotnet run --project framework/samples/SimpleCli -- invoke greetings.create --js
 XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/samples/SimpleCli -- greetings create --name Ada
 ```
 
-自定义命令与选项的完整说明见[命令行宿主](../guide/command-line)。
+自定义命令与选项的完整说明见[命令行宿主](/protocols/command-line)。
 
 ## 行为与限制
 
@@ -2816,7 +2816,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 
 ## 相关
 
-- [命令行宿主](../guide/command-line)、[操作契约](../guide/operations)
+- [命令行宿主](/protocols/command-line)、[操作契约](/web/operations)
 - [Protocols.Mcp](./protocols-mcp)：`mcp` 命令
 - [Hosting.AspNetCore](./hosting-aspnetcore)、[Cli 命令行工具](./cli)
 - 规范：`spec/protocol/commandline.md`《命令行载体》、RFC-0011《操作契约与 XGI》
@@ -2827,16 +2827,16 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 
 # 包总览
 
-XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织。本册是参考手册，每个包一页，列出它提供的能力、配置节、主要类型、限制与错误码；要完成某件事时先读[开发指南](../guide/modularity)。
+XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织。本册是参考手册，每个包一页，列出它提供的能力、配置节、主要类型、限制与错误码；要完成某件事时先读[开发指南](/startup/features)。
 
 ::: tip 先看指南还是先看这里
 | 问题 | 去处 |
 | --- | --- |
-| 要做某件事：装配特性、写操作、接数据库、做授权、发消息 | [开发指南](../guide/modularity) |
+| 要做某件事：装配特性、写操作、接数据库、做授权、发消息 | [开发指南](/startup/features) |
 | 某个包有什么：能力 ID、配置键、主要类型、AOT 与限制 | 本册 |
 :::
 
-当前是预览版，全部包共享一条版本线，取得方式见[快速上手](../quickstart#获取预览包)。
+当前是预览版，全部包共享一条版本线，取得方式见[快速上手](/getting-started/installation)。
 
 ## 命名规则
 
@@ -2993,7 +2993,7 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。框架包对分析器的引用带 `PrivateAssets="all"`，不会传递给应用；应用要用 XH0003 时自己引用。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。框架包对分析器的引用带 `PrivateAssets="all"`，不会传递给应用；应用要用 XH0003 时自己引用。
 
 框架包规则与零反射规则只在对应的 MSBuild 属性存在时生效。分析器经 `build_property.*` 读取它们，属性必须声明为编译器可见：包里带的 `buildTransitive/XiHan.Framework.Kernel.Analyzers.props` 已把 `XiHanFrameworkPackage` 与 `XiHanRing` 声明为 `CompilerVisibleProperty`，以包引用分析器的项目只需设置属性（框架仓库内以项目引用分析器，由 `framework/src/Directory.Build.props` 声明同样的两项）：
 
@@ -3054,7 +3054,7 @@ public sealed class DefaultReportStore;
 
 ## 相关
 
-- [测试与一致性套件](../guide/testing#架构测试与门禁)、[扩展与二次开发](../guide/extending)
+- [测试与一致性套件](/testing/conformance)、[扩展与二次开发](/extending/provider)
 - [Kernel.Generators](./kernel-generators)、[Primitives](./primitives)
 
 ---
@@ -3119,7 +3119,7 @@ Schema 的生成规则：
 dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：
 
 ```xml
 <ProjectReference Include="../../src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
@@ -3208,7 +3208,7 @@ public sealed class NotesFeature : IFeature
 }
 ```
 
-生成的 `CreateNoteRequest` 请求 Schema 里，`title` 进 `required`、带 `minLength: 1` 与 `maxLength: 80`，`description` 取自 `<param>`。完整用法见 `samples/SimpleApp/Orders`（`CreateOrder`、`ListOrders` 与 `OrdersFeature`），操作契约本身见[操作契约](../guide/operations)。
+生成的 `CreateNoteRequest` 请求 Schema 里，`title` 进 `required`、带 `minLength: 1` 与 `maxLength: 80`，`description` 取自 `<param>`。完整用法见 `samples/SimpleApp/Orders`（`CreateOrder`、`ListOrders` 与 `OrdersFeature`），操作契约本身见[操作契约](/web/operations)。
 
 ## 行为与限制
 
@@ -3224,11 +3224,11 @@ public sealed class NotesFeature : IFeature
 - `ReadOnly = true` 原样生成为契约的只读标记，协议据此推导（MCP 的 `readOnlyHint`、HTTP 的 `GET`）；`get` / `list` 本来就是只读。
 - 落定的 `Expose` 值写进生成的 `OperationContract`，运行期不再读特性。
 - 生成器只处理当前项目里的操作与序列化上下文，引用的其他程序集里的 `JsonSerializerContext` 不参与解析（XHG002）。
-- 清单的源生成（`[Capability]` → `Manifest` 属性与嵌入的 `xihan.manifest.json`）顺延，尚未提供：每个特性在 `Manifest` 属性里手写清单（[能力包与清单](../guide/modularity)，ADR-0075）。
+- 清单的源生成（`[Capability]` → `Manifest` 属性与嵌入的 `xihan.manifest.json`）顺延，尚未提供：每个特性在 `Manifest` 属性里手写清单（[能力包与清单](/startup/features)，ADR-0075）。
 
 ## 相关
 
-- [操作契约](../guide/operations)、[HTTP 与 OpenAPI](../guide/http)、[序列化与 Native AOT](../guide/aot)
+- [操作契约](/web/operations)、[HTTP 与 OpenAPI](/web/routing)、[序列化与 Native AOT](/common/serialization)
 - [Kernel](./kernel)、[Kernel.Analyzers](./kernel-analyzers)、[Persistence.Generators](./persistence-generators)
 - 规范：RFC-0011《操作契约与 XGI》
 
@@ -3280,7 +3280,7 @@ public sealed class NotesFeature : IFeature
 dotnet add package XiHan.Framework.Kernel --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 在通用宿主上直接使用内核（没有 HTTP）：
 
@@ -3293,7 +3293,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<WorkerFeature>());
 await builder.Build().RunAsync();
 ```
 
-`WorkerFeature` 是应用自己的特性，写法见[能力包与清单](../guide/modularity)。
+`WorkerFeature` 是应用自己的特性，写法见[能力包与清单](/startup/features)。
 
 ## 配置
 
@@ -3303,8 +3303,8 @@ await builder.Build().RunAsync();
 | `XiHan:Kernel:StopTimeoutSeconds` | `30` | 每个特性停止的超时 |
 | `XiHan:Kernel:FailurePolicy` | `TerminateStartup` | 特性启动失败时终止启动，或 `IsolateFeature` 只隔离该特性 |
 | `XiHan:Kernel:UseBuiltInMiddleware` | `true` | 是否登记 Observe、截止时间、Resilience、Validate 四个内置中间件 |
-| `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](../guide/resilience) |
-| `XiHan:Security:Outbound:*` | 只能连公网地址 | [出站地址策略](../guide/outbound)的放行项：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
+| `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](/common/resilience) |
+| `XiHan:Security:Outbound:*` | 只能连公网地址 | [出站地址策略](/security/outbound)的放行项：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Providers:<能力 ID>` | — | 指定某能力的提供者清单 ID |
 | `XiHan:Bindings:<名字>` | — | 资源绑定；另读环境变量 `SERVICE_BINDING_ROOT` 指向的 Service Binding 目录 |
 
@@ -3329,7 +3329,7 @@ await builder.Build().RunAsync();
 | `IOperationInvoker` / `OperationRegistry` / `OperationDescriptor` | 操作调用与登记；`OperationRegistry(permissions)` 绑定核对用的权限登记表，`AddRange(owner, operations, permissions)` 一个归属的一组操作连同它定义的权限码全进或全不进；`RemoveOwnedBy(owner)` 在锁里一次撤回该归属的全部操作与权限码（插件卸载时用，之后可以再登记，ADR-0085）；`Enforce(check)` 核对已登记的操作并挂上核对，此后每次登记都经过它（授权能力用它核对契约的策略名，ADR-0080） |
 | `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous` |
 | `PermissionDefinition` / `PermissionRegistry` | 权限码登记，每个码记下归属（特性或插件的清单 ID）；`Add(owner, permission)` / `AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回，写入与撤回在锁内（插件运行期加载与卸载也会登记、撤回） |
-| `OutboundAddressPolicy` / `OutboundAddressOptions` / `OutboundAddressDeniedException` | [出站地址策略](../guide/outbound)：宿主登记的单例，`Apply(SocketsHttpHandler)` 让连接按实际 IP 过策略，`ConnectAsync(host, port, ct)` 给不是 HTTP 的连接，`IsAllowed(IPAddress)` 判断一个 IP |
+| `OutboundAddressPolicy` / `OutboundAddressOptions` / `OutboundAddressDeniedException` | [出站地址策略](/security/outbound)：宿主登记的单例，`Apply(SocketsHttpHandler)` 让连接按实际 IP 过策略，`ConnectAsync(host, port, ct)` 给不是 HTTP 的连接，`IsAllowed(IPAddress)` 判断一个 IP |
 | `KernelCapabilities` | 能力 ID 常量与内核清单 |
 
 ## 使用示例
@@ -3353,7 +3353,7 @@ app.MapGet("/diagnostics/state", (App xihan) => xihan.Health().State.ToString())
 app.Run();
 ```
 
-对外暴露这类端点时要加认证约束（`RequireXiHanAuthentication`），见[宿主与 Web 应用](../guide/web)。
+对外暴露这类端点时要加认证约束（`RequireXiHanAuthentication`），见[宿主与 Web 应用](/web/hosting)。
 
 ## 行为与限制
 
@@ -3400,10 +3400,10 @@ app.Run();
 
 ## 相关
 
-- [能力包与清单](../guide/modularity)
-- [生命周期与健康](../guide/lifecycle)
-- [执行管道](../guide/pipeline)
-- [操作契约](../guide/operations)
+- [能力包与清单](/startup/features)
+- [生命周期与健康](/startup/lifecycle)
+- [执行管道](/startup/pipeline)
+- [操作契约](/web/operations)
 - [Primitives](./primitives)、[Kernel.Generators](./kernel-generators)、[Kernel.Analyzers](./kernel-analyzers)
 - 规范：RFC-0002《清单》、RFC-0003《调用上下文与传播》、RFC-0004《管道阶段与排序》、RFC-0011《操作契约与 XGI》
 
@@ -3444,7 +3444,7 @@ app.Run();
 - 需要在调用链之外按指定区域取文案，或要知道命中的区域：注入 `IMessageLocalizer`。
 - 实现新的本地化 Provider：实现 `IMessageLocalizer` 与 `IMessageResolver`，并通过 `Localization.Conformance`。
 
-用法与回退规则的完整讲解见[国际化](../guide/localization)。
+用法与回退规则的完整讲解见[国际化](/common/localization)。
 
 ## 安装与启用
 
@@ -3452,7 +3452,7 @@ app.Run();
 dotnet add package XiHan.Framework.Localization.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Minimal`（以及包含它的 `Standard`、`Full`）已引用本包与默认实现。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Minimal`（以及包含它的 `Standard`、`Full`）已引用本包与默认实现。
 
 应用的语言文件以固定逻辑名嵌入：
 
@@ -3560,7 +3560,7 @@ var chain = options.FallbackChain("zh-HK");          // zh-HK, zh-CN, zh-TW, en-
 
 ## 相关
 
-- [国际化](../guide/localization)
+- [国际化](/common/localization)
 - [Localization.InMemory](./localization-inmemory)
 - [Localization.Database](./localization-database)
 - [Primitives 原语层](./primitives)
@@ -3606,7 +3606,7 @@ var chain = options.FallbackChain("zh-HK");          // zh-HK, zh-CN, zh-TW, en-
 dotnet add package XiHan.Framework.Localization.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan
@@ -3664,7 +3664,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 ## 使用示例
 
-写入与删除放在操作里（`MessageTranslationStore` 只能在调用的 Transaction 阶段内使用），完整的操作写法见[国际化](../guide/localization#数据库翻译)：
+写入与删除放在操作里（`MessageTranslationStore` 只能在调用的 Transaction 阶段内使用），完整的操作写法见[国际化](/common/localization#数据库翻译)：
 
 ```csharp
 // 在操作的 HandleAsync 里：一次批量写入，逐项结果与入参同序
@@ -3707,8 +3707,8 @@ if (reloaded.IsFailure)
 
 ## 相关
 
-- [国际化](../guide/localization)
-- [持久化](../guide/persistence)
+- [国际化](/common/localization)
+- [持久化](/persistence/overview)
 - [Localization.Abstractions](./localization-abstractions)
 - [Localization.InMemory](./localization-inmemory)
 - 规范：RFC-0010《本地化》
@@ -3750,7 +3750,7 @@ if (reloaded.IsFailure)
 dotnet add package XiHan.Framework.Localization.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 用组合包时已经装配，不需要再写；只用内核时显式加入：
 
@@ -3812,7 +3812,7 @@ using (MessageScope.Use(localizer, "ja-JP"))
 
 ## 相关
 
-- [国际化](../guide/localization)
+- [国际化](/common/localization)
 - [Localization.Abstractions](./localization-abstractions)
 - [Localization.Database](./localization-database)
 - [Profiles.Minimal](./profiles-minimal)
@@ -3843,7 +3843,7 @@ using (MessageScope.Use(localizer, "ja-JP"))
 
 - 信封 `MessageEnvelope` 是 CloudEvents 1.0，`CloudEventsFormat` 做结构化 JSON 编解码（`application/cloudevents+json`）。
 - 应用经 `IMessagePublisher` 发布，Provider 实现 `IMessageBroker`（发布、按订阅消费、至少一次、重试、死信）；流 Provider 另实现 `IMessageReplayer`。
-- 处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic, mode)` 订阅；订阅方式 `SubscriptionMode` 缺省 `Competing`（订阅了主题的实例里只有一个收到），`Broadcast` 是每个在线实例各收到一份（尽力而为、不进死信，[订阅方式](../guide/messaging#订阅方式)）。`MessageDispatcher` 为每条消息开新作用域、从扩展属性构造调用上下文、经完整管道执行与投递同一方式的处理器。
+- 处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic, mode)` 订阅；订阅方式 `SubscriptionMode` 缺省 `Competing`（订阅了主题的实例里只有一个收到），`Broadcast` 是每个在线实例各收到一份（尽力而为、不进死信，[订阅方式](/messaging/pubsub)）。`MessageDispatcher` 为每条消息开新作用域、从扩展属性构造调用上下文、经完整管道执行与投递同一方式的处理器。
 - Provider 的特性先注册自己的 `IMessageBroker`，再调用 `MessagingRegistration.Configure(context)` 注册选项、派发器、`MessagingRuntime` 与缺省的 `DirectPublisher`，启停时调用 `MessagingRuntime.StartAsync` / `StopAsync`。
 - 领域事件：`AddDomainEvent<TEvent>` 登记事件到主题与 CloudEvents `type`，`DomainEventDispatcher` 实现持久化抽象的 `IDomainEventDispatcher`，在 Transaction 阶段提交前把聚合的事件发成信封。
 - 发件箱：`OutboxFeature` 把发布者换成 `OutboxPublisher`，有活动工作单元时写发件箱表，由 `OutboxDispatcher` 在提交后投递。
@@ -3860,7 +3860,7 @@ using (MessageScope.Use(localizer, "ja-JP"))
 dotnet add package XiHan.Framework.Messaging.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。订阅写在特性的 `Configure` 里，或直接写在 `builder.Services` 上；发件箱按需装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。订阅写在特性的 `Configure` 里，或直接写在 `builder.Services` 上；发件箱按需装配：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -3909,7 +3909,7 @@ builder.AddXiHan(xihan => xihan
 | `MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按（主题，方式）分组的订阅表（`All`、`Topics`、`HandlersFor(topic, mode)`、`Add(topic, handlerType, mode)`）；一个订阅；订阅方式 `Competing` / `Broadcast` |
 | `MessageDispatcher` | 把投递变成一次内核调用，`GetDelivery(context)` 取当前投递 |
 | `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
-| `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](../guide/messaging#订阅方式)）；Provider 共用的装配；启停消费 |
+| `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](/messaging/pubsub)）；Provider 共用的装配；启停消费 |
 | `DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher` | 领域事件登记表（容量 `DefaultCapacity` 10000）、一种事件的映射（`ToEnvelope`）、派发器 |
 | `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避与保留期，`RetryDelayAfter(attempts)`） |
 | `MessagingCapabilities`、`MessagingErrors`、`MessagingMessages` | 能力 ID 与版本、错误码、消息键与消息目录 |
@@ -3938,7 +3938,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 }
 ```
 
-中间件在特性的 `Configure` 里用 `context.AddMiddleware<DeliveryLoggingMiddleware>(PipelineStage.Observe)` 登记，见[执行管道](../guide/pipeline)。发布、订阅、领域事件与发件箱的完整示例见[消息与事件](../guide/messaging)。
+中间件在特性的 `Configure` 里用 `context.AddMiddleware<DeliveryLoggingMiddleware>(PipelineStage.Observe)` 登记，见[执行管道](/startup/pipeline)。发布、订阅、领域事件与发件箱的完整示例见[消息与事件](/messaging/pubsub)。
 
 ## 行为与限制
 
@@ -3965,7 +3965,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 
 ## 相关
 
-- [消息与事件](../guide/messaging)
+- [消息与事件](/messaging/pubsub)
 - [Messaging.InMemory](./messaging-inmemory)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Protocols.CloudEvents](./protocols-cloudevents)
 - [Persistence.Abstractions](./persistence-abstractions)：工作单元与 `IDomainEventDispatcher` 端口
 - [Conformance 一致性套件](./conformance)
@@ -3998,7 +3998,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 - 发布到没人订阅的主题：消息直接丢弃，发布照常成功（批量逐项成功），不建通道，每次发布记一条 Debug 日志（`Dropped {Count} message(s) published to topic ...`）。调度、工作流等框架事件照常发布到应用不一定订阅的主题，这是常态，所以不按 Warning 记；主题名写错时打开 `XiHan.Framework.Messaging.InMemory.InMemoryMessageBroker` 类别的 Debug 日志排查。
 - 主题数不另设上限：通道只为订阅表里的主题创建，订阅表在装配时定好、之后只读，不随发布增长（ADR-0082）。
 - 应用启动时为每个订阅了的主题起一个消费循环，按入队顺序逐条交给 `MessageDispatcher`；应用进入服务状态之前不投递，启动前发布到被订阅主题的消息留在通道里，启动后投递。
-- 订阅方式：单进程就是一个实例。一条消息给主题的每种订阅方式各入队一份投递（各占通道的一个位置），竞争订阅与广播订阅各收到一次、各自重试；没有跨进程的语义（[订阅方式](../guide/messaging#订阅方式)）。
+- 订阅方式：单进程就是一个实例。一条消息给主题的每种订阅方式各入队一份投递（各占通道的一个位置），竞争订阅与广播订阅各收到一次、各自重试；没有跨进程的语义（[订阅方式](/messaging/pubsub)）。
 - 失败按 `XiHan:Messaging:MaxAttempts` 以下一次尝试号重新入队到队尾（只给失败的那种方式）；达到上限、或重新入队时通道已满，竞争投递进入该主题的死信列表，广播投递丢弃并记 Warning 日志。死信列表同样有界，超过 `MaxQueuedMessages` 时丢弃最旧的。`DeliveredCount` 每种方式各算一次。
 - 停止时取消消费循环，把正在处理的那条放回通道，并等待循环结束。
 
@@ -4016,7 +4016,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 dotnet add package XiHan.Framework.Messaging.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -4079,7 +4079,7 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 
 ## 相关
 
-- [消息与事件](../guide/messaging)
+- [消息与事件](/messaging/pubsub)
 - [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)
 - [Profiles.Standard](./profiles-standard)
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》
@@ -4111,7 +4111,7 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 - 消息键取信封扩展属性 `xihankey`（`EnvelopeExtensions.PartitionKey`）：同键进同一分区，按发布顺序投递；没有键时由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 - 生产者幂等（`EnableIdempotence`）且 `acks=all`。批量发布连续交给客户端本地队列、合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
 - 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `GroupId`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
-- 广播订阅（[订阅方式](../guide/messaging#订阅方式)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](../guide/messaging#订阅方式)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
+- 广播订阅（[订阅方式](/messaging/pubsub)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](/messaging/pubsub)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
 - 处理失败在原位重试到 `MaxAttempts`，不重新入队，分区内顺序不变；竞争订阅仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。无法解码的消息直接进死信。
 - 竞争订阅投递完成（成功或进死信）后才提交位点；停止时未完成的消息在重启后重新投递，仍是至少一次。
 - 死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，消费者回退到这条消息，等 `RedeliveryDelaySeconds` 后重新投递（处理器重新执行），期间这个分区不往后读；消费者本身出错同样等一会儿再取。消费循环只在停止时退出，每次重投记 Error 日志。
@@ -4130,7 +4130,7 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 dotnet add package XiHan.Framework.Messaging.Kafka --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -4178,7 +4178,7 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
-凭据只作开发示例，生产环境从密钥来源注入，见[配置与选项](../guide/configuration)。
+凭据只作开发示例，生产环境从密钥来源注入，见[配置与选项](/configuration/options)。
 
 ## 主题
 
@@ -4196,8 +4196,8 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | 应用发布与订阅的主题 | 总是 |
 | 被竞争订阅的主题加 `DeadLetterSuffix`（缺省 `.dlq`） | 有竞争订阅时；广播订阅不发布死信 |
-| `scheduling.job.scheduled`、`scheduling.job.unscheduled`、`scheduling.job.paused`、`scheduling.job.resumed`、`scheduling.run.started`、`scheduling.run.succeeded`、`scheduling.run.failed`、`scheduling.run.canceled`、`scheduling.run.lost` | 装配了调度（`SchedulingTopics`，[调度事件](../guide/scheduling#事件)），没人订阅也要建 |
-| `workflow.instance.started`、`.completed`、`.faulted`、`.canceled`、`.terminated`、`.suspended`、`.resumed`、`.jumped`、`.migrated`、`.timedout`；`workflow.node.executing`、`.executed`、`.faulted`；`workflow.task.created`、`.completed`、`.transferred`、`.claimed`、`.released`、`.returned`、`.urged`、`.reminder`；`workflow.external.created`、`.completed`、`.failed`；`workflow.custom` | 装配了工作流（`WorkflowTopics`，[工作流事件](../guide/workflow#事件)），没人订阅也要建 |
+| `scheduling.job.scheduled`、`scheduling.job.unscheduled`、`scheduling.job.paused`、`scheduling.job.resumed`、`scheduling.run.started`、`scheduling.run.succeeded`、`scheduling.run.failed`、`scheduling.run.canceled`、`scheduling.run.lost` | 装配了调度（`SchedulingTopics`，[调度事件](/scheduling/jobs)），没人订阅也要建 |
+| `workflow.instance.started`、`.completed`、`.faulted`、`.canceled`、`.terminated`、`.suspended`、`.resumed`、`.jumped`、`.migrated`、`.timedout`；`workflow.node.executing`、`.executed`、`.faulted`；`workflow.task.created`、`.completed`、`.transferred`、`.claimed`、`.released`、`.returned`、`.urged`、`.reminder`；`workflow.external.created`、`.completed`、`.failed`；`workflow.custom` | 装配了工作流（`WorkflowTopics`，[工作流事件](/workflow/definitions)），没人订阅也要建 |
 
 重放用临时消费组读已有的主题，不建主题；广播订阅只多出消费组，不多出主题。用 Kafka 自带的脚本建主题（分区数与副本数按集群定）：
 
@@ -4258,9 +4258,9 @@ docker run -d -p 9092:9092 apache/kafka
 
 ## 相关
 
-- [消息与事件](../guide/messaging#队列与流)
+- [消息与事件](/messaging/streams)
 - [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.InMemory](./messaging-inmemory)
-- [部署与打包](../guide/deployment)：绑定 `stream` 的来源
+- [部署与打包](/deployment/pack)：绑定 `stream` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》「流」；ADR-0019
 
 ---
@@ -4291,7 +4291,7 @@ docker run -d -p 9092:9092 apache/kafka
 - 消息持久化投递，`content_type` 为 `application/cloudevents+json`，`message_id` 为事件 ID，消息体是 CloudEvents 结构化 JSON。
 - 发布共用一条发布通道，用信号量串行化；通道开启发布确认并由客户端跟踪，消息以 `mandatory` 发出，代理确认后发布才返回成功，代理拒绝（nack）返回 `MESSAGING_UNAVAILABLE_001`。批量发布在这条通道上连续写出整批（一次持锁），再一次等待全部确认，结果逐项对应。
 - 没有订阅者：消息被退回（路由键上没有队列绑定）时丢弃，发布照常成功（批量逐项成功），记一条 Debug 日志，与内存代理一致；发件箱不为它重试，也不记进死信。
-- 广播订阅（[订阅方式](../guide/messaging#订阅方式)）：每个实例声明独占、非持久、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`，以主题的路由键绑定到交换机，交换机给竞争队列与每个实例的广播队列各一份。实例与代理断开时队列随连接删除（客户端自动恢复连接时重新声明），断开期间的消息收不到；重试定向发回本实例的广播队列，到上限或无法解码时确认掉并记 Warning 日志，不进死信。实例下线不留下队列。队列名里的实例标识缺省每次启动生成；配了 `XiHan:Messaging:InstanceId` 时取配置值，两个同时在线的实例配了同一个值，后启动的那个声明同名独占队列被代理拒绝（`RESOURCE_LOCKED`），启动失败（`MESSAGING_UNAVAILABLE_001`），见[订阅方式](../guide/messaging#订阅方式)。
+- 广播订阅（[订阅方式](/messaging/pubsub)）：每个实例声明独占、非持久、随连接删除的队列 `<QueuePrefix><topic>@<InstanceId>`，以主题的路由键绑定到交换机，交换机给竞争队列与每个实例的广播队列各一份。实例与代理断开时队列随连接删除（客户端自动恢复连接时重新声明），断开期间的消息收不到；重试定向发回本实例的广播队列，到上限或无法解码时确认掉并记 Warning 日志，不进死信。实例下线不留下队列。队列名里的实例标识缺省每次启动生成；配了 `XiHan:Messaging:InstanceId` 时取配置值，两个同时在线的实例配了同一个值，后启动的那个声明同名独占队列被代理拒绝（`RESOURCE_LOCKED`），启动失败（`MESSAGING_UNAVAILABLE_001`），见[订阅方式](/messaging/pubsub)。
 - 每个订阅（主题加方式）一个通道与一个消费者，预取 `PrefetchCount`（缺省 16），手动确认，单线程派发。
 - 处理失败：尝试次数（消息头 `x-xihan-attempt`）小于 `MaxAttempts` 时经默认交换机重新发布到所消费队列的队尾，否则发布到死信队列 `<QueuePrefix><topic><DeadLetterSuffix>`（由死信的一方声明为持久队列并绑定到交换机，即主题加后缀的竞争队列）；重新发布同样等确认，确认了才确认原消息，未被确认、被退回（队列已不存在）或发布失败时把原消息 nack 并重新入队，由 RabbitMQ 再投递。无法解码的消息不重试，原样进死信队列（同样等确认）。
 - 停止时取消消费者；正在处理的消息不确认，连接关闭后由 RabbitMQ 重新投递。
@@ -4310,7 +4310,7 @@ docker run -d -p 9092:9092 apache/kafka
 dotnet add package XiHan.Framework.Messaging.RabbitMQ --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -4422,9 +4422,9 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 
 ## 相关
 
-- [消息与事件](../guide/messaging)
+- [消息与事件](/messaging/pubsub)
 - [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Kafka](./messaging-kafka)
-- [部署与打包](../guide/deployment)：绑定 `queue` 的来源
+- [部署与打包](/deployment/pack)：绑定 `queue` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》
 
 ---
@@ -4464,7 +4464,7 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
 
 ## 配置
 
@@ -4555,7 +4555,7 @@ public static class ShardInfo
 }
 ```
 
-管道外的作用域绑定分片的完整示例见[多租户 · 管道外绑定分片](../guide/multi-tenancy#管道外绑定分片)。
+管道外的作用域绑定分片的完整示例见[多租户 · 管道外绑定分片](/multi-tenancy/sharding)。
 
 ## 行为与限制
 
@@ -4580,7 +4580,7 @@ public static class ShardInfo
 
 ## 相关
 
-- [多租户](../guide/multi-tenancy)
+- [多租户](/multi-tenancy/resolution)
 - [MultiTenancy.InMemory](./multitenancy-inmemory)
 - [MultiTenancy.Database](./multitenancy-database)
 - [Conformance 一致性套件](./conformance)
@@ -4627,7 +4627,7 @@ public static class ShardInfo
 dotnet add package XiHan.Framework.MultiTenancy.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包必须和一个持久化 Provider 一起装配，下面用 `Persistence.SqlSugar`，它按约定映射 `TenantRecord`，不需要登记：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配，下面用 `Persistence.SqlSugar`，它按约定映射 `TenantRecord`，不需要登记：
 
 ```csharp
 using SqlSugar;
@@ -4745,7 +4745,7 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 
 ## 相关
 
-- [多租户](../guide/multi-tenancy)
+- [多租户](/multi-tenancy/resolution)
 - [MultiTenancy.Abstractions](./multitenancy-abstractions)
 - [MultiTenancy.InMemory](./multitenancy-inmemory)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
@@ -4792,7 +4792,7 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 dotnet add package XiHan.Framework.MultiTenancy.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -4900,7 +4900,7 @@ public sealed class TenantAdministration(InMemoryTenantStore store, ITenantShard
 
 ## 相关
 
-- [多租户](../guide/multi-tenancy)
+- [多租户](/multi-tenancy/resolution)
 - [MultiTenancy.Abstractions](./multitenancy-abstractions)
 - [MultiTenancy.Database](./multitenancy-database)
 - [Profiles.Standard](./profiles-standard)
@@ -4935,7 +4935,7 @@ public sealed class TenantAdministration(InMemoryTenantStore store, ITenantShard
 
 ## 何时使用
 
-业务代码注入 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 或 `BlobStores` 时引用本包；具体后端装 [ObjectStorage.FileSystem](./objectstorage-filesystem) 或 [ObjectStorage.S3](./objectstorage-s3)。实现新的存储后端时实现本包的接口，并通过 `ObjectStorage.Conformance`。用法讲解见[对象存储](../guide/storage)。
+业务代码注入 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner` 或 `BlobStores` 时引用本包；具体后端装 [ObjectStorage.FileSystem](./objectstorage-filesystem) 或 [ObjectStorage.S3](./objectstorage-s3)。实现新的存储后端时实现本包的接口，并通过 `ObjectStorage.Conformance`。用法讲解见[对象存储](/object-storage/basics)。
 
 ## 安装与启用
 
@@ -4943,7 +4943,7 @@ public sealed class TenantAdministration(InMemoryTenantStore store, ITenantShard
 dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。
 
 ## 配置
 
@@ -5078,7 +5078,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 
 ## 相关
 
-- [对象存储](../guide/storage)
+- [对象存储](/object-storage/basics)
 - [ObjectStorage.FileSystem](./objectstorage-filesystem)
 - [ObjectStorage.S3](./objectstorage-s3)
 - [Hosting.AspNetCore](./hosting-aspnetcore)
@@ -5116,7 +5116,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 
 键的各段经编码后作为路径，大小写不敏感的文件系统上键仍区分大小写；容器目录按需创建。写入先落同目录的临时文件（名字含 `.xihan-tmp-`），复制完成后原子替换，再写元数据。配额在进程内计量：启动时扫描目录得到已用量并清理残留的临时文件，之后每次写入与删除更新。
 
-预签名不是文件系统的能力。需要限时地址时装 `Hosting.AspNetCore` 的 `HostedBlobUrlFeature` 并 `MapXiHanBlobs()`，由宿主代收发，见[对象存储](../guide/storage#预签名地址)。
+预签名不是文件系统的能力。需要限时地址时装 `Hosting.AspNetCore` 的 `HostedBlobUrlFeature` 并 `MapXiHanBlobs()`，由宿主代收发，见[对象存储](/object-storage/advanced)。
 
 ## 何时使用
 
@@ -5129,7 +5129,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 dotnet add package XiHan.Framework.ObjectStorage.FileSystem --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
@@ -5196,7 +5196,7 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 - 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片不计入配额。上传标识只认本实现发出的 32 位小写十六进制。
 - 健康项 `objectstorage.filesystem.capacity` 由存储同步计算：已用量达到 `MaxTotalBytes` 即 Degraded（`OBJECTSTORAGE_UNAVAILABLE_002`），否则 Ready。命名实例的探测用同一口径。
 - 命名实例建出时即建目录并扫描用量，预签名用宿主签名器的 `ForStore(name)`。本包被别的存储顶替时仍登记 `filesystem` Provider，命名实例照常可用。
-- 与 S3 混装、以本包为缺省实例时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可，S3 只登记命名实例；要缺省的分片上传再把 `objectstorage.multipart` 指定给本包，要缺省的预签名装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。有特性依赖分片上传或预签名却没指定时，那项能力解析到 S3 且是被要求的，`OBJECTSTORAGE_VALIDATION_004` 启动失败（见[对象存储](../guide/storage#命名存储实例)）。
+- 与 S3 混装、以本包为缺省实例时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可，S3 只登记命名实例；要缺省的分片上传再把 `objectstorage.multipart` 指定给本包，要缺省的预签名装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。有特性依赖分片上传或预签名却没指定时，那项能力解析到 S3 且是被要求的，`OBJECTSTORAGE_VALIDATION_004` 启动失败（见[对象存储](/object-storage/advanced)）。
 - 通过 `ObjectStorage.Conformance` 的 `BlobStoreConformance` 与 `BlobStoreProviderConformance`。
 
 | 错误码 | 含义 |
@@ -5211,7 +5211,7 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 
 ## 相关
 
-- [对象存储](../guide/storage)
+- [对象存储](/object-storage/basics)
 - [ObjectStorage.Abstractions](./objectstorage-abstractions)
 - [ObjectStorage.S3](./objectstorage-s3)
 - [Hosting.AspNetCore](./hosting-aspnetcore)
@@ -5254,7 +5254,7 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 dotnet add package XiHan.Framework.ObjectStorage.S3 --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeature>());
@@ -5303,9 +5303,9 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 /bindings/objectstorage/secretKey     dev-secret-key
 ```
 
-绑定的解析规则见[配置与选项](../guide/configuration#资源绑定)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
+绑定的解析规则见[配置与选项](/configuration/options)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
 
-命名实例的客户端过[出站地址策略](../guide/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。缺省实例的端点是运维配的，不过策略。
+命名实例的客户端过[出站地址策略](/security/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。缺省实例的端点是运维配的，不过策略。
 
 ## 条件写入探测
 
@@ -5418,8 +5418,8 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 
 ## 相关
 
-- [对象存储](../guide/storage)
-- [配置与选项](../guide/configuration)
+- [对象存储](/object-storage/basics)
+- [配置与选项](/configuration/options)
 - [ObjectStorage.Abstractions](./objectstorage-abstractions)
 - [ObjectStorage.FileSystem](./objectstorage-filesystem)
 - 规范：RFC-0012《对象存储》、ADR-0049、ADR-0050、ADR-0089
@@ -5459,7 +5459,7 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 dotnet add package XiHan.Framework.Observability.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。两个实现包都依赖本包，`Profiles.Full` 已包含。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。两个实现包都依赖本包，`Profiles.Full` 已包含。
 
 ## 主要类型
 
@@ -5522,7 +5522,7 @@ public sealed class CapacityCheck(IHostMonitor monitor)
 
 ## 相关
 
-- [可观测性](../guide/observability#运行信息)
+- [可观测性](/common/observability#运行信息)
 - [Observability.Host](./observability-host)
 - [Observability.OpenTelemetry](./observability-opentelemetry)
 - 规范：RFC-0023《可观测性：导出与运行信息》
@@ -5570,7 +5570,7 @@ public sealed class CapacityCheck(IHostMonitor monitor)
 dotnet add package XiHan.Framework.Observability.Host --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -5609,7 +5609,7 @@ app.Run();
 
 ## 使用示例
 
-服务监控页的端点见[可观测性](../guide/observability#运行信息)。在测试里等第一次使用率出来再断言：
+服务监控页的端点见[可观测性](/common/observability#运行信息)。在测试里等第一次使用率出来再断言：
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
@@ -5667,7 +5667,7 @@ public sealed class MonitorTests
 
 ## 相关
 
-- [可观测性](../guide/observability#运行信息)
+- [可观测性](/common/observability#运行信息)
 - [Observability.Abstractions](./observability-abstractions)
 - [Observability.OpenTelemetry](./observability-opentelemetry)
 - [Profiles.Full](./profiles-full)
@@ -5714,7 +5714,7 @@ ASP.NET Core 与 `HttpClient` 不装检测包，按名字订阅它们原生发�
 dotnet add package XiHan.Framework.Observability.OpenTelemetry --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -5834,7 +5834,7 @@ public sealed class TracingTests
 
 ## 相关
 
-- [可观测性](../guide/observability#导出到-opentelemetry)
+- [可观测性](/common/observability#导出到-opentelemetry)
 - [Observability.Abstractions](./observability-abstractions)
 - [Observability.Host](./observability-host)
 - [Kernel 内核](./kernel)
@@ -5871,7 +5871,7 @@ public sealed class TracingTests
 
 ## 何时使用
 
-写操作契约、领域服务、后台任务等需要读写实体的代码引用本包。装配哪个 Provider 是应用入口的事，见[持久化](../guide/persistence#选择-provider)。实现自己的 Provider 时实现 `IRepository<TEntity, TKey>`、`IUnitOfWork` 与 `IRepositoryRegistrar`，并通过 [Conformance 一致性套件](./conformance)。
+写操作契约、领域服务、后台任务等需要读写实体的代码引用本包。装配哪个 Provider 是应用入口的事，见[持久化](/persistence/overview)。实现自己的 Provider 时实现 `IRepository<TEntity, TKey>`、`IUnitOfWork` 与 `IRepositoryRegistrar`，并通过 [Conformance 一致性套件](./conformance)。
 
 ## 安装与启用
 
@@ -5879,7 +5879,7 @@ public sealed class TracingTests
 dotnet add package XiHan.Framework.Persistence.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已包含本包与内存实现。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已包含本包与内存实现。
 
 本包的契约不需要启用；雪花标识需要显式装配：
 
@@ -5887,7 +5887,7 @@ dotnet add package XiHan.Framework.Persistence.Abstractions --prerelease
 builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 ```
 
-这样装配时机器位经 Standard 里 `InMemoryCachingFeature` 的进程内锁租约分配，只适合单实例。多实例部署配置 `WorkerId`，或装配 Redis 等跨进程的缓存 Provider（先后不限，能力图谱让它先启后停），见[标识生成](../guide/distributed-ids#启用雪花标识)。
+这样装配时机器位经 Standard 里 `InMemoryCachingFeature` 的进程内锁租约分配，只适合单实例。多实例部署配置 `WorkerId`，或装配 Redis 等跨进程的缓存 Provider（先后不限，能力图谱让它先启后停），见[标识生成](/persistence/identifiers)。
 
 ## 配置
 
@@ -5992,7 +5992,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 }
 ```
 
-`ImportAsync` 接受部分成功：通过校验的订单随调用提交。要全有或全无，把失败项作为操作结果返回，见[持久化](../guide/persistence#批量方法)；管道外的工作单元写法见[工作单元与事务](../guide/uow#在管道外开工作单元)。
+`ImportAsync` 接受部分成功：通过校验的订单随调用提交。要全有或全无，把失败项作为操作结果返回，见[持久化](/persistence/repositories)；管道外的工作单元写法见[工作单元与事务](/persistence/unit-of-work)。
 
 ## 行为与限制
 
@@ -6003,7 +6003,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073、ADR-0081）。
 - 不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元；只读工作单元拒绝写入的错误消息键是 `persistence.unit_of_work.read_only`，处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束；空集合的批量写入不算写入。
 - 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 决定，`ReadsPrimary` 让只读工作单元读主库，其余仍是只读的语义，没有从库的 Provider 上没有作用（ADR-0122）。
-- 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109）：可写工作单元里仓储的单条写入或非空批量写入一经调用即为真（不论结果），`EnsureTransactionAsync` 同样；提交（成功或返回失败）与回滚后为假，只读工作单元恒为假；多连接一个值，绑定命名连接的工作单元只报告那个连接；内存实现第一次写入调用起同样为真。调用里要立即对外产生、不随回滚撤回的副作用之前据此判断，见[工作单元与事务](../guide/uow#是否已开数据库事务)。
+- 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109）：可写工作单元里仓储的单条写入或非空批量写入一经调用即为真（不论结果），`EnsureTransactionAsync` 同样；提交（成功或返回失败）与回滚后为假，只读工作单元恒为假；多连接一个值，绑定命名连接的工作单元只报告那个连接；内存实现第一次写入调用起同样为真。调用里要立即对外产生、不随回滚撤回的副作用之前据此判断，见[工作单元与事务](/persistence/unit-of-work)。
 - `HasTransaction` 的边界：查找、查询、计数与空批量不开事务；不同服务作用域的工作单元各报各的；不经仓储、也不经 `EnsureTransactionAsync` 直接对客户端执行的写入不在事务里，也不让它变真。
 - 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
 - 领域事件在处理器成功后、提交前由中间件把带有未派发事件的聚合交给 `IDomainEventDispatcher`（Messaging 子系统实现，用发件箱时与业务写入同事务），成功即清空缓冲、失败即回滚。
@@ -6020,13 +6020,13 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 启停顺序：清单声明可选依赖 `caching.distributed@1`，装配了缓存 Provider 时它先于雪花特性启动、后于雪花特性停止，租约在锁存储可用时取得与释放，与 `UseFeature` 的先后无关；固定机器位又没有任何 `caching.distributed` Provider 时按可选依赖缺失处理，特性是 Degraded，生成不受影响。
 - 雪花失败的转换：`NewId()` 返回 `long`，失败只能抛出 `FrameworkException`；回拨超过阈值在时钟追上后自动恢复。转换成结果的中间件由本特性登记在 Resilience 阶段末尾，在幂等与工作单元之外，工作单元已回滚、幂等标记已清除；消息键 `persistence.snowflake.clock_moved_backwards` / `persistence.snowflake.worker_unavailable`，HTTP 映射为可重试的 503、gRPC 为 `Unavailable`。管道之外直接调用生成器仍是异常（ADR-0063）。
 - 雪花标识在 JSON 里保持 number（后端标准类型，不加字符串转换器）。超过 2^53（约 9.007 × 10^15）的整数在 JavaScript 的 `number` 里会丢精度，而雪花标识从 epoch 之后约 25 天起就全部超过 2^53：前端必须用能保留大整数的方式解析（`JSON.parse` 的 BigInt reviver、按字符串读取原文），以字符串或 `BigInt` 保存与回传，不能 `Number()` 换算。
-- 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。SqlSugar 两样都支持；EF Core 只支持绑定连接的工作单元（ADR-0087），普通工作单元里取用命名连接上的实体抛 `PERSISTENCE_UNAVAILABLE_008`（已定，ADR-0091）；内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 命名连接](../guide/persistence#命名连接)。
+- 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。SqlSugar 两样都支持；EF Core 只支持绑定连接的工作单元（ADR-0087），普通工作单元里取用命名连接上的实体抛 `PERSISTENCE_UNAVAILABLE_008`（已定，ADR-0091）；内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 命名连接](/persistence/connections)。
 - 命名连接的细节：SQLite 只有一个写者，业务事务写过之后同一个库文件上的另一个事务要等它结束，所以工作流的租约行要放在另一个库文件。`AddRepository<TEntity, TKey>(connection)` 里 `null` 是 Provider 的缺省落点，非空不能是空白；同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取登记的连接。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。`UnitOfWorkOptions(Connection: name)` 的连接名空白抛 `ArgumentException`，实体不落在它上面时 `PERSISTENCE_VALIDATION_004`，事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。SqlSugar 的命名连接是客户端里同名 `ConfigId` 的连接（特性创建客户端时在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上。
-- 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](../guide/persistence#运行时数据源)。
+- 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](/persistence/connections)。
 - 运行时数据源的约定：Provider 经 `AddDataSourceProvider<T>(configuration)` 登记 `IDataSourceProvider`（目前是 SqlSugar）；名字 `^[a-z0-9][a-z0-9-]{0,63}$`，`default` 保留给缺省连接；数据库类型不区分大小写，认得哪些由 Provider 决定；`DataSourceDefinition.Describes` 比名字、类型（不区分大小写）与连接串（区分大小写）。注册表是进程内的，多实例时别的实例在下一次以新定义 `GetOrAddAsync` 时替换，所以每次使用都以记录里当前的定义 `GetOrAddAsync`，不要只按名字 `GetAsync`；约定连接 `default` / `shard` 与租户分片照旧。
 - 运行时数据源的健康与失败：健康项数据 `databaseType`、`provider`，在后台按 `HealthProbeIntervalSeconds` 探连通性（关系型 Provider 走一次数据库往返，ADR-0123）；尚未探过 Started，成功 Ready，失败或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness。连不上 `PERSISTENCE_UNAVAILABLE_006`（参数 `name`、`reason`）；数据库类型不认识或连接串格式错 `PERSISTENCE_VALIDATION_006`，同名的已登记实例不受影响；`GetAsync` 没有登记 `PERSISTENCE_NOTFOUND_002`；替换同名的不占名额。
 - 运行时数据源的机密：`reason` 取驱动异常的消息链，经 `ConnectionStrings.Redact` / `Describe` 把整串连接串与口令类键（键名含 `password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机名、端口、库名、用户名不算机密，驱动消息里有就保留（脱敏范围已定，ADR-0084；选项打印遮蔽登录用户名不扩到这里，ADR-0093）。日志只记名字与数据库类型。
-- 库结构读取与实体目录（ADR-0078）：读结构一次最多 100 张表、列表 `Take` 最多 1000；分表按已登记实体的模板折叠；实体目录按登记顺序、重复登记只一条。EF Core 与内存实现读结构返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 库结构读取与实体目录](../guide/persistence#库结构读取与实体目录)。
+- 库结构读取与实体目录（ADR-0078）：读结构一次最多 100 张表、列表 `Take` 最多 1000；分表按已登记实体的模板折叠；实体目录按登记顺序、重复登记只一条。EF Core 与内存实现读结构返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 库结构读取与实体目录](/persistence/connections)。
 - 读结构的细节：列表按名字排序，`Keyword` 在名字与注释里包含匹配，返回过滤后的总数；分页越界不在构造 `TableListQuery` 时抛出，读结构的 Provider 先经 `Validate()` 核对（都是 400 的结果，不连库、不登记数据源，ADR-0084）。批量读超过 100 张整批 `PERSISTENCE_VALIDATION_005`，逐项结果与入参一一对应，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`（原因已脱敏）；空集合不连库；`GetTableAsync` 是单项特例。读运行时数据源的结构先按定义登记再读，`dataSource` 传 `null` 读应用的缺省连接。
 - 列的内容：类型名（不含长度与精度）、序号、主键（一律不可空）、自增、可空、长度（只给字符与二进制类型的声明长度；没有上限的与其余类型为 null）、精度与小数位（`decimal` / `numeric` / `number` / `money` 族）、注释、缺省值原文；数据库没有的项为 null。已登记的分表实体（SqlSugar `[SplitTable]`）按表名模板把物理表折叠成一张逻辑表（`Order_{year}{month}{day}` → `Order`），`PhysicalTables` 新到旧，列取最新的物理表。实体目录里表名与列名是映射声明的写法，分表是逻辑名；`Protocols` 标出聚合根、创建 / 修改时间、并发戳、软删除、多租户。
 
@@ -6062,9 +6062,9 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 
 ## 相关
 
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
-- [标识生成](../guide/distributed-ids)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
+- [标识生成](/persistence/identifiers)
 - [Domain](./domain)
 - [Persistence.InMemory](./persistence-inmemory)、[Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)、[Persistence.SqlSugar](./persistence-sqlsugar)
 - [Persistence.Generators](./persistence-generators)
@@ -6102,7 +6102,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 新项目，或已经用 EF Core 的应用。
 - 表结构用 EF Core 迁移管理，复杂查询直接写在 `DbContext` 上。
 
-已有大量 SqlSugar 代码、需要一次调用写多个库或按时间分表时用 [Persistence.SqlSugar](./persistence-sqlsugar)；两个关系型 Provider 的 `IsAotCompatible` 都是 `false`，标注为 AOT 兼容的持久化实现只有 [Persistence.InMemory](./persistence-inmemory)，AOT 发布的整体要求见[序列化与 Native AOT](../guide/aot)。
+已有大量 SqlSugar 代码、需要一次调用写多个库或按时间分表时用 [Persistence.SqlSugar](./persistence-sqlsugar)；两个关系型 Provider 的 `IsAotCompatible` 都是 `false`，标注为 AOT 兼容的持久化实现只有 [Persistence.InMemory](./persistence-inmemory)，AOT 发布的整体要求见[序列化与 Native AOT](/common/serialization)。
 
 ## 安装与启用
 
@@ -6111,7 +6111,7 @@ dotnet add package XiHan.Framework.Persistence.EntityFrameworkCore --prerelease
 dotnet add package Microsoft.EntityFrameworkCore.Sqlite
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用最新版的 `Microsoft.EntityFrameworkCore.Sqlite`：它带来的 `Microsoft.Data.Sqlite.Core` 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），修复之前的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。数据库驱动按所用数据库引用（Sqlite、Npgsql、SqlServer 等）。SQLite 用最新版的 `Microsoft.EntityFrameworkCore.Sqlite`：它带来的 `Microsoft.Data.Sqlite.Core` 修复了连接池激活的竞态（dotnet/efcore#39008：并发打开连接时两个连接可能共用一个原生连接），修复之前的版本带着它。本包不依赖任何 SQLite 包，版本由应用的驱动引用决定（ADR-0097）。
 
 1. 定义 `DbContext`：登记实体后调用 `ApplyPersistenceConventions(Database)`。
 2. 登记实体：`AddRepository<TEntity, TKey>()`。
@@ -6207,7 +6207,7 @@ public sealed class OrderReports(AppDbContext db)
 }
 ```
 
-用 `builder.Services.AddScoped<OrderReports>()` 注册后在操作里注入。在管道外使用时同样要先开工作单元，见[工作单元与事务](../guide/uow#在管道外开工作单元)。
+用 `builder.Services.AddScoped<OrderReports>()` 注册后在操作里注入。在管道外使用时同样要先开工作单元，见[工作单元与事务](/persistence/unit-of-work)。
 
 ## 行为与限制
 
@@ -6227,7 +6227,7 @@ public sealed class OrderReports(AppDbContext db)
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 租户分库：装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。没有 SqlSugar Provider 那样按实体分库的落点规则。
 - 健康项 `persistence.entityframeworkcore.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测在独立作用域里对默认连接 `CanConnect`，不开工作单元、不经管道。连不上为 Degraded（`PERSISTENCE_UNAVAILABLE_003`），应用仍在服务。
-- 整数主键按 EF Core 约定由数据库生成；应用自己生成整数标识时配 `ValueGeneratedNever()`，见[标识生成](../guide/distributed-ids)。
+- 整数主键按 EF Core 约定由数据库生成；应用自己生成整数标识时配 `ValueGeneratedNever()`，见[标识生成](/persistence/identifiers)。
 - 实体目录（ADR-0078）取 DbContext 模型（`GetTableName()`、`GetColumnName(表)`，影子属性不列）；库结构读取不支持，返回 `PERSISTENCE_UNAVAILABLE_008`——跨数据库读结构在 EF Core 里是设计期脚手架服务，`DbConnection.GetSchema` 各驱动不一致、SQLite 驱动不实现。
 - 索引与实体目录的补充：`ApplyPersistenceConventions(Database)` 的索引名取调用时的 `GetTableName()`，`ToTable` 要在它之前配置；从属类型与共享类型实体跳过。框架的数据库记录（授予、翻译、审计、调度、工作流、发件箱）在 `modelBuilder.Entity<T>()` 之后调用它即得到索引，不用再手写 `HasIndex`。实体目录的表名在没有映射到表时取类型名，从属类型不列，登记了却不在模型里的实体抛 `InvalidOperationException`；库结构读取在 EF Core 里对应的设计期脚手架服务是 `Microsoft.EntityFrameworkCore.Design` 的 `IDatabaseModelFactory`（按数据库 Provider 程序集反射发现）。
 - 命名连接（ADR-0087）：在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，值是连接串（名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`，值不能空白、不能写成子节，否则装配即 `ArgumentException`）。一个 `DbContext` 一个连接、建出后不换：`UnitOfWorkOptions(Connection: name)` 开启的工作单元先记下连接、再建本作用域的 `DbContext`，回调收到的绑定主值是那个连接串、属性沿用 `db` 绑定，事务只开在那个库上。所以登记到命名连接的实体（`AddRepository<TEntity, TKey>(connection)`）只能在绑定那个连接的工作单元里读写：普通工作单元里取用它的仓储抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，绑定连接的工作单元里取用落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。这一半是已定的（ADR-0091）：EF Core 不做「每个连接一个 `DbContext`、跨上下文顺序提交」的多上下文工作单元，普通工作单元里取用命名连接上的实体维持明确报错；要在业务事务里一起读写命名连接上的实体，用 `Persistence.SqlSugar`。登记到没有声明的连接装配即失败、绑定没有声明的连接 `BeginAsync` 抛出，都是 `PERSISTENCE_VALIDATION_004`；作用域里已经按别的连接建出 `DbContext`（先取用了它）再绑定，`BeginAsync` 抛 `PERSISTENCE_VALIDATION_002`，在新作用域里绑定即可。`EnsureCreated` 对登记了实体的每个命名连接各执行一次，按整个模型建表（那个库里多出的空表不用）。命名连接与默认连接用同一个配置回调，是同一种数据库 Provider。工作流的租约表就这样放到另一个库：SQLite 上 `XiHan:Workflow:Database:LockConnection` 指向这里声明的连接，调用方事务里取锁不再等自己的事务。
@@ -6271,9 +6271,9 @@ ALTER TABLE "ef_temp_TimedRow" RENAME TO "TimedRow";
 
 ## 相关
 
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
-- [多租户](../guide/multi-tenancy)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
+- [多租户](/multi-tenancy/resolution)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
 - [Persistence.Generators](./persistence-generators)
@@ -6323,7 +6323,7 @@ ALTER TABLE "ef_temp_TimedRow" RENAME TO "TimedRow";
 dotnet add package XiHan.Framework.Persistence.Generators --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。在仓库里以项目引用时写成：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。在仓库里以项目引用时写成：
 
 ```xml
 <ProjectReference Include="../../src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
@@ -6398,8 +6398,8 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 
 ## 相关
 
-- [持久化](../guide/persistence#登记实体)
-- [领域模型](../guide/domain#规约)
+- [持久化](/persistence/overview)
+- [领域模型](/persistence/domain)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - [Kernel.Generators 操作生成器](./kernel-generators)
@@ -6443,7 +6443,7 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 dotnet add package XiHan.Framework.Persistence.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已包含本包，`UseStandardProfile()` 即装配；单独使用时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已包含本包，`UseStandardProfile()` 即装配；单独使用时：
 
 ```csharp
 using XiHan.Framework.Persistence.Abstractions.Repositories;
@@ -6496,7 +6496,7 @@ using XiHan.Framework.Persistence.InMemory;
 host.Services.GetRequiredService<InMemoryStore>().Clear();
 ```
 
-仓储的读写与其他 Provider 完全相同，见[持久化](../guide/persistence)。
+仓储的读写与其他 Provider 完全相同，见[持久化](/persistence/overview)。
 
 ## 行为与限制
 
@@ -6529,9 +6529,9 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
 
 ## 相关
 
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
-- [测试与一致性套件](../guide/testing)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
+- [测试与一致性套件](/testing/basics)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Profiles.Standard](./profiles-standard)
 - 规范：RFC-0005《领域协议与持久化》
@@ -6583,7 +6583,7 @@ SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元�
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
 
 本包还显式依赖 `Microsoft.Data.Sqlite`（ADR-0097）。`SqlSugarCore` 声明的下限版本带着连接池激活的竞态（dotnet/efcore#39008），NuGet 按下限解析就会用到它：SQLite 上并发打开连接时两个连接可能共用同一个原生连接，报 "cannot start a transaction within a transaction"，清池时正在打开的连接被释放、报 `ObjectDisposedException`。有了这条依赖，引用本包的应用解析到修复后的版本，不用自己钉版本；项目里直接引用了更低版本的，NuGet 报降级 `NU1605`，删掉那条引用或抬到本包要求的版本。
 
@@ -6884,7 +6884,7 @@ public sealed class ChangeBuffer
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
 - 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
-- 读写分离（ADR-0118）：回调在 `SlaveConnectionConfigs` 上给出从库，用法见[持久化](../guide/persistence#读写分离)。配了从库的连接每个作用域一份配置副本；只读工作单元读从库，设了 `UnitOfWorkOptions.ReadsPrimary` 的除外（ADR-0122），其余工作单元读写都走主库。默认连接与命名连接的从库周期探测（走一次数据库往返，只探连通），不可读的摘除，全部不可读时读回到主库，见健康项 `SqlSugarPersistenceFeature.ReplicaHealthName`（`persistence.sqlsugar.replicas`）。分片连接的从库由回调按分片绑定给出，不探测。主库不同的连接共用从库是 `PERSISTENCE_VALIDATION_009`。没配从库时没有任何额外开销。
+- 读写分离（ADR-0118）：回调在 `SlaveConnectionConfigs` 上给出从库，用法见[持久化](/persistence/sqlsugar)。配了从库的连接每个作用域一份配置副本；只读工作单元读从库，设了 `UnitOfWorkOptions.ReadsPrimary` 的除外（ADR-0122），其余工作单元读写都走主库。默认连接与命名连接的从库周期探测（走一次数据库往返，只探连通），不可读的摘除，全部不可读时读回到主库，见健康项 `SqlSugarPersistenceFeature.ReplicaHealthName`（`persistence.sqlsugar.replicas`）。分片连接的从库由回调按分片绑定给出，不探测。主库不同的连接共用从库是 `PERSISTENCE_VALIDATION_009`。没配从库时没有任何额外开销。
 - 运行时数据源（ADR-0078）：特性登记 SqlSugar 的数据源 Provider，数据库类型是 `DbType` 的名字（不区分大小写，`Custom` 与数字不认）。登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`；客户端是每个数据源一个的 `SqlSugarScope`（`IsAutoCloseConnection`），不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写；测试连接与健康探测另建客户端、打开原生 `DbConnection` 再关闭。运行时数据源不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。
 - 库结构读取与实体目录（ADR-0078）：读表与读列经 `DbMaintenance`（同步 API）；缺省连接 `CopyNew` 另开不在事务里的连接，运行时数据源按定义登记后另建客户端；分表按已登记实体的模板折叠；驱动与 SqlSugar 的异常翻译为 `PERSISTENCE_UNAVAILABLE_006`。实体目录取 `EntityMaintenance.GetEntityInfo`。SQLite 没有注释，`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；PostgreSQL 的注释、identity、serial 缺省值与加引号的大小写混合表名都能读到。MySQL、SQL Server、Oracle 在真实库上实测过（ADR-0084）：注释、自增、主键、缺省值原文、大小写混合的表名、分表折叠与分页总数都对；长度只给字符与二进制类型（`tinyint(1)`、`datetime(6)`、SQL Server `int` 的 10 这类显示宽度或精度不算长度）。Oracle 的读列不走 SqlSugar（它给 CLR 类型名、读不到 identity、缺省值错位、大小写混合的表名查不到），改查连接用户自己的数据字典，要 Oracle 12c 及以上；运行时数据源在 Oracle 上不自动转大写。不支持（已定，ADR-0087）：Oracle 11g 及更早的版本读列以 `PERSISTENCE_UNAVAILABLE_006` 失败（数据字典没有 `IDENTITY_COLUMN`），不做 11g 的分支；达梦、OceanBase Oracle 模式等 Oracle 兼容库走 SqlSugar 原来的读列（类型名可能是 CLR 类型名，identity、缺省值、大小写混合的表名可能读不对），没有验证，读到的结构不作保证。
 - MySQL 上的已知限制（SqlSugar 上游缺陷，已报上游 [DotNetNext/SqlSugar#1460](https://github.com/DotNetNext/SqlSugar/issues/1460)，待上游修复；ADR-0100 修订）：两个及以上值的 `In(…)`、按实体删除（单个实体也是）与 `Deleteable<T>().In(…)` 把字符串内联成只转义单引号的字面量，集合 `Contains` 则把反斜杠写成两个。MySQL 缺省 sql_mode 下前一组对含反斜杠的值静默漏行（值里有 `\'` 时报语法错误），开了 `NO_BACKSLASH_ESCAPES` 时后一组静默漏行；逐个 `==`、只有一个值的 `In`、单行写入与多行插入用参数，两种模式都对。仓储里受影响的是 `FindManyAsync`（两个及以上标识）、`AddRangeAsync` 的标识预查、`UpdateRangeAsync` / `RemoveRangeAsync` 的加锁取回、物理删除的 `RemoveAsync` / `RemoveRangeAsync`（缺省模式），以及规约里的集合 `Contains`（`NO_BACKSLASH_ESCAPES`）。框架自己的字符串主键（租户、调度、工作流定义）是不含反斜杠与引号的受限标识符，Guid 与整数主键也不受影响；框架不在仓储里绕开。应用的字符串主键首选不含反斜杠（写入前按 `^[A-Za-z0-9][A-Za-z0-9._-]*$` 这类规则校验）；做不到时改用参数化的写法：
@@ -6906,10 +6906,10 @@ public sealed class ChangeBuffer
 
 ## 相关
 
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
-- [多租户](../guide/multi-tenancy)
-- [审计](../guide/auditing)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
+- [多租户](/multi-tenancy/resolution)
+- [审计](/common/auditing)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Persistence.EntityFrameworkCore](./persistence-entityframeworkcore)
 - 规范：RFC-0005《领域协议与持久化》
@@ -6954,7 +6954,7 @@ public sealed class ChangeBuffer
 dotnet add package XiHan.Framework.Plugins.InProcess --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，失败结果的文案要由宿主应用注册消息目录（RFC-0010）：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，失败结果的文案要由宿主应用注册消息目录（RFC-0010）：
 
 ```csharp
 using XiHan.Framework.Localization.Abstractions;
@@ -7066,7 +7066,7 @@ Console.WriteLine(unloaded.IsSuccess);
 
 ## 相关
 
-- [插件](../guide/plugins#进程内宿主)
+- [插件](/plugins/overview)
 - [Plugins.OutOfProcess](./plugins-outofprocess)、[Plugins.Wasm](./plugins-wasm)
 - [Kernel](./kernel)
 - 规范：RFC-0002《清单》
@@ -7111,7 +7111,7 @@ Console.WriteLine(unloaded.IsSuccess);
 dotnet add package XiHan.Framework.Plugins.OutOfProcess --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -7225,7 +7225,7 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 
 ## 相关
 
-- [插件](../guide/plugins)
+- [插件](/plugins/overview)
 - [Plugins.Protocol](./plugins-protocol)、[Plugins.Wasm](./plugins-wasm)、[Caching.Remote](./caching-remote)
 - [Conformance 一致性套件](./conformance#plugins)
 - 规范：RFC-0017《进程外插件协议》、RFC-0019《远程 Provider》
@@ -7267,7 +7267,7 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 dotnet add package XiHan.Framework.Plugins.Protocol --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口；两个插件宿主特性在 `Configure` 时自己登记消息目录 `PluginMessages.Catalog`（目录名 `plugins.protocol`，10 种区域各一个文件）。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口；两个插件宿主特性在 `Configure` 时自己登记消息目录 `PluginMessages.Catalog`（目录名 `plugins.protocol`，10 种区域各一个文件）。
 
 ## 主要类型
 
@@ -7345,7 +7345,7 @@ static bool IsTransient(Error error)
 
 ## 相关
 
-- [插件](../guide/plugins)
+- [插件](/plugins/overview)
 - [Plugins.OutOfProcess](./plugins-outofprocess)、[Plugins.Wasm](./plugins-wasm)、[Conformance 一致性套件](./conformance#plugins)
 - 规范：RFC-0017《进程外插件协议》、RFC-0018《Wasm 插件 ABI》
 
@@ -7389,7 +7389,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 dotnet add package XiHan.Framework.Plugins.Wasm --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -7547,7 +7547,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 
 ## 相关
 
-- [插件](../guide/plugins#wasm-插件贡献中间件)
+- [插件](/plugins/wasm)
 - [Plugins.Protocol](./plugins-protocol)、[Plugins.OutOfProcess](./plugins-outofprocess)
 - [Conformance 一致性套件](./conformance#plugins)
 - 规范：RFC-0018《Wasm 插件 ABI》；ADR-0009
@@ -7585,7 +7585,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 dotnet add package XiHan.Framework.Primitives --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ## 主要类型
 
@@ -7685,9 +7685,9 @@ var text = InventoryMessages.OutOfStock.L(("requested", 3), ("available", 1));
 
 ## 相关
 
-- [结果与错误](../guide/errors)
-- [国际化](../guide/localization)
-- [生命周期与健康](../guide/lifecycle)
+- [结果与错误](/web/errors)
+- [国际化](/common/localization)
+- [生命周期与健康](/startup/lifecycle)
 - [Kernel](./kernel)
 - 规范：RFC-0001《原语》、RFC-0003《调用上下文与传播》、RFC-0010《本地化》
 
@@ -7728,7 +7728,7 @@ Full 组合包（元包）：Standard 加对象存储、调度、审计、工作
 | `McpProtocolFeature` | `Protocols.Mcp` | `protocols.mcp@1` |
 | `CloudEventsProtocolFeature` | `Protocols.CloudEvents` | `protocols.cloudevents@1` |
 
-默认实现都可被显式 Provider 顶替：再 `UseFeature` 一个声明同一能力的特性（如 `DatabaseLocalizationFeature`、S3 对象存储、`KubernetesSchedulingFeature`），能力全部被顶替的默认实现不装配、不启动；还有能力被选中的照常装配，例如加入 `KubernetesSchedulingFeature` 后 `Scheduling.InMemory` 只让出 `scheduling.leader`，仍提供 `scheduling.jobs`。`Configuration.Abstractions` 只随包带进来，没有默认 Provider：.NET 原生的文件与环境变量就是缺省，按需在 `IConfigurationBuilder` 上接远程配置与密钥（[配置与选项](../guide/configuration)）。管道在 Standard 之上多了 Observe 阶段末尾的审计中间件（缺省只记声明了权限的操作，[审计](../guide/auditing)）。
+默认实现都可被显式 Provider 顶替：再 `UseFeature` 一个声明同一能力的特性（如 `DatabaseLocalizationFeature`、S3 对象存储、`KubernetesSchedulingFeature`），能力全部被顶替的默认实现不装配、不启动；还有能力被选中的照常装配，例如加入 `KubernetesSchedulingFeature` 后 `Scheduling.InMemory` 只让出 `scheduling.leader`，仍提供 `scheduling.jobs`。`Configuration.Abstractions` 只随包带进来，没有默认 Provider：.NET 原生的文件与环境变量就是缺省，按需在 `IConfigurationBuilder` 上接远程配置与密钥（[配置与选项](/configuration/options)）。管道在 Standard 之上多了 Observe 阶段末尾的审计中间件（缺省只记声明了权限的操作，[审计](/common/auditing)）。
 
 协议适配器只登记能力与服务，端点仍要在宿主上映射。
 
@@ -7743,7 +7743,7 @@ Full 组合包（元包）：Standard 加对象存储、调度、审计、工作
 dotnet add package XiHan.Framework.Profiles.Full --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -7769,7 +7769,7 @@ app.MapXiHanCloudEvents();  // /events
 app.Run();
 ```
 
-`samples/KubernetesApp` 用 Full 组合演示探针、停机宽限、ConfigMap 热更新与 Lease 领导选举，见[部署与打包](../guide/deployment)。
+`samples/KubernetesApp` 用 Full 组合演示探针、停机宽限、ConfigMap 热更新与 Lease 领导选举，见[部署与打包](/deployment/pack)。
 
 ## 主要类型
 
@@ -7787,7 +7787,7 @@ app.Run();
 
 ## 相关
 
-- [宿主与 Web 应用](../guide/web)、[HTTP 与 OpenAPI](../guide/http)、[gRPC、MCP 与 CloudEvents](../guide/protocols)、[部署与打包](../guide/deployment)
+- [宿主与 Web 应用](/web/hosting)、[HTTP 与 OpenAPI](/web/routing)、[gRPC、MCP 与 CloudEvents](/protocols/grpc)、[部署与打包](/deployment/pack)
 - [Profiles.Standard](./profiles-standard)、[Profiles.Minimal](./profiles-minimal)
 
 ---
@@ -7811,7 +7811,7 @@ Minimal 组合包（元包）：一个包引用带上原语层、内核、ASP.NE
 
 ## 概述
 
-组合包本身没有特性与清单，只做两件事：用包引用把一组包一次带进来，用一个 `AppBuilder` 扩展方法装配其中的默认实现。`UseMinimalProfile()` 只调用 `UseFeature<InMemoryLocalizationFeature>()`：它注册原语层与内核的语言文件目录并设置进程默认消息作用域，于是 `key.L()`、`Error.Message` 与 Problem Details 的 `detail` 在最小组合下就有文案（缺省 `en-US`，内置 10 种区域，[国际化](../guide/localization)）。内核与宿主由 `AddXiHan()` / `UseXiHan()` 提供，管道、探针与 Problem Details 随宿主可用。
+组合包本身没有特性与清单，只做两件事：用包引用把一组包一次带进来，用一个 `AppBuilder` 扩展方法装配其中的默认实现。`UseMinimalProfile()` 只调用 `UseFeature<InMemoryLocalizationFeature>()`：它注册原语层与内核的语言文件目录并设置进程默认消息作用域，于是 `key.L()`、`Error.Message` 与 Problem Details 的 `detail` 在最小组合下就有文案（缺省 `en-US`，内置 10 种区域，[国际化](/common/localization)）。内核与宿主由 `AddXiHan()` / `UseXiHan()` 提供，管道、探针与 Problem Details 随宿主可用。
 
 ## 何时使用
 
@@ -7825,7 +7825,7 @@ Minimal 组合包（元包）：一个包引用带上原语层、内核、ASP.NE
 dotnet add package XiHan.Framework.Profiles.Minimal --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -7854,7 +7854,7 @@ app.Run();
 
 ## 相关
 
-- [能力包与清单](../guide/modularity)、[宿主与 Web 应用](../guide/web)
+- [能力包与清单](/startup/features)、[宿主与 Web 应用](/web/hosting)
 - [Profiles.Standard](./profiles-standard)、[Profiles.Full](./profiles-full)、[Localization.InMemory](./localization-inmemory)
 
 ---
@@ -7889,7 +7889,7 @@ Standard 组合包（元包）：Minimal 加 `Domain` 与持久化、缓存、�
 | `InMemorySecurityFeature` | `Security.InMemory` | `security.authentication@1`、`security.authorization@1` |
 | `InMemoryMessagingFeature` | `Messaging.InMemory` | `messaging.queue@1` |
 
-它们都是清单里的 `role: default`。再 `UseFeature` 一个声明同一能力的显式 Provider（`EntityFrameworkCorePersistenceFeature<TContext>`、`RedisCachingFeature`、`JwtSecurityFeature`、`RabbitMQMessagingFeature` 等），能力求解就选中 Provider。默认实现提供的能力全部被顶替时不装配、不启动；还有能力被选中时照常装配，只为被选中的能力注册服务，例如加入 `RedisCachingFeature` 后 `Caching.InMemory` 仍提供 `caching.local`，加入 `JwtSecurityFeature` 后 `Security.InMemory` 仍提供授权（RFC-0002，[能力包与清单](../guide/modularity)）。换 Provider 只加包引用、`UseFeature` 与配置，业务代码不变。
+它们都是清单里的 `role: default`。再 `UseFeature` 一个声明同一能力的显式 Provider（`EntityFrameworkCorePersistenceFeature<TContext>`、`RedisCachingFeature`、`JwtSecurityFeature`、`RabbitMQMessagingFeature` 等），能力求解就选中 Provider。默认实现提供的能力全部被顶替时不装配、不启动；还有能力被选中时照常装配，只为被选中的能力注册服务，例如加入 `RedisCachingFeature` 后 `Caching.InMemory` 仍提供 `caching.local`，加入 `JwtSecurityFeature` 后 `Security.InMemory` 仍提供授权（RFC-0002，[能力包与清单](/startup/features)）。换 Provider 只加包引用、`UseFeature` 与配置，业务代码不变。
 
 这些特性填满管道的中段：Authenticate（ApiKey）→ Tenant（声明或 Baggage）→ Authorize（策略与权限）→ Idempotency（幂等键）→ Transaction（工作单元）。本地化不占阶段：宿主在 Ingress 把 `Accept-Language` 协商进 Baggage `xihan.locale`，在 Egress 把失败结果翻译成 Problem Details 的 `detail`。
 
@@ -7905,7 +7905,7 @@ Standard 组合包（元包）：Minimal 加 `Domain` 与持久化、缓存、�
 dotnet add package XiHan.Framework.Profiles.Standard --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -7946,7 +7946,7 @@ app.Run();
 
 ## 相关
 
-- [能力包与清单](../guide/modularity)、[执行管道](../guide/pipeline)
+- [能力包与清单](/startup/features)、[执行管道](/startup/pipeline)
 - [Profiles.Minimal](./profiles-minimal)、[Profiles.Full](./profiles-full)
 - [Persistence.InMemory](./persistence-inmemory)、[Caching.InMemory](./caching-inmemory)、[MultiTenancy.InMemory](./multitenancy-inmemory)、[Security.InMemory](./security-inmemory)、[Messaging.InMemory](./messaging-inmemory)
 
@@ -7973,7 +7973,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 ## 概述
 
-`CloudEventsProtocolFeature` 登记选项、本包的消息目录、命名 HttpClient `xihan.protocols.cloudevents`（过[出站地址策略](../guide/outbound)）与 `CloudEventsWebhookPublisher`。
+`CloudEventsProtocolFeature` 登记选项、本包的消息目录、命名 HttpClient `xihan.protocols.cloudevents`（过[出站地址策略](/security/outbound)）与 `CloudEventsWebhookPublisher`。
 
 入站：`MapXiHanCloudEvents()` 映射 `POST /events`，按 `Content-Type` 与 `ce-specversion` 头识别内容模式，把事件读成 `MessageEnvelope`，事件类型经 `Topics` 映射到主题（没有映射时类型本身须是合法主题）。`Inbound = Dispatch`（缺省）时在请求内经 `MessageDispatcher` 派发给本实例里主题的处理器（竞争订阅与广播订阅各一次投递，先竞争后广播），处理器的结果就是响应，要让广播订阅到达每个实例用 `Publish`；`Inbound = Publish` 时发布到消息代理后立即 202。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文。入站端点经过 `UseXiHan()`，请求凭据在外层认证。框架不给端点加任何要求，权限要由宿主自己加（`MapXiHanCloudEvents().RequireXiHanPermission(...)`）：扩展属性里的租户与主体是发送方给的，能调端点的人就能选租户（ADR-0121）。
 
@@ -7981,7 +7981,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 
 ## 何时使用
 
-外部系统（SaaS 的 Webhook、事件网关、其他语言的服务）以 CloudEvents 推事件进来，或应用要把消息以 CloudEvents 推给外部 HTTP 端点时用它。服务内部的消息传递直接用消息子系统，见[消息与事件](../guide/messaging)。
+外部系统（SaaS 的 Webhook、事件网关、其他语言的服务）以 CloudEvents 推事件进来，或应用要把消息以 CloudEvents 推给外部 HTTP 端点时用它。服务内部的消息传递直接用消息子系统，见[消息与事件](/messaging/pubsub)。
 
 ## 安装与启用
 
@@ -7989,7 +7989,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 dotnet add package XiHan.Framework.Protocols.CloudEvents --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -8072,7 +8072,7 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 }
 ```
 
-内容模式、batch 语义与派发模式的完整说明见 [gRPC、MCP 与 CloudEvents](../guide/protocols#cloudevents)。
+内容模式、batch 语义与派发模式的完整说明见 [gRPC、MCP 与 CloudEvents](/protocols/cloudevents)。
 
 ## 行为与限制
 
@@ -8097,7 +8097,7 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 
 ## 相关
 
-- [gRPC、MCP 与 CloudEvents](../guide/protocols)、[消息与事件](../guide/messaging)
+- [gRPC、MCP 与 CloudEvents](/protocols/grpc)、[消息与事件](/messaging/pubsub)
 - [Messaging.Abstractions](./messaging-abstractions)、[Hosting.AspNetCore](./hosting-aspnetcore)
 - 规范：`spec/protocol/cloudevents.md`《CloudEvents 载体》、RFC-0009《消息、CloudEvents 信封与发件箱》
 
@@ -8136,7 +8136,7 @@ gRPC 协议适配器，提供 `protocols.grpc@1`：把 `Expose.Grpc` 的操作�
 dotnet add package XiHan.Framework.Protocols.Grpc --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -8213,7 +8213,7 @@ grpcurl -plaintext -proto operations.proto -H "authorization: ApiKey dev-alice-k
   -d '{"name":"widget","amount":3}' localhost:5001 Orders/Create
 ```
 
-JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 CloudEvents](../guide/protocols#grpc)。
+JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 CloudEvents](/protocols/grpc)。
 
 ## 行为与限制
 
@@ -8249,7 +8249,7 @@ JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 C
 
 ## 相关
 
-- [gRPC、MCP 与 CloudEvents](../guide/protocols)、[操作契约](../guide/operations)
+- [gRPC、MCP 与 CloudEvents](/protocols/grpc)、[操作契约](/web/operations)
 - [Hosting.AspNetCore](./hosting-aspnetcore)、[Protocols.Http](./protocols-http)、[Kernel.Generators](./kernel-generators)
 - 规范：`spec/protocol/grpc.md`《gRPC 载体》、RFC-0011《操作契约与 XGI》
 
@@ -8276,7 +8276,7 @@ HTTP 协议适配器，提供 `protocols.http@1`：按操作 ID 推导路由（�
 
 `HttpProtocolFeature` 只登记选项与本包的消息目录；端点由应用在 `UseXiHan()` 之后调用 `MapXiHanOperations()` 映射。每个 `Expose` 含 `Http`、稳定性不是 `Stability.Internal` 的操作对应一个端点，路由按 `spec/conventions/operation-ids.md` 推导：`create` → `POST /{resource}`，`list` → `GET /{resource}`，请求含 `id` 时 `get` / `update` / `delete` 带 `/{id}` 段，其他动词是 `POST …:{verb}` 自定义动词，带嵌套对象的 `get` / `list` / `delete` 改用 POST（ADR-0015），声明只读的自定义动词走 GET（ADR-0041）。是否含 `id`、是否有嵌套对象读源生成的序列化元数据，不用反射。
 
-端点元数据带着操作描述、载荷绑定委托与响应写出委托（`OperationResponseWriter`），`UseXiHan()` 在进管道前绑定载荷，Authorize 阶段按契约判定，Validate 阶段按 Schema 校验。成功时 `create` 返回 201、其余 200；失败由宿主写成 Problem Details。带幂等键的请求重放时端点不执行，`UseXiHan()` 用同一个写出委托写出首次的状态码与正文（[缓存](../guide/caching#幂等键)）。
+端点元数据带着操作描述、载荷绑定委托与响应写出委托（`OperationResponseWriter`），`UseXiHan()` 在进管道前绑定载荷，Authorize 阶段按契约判定，Validate 阶段按 Schema 校验。成功时 `create` 返回 201、其余 200；失败由宿主写成 Problem Details。带幂等键的请求重放时端点不执行，`UseXiHan()` 用同一个写出委托写出首次的状态码与正文（[缓存](/caching/locks)）。
 
 `MapXiHanOpenApi()` 在第一次请求时从登记表、`Kernel.Generators` 生成的 Schema、权限码注册表、已装配的认证处理器与宿主的普通端点生成 OpenAPI 3.1 并缓存，带 `x-xihan-permission` / `x-xihan-policy` 扩展与权限定义组件（ADR-0031），按区域给出操作文案、标签与字段说明，支持分组文档（ADR-0052）。
 
@@ -8290,7 +8290,7 @@ HTTP 协议适配器，提供 `protocols.http@1`：按操作 ID 推导路由（�
 dotnet add package XiHan.Framework.Protocols.Http --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包，`UseFullProfile()` 会装配 `HttpProtocolFeature`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包，`UseFullProfile()` 会装配 `HttpProtocolFeature`。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -8384,7 +8384,7 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 }
 ```
 
-路由推导、绑定、文案键与普通端点收录的完整说明见 [HTTP 与 OpenAPI](../guide/http)。
+路由推导、绑定、文案键与普通端点收录的完整说明见 [HTTP 与 OpenAPI](/web/routing)。
 
 ## 行为与限制
 
@@ -8412,7 +8412,7 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 
 ## 相关
 
-- [HTTP 与 OpenAPI](../guide/http)、[操作契约](../guide/operations)、[宿主与 Web 应用](../guide/web)
+- [HTTP 与 OpenAPI](/web/routing)、[操作契约](/web/operations)、[宿主与 Web 应用](/web/hosting)
 - [Hosting.AspNetCore](./hosting-aspnetcore)、[Kernel.Generators](./kernel-generators)
 - [Protocols.Grpc](./protocols-grpc)、[Protocols.Mcp](./protocols-mcp)、[Protocols.CloudEvents](./protocols-cloudevents)
 - 规范：`spec/protocol/http.md`《HTTP 载体》、`spec/conventions/operation-ids.md`《操作 ID》、RFC-0011《操作契约与 XGI》
@@ -8457,7 +8457,7 @@ MCP 协议版本 `2025-06-18`。`McpProtocolFeature` 登记选项、本包的消
 dotnet add package XiHan.Framework.Protocols.Mcp --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -8474,7 +8474,7 @@ app.MapXiHanMcp();      // POST /mcp
 app.Run();
 ```
 
-命令行宿主里装配 `McpProtocolFeature` 并调用 `AddXiHanCommandLine()` 后，`mcp` 命令即可用，见[命令行宿主](../guide/command-line#mcp-stdio)。
+命令行宿主里装配 `McpProtocolFeature` 并调用 `AddXiHanCommandLine()` 后，`mcp` 命令即可用，见[命令行宿主](/protocols/command-line)。
 
 ## 配置
 
@@ -8525,7 +8525,7 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Autho
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | dotnet run --project framework/samples/SimpleCli -- mcp
 ```
 
-tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MCP 与 CloudEvents](../guide/protocols#mcp)。
+tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MCP 与 CloudEvents](/protocols/mcp)。
 
 ## 行为与限制
 
@@ -8549,7 +8549,7 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 
 ## 相关
 
-- [gRPC、MCP 与 CloudEvents](../guide/protocols)、[命令行宿主](../guide/command-line)、[操作契约](../guide/operations)
+- [gRPC、MCP 与 CloudEvents](/protocols/grpc)、[命令行宿主](/protocols/command-line)、[操作契约](/web/operations)
 - [Hosting.AspNetCore](./hosting-aspnetcore)、[Hosting.CommandLine](./hosting-commandline)、[Protocols.Http](./protocols-http)
 - 规范：`spec/protocol/mcp.md`《MCP 载体》、RFC-0011《操作契约与 XGI》
 
@@ -8592,7 +8592,7 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 dotnet add package XiHan.Framework.Scheduling.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业：
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -8774,7 +8774,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 
 ## 相关
 
-- [调度与后台作业](../guide/scheduling)
+- [调度与后台作业](/scheduling/jobs)
 - [Scheduling.InMemory](./scheduling-inmemory)
 - [Scheduling.Database](./scheduling-database)
 - [Scheduling.Kubernetes](./scheduling-kubernetes)
@@ -8836,7 +8836,7 @@ dotnet add package XiHan.Framework.Scheduling.Database --prerelease
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Scheduling.InMemory`：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Scheduling.InMemory`：
 
 ```csharp
 using SqlSugar;
@@ -8854,7 +8854,7 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<DatabaseSchedulingFeature>());
 ```
 
-连接串来自绑定 `db`（`XiHan:Bindings:db`），持久化 Provider 的写法见[持久化](../guide/persistence)。用 EF Core 的应用在自己的 `DbContext` 里登记本包的五个实体，并给 `Data` 列用长文本类型：
+连接串来自绑定 `db`（`XiHan:Bindings:db`），持久化 Provider 的写法见[持久化](/persistence/overview)。用 EF Core 的应用在自己的 `DbContext` 里登记本包的五个实体，并给 `Data` 列用长文本类型：
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
@@ -8953,7 +8953,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 相关
 
-- [调度与后台作业](../guide/scheduling)
+- [调度与后台作业](/scheduling/jobs)
 - [Scheduling.Abstractions](./scheduling-abstractions)
 - [Scheduling.InMemory](./scheduling-inmemory)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
@@ -9009,7 +9009,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 dotnet add package XiHan.Framework.Scheduling.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -9091,7 +9091,7 @@ public sealed class HeartbeatJob(ILogger<HeartbeatJob> logger) : IJob
 
 ## 相关
 
-- [调度与后台作业](../guide/scheduling)
+- [调度与后台作业](/scheduling/jobs)
 - [Scheduling.Abstractions](./scheduling-abstractions)
 - [Scheduling.Database](./scheduling-database)
 - [Scheduling.Kubernetes](./scheduling-kubernetes)
@@ -9152,7 +9152,7 @@ public sealed class HeartbeatJob(ILogger<HeartbeatJob> logger) : IJob
 dotnet add package XiHan.Framework.Scheduling.Kubernetes --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -9189,7 +9189,7 @@ rules:
     verbs: ["create"]
 ```
 
-`xihan pack` 把应用清单 `xihan.app.json` 里的 `leader.lease` 写进环境变量 `XiHan__Scheduling__Kubernetes__Lease`，并生成 ServiceAccount、只含该 Lease 的 Role 与 RoleBinding，见[部署与打包](../guide/deployment)。
+`xihan pack` 把应用清单 `xihan.app.json` 里的 `leader.lease` 写进环境变量 `XiHan__Scheduling__Kubernetes__Lease`，并生成 ServiceAccount、只含该 Lease 的 Role 与 RoleBinding，见[部署与打包](/deployment/pack)。
 
 ## 配置
 
@@ -9238,16 +9238,16 @@ public sealed record LeaderView(string Holder, bool IsLeader);
 
 - 只提供领导选举。运行时登记的作业、暂停状态与运行历史仍在各 Pod 的内存里，不在副本间共享，也没有失联恢复。
 - Lease 存活时间以整秒写入，小于 1 秒的存活时间在 API Server 上按 1 秒处理。
-- 与 `Scheduling.Database` 同时装配时，两个显式 Provider 都提供 `scheduling.leader`，需要用 `XiHan:Providers:scheduling.leader` 指定一个，规则见[能力包与清单](../guide/modularity)。
+- 与 `Scheduling.Database` 同时装配时，两个显式 Provider 都提供 `scheduling.leader`，需要用 `XiHan:Providers:scheduling.leader` 指定一个，规则见[能力包与清单](/startup/features)。
 - 通过 `Scheduling.Conformance` 的 `LeaderElectionConformance`（以内存 API Server 桩验证），含应用生命周期用例：排空中的节点释放 Lease，另一个 Pod 在租约到期之前就接手（ADR-0094）。
 
 ## 相关
 
-- [调度与后台作业](../guide/scheduling)
+- [调度与后台作业](/scheduling/jobs)
 - [Scheduling.Abstractions](./scheduling-abstractions)
 - [Scheduling.InMemory](./scheduling-inmemory)
 - [Scheduling.Database](./scheduling-database)
-- [部署与打包](../guide/deployment)
+- [部署与打包](/deployment/pack)
 - 规范：RFC-0013《调度与领导选举》
 
 ---
@@ -9289,7 +9289,7 @@ public sealed record LeaderView(string Holder, bool IsLeader);
 dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
 
 ## 配置
 
@@ -9395,7 +9395,7 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 
 在特性里加到 Authorize 之前的阶段：`context.AddMiddleware<AuthenticatedByDefaultMiddleware>(PipelineStage.Tenant)`。
 
-收窄过滤器、授予来源、自定义策略与条件引擎的示例见[授权](../guide/authorization)。
+收窄过滤器、授予来源、自定义策略与条件引擎的示例见[授权](/security/authorization)。
 
 ## 行为与限制
 
@@ -9432,8 +9432,8 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 
 ## 相关
 
-- [认证](../guide/authentication)
-- [授权](../guide/authorization)
+- [认证](/security/authentication)
+- [授权](/security/authorization)
 - [Security.InMemory](./security-inmemory)
 - [Security.Database](./security-database)
 - [Kernel 内核](./kernel)
@@ -9481,7 +9481,7 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 dotnet add package XiHan.Framework.Security.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。本包必须和一个持久化 Provider 一起装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配：
 
 ```csharp
 using SqlSugar;
@@ -9601,7 +9601,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
 
 ## 相关
 
-- [授权](../guide/authorization)
+- [授权](/security/authorization)
 - [Security.Abstractions](./security-abstractions)
 - [Security.InMemory](./security-inmemory)
 - [Persistence.SqlSugar](./persistence-sqlsugar)
@@ -9649,7 +9649,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
 dotnet add package XiHan.Framework.Security.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。单独装配时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。单独装配时：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -9753,8 +9753,8 @@ public sealed class TrialGrants(InMemoryPermissionGrantStore grants)
 
 ## 相关
 
-- [认证](../guide/authentication)
-- [授权](../guide/authorization)
+- [认证](/security/authentication)
+- [授权](/security/authorization)
 - [Security.Abstractions](./security-abstractions)
 - [Security.Jwt](./security-jwt)
 - [Security.Database](./security-database)
@@ -9798,7 +9798,7 @@ IP 归属地的 ip2region 离线库 Provider：按宿主提供的 IPv4 / IPv6 xd
 dotnet add package XiHan.Framework.Security.Ip2Region --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -9888,7 +9888,7 @@ public sealed class LoginLocation(IServiceProvider services)
 
 ## 相关
 
-- [授权 · IP 归属地](../guide/authorization#ip-归属地)
+- [授权 · IP 归属地](/security/ip-region)
 - [Security.Abstractions](./security-abstractions)
 - 规范：RFC-0008《认证与授权》；ADR-0047
 
@@ -9931,7 +9931,7 @@ public sealed class LoginLocation(IServiceProvider services)
 dotnet add package XiHan.Framework.Security.Jwt --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -10020,11 +10020,11 @@ public static class TokenCheck
 - 任何校验失败都返回 `SECURITY_DENIED_003`（消息键 `security.token.invalid`），不区分原因对外暴露；令牌没有 `NameClaim` 声明同样返回 `SECURITY_DENIED_003`（消息键 `security.token.subject_missing`）。
 - 经 ASP.NET Core 宿主时，无效令牌是 401 并带 `WWW-Authenticate: Bearer error="invalid_token"`，没有令牌时是 401 并带 `WWW-Authenticate: Bearer`（ADR-0042）。
 - 容器里有 `Bearer` 方案的处理器时，`Protocols.Http` 发布的 OpenAPI 文档带 `components.securitySchemes.bearer` 与全局 `security`。
-- 绕过管道的端点（SignalR Hub 等）经 ASP.NET Core 方案 `XiHan` 复用本处理器，见[认证 · 绕过管道的端点](../guide/authentication#绕过管道的端点)。
+- 绕过管道的端点（SignalR Hub 等）经 ASP.NET Core 方案 `XiHan` 复用本处理器，见[认证 · 绕过管道的端点](/web/endpoints)。
 
 ## 相关
 
-- [认证](../guide/authentication)
+- [认证](/security/authentication)
 - [Security.Abstractions](./security-abstractions)
 - [Security.OpenIdConnect](./security-openidconnect)
 - [Security.InMemory](./security-inmemory)
@@ -10070,7 +10070,7 @@ public static class TokenCheck
 dotnet add package XiHan.Framework.Security.OpenIdConnect --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -10167,7 +10167,7 @@ app.Run();
 
 ## 相关
 
-- [认证](../guide/authentication)
+- [认证](/security/authentication)
 - [Security.Abstractions](./security-abstractions)
 - [Security.Jwt](./security-jwt)
 - [Security.InMemory](./security-inmemory)
@@ -10210,7 +10210,7 @@ app.Run();
 dotnet add package XiHan.Framework.Testing --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](../guide/testing#测试项目)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](/testing/basics)。
 
 ## 主要类型
 
@@ -10282,7 +10282,7 @@ var context = TestInvocationContext.Create(deadline: DateTimeOffset.UtcNow.AddSe
 Console.WriteLine(context.TraceId.Length);
 ```
 
-中间件与操作的完整测试写法见[测试与一致性套件](../guide/testing#测一个中间件)。
+中间件与操作的完整测试写法见[测试与一致性套件](/testing/basics)。
 
 ## 行为与限制
 
@@ -10293,7 +10293,7 @@ Console.WriteLine(context.TraceId.Length);
 
 ## 相关
 
-- [测试与一致性套件](../guide/testing)
+- [测试与一致性套件](/testing/basics)
 - [Conformance 一致性套件](./conformance)、[Kernel](./kernel)
 
 ---
@@ -10333,7 +10333,7 @@ Console.WriteLine(context.TraceId.Length);
 dotnet add package XiHan.Framework.Workflow.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记自定义活动与指派规则：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记自定义活动与指派规则：
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -10395,14 +10395,14 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowJson` | 定义、实例、节点实例、书签、事件数据的 JSON 往返与深拷贝 |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionCatalogExtensions` | 定义生命周期：创建、更新、发布、新版本、停用、归档、删除、查询、活动描述符 |
 | `WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage` | 定义列表 `QueryAsync`：按关键字（名字、显示名、说明）、名字、分类、状态、创建时间区间过滤，按排序项 `Sorts`（`WorkflowDefinitionSort`：白名单字段加方向，有序、可多个、最多 6 项）排序（空时名字升序、版本降序），返回摘要的一页与总数；`Limit` 缺省 100、最大 1000，分页或排序字段越界是 `WORKFLOW_VALIDATION_002`（ADR-0096、ADR-0102） |
-| `WorkflowDefinitionSort`、`WorkflowInstanceSort`、`WorkflowDefinitionSortField`、`WorkflowInstanceSortField`、`WorkflowSortKeys` | 列表排序的白名单与排序键：定义 `Name` / `Title` / `Version` / `Status` / `CreatedAt` / `PublishedAt`，实例 `CreatedAt` / `EndedAt` / `Status` / `DefinitionName` / `Title`；标题按前 256 个字符（见 [工作流指南的列表排序](../guide/workflow#列表排序)，ADR-0102） |
-| `WorkflowKeyword` | 列表查询关键字的折叠与匹配规则（见 [工作流指南的关键字](../guide/workflow#关键字)） |
+| `WorkflowDefinitionSort`、`WorkflowInstanceSort`、`WorkflowDefinitionSortField`、`WorkflowInstanceSortField`、`WorkflowSortKeys` | 列表排序的白名单与排序键：定义 `Name` / `Title` / `Version` / `Status` / `CreatedAt` / `PublishedAt`，实例 `CreatedAt` / `EndedAt` / `Status` / `DefinitionName` / `Title`；标题按前 256 个字符（见 [工作流指南的列表排序](/workflow/definitions)，ADR-0102） |
+| `WorkflowKeyword` | 列表查询关键字的折叠与匹配规则（见 [工作流指南的关键字](/workflow/definitions)） |
 | `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`（实例全部等待点的摘要 `WorkflowBookmarkSummary`，不含载荷，ADR-0096）；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法 |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Limit` 缺省 100、最大 1000；一组关联 ID `CorrelationIds` 最多 1000 个、空集合不匹配，只取顶层 `TopLevelOnly`，关键字 `Keyword` 匹配实例标题或关联 ID，排序项 `Sorts`（`WorkflowInstanceSort`，有序、可多个、最多 5 项）空时创建时间降序，ADR-0096、ADR-0099、ADR-0102） |
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityResumeContext`、`ActivityOutcome`、`ActivityOutgoing`、`ActivityDescriptor`、`ActivityRegistry` | 活动契约、执行上下文、返回值、出边模式与设计器描述符 |
 | `ActivityTypes` 与 `StartActivity`、`UserTaskActivity`、`HttpActivity` 等 | 内置活动的类型名与属性名常量 |
-| `WorkflowHttpClient` | `Http` 活动用的 HTTP 客户端（单例，可替换；缺省的过[出站地址策略](../guide/outbound)）；`SendAsync(request, ct)` 不另计时，超时由活动按引擎时钟落成令牌传进来、按令牌归因（ADR-0097） |
+| `WorkflowHttpClient` | `Http` 活动用的 HTTP 客户端（单例，可替换；缺省的过[出站地址策略](/security/outbound)）；`SendAsync(request, ct)` 不另计时，超时由活动按引擎时钟落成令牌传进来、按令牌归因（ADR-0097） |
 | `IWorkflowOutcomeHandler`、`WorkflowOutcomeContext` | `End` 节点带结果时、结束实例之前调用 |
 | `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务；`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，ADR-0096、ADR-0099）、排序与分页下推到存储，返回 `UserTaskPage(Items, Total)`，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002` |
 | `IWorkflowExternalTaskService`、`ExternalTask`、`ExternalTaskCompletion`、`ExternalTaskFailure`、`ExternalTaskLockExtension` | 外部任务 |
@@ -10496,7 +10496,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 
 ## 相关
 
-- [工作流](../guide/workflow)
+- [工作流](/workflow/definitions)
 - [Workflow.InMemory](./workflow-inmemory)
 - [Workflow.Database](./workflow-database)
 - [Scheduling.Abstractions](./scheduling-abstractions)
@@ -10552,7 +10552,7 @@ dotnet add package XiHan.Framework.Workflow.Database --prerelease
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Workflow.InMemory`：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Workflow.InMemory`：
 
 ```csharp
 using SqlSugar;
@@ -10644,7 +10644,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 - 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
 - 实例列表的每个过滤项都是 SQL 条件，按排序项 `Sorts` 依次（空时创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102、ADR-0104，排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）；`SearchText` 可空只为给已有行的表加列，已有的行要回填 `WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列），没回填的行不被关键字匹配。
-- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](../guide/workflow#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，已有的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
+- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](/workflow/definitions)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，已有的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
 - 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（ADR-0096、ADR-0099），已有的书签行要回填这两列。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
 - 读出来的模型来自 JSON 反序列化，天然是快照；按 ID 批量查找每 1000 个一批，列表与级联查询按全序排序分页读完。删除对不存在的 ID 忽略，`DeleteByInstanceAsync` 删该实例全部书签；写入的记录的 `TenantId` 不等于分区时抛 `ArgumentException`。
 - 可空时间列的条件不写 `!= null`：SQL 的 `NULL <= 值` 本就不成立，而 SqlSugar 会把它翻译成 `<> @参数(NULL)`。
@@ -10712,7 +10712,7 @@ UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 
 
 ## 相关
 
-- [工作流](../guide/workflow)
+- [工作流](/workflow/definitions)
 - [Workflow.Abstractions](./workflow-abstractions)
 - [Workflow.InMemory](./workflow-inmemory)
 - [Scheduling.Database](./scheduling-database)
@@ -10760,7 +10760,7 @@ UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 
 dotnet add package XiHan.Framework.Workflow.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -10808,7 +10808,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryWorkflowFeature>());
 
 ## 使用示例
 
-不需要额外代码：装配特性后注入 `IWorkflowDefinitionCatalog`、`IWorkflowEngine`、`IWorkflowTaskService` 使用，写法见[工作流](../guide/workflow)。测试里想立即推进定时与超时，可以从容器取 `DueBookmarkPoller` 手动轮询一次：
+不需要额外代码：装配特性后注入 `IWorkflowDefinitionCatalog`、`IWorkflowEngine`、`IWorkflowTaskService` 使用，写法见[工作流](/workflow/definitions)。测试里想立即推进定时与超时，可以从容器取 `DueBookmarkPoller` 手动轮询一次：
 
 ```csharp
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -10835,7 +10835,7 @@ public sealed class WorkflowClock(DueBookmarkPoller poller)
 
 ## 相关
 
-- [工作流](../guide/workflow)
+- [工作流](/workflow/definitions)
 - [Workflow.Abstractions](./workflow-abstractions)
 - [Workflow.Database](./workflow-database)
 - [Profiles.Full](./profiles-full)

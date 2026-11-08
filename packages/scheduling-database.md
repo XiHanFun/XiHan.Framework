@@ -50,7 +50,7 @@ dotnet add package XiHan.Framework.Scheduling.Database --prerelease
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Scheduling.InMemory`：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Scheduling.InMemory`：
 
 ```csharp
 using SqlSugar;
@@ -68,7 +68,7 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<DatabaseSchedulingFeature>());
 ```
 
-连接串来自绑定 `db`（`XiHan:Bindings:db`），持久化 Provider 的写法见[持久化](../guide/persistence)。用 EF Core 的应用在自己的 `DbContext` 里登记本包的五个实体，并给 `Data` 列用长文本类型：
+连接串来自绑定 `db`（`XiHan:Bindings:db`），持久化 Provider 的写法见[持久化](/persistence/overview)。用 EF Core 的应用在自己的 `DbContext` 里登记本包的五个实体，并给 `Data` 列用长文本类型：
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
@@ -167,7 +167,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 相关
 
-- [调度与后台作业](../guide/scheduling)
+- [调度与后台作业](/scheduling/jobs)
 - [Scheduling.Abstractions](./scheduling-abstractions)
 - [Scheduling.InMemory](./scheduling-inmemory)
 - [Persistence.SqlSugar](./persistence-sqlsugar)

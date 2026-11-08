@@ -26,7 +26,7 @@
 
 ## 何时使用
 
-配置放在 Nacos 里、希望改了以后应用不重启就生效时使用。配置在 Kubernetes ConfigMap 里时用宿主自带的挂载目录（`XIHAN_CONFIG_PATH`）即可，见[配置与选项](../guide/configuration)。Apollo、Consul 等其他配置中心没有提供 Provider，需要应用实现 `IRemoteConfigurationClient`。
+配置放在 Nacos 里、希望改了以后应用不重启就生效时使用。配置在 Kubernetes ConfigMap 里时用宿主自带的挂载目录（`XIHAN_CONFIG_PATH`）即可，见[配置与选项](/configuration/options)。Apollo、Consul 等其他配置中心没有提供 Provider，需要应用实现 `IRemoteConfigurationClient`。
 
 ## 安装与启用
 
@@ -34,7 +34,7 @@
 dotnet add package XiHan.Framework.Configuration.Nacos --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions.Remote;
@@ -147,6 +147,6 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 
 ## 相关
 
-- [配置与选项](../guide/configuration)
+- [配置与选项](/configuration/options)
 - [Configuration.Abstractions](./configuration-abstractions)
 - 规范：RFC-0014《远程配置与密钥》、ADR-0019

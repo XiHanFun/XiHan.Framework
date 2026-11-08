@@ -34,7 +34,7 @@
 dotnet add package XiHan.Framework.Persistence.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。`Profiles.Standard` 已包含本包，`UseStandardProfile()` 即装配；单独使用时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已包含本包，`UseStandardProfile()` 即装配；单独使用时：
 
 ```csharp
 using XiHan.Framework.Persistence.Abstractions.Repositories;
@@ -87,7 +87,7 @@ using XiHan.Framework.Persistence.InMemory;
 host.Services.GetRequiredService<InMemoryStore>().Clear();
 ```
 
-仓储的读写与其他 Provider 完全相同，见[持久化](../guide/persistence)。
+仓储的读写与其他 Provider 完全相同，见[持久化](/persistence/overview)。
 
 ## 行为与限制
 
@@ -120,9 +120,9 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
 
 ## 相关
 
-- [持久化](../guide/persistence)
-- [工作单元与事务](../guide/uow)
-- [测试与一致性套件](../guide/testing)
+- [持久化](/persistence/overview)
+- [工作单元与事务](/persistence/unit-of-work)
+- [测试与一致性套件](/testing/basics)
 - [Persistence.Abstractions](./persistence-abstractions)
 - [Profiles.Standard](./profiles-standard)
 - 规范：RFC-0005《领域协议与持久化》

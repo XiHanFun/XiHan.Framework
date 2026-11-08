@@ -36,7 +36,7 @@
 dotnet add package XiHan.Framework.Localization.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](../quickstart#获取预览包)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan
@@ -94,7 +94,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 ## 使用示例
 
-写入与删除放在操作里（`MessageTranslationStore` 只能在调用的 Transaction 阶段内使用），完整的操作写法见[国际化](../guide/localization#数据库翻译)：
+写入与删除放在操作里（`MessageTranslationStore` 只能在调用的 Transaction 阶段内使用），完整的操作写法见[国际化](/common/localization#数据库翻译)：
 
 ```csharp
 // 在操作的 HandleAsync 里：一次批量写入，逐项结果与入参同序
@@ -137,8 +137,8 @@ if (reloaded.IsFailure)
 
 ## 相关
 
-- [国际化](../guide/localization)
-- [持久化](../guide/persistence)
+- [国际化](/common/localization)
+- [持久化](/persistence/overview)
 - [Localization.Abstractions](./localization-abstractions)
 - [Localization.InMemory](./localization-inmemory)
 - 规范：RFC-0010《本地化》
