@@ -102,7 +102,7 @@ jobs:
 
       - name: 安装 Go
         # Plugins.OutOfProcess.Tests 在运行时构建 samples/EchoGoPlugin（Go 插件端到端）；没有 go 会跳过
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: framework/samples/EchoGoPlugin/go.mod
           cache-dependency-path: framework/samples/EchoGoPlugin/go.sum
