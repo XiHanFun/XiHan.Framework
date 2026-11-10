@@ -30,13 +30,16 @@ builder.AddXiHan(xihan => xihan.UseFeature<WorkerFeature>());   // WorkerFeature
 await builder.Build().RunAsync();
 ```
 
-常用配置节：`XiHan:Kernel`（启动与停止超时、失败策略）、`XiHan:Kernel:Resilience`（按操作的限制）、`XiHan:Providers`（指定能力提供者）。
+常用配置节：`XiHan:Kernel`（启动与停止超时、失败策略）、`XiHan:Kernel:Resilience`（按操作的限制）、`XiHan:Kernel:Banner`（启动 Banner）、`XiHan:Providers`（指定能力提供者）。
+
+宿主启动时先打印启动 Banner：字符画 Logo、框架版本、应用、环境、运行时与操作系统，写到标准输出，没有重定向的控制台上 Logo 带颜色（设置 `NO_COLOR` 可去掉）。`XiHan:Kernel:Banner:Enabled=false` 关闭；要改写入目标，在 `AddXiHan` 之前登记自己的 `StartupBannerOptions`。命令行宿主缺省不打印。
 
 ## 主要类型
 
 此库提供的主要类型：
 
 * `AppBuilder`、`App`：装配入口与运行中的应用
+* `KernelOptions`、`StartupBannerOptions`：内核选项与启动 Banner 的选项
 * `IFeature`、`IHostedFeature`、`FeatureContext`：特性与它的装配入口
 * `PipelineBuilder`、`IPipelineMiddleware`、`PipelineStage`：执行管道
 * `OperationAttribute`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`：操作契约与调用

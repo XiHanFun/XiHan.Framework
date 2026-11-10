@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
@@ -22,13 +23,15 @@ public static class WebApplicationBuilderExtensions
     /// 装配 XiHan 应用，并装载挂载的配置目录（存在时）
     /// </summary>
     /// <remarks>
-    /// 目录里的文件紧接最后一个 appsettings 文件源（<c>appsettings.json</c> 或 <c>appsettings.{环境}.json</c>）插入：覆盖 appsettings，又被其后的开发环境用户机密、环境变量、命令行参数与应用随后添加的配置源覆盖。构建器里没有 appsettings 文件源（关掉了默认配置）时追加在末尾。文件变化触发 <c>IOptionsMonitor</c> 重载
+    /// 目录里的文件紧接最后一个 appsettings 文件源（<c>appsettings.json</c> 或 <c>appsettings.{环境}.json</c>）插入：覆盖 appsettings，又被其后的开发环境用户机密、环境变量、命令行参数与应用随后添加的配置源覆盖。构建器里没有 appsettings 文件源（关掉了默认配置）时追加在末尾。文件变化触发 <c>IOptionsMonitor</c> 重载。随后登记启动 Banner 的选项（<see cref="StartupBannerOptions"/>，应用版本取自入口程序集），应用先登记的不覆盖
     /// </remarks>
     public static WebApplicationBuilder AddXiHan(this WebApplicationBuilder builder, Action<AppBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(configure);
         AddConfigurationDirectory(builder.Configuration, builder.Environment.EnvironmentName);
+        // 启动 Banner 的应用版本取自入口程序集；在内核登记缺省选项之前登记，应用先登记的选项不覆盖
+        builder.Services.TryAddSingleton(StartupBannerOptions.FromConfiguration(builder.Configuration, new StartupBannerOptions { ApplicationVersion = EntryAssemblyVersion.Resolve() }));
         return HostApplicationBuilderExtensions.AddXiHan(builder, configure);
     }
 

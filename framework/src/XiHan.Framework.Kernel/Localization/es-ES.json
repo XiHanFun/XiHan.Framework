@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "Denegado por la política.",
+  "kernel.banner.application": "Aplicación: {application}",
+  "kernel.banner.environment": "Entorno: {environment}",
+  "kernel.banner.os": "Sistema operativo: {os}",
+  "kernel.banner.runtime": "Tiempo de ejecución: {runtime} ({architecture})",
+  "kernel.banner.tagline": "Un framework .NET rápido, ligero, eficiente y cuidado: microkernel, grafo de capacidades y ejecución en canalización.",
   "kernel.feature.start_failed": "La característica '{id}' no pudo iniciarse: {reason}",
   "kernel.feature.stop_failed": "La característica '{id}' no pudo detenerse: {reason}",
   "kernel.feature.stop_timeout": "La característica '{id}' agotó el tiempo de espera al detenerse.",

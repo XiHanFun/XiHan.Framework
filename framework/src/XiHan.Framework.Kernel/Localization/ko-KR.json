@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "정책에 의해 거부되었습니다.",
+  "kernel.banner.application": "애플리케이션: {application}",
+  "kernel.banner.environment": "환경: {environment}",
+  "kernel.banner.os": "운영 체제: {os}",
+  "kernel.banner.runtime": "런타임: {runtime} ({architecture})",
+  "kernel.banner.tagline": "빠르고 가볍고 효율적이며 정성을 담은 .NET 프레임워크: 마이크로커널, 기능 그래프, 파이프라인 실행.",
   "kernel.feature.start_failed": "기능 '{id}'을(를) 시작하지 못했습니다: {reason}",
   "kernel.feature.stop_failed": "기능 '{id}'을(를) 중지하지 못했습니다: {reason}",
   "kernel.feature.stop_timeout": "기능 '{id}' 중지가 시간 제한을 초과했습니다.",

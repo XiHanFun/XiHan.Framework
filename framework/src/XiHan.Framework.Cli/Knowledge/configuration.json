@@ -478,6 +478,19 @@
       ]
     },
     {
+      "section": "XiHan:Kernel:Banner",
+      "options": "XiHan.Framework.Kernel.Hosting.StartupBannerOptions",
+      "package": "XiHan.Framework.Kernel",
+      "keys": [
+        {
+          "key": "Enabled",
+          "type": "boolean",
+          "default": "true",
+          "summary": "宿主启动时是否打印启动 Banner（Logo、框架与应用版本、环境、运行时）；命令行宿主缺省不打印，打开时写 stderr"
+        }
+      ]
+    },
+    {
       "section": "XiHan:Kernel:Resilience",
       "options": "XiHan.Framework.Kernel.Resilience.ResilienceOptions",
       "package": "XiHan.Framework.Kernel",

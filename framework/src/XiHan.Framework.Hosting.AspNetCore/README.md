@@ -11,6 +11,7 @@
 * 端点用 `RequireXiHanPermission` 等声明授权要求，启动时核对
 * 认证方案 `XiHan` 供 SignalR、SSE 等绕过管道的端点使用
 * 可挂载配置目录 `XIHAN_CONFIG_PATH`
+* 启动时打印启动 Banner（Logo、框架与应用版本、环境、运行时），应用版本取自入口程序集，`XiHan:Kernel:Banner:Enabled=false` 关闭
 
 ## 如何使用
 

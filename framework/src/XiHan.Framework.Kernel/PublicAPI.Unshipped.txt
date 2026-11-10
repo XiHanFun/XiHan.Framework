@@ -203,6 +203,16 @@ XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.PeriodicHealthContribut
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.ProbeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Kernel.Hosting.PeriodicHealthContributor.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.<Clone>$() -> XiHan.Framework.Kernel.Hosting.StartupBannerOptions!
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.ApplicationVersion.get -> string?
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.ApplicationVersion.init -> void
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Enabled.get -> bool
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Enabled.init -> void
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Equals(XiHan.Framework.Kernel.Hosting.StartupBannerOptions? other) -> bool
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Output.get -> System.IO.TextWriter?
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Output.init -> void
+XiHan.Framework.Kernel.Hosting.StartupBannerOptions.StartupBannerOptions() -> void
 XiHan.Framework.Kernel.KernelCapabilities
 XiHan.Framework.Kernel.KernelErrors
 XiHan.Framework.Kernel.KernelMessages
@@ -565,6 +575,7 @@ const XiHan.Framework.Kernel.Hosting.BindingResolver.ServiceBindingRootVariable 
 const XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.BaseFileName = "appsettings.json" -> string!
 const XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.Variable = "XIHAN_CONFIG_PATH" -> string!
 const XiHan.Framework.Kernel.Hosting.KernelOptions.ConfigurationSection = "XiHan:Kernel" -> string!
+const XiHan.Framework.Kernel.Hosting.StartupBannerOptions.ConfigurationSection = "XiHan:Kernel:Banner" -> string!
 const XiHan.Framework.Kernel.KernelCapabilities.Capabilities = "kernel.capabilities" -> string!
 const XiHan.Framework.Kernel.KernelCapabilities.Diagnostics = "kernel.diagnostics" -> string!
 const XiHan.Framework.Kernel.KernelCapabilities.Hosting = "kernel.hosting" -> string!
@@ -603,6 +614,11 @@ const XiHan.Framework.Kernel.KernelErrors.Unexpected = "KERNEL_UNEXPECTED_001" -
 const XiHan.Framework.Kernel.KernelErrors.UnknownOperation = "KERNEL_NOTFOUND_001" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnknownStage = "KERNEL_PIPELINE_002" -> string!
 const XiHan.Framework.Kernel.KernelErrors.UnregisteredPermission = "KERNEL_VALIDATION_005" -> string!
+const XiHan.Framework.Kernel.KernelMessages.BannerApplication = "kernel.banner.application" -> string!
+const XiHan.Framework.Kernel.KernelMessages.BannerEnvironment = "kernel.banner.environment" -> string!
+const XiHan.Framework.Kernel.KernelMessages.BannerOperatingSystem = "kernel.banner.os" -> string!
+const XiHan.Framework.Kernel.KernelMessages.BannerRuntime = "kernel.banner.runtime" -> string!
+const XiHan.Framework.Kernel.KernelMessages.BannerTagline = "kernel.banner.tagline" -> string!
 const XiHan.Framework.Kernel.KernelMessages.Cancelled = "kernel.invocation.cancelled" -> string!
 const XiHan.Framework.Kernel.KernelMessages.CircuitOpen = "kernel.resilience.circuit_open" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ConcurrencyExceeded = "kernel.resilience.concurrency_exceeded" -> string!
@@ -687,6 +703,9 @@ override XiHan.Framework.Kernel.Hosting.HealthSnapshot.ToString() -> string!
 override XiHan.Framework.Kernel.Hosting.KernelOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Hosting.KernelOptions.GetHashCode() -> int
 override XiHan.Framework.Kernel.Hosting.KernelOptions.ToString() -> string!
+override XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Hosting.StartupBannerOptions.GetHashCode() -> int
+override XiHan.Framework.Kernel.Hosting.StartupBannerOptions.ToString() -> string!
 override XiHan.Framework.Kernel.Operations.OperationContract.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Operations.OperationContract.GetHashCode() -> int
 override XiHan.Framework.Kernel.Operations.OperationContract.ToString() -> string!
@@ -775,6 +794,9 @@ static XiHan.Framework.Kernel.Hosting.HostApplicationBuilderExtensions.AddXiHan<
 static XiHan.Framework.Kernel.Hosting.KernelOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Kernel.Hosting.KernelOptions!
 static XiHan.Framework.Kernel.Hosting.KernelOptions.operator !=(XiHan.Framework.Kernel.Hosting.KernelOptions? left, XiHan.Framework.Kernel.Hosting.KernelOptions? right) -> bool
 static XiHan.Framework.Kernel.Hosting.KernelOptions.operator ==(XiHan.Framework.Kernel.Hosting.KernelOptions? left, XiHan.Framework.Kernel.Hosting.KernelOptions? right) -> bool
+static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? defaults = null) -> XiHan.Framework.Kernel.Hosting.StartupBannerOptions!
+static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.operator !=(XiHan.Framework.Kernel.Hosting.StartupBannerOptions? left, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? right) -> bool
+static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.operator ==(XiHan.Framework.Kernel.Hosting.StartupBannerOptions? left, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? right) -> bool
 static XiHan.Framework.Kernel.KernelCapabilities.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 static XiHan.Framework.Kernel.Operations.OperationContract.operator !=(XiHan.Framework.Kernel.Operations.OperationContract? left, XiHan.Framework.Kernel.Operations.OperationContract? right) -> bool
 static XiHan.Framework.Kernel.Operations.OperationContract.operator ==(XiHan.Framework.Kernel.Operations.OperationContract? left, XiHan.Framework.Kernel.Operations.OperationContract? right) -> bool

@@ -6,7 +6,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Kernel;
 
 /// <summary>
-/// 内核失败结果的消息键
+/// 内核失败结果与启动 Banner 的消息键
 /// </summary>
 /// <remarks>
 /// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，由本地化默认实现装配。启动期的 <see cref="FrameworkException"/>（配置与编程错误）不走消息键
@@ -377,4 +377,41 @@ public static class KernelMessages
     /// 参数：<c>name</c>、<c>reason</c>
     /// </remarks>
     public const string HealthProbeFailed = "kernel.health.probe_failed";
+
+    /// <summary>
+    /// 启动 Banner 的标语
+    /// </summary>
+    public const string BannerTagline = "kernel.banner.tagline";
+
+    /// <summary>
+    /// 启动 Banner 的应用一行
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>application</c>（应用名，有版本时带 <c>v</c> 与版本）
+    /// </remarks>
+    public const string BannerApplication = "kernel.banner.application";
+
+    /// <summary>
+    /// 启动 Banner 的环境一行
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>environment</c>（宿主环境名）
+    /// </remarks>
+    public const string BannerEnvironment = "kernel.banner.environment";
+
+    /// <summary>
+    /// 启动 Banner 的运行时一行
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>runtime</c>（.NET 描述）、<c>architecture</c>（进程架构）
+    /// </remarks>
+    public const string BannerRuntime = "kernel.banner.runtime";
+
+    /// <summary>
+    /// 启动 Banner 的操作系统一行
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>os</c>（操作系统描述）
+    /// </remarks>
+    public const string BannerOperatingSystem = "kernel.banner.os";
 }

@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "ポリシーによって拒否されました。",
+  "kernel.banner.application": "アプリケーション: {application}",
+  "kernel.banner.environment": "環境: {environment}",
+  "kernel.banner.os": "OS: {os}",
+  "kernel.banner.runtime": "ランタイム: {runtime} ({architecture})",
+  "kernel.banner.tagline": "高速・軽量・高効率で丁寧に作られた .NET フレームワーク: マイクロカーネル、ケイパビリティグラフ、パイプライン実行。",
   "kernel.feature.start_failed": "フィーチャー '{id}' の開始に失敗しました: {reason}",
   "kernel.feature.stop_failed": "フィーチャー '{id}' の停止に失敗しました: {reason}",
   "kernel.feature.stop_timeout": "フィーチャー '{id}' の停止がタイムアウトしました。",

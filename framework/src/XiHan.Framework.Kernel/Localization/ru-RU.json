@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "Отклонено политикой.",
+  "kernel.banner.application": "Приложение: {application}",
+  "kernel.banner.environment": "Окружение: {environment}",
+  "kernel.banner.os": "ОС: {os}",
+  "kernel.banner.runtime": "Среда выполнения: {runtime} ({architecture})",
+  "kernel.banner.tagline": "Быстрый, лёгкий, эффективный и продуманный .NET-фреймворк: микроядро, граф возможностей, конвейерное выполнение.",
   "kernel.feature.start_failed": "Не удалось запустить компонент '{id}': {reason}",
   "kernel.feature.stop_failed": "Не удалось остановить компонент '{id}': {reason}",
   "kernel.feature.stop_timeout": "Истекло время ожидания остановки компонента '{id}'.",

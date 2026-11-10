@@ -53,7 +53,7 @@ app.Run();
 | `XiHan:ObjectStorage:SignedUrls:Secret` | string | 无，必填 | 预签名地址的 HMAC-SHA256 密钥，至少 32 字节 UTF-8，多实例须一致 |
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | string | `/blobs` | 预签名地址的基址 |
 
-后两项只在装配 `HostedBlobUrlFeature` 时读取。
+后两项只在装配 `HostedBlobUrlFeature` 时读取。`AddXiHan` 还按 `XiHan:Kernel:Banner:Enabled` 登记[启动 Banner](/startup/bootstrap#启动-banner) 的选项，应用版本取自入口程序集的 `AssemblyInformationalVersion`（去掉 `+` 之后的提交哈希）。
 
 ```json
 {

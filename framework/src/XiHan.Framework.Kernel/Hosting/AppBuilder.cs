@@ -283,6 +283,9 @@ public sealed class AppBuilder
         Services.AddSingleton(graph);
         Services.AddSingleton(new AppModel(graph, runtimes, Pipeline, options, bindings, startupChecks));
         Services.AddSingleton<App>();
+        // 启动 Banner：宿主包在这之前登记了带应用版本的选项，应用也可以先登记自己的；是否打印到宿主启动时才看
+        Services.TryAddSingleton(StartupBannerOptions.FromConfiguration(Configuration));
+        Services.AddHostedService<StartupBannerService>();
         Services.AddHostedService<AppHostedService>();
         return graph;
     }

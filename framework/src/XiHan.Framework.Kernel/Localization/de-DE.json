@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "Durch die Richtlinie abgelehnt.",
+  "kernel.banner.application": "Anwendung: {application}",
+  "kernel.banner.environment": "Umgebung: {environment}",
+  "kernel.banner.os": "Betriebssystem: {os}",
+  "kernel.banner.runtime": "Laufzeit: {runtime} ({architecture})",
+  "kernel.banner.tagline": "Ein schnelles, schlankes, effizientes und durchdachtes .NET-Framework: Mikrokernel, Fähigkeitsgraph, Pipeline-Ausführung.",
   "kernel.feature.start_failed": "Das Feature '{id}' konnte nicht gestartet werden: {reason}",
   "kernel.feature.stop_failed": "Das Feature '{id}' konnte nicht gestoppt werden: {reason}",
   "kernel.feature.stop_timeout": "Das Feature '{id}' hat beim Stoppen die Zeitüberschreitung erreicht.",

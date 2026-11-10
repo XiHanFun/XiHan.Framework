@@ -128,3 +128,4 @@
 | [0126](0126-出站地址策略的非HTTP连接入口.md) | 第三十一批：公开 `OutboundAddressPolicy.ConnectAsync(host, port, ct)`，返回连好的 `Socket`，规则与 HTTP 路径相同；BasicApp 的 SMTP 可以换过去 |
 | [0127](0127-调用方没取消时的gRPC取消报插件不可用.md) | gRPC 的 `Cancelled` 按调用方令牌区分：已触发是 `KERNEL_CANCELLED_001`，没触发（插件停机、通道释放切断调用）是 `PLUGINS_UNAVAILABLE_001`，与 ADR-0085 的承诺一致 | 已采纳 |
 | [0128](0128-命令行字段选项按请求Schema写类型.md) | 操作带 `OperationSchema` 时，`invoke` 进管道前按请求 Schema 把字段选项写成对应类型，转换不了的留字符串由 Validate 阶段报 `KERNEL_VALIDATION_003`；`--json` / `--data` 原样进入 | 已采纳 |
+| [0129](0129-启动Banner.md) | 宿主启动时（`StartingAsync`）由内核打印 4.x 版式的启动 Banner：Logo 彩虹渐变（只在没有重定向的控制台上、`NO_COLOR` 关闭），框架版本取构建期常量，应用版本由两个宿主包从入口程序集读取，标签走 `kernel.banner.*`；`XiHan:Kernel:Banner:Enabled` 关闭，`StartupBannerOptions` 可改写入目标；命令行宿主缺省关闭、打开时写 stderr | 已采纳 |

@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "Denied by policy.",
+  "kernel.banner.application": "Application: {application}",
+  "kernel.banner.environment": "Environment: {environment}",
+  "kernel.banner.os": "OS: {os}",
+  "kernel.banner.runtime": "Runtime: {runtime} ({architecture})",
+  "kernel.banner.tagline": "A fast, lightweight, efficient and thoughtful .NET framework: microkernel, capability graph, pipeline execution.",
   "kernel.feature.start_failed": "Feature '{id}' failed to start: {reason}",
   "kernel.feature.stop_failed": "Feature '{id}' failed to stop: {reason}",
   "kernel.feature.stop_timeout": "Feature '{id}' timed out while stopping.",

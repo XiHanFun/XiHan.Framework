@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "被原則拒絕。",
+  "kernel.banner.application": "應用程式：{application}",
+  "kernel.banner.environment": "環境：{environment}",
+  "kernel.banner.os": "作業系統：{os}",
+  "kernel.banner.runtime": "執行階段：{runtime}（{architecture}）",
+  "kernel.banner.tagline": "快速、輕量、高效、用心的 .NET 框架：微核心、能力圖譜與管線執行。",
   "kernel.feature.start_failed": "特性 '{id}' 啟動失敗：{reason}",
   "kernel.feature.stop_failed": "特性 '{id}' 停止失敗：{reason}",
   "kernel.feature.stop_timeout": "特性 '{id}' 停止逾時。",

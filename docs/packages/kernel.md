@@ -19,7 +19,7 @@
 
 | 命名空间 | 职责 |
 | --- | --- |
-| `Kernel.Hosting` | `AddXiHan`、`AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、资源绑定、健康快照与 `IHealthContributor`、`PeriodicHealthContributor` |
+| `Kernel.Hosting` | `AddXiHan`、`AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`StartupBannerOptions`、资源绑定、健康快照与 `IHealthContributor`、`PeriodicHealthContributor` |
 | `Kernel.Capabilities` | `CapabilityResolver`、`ResolvedGraph`、`ResolvedNode`、`ManifestReader`（读写 `xihan.manifest.json`） |
 | `Kernel.Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`Placement`、`DeadlineMiddleware`、`IInvocationAccessor`、调用来源 `InvocationOrigin`、上下文扩展 |
 | `Kernel.Operations` | `[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`IOperationInvoker` |
@@ -65,6 +65,7 @@ await builder.Build().RunAsync();
 | `XiHan:Kernel:StopTimeoutSeconds` | `30` | 每个特性停止的超时 |
 | `XiHan:Kernel:FailurePolicy` | `TerminateStartup` | 特性启动失败时终止启动，或 `IsolateFeature` 只隔离该特性 |
 | `XiHan:Kernel:UseBuiltInMiddleware` | `true` | 是否登记 Observe、截止时间、Resilience、Validate 四个内置中间件 |
+| `XiHan:Kernel:Banner:Enabled` | `true` | 宿主启动时是否打印[启动 Banner](/startup/bootstrap#启动-banner)；命令行宿主缺省 `false` |
 | `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](/common/resilience) |
 | `XiHan:Security:Outbound:*` | 只能连公网地址 | [出站地址策略](/security/outbound)的放行项：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Providers:<能力 ID>` | — | 指定某能力的提供者清单 ID |
@@ -83,6 +84,7 @@ await builder.Build().RunAsync();
 | `IShadowAwareFeature` | 能力全部被顶替时内核改调 `ConfigureShadowed`，只登记与能力选择无关的服务（命名存储实例的 Provider）；不注册契约、不贡献中间件、不启动 |
 | `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`（归属为本特性的清单 ID）、`AddOperation`、`AddStartupCheck`（启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归失败策略管，ADR-0085）、`GetBinding` / `TryGetBinding` |
 | `KernelOptions` / `FailurePolicy` | 内核选项与失败策略 |
+| `StartupBannerOptions` | 启动 Banner：`Enabled`（读 `XiHan:Kernel:Banner:Enabled`）、`Output`（写入目标，缺省标准输出）、`ApplicationVersion`（宿主包从入口程序集填入）；`FromConfiguration(configuration, defaults)` 让宿主给出自己的缺省 |
 | `IHealthContributor` / `PeriodicHealthContributor` / `ContributorStatus` / `HealthSnapshot` | 健康条目与快照 |
 | `ResolvedGraph` / `ResolvedNode` | 已解析的能力图谱，节点带被选中的能力、可选依赖缺失与 shadowed 标记；`IsRequestedFor` 区分被要求的选中（有依赖或经 `XiHan:Providers` / `UseProvider` 指定）与兜底选出 |
 | `PipelineBuilder` / `IPipelineMiddleware` / `PipelineStep` / `Placement` | 管道 |

@@ -15,7 +15,7 @@
 
 ## 概述
 
-一次进程执行一条命令。`invoke <操作 ID>` 与简写 `<resource> <verb>` 把 `--json`、`--data` 或字段选项拼成载荷，把 `--tenant`、`--correlation`、`--locale`、`--timeout`、`--authorization` 翻译成调用上下文，经完整内核管道调用暴露给命令行（`Expose.CommandLine`）的操作。成功时响应 JSON 写到 stdout，失败时一行 `{"code","detail","traceId"}` 写到 stderr，退出码按错误码的 KIND 段决定。`AddXiHanCommandLine()` 把日志改成只写 stderr，stdout 只有命令输出。
+一次进程执行一条命令。`invoke <操作 ID>` 与简写 `<resource> <verb>` 把 `--json`、`--data` 或字段选项拼成载荷，把 `--tenant`、`--correlation`、`--locale`、`--timeout`、`--authorization` 翻译成调用上下文，经完整内核管道调用暴露给命令行（`Expose.CommandLine`）的操作。成功时响应 JSON 写到 stdout，失败时一行 `{"code","detail","traceId"}` 写到 stderr，退出码按错误码的 KIND 段决定。`AddXiHanCommandLine()` 把日志改成只写 stderr，stdout 只有命令输出；[启动 Banner](/startup/bootstrap#启动-banner) 缺省不打印，`XiHan:Kernel:Banner:Enabled=true` 打开时也只写 stderr，命令的 JSON 输出与 `mcp` 的 stdio 消息流不受影响。
 
 其他包可以登记自己的命令：实现 `ICommand` 后 `AddXiHanCommand<T>()`，`Protocols.Mcp` 就以这种方式提供 `mcp` 命令（MCP 的 stdio 传输）。
 
@@ -48,7 +48,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 | 类型 | 说明 |
 | --- | --- |
 | `HostApplicationBuilderConfigurationExtensions` | `AddXiHan(configure)`：先装载 `XIHAN_CONFIG_PATH` 目录（紧接 `appsettings.{环境}.json` 插入），再交给内核装配应用 |
-| `CommandLineServiceCollectionExtensions` | `AddXiHanCommandLine()` 登记运行器与内置命令并把日志改到 stderr；`AddXiHanCommand<TCommand>()` 登记命令 |
+| `CommandLineServiceCollectionExtensions` | `AddXiHanCommandLine()` 登记运行器与内置命令，把日志改到 stderr，把启动 Banner 换成缺省关闭、写 stderr；`AddXiHanCommand<TCommand>()` 登记命令 |
 | `CommandLineHostExtensions` | `RunXiHanCommandLineAsync(args)`：启动宿主、执行命令、停止宿主，返回退出码；Ctrl+C 取消命令 |
 | `Commands.ICommand` | 命令：`Name`、`DescriptionKey`（说明的消息键）、`ExecuteAsync(CommandContext)` |
 | `Commands.CommandContext` | 解析结果、作用域服务、`Output` / `Error`、取消令牌 |

@@ -9,6 +9,7 @@
 * 内置 `help`、`graph`、`pipeline`、`operations`、`invoke` 命令
 * `invoke` 的字段选项、`--json`、`--data` 拼成载荷，经完整内核管道与授权
 * 成功输出 JSON 到 stdout，失败输出错误到 stderr，退出码按错误种类
+* stdout 只承载命令输出：日志只写 stderr，启动 Banner 缺省不打印，`XiHan:Kernel:Banner:Enabled=true` 打开时也只写 stderr
 * 可实现 `ICommand` 扩展自定义命令
 
 ## 如何使用

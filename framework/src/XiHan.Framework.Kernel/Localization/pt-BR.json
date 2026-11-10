@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "Negado pela política.",
+  "kernel.banner.application": "Aplicativo: {application}",
+  "kernel.banner.environment": "Ambiente: {environment}",
+  "kernel.banner.os": "Sistema operacional: {os}",
+  "kernel.banner.runtime": "Tempo de execução: {runtime} ({architecture})",
+  "kernel.banner.tagline": "Um framework .NET rápido, leve, eficiente e cuidadoso: microkernel, grafo de capacidades e execução em pipeline.",
   "kernel.feature.start_failed": "O recurso '{id}' não pôde ser iniciado: {reason}",
   "kernel.feature.stop_failed": "O recurso '{id}' não pôde ser interrompido: {reason}",
   "kernel.feature.stop_timeout": "O recurso '{id}' excedeu o tempo limite ao parar.",

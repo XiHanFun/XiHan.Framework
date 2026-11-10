@@ -6,7 +6,7 @@
 
 每个后端系统最后都会长出一批「脚本」：初始化数据、批量修复、导出报表、给运维排障。它们通常绕开业务层直接连数据库，没有认证、没有授权、没有审计，一不小心就改错租户。另一类需求是把应用交给 AI 客户端当 MCP 服务端，桌面客户端要求以子进程方式经 stdin / stdout 通信，Web 宿主做不到。
 
-命令行宿主解决这两件事。它跑在 .NET 通用宿主里，一次进程执行一条命令；同一份操作契约在命令行上就是一条命令，`invoke orders.create --name widget` 与 HTTP 一样经过完整的内核管道，Authenticate 阶段解释凭据，Authorize 阶段按契约判定，审计照常记录。stdout 只承载命令输出，日志与失败信息只写 stderr，脚本可以直接把 stdout 交给 `jq` 一类的工具。装配了 MCP 适配器时，它还提供 `mcp` 命令作为 stdio 传输。
+命令行宿主解决这两件事。它跑在 .NET 通用宿主里，一次进程执行一条命令；同一份操作契约在命令行上就是一条命令，`invoke orders.create --name widget` 与 HTTP 一样经过完整的内核管道，Authenticate 阶段解释凭据，Authorize 阶段按契约判定，审计照常记录。stdout 只承载命令输出，日志与失败信息只写 stderr，脚本可以直接把 stdout 交给 `jq` 一类的工具；[启动 Banner](/startup/bootstrap#启动-banner) 在命令行宿主上缺省不打印，用 `XiHan:Kernel:Banner:Enabled=true` 打开时也只写 stderr。装配了 MCP 适配器时，它还提供 `mcp` 命令作为 stdio 传输。
 
 ## 内置命令
 

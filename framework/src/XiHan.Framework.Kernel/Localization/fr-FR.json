@@ -1,5 +1,10 @@
 {
   "kernel.authorization.denied_by_policy": "Refusé par la stratégie.",
+  "kernel.banner.application": "Application : {application}",
+  "kernel.banner.environment": "Environnement : {environment}",
+  "kernel.banner.os": "Système d'exploitation : {os}",
+  "kernel.banner.runtime": "Environnement d'exécution : {runtime} ({architecture})",
+  "kernel.banner.tagline": "Un framework .NET rapide, léger, efficace et soigné : micronoyau, graphe des capacités, exécution en pipeline.",
   "kernel.feature.start_failed": "La fonctionnalité '{id}' n'a pas pu démarrer : {reason}",
   "kernel.feature.stop_failed": "La fonctionnalité '{id}' n'a pas pu s'arrêter : {reason}",
   "kernel.feature.stop_timeout": "La fonctionnalité '{id}' a expiré lors de l'arrêt.",

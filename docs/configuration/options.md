@@ -145,6 +145,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:Providers` | [Kernel](/packages/kernel) | `<能力 ID>` → 清单 ID，指定能力的提供者 |
 | `XiHan:Bindings` | [Kernel](/packages/kernel) | 资源绑定 |
 | `XiHan:Kernel` | [Kernel](/packages/kernel) | `StartTimeoutSeconds`、`StopTimeoutSeconds`、`FailurePolicy`、`UseBuiltInMiddleware` |
+| `XiHan:Kernel:Banner` | [Kernel](/packages/kernel) | `Enabled`：宿主启动时是否打印启动 Banner，见[装配入口](/startup/bootstrap#启动-banner) |
 | `XiHan:Kernel:Resilience` | [Kernel](/packages/kernel) | Resilience 阶段的默认策略，`Operations:<操作 ID>` 按操作覆盖，见[弹性与限流](/common/resilience) |
 | `XiHan:Persistence:InMemory` | [Persistence.InMemory](/packages/persistence-inmemory) | `MaxEntitiesPerType` |
 | `XiHan:Persistence:EntityFrameworkCore` | [Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore) | `EnsureCreated`、`HealthProbeIntervalSeconds` |
