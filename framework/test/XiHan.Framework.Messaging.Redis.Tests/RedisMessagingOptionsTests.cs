@@ -26,20 +26,20 @@ public sealed class RedisMessagingOptionsTests
         var defaults = RedisMessagingOptions.FromConfiguration(Build((ConfigurationKey, "cfg:6379")), default);
         Assert.Equal("cfg:6379", defaults.Configuration);
         Assert.Equal("xihan:messaging:", defaults.KeyPrefix);
-        Assert.Equal("xihan", defaults.GroupName);
+        Assert.Equal("xihan", defaults.ConsumerGroup);
         Assert.Equal(10, defaults.BatchSize);
         Assert.Equal(TimeSpan.FromMilliseconds(200), defaults.PollInterval);
         Assert.Equal(TimeSpan.FromSeconds(60), defaults.ClaimIdleTime);
         Assert.Equal(100_000, defaults.MaxLength);
         Assert.Equal(TimeSpan.FromSeconds(15), defaults.HealthProbeInterval);
-        Assert.Null(defaults.User);
+        Assert.Null(defaults.UserName);
         Assert.Null(defaults.Password);
 
         var configured = RedisMessagingOptions.FromConfiguration(
             Build(
                 (ConfigurationKey, "cfg:6379"),
                 ("XiHan:Messaging:Redis:KeyPrefix", "app:"),
-                ("XiHan:Messaging:Redis:GroupName", "orders-api"),
+                ("XiHan:Messaging:Redis:ConsumerGroup", "orders-api"),
                 ("XiHan:Messaging:Redis:BatchSize", "32"),
                 ("XiHan:Messaging:Redis:PollIntervalSeconds", "0.05"),
                 ("XiHan:Messaging:Redis:ClaimIdleTimeSeconds", "120"),
@@ -47,7 +47,7 @@ public sealed class RedisMessagingOptionsTests
                 ("XiHan:Messaging:Redis:HealthProbeIntervalSeconds", "3")),
             default);
         Assert.Equal("app:", configured.KeyPrefix);
-        Assert.Equal("orders-api", configured.GroupName);
+        Assert.Equal("orders-api", configured.ConsumerGroup);
         Assert.Equal(32, configured.BatchSize);
         Assert.Equal(TimeSpan.FromMilliseconds(50), configured.PollInterval);
         Assert.Equal(TimeSpan.FromSeconds(120), configured.ClaimIdleTime);
@@ -56,9 +56,9 @@ public sealed class RedisMessagingOptionsTests
     }
 
     [Theory]
-    [InlineData("XiHan:Messaging:Redis:GroupName", "a@b")]
-    [InlineData("XiHan:Messaging:Redis:GroupName", "")]
-    [InlineData("XiHan:Messaging:Redis:GroupName", "-starts-with-dash")]
+    [InlineData("XiHan:Messaging:Redis:ConsumerGroup", "a@b")]
+    [InlineData("XiHan:Messaging:Redis:ConsumerGroup", "")]
+    [InlineData("XiHan:Messaging:Redis:ConsumerGroup", "-starts-with-dash")]
     [InlineData("XiHan:Messaging:Redis:BatchSize", "0")]
     [InlineData("XiHan:Messaging:Redis:BatchSize", "1001")]
     [InlineData("XiHan:Messaging:Redis:BatchSize", "ten")]
@@ -80,7 +80,7 @@ public sealed class RedisMessagingOptionsTests
         var bound = Binding("bound:6379", ("username", "alice"), ("password", "p,w=d"));
         var options = RedisMessagingOptions.FromConfiguration(Build((ConfigurationKey, "cfg:6379,password=old"), ("XiHan:Messaging:Redis:KeyPrefix", "app:")), bound);
         Assert.Equal("bound:6379", options.Configuration);
-        Assert.Equal("alice", options.User);
+        Assert.Equal("alice", options.UserName);
         Assert.Equal("p,w=d", options.Password);
         // 绑定只管连接与凭据，其余键照读配置节
         Assert.Equal("app:", options.KeyPrefix);
@@ -89,26 +89,26 @@ public sealed class RedisMessagingOptionsTests
         var credentialsOnly = RedisMessagingOptions.FromConfiguration(Build((ConfigurationKey, "cfg:6379")), Binding(" ", ("password", "secret"), ("username", " ")));
         Assert.Equal("cfg:6379", credentialsOnly.Configuration);
         Assert.Equal("secret", credentialsOnly.Password);
-        Assert.Null(credentialsOnly.User);
+        Assert.Null(credentialsOnly.UserName);
     }
 
     [Fact]
     public void ConnectionOptions_ApplyTheBoundCredentials_WithoutRewritingTheString()
     {
-        var options = new RedisMessagingOptions { Configuration = "localhost:6379,user=old,password=old", User = "alice", Password = "p,w=d" };
+        var options = new RedisMessagingOptions { Configuration = "localhost:6379,user=old,password=old", UserName = "alice", Password = "p,w=d" };
 
         var connection = RedisMessageBroker.ConnectionOptions(options);
 
         Assert.Equal("alice", connection.User);
         Assert.Equal("p,w=d", connection.Password);
         Assert.Single(connection.EndPoints);
-        Assert.Equal("old", RedisMessageBroker.ConnectionOptions(options with { User = null, Password = null }).Password);
+        Assert.Equal("old", RedisMessageBroker.ConnectionOptions(options with { UserName = null, Password = null }).Password);
     }
 
     [Fact]
     public void ToString_MasksTheConnectionAndCredentials()
     {
-        var options = new RedisMessagingOptions { Configuration = "localhost:6379,password=hunter2", User = "alice", Password = "s3cret" };
+        var options = new RedisMessagingOptions { Configuration = "localhost:6379,password=hunter2", UserName = "alice", Password = "s3cret" };
 
         var text = options.ToString();
 
@@ -116,7 +116,7 @@ public sealed class RedisMessagingOptionsTests
         Assert.DoesNotContain("alice", text, StringComparison.Ordinal);
         Assert.DoesNotContain("s3cret", text, StringComparison.Ordinal);
         Assert.Contains("Configuration = ***", text, StringComparison.Ordinal);
-        Assert.Contains("GroupName = xihan", text, StringComparison.Ordinal);
+        Assert.Contains("ConsumerGroup = xihan", text, StringComparison.Ordinal);
         Assert.Contains("MaxLength = 100000", text, StringComparison.Ordinal);
     }
 

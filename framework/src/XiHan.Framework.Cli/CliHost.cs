@@ -58,7 +58,7 @@ internal static class CliHost
         var localization = new LocalizationOptions();
         var requested = CommandLineParser.Parse(args).Option("locale").TryGetValue(out var locale) ? locale : CultureInfo.CurrentUICulture.Name;
         localization = localization with { DefaultLocale = localization.Negotiate([requested]) };
-        var localizer = new MessageLocalizer(
+        var localizer = new InMemoryMessageLocalizer(
             [CliMessages.Catalog, CommandLineMessages.Catalog, MessageCatalog.FromEmbeddedResources("primitives", typeof(Error)), MessageCatalog.FromEmbeddedResources("kernel", typeof(Kernel.Hosting.App))],
             localization);
         services.AddSingleton<IMessageLocalizer>(localizer);

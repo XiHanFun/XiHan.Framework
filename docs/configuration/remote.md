@@ -113,8 +113,8 @@ public sealed class OrderLimits
 | 成员 | 说明 |
 | --- | --- |
 | `AddXiHanNacos(options, remote)` | 经工厂重载自建客户端（自带 HTTP 客户端），随配置根释放 |
-| `NacosOptions.FromConfiguration(configuration, binding)` | 从 `XiHan:Configuration:Nacos` 读取；传入绑定 `nacos` 时主值覆盖 `ServerAddresses`，属性 `username`、`password` 覆盖 `Username`、`Password` |
-| `NacosOptions` | `ServerAddresses`、`Group`、`Tenant`（Nacos 命名空间）、`Format`、`Username`、`Password`、`RequestTimeout`、`LongPollTimeout` |
+| `NacosOptions.FromConfiguration(configuration, binding)` | 从 `XiHan:Configuration:Nacos` 读取；传入绑定 `nacos` 时主值覆盖 `ServerAddresses`，属性 `username`、`password` 覆盖 `UserName`、`Password` |
+| `NacosOptions` | `ServerAddresses`、`Group`、`Tenant`（Nacos 命名空间）、`Format`、`UserName`、`Password`、`RequestTimeout`、`LongPollTimeout` |
 | `NacosConfigurationFeature` | 装配后运行期容器里登记 `IRemoteConfigurationClient`，供其他组件按需取文档；配置源本身不需要它 |
 
 ## 密钥
@@ -207,13 +207,13 @@ builder.Configuration.AddXiHanSecrets(
 
 ## 选项打印时遮蔽凭据
 
-框架的选项与携带凭据的记录在 `ToString()` 里把凭据打印成 `***`（`Redaction.Mask`），值为 `null` 时打印为空：看得出有没有配置，看不到值。访问密钥 ID（S3 的 `AccessKey`）是访问密钥的一半，同样遮蔽；与口令同在一个记录里的登录用户名（Redis 的 `User`、RabbitMQ 的 `UserName`、Nacos 的 `Username`）是登录凭据的另一半，也遮蔽；端点与令牌文件路径照常打印，排查连接问题要用到它们。连接串整串遮蔽。字典与列表照记录的缺省只打印类型名，不展开内容。
+框架的选项与携带凭据的记录在 `ToString()` 里把凭据打印成 `***`（`Redaction.Mask`），值为 `null` 时打印为空：看得出有没有配置，看不到值。访问密钥 ID（S3 的 `AccessKey`）是访问密钥的一半，同样遮蔽；与口令同在一个记录里的登录用户名（Redis、RabbitMQ 与 Nacos 的 `UserName`）是登录凭据的另一半，也遮蔽；端点与令牌文件路径照常打印，排查连接问题要用到它们。连接串整串遮蔽。字典与列表照记录的缺省只打印类型名，不展开内容。
 
 | 记录 | 遮蔽的成员 |
 | --- | --- |
-| `RedisCachingOptions` | `Configuration`（连接字符串）、`User`、`Password` |
+| `RedisCachingOptions` | `Configuration`（连接字符串）、`UserName`、`Password` |
 | `RabbitMQMessagingOptions` | `Configuration`（AMQP URI）、`UserName`、`Password` |
-| `NacosOptions` | `Username`、`Password` |
+| `NacosOptions` | `UserName`、`Password` |
 | `S3ObjectStorageOptions` | `AccessKey`、`SecretKey` |
 | `AIProviderOptions` | `ApiKey` |
 | `KubernetesSchedulingOptions` | `Token` |

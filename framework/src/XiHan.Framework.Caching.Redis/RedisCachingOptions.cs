@@ -38,7 +38,7 @@ public sealed record RedisCachingOptions
     /// <remarks>
     /// 为 <see langword="null"/> 时用连接字符串里的。<see cref="FromConfiguration"/> 从绑定 <c>cache</c> 的属性 <c>username</c> 取；连接时以 StackExchange.Redis 的选项设置覆盖，不改写连接字符串（密码里的逗号等字符不会把字符串拆错）。是登录凭据的身份那一半，打印选项时与 <see cref="Password"/> 一样遮蔽（ADR-0090）
     /// </remarks>
-    public string? User { get; init; }
+    public string? UserName { get; init; }
 
     /// <summary>
     /// 覆盖 <see cref="Configuration"/> 里 <c>password</c> 的密码
@@ -106,7 +106,7 @@ public sealed record RedisCachingOptions
         var options = new RedisCachingOptions
         {
             Configuration = connection,
-            User = BoundText(binding, "username"),
+            UserName = BoundText(binding, "username"),
             Password = BoundText(binding, "password"),
         };
         if (configuration[$"{ConfigurationSection}:KeyPrefix"] is { } prefix)
@@ -159,7 +159,7 @@ public sealed record RedisCachingOptions
     {
         // 凭据只打印遮蔽文本，null 仍打印为空：看得出有没有配置，看不到值
         builder.Append("Configuration = ").Append(Redaction.Redact(Configuration))
-            .Append(", User = ").Append(Redaction.Redact(User))
+            .Append(", UserName = ").Append(Redaction.Redact(UserName))
             .Append(", Password = ").Append(Redaction.Redact(Password))
             .Append(", KeyPrefix = ").Append(KeyPrefix)
             .Append(", PublishChanges = ").Append(PublishChanges)

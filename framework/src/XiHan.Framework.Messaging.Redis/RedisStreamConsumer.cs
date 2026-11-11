@@ -17,7 +17,7 @@ namespace XiHan.Framework.Messaging.Redis;
 /// 一个订阅在一条流上的消费
 /// </summary>
 /// <remarks>
-/// 竞争订阅在消费组 <see cref="RedisMessagingOptions.GroupName"/> 里，广播订阅在本实例独占的组 <c>&lt;GroupName&gt;@&lt;InstanceId&gt;</c> 里，消费者名都是实例标识。消费循环单线程：取新条目、依次派发、成功即确认；失败在原位重试，到上限进死信流（广播丢弃）。每个维护周期清理遗留的组与消费者、整理已确认的条目，并以 <c>XAUTOCLAIM</c> 回收超时未确认的条目
+/// 竞争订阅在消费组 <see cref="RedisMessagingOptions.ConsumerGroup"/> 里，广播订阅在本实例独占的组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c> 里，消费者名都是实例标识。消费循环单线程：取新条目、依次派发、成功即确认；失败在原位重试，到上限进死信流（广播丢弃）。每个维护周期清理遗留的组与消费者、整理已确认的条目，并以 <c>XAUTOCLAIM</c> 回收超时未确认的条目
 /// </remarks>
 internal sealed partial class RedisStreamConsumer
 {
@@ -137,8 +137,8 @@ internal sealed partial class RedisStreamConsumer
         _key = RedisMessageBroker.KeyOf(options, subscription.Topic);
         _stream = options.KeyPrefix + subscription.Topic;
         _deadLetterKey = RedisMessageBroker.KeyOf(options, subscription.Topic + messaging.DeadLetterSuffix);
-        _ownBroadcastGroup = options.GroupName + "@" + instance.Id;
-        _group = IsBroadcast ? _ownBroadcastGroup : options.GroupName;
+        _ownBroadcastGroup = options.ConsumerGroup + "@" + instance.Id;
+        _group = IsBroadcast ? _ownBroadcastGroup : options.ConsumerGroup;
         _consumer = instance.Id;
         _maintenanceInterval = options.ClaimIdleTime < _maxMaintenanceInterval ? options.ClaimIdleTime : _maxMaintenanceInterval;
     }
@@ -299,7 +299,7 @@ internal sealed partial class RedisStreamConsumer
             result = await _database.ScriptEvaluateAsync(
                 RedisStreamScripts.Maintain,
                 [_key],
-                [_options.GroupName + "@", _group, _ownBroadcastGroup, _consumer, ClaimIdleMilliseconds, IsBroadcast ? "0" : "1"]).ConfigureAwait(false);
+                [_options.ConsumerGroup + "@", _group, _ownBroadcastGroup, _consumer, ClaimIdleMilliseconds, IsBroadcast ? "0" : "1"]).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is RedisException or TimeoutException)
         {

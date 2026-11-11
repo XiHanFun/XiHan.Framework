@@ -8,7 +8,7 @@
 
 ## 两级缓存的概念
 
-`Caching.Hybrid` 提供 `caching.local@1` 并依赖 `caching.distributed@1`：装配后 `ICache` 变成 `HybridCache`，`ISharedCache` 仍是 L2 本身。
+`Caching.Hybrid` 提供 `caching.local@1` 并依赖 `caching.distributed@1`：装配后 `ICache` 变成 `HybridObjectCache`，`ISharedCache` 仍是 L2 本身。
 
 | 术语 | 说明 |
 | --- | --- |
@@ -17,7 +17,7 @@
 | `LocalCapacity` | L1 条目上限，缺省 10000，满时淘汰最久未访问的条目 |
 | `LocalTimeToLive` | L1 存活上限，缺省 30 秒；条目在 L1 里的寿命是自身过期与它的较小者 |
 | `ICacheChangeFeed` | L2 存储的变更通知；Redis 存储实现它，别的实例写入或删除后本实例 L1 立即失效 |
-| `HybridCache.InvalidatesAcrossInstances` | 是否订阅到了 L2 的变更通知 |
+| `HybridObjectCache.InvalidatesAcrossInstances` | 是否订阅到了 L2 的变更通知 |
 
 ## 最小示例
 
@@ -64,9 +64,9 @@ app.Run();
 
 ## 跨实例失效
 
-跨实例失效依赖 L2 存储的变更通知 `ICacheChangeFeed`。Redis 存储实现了它：每次写入与删除后同步通知本实例的订阅者，并以发后不等的方式向频道 `<KeyPrefix>__changes` 发布，其他实例收到后删掉 L1 里的这些键或前缀（`CacheChange.Keys` / `CacheChange.Prefix`）。`HybridCache.InvalidatesAcrossInstances` 表示是否订阅到了。通知是尽力而为的，断线期间可能丢失；`XiHan:Caching:Redis:PublishChanges` 设为 `false` 可以关掉发布。
+跨实例失效依赖 L2 存储的变更通知 `ICacheChangeFeed`。Redis 存储实现了它：每次写入与删除后同步通知本实例的订阅者，并以发后不等的方式向频道 `<KeyPrefix>__changes` 发布，其他实例收到后删掉 L1 里的这些键或前缀（`CacheChange.Keys` / `CacheChange.Prefix`）。`HybridObjectCache.InvalidatesAcrossInstances` 表示是否订阅到了。通知是尽力而为的，断线期间可能丢失；`XiHan:Caching:Redis:PublishChanges` 设为 `false` 可以关掉发布。
 
-L2 的存储没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridCache` 的写入（别的实例的写入，本实例直接经 `ISharedCache` 或管理界面的写入）不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`。需要强一致的键直接用 `ISharedCache`，不经 L1。
+L2 的存储没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridObjectCache` 的写入（别的实例的写入，本实例直接经 `ISharedCache` 或管理界面的写入）不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`。需要强一致的键直接用 `ISharedCache`，不经 L1。
 
 ## 键管理
 
@@ -178,7 +178,7 @@ L2 带变更通知（Redis）且通知没有丢时，别的实例一写入本实
 
 ### 装了 Hybrid 之后 ISharedCache 也走 L1 吗
 
-不走。`ISharedCache` 始终直接指向 L2，所以经它的写入与读取总是看到共享状态。只有 `ICache` 变成了 `HybridCache`。
+不走。`ISharedCache` 始终直接指向 L2，所以经它的写入与读取总是看到共享状态。只有 `ICache` 变成了 `HybridObjectCache`。
 
 ### 怎样清空整个缓存
 

@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | 投递 | 至少一次，按主题消费，重试到上限进死信 | 同样 |
 | 顺序 | 不承诺；重试排到队尾，后面的消息先于重试被处理 | 信封扩展 `xihankey` 决定分区，同一主题内同键的消息按发布顺序投递；重试在原位 |
-| 位点 | 代理按队列管理，消费即出队 | 按消费组（`GroupId`，缺省 `xihan`）保存，投递完成后才提交；重启续接 |
+| 位点 | 代理按队列管理，消费即出队 | 按消费组（`ConsumerGroup`，缺省 `xihan`）保存，投递完成后才提交；重启续接 |
 | 重放 | 没有 | `IMessageReplayer.ReplayAsync(topic, since, ct)` 把该时刻起的消息重新投递给当前的竞争订阅 |
 
 | Provider | 提供的能力 | 特性入口 | 清单 ID | 配置节 | 可选绑定 |
@@ -55,7 +55,7 @@ app.Run();
     "Messaging": {
       "Kafka": {
         "BootstrapServers": "localhost:9092",
-        "GroupId": "orders"
+        "ConsumerGroup": "orders"
       }
     }
   }
@@ -137,16 +137,16 @@ builder.AddXiHan(xihan => xihan
 - 主题映射为 `<TopicPrefix><topic>`（前缀缺省 `xihan.`）。消息值是 CloudEvents 结构化 JSON，头 `content-type` 为 `application/cloudevents+json`、`x-xihan-attempt` 为尝试次数。
 - 消息键取信封扩展 `xihankey`（`EnvelopeExtensions.PartitionKey`）：同键进同一分区、按发布顺序投递；没有键时由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 - 生产者幂等且 `acks=all`。批量发布交给客户端合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
-- 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `GroupId`，没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
+- 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `ConsumerGroup`，没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
 - 处理失败在原位重试到 `MaxAttempts`，不重新入队，分区内顺序不变；竞争订阅仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。无法解码的消息直接进死信。一条消息重试期间，同分区后面的消息等待。
 - 竞争订阅投递完成（成功或进死信）后才提交位点；停止时未完成的消息在重启后重新投递。死信发布没有得到确认时不提交，消费者回退到这条消息，等 `RedeliveryDelaySeconds`（缺省 5）后重新投递，期间这个分区不往后读。
-- 广播订阅用本实例独占的消费组 `<GroupId>@<InstanceId>`，从最新位点开始、不提交位点，重启不回放历史；启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning，不发布死信。
+- 广播订阅用本实例独占的消费组 `<ConsumerGroup>@<InstanceId>`，从最新位点开始、不提交位点，重启不回放历史；启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning，不发布死信。
 - 重放：`ReplayAsync(topic, since)` 只投给竞争订阅，用一个新的独立消费组，从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:Kafka:BootstrapServers` | 字符串 | — | 引导地址，逗号分隔的 `host:port`；有绑定 `stream` 时被绑定的主值覆盖，两者都没有时装配失败。绑定的属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 各自覆盖 `Properties` 里的同名键 |
-| `XiHan:Messaging:Kafka:GroupId` | 字符串 | `xihan` | 消费组，同一组的实例分摊分区 |
+| `XiHan:Messaging:Kafka:ConsumerGroup` | 字符串 | `xihan` | 消费组，同一组的实例分摊分区 |
 | `XiHan:Messaging:Kafka:TopicPrefix` | 字符串 | `xihan.` | 主题前缀 |
 | `XiHan:Messaging:Kafka:RedeliveryDelaySeconds` | 正数 | 5 | 投递没有完成（死信发布失败等）时重新投递前的等待 |
 | `XiHan:Messaging:Kafka:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项 `messaging.kafka.connection` 的重探间隔，也是单次探测的超时 |
@@ -186,7 +186,7 @@ builder.AddXiHan(xihan => xihan
     "Messaging": {
       "Redis": {
         "Configuration": "localhost:6379",
-        "GroupName": "orders-api"
+        "ConsumerGroup": "orders-api"
       }
     }
   }
@@ -196,7 +196,7 @@ builder.AddXiHan(xihan => xihan
 - 每个主题一条流 `<KeyPrefix><topic>`（前缀缺省 `xihan:messaging:`），条目字段 `envelope` 是 CloudEvents 结构化 JSON。
 - 流只由订阅方建立：订阅方启动时建消费组（从 `$` 开始）与自己的消费者，发布以 `NOMKSTREAM` 写入。没人订阅的主题没有流，消息丢弃并记 Debug；订阅方第一次启动之前发布的消息不投递，之后它离线期间的消息留在流里。这一点与 RabbitMQ 相同。
 - 发布等到 Redis 应答才返回成功；批量发布在一个 `MULTI` / `EXEC` 事务里，整批写入或整批不写入。
-- 竞争订阅都在消费组 `GroupName`（缺省 `xihan`）里分摊条目，广播订阅每个实例一个组 `<GroupName>@<InstanceId>`。每个订阅一个消费循环，每次最多取 `BatchSize`（缺省 10）条，单线程派发，成功即确认。客户端的多路复用连接不支持阻塞读，没取到就等 `PollIntervalSeconds`（缺省 0.2）再取。
+- 竞争订阅都在消费组 `ConsumerGroup`（缺省 `xihan`）里分摊条目，广播订阅每个实例一个组 `<ConsumerGroup>@<InstanceId>`。每个订阅一个消费循环，每次最多取 `BatchSize`（缺省 10）条，单线程派发，成功即确认。客户端的多路复用连接不支持阻塞读，没取到就等 `PollIntervalSeconds`（缺省 0.2）再取。
 - 处理失败在原位立即重试到 `MaxAttempts`：不重新入流，因为一条流上挂着全部组，重新写入会让每个组再收一遍。每次重试前把条目认领给自己，投递次数记在消费组的待确认列表里，实例崩溃后接手的实例接着计数。
 - 到了上限：竞争订阅写进死信流 `<KeyPrefix><topic><DeadLetterSuffix>`（另带 `attempt` 与 `error`），写入得到应答后才确认原条目；广播订阅确认掉并记 Warning，不进死信。无法解码的条目不重试，竞争订阅原样进死信流。
 - 回收：每个消费循环每过 `min(ClaimIdleTimeSeconds, 10)` 秒用 `XAUTOCLAIM` 认领空闲超过 `ClaimIdleTimeSeconds`（缺省 60）的待确认条目，按投递次数接着投递，已超过上限的直接进死信。`ClaimIdleTimeSeconds` 必须大于一批条目的最长处理时间，否则还在处理的条目会被别的实例认领、重复处理。
@@ -210,7 +210,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- | --- | --- |
 | `XiHan:Messaging:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有绑定 `queue`（类型 `cache:distributed`）时被绑定的主值覆盖，两者都没有时装配失败；绑定的属性 `username` / `password` 覆盖连接字符串里的 `user` / `password` |
 | `XiHan:Messaging:Redis:KeyPrefix` | 字符串 | `xihan:messaging:` | 流键的前缀；发布方与订阅方要一致 |
-| `XiHan:Messaging:Redis:GroupName` | 字符串 | `xihan` | 竞争订阅的消费组名，不含 `@` |
+| `XiHan:Messaging:Redis:ConsumerGroup` | 字符串 | `xihan` | 竞争订阅的消费组名，不含 `@` |
 | `XiHan:Messaging:Redis:BatchSize` | 1–1000 | 10 | 每次最多取的条目数 |
 | `XiHan:Messaging:Redis:PollIntervalSeconds` | 正数 | 0.2 | 没取到新条目时再取之前的等待 |
 | `XiHan:Messaging:Redis:ClaimIdleTimeSeconds` | 至少 0.001 | 60 | 待确认条目空闲多久后可被回收 |
@@ -258,7 +258,7 @@ builder.AddXiHan(xihan => xihan
 
 ### 订阅方还没启动过，这期间发布的消息去哪了
 
-RabbitMQ 上没有队列可进，按「没有订阅者」丢弃；订阅方第一次启动声明队列之后，它离线期间的消息才会留在队列里。要在订阅方上线之前就留存，由运维预先声明持久队列并绑定。Redis 同理：没有订阅方建过消费组就没有流，消息丢弃；要预先留存，由运维建好流与组（`XGROUP CREATE <KeyPrefix><topic> <GroupName> $ MKSTREAM`）。Kafka 上消息进主题、留到保留期结束，竞争订阅第一次启动时从最早位点开始，能收到。
+RabbitMQ 上没有队列可进，按「没有订阅者」丢弃；订阅方第一次启动声明队列之后，它离线期间的消息才会留在队列里。要在订阅方上线之前就留存，由运维预先声明持久队列并绑定。Redis 同理：没有订阅方建过消费组就没有流，消息丢弃；要预先留存，由运维建好流与组（`XGROUP CREATE <KeyPrefix><topic> <ConsumerGroup> $ MKSTREAM`）。Kafka 上消息进主题、留到保留期结束，竞争订阅第一次启动时从最早位点开始，能收到。
 
 ### 重放会影响正常消费吗
 

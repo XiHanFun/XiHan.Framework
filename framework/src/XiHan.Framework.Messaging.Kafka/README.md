@@ -30,7 +30,7 @@ builder.AddXiHan(xihan => xihan
 ```
 
 ```json
-{ "XiHan": { "Messaging": { "Kafka": { "BootstrapServers": "localhost:9092", "GroupId": "orders", "TopicPrefix": "xihan.", "Properties": { "security.protocol": "SASL_SSL", "sasl.mechanism": "PLAIN", "sasl.username": "<user>", "sasl.password": "<password>" } } } } }
+{ "XiHan": { "Messaging": { "Kafka": { "BootstrapServers": "localhost:9092", "ConsumerGroup": "orders", "TopicPrefix": "xihan.", "Properties": { "security.protocol": "SASL_SSL", "sasl.mechanism": "PLAIN", "sasl.username": "<user>", "sasl.password": "<password>" } } } } }
 ```
 
 `Properties` 原样透传给 librdkafka。引导地址也可以来自资源绑定 `stream`。关闭了自动建主题的集群要预建主题，清单见概念文档。

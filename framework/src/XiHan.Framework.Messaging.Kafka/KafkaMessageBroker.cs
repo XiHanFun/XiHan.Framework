@@ -21,7 +21,7 @@ namespace XiHan.Framework.Messaging.Kafka;
 /// Kafka 消息代理
 /// </summary>
 /// <remarks>
-/// 主题映射为 <c>&lt;TopicPrefix&gt;&lt;topic&gt;</c>，信封按 CloudEvents 结构化 JSON 编码为消息值，分区键取扩展属性 <c>xihankey</c>。生产者幂等且 <c>acks=all</c>；每个订阅（主题加方式）一个消费者，单线程按分区顺序派发，失败在原位重试到 <see cref="MessagingOptions.MaxAttempts"/>。竞争订阅在消费组 <see cref="KafkaMessagingOptions.GroupId"/> 里分摊，重试耗尽后发布到死信主题，投递完成后提交位点；广播订阅用本实例独占的消费组 <c>&lt;GroupId&gt;@&lt;InstanceId&gt;</c>，从最新位点开始、不提交位点，重试耗尽或无法解码时丢弃并记日志（RFC-0009「订阅方式」）；死信发布没有得到确认（或投递因异常没有完成）时不提交、回退到这条消息，等 <see cref="KafkaMessagingOptions.RedeliveryDelay"/> 后重新投递，消费循环只在停止时退出。重放用独立消费组从指定时刻的位点读到调用时的高水位，再投递一遍
+/// 主题映射为 <c>&lt;TopicPrefix&gt;&lt;topic&gt;</c>，信封按 CloudEvents 结构化 JSON 编码为消息值，分区键取扩展属性 <c>xihankey</c>。生产者幂等且 <c>acks=all</c>；每个订阅（主题加方式）一个消费者，单线程按分区顺序派发，失败在原位重试到 <see cref="MessagingOptions.MaxAttempts"/>。竞争订阅在消费组 <see cref="KafkaMessagingOptions.ConsumerGroup"/> 里分摊，重试耗尽后发布到死信主题，投递完成后提交位点；广播订阅用本实例独占的消费组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c>，从最新位点开始、不提交位点，重试耗尽或无法解码时丢弃并记日志（RFC-0009「订阅方式」）；死信发布没有得到确认（或投递因异常没有完成）时不提交、回退到这条消息，等 <see cref="KafkaMessagingOptions.RedeliveryDelay"/> 后重新投递，消费循环只在停止时退出。重放用独立消费组从指定时刻的位点读到调用时的高水位，再投递一遍
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplayer, IAsyncDisposable
@@ -260,7 +260,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
 
     /// <inheritdoc />
     /// <remarks>
-    /// 竞争订阅的消费者在消费组 <see cref="KafkaMessagingOptions.GroupId"/> 里，没有已提交位点时从最早位点开始；广播订阅的消费者在本实例独占的消费组 <c>&lt;GroupId&gt;@&lt;InstanceId&gt;</c> 里，从最新位点开始。分区分配是异步的：广播订阅要等消费组分到分区（通常几秒）才开始收
+    /// 竞争订阅的消费者在消费组 <see cref="KafkaMessagingOptions.ConsumerGroup"/> 里，没有已提交位点时从最早位点开始；广播订阅的消费者在本实例独占的消费组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c> 里，从最新位点开始。分区分配是异步的：广播订阅要等消费组分到分区（通常几秒）才开始收
     /// </remarks>
     public async Task StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
@@ -276,8 +276,8 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
                 // 广播：组内只有本实例，分到全部分区，每个实例各读一份；从最新位点开始、不提交位点（见消费循环），
                 // 消费组空了不留位点，重启的实例标识不同、是新的消费组，不回放历史。竞争：全部实例共用一个消费组分摊分区
                 var consumer = _createConsumer(subscription.Mode == SubscriptionMode.Broadcast
-                    ? ConsumerConfig($"{_options.GroupId}@{_instance.Id}", AutoOffsetReset.Latest)
-                    : ConsumerConfig(_options.GroupId, AutoOffsetReset.Earliest));
+                    ? ConsumerConfig($"{_options.ConsumerGroup}@{_instance.Id}", AutoOffsetReset.Latest)
+                    : ConsumerConfig(_options.ConsumerGroup, AutoOffsetReset.Earliest));
                 consumer.Subscribe(TopicOf(subscription.Topic));
                 // 每个订阅一条专用线程：Consume 是阻塞调用，不占线程池
                 var stopping = _stopping.Token;
@@ -355,7 +355,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
             }
 
             // 独立消费组：不提交位点，不影响正常消费
-            using var consumer = _createConsumer(ConsumerConfig($"{_options.GroupId}.replay.{Guid.NewGuid():N}", AutoOffsetReset.Earliest));
+            using var consumer = _createConsumer(ConsumerConfig($"{_options.ConsumerGroup}.replay.{Guid.NewGuid():N}", AutoOffsetReset.Earliest));
             var ends = partitions.ToDictionary(static p => p, p => consumer.QueryWatermarkOffsets(p, _operationTimeout).High);
             var starts = consumer.OffsetsForTimes(partitions.Select(p => new TopicPartitionTimestamp(p, new Timestamp(since.UtcDateTime))), _operationTimeout);
             // 该时刻之后没有消息的分区（Offset.End）与高水位之前没有消息的分区都不用读

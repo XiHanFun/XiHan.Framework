@@ -21,8 +21,8 @@
 | --- | --- | --- |
 | `UseStandardProfile()` | `InMemoryObjectCache` | 同一个 `InMemoryObjectCache` |
 | 再加 `RedisCachingFeature` | `InMemoryObjectCache` | `SerializingCache` + `RedisCacheStore` |
-| 再加 `HybridCachingFeature` | `HybridCache`（L1 + 内存 L2） | `InMemoryObjectCache` |
-| 再加 `RedisCachingFeature` 与 `HybridCachingFeature` | `HybridCache`（L1 + Redis L2） | Redis |
+| 再加 `HybridCachingFeature` | `HybridObjectCache`（L1 + 内存 L2） | `InMemoryObjectCache` |
+| 再加 `RedisCachingFeature` 与 `HybridCachingFeature` | `HybridObjectCache`（L1 + Redis L2） | Redis |
 | 再加 `OutOfProcessPluginsFeature` 与 `RemoteCachingFeature` | `InMemoryObjectCache` | `SerializingCache` + `RemoteCacheStore` |
 
 两个显式 Provider 同时提供 `caching.distributed`（如 Redis 与 Remote）时能力求解报 `KERNEL_CAPABILITY_004`，用配置键 `XiHan:Providers:caching.distributed` 写清单 ID（`xihan.caching.redis`、`xihan.caching.remote`）指定一个，规则见[能力图谱与 Provider](/startup/capabilities)。

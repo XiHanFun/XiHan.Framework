@@ -29,8 +29,8 @@ XiHan.Framework.Configuration.Nacos.NacosOptions.ServerAddresses.get -> System.C
 XiHan.Framework.Configuration.Nacos.NacosOptions.ServerAddresses.init -> void
 XiHan.Framework.Configuration.Nacos.NacosOptions.Tenant.get -> string!
 XiHan.Framework.Configuration.Nacos.NacosOptions.Tenant.init -> void
-XiHan.Framework.Configuration.Nacos.NacosOptions.Username.get -> string?
-XiHan.Framework.Configuration.Nacos.NacosOptions.Username.init -> void
+XiHan.Framework.Configuration.Nacos.NacosOptions.UserName.get -> string?
+XiHan.Framework.Configuration.Nacos.NacosOptions.UserName.init -> void
 const XiHan.Framework.Configuration.Nacos.NacosConfigurationClient.HttpClientName = "xihan.configuration.nacos" -> string!
 const XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.ConnectionBinding = "nacos" -> string!
 const XiHan.Framework.Configuration.Nacos.NacosOptions.ConfigurationSection = "XiHan:Configuration:Nacos" -> string!

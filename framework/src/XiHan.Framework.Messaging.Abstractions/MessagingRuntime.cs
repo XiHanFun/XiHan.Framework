@@ -38,7 +38,7 @@ public sealed class MessagingRuntime(IMessageBroker broker, MessageDispatcher di
     /// <remarks>
     /// 决定要消费哪些主题
     /// </remarks>
-    private readonly MessageSubscriptions _subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
+    private readonly MessageSubscriptions _subscriptions = (subscriptions ?? throw new ArgumentNullException(nameof(subscriptions))).Frozen();
 
     /// <summary>
     /// 是否已启动

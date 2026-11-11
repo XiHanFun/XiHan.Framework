@@ -32,7 +32,7 @@ public sealed class KafkaMessagingConformanceTests : MessageStreamConformance
     [
         new("XiHan:Messaging:Kafka:BootstrapServers", Environment.GetEnvironmentVariable(EnvironmentVariable)),
         new("XiHan:Messaging:Kafka:TopicPrefix", $"xihan-test.{_suffix}."),
-        new("XiHan:Messaging:Kafka:GroupId", $"xihan-test-{_suffix}"),
+        new("XiHan:Messaging:Kafka:ConsumerGroup", $"xihan-test-{_suffix}"),
     ];
 
     /// <inheritdoc />

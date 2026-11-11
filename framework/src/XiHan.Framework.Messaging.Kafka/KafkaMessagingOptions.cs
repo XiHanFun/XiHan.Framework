@@ -12,7 +12,7 @@ namespace XiHan.Framework.Messaging.Kafka;
 /// Kafka Provider 的选项
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 覆盖同名键）
+/// 配置节 <c>XiHan:Messaging:Kafka</c>：<c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先）、<c>ConsumerGroup</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>Properties:&lt;key&gt;</c>（透传给 librdkafka 的配置，如 <c>security.protocol</c>、<c>sasl.mechanism</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 覆盖同名键）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record KafkaMessagingOptions
@@ -45,7 +45,7 @@ public sealed record KafkaMessagingOptions
     /// <remarks>
     /// 默认 <c>xihan</c>。同一消费组的实例分摊分区
     /// </remarks>
-    public string GroupId
+    public string ConsumerGroup
     {
         get => field;
         init => field = !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The group ID must not be empty.", nameof(value));
@@ -95,7 +95,7 @@ public sealed record KafkaMessagingOptions
     /// 从配置与绑定读取
     /// </summary>
     /// <remarks>
-    /// <c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先于配置，RFC-0016）、<c>GroupId</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 各自覆盖 <c>Properties</c> 里的同名键，空白的不算给出
+    /// <c>BootstrapServers</c>（绑定 <c>stream</c> 的主值优先于配置，RFC-0016）、<c>ConsumerGroup</c>、<c>TopicPrefix</c>、<c>HealthProbeIntervalSeconds</c>、<c>RedeliveryDelaySeconds</c>、<c>Properties:*</c>；绑定的属性 <c>security.protocol</c>、<c>sasl.mechanism</c>、<c>sasl.username</c>、<c>sasl.password</c> 各自覆盖 <c>Properties</c> 里的同名键，空白的不算给出
     /// </remarks>
     public static KafkaMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
@@ -106,9 +106,9 @@ public sealed record KafkaMessagingOptions
             ?? configuration[$"{ConfigurationSection}:BootstrapServers"]
             ?? throw new ArgumentException($"No Kafka bootstrap servers are configured: provide the 'stream' binding or set {ConfigurationSection}:BootstrapServers.");
         var options = new KafkaMessagingOptions { BootstrapServers = servers };
-        if (configuration[$"{ConfigurationSection}:GroupId"] is { } group)
+        if (configuration[$"{ConfigurationSection}:ConsumerGroup"] is { } group)
         {
-            options = options with { GroupId = group };
+            options = options with { ConsumerGroup = group };
         }
 
         if (configuration[$"{ConfigurationSection}:TopicPrefix"] is { } prefix)

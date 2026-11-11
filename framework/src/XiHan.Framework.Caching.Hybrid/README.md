@@ -41,7 +41,7 @@ L1 存对象引用，调用方不得修改取回的对象；需要更强一致�
 
 * `HybridCachingFeature`：启用入口
 * `HybridCachingOptions`：`LocalCapacity`、`LocalTimeToLive`
-* `HybridCache`：两级 `ICache` 实现
+* `HybridObjectCache`：两级 `ICache` 实现
 
 ## 更多文档
 

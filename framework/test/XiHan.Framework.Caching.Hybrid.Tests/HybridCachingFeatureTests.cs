@@ -26,7 +26,7 @@ public sealed class HybridCachingFeatureTests
         Assert.Contains("xihan.caching.hybrid", graph, StringComparison.Ordinal);
         Assert.Contains("requires caching.distributed@1 -> xihan.caching.inmemory", graph, StringComparison.Ordinal);
 
-        var cache = Assert.IsType<HybridCache>(host.Services.GetRequiredService<ICache>());
+        var cache = Assert.IsType<HybridObjectCache>(host.Services.GetRequiredService<ICache>());
         var shared = Assert.IsType<InMemoryObjectCache>(host.Services.GetRequiredService<ISharedCache>());
         Assert.Same(shared.Store, cache.Store);
 

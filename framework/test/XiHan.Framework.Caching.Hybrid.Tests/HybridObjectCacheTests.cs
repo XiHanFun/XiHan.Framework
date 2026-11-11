@@ -13,7 +13,7 @@ namespace XiHan.Framework.Caching.Hybrid.Tests;
 /// <remarks>
 /// L1 命中不触 L2、未命中回填、批量只把未命中的键交给 L2、写删先远后近、L1 存活时间上限与容量淘汰、取或建、存储变更失效 L1、选项解析
 /// </remarks>
-public sealed class HybridCacheTests : IDisposable
+public sealed class HybridObjectCacheTests : IDisposable
 {
     /// <summary>
     /// 固定起点的可控时钟
@@ -28,15 +28,15 @@ public sealed class HybridCacheTests : IDisposable
     /// <summary>
     /// 被测缓存：L1 容量 3、存活上限 30 秒
     /// </summary>
-    private readonly HybridCache _cache;
+    private readonly HybridObjectCache _cache;
 
     /// <summary>
     /// 创建夹具
     /// </summary>
-    public HybridCacheTests()
+    public HybridObjectCacheTests()
     {
         _shared = new RecordingSharedCache(_clock);
-        _cache = new HybridCache(_shared, new HybridCachingOptions { LocalCapacity = 3, LocalTimeToLive = TimeSpan.FromSeconds(30) }, _clock);
+        _cache = new HybridObjectCache(_shared, new HybridCachingOptions { LocalCapacity = 3, LocalTimeToLive = TimeSpan.FromSeconds(30) }, _clock);
     }
 
     /// <inheritdoc />
@@ -160,7 +160,7 @@ public sealed class HybridCacheTests : IDisposable
     {
         var feed = new FeedingStore(_clock);
         var shared = new RecordingSharedCache(_clock, feed);
-        var cache = new HybridCache(shared, new HybridCachingOptions { LocalTimeToLive = TimeSpan.FromMinutes(5) }, _clock);
+        var cache = new HybridObjectCache(shared, new HybridCachingOptions { LocalTimeToLive = TimeSpan.FromMinutes(5) }, _clock);
         Assert.True(cache.InvalidatesAcrossInstances);
         Assert.False(_cache.InvalidatesAcrossInstances);
 

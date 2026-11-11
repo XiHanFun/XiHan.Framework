@@ -15,7 +15,7 @@ namespace XiHan.Framework.Caching.Hybrid;
 /// L2 的存储实现了 <see cref="ICacheChangeFeed"/> 时（Redis），本实例与其他实例对存储的写入与删除让 L1 里的这些键（或前缀）立即失效；没有时别的实例的写入要等 <see cref="HybridCachingOptions.LocalTimeToLive"/> 才看得到（ADR-0055）。L1 直接存对象引用，调用方不得修改取回的对象
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class HybridCache : ICache, IDisposable
+public sealed class HybridObjectCache : ICache, IDisposable
 {
     /// <summary>
     /// L2
@@ -48,7 +48,7 @@ public sealed class HybridCache : ICache, IDisposable
     /// <summary>
     /// 创建
     /// </summary>
-    public HybridCache(ISharedCache shared, HybridCachingOptions options, TimeProvider clock)
+    public HybridObjectCache(ISharedCache shared, HybridCachingOptions options, TimeProvider clock)
     {
         _shared = shared ?? throw new ArgumentNullException(nameof(shared));
         _options = options ?? throw new ArgumentNullException(nameof(options));

@@ -46,6 +46,8 @@
 - **调整** 字符串承载的标识（`CacheKey`、`BlobKey`、`ContainerName`、`JobName`、`WorkflowName`、`ActivityType`、`SecretName`）不再从 `string` 隐式转换：传字符串的地方写 `new JobName("cleanup")` 或 `(JobName)"cleanup"`；这些类型与 `GrantSubject`、`TriggerKey` 的 `default` 值读文本抛 `InvalidOperationException`，`PermissionGrant` 与 `TriggerKey` 拒收 `default` 成员
 - **调整** 分页统一成两种形状：偏移分页 `Skip` / `Take`（`MaxTake`，页为 `Items` 与 `long Total`），续页分页 `PageSize` / `ContinuationToken`（页为 `Items` 与 `ContinuationToken`）；调度运行历史与工作流的定义、实例、待办查询的 `Limit` / `MaxLimit` 改为 `Take` / `MaxTake`，`CacheKeyQuery` 的 `Limit` / `Continuation` 改为 `PageSize` / `ContinuationToken`，`CacheKeyPage.Keys` 与 `AuditPage.Events` 改为 `Items`，分页错误的参数 `limit` 改为 `take` / `pageSize`
 - **调整** 批量的逐项结果统一为与入参同序的 `Result` 列表：`BlobPutResult`、`BlobDeleteResult`、`JobTriggerResult`、`TenantRecordResult`、`MessageTranslationResult`、`PermissionGrantResult` 删除，读 `result.Outcome` 的地方直接用列表元素，要键时按下标取入参；实现 `IBlobStore` 的 Provider 改 `PutAsync` / `DeleteAsync` 的返回类型
+- **调整** `Caching.Hybrid.HybridCache` 改名 `HybridObjectCache`（与 BCL 的 `HybridCache` 不再同名），`Localization.InMemory.MessageLocalizer` 改名 `InMemoryMessageLocalizer`；Redis 缓存、Redis 消息与 Nacos 选项的用户名统一为 `UserName`，Kafka 的 `GroupId` 与 Redis 消息的 `GroupName` 统一为 `ConsumerGroup`，配置键改为 `XiHan:Messaging:Kafka:ConsumerGroup`、`XiHan:Messaging:Redis:ConsumerGroup`、`XiHan:Configuration:Nacos:UserName`（值不变，位点照常接续）
+- **调整** `MessageSubscriptions` 在消息运行时启动后只读：再 `Add` 抛 `InvalidOperationException`，`All` 与 `HandlersFor` 交出只读视图；订阅照旧在 `Configure` 里用 `AddMessageHandler` 登记
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
 
 ### 宿主、协议与插件

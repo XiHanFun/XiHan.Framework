@@ -53,10 +53,10 @@ public sealed class HybridCachingFeature : IFeature
         context.Services.AddMessageCatalog(CachingMessages.Catalog);
         context.Services.AddSingleton(HybridCachingOptions.FromConfiguration(context.Configuration));
         // L2 取被选中提供 caching.distributed 的 ISharedCache；没有登记时钟的宿主用系统时钟
-        context.Services.AddSingleton(static sp => new HybridCache(sp.GetRequiredService<ISharedCache>(), sp.GetRequiredService<HybridCachingOptions>(), sp.GetService<TimeProvider>() ?? TimeProvider.System));
+        context.Services.AddSingleton(static sp => new HybridObjectCache(sp.GetRequiredService<ISharedCache>(), sp.GetRequiredService<HybridCachingOptions>(), sp.GetService<TimeProvider>() ?? TimeProvider.System));
         if (context.Node.IsSelectedFor(CachingCapabilities.Local))
         {
-            context.Services.TryAddSingleton<ICache>(static sp => sp.GetRequiredService<HybridCache>());
+            context.Services.TryAddSingleton<ICache>(static sp => sp.GetRequiredService<HybridObjectCache>());
         }
     }
 }

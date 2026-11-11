@@ -17,7 +17,7 @@ namespace XiHan.Framework.Messaging.Redis;
 /// 基于 Redis Streams 的消息代理
 /// </summary>
 /// <remarks>
-/// 每个主题一条流 <c>&lt;KeyPrefix&gt;&lt;topic&gt;</c>，条目字段 <c>envelope</c> 是 CloudEvents 结构化 JSON（ADR-0130）。流只由订阅方建立：发布以 <c>NOMKSTREAM</c> 与 <c>MAXLEN ~</c> 写入，流不存在（没有订阅者）时丢弃并记 Debug 日志，发布照常成功；批量发布在一个 <c>MULTI</c> / <c>EXEC</c> 事务里，整批写入或整批不写入。每个订阅一个消费循环，竞争订阅在消费组 <see cref="RedisMessagingOptions.GroupName"/> 里，广播订阅在本实例独占的组 <c>&lt;GroupName&gt;@&lt;InstanceId&gt;</c> 里；失败原位重试，到上限竞争订阅进死信流，广播订阅丢弃；超时未确认的条目由 <c>XAUTOCLAIM</c> 回收
+/// 每个主题一条流 <c>&lt;KeyPrefix&gt;&lt;topic&gt;</c>，条目字段 <c>envelope</c> 是 CloudEvents 结构化 JSON（ADR-0130）。流只由订阅方建立：发布以 <c>NOMKSTREAM</c> 与 <c>MAXLEN ~</c> 写入，流不存在（没有订阅者）时丢弃并记 Debug 日志，发布照常成功；批量发布在一个 <c>MULTI</c> / <c>EXEC</c> 事务里，整批写入或整批不写入。每个订阅一个消费循环，竞争订阅在消费组 <see cref="RedisMessagingOptions.ConsumerGroup"/> 里，广播订阅在本实例独占的组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c> 里；失败原位重试，到上限竞争订阅进死信流，广播订阅丢弃；超时未确认的条目由 <c>XAUTOCLAIM</c> 回收
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class RedisMessageBroker : IMessageBroker, IAsyncDisposable
@@ -165,7 +165,7 @@ public sealed partial class RedisMessageBroker : IMessageBroker, IAsyncDisposabl
     {
         // 直接往字符串里拼 password= 遇到含逗号的密码会把字符串拆错，所以解析后按属性覆盖
         var parsed = ConfigurationOptions.Parse(options.Configuration);
-        if (options.User is { } user)
+        if (options.UserName is { } user)
         {
             parsed.User = user;
         }
@@ -313,7 +313,7 @@ public sealed partial class RedisMessageBroker : IMessageBroker, IAsyncDisposabl
 
     /// <inheritdoc />
     /// <remarks>
-    /// 先为每个订阅建好消费组与本实例的消费者（竞争订阅的组 <see cref="RedisMessagingOptions.GroupName"/>，广播订阅的组 <c>&lt;GroupName&gt;@&lt;InstanceId&gt;</c>，都从 <c>$</c> 开始），再起消费循环：返回之后发布的消息不会漏
+    /// 先为每个订阅建好消费组与本实例的消费者（竞争订阅的组 <see cref="RedisMessagingOptions.ConsumerGroup"/>，广播订阅的组 <c>&lt;ConsumerGroup&gt;@&lt;InstanceId&gt;</c>，都从 <c>$</c> 开始），再起消费循环：返回之后发布的消息不会漏
     /// </remarks>
     public async Task StartAsync(IReadOnlyCollection<MessageSubscription> subscriptions, MessageDispatch dispatch, CancellationToken cancellationToken)
     {

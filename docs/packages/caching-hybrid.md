@@ -15,7 +15,7 @@
 
 ## 概述
 
-`HybridCache` 实现 `ICache`：L1 是有界 LRU 的对象引用表，L2 是容器里的 `ISharedCache`（Redis、Remote，或单实例下内存实现提供的共享缓存）。`ISharedCache` 本身不变，仍直接指向 L2。
+`HybridObjectCache` 实现 `ICache`：L1 是有界 LRU 的对象引用表，L2 是容器里的 `ISharedCache`（Redis、Remote，或单实例下内存实现提供的共享缓存）。`ISharedCache` 本身不变，仍直接指向 L2。
 
 | 操作 | 行为 |
 | --- | --- |
@@ -27,7 +27,7 @@
 
 L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive` 的较小者，滑动过期在 L1 里按绝对时间处理；从 L2 回填的条目存活 `LocalTimeToLive`。L1 存对象引用，调用方不得修改取回的对象；`ICache.Store` 是 L2 的字节存储。
 
-跨实例失效（ADR-0055）：L2 的存储实现了 `ICacheChangeFeed`（Redis）时 `HybridCache` 订阅它，本实例与其他实例的写入、删除、按前缀删除都让 L1 里对应的键立即失效；`InvalidatesAcrossInstances` 表示是否订阅到了，`HybridCache` 释放即退订。
+跨实例失效（ADR-0055）：L2 的存储实现了 `ICacheChangeFeed`（Redis）时 `HybridObjectCache` 订阅它，本实例与其他实例的写入、删除、按前缀删除都让 L1 里对应的键立即失效；`InvalidatesAcrossInstances` 表示是否订阅到了，`HybridObjectCache` 释放即退订。
 
 ## 何时使用
 
@@ -77,9 +77,9 @@ builder.AddXiHan(xihan => xihan
 
 | 类型 | 说明 |
 | --- | --- |
-| `HybridCachingFeature` | 特性入口；被选中提供 `caching.local` 时把 `ICache` 登记为 `HybridCache` |
+| `HybridCachingFeature` | 特性入口；被选中提供 `caching.local` 时把 `ICache` 登记为 `HybridObjectCache` |
 | `HybridCachingOptions` | `LocalCapacity`、`LocalTimeToLive`；`FromConfiguration` 从配置节读取 |
-| `HybridCache` | 两级缓存，实现 `ICache` 与 `IDisposable`；`InvalidatesAcrossInstances`、`LocalCount` |
+| `HybridObjectCache` | 两级缓存，实现 `ICache` 与 `IDisposable`；`InvalidatesAcrossInstances`、`LocalCount` |
 
 ## 使用示例
 
@@ -94,7 +94,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 {
     public void Report()
     {
-        if (cache is HybridCache hybrid && !hybrid.InvalidatesAcrossInstances)
+        if (cache is HybridObjectCache hybrid && !hybrid.InvalidatesAcrossInstances)
         {
             logger.LogWarning("L2 has no change feed; L1 entries may be stale for up to the local time to live.");
         }
@@ -106,7 +106,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 
 ## 行为与限制
 
-- L2 没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridCache` 的写入不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`；通知丢失时同样以此为上限。
+- L2 没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridObjectCache` 的写入不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`；通知丢失时同样以此为上限。
 - L2 是内存实现时，经 `ICacheInspector` 删除的对象条目在 L1 里最长 `LocalTimeToLive` 后才消失（ADR-0058）。
 - L1 命中不触达 L2，因此不会延长 L2 里的滑动过期；滑动过期的条目经两级缓存读取时实际按绝对时间到期。
 - 同一个键被写成别的类型时，L1 按 `T` 读取当作未命中，交给 L2 判定。

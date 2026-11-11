@@ -75,7 +75,7 @@ public sealed class KafkaBroadcastTests
 
         await broker.StartAsync([new MessageSubscription(Topic, SubscriptionMode.Broadcast)], static (_, _) => ValueTask.FromResult(Result.Success()), CancellationToken.None);
 
-        // 配置了标识：广播消费组是 <GroupId>@<配置值>，每次启动同名；仍从最新位点开始、手动提交（广播不提交），重启不回放
+        // 配置了标识：广播消费组是 <ConsumerGroup>@<配置值>，每次启动同名；仍从最新位点开始、手动提交（广播不提交），重启不回放
         var config = Assert.Single(configs);
         Assert.Equal("xihan@orders-api-0", config.GroupId);
         Assert.Equal(AutoOffsetReset.Latest, config.AutoOffsetReset);

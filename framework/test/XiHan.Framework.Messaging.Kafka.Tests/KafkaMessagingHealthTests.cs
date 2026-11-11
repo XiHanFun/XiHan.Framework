@@ -37,7 +37,7 @@ public sealed class KafkaMessagingHealthTests
             [
                 new("XiHan:Messaging:Kafka:BootstrapServers", servers),
                 new("XiHan:Messaging:Kafka:TopicPrefix", $"xihan-test.{suffix}."),
-                new("XiHan:Messaging:Kafka:GroupId", $"xihan-test-{suffix}"),
+                new("XiHan:Messaging:Kafka:ConsumerGroup", $"xihan-test-{suffix}"),
             ]);
 
         var health = host.App.Health();

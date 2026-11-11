@@ -21,13 +21,13 @@
 - 键：每个主题一条流 `<KeyPrefix><topic>`（前缀缺省 `xihan:messaging:`），条目字段 `envelope` 是 CloudEvents 结构化 JSON。死信流是 `<KeyPrefix><topic><DeadLetterSuffix>`，订阅主题 `<topic>.dlq` 就能消费死信。
 - 流只由订阅方建立：订阅方启动时建消费组（带 `MKSTREAM`，从 `$` 开始）与自己的消费者，发布用 `NOMKSTREAM`。所以订阅方第一次启动之前发布的消息不投递；之后订阅方离线期间的消息留在流里。
 - 发布：`XADD ... NOMKSTREAM MAXLEN ~ <MaxLength>`，Redis 应答了条目 ID 才算成功。流不存在（没有订阅者）时消息丢弃、发布照常成功，记一条 Debug 日志，与内存代理、RabbitMQ 一致。批量发布在一个 `MULTI` / `EXEC` 事务里，一次往返，整批写入或整批不写入，主题内保持入参顺序。
-- 消费：竞争订阅都在消费组 `GroupName`（缺省 `xihan`）里，组内的实例分摊条目；广播订阅用本实例独占的组 `<GroupName>@<InstanceId>`。每个订阅（主题加方式）一个消费循环，`XREADGROUP` 每次最多取 `BatchSize` 条，单线程依次派发，成功即 `XACK`。没取到就等 `PollIntervalSeconds` 再取：StackExchange.Redis 的多路复用连接不支持阻塞读，消费是轮询。
+- 消费：竞争订阅都在消费组 `ConsumerGroup`（缺省 `xihan`）里，组内的实例分摊条目；广播订阅用本实例独占的组 `<ConsumerGroup>@<InstanceId>`。每个订阅（主题加方式）一个消费循环，`XREADGROUP` 每次最多取 `BatchSize` 条，单线程依次派发，成功即 `XACK`。没取到就等 `PollIntervalSeconds` 再取：StackExchange.Redis 的多路复用连接不支持阻塞读，消费是轮询。
 - 重试：处理失败在原位立即重试到 `MaxAttempts`，不重新入流。每次重试前先把条目 `XCLAIM` 给自己，消费组的待确认列表因此记下投递次数，尝试号就是它：实例崩溃后接手的实例接着计数。
 - 死信：竞争订阅到上限时写进死信流（另带字段 `attempt` 与 `error`），写入得到应答后才确认原条目；广播订阅到上限时确认掉并记 Warning，不进死信。无法解码的条目不重试：竞争订阅原样进死信流，广播订阅丢弃。
 - 回收：每个消费循环每过 `min(ClaimIdleTimeSeconds, 10)` 秒维护一次，用 `XAUTOCLAIM` 认领组里空闲超过 `ClaimIdleTimeSeconds` 的条目，按投递次数接着投递，已超过 `MaxAttempts` 的直接进死信。这些条目来自崩溃或停止时没处理完的实例，以及死信写入、确认失败的投递。
 - 整理与清理：维护时还会做三件事，组与消费者的数量、流的长度都不会无界增长。
   - 删除竞争组里空闲超时、没有待确认条目的消费者：实例标识每次启动不同，重启会留下旧消费者。
-  - 删除没有消费者或消费者全部空闲超时的 `<GroupName>@*` 广播组：实例崩溃会留下旧组。
+  - 删除没有消费者或消费者全部空闲超时的 `<ConsumerGroup>@*` 广播组：实例崩溃会留下旧组。
   - 按全部组的下限 `XTRIM MINID ~`，去掉全部组都确认过的条目，流里只留积压。
 - 停止时取消消费循环。正在处理的条目不确认，留给别的实例回收。之后清理本实例的痕迹：
   - 广播订阅删除自己的组，流上不剩组时连流一起删除。
@@ -70,7 +70,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- | --- | --- |
 | `XiHan:Messaging:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有绑定 `queue` 时被绑定的主值覆盖，两者都没有时装配失败；绑定的属性 `username` / `password` 覆盖连接字符串里的 `user` / `password`（连接时设置，不改写字符串） |
 | `XiHan:Messaging:Redis:KeyPrefix` | 字符串 | `xihan:messaging:` | 流键的前缀；发布方与订阅方要一致 |
-| `XiHan:Messaging:Redis:GroupName` | 字符串 | `xihan` | 竞争订阅的消费组名，文法同实例标识（字母或数字开头、最多 64 个字符、不含 `@`）；只有订阅方用到，要分摊同一主题的实例要一致 |
+| `XiHan:Messaging:Redis:ConsumerGroup` | 字符串 | `xihan` | 竞争订阅的消费组名，文法同实例标识（字母或数字开头、最多 64 个字符、不含 `@`）；只有订阅方用到，要分摊同一主题的实例要一致 |
 | `XiHan:Messaging:Redis:BatchSize` | 1–1000 | 10 | 每次最多取的条目数 |
 | `XiHan:Messaging:Redis:PollIntervalSeconds` | 正数 | 0.2 | 没取到新条目时再取之前的等待 |
 | `XiHan:Messaging:Redis:ClaimIdleTimeSeconds` | 至少 0.001 | 60 | 待确认条目空闲多久后可被回收，也是清理空闲消费者与遗留广播组的阈值 |
@@ -87,7 +87,7 @@ builder.AddXiHan(xihan => xihan
       "MaxAttempts": 5,
       "Redis": {
         "Configuration": "localhost:6379",
-        "GroupName": "orders-api",
+        "ConsumerGroup": "orders-api",
         "ClaimIdleTimeSeconds": 120
       }
     }
@@ -102,7 +102,7 @@ builder.AddXiHan(xihan => xihan
 | 类型 | 说明 |
 | --- | --- |
 | `RedisMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`queue`）、`HealthName`（`messaging.redis.connection`） |
-| `RedisMessagingOptions` | `Configuration`、`User`、`Password`、`KeyPrefix`、`GroupName`、`BatchSize`、`PollInterval`、`ClaimIdleTime`、`MaxLength`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)`；`ToString()` 遮蔽连接字符串与凭据 |
+| `RedisMessagingOptions` | `Configuration`、`UserName`、`Password`、`KeyPrefix`、`ConsumerGroup`、`BatchSize`、`PollInterval`、`ClaimIdleTime`、`MaxLength`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)`；`ToString()` 遮蔽连接字符串与凭据 |
 | `RedisMessageBroker` | 代理；连接与健康探测由特性在内部调用 |
 
 ## 使用示例

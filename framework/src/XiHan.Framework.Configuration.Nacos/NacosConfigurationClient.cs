@@ -263,7 +263,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     /// </summary>
     private async Task EnsureTokenAsync(CancellationToken cancellationToken)
     {
-        if (_options.Username is null || _options.Password is null)
+        if (_options.UserName is null || _options.Password is null)
         {
             return;
         }
@@ -287,7 +287,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
             {
                 using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint(new Uri(address), LoginPath).Uri)
                 {
-                    Content = new FormUrlEncodedContent([new("username", _options.Username), new("password", _options.Password)]),
+                    Content = new FormUrlEncodedContent([new("username", _options.UserName), new("password", _options.Password)]),
                 };
                 using var window = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 window.CancelAfter(_options.RequestTimeout);

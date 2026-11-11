@@ -40,7 +40,7 @@ public sealed class NacosConfigurationTests
             ("XiHan:Configuration:Nacos:ServerAddresses", "http://a:8848, http://b:8848;http://c:8848"),
             ("XiHan:Configuration:Nacos:Group", "orders"),
             ("XiHan:Configuration:Nacos:Tenant", "dev"),
-            ("XiHan:Configuration:Nacos:Username", "nacos"),
+            ("XiHan:Configuration:Nacos:UserName", "nacos"),
             ("XiHan:Configuration:Nacos:Password", "secret"),
             ("XiHan:Configuration:Nacos:Format", "properties"),
             ("XiHan:Configuration:Nacos:LongPollTimeoutSeconds", "5"),
@@ -48,7 +48,7 @@ public sealed class NacosConfigurationTests
         // 两者都给时取绑定的地址；绑定没给凭据属性，用户名、密码等其余键照读配置节
         Assert.Equal(["http://bound:8848"], configured.ServerAddresses);
         Assert.Equal(["http://a:8848", "http://b:8848", "http://c:8848"], NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "http://a:8848, http://b:8848;http://c:8848"))).ServerAddresses);
-        Assert.Equal(("orders", "dev", "nacos", "secret"), (configured.Group, configured.Tenant, configured.Username, configured.Password));
+        Assert.Equal(("orders", "dev", "nacos", "secret"), (configured.Group, configured.Tenant, configured.UserName, configured.Password));
         Assert.Equal(NacosConfigFormat.Properties, configured.Format);
         Assert.Equal(TimeSpan.FromSeconds(5), configured.LongPollTimeout);
         Assert.Equal(TimeSpan.FromSeconds(2.5), configured.RequestTimeout);
@@ -60,27 +60,27 @@ public sealed class NacosConfigurationTests
     }
 
     [Fact]
-    public void Options_BindingCredentials_OverrideUsernameAndPassword_ItemByItem()
+    public void Options_BindingCredentials_OverrideUserNameAndPassword_ItemByItem()
     {
         var configuration = Build(
             ("XiHan:Configuration:Nacos:ServerAddresses", "http://cfg:8848"),
-            ("XiHan:Configuration:Nacos:Username", "nacos"),
+            ("XiHan:Configuration:Nacos:UserName", "nacos"),
             ("XiHan:Configuration:Nacos:Password", "from-config"));
 
         // 绑定只给凭据：地址仍来自配置节，用户名与密码取绑定的
         var credentials = Maybe.Some(new BindingValue("nacos", "configuration:remote", null, new Dictionary<string, string> { ["username"] = "ops", ["password"] = "secret" }));
         var options = NacosOptions.FromConfiguration(configuration, credentials);
         Assert.Equal(["http://cfg:8848"], options.ServerAddresses);
-        Assert.Equal(("ops", "secret"), (options.Username, options.Password));
+        Assert.Equal(("ops", "secret"), (options.UserName, options.Password));
 
         // 逐项：只给密码、用户名空白时用户名照读配置节
         var passwordOnly = Maybe.Some(new BindingValue("nacos", "configuration:remote", null, new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" }));
         var partial = NacosOptions.FromConfiguration(configuration, passwordOnly);
-        Assert.Equal(("nacos", "secret"), (partial.Username, partial.Password));
+        Assert.Equal(("nacos", "secret"), (partial.UserName, partial.Password));
 
         // 配置节没有凭据时，绑定的凭据照样生效
         var bindingOnly = NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "http://cfg:8848")), credentials);
-        Assert.Equal(("ops", "secret"), (bindingOnly.Username, bindingOnly.Password));
+        Assert.Equal(("ops", "secret"), (bindingOnly.UserName, bindingOnly.Password));
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public sealed class NacosConfigurationTests
         // 地址的路径是上下文路径（Nacos 改过 contextPath，或经网关挂在前缀下），没有路径时用缺省的 /nacos；登录、取配置、监听都接在它后面
         using var handler = new NacosStubHandler { ContextPath = contextPath, Content = """{"Greeting":"hello"}""", ContentMd5 = "c2d231ffe3913f930fc713f76c0bfbf1", SendContentMd5Header = true };
         using var http = new HttpClient(handler, disposeHandler: false);
-        using var client = new NacosConfigurationClient(new NacosOptions { ServerAddresses = [address], Username = "nacos", Password = "secret" }, http, TimeProvider.System);
+        using var client = new NacosConfigurationClient(new NacosOptions { ServerAddresses = [address], UserName = "nacos", Password = "secret" }, http, TimeProvider.System);
 
         var document = (await client.FetchAsync("orders", null, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
         Assert.Equal("hello", document.Values["Greeting"]);

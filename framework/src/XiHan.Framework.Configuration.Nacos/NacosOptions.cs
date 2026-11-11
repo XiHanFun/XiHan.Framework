@@ -13,7 +13,7 @@ namespace XiHan.Framework.Configuration.Nacos;
 /// Nacos Provider 的选项
 /// </summary>
 /// <remarks>
-/// 配置节 <c>XiHan:Configuration:Nacos</c>：<c>ServerAddresses</c>（逗号或分号分隔；绑定 <c>nacos</c> 的主值优先）、<c>Group</c>、<c>Tenant</c>（Nacos 命名空间 ID）、<c>Username</c> / <c>Password</c>（绑定的属性 <c>username</c> / <c>password</c> 优先）、<c>Format</c>、<c>LongPollTimeoutSeconds</c>、<c>RequestTimeoutSeconds</c>
+/// 配置节 <c>XiHan:Configuration:Nacos</c>：<c>ServerAddresses</c>（逗号或分号分隔；绑定 <c>nacos</c> 的主值优先）、<c>Group</c>、<c>Tenant</c>（Nacos 命名空间 ID）、<c>UserName</c> / <c>Password</c>（绑定的属性 <c>username</c> / <c>password</c> 优先）、<c>Format</c>、<c>LongPollTimeoutSeconds</c>、<c>RequestTimeoutSeconds</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record NacosOptions
@@ -78,7 +78,7 @@ public sealed record NacosOptions
     /// <remarks>
     /// 与 <see cref="Password"/> 一起给出时先登录取令牌。是登录凭据的身份那一半，打印选项时与 <see cref="Password"/> 一样遮蔽（ADR-0090）
     /// </remarks>
-    public string? Username { get; init; }
+    public string? UserName { get; init; }
 
     /// <summary>
     /// 登录密码
@@ -121,7 +121,7 @@ public sealed record NacosOptions
     /// 从配置与绑定读取（RFC-0016「资源绑定与配置节」）
     /// </summary>
     /// <remarks>
-    /// 地址：绑定 <c>nacos</c> 的主值优先于 <c>ServerAddresses</c>；用户名与密码：绑定的属性 <c>username</c> / <c>password</c> 各自优先于 <c>Username</c> / <c>Password</c>。空白的主值与属性不算给出
+    /// 地址：绑定 <c>nacos</c> 的主值优先于 <c>ServerAddresses</c>；用户名与密码：绑定的属性 <c>username</c> / <c>password</c> 各自优先于 <c>UserName</c> / <c>Password</c>。空白的主值与属性不算给出
     /// </remarks>
     public static NacosOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding = default)
     {
@@ -134,7 +134,7 @@ public sealed record NacosOptions
         var options = new NacosOptions
         {
             ServerAddresses = [.. addresses.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],
-            Username = BoundText(binding, "username") ?? Text(configuration, "Username"),
+            UserName = BoundText(binding, "username") ?? Text(configuration, "UserName"),
             Password = BoundText(binding, "password") ?? Text(configuration, "Password"),
             Tenant = Text(configuration, "Tenant") ?? string.Empty,
         };
@@ -204,7 +204,7 @@ public sealed record NacosOptions
         builder.Append("ServerAddresses = ").Append(ServerAddresses)
             .Append(", Group = ").Append(Group)
             .Append(", Tenant = ").Append(Tenant)
-            .Append(", Username = ").Append(Redaction.Redact(Username))
+            .Append(", UserName = ").Append(Redaction.Redact(UserName))
             .Append(", Password = ").Append(Redaction.Redact(Password))
             .Append(", Format = ").Append(Format)
             .Append(", LongPollTimeout = ").Append(LongPollTimeout)

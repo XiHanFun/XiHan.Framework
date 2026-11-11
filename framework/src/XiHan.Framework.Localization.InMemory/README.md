@@ -35,7 +35,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryLocalizationFeature>());
 此库提供的主要类型：
 
 * `InMemoryLocalizationFeature`：特性入口
-* `MessageLocalizer`：同时实现 `IMessageLocalizer` 与 `IMessageResolver`，测试里可直接创建
+* `InMemoryMessageLocalizer`：同时实现 `IMessageLocalizer` 与 `IMessageResolver`，测试里可直接创建
 
 ## 更多文档
 

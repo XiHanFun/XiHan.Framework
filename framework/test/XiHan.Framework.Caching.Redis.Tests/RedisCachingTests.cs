@@ -84,7 +84,7 @@ public sealed class RedisCachingTests
         var credentials = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", null, new Dictionary<string, string> { ["username"] = "ops", ["password"] = "p,w=1" }));
         var options = RedisCachingOptions.FromConfiguration(configuration, credentials);
         Assert.Equal("cfg:6379,user=app,password=from-config", options.Configuration);
-        Assert.Equal("ops", options.User);
+        Assert.Equal("ops", options.UserName);
         Assert.Equal("p,w=1", options.Password);
         var connection = RedisCachingFeature.ConnectionOptions(options);
         Assert.Equal("ops", connection.User);

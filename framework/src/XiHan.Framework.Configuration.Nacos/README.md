@@ -25,7 +25,7 @@ dotnet add package XiHan.Framework.Configuration.Nacos --prerelease
 
 ```csharp
 builder.Configuration.AddXiHanNacos(
-    new NacosOptions { ServerAddresses = ["http://localhost:8848"], Username = "nacos", Password = "<password>" },
+    new NacosOptions { ServerAddresses = ["http://localhost:8848"], UserName = "nacos", Password = "<password>" },
     new RemoteConfigurationOptions("orders") { Prefix = "Orders", PollInterval = TimeSpan.FromSeconds(15) });
 
 // 需要在容器里取用 IRemoteConfigurationClient 时

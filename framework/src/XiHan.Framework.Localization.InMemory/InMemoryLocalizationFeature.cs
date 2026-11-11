@@ -46,9 +46,9 @@ public sealed class InMemoryLocalizationFeature : IHostedFeature
         context.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("primitives", typeof(Error)));
         context.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("kernel", typeof(App)));
         // 同一个实例同时作为本地化器（显式区域）与解析器（环境作用域）
-        context.Services.TryAddSingleton<MessageLocalizer>();
-        context.Services.TryAddSingleton<IMessageLocalizer>(static sp => sp.GetRequiredService<MessageLocalizer>());
-        context.Services.TryAddSingleton<IMessageResolver>(static sp => sp.GetRequiredService<MessageLocalizer>());
+        context.Services.TryAddSingleton<InMemoryMessageLocalizer>();
+        context.Services.TryAddSingleton<IMessageLocalizer>(static sp => sp.GetRequiredService<InMemoryMessageLocalizer>());
+        context.Services.TryAddSingleton<IMessageResolver>(static sp => sp.GetRequiredService<InMemoryMessageLocalizer>());
     }
 
     /// <inheritdoc />

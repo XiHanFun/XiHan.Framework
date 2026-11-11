@@ -89,7 +89,7 @@ public sealed class StartupBannerTests
         }
 
         builder.Services.AddSingleton(StartupBannerOptions.FromConfiguration(builder.Configuration, new StartupBannerOptions { Output = output, ApplicationVersion = "1.2.3" }));
-        builder.Services.AddSingleton<IMessageResolver>(new MessageLocalizer([MessageCatalog.FromEmbeddedResources("kernel", typeof(App))], new LocalizationOptions { DefaultLocale = "zh-CN" }));
+        builder.Services.AddSingleton<IMessageResolver>(new InMemoryMessageLocalizer([MessageCatalog.FromEmbeddedResources("kernel", typeof(App))], new LocalizationOptions { DefaultLocale = "zh-CN" }));
         builder.Services.AddHostedService(_ => new MarkerHostedService(output, "hosted-service-started"));
         builder.AddXiHan(static _ => { });
         var app = builder.Build();

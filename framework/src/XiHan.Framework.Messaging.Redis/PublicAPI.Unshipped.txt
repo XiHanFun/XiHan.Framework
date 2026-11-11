@@ -20,9 +20,9 @@ XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ClaimIdleTime.get -> Syste
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ClaimIdleTime.init -> void
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Configuration.get -> string!
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Configuration.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ConsumerGroup.get -> string!
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ConsumerGroup.init -> void
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Equals(XiHan.Framework.Messaging.Redis.RedisMessagingOptions? other) -> bool
-XiHan.Framework.Messaging.Redis.RedisMessagingOptions.GroupName.get -> string!
-XiHan.Framework.Messaging.Redis.RedisMessagingOptions.GroupName.init -> void
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.HealthProbeInterval.get -> System.TimeSpan
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.KeyPrefix.get -> string!
@@ -34,8 +34,8 @@ XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Password.init -> void
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.PollInterval.get -> System.TimeSpan
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.PollInterval.init -> void
 XiHan.Framework.Messaging.Redis.RedisMessagingOptions.RedisMessagingOptions() -> void
-XiHan.Framework.Messaging.Redis.RedisMessagingOptions.User.get -> string?
-XiHan.Framework.Messaging.Redis.RedisMessagingOptions.User.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.UserName.get -> string?
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.UserName.init -> void
 const XiHan.Framework.Messaging.Redis.RedisMessagingFeature.ConnectionBinding = "queue" -> string!
 const XiHan.Framework.Messaging.Redis.RedisMessagingFeature.HealthName = "messaging.redis.connection" -> string!
 const XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ConfigurationSection = "XiHan:Messaging:Redis" -> string!

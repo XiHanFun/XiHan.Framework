@@ -38,6 +38,19 @@ public sealed class InMemoryMessagingTests
     private static MessageEnvelope Envelope(string id) => new() { Id = id, Source = "/tests", Type = "orders.placed" };
 
     [Fact]
+    public async Task Subscriptions_AreReadOnly_OnceTheMessagingRuntimeHasStarted()
+    {
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
+        var subscriptions = host.Services.GetRequiredService<MessageSubscriptions>();
+        _ = host.Services.GetRequiredService<MessagingRuntime>();
+
+        // 运行时取用之后只读：交出的列表不能被改，再登记抛出
+        Assert.IsNotType<List<MessageSubscription>>(subscriptions.All);
+        Assert.Throws<InvalidOperationException>(() => subscriptions.Add("late.topic", typeof(object), SubscriptionMode.Competing));
+        Assert.DoesNotContain(subscriptions.All, static s => s.Topic == "late.topic");
+    }
+
+    [Fact]
     public void Options_FromConfiguration_ParsesAndRejectsInvalid()
     {
         // 用内存键值对构造配置

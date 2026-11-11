@@ -5,10 +5,10 @@ XiHan.Framework.Localization.InMemory.InMemoryLocalizationFeature.InMemoryLocali
 XiHan.Framework.Localization.InMemory.InMemoryLocalizationFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Localization.InMemory.InMemoryLocalizationFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Localization.InMemory.InMemoryLocalizationFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Localization.InMemory.MessageLocalizer
-XiHan.Framework.Localization.InMemory.MessageLocalizer.Find(string! key, string! locale) -> XiHan.Framework.Primitives.Maybe<string!>
-XiHan.Framework.Localization.InMemory.MessageLocalizer.MessageLocalizer(System.Collections.Generic.IEnumerable<XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!>! catalogs, XiHan.Framework.Localization.Abstractions.LocalizationOptions! options) -> void
-XiHan.Framework.Localization.InMemory.MessageLocalizer.Negotiate(string? locale) -> string?
-XiHan.Framework.Localization.InMemory.MessageLocalizer.Options.get -> XiHan.Framework.Localization.Abstractions.LocalizationOptions!
-XiHan.Framework.Localization.InMemory.MessageLocalizer.Resolve(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
-XiHan.Framework.Localization.InMemory.MessageLocalizer.TryResolve(string! key, string? locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments, out string? text) -> bool
+XiHan.Framework.Localization.InMemory.InMemoryMessageLocalizer
+XiHan.Framework.Localization.InMemory.InMemoryMessageLocalizer.Find(string! key, string! locale) -> XiHan.Framework.Primitives.Maybe<string!>
+XiHan.Framework.Localization.InMemory.InMemoryMessageLocalizer.InMemoryMessageLocalizer(System.Collections.Generic.IEnumerable<XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!>! catalogs, XiHan.Framework.Localization.Abstractions.LocalizationOptions! options) -> void
+XiHan.Framework.Localization.InMemory.InMemoryMessageLocalizer.Negotiate(string? locale) -> string?
+XiHan.Framework.Localization.InMemory.InMemoryMessageLocalizer.Options.get -> XiHan.Framework.Localization.Abstractions.LocalizationOptions!
+XiHan.Framework.Localization.InMemory.InMemoryMessageLocalizer.Resolve(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
+XiHan.Framework.Localization.InMemory.InMemoryMessageLocalizer.TryResolve(string! key, string? locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments, out string? text) -> bool

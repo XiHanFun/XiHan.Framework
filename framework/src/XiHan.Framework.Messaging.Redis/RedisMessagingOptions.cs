@@ -47,7 +47,7 @@ public sealed partial record RedisMessagingOptions
     /// <remarks>
     /// Redis 6 的 ACL 用户。为 <see langword="null"/> 时用连接字符串里的。<see cref="FromConfiguration"/> 从绑定 <c>queue</c> 的属性 <c>username</c> 取；连接时以 StackExchange.Redis 的选项设置覆盖，不改写连接字符串。是登录凭据的身份那一半，打印选项时与 <see cref="Password"/> 一样遮蔽（ADR-0090）
     /// </remarks>
-    public string? User { get; init; }
+    public string? UserName { get; init; }
 
     /// <summary>
     /// 覆盖连接字符串里 <c>password</c> 的密码
@@ -73,12 +73,12 @@ public sealed partial record RedisMessagingOptions
     /// 竞争订阅的消费组名
     /// </summary>
     /// <remarks>
-    /// 默认 <c>xihan</c>。广播订阅的组名是它加 <c>@</c> 与实例标识。文法同 <c>MessagingOptions.InstanceId</c>：1 到 64 个字母、数字、<c>.</c>、<c>_</c>、<c>-</c>，字母或数字开头；不含 <c>@</c>，所以竞争组与广播组的名字不会混淆，维护时只清理 <c>&lt;GroupName&gt;@</c> 开头的广播组
+    /// 默认 <c>xihan</c>。广播订阅的组名是它加 <c>@</c> 与实例标识。文法同 <c>MessagingOptions.InstanceId</c>：1 到 64 个字母、数字、<c>.</c>、<c>_</c>、<c>-</c>，字母或数字开头；不含 <c>@</c>，所以竞争组与广播组的名字不会混淆，维护时只清理 <c>&lt;ConsumerGroup&gt;@</c> 开头的广播组
     /// </remarks>
-    public string GroupName
+    public string ConsumerGroup
     {
         get => field;
-        init => field = value is not null && GroupNamePattern().IsMatch(value)
+        init => field = value is not null && ConsumerGroupPattern().IsMatch(value)
             ? value
             : throw new ArgumentException($"The consumer group name '{value}' must be 1 to 64 letters, digits, '.', '_' or '-', starting with a letter or digit.", nameof(value));
     } = "xihan";
@@ -147,7 +147,7 @@ public sealed partial record RedisMessagingOptions
     /// 从配置与绑定读取
     /// </summary>
     /// <remarks>
-    /// <c>Configuration</c>（绑定 <c>queue</c> 的主值优先于配置，RFC-0016；绑定的属性 <c>username</c> / <c>password</c> 各自覆盖连接字符串里的 <c>user</c> / <c>password</c>）、<c>KeyPrefix</c>、<c>GroupName</c>、<c>BatchSize</c>、<c>PollIntervalSeconds</c>、<c>ClaimIdleTimeSeconds</c>、<c>MaxLength</c>、<c>HealthProbeIntervalSeconds</c>；非法值抛出 <see cref="ArgumentException"/>
+    /// <c>Configuration</c>（绑定 <c>queue</c> 的主值优先于配置，RFC-0016；绑定的属性 <c>username</c> / <c>password</c> 各自覆盖连接字符串里的 <c>user</c> / <c>password</c>）、<c>KeyPrefix</c>、<c>ConsumerGroup</c>、<c>BatchSize</c>、<c>PollIntervalSeconds</c>、<c>ClaimIdleTimeSeconds</c>、<c>MaxLength</c>、<c>HealthProbeIntervalSeconds</c>；非法值抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static RedisMessagingOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
@@ -161,7 +161,7 @@ public sealed partial record RedisMessagingOptions
         var options = new RedisMessagingOptions
         {
             Configuration = connection,
-            User = BoundText(binding, "username"),
+            UserName = BoundText(binding, "username"),
             Password = BoundText(binding, "password"),
         };
         if (configuration[$"{ConfigurationSection}:KeyPrefix"] is { } prefix)
@@ -169,11 +169,11 @@ public sealed partial record RedisMessagingOptions
             options = options with { KeyPrefix = prefix };
         }
 
-        if (configuration[$"{ConfigurationSection}:GroupName"] is { } group)
+        if (configuration[$"{ConfigurationSection}:ConsumerGroup"] is { } group)
         {
-            options = GroupNamePattern().IsMatch(group)
-                ? options with { GroupName = group }
-                : throw new ArgumentException($"{ConfigurationSection}:GroupName must be 1 to 64 letters, digits, '.', '_' or '-', starting with a letter or digit, but was '{group}'.");
+            options = ConsumerGroupPattern().IsMatch(group)
+                ? options with { ConsumerGroup = group }
+                : throw new ArgumentException($"{ConfigurationSection}:ConsumerGroup must be 1 to 64 letters, digits, '.', '_' or '-', starting with a letter or digit, but was '{group}'.");
         }
 
         var batch = configuration[$"{ConfigurationSection}:BatchSize"];
@@ -250,10 +250,10 @@ public sealed partial record RedisMessagingOptions
     {
         // 凭据只打印遮蔽文本，null 仍打印为空：看得出有没有配置，看不到值
         builder.Append("Configuration = ").Append(Redaction.Redact(Configuration))
-            .Append(", User = ").Append(Redaction.Redact(User))
+            .Append(", UserName = ").Append(Redaction.Redact(UserName))
             .Append(", Password = ").Append(Redaction.Redact(Password))
             .Append(", KeyPrefix = ").Append(KeyPrefix)
-            .Append(", GroupName = ").Append(GroupName)
+            .Append(", ConsumerGroup = ").Append(ConsumerGroup)
             .Append(", BatchSize = ").Append(BatchSize)
             .Append(", PollInterval = ").Append(PollInterval)
             .Append(", ClaimIdleTime = ").Append(ClaimIdleTime)
@@ -269,5 +269,5 @@ public sealed partial record RedisMessagingOptions
     /// 结尾用 <c>\z</c> 而不是 <c>$</c>：<c>$</c> 还匹配结尾换行之前的位置，从文件或环境变量读进来的值带着换行也会被放过
     /// </remarks>
     [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z")]
-    private static partial Regex GroupNamePattern();
+    private static partial Regex ConsumerGroupPattern();
 }

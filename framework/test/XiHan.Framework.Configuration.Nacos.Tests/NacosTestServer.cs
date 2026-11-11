@@ -49,7 +49,7 @@ internal static class NacosTestServer
     public static NacosOptions Options(NacosConfigFormat format = NacosConfigFormat.Json) => new()
     {
         ServerAddresses = [RequireServiceUrl()],
-        Username = Environment.GetEnvironmentVariable("XIHAN_TEST_NACOS_USERNAME"),
+        UserName = Environment.GetEnvironmentVariable("XIHAN_TEST_NACOS_USERNAME"),
         Password = Environment.GetEnvironmentVariable("XIHAN_TEST_NACOS_PASSWORD"),
         Format = format,
         LongPollTimeout = TimeSpan.FromSeconds(10),

@@ -48,7 +48,7 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     /// <remarks>
     /// 决定主题有哪些处理器
     /// </remarks>
-    private readonly MessageSubscriptions _subscriptions = subscriptions ?? throw new ArgumentNullException(nameof(subscriptions));
+    private readonly MessageSubscriptions _subscriptions = (subscriptions ?? throw new ArgumentNullException(nameof(subscriptions))).Frozen();
 
     /// <summary>
     /// 读取本次调用正在处理的投递

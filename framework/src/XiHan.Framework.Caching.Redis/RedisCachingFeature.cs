@@ -162,7 +162,7 @@ public sealed class RedisCachingFeature : IHostedFeature
     {
         // 直接往字符串里拼 password= 遇到含逗号的密码会把字符串拆错，所以解析后按属性覆盖
         var parsed = ConfigurationOptions.Parse(options.Configuration);
-        if (options.User is { } user)
+        if (options.UserName is { } user)
         {
             parsed.User = user;
         }
