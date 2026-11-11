@@ -1608,6 +1608,13 @@
           "type": "string",
           "sample": "/api",
           "summary": "所有操作路由的前缀，须以 / 开头、不以 / 结尾；不写或为空表示无前缀"
+        },
+        {
+          "key": "MaxRequestBodyBytes",
+          "type": "integer",
+          "default": "4194304",
+          "minimum": 1,
+          "summary": "操作请求体的上限（字节）：超过为 PROTOCOLS_VALIDATION_011；只管操作端点，宿主自己映射的端点照 Kestrel 的限制（ADR-0176）"
         }
       ]
     },
@@ -1985,8 +1992,15 @@
         {
           "key": "Audience",
           "type": "string",
+          "required": true,
           "sample": "shop-api",
-          "summary": "期望的受众；未配置时不校验"
+          "summary": "期望的受众（本 API 的标识或客户端 ID）；ValidateAudience 为 true（缺省）时必填，没有即启动失败（ADR-0180）"
+        },
+        {
+          "key": "ValidateAudience",
+          "type": "boolean",
+          "default": "true",
+          "summary": "是否校验受众：共用身份提供方时发给别的应用的令牌也由同一签发者签名；只有签发者只为本 API 签发令牌时才设 false，此时不需要 Audience（ADR-0180）"
         },
         {
           "key": "RequireHttpsMetadata",
