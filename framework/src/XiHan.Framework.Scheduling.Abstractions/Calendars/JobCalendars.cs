@@ -9,7 +9,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 /// 日历登记表
 /// </summary>
 /// <remarks>
-/// 名字 → 日历。以实例注册进容器，特性与应用共同填充；同名重复登记是编程错误
+/// 名字 → 日历。以实例注册进容器，特性与应用经 <c>AddJobCalendar</c> 在装配时填充，装配之后只读；同名重复登记是编程错误（ADR-0135）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JobCalendars
@@ -42,7 +42,7 @@ public sealed class JobCalendars
     /// <remarks>
     /// 名字须符合作业名文法
     /// </remarks>
-    public JobCalendars Add(string name, IJobCalendar calendar)
+    internal JobCalendars Add(string name, IJobCalendar calendar)
     {
         ArgumentNullException.ThrowIfNull(calendar);
         if (!Jobs.JobName.IsValid(name))

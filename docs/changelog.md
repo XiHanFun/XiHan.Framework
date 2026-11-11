@@ -19,6 +19,7 @@
 - **修复** 活动、结果处理器与指派规则拿到的 `Instance`、`NodeInstance` 改为只读视图 `WorkflowInstanceView` / `WorkflowNodeInstanceView`：原先交出的是引擎随后写回的对象，扩展代码改了状态或租户会被持久化；只读的代码不用改，要读变量与私有状态改用上下文的 `Variables` 与 `State`
 - **调整** 工作流的引擎、定义目录、任务与外部任务服务的实现类型，`ActivityRegistry.Add` 与 `GetActivityRegistry`，实例的 `JoinStates` 与 `WorkflowJoinState`，以及 `Workflow.Database` 的实例锁与轮询类型不再公开：经 `IWorkflowEngine` 等接口与 `AddActivity<TActivity>` 使用；`WorkflowEngine.LastErrorVariable` 等常量移到 `WorkflowReservedNames`，成员名不变，只改类名
 - **调整** 调度与配置的实现细节不再公开：`JobPlanner`、`InMemorySchedulingHealthContributor`、`NacosDocumentParser`，以及 `KubernetesSchedulingOptions` 的 `ResolveNamespace` / `ResolveHolder` / `ResolveApiServer` / `LeaseNameFor`；它们只在各自的包里用
+- **调整** `JobRegistry`、`JobTypeRegistry`、`JobCalendars` 的 `Add` 不再公开：装配之后只读，登记作业、作业类型与日历用 `AddJob`、`AddJobType`、`AddJobCalendar`
 - **调整** 持久化、本地化、缓存与消息的实现类型不再公开：三个 Provider 的仓储实现、`InMemoryUnitOfWork`、`InMemoryTable` 与 `InMemoryStore.Table`、`LeasedWorkerIdSource`、`RepositoryRegistrations.Items`、`MessageCatalog.ParseLocaleFile`、`CacheStoreDistributedCache.Translate`、领域事件的登记表、映射与派发器、三个消息代理的连接与探测成员、`OpenIdConnectMetadataCache.FailureRetryDelay`；照常经 `IRepository`、`IUnitOfWork`、`AddDomainEvent<TEvent>` 等入口使用
 
 ### 宿主、协议与插件

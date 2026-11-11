@@ -9,7 +9,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// 作业登记表
 /// </summary>
 /// <remarks>
-/// 名字 → 定义；同名重复登记是编程错误
+/// 名字 → 定义；同名重复登记是编程错误。只经 <c>AddJob</c> 在装配时填充，装配之后只读（ADR-0135）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JobRegistry
@@ -32,7 +32,7 @@ public sealed class JobRegistry
     /// <summary>
     /// 登记
     /// </summary>
-    public JobRegistry Add(JobDefinition definition)
+    internal JobRegistry Add(JobDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
         if (!_jobs.TryAdd(definition.Name.Value, definition))

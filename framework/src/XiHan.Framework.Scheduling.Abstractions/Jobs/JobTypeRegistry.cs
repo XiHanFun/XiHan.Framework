@@ -9,7 +9,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// 作业类型登记表
 /// </summary>
 /// <remarks>
-/// 类型键 → 类型。存储里的作业只记类型键，运行时经此表解析；以实例注册进容器，特性与应用共同填充
+/// 类型键 → 类型。存储里的作业只记类型键，运行时经此表解析；以实例注册进容器，特性与应用经 <c>AddJobType</c> 在装配时填充，装配之后只读（ADR-0135）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class JobTypeRegistry
@@ -71,7 +71,7 @@ public sealed class JobTypeRegistry
     /// <remarks>
     /// 同一个键对应不同类型是编程错误，同一类型用同一个键重复登记是幂等的
     /// </remarks>
-    public JobTypeRegistry Add(string key, Type jobType)
+    internal JobTypeRegistry Add(string key, Type jobType)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(jobType);

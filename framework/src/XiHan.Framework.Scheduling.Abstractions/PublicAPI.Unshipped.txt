@@ -19,7 +19,6 @@ XiHan.Framework.Scheduling.Abstractions.Calendars.HolidayCalendar.IsExcluded(Sys
 XiHan.Framework.Scheduling.Abstractions.Calendars.IJobCalendar
 XiHan.Framework.Scheduling.Abstractions.Calendars.IJobCalendar.IsExcluded(System.DateTimeOffset at) -> bool
 XiHan.Framework.Scheduling.Abstractions.Calendars.JobCalendars
-XiHan.Framework.Scheduling.Abstractions.Calendars.JobCalendars.Add(string! name, XiHan.Framework.Scheduling.Abstractions.Calendars.IJobCalendar! calendar) -> XiHan.Framework.Scheduling.Abstractions.Calendars.JobCalendars!
 XiHan.Framework.Scheduling.Abstractions.Calendars.JobCalendars.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Calendars.IJobCalendar!>
 XiHan.Framework.Scheduling.Abstractions.Calendars.JobCalendars.JobCalendars() -> void
 XiHan.Framework.Scheduling.Abstractions.Calendars.JobCalendars.Names.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
@@ -107,7 +106,6 @@ XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.Run.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.StartedAt.get -> System.DateTimeOffset
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.StartedAt.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry
-XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry.Add(XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition! definition) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry!
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry.Find(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition!>
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry.JobRegistry() -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRegistry.Jobs.get -> System.Collections.Generic.IReadOnlyCollection<XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition!>!
@@ -268,7 +266,6 @@ XiHan.Framework.Scheduling.Abstractions.Jobs.JobTriggerStatus.Schedule.init -> v
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobTriggerStatus.State.get -> XiHan.Framework.Scheduling.Abstractions.Storage.TriggerState
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobTriggerStatus.State.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobTypeRegistry
-XiHan.Framework.Scheduling.Abstractions.Jobs.JobTypeRegistry.Add(string! key, System.Type! jobType) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobTypeRegistry!
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobTypeRegistry.Find(string! key) -> XiHan.Framework.Primitives.Maybe<System.Type!>
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobTypeRegistry.JobTypeRegistry() -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobTypeRegistry.KeyFor(System.Type! jobType) -> XiHan.Framework.Primitives.Maybe<string!>
