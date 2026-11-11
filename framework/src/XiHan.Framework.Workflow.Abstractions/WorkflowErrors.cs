@@ -63,7 +63,7 @@ public static class WorkflowErrors
     public const string DefinitionStatus = "WORKFLOW_CONFLICT_002";
 
     /// <summary>
-    /// 书签不可恢复（实例不在运行中、键不匹配）
+    /// 书签不可恢复（实例不在运行中、键不匹配、只能经所属服务消费）
     /// </summary>
     public const string BookmarkNotResumable = "WORKFLOW_CONFLICT_003";
 

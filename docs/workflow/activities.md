@@ -252,7 +252,7 @@ Provider 自己的键在各自的子节：内存实现 `XiHan:Workflow:InMemory`
 | `WORKFLOW_NOTFOUND_004` | 活动类型或指派规则类型未登记 |
 | `WORKFLOW_CONFLICT_001` | 实例状态不允许该操作 |
 | `WORKFLOW_CONFLICT_002` | 定义状态不允许该操作 |
-| `WORKFLOW_CONFLICT_003` | 书签不可恢复：实例不在运行中、键不匹配 |
+| `WORKFLOW_CONFLICT_003` | 书签不可恢复：实例不在运行中、键不匹配，或用户任务与外部任务的书签直接经引擎恢复（要经任务服务与外部任务服务） |
 | `WORKFLOW_CONFLICT_004` | 指派人已在任务上，或任务已被认领 |
 | `WORKFLOW_CONFLICT_005` | 同一关联 ID 下已有未结束的实例（`RejectActive`） |
 | `WORKFLOW_DENIED_001` | 操作者不是任务的指派人 |
