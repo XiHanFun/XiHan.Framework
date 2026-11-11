@@ -45,7 +45,7 @@ public static class McpEndpointRouteBuilderExtensions
     /// </remarks>
     private static async Task HandleAsync(HttpContext httpContext, McpServer server)
     {
-        if (!httpContext.GetXiHanContext().TryGetValue(out var context))
+        if (!httpContext.FindXiHanContext().TryGetValue(out var context))
         {
             throw new FrameworkException(KernelErrors.InvalidAppState, "The MCP endpoint requires UseXiHan() to run after routing and before the endpoint executes; the invocation context is missing.");
         }

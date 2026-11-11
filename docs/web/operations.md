@@ -276,7 +276,7 @@ using XiHan.Framework.Kernel.Operations;
 3. Transaction 阶段开启工作单元。
 4. Handle 阶段执行 `HandleAsync`，编码响应。
 
-中间件与端点里可以从上下文读当前操作：`context.GetOperation()` 得到 `OperationDescriptor`（契约、归属特性、请求与响应类型、Schema），`context.GetOperationRequest()` 得到解码后的请求对象，`context.GetOperationPayload()` 得到原始载荷。三个方法都返回 `Maybe<T>`，当前调用不是操作时为无值。
+中间件与端点里可以从上下文读当前操作：`context.FindOperation()` 得到 `OperationDescriptor`（契约、归属特性、请求与响应类型、Schema），`context.FindOperationRequest()` 得到解码后的请求对象，`context.FindOperationPayload()` 得到原始载荷。三个方法都返回 `Maybe<T>`，当前调用不是操作时为无值。
 
 ## 在进程内调用操作
 

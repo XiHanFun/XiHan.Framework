@@ -24,7 +24,7 @@ public static class InvocationContextExtensions
     /// <summary>
     /// 读取强类型项
     /// </summary>
-    public static Maybe<T> Get<T>(this InvocationContext context, ContextItemKey<T> key)
+    public static Maybe<T> Find<T>(this InvocationContext context, ContextItemKey<T> key)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(key);
@@ -50,7 +50,7 @@ public static class InvocationContextExtensions
     /// <remarks>
     /// 尚未设置时为无值
     /// </remarks>
-    public static Maybe<Result> GetOutcome(this InvocationContext context) => context.Get(_outcomeKey);
+    public static Maybe<Result> FindOutcome(this InvocationContext context) => context.Find(_outcomeKey);
 
     /// <summary>
     /// 设置本次调用的结果
@@ -66,7 +66,7 @@ public static class InvocationContextExtensions
     /// <remarks>
     /// 内部发起、没有经协议适配器的调用为无值。派生上下文共享同一个来源
     /// </remarks>
-    public static Maybe<InvocationOrigin> GetOrigin(this InvocationContext context) => context.Get(_originKey);
+    public static Maybe<InvocationOrigin> FindOrigin(this InvocationContext context) => context.Find(_originKey);
 
     /// <summary>
     /// 写入调用来源
@@ -84,7 +84,7 @@ public static class InvocationContextExtensions
     /// </remarks>
     public static void SetOutcomeIfMissing(this InvocationContext context, Result outcome)
     {
-        if (!context.GetOutcome().HasValue)
+        if (!context.FindOutcome().HasValue)
         {
             context.SetOutcome(outcome);
         }

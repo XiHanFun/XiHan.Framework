@@ -31,5 +31,5 @@ internal sealed class OriginLog
     /// <summary>
     /// 记下调用上下文里的来源
     /// </summary>
-    public void Record(InvocationContext context) => _origins.Enqueue(context.GetOrigin().TryGetValue(out var origin) ? origin : null);
+    public void Record(InvocationContext context) => _origins.Enqueue(context.FindOrigin().TryGetValue(out var origin) ? origin : null);
 }

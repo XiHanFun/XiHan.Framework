@@ -121,7 +121,7 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
         context.Services.AddMessageCatalog(PersistenceMessages.Catalog);
         _options = EntityFrameworkCorePersistenceOptions.FromConfiguration(context.Configuration);
         // 绑定可选：缺失时把 Maybe 原样交给回调，由应用决定回退到何种连接
-        var binding = context.TryGetBinding(ConnectionBinding);
+        var binding = context.FindBinding(ConnectionBinding);
 
         var persistence = _options;
         context.Services.AddSingleton(persistence);

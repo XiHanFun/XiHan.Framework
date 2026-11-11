@@ -79,7 +79,7 @@ internal sealed class OperationInvoker : IOperationInvoker
 
         context.SetOperation(descriptor);
         await DispatchAsync(context, descriptor, request.Payload).ConfigureAwait(false);
-        return ToResponse(context, descriptor, context.GetOutcome().ValueOr(Result.Success()));
+        return ToResponse(context, descriptor, context.FindOutcome().ValueOr(Result.Success()));
     }
 
     /// <inheritdoc />
@@ -112,7 +112,7 @@ internal sealed class OperationInvoker : IOperationInvoker
 
         context.SetOperation(descriptor);
         await ExecuteTypedAsync(context, descriptor, request).ConfigureAwait(false);
-        return ToTypedResult<TResponse>(context, descriptor, context.GetOutcome().ValueOr(Result.Success()));
+        return ToTypedResult<TResponse>(context, descriptor, context.FindOutcome().ValueOr(Result.Success()));
     }
 
     /// <summary>
@@ -123,7 +123,7 @@ internal sealed class OperationInvoker : IOperationInvoker
     /// </remarks>
     private async ValueTask DispatchAsync(InvocationContext context, OperationDescriptor descriptor, ReadOnlyMemory<byte> payload)
     {
-        if (!context.GetOperationRequest().TryGetValue(out var request))
+        if (!context.FindOperationRequest().TryGetValue(out var request))
         {
             var decoded = descriptor.DecodeRequest(payload);
             if (!decoded.TryGetValue(out request))
@@ -215,7 +215,7 @@ internal sealed class OperationInvoker : IOperationInvoker
     private static OperationResponse ToResponse(InvocationContext context, OperationDescriptor descriptor, Result outcome)
     {
         // 管道可能在到达 Handle 之前就以失败结束（鉴权、校验、超时），此时没有响应对象
-        if (outcome.IsFailure || !context.GetOperationResponse().TryGetValue(out var response))
+        if (outcome.IsFailure || !context.FindOperationResponse().TryGetValue(out var response))
         {
             return new OperationResponse { Outcome = outcome };
         }
@@ -233,7 +233,7 @@ internal sealed class OperationInvoker : IOperationInvoker
             return outcome.Error!;
         }
 
-        return context.GetOperationResponse().TryGetValue(out var response) && response is TResponse typed
+        return context.FindOperationResponse().TryGetValue(out var response) && response is TResponse typed
             ? Result.Success(typed)
             : Result.Failure<TResponse>(Error.Unexpected(KernelErrors.Unexpected, KernelMessages.OperationNoResponse, details: MessageArguments.Of(("id", descriptor.Id))));
     }

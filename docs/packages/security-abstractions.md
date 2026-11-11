@@ -72,7 +72,7 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器：`HasPermissionAsync` → `Result<bool>`，存储、来源、过滤器的失败原样返回 |
 | `Permissions.IPermissionFilter` | 授予命中后的收窄（ADR-0039）：`AllowsAsync` → `Result<bool>` |
 | `Permissions.IPermissionGrantSource` | 存储之外的额外授予（ADR-0045）：`GetGrantsAsync` → `Result<IReadOnlyCollection<string>>` |
-| `SecurityInvocationExtensions` | `SetCredential` / `GetCredential`、`RequireAuthorization` / `GetAuthorizationRequirement` |
+| `SecurityInvocationExtensions` | `SetCredential` / `FindCredential`、`RequireAuthorization` / `FindAuthorizationRequirement` |
 | `SecurityOptions` | 选项，见上表 |
 | `Conditions.*` | 条件引擎（ADR-0046）：`ConditionSet` / `ConditionGroup` / `ConditionClause`、`ConditionOperator`、`ConditionValueKind`、`ConditionAttributeDescriptor`、`IConditionAttributeRegistry`、`IConditionCompiler`、`IConditionEvaluator`、`IConditionAttributeSource`、`DictionaryConditionAttributeSource`、`MemoizingConditionAttributeSource`、`ConditionOperatorRules`、`AddConditionAttributes` |
 | `Network.IIpRegionResolver` / `IpRegion` | IP 归属地（ADR-0047）：`Resolve(IPAddress)` → `Maybe<IpRegion>` |
@@ -125,8 +125,8 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
         // 端点没挂要求、契约也没写权限或策略时才补；显式要求优先于契约推导
-        if (!context.GetAuthorizationRequirement().HasValue
-            && context.GetOperation().TryGetValue(out var operation)
+        if (!context.FindAuthorizationRequirement().HasValue
+            && context.FindOperation().TryGetValue(out var operation)
             && operation.Contract is { Permission: null, Policy: null })
         {
             context.RequireAuthorization(AuthorizationRequirement.Authenticated);

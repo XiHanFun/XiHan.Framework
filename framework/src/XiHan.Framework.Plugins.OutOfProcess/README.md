@@ -42,7 +42,7 @@ builder.AddXiHan(x => x
 此库提供的主要类型：
 
 * `OutOfProcessPluginsFeature`：特性入口
-* `OutOfProcessPluginHost`：实现 `IPluginHost`，`Describe` 返回诊断快照
+* `OutOfProcessPluginHost`：实现 `IPluginHost`，`FindStatus` 查找诊断快照（未加载时无值）
 * `OutOfProcessPluginOptions`：目录、授予、超时、重启策略
 
 ## 更多文档

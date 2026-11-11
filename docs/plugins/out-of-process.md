@@ -196,7 +196,7 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 | 健康探测连续失败 | 进程被终止，按崩溃处理 | 重启前 `PLUGINS_UNAVAILABLE_001` |
 | 重启次数超过上限 | 保持 `Failed` | `PLUGINS_UNAVAILABLE_001` |
 
-`OutOfProcessPluginHost.Describe(清单 ID)` 返回诊断快照 `OutOfProcessPluginStatus`：状态、进程 ID、协议版本、重启次数、是否懒激活。
+`OutOfProcessPluginHost.FindStatus(清单 ID)` 返回诊断快照 `Maybe<OutOfProcessPluginStatus>`（未加载时无值）：状态、进程 ID、协议版本、重启次数、是否懒激活。
 
 ## 远程 Provider
 

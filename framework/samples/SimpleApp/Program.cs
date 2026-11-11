@@ -68,7 +68,7 @@ app.MapGet("/greet", (string? name, GreetingCounter counter) => new Greeting($"H
 app.MapGet("/missing", (HttpContext http) =>
 {
     // 把失败结果写进调用上下文，Egress 由宿主翻译为 RFC 9457 Problem Details
-    http.GetXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("SAMPLES_NOTFOUND_001", SampleMessages.ResourceMissing));
+    http.FindXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("SAMPLES_NOTFOUND_001", SampleMessages.ResourceMissing));
     return Results.Empty;
 });
 
@@ -76,7 +76,7 @@ app.MapGet("/orders/stats", (OrderEventCounter counter) => new OrderStatistics(c
 
 app.MapGet("/whoami", (HttpContext http) =>
 {
-    var security = http.GetXiHanContext().ValueOrThrow().GetSecurity();
+    var security = http.FindXiHanContext().ValueOrThrow().GetSecurity();
     return new WhoAmI(security.Principal.Id, security.Principal.IsAuthenticated, security.Tenant?.Id);
 }).ExcludeFromDescription();
 

@@ -53,13 +53,15 @@ public sealed class WorkflowValuesTests
         var payload = new JsonObject { ["n"] = 1 };
         variables.Set("p", payload);
         payload["n"] = 2;
-        Assert.Equal(1, variables.Get<JsonObject>("p")!["n"]!.GetValue<int>());
+        Assert.True(variables.TryGet<JsonObject>("p", out var p));
+        Assert.Equal(1, p["n"]!.GetValue<int>());
 
         variables.Merge(new JsonObject { ["a"] = 1, ["b"] = "x" });
         Assert.Equal(["p", "a", "b"], variables.Names);
         Assert.True(variables.TryGet<int>("a", out var a) && a == 1);
         Assert.False(variables.TryGet<int>("b", out _));
-        Assert.Equal("x", variables.Get<string>("b"));
+        Assert.True(variables.TryGet<string>("b", out var b));
+        Assert.Equal("x", b);
         Assert.True(variables.Contains("a") && !variables.Contains("zz"));
         Assert.True(variables.Remove("a") && !variables.Remove("a"));
 

@@ -25,8 +25,8 @@ public sealed class AuthorizationMiddleware : IPipelineMiddleware
         ArgumentNullException.ThrowIfNull(nextStep);
 
         // 显式要求（宿主端点元数据）优先；没有时按当前调用的操作契约推导；都没有的调用直接放行
-        var required = context.GetAuthorizationRequirement();
-        if (!required.HasValue && context.GetOperation().TryGetValue(out var operation))
+        var required = context.FindAuthorizationRequirement();
+        if (!required.HasValue && context.FindOperation().TryGetValue(out var operation))
         {
             required = RequirementOf(operation.Contract);
         }

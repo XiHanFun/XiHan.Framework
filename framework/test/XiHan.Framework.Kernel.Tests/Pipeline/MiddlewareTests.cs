@@ -42,7 +42,7 @@ public sealed class MiddlewareTests
         });
 
         Assert.False(called);
-        Assert.Equal(KernelErrors.DeadlineExceeded, context.GetOutcome().ValueOrThrow().Error!.Code);
+        Assert.Equal(KernelErrors.DeadlineExceeded, context.FindOutcome().ValueOrThrow().Error!.Code);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class MiddlewareTests
         time.Advance(TimeSpan.FromSeconds(6));
         await invocation;
 
-        Assert.Equal(KernelErrors.DeadlineExceeded, context.GetOutcome().ValueOrThrow().Error!.Code);
+        Assert.Equal(KernelErrors.DeadlineExceeded, context.FindOutcome().ValueOrThrow().Error!.Code);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class MiddlewareTests
         await invocation;
 
         // 截止令牌触发、外部令牌没有：按超时报告
-        Assert.Equal(KernelErrors.DeadlineExceeded, context.GetOutcome().ValueOrThrow().Error!.Code);
+        Assert.Equal(KernelErrors.DeadlineExceeded, context.FindOutcome().ValueOrThrow().Error!.Code);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class MiddlewareTests
         await invocation;
 
         // 截止时间没到、外部取消：保持取消
-        Assert.Equal(KernelErrors.Cancelled, context.GetOutcome().ValueOrThrow().Error!.Code);
+        Assert.Equal(KernelErrors.Cancelled, context.FindOutcome().ValueOrThrow().Error!.Code);
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public sealed class MiddlewareTests
         await cancellation.CancelAsync();
         await invocation;
 
-        Assert.Equal(KernelErrors.Cancelled, context.GetOutcome().ValueOrThrow().Error!.Code);
+        Assert.Equal(KernelErrors.Cancelled, context.FindOutcome().ValueOrThrow().Error!.Code);
     }
 
     [Fact]
@@ -145,7 +145,7 @@ public sealed class MiddlewareTests
         });
 
         Assert.Same(context, seen);
-        Assert.False(context.GetOutcome().HasValue);
+        Assert.False(context.FindOutcome().HasValue);
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public sealed class MiddlewareTests
 
         await middleware.InvokeAsync(context, static _ => throw new FrameworkException("ORDERS_CONFLICT_001", "Conflict."));
 
-        var error = context.GetOutcome().ValueOrThrow().Error!;
+        var error = context.FindOutcome().ValueOrThrow().Error!;
         Assert.Equal(KernelErrors.Unexpected, error.Code);
         Assert.Equal("ORDERS_CONFLICT_001", error.Inner!.Code);
     }
@@ -173,7 +173,7 @@ public sealed class MiddlewareTests
             return ValueTask.CompletedTask;
         });
 
-        Assert.True(context.GetOutcome().ValueOrThrow().IsSuccess);
+        Assert.True(context.FindOutcome().ValueOrThrow().IsSuccess);
     }
 
     [Fact]
@@ -182,13 +182,13 @@ public sealed class MiddlewareTests
         var key = new ContextItemKey<int>("test.number");
         var context = App.CreateContext(_services, CancellationToken.None);
 
-        Assert.False(context.Get(key).HasValue);
+        Assert.False(context.Find(key).HasValue);
         context.Set(key, 7);
-        Assert.Equal(7, context.Get(key).ValueOrThrow());
+        Assert.Equal(7, context.Find(key).ValueOrThrow());
         // 第二次 SetOutcomeIfMissing 不覆盖已有结果
         context.SetOutcomeIfMissing(Result.Success());
         context.SetOutcomeIfMissing(Error.Literal("ORDERS_CONFLICT_001", "Second outcome."));
-        Assert.True(context.GetOutcome().ValueOrThrow().IsSuccess);
+        Assert.True(context.FindOutcome().ValueOrThrow().IsSuccess);
         Assert.Equal("test.number", key.ToString());
     }
 
@@ -196,11 +196,11 @@ public sealed class MiddlewareTests
     public void Origin_IsAbsentUntilSet_AndSharedWithDerivedContexts()
     {
         var context = App.CreateContext(_services, CancellationToken.None);
-        Assert.False(context.GetOrigin().HasValue);
+        Assert.False(context.FindOrigin().HasValue);
 
         var origin = new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /orders", RemoteAddress = "203.0.113.7" };
         context.SetOrigin(origin);
-        Assert.Equal(origin, context.WithBaggage(BaggageKeys.Tenant, "acme").GetOrigin().ValueOrThrow());
+        Assert.Equal(origin, context.WithBaggage(BaggageKeys.Tenant, "acme").FindOrigin().ValueOrThrow());
         Assert.Equal(origin with { Protocol = InvocationProtocols.Grpc }, new InvocationOrigin { Protocol = "grpc", Target = "GET /orders", RemoteAddress = "203.0.113.7" });
 
         Assert.Throws<ArgumentException>(static () => new InvocationOrigin { Protocol = " ", Target = "x" });

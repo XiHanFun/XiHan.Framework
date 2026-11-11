@@ -40,8 +40,7 @@ public sealed class WasmPluginHostTests
         await using var host = await EchoWasmPluginHost.StartAsync();
         var plugins = EchoWasmPluginHost.PluginHost(host);
 
-        var status = plugins.Describe(EchoWasmPluginHost.PluginId);
-        Assert.NotNull(status);
+        var status = plugins.FindStatus(EchoWasmPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(LifecycleState.Ready, status.Status.State);
         Assert.Equal(1u, status.AbiVersion);
         Assert.Equal(1u, status.ProtocolVersion);
@@ -83,7 +82,7 @@ public sealed class WasmPluginHostTests
                 OnConfigure = static ctx => ctx.Pipeline.UseInstance(new MarkerMiddleware(), PipelineStage.Observe, owner: "xihan.app.marker"),
             }),
             [new("XiHan:Plugins:Wasm:Directories:0", plugin.Directory)]);
-        Assert.Equal(LifecycleState.Ready, EchoWasmPluginHost.PluginHost(host).Describe(WatPlugin.PluginId)!.Status.State);
+        Assert.Equal(LifecycleState.Ready, EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State);
 
         var observe = host.App.DescribePipeline().Split('\n').Where(static line => line.StartsWith("observe ", StringComparison.Ordinal)).Select(static line => line[13..]).ToList();
 
@@ -167,12 +166,12 @@ public sealed class WasmPluginHostTests
         // 这个错误会返回给调用方：只写陷阱种类，陷阱原文（带模块内部的函数名）只进日志
         Assert.Equal(nameof(TrapCode.Unreachable), trapped.Outcome.Error?.Details?["trap"]);
 
-        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.Describe(EchoWasmPluginHost.PluginId)!.Status.State == LifecycleState.Failed, TimeSpan.FromSeconds(5)));
+        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.FindStatus(EchoWasmPluginHost.PluginId).ValueOrThrow().Status.State == LifecycleState.Failed, TimeSpan.FromSeconds(5)));
         Assert.Equal(LifecycleState.Degraded, host.App.State);
         Assert.True(host.App.Health().Ready);
 
-        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.Describe(EchoWasmPluginHost.PluginId)!.Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(15)));
-        Assert.Equal(1, plugins.Describe(EchoWasmPluginHost.PluginId)!.Restarts);
+        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.FindStatus(EchoWasmPluginHost.PluginId).ValueOrThrow().Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(15)));
+        Assert.Equal(1, plugins.FindStatus(EchoWasmPluginHost.PluginId).ValueOrThrow().Restarts);
         Assert.Equal(LifecycleState.Ready, host.App.State);
         Assert.True((await EchoWasmPluginHost.InvokeAsync(host, "echoes.create", """{"text":"again"}""")).Outcome.IsSuccess);
     }
@@ -190,7 +189,7 @@ public sealed class WasmPluginHostTests
         Assert.Equal(KernelErrors.DeadlineExceeded, response.Outcome.Error?.Code);
         Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(5), "the guest must be interrupted at the deadline instead of running to completion");
         var plugins = EchoWasmPluginHost.PluginHost(host);
-        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.Describe(EchoWasmPluginHost.PluginId)!.Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(15)));
+        Assert.True(await EchoWasmPluginHost.WaitUntilAsync(() => plugins.FindStatus(EchoWasmPluginHost.PluginId).ValueOrThrow().Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(15)));
     }
 
     [Fact]
@@ -217,8 +216,7 @@ public sealed class WasmPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", EchoWasmPluginHost.Directory)]);
         var plugins = EchoWasmPluginHost.PluginHost(host);
 
-        var status = plugins.Describe(EchoWasmPluginHost.PluginId);
-        Assert.NotNull(status);
+        var status = plugins.FindStatus(EchoWasmPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(LifecycleState.Failed, status.Status.State);
         Assert.Equal(PluginErrors.PermissionDenied, status.Status.Error?.Code);
         Assert.Null(status.AbiVersion);

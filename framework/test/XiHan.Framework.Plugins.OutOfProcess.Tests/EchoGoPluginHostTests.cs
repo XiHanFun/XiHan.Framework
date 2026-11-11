@@ -30,8 +30,7 @@ public sealed class EchoGoPluginHostTests
         await using var host = await EchoGoPluginHost.StartAsync();
         var plugins = EchoPluginHost.PluginHost(host);
 
-        var status = plugins.Describe(EchoGoPluginHost.PluginId);
-        Assert.NotNull(status);
+        var status = plugins.FindStatus(EchoGoPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(LifecycleState.Ready, status.Status.State);
         Assert.Equal(1u, status.ProtocolVersion);
         Assert.NotNull(status.ProcessId);
@@ -90,10 +89,10 @@ public sealed class EchoGoPluginHostTests
 
         await using var denied = await EchoGoPluginHost.StartAsync(grantPipeline: false);
         // 权限未授予：发现时被拒，以 Failed 登记、不启动进程（lifecycle.md §1）
-        var status = EchoPluginHost.PluginHost(denied).Describe(EchoGoPluginHost.PluginId);
-        Assert.Equal(LifecycleState.Failed, status?.Status.State);
-        Assert.Equal(PluginErrors.PermissionDenied, status?.Status.Error?.Code);
-        Assert.Null(status?.ProcessId);
+        var status = EchoPluginHost.PluginHost(denied).FindStatus(EchoGoPluginHost.PluginId).ValueOrThrow();
+        Assert.Equal(LifecycleState.Failed, status.Status.State);
+        Assert.Equal(PluginErrors.PermissionDenied, status.Status.Error?.Code);
+        Assert.Null(status.ProcessId);
         Assert.False(denied.Services.GetRequiredService<OperationRegistry>().Find("echoes.create").HasValue);
     }
 
@@ -119,17 +118,17 @@ public sealed class EchoGoPluginHostTests
     {
         await using var host = await EchoGoPluginHost.StartAsync();
         var plugins = EchoPluginHost.PluginHost(host);
-        var firstProcess = plugins.Describe(EchoGoPluginHost.PluginId)!.ProcessId;
+        var firstProcess = plugins.FindStatus(EchoGoPluginHost.PluginId).ValueOrThrow().ProcessId;
 
         var crashed = await EchoPluginHost.InvokeAsync(host, "echoes.crash", "{}");
         Assert.True(crashed.Outcome.IsFailure);
 
-        Assert.True(await EchoPluginHost.WaitUntilAsync(() => plugins.Describe(EchoGoPluginHost.PluginId)!.Status.State == LifecycleState.Failed, TimeSpan.FromSeconds(10)));
-        Assert.Equal(PluginErrors.Crashed, plugins.Describe(EchoGoPluginHost.PluginId)!.Status.Error?.Code);
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() => plugins.FindStatus(EchoGoPluginHost.PluginId).ValueOrThrow().Status.State == LifecycleState.Failed, TimeSpan.FromSeconds(10)));
+        Assert.Equal(PluginErrors.Crashed, plugins.FindStatus(EchoGoPluginHost.PluginId).ValueOrThrow().Status.Error?.Code);
         Assert.Equal(LifecycleState.Degraded, host.App.State);
 
-        Assert.True(await EchoPluginHost.WaitUntilAsync(() => plugins.Describe(EchoGoPluginHost.PluginId)!.Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(20)));
-        var restarted = plugins.Describe(EchoGoPluginHost.PluginId)!;
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() => plugins.FindStatus(EchoGoPluginHost.PluginId).ValueOrThrow().Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(20)));
+        var restarted = plugins.FindStatus(EchoGoPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(1, restarted.Restarts);
         Assert.NotEqual(firstProcess, restarted.ProcessId);
         Assert.Equal(LifecycleState.Ready, host.App.State);
@@ -141,7 +140,7 @@ public sealed class EchoGoPluginHostTests
     public async Task Stop_TerminatesTheGoProcess()
     {
         var host = await EchoGoPluginHost.StartAsync();
-        var processId = EchoPluginHost.PluginHost(host).Describe(EchoGoPluginHost.PluginId)!.ProcessId!.Value;
+        var processId = EchoPluginHost.PluginHost(host).FindStatus(EchoGoPluginHost.PluginId).ValueOrThrow().ProcessId!.Value;
         Assert.True(IsRunning(processId));
 
         await host.DisposeAsync();

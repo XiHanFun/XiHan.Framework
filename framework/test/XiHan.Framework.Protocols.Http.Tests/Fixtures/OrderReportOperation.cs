@@ -14,7 +14,7 @@ internal sealed class OrderReportOperation : IOperation<OrderReportRequest, Orde
     /// <inheritdoc />
     public ValueTask<Result<OrderReply>> HandleAsync(OrderReportRequest request, InvocationContext context)
     {
-        var operation = context.GetOperation().Map(static d => d.Id).ValueOr("-");
+        var operation = context.FindOperation().Map(static d => d.Id).ValueOr("-");
         return ValueTask.FromResult(Result.Success(new OrderReply(operation, null, request.Name, request.Page, [], null)));
     }
 }

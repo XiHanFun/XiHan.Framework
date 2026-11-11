@@ -49,7 +49,7 @@ public static class OperationInvocationExtensions
     /// <remarks>
     /// 不是操作调用时无值
     /// </remarks>
-    public static Maybe<OperationDescriptor> GetOperation(this InvocationContext context) => context.Get(_operationKey);
+    public static Maybe<OperationDescriptor> FindOperation(this InvocationContext context) => context.Find(_operationKey);
 
     /// <summary>
     /// 把本次调用的原始载荷（UTF-8 JSON，空表示 <c>{}</c>）放进上下文
@@ -65,7 +65,7 @@ public static class OperationInvocationExtensions
     /// <remarks>
     /// 类型化调用没有载荷时无值
     /// </remarks>
-    public static Maybe<ReadOnlyMemory<byte>> GetOperationPayload(this InvocationContext context) => context.Get(_payloadKey);
+    public static Maybe<ReadOnlyMemory<byte>> FindOperationPayload(this InvocationContext context) => context.Find(_payloadKey);
 
     /// <summary>
     /// 记录解码后的请求对象，供 Validate 等后续阶段检查
@@ -75,7 +75,7 @@ public static class OperationInvocationExtensions
     /// <summary>
     /// 取解码后的请求对象
     /// </summary>
-    public static Maybe<object> GetOperationRequest(this InvocationContext context) => context.Get(_requestKey);
+    public static Maybe<object> FindOperationRequest(this InvocationContext context) => context.Find(_requestKey);
 
     /// <summary>
     /// 记录执行成功的响应对象
@@ -85,5 +85,5 @@ public static class OperationInvocationExtensions
     /// <summary>
     /// 取执行成功的响应对象
     /// </summary>
-    public static Maybe<object> GetOperationResponse(this InvocationContext context) => context.Get(_responseKey);
+    public static Maybe<object> FindOperationResponse(this InvocationContext context) => context.Find(_responseKey);
 }

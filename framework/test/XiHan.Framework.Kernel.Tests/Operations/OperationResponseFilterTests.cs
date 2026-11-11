@@ -38,7 +38,7 @@ public sealed class OperationResponseFilterTests
             var response = await invoker.InvokeAsync(context, new OperationRequest(EchoOperation.Id, Encoding.UTF8.GetBytes("""{"text":"hi","repeat":2}""")));
             using var document = JsonDocument.Parse(response.Payload);
             Assert.Equal("HIHI!", document.RootElement.GetProperty("echo").GetString());
-            Assert.Equal("HIHI!", ((EchoResponse)context.GetOperationResponse().ValueOrThrow()).Echo);
+            Assert.Equal("HIHI!", ((EchoResponse)context.FindOperationResponse().ValueOrThrow()).Echo);
             Assert.Equal([EchoOperation.Id], scope.ServiceProvider.GetRequiredService<FilterLog>().Seen);
         }
 

@@ -95,12 +95,12 @@ public sealed class ProblemExtensionsTests
         app.UseXiHan();
         app.MapGet("/invalid", (HttpContext http) =>
         {
-            http.GetXiHanContext().ValueOrThrow().SetOutcome(Invalid());
+            http.FindXiHanContext().ValueOrThrow().SetOutcome(Invalid());
             return Results.Empty;
         });
         app.MapGet("/conflict", (HttpContext http) =>
         {
-            http.GetXiHanContext().ValueOrThrow().SetOutcome(Conflict());
+            http.FindXiHanContext().ValueOrThrow().SetOutcome(Conflict());
             return Results.Empty;
         });
         await app.StartAsync();

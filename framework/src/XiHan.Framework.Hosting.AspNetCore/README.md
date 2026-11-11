@@ -40,7 +40,7 @@ app.Run();
 此库提供的主要类型：
 
 * `UseXiHan`、`MapXiHanHealth`：中间件与探针端点
-* `HttpInvocation`：`GetXiHanContext()` 取当前调用上下文
+* `HttpInvocation`：`FindXiHanContext()` 取当前调用上下文
 * `ProblemResponse`：Problem Details 响应体
 * `RequireXiHanPermission`、`RequireXiHanAuthentication`、`RequireXiHanPolicy`：端点授权要求
 * `HostedBlobUrlFeature`、`MapXiHanBlobs`：文件系统存储的预签名地址

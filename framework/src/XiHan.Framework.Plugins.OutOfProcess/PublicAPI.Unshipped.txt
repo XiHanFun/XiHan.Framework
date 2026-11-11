@@ -1,8 +1,8 @@
 #nullable enable
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.Describe(string! manifestId) -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus?
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.FindStatus(string! manifestId) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus!>
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.HostEndpoint.get -> XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginHost.OutOfProcessPluginHost(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions! options, Microsoft.Extensions.Configuration.IConfiguration! configuration, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, System.TimeSpan stopGrace, string! defaultLocale = "en-US") -> void

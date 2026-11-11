@@ -81,7 +81,7 @@ public sealed class RabbitMQMessagingFeature : IHostedFeature
         ArgumentNullException.ThrowIfNull(context);
         // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
         context.Services.AddMessageCatalog(MessagingMessages.Catalog);
-        var options = RabbitMQMessagingOptions.FromConfiguration(context.Configuration, context.TryGetBinding(ConnectionBinding));
+        var options = RabbitMQMessagingOptions.FromConfiguration(context.Configuration, context.FindBinding(ConnectionBinding));
         context.Services.AddSingleton(options);
         context.Services.AddSingleton<RabbitMQMessageBroker>();
         context.Services.TryAddSingleton<IMessageBroker>(static sp => sp.GetRequiredService<RabbitMQMessageBroker>());

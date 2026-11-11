@@ -213,7 +213,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | 重建次数在窗口内超过上限 | 保持 `Failed`，直到 `UnloadAsync` + `LoadAsync` |
 | 发现时清单不合法、权限未授予或未映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记，不重试 |
 
-懒激活（只写 `onOperation:` / `onEvent:`）的插件在握手后丢弃实例，首次调用时再实例化。`WasmPluginHost.Describe(清单 ID)` 返回 `WasmPluginStatus`：状态、ABI 版本、协议版本、重建次数、是否懒激活。
+懒激活（只写 `onOperation:` / `onEvent:`）的插件在握手后丢弃实例，首次调用时再实例化。`WasmPluginHost.FindStatus(清单 ID)` 返回 `Maybe<WasmPluginStatus>`（未加载时无值）：状态、ABI 版本、协议版本、重建次数、是否懒激活。
 
 ## Windows 上关闭 CET 兼容
 

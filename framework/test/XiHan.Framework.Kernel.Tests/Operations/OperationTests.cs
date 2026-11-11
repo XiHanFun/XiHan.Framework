@@ -361,9 +361,9 @@ public sealed class OperationTests
         Assert.True(response.IsSuccess);
         Assert.Equal("hihi", Field(response, "echo"));
         Assert.Equal(context.TraceId, Field(response, "traceId"));
-        Assert.Equal(EchoOperation.Id, context.GetOperation().ValueOrThrow().Id);
-        Assert.Equal("hi", ((EchoRequest)context.GetOperationRequest().ValueOrThrow()).Text);
-        Assert.Equal("hihi", ((EchoResponse)context.GetOperationResponse().ValueOrThrow()).Echo);
+        Assert.Equal(EchoOperation.Id, context.FindOperation().ValueOrThrow().Id);
+        Assert.Equal("hi", ((EchoRequest)context.FindOperationRequest().ValueOrThrow()).Text);
+        Assert.Equal("hihi", ((EchoResponse)context.FindOperationResponse().ValueOrThrow()).Echo);
         Assert.Equal([EchoOperation.Id], provider.GetRequiredService<OperationCapture>().Seen);
         await app.StopAsync(CancellationToken.None);
     }

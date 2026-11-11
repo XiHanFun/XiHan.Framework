@@ -57,7 +57,7 @@ dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 | `AuditingOptions` | `Selection`、`IncludeSuccesses`、`Exclude`（init 时同样校验每一项）；`ConfigurationSection` 为 `XiHan:Auditing` |
 | `AuditSelection` | `Protected`（只记需要授权的操作：契约声明了 `Permission` 或 `Policy`）、`All`、`None`（只记显式动作） |
 | `Pipeline.AuditMiddleware` | Observe 阶段末尾的审计中间件 |
-| `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `GetAuditAction`、`GetAuditResource`、`GetAuditDetails` |
+| `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `FindAuditAction`、`FindAuditResource`、`FindAuditDetails`（只读副本） |
 | `Trail.IAuditTrail` | `QueryAsync(AuditQuery, CancellationToken)` → `Result<AuditPage>` |
 | `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`PrincipalId`、`TenantId`、`TraceId`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
 | `Trail.AuditPage` | `Events`（按写入顺序升序）与 `ContinuationToken`（没有下一页为 `null`） |

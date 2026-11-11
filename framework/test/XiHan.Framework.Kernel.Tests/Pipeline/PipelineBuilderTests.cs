@@ -188,7 +188,7 @@ public sealed class PipelineBuilderTests
         await pipeline(context);
 
         Assert.Equal(["enter:A", "enter:B", "terminal", "exit:B", "exit:A"], log);
-        Assert.True(context.GetOutcome().ValueOrThrow().IsSuccess);
+        Assert.True(context.FindOutcome().ValueOrThrow().IsSuccess);
     }
 
     [Fact]

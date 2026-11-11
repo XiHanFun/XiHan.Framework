@@ -168,7 +168,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
             // 绑定可选：缺失时把 Maybe 原样交给回调，由应用决定回退到何种连接
             // 应用默认连接的配置只建一份供所有作用域共用；带租户分片的调用在作用域内按分片绑定另建一个 shard 连接的配置，约定同样施加
             // 默认连接始终在客户端里：平台目录表落默认连接、租户表落分片连接，由 IEntityConnectionSelector 决定，两者在同一客户端里由 AsTenant() 统一开事务
-            var binding = context.TryGetBinding(ConnectionBinding);
+            var binding = context.FindBinding(ConnectionBinding);
             var defaultHitRate = _options.Replicas.DefaultHitRate;
             var commandTimeout = _options.CommandTimeoutSeconds;
             var shared = CreateConfig(configure, binding, SqlSugarConnections.Default, defaultHitRate);

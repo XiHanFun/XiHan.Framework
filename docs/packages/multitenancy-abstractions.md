@@ -74,7 +74,7 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | `Sharding.TenantShard` | 分片：`TenantId`、`ConnectionString`、`Provider`（转小写，可空）、`Properties` |
 | `Sharding.TenantStoreShardResolver` | 从租户属性推出分片的缺省解析器，按租户有界缓存；`FromProperties(tenant)` 不带缓存地推出单个租户的分片 |
 | `Sharding.TenantShardKeys` | 租户属性键 `ConnectionString`、`DatabaseProvider`、前缀 `Shard.`，绑定属性键 `tenant`、`provider` |
-| `Sharding.TenantShardInvocationExtensions` | `GetTenantShard()` / `SetTenantShard(shard)`：调用上下文里的分片 |
+| `Sharding.TenantShardInvocationExtensions` | `FindTenantShard()` / `SetTenantShard(shard)`：调用上下文里的分片 |
 | `Sharding.TenantShardBinding` | `Resolve(scopedServices, bindingName, bindingType, fallback)`：持久化 Provider 创建客户端时取分片连接绑定 |
 | `Sharding.TenantShardScope` | 作用域服务，管道外显式绑定分片：`BindTenantAsync`、`Bind`、`Shard`、`IsConnected` |
 | `MultiTenancyCapabilities` | 能力 ID 常量 `Context`、`Sharding` 与 `Version`（1） |
@@ -120,7 +120,7 @@ public static class ShardInfo
 {
     // 共库租户与无租户的调用没有分片
     public static string Describe(InvocationContext context)
-        => context.GetTenantShard().TryGetValue(out var shard)
+        => context.FindTenantShard().TryGetValue(out var shard)
             ? $"{shard.TenantId} -> {shard.Provider ?? "default"}"
             : "shared";
 }

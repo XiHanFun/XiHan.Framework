@@ -23,10 +23,10 @@ public static class TenantShardInvocationExtensions
     /// <remarks>
     /// 没有分片（共库租户或无租户）为空
     /// </remarks>
-    public static Maybe<TenantShard> GetTenantShard(this InvocationContext context)
+    public static Maybe<TenantShard> FindTenantShard(this InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return context.Get(_shardKey);
+        return context.Find(_shardKey);
     }
 
     /// <summary>

@@ -24,6 +24,6 @@ internal sealed class PingOperation : IOperation<PingRequest, PingResponse>
             return ValueTask.FromResult<Result<PingResponse>>(Error.Validation("PINGS_VALIDATION_001", "pings.name.required"));
         }
 
-        return ValueTask.FromResult(Result.Success(new PingResponse($"Hello, {request.Name}!", context.GetOperation().Map(static d => d.Id).ValueOr("-"))));
+        return ValueTask.FromResult(Result.Success(new PingResponse($"Hello, {request.Name}!", context.FindOperation().Map(static d => d.Id).ValueOr("-"))));
     }
 }

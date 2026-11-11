@@ -50,10 +50,10 @@ public sealed class JobDispatcher
     /// <summary>
     /// 读取本次调用正在执行的运行
     /// </summary>
-    public static Maybe<JobRun> GetRun(InvocationContext context)
+    public static Maybe<JobRun> FindRun(InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return context.Get(_runKey);
+        return context.Find(_runKey);
     }
 
     /// <summary>

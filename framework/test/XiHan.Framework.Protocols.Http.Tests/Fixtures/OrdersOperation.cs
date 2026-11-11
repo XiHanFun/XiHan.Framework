@@ -22,7 +22,7 @@ internal sealed class OrdersOperation : IOperation<OrderRequest, OrderReply>
             return ValueTask.FromResult<Result<OrderReply>>(Error.Conflict("ORDERS_CONFLICT_001", "orders.order.rejected"));
         }
 
-        var operation = context.GetOperation().Map(static d => d.Id).ValueOr("-");
+        var operation = context.FindOperation().Map(static d => d.Id).ValueOr("-");
         return ValueTask.FromResult(Result.Success(new OrderReply(operation, request.Id, request.Name, request.Page, request.Tags ?? [], request.Reason)));
     }
 }

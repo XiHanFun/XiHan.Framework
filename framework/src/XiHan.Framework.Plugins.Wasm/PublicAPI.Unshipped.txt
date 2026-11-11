@@ -1,8 +1,8 @@
 #nullable enable
 XiHan.Framework.Plugins.Wasm.WasmPluginHost
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
-XiHan.Framework.Plugins.Wasm.WasmPluginHost.Describe(string! manifestId) -> XiHan.Framework.Plugins.Wasm.WasmPluginStatus?
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Plugins.Wasm.WasmPluginHost.FindStatus(string! manifestId) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Plugins.Wasm.WasmPluginStatus!>
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.LoadAsync(XiHan.Framework.Kernel.Plugins.PluginSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Plugins.PluginStatus!>>!
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.Plugins.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Plugins.PluginStatus!>!
 XiHan.Framework.Plugins.Wasm.WasmPluginHost.UnloadAsync(string! manifestId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!

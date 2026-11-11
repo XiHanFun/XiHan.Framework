@@ -107,7 +107,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | 类型 | 说明 |
 | --- | --- |
 | `WasmPluginsFeature` | 特性入口，能力常量 `Capability`（`plugins.wasm`） |
-| `WasmPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`Describe(manifestId)` 返回诊断快照；常量 `HealthPrefix`（`plugins.`） |
+| `WasmPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值）；常量 `HealthPrefix`（`plugins.`） |
 | `WasmPluginStatus` | 诊断快照：`Status`、`AbiVersion`、`ProtocolVersion`、`Restarts`、`Lazy` |
 | `WasmPluginOptions` | 选项与 `FromConfiguration`、`GrantsFor`、`MountsFor`、`ResolveWorkDirectory` |
 
@@ -176,7 +176,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 卸载的插件的中间件被别的中间件以次序约束引用 | 卸载被拒（`KERNEL_PIPELINE_003`），什么都不撤，插件照常服务；先撤回引用方 |
 | 清单声明的权限码与已登记的重复（宿主特性定义的或另一个插件声明的）、声明的操作与已有操作重名，或 `permission` 既不是宿主已登记的、也不在本插件清单里，或 `policy` 不存在 | 配置阶段发现的启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`；`policy` 不存在在授权能力启动时报 `SECURITY_VALIDATION_004`）；运行期 `LoadAsync` 返回失败，一个权限码与代理操作都不留下 |
 | 清单 `contributes.permissions` 不合权限码文法或有重复 | 清单读不出，按发现时被拒（`PLUGINS_VALIDATION_001`） |
-| 发现时清单不合法、权限未授予或映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记（可 `Describe`、健康条目 `plugins.<清单 ID>`，清单读不出来时为 `plugins.<目录名>`），宿主启动时记错误日志，不重试 |
+| 发现时清单不合法、权限未授予或映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记（可 `FindStatus`、健康条目 `plugins.<清单 ID>`，清单读不出来时为 `plugins.<目录名>`），宿主启动时记错误日志，不重试 |
 | Windows 进程强制用户态影子栈 | 创建 `WasmPluginHost` 时抛出 `FrameworkException`（`PLUGINS_UNAVAILABLE_003`） |
 
 - 重建次数在 `RestartWindowSeconds` 内超过 `RestartLimit` 后保持 `Failed`；每个插件是健康条目 `plugins.<清单 ID>`，`Failed` / `Degraded` 让应用进入 `Degraded`。

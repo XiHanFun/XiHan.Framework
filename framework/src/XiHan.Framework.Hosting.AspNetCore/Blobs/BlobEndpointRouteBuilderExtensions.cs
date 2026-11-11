@@ -304,7 +304,7 @@ public static class BlobEndpointRouteBuilderExtensions
     /// 没有经过 <c>UseXiHan()</c> 是装配错误
     /// </remarks>
     private static InvocationContext Context(HttpContext http)
-        => http.GetXiHanContext().TryGetValue(out var context)
+        => http.FindXiHanContext().TryGetValue(out var context)
             ? context
             : throw new FrameworkException(KernelErrors.InvalidAppState, "The blob endpoints require UseXiHan() to run after routing and before the endpoint executes; the invocation context is missing.");
 }

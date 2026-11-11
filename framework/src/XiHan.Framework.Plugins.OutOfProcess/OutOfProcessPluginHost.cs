@@ -168,15 +168,15 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     public IReadOnlyList<PluginStatus> Plugins => _plugins.Values.Select(static r => r.Status).OrderBy(static s => s.Manifest.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// 一个插件的诊断快照
+    /// 查找一个插件的诊断快照
     /// </summary>
     /// <remarks>
-    /// 未加载为空
+    /// 未加载时无值
     /// </remarks>
-    public OutOfProcessPluginStatus? Describe(string manifestId)
+    public Maybe<OutOfProcessPluginStatus> FindStatus(string manifestId)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
-        return _plugins.TryGetValue(manifestId, out var runtime) ? runtime.Describe() : null;
+        return _plugins.TryGetValue(manifestId, out var runtime) ? runtime.Describe() : Maybe.None<OutOfProcessPluginStatus>();
     }
 
     /// <summary>

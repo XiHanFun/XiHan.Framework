@@ -1126,8 +1126,6 @@ XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables
 XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.AsJsonObject() -> System.Text.Json.Nodes.JsonObject!
 XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.Contains(string! name) -> bool
 XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.Count.get -> int
-XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.Get(string! name) -> System.Text.Json.Nodes.JsonNode?
-XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.Get<T>(string! name) -> T?
 XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.Merge(System.Text.Json.Nodes.JsonObject? values) -> void
 XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.Names.get -> System.Collections.Generic.IEnumerable<string!>!
 XiHan.Framework.Workflow.Abstractions.Values.WorkflowVariables.Remove(string! name) -> bool

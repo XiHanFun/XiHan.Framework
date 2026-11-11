@@ -202,7 +202,7 @@ public static partial class HttpInvocation
     /// <remarks>
     /// 请求未经过 <c>UseXiHan()</c> 时为无值
     /// </remarks>
-    public static Maybe<InvocationContext> GetXiHanContext(this HttpContext httpContext)
+    public static Maybe<InvocationContext> FindXiHanContext(this HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         return httpContext.Items.TryGetValue(ContextItemKey, out var value) && value is InvocationContext context ? Maybe.Some(context) : default;

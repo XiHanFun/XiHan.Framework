@@ -239,7 +239,7 @@ public sealed class AppBuilder
                 continue;
             }
 
-            // 必需绑定在构建期就校验，让缺失的资源在启动前暴露；可选绑定由特性自己通过 TryGetBinding 处理
+            // 必需绑定在构建期就校验，让缺失的资源在启动前暴露；可选绑定由特性自己通过 FindBinding 处理
             foreach (var binding in node.Manifest.Bindings.Where(static b => b.Required))
             {
                 if (!bindings.TryGetValue(binding.Name, out var value))

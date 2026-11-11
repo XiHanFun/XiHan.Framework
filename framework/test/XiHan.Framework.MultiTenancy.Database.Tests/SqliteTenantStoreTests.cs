@@ -61,7 +61,7 @@ public sealed class SqliteTenantStoreTests
         var ok = await reader.InvokeAsync(ctx =>
         {
             tenant = ctx.GetSecurity().Tenant;
-            shard = ctx.GetTenantShard().ValueOrThrow();
+            shard = ctx.FindTenantShard().ValueOrThrow();
             return ValueTask.CompletedTask;
         }, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "acme" });
         Assert.True(ok.IsSuccess, ok.ToString());

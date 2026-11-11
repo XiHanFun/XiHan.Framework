@@ -101,7 +101,7 @@ public sealed class AssistantsFeature : IFeature
 | 输入 Schema | 操作的请求 Schema，没有时 `{"type":"object"}` |
 | 输出 Schema | 操作的响应 Schema |
 
-工具被调用时，参数序列化成请求 JSON，在新作用域、新 `InvocationContext` 里经完整管道执行：trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，Validate、Authorize、Transaction 等阶段照常生效；新上下文不带调用来源，`GetOrigin()` 为无值。成功返回响应 JSON；失败返回 `{"error":"<错误码>","message":"<按调用方区域翻译的文案>"}` 交给模型处理，不抛异常。`AI.OpenAI` 的聊天客户端带函数调用循环，模型发起的工具调用在客户端里自动执行。
+工具被调用时，参数序列化成请求 JSON，在新作用域、新 `InvocationContext` 里经完整管道执行：trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，Validate、Authorize、Transaction 等阶段照常生效；新上下文不带调用来源，`FindOrigin()` 为无值。成功返回响应 JSON；失败返回 `{"error":"<错误码>","message":"<按调用方区域翻译的文案>"}` 交给模型处理，不抛异常。`AI.OpenAI` 的聊天客户端带函数调用循环，模型发起的工具调用在客户端里自动执行。
 
 ::: tip 工具以调用方身份执行
 工具调用沿用调用方此刻的主体与租户：调用方已在自己的管道里认证过，凭据不复制，Authenticate 阶段没有凭据可认证即保留这个主体。Authorize 阶段以调用方主体按契约判定，契约声明了 `Permission` 的操作，调用方持有该权限才放行；没有权限得到 `SECURITY_DENIED_004`、匿名调用得到 `SECURITY_DENIED_001`，错误以 JSON 交给模型。模型能做的事不超过发起聊天的用户本人能做的事。

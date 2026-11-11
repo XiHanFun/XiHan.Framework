@@ -154,7 +154,7 @@ public sealed class FeatureContext
     /// <summary>
     /// 取可选绑定
     /// </summary>
-    public Maybe<BindingValue> TryGetBinding(string name)
+    public Maybe<BindingValue> FindBinding(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
         return Bindings.TryGetValue(name, out var binding) ? Maybe.Some(binding) : default;

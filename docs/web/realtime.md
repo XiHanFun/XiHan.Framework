@@ -106,7 +106,7 @@ builder.Services.AddSingleton<IInvocationAuthenticationFilter, SessionGate>();
 
 ## 在 Hub 里调用操作
 
-Hub 方法不在内核管道里，`HttpContext.GetXiHanContext()` 在这里是无值。要执行操作时以连接的 `HttpContext` 建调用上下文，再交给 `IOperationInvoker`：
+Hub 方法不在内核管道里，`HttpContext.FindXiHanContext()` 在这里是无值。要执行操作时以连接的 `HttpContext` 建调用上下文，再交给 `IOperationInvoker`：
 
 ```csharp
 using Microsoft.AspNetCore.SignalR;

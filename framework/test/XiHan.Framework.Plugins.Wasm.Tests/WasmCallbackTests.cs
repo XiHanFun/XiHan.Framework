@@ -30,7 +30,7 @@ public sealed class WasmCallbackTests
         using var undeclared = WatPlugin.Invoking("pings.create", []);
         await using (var host = await StartAsync(undeclared, [WasmHostFunctions.PipelinePermission]))
         {
-            Assert.Equal(LifecycleState.Ready, EchoWasmPluginHost.PluginHost(host).Describe(WatPlugin.PluginId)!.Status.State);
+            Assert.Equal(LifecycleState.Ready, EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State);
 
             var response = await CallAsync(host);
 

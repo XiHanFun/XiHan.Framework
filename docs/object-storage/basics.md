@@ -119,7 +119,7 @@ app.MapPut("/files/{name}", async (string name, HttpContext http, IBlobStore sto
     var put = await store.PutAsync(new ContainerName("uploads"), new BlobKey(key), http.Request.Body, options, ct);
     if (!put.TryGetValue(out var metadata))
     {
-        http.GetXiHanContext().ValueOrThrow().SetOutcome(put.Error!);
+        http.FindXiHanContext().ValueOrThrow().SetOutcome(put.Error!);
         return Results.Empty;
     }
 
@@ -136,7 +136,7 @@ app.MapGet("/files/{**key}", async (string key, HttpContext http, IBlobStore sto
     var opened = await store.GetAsync(new ContainerName("uploads"), new BlobKey(key), ct);
     if (!opened.TryGetValue(out var blob))
     {
-        http.GetXiHanContext().ValueOrThrow().SetOutcome(opened.Error!);
+        http.FindXiHanContext().ValueOrThrow().SetOutcome(opened.Error!);
         return Results.Empty;
     }
 

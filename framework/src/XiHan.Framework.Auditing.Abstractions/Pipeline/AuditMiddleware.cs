@@ -98,7 +98,7 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
 
         // 结果优先取管道里已写入的；没有写入而又抛出了异常，按异常记失败；正常返回却没写结果视为成功
         Result outcome;
-        if (context.GetOutcome().TryGetValue(out var written))
+        if (context.FindOutcome().TryGetValue(out var written))
         {
             outcome = written;
         }
@@ -125,10 +125,10 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
             Action = action,
             Outcome = outcome,
             TraceId = context.TraceId,
-            Resource = context.GetAuditResource().TryGetValue(out var resource) ? resource : null,
+            Resource = context.FindAuditResource().TryGetValue(out var resource) ? resource : null,
             PrincipalId = security.Principal.IsAuthenticated ? security.Principal.Id : context.TryGetBaggage(BaggageKeys.Principal, out var principal) ? principal : null,
             TenantId = security.Tenant?.Id ?? (context.TryGetBaggage(BaggageKeys.Tenant, out var tenant) ? tenant : null),
-            Details = context.GetAuditDetails(),
+            Details = context.FindAuditDetails().TryGetValue(out var details) ? details : null,
         };
 
         // 不带调用的取消令牌：被取消的调用同样要记录。契约规定接收器不抛出（ADR-0147），这里兜住的是实现缺陷，不能让业务调用失败
@@ -151,12 +151,12 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
     private string? ResolveAction(InvocationContext context)
     {
         // 显式动作是代码要求必须留痕的调用（登录、导出），按操作排除只针对按规则挑出的操作，不压掉它
-        if (context.GetAuditAction().TryGetValue(out var explicitAction))
+        if (context.FindAuditAction().TryGetValue(out var explicitAction))
         {
             return explicitAction;
         }
 
-        if (!context.GetOperation().TryGetValue(out var operation))
+        if (!context.FindOperation().TryGetValue(out var operation))
         {
             return null;
         }

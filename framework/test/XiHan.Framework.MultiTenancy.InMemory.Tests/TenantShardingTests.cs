@@ -96,19 +96,19 @@ public sealed class TenantShardingTests
         var fallback = Maybe.Some(new BindingValue("db", "connection:relational", "Host=default", new Dictionary<string, string>(StringComparer.Ordinal) { ["pool"] = "10" }));
         (await host.InvokeAsync(ctx =>
         {
-            acme = ctx.GetTenantShard();
+            acme = ctx.FindTenantShard();
             acmeBinding = TenantShardBinding.Resolve(ctx.Services, "db", "connection:relational", fallback);
             return ValueTask.CompletedTask;
         }, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "acme" })).ThrowIfFailure();
         (await host.InvokeAsync(ctx =>
         {
-            beta = ctx.GetTenantShard();
+            beta = ctx.FindTenantShard();
             betaBinding = TenantShardBinding.Resolve(ctx.Services, "db", "connection:relational", fallback);
             return ValueTask.CompletedTask;
         }, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "beta" })).ThrowIfFailure();
         (await host.InvokeAsync(ctx =>
         {
-            none = ctx.GetTenantShard();
+            none = ctx.FindTenantShard();
             return ValueTask.CompletedTask;
         })).ThrowIfFailure();
 

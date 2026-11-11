@@ -37,8 +37,7 @@ public sealed class OutOfProcessPluginHostTests
         await using var host = await EchoPluginHost.StartAsync();
         var plugins = EchoPluginHost.PluginHost(host);
 
-        var status = plugins.Describe(EchoPluginHost.PluginId);
-        Assert.NotNull(status);
+        var status = plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(LifecycleState.Ready, status.Status.State);
         Assert.Equal(1u, status.ProtocolVersion);
         Assert.NotNull(status.ProcessId);
@@ -97,8 +96,7 @@ public sealed class OutOfProcessPluginHostTests
 
         // 清单声明了 capability:kernel.pipeline 却没有授予：发现阶段就被拒绝、不启动进程，插件以 Failed 上报（lifecycle.md §1）
         await using var denied = await EchoPluginHost.StartAsync(grantPipeline: false);
-        var status = EchoPluginHost.PluginHost(denied).Describe(EchoPluginHost.PluginId);
-        Assert.NotNull(status);
+        var status = EchoPluginHost.PluginHost(denied).FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(LifecycleState.Failed, status.Status.State);
         Assert.Equal(PluginErrors.PermissionDenied, status.Status.Error?.Code);
         Assert.Null(status.ProcessId);
@@ -128,8 +126,7 @@ public sealed class OutOfProcessPluginHostTests
             var plugins = EchoPluginHost.PluginHost(host);
 
             // 入口文件不存在：以清单 ID 登记为 Failed，可描述，没有进程
-            var rejected = plugins.Describe(EchoPluginHost.PluginId);
-            Assert.NotNull(rejected);
+            var rejected = plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
             Assert.Equal(LifecycleState.Failed, rejected.Status.State);
             Assert.Equal(PluginErrors.NotFound, rejected.Status.Error?.Code);
             Assert.Null(rejected.ProcessId);
@@ -170,8 +167,7 @@ public sealed class OutOfProcessPluginHostTests
         var plugins = EchoPluginHost.PluginHost(host);
 
         // 宿主照常启动，插件按发现时被拒登记：Failed、可描述、没有进程，代理操作没有登记
-        var rejected = plugins.Describe(EchoPluginHost.PluginId);
-        Assert.NotNull(rejected);
+        var rejected = plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(LifecycleState.Failed, rejected.Status.State);
         Assert.Equal(PluginErrors.InvalidSource, rejected.Status.Error?.Code);
         Assert.Equal(PluginMessages.PipelineUnsupported, rejected.Status.Error?.MessageKey);
@@ -201,7 +197,7 @@ public sealed class OutOfProcessPluginHostTests
         using var copy = new PluginCopy(EchoPluginHost.Directory);
         copy.EditManifest(static manifest => manifest.Replace("\"operations\": [ \"echoes.create\"", "\"permissions\": [ \"echoes.audit\", \"echoes.export\" ], \"operations\": [ \"echoes.create\"", StringComparison.Ordinal));
         await using var host = await EchoPluginHost.StartAsync(directory: copy.Directory);
-        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).Describe(EchoPluginHost.PluginId)!.Status.State);
+        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status.State);
 
         var permissions = host.Services.GetRequiredService<PermissionRegistry>();
         Assert.Equal("echoes.audit", permissions.Find("echoes.audit").ValueOrThrow().DisplayName);
@@ -232,7 +228,7 @@ public sealed class OutOfProcessPluginHostTests
         using var copy = new PluginCopy(EchoPluginHost.Directory);
         copy.EditManifest(static manifest => manifest.Replace("\"permissions\": [ \"capability:kernel.pipeline\" ]", "\"permissions\": [ ]", StringComparison.Ordinal));
         await using var host = await EchoPluginHost.StartAsync(static b => b.UseFeature(PingFeature()), directory: copy.Directory);
-        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).Describe(EchoPluginHost.PluginId)!.Status.State);
+        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status.State);
 
         var relayed = await EchoPluginHost.InvokeAsync(host, "echoes.relay", """{"operation":"pings.create","payload":{"name":"from-plugin"}}""");
 
@@ -250,7 +246,7 @@ public sealed class OutOfProcessPluginHostTests
 
         Assert.Equal(PluginErrors.Unexpected, response.Outcome.Error?.Code);
         Assert.StartsWith("Unknown:", response.Outcome.Error!.Details!["reason"] as string, StringComparison.Ordinal);
-        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).Describe(EchoPluginHost.PluginId)!.Status.State);
+        Assert.Equal(LifecycleState.Ready, EchoPluginHost.PluginHost(host).FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status.State);
     }
 
     [Fact]
@@ -347,7 +343,7 @@ public sealed class OutOfProcessPluginHostTests
         var plugins = EchoPluginHost.PluginHost(host);
         var registry = host.Services.GetRequiredService<OperationRegistry>();
 
-        var failed = plugins.Describe(EchoPluginHost.PluginId)!;
+        var failed = plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(LifecycleState.Failed, failed.Status.State);
         Assert.Equal(PluginErrors.Crashed, failed.Status.Error?.Code);
         Assert.Equal(0, failed.Restarts);
@@ -357,7 +353,7 @@ public sealed class OutOfProcessPluginHostTests
         // 依赖放回后，把宿主时钟推过退避（1 秒起），第一次重试就成功：不是一次失败就永远放弃（handshake.md §5）
         File.Move(dependency + ".off", dependency);
         Assert.True(await RecoversAfterBackoffAsync(plugins, clock, TimeSpan.FromSeconds(60)));
-        Assert.Equal(1, plugins.Describe(EchoPluginHost.PluginId)!.Restarts);
+        Assert.Equal(1, plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Restarts);
         Assert.Equal(LifecycleState.Ready, host.App.State);
 
         // 声明到这时才有：代理操作按运行期加载补登记，经内核调用器可用
@@ -387,7 +383,7 @@ public sealed class OutOfProcessPluginHostTests
         Assert.Equal(LifecycleState.Ready, Assert.Single(plugins.Plugins).State);
 
         // 退避只过了一次：依赖放回后的第一次重试就成功
-        Assert.Equal(1, diagnostics.Describe(EchoPluginHost.PluginId)!.Restarts);
+        Assert.Equal(1, diagnostics.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Restarts);
         var response = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"late"}""");
         Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
     }
@@ -397,20 +393,20 @@ public sealed class OutOfProcessPluginHostTests
     {
         await using var host = await EchoPluginHost.StartAsync();
         var plugins = EchoPluginHost.PluginHost(host);
-        var firstProcess = plugins.Describe(EchoPluginHost.PluginId)!.ProcessId;
+        var firstProcess = plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().ProcessId;
 
         var crashed = await EchoPluginHost.InvokeAsync(host, "echoes.crash", "{}");
         Assert.True(crashed.Outcome.IsFailure);
 
-        Assert.True(await EchoPluginHost.WaitUntilAsync(() => plugins.Describe(EchoPluginHost.PluginId)!.Status.State == LifecycleState.Failed, TimeSpan.FromSeconds(10)));
-        var failed = plugins.Describe(EchoPluginHost.PluginId)!;
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() => plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status.State == LifecycleState.Failed, TimeSpan.FromSeconds(10)));
+        var failed = plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(PluginErrors.Crashed, failed.Status.Error?.Code);
         Assert.Equal(LifecycleState.Degraded, host.App.State);
         Assert.True(host.App.Health().Ready);
 
         // 退避 1 秒后重启：新进程、累计重启次数 1、应用回到 Ready
-        Assert.True(await EchoPluginHost.WaitUntilAsync(() => plugins.Describe(EchoPluginHost.PluginId)!.Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(20)));
-        var restarted = plugins.Describe(EchoPluginHost.PluginId)!;
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() => plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status.State == LifecycleState.Ready, TimeSpan.FromSeconds(20)));
+        var restarted = plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
         Assert.Equal(1, restarted.Restarts);
         Assert.NotEqual(firstProcess, restarted.ProcessId);
         Assert.Equal(LifecycleState.Ready, host.App.State);
@@ -422,7 +418,7 @@ public sealed class OutOfProcessPluginHostTests
     public async Task Stop_TerminatesThePluginProcess()
     {
         var host = await EchoPluginHost.StartAsync();
-        var processId = EchoPluginHost.PluginHost(host).Describe(EchoPluginHost.PluginId)!.ProcessId!.Value;
+        var processId = EchoPluginHost.PluginHost(host).FindStatus(EchoPluginHost.PluginId).ValueOrThrow().ProcessId!.Value;
         Assert.True(IsRunning(processId));
 
         await host.DisposeAsync();
@@ -538,21 +534,21 @@ public sealed class OutOfProcessPluginHostTests
     /// </remarks>
     private static async Task<bool> RecoversAfterBackoffAsync(OutOfProcessPluginHost plugins, FakeTimeProvider clock, TimeSpan timeout)
     {
-        var restarts = plugins.Describe(EchoPluginHost.PluginId)!.Restarts;
+        var restarts = plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Restarts;
 
         // 重启计数在退避结束后、拉起进程前递增：计数没变就还在退避里，只在这时推进时钟
         var retried = await EchoPluginHost.WaitUntilAsync(() =>
         {
-            if (plugins.Describe(EchoPluginHost.PluginId)!.Restarts == restarts)
+            if (plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Restarts == restarts)
             {
                 clock.Advance(TimeSpan.FromSeconds(1));
             }
 
-            return plugins.Describe(EchoPluginHost.PluginId)!.Restarts != restarts;
+            return plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Restarts != restarts;
         }, timeout);
 
         // 重试已经开始：时钟停住，握手时限不会被推过，按真实时间等这次重试的结果
-        return retried && await EchoPluginHost.WaitUntilAsync(() => plugins.Describe(EchoPluginHost.PluginId)!.Status.State == LifecycleState.Ready, timeout);
+        return retried && await EchoPluginHost.WaitUntilAsync(() => plugins.FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status.State == LifecycleState.Ready, timeout);
     }
 
     /// <summary>

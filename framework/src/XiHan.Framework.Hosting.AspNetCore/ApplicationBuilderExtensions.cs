@@ -102,8 +102,8 @@ public static class ApplicationBuilderExtensions
         if (outcome.IsSuccess
             && !httpContext.Response.HasStarted
             && endpoint?.Metadata.GetMetadata<OperationResponseWriter>() is { } writer
-            && context.GetOperation().TryGetValue(out var replayed)
-            && context.GetOperationResponse().TryGetValue(out var response))
+            && context.FindOperation().TryGetValue(out var replayed)
+            && context.FindOperationResponse().TryGetValue(out var response))
         {
             await writer(httpContext, replayed, replayed.EncodeResponse(response), context.CancellationToken).ConfigureAwait(false);
             return;
@@ -200,7 +200,7 @@ public static class ApplicationBuilderExtensions
         // 401 带质询：凭据无效时质询被拒的方案（Bearer 带 error="invalid_token"），没有凭据时质询全部已装配的方案
         if (problem.Status == StatusCodes.Status401Unauthorized)
         {
-            var presented = context?.GetCredential() ?? Maybe.None<AuthenticationCredential>();
+            var presented = context?.FindCredential() ?? Maybe.None<AuthenticationCredential>();
             var schemes = httpContext.RequestServices.GetServices<IAuthenticationHandler>().Select(static h => h.Scheme);
             foreach (var challenge in AuthenticationChallenge.For(error, presented, schemes))
             {

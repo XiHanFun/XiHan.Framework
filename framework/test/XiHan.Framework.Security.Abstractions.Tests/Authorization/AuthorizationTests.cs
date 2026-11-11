@@ -212,7 +212,7 @@ public sealed class AuthorizationTests
         await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
 
         // 503 而不是 403：错误种类是 UNAVAILABLE，宿主据此回 503；不放行
-        var outcome = context.GetOutcome().ValueOrThrow();
+        var outcome = context.FindOutcome().ValueOrThrow();
         Assert.False(reached[0]);
         Assert.Equal(SecurityErrors.StoreUnavailable, outcome.Error?.Code);
         Assert.Equal("UNAVAILABLE", outcome.Error?.Kind);
@@ -238,7 +238,7 @@ public sealed class AuthorizationTests
         await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
 
         Assert.False(reached[0]);
-        Assert.Equal("ORDERS_UNAVAILABLE_001", context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal("ORDERS_UNAVAILABLE_001", context.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -323,7 +323,7 @@ public sealed class AuthorizationTests
         await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
 
         Assert.False(reached[0]);
-        Assert.Equal(SecurityErrors.PolicyNotFound, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.PolicyNotFound, context.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -334,7 +334,7 @@ public sealed class AuthorizationTests
         var reachedAnonymous = new bool[1];
         await new AuthorizationMiddleware().InvokeAsync(anonymous, Handler(reachedAnonymous));
         Assert.False(reachedAnonymous[0]);
-        Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.FindOutcome().ValueOrThrow().Error?.Code);
 
         var authenticated = SecurityHosts.Context(Services());
         authenticated.SetSecurity(new SecurityContext(SecurityHosts.Alice(), null));
@@ -360,14 +360,14 @@ public sealed class AuthorizationTests
         var reachedViewer = new bool[1];
         await new AuthorizationMiddleware().InvokeAsync(viewer, Handler(reachedViewer));
         Assert.False(reachedViewer[0]);
-        Assert.Equal(SecurityErrors.PermissionMissing, viewer.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.PermissionMissing, viewer.FindOutcome().ValueOrThrow().Error?.Code);
 
         var anonymous = SecurityHosts.Context(Services());
         anonymous.RequireAuthorization(AuthorizationRequirement.Permission("orders.read"));
         var reachedAnonymous = new bool[1];
         await new AuthorizationMiddleware().InvokeAsync(anonymous, Handler(reachedAnonymous));
         Assert.False(reachedAnonymous[0]);
-        Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -388,7 +388,7 @@ public sealed class AuthorizationTests
         await new AuthorizationMiddleware().InvokeAsync(context, Handler(reached));
 
         Assert.False(reached[0]);
-        Assert.Equal("ORDERS_DENIED_001", context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal("ORDERS_DENIED_001", context.FindOutcome().ValueOrThrow().Error?.Code);
         Assert.NotNull(seen);
         Assert.Equal("owner-only", seen.Action);
         Assert.Equal(resource, seen.Resource);

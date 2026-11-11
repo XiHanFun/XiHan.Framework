@@ -319,7 +319,7 @@ public sealed class ResilienceMiddlewareTests
             });
 
             Assert.True(called);
-            Assert.False(context.GetOutcome().HasValue);
+            Assert.False(context.FindOutcome().HasValue);
         }
     }
 }

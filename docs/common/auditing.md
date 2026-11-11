@@ -152,7 +152,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 | `UserAgent`、`Referer` | 对应的请求头，没有时为空 |
 | `Route`、`EndpointName` | 匹配到的端点的路由模板与 `WithName` 名字，没有匹配到端点或协议没有端点时为空 |
 
-缓存回源、存储维护这类内部调用没有来源，`GetOrigin()` 返回无值。下面的中间件放在 Ingress 阶段开头，被认证或授权拒绝的调用也能带上来源：
+缓存回源、存储维护这类内部调用没有来源，`FindOrigin()` 返回无值。下面的中间件放在 Ingress 阶段开头，被认证或授权拒绝的调用也能带上来源：
 
 ```csharp
 using XiHan.Framework.Auditing.Abstractions.Pipeline;
@@ -166,7 +166,7 @@ public sealed class AuditOriginMiddleware : IPipelineMiddleware
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
         // 审计事件不带调用来源；需要远端地址与 User-Agent 时写进细节
-        if (context.GetOrigin().TryGetValue(out var origin))
+        if (context.FindOrigin().TryGetValue(out var origin))
         {
             context.AddAuditDetail("protocol", origin.Protocol);
             context.AddAuditDetail("target", origin.Target);

@@ -32,7 +32,7 @@ public static class SecurityInvocationExtensions
     /// <summary>
     /// 读取凭据
     /// </summary>
-    public static Maybe<AuthenticationCredential> GetCredential(this InvocationContext context) => context.Get(_credentialKey);
+    public static Maybe<AuthenticationCredential> FindCredential(this InvocationContext context) => context.Find(_credentialKey);
 
     /// <summary>
     /// 声明本次调用在 Authorize 阶段必须满足的要求
@@ -45,5 +45,5 @@ public static class SecurityInvocationExtensions
     /// <summary>
     /// 读取授权要求
     /// </summary>
-    public static Maybe<AuthorizationRequirement> GetAuthorizationRequirement(this InvocationContext context) => context.Get(_requirementKey);
+    public static Maybe<AuthorizationRequirement> FindAuthorizationRequirement(this InvocationContext context) => context.Find(_requirementKey);
 }

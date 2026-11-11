@@ -115,7 +115,7 @@ internal sealed class WorkflowScope : IAsyncDisposable, IDisposable
         }
 
         // 本作用域就是工作流自己开的调用：事务必须可以加入，仍不能加入是装配错误，返回不可达而不是再开一层调用
-        if (Invocation.TryGetValue(out var current) && current.Get(WorkflowInvocations.OwnedKey).HasValue)
+        if (Invocation.TryGetValue(out var current) && current.Find(WorkflowInvocations.OwnedKey).HasValue)
         {
             // 自己开的调用里事务仍不能加入：持久化没有在 Transaction 阶段开启工作单元，是装配错误，不再开一层调用（否则无限递归）
             return fail(Error.Unavailable(WorkflowErrors.StoreUnavailable, WorkflowMessages.StoreUnitOfWorkMissing));

@@ -263,7 +263,7 @@ app.UseXiHan();
 app.MapGet("/reports/{id}", (string id, HttpContext http) =>
 {
     // 结果写进上下文，Egress 由宿主翻译为 Problem Details
-    http.GetXiHanContext().ValueOrThrow().SetOutcome(
+    http.FindXiHanContext().ValueOrThrow().SetOutcome(
         Error.NotFound("SHOP_NOTFOUND_002", "shop.report.not_found", MessageArguments.Of(("id", id))));
     return Results.Empty;
 });

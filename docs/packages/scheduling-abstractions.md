@@ -106,7 +106,7 @@ public sealed class ArchiveJob : IJob
 | `MisfirePolicy` | `RunOnce`（缺省）、`Skip`、`RunAll` |
 | `IJobCalendar`、`HolidayCalendar`、`WeeklyCalendar`、`DailyCalendar`、`CronCalendar`、`CompositeCalendar`、`JobCalendars` | 排除日历；按日历推算下一次由引擎完成 |
 | `JobRun`、`JobTrigger` | 一次运行（`Id`、`Name`、`TriggerName`、`ScheduledAt`、`Trigger`、`Attempt`、`RetryOf`、`Data`）；触发来源 `Schedule` / `Manual` / `Recovery` / `Retry` |
-| `JobDispatcher` | 经管道执行一次运行；`GetRun(context)` 在管道内取当前运行 |
+| `JobDispatcher` | 经管道执行一次运行；`FindRun(context)` 在管道内取当前运行 |
 | `IJobScheduler`、`JobSchedulerExtensions` | 运行时管理：登记、删除、暂停、恢复、触发、入队、取消、状态、历史、计数、恢复为代码定义；全部批量，单条是扩展方法 |
 | `JobTriggerRequest`、`JobTriggerResult` | 手动触发的请求（名字与数据）与逐项结果 |
 | `JobStatus`、`JobView`、`JobTriggerStatus`、`JobOutcome` | 作业状态（含作业的只读视图 `Job`、`NextRun`、`Paused`、`IsRunning`、`Last`）、触发器状态、一次运行的结果；都经初始化器构造 |

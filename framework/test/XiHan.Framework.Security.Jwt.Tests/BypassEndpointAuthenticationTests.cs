@@ -190,7 +190,7 @@ public sealed class BypassEndpointAuthenticationTests
         PipelineBypassMetadata.BypassXiHanPipeline(app.MapGet("/hubsx/me", Describe).RequireAuthorization(_xihan));
         PipelineBypassMetadata.BypassXiHanPipeline(app.MapGet("/other/me", Describe).RequireAuthorization(_xihan));
         PipelineBypassMetadata.BypassXiHanPipeline(app.MapGet("/hubs/invoke", (Func<HttpContext, Task<string>>)InvokeAsync).RequireAuthorization(_xihan));
-        app.MapGet("/api/me", static (HttpContext http) => http.GetXiHanContext().ValueOrThrow().GetSecurity().Principal.Id).RequireXiHanAuthentication();
+        app.MapGet("/api/me", static (HttpContext http) => http.FindXiHanContext().ValueOrThrow().GetSecurity().Principal.Id).RequireXiHanAuthentication();
         await app.StartAsync();
         return app;
     }
@@ -204,7 +204,7 @@ public sealed class BypassEndpointAuthenticationTests
     private static string Describe(HttpContext http)
     {
         var user = http.User;
-        var credential = HttpInvocation.CreateContext(http, http.RequestServices).GetCredential();
+        var credential = HttpInvocation.CreateContext(http, http.RequestServices).FindCredential();
         return $"{user.Identity?.Name}|{user.Identity?.AuthenticationType}|admin={user.IsInRole("admin")}|sub={user.FindFirst("sub")?.Value}|credential={(credential.TryGetValue(out var c) ? c.Scheme : "-")}";
     }
 

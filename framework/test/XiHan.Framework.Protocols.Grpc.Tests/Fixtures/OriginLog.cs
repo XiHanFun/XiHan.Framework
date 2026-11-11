@@ -33,7 +33,7 @@ internal sealed class OriginLog
     /// </summary>
     public void Record(InvocationContext context)
     {
-        _origins.Enqueue(context.GetOrigin().TryGetValue(out var origin) ? origin : null);
+        _origins.Enqueue(context.FindOrigin().TryGetValue(out var origin) ? origin : null);
         LastBaggage = context.Baggage;
     }
 

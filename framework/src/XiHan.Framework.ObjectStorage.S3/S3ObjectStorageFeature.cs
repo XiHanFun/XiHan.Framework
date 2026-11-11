@@ -110,7 +110,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
             return;
         }
 
-        var options = S3ObjectStorageOptions.FromConfiguration(context.Configuration, context.TryGetBinding(ConnectionBinding));
+        var options = S3ObjectStorageOptions.FromConfiguration(context.Configuration, context.FindBinding(ConnectionBinding));
         // 条件写入要在启动时探测，探测要有桶：没配就是装配错误，不等到启动再发现
         S3ConditionalWriteProbe.RequireBucket(options, S3ObjectStorageOptions.ConfigurationSection + ":");
         context.Services.AddSingleton(options);

@@ -63,5 +63,5 @@ public static class TenantShardBinding
     /// 当前调用上下文里的分片
     /// </summary>
     private static Maybe<TenantShard> InvocationShard(IServiceProvider scopedServices)
-        => scopedServices.GetService<IInvocationAccessor>() is { } accessor && accessor.Current.TryGetValue(out var context) ? context.GetTenantShard() : Maybe.None<TenantShard>();
+        => scopedServices.GetService<IInvocationAccessor>() is { } accessor && accessor.Current.TryGetValue(out var context) ? context.FindTenantShard() : Maybe.None<TenantShard>();
 }

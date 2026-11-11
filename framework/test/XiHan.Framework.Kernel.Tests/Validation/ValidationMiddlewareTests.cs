@@ -73,7 +73,7 @@ public sealed class ValidationMiddlewareTests
         Assert.Equal(["text", "repeat"], errors.Select(static e => e.Field));
         Assert.Equal([KernelMessages.ValidationMinLength, KernelMessages.ValidationMaximum], errors.Select(static e => e.MessageKey));
         // 没进 Handle：没有响应对象，捕获中间件（Authorize 阶段）仍看到了调用
-        Assert.False(context.GetOperationResponse().HasValue);
+        Assert.False(context.FindOperationResponse().HasValue);
         Assert.True(response.Payload.IsEmpty);
         Assert.Equal([EchoOperation.Id], provider.GetRequiredService<OperationCapture>().Seen);
         await app.StopAsync(CancellationToken.None);
@@ -93,8 +93,8 @@ public sealed class ValidationMiddlewareTests
         Assert.True(response.IsSuccess, response.Error?.ToString());
         using var document = JsonDocument.Parse(response.Payload);
         Assert.Equal("hihi", document.RootElement.GetProperty("echo").GetString());
-        Assert.Equal("hi", ((EchoRequest)context.GetOperationRequest().ValueOrThrow()).Text);
-        Assert.True(context.GetOperationPayload().HasValue);
+        Assert.Equal("hi", ((EchoRequest)context.FindOperationRequest().ValueOrThrow()).Text);
+        Assert.True(context.FindOperationPayload().HasValue);
         await app.StopAsync(CancellationToken.None);
     }
 

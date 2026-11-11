@@ -122,6 +122,6 @@ public sealed class DeadlineAttributionTests
         release.SetResult();
         await invocation;
 
-        Assert.Equal(expected, context.GetOutcome().ValueOrThrow().Error!.Code);
+        Assert.Equal(expected, context.FindOutcome().ValueOrThrow().Error!.Code);
     }
 }

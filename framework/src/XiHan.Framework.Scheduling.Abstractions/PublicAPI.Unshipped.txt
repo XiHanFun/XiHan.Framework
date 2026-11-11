@@ -714,7 +714,7 @@ static XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.operat
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.TimeoutLimit.get -> System.TimeSpan
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.operator !=(XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition? right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.operator ==(XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition? right) -> bool
-static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDispatcher.GetRun(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun!>
+static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDispatcher.FindRun(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun!>
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.IsValid(string? value) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.Validate(string! value) -> string!
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.explicit operator XiHan.Framework.Scheduling.Abstractions.Jobs.JobName(string! value) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName

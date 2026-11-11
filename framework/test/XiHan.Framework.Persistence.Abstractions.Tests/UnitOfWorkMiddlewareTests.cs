@@ -98,7 +98,7 @@ public sealed class UnitOfWorkMiddlewareTests
 
         Assert.Equal(["begin", "commit"], unitOfWork.Calls);
         Assert.Equal(UnitOfWorkState.Committed, unitOfWork.State);
-        Assert.False(context.GetOutcome().HasValue);
+        Assert.False(context.FindOutcome().HasValue);
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class UnitOfWorkMiddlewareTests
         });
 
         Assert.Equal(["begin", "rollback"], unitOfWork.Calls);
-        Assert.Equal(failure, context.GetOutcome().ValueOrThrow().Error);
+        Assert.Equal(failure, context.FindOutcome().ValueOrThrow().Error);
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public sealed class UnitOfWorkMiddlewareTests
         await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => ValueTask.CompletedTask);
 
         Assert.Equal(["begin", "commit"], unitOfWork.Calls);
-        Assert.Equal(conflict, context.GetOutcome().ValueOrThrow().Error);
+        Assert.Equal(conflict, context.FindOutcome().ValueOrThrow().Error);
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public sealed class UnitOfWorkMiddlewareTests
         await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => throw new FrameworkException(PersistenceErrors.ReadOnly, "The unit of work is read-only and does not accept writes."));
 
         Assert.Equal(["begin", "rollback"], unitOfWork.Calls);
-        var error = context.GetOutcome().ValueOrThrow().Error!;
+        var error = context.FindOutcome().ValueOrThrow().Error!;
         Assert.Equal(PersistenceErrors.ReadOnly, error.Code);
         Assert.Equal("PERSISTENCE_UNEXPECTED_001", error.Code);
         Assert.Equal("UNEXPECTED", error.Kind);
@@ -199,7 +199,7 @@ public sealed class UnitOfWorkMiddlewareTests
         });
 
         Assert.Equal(["begin", "rollback"], unitOfWork.Calls);
-        var error = context.GetOutcome().ValueOrThrow().Error!;
+        var error = context.FindOutcome().ValueOrThrow().Error!;
         Assert.Equal(PersistenceErrors.TakeExceeded, error.Code);
         Assert.Equal("VALIDATION", error.Kind);
         Assert.Equal(PersistenceMessages.TakeExceeded, error.MessageKey);
@@ -236,7 +236,7 @@ public sealed class UnitOfWorkMiddlewareTests
         Assert.False(ran);
         Assert.Equal(["begin"], unitOfWork.Calls);
         Assert.Equal(UnitOfWorkState.Active, unitOfWork.State);
-        var error = context.GetOutcome().ValueOrThrow().Error!;
+        var error = context.FindOutcome().ValueOrThrow().Error!;
         Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, error.Code);
         Assert.Equal(PersistenceMessages.NestedInvocation, error.MessageKey);
     }

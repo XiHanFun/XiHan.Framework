@@ -23,7 +23,7 @@ public static class SecurityContextExtensions
     /// <remarks>
     /// 未设置时为 <see cref="SecurityContext.Anonymous"/>
     /// </remarks>
-    public static SecurityContext GetSecurity(this InvocationContext context) => context.Get(_key).ValueOr(SecurityContext.Anonymous);
+    public static SecurityContext GetSecurity(this InvocationContext context) => context.Find(_key).ValueOr(SecurityContext.Anonymous);
 
     /// <summary>
     /// 写入安全上下文

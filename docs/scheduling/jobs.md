@@ -85,7 +85,7 @@ public sealed class NightlyReportJob(IReportService reports) : IJob
 }
 ```
 
-`cancellationToken` 在三种情况下取消：有人请求取消这次运行（`CancelRunsAsync`）、超过作业的执行时限、宿主停止。作业要把它传给每一个下游调用，否则时限与取消都要等作业自己返回才生效。管道内的其他代码可以用 `JobDispatcher.GetRun(context)` 取到当前运行。
+`cancellationToken` 在三种情况下取消：有人请求取消这次运行（`CancelRunsAsync`）、超过作业的执行时限、宿主停止。作业要把它传给每一个下游调用，否则时限与取消都要等作业自己返回才生效。管道内的其他代码可以用 `JobDispatcher.FindRun(context)` 取到当前运行。
 
 登记有四个扩展方法，都在 `IServiceCollection` 上，在 `Program.cs` 或特性的 `Configure` 里调用：
 

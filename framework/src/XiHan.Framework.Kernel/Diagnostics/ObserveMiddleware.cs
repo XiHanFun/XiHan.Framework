@@ -49,7 +49,7 @@ public sealed partial class ObserveMiddleware(ILoggerFactory loggerFactory) : IP
         finally
         {
             // 无论成功、失败还是取消都记指标；结果未设置时标记为 unset，便于发现没有写结果的管道
-            var outcome = context.GetOutcome();
+            var outcome = context.FindOutcome();
             var status = outcome.Match(static r => r.IsSuccess ? "success" : "failure", static () => "unset");
             var tag = new KeyValuePair<string, object?>("xihan.outcome", status);
             FrameworkDiagnostics.Invocations.Add(1, tag);

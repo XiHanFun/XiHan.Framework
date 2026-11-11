@@ -71,7 +71,7 @@ public sealed class AuthenticationTests
         await new AuthenticationMiddleware(options).InvokeAsync(context, Handler(reached));
 
         Assert.False(reached[0]);
-        Assert.Equal(SecurityErrors.NotAuthenticated, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.NotAuthenticated, context.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class AuthenticationTests
         await new AuthenticationMiddleware(new SecurityOptions()).InvokeAsync(context, Handler(reached));
 
         Assert.False(reached[0]);
-        Assert.Equal(SecurityErrors.UnsupportedScheme, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.UnsupportedScheme, context.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public sealed class AuthenticationTests
         var reachedBad = new bool[1];
         await new AuthenticationMiddleware(new SecurityOptions()).InvokeAsync(bad, Handler(reachedBad));
         Assert.False(reachedBad[0]);
-        Assert.Equal(SecurityErrors.InvalidCredential, bad.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.InvalidCredential, bad.FindOutcome().ValueOrThrow().Error?.Code);
 
         var good = SecurityHosts.Context(services);
         good.SetCredential(new AuthenticationCredential("BEARER", "good"));
@@ -109,7 +109,7 @@ public sealed class AuthenticationTests
         Assert.Equal("alice", good.GetSecurity().Principal.Id);
         Assert.True(good.GetSecurity().Principal.IsAuthenticated);
         Assert.Equal("acme", good.GetSecurity().Tenant?.Id);
-        Assert.Equal("BEARER ***", good.GetCredential().ValueOrThrow().ToString());
+        Assert.Equal("BEARER ***", good.FindCredential().ValueOrThrow().ToString());
     }
 
     [Fact]

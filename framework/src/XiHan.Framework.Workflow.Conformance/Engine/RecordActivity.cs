@@ -57,7 +57,7 @@ public sealed class RecordActivity : ICompensableActivity
     {
         ArgumentNullException.ThrowIfNull(context);
         _log.RecordExecution(context.Instance.Id, context.Node.Id, context.NodeInstance.Attempt);
-        _log.RecordOrigin(context.Invocation.GetOrigin().TryGetValue(out var origin) ? origin : null);
+        _log.RecordOrigin(context.Invocation.FindOrigin().TryGetValue(out var origin) ? origin : null);
         if (context.NodeInstance.Attempt <= context.Property(FailTimesProperty, 0))
         {
             return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFailed, details: MessageArguments.Of(("type", TypeName), ("reason", "flaky")))));

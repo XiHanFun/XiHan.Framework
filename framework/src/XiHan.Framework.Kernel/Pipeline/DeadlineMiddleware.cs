@@ -84,7 +84,7 @@ public sealed class DeadlineMiddleware(TimeProvider timeProvider) : IPipelineMid
         // 这里知道：截止令牌已触发，取消就按超时报告。与抛出路径同一规则，外部令牌也已触发时同样是超时——只认外部令牌没有
         // 触发的情形时，客户端在截止时间到点前后断开，抛出的取消报超时、写成结果的报取消，同一件事两种回答（ADR-0092）
         if (deadlineToken.IsCancellationRequested
-            && original.GetOutcome().TryGetValue(out var outcome)
+            && original.FindOutcome().TryGetValue(out var outcome)
             && outcome.Error?.Code == KernelErrors.Cancelled)
         {
             original.SetOutcome(new Error(KernelErrors.DeadlineExceeded, KernelMessages.DeadlineExceeded));

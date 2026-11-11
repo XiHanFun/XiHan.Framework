@@ -32,7 +32,7 @@ public sealed class AuthenticationMiddleware(SecurityOptions options) : IPipelin
         ArgumentNullException.ThrowIfNull(nextStep);
 
         // 先按凭据认证：没有凭据就保持匿名，是否放行交给下游的授权策略
-        if (context.GetCredential().TryGetValue(out var credential))
+        if (context.FindCredential().TryGetValue(out var credential))
         {
             var handler = FindHandler(context, credential.Scheme);
             if (handler is null)

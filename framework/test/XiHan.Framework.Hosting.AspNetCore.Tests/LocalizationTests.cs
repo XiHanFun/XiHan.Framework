@@ -59,10 +59,10 @@ public sealed class LocalizationTests
         app.UseXiHan();
         app.MapGet("/missing", (HttpContext http) =>
         {
-            http.GetXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("ORDERS_NOTFOUND_001", "orders.order.not_found", MessageArguments.Of(("id", 42))));
+            http.FindXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("ORDERS_NOTFOUND_001", "orders.order.not_found", MessageArguments.Of(("id", 42))));
             return Results.Empty;
         });
-        app.MapGet("/locale", (HttpContext http) => http.GetXiHanContext().ValueOrThrow().TryGetBaggage(BaggageKeys.Locale, out var locale) ? locale : "-");
+        app.MapGet("/locale", (HttpContext http) => http.FindXiHanContext().ValueOrThrow().TryGetBaggage(BaggageKeys.Locale, out var locale) ? locale : "-");
         app.MapGet("/text", (HttpContext http) => "orders.order.not_found".L(("id", 42)));
         await app.StartAsync();
         return (app, app.GetTestClient());

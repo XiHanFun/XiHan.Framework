@@ -184,7 +184,7 @@ public sealed class ShippingFeature : IFeature
 
 处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic)` 订阅；处理器注册为作用域服务，每条消息在新作用域里解析。`MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）、第几次尝试（`Attempt`，从 1 起）与订阅方式（`Mode`）。派发器 `MessageDispatcher` 为每条消息开新的作用域，用信封的扩展属性构造调用上下文（四个 `xihan*` 扩展进 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志，调用来源的协议是 `InvocationProtocols.Messaging`、目标是主题），然后经[执行管道](/startup/pipeline)的全部阶段执行，按订阅顺序依次执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。
 
-所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入与发布的消息随它提交或回滚。中间件里可以用 `MessageDispatcher.GetDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。消息没有凭据，Authenticate 阶段得到的是匿名主体；派发不写幂等键，Idempotency 阶段直接放行。
+所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入与发布的消息随它提交或回滚。中间件里可以用 `MessageDispatcher.FindDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。消息没有凭据，Authenticate 阶段得到的是匿名主体；派发不写幂等键，Idempotency 阶段直接放行。
 
 ## 订阅方式
 

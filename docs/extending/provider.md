@@ -188,7 +188,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 
 - 文案不写在代码里（规范 RFC-0010）：错误只携带消息键常量与参数。Provider 用的是子系统已有的错误码时，注册子系统的目录（如 `SecurityMessages.Catalog`）；有自己的错误码时，定义 `<领域>Messages` 常量类，在包里放 10 种区域的 `Localization/<区域>.json`（`en-US` 必须有），以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入，用 `MessageCatalog.FromEmbeddedResources(name, typeof(...))` 建目录并 `AddMessageCatalog`。配置错误与编程错误（如上面缺少 `Path`）抛 `FrameworkException`，消息用英文、不本地化（[全球化和本地化](/common/localization)）。
 - 连接类 Provider（数据库、缓存、消息代理、对象存储）用 `PeriodicHealthContributor(name, probe, interval, clock, loggerFactory, description)`：启动时同步探一次，之后按间隔重探，探针失败或抛出记 `KERNEL_UNAVAILABLE_005` 并报 Degraded，恢复后报 Ready，应用只从 Ready 压成 Degraded 而不退出。容量类实现（内存存储、队列）同步上报，达到容量即 Degraded。间隔的配置键按惯例叫 `HealthProbeIntervalSeconds`，缺省 15（[生命周期与健康](/startup/lifecycle)）。
-- 外部资源的连接串经绑定取得：清单 `Bindings` 声明绑定名与类型，`Configure` 里用 `context.GetBinding(name)` / `TryGetBinding(name)` 读值，同一个 Provider 在 Compose 里读环境变量、在 Kubernetes 里读 Secret（[资源绑定](/configuration/bindings)）。
+- 外部资源的连接串经绑定取得：清单 `Bindings` 声明绑定名与类型，`Configure` 里用 `context.GetBinding(name)` / `FindBinding(name)` 读值，同一个 Provider 在 Compose 里读环境变量、在 Kubernetes 里读 Secret（[资源绑定](/configuration/bindings)）。
 - AOT：包缺省按 AOT 兼容写（`<IsAotCompatible>true</IsAotCompatible>`，序列化走源生成）。依赖的第三方库不兼容时设为 `false` 并在 README 写明；必须用反射的入口标 `RequiresDynamicCode` / `RequiresUnreferencedCode`，把警告交给调用方。
 - 资源有界：缓存、队列、注册表不能无界增长，容量、过期、清理与并发语义都要有测试；不加静默兜底与无限重试。
 

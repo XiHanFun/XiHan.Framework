@@ -86,7 +86,7 @@ var app = builder.Build();
 app.UseXiHan();
 
 // 端点在管道的 Handle 阶段内执行，租户已由 Tenant 阶段写进安全上下文
-app.MapGet("/tenant", (HttpContext http) => http.GetXiHanContext().ValueOrThrow().GetSecurity().Tenant?.Id ?? "-");
+app.MapGet("/tenant", (HttpContext http) => http.FindXiHanContext().ValueOrThrow().GetSecurity().Tenant?.Id ?? "-");
 
 app.Run();
 ```

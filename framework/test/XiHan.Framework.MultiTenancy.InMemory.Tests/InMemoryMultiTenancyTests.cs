@@ -135,7 +135,7 @@ public sealed class InMemoryMultiTenancyTests
         var ok = await host.InvokeAsync(ctx =>
         {
             seen = ctx.GetSecurity().Tenant;
-            shard = ctx.GetTenantShard();
+            shard = ctx.FindTenantShard();
             return ValueTask.CompletedTask;
         }, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "app-tenant" });
         var configured = await host.InvokeAsync(static _ => ValueTask.CompletedTask, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "acme" });

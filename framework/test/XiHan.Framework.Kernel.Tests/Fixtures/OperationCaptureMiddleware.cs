@@ -15,7 +15,7 @@ internal sealed class OperationCaptureMiddleware(OperationCapture capture) : IPi
     /// <inheritdoc />
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
-        capture.Seen.Add(context.GetOperation().TryGetValue(out var operation) ? operation.Id : "-");
+        capture.Seen.Add(context.FindOperation().TryGetValue(out var operation) ? operation.Id : "-");
         return nextStep(context);
     }
 }

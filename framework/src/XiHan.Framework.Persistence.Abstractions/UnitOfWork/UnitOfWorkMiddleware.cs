@@ -42,7 +42,7 @@ public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
 
         // 只读只看本次调用自己的契约：不带操作描述的调用（消息处理器、作业、直接交给 App.InvokeAsync 的处理器）可写；
         // 只读不跨调用传播，嵌套调用在自己的作用域里按自己的契约开工作单元
-        var readOnly = context.GetOperation().Match(static operation => operation.Contract.IsReadOnly, static () => false);
+        var readOnly = context.FindOperation().Match(static operation => operation.Contract.IsReadOnly, static () => false);
         await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = context.GetSecurity().Tenant?.Id, IsReadOnly = readOnly }, context.CancellationToken).ConfigureAwait(false);
 
         try
@@ -73,7 +73,7 @@ public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
         }
 
         // 调用结果为失败：回滚并保留原失败结果，不再提交
-        if (context.GetOutcome().Match(static r => r.IsFailure, static () => false))
+        if (context.FindOutcome().Match(static r => r.IsFailure, static () => false))
         {
             await unitOfWork.RollbackAsync(context.CancellationToken).ConfigureAwait(false);
             return;

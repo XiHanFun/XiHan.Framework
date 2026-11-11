@@ -53,10 +53,10 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     /// <summary>
     /// 读取本次调用正在处理的投递
     /// </summary>
-    public static Maybe<MessageDelivery> GetDelivery(InvocationContext context)
+    public static Maybe<MessageDelivery> FindDelivery(InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return context.Get(_deliveryKey);
+        return context.Find(_deliveryKey);
     }
 
     /// <summary>

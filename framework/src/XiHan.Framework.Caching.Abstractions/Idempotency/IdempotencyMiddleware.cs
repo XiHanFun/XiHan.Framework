@@ -38,7 +38,7 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     public static bool WasReplayed(InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return context.Get(_replayedKey).ValueOr(false);
+        return context.Find(_replayedKey).ValueOr(false);
     }
 
     /// <inheritdoc />
@@ -82,7 +82,7 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
             }
 
             // 处理完成后用结果替换"处理中"标记；没有显式结果视为成功
-            var outcome = context.GetOutcome().ValueOr(Result.Success());
+            var outcome = context.FindOutcome().ValueOr(Result.Success());
             await store.SetAsync(key, Serialize(Complete(context, outcome)), CacheEntryOptions.Expires(_options.TimeToLive), context.CancellationToken).ConfigureAwait(false);
             return;
         }
@@ -117,12 +117,12 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     private static IdempotencyRecord Complete(InvocationContext context, Result outcome)
     {
         var record = IdempotencyRecord.From(outcome);
-        if (!context.GetOperation().TryGetValue(out var operation))
+        if (!context.FindOperation().TryGetValue(out var operation))
         {
             return record;
         }
 
-        if (!outcome.IsSuccess || !context.GetOperationResponse().TryGetValue(out var response))
+        if (!outcome.IsSuccess || !context.FindOperationResponse().TryGetValue(out var response))
         {
             return record with { Operation = operation.Id };
         }
@@ -139,7 +139,7 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
     /// </remarks>
     private static Result Replay(InvocationContext context, IdempotencyRecord record)
     {
-        var current = context.GetOperation();
+        var current = context.FindOperation();
         var operationId = current.TryGetValue(out var descriptor) ? descriptor.Id : null;
         if (!string.Equals(record.Operation, operationId, StringComparison.Ordinal))
         {

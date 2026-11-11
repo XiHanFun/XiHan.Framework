@@ -76,12 +76,12 @@ public static class OperationEndpointRouteBuilderExtensions
     /// </remarks>
     private static async Task HandleAsync(HttpContext httpContext, OperationDescriptor descriptor)
     {
-        if (!httpContext.GetXiHanContext().TryGetValue(out var context))
+        if (!httpContext.FindXiHanContext().TryGetValue(out var context))
         {
             throw new FrameworkException(KernelErrors.InvalidAppState, "Operation endpoints require UseXiHan() to run after routing and before the endpoint executes; the invocation context is missing.");
         }
 
-        if (!context.GetOperationPayload().TryGetValue(out var bytes))
+        if (!context.FindOperationPayload().TryGetValue(out var bytes))
         {
             throw new FrameworkException(KernelErrors.InvalidAppState, $"Operation endpoint '{descriptor.Id}' has no bound payload; UseXiHan() must run after routing and before the endpoint executes, so the payload is bound before the pipeline.");
         }

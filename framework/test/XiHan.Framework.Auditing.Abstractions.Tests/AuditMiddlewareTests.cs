@@ -272,9 +272,13 @@ public sealed class AuditMiddlewareTests
 
         var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), CancellationToken.None);
         Assert.Throws<ArgumentException>(() => context.SetAuditAction(" "));
-        Assert.Null(context.GetAuditDetails());
+        Assert.False(context.FindAuditDetails().HasValue);
         context.AddAuditDetail("a", 1);
         context.AddAuditDetail("a", 2);
-        Assert.Equal(2, context.GetAuditDetails()?["a"]);
+        var snapshot = context.FindAuditDetails().ValueOrThrow();
+        Assert.Equal(2, snapshot["a"]);
+        context.AddAuditDetail("b", 3);
+        Assert.False(snapshot.ContainsKey("b"));
+        Assert.IsNotType<Dictionary<string, object?>>(snapshot);
     }
 }

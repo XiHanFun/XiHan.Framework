@@ -270,7 +270,7 @@ builder.AddXiHan(xihan => xihan
 
 ### 忘了调用 `app.UseXiHan()` 会怎样
 
-应用照常启动，探针与操作端点也能映射，但 HTTP 请求不会进入内核管道：认证、租户、授权、事务都不执行，端点里 `HttpContext.GetXiHanContext()` 为无值。`UseXiHan()` 要放在路由之后、端点之前，`WebApplication` 已经在管道开头加了路由，按示例的位置调用即可。
+应用照常启动，探针与操作端点也能映射，但 HTTP 请求不会进入内核管道：认证、租户、授权、事务都不执行，端点里 `HttpContext.FindXiHanContext()` 为无值。`UseXiHan()` 要放在路由之后、端点之前，`WebApplication` 已经在管道开头加了路由，按示例的位置调用即可。
 
 ### 没有 Web 也没有命令行，Worker 服务怎么发起调用
 

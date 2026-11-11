@@ -55,7 +55,7 @@ public sealed class NacosConfigurationFeature : IFeature
     {
         ArgumentNullException.ThrowIfNull(context);
         context.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
-        var options = NacosOptions.FromConfiguration(context.Configuration, context.TryGetBinding(ConnectionBinding));
+        var options = NacosOptions.FromConfiguration(context.Configuration, context.FindBinding(ConnectionBinding));
         context.Services.AddSingleton(options);
         // 超时由客户端按请求控制（长轮询要比默认的 100 秒窗口更可控）
         context.Services.AddHttpClient(NacosConfigurationClient.HttpClientName, static client => client.Timeout = Timeout.InfiniteTimeSpan);

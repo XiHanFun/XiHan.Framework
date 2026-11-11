@@ -123,8 +123,8 @@ static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExt
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.AcceptedLocales(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> System.Collections.Generic.IReadOnlyList<string!>!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext, System.IServiceProvider! services) -> XiHan.Framework.Primitives.InvocationContext!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.FindXiHanContext(this Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.InvocationContext!>
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.FormatBaggage(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! baggage) -> string!
-static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.GetXiHanContext(this Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.InvocationContext!>
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.ParseBaggage(string? header) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.BypassXiHanPipeline<TBuilder>(TBuilder builder) -> TBuilder
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.Instance.get -> XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata!

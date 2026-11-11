@@ -84,7 +84,7 @@ app.UseXiHan();
 // 经 UseXiHan() 的端点在 Handle 阶段内执行，主体已由 Authenticate 阶段写进安全上下文
 app.MapGet("/whoami", (HttpContext http) =>
 {
-    var security = http.GetXiHanContext().ValueOrThrow().GetSecurity();
+    var security = http.FindXiHanContext().ValueOrThrow().GetSecurity();
     return security.Principal.IsAuthenticated
         ? $"{security.Principal.Id} ({security.Principal.AuthenticationScheme}) @ {security.Tenant?.Id ?? "-"}"
         : "anonymous";

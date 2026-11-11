@@ -75,11 +75,11 @@ public sealed class OperationContractAuthorizationTests
 
         var viewer = Context(contract, SecurityHosts.Alice("viewer"));
         Assert.False(await RunAsync(viewer));
-        Assert.Equal(SecurityErrors.PermissionMissing, viewer.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.PermissionMissing, viewer.FindOutcome().ValueOrThrow().Error?.Code);
 
         var anonymous = Context(contract);
         Assert.False(await RunAsync(anonymous));
-        Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public sealed class OperationContractAuthorizationTests
         Assert.True(await RunAsync(Context(authenticated, SecurityHosts.Alice())));
         var anonymous = Context(authenticated);
         Assert.False(await RunAsync(anonymous));
-        Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.NotAuthenticated, anonymous.FindOutcome().ValueOrThrow().Error?.Code);
 
         // 没有授权要求的契约放行匿名调用
         Assert.True(await RunAsync(Context(new OperationContract("orders.list"))));
@@ -98,7 +98,7 @@ public sealed class OperationContractAuthorizationTests
         // 没经过核对的登记表到了调用时仍找不到策略，按策略不存在拒绝，配置错误不能变成越权
         var missing = Context(new OperationContract("orders.list") { Policy = "missing" }, SecurityHosts.Alice("editor"));
         Assert.False(await RunAsync(missing));
-        Assert.Equal(SecurityErrors.PolicyNotFound, missing.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.PolicyNotFound, missing.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -108,6 +108,6 @@ public sealed class OperationContractAuthorizationTests
         context.RequireAuthorization(new AuthorizationRequirement("missing"));
 
         Assert.False(await RunAsync(context));
-        Assert.Equal(SecurityErrors.PolicyNotFound, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(SecurityErrors.PolicyNotFound, context.FindOutcome().ValueOrThrow().Error?.Code);
     }
 }

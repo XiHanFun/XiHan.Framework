@@ -47,9 +47,16 @@ public sealed class WorkflowVariables
     /// 按名取值
     /// </summary>
     /// <remarks>
-    /// 没有为 <see langword="null"/>
+    /// 没有或值为 JSON <c>null</c> 时为 <see langword="null"/>，两者用 <see cref="Contains"/> 区分
     /// </remarks>
-    public JsonNode? this[string name] => Get(name);
+    public JsonNode? this[string name]
+    {
+        get
+        {
+            ArgumentNullException.ThrowIfNull(name);
+            return _values.TryGetPropertyValue(name, out var value) ? value : null;
+        }
+    }
 
     /// <summary>
     /// 是否有该变量（值为 null 也算有）
@@ -61,31 +68,14 @@ public sealed class WorkflowVariables
     }
 
     /// <summary>
-    /// 按名取值
-    /// </summary>
-    /// <remarks>
-    /// 没有为 <see langword="null"/>
-    /// </remarks>
-    public JsonNode? Get(string name)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        return _values.TryGetPropertyValue(name, out var value) ? value : null;
-    }
-
-    /// <summary>
     /// 按名取值并转成 <typeparamref name="T"/>
     /// </summary>
     /// <remarks>
-    /// 没有或转不成返回默认值
+    /// 没有、值为 JSON <c>null</c> 或转不成都返回 <see langword="false"/>
     /// </remarks>
-    public T? Get<T>(string name) => WorkflowValues.TryConvert<T>(Get(name), out var value) ? value : default;
-
-    /// <summary>
-    /// 按名取值并转成 <typeparamref name="T"/>
-    /// </summary>
     public bool TryGet<T>(string name, [MaybeNullWhen(false)] out T value)
     {
-        if (WorkflowValues.TryConvert<T>(Get(name), out var converted) && converted is not null)
+        if (WorkflowValues.TryConvert<T>(this[name], out var converted) && converted is not null)
         {
             value = converted;
             return true;

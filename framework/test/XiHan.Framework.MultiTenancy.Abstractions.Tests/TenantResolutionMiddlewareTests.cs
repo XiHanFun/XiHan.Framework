@@ -140,7 +140,7 @@ public sealed class TenantResolutionMiddlewareTests
         await new TenantResolutionMiddleware(context.Services.GetRequiredService<MultiTenancyOptions>()).InvokeAsync(context, Handler(reached));
 
         Assert.False(reached[0]);
-        Assert.Equal(MultiTenancyErrors.StoreUnavailable, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(MultiTenancyErrors.StoreUnavailable, context.FindOutcome().ValueOrThrow().Error?.Code);
         Assert.Null(context.GetSecurity().Tenant);
     }
 
@@ -154,7 +154,7 @@ public sealed class TenantResolutionMiddlewareTests
         Assert.True(reached[0]);
         Assert.Equal("acme", context.GetSecurity().Tenant?.Id);
         Assert.Equal("Acme", context.GetSecurity().Tenant?.DisplayName);
-        Assert.False(context.GetOutcome().HasValue);
+        Assert.False(context.FindOutcome().HasValue);
     }
 
     [Theory]
@@ -168,7 +168,7 @@ public sealed class TenantResolutionMiddlewareTests
         await new TenantResolutionMiddleware(new MultiTenancyOptions()).InvokeAsync(context, Handler(reached));
 
         Assert.False(reached[0]);
-        Assert.Equal(expectedCode, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(expectedCode, context.FindOutcome().ValueOrThrow().Error?.Code);
         Assert.Null(context.GetSecurity().Tenant);
     }
 
@@ -184,7 +184,7 @@ public sealed class TenantResolutionMiddlewareTests
         var (context, reached) = Arrange(strict, baggageTenant: null, new BaggageTenantResolver());
         await new TenantResolutionMiddleware(strict).InvokeAsync(context, Handler(reached));
         Assert.False(reached[0]);
-        Assert.Equal(MultiTenancyErrors.MissingTenant, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(MultiTenancyErrors.MissingTenant, context.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public sealed class TenantResolutionMiddlewareTests
         var (rejected, reachedRejected) = Arrange(disabledDefault, baggageTenant: null, new BaggageTenantResolver());
         await new TenantResolutionMiddleware(disabledDefault).InvokeAsync(rejected, Handler(reachedRejected));
         Assert.False(reachedRejected[0]);
-        Assert.Equal(MultiTenancyErrors.Disabled, rejected.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(MultiTenancyErrors.Disabled, rejected.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -242,7 +242,7 @@ public sealed class TenantResolutionMiddlewareTests
         Assert.False(reached[0]);
         Assert.True(rejecting.Called);
         Assert.False(later.Called);
-        Assert.Same(rejection, context.GetOutcome().ValueOrThrow().Error);
+        Assert.Same(rejection, context.FindOutcome().ValueOrThrow().Error);
         Assert.Null(context.GetSecurity().Tenant);
     }
 

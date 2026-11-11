@@ -83,7 +83,7 @@ builder.AddXiHan(xihan => xihan
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |
 | `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约；一次投递的主题、信封、尝试号与订阅方式（`Mode`）；代理调用的派发委托 |
 | `MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按（主题，方式）分组的订阅表（`All`、`Topics`、`HandlersFor(topic, mode)`、`Add(topic, handlerType, mode)`）；一个订阅；订阅方式 `Competing` / `Broadcast` |
-| `MessageDispatcher` | 把投递变成一次内核调用，`GetDelivery(context)` 取当前投递 |
+| `MessageDispatcher` | 把投递变成一次内核调用，`FindDelivery(context)` 取当前投递 |
 | `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
 | `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](/messaging/pubsub)）；Provider 共用的装配；启停消费 |
 | `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避与保留期，`RetryDelayAfter(attempts)`） |
@@ -91,7 +91,7 @@ builder.AddXiHan(xihan => xihan
 
 ## 使用示例
 
-在中间件里区分消息投递与普通请求，给消息调用打上主题与尝试号（`MessageDispatcher.GetDelivery` 只在消息投递的调用里有值）：
+在中间件里区分消息投递与普通请求，给消息调用打上主题与尝试号（`MessageDispatcher.FindDelivery` 只在消息投递的调用里有值）：
 
 ```csharp
 using Microsoft.Extensions.Logging;
@@ -103,7 +103,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 {
     public async ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
-        if (MessageDispatcher.GetDelivery(context).TryGetValue(out var delivery) && delivery.Attempt > 1)
+        if (MessageDispatcher.FindDelivery(context).TryGetValue(out var delivery) && delivery.Attempt > 1)
         {
             logger.LogWarning("Retrying {MessageId} on {Topic}, attempt {Attempt}.", delivery.Envelope.Id, delivery.Topic, delivery.Attempt);
         }

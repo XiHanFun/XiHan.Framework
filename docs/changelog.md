@@ -19,6 +19,7 @@
 - **修复** `InvocationContext.Baggage` 构造时复制成只读副本，调用方之后改原字典不再影响上下文；`Items` 在派生上下文之间共享，并行写入时不再损坏
 - **调整** 匿名主体的 `Principal.Id` 由空字符串改为 `null`，`new Principal(id, scheme)` 只创建已认证主体（两者都不得为空），匿名用 `Principal.Anonymous`；判断 `IsAuthenticated` 之后可直接用 `Id`。`ResourceName.Tenant` 的全局资源由空字符串改为 `null`，构造时校验每一段
 - **调整** 内核的数据类型不再是位置记录：`AuditEvent`、`HealthSnapshot`、`OperationResponse`、`FeatureStatus` 按属性名写初始化器（`new AuditEvent { Timestamp = …, Action = …, Outcome = …, TraceId = … }`）；`AuthorizationRequest`、`ContributorStatus`、`PluginSource` 只保留两参构造，第三个实参改成初始化器（`new ContributorStatus(name, state) { Error = … }`）；这些类型都不再能解构
+- **调整** 返回 `Maybe` 的查找统一叫 `Find…`：`GetOutcome` / `GetOrigin` / `GetOperation…` / `GetCredential` / `GetAuthorizationRequirement` / `GetTenantShard` / `GetAuditAction` / `GetAuditResource` / `GetDelivery` / `GetRun` / `GetXiHanContext` 与按键读条目的 `Get<T>` 改成对应的 `Find…`，`TryGetBinding` 改成 `FindBinding`，插件宿主的 `Describe` 改成返回 `Maybe` 的 `FindStatus`；`GetAuditDetails` 改成 `FindAuditDetails` 并返回只读副本；`WorkflowVariables` 删掉 `Get` / `Get<T>`，改用索引器与 `TryGet<T>`
 
 ### 子系统
 

@@ -18,7 +18,7 @@ public sealed class RecordingHandler(DeliveryLog log) : IMessageHandler
     {
         ArgumentNullException.ThrowIfNull(delivery);
         ArgumentNullException.ThrowIfNull(context);
-        log.Record(new ReceivedMessage(delivery, new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal), context.TraceId) { Origin = context.GetOrigin().TryGetValue(out var origin) ? origin : null, TraceFlags = context.TraceFlags });
+        log.Record(new ReceivedMessage(delivery, new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal), context.TraceId) { Origin = context.FindOrigin().TryGetValue(out var origin) ? origin : null, TraceFlags = context.TraceFlags });
         if (log.ThrowingIds.ContainsKey(delivery.Envelope.Id))
         {
             throw new InvalidOperationException($"The handler threw for '{delivery.Envelope.Id}' as instructed.");

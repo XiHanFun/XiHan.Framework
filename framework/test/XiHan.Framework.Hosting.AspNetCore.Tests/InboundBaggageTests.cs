@@ -105,7 +105,7 @@ public sealed class InboundBaggageTests
         app.UseXiHan();
         app.MapGet("/whoami", static (HttpContext http) =>
         {
-            var context = http.GetXiHanContext().ValueOrThrow();
+            var context = http.FindXiHanContext().ValueOrThrow();
             var keys = context.Baggage.Keys.Order(StringComparer.Ordinal);
             return $"tenant={context.GetSecurity().Tenant?.Id ?? "none"};baggage={string.Join(",", keys)}";
         });

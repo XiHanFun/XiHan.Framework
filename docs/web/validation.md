@@ -163,7 +163,7 @@ gRPC 上这些失败是 `InvalidArgument`，命令行上退出码 2，MCP 上是
 - 宿主端点在进入管道之前绑定载荷（HTTP 的路由值、请求体与查询串）；绑定失败直接写 Problem Details，不进入管道。
 - `XiHan:Kernel:UseBuiltInMiddleware=false` 时 `ValidationMiddleware` 不登记，应用需要自己在 Validate 阶段提供校验。
 
-需要额外校验（如按租户配置的业务规则）时，在 Validate 阶段末尾登记应用自己的中间件，用 `context.GetOperationRequest()` 取解码后的请求对象（`Maybe<object>`），失败用 `context.SetOutcome(Error.Validation(...))` 结束调用：
+需要额外校验（如按租户配置的业务规则）时，在 Validate 阶段末尾登记应用自己的中间件，用 `context.FindOperationRequest()` 取解码后的请求对象（`Maybe<object>`），失败用 `context.SetOutcome(Error.Validation(...))` 结束调用：
 
 ```csharp
 builder.AddXiHan(xihan => xihan

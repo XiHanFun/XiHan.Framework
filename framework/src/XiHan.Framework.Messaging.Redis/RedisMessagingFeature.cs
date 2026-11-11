@@ -84,7 +84,7 @@ public sealed class RedisMessagingFeature : IHostedFeature
         ArgumentNullException.ThrowIfNull(context);
         // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
         context.Services.AddMessageCatalog(MessagingMessages.Catalog);
-        var options = RedisMessagingOptions.FromConfiguration(context.Configuration, context.TryGetBinding(ConnectionBinding));
+        var options = RedisMessagingOptions.FromConfiguration(context.Configuration, context.FindBinding(ConnectionBinding));
         context.Services.AddSingleton(options);
         context.Services.AddSingleton<RedisMessageBroker>();
         // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集

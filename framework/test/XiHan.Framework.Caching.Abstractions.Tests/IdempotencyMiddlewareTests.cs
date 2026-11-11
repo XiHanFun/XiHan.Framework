@@ -104,8 +104,8 @@ public sealed class IdempotencyMiddlewareTests
         await _middleware.InvokeAsync(second, Handler);
 
         Assert.Equal(1, _executions);
-        Assert.Equal(failure.Code, second.GetOutcome().ValueOrThrow().Error?.Code);
-        Assert.Equal(failure.Message, second.GetOutcome().ValueOrThrow().Error?.Message);
+        Assert.Equal(failure.Code, second.FindOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(failure.Message, second.FindOutcome().ValueOrThrow().Error?.Message);
         Assert.True(IdempotencyMiddleware.WasReplayed(second));
         Assert.False(IdempotencyMiddleware.WasReplayed(first));
         Assert.Equal(1, _store.Count);
@@ -121,7 +121,7 @@ public sealed class IdempotencyMiddlewareTests
         await _middleware.InvokeAsync(replay, Handler);
 
         Assert.Equal(1, _executions);
-        Assert.True(replay.GetOutcome().ValueOrThrow().IsSuccess);
+        Assert.True(replay.FindOutcome().ValueOrThrow().IsSuccess);
         Assert.True(IdempotencyMiddleware.WasReplayed(replay));
     }
 
@@ -134,7 +134,7 @@ public sealed class IdempotencyMiddlewareTests
         await _middleware.InvokeAsync(context, Handler);
 
         Assert.Equal(0, _executions);
-        Assert.Equal(CachingErrors.IdempotentInProgress, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(CachingErrors.IdempotentInProgress, context.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public sealed class IdempotencyMiddlewareTests
         await _middleware.InvokeAsync(context, Handler);
 
         Assert.Equal(0, _executions);
-        Assert.Equal(CachingErrors.InvalidKey, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Equal(CachingErrors.InvalidKey, context.FindOutcome().ValueOrThrow().Error?.Code);
     }
 
     [Fact]

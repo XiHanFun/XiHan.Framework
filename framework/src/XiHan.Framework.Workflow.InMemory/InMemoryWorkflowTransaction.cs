@@ -45,7 +45,7 @@ public sealed class InMemoryWorkflowTransaction : IWorkflowTransaction
         // 内存实现不加入工作单元，不能像数据库实现那样问工作单元是否只读；直接看调用的操作契约——它正是 Transaction 阶段决定开只读工作单元的依据，
         // 两种实现因此在同一类调用里拒绝，且都在取锁、执行活动之前（WorkflowScope 先调这里），只读调用里活动的副作用不会先发生
         var readOnly = _invocation?.Current.TryGetValue(out var context) == true
-            && context.GetOperation().Match(static operation => operation.Contract.IsReadOnly, static () => false);
+            && context.FindOperation().Match(static operation => operation.Contract.IsReadOnly, static () => false);
         return readOnly ? Result.Failure(Error.Unexpected(PersistenceErrors.ReadOnly, PersistenceMessages.ReadOnly)) : Result.Success();
     }
 }

@@ -53,7 +53,7 @@ internal sealed class WasmMiddleware(WasmPluginRuntime runtime, string name, Pip
         await nextStep(downstream).ConfigureAwait(false);
 
         // after 只观察：请求已取消或超时也要让插件看到结果，因此不带调用的取消令牌（仍受中间件时限约束）
-        var outcome = downstream.GetOutcome().TryGetValue(out var result) ? result : Result.Success();
+        var outcome = downstream.FindOutcome().TryGetValue(out var result) ? result : Result.Success();
         var after = await runtime.MiddlewareAsync(name, stage, "after", downstream, outcome, CancellationToken.None).ConfigureAwait(false);
         if (after.IsFailure && outcome.IsSuccess)
         {

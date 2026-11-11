@@ -110,7 +110,7 @@ public sealed class LoginLocation(IServiceProvider services)
 }
 ```
 
-远端地址可以从调用来源 `context.GetOrigin()` 的 `RemoteAddress` 取。
+远端地址可以从调用来源 `context.FindOrigin()` 的 `RemoteAddress` 取。
 
 ## 行为与限制
 

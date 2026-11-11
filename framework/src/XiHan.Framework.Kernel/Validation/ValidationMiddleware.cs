@@ -37,17 +37,17 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
-        if (!context.GetOperation().TryGetValue(out var descriptor))
+        if (!context.FindOperation().TryGetValue(out var descriptor))
         {
             await nextStep(context).ConfigureAwait(false);
             return;
         }
 
-        var request = context.GetOperationRequest().TryGetValue(out var present) ? present : null;
+        var request = context.FindOperationRequest().TryGetValue(out var present) ? present : null;
         // JSON 载荷：原始调用用上下文里的载荷；类型化调用只有对象，按描述的序列化元数据编码一次；都没有（宿主端点自己绑定、插件代理的类型化调用）就跳过 Schema 校验与解码
         // 分支显式写开：条件表达式会把 null 的 byte[] 转成空的 ReadOnlyMemory（有值），那会被当成 {} 解码
         ReadOnlyMemory<byte>? payload = null;
-        if (context.GetOperationPayload().TryGetValue(out var raw))
+        if (context.FindOperationPayload().TryGetValue(out var raw))
         {
             payload = raw;
         }

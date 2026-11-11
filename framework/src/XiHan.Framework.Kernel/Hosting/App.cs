@@ -304,7 +304,7 @@ public sealed partial class App : IDisposable
         var requested = context.TryGetBaggage(BaggageKeys.Locale, out var locale) ? locale : null;
         using var messages = MessageScope.Use(resolver, resolver is null ? requested : resolver.Negotiate(requested));
         await Pipeline(context).ConfigureAwait(false);
-        return context.GetOutcome().ValueOr(Result.Success());
+        return context.FindOutcome().ValueOr(Result.Success());
     }
 
     /// <summary>
@@ -431,7 +431,7 @@ public sealed partial class App : IDisposable
     /// 执行 <see cref="InvokeAsync"/> 放入上下文的处理器；没有处理器时什么都不做
     /// </remarks>
     private static ValueTask Terminal(InvocationContext context)
-        => context.Get(_handlerKey).Match(handler => handler(context), static () => ValueTask.CompletedTask);
+        => context.Find(_handlerKey).Match(handler => handler(context), static () => ValueTask.CompletedTask);
 
     /// <summary>
     /// 把各特性状态聚合为应用状态

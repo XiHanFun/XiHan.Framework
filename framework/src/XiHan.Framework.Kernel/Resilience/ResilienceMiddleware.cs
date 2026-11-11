@@ -58,7 +58,7 @@ public sealed class ResilienceMiddleware : IPipelineMiddleware, IDisposable
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
-        if (!context.GetOperation().TryGetValue(out var descriptor))
+        if (!context.FindOperation().TryGetValue(out var descriptor))
         {
             await nextStep(context).ConfigureAwait(false);
             return;
@@ -143,7 +143,7 @@ public sealed class ResilienceMiddleware : IPipelineMiddleware, IDisposable
             return;
         }
 
-        if (context.GetOutcome().TryGetValue(out var outcome) && outcome.IsFailure && IsInfrastructureFailure(outcome.Error!))
+        if (context.FindOutcome().TryGetValue(out var outcome) && outcome.IsFailure && IsInfrastructureFailure(outcome.Error!))
         {
             breaker.RecordFailure();
         }

@@ -180,7 +180,7 @@ public sealed class WasmPluginUnloadTests
         // 什么都不撤：插件仍在宿主里，中间件与操作照常
         Assert.Equal(KernelErrors.PipelineRegistration, unloaded.Error?.Code);
         Assert.Equal(pipeline, host.App.DescribePipeline());
-        Assert.Equal(LifecycleState.Ready, EchoWasmPluginHost.PluginHost(host).Describe(EchoWasmPluginHost.PluginId)?.Status.State);
+        Assert.Equal(LifecycleState.Ready, EchoWasmPluginHost.PluginHost(host).FindStatus(EchoWasmPluginHost.PluginId).ValueOrThrow().Status.State);
         Assert.Equal(Denied, (await PingAsync(host, "blocked")).Error?.Code);
         Assert.True((await EchoWasmPluginHost.InvokeAsync(host, "echoes.create", """{"text":"x"}""")).Outcome.IsSuccess);
     }

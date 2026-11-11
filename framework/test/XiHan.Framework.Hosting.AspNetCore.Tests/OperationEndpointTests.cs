@@ -36,7 +36,7 @@ public sealed class OperationEndpointTests
         var descriptor = app.Services.GetRequiredService<OperationRegistry>().Find(PingOperation.Id).ValueOrThrow();
         app.MapPost("/pings", async (HttpContext http, IOperationInvoker invoker) =>
         {
-            var context = http.GetXiHanContext().ValueOrThrow();
+            var context = http.FindXiHanContext().ValueOrThrow();
             using var buffer = new MemoryStream();
             await http.Request.Body.CopyToAsync(buffer);
 

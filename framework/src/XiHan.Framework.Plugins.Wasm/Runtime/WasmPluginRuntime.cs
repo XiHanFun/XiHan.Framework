@@ -461,7 +461,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 Stage = stage.ToManifestName(),
                 Phase = phase,
                 Metadata = PluginMetadata.FromContext(context),
-                Operation = context.GetOperation().TryGetValue(out var descriptor) ? descriptor.Id : string.Empty,
+                Operation = context.FindOperation().TryGetValue(out var descriptor) ? descriptor.Id : string.Empty,
             };
             if (outcome is { } downstream)
             {

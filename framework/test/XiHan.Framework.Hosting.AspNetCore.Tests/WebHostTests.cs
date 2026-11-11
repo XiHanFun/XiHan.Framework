@@ -85,7 +85,7 @@ public sealed class WebHostTests
         app.MapGet("/ok", () => "ok");
         app.MapGet("/missing", (HttpContext http) =>
         {
-            http.GetXiHanContext().ValueOrThrow().SetOutcome(Error.Literal("ORDERS_NOTFOUND_001", "The order does not exist."));
+            http.FindXiHanContext().ValueOrThrow().SetOutcome(Error.Literal("ORDERS_NOTFOUND_001", "The order does not exist."));
             return Results.Empty;
         });
         app.MapGet("/boom", static string () => throw new InvalidOperationException("boom"));
@@ -105,7 +105,7 @@ public sealed class WebHostTests
         var response = await client.GetAsync("/secure");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(AuthorizationRequirement.Permission("orders.read"), captured.Context!.GetAuthorizationRequirement().ValueOrThrow());
+        Assert.Equal(AuthorizationRequirement.Permission("orders.read"), captured.Context!.FindAuthorizationRequirement().ValueOrThrow());
     }
 
     [Fact]
@@ -120,14 +120,14 @@ public sealed class WebHostTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(captured.Context);
-        var credential = captured.Context.GetCredential().ValueOrThrow();
+        var credential = captured.Context.FindCredential().ValueOrThrow();
         Assert.Equal("Bearer", credential.Scheme);
         Assert.Equal("abc.def.ghi", credential.Value);
         Assert.False(captured.Context.GetSecurity().Principal.IsAuthenticated);
 
         var anonymous = await client.GetAsync("/ok");
         Assert.Equal(HttpStatusCode.OK, anonymous.StatusCode);
-        Assert.False(captured.Context!.GetCredential().HasValue);
+        Assert.False(captured.Context!.FindCredential().HasValue);
     }
 
     [Fact]
@@ -171,7 +171,7 @@ public sealed class WebHostTests
         });
         Assert.Equal(
             new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /app/ok", RemoteAddress = "203.0.113.7", UserAgent = "probe/1.0", Referer = "https://admin.test/users", Route = "/ok" },
-            captured.Context!.GetOrigin().ValueOrThrow());
+            captured.Context!.FindOrigin().ValueOrThrow());
 
         // 经反向代理：宿主在 UseXiHan() 之前 UseForwardedHeaders()，远端地址是转发头里的客户端；没有的头为 null
         await server.SendAsync(static http =>
@@ -183,7 +183,7 @@ public sealed class WebHostTests
         });
         Assert.Equal(
             new InvocationOrigin { Protocol = InvocationProtocols.Http, Target = "GET /ok", RemoteAddress = "198.51.100.9", Route = "/ok" },
-            captured.Context!.GetOrigin().ValueOrThrow());
+            captured.Context!.FindOrigin().ValueOrThrow());
     }
 
     [Fact]
@@ -194,14 +194,14 @@ public sealed class WebHostTests
 
         // 命名的路由端点：模板与名字进来源，目标仍是实际路径；普通端点据此在 Observe 阶段被识别
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/orders/42")).StatusCode);
-        var named = captured.Context!.GetOrigin().ValueOrThrow();
+        var named = captured.Context!.FindOrigin().ValueOrThrow();
         Assert.Equal(("GET /orders/42", "/orders/{id}", "orders.get"), (named.Target, named.Route, named.EndpointName));
 
         // 没有命名的端点只有模板；没有匹配到端点（404）两者都没有
         await client.GetAsync("/ok");
-        Assert.Equal(("/ok", (string?)null), (captured.Context!.GetOrigin().ValueOrThrow().Route, captured.Context!.GetOrigin().ValueOrThrow().EndpointName));
+        Assert.Equal(("/ok", (string?)null), (captured.Context!.FindOrigin().ValueOrThrow().Route, captured.Context!.FindOrigin().ValueOrThrow().EndpointName));
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/nowhere")).StatusCode);
-        var unmatched = captured.Context!.GetOrigin().ValueOrThrow();
+        var unmatched = captured.Context!.FindOrigin().ValueOrThrow();
         Assert.Equal(("GET /nowhere", (string?)null, (string?)null), (unmatched.Target, unmatched.Route, unmatched.EndpointName));
     }
 

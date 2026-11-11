@@ -97,7 +97,7 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
         var httpContext = call.GetHttpContext();
         var context = HttpInvocation.CreateContext(httpContext);
         // 协议与请求目标改记 gRPC 方法全名；远端地址与 User-Agent 沿用承载它的 HTTP/2 请求
-        context.SetOrigin(context.GetOrigin().ValueOrThrow() with { Protocol = InvocationProtocols.Grpc, Target = call.Method });
+        context.SetOrigin(context.FindOrigin().ValueOrThrow() with { Protocol = InvocationProtocols.Grpc, Target = call.Method });
         call.ResponseTrailers.Add(TraceIdTrailer, context.TraceId);
 
         // 未处于服务状态（启动中、停止中）不进管道，但与其他失败一样带错误码与 trace-id 尾部元数据、文案按 accept-language 翻译

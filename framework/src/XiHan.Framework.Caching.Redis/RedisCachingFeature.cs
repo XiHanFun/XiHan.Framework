@@ -80,7 +80,7 @@ public sealed class RedisCachingFeature : IHostedFeature
         ArgumentNullException.ThrowIfNull(context);
         // 本子系统错误码的多语言目录；同名目录只注册一次，多个 Provider 同时装配也不重复
         context.Services.AddMessageCatalog(CachingMessages.Catalog);
-        var options = RedisCachingOptions.FromConfiguration(context.Configuration, context.TryGetBinding(ConnectionBinding));
+        var options = RedisCachingOptions.FromConfiguration(context.Configuration, context.FindBinding(ConnectionBinding));
         context.Services.AddSingleton(options);
         context.Services.AddSingleton(IdempotencyOptions.FromConfiguration(context.Configuration));
         // 连接推迟到首次解析时建立，由 StartAsync 触发并核对；装配阶段不触网
