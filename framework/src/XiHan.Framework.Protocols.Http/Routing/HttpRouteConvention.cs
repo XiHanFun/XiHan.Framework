@@ -40,7 +40,7 @@ public static class HttpRouteConvention
     /// <param name="contract">契约</param>
     /// <param name="hasIdentifier">请求是否声明 <c>id</c> 属性；有则路由带 <c>/{id}</c> 段，没有则落在集合（或单例资源）上</param>
     /// <param name="hasNestedFields">请求是否有嵌套对象字段；有则 <c>get</c> / <c>list</c> / <c>delete</c> 与只读的自定义动词改用 POST</param>
-    public static HttpRoute Derive(OperationContract contract, bool hasIdentifier, bool hasNestedFields = false)
+    internal static HttpRoute Derive(OperationContract contract, bool hasIdentifier, bool hasNestedFields = false)
     {
         ArgumentNullException.ThrowIfNull(contract);
         var resource = contract.Resource;

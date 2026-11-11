@@ -68,7 +68,7 @@ public static partial class OpenApiDocumentBuilder
     /// <param name="permissions">权限码注册表；为 <see langword="null"/> 时 <c>x-xihan-permissions</c> 只收录被已发布操作引用的权限码，且只有 <c>code</c></param>
     /// <param name="title">文档标题，通常是应用名</param>
     /// <param name="version">文档版本</param>
-    public static byte[] Build(OperationRegistry registry, HttpProtocolOptions options, PermissionRegistry? permissions, string title, string version)
+    internal static byte[] Build(OperationRegistry registry, HttpProtocolOptions options, PermissionRegistry? permissions, string title, string version)
         => Build(new OpenApiDocumentSource(registry, options, permissions) { Title = title, Version = version });
 
     /// <summary>

@@ -88,7 +88,7 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 | `AIOptions`、`Providers.AIProviderOptions` | 选项；`ResolveDefaultProvider()`、`ResolveDefaultEmbeddingProvider()` 按配置推出框架自带目录的默认名；`AIProviderOptions.DefaultTimeout` 为 100 秒 |
 | `AIServiceCollectionExtensions` | `AddAI`、`AddAIChatClientFactory<T>`、`AddAIEmbeddingGeneratorFactory<T>`、`AddAIGuardrail<T>`、`AddAIPrompt`、`AddAITool` |
 | `AIToolsFeature` | `ai.tools@1` 的特性入口 |
-| `Providers.IAIProviderCatalog` | `Providers`、`DefaultProvider`、`DefaultEmbeddingProvider`、`Find`、`ResolveChatClient`、`ResolveEmbeddingGenerator`、`Invalidate`；框架实现 `AIProviderCatalog` |
+| `Providers.IAIProviderCatalog` | `Providers`、`DefaultProvider`、`DefaultEmbeddingProvider`、`Find`、`ResolveChatClient`、`ResolveEmbeddingGenerator`、`Invalidate`；框架的实现不公开，经接口从容器取用 |
 | `Providers.IChatClientFactory`、`IEmbeddingGeneratorFactory` | Provider 包实现：`Kind` 与 `Create(AIProviderOptions)` |
 | `Chat.IAIChat`、`Chat.AIChatRequest` | 聊天入口；`CompleteAsync`、`StreamAsync` |
 | `Prompts.IAIPromptCatalog`、`Prompts.AIPromptTemplate` | 提示词目录与模板；`Render`、`Placeholders` |

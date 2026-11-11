@@ -17,8 +17,7 @@ namespace XiHan.Framework.AI.Abstractions.Tools;
 /// <remarks>
 /// 构造时从登记表与显式登记建表，工具名不合法或重复以 <see cref="AIErrors.RequestInvalid"/> 失败
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class AIToolCatalog : IAIToolCatalog
+internal sealed class AIToolCatalog : IAIToolCatalog
 {
     /// <summary>
     /// 没有请求 Schema 时的输入 Schema

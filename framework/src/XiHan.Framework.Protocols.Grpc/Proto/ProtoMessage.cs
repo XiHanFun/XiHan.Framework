@@ -31,7 +31,7 @@ public sealed class ProtoMessage
     /// <remarks>
     /// 字段由 <see cref="Complete"/> 填入（递归引用需要先有消息再填字段）
     /// </remarks>
-    public ProtoMessage(string name)
+    internal ProtoMessage(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         Name = name;

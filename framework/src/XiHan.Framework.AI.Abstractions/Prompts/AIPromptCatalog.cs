@@ -8,8 +8,7 @@ namespace XiHan.Framework.AI.Abstractions.Prompts;
 /// <summary>
 /// 提示词目录的实现（单例）
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class AIPromptCatalog : IAIPromptCatalog
+internal sealed class AIPromptCatalog : IAIPromptCatalog
 {
     /// <summary>
     /// 名字 → 模板

@@ -19,19 +19,8 @@ XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ServerVersion.init -> void
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ToolNameFor(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> string!
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.Tools.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.Tools.init -> void
-XiHan.Framework.Protocols.Mcp.Server.McpReply
-XiHan.Framework.Protocols.Mcp.Server.McpReply.<Clone>$() -> XiHan.Framework.Protocols.Mcp.Server.McpReply!
-XiHan.Framework.Protocols.Mcp.Server.McpReply.Body.get -> System.ReadOnlyMemory<byte>
-XiHan.Framework.Protocols.Mcp.Server.McpReply.Body.init -> void
-XiHan.Framework.Protocols.Mcp.Server.McpReply.Deconstruct(out System.ReadOnlyMemory<byte> Body, out bool IsMalformed) -> void
-XiHan.Framework.Protocols.Mcp.Server.McpReply.Equals(XiHan.Framework.Protocols.Mcp.Server.McpReply? other) -> bool
-XiHan.Framework.Protocols.Mcp.Server.McpReply.IsMalformed.get -> bool
-XiHan.Framework.Protocols.Mcp.Server.McpReply.IsMalformed.init -> void
-XiHan.Framework.Protocols.Mcp.Server.McpReply.McpReply(System.ReadOnlyMemory<byte> Body, bool IsMalformed) -> void
 XiHan.Framework.Protocols.Mcp.Server.McpServer
 XiHan.Framework.Protocols.Mcp.Server.McpServer.FindTool(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Protocols.Mcp.Tools.McpTool!>
-XiHan.Framework.Protocols.Mcp.Server.McpServer.HandleAsync(System.ReadOnlyMemory<byte> message, XiHan.Framework.Primitives.InvocationContext! context, System.Func<XiHan.Framework.Primitives.InvocationContext!>! createCallContext) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Protocols.Mcp.Server.McpReply!>>
-XiHan.Framework.Protocols.Mcp.Server.McpServer.McpServer(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Kernel.Operations.IOperationInvoker! invoker, XiHan.Framework.Protocols.Mcp.McpProtocolOptions! options, string! serverName, XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer? localizer) -> void
 XiHan.Framework.Protocols.Mcp.Server.McpServer.ServerName.get -> string!
 XiHan.Framework.Protocols.Mcp.Server.McpServer.Tools.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Mcp.Tools.McpTool!>!
 XiHan.Framework.Protocols.Mcp.Tools.McpTool
@@ -63,11 +52,6 @@ XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.ReadOnly.init -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpToolName
 XiHan.Framework.Protocols.Mcp.Tools.McpToolNameConvention
 XiHan.Framework.Protocols.Mcp.Transports.McpEndpointRouteBuilderExtensions
-XiHan.Framework.Protocols.Mcp.Transports.McpStdioCommand
-XiHan.Framework.Protocols.Mcp.Transports.McpStdioCommand.DescriptionKey.get -> string!
-XiHan.Framework.Protocols.Mcp.Transports.McpStdioCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.Commands.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
-XiHan.Framework.Protocols.Mcp.Transports.McpStdioCommand.McpStdioCommand() -> void
-XiHan.Framework.Protocols.Mcp.Transports.McpStdioCommand.Name.get -> string!
 XiHan.Framework.Protocols.Mcp.Transports.McpStdioTransport
 const XiHan.Framework.Protocols.Mcp.McpErrors.DuplicateToolName = "PROTOCOLS_CONFLICT_001" -> string!
 const XiHan.Framework.Protocols.Mcp.McpErrors.InvalidArguments = "PROTOCOLS_VALIDATION_003" -> string!
@@ -94,9 +78,6 @@ const XiHan.Framework.Protocols.Mcp.Tools.McpToolName.MaxLength = 64 -> int
 override XiHan.Framework.Protocols.Mcp.McpProtocolOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Protocols.Mcp.McpProtocolOptions.GetHashCode() -> int
 override XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ToString() -> string!
-override XiHan.Framework.Protocols.Mcp.Server.McpReply.Equals(object? obj) -> bool
-override XiHan.Framework.Protocols.Mcp.Server.McpReply.GetHashCode() -> int
-override XiHan.Framework.Protocols.Mcp.Server.McpReply.ToString() -> string!
 override XiHan.Framework.Protocols.Mcp.Tools.McpTool.Equals(object? obj) -> bool
 override XiHan.Framework.Protocols.Mcp.Tools.McpTool.GetHashCode() -> int
 override XiHan.Framework.Protocols.Mcp.Tools.McpTool.ToString() -> string!
@@ -107,9 +88,6 @@ static XiHan.Framework.Protocols.Mcp.McpMessages.Catalog.get -> XiHan.Framework.
 static XiHan.Framework.Protocols.Mcp.McpProtocolOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Protocols.Mcp.McpProtocolOptions!
 static XiHan.Framework.Protocols.Mcp.McpProtocolOptions.operator !=(XiHan.Framework.Protocols.Mcp.McpProtocolOptions? left, XiHan.Framework.Protocols.Mcp.McpProtocolOptions? right) -> bool
 static XiHan.Framework.Protocols.Mcp.McpProtocolOptions.operator ==(XiHan.Framework.Protocols.Mcp.McpProtocolOptions? left, XiHan.Framework.Protocols.Mcp.McpProtocolOptions? right) -> bool
-static XiHan.Framework.Protocols.Mcp.Server.McpReply.operator !=(XiHan.Framework.Protocols.Mcp.Server.McpReply? left, XiHan.Framework.Protocols.Mcp.Server.McpReply? right) -> bool
-static XiHan.Framework.Protocols.Mcp.Server.McpReply.operator ==(XiHan.Framework.Protocols.Mcp.Server.McpReply? left, XiHan.Framework.Protocols.Mcp.Server.McpReply? right) -> bool
-static XiHan.Framework.Protocols.Mcp.Server.McpServer.UnsupportedVersionReply(string! version) -> System.ReadOnlyMemory<byte>
 static XiHan.Framework.Protocols.Mcp.Tools.McpTool.Create(string! name, XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Protocols.Mcp.Tools.McpTool!
 static XiHan.Framework.Protocols.Mcp.Tools.McpTool.operator !=(XiHan.Framework.Protocols.Mcp.Tools.McpTool? left, XiHan.Framework.Protocols.Mcp.Tools.McpTool? right) -> bool
 static XiHan.Framework.Protocols.Mcp.Tools.McpTool.operator ==(XiHan.Framework.Protocols.Mcp.Tools.McpTool? left, XiHan.Framework.Protocols.Mcp.Tools.McpTool? right) -> bool

@@ -52,7 +52,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 | `CommandLineHostExtensions` | `RunXiHanCommandLineAsync(args)`：启动宿主、执行命令、停止宿主，返回退出码；Ctrl+C 取消命令 |
 | `Commands.ICommand` | 命令：`Name`、`DescriptionKey`（说明的消息键）、`ExecuteAsync(CommandContext)` |
 | `Commands.CommandContext` | 解析结果、作用域服务、`Output` / `Error`、取消令牌 |
-| `Commands.HelpCommand`、`GraphCommand`、`PipelineCommand`、`OperationsCommand`、`InvokeCommand` | 内置命令 |
+| `Commands.HelpCommand` | 内置的 `help` 命令；`graph`、`pipeline`、`operations`、`invoke` 由 `AddXiHanCommandLine` 登记，实现不公开 |
 | `Parsing.CommandLineParser`、`Parsing.ParsedCommandLine` | 参数解析 |
 | `Runtime.CommandLineInvocation` | `Create(context, operationId)` 按选项建调用上下文；`ReservedOptions`；`AuthorizationVariable` = `XIHAN_AUTHORIZATION` |
 | `Runtime.CommandLineFailure` | `WriteAsync(...)` 把失败写到 stderr 并给出退出码 |

@@ -81,7 +81,6 @@ XiHan.Framework.Protocols.Grpc.Proto.ProtoKind.Varint64 = 4 -> XiHan.Framework.P
 XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage
 XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.Fields.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Grpc.Proto.ProtoField!>!
 XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.Name.get -> string!
-XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.ProtoMessage(string! name) -> void
 XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.TryGetField(int number, out XiHan.Framework.Protocols.Grpc.Proto.ProtoField! field) -> bool
 XiHan.Framework.Protocols.Grpc.Proto.ProtoMessage.TryGetField(string! jsonName, out XiHan.Framework.Protocols.Grpc.Proto.ProtoField! field) -> bool
 XiHan.Framework.Protocols.Grpc.Proto.ProtoSchema

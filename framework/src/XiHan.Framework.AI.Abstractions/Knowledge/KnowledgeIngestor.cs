@@ -13,8 +13,7 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// <remarks>
 /// 每篇文档一次嵌入批调用，受嵌入 Provider 的超时令牌约束（RFC-0022「超时与取消」）。重新摄入先写后删：新块写入成功之后才裁掉旧版本多出来的块，嵌入或写入失败时旧文档照常可检索
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class KnowledgeIngestor : IKnowledgeIngestor
+internal sealed class KnowledgeIngestor : IKnowledgeIngestor
 {
     /// <summary>
     /// 选项

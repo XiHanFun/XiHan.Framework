@@ -22,7 +22,7 @@ MCP 协议版本 `2025-06-18`。`McpProtocolFeature` 登记选项、本包的消
 两种传输：
 
 - Streamable HTTP：`MapXiHanMcp()` 映射 `POST /mcp`，一条消息一个答复，通知回 202，不开 SSE、不建会话。`/mcp` 经过 `UseXiHan()`，请求凭据在外层认证，凭据无效时整个请求 401。
-- stdio：命令行宿主的 `mcp` 命令（`McpStdioCommand`），stdin / stdout 每行一条 JSON-RPC 消息，日志只写 stderr；stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8；会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自启动进程的命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`。凭据在每次调用的管道里认证，无效时需要认证的 tool 是 `isError`；选项不合法时退出码 64。
+- stdio：命令行宿主的 `mcp` 命令，stdin / stdout 每行一条 JSON-RPC 消息，日志只写 stderr；stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8；会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自启动进程的命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`。凭据在每次调用的管道里认证，无效时需要认证的 tool 是 `isError`；选项不合法时退出码 64。
 
 ## 何时使用
 
@@ -83,10 +83,8 @@ app.Run();
 | `McpProtocolFeature` | 特性入口 |
 | `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`；`ToolNameFor(contract)` |
 | `Transports.McpEndpointRouteBuilderExtensions` | `MapXiHanMcp(pattern)`，缺省 `/mcp` |
-| `Transports.McpStdioCommand` | 命令行宿主的 `mcp` 命令；会话上下文取自命令行选项与环境变量 |
 | `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输；自己托管时按 UTF-8 构造 `input`（`new StreamReader(Console.OpenStandardInput(), Encoding.UTF8)`），不要直接用 `Console.In` |
-| `Server.McpServer` | JSON-RPC 服务端：`HandleAsync`、`Tools`、`FindTool`；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
-| `Server.McpReply` | 一条答复与是否为不合法消息（HTTP 400） |
+| `Server.McpServer` | JSON-RPC 服务端：`Tools`、`FindTool`，由特性构造、交给传输处理消息；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
 | `Tools.McpTool` | 一个 tool：名字、操作描述、输入 / 输出 Schema、提示 |
 | `Tools.McpToolAnnotations` | `For(contract)`：只读、破坏性、幂等提示 |
 | `Tools.McpToolName`、`Tools.McpToolNameConvention` | 名字校验与推导 |

@@ -13,8 +13,7 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// <remarks>
 /// 查询文本的嵌入受嵌入 Provider 的超时令牌约束（RFC-0022「超时与取消」）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class KnowledgeRetriever : IKnowledgeRetriever
+internal sealed class KnowledgeRetriever : IKnowledgeRetriever
 {
     /// <summary>
     /// 选项

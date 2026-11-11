@@ -15,11 +15,6 @@ XiHan.Framework.Hosting.CommandLine.Commands.CommandContext.Option(string! name)
 XiHan.Framework.Hosting.CommandLine.Commands.CommandContext.Output.get -> System.IO.TextWriter!
 XiHan.Framework.Hosting.CommandLine.Commands.CommandContext.Services.get -> System.IServiceProvider!
 XiHan.Framework.Hosting.CommandLine.Commands.CommandLineHelp
-XiHan.Framework.Hosting.CommandLine.Commands.GraphCommand
-XiHan.Framework.Hosting.CommandLine.Commands.GraphCommand.DescriptionKey.get -> string!
-XiHan.Framework.Hosting.CommandLine.Commands.GraphCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.Commands.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
-XiHan.Framework.Hosting.CommandLine.Commands.GraphCommand.GraphCommand() -> void
-XiHan.Framework.Hosting.CommandLine.Commands.GraphCommand.Name.get -> string!
 XiHan.Framework.Hosting.CommandLine.Commands.HelpCommand
 XiHan.Framework.Hosting.CommandLine.Commands.HelpCommand.DescriptionKey.get -> string!
 XiHan.Framework.Hosting.CommandLine.Commands.HelpCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.Commands.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
@@ -29,21 +24,6 @@ XiHan.Framework.Hosting.CommandLine.Commands.ICommand
 XiHan.Framework.Hosting.CommandLine.Commands.ICommand.DescriptionKey.get -> string!
 XiHan.Framework.Hosting.CommandLine.Commands.ICommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.Commands.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
 XiHan.Framework.Hosting.CommandLine.Commands.ICommand.Name.get -> string!
-XiHan.Framework.Hosting.CommandLine.Commands.InvokeCommand
-XiHan.Framework.Hosting.CommandLine.Commands.InvokeCommand.DescriptionKey.get -> string!
-XiHan.Framework.Hosting.CommandLine.Commands.InvokeCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.Commands.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
-XiHan.Framework.Hosting.CommandLine.Commands.InvokeCommand.InvokeCommand() -> void
-XiHan.Framework.Hosting.CommandLine.Commands.InvokeCommand.Name.get -> string!
-XiHan.Framework.Hosting.CommandLine.Commands.OperationsCommand
-XiHan.Framework.Hosting.CommandLine.Commands.OperationsCommand.DescriptionKey.get -> string!
-XiHan.Framework.Hosting.CommandLine.Commands.OperationsCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.Commands.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
-XiHan.Framework.Hosting.CommandLine.Commands.OperationsCommand.Name.get -> string!
-XiHan.Framework.Hosting.CommandLine.Commands.OperationsCommand.OperationsCommand() -> void
-XiHan.Framework.Hosting.CommandLine.Commands.PipelineCommand
-XiHan.Framework.Hosting.CommandLine.Commands.PipelineCommand.DescriptionKey.get -> string!
-XiHan.Framework.Hosting.CommandLine.Commands.PipelineCommand.ExecuteAsync(XiHan.Framework.Hosting.CommandLine.Commands.CommandContext! context) -> System.Threading.Tasks.ValueTask<int>
-XiHan.Framework.Hosting.CommandLine.Commands.PipelineCommand.Name.get -> string!
-XiHan.Framework.Hosting.CommandLine.Commands.PipelineCommand.PipelineCommand() -> void
 XiHan.Framework.Hosting.CommandLine.HostApplicationBuilderConfigurationExtensions
 XiHan.Framework.Hosting.CommandLine.Parsing.CommandLineParser
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine

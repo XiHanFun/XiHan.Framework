@@ -12,8 +12,7 @@ namespace XiHan.Framework.AI.Abstractions.Providers;
 /// <remarks>
 /// 按名字找配置，按种类找工厂，实例按名字缓存；同一种类登记多个工厂以最后登记的为准。默认名从配置给出（<see cref="AIOptions.ResolveDefaultProvider"/>、<see cref="AIOptions.ResolveDefaultEmbeddingProvider"/>）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
+internal sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
 {
     /// <summary>
     /// 保护缓存的锁

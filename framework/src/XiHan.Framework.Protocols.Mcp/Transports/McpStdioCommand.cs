@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.CommandLine;
 using XiHan.Framework.Hosting.CommandLine.Commands;
 using XiHan.Framework.Hosting.CommandLine.Runtime;
-using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Mcp.Server;
 
 namespace XiHan.Framework.Protocols.Mcp.Transports;
@@ -17,8 +16,7 @@ namespace XiHan.Framework.Protocols.Mcp.Transports;
 /// <remarks>
 /// 会话的上下文取自启动进程的命令行选项与环境变量，与 <c>invoke</c> 同一套映射（<c>--authorization</c> 或 <c>XIHAN_AUTHORIZATION</c>、<c>--tenant</c>、<c>--correlation</c>、<c>--locale</c>、<c>--timeout</c>），作用于每个 <c>tools/call</c>；选项不合法时不进入会话，按用法错误退出（<c>spec/protocol/mcp.md</c>）。标准输入的字节按 UTF-8 解码，与控制台代码页无关；答复只含 ASCII
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class McpStdioCommand : ICommand
+internal sealed class McpStdioCommand : ICommand
 {
     /// <summary>
     /// 打开输入的字节流

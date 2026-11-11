@@ -30,10 +30,6 @@ XiHan.Framework.AI.Abstractions.AIToolsFeature.Configure(XiHan.Framework.Kernel.
 XiHan.Framework.AI.Abstractions.AIToolsFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.AI.Abstractions.AIToolsFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.AI.Abstractions.AIToolsFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.AI.Abstractions.Chat.AIChat
-XiHan.Framework.AI.Abstractions.Chat.AIChat.AIChat(XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog! providers, XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog! prompts, XiHan.Framework.AI.Abstractions.Tools.IAIToolCatalog! tools, System.Collections.Generic.IEnumerable<XiHan.Framework.AI.Abstractions.Guardrails.IAIGuardrail!>! guardrails, XiHan.Framework.Kernel.Pipeline.IInvocationAccessor! invocation, System.TimeProvider! timeProvider, System.IServiceProvider! services, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
-XiHan.Framework.AI.Abstractions.Chat.AIChat.CompleteAsync(XiHan.Framework.AI.Abstractions.Chat.AIChatRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.ChatResponse!>>
-XiHan.Framework.AI.Abstractions.Chat.AIChat.StreamAsync(XiHan.Framework.AI.Abstractions.Chat.AIChatRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IAsyncEnumerable<Microsoft.Extensions.AI.ChatResponseUpdate!>!>>
 XiHan.Framework.AI.Abstractions.Chat.AIChatRequest
 XiHan.Framework.AI.Abstractions.Chat.AIChatRequest.<Clone>$() -> XiHan.Framework.AI.Abstractions.Chat.AIChatRequest!
 XiHan.Framework.AI.Abstractions.Chat.AIChatRequest.AIChatRequest() -> void
@@ -122,10 +118,6 @@ XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest.Provider.get ->
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest.Provider.init -> void
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest.Text.get -> string!
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest.Text.init -> void
-XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestor
-XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestor.IngestAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestRequest!>! requests, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<int>>!>
-XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestor.KnowledgeIngestor(XiHan.Framework.AI.Abstractions.AIOptions! options, XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog! providers, XiHan.Framework.AI.Abstractions.Knowledge.IChunkingStrategy! chunking, System.TimeProvider! timeProvider, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore? store = null) -> void
-XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestor.RemoveAsync(string? collection, System.Collections.Generic.IReadOnlyList<string!>! documentIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeIngestorExtensions
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions
@@ -179,12 +171,6 @@ XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Text.get -> string!
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Text.init -> void
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Vector.get -> System.ReadOnlyMemory<float>
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Vector.init -> void
-XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRetriever
-XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRetriever.KnowledgeRetriever(XiHan.Framework.AI.Abstractions.AIOptions! options, XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog! providers, System.TimeProvider! timeProvider, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore? store = null) -> void
-XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRetriever.RetrieveAsync(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>!>>
-XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter
-XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter.Augment(string! question, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>! chunks) -> string!
-XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter.RagPromptAugmenter(XiHan.Framework.AI.Abstractions.AIOptions! options, XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog! prompts) -> void
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.<Clone>$() -> XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter!
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.DocumentIds.get -> System.Collections.Generic.IReadOnlyList<string!>?
@@ -211,10 +197,6 @@ XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk.Score.get -> double
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk.Score.init -> void
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk.Text.get -> string!
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk.Text.init -> void
-XiHan.Framework.AI.Abstractions.Prompts.AIPromptCatalog
-XiHan.Framework.AI.Abstractions.Prompts.AIPromptCatalog.AIPromptCatalog(XiHan.Framework.AI.Abstractions.AIOptions! options, System.Collections.Generic.IEnumerable<XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate!>! registered) -> void
-XiHan.Framework.AI.Abstractions.Prompts.AIPromptCatalog.All() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate!>!
-XiHan.Framework.AI.Abstractions.Prompts.AIPromptCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate!>
 XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate
 XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate.<Clone>$() -> XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate!
 XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate.AIPromptTemplate(string! name, string! template, string? description = null) -> void
@@ -227,16 +209,6 @@ XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate.Template.get -> string!
 XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog
 XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog.All() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate!>!
 XiHan.Framework.AI.Abstractions.Prompts.IAIPromptCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.AI.Abstractions.Prompts.AIPromptTemplate!>
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.AIProviderCatalog(XiHan.Framework.AI.Abstractions.AIOptions! options, System.Collections.Generic.IEnumerable<XiHan.Framework.AI.Abstractions.Providers.IChatClientFactory!>! chatFactories, System.Collections.Generic.IEnumerable<XiHan.Framework.AI.Abstractions.Providers.IEmbeddingGeneratorFactory!>! embeddingFactories) -> void
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.DefaultEmbeddingProvider.get -> string?
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.DefaultProvider.get -> string?
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.Dispose() -> void
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions!>
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.Invalidate(string? name = null) -> void
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.Providers.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.ResolveChatClient(string? name = null) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IChatClient!>
-XiHan.Framework.AI.Abstractions.Providers.AIProviderCatalog.ResolveEmbeddingGenerator(string? name = null) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IEmbeddingGenerator<string!, Microsoft.Extensions.AI.Embedding<float>!>!>
 XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions
 XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions.<Clone>$() -> XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions!
 XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions.AIProviderOptions(string! name, string! kind) -> void
@@ -271,11 +243,6 @@ XiHan.Framework.AI.Abstractions.Providers.IChatClientFactory.Kind.get -> string!
 XiHan.Framework.AI.Abstractions.Providers.IEmbeddingGeneratorFactory
 XiHan.Framework.AI.Abstractions.Providers.IEmbeddingGeneratorFactory.Create(XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions! options) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IEmbeddingGenerator<string!, Microsoft.Extensions.AI.Embedding<float>!>!>
 XiHan.Framework.AI.Abstractions.Providers.IEmbeddingGeneratorFactory.Kind.get -> string!
-XiHan.Framework.AI.Abstractions.Tools.AIToolCatalog
-XiHan.Framework.AI.Abstractions.Tools.AIToolCatalog.AIToolCatalog(XiHan.Framework.AI.Abstractions.AIOptions! options, XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Kernel.Operations.IOperationInvoker! invoker, Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopes, System.Collections.Generic.IEnumerable<Microsoft.Extensions.AI.AITool!>! registered, XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer? localizer = null) -> void
-XiHan.Framework.AI.Abstractions.Tools.AIToolCatalog.All() -> System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.AI.AITool!>!
-XiHan.Framework.AI.Abstractions.Tools.AIToolCatalog.Bind(XiHan.Framework.Primitives.InvocationContext! caller) -> System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.AI.AITool!>!
-XiHan.Framework.AI.Abstractions.Tools.AIToolCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<Microsoft.Extensions.AI.AITool!>
 XiHan.Framework.AI.Abstractions.Tools.AIToolNameConvention
 XiHan.Framework.AI.Abstractions.Tools.IAIToolCatalog
 XiHan.Framework.AI.Abstractions.Tools.IAIToolCatalog.All() -> System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.AI.AITool!>!
@@ -324,7 +291,6 @@ const XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail.Guard
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys.Source = "source" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys.Title = "title" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.DefaultCollection = "knowledge" -> string!
-const XiHan.Framework.AI.Abstractions.Knowledge.RagPromptAugmenter.BuiltInTemplate = "Answer the question using only the knowledge snippets below. If they are not enough, say that no supporting evidence was found instead of guessing. Cite snippets by their number, like [1].\n\n# Knowledge snippets\n{context}\n# Question\n{question}" -> string!
 const XiHan.Framework.AI.Abstractions.Tools.AIToolNameConvention.MaxLength = 64 -> int
 override XiHan.Framework.AI.Abstractions.AIOptions.Equals(object? obj) -> bool
 override XiHan.Framework.AI.Abstractions.AIOptions.GetHashCode() -> int

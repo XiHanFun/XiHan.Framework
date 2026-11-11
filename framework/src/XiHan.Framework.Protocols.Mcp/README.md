@@ -39,7 +39,7 @@ app.MapXiHanMcp();   // POST /mcp
 
 * `McpProtocolFeature`：特性入口
 * `McpProtocolOptions`：服务名、版本、说明与 tool 名覆盖
-* `McpStdioCommand`、`McpStdioTransport`：stdio 传输
+* `McpStdioTransport`：stdio 传输（命令行宿主的 `mcp` 命令由特性登记）
 
 ## 更多文档
 

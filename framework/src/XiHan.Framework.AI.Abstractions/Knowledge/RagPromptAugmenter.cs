@@ -15,8 +15,7 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// 创建时就定下模板：配置了 <see cref="KnowledgeOptions.PromptName"/> 就从提示词目录取它指向的模板，并用代表性参数试渲染一次；找不到或渲染不了抛出 <see cref="FrameworkException"/>，宿主启动失败（AI 的宿主特性启动时解析本服务）。没有配置用内置英文模板。之后增强只用这份模板，不再查目录，因而不会失败
 /// <c>{context}</c> 里每个片段一段：先是 <c>[序号] Source: 来源</c> 一行，再是片段文本。来源取元数据的 <see cref="KnowledgeMetadataKeys.Title"/>，没有或为空白取 <see cref="KnowledgeMetadataKeys.Source"/>，都没有取文档 ID（ADR-0116）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class RagPromptAugmenter : IRagPromptAugmenter
+internal sealed class RagPromptAugmenter : IRagPromptAugmenter
 {
     /// <summary>
     /// 内置模板

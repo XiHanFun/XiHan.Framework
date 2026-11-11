@@ -56,7 +56,6 @@ const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ConfigurationSecti
 override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.Equals(object? obj) -> bool
 override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.GetHashCode() -> int
 override XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ToString() -> string!
-static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.CreateClient(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions! options) -> Amazon.S3.AmazonS3Client!
 static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!> binding = default(XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!>)) -> XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions!
 static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.FromSettings(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! settings) -> XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions!
 static XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.operator !=(XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? left, XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions? right) -> bool

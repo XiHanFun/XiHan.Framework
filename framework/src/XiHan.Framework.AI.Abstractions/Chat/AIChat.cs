@@ -22,8 +22,7 @@ namespace XiHan.Framework.AI.Abstractions.Chat;
 /// 调用 Provider 时把它的 <see cref="AIProviderOptions.Timeout"/> 按注入的 <see cref="TimeProvider"/> 落成超时令牌、与调用方令牌链接后交给它，
 /// 超时与取消按令牌归因（RFC-0022「超时与取消」）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class AIChat : IAIChat
+internal sealed partial class AIChat : IAIChat
 {
     /// <summary>
     /// Provider 目录

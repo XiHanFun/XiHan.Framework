@@ -23,6 +23,7 @@
 
 ### 宿主、协议与插件
 
+- **调整** AI、协议与宿主的实现类型不再公开：AI 的对话、知识库摄入与检索、提示增强、Provider / 工具 / 提示目录的默认实现，`McpServer` 的构造与 `HandleAsync`、`McpReply`、`McpStdioCommand`，命令行内置的 `graph` / `pipeline` / `operations` / `invoke` 命令，`HttpRouteConvention.Derive` 的布尔重载、`OpenApiDocumentBuilder.Build` 的五参重载，`ProtoMessage` 的构造与 `S3ObjectStorageFeature.CreateClient`；经接口与特性使用的写法不变
 - **修复** `Plugins.OutOfProcess`、`Plugins.Wasm`、`Plugins.Conformance` 对 `Plugins.Protocol`（以及 Conformance 对两个宿主）改为精确版本依赖：原先单独升级其中一个包，还原能通过，运行时才缺成员；这几个包要用同一版本
 
 ## v5.0.0-preview.2（2026-11-06）

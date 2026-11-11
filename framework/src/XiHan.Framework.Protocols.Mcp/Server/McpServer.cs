@@ -88,7 +88,7 @@ public sealed class McpServer
     /// <param name="options">选项</param>
     /// <param name="serverName"><c>initialize</c> 答复里的服务端名</param>
     /// <param name="localizer">本地化器，可为空</param>
-    public McpServer(OperationRegistry registry, IOperationInvoker invoker, McpProtocolOptions options, string serverName, IMessageLocalizer? localizer)
+    internal McpServer(OperationRegistry registry, IOperationInvoker invoker, McpProtocolOptions options, string serverName, IMessageLocalizer? localizer)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(invoker);
@@ -124,7 +124,7 @@ public sealed class McpServer
     /// <summary>
     /// 协议版本不受支持时的 JSON-RPC 错误答复（<c>id</c> 为 <c>null</c>）
     /// </summary>
-    public static ReadOnlyMemory<byte> UnsupportedVersionReply(string version)
+    internal static ReadOnlyMemory<byte> UnsupportedVersionReply(string version)
     {
         ArgumentNullException.ThrowIfNull(version);
         return WriteError(default, JsonRpcErrorCodes.InvalidRequest, McpErrors.UnsupportedVersion, McpMessages.VersionUnsupported.L(("version", version), ("supported", ProtocolVersion)));
@@ -139,7 +139,7 @@ public sealed class McpServer
     /// <param name="message">消息的 UTF-8 JSON</param>
     /// <param name="context">承载这条消息的调用上下文（区域、取消）</param>
     /// <param name="createCallContext">为 <c>tools/call</c> 创建独立调用上下文的工厂：每次调用自己的作用域与管道</param>
-    public async ValueTask<Maybe<McpReply>> HandleAsync(ReadOnlyMemory<byte> message, InvocationContext context, Func<InvocationContext> createCallContext)
+    internal async ValueTask<Maybe<McpReply>> HandleAsync(ReadOnlyMemory<byte> message, InvocationContext context, Func<InvocationContext> createCallContext)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(createCallContext);
