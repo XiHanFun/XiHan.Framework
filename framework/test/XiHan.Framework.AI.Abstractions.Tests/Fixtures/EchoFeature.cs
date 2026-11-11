@@ -33,10 +33,10 @@ internal sealed class EchoFeature : IFeature
     /// <inheritdoc />
     public void Configure(FeatureContext context)
     {
-        Add(context, new OperationContract("echoes.create", expose: Expose.Ai | Expose.Http), new OperationSchema(EchoOperation.RequestSchema, EchoOperation.ResponseSchema));
-        Add(context, new OperationContract("echoes.rename", expose: Expose.Ai));
-        Add(context, new OperationContract("echoes.secret", expose: Expose.Http));
-        Add(context, new OperationContract("echoes.audit", Stability.Internal, Expose.All));
+        Add(context, new OperationContract("echoes.create") { Expose = Expose.Ai | Expose.Http }, new OperationSchema(EchoOperation.RequestSchema, EchoOperation.ResponseSchema));
+        Add(context, new OperationContract("echoes.rename") { Expose = Expose.Ai });
+        Add(context, new OperationContract("echoes.secret") { Expose = Expose.Http });
+        Add(context, new OperationContract("echoes.audit") { Stability = Stability.Internal, Expose = Expose.All });
     }
 
     /// <summary>

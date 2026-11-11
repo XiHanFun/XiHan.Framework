@@ -23,9 +23,9 @@ internal sealed class OrdersFeature : IFeature
     public void Configure(FeatureContext context)
     {
         context.AddPermission(new PermissionDefinition("orders.write", "Write orders"));
-        context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(new(CreateOrder.Id, permission: "orders.write"), OrdersJsonContext.Default.CreateOrderRequest, OrdersJsonContext.Default.OrderResponse);
+        context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(new(CreateOrder.Id) { Permission = "orders.write" }, OrdersJsonContext.Default.CreateOrderRequest, OrdersJsonContext.Default.OrderResponse);
         context.AddOperation<ListOrders, ListOrdersRequest, OrderResponse>(new(ListOrders.Id), OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);
         context.AddOperation<ExportOrders, ListOrdersRequest, OrderResponse>(new(ExportOrders.Id), OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);
-        context.AddOperation<ApproveOrders, ListOrdersRequest, OrderResponse>(new(ApproveOrders.Id, policy: ApproveOrders.Policy), OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);
+        context.AddOperation<ApproveOrders, ListOrdersRequest, OrderResponse>(new(ApproveOrders.Id) { Policy = ApproveOrders.Policy }, OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);
     }
 }

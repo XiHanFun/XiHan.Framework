@@ -20,6 +20,6 @@ internal sealed class OrdersFeature : IFeature
     public void Configure(FeatureContext context)
     {
         context.AddPermission(new PermissionDefinition("orders.write", "Write orders"));
-        context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(new(CreateOrder.Id, permission: "orders.write"), OrdersJsonContext.Default.CreateOrderRequest, OrdersJsonContext.Default.OrderResponse);
+        context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(new(CreateOrder.Id) { Permission = "orders.write" }, OrdersJsonContext.Default.CreateOrderRequest, OrdersJsonContext.Default.OrderResponse);
     }
 }

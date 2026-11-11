@@ -55,7 +55,7 @@ orders.create    orders.get    orders.list    order-lines.delete    orders.cance
 | `Mcp` | `Protocols.Mcp` 的 tool |
 | `CommandLine` | `Hosting.CommandLine` 的命令 |
 | `Ai` | `ai.tools@1` 目录里的模型工具 |
-| `All` / `None` | 全部 / 都不发布（仍可在进程内经调用器调用） |
+| `All` / `None` | 5.0 的五个协议 / 都不发布（仍可在进程内经调用器调用）；`All` 的值冻结，框架以后新增的协议不在其中，要在新协议上发布须显式开启（ADR-0136） |
 
 `HandleAsync` 的约定：
 
@@ -234,7 +234,7 @@ using XiHan.Framework.Kernel.Operations;
 
 ## 登记操作与生成器诊断
 
-特性在 `Configure` 里调用生成的 `AddGeneratedOperations()`，一次登记项目里全部操作；也可以按操作调用生成的 `Add<类名>()`。生成的代码在项目 `RootNamespace` 下的 `GeneratedOperations` 静态类里。生成器的诊断：
+特性在 `Configure` 里调用生成的 `AddGeneratedOperations()`，一次登记项目里全部操作；也可以按操作调用生成的 `Add<类名>()`。生成的代码在项目 `RootNamespace` 下的 `internal` 静态类 `GeneratedOperations` 里，只供本项目的特性调用。生成器的诊断：
 
 | 诊断 | 情形 |
 | --- | --- |

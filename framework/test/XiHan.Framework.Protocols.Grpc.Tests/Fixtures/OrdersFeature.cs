@@ -63,12 +63,12 @@ internal sealed class OrdersFeature : IFeature
     {
         context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
         context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
-        Add(context, new OperationContract("orders.create", expose: Expose.Grpc | Expose.Http, permission: "orders.write"), OrderSchema);
-        Add(context, new OperationContract("orders.get", expose: Expose.Grpc), OrderSchema);
-        Add(context, new OperationContract("orders.list", expose: Expose.Grpc), OrderSchema);
-        Add(context, new OperationContract("order-lines.list", expose: Expose.Grpc), OrderSchema);
-        Add(context, new OperationContract("orders.secret", expose: Expose.Http));
-        Add(context, new OperationContract("orders.audit", Stability.Internal, Expose.All));
+        Add(context, new OperationContract("orders.create") { Expose = Expose.Grpc | Expose.Http, Permission = "orders.write" }, OrderSchema);
+        Add(context, new OperationContract("orders.get") { Expose = Expose.Grpc }, OrderSchema);
+        Add(context, new OperationContract("orders.list") { Expose = Expose.Grpc }, OrderSchema);
+        Add(context, new OperationContract("order-lines.list") { Expose = Expose.Grpc }, OrderSchema);
+        Add(context, new OperationContract("orders.secret") { Expose = Expose.Http });
+        Add(context, new OperationContract("orders.audit") { Stability = Stability.Internal, Expose = Expose.All });
     }
 
     /// <summary>

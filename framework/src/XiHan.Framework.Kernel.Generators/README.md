@@ -6,7 +6,7 @@
 
 ## 主要特性
 
-* 生成 `GeneratedOperations`：每个操作一个 `Add<类名>`，以及登记全部操作的 `AddGeneratedOperations`
+* 生成 `internal` 的 `GeneratedOperations`：每个操作一个 `Add<类名>`，以及登记全部操作的 `AddGeneratedOperations`
 * 生成 JSON Schema（draft 2020-12），供 HTTP 的 OpenAPI、MCP 的 tool 描述与内核的契约校验使用
 * `[Required]`、`[Range]`、`[StringLength]`、XML 文档注释折进 Schema
 * `XHG001`–`XHG006` 诊断：缺接口、缺序列化登记、操作 ID 文法等

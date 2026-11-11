@@ -35,7 +35,7 @@ internal sealed class ThingsFeature : IFeature
     {
         foreach (var id in new[] { "things.list", "things.get" })
         {
-            context.AddOperation<OrderReportOperation, OrderReportRequest, OrderReply>(new OperationContract(id, expose: Expose.Http), OrdersJsonContext.Default.OrderReportRequest, OrdersJsonContext.Default.OrderReply);
+            context.AddOperation<OrderReportOperation, OrderReportRequest, OrderReply>(new OperationContract(id) { Expose = Expose.Http }, OrdersJsonContext.Default.OrderReportRequest, OrdersJsonContext.Default.OrderReply);
         }
     }
 }

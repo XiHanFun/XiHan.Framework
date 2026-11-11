@@ -77,5 +77,5 @@ internal sealed class KnowledgeFeature : IFeature
     /// <summary>
     /// 只读、只暴露给 MCP 的契约
     /// </summary>
-    private static OperationContract Contract(string id) => new(id, Stability.Preview, Expose.Mcp, readOnly: true);
+    private static OperationContract Contract(string id) => new(id) { Stability = Stability.Preview, Expose = Expose.Mcp, IsReadOnly = true };
 }

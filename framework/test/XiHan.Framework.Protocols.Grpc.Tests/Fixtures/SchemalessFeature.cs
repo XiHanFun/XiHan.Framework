@@ -29,5 +29,5 @@ internal sealed class SchemalessFeature : IFeature
 
     /// <inheritdoc />
     public void Configure(FeatureContext context)
-        => context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("reports.create", expose: Expose.Grpc), OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
+        => context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("reports.create") { Expose = Expose.Grpc }, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
 }

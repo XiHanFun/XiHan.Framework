@@ -165,7 +165,7 @@ public sealed class UnitOfWorkMiddlewareTests
     public async Task OperationContract_DecidesWhetherTheUnitOfWorkIsReadOnly(string operationId, bool declaredReadOnly, bool expected)
     {
         var (context, unitOfWork) = Arrange();
-        context.SetOperation(new ContractOnlyDescriptor(new OperationContract(operationId, readOnly: declaredReadOnly)));
+        context.SetOperation(new ContractOnlyDescriptor(new OperationContract(operationId) { IsReadOnly = declaredReadOnly }));
 
         await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => ValueTask.CompletedTask);
 

@@ -160,9 +160,9 @@ public sealed class OpenApiExtensionsTests
     public void Build_ProtectedOperationsInheritGlobalSecurity_AndNonBearerSchemesPublishNothing()
     {
         var registry = new OperationRegistry(new PermissionRegistry());
-        registry.Add(Describe(new OperationContract("orders.create", expose: Expose.Http, permission: "orders.write"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.list", expose: Expose.Http, policy: "authenticated"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.get", expose: Expose.Http))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.create") { Expose = Expose.Http, Permission = "orders.write" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.list") { Expose = Expose.Http, Policy = "authenticated" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.get") { Expose = Expose.Http })).ThrowIfFailure();
 
         using var bearer = JsonDocument.Parse(OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, new HttpProtocolOptions(), null) { AuthenticationSchemes = ["bearer"] }));
         var paths = bearer.RootElement.GetProperty("paths");
@@ -312,7 +312,7 @@ public sealed class OpenApiExtensionsTests
     public void Build_RejectsPlainEndpointJsonTypes_ThatReferenceNoOperation_AndRoutesSharedWithOperations()
     {
         var registry = new OperationRegistry(new PermissionRegistry());
-        registry.Add(Describe(new OperationContract("orders.get", expose: Expose.Http))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.get") { Expose = Expose.Http })).ThrowIfFailure();
         var options = new HttpProtocolOptions();
 
         // 类型不是任何已登记操作的响应类型

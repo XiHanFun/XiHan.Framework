@@ -36,11 +36,11 @@ internal sealed class EchoFeature : IFeature
     {
         context.AddPermission(new PermissionDefinition("orders.read", "Read orders"));
         context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
-        Add(context, new OperationContract("orders.create", expose: Expose.CommandLine | Expose.Http, permission: "orders.write"));
-        Add(context, new OperationContract("orders.get", expose: Expose.CommandLine));
-        Add(context, new OperationContract("orders.secret", expose: Expose.Http));
-        Add(context, new OperationContract("orders.audit", Stability.Internal, Expose.All));
-        context.AddOperation<TypedOperation, TypedRequest, TypedRequest>(new OperationContract("orders.typed", expose: Expose.CommandLine), TypedJsonContext.Default.TypedRequest, TypedJsonContext.Default.TypedRequest, new OperationSchema(TypedOperation.RequestSchema, TypedOperation.ResponseSchema));
+        Add(context, new OperationContract("orders.create") { Expose = Expose.CommandLine | Expose.Http, Permission = "orders.write" });
+        Add(context, new OperationContract("orders.get") { Expose = Expose.CommandLine });
+        Add(context, new OperationContract("orders.secret") { Expose = Expose.Http });
+        Add(context, new OperationContract("orders.audit") { Stability = Stability.Internal, Expose = Expose.All });
+        context.AddOperation<TypedOperation, TypedRequest, TypedRequest>(new OperationContract("orders.typed") { Expose = Expose.CommandLine }, TypedJsonContext.Default.TypedRequest, TypedJsonContext.Default.TypedRequest, new OperationSchema(TypedOperation.RequestSchema, TypedOperation.ResponseSchema));
     }
 
     /// <summary>

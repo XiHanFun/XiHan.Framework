@@ -41,5 +41,5 @@ internal sealed class PagedFeature : IFeature
     /// 以订单实现登记一个只有 Schema 不同的契约
     /// </summary>
     private static void Add(FeatureContext context, string id, string responseSchema)
-        => context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract(id, expose: Expose.Grpc | Expose.Http), OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, new OperationSchema(PagedSchemas.PageQuery, responseSchema));
+        => context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract(id) { Expose = Expose.Grpc | Expose.Http }, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, new OperationSchema(PagedSchemas.PageQuery, responseSchema));
 }

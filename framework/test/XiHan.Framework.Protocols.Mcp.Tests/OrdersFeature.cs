@@ -52,13 +52,13 @@ internal sealed class OrdersFeature : IFeature
         foreach (var id in McpOperations)
         {
             var contract = id == "orders.create"
-                ? new OperationContract(id, expose: Expose.Mcp | Expose.Http, permission: "orders.write")
-                : new OperationContract(id, expose: Expose.Mcp);
+                ? new OperationContract(id) { Expose = Expose.Mcp | Expose.Http, Permission = "orders.write" }
+                : new OperationContract(id) { Expose = Expose.Mcp };
             Add(context, contract, id is "orders.get" or "orders.create" ? OrderSchema : null);
         }
 
-        Add(context, new OperationContract("orders.secret", expose: Expose.Http));
-        Add(context, new OperationContract("orders.audit", Stability.Internal, Expose.All));
+        Add(context, new OperationContract("orders.secret") { Expose = Expose.Http });
+        Add(context, new OperationContract("orders.audit") { Stability = Stability.Internal, Expose = Expose.All });
     }
 
     /// <summary>

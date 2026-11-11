@@ -250,11 +250,11 @@ public sealed class AuthorizationTests
         var permissions = SecurityHosts.Registry(SecurityHosts.OrdersRead);
         var registry = new OperationRegistry(permissions);
         // 已知策略、已登记权限码的权限策略、只写权限码（装配时由内核核对）的都通过；不存在的策略与未登记的权限策略各列一项
-        registry.Add(Describe(new OperationContract("orders.list", policy: AuthenticatedPolicy.PolicyName))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.export", policy: "permission:orders.read"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.get", permission: "orders.read"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.approve", policy: "approvers"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.purge", policy: "permission:orders.purge"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.list") { Policy = AuthenticatedPolicy.PolicyName })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.export") { Policy = "permission:orders.read" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.get") { Permission = "orders.read" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.approve") { Policy = "approvers" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.purge") { Policy = "permission:orders.purge" })).ThrowIfFailure();
         var catalog = new PolicyCatalog([new AuthenticatedPolicy()], permissions, new PermissionChecker(new DictionaryGrantStore(), new SecurityOptions()));
 
         var exception = Assert.Throws<FrameworkException>(() => catalog.EnforceOn(registry));
@@ -271,12 +271,12 @@ public sealed class AuthorizationTests
     {
         var permissions = SecurityHosts.Registry(SecurityHosts.OrdersRead);
         var registry = new OperationRegistry(permissions);
-        registry.Add(Describe(new OperationContract("orders.list", policy: AuthenticatedPolicy.PolicyName))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.list") { Policy = AuthenticatedPolicy.PolicyName })).ThrowIfFailure();
         var catalog = new PolicyCatalog([new AuthenticatedPolicy()], permissions, new PermissionChecker(new DictionaryGrantStore(), new SecurityOptions()));
         catalog.EnforceOn(registry);
 
         // 之后登记（插件握手之后）：引用了不存在的策略，整组不进，同组声明的权限码撤回
-        var rejected = registry.AddRange("xihan.plugins.billing", [Describe(new OperationContract("invoices.list", policy: "auditors"), "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]);
+        var rejected = registry.AddRange("xihan.plugins.billing", [Describe(new OperationContract("invoices.list") { Policy = "auditors" }, "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]);
         Assert.Equal(SecurityErrors.UnregisteredPolicy, rejected.Error?.Code);
         Assert.Equal("VALIDATION", rejected.Error?.Kind);
         Assert.Equal(SecurityMessages.OperationPolicyUnregistered, rejected.Error?.MessageKey);
@@ -285,8 +285,8 @@ public sealed class AuthorizationTests
         Assert.False(permissions.Find("invoices.read").HasValue);
 
         // 同组声明的权限码让同组的权限策略可用
-        Assert.True(registry.AddRange("xihan.plugins.billing", [Describe(new OperationContract("invoices.get", policy: "permission:invoices.read"), "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]).IsSuccess);
-        Assert.True(registry.Add(Describe(new OperationContract("invoices.export", policy: AuthenticatedPolicy.PolicyName))).IsSuccess);
+        Assert.True(registry.AddRange("xihan.plugins.billing", [Describe(new OperationContract("invoices.get") { Policy = "permission:invoices.read" }, "xihan.plugins.billing")], [new PermissionDefinition("invoices.read", "invoices.read")]).IsSuccess);
+        Assert.True(registry.Add(Describe(new OperationContract("invoices.export") { Policy = AuthenticatedPolicy.PolicyName })).IsSuccess);
         Assert.Throws<ArgumentNullException>(() => catalog.EnforceOn(null!));
     }
 

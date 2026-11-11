@@ -29,5 +29,5 @@ internal sealed class PingFeature : IFeature
 
     /// <inheritdoc />
     public void Configure(FeatureContext context)
-        => context.AddOperation<PingOperation, PingRequest, PingResponse>(new(PingOperation.Id, expose: Expose.Http), PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse);
+        => context.AddOperation<PingOperation, PingRequest, PingResponse>(new(PingOperation.Id) { Expose = Expose.Http }, PingJsonContext.Default.PingRequest, PingJsonContext.Default.PingResponse);
 }

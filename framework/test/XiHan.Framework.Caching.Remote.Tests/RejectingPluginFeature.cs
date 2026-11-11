@@ -35,7 +35,7 @@ internal sealed class RejectingPluginFeature : IFeature
     {
         ArgumentNullException.ThrowIfNull(context);
         context.AddOperation<RejectingSetOperation, RemoteCacheOperations.SetRequest, RemoteCacheOperations.EmptyResponse>(
-            new OperationContract(RemoteCacheOperations.Set, expose: Expose.None),
+            new OperationContract(RemoteCacheOperations.Set) { Expose = Expose.None },
             RemoteCacheJsonContext.Default.SetRequest,
             RemoteCacheJsonContext.Default.EmptyResponse);
     }

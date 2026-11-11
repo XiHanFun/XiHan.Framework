@@ -28,7 +28,7 @@ internal sealed class WriteOrderOperation : IOperation<OrderRequest, OrderRespon
     /// <summary>
     /// 运行期契约：权限 <see cref="Permission"/>
     /// </summary>
-    public static OperationContract Contract { get; } = new(Id, permission: Permission);
+    public static OperationContract Contract { get; } = new(Id) { Permission = Permission };
 
     /// <inheritdoc />
     public ValueTask<Result<OrderResponse>> HandleAsync(OrderRequest request, InvocationContext context)

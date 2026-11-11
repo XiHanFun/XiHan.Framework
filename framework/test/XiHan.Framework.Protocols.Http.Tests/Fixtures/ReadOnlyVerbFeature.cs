@@ -34,7 +34,7 @@ internal sealed class ReadOnlyVerbFeature : IFeature
     public void Configure(FeatureContext context)
     {
         // 带 Schema：OpenAPI 才写得出查询参数
-        context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("orders.tree", expose: Expose.Http, readOnly: true), OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, OrdersFeature.OrderSchema);
-        context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("orders.archive", expose: Expose.Http), OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
+        context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("orders.tree") { Expose = Expose.Http, IsReadOnly = true }, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply, OrdersFeature.OrderSchema);
+        context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("orders.archive") { Expose = Expose.Http }, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
     }
 }

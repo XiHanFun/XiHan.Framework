@@ -53,7 +53,7 @@ internal sealed class EchoFeature(string manifestId = "xihan.test.echo", string 
         }
 
         context.AddOperation<EchoOperation, EchoRequest, EchoResponse>(
-            new(operationId, Stability.Stable, EchoOperation.Contract.Expose, permission: EchoOperation.Contract.Permission),
+            new(operationId) { Stability = Stability.Stable, Expose = EchoOperation.Contract.Expose, Permission = EchoOperation.Contract.Permission },
             EchoJsonContext.Default.EchoRequest,
             EchoJsonContext.Default.EchoResponse,
             schema);

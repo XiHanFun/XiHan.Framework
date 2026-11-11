@@ -104,7 +104,7 @@ public sealed class OperationTests
         var permissions = new PermissionRegistry();
         Assert.True(permissions.Add("xihan.test.host", new PermissionDefinition("hosts.manage", "Manage hosts")).IsSuccess);
         var registry = new OperationRegistry(permissions);
-        OperationDescriptor Describe(string id, string? permission = null) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        OperationDescriptor Describe(string id, string? permission = null) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id) { Permission = permission }, "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
         static PermissionDefinition Define(string code) => new(code, code);
 
         // 一组：归属定义的权限码与引用它们的操作一起进
@@ -135,7 +135,7 @@ public sealed class OperationTests
         var permissions = new PermissionRegistry();
         Assert.True(permissions.Add("xihan.test.host", new PermissionDefinition("hosts.manage", "Manage hosts")).IsSuccess);
         var registry = new OperationRegistry(permissions);
-        static OperationDescriptor Describe(string id, string owner, string? permission = null) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        static OperationDescriptor Describe(string id, string owner, string? permission = null) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id) { Permission = permission }, owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
         static PermissionDefinition Define(string code) => new(code, code);
         static IReadOnlyList<OperationDescriptor> Group() => [Describe("echoes.get", "xihan.test.plugin", "echoes.read"), Describe("echoes.list", "xihan.test.plugin")];
         Assert.True(registry.AddRange("xihan.test.plugin", Group(), [Define("echoes.read"), Define("echoes.write")]).IsSuccess);
@@ -182,7 +182,7 @@ public sealed class OperationTests
     {
         var permissions = new PermissionRegistry();
         var registry = new OperationRegistry(permissions);
-        static OperationDescriptor Describe(string id, string owner) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: id == "echoes.get" ? "echoes.read" : null), owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        static OperationDescriptor Describe(string id, string owner) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id) { Permission = id == "echoes.get" ? "echoes.read" : null }, owner, EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
         static PermissionDefinition Define(string code) => new(code, code);
         var successes = 0;
 
@@ -220,7 +220,7 @@ public sealed class OperationTests
     {
         var permissions = new PermissionRegistry();
         var registry = new OperationRegistry(permissions);
-        OperationDescriptor Describe(string id, string? policy) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, policy: policy), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        OperationDescriptor Describe(string id, string? policy) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id) { Policy = policy }, "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
         Assert.True(registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "known"), Describe("echoes.list", "unknown"), Describe("echoes.copy", "unknown")], []).IsSuccess);
 
         // 挂上核对时返回已登记的不通过项（按 ID 排序），由调用方决定怎样失败
@@ -242,7 +242,7 @@ public sealed class OperationTests
         var (provider, app) = await StartAsync(new EchoFeature(registerPermission: true));
         var registry = provider.GetRequiredService<OperationRegistry>();
         var permissions = provider.GetRequiredService<PermissionRegistry>();
-        OperationDescriptor Describe(string id, string? permission) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        OperationDescriptor Describe(string id, string? permission) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id) { Permission = permission }, "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
 
         // 装配之后：一项引用了谁都没定义的码，整组被拒，同组声明的码撤回
         var rejected = registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "plugin.read"), Describe("echoes.purge", "plugin.purge")], [new PermissionDefinition("plugin.read", "plugin.read")]);
@@ -276,7 +276,7 @@ public sealed class OperationTests
         // 权限码由另一个特性登记：登记操作的那一刻还没有它，装配完成时已经有了
         var (provider, app) = await StartAsync(new EchoFeature(registerPermission: false), new PermissionsFeature("xihan.test.permissions", "echoes.write", "echoes.read"));
         var registry = provider.GetRequiredService<OperationRegistry>();
-        OperationDescriptor Describe(string id, string? permission) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id, permission: permission), "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+        OperationDescriptor Describe(string id, string? permission) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id) { Permission = permission }, "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
 
         // 装配之后登记（插件握手之后）：未登记的权限码在登记时被拒，整批不进
         var rejected = registry.AddRange("xihan.test.plugin", [Describe("echoes.get", "echoes.read"), Describe("echoes.purge", "echoes.purge")], []);
@@ -310,7 +310,7 @@ public sealed class OperationTests
     [Fact]
     public void Contract_ValidatesIdAndAuthorization()
     {
-        var contract = new OperationContract("order-lines.list", Stability.Preview, Expose.Http, policy: "owners");
+        var contract = new OperationContract("order-lines.list") { Stability = Stability.Preview, Expose = Expose.Http, Policy = "owners" };
 
         Assert.Equal("order-lines", contract.Resource);
         Assert.Equal("list", contract.Verb);
@@ -318,8 +318,8 @@ public sealed class OperationTests
         Assert.False(contract.IsExposedTo(Expose.Http | Expose.Mcp));
         Assert.False(contract.IsExposedTo(Expose.None));
         Assert.Throws<ArgumentException>(static () => new OperationContract("Orders.Create"));
-        Assert.Throws<ArgumentException>(static () => new OperationContract("orders.create", policy: "a", permission: "b"));
-        Assert.Throws<ArgumentException>(static () => new OperationContract("orders.create", permission: " "));
+        Assert.Throws<ArgumentException>(static () => new OperationContract("orders.create") { Policy = "a", Permission = "b" });
+        Assert.Throws<ArgumentException>(static () => new OperationContract("orders.create") { Permission = " " });
         Assert.Throws<ArgumentException>(static () => new OperationRequest("bad"));
         Assert.Equal("echoes.create", new OperationAttribute("echoes.create").Id);
     }
@@ -331,15 +331,15 @@ public sealed class OperationTests
         Assert.True(new OperationContract("orders.get").IsReadOnly);
         Assert.True(new OperationContract("orders.list").IsReadOnly);
         Assert.False(new OperationContract("departments.tree").IsReadOnly);
-        Assert.True(new OperationContract("departments.tree", readOnly: true).IsReadOnly);
-        Assert.True(new OperationContract("users.list-online", readOnly: true).IsReadOnly);
+        Assert.True(new OperationContract("departments.tree") { IsReadOnly = true }.IsReadOnly);
+        Assert.True(new OperationContract("users.list-online") { IsReadOnly = true }.IsReadOnly);
         Assert.False(new OperationContract("orders.cancel").IsReadOnly);
 
         // 写操作的动词不能声明只读
         foreach (var id in new[] { "orders.create", "orders.update", "orders.delete" })
         {
             Assert.False(new OperationContract(id).IsReadOnly);
-            Assert.Throws<ArgumentException>(() => new OperationContract(id, readOnly: true));
+            Assert.Throws<ArgumentException>(() => new OperationContract(id) { IsReadOnly = true });
         }
 
         // 特性只是生成器输入：只读与程序集缺省都有，缺省值分别是 false 与 All
@@ -482,5 +482,27 @@ public sealed class OperationTests
         var exception = Assert.Throws<FrameworkException>(static () => Hosts.BuildApp(b => b.UseFeature(new EchoFeature()).UseFeature(new EchoFeature("xihan.test.echo2", capture: false))));
 
         Assert.Equal(KernelErrors.DuplicateOperation, exception.Code);
+    }
+
+    [Fact]
+    public void ExposeAll_IsFrozenToTheFiveProtocolsOf50()
+    {
+        // 值写进调用方程序集，也写进生成器：以后新增的协议不并进 All，已发布的操作不会被自动暴露到新协议上（ADR-0136）
+        Assert.Equal(31, (int)Expose.All);
+        Assert.Equal(Expose.Http | Expose.Grpc | Expose.Mcp | Expose.CommandLine | Expose.Ai, Expose.All);
+    }
+
+    [Fact]
+    public void Contract_InitializersValidateRegardlessOfOrder()
+    {
+        // 初始化器先写哪个字段都一样：冲突在后写的那个赋值里被发现
+        Assert.Throws<ArgumentException>(static () => new OperationContract("orders.list") { Permission = "orders.read", Policy = "owners" });
+        Assert.Throws<ArgumentException>(static () => new OperationContract("orders.list") { Policy = "owners", Permission = "orders.read" });
+        Assert.Throws<ArgumentException>(static () => new OperationContract("orders.update") { IsReadOnly = true });
+
+        var contract = new OperationContract("orders.list");
+        Assert.Equal((Stability.Stable, Expose.All, null, null, true), (contract.Stability, contract.Expose, contract.Policy, contract.Permission, contract.IsReadOnly));
+        Assert.Equal("owners", (contract with { Policy = "owners" }).Policy);
+        Assert.Throws<ArgumentException>(() => contract with { Policy = "owners" } with { Permission = "orders.read" });
     }
 }

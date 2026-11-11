@@ -233,14 +233,19 @@ XiHan.Framework.Kernel.Operations.OperationContract
 XiHan.Framework.Kernel.Operations.OperationContract.<Clone>$() -> XiHan.Framework.Kernel.Operations.OperationContract!
 XiHan.Framework.Kernel.Operations.OperationContract.Equals(XiHan.Framework.Kernel.Operations.OperationContract? other) -> bool
 XiHan.Framework.Kernel.Operations.OperationContract.Expose.get -> XiHan.Framework.Kernel.Operations.Expose
+XiHan.Framework.Kernel.Operations.OperationContract.Expose.init -> void
 XiHan.Framework.Kernel.Operations.OperationContract.Id.get -> string!
 XiHan.Framework.Kernel.Operations.OperationContract.IsExposedTo(XiHan.Framework.Kernel.Operations.Expose protocol) -> bool
 XiHan.Framework.Kernel.Operations.OperationContract.IsReadOnly.get -> bool
-XiHan.Framework.Kernel.Operations.OperationContract.OperationContract(string! id, XiHan.Framework.Primitives.Stability stability = XiHan.Framework.Primitives.Stability.Stable, XiHan.Framework.Kernel.Operations.Expose expose = XiHan.Framework.Kernel.Operations.Expose.All, string? policy = null, string? permission = null, bool readOnly = false) -> void
+XiHan.Framework.Kernel.Operations.OperationContract.IsReadOnly.init -> void
+XiHan.Framework.Kernel.Operations.OperationContract.OperationContract(string! id) -> void
 XiHan.Framework.Kernel.Operations.OperationContract.Permission.get -> string?
+XiHan.Framework.Kernel.Operations.OperationContract.Permission.init -> void
 XiHan.Framework.Kernel.Operations.OperationContract.Policy.get -> string?
+XiHan.Framework.Kernel.Operations.OperationContract.Policy.init -> void
 XiHan.Framework.Kernel.Operations.OperationContract.Resource.get -> string!
 XiHan.Framework.Kernel.Operations.OperationContract.Stability.get -> XiHan.Framework.Primitives.Stability
+XiHan.Framework.Kernel.Operations.OperationContract.Stability.init -> void
 XiHan.Framework.Kernel.Operations.OperationContract.Verb.get -> string!
 XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute
 XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute.Expose.get -> XiHan.Framework.Kernel.Operations.Expose

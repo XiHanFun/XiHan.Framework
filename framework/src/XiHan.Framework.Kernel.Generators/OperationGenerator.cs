@@ -32,9 +32,22 @@ public sealed class OperationGenerator : IIncrementalGenerator
     private const string OperationDefaultsAttributeName = "XiHan.Framework.Kernel.Operations.OperationDefaultsAttribute";
 
     /// <summary>
-    /// <c>Expose.All</c> 的数值：Http | Grpc | Mcp | CommandLine | Ai（与内核枚举同步）
+    /// <c>Expose.All</c> 的数值：Http | Grpc | Mcp | CommandLine | Ai
     /// </summary>
+    /// <remarks>
+    /// 内核把 <c>All</c> 冻结为这五个协议（ADR-0136），所以这里的值不会再变
+    /// </remarks>
     private const int ExposeAll = 31;
+
+    /// <summary>
+    /// <c>Expose</c> 的各个协议位与成员名，按位从低到高
+    /// </summary>
+    private static readonly (int Bit, string Name)[] _exposeMembers = [(1, "Http"), (2, "Grpc"), (4, "Mcp"), (8, "CommandLine"), (16, "Ai")];
+
+    /// <summary>
+    /// <c>Stability</c> 的成员名，下标即数值
+    /// </summary>
+    private static readonly string[] _stabilityMembers = ["Stable", "Preview", "Experimental", "Internal", "Deprecated"];
 
     /// <summary>
     /// <c>IOperation&lt;,&gt;</c> 的元数据名
@@ -260,7 +273,8 @@ public sealed class OperationGenerator : IIncrementalGenerator
         builder.AppendLine("/// </summary>");
         builder.AppendLine("[global::System.CodeDom.Compiler.GeneratedCode(\"XiHan.Framework.Kernel.Generators\", \"5.0\")]");
         builder.AppendLine("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]");
-        builder.AppendLine("public static class GeneratedOperations");
+        // 只在特性所在的程序集里调用：不进入调用方程序集的公开面（ADR-0136）
+        builder.AppendLine("internal static class GeneratedOperations");
         builder.AppendLine("{");
 
         var methodNames = new List<string>();
@@ -281,12 +295,7 @@ public sealed class OperationGenerator : IIncrementalGenerator
             builder.AppendLine("    /// </summary>");
             builder.Append("    public static global::XiHan.Framework.Kernel.Hosting.FeatureContext ").Append(methodName).AppendLine("(this global::XiHan.Framework.Kernel.Hosting.FeatureContext context)");
             builder.Append("        => context.AddOperation<").Append(Display(model.OperationType)).Append(", ").Append(Display(model.RequestType)).Append(", ").Append(Display(model.ResponseType)).AppendLine(">(");
-            builder.Append("            new global::XiHan.Framework.Kernel.Operations.OperationContract(").Append(Literal(model.Id))
-                .Append(", (global::XiHan.Framework.Primitives.Stability)").Append(model.Stability)
-                .Append(", (global::XiHan.Framework.Kernel.Operations.Expose)").Append(model.Expose)
-                .Append(", ").Append(model.Policy is null ? "null" : Literal(model.Policy))
-                .Append(", ").Append(model.Permission is null ? "null" : Literal(model.Permission))
-                .Append(model.ReadOnly ? ", readOnly: true" : string.Empty).AppendLine("),");
+            builder.Append("            ").Append(ContractExpression(model)).AppendLine(",");
             builder.Append("            ").Append(Display(model.RequestContext!.Type)).Append(".Default.").Append(Identifier(model.RequestProperty!)).AppendLine(",");
             builder.Append("            ").Append(Display(model.ResponseContext!.Type)).Append(".Default.").Append(Identifier(model.ResponseProperty!)).AppendLine(",");
             builder.Append("            new global::XiHan.Framework.Kernel.Operations.OperationSchema(").Append(Literal(model.RequestSchema!)).Append(", ").Append(Literal(model.ResponseSchema!)).AppendLine("));");
@@ -307,6 +316,84 @@ public sealed class OperationGenerator : IIncrementalGenerator
         builder.AppendLine("    }");
         builder.AppendLine("}");
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// 契约的构造表达式
+    /// </summary>
+    /// <remarks>
+    /// 构造函数只收 ID，其余字段写成初始化器且只写非缺省值：契约以后加字段只加 <c>init</c> 属性，已生成的代码照常运行（ADR-0136）
+    /// </remarks>
+    private static string ContractExpression(OperationModel model)
+    {
+        var members = new List<string>();
+        if (model.Stability != 0)
+        {
+            members.Add("Stability = " + StabilityExpression(model.Stability));
+        }
+
+        if (model.Expose != ExposeAll)
+        {
+            members.Add("Expose = " + ExposeExpression(model.Expose));
+        }
+
+        if (model.Policy is not null)
+        {
+            members.Add("Policy = " + Literal(model.Policy));
+        }
+
+        if (model.Permission is not null)
+        {
+            members.Add("Permission = " + Literal(model.Permission));
+        }
+
+        if (model.ReadOnly)
+        {
+            members.Add("IsReadOnly = true");
+        }
+
+        var construction = "new global::XiHan.Framework.Kernel.Operations.OperationContract(" + Literal(model.Id) + ")";
+        return members.Count == 0 ? construction : construction + " { " + string.Join(", ", members) + " }";
+    }
+
+    /// <summary>
+    /// 稳定性的符号表达式
+    /// </summary>
+    /// <remarks>
+    /// 认识的值写成员名；不认识的值（新生成器配旧内核时不会出现，留作兜底）写成强转
+    /// </remarks>
+    private static string StabilityExpression(int value)
+        => value >= 0 && value < _stabilityMembers.Length
+            ? "global::XiHan.Framework.Primitives.Stability." + _stabilityMembers[value]
+            : "(global::XiHan.Framework.Primitives.Stability)" + value;
+
+    /// <summary>
+    /// 暴露协议的符号表达式
+    /// </summary>
+    /// <remarks>
+    /// 全部五个协议写 <c>All</c>，没有写 <c>None</c>，其余按位写成成员名的按位或；认识不了的位写成强转
+    /// </remarks>
+    private static string ExposeExpression(int value)
+    {
+        const string Prefix = "global::XiHan.Framework.Kernel.Operations.Expose.";
+        if (value == 0)
+        {
+            return Prefix + "None";
+        }
+
+        if (value == ExposeAll)
+        {
+            return Prefix + "All";
+        }
+
+        var known = _exposeMembers.Where(member => (value & member.Bit) == member.Bit).Select(static member => Prefix + member.Name).ToList();
+        var rest = value & ~ExposeAll;
+        if (rest != 0)
+        {
+            known.Add("(global::XiHan.Framework.Kernel.Operations.Expose)" + rest);
+        }
+
+        return string.Join(" | ", known);
     }
 
     /// <summary>

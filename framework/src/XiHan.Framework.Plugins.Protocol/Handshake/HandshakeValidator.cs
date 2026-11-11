@@ -159,12 +159,13 @@ internal static class HandshakeValidator
 
         try
         {
-            var contract = new OperationContract(
-                declaration.Id,
-                stability,
-                expose,
-                string.IsNullOrEmpty(declaration.Policy) ? null : declaration.Policy,
-                string.IsNullOrEmpty(declaration.Permission) ? null : declaration.Permission);
+            var contract = new OperationContract(declaration.Id)
+            {
+                Stability = stability,
+                Expose = expose,
+                Policy = string.IsNullOrEmpty(declaration.Policy) ? null : declaration.Policy,
+                Permission = string.IsNullOrEmpty(declaration.Permission) ? null : declaration.Permission,
+            };
             var schema = string.IsNullOrEmpty(declaration.RequestSchema) && string.IsNullOrEmpty(declaration.ResponseSchema)
                 ? null
                 : new OperationSchema(

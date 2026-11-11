@@ -109,10 +109,10 @@ public sealed class HttpProtocolTests
         Assert.Equal("PUT /orders/{id}", HttpRouteConvention.Derive(new OperationContract("orders.update"), hasIdentifier: true, hasNestedFields: true).ToString());
         Assert.Equal("POST /orders", HttpRouteConvention.Derive(new OperationContract("orders.create"), hasIdentifier: false, hasNestedFields: true).ToString());
         // 声明只读的自定义动词与 get 同规则：只有标量字段走 GET（集合级或实例级），带嵌套对象仍是 POST；没声明的自定义动词照旧 POST
-        Assert.Equal("GET /departments:tree", HttpRouteConvention.Derive(new OperationContract("departments.tree", readOnly: true), hasIdentifier: false).ToString());
-        Assert.Equal("GET /departments/{id}:tree", HttpRouteConvention.Derive(new OperationContract("departments.tree", readOnly: true), hasIdentifier: true).ToString());
-        Assert.Equal("GET /users:list-online", HttpRouteConvention.Derive(new OperationContract("users.list-online", readOnly: true), hasIdentifier: false).ToString());
-        Assert.Equal("POST /users:list-online", HttpRouteConvention.Derive(new OperationContract("users.list-online", readOnly: true), hasIdentifier: false, hasNestedFields: true).ToString());
+        Assert.Equal("GET /departments:tree", HttpRouteConvention.Derive(new OperationContract("departments.tree") { IsReadOnly = true }, hasIdentifier: false).ToString());
+        Assert.Equal("GET /departments/{id}:tree", HttpRouteConvention.Derive(new OperationContract("departments.tree") { IsReadOnly = true }, hasIdentifier: true).ToString());
+        Assert.Equal("GET /users:list-online", HttpRouteConvention.Derive(new OperationContract("users.list-online") { IsReadOnly = true }, hasIdentifier: false).ToString());
+        Assert.Equal("POST /users:list-online", HttpRouteConvention.Derive(new OperationContract("users.list-online") { IsReadOnly = true }, hasIdentifier: false, hasNestedFields: true).ToString());
         Assert.Equal("POST /departments:tree", HttpRouteConvention.Derive(new OperationContract("departments.tree"), hasIdentifier: false).ToString());
         Assert.Equal(201, HttpRouteConvention.SuccessStatusCode(new OperationContract("orders.create")));
         Assert.Equal(200, HttpRouteConvention.SuccessStatusCode(new OperationContract("orders.get")));
@@ -328,12 +328,12 @@ public sealed class HttpProtocolTests
         var permissions = new PermissionRegistry();
         var registry = new OperationRegistry(permissions);
         // 三种契约：按权限码、按策略、无授权要求；orders.export 引用了没登记的权限码；只给 MCP 的与内部的操作不进文档，它们引用的权限码也不算被引用
-        registry.Add(Describe(new OperationContract("orders.create", expose: Expose.Http, permission: "orders.write"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.list", expose: Expose.Http, policy: "authenticated"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.get", expose: Expose.Http))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.export", expose: Expose.Http, permission: "orders.export"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.secret", expose: Expose.Mcp, permission: "orders.secret"))).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.audit", Stability.Internal, Expose.All, permission: "orders.audit"))).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.create") { Expose = Expose.Http, Permission = "orders.write" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.list") { Expose = Expose.Http, Policy = "authenticated" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.get") { Expose = Expose.Http })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.export") { Expose = Expose.Http, Permission = "orders.export" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.secret") { Expose = Expose.Mcp, Permission = "orders.secret" })).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.audit") { Stability = Stability.Internal, Expose = Expose.All, Permission = "orders.audit" })).ThrowIfFailure();
         permissions.Add("xihan.test.orders", new PermissionDefinition("orders.write", "Place orders", "Create orders for the current tenant.")).ThrowIfFailure();
         // 登记了但没有任何 HTTP 操作引用：授权界面仍需要它
         permissions.Add("xihan.test.orders", new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();

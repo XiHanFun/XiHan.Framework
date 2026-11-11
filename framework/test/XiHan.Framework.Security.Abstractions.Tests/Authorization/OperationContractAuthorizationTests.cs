@@ -69,7 +69,7 @@ public sealed class OperationContractAuthorizationTests
     [Fact]
     public async Task PermissionContract_RequiresTheGrant()
     {
-        var contract = new OperationContract("orders.list", permission: "orders.read");
+        var contract = new OperationContract("orders.list") { Permission = "orders.read" };
 
         Assert.True(await RunAsync(Context(contract, SecurityHosts.Alice("editor"))));
 
@@ -85,7 +85,7 @@ public sealed class OperationContractAuthorizationTests
     [Fact]
     public async Task PolicyContract_AndNoContract()
     {
-        var authenticated = new OperationContract("orders.list", policy: AuthenticatedPolicy.PolicyName);
+        var authenticated = new OperationContract("orders.list") { Policy = AuthenticatedPolicy.PolicyName };
         Assert.True(await RunAsync(Context(authenticated, SecurityHosts.Alice())));
         var anonymous = Context(authenticated);
         Assert.False(await RunAsync(anonymous));
@@ -96,7 +96,7 @@ public sealed class OperationContractAuthorizationTests
 
         // 契约的策略名在授权能力启动时核对（PolicyCatalog.EnforceOn，ADR-0080），权限码在装配时核对；
         // 没经过核对的登记表到了调用时仍找不到策略，按策略不存在拒绝，配置错误不能变成越权
-        var missing = Context(new OperationContract("orders.list", policy: "missing"), SecurityHosts.Alice("editor"));
+        var missing = Context(new OperationContract("orders.list") { Policy = "missing" }, SecurityHosts.Alice("editor"));
         Assert.False(await RunAsync(missing));
         Assert.Equal(SecurityErrors.PolicyNotFound, missing.GetOutcome().ValueOrThrow().Error?.Code);
     }
@@ -104,7 +104,7 @@ public sealed class OperationContractAuthorizationTests
     [Fact]
     public async Task ExplicitRequirement_TakesPrecedenceOverContract()
     {
-        var context = Context(new OperationContract("orders.list", permission: "orders.read"), SecurityHosts.Alice("editor"));
+        var context = Context(new OperationContract("orders.list") { Permission = "orders.read" }, SecurityHosts.Alice("editor"));
         context.RequireAuthorization(new AuthorizationRequirement("missing"));
 
         Assert.False(await RunAsync(context));

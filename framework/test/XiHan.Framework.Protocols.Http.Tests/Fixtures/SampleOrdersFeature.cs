@@ -50,7 +50,7 @@ internal sealed class SampleOrdersFeature : IFeature
         context.AddPermission(new PermissionDefinition("orders.write", WriteDisplayName));
 
         const Expose expose = Expose.Http | Expose.Grpc | Expose.Mcp;
-        context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("orders.create", Stability.Experimental, expose, permission: "orders.write"), OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
-        context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("orders.list", Stability.Experimental, expose, permission: "orders.read"), OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
+        context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("orders.create") { Stability = Stability.Experimental, Expose = expose, Permission = "orders.write" }, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
+        context.AddOperation<OrdersOperation, OrderRequest, OrderReply>(new OperationContract("orders.list") { Stability = Stability.Experimental, Expose = expose, Permission = "orders.read" }, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
     }
 }

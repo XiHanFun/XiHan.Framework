@@ -30,7 +30,7 @@ internal sealed class EchoFeature : IFeature
     /// <inheritdoc />
     public void Configure(FeatureContext context)
         => context.AddOperation<EchoOperation, EchoRequest, EchoResponse>(
-            new OperationContract("echoes.create", expose: Expose.Ai),
+            new OperationContract("echoes.create") { Expose = Expose.Ai },
             EchoJsonContext.Default.EchoRequest,
             EchoJsonContext.Default.EchoResponse,
             new OperationSchema("""{"type":"object","properties":{"text":{"type":"string"},"repeat":{"type":"integer"}},"required":["text"]}""", """{"type":"object","properties":{"echo":{"type":"string"}}}"""));

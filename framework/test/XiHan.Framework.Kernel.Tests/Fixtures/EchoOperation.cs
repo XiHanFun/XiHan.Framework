@@ -20,7 +20,7 @@ internal sealed class EchoOperation : IOperation<EchoRequest, EchoResponse>
     /// <summary>
     /// 运行期契约，与特性上的声明一致
     /// </summary>
-    public static OperationContract Contract { get; } = new(Id, Stability.Stable, Expose.Http | Expose.Mcp, permission: "echoes.write");
+    public static OperationContract Contract { get; } = new(Id) { Stability = Stability.Stable, Expose = Expose.Http | Expose.Mcp, Permission = "echoes.write" };
 
     /// <inheritdoc />
     public ValueTask<Result<EchoResponse>> HandleAsync(EchoRequest request, InvocationContext context)

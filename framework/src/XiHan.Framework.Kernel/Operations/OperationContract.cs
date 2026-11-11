@@ -9,57 +9,35 @@ namespace XiHan.Framework.Kernel.Operations;
 /// 操作契约的运行期形态
 /// </summary>
 /// <remarks>
-/// 操作 ID、稳定性、暴露的协议、授权要求与是否只读。与 <see cref="OperationAttribute"/> 字段一一对应，由登记代码（手写或生成）提供
+/// 操作 ID、稳定性、暴露的协议、授权要求与是否只读。与 <see cref="OperationAttribute"/> 字段一一对应，由登记代码（手写或生成）提供。
+/// 构造函数只收 ID，其余字段是 <c>init</c> 属性：以后加字段只加属性，已编译的登记代码不受影响（ADR-0136）；字段之间的约束在赋值时校验，违反即抛出 <see cref="ArgumentException"/>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record OperationContract
 {
     /// <summary>
+    /// 授权策略名的存储
+    /// </summary>
+    private readonly string? _policy;
+
+    /// <summary>
+    /// 所需权限码的存储
+    /// </summary>
+    private readonly string? _permission;
+
+    /// <summary>
+    /// 声明的只读
+    /// </summary>
+    private readonly bool _declaredReadOnly;
+
+    /// <summary>
     /// 创建契约
     /// </summary>
     /// <param name="id">符合 <see cref="OperationId"/> 文法的操作 ID</param>
-    /// <param name="stability">稳定性</param>
-    /// <param name="expose">暴露的协议</param>
-    /// <param name="policy">授权策略名；与 <paramref name="permission"/> 二选一</param>
-    /// <param name="permission">所需权限码；与 <paramref name="policy"/> 二选一</param>
-    /// <param name="readOnly">声明非标准动词是只读的；<c>get</c> / <c>list</c> 不需要声明，<c>create</c> / <c>update</c> / <c>delete</c> 不能声明</param>
-    public OperationContract(string id, Stability stability = Stability.Stable, Expose expose = Expose.All, string? policy = null, string? permission = null, bool readOnly = false)
+    public OperationContract(string id)
     {
         Id = OperationId.Validate(id);
-        var verb = OperationId.VerbOf(Id);
-        if (readOnly && verb is "create" or "update" or "delete")
-        {
-            throw new ArgumentException($"Operation '{Id}' cannot be declared read-only: the '{verb}' verb changes state.", nameof(readOnly));
-        }
-        if (policy is not null && string.IsNullOrWhiteSpace(policy))
-        {
-            throw new ArgumentException("The policy name must not be blank.", nameof(policy));
-        }
-
-        if (permission is not null && string.IsNullOrWhiteSpace(permission))
-        {
-            throw new ArgumentException("The permission code must not be blank.", nameof(permission));
-        }
-
-        if (policy is not null && permission is not null)
-        {
-            throw new ArgumentException("Specify either a policy or a permission, not both.", nameof(permission));
-        }
-
-        Stability = stability;
-        Expose = expose;
-        Policy = policy;
-        Permission = permission;
-        IsReadOnly = readOnly || verb is "get" or "list";
     }
-
-    /// <summary>
-    /// 是否只读（不改变状态、可重复调用）
-    /// </summary>
-    /// <remarks>
-    /// 动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词。协议据此推导 MCP 行为提示与 HTTP 方法；装配了持久化时 Transaction 阶段据此开只读工作单元（不开数据库事务，写入以 <c>PERSISTENCE_UNEXPECTED_001</c> 拒绝）
-    /// </remarks>
-    public bool IsReadOnly { get; }
 
     /// <summary>
     /// 操作 ID
@@ -69,25 +47,90 @@ public sealed record OperationContract
     /// <summary>
     /// 稳定性
     /// </summary>
-    public Stability Stability { get; }
+    /// <remarks>
+    /// 缺省 <see cref="Stability.Stable"/>
+    /// </remarks>
+    public Stability Stability { get; init; } = Stability.Stable;
 
     /// <summary>
     /// 暴露的协议
     /// </summary>
-    public Expose Expose { get; }
+    /// <remarks>
+    /// 缺省 <see cref="Operations.Expose.All"/>，即 5.0 的五个协议
+    /// </remarks>
+    public Expose Expose { get; init; } = Expose.All;
 
     /// <summary>
     /// 授权策略名
     /// </summary>
     /// <remarks>
-    /// 为 <see langword="null"/> 时看 <see cref="Permission"/>，都为 <see langword="null"/> 则无授权要求
+    /// 与 <see cref="Permission"/> 二选一；为 <see langword="null"/> 时看 <see cref="Permission"/>，都为 <see langword="null"/> 则无授权要求
     /// </remarks>
-    public string? Policy { get; }
+    public string? Policy
+    {
+        get => _policy;
+        init
+        {
+            // 两个字段各在自己的赋值里查对方：无论初始化器先写哪个，后写的那个都会发现冲突
+            if (value is not null && string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("The policy name must not be blank.", nameof(Policy));
+            }
+
+            if (value is not null && _permission is not null)
+            {
+                throw new ArgumentException("Specify either a policy or a permission, not both.", nameof(Policy));
+            }
+
+            _policy = value;
+        }
+    }
 
     /// <summary>
     /// 所需权限码
     /// </summary>
-    public string? Permission { get; }
+    /// <remarks>
+    /// 与 <see cref="Policy"/> 二选一
+    /// </remarks>
+    public string? Permission
+    {
+        get => _permission;
+        init
+        {
+            if (value is not null && string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException("The permission code must not be blank.", nameof(Permission));
+            }
+
+            if (value is not null && _policy is not null)
+            {
+                throw new ArgumentException("Specify either a policy or a permission, not both.", nameof(Permission));
+            }
+
+            _permission = value;
+        }
+    }
+
+    /// <summary>
+    /// 是否只读（不改变状态、可重复调用）
+    /// </summary>
+    /// <remarks>
+    /// 动词是 <c>get</c> / <c>list</c>，或声明了只读的非标准动词；<c>create</c> / <c>update</c> / <c>delete</c> 不能声明只读。
+    /// 协议据此推导 MCP 行为提示与 HTTP 方法；装配了持久化时 Transaction 阶段据此开只读工作单元（不开数据库事务，写入以 <c>PERSISTENCE_UNEXPECTED_001</c> 拒绝）
+    /// </remarks>
+    public bool IsReadOnly
+    {
+        get => _declaredReadOnly || Verb is "get" or "list";
+        init
+        {
+            if (value && Verb is "create" or "update" or "delete")
+            {
+                throw new ArgumentException($"Operation '{Id}' cannot be declared read-only: the '{Verb}' verb changes state.", nameof(IsReadOnly));
+            }
+
+            _declaredReadOnly = value;
+        }
+    }
 
     /// <summary>
     /// 资源段

@@ -172,13 +172,14 @@ public sealed class OperationGeneratorTests
         Assert.Empty(generator);
         Assert.Empty(compile);
         Assert.Contains("namespace Demo.App;", generated, StringComparison.Ordinal);
-        Assert.Contains("public static class GeneratedOperations", generated, StringComparison.Ordinal);
+        Assert.Contains("internal static class GeneratedOperations", generated, StringComparison.Ordinal);
         Assert.Contains("AddCreateOrder(this global::XiHan.Framework.Kernel.Hosting.FeatureContext context)", generated, StringComparison.Ordinal);
         Assert.Contains("context.AddOperation<global::Demo.App.CreateOrder, global::Demo.App.CreateOrderRequest, global::Demo.App.OrderResponse>(", generated, StringComparison.Ordinal);
-        Assert.Contains("new global::XiHan.Framework.Kernel.Operations.OperationContract(@\"orders.create\", (global::XiHan.Framework.Primitives.Stability)2, (global::XiHan.Framework.Kernel.Operations.Expose)5, null, @\"orders.write\")", generated, StringComparison.Ordinal);
+        // 构造只收 ID，其余字段写成初始化器且只写非缺省值，枚举写成员名（ADR-0136）
+        Assert.Contains("new global::XiHan.Framework.Kernel.Operations.OperationContract(@\"orders.create\") { Stability = global::XiHan.Framework.Primitives.Stability.Experimental, Expose = global::XiHan.Framework.Kernel.Operations.Expose.Http | global::XiHan.Framework.Kernel.Operations.Expose.Mcp, Permission = @\"orders.write\" }", generated, StringComparison.Ordinal);
         Assert.Contains("global::Demo.App.DemoJsonContext.Default.CreateOrderRequest", generated, StringComparison.Ordinal);
         Assert.Contains("global::Demo.App.DemoJsonContext.Default.Order,", generated, StringComparison.Ordinal);
-        Assert.Contains("(global::XiHan.Framework.Kernel.Operations.Expose)31, @\"authenticated\", null)", generated, StringComparison.Ordinal);
+        Assert.Contains(") { Policy = @\"authenticated\" }", generated, StringComparison.Ordinal);
         Assert.Contains("context.AddCreateOrder();", generated, StringComparison.Ordinal);
         Assert.Contains("context.AddListOrders();", generated, StringComparison.Ordinal);
 
@@ -300,10 +301,13 @@ public sealed class OperationGeneratorTests
         """;
 
     /// <summary>
-    /// 生成代码里某个操作的契约构造表达式前缀
+    /// 生成代码里某个操作的契约构造表达式
     /// </summary>
-    private static string ContractOf(string id, int expose)
-        => $"new global::XiHan.Framework.Kernel.Operations.OperationContract(@\"{id}\", (global::XiHan.Framework.Primitives.Stability)0, (global::XiHan.Framework.Kernel.Operations.Expose){expose}, null, null";
+    /// <remarks>
+    /// <paramref name="members"/> 为空时没有初始化器（全部取缺省）
+    /// </remarks>
+    private static string ContractOf(string id, string? members)
+        => $"new global::XiHan.Framework.Kernel.Operations.OperationContract(@\"{id}\")" + (members is null ? string.Empty : " { " + members + " }");
 
     [Fact]
     public void AssemblyDefaults_ApplyToOperationsWithoutExpose_AndReadOnlyIsEmitted()
@@ -313,16 +317,16 @@ public sealed class OperationGeneratorTests
         Assert.Empty(generator);
         Assert.Empty(compile);
         // 没写 Expose 的取程序集缺省（Http = 1），显式写的不受影响（Http | Mcp = 5），只读声明原样进契约
-        Assert.Contains(ContractOf("pings.create", 1) + "),", generated, StringComparison.Ordinal);
-        Assert.Contains(ContractOf("pings.get", 5) + "),", generated, StringComparison.Ordinal);
-        Assert.Contains(ContractOf("pings.tree", 1) + ", readOnly: true),", generated, StringComparison.Ordinal);
+        Assert.Contains(ContractOf("pings.create", "Expose = global::XiHan.Framework.Kernel.Operations.Expose.Http") + ",", generated, StringComparison.Ordinal);
+        Assert.Contains(ContractOf("pings.get", "Expose = global::XiHan.Framework.Kernel.Operations.Expose.Http | global::XiHan.Framework.Kernel.Operations.Expose.Mcp") + ",", generated, StringComparison.Ordinal);
+        Assert.Contains(ContractOf("pings.tree", "Expose = global::XiHan.Framework.Kernel.Operations.Expose.Http, IsReadOnly = true") + ",", generated, StringComparison.Ordinal);
 
         // 没有程序集缺省时没写 Expose 的仍是全部协议（31）
         var (_, _, withoutDefaults) = Run(DefaultsSource.Replace("ASSEMBLY_DEFAULTS", string.Empty, StringComparison.Ordinal));
-        Assert.Contains(ContractOf("pings.create", 31) + "),", withoutDefaults, StringComparison.Ordinal);
+        Assert.Contains(ContractOf("pings.create", null) + ",", withoutDefaults, StringComparison.Ordinal);
         // 写了特性却没写 Expose：缺省就是全部协议
         var (_, _, bareDefaults) = Run(DefaultsSource.Replace("ASSEMBLY_DEFAULTS", "[assembly: OperationDefaults]", StringComparison.Ordinal));
-        Assert.Contains(ContractOf("pings.create", 31) + "),", bareDefaults, StringComparison.Ordinal);
+        Assert.Contains(ContractOf("pings.create", null) + ",", bareDefaults, StringComparison.Ordinal);
     }
 
     [Fact]

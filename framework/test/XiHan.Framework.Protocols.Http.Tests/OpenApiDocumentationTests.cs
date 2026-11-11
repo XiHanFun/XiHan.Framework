@@ -234,13 +234,13 @@ public sealed class OpenApiDocumentationTests
     {
         var permissions = new PermissionRegistry();
         var registry = new OperationRegistry(permissions);
-        registry.Add(Describe(new OperationContract("orders.get", expose: Expose.Http, permission: "orders.read"), "xihan.test.orders")).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.create", expose: Expose.Http, permission: "orders.write"), "xihan.test.orders")).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("orders.list", expose: Expose.Http, policy: "authenticated"), "xihan.test.orders")).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("invoices.list", expose: Expose.Http, policy: "billing.admins"), "xihan.test.billing")).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("notes.list", expose: Expose.Http), "xihan.test.misc")).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("audits.list", expose: Expose.Http), "xihan.test.orders")).ThrowIfFailure();
-        registry.Add(Describe(new OperationContract("audits.get", expose: Expose.Http), "xihan.test.billing")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.get") { Expose = Expose.Http, Permission = "orders.read" }, "xihan.test.orders")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.create") { Expose = Expose.Http, Permission = "orders.write" }, "xihan.test.orders")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("orders.list") { Expose = Expose.Http, Policy = "authenticated" }, "xihan.test.orders")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("invoices.list") { Expose = Expose.Http, Policy = "billing.admins" }, "xihan.test.billing")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("notes.list") { Expose = Expose.Http }, "xihan.test.misc")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("audits.list") { Expose = Expose.Http }, "xihan.test.orders")).ThrowIfFailure();
+        registry.Add(Describe(new OperationContract("audits.get") { Expose = Expose.Http }, "xihan.test.billing")).ThrowIfFailure();
         // 定义里是英文显示名（与 BasicApp 相同），中文由区域文案给出
         permissions.Add("xihan.test.orders", new PermissionDefinition("orders.read", "Read orders")).ThrowIfFailure();
         permissions.Add("xihan.test.orders", new PermissionDefinition("billing.view", "View billing")).ThrowIfFailure();

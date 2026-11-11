@@ -41,7 +41,7 @@ internal sealed class GuardedFeature : IFeature
     {
         context.AddPermission(new PermissionDefinition(Permission, "Read guarded data"));
         context.AddOperation<WhoAmIOperation, EchoRequest, EchoResponse>(
-            new OperationContract("guarded.whoami", expose: Expose.Ai, permission: Permission),
+            new OperationContract("guarded.whoami") { Expose = Expose.Ai, Permission = Permission },
             EchoJsonContext.Default.EchoRequest,
             EchoJsonContext.Default.EchoResponse);
     }

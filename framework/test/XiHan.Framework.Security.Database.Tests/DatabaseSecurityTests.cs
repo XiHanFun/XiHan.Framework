@@ -81,7 +81,7 @@ public sealed class DatabaseSecurityTests
         // 数据库授权是选中的授权能力：登记的启动核对在任何特性启动之前核对契约按名引用的策略，不存在即终止启动（ADR-0080、ADR-0085）
         var approvals = new StubFeature(TestManifests.Create("xihan.app.approvals", requires: ["security.authorization@1"]))
         {
-            OnConfigure = static ctx => ctx.AddOperation<WriteOrderOperation, OrderRequest, OrderResponse>(new OperationContract("orders.approve", policy: "approvers"), OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderResponse),
+            OnConfigure = static ctx => ctx.AddOperation<WriteOrderOperation, OrderRequest, OrderResponse>(new OperationContract("orders.approve") { Policy = "approvers" }, OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderResponse),
         };
 
         var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(

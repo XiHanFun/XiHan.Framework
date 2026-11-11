@@ -48,22 +48,22 @@ internal sealed class OrdersFeature : IFeature
         foreach (var id in HttpOperations.Where(static id => id.StartsWith("orders.", StringComparison.Ordinal) && id != "orders.report"))
         {
             // get 与 create 带 Schema，其余不带：OpenAPI 两种情况都要能发布
-            Add(context, new OperationContract(id, expose: Expose.Http), id is "orders.get" or "orders.create" ? OrderSchema : null);
+            Add(context, new OperationContract(id) { Expose = Expose.Http }, id is "orders.get" or "orders.create" ? OrderSchema : null);
         }
 
         // 请求不含 id 的自定义动词：按约定走集合级路由 POST /orders:report
-        context.AddOperation<OrderReportOperation, OrderReportRequest, OrderReply>(new OperationContract("orders.report", expose: Expose.Http), OrdersJsonContext.Default.OrderReportRequest, OrdersJsonContext.Default.OrderReply);
+        context.AddOperation<OrderReportOperation, OrderReportRequest, OrderReply>(new OperationContract("orders.report") { Expose = Expose.Http }, OrdersJsonContext.Default.OrderReportRequest, OrdersJsonContext.Default.OrderReply);
         // 类型化绑定：GET /order-filters 与 DELETE /order-filters/{id}，字段只能从路由值与查询串来
         foreach (var id in new[] { "order-filters.list", "order-filters.delete" })
         {
-            context.AddOperation<OrderFilterOperation, OrderFilterRequest, OrderFilterRequest>(new OperationContract(id, expose: Expose.Http), OrdersJsonContext.Default.OrderFilterRequest, OrdersJsonContext.Default.OrderFilterRequest);
+            context.AddOperation<OrderFilterOperation, OrderFilterRequest, OrderFilterRequest>(new OperationContract(id) { Expose = Expose.Http }, OrdersJsonContext.Default.OrderFilterRequest, OrdersJsonContext.Default.OrderFilterRequest);
         }
 
         // 分页请求带嵌套对象：list 推导为 POST /order-searches:list
-        context.AddOperation<OrderSearchOperation, OrderSearchRequest, OrderSearchRequest>(new OperationContract("order-searches.list", expose: Expose.Http), OrdersJsonContext.Default.OrderSearchRequest, OrdersJsonContext.Default.OrderSearchRequest);
+        context.AddOperation<OrderSearchOperation, OrderSearchRequest, OrderSearchRequest>(new OperationContract("order-searches.list") { Expose = Expose.Http }, OrdersJsonContext.Default.OrderSearchRequest, OrdersJsonContext.Default.OrderSearchRequest);
 
-        Add(context, new OperationContract("orders.secret", expose: Expose.Mcp));
-        Add(context, new OperationContract("orders.audit", Stability.Internal, Expose.All));
+        Add(context, new OperationContract("orders.secret") { Expose = Expose.Mcp });
+        Add(context, new OperationContract("orders.audit") { Stability = Stability.Internal, Expose = Expose.All });
     }
 
     /// <summary>
