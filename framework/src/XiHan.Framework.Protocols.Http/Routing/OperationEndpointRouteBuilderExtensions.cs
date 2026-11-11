@@ -22,14 +22,20 @@ namespace XiHan.Framework.Protocols.Http.Routing;
 public static class OperationEndpointRouteBuilderExtensions
 {
     /// <summary>
-    /// 映射全部暴露给 HTTP 且非 <see cref="Stability.Internal"/> 的操作，返回映射的端点数
+    /// 映射全部暴露给 HTTP 且非 <see cref="Stability.Internal"/> 的操作
     /// </summary>
-    public static int MapXiHanOperations(this IEndpointRouteBuilder endpoints)
+    /// <remarks>
+    /// 操作端点映射在一个空前缀的路由组里，路由模板不变；加在返回值上的约定（授权、限流、CORS、标签、过滤器）作用于每个操作端点，与其他 <c>MapXiHan*</c> 一样（ADR-0144）
+    /// </remarks>
+    /// <returns>这组操作端点的约定构建器</returns>
+    /// <exception cref="FrameworkException">两个操作推导出同一条路由（<see cref="HttpErrors.DuplicateRoute"/>）</exception>
+    public static IEndpointConventionBuilder MapXiHanOperations(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         var registry = endpoints.ServiceProvider.GetRequiredService<OperationRegistry>();
         var options = endpoints.ServiceProvider.GetService<HttpProtocolOptions>() ?? new HttpProtocolOptions();
-        var count = 0;
+        // 空前缀的组只用来承载约定：应用对返回值加的约定在端点构建时才应用，所以映射之后再加也作用于每个操作端点
+        var group = endpoints.MapGroup(string.Empty);
         // 同一方法 + 模板只能有一个操作：无 id 的 get 与 list 都是 GET /{resource}，这种冲突在启动时报出来而不是留给路由匹配时的 500
         var mapped = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var descriptor in registry.ExposedTo(Expose.Http))
@@ -51,16 +57,15 @@ public static class OperationEndpointRouteBuilderExtensions
             OperationPayloadBinder binder = (httpContext, cancellationToken) => OperationRequestBinder.BindAsync(httpContext, descriptor, cancellationToken);
             // 写出方式也挂在元数据上：端点执行成功时用它，Idempotency 阶段回放（端点没有执行）时 UseXiHan() 用它写出同样的状态码与正文
             OperationResponseWriter writer = WriteResponseAsync;
-            endpoints
+            group
                 .MapMethods(route.Template, [route.Method], httpContext => HandleAsync(httpContext, descriptor))
                 .WithMetadata(descriptor)
                 .WithMetadata(binder)
                 .WithMetadata(writer)
                 .WithName(descriptor.Id);
-            count++;
         }
 
-        return count;
+        return group;
     }
 
     /// <summary>

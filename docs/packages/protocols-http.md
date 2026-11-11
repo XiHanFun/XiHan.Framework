@@ -78,7 +78,7 @@ OpenAPI 的标题、版本、`servers` 与分组不走配置，由传给 `MapXiH
 | --- | --- |
 | `HttpProtocolFeature` | 特性入口 |
 | `HttpProtocolOptions` | `RoutePrefix`、`Routes`；`RouteFor(descriptor)` 给出最终路由；`FromConfiguration` |
-| `Routing.OperationEndpointRouteBuilderExtensions` | `MapXiHanOperations()`，返回映射的端点数 |
+| `Routing.OperationEndpointRouteBuilderExtensions` | `MapXiHanOperations()`，返回这组操作端点的约定构建器（`IEndpointConventionBuilder`），加在上面的约定作用于每个操作端点 |
 | `Routing.HttpRouteConvention` | 推导规则：`Derive`、`HasIdentifier`、`HasNestedFields`、`SuccessStatusCode`；常量 `IdentifierProperty` = `id` |
 | `Routing.HttpRoute` | 方法与模板；`Parse("POST /orders:export")` |
 | `Routing.OperationRequestBinder` | `BindAsync`：路由值、请求体、查询串合并成载荷 |

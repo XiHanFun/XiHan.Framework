@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Hosting.AspNetCore;
@@ -41,9 +42,10 @@ public sealed class HttpProtocolTests
 
         var app = builder.Build();
         app.UseXiHan();
-        var mapped = app.MapXiHanOperations();
+        app.MapXiHanOperations();
         app.MapXiHanOpenApi();
         await app.StartAsync();
+        var mapped = ((IEndpointRouteBuilder)app).DataSources.SelectMany(static source => source.Endpoints).Count(static endpoint => endpoint.Metadata.GetMetadata<OperationDescriptor>() is not null);
         return (app, app.GetTestClient(), mapped);
     }
 
@@ -224,6 +226,30 @@ public sealed class HttpProtocolTests
     }
 
     [Fact]
+    public async Task ConventionsOnTheReturnedBuilder_ApplyToEveryOperationEndpoint_AndNothingElse()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.AddXiHan(static xihan => xihan.UseFeature<HttpProtocolFeature>().UseFeature<OrdersFeature>());
+        await using var app = builder.Build();
+        app.UseXiHan();
+        var marker = new ConventionMarker();
+        // 约定在映射之后才加：端点构建时应用，仍要作用到每个操作端点
+        app.MapXiHanOperations().WithMetadata(marker);
+        app.MapXiHanOpenApi();
+        await app.StartAsync();
+
+        var endpoints = ((IEndpointRouteBuilder)app).DataSources.SelectMany(static source => source.Endpoints).ToList();
+        var operations = endpoints.Where(static endpoint => endpoint.Metadata.GetMetadata<OperationDescriptor>() is not null).ToList();
+        Assert.Equal(OrdersFeature.HttpOperations.Length, operations.Count);
+        Assert.All(operations, endpoint => Assert.Same(marker, endpoint.Metadata.GetMetadata<ConventionMarker>()));
+        Assert.All(endpoints.Except(operations), static endpoint => Assert.Null(endpoint.Metadata.GetMetadata<ConventionMarker>()));
+
+        // 组的前缀为空：路由模板不变
+        Assert.Equal(HttpStatusCode.Created, (await app.GetTestClient().PostAsync("/orders?page=1", Json("""{"name":"widget"}"""))).StatusCode);
+    }
+
+    [Fact]
     public async Task Endpoints_BindRouteBodyAndQuery_AndReturnJson()
     {
         var (app, client, mapped) = await StartAsync(("XiHan:Protocols:Http:Routes:orders.export", "POST /orders:export"));
@@ -378,4 +404,9 @@ public sealed class HttpProtocolTests
         Assert.Equal("orders.get", (await ReplyOf(await client.GetAsync("/api/orders/1?page=1"))).Operation);
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/orders/1")).StatusCode);
     }
+
+    /// <summary>
+    /// 经约定加到端点上的标记元数据
+    /// </summary>
+    private sealed class ConventionMarker;
 }

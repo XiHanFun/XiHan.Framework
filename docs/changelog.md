@@ -38,6 +38,7 @@
 ### 宿主、协议与插件
 
 - **调整** AI、协议与宿主的实现类型不再公开：AI 的对话、知识库摄入与检索、提示增强、Provider / 工具 / 提示目录的默认实现，`McpServer` 的构造与 `HandleAsync`、`McpReply`、`McpStdioCommand`，命令行内置的 `graph` / `pipeline` / `operations` / `invoke` 命令，`HttpRouteConvention.Derive` 的布尔重载、`OpenApiDocumentBuilder.Build` 的五参重载，`ProtoMessage` 的构造与 `S3ObjectStorageFeature.CreateClient`；经接口与特性使用的写法不变
+- **调整** `MapXiHanOperations()` 返回 `IEndpointConventionBuilder` 而不是端点数，可以在返回值上给全部操作端点统一加 CORS、限流等约定
 - **调整** `ProblemResponse`、`HealthResponse`、`FeatureHealth` 改为初始化器，按属性名赋值；响应的 JSON 不变
 - **修复** `Plugins.OutOfProcess`、`Plugins.Wasm`、`Plugins.Conformance` 对 `Plugins.Protocol`（以及 Conformance 对两个宿主）改为精确版本依赖：原先单独升级其中一个包，还原能通过，运行时才缺成员；这几个包要用同一版本
 

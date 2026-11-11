@@ -143,3 +143,4 @@
 | [0141](0141-工作单元选项的初始化器形状与接口交出Options.md) | `UnitOfWorkOptions` 改为只有 `init` 属性的记录（`TenantId`、`IsReadOnly`、`Connection`、`ReadsPrimary`），以后加选项不改构造；`IUnitOfWork` 删掉镜像的 `TenantId` / `IsReadOnly`，改交出 `Options` | 已采纳 |
 | [0142](0142-会演进的数据类型不用位置记录.md) | 会演进或跨 Provider 边界的数据类型不用位置记录（规则进 RFC-0001）：身份成员经构造、其余走 `required` / 可选初始化器；`AuditEvent`、`AuthorizationRequest`、`HealthSnapshot`、`OperationResponse`、`FeatureStatus`、`ContributorStatus`、`PluginSource`、`MessageDelivery`、`MessageSubscription`、`HealthResponse`、`FeatureHealth`、`ProblemResponse` 照此改写；`IdempotencyRecord` 改 internal | 已采纳 |
 | [0143](0143-租户解析器可以拒绝调用.md) | `ITenantResolver.ResolveAsync` 返回 `Result<Maybe<string>>`：无值交给下一个解析器，失败即拒绝——Tenant 阶段以该错误结束，不再问后面的解析器、默认租户也不顶替（不让调用方自报的 Baggage 绕过拒绝） | 已采纳 |
+| [0144](0144-操作端点映射返回约定构建器.md) | `MapXiHanOperations()` 返回 `IEndpointConventionBuilder`（空前缀路由组），与其他 `MapXiHan*` 一致，应用可对全部操作端点统一加 CORS、限流等约定；不再返回端点数 | 已采纳 |

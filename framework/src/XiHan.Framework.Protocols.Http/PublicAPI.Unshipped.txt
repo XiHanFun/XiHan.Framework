@@ -169,6 +169,6 @@ static XiHan.Framework.Protocols.Http.Routing.HttpRouteConvention.HasIdentifier(
 static XiHan.Framework.Protocols.Http.Routing.HttpRouteConvention.HasNestedFields(System.Text.Json.Serialization.Metadata.JsonTypeInfo! requestInfo) -> bool
 static XiHan.Framework.Protocols.Http.Routing.HttpRouteConvention.HasNestedFields(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> bool
 static XiHan.Framework.Protocols.Http.Routing.HttpRouteConvention.SuccessStatusCode(XiHan.Framework.Kernel.Operations.OperationContract! contract) -> int
-static XiHan.Framework.Protocols.Http.Routing.OperationEndpointRouteBuilderExtensions.MapXiHanOperations(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> int
+static XiHan.Framework.Protocols.Http.Routing.OperationEndpointRouteBuilderExtensions.MapXiHanOperations(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
 static XiHan.Framework.Protocols.Http.Routing.OperationRequestBinder.BindAsync(Microsoft.AspNetCore.Http.HttpContext! httpContext, XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
 static readonly XiHan.Framework.Protocols.Http.Routing.HttpRoute.Methods -> System.Collections.Generic.IReadOnlyList<string!>!
