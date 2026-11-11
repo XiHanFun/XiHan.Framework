@@ -60,8 +60,28 @@ public sealed class TenantResolutionMiddlewareTests
         /// <summary>
         /// 不看上下文，直接返回构造时给定的值
         /// </summary>
-        public ValueTask<Maybe<string>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
-            => ValueTask.FromResult(tenantId is null ? default : Maybe.Some(tenantId));
+        public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+            => ValueTask.FromResult(Result.Success(tenantId is null ? Maybe.None<string>() : Maybe.Some(tenantId)));
+    }
+
+    /// <summary>
+    /// 拒绝调用的解析器，记录自己是否被调用
+    /// </summary>
+    private sealed class RejectingResolver(Error error) : ITenantResolver
+    {
+        /// <summary>
+        /// 是否被调用过
+        /// </summary>
+        public bool Called { get; private set; }
+
+        /// <summary>
+        /// 不看上下文，直接返回构造时给定的失败
+        /// </summary>
+        public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+        {
+            Called = true;
+            return ValueTask.FromResult(Result.Failure<Maybe<string>>(error));
+        }
     }
 
     /// <summary>
@@ -205,6 +225,25 @@ public sealed class TenantResolutionMiddlewareTests
 
         Assert.True(reached[0]);
         Assert.Equal("acme", context.GetSecurity().Tenant?.Id);
+    }
+
+    [Fact]
+    public async Task RejectingResolver_EndsTheCall_WithItsError_AndLaterResolversAreNotAsked()
+    {
+        // 拒绝不往下问：优先级更低的 Baggage 不能绕过拒绝，默认租户也不顶替
+        var rejection = Error.Denied(MultiTenancyErrors.Disabled, MultiTenancyMessages.TenantDisabled, MessageArguments.Of(("tenantId", "acme")));
+        var rejecting = new RejectingResolver(rejection);
+        var later = new RejectingResolver(Error.Unavailable(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable));
+        var options = new MultiTenancyOptions { DefaultTenant = "acme" };
+        var (context, reached) = Arrange(options, baggageTenant: "acme", new FixedResolver(null), rejecting, later, new BaggageTenantResolver());
+
+        await new TenantResolutionMiddleware(options).InvokeAsync(context, Handler(reached));
+
+        Assert.False(reached[0]);
+        Assert.True(rejecting.Called);
+        Assert.False(later.Called);
+        Assert.Same(rejection, context.GetOutcome().ValueOrThrow().Error);
+        Assert.Null(context.GetSecurity().Tenant);
     }
 
     [Fact]

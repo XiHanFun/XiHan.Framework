@@ -14,7 +14,7 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 /// Tenant 阶段的中间件
 /// </summary>
 /// <remarks>
-/// 按注册顺序调用 <see cref="ITenantResolver"/>，取第一个解析结果（没有时用默认租户），校验格式，按选项核对 <see cref="ITenantStore"/>（存在且启用），然后写入安全上下文。失败以结果返回：<see cref="MultiTenancyErrors.InvalidTenantId"/>、<see cref="MultiTenancyErrors.MissingTenant"/>、<see cref="MultiTenancyErrors.NotFound"/>、<see cref="MultiTenancyErrors.Disabled"/>
+/// 按注册顺序调用 <see cref="ITenantResolver"/>，取第一个解析结果（没有时用默认租户；解析器拒绝时以它的错误结束），校验格式，按选项核对 <see cref="ITenantStore"/>（存在且启用），然后写入安全上下文。失败以结果返回：解析器的错误、<see cref="MultiTenancyErrors.InvalidTenantId"/>、<see cref="MultiTenancyErrors.MissingTenant"/>、<see cref="MultiTenancyErrors.NotFound"/>、<see cref="MultiTenancyErrors.Disabled"/>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IPipelineMiddleware
@@ -30,8 +30,15 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
 
-        // 解析器都没给出结果时才退回默认租户；默认租户同样要走下面的格式与存储校验
-        var tenantId = await ResolveAsync(context).ConfigureAwait(false) ?? _options.DefaultTenant;
+        // 解析器拒绝即结束调用；都没给出结果时才退回默认租户，默认租户同样要走下面的格式与存储校验
+        var resolution = await ResolveAsync(context).ConfigureAwait(false);
+        if (!resolution.TryGetValue(out var candidate))
+        {
+            context.SetOutcome(resolution.Error!);
+            return;
+        }
+
+        var tenantId = candidate.TryGetValue(out var value) ? value : _options.DefaultTenant;
         if (tenantId is null)
         {
             if (_options.RequireTenant)
@@ -97,9 +104,9 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
                 return;
             }
 
-            if (shard.TryGetValue(out var value))
+            if (shard.TryGetValue(out var tenantShard))
             {
-                context.SetTenantShard(value);
+                context.SetTenantShard(tenantShard);
             }
         }
 
@@ -107,23 +114,24 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
     }
 
     /// <summary>
-    /// 按注册顺序依次调用解析器，返回第一个解析出的租户 ID
+    /// 按注册顺序依次调用解析器，返回第一个解析出的租户 ID 或第一个拒绝
     /// </summary>
     /// <remarks>
-    /// 都没有返回 <see langword="null"/>
+    /// 都没有给出时成功且无值
     /// </remarks>
-    private static async ValueTask<string?> ResolveAsync(InvocationContext context)
+    private static async ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context)
     {
         // 注册顺序即优先级：先注册的解析器（如已认证主体的声明）压过后注册的（如调用方自报的 Baggage）
         foreach (var resolver in context.Services.GetServices<ITenantResolver>())
         {
             var resolved = await resolver.ResolveAsync(context, context.CancellationToken).ConfigureAwait(false);
-            if (resolved.TryGetValue(out var tenantId))
+            // 拒绝不往下问：否则优先级更低的解析器（调用方自报的 Baggage）能绕过前面的拒绝
+            if (!resolved.TryGetValue(out var candidate) || candidate.HasValue)
             {
-                return tenantId;
+                return resolved;
             }
         }
 
-        return null;
+        return Result.Success(Maybe.None<string>());
     }
 }

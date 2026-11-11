@@ -18,22 +18,22 @@ public sealed class ClaimTenantResolver(MultiTenancyOptions options) : ITenantRe
     private readonly MultiTenancyOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc />
-    public ValueTask<Maybe<string>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
         // 未认证主体的声明不可信，直接放弃，交给后续解析器（如 Baggage）
         var principal = context.GetSecurity().Principal;
         if (!principal.IsAuthenticated)
         {
-            return ValueTask.FromResult<Maybe<string>>(default);
+            return ValueTask.FromResult(Result.Success(Maybe.None<string>()));
         }
 
         // 同类声明可能有多个，只取第一个
         foreach (var value in principal.ClaimValues(_options.TenantClaim))
         {
-            return ValueTask.FromResult(Maybe.Some(value));
+            return ValueTask.FromResult(Result.Success(Maybe.Some(value)));
         }
 
-        return ValueTask.FromResult<Maybe<string>>(default);
+        return ValueTask.FromResult(Result.Success(Maybe.None<string>()));
     }
 }

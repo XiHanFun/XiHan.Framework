@@ -18,12 +18,12 @@ XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ValidateAgainstSto
 XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ValidateAgainstStore.init -> void
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.BaggageTenantResolver
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.BaggageTenantResolver.BaggageTenantResolver() -> void
-XiHan.Framework.MultiTenancy.Abstractions.Resolution.BaggageTenantResolver.ResolveAsync(XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<string!>>
+XiHan.Framework.MultiTenancy.Abstractions.Resolution.BaggageTenantResolver.ResolveAsync(XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<string!>>>
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.ClaimTenantResolver
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.ClaimTenantResolver.ClaimTenantResolver(XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions! options) -> void
-XiHan.Framework.MultiTenancy.Abstractions.Resolution.ClaimTenantResolver.ResolveAsync(XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<string!>>
+XiHan.Framework.MultiTenancy.Abstractions.Resolution.ClaimTenantResolver.ResolveAsync(XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<string!>>>
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.ITenantResolver
-XiHan.Framework.MultiTenancy.Abstractions.Resolution.ITenantResolver.ResolveAsync(XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<string!>>
+XiHan.Framework.MultiTenancy.Abstractions.Resolution.ITenantResolver.ResolveAsync(XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<string!>>>
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.TenantResolutionMiddleware
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.TenantResolutionMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.MultiTenancy.Abstractions.Resolution.TenantResolutionMiddleware.TenantResolutionMiddleware(XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions! options) -> void

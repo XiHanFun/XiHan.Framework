@@ -15,10 +15,10 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 public sealed class BaggageTenantResolver : ITenantResolver
 {
     /// <inheritdoc />
-    public ValueTask<Maybe<string>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
         // 这里只取值不信任；是否存在、是否启用由中间件对照存储核对
-        return ValueTask.FromResult(context.TryGetBaggage(BaggageKeys.Tenant, out var tenantId) ? Maybe.Some(tenantId) : default);
+        return ValueTask.FromResult(Result.Success(context.TryGetBaggage(BaggageKeys.Tenant, out var tenantId) ? Maybe.Some(tenantId) : Maybe.None<string>()));
     }
 }
