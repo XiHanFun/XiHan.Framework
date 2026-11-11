@@ -68,7 +68,7 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | `Authorization.AuthorizationMiddleware` | Authorize 阶段的中间件；策略判定失败以该失败结束调用（ADR-0071） |
 | `Permissions.GrantSubject` | 授予的主体：`ForUser(id)`、`ForRole(name)`，种类常量 `User`、`Role` |
 | `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、租户（`null` 为全局） |
-| `Permissions.IPermissionGrantStore` | 授予存储：`GetGrantsAsync(subject, tenantId)` → `Result<IReadOnlyCollection<string>>`，全局授予加该租户的授予；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
+| `Permissions.IPermissionGrantStore`、`PermissionGrantStoreExtensions` | 授予存储：`GetManyAsync(subjects, tenantId)` → 与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`，单主体写法是扩展方法 `GetGrantsAsync(subject, tenantId)`；每项全局授予加该租户的授予；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
 | `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器：`HasPermissionAsync` → `Result<bool>`，存储、来源、过滤器的失败原样返回 |
 | `Permissions.IPermissionFilter` | 授予命中后的收窄（ADR-0039）：`AllowsAsync` → `Result<bool>` |
 | `Permissions.IPermissionGrantSource` | 存储之外的额外授予（ADR-0045）：`GetGrantsAsync` → `Result<IReadOnlyCollection<string>>` |

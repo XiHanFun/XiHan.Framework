@@ -120,6 +120,34 @@ public abstract class PermissionGrantStoreConformance
     }
 
     /// <summary>
+    /// 用例 6：批量读取与入参等长、顺序一致
+    /// </summary>
+    /// <remarks>
+    /// 重复的主体各得一份相同的结果；种类不同、ID 相同的主体互不串（角色 <c>alice</c> 不拿到用户 <c>alice</c> 的授予）；空集合返回空列表（批量优先）
+    /// </remarks>
+    [Fact]
+    public async Task GetMany_IsIndexAligned_HandlesDuplicatesAndKinds_AndEmptyInput()
+    {
+        var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
+        GrantSubject[] subjects = [GrantSubject.ForUser("alice"), GrantSubject.ForRole("editor"), GrantSubject.ForRole("alice"), GrantSubject.ForUser("alice"), GrantSubject.ForUser("nobody")];
+
+        var read = await store.GetManyAsync(subjects, "acme", CancellationToken.None).ConfigureAwait(false);
+
+        Assert.True(read.IsSuccess, $"Reading the grants of several subjects failed: {read.Error}.");
+        var grants = read.ValueOrThrow();
+        Assert.Equal(subjects.Length, grants.Count);
+        Assert.Equal(["reports.export", "reports.read"], Sorted(grants[0]));
+        Assert.Equal(["orders.read", "orders.write"], Sorted(grants[1]));
+        Assert.Empty(grants[2]);
+        Assert.Equal(["reports.export", "reports.read"], Sorted(grants[3]));
+        Assert.Empty(grants[4]);
+
+        var empty = await store.GetManyAsync([], "acme", CancellationToken.None).ConfigureAwait(false);
+        Assert.True(empty.IsSuccess);
+        Assert.Empty(empty.ValueOrThrow());
+    }
+
+    /// <summary>
     /// 读取授予并要求成功：前四个用例的存储都可达，失败即不符合套件
     /// </summary>
     private static async Task<IReadOnlyCollection<string>> GrantsAsync(IPermissionGrantStore store, GrantSubject subject, string? tenantId, CancellationToken cancellationToken)

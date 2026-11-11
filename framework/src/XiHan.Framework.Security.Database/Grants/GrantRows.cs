@@ -12,29 +12,30 @@ namespace XiHan.Framework.Security.Database.Grants;
 /// 两个存储共用的授予行查询
 /// </summary>
 /// <remarks>
-/// 按主体取有效授予的规约、按自然键集合取回已有行、按全序分页读完
+/// 按一组主体取有效授予的规约、按自然键集合取回已有行、按全序分页读完
 /// </remarks>
 internal static class GrantRows
 {
     /// <summary>
-    /// 主体在租户下的有效授予
+    /// 一组主体在租户下的有效授予行
     /// </summary>
     /// <remarks>
-    /// 全局行加该租户的行；<paramref name="tenantId"/> 为 <see langword="null"/>（或空）时只有全局行
+    /// 全局行加该租户的行；<paramref name="tenantId"/> 为 <see langword="null"/>（或空）时只有全局行。主体种类与主体 ID 各取集合做 <c>IN</c> 过滤，
+    /// 两个集合的笛卡尔积可能多取回别的主体的行，调用方按完整的主体精确匹配
     /// </remarks>
-    public static Specification<PermissionGrantRecord> EffectiveFor(GrantSubject subject, string? tenantId)
+    public static Specification<PermissionGrantRecord> EffectiveForAny(IReadOnlyCollection<GrantSubject> subjects, string? tenantId)
     {
-        var kind = subject.Kind;
-        var id = subject.Id;
+        var kinds = subjects.Select(static s => s.Kind).Distinct(StringComparer.Ordinal).ToList();
+        var ids = subjects.Select(static s => s.Id).Distinct(StringComparer.Ordinal).ToList();
         var global = PermissionGrantRecord.GlobalTenantId;
         // 没有租户时只要全局行；条件里不写 "|| TenantId == null"，列本身非空
         if (string.IsNullOrEmpty(tenantId))
         {
-            return new Specification<PermissionGrantRecord>(r => r.SubjectKind == kind && r.SubjectId == id && r.TenantId == global);
+            return new Specification<PermissionGrantRecord>(r => kinds.Contains(r.SubjectKind) && ids.Contains(r.SubjectId) && r.TenantId == global);
         }
 
         var tenant = tenantId;
-        return new Specification<PermissionGrantRecord>(r => r.SubjectKind == kind && r.SubjectId == id && (r.TenantId == global || r.TenantId == tenant));
+        return new Specification<PermissionGrantRecord>(r => kinds.Contains(r.SubjectKind) && ids.Contains(r.SubjectId) && (r.TenantId == global || r.TenantId == tenant));
     }
 
     /// <summary>

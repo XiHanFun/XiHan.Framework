@@ -272,7 +272,7 @@ XiHan.Framework.Security.Abstractions.Permissions.IPermissionFilter.AllowsAsync(
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantSource
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantSource.GetGrantsAsync(XiHan.Framework.Kernel.Security.SecurityContext! security, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyCollection<string!>!>>
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore
-XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore.GetGrantsAsync(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyCollection<string!>!>>
+XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore.GetManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.GrantSubject>! subjects, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyCollection<string!>!>!>>
 XiHan.Framework.Security.Abstractions.Permissions.PermissionChecker
 XiHan.Framework.Security.Abstractions.Permissions.PermissionChecker.HasPermissionAsync(XiHan.Framework.Kernel.Security.SecurityContext! security, string! permission, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<bool>>
 XiHan.Framework.Security.Abstractions.Permissions.PermissionChecker.PermissionChecker(XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore! store, XiHan.Framework.Security.Abstractions.SecurityOptions! options, System.Collections.Generic.IEnumerable<XiHan.Framework.Security.Abstractions.Permissions.IPermissionFilter!>? filters = null, System.Collections.Generic.IEnumerable<XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantSource!>? sources = null) -> void
@@ -286,6 +286,7 @@ XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Subject.get ->
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Subject.init -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.TenantId.get -> string?
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.TenantId.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantStoreExtensions
 XiHan.Framework.Security.Abstractions.SecurityCapabilities
 XiHan.Framework.Security.Abstractions.SecurityErrors
 XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions
@@ -452,6 +453,7 @@ static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.operator !
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.operator ==(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject left, XiHan.Framework.Security.Abstractions.Permissions.GrantSubject right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.operator !=(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.operator ==(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? right) -> bool
+static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantStoreExtensions.GetGrantsAsync(this XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore! store, XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyCollection<string!>!>>
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.GetAuthorizationRequirement(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement!>
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.GetCredential(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential!>
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.RequireAuthorization(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement! requirement) -> void

@@ -78,27 +78,56 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(subjects);
+        if (subjects.Count == 0)
+        {
+            return Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>([]);
+        }
+
         // 空租户与无租户同义：都只有全局授予，缓存键也归一
         var tenant = string.IsNullOrEmpty(tenantId) ? null : tenantId;
-        if (TryGetCached(subject, tenant, out var cached))
+        var found = new Dictionary<GrantSubject, FrozenSet<string>>();
+        var missing = new HashSet<GrantSubject>();
+        foreach (var subject in subjects)
         {
-            return Result.Success<IReadOnlyCollection<string>>(cached);
+            if (TryGetCached(subject, tenant, out var cached))
+            {
+                found[subject] = cached;
+            }
+            else
+            {
+                missing.Add(subject);
+            }
         }
 
-        // 未命中时在锁外查库：并发未命中各自查一次，后写入的覆盖前者，结果相同
-        var query = EntityQuery.All<PermissionGrantRecord>().Where(GrantRows.EffectiveFor(subject, tenant)).OrderBy(static r => r.Id);
-        var read = await _invocation.ReadAsync((repository, ct) => GrantRows.ListAllAsync(repository, query, ct), cancellationToken).ConfigureAwait(false);
-        // 失败不进缓存：存储恢复后下一次判定立即重新查库，而不是在 TTL 内一直报不可达
-        if (!read.TryGetValue(out var rows))
+        // 未命中的主体一次查库；在锁外查，并发未命中各自查一次，后写入的覆盖前者，结果相同
+        if (missing.Count > 0)
         {
-            return read.Error!;
+            var query = EntityQuery.All<PermissionGrantRecord>().Where(GrantRows.EffectiveForAny(missing, tenant)).OrderBy(static r => r.Id);
+            var read = await _invocation.ReadAsync((repository, ct) => GrantRows.ListAllAsync(repository, query, ct), cancellationToken).ConfigureAwait(false);
+            // 失败不进缓存：存储恢复后下一次判定立即重新查库，而不是在 TTL 内一直报不可达
+            if (!read.TryGetValue(out var rows))
+            {
+                return read.Error!;
+            }
+
+            // IN 的笛卡尔积可能带回别的主体的行：按完整主体精确匹配，查不到行的主体是空集合
+            var bySubject = rows
+                .Select(static r => (Subject: new GrantSubject(r.SubjectKind, r.SubjectId), r.Permission))
+                .Where(row => missing.Contains(row.Subject))
+                .GroupBy(static row => row.Subject)
+                .ToDictionary(static g => g.Key, static g => g.Select(static row => row.Permission).ToFrozenSet(StringComparer.Ordinal));
+            foreach (var subject in missing)
+            {
+                var grants = bySubject.GetValueOrDefault(subject) ?? FrozenSet<string>.Empty;
+                Store(subject, tenant, grants);
+                found[subject] = grants;
+            }
         }
 
-        var grants = rows.Select(static r => r.Permission).ToFrozenSet(StringComparer.Ordinal);
-        Store(subject, tenant, grants);
-        return Result.Success<IReadOnlyCollection<string>>(grants);
+        return Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>(subjects.Select(subject => (IReadOnlyCollection<string>)found[subject]).ToList());
     }
 
     /// <summary>

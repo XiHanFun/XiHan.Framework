@@ -87,24 +87,33 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     /// <remarks>
     /// 进程内的表，读取不会失败，总是返回成功
     /// </remarks>
-    public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(subjects);
+        var results = new IReadOnlyCollection<string>[subjects.Count];
+        // 一次加锁读完整批：同一批里各主体看到的是同一时刻的表
         lock (_gate)
         {
-            // 全局授予与该租户的授予取并集；没有租户时只有全局授予
-            var result = new HashSet<string>(StringComparer.Ordinal);
-            if (_grants.TryGetValue((subject.Kind, subject.Id, null), out var global))
+            for (var i = 0; i < subjects.Count; i++)
             {
-                result.UnionWith(global);
-            }
+                // 全局授予与该租户的授予取并集；没有租户时只有全局授予
+                var subject = subjects[i];
+                var result = new HashSet<string>(StringComparer.Ordinal);
+                if (_grants.TryGetValue((subject.Kind, subject.Id, null), out var global))
+                {
+                    result.UnionWith(global);
+                }
 
-            if (tenantId is not null && _grants.TryGetValue((subject.Kind, subject.Id, tenantId), out var scoped))
-            {
-                result.UnionWith(scoped);
-            }
+                if (tenantId is not null && _grants.TryGetValue((subject.Kind, subject.Id, tenantId), out var scoped))
+                {
+                    result.UnionWith(scoped);
+                }
 
-            return ValueTask.FromResult(Result.Success<IReadOnlyCollection<string>>(result));
+                results[i] = result;
+            }
         }
+
+        return ValueTask.FromResult(Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>(results));
     }
 
     /// <summary>

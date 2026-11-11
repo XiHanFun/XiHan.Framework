@@ -20,19 +20,21 @@ internal sealed class DictionaryGrantStore(params PermissionGrant[] grants) : IP
     public Error? Failure { get; set; }
 
     /// <summary>
-    /// 被读取的主体，按调用顺序
+    /// 每次读取的主体集合，按调用顺序
     /// </summary>
-    public List<GrantSubject> Calls { get; } = [];
+    public List<GrantSubject[]> Calls { get; } = [];
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)
     {
-        Calls.Add(subject);
+        Calls.Add([.. subjects]);
         return ValueTask.FromResult(Failure is { } failure
-            ? Result.Failure<IReadOnlyCollection<string>>(failure)
-            : Result.Success<IReadOnlyCollection<string>>(grants
-                .Where(g => g.Subject == subject && (g.TenantId is null || g.TenantId == tenantId))
-                .Select(static g => g.Permission)
+            ? Result.Failure<IReadOnlyList<IReadOnlyCollection<string>>>(failure)
+            : Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>(subjects
+                .Select(subject => (IReadOnlyCollection<string>)grants
+                    .Where(g => g.Subject == subject && (g.TenantId is null || g.TenantId == tenantId))
+                    .Select(static g => g.Permission)
+                    .ToList())
                 .ToList()));
     }
 }

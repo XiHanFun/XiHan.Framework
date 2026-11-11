@@ -47,14 +47,16 @@ public sealed class FileGrantStore(IReadOnlyList<PermissionGrant> grants) : IPer
         return new FileGrantStore(entries.Select(static e => new PermissionGrant(new GrantSubject(e.Kind, e.Subject), e.Permission, e.Tenant)).ToList());
     }
 
-    public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)
     {
-        // 全局授予（TenantId 为空）对任何租户生效，租户授予只对该租户生效；
-        // 文件在启动时已读进内存，这里不会失败。读外部存储的实现在故障时返回 SECURITY_UNAVAILABLE_001，不能返回空集合
-        IReadOnlyCollection<string> permissions = grants
-            .Where(g => g.Subject == subject && (g.TenantId is null || (tenantId is not null && g.TenantId == tenantId)))
-            .Select(static g => g.Permission)
-            .ToHashSet(StringComparer.Ordinal);
+        // 结果与 subjects 等长、顺序一致；全局授予（TenantId 为空）对任何租户生效，租户授予只对该租户生效。
+        // 文件在启动时已读进内存，这里不会失败。读外部存储的实现一次查完整批，故障时整批返回 SECURITY_UNAVAILABLE_001，不能返回空集合
+        IReadOnlyList<IReadOnlyCollection<string>> permissions = subjects
+            .Select(subject => (IReadOnlyCollection<string>)grants
+                .Where(g => g.Subject == subject && (g.TenantId is null || (tenantId is not null && g.TenantId == tenantId)))
+                .Select(static g => g.Permission)
+                .ToHashSet(StringComparer.Ordinal))
+            .ToList();
         return ValueTask.FromResult(Result.Success(permissions));
     }
 }

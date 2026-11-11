@@ -26,7 +26,7 @@
 4. 存储都没命中时，按登记顺序查询各 `IPermissionGrantSource`。
 5. 任一步命中即算授予命中，之后按登记顺序调用全部 `IPermissionFilter`，全部放行才算持有。
 
-存储、来源、过滤器、检查器都返回 `Result`：`GetGrantsAsync` 是 `Result<IReadOnlyCollection<string>>`，`AllowsAsync` 与 `HasPermissionAsync` 是 `Result<bool>`。没有授予是成功的空集合，读不到是失败；检查器遇到第一个失败即原样返回。
+存储、来源、过滤器、检查器都返回 `Result`：存储的 `GetManyAsync` 是与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`（检查器把用户与全部角色一次读出），来源的 `GetGrantsAsync` 是 `Result<IReadOnlyCollection<string>>`，`AllowsAsync` 与 `HasPermissionAsync` 是 `Result<bool>`。没有授予是成功的空集合，读不到是失败；检查器遇到第一个失败即原样返回。
 
 ::: warning 读不到不是没有
 授予存储、来源或过滤器读不到数据时返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束。不要用空集合或 `false` 代替：那会被判定为不持有，客户端会以为权限被收回，网关也不会重试。自己调用 `HasPermissionAsync` 的地方同样要处理失败，不能把失败当作不持有。

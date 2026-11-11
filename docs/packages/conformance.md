@@ -235,7 +235,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、全局授予对任何租户生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
 
-`GetGrantsAsync` 返回 `Result<IReadOnlyCollection<string>>`：没有授予是成功的空集合，存储故障是失败。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
+`GetManyAsync` 返回与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`：没有授予是成功的空集合，存储故障整批失败；用例 6 核对顺序、重复项、种类不串与空集合。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
 
 在完整的应用宿主上给不可达的存储时，不要让整个宿主的库不可达（删库、断开默认连接）：宿主里别的子系统的后台循环——工作流轮询与它的领导权、发件箱、调度、翻译加载——在服务状态下会如实报存储不可达（如 `WORKFLOW_UNAVAILABLE_001`），那是真实的故障信号。用只装被测特性的最小宿主（框架 `Security.Database` 的测试就是这样），或只让被测存储用的连接不可达。
 

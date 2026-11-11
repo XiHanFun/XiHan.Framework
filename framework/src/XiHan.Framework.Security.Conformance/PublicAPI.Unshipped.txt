@@ -1,6 +1,7 @@
 #nullable enable
 XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance
 XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.EmptyStore_ReturnsNothing() -> System.Threading.Tasks.Task!
+XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.GetMany_IsIndexAligned_HandlesDuplicatesAndKinds_AndEmptyInput() -> System.Threading.Tasks.Task!
 XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.Grants_AreReturnedPerSubject_AndEmptyForUnknown() -> System.Threading.Tasks.Task!
 XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.PermissionGrantStoreConformance() -> void
 XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.SubjectIds_AreCaseSensitive() -> System.Threading.Tasks.Task!

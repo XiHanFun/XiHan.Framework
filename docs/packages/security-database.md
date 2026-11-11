@@ -108,7 +108,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `DatabaseSecurityFeature` | 特性入口：登记授予实体的仓储、授予存储、`PermissionChecker`、`authenticated` 策略、`PolicyCatalog` 与 `AuthorizationMiddleware`；不声明健康项 |
 | `DatabaseSecurityOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
 | `Grants.PermissionGrantRecord` | 授予行：`Id`、`SubjectKind`、`SubjectId`、`Permission`、`TenantId`、`CreatedAt`；`ToGrant()` 换算成 `PermissionGrant`；`TenantColumnOf(tenantId)` 给出租户列的值 |
-| `Grants.DatabasePermissionGrantStore` | 单例 `IPermissionGrantStore`：`GetGrantsAsync`（`Result`，数据库故障为 `SECURITY_UNAVAILABLE_001`）、`Invalidate(subject?)`、`CachedEntryCount` |
+| `Grants.DatabasePermissionGrantStore` | 单例 `IPermissionGrantStore`：`GetManyAsync`（缓存未命中的主体一次查库，`Result`，数据库故障为 `SECURITY_UNAVAILABLE_001`）、`Invalidate(subject?)`、`CachedEntryCount` |
 | `Grants.PermissionGrantRecordStore` | 作用域服务：`GrantAsync`、`RevokeAsync` 批量逐项结果，`ListAsync(subject?, tenantId?, skip, take)` 分页 |
 | `Grants.PermissionGrantResult` | 一项结果：`Grant`、`Outcome` |
 

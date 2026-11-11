@@ -110,24 +110,21 @@ public sealed class PermissionChecker : IPermissionChecker
     /// 授予是否命中
     /// </summary>
     /// <remarks>
-    /// 先查用户本身的授予，再逐个角色查，存储都没命中时再逐个查授予来源；任一命中即返回，避免多余的存储与来源访问。任一次读取失败立即返回该失败，不再查后面的：用户与角色读的是同一个存储，后面的读取多半同样失败，逐个等待只会拖长失败的调用
+    /// 用户与它的全部角色一次读出（批量优先），存储没命中时再逐个查授予来源；来源任一命中即返回，避免多余的访问。读取失败立即返回该失败，不当作不持有
     /// </remarks>
     private async ValueTask<Result<bool>> IsGrantedAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
     {
-        var tenantId = security.Tenant?.Id;
-        var own = await _store.GetGrantsAsync(GrantSubject.ForUser(security.Principal.Id), tenantId, cancellationToken).ConfigureAwait(false);
-        if (own.IsFailure || Matches(own.ValueOrThrow(), permission))
+        List<GrantSubject> subjects = [GrantSubject.ForUser(security.Principal.Id)];
+        subjects.AddRange(security.Principal.ClaimValues(_options.RoleClaim).Select(GrantSubject.ForRole));
+        var stored = await _store.GetManyAsync(subjects, security.Tenant?.Id, cancellationToken).ConfigureAwait(false);
+        if (!stored.TryGetValue(out var grants))
         {
-            return own.Map(static _ => true);
+            return stored.Error!;
         }
 
-        foreach (var role in security.Principal.ClaimValues(_options.RoleClaim))
+        if (grants.Any(granted => Matches(granted, permission)))
         {
-            var granted = await _store.GetGrantsAsync(GrantSubject.ForRole(role), tenantId, cancellationToken).ConfigureAwait(false);
-            if (granted.IsFailure || Matches(granted.ValueOrThrow(), permission))
-            {
-                return granted.Map(static _ => true);
-            }
+            return true;
         }
 
         // 存储之外的授予（角色继承、委托等）只能加：命中后与存储授予一样经全部过滤器收窄

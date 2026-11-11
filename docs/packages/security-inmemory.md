@@ -95,7 +95,7 @@ app.Run();
 | `PrincipalRecord` | 配置里的一个主体：`Id`、`ApiKey`、`DisplayName`、`Roles`、`Tenant`、`Claims` |
 | `InMemoryPrincipalStore` | 主体存储：`FindByApiKey`（常量时间比较）、`Set`、`Remove`、`Capacity`、`Count` |
 | `ApiKeyAuthenticationHandler` | `ApiKey` 方案的处理器；`SchemeName` = `ApiKey` |
-| `InMemoryPermissionGrantStore` | 授予存储：`GetGrantsAsync`、`Grant`、`Revoke`、`Capacity`、`Count` |
+| `InMemoryPermissionGrantStore` | 授予存储：`GetManyAsync`（一次加锁读完整批）、`Grant`、`Revoke`、`Capacity`、`Count` |
 | `InMemorySecurityHealthContributor` | 健康项的贡献者 |
 
 ## 使用示例

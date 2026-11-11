@@ -28,14 +28,16 @@ internal sealed class SwitchableGrantStore : IPermissionGrantStore
     public bool Unavailable { get; set; }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(GrantSubject subject, string? tenantId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)
     {
         if (Unavailable)
         {
-            return ValueTask.FromResult(Result.Failure<IReadOnlyCollection<string>>(Error.Unavailable(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable)));
+            return ValueTask.FromResult(Result.Failure<IReadOnlyList<IReadOnlyCollection<string>>>(Error.Unavailable(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable)));
         }
 
-        IReadOnlyCollection<string> grants = subject.Kind == GrantSubject.User && Granted.Contains(subject.Id) ? [Permission] : [];
+        IReadOnlyList<IReadOnlyCollection<string>> grants = subjects
+            .Select(subject => (IReadOnlyCollection<string>)(subject.Kind == GrantSubject.User && Granted.Contains(subject.Id) ? [Permission] : []))
+            .ToList();
         return ValueTask.FromResult(Result.Success(grants));
     }
 }

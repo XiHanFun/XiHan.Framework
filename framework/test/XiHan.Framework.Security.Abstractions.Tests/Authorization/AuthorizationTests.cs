@@ -152,6 +152,18 @@ public sealed class AuthorizationTests
     }
 
     [Fact]
+    public async Task PermissionChecker_ReadsTheUserAndEveryRoleInOneStoreCall()
+    {
+        // 批量优先：用户与它的全部角色一次读出，N 个角色不再是 N 次往返
+        var store = new DictionaryGrantStore(_grants);
+        var checker = new PermissionChecker(store, new SecurityOptions());
+        var alice = new SecurityContext(SecurityHosts.Alice("editor", "admin"), null);
+
+        Assert.True((await checker.HasPermissionAsync(alice, "orders.delete", CancellationToken.None)).ValueOrThrow());
+        Assert.Equal([[GrantSubject.ForUser("alice"), GrantSubject.ForRole("editor"), GrantSubject.ForRole("admin")]], store.Calls);
+    }
+
+    [Fact]
     public async Task PermissionChecker_ReturnsTheFailure_WhenStoreSourceOrFilterCannotDecide()
     {
         var unavailable = Error.Unavailable(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable);
@@ -163,7 +175,7 @@ public sealed class AuthorizationTests
         var filter = new RecordingPermissionFilter(allowed: null);
         var failed = await new PermissionChecker(store, new SecurityOptions(), [filter], [source]).HasPermissionAsync(alice, "orders.read", CancellationToken.None);
         Assert.Equal(SecurityErrors.StoreUnavailable, failed.Error?.Code);
-        Assert.Equal([GrantSubject.ForUser("alice")], store.Calls);
+        Assert.Equal([[GrantSubject.ForUser("alice"), GrantSubject.ForRole("editor")]], store.Calls);
         Assert.Empty(source.Calls);
         Assert.Empty(filter.Calls);
 
