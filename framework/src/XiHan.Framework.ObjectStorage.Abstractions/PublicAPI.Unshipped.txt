@@ -176,6 +176,7 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Equals(XiH
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Name.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Provider.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.Settings.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreFailures
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreSelection
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreServiceCollectionExtensions
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores
@@ -189,7 +190,7 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.ProbeAsync(System.T
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.Providers.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.RemoveAsync(string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider
-XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.CreateAsync(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>
+XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.CreateAsync(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>>
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.Name.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.ProbeAsync(XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 const XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.DefaultContentType = "application/octet-stream" -> string!
@@ -345,6 +346,8 @@ static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.operato
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.IsValidName(string? name) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? left, XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? left, XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition? right) -> bool
+static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreFailures.DefinitionInvalid(XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition! definition, string! reason) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreFailures.Unavailable(System.Exception! exception) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreSelection.ProvidesDefaultInstance(XiHan.Framework.Kernel.Capabilities.ResolvedNode! node) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreServiceCollectionExtensions.AddBlobStoreProvider<TProvider>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static readonly XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.DefaultExpiresIn -> System.TimeSpan

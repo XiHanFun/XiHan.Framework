@@ -73,22 +73,39 @@ public sealed class S3BlobStoreProvider : IBlobStoreProvider
     public string Name => ProviderName;
 
     /// <inheritdoc />
-    public async ValueTask<IBlobStore> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
+    public async ValueTask<Result<IBlobStore>> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        var options = S3ObjectStorageOptions.FromSettings(definition.Settings);
-        S3ConditionalWriteProbe.RequireBucket(options, string.Empty);
+        S3ObjectStorageOptions options;
+        try
+        {
+            options = S3ObjectStorageOptions.FromSettings(definition.Settings);
+            S3ConditionalWriteProbe.RequireBucket(options, string.Empty);
+        }
+        catch (ArgumentException exception)
+        {
+            return BlobStoreFailures.DefinitionInvalid(definition, exception.Message);
+        }
+
         var client = _clients(options);
         var conditionalWrites = S3ConditionalWriteGate.Create(client, options, multipart: true, _clock, _logger, definition.Name);
         try
         {
             // 每个实例各探一次：命名实例可能指向不同的服务。探明不认、被拒绝或缺桶都不建——不覆盖写入不会落到不认条件写入的服务上，
             // 配置错误在登记实例时就报给调用方；只有暂时连不上照常建出，后台重试，探明之前不覆盖写入由状态拒绝
-            (await conditionalWrites.StartAsync(cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
+            var started = await conditionalWrites.StartAsync(cancellationToken).ConfigureAwait(false);
+            if (started.IsFailure)
+            {
+                await conditionalWrites.DisposeAsync().ConfigureAwait(false);
+                client.Dispose();
+                return started.Error!;
+            }
+
             return new S3BlobStore(client, options, _clock, _loggerFactory, conditionalWrites, owned: true);
         }
         catch
         {
+            // 取消或实现缺陷：照常传播，先释放已建的客户端
             await conditionalWrites.DisposeAsync().ConfigureAwait(false);
             client.Dispose();
             throw;

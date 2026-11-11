@@ -100,7 +100,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `SchemaServiceCollectionExtensions` | `…Abstractions.Schema` | `AddUnsupportedSchemaReader()`：不能读结构的 Provider 登记，返回 `PERSISTENCE_UNAVAILABLE_008` |
 | `DataSourceRegistry` | `…Abstractions.DataSources` | 运行时数据源的注册表（单例，健康项贡献者）：`GetOrAddAsync`（同定义复用、变了替换）、`GetAsync`、`RemoveAsync`（批量失效）、`TestAsync`（测试连接，不登记）、`ProbeAsync`、`Names`、`IsSupported` |
 | `DataSourceDefinition`、`DatabaseTypes` | `…Abstractions.DataSources` | 定义：名字、数据库类型、连接串（`ToString` 不含连接串，`Redact` 脱敏）；常用的数据库类型名 |
-| `IDataSource`、`IDataSourceProvider` | `…Abstractions.DataSources` | 已建的数据源；按定义建数据源与探测的 Provider 端口（SqlSugar 实现） |
+| `IDataSource`、`IDataSourceProvider`、`DataSourceFailures` | `…Abstractions.DataSources` | 已建的数据源；按定义建数据源（`CreateAsync` → `Result<IDataSource>`，定义不合法用 `DataSourceFailures.Invalid`，原因统一脱敏）与探测的 Provider 端口（SqlSugar 实现） |
 | `DataSourceOptions`、`DataSourceServiceCollectionExtensions` | `…Abstractions.DataSources` | 选项；`AddDataSourceProvider<T>(configuration)`、`AddDataSourceRegistry()` |
 | `ConnectionStrings` | `…Abstractions.DataSources` | `Redact(text, connectionString)`、`Describe(exception, connectionString)`：把连接串与口令类键的值换成 `***` |
 

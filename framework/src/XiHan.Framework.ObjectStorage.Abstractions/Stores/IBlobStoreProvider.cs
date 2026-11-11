@@ -24,9 +24,15 @@ public interface IBlobStoreProvider
     /// 按定义建实例
     /// </summary>
     /// <remarks>
-    /// 设置不合法（含未知的设置键）时抛出 <see cref="ArgumentException"/>，后端此刻建不出来时抛出 <see cref="IOException"/> 或 <see cref="UnauthorizedAccessException"/>（注册表分别翻译为 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/> 与 <see cref="ObjectStorageErrors.StoreUnavailable"/>）；建实例时的探测发现实例不能用（如 S3 探明服务不认条件写入、探测被拒绝或探测桶不存在；只是暂时连不上的照常建出）时抛出携带错误码的 <see cref="FrameworkException"/>，注册表转成同码的失败结果
+    /// 失败以结果返回，不抛出（ADR-0150）：
+    /// <list type="bullet">
+    /// <item>设置不合法（含未知的设置键）→ <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>（<see cref="BlobStoreFailures.DefinitionInvalid"/>）</item>
+    /// <item>后端此刻建不出来（目录无权限、磁盘错误）→ <see cref="ObjectStorageErrors.StoreUnavailable"/>（<see cref="BlobStoreFailures.Unavailable"/>）</item>
+    /// <item>建实例时的探测发现实例不能用（如 S3 探明服务不认条件写入、探测被拒绝或探测桶不存在）→ 探测给出的错误码；只是暂时连不上的照常建出</item>
+    /// </list>
+    /// 失败时实现自己释放已建的资源。只有 <paramref name="definition"/> 为 <see langword="null"/> 这类编程错误抛出
     /// </remarks>
-    ValueTask<IBlobStore> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken);
+    ValueTask<Result<IBlobStore>> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken);
 
     /// <summary>
     /// 探测实例是否可用（健康项用）

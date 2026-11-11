@@ -29,13 +29,13 @@ internal sealed class SqlSugarDataSourceProvider : IDataSourceProvider
     public bool Supports(string databaseType) => TryParse(databaseType, out _);
 
     /// <inheritdoc />
-    public ValueTask<IDataSource> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken)
+    public ValueTask<Result<IDataSource>> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
         cancellationToken.ThrowIfCancellationRequested();
         if (!TryParse(definition.DatabaseType, out var databaseType))
         {
-            throw new ArgumentException($"Database type '{definition.DatabaseType}' is not a SqlSugar DbType name.", nameof(definition));
+            return ValueTask.FromResult(Result.Failure<IDataSource>(DataSourceFailures.Invalid(definition, $"Database type '{definition.DatabaseType}' is not a SqlSugar DbType name.")));
         }
 
         // 登记时就让驱动解析连接串：格式错在这里拒绝，不等第一次使用；取 Ado.Connection 只构造连接对象、不打开
@@ -47,10 +47,10 @@ internal sealed class SqlSugarDataSourceProvider : IDataSourceProvider
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw new ArgumentException(ConnectionStrings.Describe(exception, definition.ConnectionString), nameof(definition));
+            return ValueTask.FromResult(Result.Failure<IDataSource>(DataSourceFailures.Invalid(definition, ConnectionStrings.Describe(exception, definition.ConnectionString))));
         }
 
-        return ValueTask.FromResult<IDataSource>(new SqlSugarDataSource(definition, databaseType));
+        return ValueTask.FromResult(Result.Success<IDataSource>(new SqlSugarDataSource(definition, databaseType)));
     }
 
     /// <inheritdoc />

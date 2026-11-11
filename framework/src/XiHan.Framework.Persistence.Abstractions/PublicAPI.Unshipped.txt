@@ -7,6 +7,7 @@ XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.Databa
 XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.Describes(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition! other) -> bool
 XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.Name.get -> string!
 XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.Redact(string! text) -> string!
+XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceFailures
 XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions
 XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions!
 XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.DataSourceOptions() -> void
@@ -32,7 +33,7 @@ XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource
 XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource.DatabaseType.get -> string!
 XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource.Name.get -> string!
 XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider
-XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.CreateAsync(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource!>
+XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.CreateAsync(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition! definition, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource!>>
 XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.Name.get -> string!
 XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.ProbeAsync(XiHan.Framework.Persistence.Abstractions.DataSources.IDataSource! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Persistence.Abstractions.DataSources.IDataSourceProvider.Supports(string! databaseType) -> bool
@@ -428,6 +429,7 @@ override XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.T
 static XiHan.Framework.Persistence.Abstractions.DataSources.ConnectionStrings.Describe(System.Exception! exception, string! connectionString) -> string!
 static XiHan.Framework.Persistence.Abstractions.DataSources.ConnectionStrings.Redact(string! text, string! connectionString) -> string!
 static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.IsValidName(string? name) -> bool
+static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceFailures.Invalid(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition! definition, string! reason) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions!
 static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.operator !=(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? left, XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.operator ==(XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? left, XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions? right) -> bool

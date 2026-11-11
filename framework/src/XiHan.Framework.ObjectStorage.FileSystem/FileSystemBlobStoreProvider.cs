@@ -17,7 +17,7 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// <param name="clock">时钟</param>
 /// <param name="loggerFactory">日志工厂</param>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class FileSystemBlobStoreProvider(TimeProvider clock, ILoggerFactory loggerFactory) : IBlobStoreProvider
+public sealed partial class FileSystemBlobStoreProvider(TimeProvider clock, ILoggerFactory loggerFactory) : IBlobStoreProvider
 {
     /// <summary>
     /// Provider 名
@@ -38,13 +38,40 @@ public sealed class FileSystemBlobStoreProvider(TimeProvider clock, ILoggerFacto
     public string Name => ProviderName;
 
     /// <inheritdoc />
-    public async ValueTask<IBlobStore> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
+    public async ValueTask<Result<IBlobStore>> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        var store = new FileSystemBlobStore(FileSystemObjectStorageOptions.FromSettings(definition.Settings), _clock, _loggerFactory);
-        await store.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        FileSystemObjectStorageOptions options;
+        try
+        {
+            options = FileSystemObjectStorageOptions.FromSettings(definition.Settings);
+        }
+        catch (ArgumentException exception)
+        {
+            return BlobStoreFailures.DefinitionInvalid(definition, exception.Message);
+        }
+
+        var store = new FileSystemBlobStore(options, _clock, _loggerFactory);
+        try
+        {
+            // 初始化扫描目录得到已用量：目录无权限、磁盘错误是后端此刻建不出来，不是定义的问题
+            await store.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // 结果里只写异常类型（消息常带完整路径），完整异常进日志
+            LogInitializeFailed(_loggerFactory.CreateLogger<FileSystemBlobStoreProvider>(), definition.Name, exception);
+            return BlobStoreFailures.Unavailable(exception);
+        }
+
         return store;
     }
+
+    /// <summary>
+    /// 初始化存储目录失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Initializing file system blob store '{Store}' failed.")]
+    private static partial void LogInitializeFailed(ILogger logger, string store, Exception exception);
 
     /// <inheritdoc />
     public ValueTask<Result> ProbeAsync(IBlobStore store, CancellationToken cancellationToken)

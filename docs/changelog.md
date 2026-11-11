@@ -40,6 +40,7 @@
 - **调整** 调度器的批量方法中途取消不再抛出：已开始的项照常给出结果，未开始的项以 `KERNEL_CANCELLED_001` 结束；开始前已取消时仍抛出
 - **移除** `IWorkflowTaskService.PendingAsync` 与 `PendingByInstanceAsync`：待办一律分页读取，改为 `QueryAsync(new UserTaskQuery { AssigneeId = … })` 或 `{ InstanceId = … }`
 - **调整** 工作流的批量方法传空集合时直接返回空结果，不再开一次调用
+- **调整** `IBlobStoreProvider.CreateAsync` 与 `IDataSourceProvider.CreateAsync` 以结果报告失败（`Result<IBlobStore>` / `Result<IDataSource>`），不再抛出：自己写存储或数据源 Provider 的改返回类型，拒绝定义用 `BlobStoreFailures` / `DataSourceFailures`；经注册表使用的应用不受影响
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
 
 ### 宿主、协议与插件

@@ -28,9 +28,9 @@ public interface IDataSourceProvider
     /// 按定义建数据源
     /// </summary>
     /// <remarks>
-    /// 不连库：连不上的库照样建出，使用与探测时报告。连接串格式不合法时抛出 <see cref="ArgumentException"/>（消息先经 <see cref="DataSourceDefinition.Redact"/> 脱敏），注册表翻译为 <see cref="PersistenceErrors.DataSourceInvalid"/>
+    /// 不连库：连不上的库照样建出，使用与探测时报告。失败以结果返回，不抛出（ADR-0150）：数据库类型不认得或连接串格式不合法 → <see cref="PersistenceErrors.DataSourceInvalid"/>（<see cref="DataSourceFailures.Invalid"/>，原因已脱敏）。只有 <paramref name="definition"/> 为 <see langword="null"/> 这类编程错误抛出
     /// </remarks>
-    ValueTask<IDataSource> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken);
+    ValueTask<Result<IDataSource>> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken);
 
     /// <summary>
     /// 探一次连通性

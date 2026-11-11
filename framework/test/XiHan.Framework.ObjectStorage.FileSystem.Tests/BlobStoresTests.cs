@@ -91,19 +91,19 @@ public sealed class BlobStoresTests : IDisposable
     {
         const string secret = "C:/data/blobs/tenant-a";
         var logs = new LogCapture();
-        var provider = new FaultingProvider { CreateFault = new IOException($"Access to the path '{secret}' is denied.") };
+        // Provider 以结果报告建不出实例（ADR-0150）：注册表原样交给调用方，并记一条带错误码的 Warning
+        var provider = new FaultingProvider { CreateFailure = BlobStoreFailures.Unavailable(new IOException($"Access to the path '{secret}' is denied.")) };
         await using var registry = new BlobStores([provider], TimeProvider.System, logs);
 
         var refused = await registry.GetOrAddAsync(Counting("one", "1"), CancellationToken.None);
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, refused.Error?.Code);
         Assert.Equal(typeof(IOException).FullName, refused.Error?.Details?["reason"]);
         Assert.DoesNotContain(secret, refused.Error?.Message ?? string.Empty, StringComparison.Ordinal);
-        var created = Assert.Single(logs.Entries, static entry => entry.Exception is not null);
+        var created = Assert.Single(logs.Entries, static entry => entry.Level >= LogLevel.Warning);
         Assert.Equal(LogLevel.Warning, created.Level);
-        Assert.Same(provider.CreateFault, created.Exception);
 
         // 探测持续抛出：第一次 Warning，之后 Debug；健康快照里只有类型
-        provider.CreateFault = null;
+        provider.CreateFailure = null;
         provider.ProbeFault = new IOException($"The device behind '{secret}' is not ready.");
         (await registry.GetOrAddAsync(Counting("one", "1"), CancellationToken.None)).ValueOrThrow();
         await registry.ProbeAsync(CancellationToken.None);
@@ -183,9 +183,9 @@ public sealed class BlobStoresTests : IDisposable
     private sealed class FaultingProvider : IBlobStoreProvider
     {
         /// <summary>
-        /// 建实例时抛出的异常
+        /// 建实例时返回的失败
         /// </summary>
-        public Exception? CreateFault { get; set; }
+        public Error? CreateFailure { get; set; }
 
         /// <summary>
         /// 探测时抛出的异常
@@ -196,8 +196,8 @@ public sealed class BlobStoresTests : IDisposable
         public string Name => "counting";
 
         /// <inheritdoc />
-        public ValueTask<IBlobStore> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
-            => CreateFault is { } fault ? throw fault : ValueTask.FromResult<IBlobStore>(new CountingStore());
+        public ValueTask<Result<IBlobStore>> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken)
+            => ValueTask.FromResult(CreateFailure is { } failure ? Result.Failure<IBlobStore>(failure) : Result.Success<IBlobStore>(new CountingStore()));
 
         /// <inheritdoc />
         public ValueTask<Result> ProbeAsync(IBlobStore store, CancellationToken cancellationToken)
@@ -213,7 +213,7 @@ public sealed class BlobStoresTests : IDisposable
         public string Name => "counting";
 
         /// <inheritdoc />
-        public ValueTask<IBlobStore> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken) => ValueTask.FromResult<IBlobStore>(new CountingStore());
+        public ValueTask<Result<IBlobStore>> CreateAsync(BlobStoreDefinition definition, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success<IBlobStore>(new CountingStore()));
 
         /// <inheritdoc />
         public ValueTask<Result> ProbeAsync(IBlobStore store, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());

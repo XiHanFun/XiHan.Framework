@@ -366,7 +366,7 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
     /// 选 Provider 并建实例
     /// </summary>
     /// <remarks>
-    /// 数据库类型没有 Provider 认得、Provider 以 <see cref="ArgumentException"/> 拒绝连接串，都翻译为 <see cref="PersistenceErrors.DataSourceInvalid"/>；原因经定义脱敏
+    /// 数据库类型没有 Provider 认得返回 <see cref="PersistenceErrors.DataSourceInvalid"/>；Provider 拒绝定义的结果原样返回（ADR-0150）
     /// </remarks>
     private async ValueTask<Result<(IDataSourceProvider Provider, IDataSource Source)>> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken)
     {
@@ -376,14 +376,8 @@ public sealed partial class DataSourceRegistry : IHealthContributor, IAsyncDispo
             return Error.Validation(PersistenceErrors.DataSourceInvalid, PersistenceMessages.DataSourceTypeUnknown, MessageArguments.Of(("name", definition.Name), ("databaseType", definition.DatabaseType)));
         }
 
-        try
-        {
-            return (provider, await provider.CreateAsync(definition, cancellationToken).ConfigureAwait(false));
-        }
-        catch (ArgumentException exception)
-        {
-            return Error.Validation(PersistenceErrors.DataSourceInvalid, PersistenceMessages.DataSourceInvalid, MessageArguments.Of(("name", definition.Name), ("reason", definition.Redact(exception.Message))));
-        }
+        var created = await provider.CreateAsync(definition, cancellationToken).ConfigureAwait(false);
+        return created.TryGetValue(out var source) ? (provider, source) : created.Error!;
     }
 
     /// <summary>

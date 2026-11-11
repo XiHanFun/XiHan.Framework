@@ -275,7 +275,7 @@ public sealed class DataSourceRegistryTests
         public int Created => Sources.Count;
 
         /// <summary>
-        /// 非空时建实例以这个消息抛出 <see cref="ArgumentException"/>
+        /// 非空时建实例以这个原因返回定义不合法
         /// </summary>
         public string? RejectWith { get; init; }
 
@@ -301,16 +301,16 @@ public sealed class DataSourceRegistryTests
         public bool Supports(string databaseType) => string.Equals(databaseType, "fake", StringComparison.OrdinalIgnoreCase);
 
         /// <inheritdoc />
-        public ValueTask<IDataSource> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken)
+        public ValueTask<Result<IDataSource>> CreateAsync(DataSourceDefinition definition, CancellationToken cancellationToken)
         {
             if (RejectWith is not null)
             {
-                throw new ArgumentException(RejectWith);
+                return ValueTask.FromResult(Result.Failure<IDataSource>(DataSourceFailures.Invalid(definition, RejectWith)));
             }
 
             var source = new FakeSource(definition);
             Sources.Add(source);
-            return ValueTask.FromResult<IDataSource>(source);
+            return ValueTask.FromResult(Result.Success<IDataSource>(source));
         }
 
         /// <inheritdoc />

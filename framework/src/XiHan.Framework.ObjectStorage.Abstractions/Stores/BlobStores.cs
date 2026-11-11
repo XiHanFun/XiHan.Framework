@@ -204,25 +204,12 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
                 return Error.Validation(ObjectStorageErrors.StoreDefinitionInvalid, ObjectStorageMessages.StoreProviderUnknown, MessageArguments.Of(("store", definition.Name), ("provider", definition.Provider)));
             }
 
-            IBlobStore store;
-            try
+            // Provider 以结果报告失败（ADR-0150）：定义不合法、后端此刻建不出来、探测发现不能用都原样交给调用方，不登记，下次取用重新建
+            var created = await provider.CreateAsync(definition, cancellationToken).ConfigureAwait(false);
+            if (!created.TryGetValue(out var store))
             {
-                store = await provider.CreateAsync(definition, cancellationToken).ConfigureAwait(false);
-            }
-            catch (ArgumentException exception)
-            {
-                return Error.Validation(ObjectStorageErrors.StoreDefinitionInvalid, ObjectStorageMessages.StoreDefinitionInvalid, MessageArguments.Of(("store", definition.Name), ("reason", exception.Message)));
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                // 后端此刻建不出来（目录无权限、磁盘错误）：不是定义的问题，下次取用会重试。IO 异常的消息常带完整路径，reason 只写类型，完整异常只进日志
-                LogCreateFailed(_logger, definition.Name, exception);
-                return Unavailable(exception);
-            }
-            catch (FrameworkException exception)
-            {
-                // Provider 建实例时的探测发现实例不能用（如 S3 探明服务不认条件写入、探测被拒绝或缺桶）：错误码由 Provider 定，原样交给调用方；不登记，下次取用重新探测
-                return Result.Failure<IBlobStore>(exception.ToError());
+                LogCreateFailed(_logger, definition.Name, created.Error!.Code);
+                return created.Error;
             }
 
             added = new Entry(definition, provider, store, new ContributorStatus(HealthPrefix + definition.Name, LifecycleState.Started)
@@ -421,7 +408,7 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
                 LogProbeThrew(_logger, entry.Definition.Name, exception);
             }
 
-            status = entry.Status with { State = LifecycleState.Degraded, Error = Unavailable(exception) };
+            status = entry.Status with { State = LifecycleState.Degraded, Error = BlobStoreFailures.Unavailable(exception) };
         }
         catch (OperationCanceledException)
         {
@@ -482,22 +469,10 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
     }
 
     /// <summary>
-    /// 存储不可用
-    /// </summary>
-    /// <remarks>
-    /// 这个 Provider 接任意后端，异常消息可能带路径或地址：<c>reason</c> 只写类型
-    /// </remarks>
-    private static Error Unavailable(Exception exception)
-    {
-        var type = exception.GetType();
-        return Error.Unavailable(ObjectStorageErrors.StoreUnavailable, ObjectStorageMessages.StoreUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
-    }
-
-    /// <summary>
     /// 建实例失败
     /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Creating blob store '{Store}' failed.")]
-    private static partial void LogCreateFailed(ILogger logger, string store, Exception exception);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Creating blob store '{Store}' failed with '{Code}'.")]
+    private static partial void LogCreateFailed(ILogger logger, string store, string code);
 
     /// <summary>
     /// 探测抛出（从可用变成不可用）

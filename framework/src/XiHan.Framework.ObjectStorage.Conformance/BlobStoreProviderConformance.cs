@@ -54,7 +54,7 @@ public abstract class BlobStoreProviderConformance
     public async Task Create_YieldsAWorkingStore_ThatProbesHealthy()
     {
         var provider = CreateProvider();
-        var store = await provider.CreateAsync(new BlobStoreDefinition("conformance-create", provider.Name, ValidSettings()), CancellationToken.None).ConfigureAwait(false);
+        var store = (await provider.CreateAsync(new BlobStoreDefinition("conformance-create", provider.Name, ValidSettings()), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         try
         {
             var key = new BlobKey("provider/" + Guid.NewGuid().ToString("N"));
@@ -69,14 +69,18 @@ public abstract class BlobStoreProviderConformance
     }
 
     /// <summary>
-    /// 用例 2：未知的设置键抛出 <see cref="ArgumentException"/>（拼错的键不会被静默忽略）
+    /// 用例 2：未知的设置键返回 <see cref="ObjectStorageErrors.StoreDefinitionInvalid"/>（拼错的键不会被静默忽略）
     /// </summary>
+    /// <remarks>
+    /// 建实例以结果报告失败，不抛出（ADR-0150）
+    /// </remarks>
     [Fact]
     public async Task Create_RejectsUnknownSettings()
     {
         var provider = CreateProvider();
         var settings = new Dictionary<string, string>(ValidSettings(), StringComparer.OrdinalIgnoreCase) { ["NoSuchSetting"] = "x" };
-        await Assert.ThrowsAsync<ArgumentException>(async () => await provider.CreateAsync(new BlobStoreDefinition("conformance-unknown", provider.Name, settings), CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
+        var created = await provider.CreateAsync(new BlobStoreDefinition("conformance-unknown", provider.Name, settings), CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(ObjectStorageErrors.StoreDefinitionInvalid, created.Error?.Code);
     }
 
     /// <summary>

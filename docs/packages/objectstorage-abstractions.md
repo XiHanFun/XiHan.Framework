@@ -78,7 +78,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Signing.BlobContentDisposition` | `Attachment(fileName)`：下载文件名的统一写法，非 ASCII 文件名带 `filename*` |
 | `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(name)`、`Names`、`Providers`；同时是健康项贡献者 |
 | `Stores.BlobStoreDefinition` | 实例名（`^[a-z0-9][a-z0-9-]{0,63}$`）、Provider 名与设置；`Describes(other)` 判断定义是否相同 |
-| `Stores.IBlobStoreProvider` | 存储包的命名实例工厂：`Name`、`CreateAsync(definition)`、`ProbeAsync(store)` |
+| `Stores.IBlobStoreProvider`、`Stores.BlobStoreFailures` | 存储包的命名实例工厂：`Name`、`CreateAsync(definition)` → `Result<IBlobStore>`（失败以结果返回，不抛出）、`ProbeAsync(store)`；`BlobStoreFailures` 给出定义不合法与后端不可用的标准错误 |
 | `Stores.BlobStoreSelection` | `ProvidesDefaultInstance(node)`：被选为对象存储返回 `true`（缺省存储）；没被选为对象存储、却被要求提供分片上传或预签名（有依赖或经配置指定）时抛 `OBJECTSTORAGE_VALIDATION_004`；两者都只是兜底选出时返回 `false`，存储包按被顶替处理 |
 | `Stores.BlobStoreServiceCollectionExtensions` | `AddBlobStoreProvider<TProvider>(configuration)`：存储包装配时登记 Provider，并确保注册表只登记一次 |
 | `ObjectStorageCapabilities` / `ObjectStorageErrors` / `ObjectStorageMessages` | 能力 ID、错误码与消息键常量，`ObjectStorageMessages.Catalog` 是本包的消息目录 |
