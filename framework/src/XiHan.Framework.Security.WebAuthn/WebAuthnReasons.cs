@@ -97,8 +97,11 @@ internal static class WebAuthnReasons
     public const string Credential = "credential";
 
     /// <summary>
-    /// 用户句柄与存储的不同
+    /// 凭据不属于期望的用户
     /// </summary>
+    /// <remarks>
+    /// 凭据的所属用户不是登录前认出的用户、响应的句柄与所属用户不同，或免用户名的流程里响应没带句柄（ADR-0179）
+    /// </remarks>
     public const string UserHandle = "user_handle";
 
     /// <summary>

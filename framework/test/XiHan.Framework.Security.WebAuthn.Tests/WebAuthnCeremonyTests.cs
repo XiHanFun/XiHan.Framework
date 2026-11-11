@@ -73,8 +73,8 @@ public sealed class WebAuthnCeremonyTests
 
         var stored = new WebAuthnStoredCredential(registered.CredentialId, registered.PublicKey, registered.SignCount, _userHandle);
         var login = NewChallenge();
-        var verified = Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(login) with { UserHandle = _userHandle }), login, stored).ValueOrThrow();
-        Assert.Equal((registered.CredentialId, 0u, true, true), (verified.CredentialId, verified.SignCount, verified.UserVerified, verified.BackedUp));
+        var verified = Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(login) with { UserHandle = _userHandle }), login, stored, null).ValueOrThrow();
+        Assert.Equal((registered.CredentialId, 0u, true, true, _userHandle), (verified.CredentialId, verified.SignCount, verified.UserVerified, verified.BackedUp, verified.UserHandle));
     }
 
     [Fact]
@@ -128,24 +128,55 @@ public sealed class WebAuthnCeremonyTests
         var challenge = NewChallenge();
         WebAuthnAuthenticationResponse Authenticate(WebAuthnTestCeremony ceremony) => authenticator.Authenticate(ceremony);
 
-        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(NewChallenge())), challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "challenge");
-        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { Type = "webauthn.create" }), challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "type");
-        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { RelyingPartyId = "evil.com" }), challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "rp_id");
-        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { UserVerified = false }), challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "user_verified");
-        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { CorruptSignature = true }), challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "signature");
-        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { UserHandle = Base64Url.EncodeToString(Guid.NewGuid().ToByteArray()) }), challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "user_handle");
+        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(NewChallenge())), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "challenge");
+        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { Type = "webauthn.create" }), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "type");
+        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { RelyingPartyId = "evil.com" }), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "rp_id");
+        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { UserVerified = false }), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "user_verified");
+        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { CorruptSignature = true }), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "signature");
+        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { UserHandle = Base64Url.EncodeToString(Guid.NewGuid().ToByteArray()) }), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "user_handle");
 
         // 别的凭据的响应、存储的公钥被改坏
         using var other = new WebAuthnTestAuthenticator();
-        AssertFailure(Ceremonies.VerifyAuthentication(other.Authenticate(Ceremony(challenge)), challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "credential");
-        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge)), challenge, stored with { PublicKey = Base64Url.EncodeToString("\xa0"u8) }), SecurityErrors.WebAuthnResponseMalformed, "public_key");
+        AssertFailure(Ceremonies.VerifyAuthentication(other.Authenticate(Ceremony(challenge)), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "credential");
+        AssertFailure(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge)), challenge, stored with { PublicKey = Base64Url.EncodeToString("\xa0"u8) }, _userHandle), SecurityErrors.WebAuthnResponseMalformed, "public_key");
         // 同一份签名换了客户端数据：签名覆盖客户端数据的哈希
         var valid = Authenticate(Ceremony(challenge));
         var forged = Authenticate(Ceremony(challenge) with { Origin = "https://login.example.com" });
-        AssertFailure(Ceremonies.VerifyAuthentication(valid with { Response = valid.Response with { ClientDataJson = forged.Response.ClientDataJson } }, challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "signature");
-        Assert.True(Ceremonies.VerifyAuthentication(valid, challenge, stored).IsSuccess);
-        // 存储的凭据没记用户句柄时不比对
-        Assert.True(Ceremonies.VerifyAuthentication(Authenticate(Ceremony(challenge) with { UserHandle = "AAAA" }), challenge, stored with { UserHandle = null }).IsSuccess);
+        AssertFailure(Ceremonies.VerifyAuthentication(valid with { Response = valid.Response with { ClientDataJson = forged.Response.ClientDataJson } }, challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "signature");
+        Assert.True(Ceremonies.VerifyAuthentication(valid, challenge, stored, _userHandle).IsSuccess);
+    }
+
+    /// <summary>
+    /// 凭据必须属于登录的那个用户
+    /// </summary>
+    /// <remarks>
+    /// 安全审查 S-04（ADR-0179）：原先只在存储与响应都带句柄时才比对，又没有「期望用户」：知道受害者口令的攻击者用自己账号下的通行密钥签受害者的挑战、省略句柄，就能完成受害者的登录
+    /// </remarks>
+    [Fact]
+    public void IdentifierFirst_ACredentialOfAnotherUser_IsDenied()
+    {
+        using var attacker = new WebAuthnTestAuthenticator();
+        var attackerHandle = Base64Url.EncodeToString(Guid.NewGuid().ToByteArray());
+        var attackerCredential = Registered(attacker) with { UserHandle = attackerHandle };
+        var victimChallenge = NewChallenge();
+
+        // 应用按响应的凭据 ID 找到的是攻击者自己的凭据：签名、计数都对，只有所属用户不是正在登录的受害者
+        var forged = attacker.Authenticate(Ceremony(victimChallenge));
+        AssertFailure(Ceremonies.VerifyAuthentication(forged, victimChallenge, attackerCredential, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "user_handle");
+        Assert.Equal(attackerHandle, Ceremonies.VerifyAuthentication(forged, victimChallenge, attackerCredential, attackerHandle).ValueOrThrow().UserHandle);
+    }
+
+    [Fact]
+    public void Usernameless_TheResponseMustCarryTheOwnersHandle()
+    {
+        using var authenticator = new WebAuthnTestAuthenticator();
+        var stored = Registered(authenticator);
+        var challenge = NewChallenge();
+
+        // 登录前没认出用户：响应不带句柄就无从确认，带了别人的句柄也不行
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored, null), SecurityErrors.WebAuthnVerificationFailed, "user_handle");
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge) with { UserHandle = Base64Url.EncodeToString(Guid.NewGuid().ToByteArray()) }), challenge, stored, null), SecurityErrors.WebAuthnVerificationFailed, "user_handle");
+        Assert.Equal(_userHandle, Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge) with { UserHandle = _userHandle }), challenge, stored, null).ValueOrThrow().UserHandle);
     }
 
     [Fact]
@@ -156,15 +187,15 @@ public sealed class WebAuthnCeremonyTests
         var challenge = NewChallenge();
 
         authenticator.SignCount = 6;
-        Assert.Equal(6u, Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored).ValueOrThrow().SignCount);
+        Assert.Equal(6u, Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored, _userHandle).ValueOrThrow().SignCount);
         authenticator.SignCount = 5;
-        var regressed = Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored);
+        var regressed = Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored, _userHandle);
         AssertFailure(regressed, SecurityErrors.WebAuthnCounterRegressed, null);
         Assert.Equal((5u, 5u), ((uint)regressed.Error!.Details!["stored"]!, (uint)regressed.Error.Details["received"]!));
         // 计数在签名之后判定：签名不对的响应报签名
-        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge) with { CorruptSignature = true }), challenge, stored), SecurityErrors.WebAuthnVerificationFailed, "signature");
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge) with { CorruptSignature = true }), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "signature");
         authenticator.SignCount = 0;
-        Assert.True(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored with { SignCount = 0 }).IsSuccess);
-        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored), SecurityErrors.WebAuthnCounterRegressed, null);
+        Assert.True(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored with { SignCount = 0 }, _userHandle).IsSuccess);
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored, _userHandle), SecurityErrors.WebAuthnCounterRegressed, null);
     }
 }

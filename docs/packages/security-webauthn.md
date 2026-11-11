@@ -123,23 +123,30 @@ public sealed class PasskeyRegistration(WebAuthnCeremonies ceremonies, IPasskeyS
 }
 ```
 
-认证：免用户名时 `allowCredentials` 为空；响应回来后按凭据 ID 找到存储的凭据，核对通过即更新签名计数。
+认证：免用户名时 `allowCredentials` 为空；响应回来后按凭据 ID 找到存储的凭据（连同所属用户的句柄），核对通过即更新签名计数。
+
+- 登录前已认出用户（先填账号、作为第二因素）：把这个用户的句柄传给 `expectedUserHandle`，凭据不属于他即拒绝。不传的话，知道口令的攻击者能用自己账号下的通行密钥完成别人的登录。
+- 免用户名：传 `null`，响应必须带 `userHandle`；登录的用户取结果的 `UserHandle`（来自存储的凭据），不取响应里的句柄。
 
 ```csharp
 var stored = await store.FindAsync(response.Id, ct);
-var verified = ceremonies.VerifyAuthentication(response, challenge, new WebAuthnStoredCredential(stored.CredentialId, stored.PublicKey, stored.SignCount, stored.UserHandle));
+// 先填账号的流程传那个用户的句柄；免用户名的流程传 null
+var verified = ceremonies.VerifyAuthentication(response, challenge, new WebAuthnStoredCredential(stored.CredentialId, stored.PublicKey, stored.SignCount, stored.UserHandle), expectedUserHandle);
 if (verified.TryGetValue(out var assertion))
 {
     await store.UpdateSignCountAsync(stored.CredentialId, assertion.SignCount, ct);
+    var userHandle = assertion.UserHandle;
 }
 ```
+
+注册时把选项里的 `user.id` 作为凭据的所属用户存下来，并拒绝已经登记过的凭据 ID：凭据 ID 由认证器给出，同一 ID 不应属于两个用户。
 
 ## 行为与限制
 
 - 核对的顺序与每条失败的 `reason` 见 RFC-0008「WebAuthn」：解析不了是 `SECURITY_VALIDATION_006`，算法不支持是 `SECURITY_VALIDATION_007`，核对不通过是 `SECURITY_DENIED_005`。
 - 签名计数：新旧值有一个不为 0 时新值必须大于旧值，否则 `SECURITY_DENIED_006`，参数 `stored`、`received`。它是认证器可能被复制的信号，应用应提醒本人或停用这把凭据；都为 0 的认证器（多数同步的通行密钥）不计数，放行。
 - 挑战定长比较；客户端数据的哈希在签名里，挑战与来源受签名保护。
-- 存储的凭据带用户句柄、响应也带 `userHandle` 时两者必须相同，拿别人的凭据 ID 冒充会被拒绝。
+- 凭据属于谁（ADR-0179）：存储的凭据必须记下所属用户；传了 `expectedUserHandle` 时凭据必须属于他，没传时响应必须带 `userHandle`；响应带了句柄就必须等于所属用户。任一不满足为 `user_handle`。
 - 客户端扩展结果不读；`crossOrigin` 为真（跨源的 iframe 里发起）一律拒绝。
 - 应用给的期望挑战或存储的凭据 ID 不是 base64url 抛 `ArgumentException`：那是调用方的错误。
 

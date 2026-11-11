@@ -15,6 +15,7 @@
 - **修复** HTTP 操作的请求体改在授权之后才读，原先进管道前就整读解析，匿名调用方也能让宿主为每个请求缓冲几十 MB；请求体上限 `XiHan:Protocols:Http:MaxRequestBodyBytes`（缺省 4 MiB，超过为 `PROTOCOLS_VALIDATION_011`），有请求体时 `Content-Type` 必须是 JSON（否则 `PROTOCOLS_VALIDATION_012`）：以 `text/plain` 或表单发 JSON 的客户端要改成 `application/json`
 - **修复** 进程外与 Wasm 插件读宿主配置节与绑定要运营方授予：原先插件在清单里点名哪个 `XiHan:*` 节、哪个绑定就拿到哪个，零权限的插件也能拿到 JWT 密钥、连接串与签名密钥；现在要在 `XiHan:Plugins:<OutOfProcess|Wasm>:Grants:<清单 ID>` 里授予 `config:<配置节>` 与 `binding:<绑定名>`，没有授予即拒绝加载（`PLUGINS_DENIED_001`）
 - **修复** S3 命名实例必须给出 `AccessKey` 与 `SecretKey`：原先没给密钥就用宿主的 AWS 凭据链，能登记存储实例的租户管理员可以以宿主的身份读写任何桶；要用环境凭据由运营方打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials`
+- **修复** WebAuthn 认证核对凭据属于谁：原先只在存储与响应都带用户句柄时才比对，知道口令的攻击者能用自己账号下的通行密钥完成别人的登录。`WebAuthnStoredCredential.UserHandle` 改为必填，`VerifyAuthentication` 增加 `expectedUserHandle`（先认出用户时传他，免用户名传 `null`，此时响应必须带句柄），结果新增 `UserHandle`
 
 ## v5.0.0-preview.3（2026-11-12）
 

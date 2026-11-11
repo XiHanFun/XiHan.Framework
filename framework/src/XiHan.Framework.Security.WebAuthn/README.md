@@ -39,10 +39,10 @@ var options = ceremonies.CreateRegistrationOptions(new WebAuthnUserEntity(userHa
 var registered = ceremonies.VerifyRegistration(response, savedChallenge);
 ```
 
-认证：按响应的凭据 ID 找到存储的凭据，核对后更新签名计数。
+认证：按响应的凭据 ID 找到存储的凭据（连同它所属用户的句柄），核对后更新签名计数。登录前已认出用户（先填账号、第二因素）时传入这个用户，凭据必须属于他；免用户名登录传 `null`，登录的用户取结果的 `UserHandle`。
 
 ```csharp
-var verified = ceremonies.VerifyAuthentication(response, savedChallenge, new WebAuthnStoredCredential(id, publicKey, signCount, userHandle));
+var verified = ceremonies.VerifyAuthentication(response, savedChallenge, new WebAuthnStoredCredential(id, publicKey, signCount, ownerHandle), expectedUserHandle);
 ```
 
 ## 主要类型

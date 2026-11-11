@@ -51,7 +51,7 @@ XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies
 XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.CreateAuthenticationOptions(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>! allowCredentials) -> XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions!
 XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.CreateRegistrationOptions(XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity! user, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>! excludeCredentials) -> XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions!
 XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.Options.get -> XiHan.Framework.Security.WebAuthn.WebAuthnOptions!
-XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.VerifyAuthentication(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse! response, string! expectedChallenge, XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential! credential) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion!>
+XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.VerifyAuthentication(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse! response, string! expectedChallenge, XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential! credential, string? expectedUserHandle) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion!>
 XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.VerifyRegistration(XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse! response, string! expectedChallenge) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential!>
 XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.WebAuthnCeremonies(XiHan.Framework.Security.WebAuthn.WebAuthnOptions! options) -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions
@@ -187,15 +187,15 @@ XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential!
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.CredentialId.get -> string!
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.CredentialId.init -> void
-XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.Deconstruct(out string! CredentialId, out string! PublicKey, out uint SignCount, out string? UserHandle) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.Deconstruct(out string! CredentialId, out string! PublicKey, out uint SignCount, out string! UserHandle) -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential? other) -> bool
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.PublicKey.get -> string!
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.PublicKey.init -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.SignCount.get -> uint
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.SignCount.init -> void
-XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.UserHandle.get -> string?
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.UserHandle.get -> string!
 XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.UserHandle.init -> void
-XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.WebAuthnStoredCredential(string! CredentialId, string! PublicKey, uint SignCount, string? UserHandle) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.WebAuthnStoredCredential(string! CredentialId, string! PublicKey, uint SignCount, string! UserHandle) -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity
 XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity!
 XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.Deconstruct(out string! Id, out string! Name, out string! DisplayName) -> void
@@ -213,13 +213,15 @@ XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.BackedUp.get -> bool
 XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.BackedUp.init -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.CredentialId.get -> string!
 XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.CredentialId.init -> void
-XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.Deconstruct(out string! CredentialId, out uint SignCount, out bool UserVerified, out bool BackedUp) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.Deconstruct(out string! CredentialId, out uint SignCount, out bool UserVerified, out bool BackedUp, out string! UserHandle) -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion? other) -> bool
 XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.SignCount.get -> uint
 XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.SignCount.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.UserHandle.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.UserHandle.init -> void
 XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.UserVerified.get -> bool
 XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.UserVerified.init -> void
-XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.WebAuthnVerifiedAssertion(string! CredentialId, uint SignCount, bool UserVerified, bool BackedUp) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.WebAuthnVerifiedAssertion(string! CredentialId, uint SignCount, bool UserVerified, bool BackedUp, string! UserHandle) -> void
 const XiHan.Framework.Security.WebAuthn.WebAuthnOptions.ConfigurationSection = "XiHan:Security:WebAuthn" -> string!
 override XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.Equals(object? obj) -> bool
 override XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.GetHashCode() -> int

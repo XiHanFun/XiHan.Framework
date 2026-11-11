@@ -85,7 +85,7 @@ public sealed class WebAuthnVectorTests
 
         foreach (var vector in file.Authentication)
         {
-            var result = ceremonies.VerifyAuthentication(vector.Response, vector.Challenge, vector.Credential);
+            var result = ceremonies.VerifyAuthentication(vector.Response, vector.Challenge, vector.Credential, vector.ExpectedUserHandle);
             if (vector.Error is { } error)
             {
                 AssertError(vector.Name, result, error);
@@ -169,7 +169,7 @@ public sealed class WebAuthnVectorTests
         {
             var challenge = Challenge();
             authenticator.SignCount = signCount;
-            authentication.Add(new AuthenticationVector(name, challenge, credential, authenticator.Authenticate(tamper(Ceremony(challenge) with { UserHandle = handle })), expected, error));
+            authentication.Add(new AuthenticationVector(name, challenge, credential, null, authenticator.Authenticate(tamper(Ceremony(challenge) with { UserHandle = handle })), expected, error));
         }
 
         Authenticated("es256-uncounted", es256, stored, 0, static c => c, new ExpectedAssertion(0, true, true), null);
@@ -185,6 +185,16 @@ public sealed class WebAuthnVectorTests
         Authenticated("user-handle-mismatch", es256, stored, 0, c => c with { UserHandle = Base64Url.EncodeToString(Encoding.UTF8.GetBytes("user-0002")) }, null, new ExpectedError(SecurityErrors.WebAuthnVerificationFailed, "user_handle", null));
         Authenticated("other-credential", other, stored, 0, static c => c, null, new ExpectedError(SecurityErrors.WebAuthnVerificationFailed, "credential", null));
         Authenticated("counter-regressed", es256, stored with { SignCount = 6 }, 6, static c => c, null, new ExpectedError(SecurityErrors.WebAuthnCounterRegressed, null, null));
+
+        // 凭据属于谁（ADR-0179）：先认出用户的流程传期望用户，凭据不属于他即拒绝；免用户名的流程响应必须带句柄
+        es256.SignCount = 0;
+        var victim = Base64Url.EncodeToString(Encoding.UTF8.GetBytes("user-0003"));
+        var ownedChallenge = Challenge();
+        authentication.Add(new AuthenticationVector("credential-of-another-user", ownedChallenge, stored, victim, es256.Authenticate(Ceremony(ownedChallenge)), null, new ExpectedError(SecurityErrors.WebAuthnVerificationFailed, "user_handle", null)));
+        var identifiedChallenge = Challenge();
+        authentication.Add(new AuthenticationVector("identified-user-without-handle", identifiedChallenge, stored, handle, es256.Authenticate(Ceremony(identifiedChallenge)), new ExpectedAssertion(0, true, true), null));
+        var usernamelessChallenge = Challenge();
+        authentication.Add(new AuthenticationVector("usernameless-without-handle", usernamelessChallenge, stored, null, es256.Authenticate(Ceremony(usernamelessChallenge)), null, new ExpectedError(SecurityErrors.WebAuthnVerificationFailed, "user_handle", null)));
 
         return new VectorFile(new VectorRelyingParty(RelyingPartyId, [Origin], "required"), registration, authentication);
     }
@@ -346,10 +356,11 @@ public sealed class WebAuthnVectorTests
     /// <param name="Name">名称</param>
     /// <param name="Challenge">依赖方保存的挑战</param>
     /// <param name="Credential">存储的凭据</param>
+    /// <param name="ExpectedUserHandle">登录前已认出的用户；免用户名的流程为空（ADR-0179）</param>
     /// <param name="Response">浏览器交回的响应</param>
     /// <param name="Expected">成功时的结果</param>
     /// <param name="Error">失败时的错误</param>
-    private sealed record AuthenticationVector(string Name, string Challenge, WebAuthnStoredCredential Credential, WebAuthnAuthenticationResponse Response, ExpectedAssertion? Expected, ExpectedError? Error);
+    private sealed record AuthenticationVector(string Name, string Challenge, WebAuthnStoredCredential Credential, string? ExpectedUserHandle, WebAuthnAuthenticationResponse Response, ExpectedAssertion? Expected, ExpectedError? Error);
 
     /// <summary>
     /// 注册成功时的期望

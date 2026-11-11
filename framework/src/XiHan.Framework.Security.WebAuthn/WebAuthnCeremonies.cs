@@ -209,9 +209,13 @@ public sealed class WebAuthnCeremonies
     /// <param name="response">浏览器交回的响应</param>
     /// <param name="expectedChallenge">本次仪式保存的挑战（base64url）</param>
     /// <param name="credential">按响应的凭据 ID 找到的存储凭据</param>
+    /// <param name="expectedUserHandle">
+    /// 登录前已经认出的用户（base64url）：先填账号、或作为第二因素的流程传这个用户，凭据必须属于他；
+    /// 免用户名（可发现凭据）的流程传 <see langword="null"/>，此时响应必须带 <c>userHandle</c>，登录的用户取结果的 <see cref="WebAuthnVerifiedAssertion.UserHandle"/>（ADR-0179）
+    /// </param>
     /// <returns>核对通过的结果；解析不了为 <c>SECURITY_VALIDATION_006</c>，核对不通过为 <c>SECURITY_DENIED_005</c>，签名计数没有增加为 <c>SECURITY_DENIED_006</c></returns>
-    /// <exception cref="ArgumentException"><paramref name="expectedChallenge"/> 或存储的凭据 ID 不是 base64url</exception>
-    public Result<WebAuthnVerifiedAssertion> VerifyAuthentication(WebAuthnAuthenticationResponse response, string expectedChallenge, WebAuthnStoredCredential credential)
+    /// <exception cref="ArgumentException"><paramref name="expectedChallenge"/>、存储的凭据 ID、存储的用户句柄或 <paramref name="expectedUserHandle"/> 不是 base64url</exception>
+    public Result<WebAuthnVerifiedAssertion> VerifyAuthentication(WebAuthnAuthenticationResponse response, string expectedChallenge, WebAuthnStoredCredential credential, string? expectedUserHandle)
     {
         ArgumentNullException.ThrowIfNull(response);
         ArgumentNullException.ThrowIfNull(credential);
@@ -219,6 +223,17 @@ public sealed class WebAuthnCeremonies
         if (!Base64UrlText.TryDecode(credential.CredentialId, out var storedId))
         {
             throw new ArgumentException("The stored credential ID must be base64url.", nameof(credential));
+        }
+
+        if (string.IsNullOrEmpty(credential.UserHandle) || !Base64UrlText.TryDecode(credential.UserHandle, out var ownerHandle))
+        {
+            throw new ArgumentException("The stored credential must record its owner's user handle as base64url.", nameof(credential));
+        }
+
+        byte[]? expectedOwner = null;
+        if (expectedUserHandle is not null && !Base64UrlText.TryDecode(expectedUserHandle, out expectedOwner))
+        {
+            throw new ArgumentException("The expected user handle must be base64url.", nameof(expectedUserHandle));
         }
 
         if (!TryReadId(response.Type, response.Id, response.RawId, out var rawId) || response.Response is not { } assertionResponse)
@@ -251,9 +266,21 @@ public sealed class WebAuthnCeremonies
             return dataFailure;
         }
 
-        // 存储的凭据记着所属用户时，响应交回的句柄必须是同一个：防止拿别人的凭据 ID 冒充
-        if (credential.UserHandle is { Length: > 0 } storedHandle && assertionResponse.UserHandle is { Length: > 0 } receivedHandle
-            && (!Base64UrlText.TryDecode(storedHandle, out var expectedHandle) || !Base64UrlText.TryDecode(receivedHandle, out var actualHandle) || !expectedHandle.AsSpan().SequenceEqual(actualHandle)))
+        // 凭据属于谁（WebAuthn §7.2 第 6 步）：登录前已认出用户时，凭据必须属于他，否则攻击者能用自己账号下的凭据签受害者的挑战；
+        // 没有认出用户（免用户名）时响应必须带句柄。响应带了句柄就必须等于存储的所属用户，防止拿别人的句柄冒充（ADR-0179）
+        if (expectedOwner is not null && !expectedOwner.AsSpan().SequenceEqual(ownerHandle))
+        {
+            return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
+        }
+
+        if (assertionResponse.UserHandle is { Length: > 0 } receivedHandle)
+        {
+            if (!Base64UrlText.TryDecode(receivedHandle, out var actualHandle) || !actualHandle.AsSpan().SequenceEqual(ownerHandle))
+            {
+                return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
+            }
+        }
+        else if (expectedOwner is null)
         {
             return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
         }
@@ -285,7 +312,7 @@ public sealed class WebAuthnCeremonies
             return WebAuthnFailures.CounterRegressed(credential.SignCount, received);
         }
 
-        return new WebAuthnVerifiedAssertion(Base64Url.EncodeToString(rawId), received, authenticatorData.UserVerified, authenticatorData.BackedUp);
+        return new WebAuthnVerifiedAssertion(Base64Url.EncodeToString(rawId), received, authenticatorData.UserVerified, authenticatorData.BackedUp, Base64Url.EncodeToString(ownerHandle));
     }
 
     /// <summary>
