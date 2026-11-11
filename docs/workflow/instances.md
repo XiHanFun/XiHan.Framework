@@ -58,7 +58,7 @@ public sealed class Inbox(IWorkflowTaskService tasks)
         => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
 
     public ValueTask<Result<WorkflowInstance>> ApproveAsync(string taskId, string userId, string? comment, CancellationToken cancellationToken)
-        => tasks.CompleteAsync(new UserTaskCompletion(taskId, userId, UserTaskOutcomes.Approved, comment), cancellationToken);
+        => tasks.CompleteAsync(new UserTaskCompletion(taskId, userId) { Outcome = UserTaskOutcomes.Approved, Comment = comment }, cancellationToken);
 }
 ```
 
@@ -159,10 +159,10 @@ public ValueTask<Result<UserTaskPage>> SearchAsync(string userId, string keyword
     => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
 
 public ValueTask<Result> HandOverAsync(string taskId, string userId, string colleague, CancellationToken cancellationToken)
-    => tasks.TransferAsync(new UserTaskTransfer(taskId, userId, colleague, "出差，转同事处理"), cancellationToken);
+    => tasks.TransferAsync(new UserTaskTransfer(taskId, userId) { TargetAssigneeId = colleague, Comment = "出差，转同事处理" }, cancellationToken);
 
 public ValueTask<Result<WorkflowInstance>> SendBackAsync(string taskId, string userId, CancellationToken cancellationToken)
-    => tasks.ReturnAsync(new UserTaskReturn(taskId, userId, Comment: "材料不全"), cancellationToken);
+    => tasks.ReturnAsync(new UserTaskReturn(taskId, userId) { Comment = "材料不全" }, cancellationToken);
 ```
 
 ### 自定义指派规则
@@ -243,12 +243,12 @@ public sealed class ShippingWorker(IWorkflowExternalTaskService external)
             var order = task.Payload?["order"]?.GetValue<string>();
             if (order is { Length: > 0 })
             {
-                await external.CompleteAsync(new ExternalTaskCompletion(task.Id, "worker-1", new JsonObject { ["shipped"] = true }), cancellationToken);
+                await external.CompleteAsync(new ExternalTaskCompletion(task.Id, "worker-1") { Outputs = new JsonObject { ["shipped"] = true } }, cancellationToken);
             }
             else
             {
                 // 带 RetryAfter：解锁并推迟，任务的 Attempt 加一；不带则节点以该错误故障，按节点重试策略处理
-                await external.FailAsync(new ExternalTaskFailure(task.Id, "worker-1", "order missing", TimeSpan.FromMinutes(1)), cancellationToken);
+                await external.FailAsync(new ExternalTaskFailure(task.Id, "worker-1") { Error = "order missing", RetryAfter = TimeSpan.FromMinutes(1) }, cancellationToken);
             }
         }
     }
@@ -338,8 +338,8 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 | `CancelAsync(ids, reason)` | `Running`、`Suspended`、`Faulted` | 取消：清掉未结束节点与全部书签，`EnableCompensation` 时补偿，级联到未结束的子流程 |
 | `TerminateAsync(ids, reason)` | `Running`、`Suspended`、`Faulted` | 终止：同取消，但不补偿 |
 | `RetryAsync(ids)` | `Faulted` 且有故障节点 | 清故障，从故障节点再执行一次（`Attempt + 1`） |
-| `SetVariablesAsync(updates)` | `Running`、`Suspended` | `WorkflowVariableUpdate(instanceId, variables, remove)`：合并变量、删除指定键 |
-| `JumpAsync(jumps)` | `Running`、`Suspended`、`Faulted` | `WorkflowJump(instanceId, targetNodeId, reason, variables, actorId)`：取消全部未结束节点与书签，从目标节点重新执行 |
+| `SetVariablesAsync(updates)` | `Running`、`Suspended` | `new WorkflowVariableUpdate(instanceId) { Variables = …, Remove = … }`：合并变量、删除指定键 |
+| `JumpAsync(jumps)` | `Running`、`Suspended`、`Faulted` | `new WorkflowJump(instanceId, targetNodeId) { Reason = …, Variables = …, ActorId = … }`：取消全部未结束节点与书签，从目标节点重新执行 |
 | `MigrateAsync(migrations)` | `Running`、`Suspended` | `WorkflowMigration(instanceId, targetDefinitionId)`：迁到同名的另一个已发布版本；未结束节点在目标版本里必须存在且活动类型相同 |
 | `PurgeAsync(request)` | 已结束 | `WorkflowPurgeRequest`：删除早于 `EndedBefore` 结束的实例及其节点实例与书签，可按 `Statuses` 与 `DefinitionName` 过滤，一次最多 `Limit` 条（1～1000，缺省 1000；越界返回 `WORKFLOW_VALIDATION_002`，不开事务） |
 
@@ -348,9 +348,9 @@ using System.Text.Json.Nodes;
 using XiHan.Framework.Workflow.Abstractions.Engine;
 
 // 改一个变量并删掉一个过期的键
-await engine.SetVariablesAsync(new WorkflowVariableUpdate(instanceId, new JsonObject { ["days"] = 2 }, Remove: ["draft"]), cancellationToken);
+await engine.SetVariablesAsync(new WorkflowVariableUpdate(instanceId) { Variables = new JsonObject { ["days"] = 2 }, Remove = ["draft"] }, cancellationToken);
 // 管理员把卡住的实例跳回主管审批
-await engine.JumpAsync(new WorkflowJump(instanceId, "manager", Reason: "重新审批", ActorId: adminId), cancellationToken);
+await engine.JumpAsync(new WorkflowJump(instanceId, "manager") { Reason = "重新审批", ActorId = adminId }, cancellationToken);
 // 迁到新发布的版本
 await engine.MigrateAsync(new WorkflowMigration(instanceId, newVersion.Id), cancellationToken);
 ```

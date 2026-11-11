@@ -60,7 +60,18 @@ public sealed class SchemaContractTests
     [Fact]
     public void EntityMapping_InfersProtocolsAndKeys_FromTheEntityType()
     {
-        var audited = new EntityMapping(new RegisteredEntity(typeof(AuditedWidget), typeof(Guid)), "audited_widget", isSplit: false, [new EntityColumnMapping("Id", "id", typeof(Guid), IsKey: true, IsNullable: false), new EntityColumnMapping("TenantId", "tenant_id", typeof(string), IsKey: false, IsNullable: false)]);
+        var audited = new EntityMapping(new RegisteredEntity(typeof(AuditedWidget), typeof(Guid)), "audited_widget", isSplit: false, [new EntityColumnMapping
+        {
+            Property = "Id",
+            Column = "id",
+            Type = typeof(Guid),
+            IsKey = true,
+        }, new EntityColumnMapping
+        {
+            Property = "TenantId",
+            Column = "tenant_id",
+            Type = typeof(string),
+        }]);
         var plain = new EntityMapping(new RegisteredEntity(typeof(Widget), typeof(Guid)), "widget", isSplit: false, []);
 
         Assert.Equal(EntityProtocols.CreationTime | EntityProtocols.ModificationTime | EntityProtocols.ConcurrencyStamp | EntityProtocols.SoftDeletable | EntityProtocols.MultiTenant, audited.Protocols);

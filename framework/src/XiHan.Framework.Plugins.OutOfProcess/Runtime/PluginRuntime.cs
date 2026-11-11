@@ -245,7 +245,14 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// 诊断快照
     /// </summary>
     public OutOfProcessPluginStatus Describe()
-        => new(Status, _process is { HasExited: false } process ? process.ProcessId : null, _handshake?.ProtocolVersion, _restarts, IsLazy);
+        => new()
+        {
+            Status = Status,
+            ProcessId = _process is { HasExited: false } process ? process.ProcessId : null,
+            ProtocolVersion = _handshake?.ProtocolVersion,
+            Restarts = _restarts,
+            Lazy = IsLazy,
+        };
 
     /// <summary>
     /// 是否以该方式订阅了该主题与类型

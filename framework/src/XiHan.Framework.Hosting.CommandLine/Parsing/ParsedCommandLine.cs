@@ -8,12 +8,33 @@ namespace XiHan.Framework.Hosting.CommandLine.Parsing;
 /// <summary>
 /// 解析后的命令行：命令名、位置参数与选项（同名选项可重复，值按出现顺序）
 /// </summary>
-/// <param name="Command">第一个非选项记号；没有时为 <see langword="null"/></param>
-/// <param name="Arguments">命令名之后的位置参数</param>
-/// <param name="Options">选项名（不含 <c>--</c>）→ 值；无值的标志记为 <c>true</c></param>
+/// <remarks>
+/// 成员经初始化器给出，以后加字段只加属性（ADR-0142）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record ParsedCommandLine(string? Command, IReadOnlyList<string> Arguments, IReadOnlyDictionary<string, IReadOnlyList<string>> Options)
+public sealed record ParsedCommandLine
 {
+    /// <summary>
+    /// 第一个非选项记号
+    /// </summary>
+    /// <remarks>
+    /// 没有时为 <see langword="null"/>
+    /// </remarks>
+    public string? Command { get; init; }
+
+    /// <summary>
+    /// 命令名之后的位置参数
+    /// </summary>
+    public required IReadOnlyList<string> Arguments { get; init; }
+
+    /// <summary>
+    /// 选项名（不含 <c>--</c>）→ 值
+    /// </summary>
+    /// <remarks>
+    /// 无值的标志记为 <c>true</c>
+    /// </remarks>
+    public required IReadOnlyDictionary<string, IReadOnlyList<string>> Options { get; init; }
+
     /// <summary>
     /// 选项的最后一个值
     /// </summary>

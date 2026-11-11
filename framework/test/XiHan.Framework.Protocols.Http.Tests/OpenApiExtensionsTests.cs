@@ -118,7 +118,7 @@ public sealed class OpenApiExtensionsTests
         {
             Title = "Orders API",
             Version = "2.1.0",
-            Servers = [new OpenApiServer("https://api.example.com", "Production"), new OpenApiServer("/api")],
+            Servers = [new OpenApiServer("https://api.example.com") { Description = "Production" }, new OpenApiServer("/api")],
         };
         var (app, client) = await StartAsync(options: options);
         await using var host = app;
@@ -164,7 +164,10 @@ public sealed class OpenApiExtensionsTests
         registry.Add(Describe(new OperationContract("orders.list") { Expose = Expose.Http, Policy = "authenticated" })).ThrowIfFailure();
         registry.Add(Describe(new OperationContract("orders.get") { Expose = Expose.Http })).ThrowIfFailure();
 
-        using var bearer = JsonDocument.Parse(OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, new HttpProtocolOptions(), null) { AuthenticationSchemes = ["bearer"] }));
+        using var bearer = JsonDocument.Parse(OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, new HttpProtocolOptions())
+        {
+            AuthenticationSchemes = ["bearer"],
+        }));
         var paths = bearer.RootElement.GetProperty("paths");
         // 有权限或策略要求的操作不写 security（沿用全局），无要求的写空数组；权限码与策略名仍只走 x-xihan-*
         Assert.False(paths.GetProperty("/orders").GetProperty("post").TryGetProperty("security", out _));
@@ -172,7 +175,10 @@ public sealed class OpenApiExtensionsTests
         Assert.Equal(0, paths.GetProperty("/orders/{id}").GetProperty("get").GetProperty("security").GetArrayLength());
         Assert.Equal("orders.write", paths.GetProperty("/orders").GetProperty("post").GetProperty("x-xihan-permission").GetString());
 
-        using var apiKey = JsonDocument.Parse(OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, new HttpProtocolOptions(), null) { AuthenticationSchemes = ["ApiKey"] }));
+        using var apiKey = JsonDocument.Parse(OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, new HttpProtocolOptions())
+        {
+            AuthenticationSchemes = ["ApiKey"],
+        }));
         Assert.False(apiKey.RootElement.GetProperty("components").TryGetProperty("securitySchemes", out _));
         Assert.False(apiKey.RootElement.TryGetProperty("security", out _));
         Assert.False(apiKey.RootElement.GetProperty("paths").GetProperty("/orders/{id}").GetProperty("get").TryGetProperty("security", out _));
@@ -210,7 +216,10 @@ public sealed class OpenApiExtensionsTests
     [Fact]
     public async Task DocumentSource_FromServices_ProducesTheSameDocument_AsTheMappedEndpoint()
     {
-        var options = new OpenApiOptions { Title = "Orders API", Version = "2.0.0", Servers = [new OpenApiServer("https://api.example.com", "prod")] };
+        var options = new OpenApiOptions { Title = "Orders API", Version = "2.0.0", Servers = [new OpenApiServer("https://api.example.com")
+        {
+            Description = "prod",
+        }] };
         var (app, client) = await StartAsync(localization: true, bearer: true, options: options);
         await using var host = app;
         var endpoints = ((IEndpointRouteBuilder)app).DataSources.SelectMany(static source => source.Endpoints).ToList();
@@ -317,25 +326,37 @@ public sealed class OpenApiExtensionsTests
 
         // 类型不是任何已登记操作的响应类型
         var unknown = Endpoint("GET", "/legacy/unknown", new ProducesResponseTypeMetadata(200, typeof(LegacyOrder), ["application/json"]));
-        var unresolved = Assert.Throws<FrameworkException>(() => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options, null) { Endpoints = [unknown] }));
+        var unresolved = Assert.Throws<FrameworkException>(() => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options)
+        {
+            Endpoints = [unknown],
+        }));
         Assert.Equal(HttpErrors.OpenApiSchemaUnresolved, unresolved.Code);
         Assert.Contains("LegacyOrder", unresolved.Message, StringComparison.Ordinal);
 
         // 显式声明的操作没登记
         var declared = Endpoint("GET", "/legacy/declared", new ProducesResponseTypeMetadata(200, typeof(LegacyOrder), ["application/json"]), new OperationSchemaReference(ResponseOperationId: "orders.missing"));
-        Assert.Equal(HttpErrors.OpenApiSchemaUnresolved, Assert.Throws<FrameworkException>(() => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options, null) { Endpoints = [declared] })).Code);
+        Assert.Equal(HttpErrors.OpenApiSchemaUnresolved, Assert.Throws<FrameworkException>(() => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options)
+        {
+            Endpoints = [declared],
+        })).Code);
 
         // JSON 响应没有类型也没有声明
         var untyped = Endpoint("GET", "/legacy/untyped", new ProducesResponseTypeMetadata(200, null, ["application/json"]));
-        Assert.Equal(HttpErrors.OpenApiSchemaUnresolved, Assert.Throws<FrameworkException>(() => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options, null) { Endpoints = [untyped] })).Code);
+        Assert.Equal(HttpErrors.OpenApiSchemaUnresolved, Assert.Throws<FrameworkException>(() => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options)
+        {
+            Endpoints = [untyped],
+        })).Code);
 
         // 与操作共用一条路由
         var shared = Endpoint("GET", "/orders/{id}", new ProducesResponseTypeMetadata(200, typeof(string), ["text/plain"]));
-        Assert.Equal(HttpErrors.DuplicateRoute, Assert.Throws<FrameworkException>(() => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options, null) { Endpoints = [shared] })).Code);
+        Assert.Equal(HttpErrors.DuplicateRoute, Assert.Throws<FrameworkException>(() => OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options)
+        {
+            Endpoints = [shared],
+        })).Code);
 
         // 没有方法元数据、没有描述元数据、带操作描述的端点都不进文档
         var ignored = new RouteEndpoint(static _ => Task.CompletedTask, RoutePatternFactory.Parse("/plain"), 0, new EndpointMetadataCollection(new HttpMethodMetadata(["GET"])), "GET /plain");
-        using var document = JsonDocument.Parse(OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options, null) { Endpoints = [ignored] }));
+        using var document = JsonDocument.Parse(OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options) { Endpoints = [ignored] }));
         Assert.Equal(["/orders/{id}"], document.RootElement.GetProperty("paths").EnumerateObject().Select(static p => p.Name));
     }
 }

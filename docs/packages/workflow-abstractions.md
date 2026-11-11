@@ -103,7 +103,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `ActivityTypes` 与 `StartActivity`、`UserTaskActivity`、`HttpActivity` 等 | 内置活动的类型名与属性名常量 |
 | `WorkflowHttpClient` | `Http` 活动用的 HTTP 客户端（单例，可替换；缺省的过[出站地址策略](/security/outbound)）；`SendAsync(request, ct)` 不另计时，超时由活动按引擎时钟落成令牌传进来、按令牌归因（ADR-0097） |
 | `IWorkflowOutcomeHandler`、`WorkflowOutcomeContext` | `End` 节点带结果时、结束实例之前调用 |
-| `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务；`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，ADR-0096、ADR-0099）、排序与分页下推到存储，返回 `UserTaskPage(Items, Total)`，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002` |
+| `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务；`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，ADR-0096、ADR-0099）、排序与分页下推到存储，返回 `UserTaskPage { Items, Total }`，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002` |
 | `IWorkflowExternalTaskService`、`ExternalTask`、`ExternalTaskCompletion`、`ExternalTaskFailure`、`ExternalTaskLockExtension` | 外部任务 |
 | `IAssigneeProvider`、`AssigneeRule`、`AssigneeResolution`、`AssigneeRuleTypes`、`EmptyAssigneeStrategy` | 指派规则；内置 `User`、`Starter`、`Expression` |
 | `IWorkflowExpressionEvaluator`、`WorkflowExpressionEvaluator`、`ExpressionScope` | 表达式：`Evaluate` 返回 `Result<Maybe<JsonNode>>`、`EvaluateCondition`、`Render`、`Validate` |

@@ -69,7 +69,7 @@ public static partial class OpenApiDocumentBuilder
     /// <param name="title">文档标题，通常是应用名</param>
     /// <param name="version">文档版本</param>
     internal static byte[] Build(OperationRegistry registry, HttpProtocolOptions options, PermissionRegistry? permissions, string title, string version)
-        => Build(new OpenApiDocumentSource(registry, options, permissions) { Title = title, Version = version });
+        => Build(new OpenApiDocumentSource(registry, options) { Permissions = permissions, Title = title, Version = version });
 
     /// <summary>
     /// 生成文档的 UTF-8 JSON

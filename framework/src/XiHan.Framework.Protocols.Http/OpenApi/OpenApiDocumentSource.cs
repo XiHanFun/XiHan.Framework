@@ -19,21 +19,42 @@ namespace XiHan.Framework.Protocols.Http.OpenApi;
 /// 操作登记表、HTTP 选项、权限码注册表，以及标题 / 版本 / <c>servers</c>、已装配的认证方案、要收录的普通端点、分组与按键取文档区域文案的函数
 /// <see cref="FromServices"/> 从容器组装这些输入，<c>MapXiHanOpenApi</c> 与导出工具（如 <c>contracts export</c>）共用它，产出同一份文档
 /// </remarks>
-/// <param name="Registry">操作登记表</param>
-/// <param name="Options">HTTP 选项（路由覆盖与前缀）</param>
-/// <param name="Permissions">权限码注册表；为 <see langword="null"/> 时 <c>x-xihan-permissions</c> 只收录被引用的权限码，且只有 <c>code</c></param>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProtocolOptions Options, PermissionRegistry? Permissions)
+public sealed record OpenApiDocumentSource
 {
+    /// <summary>
+    /// 创建文档的输入
+    /// </summary>
+    /// <remarks>
+    /// 登记表与选项经构造给出，其余成员经初始化器给出，以后加字段只加属性、不改构造签名（ADR-0142）
+    /// </remarks>
+    /// <param name="registry">操作登记表</param>
+    /// <param name="options">HTTP 选项（路由覆盖与前缀）</param>
+    public OpenApiDocumentSource(OperationRegistry registry, HttpProtocolOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(registry);
+        ArgumentNullException.ThrowIfNull(options);
+        Registry = registry;
+        Options = options;
+    }
+
     /// <summary>
     /// 操作登记表
     /// </summary>
-    public OperationRegistry Registry { get; } = Registry ?? throw new ArgumentNullException(nameof(Registry));
+    public OperationRegistry Registry { get; }
 
     /// <summary>
     /// HTTP 选项
     /// </summary>
-    public HttpProtocolOptions Options { get; } = Options ?? throw new ArgumentNullException(nameof(Options));
+    public HttpProtocolOptions Options { get; }
+
+    /// <summary>
+    /// 权限码注册表
+    /// </summary>
+    /// <remarks>
+    /// 为 <see langword="null"/> 时 <c>x-xihan-permissions</c> 只收录被引用的权限码，且只有 <c>code</c>
+    /// </remarks>
+    public PermissionRegistry? Permissions { get; init; }
 
     /// <summary>
     /// 文档标题
@@ -144,9 +165,9 @@ public sealed record OpenApiDocumentSource(OperationRegistry Registry, HttpProto
         var localizer = services.GetService<IMessageLocalizer>();
         return new OpenApiDocumentSource(
             services.GetRequiredService<OperationRegistry>(),
-            services.GetService<HttpProtocolOptions>() ?? new HttpProtocolOptions(),
-            services.GetService<PermissionRegistry>())
+            services.GetService<HttpProtocolOptions>() ?? new HttpProtocolOptions())
         {
+            Permissions = services.GetService<PermissionRegistry>(),
             Title = options.Title ?? services.GetService<IHostEnvironment>()?.ApplicationName ?? FrameworkInfo.Name,
             Version = options.Version ?? FrameworkInfo.Version,
             Servers = options.Servers,

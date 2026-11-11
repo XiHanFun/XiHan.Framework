@@ -41,11 +41,13 @@
 - **移除** `IWorkflowTaskService.PendingAsync` 与 `PendingByInstanceAsync`：待办一律分页读取，改为 `QueryAsync(new UserTaskQuery { AssigneeId = … })` 或 `{ InstanceId = … }`
 - **调整** 工作流的批量方法传空集合时直接返回空结果，不再开一次调用
 - **调整** `IBlobStoreProvider.CreateAsync` 与 `IDataSourceProvider.CreateAsync` 以结果报告失败（`Result<IBlobStore>` / `Result<IDataSource>`），不再抛出：自己写存储或数据源 Provider 的改返回类型，拒绝定义用 `BlobStoreFailures` / `DataSourceFailures`；经注册表使用的应用不受影响
+- **调整** 工作流的任务与控制请求改为初始化器：`new UserTaskCompletion(taskId, actorId) { Outcome = …, Comment = … }`，外部任务请求保留 `(taskId, workerId)`，`new WorkflowJump(instanceId, targetNodeId) { Reason = … }`、`new WorkflowVariableUpdate(instanceId) { Variables = …, Remove = … }`；`UserTaskPage`、`BlobMetadata`、`BlobPage`、`EntityColumnMapping`、`SqlSugarDiffLogData` 按属性名初始化，这些类型都不再能解构
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
 
 ### 宿主、协议与插件
 
 - **调整** AI、协议与宿主的实现类型不再公开：AI 的对话、知识库摄入与检索、提示增强、Provider / 工具 / 提示目录的默认实现，`McpServer` 的构造与 `HandleAsync`、`McpReply`、`McpStdioCommand`，命令行内置的 `graph` / `pipeline` / `operations` / `invoke` 命令，`HttpRouteConvention.Derive` 的布尔重载、`OpenApiDocumentBuilder.Build` 的五参重载，`ProtoMessage` 的构造与 `S3ObjectStorageFeature.CreateClient`；经接口与特性使用的写法不变
+- **调整** `McpTool`、`McpToolAnnotations`（提示缺省为假，只写为真的项）、`OutOfProcessPluginStatus`、`WasmPluginStatus`、`ParsedCommandLine` 改为初始化器；`new OpenApiServer(url) { Description = … }`、`new OpenApiDocumentSource(registry, options) { Permissions = … }`
 - **调整** `MapXiHanOperations()` 返回 `IEndpointConventionBuilder` 而不是端点数，可以在返回值上给全部操作端点统一加 CORS、限流等约定
 - **调整** `ProblemResponse`、`HealthResponse`、`FeatureHealth` 改为初始化器，按属性名赋值；响应的 JSON 不变
 - **修复** `Plugins.OutOfProcess`、`Plugins.Wasm`、`Plugins.Conformance` 对 `Plugins.Protocol`（以及 Conformance 对两个宿主）改为精确版本依赖：原先单独升级其中一个包，还原能通过，运行时才缺成员；这几个包要用同一版本

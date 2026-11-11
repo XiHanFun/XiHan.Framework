@@ -29,10 +29,9 @@ XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobDeleteResult.Outcome.get ->
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobDeleteResult.Outcome.init -> void
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata!
-XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.BlobMetadata(XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey Key, long Length, string! ContentType, string! ETag, System.DateTimeOffset LastModified, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Metadata) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.BlobMetadata() -> void
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.ContentType.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.ContentType.init -> void
-XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.Deconstruct(out XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey Key, out long Length, out string! ContentType, out string! ETag, out System.DateTimeOffset LastModified, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Metadata) -> void
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.ETag.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.ETag.init -> void
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.Equals(XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata? other) -> bool
@@ -97,10 +96,9 @@ XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName.Equals(XiHan.Frame
 XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName.Value.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage!
-XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.BlobPage(System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata!>! Items, string? ContinuationToken) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.BlobPage() -> void
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.ContinuationToken.get -> string?
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.ContinuationToken.init -> void
-XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata!>! Items, out string? ContinuationToken) -> void
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.Equals(XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage? other) -> bool
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata!>!
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.Items.init -> void

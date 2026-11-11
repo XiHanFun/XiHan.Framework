@@ -31,7 +31,6 @@ XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.<Clone>$() -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.AuthenticationSchemes.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.AuthenticationSchemes.init -> void
-XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Deconstruct(out XiHan.Framework.Kernel.Operations.OperationRegistry! Registry, out XiHan.Framework.Protocols.Http.HttpProtocolOptions! Options, out XiHan.Framework.Kernel.Security.PermissionRegistry? Permissions) -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Endpoints.get -> System.Collections.Generic.IReadOnlyList<Microsoft.AspNetCore.Http.Endpoint!>!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Endpoints.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Equals(XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource? other) -> bool
@@ -41,7 +40,7 @@ XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Groups.get -> Syste
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Groups.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Localize.get -> System.Func<string!, System.Collections.Generic.IReadOnlyDictionary<string!, object?>?, string?>?
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Localize.init -> void
-XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.OpenApiDocumentSource(XiHan.Framework.Kernel.Operations.OperationRegistry! Registry, XiHan.Framework.Protocols.Http.HttpProtocolOptions! Options, XiHan.Framework.Kernel.Security.PermissionRegistry? Permissions) -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.OpenApiDocumentSource(XiHan.Framework.Kernel.Operations.OperationRegistry! registry, XiHan.Framework.Protocols.Http.HttpProtocolOptions! options) -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Options.get -> XiHan.Framework.Protocols.Http.HttpProtocolOptions!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Permissions.get -> XiHan.Framework.Kernel.Security.PermissionRegistry?
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentSource.Permissions.init -> void
@@ -76,11 +75,10 @@ XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.Version.get -> string?
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiOptions.Version.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.<Clone>$() -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer!
-XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.Deconstruct(out string! Url, out string? Description) -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.Description.get -> string?
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.Description.init -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.Equals(XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer? other) -> bool
-XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.OpenApiServer(string! Url, string? Description = null) -> void
+XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.OpenApiServer(string! url) -> void
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiServer.Url.get -> string!
 XiHan.Framework.Protocols.Http.OpenApi.OperationSchemaReference
 XiHan.Framework.Protocols.Http.OpenApi.OperationSchemaReference.<Clone>$() -> XiHan.Framework.Protocols.Http.OpenApi.OperationSchemaReference!

@@ -246,19 +246,30 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     /// 完成任务
     /// </summary>
     public ValueTask<Result<WorkflowInstance>> CompleteAsync(string taskId, string actorId, string outcome, JsonObject? variables = null, string? comment = null)
-        => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(taskId, actorId, outcome, comment, variables), CancellationToken.None));
+        => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(taskId, actorId)
+        {
+            Outcome = outcome,
+            Comment = comment,
+            Variables = variables,
+        }, CancellationToken.None));
 
     /// <summary>
     /// 转办任务
     /// </summary>
     public ValueTask<Result> TransferAsync(string taskId, string actorId, string target)
-        => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().TransferAsync(new UserTaskTransfer(taskId, actorId, target), CancellationToken.None));
+        => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().TransferAsync(new UserTaskTransfer(taskId, actorId)
+        {
+            TargetAssigneeId = target,
+        }, CancellationToken.None));
 
     /// <summary>
     /// 加签
     /// </summary>
     public ValueTask<Result> AddAssigneesAsync(string taskId, string actorId, params IReadOnlyList<string> assignees)
-        => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().AddAssigneesAsync(new UserTaskAddition(taskId, actorId, assignees), CancellationToken.None));
+        => InScopeAsync(sp => sp.GetRequiredService<IWorkflowTaskService>().AddAssigneesAsync(new UserTaskAddition(taskId, actorId)
+        {
+            AssigneeIds = assignees,
+        }, CancellationToken.None));
 
     /// <summary>
     /// 发信号

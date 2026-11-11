@@ -9,11 +9,39 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 /// <summary>
 /// 对象的元数据
 /// </summary>
-/// <param name="Key">键</param>
-/// <param name="Length">内容长度（字节）</param>
-/// <param name="ContentType">内容类型</param>
-/// <param name="ETag">内容标签：内容变化即变化，形式由 Provider 决定</param>
-/// <param name="LastModified">最后修改时间</param>
-/// <param name="Metadata">自定义元数据</param>
+/// <remarks>
+/// 以后加字段只加初始化器属性（ADR-0142）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record BlobMetadata(BlobKey Key, long Length, string ContentType, string ETag, DateTimeOffset LastModified, IReadOnlyDictionary<string, string> Metadata);
+public sealed record BlobMetadata
+{
+    /// <summary>
+    /// 键
+    /// </summary>
+    public required BlobKey Key { get; init; }
+
+    /// <summary>
+    /// 内容长度（字节）
+    /// </summary>
+    public required long Length { get; init; }
+
+    /// <summary>
+    /// 内容类型
+    /// </summary>
+    public required string ContentType { get; init; }
+
+    /// <summary>
+    /// 内容标签：内容变化即变化，形式由 Provider 决定
+    /// </summary>
+    public required string ETag { get; init; }
+
+    /// <summary>
+    /// 最后修改时间
+    /// </summary>
+    public required DateTimeOffset LastModified { get; init; }
+
+    /// <summary>
+    /// 自定义元数据
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
+}

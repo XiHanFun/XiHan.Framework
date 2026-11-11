@@ -58,7 +58,14 @@ internal sealed class EntityFrameworkCoreEntityCatalog(IServiceProvider services
                 var store = StoreObjectIdentifier.Table(table, entityType.GetSchema());
                 var columns = entityType.GetProperties()
                     .Where(static p => !p.IsShadowProperty())
-                    .Select(p => new EntityColumnMapping(p.Name, p.GetColumnName(store) ?? p.Name, p.ClrType, p.IsPrimaryKey(), p.IsNullable))
+                    .Select(p => new EntityColumnMapping
+                    {
+                        Property = p.Name,
+                        Column = p.GetColumnName(store) ?? p.Name,
+                        Type = p.ClrType,
+                        IsKey = p.IsPrimaryKey(),
+                        IsNullable = p.IsNullable,
+                    })
                     .ToList();
                 mappings.Add(new EntityMapping(entity, table, isSplit: false, columns));
             }

@@ -44,7 +44,6 @@ XiHan.Framework.Plugins.Wasm.WasmPluginStatus
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.<Clone>$() -> XiHan.Framework.Plugins.Wasm.WasmPluginStatus!
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.AbiVersion.get -> uint?
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.AbiVersion.init -> void
-XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Deconstruct(out XiHan.Framework.Kernel.Plugins.PluginStatus! Status, out uint? AbiVersion, out uint? ProtocolVersion, out int Restarts, out bool Lazy) -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Equals(XiHan.Framework.Plugins.Wasm.WasmPluginStatus? other) -> bool
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Lazy.get -> bool
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Lazy.init -> void
@@ -54,7 +53,7 @@ XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Restarts.get -> int
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Restarts.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Status.get -> XiHan.Framework.Kernel.Plugins.PluginStatus!
 XiHan.Framework.Plugins.Wasm.WasmPluginStatus.Status.init -> void
-XiHan.Framework.Plugins.Wasm.WasmPluginStatus.WasmPluginStatus(XiHan.Framework.Kernel.Plugins.PluginStatus! Status, uint? AbiVersion, uint? ProtocolVersion, int Restarts, bool Lazy) -> void
+XiHan.Framework.Plugins.Wasm.WasmPluginStatus.WasmPluginStatus() -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginsFeature
 XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginsFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!

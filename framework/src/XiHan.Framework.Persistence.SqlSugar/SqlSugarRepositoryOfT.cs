@@ -79,7 +79,7 @@ internal sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitO
     /// 本实体没有开启差异日志时为 <see langword="null"/>
     /// </remarks>
     private readonly SqlSugarDiffLogData? _diffLog = (options ?? throw new ArgumentNullException(nameof(options))).DiffLog(typeof(TEntity))
-        ? new SqlSugarDiffLogData(typeof(TEntity), services ?? throw new ArgumentNullException(nameof(services)))
+        ? new SqlSugarDiffLogData { EntityType = typeof(TEntity), Services = services ?? throw new ArgumentNullException(nameof(services)) }
         : null;
 
     /// <summary>

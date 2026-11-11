@@ -27,26 +27,24 @@ XiHan.Framework.Protocols.Mcp.Tools.McpTool
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.<Clone>$() -> XiHan.Framework.Protocols.Mcp.Tools.McpTool!
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.Annotations.get -> XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations!
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.Annotations.init -> void
-XiHan.Framework.Protocols.Mcp.Tools.McpTool.Deconstruct(out string! Name, out XiHan.Framework.Kernel.Operations.OperationDescriptor! Descriptor, out string! InputSchema, out string? OutputSchema, out XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations! Annotations) -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.Descriptor.get -> XiHan.Framework.Kernel.Operations.OperationDescriptor!
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.Descriptor.init -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.Equals(XiHan.Framework.Protocols.Mcp.Tools.McpTool? other) -> bool
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.InputSchema.get -> string!
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.InputSchema.init -> void
-XiHan.Framework.Protocols.Mcp.Tools.McpTool.McpTool(string! Name, XiHan.Framework.Kernel.Operations.OperationDescriptor! Descriptor, string! InputSchema, string? OutputSchema, XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations! Annotations) -> void
+XiHan.Framework.Protocols.Mcp.Tools.McpTool.McpTool() -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.Name.get -> string!
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.Name.init -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.OutputSchema.get -> string?
 XiHan.Framework.Protocols.Mcp.Tools.McpTool.OutputSchema.init -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.<Clone>$() -> XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations!
-XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.Deconstruct(out bool ReadOnly, out bool Destructive, out bool Idempotent) -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.Destructive.get -> bool
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.Destructive.init -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.Equals(XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations? other) -> bool
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.Idempotent.get -> bool
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.Idempotent.init -> void
-XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.McpToolAnnotations(bool ReadOnly, bool Destructive, bool Idempotent) -> void
+XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.McpToolAnnotations() -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.ReadOnly.get -> bool
 XiHan.Framework.Protocols.Mcp.Tools.McpToolAnnotations.ReadOnly.init -> void
 XiHan.Framework.Protocols.Mcp.Tools.McpToolName

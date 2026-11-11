@@ -41,7 +41,10 @@ public sealed class ReadOnlyInvocationTests
             // 引擎、任务服务、定义目录的写入都在取锁、执行活动之前拒绝，错误码与消息键同数据库实现
             AssertRejected((await engine.StartAsync(new WorkflowStartRequest { Name = "ro-approval" }, CancellationToken.None)).Error);
             AssertRejected((await engine.SuspendAsync(running.Id, "hold", CancellationToken.None)).Error);
-            AssertRejected((await tasks.CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved), CancellationToken.None)).Error);
+            AssertRejected((await tasks.CompleteAsync(new UserTaskCompletion(task.Id, "alice")
+            {
+                Outcome = UserTaskOutcomes.Approved,
+            }, CancellationToken.None)).Error);
             AssertRejected((await catalog.CreateAsync(Approval() with { Name = new WorkflowName("ro-other") }, CancellationToken.None)).Error);
 
             // 查询照常

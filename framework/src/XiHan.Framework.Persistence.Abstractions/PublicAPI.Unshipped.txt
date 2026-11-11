@@ -193,8 +193,7 @@ XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping
 XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping!
 XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Column.get -> string!
 XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Column.init -> void
-XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Deconstruct(out string! Property, out string! Column, out System.Type! Type, out bool IsKey, out bool IsNullable) -> void
-XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.EntityColumnMapping(string! Property, string! Column, System.Type! Type, bool IsKey, bool IsNullable) -> void
+XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.EntityColumnMapping() -> void
 XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.Equals(XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping? other) -> bool
 XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.IsKey.get -> bool
 XiHan.Framework.Persistence.Abstractions.Schema.EntityColumnMapping.IsKey.init -> void

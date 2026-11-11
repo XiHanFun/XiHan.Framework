@@ -53,13 +53,19 @@ public sealed class EntityFrameworkCoreWorkflowTests
         // 办理到结论、处理器写了授予，业务随后失败：授予与实例完成一起回滚
         await workflow.AsTenantAsync(null, async sp =>
         {
-            (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None)).ValueOrThrow();
+            (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice")
+            {
+                Outcome = UserTaskOutcomes.Approved,
+            }, CancellationToken.None)).ValueOrThrow();
             return true;
         }, rollback: true);
         Assert.Equal(WorkflowInstanceStatus.Running, (await workflow.InstanceAsync(instance.Id)).Status);
 
         // 提交：授予与实例完成一起落库；租约行都已释放
-        await workflow.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None)).ValueOrThrow());
+        await workflow.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice")
+        {
+            Outcome = UserTaskOutcomes.Approved,
+        }, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(WorkflowInstanceStatus.Completed, (await workflow.InstanceAsync(instance.Id)).Status);
         Assert.Equal(2L, Count(database.Path, "ApprovalGrant"));
         Assert.Equal(0L, Count(database.LeasePath, "WorkflowLockRecord"));

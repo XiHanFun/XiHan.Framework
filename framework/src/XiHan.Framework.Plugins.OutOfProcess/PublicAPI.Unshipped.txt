@@ -36,11 +36,10 @@ XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.WorkDirectory.get
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginOptions.WorkDirectory.init -> void
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.<Clone>$() -> XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus!
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Deconstruct(out XiHan.Framework.Kernel.Plugins.PluginStatus! Status, out int? ProcessId, out uint? ProtocolVersion, out int Restarts, out bool Lazy) -> void
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Equals(XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus? other) -> bool
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Lazy.get -> bool
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.Lazy.init -> void
-XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.OutOfProcessPluginStatus(XiHan.Framework.Kernel.Plugins.PluginStatus! Status, int? ProcessId, uint? ProtocolVersion, int Restarts, bool Lazy) -> void
+XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.OutOfProcessPluginStatus() -> void
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ProcessId.get -> int?
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ProcessId.init -> void
 XiHan.Framework.Plugins.OutOfProcess.OutOfProcessPluginStatus.ProtocolVersion.get -> uint?

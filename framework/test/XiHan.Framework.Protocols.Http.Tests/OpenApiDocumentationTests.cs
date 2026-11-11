@@ -250,8 +250,9 @@ public sealed class OpenApiDocumentationTests
             0,
             new EndpointMetadataCollection(new HttpMethodMetadata(["GET"]), new TagsAttribute("exports"), new ProducesResponseTypeMetadata(200, null, ["text/csv"])),
             "GET /exports/{id}");
-        return new OpenApiDocumentSource(registry, new HttpProtocolOptions(), permissions)
+        return new OpenApiDocumentSource(registry, new HttpProtocolOptions())
         {
+            Permissions = permissions,
             Endpoints = [export],
             Groups = _groups,
             Localize = static (key, arguments) => _catalog.TryGetValue(key, out var template) ? MessageTemplate.Format(template, arguments, CultureInfo.InvariantCulture) : null,

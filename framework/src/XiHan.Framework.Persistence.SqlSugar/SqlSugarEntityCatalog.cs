@@ -64,7 +64,14 @@ internal sealed class SqlSugarEntityCatalog(IServiceProvider services, Repositor
                 var template = entity.EntityType.IsDefined(typeof(SplitTableAttribute), inherit: false) ? SplitTableTemplate.Create(info.DbTableName) : null;
                 var columns = info.Columns
                     .Where(static c => !c.IsIgnore && c.PropertyInfo is not null)
-                    .Select(static c => new EntityColumnMapping(c.PropertyName, c.DbColumnName, c.PropertyInfo.PropertyType, c.IsPrimarykey, c.IsNullable))
+                    .Select(static c => new EntityColumnMapping
+                    {
+                        Property = c.PropertyName,
+                        Column = c.DbColumnName,
+                        Type = c.PropertyInfo.PropertyType,
+                        IsKey = c.IsPrimarykey,
+                        IsNullable = c.IsNullable,
+                    })
                     .ToList();
                 mappings.Add(new EntityMapping(entity, template?.LogicalName ?? info.DbTableName, template is not null, columns));
                 if (template is not null)

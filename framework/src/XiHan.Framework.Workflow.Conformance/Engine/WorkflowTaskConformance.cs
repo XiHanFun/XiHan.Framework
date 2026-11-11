@@ -586,13 +586,17 @@ public abstract class WorkflowTaskConformance
     /// 退回
     /// </summary>
     private static ValueTask<Result<WorkflowInstance>> ReturnAsync(WorkflowEngineHost host, string taskId, string actorId, string? targetNodeId = null, string? comment = null)
-        => TasksAsync(host, service => service.ReturnAsync(new UserTaskReturn(taskId, actorId, targetNodeId, comment), CancellationToken.None));
+        => TasksAsync(host, service => service.ReturnAsync(new UserTaskReturn(taskId, actorId)
+        {
+            TargetNodeId = targetNodeId,
+            Comment = comment,
+        }, CancellationToken.None));
 
     /// <summary>
     /// 催办
     /// </summary>
     private static ValueTask<Result> UrgeAsync(WorkflowEngineHost host, string taskId, string actorId, string? comment = null)
-        => TasksAsync(host, service => service.UrgeAsync(new UserTaskUrge(taskId, actorId, comment), CancellationToken.None));
+        => TasksAsync(host, service => service.UrgeAsync(new UserTaskUrge(taskId, actorId) { Comment = comment }, CancellationToken.None));
 
     /// <summary>
     /// 条件查询
@@ -610,17 +614,27 @@ public abstract class WorkflowTaskConformance
     /// 完成外部任务
     /// </summary>
     private static ValueTask<Result<WorkflowInstance>> CompleteExternalAsync(WorkflowEngineHost host, string taskId, string workerId, JsonObject? outputs = null)
-        => ExternalAsync(host, service => service.CompleteAsync(new ExternalTaskCompletion(taskId, workerId, outputs), CancellationToken.None));
+        => ExternalAsync(host, service => service.CompleteAsync(new ExternalTaskCompletion(taskId, workerId)
+        {
+            Outputs = outputs,
+        }, CancellationToken.None));
 
     /// <summary>
     /// 报告外部任务失败
     /// </summary>
     private static ValueTask<Result> FailAsync(WorkflowEngineHost host, string taskId, string workerId, string error, TimeSpan? retryAfter = null)
-        => ExternalAsync(host, service => service.FailAsync(new ExternalTaskFailure(taskId, workerId, error, retryAfter), CancellationToken.None));
+        => ExternalAsync(host, service => service.FailAsync(new ExternalTaskFailure(taskId, workerId)
+        {
+            Error = error,
+            RetryAfter = retryAfter,
+        }, CancellationToken.None));
 
     /// <summary>
     /// 延长外部任务的锁
     /// </summary>
     private static ValueTask<Result> ExtendLockAsync(WorkflowEngineHost host, string taskId, string workerId)
-        => ExternalAsync(host, service => service.ExtendLockAsync(new ExternalTaskLockExtension(taskId, workerId, TimeSpan.FromMinutes(1)), CancellationToken.None));
+        => ExternalAsync(host, service => service.ExtendLockAsync(new ExternalTaskLockExtension(taskId, workerId)
+        {
+            LockDuration = TimeSpan.FromMinutes(1),
+        }, CancellationToken.None));
 }

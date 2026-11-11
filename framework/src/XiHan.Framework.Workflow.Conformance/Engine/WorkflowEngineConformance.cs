@@ -927,10 +927,19 @@ public abstract class WorkflowEngineConformance
             .Build();
         var published = await host.PublishAsync(v1).ConfigureAwait(false);
         var instance = (await host.StartAsync("conf-migrate", new JsonObject { ["k"] = 1 }).ConfigureAwait(false)).ValueOrThrow();
-        var changed = (await host.EngineAsync(engine => engine.SetVariablesAsync(new WorkflowVariableUpdate(instance.Id, new JsonObject { ["m"] = 2 }, ["k"]), CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var changed = (await host.EngineAsync(engine => engine.SetVariablesAsync(new WorkflowVariableUpdate(instance.Id)
+        {
+            Variables = new JsonObject { ["m"] = 2 },
+            Remove = ["k"],
+        }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.False(changed.Variables.ContainsKey("k"));
         Assert.Equal(2, changed.Variables["m"]!.GetValue<int>());
-        var jumped = (await host.EngineAsync(engine => engine.JumpAsync(new WorkflowJump(instance.Id, "second", "skip", new JsonObject { ["j"] = true }, "admin"), CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var jumped = (await host.EngineAsync(engine => engine.JumpAsync(new WorkflowJump(instance.Id, "second")
+        {
+            Reason = "skip",
+            Variables = new JsonObject { ["j"] = true },
+            ActorId = "admin",
+        }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, jumped.Status);
         Assert.Empty(await host.PendingAsync("alice").ConfigureAwait(false));
         Assert.Single(await host.PendingAsync("bob").ConfigureAwait(false));
@@ -951,7 +960,10 @@ public abstract class WorkflowEngineConformance
         // 迁移后仍能按新版本完成
         var task = Assert.Single(await host.PendingAsync("bob").ConfigureAwait(false));
         Assert.Equal(WorkflowInstanceStatus.Completed, (await host.CompleteAsync(task.Id, "bob", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
-        Assert.Equal(WorkflowErrors.InstanceStatus, (await host.EngineAsync(engine => engine.SetVariablesAsync(new WorkflowVariableUpdate(instance.Id, new JsonObject { ["x"] = 1 }), CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(WorkflowErrors.InstanceStatus, (await host.EngineAsync(engine => engine.SetVariablesAsync(new WorkflowVariableUpdate(instance.Id)
+        {
+            Variables = new JsonObject { ["x"] = 1 },
+        }, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
     }
 
     /// <summary>
@@ -1172,20 +1184,35 @@ public abstract class WorkflowEngineConformance
                 Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.CancelAsync(t1.Id, "x", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.TerminateAsync(t1.Id, "x", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.RetryAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.SetVariablesAsync(new WorkflowVariableUpdate(t1.Id, new JsonObject { ["x"] = 1 }), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.SetVariablesAsync(new WorkflowVariableUpdate(t1.Id)
+                {
+                    Variables = new JsonObject { ["x"] = 1 },
+                }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.JumpAsync(new WorkflowJump(t1.Id, "end"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 Assert.Equal(WorkflowErrors.InstanceNotFound, (await engine.MigrateAsync(new WorkflowMigration(t1.Id, mine.DefinitionId), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
 
                 // 按书签 ID 恢复、用户任务与外部任务的操作都看不到 t1 的书签
                 Assert.Equal(WorkflowErrors.BookmarkNotFound, (await engine.ResumeAsync(t1Task.Id, null, null, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 var tasks = sp.GetRequiredService<IWorkflowTaskService>();
-                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.CompleteAsync(new UserTaskCompletion(t1Task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.TransferAsync(new UserTaskTransfer(t1Task.Id, "alice", "bob"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.AddAssigneesAsync(new UserTaskAddition(t1Task.Id, "alice", ["bob"]), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.CompleteAsync(new UserTaskCompletion(t1Task.Id, "alice")
+                {
+                    Outcome = UserTaskOutcomes.Approved,
+                }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.TransferAsync(new UserTaskTransfer(t1Task.Id, "alice")
+                {
+                    TargetAssigneeId = "bob",
+                }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.AddAssigneesAsync(new UserTaskAddition(t1Task.Id, "alice")
+                {
+                    AssigneeIds = ["bob"],
+                }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 Assert.Equal([mine.Id], (await tasks.QueryAsync(new UserTaskQuery { AssigneeId = "alice" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
                 var externals = sp.GetRequiredService<IWorkflowExternalTaskService>();
-                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.CompleteAsync(new ExternalTaskCompletion(fetched.Id, "w1", null), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.FailAsync(new ExternalTaskFailure(fetched.Id, "w1", "boom"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.CompleteAsync(new ExternalTaskCompletion(fetched.Id, "w1"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+                Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.FailAsync(new ExternalTaskFailure(fetched.Id, "w1")
+                {
+                    Error = "boom",
+                }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
 
                 // 实例查询只给自己分区的：按 ID 无值，列表与计数只有自己的，节点实例不存在
                 var byName = new WorkflowInstanceQuery { DefinitionName = approvalDefinition.Name };
@@ -1271,7 +1298,10 @@ public abstract class WorkflowEngineConformance
 
         await host.AsTenantAsync(null, async sp =>
         {
-            var completed = (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            var completed = (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice")
+            {
+                Outcome = UserTaskOutcomes.Approved,
+            }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.Equal(WorkflowInstanceStatus.Completed, completed.Status);
             return true;
         }, rollback: true).ConfigureAwait(false);
@@ -1279,7 +1309,10 @@ public abstract class WorkflowEngineConformance
         {
             Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(instance.Id).ConfigureAwait(false)).Status);
             Assert.Equal([task.Id], (await host.PendingAsync("alice").ConfigureAwait(false)).Select(static pending => pending.Id));
-            var outcome = await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+            var outcome = await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice")
+            {
+                Outcome = UserTaskOutcomes.Approved,
+            }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
             Assert.Equal(WorkflowInstanceStatus.Completed, outcome.Status);
         }
 
@@ -1593,7 +1626,10 @@ public abstract class WorkflowEngineConformance
 
         // 消费之后随之消失：Any 策略一人办理，用户任务与节点超时撤下；再发信号，只剩延时
         var task = tasks.Single(static task => task.AssigneeId == "alice");
-        await host.AsTenantAsync("t1", async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+        await host.AsTenantAsync("t1", async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice")
+        {
+            Outcome = UserTaskOutcomes.Approved,
+        }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
         Assert.Equal([BookmarkKinds.Signal, BookmarkKinds.Timer], (await ListAsync("t1", instance.Id).ConfigureAwait(false)).ValueOrThrow().Select(static wait => wait.Kind).Order(StringComparer.Ordinal));
         Assert.Equal(1, (await host.AsTenantAsync("t1", sp => sp.GetRequiredService<IWorkflowEngine>().SignalAsync("conf-waits-go", null, null, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal([BookmarkKinds.Timer], (await ListAsync("t1", instance.Id).ConfigureAwait(false)).ValueOrThrow().Select(static wait => wait.Kind));

@@ -9,8 +9,33 @@ namespace XiHan.Framework.Workflow.Abstractions.Engine;
 /// <summary>
 /// 改实例变量的请求
 /// </summary>
-/// <param name="InstanceId">实例 ID</param>
-/// <param name="Variables">要合并（新增或覆盖）的变量</param>
-/// <param name="Remove">要删除的变量名</param>
+/// <remarks>
+/// 以后加字段只加初始化器属性、不改构造签名（ADR-0142）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record WorkflowVariableUpdate(string InstanceId, JsonObject? Variables, IReadOnlyList<string>? Remove = null);
+public sealed record WorkflowVariableUpdate
+{
+    /// <summary>
+    /// 创建改实例变量的请求
+    /// </summary>
+    /// <param name="instanceId">实例 ID</param>
+    public WorkflowVariableUpdate(string instanceId)
+    {
+        InstanceId = instanceId;
+    }
+
+    /// <summary>
+    /// 实例 ID
+    /// </summary>
+    public string InstanceId { get; }
+
+    /// <summary>
+    /// 要合并（新增或覆盖）的变量
+    /// </summary>
+    public JsonObject? Variables { get; init; }
+
+    /// <summary>
+    /// 要删除的变量名
+    /// </summary>
+    public IReadOnlyList<string>? Remove { get; init; }
+}

@@ -49,7 +49,14 @@ internal sealed class InMemoryEntityCatalog(RepositoryRegistrations registration
                 {
                     var columns = entity.EntityType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                         .Where(static p => p.SetMethod is { IsPublic: true } && p.GetIndexParameters().Length == 0 && !IsCollection(p.PropertyType))
-                        .Select(p => new EntityColumnMapping(p.Name, p.Name, p.PropertyType, p.Name == "Id", IsNullable(p)))
+                        .Select(p => new EntityColumnMapping
+                        {
+                            Property = p.Name,
+                            Column = p.Name,
+                            Type = p.PropertyType,
+                            IsKey = p.Name == "Id",
+                            IsNullable = IsNullable(p),
+                        })
                         .ToList();
                     mappings.Add(new EntityMapping(entity, entity.EntityType.Name, isSplit: false, columns));
                 }

@@ -10,14 +10,26 @@ namespace XiHan.Framework.Protocols.Mcp.Tools;
 /// tool 的行为提示
 /// </summary>
 /// <remarks>
-/// MCP <c>annotations</c>：<c>readOnlyHint</c>、<c>destructiveHint</c>、<c>idempotentHint</c>。按操作动词与契约的只读声明推导
+/// MCP <c>annotations</c>：<c>readOnlyHint</c>、<c>destructiveHint</c>、<c>idempotentHint</c>。按操作动词与契约的只读声明推导。成员经初始化器给出、缺省为假，以后补 MCP 规范的其他提示只加属性（ADR-0142）
 /// </remarks>
-/// <param name="ReadOnly">只读，不改变状态</param>
-/// <param name="Destructive">可能破坏性地修改状态</param>
-/// <param name="Idempotent">重复调用同样的参数没有额外效果</param>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record McpToolAnnotations(bool ReadOnly, bool Destructive, bool Idempotent)
+public sealed record McpToolAnnotations
 {
+    /// <summary>
+    /// 只读，不改变状态
+    /// </summary>
+    public bool ReadOnly { get; init; }
+
+    /// <summary>
+    /// 可能破坏性地修改状态
+    /// </summary>
+    public bool Destructive { get; init; }
+
+    /// <summary>
+    /// 重复调用同样的参数没有额外效果
+    /// </summary>
+    public bool Idempotent { get; init; }
+
     /// <summary>
     /// 推导
     /// </summary>
@@ -29,11 +41,11 @@ public sealed record McpToolAnnotations(bool ReadOnly, bool Destructive, bool Id
         ArgumentNullException.ThrowIfNull(contract);
         return contract.Verb switch
         {
-            "update" => new McpToolAnnotations(ReadOnly: false, Destructive: false, Idempotent: true),
-            "delete" => new McpToolAnnotations(ReadOnly: false, Destructive: true, Idempotent: true),
-            "create" => new McpToolAnnotations(ReadOnly: false, Destructive: false, Idempotent: false),
-            _ when contract.IsReadOnly => new McpToolAnnotations(ReadOnly: true, Destructive: false, Idempotent: true),
-            _ => new McpToolAnnotations(ReadOnly: false, Destructive: true, Idempotent: false),
+            "update" => new McpToolAnnotations { Idempotent = true },
+            "delete" => new McpToolAnnotations { Destructive = true, Idempotent = true },
+            "create" => new McpToolAnnotations(),
+            _ when contract.IsReadOnly => new McpToolAnnotations { ReadOnly = true, Idempotent = true },
+            _ => new McpToolAnnotations { Destructive = true },
         };
     }
 }

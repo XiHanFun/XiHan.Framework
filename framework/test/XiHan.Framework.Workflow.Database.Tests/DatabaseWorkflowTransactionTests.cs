@@ -48,7 +48,10 @@ public sealed class DatabaseWorkflowTransactionTests
         // 办理到结论、处理器写了授予，业务随后失败：授予与实例完成一起回滚，任务仍在待办
         await workflow.AsTenantAsync(null, async sp =>
         {
-            var completed = (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None)).ValueOrThrow();
+            var completed = (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice")
+            {
+                Outcome = UserTaskOutcomes.Approved,
+            }, CancellationToken.None)).ValueOrThrow();
             Assert.Equal(WorkflowInstanceStatus.Completed, completed.Status);
             Assert.Equal(1, await GrantsAsync(sp));
             return true;
@@ -58,7 +61,10 @@ public sealed class DatabaseWorkflowTransactionTests
         Assert.Equal([task.Id], (await workflow.PendingAsync("alice")).Select(static pending => pending.Id));
 
         // 提交：授予与实例完成一起落库
-        await workflow.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None)).ValueOrThrow());
+        await workflow.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().CompleteAsync(new UserTaskCompletion(task.Id, "alice")
+        {
+            Outcome = UserTaskOutcomes.Approved,
+        }, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(1, await workflow.AsTenantAsync(null, GrantsAsync));
         Assert.Equal(WorkflowInstanceStatus.Completed, (await workflow.InstanceAsync(instance.Id)).Status);
     }

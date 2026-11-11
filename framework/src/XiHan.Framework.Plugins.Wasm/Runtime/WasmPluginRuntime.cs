@@ -272,7 +272,14 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// <summary>
     /// 诊断快照
     /// </summary>
-    public WasmPluginStatus Describe() => new(Status, _instance?.AbiVersion, _handshake?.ProtocolVersion, _restarts, IsLazy);
+    public WasmPluginStatus Describe() => new()
+    {
+        Status = Status,
+        AbiVersion = _instance?.AbiVersion,
+        ProtocolVersion = _handshake?.ProtocolVersion,
+        Restarts = _restarts,
+        Lazy = IsLazy,
+    };
 
     /// <summary>
     /// 是否以该方式订阅了该主题与类型

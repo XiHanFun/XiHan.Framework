@@ -166,7 +166,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         try
         {
             response = await _client.GetObjectAsync(new GetObjectRequest { BucketName = container.Value, Key = key.Value }, cancellationToken).ConfigureAwait(false);
-            var metadata = new BlobMetadata(key, response.ContentLength, response.Headers.ContentType ?? BlobPutOptions.DefaultContentType, Unquote(response.ETag), ToTimestamp(response.LastModified), ReadMetadata(response.Metadata));
+            var metadata = new BlobMetadata
+            {
+                Key = key,
+                Length = response.ContentLength,
+                ContentType = response.Headers.ContentType ?? BlobPutOptions.DefaultContentType,
+                ETag = Unquote(response.ETag),
+                LastModified = ToTimestamp(response.LastModified),
+                Metadata = ReadMetadata(response.Metadata),
+            };
             var content = new BlobContent(metadata, new S3ObjectStream(response));
             response = null;
             return Result.Success(content);
@@ -192,7 +200,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         try
         {
             var response = await _client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = container.Value, Key = key.Value }, cancellationToken).ConfigureAwait(false);
-            return Result.Success(new BlobMetadata(key, response.ContentLength, response.Headers.ContentType ?? BlobPutOptions.DefaultContentType, Unquote(response.ETag), ToTimestamp(response.LastModified), ReadMetadata(response.Metadata)));
+            return Result.Success(new BlobMetadata
+            {
+                Key = key,
+                Length = response.ContentLength,
+                ContentType = response.Headers.ContentType ?? BlobPutOptions.DefaultContentType,
+                ETag = Unquote(response.ETag),
+                LastModified = ToTimestamp(response.LastModified),
+                Metadata = ReadMetadata(response.Metadata),
+            });
         }
         catch (AmazonS3Exception exception) when (IsNotFound(exception))
         {
@@ -309,16 +325,28 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 // 不符合键文法的对象不是本契约的对象，跳过：以 / 结尾的"目录"占位，以及保留前缀下框架自己的对象（如条件写入探测键，ADR-0090）
                 if (BlobKey.IsValid(entry.Key))
                 {
-                    items.Add(new BlobMetadata(new BlobKey(entry.Key), entry.Size ?? 0, BlobPutOptions.DefaultContentType, Unquote(entry.ETag), ToTimestamp(entry.LastModified), EmptyMetadata));
+                    items.Add(new BlobMetadata
+                    {
+                        Key = new BlobKey(entry.Key),
+                        Length = entry.Size ?? 0,
+                        ContentType = BlobPutOptions.DefaultContentType,
+                        ETag = Unquote(entry.ETag),
+                        LastModified = ToTimestamp(entry.LastModified),
+                        Metadata = EmptyMetadata,
+                    });
                 }
             }
 
-            return Result.Success(new BlobPage(items, response.IsTruncated == true ? response.NextContinuationToken : null));
+            return Result.Success(new BlobPage
+            {
+                Items = items,
+                ContinuationToken = response.IsTruncated == true ? response.NextContinuationToken : null,
+            });
         }
         catch (AmazonS3Exception exception) when (IsNotFound(exception))
         {
             // 桶不存在视作空容器，与文件系统实现里容器目录不存在的语义一致
-            return Result.Success(new BlobPage([], null));
+            return Result.Success(new BlobPage { Items = [] });
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {
@@ -342,7 +370,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 return Unavailable("the server ignored the range request");
             }
 
-            var metadata = new BlobMetadata(key, resolved.TotalLength, response.Headers.ContentType ?? BlobPutOptions.DefaultContentType, Unquote(response.ETag), ToTimestamp(response.LastModified), ReadMetadata(response.Metadata));
+            var metadata = new BlobMetadata
+            {
+                Key = key,
+                Length = resolved.TotalLength,
+                ContentType = response.Headers.ContentType ?? BlobPutOptions.DefaultContentType,
+                ETag = Unquote(response.ETag),
+                LastModified = ToTimestamp(response.LastModified),
+                Metadata = ReadMetadata(response.Metadata),
+            };
             var content = new BlobContent(metadata, new S3ObjectStream(response), resolved);
             response = null;
             return Result.Success(content);
@@ -762,7 +798,15 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                     }
 
                     var response = await _client.PutObjectAsync(request, cancellationToken).ConfigureAwait(false);
-                    return Result.Success(new BlobMetadata(upload.Key, length, upload.Options.ContentType, Unquote(response.ETag), _clock.GetUtcNow(), new Dictionary<string, string>(upload.Options.Metadata, StringComparer.Ordinal)));
+                    return Result.Success(new BlobMetadata
+                    {
+                        Key = upload.Key,
+                        Length = length,
+                        ContentType = upload.Options.ContentType,
+                        ETag = Unquote(response.ETag),
+                        LastModified = _clock.GetUtcNow(),
+                        Metadata = new Dictionary<string, string>(upload.Options.Metadata, StringComparer.Ordinal),
+                    });
                 }
                 catch (AmazonS3Exception exception) when (exception.StatusCode == HttpStatusCode.PreconditionFailed)
                 {

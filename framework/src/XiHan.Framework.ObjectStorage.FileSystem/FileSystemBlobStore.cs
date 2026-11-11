@@ -333,7 +333,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             var data = Path.Combine(_options.RootPath, container.Value, DataDirectory);
             if (!Directory.Exists(data))
             {
-                return ValueTask.FromResult(Result.Success(new BlobPage([], null)));
+                return ValueTask.FromResult(Result.Success(new BlobPage { Items = [] }));
             }
 
             // 目录遍历没有顺序保证：先收集全部匹配的键再序数排序，再按续页标记（上一页最后一个键）截取
@@ -367,7 +367,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             }
 
             var next = keys.Count > query.PageSize ? EncodeToken(keys[query.PageSize - 1]) : null;
-            return ValueTask.FromResult(Result.Success(new BlobPage(items, next)));
+            return ValueTask.FromResult(Result.Success(new BlobPage { Items = items, ContinuationToken = next }));
         }
         catch (IOException exception)
         {
@@ -586,14 +586,30 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         }
 
         var info = new FileInfo(dataPath);
-        return new BlobMetadata(key, info.Length, BlobPutOptions.DefaultContentType, info.LastWriteTimeUtc.Ticks.ToString("x", System.Globalization.CultureInfo.InvariantCulture), new DateTimeOffset(info.LastWriteTimeUtc), new Dictionary<string, string>(StringComparer.Ordinal));
+        return new BlobMetadata
+        {
+            Key = key,
+            Length = info.Length,
+            ContentType = BlobPutOptions.DefaultContentType,
+            ETag = info.LastWriteTimeUtc.Ticks.ToString("x", System.Globalization.CultureInfo.InvariantCulture),
+            LastModified = new DateTimeOffset(info.LastWriteTimeUtc),
+            Metadata = new Dictionary<string, string>(StringComparer.Ordinal),
+        };
     }
 
     /// <summary>
     /// 元数据文件 → 元数据
     /// </summary>
     private static BlobMetadata ToMetadata(BlobKey key, BlobMetadataDocument document)
-        => new(key, document.Length, document.ContentType, document.ETag, document.LastModified, document.Metadata);
+        => new()
+        {
+            Key = key,
+            Length = document.Length,
+            ContentType = document.ContentType,
+            ETag = document.ETag,
+            LastModified = document.LastModified,
+            Metadata = document.Metadata,
+        };
 
     /// <summary>
     /// 再写 <paramref name="delta"/> 字节是否仍在总配额内

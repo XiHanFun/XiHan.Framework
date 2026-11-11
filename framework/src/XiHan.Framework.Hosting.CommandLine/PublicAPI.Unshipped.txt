@@ -32,14 +32,13 @@ XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Arguments.get -> S
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Arguments.init -> void
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Command.get -> string?
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Command.init -> void
-XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Deconstruct(out string? Command, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>! Options) -> void
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Equals(XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine? other) -> bool
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.HasOption(string! name) -> bool
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Option(string! name) -> XiHan.Framework.Primitives.Maybe<string!>
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.OptionValues(string! name) -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Options.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
 XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.Options.init -> void
-XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.ParsedCommandLine(string? Command, System.Collections.Generic.IReadOnlyList<string!>! Arguments, System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>! Options) -> void
+XiHan.Framework.Hosting.CommandLine.Parsing.ParsedCommandLine.ParsedCommandLine() -> void
 XiHan.Framework.Hosting.CommandLine.Runtime.CommandLineFailure
 XiHan.Framework.Hosting.CommandLine.Runtime.CommandLineInvocation
 XiHan.Framework.Hosting.CommandLine.Runtime.CommandLineRunner

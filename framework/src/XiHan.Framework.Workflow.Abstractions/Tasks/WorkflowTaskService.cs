@@ -135,7 +135,7 @@ internal sealed class WorkflowTaskService : IWorkflowTaskService
 
         // 存储已经只给运行中实例的书签；换视图时再按实例过滤一次只为防御（数据库实现在同一事务里，两次读一致）
         var tasks = await ToTasksAsync(bookmarks, cancellationToken).ConfigureAwait(false);
-        return tasks.TryGetValue(out var items) ? new UserTaskPage(items, total) : tasks.Error!;
+        return tasks.TryGetValue(out var items) ? new UserTaskPage { Items = items, Total = total } : tasks.Error!;
     }
 
     /// <inheritdoc />
@@ -513,7 +513,11 @@ internal sealed class WorkflowTaskService : IWorkflowTaskService
         }
 
         // 跳转由引擎自己加锁执行：上一步交还的锁在本作用域里空闲，引擎复用它；跳转会取消本节点实例与它的书签
-        var jumped = (await _engine.JumpAsync([new WorkflowJump(peek.InstanceId, target!, request.Comment, null, request.ActorId)], cancellationToken).ConfigureAwait(false))[0];
+        var jumped = (await _engine.JumpAsync([new WorkflowJump(peek.InstanceId, target!)
+        {
+            Reason = request.Comment,
+            ActorId = request.ActorId,
+        }], cancellationToken).ConfigureAwait(false))[0];
         if (!jumped.TryGetValue(out var result))
         {
             return jumped.Error!;

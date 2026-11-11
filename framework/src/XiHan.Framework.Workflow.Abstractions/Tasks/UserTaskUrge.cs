@@ -8,8 +8,35 @@ namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 /// <summary>
 /// 催办请求：发布 <c>workflow.task.urged</c> 事件
 /// </summary>
-/// <param name="TaskId">任务 ID</param>
-/// <param name="ActorId">催办人</param>
-/// <param name="Comment">留言</param>
+/// <remarks>
+/// 以后加字段只加初始化器属性、不改构造签名（ADR-0142）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record UserTaskUrge(string TaskId, string ActorId, string? Comment = null);
+public sealed record UserTaskUrge
+{
+    /// <summary>
+    /// 创建催办请求
+    /// </summary>
+    /// <param name="taskId">任务 ID</param>
+    /// <param name="actorId">催办人</param>
+    public UserTaskUrge(string taskId, string actorId)
+    {
+        TaskId = taskId;
+        ActorId = actorId;
+    }
+
+    /// <summary>
+    /// 任务 ID
+    /// </summary>
+    public string TaskId { get; }
+
+    /// <summary>
+    /// 催办人
+    /// </summary>
+    public string ActorId { get; }
+
+    /// <summary>
+    /// 留言
+    /// </summary>
+    public string? Comment { get; init; }
+}

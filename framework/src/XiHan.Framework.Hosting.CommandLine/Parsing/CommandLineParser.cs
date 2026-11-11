@@ -81,7 +81,12 @@ public static class CommandLineParser
             }
         }
 
-        return new ParsedCommandLine(command, arguments, options.ToDictionary(static o => o.Key, static o => (IReadOnlyList<string>)o.Value, StringComparer.Ordinal));
+        return new ParsedCommandLine
+        {
+            Command = command,
+            Arguments = arguments,
+            Options = options.ToDictionary(static o => o.Key, static o => (IReadOnlyList<string>)o.Value, StringComparer.Ordinal),
+        };
     }
 
     /// <summary>

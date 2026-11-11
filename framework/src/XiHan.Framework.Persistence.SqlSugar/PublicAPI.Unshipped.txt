@@ -14,13 +14,12 @@ XiHan.Framework.Persistence.SqlSugar.SqlSugarDataSource.Name.get -> string!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDataSourceExtensions
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.<Clone>$() -> XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData!
-XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Deconstruct(out System.Type! EntityType, out System.IServiceProvider! Services) -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.EntityType.get -> System.Type!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.EntityType.init -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Equals(XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData? other) -> bool
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Services.get -> System.IServiceProvider!
 XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.Services.init -> void
-XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.SqlSugarDiffLogData(System.Type! EntityType, System.IServiceProvider! Services) -> void
+XiHan.Framework.Persistence.SqlSugar.SqlSugarDiffLogData.SqlSugarDiffLogData() -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Persistence.SqlSugar.SqlSugarPersistenceFeature.DiffLog.get -> System.Func<System.Type!, bool>?
