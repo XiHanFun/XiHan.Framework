@@ -5,5 +5,7 @@
   "protocols.http.openapi_permission_required": "需要权限 {permission}（{name}）。",
   "protocols.http.openapi_policy_required": "需要策略 {policy}。",
   "protocols.http.openapi_success": "成功",
-  "protocols.http.openapi_ungrouped": "其他"
+  "protocols.http.openapi_ungrouped": "其他",
+  "protocols.http.request_body_not_json": "操作 '{id}' 的请求体必须是 JSON（Content-Type 为 application/json），收到的是 '{type}'。",
+  "protocols.http.request_body_too_large": "操作 '{id}' 的请求体超过 {max} 字节。"
 }

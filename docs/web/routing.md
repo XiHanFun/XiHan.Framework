@@ -12,13 +12,13 @@
 
 ## 适配器做什么
 
-`Protocols.Http` 提供能力 `protocols.http@1`，入口是 `HttpProtocolFeature`。`MapXiHanOperations()` 遍历操作登记表，把 `Expose` 含 `Http`、稳定性不是 `Stability.Internal` 的每个操作映射成一个 ASP.NET Core 端点，路由由操作 ID 推导。端点元数据带着操作描述与载荷绑定委托：`UseXiHan()` 在进入内核管道前把描述放进调用上下文、把请求绑定成载荷，Authorize 阶段按契约的权限或策略判定，Validate 阶段按请求 Schema 校验并解码，端点内只剩执行。失败结果留在上下文里，由 `UseXiHan()` 写成 Problem Details。
+`Protocols.Http` 提供能力 `protocols.http@1`，入口是 `HttpProtocolFeature`。`MapXiHanOperations()` 遍历操作登记表，把 `Expose` 含 `Http`、稳定性不是 `Stability.Internal` 的每个操作映射成一个 ASP.NET Core 端点，路由由操作 ID 推导。端点元数据带着操作描述与载荷绑定委托：`UseXiHan()` 在进入内核管道前把描述放进调用上下文，Authorize 阶段按契约的权限或策略判定，Validate 阶段才读请求体、绑定成载荷，再按请求 Schema 校验并解码，端点内只剩执行。被限流、没有认证或没有权限的请求不会让宿主读请求体。失败结果留在上下文里，由 `UseXiHan()` 写成 Problem Details。
 
 | 环节 | 在哪里发生 | 做什么 |
 | --- | --- | --- |
 | 路由推导 | `MapXiHanOperations()`，启动时 | 操作 ID 加请求形状 → 方法与模板；两个操作撞路由则启动失败 |
-| 载荷绑定 | `UseXiHan()`，进管道前 | 路由值、请求体、查询串合并成一个 JSON 对象 |
-| 授权、校验、事务 | 内核管道 | 按契约的 `Permission` / `Policy` 判定，按 Schema 校验并解码 |
+| 授权 | 内核管道，Authorize 阶段 | 按契约的 `Permission` / `Policy` 判定 |
+| 载荷绑定、校验、事务 | 内核管道，Validate 阶段起 | 读请求体（有上限、必须是 JSON），与路由值、查询串合并成一个 JSON 对象，按 Schema 校验并解码 |
 | 执行与写响应 | Handle 阶段 | `HandleAsync`；成功写响应 JSON，失败留在上下文由宿主写 Problem Details |
 
 ## 最小示例
@@ -123,7 +123,7 @@ curl -s localhost:5000/orders -H "Authorization: ApiKey dev-alice-key"
 一次请求的载荷是一个 JSON 对象，由三处合并而成，同名时前者优先：
 
 1. 路由值：URL 里的标识是权威，请求体里的同名字段被它覆盖。
-2. JSON 请求体：只有 `POST`、`PUT`、`PATCH` 读请求体，必须是 JSON 对象；空请求体按没有处理。
+2. JSON 请求体：只有 `POST`、`PUT`、`PATCH` 读请求体，必须是 JSON 对象；空请求体按没有处理。有请求体时 `Content-Type` 必须是 `application/json` 或 `+json` 结尾的类型，否则 400 `PROTOCOLS_VALIDATION_012`；超过 `XiHan:Protocols:Http:MaxRequestBodyBytes`（缺省 4 MiB）是 400 `PROTOCOLS_VALIDATION_011`。
 3. 查询串。
 
 路由值与查询串都是字符串，绑定器按请求类型序列化元数据里的属性类型写成 JSON：布尔、整数、浮点与数值枚举写成字面量，集合属性写成数组（单个值也写成一元数组），其余写字符串；属性名不区分大小写匹配并改写成序列化名。找不到属性或没有类型化元数据（插件代理）时按字符串写，多值写成字符串数组。解析不了的值（如布尔属性收到 `maybe`）照样按字符串写，由反序列化报出 `KERNEL_VALIDATION_001`。

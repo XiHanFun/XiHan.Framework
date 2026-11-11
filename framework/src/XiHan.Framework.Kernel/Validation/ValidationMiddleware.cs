@@ -43,6 +43,14 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
             return;
         }
 
+        // 宿主延迟读取的载荷在这里读：Validate 排在 Authorize 之后，没有认证、没有权限的调用不读请求体（ADR-0176）
+        var resolved = await context.ResolveOperationPayloadAsync().ConfigureAwait(false);
+        if (resolved.IsFailure)
+        {
+            context.SetOutcome(resolved.Error!);
+            return;
+        }
+
         var request = context.FindOperationRequest().TryGetValue(out var present) ? present : null;
         // JSON 载荷：原始调用用上下文里的载荷；类型化调用只有对象，按描述的序列化元数据编码一次；都没有（宿主端点自己绑定、插件代理的类型化调用）就跳过 Schema 校验与解码
         // 分支显式写开：条件表达式会把 null 的 byte[] 转成空的 ReadOnlyMemory（有值），那会被当成 {} 解码

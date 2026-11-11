@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Protocols.Http.Routing;
@@ -53,7 +54,7 @@ public static class OperationEndpointRouteBuilderExtensions
                 throw new FrameworkException(HttpErrors.DuplicateRoute, $"Operations '{mapped[key]}' and '{descriptor.Id}' derive the same HTTP route '{key}'. Override one of them via 'XiHan:Protocols:Http:Routes'.");
             }
 
-            // 绑定委托与描述一起挂在元数据上：UseXiHan() 在进入管道前调用它，Validate 阶段才能看到载荷
+            // 绑定委托与描述一起挂在元数据上：UseXiHan() 把它包成载荷来源，Validate 阶段（Authorize 之后）才读请求体（ADR-0176）
             OperationPayloadBinder binder = (httpContext, cancellationToken) => OperationRequestBinder.BindAsync(httpContext, descriptor, cancellationToken);
             // 写出方式也挂在元数据上：端点执行成功时用它，Idempotency 阶段回放（端点没有执行）时 UseXiHan() 用它写出同样的状态码与正文
             OperationResponseWriter writer = WriteResponseAsync;
@@ -72,7 +73,7 @@ public static class OperationEndpointRouteBuilderExtensions
     /// 端点处理
     /// </summary>
     /// <remarks>
-    /// 用 <c>UseXiHan()</c> 进管道前绑定好的载荷在当前调用里执行操作（Validate 阶段已解码时直接执行），成功写 JSON 响应，失败把结果留给宿主
+    /// 用 Validate 阶段读好的载荷在当前调用里执行操作（已解码时直接执行）；关掉内置中间件、没有 Validate 阶段时在这里读。成功写 JSON 响应，失败把结果留给宿主
     /// </remarks>
     private static async Task HandleAsync(HttpContext httpContext, OperationDescriptor descriptor)
     {
@@ -81,9 +82,18 @@ public static class OperationEndpointRouteBuilderExtensions
             throw new FrameworkException(KernelErrors.InvalidAppState, "Operation endpoints require UseXiHan() to run after routing and before the endpoint executes; the invocation context is missing.");
         }
 
-        if (!context.FindOperationPayload().TryGetValue(out var bytes))
+        // 通常 Validate 阶段已经读过；没有 Validate 阶段时在这里读（ADR-0176）
+        var resolved = await context.ResolveOperationPayloadAsync().ConfigureAwait(false);
+        if (!resolved.TryGetValue(out var found))
         {
-            throw new FrameworkException(KernelErrors.InvalidAppState, $"Operation endpoint '{descriptor.Id}' has no bound payload; UseXiHan() must run after routing and before the endpoint executes, so the payload is bound before the pipeline.");
+            // 结果留在上下文里，UseXiHan() 写成 Problem Details
+            context.SetOutcome(resolved.Error!);
+            return;
+        }
+
+        if (!found.TryGetValue(out var bytes))
+        {
+            throw new FrameworkException(KernelErrors.InvalidAppState, $"Operation endpoint '{descriptor.Id}' has no payload source; UseXiHan() must run after routing and before the endpoint executes, so the payload binder is attached to the invocation.");
         }
 
         var invoker = httpContext.RequestServices.GetRequiredService<IOperationInvoker>();

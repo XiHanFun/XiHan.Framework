@@ -5,5 +5,7 @@
   "protocols.http.openapi_permission_required": "Nécessite l'autorisation {permission} ({name}).",
   "protocols.http.openapi_policy_required": "Nécessite la stratégie {policy}.",
   "protocols.http.openapi_success": "Succès",
-  "protocols.http.openapi_ungrouped": "Autres"
+  "protocols.http.openapi_ungrouped": "Autres",
+  "protocols.http.request_body_not_json": "Le corps de la requête de l'opération '{id}' doit être du JSON (Content-Type application/json), reçu '{type}'.",
+  "protocols.http.request_body_too_large": "Le corps de la requête de l'opération '{id}' dépasse {max} octets."
 }

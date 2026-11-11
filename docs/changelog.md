@@ -12,6 +12,7 @@
 
 - **修复** 端点或路由组上的授权约定原先顶替了操作契约的权限：在 `MapXiHanOperations()` 上加 `RequireXiHanAuthentication()` 后，没有授予的已登录用户能调用全部操作；现在两者叠加判定，全部满足才放行。`FindAuthorizationRequirement` 改为 `GetAuthorizationRequirements`，返回全部已写入的要求
 - **修复** 端点上的授权要求不再被静默跳过：挂在绕过管道的端点（OpenAPI、`.proto`、健康探针、自己标注绕过的）上时宿主启动失败（`SECURITY_VALIDATION_008`），原先从不判定；`UseXiHan()` 没调或排在 `UseRouting()` 之前时，带要求的端点拒绝执行；`MapXiHanGrpc()` 上的授权约定现在每次调用都判定
+- **修复** HTTP 操作的请求体改在授权之后才读，原先进管道前就整读解析，匿名调用方也能让宿主为每个请求缓冲几十 MB；请求体上限 `XiHan:Protocols:Http:MaxRequestBodyBytes`（缺省 4 MiB，超过为 `PROTOCOLS_VALIDATION_011`），有请求体时 `Content-Type` 必须是 JSON（否则 `PROTOCOLS_VALIDATION_012`）：以 `text/plain` 或表单发 JSON 的客户端要改成 `application/json`
 
 ## v5.0.0-preview.3（2026-11-12）
 

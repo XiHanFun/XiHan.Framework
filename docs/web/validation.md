@@ -160,7 +160,7 @@ gRPC 上这些失败是 `InvalidArgument`，命令行上退出码 2，MCP 上是
 ## 不经过校验的路径
 
 - `IOperationInvoker.ExecuteAsync` 用于调用方已经在管道内的场合，直接执行操作，不校验；要校验就用 `InvokeAsync`。
-- 宿主端点在进入管道之前绑定载荷（HTTP 的路由值、请求体与查询串）；绑定失败直接写 Problem Details，不进入管道。
+- 宿主端点的载荷在 Validate 阶段开头才绑定（HTTP 的路由值、请求体与查询串），排在授权之后；绑定失败（请求体超过上限、不是 JSON）和校验失败一样写成 Problem Details。
 - `XiHan:Kernel:UseBuiltInMiddleware=false` 时 `ValidationMiddleware` 不登记，应用需要自己在 Validate 阶段提供校验。
 
 需要额外校验（如按租户配置的业务规则）时，在 Validate 阶段末尾登记应用自己的中间件，用 `context.FindOperationRequest()` 取解码后的请求对象（`Maybe<object>`），失败用 `context.SetOutcome(Error.Validation(...))` 结束调用：

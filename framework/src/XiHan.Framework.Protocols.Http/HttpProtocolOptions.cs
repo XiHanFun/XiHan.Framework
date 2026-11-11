@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Http.Routing;
@@ -20,6 +21,26 @@ public sealed record HttpProtocolOptions
     /// 配置节
     /// </summary>
     public const string ConfigurationSection = "XiHan:Protocols:Http";
+
+    /// <summary>
+    /// 操作请求体的缺省上限
+    /// </summary>
+    /// <remarks>
+    /// 4 MiB
+    /// </remarks>
+    public const long DefaultMaxRequestBodyBytes = 4 * 1024 * 1024;
+
+    /// <summary>
+    /// 操作请求体的上限（字节）
+    /// </summary>
+    /// <remarks>
+    /// 超过即 <see cref="HttpErrors.RequestBodyTooLarge"/>，缺省 <see cref="DefaultMaxRequestBodyBytes"/>；只管操作端点，宿主自己映射的端点照 Kestrel 的限制（ADR-0176）
+    /// </remarks>
+    public long MaxRequestBodyBytes
+    {
+        get => field;
+        init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum request body size must be positive.");
+    } = DefaultMaxRequestBodyBytes;
 
     /// <summary>
     /// 所有操作路由的前缀（如 <c>/api</c>）
@@ -79,10 +100,17 @@ public sealed record HttpProtocolOptions
             }
         }
 
+        var maxBody = DefaultMaxRequestBodyBytes;
+        if (section["MaxRequestBodyBytes"] is { } maxText && !long.TryParse(maxText, NumberStyles.None, CultureInfo.InvariantCulture, out maxBody))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:MaxRequestBodyBytes must be a positive integer, got '{maxText}'.");
+        }
+
         return new HttpProtocolOptions
         {
             RoutePrefix = section["RoutePrefix"] ?? string.Empty,
             Routes = routes,
+            MaxRequestBodyBytes = maxBody,
         };
     }
 

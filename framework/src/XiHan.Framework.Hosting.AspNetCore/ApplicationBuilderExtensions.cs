@@ -83,22 +83,16 @@ public static class ApplicationBuilderExtensions
             EndpointRequirementGuard.MarkEvaluated(httpContext);
         }
 
-        // 操作端点把描述与载荷绑定挂在元数据上：进入管道前把描述放进上下文（Authorize 阶段按契约判定），并先绑定载荷（Validate 阶段按 Schema 校验并解码），端点内只剩执行；
-        // 绑定失败（请求体不是 JSON 对象等）不进管道，直接写 Problem Details
+        // 操作端点把描述与载荷绑定挂在元数据上：进入管道前把描述放进上下文（Authorize 阶段按契约判定）；
+        // 载荷不在这里读，只放一个来源，Validate 阶段（Authorize 之后）才读请求体：匿名、无权限或被限流的调用不会让宿主缓冲请求体（ADR-0176）。
+        // 读取失败（请求体不是 JSON、超过上限等）是调用的失败结果，与其他失败一样写成 Problem Details
         var endpoint = httpContext.GetEndpoint();
         if (endpoint?.Metadata.GetMetadata<OperationDescriptor>() is { } operation)
         {
             context.SetOperation(operation);
             if (endpoint.Metadata.GetMetadata<OperationPayloadBinder>() is { } binder)
             {
-                var bound = await binder(httpContext, context.CancellationToken).ConfigureAwait(false);
-                if (!bound.TryGetValue(out var payload))
-                {
-                    await WriteProblemAsync(httpContext, bound.Error!, context.TraceId, context).ConfigureAwait(false);
-                    return;
-                }
-
-                context.SetOperationPayload(payload);
+                context.SetOperationPayloadSource(cancellationToken => binder(httpContext, cancellationToken));
             }
         }
 

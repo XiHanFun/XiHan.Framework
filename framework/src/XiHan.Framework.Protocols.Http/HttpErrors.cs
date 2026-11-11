@@ -29,4 +29,20 @@ public static class HttpErrors
     /// 也不与任何已登记操作的请求 / 响应类型匹配。生成 OpenAPI 文档失败
     /// </remarks>
     public const string OpenApiSchemaUnresolved = "PROTOCOLS_VALIDATION_010";
+
+    /// <summary>
+    /// 操作的请求体超过上限
+    /// </summary>
+    /// <remarks>
+    /// 上限是 <see cref="HttpProtocolOptions.MaxRequestBodyBytes"/>；<c>Content-Length</c> 超过时不读请求体，没有长度时读到超过即停（ADR-0176）
+    /// </remarks>
+    public const string RequestBodyTooLarge = "PROTOCOLS_VALIDATION_011";
+
+    /// <summary>
+    /// 操作的请求体不是 JSON
+    /// </summary>
+    /// <remarks>
+    /// 有请求体时 <c>Content-Type</c> 必须是 <c>application/json</c> 或 <c>+json</c> 结尾的类型；浏览器跨站的简单请求（<c>text/plain</c>、表单）因此不能调用操作（ADR-0176）
+    /// </remarks>
+    public const string RequestBodyNotJson = "PROTOCOLS_VALIDATION_012";
 }

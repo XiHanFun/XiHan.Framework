@@ -277,6 +277,7 @@ XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TRes
 XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.OperationDescriptor(XiHan.Framework.Kernel.Operations.OperationContract! contract, string! ownerId, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo) -> void
 XiHan.Framework.Kernel.Operations.OperationDescriptor<TOperation, TRequest, TResponse>.OperationDescriptor(XiHan.Framework.Kernel.Operations.OperationContract! contract, string! ownerId, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TRequest>! requestInfo, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TResponse>! responseInfo, XiHan.Framework.Kernel.Operations.OperationSchema? schema) -> void
 XiHan.Framework.Kernel.Operations.OperationInvocationExtensions
+XiHan.Framework.Kernel.Operations.OperationPayloadSource
 XiHan.Framework.Kernel.Operations.OperationRegistry
 XiHan.Framework.Kernel.Operations.OperationRegistry.Add(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Operations.OperationRegistry.AddRange(string! ownerId, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>! descriptors, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Security.PermissionDefinition!>! permissions) -> XiHan.Framework.Primitives.Result
@@ -815,8 +816,10 @@ static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.FindOpera
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.FindOperationPayload(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>>
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.FindOperationRequest(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<object!>
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.FindOperationResponse(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<object!>
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.ResolveOperationPayloadAsync(this XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<System.ReadOnlyMemory<byte>>>>
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperation(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> void
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationPayload(this XiHan.Framework.Primitives.InvocationContext! context, System.ReadOnlyMemory<byte> payload) -> void
+static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationPayloadSource(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Operations.OperationPayloadSource! source) -> void
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationRequest(this XiHan.Framework.Primitives.InvocationContext! context, object! request) -> void
 static XiHan.Framework.Kernel.Operations.OperationInvocationExtensions.SetOperationResponse(this XiHan.Framework.Primitives.InvocationContext! context, object! response) -> void
 static XiHan.Framework.Kernel.Operations.OperationRequest.operator !=(XiHan.Framework.Kernel.Operations.OperationRequest? left, XiHan.Framework.Kernel.Operations.OperationRequest? right) -> bool
@@ -880,6 +883,7 @@ static XiHan.Framework.Kernel.Validation.SchemaViolation.operator ==(XiHan.Frame
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.DecodeResponse(System.ReadOnlyMemory<byte> payload) -> XiHan.Framework.Primitives.Result<object!>
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.RequestInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.ResponseInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
+virtual XiHan.Framework.Kernel.Operations.OperationPayloadSource.Invoke(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
 virtual XiHan.Framework.Kernel.Pipeline.PipelineStep.Invoke(XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask
 ~override XiHan.Framework.Kernel.Security.AuthorizationResult.Equals(object obj) -> bool
 ~override XiHan.Framework.Kernel.Security.AuthorizationResult.ToString() -> string

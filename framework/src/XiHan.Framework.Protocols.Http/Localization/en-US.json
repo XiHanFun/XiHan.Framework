@@ -5,5 +5,7 @@
   "protocols.http.openapi_permission_required": "Requires permission {permission} ({name}).",
   "protocols.http.openapi_policy_required": "Requires policy {policy}.",
   "protocols.http.openapi_success": "Success",
-  "protocols.http.openapi_ungrouped": "Other"
+  "protocols.http.openapi_ungrouped": "Other",
+  "protocols.http.request_body_not_json": "The request body of operation '{id}' must be JSON (Content-Type application/json), got '{type}'.",
+  "protocols.http.request_body_too_large": "The request body of operation '{id}' exceeds {max} bytes."
 }

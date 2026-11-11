@@ -227,6 +227,7 @@ public sealed record WhoAmI(string? Principal, bool IsAuthenticated, string? Ten
 | 进入管道时截止时间已过 | 504 | `KERNEL_TIMEOUT_001` |
 | 端点抛出未处理异常 | 500 | `KERNEL_UNEXPECTED_001` |
 | 操作端点的请求体不是 JSON 对象 | 400 | `KERNEL_VALIDATION_001` |
+| 操作端点的请求体超过上限 / 不是 JSON 类型 | 400 | `PROTOCOLS_VALIDATION_011` / `PROTOCOLS_VALIDATION_012` |
 | 未认证 / 凭据无效、过期或签名不符 | 401 | `SECURITY_DENIED_001` / `SECURITY_DENIED_003` |
 | 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
 | 授予存储、授予来源或收窄过滤器读不到数据（授权无法判定） | 503 | `SECURITY_UNAVAILABLE_001` |

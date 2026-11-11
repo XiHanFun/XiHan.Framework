@@ -65,6 +65,22 @@ public static class HttpMessages
     public const string OpenApiUngrouped = "protocols.http.openapi_ungrouped";
 
     /// <summary>
+    /// 操作的请求体超过上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>（操作 ID）、<c>max</c>（上限字节数）
+    /// </remarks>
+    public const string RequestBodyTooLarge = "protocols.http.request_body_too_large";
+
+    /// <summary>
+    /// 操作的请求体不是 JSON
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>（操作 ID）、<c>type</c>（收到的 <c>Content-Type</c>，没有时为空）
+    /// </remarks>
+    public const string RequestBodyNotJson = "protocols.http.request_body_not_json";
+
+    /// <summary>
     /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(HttpMessages));

@@ -5,5 +5,7 @@
   "protocols.http.openapi_permission_required": "Requiere el permiso {permission} ({name}).",
   "protocols.http.openapi_policy_required": "Requiere la directiva {policy}.",
   "protocols.http.openapi_success": "Correcto",
-  "protocols.http.openapi_ungrouped": "Otros"
+  "protocols.http.openapi_ungrouped": "Otros",
+  "protocols.http.request_body_not_json": "El cuerpo de la solicitud de la operación '{id}' debe ser JSON (Content-Type application/json); se recibió '{type}'.",
+  "protocols.http.request_body_too_large": "El cuerpo de la solicitud de la operación '{id}' supera los {max} bytes."
 }

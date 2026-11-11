@@ -10,6 +10,8 @@ XiHan.Framework.Protocols.Http.HttpProtocolOptions
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.<Clone>$() -> XiHan.Framework.Protocols.Http.HttpProtocolOptions!
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.Equals(XiHan.Framework.Protocols.Http.HttpProtocolOptions? other) -> bool
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.HttpProtocolOptions() -> void
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.MaxRequestBodyBytes.get -> long
+XiHan.Framework.Protocols.Http.HttpProtocolOptions.MaxRequestBodyBytes.init -> void
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.RouteFor(XiHan.Framework.Kernel.Operations.OperationDescriptor! descriptor) -> XiHan.Framework.Protocols.Http.Routing.HttpRoute!
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.RoutePrefix.get -> string!
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.RoutePrefix.init -> void
@@ -98,6 +100,8 @@ XiHan.Framework.Protocols.Http.Routing.OperationEndpointRouteBuilderExtensions
 XiHan.Framework.Protocols.Http.Routing.OperationRequestBinder
 const XiHan.Framework.Protocols.Http.HttpErrors.DuplicateRoute = "PROTOCOLS_CONFLICT_002" -> string!
 const XiHan.Framework.Protocols.Http.HttpErrors.OpenApiSchemaUnresolved = "PROTOCOLS_VALIDATION_010" -> string!
+const XiHan.Framework.Protocols.Http.HttpErrors.RequestBodyNotJson = "PROTOCOLS_VALIDATION_012" -> string!
+const XiHan.Framework.Protocols.Http.HttpErrors.RequestBodyTooLarge = "PROTOCOLS_VALIDATION_011" -> string!
 const XiHan.Framework.Protocols.Http.HttpMessages.CatalogName = "protocols.http" -> string!
 const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiAuthenticationRequired = "protocols.http.openapi_authentication_required" -> string!
 const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiError = "protocols.http.openapi_error" -> string!
@@ -106,9 +110,12 @@ const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiPermissionRequired = "p
 const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiPolicyRequired = "protocols.http.openapi_policy_required" -> string!
 const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiSuccess = "protocols.http.openapi_success" -> string!
 const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiUngrouped = "protocols.http.openapi_ungrouped" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.RequestBodyNotJson = "protocols.http.request_body_not_json" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.RequestBodyTooLarge = "protocols.http.request_body_too_large" -> string!
 const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Http = "protocols.http" -> string!
 const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Version = 1 -> int
 const XiHan.Framework.Protocols.Http.HttpProtocolOptions.ConfigurationSection = "XiHan:Protocols:Http" -> string!
+const XiHan.Framework.Protocols.Http.HttpProtocolOptions.DefaultMaxRequestBodyBytes = 4194304 -> long
 const XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointRouteBuilderExtensions.DefaultPattern = "/openapi.json" -> string!
 const XiHan.Framework.Protocols.Http.OpenApi.OpenApiEndpointRouteBuilderExtensions.FullDocumentName = "all" -> string!
 const XiHan.Framework.Protocols.Http.Routing.HttpRouteConvention.IdentifierProperty = "id" -> string!
