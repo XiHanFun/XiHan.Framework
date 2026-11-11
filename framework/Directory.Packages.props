@@ -66,6 +66,11 @@
     <PackageVersion Include="xunit.v3.assert" Version="4.0.2" />
   </ItemGroup>
 
+  <ItemGroup Label="打包">
+    <!-- 打包时在每个包里生成 SPDX 软件物料清单（_manifest/spdx_2.2），只在构建期使用，不传递给包的使用方 -->
+    <PackageVersion Include="Microsoft.Sbom.Targets" Version="4.1.13" />
+  </ItemGroup>
+
   <ItemGroup Label="基准">
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>

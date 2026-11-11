@@ -6,6 +6,14 @@
   </ItemGroup>
 
   <!--
+    包验证基线（ADR-0131）：XiHanPackageBaselineVersion 有值时按它比对公开面。放在 targets 里是为了在项目体之后求值：
+    基线发布之后才新增的包没有可比的版本，在项目里写 <XiHanPackageBaselineVersion /> 清空即可；不启用包验证的包（Cli）不受影响
+  -->
+  <PropertyGroup Condition="'$(XiHanPackageBaselineVersion)' != '' and '$(EnablePackageValidation)' == 'true'">
+    <PackageValidationBaselineVersion>$(XiHanPackageBaselineVersion)</PackageValidationBaselineVersion>
+  </PropertyGroup>
+
+  <!--
     共享 internal 的包按精确版本互相依赖（ADR-0134）：带 XiHanExactVersion="true" 的项目引用，打包时依赖写成 [版本]，不是缺省的「≥ 版本」。
     包验证不比较 internal；友元包按「≥」依赖时，应用单独升级被引用的包，友元包会在运行时找不到成员。
     NuGet 在 _GetProjectReferenceVersions 里按被引用项目的完整路径收集版本，项目引用上的元数据带不过去，所以按完整路径挑出这几项再改写

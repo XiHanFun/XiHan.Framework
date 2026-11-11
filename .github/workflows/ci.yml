@@ -135,6 +135,18 @@ jobs:
       - name: 打包（触发包验证与 README 检查）
         run: dotnet pack framework/XiHan.Framework.slnx --configuration Release --no-build
 
+      - name: 核对 SBOM
+        # 每个包都要带 SPDX 清单：Microsoft.Sbom.Targets 在打包时生成到包内 _manifest/spdx_2.2（ADR-0173）
+        run: |
+          missing=0
+          for pkg in framework/artifacts/packages/*.nupkg; do
+            if ! unzip -Z1 "$pkg" | grep -qx '_manifest/spdx_2.2/manifest.spdx.json'; then
+              echo "::error::$(basename "$pkg") 缺少 SBOM（_manifest/spdx_2.2/manifest.spdx.json）"
+              missing=1
+            fi
+          done
+          exit $missing
+
       - name: 依赖漏洞清单
         run: dotnet list framework/XiHan.Framework.slnx package --vulnerable --include-transitive
 
@@ -155,6 +167,70 @@ jobs:
           path: |
             framework/test/**/TestResults/
             framework/artifacts/packages/
+          if-no-files-found: ignore
+
+  benchmarks:
+    # 性能门禁（开发计划第九节、总体方案 11.2，ADR-0173）：单独一台运行器，与主作业并行，不和服务容器、测试争资源。
+    # 绝对预算、分配基线与程序集大小写在 framework/benchmarks/budgets.json；相对回退在同一台运行器上先测对照提交、再测当前提交，
+    # 慢了 5% 以上且统计显著才算，复测一次仍回退才失败。对照提交：推送取推送前的远端提交，PR 取目标分支的提交，拿不到就取上一个提交
+    name: 性能门禁
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: 检出
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+          # 要拿到对照提交
+          fetch-depth: 0
+
+      - name: 安装 .NET SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: 构建当前提交的基准
+        run: dotnet build framework/benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj --configuration Release
+
+      - name: 构建对照提交的基准
+        id: base
+        env:
+          BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          base="${PR_BASE:-$BEFORE}"
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            base="$(git rev-parse HEAD^)"
+          fi
+          src="$RUNNER_TEMP/base-src"
+          git worktree add --detach "$src" "$base"
+          git -C "$src" submodule update --init framework/spec
+          # 对照提交可能还没有基准项目或构建不过（比如修的正是构建错误）：那就只查绝对预算、分配基线与程序集大小
+          if dotnet build "$src/framework/benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj" --configuration Release; then
+            echo "dir=$src/framework/benchmarks/XiHan.Framework.Benchmarks/bin/Release/net10.0" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::对照提交 $base 的基准构建失败，这次跳过相对回退的比较"
+          fi
+
+      - name: 性能门禁
+        shell: pwsh
+        env:
+          # 有意的回退：最后一个提交的说明带 [perf-accepted]，或 PR 带 perf-accepted 标签；只放行相对回退，绝对预算照常
+          ACCEPT: ${{ contains(github.event.head_commit.message, '[perf-accepted]') || contains(github.event.pull_request.labels.*.name, 'perf-accepted') }}
+        run: >
+          framework/scripts/Test-Benchmarks.ps1
+          -Head framework/benchmarks/XiHan.Framework.Benchmarks/bin/Release/net10.0
+          -Base "${{ steps.base.outputs.dir }}"
+          -Artifacts "${{ runner.temp }}/benchmarks"
+          -AcceptRegression:$($env:ACCEPT -eq 'true')
+
+      - name: 上传基准结果
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-artifacts
+          path: ${{ runner.temp }}/benchmarks
           if-no-files-found: ignore
 
   oracle:

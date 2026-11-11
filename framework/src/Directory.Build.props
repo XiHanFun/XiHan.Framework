@@ -11,6 +11,11 @@
     <PackageReleaseNotes>https://framework.docs.xihanfun.com/changelog</PackageReleaseNotes>
     <!-- 启用 XiHan.Framework.Kernel.Analyzers 的框架包规则（XH0001/0002/0004）；XiHanRing 由 Ring 0/1 的项目自行设置 -->
     <XiHanFrameworkPackage>true</XiHanFrameworkPackage>
+    <!-- 软件物料清单：打包时在包内 _manifest/spdx_2.2 生成 SPDX 2.2 清单，列出包的组成与依赖；不联网查许可证，构建离线可重复 -->
+    <GenerateSBOM>true</GenerateSBOM>
+    <SbomGenerationPackageSupplier>$(Authors)</SbomGenerationPackageSupplier>
+    <SbomGenerationNamespaceBaseUri>https://github.com/XiHanFun/XiHan.Framework/sbom</SbomGenerationNamespaceBaseUri>
+    <SbomGenerationFetchLicenseInformation>false</SbomGenerationFetchLicenseInformation>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +29,7 @@
     <AdditionalFiles Include="PublicAPI.Shipped.txt" />
     <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Sbom.Targets" PrivateAssets="all" />
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />
   </ItemGroup>
 

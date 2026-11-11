@@ -1,0 +1,16 @@
+{
+  "regressionThreshold": 0.05,
+  "significance": 0.01,
+  "benchmarks": {
+    "XiHan.Framework.Benchmarks.PipelineBenchmarks.SingleMiddleware": { "maxMeanNanoseconds": 100000 },
+    "XiHan.Framework.Benchmarks.PipelineBenchmarks.FiveMiddleware": { "maxMeanNanoseconds": 500000 },
+    "XiHan.Framework.Benchmarks.StartupBenchmarks.BuildAndStart(Features: 1)": {},
+    "XiHan.Framework.Benchmarks.StartupBenchmarks.BuildAndStart(Features: 10)": {}
+  },
+  "assemblies": {
+    "maxBytes": 512000,
+    "files": [ "XiHan.Framework.Primitives.dll", "XiHan.Framework.Kernel.dll" ]
+  },
+  "coldStart": { "targetMilliseconds": 50 },
+  "residentMemory": { "targetBytes": 31457280 }
+}

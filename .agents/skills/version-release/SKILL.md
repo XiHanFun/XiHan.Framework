@@ -21,6 +21,15 @@ description: 为 XiHan.Framework 准备版本、更新 framework/Directory.Build
 2. 在 `dev` 上改 `<Version>` 与 `docs/package.json`，在 `docs/changelog.md` 补这一版；不替用户预选版本级别或发布通道。
 3. 执行 Release 还原、构建、MTP 测试与打包，检查 `framework/artifacts/packages/` 的包数量、版本与内容。
 4. 版本提交使用 `build: vX.Y.Z`；推 `dev`，等 `ci.yml` 全绿。
+5. 正式版（不带预发布后缀）的版本提交里执行 `framework/scripts/Ship-PublicApi.ps1`，把各包 `PublicAPI.Unshipped.txt` 移进 `Shipped`（先 `-Check` 预览）。
+
+## 包验证基线
+
+- 基线是同一大版本最近一次发布的正式版，写在 `framework/Directory.Build.props` 的 `<XiHanPackageBaselineVersion>`；空表示不比对（ADR-0131）。
+- 正式版在 NuGet 上可以还原之后，下一个提交把它填成刚发布的版本号；在那之前填会因还原不到基线包而打包失败。
+- 基线发布之后才新增的包，在项目文件里写 `<XiHanPackageBaselineVersion />` 清空；`Cli` 不启用包验证，不受影响。
+- `Preview` / `Experimental` 的破坏用 `dotnet pack <项目> -p:ApiCompatGenerateSuppressionFile=true` 生成包目录下的 `CompatibilitySuppressions.xml`，与改动同一提交；`Stable` 的破坏不登记豁免，改回去。
+- 换大版本时清空基线与全部豁免文件，另列破坏清单。
 
 ## 发布
 
