@@ -129,7 +129,9 @@ public static class WorkflowServiceCollectionExtensions
         services.TryAddScoped<WorkflowDefinitionValidator>();
         // 执行范围按作用域：引擎、目录、任务服务与外部任务服务共用它决定事务的加入或自开，并把实例锁持有到作用域结束
         services.TryAddScoped<WorkflowScope>();
-        services.TryAddScoped<IWorkflowEngine, WorkflowEngine>();
+        // 引擎以具体类型登记、接口转发到同一个实例：任务服务、外部任务服务与轮询器经内部入口消费自己的书签（ADR-0171）
+        services.TryAddScoped<WorkflowEngine>();
+        services.TryAddScoped<IWorkflowEngine>(static sp => sp.GetRequiredService<WorkflowEngine>());
         services.TryAddScoped<IWorkflowDefinitionCatalog, WorkflowDefinitionCatalog>();
         services.TryAddScoped<IWorkflowTaskService, WorkflowTaskService>();
         services.TryAddScoped<IWorkflowExternalTaskService, WorkflowExternalTaskService>();

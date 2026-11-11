@@ -182,13 +182,28 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     public ValueTask<Result<WorkflowInstance>> ResumeAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(bookmarkId);
-        return _scope.RunAsync<IWorkflowEngine, WorkflowInstance>(true, "workflow.resume", () => ResumeCoreAsync(bookmarkId, inputs, expectedKey, cancellationToken), engine => engine.ResumeAsync(bookmarkId, inputs, expectedKey, cancellationToken), cancellationToken);
+        return _scope.RunAsync<IWorkflowEngine, WorkflowInstance>(true, "workflow.resume", () => ResumeCoreAsync(bookmarkId, inputs, expectedKey, false, cancellationToken), engine => engine.ResumeAsync(bookmarkId, inputs, expectedKey, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>
+    /// 消费任意种类的书签并恢复节点
+    /// </summary>
+    /// <remarks>
+    /// 框架内部的消费方用：任务服务与外部任务服务在校验指派人、持锁的工作者之后消费自己的书签，轮询器解锁到期的外部任务。公开的 <see cref="ResumeAsync"/> 拒绝这两种书签（ADR-0171）
+    /// </remarks>
+    internal ValueTask<Result<WorkflowInstance>> ResumeOwnedAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(bookmarkId);
+        return _scope.RunAsync<WorkflowEngine, WorkflowInstance>(true, "workflow.resume", () => ResumeCoreAsync(bookmarkId, inputs, expectedKey, true, cancellationToken), engine => engine.ResumeOwnedAsync(bookmarkId, inputs, expectedKey, cancellationToken), cancellationToken);
     }
 
     /// <summary>
     /// 恢复书签（在事务里）
     /// </summary>
-    private async ValueTask<Result<WorkflowInstance>> ResumeCoreAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, CancellationToken cancellationToken)
+    /// <remarks>
+    /// <paramref name="serviceOwned"/> 为 <see langword="false"/> 时拒绝用户任务与外部任务的书签
+    /// </remarks>
+    private async ValueTask<Result<WorkflowInstance>> ResumeCoreAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, bool serviceOwned, CancellationToken cancellationToken)
     {
         // 存储只返回调用方分区的书签：别的租户（含平台与租户之间）的书签按不存在处理
         var peek = await _bookmarks.FindAsync(Tenant, bookmarkId, cancellationToken).ConfigureAwait(false);
@@ -200,6 +215,12 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
         if (!maybe.TryGetValue(out var found))
         {
             return BookmarkNotFound(bookmarkId);
+        }
+
+        // 分区之后、取锁之前判种类：两种书签的身份校验（指派人、持锁的工作者）与完成事件在各自的服务里，直接消费会跳过它们；种类在书签的一生里不变，锁外判定即可
+        if (!serviceOwned && IsServiceOwned(found.Kind))
+        {
+            return Error.Conflict(WorkflowErrors.BookmarkNotResumable, WorkflowMessages.BookmarkServiceOwned, MessageArguments.Of(("id", bookmarkId), ("kind", found.Kind)));
         }
 
         if (string.Equals(found.Kind, BookmarkKinds.DefinitionTimer, StringComparison.Ordinal))
@@ -1804,6 +1825,15 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     /// </summary>
     private static Error BookmarkNotFound(string id)
         => Error.NotFound(WorkflowErrors.BookmarkNotFound, WorkflowMessages.BookmarkNotFound, MessageArguments.Of(("id", id)));
+
+    /// <summary>
+    /// 是否只能经所属服务消费的书签种类
+    /// </summary>
+    /// <remarks>
+    /// 用户任务（任务服务校验指派人）与外部任务（外部任务服务校验持锁的工作者）
+    /// </remarks>
+    private static bool IsServiceOwned(string kind)
+        => string.Equals(kind, BookmarkKinds.UserTask, StringComparison.Ordinal) || string.Equals(kind, BookmarkKinds.External, StringComparison.Ordinal);
 
     /// <summary>
     /// 信号恢复失败

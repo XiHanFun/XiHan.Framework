@@ -77,6 +77,7 @@
   "workflow.bookmark.key_mismatch": "Le signet '{id}' ne correspond pas à la clé attendue.",
   "workflow.bookmark.not_found": "Le signet '{id}' n'existe pas.",
   "workflow.bookmark.not_resumable": "Le signet '{id}' ne peut pas reprendre car son instance n'est pas en cours d'exécution.",
+  "workflow.bookmark.service_owned": "Le signet '{id}' de type '{kind}' ne peut être consommé que par son service : terminez les tâches utilisateur avec le service de tâches et les tâches externes avec le service de tâches externes.",
   "workflow.child.canceled": "Le sous-workflow '{id}' a été annulé.",
   "workflow.child.failed": "Le sous-workflow '{id}' ne s'est pas terminé (statut {status}).",
   "workflow.child.faulted": "Le sous-workflow '{id}' est en erreur.",

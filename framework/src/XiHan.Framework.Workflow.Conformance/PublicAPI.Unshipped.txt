@@ -95,6 +95,7 @@ XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.ExternalTask
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.ExternalTask_FetchTakesTheOldestFirst_UpToMaxTasks() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Query_FiltersAndPages() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Return_JumpsBack_AndRecordsHistory() -> System.Threading.Tasks.Task!
+XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.ServiceOwnedBookmarks_AreNotResumableThroughTheEngine() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.TaskMetadata_PriorityDueFormKey_AndReminder() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Threshold_All_CompletesAtCountOrPercent() -> System.Threading.Tasks.Task!
 XiHan.Framework.Workflow.Conformance.Engine.WorkflowTaskConformance.Urge_PublishesEvent() -> System.Threading.Tasks.Task!

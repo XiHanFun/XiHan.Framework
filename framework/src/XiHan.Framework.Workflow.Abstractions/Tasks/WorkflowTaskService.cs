@@ -32,7 +32,7 @@ internal sealed class WorkflowTaskService : IWorkflowTaskService
     /// <summary>
     /// 引擎
     /// </summary>
-    private readonly IWorkflowEngine _engine;
+    private readonly WorkflowEngine _engine;
 
     /// <summary>
     /// 定义存储
@@ -68,7 +68,7 @@ internal sealed class WorkflowTaskService : IWorkflowTaskService
     /// <summary>
     /// 创建（作用域服务）
     /// </summary>
-    public WorkflowTaskService(IWorkflowEngine engine, IWorkflowDefinitionStore definitions, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
+    public WorkflowTaskService(WorkflowEngine engine, IWorkflowDefinitionStore definitions, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(loggerFactory);
@@ -243,7 +243,7 @@ internal sealed class WorkflowTaskService : IWorkflowTaskService
         inputs[UserTaskPayloadKeys.ActorId] = completion.ActorId;
         inputs[UserTaskPayloadKeys.Outcome] = completion.Outcome;
         inputs[UserTaskPayloadKeys.Comment] = completion.Comment;
-        var resumed = await _engine.ResumeAsync(bookmark.Id, inputs, completion.ActorId, cancellationToken).ConfigureAwait(false);
+        var resumed = await _engine.ResumeOwnedAsync(bookmark.Id, inputs, completion.ActorId, cancellationToken).ConfigureAwait(false);
         if (!resumed.TryGetValue(out var instance))
         {
             return resumed.Error!;

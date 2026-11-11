@@ -24,7 +24,7 @@ namespace XiHan.Framework.Workflow.Conformance.Engine;
 /// 用户任务增强与外部任务的一致性套件（RFC-0021）
 /// </summary>
 /// <remarks>
-/// 会签阈值、认领与释放、退回、催办、条件查询、任务元数据与周期提醒、外部任务的领取 / 完成 / 失败 / 锁。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器
+/// 会签阈值、认领与释放、退回、催办、条件查询、任务元数据与周期提醒、外部任务的领取 / 完成 / 失败 / 锁、两种书签不能绕过服务经引擎消费。Provider 继承并实现 <see cref="StartAsync"/>：装配被测特性，并把套件的记录器、活动与处理器登记进容器
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class WorkflowTaskConformance
@@ -509,6 +509,65 @@ public abstract class WorkflowTaskConformance
         var second = (await FetchAsync(host, "w2", TimeSpan.FromMinutes(1), IWorkflowExternalTaskService.MaxTasksPerFetch).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([started[2]], second.Select(static task => task.InstanceId));
         Assert.Empty((await FetchAsync(host, "w3", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
+    }
+
+    /// <summary>
+    /// 用例 9：用户任务与外部任务的书签只能经各自的服务消费
+    /// </summary>
+    /// <remarks>
+    /// 引擎的 <see cref="IWorkflowEngine.ResumeAsync"/> 直接恢复这两种书签返回 <c>WORKFLOW_CONFLICT_003</c>：冒用指派人、传对期望的键、持有外部任务的锁都不行，书签与实例不变、不发完成事件（ADR-0171）；服务照常完成；外部任务锁到期仍由轮询解锁
+    /// </remarks>
+    [Fact]
+    public async Task ServiceOwnedBookmarks_AreNotResumableThroughTheEngine()
+    {
+        var log = new ConformanceLog();
+        var clock = new ManualClock(DateTimeOffset.UtcNow);
+        await using var host = await StartAsync(services =>
+        {
+            Register(services, log);
+            services.AddSingleton<TimeProvider>(clock);
+        }).ConfigureAwait(false);
+        await host.PublishAsync(Approval("conf-owned-task", UserTaskCompletionPolicy.Any, ["alice"])).ConfigureAwait(false);
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-owned-external"))
+            .AddStart()
+            .AddExternalTask("pay", PaymentTopic)
+            .AddEnd()
+            .AddTransition("start", "pay").AddTransition("pay", "end")
+            .Build()).ConfigureAwait(false);
+
+        // 用户任务：载荷里写成指派人、不传与传对期望的键，都不能绕过任务服务
+        var approval = (await host.StartAsync(new WorkflowName("conf-owned-task")).ConfigureAwait(false)).ValueOrThrow();
+        var task = await TaskOfAsync(host, "alice", approval.Id).ConfigureAwait(false);
+        var forged = new JsonObject { [UserTaskPayloadKeys.ActorId] = "alice", [UserTaskPayloadKeys.Outcome] = UserTaskOutcomes.Approved };
+        foreach (var expectedKey in new string?[] { null, "alice" })
+        {
+            var refused = await host.EngineAsync(engine => engine.ResumeAsync(task.Id, forged, expectedKey, CancellationToken.None)).ConfigureAwait(false);
+            Assert.Equal((WorkflowErrors.BookmarkNotResumable, WorkflowMessages.BookmarkServiceOwned), (refused.Error?.Code, refused.Error?.MessageKey));
+        }
+
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(approval.Id).ConfigureAwait(false)).Status);
+        Assert.Equal(task.Id, (await TaskOfAsync(host, "alice", approval.Id).ConfigureAwait(false)).Id);
+        Assert.Empty(log.EventsOf(WorkflowTopics.TaskCompleted));
+        Assert.Equal(WorkflowInstanceStatus.Completed, (await host.CompleteAsync(task.Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
+        Assert.Single(log.EventsOf(WorkflowTopics.TaskCompleted));
+
+        // 外部任务：未领取与持锁时都不能经引擎完成
+        var payment = (await host.StartAsync(new WorkflowName("conf-owned-external")).ConfigureAwait(false)).ValueOrThrow();
+        var pending = Assert.Single(await host.BookmarksAsync(payment.Id).ConfigureAwait(false), static bookmark => bookmark.Kind == BookmarkKinds.External);
+        var outputs = new JsonObject { [ExternalTaskPayloadKeys.Outputs] = new JsonObject { ["paid"] = true } };
+        Assert.Equal(WorkflowErrors.BookmarkNotResumable, (await host.EngineAsync(engine => engine.ResumeAsync(pending.Id, outputs, null, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
+        var locked = Assert.Single((await FetchAsync(host, "w1", TimeSpan.FromMilliseconds(50)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(WorkflowErrors.BookmarkNotResumable, (await host.EngineAsync(engine => engine.ResumeAsync(locked.Id, outputs, PaymentTopic, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(payment.Id).ConfigureAwait(false)).Status);
+        Assert.Empty(log.EventsOf(WorkflowTopics.ExternalCompleted));
+
+        // 锁到期的解锁是轮询的内部消费，不受这条限制
+        clock.Advance(TimeSpan.FromMilliseconds(80));
+        Assert.True(await host.PollAsync().ConfigureAwait(false) >= 1);
+        var taken = Assert.Single((await FetchAsync(host, "w2", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.NotEqual(locked.Id, taken.Id);
+        Assert.Equal(WorkflowInstanceStatus.Completed, (await CompleteExternalAsync(host, taken.Id, "w2").ConfigureAwait(false)).ValueOrThrow().Status);
+        Assert.Single(log.EventsOf(WorkflowTopics.ExternalCompleted));
     }
 
     /// <summary>

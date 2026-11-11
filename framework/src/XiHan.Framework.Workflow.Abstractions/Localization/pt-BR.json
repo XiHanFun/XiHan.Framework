@@ -77,6 +77,7 @@
   "workflow.bookmark.key_mismatch": "O marcador '{id}' não corresponde à chave esperada.",
   "workflow.bookmark.not_found": "O marcador '{id}' não existe.",
   "workflow.bookmark.not_resumable": "O marcador '{id}' não pode ser retomado porque sua instância não está em execução.",
+  "workflow.bookmark.service_owned": "O marcador '{id}' do tipo '{kind}' só pode ser consumido pelo seu serviço: conclua tarefas de usuário com o serviço de tarefas e tarefas externas com o serviço de tarefas externas.",
   "workflow.child.canceled": "O subfluxo '{id}' foi cancelado.",
   "workflow.child.failed": "O subfluxo '{id}' não foi concluído (status {status}).",
   "workflow.child.faulted": "O subfluxo '{id}' falhou.",

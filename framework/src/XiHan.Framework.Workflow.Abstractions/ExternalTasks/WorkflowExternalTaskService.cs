@@ -27,7 +27,7 @@ internal sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     /// <summary>
     /// 引擎
     /// </summary>
-    private readonly IWorkflowEngine _engine;
+    private readonly WorkflowEngine _engine;
 
     /// <summary>
     /// 实例存储
@@ -58,7 +58,7 @@ internal sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
     /// <summary>
     /// 创建（作用域服务）
     /// </summary>
-    public WorkflowExternalTaskService(IWorkflowEngine engine, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
+    public WorkflowExternalTaskService(WorkflowEngine engine, IWorkflowInstanceStore instances, IWorkflowBookmarkStore bookmarks, TimeProvider clock, IServiceProvider services, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(loggerFactory);
@@ -223,7 +223,7 @@ internal sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
             [ExternalTaskPayloadKeys.Outputs] = WorkflowJson.CloneObject(completion.Outputs),
             [ExternalTaskPayloadKeys.WorkerId] = completion.WorkerId,
         };
-        var resumed = await _engine.ResumeAsync(bookmark.Id, inputs, null, cancellationToken).ConfigureAwait(false);
+        var resumed = await _engine.ResumeOwnedAsync(bookmark.Id, inputs, null, cancellationToken).ConfigureAwait(false);
         if (!resumed.TryGetValue(out var instance))
         {
             return resumed.Error!;
@@ -292,7 +292,7 @@ internal sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
             [ExternalTaskPayloadKeys.Error] = failure.Error,
             [ExternalTaskPayloadKeys.WorkerId] = failure.WorkerId,
         };
-        var resumed = await _engine.ResumeAsync(held.Id, inputs, null, cancellationToken).ConfigureAwait(false);
+        var resumed = await _engine.ResumeOwnedAsync(held.Id, inputs, null, cancellationToken).ConfigureAwait(false);
         if (!resumed.TryGetValue(out var instance))
         {
             return resumed.Error!;

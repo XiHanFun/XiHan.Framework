@@ -1439,6 +1439,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.AssigneeUsersMissin
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkKeyMismatch = "workflow.bookmark.key_mismatch" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkNotFound = "workflow.bookmark.not_found" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkNotResumable = "workflow.bookmark.not_resumable" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.BookmarkServiceOwned = "workflow.bookmark.service_owned" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.CatalogName = "workflow" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ChildCanceled = "workflow.child.canceled" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ChildFailed = "workflow.child.failed" -> string!

@@ -210,7 +210,7 @@ public sealed class DepartmentManagerProvider(IOrgChart org) : IAssigneeProvider
 | `InstanceTimeout` | 定义 `Timeout` | 引擎直接处理 |
 | `DefinitionTimer` | `Start.Cron` | 引擎直接处理，`InstanceId` 是定义 ID |
 
-`ResumeAsync(bookmarkId, inputs, expectedKey)` 消费一个书签并恢复节点；实例不在运行中，或 `expectedKey` 与书签的 `Key` 不同时返回 `WORKFLOW_CONFLICT_003`，轮询器遇到这类书签把到期时间后推 `NotResumableBackoff`（缺省 5 分钟）。`SignalAsync(name, payload, correlationId)` 消费当前分区里匹配的全部信号书签（书签的 `CorrelationId` 为空时接受任意关联），再按信号启动规则启动实例，返回消费数加启动数。
+`ResumeAsync(bookmarkId, inputs, expectedKey)` 消费一个书签并恢复节点；实例不在运行中，或 `expectedKey` 与书签的 `Key` 不同时返回 `WORKFLOW_CONFLICT_003`，轮询器遇到这类书签把到期时间后推 `NotResumableBackoff`（缺省 5 分钟）。用户任务与外部任务的书签只能经任务服务与外部任务服务消费（它们校验指派人与持锁的工作者、发布完成事件），`ResumeAsync` 对这两种也返回 `WORKFLOW_CONFLICT_003`。`ResumeAsync` 不校验调用者身份，`inputs` 原样交给活动，是给受信代码的入口，不要把它直接做成面向最终用户的接口。`SignalAsync(name, payload, correlationId)` 消费当前分区里匹配的全部信号书签（书签的 `CorrelationId` 为空时接受任意关联），再按信号启动规则启动实例，返回消费数加启动数。
 
 ```csharp
 using System.Text.Json.Nodes;

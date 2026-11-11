@@ -77,6 +77,7 @@
   "workflow.bookmark.key_mismatch": "북마크 '{id}'이(가) 기대한 키와 일치하지 않습니다.",
   "workflow.bookmark.not_found": "북마크 '{id}'이(가) 없습니다.",
   "workflow.bookmark.not_resumable": "북마크 '{id}'의 인스턴스가 실행 중이 아니라서 재개할 수 없습니다.",
+  "workflow.bookmark.service_owned": "북마크 '{id}'(종류 '{kind}')는 소속 서비스를 통해서만 소비할 수 있습니다. 사용자 작업은 작업 서비스로, 외부 작업은 외부 작업 서비스로 완료하십시오.",
   "workflow.child.canceled": "하위 워크플로 '{id}'이(가) 취소되었습니다.",
   "workflow.child.failed": "하위 워크플로 '{id}'이(가) 정상적으로 완료되지 않았습니다(상태 {status}).",
   "workflow.child.faulted": "하위 워크플로 '{id}'에서 오류가 발생했습니다.",

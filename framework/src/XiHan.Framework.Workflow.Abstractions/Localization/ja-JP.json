@@ -77,6 +77,7 @@
   "workflow.bookmark.key_mismatch": "ブックマーク '{id}' は期待されたキーと一致しません。",
   "workflow.bookmark.not_found": "ブックマーク '{id}' は存在しません。",
   "workflow.bookmark.not_resumable": "ブックマーク '{id}' のインスタンスは実行中ではないため再開できません。",
+  "workflow.bookmark.service_owned": "ブックマーク '{id}'（種類 '{kind}'）は所属するサービス経由でのみ消費できます。ユーザータスクはタスクサービスで、外部タスクは外部タスクサービスで完了してください。",
   "workflow.child.canceled": "サブワークフロー '{id}' はキャンセルされました。",
   "workflow.child.failed": "サブワークフロー '{id}' は正常に完了しませんでした（状態 {status}）。",
   "workflow.child.faulted": "サブワークフロー '{id}' で障害が発生しました。",

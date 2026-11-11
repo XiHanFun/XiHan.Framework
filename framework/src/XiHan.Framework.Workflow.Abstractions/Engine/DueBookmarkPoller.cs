@@ -347,7 +347,7 @@ public sealed partial class DueBookmarkPoller : IDisposable
         var resumed = false;
         var outcome = await InvokeAsync(bookmark.TenantId, "workflow.poll.resume", async services =>
         {
-            var result = await services.GetRequiredService<IWorkflowEngine>().ResumeAsync(bookmark.Id, null, null, cancellationToken).ConfigureAwait(false);
+            var result = await services.GetRequiredService<WorkflowEngine>().ResumeOwnedAsync(bookmark.Id, null, null, cancellationToken).ConfigureAwait(false);
             if (result.IsSuccess)
             {
                 resumed = true;

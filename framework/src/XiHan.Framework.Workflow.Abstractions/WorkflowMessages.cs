@@ -111,6 +111,14 @@ public static class WorkflowMessages
     public const string BookmarkKeyMismatch = "workflow.bookmark.key_mismatch";
 
     /// <summary>
+    /// 书签只能经所属的服务消费
+    /// </summary>
+    /// <remarks>
+    /// 用户任务经任务服务、外部任务经外部任务服务（ADR-0171）。参数：<c>id</c>、<c>kind</c>
+    /// </remarks>
+    public const string BookmarkServiceOwned = "workflow.bookmark.service_owned";
+
+    /// <summary>
     /// 活动类型未登记
     /// </summary>
     /// <remarks>

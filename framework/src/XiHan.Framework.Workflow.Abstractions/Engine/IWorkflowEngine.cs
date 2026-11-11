@@ -35,7 +35,11 @@ public interface IWorkflowEngine
     /// 消费书签并恢复节点
     /// </summary>
     /// <remarks>
-    /// <paramref name="expectedKey"/> 非空时必须与书签的键相同
+    /// <list type="bullet">
+    /// <item><paramref name="expectedKey"/> 非空时必须与书签的键相同</item>
+    /// <item>用户任务（<c>UserTask</c>）与外部任务（<c>External</c>）的书签只能经 <see cref="Tasks.IWorkflowTaskService"/> 与 <see cref="ExternalTasks.IWorkflowExternalTaskService"/> 消费，这里返回 <c>WORKFLOW_CONFLICT_003</c>：两个服务校验指派人与持锁的工作者并发布完成事件（ADR-0171）</item>
+    /// <item>这是给受信代码的系统级入口：不校验调用者身份，<paramref name="inputs"/> 原样交给活动，不要直接开放给最终用户</item>
+    /// </list>
     /// </remarks>
     ValueTask<Result<WorkflowInstance>> ResumeAsync(string bookmarkId, JsonObject? inputs, string? expectedKey, CancellationToken cancellationToken);
 

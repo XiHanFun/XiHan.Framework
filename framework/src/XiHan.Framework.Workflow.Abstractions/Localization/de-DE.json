@@ -77,6 +77,7 @@
   "workflow.bookmark.key_mismatch": "Das Lesezeichen '{id}' passt nicht zum erwarteten Schlüssel.",
   "workflow.bookmark.not_found": "Das Lesezeichen '{id}' existiert nicht.",
   "workflow.bookmark.not_resumable": "Das Lesezeichen '{id}' kann nicht fortgesetzt werden, weil seine Instanz nicht läuft.",
+  "workflow.bookmark.service_owned": "Das Lesezeichen '{id}' vom Typ '{kind}' kann nur über seinen Dienst verarbeitet werden: Benutzeraufgaben über den Aufgabendienst, externe Aufgaben über den Dienst für externe Aufgaben abschließen.",
   "workflow.child.canceled": "Der Sub-Workflow '{id}' wurde abgebrochen.",
   "workflow.child.failed": "Der Sub-Workflow '{id}' wurde nicht abgeschlossen (Status {status}).",
   "workflow.child.faulted": "Der Sub-Workflow '{id}' ist fehlgeschlagen.",

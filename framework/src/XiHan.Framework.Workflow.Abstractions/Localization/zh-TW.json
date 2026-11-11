@@ -77,6 +77,7 @@
   "workflow.bookmark.key_mismatch": "書籤 '{id}' 與期望的鍵不符。",
   "workflow.bookmark.not_found": "書籤 '{id}' 不存在。",
   "workflow.bookmark.not_resumable": "書籤 '{id}' 所屬實例不在執行中，不能恢復。",
+  "workflow.bookmark.service_owned": "書籤 '{id}'（種類 '{kind}'）只能經所屬的服務消費：使用者任務經任務服務辦理，外部任務經外部任務服務完成。",
   "workflow.child.canceled": "子流程 '{id}' 已取消。",
   "workflow.child.failed": "子流程 '{id}' 沒有正常完成（狀態 {status}）。",
   "workflow.child.faulted": "子流程 '{id}' 發生故障。",
