@@ -13,29 +13,65 @@ namespace XiHan.Framework.Hosting.AspNetCore;
 /// RFC 9457 Problem Details 的响应体
 /// </summary>
 /// <remarks>
-/// <c>code</c>、<c>traceId</c>、<c>errors</c>、<c>details</c> 是扩展成员：<c>errors</c> 只在 VALIDATION 种类的错误上出现，键是字段键（<see cref="SchemaViolation.Field"/>），值是该字段的消息数组；<c>details</c> 是 <see cref="Error.Details"/> 里的标量（字符串、布尔、数值、<see cref="Guid"/>、时间），按白名单输出，集合与对象不写
+/// <c>code</c>、<c>traceId</c>、<c>errors</c>、<c>details</c> 是扩展成员：<c>errors</c> 只在 VALIDATION 种类的错误上出现，键是字段键（<see cref="SchemaViolation.Field"/>），值是该字段的消息数组；<c>details</c> 是 <see cref="Error.Details"/> 里的标量（字符串、布尔、数值、<see cref="Guid"/>、时间），按白名单输出，集合与对象不写。成员都经初始化器给出，以后加字段只加属性（ADR-0142）
 /// </remarks>
-/// <param name="Type">问题类型 URI：<c>urn:xihan:error:&lt;错误码&gt;</c></param>
-/// <param name="Title">错误码的 KIND 段</param>
-/// <param name="Status">HTTP 状态码</param>
-/// <param name="Detail">错误说明；装配了本地化时是调用方区域的文案，否则是 <see cref="Error.Message"/></param>
-/// <param name="Instance">请求路径</param>
-/// <param name="Code">错误码</param>
-/// <param name="TraceId">调用的 trace-id</param>
-/// <param name="Errors">字段级错误；没有时为 <see langword="null"/></param>
-/// <param name="Details">标量细节；没有时为 <see langword="null"/></param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record ProblemResponse(
-    string Type,
-    string Title,
-    int Status,
-    string Detail,
-    string Instance,
-    string Code,
-    string TraceId,
-    IReadOnlyDictionary<string, IReadOnlyList<string>>? Errors = null,
-    IReadOnlyDictionary<string, object?>? Details = null)
+public sealed record ProblemResponse
 {
+    /// <summary>
+    /// 问题类型 URI：<c>urn:xihan:error:&lt;错误码&gt;</c>
+    /// </summary>
+    public required string Type { get; init; }
+
+    /// <summary>
+    /// 错误码的 KIND 段
+    /// </summary>
+    public required string Title { get; init; }
+
+    /// <summary>
+    /// HTTP 状态码
+    /// </summary>
+    public required int Status { get; init; }
+
+    /// <summary>
+    /// 错误说明
+    /// </summary>
+    /// <remarks>
+    /// 装配了本地化时是调用方区域的文案，否则是 <see cref="Error.Message"/>
+    /// </remarks>
+    public required string Detail { get; init; }
+
+    /// <summary>
+    /// 请求路径
+    /// </summary>
+    public required string Instance { get; init; }
+
+    /// <summary>
+    /// 错误码
+    /// </summary>
+    public required string Code { get; init; }
+
+    /// <summary>
+    /// 调用的 trace-id
+    /// </summary>
+    public required string TraceId { get; init; }
+
+    /// <summary>
+    /// 字段级错误
+    /// </summary>
+    /// <remarks>
+    /// 没有时为 <see langword="null"/>
+    /// </remarks>
+    public IReadOnlyDictionary<string, IReadOnlyList<string>>? Errors { get; init; }
+
+    /// <summary>
+    /// 标量细节
+    /// </summary>
+    /// <remarks>
+    /// 没有时为 <see langword="null"/>
+    /// </remarks>
+    public IReadOnlyDictionary<string, object?>? Details { get; init; }
+
     /// <summary>
     /// 细节里保留给字段级错误的键
     /// </summary>
@@ -52,16 +88,18 @@ public sealed record ProblemResponse(
         ArgumentNullException.ThrowIfNull(error);
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(traceId);
-        return new ProblemResponse(
-            $"urn:xihan:error:{error.Code}",
-            error.Kind,
-            StatusCodeFor(error),
-            detail ?? error.Message,
-            instance,
-            error.Code,
-            traceId,
-            FieldErrorsOf(error, translate ?? (static violation => violation.Reason)),
-            ScalarDetailsOf(error));
+        return new ProblemResponse
+        {
+            Type = $"urn:xihan:error:{error.Code}",
+            Title = error.Kind,
+            Status = StatusCodeFor(error),
+            Detail = detail ?? error.Message,
+            Instance = instance,
+            Code = error.Code,
+            TraceId = traceId,
+            Errors = FieldErrorsOf(error, translate ?? (static violation => violation.Reason)),
+            Details = ScalarDetailsOf(error),
+        };
     }
 
     /// <summary>

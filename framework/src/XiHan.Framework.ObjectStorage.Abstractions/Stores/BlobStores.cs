@@ -225,7 +225,10 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
                 return Result.Failure<IBlobStore>(exception.ToError());
             }
 
-            added = new Entry(definition, provider, store, new ContributorStatus(HealthPrefix + definition.Name, LifecycleState.Started) { Data = new Dictionary<string, object?>(StringComparer.Ordinal) { ["provider"] = provider.Name } });
+            added = new Entry(definition, provider, store, new ContributorStatus(HealthPrefix + definition.Name, LifecycleState.Started)
+            {
+                Data = new Dictionary<string, object?>(StringComparer.Ordinal) { ["provider"] = provider.Name },
+            });
             lock (_entries)
             {
                 _entries.TryGetValue(definition.Name, out replaced);

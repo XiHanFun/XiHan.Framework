@@ -141,7 +141,10 @@ public sealed partial class App : IDisposable
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
                     // 健康采集不能因为某个贡献者出错而失败：把异常本身记成一条 Failed 条目
-                    contributions.Add(new ContributorStatus(contributor.GetType().FullName ?? contributor.GetType().Name, LifecycleState.Failed, Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, inner: exception is FrameworkException framework ? framework.ToError() : null)));
+                    contributions.Add(new ContributorStatus(contributor.GetType().FullName ?? contributor.GetType().Name, LifecycleState.Failed)
+                    {
+                        Error = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, inner: exception is FrameworkException framework ? framework.ToError() : null),
+                    });
                 }
             }
 
@@ -158,7 +161,15 @@ public sealed partial class App : IDisposable
         var contributions = Contributions;
         var state = Degrade(Aggregate(features.Select(static f => f.State).ToList(), _model.Options.FailurePolicy), contributions);
         var started = features.All(static f => f.State is >= LifecycleState.Started);
-        return new HealthSnapshot(started, state.IsServing(), state != LifecycleState.Failed, state, features, contributions);
+        return new HealthSnapshot
+        {
+            Started = started,
+            Ready = state.IsServing(),
+            Live = state != LifecycleState.Failed,
+            State = state,
+            Features = features,
+            Contributions = contributions,
+        };
     }
 
     /// <summary>

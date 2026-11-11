@@ -456,7 +456,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             await Task.Delay(10, stopping).ConfigureAwait(false);
         }
 
-        var delivery = new MessageDelivery(topic, envelope, attempt, subscription.Mode);
+        var delivery = new MessageDelivery { Topic = topic, Envelope = envelope, Attempt = attempt, Mode = subscription.Mode };
         Result result;
         try
         {

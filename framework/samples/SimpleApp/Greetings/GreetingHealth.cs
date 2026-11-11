@@ -16,5 +16,8 @@ internal sealed class GreetingHealth(GreetingCounter counter) : IHealthContribut
 {
     /// <inheritdoc />
     public IReadOnlyList<ContributorStatus> Check()
-        => [new ContributorStatus(GreetingFeature.HealthName, LifecycleState.Ready) { Description = $"Greeting counter ({counter.Count} greetings so far)" }];
+        => [new ContributorStatus(GreetingFeature.HealthName, LifecycleState.Ready)
+        {
+            Description = $"Greeting counter ({counter.Count} greetings so far)",
+        }];
 }

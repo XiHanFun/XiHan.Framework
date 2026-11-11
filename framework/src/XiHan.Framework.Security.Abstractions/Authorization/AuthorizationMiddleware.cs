@@ -41,7 +41,10 @@ public sealed class AuthorizationMiddleware : IPipelineMiddleware
                 return;
             }
 
-            var evaluated = await policy.EvaluateAsync(new AuthorizationRequest(context.GetSecurity(), requirement.Policy, requirement.Resource), context.CancellationToken).ConfigureAwait(false);
+            var evaluated = await policy.EvaluateAsync(new AuthorizationRequest(context.GetSecurity(), requirement.Policy)
+            {
+                Resource = requirement.Resource,
+            }, context.CancellationToken).ConfigureAwait(false);
             // 判定失败（授予存储不可达等）以该失败结束调用：既不放行，也不改写成拒绝（403），HTTP 按错误种类回 503
             if (!evaluated.TryGetValue(out var decision))
             {

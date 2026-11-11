@@ -23,7 +23,13 @@ public sealed class InMemoryAuditingTests
         var trail = new InMemoryAuditTrail(new InMemoryAuditingOptions { Capacity = 3, LogEvents = false }, NullLoggerFactory.Instance);
         for (var i = 1; i <= 5; i++)
         {
-            await trail.WriteAsync(new AuditEvent(DateTimeOffset.UnixEpoch.AddMinutes(i), "a" + i, Result.Success(), "t"), CancellationToken.None);
+            await trail.WriteAsync(new AuditEvent
+            {
+                Timestamp = DateTimeOffset.UnixEpoch.AddMinutes(i),
+                Action = "a" + i,
+                Outcome = Result.Success(),
+                TraceId = "t",
+            }, CancellationToken.None);
         }
 
         Assert.Equal((3, 3), (trail.Count, trail.Capacity));
@@ -32,7 +38,13 @@ public sealed class InMemoryAuditingTests
         Assert.NotNull(first.ContinuationToken);
 
         // 续页期间再写入并淘汰：令牌仍指向正确的位置
-        await trail.WriteAsync(new AuditEvent(DateTimeOffset.UnixEpoch.AddMinutes(6), "a6", Result.Success(), "t"), CancellationToken.None);
+        await trail.WriteAsync(new AuditEvent
+        {
+            Timestamp = DateTimeOffset.UnixEpoch.AddMinutes(6),
+            Action = "a6",
+            Outcome = Result.Success(),
+            TraceId = "t",
+        }, CancellationToken.None);
         var second = (await trail.QueryAsync(new AuditQuery { PageSize = 2, ContinuationToken = first.ContinuationToken }, CancellationToken.None)).ValueOrThrow();
         Assert.Equal(["a5", "a6"], second.Events.Select(static e => e.Action));
         Assert.Null(second.ContinuationToken);

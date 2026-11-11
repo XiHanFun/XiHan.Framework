@@ -230,7 +230,10 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
         var now = _clock.GetUtcNow();
         var current = (outcome.IsSuccess
             ? new ContributorStatus(Name, LifecycleState.Ready)
-            : new ContributorStatus(Name, LifecycleState.Degraded, outcome.Error)) with { Description = Description, CheckedAt = now, Duration = duration };
+            : new ContributorStatus(Name, LifecycleState.Degraded)
+            {
+                Error = outcome.Error,
+            }) with { Description = Description, CheckedAt = now, Duration = duration };
         _status = current;
         LastProbedAt = now;
 

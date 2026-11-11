@@ -578,7 +578,13 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
             Result result;
             try
             {
-                result = await dispatch(new MessageDelivery(topic, envelope, attempt, subscription.Mode), cancellationToken).ConfigureAwait(false);
+                result = await dispatch(new MessageDelivery
+                {
+                    Topic = topic,
+                    Envelope = envelope,
+                    Attempt = attempt,
+                    Mode = subscription.Mode,
+                }, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

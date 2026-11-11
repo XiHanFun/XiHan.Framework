@@ -103,10 +103,34 @@ public sealed class MessageContractTests
         Assert.Throws<ArgumentException>(static () => new MessageEnvelope { Id = "1", Source = "", Type = "t" });
         Assert.Throws<ArgumentException>(() => envelope.WithExtension("Region", "cn"));
         Assert.Throws<ArgumentException>(() => envelope.WithExtension("waytoolongextensionname", "cn"));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new MessageDelivery("orders", envelope, 0, SubscriptionMode.Competing));
-        Assert.Throws<ArgumentException>(() => new MessageDelivery("Bad Topic", envelope, 1, SubscriptionMode.Competing));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new MessageDelivery("orders", envelope, 1, (SubscriptionMode)7));
-        Assert.Equal(SubscriptionMode.Broadcast, new MessageDelivery("orders", envelope, 1, SubscriptionMode.Broadcast).Mode);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MessageDelivery
+        {
+            Topic = "orders",
+            Envelope = envelope,
+            Attempt = 0,
+            Mode = SubscriptionMode.Competing,
+        });
+        Assert.Throws<ArgumentException>(() => new MessageDelivery
+        {
+            Topic = "Bad Topic",
+            Envelope = envelope,
+            Attempt = 1,
+            Mode = SubscriptionMode.Competing,
+        });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new MessageDelivery
+        {
+            Topic = "orders",
+            Envelope = envelope,
+            Attempt = 1,
+            Mode = (SubscriptionMode)7,
+        });
+        Assert.Equal(SubscriptionMode.Broadcast, new MessageDelivery
+        {
+            Topic = "orders",
+            Envelope = envelope,
+            Attempt = 1,
+            Mode = SubscriptionMode.Broadcast,
+        }.Mode);
     }
 
     [Fact]

@@ -64,7 +64,10 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
         return
         [
             _tenants.Count >= Capacity
-                ? new ContributorStatus(InMemoryMultiTenancyFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(MultiTenancyErrors.CapacityExceeded, MultiTenancyMessages.CapacityExceeded, MessageArguments.Of(("capacity", Capacity))))
+                ? new ContributorStatus(InMemoryMultiTenancyFeature.HealthName, LifecycleState.Degraded)
+                {
+                    Error = Error.Unavailable(MultiTenancyErrors.CapacityExceeded, MultiTenancyMessages.CapacityExceeded, MessageArguments.Of(("capacity", Capacity))),
+                }
                 : new ContributorStatus(InMemoryMultiTenancyFeature.HealthName, LifecycleState.Ready),
         ];
     }

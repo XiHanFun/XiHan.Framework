@@ -47,12 +47,18 @@ public sealed class InMemorySecurityHealthContributor : IHealthContributor
         // 先看主体再看授予：两者都满时报主体存储，报告稳定
         if (_principals is { } principals && principals.Count >= principals.Capacity)
         {
-            return [new ContributorStatus(InMemorySecurityFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.PrincipalStoreCapacityExceeded, MessageArguments.Of(("capacity", principals.Capacity))))];
+            return [new ContributorStatus(InMemorySecurityFeature.HealthName, LifecycleState.Degraded)
+            {
+                Error = Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.PrincipalStoreCapacityExceeded, MessageArguments.Of(("capacity", principals.Capacity))),
+            }];
         }
 
         if (_grants is { } grants && grants.Count >= grants.Capacity)
         {
-            return [new ContributorStatus(InMemorySecurityFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.GrantStoreCapacityExceeded, MessageArguments.Of(("capacity", grants.Capacity))))];
+            return [new ContributorStatus(InMemorySecurityFeature.HealthName, LifecycleState.Degraded)
+            {
+                Error = Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.GrantStoreCapacityExceeded, MessageArguments.Of(("capacity", grants.Capacity))),
+            }];
         }
 
         return [new ContributorStatus(InMemorySecurityFeature.HealthName, LifecycleState.Ready)];

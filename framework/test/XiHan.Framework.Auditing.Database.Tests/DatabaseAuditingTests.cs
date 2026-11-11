@@ -287,7 +287,7 @@ public sealed class DatabaseAuditingTests
     /// <summary>
     /// trace-id 为 <c>t</c> 的成功事件
     /// </summary>
-    private static AuditEvent Event(string action) => new(_start, action, Result.Success(), "t");
+    private static AuditEvent Event(string action) => new() { Timestamp = _start, Action = action, Outcome = Result.Success(), TraceId = "t" };
 
     /// <summary>
     /// 轮询直到条件成立，最多 10 秒

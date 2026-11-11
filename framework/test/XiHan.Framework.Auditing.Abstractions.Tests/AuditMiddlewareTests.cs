@@ -258,7 +258,14 @@ public sealed class AuditMiddlewareTests
         Assert.Equal(AuditingErrors.QueryInvalid, new AuditQuery { PageSize = AuditQuery.MaxPageSize + 1 }.Validate().Error?.Code);
         Assert.Equal(AuditingErrors.QueryInvalid, new AuditQuery { From = DateTimeOffset.UnixEpoch.AddDays(1), To = DateTimeOffset.UnixEpoch }.Validate().Error?.Code);
 
-        var auditEvent = new AuditEvent(DateTimeOffset.UnixEpoch, "orders.create", Result.Success(), "trace") { PrincipalId = "alice" };
+        var auditEvent = new AuditEvent
+        {
+            Timestamp = DateTimeOffset.UnixEpoch,
+            Action = "orders.create",
+            Outcome = Result.Success(),
+            TraceId = "trace",
+            PrincipalId = "alice",
+        };
         Assert.True(new AuditQuery { Action = "orders.create", PrincipalId = "alice", Succeeded = true, From = DateTimeOffset.UnixEpoch, To = DateTimeOffset.UnixEpoch }.Matches(auditEvent));
         Assert.False(new AuditQuery { TenantId = "acme" }.Matches(auditEvent));
         Assert.False(new AuditQuery { Succeeded = false }.Matches(auditEvent));

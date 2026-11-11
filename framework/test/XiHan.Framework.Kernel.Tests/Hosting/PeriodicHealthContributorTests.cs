@@ -75,11 +75,20 @@ public sealed class PeriodicHealthContributorTests
     [Fact]
     public void StatusData_AcceptsScalars_AndRejectsOtherValues()
     {
-        var status = new ContributorStatus(Name, LifecycleState.Ready) { Data = new Dictionary<string, object?> { ["used"] = 3L, ["ratio"] = 0.5, ["mode"] = "lru", ["full"] = false, ["none"] = null } };
+        var status = new ContributorStatus(Name, LifecycleState.Ready)
+        {
+            Data = new Dictionary<string, object?> { ["used"] = 3L, ["ratio"] = 0.5, ["mode"] = "lru", ["full"] = false, ["none"] = null },
+        };
         Assert.Equal(5, status.Data.Count);
         Assert.Empty(new ContributorStatus(Name, LifecycleState.Ready).Data);
-        Assert.Throws<ArgumentException>(() => new ContributorStatus(Name, LifecycleState.Ready) { Data = new Dictionary<string, object?> { ["bad"] = new object() } });
-        Assert.Throws<ArgumentException>(() => new ContributorStatus(Name, LifecycleState.Ready) { Data = new Dictionary<string, object?> { [" "] = 1 } });
+        Assert.Throws<ArgumentException>(() => new ContributorStatus(Name, LifecycleState.Ready)
+        {
+            Data = new Dictionary<string, object?> { ["bad"] = new object() },
+        });
+        Assert.Throws<ArgumentException>(() => new ContributorStatus(Name, LifecycleState.Ready)
+        {
+            Data = new Dictionary<string, object?> { [" "] = 1 },
+        });
     }
 
     [Fact]

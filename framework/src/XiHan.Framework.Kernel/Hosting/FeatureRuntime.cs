@@ -47,7 +47,7 @@ internal sealed class FeatureRuntime(ResolvedNode node, IFeature feature)
     /// <summary>
     /// 当前状态快照
     /// </summary>
-    public FeatureStatus Status => new(Node.Manifest, _state, Error, Feature is IHostedFeature);
+    public FeatureStatus Status => new() { Manifest = Node.Manifest, State = _state, Error = Error, IsHosted = Feature is IHostedFeature };
 
     /// <summary>
     /// 迁移到新状态

@@ -119,8 +119,12 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
         // 主体与租户先看安全上下文：Observe 在 Authenticate 之外、事件在调用结束时构造，认证后的主体与解析后的租户此时都已就绪，
         // 而 HTTP + JWT 这条路上没有中间件写 Baggage；匿名调用或只带 Baggage 的调用（插件协议、消息派发、命令行）再回退到 Baggage
         var security = context.GetSecurity();
-        var auditEvent = new AuditEvent(_clock.GetUtcNow(), action, outcome, context.TraceId)
+        var auditEvent = new AuditEvent
         {
+            Timestamp = _clock.GetUtcNow(),
+            Action = action,
+            Outcome = outcome,
+            TraceId = context.TraceId,
             Resource = context.GetAuditResource().TryGetValue(out var resource) ? resource : null,
             PrincipalId = security.Principal.IsAuthenticated ? security.Principal.Id : context.TryGetBaggage(BaggageKeys.Principal, out var principal) ? principal : null,
             TenantId = security.Tenant?.Id ?? (context.TryGetBaggage(BaggageKeys.Tenant, out var tenant) ? tenant : null),

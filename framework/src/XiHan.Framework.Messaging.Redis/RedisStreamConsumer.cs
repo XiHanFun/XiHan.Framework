@@ -407,7 +407,13 @@ internal sealed partial class RedisStreamConsumer
             Result result;
             try
             {
-                result = await dispatch(new MessageDelivery(topic, envelope, attempt, Subscription.Mode), stopping).ConfigureAwait(false);
+                result = await dispatch(new MessageDelivery
+                {
+                    Topic = topic,
+                    Envelope = envelope,
+                    Attempt = attempt,
+                    Mode = Subscription.Mode,
+                }, stopping).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (stopping.IsCancellationRequested)
             {

@@ -147,7 +147,13 @@ public static class CloudEventsEndpointRouteBuilderExtensions
 
             foreach (var mode in modes)
             {
-                var outcome = await dispatcher.DispatchAsync(new MessageDelivery(topics[index], envelopes[index], 1, mode), cancellationToken).ConfigureAwait(false);
+                var outcome = await dispatcher.DispatchAsync(new MessageDelivery
+                {
+                    Topic = topics[index],
+                    Envelope = envelopes[index],
+                    Attempt = 1,
+                    Mode = mode,
+                }, cancellationToken).ConfigureAwait(false);
                 if (outcome.IsFailure)
                 {
                     return outcome;

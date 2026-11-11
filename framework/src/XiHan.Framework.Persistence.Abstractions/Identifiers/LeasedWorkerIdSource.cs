@@ -244,7 +244,10 @@ internal sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthCon
     [
         Current.HasValue
             ? new ContributorStatus(HealthName, LifecycleState.Ready)
-            : new ContributorStatus(HealthName, LifecycleState.Degraded, Error.Unavailable(PersistenceErrors.WorkerIdUnavailable, PersistenceMessages.WorkerIdUnavailable)),
+            : new ContributorStatus(HealthName, LifecycleState.Degraded)
+            {
+                Error = Error.Unavailable(PersistenceErrors.WorkerIdUnavailable, PersistenceMessages.WorkerIdUnavailable),
+            },
     ];
 
     /// <inheritdoc />

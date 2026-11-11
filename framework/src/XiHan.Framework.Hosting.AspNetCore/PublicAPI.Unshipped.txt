@@ -41,7 +41,6 @@ XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.CheckedAt.get -> System.
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.CheckedAt.init -> void
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Data.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Data.init -> void
-XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Deconstruct(out string! Id, out string! State, out string? Error) -> void
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Description.get -> string?
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Description.init -> void
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.DurationMs.get -> double?
@@ -49,7 +48,7 @@ XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.DurationMs.init -> void
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Equals(XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? other) -> bool
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Error.get -> string?
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Error.init -> void
-XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.FeatureHealth(string! Id, string! State, string? Error) -> void
+XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.FeatureHealth() -> void
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Id.get -> string!
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.Id.init -> void
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.State.get -> string!
@@ -58,11 +57,10 @@ XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse!
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Contributions.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>!
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Contributions.init -> void
-XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Deconstruct(out string! Status, out string! State, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>! Features, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>! Contributions) -> void
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Equals(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? other) -> bool
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Features.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>!
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Features.init -> void
-XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.HealthResponse(string! Status, string! State, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>! Features, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!>! Contributions) -> void
+XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.HealthResponse() -> void
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.State.get -> string!
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.State.init -> void
 XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.Status.get -> string!
@@ -71,7 +69,6 @@ XiHan.Framework.Hosting.AspNetCore.ProblemResponse
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Code.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Code.init -> void
-XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Deconstruct(out string! Type, out string! Title, out int Status, out string! Detail, out string! Instance, out string! Code, out string! TraceId, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>? Errors, out System.Collections.Generic.IReadOnlyDictionary<string!, object?>? Details) -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Detail.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Detail.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Details.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
@@ -81,7 +78,7 @@ XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Errors.get -> System.Collecti
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Errors.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Instance.get -> string!
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Instance.init -> void
-XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ProblemResponse(string! Type, string! Title, int Status, string! Detail, string! Instance, string! Code, string! TraceId, System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>? Errors = null, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? Details = null) -> void
+XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ProblemResponse() -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Status.get -> int
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Status.init -> void
 XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Title.get -> string!

@@ -9,15 +9,49 @@ namespace XiHan.Framework.Kernel.Diagnostics;
 /// 审计事件
 /// </summary>
 /// <remarks>
-/// 格式是规范性内容（RFC-0001 附属），审计子系统的 Provider 负责持久化
+/// 格式是规范性内容（RFC-0001 附属），审计子系统的 Provider 负责持久化。成员都经初始化器给出，以后加字段只加属性（ADR-0142）
 /// </remarks>
-/// <param name="Timestamp">发生时间（UTC）</param>
-/// <param name="Action">动作，例如 <c>orders.create</c></param>
-/// <param name="Outcome">结果</param>
-/// <param name="TraceId">所属调用的 trace-id</param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record AuditEvent(DateTimeOffset Timestamp, string Action, Result Outcome, string TraceId)
+public sealed record AuditEvent
 {
+    /// <summary>
+    /// 发生时间（UTC）
+    /// </summary>
+    public required DateTimeOffset Timestamp { get; init; }
+
+    /// <summary>
+    /// 动作，例如 <c>orders.create</c>
+    /// </summary>
+    /// <exception cref="ArgumentException">为空或空白</exception>
+    public required string Action
+    {
+        get;
+        init
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(value);
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// 结果
+    /// </summary>
+    public required Result Outcome { get; init; }
+
+    /// <summary>
+    /// 所属调用的 trace-id
+    /// </summary>
+    /// <exception cref="ArgumentNullException">为 <see langword="null"/></exception>
+    public required string TraceId
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            field = value;
+        }
+    }
+
     /// <summary>
     /// 资源名（<c>xrn:</c>）
     /// </summary>

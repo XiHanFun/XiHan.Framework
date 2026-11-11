@@ -30,21 +30,23 @@ XiHan.Framework.Messaging.Abstractions.Handlers.IMessageHandler.HandleAsync(XiHa
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Attempt.get -> int
-XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Deconstruct(out string! Topic, out XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! Envelope, out int Attempt, out XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode Mode) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Attempt.init -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Envelope.get -> XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Envelope.init -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Equals(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? other) -> bool
-XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.MessageDelivery(string! Topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! Envelope, int Attempt, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode Mode) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.MessageDelivery() -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Mode.get -> XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Mode.init -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Topic.get -> string!
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Topic.init -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher.DispatchAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher.MessageDispatcher(System.IServiceProvider! services, XiHan.Framework.Kernel.Hosting.App! app, XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions! subscriptions) -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription!
-XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Deconstruct(out string! Topic, out XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode Mode) -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Equals(XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? other) -> bool
-XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.MessageSubscription(string! Topic, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode Mode) -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.MessageSubscription(string! topic, XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode mode) -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Mode.get -> XiHan.Framework.Messaging.Abstractions.Handlers.SubscriptionMode
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Topic.get -> string!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscriptions

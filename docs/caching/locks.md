@@ -26,7 +26,7 @@
 | 幂等键 | 客户端为「一次业务意图」生成的唯一字符串，经 Baggage `xihan.idempotency-key`（`BaggageKeys.IdempotencyKey`）随调用传入 |
 | Idempotency 阶段 | 管道里 Authenticate、Tenant、Authorize、Validate 之后、Transaction 之前的阶段；装配了 `caching.distributed` 的 Provider 时这里有 `IdempotencyMiddleware` |
 | 作用域 | 去重按（租户、主体、键）三元组，存储键 `idem:<租户>:<主体>:<幂等键>`，没有租户或匿名时对应段为 `-` |
-| 记录 | `IdempotencyRecord`：处理中标记，或已完成调用的结果；操作调用另记操作 ID 与响应 |
+| 记录 | 中间件内部的存储格式：处理中标记，或已完成调用的结果；操作调用另记操作 ID 与响应 |
 | 回放 | 重复调用遇到已完成的记录时不再执行处理器，直接还原首次结果；`IdempotencyMiddleware.WasReplayed(context)` 为 `true` |
 
 调用不带幂等键时中间件直接放行；消息派发也不写幂等键，处理器的调用不会被去重（原因见[发布与订阅](/messaging/pubsub)）。

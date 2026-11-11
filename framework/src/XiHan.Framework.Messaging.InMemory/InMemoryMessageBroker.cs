@@ -106,7 +106,7 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
 
             foreach (var mode in modes)
             {
-                queue.Channel.Writer.TryWrite(new MessageDelivery(topic, envelope, 1, mode));
+                queue.Channel.Writer.TryWrite(new MessageDelivery { Topic = topic, Envelope = envelope, Attempt = 1, Mode = mode });
             }
         }
 
@@ -144,7 +144,13 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
         {
             for (var slot = 0; slot < modes.Length; slot++)
             {
-                deliveries[(index * modes.Length) + slot] = new MessageDelivery(topic, envelopes[index], 1, modes[slot]);
+                deliveries[(index * modes.Length) + slot] = new MessageDelivery
+                {
+                    Topic = topic,
+                    Envelope = envelopes[index],
+                    Attempt = 1,
+                    Mode = modes[slot],
+                };
             }
         }
 
@@ -267,7 +273,7 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
         [
             full is null
                 ? new ContributorStatus(InMemoryMessagingFeature.HealthName, LifecycleState.Ready)
-                : new ContributorStatus(InMemoryMessagingFeature.HealthName, LifecycleState.Degraded, QueueFull(full)),
+                : new ContributorStatus(InMemoryMessagingFeature.HealthName, LifecycleState.Degraded) { Error = QueueFull(full) },
         ];
     }
 
@@ -348,7 +354,13 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
             }
 
             // 未达上限则以下一次尝试号重新入队（队尾），只给这一种订阅方式；入队失败（队列已满）同样到此为止
-            if (delivery.Attempt < _messaging.MaxAttempts && queue.Channel.Writer.TryWrite(new MessageDelivery(delivery.Topic, delivery.Envelope, delivery.Attempt + 1, delivery.Mode)))
+            if (delivery.Attempt < _messaging.MaxAttempts && queue.Channel.Writer.TryWrite(new MessageDelivery
+            {
+                Topic = delivery.Topic,
+                Envelope = delivery.Envelope,
+                Attempt = delivery.Attempt + 1,
+                Mode = delivery.Mode,
+            }))
             {
                 continue;
             }

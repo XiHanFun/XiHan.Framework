@@ -170,7 +170,7 @@ public sealed partial class MessageTranslationLoader : IDisposable, IHealthContr
         // 最近一次加载失败 → Degraded（上一份快照仍在生效）；还没加载过（宿主尚未进入服务状态）→ Started；否则 Ready
         if (_lastError is { } error)
         {
-            return [new ContributorStatus(DatabaseLocalizationFeature.HealthName, LifecycleState.Degraded, error)];
+            return [new ContributorStatus(DatabaseLocalizationFeature.HealthName, LifecycleState.Degraded) { Error = error }];
         }
 
         return [new ContributorStatus(DatabaseLocalizationFeature.HealthName, _loaded ? LifecycleState.Ready : LifecycleState.Started)];

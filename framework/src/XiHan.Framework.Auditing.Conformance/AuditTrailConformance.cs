@@ -148,8 +148,12 @@ public abstract class AuditTrailConformance
     /// 基准时刻起第 <paramref name="minute"/> 分钟的事件
     /// </summary>
     private static AuditEvent Event(string trace, int minute, string action, string? principal = null, string? tenant = null, string? resource = null, string? failure = null, IReadOnlyDictionary<string, object?>? details = null)
-        => new(_epoch.AddMinutes(minute), action, failure is null ? Result.Success() : new Error(failure, "conformance.failed"), trace)
+        => new()
         {
+            Timestamp = _epoch.AddMinutes(minute),
+            Action = action,
+            Outcome = failure is null ? Result.Success() : new Error(failure, "conformance.failed"),
+            TraceId = trace,
             PrincipalId = principal,
             TenantId = tenant,
             Resource = resource,

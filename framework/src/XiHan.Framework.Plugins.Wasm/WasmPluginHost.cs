@@ -376,8 +376,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
 
     /// <inheritdoc />
     public IReadOnlyList<ContributorStatus> Check()
-        => _order.Select(static r => new ContributorStatus(HealthPrefix + r.Manifest.Id, r.State, r.Error))
-            .Concat(_unreadable.Select(static u => new ContributorStatus(HealthPrefix + Path.GetFileName(u.Directory), LifecycleState.Failed, u.Error)))
+        => _order.Select(static r => new ContributorStatus(HealthPrefix + r.Manifest.Id, r.State) { Error = r.Error })
+            .Concat(_unreadable.Select(static u => new ContributorStatus(HealthPrefix + Path.GetFileName(u.Directory), LifecycleState.Failed)
+            {
+                Error = u.Error,
+            }))
             .ToList();
 
     /// <summary>

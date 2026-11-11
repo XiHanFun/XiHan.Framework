@@ -128,8 +128,12 @@ public sealed class SqliteAuditTrailTests
     /// 基准时刻起第 <paramref name="minute"/> 分钟的事件
     /// </summary>
     private static AuditEvent Event(string trace, int minute, string action, string principal, string tenant, Error? failure = null, IReadOnlyDictionary<string, object?>? details = null)
-        => new(_epoch.AddMinutes(minute), action, failure is null ? Result.Success() : Result.Failure(failure), trace)
+        => new()
         {
+            Timestamp = _epoch.AddMinutes(minute),
+            Action = action,
+            Outcome = failure is null ? Result.Success() : Result.Failure(failure),
+            TraceId = trace,
             PrincipalId = principal,
             TenantId = tenant,
             Details = details,

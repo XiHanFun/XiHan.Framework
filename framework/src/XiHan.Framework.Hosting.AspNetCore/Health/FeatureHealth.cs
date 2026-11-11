@@ -8,12 +8,30 @@ namespace XiHan.Framework.Hosting.AspNetCore.Health;
 /// <summary>
 /// 探针端点中的单个特性状态
 /// </summary>
-/// <param name="Id">清单 ID</param>
-/// <param name="State">生命周期状态</param>
-/// <param name="Error">失败原因的错误码</param>
+/// <remarks>
+/// 成员都经初始化器给出，以后加字段只加属性（ADR-0142）
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record FeatureHealth(string Id, string State, string? Error)
+public sealed record FeatureHealth
 {
+    /// <summary>
+    /// 清单 ID 或健康贡献条目名
+    /// </summary>
+    public required string Id { get; init; }
+
+    /// <summary>
+    /// 生命周期状态
+    /// </summary>
+    public required string State { get; init; }
+
+    /// <summary>
+    /// 失败原因的错误码
+    /// </summary>
+    /// <remarks>
+    /// 没有失败为 <see langword="null"/>
+    /// </remarks>
+    public string? Error { get; init; }
+
     /// <summary>
     /// 条目检查的是什么
     /// </summary>

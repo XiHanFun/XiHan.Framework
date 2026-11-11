@@ -19,8 +19,7 @@ XiHan.Framework.Kernel.Diagnostics.AuditEvent
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.<Clone>$() -> XiHan.Framework.Kernel.Diagnostics.AuditEvent!
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Action.get -> string!
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Action.init -> void
-XiHan.Framework.Kernel.Diagnostics.AuditEvent.AuditEvent(System.DateTimeOffset Timestamp, string! Action, XiHan.Framework.Primitives.Result Outcome, string! TraceId) -> void
-XiHan.Framework.Kernel.Diagnostics.AuditEvent.Deconstruct(out System.DateTimeOffset Timestamp, out string! Action, out XiHan.Framework.Primitives.Result Outcome, out string! TraceId) -> void
+XiHan.Framework.Kernel.Diagnostics.AuditEvent.AuditEvent() -> void
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Details.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Details.init -> void
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Equals(XiHan.Framework.Kernel.Diagnostics.AuditEvent? other) -> bool
@@ -90,10 +89,9 @@ XiHan.Framework.Kernel.Hosting.ContributorStatus
 XiHan.Framework.Kernel.Hosting.ContributorStatus.<Clone>$() -> XiHan.Framework.Kernel.Hosting.ContributorStatus!
 XiHan.Framework.Kernel.Hosting.ContributorStatus.CheckedAt.get -> System.DateTimeOffset?
 XiHan.Framework.Kernel.Hosting.ContributorStatus.CheckedAt.init -> void
-XiHan.Framework.Kernel.Hosting.ContributorStatus.ContributorStatus(string! Name, XiHan.Framework.Primitives.LifecycleState State, XiHan.Framework.Primitives.Error? Error = null) -> void
+XiHan.Framework.Kernel.Hosting.ContributorStatus.ContributorStatus(string! name, XiHan.Framework.Primitives.LifecycleState state) -> void
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Data.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>!
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Data.init -> void
-XiHan.Framework.Kernel.Hosting.ContributorStatus.Deconstruct(out string! Name, out XiHan.Framework.Primitives.LifecycleState State, out XiHan.Framework.Primitives.Error? Error) -> void
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Description.get -> string?
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Description.init -> void
 XiHan.Framework.Kernel.Hosting.ContributorStatus.Duration.get -> System.TimeSpan?
@@ -124,11 +122,10 @@ XiHan.Framework.Kernel.Hosting.FeatureContext.Services.get -> Microsoft.Extensio
 XiHan.Framework.Kernel.Hosting.FeatureContext.TryGetBinding(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!>
 XiHan.Framework.Kernel.Hosting.FeatureStatus
 XiHan.Framework.Kernel.Hosting.FeatureStatus.<Clone>$() -> XiHan.Framework.Kernel.Hosting.FeatureStatus!
-XiHan.Framework.Kernel.Hosting.FeatureStatus.Deconstruct(out XiHan.Framework.Primitives.Manifests.Manifest! Manifest, out XiHan.Framework.Primitives.LifecycleState State, out XiHan.Framework.Primitives.Error? Error, out bool IsHosted) -> void
 XiHan.Framework.Kernel.Hosting.FeatureStatus.Equals(XiHan.Framework.Kernel.Hosting.FeatureStatus? other) -> bool
 XiHan.Framework.Kernel.Hosting.FeatureStatus.Error.get -> XiHan.Framework.Primitives.Error?
 XiHan.Framework.Kernel.Hosting.FeatureStatus.Error.init -> void
-XiHan.Framework.Kernel.Hosting.FeatureStatus.FeatureStatus(XiHan.Framework.Primitives.Manifests.Manifest! Manifest, XiHan.Framework.Primitives.LifecycleState State, XiHan.Framework.Primitives.Error? Error, bool IsHosted) -> void
+XiHan.Framework.Kernel.Hosting.FeatureStatus.FeatureStatus() -> void
 XiHan.Framework.Kernel.Hosting.FeatureStatus.IsHosted.get -> bool
 XiHan.Framework.Kernel.Hosting.FeatureStatus.IsHosted.init -> void
 XiHan.Framework.Kernel.Hosting.FeatureStatus.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
@@ -139,11 +136,10 @@ XiHan.Framework.Kernel.Hosting.HealthSnapshot
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.<Clone>$() -> XiHan.Framework.Kernel.Hosting.HealthSnapshot!
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Contributions.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Contributions.init -> void
-XiHan.Framework.Kernel.Hosting.HealthSnapshot.Deconstruct(out bool Started, out bool Ready, out bool Live, out XiHan.Framework.Primitives.LifecycleState State, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.FeatureStatus!>! Features, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>! Contributions) -> void
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Equals(XiHan.Framework.Kernel.Hosting.HealthSnapshot? other) -> bool
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Features.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.FeatureStatus!>!
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Features.init -> void
-XiHan.Framework.Kernel.Hosting.HealthSnapshot.HealthSnapshot(bool Started, bool Ready, bool Live, XiHan.Framework.Primitives.LifecycleState State, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.FeatureStatus!>! Features, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>! Contributions) -> void
+XiHan.Framework.Kernel.Hosting.HealthSnapshot.HealthSnapshot() -> void
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Live.get -> bool
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Live.init -> void
 XiHan.Framework.Kernel.Hosting.HealthSnapshot.Ready.get -> bool
@@ -281,11 +277,10 @@ XiHan.Framework.Kernel.Operations.OperationRequest.OperationRequest(string! id, 
 XiHan.Framework.Kernel.Operations.OperationRequest.Payload.get -> System.ReadOnlyMemory<byte>
 XiHan.Framework.Kernel.Operations.OperationResponse
 XiHan.Framework.Kernel.Operations.OperationResponse.<Clone>$() -> XiHan.Framework.Kernel.Operations.OperationResponse!
-XiHan.Framework.Kernel.Operations.OperationResponse.Deconstruct(out XiHan.Framework.Primitives.Result Outcome, out System.ReadOnlyMemory<byte> Payload) -> void
 XiHan.Framework.Kernel.Operations.OperationResponse.Equals(XiHan.Framework.Kernel.Operations.OperationResponse? other) -> bool
 XiHan.Framework.Kernel.Operations.OperationResponse.Error.get -> XiHan.Framework.Primitives.Error?
 XiHan.Framework.Kernel.Operations.OperationResponse.IsSuccess.get -> bool
-XiHan.Framework.Kernel.Operations.OperationResponse.OperationResponse(XiHan.Framework.Primitives.Result Outcome, System.ReadOnlyMemory<byte> Payload) -> void
+XiHan.Framework.Kernel.Operations.OperationResponse.OperationResponse() -> void
 XiHan.Framework.Kernel.Operations.OperationResponse.Outcome.get -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Kernel.Operations.OperationResponse.Outcome.init -> void
 XiHan.Framework.Kernel.Operations.OperationResponse.Payload.get -> System.ReadOnlyMemory<byte>
@@ -387,11 +382,10 @@ XiHan.Framework.Kernel.Plugins.PluginContext.PluginContext(XiHan.Framework.Primi
 XiHan.Framework.Kernel.Plugins.PluginContext.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 XiHan.Framework.Kernel.Plugins.PluginSource
 XiHan.Framework.Kernel.Plugins.PluginSource.<Clone>$() -> XiHan.Framework.Kernel.Plugins.PluginSource!
-XiHan.Framework.Kernel.Plugins.PluginSource.Deconstruct(out string! Directory, out XiHan.Framework.Kernel.Plugins.PermissionGrant! Permissions) -> void
 XiHan.Framework.Kernel.Plugins.PluginSource.Directory.get -> string!
 XiHan.Framework.Kernel.Plugins.PluginSource.Equals(XiHan.Framework.Kernel.Plugins.PluginSource? other) -> bool
 XiHan.Framework.Kernel.Plugins.PluginSource.Permissions.get -> XiHan.Framework.Kernel.Plugins.PermissionGrant!
-XiHan.Framework.Kernel.Plugins.PluginSource.PluginSource(string! Directory, XiHan.Framework.Kernel.Plugins.PermissionGrant! Permissions) -> void
+XiHan.Framework.Kernel.Plugins.PluginSource.PluginSource(string! directory, XiHan.Framework.Kernel.Plugins.PermissionGrant! permissions) -> void
 XiHan.Framework.Kernel.Plugins.PluginStatus
 XiHan.Framework.Kernel.Plugins.PluginStatus.<Clone>$() -> XiHan.Framework.Kernel.Plugins.PluginStatus!
 XiHan.Framework.Kernel.Plugins.PluginStatus.Deconstruct(out XiHan.Framework.Primitives.Manifests.Manifest! Manifest, out XiHan.Framework.Primitives.LifecycleState State, out XiHan.Framework.Primitives.Error? Error) -> void
@@ -438,8 +432,7 @@ XiHan.Framework.Kernel.Resilience.ResiliencePolicy.Window.init -> void
 XiHan.Framework.Kernel.Security.AuthorizationRequest
 XiHan.Framework.Kernel.Security.AuthorizationRequest.<Clone>$() -> XiHan.Framework.Kernel.Security.AuthorizationRequest!
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Action.get -> string!
-XiHan.Framework.Kernel.Security.AuthorizationRequest.AuthorizationRequest(XiHan.Framework.Kernel.Security.SecurityContext! Security, string! Action, XiHan.Framework.Kernel.Security.ResourceName? Resource = null) -> void
-XiHan.Framework.Kernel.Security.AuthorizationRequest.Deconstruct(out XiHan.Framework.Kernel.Security.SecurityContext! Security, out string! Action, out XiHan.Framework.Kernel.Security.ResourceName? Resource) -> void
+XiHan.Framework.Kernel.Security.AuthorizationRequest.AuthorizationRequest(XiHan.Framework.Kernel.Security.SecurityContext! security, string! action) -> void
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Equals(XiHan.Framework.Kernel.Security.AuthorizationRequest? other) -> bool
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Resource.get -> XiHan.Framework.Kernel.Security.ResourceName?
 XiHan.Framework.Kernel.Security.AuthorizationRequest.Resource.init -> void

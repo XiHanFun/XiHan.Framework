@@ -123,7 +123,10 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         // 已用量达到总配额即 Degraded：此后任何写入都会被 QuotaExceeded 拒绝
         var used = UsedBytes;
         var status = used >= _options.MaxTotalBytes
-            ? new ContributorStatus(FileSystemObjectStorageFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(ObjectStorageErrors.QuotaExceeded, ObjectStorageMessages.QuotaReached, MessageArguments.Of(("limit", _options.MaxTotalBytes), ("used", used))))
+            ? new ContributorStatus(FileSystemObjectStorageFeature.HealthName, LifecycleState.Degraded)
+            {
+                Error = Error.Unavailable(ObjectStorageErrors.QuotaExceeded, ObjectStorageMessages.QuotaReached, MessageArguments.Of(("limit", _options.MaxTotalBytes), ("used", used))),
+            }
             : new ContributorStatus(FileSystemObjectStorageFeature.HealthName, LifecycleState.Ready);
         return [status with { CheckedAt = _clock.GetUtcNow(), Data = new Dictionary<string, object?>(StringComparer.Ordinal) { ["usedBytes"] = used, ["maxTotalBytes"] = _options.MaxTotalBytes } }];
     }

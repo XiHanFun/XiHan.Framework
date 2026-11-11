@@ -49,7 +49,10 @@ public sealed class InMemoryCacheHealthContributor : IHealthContributor
         var (stored, cached) = (_store.Count, _cache.Count);
         var full = stored >= _capacity || cached >= _capacity;
         var status = full
-            ? new ContributorStatus(InMemoryCachingFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(CachingErrors.CapacityReached, CachingMessages.CapacityReached, MessageArguments.Of(("capacity", _capacity))))
+            ? new ContributorStatus(InMemoryCachingFeature.HealthName, LifecycleState.Degraded)
+            {
+                Error = Error.Unavailable(CachingErrors.CapacityReached, CachingMessages.CapacityReached, MessageArguments.Of(("capacity", _capacity))),
+            }
             : new ContributorStatus(InMemoryCachingFeature.HealthName, LifecycleState.Ready);
         return [status with { Data = new Dictionary<string, object?>(StringComparer.Ordinal) { ["storeEntries"] = stored, ["cacheEntries"] = cached, ["capacity"] = _capacity } }];
     }

@@ -217,10 +217,10 @@ internal sealed class OperationInvoker : IOperationInvoker
         // 管道可能在到达 Handle 之前就以失败结束（鉴权、校验、超时），此时没有响应对象
         if (outcome.IsFailure || !context.GetOperationResponse().TryGetValue(out var response))
         {
-            return new OperationResponse(outcome, ReadOnlyMemory<byte>.Empty);
+            return new OperationResponse { Outcome = outcome };
         }
 
-        return new OperationResponse(outcome, descriptor.EncodeResponse(response));
+        return new OperationResponse { Outcome = outcome, Payload = descriptor.EncodeResponse(response) };
     }
 
     /// <summary>

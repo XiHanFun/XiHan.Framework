@@ -8,9 +8,29 @@ namespace XiHan.Framework.Hosting.AspNetCore.Health;
 /// <summary>
 /// 探针端点的响应体
 /// </summary>
-/// <param name="Status"><c>pass</c> 或 <c>fail</c></param>
-/// <param name="State">应用聚合状态</param>
-/// <param name="Features">各特性状态</param>
-/// <param name="Contributions">各健康贡献条目（如插件）的状态</param>
+/// <remarks>
+/// 成员都经初始化器给出，以后加字段只加属性（ADR-0142）
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record HealthResponse(string Status, string State, IReadOnlyList<FeatureHealth> Features, IReadOnlyList<FeatureHealth> Contributions);
+public sealed record HealthResponse
+{
+    /// <summary>
+    /// <c>pass</c> 或 <c>fail</c>
+    /// </summary>
+    public required string Status { get; init; }
+
+    /// <summary>
+    /// 应用聚合状态
+    /// </summary>
+    public required string State { get; init; }
+
+    /// <summary>
+    /// 各特性状态
+    /// </summary>
+    public required IReadOnlyList<FeatureHealth> Features { get; init; }
+
+    /// <summary>
+    /// 各健康贡献条目（如插件）的状态
+    /// </summary>
+    public required IReadOnlyList<FeatureHealth> Contributions { get; init; }
+}

@@ -8,16 +8,45 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// <summary>
 /// 一个健康贡献条目
 /// </summary>
-/// <param name="Name">条目名（如 <c>plugins.xihan.samples.echo</c>）</param>
-/// <param name="State">条目状态；只有 <see cref="LifecycleState.Degraded"/> 与 <see cref="LifecycleState.Failed"/> 影响应用聚合状态</param>
-/// <param name="Error">Degraded / Failed 的原因；可空</param>
+/// <remarks>
+/// 条目名与状态经构造给出，其余成员经初始化器给出，以后加字段只加属性、不改构造签名（ADR-0142）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record ContributorStatus(string Name, LifecycleState State, Error? Error = null)
+public sealed record ContributorStatus
 {
+    /// <summary>
+    /// 创建健康贡献条目
+    /// </summary>
+    /// <param name="name">条目名（如 <c>plugins.xihan.samples.echo</c>）</param>
+    /// <param name="state">条目状态；只有 <see cref="LifecycleState.Degraded"/> 与 <see cref="LifecycleState.Failed"/> 影响应用聚合状态</param>
+    /// <exception cref="ArgumentException"><paramref name="name"/> 为空或空白</exception>
+    public ContributorStatus(string name, LifecycleState state)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name;
+        State = state;
+    }
+
     /// <summary>
     /// 条目名
     /// </summary>
-    public string Name { get; } = !string.IsNullOrWhiteSpace(Name) ? Name : throw new ArgumentException("The contributor name must not be empty.", nameof(Name));
+    public string Name { get; }
+
+    /// <summary>
+    /// 条目状态
+    /// </summary>
+    /// <remarks>
+    /// 可经 <see langword="with"/> 换成新状态，条目名不变
+    /// </remarks>
+    public LifecycleState State { get; init; }
+
+    /// <summary>
+    /// Degraded / Failed 的原因
+    /// </summary>
+    /// <remarks>
+    /// 没有为 <see langword="null"/>
+    /// </remarks>
+    public Error? Error { get; init; }
 
     /// <summary>
     /// 条目检查的是什么

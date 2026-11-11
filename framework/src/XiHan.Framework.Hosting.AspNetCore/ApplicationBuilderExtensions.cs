@@ -141,17 +141,27 @@ public static class ApplicationBuilderExtensions
     {
         var snapshot = app.Health();
         var pass = probe(snapshot);
-        var response = new HealthResponse(
-            pass ? "pass" : "fail",
-            snapshot.State.ToString(),
-            snapshot.Features.Select(static f => new FeatureHealth(f.Manifest.Id, f.State.ToString(), f.Error?.Code)).ToList(),
-            snapshot.Contributions.Select(static c => new FeatureHealth(c.Name, c.State.ToString(), c.Error?.Code)
+        var response = new HealthResponse
+        {
+            Status = pass ? "pass" : "fail",
+            State = snapshot.State.ToString(),
+            Features = snapshot.Features.Select(static f => new FeatureHealth
             {
+                Id = f.Manifest.Id,
+                State = f.State.ToString(),
+                Error = f.Error?.Code,
+            }).ToList(),
+            Contributions = snapshot.Contributions.Select(static c => new FeatureHealth
+            {
+                Id = c.Name,
+                State = c.State.ToString(),
+                Error = c.Error?.Code,
                 Description = c.Description,
                 CheckedAt = c.CheckedAt,
                 DurationMs = c.Duration?.TotalMilliseconds,
                 Data = c.Data.Count > 0 ? c.Data : null,
-            }).ToList());
+            }).ToList(),
+        };
 
         httpContext.Response.StatusCode = pass ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable;
         return httpContext.Response.WriteAsJsonAsync(response, HostingJsonContext.Default.HealthResponse, cancellationToken: httpContext.RequestAborted);

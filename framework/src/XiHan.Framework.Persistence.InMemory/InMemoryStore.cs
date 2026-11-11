@@ -61,7 +61,10 @@ public sealed class InMemoryStore(InMemoryPersistenceOptions options) : IHealthC
         [
             full is null
                 ? new ContributorStatus(InMemoryPersistenceFeature.HealthName, LifecycleState.Ready)
-                : new ContributorStatus(InMemoryPersistenceFeature.HealthName, LifecycleState.Degraded, Error.Unavailable(PersistenceErrors.CapacityExceeded, PersistenceMessages.CapacityExceeded, MessageArguments.Of(("entity", full.EntityName), ("capacity", full.Capacity)))),
+                : new ContributorStatus(InMemoryPersistenceFeature.HealthName, LifecycleState.Degraded)
+                {
+                    Error = Error.Unavailable(PersistenceErrors.CapacityExceeded, PersistenceMessages.CapacityExceeded, MessageArguments.Of(("entity", full.EntityName), ("capacity", full.Capacity))),
+                },
         ];
     }
 }

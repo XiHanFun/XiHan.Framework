@@ -50,8 +50,12 @@ internal static class AuditRecordMapping
     /// 存储行 → 事件
     /// </summary>
     public static AuditEvent ToEvent(AuditRecord record)
-        => new(record.Timestamp, record.Action, ToOutcome(record), record.TraceId)
+        => new()
         {
+            Timestamp = record.Timestamp,
+            Action = record.Action,
+            Outcome = ToOutcome(record),
+            TraceId = record.TraceId,
             Resource = record.Resource,
             PrincipalId = record.PrincipalId,
             TenantId = record.TenantId,
