@@ -24,7 +24,7 @@ XiHan.Framework.Caching.Abstractions.Caches.ICache.Store.get -> XiHan.Framework.
 XiHan.Framework.Caching.Abstractions.Caches.ICacheInspector
 XiHan.Framework.Caching.Abstractions.Caches.ICacheInspector.InspectAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Caching.Abstractions.Caches.CachedObjectInfo!>>
 XiHan.Framework.Caching.Abstractions.Caches.ICacheInspector.ListKeysAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage!>>
-XiHan.Framework.Caching.Abstractions.Caches.ICacheInspector.RemoveByPrefixAsync(string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<long>
+XiHan.Framework.Caching.Abstractions.Caches.ICacheInspector.RemoveByPrefixAsync(string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 XiHan.Framework.Caching.Abstractions.Caches.ISharedCache
 XiHan.Framework.Caching.Abstractions.Caches.SerializingCache
 XiHan.Framework.Caching.Abstractions.Caches.SerializingCache.GetAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<T>>
@@ -152,7 +152,7 @@ XiHan.Framework.Caching.Abstractions.Stores.ICacheStore.TryRemoveAsync(XiHan.Fra
 XiHan.Framework.Caching.Abstractions.Stores.ICacheStoreInspector
 XiHan.Framework.Caching.Abstractions.Stores.ICacheStoreInspector.InspectAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<XiHan.Framework.Caching.Abstractions.Stores.CacheEntryInfo!>>
 XiHan.Framework.Caching.Abstractions.Stores.ICacheStoreInspector.ListKeysAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage!>>
-XiHan.Framework.Caching.Abstractions.Stores.ICacheStoreInspector.RemoveByPrefixAsync(string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<long>
+XiHan.Framework.Caching.Abstractions.Stores.ICacheStoreInspector.RemoveByPrefixAsync(string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Distributed = "caching.distributed" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Local = "caching.local" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingCapabilities.Version = 1 -> int
@@ -163,6 +163,7 @@ const XiHan.Framework.Caching.Abstractions.CachingErrors.InvalidKey = "CACHING_V
 const XiHan.Framework.Caching.Abstractions.CachingErrors.InvalidOptions = "CACHING_VALIDATION_002" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.ListPageSizeInvalid = "CACHING_VALIDATION_003" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.LockHeld = "CACHING_CONFLICT_001" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingErrors.PrefixInvalid = "CACHING_VALIDATION_004" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.StoreUnavailable = "CACHING_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.CapacityReached = "caching.store.capacity_reached" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.CatalogName = "caching" -> string!
@@ -173,6 +174,8 @@ const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentResponseUna
 const XiHan.Framework.Caching.Abstractions.CachingMessages.InvalidIdempotencyKey = "caching.idempotency.invalid_key" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.ListPageSizeInvalid = "caching.inspector.page_size_invalid" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.LockHeld = "caching.lock.held" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.PrefixInvalid = "caching.inspector.prefix_invalid" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.PrefixRequired = "caching.inspector.prefix_required" -> string!
 const XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions.ConfigurationSection = "XiHan:Caching:Idempotency" -> string!
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKey.MaxLength = 512 -> int
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.DefaultPageSize = 100 -> int
@@ -235,6 +238,7 @@ static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.operator !=(XiHan.Fr
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.operator ==(XiHan.Framework.Caching.Abstractions.Stores.CacheKey left, XiHan.Framework.Caching.Abstractions.Stores.CacheKey right) -> bool
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.operator !=(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage? left, XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage? right) -> bool
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.operator ==(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage? left, XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage? right) -> bool
+static XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.ValidateRemovalPrefix(string! prefix) -> XiHan.Framework.Primitives.Result
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.operator !=(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery? left, XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery? right) -> bool
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.operator ==(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery? left, XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery? right) -> bool
 ~override XiHan.Framework.Caching.Abstractions.Stores.CacheKey.Equals(object obj) -> bool

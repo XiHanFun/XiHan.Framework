@@ -5,6 +5,8 @@
   "caching.idempotency.recently_completed": "같은 멱등성 키의 호출이 방금 완료되었거나 아직 진행 중입니다. 나중에 다시 시도하세요.",
   "caching.idempotency.response_unavailable": "작업 '{operation}'의 기록된 응답을 재생할 수 없습니다: {reason}",
   "caching.inspector.page_size_invalid": "키 목록의 페이지당 상한 {pageSize}은(는) 1에서 {max} 사이여야 합니다.",
+  "caching.inspector.prefix_invalid": "키 접두사 '{prefix}'이(가) 올바르지 않습니다. 공백이나 제어 문자를 포함할 수 없고 최대 {max}자여야 합니다.",
+  "caching.inspector.prefix_required": "접두사로 삭제하려면 비어 있지 않은 접두사가 필요합니다. 빈 접두사는 모든 키를 삭제합니다.",
   "caching.lock.held": "리소스 '{resource}'의 잠금을 다른 소유자가 보유하고 있습니다.",
   "caching.store.capacity_reached": "메모리 내 캐시가 용량 한도 {capacity}개에 도달했습니다."
 }

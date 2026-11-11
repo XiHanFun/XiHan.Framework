@@ -55,7 +55,11 @@ public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
             : Maybe.None<CacheEntryInfo>());
 
     /// <inheritdoc />
-    public ValueTask<long> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken) => ValueTask.FromResult(_table.RemoveByPrefix(prefix));
+    public ValueTask<Result<long>> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken)
+    {
+        var valid = CacheKeyQuery.ValidateRemovalPrefix(prefix);
+        return ValueTask.FromResult(valid.IsSuccess ? Result.Success(_table.RemoveByPrefix(prefix)) : Result.Failure<long>(valid.Error!));
+    }
 
     /// <inheritdoc />
     public ValueTask<Maybe<ReadOnlyMemory<byte>>> GetAsync(CacheKey key, CancellationToken cancellationToken)

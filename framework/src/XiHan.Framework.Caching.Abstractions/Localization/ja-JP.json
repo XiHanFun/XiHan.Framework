@@ -5,6 +5,8 @@
   "caching.idempotency.recently_completed": "同じ冪等キーの呼び出しが完了直後か、まだ処理中です。後で再試行してください。",
   "caching.idempotency.response_unavailable": "操作 '{operation}' の記録済み応答を再生できません: {reason}",
   "caching.inspector.page_size_invalid": "キー一覧の 1 ページあたりの上限 {pageSize} は 1 から {max} の範囲で指定してください。",
+  "caching.inspector.prefix_invalid": "キーのプレフィックス '{prefix}' が不正です。空白や制御文字を含まず、{max} 文字以内である必要があります。",
+  "caching.inspector.prefix_required": "プレフィックスによる削除には空でないプレフィックスが必要です。空のプレフィックスはすべてのキーを削除してしまいます。",
   "caching.lock.held": "リソース '{resource}' のロックは別の所有者が保持しています。",
   "caching.store.capacity_reached": "インメモリキャッシュは容量上限 {capacity} 件に達しました。"
 }

@@ -5,6 +5,8 @@
   "caching.idempotency.recently_completed": "同一冪等鍵的呼叫剛剛完成或仍在處理中，請稍後重試。",
   "caching.idempotency.response_unavailable": "操作 '{operation}' 記錄的回應無法回放：{reason}",
   "caching.inspector.page_size_invalid": "鍵清單的每頁筆數 {pageSize} 必須在 1 到 {max} 之間。",
+  "caching.inspector.prefix_invalid": "鍵前綴 '{prefix}' 不合法：不能含空白或控制字元，最長 {max} 個字元。",
+  "caching.inspector.prefix_required": "依前綴刪除需要非空的前綴，空前綴會刪掉全部鍵。",
   "caching.lock.held": "資源 '{resource}' 的鎖被其他持有者占用。",
   "caching.store.capacity_reached": "記憶體快取已達到容量上限 {capacity} 筆。"
 }

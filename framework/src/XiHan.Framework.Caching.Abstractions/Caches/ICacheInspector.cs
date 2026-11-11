@@ -35,7 +35,7 @@ public interface ICacheInspector
     /// 删除前缀下的全部对象条目，返回删除数
     /// </summary>
     /// <remarks>
-    /// 前缀为空或不合法抛出 <see cref="ArgumentException"/>
+    /// 前缀为空或不合法返回 <see cref="CachingErrors.PrefixInvalid"/>，同 <see cref="ICacheStoreInspector.RemoveByPrefixAsync"/>
     /// </remarks>
-    ValueTask<long> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken);
+    ValueTask<Result<long>> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken);
 }

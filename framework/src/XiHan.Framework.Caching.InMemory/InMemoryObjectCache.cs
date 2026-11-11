@@ -109,7 +109,11 @@ public sealed class InMemoryObjectCache : ISharedCache, ICacheInspector
             : Maybe.None<CachedObjectInfo>());
 
     /// <inheritdoc />
-    public ValueTask<long> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken) => ValueTask.FromResult(_table.RemoveByPrefix(prefix));
+    public ValueTask<Result<long>> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken)
+    {
+        var valid = CacheKeyQuery.ValidateRemovalPrefix(prefix);
+        return ValueTask.FromResult(valid.IsSuccess ? Result.Success(_table.RemoveByPrefix(prefix)) : Result.Failure<long>(valid.Error!));
+    }
 
     /// <inheritdoc />
     public ValueTask<bool> RemoveAsync(CacheKey key, CancellationToken cancellationToken) => ValueTask.FromResult(_table.Remove(key.Value));

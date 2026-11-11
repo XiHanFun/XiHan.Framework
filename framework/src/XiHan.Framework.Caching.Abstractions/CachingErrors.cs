@@ -36,6 +36,14 @@ public static class CachingErrors
     public const string ListPageSizeInvalid = "CACHING_VALIDATION_003";
 
     /// <summary>
+    /// 键前缀不合法
+    /// </summary>
+    /// <remarks>
+    /// 列键时前缀不合键的文法，或按前缀删除时前缀为空或不合文法：不在构造时抛出，以结果返回（HTTP 400）
+    /// </remarks>
+    public const string PrefixInvalid = "CACHING_VALIDATION_004";
+
+    /// <summary>
     /// 存储不可达或操作失败
     /// </summary>
     public const string StoreUnavailable = "CACHING_UNAVAILABLE_001";

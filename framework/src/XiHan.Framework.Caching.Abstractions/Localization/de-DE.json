@@ -5,6 +5,8 @@
   "caching.idempotency.recently_completed": "Ein Aufruf mit demselben Idempotenzschlüssel wurde gerade abgeschlossen oder wird noch verarbeitet; bitte später erneut versuchen.",
   "caching.idempotency.response_unavailable": "Die aufgezeichnete Antwort der Operation '{operation}' kann nicht wiedergegeben werden: {reason}",
   "caching.inspector.page_size_invalid": "Das Seitenlimit {pageSize} der Schlüsselliste muss zwischen 1 und {max} liegen.",
+  "caching.inspector.prefix_invalid": "Das Schlüsselpräfix '{prefix}' ist ungültig: Es darf keine Leer- oder Steuerzeichen enthalten und höchstens {max} Zeichen lang sein.",
+  "caching.inspector.prefix_required": "Das Löschen nach Präfix erfordert ein nicht leeres Präfix; ein leeres Präfix würde alle Schlüssel löschen.",
   "caching.lock.held": "Die Sperre für die Ressource '{resource}' wird von einem anderen Besitzer gehalten.",
   "caching.store.capacity_reached": "Der In-Memory-Cache hat seine Kapazität von {capacity} Einträgen erreicht."
 }

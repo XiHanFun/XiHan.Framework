@@ -361,11 +361,12 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     }
 
     /// <inheritdoc />
-    public async ValueTask<long> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken)
+    public async ValueTask<Result<long>> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(prefix) || !CacheKey.IsValidPrefix(prefix))
+        var valid = CacheKeyQuery.ValidateRemovalPrefix(prefix);
+        if (!valid.IsSuccess)
         {
-            throw new ArgumentException($"Cache key prefix '{prefix}' is invalid or empty.", nameof(prefix));
+            return Result.Failure<long>(valid.Error!);
         }
 
         long removed = 0;

@@ -48,6 +48,7 @@
 - **调整** 批量的逐项结果统一为与入参同序的 `Result` 列表：`BlobPutResult`、`BlobDeleteResult`、`JobTriggerResult`、`TenantRecordResult`、`MessageTranslationResult`、`PermissionGrantResult` 删除，读 `result.Outcome` 的地方直接用列表元素，要键时按下标取入参；实现 `IBlobStore` 的 Provider 改 `PutAsync` / `DeleteAsync` 的返回类型
 - **调整** `Caching.Hybrid.HybridCache` 改名 `HybridObjectCache`（与 BCL 的 `HybridCache` 不再同名），`Localization.InMemory.MessageLocalizer` 改名 `InMemoryMessageLocalizer`；Redis 缓存、Redis 消息与 Nacos 选项的用户名统一为 `UserName`，Kafka 的 `GroupId` 与 Redis 消息的 `GroupName` 统一为 `ConsumerGroup`，配置键改为 `XiHan:Messaging:Kafka:ConsumerGroup`、`XiHan:Messaging:Redis:ConsumerGroup`、`XiHan:Configuration:Nacos:UserName`（值不变，位点照常接续）
 - **调整** `MessageSubscriptions` 在消息运行时启动后只读：再 `Add` 抛 `InvalidOperationException`，`All` 与 `HandlersFor` 交出只读视图；订阅照旧在 `Configure` 里用 `AddMessageHandler` 登记
+- **调整** 缓存键管理的 `RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回新错误码 `CACHING_VALIDATION_004`（HTTP 400）而不是抛 `ArgumentException`；`CacheKeyQuery.Prefix` 不合法不再在构造时抛出，由 `ListKeysAsync` 以同一错误码返回；实现键管理的 Provider 在开头调 `CacheKeyQuery.ValidateRemovalPrefix`
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
 
 ### 宿主、协议与插件

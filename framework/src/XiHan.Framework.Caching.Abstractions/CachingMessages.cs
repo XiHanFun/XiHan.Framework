@@ -76,6 +76,22 @@ public static class CachingMessages
     public const string ListPageSizeInvalid = "caching.inspector.page_size_invalid";
 
     /// <summary>
+    /// 键前缀不合文法
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>prefix</c>（给出的前缀）、<c>max</c>（最大长度）。与 <see cref="CachingErrors.PrefixInvalid"/> 搭配
+    /// </remarks>
+    public const string PrefixInvalid = "caching.inspector.prefix_invalid";
+
+    /// <summary>
+    /// 按前缀删除时前缀为空
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="CachingErrors.PrefixInvalid"/> 搭配
+    /// </remarks>
+    public const string PrefixRequired = "caching.inspector.prefix_required";
+
+    /// <summary>
     /// 延迟装载的目录
     /// </summary>
     /// <remarks>

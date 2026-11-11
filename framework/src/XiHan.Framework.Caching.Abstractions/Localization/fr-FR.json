@@ -5,6 +5,8 @@
   "caching.idempotency.recently_completed": "Un appel avec la même clé d'idempotence vient de se terminer ou est toujours en cours ; réessayez plus tard.",
   "caching.idempotency.response_unavailable": "La réponse enregistrée de l'opération '{operation}' ne peut pas être rejouée : {reason}",
   "caching.inspector.page_size_invalid": "La limite par page {pageSize} de la liste des clés doit être comprise entre 1 et {max}.",
+  "caching.inspector.prefix_invalid": "Le préfixe de clé '{prefix}' n'est pas valide : il ne doit contenir ni espace ni caractère de contrôle et compter au plus {max} caractères.",
+  "caching.inspector.prefix_required": "La suppression par préfixe exige un préfixe non vide ; un préfixe vide supprimerait toutes les clés.",
   "caching.lock.held": "Le verrou sur la ressource '{resource}' est détenu par un autre propriétaire.",
   "caching.store.capacity_reached": "Le cache en mémoire a atteint sa capacité de {capacity} entrées."
 }

@@ -373,15 +373,23 @@ public abstract class CacheStoreConformance
         Assert.InRange(slidingInfo.TimeToLive!.Value, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(2));
         Assert.False((await inspector.InspectAsync(Key(), CancellationToken.None).ConfigureAwait(false)).HasValue);
 
-        Assert.Equal(5, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
+        Assert.Equal(5, (await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.All(await store.GetManyAsync(keys, CancellationToken.None).ConfigureAwait(false), static hit => Assert.False(hit.HasValue));
         Assert.Equal("outsider", Text(await store.GetAsync(outsider, CancellationToken.None).ConfigureAwait(false)));
         Assert.Empty((await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items);
-        Assert.Equal(0, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
+        Assert.Equal(0, (await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
 
-        // 空前缀不能删；不合法的前缀在构造查询时拒绝
-        await Assert.ThrowsAsync<ArgumentException>(async () => await inspector.RemoveByPrefixAsync(string.Empty, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
-        Assert.Throws<ArgumentException>(() => new CacheKeyQuery { Prefix = "has space" });
+        // 空前缀不能删、不合法的前缀不能列也不能删：都以校验错误返回，不访问后端，前缀外的条目不受影响
+        var empty = await inspector.RemoveByPrefixAsync(string.Empty, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(CachingErrors.PrefixInvalid, empty.Error?.Code);
+        Assert.Equal(CachingMessages.PrefixRequired, empty.Error!.MessageKey);
+        var invalidRemoval = await inspector.RemoveByPrefixAsync("has space", CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(CachingErrors.PrefixInvalid, invalidRemoval.Error?.Code);
+        Assert.Equal("has space", invalidRemoval.Error!.Details!["prefix"]);
+        var invalidListing = await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = "has space" }, CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(CachingErrors.PrefixInvalid, invalidListing.Error?.Code);
+        Assert.Equal(CachingMessages.PrefixInvalid, invalidListing.Error!.MessageKey);
+        Assert.Equal("outsider", Text(await store.GetAsync(outsider, CancellationToken.None).ConfigureAwait(false)));
     }
 
     /// <summary>
@@ -431,7 +439,7 @@ public abstract class CacheStoreConformance
         }
         while (continuation is not null);
         Assert.Equal(listed, widest);
-        Assert.Equal(2, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
+        Assert.Equal(2, (await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>

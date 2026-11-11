@@ -19,7 +19,7 @@ public interface ICacheStoreInspector
     /// 按前缀分页列出键
     /// </summary>
     /// <remarks>
-    /// 已过期的键不列出；分页的顺序与续页标记的含义由实现决定（见各实现）。先经 <see cref="CacheKeyQuery.Validate"/> 核对每页上限，越界返回 <see cref="CachingErrors.ListPageSizeInvalid"/>、不访问后端
+    /// 已过期的键不列出；分页的顺序与续页标记的含义由实现决定（见各实现）。先经 <see cref="CacheKeyQuery.Validate"/> 核对前缀与每页条数，不合法返回 <see cref="CachingErrors.PrefixInvalid"/> 或 <see cref="CachingErrors.ListPageSizeInvalid"/>、不访问后端
     /// </remarks>
     ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken);
 
@@ -35,7 +35,7 @@ public interface ICacheStoreInspector
     /// 删除前缀下的全部键，返回删除数
     /// </summary>
     /// <remarks>
-    /// 前缀不能为空（防误删全部），不合法时抛出 <see cref="ArgumentException"/>
+    /// 先经 <see cref="CacheKeyQuery.ValidateRemovalPrefix"/> 核对：前缀为空（防误删全部）或不合法返回 <see cref="CachingErrors.PrefixInvalid"/>、不访问后端。基础设施失败仍抛出
     /// </remarks>
-    ValueTask<long> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken);
+    ValueTask<Result<long>> RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken);
 }

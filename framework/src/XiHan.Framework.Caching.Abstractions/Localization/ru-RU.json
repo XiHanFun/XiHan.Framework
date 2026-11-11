@@ -5,6 +5,8 @@
   "caching.idempotency.recently_completed": "Вызов с таким же ключом идемпотентности только что завершился или ещё выполняется; повторите позже.",
   "caching.idempotency.response_unavailable": "Записанный ответ операции '{operation}' нельзя воспроизвести: {reason}",
   "caching.inspector.page_size_invalid": "Лимит на страницу {pageSize} в списке ключей должен быть от 1 до {max}.",
+  "caching.inspector.prefix_invalid": "Префикс ключа '{prefix}' недопустим: он не должен содержать пробелов и управляющих символов и должен быть не длиннее {max} символов.",
+  "caching.inspector.prefix_required": "Удаление по префиксу требует непустого префикса: пустой префикс удалил бы все ключи.",
   "caching.lock.held": "Блокировка ресурса '{resource}' удерживается другим владельцем.",
   "caching.store.capacity_reached": "Кэш в памяти достиг предела ёмкости {capacity} записей."
 }

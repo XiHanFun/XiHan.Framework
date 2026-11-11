@@ -120,9 +120,9 @@ public sealed class CacheAdmin(ISharedCache cache)
 
 三个方法的语义：
 
-- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法在构造查询时抛 `ArgumentException`）；`PageSize` 为 1 到 1000（`CacheKeyQuery.MaxPageSize`，缺省 `DefaultPageSize` 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate()` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `pageSize`、`max`），不访问后端；本页的键在 `Items`，没有更多时 `ContinuationToken` 为 `null`。已过期的键不列出。
+- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法不在构造时抛出，返回 `CACHING_VALIDATION_004`，参数 `prefix`、`max`）；`PageSize` 为 1 到 1000（`CacheKeyQuery.MaxPageSize`，缺省 `DefaultPageSize` 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate()` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `pageSize`、`max`），不访问后端；本页的键在 `Items`，没有更多时 `ContinuationToken` 为 `null`。已过期的键不列出。
 - `InspectAsync`：不存在或已过期为无值；读元数据不延长滑动过期，对象条目也不读出值。
-- `RemoveByPrefixAsync`：返回删除数；前缀不能为空，空前缀抛 `ArgumentException`，没有「清空全部」。
+- `RemoveByPrefixAsync`：返回 `Result<long>`（删除数）；前缀为空或不合法返回 `CACHING_VALIDATION_004`（HTTP 400）、不访问后端，没有「清空全部」。
 
 内存实现按键的序数顺序分页，续页标记是上一页最后一个键。Redis 用单个端点的 `SCAN`：续页标记是游标，`PageSize` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符会被转义，按前缀匹配而不是按模式。读值、改值、删单个键仍走 `ICache` / `ICacheStore`。经 Redis 存储删除的键同样触发变更通知，各实例两级缓存的 L1 随之失效。
 

@@ -5,6 +5,8 @@
   "caching.idempotency.recently_completed": "A call with the same idempotency key has just completed or is still in progress; retry later.",
   "caching.idempotency.response_unavailable": "The recorded response of operation '{operation}' cannot be replayed: {reason}",
   "caching.inspector.page_size_invalid": "The key listing page size {pageSize} must be between 1 and {max}.",
+  "caching.inspector.prefix_invalid": "The key prefix '{prefix}' is invalid: it must contain no whitespace or control characters and be at most {max} characters long.",
+  "caching.inspector.prefix_required": "Removing keys by prefix needs a non-empty prefix; an empty prefix would remove every key.",
   "caching.lock.held": "The lock on resource '{resource}' is held by another owner.",
   "caching.store.capacity_reached": "The in-memory cache has reached its capacity of {capacity} entries."
 }

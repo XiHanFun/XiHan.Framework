@@ -36,7 +36,7 @@ public sealed class RedisChangeFeedTests
 
         // 没删到的不通知；按前缀删除带前缀、不带键
         Assert.False(await local.RemoveAsync(new CacheKey("feed:missing"), CancellationToken.None));
-        Assert.Equal(1, await local.RemoveByPrefixAsync("feed:", CancellationToken.None));
+        Assert.Equal(1, (await local.RemoveByPrefixAsync("feed:", CancellationToken.None)).ValueOrThrow());
         await WaitForCountAsync(seenRemotely, 2);
         Assert.Equal(2, seenLocally.Count);
         Assert.Equal("feed:", seenRemotely.Last().Prefix);

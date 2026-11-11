@@ -105,13 +105,13 @@ public sealed class InMemoryObjectCacheInspectorTests
         await _cache.SetAsync<object>(new CacheKey("identity:user:1"), new Snapshot(3), CacheEntryOptions.Default, CancellationToken.None);
         await _store.SetAsync(new CacheKey("access:lock"), Encoding.UTF8.GetBytes("owner"), CacheEntryOptions.Default, CancellationToken.None);
 
-        Assert.Equal(2, await _cache.RemoveByPrefixAsync("access:", CancellationToken.None));
+        Assert.Equal(2, (await _cache.RemoveByPrefixAsync("access:", CancellationToken.None)).ValueOrThrow());
         Assert.Empty((await _cache.ListKeysAsync(new CacheKeyQuery { Prefix = "access:" }, CancellationToken.None)).ValueOrThrow().Items);
         Assert.True((await _cache.GetAsync<Snapshot>(new CacheKey("identity:user:1"), CancellationToken.None)).HasValue);
         // 字节存储里的同前缀条目不受影响，各层各删
         Assert.True((await _store.GetAsync(new CacheKey("access:lock"), CancellationToken.None)).HasValue);
-        Assert.Equal(0, await _cache.RemoveByPrefixAsync("access:", CancellationToken.None));
-        await Assert.ThrowsAsync<ArgumentException>(async () => await _cache.RemoveByPrefixAsync(string.Empty, CancellationToken.None));
+        Assert.Equal(0, (await _cache.RemoveByPrefixAsync("access:", CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(CachingErrors.PrefixInvalid, (await _cache.RemoveByPrefixAsync(string.Empty, CancellationToken.None)).Error?.Code);
     }
 
     /// <summary>
