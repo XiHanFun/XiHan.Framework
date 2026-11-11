@@ -22,6 +22,50 @@ XiHan.Framework.Testing.TestHost.InvokeOperationRawAsync(XiHan.Framework.Kernel.
 XiHan.Framework.Testing.TestHost.Services.get -> System.IServiceProvider!
 XiHan.Framework.Testing.TestInvocationContext
 XiHan.Framework.Testing.TestManifests
+XiHan.Framework.Testing.WebAuthnTestAuthenticator
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.Algorithm.get -> int
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.Authenticate(XiHan.Framework.Testing.WebAuthnTestCeremony! ceremony) -> XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse!
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.CredentialId.get -> string!
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.Dispose() -> void
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.PublicKey.get -> string!
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.Register(XiHan.Framework.Testing.WebAuthnTestCeremony! ceremony) -> XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse!
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.SignCount.get -> uint
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.SignCount.set -> void
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.WebAuthnTestAuthenticator() -> void
+XiHan.Framework.Testing.WebAuthnTestAuthenticator.WebAuthnTestAuthenticator(int algorithm) -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony
+XiHan.Framework.Testing.WebAuthnTestCeremony.<Clone>$() -> XiHan.Framework.Testing.WebAuthnTestCeremony!
+XiHan.Framework.Testing.WebAuthnTestCeremony.AttestationFormat.get -> string!
+XiHan.Framework.Testing.WebAuthnTestCeremony.AttestationFormat.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.BackedUp.get -> bool
+XiHan.Framework.Testing.WebAuthnTestCeremony.BackedUp.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.BackupEligible.get -> bool
+XiHan.Framework.Testing.WebAuthnTestCeremony.BackupEligible.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.Challenge.get -> string!
+XiHan.Framework.Testing.WebAuthnTestCeremony.Challenge.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.CorruptSignature.get -> bool
+XiHan.Framework.Testing.WebAuthnTestCeremony.CorruptSignature.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.CrossOrigin.get -> bool
+XiHan.Framework.Testing.WebAuthnTestCeremony.CrossOrigin.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.Equals(XiHan.Framework.Testing.WebAuthnTestCeremony? other) -> bool
+XiHan.Framework.Testing.WebAuthnTestCeremony.Origin.get -> string!
+XiHan.Framework.Testing.WebAuthnTestCeremony.Origin.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.RelyingPartyId.get -> string!
+XiHan.Framework.Testing.WebAuthnTestCeremony.RelyingPartyId.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.Type.get -> string?
+XiHan.Framework.Testing.WebAuthnTestCeremony.Type.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.UserHandle.get -> string?
+XiHan.Framework.Testing.WebAuthnTestCeremony.UserHandle.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.UserPresent.get -> bool
+XiHan.Framework.Testing.WebAuthnTestCeremony.UserPresent.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.UserVerified.get -> bool
+XiHan.Framework.Testing.WebAuthnTestCeremony.UserVerified.init -> void
+XiHan.Framework.Testing.WebAuthnTestCeremony.WebAuthnTestCeremony() -> void
+override XiHan.Framework.Testing.WebAuthnTestCeremony.Equals(object? obj) -> bool
+override XiHan.Framework.Testing.WebAuthnTestCeremony.GetHashCode() -> int
+override XiHan.Framework.Testing.WebAuthnTestCeremony.ToString() -> string!
 static XiHan.Framework.Testing.TestHost.StartAsync(System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>? configuration = null, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>? services = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
 static XiHan.Framework.Testing.TestInvocationContext.Create(System.IServiceProvider? services = null, System.DateTimeOffset? deadline = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Testing.TestManifests.Create(string! id, System.Collections.Generic.IEnumerable<string!>? provides = null, System.Collections.Generic.IEnumerable<string!>? requires = null, XiHan.Framework.Primitives.Manifests.ManifestRole role = XiHan.Framework.Primitives.Manifests.ManifestRole.Provider, XiHan.Framework.Primitives.Manifests.ManifestKind kind = XiHan.Framework.Primitives.Manifests.ManifestKind.Capability, System.Collections.Generic.IEnumerable<XiHan.Framework.Primitives.Manifests.Binding!>? bindings = null) -> XiHan.Framework.Primitives.Manifests.Manifest!
+static XiHan.Framework.Testing.WebAuthnTestCeremony.operator !=(XiHan.Framework.Testing.WebAuthnTestCeremony? left, XiHan.Framework.Testing.WebAuthnTestCeremony? right) -> bool
+static XiHan.Framework.Testing.WebAuthnTestCeremony.operator ==(XiHan.Framework.Testing.WebAuthnTestCeremony? left, XiHan.Framework.Testing.WebAuthnTestCeremony? right) -> bool

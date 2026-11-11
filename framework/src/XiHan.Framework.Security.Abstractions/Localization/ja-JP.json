@@ -30,5 +30,9 @@
   "security.policy.operation_unregistered": "'{owner}' の操作 '{id}' が要求するポリシー '{policy}' は存在しません。",
   "security.principal_store.capacity_exceeded": "インメモリプリンシパルストアは容量上限 {capacity} に達しました。",
   "security.token.invalid": "トークンが無効、期限切れ、または署名が不正です。",
-  "security.token.subject_missing": "トークンにサブジェクトクレーム '{claim}' がありません。"
+  "security.token.subject_missing": "トークンにサブジェクトクレーム '{claim}' がありません。",
+  "security.webauthn.algorithm_unsupported": "パスキーがサポートされていないアルゴリズム {algorithm} を使っています。ES256（P-256）、PS256、RS256 のみ受け付けます。",
+  "security.webauthn.counter_regressed": "パスキーの署名カウンターが増えていません（保存値 {stored}、受信値 {received}）。認証器が複製された可能性があります。",
+  "security.webauthn.response_malformed": "パスキーの応答を解析できません（{reason}）。",
+  "security.webauthn.verification_failed": "パスキーの応答の検証に失敗しました（{reason}）。"
 }

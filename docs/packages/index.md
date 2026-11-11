@@ -66,7 +66,7 @@ XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织
 | 持久化 | [Persistence.InMemory](./persistence-inmemory) | [EntityFrameworkCore](./persistence-entityframeworkcore)、[SqlSugar](./persistence-sqlsugar) |
 | 缓存 | [Caching.InMemory](./caching-inmemory) | [Redis](./caching-redis)、[Hybrid](./caching-hybrid)、[Remote](./caching-remote)（Experimental） |
 | 多租户 | [MultiTenancy.InMemory](./multitenancy-inmemory) | [Database](./multitenancy-database) |
-| 安全 | [Security.InMemory](./security-inmemory) | [Database](./security-database)、[Jwt](./security-jwt)、[OpenIdConnect](./security-openidconnect)、[Ip2Region](./security-ip2region) |
+| 安全 | [Security.InMemory](./security-inmemory) | [Database](./security-database)、[Jwt](./security-jwt)、[OpenIdConnect](./security-openidconnect)、[Ip2Region](./security-ip2region)、[WebAuthn](./security-webauthn) |
 | 消息 | [Messaging.InMemory](./messaging-inmemory) | [RabbitMQ](./messaging-rabbitmq)、[Kafka](./messaging-kafka)、[Redis](./messaging-redis) |
 | 本地化 | [Localization.InMemory](./localization-inmemory) | [Database](./localization-database) |
 | 对象存储 | [ObjectStorage.FileSystem](./objectstorage-filesystem) | [S3](./objectstorage-s3) |

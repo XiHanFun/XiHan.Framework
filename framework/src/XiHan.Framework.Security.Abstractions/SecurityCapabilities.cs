@@ -27,6 +27,14 @@ public static class SecurityCapabilities
     public const string IpRegion = "security.ip-region";
 
     /// <summary>
+    /// 通行密钥（WebAuthn）仪式的选项生成与响应校验
+    /// </summary>
+    /// <remarks>
+    /// RFC-0008「WebAuthn」，参考实现 <c>Security.WebAuthn</c>
+    /// </remarks>
+    public const string WebAuthn = "security.webauthn";
+
+    /// <summary>
     /// 当前接口版本
     /// </summary>
     public const int Version = 1;

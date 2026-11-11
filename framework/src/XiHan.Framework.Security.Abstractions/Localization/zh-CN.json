@@ -30,5 +30,9 @@
   "security.policy.operation_unregistered": "'{owner}' 的操作 '{id}' 要求的策略 '{policy}' 不存在。",
   "security.principal_store.capacity_exceeded": "内存主体存储已达到容量上限 {capacity}。",
   "security.token.invalid": "令牌无效、已过期或签名不符。",
-  "security.token.subject_missing": "令牌缺少主体声明 '{claim}'。"
+  "security.token.subject_missing": "令牌缺少主体声明 '{claim}'。",
+  "security.webauthn.algorithm_unsupported": "通行密钥使用了不支持的算法 {algorithm}，只认 ES256（P-256）、PS256 与 RS256。",
+  "security.webauthn.counter_regressed": "通行密钥的签名计数没有增加（已存 {stored}，收到 {received}），认证器可能被复制。",
+  "security.webauthn.response_malformed": "通行密钥的响应解析不了（{reason}）。",
+  "security.webauthn.verification_failed": "通行密钥的响应核对不通过（{reason}）。"
 }

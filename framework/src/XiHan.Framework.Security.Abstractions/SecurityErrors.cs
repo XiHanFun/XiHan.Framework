@@ -99,4 +99,36 @@ public static class SecurityErrors
     /// 签发者的发现文档或 JWKS 不可达且没有缓存
     /// </summary>
     public const string IssuerUnavailable = "SECURITY_UNAVAILABLE_003";
+
+    /// <summary>
+    /// WebAuthn 响应核对不通过
+    /// </summary>
+    /// <remarks>
+    /// 挑战、来源、RP ID、用户在场或验证、凭据、用户句柄或签名不符；参数 <c>reason</c>
+    /// </remarks>
+    public const string WebAuthnVerificationFailed = "SECURITY_DENIED_005";
+
+    /// <summary>
+    /// WebAuthn 签名计数没有增加
+    /// </summary>
+    /// <remarks>
+    /// 认证器可能被复制；参数 <c>stored</c>、<c>received</c>
+    /// </remarks>
+    public const string WebAuthnCounterRegressed = "SECURITY_DENIED_006";
+
+    /// <summary>
+    /// WebAuthn 响应解析不了
+    /// </summary>
+    /// <remarks>
+    /// base64url、JSON、CBOR、认证器数据或字段缺失、类型不对；参数 <c>reason</c>
+    /// </remarks>
+    public const string WebAuthnResponseMalformed = "SECURITY_VALIDATION_006";
+
+    /// <summary>
+    /// WebAuthn 公钥的算法不支持
+    /// </summary>
+    /// <remarks>
+    /// 只认 ES256（P-256）、PS256、RS256；参数 <c>algorithm</c>
+    /// </remarks>
+    public const string WebAuthnAlgorithmUnsupported = "SECURITY_VALIDATION_007";
 }

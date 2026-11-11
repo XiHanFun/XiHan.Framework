@@ -30,5 +30,9 @@
   "security.policy.operation_unregistered": "'{owner}'의 작업 '{id}'에 필요한 정책 '{policy}'이(가) 없습니다.",
   "security.principal_store.capacity_exceeded": "메모리 내 주체 저장소가 용량 한도 {capacity}에 도달했습니다.",
   "security.token.invalid": "토큰이 유효하지 않거나 만료되었거나 서명이 잘못되었습니다.",
-  "security.token.subject_missing": "토큰에 주체 클레임 '{claim}'이(가) 없습니다."
+  "security.token.subject_missing": "토큰에 주체 클레임 '{claim}'이(가) 없습니다.",
+  "security.webauthn.algorithm_unsupported": "패스키가 지원하지 않는 알고리즘 {algorithm}을(를) 사용합니다. ES256(P-256), PS256, RS256만 허용됩니다.",
+  "security.webauthn.counter_regressed": "패스키의 서명 카운터가 증가하지 않았습니다(저장값 {stored}, 수신값 {received}). 인증기가 복제되었을 수 있습니다.",
+  "security.webauthn.response_malformed": "패스키 응답을 해석할 수 없습니다({reason}).",
+  "security.webauthn.verification_failed": "패스키 응답 검증에 실패했습니다({reason})."
 }

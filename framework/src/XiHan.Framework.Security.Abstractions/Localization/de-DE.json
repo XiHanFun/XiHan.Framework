@@ -30,5 +30,9 @@
   "security.policy.operation_unregistered": "Der Vorgang '{id}' von '{owner}' erfordert die Richtlinie '{policy}', die nicht existiert.",
   "security.principal_store.capacity_exceeded": "Der In-Memory-Prinzipalspeicher hat seine Kapazität von {capacity} erreicht.",
   "security.token.invalid": "Das Token ist ungültig, abgelaufen oder hat eine ungültige Signatur.",
-  "security.token.subject_missing": "Dem Token fehlt der Subject-Claim '{claim}'."
+  "security.token.subject_missing": "Dem Token fehlt der Subject-Claim '{claim}'.",
+  "security.webauthn.algorithm_unsupported": "Der Passkey verwendet den nicht unterstützten Algorithmus {algorithm}; akzeptiert werden nur ES256 (P-256), PS256 und RS256.",
+  "security.webauthn.counter_regressed": "Der Signaturzähler des Passkeys ist nicht gestiegen (gespeichert {stored}, empfangen {received}); der Authenticator wurde möglicherweise geklont.",
+  "security.webauthn.response_malformed": "Die Passkey-Antwort kann nicht gelesen werden ({reason}).",
+  "security.webauthn.verification_failed": "Die Passkey-Antwort hat die Prüfung nicht bestanden ({reason})."
 }

@@ -344,6 +344,7 @@ const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authentication 
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authorization = "security.authorization" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.IpRegion = "security.ip-region" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Version = 1 -> int
+const XiHan.Framework.Security.Abstractions.SecurityCapabilities.WebAuthn = "security.webauthn" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.CapacityExceeded = "SECURITY_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionAttributeInvalid = "SECURITY_VALIDATION_003" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionAttributeMissing = "SECURITY_NOTFOUND_003" -> string!
@@ -360,6 +361,10 @@ const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyNotFound = "SEC
 const XiHan.Framework.Security.Abstractions.SecurityErrors.StoreUnavailable = "SECURITY_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.UnregisteredPolicy = "SECURITY_VALIDATION_004" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.UnsupportedScheme = "SECURITY_VALIDATION_001" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.WebAuthnAlgorithmUnsupported = "SECURITY_VALIDATION_007" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.WebAuthnCounterRegressed = "SECURITY_DENIED_006" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.WebAuthnResponseMalformed = "SECURITY_VALIDATION_006" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.WebAuthnVerificationFailed = "SECURITY_DENIED_005" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.AuthenticationRequired = "security.authentication.required" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.CatalogName = "security" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionAttributeInvalid = "security.condition.attribute_invalid" -> string!
@@ -393,6 +398,10 @@ const XiHan.Framework.Security.Abstractions.SecurityMessages.PolicyNotFound = "s
 const XiHan.Framework.Security.Abstractions.SecurityMessages.PrincipalStoreCapacityExceeded = "security.principal_store.capacity_exceeded" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.TokenSubjectMissing = "security.token.subject_missing" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.UnsupportedScheme = "security.authentication.unsupported_scheme" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.WebAuthnAlgorithmUnsupported = "security.webauthn.algorithm_unsupported" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.WebAuthnCounterRegressed = "security.webauthn.counter_regressed" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.WebAuthnResponseMalformed = "security.webauthn.response_malformed" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.WebAuthnVerificationFailed = "security.webauthn.verification_failed" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityOptions.ConfigurationSection = "XiHan:Security" -> string!
 override XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential.Equals(object? obj) -> bool
 override XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential.GetHashCode() -> int

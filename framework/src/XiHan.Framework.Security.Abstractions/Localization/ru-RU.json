@@ -30,5 +30,9 @@
   "security.policy.operation_unregistered": "Операция '{id}' из '{owner}' требует политику '{policy}', которая не существует.",
   "security.principal_store.capacity_exceeded": "Хранилище субъектов в памяти достигло предела ёмкости {capacity}.",
   "security.token.invalid": "Токен недействителен, просрочен или имеет неверную подпись.",
-  "security.token.subject_missing": "В токене отсутствует утверждение субъекта '{claim}'."
+  "security.token.subject_missing": "В токене отсутствует утверждение субъекта '{claim}'.",
+  "security.webauthn.algorithm_unsupported": "Ключ доступа использует неподдерживаемый алгоритм {algorithm}; принимаются только ES256 (P-256), PS256 и RS256.",
+  "security.webauthn.counter_regressed": "Счётчик подписей ключа доступа не увеличился (сохранено {stored}, получено {received}); аутентификатор, возможно, скопирован.",
+  "security.webauthn.response_malformed": "Не удалось разобрать ответ ключа доступа ({reason}).",
+  "security.webauthn.verification_failed": "Ответ ключа доступа не прошёл проверку ({reason})."
 }

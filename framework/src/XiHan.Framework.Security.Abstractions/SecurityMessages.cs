@@ -253,6 +253,38 @@ public static class SecurityMessages
     public const string ConditionAttributeInvalid = "security.condition.attribute_invalid";
 
     /// <summary>
+    /// WebAuthn 响应核对不通过
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>
+    /// </remarks>
+    public const string WebAuthnVerificationFailed = "security.webauthn.verification_failed";
+
+    /// <summary>
+    /// WebAuthn 签名计数没有增加
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>stored</c>、<c>received</c>
+    /// </remarks>
+    public const string WebAuthnCounterRegressed = "security.webauthn.counter_regressed";
+
+    /// <summary>
+    /// WebAuthn 响应解析不了
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>
+    /// </remarks>
+    public const string WebAuthnResponseMalformed = "security.webauthn.response_malformed";
+
+    /// <summary>
+    /// WebAuthn 公钥的算法不支持
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>algorithm</c>
+    /// </remarks>
+    public const string WebAuthnAlgorithmUnsupported = "security.webauthn.algorithm_unsupported";
+
+    /// <summary>
     /// 延迟装载的目录
     /// </summary>
     /// <remarks>

@@ -2062,6 +2062,70 @@
       ]
     },
     {
+      "section": "XiHan:Security:WebAuthn",
+      "options": "XiHan.Framework.Security.WebAuthn.WebAuthnOptions",
+      "package": "XiHan.Framework.Security.WebAuthn",
+      "keys": [
+        {
+          "key": "RelyingPartyId",
+          "type": "string",
+          "required": true,
+          "sample": "example.com",
+          "summary": "依赖方 ID：可注册的域名（本地开发用 localhost），不带协议、端口与路径"
+        },
+        {
+          "key": "RelyingPartyName",
+          "type": "string",
+          "sample": "Example",
+          "summary": "认证器上显示的名称；未配置时同 RelyingPartyId"
+        },
+        {
+          "key": "Origins:{index}",
+          "type": "string",
+          "required": true,
+          "sample": "https://example.com",
+          "summary": "允许的来源 scheme://host[:port]，至少一个；主机须等于 RP ID 或是它的子域，https 之外只允许 localhost 的 http"
+        },
+        {
+          "key": "UserVerification",
+          "type": "enum",
+          "default": "Required",
+          "values": [
+            "Required",
+            "Preferred",
+            "Discouraged"
+          ],
+          "summary": "对用户验证（指纹、面容、PIN）的要求；Required 时核对响应带 UV 标志"
+        },
+        {
+          "key": "ResidentKey",
+          "type": "enum",
+          "default": "Required",
+          "values": [
+            "Required",
+            "Preferred",
+            "Discouraged"
+          ],
+          "summary": "对可发现凭据（免用户名登录）的要求"
+        },
+        {
+          "key": "TimeoutSeconds",
+          "type": "integer",
+          "default": "300",
+          "exclusiveMinimum": 0,
+          "summary": "仪式的超时（秒），写进选项交给浏览器"
+        },
+        {
+          "key": "ChallengeSize",
+          "type": "integer",
+          "default": "32",
+          "minimum": 16,
+          "maximum": 64,
+          "summary": "挑战的字节数"
+        }
+      ]
+    },
+    {
       "section": "XiHan:Workflow",
       "options": "XiHan.Framework.Workflow.Abstractions.WorkflowOptions",
       "package": "XiHan.Framework.Workflow.Abstractions",

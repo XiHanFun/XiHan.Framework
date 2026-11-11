@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Security.WebAuthn</PackageId>
+    <RootNamespace>XiHan.Framework.Security.WebAuthn</RootNamespace>
+    <Description>曦寒框架的通行密钥（WebAuthn）注册与认证校验</Description>
+    <PackageTags>xihan;framework;security;webauthn;passkey;fido2</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Security.Abstractions/XiHan.Framework.Security.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Formats.Cbor" />
+  </ItemGroup>
+</Project>

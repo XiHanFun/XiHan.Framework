@@ -50,6 +50,7 @@ framework/
 | `XiHan.Framework.Security.Jwt` | 3 | JWT Bearer 认证 Provider（非 AOT） |
 | `XiHan.Framework.Security.OpenIdConnect` | 3 | OpenID Connect Bearer 认证 Provider：发现文档 + JWKS，密钥轮换时限速刷新（非 AOT） |
 | `XiHan.Framework.Security.Ip2Region` | 3 | IP 归属地 Provider（`security.ip-region@1`）：ip2region 离线库，IPv4 / IPv6 xdb 由宿主提供，缺失只记警告 |
+| `XiHan.Framework.Security.WebAuthn` | 3 | 通行密钥 Provider（`security.webauthn@1`）：WebAuthn 注册与认证的选项生成与响应核对，无状态，证明按 none、ES256 / PS256 / RS256 |
 | `XiHan.Framework.Messaging.InMemory` | 3 | 内存消息代理默认实现：有界通道、顺序投递、重试与死信 |
 | `XiHan.Framework.Messaging.RabbitMQ` | 3 | RabbitMQ Provider：持久队列、手动确认、重试与死信队列（非 AOT） |
 | `XiHan.Framework.Messaging.Kafka` | 3 | Kafka Provider：队列与流，幂等生产者、消费组位点、`xihankey` 分区键有序、按时刻重放、原位重试与死信主题（非 AOT） |

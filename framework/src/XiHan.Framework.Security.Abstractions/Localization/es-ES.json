@@ -30,5 +30,9 @@
   "security.policy.operation_unregistered": "La operación '{id}' de '{owner}' requiere la política '{policy}', que no existe.",
   "security.principal_store.capacity_exceeded": "El almacén de identidades en memoria alcanzó su capacidad de {capacity}.",
   "security.token.invalid": "El token no es válido, expiró o tiene una firma no válida.",
-  "security.token.subject_missing": "Al token le falta la reclamación de sujeto '{claim}'."
+  "security.token.subject_missing": "Al token le falta la reclamación de sujeto '{claim}'.",
+  "security.webauthn.algorithm_unsupported": "La clave de acceso usa el algoritmo no admitido {algorithm}; solo se aceptan ES256 (P-256), PS256 y RS256.",
+  "security.webauthn.counter_regressed": "El contador de firmas de la clave de acceso no aumentó (guardado {stored}, recibido {received}); es posible que el autenticador se haya clonado.",
+  "security.webauthn.response_malformed": "No se puede interpretar la respuesta de la clave de acceso ({reason}).",
+  "security.webauthn.verification_failed": "La respuesta de la clave de acceso no superó la verificación ({reason})."
 }

@@ -30,5 +30,9 @@
   "security.policy.operation_unregistered": "L'opération '{id}' de '{owner}' requiert la stratégie '{policy}', qui n'existe pas.",
   "security.principal_store.capacity_exceeded": "Le magasin de principaux en mémoire a atteint sa capacité de {capacity}.",
   "security.token.invalid": "Le jeton est invalide, expiré ou sa signature est incorrecte.",
-  "security.token.subject_missing": "Le jeton ne contient pas la revendication de sujet '{claim}'."
+  "security.token.subject_missing": "Le jeton ne contient pas la revendication de sujet '{claim}'.",
+  "security.webauthn.algorithm_unsupported": "La clé d’accès utilise l’algorithme non pris en charge {algorithm} ; seuls ES256 (P-256), PS256 et RS256 sont acceptés.",
+  "security.webauthn.counter_regressed": "Le compteur de signatures de la clé d’accès n’a pas augmenté (enregistré {stored}, reçu {received}) ; l’authentificateur a peut-être été cloné.",
+  "security.webauthn.response_malformed": "La réponse de la clé d’accès est illisible ({reason}).",
+  "security.webauthn.verification_failed": "La réponse de la clé d’accès n’a pas passé la vérification ({reason})."
 }

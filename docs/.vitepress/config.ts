@@ -118,6 +118,7 @@ const chapters: Chapter[] = [
       ["认证", "authentication"],
       ["授权与权限", "authorization"],
       ["RBAC 授予与条件", "grants"],
+      ["通行密钥", "webauthn"],
       ["IP 归属地", "ip-region"],
       ["出站地址策略", "outbound"],
     ],
@@ -293,6 +294,7 @@ const packagesGroup: DefaultTheme.SidebarItem = {
         pkg("Security.Jwt", "security-jwt"),
         pkg("Security.OpenIdConnect", "security-openidconnect"),
         pkg("Security.Ip2Region", "security-ip2region"),
+        pkg("Security.WebAuthn", "security-webauthn"),
       ],
     },
     {

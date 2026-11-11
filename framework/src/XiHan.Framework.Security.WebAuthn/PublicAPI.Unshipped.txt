@@ -1,0 +1,299 @@
+#nullable enable
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse!
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.AuthenticatorData.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.AuthenticatorData.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.ClientDataJson.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.ClientDataJson.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.Deconstruct(out string! ClientDataJson, out string! AuthenticatorData, out string! Signature, out string? UserHandle) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.Signature.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.Signature.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.UserHandle.get -> string?
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.UserHandle.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.WebAuthnAssertionResponse(string! ClientDataJson, string! AuthenticatorData, string! Signature, string? UserHandle) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse!
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.AttestationObject.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.AttestationObject.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.ClientDataJson.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.ClientDataJson.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Deconstruct(out string! ClientDataJson, out string! AttestationObject, out System.Collections.Generic.IReadOnlyList<string!>? Transports) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Transports.get -> System.Collections.Generic.IReadOnlyList<string!>?
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Transports.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.WebAuthnAttestationResponse(string! ClientDataJson, string! AttestationObject, System.Collections.Generic.IReadOnlyList<string!>? Transports) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse!
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Deconstruct(out string! Id, out string! RawId, out string! Type, out XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse! Response) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Id.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Id.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.RawId.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.RawId.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Response.get -> XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse!
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Response.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Type.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Type.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.WebAuthnAuthenticationResponse(string! Id, string! RawId, string! Type, XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse! Response) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection!
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.Deconstruct(out string! ResidentKey, out bool RequireResidentKey, out string! UserVerification) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.RequireResidentKey.get -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.RequireResidentKey.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.ResidentKey.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.ResidentKey.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.UserVerification.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.UserVerification.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.WebAuthnAuthenticatorSelection(string! ResidentKey, bool RequireResidentKey, string! UserVerification) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies
+XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.CreateAuthenticationOptions(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>! allowCredentials) -> XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions!
+XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.CreateRegistrationOptions(XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity! user, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>! excludeCredentials) -> XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions!
+XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.Options.get -> XiHan.Framework.Security.WebAuthn.WebAuthnOptions!
+XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.VerifyAuthentication(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse! response, string! expectedChallenge, XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential! credential) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion!>
+XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.VerifyRegistration(XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse! response, string! expectedChallenge) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential!>
+XiHan.Framework.Security.WebAuthn.WebAuthnCeremonies.WebAuthnCeremonies(XiHan.Framework.Security.WebAuthn.WebAuthnOptions! options) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions!
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Attestation.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Attestation.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.AuthenticatorSelection.get -> XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection!
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.AuthenticatorSelection.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Challenge.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Challenge.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Deconstruct(out XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty! Rp, out XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity! User, out string! Challenge, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter!>! PubKeyCredParams, out long Timeout, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>! ExcludeList, out XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection! AuthenticatorSelection, out string! Attestation) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.ExcludeList.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>!
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.ExcludeList.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.PubKeyCredParams.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter!>!
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.PubKeyCredParams.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Rp.get -> XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty!
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Rp.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Timeout.get -> long
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Timeout.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.User.get -> XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity!
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.User.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.WebAuthnCreationOptions(XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty! Rp, XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity! User, string! Challenge, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter!>! PubKeyCredParams, long Timeout, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>! ExcludeList, XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection! AuthenticatorSelection, string! Attestation) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Deconstruct(out string! Type, out string! Id, out System.Collections.Generic.IReadOnlyList<string!>? Transports) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Id.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Id.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Transports.get -> System.Collections.Generic.IReadOnlyList<string!>?
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Transports.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Type.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Type.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.WebAuthnCredentialDescriptor(string! Type, string! Id, System.Collections.Generic.IReadOnlyList<string!>? Transports) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter!
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.Alg.get -> int
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.Alg.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.Deconstruct(out string! Type, out int Alg) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.Type.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.Type.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.WebAuthnCredentialParameter(string! Type, int Alg) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnOptions!
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.ChallengeSize.get -> int
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.ChallengeSize.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnOptions? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.Origins.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.Origins.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.RelyingPartyId.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.RelyingPartyId.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.RelyingPartyName.get -> string?
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.RelyingPartyName.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.ResidentKey.get -> XiHan.Framework.Security.WebAuthn.WebAuthnRequirement
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.ResidentKey.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.Timeout.get -> System.TimeSpan
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.Timeout.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.UserVerification.get -> XiHan.Framework.Security.WebAuthn.WebAuthnRequirement
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.UserVerification.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnOptions.WebAuthnOptions() -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Aaguid.get -> System.Guid
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Aaguid.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Algorithm.get -> int
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Algorithm.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.AttestationFormat.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.AttestationFormat.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.BackedUp.get -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.BackedUp.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.BackupEligible.get -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.BackupEligible.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.CredentialId.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.CredentialId.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Deconstruct(out string! CredentialId, out string! PublicKey, out int Algorithm, out uint SignCount, out System.Guid Aaguid, out bool UserVerified, out bool BackupEligible, out bool BackedUp, out System.Collections.Generic.IReadOnlyList<string!>! Transports, out string! AttestationFormat) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.PublicKey.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.PublicKey.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.SignCount.get -> uint
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.SignCount.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Transports.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Transports.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.UserVerified.get -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.UserVerified.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.WebAuthnRegisteredCredential(string! CredentialId, string! PublicKey, int Algorithm, uint SignCount, System.Guid Aaguid, bool UserVerified, bool BackupEligible, bool BackedUp, System.Collections.Generic.IReadOnlyList<string!>! Transports, string! AttestationFormat) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Deconstruct(out string! Id, out string! RawId, out string! Type, out XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse! Response) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Id.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Id.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.RawId.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.RawId.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Response.get -> XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Response.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Type.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Type.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.WebAuthnRegistrationResponse(string! Id, string! RawId, string! Type, XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse! Response) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty!
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.Deconstruct(out string! Id, out string! Name) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.Id.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.Id.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.Name.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.Name.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.WebAuthnRelyingParty(string! Id, string! Name) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions!
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.AllowList.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>!
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.AllowList.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.Challenge.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.Challenge.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.Deconstruct(out string! Challenge, out long Timeout, out string! RpId, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>! AllowList, out string! UserVerification) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.RpId.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.RpId.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.Timeout.get -> long
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.Timeout.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.UserVerification.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.UserVerification.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.WebAuthnRequestOptions(string! Challenge, long Timeout, string! RpId, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor!>! AllowList, string! UserVerification) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnRequirement
+XiHan.Framework.Security.WebAuthn.WebAuthnRequirement.Discouraged = 2 -> XiHan.Framework.Security.WebAuthn.WebAuthnRequirement
+XiHan.Framework.Security.WebAuthn.WebAuthnRequirement.Preferred = 1 -> XiHan.Framework.Security.WebAuthn.WebAuthnRequirement
+XiHan.Framework.Security.WebAuthn.WebAuthnRequirement.Required = 0 -> XiHan.Framework.Security.WebAuthn.WebAuthnRequirement
+XiHan.Framework.Security.WebAuthn.WebAuthnSecurityFeature
+XiHan.Framework.Security.WebAuthn.WebAuthnSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Security.WebAuthn.WebAuthnSecurityFeature.WebAuthnSecurityFeature() -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential!
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.CredentialId.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.CredentialId.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.Deconstruct(out string! CredentialId, out string! PublicKey, out uint SignCount, out string? UserHandle) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.PublicKey.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.PublicKey.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.SignCount.get -> uint
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.SignCount.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.UserHandle.get -> string?
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.UserHandle.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.WebAuthnStoredCredential(string! CredentialId, string! PublicKey, uint SignCount, string? UserHandle) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity!
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.Deconstruct(out string! Id, out string! Name, out string! DisplayName) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.DisplayName.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.DisplayName.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.Id.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.Id.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.Name.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.Name.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.WebAuthnUserEntity(string! Id, string! Name, string! DisplayName) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.<Clone>$() -> XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion!
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.BackedUp.get -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.BackedUp.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.CredentialId.get -> string!
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.CredentialId.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.Deconstruct(out string! CredentialId, out uint SignCount, out bool UserVerified, out bool BackedUp) -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.Equals(XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion? other) -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.SignCount.get -> uint
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.SignCount.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.UserVerified.get -> bool
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.UserVerified.init -> void
+XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.WebAuthnVerifiedAssertion(string! CredentialId, uint SignCount, bool UserVerified, bool BackedUp) -> void
+const XiHan.Framework.Security.WebAuthn.WebAuthnOptions.ConfigurationSection = "XiHan:Security:WebAuthn" -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnOptions.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnOptions.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.ToString() -> string!
+override XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.Equals(object? obj) -> bool
+override XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.GetHashCode() -> int
+override XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.ToString() -> string!
+static XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse? left, XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse? left, XiHan.Framework.Security.WebAuthn.WebAuthnAssertionResponse? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse? left, XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse? left, XiHan.Framework.Security.WebAuthn.WebAuthnAttestationResponse? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse? left, XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse? left, XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticationResponse? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection? left, XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection? left, XiHan.Framework.Security.WebAuthn.WebAuthnAuthenticatorSelection? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions? left, XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions? left, XiHan.Framework.Security.WebAuthn.WebAuthnCreationOptions? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor? left, XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor? left, XiHan.Framework.Security.WebAuthn.WebAuthnCredentialDescriptor? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter? left, XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter? left, XiHan.Framework.Security.WebAuthn.WebAuthnCredentialParameter? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.WebAuthn.WebAuthnOptions!
+static XiHan.Framework.Security.WebAuthn.WebAuthnOptions.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnOptions? left, XiHan.Framework.Security.WebAuthn.WebAuthnOptions? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnOptions.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnOptions? left, XiHan.Framework.Security.WebAuthn.WebAuthnOptions? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential? left, XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential? left, XiHan.Framework.Security.WebAuthn.WebAuthnRegisteredCredential? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse? left, XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse? left, XiHan.Framework.Security.WebAuthn.WebAuthnRegistrationResponse? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty? left, XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty? left, XiHan.Framework.Security.WebAuthn.WebAuthnRelyingParty? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions? left, XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions? left, XiHan.Framework.Security.WebAuthn.WebAuthnRequestOptions? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential? left, XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential? left, XiHan.Framework.Security.WebAuthn.WebAuthnStoredCredential? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity? left, XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity? left, XiHan.Framework.Security.WebAuthn.WebAuthnUserEntity? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.operator !=(XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion? left, XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion? right) -> bool
+static XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion.operator ==(XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion? left, XiHan.Framework.Security.WebAuthn.WebAuthnVerifiedAssertion? right) -> bool

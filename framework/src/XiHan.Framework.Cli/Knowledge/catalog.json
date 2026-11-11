@@ -1322,12 +1322,29 @@
       "frameworkReferences": []
     },
     {
+      "id": "XiHan.Framework.Security.WebAuthn",
+      "ring": "3",
+      "summary": "通行密钥 Provider（`security.webauthn@1`）：WebAuthn 注册与认证的选项生成与响应核对，无状态，证明按 none、ES256 / PS256 / RS256",
+      "description": "曦寒框架的通行密钥（WebAuthn）注册与认证校验",
+      "references": [
+        "XiHan.Framework.Security.Abstractions"
+      ],
+      "dependencies": [
+        {
+          "id": "System.Formats.Cbor",
+          "version": "10.0.15"
+        }
+      ],
+      "frameworkReferences": []
+    },
+    {
       "id": "XiHan.Framework.Testing",
       "ring": "工具链",
       "summary": "测试宿主、特性桩、清单与上下文构造",
       "description": "曦寒框架测试工具库",
       "references": [
-        "XiHan.Framework.Kernel"
+        "XiHan.Framework.Kernel",
+        "XiHan.Framework.Security.WebAuthn"
       ],
       "dependencies": [
         {
@@ -1337,6 +1354,10 @@
         {
           "id": "Microsoft.Extensions.DependencyInjection",
           "version": "10.0.14"
+        },
+        {
+          "id": "System.Formats.Cbor",
+          "version": "10.0.15"
         }
       ],
       "frameworkReferences": []
@@ -2731,6 +2752,30 @@
           "after": []
         }
       ],
+      "operations": [],
+      "permissions": [],
+      "health": []
+    },
+    {
+      "type": "XiHan.Framework.Security.WebAuthn.WebAuthnSecurityFeature",
+      "package": "XiHan.Framework.Security.WebAuthn",
+      "id": "xihan.security.webauthn",
+      "kind": "provider",
+      "role": "provider",
+      "stability": "preview",
+      "provides": [
+        "security.webauthn@1"
+      ],
+      "requires": [
+        {
+          "id": "kernel.hosting",
+          "version": 1,
+          "optional": false
+        }
+      ],
+      "bindings": [],
+      "config": "XiHan:Security:WebAuthn",
+      "pipeline": [],
       "operations": [],
       "permissions": [],
       "health": []

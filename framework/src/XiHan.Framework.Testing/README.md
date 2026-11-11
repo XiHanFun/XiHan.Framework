@@ -9,6 +9,7 @@
 * `TestHost` 在内存里装配并启动应用，调用直接走完整管道
 * `StubFeature` 注入配置、启动、停止行为并记录事件
 * 不依赖宿主就能构造调用上下文
+* 内存里的通行密钥认证器，按 WebAuthn 格式生成可篡改的响应
 
 ## 如何使用
 
@@ -43,6 +44,7 @@ var result = await host.InvokeAsync(static context =>
 * `StubFeature`：可注入行为并记录事件的特性桩
 * `TestManifests`：用能力 ID 文本构造清单
 * `TestInvocationContext`：不依赖宿主的调用上下文
+* `WebAuthnTestAuthenticator`：测试用的通行密钥认证器，生成注册与认证响应
 
 ## 更多文档
 

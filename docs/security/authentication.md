@@ -279,7 +279,7 @@ SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道，Authe
 
 ## 相关包与下一步
 
-- 包参考：[Security.Abstractions](/packages/security-abstractions)、[Security.InMemory](/packages/security-inmemory)、[Security.Jwt](/packages/security-jwt)、[Security.OpenIdConnect](/packages/security-openidconnect)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)
+- 包参考：[Security.Abstractions](/packages/security-abstractions)、[Security.InMemory](/packages/security-inmemory)、[Security.Jwt](/packages/security-jwt)、[Security.OpenIdConnect](/packages/security-openidconnect)、[Security.WebAuthn](/packages/security-webauthn)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)
 - 规范：RFC-0008《认证与授权》
-- 相关章节：[租户解析与隔离](/multi-tenancy/resolution)、[端点里使用框架](/web/endpoints)、[命令行宿主](/protocols/command-line)
+- 相关章节：[通行密钥](/security/webauthn)、[租户解析与隔离](/multi-tenancy/resolution)、[端点里使用框架](/web/endpoints)、[命令行宿主](/protocols/command-line)
 - 下一步：[授权与权限](/security/authorization)
