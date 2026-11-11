@@ -42,28 +42,28 @@ public sealed class InMemoryCacheStoreTests
     public async Task Capacity_EvictsLeastRecentlyUsed()
     {
         var (store, _) = Arrange(maxEntries: 2);
-        await store.SetAsync("a", Bytes("1"), CacheEntryOptions.Default, CancellationToken.None);
-        await store.SetAsync("b", Bytes("2"), CacheEntryOptions.Default, CancellationToken.None);
-        _ = await store.GetAsync("a", CancellationToken.None);
+        await store.SetAsync(new CacheKey("a"), Bytes("1"), CacheEntryOptions.Default, CancellationToken.None);
+        await store.SetAsync(new CacheKey("b"), Bytes("2"), CacheEntryOptions.Default, CancellationToken.None);
+        _ = await store.GetAsync(new CacheKey("a"), CancellationToken.None);
 
-        await store.SetAsync("c", Bytes("3"), CacheEntryOptions.Default, CancellationToken.None);
+        await store.SetAsync(new CacheKey("c"), Bytes("3"), CacheEntryOptions.Default, CancellationToken.None);
 
         Assert.Equal(2, store.Count);
-        Assert.True((await store.GetAsync("a", CancellationToken.None)).HasValue);
-        Assert.False((await store.GetAsync("b", CancellationToken.None)).HasValue);
-        Assert.True((await store.GetAsync("c", CancellationToken.None)).HasValue);
+        Assert.True((await store.GetAsync(new CacheKey("a"), CancellationToken.None)).HasValue);
+        Assert.False((await store.GetAsync(new CacheKey("b"), CancellationToken.None)).HasValue);
+        Assert.True((await store.GetAsync(new CacheKey("c"), CancellationToken.None)).HasValue);
     }
 
     [Fact]
     public async Task DefaultTimeToLive_AppliesWhenOptionsSilent()
     {
         var (store, clock) = Arrange(defaultTtl: TimeSpan.FromSeconds(30));
-        await store.SetAsync("k", Bytes("v"), CacheEntryOptions.Default, CancellationToken.None);
+        await store.SetAsync(new CacheKey("k"), Bytes("v"), CacheEntryOptions.Default, CancellationToken.None);
 
         clock.Advance(TimeSpan.FromSeconds(29));
-        Assert.True((await store.GetAsync("k", CancellationToken.None)).HasValue);
+        Assert.True((await store.GetAsync(new CacheKey("k"), CancellationToken.None)).HasValue);
         clock.Advance(TimeSpan.FromSeconds(2));
-        Assert.False((await store.GetAsync("k", CancellationToken.None)).HasValue);
+        Assert.False((await store.GetAsync(new CacheKey("k"), CancellationToken.None)).HasValue);
         Assert.Equal(0, store.Count);
     }
 
@@ -71,28 +71,28 @@ public sealed class InMemoryCacheStoreTests
     public async Task SlidingExpiration_RefreshesOnRead_WithFakeClock()
     {
         var (store, clock) = Arrange();
-        await store.SetAsync("k", Bytes("v"), CacheEntryOptions.Sliding(TimeSpan.FromMinutes(1)), CancellationToken.None);
+        await store.SetAsync(new CacheKey("k"), Bytes("v"), CacheEntryOptions.Sliding(TimeSpan.FromMinutes(1)), CancellationToken.None);
 
         clock.Advance(TimeSpan.FromSeconds(50));
-        Assert.True((await store.GetAsync("k", CancellationToken.None)).HasValue);
+        Assert.True((await store.GetAsync(new CacheKey("k"), CancellationToken.None)).HasValue);
         clock.Advance(TimeSpan.FromSeconds(50));
-        Assert.True((await store.GetAsync("k", CancellationToken.None)).HasValue);
+        Assert.True((await store.GetAsync(new CacheKey("k"), CancellationToken.None)).HasValue);
         clock.Advance(TimeSpan.FromSeconds(61));
-        Assert.False((await store.GetAsync("k", CancellationToken.None)).HasValue);
+        Assert.False((await store.GetAsync(new CacheKey("k"), CancellationToken.None)).HasValue);
     }
 
     [Fact]
     public async Task TryAdd_SucceedsOverExpiredEntry_AndSetRejectsConflictingOptions()
     {
         var (store, clock) = Arrange();
-        Assert.True(await store.TryAddAsync("k", Bytes("old"), CacheEntryOptions.Expires(TimeSpan.FromSeconds(1)), CancellationToken.None));
-        Assert.False(await store.TryAddAsync("k", Bytes("new"), CacheEntryOptions.Expires(TimeSpan.FromSeconds(1)), CancellationToken.None));
+        Assert.True(await store.TryAddAsync(new CacheKey("k"), Bytes("old"), CacheEntryOptions.Expires(TimeSpan.FromSeconds(1)), CancellationToken.None));
+        Assert.False(await store.TryAddAsync(new CacheKey("k"), Bytes("new"), CacheEntryOptions.Expires(TimeSpan.FromSeconds(1)), CancellationToken.None));
 
         clock.Advance(TimeSpan.FromSeconds(2));
 
-        Assert.True(await store.TryAddAsync("k", Bytes("new"), CacheEntryOptions.Expires(TimeSpan.FromSeconds(1)), CancellationToken.None));
-        Assert.Equal("new", Encoding.UTF8.GetString((await store.GetAsync("k", CancellationToken.None)).ValueOrThrow().Span));
-        await Assert.ThrowsAsync<ArgumentException>(async () => await store.SetAsync("k", Bytes("x"), new CacheEntryOptions { TimeToLive = TimeSpan.FromSeconds(1), SlidingExpiration = TimeSpan.FromSeconds(1) }, CancellationToken.None));
+        Assert.True(await store.TryAddAsync(new CacheKey("k"), Bytes("new"), CacheEntryOptions.Expires(TimeSpan.FromSeconds(1)), CancellationToken.None));
+        Assert.Equal("new", Encoding.UTF8.GetString((await store.GetAsync(new CacheKey("k"), CancellationToken.None)).ValueOrThrow().Span));
+        await Assert.ThrowsAsync<ArgumentException>(async () => await store.SetAsync(new CacheKey("k"), Bytes("x"), new CacheEntryOptions { TimeToLive = TimeSpan.FromSeconds(1), SlidingExpiration = TimeSpan.FromSeconds(1) }, CancellationToken.None));
     }
 
     [Fact]
@@ -100,11 +100,11 @@ public sealed class InMemoryCacheStoreTests
     {
         var (store, _) = Arrange();
         var buffer = Encoding.UTF8.GetBytes("original");
-        await store.SetAsync("k", buffer, CacheEntryOptions.Default, CancellationToken.None);
+        await store.SetAsync(new CacheKey("k"), buffer, CacheEntryOptions.Default, CancellationToken.None);
 
         buffer[0] = (byte)'X';
 
-        Assert.Equal("original", Encoding.UTF8.GetString((await store.GetAsync("k", CancellationToken.None)).ValueOrThrow().Span));
+        Assert.Equal("original", Encoding.UTF8.GetString((await store.GetAsync(new CacheKey("k"), CancellationToken.None)).ValueOrThrow().Span));
         store.Clear();
         Assert.Equal(0, store.Count);
     }

@@ -92,7 +92,9 @@ public static class BlobEndpointRouteBuilderExtensions
             return;
         }
 
-        var verified = signer.Verify(BlobUrlMethod.Get, container, key, http.Request.Query);
+        var containerName = new ContainerName(container);
+        var blobKey = new BlobKey(key);
+        var verified = signer.Verify(BlobUrlMethod.Get, containerName, blobKey, http.Request.Query);
         if (!verified.TryGetValue(out var grant))
         {
             context.SetOutcome(verified.Error!);
@@ -106,7 +108,7 @@ public static class BlobEndpointRouteBuilderExtensions
             return;
         }
 
-        var range = await RangeOf(http, store, container, key, context.CancellationToken).ConfigureAwait(false);
+        var range = await RangeOf(http, store, containerName, blobKey, context.CancellationToken).ConfigureAwait(false);
         if (!range.IsSuccess)
         {
             context.SetOutcome(range.Error!);
@@ -114,8 +116,8 @@ public static class BlobEndpointRouteBuilderExtensions
         }
 
         var got = range.ValueOrThrow().TryGetValue(out var requested)
-            ? await store.GetAsync(container, key, requested, context.CancellationToken).ConfigureAwait(false)
-            : await store.GetAsync(container, key, context.CancellationToken).ConfigureAwait(false);
+            ? await store.GetAsync(containerName, blobKey, requested, context.CancellationToken).ConfigureAwait(false)
+            : await store.GetAsync(containerName, blobKey, context.CancellationToken).ConfigureAwait(false);
         if (!got.TryGetValue(out var blob))
         {
             if (got.Error!.Code == ObjectStorageErrors.RangeNotSatisfiable)
@@ -176,7 +178,9 @@ public static class BlobEndpointRouteBuilderExtensions
             return;
         }
 
-        var verified = signer.Verify(BlobUrlMethod.Put, container, key, http.Request.Query);
+        var containerName = new ContainerName(container);
+        var blobKey = new BlobKey(key);
+        var verified = signer.Verify(BlobUrlMethod.Put, containerName, blobKey, http.Request.Query);
         if (!verified.TryGetValue(out var grant))
         {
             context.SetOutcome(verified.Error!);
@@ -213,7 +217,7 @@ public static class BlobEndpointRouteBuilderExtensions
                 return;
             }
 
-            var part = await multipart.UploadPartAsync(new BlobMultipartUpload(container, key, uploadId), grant.PartNumber!.Value, http.Request.Body, context.CancellationToken).ConfigureAwait(false);
+            var part = await multipart.UploadPartAsync(new BlobMultipartUpload(containerName, blobKey, uploadId), grant.PartNumber!.Value, http.Request.Body, context.CancellationToken).ConfigureAwait(false);
             if (!part.TryGetValue(out var uploaded))
             {
                 context.SetOutcome(part.Error!);
@@ -225,7 +229,7 @@ public static class BlobEndpointRouteBuilderExtensions
         else
         {
             var options = new BlobPutOptions { ContentType = grant.ContentType ?? (string.IsNullOrWhiteSpace(requestType) ? BlobPutOptions.DefaultContentType : requestType) };
-            var put = await store.PutAsync(container, key, http.Request.Body, options, context.CancellationToken).ConfigureAwait(false);
+            var put = await store.PutAsync(containerName, blobKey, http.Request.Body, options, context.CancellationToken).ConfigureAwait(false);
             if (!put.TryGetValue(out var written))
             {
                 context.SetOutcome(put.Error!);

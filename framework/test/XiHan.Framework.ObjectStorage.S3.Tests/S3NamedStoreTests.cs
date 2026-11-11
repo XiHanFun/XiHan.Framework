@@ -4,6 +4,7 @@
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
@@ -68,8 +69,8 @@ public sealed class S3NamedStoreTests
         // 命名实例自己就是签名器：地址直连存储，不经宿主
         var media = (await registry.GetAsync("media", CancellationToken.None)).ValueOrThrow();
         var key = Guid.NewGuid().ToString("N")[..8] + "/clip.txt";
-        Assert.True((await media.PutAsync(Bucket, key, Encoding.UTF8.GetBytes("named"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
-        var url = (await Assert.IsAssignableFrom<IBlobUrlSigner>(media).SignAsync(Bucket, key, BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow();
+        Assert.True((await media.PutAsync(new ContainerName(Bucket), new BlobKey(key), Encoding.UTF8.GetBytes("named"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+        var url = (await Assert.IsAssignableFrom<IBlobUrlSigner>(media).SignAsync(new ContainerName(Bucket), new BlobKey(key), BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow();
         using (var download = await _http.GetAsync(url.Url))
         {
             Assert.Equal((HttpStatusCode.OK, "named"), (download.StatusCode, await download.Content.ReadAsStringAsync()));

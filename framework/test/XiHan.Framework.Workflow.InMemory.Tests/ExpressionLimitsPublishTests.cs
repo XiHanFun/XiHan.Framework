@@ -26,7 +26,7 @@ public sealed class ExpressionLimitsPublishTests
             static b => b.UseFeature<InMemoryWorkflowFeature>(),
             [new($"{InMemoryWorkflowOptions.ConfigurationSection}:PollIntervalSeconds", "3600")]);
         var condition = new string('(', levels) + "true" + new string(')', levels);
-        var definition = WorkflowDefinitionBuilder.Create("deep-condition")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("deep-condition"))
             .AddStart()
             .AddEnd()
             .AddTransition("start", "end", condition)
@@ -42,7 +42,7 @@ public sealed class ExpressionLimitsPublishTests
         var errors = Assert.IsAssignableFrom<IReadOnlyList<SchemaViolation>>(published.Error!.Details!["errors"]);
         Assert.Contains(errors, issue => issue.MessageKey == messageKey);
 
-        var fine = WorkflowDefinitionBuilder.Create("fine").AddStart().AddEnd().AddTransition("start", "end").Build();
+        var fine = WorkflowDefinitionBuilder.Create(new WorkflowName("fine")).AddStart().AddEnd().AddTransition("start", "end").Build();
         var next = (await catalog.CreateAsync(fine, CancellationToken.None)).ValueOrThrow();
         (await catalog.PublishAsync(next.Id, CancellationToken.None)).ValueOrThrow();
     }

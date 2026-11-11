@@ -100,7 +100,7 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 
 public static class LeaveWorkflow
 {
-    public static WorkflowDefinition Build() => WorkflowDefinitionBuilder.Create("hr.leave", "请假审批")
+    public static WorkflowDefinition Build() => WorkflowDefinitionBuilder.Create(new WorkflowName("hr.leave"), "请假审批")
         .WithCategory("hr")
         .WithTimeout(TimeSpan.FromDays(7), WorkflowTimeoutAction.Terminate)
         .AddVariable("applicant", required: true)

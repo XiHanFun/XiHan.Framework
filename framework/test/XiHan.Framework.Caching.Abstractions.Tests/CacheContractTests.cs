@@ -38,7 +38,7 @@ public sealed class CacheContractTests
         Assert.Equal(valid, CacheKey.IsValid(value));
         if (valid)
         {
-            CacheKey key = value;
+            CacheKey key = new CacheKey(value);
             Assert.Equal(value, key.Value);
             Assert.Equal(value, key.ToString());
         }

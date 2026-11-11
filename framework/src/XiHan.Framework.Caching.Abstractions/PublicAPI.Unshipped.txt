@@ -230,7 +230,7 @@ static XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions.operator ==
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.IsValid(string? value) -> bool
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.IsValidPrefix(string? value) -> bool
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.Validate(string! value) -> string!
-static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.implicit operator XiHan.Framework.Caching.Abstractions.Stores.CacheKey(string! value) -> XiHan.Framework.Caching.Abstractions.Stores.CacheKey
+static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.explicit operator XiHan.Framework.Caching.Abstractions.Stores.CacheKey(string! value) -> XiHan.Framework.Caching.Abstractions.Stores.CacheKey
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.operator !=(XiHan.Framework.Caching.Abstractions.Stores.CacheKey left, XiHan.Framework.Caching.Abstractions.Stores.CacheKey right) -> bool
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKey.operator ==(XiHan.Framework.Caching.Abstractions.Stores.CacheKey left, XiHan.Framework.Caching.Abstractions.Stores.CacheKey right) -> bool
 static XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.operator !=(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage? left, XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage? right) -> bool

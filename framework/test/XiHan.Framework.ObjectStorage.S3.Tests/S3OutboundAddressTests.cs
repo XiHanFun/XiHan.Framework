@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Stores;
@@ -38,7 +39,7 @@ public sealed class S3OutboundAddressTests
             };
             var store = (await registry.GetOrAddAsync(new BlobStoreDefinition("tenant", S3BlobStoreProvider.ProviderName, settings), CancellationToken.None)).ValueOrThrow();
 
-            var put = await store.PutAsync("media", "a.txt", Encoding.UTF8.GetBytes("a"), new BlobPutOptions(), CancellationToken.None);
+            var put = await store.PutAsync(new ContainerName("media"), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("a"), new BlobPutOptions(), CancellationToken.None);
 
             Assert.Equal(ObjectStorageErrors.StoreUnavailable, put.Error?.Code);
             Assert.False(listener.Pending());

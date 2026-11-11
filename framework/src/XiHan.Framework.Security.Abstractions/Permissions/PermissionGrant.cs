@@ -23,6 +23,11 @@ public sealed record PermissionGrant(GrantSubject Subject, string Permission, st
     public const string All = "*";
 
     /// <summary>
+    /// 主体
+    /// </summary>
+    public GrantSubject Subject { get; } = Subject != default ? Subject : throw new ArgumentException("The subject must not be the default value.", nameof(Subject));
+
+    /// <summary>
     /// 权限码
     /// </summary>
     public string Permission { get; } = !string.IsNullOrWhiteSpace(Permission) ? Permission : throw new ArgumentException("The permission code must not be empty.", nameof(Permission));

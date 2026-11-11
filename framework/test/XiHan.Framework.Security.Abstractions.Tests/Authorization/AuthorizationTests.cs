@@ -405,6 +405,19 @@ public sealed class AuthorizationTests
         Assert.Throws<ArgumentException>(static () => new AuthorizationRequirement(" "));
     }
 
+    [Fact]
+    public void DefaultGrantSubject_HasNoKindOrId_AndNeverEqualsARealSubject()
+    {
+        var empty = default(GrantSubject);
+
+        Assert.Throws<InvalidOperationException>(() => empty.Kind);
+        Assert.Throws<InvalidOperationException>(() => empty.Id);
+        Assert.Equal(string.Empty, empty.ToString());
+        Assert.NotEqual(GrantSubject.ForUser("a"), empty);
+        Assert.Equal(GrantSubject.ForRole("admin"), new GrantSubject(GrantSubject.Role, "admin"));
+        Assert.Throws<ArgumentException>(static () => new PermissionGrant(default, "orders.read"));
+    }
+
     /// <summary>
     /// 把判定委托给回调的策略，用于观察中间件传入的请求
     /// </summary>

@@ -161,7 +161,7 @@ var store = (await stores.GetOrAddAsync(definition, cancellationToken)).ValueOrT
 
 // S3 的命名实例同时是签名器，签出的地址直连该实例的端点
 var signer = (IBlobUrlSigner)store;
-var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlRequest.ForDownload(TimeSpan.FromMinutes(10)), cancellationToken)).ValueOrThrow();
+var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), BlobUrlRequest.ForDownload(TimeSpan.FromMinutes(10)), cancellationToken)).ValueOrThrow();
 ```
 
 `settings` 是应用保存的租户存储配置。

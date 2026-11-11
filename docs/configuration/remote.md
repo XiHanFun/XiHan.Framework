@@ -123,7 +123,7 @@ public sealed class OrderLimits
 
 - 批量读取，逐项返回 `SecretLookup(Name, Result<SecretValue>)`，顺序与入参一致，重复项各自作答，空集合返回空。
 - 只读。写入与轮换属于运维工具，不在应用契约里。
-- 密钥名 `SecretName` 的文法是 `^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..` 与 `//`，不以 `/` 结尾，大小写敏感；不合法在构造时抛出 `ArgumentException`。`string` 可隐式转换成 `SecretName`。
+- 密钥名 `SecretName` 的文法是 `^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..` 与 `//`，不以 `/` 结尾，大小写敏感；不合法在构造时抛出 `ArgumentException`。从 `string` 创建用构造或显式转换。
 - `SecretValue.ToString()` 固定返回 `***`（常量 `SecretValue.Redacted`），值不会经字符串插值进入日志或异常消息；读值用 `Value`，可选的 `Version` 记录密钥版本。
 - 单条读取用扩展方法 `store.GetAsync(name, cancellationToken)`，它转调批量方法。
 

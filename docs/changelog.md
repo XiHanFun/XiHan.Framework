@@ -42,6 +42,7 @@
 - **调整** 工作流的批量方法传空集合时直接返回空结果，不再开一次调用
 - **调整** `IBlobStoreProvider.CreateAsync` 与 `IDataSourceProvider.CreateAsync` 以结果报告失败（`Result<IBlobStore>` / `Result<IDataSource>`），不再抛出：自己写存储或数据源 Provider 的改返回类型，拒绝定义用 `BlobStoreFailures` / `DataSourceFailures`；经注册表使用的应用不受影响
 - **调整** 工作流的任务与控制请求改为初始化器：`new UserTaskCompletion(taskId, actorId) { Outcome = …, Comment = … }`，外部任务请求保留 `(taskId, workerId)`，`new WorkflowJump(instanceId, targetNodeId) { Reason = … }`、`new WorkflowVariableUpdate(instanceId) { Variables = …, Remove = … }`；`UserTaskPage`、`BlobMetadata`、`BlobPage`、`EntityColumnMapping`、`SqlSugarDiffLogData` 按属性名初始化，这些类型都不再能解构
+- **调整** 字符串承载的标识（`CacheKey`、`BlobKey`、`ContainerName`、`JobName`、`WorkflowName`、`ActivityType`、`SecretName`）不再从 `string` 隐式转换：传字符串的地方写 `new JobName("cleanup")` 或 `(JobName)"cleanup"`；这些类型与 `GrantSubject`、`TriggerKey` 的 `default` 值读文本抛 `InvalidOperationException`，`PermissionGrant` 与 `TriggerKey` 拒收 `default` 成员
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
 
 ### 宿主、协议与插件

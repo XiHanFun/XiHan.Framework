@@ -45,28 +45,28 @@ public sealed class HybridCacheTests : IDisposable
     [Fact]
     public async Task Get_FillsLocal_ThenServesFromLocal()
     {
-        await _shared.SetAsync<string>("k", "v", CacheEntryOptions.Default, CancellationToken.None);
+        await _shared.SetAsync<string>(new CacheKey("k"), "v", CacheEntryOptions.Default, CancellationToken.None);
         _shared.Operations.Clear();
 
-        Assert.Equal("v", (await _cache.GetAsync<string>("k", CancellationToken.None)).ValueOrThrow());
-        Assert.Equal("v", (await _cache.GetAsync<string>("k", CancellationToken.None)).ValueOrThrow());
+        Assert.Equal("v", (await _cache.GetAsync<string>(new CacheKey("k"), CancellationToken.None)).ValueOrThrow());
+        Assert.Equal("v", (await _cache.GetAsync<string>(new CacheKey("k"), CancellationToken.None)).ValueOrThrow());
         Assert.Equal(["get:k"], _shared.Operations);
         Assert.Equal(1, _cache.LocalCount);
 
         // 未命中也不缓存：每次都问 L2
-        Assert.False((await _cache.GetAsync<string>("missing", CancellationToken.None)).HasValue);
-        Assert.False((await _cache.GetAsync<string>("missing", CancellationToken.None)).HasValue);
+        Assert.False((await _cache.GetAsync<string>(new CacheKey("missing"), CancellationToken.None)).HasValue);
+        Assert.False((await _cache.GetAsync<string>(new CacheKey("missing"), CancellationToken.None)).HasValue);
         Assert.Equal(["get:k", "get:missing", "get:missing"], _shared.Operations);
     }
 
     [Fact]
     public async Task GetMany_OnlyAsksRemoteForLocalMisses()
     {
-        await _cache.SetAsync<string>("a", "1", CacheEntryOptions.Default, CancellationToken.None);
-        await _shared.SetAsync<string>("b", "2", CacheEntryOptions.Default, CancellationToken.None);
+        await _cache.SetAsync<string>(new CacheKey("a"), "1", CacheEntryOptions.Default, CancellationToken.None);
+        await _shared.SetAsync<string>(new CacheKey("b"), "2", CacheEntryOptions.Default, CancellationToken.None);
         _shared.Operations.Clear();
 
-        var results = await _cache.GetManyAsync<string>(["a", "b", "c"], CancellationToken.None);
+        var results = await _cache.GetManyAsync<string>([new CacheKey("a"), new CacheKey("b"), new CacheKey("c")], CancellationToken.None);
 
         Assert.Equal("1", results[0].ValueOrThrow());
         Assert.Equal("2", results[1].ValueOrThrow());
@@ -75,7 +75,7 @@ public sealed class HybridCacheTests : IDisposable
         Assert.Equal(2, _cache.LocalCount);
 
         _shared.Operations.Clear();
-        Assert.All(await _cache.GetManyAsync<string>(["a", "b"], CancellationToken.None), static r => Assert.True(r.HasValue));
+        Assert.All(await _cache.GetManyAsync<string>([new CacheKey("a"), new CacheKey("b")], CancellationToken.None), static r => Assert.True(r.HasValue));
         Assert.Empty(_shared.Operations);
         Assert.Empty(await _cache.GetManyAsync<string>([], CancellationToken.None));
     }
@@ -83,17 +83,17 @@ public sealed class HybridCacheTests : IDisposable
     [Fact]
     public async Task SetAndRemove_GoRemoteFirst_ThenLocal()
     {
-        await _cache.SetAsync<string>("k", "v", CacheEntryOptions.Expires(TimeSpan.FromMinutes(5)), CancellationToken.None);
-        Assert.Equal("v", (await _shared.GetAsync<string>("k", CancellationToken.None)).ValueOrThrow());
+        await _cache.SetAsync<string>(new CacheKey("k"), "v", CacheEntryOptions.Expires(TimeSpan.FromMinutes(5)), CancellationToken.None);
+        Assert.Equal("v", (await _shared.GetAsync<string>(new CacheKey("k"), CancellationToken.None)).ValueOrThrow());
         Assert.Equal(1, _cache.LocalCount);
 
-        await _cache.SetManyAsync<string>([new("x", "1"), new("y", "2")], CacheEntryOptions.Default, CancellationToken.None);
+        await _cache.SetManyAsync<string>([new(new CacheKey("x"), "1"), new(new CacheKey("y"), "2")], CacheEntryOptions.Default, CancellationToken.None);
         Assert.Equal("setmany:x,y", _shared.Operations[^1]);
 
-        Assert.True(await _cache.RemoveAsync("k", CancellationToken.None));
-        Assert.False((await _shared.GetAsync<string>("k", CancellationToken.None)).HasValue);
-        Assert.False(await _cache.RemoveAsync("k", CancellationToken.None));
-        Assert.Equal([true, true, false], await _cache.RemoveManyAsync(["x", "y", "nope"], CancellationToken.None));
+        Assert.True(await _cache.RemoveAsync(new CacheKey("k"), CancellationToken.None));
+        Assert.False((await _shared.GetAsync<string>(new CacheKey("k"), CancellationToken.None)).HasValue);
+        Assert.False(await _cache.RemoveAsync(new CacheKey("k"), CancellationToken.None));
+        Assert.Equal([true, true, false], await _cache.RemoveManyAsync([new CacheKey("x"), new CacheKey("y"), new CacheKey("nope")], CancellationToken.None));
         Assert.Equal(0, _cache.LocalCount);
     }
 
@@ -101,18 +101,18 @@ public sealed class HybridCacheTests : IDisposable
     public async Task Local_ExpiresByOwnTimeToLive_CappedByLocalLimit()
     {
         // 条目自己 5 秒：5 秒后 L1 过期，重新问 L2（L2 也过期了，所以无值）
-        await _cache.SetAsync<string>("short", "v", CacheEntryOptions.Expires(TimeSpan.FromSeconds(5)), CancellationToken.None);
+        await _cache.SetAsync<string>(new CacheKey("short"), "v", CacheEntryOptions.Expires(TimeSpan.FromSeconds(5)), CancellationToken.None);
         // 条目 10 分钟：L1 只留 30 秒上限，之后回到 L2 取
-        await _cache.SetAsync<string>("long", "v", CacheEntryOptions.Expires(TimeSpan.FromMinutes(10)), CancellationToken.None);
+        await _cache.SetAsync<string>(new CacheKey("long"), "v", CacheEntryOptions.Expires(TimeSpan.FromMinutes(10)), CancellationToken.None);
         _shared.Operations.Clear();
 
         _clock.Advance(TimeSpan.FromSeconds(6));
-        Assert.False((await _cache.GetAsync<string>("short", CancellationToken.None)).HasValue);
-        Assert.Equal("v", (await _cache.GetAsync<string>("long", CancellationToken.None)).ValueOrThrow());
+        Assert.False((await _cache.GetAsync<string>(new CacheKey("short"), CancellationToken.None)).HasValue);
+        Assert.Equal("v", (await _cache.GetAsync<string>(new CacheKey("long"), CancellationToken.None)).ValueOrThrow());
         Assert.Equal(["get:short"], _shared.Operations);
 
         _clock.Advance(TimeSpan.FromSeconds(31));
-        Assert.Equal("v", (await _cache.GetAsync<string>("long", CancellationToken.None)).ValueOrThrow());
+        Assert.Equal("v", (await _cache.GetAsync<string>(new CacheKey("long"), CancellationToken.None)).ValueOrThrow());
         Assert.Equal(["get:short", "get:long"], _shared.Operations);
     }
 
@@ -121,18 +121,18 @@ public sealed class HybridCacheTests : IDisposable
     {
         foreach (var key in new[] { "a", "b", "c" })
         {
-            await _cache.SetAsync<string>(key, key, CacheEntryOptions.Default, CancellationToken.None);
+            await _cache.SetAsync<string>(new CacheKey(key), key, CacheEntryOptions.Default, CancellationToken.None);
         }
 
         // 访问 a 让它变成最近使用；再写 d 淘汰的是 b
-        _ = await _cache.GetAsync<string>("a", CancellationToken.None);
-        await _cache.SetAsync<string>("d", "d", CacheEntryOptions.Default, CancellationToken.None);
+        _ = await _cache.GetAsync<string>(new CacheKey("a"), CancellationToken.None);
+        await _cache.SetAsync<string>(new CacheKey("d"), "d", CacheEntryOptions.Default, CancellationToken.None);
         _shared.Operations.Clear();
 
         Assert.Equal(3, _cache.LocalCount);
-        _ = await _cache.GetAsync<string>("a", CancellationToken.None);
-        _ = await _cache.GetAsync<string>("d", CancellationToken.None);
-        _ = await _cache.GetAsync<string>("b", CancellationToken.None);
+        _ = await _cache.GetAsync<string>(new CacheKey("a"), CancellationToken.None);
+        _ = await _cache.GetAsync<string>(new CacheKey("d"), CancellationToken.None);
+        _ = await _cache.GetAsync<string>(new CacheKey("b"), CancellationToken.None);
         Assert.Equal(["get:b"], _shared.Operations);
     }
 
@@ -146,13 +146,13 @@ public sealed class HybridCacheTests : IDisposable
             return ValueTask.FromResult("built");
         }
 
-        Assert.Equal("built", await _cache.GetOrCreateAsync<string>("k", Factory, CacheEntryOptions.Default, CancellationToken.None));
-        Assert.Equal("built", await _cache.GetOrCreateAsync<string>("k", Factory, CacheEntryOptions.Default, CancellationToken.None));
+        Assert.Equal("built", await _cache.GetOrCreateAsync<string>(new CacheKey("k"), Factory, CacheEntryOptions.Default, CancellationToken.None));
+        Assert.Equal("built", await _cache.GetOrCreateAsync<string>(new CacheKey("k"), Factory, CacheEntryOptions.Default, CancellationToken.None));
         Assert.Equal(1, calls);
         Assert.Equal(["getorcreate:k"], _shared.Operations);
 
         // 类型不匹配按未命中处理，交给 L2 判定
-        Assert.False((await _cache.GetAsync<int>("k", CancellationToken.None)).HasValue);
+        Assert.False((await _cache.GetAsync<int>(new CacheKey("k"), CancellationToken.None)).HasValue);
     }
 
     [Fact]
@@ -164,16 +164,16 @@ public sealed class HybridCacheTests : IDisposable
         Assert.True(cache.InvalidatesAcrossInstances);
         Assert.False(_cache.InvalidatesAcrossInstances);
 
-        await cache.SetAsync<string>("user:1", "a", CacheEntryOptions.Default, CancellationToken.None);
-        await cache.SetAsync<string>("user:2", "b", CacheEntryOptions.Default, CancellationToken.None);
-        await cache.SetAsync<string>("role:1", "c", CacheEntryOptions.Default, CancellationToken.None);
+        await cache.SetAsync<string>(new CacheKey("user:1"), "a", CacheEntryOptions.Default, CancellationToken.None);
+        await cache.SetAsync<string>(new CacheKey("user:2"), "b", CacheEntryOptions.Default, CancellationToken.None);
+        await cache.SetAsync<string>(new CacheKey("role:1"), "c", CacheEntryOptions.Default, CancellationToken.None);
 
         // 别的实例改了 L2：通知到达前 L1 仍是旧值，到达后回 L2 取新值
-        await shared.SetAsync<string>("user:1", "a2", CacheEntryOptions.Default, CancellationToken.None);
+        await shared.SetAsync<string>(new CacheKey("user:1"), "a2", CacheEntryOptions.Default, CancellationToken.None);
         shared.Operations.Clear();
-        Assert.Equal("a", (await cache.GetAsync<string>("user:1", CancellationToken.None)).ValueOrThrow());
-        feed.Raise(CacheChange.ForKeys(["user:1"]));
-        Assert.Equal("a2", (await cache.GetAsync<string>("user:1", CancellationToken.None)).ValueOrThrow());
+        Assert.Equal("a", (await cache.GetAsync<string>(new CacheKey("user:1"), CancellationToken.None)).ValueOrThrow());
+        feed.Raise(CacheChange.ForKeys([new CacheKey("user:1")]));
+        Assert.Equal("a2", (await cache.GetAsync<string>(new CacheKey("user:1"), CancellationToken.None)).ValueOrThrow());
         Assert.Equal(["get:user:1"], shared.Operations);
         Assert.Equal(3, cache.LocalCount);
 

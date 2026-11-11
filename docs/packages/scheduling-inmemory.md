@@ -94,7 +94,7 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Scheduling.InMemory;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddJob<HeartbeatJob>("heartbeat", JobSchedule.Every(TimeSpan.FromSeconds(10)));
+builder.Services.AddJob<HeartbeatJob>(new JobName("heartbeat"), JobSchedule.Every(TimeSpan.FromSeconds(10)));
 builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 
 var app = builder.Build();

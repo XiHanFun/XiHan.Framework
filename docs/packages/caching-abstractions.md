@@ -61,7 +61,7 @@ dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
 | `ICache` | 类型化缓存：`GetAsync<T>`、`SetAsync<T>`、`RemoveAsync`、`GetOrCreateAsync<T>` 与批量方法；`Store` 暴露底层存储 |
 | `ISharedCache` | 跨进程共享的 `ICache`（`caching.distributed`） |
 | `SerializingCache` | `ICacheStore` + `ICacheSerializer` 组成的 `ISharedCache` |
-| `CacheKey` | 键：非空、无空白与控制字符、不超过 `MaxLength`（512）、区分大小写；可从字符串隐式转换；`IsValid`、`IsValidPrefix`、`Validate` |
+| `CacheKey` | 键：非空、无空白与控制字符、不超过 `MaxLength`（512）、区分大小写；从字符串显式转换；`IsValid`、`IsValidPrefix`、`Validate` |
 | `CacheEntryOptions` | 过期：`Expires(ttl)`、`Sliding(window)`、`Default`（Provider 默认存活时间），二选一，`Validated()` 校验组合 |
 | `CacheEntry` | `ICacheStore.SetManyAsync` 的一项：键、值、该项自己的过期选项 |
 | `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 值序列化；`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`；`TryAddJsonSerializer` 供 Provider 按已有登记选序列化器 |

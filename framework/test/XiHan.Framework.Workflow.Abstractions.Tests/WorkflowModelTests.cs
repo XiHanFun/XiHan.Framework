@@ -117,7 +117,7 @@ public sealed class WorkflowModelTests
         // 越界不在构造时抛出：由目录以校验错误返回（一致性套件用例 33）
         Assert.Equal(0, new WorkflowDefinitionQuery { Limit = 0 }.Limit);
 
-        var definition = WorkflowDefinitionBuilder.Create("expense", "Expense Claim").WithCategory("finance").WithDescription("Travel").AddStart().Build();
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("expense"), "Expense Claim").WithCategory("finance").WithDescription("Travel").AddStart().Build();
         Assert.True(new WorkflowDefinitionQuery { Keyword = " CLAIM ", Category = "finance", Status = WorkflowDefinitionStatus.Draft, Name = new WorkflowName("expense") }.Matches(definition));
         Assert.True(new WorkflowDefinitionQuery { Keyword = "travel" }.Matches(definition));
         Assert.False(new WorkflowDefinitionQuery { Category = "Finance" }.Matches(definition));
@@ -157,7 +157,7 @@ public sealed class WorkflowModelTests
 
         // 定义的创建时间区间：下界含、上界不含
         var created = DateTimeOffset.UnixEpoch.AddDays(1);
-        var definition = WorkflowDefinitionBuilder.Create("range").AddStart().AddEnd().AddTransition("start", "end").Build() with { CreatedAt = created };
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("range")).AddStart().AddEnd().AddTransition("start", "end").Build() with { CreatedAt = created };
         Assert.True(new WorkflowDefinitionQuery { CreatedFrom = created, CreatedTo = created.AddTicks(1) }.Matches(definition));
         Assert.False(new WorkflowDefinitionQuery { CreatedTo = created }.Matches(definition));
         Assert.False(new WorkflowDefinitionQuery { CreatedFrom = created.AddTicks(1) }.Matches(definition));

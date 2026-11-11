@@ -47,11 +47,11 @@ public sealed class InMemoryObjectCacheInspectorTests
     {
         for (var i = 0; i < 5; i++)
         {
-            await _cache.SetAsync<object>($"access:user:{i}", new Snapshot(i), CacheEntryOptions.Default, CancellationToken.None);
+            await _cache.SetAsync<object>(new CacheKey($"access:user:{i}"), new Snapshot(i), CacheEntryOptions.Default, CancellationToken.None);
         }
 
-        await _cache.SetAsync<string>("identity:session", "s", CacheEntryOptions.Default, CancellationToken.None);
-        await _store.SetAsync("access:lock", Encoding.UTF8.GetBytes("owner"), CacheEntryOptions.Default, CancellationToken.None);
+        await _cache.SetAsync<string>(new CacheKey("identity:session"), "s", CacheEntryOptions.Default, CancellationToken.None);
+        await _store.SetAsync(new CacheKey("access:lock"), Encoding.UTF8.GetBytes("owner"), CacheEntryOptions.Default, CancellationToken.None);
 
         // 对象层：每页 2 个，走完续页，只有对象条目
         var inspector = Assert.IsAssignableFrom<ICacheInspector>(_cache);
@@ -81,35 +81,35 @@ public sealed class InMemoryObjectCacheInspectorTests
     [Fact]
     public async Task Inspect_GivesTypeAndRemainingTime_WithoutExtendingSliding()
     {
-        await _cache.SetAsync<object>("access:user:1", new Snapshot(1), CacheEntryOptions.Expires(TimeSpan.FromMinutes(2)), CancellationToken.None);
-        await _cache.SetAsync<object>("access:window", new Snapshot(2), CacheEntryOptions.Sliding(TimeSpan.FromSeconds(60)), CancellationToken.None);
+        await _cache.SetAsync<object>(new CacheKey("access:user:1"), new Snapshot(1), CacheEntryOptions.Expires(TimeSpan.FromMinutes(2)), CancellationToken.None);
+        await _cache.SetAsync<object>(new CacheKey("access:window"), new Snapshot(2), CacheEntryOptions.Sliding(TimeSpan.FromSeconds(60)), CancellationToken.None);
         _clock.Advance(TimeSpan.FromSeconds(30));
 
-        var info = (await _cache.InspectAsync("access:user:1", CancellationToken.None)).ValueOrThrow();
-        Assert.Equal(new CachedObjectInfo("access:user:1", typeof(Snapshot).FullName!, TimeSpan.FromSeconds(90), null), info);
-        Assert.Equal(new Snapshot(1), (await _cache.GetAsync<object>("access:user:1", CancellationToken.None)).ValueOrThrow());
+        var info = (await _cache.InspectAsync(new CacheKey("access:user:1"), CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(new CachedObjectInfo(new CacheKey("access:user:1"), typeof(Snapshot).FullName!, TimeSpan.FromSeconds(90), null), info);
+        Assert.Equal(new Snapshot(1), (await _cache.GetAsync<object>(new CacheKey("access:user:1"), CancellationToken.None)).ValueOrThrow());
 
         // 查看不算访问：滑动窗口不因查看而延长
-        var sliding = (await _cache.InspectAsync("access:window", CancellationToken.None)).ValueOrThrow();
+        var sliding = (await _cache.InspectAsync(new CacheKey("access:window"), CancellationToken.None)).ValueOrThrow();
         Assert.Equal((TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(60)), (sliding.TimeToLive!.Value, sliding.SlidingExpiration!.Value));
         _clock.Advance(TimeSpan.FromSeconds(31));
-        Assert.False((await _cache.InspectAsync("access:window", CancellationToken.None)).HasValue);
-        Assert.False((await _cache.InspectAsync("missing", CancellationToken.None)).HasValue);
+        Assert.False((await _cache.InspectAsync(new CacheKey("access:window"), CancellationToken.None)).HasValue);
+        Assert.False((await _cache.InspectAsync(new CacheKey("missing"), CancellationToken.None)).HasValue);
     }
 
     [Fact]
     public async Task RemoveByPrefix_RemovesOnlyObjectEntriesUnderThePrefix()
     {
-        await _cache.SetAsync<object>("access:user:1", new Snapshot(1), CacheEntryOptions.Default, CancellationToken.None);
-        await _cache.SetAsync<object>("access:user:2", new Snapshot(2), CacheEntryOptions.Default, CancellationToken.None);
-        await _cache.SetAsync<object>("identity:user:1", new Snapshot(3), CacheEntryOptions.Default, CancellationToken.None);
-        await _store.SetAsync("access:lock", Encoding.UTF8.GetBytes("owner"), CacheEntryOptions.Default, CancellationToken.None);
+        await _cache.SetAsync<object>(new CacheKey("access:user:1"), new Snapshot(1), CacheEntryOptions.Default, CancellationToken.None);
+        await _cache.SetAsync<object>(new CacheKey("access:user:2"), new Snapshot(2), CacheEntryOptions.Default, CancellationToken.None);
+        await _cache.SetAsync<object>(new CacheKey("identity:user:1"), new Snapshot(3), CacheEntryOptions.Default, CancellationToken.None);
+        await _store.SetAsync(new CacheKey("access:lock"), Encoding.UTF8.GetBytes("owner"), CacheEntryOptions.Default, CancellationToken.None);
 
         Assert.Equal(2, await _cache.RemoveByPrefixAsync("access:", CancellationToken.None));
         Assert.Empty((await _cache.ListKeysAsync(new CacheKeyQuery { Prefix = "access:" }, CancellationToken.None)).ValueOrThrow().Keys);
-        Assert.True((await _cache.GetAsync<Snapshot>("identity:user:1", CancellationToken.None)).HasValue);
+        Assert.True((await _cache.GetAsync<Snapshot>(new CacheKey("identity:user:1"), CancellationToken.None)).HasValue);
         // 字节存储里的同前缀条目不受影响，各层各删
-        Assert.True((await _store.GetAsync("access:lock", CancellationToken.None)).HasValue);
+        Assert.True((await _store.GetAsync(new CacheKey("access:lock"), CancellationToken.None)).HasValue);
         Assert.Equal(0, await _cache.RemoveByPrefixAsync("access:", CancellationToken.None));
         await Assert.ThrowsAsync<ArgumentException>(async () => await _cache.RemoveByPrefixAsync(string.Empty, CancellationToken.None));
     }

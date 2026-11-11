@@ -30,17 +30,17 @@ public sealed class RemoteCachingTests
 
         var shared = host.Services.GetRequiredService<ISharedCache>();
         Assert.IsType<SerializingCache>(shared);
-        await shared.SetAsync("greeting", "hello from go", CacheEntryOptions.Expires(TimeSpan.FromMinutes(1)), CancellationToken.None);
-        var cached = await shared.GetAsync<string>("greeting", CancellationToken.None);
+        await shared.SetAsync(new CacheKey("greeting"), "hello from go", CacheEntryOptions.Expires(TimeSpan.FromMinutes(1)), CancellationToken.None);
+        var cached = await shared.GetAsync<string>(new CacheKey("greeting"), CancellationToken.None);
         Assert.Equal("hello from go", cached.ValueOrThrow());
-        Assert.False((await shared.GetAsync<string>("missing", CancellationToken.None)).HasValue);
+        Assert.False((await shared.GetAsync<string>(new CacheKey("missing"), CancellationToken.None)).HasValue);
 
         var locks = host.Services.GetRequiredService<IDistributedLock>();
-        var first = await locks.TryAcquireAsync("orders", TimeSpan.FromSeconds(30), CancellationToken.None);
+        var first = await locks.TryAcquireAsync(new CacheKey("orders"), TimeSpan.FromSeconds(30), CancellationToken.None);
         Assert.True(first.HasValue);
-        Assert.False((await locks.TryAcquireAsync("orders", TimeSpan.FromSeconds(30), CancellationToken.None)).HasValue);
+        Assert.False((await locks.TryAcquireAsync(new CacheKey("orders"), TimeSpan.FromSeconds(30), CancellationToken.None)).HasValue);
         Assert.True(await first.ValueOrThrow().ReleaseAsync(CancellationToken.None));
-        Assert.True((await locks.TryAcquireAsync("orders", TimeSpan.FromSeconds(30), CancellationToken.None)).HasValue);
+        Assert.True((await locks.TryAcquireAsync(new CacheKey("orders"), TimeSpan.FromSeconds(30), CancellationToken.None)).HasValue);
 
         var local = host.Services.GetRequiredService<ICache>();
         Assert.IsType<InMemoryObjectCache>(local);
@@ -71,7 +71,7 @@ public sealed class RemoteCachingTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<RemoteCachingFeature>(), [new("XiHan:Caching:Remote:TimeoutMilliseconds", "500")]);
         var store = host.Services.GetRequiredService<RemoteCacheStore>();
 
-        var exception = await Assert.ThrowsAsync<FrameworkException>(async () => await store.GetAsync("orders:1", CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FrameworkException>(async () => await store.GetAsync(new CacheKey("orders:1"), CancellationToken.None));
 
         Assert.Equal(CachingErrors.StoreUnavailable, exception.Code);
         Assert.Contains("KERNEL_NOTFOUND_001", exception.Message, StringComparison.Ordinal);
@@ -84,12 +84,12 @@ public sealed class RemoteCachingTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<RemoteCachingFeature>().UseFeature<RejectingPluginFeature>());
         var store = host.Services.GetRequiredService<RemoteCacheStore>();
 
-        var exception = await Assert.ThrowsAsync<FrameworkException>(async () => await store.SetAsync("orders:1", new byte[] { 1 }, CacheEntryOptions.Expires(TimeSpan.FromMinutes(1)), CancellationToken.None));
+        var exception = await Assert.ThrowsAsync<FrameworkException>(async () => await store.SetAsync(new CacheKey("orders:1"), new byte[] { 1 }, CacheEntryOptions.Expires(TimeSpan.FromMinutes(1)), CancellationToken.None));
 
         Assert.Equal(CachingErrors.InvalidOptions, exception.Code);
         Assert.Contains(RemoteCacheOperations.Set, exception.Message, StringComparison.Ordinal);
         // 选项本身不合法时 .NET 侧在调用插件之前就抛 ArgumentException
-        await Assert.ThrowsAsync<ArgumentException>(async () => await store.SetAsync("orders:1", new byte[] { 1 }, new CacheEntryOptions { TimeToLive = TimeSpan.FromMinutes(1), SlidingExpiration = TimeSpan.FromMinutes(1) }, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(async () => await store.SetAsync(new CacheKey("orders:1"), new byte[] { 1 }, new CacheEntryOptions { TimeToLive = TimeSpan.FromMinutes(1), SlidingExpiration = TimeSpan.FromMinutes(1) }, CancellationToken.None));
     }
 
     [Fact]

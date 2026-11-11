@@ -222,7 +222,7 @@ public sealed class DatabaseWorkflowTests
         Assert.False(await other.TryHoldAsync(CancellationToken.None));
 
         // 到期的延时由持有领导权的后台轮询恢复，不用手工 Poll
-        var definition = WorkflowDefinitionBuilder.Create("poll-delay")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("poll-delay"))
             .AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(20)).AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "end")
             .Build();
@@ -232,7 +232,7 @@ public sealed class DatabaseWorkflowTests
             var catalog = scope.ServiceProvider.GetRequiredService<IWorkflowDefinitionCatalog>();
             var created = (await catalog.CreateAsync(definition, CancellationToken.None)).ValueOrThrow();
             (await catalog.PublishAsync(created.Id, CancellationToken.None)).ValueOrThrow();
-            instanceId = (await scope.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = "poll-delay" }, CancellationToken.None)).ValueOrThrow().Id;
+            instanceId = (await scope.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = new WorkflowName("poll-delay") }, CancellationToken.None)).ValueOrThrow().Id;
         }
 
         await WaitUntilAsync(async () => await Partitions.InAsync(host, null, async s => (await s.Instances.FindAsync(null, instanceId, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Status == WorkflowInstanceStatus.Completed));
@@ -304,7 +304,7 @@ public sealed class DatabaseWorkflowTests
             var store = s.Instances;
             var bookmarks = s.Bookmarks;
             Assert.True((await store.SaveAsync(null, instances, CancellationToken.None)).IsSuccess);
-            Assert.True((await store.SaveNodeInstancesAsync(null, instances.Select(static instance => new WorkflowNodeInstance { Id = WorkflowIdentifiers.NewId(), InstanceId = instance.Id, NodeId = "n", ActivityType = ActivityTypes.Log, StartedAt = instance.CreatedAt }).ToList(), CancellationToken.None)).IsSuccess);
+            Assert.True((await store.SaveNodeInstancesAsync(null, instances.Select(static instance => new WorkflowNodeInstance { Id = WorkflowIdentifiers.NewId(), InstanceId = instance.Id, NodeId = "n", ActivityType = new ActivityType(ActivityTypes.Log), StartedAt = instance.CreatedAt }).ToList(), CancellationToken.None)).IsSuccess);
             Assert.True((await bookmarks.SaveAsync(null, instances.Select(static instance => new WorkflowBookmark { Id = WorkflowIdentifiers.NewId(), InstanceId = instance.Id, NodeId = "n", NodeInstanceId = "ni", Kind = BookmarkKinds.Signal, Key = "go", CreatedAt = instance.CreatedAt }).ToList(), CancellationToken.None)).IsSuccess);
 
             Assert.Equal(1005, (await store.FindManyAsync(null, [.. ids, "missing"], CancellationToken.None)).ValueOrThrow().Count);
@@ -343,7 +343,7 @@ public sealed class DatabaseWorkflowTests
         {
             Id = WorkflowIdentifiers.NewId(),
             Name = new WorkflowName("big"),
-            Nodes = [new WorkflowNode { Id = "start", ActivityType = ActivityTypes.Start }],
+            Nodes = [new WorkflowNode { Id = "start", ActivityType = new ActivityType(ActivityTypes.Start) }],
             Description = text,
             CreatedAt = DateTimeOffset.UtcNow,
         };

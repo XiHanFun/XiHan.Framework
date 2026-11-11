@@ -58,8 +58,8 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 
 | 类型 | 说明 |
 | --- | --- |
-| `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，可从 `string` 隐式转换 |
-| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`、`Validate`，可从 `string` 隐式转换 |
+| `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，从 `string` 显式转换 |
+| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`、`Validate`，从 `string` 显式转换 |
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
@@ -91,11 +91,11 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Listing;
 
-var put = await store.PutAsync("invoices", "2026/10/inv-1.pdf", stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);
-var page = await store.ListAsync("invoices", new BlobQuery { Prefix = "2026/10/", PageSize = 100 }, ct);
-var deleted = await store.DeleteAsync("invoices", ["2026/10/inv-1.pdf", "2026/10/inv-2.pdf"], ct);   // 逐项：存在过 / 不存在 / 失败
+var put = await store.PutAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);
+var page = await store.ListAsync(new ContainerName("invoices"), new BlobQuery { Prefix = "2026/10/", PageSize = 100 }, ct);
+var deleted = await store.DeleteAsync(new ContainerName("invoices"), [new BlobKey("2026/10/inv-1.pdf"), new BlobKey("2026/10/inv-2.pdf")], ct);   // 逐项：存在过 / 不存在 / 失败
 
-await using var content = (await store.GetAsync("invoices", "2026/10/inv-1.pdf", ct)).ValueOrThrow();
+await using var content = (await store.GetAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), ct)).ValueOrThrow();
 await content.Content.CopyToAsync(destination, ct);
 ```
 
@@ -106,12 +106,12 @@ using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
 // 服务端发起，客户端按片直传，服务端完成
-var upload = (await multipart.StartAsync("videos", key, new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
-var partUrl = (await signer.SignAsync("videos", key, BlobUrlRequest.ForPart(upload, 1), ct)).ValueOrThrow();
+var upload = (await multipart.StartAsync(new ContainerName("videos"), key, new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
+var partUrl = (await signer.SignAsync(new ContainerName("videos"), key, BlobUrlRequest.ForPart(upload, 1), ct)).ValueOrThrow();
 var done = await multipart.CompleteAsync(upload, parts, ct);
 
 // 限时下载链接（缺省 30 分钟）
-var link = (await signer.SignAsync("invoices", key, BlobUrlRequest.ForDownload(downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
+var link = (await signer.SignAsync(new ContainerName("invoices"), key, BlobUrlRequest.ForDownload(downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
 ```
 
 实现自己的存储后端时，用一致性套件验证；测试项目引用 `XiHan.Framework.ObjectStorage.Conformance`：

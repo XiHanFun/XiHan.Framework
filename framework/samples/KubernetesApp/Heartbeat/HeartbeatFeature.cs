@@ -5,6 +5,7 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
+using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
@@ -36,6 +37,6 @@ public sealed class HeartbeatFeature : IFeature
     public void Configure(FeatureContext context)
     {
         context.Services.AddSingleton<HeartbeatCounter>();
-        context.Services.AddJob<HeartbeatJob>("heartbeat", JobSchedule.Every(TimeSpan.FromSeconds(10)));
+        context.Services.AddJob<HeartbeatJob>(new JobName("heartbeat"), JobSchedule.Every(TimeSpan.FromSeconds(10)));
     }
 }

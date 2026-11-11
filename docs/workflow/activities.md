@@ -121,7 +121,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 ```
 
 ::: v-pre
-`builder.Services.AddActivity<SmsActivity>(SmsActivity.TypeName)` 登记后，定义里写 `AddNode("notify", SmsActivity.TypeName, "短信通知", node => node.WithProperty("Phone", "{{ phone }}").WithProperty("Text", "申请已 {{ outcome }}").WithRetry(3, TimeSpan.FromSeconds(10), 2))`。`AddActivity` 的第三个参数是 `ActivityOutgoing`，第四个是给设计器的 `ActivityDescriptor`。运行后：流程走到 `notify` 时在当前调用的作用域里解析 `SmsActivity`，发送成功则变量里多出 `smsSent: true` 并沿出边继续；发送失败则节点记为 `Faulted`、10 秒后重试，三次都失败实例 `Faulted`，`FaultNodeId` 是 `notify`。`ActivityTypes()` 返回的描述符里也能看到 `Sms`。
+`builder.Services.AddActivity<SmsActivity>(new ActivityType(SmsActivity.TypeName))` 登记后，定义里写 `AddNode("notify", new ActivityType(SmsActivity.TypeName), "短信通知", node => node.WithProperty("Phone", "{{ phone }}").WithProperty("Text", "申请已 {{ outcome }}").WithRetry(3, TimeSpan.FromSeconds(10), 2))`。`AddActivity` 的第三个参数是 `ActivityOutgoing`，第四个是给设计器的 `ActivityDescriptor`。运行后：流程走到 `notify` 时在当前调用的作用域里解析 `SmsActivity`，发送成功则变量里多出 `smsSent: true` 并沿出边继续；发送失败则节点记为 `Faulted`、10 秒后重试，三次都失败实例 `Faulted`，`FaultNodeId` 是 `notify`。`ActivityTypes()` 返回的描述符里也能看到 `Sms`。
 :::
 
 活动的返回：

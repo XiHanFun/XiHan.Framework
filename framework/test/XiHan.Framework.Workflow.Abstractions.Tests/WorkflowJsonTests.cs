@@ -18,9 +18,9 @@ public sealed class WorkflowJsonTests
     [Fact]
     public void Definition_RoundTrips_AndCloneIsDeep()
     {
-        var definition = WorkflowDefinitionBuilder.Create("rt", "Round trip")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("rt"), "Round trip")
             .AddVariable("x", required: true, defaultValue: 1)
-            .AddStart().AddNode("log", ActivityTypes.Log, configure: node => node.WithProperty("Text", "hi").WithRetry(2)).AddEnd("end", outcome: "done")
+            .AddStart().AddNode("log", new ActivityType(ActivityTypes.Log), configure: node => node.WithProperty("Text", "hi").WithRetry(2)).AddEnd("end", outcome: "done")
             .AddTransition("start", "log").AddTransition("log", "end", "x > 0")
             .Build() with { Status = WorkflowDefinitionStatus.Published, PublishedAt = new DateTimeOffset(2026, 10, 26, 0, 0, 0, TimeSpan.Zero), TenantId = "t1" };
 
@@ -93,7 +93,7 @@ public sealed class WorkflowJsonTests
         clone.Variables["a"]!.AsArray().Add((JsonNode?)JsonValue.Create(3));
         Assert.Equal(2, instance.Variables["a"]!.AsArray().Count);
 
-        var nodeInstance = new WorkflowNodeInstance { Id = "ni", InstanceId = "i1", NodeId = "n", ActivityType = ActivityTypes.UserTask, Attempt = 2, Status = WorkflowNodeInstanceStatus.Suspended, State = new JsonObject { ["assignees"] = new JsonArray("alice") }, Outputs = new JsonObject { ["o"] = 1 } };
+        var nodeInstance = new WorkflowNodeInstance { Id = "ni", InstanceId = "i1", NodeId = "n", ActivityType = new ActivityType(ActivityTypes.UserTask), Attempt = 2, Status = WorkflowNodeInstanceStatus.Suspended, State = new JsonObject { ["assignees"] = new JsonArray("alice") }, Outputs = new JsonObject { ["o"] = 1 } };
         var nodeBack = WorkflowJson.DeserializeNodeInstance(WorkflowJson.Serialize(nodeInstance));
         Assert.Equal((2, WorkflowNodeInstanceStatus.Suspended, "alice", 1), (nodeBack.Attempt, nodeBack.Status, nodeBack.State["assignees"]![0]!.GetValue<string>(), nodeBack.Outputs["o"]!.GetValue<int>()));
 

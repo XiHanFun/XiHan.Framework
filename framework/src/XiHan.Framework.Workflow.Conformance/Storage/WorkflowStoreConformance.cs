@@ -46,9 +46,9 @@ public abstract class WorkflowStoreConformance
             var found = (await s.Definitions.FindAsync(null, v2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
             Assert.Equal((v2.Name, 2, WorkflowDefinitionStatus.Draft), (found.Name, found.Version, found.Status));
             Assert.Equal(1, (await s.Definitions.FindAsync(null, new WorkflowName("conf-def"), 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Version);
-            Assert.Equal(v1.Id, (await s.Definitions.FindLatestPublishedAsync(null, "conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
-            Assert.Equal(2, (await s.Definitions.MaxVersionAsync(null, "conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-            Assert.Equal(0, (await s.Definitions.MaxVersionAsync(null, "conf-none", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(v1.Id, (await s.Definitions.FindLatestPublishedAsync(null, new WorkflowName("conf-def"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+            Assert.Equal(2, (await s.Definitions.MaxVersionAsync(null, new WorkflowName("conf-def"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(0, (await s.Definitions.MaxVersionAsync(null, new WorkflowName("conf-none"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.False((await s.Definitions.FindAsync(null, "missing", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
 
             var listed = (await s.Definitions.ListAsync(null, null, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
@@ -62,7 +62,7 @@ public abstract class WorkflowStoreConformance
         await host.InPartitionAsync(null, async s =>
         {
             Assert.False((await s.Definitions.FindAsync(null, v2.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-            Assert.Equal(1, (await s.Definitions.MaxVersionAsync(null, "conf-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(1, (await s.Definitions.MaxVersionAsync(null, new WorkflowName("conf-def"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         }).ConfigureAwait(false);
     }
 
@@ -494,7 +494,7 @@ public abstract class WorkflowStoreConformance
             Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Limit = 1 }).ConfigureAwait(false));
             Assert.Equal(3, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Limit = 1 }).ConfigureAwait(false));
             Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 3 }).ConfigureAwait(false));
-            Assert.Equal([t1.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", DefinitionName = "conf.a" }).ConfigureAwait(false));
+            Assert.Equal([t1.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", DefinitionName = new WorkflowName("conf.a") }).ConfigureAwait(false));
             Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", NodeId = "review" }).ConfigureAwait(false));
             Assert.Equal([t1.Id, t3.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { InstanceId = a.Id }).ConfigureAwait(false));
             Assert.Equal(1, await TaskCountAsync(s, new UserTaskQuery { InstanceId = a.Id, AssigneeId = "bob" }).ConfigureAwait(false));
@@ -988,7 +988,7 @@ public abstract class WorkflowStoreConformance
         Name = new WorkflowName(name),
         Version = version,
         Status = status,
-        Nodes = [new WorkflowNode { Id = "start", ActivityType = ActivityTypes.Start }],
+        Nodes = [new WorkflowNode { Id = "start", ActivityType = new ActivityType(ActivityTypes.Start) }],
         CreatedAt = DateTimeOffset.UtcNow,
         Properties = new JsonObject { ["tag"] = version },
     };
@@ -1013,7 +1013,7 @@ public abstract class WorkflowStoreConformance
         Id = WorkflowIdentifiers.NewId(),
         InstanceId = instanceId,
         NodeId = nodeId,
-        ActivityType = ActivityTypes.Log,
+        ActivityType = new ActivityType(ActivityTypes.Log),
         StartedAt = startedAt,
     };
 

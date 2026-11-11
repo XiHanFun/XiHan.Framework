@@ -58,7 +58,7 @@ public abstract class WorkflowTaskConformance
         await host.PublishAsync(Approval("conf-threshold-all", UserTaskCompletionPolicy.All, ["alice", "bob", "carol"])).ConfigureAwait(false);
 
         // 人数阈值 2：两人通过即通过，第三人的书签随节点一起清掉
-        var count = (await host.StartAsync("conf-threshold-count").ConfigureAwait(false)).ValueOrThrow();
+        var count = (await host.StartAsync(new WorkflowName("conf-threshold-count")).ConfigureAwait(false)).ValueOrThrow();
         var alice = await TaskOfAsync(host, "alice", count.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowInstanceStatus.Running, (await host.CompleteAsync(alice.Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
         var bob = await TaskOfAsync(host, "bob", count.Id).ConfigureAwait(false);
@@ -68,13 +68,13 @@ public abstract class WorkflowTaskConformance
         Assert.Empty(await host.BookmarksAsync(count.Id).ConfigureAwait(false));
 
         // 百分比 50% 的三人 → 向上取整为 2
-        var percent = (await host.StartAsync("conf-threshold-percent").ConfigureAwait(false)).ValueOrThrow();
+        var percent = (await host.StartAsync(new WorkflowName("conf-threshold-percent")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, (await host.CompleteAsync((await TaskOfAsync(host, "carol", percent.Id).ConfigureAwait(false)).Id, "carol", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
         var percentDone = (await host.CompleteAsync((await TaskOfAsync(host, "alice", percent.Id).ConfigureAwait(false)).Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "approved"), (percentDone.Status, percentDone.Outcome));
 
         // 人数阈值 2：一人拒绝还有两人能通过，继续等；第二人拒绝后剩一人到不了 2，拒绝
-        var mixed = (await host.StartAsync("conf-threshold-count").ConfigureAwait(false)).ValueOrThrow();
+        var mixed = (await host.StartAsync(new WorkflowName("conf-threshold-count")).ConfigureAwait(false)).ValueOrThrow();
         var firstReject = (await host.CompleteAsync((await TaskOfAsync(host, "alice", mixed.Id).ConfigureAwait(false)).Id, "alice", UserTaskOutcomes.Rejected).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, firstReject.Status);
         Assert.Equal(2, (await host.BookmarksAsync(mixed.Id).ConfigureAwait(false)).Count);
@@ -83,7 +83,7 @@ public abstract class WorkflowTaskConformance
         Assert.Empty((await host.PendingAsync("carol").ConfigureAwait(false)).Where(task => task.InstanceId == mixed.Id));
 
         // 缺省阈值 = 全部：一人拒绝立即拒绝
-        var strict = (await host.StartAsync("conf-threshold-all").ConfigureAwait(false)).ValueOrThrow();
+        var strict = (await host.StartAsync(new WorkflowName("conf-threshold-all")).ConfigureAwait(false)).ValueOrThrow();
         var strictDone = (await host.CompleteAsync((await TaskOfAsync(host, "bob", strict.Id).ConfigureAwait(false)).Id, "bob", UserTaskOutcomes.Rejected).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "rejected"), (strictDone.Status, strictDone.Outcome));
         Assert.Empty((await host.PendingAsync("alice").ConfigureAwait(false)).Where(task => task.InstanceId == strict.Id));
@@ -113,7 +113,7 @@ public abstract class WorkflowTaskConformance
         await host.PublishAsync(Approval("conf-claim", UserTaskCompletionPolicy.Any, ["alice", "bob"])).ConfigureAwait(false);
         await host.PublishAsync(Approval("conf-claim-seq", UserTaskCompletionPolicy.Sequential, ["alice", "bob"])).ConfigureAwait(false);
 
-        var instance = (await host.StartAsync("conf-claim").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-claim")).ConfigureAwait(false)).ValueOrThrow();
         var alice = await TaskOfAsync(host, "alice", instance.Id).ConfigureAwait(false);
         var bob = await TaskOfAsync(host, "bob", instance.Id).ConfigureAwait(false);
         Assert.Null(alice.ClaimedBy);
@@ -155,7 +155,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal(("alice", alice.Id), (released.ActorId, released.TaskId));
 
         // Sequential 不支持认领
-        var sequential = (await host.StartAsync("conf-claim-seq").ConfigureAwait(false)).ValueOrThrow();
+        var sequential = (await host.StartAsync(new WorkflowName("conf-claim-seq")).ConfigureAwait(false)).ValueOrThrow();
         var first = await TaskOfAsync(host, "alice", sequential.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowErrors.InputInvalid, (await ClaimAsync(host, first.Id, "alice").ConfigureAwait(false)).Error?.Code);
     }
@@ -171,22 +171,22 @@ public abstract class WorkflowTaskConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-return")
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-return"))
             .AddStart()
             .AddUserTask("first", "First", node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice"))
             .AddUserTask("second", "Second", node => node.WithAssigneeRule(AssigneeRuleTypes.User, "bob"))
             .AddEnd()
             .AddTransition("start", "first").AddTransition("first", "second").AddTransition("second", "end")
             .Build()).ConfigureAwait(false);
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-return-first")
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-return-first"))
             .AddStart()
-            .AddNode("a", RecordActivity.TypeName)
+            .AddNode("a", new ActivityType(RecordActivity.TypeName))
             .AddUserTask("task", "Task", node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice"))
             .AddEnd()
             .AddTransition("start", "a").AddTransition("a", "task").AddTransition("task", "end")
             .Build()).ConfigureAwait(false);
 
-        var instance = (await host.StartAsync("conf-return").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-return")).ConfigureAwait(false)).ValueOrThrow();
         var first = await TaskOfAsync(host, "alice", instance.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowInstanceStatus.Running, (await host.CompleteAsync(first.Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
         var second = await TaskOfAsync(host, "bob", instance.Id).ConfigureAwait(false);
@@ -222,7 +222,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal(WorkflowInstanceStatus.Completed, (await host.CompleteAsync(secondAgain.Id, "bob", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
 
         // 没有上游用户任务：退回 Start 之后的首个节点，它再执行一次
-        var fromStart = (await host.StartAsync("conf-return-first").ConfigureAwait(false)).ValueOrThrow();
+        var fromStart = (await host.StartAsync(new WorkflowName("conf-return-first")).ConfigureAwait(false)).ValueOrThrow();
         var task = await TaskOfAsync(host, "alice", fromStart.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowInstanceStatus.Running, (await ReturnAsync(host, task.Id, "alice").ConfigureAwait(false)).ValueOrThrow().Status);
         Assert.Equal(2, log.Executed.Count(executed => executed.InstanceId == fromStart.Id && executed.NodeId == "a"));
@@ -242,7 +242,7 @@ public abstract class WorkflowTaskConformance
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(Approval("conf-urge", UserTaskCompletionPolicy.Any, ["alice"])).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-urge", starterId: "starter").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-urge"), starterId: "starter").ConfigureAwait(false)).ValueOrThrow();
         var task = await TaskOfAsync(host, "alice", instance.Id).ConfigureAwait(false);
 
         Assert.True((await UrgeAsync(host, task.Id, "starter", "please hurry").ConfigureAwait(false)).IsSuccess);
@@ -268,9 +268,9 @@ public abstract class WorkflowTaskConformance
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(Approval("conf-query", UserTaskCompletionPolicy.All, ["alice", "bob"])).ConfigureAwait(false);
-        var first = (await host.StartAsync("conf-query").ConfigureAwait(false)).ValueOrThrow();
-        var second = (await host.StartAsync("conf-query").ConfigureAwait(false)).ValueOrThrow();
-        var third = (await host.StartAsync("conf-query").ConfigureAwait(false)).ValueOrThrow();
+        var first = (await host.StartAsync(new WorkflowName("conf-query")).ConfigureAwait(false)).ValueOrThrow();
+        var second = (await host.StartAsync(new WorkflowName("conf-query")).ConfigureAwait(false)).ValueOrThrow();
+        var third = (await host.StartAsync(new WorkflowName("conf-query")).ConfigureAwait(false)).ValueOrThrow();
 
         Assert.Equal(WorkflowErrors.InputInvalid, (await QueryAsync(host, new UserTaskQuery()).ConfigureAwait(false)).Error?.Code);
         // 分页越界不在构造时抛出，查询返回校验错误（HTTP 400）；上限与持久化的查询条数上限一致
@@ -306,8 +306,8 @@ public abstract class WorkflowTaskConformance
         Assert.Equal(2, (await QueryAsync(host, new UserTaskQuery { InstanceId = second.Id, NodeId = "approve" }).ConfigureAwait(false)).ValueOrThrow().Total);
         Assert.Empty((await QueryAsync(host, new UserTaskQuery { InstanceId = second.Id, NodeId = "other" }).ConfigureAwait(false)).ValueOrThrow().Items);
         Assert.Equal("alice", Assert.Single((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", InstanceId = third.Id }).ConfigureAwait(false)).ValueOrThrow().Items).AssigneeId);
-        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", DefinitionName = "conf-query" }).ConfigureAwait(false)).ValueOrThrow().Total);
-        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", DefinitionName = "conf-other" }).ConfigureAwait(false)).ValueOrThrow().Items);
+        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", DefinitionName = new WorkflowName("conf-query") }).ConfigureAwait(false)).ValueOrThrow().Total);
+        Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", DefinitionName = new WorkflowName("conf-other") }).ConfigureAwait(false)).ValueOrThrow().Items);
         Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedFrom = DateTimeOffset.UtcNow.AddHours(1) }).ConfigureAwait(false)).ValueOrThrow().Items);
         Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedTo = DateTimeOffset.UtcNow.AddHours(-1) }).ConfigureAwait(false)).ValueOrThrow().Items);
         Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", CreatedFrom = DateTimeOffset.UtcNow.AddHours(-1), CreatedTo = DateTimeOffset.UtcNow.AddHours(1) }).ConfigureAwait(false)).ValueOrThrow().Items.Count);
@@ -320,7 +320,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal(0, (await QueryAsync(host, new UserTaskQuery { InstanceId = first.Id }).ConfigureAwait(false)).ValueOrThrow().Total);
 
         // 关键字（ADR-0096、ADR-0099）：任务标题来自节点的 Title 模板，实例标题是启动时给的显示名、没给取定义名；定义名与关联 ID 也匹配；不区分大小写，% 与 _ 按字面
-        var titled = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-query", DisplayName = "Budget_2026", CorrelationId = "PO-2026/0042", Variables = new JsonObject { ["amount"] = 42 } }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var titled = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("conf-query"), DisplayName = "Budget_2026", CorrelationId = "PO-2026/0042", Variables = new JsonObject { ["amount"] = 42 } }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([titled.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "APPROVE 42" }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
         Assert.Equal([titled.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "t_2" }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
         Assert.Empty((await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Keyword = "t%2" }).ConfigureAwait(false)).ValueOrThrow().Items);
@@ -357,7 +357,7 @@ public abstract class WorkflowTaskConformance
             .WithProperty(UserTaskActivity.DueAtProperty, "2030-01-02T03:04:05Z"))).ConfigureAwait(false);
 
         var before = DateTimeOffset.UtcNow;
-        var instance = (await host.StartAsync("conf-meta").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-meta")).ConfigureAwait(false)).ValueOrThrow();
         var task = await TaskOfAsync(host, "alice", instance.Id).ConfigureAwait(false);
         Assert.Equal((5, "form-7"), (task.Priority, task.FormKey));
         Assert.NotNull(task.DueAt);
@@ -367,7 +367,7 @@ public abstract class WorkflowTaskConformance
         var created = Assert.Single(log.EventsOf(WorkflowTopics.TaskCreated).Where(data => data.InstanceId == instance.Id));
         Assert.Equal(5, created.Payload?[UserTaskPayloadKeys.Priority]?.GetValue<int>());
 
-        var fixedDue = (await host.StartAsync("conf-meta-due").ConfigureAwait(false)).ValueOrThrow();
+        var fixedDue = (await host.StartAsync(new WorkflowName("conf-meta-due")).ConfigureAwait(false)).ValueOrThrow();
         var fixedTask = await TaskOfAsync(host, "alice", fixedDue.Id).ConfigureAwait(false);
         Assert.Equal(new DateTimeOffset(2030, 1, 2, 3, 4, 5, TimeSpan.Zero), fixedTask.DueAt);
         Assert.Null(fixedTask.Priority);
@@ -407,7 +407,7 @@ public abstract class WorkflowTaskConformance
             Register(services, log);
             services.AddSingleton<TimeProvider>(clock);
         }).ConfigureAwait(false);
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-external")
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-external"))
             .AddStart()
             .AddExternalTask("pay", PaymentTopic, new JsonObject { ["order"] = "{{ orderId }}", ["retries"] = 3 })
             .AddEnd()
@@ -415,7 +415,7 @@ public abstract class WorkflowTaskConformance
             .Build()).ConfigureAwait(false);
 
         // 领取与锁
-        var instance = (await host.StartAsync("conf-external", new JsonObject { ["orderId"] = "o-1" }).ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-external"), new JsonObject { ["orderId"] = "o-1" }).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, instance.Status);
         Assert.Single(log.EventsOf(WorkflowTopics.ExternalCreated).Where(data => data.InstanceId == instance.Id));
         Assert.Equal(WorkflowErrors.InputInvalid, (await FetchAsync(host, "w1", TimeSpan.Zero).ConfigureAwait(false)).Error?.Code);
@@ -441,7 +441,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal((instance.Id, task.Id, "w1"), (completedEvent.InstanceId, completedEvent.TaskId, completedEvent.ActorId));
 
         // 失败：带 RetryAfter 解锁后推并加一次尝试，轮询后可再领；不带的使节点故障
-        var retried = (await host.StartAsync("conf-external", new JsonObject { ["orderId"] = "o-2" }).ConfigureAwait(false)).ValueOrThrow();
+        var retried = (await host.StartAsync(new WorkflowName("conf-external"), new JsonObject { ["orderId"] = "o-2" }).ConfigureAwait(false)).ValueOrThrow();
         var attempt = Assert.Single((await FetchAsync(host, "w1", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal(WorkflowErrors.ExternalTaskDenied, (await FailAsync(host, attempt.Id, "w2", "boom", TimeSpan.FromMilliseconds(10)).ConfigureAwait(false)).Error?.Code);
         Assert.True((await FailAsync(host, attempt.Id, "w1", "boom", TimeSpan.FromMilliseconds(10)).ConfigureAwait(false)).IsSuccess);
@@ -458,7 +458,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal([("w1", "boom", true), ("w2", "fatal", false)], failures.Select(static data => (data.ActorId, data.Reason, data.WillRetry)));
 
         // 锁过期：轮询把任务重新挂起（解锁），别的工作者可领，原持有者不能再完成
-        var expiring = (await host.StartAsync("conf-external", new JsonObject { ["orderId"] = "o-3" }).ConfigureAwait(false)).ValueOrThrow();
+        var expiring = (await host.StartAsync(new WorkflowName("conf-external"), new JsonObject { ["orderId"] = "o-3" }).ConfigureAwait(false)).ValueOrThrow();
         var shortLock = Assert.Single((await FetchAsync(host, "w1", TimeSpan.FromMilliseconds(50)).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal(expiring.Id, shortLock.InstanceId);
         Assert.Empty((await FetchAsync(host, "w2", TimeSpan.FromMinutes(1)).ConfigureAwait(false)).ValueOrThrow());
@@ -487,7 +487,7 @@ public abstract class WorkflowTaskConformance
             Register(services, log);
             services.AddSingleton<TimeProvider>(clock);
         }).ConfigureAwait(false);
-        var batch = WorkflowDefinitionBuilder.Create("conf-external-batch")
+        var batch = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-external-batch"))
             .AddStart()
             .AddExternalTask("pay", PaymentTopic)
             .AddEnd()
@@ -498,11 +498,11 @@ public abstract class WorkflowTaskConformance
         var started = new List<string>();
         for (var index = 0; index < 3; index++)
         {
-            started.Add((await host.StartAsync("conf-external-batch").ConfigureAwait(false)).ValueOrThrow().Id);
+            started.Add((await host.StartAsync(new WorkflowName("conf-external-batch")).ConfigureAwait(false)).ValueOrThrow().Id);
             clock.Advance(TimeSpan.FromSeconds(1));
         }
 
-        _ = (await host.StartAsync("conf-external-batch", tenantId: "t-other").ConfigureAwait(false)).ValueOrThrow();
+        _ = (await host.StartAsync(new WorkflowName("conf-external-batch"), tenantId: "t-other").ConfigureAwait(false)).ValueOrThrow();
 
         var first = (await FetchAsync(host, "w1", TimeSpan.FromMinutes(1), 2).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(started.Take(2), first.Select(static task => task.InstanceId));
@@ -525,7 +525,7 @@ public abstract class WorkflowTaskConformance
         services.TryAddScoped<IMessagePublisher, DirectPublisher>();
         // 轮询器从租户目录取租户分区：宿主没有装配多租户时用套件的目录
         services.TryAddSingleton<ITenantStore, ConformanceTenants>();
-        services.AddActivity<RecordActivity>(RecordActivity.TypeName);
+        services.AddActivity<RecordActivity>(new ActivityType(RecordActivity.TypeName));
         services.AddWorkflowOutcomeHandler<RecordingOutcomeHandler>();
     }
 
@@ -536,7 +536,7 @@ public abstract class WorkflowTaskConformance
     /// <paramref name="configure"/> 给用户任务节点加属性
     /// </remarks>
     protected static WorkflowDefinition Approval(string name, UserTaskCompletionPolicy policy, IReadOnlyList<string> assignees, Action<WorkflowNodeBuilder>? configure = null)
-        => WorkflowDefinitionBuilder.Create(name)
+        => WorkflowDefinitionBuilder.Create(new WorkflowName(name))
             .AddVariable("amount", defaultValue: 7)
             .AddStart()
             .AddUserTask("approve", "Approve", node =>

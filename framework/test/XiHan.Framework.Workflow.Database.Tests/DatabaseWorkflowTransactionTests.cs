@@ -36,13 +36,13 @@ public sealed class DatabaseWorkflowTransactionTests
             services.AddWorkflowOutcomeHandler<GrantingOutcomeHandler>();
         });
         await using var workflow = new WorkflowEngineHost(host.Services, static _ => ValueTask.FromResult(0), database);
-        await workflow.PublishAsync(WorkflowDefinitionBuilder.Create("grant")
+        await workflow.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("grant"))
             .AddStart()
             .AddUserTask("approve", "Approve", static node => node.WithAssigneeRule("User", ["alice"]))
             .AddEnd("approved", outcome: UserTaskOutcomes.Approved)
             .AddTransition("start", "approve").AddTransition("approve", "approved")
             .Build());
-        var instance = (await workflow.StartAsync("grant")).ValueOrThrow();
+        var instance = (await workflow.StartAsync(new WorkflowName("grant"))).ValueOrThrow();
         var task = Assert.Single(await workflow.PendingAsync("alice"));
 
         // 办理到结论、处理器写了授予，业务随后失败：授予与实例完成一起回滚，任务仍在待办
@@ -89,7 +89,7 @@ public sealed class DatabaseWorkflowTransactionTests
             configure: static b => b.UseFeature<InMemoryMultiTenancyFeature>());
         await using (database)
         {
-            var definition = WorkflowDefinitionBuilder.Create("sharded").AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(1)).AddEnd()
+            var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("sharded")).AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(1)).AddEnd()
                 .AddTransition("start", "wait").AddTransition("wait", "end").Build();
             var started = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var tenant in new[] { "t-shard", "t-shared" })
@@ -100,7 +100,7 @@ public sealed class DatabaseWorkflowTransactionTests
                     var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
                     var created = (await catalog.CreateAsync(definition, CancellationToken.None)).ValueOrThrow();
                     (await catalog.PublishAsync(created.Id, CancellationToken.None)).ValueOrThrow();
-                    return (await sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = "sharded" }, CancellationToken.None)).ValueOrThrow().Id;
+                    return (await sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = new WorkflowName("sharded") }, CancellationToken.None)).ValueOrThrow().Id;
                 });
             }
 

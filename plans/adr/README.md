@@ -151,3 +151,4 @@
 | [0149](0149-工作流的批量语义与待办只经查询读取.md) | 工作流批量语义写进接口与 RFC（等长同序、整批一个事务逐项失败不回滚其余、取消整批回滚、不设上限），空集合不开事务；删除不分页、与 `QueryAsync` 重复的 `PendingAsync` / `PendingByInstanceAsync`；书签与定义存储的分页需配合快照游标与逐页事务，另行设计 | 已采纳 |
 | [0150](0150-建实例的Provider以Result报告失败.md) | `IBlobStoreProvider.CreateAsync` 返回 `Result<IBlobStore>`、`IDataSourceProvider.CreateAsync` 返回 `Result<IDataSource>`，定义不合法、后端建不出来、探测不能用都以结果返回不抛出；新增 `BlobStoreFailures` / `DataSourceFailures` 统一错误码、参数与脱敏，注册表去掉逐类捕获 | 已采纳 |
 | [0151](0151-Preview数据类型按初始化器形状改写.md) | 按 ADR-0142 改写 25 个 `Preview` 位置记录：工作流的用户任务 / 外部任务 / 跳转 / 迁移 / 变量请求保留身份构造、其余初始化器；对象存储元数据与分页、MCP tool 与提示、插件状态、命令行解析、OpenAPI 输入、列映射与差异日志数据改为初始化器 | 已采纳 |
+| [0152](0152-标识值显式转换且default不是合法值.md) | 字符串承载的标识值（缓存键、对象键、容器名、作业名、工作流名、活动类型、密钥名）去掉会抛出的隐式转换，改显式；`default` 读文本抛 `InvalidOperationException`、`ToString` 为空串，组合值（`GrantSubject`、`TriggerKey`、`PermissionGrant`）构造时拒收 `default` 成员；架构测试守护 | 已采纳 |

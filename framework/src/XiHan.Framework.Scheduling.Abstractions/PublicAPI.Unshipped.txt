@@ -717,7 +717,7 @@ static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.operator ==(Xi
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobDispatcher.GetRun(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun!>
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.IsValid(string? value) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.Validate(string! value) -> string!
-static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.implicit operator XiHan.Framework.Scheduling.Abstractions.Jobs.JobName(string! value) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
+static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.explicit operator XiHan.Framework.Scheduling.Abstractions.Jobs.JobName(string! value) -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.operator !=(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobName right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobName.operator ==(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobName right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome.operator !=(XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome? left, XiHan.Framework.Scheduling.Abstractions.Jobs.JobOutcome? right) -> bool

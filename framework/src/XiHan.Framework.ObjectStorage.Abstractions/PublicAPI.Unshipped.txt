@@ -314,12 +314,12 @@ static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.IsReserved(string
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.IsValid(string? value) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.IsValidPrefix(string? value) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.Validate(string! value) -> string!
-static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.implicit operator XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey(string! value) -> XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey
+static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.explicit operator XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey(string! value) -> XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey left, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey left, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName.IsValid(string? value) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName.Validate(string! value) -> string!
-static XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName.implicit operator XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName(string! value) -> XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName
+static XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName.explicit operator XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName(string! value) -> XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName left, XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName left, XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage? left, XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobPage? right) -> bool

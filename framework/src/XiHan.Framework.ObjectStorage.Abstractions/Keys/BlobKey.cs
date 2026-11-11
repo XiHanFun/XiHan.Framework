@@ -34,6 +34,14 @@ public readonly record struct BlobKey
     public const string ReservedSegment = ".xihan";
 
     /// <summary>
+    /// 校验过的文本
+    /// </summary>
+    /// <remarks>
+    /// 只有 <see langword="default"/> 值为 <see langword="null"/>
+    /// </remarks>
+    private readonly string? _value;
+
+    /// <summary>
     /// 创建
     /// </summary>
     /// <remarks>
@@ -41,18 +49,24 @@ public readonly record struct BlobKey
     /// </remarks>
     public BlobKey(string value)
     {
-        Value = Validate(value);
+        _value = Validate(value);
     }
 
     /// <summary>
     /// 键文本
     /// </summary>
-    public string Value { get; }
+    /// <remarks>
+    /// <see langword="default"/> 值没有键文本，读取抛出 <see cref="InvalidOperationException"/>（RFC-0001「标识值」）
+    /// </remarks>
+    public string Value => _value ?? throw new InvalidOperationException("The 'BlobKey' is the default value and has no text; create it with the constructor.");
 
     /// <summary>
-    /// 从字符串隐式创建
+    /// 从字符串显式创建
     /// </summary>
-    public static implicit operator BlobKey(string value) => new(value);
+    /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>；会抛出的转换不做成隐式（RFC-0001「标识值」）
+    /// </remarks>
+    public static explicit operator BlobKey(string value) => new(value);
 
     /// <summary>
     /// 是否合法
@@ -132,5 +146,5 @@ public readonly record struct BlobKey
     }
 
     /// <inheritdoc />
-    public override string ToString() => Value;
+    public override string ToString() => _value ?? string.Empty;
 }

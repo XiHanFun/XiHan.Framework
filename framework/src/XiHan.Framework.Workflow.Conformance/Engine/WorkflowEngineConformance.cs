@@ -66,20 +66,20 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-linear")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-linear"))
             .AddVariable("x", required: true)
             .AddStart()
-            .AddNode("a", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.OutputsProperty, new JsonObject { ["y"] = 2 }))
-            .AddNode("b", ActivityTypes.SetVariable, configure: node => node.WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["z"] = "x + y", ["greeting"] = "'hi ' + upper(name)", ["nothing"] = "null" }))
+            .AddNode("a", new ActivityType(RecordActivity.TypeName), configure: node => node.WithProperty(RecordActivity.OutputsProperty, new JsonObject { ["y"] = 2 }))
+            .AddNode("b", new ActivityType(ActivityTypes.SetVariable), configure: node => node.WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["z"] = "x + y", ["greeting"] = "'hi ' + upper(name)", ["nothing"] = "null" }))
             .AddEnd()
             .AddTransition("start", "a").AddTransition("a", "b").AddTransition("b", "end")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
 
-        var missing = await host.StartAsync("conf-linear", new JsonObject { ["name"] = "bob" }).ConfigureAwait(false);
+        var missing = await host.StartAsync(new WorkflowName("conf-linear"), new JsonObject { ["name"] = "bob" }).ConfigureAwait(false);
         Assert.Equal(WorkflowErrors.InputInvalid, missing.Error?.Code);
 
-        var started = (await host.StartAsync("conf-linear", new JsonObject { ["x"] = 40, ["name"] = "bob" }, starterId: "alice", correlationId: "doc-1").ConfigureAwait(false)).ValueOrThrow();
+        var started = (await host.StartAsync(new WorkflowName("conf-linear"), new JsonObject { ["x"] = 40, ["name"] = "bob" }, starterId: "alice", correlationId: "doc-1").ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Completed, started.Status);
         var instance = await host.InstanceAsync(started.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowInstanceStatus.Completed, instance.Status);
@@ -116,11 +116,11 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-decision")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-decision"))
             .AddStart()
-            .AddNode("label", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.LabelProperty, "big"))
+            .AddNode("label", new ActivityType(RecordActivity.TypeName), configure: node => node.WithProperty(RecordActivity.LabelProperty, "big"))
             .AddDecision("check")
-            .AddNode("high", RecordActivity.TypeName).AddNode("low", RecordActivity.TypeName).AddNode("other", RecordActivity.TypeName)
+            .AddNode("high", new ActivityType(RecordActivity.TypeName)).AddNode("low", new ActivityType(RecordActivity.TypeName)).AddNode("other", new ActivityType(RecordActivity.TypeName))
             .AddEnd()
             .AddTransition("start", "label").AddTransition("label", "check")
             .AddTransition("check", "high", "amount > 100 && outcome == 'big'").AddTransition("check", "low", "amount <= 10")
@@ -129,16 +129,16 @@ public abstract class WorkflowEngineConformance
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
 
-        var high = (await host.StartAsync("conf-decision", new JsonObject { ["amount"] = 500 }).ConfigureAwait(false)).ValueOrThrow();
-        var low = (await host.StartAsync("conf-decision", new JsonObject { ["amount"] = 5 }).ConfigureAwait(false)).ValueOrThrow();
-        var other = (await host.StartAsync("conf-decision", new JsonObject { ["amount"] = 50 }).ConfigureAwait(false)).ValueOrThrow();
+        var high = (await host.StartAsync(new WorkflowName("conf-decision"), new JsonObject { ["amount"] = 500 }).ConfigureAwait(false)).ValueOrThrow();
+        var low = (await host.StartAsync(new WorkflowName("conf-decision"), new JsonObject { ["amount"] = 5 }).ConfigureAwait(false)).ValueOrThrow();
+        var other = (await host.StartAsync(new WorkflowName("conf-decision"), new JsonObject { ["amount"] = 50 }).ConfigureAwait(false)).ValueOrThrow();
         Assert.All(new[] { high, low, other }, instance => Assert.Equal(WorkflowInstanceStatus.Completed, instance.Status));
         Assert.Equal(["label", "high"], log.Executed.Where(entry => entry.InstanceId == high.Id).Select(static entry => entry.NodeId));
         Assert.Equal(["label", "low"], log.Executed.Where(entry => entry.InstanceId == low.Id).Select(static entry => entry.NodeId));
         Assert.Equal(["label", "other"], log.Executed.Where(entry => entry.InstanceId == other.Id).Select(static entry => entry.NodeId));
 
         // 条件引用未知变量 → 实例故障（表达式错误），不是悄悄为假
-        var broken = (await host.StartAsync("conf-decision", new JsonObject()).ConfigureAwait(false)).ValueOrThrow();
+        var broken = (await host.StartAsync(new WorkflowName("conf-decision"), new JsonObject()).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Faulted, broken.Status);
         Assert.Equal(WorkflowErrors.ExpressionInvalid, broken.Fault?.Code);
     }
@@ -154,16 +154,16 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-parallel")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-parallel"))
             .AddStart().AddParallel("fork")
-            .AddNode("left", RecordActivity.TypeName).AddNode("right", RecordActivity.TypeName)
-            .AddJoin("join").AddNode("after", RecordActivity.TypeName).AddEnd()
+            .AddNode("left", new ActivityType(RecordActivity.TypeName)).AddNode("right", new ActivityType(RecordActivity.TypeName))
+            .AddJoin("join").AddNode("after", new ActivityType(RecordActivity.TypeName)).AddEnd()
             .AddTransition("start", "fork").AddTransition("fork", "left").AddTransition("fork", "right")
             .AddTransition("left", "join").AddTransition("right", "join").AddTransition("join", "after").AddTransition("after", "end")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
 
-        var instance = (await host.StartAsync("conf-parallel").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-parallel")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Completed, instance.Status);
         var executed = log.Executed.Where(entry => entry.InstanceId == instance.Id).Select(static entry => entry.NodeId).ToList();
         Assert.Equal(["left", "right", "after"], executed);
@@ -172,16 +172,16 @@ public abstract class WorkflowEngineConformance
         Assert.Empty(JsonNode.Parse(WorkflowJson.Serialize(instance))!["joinStates"]!.AsObject());
 
         // 一个分支被决策导向没有出边的节点（不到汇合）：汇合的两条入边永远凑不齐 → 故障
-        var dead = WorkflowDefinitionBuilder.Create("conf-dead-join")
+        var dead = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-dead-join"))
             .AddStart().AddParallel("fork")
-            .AddNode("left", RecordActivity.TypeName).AddNode("right", RecordActivity.TypeName).AddDecision("route").AddNode("sink", RecordActivity.TypeName)
+            .AddNode("left", new ActivityType(RecordActivity.TypeName)).AddNode("right", new ActivityType(RecordActivity.TypeName)).AddDecision("route").AddNode("sink", new ActivityType(RecordActivity.TypeName))
             .AddJoin("join").AddEnd()
             .AddTransition("start", "fork").AddTransition("fork", "left").AddTransition("fork", "right")
             .AddTransition("left", "join").AddTransition("right", "route").AddTransition("route", "join", "false").AddDefaultTransition("route", "sink")
             .AddTransition("join", "end")
             .Build();
         await host.PublishAsync(dead).ConfigureAwait(false);
-        var faulted = (await host.StartAsync("conf-dead-join").ConfigureAwait(false)).ValueOrThrow();
+        var faulted = (await host.StartAsync(new WorkflowName("conf-dead-join")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Faulted, faulted.Status);
         Assert.Null(faulted.FaultNodeInstanceId);
     }
@@ -199,7 +199,7 @@ public abstract class WorkflowEngineConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(Approval("conf-task-any", UserTaskCompletionPolicy.Any, "alice", "bob")).ConfigureAwait(false);
 
-        var instance = (await host.StartAsync("conf-task-any", starterId: "starter").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-task-any"), starterId: "starter").ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, instance.Status);
         var alice = Assert.Single(await host.PendingAsync("alice").ConfigureAwait(false));
         var bob = Assert.Single(await host.PendingAsync("bob").ConfigureAwait(false));
@@ -239,7 +239,7 @@ public abstract class WorkflowEngineConformance
         await host.PublishAsync(Approval("conf-task-all", UserTaskCompletionPolicy.All, "alice", "bob")).ConfigureAwait(false);
         await host.PublishAsync(Approval("conf-task-seq", UserTaskCompletionPolicy.Sequential, "alice", "bob")).ConfigureAwait(false);
 
-        var all = (await host.StartAsync("conf-task-all").ConfigureAwait(false)).ValueOrThrow();
+        var all = (await host.StartAsync(new WorkflowName("conf-task-all")).ConfigureAwait(false)).ValueOrThrow();
         var aliceTask = Assert.Single(await host.PendingAsync("alice").ConfigureAwait(false));
         var afterAlice = (await host.CompleteAsync(aliceTask.Id, "alice", UserTaskOutcomes.Approved, new JsonObject { ["alice"] = 1 }).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, afterAlice.Status);
@@ -248,13 +248,13 @@ public abstract class WorkflowEngineConformance
         var afterBob = (await host.CompleteAsync(bobTask.Id, "bob", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "approved"), (afterBob.Status, afterBob.Outcome));
 
-        var rejected = (await host.StartAsync("conf-task-all").ConfigureAwait(false)).ValueOrThrow();
+        var rejected = (await host.StartAsync(new WorkflowName("conf-task-all")).ConfigureAwait(false)).ValueOrThrow();
         var bobReject = Assert.Single((await host.PendingAsync("bob").ConfigureAwait(false)).Where(task => task.InstanceId == rejected.Id));
         var afterReject = (await host.CompleteAsync(bobReject.Id, "bob", UserTaskOutcomes.Rejected).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "rejected"), (afterReject.Status, afterReject.Outcome));
         Assert.Empty((await host.PendingAsync("alice").ConfigureAwait(false)).Where(task => task.InstanceId == rejected.Id));
 
-        var sequential = (await host.StartAsync("conf-task-seq").ConfigureAwait(false)).ValueOrThrow();
+        var sequential = (await host.StartAsync(new WorkflowName("conf-task-seq")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Single((await host.PendingAsync("alice").ConfigureAwait(false)).Where(task => task.InstanceId == sequential.Id));
         Assert.Empty((await host.PendingAsync("bob").ConfigureAwait(false)).Where(task => task.InstanceId == sequential.Id));
         var first = Assert.Single((await host.PendingAsync("alice").ConfigureAwait(false)).Where(task => task.InstanceId == sequential.Id));
@@ -275,7 +275,7 @@ public abstract class WorkflowEngineConformance
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(Approval("conf-task-transfer", UserTaskCompletionPolicy.All, "alice", "bob")).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-task-transfer").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-task-transfer")).ConfigureAwait(false)).ValueOrThrow();
         var alice = Assert.Single(await host.PendingAsync("alice").ConfigureAwait(false));
 
         Assert.Equal(WorkflowErrors.AssigneeExists, (await host.TransferAsync(alice.Id, "alice", "bob").ConfigureAwait(false)).Error?.Code);
@@ -310,12 +310,12 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var delay = WorkflowDefinitionBuilder.Create("conf-delay")
-            .AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(100)).AddNode("after", RecordActivity.TypeName).AddEnd()
+        var delay = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-delay"))
+            .AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(100)).AddNode("after", new ActivityType(RecordActivity.TypeName)).AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "after").AddTransition("after", "end")
             .Build();
         await host.PublishAsync(delay).ConfigureAwait(false);
-        var timeout = WorkflowDefinitionBuilder.Create("conf-timeout")
+        var timeout = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-timeout"))
             .AddStart()
             .AddUserTask("approve", null, node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice").WithTimeout(TimeSpan.FromMilliseconds(100)))
             .AddDecision("check").AddEnd("timed", outcome: "timed").AddEnd("done", outcome: "done")
@@ -324,10 +324,10 @@ public abstract class WorkflowEngineConformance
             .Build();
         await host.PublishAsync(timeout).ConfigureAwait(false);
 
-        var waiting = (await host.StartAsync("conf-delay").ConfigureAwait(false)).ValueOrThrow();
+        var waiting = (await host.StartAsync(new WorkflowName("conf-delay")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, waiting.Status);
         Assert.Equal(BookmarkKinds.Timer, Assert.Single(await host.BookmarksAsync(waiting.Id).ConfigureAwait(false)).Kind);
-        var tasked = (await host.StartAsync("conf-timeout").ConfigureAwait(false)).ValueOrThrow();
+        var tasked = (await host.StartAsync(new WorkflowName("conf-timeout")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([BookmarkKinds.NodeTimeout, BookmarkKinds.UserTask], (await host.BookmarksAsync(tasked.Id).ConfigureAwait(false)).Select(static bookmark => bookmark.Kind).Order(StringComparer.Ordinal));
 
         await WaitUntilAsync(async () =>
@@ -354,19 +354,19 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-signal")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-signal"))
             .AddStart()
-            .AddNode("wait", ActivityTypes.WaitSignal, configure: node => node.WithProperty(WaitSignalActivity.SignalNameProperty, "paid"))
+            .AddNode("wait", new ActivityType(ActivityTypes.WaitSignal), configure: node => node.WithProperty(WaitSignalActivity.SignalNameProperty, "paid"))
             .AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "end")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
 
-        var noCorrelation = await host.StartAsync("conf-signal").ConfigureAwait(false);
+        var noCorrelation = await host.StartAsync(new WorkflowName("conf-signal")).ConfigureAwait(false);
         Assert.Equal(WorkflowInstanceStatus.Faulted, noCorrelation.ValueOrThrow().Status);
 
-        var one = (await host.StartAsync("conf-signal", correlationId: "order-1").ConfigureAwait(false)).ValueOrThrow();
-        var two = (await host.StartAsync("conf-signal", correlationId: "order-2").ConfigureAwait(false)).ValueOrThrow();
+        var one = (await host.StartAsync(new WorkflowName("conf-signal"), correlationId: "order-1").ConfigureAwait(false)).ValueOrThrow();
+        var two = (await host.StartAsync(new WorkflowName("conf-signal"), correlationId: "order-2").ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(1, (await host.SignalAsync("paid", new JsonObject { ["amount"] = 9 }, "order-1").ConfigureAwait(false)).ValueOrThrow());
         var first = await host.InstanceAsync(one.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowInstanceStatus.Completed, first.Status);
@@ -388,20 +388,20 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var child = WorkflowDefinitionBuilder.Create("conf-child")
+        var child = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-child"))
             .AddStart()
-            .AddNode("double", ActivityTypes.SetVariable, configure: node => node.WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["result"] = "item * 2" }))
+            .AddNode("double", new ActivityType(ActivityTypes.SetVariable), configure: node => node.WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["result"] = "item * 2" }))
             .AddEnd()
             .AddTransition("start", "double").AddTransition("double", "end")
             .Build();
         await host.PublishAsync(child).ConfigureAwait(false);
-        var parent = WorkflowDefinitionBuilder.Create("conf-parent")
+        var parent = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-parent"))
             .AddStart()
-            .AddNode("sub", ActivityTypes.SubWorkflow, configure: node => node
+            .AddNode("sub", new ActivityType(ActivityTypes.SubWorkflow), configure: node => node
                 .WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-child")
                 .WithProperty(SubWorkflowActivity.VariablesProperty, new JsonObject { ["item"] = 21 })
                 .WithProperty(SubWorkflowActivity.ResultVariableProperty, "child"))
-            .AddNode("each", ActivityTypes.ForEach, configure: node => node
+            .AddNode("each", new ActivityType(ActivityTypes.ForEach), configure: node => node
                 .WithProperty(ForEachActivity.ItemsProperty, "items")
                 .WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-child")
                 .WithProperty(SubWorkflowActivity.ResultVariableProperty, "results"))
@@ -410,7 +410,7 @@ public abstract class WorkflowEngineConformance
             .Build();
         await host.PublishAsync(parent).ConfigureAwait(false);
 
-        var instance = (await host.StartAsync("conf-parent", new JsonObject { ["items"] = new JsonArray(1, 2, 3) }, correlationId: "doc-9").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-parent"), new JsonObject { ["items"] = new JsonArray(1, 2, 3) }, correlationId: "doc-9").ConfigureAwait(false)).ValueOrThrow();
         await WaitUntilAsync(async () => (await host.InstanceAsync(instance.Id).ConfigureAwait(false)).IsFinal).ConfigureAwait(false);
         var done = await host.InstanceAsync(instance.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowInstanceStatus.Completed, done.Status);
@@ -433,23 +433,23 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var retrying = WorkflowDefinitionBuilder.Create("conf-retry")
+        var retrying = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-retry"))
             .AddStart()
-            .AddNode("flaky", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.FailTimesProperty, 3).WithRetry(2, TimeSpan.FromMilliseconds(50), 1))
+            .AddNode("flaky", new ActivityType(RecordActivity.TypeName), configure: node => node.WithProperty(RecordActivity.FailTimesProperty, 3).WithRetry(2, TimeSpan.FromMilliseconds(50), 1))
             .AddEnd()
             .AddTransition("start", "flaky").AddTransition("flaky", "end")
             .Build();
         await host.PublishAsync(retrying).ConfigureAwait(false);
-        var continuing = WorkflowDefinitionBuilder.Create("conf-continue")
+        var continuing = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-continue"))
             .AddStart()
-            .AddNode("broken", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.FailTimesProperty, 9).WithContinueOnError())
+            .AddNode("broken", new ActivityType(RecordActivity.TypeName), configure: node => node.WithProperty(RecordActivity.FailTimesProperty, 9).WithContinueOnError())
             .AddDecision("check").AddEnd("errored", outcome: "errored").AddEnd("fine", outcome: "fine")
             .AddTransition("start", "broken").AddTransition("broken", "check")
             .AddTransition("check", "errored", "outcome == 'error' && lastError.code == 'WORKFLOW_UNEXPECTED_001'").AddDefaultTransition("check", "fine")
             .Build();
         await host.PublishAsync(continuing).ConfigureAwait(false);
 
-        var instance = (await host.StartAsync("conf-retry").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-retry")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, instance.Status);
         Assert.Equal(BookmarkKinds.Retry, Assert.Single(await host.BookmarksAsync(instance.Id).ConfigureAwait(false)).Kind);
         Assert.Contains(log.EventsOf(WorkflowTopics.NodeFaulted), data => data.InstanceId == instance.Id && data.WillRetry == true);
@@ -470,7 +470,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal([1, 2, 3, 4], log.Executed.Where(entry => entry.InstanceId == instance.Id).Select(static entry => entry.Attempt));
         Assert.Equal(WorkflowErrors.InstanceStatus, (await host.EngineAsync(engine => engine.RetryAsync(instance.Id, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
 
-        var continued = (await host.StartAsync("conf-continue").ConfigureAwait(false)).ValueOrThrow();
+        var continued = (await host.StartAsync(new WorkflowName("conf-continue")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "errored"), (continued.Status, continued.Outcome));
         Assert.Equal(WorkflowErrors.ActivityFailed, continued.Variables[WorkflowReservedNames.LastErrorVariable]!["code"]!.GetValue<string>());
     }
@@ -486,14 +486,14 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-control")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-control"))
             .WithCompensation()
-            .AddStart().AddNode("done", RecordActivity.TypeName).AddDelay("wait", TimeSpan.FromMilliseconds(50)).AddNode("after", RecordActivity.TypeName).AddEnd()
+            .AddStart().AddNode("done", new ActivityType(RecordActivity.TypeName)).AddDelay("wait", TimeSpan.FromMilliseconds(50)).AddNode("after", new ActivityType(RecordActivity.TypeName)).AddEnd()
             .AddTransition("start", "done").AddTransition("done", "wait").AddTransition("wait", "after").AddTransition("after", "end")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
 
-        var suspended = (await host.StartAsync("conf-control").ConfigureAwait(false)).ValueOrThrow();
+        var suspended = (await host.StartAsync(new WorkflowName("conf-control")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Suspended, (await host.EngineAsync(engine => engine.SuspendAsync(suspended.Id, "hold", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
         Assert.Equal(WorkflowErrors.InstanceStatus, (await host.EngineAsync(engine => engine.SuspendAsync(suspended.Id, null, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
         await Task.Delay(100).ConfigureAwait(false);
@@ -503,7 +503,7 @@ public abstract class WorkflowEngineConformance
         Assert.True(deferred.DueAt > DateTimeOffset.UtcNow.AddMinutes(1));
         Assert.Equal(WorkflowInstanceStatus.Running, (await host.EngineAsync(engine => engine.ResumeInstanceAsync(suspended.Id, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
 
-        var canceled = (await host.StartAsync("conf-control").ConfigureAwait(false)).ValueOrThrow();
+        var canceled = (await host.StartAsync(new WorkflowName("conf-control")).ConfigureAwait(false)).ValueOrThrow();
         var afterCancel = (await host.EngineAsync(engine => engine.CancelAsync(canceled.Id, "stop", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Canceled, "stop"), (afterCancel.Status, afterCancel.CancellationReason));
         Assert.Empty(await host.BookmarksAsync(canceled.Id).ConfigureAwait(false));
@@ -513,7 +513,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(WorkflowInstanceStatus.Canceled, (await host.EngineAsync(engine => engine.CancelAsync(canceled.Id, null, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
         Assert.Equal(WorkflowErrors.InstanceStatus, (await host.EngineAsync(engine => engine.SuspendAsync(canceled.Id, null, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
 
-        var terminated = (await host.StartAsync("conf-control").ConfigureAwait(false)).ValueOrThrow();
+        var terminated = (await host.StartAsync(new WorkflowName("conf-control")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Terminated, (await host.EngineAsync(engine => engine.TerminateAsync(terminated.Id, "kill", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
         Assert.Equal(["done"], log.Compensated);
         Assert.Equal(WorkflowErrors.InstanceNotFound, (await host.EngineAsync(engine => engine.CancelAsync("missing", null, CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
@@ -532,8 +532,8 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var broken = WorkflowDefinitionBuilder.Create("conf-lifecycle")
-            .AddStart().AddNode("x", "NoSuchActivity").AddEnd()
+        var broken = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-lifecycle"))
+            .AddStart().AddNode("x", new ActivityType("NoSuchActivity")).AddEnd()
             .AddTransition("start", "x").AddTransition("x", "end").AddTransition("end", "start")
             .Build();
         var (draft, published) = await host.InScopeAsync(async sp =>
@@ -548,7 +548,7 @@ public abstract class WorkflowEngineConformance
 
             var fixedDraft = created with
             {
-                Nodes = [new WorkflowNode { Id = "start", ActivityType = ActivityTypes.Start }, new WorkflowNode { Id = "end", ActivityType = ActivityTypes.End, Properties = new JsonObject { [EndActivity.OutcomeProperty] = "{{ verdict }}" } }],
+                Nodes = [new WorkflowNode { Id = "start", ActivityType = new ActivityType(ActivityTypes.Start) }, new WorkflowNode { Id = "end", ActivityType = new ActivityType(ActivityTypes.End), Properties = new JsonObject { [EndActivity.OutcomeProperty] = "{{ verdict }}" } }],
                 Transitions = [new WorkflowTransition { Id = "s-e", SourceNodeId = "start", TargetNodeId = "end" }],
             };
             var updated = (await catalog.UpdateAsync(fixedDraft, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
@@ -557,16 +557,16 @@ public abstract class WorkflowEngineConformance
             Assert.NotNull(live.PublishedAt);
             Assert.Equal(WorkflowErrors.DefinitionStatus, (await catalog.UpdateAsync(live, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Equal(WorkflowErrors.DefinitionStatus, (await catalog.DeleteAsync(live.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            var next = (await catalog.NewVersionAsync("conf-lifecycle", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            var next = (await catalog.NewVersionAsync(new WorkflowName("conf-lifecycle"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.Equal((2, WorkflowDefinitionStatus.Draft), (next.Version, next.Status));
-            Assert.Equal(live.Id, (await catalog.FindPublishedAsync("conf-lifecycle", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
-            Assert.False((await catalog.FindPublishedAsync("conf-lifecycle", 2, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.Equal(live.Id, (await catalog.FindPublishedAsync(new WorkflowName("conf-lifecycle"), null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().Id);
+            Assert.False((await catalog.FindPublishedAsync(new WorkflowName("conf-lifecycle"), 2, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
             return (next, live);
         }).ConfigureAwait(false);
 
-        var ok = (await host.StartAsync("conf-lifecycle", new JsonObject { ["verdict"] = "accepted" }).ConfigureAwait(false)).ValueOrThrow();
+        var ok = (await host.StartAsync(new WorkflowName("conf-lifecycle"), new JsonObject { ["verdict"] = "accepted" }).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "accepted"), (ok.Status, ok.Outcome));
-        var failingHandler = (await host.StartAsync("conf-lifecycle", new JsonObject { ["verdict"] = RecordingOutcomeHandler.FailingOutcome }).ConfigureAwait(false)).ValueOrThrow();
+        var failingHandler = (await host.StartAsync(new WorkflowName("conf-lifecycle"), new JsonObject { ["verdict"] = RecordingOutcomeHandler.FailingOutcome }).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Faulted, "CONFORMANCE_CONFLICT_001"), (failingHandler.Status, failingHandler.Fault?.Code));
         Assert.Equal(["accepted", RecordingOutcomeHandler.FailingOutcome], log.Outcomes);
 
@@ -579,7 +579,7 @@ public abstract class WorkflowEngineConformance
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.PublishAsync("missing", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             return true;
         }).ConfigureAwait(false);
-        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await host.StartAsync("conf-lifecycle").ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(WorkflowErrors.DefinitionNotFound, (await host.StartAsync(new WorkflowName("conf-lifecycle")).ConfigureAwait(false)).Error?.Code);
     }
 
     /// <summary>
@@ -590,13 +590,13 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log), [new KeyValuePair<string, string?>($"{WorkflowOptions.ConfigurationSection}:MaxNodeExecutionsPerBurst", "20")]).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-loop")
-            .AddStart().AddNode("a", RecordActivity.TypeName).AddNode("b", RecordActivity.TypeName)
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-loop"))
+            .AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName)).AddNode("b", new ActivityType(RecordActivity.TypeName))
             .AddTransition("start", "a").AddTransition("a", "b").AddTransition("b", "a")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
 
-        var instance = (await host.StartAsync("conf-loop").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-loop")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Faulted, instance.Status);
         Assert.Null(instance.FaultNodeInstanceId);
         Assert.True(log.Executed.Count(entry => entry.InstanceId == instance.Id) <= 20);
@@ -614,15 +614,15 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var waiting = WorkflowDefinitionBuilder.Create("conf-tenant-signal")
-            .AddStart().AddNode("wait", ActivityTypes.WaitSignal, configure: node => node.WithProperty(WaitSignalActivity.SignalNameProperty, "conf.tenant.go").WithProperty(WaitSignalActivity.AcceptAnyCorrelationProperty, true)).AddEnd()
+        var waiting = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-tenant-signal"))
+            .AddStart().AddNode("wait", new ActivityType(ActivityTypes.WaitSignal), configure: node => node.WithProperty(WaitSignalActivity.SignalNameProperty, "conf.tenant.go").WithProperty(WaitSignalActivity.AcceptAnyCorrelationProperty, true)).AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "end")
             .Build();
         await host.PublishManyAsync(null, Approval("conf-tenant", UserTaskCompletionPolicy.Any, "alice"), waiting).ConfigureAwait(false);
         await host.PublishManyAsync("t1", Approval("conf-tenant", UserTaskCompletionPolicy.Any, "alice"), waiting).ConfigureAwait(false);
 
-        var tenantInstance = (await host.StartAsync("conf-tenant", tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
-        var plainInstance = (await host.StartAsync("conf-tenant").ConfigureAwait(false)).ValueOrThrow();
+        var tenantInstance = (await host.StartAsync(new WorkflowName("conf-tenant"), tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
+        var plainInstance = (await host.StartAsync(new WorkflowName("conf-tenant")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal("t1", tenantInstance.TenantId);
         Assert.Equal("t1", Assert.Single(await host.BookmarksAsync(tenantInstance.Id, "t1").ConfigureAwait(false)).TenantId);
 
@@ -632,8 +632,8 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(WorkflowErrors.BookmarkNotFound, (await host.CompleteAsync(tenantTask.Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).Error?.Code);
 
         // 信号只到调用方分区：平台的信号恢复平台的实例，t1 的不动
-        var tenantWaiting = (await host.StartAsync("conf-tenant-signal", tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
-        var plainWaiting = (await host.StartAsync("conf-tenant-signal").ConfigureAwait(false)).ValueOrThrow();
+        var tenantWaiting = (await host.StartAsync(new WorkflowName("conf-tenant-signal"), tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
+        var plainWaiting = (await host.StartAsync(new WorkflowName("conf-tenant-signal")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(1, (await host.SignalAsync("conf.tenant.go").ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal(WorkflowInstanceStatus.Completed, (await host.InstanceAsync(plainWaiting.Id).ConfigureAwait(false)).Status);
         Assert.Equal(WorkflowInstanceStatus.Running, (await host.InstanceAsync(tenantWaiting.Id, "t1").ConfigureAwait(false)).Status);
@@ -650,7 +650,7 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-gateway")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-gateway"))
             .AddStart()
             .AddEventGateway("wait", ["approved", "rejected"], TimeSpan.FromMilliseconds(100), acceptAnyCorrelation: true)
             .AddDecision("check")
@@ -659,7 +659,7 @@ public abstract class WorkflowEngineConformance
             .AddTransition("check", "ok", "outcome == 'approved'").AddTransition("check", "no", "outcome == 'rejected'").AddDefaultTransition("check", "late")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
-        var signaled = (await host.StartAsync("conf-gateway").ConfigureAwait(false)).ValueOrThrow();
+        var signaled = (await host.StartAsync(new WorkflowName("conf-gateway")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([BookmarkKinds.Signal, BookmarkKinds.Signal, BookmarkKinds.Timer], (await host.BookmarksAsync(signaled.Id).ConfigureAwait(false)).Select(static bookmark => bookmark.Kind).Order(StringComparer.Ordinal));
         Assert.Equal(1, (await host.SignalAsync("rejected", new JsonObject { ["why"] = "budget" }).ConfigureAwait(false)).ValueOrThrow());
         var decided = await host.InstanceAsync(signaled.Id).ConfigureAwait(false);
@@ -667,7 +667,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal("rejected", decided.Variables[EventGatewayActivity.SignalOutput]!.GetValue<string>());
         Assert.Equal("budget", decided.Variables[EventGatewayActivity.PayloadOutput]!["why"]!.GetValue<string>());
         Assert.Empty(await host.BookmarksAsync(signaled.Id).ConfigureAwait(false));
-        var timed = (await host.StartAsync("conf-gateway").ConfigureAwait(false)).ValueOrThrow();
+        var timed = (await host.StartAsync(new WorkflowName("conf-gateway")).ConfigureAwait(false)).ValueOrThrow();
         await WaitUntilAsync(async () =>
         {
             await host.PollAsync().ConfigureAwait(false);
@@ -693,7 +693,7 @@ public abstract class WorkflowEngineConformance
             Register(services, log);
             services.AddSingleton(new WorkflowHttpClient(new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan }));
         }).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-http")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-http"))
             .AddStart()
             .AddHttp("create", "https://api.test/orders/{{ orderId }}", "POST", configure: node => node
                 .WithProperty(HttpActivity.BodyProperty, "{\"qty\": {{ qty }}}")
@@ -707,7 +707,7 @@ public abstract class WorkflowEngineConformance
             .AddTransition("start", "create").AddTransition("create", "soft").AddTransition("soft", "hard").AddTransition("hard", "end")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-http", new JsonObject { ["orderId"] = "o-7", ["qty"] = 3 }).ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-http"), new JsonObject { ["orderId"] = "o-7", ["qty"] = 3 }).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Faulted, instance.Status);
         Assert.True(instance.FaultNodeId == "hard", instance.FaultNodeId + ": " + instance.Fault?.Code + " " + instance.Fault?.Message);
         Assert.Equal(("POST", "https://api.test/orders/o-7", "{\"qty\": 3}", "o-7"), handler.Requests[0]);
@@ -716,7 +716,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(500, instance.Variables["soft"]!["status"]!.GetValue<int>());
         var nodes = await host.NodeInstancesAsync(instance.Id).ConfigureAwait(false);
         Assert.Equal("error", nodes.Single(static node => node.NodeId == "soft").Outputs[UserTaskPayloadKeys.Outcome]!.GetValue<string>());
-        var invalid = WorkflowDefinitionBuilder.Create("conf-http-bad").AddStart().AddHttp("h", "https://api.test", "TRACE").AddTransition("start", "h").Build();
+        var invalid = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-http-bad")).AddStart().AddHttp("h", "https://api.test", "TRACE").AddTransition("start", "h").Build();
         var created = await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowDefinitionCatalog>().CreateAsync(invalid, CancellationToken.None)).ConfigureAwait(false);
         var published = await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowDefinitionCatalog>().PublishAsync([created.ValueOrThrow().Id], CancellationToken.None)).ConfigureAwait(false);
         Assert.Equal(WorkflowErrors.DefinitionInvalid, published[0].Error?.Code);
@@ -733,25 +733,25 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var explicitly = WorkflowDefinitionBuilder.Create("conf-compensate")
-            .AddStart().AddNode("a", RecordActivity.TypeName).AddNode("b", RecordActivity.TypeName).AddCompensate("undo", ["a"]).AddNode("c", RecordActivity.TypeName).AddEnd()
+        var explicitly = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-compensate"))
+            .AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName)).AddNode("b", new ActivityType(RecordActivity.TypeName)).AddCompensate("undo", ["a"]).AddNode("c", new ActivityType(RecordActivity.TypeName)).AddEnd()
             .AddTransition("start", "a").AddTransition("a", "b").AddTransition("b", "undo").AddTransition("undo", "c").AddTransition("c", "end")
             .Build();
         await host.PublishAsync(explicitly).ConfigureAwait(false);
-        var compensated = (await host.StartAsync("conf-compensate").ConfigureAwait(false)).ValueOrThrow();
+        var compensated = (await host.StartAsync(new WorkflowName("conf-compensate")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Completed, compensated.Status);
         Assert.Equal(["a"], log.Compensated);
         var nodes = await host.NodeInstancesAsync(compensated.Id).ConfigureAwait(false);
         Assert.Equal(WorkflowNodeInstanceStatus.Compensated, nodes.Single(static node => node.NodeId == "a").Status);
         Assert.Equal(WorkflowNodeInstanceStatus.Completed, nodes.Single(static node => node.NodeId == "b").Status);
         Assert.Contains(nodes.Single(static node => node.NodeId == "undo").State[CompensateActivity.CompensatedState]!.AsArray(), item => item!.GetValue<string>() == nodes.Single(static node => node.NodeId == "a").Id);
-        var onFault = WorkflowDefinitionBuilder.Create("conf-compensate-fault")
+        var onFault = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-compensate-fault"))
             .WithCompensateOnFault()
-            .AddStart().AddNode("a", RecordActivity.TypeName).AddNode("b", RecordActivity.TypeName).AddNode("boom", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.FailTimesProperty, 9)).AddEnd()
+            .AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName)).AddNode("b", new ActivityType(RecordActivity.TypeName)).AddNode("boom", new ActivityType(RecordActivity.TypeName), configure: node => node.WithProperty(RecordActivity.FailTimesProperty, 9)).AddEnd()
             .AddTransition("start", "a").AddTransition("a", "b").AddTransition("b", "boom").AddTransition("boom", "end")
             .Build();
         await host.PublishAsync(onFault).ConfigureAwait(false);
-        var faulted = (await host.StartAsync("conf-compensate-fault").ConfigureAwait(false)).ValueOrThrow();
+        var faulted = (await host.StartAsync(new WorkflowName("conf-compensate-fault")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Faulted, faulted.Status);
         Assert.Equal(["a", "b", "a"], log.Compensated);
         Assert.All((await host.NodeInstancesAsync(faulted.Id).ConfigureAwait(false)).Where(static node => node.NodeId is "a" or "b"), static node => Assert.Equal(WorkflowNodeInstanceStatus.Compensated, node.Status));
@@ -768,19 +768,19 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-mapping")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-mapping"))
             .AddStart()
-            .AddNode("a", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.OutputsProperty, new JsonObject { ["y"] = 2 }).WithOutputMapping("doubled", "outputs.y * 2").WithOutputMapping("tagged", "'y=' + toString(outputs.y)"))
-            .AddNode("b", RecordActivity.TypeName, configure: node => node.WithOutputMapping("broken", "nothing.here"))
+            .AddNode("a", new ActivityType(RecordActivity.TypeName), configure: node => node.WithProperty(RecordActivity.OutputsProperty, new JsonObject { ["y"] = 2 }).WithOutputMapping("doubled", "outputs.y * 2").WithOutputMapping("tagged", "'y=' + toString(outputs.y)"))
+            .AddNode("b", new ActivityType(RecordActivity.TypeName), configure: node => node.WithOutputMapping("broken", "nothing.here"))
             .AddEnd()
             .AddTransition("start", "a").AddTransition("a", "b").AddTransition("b", "end")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-mapping").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-mapping")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Faulted, "b"), (instance.Status, instance.FaultNodeId));
         Assert.Equal(WorkflowErrors.ExpressionInvalid, instance.Fault?.Code);
         Assert.Equal((4, "y=2"), (instance.Variables["doubled"]!.GetValue<decimal>(), instance.Variables["tagged"]!.GetValue<string>()));
-        var invalid = WorkflowDefinitionBuilder.Create("conf-mapping-bad").AddStart().AddNode("a", RecordActivity.TypeName, configure: node => node.WithOutputMapping("x", "outputs.y +")).AddTransition("start", "a").Build();
+        var invalid = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-mapping-bad")).AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName), configure: node => node.WithOutputMapping("x", "outputs.y +")).AddTransition("start", "a").Build();
         var created = await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowDefinitionCatalog>().CreateAsync(invalid, CancellationToken.None)).ConfigureAwait(false);
         var published = await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowDefinitionCatalog>().PublishAsync([created.ValueOrThrow().Id], CancellationToken.None)).ConfigureAwait(false);
         Assert.Equal(WorkflowErrors.DefinitionInvalid, published[0].Error?.Code);
@@ -796,8 +796,8 @@ public abstract class WorkflowEngineConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(TimingOut("conf-timeout-fault", WorkflowTimeoutAction.Fault)).ConfigureAwait(false);
         await host.PublishAsync(TimingOut("conf-timeout-terminate", WorkflowTimeoutAction.Terminate)).ConfigureAwait(false);
-        var faulting = (await host.StartAsync("conf-timeout-fault").ConfigureAwait(false)).ValueOrThrow();
-        var terminating = (await host.StartAsync("conf-timeout-terminate").ConfigureAwait(false)).ValueOrThrow();
+        var faulting = (await host.StartAsync(new WorkflowName("conf-timeout-fault")).ConfigureAwait(false)).ValueOrThrow();
+        var terminating = (await host.StartAsync(new WorkflowName("conf-timeout-terminate")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([BookmarkKinds.InstanceTimeout, BookmarkKinds.Timer], (await host.BookmarksAsync(faulting.Id).ConfigureAwait(false)).Select(static bookmark => bookmark.Kind).Order(StringComparer.Ordinal));
         await WaitUntilAsync(async () =>
         {
@@ -811,9 +811,9 @@ public abstract class WorkflowEngineConformance
         Assert.Equal((WorkflowInstanceStatus.Terminated, "timeout"), (terminated.Status, terminated.CancellationReason));
         Assert.Equal(2, log.EventsOf(WorkflowTopics.InstanceTimedOut).Count(data => data.InstanceId == faulting.Id || data.InstanceId == terminating.Id));
         // 正常完成的实例不会再被超时书签打扰
-        var quick = WorkflowDefinitionBuilder.Create("conf-timeout-quick").WithTimeout(TimeSpan.FromMilliseconds(50)).AddStart().AddNode("a", RecordActivity.TypeName).AddEnd().AddTransition("start", "a").AddTransition("a", "end").Build();
+        var quick = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-timeout-quick")).WithTimeout(TimeSpan.FromMilliseconds(50)).AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName)).AddEnd().AddTransition("start", "a").AddTransition("a", "end").Build();
         await host.PublishAsync(quick).ConfigureAwait(false);
-        var done = (await host.StartAsync("conf-timeout-quick").ConfigureAwait(false)).ValueOrThrow();
+        var done = (await host.StartAsync(new WorkflowName("conf-timeout-quick")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Completed, done.Status);
         Assert.Empty(await host.BookmarksAsync(done.Id).ConfigureAwait(false));
     }
@@ -834,12 +834,12 @@ public abstract class WorkflowEngineConformance
             Register(services, log);
             services.AddSingleton<TimeProvider>(clock);
         }).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-start")
-            .AddStart().AddNode("a", RecordActivity.TypeName).AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-start"))
+            .AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName)).AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
             .AddTransition("start", "a").AddTransition("a", "wait").AddTransition("wait", "end")
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
-        var delayed = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-start", StartAt = clock.GetUtcNow().AddMinutes(1) }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var delayed = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("conf-start"), StartAt = clock.GetUtcNow().AddMinutes(1) }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Running, delayed.Status);
         var startBookmark = Assert.Single(await host.BookmarksAsync(delayed.Id).ConfigureAwait(false));
         Assert.Equal((BookmarkKinds.Timer, "start"), (startBookmark.Kind, startBookmark.NodeId));
@@ -854,14 +854,14 @@ public abstract class WorkflowEngineConformance
             return log.Executed.Any(entry => entry.InstanceId == delayed.Id && entry.NodeId == "a");
         }).ConfigureAwait(false);
         Assert.Equal("wait", Assert.Single(await host.BookmarksAsync(delayed.Id).ConfigureAwait(false)).NodeId);
-        var first = (await host.StartAsync("conf-start", correlationId: "dup-1").ConfigureAwait(false)).ValueOrThrow();
-        var rejected = await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-start", CorrelationId = "dup-1", ReusePolicy = WorkflowReusePolicy.RejectActive }, CancellationToken.None)).ConfigureAwait(false);
+        var first = (await host.StartAsync(new WorkflowName("conf-start"), correlationId: "dup-1").ConfigureAwait(false)).ValueOrThrow();
+        var rejected = await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("conf-start"), CorrelationId = "dup-1", ReusePolicy = WorkflowReusePolicy.RejectActive }, CancellationToken.None)).ConfigureAwait(false);
         Assert.Equal(WorkflowErrors.ActiveInstanceExists, rejected.Error?.Code);
-        var returned = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-start", CorrelationId = "dup-1", ReusePolicy = WorkflowReusePolicy.ReturnActive }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var returned = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("conf-start"), CorrelationId = "dup-1", ReusePolicy = WorkflowReusePolicy.ReturnActive }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(first.Id, returned.Id);
-        var duplicate = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-start", CorrelationId = "dup-1" }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var duplicate = (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("conf-start"), CorrelationId = "dup-1" }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.NotEqual(first.Id, duplicate.Id);
-        Assert.True((await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-start", ReusePolicy = WorkflowReusePolicy.RejectActive }, CancellationToken.None)).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("conf-start"), ReusePolicy = WorkflowReusePolicy.RejectActive }, CancellationToken.None)).ConfigureAwait(false)).IsSuccess);
     }
 
     /// <summary>
@@ -875,9 +875,9 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var bySignal = WorkflowDefinitionBuilder.Create("conf-signal-start")
-            .AddNode("start", ActivityTypes.Start, configure: node => node.WithProperty(StartActivity.SignalNameProperty, "order.created"))
-            .AddNode("a", RecordActivity.TypeName).AddEnd()
+        var bySignal = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-signal-start"))
+            .AddNode("start", new ActivityType(ActivityTypes.Start), configure: node => node.WithProperty(StartActivity.SignalNameProperty, "order.created"))
+            .AddNode("a", new ActivityType(RecordActivity.TypeName)).AddEnd()
             .AddTransition("start", "a").AddTransition("a", "end")
             .Build();
         await host.PublishAsync(bySignal).ConfigureAwait(false);
@@ -886,9 +886,9 @@ public abstract class WorkflowEngineConformance
         var instance = await host.InstanceAsync(started.InstanceId).ConfigureAwait(false);
         Assert.Equal((WorkflowInstanceStatus.Completed, "ord-9", 5), (instance.Status, instance.CorrelationId, instance.Variables[WorkflowReservedNames.SignalVariable]!["amount"]!.GetValue<int>()));
         Assert.Equal(0, (await host.SignalAsync("order.deleted").ConfigureAwait(false)).ValueOrThrow());
-        var byCron = WorkflowDefinitionBuilder.Create("conf-cron-start")
-            .AddNode("start", ActivityTypes.Start, configure: node => node.WithProperty(StartActivity.CronProperty, "* * * * * *"))
-            .AddNode("a", RecordActivity.TypeName).AddEnd()
+        var byCron = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-cron-start"))
+            .AddNode("start", new ActivityType(ActivityTypes.Start), configure: node => node.WithProperty(StartActivity.CronProperty, "* * * * * *"))
+            .AddNode("a", new ActivityType(RecordActivity.TypeName)).AddEnd()
             .AddTransition("start", "a").AddTransition("a", "end")
             .Build();
         var published = await host.PublishAsync(byCron).ConfigureAwait(false);
@@ -918,7 +918,7 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var v1 = WorkflowDefinitionBuilder.Create("conf-migrate")
+        var v1 = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-migrate"))
             .AddStart()
             .AddUserTask("first", null, node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice"))
             .AddUserTask("second", null, node => node.WithAssigneeRule(AssigneeRuleTypes.User, "bob"))
@@ -926,7 +926,7 @@ public abstract class WorkflowEngineConformance
             .AddTransition("start", "first").AddTransition("first", "second").AddTransition("second", "end")
             .Build();
         var published = await host.PublishAsync(v1).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-migrate", new JsonObject { ["k"] = 1 }).ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-migrate"), new JsonObject { ["k"] = 1 }).ConfigureAwait(false)).ValueOrThrow();
         var changed = (await host.EngineAsync(engine => engine.SetVariablesAsync(new WorkflowVariableUpdate(instance.Id)
         {
             Variables = new JsonObject { ["m"] = 2 },
@@ -948,12 +948,12 @@ public abstract class WorkflowEngineConformance
         Assert.Contains(log.EventsOf(WorkflowTopics.InstanceJumped), data => data.InstanceId == instance.Id && data.NodeId == "second" && data.ActorId == "admin");
         Assert.Equal(WorkflowErrors.InputInvalid, (await host.EngineAsync(engine => engine.JumpAsync(new WorkflowJump(instance.Id, "nowhere"), CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
         // 新版本保留 second 节点：可迁移；去掉 second 的版本：不兼容
-        var v2 = (await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowDefinitionCatalog>().NewVersionAsync("conf-migrate", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var v2 = (await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowDefinitionCatalog>().NewVersionAsync(new WorkflowName("conf-migrate"), CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         var v2Published = (await host.InScopeAsync(sp => sp.GetRequiredService<IWorkflowDefinitionCatalog>().PublishAsync([v2.Id], CancellationToken.None)).ConfigureAwait(false))[0].ValueOrThrow();
         var migrated = (await host.EngineAsync(engine => engine.MigrateAsync(new WorkflowMigration(instance.Id, v2Published.Id), CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((v2Published.Id, 2), (migrated.DefinitionId, migrated.DefinitionVersion));
         Assert.Contains(log.EventsOf(WorkflowTopics.InstanceMigrated), data => data.InstanceId == instance.Id && data.DefinitionVersion == 2);
-        var v3 = WorkflowDefinitionBuilder.Create("conf-migrate").AddStart().AddUserTask("first", null, node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice")).AddEnd().AddTransition("start", "first").AddTransition("first", "end").Build();
+        var v3 = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-migrate")).AddStart().AddUserTask("first", null, node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice")).AddEnd().AddTransition("start", "first").AddTransition("first", "end").Build();
         var v3Published = await host.PublishAsync(v3).ConfigureAwait(false);
         Assert.Equal(WorkflowErrors.InputInvalid, (await host.EngineAsync(engine => engine.MigrateAsync(new WorkflowMigration(instance.Id, v3Published.Id), CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
         Assert.Equal(WorkflowErrors.DefinitionNotFound, (await host.EngineAsync(engine => engine.MigrateAsync(new WorkflowMigration(instance.Id, published.Id + "-missing"), CancellationToken.None)).ConfigureAwait(false)).Error?.Code);
@@ -977,18 +977,18 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var linear = WorkflowDefinitionBuilder.Create("conf-purge").AddStart().AddNode("a", RecordActivity.TypeName).AddEnd().AddTransition("start", "a").AddTransition("a", "end").Build();
+        var linear = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-purge")).AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName)).AddEnd().AddTransition("start", "a").AddTransition("a", "end").Build();
         await host.PublishAsync(linear).ConfigureAwait(false);
-        var waiting = WorkflowDefinitionBuilder.Create("conf-purge-wait").AddStart().AddDelay("wait", TimeSpan.FromHours(1)).AddEnd().AddTransition("start", "wait").AddTransition("wait", "end").Build();
+        var waiting = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-purge-wait")).AddStart().AddDelay("wait", TimeSpan.FromHours(1)).AddEnd().AddTransition("start", "wait").AddTransition("wait", "end").Build();
         await host.PublishAsync(waiting).ConfigureAwait(false);
         var ended = new List<string>();
         for (var index = 0; index < 3; index++)
         {
-            ended.Add((await host.StartAsync("conf-purge").ConfigureAwait(false)).ValueOrThrow().Id);
+            ended.Add((await host.StartAsync(new WorkflowName("conf-purge")).ConfigureAwait(false)).ValueOrThrow().Id);
         }
 
-        var running = (await host.StartAsync("conf-purge-wait").ConfigureAwait(false)).ValueOrThrow();
-        var purged = (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = "conf-purge" }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+        var running = (await host.StartAsync(new WorkflowName("conf-purge-wait")).ConfigureAwait(false)).ValueOrThrow();
+        var purged = (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = new WorkflowName("conf-purge") }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(3, purged);
         foreach (var id in ended)
         {
@@ -997,18 +997,18 @@ public abstract class WorkflowEngineConformance
 
         Assert.True(await host.InstanceExistsAsync(running.Id).ConfigureAwait(false));
         Assert.Equal(0, (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1) }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
-        var until = WorkflowDefinitionBuilder.Create("conf-delay-until")
-            .AddStart().AddNode("wait", ActivityTypes.Delay, configure: node => node.WithProperty(DelayActivity.UntilProperty, "'2000-01-01T00:00:00Z'")).AddNode("a", RecordActivity.TypeName).AddEnd()
+        var until = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-delay-until"))
+            .AddStart().AddNode("wait", new ActivityType(ActivityTypes.Delay), configure: node => node.WithProperty(DelayActivity.UntilProperty, "'2000-01-01T00:00:00Z'")).AddNode("a", new ActivityType(RecordActivity.TypeName)).AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "a").AddTransition("a", "end")
             .Build();
         await host.PublishAsync(until).ConfigureAwait(false);
-        var cron = WorkflowDefinitionBuilder.Create("conf-delay-cron")
-            .AddStart().AddNode("wait", ActivityTypes.Delay, configure: node => node.WithProperty(DelayActivity.CronProperty, "* * * * * *")).AddNode("a", RecordActivity.TypeName).AddEnd()
+        var cron = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-delay-cron"))
+            .AddStart().AddNode("wait", new ActivityType(ActivityTypes.Delay), configure: node => node.WithProperty(DelayActivity.CronProperty, "* * * * * *")).AddNode("a", new ActivityType(RecordActivity.TypeName)).AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "a").AddTransition("a", "end")
             .Build();
         await host.PublishAsync(cron).ConfigureAwait(false);
-        var untilInstance = (await host.StartAsync("conf-delay-until").ConfigureAwait(false)).ValueOrThrow();
-        var cronInstance = (await host.StartAsync("conf-delay-cron").ConfigureAwait(false)).ValueOrThrow();
+        var untilInstance = (await host.StartAsync(new WorkflowName("conf-delay-until")).ConfigureAwait(false)).ValueOrThrow();
+        var cronInstance = (await host.StartAsync(new WorkflowName("conf-delay-cron")).ConfigureAwait(false)).ValueOrThrow();
         Assert.True(Assert.Single(await host.BookmarksAsync(cronInstance.Id).ConfigureAwait(false)).DueAt <= DateTimeOffset.UtcNow.AddSeconds(1.5));
         await WaitUntilAsync(async () =>
         {
@@ -1040,11 +1040,11 @@ public abstract class WorkflowEngineConformance
             Register(services, log);
             probe.Install(services);
         }).ConfigureAwait(false);
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-start-race")
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-start-race"))
             .AddStart().AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "end")
             .Build()).ConfigureAwait(false);
-        var request = new WorkflowStartRequest { Name = "conf-start-race", CorrelationId = "race-1", ReusePolicy = WorkflowReusePolicy.RejectActive };
+        var request = new WorkflowStartRequest { Name = new WorkflowName("conf-start-race"), CorrelationId = "race-1", ReusePolicy = WorkflowReusePolicy.RejectActive };
 
         var first = StartRaceProbe.Run(StartRaceProbe.Racer.First, () => host.EngineAsync(engine => engine.StartAsync(request, CancellationToken.None)).AsTask());
         await probe.FirstQueried.WaitAsync(WaitTimeout).ConfigureAwait(false);
@@ -1087,8 +1087,8 @@ public abstract class WorkflowEngineConformance
         await AsTenantAsync(host, "t2", async sp =>
         {
             var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
-            Assert.False((await catalog.FindPublishedAsync("conf-tenant-def", null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
-            Assert.False((await catalog.FindPublishedAsync("conf-tenant-def", 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.False((await catalog.FindPublishedAsync(new WorkflowName("conf-tenant-def"), null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+            Assert.False((await catalog.FindPublishedAsync(new WorkflowName("conf-tenant-def"), 1, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
             Assert.False((await catalog.FindAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
             var listed = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Name = new WorkflowName("conf-tenant-def") }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.Equal([t2.Id], listed.Items.Select(static definition => definition.Id));
@@ -1097,7 +1097,7 @@ public abstract class WorkflowEngineConformance
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.ArchiveAsync(t1.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.UpdateAsync(t1 with { DisplayName = "taken" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
             Assert.Equal(WorkflowErrors.DefinitionNotFound, (await catalog.CreateAsync(Labeled("conf-tenant-def", "forged") with { TenantId = "t1" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-            var next = (await catalog.NewVersionAsync("conf-tenant-def", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            var next = (await catalog.NewVersionAsync(new WorkflowName("conf-tenant-def"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.Equal((2, "t2", "t2"), (next.Version, next.TenantId, next.Nodes.Single(static node => node.Id == "a").Properties[RecordActivity.LabelProperty]!.GetValue<string>()));
             return true;
         }).ConfigureAwait(false);
@@ -1135,7 +1135,7 @@ public abstract class WorkflowEngineConformance
 
         // 重用策略只在同一分区里查重：别的租户同一关联 ID 的实例既不挡住启动，也不会被当成已有实例返回
         var waitingT2 = await AsTenantAsync(host, "t2", sp => PublishAsync(sp, Waiting("conf-tenant-migrate"))).ConfigureAwait(false);
-        var reuse = new WorkflowStartRequest { Name = "conf-tenant-migrate", CorrelationId = "conf-doc", ReusePolicy = WorkflowReusePolicy.RejectActive };
+        var reuse = new WorkflowStartRequest { Name = new WorkflowName("conf-tenant-migrate"), CorrelationId = "conf-doc", ReusePolicy = WorkflowReusePolicy.RejectActive };
         var inT1 = (await AsTenantAsync(host, "t1", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(reuse, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         var inT2 = (await AsTenantAsync(host, "t2", sp => sp.GetRequiredService<IWorkflowEngine>().StartAsync(reuse with { ReusePolicy = WorkflowReusePolicy.ReturnActive }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
         Assert.NotEqual(inT1.Id, inT2.Id);
@@ -1155,7 +1155,7 @@ public abstract class WorkflowEngineConformance
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         var approvalDefinition = Approval("conf-tenant-instance", UserTaskCompletionPolicy.Any, "alice");
-        var externalDefinition = WorkflowDefinitionBuilder.Create("conf-tenant-external")
+        var externalDefinition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-tenant-external"))
             .AddStart().AddExternalTask("pay", "conf.tenant.pay").AddEnd()
             .AddTransition("start", "pay").AddTransition("pay", "end")
             .Build();
@@ -1293,7 +1293,7 @@ public abstract class WorkflowEngineConformance
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(Approval("conf-tx-complete", UserTaskCompletionPolicy.Any, "alice")).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-tx-complete").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-tx-complete")).ConfigureAwait(false)).ValueOrThrow();
         var task = Assert.Single(await host.PendingAsync("alice").ConfigureAwait(false));
 
         await host.AsTenantAsync(null, async sp =>
@@ -1334,7 +1334,7 @@ public abstract class WorkflowEngineConformance
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(Waiting("conf-tx-lock")).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-tx-lock").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-tx-lock")).ConfigureAwait(false)).ValueOrThrow();
 
         await host.AsTenantAsync(null, async sp =>
         {
@@ -1361,9 +1361,9 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-tx-readonly").AddStart().AddNode("a", RecordActivity.TypeName).AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-tx-readonly")).AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName)).AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
             .AddTransition("start", "a").AddTransition("a", "wait").AddTransition("wait", "end").Build()).ConfigureAwait(false);
-        var existing = (await host.StartAsync("conf-tx-readonly").ConfigureAwait(false)).ValueOrThrow();
+        var existing = (await host.StartAsync(new WorkflowName("conf-tx-readonly")).ConfigureAwait(false)).ValueOrThrow();
         var executed = log.Executed.Count;
 
         // 自己开只读调用而不用夹具的 AsTenantAsync：要看调用本身的结果——写入被提前拒绝，什么也没发出，调用照常成功
@@ -1396,7 +1396,7 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-poll-tenants").AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(50)).AddEnd()
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-poll-tenants")).AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(50)).AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "end").Build();
         var tenants = new[] { null, "t1", "t2", ConformanceTenants.Disabled };
         var started = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -1404,7 +1404,7 @@ public abstract class WorkflowEngineConformance
         {
             // 每个分区各发布一次：定义按分区隔离，跨分区没有批量
             await host.PublishManyAsync(tenant, definition).ConfigureAwait(false);
-            started[tenant ?? string.Empty] = (await host.StartAsync("conf-poll-tenants", tenantId: tenant).ConfigureAwait(false)).ValueOrThrow().Id;
+            started[tenant ?? string.Empty] = (await host.StartAsync(new WorkflowName("conf-poll-tenants"), tenantId: tenant).ConfigureAwait(false)).ValueOrThrow().Id;
         }
 
         await WaitUntilAsync(async () =>
@@ -1442,7 +1442,7 @@ public abstract class WorkflowEngineConformance
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(Labeled("conf-paging", "a")).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-paging").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-paging")).ConfigureAwait(false)).ValueOrThrow();
         var byName = new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-paging") };
 
         foreach (var (skip, limit) in new[] { (0, 0), (0, WorkflowInstanceQuery.MaxLimit + 1), (-1, 10) })
@@ -1458,14 +1458,14 @@ public abstract class WorkflowEngineConformance
 
         foreach (var limit in new[] { 0, WorkflowInstanceQuery.MaxLimit + 1 })
         {
-            var rejected = await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = "conf-paging", Limit = limit }, CancellationToken.None)).ConfigureAwait(false);
+            var rejected = await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = new WorkflowName("conf-paging"), Limit = limit }, CancellationToken.None)).ConfigureAwait(false);
             Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
             Assert.Equal(WorkflowMessages.PurgeLimitInvalid, rejected.Error?.MessageKey);
         }
 
         // 被拒绝的清理什么都没删
         Assert.True(await host.InstanceExistsAsync(instance.Id).ConfigureAwait(false));
-        Assert.Equal(1, (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = "conf-paging", Limit = 1 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(1, (await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = new WorkflowName("conf-paging"), Limit = 1 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>
@@ -1481,7 +1481,7 @@ public abstract class WorkflowEngineConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         var expense = await host.PublishAsync(Labeled("conf-catalog-expense", "a") with { DisplayName = "Expense", Category = "finance" }).ConfigureAwait(false);
         var leave = await host.PublishAsync(Labeled("conf-catalog-leave", "a") with { DisplayName = "Leave", Category = "hr" }).ConfigureAwait(false);
-        var draft = await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().NewVersionAsync("conf-catalog-expense", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+        var draft = await host.AsTenantAsync(null, async sp => (await sp.GetRequiredService<IWorkflowDefinitionCatalog>().NewVersionAsync(new WorkflowName("conf-catalog-expense"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
 
         await host.AsTenantAsync(null, async sp =>
         {
@@ -1521,15 +1521,15 @@ public abstract class WorkflowEngineConformance
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         await host.PublishAsync(Approval("conf-q-child", UserTaskCompletionPolicy.Any, "alice")).ConfigureAwait(false);
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-q-parent", "Parent Flow")
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-q-parent"), "Parent Flow")
             .AddStart()
-            .AddNode("sub", ActivityTypes.SubWorkflow, configure: node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-q-child"))
+            .AddNode("sub", new ActivityType(ActivityTypes.SubWorkflow), configure: node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-q-child"))
             .AddEnd()
             .AddTransition("start", "sub").AddTransition("sub", "end")
             .Build()).ConfigureAwait(false);
 
         async Task<WorkflowInstance> StartParentAsync(string correlationId, string starterId, string? displayName)
-            => (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-q-parent", CorrelationId = correlationId, StarterId = starterId, DisplayName = displayName }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+            => (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("conf-q-parent"), CorrelationId = correlationId, StarterId = starterId, DisplayName = displayName }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
 
         var expense = await StartParentAsync("doc-1", "alice", "Expense 50% Claim").ConfigureAwait(false);
         var untitled = await StartParentAsync("doc-2", "alice", null).ConfigureAwait(false);
@@ -1589,18 +1589,18 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-waits")
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-waits"))
             .AddStart()
             .AddParallel("fork")
             .AddUserTask("approve", "Approve", static node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice", "bob").WithTimeout(TimeSpan.FromHours(1)))
-            .AddNode("signal", ActivityTypes.WaitSignal, configure: static node => node.WithProperty(WaitSignalActivity.SignalNameProperty, "conf-waits-go").WithProperty(WaitSignalActivity.AcceptAnyCorrelationProperty, true))
+            .AddNode("signal", new ActivityType(ActivityTypes.WaitSignal), configure: static node => node.WithProperty(WaitSignalActivity.SignalNameProperty, "conf-waits-go").WithProperty(WaitSignalActivity.AcceptAnyCorrelationProperty, true))
             .AddDelay("wait", TimeSpan.FromHours(1))
             .AddJoin("join")
             .AddEnd()
             .AddTransition("start", "fork").AddTransition("fork", "approve").AddTransition("fork", "signal").AddTransition("fork", "wait")
             .AddTransition("approve", "join").AddTransition("signal", "join").AddTransition("wait", "join").AddTransition("join", "end")
             .Build(), "t1").ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-waits", tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-waits"), tenantId: "t1").ConfigureAwait(false)).ValueOrThrow();
 
         async ValueTask<Result<IReadOnlyList<WorkflowBookmarkSummary>>> ListAsync(string? tenantId, string instanceId)
             => await host.AsTenantAsync(tenantId, sp => sp.GetRequiredService<IWorkflowEngine>().BookmarksAsync(instanceId, CancellationToken.None)).ConfigureAwait(false);
@@ -1680,7 +1680,7 @@ public abstract class WorkflowEngineConformance
         }).ConfigureAwait(false);
 
         async Task<WorkflowInstance> StartTitledAsync(string displayName)
-            => (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = "conf-sort-a", DisplayName = displayName }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
+            => (await host.EngineAsync(engine => engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("conf-sort-a"), DisplayName = displayName }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow();
 
         var charlie = await StartTitledAsync("charlie").ConfigureAwait(false);
         var first = await StartTitledAsync("alpha").ConfigureAwait(false);
@@ -1751,7 +1751,7 @@ public abstract class WorkflowEngineConformance
 
         // 实例：四个停在延时上的实例，挂起、取消、终止各一个
         await host.PublishAsync(Waiting("conf-life-run")).ConfigureAwait(false);
-        async Task<string> StartWaitingAsync() => (await host.StartAsync("conf-life-run").ConfigureAwait(false)).ValueOrThrow().Id;
+        async Task<string> StartWaitingAsync() => (await host.StartAsync(new WorkflowName("conf-life-run")).ConfigureAwait(false)).ValueOrThrow().Id;
         var running = await StartWaitingAsync().ConfigureAwait(false);
         var suspended = await StartWaitingAsync().ConfigureAwait(false);
         var terminated = await StartWaitingAsync().ConfigureAwait(false);
@@ -1793,29 +1793,29 @@ public abstract class WorkflowEngineConformance
 
         await host.PublishManyAsync(
             null,
-            WorkflowDefinitionBuilder.Create("conf-l10n-nobody")
+            WorkflowDefinitionBuilder.Create(new WorkflowName("conf-l10n-nobody"))
                 .AddStart().AddUserTask("approve", "Approve", static node => node.WithAssigneeRule(AssigneeRuleTypes.Starter)).AddEnd()
                 .AddTransition("start", "approve").AddTransition("approve", "end")
                 .Build(),
-            WorkflowDefinitionBuilder.Create("conf-l10n-approve")
+            WorkflowDefinitionBuilder.Create(new WorkflowName("conf-l10n-approve"))
                 .AddVariable("count", defaultValue: 3)
                 .AddStart()
                 .AddUserTask("approve", "Approve", static node => node.WithAssigneeRule(AssigneeRuleTypes.User, ["alice"]))
-                .AddNode("each", ActivityTypes.ForEach, configure: static node => node.WithProperty(ForEachActivity.ItemsProperty, "count").WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-child"))
+                .AddNode("each", new ActivityType(ActivityTypes.ForEach), configure: static node => node.WithProperty(ForEachActivity.ItemsProperty, "count").WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-child"))
                 .AddEnd()
                 .AddTransition("start", "approve").AddTransition("approve", "each").AddTransition("each", "end")
                 .Build(),
-            WorkflowDefinitionBuilder.Create("conf-l10n-child")
-                .AddStart().AddNode("stop", ActivityTypes.Fault, configure: static node => node.WithProperty(FaultActivity.MessageProperty, "Budget exceeded")).AddEnd()
+            WorkflowDefinitionBuilder.Create(new WorkflowName("conf-l10n-child"))
+                .AddStart().AddNode("stop", new ActivityType(ActivityTypes.Fault), configure: static node => node.WithProperty(FaultActivity.MessageProperty, "Budget exceeded")).AddEnd()
                 .AddTransition("start", "stop").AddTransition("stop", "end")
                 .Build(),
-            WorkflowDefinitionBuilder.Create("conf-l10n-parent")
-                .AddStart().AddNode("sub", ActivityTypes.SubWorkflow, configure: static node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-child")).AddEnd()
+            WorkflowDefinitionBuilder.Create(new WorkflowName("conf-l10n-parent"))
+                .AddStart().AddNode("sub", new ActivityType(ActivityTypes.SubWorkflow), configure: static node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-child")).AddEnd()
                 .AddTransition("start", "sub").AddTransition("sub", "end")
                 .Build()).ConfigureAwait(false);
 
         // 发起即故障：用户任务按发起人指派，没有发起人就没有指派人——存储里是键与参数，不是写入时渲染的英文
-        var nobody = (await host.StartAsync("conf-l10n-nobody").ConfigureAwait(false)).ValueOrThrow();
+        var nobody = (await host.StartAsync(new WorkflowName("conf-l10n-nobody")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Faulted, nobody.Status);
         var noAssignee = (await host.InstanceAsync(nobody.Id).ConfigureAwait(false)).Fault!;
         Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.TaskNoAssignee, "approve"), (noAssignee.Code, noAssignee.MessageKey, noAssignee.Arguments!["node"]));
@@ -1829,7 +1829,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal("用户任务 'approve' 没有解析出指派人。", In("zh-CN", faultedEvent.Fault!.Localize));
 
         // 完成任务之后活动失败：ForEach 的 Items 求值是数字不是数组，原因是按属性的键，不是英文句子
-        var approving = (await host.StartAsync("conf-l10n-approve").ConfigureAwait(false)).ValueOrThrow();
+        var approving = (await host.StartAsync(new WorkflowName("conf-l10n-approve")).ConfigureAwait(false)).ValueOrThrow();
         var task = Assert.Single(await host.PendingAsync("alice").ConfigureAwait(false), task => task.InstanceId == approving.Id);
         Assert.Equal(WorkflowInstanceStatus.Faulted, (await host.CompleteAsync(task.Id, "alice", UserTaskOutcomes.Approved).ConfigureAwait(false)).ValueOrThrow().Status);
         var notArray = (await host.InstanceAsync(approving.Id).ConfigureAwait(false)).Fault!;
@@ -1838,7 +1838,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal("Activity property 'Items' must evaluate to an array.", In("en-US", notArray.Localize));
 
         // 子流程故障：父节点是"子流程故障"（参数子实例与状态枚举名，状态名不进文案），子实例的故障作为内层原因接在后面，两段同一种语言
-        var parent = (await host.StartAsync("conf-l10n-parent").ConfigureAwait(false)).ValueOrThrow();
+        var parent = (await host.StartAsync(new WorkflowName("conf-l10n-parent")).ConfigureAwait(false)).ValueOrThrow();
         await WaitUntilAsync(async () => (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).IsFinal).ConfigureAwait(false);
         var child = Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { ParentInstanceId = parent.Id }).ConfigureAwait(false));
         var childFailed = (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).Fault!;
@@ -1903,8 +1903,8 @@ public abstract class WorkflowEngineConformance
         }
 
         // 设计期诊断：发布时逐条问题带定义 JSON 里的路径与消息键，汇总只给条数
-        var design = WorkflowDefinitionBuilder.Create("conf-l10n-design")
-            .AddStart().AddEnd().AddNode("island", ActivityTypes.Log, configure: static node => node.WithProperty(LogActivity.MessageProperty, "hi"))
+        var design = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-l10n-design"))
+            .AddStart().AddEnd().AddNode("island", new ActivityType(ActivityTypes.Log), configure: static node => node.WithProperty(LogActivity.MessageProperty, "hi"))
             .AddTransition("start", "end", "amount >")
             .Build();
         var rejected = await host.InScopeAsync(async sp =>
@@ -1941,27 +1941,27 @@ public abstract class WorkflowEngineConformance
 
         await host.PublishManyAsync(
             null,
-            WorkflowDefinitionBuilder.Create("conf-l10n-continue")
+            WorkflowDefinitionBuilder.Create(new WorkflowName("conf-l10n-continue"))
                 .AddVariable("count", defaultValue: 3)
                 .AddStart()
-                .AddNode("each", ActivityTypes.ForEach, configure: static node => node.WithProperty(ForEachActivity.ItemsProperty, "count").WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-wait").WithContinueOnError())
+                .AddNode("each", new ActivityType(ActivityTypes.ForEach), configure: static node => node.WithProperty(ForEachActivity.ItemsProperty, "count").WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-wait").WithContinueOnError())
                 .AddDecision("check").AddEnd("errored", outcome: "errored").AddEnd("fine", outcome: "fine")
                 .AddTransition("start", "each").AddTransition("each", "check")
                 .AddTransition("check", "errored", $"outcome == 'error' && lastError.code == '{WorkflowErrors.InputInvalid}' && lastError.messageKey == '{WorkflowMessages.PropertyNotArray}' && lastError.message != null")
                 .AddDefaultTransition("check", "fine")
                 .Build(),
-            WorkflowDefinitionBuilder.Create("conf-l10n-expr")
+            WorkflowDefinitionBuilder.Create(new WorkflowName("conf-l10n-expr"))
                 .AddStart().AddDecision("check").AddEnd("a", outcome: "a").AddEnd("b", outcome: "b")
                 .AddTransition("start", "check").AddTransition("check", "a", "nope > 1").AddDefaultTransition("check", "b")
                 .Build(),
             Waiting("conf-l10n-wait"),
-            WorkflowDefinitionBuilder.Create("conf-l10n-waiting-parent")
-                .AddStart().AddNode("sub", ActivityTypes.SubWorkflow, configure: static node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-wait")).AddEnd()
+            WorkflowDefinitionBuilder.Create(new WorkflowName("conf-l10n-waiting-parent"))
+                .AddStart().AddNode("sub", new ActivityType(ActivityTypes.SubWorkflow), configure: static node => node.WithProperty(SubWorkflowActivity.DefinitionNameProperty, "conf-l10n-wait")).AddEnd()
                 .AddTransition("start", "sub").AddTransition("sub", "end")
                 .Build()).ConfigureAwait(false);
 
         // lastError：表达式照旧按错误码、消息键与按进程默认区域渲染的消息判断；展示按区域渲染
-        var continued = (await host.StartAsync("conf-l10n-continue").ConfigureAwait(false)).ValueOrThrow();
+        var continued = (await host.StartAsync(new WorkflowName("conf-l10n-continue")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "errored"), (continued.Status, continued.Outcome));
         var lastError = WorkflowJson.DeserializeFault((await host.InstanceAsync(continued.Id).ConfigureAwait(false)).Variables[WorkflowReservedNames.LastErrorVariable])!;
         Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.PropertyNotArray), (lastError.Code, lastError.MessageKey));
@@ -1969,14 +1969,14 @@ public abstract class WorkflowEngineConformance
         Assert.Equal("Activity property 'Items' must evaluate to an array.", In("en-US", lastError.Localize));
 
         // 表达式的运行期错误：条件里的未知变量让实例故障，原因是表达式的键与参数
-        var broken = (await host.StartAsync("conf-l10n-expr").ConfigureAwait(false)).ValueOrThrow();
+        var broken = (await host.StartAsync(new WorkflowName("conf-l10n-expr")).ConfigureAwait(false)).ValueOrThrow();
         var unknownVariable = (await host.InstanceAsync(broken.Id).ConfigureAwait(false)).Fault!;
         Assert.Equal((WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionUnknownVariable), (unknownVariable.Code, unknownVariable.MessageKey));
         Assert.Equal("表达式 'nope > 1' 引用了未知变量 'nope'。", In("zh-CN", unknownVariable.Localize));
         Assert.Equal("Expression 'nope > 1': variable 'nope' is unknown.", In("en-US", unknownVariable.Localize));
 
         // 子流程被取消：父节点的故障按状态各一个键，状态名不进文案
-        var parent = (await host.StartAsync("conf-l10n-waiting-parent").ConfigureAwait(false)).ValueOrThrow();
+        var parent = (await host.StartAsync(new WorkflowName("conf-l10n-waiting-parent")).ConfigureAwait(false)).ValueOrThrow();
         var child = Assert.Single(await host.ListInstancesAsync(new WorkflowInstanceQuery { ParentInstanceId = parent.Id }).ConfigureAwait(false));
         Assert.Equal(WorkflowInstanceStatus.Canceled, (await host.EngineAsync(engine => engine.CancelAsync(child.Id, "drop", CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Status);
         await WaitUntilAsync(async () => (await host.InstanceAsync(parent.Id).ConfigureAwait(false)).IsFinal).ConfigureAwait(false);
@@ -2013,7 +2013,7 @@ public abstract class WorkflowEngineConformance
         Assert.True(transactional.IsSuccess, transactional.Error?.Code);
 
         await host.PublishAsync(Labeled("conf-other-publishers", "a")).ConfigureAwait(false);
-        var instance = (await host.StartAsync("conf-other-publishers").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-other-publishers")).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Completed, instance.Status);
 
         // 宿主里别的特性也可能发布（如调度的作业事件），只数本用例的主题
@@ -2034,7 +2034,7 @@ public abstract class WorkflowEngineConformance
     {
         var log = new ConformanceLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
-        var definition = WorkflowDefinitionBuilder.Create("conf-http-denied")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("conf-http-denied"))
             .AddStart()
             .AddHttp("call", "http://127.0.0.1:9/")
             .AddEnd()
@@ -2042,7 +2042,7 @@ public abstract class WorkflowEngineConformance
             .Build();
         await host.PublishAsync(definition).ConfigureAwait(false);
 
-        var instance = (await host.StartAsync("conf-http-denied").ConfigureAwait(false)).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-http-denied")).ConfigureAwait(false)).ValueOrThrow();
 
         Assert.Equal(WorkflowInstanceStatus.Faulted, instance.Status);
         Assert.Equal("call", instance.FaultNodeId);
@@ -2054,15 +2054,15 @@ public abstract class WorkflowEngineConformance
     /// <summary>
     /// 带标签记录节点的定义：开始 → 记录 → 结束
     /// </summary>
-    private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(name)
-        .AddStart().AddNode("a", RecordActivity.TypeName, configure: node => node.WithProperty(RecordActivity.LabelProperty, label)).AddEnd()
+    private static WorkflowDefinition Labeled(string name, string label) => WorkflowDefinitionBuilder.Create(new WorkflowName(name))
+        .AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName), configure: node => node.WithProperty(RecordActivity.LabelProperty, label)).AddEnd()
         .AddTransition("start", "a").AddTransition("a", "end")
         .Build();
 
     /// <summary>
     /// 停在一小时延时上的定义：开始 → 等待 → 结束
     /// </summary>
-    private static WorkflowDefinition Waiting(string name) => WorkflowDefinitionBuilder.Create(name)
+    private static WorkflowDefinition Waiting(string name) => WorkflowDefinitionBuilder.Create(new WorkflowName(name))
         .AddStart().AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
         .AddTransition("start", "wait").AddTransition("wait", "end")
         .Build();
@@ -2081,7 +2081,7 @@ public abstract class WorkflowEngineConformance
     /// 在给定作用域里按名字启动最新已发布版本
     /// </summary>
     private static ValueTask<Result<WorkflowInstance>> StartByNameAsync(IServiceProvider services, string name)
-        => services.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = name }, CancellationToken.None);
+        => services.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = new WorkflowName(name) }, CancellationToken.None);
 
     /// <summary>
     /// 以给定租户（空为平台）在一次经管道的调用里执行
@@ -2092,9 +2092,9 @@ public abstract class WorkflowEngineConformance
     /// <summary>
     /// 带实例级超时的定义：开始 → 记录 → 等一小时
     /// </summary>
-    private static WorkflowDefinition TimingOut(string name, WorkflowTimeoutAction action) => WorkflowDefinitionBuilder.Create(name)
+    private static WorkflowDefinition TimingOut(string name, WorkflowTimeoutAction action) => WorkflowDefinitionBuilder.Create(new WorkflowName(name))
         .WithTimeout(TimeSpan.FromMilliseconds(100), action)
-        .AddStart().AddNode("a", RecordActivity.TypeName).AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
+        .AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName)).AddDelay("wait", TimeSpan.FromHours(1)).AddEnd()
         .AddTransition("start", "a").AddTransition("a", "wait").AddTransition("wait", "end")
         .Build();
 
@@ -2136,7 +2136,7 @@ public abstract class WorkflowEngineConformance
         services.TryAddScoped<IMessagePublisher, DirectPublisher>();
         // 轮询器从租户目录取租户分区：宿主没有装配多租户时用套件的目录
         services.TryAddSingleton<ITenantStore, ConformanceTenants>();
-        services.AddActivity<RecordActivity>(RecordActivity.TypeName);
+        services.AddActivity<RecordActivity>(new ActivityType(RecordActivity.TypeName));
         services.AddWorkflowOutcomeHandler<RecordingOutcomeHandler>();
     }
 
@@ -2144,7 +2144,7 @@ public abstract class WorkflowEngineConformance
     /// 一个"开始 → 用户任务 → 决策 → 结束（approved / rejected）"的定义
     /// </summary>
     protected static WorkflowDefinition Approval(string name, UserTaskCompletionPolicy policy, params IReadOnlyList<string> assignees)
-        => WorkflowDefinitionBuilder.Create(name)
+        => WorkflowDefinitionBuilder.Create(new WorkflowName(name))
             .AddVariable("amount", defaultValue: 7)
             .AddStart()
             .AddUserTask("approve", "Approve", node => node

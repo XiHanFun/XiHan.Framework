@@ -43,7 +43,7 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 var builder = WebApplication.CreateBuilder(args);
 // 代码作业：同时登记类型
-builder.Services.AddJob<CleanupJob>("cleanup.nightly", JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
+builder.Services.AddJob<CleanupJob>(new JobName("cleanup.nightly"), JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
 // 只登记类型：供运行时 ScheduleAsync 新建的作业引用
 builder.Services.AddJobType<ArchiveJob>();
 
@@ -97,7 +97,7 @@ public sealed class ArchiveJob : IJob
 | 类型 | 说明 |
 | --- | --- |
 | `IJob` | 作业：`RunAsync(JobRun, InvocationContext, CancellationToken)` → `ValueTask<Result>`，作用域服务 |
-| `JobName`、`TriggerKey` | 作业名（`^[a-z0-9][a-z0-9._-]{0,127}$`，可从字符串隐式转换）；触发器键 `(Job, Trigger)` |
+| `JobName`、`TriggerKey` | 作业名（`^[a-z0-9][a-z0-9._-]{0,127}$`，从字符串显式转换）；触发器键 `(Job, Trigger)` |
 | `JobDefinition` | 作业定义：`Name`、`JobType`、`Triggers`、`Data`、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`、`Retry`、`Timeout`、`Description` |
 | `JobTriggerDefinition` | 触发器：`Name`、`Schedule`、`Data`、`Priority`（缺省 5）、`MisfirePolicy`、`Description` |
 | `JobRetryPolicy`、`JobRetryBackoff` | 重试：`MaxRetries` 1–100、`Delay`、`Fixed` / `Exponential`、`MaxDelay`，等待最长 30 天；`DelayFor(n)` |

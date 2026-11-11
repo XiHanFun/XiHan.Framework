@@ -30,7 +30,7 @@ public sealed class ActivityErrorTests
     public async Task ActivityThatThrows_FaultsWithOnlyTheExceptionType_AndLogsTheFullException()
     {
         var logs = new LogCapture();
-        var fault = await RunAsync(logs, ThrowingActivity.TypeName, static services => services.AddActivity<ThrowingActivity>(ThrowingActivity.TypeName));
+        var fault = await RunAsync(logs, ThrowingActivity.TypeName, static services => services.AddActivity<ThrowingActivity>(new ActivityType(ThrowingActivity.TypeName)));
 
         Assert.Equal(WorkflowErrors.ActivityFailed, fault.Code);
         Assert.Equal(typeof(InvalidOperationException).FullName, fault.Arguments?["reason"]);
@@ -64,9 +64,9 @@ public sealed class ActivityErrorTests
                 services.AddSingleton<ILoggerFactory>(logs);
                 configure(services);
             });
-        var definition = WorkflowDefinitionBuilder.Create("activity-errors")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("activity-errors"))
             .AddStart()
-            .AddNode("call", activityType, configure: static node => node.WithProperty(HttpActivity.UrlProperty, "https://erp.test/orders"))
+            .AddNode("call", new ActivityType(activityType), configure: static node => node.WithProperty(HttpActivity.UrlProperty, "https://erp.test/orders"))
             .AddEnd()
             .AddTransition("start", "call").AddTransition("call", "end")
             .Build();
@@ -78,7 +78,7 @@ public sealed class ActivityErrorTests
         }
 
         await using var run = host.Services.CreateAsyncScope();
-        var instance = (await run.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = "activity-errors" }, CancellationToken.None)).ValueOrThrow();
+        var instance = (await run.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = new WorkflowName("activity-errors") }, CancellationToken.None)).ValueOrThrow();
         Assert.Equal(WorkflowInstanceStatus.Faulted, instance.Status);
         return Assert.IsType<WorkflowFault>(instance.Fault);
     }

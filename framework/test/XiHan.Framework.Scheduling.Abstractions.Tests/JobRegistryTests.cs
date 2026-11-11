@@ -39,31 +39,43 @@ public sealed class JobRegistryTests
         Assert.Throws<ArgumentException>(static () => new JobName("Upper"));
         Assert.Throws<ArgumentException>(static () => new JobName(".dot"));
         Assert.Throws<ArgumentException>(static () => new JobName(string.Empty));
-        Assert.Throws<ArgumentException>(static () => new JobDefinition("x", JobSchedule.Manual, typeof(string)));
+        Assert.Throws<ArgumentException>(static () => new JobDefinition(new JobName("x"), JobSchedule.Manual, typeof(string)));
 
-        var definition = new JobDefinition("x", JobSchedule.Manual, typeof(NoopJob));
+        var definition = new JobDefinition(new JobName("x"), JobSchedule.Manual, typeof(NoopJob));
         Assert.False(definition.RunOnEveryInstance);
         Assert.Empty(definition.Triggers);
-        Assert.Equal(JobTriggerDefinition.DefaultName, Assert.Single(new JobDefinition("x", JobSchedule.Every(TimeSpan.FromMinutes(1)), typeof(NoopJob)).Triggers).Name);
+        Assert.Equal(JobTriggerDefinition.DefaultName, Assert.Single(new JobDefinition(new JobName("x"), JobSchedule.Every(TimeSpan.FromMinutes(1)), typeof(NoopJob)).Triggers).Name);
         Assert.False(definition.AllowConcurrent);
-        Assert.Equal(JobTrigger.Manual, JobRun.Create("x", DateTimeOffset.UnixEpoch, JobTrigger.Manual).Trigger);
+        Assert.Equal(JobTrigger.Manual, JobRun.Create(new JobName("x"), DateTimeOffset.UnixEpoch, JobTrigger.Manual).Trigger);
+    }
+
+    [Fact]
+    public void TriggerKey_RejectsADefaultJobName_AndItsOwnDefaultHasNoMembers()
+    {
+        Assert.Equal("x/nightly", new TriggerKey(new JobName("x"), "nightly").ToString());
+        Assert.Throws<ArgumentException>(static () => new TriggerKey(default, "nightly"));
+
+        var empty = default(TriggerKey);
+        Assert.Throws<InvalidOperationException>(() => empty.Trigger);
+        Assert.Throws<InvalidOperationException>(() => empty.Job.Value);
+        Assert.Equal(string.Empty, empty.ToString());
     }
 
     [Fact]
     public void AddJob_RegistersScopedJobsInASharedRegistry_AndRejectsDuplicates()
     {
         var services = new ServiceCollection();
-        services.AddJob<NoopJob>("a", JobSchedule.Manual);
-        services.AddJob<OtherJob>(new JobDefinition("b", JobSchedule.Every(TimeSpan.FromSeconds(1)), typeof(OtherJob)) { AllowConcurrent = true });
+        services.AddJob<NoopJob>(new JobName("a"), JobSchedule.Manual);
+        services.AddJob<OtherJob>(new JobDefinition(new JobName("b"), JobSchedule.Every(TimeSpan.FromSeconds(1)), typeof(OtherJob)) { AllowConcurrent = true });
 
         var registry = services.GetJobRegistry();
         Assert.Same(registry, services.GetJobRegistry());
         Assert.Equal(["a", "b"], registry.Jobs.Select(static j => j.Name.Value));
-        Assert.True(registry.Find("b").ValueOrThrow().AllowConcurrent);
-        Assert.False(registry.Find("c").HasValue);
+        Assert.True(registry.Find(new JobName("b")).ValueOrThrow().AllowConcurrent);
+        Assert.False(registry.Find(new JobName("c")).HasValue);
         Assert.Contains(services, static d => d.ServiceType == typeof(NoopJob) && d.Lifetime == ServiceLifetime.Scoped);
 
-        Assert.Throws<ArgumentException>(() => services.AddJob<NoopJob>("a", JobSchedule.Manual));
-        Assert.Throws<ArgumentException>(() => services.AddJob<NoopJob>(new JobDefinition("d", JobSchedule.Manual, typeof(OtherJob))));
+        Assert.Throws<ArgumentException>(() => services.AddJob<NoopJob>(new JobName("a"), JobSchedule.Manual));
+        Assert.Throws<ArgumentException>(() => services.AddJob<NoopJob>(new JobDefinition(new JobName("d"), JobSchedule.Manual, typeof(OtherJob))));
     }
 }

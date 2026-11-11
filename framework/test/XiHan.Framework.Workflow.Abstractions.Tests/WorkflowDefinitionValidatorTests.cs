@@ -26,7 +26,7 @@ public sealed class WorkflowDefinitionValidatorTests
     public void Validate_AcceptsAWellFormedDefinition()
     {
         using var scope = Validator();
-        var definition = WorkflowDefinitionBuilder.Create("ok")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("ok"))
             .AddStart()
             .AddUserTask("approve", null, node => node.WithAssigneeRule(AssigneeRuleTypes.Starter).WithProperty(UserTaskActivity.EmptyAssigneeStrategyProperty, EmptyAssigneeStrategy.Fallback.ToString()).WithProperty(UserTaskActivity.FallbackAssigneeRulesProperty, new JsonArray(new AssigneeRule(AssigneeRuleTypes.User, ["admin"]).ToJson())))
             .AddDecision("check").AddJoin("join", waitAny: true).AddEnd("ok", outcome: "ok").AddEnd("no", outcome: "no")
@@ -80,7 +80,7 @@ public sealed class WorkflowDefinitionValidatorTests
         Assert.Equal((WorkflowErrors.DefinitionInvalid, WorkflowMessages.DefinitionInvalid, (object?)issues.Count), (result.Error?.Code, result.Error?.MessageKey, result.Error?.Details?["count"]));
         Assert.Equal(issues.Select(static issue => (issue.Path, issue.MessageKey)), Assert.IsAssignableFrom<IReadOnlyList<SchemaViolation>>(result.Error!.Details!["errors"]).Select(static issue => (issue.Path, issue.MessageKey)));
 
-        Assert.Equal(("$.nodes", WorkflowMessages.DefinitionStartMissing), Single(scope.Validator.Diagnose(WorkflowDefinitionBuilder.Create("nostart").AddNode("a", ActivityTypes.Log).Build())));
+        Assert.Equal(("$.nodes", WorkflowMessages.DefinitionStartMissing), Single(scope.Validator.Diagnose(WorkflowDefinitionBuilder.Create(new WorkflowName("nostart")).AddNode("a", new ActivityType(ActivityTypes.Log)).Build())));
     }
 
     [Fact]
@@ -153,16 +153,16 @@ public sealed class WorkflowDefinitionValidatorTests
         Name = new WorkflowName("broken"),
         Nodes =
         [
-            new WorkflowNode { Id = "start", ActivityType = ActivityTypes.Start },
-            new WorkflowNode { Id = "start2", ActivityType = ActivityTypes.Start },
-            new WorkflowNode { Id = "dup", ActivityType = ActivityTypes.Log },
-            new WorkflowNode { Id = "dup", ActivityType = ActivityTypes.Log },
-            new WorkflowNode { Id = "nope", ActivityType = "NoSuchActivity" },
-            new WorkflowNode { Id = "island", ActivityType = ActivityTypes.Log },
-            new WorkflowNode { Id = "join", ActivityType = ActivityTypes.Join, Properties = new JsonObject { [JoinActivity.ModeProperty] = "Sometimes" } },
-            new WorkflowNode { Id = "end", ActivityType = ActivityTypes.End, Properties = new JsonObject { [EndActivity.OutcomeProperty] = " " } },
-            new WorkflowNode { Id = "task", ActivityType = ActivityTypes.UserTask, Properties = new JsonObject { [UserTaskActivity.CompletionPolicyProperty] = "Whenever", [UserTaskActivity.EmptyAssigneeStrategyProperty] = "Fallback" } },
-            new WorkflowNode { Id = "task2", ActivityType = ActivityTypes.UserTask, Properties = new JsonObject { [UserTaskActivity.AssigneeRulesProperty] = new JsonArray(new JsonObject { ["type"] = "Martian", ["values"] = new JsonArray("x") }, new JsonObject { ["type"] = AssigneeRuleTypes.Expression, ["values"] = new JsonArray("1 +") }) } },
+            new WorkflowNode { Id = "start", ActivityType = new ActivityType(ActivityTypes.Start) },
+            new WorkflowNode { Id = "start2", ActivityType = new ActivityType(ActivityTypes.Start) },
+            new WorkflowNode { Id = "dup", ActivityType = new ActivityType(ActivityTypes.Log) },
+            new WorkflowNode { Id = "dup", ActivityType = new ActivityType(ActivityTypes.Log) },
+            new WorkflowNode { Id = "nope", ActivityType = new ActivityType("NoSuchActivity") },
+            new WorkflowNode { Id = "island", ActivityType = new ActivityType(ActivityTypes.Log) },
+            new WorkflowNode { Id = "join", ActivityType = new ActivityType(ActivityTypes.Join), Properties = new JsonObject { [JoinActivity.ModeProperty] = "Sometimes" } },
+            new WorkflowNode { Id = "end", ActivityType = new ActivityType(ActivityTypes.End), Properties = new JsonObject { [EndActivity.OutcomeProperty] = " " } },
+            new WorkflowNode { Id = "task", ActivityType = new ActivityType(ActivityTypes.UserTask), Properties = new JsonObject { [UserTaskActivity.CompletionPolicyProperty] = "Whenever", [UserTaskActivity.EmptyAssigneeStrategyProperty] = "Fallback" } },
+            new WorkflowNode { Id = "task2", ActivityType = new ActivityType(ActivityTypes.UserTask), Properties = new JsonObject { [UserTaskActivity.AssigneeRulesProperty] = new JsonArray(new JsonObject { ["type"] = "Martian", ["values"] = new JsonArray("x") }, new JsonObject { ["type"] = AssigneeRuleTypes.Expression, ["values"] = new JsonArray("1 +") }) } },
         ],
         Transitions =
         [

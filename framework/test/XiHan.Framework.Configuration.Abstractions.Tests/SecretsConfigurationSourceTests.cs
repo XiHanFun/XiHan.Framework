@@ -19,8 +19,8 @@ public sealed class SecretsConfigurationSourceTests
     public async Task Load_MapsSecretsToKeys_AndRefreshesKeepingOldValuesOnFailure()
     {
         var store = new InMemorySecretStore();
-        store.Put("orders/db", "pw1");
-        store.Put("orders/api", "key1");
+        store.Put(new SecretName("orders/db"), "pw1");
+        store.Put(new SecretName("orders/api"), "key1");
         var errors = new List<Error>();
         // 重读只由用例推进时钟触发：不推进就不重读，次数与时机都确定
         var clock = new FakeTimeProvider();
@@ -28,8 +28,8 @@ public sealed class SecretsConfigurationSourceTests
         var root = new ConfigurationBuilder()
             .AddXiHanSecrets(store, new SecretsConfigurationOptions(new Dictionary<string, SecretName>
             {
-                ["ConnectionStrings:Orders"] = "orders/db",
-                ["Api:Key"] = "orders/api",
+                ["ConnectionStrings:Orders"] = new SecretName("orders/db"),
+                ["Api:Key"] = new SecretName("orders/api"),
             })
             {
                 RefreshInterval = interval,
@@ -56,7 +56,7 @@ public sealed class SecretsConfigurationSourceTests
         Assert.False(reloaded.Task.IsCompleted);
 
         // 值变了才触发，重载时已是新值
-        store.Put("orders/db", "pw2");
+        store.Put(new SecretName("orders/db"), "pw2");
         await RefreshAsync(clock, interval, store);
         await reloaded.Task.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal("pw2", root["ConnectionStrings:Orders"]);
@@ -79,8 +79,8 @@ public sealed class SecretsConfigurationSourceTests
     public void Load_MissingSecret_ThrowsUnlessOptional()
     {
         var store = new InMemorySecretStore();
-        store.Put("present", "v");
-        var mappings = new Dictionary<string, SecretName> { ["A"] = "present", ["B"] = "absent" };
+        store.Put(new SecretName("present"), "v");
+        var mappings = new Dictionary<string, SecretName> { ["A"] = new SecretName("present"), ["B"] = new SecretName("absent") };
         var errors = new List<Error>();
 
         var thrown = Assert.Throws<FrameworkException>(() => new ConfigurationBuilder().AddXiHanSecrets(store, new SecretsConfigurationOptions(mappings) { OnError = errors.Add }).Build());
@@ -105,13 +105,13 @@ public sealed class SecretsConfigurationSourceTests
     public async Task Load_OptionalTimeout_StillStartsRefreshing()
     {
         var store = new InMemorySecretStore { Hang = true };
-        store.Put("orders/db", "pw1");
+        store.Put(new SecretName("orders/db"), "pw1");
         var errors = new ConcurrentQueue<Error>();
         var clock = new FakeTimeProvider();
         var interval = TimeSpan.FromMinutes(1);
         // 首次读取挂起到超时：可选时该源为空并回调一次
         var root = new ConfigurationBuilder()
-            .AddXiHanSecrets(store, new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["ConnectionStrings:Orders"] = "orders/db" })
+            .AddXiHanSecrets(store, new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["ConnectionStrings:Orders"] = new SecretName("orders/db") })
             {
                 LoadTimeout = TimeSpan.FromMilliseconds(50),
                 RefreshInterval = interval,
@@ -139,9 +139,9 @@ public sealed class SecretsConfigurationSourceTests
     public async Task Miscount_IsAFailure_OnLoadAndRefresh_AndOnErrorThrowingDoesNotStopRefreshing()
     {
         var store = new InMemorySecretStore { Short = true };
-        store.Put("a", "1");
-        store.Put("b", "2");
-        var mappings = new Dictionary<string, SecretName> { ["A"] = "a", ["B"] = "b" };
+        store.Put(new SecretName("a"), "1");
+        store.Put(new SecretName("b"), "2");
+        var mappings = new Dictionary<string, SecretName> { ["A"] = new SecretName("a"), ["B"] = new SecretName("b") };
 
         // 首次读取条数不符：回调一次不可达，再按 Optional 抛出或为空
         var errors = new ConcurrentQueue<Error>();
@@ -172,7 +172,7 @@ public sealed class SecretsConfigurationSourceTests
             .Build();
         using var disposable = root as IDisposable;
         store.Short = true;
-        store.Put("a", "changed");
+        store.Put(new SecretName("a"), "changed");
         await RefreshAsync(clock, interval, store);
         await WaitUntilAsync(() => !reports.IsEmpty);
         Assert.Equal(ConfigurationErrors.SecretsUnavailable, Assert.Single(reports).Code);
@@ -195,13 +195,13 @@ public sealed class SecretsConfigurationSourceTests
         }
 
         Assert.Throws<ArgumentException>(static () => new SecretsConfigurationOptions(new Dictionary<string, SecretName>()));
-        Assert.Throws<ArgumentException>(static () => new SecretsConfigurationOptions(new Dictionary<string, SecretName> { [" "] = "a" }));
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["A"] = "a" }) { RefreshInterval = TimeSpan.Zero });
-        Assert.Same(TimeProvider.System, new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["A"] = "a" }).Clock);
-        Assert.Throws<ArgumentNullException>(static () => new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["A"] = "a" }) { Clock = null! });
+        Assert.Throws<ArgumentException>(static () => new SecretsConfigurationOptions(new Dictionary<string, SecretName> { [" "] = new SecretName("a") }));
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["A"] = new SecretName("a") }) { RefreshInterval = TimeSpan.Zero });
+        Assert.Same(TimeProvider.System, new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["A"] = new SecretName("a") }).Clock);
+        Assert.Throws<ArgumentNullException>(static () => new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["A"] = new SecretName("a") }) { Clock = null! });
         Assert.Equal(SecretValue.Redacted, new SecretValue("x", "1").ToString());
         Assert.Equal("1", new SecretValue("x", "1").Version);
-        Assert.DoesNotContain("x", new SecretLookup("a", new SecretValue("x")).ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("x", new SecretLookup(new SecretName("a"), new SecretValue("x")).ToString(), StringComparison.Ordinal);
     }
 
     /// <summary>

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
@@ -53,7 +54,7 @@ public sealed class S3ConditionalWriteRetryTests
         Assert.Equal(ObjectStorageMessages.ConditionalWriteUnconfirmed, refused.Error?.MessageKey);
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, (string?)refused.Error!.Details!["reason"]);
         var multipart = host.Services.GetRequiredService<IBlobMultipartStore>();
-        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, (await multipart.StartAsync(Bucket, "b.bin", new BlobPutOptions { Overwrite = false }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, (await multipart.StartAsync(new ContainerName(Bucket), new BlobKey("b.bin"), new BlobPutOptions { Overwrite = false }, CancellationToken.None)).Error?.Code);
         Assert.Equal(requests, fake.Requests.Count);
 
         // 后台重试：1 秒后再探仍连不上，下一次排在 2 秒后；服务恢复后那一次探测通过
@@ -206,12 +207,12 @@ public sealed class S3ConditionalWriteRetryTests
         var refused = await Put(store, "a.txt");
         Assert.Equal((ObjectStorageErrors.ConditionalWriteUnavailable, ObjectStorageMessages.ConditionalWriteUnsupported), (refused.Error?.Code, refused.Error?.MessageKey));
         var multipart = host.Services.GetRequiredService<IBlobMultipartStore>();
-        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.CompleteAsync(new BlobMultipartUpload(Bucket, "b.bin", "upload", overwrite: false), [new BlobPart(1, "etag", 1)], CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.CompleteAsync(new BlobMultipartUpload(new ContainerName(Bucket), new BlobKey("b.bin"), "upload", overwrite: false), [new BlobPart(1, "etag", 1)], CancellationToken.None)).Error?.Code);
         Assert.Equal(requests, fake.Requests.Count);
         Assert.Single(gate.ScheduledDelays);
 
         // 覆盖写入不受影响
-        Assert.True((await store.PutAsync(Bucket, "c.txt", Encoding.UTF8.GetBytes("c"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+        Assert.True((await store.PutAsync(new ContainerName(Bucket), new BlobKey("c.txt"), Encoding.UTF8.GetBytes("c"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
     }
 
     [Fact]
@@ -327,7 +328,7 @@ public sealed class S3ConditionalWriteRetryTests
     /// 以不覆盖方式写一个对象
     /// </summary>
     private static Task<Result<BlobMetadata>> Put(IBlobStore store, string key)
-        => store.PutAsync(Bucket, key, Encoding.UTF8.GetBytes(key), new BlobPutOptions { Overwrite = false }, CancellationToken.None).AsTask();
+        => store.PutAsync(new ContainerName(Bucket), new BlobKey(key), Encoding.UTF8.GetBytes(key), new BlobPutOptions { Overwrite = false }, CancellationToken.None).AsTask();
 
     /// <summary>
     /// 缺省实例的健康项

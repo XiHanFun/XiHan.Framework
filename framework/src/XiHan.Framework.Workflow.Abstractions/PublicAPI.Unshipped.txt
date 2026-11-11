@@ -1722,7 +1722,7 @@ static XiHan.Framework.Workflow.Abstractions.Activities.ActivityOutcome.operator
 static XiHan.Framework.Workflow.Abstractions.Activities.ActivityOutcome.operator ==(XiHan.Framework.Workflow.Abstractions.Activities.ActivityOutcome? left, XiHan.Framework.Workflow.Abstractions.Activities.ActivityOutcome? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.IsValid(string? value) -> bool
 static XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.Validate(string! value) -> string!
-static XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.implicit operator XiHan.Framework.Workflow.Abstractions.Activities.ActivityType(string! value) -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityType
+static XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.explicit operator XiHan.Framework.Workflow.Abstractions.Activities.ActivityType(string! value) -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityType
 static XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.operator !=(XiHan.Framework.Workflow.Abstractions.Activities.ActivityType left, XiHan.Framework.Workflow.Abstractions.Activities.ActivityType right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.operator ==(XiHan.Framework.Workflow.Abstractions.Activities.ActivityType left, XiHan.Framework.Workflow.Abstractions.Activities.ActivityType right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Activities.BuiltInActivityDescriptors.Compensate.get -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityDescriptor!
@@ -1877,7 +1877,7 @@ static XiHan.Framework.Workflow.Abstractions.WorkflowKeyword.Normalize(string? k
 static XiHan.Framework.Workflow.Abstractions.WorkflowMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
 static XiHan.Framework.Workflow.Abstractions.WorkflowName.IsValid(string? value) -> bool
 static XiHan.Framework.Workflow.Abstractions.WorkflowName.Validate(string! value) -> string!
-static XiHan.Framework.Workflow.Abstractions.WorkflowName.implicit operator XiHan.Framework.Workflow.Abstractions.WorkflowName(string! value) -> XiHan.Framework.Workflow.Abstractions.WorkflowName
+static XiHan.Framework.Workflow.Abstractions.WorkflowName.explicit operator XiHan.Framework.Workflow.Abstractions.WorkflowName(string! value) -> XiHan.Framework.Workflow.Abstractions.WorkflowName
 static XiHan.Framework.Workflow.Abstractions.WorkflowName.operator !=(XiHan.Framework.Workflow.Abstractions.WorkflowName left, XiHan.Framework.Workflow.Abstractions.WorkflowName right) -> bool
 static XiHan.Framework.Workflow.Abstractions.WorkflowName.operator ==(XiHan.Framework.Workflow.Abstractions.WorkflowName left, XiHan.Framework.Workflow.Abstractions.WorkflowName right) -> bool
 static XiHan.Framework.Workflow.Abstractions.WorkflowOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Workflow.Abstractions.WorkflowOptions!

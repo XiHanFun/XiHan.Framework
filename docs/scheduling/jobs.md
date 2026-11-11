@@ -48,7 +48,7 @@ using XiHan.Framework.Scheduling.InMemory;
 var builder = WebApplication.CreateBuilder(args);
 
 // 最简写法：一个 cron 触发器，名为 default
-builder.Services.AddJob<CleanupJob>("cleanup.nightly", JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
+builder.Services.AddJob<CleanupJob>(new JobName("cleanup.nightly"), JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
 
 builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 
@@ -141,7 +141,7 @@ builder.Services.AddJob<NightlyReportJob>(new JobDefinition("reports.nightly", t
 | `Timeout` | 空 | 单次执行时限，大于零、不超过 30 天（`JobDefinition.TimeoutLimit`） |
 | `Description` | 空 | 说明 |
 
-作业名、触发器名与领导租约的资源名用同一个文法：`^[a-z0-9][a-z0-9._-]{0,127}$`。`JobName` 可以从字符串隐式转换，不合法时抛 `ArgumentException`；名字来自外部输入时先用 `JobName.IsValid` 判断。
+作业名、触发器名与领导租约的资源名用同一个文法：`^[a-z0-9][a-z0-9._-]{0,127}$`。`JobName` 用构造或显式转换从字符串创建，不合法时抛 `ArgumentException`；名字来自外部输入时先用 `JobName.IsValid` 判断。
 
 `JobTriggerDefinition` 另有 `Priority`（缺省 5，到期触发器多于本周期名额时大者先运行）、`MisfirePolicy`（缺省 `RunOnce`）、`Data` 与 `Description`；触发器的计划不能是 `Manual`。
 

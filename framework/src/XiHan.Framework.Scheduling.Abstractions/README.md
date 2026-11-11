@@ -24,7 +24,7 @@ dotnet add package XiHan.Framework.Scheduling.Abstractions --prerelease
 一般由实现包带入，写作业或自定义提供程序时才直接引用；运行作业需要同时装配 `Scheduling.InMemory` 或 `Scheduling.Database`。写一个 `IJob` 并登记计划：
 
 ```csharp
-builder.Services.AddJob<CleanupJob>("cleanup.nightly", JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
+builder.Services.AddJob<CleanupJob>(new JobName("cleanup.nightly"), JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
 
 public sealed class CleanupJob : IJob
 {

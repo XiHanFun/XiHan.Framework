@@ -172,7 +172,7 @@ public sealed class WorkflowDefinitionBuilder
     /// <summary>
     /// 开始节点
     /// </summary>
-    public WorkflowDefinitionBuilder AddStart(string id = "start", string? displayName = null) => AddNode(id, ActivityTypes.Start, displayName);
+    public WorkflowDefinitionBuilder AddStart(string id = "start", string? displayName = null) => AddNode(id, new ActivityType(ActivityTypes.Start), displayName);
 
     /// <summary>
     /// 结束节点
@@ -181,40 +181,40 @@ public sealed class WorkflowDefinitionBuilder
     /// <paramref name="outcome"/> 非空即带结果结束实例
     /// </remarks>
     public WorkflowDefinitionBuilder AddEnd(string id = "end", string? outcome = null, string? displayName = null)
-        => AddNode(id, ActivityTypes.End, displayName, outcome is null ? null : builder => builder.WithProperty(EndActivity.OutcomeProperty, outcome));
+        => AddNode(id, new ActivityType(ActivityTypes.End), displayName, outcome is null ? null : builder => builder.WithProperty(EndActivity.OutcomeProperty, outcome));
 
     /// <summary>
     /// 决策节点
     /// </summary>
-    public WorkflowDefinitionBuilder AddDecision(string id, string? displayName = null) => AddNode(id, ActivityTypes.Decision, displayName);
+    public WorkflowDefinitionBuilder AddDecision(string id, string? displayName = null) => AddNode(id, new ActivityType(ActivityTypes.Decision), displayName);
 
     /// <summary>
     /// 并行网关
     /// </summary>
-    public WorkflowDefinitionBuilder AddParallel(string id, string? displayName = null) => AddNode(id, ActivityTypes.Parallel, displayName);
+    public WorkflowDefinitionBuilder AddParallel(string id, string? displayName = null) => AddNode(id, new ActivityType(ActivityTypes.Parallel), displayName);
 
     /// <summary>
     /// 汇合节点
     /// </summary>
     public WorkflowDefinitionBuilder AddJoin(string id, bool waitAny = false, string? displayName = null)
-        => AddNode(id, ActivityTypes.Join, displayName, builder => builder.WithProperty(JoinActivity.ModeProperty, waitAny ? JoinActivity.WaitAny : JoinActivity.WaitAll));
+        => AddNode(id, new ActivityType(ActivityTypes.Join), displayName, builder => builder.WithProperty(JoinActivity.ModeProperty, waitAny ? JoinActivity.WaitAny : JoinActivity.WaitAll));
 
     /// <summary>
     /// 延时节点
     /// </summary>
     public WorkflowDefinitionBuilder AddDelay(string id, TimeSpan duration, string? displayName = null)
-        => AddNode(id, ActivityTypes.Delay, displayName, builder => builder.WithProperty(DelayActivity.DurationProperty, JsonValue.Create(duration.TotalSeconds)));
+        => AddNode(id, new ActivityType(ActivityTypes.Delay), displayName, builder => builder.WithProperty(DelayActivity.DurationProperty, JsonValue.Create(duration.TotalSeconds)));
 
     /// <summary>
     /// 用户任务节点
     /// </summary>
-    public WorkflowDefinitionBuilder AddUserTask(string id, string? displayName, Action<WorkflowNodeBuilder> configure) => AddNode(id, ActivityTypes.UserTask, displayName, configure);
+    public WorkflowDefinitionBuilder AddUserTask(string id, string? displayName, Action<WorkflowNodeBuilder> configure) => AddNode(id, new ActivityType(ActivityTypes.UserTask), displayName, configure);
 
     /// <summary>
     /// 事件网关：等待多个信号或超时中先到的一个
     /// </summary>
     public WorkflowDefinitionBuilder AddEventGateway(string id, IReadOnlyList<string> signals, TimeSpan? timeout = null, bool acceptAnyCorrelation = false, string? displayName = null)
-        => AddNode(id, ActivityTypes.EventGateway, displayName, builder =>
+        => AddNode(id, new ActivityType(ActivityTypes.EventGateway), displayName, builder =>
         {
             builder.WithProperty(EventGatewayActivity.SignalsProperty, new JsonArray(signals.Select(static signal => (JsonNode?)JsonValue.Create(signal)).ToArray()));
             if (timeout is { } span)
@@ -229,7 +229,7 @@ public sealed class WorkflowDefinitionBuilder
     /// HTTP 请求
     /// </summary>
     public WorkflowDefinitionBuilder AddHttp(string id, string url, string method = "GET", string? displayName = null, Action<WorkflowNodeBuilder>? configure = null)
-        => AddNode(id, ActivityTypes.Http, displayName, builder =>
+        => AddNode(id, new ActivityType(ActivityTypes.Http), displayName, builder =>
         {
             builder.WithProperty(HttpActivity.UrlProperty, url).WithProperty(HttpActivity.MethodProperty, method);
             configure?.Invoke(builder);
@@ -239,7 +239,7 @@ public sealed class WorkflowDefinitionBuilder
     /// 外部任务
     /// </summary>
     public WorkflowDefinitionBuilder AddExternalTask(string id, string topic, JsonObject? payload = null, string? displayName = null)
-        => AddNode(id, ActivityTypes.ExternalTask, displayName, builder =>
+        => AddNode(id, new ActivityType(ActivityTypes.ExternalTask), displayName, builder =>
         {
             builder.WithProperty(ExternalTaskActivity.TopicProperty, topic);
             if (payload is not null)
@@ -252,7 +252,7 @@ public sealed class WorkflowDefinitionBuilder
     /// 补偿节点
     /// </summary>
     public WorkflowDefinitionBuilder AddCompensate(string id, IReadOnlyList<string>? nodeIds = null, string? displayName = null)
-        => AddNode(id, ActivityTypes.Compensate, displayName, nodeIds is null ? null : builder => builder.WithProperty(CompensateActivity.NodeIdsProperty, new JsonArray(nodeIds.Select(static node => (JsonNode?)JsonValue.Create(node)).ToArray())));
+        => AddNode(id, new ActivityType(ActivityTypes.Compensate), displayName, nodeIds is null ? null : builder => builder.WithProperty(CompensateActivity.NodeIdsProperty, new JsonArray(nodeIds.Select(static node => (JsonNode?)JsonValue.Create(node)).ToArray())));
 
     /// <summary>
     /// 加转移

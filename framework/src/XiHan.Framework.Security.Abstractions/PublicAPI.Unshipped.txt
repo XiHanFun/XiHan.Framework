@@ -283,7 +283,6 @@ XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Equals(XiHan.F
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Permission.get -> string!
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.PermissionGrant(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject Subject, string! Permission, string? TenantId = null) -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Subject.get -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
-XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Subject.init -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.TenantId.get -> string?
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.TenantId.init -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantStoreExtensions

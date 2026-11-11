@@ -29,7 +29,7 @@ public sealed class ReadOnlyInvocationTests
     {
         await using var host = await StartAsync();
         await host.PublishAsync(Approval());
-        var running = (await host.StartAsync("ro-approval")).ValueOrThrow();
+        var running = (await host.StartAsync(new WorkflowName("ro-approval"))).ValueOrThrow();
         var task = Assert.Single(await host.PendingAsync("alice"));
 
         await host.AsTenantAsync(null, async services =>
@@ -39,7 +39,7 @@ public sealed class ReadOnlyInvocationTests
             var catalog = services.GetRequiredService<IWorkflowDefinitionCatalog>();
 
             // 引擎、任务服务、定义目录的写入都在取锁、执行活动之前拒绝，错误码与消息键同数据库实现
-            AssertRejected((await engine.StartAsync(new WorkflowStartRequest { Name = "ro-approval" }, CancellationToken.None)).Error);
+            AssertRejected((await engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("ro-approval") }, CancellationToken.None)).Error);
             AssertRejected((await engine.SuspendAsync(running.Id, "hold", CancellationToken.None)).Error);
             AssertRejected((await tasks.CompleteAsync(new UserTaskCompletion(task.Id, "alice")
             {
@@ -99,7 +99,7 @@ public sealed class ReadOnlyInvocationTests
     /// 开始 → 指派给 alice 的用户任务 → 结束
     /// </summary>
     private static WorkflowDefinition Approval()
-        => WorkflowDefinitionBuilder.Create("ro-approval")
+        => WorkflowDefinitionBuilder.Create(new WorkflowName("ro-approval"))
             .AddStart()
             .AddUserTask("approve", "Approve", static node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice"))
             .AddEnd()

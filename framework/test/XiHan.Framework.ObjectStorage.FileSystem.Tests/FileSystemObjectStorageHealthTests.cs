@@ -3,6 +3,7 @@
 
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.Primitives;
@@ -37,7 +38,7 @@ public sealed class FileSystemObjectStorageHealthTests : IDisposable
         Assert.Equal(LifecycleState.Ready, ready.State);
 
         var store = host.Services.GetRequiredService<IBlobStore>();
-        Assert.True((await store.PutAsync("hosted", "k", Encoding.UTF8.GetBytes("abc"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+        Assert.True((await store.PutAsync(new ContainerName("hosted"), new BlobKey("k"), Encoding.UTF8.GetBytes("abc"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
 
         var health = host.App.Health();
         var degraded = Assert.Single(health.Contributions, static c => c.Name == FileSystemObjectStorageFeature.HealthName);

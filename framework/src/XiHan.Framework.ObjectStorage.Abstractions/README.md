@@ -24,9 +24,9 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 一般由实现包带入；业务代码注入 `IBlobStore` 读写对象：
 
 ```csharp
-var put = await store.PutAsync("invoices", "2026/10/inv-1.pdf", stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);
-var page = await store.ListAsync("invoices", new BlobQuery { Prefix = "2026/10/", PageSize = 100 }, ct);
-var deleted = await store.DeleteAsync("invoices", [key1, key2], ct);   // 逐项结果
+var put = await store.PutAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);
+var page = await store.ListAsync(new ContainerName("invoices"), new BlobQuery { Prefix = "2026/10/", PageSize = 100 }, ct);
+var deleted = await store.DeleteAsync(new ContainerName("invoices"), [key1, key2], ct);   // 逐项结果
 ```
 
 ## 主要类型

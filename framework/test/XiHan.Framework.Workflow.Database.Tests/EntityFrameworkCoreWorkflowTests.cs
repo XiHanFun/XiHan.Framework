@@ -33,7 +33,7 @@ public sealed class EntityFrameworkCoreWorkflowTests
             services.AddWorkflowOutcomeHandler<GrantingOutcomeHandler>();
         });
         await using var workflow = new WorkflowEngineHost(host.Services, static _ => ValueTask.FromResult(0), database);
-        await workflow.PublishAsync(WorkflowDefinitionBuilder.Create("grant")
+        await workflow.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("grant"))
             .AddStart()
             .AddUserTask("approve", "Approve", static node => node.WithAssigneeRule("User", ["alice"]))
             .AddEnd("approved", outcome: UserTaskOutcomes.Approved)
@@ -46,7 +46,7 @@ public sealed class EntityFrameworkCoreWorkflowTests
             (await sp.GetRequiredService<IRepository<ApprovalGrant, string>>().AddAsync(new ApprovalGrant { Id = "seed", InstanceId = "none" }, CancellationToken.None)).ThrowIfFailure();
             await using var held = (await sp.GetRequiredService<IWorkflowInstanceLock>().AcquireAsync("instance-1", CancellationToken.None)).ValueOrThrow();
             Assert.Equal((1L, 0L), (Count(database.LeasePath, "WorkflowLockRecord"), Count(database.Path, "WorkflowLockRecord")));
-            return (await sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = "grant" }, CancellationToken.None)).ValueOrThrow();
+            return (await sp.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = new WorkflowName("grant") }, CancellationToken.None)).ValueOrThrow();
         });
         var task = Assert.Single(await workflow.PendingAsync("alice"));
 

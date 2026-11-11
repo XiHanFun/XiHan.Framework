@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
@@ -33,10 +34,10 @@ public sealed class S3PresignTests
     {
         var store = S3TestServer.CreateStore(Bucket);
         var key = Guid.NewGuid().ToString("N")[..8] + "/report.txt";
-        Assert.True((await store.PutAsync(Bucket, key, Encoding.UTF8.GetBytes("0123456789"), new BlobPutOptions { ContentType = "text/plain" }, CancellationToken.None)).IsSuccess);
+        Assert.True((await store.PutAsync(new ContainerName(Bucket), new BlobKey(key), Encoding.UTF8.GetBytes("0123456789"), new BlobPutOptions { ContentType = "text/plain" }, CancellationToken.None)).IsSuccess);
 
         // 下载：整读带保存文件名，范围请求 206
-        var download = (await store.SignAsync(Bucket, key, BlobUrlRequest.ForDownload(downloadFileName: "报告.txt"), CancellationToken.None)).ValueOrThrow();
+        var download = (await store.SignAsync(new ContainerName(Bucket), new BlobKey(key), BlobUrlRequest.ForDownload(downloadFileName: "报告.txt"), CancellationToken.None)).ValueOrThrow();
         Assert.True(download.Url.IsAbsoluteUri);
         using (var whole = await _http.GetAsync(download.Url))
         {
@@ -53,13 +54,13 @@ public sealed class S3PresignTests
 
         // 上传：限定内容类型，请求带上签出的头即成功，存进去的内容类型就是它
         var target = Guid.NewGuid().ToString("N")[..8] + "/upload.md";
-        var upload = (await store.SignAsync(Bucket, target, BlobUrlRequest.ForUpload(contentType: "text/markdown"), CancellationToken.None)).ValueOrThrow();
+        var upload = (await store.SignAsync(new ContainerName(Bucket), new BlobKey(target), BlobUrlRequest.ForUpload(contentType: "text/markdown"), CancellationToken.None)).ValueOrThrow();
         using (var put = await _http.PutAsync(upload.Url, new ByteArrayContent(Encoding.UTF8.GetBytes("# hi")) { Headers = { ContentType = new MediaTypeHeaderValue(upload.Headers["Content-Type"]) } }))
         {
             Assert.Equal(HttpStatusCode.OK, put.StatusCode);
         }
 
-        Assert.Equal("text/markdown", (await store.HeadAsync(Bucket, target, CancellationToken.None)).ValueOrThrow().ContentType);
+        Assert.Equal("text/markdown", (await store.HeadAsync(new ContainerName(Bucket), new BlobKey(target), CancellationToken.None)).ValueOrThrow().ContentType);
     }
 
     [Fact]
@@ -67,14 +68,14 @@ public sealed class S3PresignTests
     {
         var store = S3TestServer.CreateStore(Bucket);
         var key = Guid.NewGuid().ToString("N")[..8] + "/video.bin";
-        var upload = (await store.StartAsync(Bucket, key, new BlobPutOptions { ContentType = "video/mp4" }, CancellationToken.None)).ValueOrThrow();
+        var upload = (await store.StartAsync(new ContainerName(Bucket), new BlobKey(key), new BlobPutOptions { ContentType = "video/mp4" }, CancellationToken.None)).ValueOrThrow();
         var first = new byte[BlobMultipart.MinPartBytes];
         Random.Shared.NextBytes(first);
 
         var parts = new List<BlobPart>();
         foreach (var (number, body) in new[] { (1, first), (2, Encoding.UTF8.GetBytes("end")) })
         {
-            var url = (await store.SignAsync(Bucket, key, BlobUrlRequest.ForPart(upload, number), CancellationToken.None)).ValueOrThrow();
+            var url = (await store.SignAsync(new ContainerName(Bucket), new BlobKey(key), BlobUrlRequest.ForPart(upload, number), CancellationToken.None)).ValueOrThrow();
             using var put = await _http.PutAsync(url.Url, new ByteArrayContent(body));
             Assert.Equal(HttpStatusCode.OK, put.StatusCode);
             parts.Add(new BlobPart(number, put.Headers.ETag!.Tag.Trim('"')));
@@ -83,6 +84,6 @@ public sealed class S3PresignTests
         var completed = (await store.CompleteAsync(upload, parts, CancellationToken.None)).ValueOrThrow();
         Assert.Equal((first.Length + 3L, "video/mp4"), (completed.Length, completed.ContentType));
         byte[] expected = [.. first, .. Encoding.UTF8.GetBytes("end")];
-        Assert.Equal(expected, (await store.ReadAllBytesAsync(Bucket, key, CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(expected, (await store.ReadAllBytesAsync(new ContainerName(Bucket), new BlobKey(key), CancellationToken.None)).ValueOrThrow());
     }
 }

@@ -56,9 +56,9 @@ public sealed class HttpActivityOutboundTests
         await using var host = await TestHost.StartAsync(
             static b => b.UseFeature<InMemoryWorkflowFeature>(),
             [new($"{InMemoryWorkflowOptions.ConfigurationSection}:PollIntervalSeconds", "3600"), .. configuration]);
-        var definition = WorkflowDefinitionBuilder.Create("outbound")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("outbound"))
             .AddStart()
-            .AddNode("call", ActivityTypes.Http, configure: node => node.WithProperty(HttpActivity.UrlProperty, url))
+            .AddNode("call", new ActivityType(ActivityTypes.Http), configure: node => node.WithProperty(HttpActivity.UrlProperty, url))
             .AddEnd()
             .AddTransition("start", "call").AddTransition("call", "end")
             .Build();
@@ -70,7 +70,7 @@ public sealed class HttpActivityOutboundTests
         }
 
         await using var run = host.Services.CreateAsyncScope();
-        return (await run.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = "outbound" }, CancellationToken.None)).ValueOrThrow();
+        return (await run.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = new WorkflowName("outbound") }, CancellationToken.None)).ValueOrThrow();
     }
 
     /// <summary>

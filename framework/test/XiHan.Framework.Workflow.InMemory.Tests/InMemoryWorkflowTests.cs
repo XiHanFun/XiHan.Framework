@@ -127,7 +127,7 @@ public sealed class InMemoryWorkflowTests
         }
 
         // 到期的延时经后台轮询恢复，不用手工 Poll
-        var definition = WorkflowDefinitionBuilder.Create("poll-delay")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("poll-delay"))
             .AddStart().AddDelay("wait", TimeSpan.FromMilliseconds(20)).AddEnd()
             .AddTransition("start", "wait").AddTransition("wait", "end")
             .Build();
@@ -137,7 +137,7 @@ public sealed class InMemoryWorkflowTests
             var catalog = scope.ServiceProvider.GetRequiredService<IWorkflowDefinitionCatalog>();
             var created = (await catalog.CreateAsync(definition, CancellationToken.None)).ValueOrThrow();
             (await catalog.PublishAsync(created.Id, CancellationToken.None)).ValueOrThrow();
-            instanceId = (await scope.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = "poll-delay" }, CancellationToken.None)).ValueOrThrow().Id;
+            instanceId = (await scope.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = new WorkflowName("poll-delay") }, CancellationToken.None)).ValueOrThrow().Id;
         }
 
         var store = host.Services.GetRequiredService<IWorkflowInstanceStore>();
@@ -159,7 +159,7 @@ public sealed class InMemoryWorkflowTests
     {
         Id = WorkflowIdentifiers.NewId(),
         Name = new WorkflowName(name),
-        Nodes = [new WorkflowNode { Id = "start", ActivityType = ActivityTypes.Start }],
+        Nodes = [new WorkflowNode { Id = "start", ActivityType = new ActivityType(ActivityTypes.Start) }],
     };
 
     /// <summary>

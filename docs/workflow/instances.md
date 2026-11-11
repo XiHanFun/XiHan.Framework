@@ -93,18 +93,18 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 
-var onOrder = WorkflowDefinitionBuilder.Create("orders.fulfil")
-    .AddNode("start", ActivityTypes.Start, configure: node => node.WithProperty(StartActivity.SignalNameProperty, "order.created"))
+var onOrder = WorkflowDefinitionBuilder.Create(new WorkflowName("orders.fulfil"))
+    .AddNode("start", new ActivityType(ActivityTypes.Start), configure: node => node.WithProperty(StartActivity.SignalNameProperty, "order.created"))
     .AddExternalTask("ship", "warehouse.ship")
     .AddEnd()
     .AddTransition("start", "ship").AddTransition("ship", "end")
     .Build();
 
-var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
-    .AddNode("start", ActivityTypes.Start, configure: node => node
+var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconcile"))
+    .AddNode("start", new ActivityType(ActivityTypes.Start), configure: node => node
         .WithProperty(StartActivity.CronProperty, "0 0 2 * * *")
         .WithProperty(StartActivity.TimeZoneProperty, "Asia/Shanghai"))
-    .AddNode("log", ActivityTypes.Log, configure: node => node.WithProperty(LogActivity.MessageProperty, "reconcile started"))
+    .AddNode("log", new ActivityType(ActivityTypes.Log), configure: node => node.WithProperty(LogActivity.MessageProperty, "reconcile started"))
     .AddEnd()
     .AddTransition("start", "log").AddTransition("log", "end")
     .Build();

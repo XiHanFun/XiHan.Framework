@@ -79,7 +79,7 @@ public sealed class BlobStoresTests : IDisposable
             await registry.ProbeAsync(CancellationToken.None);
             Assert.Equal([("objectstorage.store.roomy", LifecycleState.Ready), ("objectstorage.store.tiny", LifecycleState.Ready)], registry.Check().Select(static s => (s.Name, s.State)));
 
-            Assert.True((await tiny.PutAsync("docs", "full.bin", Encoding.UTF8.GetBytes("1234"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+            Assert.True((await tiny.PutAsync(new ContainerName("docs"), new BlobKey("full.bin"), Encoding.UTF8.GetBytes("1234"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
             await registry.ProbeAsync(CancellationToken.None);
             var degraded = registry.Check().Single(static s => s.Name == "objectstorage.store.tiny");
             Assert.Equal((LifecycleState.Degraded, ObjectStorageErrors.QuotaExceeded), (degraded.State, degraded.Error?.Code));

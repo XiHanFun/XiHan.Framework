@@ -40,7 +40,7 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Assignees;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddActivity<AuditActivity>("Audit");
+builder.Services.AddActivity<AuditActivity>(new ActivityType("Audit"));
 builder.Services.AddAssigneeProvider<RoleAssigneeProvider>();
 
 public sealed class AuditActivity : IActivity
@@ -131,10 +131,10 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 {
     public async ValueTask<string?> RunAsync(string name, CancellationToken cancellationToken)
     {
-        var definition = WorkflowDefinitionBuilder.Create("demo.greeting")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("demo.greeting"))
             .AddVariable("name", required: true)
             .AddStart()
-            .AddNode("greet", ActivityTypes.SetVariable, configure: node => node
+            .AddNode("greet", new ActivityType(ActivityTypes.SetVariable), configure: node => node
                 .WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["greeting"] = "'hello ' + upper(name)" }))
             .AddEnd()
             .AddTransition("start", "greet").AddTransition("greet", "end")

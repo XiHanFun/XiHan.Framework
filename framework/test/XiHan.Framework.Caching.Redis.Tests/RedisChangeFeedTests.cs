@@ -29,13 +29,13 @@ public sealed class RedisChangeFeedTests
         using var remoteSubscription = remote.Subscribe(seenRemotely.Enqueue);
 
         // 本实例写入：写入返回时已同步通知，别的实例经频道收到
-        await local.SetAsync("feed:1", "v"u8.ToArray(), CacheEntryOptions.Default, CancellationToken.None);
+        await local.SetAsync(new CacheKey("feed:1"), "v"u8.ToArray(), CacheEntryOptions.Default, CancellationToken.None);
         Assert.Equal(["feed:1"], Assert.Single(seenLocally).Keys.Select(static key => key.Value));
         await WaitForCountAsync(seenRemotely, 1);
         Assert.Equal(["feed:1"], seenRemotely.Last().Keys.Select(static key => key.Value));
 
         // 没删到的不通知；按前缀删除带前缀、不带键
-        Assert.False(await local.RemoveAsync("feed:missing", CancellationToken.None));
+        Assert.False(await local.RemoveAsync(new CacheKey("feed:missing"), CancellationToken.None));
         Assert.Equal(1, await local.RemoveByPrefixAsync("feed:", CancellationToken.None));
         await WaitForCountAsync(seenRemotely, 2);
         Assert.Equal(2, seenLocally.Count);
@@ -43,7 +43,7 @@ public sealed class RedisChangeFeedTests
         Assert.Empty(seenRemotely.Last().Keys);
 
         // 别的实例写入：本实例经频道收到；发出者只有本地同步的那一次，频道上的消息不回送给它
-        await remote.SetManyAsync([new CacheEntry("feed:2", "a"u8.ToArray(), CacheEntryOptions.Default), new CacheEntry("feed:3", "b"u8.ToArray(), CacheEntryOptions.Default)], CancellationToken.None);
+        await remote.SetManyAsync([new CacheEntry(new CacheKey("feed:2"), "a"u8.ToArray(), CacheEntryOptions.Default), new CacheEntry(new CacheKey("feed:3"), "b"u8.ToArray(), CacheEntryOptions.Default)], CancellationToken.None);
         await WaitForCountAsync(seenLocally, 3);
         Assert.Equal(["feed:2", "feed:3"], seenLocally.Last().Keys.Select(static key => key.Value));
         await Task.Delay(TimeSpan.FromMilliseconds(300));
@@ -52,7 +52,7 @@ public sealed class RedisChangeFeedTests
 
         // 退订后不再收到
         remoteSubscription.Dispose();
-        await local.SetAsync("feed:4", "c"u8.ToArray(), CacheEntryOptions.Default, CancellationToken.None);
+        await local.SetAsync(new CacheKey("feed:4"), "c"u8.ToArray(), CacheEntryOptions.Default, CancellationToken.None);
         await Task.Delay(TimeSpan.FromMilliseconds(300));
         Assert.Equal(3, seenRemotely.Count);
     }
@@ -70,7 +70,7 @@ public sealed class RedisChangeFeedTests
         using var localSubscription = silent.Subscribe(seenLocally.Enqueue);
         using var remoteSubscription = listener.Subscribe(seenRemotely.Enqueue);
 
-        await silent.SetAsync("feed:1", "v"u8.ToArray(), CacheEntryOptions.Default, CancellationToken.None);
+        await silent.SetAsync(new CacheKey("feed:1"), "v"u8.ToArray(), CacheEntryOptions.Default, CancellationToken.None);
         Assert.Single(seenLocally);
         await Task.Delay(TimeSpan.FromMilliseconds(300));
         Assert.Empty(seenRemotely);

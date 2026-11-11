@@ -142,11 +142,11 @@ public sealed class HttpActivityTimeoutTests
                 services.AddSingleton<TimeProvider>(clock);
                 services.AddSingleton(probe);
                 services.AddSingleton(new WorkflowHttpClient(new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan }));
-                services.AddActivity<ProbeActivity>(ProbeActivity.TypeName);
+                services.AddActivity<ProbeActivity>(new ActivityType(ProbeActivity.TypeName));
             });
-        var definition = WorkflowDefinitionBuilder.Create("http-attribution")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("http-attribution"))
             .AddStart()
-            .AddNode("call", ProbeActivity.TypeName, configure: node => node
+            .AddNode("call", new ActivityType(ProbeActivity.TypeName), configure: node => node
                 .WithProperty(HttpActivity.UrlProperty, "https://api.test/orders")
                 .WithProperty(HttpActivity.TimeoutSecondsProperty, _timeout.TotalSeconds))
             .AddEnd()
@@ -160,7 +160,7 @@ public sealed class HttpActivityTimeoutTests
         }
 
         await using var run = host.Services.CreateAsyncScope();
-        var started = run.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = "http-attribution" }, CancellationToken.None);
+        var started = run.ServiceProvider.GetRequiredService<IWorkflowEngine>().StartAsync(new WorkflowStartRequest { Name = new WorkflowName("http-attribution") }, CancellationToken.None);
 
         // 请求已交给客户端、两个令牌都还没触发：从这里起由用例决定先后
         await handler.Entered.Task;

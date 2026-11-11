@@ -80,7 +80,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | 键 `BlobKey` | `/` 分段，1 到 1024 个字符；每段非空、不是 `.` 或 `..`；不含空白、控制字符与 `\`；首段不是 `.xihan`（保留给框架）；区分大小写 | `2026/10/inv-1.pdf` |
 | 自定义元数据名 | `^[a-z0-9][a-z0-9-]{0,63}$`，值为任意字符串 | `uploaded-by` |
 
-`ContainerName` 与 `BlobKey` 都能从 `string` 隐式转换，不合法在构造时抛出 `ArgumentException`，不会进入 Provider。来自用户输入的键先用 `BlobKey.IsValid` 判断。
+`ContainerName` 与 `BlobKey` 用构造或显式转换从 `string` 创建，不合法时抛出 `ArgumentException`，不会进入 Provider；`default` 值不是合法标识，读 `Value` 抛 `InvalidOperationException`。来自用户输入的键先用 `BlobKey.IsValid` 判断。
 
 首段是 `.xihan` 的键（`BlobKey.ReservedSegment`，`.xihan` 本身与 `.xihan/…`，区分大小写）保留给框架自己的对象，例如 S3 的条件写入探测键 `.xihan/probe/conditional-write`：业务写不进、读不到、删不掉，各存储列举时跳过存储里已有的这类对象，所以它们不会混进业务列举。以 `.xihan` 开头的查询前缀不报错，列举结果总是空的。
 
@@ -116,7 +116,7 @@ app.MapPut("/files/{name}", async (string name, HttpContext http, IBlobStore sto
         // 不覆盖：同名对象已存在时返回 OBJECTSTORAGE_CONFLICT_001，宿主映射为 409
         Overwrite = false,
     };
-    var put = await store.PutAsync("uploads", key, http.Request.Body, options, ct);
+    var put = await store.PutAsync(new ContainerName("uploads"), new BlobKey(key), http.Request.Body, options, ct);
     if (!put.TryGetValue(out var metadata))
     {
         http.GetXiHanContext().ValueOrThrow().SetOutcome(put.Error!);
@@ -133,7 +133,7 @@ app.MapGet("/files/{**key}", async (string key, HttpContext http, IBlobStore sto
         return Results.NotFound();
     }
 
-    var opened = await store.GetAsync("uploads", key, ct);
+    var opened = await store.GetAsync(new ContainerName("uploads"), new BlobKey(key), ct);
     if (!opened.TryGetValue(out var blob))
     {
         http.GetXiHanContext().ValueOrThrow().SetOutcome(opened.Error!);
@@ -157,10 +157,10 @@ app.Run();
 批量写入 `PutAsync(container, uploads, cancellationToken)` 按顺序逐项执行，返回与入参同序的逐项结果 `BlobPutResult`（`Key` 与 `Outcome`）；两项之间检查取消，已完成的项不回滚。空列表返回空，重复的键按顺序各执行一次：
 
 ```csharp
-var results = await store.PutAsync("invoices",
+var results = await store.PutAsync(new ContainerName("invoices"),
 [
-    new BlobUpload("2026/10/inv-1.pdf", first, new BlobPutOptions { ContentType = "application/pdf" }),
-    new BlobUpload("2026/10/inv-2.pdf", second, new BlobPutOptions { ContentType = "application/pdf" }),
+    new BlobUpload(new BlobKey("2026/10/inv-1.pdf"), first, new BlobPutOptions { ContentType = "application/pdf" }),
+    new BlobUpload(new BlobKey("2026/10/inv-2.pdf"), second, new BlobPutOptions { ContentType = "application/pdf" }),
 ], cancellationToken);
 
 foreach (var result in results.Where(static r => r.Outcome.IsFailure))
@@ -182,7 +182,7 @@ foreach (var result in results.Where(static r => r.Outcome.IsFailure))
 `DeleteAsync(container, keys, cancellationToken)` 批量删除，逐项结果 `BlobDeleteResult` 的 `Outcome` 为 `true` 表示存在过并已删除，`false` 表示本来就不存在，失败时带错误。同一批里重复的键第二次报告不存在：
 
 ```csharp
-var deleted = await store.DeleteAsync("invoices", ["2026/10/inv-1.pdf", "2026/10/inv-2.pdf"], cancellationToken);
+var deleted = await store.DeleteAsync(new ContainerName("invoices"), [new BlobKey("2026/10/inv-1.pdf"), new BlobKey("2026/10/inv-2.pdf")], cancellationToken);
 var removed = deleted.Count(static d => d.Outcome.ValueOr(false));
 ```
 
@@ -196,7 +196,7 @@ var removed = deleted.Count(static d => d.Outcome.ValueOr(false));
 var query = new BlobQuery { Prefix = "2026/10/", PageSize = 100 };
 while (true)
 {
-    var page = (await store.ListAsync("invoices", query, cancellationToken)).ValueOrThrow();
+    var page = (await store.ListAsync(new ContainerName("invoices"), query, cancellationToken)).ValueOrThrow();
     foreach (var item in page.Items)
     {
         Console.WriteLine($"{item.Key} {item.Length}");

@@ -51,7 +51,7 @@
 
 `ICache.Store` 暴露底层字节存储，锁与幂等用它的原子原语。存储不可达时所有方法抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不会当成未命中返回。
 
-缓存键是 `CacheKey`：非空、不含空白与控制字符、不超过 512 个字符（`CacheKey.MaxLength`）、区分大小写；字符串可以隐式转换成它，不合法时抛 `ArgumentException`。缓存不自动按租户隔离键，多租户应用要把租户 ID 写进键里（幂等中间件是例外，见[分布式锁与幂等](/caching/locks)）。
+缓存键是 `CacheKey`：非空、不含空白与控制字符、不超过 512 个字符（`CacheKey.MaxLength`）、区分大小写；从字符串创建用构造或显式转换（`new CacheKey(text)`、`(CacheKey)text`），不合法时抛 `ArgumentException`；`default(CacheKey)` 不是合法键，读 `Value` 抛 `InvalidOperationException`。缓存不自动按租户隔离键，多租户应用要把租户 ID 写进键里（幂等中间件是例外，见[分布式锁与幂等](/caching/locks)）。
 
 ## 启用
 

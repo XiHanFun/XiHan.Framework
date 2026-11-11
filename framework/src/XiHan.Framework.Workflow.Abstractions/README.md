@@ -24,12 +24,12 @@ dotnet add package XiHan.Framework.Workflow.Abstractions --prerelease
 一般由实现包带入，定义流程或写自定义活动与存储提供程序时才直接引用；运行流程需要同时装配 `Workflow.InMemory` 或 `Workflow.Database`。登记自定义活动，并定义、发布、启动流程：
 
 ```csharp
-builder.Services.AddActivity<AuditActivity>("Audit");
+builder.Services.AddActivity<AuditActivity>(new ActivityType("Audit"));
 
-var definition = WorkflowDefinitionBuilder.Create("demo.greeting")
+var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("demo.greeting"))
     .AddVariable("name", required: true)
     .AddStart()
-    .AddNode("greet", ActivityTypes.SetVariable, configure: node => node
+    .AddNode("greet", new ActivityType(ActivityTypes.SetVariable), configure: node => node
         .WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["greeting"] = "'hello ' + upper(name)" }))
     .AddEnd()
     .AddTransition("start", "greet").AddTransition("greet", "end")

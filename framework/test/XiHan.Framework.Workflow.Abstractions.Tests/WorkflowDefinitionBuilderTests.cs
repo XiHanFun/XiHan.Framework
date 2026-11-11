@@ -17,12 +17,12 @@ public sealed class WorkflowDefinitionBuilderTests
     [Fact]
     public void Build_ProducesNodesTransitionsAndMetadata()
     {
-        var definition = WorkflowDefinitionBuilder.Create("order-approval", "Order approval")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("order-approval"), "Order approval")
             .WithDescription("desc").WithCategory("sales").WithCompensation().WithProperties(new JsonObject { ["icon"] = "cart" })
             .AddVariable("amount", required: true, description: "The amount")
             .AddVariable("currency", defaultValue: "CNY")
             .AddStart()
-            .AddNode("flaky", ActivityTypes.Log, "Flaky", node => node
+            .AddNode("flaky", new ActivityType(ActivityTypes.Log), "Flaky", node => node
                 .WithProperty("Text", "hello").WithProperty("Count", 3).WithProperty("Flag", true).WithProperty("Shape", new JsonObject { ["k"] = "v" })
                 .WithRetry(3, TimeSpan.FromSeconds(2), 1.5).WithTimeout(TimeSpan.FromMinutes(1)).WithContinueOnError().WithDisplayName("Renamed"))
             .AddUserTask("approve", "Approve", node => node.WithAssigneeRule(AssigneeRuleTypes.User, "alice", "bob").WithAssigneeRule(AssigneeRuleTypes.Starter))
@@ -43,7 +43,7 @@ public sealed class WorkflowDefinitionBuilderTests
         Assert.Equal(("Renamed", "hello", 3, true, "v"), (flaky.DisplayName, flaky.Properties["Text"]!.GetValue<string>(), flaky.Properties["Count"]!.GetValue<int>(), flaky.Properties["Flag"]!.GetValue<bool>(), flaky.Properties["Shape"]!["k"]!.GetValue<string>()));
         Assert.Equal((3, TimeSpan.FromSeconds(2), 1.5), (flaky.RetryPolicy!.MaxAttempts, flaky.RetryPolicy.FirstDelay, flaky.RetryPolicy.BackoffFactor));
         Assert.Equal((TimeSpan.FromMinutes(1), true), (flaky.Timeout, flaky.ContinueOnError));
-        Assert.Equal("Flaky", WorkflowDefinitionBuilder.Create("x").AddNode("flaky", ActivityTypes.Log, "Flaky").Build().FindNode("flaky").ValueOrThrow().Title);
+        Assert.Equal("Flaky", WorkflowDefinitionBuilder.Create(new WorkflowName("x")).AddNode("flaky", new ActivityType(ActivityTypes.Log), "Flaky").Build().FindNode("flaky").ValueOrThrow().Title);
 
         var rules = AssigneeRule.Parse(definition.FindNode("approve").ValueOrThrow().Properties[UserTaskActivity.AssigneeRulesProperty]).ValueOrThrow();
         Assert.Equal([(AssigneeRuleTypes.User, "alice,bob"), (AssigneeRuleTypes.Starter, "")], rules.Select(static rule => (rule.Type, string.Join(',', rule.Values))));
@@ -63,8 +63,8 @@ public sealed class WorkflowDefinitionBuilderTests
     [Fact]
     public void Build_RejectsInvalidIdentifiers()
     {
-        Assert.ThrowsAny<ArgumentException>(() => WorkflowDefinitionBuilder.Create("Bad Name"));
-        Assert.ThrowsAny<ArgumentException>(() => WorkflowDefinitionBuilder.Create("ok").AddNode("bad id", ActivityTypes.Log));
-        Assert.ThrowsAny<ArgumentException>(() => WorkflowDefinitionBuilder.Create("ok").AddNode("a", "bad type!"));
+        Assert.ThrowsAny<ArgumentException>(() => WorkflowDefinitionBuilder.Create(new WorkflowName("Bad Name")));
+        Assert.ThrowsAny<ArgumentException>(() => WorkflowDefinitionBuilder.Create(new WorkflowName("ok")).AddNode("bad id", new ActivityType(ActivityTypes.Log)));
+        Assert.ThrowsAny<ArgumentException>(() => WorkflowDefinitionBuilder.Create(new WorkflowName("ok")).AddNode("a", new ActivityType("bad type!")));
     }
 }

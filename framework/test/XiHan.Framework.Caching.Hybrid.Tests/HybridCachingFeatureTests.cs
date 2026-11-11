@@ -30,8 +30,8 @@ public sealed class HybridCachingFeatureTests
         var shared = Assert.IsType<InMemoryObjectCache>(host.Services.GetRequiredService<ISharedCache>());
         Assert.Same(shared.Store, cache.Store);
 
-        await cache.SetAsync<string>("k", "v", CacheEntryOptions.Default, CancellationToken.None);
-        Assert.Equal("v", (await shared.GetAsync<string>("k", CancellationToken.None)).ValueOrThrow());
+        await cache.SetAsync<string>(new CacheKey("k"), "v", CacheEntryOptions.Default, CancellationToken.None);
+        Assert.Equal("v", (await shared.GetAsync<string>(new CacheKey("k"), CancellationToken.None)).ValueOrThrow());
         Assert.Equal(1, cache.LocalCount);
     }
 }

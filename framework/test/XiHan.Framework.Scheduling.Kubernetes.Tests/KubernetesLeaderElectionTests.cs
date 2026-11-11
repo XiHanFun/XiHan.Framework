@@ -43,7 +43,7 @@ public sealed class KubernetesLeaderElectionTests
     public async Task Acquire_CreatesLease_TakesOverWhenExpired_AndRenewsWithVersion()
     {
         var (api, a, b, clock) = Cluster();
-        JobName resource = "scheduling.jobs";
+        JobName resource = new JobName("scheduling.jobs");
 
         var leaseA = (await a.TryAcquireAsync(resource, TimeSpan.FromSeconds(15), CancellationToken.None)).ValueOrThrow();
         Assert.Equal(("pod-a", 15, 0), ((string?)api.Spec("orders-scheduler")!["holderIdentity"], (int?)api.Spec("orders-scheduler")!["leaseDurationSeconds"], (int?)api.Spec("orders-scheduler")!["leaseTransitions"]));
@@ -80,17 +80,17 @@ public sealed class KubernetesLeaderElectionTests
     {
         var (api, a, _, _) = Cluster();
         api.FailNext = true;
-        var failed = await a.TryAcquireAsync("scheduling.jobs", TimeSpan.FromSeconds(5), CancellationToken.None);
+        var failed = await a.TryAcquireAsync(new JobName("scheduling.jobs"), TimeSpan.FromSeconds(5), CancellationToken.None);
         Assert.Equal(SchedulingErrors.LeaseUnavailable, failed.Error?.Code);
         Assert.Contains("injected failure", (string)failed.Error!.Details!["reason"]!, StringComparison.Ordinal);
 
-        Assert.True((await a.TryAcquireAsync("reports.nightly", TimeSpan.FromSeconds(5), CancellationToken.None)).IsSuccess);
+        Assert.True((await a.TryAcquireAsync(new JobName("reports.nightly"), TimeSpan.FromSeconds(5), CancellationToken.None)).IsSuccess);
         Assert.NotNull(api.Spec("orders-scheduler-reports-nightly"));
         Assert.Null(api.Spec("orders-scheduler"));
 
         var wrongToken = new KubernetesSchedulingOptions { Namespace = "shop", Holder = "x", Token = "bad", ApiServer = new Uri("https://api.test") };
         var unauthorized = new KubernetesLeaderElection(new KubernetesLeaseClient(new HttpClient(api) { BaseAddress = wrongToken.ApiServer }, wrongToken), wrongToken, TimeProvider.System, NullLoggerFactory.Instance);
-        Assert.Equal(SchedulingErrors.LeaseUnavailable, (await unauthorized.TryAcquireAsync("scheduling.jobs", TimeSpan.FromSeconds(5), CancellationToken.None)).Error?.Code);
+        Assert.Equal(SchedulingErrors.LeaseUnavailable, (await unauthorized.TryAcquireAsync(new JobName("scheduling.jobs"), TimeSpan.FromSeconds(5), CancellationToken.None)).Error?.Code);
     }
 
     [Fact]
@@ -106,8 +106,8 @@ public sealed class KubernetesLeaderElectionTests
         }).Build());
         Assert.Equal(("orders-scheduler", "shop", "pod-7", "/tmp/token"), (options.Lease, options.ResolveNamespace(), options.ResolveHolder(), options.TokenPath));
         Assert.Equal(new Uri("https://10.0.0.1:6443"), options.ResolveApiServer());
-        Assert.Equal("orders-scheduler", options.LeaseNameFor("scheduling.jobs"));
-        Assert.Equal("orders-scheduler-reports-nightly", options.LeaseNameFor("reports.nightly"));
+        Assert.Equal("orders-scheduler", options.LeaseNameFor(new JobName("scheduling.jobs")));
+        Assert.Equal("orders-scheduler-reports-nightly", options.LeaseNameFor(new JobName("reports.nightly")));
 
         var defaults = new KubernetesSchedulingOptions();
         Assert.Equal("xihan-scheduler", defaults.Lease);

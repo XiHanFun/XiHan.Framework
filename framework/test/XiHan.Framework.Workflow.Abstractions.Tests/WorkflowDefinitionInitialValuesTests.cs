@@ -22,7 +22,7 @@ public sealed class WorkflowDefinitionInitialValuesTests
     {
         // 只写必填成员读出来的，与直接构造（必填成员相同）的逐个成员比：以后加了带初值的 init 成员而初值在读入时丢失，这里就失败
         AssertSameMembers(WorkflowJsonContext.Default.WorkflowDefinition, "{\"id\":\"d\",\"name\":\"ok\"}", new WorkflowDefinition { Id = "d", Name = new WorkflowName("ok") });
-        AssertSameMembers(WorkflowJsonContext.Default.WorkflowNode, "{\"id\":\"a\",\"activityType\":\"Log\"}", new WorkflowNode { Id = "a", ActivityType = ActivityTypes.Log });
+        AssertSameMembers(WorkflowJsonContext.Default.WorkflowNode, "{\"id\":\"a\",\"activityType\":\"Log\"}", new WorkflowNode { Id = "a", ActivityType = new ActivityType(ActivityTypes.Log) });
         AssertSameMembers(WorkflowJsonContext.Default.WorkflowTransition, "{\"id\":\"t\",\"sourceNodeId\":\"a\",\"targetNodeId\":\"b\"}", new WorkflowTransition { Id = "t", SourceNodeId = "a", TargetNodeId = "b" });
         AssertSameMembers(WorkflowJsonContext.Default.WorkflowVariableDefinition, "{\"name\":\"x\"}", new WorkflowVariableDefinition { Name = "x" });
         AssertSameMembers(WorkflowJsonContext.Default.WorkflowRetryPolicy, "{}", new WorkflowRetryPolicy());

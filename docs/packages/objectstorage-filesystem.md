@@ -92,7 +92,7 @@ var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPat
 // 扫描已用量、清理残留的临时文件与过期的分片上传
 await store.InitializeAsync(CancellationToken.None);
 
-var put = await store.PutAsync("reports", "2026/10/summary.txt", "hello"u8.ToArray(), BlobPutOptions.Default, CancellationToken.None);
+var put = await store.PutAsync(new ContainerName("reports"), new BlobKey("2026/10/summary.txt"), "hello"u8.ToArray(), BlobPutOptions.Default, CancellationToken.None);
 Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 ```
 

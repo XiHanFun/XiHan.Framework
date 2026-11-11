@@ -57,20 +57,20 @@ public sealed class InMemorySchedulingTests
             {
                 services.AddSingleton<TimeProvider>(clock);
                 services.AddSingleton(log);
-                services.AddJob<RecordingJob>("nightly", JobSchedule.FromCron("0 3 * * *"));
+                services.AddJob<RecordingJob>(new JobName("nightly"), JobSchedule.FromCron("0 3 * * *"));
             });
         var engine = host.Services.GetRequiredService<JobSchedulerEngine>();
         // 第一个刻度：同步代码作业、取得租约，作业未到期
         clock.Advance(TimeSpan.FromSeconds(1));
         await WaitUntilAsync(() => engine.IsLeader);
-        Assert.Equal(new DateTimeOffset(2026, 10, 23, 3, 0, 0, TimeSpan.Zero), (await StatusAsync(engine, "nightly")).NextRun);
+        Assert.Equal(new DateTimeOffset(2026, 10, 23, 3, 0, 0, TimeSpan.Zero), (await StatusAsync(engine, new JobName("nightly"))).NextRun);
         Assert.Empty(log.Runs);
         // 跨过 03:00 的刻度：作业运行，下一次是明天（从计划时刻推算，节奏不漂移）
         clock.Advance(TimeSpan.FromSeconds(30));
-        await log.WaitAsync("nightly", 1, TimeSpan.FromSeconds(10));
+        await log.WaitAsync(new JobName("nightly"), 1, TimeSpan.FromSeconds(10));
         Assert.Equal((JobTrigger.Schedule, new DateTimeOffset(2026, 10, 23, 3, 0, 0, TimeSpan.Zero)), (log.Runs[0].Run.Trigger, log.Runs[0].Run.ScheduledAt));
-        await WaitUntilAsync(() => !StatusAsync(engine, "nightly").GetAwaiter().GetResult().IsRunning);
-        var status = await StatusAsync(engine, "nightly");
+        await WaitUntilAsync(() => !StatusAsync(engine, new JobName("nightly")).GetAwaiter().GetResult().IsRunning);
+        var status = await StatusAsync(engine, new JobName("nightly"));
         Assert.Equal(new DateTimeOffset(2026, 10, 24, 3, 0, 0, TimeSpan.Zero), status.NextRun);
         Assert.Equal((1L, new DateTimeOffset(2026, 10, 23, 3, 0, 0, TimeSpan.Zero)), (status.Triggers[0].FireCount, status.Triggers[0].PreviousFireAt));
         Assert.Equal(JobSource.Code, status.Job.Source);
@@ -86,18 +86,18 @@ public sealed class InMemorySchedulingTests
             services =>
             {
                 services.AddSingleton(log);
-                services.AddJob<RecordingJob>("tick", JobSchedule.Every(TimeSpan.FromMilliseconds(50)));
-                services.AddJob<RecordingJob>(new JobDefinition("free", JobSchedule.Every(TimeSpan.FromMilliseconds(50)), typeof(RecordingJob)) { RunOnEveryInstance = true });
+                services.AddJob<RecordingJob>(new JobName("tick"), JobSchedule.Every(TimeSpan.FromMilliseconds(50)));
+                services.AddJob<RecordingJob>(new JobDefinition(new JobName("free"), JobSchedule.Every(TimeSpan.FromMilliseconds(50)), typeof(RecordingJob)) { RunOnEveryInstance = true });
             });
         var engine = host.Services.GetRequiredService<JobSchedulerEngine>();
         // 显式 Provider 赢得 scheduling.leader：本包不再绑定自己的选举，引擎拿不到租约
         Assert.IsType<NeverLeaderElection>(host.Services.GetRequiredService<ILeaderElection>());
         Assert.Equal(["scheduling.jobs"], host.App.Graph["xihan.scheduling.inmemory"].SelectedCapabilities);
         Assert.False(host.Services.GetRequiredService<IJobStore>().IsShared);
-        await log.WaitAsync("free", 2, TimeSpan.FromSeconds(10));
+        await log.WaitAsync(new JobName("free"), 2, TimeSpan.FromSeconds(10));
         Assert.False(engine.IsLeader);
         Assert.DoesNotContain(log.Runs, static r => r.Run.Name == new JobName("tick"));
-        Assert.True((await engine.TriggerAsync("tick", CancellationToken.None)).IsSuccess);
+        Assert.True((await engine.TriggerAsync(new JobName("tick"), CancellationToken.None)).IsSuccess);
         Assert.Single(log.Runs, static r => r.Run.Name == new JobName("tick") && r.Run.Trigger == JobTrigger.Manual);
     }
 
@@ -112,20 +112,20 @@ public sealed class InMemorySchedulingTests
             {
                 services.AddSingleton<TimeProvider>(new FakeTimeProvider(new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero)));
                 services.AddSingleton(log);
-                services.AddJob<RecordingJob>("manual", JobSchedule.Every(TimeSpan.FromHours(1)));
+                services.AddJob<RecordingJob>(new JobName("manual"), JobSchedule.Every(TimeSpan.FromHours(1)));
             });
         var engine = host.Services.GetRequiredService<JobSchedulerEngine>();
-        Assert.True((await engine.TriggerAsync("manual", CancellationToken.None)).IsSuccess);
+        Assert.True((await engine.TriggerAsync(new JobName("manual"), CancellationToken.None)).IsSuccess);
 
         // 停止之后到达的手动触发不起新的运行：停止只等已经开始的运行
         await engine.StopAsync(CancellationToken.None);
-        var refused = await engine.TriggerAsync("manual", CancellationToken.None);
+        var refused = await engine.TriggerAsync(new JobName("manual"), CancellationToken.None);
         Assert.Equal(SchedulingErrors.SchedulerUnavailable, refused.Error?.Code);
         Assert.Single(log.Runs);
 
         // 再次启动后照常
         await engine.StartAsync(CancellationToken.None);
-        Assert.True((await engine.TriggerAsync("manual", CancellationToken.None)).IsSuccess);
+        Assert.True((await engine.TriggerAsync(new JobName("manual"), CancellationToken.None)).IsSuccess);
         Assert.Equal(2, log.Runs.Count);
     }
 
@@ -140,22 +140,22 @@ public sealed class InMemorySchedulingTests
             {
                 services.AddSingleton<TimeProvider>(new FakeTimeProvider(new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero)));
                 services.AddSingleton(log);
-                services.AddJob<RecordingJob>("manual", JobSchedule.Manual);
+                services.AddJob<RecordingJob>(new JobName("manual"), JobSchedule.Manual);
             });
         // 宿主里的引擎已随特性启动；另建一个同样装配、尚未启动的引擎
         using var engine = ActivatorUtilities.CreateInstance<JobSchedulerEngine>(host.Services);
 
         // 启动之前没有轮询照看运行：手动触发不起新的运行，与开始停止之后同码
-        var refused = await engine.TriggerAsync("manual", CancellationToken.None);
+        var refused = await engine.TriggerAsync(new JobName("manual"), CancellationToken.None);
         Assert.Equal(SchedulingErrors.SchedulerUnavailable, refused.Error?.Code);
         Assert.Equal("UNAVAILABLE", refused.Error?.Kind);
         Assert.Empty(log.Runs);
 
         // 启动后照常，停止后再次拒绝
         await engine.StartAsync(CancellationToken.None);
-        Assert.True((await engine.TriggerAsync("manual", CancellationToken.None)).IsSuccess);
+        Assert.True((await engine.TriggerAsync(new JobName("manual"), CancellationToken.None)).IsSuccess);
         await engine.StopAsync(CancellationToken.None);
-        Assert.Equal(SchedulingErrors.SchedulerUnavailable, (await engine.TriggerAsync("manual", CancellationToken.None)).Error?.Code);
+        Assert.Equal(SchedulingErrors.SchedulerUnavailable, (await engine.TriggerAsync(new JobName("manual"), CancellationToken.None)).Error?.Code);
         Assert.Single(log.Runs);
     }
 
@@ -163,9 +163,9 @@ public sealed class InMemorySchedulingTests
     public async Task RunHistory_IsBounded_EvictingOldestFinished()
     {
         var store = new InMemoryJobStore(new InMemorySchedulingOptions { MaxRuns = 2 });
-        var job = new JobRecord { Name = "cap", JobTypeName = "t" };
+        var job = new JobRecord { Name = new JobName("cap"), JobTypeName = "t" };
         await store.SaveJobsAsync([job], CancellationToken.None);
-        var runs = Enumerable.Range(0, 3).Select(index => new JobRunRecord { Id = $"r{index}", Job = "cap", NodeId = "n", StartedAt = DateTimeOffset.UtcNow.AddSeconds(index), ScheduledAt = DateTimeOffset.UtcNow.AddSeconds(index) }).ToList();
+        var runs = Enumerable.Range(0, 3).Select(index => new JobRunRecord { Id = $"r{index}", Job = new JobName("cap"), NodeId = "n", StartedAt = DateTimeOffset.UtcNow.AddSeconds(index), ScheduledAt = DateTimeOffset.UtcNow.AddSeconds(index) }).ToList();
         Assert.True((await store.TryBeginRunAsync(runs[0], false, CancellationToken.None)).ValueOrThrow());
         Assert.True((await store.TryBeginRunAsync(runs[1], false, CancellationToken.None)).ValueOrThrow());
         // 满了且都在运行中：无法淘汰

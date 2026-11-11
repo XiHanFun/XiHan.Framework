@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.Primitives;
@@ -123,11 +124,11 @@ public sealed class S3ObjectStorageTests
         Assert.Contains("xihan.objectstorage.s3", host.App.DescribeGraph(), StringComparison.Ordinal);
 
         S3TestServer.EnsureBucket(host.Services.GetRequiredService<IAmazonS3>(), "xihan-feature");
-        var key = new Abstractions.Keys.BlobKey(Guid.NewGuid().ToString("N") + "/hello.txt");
+        var key = new BlobKey(Guid.NewGuid().ToString("N") + "/hello.txt");
         using var content = new MemoryStream(Encoding.UTF8.GetBytes("hello"), writable: false);
-        Assert.Equal("text/plain", (await store.PutAsync("xihan-feature", key, content, new BlobPutOptions { ContentType = "text/plain" }, CancellationToken.None)).ValueOrThrow().ContentType);
-        Assert.Equal("hello", Encoding.UTF8.GetString((await store.ReadAllBytesAsync("xihan-feature", key, CancellationToken.None)).ValueOrThrow()));
-        Assert.True((await store.DeleteAsync("xihan-feature", key, CancellationToken.None)).ValueOrThrow());
+        Assert.Equal("text/plain", (await store.PutAsync(new ContainerName("xihan-feature"), key, content, new BlobPutOptions { ContentType = "text/plain" }, CancellationToken.None)).ValueOrThrow().ContentType);
+        Assert.Equal("hello", Encoding.UTF8.GetString((await store.ReadAllBytesAsync(new ContainerName("xihan-feature"), key, CancellationToken.None)).ValueOrThrow()));
+        Assert.True((await store.DeleteAsync(new ContainerName("xihan-feature"), key, CancellationToken.None)).ValueOrThrow());
     }
 
     [Fact]
@@ -138,18 +139,18 @@ public sealed class S3ObjectStorageTests
         var store = new S3BlobStore(client, S3TestServer.Options(), TimeProvider.System, NullLoggerFactory.Instance);
         using var content = new MemoryStream([1, 2, 3], writable: false);
 
-        Assert.Equal(ObjectStorageErrors.BlobNotFound, (await store.GetAsync(bucket, "a", CancellationToken.None)).Error?.Code);
-        Assert.Equal(ObjectStorageErrors.BlobNotFound, (await store.HeadAsync(bucket, "a", CancellationToken.None)).Error?.Code);
-        Assert.Empty((await store.ListAsync(bucket, Abstractions.Listing.BlobQuery.All, CancellationToken.None)).ValueOrThrow().Items);
-        Assert.False((await store.DeleteAsync(bucket, "a", CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(ObjectStorageErrors.StoreUnavailable, (await store.PutAsync(bucket, "a", content, BlobPutOptions.Default, CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, (await store.GetAsync(new ContainerName(bucket), new BlobKey("a"), CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.BlobNotFound, (await store.HeadAsync(new ContainerName(bucket), new BlobKey("a"), CancellationToken.None)).Error?.Code);
+        Assert.Empty((await store.ListAsync(new ContainerName(bucket), Abstractions.Listing.BlobQuery.All, CancellationToken.None)).ValueOrThrow().Items);
+        Assert.False((await store.DeleteAsync(new ContainerName(bucket), new BlobKey("a"), CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(ObjectStorageErrors.StoreUnavailable, (await store.PutAsync(new ContainerName(bucket), new BlobKey("a"), content, BlobPutOptions.Default, CancellationToken.None)).Error?.Code);
 
         // 开启 EnsureBuckets 后写入自动建桶
         var ensuring = new S3BlobStore(client, S3TestServer.Options(ensureBuckets: true), TimeProvider.System, NullLoggerFactory.Instance);
         content.Position = 0;
-        var written = (await ensuring.PutAsync(bucket, "a", content, BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+        var written = (await ensuring.PutAsync(new ContainerName(bucket), new BlobKey("a"), content, BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
         Assert.Equal(3, written.Length);
-        Assert.True((await ensuring.DeleteAsync(bucket, "a", CancellationToken.None)).ValueOrThrow());
+        Assert.True((await ensuring.DeleteAsync(new ContainerName(bucket), new BlobKey("a"), CancellationToken.None)).ValueOrThrow());
         await client.DeleteBucketAsync(bucket);
     }
 }

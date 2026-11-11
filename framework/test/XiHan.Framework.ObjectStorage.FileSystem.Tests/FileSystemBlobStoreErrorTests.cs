@@ -3,6 +3,7 @@
 
 using System.Text;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 
@@ -32,7 +33,7 @@ public sealed class FileSystemBlobStoreErrorTests : IDisposable
         var logs = new LogCapture();
         var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = _root.Path }, TimeProvider.System, logs);
 
-        var failed = await store.PutAsync("docs", "a.txt", Encoding.UTF8.GetBytes("hello"), BlobPutOptions.Default, CancellationToken.None);
+        var failed = await store.PutAsync(new ContainerName("docs"), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("hello"), BlobPutOptions.Default, CancellationToken.None);
 
         var logged = Assert.Single(logs.Entries, static entry => entry.Category == typeof(FileSystemBlobStore).FullName);
         Assert.Equal(LogLevel.Warning, logged.Level);

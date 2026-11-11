@@ -48,7 +48,7 @@ public sealed class S3ConditionalWriteTests
         fake.Fault = static _ => new HttpRequestException($"Connection refused by {secret}.");
         var store = new S3BlobStore(fake.AsClient(), Options(), TimeProvider.System, logs);
 
-        var failed = await store.PutAsync(Bucket, "a.txt", Encoding.UTF8.GetBytes("a"), BlobPutOptions.Default, CancellationToken.None);
+        var failed = await store.PutAsync(new ContainerName(Bucket), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("a"), BlobPutOptions.Default, CancellationToken.None);
 
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, failed.Error?.Code);
         Assert.Equal(typeof(HttpRequestException).FullName, failed.Error?.Details?["reason"]);
@@ -317,15 +317,15 @@ public sealed class S3ConditionalWriteTests
 
         // 不覆盖的写入与分片上传一律拒绝，不访问存储；覆盖写入照常
         var store = host.Services.GetRequiredService<IBlobStore>();
-        var refused = await store.PutAsync("media", "a.txt", Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
+        var refused = await store.PutAsync(new ContainerName("media"), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
         Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, refused.Error?.Code);
         Assert.Equal(ObjectStorageMessages.ConditionalWriteDisabled, refused.Error?.MessageKey);
         var multipart = host.Services.GetRequiredService<IBlobMultipartStore>();
-        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.StartAsync("media", "b.bin", new BlobPutOptions { Overwrite = false }, CancellationToken.None)).Error?.Code);
-        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.CompleteAsync(new BlobMultipartUpload("media", "b.bin", "upload", overwrite: false), [new BlobPart(1, "etag", 1)], CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.StartAsync(new ContainerName("media"), new BlobKey("b.bin"), new BlobPutOptions { Overwrite = false }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.CompleteAsync(new BlobMultipartUpload(new ContainerName("media"), new BlobKey("b.bin"), "upload", overwrite: false), [new BlobPart(1, "etag", 1)], CancellationToken.None)).Error?.Code);
         Assert.Equal(["HeadBucket"], fake.Requests);
 
-        Assert.True((await store.PutAsync(Bucket, "a.txt", Encoding.UTF8.GetBytes("a"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
+        Assert.True((await store.PutAsync(new ContainerName(Bucket), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("a"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
         Assert.Equal(["HeadBucket", "PutObject"], fake.Requests);
     }
 
@@ -338,7 +338,7 @@ public sealed class S3ConditionalWriteTests
             // 连不上：建实例时的探测失败只是尚未确认，照常建出并登记；不覆盖写入不可用，原因是连不上
             var down = (await registry.GetOrAddAsync(new BlobStoreDefinition("down", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://127.0.0.1:1", ["AccessKey"] = "ak", ["SecretKey"] = "sk", ["HealthBucket"] = Bucket }), CancellationToken.None)).ValueOrThrow();
             Assert.Equal(["down"], registry.Names);
-            var refused = await down.PutAsync("media", "a.txt", Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
+            var refused = await down.PutAsync(new ContainerName("media"), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None);
             Assert.Equal(ObjectStorageErrors.ConditionalWriteUnconfirmed, refused.Error?.Code);
             Assert.Equal(ObjectStorageErrors.StoreUnavailable, (string?)refused.Error!.Details!["reason"]);
 
@@ -348,7 +348,7 @@ public sealed class S3ConditionalWriteTests
 
             // 关闭条件写入：建实例不发请求
             var unprobed = (await registry.GetOrAddAsync(new BlobStoreDefinition("unprobed", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://127.0.0.1:1", ["ConditionalWrites"] = "false" }), CancellationToken.None)).ValueOrThrow();
-            Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await unprobed.PutAsync("media", "a.txt", Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None)).Error?.Code);
+            Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await unprobed.PutAsync(new ContainerName("media"), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None)).Error?.Code);
         }
     }
 
@@ -374,7 +374,7 @@ public sealed class S3ConditionalWriteTests
 
         // 探测键在保留前缀下，业务列举看不到它（ADR-0090）
         var store = new S3BlobStore(client, S3TestServer.Options(), TimeProvider.System, NullLoggerFactory.Instance);
-        Assert.Empty((await store.ListAsync(fresh, new BlobQuery(), CancellationToken.None)).ValueOrThrow().Items);
+        Assert.Empty((await store.ListAsync(new ContainerName(fresh), new BlobQuery(), CancellationToken.None)).ValueOrThrow().Items);
         await client.DeleteObjectAsync(fresh, Key);
         await client.DeleteBucketAsync(fresh);
 

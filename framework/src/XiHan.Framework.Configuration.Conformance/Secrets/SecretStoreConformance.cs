@@ -36,8 +36,8 @@ public abstract class SecretStoreConformance
     {
         var fixture = await CreateFixtureAsync().ConfigureAwait(false);
         var prefix = "conformance/" + Guid.NewGuid().ToString("N")[..8];
-        SecretName present = prefix + "/db-password";
-        SecretName missing = prefix + "/missing";
+        var present = new SecretName(prefix + "/db-password");
+        var missing = new SecretName(prefix + "/missing");
         await fixture.PutAsync(present, "s3cr3t", CancellationToken.None).ConfigureAwait(false);
 
         var lookups = await fixture.Store.GetAsync([present, missing, present], CancellationToken.None).ConfigureAwait(false);
@@ -56,7 +56,7 @@ public abstract class SecretStoreConformance
     public async Task Get_AfterOverwrite_ReturnsNewValue()
     {
         var fixture = await CreateFixtureAsync().ConfigureAwait(false);
-        SecretName name = "conformance/" + Guid.NewGuid().ToString("N")[..8] + "/token";
+        var name = new SecretName("conformance/" + Guid.NewGuid().ToString("N")[..8] + "/token");
         await fixture.PutAsync(name, "one", CancellationToken.None).ConfigureAwait(false);
         await fixture.PutAsync(name, "two", CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("two", (await fixture.Store.GetAsync(name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Value);

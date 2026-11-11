@@ -10,6 +10,7 @@ using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Scheduling.InMemory;
 using XiHan.Framework.Testing;
+using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -61,11 +62,11 @@ public sealed class InMemoryWorkflowEngineConformanceWithSchedulingTests : Workf
         var logs = new LogCapture();
         await using var host = await StartAsync(logs, services => Register(services, log), configuration: null);
 
-        await host.PublishAsync(WorkflowDefinitionBuilder.Create("conf-with-scheduling")
-            .AddStart().AddNode("a", RecordActivity.TypeName, configure: static node => node.WithProperty(RecordActivity.LabelProperty, "a")).AddEnd()
+        await host.PublishAsync(WorkflowDefinitionBuilder.Create(new WorkflowName("conf-with-scheduling"))
+            .AddStart().AddNode("a", new ActivityType(RecordActivity.TypeName), configure: static node => node.WithProperty(RecordActivity.LabelProperty, "a")).AddEnd()
             .AddTransition("start", "a").AddTransition("a", "end")
             .Build());
-        var instance = (await host.StartAsync("conf-with-scheduling")).ValueOrThrow();
+        var instance = (await host.StartAsync(new WorkflowName("conf-with-scheduling"))).ValueOrThrow();
 
         Assert.Equal(WorkflowInstanceStatus.Completed, instance.Status);
         Assert.Contains(log.EventsOf(WorkflowTopics.InstanceCompleted), data => data.InstanceId == instance.Id);
