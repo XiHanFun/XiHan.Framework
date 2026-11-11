@@ -125,7 +125,7 @@ done
 | --- | --- |
 | `KafkaMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`stream`）、`HealthName`（`messaging.kafka.connection`） |
 | `KafkaMessagingOptions` | `BootstrapServers`、`GroupId`、`TopicPrefix`、`Properties`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
-| `KafkaMessageBroker` | 代理与重放器；`ConnectAsync`、`IsConnected`、`ProbeAsync`（健康项用）、`ReplayAsync` |
+| `KafkaMessageBroker` | 代理与重放器；`ReplayAsync`；连接与健康探测由特性在内部调用 |
 
 ## 使用示例
 

@@ -18,8 +18,7 @@ namespace XiHan.Framework.Persistence.EntityFrameworkCore;
 /// <remarks>
 /// 读在活动工作单元内进行，首次写入开启事务，每次写入立即保存（读己之写），按协议维护审计字段、租户与软删除。更新与删除时创建时间、租户与删除标记回到跟踪实例的原值（调用方改了也不生效）。新增撞上主键约束（检查之后别的事务提交了同一标识）时，<c>SaveChanges</c> 已回到自动建的保存点，在同一事务里核对标识确已存在就按标识重复报告；新增、更新与软删除撞上唯一索引（实体声明的 <c>[EntityIndex(IsUnique = true)]</c> 或模型里别的唯一索引）时同样在保存点之后核对，按唯一键重复报告；两种情况工作单元随后都只能回滚。批量方法用一次 <c>IN</c> 查询取回目标行、逐项校验后一次 <c>SaveChanges</c>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFrameworkCoreUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
+internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFrameworkCoreUnitOfWork unitOfWork, TimeProvider timeProvider) : IRepository<TEntity, TKey>
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {

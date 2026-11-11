@@ -174,7 +174,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// <summary>
     /// 是否已连接
     /// </summary>
-    public bool IsConnected => _connection?.IsOpen == true;
+    internal bool IsConnected => _connection?.IsOpen == true;
 
     /// <summary>
     /// 连通性检查（健康项）
@@ -182,7 +182,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// <remarks>
     /// 连接与发布通道都打开为成功；否则以代理给出的关闭原因（还没建立连接时说明如此）构造 <see cref="MessagingErrors.BrokerUnavailable"/>
     /// </remarks>
-    public Result CheckConnection()
+    internal Result CheckConnection()
     {
         if (_connection is { IsOpen: true } && _publishChannel is { IsOpen: true })
         {
@@ -199,7 +199,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// <remarks>
     /// 发布通道开启发布确认并由客户端跟踪：每次发布在代理确认后才完成，拒绝或退回以 <see cref="PublishException"/> 抛出。随后声明交换机
     /// </remarks>
-    public async Task ConnectAsync(CancellationToken cancellationToken)
+    internal async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (_connection is not null)
         {

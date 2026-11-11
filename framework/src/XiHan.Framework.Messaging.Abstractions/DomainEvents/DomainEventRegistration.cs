@@ -5,7 +5,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using XiHan.Framework.Domain.Events;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
-using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions.DomainEvents;
 
@@ -15,8 +14,7 @@ namespace XiHan.Framework.Messaging.Abstractions.DomainEvents;
 /// <remarks>
 /// 发布到哪个主题、CloudEvents <c>type</c>、源生成的序列化元数据（不经反射）与可选的 <c>subject</c> 选择器
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class DomainEventRegistration
+internal sealed class DomainEventRegistration
 {
     /// <summary>
     /// 创建

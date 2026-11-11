@@ -23,8 +23,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// <param name="timeProvider">审计字段使用的时间源</param>
 /// <param name="options">Provider 选项；据此决定本实体是否带差异日志</param>
 /// <param name="services">本作用域的服务提供器；随差异日志交给回调</param>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfWork, TimeProvider timeProvider, SqlSugarPersistenceOptions options, IServiceProvider services) : IRepository<TEntity, TKey>
+internal sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitOfWork, TimeProvider timeProvider, SqlSugarPersistenceOptions options, IServiceProvider services) : IRepository<TEntity, TKey>
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {

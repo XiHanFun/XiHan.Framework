@@ -155,7 +155,7 @@ public sealed class MessageCatalog
     /// <remarks>
     /// 不合法抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>
     /// </remarks>
-    public static IReadOnlyDictionary<string, string> ParseLocaleFile(string name, string locale, ReadOnlySpan<byte> utf8Json)
+    internal static IReadOnlyDictionary<string, string> ParseLocaleFile(string name, string locale, ReadOnlySpan<byte> utf8Json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(locale);

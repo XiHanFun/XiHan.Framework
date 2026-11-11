@@ -103,7 +103,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | `RedisMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`queue`）、`HealthName`（`messaging.redis.connection`） |
 | `RedisMessagingOptions` | `Configuration`、`User`、`Password`、`KeyPrefix`、`GroupName`、`BatchSize`、`PollInterval`、`ClaimIdleTime`、`MaxLength`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)`；`ToString()` 遮蔽连接字符串与凭据 |
-| `RedisMessageBroker` | 代理；`ConnectAsync`、`IsConnected`、`ProbeAsync`（健康项用） |
+| `RedisMessageBroker` | 代理；连接与健康探测由特性在内部调用 |
 
 ## 使用示例
 

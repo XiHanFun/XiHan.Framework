@@ -15,8 +15,7 @@ namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 /// <remarks>
 /// 启动时从 0 起逐个尝试锁 <c>persistence:snowflake:worker:&lt;n&gt;</c>，取得第一个空位；每三分之一存活时间续约一次（锁不续约，续约 = 释放再获取同一机器位），续约失败按丢失处理并重新分配。本地按获取时刻 + 存活时间判定有效：到期未续上即没有机器位，宁可拒绝生成也不冒重复的风险。同时是健康项 <see cref="HealthName"/> 的贡献者
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContributor, IAsyncDisposable
+internal sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContributor, IAsyncDisposable
 {
     /// <summary>
     /// 健康项名：是否持有机器位租约

@@ -65,4 +65,3 @@ static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata.operator ==(
 static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions!
 static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.operator !=(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? right) -> bool
 static XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.operator ==(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? left, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? right) -> bool
-static readonly XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache.FailureRetryDelay -> System.TimeSpan

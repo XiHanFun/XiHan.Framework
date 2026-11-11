@@ -43,7 +43,7 @@ builder.AddXiHan(x => x.UseStandardProfile()
 * `SqlSugarPersistenceOptions`：建表、健康探测、命名连接、命令超时、读写分离选项
 * `SqlSugarConventions`：`Apply`、`InitTables` 等约定入口
 * `IEntityConnectionSelector`：决定实体落在哪个连接
-* `SqlSugarUnitOfWork`、`SqlSugarRepository<TEntity, TKey>`：工作单元与仓储实现
+* `SqlSugarUnitOfWork`：工作单元实现；仓储实现不公开，经 `IRepository<TEntity, TKey>` 使用
 
 ## 更多文档
 

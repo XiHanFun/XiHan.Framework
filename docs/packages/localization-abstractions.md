@@ -69,7 +69,7 @@ dotnet add package XiHan.Framework.Localization.Abstractions --prerelease
 | `Locales.SupportedLocales` | `All` 与各区域常量（`EnglishUnitedStates`、`ChineseSimplified`、`ChineseTraditional`、`Japanese`、`Korean`、`German`、`Spanish`、`French`、`PortugueseBrazil`、`Russian`），`Default` = `en-US` |
 | `Locales.LocaleName` | `IsValid`、`Validate`、`Normalize`（`zh-cn` → `zh-CN`）、`LanguageOf`（`zh-CN` → `zh`）、`CultureOf`、`AreEqual`；`MaxLength` = 35 |
 | `LocalizationOptions` | `DefaultLocale`、`Locales`、`FallbackChain(locale)`、`Negotiate(candidates)`、`Resolve(context)`、`FromConfiguration`、`Validated()` |
-| `Messages.MessageCatalog` | 构造（目录名 + 区域 → 键 → 模板）、`FromEmbeddedResources(name, anchor, prefix)`、`ParseLocaleFile`、`Find(key, locale)`（精确匹配）、`Keys`、`Locales`、`LocalesOf(key)`；`DefaultResourcePrefix` = `Localization/` |
+| `Messages.MessageCatalog` | 构造（目录名 + 区域 → 键 → 模板）、`FromEmbeddedResources(name, anchor, prefix)`、`Find(key, locale)`（精确匹配）、`Keys`、`Locales`、`LocalesOf(key)`；`DefaultResourcePrefix` = `Localization/` |
 | `Messages.IMessageLocalizer` | `Find`、`Resolve(key, locale, arguments)`、`Localize(...)`、`Resolve(error, locale)`、`Localize(error, ...)`、`Options` |
 | `Messages.LocalizedText` | 一次解析的 `Text` 与实际命中的 `Locale` |
 | `Messages.InvocationContextLocalizationExtensions` | `context.Localize(key, arguments)`、`context.Localize(error)`；没有装配本地化时退回描述与 `Error.Message` |

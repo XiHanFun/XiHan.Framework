@@ -46,7 +46,7 @@ public sealed class RepositoryRegistrations
     /// <summary>
     /// 已登记的注册动作
     /// </summary>
-    public IReadOnlyList<Action<IServiceCollection, IRepositoryRegistrar>> Items => _registrations;
+    internal IReadOnlyList<Action<IServiceCollection, IRepositoryRegistrar>> Items => _registrations;
 
     /// <summary>
     /// 登记过的实体与标识类型

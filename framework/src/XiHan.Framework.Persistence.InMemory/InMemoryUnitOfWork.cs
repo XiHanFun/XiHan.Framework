@@ -14,8 +14,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// <remarks>
 /// 变更先进覆盖层（读己之写），提交时按涉及的表依次加锁，逐表校验每个写过的标识首次读到的状态（新增的标识已被别人提交即标识重复，更新或删除的行已被删、带戳的行戳已变即并发冲突），全部通过才逐表应用，跨表原子；回滚丢弃覆盖层。只读工作单元里仓储在写入时就拒绝（<see cref="PersistenceErrors.ReadOnly"/>），覆盖层始终为空；拒绝过写入的工作单元提交时回滚并返回同一错误
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
+internal sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
 {
     /// <summary>
     /// 提交目标存储

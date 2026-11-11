@@ -58,16 +58,6 @@ XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>
 XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>.NewId() -> TKey
 XiHan.Framework.Persistence.Abstractions.Identifiers.IWorkerIdSource
 XiHan.Framework.Persistence.Abstractions.Identifiers.IWorkerIdSource.Current.get -> XiHan.Framework.Primitives.Maybe<int>
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.Current.get -> XiHan.Framework.Primitives.Maybe<int>
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.DisposeAsync() -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.ExpiresAt.get -> System.DateTimeOffset?
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.LeasedWorkerIdSource(XiHan.Framework.Caching.Abstractions.Locking.IDistributedLock! distributedLock, XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.RenewAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.RenewInterval.get -> System.TimeSpan
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Deconstruct(out long Value, out System.DateTimeOffset Timestamp, out int WorkerId, out int Sequence) -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Equals(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId other) -> bool
@@ -170,7 +160,6 @@ XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Ad
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.ApplyTo(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar! registrar) -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.ConnectionOf(System.Type! entityType) -> string?
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Entities.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity!>!
-XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Items.get -> System.Collections.Generic.IReadOnlyList<System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar!>!>!
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.RepositoryRegistrations() -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions
 XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo
@@ -330,8 +319,6 @@ const XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes.Postgre
 const XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes.SqlServer = "sqlserver" -> string!
 const XiHan.Framework.Persistence.Abstractions.DataSources.DatabaseTypes.Sqlite = "sqlite" -> string!
 const XiHan.Framework.Persistence.Abstractions.EntityIndexes.MaxNameLength = 63 -> int
-const XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.HealthName = "persistence.snowflake.worker" -> string!
-const XiHan.Framework.Persistence.Abstractions.Identifiers.LeasedWorkerIdSource.ResourcePrefix = "persistence:snowflake:worker:" -> string!
 const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.MaxSequence = 4095 -> int
 const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.MaxTimestamp = 2199023255551 -> long
 const XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.MaxWorkerId = 1023 -> int

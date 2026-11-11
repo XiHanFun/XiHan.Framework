@@ -10,40 +10,11 @@ XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.Equals(XiHan.Fra
 XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.InMemoryPersistenceOptions() -> void
 XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.MaxEntitiesPerType.get -> int
 XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.MaxEntitiesPerType.init -> void
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.CountAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<long>!
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.FindAsync(TKey id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<TEntity!>>
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.FindManyAsync(System.Collections.Generic.IReadOnlyList<TKey>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.InMemoryRepository(XiHan.Framework.Persistence.InMemory.InMemoryStore! store, XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork! unitOfWork, System.TimeProvider! timeProvider) -> void
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.ListAsync(XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.RemoveAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.RemoveRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Persistence.InMemory.InMemoryRepository<TEntity, TKey>.UpdateRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
 XiHan.Framework.Persistence.InMemory.InMemoryStore
 XiHan.Framework.Persistence.InMemory.InMemoryStore.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.Persistence.InMemory.InMemoryStore.Clear() -> void
 XiHan.Framework.Persistence.InMemory.InMemoryStore.InMemoryStore(XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions! options) -> void
 XiHan.Framework.Persistence.InMemory.InMemoryStore.Options.get -> XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions!
-XiHan.Framework.Persistence.InMemory.InMemoryStore.Table<TEntity, TKey>() -> XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity!, TKey>!
-XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>
-XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Capacity.get -> int
-XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Count.get -> int
-XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Find(TKey id) -> XiHan.Framework.Primitives.Maybe<TEntity!>
-XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.InMemoryTable(int capacity) -> void
-XiHan.Framework.Persistence.InMemory.InMemoryTable<TEntity, TKey>.Snapshot() -> System.Collections.Generic.IReadOnlyList<TEntity!>!
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.BeginAsync(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.HasTransaction.get -> bool
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.InMemoryUnitOfWork(XiHan.Framework.Persistence.InMemory.InMemoryStore! store) -> void
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.IsReadOnly.get -> bool
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
-XiHan.Framework.Persistence.InMemory.InMemoryUnitOfWork.TenantId.get -> string?
 const XiHan.Framework.Persistence.InMemory.InMemoryPersistenceFeature.HealthName = "persistence.inmemory.capacity" -> string!
 const XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.ConfigurationSection = "XiHan:Persistence:InMemory" -> string!
 override XiHan.Framework.Persistence.InMemory.InMemoryPersistenceOptions.Equals(object? obj) -> bool

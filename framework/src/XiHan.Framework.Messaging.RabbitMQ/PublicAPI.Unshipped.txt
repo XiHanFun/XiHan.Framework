@@ -1,9 +1,6 @@
 #nullable enable
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker
-XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.CheckConnection() -> XiHan.Framework.Primitives.Result
-XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.ConnectAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.DisposeAsync() -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.IsConnected.get -> bool
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessageBroker.RabbitMQMessageBroker(XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions! options, XiHan.Framework.Messaging.Abstractions.MessagingOptions! messaging, XiHan.Framework.Messaging.Abstractions.MessagingInstance! instance, XiHan.Framework.Kernel.Hosting.App! app, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
@@ -24,15 +21,15 @@ XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Exchange.get -> stri
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Exchange.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.HealthProbeInterval.get -> System.TimeSpan
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.HealthProbeInterval.init -> void
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Password.get -> string?
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Password.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.PrefetchCount.get -> ushort
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.PrefetchCount.init -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.QueuePrefix.get -> string!
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.QueuePrefix.init -> void
-XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Password.get -> string?
-XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.Password.init -> void
+XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.RabbitMQMessagingOptions() -> void
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.UserName.get -> string?
 XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.UserName.init -> void
-XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.RabbitMQMessagingOptions() -> void
 const XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingFeature.ConnectionBinding = "queue" -> string!
 const XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingFeature.HealthName = "messaging.rabbitmq.connection" -> string!
 const XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions.ConfigurationSection = "XiHan:Messaging:RabbitMQ" -> string!

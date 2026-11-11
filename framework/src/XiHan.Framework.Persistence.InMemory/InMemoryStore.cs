@@ -42,7 +42,7 @@ public sealed class InMemoryStore(InMemoryPersistenceOptions options) : IHealthC
     /// <summary>
     /// 取实体的表
     /// </summary>
-    public InMemoryTable<TEntity, TKey> Table<TEntity, TKey>()
+    internal InMemoryTable<TEntity, TKey> Table<TEntity, TKey>()
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
         => (InMemoryTable<TEntity, TKey>)_tables.GetOrAdd(typeof(TEntity), _ => new InMemoryTable<TEntity, TKey>(Options.MaxEntitiesPerType) { Order = Interlocked.Increment(ref _order) });

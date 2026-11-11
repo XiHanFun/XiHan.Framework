@@ -24,7 +24,7 @@ public sealed partial class OpenIdConnectMetadataCache : IDisposable
     /// <remarks>
     /// 避免签发者故障期间每次认证都发起请求
     /// </remarks>
-    public static readonly TimeSpan FailureRetryDelay = TimeSpan.FromSeconds(5);
+    internal static readonly TimeSpan FailureRetryDelay = TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// 选项

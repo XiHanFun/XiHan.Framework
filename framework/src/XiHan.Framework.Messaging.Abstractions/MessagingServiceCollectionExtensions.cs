@@ -58,7 +58,7 @@ public static class MessagingServiceCollectionExtensions
     /// <remarks>
     /// 以实例注册，多次调用返回同一对象
     /// </remarks>
-    public static DomainEventRegistry GetDomainEventRegistry(this IServiceCollection services)
+    internal static DomainEventRegistry GetDomainEventRegistry(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
         foreach (var descriptor in services)

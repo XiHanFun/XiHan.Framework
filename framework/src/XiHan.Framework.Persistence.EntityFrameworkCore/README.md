@@ -48,7 +48,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 * `EntityFrameworkCorePersistenceFeature<TContext>`：特性入口，构造参数是配置回调
 * `EntityFrameworkCorePersistenceOptions`：`EnsureCreated`、健康探测间隔、命名连接
 * `ModelBuilderExtensions.ApplyPersistenceConventions`：在模型上应用协议约定
-* `EntityFrameworkCoreUnitOfWork`、`EntityFrameworkCoreRepository<TEntity, TKey>`：工作单元与仓储实现
+* `EntityFrameworkCoreUnitOfWork`：工作单元实现；仓储实现不公开，经 `IRepository<TEntity, TKey>` 使用
 
 ## 更多文档
 

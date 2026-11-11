@@ -13,8 +13,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// <remarks>
 /// 表里存的是副本，公开的读取也只交出副本，调用方改动读出的实例碰不到表。写入由工作单元在提交时校验后原子应用：在锁内按每个写过的标识首次读到的状态校验，全部通过才改行
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemoryTable<TEntity, TKey>(int capacity) : IInMemoryTable
+internal sealed class InMemoryTable<TEntity, TKey>(int capacity) : IInMemoryTable
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {

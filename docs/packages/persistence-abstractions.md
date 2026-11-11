@@ -92,7 +92,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `PersistenceCapabilities`、`PersistenceErrors`、`PersistenceMessages` | `…Abstractions` | 能力 ID、错误码、消息键与消息目录 |
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | `…Abstractions.Identifiers` | 标识生成端口；UUID v7 实现 |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId` | `…Abstractions.Identifiers` | 雪花标识的特性、生成器、选项、位布局与解析 |
-| `IWorkerIdSource`、`FixedWorkerIdSource`、`LeasedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置或分布式锁租约 |
+| `IWorkerIdSource`、`FixedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置；分布式锁租约由 `SnowflakeIdFeature` 在内部装配 |
 | `ISchemaReader`、`SchemaReaderExtensions`、`SchemaLimits` | `…Abstractions.Schema` | 库结构读取：`ListTablesAsync`（关键字、分页、总数）、`GetTablesAsync`（批量，最多 100 张，逐项结果）、`GetTableAsync` |
 | `TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo` | `…Abstractions.Schema` | 列表查询（`Validate()` 核对分页，越界是 `PERSISTENCE_VALIDATION_007` / `005`）、一页表、表（分表的逻辑名与物理表）、表结构、列 |
 | `IEntityCatalog`、`EntityMapping`、`EntityColumnMapping`、`EntityProtocols` | `…Abstractions.Schema` | 已登记实体的目录：表、列映射、协议、`[EntityIndex]` 索引 |

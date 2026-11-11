@@ -219,7 +219,7 @@ app.Run();
 
 元数据按需取得：首次认证时取发现文档的 `issuer` 与 `jwks_uri`，再取 JWKS 的签名密钥并缓存，并发认证只发一次请求。令牌的 `kid` 不在 JWKS 里时（签发者轮换了密钥）按需刷新一次再校验，两次按需刷新至少间隔 `MinimumRefreshInterval`，伪造的 `kid` 不会让签发者被反复请求。
 
-刷新失败时沿用最后一份密钥；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`（HTTP 503），5 秒（`OpenIdConnectMetadataCache.FailureRetryDelay`）后再试。读不出的令牌直接返回 `SECURITY_DENIED_003`，不为它访问签发者。`RequireHttpsMetadata` 为真而发现文档地址不是 HTTPS 时，启动读取配置就抛出 `InvalidOperationException`。主体与声明的映射与 JWT Provider 相同。
+刷新失败时沿用最后一份密钥；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`（HTTP 503），5 秒后再试。读不出的令牌直接返回 `SECURITY_DENIED_003`，不为它访问签发者。`RequireHttpsMetadata` 为真而发现文档地址不是 HTTPS 时，启动读取配置就抛出 `InvalidOperationException`。主体与声明的映射与 JWT Provider 相同。
 
 ## 凭据无效与 401 质询
 

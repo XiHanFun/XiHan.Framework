@@ -89,7 +89,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | `RabbitMQMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`queue`）、`HealthName`（`messaging.rabbitmq.connection`） |
 | `RabbitMQMessagingOptions` | `Configuration`、`QueuePrefix`、`Exchange`、`PrefetchCount`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
-| `RabbitMQMessageBroker` | 代理；`ConnectAsync`、`IsConnected`、`CheckConnection()`（健康项用） |
+| `RabbitMQMessageBroker` | 代理；连接与健康探测由特性在内部调用 |
 
 ## 使用示例
 

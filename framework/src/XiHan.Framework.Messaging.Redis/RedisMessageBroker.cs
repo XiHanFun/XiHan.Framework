@@ -148,7 +148,7 @@ public sealed partial class RedisMessageBroker : IMessageBroker, IAsyncDisposabl
     /// <summary>
     /// 是否已连接
     /// </summary>
-    public bool IsConnected => _connection?.IsConnected == true;
+    internal bool IsConnected => _connection?.IsConnected == true;
 
     /// <summary>
     /// 主题对应的流键
@@ -184,7 +184,7 @@ public sealed partial class RedisMessageBroker : IMessageBroker, IAsyncDisposabl
     /// <remarks>
     /// 对连接发一次 <c>PING</c>。还没建立连接时返回 <see cref="MessagingErrors.BrokerUnavailable"/>；连接断开时 <c>PING</c> 抛出连接或超时异常，由探针宿主记成 Degraded
     /// </remarks>
-    public async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
+    internal async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
     {
         if (_connection is not { } connection)
         {
@@ -201,7 +201,7 @@ public sealed partial class RedisMessageBroker : IMessageBroker, IAsyncDisposabl
     /// <remarks>
     /// 连不上视为失败，不降级运行；连接字符串里写了 <c>abortConnect=false</c> 也一样，连接没有建立就抛出。可重复调用。连上后读一次 <c>INFO memory</c>，<c>maxmemory-policy</c> 会淘汰流的键（<c>allkeys-*</c>）时记 Warning
     /// </remarks>
-    public async Task ConnectAsync(CancellationToken cancellationToken)
+    internal async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (_connection is not null)
         {

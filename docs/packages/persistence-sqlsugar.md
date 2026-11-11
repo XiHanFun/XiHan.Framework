@@ -126,7 +126,6 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | `SqlSugarConnections` | 连接的 `ConfigId` 约定：`Default`（`default`）、`Shard`（`shard`） |
 | `IEntityConnectionSelector`、`SqlSugarConnectionSelector` | 实体落在哪个连接；默认规则见下文 |
 | `SqlSugarUnitOfWork` | 事务型工作单元；`Client` 是根连接，`ConnectionFor(Type)` 返回某种实体所用的连接；以 `UnitOfWorkOptions.Connection` 开启时只用那个命名连接 |
-| `SqlSugarRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 | `SqlSugarDiffLogData` | 差异日志的业务数据：`EntityType` 与仓储所在作用域的 `Services` |
 | `SqlSugarDataSource`、`SqlSugarDataSourceExtensions` | 运行时数据源：`Client` 是每个数据源一个的 `SqlSugarScope`；`source.GetSqlSugarClient()` 从中立的 `IDataSource` 取它 |
 

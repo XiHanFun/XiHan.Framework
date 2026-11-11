@@ -149,7 +149,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// <summary>
     /// 是否已建立生产者并确认过集群可达
     /// </summary>
-    public bool IsConnected => _producer is not null;
+    internal bool IsConnected => _producer is not null;
 
     /// <summary>
     /// 连通性探针（健康项）
@@ -157,7 +157,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// <remarks>
     /// 以生产者的句柄建一个从属管理客户端描述集群——复用生产者已有的连接，只取节点与控制器，不拉主题元数据。生产者还没建立时返回 <see cref="MessagingErrors.BrokerUnavailable"/>；集群不可达时抛出 <see cref="KafkaException"/>，由探针宿主记成 Degraded
     /// </remarks>
-    public async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
+    internal async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
     {
         if (_producer is not { } producer)
         {
@@ -175,7 +175,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// <remarks>
     /// 连不上视为失败，不降级运行。可重复调用
     /// </remarks>
-    public Task ConnectAsync(CancellationToken cancellationToken)
+    internal Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (_producer is not null)
         {

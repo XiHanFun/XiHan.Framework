@@ -110,7 +110,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `EntityFrameworkCorePersistenceOptions` | 选项：`EnsureCreated`、`HealthProbeInterval`、`VerifiedShardCapacity`、`Connections`（命名连接）；`FromConfiguration(configuration)` |
 | `ModelBuilderExtensions.ApplyPersistenceConventions(Database)` | 对模型里已有的每个实体：`ConcurrencyStamp` 设为并发令牌、最大长度 32；`TenantId` 与 `IsDeleted` 建索引；实体上的 `[EntityIndex]` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与 SqlSugar 建出的相同（ADR-0072）；软删除实体的唯一索引加 `HasFilter`，条件按 `Database.ProviderName` 写方言（Npgsql、SQLite、SQL Server），其余关系型 Provider 建模时抛出 `PERSISTENCE_UNAVAILABLE_008`（ADR-0081）；SQLite 上 `DateTimeOffset` 与可空 `DateTimeOffset` 属性存成 UTC ticks 整数，应用已配转换的不动（ADR-0091） |
 | `EntityFrameworkCoreUnitOfWork` | 事务型工作单元；`Context` 是本作用域的 `DbContext`（开始时建出：绑定了命名连接就建在那个连接上）；由容器创建，构造不公开 |
-| `EntityFrameworkCoreRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 
 ## 使用示例
 
