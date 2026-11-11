@@ -170,3 +170,4 @@
 | [0168](0168-文件系统不覆盖写入以独占创建占位.md) | 文件系统存储的不覆盖提交先以 `FileMode.CreateNew` 独占创建占位文件再替换内容，不再用 `File.Move(…, overwrite: false)`（.NET 在 Unix 上先查目标再改名，并发时偶发两个成功）；一致性用例跑 16 轮；修正 ADR-0089 的理由 | 已采纳 |
 | [0169](0169-审计查询的租户与主体显式过滤.md) | `AuditQuery` 的 `PrincipalId` / `TenantId` 改为 `AuditPrincipalFilter`（`Any` / `Anonymous` / `Of`）与 `AuditTenantFilter`（`Any` / `Global` / `Of`），能只查匿名或平台级事件；照授予的 `GrantTenantFilter`；新增一致性用例 | 已采纳 |
 | [0171](0171-用户任务与外部任务的书签只经服务消费.md) | `IWorkflowEngine.ResumeAsync` 拒绝 `UserTask` 与 `External` 书签（`WORKFLOW_CONFLICT_003`，`workflow.bookmark.service_owned`）：原先能绕过任务服务的指派人校验与外部任务服务的持锁校验、不发完成事件；两个服务与轮询器改走引擎的内部入口；写明 `ResumeAsync` 是受信代码的系统级入口；新增一致性用例 | 已采纳 |
+| [0172](0172-文件系统不覆盖写入按平台选原子原语.md) | 修正 ADR-0168：文件系统存储的不覆盖提交在 Windows 上改回不替换的改名（本身原子），占位再替换只用于 Unix——Windows 上替换要求目标没有被打开，并发写入方探测占位的那一下就让占到位的一方以拒绝访问失败 | 已采纳 |

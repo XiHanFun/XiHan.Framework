@@ -398,7 +398,7 @@ public abstract class BlobStoreConformance
     /// </summary>
     /// <remarks>
     /// 多个写入方同时以 <c>Overwrite = false</c> 写同一个新键：恰好一个成功，其余都是 CONFLICT，对象内容是成功者写的。先查是否存在再写的实现在并发下会让后写的静默覆盖先写的，过不了本用例；原子的实现每次都过。
-    /// 竞争窗口很窄，一轮未必撞上，所以跑多轮、每轮一个新键：.NET 在 Unix 上的不替换移动是先查目标再改名，单轮时偶尔才露出两个成功者（ADR-0168）
+    /// 竞争窗口很窄，一轮未必撞上，所以跑多轮、每轮一个新键：.NET 在 Unix 上的不替换移动是先查目标再改名，单轮时偶尔才露出两个成功者（ADR-0168）；Windows 上先占位再替换的实现会让占到位的一方因目标被并发探测而失败，同样过不了「恰好一个成功」（ADR-0172）
     /// </remarks>
     [Fact]
     public async Task Put_WithoutOverwrite_IsAtomicUnderConcurrentWriters()
