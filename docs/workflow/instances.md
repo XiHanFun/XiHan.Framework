@@ -76,7 +76,9 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 | `CorrelationId` | 业务关联 ID，信号按它匹配，重用策略按它查重 |
 | `ReusePolicy` | `AllowDuplicate`（缺省）、`RejectActive`（已有未结束实例 → `WORKFLOW_CONFLICT_005`）、`ReturnActive`（返回已有实例）；没有 `CorrelationId` 时忽略。查重只看同一分区的实例；查重与写入在同一把实例锁里，并发的同键启动只建一个实例；等锁超时是 `WORKFLOW_TIMEOUT_001` |
 | `StartAt` | 延迟启动：开始节点以定时书签挂起到该时刻 |
-| `DisplayName`、`InstanceId` | 实例显示名与指定的实例 ID |
+| `DisplayName` | 实例显示名，空取定义的 |
+
+实例 ID 由引擎生成。子流程的父实例、父节点实例与深度只由引擎在启动子实例时设置，不在启动请求里；要幂等启动，用 `CorrelationId` 与 `ReusePolicy`。
 
 实例属于调用方的分区。返回的是第一个波次结束后的实例：流程一路走到 `End` 时状态已是 `Completed`，停在用户任务上时是 `Running`。定义有实例级超时时，启动时就排好 `InstanceTimeout` 书签，到期按 `TimeoutAction` 让实例故障或终止。
 

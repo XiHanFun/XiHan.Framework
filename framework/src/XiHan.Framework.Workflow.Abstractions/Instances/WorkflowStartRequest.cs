@@ -60,24 +60,33 @@ public sealed record WorkflowStartRequest
     /// 指定实例 ID（子流程用）
     /// </summary>
     /// <remarks>
-    /// 空由引擎生成
+    /// 只由引擎为子流程设置；空由引擎生成
     /// </remarks>
-    public string? InstanceId { get; init; }
+    internal string? InstanceId { get; init; }
 
     /// <summary>
     /// 父实例 ID（子流程用）
     /// </summary>
-    public string? ParentInstanceId { get; init; }
+    /// <remarks>
+    /// 只由引擎为子流程设置：调用方能写的话，可以伪造父链接，子实例结束时恢复别人子流程的书签
+    /// </remarks>
+    internal string? ParentInstanceId { get; init; }
 
     /// <summary>
     /// 父节点实例 ID（子流程用）
     /// </summary>
-    public string? ParentNodeInstanceId { get; init; }
+    /// <remarks>
+    /// 只由引擎为子流程设置
+    /// </remarks>
+    internal string? ParentNodeInstanceId { get; init; }
 
     /// <summary>
     /// 嵌套深度（子流程用）
     /// </summary>
-    public int Depth { get; init; }
+    /// <remarks>
+    /// 只由引擎为子流程设置：调用方能写的话，负值能绕过 <see cref="WorkflowOptions.MaxSubWorkflowDepth"/>
+    /// </remarks>
+    internal int Depth { get; init; }
 
     /// <summary>
     /// 延迟启动

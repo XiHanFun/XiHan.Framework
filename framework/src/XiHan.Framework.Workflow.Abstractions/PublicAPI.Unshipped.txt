@@ -943,19 +943,11 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.Correlation
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.CorrelationId.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.DefinitionId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.DefinitionId.init -> void
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.Depth.get -> int
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.Depth.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.DisplayName.get -> string?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.DisplayName.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.Equals(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest? other) -> bool
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.InstanceId.get -> string?
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.InstanceId.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.Name.get -> XiHan.Framework.Workflow.Abstractions.WorkflowName?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.Name.init -> void
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.ParentInstanceId.get -> string?
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.ParentInstanceId.init -> void
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.ParentNodeInstanceId.get -> string?
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.ParentNodeInstanceId.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.ReusePolicy.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowReusePolicy
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.ReusePolicy.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowStartRequest.StartAt.get -> System.DateTimeOffset?
