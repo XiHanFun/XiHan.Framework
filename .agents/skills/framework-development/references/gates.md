@@ -27,6 +27,7 @@ dotnet run -c Release --project framework/benchmarks/XiHan.Framework.Benchmarks 
 | 自研分析器 XH0001–XH0005 | `src/XiHan.Framework.Kernel.Analyzers`，经 `src/Directory.Build.props` 引用 | 补 `[ApiLevel]`、改名、去反射；不加 `NoWarn` |
 | 架构测试 | `test/XiHan.Framework.Architecture.Tests` | 改名、改依赖、改命名空间；不改测试放宽 |
 | 新正式包 | 同上 `EverySourceProject_IsReferencedByArchitectureTests` | 把新包加进架构测试项目引用 |
+| 跨包共享 internal | 同上 `InternalsSharedAcrossPackages_ArePinnedToTheExactVersion` | 用了别的正式包 internal 的项目引用加 `XiHanExactVersion="true"`，打包时依赖写成 `[版本]`（ADR-0134）；优先不跨包共享 internal |
 
 架构测试覆盖：包 ID 文法、目录名等于包 ID、命名空间等于包 ID 或其下一层、公开类型不带 `XiHan` 前缀、一个源文件一个顶层类型且文件名等于类型名（泛型加 `OfT`，`FileNamingTests`）、批量优先（循环体内不调单条写入与发布，`BatchFirstTests`）、依赖只向下或同环契约包、`Primitives` 无引用、Ring 1/2 只引用 `Microsoft.Extensions.*` 抽象包（允许名单另有 `Microsoft.Extensions.Options`、`Microsoft.Extensions.Primitives`、`System.Threading.RateLimiting`）、公开签名不泄漏第三方类型、Ring 0/1 零反射、版权头、README 与 PublicAPI 文件存在、术语表自洽、本地化约定（`LocalizationTests`：带 `Localization/` 的包每种内置区域一个文件且键集一致、占位符与 `en-US` 一致、键首段是术语表领域词、文件以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入；`<领域>Messages` 的 `const string` 与 `en-US.json` 的键一一对应且全局唯一；正式包里 `Error.*` 的第二个参数必须是常量，`Error.Literal` 只允许在 `FrameworkException.cs` 与 `IdempotencyRecord.cs`）。
 

@@ -133,3 +133,4 @@
 | [0131](0131-Preview与Experimental经豁免在小版本破坏.md) | 稳定性级别写进 RFC-0001：`Stable` 同一大版本内不破坏；`Preview` / `Experimental` 小版本可以破坏，每处破坏登记包验证的 `CompatibilitySuppressions.xml`、PublicAPI 写 `*REMOVED*` 行、更新日志给迁移方式；级别只升不降，`Stable` 签名不引用不稳定类型，原语层不适用豁免；基线与豁免门禁随 5.0.0 发版落地 | 已采纳 |
 | [0132](0132-启动请求的子流程字段只由引擎设置.md) | `WorkflowStartRequest` 的 `InstanceId`、`ParentInstanceId`、`ParentNodeInstanceId`、`Depth` 改为 `internal init`，只由引擎为子流程设置：公开时同分区调用方能伪造父链接恢复别人子流程的书签、负深度绕过 `MaxSubWorkflowDepth` | 已采纳 |
 | [0133](0133-活动上下文交出实例的只读视图.md) | 活动、结果处理器与指派规则的 `Instance` / `NodeInstance` 改为密封只读视图 `WorkflowInstanceView` / `WorkflowNodeInstanceView`（跟随引擎修改、不含变量与汇合记录），原先交出引擎随后写回的可写对象；`ActivityContext.Variables` 的可写留到 5.x | 已采纳 |
+| [0134](0134-共享internal的包按精确版本依赖.md) | 经 `InternalsVisibleTo` 共享 internal 的正式包之间，项目引用标 `XiHanExactVersion="true"`，打包时依赖写成 `[版本]`（`Directory.Build.targets` 改写 `_ProjectReferencesWithVersions`）：包验证不比较 internal，「≥」依赖下单独升级会在运行时缺成员；Plugins 的五条引用，架构测试守护 | 已采纳 |

@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" />
-    <ProjectReference Include="../XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" />
-    <ProjectReference Include="../XiHan.Framework.Plugins.Wasm/XiHan.Framework.Plugins.Wasm.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.Protocol/XiHan.Framework.Plugins.Protocol.csproj" XiHanExactVersion="true" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.OutOfProcess/XiHan.Framework.Plugins.OutOfProcess.csproj" XiHanExactVersion="true" />
+    <ProjectReference Include="../XiHan.Framework.Plugins.Wasm/XiHan.Framework.Plugins.Wasm.csproj" XiHanExactVersion="true" />
   </ItemGroup>
 
   <ItemGroup>

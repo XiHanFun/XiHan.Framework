@@ -4,4 +4,21 @@
     <None Update="README.md;PublicAPI.Shipped.txt;PublicAPI.Unshipped.txt" Visible="false" />
     <AdditionalFiles Update="PublicAPI.Shipped.txt;PublicAPI.Unshipped.txt" Visible="false" />
   </ItemGroup>
+
+  <!--
+    共享 internal 的包按精确版本互相依赖（ADR-0134）：带 XiHanExactVersion="true" 的项目引用，打包时依赖写成 [版本]，不是缺省的「≥ 版本」。
+    包验证不比较 internal；友元包按「≥」依赖时，应用单独升级被引用的包，友元包会在运行时找不到成员。
+    NuGet 在 _GetProjectReferenceVersions 里按被引用项目的完整路径收集版本，项目引用上的元数据带不过去，所以按完整路径挑出这几项再改写
+  -->
+  <Target Name="_XiHanPinExactProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_XiHanExactProjectPath Include="@(ProjectReference->WithMetadataValue('XiHanExactVersion', 'true')->'%(FullPath)')" />
+      <_XiHanRangedProjectVersion Include="@(_ProjectReferencesWithVersions)" Exclude="@(_XiHanExactProjectPath)" />
+      <_XiHanExactProjectVersion Include="@(_ProjectReferencesWithVersions)" Exclude="@(_XiHanRangedProjectVersion)" />
+      <_ProjectReferencesWithVersions Remove="@(_XiHanExactProjectVersion)" />
+      <_ProjectReferencesWithVersions Include="@(_XiHanExactProjectVersion)">
+        <ProjectVersion>[%(_XiHanExactProjectVersion.ProjectVersion)]</ProjectVersion>
+      </_ProjectReferencesWithVersions>
+    </ItemGroup>
+  </Target>
 </Project>

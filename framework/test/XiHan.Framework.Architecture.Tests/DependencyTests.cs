@@ -132,6 +132,40 @@ public sealed class DependencyTests
         Assert.True(missing.Count == 0, "The architecture test project must reference every source package; missing: " + string.Join(", ", missing) + ".");
     }
 
+    [Fact]
+    public void InternalsSharedAcrossPackages_ArePinnedToTheExactVersion()
+    {
+        var failures = new List<string>();
+        var packages = Workspace.SourceProjects.ToDictionary(static p => p.PackageId, StringComparer.Ordinal);
+
+        foreach (var project in Workspace.SourceProjects)
+        {
+            var friends = Workspace.LoadXml(project.ProjectPath)
+                .Descendants("InternalsVisibleTo")
+                .Select(static e => (string?)e.Attribute("Include") ?? string.Empty)
+                .Where(packages.ContainsKey);
+
+            foreach (var friend in friends)
+            {
+                // 包验证不比较 internal：友元包按「≥」依赖本包时，应用单独升级本包，友元包会在运行时找不到成员
+                var reference = Workspace.LoadXml(packages[friend].ProjectPath)
+                    .Descendants("ProjectReference")
+                    .FirstOrDefault(e => string.Equals(Path.GetFileNameWithoutExtension((string?)e.Attribute("Include") ?? string.Empty), project.PackageId, StringComparison.Ordinal));
+
+                if (reference is null)
+                {
+                    failures.Add($"'{project.PackageId}' grants internals to '{friend}', which does not reference it.");
+                }
+                else if (!string.Equals((string?)reference.Attribute("XiHanExactVersion"), "true", StringComparison.OrdinalIgnoreCase))
+                {
+                    failures.Add($"'{friend}' uses internals of '{project.PackageId}' and must reference it with XiHanExactVersion=\"true\".");
+                }
+            }
+        }
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
     /// <summary>
     /// 枚举成员公开签名里直接出现的类型
     /// </summary>

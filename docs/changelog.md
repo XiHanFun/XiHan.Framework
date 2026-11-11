@@ -14,6 +14,10 @@
 - **修复** 工作流启动请求不再公开 `InstanceId`、`ParentInstanceId`、`ParentNodeInstanceId` 与 `Depth`：调用方原先能借它们伪造子流程的父链接、绕过嵌套深度上限；这几个字段只由引擎为子流程设置，给它们赋值的代码删掉即可，要幂等启动用 `CorrelationId` 与 `ReusePolicy`
 - **修复** 活动、结果处理器与指派规则拿到的 `Instance`、`NodeInstance` 改为只读视图 `WorkflowInstanceView` / `WorkflowNodeInstanceView`：原先交出的是引擎随后写回的对象，扩展代码改了状态或租户会被持久化；只读的代码不用改，要读变量与私有状态改用上下文的 `Variables` 与 `State`
 
+### 宿主、协议与插件
+
+- **修复** `Plugins.OutOfProcess`、`Plugins.Wasm`、`Plugins.Conformance` 对 `Plugins.Protocol`（以及 Conformance 对两个宿主）改为精确版本依赖：原先单独升级其中一个包，还原能通过，运行时才缺成员；这几个包要用同一版本
+
 ## v5.0.0-preview.2（2026-11-06）
 
 ::: warning 预览须知
