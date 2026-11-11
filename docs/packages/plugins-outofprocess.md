@@ -125,7 +125,7 @@ using XiHan.Framework.Kernel.Operations;
 static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 {
     await using var scope = services.CreateAsyncScope();
-    var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, deadline: DateTimeOffset.UtcNow.AddSeconds(5));
+    var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = DateTimeOffset.UtcNow.AddSeconds(5) }, CancellationToken.None);
     var invoker = scope.ServiceProvider.GetRequiredService<IOperationInvoker>();
     return await invoker.InvokeAsync(context, new OperationRequest("echoes.create", Encoding.UTF8.GetBytes("""{"text":"ping"}""")));
 }

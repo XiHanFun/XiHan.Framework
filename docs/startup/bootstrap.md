@@ -144,7 +144,7 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 | `Bindings` | 解析出的资源绑定 |
 | `Options` | 生效的 `KernelOptions` |
 | `InvokeAsync(context, handler)` | 让一次调用经完整管道执行，处理器作为 Handle 阶段；应用不在服务状态时抛出 `FrameworkException` |
-| `CreateContext(scopedServices, cancellationToken, ...)` | 静态方法，为自己发起的调用建一个 `InvocationContext`，见[调用上下文](/startup/invocation-context) |
+| `CreateContext(scopedServices, cancellationToken)` / `CreateContext(scopedServices, options, cancellationToken)` | 静态方法，为自己发起的调用建一个 `InvocationContext`，选项 `InvocationContextOptions` 带截止时间、Baggage 与上游追踪，见[调用上下文](/startup/invocation-context) |
 
 协议适配器与派发器用的就是 `InvokeAsync`；应用一般只读信息。下面把图谱与管道暴露成诊断端点，便于在运行中的实例上核对装配结果：
 

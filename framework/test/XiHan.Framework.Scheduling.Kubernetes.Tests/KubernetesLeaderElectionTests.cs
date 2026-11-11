@@ -68,7 +68,7 @@ public sealed class KubernetesLeaderElectionTests
         Assert.True(leaseB.IsHeld);
 
         // 释放清空持有者，之后他人立即可取
-        await leaseB.ReleaseAsync();
+        await leaseB.ReleaseAsync(CancellationToken.None);
         Assert.False(leaseB.IsHeld);
         Assert.Equal(string.Empty, (string?)api.Spec("orders-scheduler")!["holderIdentity"]);
         Assert.True((await a.TryAcquireAsync(resource, TimeSpan.FromSeconds(5), CancellationToken.None)).IsSuccess);

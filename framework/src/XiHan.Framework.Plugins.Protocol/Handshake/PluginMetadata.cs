@@ -88,7 +88,7 @@ internal static partial class PluginMetadata
 
         // 回调不能冒充别的主体：xihan.principal 一律改写成插件的清单 ID（invocation.md §5）
         baggage[BaggageKeys.Principal] = principalId;
-        return App.CreateContext(scopedServices, cancellationToken, traceId, spanId, deadline, baggage);
+        return App.CreateContext(scopedServices, new InvocationContextOptions { TraceId = traceId, SpanId = spanId, Deadline = deadline, Baggage = baggage }, cancellationToken);
     }
 
     /// <summary>

@@ -30,10 +30,18 @@ public sealed class DomainEventBuffer
     private readonly int _capacity;
 
     /// <summary>
+    /// 以默认容量 <see cref="DefaultCapacity"/> 创建缓冲
+    /// </summary>
+    public DomainEventBuffer()
+        : this(DefaultCapacity)
+    {
+    }
+
+    /// <summary>
     /// 创建集合
     /// </summary>
     /// <param name="capacity">容量上限；超出时 <see cref="Add"/> 抛出 <see cref="InvalidOperationException"/></param>
-    public DomainEventBuffer(int capacity = DefaultCapacity)
+    public DomainEventBuffer(int capacity)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
         _capacity = capacity;
@@ -42,7 +50,7 @@ public sealed class DomainEventBuffer
     /// <summary>
     /// 尚未派发的事件
     /// </summary>
-    public IReadOnlyList<IDomainEvent> Items => _events;
+    public IReadOnlyList<IDomainEvent> Items => _events.AsReadOnly();
 
     /// <summary>
     /// 记录一个事件

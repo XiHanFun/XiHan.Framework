@@ -77,7 +77,7 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
         // 每次投递一个新作用域与新调用上下文：租户、主体、关联 ID 与区域来自扩展属性，追踪 ID、父跨度与采样标志来自 traceparent（与 HTTP 入站一致）
         await using var scope = _services.CreateAsyncScope();
         var (traceId, spanId, traceFlags) = TraceOf(delivery.Envelope);
-        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, traceId, spanId, null, BaggageOf(delivery.Envelope), traceFlags);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = traceId, SpanId = spanId, Baggage = BaggageOf(delivery.Envelope), TraceFlags = traceFlags }, cancellationToken);
         context.Set(_deliveryKey, delivery);
         context.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.Messaging, Target = delivery.Topic });
 

@@ -87,11 +87,11 @@ internal sealed class KubernetesLeaderLease : LeaderLease
     }
 
     /// <inheritdoc />
-    public override async ValueTask ReleaseAsync()
+    public override async ValueTask<Result> ReleaseAsync(CancellationToken cancellationToken)
     {
         if (_lost)
         {
-            return;
+            return Result.Success();
         }
 
         _lost = true;
@@ -99,7 +99,8 @@ internal sealed class KubernetesLeaderLease : LeaderLease
         var released = Clone(_document);
         released.Spec.HolderIdentity = string.Empty;
         released.Spec.RenewTime = MicroTime.Format(_clock.GetUtcNow());
-        await _client.ReplaceAsync(released, CancellationToken.None).ConfigureAwait(false);
+        var written = await _client.ReplaceAsync(released, cancellationToken).ConfigureAwait(false);
+        return written.IsSuccess ? Result.Success() : written.Error!;
     }
 
     /// <summary>

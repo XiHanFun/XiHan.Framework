@@ -66,7 +66,7 @@ public sealed class JobDispatcher
         // 每次运行一个新作用域与新调用上下文：运行 ID 作为关联 ID，便于在日志与追踪里串起一次运行
         await using var scope = _services.CreateAsyncScope();
         var baggage = new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Correlation] = run.Id };
-        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = baggage }, cancellationToken);
         context.Set(_runKey, run);
         context.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.Job, Target = run.Name.Value });
         try
@@ -74,7 +74,7 @@ public sealed class JobDispatcher
             return await _app.InvokeAsync(context, async ctx =>
             {
                 var job = (IJob)ctx.Services.GetRequiredService(jobType);
-                var result = await job.RunAsync(run, ctx, ctx.CancellationToken).ConfigureAwait(false);
+                var result = await job.RunAsync(run, ctx).ConfigureAwait(false);
                 if (result.IsFailure)
                 {
                     ctx.SetOutcome(result);

@@ -230,25 +230,31 @@ public sealed partial class App : IDisposable
     /// 创建一次调用的上下文
     /// </summary>
     /// <remarks>
-    /// 给了 <paramref name="traceId"/> 时用载体的 trace-id、parent-id（缺省生成）与标志（缺省按上游已采样处理）。没有给时并入宿主当前的 W3C Activity（ASP.NET Core 的请求 Span、外层调用的 Span）：取它的 trace-id 与 span-id，它有采样决定时连同标志；也没有当前 Activity 时生成新的 trace-id 与 parent-id，标志为空，这次调用是链路的根（RFC-0003 规则 7）
+    /// 不带载体的追踪、截止时间与 Baggage，同 <see cref="CreateContext(IServiceProvider, InvocationContextOptions, CancellationToken)"/> 传 <see cref="InvocationContextOptions.None"/>
     /// </remarks>
     /// <param name="scopedServices">调用作用域的服务提供器</param>
     /// <param name="cancellationToken">取消令牌</param>
-    /// <param name="traceId">载体给出的 trace-id</param>
-    /// <param name="spanId">载体给出的 parent-id</param>
-    /// <param name="deadline">绝对截止时间</param>
-    /// <param name="baggage">Baggage</param>
-    /// <param name="traceFlags">载体给出的 trace-flags；只在给了 <paramref name="traceId"/> 时使用</param>
-    public static InvocationContext CreateContext(
-        IServiceProvider scopedServices,
-        CancellationToken cancellationToken,
-        string? traceId = null,
-        string? spanId = null,
-        DateTimeOffset? deadline = null,
-        IReadOnlyDictionary<string, string>? baggage = null,
-        ActivityTraceFlags? traceFlags = null)
+    public static InvocationContext CreateContext(IServiceProvider scopedServices, CancellationToken cancellationToken)
+        => CreateContext(scopedServices, InvocationContextOptions.None, cancellationToken);
+
+    /// <summary>
+    /// 按调用方给出的值创建一次调用的上下文
+    /// </summary>
+    /// <remarks>
+    /// 给了 <see cref="InvocationContextOptions.TraceId"/> 时用载体的 trace-id、parent-id（缺省生成）与标志（缺省按上游已采样处理）。没有给时并入宿主当前的 W3C Activity（ASP.NET Core 的请求 Span、外层调用的 Span）：取它的 trace-id 与 span-id，它有采样决定时连同标志；也没有当前 Activity 时生成新的 trace-id 与 parent-id，标志为空，这次调用是链路的根（RFC-0003 规则 7）
+    /// </remarks>
+    /// <param name="scopedServices">调用作用域的服务提供器</param>
+    /// <param name="options">载体给出的追踪、截止时间与 Baggage</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    public static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationContextOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scopedServices);
+        ArgumentNullException.ThrowIfNull(options);
+        var traceId = options.TraceId;
+        var spanId = options.SpanId;
+        var traceFlags = options.TraceFlags;
+        var deadline = options.Deadline;
+        var baggage = options.Baggage;
         ActivityTraceFlags? flags;
         if (traceId is not null)
         {

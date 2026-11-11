@@ -39,7 +39,7 @@ XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.LeaderElectionC
 XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.Lease_ExpiresUnlessRenewed() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.RecordingJob
 XiHan.Framework.Scheduling.Conformance.RecordingJob.RecordingJob(XiHan.Framework.Scheduling.Conformance.RecordingJobLog! log, System.TimeProvider! clock) -> void
-XiHan.Framework.Scheduling.Conformance.RecordingJob.RunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun! run, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Conformance.RecordingJob.RunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun! run, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Delay.get -> System.TimeSpan
 XiHan.Framework.Scheduling.Conformance.RecordingJobLog.Delay.set -> void

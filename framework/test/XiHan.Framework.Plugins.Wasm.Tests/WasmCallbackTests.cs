@@ -115,7 +115,7 @@ public sealed class WasmCallbackTests
         }, s => s.AddSingleton<TimeProvider>(clock));
         using var caller = new CancellationTokenSource();
         await using var scope = host.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, caller.Token, deadline: clock.GetUtcNow() + _deadlineAfter);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = clock.GetUtcNow() + _deadlineAfter }, caller.Token);
         var call = scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest(WatPlugin.Operation, Encoding.UTF8.GetBytes("{}"))).AsTask();
 
         await WaitUntilEnteredAsync(probe, call);
@@ -213,7 +213,7 @@ public sealed class WasmCallbackTests
     private static async Task<OperationResponse> CallAsync(TestHost host, DateTimeOffset? deadline = null)
     {
         await using var scope = host.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, deadline: deadline);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = deadline }, CancellationToken.None);
         return await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest(WatPlugin.Operation, Encoding.UTF8.GetBytes("{}")));
     }
 }

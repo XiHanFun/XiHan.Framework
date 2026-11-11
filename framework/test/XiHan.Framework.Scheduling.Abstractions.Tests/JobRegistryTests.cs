@@ -20,7 +20,7 @@ public sealed class JobRegistryTests
     private sealed class NoopJob : IJob
     {
         /// <inheritdoc />
-        public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());
+        public ValueTask<Result> RunAsync(JobRun run, InvocationContext context) => ValueTask.FromResult(Result.Success());
     }
 
     /// <summary>
@@ -29,7 +29,7 @@ public sealed class JobRegistryTests
     private sealed class OtherJob : IJob
     {
         /// <inheritdoc />
-        public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());
+        public ValueTask<Result> RunAsync(JobRun run, InvocationContext context) => ValueTask.FromResult(Result.Success());
     }
 
     [Fact]

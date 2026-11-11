@@ -870,7 +870,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         // 先摘下再释放：释放失败由 Provider 记日志、租约到期后自然可被接管，本节点都不再当自己是领导者
         var lease = _lease;
         _lease = null;
-        await lease.ReleaseAsync().ConfigureAwait(false);
+        await lease.ReleaseAsync(CancellationToken.None).ConfigureAwait(false);
         LogLeadershipReleased(_logger, _options.LeaseResource.Value);
     }
 

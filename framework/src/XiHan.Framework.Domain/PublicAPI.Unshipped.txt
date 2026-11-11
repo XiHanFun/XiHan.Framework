@@ -22,7 +22,8 @@ XiHan.Framework.Domain.Entities.ISoftDeletable.IsDeleted.set -> void
 XiHan.Framework.Domain.Events.DomainEventBuffer
 XiHan.Framework.Domain.Events.DomainEventBuffer.Add(XiHan.Framework.Domain.Events.IDomainEvent! domainEvent) -> void
 XiHan.Framework.Domain.Events.DomainEventBuffer.Clear() -> void
-XiHan.Framework.Domain.Events.DomainEventBuffer.DomainEventBuffer(int capacity = 256) -> void
+XiHan.Framework.Domain.Events.DomainEventBuffer.DomainEventBuffer() -> void
+XiHan.Framework.Domain.Events.DomainEventBuffer.DomainEventBuffer(int capacity) -> void
 XiHan.Framework.Domain.Events.DomainEventBuffer.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Domain.Events.IDomainEvent!>!
 XiHan.Framework.Domain.Events.IDomainEvent
 XiHan.Framework.Domain.Events.IDomainEvent.OccurredAt.get -> System.DateTimeOffset

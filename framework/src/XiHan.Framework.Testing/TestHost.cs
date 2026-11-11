@@ -116,7 +116,7 @@ public sealed class TestHost : IAsyncDisposable
 
         // 每次调用一个独立作用域，与真实宿主里一请求一作用域的语义一致
         await using var scope = _provider.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, deadline: deadline, baggage: baggage);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = deadline, Baggage = baggage }, cancellationToken);
         return await App.InvokeAsync(context, handler).ConfigureAwait(false);
     }
 
@@ -134,7 +134,7 @@ public sealed class TestHost : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(request);
         ObjectDisposedException.ThrowIf(_disposed, this);
         await using var scope = _provider.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = baggage }, cancellationToken);
         return await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, request).ConfigureAwait(false);
     }
 
@@ -153,7 +153,7 @@ public sealed class TestHost : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(operationId);
         ObjectDisposedException.ThrowIf(_disposed, this);
         await using var scope = _provider.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = baggage }, cancellationToken);
         return await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync<TRequest, TResponse>(context, operationId, request).ConfigureAwait(false);
     }
 

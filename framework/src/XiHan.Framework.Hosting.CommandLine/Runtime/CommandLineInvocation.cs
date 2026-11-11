@@ -90,7 +90,7 @@ public static class CommandLineInvocation
             deadline = (services.GetService<TimeProvider>() ?? TimeProvider.System).GetUtcNow() + TimeSpan.FromSeconds(seconds);
         }
 
-        var invocation = App.CreateContext(services, context.CancellationToken, deadline: deadline, baggage: baggage);
+        var invocation = App.CreateContext(services, new InvocationContextOptions { Deadline = deadline, Baggage = baggage }, context.CancellationToken);
         invocation.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.CommandLine, Target = operationId });
 
         // 凭据只做格式拆分，不在这里验证；解释交给安全子系统的 Authenticate 阶段

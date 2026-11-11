@@ -56,14 +56,17 @@ public abstract class LeaderLease : IAsyncDisposable
     /// 释放
     /// </summary>
     /// <remarks>
-    /// 幂等
+    /// 幂等：调用后本实例不再是领导，已释放或已失去的租约直接成功。后端没能删掉租约（不可达、已被接管）时返回那个失败，租约到期后自然可被接管；释放与 <see cref="RenewAsync"/> 一样收令牌、以结果报告（ADR-0157）
     /// </remarks>
-    public abstract ValueTask ReleaseAsync();
+    public abstract ValueTask<Result> ReleaseAsync(CancellationToken cancellationToken);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 以 <see cref="CancellationToken.None"/> 释放并忽略结果：释放失败由实现记日志，租约到期自然失效
+    /// </remarks>
     public async ValueTask DisposeAsync()
     {
-        await ReleaseAsync().ConfigureAwait(false);
+        _ = await ReleaseAsync(CancellationToken.None).ConfigureAwait(false);
         GC.SuppressFinalize(this);
     }
 }

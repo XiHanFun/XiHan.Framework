@@ -73,7 +73,7 @@ public sealed class InboundBaggageTests
         // 消息、作业、工作流、命令行都在进程内建上下文，租户是框架自己放进去的：Tenant 阶段照常解析
         await using var app = await StartAsync();
         await using var scope = app.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, baggage: new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Tenant] = "acme" });
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Tenant] = "acme" } }, CancellationToken.None);
         string? tenant = null;
 
         await scope.ServiceProvider.GetRequiredService<App>().InvokeAsync(context, ctx =>

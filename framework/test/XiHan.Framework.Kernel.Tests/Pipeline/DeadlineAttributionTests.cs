@@ -87,7 +87,7 @@ public sealed class DeadlineAttributionTests
         var time = new FakeTimeProvider(new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero));
         using var caller = new CancellationTokenSource();
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(_services, caller.Token, deadline: time.GetUtcNow() + _deadlineAfter);
+        var context = App.CreateContext(_services, new InvocationContextOptions { Deadline = time.GetUtcNow() + _deadlineAfter }, caller.Token);
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var invocation = middleware.InvokeAsync(context, async inner =>

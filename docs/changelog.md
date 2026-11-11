@@ -20,6 +20,7 @@
 - **调整** 匿名主体的 `Principal.Id` 由空字符串改为 `null`，`new Principal(id, scheme)` 只创建已认证主体（两者都不得为空），匿名用 `Principal.Anonymous`；判断 `IsAuthenticated` 之后可直接用 `Id`。`ResourceName.Tenant` 的全局资源由空字符串改为 `null`，构造时校验每一段
 - **调整** 内核的数据类型不再是位置记录：`AuditEvent`、`HealthSnapshot`、`OperationResponse`、`FeatureStatus` 按属性名写初始化器（`new AuditEvent { Timestamp = …, Action = …, Outcome = …, TraceId = … }`）；`AuthorizationRequest`、`ContributorStatus`、`PluginSource` 只保留两参构造，第三个实参改成初始化器（`new ContributorStatus(name, state) { Error = … }`）；这些类型都不再能解构
 - **调整** 返回 `Maybe` 的查找统一叫 `Find…`：`GetOutcome` / `GetOrigin` / `GetOperation…` / `GetCredential` / `GetAuthorizationRequirement` / `GetTenantShard` / `GetAuditAction` / `GetAuditResource` / `GetDelivery` / `GetRun` / `GetXiHanContext` 与按键读条目的 `Get<T>` 改成对应的 `Find…`，`TryGetBinding` 改成 `FindBinding`，插件宿主的 `Describe` 改成返回 `Maybe` 的 `FindStatus`；`GetAuditDetails` 改成 `FindAuditDetails` 并返回只读副本；`WorkflowVariables` 删掉 `Get` / `Get<T>`，改用索引器与 `TryGet<T>`
+- **调整** `App.CreateContext` 的可选参数收进新的 `InvocationContextOptions`：`App.CreateContext(sp, ct, deadline: d, baggage: b)` 改成 `App.CreateContext(sp, new InvocationContextOptions { Deadline = d, Baggage = b }, ct)`，只传服务与令牌的不用改；`DomainEventBuffer` 改为无参与 `(int capacity)` 两个构造，`Items` 交出只读视图
 
 ### 子系统
 
@@ -49,6 +50,7 @@
 - **调整** `Caching.Hybrid.HybridCache` 改名 `HybridObjectCache`（与 BCL 的 `HybridCache` 不再同名），`Localization.InMemory.MessageLocalizer` 改名 `InMemoryMessageLocalizer`；Redis 缓存、Redis 消息与 Nacos 选项的用户名统一为 `UserName`，Kafka 的 `GroupId` 与 Redis 消息的 `GroupName` 统一为 `ConsumerGroup`，配置键改为 `XiHan:Messaging:Kafka:ConsumerGroup`、`XiHan:Messaging:Redis:ConsumerGroup`、`XiHan:Configuration:Nacos:UserName`（值不变，位点照常接续）
 - **调整** `MessageSubscriptions` 在消息运行时启动后只读：再 `Add` 抛 `InvalidOperationException`，`All` 与 `HandlersFor` 交出只读视图；订阅照旧在 `Configure` 里用 `AddMessageHandler` 登记
 - **调整** 缓存键管理的 `RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回新错误码 `CACHING_VALIDATION_004`（HTTP 400）而不是抛 `ArgumentException`；`CacheKeyQuery.Prefix` 不合法不再在构造时抛出，由 `ListKeysAsync` 以同一错误码返回；实现键管理的 Provider 在开头调 `CacheKeyQuery.ValidateRemovalPrefix`
+- **调整** `IJob.RunAsync(run, context)` 去掉与 `context.CancellationToken` 重复的令牌参数，实现里的 `cancellationToken` 改为 `context.CancellationToken`；`LeaderLease.ReleaseAsync(cancellationToken)` 收令牌并返回 `Result`（幂等，后端没删掉时返回那个失败），实现租约的 Provider 改签名
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
 
 ### 宿主、协议与插件

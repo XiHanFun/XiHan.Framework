@@ -15,7 +15,7 @@ namespace KubernetesApp.Heartbeat;
 public sealed partial class HeartbeatJob(HeartbeatCounter counter, ILogger<HeartbeatJob> logger) : IJob
 {
     /// <inheritdoc />
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
     {
         var tick = counter.Increment();
         var pod = Environment.MachineName;

@@ -17,5 +17,8 @@ public interface IJob
     /// <summary>
     /// 运行
     /// </summary>
-    ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken);
+    /// <remarks>
+    /// 取消与超时在 <see cref="InvocationContext.CancellationToken"/> 上，与操作的处理器一样不另传令牌（ADR-0157）
+    /// </remarks>
+    ValueTask<Result> RunAsync(JobRun run, InvocationContext context);
 }

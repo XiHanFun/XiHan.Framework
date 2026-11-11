@@ -226,7 +226,7 @@ public sealed class InMemoryMessagingTests
             });
         await using var scope = host.Services.CreateAsyncScope();
         // 上游不采样（HTTP 的 -00 等）的调用里发布：处理器的调用同一 trace、仍不采样（RFC-0003 规则 7）
-        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, "4bf92f3577b34da6a3ce929d0e0e4736", "00f067aa0ba902b7", traceFlags: ActivityTraceFlags.None);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = "4bf92f3577b34da6a3ce929d0e0e4736", SpanId = "00f067aa0ba902b7", TraceFlags = ActivityTraceFlags.None }, CancellationToken.None);
 
         (await host.App.InvokeAsync(context, async ctx => (await ctx.Services.GetRequiredService<IMessagePublisher>().PublishAsync(Topic, Envelope("unsampled"), ctx.CancellationToken)).ThrowIfFailure())).ThrowIfFailure();
 

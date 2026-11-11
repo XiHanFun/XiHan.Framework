@@ -87,12 +87,7 @@ public sealed class OperationAIFunction : AIFunction
         ArgumentNullException.ThrowIfNull(arguments);
         // 每次工具调用都是一次独立调用：新作用域、新上下文，Authorize 阶段按契约判定；Baggage 与截止时间沿用调用方，追踪 ID 不变
         await using var scope = _scopes.CreateAsyncScope();
-        var context = App.CreateContext(
-            scope.ServiceProvider,
-            cancellationToken,
-            traceId: _caller.TraceId,
-            deadline: _caller.Deadline,
-            baggage: new Dictionary<string, string>(_caller.Baggage, StringComparer.Ordinal));
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = _caller.TraceId, Deadline = _caller.Deadline, Baggage = new Dictionary<string, string>(_caller.Baggage, StringComparer.Ordinal) }, cancellationToken);
         // 以调用方身份执行：主体与租户取调用方此刻的安全上下文（调用方已在自己的管道里认证过）。不复制凭据，Authenticate 阶段没有凭据可认证即保留这个主体，
         // Authorize 阶段以它按契约判定——工具既不能绕过授权，也不会因为丢了身份被当成匿名一律拒绝
         context.SetSecurity(_caller.GetSecurity());

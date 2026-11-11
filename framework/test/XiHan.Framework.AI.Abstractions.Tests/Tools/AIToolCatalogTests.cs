@@ -48,7 +48,7 @@ public sealed class AIToolCatalogTests
         Assert.IsType<AIFunction>(catalog.Find("manual_add").ValueOrThrow(), exactMatch: false);
 
         await using var scope = host.Services.CreateAsyncScope();
-        var chinese = App.CreateContext(scope.ServiceProvider, CancellationToken.None, baggage: new Dictionary<string, string> { [BaggageKeys.Locale] = "zh-CN" });
+        var chinese = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.Locale] = "zh-CN" } }, CancellationToken.None);
         var bound = catalog.Bind(chinese);
         Assert.Equal("把给定文本回显出来。", bound.Single(static tool => tool.Name == "echoes_create").Description);
         Assert.Same(catalog.Find("manual_add").ValueOrThrow().GetType(), bound.Single(static tool => tool.Name == "manual_add").GetType());
@@ -60,7 +60,7 @@ public sealed class AIToolCatalogTests
         await using var host = await StartAsync();
         var catalog = host.Services.GetRequiredService<IAIToolCatalog>();
         await using var scope = host.Services.CreateAsyncScope();
-        var caller = App.CreateContext(scope.ServiceProvider, CancellationToken.None, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "t1", [BaggageKeys.Locale] = "en-US" });
+        var caller = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.Tenant] = "t1", [BaggageKeys.Locale] = "en-US" } }, CancellationToken.None);
         var tool = Assert.IsType<OperationAIFunction>(catalog.Bind(caller).Single(static tool => tool.Name == "echoes_create"));
         Assert.Equal("echoes.create", tool.OperationId);
 

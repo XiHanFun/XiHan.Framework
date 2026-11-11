@@ -46,7 +46,7 @@ internal static class WorkflowInvocations
             // 新作用域：同一作用域里再经管道会撞上已经开始过的工作单元（RFC-0005「嵌套调用」）
             await using var scope = scopes.CreateAsyncScope();
             var baggage = tenantId is null ? null : new Dictionary<string, string>(StringComparer.Ordinal) { [BaggageKeys.Tenant] = tenantId };
-            var context = App.CreateContext(scope.ServiceProvider, cancellationToken, baggage: baggage);
+            var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = baggage }, cancellationToken);
             if (tenantId is not null)
             {
                 // 预先放进安全上下文：没有装配多租户（没有 Tenant 阶段）时租户也在，工作单元按它开启；装配了时 Tenant 阶段按 Baggage 解析出同一个租户并校验

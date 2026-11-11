@@ -49,13 +49,13 @@ builder.Services.AddJobType<ArchiveJob>();
 
 public sealed class CleanupJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 
 public sealed class ArchiveJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 ```
@@ -96,7 +96,7 @@ public sealed class ArchiveJob : IJob
 
 | 类型 | 说明 |
 | --- | --- |
-| `IJob` | 作业：`RunAsync(JobRun, InvocationContext, CancellationToken)` → `ValueTask<Result>`，作用域服务 |
+| `IJob` | 作业：`RunAsync(JobRun, InvocationContext)` → `ValueTask<Result>`（取消用 `context.CancellationToken`），作用域服务 |
 | `JobName`、`TriggerKey` | 作业名（`^[a-z0-9][a-z0-9._-]{0,127}$`，从字符串显式转换）；触发器键 `(Job, Trigger)` |
 | `JobDefinition` | 作业定义：`Name`、`JobType`、`Triggers`、`Data`、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`、`Retry`、`Timeout`、`Description` |
 | `JobTriggerDefinition` | 触发器：`Name`、`Schedule`、`Data`、`Priority`（缺省 5）、`MisfirePolicy`、`Description` |
@@ -156,8 +156,8 @@ public interface IExporter
 public sealed class ExportJob(IExporter exporter) : IJob
 {
     // hourly 触发器的数据覆盖作业数据的同名键 mode
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
-        => exporter.ExportAsync(run.Data["mode"]?.GetValue<string>() ?? "full", cancellationToken);
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
+        => exporter.ExportAsync(run.Data["mode"]?.GetValue<string>() ?? "full", context.CancellationToken);
 }
 ```
 

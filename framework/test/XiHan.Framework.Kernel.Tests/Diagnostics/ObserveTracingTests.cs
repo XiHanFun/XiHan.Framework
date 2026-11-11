@@ -99,7 +99,7 @@ public sealed class ObserveTracingTests
         using var scope = provider.CreateScope();
 
         // 上游采样：远端父级是上游的 parent-id，trace-id 不变
-        var sampled = App.CreateContext(scope.ServiceProvider, CancellationToken.None, UpstreamTrace, UpstreamSpan, traceFlags: ActivityTraceFlags.Recorded);
+        var sampled = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = UpstreamTrace, SpanId = UpstreamSpan, TraceFlags = ActivityTraceFlags.Recorded }, CancellationToken.None);
         Assert.Equal(ActivityTraceFlags.Recorded, sampled.TraceFlags);
         var activity = await InvokeAsync(app, sampled);
         Assert.NotNull(activity);
@@ -109,7 +109,7 @@ public sealed class ObserveTracingTests
         Assert.True(activity.HasRemoteParent);
 
         // 上游不采样：标志原样保留，xihan.invoke 也不采样（根规则要采样也不影响）
-        var unsampled = App.CreateContext(scope.ServiceProvider, CancellationToken.None, UpstreamTrace, UpstreamSpan, traceFlags: ActivityTraceFlags.None);
+        var unsampled = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = UpstreamTrace, SpanId = UpstreamSpan, TraceFlags = ActivityTraceFlags.None }, CancellationToken.None);
         Assert.Equal(ActivityTraceFlags.None, unsampled.TraceFlags);
         Assert.Null(await InvokeAsync(app, unsampled));
 
@@ -117,7 +117,7 @@ public sealed class ObserveTracingTests
         Assert.Equal(ActivityTraceFlags.None, unsampled.WithBaggage(BaggageKeys.Correlation, "c").TraceFlags);
 
         // 只给 trace-id 不给标志的创建方按上游已采样处理
-        Assert.Equal(ActivityTraceFlags.Recorded, App.CreateContext(scope.ServiceProvider, CancellationToken.None, UpstreamTrace).TraceFlags);
+        Assert.Equal(ActivityTraceFlags.Recorded, App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = UpstreamTrace }, CancellationToken.None).TraceFlags);
     }
 
     [Fact]

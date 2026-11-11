@@ -51,6 +51,6 @@ public sealed class JobRetryPolicyTests
     private sealed class NoopJob : IJob
     {
         /// <inheritdoc />
-        public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());
+        public ValueTask<Result> RunAsync(JobRun run, InvocationContext context) => ValueTask.FromResult(Result.Success());
     }
 }

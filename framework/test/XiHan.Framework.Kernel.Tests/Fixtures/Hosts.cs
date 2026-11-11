@@ -41,5 +41,5 @@ internal static class Hosts
     /// 创建带随机 Trace 的调用上下文
     /// </summary>
     public static InvocationContext Context(IServiceProvider services, DateTimeOffset? deadline = null, CancellationToken cancellationToken = default)
-        => App.CreateContext(services, cancellationToken, deadline: deadline);
+        => App.CreateContext(services, new InvocationContextOptions { Deadline = deadline }, cancellationToken);
 }

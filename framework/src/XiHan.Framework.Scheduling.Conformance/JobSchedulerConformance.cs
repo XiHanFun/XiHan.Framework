@@ -723,6 +723,6 @@ public abstract class JobSchedulerConformance
     private sealed class UnregisteredJob : IJob
     {
         /// <inheritdoc />
-        public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());
+        public ValueTask<Result> RunAsync(JobRun run, InvocationContext context) => ValueTask.FromResult(Result.Success());
     }
 }

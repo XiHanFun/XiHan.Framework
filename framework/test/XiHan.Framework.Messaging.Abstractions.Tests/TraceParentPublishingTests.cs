@@ -70,7 +70,7 @@ public sealed class TraceParentPublishingTests : IDisposable
     [InlineData(ActivityTraceFlags.Recorded, "01")]
     public async Task Publisher_WritesTheUpstreamSamplingFlag(ActivityTraceFlags upstream, string flags)
     {
-        var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), CancellationToken.None, TraceId, SpanId, traceFlags: upstream);
+        var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), new InvocationContextOptions { TraceId = TraceId, SpanId = SpanId, TraceFlags = upstream }, CancellationToken.None);
 
         var published = await PublishAsync(context);
 
@@ -94,7 +94,7 @@ public sealed class TraceParentPublishingTests : IDisposable
     [InlineData(ActivitySamplingResult.PropagationData, "00")]
     public async Task Publisher_PrefersTheCurrentActivityOfTheSameTrace(ActivitySamplingResult sampling, string flags)
     {
-        var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), CancellationToken.None, TraceId, SpanId, traceFlags: ActivityTraceFlags.Recorded);
+        var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), new InvocationContextOptions { TraceId = TraceId, SpanId = SpanId, TraceFlags = ActivityTraceFlags.Recorded }, CancellationToken.None);
         _sampling = sampling;
         using var activity = _source.StartActivity("publish", ActivityKind.Internal, new ActivityContext(ActivityTraceId.CreateFromString(TraceId), ActivitySpanId.CreateFromString(SpanId), ActivityTraceFlags.Recorded, isRemote: true));
         Assert.NotNull(activity);
@@ -108,7 +108,7 @@ public sealed class TraceParentPublishingTests : IDisposable
     [Fact]
     public async Task Publisher_IgnoresACurrentActivityOfAnotherTrace()
     {
-        var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), CancellationToken.None, TraceId, SpanId, traceFlags: ActivityTraceFlags.None);
+        var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), new InvocationContextOptions { TraceId = TraceId, SpanId = SpanId, TraceFlags = ActivityTraceFlags.None }, CancellationToken.None);
         using var other = _source.StartActivity("unrelated", ActivityKind.Internal, new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, isRemote: true));
         Assert.NotNull(other);
 

@@ -37,7 +37,7 @@ public sealed class RecordingJob : IJob
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(context);
@@ -48,7 +48,7 @@ public sealed class RecordingJob : IJob
         }
 
         // 先挂上计时器再记录：用例看到记录就推进时钟，计时器若在推进之后才创建，就从推进后的时刻起算、错过这次推进
-        var staying = stay > TimeSpan.Zero ? Task.Delay(stay, _clock, cancellationToken) : Task.CompletedTask;
+        var staying = stay > TimeSpan.Zero ? Task.Delay(stay, _clock, context.CancellationToken) : Task.CompletedTask;
         _log.Record(run, context.TryGetBaggage(BaggageKeys.Correlation, out var correlation) ? correlation : null, context.FindOrigin().TryGetValue(out var origin) ? origin : null);
         await staying.ConfigureAwait(false);
 

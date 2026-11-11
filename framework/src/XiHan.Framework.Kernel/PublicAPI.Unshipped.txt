@@ -159,6 +159,20 @@ XiHan.Framework.Kernel.Hosting.IHostedFeature.StartAsync(System.IServiceProvider
 XiHan.Framework.Kernel.Hosting.IHostedFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Kernel.Hosting.IShadowAwareFeature
 XiHan.Framework.Kernel.Hosting.IShadowAwareFeature.ConfigureShadowed(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.<Clone>$() -> XiHan.Framework.Kernel.Hosting.InvocationContextOptions!
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.Baggage.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>?
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.Baggage.init -> void
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.Deadline.get -> System.DateTimeOffset?
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.Deadline.init -> void
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.Equals(XiHan.Framework.Kernel.Hosting.InvocationContextOptions? other) -> bool
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.InvocationContextOptions() -> void
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.SpanId.get -> string?
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.SpanId.init -> void
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.TraceFlags.get -> System.Diagnostics.ActivityTraceFlags?
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.TraceFlags.init -> void
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.TraceId.get -> string?
+XiHan.Framework.Kernel.Hosting.InvocationContextOptions.TraceId.init -> void
 XiHan.Framework.Kernel.Hosting.KernelOptions
 XiHan.Framework.Kernel.Hosting.KernelOptions.<Clone>$() -> XiHan.Framework.Kernel.Hosting.KernelOptions!
 XiHan.Framework.Kernel.Hosting.KernelOptions.Equals(XiHan.Framework.Kernel.Hosting.KernelOptions? other) -> bool
@@ -678,6 +692,9 @@ override XiHan.Framework.Kernel.Hosting.FeatureStatus.ToString() -> string!
 override XiHan.Framework.Kernel.Hosting.HealthSnapshot.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Hosting.HealthSnapshot.GetHashCode() -> int
 override XiHan.Framework.Kernel.Hosting.HealthSnapshot.ToString() -> string!
+override XiHan.Framework.Kernel.Hosting.InvocationContextOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Kernel.Hosting.InvocationContextOptions.GetHashCode() -> int
+override XiHan.Framework.Kernel.Hosting.InvocationContextOptions.ToString() -> string!
 override XiHan.Framework.Kernel.Hosting.KernelOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Hosting.KernelOptions.GetHashCode() -> int
 override XiHan.Framework.Kernel.Hosting.KernelOptions.ToString() -> string!
@@ -754,7 +771,8 @@ static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.ActivitySource.ge
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.InvocationDuration.get -> System.Diagnostics.Metrics.Histogram<double>!
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.Invocations.get -> System.Diagnostics.Metrics.Counter<long>!
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.Meter.get -> System.Diagnostics.Metrics.Meter!
-static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider! scopedServices, System.Threading.CancellationToken cancellationToken, string? traceId = null, string? spanId = null, System.DateTimeOffset? deadline = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Diagnostics.ActivityTraceFlags? traceFlags = null) -> XiHan.Framework.Primitives.InvocationContext!
+static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider! scopedServices, System.Threading.CancellationToken cancellationToken) -> XiHan.Framework.Primitives.InvocationContext!
+static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider! scopedServices, XiHan.Framework.Kernel.Hosting.InvocationContextOptions! options, System.Threading.CancellationToken cancellationToken) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Kernel.Hosting.BindingResolver.Resolve(Microsoft.Extensions.Configuration.IConfiguration! configuration, string? serviceBindingRoot = null) -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator !=(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator ==(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
@@ -767,6 +785,9 @@ static XiHan.Framework.Kernel.Hosting.FeatureStatus.operator ==(XiHan.Framework.
 static XiHan.Framework.Kernel.Hosting.HealthSnapshot.operator !=(XiHan.Framework.Kernel.Hosting.HealthSnapshot? left, XiHan.Framework.Kernel.Hosting.HealthSnapshot? right) -> bool
 static XiHan.Framework.Kernel.Hosting.HealthSnapshot.operator ==(XiHan.Framework.Kernel.Hosting.HealthSnapshot? left, XiHan.Framework.Kernel.Hosting.HealthSnapshot? right) -> bool
 static XiHan.Framework.Kernel.Hosting.HostApplicationBuilderExtensions.AddXiHan<TBuilder>(this TBuilder builder, System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure) -> TBuilder
+static XiHan.Framework.Kernel.Hosting.InvocationContextOptions.None.get -> XiHan.Framework.Kernel.Hosting.InvocationContextOptions!
+static XiHan.Framework.Kernel.Hosting.InvocationContextOptions.operator !=(XiHan.Framework.Kernel.Hosting.InvocationContextOptions? left, XiHan.Framework.Kernel.Hosting.InvocationContextOptions? right) -> bool
+static XiHan.Framework.Kernel.Hosting.InvocationContextOptions.operator ==(XiHan.Framework.Kernel.Hosting.InvocationContextOptions? left, XiHan.Framework.Kernel.Hosting.InvocationContextOptions? right) -> bool
 static XiHan.Framework.Kernel.Hosting.KernelOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Kernel.Hosting.KernelOptions!
 static XiHan.Framework.Kernel.Hosting.KernelOptions.operator !=(XiHan.Framework.Kernel.Hosting.KernelOptions? left, XiHan.Framework.Kernel.Hosting.KernelOptions? right) -> bool
 static XiHan.Framework.Kernel.Hosting.KernelOptions.operator ==(XiHan.Framework.Kernel.Hosting.KernelOptions? left, XiHan.Framework.Kernel.Hosting.KernelOptions? right) -> bool

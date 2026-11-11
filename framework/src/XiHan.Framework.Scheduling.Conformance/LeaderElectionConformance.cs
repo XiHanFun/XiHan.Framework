@@ -68,9 +68,10 @@ public abstract class LeaderElectionConformance
         Assert.Equal(SchedulingErrors.LeaseHeld, refused.Error?.Code);
         Assert.True((await election.TryAcquireAsync(Resource(), TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).IsSuccess);
 
-        await lease.ReleaseAsync().ConfigureAwait(false);
+        Assert.True((await lease.ReleaseAsync(CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.False(lease.IsHeld);
-        await lease.ReleaseAsync().ConfigureAwait(false);
+        // 释放是幂等的：已释放的租约再释放直接成功
+        Assert.True((await lease.ReleaseAsync(CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         // 持有者标识是实例身份（如 Pod 名），同一实例再次获取可以相同；旧租约对象必须已失效
         var again = (await election.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.True(again.IsHeld);
@@ -142,7 +143,7 @@ public abstract class LeaderElectionConformance
                 draining = (app!.State, engine.IsLeader, tookOver.IsSuccess);
                 if (tookOver.TryGetValue(out var lease))
                 {
-                    await lease.ReleaseAsync().ConfigureAwait(false);
+                    await lease.ReleaseAsync(CancellationToken.None).ConfigureAwait(false);
                 }
             });
 
@@ -159,7 +160,7 @@ public abstract class LeaderElectionConformance
             Assert.False(engine.IsLeader, "The node must not take a lease that another holder holds.");
 
             // 竞争者放手：在服务的节点下一个周期重新拿到，竞争者随即被拒
-            await held.ReleaseAsync().ConfigureAwait(false);
+            await held.ReleaseAsync(CancellationToken.None).ConfigureAwait(false);
             await engine.PollOnceAsync(CancellationToken.None).ConfigureAwait(false);
             Assert.True(engine.IsLeader, "A serving node must take the free lease.");
             Assert.Equal(SchedulingErrors.LeaseHeld, (await competitor.TryAcquireAsync(options.LeaseResource, options.LeaseTimeToLive, CancellationToken.None).ConfigureAwait(false)).Error?.Code);

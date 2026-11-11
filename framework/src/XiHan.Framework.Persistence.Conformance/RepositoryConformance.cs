@@ -1209,7 +1209,7 @@ public abstract class RepositoryConformance
         {
             // 嵌套调用新建服务作用域与上下文（沿用 Baggage），内层得到自己的工作单元
             await using var scope = context.Services.CreateAsyncScope();
-            var call = App.CreateContext(scope.ServiceProvider, context.CancellationToken, baggage: new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal));
+            var call = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal) }, context.CancellationToken);
             var key = scripts.Add(c => Repository<ConformanceOrder, Guid>(c).AddAsync(new ConformanceOrder { Id = inner, Name = "inner" }, c.CancellationToken));
             nested = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync<ConformanceScriptRequest, ConformanceScriptResponse>(call, WriteScriptOperation.Id, new ConformanceScriptRequest(key)).ConfigureAwait(false);
             outerWrite = await Repository<ConformanceOrder, Guid>(context).AddAsync(new ConformanceOrder { Id = outer, Name = "outer" }, context.CancellationToken).ConfigureAwait(false);
@@ -1241,7 +1241,7 @@ public abstract class RepositoryConformance
         var result = await InvokeScriptAsync(host, WriteScriptOperation.Id, async context =>
         {
             // 以外层的服务作用域建上下文：作用域里只有一个工作单元，且已经开始
-            var call = App.CreateContext(context.Services, context.CancellationToken, baggage: new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal));
+            var call = App.CreateContext(context.Services, new InvocationContextOptions { Baggage = new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal) }, context.CancellationToken);
             var key = scripts.Add(_ =>
             {
                 ran = true;

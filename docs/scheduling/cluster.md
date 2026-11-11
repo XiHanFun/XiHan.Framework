@@ -44,7 +44,7 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 public sealed class TenantSyncJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 

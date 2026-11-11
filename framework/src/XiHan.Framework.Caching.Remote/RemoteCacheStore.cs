@@ -206,7 +206,7 @@ public sealed class RemoteCacheStore : ICacheStore
         var payload = JsonSerializer.SerializeToUtf8Bytes(request, requestInfo);
         await using var scope = _services.CreateAsyncScope();
         // 不走管道：存储本身会被幂等中间件在管道里使用，走管道会递归；截止时间由上下文带给插件调用
-        var context = App.CreateContext(scope.ServiceProvider, cancellationToken, deadline: _clock.GetUtcNow() + _options.Timeout);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = _clock.GetUtcNow() + _options.Timeout }, cancellationToken);
         var invoker = scope.ServiceProvider.GetRequiredService<IOperationInvoker>();
         var response = await invoker.ExecuteAsync(context, new OperationRequest(operation, payload)).ConfigureAwait(false);
         if (!response.IsSuccess)

@@ -32,7 +32,7 @@ public sealed class MiddlewareTests
     {
         var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero));
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(_services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(-1));
+        var context = App.CreateContext(_services, new InvocationContextOptions { Deadline = time.GetUtcNow().AddSeconds(-1) }, CancellationToken.None);
         var called = false;
 
         await middleware.InvokeAsync(context, _ =>
@@ -50,7 +50,7 @@ public sealed class MiddlewareTests
     {
         var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero));
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(_services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(5));
+        var context = App.CreateContext(_services, new InvocationContextOptions { Deadline = time.GetUtcNow().AddSeconds(5) }, CancellationToken.None);
 
         // 下游先挂起，再推进虚拟时间越过截止点，触发定时取消
         var invocation = middleware.InvokeAsync(context, async inner =>
@@ -69,7 +69,7 @@ public sealed class MiddlewareTests
     {
         var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 21, 0, 0, 0, TimeSpan.Zero));
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(_services, CancellationToken.None, deadline: time.GetUtcNow().AddSeconds(5));
+        var context = App.CreateContext(_services, new InvocationContextOptions { Deadline = time.GetUtcNow().AddSeconds(5) }, CancellationToken.None);
 
         // 下游（如插件运行时）接住取消、自己写下取消结果、正常返回，不抛异常
         var invocation = middleware.InvokeAsync(context, async inner =>
@@ -96,7 +96,7 @@ public sealed class MiddlewareTests
         using var cancellation = new CancellationTokenSource();
         var time = new FakeTimeProvider();
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(_services, cancellation.Token, deadline: time.GetUtcNow().AddMinutes(1));
+        var context = App.CreateContext(_services, new InvocationContextOptions { Deadline = time.GetUtcNow().AddMinutes(1) }, cancellation.Token);
 
         var invocation = middleware.InvokeAsync(context, async inner =>
         {
@@ -122,7 +122,7 @@ public sealed class MiddlewareTests
         using var cancellation = new CancellationTokenSource();
         var time = new FakeTimeProvider();
         var middleware = new DeadlineMiddleware(time);
-        var context = App.CreateContext(_services, cancellation.Token, deadline: time.GetUtcNow().AddMinutes(1));
+        var context = App.CreateContext(_services, new InvocationContextOptions { Deadline = time.GetUtcNow().AddMinutes(1) }, cancellation.Token);
 
         var invocation = middleware.InvokeAsync(context, async inner => await Task.Delay(Timeout.InfiniteTimeSpan, inner.CancellationToken));
         await cancellation.CancelAsync();

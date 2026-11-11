@@ -103,7 +103,7 @@ app.Run();
 
 public sealed class HeartbeatJob(ILogger<HeartbeatJob> logger) : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
     {
         logger.LogInformation("Heartbeat run {RunId}.", run.Id);
         return ValueTask.FromResult(Result.Success());

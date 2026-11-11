@@ -259,7 +259,7 @@ public sealed class OutOfProcessPluginHostTests
         await using var host = await EchoPluginHost.StartAsync(static b => b.UseFeature(PingFeature()), services: s => s.AddSingleton<TimeProvider>(clock));
         var deadline = clock.GetUtcNow().AddHours(1).AddTicks(1_234_567);
         await using var scope = host.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, deadline: deadline);
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = deadline }, CancellationToken.None);
 
         // 插件把收到的 InvokeRequest.metadata 原样带进宿主回调 pings.create，宿主按其中的 deadline 建回调上下文（invocation.md §2）：
         // 回显出的截止时间就是插件进程收到的那一个
@@ -291,7 +291,7 @@ public sealed class OutOfProcessPluginHostTests
         }), services: s => s.AddSingleton<TimeProvider>(clock));
         using var caller = new CancellationTokenSource();
         await using var scope = host.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, caller.Token, deadline: clock.GetUtcNow().AddHours(1));
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = clock.GetUtcNow().AddHours(1) }, caller.Token);
         var call = scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest("echoes.relay", Encoding.UTF8.GetBytes("""{"operation":"waits.create","payload":{"name":"wait"}}"""))).AsTask();
         if (await Task.WhenAny(probe.Entered, call).WaitAsync(TimeSpan.FromSeconds(30)) != probe.Entered)
         {

@@ -36,9 +36,9 @@ internal sealed class InMemoryLeaderLease : LeaderLease
     public override ValueTask<Result> RenewAsync(CancellationToken cancellationToken) => ValueTask.FromResult(_election.Renew(Resource, Holder));
 
     /// <inheritdoc />
-    public override ValueTask ReleaseAsync()
+    public override ValueTask<Result> ReleaseAsync(CancellationToken cancellationToken)
     {
         _election.Release(Resource, Holder);
-        return ValueTask.CompletedTask;
+        return ValueTask.FromResult(Result.Success());
     }
 }

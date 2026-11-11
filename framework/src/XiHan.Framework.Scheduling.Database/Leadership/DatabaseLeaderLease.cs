@@ -97,20 +97,22 @@ internal sealed partial class DatabaseLeaderLease : LeaderLease
     }
 
     /// <inheritdoc />
-    public override async ValueTask ReleaseAsync()
+    public override async ValueTask<Result> ReleaseAsync(CancellationToken cancellationToken)
     {
         if (_lost)
         {
-            return;
+            return Result.Success();
         }
 
         // 先在本地标记再删行：删行失败（不可达、已被接管）不影响释放语义，行到期后自然可被接管
         _lost = true;
-        var released = await _rows.ReleaseAsync(Resource.Value, _token, CancellationToken.None).ConfigureAwait(false);
+        var released = await _rows.ReleaseAsync(Resource.Value, _token, cancellationToken).ConfigureAwait(false);
         if (released.IsFailure)
         {
             LogReleaseFailed(_logger, Resource.Value, released.Error!.Code);
         }
+
+        return released;
     }
 
     /// <summary>

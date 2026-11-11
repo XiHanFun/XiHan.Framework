@@ -41,7 +41,7 @@ public sealed class LeadershipLifecycleTests
         await first.App.StopAsync(CancellationToken.None);
         Assert.False(engine.IsLeader);
         var lease = (await other.TryAcquireAsync(options.LeaseResource, options.LeaseTimeToLive, CancellationToken.None)).ValueOrThrow();
-        await lease.ReleaseAsync();
+        await lease.ReleaseAsync(CancellationToken.None);
         Assert.DoesNotContain(logs.Entries, static entry => entry.Category.StartsWith("XiHan.Framework.Scheduling", StringComparison.Ordinal) && entry.Level >= LogLevel.Warning);
     }
 

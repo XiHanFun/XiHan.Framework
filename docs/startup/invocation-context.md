@@ -157,9 +157,12 @@ public sealed class NightlyReconciler(App app, IServiceScopeFactory scopes)
         await using var scope = scopes.CreateAsyncScope();
         var context = App.CreateContext(
             scope.ServiceProvider,
-            cancellationToken,
-            deadline: DateTimeOffset.UtcNow.AddMinutes(10),
-            baggage: new Dictionary<string, string> { [BaggageKeys.Correlation] = runId });
+            new InvocationContextOptions
+            {
+                Deadline = DateTimeOffset.UtcNow.AddMinutes(10),
+                Baggage = new Dictionary<string, string> { [BaggageKeys.Correlation] = runId },
+            },
+            cancellationToken);
 
         // 处理器作为 Handle 阶段执行；不写结果时视为成功
         var result = await app.InvokeAsync(context, static ctx =>
@@ -171,7 +174,7 @@ public sealed class NightlyReconciler(App app, IServiceScopeFactory scopes)
 }
 ```
 
-`CreateContext` 的可选参数依次是 `traceId`、`spanId`、`deadline`、`baggage`、`traceFlags`；不给 `traceId` 时新开一条链路。调度子系统的作业已经由 `JobDispatcher` 这样做了，优先用[作业与计划](/scheduling/jobs)而不是自己写循环。
+`CreateContext(services, cancellationToken)` 建一个不带载体的上下文；要带截止时间、Baggage 或上游的追踪时传 `InvocationContextOptions`（`TraceId`、`SpanId`、`TraceFlags`、`Deadline`、`Baggage`，都可省略），令牌总在最后。不给 `TraceId` 时并入当前的 Activity，也没有时新开一条链路。调度子系统的作业已经由 `JobDispatcher` 这样做了，优先用[作业与计划](/scheduling/jobs)而不是自己写循环。
 
 ## 调用来源
 

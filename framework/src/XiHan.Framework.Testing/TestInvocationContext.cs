@@ -45,5 +45,5 @@ public static class TestInvocationContext
         DateTimeOffset? deadline = null,
         IReadOnlyDictionary<string, string>? baggage = null,
         CancellationToken cancellationToken = default)
-        => App.CreateContext(services ?? EmptyServiceProvider.Instance, cancellationToken, deadline: deadline, baggage: baggage);
+        => App.CreateContext(services ?? EmptyServiceProvider.Instance, new InvocationContextOptions { Deadline = deadline, Baggage = baggage }, cancellationToken);
 }

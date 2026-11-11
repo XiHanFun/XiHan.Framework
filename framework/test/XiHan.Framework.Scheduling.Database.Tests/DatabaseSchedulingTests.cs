@@ -191,7 +191,7 @@ public sealed class DatabaseSchedulingTests
         // 存储不可达不等于失去租约：到期前仍按持有对待
         Assert.Equal(SchedulingErrors.LeaseUnavailable, (await lease.RenewAsync(CancellationToken.None)).Error?.Code);
         Assert.True(lease.IsHeld);
-        await lease.ReleaseAsync();
+        await lease.ReleaseAsync(CancellationToken.None);
         Assert.False(lease.IsHeld);
     }
 

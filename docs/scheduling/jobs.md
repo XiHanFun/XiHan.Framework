@@ -58,7 +58,7 @@ app.Run();
 
 public sealed class CleanupJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 ```
@@ -76,11 +76,11 @@ using XiHan.Framework.Scheduling.Abstractions.Jobs;
 // IReportService 是应用自己的服务，GenerateAsync 返回 ValueTask<Result>
 public sealed class NightlyReportJob(IReportService reports) : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
     {
         // Data 已按 作业 ← 触发器 ← 手动触发 逐层合并
         var format = run.Data["format"]?.GetValue<string>() ?? "pdf";
-        return reports.GenerateAsync(format, cancellationToken);
+        return reports.GenerateAsync(format, context.CancellationToken);
     }
 }
 ```

@@ -60,7 +60,7 @@ XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.TriggerName.g
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingEventData.TriggerName.init -> void
 XiHan.Framework.Scheduling.Abstractions.Events.SchedulingTopics
 XiHan.Framework.Scheduling.Abstractions.Jobs.IJob
-XiHan.Framework.Scheduling.Abstractions.Jobs.IJob.RunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun! run, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Scheduling.Abstractions.Jobs.IJob.RunAsync(XiHan.Framework.Scheduling.Abstractions.Jobs.JobRun! run, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition!
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobDefinition.AllowConcurrent.get -> bool
@@ -582,7 +582,7 @@ XiHan.Framework.Scheduling.Abstractions.Storage.TriggerState.Paused = 1 -> XiHan
 XiHan.Framework.Scheduling.Abstractions.Storage.TriggerState.Waiting = 0 -> XiHan.Framework.Scheduling.Abstractions.Storage.TriggerState
 abstract XiHan.Framework.Scheduling.Abstractions.Leadership.LeaderLease.ExpiresAt.get -> System.DateTimeOffset
 abstract XiHan.Framework.Scheduling.Abstractions.Leadership.LeaderLease.IsHeld.get -> bool
-abstract XiHan.Framework.Scheduling.Abstractions.Leadership.LeaderLease.ReleaseAsync() -> System.Threading.Tasks.ValueTask
+abstract XiHan.Framework.Scheduling.Abstractions.Leadership.LeaderLease.ReleaseAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 abstract XiHan.Framework.Scheduling.Abstractions.Leadership.LeaderLease.RenewAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 const XiHan.Framework.Scheduling.Abstractions.Events.SchedulingTopics.JobPaused = "scheduling.job.paused" -> string!
 const XiHan.Framework.Scheduling.Abstractions.Events.SchedulingTopics.JobResumed = "scheduling.job.resumed" -> string!

@@ -28,7 +28,7 @@ builder.Services.AddJob<CleanupJob>(new JobName("cleanup.nightly"), JobSchedule.
 
 public sealed class CleanupJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 ```

@@ -62,7 +62,7 @@ public sealed record Money(decimal Amount, string Currency) : IValueObject
 
 | 成员 | 说明 |
 | --- | --- |
-| `DomainEventBuffer(int capacity = 256)` | 容量上限，小于 1 抛出 `ArgumentOutOfRangeException`；缺省值是常量 `DomainEventBuffer.DefaultCapacity` |
+| `DomainEventBuffer()` / `DomainEventBuffer(int capacity)` | 无参构造用常量 `DomainEventBuffer.DefaultCapacity`（256）；容量小于 1 抛出 `ArgumentOutOfRangeException` |
 | `Add(IDomainEvent)` | 按记录顺序追加；已达容量时抛出 `InvalidOperationException`，不静默丢弃 |
 | `Items` | 尚未派发的事件，只读视图 |
 | `Clear()` | 清空 |

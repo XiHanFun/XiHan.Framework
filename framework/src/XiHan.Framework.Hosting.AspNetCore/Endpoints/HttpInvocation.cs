@@ -123,7 +123,7 @@ public static partial class HttpInvocation
             }
         }
 
-        var context = App.CreateContext(services, httpContext.RequestAborted, traceId, spanId, deadline, baggage, traceFlags);
+        var context = App.CreateContext(services, new InvocationContextOptions { TraceId = traceId, SpanId = spanId, Deadline = deadline, Baggage = baggage, TraceFlags = traceFlags }, httpContext.RequestAborted);
 
         // 凭据只做格式拆分（scheme 与值），不在这里验证；解释交给安全子系统的 Authenticate 阶段
         if (CredentialOf(httpContext).TryGetValue(out var credential))

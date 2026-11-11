@@ -181,7 +181,7 @@ public sealed class WasmPluginHostTests
     {
         await using var host = await EchoWasmPluginHost.StartAsync();
         await using var scope = host.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, deadline: DateTimeOffset.UtcNow.AddMilliseconds(300));
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = DateTimeOffset.UtcNow.AddMilliseconds(300) }, CancellationToken.None);
 
         var started = DateTime.UtcNow;
         var response = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest("echoes.spin", Encoding.UTF8.GetBytes("""{"millis":10000}""")));

@@ -181,7 +181,7 @@ public sealed class InMemorySecurityTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemorySecurityFeature>().UseFeature<InMemoryMultiTenancyFeature>(), configuration);
 
         await using var scope = host.Services.CreateAsyncScope();
-        var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "other" });
+        var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.Tenant] = "other" } }, CancellationToken.None);
         Assert.True(AuthenticationCredential.TryParse("ApiKey dev-alice-key", out var credential));
         context.SetCredential(credential);
         SecurityContext? security = null;

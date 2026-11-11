@@ -79,7 +79,7 @@ public sealed class OpenTelemetryObservabilityTests
         foreach (var (traceId, flags) in new[] { (sampledTrace, ActivityTraceFlags.Recorded), (unsampledTrace, ActivityTraceFlags.None) })
         {
             await using var scope = host.Services.CreateAsyncScope();
-            var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, traceId, "00f067aa0ba902b7", traceFlags: flags);
+            var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { TraceId = traceId, SpanId = "00f067aa0ba902b7", TraceFlags = flags }, CancellationToken.None);
             (await host.App.InvokeAsync(context, static _ => ValueTask.CompletedTask)).ThrowIfFailure();
         }
 

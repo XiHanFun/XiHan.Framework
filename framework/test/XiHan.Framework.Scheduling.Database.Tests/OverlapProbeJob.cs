@@ -40,11 +40,11 @@ internal sealed class OverlapProbeJob : IJob
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(run);
         var started = DateTimeOffset.UtcNow;
-        await Task.Delay(Duration, cancellationToken);
+        await Task.Delay(Duration, context.CancellationToken);
         _log.Record(_options.NodeId, run.Id, started, DateTimeOffset.UtcNow);
         return Result.Success();
     }
