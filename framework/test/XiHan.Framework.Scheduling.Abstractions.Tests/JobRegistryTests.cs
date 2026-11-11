@@ -50,6 +50,21 @@ public sealed class JobRegistryTests
     }
 
     [Fact]
+    public void Schedule_FieldsThatDoNotApply_AreNull()
+    {
+        Assert.Equal(TimeSpan.FromMinutes(1), JobSchedule.Every(TimeSpan.FromMinutes(1)).Interval);
+        Assert.Null(JobSchedule.Every(TimeSpan.FromMinutes(1)).At);
+        Assert.Null(JobSchedule.FromCron("0 3 * * *").Interval);
+        Assert.Null(JobSchedule.Manual.Interval);
+        Assert.Null(JobSchedule.Manual.At);
+        var at = DateTimeOffset.UnixEpoch.AddDays(1);
+        Assert.Equal(at, JobSchedule.Once(at).At);
+        Assert.Null(JobSchedule.Once(at).Interval);
+        Assert.Equal(at, JobSchedule.Once(at).NextRun(DateTimeOffset.UnixEpoch).ValueOrThrow());
+        Assert.Equal(JobSchedule.Once(at), JobSchedule.Parse(JobSchedule.Once(at).ToString()));
+    }
+
+    [Fact]
     public void TriggerKey_RejectsADefaultJobName_AndItsOwnDefaultHasNoMembers()
     {
         Assert.Equal("x/nightly", new TriggerKey(new JobName("x"), "nightly").ToString());

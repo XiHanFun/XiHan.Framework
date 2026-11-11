@@ -17,7 +17,7 @@
 
 内核的追踪与指标直接基于 `System.Diagnostics`，不需要抽象；本包只承载两件事：能力 ID 常量，供两个实现包与应用清单共用；运行信息的契约，供管理界面的服务监控读取（RFC-0023，ADR-0056）。
 
-`IHostMonitor` 的七个方法各返回一份不可变记录。契约约定读取不阻塞、不抛出、不启动外部命令；读不到的项为 `null`，不以 0 或空串顶替；使用率与速率取后台采样器最近一次的值，启动后第一个采样间隔内为空；CPU 型号与核心、GPU、主板首次读取后缓存。
+`IHostMonitor` 的七个方法各返回一份不可变记录。契约约定读取不抛出、不启动外部命令，方法都收取消令牌：可能阻塞的系统调用（挂起的网络盘、首次的硬件探测）不占调用方的线程，取消即不再等待；读不到的项为 `null`，不以 0 或空串顶替；使用率与速率取后台采样器最近一次的值，启动后第一个采样间隔内为空；CPU 型号与核心、GPU、主板首次读取后缓存。
 
 ## 何时使用
 
@@ -56,21 +56,22 @@ namespace MyApp.Diagnostics;
 
 public sealed class CapacityCheck(IHostMonitor monitor)
 {
-    public IReadOnlyList<string> FindAlerts()
+    public async ValueTask<IReadOnlyList<string>> FindAlertsAsync(CancellationToken cancellationToken)
     {
         var alerts = new List<string>();
-        if (monitor.ReadMemory().UsagePercent is > 90)
+        if ((await monitor.ReadMemoryAsync(cancellationToken)).UsagePercent is > 90)
         {
             alerts.Add("memory");
         }
 
         // 启动后第一个采样间隔内 UsagePercent 为 null，这里自然跳过
-        if (monitor.ReadProcessor().UsagePercent is > 95)
+        if ((await monitor.ReadProcessorAsync(cancellationToken)).UsagePercent is > 95)
         {
             alerts.Add("cpu");
         }
 
-        foreach (var disk in monitor.ReadDisks())
+        // 挂起的网络盘不占调用方的线程；取消即不再等待
+        foreach (var disk in await monitor.ReadDisksAsync(cancellationToken))
         {
             if (disk.UsagePercent is > 85)
             {

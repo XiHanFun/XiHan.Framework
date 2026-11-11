@@ -230,8 +230,12 @@ public abstract class JobStoreConformance
             Assert.Equal([third.Id, second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, Node = "node-b" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
             Assert.Equal([first.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, HasError = true }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
             Assert.Equal([third.Id, second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, HasError = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
-            Assert.Empty((await store.RunsAsync(new JobRunQuery { Job = job.Name, Trigger = "other" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-            Assert.Equal(3, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Trigger = "t", Skip = 1, Take = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Empty((await store.RunsAsync(new JobRunQuery { Job = job.Name, TriggerName = "other" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(3, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, TriggerName = "t", Skip = 1, Take = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            // 触发来源与触发器名分开过滤：单个来源与多个来源（IN）都要支持
+            Assert.Equal(3, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Triggers = [JobTrigger.Schedule] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Empty((await store.RunsAsync(new JobRunQuery { Job = job.Name, Triggers = [JobTrigger.Manual] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(3, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Triggers = [JobTrigger.Manual, JobTrigger.Schedule] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(1, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, States = [JobRunState.Succeeded] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(2, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Node = "node-b", HasError = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(0, (await store.CountRunsAsync(new JobRunQuery { Job = new JobName("conf.store.none") }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());

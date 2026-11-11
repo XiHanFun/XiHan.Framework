@@ -26,31 +26,31 @@ public sealed class HostObservabilityFeatureTests
         Assert.Equal(["observability.host"], host.App.Graph["xihan.observability.host"].SelectedCapabilities);
         var monitor = host.Services.GetRequiredService<IHostMonitor>();
 
-        var runtime = monitor.ReadRuntime();
+        var runtime = (await monitor.ReadRuntimeAsync(CancellationToken.None));
         Assert.Equal(Environment.ProcessId, runtime.ProcessId);
         Assert.Equal(HostPlatform.PlatformName(), runtime.OsPlatform);
         Assert.False(string.IsNullOrWhiteSpace(runtime.Framework));
         Assert.True(runtime.WorkingSetBytes > 0);
         Assert.True(runtime.ProcessUptime >= TimeSpan.Zero);
         Assert.True(runtime.SystemUptime > runtime.ProcessUptime - TimeSpan.FromSeconds(1));
-        Assert.Equal(Environment.ProcessorCount, monitor.ReadProcessor().LogicalCores);
+        Assert.Equal(Environment.ProcessorCount, (await monitor.ReadProcessorAsync(CancellationToken.None)).LogicalCores);
 
         // 只有 Linux 与 Windows 读得到系统 CPU 时间
         if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows())
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            while (monitor.ReadProcessor().UsagePercent is null)
+            while ((await monitor.ReadProcessorAsync(CancellationToken.None)).UsagePercent is null)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(20), timeout.Token);
             }
 
-            Assert.InRange(monitor.ReadProcessor().UsagePercent!.Value, 0d, 100d);
-            Assert.InRange(monitor.ReadRuntime().ProcessCpuUsagePercent!.Value, 0d, 100d);
+            Assert.InRange((await monitor.ReadProcessorAsync(CancellationToken.None)).UsagePercent!.Value, 0d, 100d);
+            Assert.InRange((await monitor.ReadRuntimeAsync(CancellationToken.None)).ProcessCpuUsagePercent!.Value, 0d, 100d);
         }
 
         // 静态部分缓存：两次读到同一份
-        Assert.Same(monitor.ReadGpus(), monitor.ReadGpus());
-        Assert.Same(monitor.ReadBoard(), monitor.ReadBoard());
+        Assert.Same((await monitor.ReadGpusAsync(CancellationToken.None)), (await monitor.ReadGpusAsync(CancellationToken.None)));
+        Assert.Same((await monitor.ReadBoardAsync(CancellationToken.None)), (await monitor.ReadBoardAsync(CancellationToken.None)));
     }
 
     [Fact]

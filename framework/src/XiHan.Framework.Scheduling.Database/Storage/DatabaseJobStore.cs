@@ -838,9 +838,24 @@ public sealed class DatabaseJobStore : IJobStore
             filtered = filtered.Where(new Specification<JobRunEntity>(run => run.ScheduledAt < to));
         }
 
-        if (query.Trigger is { } trigger)
+        if (query.TriggerName is { } trigger)
         {
             filtered = filtered.Where(new Specification<JobRunEntity>(run => run.TriggerName == trigger));
+        }
+
+        if (query.Triggers is { Count: > 0 } sources)
+        {
+            // 来源按整数码存：单个来源用等值，多个用 IN，与状态集合同一写法
+            var codes = sources.Select(static source => (int)source).Distinct().ToList();
+            if (codes.Count == 1)
+            {
+                var code = codes[0];
+                filtered = filtered.Where(new Specification<JobRunEntity>(run => run.Trigger == code));
+            }
+            else
+            {
+                filtered = filtered.Where(new Specification<JobRunEntity>(run => codes.Contains(run.Trigger)));
+            }
         }
 
         if (query.Node is { } node)

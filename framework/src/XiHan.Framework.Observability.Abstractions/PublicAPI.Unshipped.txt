@@ -63,13 +63,13 @@ XiHan.Framework.Observability.Abstractions.GpuInfo.Vendor.init -> void
 XiHan.Framework.Observability.Abstractions.GpuInfo.VendorId.get -> string?
 XiHan.Framework.Observability.Abstractions.GpuInfo.VendorId.init -> void
 XiHan.Framework.Observability.Abstractions.IHostMonitor
-XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadBoard() -> XiHan.Framework.Observability.Abstractions.BoardInfo!
-XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadDisks() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.DiskInfo!>!
-XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadGpus() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.GpuInfo!>!
-XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadMemory() -> XiHan.Framework.Observability.Abstractions.MemoryInfo!
-XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadNetworkInterfaces() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo!>!
-XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadProcessor() -> XiHan.Framework.Observability.Abstractions.ProcessorInfo!
-XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadRuntime() -> XiHan.Framework.Observability.Abstractions.RuntimeInfo!
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadBoardAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Observability.Abstractions.BoardInfo!>
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadDisksAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.DiskInfo!>!>
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadGpusAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.GpuInfo!>!>
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadMemoryAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Observability.Abstractions.MemoryInfo!>
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadNetworkInterfacesAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Observability.Abstractions.NetworkInterfaceInfo!>!>
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadProcessorAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Observability.Abstractions.ProcessorInfo!>
+XiHan.Framework.Observability.Abstractions.IHostMonitor.ReadRuntimeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Observability.Abstractions.RuntimeInfo!>
 XiHan.Framework.Observability.Abstractions.MemoryInfo
 XiHan.Framework.Observability.Abstractions.MemoryInfo.<Clone>$() -> XiHan.Framework.Observability.Abstractions.MemoryInfo!
 XiHan.Framework.Observability.Abstractions.MemoryInfo.AvailableBytes.get -> long?

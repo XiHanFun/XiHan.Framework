@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 
 namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 
@@ -46,9 +47,17 @@ public sealed record JobRunQuery
     /// 触发器名
     /// </summary>
     /// <remarks>
-    /// 只取由该触发器引起的运行；手动运行没有触发器名
+    /// 只取由该触发器引起的运行；手动运行没有触发器名。与 <see cref="JobRunRecord.TriggerName"/> 同名（ADR-0161）
     /// </remarks>
-    public string? Trigger { get; init; }
+    public string? TriggerName { get; init; }
+
+    /// <summary>
+    /// 触发来源集合
+    /// </summary>
+    /// <remarks>
+    /// 只取由这些来源引起的运行（按计划、手动、恢复、重试）；空视同未限定。与 <see cref="JobRunRecord.Trigger"/> 同名（ADR-0161）
+    /// </remarks>
+    public IReadOnlyList<JobTrigger>? Triggers { get; init; }
 
     /// <summary>
     /// 执行节点 ID
@@ -89,7 +98,8 @@ public sealed record JobRunQuery
             && (States is not { Count: > 0 } || States.Contains(record.State))
             && (From is null || record.ScheduledAt >= From.Value)
             && (To is null || record.ScheduledAt < To.Value)
-            && (Trigger is null || string.Equals(record.TriggerName, Trigger, StringComparison.Ordinal))
+            && (TriggerName is null || string.Equals(record.TriggerName, TriggerName, StringComparison.Ordinal))
+            && (Triggers is not { Count: > 0 } || Triggers.Contains(record.Trigger))
             && (Node is null || string.Equals(record.NodeId, Node, StringComparison.Ordinal))
             && (HasError is null || (record.ErrorCode is not null) == HasError.Value);
     }

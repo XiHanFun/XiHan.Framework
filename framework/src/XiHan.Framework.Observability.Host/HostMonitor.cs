@@ -62,7 +62,17 @@ internal sealed class HostMonitor : IHostMonitor
     }
 
     /// <inheritdoc />
-    public RuntimeInfo ReadRuntime()
+    public ValueTask<RuntimeInfo> ReadRuntimeAsync(CancellationToken cancellationToken)
+    {
+        // 运行时信息都来自本进程与 BCL，不会阻塞，不必换线程
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(ReadRuntime());
+    }
+
+    /// <summary>
+    /// 同步读运行时信息
+    /// </summary>
+    private RuntimeInfo ReadRuntime()
     {
         using var process = Process.GetCurrentProcess();
         var now = _clock.GetUtcNow();
@@ -99,25 +109,39 @@ internal sealed class HostMonitor : IHostMonitor
     }
 
     /// <inheritdoc />
-    public ProcessorInfo ReadProcessor() => _processor.Value with { UsagePercent = _sampler.CpuUsagePercent };
+    public ValueTask<ProcessorInfo> ReadProcessorAsync(CancellationToken cancellationToken)
+        => _processor.IsValueCreated
+            ? ValueTask.FromResult(_processor.Value with { UsagePercent = _sampler.CpuUsagePercent })
+            : Offload(() => _processor.Value with { UsagePercent = _sampler.CpuUsagePercent }, cancellationToken);
 
     /// <inheritdoc />
-    public MemoryInfo ReadMemory() => _platform.ReadMemory();
+    public ValueTask<MemoryInfo> ReadMemoryAsync(CancellationToken cancellationToken) => Offload(_platform.ReadMemory, cancellationToken);
 
     /// <inheritdoc />
-    public IReadOnlyList<DiskInfo> ReadDisks() => _platform.ReadDisks();
+    public ValueTask<IReadOnlyList<DiskInfo>> ReadDisksAsync(CancellationToken cancellationToken) => Offload(_platform.ReadDisks, cancellationToken);
 
     /// <inheritdoc />
-    public IReadOnlyList<NetworkInterfaceInfo> ReadNetworkInterfaces()
-        => [.. _platform.ReadNetworkInterfaces().Select(nic =>
+    public ValueTask<IReadOnlyList<NetworkInterfaceInfo>> ReadNetworkInterfacesAsync(CancellationToken cancellationToken)
+        => Offload<IReadOnlyList<NetworkInterfaceInfo>>(() => [.. _platform.ReadNetworkInterfaces().Select(nic =>
         {
             var (receive, send) = _sampler.NetworkRate(nic.Id);
             return nic with { ReceiveBytesPerSecond = receive, SendBytesPerSecond = send };
-        })];
+        })], cancellationToken);
 
     /// <inheritdoc />
-    public IReadOnlyList<GpuInfo> ReadGpus() => _gpus.Value;
+    public ValueTask<IReadOnlyList<GpuInfo>> ReadGpusAsync(CancellationToken cancellationToken)
+        => _gpus.IsValueCreated ? ValueTask.FromResult(_gpus.Value) : Offload(() => _gpus.Value, cancellationToken);
 
     /// <inheritdoc />
-    public BoardInfo ReadBoard() => _board.Value;
+    public ValueTask<BoardInfo> ReadBoardAsync(CancellationToken cancellationToken)
+        => _board.IsValueCreated ? ValueTask.FromResult(_board.Value) : Offload(() => _board.Value, cancellationToken);
+
+    /// <summary>
+    /// 在线程池上执行可能阻塞的读取
+    /// </summary>
+    /// <remarks>
+    /// 磁盘（挂起的网络盘）、网卡与首次的硬件探测可能长时间阻塞：放到线程池，调用方取消时立即不再等待；已经开始的系统调用无法中断，会在后台自行结束
+    /// </remarks>
+    private static ValueTask<T> Offload<T>(Func<T> read, CancellationToken cancellationToken)
+        => new(Task.Run(read, cancellationToken).WaitAsync(cancellationToken));
 }

@@ -168,13 +168,13 @@ public sealed partial class OrderExporter(ILogger<OrderExporter> logger)
 
 | 方法 | 返回 |
 | --- | --- |
-| `ReadRuntime()` | `RuntimeInfo`：操作系统、.NET 与 RID、机器名与用户名、进程 ID / 名称 / 启动时刻 / 运行时长、系统启动时刻 / 运行时长、工作集、私有字节、托管堆、线程数、句柄数、三代 GC 次数、进程 CPU 使用率（用户名是运行进程的系统账户，不是登录凭据） |
-| `ReadProcessor()` | `ProcessorInfo`：型号、厂商、架构、物理与逻辑核心、标称频率（MHz）、最后一级缓存、系统 CPU 使用率 |
-| `ReadMemory()` | `MemoryInfo`：总量、可用、空闲、缓存，以及已用与使用率 |
-| `ReadDisks()` | `DiskInfo` 列表：挂载点或盘符、设备、卷标、文件系统、类型、总量、空闲、当前用户可用，以及已用与使用率 |
-| `ReadNetworkInterfaces()` | `NetworkInterfaceInfo` 列表：ID、名称、描述、类型、状态、速率、物理地址、IPv4 / IPv6 地址、网关、DNS、累计收发字节与包数、收发速率 |
-| `ReadGpus()` | `GpuInfo` 列表：名称、厂商、PCI 厂商与设备 ID、驱动与版本、显存、温度 |
-| `ReadBoard()` | `BoardInfo`：主板、整机与 BIOS 的厂商、型号、版本、序列号与日期 |
+| `ReadRuntimeAsync(ct)` | `RuntimeInfo`：操作系统、.NET 与 RID、机器名与用户名、进程 ID / 名称 / 启动时刻 / 运行时长、系统启动时刻 / 运行时长、工作集、私有字节、托管堆、线程数、句柄数、三代 GC 次数、进程 CPU 使用率（用户名是运行进程的系统账户，不是登录凭据） |
+| `ReadProcessorAsync(ct)` | `ProcessorInfo`：型号、厂商、架构、物理与逻辑核心、标称频率（MHz）、最后一级缓存、系统 CPU 使用率 |
+| `ReadMemoryAsync(ct)` | `MemoryInfo`：总量、可用、空闲、缓存，以及已用与使用率 |
+| `ReadDisksAsync(ct)` | `DiskInfo` 列表：挂载点或盘符、设备、卷标、文件系统、类型、总量、空闲、当前用户可用，以及已用与使用率 |
+| `ReadNetworkInterfacesAsync(ct)` | `NetworkInterfaceInfo` 列表：ID、名称、描述、类型、状态、速率、物理地址、IPv4 / IPv6 地址、网关、DNS、累计收发字节与包数、收发速率 |
+| `ReadGpusAsync(ct)` | `GpuInfo` 列表：名称、厂商、PCI 厂商与设备 ID、驱动与版本、显存、温度 |
+| `ReadBoardAsync(ct)` | `BoardInfo`：主板、整机与 BIOS 的厂商、型号、版本、序列号与日期 |
 
 读取的约定：
 
@@ -211,10 +211,10 @@ app.UseXiHan();
 
 // 读取只返回后台采样的最近值，不阻塞请求线程；机器信息只给认证过的调用方
 var monitor = app.MapGroup("/monitor").RequireXiHanAuthentication();
-monitor.MapGet("/runtime", (IHostMonitor host) => host.ReadRuntime());
-monitor.MapGet("/cpu", (IHostMonitor host) => host.ReadProcessor());
-monitor.MapGet("/memory", (IHostMonitor host) => host.ReadMemory());
-monitor.MapGet("/disks", (IHostMonitor host) => host.ReadDisks());
+monitor.MapGet("/runtime", (IHostMonitor host, CancellationToken ct) => host.ReadRuntimeAsync(ct));
+monitor.MapGet("/cpu", (IHostMonitor host, CancellationToken ct) => host.ReadProcessorAsync(ct));
+monitor.MapGet("/memory", (IHostMonitor host, CancellationToken ct) => host.ReadMemoryAsync(ct));
+monitor.MapGet("/disks", (IHostMonitor host, CancellationToken ct) => host.ReadDisksAsync(ct));
 
 app.Run();
 ```

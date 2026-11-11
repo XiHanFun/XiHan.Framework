@@ -27,7 +27,8 @@ using XiHan.Framework.Observability.Abstractions;
 
 public sealed class CapacityCheck(IHostMonitor monitor)
 {
-    public bool MemoryTooHigh() => monitor.ReadMemory().UsagePercent is > 90;
+    public async ValueTask<bool> MemoryTooHighAsync(CancellationToken cancellationToken)
+        => (await monitor.ReadMemoryAsync(cancellationToken)).UsagePercent is > 90;
 }
 ```
 

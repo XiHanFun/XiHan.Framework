@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Time.Testing;
+using XiHan.Framework.Configuration.Abstractions.Remote;
 using XiHan.Framework.Configuration.Abstractions.Secrets;
 using XiHan.Framework.Primitives;
 
@@ -73,6 +74,24 @@ public sealed class SecretsConfigurationSourceTests
         await RefreshAsync(clock, interval, store);
         await WaitUntilAsync(() => errors.Any(static e => e.Code == ConfigurationErrors.SecretsUnavailable));
         Assert.Equal("pw2", root["ConnectionStrings:Orders"]);
+    }
+
+    [Fact]
+    public void Options_AndDocuments_CopyTheCallersDictionaries_AndRejectCaseDuplicates()
+    {
+        var mappings = new Dictionary<string, SecretName>(StringComparer.Ordinal) { ["Db:Password"] = new SecretName("db/password") };
+        var options = new SecretsConfigurationOptions(mappings);
+        mappings["Db:User"] = new SecretName("db/user");
+        Assert.Single(options.Mappings);
+        Assert.True(options.Mappings.ContainsKey("db:password"));
+        Assert.Throws<ArgumentException>(() => new SecretsConfigurationOptions(new Dictionary<string, SecretName>(StringComparer.Ordinal) { ["A"] = new SecretName("a"), ["a"] = new SecretName("b") }));
+        Assert.Throws<ArgumentException>(() => new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["A"] = default }));
+
+        var values = new Dictionary<string, string?>(StringComparer.Ordinal) { ["Orders:Limit"] = "10" };
+        var document = new ConfigurationDocument("v1", values);
+        values["Orders:Limit"] = "99";
+        Assert.Equal("10", document.Values["orders:limit"]);
+        Assert.Throws<ArgumentException>(() => new ConfigurationDocument("v1", new Dictionary<string, string?>(StringComparer.Ordinal) { ["A"] = "1", ["a"] = "2" }));
     }
 
     [Fact]

@@ -98,12 +98,12 @@ public sealed class MonitorTests
         if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows())
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            while (monitor.ReadProcessor().UsagePercent is null)
+            while ((await monitor.ReadProcessorAsync(timeout.Token)).UsagePercent is null)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(20), timeout.Token);
             }
 
-            Assert.InRange(monitor.ReadProcessor().UsagePercent!.Value, 0d, 100d);
+            Assert.InRange((await monitor.ReadProcessorAsync(CancellationToken.None)).UsagePercent!.Value, 0d, 100d);
         }
     }
 }

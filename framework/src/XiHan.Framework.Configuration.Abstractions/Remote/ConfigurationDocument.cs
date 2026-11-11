@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Collections.Frozen;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Configuration.Abstractions.Remote;
@@ -15,22 +16,29 @@ public sealed class ConfigurationDocument
     /// 创建
     /// </summary>
     /// <remarks>
-    /// 版本不能为空，键不能为空
+    /// 版本不能为空，键不能为空，键按配置的规则不区分大小写、不能重复。键值复制成只读副本，调用方之后改原字典不影响文档（ADR-0161）
     /// </remarks>
     public ConfigurationDocument(string version, IReadOnlyDictionary<string, string?> values)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(version);
         ArgumentNullException.ThrowIfNull(values);
-        foreach (var key in values.Keys)
+        var copy = new Dictionary<string, string?>(values.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, value) in values)
         {
             if (string.IsNullOrEmpty(key))
             {
                 throw new ArgumentException("Configuration keys must not be empty.", nameof(values));
             }
+
+            // 配置键不区分大小写：只差大小写的两个键在配置里是同一个键，留哪个都是猜
+            if (!copy.TryAdd(key, value))
+            {
+                throw new ArgumentException($"Configuration key '{key}' appears more than once when compared without regard to case.", nameof(values));
+            }
         }
 
         Version = version;
-        Values = values;
+        Values = copy.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>

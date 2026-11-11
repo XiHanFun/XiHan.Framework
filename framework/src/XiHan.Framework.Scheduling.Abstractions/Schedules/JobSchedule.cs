@@ -39,7 +39,7 @@ public sealed record JobSchedule
     /// <summary>
     /// 由种类与参数创建
     /// </summary>
-    private JobSchedule(JobScheduleKind kind, TimeSpan interval, int? repeatCount, CronExpression? cron, string? timeZoneId, DateTimeOffset at)
+    private JobSchedule(JobScheduleKind kind, TimeSpan? interval, int? repeatCount, CronExpression? cron, string? timeZoneId, DateTimeOffset? at)
     {
         Kind = kind;
         Interval = interval;
@@ -52,7 +52,7 @@ public sealed record JobSchedule
     /// <summary>
     /// 只手动触发
     /// </summary>
-    public static JobSchedule Manual { get; } = new(JobScheduleKind.Manual, TimeSpan.Zero, null, null, null, default);
+    public static JobSchedule Manual { get; } = new(JobScheduleKind.Manual, null, null, null, null, null);
 
     /// <summary>
     /// 种类
@@ -60,9 +60,12 @@ public sealed record JobSchedule
     public JobScheduleKind Kind { get; }
 
     /// <summary>
-    /// 间隔（只对 <see cref="JobScheduleKind.Interval"/> 有意义）
+    /// 间隔
     /// </summary>
-    public TimeSpan Interval { get; }
+    /// <remarks>
+    /// 只有 <see cref="JobScheduleKind.Interval"/> 有值，其余为 <see langword="null"/>（RFC-0001「缺失用 null」，ADR-0161）
+    /// </remarks>
+    public TimeSpan? Interval { get; }
 
     /// <summary>
     /// 总运行次数上限（只对 <see cref="JobScheduleKind.Interval"/>）
@@ -86,9 +89,12 @@ public sealed record JobSchedule
     public string? TimeZoneId { get; }
 
     /// <summary>
-    /// 运行时刻（只对 <see cref="JobScheduleKind.Once"/>）
+    /// 运行时刻
     /// </summary>
-    public DateTimeOffset At { get; }
+    /// <remarks>
+    /// 只有 <see cref="JobScheduleKind.Once"/> 有值，其余为 <see langword="null"/>（ADR-0161）
+    /// </remarks>
+    public DateTimeOffset? At { get; }
 
     /// <summary>
     /// 起始时刻：之前不运行（推算下一次时从它开始）
@@ -126,7 +132,7 @@ public sealed record JobSchedule
             throw new ArgumentOutOfRangeException(nameof(repeatCount), repeatCount, "The repeat count must be at least 1.");
         }
 
-        return new JobSchedule(JobScheduleKind.Interval, interval, repeatCount, null, null, default);
+        return new JobSchedule(JobScheduleKind.Interval, interval, repeatCount, null, null, null);
     }
 
     /// <summary>
@@ -143,13 +149,13 @@ public sealed record JobSchedule
             _ = ResolveTimeZone(timeZoneId);
         }
 
-        return new JobSchedule(JobScheduleKind.Cron, TimeSpan.Zero, null, cron, string.IsNullOrWhiteSpace(timeZoneId) ? null : timeZoneId, default);
+        return new JobSchedule(JobScheduleKind.Cron, null, null, cron, string.IsNullOrWhiteSpace(timeZoneId) ? null : timeZoneId, null);
     }
 
     /// <summary>
     /// 在 <paramref name="at"/> 运行一次
     /// </summary>
-    public static JobSchedule Once(DateTimeOffset at) => new(JobScheduleKind.Once, TimeSpan.Zero, null, null, null, at);
+    public static JobSchedule Once(DateTimeOffset at) => new(JobScheduleKind.Once, null, null, null, null, at);
 
     /// <summary>
     /// <paramref name="after"/> 之后的下一次运行时刻（不考虑日历）
@@ -167,9 +173,9 @@ public sealed record JobSchedule
 
         Maybe<DateTimeOffset> next = Kind switch
         {
-            JobScheduleKind.Interval => after + Interval,
+            JobScheduleKind.Interval when Interval is { } interval => after + interval,
             JobScheduleKind.Cron => TimeZoneId is null ? Cron!.Next(after) : Cron!.Next(after, ResolveTimeZone(TimeZoneId)),
-            JobScheduleKind.Once => At > after ? Maybe.Some(At) : default,
+            JobScheduleKind.Once when At is { } at => at > after ? Maybe.Some(at) : default,
             _ => default,
         };
         return next.TryGetValue(out var value) && EndAt is { } end && value > end ? default : next;
@@ -263,7 +269,7 @@ public sealed record JobSchedule
                     return false;
                 }
 
-                parsed = new JobSchedule(JobScheduleKind.Cron, TimeSpan.Zero, null, cron, timeZoneId, default);
+                parsed = new JobSchedule(JobScheduleKind.Cron, null, null, cron, timeZoneId, null);
                 break;
             case "once" when end == 2 && TryParseTime(tokens[1], out var at):
                 parsed = Once(at);
@@ -281,9 +287,9 @@ public sealed record JobSchedule
     {
         var text = Kind switch
         {
-            JobScheduleKind.Interval => "every " + Interval.ToString("c", CultureInfo.InvariantCulture) + (RepeatCount is { } count ? " x" + count.ToString(CultureInfo.InvariantCulture) : string.Empty),
+            JobScheduleKind.Interval when Interval is { } interval => "every " + interval.ToString("c", CultureInfo.InvariantCulture) + (RepeatCount is { } count ? " x" + count.ToString(CultureInfo.InvariantCulture) : string.Empty),
             JobScheduleKind.Cron => "cron " + Cron + (TimeZoneId is null ? string.Empty : " " + TimeZoneOption + TimeZoneId),
-            JobScheduleKind.Once => "once " + Format(At),
+            JobScheduleKind.Once when At is { } at => "once " + Format(at),
             _ => "manual",
         };
         if (StartAt is { } start)

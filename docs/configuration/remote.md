@@ -131,7 +131,7 @@ public sealed class OrderLimits
 
 | 选项 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `Mappings` | `IReadOnlyDictionary<string, SecretName>` | 构造参数 | 配置键 → 密钥名，至少一项 |
+| `Mappings` | `IReadOnlyDictionary<string, SecretName>` | 构造参数 | 配置键 → 密钥名，至少一项；构造时复制成只读副本，键不区分大小写地不重复 |
 | `LoadTimeout` | `TimeSpan` | 10 秒 | 首次读取的超时 |
 | `RefreshInterval` | `TimeSpan?` | `null` | 周期重读的间隔，`null` 不重读 |
 | `Clock` | `TimeProvider` | 系统时钟 | 重读计时用的时钟 |

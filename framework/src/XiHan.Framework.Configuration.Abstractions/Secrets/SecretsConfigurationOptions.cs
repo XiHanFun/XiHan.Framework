@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Collections.Frozen;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Configuration.Abstractions.Secrets;
@@ -15,7 +16,7 @@ public sealed record SecretsConfigurationOptions
     /// 创建
     /// </summary>
     /// <remarks>
-    /// 映射不能为空
+    /// 映射不能为空，配置键不能为空且不区分大小写地不重复，密钥名不能是 <see langword="default"/>。映射复制成只读副本，调用方之后改原字典不影响选项（ADR-0161）
     /// </remarks>
     public SecretsConfigurationOptions(IReadOnlyDictionary<string, SecretName> mappings)
     {
@@ -25,15 +26,26 @@ public sealed record SecretsConfigurationOptions
             throw new ArgumentException("At least one configuration key must be mapped to a secret.", nameof(mappings));
         }
 
-        foreach (var key in mappings.Keys)
+        var copy = new Dictionary<string, SecretName>(mappings.Count, StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, name) in mappings)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
                 throw new ArgumentException("Configuration keys must not be empty.", nameof(mappings));
             }
+
+            if (name == default)
+            {
+                throw new ArgumentException($"The secret name mapped to '{key}' must not be the default value.", nameof(mappings));
+            }
+
+            if (!copy.TryAdd(key, name))
+            {
+                throw new ArgumentException($"Configuration key '{key}' is mapped more than once when compared without regard to case.", nameof(mappings));
+            }
         }
 
-        Mappings = mappings;
+        Mappings = copy.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>

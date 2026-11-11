@@ -165,8 +165,10 @@ XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.Take.get -> int
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.Take.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.To.get -> System.DateTimeOffset?
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.To.init -> void
-XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.Trigger.get -> string?
-XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.Trigger.init -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.TriggerName.get -> string?
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.TriggerName.init -> void
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.Triggers.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Schedulers.JobTrigger>?
+XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunQuery.Triggers.init -> void
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.Attempt.get -> int
 XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord.Attempt.set -> void
@@ -440,14 +442,14 @@ XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression.Next(System.Dat
 XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression.Next(System.DateTimeOffset after, System.TimeZoneInfo! timeZone) -> XiHan.Framework.Primitives.Maybe<System.DateTimeOffset>
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule!
-XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.At.get -> System.DateTimeOffset
+XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.At.get -> System.DateTimeOffset?
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Calendar.get -> string?
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Calendar.init -> void
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Cron.get -> XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression?
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.EndAt.get -> System.DateTimeOffset?
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.EndAt.init -> void
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Equals(XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule? other) -> bool
-XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Interval.get -> System.TimeSpan
+XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Interval.get -> System.TimeSpan?
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Kind.get -> XiHan.Framework.Scheduling.Abstractions.Schedules.JobScheduleKind
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.NextRun(System.DateTimeOffset after) -> XiHan.Framework.Primitives.Maybe<System.DateTimeOffset>
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.RepeatCount.get -> int?
