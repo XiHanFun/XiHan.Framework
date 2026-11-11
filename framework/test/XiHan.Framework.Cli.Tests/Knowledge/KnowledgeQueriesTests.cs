@@ -26,13 +26,13 @@ public sealed class KnowledgeQueriesTests
     {
         var paths = Knowledge.Pages.Select(static p => p.Path).ToList();
 
-        Assert.Contains("docs/guide/deployment.md", paths);
+        Assert.Contains("docs/deployment/pack.md", paths);
         Assert.Contains("framework/spec/rfcs/0016-packaging.md", paths);
         Assert.Contains("framework/spec/conventions/error-codes.md", paths);
         Assert.Contains("framework/src/XiHan.Framework.Messaging.Kafka/README.md", paths);
         Assert.DoesNotContain(paths, static p => p.Contains("node_modules", StringComparison.Ordinal) || p.Contains(".vitepress", StringComparison.Ordinal));
-        var deployment = Knowledge.Pages.Single(static p => p.Path == "docs/guide/deployment.md");
-        Assert.Equal("部署与打包", deployment.Title);
+        var deployment = Knowledge.Pages.Single(static p => p.Path == "docs/deployment/pack.md");
+        Assert.Equal("应用清单与 xihan pack", deployment.Title);
         Assert.False(string.IsNullOrEmpty(deployment.Summary));
     }
 
@@ -172,7 +172,7 @@ public sealed class KnowledgeQueriesTests
         var results = KnowledgeQueries.Search(Knowledge, "KRaft Nacos", null, 5).ValueOrThrow().Results!;
 
         Assert.InRange(results.Count, 1, 5);
-        Assert.Contains(results, static r => r.Path == "docs/guide/deployment.md");
+        Assert.Contains(results, static r => r.Path == "docs/deployment/pack.md");
         Assert.All(results, r =>
         {
             var page = Knowledge.Pages.Single(p => p.Path == r.Path);
@@ -184,8 +184,8 @@ public sealed class KnowledgeQueriesTests
     }
 
     [Theory]
-    [InlineData("guide/deployment", "docs/guide/deployment.md")]
-    [InlineData("docs/guide/deployment.md", "docs/guide/deployment.md")]
+    [InlineData("deployment/pack", "docs/deployment/pack.md")]
+    [InlineData("docs/deployment/pack.md", "docs/deployment/pack.md")]
     [InlineData("0016", "framework/spec/rfcs/0016-packaging.md")]
     [InlineData("0016-packaging", "framework/spec/rfcs/0016-packaging.md")]
     [InlineData("error-codes", "framework/spec/conventions/error-codes.md")]
