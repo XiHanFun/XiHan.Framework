@@ -42,6 +42,8 @@ internal static class EchoWasmPluginHost
         {
             new("XiHan:Plugins:Wasm:Directories:0", Directory),
             new("XiHan:Plugins:Wasm:Grants:xihan.samples.echowasm:0", "capability:kernel.pipeline"),
+            // 清单的 XiHan:Echo 要授予才交给插件（ADR-0177）
+            new("XiHan:Plugins:Wasm:Grants:xihan.samples.echowasm:1", "config:XiHan:Echo"),
             new("XiHan:Plugins:Wasm:HealthIntervalSeconds", "1"),
             new("XiHan:Plugins:Wasm:EpochIntervalMilliseconds", "5"),
             new("XiHan:Echo:Greeting", "hello"),

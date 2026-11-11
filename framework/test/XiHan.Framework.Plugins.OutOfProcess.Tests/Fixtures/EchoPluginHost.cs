@@ -40,6 +40,15 @@ internal static class EchoPluginHost
     /// <paramref name="directory"/> 为空时用示例的输出目录
     /// </remarks>
     public static IEnumerable<KeyValuePair<string, string?>> Configuration(bool grantPipeline = true, string? directory = null, params (string Key, string Value)[] extra)
+        => Configuration(grantPipeline, grantConfiguration: true, directory, extra);
+
+    /// <summary>
+    /// 宿主配置，可不授予清单的配置节
+    /// </summary>
+    /// <remarks>
+    /// 清单的 <c>XiHan:Echo</c> 要授予 <c>config:XiHan:Echo</c> 才能交给插件（ADR-0177）
+    /// </remarks>
+    public static IEnumerable<KeyValuePair<string, string?>> Configuration(bool grantPipeline, bool grantConfiguration, string? directory, params (string Key, string Value)[] extra)
     {
         var values = new List<KeyValuePair<string, string?>>
         {
@@ -51,6 +60,11 @@ internal static class EchoPluginHost
         if (grantPipeline)
         {
             values.Add(new("XiHan:Plugins:OutOfProcess:Grants:xihan.samples.echo:0", "capability:kernel.pipeline"));
+        }
+
+        if (grantConfiguration)
+        {
+            values.Add(new("XiHan:Plugins:OutOfProcess:Grants:xihan.samples.echo:1", "config:XiHan:Echo"));
         }
 
         values.AddRange(extra.Select(static e => new KeyValuePair<string, string?>(e.Key, e.Value)));

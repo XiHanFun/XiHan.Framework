@@ -502,7 +502,8 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private static Error? Preflight(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, out string? modulePath)
     {
         modulePath = null;
-        var missing = manifest.Permissions.Where(permission => !IsGranted(permission, source.Permissions, mounts)).ToList();
+        // 清单声明的权限，以及它要读的宿主配置节与绑定，都要运营方授予：配置节里有密钥，插件不能自己点名（ADR-0177）
+        var missing = manifest.Permissions.Where(permission => !IsGranted(permission, source.Permissions, mounts)).Concat(source.Permissions.MissingConfigurationGrants(manifest)).ToList();
         if (missing.Count > 0)
         {
             return Error.Denied(PluginErrors.PermissionDenied, PluginMessages.PermissionsNotGranted, MessageArguments.Of(("id", manifest.Id), ("permissions", string.Join(", ", missing))));

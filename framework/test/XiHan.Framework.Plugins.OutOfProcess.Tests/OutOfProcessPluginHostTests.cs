@@ -105,6 +105,23 @@ public sealed class OutOfProcessPluginHostTests
         Assert.False(denied.Services.GetRequiredService<OperationRegistry>().Find("echoes.create").HasValue);
     }
 
+    /// <summary>
+    /// 清单点名的宿主配置节要运营方授予才交给插件
+    /// </summary>
+    /// <remarks>
+    /// 安全审查 S-02（ADR-0177）：原先插件在清单里写哪个 <c>XiHan:*</c> 节就拿到哪个，零权限的插件也能拿到 JWT 密钥与连接串
+    /// </remarks>
+    [Fact]
+    public async Task ConfigurationSection_NotGranted_RejectsThePluginAtDiscovery()
+    {
+        await using var denied = await TestHost.StartAsync(static b => b.UseFeature<OutOfProcessPluginsFeature>(), EchoPluginHost.Configuration(grantPipeline: true, grantConfiguration: false, directory: null));
+        var status = EchoPluginHost.PluginHost(denied).FindStatus(EchoPluginHost.PluginId).ValueOrThrow();
+        Assert.Equal(LifecycleState.Failed, status.Status.State);
+        Assert.Equal(PluginErrors.PermissionDenied, status.Status.Error?.Code);
+        Assert.Contains("config:XiHan:Echo", status.Status.Error?.Message, StringComparison.Ordinal);
+        Assert.Null(status.ProcessId);
+    }
+
     [Fact]
     public async Task Discovery_KeepsRejectedPluginsAsFailed_ReportsHealth_AndLogsThem()
     {
@@ -121,6 +138,7 @@ public sealed class OutOfProcessPluginHostTests
                     new("XiHan:Plugins:OutOfProcess:Directories:0", unreadable.FullName),
                     new("XiHan:Plugins:OutOfProcess:Directories:1", missingEntry.Directory),
                     new("XiHan:Plugins:OutOfProcess:Grants:xihan.samples.echo:0", "capability:kernel.pipeline"),
+                    new("XiHan:Plugins:OutOfProcess:Grants:xihan.samples.echo:1", "config:XiHan:Echo"),
                 ],
                 services => services.AddSingleton<ILoggerFactory>(new LoggerFactory([logs])));
             var plugins = EchoPluginHost.PluginHost(host);
@@ -184,7 +202,7 @@ public sealed class OutOfProcessPluginHostTests
 
         // 运行期显式加载同一个插件：同一错误直接返回给调用方，不登记
         Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
-        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
         Assert.Equal(PluginErrors.InvalidSource, loaded.Error?.Code);
         Assert.Equal(PluginMessages.PipelineUnsupported, loaded.Error?.MessageKey);
         Assert.Empty(plugins.Plugins);
@@ -372,7 +390,7 @@ public sealed class OutOfProcessPluginHostTests
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<OutOfProcessPluginsFeature>(), services: s => s.AddSingleton<TimeProvider>(clock));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
-        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
 
         // 失败返回给调用方，插件保持 Failed 并按重启策略重试（lifecycle.md §6）
         Assert.Equal(PluginErrors.Crashed, loaded.Error?.Code);
@@ -431,7 +449,7 @@ public sealed class OutOfProcessPluginHostTests
     {
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<OutOfProcessPluginsFeature>(), [new("XiHan:Plugins:OutOfProcess:HealthIntervalSeconds", "1")]);
         var plugins = host.Services.GetRequiredService<IPluginHost>();
-        var source = new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline"]));
+        var source = new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"]));
 
         var loaded = await plugins.LoadAsync(source, CancellationToken.None);
         Assert.Equal(LifecycleState.Ready, loaded.ValueOrThrow().State);
@@ -473,7 +491,7 @@ public sealed class OutOfProcessPluginHostTests
         Assert.Equal(KernelErrors.UnknownOperation, (await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"gone"}""")).Outcome.Error?.Code);
 
         // 同一插件直接再加载：重新登记，不撞上自己上一次留下的操作与码（KERNEL_OPERATION_001 / KERNEL_SECURITY_001）
-        var reloaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
+        var reloaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
         Assert.Equal(LifecycleState.Ready, reloaded.ValueOrThrow().State);
         Assert.Equal(4, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));
         Assert.True(permissions.Find("echoes.audit").HasValue);
@@ -514,7 +532,7 @@ public sealed class OutOfProcessPluginHostTests
         Assert.DoesNotContain(host.Services.GetRequiredService<OperationRegistry>().All(), static d => d.OwnerId == EchoPluginHost.PluginId);
 
         // 卸载干净：同一插件直接再加载并服务
-        Assert.True((await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None)).IsSuccess);
+        Assert.True((await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None)).IsSuccess);
         Assert.True((await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"back"}""")).Outcome.IsSuccess);
     }
 

@@ -30,6 +30,22 @@ public sealed class PermissionGrant
     }
 
     /// <summary>
+    /// 读取宿主配置节的授予前缀
+    /// </summary>
+    /// <remarks>
+    /// <c>config:&lt;配置节&gt;</c>，配置节与清单 <c>contributes.config.section</c> 逐字相同（ADR-0177）
+    /// </remarks>
+    public const string ConfigurationPrefix = "config:";
+
+    /// <summary>
+    /// 读取宿主绑定的授予前缀
+    /// </summary>
+    /// <remarks>
+    /// <c>binding:&lt;绑定名&gt;</c>，绑定名与清单 <c>bindings</c> 里的名字逐字相同（ADR-0177）
+    /// </remarks>
+    public const string BindingPrefix = "binding:";
+
+    /// <summary>
     /// 空授权
     /// </summary>
     public static PermissionGrant Empty { get; } = new([]);
@@ -55,5 +71,24 @@ public sealed class PermissionGrant
     {
         ArgumentNullException.ThrowIfNull(manifest);
         return manifest.Permissions.Where(p => !_granted.Contains(p)).ToList();
+    }
+
+    /// <summary>
+    /// 清单要读的宿主配置节与绑定中未授予的部分
+    /// </summary>
+    /// <remarks>
+    /// 隔离运行的插件（进程外、Wasm）只拿得到运营方授予了的配置节与绑定：清单的 <c>contributes.config.section</c> 要求授予 <see cref="ConfigurationPrefix"/> 加配置节，<c>bindings</c> 的每一项要求授予 <see cref="BindingPrefix"/> 加绑定名。配置节里常有密钥、连接串与签名密钥，不能由插件自己点名（ADR-0177）。进程内插件是受信代码，本来就能读整个配置，不受此限
+    /// </remarks>
+    public IReadOnlyList<string> MissingConfigurationGrants(Manifest manifest)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        var required = new List<string>();
+        if (manifest.Contributes.Config is { } config)
+        {
+            required.Add(ConfigurationPrefix + config.Section);
+        }
+
+        required.AddRange(manifest.Bindings.Select(static binding => BindingPrefix + binding.Name));
+        return required.Where(grant => !_granted.Contains(grant)).ToList();
     }
 }

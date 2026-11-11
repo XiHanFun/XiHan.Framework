@@ -69,6 +69,8 @@ internal static class CacheGoPluginHost
             new("XiHan:Plugins:OutOfProcess:HealthIntervalSeconds", "1"),
             new("XiHan:Plugins:OutOfProcess:StopGraceSeconds", "5"),
             new("XiHan:Cache:MaxEntries", "100000"),
+            // 清单的 XiHan:Cache 要授予才交给插件（ADR-0177）
+            new("XiHan:Plugins:OutOfProcess:Grants:xihan.samples.cache-go:0", "config:XiHan:Cache"),
             new("XiHan:Caching:Remote:TimeoutMilliseconds", "5000"),
         };
         values.AddRange(extra.Select(static e => new KeyValuePair<string, string?>(e.Key, e.Value)));

@@ -69,6 +69,9 @@ internal static class EchoGoPluginHost
             values.Add(new("XiHan:Plugins:OutOfProcess:Grants:" + PluginId + ":0", "capability:kernel.pipeline"));
         }
 
+        // 清单的 XiHan:Echo 要授予才交给插件（ADR-0177）
+        values.Add(new("XiHan:Plugins:OutOfProcess:Grants:" + PluginId + ":1", "config:XiHan:Echo"));
+
         values.AddRange(extra.Select(static e => new KeyValuePair<string, string?>(e.Key, e.Value)));
         return values;
     }

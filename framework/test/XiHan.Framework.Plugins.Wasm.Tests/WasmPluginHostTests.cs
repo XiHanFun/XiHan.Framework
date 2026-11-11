@@ -210,6 +210,26 @@ public sealed class WasmPluginHostTests
         }, TimeSpan.FromSeconds(10)));
     }
 
+    /// <summary>
+    /// 清单点名的宿主配置节要运营方授予才交给插件
+    /// </summary>
+    /// <remarks>
+    /// 安全审查 S-02（ADR-0177）：原先零权限的 Wasm 插件写一个 <c>XiHan:Security:Jwt</c> 就能拿到 JWT 密钥
+    /// </remarks>
+    [Fact]
+    public async Task ConfigurationSection_NotGranted_RejectsThePluginAtDiscovery()
+    {
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>(),
+        [
+            new("XiHan:Plugins:Wasm:Directories:0", EchoWasmPluginHost.Directory),
+            new("XiHan:Plugins:Wasm:Grants:xihan.samples.echowasm:0", "capability:kernel.pipeline"),
+        ]);
+        var status = EchoWasmPluginHost.PluginHost(host).FindStatus(EchoWasmPluginHost.PluginId).ValueOrThrow();
+        Assert.Equal(LifecycleState.Failed, status.Status.State);
+        Assert.Equal(PluginErrors.PermissionDenied, status.Status.Error?.Code);
+        Assert.Contains("config:XiHan:Echo", status.Status.Error?.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task Discovery_KeepsARejectedPluginAsFailed_AndReportsItsHealth()
     {
@@ -244,7 +264,7 @@ public sealed class WasmPluginHostTests
         Assert.Equal(pipeline, host.App.DescribePipeline());
 
         // 贡献中间件的插件可以在运行期加载：中间件成组登记进管道，之后的调用经过它
-        var loaded = await plugins.LoadAsync(new PluginSource(EchoWasmPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline"])), CancellationToken.None);
+        var loaded = await plugins.LoadAsync(new PluginSource(EchoWasmPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
         Assert.True(loaded.IsSuccess, loaded.ToString());
         Assert.Contains("WasmMiddleware[xihan.samples.echowasm:echo-guard]", host.App.DescribePipeline(), StringComparison.Ordinal);
         var blocked = await EchoWasmPluginHost.InvokeAsync(host, "echoes.create", """{"text":"x"}""", new Dictionary<string, string> { [BaggageKeys.Tenant] = "blocked" });

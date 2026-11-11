@@ -399,6 +399,7 @@ XiHan.Framework.Kernel.Plugins.PermissionGrant
 XiHan.Framework.Kernel.Plugins.PermissionGrant.Granted.get -> System.Collections.Generic.IReadOnlySet<string!>!
 XiHan.Framework.Kernel.Plugins.PermissionGrant.IsGranted(string! permission) -> bool
 XiHan.Framework.Kernel.Plugins.PermissionGrant.Missing(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Kernel.Plugins.PermissionGrant.MissingConfigurationGrants(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Kernel.Plugins.PermissionGrant.PermissionGrant(System.Collections.Generic.IEnumerable<string!>! granted) -> void
 XiHan.Framework.Kernel.Plugins.PluginContext
 XiHan.Framework.Kernel.Plugins.PluginContext.Configuration.get -> Microsoft.Extensions.Configuration.IConfiguration!
@@ -684,6 +685,8 @@ const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Mcp = "mcp" -> string!
 const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Messaging = "messaging" -> string!
 const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Workflow = "workflow" -> string!
 const XiHan.Framework.Kernel.Pipeline.PipelineBuilder.AppOwner = "app" -> string!
+const XiHan.Framework.Kernel.Plugins.PermissionGrant.BindingPrefix = "binding:" -> string!
+const XiHan.Framework.Kernel.Plugins.PermissionGrant.ConfigurationPrefix = "config:" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.ConfigurationSection = "XiHan:Kernel:Resilience" -> string!
 const XiHan.Framework.Kernel.Resilience.ResilienceOptions.OperationsSection = "Operations" -> string!
 const XiHan.Framework.Kernel.Security.OutboundAddressOptions.ConfigurationSection = "XiHan:Security:Outbound" -> string!

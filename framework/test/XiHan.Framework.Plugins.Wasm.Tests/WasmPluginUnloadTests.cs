@@ -67,7 +67,7 @@ public sealed class WasmPluginUnloadTests
         using var plugin = WatPlugin.Invoking("pings.create", [WasmHostFunctions.PipelinePermission]);
         await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(PingFeature()));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
-        var source = new PluginSource(plugin.Directory, new PermissionGrant([WasmHostFunctions.PipelinePermission]));
+        var source = new PluginSource(plugin.Directory, new PermissionGrant([WasmHostFunctions.PipelinePermission, "config:XiHan:Echo"]));
         Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
         var outcomes = new ConcurrentQueue<string>();
         using var stop = new CancellationTokenSource();
@@ -189,7 +189,7 @@ public sealed class WasmPluginUnloadTests
     /// <summary>
     /// 运行期加载示例插件的来源（授予回调权限）
     /// </summary>
-    private static PluginSource EchoSource => new(EchoWasmPluginHost.Directory, new PermissionGrant([WasmHostFunctions.PipelinePermission]));
+    private static PluginSource EchoSource => new(EchoWasmPluginHost.Directory, new PermissionGrant([WasmHostFunctions.PipelinePermission, "config:XiHan:Echo"]));
 
     /// <summary>
     /// 以给定租户经完整管道调用宿主侧操作 <c>pings.create</c>

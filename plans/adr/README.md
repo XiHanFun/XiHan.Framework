@@ -176,3 +176,4 @@
 | [0174](0174-授权要求叠加判定.md) | 安全审查 S-01：宿主写入的授权要求（端点与路由组上的每条约定）与操作契约的要求叠加判定，全部满足才放行，不再顶替契约的权限；`FindAuthorizationRequirement` 改为 `GetAuthorizationRequirements` | 已采纳 |
 | [0175](0175-端点授权要求不被静默跳过.md) | 安全审查 S-06：绕过管道的端点挂 `RequireXiHan*` 启动即失败（`SECURITY_VALIDATION_008`）；gRPC 方法端点改标 `PipelineBypassMetadata.SelfInvoking` 并在处理器里带上端点要求；`RequireXiHan*` 给端点包守卫，`UseXiHan()` 没判定到时端点拒绝执行 | 已采纳 |
 | [0176](0176-操作请求体在授权之后读取.md) | 安全审查 S-07：内核新增载荷来源 `OperationPayloadSource`，`UseXiHan()` 不在进管道前读请求体，Validate 阶段（授权之后）才读；HTTP 操作请求体上限 `MaxRequestBodyBytes`（缺省 4 MiB，`PROTOCOLS_VALIDATION_011`），有请求体时必须是 JSON 类型（`PROTOCOLS_VALIDATION_012`） | 已采纳 |
+| [0177](0177-插件读宿主配置与绑定要授予.md) | 安全审查 S-02：进程外与 Wasm 插件读清单点名的宿主配置节与绑定，要运营方在 `Grants` 里授予 `config:<配置节>`、`binding:<绑定名>`，否则发现时以 `PLUGINS_DENIED_001` 拒绝；`PermissionGrant.MissingConfigurationGrants`；进程内插件不受此限 | 已采纳 |

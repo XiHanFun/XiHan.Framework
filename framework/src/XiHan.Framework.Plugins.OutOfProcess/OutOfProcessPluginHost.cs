@@ -500,7 +500,8 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             return new Error(PluginErrors.InvalidSource, PluginMessages.PipelineUnsupported, MessageArguments.Of(("id", manifest.Id), ("middleware", string.Join(", ", manifest.Contributes.Pipeline.Select(static p => p.Middleware)))));
         }
 
-        var missing = source.Permissions.Missing(manifest);
+        // 清单声明的权限，以及它要读的宿主配置节与绑定，都要运营方授予：配置节里有密钥，插件不能自己点名（ADR-0177）
+        var missing = source.Permissions.Missing(manifest).Concat(source.Permissions.MissingConfigurationGrants(manifest)).ToList();
         if (missing.Count > 0)
         {
             return Error.Denied(PluginErrors.PermissionDenied, PluginMessages.PermissionsNotGranted, MessageArguments.Of(("id", manifest.Id), ("permissions", string.Join(", ", missing))));

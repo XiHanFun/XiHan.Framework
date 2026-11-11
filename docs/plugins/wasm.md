@@ -150,7 +150,7 @@ app.Run();
     "Plugins": {
       "Wasm": {
         "Directories": [ "plugins/echo-wasm" ],
-        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline" ] }
+        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline", "config:XiHan:Echo" ] }
       }
     },
     "Echo": { "Greeting": "hello" }
@@ -188,7 +188,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `Directories` | 字符串数组 | 空 | 启动时装载的插件目录（含清单与模块文件） |
-| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限 |
+| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限，以及清单要读的宿主配置节与绑定：`config:<配置节>`、`binding:<绑定名>`，没有授予即拒绝加载 |
 | `Mounts:<清单 ID>:<客体路径>` | 字符串 | 空 | 客体路径映射到的宿主目录；清单的 `fs.read:` / `fs.write:` 只有映射了才算授予 |
 | `MemoryLimitBytes` | 正整数 | 67108864（64 MiB） | 线性内存上限 |
 | `StackLimitBytes` | 正整数 | 1048576（1 MiB） | Wasm 栈上限 |
