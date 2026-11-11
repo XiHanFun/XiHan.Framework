@@ -59,7 +59,7 @@ dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 | `Pipeline.AuditMiddleware` | Observe 阶段末尾的审计中间件 |
 | `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `FindAuditAction`、`FindAuditResource`、`FindAuditDetails`（只读副本） |
 | `Trail.IAuditTrail` | `QueryAsync(AuditQuery, CancellationToken)` → `Result<AuditPage>` |
-| `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`PrincipalId`、`TenantId`、`TraceId`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
+| `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`PrincipalId`、`TenantId`、`TraceId`、`Resource`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
 | `Trail.AuditPage` | `Items`（按写入顺序升序）与 `ContinuationToken`（没有下一页为 `null`） |
 | `AuditingFeatureContextExtensions` | `AddAuditing(this FeatureContext)`：注册消息目录 `auditing` 与选项，把中间件挂到 Observe 末尾 |
 | `AuditingErrors`、`AuditingMessages` | 错误码与消息键 |
@@ -106,7 +106,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 - 记录条件：有显式动作的调用总是记录；没有时只看操作调用并按 `Selection` 判定，再去掉 `Exclude` 命中的操作，非操作调用不记录。`IncludeSuccesses` 为假时成功的调用不记录。
 - 结果：管道写入的 outcome 优先；没写入而抛出了异常时，取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`，异常照常向外抛；正常返回却没写结果视为成功。
 - 接收器的写入不带调用的取消令牌，被取消的调用同样记录；接收器抛出的异常以 Error 级记一条日志，不影响调用结果。
-- 细节只允许 JSON 可表示的值，同名覆盖；资源名以 `xrn:` 文本保存。
+- 细节的值是 JSON：`AddAuditDetail(key, JsonNode?)` 追加时固化，事件的 `Details` 是 `IReadOnlyDictionary<string, JsonElement>`，内存与数据库读回同一类型；同名覆盖。资源名以 `xrn:` 文本保存，可按 `AuditQuery.Resource` 精确查询。
 - 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](/common/auditing#记录调用来源)。
 - 查询页大小 1 到 1000，缺省 100；续页令牌由实现自行校验。
 

@@ -20,7 +20,7 @@ XiHan.Framework.Kernel.Diagnostics.AuditEvent.<Clone>$() -> XiHan.Framework.Kern
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Action.get -> string!
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Action.init -> void
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.AuditEvent() -> void
-XiHan.Framework.Kernel.Diagnostics.AuditEvent.Details.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
+XiHan.Framework.Kernel.Diagnostics.AuditEvent.Details.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>?
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Details.init -> void
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Equals(XiHan.Framework.Kernel.Diagnostics.AuditEvent? other) -> bool
 XiHan.Framework.Kernel.Diagnostics.AuditEvent.Outcome.get -> XiHan.Framework.Primitives.Result

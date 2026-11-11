@@ -23,7 +23,7 @@
 | `Resource` | `SetAuditResource` 写入的 `xrn:` 资源名 |
 | `PrincipalId` | 认证后的主体 ID，没有时取 Baggage `xihan.principal` |
 | `TenantId` | 解析出的租户 ID，没有时取 Baggage `xihan.tenant` |
-| `Details` | `AddAuditDetail` 追加的键值，只允许 JSON 可表示的值 |
+| `Details` | `AddAuditDetail` 追加的键值，值是 JSON（`JsonElement`），经任何接收器写入再读回都是同一类型 |
 
 ## 启用
 
@@ -92,7 +92,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 | --- | --- |
 | `SetAuditAction(action)` | 动作不能为空白；声明后这次调用一定记录，非操作调用也一样 |
 | `SetAuditResource(resource)` | 参数是 `ResourceName`，事件里存它的 `xrn:<partition>:<service>:<tenant>:<type>/<id>` 文本；租户段可以为空 |
-| `AddAuditDetail(key, value)` | 键不能为空白，同名覆盖；值只用 JSON 可表示的类型，数据库存储按类型写成 JSON |
+| `AddAuditDetail(key, value)` | 键不能为空白，同名覆盖；值是 `JsonNode?`，字符串、数值、布尔、日期与 `Guid` 都能直接传（隐式转换），`null` 记为 JSON null；追加时即固化，事件里读回的是 `JsonElement` |
 
 ## 哪些调用会被记录
 
@@ -225,7 +225,7 @@ public sealed class OrdersFeature : IFeature
 | `AuditQuery` 成员 | 说明 |
 | --- | --- |
 | `From`、`To` | 时间范围，两端都包含；`From` 晚于 `To` 时查询不合法 |
-| `Action`、`PrincipalId`、`TenantId`、`TraceId` | 区分大小写的精确匹配 |
+| `Action`、`PrincipalId`、`TenantId`、`TraceId`、`Resource` | 区分大小写的精确匹配；`Resource` 是 `xrn:` 文本，查某个资源的全部历史 |
 | `Succeeded` | `true` 只取成功，`false` 只取失败 |
 | `PageSize` | 缺省 100，取值 1 到 `AuditQuery.MaxPageSize`（1000） |
 | `ContinuationToken` | 上一页返回的续页令牌 |

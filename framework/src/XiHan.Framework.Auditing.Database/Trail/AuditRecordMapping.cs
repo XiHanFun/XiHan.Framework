@@ -42,7 +42,7 @@ internal static class AuditRecordMapping
             Resource = auditEvent.Resource,
             PrincipalId = auditEvent.PrincipalId,
             TenantId = auditEvent.TenantId,
-            DetailsJson = auditEvent.Details is { } details ? WriteJson(details) : null,
+            DetailsJson = auditEvent.Details is { } details ? WriteDetails(details) : null,
         };
     }
 
@@ -59,11 +59,54 @@ internal static class AuditRecordMapping
             Resource = record.Resource,
             PrincipalId = record.PrincipalId,
             TenantId = record.TenantId,
-            Details = record.DetailsJson is { } json ? ReadJson(json) : null,
+            Details = record.DetailsJson is { } json ? ReadDetails(json) : null,
         };
 
     /// <summary>
-    /// 把细节写成 JSON 对象文本
+    /// 把审计细节写成 JSON 对象文本
+    /// </summary>
+    public static string WriteDetails(IReadOnlyDictionary<string, JsonElement> values)
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            foreach (var (name, value) in values)
+            {
+                writer.WritePropertyName(name);
+                value.WriteTo(writer);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    /// <summary>
+    /// 把 JSON 对象文本读成审计细节
+    /// </summary>
+    /// <remarks>
+    /// 每个值是脱离文档的 <see cref="JsonElement"/>，不是对象时为空字典
+    /// </remarks>
+    public static IReadOnlyDictionary<string, JsonElement> ReadDetails(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var values = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        if (document.RootElement.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in document.RootElement.EnumerateObject())
+            {
+                // 文档随 using 释放，值必须克隆出来才能在之后使用
+                values[property.Name] = property.Value.Clone();
+            }
+        }
+
+        return values;
+    }
+
+    /// <summary>
+    /// 把错误细节写成 JSON 对象文本
     /// </summary>
     public static string WriteJson(IReadOnlyDictionary<string, object?> values)
     {
@@ -84,7 +127,7 @@ internal static class AuditRecordMapping
     }
 
     /// <summary>
-    /// 把 JSON 对象文本读成细节
+    /// 把 JSON 对象文本读成错误细节
     /// </summary>
     /// <remarks>
     /// 每个值是脱离文档的 <see cref="JsonElement"/>，不是对象时为空字典

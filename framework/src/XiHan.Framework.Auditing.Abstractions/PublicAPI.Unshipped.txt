@@ -44,6 +44,8 @@ XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.PageSize.get -> int
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.PageSize.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.PrincipalId.get -> string?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.PrincipalId.init -> void
+XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Resource.get -> string?
+XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Resource.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Succeeded.get -> bool?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Succeeded.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.TenantId.get -> string?
@@ -78,9 +80,9 @@ static XiHan.Framework.Auditing.Abstractions.AuditingMessages.Catalog.get -> XiH
 static XiHan.Framework.Auditing.Abstractions.AuditingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Auditing.Abstractions.AuditingOptions!
 static XiHan.Framework.Auditing.Abstractions.AuditingOptions.operator !=(XiHan.Framework.Auditing.Abstractions.AuditingOptions? left, XiHan.Framework.Auditing.Abstractions.AuditingOptions? right) -> bool
 static XiHan.Framework.Auditing.Abstractions.AuditingOptions.operator ==(XiHan.Framework.Auditing.Abstractions.AuditingOptions? left, XiHan.Framework.Auditing.Abstractions.AuditingOptions? right) -> bool
-static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.AddAuditDetail(this XiHan.Framework.Primitives.InvocationContext! context, string! key, object? value) -> void
+static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.AddAuditDetail(this XiHan.Framework.Primitives.InvocationContext! context, string! key, System.Text.Json.Nodes.JsonNode? value) -> void
 static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.FindAuditAction(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<string!>
-static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.FindAuditDetails(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<System.Collections.Generic.IReadOnlyDictionary<string!, object?>!>
+static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.FindAuditDetails(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>!>
 static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.FindAuditResource(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<string!>
 static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.SetAuditAction(this XiHan.Framework.Primitives.InvocationContext! context, string! action) -> void
 static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.SetAuditResource(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Security.ResourceName resource) -> void

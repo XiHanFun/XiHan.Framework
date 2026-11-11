@@ -158,3 +158,4 @@
 | [0156](0156-缓存键管理的前缀以结果报告.md) | `CacheKeyQuery.Prefix` 不合法不在构造时抛出，`Validate()` 返回新错误码 `CACHING_VALIDATION_004`；`RemoveByPrefixAsync` 返回 `Result<long>`，空前缀与不合法前缀经 `ValidateRemovalPrefix` 以结果返回、不访问后端；基础设施失败仍抛出 | 已采纳 |
 | [0157](0157-可选参数收进选项记录与作业令牌.md) | 公开方法不用一串可选参数（单个用重载、多个收进选项记录、令牌放最后，工具链包例外）；`App.CreateContext` 改为 `(services, ct)` 与 `(services, InvocationContextOptions, ct)`，`DomainEventBuffer` 改两个构造并交出只读视图；`IJob.RunAsync` 去掉重复的令牌；`LeaderLease.ReleaseAsync(ct)` 返回 `Result` | 已采纳 |
 | [0158](0158-授予管理的可选接口.md) | 新增可选接口 `IPermissionGrantAdministration`（批量授予与撤销同序逐项结果、`ListAsync(PermissionGrantQuery)` 偏移分页并计数，越界为 `SECURITY_VALIDATION_005`），租户过滤用显式的 `GrantTenantFilter`（`Any` / `Global` / `Of`）不用 null；内存与数据库实现都实现它，旧的同步方法与按 null 不过滤的列表删除；新增一致性套件 | 已采纳 |
+| [0159](0159-审计按资源查询与细节为JSON值.md) | `AuditQuery.Resource` 按 `xrn:` 文本精确过滤（数据库加 `(Resource, Sequence)` 索引）；`AuditEvent.Details` 改为名字到 `JsonElement`，`AddAuditDetail(key, JsonNode?)` 追加时固化，所有接收器读回同一类型 | 已采纳 |

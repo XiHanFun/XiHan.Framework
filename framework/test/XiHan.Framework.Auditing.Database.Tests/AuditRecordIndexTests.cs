@@ -58,6 +58,7 @@ public sealed class AuditRecordIndexTests : IDisposable
 
         Assert.Equal(
             [
+                "IX_AuditRecord_Re_Se Resource,Sequence",
                 "IX_AuditRecord_Se Sequence",
                 "IX_AuditRecord_TeId_Se TenantId,Sequence",
                 "IX_AuditRecord_Ti Timestamp",

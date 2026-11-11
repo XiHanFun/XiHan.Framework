@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
 using XiHan.Framework.Auditing.Abstractions.Trail;
@@ -59,7 +60,7 @@ public sealed class SqliteAuditTrailTests
         var trail = host.Services.GetRequiredService<DatabaseAuditTrail>();
         var trace = Guid.NewGuid().ToString("N");
         var other = Guid.NewGuid().ToString("N");
-        await trail.WriteAsync(Event(trace, 0, "orders.create", "alice", "acme", details: new Dictionary<string, object?> { ["amount"] = "12.50", ["rows"] = 3, ["when"] = _epoch }), CancellationToken.None);
+        await trail.WriteAsync(Event(trace, 0, "orders.create", "alice", "acme", details: new Dictionary<string, JsonElement> { ["amount"] = Json("12.50"), ["rows"] = Json(3), ["when"] = Json(_epoch) }), CancellationToken.None);
         await trail.WriteAsync(Event(trace, 1, "orders.delete", "bob", "acme", failure: new Error("ORDERS_DENIED_001", "orders.denied", MessageArguments.Of(("id", "o-1")))), CancellationToken.None);
         await trail.WriteAsync(Event(trace, 2, "orders.create", "alice", "zeta"), CancellationToken.None);
         await trail.WriteAsync(Event(other, 3, "orders.export", "alice", "acme"), CancellationToken.None);
@@ -96,9 +97,9 @@ public sealed class SqliteAuditTrailTests
 
         // 细节与错误往返
         var created = first.Items[0];
-        Assert.Equal("12.50", created.Details?["amount"]?.ToString());
-        Assert.Equal(3, Assert.IsType<JsonElement>(created.Details?["rows"]).GetInt32());
-        Assert.Equal(_epoch, Assert.IsType<JsonElement>(created.Details?["when"]).GetDateTimeOffset());
+        Assert.Equal("12.50", created.Details!["amount"].GetString());
+        Assert.Equal(3, created.Details!["rows"].GetInt32());
+        Assert.Equal(_epoch, created.Details!["when"].GetDateTimeOffset());
         var denied = first.Items[1].Outcome.Error!;
         Assert.Equal(("ORDERS_DENIED_001", "orders.denied", "o-1"), (denied.Code, denied.MessageKey, denied.Details?["id"]?.ToString()));
         Assert.Null(first.Items[1].Details);
@@ -127,7 +128,7 @@ public sealed class SqliteAuditTrailTests
     /// <summary>
     /// 基准时刻起第 <paramref name="minute"/> 分钟的事件
     /// </summary>
-    private static AuditEvent Event(string trace, int minute, string action, string principal, string tenant, Error? failure = null, IReadOnlyDictionary<string, object?>? details = null)
+    private static AuditEvent Event(string trace, int minute, string action, string principal, string tenant, Error? failure = null, IReadOnlyDictionary<string, JsonElement>? details = null)
         => new()
         {
             Timestamp = _epoch.AddMinutes(minute),
@@ -138,4 +139,13 @@ public sealed class SqliteAuditTrailTests
             TenantId = tenant,
             Details = details,
         };
+
+    /// <summary>
+    /// 把一个 JSON 值固化成脱离文档的元素
+    /// </summary>
+    private static JsonElement Json(JsonNode? value)
+    {
+        using var document = JsonDocument.Parse(value?.ToJsonString() ?? "null");
+        return document.RootElement.Clone();
+    }
 }

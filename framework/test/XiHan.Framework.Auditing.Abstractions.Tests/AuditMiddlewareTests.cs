@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Auditing.Abstractions.Pipeline;
@@ -71,7 +72,7 @@ public sealed class AuditMiddlewareTests
         var created = sink.Events[0];
         Assert.True(created.Outcome.IsSuccess);
         Assert.Equal(("alice", "acme", "xrn:global:orders:acme:order/o-1"), (created.PrincipalId, created.TenantId, created.Resource));
-        Assert.Equal(12.5m, created.Details?["amount"]);
+        Assert.Equal(12.5m, created.Details!["amount"].GetDecimal());
         Assert.Equal(32, created.TraceId.Length);
         Assert.True(created.Timestamp <= DateTimeOffset.UtcNow);
         Assert.Null(sink.Events[2].PrincipalId == null ? null : sink.Events[2].Resource);
@@ -228,7 +229,7 @@ public sealed class AuditMiddlewareTests
 
         Assert.Equal(["ORDERS_VALIDATION_001", KernelErrors.Unexpected], sink.Events.Select(static e => e.Outcome.Error?.Code));
         Assert.All(sink.Events, static e => Assert.Equal(CreateOrder.Id, e.Action));
-        Assert.Equal(-1m, sink.Events[0].Details?["amount"]);
+        Assert.Equal(-1m, sink.Events[0].Details!["amount"].GetDecimal());
     }
 
     [Fact]
@@ -276,9 +277,11 @@ public sealed class AuditMiddlewareTests
         context.AddAuditDetail("a", 1);
         context.AddAuditDetail("a", 2);
         var snapshot = context.FindAuditDetails().ValueOrThrow();
-        Assert.Equal(2, snapshot["a"]);
+        Assert.Equal(2, snapshot["a"].GetInt32());
         context.AddAuditDetail("b", 3);
         Assert.False(snapshot.ContainsKey("b"));
-        Assert.IsNotType<Dictionary<string, object?>>(snapshot);
+        Assert.IsNotType<Dictionary<string, JsonElement>>(snapshot);
+        context.AddAuditDetail("none", null);
+        Assert.Equal(JsonValueKind.Null, context.FindAuditDetails().ValueOrThrow()["none"].ValueKind);
     }
 }

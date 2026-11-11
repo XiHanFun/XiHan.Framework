@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json;
 using XiHan.Framework.Auditing.Abstractions;
 using XiHan.Framework.Auditing.Abstractions.Trail;
 using XiHan.Framework.Kernel.Diagnostics;
@@ -42,7 +43,7 @@ public abstract class AuditTrailConformance
     {
         var fixture = await CreateFixtureAsync().ConfigureAwait(false);
         var trace = Trace();
-        await fixture.Sink.WriteAsync(Event(trace, 0, "orders.create", principal: "alice", tenant: "acme", resource: "xrn:global:orders:acme:order/1", details: new Dictionary<string, object?> { ["amount"] = "12.50" }), CancellationToken.None).ConfigureAwait(false);
+        await fixture.Sink.WriteAsync(Event(trace, 0, "orders.create", principal: "alice", tenant: "acme", resource: "xrn:global:orders:acme:order/1", details: new Dictionary<string, JsonElement> { ["amount"] = Json("\"12.50\""), ["rows"] = Json("3") }), CancellationToken.None).ConfigureAwait(false);
         await fixture.Sink.WriteAsync(Event(trace, 1, "orders.delete", principal: "bob", tenant: "acme", failure: "ORDERS_DENIED_001"), CancellationToken.None).ConfigureAwait(false);
         await fixture.Sink.WriteAsync(Event(trace, 2, "orders.create", principal: "alice", tenant: "zeta"), CancellationToken.None).ConfigureAwait(false);
 
@@ -52,7 +53,10 @@ public abstract class AuditTrailConformance
         var first = page.Items[0];
         Assert.Equal((_epoch, "alice", "acme", "xrn:global:orders:acme:order/1", trace), (first.Timestamp, first.PrincipalId, first.TenantId, first.Resource, first.TraceId));
         Assert.True(first.Outcome.IsSuccess);
-        Assert.Equal("12.50", first.Details?["amount"]?.ToString());
+        // 细节是 JSON 值：任何接收器写入再读回，字符串与数值各自保持 JSON 类型
+        var details = Assert.IsAssignableFrom<IReadOnlyDictionary<string, JsonElement>>(first.Details);
+        Assert.Equal(("12.50", JsonValueKind.String), (details["amount"].GetString(), details["amount"].ValueKind));
+        Assert.Equal((3, JsonValueKind.Number), (details["rows"].GetInt32(), details["rows"].ValueKind));
         Assert.Equal("ORDERS_DENIED_001", page.Items[1].Outcome.Error?.Code);
         Assert.Null(page.Items[1].Resource);
         Assert.Null(page.Items[1].Details);
@@ -69,8 +73,8 @@ public abstract class AuditTrailConformance
     {
         var fixture = await CreateFixtureAsync().ConfigureAwait(false);
         var trace = Trace();
-        await fixture.Sink.WriteAsync(Event(trace, 0, "orders.create", principal: "alice", tenant: "acme"), CancellationToken.None).ConfigureAwait(false);
-        await fixture.Sink.WriteAsync(Event(trace, 1, "orders.create", principal: "bob", tenant: "acme", failure: "ORDERS_CONFLICT_001"), CancellationToken.None).ConfigureAwait(false);
+        await fixture.Sink.WriteAsync(Event(trace, 0, "orders.create", principal: "alice", tenant: "acme", resource: "xrn:global:orders:acme:order/1"), CancellationToken.None).ConfigureAwait(false);
+        await fixture.Sink.WriteAsync(Event(trace, 1, "orders.create", principal: "bob", tenant: "acme", resource: "xrn:global:orders:acme:order/2", failure: "ORDERS_CONFLICT_001"), CancellationToken.None).ConfigureAwait(false);
         await fixture.Sink.WriteAsync(Event(trace, 2, "orders.delete", principal: "alice", tenant: "zeta"), CancellationToken.None).ConfigureAwait(false);
 
         async Task<IReadOnlyList<string?>> PrincipalsAsync(AuditQuery query)
@@ -85,6 +89,10 @@ public abstract class AuditTrailConformance
         Assert.Equal(["alice", "bob"], await PrincipalsAsync(new AuditQuery { To = _epoch.AddMinutes(1) }).ConfigureAwait(false));
         Assert.Equal(["bob"], await PrincipalsAsync(new AuditQuery { From = _epoch.AddMinutes(1), To = _epoch.AddMinutes(1), TenantId = "acme" }).ConfigureAwait(false));
         Assert.Empty(await PrincipalsAsync(new AuditQuery { Action = "orders.delete", TenantId = "acme" }).ConfigureAwait(false));
+        // 资源按 xrn 文本精确匹配：前缀不算命中
+        Assert.Equal(["bob"], await PrincipalsAsync(new AuditQuery { Resource = "xrn:global:orders:acme:order/2" }).ConfigureAwait(false));
+        Assert.Empty(await PrincipalsAsync(new AuditQuery { Resource = "xrn:global:orders:acme:order" }).ConfigureAwait(false));
+        Assert.Equal(["alice"], await PrincipalsAsync(new AuditQuery { Resource = "xrn:global:orders:acme:order/1", Succeeded = true }).ConfigureAwait(false));
     }
 
     /// <summary>
@@ -169,7 +177,7 @@ public abstract class AuditTrailConformance
     /// <summary>
     /// 基准时刻起第 <paramref name="minute"/> 分钟的事件
     /// </summary>
-    private static AuditEvent Event(string trace, int minute, string action, string? principal = null, string? tenant = null, string? resource = null, string? failure = null, IReadOnlyDictionary<string, object?>? details = null)
+    private static AuditEvent Event(string trace, int minute, string action, string? principal = null, string? tenant = null, string? resource = null, string? failure = null, IReadOnlyDictionary<string, JsonElement>? details = null)
         => new()
         {
             Timestamp = _epoch.AddMinutes(minute),
@@ -181,4 +189,13 @@ public abstract class AuditTrailConformance
             Resource = resource,
             Details = details,
         };
+
+    /// <summary>
+    /// 把 JSON 文本解析成脱离文档的值
+    /// </summary>
+    private static JsonElement Json(string raw)
+    {
+        using var document = JsonDocument.Parse(raw);
+        return document.RootElement.Clone();
+    }
 }

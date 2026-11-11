@@ -334,6 +334,11 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
             filtered = filtered.Where(new Specification<AuditRecord>(r => r.TraceId == trace));
         }
 
+        if (query.Resource is { } resource)
+        {
+            filtered = filtered.Where(new Specification<AuditRecord>(r => r.Resource == resource));
+        }
+
         if (query.Succeeded is { } succeeded)
         {
             filtered = filtered.Where(new Specification<AuditRecord>(r => r.Succeeded == succeeded));

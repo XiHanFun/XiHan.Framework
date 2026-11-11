@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -77,7 +76,7 @@ public sealed class DatabaseAuditingTests
         Assert.True(recorded.Outcome.IsSuccess);
         Assert.Equal(32, recorded.TraceId.Length);
         // 细节读回是 JsonElement
-        Assert.Equal(12.5m, Assert.IsType<JsonElement>(recorded.Details?["amount"]).GetDecimal());
+        Assert.Equal(12.5m, recorded.Details!["amount"].GetDecimal());
     }
 
     [Fact]

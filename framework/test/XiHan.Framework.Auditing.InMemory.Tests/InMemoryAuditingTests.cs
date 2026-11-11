@@ -71,7 +71,7 @@ public sealed class InMemoryAuditingTests
         }, baggage: new Dictionary<string, string> { [BaggageKeys.Principal] = "ops" })).IsSuccess);
         var page = (await trail.QueryAsync(new AuditQuery { Action = "reports.rebuild" }, CancellationToken.None)).ValueOrThrow();
         var recorded = Assert.Single(page.Items);
-        Assert.Equal(("ops", 3), (recorded.PrincipalId, recorded.Details?["rows"]));
+        Assert.Equal(("ops", 3), (recorded.PrincipalId, recorded.Details!["rows"].GetInt32()));
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Text.Json;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Diagnostics;
@@ -68,7 +69,10 @@ public sealed record AuditEvent
     public string? TenantId { get; init; }
 
     /// <summary>
-    /// 附加细节，只允许 JSON 可表示的值
+    /// 附加细节，名字到 JSON 值
     /// </summary>
-    public IReadOnlyDictionary<string, object?>? Details { get; init; }
+    /// <remarks>
+    /// 值是 <see cref="JsonElement"/>，任何接收器写入再读回都是同一类型（ADR-0159）
+    /// </remarks>
+    public IReadOnlyDictionary<string, JsonElement>? Details { get; init; }
 }

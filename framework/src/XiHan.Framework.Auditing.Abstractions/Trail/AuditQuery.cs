@@ -48,6 +48,14 @@ public sealed record AuditQuery
     public string? TraceId { get; init; }
 
     /// <summary>
+    /// 作用的资源
+    /// </summary>
+    /// <remarks>
+    /// <c>xrn:</c> 文本，与 <see cref="AuditEvent.Resource"/> 按序数精确比较；为 <see langword="null"/> 不按资源过滤（ADR-0159）
+    /// </remarks>
+    public string? Resource { get; init; }
+
+    /// <summary>
     /// 只取成功（<see langword="true"/>）或只取失败（<see langword="false"/>）
     /// </summary>
     public bool? Succeeded { get; init; }
@@ -98,6 +106,7 @@ public sealed record AuditQuery
             && (PrincipalId is null || string.Equals(PrincipalId, auditEvent.PrincipalId, StringComparison.Ordinal))
             && (TenantId is null || string.Equals(TenantId, auditEvent.TenantId, StringComparison.Ordinal))
             && (TraceId is null || string.Equals(TraceId, auditEvent.TraceId, StringComparison.Ordinal))
+            && (Resource is null || string.Equals(Resource, auditEvent.Resource, StringComparison.Ordinal))
             && (Succeeded is not { } succeeded || auditEvent.Outcome.IsSuccess == succeeded);
     }
 }

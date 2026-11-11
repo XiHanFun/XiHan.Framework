@@ -19,6 +19,7 @@ namespace XiHan.Framework.Auditing.Database.Trail;
 [EntityIndex(nameof(Timestamp))]
 [EntityIndex(nameof(TraceId))]
 [EntityIndex(nameof(TenantId), nameof(Sequence))]
+[EntityIndex(nameof(Resource), nameof(Sequence))]
 public sealed class AuditRecord : IEntity<Guid>
 {
     /// <inheritdoc />
