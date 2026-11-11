@@ -142,7 +142,7 @@ EF Core 的 `DbContext` 里为它配置 `modelBuilder.Entity<Invoice>(static e =
 | 21–12（10 位） | 机器位 | 0–1023 |
 | 11–0（12 位） | 同一毫秒内的序列 | 0–4095 |
 
-这些位宽与上限是 `SnowflakeId` 上的常量：`TimestampBits`、`WorkerIdBits`、`SequenceBits`、`MaxWorkerId`、`MaxSequence`、`MaxTimestamp`。缺省 epoch 是 `2026-01-01T00:00:00Z`，41 位毫秒可用到 2095 年前后；用尽时 `NewId()` 抛出 `InvalidOperationException`。
+`SnowflakeId` 只能经 `SnowflakeId.Parse(value, epoch)` 从值分解得到，值与时刻、节点、序号总是一致。这些位宽与上限是它上面的常量：`TimestampBits`、`WorkerIdBits`、`SequenceBits`、`MaxWorkerId`、`MaxSequence`、`MaxTimestamp`。缺省 epoch 是 `2026-01-01T00:00:00Z`，41 位毫秒可用到 2095 年前后；用尽时 `NewId()` 抛出 `InvalidOperationException`。
 
 ## 配置
 

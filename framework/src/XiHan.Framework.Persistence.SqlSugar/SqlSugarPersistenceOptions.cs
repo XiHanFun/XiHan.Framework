@@ -23,12 +23,12 @@ public sealed record SqlSugarPersistenceOptions
     public const string ConfigurationSection = "XiHan:Persistence:SqlSugar";
 
     /// <summary>
-    /// <see cref="CommandTimeoutSeconds"/> 的缺省值
+    /// <see cref="CommandTimeout"/> 的缺省值
     /// </summary>
     /// <remarks>
     /// 与 SqlSugar 自己的缺省值相同，不配时行为不变
     /// </remarks>
-    public const int StandardCommandTimeoutSeconds = 300;
+    public static TimeSpan StandardCommandTimeout { get; } = TimeSpan.FromSeconds(300);
 
     /// <summary>
     /// 启动时用 CodeFirst 为已登记的实体建表（<c>InitTables</c>）
@@ -75,16 +75,17 @@ public sealed record SqlSugarPersistenceOptions
     } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// 命令超时（秒）
+    /// 命令超时
     /// </summary>
     /// <remarks>
-    /// 默认 <see cref="StandardCommandTimeoutSeconds"/>。特性建的客户端的每个连接都设上；应用自己注册客户端时不适用。必须是正数：ADO.NET 的 0 是无限等待。个别长任务在调用点用 <c>Ado.CommandTimeOut</c> 临时调大
+    /// 默认 <see cref="StandardCommandTimeout"/>。特性建的客户端的每个连接都设上；应用自己注册客户端时不适用。必须是正数：ADO.NET 的 0 是无限等待。个别长任务在调用点用 <c>Ado.CommandTimeOut</c> 临时调大
+    /// 至少 1 秒，按整秒向上取整交给 ADO.NET；与同类型其他时长一样是 <see cref="TimeSpan"/>，配置键仍是 <c>CommandTimeoutSeconds</c>（秒，ADR-0164）
     /// </remarks>
-    public int CommandTimeoutSeconds
+    public TimeSpan CommandTimeout
     {
         get => field;
-        init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The command timeout must be positive.");
-    } = StandardCommandTimeoutSeconds;
+        init => field = value >= TimeSpan.FromSeconds(1) && value.TotalSeconds <= int.MaxValue ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The command timeout must be at least one second.");
+    } = StandardCommandTimeout;
 
     /// <summary>
     /// 从库的权重与健康探测
@@ -132,7 +133,7 @@ public sealed record SqlSugarPersistenceOptions
         if (commandTimeout is not null)
         {
             options = int.TryParse(commandTimeout, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { CommandTimeoutSeconds = seconds }
+                ? options with { CommandTimeout = TimeSpan.FromSeconds(seconds) }
                 : throw new ArgumentException($"'{ConfigurationSection}:CommandTimeoutSeconds' must be a positive integer, but was '{commandTimeout}'.");
         }
 

@@ -170,7 +170,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
             // 默认连接始终在客户端里：平台目录表落默认连接、租户表落分片连接，由 IEntityConnectionSelector 决定，两者在同一客户端里由 AsTenant() 统一开事务
             var binding = context.FindBinding(ConnectionBinding);
             var defaultHitRate = _options.Replicas.DefaultHitRate;
-            var commandTimeout = _options.CommandTimeoutSeconds;
+            var commandTimeout = _options.CommandTimeout;
             var shared = CreateConfig(configure, binding, SqlSugarConnections.Default, defaultHitRate);
             // 命名连接（RFC-0005「命名连接」）同样只建一份配置：回调按 ConfigId 区分，绑定的主值换成该连接串、属性沿用 db 绑定（库类型等）
             // 它们排在默认连接之后，根连接仍是默认连接；工作单元只在触及的连接上开事务，业务调用不碰命名连接时那个库不被业务事务锁住
@@ -210,7 +210,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
             // 方式二由应用自己组装连接集合：这一节对它没有作用，静默忽略会让应用以为命名连接已经建好
             throw new ArgumentException($"'{SqlSugarPersistenceOptions.ConfigurationSection}:Connections' only applies when the feature creates the client from a configure callback; the application registers its own ISqlSugarClient, so add connections with these ConfigIds to it instead.");
         }
-        else if (_options.CommandTimeoutSeconds != SqlSugarPersistenceOptions.StandardCommandTimeoutSeconds)
+        else if (_options.CommandTimeout != SqlSugarPersistenceOptions.StandardCommandTimeout)
         {
             // 同上：客户端是应用建的，这个键碰不到它，静默忽略会让应用以为超时已经生效
             throw new ArgumentException($"'{SqlSugarPersistenceOptions.ConfigurationSection}:CommandTimeoutSeconds' only applies when the feature creates the client from a configure callback; the application registers its own ISqlSugarClient, so set 'Ado.CommandTimeOut' on it instead.");
@@ -398,12 +398,15 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// <remarks>
     /// <c>Ado</c> 每个连接一个，连接配置上没有这一项，应用的回调也碰不到建好的客户端，所以在这里设（RFC-0005「命令超时」）。多连接时要把各连接的上下文都建出来，缺省值与 SqlSugar 相同，不必设，也就不多这一步
     /// </remarks>
-    private static SqlSugarClient WithCommandTimeout(SqlSugarClient client, List<ConnectionConfig> connections, int seconds)
+    private static SqlSugarClient WithCommandTimeout(SqlSugarClient client, List<ConnectionConfig> connections, TimeSpan timeout)
     {
-        if (seconds == SqlSugarPersistenceOptions.StandardCommandTimeoutSeconds)
+        if (timeout == SqlSugarPersistenceOptions.StandardCommandTimeout)
         {
             return client;
         }
+
+        // ADO.NET 的超时是整秒：向上取整，不让 1.5 秒变成 1 秒
+        var seconds = (int)Math.Ceiling(timeout.TotalSeconds);
 
         client.Ado.CommandTimeOut = seconds;
         foreach (var connection in connections)

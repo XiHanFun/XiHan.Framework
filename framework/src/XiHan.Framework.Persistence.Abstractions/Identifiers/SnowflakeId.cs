@@ -10,14 +10,42 @@ namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 /// </summary>
 /// <remarks>
 /// 符号位恒为 0，其后 41 位是自 epoch 起的毫秒数、10 位机器位、12 位同一毫秒内的序列
+/// 只能经 <see cref="Parse"/> 从值分解得到：值与各分量总是一致，不能单独构造出对不上的实例（ADR-0164）
 /// </remarks>
-/// <param name="Value">标识本身</param>
-/// <param name="Timestamp">生成时刻（毫秒精度，UTC）</param>
-/// <param name="WorkerId">机器位</param>
-/// <param name="Sequence">同一毫秒内的序列</param>
 [ApiLevel(Stability.Preview, "5.0")]
-public readonly record struct SnowflakeId(long Value, DateTimeOffset Timestamp, int WorkerId, int Sequence)
+public readonly record struct SnowflakeId
 {
+    /// <summary>
+    /// 由分解出的各分量创建
+    /// </summary>
+    private SnowflakeId(long value, DateTimeOffset timestamp, int workerId, int sequence)
+    {
+        Value = value;
+        Timestamp = timestamp;
+        WorkerId = workerId;
+        Sequence = sequence;
+    }
+
+    /// <summary>
+    /// 64 位值
+    /// </summary>
+    public long Value { get; }
+
+    /// <summary>
+    /// 生成时刻（UTC）
+    /// </summary>
+    public DateTimeOffset Timestamp { get; }
+
+    /// <summary>
+    /// 工作节点 ID
+    /// </summary>
+    public int WorkerId { get; }
+
+    /// <summary>
+    /// 同一毫秒内的序号
+    /// </summary>
+    public int Sequence { get; }
+
     /// <summary>
     /// 时间戳位数
     /// </summary>

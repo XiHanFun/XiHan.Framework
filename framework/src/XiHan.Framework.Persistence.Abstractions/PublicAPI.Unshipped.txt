@@ -60,18 +60,12 @@ XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<TKey>.NewId() 
 XiHan.Framework.Persistence.Abstractions.Identifiers.IWorkerIdSource
 XiHan.Framework.Persistence.Abstractions.Identifiers.IWorkerIdSource.Current.get -> XiHan.Framework.Primitives.Maybe<int>
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId
-XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Deconstruct(out long Value, out System.DateTimeOffset Timestamp, out int WorkerId, out int Sequence) -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Equals(XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId other) -> bool
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Sequence.get -> int
-XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Sequence.init -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.SnowflakeId() -> void
-XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.SnowflakeId(long Value, System.DateTimeOffset Timestamp, int WorkerId, int Sequence) -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Timestamp.get -> System.DateTimeOffset
-XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Timestamp.init -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Value.get -> long
-XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.Value.init -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.WorkerId.get -> int
-XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeId.WorkerId.init -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Persistence.Abstractions.Identifiers.SnowflakeIdFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!

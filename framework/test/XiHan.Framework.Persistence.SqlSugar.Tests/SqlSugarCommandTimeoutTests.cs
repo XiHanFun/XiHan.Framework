@@ -122,8 +122,9 @@ public sealed class SqlSugarCommandTimeoutTests : IDisposable
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [Key] = "45" }).Build();
 
-        Assert.Equal(45, SqlSugarPersistenceOptions.FromConfiguration(configuration).CommandTimeoutSeconds);
-        Assert.Equal(300, new SqlSugarPersistenceOptions().CommandTimeoutSeconds);
+        Assert.Equal(TimeSpan.FromSeconds(45), SqlSugarPersistenceOptions.FromConfiguration(configuration).CommandTimeout);
+        Assert.Equal(TimeSpan.FromSeconds(300), new SqlSugarPersistenceOptions().CommandTimeout);
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new SqlSugarPersistenceOptions { CommandTimeout = TimeSpan.FromMilliseconds(500) });
     }
 
     /// <summary>

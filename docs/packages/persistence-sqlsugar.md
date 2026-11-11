@@ -120,7 +120,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | 类型 | 说明 |
 | --- | --- |
 | `SqlSugarPersistenceFeature` | 特性入口；无参构造用应用注册的客户端，带回调的构造由特性创建客户端；`DiffLog` 选出开启差异日志的实体；常量 `ConnectionBinding`（`db`）与 `HealthName`（`persistence.sqlsugar.database`） |
-| `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`Connections`（方式一的命名连接）、`DiffLog`；`FromConfiguration(configuration)` |
+| `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`CommandTimeout`（`TimeSpan`，缺省 `StandardCommandTimeout` 300 秒，配置键是 `CommandTimeoutSeconds`）、`Connections`（方式一的命名连接）、`DiffLog`；`FromConfiguration(configuration)` |
 | `SqlSugarReplicaOptions` | 从库的权重与健康探测选项（`SqlSugarPersistenceOptions.Replicas`） |
 | `SqlSugarConventions` | `Apply(config)` 在连接配置上登记协议约定（保留配置里已有的实体服务与表服务回调，先执行它们）；`Configure(property, column)` 对单个属性施加约定；`ConfigureIndexes(type, entityInfo)` 把实体上的 `[EntityIndex]` 登记为 SqlSugar 索引（软删除实体的部分唯一索引除外）；`InitTables(client, entityTypes)` 按约定建表并补建软删除实体的部分唯一索引，应用自己建表（租户独立库）用它 |
 | `SqlSugarConnections` | 连接的 `ConfigId` 约定：`Default`（`default`）、`Shard`（`shard`） |
