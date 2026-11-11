@@ -29,7 +29,7 @@
 
 - 应用或能力包有自己的文案：定义 `<领域>Messages` 键常量、写语言文件、用 `AddMessageCatalog` 注册目录。
 - 需要在调用链之外按指定区域取文案，或要知道命中的区域：注入 `IMessageLocalizer`。
-- 实现新的本地化 Provider：实现 `IMessageLocalizer` 与 `IMessageResolver`，并通过 `Localization.Conformance`。
+- 实现新的本地化 Provider：实现 `IMessageLocalizer`（`Options`、`Find`、`Resolve` 三个成员）与 `IMessageResolver`，并通过 `Localization.Conformance`。
 
 用法与回退规则的完整讲解见[国际化](/common/localization)。
 
@@ -70,7 +70,8 @@ dotnet add package XiHan.Framework.Localization.Abstractions --prerelease
 | `Locales.LocaleName` | `IsValid`、`Validate`、`Normalize`（`zh-cn` → `zh-CN`）、`LanguageOf`（`zh-CN` → `zh`）、`CultureOf`、`AreEqual`；`MaxLength` = 35 |
 | `LocalizationOptions` | `DefaultLocale`、`Locales`、`FallbackChain(locale)`、`Negotiate(candidates)`、`Resolve(context)`、`FromConfiguration`、`Validated()` |
 | `Messages.MessageCatalog` | 构造（目录名 + 区域 → 键 → 模板）、`FromEmbeddedResources(name, anchor, prefix)`、`Find(key, locale)`（精确匹配）、`Keys`、`Locales`、`LocalesOf(key)`；`DefaultResourcePrefix` = `Localization/` |
-| `Messages.IMessageLocalizer` | `Find`、`Resolve(key, locale, arguments)`、`Localize(...)`、`Resolve(error, locale)`、`Localize(error, ...)`、`Options` |
+| `Messages.IMessageLocalizer` | `Find`、`Resolve(key, locale, arguments)`、`Options`；实现只需提供这三个 |
+| `Messages.MessageLocalizerExtensions` | 由 `Resolve` 推出的 `Localize(key, locale \| context, arguments)`、`Resolve(error, locale)`、`Localize(error, locale \| context)` |
 | `Messages.LocalizedText` | 一次解析的 `Text` 与实际命中的 `Locale` |
 | `Messages.InvocationContextLocalizationExtensions` | `context.Localize(key, arguments)`、`context.Localize(error)`；没有装配本地化时退回描述与 `Error.Message` |
 | `LocalizationServiceCollectionExtensions` | `AddMessageCatalog(catalog)`：同名目录合并为一份，同一键同一区域的模板不同时抛出 `LOCALIZATION_CONFLICT_001` |

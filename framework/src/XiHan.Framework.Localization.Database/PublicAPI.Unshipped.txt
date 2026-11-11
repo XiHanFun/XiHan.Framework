@@ -16,13 +16,8 @@ XiHan.Framework.Localization.Database.DatabaseLocalizationOptions.RefreshInterva
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.DatabaseMessageLocalizer(System.Collections.Generic.IEnumerable<XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!>! catalogs, XiHan.Framework.Localization.Abstractions.LocalizationOptions! options) -> void
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Find(string! key, string! locale) -> XiHan.Framework.Primitives.Maybe<string!>
-XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Localize(XiHan.Framework.Primitives.Error! failure, XiHan.Framework.Primitives.InvocationContext! context) -> string!
-XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Localize(XiHan.Framework.Primitives.Error! failure, string! locale) -> string!
-XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Localize(string! key, XiHan.Framework.Primitives.InvocationContext! context, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
-XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Localize(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Negotiate(string? locale) -> string?
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Options.get -> XiHan.Framework.Localization.Abstractions.LocalizationOptions!
-XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Resolve(XiHan.Framework.Primitives.Error! failure, string! locale) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Resolve(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.TranslationCount.get -> int
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.TryResolve(string! key, string? locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments, out string? text) -> bool

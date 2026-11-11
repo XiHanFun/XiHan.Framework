@@ -90,36 +90,6 @@ public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolv
             : default;
     }
 
-    /// <inheritdoc />
-    public string Localize(string key, string locale, IReadOnlyDictionary<string, object?>? arguments)
-        => Resolve(key, locale, arguments).TryGetValue(out var localized) ? localized.Text : MessageTemplate.Describe(key, arguments);
-
-    /// <inheritdoc />
-    public string Localize(string key, InvocationContext context, IReadOnlyDictionary<string, object?>? arguments)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return Localize(key, Options.Resolve(context), arguments);
-    }
-
-    /// <inheritdoc />
-    public Maybe<LocalizedText> Resolve(Error failure, string locale)
-    {
-        ArgumentNullException.ThrowIfNull(failure);
-        // 自由文本错误（线上还原、异常转换）没有键，无法翻译
-        return failure.MessageKey is null ? default : Resolve(failure.MessageKey, locale, failure.Details);
-    }
-
-    /// <inheritdoc />
-    public string Localize(Error failure, string locale)
-        => Resolve(failure, locale).TryGetValue(out var localized) ? localized.Text : failure.Message;
-
-    /// <inheritdoc />
-    public string Localize(Error failure, InvocationContext context)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-        return Localize(failure, Options.Resolve(context));
-    }
-
     /// <summary>
     /// 整份替换快照
     /// </summary>

@@ -211,16 +211,16 @@ using (MessageScope.Use(resolver: null, locale: recipientLocale))
 
 ## IMessageLocalizer
 
-需要显式区域、或要知道文案实际命中哪个区域时，注入 `IMessageLocalizer`：
+需要显式区域、或要知道文案实际命中哪个区域时，注入 `IMessageLocalizer`。接口只有三个成员，其余形式是 `MessageLocalizerExtensions` 的扩展方法，由 `Resolve` 推出，各实现行为一致：
 
 | 成员 | 返回 |
 | --- | --- |
 | `Resolve(key, locale, arguments)` | `Maybe<LocalizedText>`：文案与命中的区域；没有模板或占位符缺值时无值 |
-| `Localize(key, locale, arguments)` | 文案；解析不到时是键与参数的描述 |
-| `Localize(key, context, arguments)` | 按调用上下文的区域解析 |
-| `Resolve(error, locale)` / `Localize(error, locale)` | 翻译 `Error`；自由文本错误没有键，`Resolve` 无值，`Localize` 返回原文 |
 | `Find(key, locale)` | 沿回退链取未格式化的模板 |
 | `Options` | 当前的 `LocalizationOptions` |
+| `Localize(key, locale, arguments)`（扩展） | 文案；解析不到时是键与参数的描述 |
+| `Localize(key, context, arguments)`（扩展） | 按调用上下文的区域解析 |
+| `Resolve(error, locale)` / `Localize(error, locale)` / `Localize(error, context)`（扩展） | 翻译 `Error`；自由文本错误没有键，`Resolve` 无值，`Localize` 返回原文 |
 
 调用上下文上有等价的扩展方法 `context.Localize(key, arguments)` 与 `context.Localize(error)`，没有装配本地化时分别退回描述与 `Error.Message`。
 

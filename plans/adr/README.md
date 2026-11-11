@@ -145,3 +145,4 @@
 | [0143](0143-租户解析器可以拒绝调用.md) | `ITenantResolver.ResolveAsync` 返回 `Result<Maybe<string>>`：无值交给下一个解析器，失败即拒绝——Tenant 阶段以该错误结束，不再问后面的解析器、默认租户也不顶替（不让调用方自报的 Baggage 绕过拒绝） | 已采纳 |
 | [0144](0144-操作端点映射返回约定构建器.md) | `MapXiHanOperations()` 返回 `IEndpointConventionBuilder`（空前缀路由组），与其他 `MapXiHan*` 一致，应用可对全部操作端点统一加 CORS、限流等约定；不再返回端点数 | 已采纳 |
 | [0145](0145-缺失用null不用空字符串.md) | 公开契约里缺失用 `null` 不用空字符串（规则进 RFC-0001）：匿名主体的 `Id` 与方案为 `null`，`Principal(id, scheme)` 只创建已认证主体、`IsAuthenticated` 标注 `MemberNotNullWhen`；`ResourceName.Tenant` 全局为 `null`、构造与 `with` 按文法校验；持久化协议字段 `TenantId` / `ConcurrencyStamp` 例外，不可空、新增前以空字符串占位 | 已采纳 |
+| [0146](0146-本地化器接口只留原语.md) | `IMessageLocalizer` 只留 `Options`、`Find`、`Resolve(key, locale, arguments)` 三个原语，按上下文取、翻译错误、退回描述的 5 个形式移到 `MessageLocalizerExtensions`，各实现不再复制；调用方源码不变 | 已采纳 |

@@ -18,12 +18,7 @@ XiHan.Framework.Localization.Abstractions.LocalizationOptions.Validated() -> XiH
 XiHan.Framework.Localization.Abstractions.LocalizationServiceCollectionExtensions
 XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer
 XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer.Find(string! key, string! locale) -> XiHan.Framework.Primitives.Maybe<string!>
-XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer.Localize(XiHan.Framework.Primitives.Error! failure, XiHan.Framework.Primitives.InvocationContext! context) -> string!
-XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer.Localize(XiHan.Framework.Primitives.Error! failure, string! locale) -> string!
-XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer.Localize(string! key, XiHan.Framework.Primitives.InvocationContext! context, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
-XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer.Localize(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
 XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer.Options.get -> XiHan.Framework.Localization.Abstractions.LocalizationOptions!
-XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer.Resolve(XiHan.Framework.Primitives.Error! failure, string! locale) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
 XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer.Resolve(string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
 XiHan.Framework.Localization.Abstractions.Messages.InvocationContextLocalizationExtensions
 XiHan.Framework.Localization.Abstractions.Messages.LocalizedText
@@ -43,6 +38,7 @@ XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog.Locales.get ->
 XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog.LocalesOf(string! key) -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog.MessageCatalog(string! name, System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>! templatesByLocale) -> void
 XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog.Name.get -> string!
+XiHan.Framework.Localization.Abstractions.Messages.MessageLocalizerExtensions
 const XiHan.Framework.Localization.Abstractions.Locales.LocaleName.MaxLength = 35 -> int
 const XiHan.Framework.Localization.Abstractions.Locales.SupportedLocales.ChineseSimplified = "zh-CN" -> string!
 const XiHan.Framework.Localization.Abstractions.Locales.SupportedLocales.ChineseTraditional = "zh-TW" -> string!
@@ -84,3 +80,8 @@ static XiHan.Framework.Localization.Abstractions.Messages.InvocationContextLocal
 static XiHan.Framework.Localization.Abstractions.Messages.LocalizedText.operator !=(XiHan.Framework.Localization.Abstractions.Messages.LocalizedText? left, XiHan.Framework.Localization.Abstractions.Messages.LocalizedText? right) -> bool
 static XiHan.Framework.Localization.Abstractions.Messages.LocalizedText.operator ==(XiHan.Framework.Localization.Abstractions.Messages.LocalizedText? left, XiHan.Framework.Localization.Abstractions.Messages.LocalizedText? right) -> bool
 static XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog.FromEmbeddedResources(string! name, System.Type! anchor, string! prefix = "Localization/") -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
+static XiHan.Framework.Localization.Abstractions.Messages.MessageLocalizerExtensions.Localize(this XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer! localizer, XiHan.Framework.Primitives.Error! failure, XiHan.Framework.Primitives.InvocationContext! context) -> string!
+static XiHan.Framework.Localization.Abstractions.Messages.MessageLocalizerExtensions.Localize(this XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer! localizer, XiHan.Framework.Primitives.Error! failure, string! locale) -> string!
+static XiHan.Framework.Localization.Abstractions.Messages.MessageLocalizerExtensions.Localize(this XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer! localizer, string! key, XiHan.Framework.Primitives.InvocationContext! context, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
+static XiHan.Framework.Localization.Abstractions.Messages.MessageLocalizerExtensions.Localize(this XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer! localizer, string! key, string! locale, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? arguments) -> string!
+static XiHan.Framework.Localization.Abstractions.Messages.MessageLocalizerExtensions.Resolve(this XiHan.Framework.Localization.Abstractions.Messages.IMessageLocalizer! localizer, XiHan.Framework.Primitives.Error! failure, string! locale) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Localization.Abstractions.Messages.LocalizedText!>
