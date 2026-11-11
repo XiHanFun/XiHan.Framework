@@ -325,8 +325,6 @@ XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Create
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Equals(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery? other) -> bool
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Keyword.get -> string?
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Keyword.init -> void
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Limit.get -> int
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Limit.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Matches(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> bool
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Name.get -> XiHan.Framework.Workflow.Abstractions.WorkflowName?
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Name.init -> void
@@ -336,6 +334,8 @@ XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Sorts.
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Sorts.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Status.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus?
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Status.init -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Take.get -> int
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.Take.init -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.WorkflowDefinitionQuery() -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSort!
@@ -794,8 +794,6 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.EndedBefor
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Equals(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery? other) -> bool
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Keyword.get -> string?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Keyword.init -> void
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Limit.get -> int
-XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Limit.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Matches(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance! instance) -> bool
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.ParentInstanceId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.ParentInstanceId.init -> void
@@ -809,6 +807,8 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Status.get
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Status.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Statuses.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus>?
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Statuses.init -> void
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Take.get -> int
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.Take.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.TopLevelOnly.get -> bool
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.TopLevelOnly.init -> void
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.WorkflowInstanceQuery() -> void
@@ -1079,12 +1079,12 @@ XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.InstanceId.get -> stri
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.InstanceId.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Keyword.get -> string?
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Keyword.init -> void
-XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Limit.get -> int
-XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Limit.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.NodeId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.NodeId.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Skip.get -> int
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Skip.init -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Take.get -> int
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Take.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.UserTaskQuery() -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease!
@@ -1264,8 +1264,8 @@ const XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRuleTypes.Expressi
 const XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRuleTypes.Starter = "Starter" -> string!
 const XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRuleTypes.User = "User" -> string!
 const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition.MaxCategoryLength = 128 -> int
-const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.MaxLimit = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.MaxSorts = 6 -> int
+const XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionQuery.MaxTake = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowReservedNames.ChildFaultInput = "childFault" -> string!
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowReservedNames.ChildInstanceIdInput = "childInstanceId" -> string!
 const XiHan.Framework.Workflow.Abstractions.Engine.WorkflowReservedNames.ChildStatusInput = "childStatus" -> string!
@@ -1321,8 +1321,8 @@ const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.SubWorkflow 
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.Timer = "Timer" -> string!
 const XiHan.Framework.Workflow.Abstractions.Instances.BookmarkKinds.UserTask = "UserTask" -> string!
 const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxCorrelationIds = 1000 -> int
-const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxLimit = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxSorts = 5 -> int
+const XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceQuery.MaxTake = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes.Approved = "approved" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes.Rejected = "rejected" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskOutcomes.Timeout = "timeout" -> string!
@@ -1342,7 +1342,7 @@ const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Priority =
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Rejected = "rejected" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.ReminderIntervalSeconds = "intervalSeconds" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Title = "title" -> string!
-const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.MaxLimit = 1000 -> int
+const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.MaxTake = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowCapabilities.Execution = "workflow.execution" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowCapabilities.Version = 1 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowErrors.ActiveInstanceExists = "WORKFLOW_CONFLICT_005" -> string!

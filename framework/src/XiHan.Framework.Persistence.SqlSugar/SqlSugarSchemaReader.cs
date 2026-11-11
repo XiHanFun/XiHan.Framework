@@ -53,7 +53,7 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
             var matched = string.IsNullOrEmpty(keyword)
                 ? tables
                 : tables.FindAll(t => t.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase) || (t.Comment?.Contains(keyword, StringComparison.OrdinalIgnoreCase) ?? false));
-            return new TablePage([.. matched.Skip(query.Skip).Take(query.Take)], matched.Count);
+            return new TablePage { Items = [.. matched.Skip(query.Skip).Take(query.Take)], Total = matched.Count };
         }, cancellationToken).ConfigureAwait(false);
     }
 

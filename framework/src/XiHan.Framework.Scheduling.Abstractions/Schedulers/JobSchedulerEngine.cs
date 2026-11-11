@@ -462,7 +462,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         => SetTriggersPausedAsync(keys, paused: false, cancellationToken);
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<JobTriggerResult>> TriggerAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> TriggerAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(requests);
         cancellationToken.ThrowIfCancellationRequested();
@@ -473,15 +473,15 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             {
                 try
                 {
-                    return new JobTriggerResult(request.Name, await TriggerOneAsync(request, cancellationToken).ConfigureAwait(false));
+                    return await TriggerOneAsync(request, cancellationToken).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
                     // 运行开始之前就被取消：没有留下运行记录，按取消报告这一项
-                    return new JobTriggerResult(request.Name, CancelledError());
+                    return CancelledError();
                 }
             },
-            static (request, error) => new JobTriggerResult(request.Name, error),
+            static (_, error) => error,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -705,9 +705,9 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     {
         ArgumentNullException.ThrowIfNull(query);
         // 分页越界是调用方可以改正的输入（查询常由请求绑定）：以校验错误返回而不是抛出，也不进存储；上限与持久化的查询条数上限一致
-        if (query.Skip < 0 || query.Limit is < 1 or > JobRunQuery.MaxLimit)
+        if (query.Skip < 0 || query.Take is < 1 or > JobRunQuery.MaxTake)
         {
-            return Error.Validation(SchedulingErrors.RunQueryInvalid, SchedulingMessages.RunQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", JobRunQuery.MaxLimit)));
+            return Error.Validation(SchedulingErrors.RunQueryInvalid, SchedulingMessages.RunQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("take", query.Take), ("max", JobRunQuery.MaxTake)));
         }
 
         // 存储记录是可变的存储形态：交给应用的是只读视图

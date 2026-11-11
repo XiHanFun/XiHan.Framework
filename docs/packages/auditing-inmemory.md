@@ -104,7 +104,7 @@ public sealed class AuditTrailTests
 
         var trail = host.Services.GetRequiredService<IAuditTrail>();
         var page = (await trail.QueryAsync(new AuditQuery { Action = "reports.rebuild" }, CancellationToken.None)).ValueOrThrow();
-        Assert.Single(page.Events);
+        Assert.Single(page.Items);
     }
 }
 ```

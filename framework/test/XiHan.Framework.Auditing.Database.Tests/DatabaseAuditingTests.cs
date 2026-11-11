@@ -71,7 +71,7 @@ public sealed class DatabaseAuditingTests
         Assert.Equal((0, 1L, 0L, 0L), (trail.PendingCount, trail.PersistedCount, trail.FailedCount, trail.DroppedCount));
 
         var page = (await trail.QueryAsync(new AuditQuery { Action = CreateOrder.Id, PrincipalId = "alice" }, CancellationToken.None)).ValueOrThrow();
-        var recorded = Assert.Single(page.Events);
+        var recorded = Assert.Single(page.Items);
         Assert.Null(page.ContinuationToken);
         Assert.Equal(("alice", "acme", "xrn:global:orders:acme:order/o-1", _start), (recorded.PrincipalId, recorded.TenantId, recorded.Resource, recorded.Timestamp));
         Assert.True(recorded.Outcome.IsSuccess);
@@ -101,7 +101,7 @@ public sealed class DatabaseAuditingTests
         }, baggage: _alice);
         await trail.FlushAsync(CancellationToken.None);
 
-        var events = (await trail.QueryAsync(new AuditQuery { Succeeded = false, PrincipalId = "alice" }, CancellationToken.None)).ValueOrThrow().Events;
+        var events = (await trail.QueryAsync(new AuditQuery { Succeeded = false, PrincipalId = "alice" }, CancellationToken.None)).ValueOrThrow().Items;
         Assert.Equal(["orders.create", "orders.print"], events.Select(static e => e.Action));
         var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
         // 带键的错误按键与细节还原，读取方按区域翻译
@@ -132,7 +132,7 @@ public sealed class DatabaseAuditingTests
         await trail.FlushAsync(CancellationToken.None);
         Assert.Equal((0, 2L, 1L), (trail.PendingCount, trail.PersistedCount, trail.DroppedCount));
         var page = (await trail.QueryAsync(new AuditQuery { TraceId = "t" }, CancellationToken.None)).ValueOrThrow();
-        Assert.Equal(["a1", "a2"], page.Events.Select(static e => e.Action));
+        Assert.Equal(["a1", "a2"], page.Items.Select(static e => e.Action));
     }
 
     [Fact]
@@ -219,16 +219,16 @@ public sealed class DatabaseAuditingTests
 
         await trail.FlushAsync(CancellationToken.None);
         var full = (await trail.QueryAsync(new AuditQuery { PageSize = AuditQuery.MaxPageSize }, CancellationToken.None)).ValueOrThrow();
-        Assert.Equal(AuditQuery.MaxPageSize, full.Events.Count);
+        Assert.Equal(AuditQuery.MaxPageSize, full.Items.Count);
         Assert.Null(full.ContinuationToken);
 
         await trail.WriteAsync(Event("extra"), CancellationToken.None);
         await trail.FlushAsync(CancellationToken.None);
         var first = (await trail.QueryAsync(new AuditQuery { PageSize = AuditQuery.MaxPageSize }, CancellationToken.None)).ValueOrThrow();
-        Assert.Equal(AuditQuery.MaxPageSize, first.Events.Count);
+        Assert.Equal(AuditQuery.MaxPageSize, first.Items.Count);
         Assert.NotNull(first.ContinuationToken);
         var second = (await trail.QueryAsync(new AuditQuery { PageSize = AuditQuery.MaxPageSize, ContinuationToken = first.ContinuationToken }, CancellationToken.None)).ValueOrThrow();
-        Assert.Equal("extra", Assert.Single(second.Events).Action);
+        Assert.Equal("extra", Assert.Single(second.Items).Action);
         Assert.Null(second.ContinuationToken);
     }
 

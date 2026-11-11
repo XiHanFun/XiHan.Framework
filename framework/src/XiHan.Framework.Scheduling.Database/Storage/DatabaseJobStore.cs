@@ -311,7 +311,7 @@ public sealed class DatabaseJobStore : IJobStore
             .OrderBy(static run => run.ScheduledAt, descending: true)
             .OrderBy(static run => run.Sequence, descending: true)
             .OrderBy(static run => run.Id, descending: true)
-            .Page(query.Skip, query.Limit);
+            .Page(query.Skip, query.Take);
         return StoreInvocation.OrUnavailable(await _invocation.RunAsync<IReadOnlyList<JobRunRecord>>(async ctx =>
         {
             var rows = await StoreInvocation.Repository<JobRunEntity>(ctx).ListAsync(filtered, ctx.CancellationToken).ConfigureAwait(false);

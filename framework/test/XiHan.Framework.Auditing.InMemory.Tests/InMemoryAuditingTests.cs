@@ -34,7 +34,7 @@ public sealed class InMemoryAuditingTests
 
         Assert.Equal((3, 3), (trail.Count, trail.Capacity));
         var first = (await trail.QueryAsync(new AuditQuery { PageSize = 2 }, CancellationToken.None)).ValueOrThrow();
-        Assert.Equal(["a3", "a4"], first.Events.Select(static e => e.Action));
+        Assert.Equal(["a3", "a4"], first.Items.Select(static e => e.Action));
         Assert.NotNull(first.ContinuationToken);
 
         // 续页期间再写入并淘汰：令牌仍指向正确的位置
@@ -46,7 +46,7 @@ public sealed class InMemoryAuditingTests
             TraceId = "t",
         }, CancellationToken.None);
         var second = (await trail.QueryAsync(new AuditQuery { PageSize = 2, ContinuationToken = first.ContinuationToken }, CancellationToken.None)).ValueOrThrow();
-        Assert.Equal(["a5", "a6"], second.Events.Select(static e => e.Action));
+        Assert.Equal(["a5", "a6"], second.Items.Select(static e => e.Action));
         Assert.Null(second.ContinuationToken);
     }
 
@@ -70,7 +70,7 @@ public sealed class InMemoryAuditingTests
             return ValueTask.CompletedTask;
         }, baggage: new Dictionary<string, string> { [BaggageKeys.Principal] = "ops" })).IsSuccess);
         var page = (await trail.QueryAsync(new AuditQuery { Action = "reports.rebuild" }, CancellationToken.None)).ValueOrThrow();
-        var recorded = Assert.Single(page.Events);
+        var recorded = Assert.Single(page.Items);
         Assert.Equal(("ops", 3), (recorded.PrincipalId, recorded.Details?["rows"]));
     }
 

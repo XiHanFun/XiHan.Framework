@@ -4,7 +4,7 @@
   "caching.idempotency.key_reused": "冪等キーは別の呼び出し ('{recorded}') で既に使われているため、その結果を '{operation}' に再生できません。",
   "caching.idempotency.recently_completed": "同じ冪等キーの呼び出しが完了直後か、まだ処理中です。後で再試行してください。",
   "caching.idempotency.response_unavailable": "操作 '{operation}' の記録済み応答を再生できません: {reason}",
-  "caching.inspector.limit_invalid": "キー一覧の 1 ページあたりの上限 {limit} は 1 から {max} の範囲で指定してください。",
+  "caching.inspector.page_size_invalid": "キー一覧の 1 ページあたりの上限 {pageSize} は 1 から {max} の範囲で指定してください。",
   "caching.lock.held": "リソース '{resource}' のロックは別の所有者が保持しています。",
   "caching.store.capacity_reached": "インメモリキャッシュは容量上限 {capacity} 件に達しました。"
 }

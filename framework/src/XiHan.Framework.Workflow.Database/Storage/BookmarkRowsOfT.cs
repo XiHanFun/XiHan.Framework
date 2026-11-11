@@ -176,7 +176,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
             .OrderBy(static record => record.CreatedAt, descending)
             .OrderBy(static record => record.Sequence, descending)
             .OrderBy(static record => record.Id, descending)
-            .Page(query.Skip, query.Limit);
+            .Page(query.Skip, query.Take);
         var records = await repository.ListAsync(paged, cancellationToken).ConfigureAwait(false);
         return ToBookmarks([.. records]);
     }

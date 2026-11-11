@@ -9,7 +9,7 @@
   "scheduling.lease.unavailable": "The leader lease store for '{resource}' is unavailable: {reason}",
   "scheduling.run.canceled": "Run '{id}' was canceled.",
   "scheduling.run.not_found": "Run '{id}' does not exist or has already finished.",
-  "scheduling.run.query_page_invalid": "The run history query page is out of range: skip {skip} must not be negative and limit {limit} must be between 1 and {max}.",
+  "scheduling.run.query_page_invalid": "The run history query page is out of range: skip {skip} must not be negative and take {take} must be between 1 and {max}.",
   "scheduling.run.timed_out": "Run '{id}' exceeded its time limit of {timeout}.",
   "scheduling.scheduler.unavailable": "The job scheduler is not running.",
   "scheduling.status.query_page_invalid": "The job status list page size {pageSize} must be between 1 and {max}.",

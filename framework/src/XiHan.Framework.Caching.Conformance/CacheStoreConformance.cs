@@ -350,10 +350,10 @@ public abstract class CacheStoreConformance
         var pages = 0;
         do
         {
-            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = 2, Continuation = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-            Assert.All(page.Keys, key => Assert.StartsWith(prefix, key.Value, StringComparison.Ordinal));
-            listed.UnionWith(page.Keys.Select(static key => key.Value));
-            continuation = page.Continuation;
+            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, PageSize = 2, ContinuationToken = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.All(page.Items, key => Assert.StartsWith(prefix, key.Value, StringComparison.Ordinal));
+            listed.UnionWith(page.Items.Select(static key => key.Value));
+            continuation = page.ContinuationToken;
             Assert.True(++pages <= 1000, "Listing should reach the last page.");
         }
         while (continuation is not null);
@@ -376,7 +376,7 @@ public abstract class CacheStoreConformance
         Assert.Equal(5, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
         Assert.All(await store.GetManyAsync(keys, CancellationToken.None).ConfigureAwait(false), static hit => Assert.False(hit.HasValue));
         Assert.Equal("outsider", Text(await store.GetAsync(outsider, CancellationToken.None).ConfigureAwait(false)));
-        Assert.Empty((await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Keys);
+        Assert.Empty((await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items);
         Assert.Equal(0, await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false));
 
         // 空前缀不能删；不合法的前缀在构造查询时拒绝
@@ -388,7 +388,7 @@ public abstract class CacheStoreConformance
     /// 用例：键列表的每页上限越界以校验结果返回，边界值照常分页
     /// </summary>
     /// <remarks>
-    /// 存储没有实现 <see cref="ICacheStoreInspector"/> 时跳过。0 与 <see cref="CacheKeyQuery.MaxLimit"/> + 1 返回 <see cref="CachingErrors.ListLimitInvalid"/>（构造查询时不抛出）；1 与 <see cref="CacheKeyQuery.MaxLimit"/> 照常列出
+    /// 存储没有实现 <see cref="ICacheStoreInspector"/> 时跳过。0 与 <see cref="CacheKeyQuery.MaxPageSize"/> + 1 返回 <see cref="CachingErrors.ListPageSizeInvalid"/>（构造查询时不抛出）；1 与 <see cref="CacheKeyQuery.MaxPageSize"/> 照常列出
     /// </remarks>
     [Fact]
     public async Task Inspector_ListLimitOutOfRange_IsAValidationResult()
@@ -399,13 +399,13 @@ public abstract class CacheStoreConformance
         var prefix = $"conformance:{Guid.NewGuid():N}:";
         await store.SetManyAsync([new CacheEntry(new CacheKey($"{prefix}a"), Bytes("a"), CacheEntryOptions.Expires(TimeSpan.FromMinutes(5))), new CacheEntry(new CacheKey($"{prefix}b"), Bytes("b"), CacheEntryOptions.Expires(TimeSpan.FromMinutes(5)))], CancellationToken.None).ConfigureAwait(false);
 
-        foreach (var limit in new[] { 0, CacheKeyQuery.MaxLimit + 1, -1 })
+        foreach (var pageSize in new[] { 0, CacheKeyQuery.MaxPageSize + 1, -1 })
         {
-            var rejected = await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = limit }, CancellationToken.None).ConfigureAwait(false);
-            Assert.Equal(CachingErrors.ListLimitInvalid, rejected.Error?.Code);
-            Assert.Equal(CachingMessages.ListLimitInvalid, rejected.Error!.MessageKey);
-            Assert.Equal(limit, rejected.Error.Details!["limit"]);
-            Assert.Equal(CacheKeyQuery.MaxLimit, rejected.Error.Details!["max"]);
+            var rejected = await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, PageSize = pageSize }, CancellationToken.None).ConfigureAwait(false);
+            Assert.Equal(CachingErrors.ListPageSizeInvalid, rejected.Error?.Code);
+            Assert.Equal(CachingMessages.ListPageSizeInvalid, rejected.Error!.MessageKey);
+            Assert.Equal(pageSize, rejected.Error.Details!["pageSize"]);
+            Assert.Equal(CacheKeyQuery.MaxPageSize, rejected.Error.Details!["max"]);
         }
 
         // 边界值照常：上限 1 的续页走完同样列全（Redis 的 SCAN 只把上限当提示值，按集合比较）
@@ -414,9 +414,9 @@ public abstract class CacheStoreConformance
         var pages = 0;
         do
         {
-            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = 1, Continuation = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-            listed.UnionWith(page.Keys.Select(static key => key.Value));
-            continuation = page.Continuation;
+            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, PageSize = 1, ContinuationToken = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            listed.UnionWith(page.Items.Select(static key => key.Value));
+            continuation = page.ContinuationToken;
             Assert.True(++pages <= 1000, "Listing should reach the last page.");
         }
         while (continuation is not null);
@@ -425,9 +425,9 @@ public abstract class CacheStoreConformance
         continuation = null;
         do
         {
-            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, Limit = CacheKeyQuery.MaxLimit, Continuation = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-            widest.UnionWith(page.Keys.Select(static key => key.Value));
-            continuation = page.Continuation;
+            var page = (await inspector.ListKeysAsync(new CacheKeyQuery { Prefix = prefix, PageSize = CacheKeyQuery.MaxPageSize, ContinuationToken = continuation }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            widest.UnionWith(page.Items.Select(static key => key.Value));
+            continuation = page.ContinuationToken;
         }
         while (continuation is not null);
         Assert.Equal(listed, widest);

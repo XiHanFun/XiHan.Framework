@@ -105,7 +105,7 @@ internal sealed class DefinitionRows<TRow>(IRepository<TRow, string> repository)
     /// </remarks>
     public async ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(WorkflowDefinitionQuery query, CancellationToken cancellationToken)
     {
-        var paged = Sorted(Filter(query), query).Page(query.Skip, query.Limit);
+        var paged = Sorted(Filter(query), query).Page(query.Skip, query.Take);
         var definitions = ToDefinitions([.. await repository.ListAsync(paged, cancellationToken).ConfigureAwait(false)]);
         return definitions.TryGetValue(out var values)
             ? Result.Success<IReadOnlyList<WorkflowDefinitionSummary>>(values.Select(WorkflowDefinitionSummary.From).ToList())

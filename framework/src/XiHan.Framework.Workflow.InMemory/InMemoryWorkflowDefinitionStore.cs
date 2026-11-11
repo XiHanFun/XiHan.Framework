@@ -134,7 +134,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         {
             IReadOnlyList<WorkflowDefinitionSummary> page = Sorted(InPartition(tenantId).Where(query.Matches), query)
                 .Skip(query.Skip)
-                .Take(query.Limit)
+                .Take(query.Take)
                 .Select(WorkflowDefinitionSummary.From)
                 .ToList();
             return ValueTask.FromResult(Result.Success(page));

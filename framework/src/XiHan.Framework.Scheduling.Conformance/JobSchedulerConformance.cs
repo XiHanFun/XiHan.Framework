@@ -124,10 +124,10 @@ public abstract class JobSchedulerConformance
         var log = new RecordingJobLog();
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         var results = await host.Scheduler.TriggerAsync([ManualJob, new JobName("conformance.missing"), ManualJob], CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal([ManualJob, new JobName("conformance.missing"), ManualJob], results.Select(static r => r.Name));
-        Assert.True(results[0].Outcome.IsSuccess);
-        Assert.Equal(SchedulingErrors.JobNotFound, results[1].Outcome.Error?.Code);
-        Assert.True(results[2].Outcome.IsSuccess);
+        Assert.Equal(3, results.Count);
+        Assert.True(results[0].IsSuccess);
+        Assert.Equal(SchedulingErrors.JobNotFound, results[1].Error?.Code);
+        Assert.True(results[2].IsSuccess);
         Assert.Equal(2, log.Runs.Count);
         Assert.Empty(await host.Scheduler.TriggerAsync([], CancellationToken.None).ConfigureAwait(false));
         Assert.False((await host.Scheduler.StatusAsync(new JobName("conformance.missing"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
@@ -415,7 +415,7 @@ public abstract class JobSchedulerConformance
         var all = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([_start.AddSeconds(3), _start.AddSeconds(2), _start.AddSeconds(1), _start], all.Select(static run => run.ScheduledAt));
         Assert.All(all, static run => Assert.NotNull(run.CompletedAt));
-        var page = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Skip = 1, Limit = 2 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var page = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Skip = 1, Take = 2 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(all.Skip(1).Take(2).Select(static r => r.Id), page.Select(static r => r.Id));
         var failed = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, States = [JobRunState.Failed] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal("CONFORMANCE_CONFLICT_001", Assert.Single(failed).Outcome?.Error?.Code);
@@ -435,17 +435,17 @@ public abstract class JobSchedulerConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         Assert.True((await host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
 
-        foreach (var (skip, limit) in new[] { (0, 0), (0, JobRunQuery.MaxLimit + 1), (-1, 10) })
+        foreach (var (skip, take) in new[] { (0, 0), (0, JobRunQuery.MaxTake + 1), (-1, 10) })
         {
-            var rejected = await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Skip = skip, Limit = limit }, CancellationToken.None).ConfigureAwait(false);
+            var rejected = await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Skip = skip, Take = take }, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(SchedulingErrors.RunQueryInvalid, rejected.Error?.Code);
-            Assert.Equal<object?>(limit, rejected.Error!.Details!["limit"]);
-            Assert.Equal<object?>(JobRunQuery.MaxLimit, rejected.Error!.Details!["max"]);
+            Assert.Equal<object?>(take, rejected.Error!.Details!["take"]);
+            Assert.Equal<object?>(JobRunQuery.MaxTake, rejected.Error!.Details!["max"]);
         }
 
-        Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Limit = JobRunQuery.MaxLimit }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Equal(1, (await host.Scheduler.CountRunsAsync(new JobRunQuery { Job = ManualJob, Skip = -1, Limit = 0 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Take = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Take = JobRunQuery.MaxTake }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(1, (await host.Scheduler.CountRunsAsync(new JobRunQuery { Job = ManualJob, Skip = -1, Take = 0 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>

@@ -47,7 +47,7 @@ internal sealed class InstanceRows<TInstance, TNode>(IRepository<TInstance, stri
     /// </summary>
     public async ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
-        var filtered = Sorted(Filter(query), query).Page(query.Skip, query.Limit);
+        var filtered = Sorted(Filter(query), query).Page(query.Skip, query.Take);
         var records = await instances.ListAsync(filtered, cancellationToken).ConfigureAwait(false);
         return Result.Success<IReadOnlyList<WorkflowInstance>>(records.Select(static record => WorkflowJson.DeserializeInstance(record.Document)).ToList());
     }

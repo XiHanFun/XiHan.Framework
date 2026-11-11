@@ -291,7 +291,7 @@ public sealed class InMemoryJobStore : IJobStore
                 .OrderByDescending(static run => run.ScheduledAt)
                 .ThenByDescending(static run => run.Id, StringComparer.Ordinal)
                 .Skip(query.Skip)
-                .Take(query.Limit)
+                .Take(query.Take)
                 .Select(static run => run.Clone())
                 .ToList();
             return ValueTask.FromResult(Result.Success(listed));

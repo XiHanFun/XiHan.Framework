@@ -154,18 +154,23 @@ app.Run();
 
 单条写入用扩展方法 `PutAsync(container, key, content, options, cancellationToken)`，`content` 是 `Stream` 或 `ReadOnlyMemory<byte>`，它转调批量方法。写入选项 `BlobPutOptions` 有内容类型 `ContentType`（缺省 `application/octet-stream`）、自定义元数据 `Metadata` 与 `Overwrite`（缺省 `true`）。
 
-批量写入 `PutAsync(container, uploads, cancellationToken)` 按顺序逐项执行，返回与入参同序的逐项结果 `BlobPutResult`（`Key` 与 `Outcome`）；两项之间检查取消，已完成的项不回滚。空列表返回空，重复的键按顺序各执行一次：
+批量写入 `PutAsync(container, uploads, cancellationToken)` 按顺序逐项执行，返回与入参同序的逐项结果 `Result<BlobMetadata>`；两项之间检查取消，已完成的项不回滚。空列表返回空，重复的键按顺序各执行一次：
 
 ```csharp
-var results = await store.PutAsync(new ContainerName("invoices"),
+BlobUpload[] uploads =
 [
     new BlobUpload(new BlobKey("2026/10/inv-1.pdf"), first, new BlobPutOptions { ContentType = "application/pdf" }),
     new BlobUpload(new BlobKey("2026/10/inv-2.pdf"), second, new BlobPutOptions { ContentType = "application/pdf" }),
-], cancellationToken);
+];
+var results = await store.PutAsync(new ContainerName("invoices"), uploads, cancellationToken);
 
-foreach (var result in results.Where(static r => r.Outcome.IsFailure))
+for (var i = 0; i < results.Count; i++)
 {
-    logger.LogWarning("Storing {Key} failed: {Code}", result.Key, result.Outcome.Error!.Code);
+    // 逐项结果与入参同序：第 i 项对应第 i 个上传
+    if (!results[i].IsSuccess)
+    {
+        logger.LogWarning("Storing {Key} failed: {Code}", uploads[i].Key, results[i].Error?.Code);
+    }
 }
 ```
 
@@ -179,11 +184,11 @@ foreach (var result in results.Where(static r => r.Outcome.IsFailure))
 
 ## 删除
 
-`DeleteAsync(container, keys, cancellationToken)` 批量删除，逐项结果 `BlobDeleteResult` 的 `Outcome` 为 `true` 表示存在过并已删除，`false` 表示本来就不存在，失败时带错误。同一批里重复的键第二次报告不存在：
+`DeleteAsync(container, keys, cancellationToken)` 批量删除，逐项结果 `Result<bool>` 与入参同序，值为 `true` 表示存在过并已删除，`false` 表示本来就不存在，失败时带错误。同一批里重复的键第二次报告不存在：
 
 ```csharp
 var deleted = await store.DeleteAsync(new ContainerName("invoices"), [new BlobKey("2026/10/inv-1.pdf"), new BlobKey("2026/10/inv-2.pdf")], cancellationToken);
-var removed = deleted.Count(static d => d.Outcome.ValueOr(false));
+var removed = deleted.Count(static d => d.ValueOr(false));
 ```
 
 单条删除用扩展方法 `DeleteAsync(container, key, cancellationToken)`，返回 `Result<bool>`。

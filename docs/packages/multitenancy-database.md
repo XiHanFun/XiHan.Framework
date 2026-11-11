@@ -105,7 +105,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `Tenants.TenantRecord` | 存储行：`Id`（主键，租户 ID）、`DisplayName`、`IsEnabled`、`PropertiesJson`、`CreatedAt`、`ModifiedAt`、`ConcurrencyStamp`；平台级数据，不实现 `IMultiTenant`、不软删除 |
 | `Tenants.DatabaseTenantStore` | 单例 `ITenantStore`：`FindAsync`（缓存）、`ListAsync`（按 ID 一页一页读，偏移作续页令牌，不走缓存）、`Invalidate(tenantId?)`、`CachedCount` |
 | `Tenants.TenantRecordStore` | 作用域服务：`UpsertAsync`、`RemoveAsync` 批量逐项结果，`ListAsync(skip, take)` 按 ID 分页 |
-| `Tenants.TenantRecordResult` | 一项结果：`TenantId`、`Outcome` |
 
 ## 使用示例
 
@@ -130,10 +129,10 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
         }
 
         var results = await tenants.UpsertAsync([new TenantInfo { Id = tenantId, DisplayName = displayName, Properties = properties }], cancellationToken);
-        return results[0].Outcome;
+        return results[0];
     }
 
-    public async ValueTask<IReadOnlyList<TenantRecordResult>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
         => await tenants.UpsertAsync([.. current.Select(static t => t with { IsEnabled = false })], cancellationToken);
 }
 ```

@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 /// 实例列表查询
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按排序项 <see cref="Sorts"/> 排序（缺省创建时间降序），跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行（平台调用只查平台的实例，租户只查本租户的），没有跨租户的查询；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。分页、关联 ID 集合与排序项越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 与 <see cref="Engine.IWorkflowEngine.CountInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）
+/// 过滤项都可空、同时给出的取交集；结果按排序项 <see cref="Sorts"/> 排序（缺省创建时间降序），跳过 <see cref="Skip"/> 条后最多 <see cref="Take"/> 条。查询只在调用方自己的分区里进行（平台调用只查平台的实例，租户只查本租户的），没有跨租户的查询；过滤、排序、分页与计数都由存储执行（数据库实现是 SQL）。分页、关联 ID 集合与排序项越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Engine.IWorkflowEngine.ListInstancesAsync"/> 与 <see cref="Engine.IWorkflowEngine.CountInstancesAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowInstanceQuery
@@ -17,7 +17,7 @@ public sealed record WorkflowInstanceQuery
     /// <summary>
     /// 上限的最大值
     /// </summary>
-    public const int MaxLimit = 1000;
+    public const int MaxTake = 1000;
 
     /// <summary>
     /// 关联 ID 集合的最大个数
@@ -125,12 +125,12 @@ public sealed record WorkflowInstanceQuery
     public int Skip { get; init; }
 
     /// <summary>
-    /// 最多返回条数，1 到 <see cref="MaxLimit"/>
+    /// 最多返回条数，1 到 <see cref="MaxTake"/>
     /// </summary>
     /// <remarks>
     /// 默认 100
     /// </remarks>
-    public int Limit { get; init; } = 100;
+    public int Take { get; init; } = 100;
 
     /// <summary>
     /// 实例是否匹配全部过滤项（不含分页）

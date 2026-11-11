@@ -75,7 +75,7 @@ public interface IJobScheduler
     /// <remarks>
     /// 不受暂停与领导限制。未登记 → <see cref="SchedulingErrors.JobNotFound"/>，正在运行且不允许并发 → <see cref="SchedulingErrors.JobRunning"/>，本实例的调度器尚未启动或已开始停止 → <see cref="SchedulingErrors.SchedulerUnavailable"/>
     /// </remarks>
-    ValueTask<IReadOnlyList<JobTriggerResult>> TriggerAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken);
+    ValueTask<IReadOnlyList<Result>> TriggerAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken);
 
     /// <summary>
     /// 入队一次立即到期的运行，由集群中任一节点运行，不等待
@@ -113,7 +113,7 @@ public interface IJobScheduler
     /// 运行历史
     /// </summary>
     /// <remarks>
-    /// 返回只读视图，不是存储记录。<see cref="JobRunQuery.Skip"/> 为负或 <see cref="JobRunQuery.Limit"/> 不在 1 到 <see cref="JobRunQuery.MaxLimit"/> 之间 → <see cref="SchedulingErrors.RunQueryInvalid"/>（HTTP 400），不进存储
+    /// 返回只读视图，不是存储记录。<see cref="JobRunQuery.Skip"/> 为负或 <see cref="JobRunQuery.Take"/> 不在 1 到 <see cref="JobRunQuery.MaxTake"/> 之间 → <see cref="SchedulingErrors.RunQueryInvalid"/>（HTTP 400），不进存储
     /// </remarks>
     ValueTask<Result<IReadOnlyList<JobRunView>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 

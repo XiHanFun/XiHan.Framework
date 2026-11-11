@@ -38,7 +38,7 @@ public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
 
     /// <inheritdoc />
     /// <remarks>
-    /// 按键的序数顺序分页，续页标记是上一页最后一个键。每页上限越界返回 <see cref="Abstractions.CachingErrors.ListLimitInvalid"/>
+    /// 按键的序数顺序分页，续页标记是上一页最后一个键。每页上限越界返回 <see cref="Abstractions.CachingErrors.ListPageSizeInvalid"/>
     /// </remarks>
     public ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
     {

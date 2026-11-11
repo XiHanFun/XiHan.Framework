@@ -173,15 +173,15 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<BlobPutResult>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result<BlobMetadata>>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(uploads);
         EnsureInitialized();
-        var results = new List<BlobPutResult>(uploads.Count);
+        var results = new List<Result<BlobMetadata>>(uploads.Count);
         foreach (var upload in uploads)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            results.Add(new BlobPutResult(upload.Key, await PutOneAsync(container, upload, cancellationToken).ConfigureAwait(false)));
+            results.Add(await PutOneAsync(container, upload, cancellationToken).ConfigureAwait(false));
         }
 
         return results;
@@ -303,18 +303,18 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     }
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<BlobDeleteResult>> DeleteAsync(ContainerName container, IReadOnlyList<BlobKey> keys, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<bool>>> DeleteAsync(ContainerName container, IReadOnlyList<BlobKey> keys, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(keys);
         EnsureInitialized();
-        var results = new List<BlobDeleteResult>(keys.Count);
+        var results = new List<Result<bool>>(keys.Count);
         foreach (var key in keys)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            results.Add(new BlobDeleteResult(key, DeleteOne(container, key)));
+            results.Add(DeleteOne(container, key));
         }
 
-        return ValueTask.FromResult<IReadOnlyList<BlobDeleteResult>>(results);
+        return ValueTask.FromResult<IReadOnlyList<Result<bool>>>(results);
     }
 
     /// <inheritdoc />

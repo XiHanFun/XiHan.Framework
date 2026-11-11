@@ -72,7 +72,7 @@ public sealed class TenantSyncPlanner(IJobScheduler scheduler)
 
 批量方法都返回与入参等长、同序的逐项结果。取消在开始前检查，已取消时抛出 `OperationCanceledException`；开始之后取消，已开始的项照常完成并给出结果，尚未开始的项以 `KERNEL_CANCELLED_001` 结束，方法不抛出。
 
-查历史用 `RunsAsync(query)`，返回只读视图 `JobRunView`，失败的结果在 `Outcome` 里：`JobRunQuery` 按作业、状态集合、计划时刻范围（`From` 含、`To` 不含）、触发器名、执行节点、有无错误码过滤，`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`JobRunQuery.MaxLimit`）；结果按计划时刻降序。`CountRunsAsync` 用同一组过滤项给出总数，不看分页。分页越界不在构造时抛出，`RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入。
+查历史用 `RunsAsync(query)`，返回只读视图 `JobRunView`，失败的结果在 `Outcome` 里：`JobRunQuery` 按作业、状态集合、计划时刻范围（`From` 含、`To` 不含）、触发器名、执行节点、有无错误码过滤，`Skip` 缺省 0，`Take` 缺省 100、最大 1000（`JobRunQuery.MaxTake`）；结果按计划时刻降序。`CountRunsAsync` 用同一组过滤项给出总数，不看分页。分页越界不在构造时抛出，`RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入。
 
 ## 代码作业的运行时修改与指纹
 

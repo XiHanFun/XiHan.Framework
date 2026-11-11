@@ -1445,18 +1445,18 @@ public abstract class WorkflowEngineConformance
         var instance = (await host.StartAsync(new WorkflowName("conf-paging")).ConfigureAwait(false)).ValueOrThrow();
         var byName = new WorkflowInstanceQuery { DefinitionName = new WorkflowName("conf-paging") };
 
-        foreach (var (skip, limit) in new[] { (0, 0), (0, WorkflowInstanceQuery.MaxLimit + 1), (-1, 10) })
+        foreach (var (skip, limit) in new[] { (0, 0), (0, WorkflowInstanceQuery.MaxTake + 1), (-1, 10) })
         {
-            var rejected = await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Skip = skip, Limit = limit }, CancellationToken.None)).ConfigureAwait(false);
+            var rejected = await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Skip = skip, Take = limit }, CancellationToken.None)).ConfigureAwait(false);
             Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
             Assert.Equal(WorkflowMessages.InstanceQueryPageInvalid, rejected.Error?.MessageKey);
         }
 
-        Assert.Equal([instance.Id], (await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Limit = 1 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Select(static found => found.Id));
-        Assert.Equal([instance.Id], (await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Limit = WorkflowInstanceQuery.MaxLimit }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Select(static found => found.Id));
-        Assert.Equal(1, (await host.EngineAsync(engine => engine.CountInstancesAsync(byName with { Skip = -1, Limit = 0 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal([instance.Id], (await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Take = 1 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Select(static found => found.Id));
+        Assert.Equal([instance.Id], (await host.EngineAsync(engine => engine.ListInstancesAsync(byName with { Take = WorkflowInstanceQuery.MaxTake }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow().Select(static found => found.Id));
+        Assert.Equal(1, (await host.EngineAsync(engine => engine.CountInstancesAsync(byName with { Skip = -1, Take = 0 }, CancellationToken.None)).ConfigureAwait(false)).ValueOrThrow());
 
-        foreach (var limit in new[] { 0, WorkflowInstanceQuery.MaxLimit + 1 })
+        foreach (var limit in new[] { 0, WorkflowInstanceQuery.MaxTake + 1 })
         {
             var rejected = await host.EngineAsync(engine => engine.PurgeAsync(new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UtcNow.AddSeconds(1), DefinitionName = new WorkflowName("conf-paging"), Limit = limit }, CancellationToken.None)).ConfigureAwait(false);
             Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
@@ -1486,19 +1486,19 @@ public abstract class WorkflowEngineConformance
         await host.AsTenantAsync(null, async sp =>
         {
             var catalog = sp.GetRequiredService<IWorkflowDefinitionCatalog>();
-            foreach (var invalid in new[] { new WorkflowDefinitionQuery { Limit = 0 }, new WorkflowDefinitionQuery { Limit = WorkflowDefinitionQuery.MaxLimit + 1 }, new WorkflowDefinitionQuery { Skip = -1 } })
+            foreach (var invalid in new[] { new WorkflowDefinitionQuery { Take = 0 }, new WorkflowDefinitionQuery { Take = WorkflowDefinitionQuery.MaxTake + 1 }, new WorkflowDefinitionQuery { Skip = -1 } })
             {
                 var rejected = await catalog.QueryAsync(invalid, CancellationToken.None).ConfigureAwait(false);
                 Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
                 Assert.Equal(WorkflowMessages.DefinitionQueryPageInvalid, rejected.Error?.MessageKey);
             }
 
-            var all = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-catalog", Limit = WorkflowDefinitionQuery.MaxLimit }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            var all = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "conf-catalog", Take = WorkflowDefinitionQuery.MaxTake }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.Equal([draft.Id, expense.Id, leave.Id], all.Items.Select(static summary => summary.Id));
             Assert.Equal(3, all.Total);
             Assert.Equal((2, WorkflowDefinitionStatus.Draft, "finance"), (all.Items[0].Version, all.Items[0].Status, all.Items[0].Category));
 
-            var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "CONF-CATALOG", Skip = 1, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery { Keyword = "CONF-CATALOG", Skip = 1, Take = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
             Assert.Equal(expense.Id, Assert.Single(page.Items).Id);
             Assert.Equal(3, page.Total);
 
@@ -1613,7 +1613,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(("signal", "conf-waits-go"), waits.Where(static wait => wait.Kind == BookmarkKinds.Signal).Select(static wait => (wait.NodeId, wait.Key)).Single());
         Assert.All(waits.Where(static wait => wait.Kind is BookmarkKinds.Timer or BookmarkKinds.NodeTimeout), static wait => Assert.NotNull(wait.DueAt));
         // 用户任务的摘要 ID 就是任务 ID
-        var tasks = await host.AsTenantAsync("t1", async sp => (await sp.GetRequiredService<IWorkflowTaskService>().QueryAsync(new UserTaskQuery { InstanceId = instance.Id, Limit = UserTaskQuery.MaxLimit }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items).ConfigureAwait(false);
+        var tasks = await host.AsTenantAsync("t1", async sp => (await sp.GetRequiredService<IWorkflowTaskService>().QueryAsync(new UserTaskQuery { InstanceId = instance.Id, Take = UserTaskQuery.MaxTake }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items).ConfigureAwait(false);
         Assert.Equal(tasks.Select(static task => task.Id).Order(StringComparer.Ordinal), waits.Where(static wait => wait.Kind == BookmarkKinds.UserTask).Select(static wait => wait.Id).Order(StringComparer.Ordinal));
 
         // 别的分区与不存在的实例都按不存在处理

@@ -269,7 +269,7 @@ public static class WorkflowMessages
     /// 待办查询的分页越界
     /// </summary>
     /// <remarks>
-    /// 参数：<c>skip</c>、<c>limit</c>、<c>max</c>
+    /// 参数：<c>skip</c>、<c>take</c>、<c>max</c>
     /// </remarks>
     public const string TaskQueryPageInvalid = "workflow.task.query_page_invalid";
 
@@ -277,7 +277,7 @@ public static class WorkflowMessages
     /// 实例查询的分页越界
     /// </summary>
     /// <remarks>
-    /// 参数：<c>skip</c>、<c>limit</c>、<c>max</c>
+    /// 参数：<c>skip</c>、<c>take</c>、<c>max</c>
     /// </remarks>
     public const string InstanceQueryPageInvalid = "workflow.instance.query_page_invalid";
 
@@ -293,7 +293,7 @@ public static class WorkflowMessages
     /// 定义查询的分页越界
     /// </summary>
     /// <remarks>
-    /// 参数：<c>skip</c>、<c>limit</c>、<c>max</c>
+    /// 参数：<c>skip</c>、<c>take</c>、<c>max</c>
     /// </remarks>
     public const string DefinitionQueryPageInvalid = "workflow.definition.query_page_invalid";
 

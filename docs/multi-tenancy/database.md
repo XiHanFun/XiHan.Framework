@@ -32,7 +32,6 @@
 | --- | --- |
 | `DatabaseMultiTenancyFeature` | 特性入口（清单 `xihan.multitenancy.database`，`role: provider`）：登记 `TenantRecord` 的仓储、目录、解析器与 Tenant 阶段中间件，启动时核对持久化 Provider |
 | `DatabaseMultiTenancyOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
-| `TenantRecordResult` | 一项写入结果：`TenantId`、`Outcome`（`Result`） |
 
 ## 最小示例
 
@@ -128,15 +127,15 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
         }
 
         var results = await tenants.UpsertAsync([new TenantInfo { Id = tenantId, DisplayName = displayName, Properties = properties }], cancellationToken);
-        return results[0].Outcome;
+        return results[0];
     }
 
     // 整份覆盖：先读出当前记录再改启用标记写回，否则显示名与属性会被清空
-    public async ValueTask<IReadOnlyList<TenantRecordResult>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
         => await tenants.UpsertAsync([.. current.Select(static t => t with { IsEnabled = false })], cancellationToken);
 
     // 不存在的 ID 逐项返回 MULTITENANCY_NOTFOUND_001
-    public ValueTask<IReadOnlyList<TenantRecordResult>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
         => tenants.RemoveAsync(tenantIds, cancellationToken);
 
     // 按 ID 分页列出

@@ -102,7 +102,7 @@
   "workflow.definition.node_id_invalid": "O ID de nó '{value}' é inválido: deve começar com uma letra ou um dígito e conter apenas letras, dígitos, '.', '_' ou '-' (no máximo {max} caracteres).",
   "workflow.definition.node_unreachable": "O nó '{node}' não é alcançável a partir do nó inicial.",
   "workflow.definition.not_found": "A definição de fluxo de trabalho '{name}' não existe ou não tem versão publicada.",
-  "workflow.definition.query_page_invalid": "A página da consulta de definições está fora do intervalo: skip {skip} não pode ser negativo e limit {limit} deve estar entre 1 e {max}.",
+  "workflow.definition.query_page_invalid": "A página da consulta de definições está fora do intervalo: skip {skip} não pode ser negativo e limit {take} deve estar entre 1 e {max}.",
   "workflow.definition.query_sort_duplicate": "As definições de fluxo de trabalho não podem ser ordenadas por '{sort}' mais de uma vez.",
   "workflow.definition.query_sort_invalid": "As definições de fluxo de trabalho não podem ser ordenadas por '{sort}'.",
   "workflow.definition.query_sorts_too_many": "As definições de fluxo de trabalho aceitam no máximo {max} critérios de ordenação; foram informados {count}.",
@@ -170,7 +170,7 @@
   "workflow.instance.node_not_found": "A instância de fluxo de trabalho '{id}' não tem o nó '{node}'.",
   "workflow.instance.not_found": "A instância de fluxo de trabalho '{id}' não existe.",
   "workflow.instance.query_correlations_invalid": "O filtro de IDs de correlação aceita no máximo {max} IDs não vazios; foram informados {count}.",
-  "workflow.instance.query_page_invalid": "A página da consulta de instâncias está fora do intervalo: skip {skip} não pode ser negativo e limit {limit} deve estar entre 1 e {max}.",
+  "workflow.instance.query_page_invalid": "A página da consulta de instâncias está fora do intervalo: skip {skip} não pode ser negativo e limit {take} deve estar entre 1 e {max}.",
   "workflow.instance.query_sort_duplicate": "As instâncias de fluxo de trabalho não podem ser ordenadas por '{sort}' mais de uma vez.",
   "workflow.instance.query_sort_invalid": "As instâncias de fluxo de trabalho não podem ser ordenadas por '{sort}'.",
   "workflow.instance.query_sorts_too_many": "As instâncias de fluxo de trabalho aceitam no máximo {max} critérios de ordenação; foram informados {count}.",
@@ -201,7 +201,7 @@
   "workflow.task.no_return_target": "A tarefa '{task}' não tem um nó anterior para o qual retornar.",
   "workflow.task.not_claimable": "A tarefa '{task}' não pode ser assumida com sua política de conclusão.",
   "workflow.task.outcome_invalid": "O resultado de tarefa '{outcome}' não é permitido.",
-  "workflow.task.query_page_invalid": "A página da consulta de tarefas está fora do intervalo: skip {skip} não pode ser negativo e limit {limit} deve estar entre 1 e {max}.",
+  "workflow.task.query_page_invalid": "A página da consulta de tarefas está fora do intervalo: skip {skip} não pode ser negativo e limit {take} deve estar entre 1 e {max}.",
   "workflow.task.query_target_missing": "A consulta de tarefas precisa de um ID de responsável ou de um ID de instância.",
   "workflow.variable.required": "A variável '{name}' é obrigatória."
 }

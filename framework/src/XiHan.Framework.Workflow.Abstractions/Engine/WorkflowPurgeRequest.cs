@@ -37,10 +37,10 @@ public sealed record WorkflowPurgeRequest
     public WorkflowName? DefinitionName { get; init; }
 
     /// <summary>
-    /// 一次最多删除条数，1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/>
+    /// 一次最多删除条数，1 到 <see cref="WorkflowInstanceQuery.MaxTake"/>
     /// </summary>
     /// <remarks>
     /// 默认 1000
     /// </remarks>
-    public int Limit { get; init; } = WorkflowInstanceQuery.MaxLimit;
+    public int Limit { get; init; } = WorkflowInstanceQuery.MaxTake;
 }

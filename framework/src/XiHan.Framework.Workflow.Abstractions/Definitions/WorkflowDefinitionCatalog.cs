@@ -311,9 +311,9 @@ internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
     {
         ArgumentNullException.ThrowIfNull(query);
         // 分页越界是调用方可以改正的输入（查询常由请求绑定）：以校验错误返回而不是抛出，也不进存储、不开事务；上限与持久化的查询条数上限一致
-        if (query.Skip < 0 || query.Limit is < 1 or > WorkflowDefinitionQuery.MaxLimit)
+        if (query.Skip < 0 || query.Take is < 1 or > WorkflowDefinitionQuery.MaxTake)
         {
-            return ValueTask.FromResult<Result<WorkflowDefinitionPage>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", WorkflowDefinitionQuery.MaxLimit))));
+            return ValueTask.FromResult<Result<WorkflowDefinitionPage>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.DefinitionQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("take", query.Take), ("max", WorkflowDefinitionQuery.MaxTake))));
         }
 
         // 排序项只能是白名单里不重复的字段、不超过上限（越界来自请求）：同样是可以改正的输入，存储不必再猜怎么排

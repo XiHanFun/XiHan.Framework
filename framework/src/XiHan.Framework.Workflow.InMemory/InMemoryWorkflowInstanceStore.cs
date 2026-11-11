@@ -133,7 +133,7 @@ public sealed class InMemoryWorkflowInstanceStore : IWorkflowInstanceStore
         {
             IReadOnlyList<WorkflowInstance> listed = Sorted(InPartition(tenantId).Where(entry => query.Matches(entry.Instance)), query)
                 .Skip(query.Skip)
-                .Take(query.Limit)
+                .Take(query.Take)
                 .Select(static entry => WorkflowJson.Clone(entry.Instance))
                 .ToList();
             return ValueTask.FromResult(Result.Success(listed));

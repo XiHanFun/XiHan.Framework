@@ -204,8 +204,8 @@ public sealed class DatabaseMultiTenancyTests
         {
             var records = context.Services.GetRequiredService<TenantRecordStore>();
             var results = await records.UpsertAsync([Acme("Acme 1", "Host=a1"), new TenantInfo { Id = "beta" }, Acme("Acme 2", "Host=a2")], context.CancellationToken);
-            Assert.All(results, static r => Assert.True(r.Outcome.IsSuccess, r.Outcome.ToString()));
-            Assert.Equal(["acme", "beta", "acme"], results.Select(static r => r.TenantId));
+            Assert.All(results, static r => Assert.True(r.IsSuccess, r.ToString()));
+            Assert.Equal(3, results.Count);
             Assert.Equal(["acme", "beta"], (await records.ListAsync(0, 10, context.CancellationToken)).Select(static t => t.Id));
             Assert.Single(await records.ListAsync(1, 10, context.CancellationToken));
         });
@@ -220,10 +220,10 @@ public sealed class DatabaseMultiTenancyTests
         {
             var records = context.Services.GetRequiredService<TenantRecordStore>();
             var results = await records.RemoveAsync(["acme", "nobody", "acme"], context.CancellationToken);
-            Assert.True(results[0].Outcome.IsSuccess, results[0].Outcome.ToString());
-            Assert.Equal(MultiTenancyErrors.NotFound, results[1].Outcome.Error?.Code);
-            Assert.Equal(MultiTenancyErrors.NotFound, results[2].Outcome.Error?.Code);
-            Assert.Contains("nobody", context.Services.GetRequiredService<IMessageLocalizer>().Localize(results[1].Outcome.Error!, "zh-CN"), StringComparison.Ordinal);
+            Assert.True(results[0].IsSuccess, results[0].ToString());
+            Assert.Equal(MultiTenancyErrors.NotFound, results[1].Error?.Code);
+            Assert.Equal(MultiTenancyErrors.NotFound, results[2].Error?.Code);
+            Assert.Contains("nobody", context.Services.GetRequiredService<IMessageLocalizer>().Localize(results[1].Error!, "zh-CN"), StringComparison.Ordinal);
             // 不合法的 ID 是编程错误：整批在触库前抛出
             await Assert.ThrowsAsync<ArgumentException>(async () => await records.RemoveAsync(["beta", "bad id"], context.CancellationToken));
         });

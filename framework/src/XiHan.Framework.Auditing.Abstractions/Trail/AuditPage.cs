@@ -7,9 +7,27 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Auditing.Abstractions.Trail;
 
 /// <summary>
-/// 查询的一页
+/// 审计事件的一页
 /// </summary>
-/// <param name="Events">事件，按写入顺序升序</param>
-/// <param name="ContinuationToken">取下一页的不透明令牌；没有下一页为 <see langword="null"/></param>
+/// <remarks>
+/// 成员经初始化器给出，与其他续页分页同名（ADR-0154）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record AuditPage(IReadOnlyList<AuditEvent> Events, string? ContinuationToken);
+public sealed record AuditPage
+{
+    /// <summary>
+    /// 本页的事件
+    /// </summary>
+    /// <remarks>
+    /// 按写入顺序升序
+    /// </remarks>
+    public required IReadOnlyList<AuditEvent> Items { get; init; }
+
+    /// <summary>
+    /// 取下一页的不透明令牌
+    /// </summary>
+    /// <remarks>
+    /// 没有下一页为 <see langword="null"/>
+    /// </remarks>
+    public string? ContinuationToken { get; init; }
+}

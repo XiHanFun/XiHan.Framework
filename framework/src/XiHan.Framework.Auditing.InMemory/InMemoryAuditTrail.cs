@@ -143,7 +143,11 @@ public sealed partial class InMemoryAuditTrail : IAuditSink, IAuditTrail
             }
         }
 
-        return ValueTask.FromResult(Result.Success(new AuditPage(events, more ? last.ToString(CultureInfo.InvariantCulture) : null)));
+        return ValueTask.FromResult(Result.Success(new AuditPage
+        {
+            Items = events,
+            ContinuationToken = more ? last.ToString(CultureInfo.InvariantCulture) : null,
+        }));
     }
 
     /// <summary>

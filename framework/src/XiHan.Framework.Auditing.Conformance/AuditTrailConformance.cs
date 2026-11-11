@@ -48,14 +48,14 @@ public abstract class AuditTrailConformance
 
         var page = (await fixture.Trail.QueryAsync(new AuditQuery { TraceId = trace }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Null(page.ContinuationToken);
-        Assert.Equal(["orders.create", "orders.delete", "orders.create"], page.Events.Select(static e => e.Action));
-        var first = page.Events[0];
+        Assert.Equal(["orders.create", "orders.delete", "orders.create"], page.Items.Select(static e => e.Action));
+        var first = page.Items[0];
         Assert.Equal((_epoch, "alice", "acme", "xrn:global:orders:acme:order/1", trace), (first.Timestamp, first.PrincipalId, first.TenantId, first.Resource, first.TraceId));
         Assert.True(first.Outcome.IsSuccess);
         Assert.Equal("12.50", first.Details?["amount"]?.ToString());
-        Assert.Equal("ORDERS_DENIED_001", page.Events[1].Outcome.Error?.Code);
-        Assert.Null(page.Events[1].Resource);
-        Assert.Null(page.Events[1].Details);
+        Assert.Equal("ORDERS_DENIED_001", page.Items[1].Outcome.Error?.Code);
+        Assert.Null(page.Items[1].Resource);
+        Assert.Null(page.Items[1].Details);
     }
 
     /// <summary>
@@ -74,7 +74,7 @@ public abstract class AuditTrailConformance
         await fixture.Sink.WriteAsync(Event(trace, 2, "orders.delete", principal: "alice", tenant: "zeta"), CancellationToken.None).ConfigureAwait(false);
 
         async Task<IReadOnlyList<string?>> PrincipalsAsync(AuditQuery query)
-            => (await fixture.Trail.QueryAsync(query with { TraceId = trace }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Events.Select(static e => e.PrincipalId).ToList();
+            => (await fixture.Trail.QueryAsync(query with { TraceId = trace }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static e => e.PrincipalId).ToList();
 
         Assert.Equal(["alice", "bob"], await PrincipalsAsync(new AuditQuery { Action = "orders.create" }).ConfigureAwait(false));
         Assert.Equal(["alice", "alice"], await PrincipalsAsync(new AuditQuery { PrincipalId = "alice" }).ConfigureAwait(false));
@@ -109,8 +109,8 @@ public abstract class AuditTrailConformance
         do
         {
             var page = (await fixture.Trail.QueryAsync(new AuditQuery { TraceId = trace, PageSize = 2, ContinuationToken = token }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-            Assert.True(page.Events.Count <= 2);
-            seen.AddRange(page.Events.Select(static e => e.PrincipalId));
+            Assert.True(page.Items.Count <= 2);
+            seen.AddRange(page.Items.Select(static e => e.PrincipalId));
             token = page.ContinuationToken;
             pages++;
         }
@@ -158,7 +158,7 @@ public abstract class AuditTrailConformance
 
         Assert.Null(exception);
         var page = (await fixture.Trail.QueryAsync(new AuditQuery { TraceId = trace }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-        Assert.Contains(page.Events, static e => e.Action == "orders.kept");
+        Assert.Contains(page.Items, static e => e.Action == "orders.kept");
     }
 
     /// <summary>

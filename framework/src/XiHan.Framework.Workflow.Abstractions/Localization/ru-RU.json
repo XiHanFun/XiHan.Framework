@@ -102,7 +102,7 @@
   "workflow.definition.node_id_invalid": "Идентификатор узла '{value}' недопустим: он должен начинаться с буквы или цифры и содержать только буквы, цифры, '.', '_' или '-' (не более {max} символов).",
   "workflow.definition.node_unreachable": "Узел '{node}' недостижим из начального узла.",
   "workflow.definition.not_found": "Определение рабочего процесса '{name}' не существует или не имеет опубликованной версии.",
-  "workflow.definition.query_page_invalid": "Страница запроса определений вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {limit} должен быть от 1 до {max}.",
+  "workflow.definition.query_page_invalid": "Страница запроса определений вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {take} должен быть от 1 до {max}.",
   "workflow.definition.query_sort_duplicate": "Определения рабочих процессов нельзя сортировать по «{sort}» более одного раза.",
   "workflow.definition.query_sort_invalid": "Определения рабочих процессов нельзя сортировать по «{sort}».",
   "workflow.definition.query_sorts_too_many": "Для определений рабочих процессов допускается не более {max} условий сортировки; указано {count}.",
@@ -170,7 +170,7 @@
   "workflow.instance.node_not_found": "В экземпляре рабочего процесса '{id}' нет узла '{node}'.",
   "workflow.instance.not_found": "Экземпляр рабочего процесса '{id}' не существует.",
   "workflow.instance.query_correlations_invalid": "Фильтр идентификаторов корреляции принимает не более {max} непустых идентификаторов; передано {count}.",
-  "workflow.instance.query_page_invalid": "Страница запроса экземпляров вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {limit} должен быть от 1 до {max}.",
+  "workflow.instance.query_page_invalid": "Страница запроса экземпляров вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {take} должен быть от 1 до {max}.",
   "workflow.instance.query_sort_duplicate": "Экземпляры рабочих процессов нельзя сортировать по «{sort}» более одного раза.",
   "workflow.instance.query_sort_invalid": "Экземпляры рабочих процессов нельзя сортировать по «{sort}».",
   "workflow.instance.query_sorts_too_many": "Для экземпляров рабочих процессов допускается не более {max} условий сортировки; указано {count}.",
@@ -201,7 +201,7 @@
   "workflow.task.no_return_target": "У задачи '{task}' нет предыдущего узла для возврата.",
   "workflow.task.not_claimable": "Задачу '{task}' нельзя взять при её политике завершения.",
   "workflow.task.outcome_invalid": "Результат задачи '{outcome}' не разрешён.",
-  "workflow.task.query_page_invalid": "Страница запроса задач вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {limit} должен быть от 1 до {max}.",
+  "workflow.task.query_page_invalid": "Страница запроса задач вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {take} должен быть от 1 до {max}.",
   "workflow.task.query_target_missing": "Для запроса задач нужен идентификатор исполнителя или экземпляра.",
   "workflow.variable.required": "Переменная '{name}' обязательна."
 }

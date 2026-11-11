@@ -9,7 +9,7 @@
   "scheduling.lease.unavailable": "Хранилище аренды лидера для '{resource}' недоступно: {reason}",
   "scheduling.run.canceled": "Запуск '{id}' был отменён.",
   "scheduling.run.not_found": "Запуск '{id}' не существует или уже завершён.",
-  "scheduling.run.query_page_invalid": "Страница запроса истории запусков вне диапазона: skip {skip} не может быть отрицательным, а limit {limit} должен быть от 1 до {max}.",
+  "scheduling.run.query_page_invalid": "Страница запроса истории запусков вне диапазона: skip {skip} не может быть отрицательным, а limit {take} должен быть от 1 до {max}.",
   "scheduling.run.timed_out": "Запуск '{id}' превысил лимит времени {timeout}.",
   "scheduling.scheduler.unavailable": "Планировщик заданий не запущен.",
   "scheduling.status.query_page_invalid": "Размер страницы списка состояний заданий {pageSize} должен быть от 1 до {max}.",

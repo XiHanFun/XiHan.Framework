@@ -236,7 +236,7 @@ public sealed class BlobStoresTests : IDisposable
         public void Dispose() => Disposed++;
 
         /// <inheritdoc />
-        public ValueTask<IReadOnlyList<BlobPutResult>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<IReadOnlyList<Result<BlobMetadata>>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         /// <inheritdoc />
         public ValueTask<Result<BlobContent>> GetAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken) => throw new NotSupportedException();
@@ -248,7 +248,7 @@ public sealed class BlobStoresTests : IDisposable
         public ValueTask<Result<BlobMetadata>> HeadAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         /// <inheritdoc />
-        public ValueTask<IReadOnlyList<BlobDeleteResult>> DeleteAsync(ContainerName container, IReadOnlyList<BlobKey> keys, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<IReadOnlyList<Result<bool>>> DeleteAsync(ContainerName container, IReadOnlyList<BlobKey> keys, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         /// <inheritdoc />
         public ValueTask<Result<BlobPage>> ListAsync(ContainerName container, BlobQuery query, CancellationToken cancellationToken) => throw new NotSupportedException();

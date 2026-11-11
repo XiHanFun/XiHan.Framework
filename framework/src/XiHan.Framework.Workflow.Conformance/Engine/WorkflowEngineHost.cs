@@ -240,7 +240,7 @@ public sealed class WorkflowEngineHost : IAsyncDisposable
     /// 套件里的待办远少于一页上限，取第一页即是全部
     /// </remarks>
     public ValueTask<IReadOnlyList<UserTask>> PendingAsync(string assigneeId, string? tenantId = null)
-        => AsTenantAsync(tenantId, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().QueryAsync(new UserTaskQuery { AssigneeId = assigneeId, Limit = UserTaskQuery.MaxLimit }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items);
+        => AsTenantAsync(tenantId, async sp => (await sp.GetRequiredService<IWorkflowTaskService>().QueryAsync(new UserTaskQuery { AssigneeId = assigneeId, Take = UserTaskQuery.MaxTake }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items);
 
     /// <summary>
     /// 完成任务

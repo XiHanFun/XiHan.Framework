@@ -153,3 +153,4 @@
 | [0151](0151-Preview数据类型按初始化器形状改写.md) | 按 ADR-0142 改写 25 个 `Preview` 位置记录：工作流的用户任务 / 外部任务 / 跳转 / 迁移 / 变量请求保留身份构造、其余初始化器；对象存储元数据与分页、MCP tool 与提示、插件状态、命令行解析、OpenAPI 输入、列映射与差异日志数据改为初始化器 | 已采纳 |
 | [0152](0152-标识值显式转换且default不是合法值.md) | 字符串承载的标识值（缓存键、对象键、容器名、作业名、工作流名、活动类型、密钥名）去掉会抛出的隐式转换，改显式；`default` 读文本抛 `InvalidOperationException`、`ToString` 为空串，组合值（`GrantSubject`、`TriggerKey`、`PermissionGrant`）构造时拒收 `default` 成员；架构测试守护 | 已采纳 |
 | [0153](0153-查找方法按返回形状命名.md) | 查找按返回形状命名：`Find…` 返回 `Maybe`、`TryGet…` 是 `bool` 加 `out`、`Get…` 必定有值（缓存键值读取与外部接口成员除外）；调用上下文条目、绑定、投递、运行、HTTP 上下文的 `Get…` / `TryGetBinding` 改 `Find…`，插件宿主 `Describe` 改 `FindStatus`，工作流变量删 `Get` / `Get<T>`，审计细节交出只读副本；`LookupNamingTests` 守护 | 已采纳 |
+| [0154](0154-分页与逐项结果统一形状.md) | 偏移分页统一 `Skip` / `Take` / `MaxTake` 与 `Items` + `long Total`，续页分页统一 `PageSize` / `ContinuationToken` / `MaxPageSize` 与 `Items` + `ContinuationToken`，错误参数名随成员名；三个页改初始化器；逐项结果只用与入参同序的 `Result` 列表（整批成败时用值本身），删除六个带键的结果记录 | 已采纳 |

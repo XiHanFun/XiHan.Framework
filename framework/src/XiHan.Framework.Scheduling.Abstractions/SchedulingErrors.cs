@@ -51,7 +51,7 @@ public static class SchedulingErrors
     /// 运行历史查询的分页越界
     /// </summary>
     /// <remarks>
-    /// <see cref="Jobs.JobRunQuery.Skip"/> 为负或 <see cref="Jobs.JobRunQuery.Limit"/> 不在 1 到 <see cref="Jobs.JobRunQuery.MaxLimit"/> 之间；<c>RunsAsync</c> 以结果返回（HTTP 400），不进存储
+    /// <see cref="Jobs.JobRunQuery.Skip"/> 为负或 <see cref="Jobs.JobRunQuery.Take"/> 不在 1 到 <see cref="Jobs.JobRunQuery.MaxTake"/> 之间；<c>RunsAsync</c> 以结果返回（HTTP 400），不进存储
     /// </remarks>
     public const string RunQueryInvalid = "SCHEDULING_VALIDATION_002";
 

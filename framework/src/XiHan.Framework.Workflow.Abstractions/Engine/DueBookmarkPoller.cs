@@ -290,7 +290,7 @@ public sealed partial class DueBookmarkPoller : IDisposable
                 }
 
                 purged += count;
-                if (count < WorkflowInstanceQuery.MaxLimit)
+                if (count < WorkflowInstanceQuery.MaxTake)
                 {
                     break;
                 }

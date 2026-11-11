@@ -76,8 +76,8 @@ public sealed class SqliteTenantStoreTests
         var written = await writer.InvokeAsync(async context =>
         {
             var records = context.Services.GetRequiredService<TenantRecordStore>();
-            Assert.All(await records.UpsertAsync([acme with { DisplayName = "Acme 2" }], context.CancellationToken), static r => Assert.True(r.Outcome.IsSuccess, r.Outcome.ToString()));
-            Assert.All(await records.RemoveAsync(["Dormant-01"], context.CancellationToken), static r => Assert.True(r.Outcome.IsSuccess, r.Outcome.ToString()));
+            Assert.All(await records.UpsertAsync([acme with { DisplayName = "Acme 2" }], context.CancellationToken), static r => Assert.True(r.IsSuccess, r.ToString()));
+            Assert.All(await records.RemoveAsync(["Dormant-01"], context.CancellationToken), static r => Assert.True(r.IsSuccess, r.ToString()));
         });
         Assert.True(written.IsSuccess, written.ToString());
         Assert.Equal("Acme Corp", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);

@@ -274,14 +274,14 @@ public abstract class WorkflowTaskConformance
 
         Assert.Equal(WorkflowErrors.InputInvalid, (await QueryAsync(host, new UserTaskQuery()).ConfigureAwait(false)).Error?.Code);
         // 分页越界不在构造时抛出，查询返回校验错误（HTTP 400）；上限与持久化的查询条数上限一致
-        foreach (var invalid in new[] { new UserTaskQuery { AssigneeId = "alice", Limit = 0 }, new UserTaskQuery { AssigneeId = "alice", Limit = UserTaskQuery.MaxLimit + 1 }, new UserTaskQuery { AssigneeId = "alice", Skip = -1 } })
+        foreach (var invalid in new[] { new UserTaskQuery { AssigneeId = "alice", Take = 0 }, new UserTaskQuery { AssigneeId = "alice", Take = UserTaskQuery.MaxTake + 1 }, new UserTaskQuery { AssigneeId = "alice", Skip = -1 } })
         {
             var rejected = await QueryAsync(host, invalid).ConfigureAwait(false);
             Assert.Equal(WorkflowErrors.InputInvalid, rejected.Error?.Code);
             Assert.Equal(WorkflowMessages.TaskQueryPageInvalid, rejected.Error?.MessageKey);
         }
 
-        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Limit = UserTaskQuery.MaxLimit }).ConfigureAwait(false)).ValueOrThrow().Total);
+        Assert.Equal(3, (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Take = UserTaskQuery.MaxTake }).ConfigureAwait(false)).ValueOrThrow().Total);
 
         var allPage = (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false)).ValueOrThrow();
         var all = allPage.Items;
@@ -289,7 +289,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal([first.Id, second.Id, third.Id], all.Select(static task => task.InstanceId));
         Assert.True(all.Zip(all.Skip(1)).All(static pair => pair.First.CreatedAt <= pair.Second.CreatedAt));
         Assert.Equal([third.Id, second.Id, first.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Descending = true }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
-        var page = (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Limit = 1 }).ConfigureAwait(false)).ValueOrThrow();
+        var page = (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Take = 1 }).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(second.Id, Assert.Single(page.Items).InstanceId);
         Assert.Equal(3, page.Total);
 

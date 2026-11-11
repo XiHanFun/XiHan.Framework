@@ -55,7 +55,7 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 {
     // 第 page 页（从 0 起），最新的在前；Total 用来算页数
     public ValueTask<Result<UserTaskPage>> ListAsync(string userId, int page, CancellationToken cancellationToken)
-        => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
+        => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Descending = true, Skip = page * 20, Take = 20 }, cancellationToken);
 
     public ValueTask<Result<WorkflowInstance>> ApproveAsync(string taskId, string userId, string? comment, CancellationToken cancellationToken)
         => tasks.CompleteAsync(new UserTaskCompletion(taskId, userId) { Outcome = UserTaskOutcomes.Approved, Comment = comment }, cancellationToken);
@@ -141,7 +141,7 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 
 | 方法 | 作用 | 主要错误 |
 | --- | --- | --- |
-| `QueryAsync(UserTaskQuery)` | 读待办的唯一入口：某人的待办给 `AssigneeId`，某实例的给 `InstanceId`，两者必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
+| `QueryAsync(UserTaskQuery)` | 读待办的唯一入口：某人的待办给 `AssigneeId`，某实例的给 `InstanceId`，两者必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Take` 不在 1 到 1000） |
 | `CompleteAsync(completions)` | 完成任务，可带结果、意见与变量 | `WORKFLOW_DENIED_001`（不是指派人）、`WORKFLOW_VALIDATION_002`（结果不允许）、`WORKFLOW_NOTFOUND_003` |
 | `TransferAsync(transfers)` | 转办给另一个人 | `WORKFLOW_CONFLICT_004`（目标已是指派人） |
 | `AddAssigneesAsync(additions)` | 加签：`Any` / `All` 立即加任务，`Sequential` 排到队尾 | `WORKFLOW_CONFLICT_004` |
@@ -149,14 +149,14 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 | `ReturnAsync(returns)` | 退回：目标缺省为本节点之前最近完成的用户任务节点，没有则退回 `Start` 之后的首个节点；以跳转实现 | `WORKFLOW_VALIDATION_002` |
 | `UrgeAsync(urges)` | 催办：发布 `workflow.task.urged`，不改状态 | — |
 
-任务标题是节点 `Title` 模板渲染的结果（缺省节点名），实例标题是启动时给的显示名、没给取定义的显示名、再没有取定义名。查询只返回当前分区、实例处于运行中的任务：实例挂起或故障时它的任务退出结果，恢复后回来。过滤、排序与分页都由存储执行，`Total` 是同条件的总数；`Limit` 缺省 100、最大 1000（`UserTaskQuery.MaxLimit`），越界在查询时返回校验错误，HTTP 是 400。关键字规则见[关键字](/workflow/definitions#关键字)。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
+任务标题是节点 `Title` 模板渲染的结果（缺省节点名），实例标题是启动时给的显示名、没给取定义的显示名、再没有取定义名。查询只返回当前分区、实例处于运行中的任务：实例挂起或故障时它的任务退出结果，恢复后回来。过滤、排序与分页都由存储执行，`Total` 是同条件的总数；`Take` 缺省 100、最大 1000（`UserTaskQuery.MaxTake`），越界在查询时返回校验错误，HTTP 是 400。关键字规则见[关键字](/workflow/definitions#关键字)。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
 
 在最小示例的 `Inbox` 上补搜索、转办与退回：
 
 ```csharp
 // 待办搜索框：任务标题、流程标题、定义名或单据号（关联 ID）包含关键字即命中
 public ValueTask<Result<UserTaskPage>> SearchAsync(string userId, string keyword, int page, CancellationToken cancellationToken)
-    => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
+    => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Descending = true, Skip = page * 20, Take = 20 }, cancellationToken);
 
 public ValueTask<Result> HandOverAsync(string taskId, string userId, string colleague, CancellationToken cancellationToken)
     => tasks.TransferAsync(new UserTaskTransfer(taskId, userId) { TargetAssigneeId = colleague, Comment = "出差，转同事处理" }, cancellationToken);
@@ -275,7 +275,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
             DefinitionName = "hr.leave",
             Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended],
             Skip = page * 20,
-            Limit = 20,
+            Take = 20,
         };
         var items = (await engine.ListInstancesAsync(query, cancellationToken)).ValueOrThrow();
         var total = (await engine.CountInstancesAsync(query, cancellationToken)).ValueOrThrow();
@@ -292,7 +292,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 }
 ```
 
-`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、关键字、创建时间范围（`CreatedFrom` / `CreatedTo`）、结束时间上界（`EndedBefore`）过滤，同时给出的取交集，按排序项 `Sorts` 排序（可多个，缺省创建时间降序，字段与规则见[列表排序](/workflow/definitions#列表排序)）；过滤、排序、分页与计数都由存储执行。`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页。
+`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、关键字、创建时间范围（`CreatedFrom` / `CreatedTo`）、结束时间上界（`EndedBefore`）过滤，同时给出的取交集，按排序项 `Sorts` 排序（可多个，缺省创建时间降序，字段与规则见[列表排序](/workflow/definitions#列表排序)）；过滤、排序、分页与计数都由存储执行。`Skip` 缺省 0，`Take` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxTake`）。分页越界不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页。
 
 | 条件 | 说明 |
 | --- | --- |
@@ -303,9 +303,9 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 
 ```csharp
 // 审批中心「我发起的」：只取顶层，带标题搜索
-var mine = new WorkflowInstanceQuery { StarterId = userId, TopLevelOnly = true, Keyword = keyword, Skip = page * 20, Limit = 20 };
+var mine = new WorkflowInstanceQuery { StarterId = userId, TopLevelOnly = true, Keyword = keyword, Skip = page * 20, Take = 20 };
 // 实例列表点「结束时间」列升序
-var finished = new WorkflowInstanceQuery { Sorts = [new(WorkflowInstanceSortField.EndedAt)], Skip = page * 20, Limit = 20 };
+var finished = new WorkflowInstanceQuery { Sorts = [new(WorkflowInstanceSortField.EndedAt)], Skip = page * 20, Take = 20 };
 // 状态升序（生命周期），同状态的定义名升序，再同的创建时间降序
 var grouped = new WorkflowInstanceQuery
 {
@@ -316,7 +316,7 @@ var grouped = new WorkflowInstanceQuery
         new(WorkflowInstanceSortField.CreatedAt, Descending: true),
     ],
     Skip = page * 20,
-    Limit = 20,
+    Take = 20,
 };
 
 // 一页单据的审批进度：一次查询，按关联 ID 分组
@@ -325,7 +325,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
     DefinitionName = "permission-request",
     CorrelationIds = requests.Select(static r => r.Id.ToString()).ToList(),
     TopLevelOnly = true,
-    Limit = WorkflowInstanceQuery.MaxLimit,
+    Take = WorkflowInstanceQuery.MaxTake,
 }, cancellationToken)).ValueOrThrow().ToLookup(static instance => instance.CorrelationId);
 ```
 

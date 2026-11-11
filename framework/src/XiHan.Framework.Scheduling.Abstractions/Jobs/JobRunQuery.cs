@@ -9,7 +9,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// 运行历史查询
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按计划时刻降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。分页越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Schedulers.IJobScheduler.RunsAsync"/> 返回 <c>SCHEDULING_VALIDATION_002</c>（HTTP 400）
+/// 过滤项都可空、同时给出的取交集；结果按计划时刻降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Take"/> 条。分页越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Schedulers.IJobScheduler.RunsAsync"/> 返回 <c>SCHEDULING_VALIDATION_002</c>（HTTP 400）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record JobRunQuery
@@ -17,7 +17,7 @@ public sealed record JobRunQuery
     /// <summary>
     /// 上限的最大值
     /// </summary>
-    public const int MaxLimit = 1000;
+    public const int MaxTake = 1000;
 
     /// <summary>
     /// 作业名
@@ -72,12 +72,12 @@ public sealed record JobRunQuery
     public int Skip { get; init; }
 
     /// <summary>
-    /// 最多返回条数，1 到 <see cref="MaxLimit"/>
+    /// 最多返回条数，1 到 <see cref="MaxTake"/>
     /// </summary>
     /// <remarks>
     /// 默认 100
     /// </remarks>
-    public int Limit { get; init; } = 100;
+    public int Take { get; init; } = 100;
 
     /// <summary>
     /// 记录是否匹配全部过滤项（不含分页）

@@ -19,7 +19,7 @@ public static class BlobStoreExtensions
     {
         ArgumentNullException.ThrowIfNull(store);
         var results = await store.PutAsync(container, [new BlobUpload(key, content, options)], cancellationToken).ConfigureAwait(false);
-        return results[0].Outcome;
+        return results[0];
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public static class BlobStoreExtensions
     {
         ArgumentNullException.ThrowIfNull(store);
         var results = await store.DeleteAsync(container, [key], cancellationToken).ConfigureAwait(false);
-        return results[0].Outcome;
+        return results[0];
     }
 
     /// <summary>

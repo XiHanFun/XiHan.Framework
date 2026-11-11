@@ -23,13 +23,12 @@ XiHan.Framework.Auditing.Abstractions.Pipeline.AuditMiddleware.AuditMiddleware(X
 XiHan.Framework.Auditing.Abstractions.Pipeline.AuditMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Auditing.Abstractions.Trail.AuditPage
 XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.<Clone>$() -> XiHan.Framework.Auditing.Abstractions.Trail.AuditPage!
-XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.AuditPage(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Diagnostics.AuditEvent!>! Events, string? ContinuationToken) -> void
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.AuditPage() -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.ContinuationToken.get -> string?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.ContinuationToken.init -> void
-XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Diagnostics.AuditEvent!>! Events, out string? ContinuationToken) -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Equals(XiHan.Framework.Auditing.Abstractions.Trail.AuditPage? other) -> bool
-XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Events.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Diagnostics.AuditEvent!>!
-XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Events.init -> void
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Diagnostics.AuditEvent!>!
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Items.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.<Clone>$() -> XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery!
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Action.get -> string?

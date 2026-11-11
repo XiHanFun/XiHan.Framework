@@ -135,10 +135,10 @@ public abstract class BlobStoreConformance
         ], CancellationToken.None).ConfigureAwait(false);
 
         Assert.Equal(3, results.Count);
-        Assert.Equal([key, other, key], results.Select(static r => r.Key));
-        Assert.True(results[0].Outcome.IsSuccess);
-        Assert.True(results[1].Outcome.IsSuccess);
-        Assert.Equal(ObjectStorageErrors.BlobExists, results[2].Outcome.Error?.Code);
+        Assert.Equal([key, other], results.Take(2).Select(static r => r.ValueOrThrow().Key));
+        Assert.True(results[0].IsSuccess);
+        Assert.True(results[1].IsSuccess);
+        Assert.Equal(ObjectStorageErrors.BlobExists, results[2].Error?.Code);
         Assert.Equal("a", Text((await store.ReadAllBytesAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
         Assert.Empty(await store.PutAsync(Container, [], CancellationToken.None).ConfigureAwait(false));
     }
@@ -160,8 +160,7 @@ public abstract class BlobStoreConformance
         Assert.True((await store.PutAsync(Container, two, Bytes("2"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
 
         var results = await store.DeleteAsync(Container, [one, missing, one, two], CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal([true, false, false, true], results.Select(static r => r.Outcome.ValueOrThrow()));
-        Assert.Equal([one, missing, one, two], results.Select(static r => r.Key));
+        Assert.Equal([true, false, false, true], results.Select(static r => r.ValueOrThrow()));
         Assert.Equal(ObjectStorageErrors.BlobNotFound, (await store.HeadAsync(Container, one, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         Assert.False((await store.DeleteAsync(Container, two, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.Empty(await store.DeleteAsync(Container, [], CancellationToken.None).ConfigureAwait(false));

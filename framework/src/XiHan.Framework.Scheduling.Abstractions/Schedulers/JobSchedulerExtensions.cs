@@ -20,7 +20,7 @@ public static class JobSchedulerExtensions
     {
         ArgumentNullException.ThrowIfNull(scheduler);
         var results = await scheduler.TriggerAsync([new JobTriggerRequest(name)], cancellationToken).ConfigureAwait(false);
-        return results[0].Outcome;
+        return results[0];
     }
 
     /// <summary>
@@ -30,13 +30,13 @@ public static class JobSchedulerExtensions
     {
         ArgumentNullException.ThrowIfNull(scheduler);
         var results = await scheduler.TriggerAsync([new JobTriggerRequest(name) { Data = data }], cancellationToken).ConfigureAwait(false);
-        return results[0].Outcome;
+        return results[0];
     }
 
     /// <summary>
     /// 按名字批量立即运行并等待结果
     /// </summary>
-    public static ValueTask<IReadOnlyList<JobTriggerResult>> TriggerAsync(this IJobScheduler scheduler, IReadOnlyList<JobName> names, CancellationToken cancellationToken)
+    public static ValueTask<IReadOnlyList<Result>> TriggerAsync(this IJobScheduler scheduler, IReadOnlyList<JobName> names, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scheduler);
         ArgumentNullException.ThrowIfNull(names);

@@ -75,7 +75,7 @@ public sealed class MessageTranslationUpsertTests : IDisposable
             var written = await host.InvokeAsync(async context =>
             {
                 var results = await context.Services.GetRequiredService<MessageTranslationStore>().UpsertAsync(entries, context.CancellationToken);
-                Assert.All(results, static r => Assert.True(r.Outcome.IsSuccess));
+                Assert.All(results, static r => Assert.True(r.IsSuccess));
             });
             written.ThrowIfFailure();
         }
@@ -114,7 +114,7 @@ public sealed class MessageTranslationUpsertTests : IDisposable
         var raced = await host.InvokeAsync(async context =>
         {
             var results = await context.Services.GetRequiredService<MessageTranslationStore>().UpsertAsync([new MessageTranslationEntry(RaceKey, "zh-CN", "mine")], context.CancellationToken);
-            Assert.Equal(PersistenceErrors.UniqueKeyConflict, Assert.Single(results).Outcome.Error?.Code);
+            Assert.Equal(PersistenceErrors.UniqueKeyConflict, Assert.Single(results).Error?.Code);
         });
 
         // 撞上唯一索引后工作单元只能回滚：处理器没有返回失败，调用也以同一错误结束
@@ -126,7 +126,7 @@ public sealed class MessageTranslationUpsertTests : IDisposable
         var retried = await host.InvokeAsync(async context =>
         {
             var results = await context.Services.GetRequiredService<MessageTranslationStore>().UpsertAsync([new MessageTranslationEntry(RaceKey, "zh-CN", "mine")], context.CancellationToken);
-            Assert.True(Assert.Single(results).Outcome.IsSuccess);
+            Assert.True(Assert.Single(results).IsSuccess);
         });
         retried.ThrowIfFailure();
         Assert.Equal([("zh-CN", "mine")], await RowsAsync(host));

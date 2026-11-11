@@ -102,7 +102,7 @@
   "workflow.definition.node_id_invalid": "L'ID de nœud '{value}' n'est pas valide : il doit commencer par une lettre ou un chiffre et ne contenir que des lettres, des chiffres, '.', '_' ou '-' ({max} caractères au maximum).",
   "workflow.definition.node_unreachable": "Le nœud '{node}' n'est pas accessible depuis le nœud de départ.",
   "workflow.definition.not_found": "La définition de workflow '{name}' n'existe pas ou n'a pas de version publiée.",
-  "workflow.definition.query_page_invalid": "La page de la requête de définitions est hors limites : skip {skip} ne doit pas être négatif et limit {limit} doit être compris entre 1 et {max}.",
+  "workflow.definition.query_page_invalid": "La page de la requête de définitions est hors limites : skip {skip} ne doit pas être négatif et limit {take} doit être compris entre 1 et {max}.",
   "workflow.definition.query_sort_duplicate": "Les définitions de workflow ne peuvent pas être triées plusieurs fois par « {sort} ».",
   "workflow.definition.query_sort_invalid": "Les définitions de workflow ne peuvent pas être triées par « {sort} ».",
   "workflow.definition.query_sorts_too_many": "Les définitions de workflow acceptent au plus {max} critères de tri ; {count} ont été fournis.",
@@ -170,7 +170,7 @@
   "workflow.instance.node_not_found": "L'instance de flux de travail '{id}' n'a pas de nœud '{node}'.",
   "workflow.instance.not_found": "L'instance de workflow '{id}' n'existe pas.",
   "workflow.instance.query_correlations_invalid": "Le filtre d'ID de corrélation accepte au plus {max} ID non vides ; {count} ont été fournis.",
-  "workflow.instance.query_page_invalid": "La page de la requête d'instances est hors limites : skip {skip} ne doit pas être négatif et limit {limit} doit être compris entre 1 et {max}.",
+  "workflow.instance.query_page_invalid": "La page de la requête d'instances est hors limites : skip {skip} ne doit pas être négatif et limit {take} doit être compris entre 1 et {max}.",
   "workflow.instance.query_sort_duplicate": "Les instances de workflow ne peuvent pas être triées plusieurs fois par « {sort} ».",
   "workflow.instance.query_sort_invalid": "Les instances de workflow ne peuvent pas être triées par « {sort} ».",
   "workflow.instance.query_sorts_too_many": "Les instances de workflow acceptent au plus {max} critères de tri ; {count} ont été fournis.",
@@ -201,7 +201,7 @@
   "workflow.task.no_return_target": "La tâche '{task}' n'a aucun nœud précédent vers lequel revenir.",
   "workflow.task.not_claimable": "La tâche '{task}' ne peut pas être réclamée avec sa politique d'achèvement.",
   "workflow.task.outcome_invalid": "Le résultat de tâche '{outcome}' n'est pas autorisé.",
-  "workflow.task.query_page_invalid": "La page de la requête de tâches est hors limites : skip {skip} ne doit pas être négatif et limit {limit} doit être compris entre 1 et {max}.",
+  "workflow.task.query_page_invalid": "La page de la requête de tâches est hors limites : skip {skip} ne doit pas être négatif et limit {take} doit être compris entre 1 et {max}.",
   "workflow.task.query_target_missing": "La requête de tâches nécessite un ID d'assigné ou un ID d'instance.",
   "workflow.variable.required": "La variable '{name}' est obligatoire."
 }

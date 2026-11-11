@@ -62,8 +62,8 @@ public sealed class DatabaseLocalizationTests
                 new MessageTranslationEntry("orders.order.not_found", "zh-TW", "訂單 '{id}' 找不到。"),
                 new MessageTranslationEntry("orders.order.not_found", "zh-CN", "订单 '{id}' 真的找不到。"),
             ], context.CancellationToken);
-            Assert.All(results, static r => Assert.True(r.Outcome.IsSuccess));
-            Assert.Equal(["zh-CN", "zh-TW", "zh-CN"], results.Select(static r => r.Key.Locale));
+            Assert.All(results, static r => Assert.True(r.IsSuccess));
+            Assert.Equal(3, results.Count);
             Assert.Equal(2, (await store.ListAsync(null, 0, 10, context.CancellationToken)).Count);
             Assert.Single(await store.ListAsync("zh-TW", 0, 10, context.CancellationToken));
         });
@@ -91,9 +91,9 @@ public sealed class DatabaseLocalizationTests
         {
             var store = context.Services.GetRequiredService<MessageTranslationStore>();
             var results = await store.RemoveAsync([new MessageTranslationKey("orders.order.not_found", "zh-CN"), new MessageTranslationKey("orders.order.not_found", "ko-KR")], context.CancellationToken);
-            Assert.True(results[0].Outcome.IsSuccess);
-            Assert.Equal(LocalizationErrors.TranslationNotFound, results[1].Outcome.Error?.Code);
-            Assert.Equal("数据库里没有翻译 'orders.order.not_found'（ko-KR）。", context.Services.GetRequiredService<IMessageLocalizer>().Localize(results[1].Outcome.Error!, "zh-CN"));
+            Assert.True(results[0].IsSuccess);
+            Assert.Equal(LocalizationErrors.TranslationNotFound, results[1].Error?.Code);
+            Assert.Equal("数据库里没有翻译 'orders.order.not_found'（ko-KR）。", context.Services.GetRequiredService<IMessageLocalizer>().Localize(results[1].Error!, "zh-CN"));
         }, baggage: new Dictionary<string, string> { [BaggageKeys.Locale] = "zh-CN" });
         Assert.True(removed.IsSuccess);
         await loader.ReloadAsync(CancellationToken.None);
@@ -142,7 +142,7 @@ public sealed class DatabaseLocalizationTests
         var written = await host.InvokeAsync(async context =>
         {
             var results = await context.Services.GetRequiredService<MessageTranslationStore>().UpsertAsync([new MessageTranslationEntry("orders.order.not_found", Longest, "long")], context.CancellationToken);
-            Assert.True(Assert.Single(results).Outcome.IsSuccess);
+            Assert.True(Assert.Single(results).IsSuccess);
         });
         Assert.True(written.IsSuccess);
         Assert.True((await host.Services.GetRequiredService<MessageTranslationLoader>().ReloadAsync(CancellationToken.None)).IsSuccess);

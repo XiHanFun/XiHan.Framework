@@ -102,7 +102,7 @@
   "workflow.definition.node_id_invalid": "节点 ID '{value}' 不合法：必须以字母或数字开头，只能包含字母、数字、'.'、'_' 或 '-'（最多 {max} 个字符）。",
   "workflow.definition.node_unreachable": "节点 '{node}' 从开始节点走不到。",
   "workflow.definition.not_found": "工作流定义 '{name}' 不存在或没有已发布版本。",
-  "workflow.definition.query_page_invalid": "定义查询的分页越界：跳过条数 {skip} 不能为负，页大小 {limit} 必须在 1 到 {max} 之间。",
+  "workflow.definition.query_page_invalid": "定义查询的分页越界：跳过条数 {skip} 不能为负，页大小 {take} 必须在 1 到 {max} 之间。",
   "workflow.definition.query_sort_duplicate": "定义查询的排序项里 '{sort}' 出现了不止一次。",
   "workflow.definition.query_sort_invalid": "定义查询不支持按 '{sort}' 排序。",
   "workflow.definition.query_sorts_too_many": "定义查询最多 {max} 个排序项，收到 {count} 个。",
@@ -170,7 +170,7 @@
   "workflow.instance.node_not_found": "工作流实例 '{id}' 没有节点 '{node}'。",
   "workflow.instance.not_found": "工作流实例 '{id}' 不存在。",
   "workflow.instance.query_correlations_invalid": "实例查询的关联 ID 集合最多 {max} 个且不能有空白，收到 {count} 个。",
-  "workflow.instance.query_page_invalid": "实例查询的分页越界：跳过条数 {skip} 不能为负，页大小 {limit} 必须在 1 到 {max} 之间。",
+  "workflow.instance.query_page_invalid": "实例查询的分页越界：跳过条数 {skip} 不能为负，页大小 {take} 必须在 1 到 {max} 之间。",
   "workflow.instance.query_sort_duplicate": "实例查询的排序项里 '{sort}' 出现了不止一次。",
   "workflow.instance.query_sort_invalid": "实例查询不支持按 '{sort}' 排序。",
   "workflow.instance.query_sorts_too_many": "实例查询最多 {max} 个排序项，收到 {count} 个。",
@@ -201,7 +201,7 @@
   "workflow.task.no_return_target": "任务 '{task}' 没有可退回的上游节点。",
   "workflow.task.not_claimable": "任务 '{task}' 的完成策略不支持认领。",
   "workflow.task.outcome_invalid": "任务结果 '{outcome}' 不在允许范围内。",
-  "workflow.task.query_page_invalid": "待办查询的分页越界：跳过条数 {skip} 不能为负，页大小 {limit} 必须在 1 到 {max} 之间。",
+  "workflow.task.query_page_invalid": "待办查询的分页越界：跳过条数 {skip} 不能为负，页大小 {take} 必须在 1 到 {max} 之间。",
   "workflow.task.query_target_missing": "待办查询需要指派人 ID 或实例 ID。",
   "workflow.variable.required": "变量 '{name}' 必填。"
 }

@@ -275,7 +275,7 @@ public sealed class DatabaseWorkflowTests
             var store = s.Instances;
             Assert.Equal(25, (await store.CountAsync(null, new WorkflowInstanceQuery(), CancellationToken.None)).ValueOrThrow());
             Assert.Equal(10, (await store.CountAsync(null, new WorkflowInstanceQuery { Statuses = [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Faulted] }, CancellationToken.None)).ValueOrThrow());
-            Assert.Equal(10, (await store.CountAsync(null, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed, Statuses = [WorkflowInstanceStatus.Faulted], Skip = 100, Limit = 1 }, CancellationToken.None)).ValueOrThrow());
+            Assert.Equal(10, (await store.CountAsync(null, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Completed, Statuses = [WorkflowInstanceStatus.Faulted], Skip = 100, Take = 1 }, CancellationToken.None)).ValueOrThrow());
             Assert.Equal(13, (await store.CountAsync(null, new WorkflowInstanceQuery { DefinitionName = new WorkflowName("even") }, CancellationToken.None)).ValueOrThrow());
             Assert.Equal(9, (await store.CountAsync(null, new WorkflowInstanceQuery { StarterId = "user-0" }, CancellationToken.None)).ValueOrThrow());
             // 创建时间在 [now-10min, now-5min) 的是 index 6..10；已结束且结束早于 now-9min 的是 index 10、15、20
@@ -283,9 +283,9 @@ public sealed class DatabaseWorkflowTests
             Assert.Equal(3, (await store.CountAsync(null, new WorkflowInstanceQuery { EndedBefore = now.AddMinutes(-9) }, CancellationToken.None)).ValueOrThrow());
 
             // 分页按创建时间降序：第 2 页（每页 10）是 index 10..19
-            var page = (await store.ListAsync(null, new WorkflowInstanceQuery { Skip = 10, Limit = 10 }, CancellationToken.None)).ValueOrThrow();
+            var page = (await store.ListAsync(null, new WorkflowInstanceQuery { Skip = 10, Take = 10 }, CancellationToken.None)).ValueOrThrow();
             Assert.Equal(instances.Skip(10).Take(10).Select(static instance => instance.Id), page.Select(static instance => instance.Id));
-            var running = (await store.ListAsync(null, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Running, Skip = 12, Limit = 10 }, CancellationToken.None)).ValueOrThrow();
+            var running = (await store.ListAsync(null, new WorkflowInstanceQuery { Status = WorkflowInstanceStatus.Running, Skip = 12, Take = 10 }, CancellationToken.None)).ValueOrThrow();
             Assert.Equal(instances.Where(static instance => instance.Status == WorkflowInstanceStatus.Running).Skip(12).Select(static instance => instance.Id), running.Select(static instance => instance.Id));
             Assert.Empty((await store.ListAsync(null, new WorkflowInstanceQuery { Skip = 25 }, CancellationToken.None)).ValueOrThrow());
         });
@@ -309,7 +309,7 @@ public sealed class DatabaseWorkflowTests
 
             Assert.Equal(1005, (await store.FindManyAsync(null, [.. ids, "missing"], CancellationToken.None)).ValueOrThrow().Count);
             Assert.Equal(1005, (await store.CountAsync(null, new WorkflowInstanceQuery { DefinitionName = new WorkflowName("bulk") }, CancellationToken.None)).ValueOrThrow());
-            Assert.Equal(1000, (await store.ListAsync(null, new WorkflowInstanceQuery { Limit = 1000 }, CancellationToken.None)).ValueOrThrow().Count);
+            Assert.Equal(1000, (await store.ListAsync(null, new WorkflowInstanceQuery { Take = 1000 }, CancellationToken.None)).ValueOrThrow().Count);
             Assert.Equal(1005, (await bookmarks.BySignalAsync(null, "go", null, CancellationToken.None)).ValueOrThrow().Count);
 
             // 整体替换 1005 条：状态变了、条数不变

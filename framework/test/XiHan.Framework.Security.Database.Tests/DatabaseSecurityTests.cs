@@ -108,19 +108,19 @@ public sealed class DatabaseSecurityTests
         Assert.Equal(SecurityErrors.NotAuthenticated, (await WriteOrderAsync(host, null)).Error?.Code);
 
         // 直接授予用户
-        Assert.All(await GrantAsync(host, new PermissionGrant(_alice, WriteOrderOperation.Permission)), static r => Assert.True(r.Outcome.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant(_alice, WriteOrderOperation.Permission)), static r => Assert.True(r.IsSuccess));
         var written = await WriteOrderAsync(host, "dev-alice-key");
         Assert.Equal(("alice", null), (written.ValueOrThrow().Principal, written.ValueOrThrow().Tenant));
-        Assert.All(await RevokeAsync(host, new PermissionGrant(_alice, WriteOrderOperation.Permission)), static r => Assert.True(r.Outcome.IsSuccess));
+        Assert.All(await RevokeAsync(host, new PermissionGrant(_alice, WriteOrderOperation.Permission)), static r => Assert.True(r.IsSuccess));
         Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-alice-key")).Error?.Code);
 
         // 经角色授予：alice 的 ApiKey 主体带 role=editor 声明，bob 没有角色
-        Assert.All(await GrantAsync(host, new PermissionGrant(_editor, WriteOrderOperation.Permission)), static r => Assert.True(r.Outcome.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant(_editor, WriteOrderOperation.Permission)), static r => Assert.True(r.IsSuccess));
         Assert.True((await WriteOrderAsync(host, "dev-alice-key")).IsSuccess);
         Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-bob-key")).Error?.Code);
 
         // 租户专属授予只对该租户放行
-        Assert.All(await GrantAsync(host, new PermissionGrant(_bob, WriteOrderOperation.Permission, "acme")), static r => Assert.True(r.Outcome.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant(_bob, WriteOrderOperation.Permission, "acme")), static r => Assert.True(r.IsSuccess));
         var scoped = await WriteOrderAsync(host, "dev-bob-key", tenant: "acme");
         Assert.Equal(("bob", "acme"), (scoped.ValueOrThrow().Principal, scoped.ValueOrThrow().Tenant));
         Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-bob-key", tenant: "other")).Error?.Code);
@@ -137,9 +137,9 @@ public sealed class DatabaseSecurityTests
 
         // 同一批里的重复项与已存在的项都成功，只落一行
         var granted = await GrantAsync(host, global, global, scoped, wildcard);
-        Assert.All(granted, static r => Assert.True(r.Outcome.IsSuccess));
-        Assert.Equal([global, global, scoped, wildcard], granted.Select(static r => r.Grant));
-        Assert.All(await GrantAsync(host, global), static r => Assert.True(r.Outcome.IsSuccess));
+        Assert.All(granted, static r => Assert.True(r.IsSuccess));
+        Assert.Equal(4, granted.Count);
+        Assert.All(await GrantAsync(host, global), static r => Assert.True(r.IsSuccess));
 
         // 按主体种类、主体 ID、权限码、租户排序；全局行的租户列是空字符串，换算回契约是 null
         var rows = await ListAsync(host, null, null, 0, 10);
@@ -153,12 +153,12 @@ public sealed class DatabaseSecurityTests
         // 撤销逐项：存在的成功，同一批第二次与从未存在的都不存在，错误能按调用方语言翻译
         var missing = new PermissionGrant(GrantSubject.ForUser("carol"), "reports.read");
         var revoked = await RevokeAsync(host, global, global, missing, new PermissionGrant(_alice, "reports.read", "acme"));
-        Assert.True(revoked[0].Outcome.IsSuccess);
-        Assert.All(revoked.Skip(1), static r => Assert.Equal(SecurityErrors.GrantNotFound, r.Outcome.Error?.Code));
+        Assert.True(revoked[0].IsSuccess);
+        Assert.All(revoked.Skip(1), static r => Assert.Equal(SecurityErrors.GrantNotFound, r.Error?.Code));
         var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
-        Assert.Equal("Grant of 'reports.read' to 'user:carol' in tenant '*' was not found.", localizer.Localize(revoked[2].Outcome.Error!, "en-US"));
-        Assert.Equal("租户 '*' 中对 'user:carol' 的权限 'reports.read' 授予不存在。", localizer.Localize(revoked[2].Outcome.Error!, "zh-CN"));
-        Assert.Equal("租户 'acme' 中对 'user:alice' 的权限 'reports.read' 授予不存在。", localizer.Localize(revoked[3].Outcome.Error!, "zh-CN"));
+        Assert.Equal("Grant of 'reports.read' to 'user:carol' in tenant '*' was not found.", localizer.Localize(revoked[2].Error!, "en-US"));
+        Assert.Equal("租户 '*' 中对 'user:carol' 的权限 'reports.read' 授予不存在。", localizer.Localize(revoked[2].Error!, "zh-CN"));
+        Assert.Equal("租户 'acme' 中对 'user:alice' 的权限 'reports.read' 授予不存在。", localizer.Localize(revoked[3].Error!, "zh-CN"));
         Assert.Equal([wildcard, scoped], (await ListAsync(host, null, null, 0, 10)).Select(static r => r.ToGrant()));
 
         // 空集合不触后端；空白租户是编程错误
@@ -205,7 +205,7 @@ public sealed class DatabaseSecurityTests
         store.Invalidate();
         Assert.Equal(0, store.CachedEntryCount);
         Assert.Empty((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
-        Assert.All(await GrantAsync(host, new PermissionGrant(_bob, "reports.read", "acme")), static r => Assert.True(r.Outcome.IsSuccess));
+        Assert.All(await GrantAsync(host, new PermissionGrant(_bob, "reports.read", "acme")), static r => Assert.True(r.IsSuccess));
         Assert.Equal(["reports.read"], (await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.Empty((await store.GetGrantsAsync(_bob, "other", CancellationToken.None)).ValueOrThrow());
         // 返回的是冻结集合：不可变，调用方改不了缓存
@@ -295,9 +295,9 @@ public sealed class DatabaseSecurityTests
     /// <summary>
     /// 在一次调用（Transaction 阶段内）里批量授予
     /// </summary>
-    private static async Task<IReadOnlyList<PermissionGrantResult>> GrantAsync(TestHost host, params PermissionGrant[] grants)
+    private static async Task<IReadOnlyList<Result>> GrantAsync(TestHost host, params PermissionGrant[] grants)
     {
-        IReadOnlyList<PermissionGrantResult> results = [];
+        IReadOnlyList<Result> results = [];
         (await host.InvokeAsync(async context => results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync(grants, context.CancellationToken))).ThrowIfFailure();
         return results;
     }
@@ -305,9 +305,9 @@ public sealed class DatabaseSecurityTests
     /// <summary>
     /// 在一次调用里批量撤销
     /// </summary>
-    private static async Task<IReadOnlyList<PermissionGrantResult>> RevokeAsync(TestHost host, params PermissionGrant[] grants)
+    private static async Task<IReadOnlyList<Result>> RevokeAsync(TestHost host, params PermissionGrant[] grants)
     {
-        IReadOnlyList<PermissionGrantResult> results = [];
+        IReadOnlyList<Result> results = [];
         (await host.InvokeAsync(async context => results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().RevokeAsync(grants, context.CancellationToken))).ThrowIfFailure();
         return results;
     }

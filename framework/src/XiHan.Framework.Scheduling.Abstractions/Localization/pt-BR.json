@@ -9,7 +9,7 @@
   "scheduling.lease.unavailable": "O armazenamento de concessões de líder para '{resource}' está indisponível: {reason}",
   "scheduling.run.canceled": "A execução '{id}' foi cancelada.",
   "scheduling.run.not_found": "A execução '{id}' não existe ou já terminou.",
-  "scheduling.run.query_page_invalid": "A página da consulta do histórico de execuções está fora do intervalo: skip {skip} não pode ser negativo e limit {limit} deve estar entre 1 e {max}.",
+  "scheduling.run.query_page_invalid": "A página da consulta do histórico de execuções está fora do intervalo: skip {skip} não pode ser negativo e limit {take} deve estar entre 1 e {max}.",
   "scheduling.run.timed_out": "A execução '{id}' excedeu o limite de tempo de {timeout}.",
   "scheduling.scheduler.unavailable": "O agendador de trabalhos não está em execução.",
   "scheduling.status.query_page_invalid": "O tamanho de página {pageSize} da lista de status de tarefas deve estar entre 1 e {max}.",

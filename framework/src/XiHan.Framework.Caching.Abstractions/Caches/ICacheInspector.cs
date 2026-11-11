@@ -19,7 +19,7 @@ public interface ICacheInspector
     /// 按前缀分页列出对象条目的键
     /// </summary>
     /// <remarks>
-    /// 前缀、上限与续页同 <see cref="ICacheStoreInspector.ListKeysAsync"/>；每页上限越界返回 <see cref="CachingErrors.ListLimitInvalid"/>
+    /// 前缀、上限与续页同 <see cref="ICacheStoreInspector.ListKeysAsync"/>；每页上限越界返回 <see cref="CachingErrors.ListPageSizeInvalid"/>
     /// </remarks>
     ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken);
 

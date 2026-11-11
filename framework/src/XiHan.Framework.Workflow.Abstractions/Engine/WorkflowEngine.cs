@@ -561,9 +561,9 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     {
         ArgumentNullException.ThrowIfNull(request);
         // 条数越界是调用方可以改正的输入（请求常由绑定而来）：以校验错误返回而不是抛出，也不开事务
-        if (request.Limit is < 1 or > WorkflowInstanceQuery.MaxLimit)
+        if (request.Limit is < 1 or > WorkflowInstanceQuery.MaxTake)
         {
-            return ValueTask.FromResult<Result<int>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.PurgeLimitInvalid, MessageArguments.Of(("limit", request.Limit), ("max", WorkflowInstanceQuery.MaxLimit))));
+            return ValueTask.FromResult<Result<int>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.PurgeLimitInvalid, MessageArguments.Of(("limit", request.Limit), ("max", WorkflowInstanceQuery.MaxTake))));
         }
 
         return _scope.RunAsync<IWorkflowEngine, int>(true, "workflow.purge", () => PurgeCoreAsync(request, cancellationToken), engine => engine.PurgeAsync(request, cancellationToken), cancellationToken);
@@ -582,7 +582,7 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
             EndedBefore = request.EndedBefore,
             Statuses = request.Statuses is { Count: > 0 } ? request.Statuses : [WorkflowInstanceStatus.Completed, WorkflowInstanceStatus.Canceled, WorkflowInstanceStatus.Faulted, WorkflowInstanceStatus.Terminated],
             DefinitionName = request.DefinitionName,
-            Limit = request.Limit,
+            Take = request.Limit,
         };
         var listed = await _instances.ListAsync(Tenant, query, cancellationToken).ConfigureAwait(false);
         if (!listed.TryGetValue(out var instances))
@@ -954,7 +954,7 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
 
         if (session.CascadeToChildren is { } cascade)
         {
-            var children = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { ParentInstanceId = instance.Id, Limit = WorkflowInstanceQuery.MaxLimit }, cancellationToken).ConfigureAwait(false);
+            var children = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { ParentInstanceId = instance.Id, Take = WorkflowInstanceQuery.MaxTake }, cancellationToken).ConfigureAwait(false);
             if (children.TryGetValue(out var list))
             {
                 var open = list.Where(static child => !child.IsFinal).Select(static child => child.Id).ToList();
@@ -1552,7 +1552,7 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
         await using (handle.ConfigureAwait(false))
         {
             // 重用策略：同一分区里同名定义在同一关联 ID 下已有未结束的实例
-            var active = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationIds = [correlation], Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Limit = 1 }, cancellationToken).ConfigureAwait(false);
+            var active = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { DefinitionName = definition.Name, CorrelationIds = [correlation], Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended], Take = 1 }, cancellationToken).ConfigureAwait(false);
             if (!active.TryGetValue(out var activeList))
             {
                 return active.Error!;
@@ -1689,9 +1689,9 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     {
         ArgumentNullException.ThrowIfNull(query);
         // 分页越界是调用方可以改正的输入（查询常由请求绑定）：以校验错误返回而不是抛出，也不进存储；上限与持久化的查询条数上限一致
-        if (query.Skip < 0 || query.Limit is < 1 or > WorkflowInstanceQuery.MaxLimit)
+        if (query.Skip < 0 || query.Take is < 1 or > WorkflowInstanceQuery.MaxTake)
         {
-            return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", WorkflowInstanceQuery.MaxLimit))));
+            return ValueTask.FromResult<Result<IReadOnlyList<WorkflowInstance>>>(Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.InstanceQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("take", query.Take), ("max", WorkflowInstanceQuery.MaxTake))));
         }
 
         if (CorrelationsInvalid(query) is { } invalid)

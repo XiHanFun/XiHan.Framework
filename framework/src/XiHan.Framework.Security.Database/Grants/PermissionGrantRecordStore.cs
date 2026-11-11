@@ -54,7 +54,7 @@ public sealed class PermissionGrantRecordStore
     /// <remarks>
     /// 已存在的返回成功且不重复写，同一批里重复的项同样成功（只写一行，结果相同）。租户专属授予的 <see cref="PermissionGrant.TenantId"/> 不能是空白（全局用 <see langword="null"/>），否则是编程错误
     /// </remarks>
-    public async ValueTask<IReadOnlyList<PermissionGrantResult>> GrantAsync(IReadOnlyList<PermissionGrant> grants, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> GrantAsync(IReadOnlyList<PermissionGrant> grants, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(grants);
         if (grants.Count == 0)
@@ -100,10 +100,10 @@ public sealed class PermissionGrantRecordStore
 
         var added = additions.Count == 0 ? [] : await _repository.AddRangeAsync(additions, cancellationToken).ConfigureAwait(false);
         InvalidateSubjects(additions);
-        var results = new PermissionGrantResult[grants.Count];
+        var results = new Result[grants.Count];
         for (var index = 0; index < grants.Count; index++)
         {
-            results[index] = new PermissionGrantResult(grants[index], slots[index] < 0 ? Result.Success() : added[slots[index]]);
+            results[index] = slots[index] < 0 ? Result.Success() : added[slots[index]];
         }
 
         return results;
@@ -112,7 +112,7 @@ public sealed class PermissionGrantRecordStore
     /// <summary>
     /// 撤销，按顺序逐项返回：不存在 → <see cref="SecurityErrors.GrantNotFound"/>，同一批里同一授予第二次同样不存在
     /// </summary>
-    public async ValueTask<IReadOnlyList<PermissionGrantResult>> RevokeAsync(IReadOnlyList<PermissionGrant> grants, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> RevokeAsync(IReadOnlyList<PermissionGrant> grants, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(grants);
         if (grants.Count == 0)
@@ -145,14 +145,14 @@ public sealed class PermissionGrantRecordStore
 
         var removed = removals.Count == 0 ? [] : await _repository.RemoveRangeAsync(removals, cancellationToken).ConfigureAwait(false);
         InvalidateSubjects(removals);
-        var results = new PermissionGrantResult[grants.Count];
+        var results = new Result[grants.Count];
         for (var index = 0; index < grants.Count; index++)
         {
             var grant = grants[index];
             Result outcome = slots[index] >= 0
                 ? removed[slots[index]]
                 : Error.NotFound(SecurityErrors.GrantNotFound, SecurityMessages.GrantNotFound, MessageArguments.Of(("subject", grant.Subject.ToString()), ("permission", grant.Permission), ("tenant", grant.TenantId ?? PermissionGrant.All)));
-            results[index] = new PermissionGrantResult(grant, outcome);
+            results[index] = outcome;
         }
 
         return results;

@@ -102,7 +102,7 @@
   "workflow.definition.node_id_invalid": "Die Knoten-ID '{value}' ist ungültig: Sie muss mit einem Buchstaben oder einer Ziffer beginnen und darf nur Buchstaben, Ziffern, '.', '_' oder '-' enthalten (höchstens {max} Zeichen).",
   "workflow.definition.node_unreachable": "Der Knoten '{node}' ist vom Startknoten aus nicht erreichbar.",
   "workflow.definition.not_found": "Die Workflow-Definition '{name}' existiert nicht oder hat keine veröffentlichte Version.",
-  "workflow.definition.query_page_invalid": "Die Seite der Definitionsabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {limit} muss zwischen 1 und {max} liegen.",
+  "workflow.definition.query_page_invalid": "Die Seite der Definitionsabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {take} muss zwischen 1 und {max} liegen.",
   "workflow.definition.query_sort_duplicate": "Workflow-Definitionen können nicht mehrfach nach '{sort}' sortiert werden.",
   "workflow.definition.query_sort_invalid": "Workflow-Definitionen können nicht nach '{sort}' sortiert werden.",
   "workflow.definition.query_sorts_too_many": "Workflow-Definitionen akzeptieren höchstens {max} Sortierangaben; {count} wurden angegeben.",
@@ -170,7 +170,7 @@
   "workflow.instance.node_not_found": "Die Workflow-Instanz '{id}' hat keinen Knoten '{node}'.",
   "workflow.instance.not_found": "Die Workflow-Instanz '{id}' existiert nicht.",
   "workflow.instance.query_correlations_invalid": "Der Korrelations-ID-Filter akzeptiert höchstens {max} nicht leere IDs; {count} wurden angegeben.",
-  "workflow.instance.query_page_invalid": "Die Seite der Instanzabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {limit} muss zwischen 1 und {max} liegen.",
+  "workflow.instance.query_page_invalid": "Die Seite der Instanzabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {take} muss zwischen 1 und {max} liegen.",
   "workflow.instance.query_sort_duplicate": "Workflow-Instanzen können nicht mehrfach nach '{sort}' sortiert werden.",
   "workflow.instance.query_sort_invalid": "Workflow-Instanzen können nicht nach '{sort}' sortiert werden.",
   "workflow.instance.query_sorts_too_many": "Workflow-Instanzen akzeptieren höchstens {max} Sortierangaben; {count} wurden angegeben.",
@@ -201,7 +201,7 @@
   "workflow.task.no_return_target": "Die Aufgabe '{task}' hat keinen vorherigen Knoten, an den sie zurückgegeben werden kann.",
   "workflow.task.not_claimable": "Die Aufgabe '{task}' kann unter ihrer Abschlussrichtlinie nicht übernommen werden.",
   "workflow.task.outcome_invalid": "Das Aufgabenergebnis '{outcome}' ist nicht erlaubt.",
-  "workflow.task.query_page_invalid": "Die Seite der Aufgabenabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {limit} muss zwischen 1 und {max} liegen.",
+  "workflow.task.query_page_invalid": "Die Seite der Aufgabenabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {take} muss zwischen 1 und {max} liegen.",
   "workflow.task.query_target_missing": "Die Aufgabenabfrage benötigt eine Bearbeiter-ID oder eine Instanz-ID.",
   "workflow.variable.required": "Die Variable '{name}' ist erforderlich."
 }

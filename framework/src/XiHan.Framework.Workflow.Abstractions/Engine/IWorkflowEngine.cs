@@ -103,7 +103,7 @@ public interface IWorkflowEngine
     /// 删除早于给定时刻结束的实例（含节点实例与书签）
     /// </summary>
     /// <remarks>
-    /// 返回删除的实例数（最多 <see cref="WorkflowPurgeRequest.Limit"/> 条，需要时重复调用）。<see cref="WorkflowPurgeRequest.Limit"/> 不在 1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400），不开事务
+    /// 返回删除的实例数（最多 <see cref="WorkflowPurgeRequest.Limit"/> 条，需要时重复调用）。<see cref="WorkflowPurgeRequest.Limit"/> 不在 1 到 <see cref="WorkflowInstanceQuery.MaxTake"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400），不开事务
     /// </remarks>
     ValueTask<Result<int>> PurgeAsync(WorkflowPurgeRequest request, CancellationToken cancellationToken);
 
@@ -119,7 +119,7 @@ public interface IWorkflowEngine
     /// 按条件列实例
     /// </summary>
     /// <remarks>
-    /// 只列调用方分区的实例。过滤、排序与分页由存储执行（关联 ID 集合、只取顶层、关键字见 <see cref="WorkflowInstanceQuery"/>，ADR-0096、ADR-0099）。<see cref="WorkflowInstanceQuery.Skip"/> 为负或 <see cref="WorkflowInstanceQuery.Limit"/> 不在 1 到 <see cref="WorkflowInstanceQuery.MaxLimit"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400，消息键 <c>workflow.instance.query_page_invalid</c>）；<see cref="WorkflowInstanceQuery.CorrelationIds"/> 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个或有空白的 ID → 同一错误码（消息键 <c>workflow.instance.query_correlations_invalid</c>）；排序项 <see cref="WorkflowInstanceQuery.Sorts"/> 不合法 → 同一错误码：项数超过 <see cref="WorkflowInstanceQuery.MaxSorts"/>（消息键 <c>workflow.instance.query_sorts_too_many</c>），某项为空或字段不是 <see cref="WorkflowInstanceSortField"/> 里定义的值（<c>workflow.instance.query_sort_invalid</c>），同一字段出现两次（<c>workflow.instance.query_sort_duplicate</c>，ADR-0102、ADR-0104）；都不进存储；关联 ID 的空集合直接返回空列表
+    /// 只列调用方分区的实例。过滤、排序与分页由存储执行（关联 ID 集合、只取顶层、关键字见 <see cref="WorkflowInstanceQuery"/>，ADR-0096、ADR-0099）。<see cref="WorkflowInstanceQuery.Skip"/> 为负或 <see cref="WorkflowInstanceQuery.Take"/> 不在 1 到 <see cref="WorkflowInstanceQuery.MaxTake"/> 之间 → <c>WORKFLOW_VALIDATION_002</c>（HTTP 400，消息键 <c>workflow.instance.query_page_invalid</c>）；<see cref="WorkflowInstanceQuery.CorrelationIds"/> 超过 <see cref="WorkflowInstanceQuery.MaxCorrelationIds"/> 个或有空白的 ID → 同一错误码（消息键 <c>workflow.instance.query_correlations_invalid</c>）；排序项 <see cref="WorkflowInstanceQuery.Sorts"/> 不合法 → 同一错误码：项数超过 <see cref="WorkflowInstanceQuery.MaxSorts"/>（消息键 <c>workflow.instance.query_sorts_too_many</c>），某项为空或字段不是 <see cref="WorkflowInstanceSortField"/> 里定义的值（<c>workflow.instance.query_sort_invalid</c>），同一字段出现两次（<c>workflow.instance.query_sort_duplicate</c>，ADR-0102、ADR-0104）；都不进存储；关联 ID 的空集合直接返回空列表
     /// </remarks>
     ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListInstancesAsync(WorkflowInstanceQuery query, CancellationToken cancellationToken);
 

@@ -59,7 +59,7 @@ public sealed class TenantRecordStore
     /// <remarks>
     /// 同一租户在同一批里后者覆盖前者（同一行只写一次，各项结果相同）
     /// </remarks>
-    public async ValueTask<IReadOnlyList<TenantRecordResult>> UpsertAsync(IReadOnlyList<TenantInfo> tenants, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> UpsertAsync(IReadOnlyList<TenantInfo> tenants, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenants);
         if (tenants.Count == 0)
@@ -102,11 +102,11 @@ public sealed class TenantRecordStore
 
         var updated = updates.Count == 0 ? [] : await _repository.UpdateRangeAsync(updates, cancellationToken).ConfigureAwait(false);
         var added = additions.Count == 0 ? [] : await _repository.AddRangeAsync(additions, cancellationToken).ConfigureAwait(false);
-        var results = new TenantRecordResult[tenants.Count];
+        var results = new Result[tenants.Count];
         for (var index = 0; index < tenants.Count; index++)
         {
             var slot = slots[index];
-            results[index] = new TenantRecordResult(tenants[index].Id, slot >= 0 ? updated[slot] : added[~slot]);
+            results[index] = slot >= 0 ? updated[slot] : added[~slot];
         }
 
         Invalidate(ids);
@@ -119,7 +119,7 @@ public sealed class TenantRecordStore
     /// <remarks>
     /// 不存在 → <see cref="MultiTenancyErrors.NotFound"/>，同一批里同一 ID 第二次同样不存在。ID 不合法是编程错误，整批在触库前抛出
     /// </remarks>
-    public async ValueTask<IReadOnlyList<TenantRecordResult>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenantIds);
         if (tenantIds.Count == 0)
@@ -147,13 +147,13 @@ public sealed class TenantRecordStore
         }
 
         var removed = removals.Count == 0 ? [] : await _repository.RemoveRangeAsync(removals, cancellationToken).ConfigureAwait(false);
-        var results = new TenantRecordResult[tenantIds.Count];
+        var results = new Result[tenantIds.Count];
         for (var index = 0; index < tenantIds.Count; index++)
         {
             Result outcome = slots[index] >= 0
                 ? removed[slots[index]]
                 : Error.NotFound(MultiTenancyErrors.NotFound, MultiTenancyMessages.TenantNotFound, MessageArguments.Of(("tenantId", tenantIds[index])));
-            results[index] = new TenantRecordResult(tenantIds[index], outcome);
+            results[index] = outcome;
         }
 
         Invalidate(ids);

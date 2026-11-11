@@ -4,7 +4,7 @@
   "caching.idempotency.key_reused": "Der Idempotenzschlüssel wurde bereits für einen anderen Aufruf ('{recorded}') verwendet; das Ergebnis kann nicht für '{operation}' wiedergegeben werden.",
   "caching.idempotency.recently_completed": "Ein Aufruf mit demselben Idempotenzschlüssel wurde gerade abgeschlossen oder wird noch verarbeitet; bitte später erneut versuchen.",
   "caching.idempotency.response_unavailable": "Die aufgezeichnete Antwort der Operation '{operation}' kann nicht wiedergegeben werden: {reason}",
-  "caching.inspector.limit_invalid": "Das Seitenlimit {limit} der Schlüsselliste muss zwischen 1 und {max} liegen.",
+  "caching.inspector.page_size_invalid": "Das Seitenlimit {pageSize} der Schlüsselliste muss zwischen 1 und {max} liegen.",
   "caching.lock.held": "Die Sperre für die Ressource '{resource}' wird von einem anderen Besitzer gehalten.",
   "caching.store.capacity_reached": "Der In-Memory-Cache hat seine Kapazität von {capacity} Einträgen erreicht."
 }

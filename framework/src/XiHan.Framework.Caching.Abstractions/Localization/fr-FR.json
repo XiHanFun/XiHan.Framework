@@ -4,7 +4,7 @@
   "caching.idempotency.key_reused": "La clé d'idempotence a déjà été utilisée par un autre appel ('{recorded}') ; son résultat ne peut pas être rejoué pour '{operation}'.",
   "caching.idempotency.recently_completed": "Un appel avec la même clé d'idempotence vient de se terminer ou est toujours en cours ; réessayez plus tard.",
   "caching.idempotency.response_unavailable": "La réponse enregistrée de l'opération '{operation}' ne peut pas être rejouée : {reason}",
-  "caching.inspector.limit_invalid": "La limite par page {limit} de la liste des clés doit être comprise entre 1 et {max}.",
+  "caching.inspector.page_size_invalid": "La limite par page {pageSize} de la liste des clés doit être comprise entre 1 et {max}.",
   "caching.lock.held": "Le verrou sur la ressource '{resource}' est détenu par un autre propriétaire.",
   "caching.store.capacity_reached": "Le cache en mémoire a atteint sa capacité de {capacity} entrées."
 }

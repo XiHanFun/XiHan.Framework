@@ -141,7 +141,7 @@ public static class SchedulingMessages
     /// 运行历史查询的分页越界
     /// </summary>
     /// <remarks>
-    /// 参数：<c>skip</c>、<c>limit</c>、<c>max</c>
+    /// 参数：<c>skip</c>、<c>take</c>、<c>max</c>
     /// </remarks>
     public const string RunQueryPageInvalid = "scheduling.run.query_page_invalid";
 

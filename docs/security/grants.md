@@ -120,7 +120,7 @@ using XiHan.Framework.Security.Database.Grants;
 public sealed class RoleAdministration(PermissionGrantRecordStore grants)
 {
     // 一次授予多项：已存在的返回成功且不重复写
-    public ValueTask<IReadOnlyList<PermissionGrantResult>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
         => grants.GrantAsync(
         [
             new PermissionGrant(GrantSubject.ForRole("editor"), "orders.read"),
@@ -128,7 +128,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
         ], cancellationToken);
 
     // 不存在的授予逐项返回 SECURITY_NOTFOUND_002
-    public ValueTask<IReadOnlyList<PermissionGrantResult>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
         => grants.RevokeAsync([new PermissionGrant(GrantSubject.ForRole("editor"), "orders.write", tenantId)], cancellationToken);
 }
 ```

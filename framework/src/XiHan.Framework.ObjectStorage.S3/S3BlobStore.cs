@@ -146,14 +146,14 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<BlobPutResult>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result<BlobMetadata>>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(uploads);
-        var results = new List<BlobPutResult>(uploads.Count);
+        var results = new List<Result<BlobMetadata>>(uploads.Count);
         foreach (var upload in uploads)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            results.Add(new BlobPutResult(upload.Key, await PutOneAsync(container, upload, cancellationToken).ConfigureAwait(false)));
+            results.Add(await PutOneAsync(container, upload, cancellationToken).ConfigureAwait(false));
         }
 
         return results;
@@ -221,7 +221,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<BlobDeleteResult>> DeleteAsync(ContainerName container, IReadOnlyList<BlobKey> keys, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result<bool>>> DeleteAsync(ContainerName container, IReadOnlyList<BlobKey> keys, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(keys);
         if (keys.Count == 0)
@@ -283,7 +283,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
             }
         }
 
-        var results = new List<BlobDeleteResult>(keys.Count);
+        var results = new List<Result<bool>>(keys.Count);
         for (var index = 0; index < keys.Count; index++)
         {
             // 只有"存在且本次负责删除"的项会因删除失败而失败
@@ -293,7 +293,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 outcome = Result.Failure<bool>(error);
             }
 
-            results.Add(new BlobDeleteResult(keys[index], outcome));
+            results.Add(outcome);
         }
 
         return results;

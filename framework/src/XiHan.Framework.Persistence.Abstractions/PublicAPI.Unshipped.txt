@@ -254,12 +254,11 @@ XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Take.init -> void
 XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Validate() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.TablePage!
-XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!>! Items, out int Total) -> void
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Equals(XiHan.Framework.Persistence.Abstractions.Schema.TablePage? other) -> bool
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!>!
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Items.init -> void
-XiHan.Framework.Persistence.Abstractions.Schema.TablePage.TablePage(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Schema.TableInfo!>! Items, int Total) -> void
-XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Total.get -> int
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.TablePage() -> void
+XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Total.get -> long
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Total.init -> void
 XiHan.Framework.Persistence.Abstractions.Schema.TableSchema
 XiHan.Framework.Persistence.Abstractions.Schema.TableSchema.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.TableSchema!

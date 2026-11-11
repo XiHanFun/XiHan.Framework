@@ -109,9 +109,9 @@ internal sealed class WorkflowTaskService : IWorkflowTaskService
         }
 
         // 分页越界是调用方可以改正的输入（查询常由请求绑定），以校验错误返回而不是抛出；上限与持久化的查询条数上限一致
-        if (query.Skip < 0 || query.Limit is < 1 or > UserTaskQuery.MaxLimit)
+        if (query.Skip < 0 || query.Take is < 1 or > UserTaskQuery.MaxTake)
         {
-            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", UserTaskQuery.MaxLimit)));
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("take", query.Take), ("max", UserTaskQuery.MaxTake)));
         }
 
         var nodeId = query.NodeId?.Trim();

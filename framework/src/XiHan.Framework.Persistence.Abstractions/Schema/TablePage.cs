@@ -6,9 +6,24 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Schema;
 
 /// <summary>
-/// 一页表
+/// 表列表的一页
 /// </summary>
-/// <param name="Items">本页的表（不含列）</param>
-/// <param name="Total">过滤后的总数（不受分页影响）</param>
+/// <remarks>
+/// 成员经初始化器给出，与其他偏移分页同名、总数是 <see langword="long"/>（ADR-0154）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record TablePage(IReadOnlyList<TableInfo> Items, int Total);
+public sealed record TablePage
+{
+    /// <summary>
+    /// 本页的表
+    /// </summary>
+    public required IReadOnlyList<TableInfo> Items { get; init; }
+
+    /// <summary>
+    /// 过滤后的总数
+    /// </summary>
+    /// <remarks>
+    /// 不受分页影响
+    /// </remarks>
+    public required long Total { get; init; }
+}

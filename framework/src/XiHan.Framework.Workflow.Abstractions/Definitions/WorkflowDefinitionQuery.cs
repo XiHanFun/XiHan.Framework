@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// 定义列表查询
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按排序项 <see cref="Sorts"/> 排序（缺省名字升序、版本降序），跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。查询只在调用方自己的分区里进行，过滤、排序、分页与计数都由存储执行（数据库实现是 SQL，ADR-0096、ADR-0102、ADR-0104）。分页与排序项越界不在构造时抛出，由 <see cref="IWorkflowDefinitionCatalog.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入
+/// 过滤项都可空、同时给出的取交集；结果按排序项 <see cref="Sorts"/> 排序（缺省名字升序、版本降序），跳过 <see cref="Skip"/> 条后最多 <see cref="Take"/> 条。查询只在调用方自己的分区里进行，过滤、排序、分页与计数都由存储执行（数据库实现是 SQL，ADR-0096、ADR-0102、ADR-0104）。分页与排序项越界不在构造时抛出，由 <see cref="IWorkflowDefinitionCatalog.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record WorkflowDefinitionQuery
@@ -28,7 +28,7 @@ public sealed record WorkflowDefinitionQuery
     /// <remarks>
     /// 与持久化的查询条数上限（<c>EntityQuery.DefaultMaxTake</c>）一致
     /// </remarks>
-    public const int MaxLimit = 1000;
+    public const int MaxTake = 1000;
 
     /// <summary>
     /// 关键字
@@ -80,12 +80,12 @@ public sealed record WorkflowDefinitionQuery
     public int Skip { get; init; }
 
     /// <summary>
-    /// 最多返回条数，1 到 <see cref="MaxLimit"/>
+    /// 最多返回条数，1 到 <see cref="MaxTake"/>
     /// </summary>
     /// <remarks>
     /// 默认 100
     /// </remarks>
-    public int Limit { get; init; } = 100;
+    public int Take { get; init; } = 100;
 
     /// <summary>
     /// 定义是否匹配全部过滤项（不含分页）

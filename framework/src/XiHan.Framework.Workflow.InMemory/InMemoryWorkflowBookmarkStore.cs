@@ -146,7 +146,7 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
         var ordered = query.Descending
             ? matched.OrderByDescending(static entry => entry.Bookmark.CreatedAt).ThenByDescending(static entry => entry.Sequence)
             : matched.OrderBy(static entry => entry.Bookmark.CreatedAt).ThenBy(static entry => entry.Sequence);
-        IReadOnlyList<WorkflowBookmark> page = ordered.Skip(query.Skip).Take(query.Limit).Select(static entry => entry.Bookmark).ToList();
+        IReadOnlyList<WorkflowBookmark> page = ordered.Skip(query.Skip).Take(query.Take).Select(static entry => entry.Bookmark).ToList();
         return ValueTask.FromResult(Result.Success(page));
     }
 

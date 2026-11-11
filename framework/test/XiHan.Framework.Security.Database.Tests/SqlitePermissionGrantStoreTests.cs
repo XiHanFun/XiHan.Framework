@@ -40,7 +40,7 @@ public sealed class SqlitePermissionGrantStoreTests
                 new PermissionGrant(alice, "reports.export", "acme"),
                 new PermissionGrant(editor, "orders.write"),
             ], context.CancellationToken);
-            Assert.All(results, static r => Assert.True(r.Outcome.IsSuccess));
+            Assert.All(results, static r => Assert.True(r.IsSuccess));
         });
         granted.ThrowIfFailure();
 
@@ -64,8 +64,8 @@ public sealed class SqlitePermissionGrantStoreTests
         {
             var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().RevokeAsync(
                 [new PermissionGrant(editor, "orders.write"), new PermissionGrant(editor, "orders.write")], context.CancellationToken);
-            Assert.True(results[0].Outcome.IsSuccess);
-            Assert.Equal(SecurityErrors.GrantNotFound, results[1].Outcome.Error?.Code);
+            Assert.True(results[0].IsSuccess);
+            Assert.Equal(SecurityErrors.GrantNotFound, results[1].Error?.Code);
         });
         revoked.ThrowIfFailure();
 
@@ -87,7 +87,7 @@ public sealed class SqlitePermissionGrantStoreTests
         var granted = await host.InvokeAsync(async context =>
         {
             var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant(GrantSubject.ForRole("editor"), WriteOrderOperation.Permission)], context.CancellationToken);
-            Assert.All(results, static r => Assert.True(r.Outcome.IsSuccess));
+            Assert.All(results, static r => Assert.True(r.IsSuccess));
         });
         granted.ThrowIfFailure();
         Assert.True((await WriteOrderAsync(host)).IsSuccess);

@@ -223,7 +223,7 @@ public abstract class JobStoreConformance
             Assert.Equal([third.Id, second.Id, first.Id], all.Select(static run => run.Id));
             Assert.Equal(("X_001", "boom", JobRunState.Failed, "node-a"), (all[2].ErrorCode, all[2].ErrorMessage, all[2].State, all[2].NodeId));
             Assert.Equal([second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, States = [JobRunState.Succeeded] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
-            Assert.Equal([second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, Skip = 1, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
+            Assert.Equal([second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, Skip = 1, Take = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
             Assert.Equal([second.Id, first.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, From = now, To = now.AddSeconds(2) }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
             Assert.Equal("v", all[0].Data["k"]!.GetValue<string>());
             // 触发器名、执行节点、有无错误；总数与列表同一组过滤项，不看分页
@@ -231,7 +231,7 @@ public abstract class JobStoreConformance
             Assert.Equal([first.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, HasError = true }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
             Assert.Equal([third.Id, second.Id], (await store.RunsAsync(new JobRunQuery { Job = job.Name, HasError = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static run => run.Id));
             Assert.Empty((await store.RunsAsync(new JobRunQuery { Job = job.Name, Trigger = "other" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-            Assert.Equal(3, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Trigger = "t", Skip = 1, Limit = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+            Assert.Equal(3, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Trigger = "t", Skip = 1, Take = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(1, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, States = [JobRunState.Succeeded] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(2, (await store.CountRunsAsync(new JobRunQuery { Job = job.Name, Node = "node-b", HasError = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
             Assert.Equal(0, (await store.CountRunsAsync(new JobRunQuery { Job = new JobName("conf.store.none") }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());

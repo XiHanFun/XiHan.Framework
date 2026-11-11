@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 /// 待办查询
 /// </summary>
 /// <remarks>
-/// <see cref="AssigneeId"/> 与 <see cref="InstanceId"/> 必填其一；其余过滤项可空、同时给出的取交集；按创建时间排序（<see cref="Descending"/>），跳过 <see cref="Skip"/> 条后最多 <see cref="Limit"/> 条。过滤、排序与分页都由存储执行（ADR-0077）。分页越界不在构造时抛出，由 <see cref="IWorkflowTaskService.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入
+/// <see cref="AssigneeId"/> 与 <see cref="InstanceId"/> 必填其一；其余过滤项可空、同时给出的取交集；按创建时间排序（<see cref="Descending"/>），跳过 <see cref="Skip"/> 条后最多 <see cref="Take"/> 条。过滤、排序与分页都由存储执行（ADR-0077）。分页越界不在构造时抛出，由 <see cref="IWorkflowTaskService.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record UserTaskQuery
@@ -58,7 +58,7 @@ public sealed record UserTaskQuery
     /// <remarks>
     /// 与持久化的查询条数上限（<c>EntityQuery.DefaultMaxTake</c>）一致
     /// </remarks>
-    public const int MaxLimit = 1000;
+    public const int MaxTake = 1000;
 
     /// <summary>
     /// 是否按创建时间降序
@@ -77,10 +77,10 @@ public sealed record UserTaskQuery
     public int Skip { get; init; }
 
     /// <summary>
-    /// 最多返回条数，1 到 <see cref="MaxLimit"/>
+    /// 最多返回条数，1 到 <see cref="MaxTake"/>
     /// </summary>
     /// <remarks>
     /// 默认 100
     /// </remarks>
-    public int Limit { get; init; } = 100;
+    public int Take { get; init; } = 100;
 }

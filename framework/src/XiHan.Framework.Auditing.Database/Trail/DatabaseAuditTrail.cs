@@ -211,7 +211,7 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
             events[index] = AuditRecordMapping.ToEvent(rows[index]);
         }
 
-        return new AuditPage(events, more ? rows[count - 1].Sequence.ToString(CultureInfo.InvariantCulture) : null);
+        return new AuditPage { Items = events, ContinuationToken = more ? rows[count - 1].Sequence.ToString(CultureInfo.InvariantCulture) : null };
     }
 
     /// <summary>

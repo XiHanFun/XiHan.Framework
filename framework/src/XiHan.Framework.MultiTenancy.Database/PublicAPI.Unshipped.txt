@@ -35,29 +35,15 @@ XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.ModifiedAt.set -> voi
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.PropertiesJson.get -> string!
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.PropertiesJson.set -> void
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.TenantRecord() -> void
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.<Clone>$() -> XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult!
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.Deconstruct(out string! TenantId, out XiHan.Framework.Primitives.Result Outcome) -> void
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.Equals(XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult? other) -> bool
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.Outcome.get -> XiHan.Framework.Primitives.Result
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.Outcome.init -> void
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.TenantId.get -> string!
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.TenantId.init -> void
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.TenantRecordResult(string! TenantId, XiHan.Framework.Primitives.Result Outcome) -> void
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordStore
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordStore.ListAsync(int skip, int take, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>!>!
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordStore.RemoveAsync(System.Collections.Generic.IReadOnlyList<string!>! tenantIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult!>!>
+XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordStore.RemoveAsync(System.Collections.Generic.IReadOnlyList<string!>! tenantIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordStore.TenantRecordStore(XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord!, string!>! repository, XiHan.Framework.MultiTenancy.Database.Tenants.DatabaseTenantStore! catalog, XiHan.Framework.MultiTenancy.Abstractions.Sharding.ITenantShardResolver? shards = null) -> void
-XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordStore.UpsertAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>! tenants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult!>!>
+XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordStore.UpsertAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>! tenants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 const XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions.ConfigurationSection = "XiHan:MultiTenancy:Database" -> string!
 override XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions.Equals(object? obj) -> bool
 override XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions.GetHashCode() -> int
 override XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions.ToString() -> string!
-override XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.Equals(object? obj) -> bool
-override XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.GetHashCode() -> int
-override XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.ToString() -> string!
 static XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions!
 static XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions.operator !=(XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions? left, XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions? right) -> bool
 static XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions.operator ==(XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions? left, XiHan.Framework.MultiTenancy.Database.DatabaseMultiTenancyOptions? right) -> bool
-static XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.operator !=(XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult? left, XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult? right) -> bool
-static XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult.operator ==(XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult? left, XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecordResult? right) -> bool

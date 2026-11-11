@@ -102,7 +102,7 @@
   "workflow.definition.node_id_invalid": "ノード ID '{value}' が不正です。英字または数字で始め、英字、数字、'.'、'_'、'-' だけを使ってください（最大 {max} 文字）。",
   "workflow.definition.node_unreachable": "ノード '{node}' には開始ノードから到達できません。",
   "workflow.definition.not_found": "ワークフロー定義 '{name}' は存在しないか、公開済みバージョンがありません。",
-  "workflow.definition.query_page_invalid": "定義クエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {limit} は 1 から {max} の範囲で指定してください。",
+  "workflow.definition.query_page_invalid": "定義クエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {take} は 1 から {max} の範囲で指定してください。",
   "workflow.definition.query_sort_duplicate": "定義クエリの並べ替え項目に '{sort}' が複数回指定されています。",
   "workflow.definition.query_sort_invalid": "定義クエリは '{sort}' で並べ替えできません。",
   "workflow.definition.query_sorts_too_many": "定義クエリの並べ替え項目は最大 {max} 件です（{count} 件が指定されました）。",
@@ -170,7 +170,7 @@
   "workflow.instance.node_not_found": "ワークフローインスタンス '{id}' にノード '{node}' はありません。",
   "workflow.instance.not_found": "ワークフローインスタンス '{id}' は存在しません。",
   "workflow.instance.query_correlations_invalid": "インスタンスクエリの相関 ID は空白なしで最大 {max} 件まで指定できます（{count} 件が指定されました）。",
-  "workflow.instance.query_page_invalid": "インスタンスクエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {limit} は 1 から {max} の範囲で指定してください。",
+  "workflow.instance.query_page_invalid": "インスタンスクエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {take} は 1 から {max} の範囲で指定してください。",
   "workflow.instance.query_sort_duplicate": "インスタンスクエリの並べ替え項目に '{sort}' が複数回指定されています。",
   "workflow.instance.query_sort_invalid": "インスタンスクエリは '{sort}' で並べ替えできません。",
   "workflow.instance.query_sorts_too_many": "インスタンスクエリの並べ替え項目は最大 {max} 件です（{count} 件が指定されました）。",
@@ -201,7 +201,7 @@
   "workflow.task.no_return_target": "タスク '{task}' には差し戻せる上流ノードがありません。",
   "workflow.task.not_claimable": "タスク '{task}' の完了ポリシーでは引き受けできません。",
   "workflow.task.outcome_invalid": "タスクの結果 '{outcome}' は許可されていません。",
-  "workflow.task.query_page_invalid": "タスククエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {limit} は 1 から {max} の間である必要があります。",
+  "workflow.task.query_page_invalid": "タスククエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {take} は 1 から {max} の間である必要があります。",
   "workflow.task.query_target_missing": "タスクのクエリには担当者 ID またはインスタンス ID が必要です。",
   "workflow.variable.required": "変数 '{name}' は必須です。"
 }

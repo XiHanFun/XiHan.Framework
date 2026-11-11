@@ -41,7 +41,7 @@ internal static class TenantHosts
             var results = await context.Services.GetRequiredService<TenantRecordStore>().UpsertAsync(tenants, context.CancellationToken);
             foreach (var result in results)
             {
-                result.Outcome.ThrowIfFailure();
+                result.ThrowIfFailure();
             }
         });
         outcome.ThrowIfFailure();

@@ -178,17 +178,17 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
         lock (_gate)
         {
             var now = timeProvider.GetUtcNow();
-            var after = query.Continuation;
+            var after = query.ContinuationToken;
             // 多取一个判断是否还有下一页
             keys = [.. _index.Values
                 .Where(node => node.Value.Key.StartsWith(query.Prefix, StringComparison.Ordinal) && node.Value.ExpiresAt > now && (after is null || string.CompareOrdinal(node.Value.Key, after) > 0))
                 .Select(static node => node.Value.Key)
                 .Order(StringComparer.Ordinal)
-                .Take(query.Limit + 1)];
+                .Take(query.PageSize + 1)];
         }
 
-        var page = keys.Take(query.Limit).Select(static key => new CacheKey(key)).ToList();
-        return new CacheKeyPage(page, keys.Count > query.Limit ? page[^1].Value : null);
+        var page = keys.Take(query.PageSize).Select(static key => new CacheKey(key)).ToList();
+        return new CacheKeyPage { Items = page, ContinuationToken = keys.Count > query.PageSize ? page[^1].Value : null };
     }
 
     /// <summary>

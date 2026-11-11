@@ -55,10 +55,10 @@ public sealed class WorkflowModelTests
     [Fact]
     public void QueryOptionsAndFaults_EnforceBounds()
     {
-        Assert.Equal(100, new WorkflowInstanceQuery().Limit);
-        Assert.Equal(WorkflowInstanceQuery.MaxLimit, new WorkflowInstanceQuery { Limit = WorkflowInstanceQuery.MaxLimit }.Limit);
+        Assert.Equal(100, new WorkflowInstanceQuery().Take);
+        Assert.Equal(WorkflowInstanceQuery.MaxTake, new WorkflowInstanceQuery { Take = WorkflowInstanceQuery.MaxTake }.Take);
         // 越界不在构造时抛出：查询常由请求绑定，由引擎以校验错误返回（一致性套件用例 32）
-        Assert.Equal(0, new WorkflowInstanceQuery { Limit = 0 }.Limit);
+        Assert.Equal(0, new WorkflowInstanceQuery { Take = 0 }.Take);
         Assert.Equal(-1, new WorkflowInstanceQuery { Skip = -1 }.Skip);
         Assert.Equal(0, new WorkflowPurgeRequest { EndedBefore = DateTimeOffset.UnixEpoch, Limit = 0 }.Limit);
 
@@ -113,9 +113,9 @@ public sealed class WorkflowModelTests
     [Fact]
     public void DefinitionQueryAndSummary_FollowTheContract()
     {
-        Assert.Equal((100, 0, 1000), (new WorkflowDefinitionQuery().Limit, new WorkflowDefinitionQuery().Skip, WorkflowDefinitionQuery.MaxLimit));
+        Assert.Equal((100, 0, 1000), (new WorkflowDefinitionQuery().Take, new WorkflowDefinitionQuery().Skip, WorkflowDefinitionQuery.MaxTake));
         // 越界不在构造时抛出：由目录以校验错误返回（一致性套件用例 33）
-        Assert.Equal(0, new WorkflowDefinitionQuery { Limit = 0 }.Limit);
+        Assert.Equal(0, new WorkflowDefinitionQuery { Take = 0 }.Take);
 
         var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("expense"), "Expense Claim").WithCategory("finance").WithDescription("Travel").AddStart().Build();
         Assert.True(new WorkflowDefinitionQuery { Keyword = " CLAIM ", Category = "finance", Status = WorkflowDefinitionStatus.Draft, Name = new WorkflowName("expense") }.Matches(definition));

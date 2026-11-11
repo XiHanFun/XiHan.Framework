@@ -22,7 +22,7 @@ public interface IBlobStore
     /// <remarks>
     /// 已存在且 <see cref="BlobPutOptions.Overwrite"/> 为 <see langword="false"/> 的项返回 <see cref="ObjectStorageErrors.BlobExists"/>；超过配额的项返回 <see cref="ObjectStorageErrors.QuotaExceeded"/>
     /// </remarks>
-    ValueTask<IReadOnlyList<BlobPutResult>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken);
+    ValueTask<IReadOnlyList<Result<BlobMetadata>>> PutAsync(ContainerName container, IReadOnlyList<BlobUpload> uploads, CancellationToken cancellationToken);
 
     /// <summary>
     /// 读取内容与元数据
@@ -54,7 +54,7 @@ public interface IBlobStore
     /// <remarks>
     /// 不存在的项成功且报告为不存在
     /// </remarks>
-    ValueTask<IReadOnlyList<BlobDeleteResult>> DeleteAsync(ContainerName container, IReadOnlyList<BlobKey> keys, CancellationToken cancellationToken);
+    ValueTask<IReadOnlyList<Result<bool>>> DeleteAsync(ContainerName container, IReadOnlyList<BlobKey> keys, CancellationToken cancellationToken);
 
     /// <summary>
     /// 按前缀分页列举，键的序数顺序

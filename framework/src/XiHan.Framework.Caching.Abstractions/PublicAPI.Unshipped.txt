@@ -121,21 +121,20 @@ XiHan.Framework.Caching.Abstractions.Stores.CacheKey.Equals(XiHan.Framework.Cach
 XiHan.Framework.Caching.Abstractions.Stores.CacheKey.Value.get -> string!
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.<Clone>$() -> XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage!
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.CacheKeyPage(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! Keys, string? Continuation) -> void
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.Continuation.get -> string?
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.Continuation.init -> void
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.Deconstruct(out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! Keys, out string? Continuation) -> void
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.CacheKeyPage() -> void
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.ContinuationToken.get -> string?
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.ContinuationToken.init -> void
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.Equals(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage? other) -> bool
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.Keys.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>!
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.Keys.init -> void
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>!
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage.Items.init -> void
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.<Clone>$() -> XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery!
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.CacheKeyQuery() -> void
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Continuation.get -> string?
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Continuation.init -> void
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.ContinuationToken.get -> string?
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.ContinuationToken.init -> void
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Equals(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery? other) -> bool
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Limit.get -> int
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Limit.init -> void
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.PageSize.get -> int
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.PageSize.init -> void
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Prefix.get -> string!
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Prefix.init -> void
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Validate() -> XiHan.Framework.Primitives.Result
@@ -162,7 +161,7 @@ const XiHan.Framework.Caching.Abstractions.CachingErrors.IdempotentInProgress = 
 const XiHan.Framework.Caching.Abstractions.CachingErrors.IdempotentMismatch = "CACHING_CONFLICT_003" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.InvalidKey = "CACHING_VALIDATION_001" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.InvalidOptions = "CACHING_VALIDATION_002" -> string!
-const XiHan.Framework.Caching.Abstractions.CachingErrors.ListLimitInvalid = "CACHING_VALIDATION_003" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingErrors.ListPageSizeInvalid = "CACHING_VALIDATION_003" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.LockHeld = "CACHING_CONFLICT_001" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingErrors.StoreUnavailable = "CACHING_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.CapacityReached = "caching.store.capacity_reached" -> string!
@@ -172,11 +171,12 @@ const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentKeyReused =
 const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentRecentlyCompleted = "caching.idempotency.recently_completed" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.IdempotentResponseUnavailable = "caching.idempotency.response_unavailable" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.InvalidIdempotencyKey = "caching.idempotency.invalid_key" -> string!
-const XiHan.Framework.Caching.Abstractions.CachingMessages.ListLimitInvalid = "caching.inspector.limit_invalid" -> string!
+const XiHan.Framework.Caching.Abstractions.CachingMessages.ListPageSizeInvalid = "caching.inspector.page_size_invalid" -> string!
 const XiHan.Framework.Caching.Abstractions.CachingMessages.LockHeld = "caching.lock.held" -> string!
 const XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions.ConfigurationSection = "XiHan:Caching:Idempotency" -> string!
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKey.MaxLength = 512 -> int
-const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.MaxLimit = 1000 -> int
+const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.DefaultPageSize = 100 -> int
+const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.MaxPageSize = 1000 -> int
 override XiHan.Framework.Caching.Abstractions.Caches.CachedObjectInfo.Equals(object? obj) -> bool
 override XiHan.Framework.Caching.Abstractions.Caches.CachedObjectInfo.GetHashCode() -> int
 override XiHan.Framework.Caching.Abstractions.Caches.CachedObjectInfo.ToString() -> string!

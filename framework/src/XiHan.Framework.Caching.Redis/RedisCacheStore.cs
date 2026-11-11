@@ -305,7 +305,7 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
 
     /// <inheritdoc />
     /// <remarks>
-    /// 按单个端点的 <c>SCAN</c> 分页：续页标记是 SCAN 游标，<see cref="CacheKeyQuery.Limit"/> 是提示值，同一个键可能出现在两页；前缀里的 glob 字符转义。每页上限越界返回 <see cref="CachingErrors.ListLimitInvalid"/>，不访问 Redis
+    /// 按单个端点的 <c>SCAN</c> 分页：续页标记是 SCAN 游标，<see cref="CacheKeyQuery.PageSize"/> 是提示值，同一个键可能出现在两页；前缀里的 glob 字符转义。每页上限越界返回 <see cref="CachingErrors.ListPageSizeInvalid"/>，不访问 Redis
     /// </remarks>
     public async ValueTask<Result<CacheKeyPage>> ListKeysAsync(CacheKeyQuery query, CancellationToken cancellationToken)
     {
@@ -316,7 +316,7 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
             return Result.Failure<CacheKeyPage>(invalid.Error!);
         }
 
-        var cursor = query.Continuation ?? "0";
+        var cursor = query.ContinuationToken ?? "0";
         if (!ulong.TryParse(cursor, NumberStyles.None, CultureInfo.InvariantCulture, out _))
         {
             throw new ArgumentException($"The continuation '{cursor}' is not a Redis SCAN cursor.", nameof(query));
@@ -324,9 +324,9 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
 
         try
         {
-            var (next, keys) = await ScanAsync(cursor, query.Prefix, query.Limit).ConfigureAwait(false);
+            var (next, keys) = await ScanAsync(cursor, query.Prefix, query.PageSize).ConfigureAwait(false);
             var page = keys.Select(StripPrefix).Where(static key => CacheKey.IsValid(key)).Select(static key => new CacheKey(key!)).ToList();
-            return new CacheKeyPage(page, next == "0" ? null : next);
+            return new CacheKeyPage { Items = page, ContinuationToken = next == "0" ? null : next };
         }
         catch (Exception exception) when (exception is RedisException or TimeoutException)
         {

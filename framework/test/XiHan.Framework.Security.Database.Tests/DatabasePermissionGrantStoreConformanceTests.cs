@@ -44,7 +44,7 @@ public sealed class DatabasePermissionGrantStoreConformanceTests : PermissionGra
         var seeded = await host.InvokeAsync(async context =>
         {
             var results = await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync(grants, context.CancellationToken);
-            Assert.All(results, static r => Assert.True(r.Outcome.IsSuccess));
+            Assert.All(results, static r => Assert.True(r.IsSuccess));
         });
         seeded.ThrowIfFailure();
         return host.Services.GetRequiredService<IPermissionGrantStore>();

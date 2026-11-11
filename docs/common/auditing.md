@@ -254,7 +254,7 @@ public sealed class FailureStatistics(IAuditTrail trail)
                 return page.Error!;
             }
 
-            foreach (var auditEvent in current.Events)
+            foreach (var auditEvent in current.Items)
             {
                 counts[auditEvent.Action] = counts.GetValueOrDefault(auditEvent.Action) + 1;
             }
