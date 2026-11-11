@@ -84,6 +84,7 @@ public sealed class InMemorySecurityFeature : IFeature
         {
             context.Services.AddSingleton<InMemoryPermissionGrantStore>();
             context.Services.TryAddSingleton<IPermissionGrantStore>(static sp => sp.GetRequiredService<InMemoryPermissionGrantStore>());
+            context.Services.TryAddSingleton<IPermissionGrantAdministration>(static sp => sp.GetRequiredService<InMemoryPermissionGrantStore>());
             context.Services.TryAddSingleton<IPermissionChecker, PermissionChecker>();
             context.Services.AddSingleton<IPolicy, AuthenticatedPolicy>();
             context.Services.TryAddSingleton<PolicyCatalog>();

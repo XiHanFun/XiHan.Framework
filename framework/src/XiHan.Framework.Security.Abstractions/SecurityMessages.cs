@@ -66,6 +66,14 @@ public static class SecurityMessages
     public const string GrantNotFound = "security.grant.not_found";
 
     /// <summary>
+    /// 授予列表的分页越界
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>skip</c>、<c>take</c>、<c>max</c>。与 <see cref="SecurityErrors.GrantQueryInvalid"/> 搭配
+    /// </remarks>
+    public const string GrantQueryPageInvalid = "security.grant.query_page_invalid";
+
+    /// <summary>
     /// API Key 无效
     /// </summary>
     public const string InvalidApiKey = "security.api_key.invalid";

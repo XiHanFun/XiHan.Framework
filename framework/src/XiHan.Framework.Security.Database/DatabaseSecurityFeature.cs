@@ -64,6 +64,7 @@ public sealed class DatabaseSecurityFeature : IFeature
         context.Services.AddRepository<PermissionGrantRecord, Guid>();
         context.Services.AddSingleton<DatabasePermissionGrantStore>();
         context.Services.TryAddScoped<PermissionGrantRecordStore>();
+        context.Services.TryAddScoped<IPermissionGrantAdministration>(static sp => sp.GetRequiredService<PermissionGrantRecordStore>());
 
         // 只为解析器选中本特性的能力注册服务与中间件；别的显式 Provider 胜出时本特性只留自己的类型
         if (context.Node.IsSelectedFor(SecurityCapabilities.Authorization))

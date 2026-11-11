@@ -7,9 +7,10 @@ XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Capacity.get -> int
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Count.get -> int
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.GetManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.GrantSubject>! subjects, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyCollection<string!>!>!>>
-XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Grant(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! grant) -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.GrantAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>! grants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.InMemoryPermissionGrantStore(XiHan.Framework.Security.InMemory.InMemorySecurityOptions! options) -> void
-XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.Revoke(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! grant) -> bool
+XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.ListAsync(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage!>>
+XiHan.Framework.Security.InMemory.InMemoryPermissionGrantStore.RevokeAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>! grants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Security.InMemory.InMemoryPrincipalStore
 XiHan.Framework.Security.InMemory.InMemoryPrincipalStore.Capacity.get -> int
 XiHan.Framework.Security.InMemory.InMemoryPrincipalStore.Count.get -> int

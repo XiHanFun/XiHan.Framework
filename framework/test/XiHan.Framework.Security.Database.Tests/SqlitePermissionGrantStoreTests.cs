@@ -4,6 +4,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Persistence.Abstractions.Queries;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Abstractions.Authentication;
@@ -53,7 +55,9 @@ public sealed class SqlitePermissionGrantStoreTests
         // 全局行的租户列是空字符串，能原样写入与读回；创建时间由仓储写入
         var listed = await host.InvokeAsync(async context =>
         {
-            var rows = await context.Services.GetRequiredService<PermissionGrantRecordStore>().ListAsync(null, null, 0, 10, context.CancellationToken);
+            var rows = await context.Services.GetRequiredService<IRepository<PermissionGrantRecord, Guid>>().ListAsync(
+                EntityQuery.All<PermissionGrantRecord>().OrderBy(static r => r.SubjectKind).OrderBy(static r => r.SubjectId),
+                context.CancellationToken);
             Assert.Equal([("role", "editor", "orders.write", PermissionGrantRecord.GlobalTenantId), ("user", "alice", "reports.export", "acme")], rows.Select(static r => (r.SubjectKind, r.SubjectId, r.Permission, r.TenantId)));
             Assert.Null(rows[0].ToGrant().TenantId);
             Assert.All(rows, static r => Assert.NotEqual(default, r.CreatedAt));

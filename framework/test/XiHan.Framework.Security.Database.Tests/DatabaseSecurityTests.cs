@@ -142,13 +142,15 @@ public sealed class DatabaseSecurityTests
         Assert.All(await GrantAsync(host, global), static r => Assert.True(r.IsSuccess));
 
         // 按主体种类、主体 ID、权限码、租户排序；全局行的租户列是空字符串，换算回契约是 null
-        var rows = await ListAsync(host, null, null, 0, 10);
-        Assert.Equal([wildcard, global, scoped], rows.Select(static r => r.ToGrant()));
-        Assert.Equal([PermissionGrantRecord.GlobalTenantId, "acme"], rows.Skip(1).Select(static r => r.TenantId));
-        Assert.All(rows, static r => Assert.NotEqual(default, r.CreatedAt));
-        Assert.Equal([global, scoped], (await ListAsync(host, _alice, null, 0, 10)).Select(static r => r.ToGrant()));
-        Assert.Equal([scoped], (await ListAsync(host, null, "acme", 0, 10)).Select(static r => r.ToGrant()));
-        Assert.Equal([global], (await ListAsync(host, null, null, 1, 1)).Select(static r => r.ToGrant()));
+        var all = await ListAsync(host, new PermissionGrantQuery { Take = 10 });
+        Assert.Equal([wildcard, global, scoped], all.Items);
+        Assert.Equal(3, all.Total);
+        Assert.Equal([global, scoped], (await ListAsync(host, new PermissionGrantQuery { Subject = _alice })).Items);
+        Assert.Equal([scoped], (await ListAsync(host, new PermissionGrantQuery { Tenant = GrantTenantFilter.Of("acme") })).Items);
+        Assert.Equal([wildcard, global], (await ListAsync(host, new PermissionGrantQuery { Tenant = GrantTenantFilter.Global })).Items);
+        var second = await ListAsync(host, new PermissionGrantQuery { Skip = 1, Take = 1 });
+        Assert.Equal([global], second.Items);
+        Assert.Equal(3, second.Total);
 
         // 撤销逐项：存在的成功，同一批第二次与从未存在的都不存在，错误能按调用方语言翻译
         var missing = new PermissionGrant(GrantSubject.ForUser("carol"), "reports.read");
@@ -159,7 +161,7 @@ public sealed class DatabaseSecurityTests
         Assert.Equal("Grant of 'reports.read' to 'user:carol' in tenant '*' was not found.", localizer.Localize(revoked[2].Error!, "en-US"));
         Assert.Equal("租户 '*' 中对 'user:carol' 的权限 'reports.read' 授予不存在。", localizer.Localize(revoked[2].Error!, "zh-CN"));
         Assert.Equal("租户 'acme' 中对 'user:alice' 的权限 'reports.read' 授予不存在。", localizer.Localize(revoked[3].Error!, "zh-CN"));
-        Assert.Equal([wildcard, scoped], (await ListAsync(host, null, null, 0, 10)).Select(static r => r.ToGrant()));
+        Assert.Equal([wildcard, scoped], (await ListAsync(host, new PermissionGrantQuery())).Items);
 
         // 空集合不触后端；空白租户是编程错误
         var empty = await host.InvokeAsync(async context =>
@@ -315,11 +317,11 @@ public sealed class DatabaseSecurityTests
     /// <summary>
     /// 在一次调用里列出授予行
     /// </summary>
-    private static async Task<IReadOnlyList<PermissionGrantRecord>> ListAsync(TestHost host, GrantSubject? subject, string? tenantId, int skip, int take)
+    private static async Task<PermissionGrantPage> ListAsync(TestHost host, PermissionGrantQuery query)
     {
-        IReadOnlyList<PermissionGrantRecord> rows = [];
-        (await host.InvokeAsync(async context => rows = await context.Services.GetRequiredService<PermissionGrantRecordStore>().ListAsync(subject, tenantId, skip, take, context.CancellationToken))).ThrowIfFailure();
-        return rows;
+        PermissionGrantPage? page = null;
+        (await host.InvokeAsync(async context => page = (await context.Services.GetRequiredService<IPermissionGrantAdministration>().ListAsync(query, context.CancellationToken)).ValueOrThrow())).ThrowIfFailure();
+        return page ?? throw new InvalidOperationException("The listing did not run.");
     }
 
     /// <summary>

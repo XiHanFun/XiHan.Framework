@@ -46,7 +46,7 @@ builder.AddXiHan(xihan => xihan
 
 * `DatabaseSecurityFeature`：启用数据库授权的特性
 * `DatabasePermissionGrantStore`：带缓存的授予存储
-* `PermissionGrantRecordStore`：在业务操作里批量授予、撤销与分页列出
+* `PermissionGrantRecordStore`：实现授予管理 `IPermissionGrantAdministration`，在业务操作里批量授予、撤销与分页列出
 * `PermissionGrantRecord`：需要建表的授予实体
 
 ## 更多文档

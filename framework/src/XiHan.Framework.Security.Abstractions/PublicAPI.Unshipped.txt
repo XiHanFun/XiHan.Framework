@@ -265,10 +265,20 @@ XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.GrantSubject() ->
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.GrantSubject(string! Kind, string! Id) -> void
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.Id.get -> string!
 XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.Kind.get -> string!
+XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter
+XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.<Clone>$() -> XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter!
+XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.Equals(XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter? other) -> bool
+XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.IsAny.get -> bool
+XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.Matches(string? tenantId) -> bool
+XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.TenantId.get -> string?
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionChecker
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionChecker.HasPermissionAsync(XiHan.Framework.Kernel.Security.SecurityContext! security, string! permission, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<bool>>
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionFilter
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionFilter.AllowsAsync(XiHan.Framework.Kernel.Security.SecurityContext! security, string! permission, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<bool>>
+XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantAdministration
+XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantAdministration.GrantAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>! grants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantAdministration.ListAsync(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage!>>
+XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantAdministration.RevokeAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>! grants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantSource
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantSource.GetGrantsAsync(XiHan.Framework.Kernel.Security.SecurityContext! security, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyCollection<string!>!>>
 XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore
@@ -285,6 +295,28 @@ XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.PermissionGran
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Subject.get -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.TenantId.get -> string?
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.TenantId.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantAdministrationExtensions
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.<Clone>$() -> XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage!
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.Equals(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage? other) -> bool
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>!
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.Items.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.PermissionGrantPage() -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.Total.get -> long
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.Total.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.<Clone>$() -> XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery!
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Equals(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? other) -> bool
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.PermissionGrantQuery() -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Skip.get -> int
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Skip.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Subject.get -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject?
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Subject.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Take.get -> int
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Take.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Tenant.get -> XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter!
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Tenant.init -> void
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Validate() -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantStoreExtensions
 XiHan.Framework.Security.Abstractions.SecurityCapabilities
 XiHan.Framework.Security.Abstractions.SecurityErrors
@@ -303,6 +335,7 @@ const XiHan.Framework.Security.Abstractions.Authorization.PermissionPolicy.Prefi
 const XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.Role = "role" -> string!
 const XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.User = "user" -> string!
 const XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.All = "*" -> string!
+const XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.MaxTake = 1000 -> int
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authentication = "security.authentication" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authorization = "security.authorization" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.IpRegion = "security.ip-region" -> string!
@@ -313,6 +346,7 @@ const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionAttributeMis
 const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionAttributePending = "SECURITY_UNAVAILABLE_004" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.ConditionInvalid = "SECURITY_VALIDATION_002" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.GrantNotFound = "SECURITY_NOTFOUND_002" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.GrantQueryInvalid = "SECURITY_VALIDATION_005" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.InvalidCredential = "SECURITY_DENIED_003" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.IssuerUnavailable = "SECURITY_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.NotAuthenticated = "SECURITY_DENIED_001" -> string!
@@ -343,6 +377,7 @@ const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionRangeValue
 const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionValueInvalid = "security.condition.value_invalid" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.ConditionValueRequired = "security.condition.value_required" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantNotFound = "security.grant.not_found" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantQueryPageInvalid = "security.grant.query_page_invalid" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantStoreCapacityExceeded = "security.grant_store.capacity_exceeded" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.GrantStoreUnavailable = "security.grant_store.unavailable" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityMessages.InvalidApiKey = "security.api_key.invalid" -> string!
@@ -399,9 +434,18 @@ override XiHan.Framework.Security.Abstractions.Network.IpRegion.GetHashCode() ->
 override XiHan.Framework.Security.Abstractions.Network.IpRegion.ToString() -> string!
 override XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.GetHashCode() -> int
 override XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.ToString() -> string!
 override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.Equals(object? obj) -> bool
 override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.GetHashCode() -> int
 override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.ToString() -> string!
+override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Equals(object? obj) -> bool
+override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.GetHashCode() -> int
+override XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.ToString() -> string!
 override XiHan.Framework.Security.Abstractions.SecurityOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Security.Abstractions.SecurityOptions.GetHashCode() -> int
 override XiHan.Framework.Security.Abstractions.SecurityOptions.ToString() -> string!
@@ -450,8 +494,19 @@ static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ForRole(st
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.ForUser(string! userId) -> XiHan.Framework.Security.Abstractions.Permissions.GrantSubject
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.operator !=(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject left, XiHan.Framework.Security.Abstractions.Permissions.GrantSubject right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.operator ==(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject left, XiHan.Framework.Security.Abstractions.Permissions.GrantSubject right) -> bool
+static XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.Any.get -> XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter!
+static XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.Global.get -> XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter!
+static XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.Of(string! tenantId) -> XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter!
+static XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.operator !=(XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter? left, XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter? right) -> bool
+static XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter.operator ==(XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter? left, XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter? right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.operator !=(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.operator ==(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant? right) -> bool
+static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantAdministrationExtensions.GrantAsync(this XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantAdministration! grants, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! grant, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantAdministrationExtensions.RevokeAsync(this XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantAdministration! grants, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant! grant, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.operator !=(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage? right) -> bool
+static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.operator ==(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage? right) -> bool
+static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.operator !=(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? right) -> bool
+static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.operator ==(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantStoreExtensions.GetGrantsAsync(this XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore! store, XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyCollection<string!>!>>
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.FindAuthorizationRequirement(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement!>
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.FindCredential(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential!>

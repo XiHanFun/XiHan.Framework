@@ -21,6 +21,7 @@
   "security.condition.value_invalid": "O valor de condição '{value}' não é um {kind} válido.",
   "security.condition.value_required": "O valor da condição não pode estar vazio.",
   "security.grant.not_found": "A concessão da permissão '{permission}' a '{subject}' no locatário '{tenant}' não foi encontrada.",
+  "security.grant.query_page_invalid": "A página da lista de concessões está fora do intervalo: skip {skip} não pode ser negativo e take {take} deve estar entre 1 e {max}.",
   "security.grant_store.capacity_exceeded": "O armazenamento de concessões em memória atingiu sua capacidade de {capacity}.",
   "security.grant_store.unavailable": "O armazenamento de concessões de permissões está indisponível. Tente novamente mais tarde.",
   "security.issuer.unavailable": "Não foi possível obter os metadados OpenID Connect do emissor '{authority}'.",

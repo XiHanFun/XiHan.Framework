@@ -21,6 +21,7 @@
   "security.condition.value_invalid": "條件值 '{value}' 不是有效的 {kind}。",
   "security.condition.value_required": "條件值不可為空。",
   "security.grant.not_found": "租戶 '{tenant}' 中對 '{subject}' 的權限 '{permission}' 授予不存在。",
+  "security.grant.query_page_invalid": "授予清單的分頁越界：略過筆數 {skip} 不能為負，頁大小 {take} 必須在 1 到 {max} 之間。",
   "security.grant_store.capacity_exceeded": "記憶體授權儲存已達到容量上限 {capacity}。",
   "security.grant_store.unavailable": "權限授予儲存暫時無法使用，請稍後再試。",
   "security.issuer.unavailable": "無法取得簽發者 '{authority}' 的 OpenID Connect 中繼資料。",

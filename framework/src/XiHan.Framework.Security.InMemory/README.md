@@ -43,7 +43,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySecurityFeature>());
 
 * `InMemorySecurityFeature`：启用内存安全的特性
 * `ApiKeyAuthenticationHandler`：`ApiKey` 方案的认证处理器
-* `InMemoryPermissionGrantStore`：授予存储，可在运行时 `Grant` / `Revoke`
+* `InMemoryPermissionGrantStore`：授予存储，同时实现授予管理 `IPermissionGrantAdministration`，运行时批量授予、撤销与分页列出
 * `InMemorySecurityOptions`：配置项，对应 `XiHan:Security:InMemory`
 
 ## 更多文档

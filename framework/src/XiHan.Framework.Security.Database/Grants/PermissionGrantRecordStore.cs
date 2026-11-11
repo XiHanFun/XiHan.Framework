@@ -18,7 +18,7 @@ namespace XiHan.Framework.Security.Database.Grants;
 /// 作用域服务，须在调用的 Transaction 阶段内使用，走调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入，写入后让 <see cref="DatabasePermissionGrantStore"/> 的缓存按主体失效。写入在调用方的事务提交后才对别的调用可见；失效与提交之间的窗口由缓存的存活时间收敛
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class PermissionGrantRecordStore
+public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration
 {
     /// <summary>
     /// 仓储
@@ -48,9 +48,7 @@ public sealed class PermissionGrantRecordStore
         _grants = grants ?? throw new ArgumentNullException(nameof(grants));
     }
 
-    /// <summary>
-    /// 授予，按顺序逐项返回
-    /// </summary>
+    /// <inheritdoc />
     /// <remarks>
     /// 已存在的返回成功且不重复写，同一批里重复的项同样成功（只写一行，结果相同）。租户专属授予的 <see cref="PermissionGrant.TenantId"/> 不能是空白（全局用 <see langword="null"/>），否则是编程错误
     /// </remarks>
@@ -109,9 +107,7 @@ public sealed class PermissionGrantRecordStore
         return results;
     }
 
-    /// <summary>
-    /// 撤销，按顺序逐项返回：不存在 → <see cref="SecurityErrors.GrantNotFound"/>，同一批里同一授予第二次同样不存在
-    /// </summary>
+    /// <inheritdoc />
     public async ValueTask<IReadOnlyList<Result>> RevokeAsync(IReadOnlyList<PermissionGrant> grants, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(grants);
@@ -158,34 +154,44 @@ public sealed class PermissionGrantRecordStore
         return results;
     }
 
-    /// <summary>
-    /// 列出授予行
-    /// </summary>
+    /// <inheritdoc />
     /// <remarks>
-    /// <paramref name="subject"/> 为 <see langword="null"/> 不按主体过滤，<paramref name="tenantId"/> 为 <see langword="null"/> 不按租户过滤（否则只列该租户专属的行）；按主体种类、主体 ID、权限码、租户排序，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页；<paramref name="take"/> 超过上限时构造查询抛出携带 <c>PERSISTENCE_VALIDATION_005</c> 的异常，调用里由 Transaction 阶段转为同码的校验结果
+    /// 过滤、排序、分页与计数都在数据库里执行。全局授予在列里是空字符串，所以「只要全局」按空字符串查、序数顺序里排在租户之前
     /// </remarks>
-    public Task<IReadOnlyList<PermissionGrantRecord>> ListAsync(GrantSubject? subject, string? tenantId, int skip, int take, CancellationToken cancellationToken)
+    public async ValueTask<Result<PermissionGrantPage>> ListAsync(PermissionGrantQuery query, CancellationToken cancellationToken)
     {
-        var query = EntityQuery.All<PermissionGrantRecord>()
-            .OrderBy(static r => r.SubjectKind)
-            .OrderBy(static r => r.SubjectId)
-            .OrderBy(static r => r.Permission)
-            .OrderBy(static r => r.TenantId)
-            .Page(skip, take);
-        if (subject is { } target)
+        ArgumentNullException.ThrowIfNull(query);
+        if (query.Validate() is { IsFailure: true } invalid)
+        {
+            return invalid.Error!;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        var filter = EntityQuery.All<PermissionGrantRecord>();
+        if (query.Subject is { } target)
         {
             var kind = target.Kind;
             var id = target.Id;
-            query = query.Where(new Specification<PermissionGrantRecord>(r => r.SubjectKind == kind && r.SubjectId == id));
+            filter = filter.Where(new Specification<PermissionGrantRecord>(r => r.SubjectKind == kind && r.SubjectId == id));
         }
 
-        if (tenantId is not null)
+        if (!query.Tenant.IsAny)
         {
-            var tenant = tenantId;
-            query = query.Where(new Specification<PermissionGrantRecord>(r => r.TenantId == tenant));
+            // 契约的 null 租户是全局，落库为空字符串（PermissionGrantRecord.GlobalTenantId）
+            var tenant = query.Tenant.TenantId ?? PermissionGrantRecord.GlobalTenantId;
+            filter = filter.Where(new Specification<PermissionGrantRecord>(r => r.TenantId == tenant));
         }
 
-        return _repository.ListAsync(query, cancellationToken);
+        var total = await _repository.CountAsync(filter, cancellationToken).ConfigureAwait(false);
+        var rows = await _repository.ListAsync(
+            filter
+                .OrderBy(static r => r.SubjectKind)
+                .OrderBy(static r => r.SubjectId)
+                .OrderBy(static r => r.Permission)
+                .OrderBy(static r => r.TenantId)
+                .Page(query.Skip, query.Take),
+            cancellationToken).ConfigureAwait(false);
+        return new PermissionGrantPage { Items = [.. rows.Select(static r => r.ToGrant())], Total = total };
     }
 
     /// <summary>

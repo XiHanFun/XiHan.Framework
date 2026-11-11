@@ -21,6 +21,7 @@
   "security.condition.value_invalid": "Значение условия '{value}' не является допустимым значением типа {kind}.",
   "security.condition.value_required": "Значение условия не может быть пустым.",
   "security.grant.not_found": "Предоставление разрешения '{permission}' субъекту '{subject}' в арендаторе '{tenant}' не найдено.",
+  "security.grant.query_page_invalid": "Страница списка выдач вне допустимого диапазона: skip {skip} не может быть отрицательным, а take {take} должен быть от 1 до {max}.",
   "security.grant_store.capacity_exceeded": "Хранилище разрешений в памяти достигло предела ёмкости {capacity}.",
   "security.grant_store.unavailable": "Хранилище разрешений недоступно. Повторите попытку позже.",
   "security.issuer.unavailable": "Не удалось получить метаданные OpenID Connect издателя '{authority}'.",

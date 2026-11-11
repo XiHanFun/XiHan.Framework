@@ -21,6 +21,7 @@
   "security.condition.value_invalid": "조건 값 '{value}'은(는) 올바른 {kind}이(가) 아닙니다.",
   "security.condition.value_required": "조건 값은 비워 둘 수 없습니다.",
   "security.grant.not_found": "테넌트 '{tenant}'에서 '{subject}'에 대한 권한 '{permission}' 부여를 찾을 수 없습니다.",
+  "security.grant.query_page_invalid": "권한 부여 목록의 페이지가 범위를 벗어났습니다. skip {skip}은(는) 음수일 수 없고 take {take}은(는) 1에서 {max} 사이여야 합니다.",
   "security.grant_store.capacity_exceeded": "메모리 내 권한 부여 저장소가 용량 한도 {capacity}에 도달했습니다.",
   "security.grant_store.unavailable": "권한 부여 저장소를 현재 사용할 수 없습니다. 잠시 후 다시 시도하세요.",
   "security.issuer.unavailable": "발급자 '{authority}'의 OpenID Connect 메타데이터를 가져올 수 없습니다.",

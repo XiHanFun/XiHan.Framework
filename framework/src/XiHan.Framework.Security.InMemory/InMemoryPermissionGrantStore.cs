@@ -10,8 +10,11 @@ namespace XiHan.Framework.Security.InMemory;
 /// <summary>
 /// 有界的内存权限授予存储
 /// </summary>
+/// <remarks>
+/// 同时实现授予管理 <see cref="IPermissionGrantAdministration"/>：写入立即对判定可见
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
+public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore, IPermissionGrantAdministration
 {
     /// <summary>
     /// 授予表：键为主体种类、主体 ID 与租户（<see langword="null"/> 为全局），值为权限码集合
@@ -41,9 +44,12 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
     {
         ArgumentNullException.ThrowIfNull(options);
         Capacity = options.MaxGrants;
-        foreach (var grant in options.Grants)
+        lock (_gate)
         {
-            Grant(grant).ThrowIfFailure();
+            foreach (var grant in options.Grants)
+            {
+                GrantLocked(grant).ThrowIfFailure();
+            }
         }
     }
 
@@ -116,69 +122,163 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore
         return ValueTask.FromResult(Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>(results));
     }
 
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<Result>> GrantAsync(IReadOnlyList<PermissionGrant> grants, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(grants);
+        Validate(grants);
+        cancellationToken.ThrowIfCancellationRequested();
+        var results = new Result[grants.Count];
+        // 一次加锁处理整批（批量优先第 2 条）：逐项施加，后一项看见前一项的效果
+        lock (_gate)
+        {
+            for (var index = 0; index < grants.Count; index++)
+            {
+                results[index] = GrantLocked(grants[index]);
+            }
+        }
+
+        return ValueTask.FromResult<IReadOnlyList<Result>>(results);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<IReadOnlyList<Result>> RevokeAsync(IReadOnlyList<PermissionGrant> grants, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(grants);
+        Validate(grants);
+        cancellationToken.ThrowIfCancellationRequested();
+        var results = new Result[grants.Count];
+        // 一次加锁处理整批：同一批里同一授予第二次撤销看见第一次的效果，报告不存在
+        lock (_gate)
+        {
+            for (var index = 0; index < grants.Count; index++)
+            {
+                var grant = grants[index];
+                results[index] = RevokeLocked(grant)
+                    ? Result.Success()
+                    : Error.NotFound(SecurityErrors.GrantNotFound, SecurityMessages.GrantNotFound, MessageArguments.Of(("subject", grant.Subject.ToString()), ("permission", grant.Permission), ("tenant", grant.TenantId ?? PermissionGrant.All)));
+            }
+        }
+
+        return ValueTask.FromResult<IReadOnlyList<Result>>(results);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<Result<PermissionGrantPage>> ListAsync(PermissionGrantQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (query.Validate() is { IsFailure: true } invalid)
+        {
+            return ValueTask.FromResult(Result.Failure<PermissionGrantPage>(invalid.Error!));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        List<PermissionGrant> matched;
+        lock (_gate)
+        {
+            // 锁内只做筛选与展开，排序与分页在锁外：表可能很大，持锁时间只与匹配数成正比
+            matched = [];
+            foreach (var (key, permissions) in _grants)
+            {
+                if (query.Subject is { } subject && (!string.Equals(subject.Kind, key.Kind, StringComparison.Ordinal) || !string.Equals(subject.Id, key.Id, StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
+                if (!query.Tenant.Matches(key.Tenant))
+                {
+                    continue;
+                }
+
+                foreach (var permission in permissions)
+                {
+                    matched.Add(new PermissionGrant(new GrantSubject(key.Kind, key.Id), permission, key.Tenant));
+                }
+            }
+        }
+
+        // 序数顺序与数据库实现一致：种类、主体 ID、权限码，全局（null）排在租户之前
+        var page = matched
+            .OrderBy(static g => g.Subject.Kind, StringComparer.Ordinal)
+            .ThenBy(static g => g.Subject.Id, StringComparer.Ordinal)
+            .ThenBy(static g => g.Permission, StringComparer.Ordinal)
+            .ThenBy(static g => g.TenantId ?? string.Empty, StringComparer.Ordinal)
+            .Skip(query.Skip)
+            .Take(query.Take)
+            .ToList();
+        return ValueTask.FromResult(Result.Success(new PermissionGrantPage { Items = page, Total = matched.Count }));
+    }
+
     /// <summary>
-    /// 授予
+    /// 授予一条，调用方持有锁
     /// </summary>
     /// <remarks>
     /// 已存在返回成功且不计数，超出容量返回 <see cref="SecurityErrors.CapacityExceeded"/>，被拒绝的授予不留下任何条目
     /// </remarks>
-    public Result Grant(PermissionGrant grant)
+    private Result GrantLocked(PermissionGrant grant)
     {
-        ArgumentNullException.ThrowIfNull(grant);
-        lock (_gate)
+        var key = (grant.Subject.Kind, grant.Subject.Id, grant.TenantId);
+        var exists = _grants.TryGetValue(key, out var set);
+
+        // 重复授予幂等成功且不占容量；容量只在真正新增时检查
+        if (exists && set!.Contains(grant.Permission))
         {
-            var key = (grant.Subject.Kind, grant.Subject.Id, grant.TenantId);
-            var exists = _grants.TryGetValue(key, out var set);
-
-            // 重复授予幂等成功且不占容量；容量只在真正新增时检查
-            if (exists && set!.Contains(grant.Permission))
-            {
-                return Result.Success();
-            }
-
-            // 先查容量再建主体的集合：满了以后新主体的授予被拒绝时，授予表里也不能多出一个空集合
-            if (_count >= Capacity)
-            {
-                return Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.GrantStoreCapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
-            }
-
-            if (!exists)
-            {
-                set = new HashSet<string>(StringComparer.Ordinal);
-                _grants[key] = set;
-            }
-
-            set!.Add(grant.Permission);
-            _count++;
             return Result.Success();
         }
+
+        // 先查容量再建主体的集合：满了以后新主体的授予被拒绝时，授予表里也不能多出一个空集合
+        if (_count >= Capacity)
+        {
+            return Error.Unavailable(SecurityErrors.CapacityExceeded, SecurityMessages.GrantStoreCapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
+        }
+
+        if (!exists)
+        {
+            set = new HashSet<string>(StringComparer.Ordinal);
+            _grants[key] = set;
+        }
+
+        set!.Add(grant.Permission);
+        _count++;
+        return Result.Success();
     }
 
     /// <summary>
-    /// 撤销
+    /// 撤销一条，调用方持有锁
     /// </summary>
     /// <remarks>
     /// 存在返回 <see langword="true"/>；主体在该租户下的最后一条授予被撤销时连同它的键一起移除
     /// </remarks>
-    public bool Revoke(PermissionGrant grant)
+    private bool RevokeLocked(PermissionGrant grant)
     {
-        ArgumentNullException.ThrowIfNull(grant);
-        lock (_gate)
+        var key = (grant.Subject.Kind, grant.Subject.Id, grant.TenantId);
+        if (!_grants.TryGetValue(key, out var set) || !set.Remove(grant.Permission))
         {
-            var key = (grant.Subject.Kind, grant.Subject.Id, grant.TenantId);
-            if (!_grants.TryGetValue(key, out var set) || !set.Remove(grant.Permission))
-            {
-                return false;
-            }
+            return false;
+        }
 
-            _count--;
-            // 空集合不留在表里：授予与撤销反复进行的主体（会话、临时委托）不让授予表只增不减
-            if (set.Count == 0)
-            {
-                _grants.Remove(key);
-            }
+        _count--;
+        // 空集合不留在表里：授予与撤销反复进行的主体（会话、临时委托）不让授予表只增不减
+        if (set.Count == 0)
+        {
+            _grants.Remove(key);
+        }
 
-            return true;
+        return true;
+    }
+
+    /// <summary>
+    /// 批量写入前逐项核对：空项与空白租户是编程错误，在改动任何条目之前抛出
+    /// </summary>
+    private static void Validate(IReadOnlyList<PermissionGrant> grants)
+    {
+        foreach (var grant in grants)
+        {
+            ArgumentNullException.ThrowIfNull(grant, nameof(grants));
+            if (grant.TenantId is not null && string.IsNullOrWhiteSpace(grant.TenantId))
+            {
+                throw new ArgumentException($"The tenant of a grant must not be blank; use null for a global grant ('{grant.Subject}', '{grant.Permission}').", nameof(grants));
+            }
         }
     }
 }

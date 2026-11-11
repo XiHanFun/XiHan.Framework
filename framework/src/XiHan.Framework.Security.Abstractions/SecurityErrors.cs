@@ -68,6 +68,14 @@ public static class SecurityErrors
     public const string UnregisteredPolicy = "SECURITY_VALIDATION_004";
 
     /// <summary>
+    /// 授予列表的分页越界
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Permissions.PermissionGrantQuery.Skip"/> 为负或 <see cref="Permissions.PermissionGrantQuery.Take"/> 不在 1 到 <see cref="Permissions.PermissionGrantQuery.MaxTake"/> 之间：不在构造时抛出，以结果返回（HTTP 400）
+    /// </remarks>
+    public const string GrantQueryInvalid = "SECURITY_VALIDATION_005";
+
+    /// <summary>
     /// 取不到条件属性的值
     /// </summary>
     public const string ConditionAttributeMissing = "SECURITY_NOTFOUND_003";

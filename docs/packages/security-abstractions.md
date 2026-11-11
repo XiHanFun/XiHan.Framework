@@ -69,6 +69,7 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | `Permissions.GrantSubject` | 授予的主体：`ForUser(id)`、`ForRole(name)`，种类常量 `User`、`Role` |
 | `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、租户（`null` 为全局） |
 | `Permissions.IPermissionGrantStore`、`PermissionGrantStoreExtensions` | 授予存储：`GetManyAsync(subjects, tenantId)` → 与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`，单主体写法是扩展方法 `GetGrantsAsync(subject, tenantId)`；每项全局授予加该租户的授予；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
+| `Permissions.IPermissionGrantAdministration`、`PermissionGrantAdministrationExtensions`、`PermissionGrantQuery`、`GrantTenantFilter`、`PermissionGrantPage` | 可选的授予管理：`GrantAsync` / `RevokeAsync` 与入参同序的逐项结果（撤销不存在为 `SECURITY_NOTFOUND_002`），`ListAsync(query)` 按主体与租户过滤（`Any` / `Global` / `Of(tenantId)`）、偏移分页并计数，越界为 `SECURITY_VALIDATION_005`；单条写法是扩展方法 |
 | `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器：`HasPermissionAsync` → `Result<bool>`，存储、来源、过滤器的失败原样返回 |
 | `Permissions.IPermissionFilter` | 授予命中后的收窄（ADR-0039）：`AllowsAsync` → `Result<bool>` |
 | `Permissions.IPermissionGrantSource` | 存储之外的额外授予（ADR-0045）：`GetGrantsAsync` → `Result<IReadOnlyCollection<string>>` |

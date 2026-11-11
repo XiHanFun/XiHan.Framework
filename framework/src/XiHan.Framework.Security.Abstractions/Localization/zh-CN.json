@@ -21,6 +21,7 @@
   "security.condition.value_invalid": "条件值 '{value}' 不是合法的 {kind}。",
   "security.condition.value_required": "条件值不能为空。",
   "security.grant.not_found": "租户 '{tenant}' 中对 '{subject}' 的权限 '{permission}' 授予不存在。",
+  "security.grant.query_page_invalid": "授予列表的分页越界：跳过条数 {skip} 不能为负，页大小 {take} 必须在 1 到 {max} 之间。",
   "security.grant_store.capacity_exceeded": "内存授予存储已达到容量上限 {capacity}。",
   "security.grant_store.unavailable": "权限授予存储暂不可用，请稍后重试。",
   "security.issuer.unavailable": "无法取得签发者 '{authority}' 的 OpenID Connect 元数据。",
