@@ -1,18 +1,4 @@
 #nullable enable
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.CapabilityAttribute(string! id) -> void
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Id.get -> string!
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Kind.get -> XiHan.Framework.Primitives.Manifests.ManifestKind
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Kind.init -> void
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Provides.get -> string![]!
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Provides.init -> void
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Requires.get -> string![]!
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Requires.init -> void
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Role.get -> XiHan.Framework.Primitives.Manifests.ManifestRole
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Role.init -> void
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Stability.get -> XiHan.Framework.Primitives.Stability
-XiHan.Framework.Kernel.Capabilities.CapabilityAttribute.Stability.init -> void
-XiHan.Framework.Kernel.Capabilities.CapabilityResolver
 XiHan.Framework.Kernel.Capabilities.ManifestReader
 XiHan.Framework.Kernel.Capabilities.ResolvedGraph
 XiHan.Framework.Kernel.Capabilities.ResolvedGraph.Contains(string! manifestId) -> bool
@@ -53,9 +39,6 @@ XiHan.Framework.Kernel.Diagnostics.AuditEvent.TraceId.init -> void
 XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics
 XiHan.Framework.Kernel.Diagnostics.IAuditSink
 XiHan.Framework.Kernel.Diagnostics.IAuditSink.WriteAsync(XiHan.Framework.Kernel.Diagnostics.AuditEvent! auditEvent, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
-XiHan.Framework.Kernel.Diagnostics.NullAuditSink
-XiHan.Framework.Kernel.Diagnostics.NullAuditSink.NullAuditSink() -> void
-XiHan.Framework.Kernel.Diagnostics.NullAuditSink.WriteAsync(XiHan.Framework.Kernel.Diagnostics.AuditEvent! auditEvent, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware
 XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware.ObserveMiddleware(Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
@@ -767,7 +750,6 @@ override XiHan.Framework.Kernel.Security.TenantContext.ToString() -> string!
 override XiHan.Framework.Kernel.Validation.SchemaViolation.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Validation.SchemaViolation.GetHashCode() -> int
 override XiHan.Framework.Kernel.Validation.SchemaViolation.ToString() -> string!
-static XiHan.Framework.Kernel.Capabilities.CapabilityResolver.Resolve(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Manifests.Manifest!>! manifests, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? providerSelections = null) -> XiHan.Framework.Kernel.Capabilities.ResolvedGraph!
 static XiHan.Framework.Kernel.Capabilities.ManifestReader.Read(string! json) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Manifests.Manifest!>
 static XiHan.Framework.Kernel.Capabilities.ManifestReader.ReadFile(string! path) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Manifests.Manifest!>
 static XiHan.Framework.Kernel.Capabilities.ManifestReader.Write(XiHan.Framework.Primitives.Manifests.Manifest! manifest) -> string!
@@ -777,7 +759,6 @@ static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.ActivitySource.ge
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.InvocationDuration.get -> System.Diagnostics.Metrics.Histogram<double>!
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.Invocations.get -> System.Diagnostics.Metrics.Counter<long>!
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.Meter.get -> System.Diagnostics.Metrics.Meter!
-static XiHan.Framework.Kernel.Diagnostics.NullAuditSink.Instance.get -> XiHan.Framework.Kernel.Diagnostics.NullAuditSink!
 static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider! scopedServices, System.Threading.CancellationToken cancellationToken, string? traceId = null, string? spanId = null, System.DateTimeOffset? deadline = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Diagnostics.ActivityTraceFlags? traceFlags = null) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Kernel.Hosting.BindingResolver.Resolve(Microsoft.Extensions.Configuration.IConfiguration! configuration, string? serviceBindingRoot = null) -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator !=(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool

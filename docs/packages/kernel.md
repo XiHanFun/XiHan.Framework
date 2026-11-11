@@ -20,7 +20,7 @@
 | 命名空间 | 职责 |
 | --- | --- |
 | `Kernel.Hosting` | `AddXiHan`、`AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`StartupBannerOptions`、资源绑定、健康快照与 `IHealthContributor`、`PeriodicHealthContributor` |
-| `Kernel.Capabilities` | `CapabilityResolver`、`ResolvedGraph`、`ResolvedNode`、`ManifestReader`（读写 `xihan.manifest.json`） |
+| `Kernel.Capabilities` | `ResolvedGraph`、`ResolvedNode`（能力求解的结果）、`ManifestReader`（读写 `xihan.manifest.json`） |
 | `Kernel.Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`Placement`、`DeadlineMiddleware`、`IInvocationAccessor`、调用来源 `InvocationOrigin`、上下文扩展 |
 | `Kernel.Operations` | `[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`IOperationInvoker` |
 | `Kernel.Validation` | `ValidationMiddleware`、`JsonSchemaValidator`、`SchemaViolation` |

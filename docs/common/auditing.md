@@ -8,7 +8,7 @@
 
 ## 审计事件与接收器
 
-内核定义了审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认注册的 `NullAuditSink` 丢弃全部事件。审计子系统在此之上补三件事：挂在 Observe 阶段的 `AuditMiddleware` 在调用结束时决定是否生成事件；调用上下文上的 `SetAuditAction`、`SetAuditResource`、`AddAuditDetail` 让处理器补充信息；查询契约 `IAuditTrail` 按条件分页读回。
+内核定义了审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认注册的接收器丢弃全部事件。审计子系统在此之上补三件事：挂在 Observe 阶段的 `AuditMiddleware` 在调用结束时决定是否生成事件；调用上下文上的 `SetAuditAction`、`SetAuditResource`、`AddAuditDetail` 让处理器补充信息；查询契约 `IAuditTrail` 按条件分页读回。
 
 能力 `auditing.trail@1` 的 Provider 同时实现 `IAuditSink` 与 `IAuditTrail`。被能力图谱选中时，Provider 先占住 `IAuditSink`，再注册消息目录与选项，并把 `AuditMiddleware` 挂到 Observe 阶段末尾，也就是内核的 `ObserveMiddleware` 之内。Observe 之后的各阶段都在它里面执行，所以认证、授权、校验阶段的拒绝也会以结果的形式被它看到。
 

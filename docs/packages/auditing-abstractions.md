@@ -15,7 +15,7 @@
 
 ## 概述
 
-内核定义审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认的 `NullAuditSink` 丢弃全部事件。本包补上产生事件与读回事件的部分：
+内核定义审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认的接收器丢弃全部事件。本包补上产生事件与读回事件的部分：
 
 - `AuditMiddleware` 挂在 Observe 阶段末尾，调用结束后按显式动作或 `AuditSelection` 决定是否记录；结果优先取管道写入的 outcome，主体与租户先取安全上下文、再回退 Baggage（ADR-0036）；接收器故障只记日志。
 - `AuditInvocationExtensions` 让处理器在调用期间写入动作、资源名与细节。

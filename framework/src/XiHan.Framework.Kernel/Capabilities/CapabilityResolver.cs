@@ -12,8 +12,7 @@ namespace XiHan.Framework.Kernel.Capabilities;
 /// <remarks>
 /// 按能力 ID 与接口版本把每个 <c>requires</c> 绑定到唯一提供者，拓扑排序，报错可解释
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
-public static class CapabilityResolver
+internal static class CapabilityResolver
 {
     /// <summary>
     /// 求解
