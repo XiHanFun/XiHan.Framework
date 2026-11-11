@@ -134,7 +134,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 2. 没有写入结果而抛出了异常的，记为失败：取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`。异常继续向外抛给 `ObserveMiddleware`，由它转成调用结果。
 3. 正常返回却没有写结果的，记为成功。
 
-写接收器时不带调用的取消令牌，被取消的调用同样留下记录。接收器抛出的异常只以 Error 级写一条日志，不改变调用结果；`IAuditSink` 的契约要求实现有界、不阻塞调用路径，两个内置实现的写入都不等待存储。
+写接收器时不带调用的取消令牌，被取消的调用同样留下记录。`IAuditSink.WriteAsync` 的契约与日志接收器相同：有界、不阻塞调用路径，返回只表示已接收；不抛出，接收不下或落地失败时由实现自己丢弃、计数并节流告警。两个内置实现的写入都不等待存储。接收器违反契约抛出的异常只以 Error 级写一条日志，不改变调用结果。
 
 ## 主体与租户从哪里来
 

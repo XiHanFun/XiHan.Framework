@@ -140,6 +140,28 @@ public abstract class AuditTrailConformance
     }
 
     /// <summary>
+    /// 用例 5：接收器不抛出，取消的令牌也不例外
+    /// </summary>
+    /// <remarks>
+    /// 契约（ADR-0147）：取消时实现可以放弃这条事件，但不把故障交给调用方；令牌没取消的写入照常留下
+    /// </remarks>
+    [Fact]
+    public async Task Write_NeverThrows_EvenWithACancelledToken()
+    {
+        var fixture = await CreateFixtureAsync().ConfigureAwait(false);
+        var trace = Trace();
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync().ConfigureAwait(false);
+
+        var exception = await Record.ExceptionAsync(async () => await fixture.Sink.WriteAsync(Event(trace, 0, "orders.cancelled"), cancelled.Token).ConfigureAwait(false)).ConfigureAwait(false);
+        await fixture.Sink.WriteAsync(Event(trace, 1, "orders.kept"), CancellationToken.None).ConfigureAwait(false);
+
+        Assert.Null(exception);
+        var page = (await fixture.Trail.QueryAsync(new AuditQuery { TraceId = trace }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Contains(page.Events, static e => e.Action == "orders.kept");
+    }
+
+    /// <summary>
     /// 套件内唯一的 trace-id（32 位十六进制）
     /// </summary>
     private static string Trace() => Guid.NewGuid().ToString("N");

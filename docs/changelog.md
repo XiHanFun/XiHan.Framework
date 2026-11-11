@@ -33,6 +33,7 @@
 - **调整** `ITenantStore.FindAsync` 返回 `Result<Maybe<TenantInfo>>`，存储不可达是 `MULTITENANCY_UNAVAILABLE_003`（Tenant 阶段以 503 结束，不再当作 500 抛出）；`ListAsync(TenantQuery)` 改为分页，逐页读到 `ContinuationToken` 为空；自己实现租户存储的 Provider 改这两个方法
 - **调整** `ITenantResolver.ResolveAsync` 返回 `Result<Maybe<string>>`，自定义解析器可以返回失败拒绝调用（以该错误结束，后面的解析器与默认租户不再顶替）；实现解析器的应用把返回值包进 `Result.Success(…)`
 - **调整** `IMessageLocalizer` 只留 `Options`、`Find`、`Resolve(key, locale, arguments)`，其余 `Localize` / `Resolve(error, …)` 改为 `MessageLocalizerExtensions` 的扩展方法：调用方不用改，自己实现本地化器的 Provider 删掉这 5 个成员
+- **调整** `IAuditSink.WriteAsync` 的契约写明不抛出：接收不下或落地失败时由实现自己丢弃、计数并告警，返回只表示已接收；自己实现接收器的 Provider 需通过一致性套件新增的用例
 - **移除** `XiHan:MultiTenancy:Database:MaxListedTenants`：租户列表分页之后不再截断，删掉这个配置键
 - **调整** `MessageDelivery` 改为初始化器（`new MessageDelivery { Topic = …, Envelope = …, Attempt = …, Mode = … }`），`MessageSubscription` 只保留 `(topic, mode)` 构造；`IdempotencyRecord` 不再公开，记录格式与回放不变
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`

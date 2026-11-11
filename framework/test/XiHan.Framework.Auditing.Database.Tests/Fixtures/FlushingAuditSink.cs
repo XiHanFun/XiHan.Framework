@@ -31,6 +31,7 @@ internal sealed class FlushingAuditSink : IAuditSink
     public async ValueTask WriteAsync(AuditEvent auditEvent, CancellationToken cancellationToken)
     {
         await _trail.WriteAsync(auditEvent, cancellationToken);
-        await _trail.FlushAsync(cancellationToken);
+        // 接收器契约不抛出（ADR-0147）：刷盘是夹具为了让查询立刻可见，不随调用方的令牌取消
+        await _trail.FlushAsync(CancellationToken.None);
     }
 }

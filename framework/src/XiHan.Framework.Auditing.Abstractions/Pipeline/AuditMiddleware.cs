@@ -131,7 +131,7 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
             Details = context.GetAuditDetails(),
         };
 
-        // 不带调用的取消令牌：被取消的调用同样要记录；接收器的故障不能让业务调用失败
+        // 不带调用的取消令牌：被取消的调用同样要记录。契约规定接收器不抛出（ADR-0147），这里兜住的是实现缺陷，不能让业务调用失败
         try
         {
             await _sink.WriteAsync(auditEvent, CancellationToken.None).ConfigureAwait(false);

@@ -28,7 +28,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |
 | [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 5 |
-| [Auditing](#auditing) | `AuditTrailConformance` | 4 |
+| [Auditing](#auditing) | `AuditTrailConformance` | 5 |
 | [Caching](#caching) | `CacheStoreConformance` | 16 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
@@ -54,7 +54,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 ## Auditing
 
-包 ID `XiHan.Framework.Auditing.Conformance`（RFC-0015，Preview）。基类 `AuditTrailConformance`，实现 `CreateFixtureAsync()` 返回 `AuditTrailFixture`（抽象属性 `Sink` 是被测 `IAuditSink`，`Trail` 是被测 `IAuditTrail`）。用例覆盖写入后按写入顺序读回且字段完整往返、各过滤项取交集、分页与续页令牌、不合法查询是 VALIDATION。用例以 trace-id 隔离数据，夹具可以共用一个存储。`Auditing.InMemory` 与 `Auditing.Database` 通过本套件。
+包 ID `XiHan.Framework.Auditing.Conformance`（RFC-0015，Preview）。基类 `AuditTrailConformance`，实现 `CreateFixtureAsync()` 返回 `AuditTrailFixture`（抽象属性 `Sink` 是被测 `IAuditSink`，`Trail` 是被测 `IAuditTrail`）。用例覆盖写入后按写入顺序读回且字段完整往返、各过滤项取交集、分页与续页令牌、不合法查询是 VALIDATION、接收器带着已取消的令牌也不抛出（ADR-0147）。用例以 trace-id 隔离数据，夹具可以共用一个存储。`Auditing.InMemory` 与 `Auditing.Database` 通过本套件。
 
 ## Caching
 

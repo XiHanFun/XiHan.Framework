@@ -98,7 +98,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 1. 清单声明 `Provides = [new CapabilityDeclaration(AuditingCapabilities.Trail, AuditingCapabilities.Version)]`，`Role = ManifestRole.Provider`，写法见[能力包与清单](/startup/features)。
 2. `Configure` 里把存储登记为单例；`context.Node.IsSelectedFor(AuditingCapabilities.Trail)` 为真时，用 `TryAddSingleton` 把同一个实例登记为 `IAuditSink` 与 `IAuditTrail`。特性先于内核的默认注册配置，所以 `TryAdd` 能先于 `NullAuditSink` 占住接收器。
 3. 同一分支里调用 `context.AddAuditing()`，注册消息目录与选项并挂上中间件；没被选中时不要调用，否则中间件会挂两次。
-4. `WriteAsync` 必须有界、不阻塞调用路径；`QueryAsync` 先调用 `query.Validate()`，续页令牌不可识别时返回 `AUDITING_VALIDATION_001`。
+4. `WriteAsync` 必须有界、不阻塞调用路径，并且不抛出：接收不下（队列满、已停止）或落地失败时自己丢弃、计数并节流告警，不把故障交给调用方；`QueryAsync` 先调用 `query.Validate()`，续页令牌不可识别时返回 `AUDITING_VALIDATION_001`。
 5. 测试项目继承 `Auditing.Conformance` 的 `AuditTrailConformance` 并通过全部用例。
 
 ## 行为与限制
