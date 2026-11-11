@@ -21,8 +21,8 @@ dotnet run -c Release --project framework/benchmarks/XiHan.Framework.Benchmarks 
 | 构建期代码样式 `EnforceCodeStyleInBuild`：IDE1006 命名（私有字段 `_camelCase`、私有常量 PascalCase）、IDE0005 未使用 using | `framework/Directory.Build.props`、`framework/.editorconfig` | 改名、删 using；批量清理 `dotnet format style framework/XiHan.Framework.slnx --diagnostics IDE0005 --severity warn`；增量构建可能不重编译，验证时加 `--no-incremental` |
 | XML 文档 `GenerateDocumentationFile`（CS1591 在 src 为错误） | `src/Directory.Build.props` | 给全部成员含私有补中文 `<summary>` |
 | NU1903/NU1904 漏洞 | 同上 | 升级依赖 |
-| PublicAPI 文件（RS00xx） | `src/Directory.Build.props` | 运行 `pwsh -File framework/scripts/Sync-PublicApi.ps1 -Project <csproj>` 同步 `PublicAPI.Unshipped.txt`；已发布行不改 |
-| 包验证 `EnablePackageValidation` | 同上 | 小版本不得破坏；大版本列出破坏清单 |
+| PublicAPI 文件（RS00xx） | `src/Directory.Build.props` | 运行 `pwsh -File framework/scripts/Sync-PublicApi.ps1 -Project <csproj>` 同步 `PublicAPI.Unshipped.txt`；`Stable` 与原语层的已发布行不改，`Preview` / `Experimental` 的已发布行用 Unshipped 里的 `*REMOVED*` 行撤下 |
+| 包验证 `EnablePackageValidation` | 同上 | `Stable` 小版本不得破坏；`Preview` / `Experimental` 小版本的破坏用 `dotnet pack -p:ApiCompatGenerateSuppressionFile=true` 写进包目录的 `CompatibilitySuppressions.xml`，与改动同一提交、引用 ADR、更新日志写迁移方式；补丁版本都不破坏；大版本列出破坏清单（RFC-0001「稳定性级别」、ADR-0131；基线随 5.0.0 发版设置） |
 | AOT 分析器 `IsAotCompatible` | 同上 | 去掉反射与动态代码 |
 | 自研分析器 XH0001–XH0005 | `src/XiHan.Framework.Kernel.Analyzers`，经 `src/Directory.Build.props` 引用 | 补 `[ApiLevel]`、改名、去反射；不加 `NoWarn` |
 | 架构测试 | `test/XiHan.Framework.Architecture.Tests` | 改名、改依赖、改命名空间；不改测试放宽 |

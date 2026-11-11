@@ -84,7 +84,7 @@ XiHan.Framework 是面向 .NET 10 的微内核应用框架。能力按环层拆�
 
 ### 公共 API
 
-- 公开类型有 `[ApiLevel]` 与准确的 XML 文档，`PublicAPI.Unshipped.txt` 同步更新；已发布行不改。
+- 公开类型有 `[ApiLevel]` 与准确的 XML 文档，`PublicAPI.Unshipped.txt` 同步更新；`Stable` 与原语层的已发布行不改，`Preview` / `Experimental` 的破坏按 ADR-0131 登记豁免。
 - Nullable 是契约的一部分；不要用 `!`、空字符串或默认实例掩盖非法状态。
 - 异步 API 接受并传递 `CancellationToken`；不阻塞异步调用，不吞异常。
 - 破坏性 API 变更必须明确说明迁移方式，不保留推测性兼容别名或静默兜底。

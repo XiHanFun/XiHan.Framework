@@ -131,10 +131,12 @@ Ring 0  原语层          Primitives
 | 级别 | 含义 |
 | --- | --- |
 | `Stable` | 大版本内不破坏 |
-| `Preview` | 可能变更 |
-| `Experimental` | 可能移除，用于收集反馈 |
+| `Preview` | 小版本可能变更，补丁版本不变；每次变更都在更新日志写明迁移方式 |
+| `Experimental` | 小版本可能变更或移除，用于收集反馈 |
 | `Internal` | 不对外承诺，分析器阻止外部引用 |
 | `Deprecated` | 将在下一个大版本移除 |
+
+级别在同一大版本内只升不降，`Stable` 的成员不依赖 `Preview` 或 `Experimental` 的类型。要求升级时不改代码，就只用 `Stable` 的 API。
 
 ## 下一步
 

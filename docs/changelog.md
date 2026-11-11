@@ -4,6 +4,10 @@
 
 ## 未发布
 
+### 版本与兼容
+
+- **调整** 稳定性级别的承诺：`Stable` 大版本内不破坏；`Preview` 与 `Experimental` 可能在小版本变更，补丁版本不变，每次变更在本页写明迁移方式；要求升级不改代码就只用 `Stable` 的 API（见 [稳定性分级](/getting-started/concepts#稳定性分级)）
+
 ### 子系统
 
 - **新增** `Messaging.Redis`：用 Redis Streams 提供 `messaging.queue@1`，只有 Redis 的部署也能跨进程收发消息；需显式 `UseFeature<RedisMessagingFeature>()`，配置节 `XiHan:Messaging:Redis`，可选绑定 `queue`（类型 `cache:distributed`），需要 Redis 6.2+，不提供 `messaging.stream@1`（见 [Messaging.Redis](/packages/messaging-redis)）
