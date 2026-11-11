@@ -95,7 +95,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage` | 定义列表 `QueryAsync`：按关键字（名字、显示名、说明）、名字、分类、状态、创建时间区间过滤，按排序项 `Sorts`（`WorkflowDefinitionSort`：白名单字段加方向，有序、可多个、最多 6 项）排序（空时名字升序、版本降序），返回摘要的一页与总数；`Limit` 缺省 100、最大 1000，分页或排序字段越界是 `WORKFLOW_VALIDATION_002`（ADR-0096、ADR-0102） |
 | `WorkflowDefinitionSort`、`WorkflowInstanceSort`、`WorkflowDefinitionSortField`、`WorkflowInstanceSortField`、`WorkflowSortKeys` | 列表排序的白名单与排序键：定义 `Name` / `Title` / `Version` / `Status` / `CreatedAt` / `PublishedAt`，实例 `CreatedAt` / `EndedAt` / `Status` / `DefinitionName` / `Title`；标题按前 256 个字符（见 [工作流指南的列表排序](/workflow/definitions)，ADR-0102） |
 | `WorkflowKeyword` | 列表查询关键字的折叠与匹配规则（见 [工作流指南的关键字](/workflow/definitions)） |
-| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`（实例全部等待点的摘要 `WorkflowBookmarkSummary`，不含载荷，ADR-0096）；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法 |
+| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy`、`WorkflowReservedNames` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`（实例全部等待点的摘要 `WorkflowBookmarkSummary`，不含载荷，ADR-0096）；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法；引擎保留的变量名（`lastError`、`signal`）、子流程回调输入键与结果标签在 `WorkflowReservedNames`，引擎、目录与任务服务的实现类型不公开（ADR-0135） |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Limit` 缺省 100、最大 1000；一组关联 ID `CorrelationIds` 最多 1000 个、空集合不匹配，只取顶层 `TopLevelOnly`，关键字 `Keyword` 匹配实例标题或关联 ID，排序项 `Sorts`（`WorkflowInstanceSort`，有序、可多个、最多 5 项）空时创建时间降序，ADR-0096、ADR-0099、ADR-0102） |
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityResumeContext`、`ActivityOutcome`、`ActivityOutgoing`、`ActivityDescriptor`、`ActivityRegistry` | 活动契约、执行上下文、返回值、出边模式与设计器描述符 |
@@ -113,7 +113,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件 |
 | `WorkflowErrors`、`WorkflowMessages`、`WorkflowCapabilities` | 错误码、消息键（目录 `workflow`，故障原因也是消息键，`WorkflowFault.Localize()` / `ToError()` 按调用方的区域本地化，ADR-0105）、能力 ID |
 
-`WorkflowServiceCollectionExtensions` 提供 `AddActivity<TActivity>`、`AddAssigneeProvider<TProvider>`、`AddWorkflowOutcomeHandler<THandler>`、`GetActivityRegistry`，以及给 Provider 用的 `AddWorkflowEngine(options)`。`AddWorkflowEngine` 把引擎、目录、任务服务、外部任务服务注册为作用域服务，表达式求值器、轮询器与 `WorkflowHttpClient` 注册为单例，并登记 19 个内置活动。
+`WorkflowServiceCollectionExtensions` 提供 `AddActivity<TActivity>`、`AddAssigneeProvider<TProvider>`、`AddWorkflowOutcomeHandler<THandler>`，以及给 Provider 用的 `AddWorkflowEngine(options)`。`AddWorkflowEngine` 把引擎、目录、任务服务、外部任务服务注册为作用域服务，表达式求值器、轮询器与 `WorkflowHttpClient` 注册为单例，并登记 19 个内置活动。
 
 ## 使用示例
 

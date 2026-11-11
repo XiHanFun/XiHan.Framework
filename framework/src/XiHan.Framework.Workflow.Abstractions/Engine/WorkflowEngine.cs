@@ -18,6 +18,7 @@ using XiHan.Framework.Workflow.Abstractions.Serialization;
 using XiHan.Framework.Workflow.Abstractions.Storage;
 using XiHan.Framework.Workflow.Abstractions.Tasks;
 using XiHan.Framework.Workflow.Abstractions.Values;
+using static XiHan.Framework.Workflow.Abstractions.Engine.WorkflowReservedNames;
 
 namespace XiHan.Framework.Workflow.Abstractions.Engine;
 
@@ -25,57 +26,11 @@ namespace XiHan.Framework.Workflow.Abstractions.Engine;
 /// 引擎（RFC-0021）
 /// </summary>
 /// <remarks>
-/// 在实例锁内按波次执行节点，状态先在会话里改、波次结束一次批量写回，事件波次后发布，子流程启动与父流程通知在锁外进行。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区，实例锁持有到作用域结束
+/// 在实例锁内按波次执行节点，状态先在会话里改、波次结束一次批量写回，事件波次后发布，子流程启动与父流程通知在锁外进行。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区，实例锁持有到作用域结束。
+/// 保留的变量名与回调输入键在 <see cref="WorkflowReservedNames"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class WorkflowEngine : IWorkflowEngine
+internal sealed partial class WorkflowEngine : IWorkflowEngine
 {
-    /// <summary>
-    /// 实例变量里记录最近一次"继续"错误的键
-    /// </summary>
-    /// <remarks>
-    /// 值是 <see cref="WorkflowFault"/> 的 JSON（ADR-0106）：表达式读 <c>lastError.code</c>（错误码）与 <c>lastError.message</c>（按进程默认区域渲染的文本），展示用 <c>WorkflowJson.DeserializeFault(variables[LastErrorVariable])?.Localize()</c> 按调用方的区域渲染 <c>messageKey</c> 与 <c>arguments</c>
-    /// </remarks>
-    public const string LastErrorVariable = "lastError";
-
-    /// <summary>
-    /// 继续出错时的出边结果标签
-    /// </summary>
-    public const string ErrorOutcome = "error";
-
-    /// <summary>
-    /// 子流程回调输入：子实例 ID
-    /// </summary>
-    public const string ChildInstanceIdInput = "childInstanceId";
-
-    /// <summary>
-    /// 子流程回调输入：子实例状态
-    /// </summary>
-    public const string ChildStatusInput = "childStatus";
-
-    /// <summary>
-    /// 子流程回调输入：子实例变量
-    /// </summary>
-    public const string ChildVariablesInput = "childVariables";
-
-    /// <summary>
-    /// 子流程回调输入：子实例故障
-    /// </summary>
-    /// <remarks>
-    /// 是 <see cref="WorkflowFault"/> 的 JSON（<c>code</c>、<c>message</c>、<c>messageKey</c>、<c>arguments</c>、<c>inner</c>），子实例没有故障时为空（ADR-0105）
-    /// </remarks>
-    public const string ChildFaultInput = "childFault";
-
-    /// <summary>
-    /// 信号启动时写入的变量：信号载荷
-    /// </summary>
-    public const string SignalVariable = "signal";
-
-    /// <summary>
-    /// 输出映射表达式作用域里本节点输出的名字
-    /// </summary>
-    public const string OutputsScopeName = "outputs";
-
     /// <summary>
     /// 通知父实例时等锁的尝试次数
     /// </summary>

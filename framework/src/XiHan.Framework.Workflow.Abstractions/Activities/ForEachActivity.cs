@@ -118,7 +118,7 @@ public sealed class ForEachActivity : IResumableActivity
             return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.TimedOut(context.Node)));
         }
 
-        var status = context.Inputs.TryGetPropertyValue(WorkflowEngine.ChildStatusInput, out var statusNode) && statusNode is JsonValue statusValue ? WorkflowValues.AsString(statusValue) : string.Empty;
+        var status = context.Inputs.TryGetPropertyValue(WorkflowReservedNames.ChildStatusInput, out var statusNode) && statusNode is JsonValue statusValue ? WorkflowValues.AsString(statusValue) : string.Empty;
         if (!string.Equals(status, nameof(WorkflowInstanceStatus.Completed), StringComparison.OrdinalIgnoreCase) && context.Property(FailFastProperty, true))
         {
             return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.ChildFailed(context.Inputs, status)));
@@ -126,7 +126,7 @@ public sealed class ForEachActivity : IResumableActivity
 
         // 状态里的数组已有父节点，改副本再放回去（JSON 节点只能有一个父）
         var results = (context.State[ResultsState] as JsonArray)?.DeepClone() as JsonArray ?? [];
-        results.Add(context.Inputs.TryGetPropertyValue(WorkflowEngine.ChildVariablesInput, out var variables) ? variables?.DeepClone() : null);
+        results.Add(context.Inputs.TryGetPropertyValue(WorkflowReservedNames.ChildVariablesInput, out var variables) ? variables?.DeepClone() : null);
         context.State[ResultsState] = results;
         var completed = WorkflowValues.ConvertOr(context.State[CompletedState], 0) + 1;
         context.State[CompletedState] = completed;

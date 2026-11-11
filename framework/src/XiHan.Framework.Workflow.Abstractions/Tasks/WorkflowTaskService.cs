@@ -22,8 +22,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 /// <remarks>
 /// 待办按书签查、完成经引擎消费书签、转办、加签、认领与释放在实例锁内改书签与节点状态、退回经引擎跳转、催办只发事件。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class WorkflowTaskService : IWorkflowTaskService
+internal sealed class WorkflowTaskService : IWorkflowTaskService
 {
     /// <summary>
     /// 退回写进节点历史的结果

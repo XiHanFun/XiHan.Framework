@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Abstractions.Instances;
@@ -53,7 +54,11 @@ public sealed class WorkflowInstance
     /// <summary>
     /// 汇合节点的到达记录，键为汇合节点 ID
     /// </summary>
-    public Dictionary<string, WorkflowJoinState> JoinStates { get; set; } = new(StringComparer.Ordinal);
+    /// <remarks>
+    /// 引擎的内部状态：随实例文档一起序列化（存储只经 <c>WorkflowJson</c> 存整份文档），不交给应用与 Provider 直接读写
+    /// </remarks>
+    [JsonInclude]
+    internal Dictionary<string, WorkflowJoinState> JoinStates { get; set; } = new(StringComparer.Ordinal);
 
     /// <summary>
     /// 业务关联 ID（如单据 ID）

@@ -14,8 +14,7 @@ namespace XiHan.Framework.Workflow.Database.Polling;
 /// <remarks>
 /// 按 <see cref="DatabaseWorkflowOptions.PollInterval"/> 定时，每个周期先经 <see cref="PollerLeadership"/> 拿或续领导权，只有持有时才调用 <see cref="DueBookmarkPoller.RunCycleAsync"/>（覆盖平台与每个启用的租户分区，到了维护周期再按保留期清理）。应用不在服务状态（启动中、排空中）的周期不拿也不续领导权，持有就立即释放：排空开始后最多一个轮询周期，另一个在服务的实例就能接手，不用等本节点的特性停止或租约到期。领导权是全局一份：平台库里的租约行 <see cref="PollerLeadership.Resource"/>，领导节点逐个分区轮询。不用 <see cref="DueBookmarkPoller.StartAsync"/> 的内置循环，领导权判定才能插在每个周期之前
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class DueBookmarkPollingLoop : IDisposable
+internal sealed partial class DueBookmarkPollingLoop : IDisposable
 {
     /// <summary>
     /// 轮询器

@@ -72,7 +72,7 @@ public static class WorkflowServiceCollectionExtensions
     /// <summary>
     /// 取（必要时创建）活动登记表
     /// </summary>
-    public static ActivityRegistry GetActivityRegistry(this IServiceCollection services)
+    internal static ActivityRegistry GetActivityRegistry(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
         // 登记表以实例注册，多次调用返回同一对象，特性与应用可以共同填充

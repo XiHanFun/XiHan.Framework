@@ -17,8 +17,7 @@ namespace XiHan.Framework.Workflow.Database.Locking;
 /// <remarks>
 /// 实例 ID 对应一行 <c>WorkflowLockRecord</c>，拿到后后台每三分之一租约续约一次，释放时删除自己的行；持有者消失时别的节点在租约到期后接管。等待超过 <see cref="WorkflowOptions.LockTimeout"/> → <see cref="WorkflowErrors.LockTimeout"/>；不可重入
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
+internal sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLock
 {
     /// <summary>
     /// 等待的起始间隔

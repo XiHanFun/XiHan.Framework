@@ -168,7 +168,8 @@ public abstract class WorkflowEngineConformance
         var executed = log.Executed.Where(entry => entry.InstanceId == instance.Id).Select(static entry => entry.NodeId).ToList();
         Assert.Equal(["left", "right", "after"], executed);
         Assert.Single((await host.NodeInstancesAsync(instance.Id).ConfigureAwait(false)).Where(static node => node.NodeId == "join"));
-        Assert.Empty(instance.JoinStates);
+        // 汇合记录是引擎的内部状态，只经实例文档可见：触发之后清空
+        Assert.Empty(JsonNode.Parse(WorkflowJson.Serialize(instance))!["joinStates"]!.AsObject());
 
         // 一个分支被决策导向没有出边的节点（不到汇合）：汇合的两条入边永远凑不齐 → 故障
         var dead = WorkflowDefinitionBuilder.Create("conf-dead-join")
@@ -471,7 +472,7 @@ public abstract class WorkflowEngineConformance
 
         var continued = (await host.StartAsync("conf-continue").ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "errored"), (continued.Status, continued.Outcome));
-        Assert.Equal(WorkflowErrors.ActivityFailed, continued.Variables[WorkflowEngine.LastErrorVariable]!["code"]!.GetValue<string>());
+        Assert.Equal(WorkflowErrors.ActivityFailed, continued.Variables[WorkflowReservedNames.LastErrorVariable]!["code"]!.GetValue<string>());
     }
 
     /// <summary>
@@ -883,7 +884,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(1, (await host.SignalAsync("order.created", new JsonObject { ["amount"] = 5 }, "ord-9").ConfigureAwait(false)).ValueOrThrow());
         var started = Assert.Single(log.EventsOf(WorkflowTopics.InstanceStarted).Where(static data => data.DefinitionName == "conf-signal-start"));
         var instance = await host.InstanceAsync(started.InstanceId).ConfigureAwait(false);
-        Assert.Equal((WorkflowInstanceStatus.Completed, "ord-9", 5), (instance.Status, instance.CorrelationId, instance.Variables[WorkflowEngine.SignalVariable]!["amount"]!.GetValue<int>()));
+        Assert.Equal((WorkflowInstanceStatus.Completed, "ord-9", 5), (instance.Status, instance.CorrelationId, instance.Variables[WorkflowReservedNames.SignalVariable]!["amount"]!.GetValue<int>()));
         Assert.Equal(0, (await host.SignalAsync("order.deleted").ConfigureAwait(false)).ValueOrThrow());
         var byCron = WorkflowDefinitionBuilder.Create("conf-cron-start")
             .AddNode("start", ActivityTypes.Start, configure: node => node.WithProperty(StartActivity.CronProperty, "* * * * * *"))
@@ -1926,7 +1927,7 @@ public abstract class WorkflowEngineConformance
         // lastError：表达式照旧按错误码、消息键与按进程默认区域渲染的消息判断；展示按区域渲染
         var continued = (await host.StartAsync("conf-l10n-continue").ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal((WorkflowInstanceStatus.Completed, "errored"), (continued.Status, continued.Outcome));
-        var lastError = WorkflowJson.DeserializeFault((await host.InstanceAsync(continued.Id).ConfigureAwait(false)).Variables[WorkflowEngine.LastErrorVariable])!;
+        var lastError = WorkflowJson.DeserializeFault((await host.InstanceAsync(continued.Id).ConfigureAwait(false)).Variables[WorkflowReservedNames.LastErrorVariable])!;
         Assert.Equal((WorkflowErrors.InputInvalid, WorkflowMessages.PropertyNotArray), (lastError.Code, lastError.MessageKey));
         Assert.Equal("活动属性 'Items' 的求值结果必须是数组。", In("zh-CN", lastError.Localize));
         Assert.Equal("Activity property 'Items' must evaluate to an array.", In("en-US", lastError.Localize));

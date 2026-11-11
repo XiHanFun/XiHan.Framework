@@ -81,7 +81,7 @@ public sealed class SubWorkflowActivity : IResumableActivity
             return ValueTask.FromResult(Result.Failure<ActivityOutcome>(ActivityFailures.TimedOut(context.Node)));
         }
 
-        var status = context.Inputs.TryGetPropertyValue(WorkflowEngine.ChildStatusInput, out var statusNode) && statusNode is JsonValue statusValue ? WorkflowValues.AsString(statusValue) : string.Empty;
+        var status = context.Inputs.TryGetPropertyValue(WorkflowReservedNames.ChildStatusInput, out var statusNode) && statusNode is JsonValue statusValue ? WorkflowValues.AsString(statusValue) : string.Empty;
         var completed = string.Equals(status, nameof(WorkflowInstanceStatus.Completed), StringComparison.OrdinalIgnoreCase);
         if (!completed && context.Property(FailOnChildFaultProperty, true))
         {
@@ -90,7 +90,7 @@ public sealed class SubWorkflowActivity : IResumableActivity
 
         var outputs = new JsonObject();
         var resultVariable = context.Property<string>(ResultVariableProperty);
-        if (!string.IsNullOrWhiteSpace(resultVariable) && context.Inputs.TryGetPropertyValue(WorkflowEngine.ChildVariablesInput, out var variables))
+        if (!string.IsNullOrWhiteSpace(resultVariable) && context.Inputs.TryGetPropertyValue(WorkflowReservedNames.ChildVariablesInput, out var variables))
         {
             outputs[resultVariable] = variables?.DeepClone();
         }

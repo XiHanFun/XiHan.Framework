@@ -22,8 +22,7 @@ namespace XiHan.Framework.Workflow.Abstractions.ExternalTasks;
 /// <remarks>
 /// 领取在实例锁内把锁写进 <c>External</c> 书签载荷并把书签 <c>DueAt</c> 设为锁到期时刻（到期由轮询恢复、活动原样重新挂起即自动解锁）；完成与无重试的失败先在锁内校验工作者持锁，交还锁后经引擎消费书签（引擎复用本作用域空闲的锁）；带重试的失败与延长锁只改书签。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
+internal sealed class WorkflowExternalTaskService : IWorkflowExternalTaskService
 {
     /// <summary>
     /// 引擎

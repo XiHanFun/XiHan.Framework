@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// 活动登记表
 /// </summary>
 /// <remarks>
-/// 类型名 → 定义；以实例注册，特性与应用共同填充
+/// 类型名 → 定义；以实例注册，只经 <c>AddActivity&lt;TActivity&gt;</c> 填充，应用只读取
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ActivityRegistry
@@ -18,6 +18,16 @@ public sealed class ActivityRegistry
     /// 类型名 → 定义，按名字排序
     /// </summary>
     private readonly SortedDictionary<string, ActivityDefinition> _activities = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// 由装配扩展创建
+    /// </summary>
+    /// <remarks>
+    /// 只登记进表、不注册进容器的活动要到运行时才失败，所以不公开构造与 <see cref="Add"/>
+    /// </remarks>
+    internal ActivityRegistry()
+    {
+    }
 
     /// <summary>
     /// 全部定义，按类型名排序
@@ -40,7 +50,7 @@ public sealed class ActivityRegistry
     /// <remarks>
     /// 同一类型名登记两个不同的类是编程错误，同一个类重复登记忽略
     /// </remarks>
-    public ActivityRegistry Add(ActivityDefinition definition)
+    internal ActivityRegistry Add(ActivityDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
         if (_activities.TryGetValue(definition.Type.Value, out var existing))

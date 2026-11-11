@@ -17,8 +17,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// <remarks>
 /// 生命周期规则在这里，存储只管读写。作用域服务：每个操作在调用方的事务里执行（没有可加入的事务时自己开一次调用），只读写调用方租户的分区——平台调用只看得到、改得动平台的定义，租户只看得到、改得动本租户的
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
+internal sealed class WorkflowDefinitionCatalog : IWorkflowDefinitionCatalog
 {
     /// <summary>
     /// 存储

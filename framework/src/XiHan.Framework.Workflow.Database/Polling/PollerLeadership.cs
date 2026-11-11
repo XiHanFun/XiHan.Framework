@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Database.Locking;
 
 namespace XiHan.Framework.Workflow.Database.Polling;
@@ -13,8 +12,7 @@ namespace XiHan.Framework.Workflow.Database.Polling;
 /// <remarks>
 /// 用与实例锁同一张租约表、资源名 <see cref="Resource"/>。每个轮询周期调用一次 <see cref="TryHoldAsync"/>：没持有就尝试一次（不等待），持有就按需续约；拿不到的节点跳过本周期。领导权只为省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由引擎的实例锁串行化。只在单个轮询循环里使用，不做并发保护
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class PollerLeadership
+internal sealed partial class PollerLeadership
 {
     /// <summary>
     /// 租约行的资源名
