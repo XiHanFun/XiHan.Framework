@@ -10,23 +10,18 @@ namespace XiHan.Framework.Caching.Abstractions.Locking;
 /// 已获取的锁
 /// </summary>
 /// <remarks>
-/// 释放一次；释放或到期后再释放返回 <see langword="false"/>
+/// 释放一次；释放或到期后再释放返回 <see langword="false"/>。抽象基类：锁的实现派生它并实现 <see cref="ReleaseCoreAsync"/>，包外也能实现 <see cref="IDistributedLock"/>；以后加续约只加虚成员，不破坏已有实现（ADR-0165）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed class LockHandle : IAsyncDisposable
+public abstract class LockHandle : IAsyncDisposable
 {
-    /// <summary>
-    /// 释放回调：按令牌比较删除锁条目，仍持有时返回 <see langword="true"/>
-    /// </summary>
-    private readonly Func<CancellationToken, ValueTask<bool>> _release;
-
     /// <summary>
     /// 是否已经调用过释放
     /// </summary>
     /// <remarks>
-    /// 保证释放只执行一次
+    /// 0 未释放、1 已释放；原子交换保证并发释放也只执行一次
     /// </remarks>
-    private bool _released;
+    private int _released;
 
     /// <summary>
     /// 由锁实现创建句柄
@@ -34,11 +29,18 @@ public sealed class LockHandle : IAsyncDisposable
     /// <remarks>
     /// 调用方只通过 <see cref="IDistributedLock.TryAcquireAsync"/> 获得
     /// </remarks>
-    internal LockHandle(CacheKey resource, string token, Func<CancellationToken, ValueTask<bool>> release)
+    /// <param name="resource">被锁的资源</param>
+    /// <param name="token">本次持有的唯一令牌，不能为空白</param>
+    protected LockHandle(CacheKey resource, string token)
     {
+        if (resource == default)
+        {
+            throw new ArgumentException("The locked resource must not be the default value.", nameof(resource));
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(token);
         Resource = resource;
         Token = token;
-        _release = release;
     }
 
     /// <summary>
@@ -58,20 +60,31 @@ public sealed class LockHandle : IAsyncDisposable
     /// 释放
     /// </summary>
     /// <remarks>
-    /// 仍持有并成功删除返回 <see langword="true"/>
+    /// 仍持有并成功删除返回 <see langword="true"/>；只执行一次，之后返回 <see langword="false"/>
     /// </remarks>
     public async ValueTask<bool> ReleaseAsync(CancellationToken cancellationToken)
     {
-        if (_released)
+        // 先置位再释放：即使释放失败（锁已到期、令牌不再匹配）也不重试，句柄从此视为无效
+        if (Interlocked.Exchange(ref _released, 1) == 1)
         {
             return false;
         }
 
-        // 先置位再释放：即使释放失败（锁已到期、令牌不再匹配）也不重试，句柄从此视为无效
-        _released = true;
-        return await _release(cancellationToken).ConfigureAwait(false);
+        return await ReleaseCoreAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync() => await ReleaseAsync(CancellationToken.None).ConfigureAwait(false);
+    public async ValueTask DisposeAsync()
+    {
+        await ReleaseAsync(CancellationToken.None).ConfigureAwait(false);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// 按令牌比较后删除锁
+    /// </summary>
+    /// <remarks>
+    /// 由 <see cref="ReleaseAsync"/> 至多调用一次；仍持有并删除返回 <see langword="true"/>，已到期或令牌不再匹配返回 <see langword="false"/>
+    /// </remarks>
+    protected abstract ValueTask<bool> ReleaseCoreAsync(CancellationToken cancellationToken);
 }

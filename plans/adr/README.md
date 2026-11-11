@@ -164,3 +164,4 @@
 | [0162](0162-待办排序项与状态序号公开一份.md) | 待办查询的 `bool Descending` 改为排序项列表 `Sorts`（`UserTaskSort` / `UserTaskSortField`，同定义与实例查询的核对与消息键）；状态序号 `WorkflowStatusOrder.Of` 移到抽象包公开一份，存储实现共用；`ResumeAsync` 与任务服务的边界留作后续 | 已采纳 |
 | [0163](0163-分片句柄覆盖标志必填与文件系统存储只经工厂创建.md) | 分片句柄的 `Overwrite` 改为 `required` 初始化成员，重建时漏写编译不过；`FileSystemBlobStore` 构造与初始化改 internal，只经 `CreateAsync` 创建；对象存储一致性套件改为异步创建被测存储 | 已采纳 |
 | [0164](0164-雪花ID只经分解与命令超时为TimeSpan.md) | `SnowflakeId` 去掉位置参数与公开构造，只经 `Parse(value, epoch)` 分解得到；SqlSugar 的命令超时改为 `TimeSpan CommandTimeout`（配置键不变） | 已采纳 |
+| [0165](0165-锁句柄改为抽象基类.md) | `LockHandle` 改为抽象基类（受保护构造、`ReleaseCoreAsync`、原子的只释放一次），包外能实现 `IDistributedLock`；续约要存储层的比较后延期原语与远程操作集同步，留作后续 | 已采纳 |

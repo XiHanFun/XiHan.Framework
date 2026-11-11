@@ -33,7 +33,19 @@ public sealed class StoreDistributedLock(ICacheStore store) : IDistributedLock
         var tokenBytes = new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(token));
         var acquired = await _store.TryAddAsync(key, tokenBytes, CacheEntryOptions.Expires(timeToLive), cancellationToken).ConfigureAwait(false);
         return acquired
-            ? Maybe.Some(new LockHandle(resource, token, ct => _store.TryRemoveAsync(key, tokenBytes, ct)))
+            ? Maybe.Some<LockHandle>(new StoreLockHandle(_store, key, resource, token, tokenBytes))
             : default;
+    }
+
+    /// <summary>
+    /// 存在缓存存储里的锁的句柄
+    /// </summary>
+    /// <remarks>
+    /// 释放按令牌比较删除锁条目：锁到期后被他人获取会换成新令牌，旧句柄删不掉别人的锁
+    /// </remarks>
+    private sealed class StoreLockHandle(ICacheStore store, CacheKey entry, CacheKey resource, string token, ReadOnlyMemory<byte> tokenBytes) : LockHandle(resource, token)
+    {
+        /// <inheritdoc />
+        protected override ValueTask<bool> ReleaseCoreAsync(CancellationToken cancellationToken) => store.TryRemoveAsync(entry, tokenBytes, cancellationToken);
     }
 }

@@ -15,7 +15,8 @@
 | `IDistributedLock.TryAcquireAsync(resource, timeToLive, ct)` | 返回 `Maybe<LockHandle>`；被占用时无值，不产生错误码 |
 | `DistributedLockExtensions.AcquireAsync(resource, timeToLive, ct)` | 结果式版本，返回 `Result<LockHandle>`；被占用返回 `CACHING_CONFLICT_001` |
 | `LockHandle.Resource` / `LockHandle.Token` | 锁定的资源键与本次获取的令牌 |
-| `LockHandle.ReleaseAsync(ct)` / `DisposeAsync()` | 按令牌比较删除；只释放一次，重复释放返回 `false` |
+| `LockHandle.ReleaseAsync(ct)` / `DisposeAsync()` | 按令牌比较删除；只释放一次（并发释放也只执行一次），重复释放返回 `false` |
+| 自己实现 `IDistributedLock` | 派生抽象类 `LockHandle`（受保护构造收资源与令牌），实现 `ReleaseCoreAsync`；基类保证释放只调用它一次 |
 
 锁不可重入、不续约，到期后别人可以获取，原持有者再释放返回 `false`，不会误删别人的锁。`IDistributedLock` 由被选中提供 `caching.distributed` 的 Provider（内存、Redis、远程）登记在容器里，用的 `ICacheStore` 与 `ISharedCache.Store` 是同一个实例。
 
