@@ -391,7 +391,7 @@
           "summary": "服务地址，逗号或分号分隔的绝对 http(s) URL，按序尝试；绑定 nacos 的值优先，没有绑定或其值为空时读本键"
         },
         {
-          "key": "Username",
+          "key": "UserName",
           "type": "string",
           "sample": "nacos",
           "summary": "登录用户名；与 Password 都给出时先登录取令牌；空白视为没有；绑定 nacos 的属性 username 优先"
@@ -400,7 +400,7 @@
           "key": "Password",
           "type": "string",
           "sample": "nacos",
-          "summary": "登录密码；与 Username 一起给出时生效；绑定 nacos 的属性 password 优先"
+          "summary": "登录密码；与 UserName 一起给出时生效；绑定 nacos 的属性 password 优先"
         },
         {
           "key": "Tenant",
@@ -692,7 +692,7 @@
           "summary": "引导地址，逗号分隔的 host:port；绑定 stream 的值优先，没有绑定或其值为空时读本键"
         },
         {
-          "key": "GroupId",
+          "key": "ConsumerGroup",
           "type": "string",
           "default": "xihan",
           "summary": "消费组；同一组的实例分摊分区"
@@ -837,7 +837,7 @@
           "summary": "流键的前缀：主题的流是前缀加主题，死信流再加 DeadLetterSuffix；发布方与订阅方要一致"
         },
         {
-          "key": "GroupName",
+          "key": "ConsumerGroup",
           "type": "string",
           "default": "xihan",
           "summary": "竞争订阅的消费组名（字母或数字开头、≤64 字符、不含 @）；广播订阅的组是它加 @ 与实例标识"
