@@ -29,6 +29,12 @@ XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.ContinuationToken.init -> 
 XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Equals(XiHan.Framework.Auditing.Abstractions.Trail.AuditPage? other) -> bool
 XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Items.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Diagnostics.AuditEvent!>!
 XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Items.init -> void
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.<Clone>$() -> XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter!
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.Equals(XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter? other) -> bool
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.IsAny.get -> bool
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.Matches(string? principalId) -> bool
+XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.PrincipalId.get -> string?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.<Clone>$() -> XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery!
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Action.get -> string?
@@ -42,19 +48,25 @@ XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.From.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Matches(XiHan.Framework.Kernel.Diagnostics.AuditEvent! auditEvent) -> bool
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.PageSize.get -> int
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.PageSize.init -> void
-XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.PrincipalId.get -> string?
-XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.PrincipalId.init -> void
+XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Principal.get -> XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter!
+XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Principal.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Resource.get -> string?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Resource.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Succeeded.get -> bool?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Succeeded.init -> void
-XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.TenantId.get -> string?
-XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.TenantId.init -> void
+XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Tenant.get -> XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter!
+XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Tenant.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.To.get -> System.DateTimeOffset?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.To.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.TraceId.get -> string?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.TraceId.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Validate() -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter
+XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.<Clone>$() -> XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter!
+XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.Equals(XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter? other) -> bool
+XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.IsAny.get -> bool
+XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.Matches(string? tenantId) -> bool
+XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.TenantId.get -> string?
 XiHan.Framework.Auditing.Abstractions.Trail.IAuditTrail
 XiHan.Framework.Auditing.Abstractions.Trail.IAuditTrail.QueryAsync(XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Auditing.Abstractions.Trail.AuditPage!>>
 const XiHan.Framework.Auditing.Abstractions.AuditingCapabilities.Trail = "auditing.trail" -> string!
@@ -72,9 +84,15 @@ override XiHan.Framework.Auditing.Abstractions.AuditingOptions.ToString() -> str
 override XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.Equals(object? obj) -> bool
 override XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.GetHashCode() -> int
 override XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.ToString() -> string!
+override XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.Equals(object? obj) -> bool
+override XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.GetHashCode() -> int
+override XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.ToString() -> string!
 override XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Equals(object? obj) -> bool
 override XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.GetHashCode() -> int
 override XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.ToString() -> string!
+override XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.Equals(object? obj) -> bool
+override XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.GetHashCode() -> int
+override XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.ToString() -> string!
 static XiHan.Framework.Auditing.Abstractions.AuditingFeatureContextExtensions.AddAuditing(this XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> XiHan.Framework.Kernel.Hosting.FeatureContext!
 static XiHan.Framework.Auditing.Abstractions.AuditingMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
 static XiHan.Framework.Auditing.Abstractions.AuditingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Auditing.Abstractions.AuditingOptions!
@@ -88,5 +106,15 @@ static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.
 static XiHan.Framework.Auditing.Abstractions.Pipeline.AuditInvocationExtensions.SetAuditResource(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Security.ResourceName resource) -> void
 static XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.operator !=(XiHan.Framework.Auditing.Abstractions.Trail.AuditPage? left, XiHan.Framework.Auditing.Abstractions.Trail.AuditPage? right) -> bool
 static XiHan.Framework.Auditing.Abstractions.Trail.AuditPage.operator ==(XiHan.Framework.Auditing.Abstractions.Trail.AuditPage? left, XiHan.Framework.Auditing.Abstractions.Trail.AuditPage? right) -> bool
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.Anonymous.get -> XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter!
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.Any.get -> XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter!
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.Of(string! principalId) -> XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter!
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.operator !=(XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter? left, XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter? right) -> bool
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter.operator ==(XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter? left, XiHan.Framework.Auditing.Abstractions.Trail.AuditPrincipalFilter? right) -> bool
 static XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.operator !=(XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery? left, XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery? right) -> bool
 static XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.operator ==(XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery? left, XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery? right) -> bool
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.Any.get -> XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter!
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.Global.get -> XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter!
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.Of(string! tenantId) -> XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter!
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.operator !=(XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter? left, XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter? right) -> bool
+static XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.operator ==(XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter? left, XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter? right) -> bool

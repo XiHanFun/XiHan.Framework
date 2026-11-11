@@ -267,8 +267,13 @@ public sealed class AuditMiddlewareTests
             TraceId = "trace",
             PrincipalId = "alice",
         };
-        Assert.True(new AuditQuery { Action = "orders.create", PrincipalId = "alice", Succeeded = true, From = DateTimeOffset.UnixEpoch, To = DateTimeOffset.UnixEpoch }.Matches(auditEvent));
-        Assert.False(new AuditQuery { TenantId = "acme" }.Matches(auditEvent));
+        Assert.True(new AuditQuery { Action = "orders.create", Principal = AuditPrincipalFilter.Of("alice"), Succeeded = true, From = DateTimeOffset.UnixEpoch, To = DateTimeOffset.UnixEpoch }.Matches(auditEvent));
+        Assert.False(new AuditQuery { Tenant = AuditTenantFilter.Of("acme") }.Matches(auditEvent));
+        Assert.True(new AuditQuery { Tenant = AuditTenantFilter.Global }.Matches(auditEvent));
+        Assert.False(new AuditQuery { Principal = AuditPrincipalFilter.Anonymous }.Matches(auditEvent));
+        Assert.Throws<ArgumentException>(static () => AuditTenantFilter.Of(" "));
+        Assert.Throws<ArgumentException>(static () => AuditPrincipalFilter.Of(""));
+        Assert.Throws<ArgumentNullException>(static () => new AuditQuery { Tenant = null! });
         Assert.False(new AuditQuery { Succeeded = false }.Matches(auditEvent));
 
         var context = App.CreateContext(new ServiceCollection().BuildServiceProvider(), CancellationToken.None);

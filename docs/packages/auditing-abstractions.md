@@ -59,7 +59,7 @@ dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 | `Pipeline.AuditMiddleware` | Observe 阶段末尾的审计中间件 |
 | `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `FindAuditAction`、`FindAuditResource`、`FindAuditDetails`（只读副本） |
 | `Trail.IAuditTrail` | `QueryAsync(AuditQuery, CancellationToken)` → `Result<AuditPage>` |
-| `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`PrincipalId`、`TenantId`、`TraceId`、`Resource`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
+| `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`Principal`（`AuditPrincipalFilter`）、`Tenant`（`AuditTenantFilter`）、`TraceId`、`Resource`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
 | `Trail.AuditPage` | `Items`（按写入顺序升序）与 `ContinuationToken`（没有下一页为 `null`） |
 | `AuditingFeatureContextExtensions` | `AddAuditing(this FeatureContext)`：注册消息目录 `auditing` 与选项，把中间件挂到 Observe 末尾 |
 | `AuditingErrors`、`AuditingMessages` | 错误码与消息键 |

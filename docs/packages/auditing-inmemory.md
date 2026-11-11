@@ -117,7 +117,7 @@ public sealed class AuditTrailTests
 - 续页令牌是十进制序号，不能解析或为负数时返回 `AUDITING_VALIDATION_001`；页大小越界、起止颠倒同样返回该错误码。
 - `LogEvents` 的日志模板是 `Audit {Action} {Outcome} by {PrincipalId} in tenant {TenantId} on {Resource} ({TraceId}).`，成功时 `Outcome` 为 `success`，失败时为错误码。
 - 单进程、重启即失，多实例之间不共享。
-- 记录不按租户分区，查询要显式传 `TenantId`。
+- 记录不按租户分区，查询要显式传 `Tenant = AuditTenantFilter.Of(…)`；只要平台级事件用 `AuditTenantFilter.Global`。
 
 ## 相关
 

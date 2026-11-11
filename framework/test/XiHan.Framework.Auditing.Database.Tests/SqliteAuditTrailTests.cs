@@ -76,12 +76,12 @@ public sealed class SqliteAuditTrailTests
         Assert.Equal(_epoch.AddMinutes(1), byTime.Items[0].Timestamp);
         // 动作、主体、租户、trace-id、成败各是一个 SQL 条件
         Assert.Equal(["alice", "alice", "carol"], (await QueryAsync(new AuditQuery { Action = "orders.create" })).Items.Select(static e => e.PrincipalId));
-        Assert.Equal(["orders.create", "orders.create", "orders.export"], (await QueryAsync(new AuditQuery { PrincipalId = "alice" })).Items.Select(static e => e.Action));
-        Assert.Equal(["alice", "bob", "alice", "carol"], (await QueryAsync(new AuditQuery { TenantId = "acme" })).Items.Select(static e => e.PrincipalId));
+        Assert.Equal(["orders.create", "orders.create", "orders.export"], (await QueryAsync(new AuditQuery { Principal = AuditPrincipalFilter.Of("alice") })).Items.Select(static e => e.Action));
+        Assert.Equal(["alice", "bob", "alice", "carol"], (await QueryAsync(new AuditQuery { Tenant = AuditTenantFilter.Of("acme") })).Items.Select(static e => e.PrincipalId));
         Assert.Equal(4, (await QueryAsync(new AuditQuery { TraceId = trace })).Items.Count);
         Assert.Single((await QueryAsync(new AuditQuery { TraceId = other })).Items);
         Assert.Equal(["orders.delete"], (await QueryAsync(new AuditQuery { Succeeded = false })).Items.Select(static e => e.Action));
-        Assert.Equal(["bob", "carol"], (await QueryAsync(new AuditQuery { TraceId = trace, TenantId = "acme", From = _epoch.AddMinutes(1) })).Items.Select(static e => e.PrincipalId));
+        Assert.Equal(["bob", "carol"], (await QueryAsync(new AuditQuery { TraceId = trace, Tenant = AuditTenantFilter.Of("acme"), From = _epoch.AddMinutes(1) })).Items.Select(static e => e.PrincipalId));
 
         // 每页 2 条：续页令牌是序号；4 条正好两页，第二页已知没有下一页所以没有令牌
         var first = await QueryAsync(new AuditQuery { TraceId = trace, PageSize = 2 });

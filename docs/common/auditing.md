@@ -225,7 +225,9 @@ public sealed class OrdersFeature : IFeature
 | `AuditQuery` 成员 | 说明 |
 | --- | --- |
 | `From`、`To` | 时间范围，两端都包含；`From` 晚于 `To` 时查询不合法 |
-| `Action`、`PrincipalId`、`TenantId`、`TraceId`、`Resource` | 区分大小写的精确匹配；`Resource` 是 `xrn:` 文本，查某个资源的全部历史 |
+| `Action`、`TraceId`、`Resource` | 区分大小写的精确匹配；`Resource` 是 `xrn:` 文本，查某个资源的全部历史 |
+| `Principal` | `AuditPrincipalFilter`：缺省 `Any` 不过滤，`Anonymous` 只要匿名调用，`Of(id)` 只要某个主体 |
+| `Tenant` | `AuditTenantFilter`：缺省 `Any` 不过滤，`Global` 只要不属于任何租户的事件，`Of(id)` 只要某个租户 |
 | `Succeeded` | `true` 只取成功，`false` 只取失败 |
 | `PageSize` | 缺省 100，取值 1 到 `AuditQuery.MaxPageSize`（1000） |
 | `ContinuationToken` | 上一页返回的续页令牌 |
@@ -247,7 +249,7 @@ public sealed class FailureStatistics(IAuditTrail trail)
         string? token = null;
         do
         {
-            var query = new AuditQuery { TenantId = tenantId, From = from, To = to, Succeeded = false, PageSize = AuditQuery.MaxPageSize, ContinuationToken = token };
+            var query = new AuditQuery { Tenant = AuditTenantFilter.Of(tenantId), From = from, To = to, Succeeded = false, PageSize = AuditQuery.MaxPageSize, ContinuationToken = token };
             var page = await trail.QueryAsync(query, cancellationToken);
             if (!page.TryGetValue(out var current))
             {
@@ -271,7 +273,7 @@ public sealed class FailureStatistics(IAuditTrail trail)
 `FailureStatistics` 以 `builder.Services.AddSingleton<FailureStatistics>()` 登记。
 
 ::: warning 审计记录是平台级数据
-审计记录不实现 `IMultiTenant`，`IAuditTrail` 不按当前租户自动过滤。给租户管理员看的界面必须显式传 `TenantId`；数据库存储里独立库租户的记录也落在应用的默认连接，靠租户列区分（规范 RFC-0015《审计》）。
+审计记录不实现 `IMultiTenant`，`IAuditTrail` 不按当前租户自动过滤。给租户管理员看的界面必须显式传 `Tenant = AuditTenantFilter.Of(…)`；数据库存储里独立库租户的记录也落在应用的默认连接，靠租户列区分（规范 RFC-0015《审计》）。
 :::
 
 ## 内存存储
@@ -381,7 +383,7 @@ Problem Details、日志与审计事件共用 trace-id：拿到请求返回的 t
 
 ### 租户管理员能看别的租户的审计吗
 
-`IAuditTrail` 不按当前租户过滤，给租户看的界面必须由应用显式传 `TenantId` 并做好授权。审计是平台级数据，不随租户分库。
+`IAuditTrail` 不按当前租户过滤，给租户看的界面必须由应用显式传 `AuditTenantFilter.Of(…)` 并做好授权。审计是平台级数据，不随租户分库。
 
 ## 相关包与下一步
 

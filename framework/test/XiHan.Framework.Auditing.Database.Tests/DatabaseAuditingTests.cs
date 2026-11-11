@@ -69,7 +69,7 @@ public sealed class DatabaseAuditingTests
         await trail.FlushAsync(CancellationToken.None);
         Assert.Equal((0, 1L, 0L, 0L), (trail.PendingCount, trail.PersistedCount, trail.FailedCount, trail.DroppedCount));
 
-        var page = (await trail.QueryAsync(new AuditQuery { Action = CreateOrder.Id, PrincipalId = "alice" }, CancellationToken.None)).ValueOrThrow();
+        var page = (await trail.QueryAsync(new AuditQuery { Action = CreateOrder.Id, Principal = AuditPrincipalFilter.Of("alice") }, CancellationToken.None)).ValueOrThrow();
         var recorded = Assert.Single(page.Items);
         Assert.Null(page.ContinuationToken);
         Assert.Equal(("alice", "acme", "xrn:global:orders:acme:order/o-1", _start), (recorded.PrincipalId, recorded.TenantId, recorded.Resource, recorded.Timestamp));
@@ -100,7 +100,7 @@ public sealed class DatabaseAuditingTests
         }, baggage: _alice);
         await trail.FlushAsync(CancellationToken.None);
 
-        var events = (await trail.QueryAsync(new AuditQuery { Succeeded = false, PrincipalId = "alice" }, CancellationToken.None)).ValueOrThrow().Items;
+        var events = (await trail.QueryAsync(new AuditQuery { Succeeded = false, Principal = AuditPrincipalFilter.Of("alice") }, CancellationToken.None)).ValueOrThrow().Items;
         Assert.Equal(["orders.create", "orders.print"], events.Select(static e => e.Action));
         var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
         // 带键的错误按键与细节还原，读取方按区域翻译

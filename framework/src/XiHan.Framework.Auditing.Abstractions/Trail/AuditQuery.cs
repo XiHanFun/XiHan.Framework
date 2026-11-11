@@ -9,6 +9,9 @@ namespace XiHan.Framework.Auditing.Abstractions.Trail;
 /// <summary>
 /// 审计查询：过滤项全部可选且取交集，按写入顺序升序分页
 /// </summary>
+/// <remarks>
+/// 租户与主体用显式过滤，能区分「不过滤」与「只要全局 / 匿名」；其余可空的过滤项为 <see langword="null"/> 时不按它过滤（ADR-0169）
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record AuditQuery
 {
@@ -33,14 +36,28 @@ public sealed record AuditQuery
     public string? Action { get; init; }
 
     /// <summary>
-    /// 主体 ID
+    /// 主体过滤
     /// </summary>
-    public string? PrincipalId { get; init; }
+    /// <remarks>
+    /// 缺省 <see cref="AuditPrincipalFilter.Any"/>；<see cref="AuditPrincipalFilter.Anonymous"/> 只要匿名调用的事件
+    /// </remarks>
+    public AuditPrincipalFilter Principal
+    {
+        get => field;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = AuditPrincipalFilter.Any;
 
     /// <summary>
-    /// 租户 ID
+    /// 租户过滤
     /// </summary>
-    public string? TenantId { get; init; }
+    /// <remarks>
+    /// 缺省 <see cref="AuditTenantFilter.Any"/>；<see cref="AuditTenantFilter.Global"/> 只要不属于任何租户的事件
+    /// </remarks>
+    public AuditTenantFilter Tenant
+    {
+        get => field;
+        init => field = value ?? throw new ArgumentNullException(nameof(value));
+    } = AuditTenantFilter.Any;
 
     /// <summary>
     /// trace-id
@@ -103,8 +120,8 @@ public sealed record AuditQuery
         return (From is not { } from || auditEvent.Timestamp >= from)
             && (To is not { } to || auditEvent.Timestamp <= to)
             && (Action is null || string.Equals(Action, auditEvent.Action, StringComparison.Ordinal))
-            && (PrincipalId is null || string.Equals(PrincipalId, auditEvent.PrincipalId, StringComparison.Ordinal))
-            && (TenantId is null || string.Equals(TenantId, auditEvent.TenantId, StringComparison.Ordinal))
+            && Principal.Matches(auditEvent.PrincipalId)
+            && Tenant.Matches(auditEvent.TenantId)
             && (TraceId is null || string.Equals(TraceId, auditEvent.TraceId, StringComparison.Ordinal))
             && (Resource is null || string.Equals(Resource, auditEvent.Resource, StringComparison.Ordinal))
             && (Succeeded is not { } succeeded || auditEvent.Outcome.IsSuccess == succeeded);

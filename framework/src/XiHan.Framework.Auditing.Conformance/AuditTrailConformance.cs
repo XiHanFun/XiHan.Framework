@@ -81,14 +81,14 @@ public abstract class AuditTrailConformance
             => (await fixture.Trail.QueryAsync(query with { TraceId = trace }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static e => e.PrincipalId).ToList();
 
         Assert.Equal(["alice", "bob"], await PrincipalsAsync(new AuditQuery { Action = "orders.create" }).ConfigureAwait(false));
-        Assert.Equal(["alice", "alice"], await PrincipalsAsync(new AuditQuery { PrincipalId = "alice" }).ConfigureAwait(false));
-        Assert.Equal(["alice", "bob"], await PrincipalsAsync(new AuditQuery { TenantId = "acme" }).ConfigureAwait(false));
+        Assert.Equal(["alice", "alice"], await PrincipalsAsync(new AuditQuery { Principal = AuditPrincipalFilter.Of("alice") }).ConfigureAwait(false));
+        Assert.Equal(["alice", "bob"], await PrincipalsAsync(new AuditQuery { Tenant = AuditTenantFilter.Of("acme") }).ConfigureAwait(false));
         Assert.Equal(["bob"], await PrincipalsAsync(new AuditQuery { Succeeded = false }).ConfigureAwait(false));
         Assert.Equal(["alice", "alice"], await PrincipalsAsync(new AuditQuery { Succeeded = true }).ConfigureAwait(false));
         Assert.Equal(["bob", "alice"], await PrincipalsAsync(new AuditQuery { From = _epoch.AddMinutes(1) }).ConfigureAwait(false));
         Assert.Equal(["alice", "bob"], await PrincipalsAsync(new AuditQuery { To = _epoch.AddMinutes(1) }).ConfigureAwait(false));
-        Assert.Equal(["bob"], await PrincipalsAsync(new AuditQuery { From = _epoch.AddMinutes(1), To = _epoch.AddMinutes(1), TenantId = "acme" }).ConfigureAwait(false));
-        Assert.Empty(await PrincipalsAsync(new AuditQuery { Action = "orders.delete", TenantId = "acme" }).ConfigureAwait(false));
+        Assert.Equal(["bob"], await PrincipalsAsync(new AuditQuery { From = _epoch.AddMinutes(1), To = _epoch.AddMinutes(1), Tenant = AuditTenantFilter.Of("acme") }).ConfigureAwait(false));
+        Assert.Empty(await PrincipalsAsync(new AuditQuery { Action = "orders.delete", Tenant = AuditTenantFilter.Of("acme") }).ConfigureAwait(false));
         // 资源按 xrn 文本精确匹配：前缀不算命中
         Assert.Equal(["bob"], await PrincipalsAsync(new AuditQuery { Resource = "xrn:global:orders:acme:order/2" }).ConfigureAwait(false));
         Assert.Empty(await PrincipalsAsync(new AuditQuery { Resource = "xrn:global:orders:acme:order" }).ConfigureAwait(false));
@@ -167,6 +167,33 @@ public abstract class AuditTrailConformance
         Assert.Null(exception);
         var page = (await fixture.Trail.QueryAsync(new AuditQuery { TraceId = trace }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Contains(page.Items, static e => e.Action == "orders.kept");
+    }
+
+    /// <summary>
+    /// 用例 6：租户与主体的过滤区分「不过滤」与「只要全局 / 匿名」
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AuditTenantFilter.Global"/> 只取没有租户的事件，<see cref="AuditPrincipalFilter.Anonymous"/> 只取匿名调用的事件；缺省的 Any 两类都取
+    /// </remarks>
+    [Fact]
+    public async Task Query_TenantAndPrincipalFilters_DistinguishGlobalAndAnonymous()
+    {
+        var fixture = await CreateFixtureAsync().ConfigureAwait(false);
+        var trace = Trace();
+        await fixture.Sink.WriteAsync(Event(trace, 0, "orders.create", principal: "alice", tenant: "acme"), CancellationToken.None).ConfigureAwait(false);
+        await fixture.Sink.WriteAsync(Event(trace, 1, "system.cleanup", principal: "ops"), CancellationToken.None).ConfigureAwait(false);
+        await fixture.Sink.WriteAsync(Event(trace, 2, "orders.view", tenant: "acme"), CancellationToken.None).ConfigureAwait(false);
+        await fixture.Sink.WriteAsync(Event(trace, 3, "health.probe"), CancellationToken.None).ConfigureAwait(false);
+
+        async Task<IReadOnlyList<string>> ActionsAsync(AuditQuery query)
+            => (await fixture.Trail.QueryAsync(query with { TraceId = trace }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static e => e.Action).ToList();
+
+        Assert.Equal(["orders.create", "system.cleanup", "orders.view", "health.probe"], await ActionsAsync(new AuditQuery()).ConfigureAwait(false));
+        Assert.Equal(["system.cleanup", "health.probe"], await ActionsAsync(new AuditQuery { Tenant = AuditTenantFilter.Global }).ConfigureAwait(false));
+        Assert.Equal(["orders.create", "orders.view"], await ActionsAsync(new AuditQuery { Tenant = AuditTenantFilter.Of("acme") }).ConfigureAwait(false));
+        Assert.Equal(["orders.view", "health.probe"], await ActionsAsync(new AuditQuery { Principal = AuditPrincipalFilter.Anonymous }).ConfigureAwait(false));
+        Assert.Equal(["system.cleanup"], await ActionsAsync(new AuditQuery { Principal = AuditPrincipalFilter.Of("ops") }).ConfigureAwait(false));
+        Assert.Equal(["health.probe"], await ActionsAsync(new AuditQuery { Tenant = AuditTenantFilter.Global, Principal = AuditPrincipalFilter.Anonymous }).ConfigureAwait(false));
     }
 
     /// <summary>

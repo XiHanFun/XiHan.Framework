@@ -319,14 +319,19 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
             filtered = filtered.Where(new Specification<AuditRecord>(r => r.Action == action));
         }
 
-        if (query.PrincipalId is { } principal)
+        // 「只要匿名 / 全局」写成字面的 null 比较：与捕获的 null 变量比较，有的 Provider 会生成 = NULL 而不是 IS NULL
+        if (!query.Principal.IsAny)
         {
-            filtered = filtered.Where(new Specification<AuditRecord>(r => r.PrincipalId == principal));
+            filtered = query.Principal.PrincipalId is { } principal
+                ? filtered.Where(new Specification<AuditRecord>(r => r.PrincipalId == principal))
+                : filtered.Where(new Specification<AuditRecord>(r => r.PrincipalId == null));
         }
 
-        if (query.TenantId is { } tenant)
+        if (!query.Tenant.IsAny)
         {
-            filtered = filtered.Where(new Specification<AuditRecord>(r => r.TenantId == tenant));
+            filtered = query.Tenant.TenantId is { } tenant
+                ? filtered.Where(new Specification<AuditRecord>(r => r.TenantId == tenant))
+                : filtered.Where(new Specification<AuditRecord>(r => r.TenantId == null));
         }
 
         if (query.TraceId is { } trace)
