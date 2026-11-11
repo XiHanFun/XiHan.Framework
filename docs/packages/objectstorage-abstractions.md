@@ -125,7 +125,7 @@ namespace Storage.Tests;
 public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 {
     // 返回被测的存储；实现了 IBlobMultipartStore 时分片用例一并执行，否则跳过
-    protected override IBlobStore CreateStore() => new AzureBlobStore(TestSettings.ConnectionString);
+    protected override ValueTask<IBlobStore> CreateStoreAsync() => ValueTask.FromResult<IBlobStore>(new AzureBlobStore(TestSettings.ConnectionString));
 
     // 绕过契约直接写一个对象（键可以在保留前缀下），用来核对列举跳过框架自己的对象
     protected override Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content)

@@ -207,7 +207,7 @@ public sealed class S3ConditionalWriteRetryTests
         var refused = await Put(store, "a.txt");
         Assert.Equal((ObjectStorageErrors.ConditionalWriteUnavailable, ObjectStorageMessages.ConditionalWriteUnsupported), (refused.Error?.Code, refused.Error?.MessageKey));
         var multipart = host.Services.GetRequiredService<IBlobMultipartStore>();
-        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.CompleteAsync(new BlobMultipartUpload(new ContainerName(Bucket), new BlobKey("b.bin"), "upload", overwrite: false), [new BlobPart(1, "etag", 1)], CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.CompleteAsync(new BlobMultipartUpload(new ContainerName(Bucket), new BlobKey("b.bin"), "upload") { Overwrite = false }, [new BlobPart(1, "etag", 1)], CancellationToken.None)).Error?.Code);
         Assert.Equal(requests, fake.Requests.Count);
         Assert.Single(gate.ScheduledDelays);
 

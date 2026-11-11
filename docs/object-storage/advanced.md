@@ -154,10 +154,10 @@ app.MapPost("/videos/{name}/uploads", async (string name, int parts, IBlobMultip
 
 // 2. 客户端逐片 PUT 到签名地址，记下每个响应的 ETag
 
-// 3. 完成：上传标识可持久化，这里按同样的容器与键重建
+// 3. 完成：上传标识可持久化，这里按同样的容器、键与覆盖标志重建（覆盖标志必填，要与开始时一致）
 app.MapPost("/videos/{name}/uploads/{uploadId}/complete", async (string name, string uploadId, CompletedPart[] completed, IBlobMultipartStore multipart, CancellationToken ct) =>
 {
-    var upload = new BlobMultipartUpload("videos", $"raw/{name}", uploadId);
+    var upload = new BlobMultipartUpload(new ContainerName("videos"), new BlobKey($"raw/{name}"), uploadId) { Overwrite = true };
     var parts = completed.OrderBy(static p => p.Number).Select(static p => new BlobPart(p.Number, p.ETag)).ToList();
     var done = (await multipart.CompleteAsync(upload, parts, ct)).ValueOrThrow();
     return new { Key = done.Key.Value, done.Length, done.ETag };

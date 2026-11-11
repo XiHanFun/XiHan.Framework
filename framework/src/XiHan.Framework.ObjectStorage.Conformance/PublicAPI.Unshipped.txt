@@ -20,7 +20,7 @@ XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Create_Re
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Create_YieldsAWorkingStore_ThatProbesHealthy() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Registry_ReusesReplacesAndRemovesInstances() -> System.Threading.Tasks.Task!
 XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.Registry_TranslatesDefinitionErrors_AndKeepsTheExistingInstance() -> System.Threading.Tasks.Task!
-abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.CreateStore() -> XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!
+abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.CreateStoreAsync() -> System.Threading.Tasks.ValueTask<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>
 abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreConformance.PlantOutsideContractAsync(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, string! key, byte[]! content) -> System.Threading.Tasks.Task!
 abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.CreateProvider() -> XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!
 abstract XiHan.Framework.ObjectStorage.Conformance.BlobStoreProviderConformance.OtherValidSettings() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!

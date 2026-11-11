@@ -441,7 +441,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
                 }
 
                 var response = await _client.InitiateMultipartUploadAsync(request, cancellationToken).ConfigureAwait(false);
-                return Result.Success(new BlobMultipartUpload(container, key, response.UploadId, options.Overwrite));
+                return Result.Success(new BlobMultipartUpload(container, key, response.UploadId) { Overwrite = options.Overwrite });
             }
             catch (AmazonS3Exception exception) when (!ensured && _options.EnsureBuckets && IsNoSuchBucket(exception))
             {

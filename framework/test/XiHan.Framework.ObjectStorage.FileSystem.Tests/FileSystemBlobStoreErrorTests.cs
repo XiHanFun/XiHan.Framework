@@ -31,7 +31,7 @@ public sealed class FileSystemBlobStoreErrorTests : IDisposable
         // 容器目录的位置上是一个文件：写入时建目录必然失败，异常消息里带完整路径
         await File.WriteAllTextAsync(Path.Combine(_root.Path, "docs"), "not a directory");
         var logs = new LogCapture();
-        var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = _root.Path }, TimeProvider.System, logs);
+        var store = await FileSystemBlobStore.CreateAsync(new FileSystemObjectStorageOptions { RootPath = _root.Path }, TimeProvider.System, logs, CancellationToken.None);
 
         var failed = await store.PutAsync(new ContainerName("docs"), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("hello"), BlobPutOptions.Default, CancellationToken.None);
 

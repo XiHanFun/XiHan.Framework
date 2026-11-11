@@ -66,7 +66,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
             var temporary = path + FileSystemBlobStore.TemporaryMarker + Guid.NewGuid().ToString("N");
             await File.WriteAllBytesAsync(temporary, JsonSerializer.SerializeToUtf8Bytes(manifest, FileSystemJsonContext.Default.MultipartManifestDocument), cancellationToken).ConfigureAwait(false);
             File.Move(temporary, path, overwrite: true);
-            return Result.Success(new BlobMultipartUpload(container, key, uploadId, putOptions.Overwrite));
+            return Result.Success(new BlobMultipartUpload(container, key, uploadId) { Overwrite = putOptions.Overwrite });
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {

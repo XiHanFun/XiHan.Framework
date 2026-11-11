@@ -76,7 +76,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 | 类型 | 说明 |
 | --- | --- |
 | `FileSystemObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`）；启动时扫描目录；被 S3 等存储顶替（或没被选为对象存储、分片上传只是兜底选出）时只登记命名实例 Provider；常量 `HealthName` = `objectstorage.filesystem.capacity` |
-| `FileSystemBlobStore` | 实现 `IBlobStore` 与 `IBlobMultipartStore`；`RootPath`、`UsedBytes`；不经宿主使用时先调用 `InitializeAsync` |
+| `FileSystemBlobStore` | 实现 `IBlobStore` 与 `IBlobMultipartStore`；`RootPath`、`UsedBytes`；不经宿主使用时用 `CreateAsync` 创建（建目录并扫描已用量后才交出，构造不公开） |
 | `FileSystemObjectStorageOptions` | 选项；`FromConfiguration`、`FromSettings`（命名实例的设置，未知键抛出） |
 | `FileSystemBlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `filesystem` |
 
@@ -88,9 +88,8 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.FileSystem;
 
-var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = "./data/blobs", MaxTotalBytes = 64L << 20 }, TimeProvider.System);
+var store = await FileSystemBlobStore.CreateAsync(new FileSystemObjectStorageOptions { RootPath = "./data/blobs", MaxTotalBytes = 64L << 20 }, TimeProvider.System, NullLoggerFactory.Instance, CancellationToken.None);
 // 扫描已用量、清理残留的临时文件与过期的分片上传
-await store.InitializeAsync(CancellationToken.None);
 
 var put = await store.PutAsync(new ContainerName("reports"), new BlobKey("2026/10/summary.txt"), "hello"u8.ToArray(), BlobPutOptions.Default, CancellationToken.None);
 Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");

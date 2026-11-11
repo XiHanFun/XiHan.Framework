@@ -217,7 +217,8 @@ public static class BlobEndpointRouteBuilderExtensions
                 return;
             }
 
-            var part = await multipart.UploadPartAsync(new BlobMultipartUpload(containerName, blobKey, uploadId), grant.PartNumber!.Value, http.Request.Body, context.CancellationToken).ConfigureAwait(false);
+            // 上传分片不看覆盖标志（只在完成时生效），签名里也不带它；这里写死不覆盖，不让句柄带着缺省的覆盖语义
+            var part = await multipart.UploadPartAsync(new BlobMultipartUpload(containerName, blobKey, uploadId) { Overwrite = false }, grant.PartNumber!.Value, http.Request.Body, context.CancellationToken).ConfigureAwait(false);
             if (!part.TryGetValue(out var uploaded))
             {
                 context.SetOutcome(part.Error!);

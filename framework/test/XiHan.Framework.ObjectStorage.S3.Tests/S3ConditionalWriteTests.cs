@@ -322,7 +322,7 @@ public sealed class S3ConditionalWriteTests
         Assert.Equal(ObjectStorageMessages.ConditionalWriteDisabled, refused.Error?.MessageKey);
         var multipart = host.Services.GetRequiredService<IBlobMultipartStore>();
         Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.StartAsync(new ContainerName("media"), new BlobKey("b.bin"), new BlobPutOptions { Overwrite = false }, CancellationToken.None)).Error?.Code);
-        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.CompleteAsync(new BlobMultipartUpload(new ContainerName("media"), new BlobKey("b.bin"), "upload", overwrite: false), [new BlobPart(1, "etag", 1)], CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await multipart.CompleteAsync(new BlobMultipartUpload(new ContainerName("media"), new BlobKey("b.bin"), "upload") { Overwrite = false }, [new BlobPart(1, "etag", 1)], CancellationToken.None)).Error?.Code);
         Assert.Equal(["HeadBucket"], fake.Requests);
 
         Assert.True((await store.PutAsync(new ContainerName(Bucket), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("a"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);

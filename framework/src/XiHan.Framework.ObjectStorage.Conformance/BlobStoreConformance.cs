@@ -17,7 +17,7 @@ namespace XiHan.Framework.ObjectStorage.Conformance;
 /// <see cref="IBlobStore"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateStore"/> 与 <see cref="PlantOutsideContractAsync"/>，全部用例随之执行
+/// 继承并实现 <see cref="CreateStoreAsync"/> 与 <see cref="PlantOutsideContractAsync"/>，全部用例随之执行
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class BlobStoreConformance
@@ -33,7 +33,7 @@ public abstract class BlobStoreConformance
     /// <remarks>
     /// 每个用例调用一次；返回的存储在 <see cref="Container"/> 里不应含有本套件使用的键
     /// </remarks>
-    protected abstract IBlobStore CreateStore();
+    protected abstract ValueTask<IBlobStore> CreateStoreAsync();
 
     /// <summary>
     /// 绕过契约直接在底层存储里放入一个对象
@@ -55,7 +55,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task Put_ThenGet_RoundTripsContentAndMetadata()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var key = Key("a/b/file.txt");
         var options = new BlobPutOptions { ContentType = "text/plain; charset=utf-8", Metadata = new Dictionary<string, string> { ["owner"] = "alice", ["x-trace"] = "t-1" } };
 
@@ -92,7 +92,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task Put_OverwritesOrConflicts_AndKeysAreCaseSensitive()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var root = Guid.NewGuid().ToString("N")[..8];
         var key = new BlobKey(root + "/case/File");
         var lower = new BlobKey(root + "/case/file");
@@ -120,7 +120,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task PutMany_ReturnsOneResultPerUpload_InOrder()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var key = Key("batch/dup");
         var other = Key("batch/other");
         using var a = Bytes("a");
@@ -152,7 +152,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task DeleteMany_ReportsExistencePerKey()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var one = Key("del/one");
         var two = Key("del/two");
         var missing = Key("del/missing");
@@ -175,7 +175,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task List_FiltersByPrefix_OrdersByKey_AndPaginates()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var root = Guid.NewGuid().ToString("N")[..8];
         foreach (var key in new[] { "list/b", "list/a/2", "list/a/1", "list/c", "other/x" })
         {
@@ -212,7 +212,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task LargeContent_StreamsThrough()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var key = Key("large/blob.bin");
         var payload = new byte[3 * 1024 * 1024 + 17];
         RandomNumberGenerator.Fill(payload);
@@ -268,7 +268,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task GetRange_ReturnsTheRequestedBytes()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var key = Key("range/digits");
         Assert.True((await store.PutAsync(Container, key, Bytes("0123456789"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
 
@@ -302,7 +302,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task Multipart_UploadsPartsInAnyOrder_AndCompletesAtomically()
     {
-        var (store, multipart) = CreateMultipartStore();
+        var (store, multipart) = await CreateMultipartStoreAsync().ConfigureAwait(false);
         var key = Key("multipart/video.bin");
         var options = new BlobPutOptions { ContentType = "application/x-conformance", Metadata = new Dictionary<string, string> { ["owner"] = "alice" } };
         var upload = (await multipart.StartAsync(Container, key, options, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
@@ -336,7 +336,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task Multipart_RejectsInvalidPartLists_AndHonoursOverwriteAndAbort()
     {
-        var (store, multipart) = CreateMultipartStore();
+        var (store, multipart) = await CreateMultipartStoreAsync().ConfigureAwait(false);
         var key = Key("multipart/checked.bin");
         var upload = (await multipart.StartAsync(Container, key, new BlobPutOptions { Overwrite = false }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         var small = (await multipart.UploadPartAsync(upload, 1, Bytes("small"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
@@ -373,7 +373,7 @@ public abstract class BlobStoreConformance
     [Fact]
     public async Task List_RejectsOutOfRangePageSize_AsValidationError()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var root = Guid.NewGuid().ToString("N")[..8];
         Assert.True((await store.PutAsync(Container, new BlobKey(root + "/page/a"), Bytes("a"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.True((await store.PutAsync(Container, new BlobKey(root + "/page/b"), Bytes("b"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
@@ -403,7 +403,7 @@ public abstract class BlobStoreConformance
     public async Task Put_WithoutOverwrite_IsAtomicUnderConcurrentWriters()
     {
         const int writers = 8;
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var key = Key("race/once");
         var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var writes = Enumerable.Range(0, writers).Select(index => Task.Run(async () =>
@@ -439,7 +439,7 @@ public abstract class BlobStoreConformance
         Assert.True(BlobKey.IsValid(".XiHan/a"));
         Assert.True(BlobKey.IsValid("a/" + BlobKey.ReservedSegment + "/b"));
 
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         var lookalike = new BlobKey(BlobKey.ReservedSegment + "x/" + Guid.NewGuid().ToString("N")[..8]);
         await PlantOutsideContractAsync(Container, BlobKey.ReservedSegment + "/conformance/planted", Encoding.UTF8.GetBytes("framework")).ConfigureAwait(false);
         Assert.True((await store.PutAsync(Container, lookalike, Bytes("business"), BlobPutOptions.Default, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
@@ -462,9 +462,9 @@ public abstract class BlobStoreConformance
     /// <remarks>
     /// 存储没有实现 <see cref="IBlobMultipartStore"/> 时跳过用例
     /// </remarks>
-    private (IBlobStore Store, IBlobMultipartStore Multipart) CreateMultipartStore()
+    private async ValueTask<(IBlobStore Store, IBlobMultipartStore Multipart)> CreateMultipartStoreAsync()
     {
-        var store = CreateStore();
+        var store = await CreateStoreAsync().ConfigureAwait(false);
         Assert.SkipWhen(store is not IBlobMultipartStore, $"{store.GetType().Name} does not implement IBlobMultipartStore.");
         return (store, (IBlobMultipartStore)store);
     }

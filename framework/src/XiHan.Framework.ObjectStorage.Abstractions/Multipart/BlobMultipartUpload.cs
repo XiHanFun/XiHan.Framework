@@ -21,8 +21,10 @@ public sealed record BlobMultipartUpload
     /// <param name="container">容器</param>
     /// <param name="key">完成后对象的键</param>
     /// <param name="uploadId">Provider 给出的上传标识（不透明，1 到 1024 个可见字符）</param>
-    /// <param name="overwrite">完成时对象已存在是否覆盖（发起时的 <c>BlobPutOptions.Overwrite</c>）</param>
-    public BlobMultipartUpload(ContainerName container, BlobKey key, string uploadId, bool overwrite = true)
+    /// <remarks>
+    /// 覆盖标志经必填的初始化器 <see cref="Overwrite"/> 给出：重建句柄（从签名地址、存下的状态）时漏写就编译不过，不会静默地从「不覆盖」变成「覆盖」（ADR-0163）
+    /// </remarks>
+    public BlobMultipartUpload(ContainerName container, BlobKey key, string uploadId)
     {
         ArgumentNullException.ThrowIfNull(uploadId);
         if (uploadId.Length is 0 or > 1024 || uploadId.Any(static ch => char.IsWhiteSpace(ch) || char.IsControl(ch)))
@@ -33,7 +35,6 @@ public sealed record BlobMultipartUpload
         Container = container;
         Key = key;
         UploadId = uploadId;
-        Overwrite = overwrite;
     }
 
     /// <summary>
@@ -54,5 +55,8 @@ public sealed record BlobMultipartUpload
     /// <summary>
     /// 完成时对象已存在是否覆盖
     /// </summary>
-    public bool Overwrite { get; }
+    /// <remarks>
+    /// 开始上传时取 <c>BlobPutOptions.Overwrite</c>；完成时 Provider 可能按句柄上的值决定（如 S3 的条件写入）
+    /// </remarks>
+    public required bool Overwrite { get; init; }
 }

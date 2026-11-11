@@ -84,9 +84,12 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 创建
+    /// 创建，尚未扫描已用量
     /// </summary>
-    public FileSystemBlobStore(FileSystemObjectStorageOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
+    /// <remarks>
+    /// 只在包内使用：特性与 Provider 构造后紧接着 <see cref="InitializeAsync"/>，外部经 <see cref="CreateAsync"/> 一步拿到初始化好的存储（ADR-0163）
+    /// </remarks>
+    internal FileSystemBlobStore(FileSystemObjectStorageOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _logger = loggerFactory.CreateLogger<FileSystemBlobStore>();
@@ -99,6 +102,19 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 根目录
     /// </summary>
     public string RootPath => _options.RootPath;
+
+    /// <summary>
+    /// 创建并初始化
+    /// </summary>
+    /// <remarks>
+    /// 建根目录、扫描已用量并清掉过期的分片上传后才交出：没有扫描过的存储配额从零算起，会放过超额的写入，所以不提供不初始化的公开构造（ADR-0163）。目录无权限或磁盘错误照常抛出
+    /// </remarks>
+    public static async Task<FileSystemBlobStore> CreateAsync(FileSystemObjectStorageOptions options, TimeProvider clock, ILoggerFactory loggerFactory, CancellationToken cancellationToken)
+    {
+        var store = new FileSystemBlobStore(options, clock, loggerFactory);
+        await store.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        return store;
+    }
 
     /// <summary>
     /// 已用字节（进程内计量）
@@ -137,7 +153,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// <remarks>
     /// 可重复调用，每次重新扫描
     /// </remarks>
-    public Task InitializeAsync(CancellationToken cancellationToken)
+    internal Task InitializeAsync(CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(_options.RootPath);
         long total = 0;

@@ -98,11 +98,12 @@ XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Validate() -> XiHan
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipart
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload!
-XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.BlobMultipartUpload(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, string! uploadId, bool overwrite = true) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.BlobMultipartUpload(XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName container, XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey key, string! uploadId) -> void
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.Container.get -> XiHan.Framework.ObjectStorage.Abstractions.Keys.ContainerName
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.Equals(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload? other) -> bool
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.Key.get -> XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.Overwrite.get -> bool
+XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.Overwrite.init -> void
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.UploadId.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart!

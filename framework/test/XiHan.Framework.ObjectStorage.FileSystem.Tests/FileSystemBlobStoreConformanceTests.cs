@@ -22,7 +22,7 @@ public sealed class FileSystemBlobStoreConformanceTests : BlobStoreConformance, 
     private readonly TemporaryRoot _root = new();
 
     /// <inheritdoc />
-    protected override IBlobStore CreateStore() => new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = _root.Path }, TimeProvider.System, NullLoggerFactory.Instance);
+    protected override async ValueTask<IBlobStore> CreateStoreAsync() => await FileSystemBlobStore.CreateAsync(new FileSystemObjectStorageOptions { RootPath = _root.Path }, TimeProvider.System, NullLoggerFactory.Instance, CancellationToken.None);
 
     /// <inheritdoc />
     /// <remarks>

@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
@@ -82,7 +83,8 @@ public sealed class FileSystemObjectStorageFeature : IHostedFeature, IShadowAwar
         }
 
         context.Services.AddSingleton(FileSystemObjectStorageOptions.FromConfiguration(context.Configuration));
-        context.Services.AddSingleton<FileSystemBlobStore>();
+        // 构造不公开：特性在 StartAsync 里初始化它（扫描已用量），再交给容器里的使用方
+        context.Services.AddSingleton(static sp => new FileSystemBlobStore(sp.GetRequiredService<FileSystemObjectStorageOptions>(), sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
         // 存储自己就是健康项的贡献者：直接看已用量与总配额
         context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<FileSystemBlobStore>());
         // 走到这里本包已被选为 objectstorage.blob，是缺省存储；分片上传被选中就注册（兜底选出的也注册）

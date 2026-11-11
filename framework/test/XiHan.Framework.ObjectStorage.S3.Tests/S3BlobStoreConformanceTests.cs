@@ -17,7 +17,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 public sealed class S3BlobStoreConformanceTests : BlobStoreConformance
 {
     /// <inheritdoc />
-    protected override IBlobStore CreateStore() => S3TestServer.CreateStore(Container.Value);
+    protected override ValueTask<IBlobStore> CreateStoreAsync() => ValueTask.FromResult<IBlobStore>(S3TestServer.CreateStore(Container.Value));
 
     /// <inheritdoc />
     /// <remarks>

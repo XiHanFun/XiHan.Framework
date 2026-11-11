@@ -19,13 +19,13 @@ dotnet add package XiHan.Framework.ObjectStorage.Conformance --prerelease
 
 ### 使用
 
-继承 `BlobStoreConformance`，实现 `CreateStore()` 与 `PlantOutsideContractAsync`（绕过契约直接在底层存储写一个对象）：
+继承 `BlobStoreConformance`，实现 `CreateStoreAsync()` 与 `PlantOutsideContractAsync`（绕过契约直接在底层存储写一个对象）：
 
 ```csharp
 public sealed class FileSystemBlobStoreConformanceTests : BlobStoreConformance
 {
-    protected override IBlobStore CreateStore()
-        => new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = TempDirectory() }, TimeProvider.System);
+    protected override async ValueTask<IBlobStore> CreateStoreAsync()
+        => await FileSystemBlobStore.CreateAsync(new FileSystemObjectStorageOptions { RootPath = TempDirectory() }, TimeProvider.System, NullLoggerFactory.Instance, CancellationToken.None);
 
     protected override Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content)
         => WriteUnderDataDirectoryAsync(container, key, content);
