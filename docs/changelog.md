@@ -2,7 +2,12 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
-## 未发布
+## v5.0.0-preview.3（2026-11-12）
+
+::: warning 预览须知
+- 这是预览版，安装要带 `--prerelease`；公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整
+- 这一版集中调整了正式版前的公共 API，多数条目要改调用代码，升级前逐条看下面的迁移写法
+:::
 
 ### 版本与兼容
 
@@ -11,6 +16,7 @@
 
 ### 原语与内核
 
+- **新增** 宿主启动时向标准输出打印启动 Banner（版式同 4.x），`XiHan:Kernel:Banner:Enabled=false` 关闭，以 JSON 行收集 stdout 的部署应关掉；命令行宿主缺省不打印（见[装配入口](/startup/bootstrap#启动-banner)）
 - **移除** `CapabilityAttribute`：没有使用者，运行期也不读，随清单生成器一起提供；`CapabilityResolver` 与 `NullAuditSink` 不再公开，能力求解经 `AddXiHan` 装配，结果从 `ResolvedGraph` 读取
 - **调整** `OperationContract` 构造只收 ID，其余字段改为初始化器：手写的 `new OperationContract(id, stability, expose, policy, permission, readOnly)` 改成 `new OperationContract(id) { Stability = …, Expose = …, Policy = …, Permission = …, IsReadOnly = … }`；用生成器的项目重新编译即可，生成的 `GeneratedOperations` 变为 internal
 - **调整** `Expose.All` 冻结为 5.0 的五个协议：以后新增的协议不并入 `All`，要在新协议上发布须显式开启；现有行为不变
@@ -79,6 +85,10 @@
 - **调整** `MapXiHanOperations()` 返回 `IEndpointConventionBuilder` 而不是端点数，可以在返回值上给全部操作端点统一加 CORS、限流等约定
 - **调整** `ProblemResponse`、`HealthResponse`、`FeatureHealth` 改为初始化器，按属性名赋值；响应的 JSON 不变
 - **修复** `Plugins.OutOfProcess`、`Plugins.Wasm`、`Plugins.Conformance` 对 `Plugins.Protocol`（以及 Conformance 对两个宿主）改为精确版本依赖：原先单独升级其中一个包，还原能通过，运行时才缺成员；这几个包要用同一版本
+
+### 包
+
+- **优化** NuGet 包换用新图标
 
 ## v5.0.0-preview.2（2026-11-06）
 
