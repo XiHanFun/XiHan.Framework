@@ -95,9 +95,9 @@ public abstract class TenantShardResolverConformance
         var resolver = await CreateResolverAsync([Sharded, Shared]).ConfigureAwait(false);
 
         var first = (await resolver.ResolveAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
-        resolver.Invalidate("acme");
+        resolver.Invalidate(["acme"]);
         var second = (await resolver.ResolveAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
-        resolver.Invalidate();
+        resolver.InvalidateAll();
         var third = (await resolver.ResolveAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
 
         Assert.Equal(first.ConnectionString, second.ConnectionString);

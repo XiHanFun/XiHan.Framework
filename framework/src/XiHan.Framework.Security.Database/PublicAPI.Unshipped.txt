@@ -15,7 +15,8 @@ XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore
 XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.CachedEntryCount.get -> int
 XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.DatabasePermissionGrantStore(System.IServiceProvider! services, XiHan.Framework.Security.Database.DatabaseSecurityOptions! options, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.GetManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.GrantSubject>! subjects, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyCollection<string!>!>!>>
-XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.Invalidate(XiHan.Framework.Security.Abstractions.Permissions.GrantSubject? subject = null) -> void
+XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.Invalidate(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.GrantSubject>! subjects) -> void
+XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore.InvalidateAll() -> void
 XiHan.Framework.Security.Database.Grants.PermissionGrantRecord
 XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.CreatedAt.get -> System.DateTimeOffset
 XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.CreatedAt.set -> void

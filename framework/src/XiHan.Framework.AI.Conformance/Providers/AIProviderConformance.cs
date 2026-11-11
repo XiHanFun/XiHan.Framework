@@ -83,10 +83,10 @@ public abstract class AIProviderConformance
         var generator = catalog.ResolveEmbeddingGenerator(host.ProviderName).ValueOrThrow();
         Assert.Same(generator, catalog.ResolveEmbeddingGenerator(host.ProviderName).ValueOrThrow());
 
-        catalog.Invalidate(host.ProviderName);
+        catalog.Invalidate([host.ProviderName]);
         Assert.NotSame(first, catalog.ResolveChatClient(host.ProviderName).ValueOrThrow());
         Assert.NotSame(generator, catalog.ResolveEmbeddingGenerator(host.ProviderName).ValueOrThrow());
-        catalog.Invalidate();
+        catalog.InvalidateAll();
         Assert.True(catalog.ResolveChatClient(host.ProviderName).IsSuccess);
 
         Assert.Equal(AIErrors.ProviderNotFound, catalog.ResolveChatClient("no-such-provider").Error?.Code);

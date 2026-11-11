@@ -1,4 +1,8 @@
 #nullable enable
+XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance
+XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Remove_ReportsMissingItems_PerItem() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.TenantAdministrationConformance() -> void
+XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Upsert_IsIndexAligned_LaterItemsWin_AndVisibleToTheCatalog() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance
 XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Resolve_IsStable_AcrossInvalidate() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Resolve_ReturnsNone_ForSharedAndUnknownTenants() -> System.Threading.Tasks.Task!
@@ -11,6 +15,8 @@ XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_ReturnsSeed
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.List_PagesThroughAllTenants_AndFiltersEnabled() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.List_RejectsOutOfRangePagesAndForeignTokens() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.TenantStoreConformance() -> void
+abstract XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.AdministerAsync<T>(System.Func<XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantAdministration!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>>! action) -> System.Threading.Tasks.ValueTask<T>
+abstract XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.StartAsync() -> System.Threading.Tasks.ValueTask<XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantStore!>
 abstract XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.CreateResolverAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>! tenants) -> System.Threading.Tasks.ValueTask<XiHan.Framework.MultiTenancy.Abstractions.Sharding.ITenantShardResolver!>
 abstract XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.CreateStoreAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!>! tenants) -> System.Threading.Tasks.ValueTask<XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantStore!>
 static XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Sharded.get -> XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!

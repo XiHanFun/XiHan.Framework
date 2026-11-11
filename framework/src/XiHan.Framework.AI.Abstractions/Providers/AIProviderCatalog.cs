@@ -162,20 +162,15 @@ internal sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
     }
 
     /// <inheritdoc />
-    public void Invalidate(string? name = null)
+    public void Invalidate(IReadOnlyList<string> names)
     {
+        ArgumentNullException.ThrowIfNull(names);
         List<IDisposable> disposables = [];
         lock (_lock)
         {
-            if (name is null)
+            foreach (var name in names)
             {
-                disposables.AddRange(_chatClients.Values.OfType<IDisposable>());
-                disposables.AddRange(_generators.Values.OfType<IDisposable>());
-                _chatClients.Clear();
-                _generators.Clear();
-            }
-            else
-            {
+                ArgumentNullException.ThrowIfNull(name, nameof(names));
                 if (_chatClients.Remove(name, out var client) && client is IDisposable disposableClient)
                 {
                     disposables.Add(disposableClient);
@@ -188,15 +183,40 @@ internal sealed class AIProviderCatalog : IAIProviderCatalog, IDisposable
             }
         }
 
-        // 释放放在锁外：释放可能阻塞或抛出，不拖住其他解析
+        Release(disposables);
+    }
+
+    /// <inheritdoc />
+    public void InvalidateAll()
+    {
+        List<IDisposable> disposables = [];
+        lock (_lock)
+        {
+            disposables.AddRange(_chatClients.Values.OfType<IDisposable>());
+            disposables.AddRange(_generators.Values.OfType<IDisposable>());
+            _chatClients.Clear();
+            _generators.Clear();
+        }
+
+        Release(disposables);
+    }
+
+    /// <inheritdoc />
+    public void Dispose() => InvalidateAll();
+
+    /// <summary>
+    /// 释放丢弃的实例
+    /// </summary>
+    /// <remarks>
+    /// 放在锁外调用：释放可能阻塞或抛出，不拖住其他解析
+    /// </remarks>
+    private static void Release(List<IDisposable> disposables)
+    {
         foreach (var disposable in disposables)
         {
             disposable.Dispose();
         }
     }
-
-    /// <inheritdoc />
-    public void Dispose() => Invalidate();
 
     /// <summary>
     /// Provider 未配置

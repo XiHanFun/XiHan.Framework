@@ -49,11 +49,11 @@ public sealed class TenantShardingTests
         Assert.Equal(1, resolver.CachedCount);
 
         // 缓存命中：存储里的变更要经失效才可见
-        Assert.True(store.Set(new TenantInfo { Id = "c", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=c2" } }).IsSuccess);
+        Assert.True((await new InMemoryTenantAdministration(store, shards: null).UpsertAsync([new TenantInfo { Id = "c", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=c2" } }], CancellationToken.None))[0].IsSuccess);
         Assert.Equal("Host=c", (await resolver.ResolveAsync("c", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
-        resolver.Invalidate("c");
+        resolver.Invalidate(["c"]);
         Assert.Equal("Host=c2", (await resolver.ResolveAsync("c", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
-        resolver.Invalidate();
+        resolver.InvalidateAll();
         Assert.Equal(0, resolver.CachedCount);
 
         Assert.Throws<ArgumentOutOfRangeException>(static () => new MultiTenancyOptions { ShardCacheSize = 0 });
@@ -179,7 +179,12 @@ public sealed class TenantShardingTests
             => ValueTask.FromResult<Result<Maybe<TenantShard>>>(Error.Unavailable(MultiTenancyErrors.ShardUnavailable, MultiTenancyMessages.ShardUnavailable, MessageArguments.Of(("tenantId", tenantId), ("reason", "offline"))));
 
         /// <inheritdoc />
-        public void Invalidate(string? tenantId = null)
+        public void Invalidate(IReadOnlyList<string> tenantIds)
+        {
+        }
+
+        /// <inheritdoc />
+        public void InvalidateAll()
         {
         }
     }

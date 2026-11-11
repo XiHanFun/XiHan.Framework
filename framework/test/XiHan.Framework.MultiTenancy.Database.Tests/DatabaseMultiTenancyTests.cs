@@ -130,11 +130,11 @@ public sealed class DatabaseMultiTenancyTests
         Assert.False((await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().HasValue);
 
         // 单个失效只重查该租户；整体失效后两者都重查
-        store.Invalidate("acme");
+        store.Invalidate(["acme"]);
         Assert.Equal(1, store.CachedCount);
         Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         Assert.False((await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().HasValue);
-        store.Invalidate();
+        store.InvalidateAll();
         Assert.Equal(0, store.CachedCount);
         Assert.Equal("Ghost", (await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
 
@@ -169,7 +169,7 @@ public sealed class DatabaseMultiTenancyTests
         await TenantHosts.EditRowAsync(forever, "acme", static row => row.DisplayName = "Acme 2");
         frozen.Advance(TimeSpan.FromDays(365));
         Assert.Equal("Acme", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
-        foreverStore.Invalidate("acme");
+        foreverStore.Invalidate(["acme"]);
         Assert.Equal("Acme 2", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
     }
 
@@ -199,17 +199,19 @@ public sealed class DatabaseMultiTenancyTests
         Assert.Equal("Host=a", (await shards.ResolveAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
         Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
 
-        // 同一批里后者整份覆盖前者，三项结果都成功；分页列表不走缓存
+        // 同一批里后者整份覆盖前者，三项结果都成功
         var written = await host.InvokeAsync(async context =>
         {
             var records = context.Services.GetRequiredService<TenantRecordStore>();
             var results = await records.UpsertAsync([Acme("Acme 1", "Host=a1"), new TenantInfo { Id = "beta" }, Acme("Acme 2", "Host=a2")], context.CancellationToken);
             Assert.All(results, static r => Assert.True(r.IsSuccess, r.ToString()));
             Assert.Equal(3, results.Count);
-            Assert.Equal(["acme", "beta"], (await records.ListAsync(0, 10, context.CancellationToken)).Select(static t => t.Id));
-            Assert.Single(await records.ListAsync(1, 10, context.CancellationToken));
         });
         Assert.True(written.IsSuccess, written.ToString());
+
+        // 提交后经租户目录列出：按 ID 排序分页，同一 ID 在一批里写两次只留一行
+        Assert.Equal(["acme", "beta"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
+        Assert.Single((await store.ListAsync(new TenantQuery { PageSize = 1 }, CancellationToken.None)).ValueOrThrow().Items);
 
         // 写入即失效：目录与分片解析器都看到新值
         Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);

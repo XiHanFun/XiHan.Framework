@@ -83,17 +83,18 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     }
 
     /// <inheritdoc />
-    public void Invalidate(string? tenantId = null)
+    public void Invalidate(IReadOnlyList<string> tenantIds)
     {
-        if (tenantId is null)
+        ArgumentNullException.ThrowIfNull(tenantIds);
+        foreach (var tenantId in tenantIds)
         {
-            _cache.Clear();
-        }
-        else
-        {
+            ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
             _cache.TryRemove(tenantId, out _);
         }
     }
+
+    /// <inheritdoc />
+    public void InvalidateAll() => _cache.Clear();
 
     /// <summary>
     /// 从租户属性建分片

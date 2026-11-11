@@ -52,20 +52,26 @@ public sealed class InMemoryMultiTenancyTests
     }
 
     [Fact]
-    public async Task Store_IsBounded_AndSupportsSetAndRemove()
+    public async Task Store_IsBounded_AndAdministeredInBatches()
     {
-        var store = new InMemoryTenantStore(new InMemoryMultiTenancyOptions { MaxTenants = 2, Tenants = [new TenantInfo { Id = "a" }] });
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryMultiTenancyFeature>(), [new("XiHan:MultiTenancy:InMemory:MaxTenants", "2"), new("XiHan:MultiTenancy:Tenants:a:DisplayName", "A")]);
+        var store = host.Services.GetRequiredService<InMemoryTenantStore>();
+        var tenants = host.Services.GetRequiredService<ITenantAdministration>();
 
-        Assert.True(store.Set(new TenantInfo { Id = "b" }).IsSuccess);
-        var full = store.Set(new TenantInfo { Id = "c" });
-        Assert.Equal(MultiTenancyErrors.CapacityExceeded, full.Error?.Code);
-        Assert.True(store.Set(new TenantInfo { Id = "a", DisplayName = "replaced" }).IsSuccess);
+        // 一批里逐项施加：b 新增成功，c 超出容量，a 替换不占新容量
+        var written = await tenants.UpsertAsync([new TenantInfo { Id = "b" }, new TenantInfo { Id = "c" }, new TenantInfo { Id = "a", DisplayName = "replaced" }], CancellationToken.None);
+        Assert.True(written[0].IsSuccess);
+        Assert.Equal(MultiTenancyErrors.CapacityExceeded, written[1].Error?.Code);
+        Assert.True(written[2].IsSuccess);
         Assert.Equal("replaced", (await store.FindAsync("a", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         Assert.Equal(2, store.Count);
 
-        Assert.True(store.Remove("a"));
-        Assert.False(store.Remove("a"));
-        Assert.True(store.Set(new TenantInfo { Id = "c" }).IsSuccess);
+        // 同一批里第二次删除同一 ID 报告不存在
+        var removed = await tenants.RemoveAsync(["a", "a"], CancellationToken.None);
+        Assert.True(removed[0].IsSuccess);
+        Assert.Equal(MultiTenancyErrors.NotFound, removed[1].Error?.Code);
+        Assert.True((await tenants.UpsertAsync([new TenantInfo { Id = "c" }], CancellationToken.None))[0].IsSuccess);
+        Assert.Empty(await tenants.UpsertAsync([], CancellationToken.None));
         Assert.Throws<FrameworkException>(static () => new InMemoryTenantStore(new InMemoryMultiTenancyOptions { MaxTenants = 1, Tenants = [new TenantInfo { Id = "a" }, new TenantInfo { Id = "b" }] }));
     }
 

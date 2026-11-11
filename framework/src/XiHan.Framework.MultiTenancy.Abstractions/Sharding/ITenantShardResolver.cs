@@ -23,10 +23,15 @@ public interface ITenantShardResolver
     ValueTask<Result<Maybe<TenantShard>>> ResolveAsync(string tenantId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 丢弃缓存的分片（租户连接变更后调用）
+    /// 丢弃这些租户缓存的分片
     /// </summary>
     /// <remarks>
-    /// <paramref name="tenantId"/> 为空清全部
+    /// 租户连接变更后调用；空集合什么也不做。要清全部用 <see cref="InvalidateAll"/>，不以 <see langword="null"/> 表示全部（ADR-0160）
     /// </remarks>
-    void Invalidate(string? tenantId = null);
+    void Invalidate(IReadOnlyList<string> tenantIds);
+
+    /// <summary>
+    /// 丢弃全部缓存的分片
+    /// </summary>
+    void InvalidateAll();
 }

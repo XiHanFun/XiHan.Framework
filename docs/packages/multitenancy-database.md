@@ -104,20 +104,19 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `DatabaseMultiTenancyOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
 | `Tenants.TenantRecord` | 存储行：`Id`（主键，租户 ID）、`DisplayName`、`IsEnabled`、`PropertiesJson`、`CreatedAt`、`ModifiedAt`、`ConcurrencyStamp`；平台级数据，不实现 `IMultiTenant`、不软删除 |
 | `Tenants.DatabaseTenantStore` | 单例 `ITenantStore`：`FindAsync`（缓存）、`ListAsync`（按 ID 一页一页读，偏移作续页令牌，不走缓存）、`Invalidate(tenantId?)`、`CachedCount` |
-| `Tenants.TenantRecordStore` | 作用域服务：`UpsertAsync`、`RemoveAsync` 批量逐项结果，`ListAsync(skip, take)` 按 ID 分页 |
+| `Tenants.TenantRecordStore` | 作用域服务，实现 `ITenantAdministration`：`UpsertAsync`、`RemoveAsync` 批量逐项结果；列出租户用 `ITenantStore.ListAsync` |
 
 ## 使用示例
 
-管理操作在处理器里经 `TenantRecordStore` 写入；Transaction 阶段已经开了工作单元，写入随调用一起提交：
+管理操作在处理器里经租户管理 `ITenantAdministration`（作用域服务，就是 `TenantRecordStore`）写入；Transaction 阶段已经开了工作单元，写入随调用一起提交。列出租户用 `ITenantStore.ListAsync(TenantQuery)`：
 
 ```csharp
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
-using XiHan.Framework.MultiTenancy.Database.Tenants;
 using XiHan.Framework.Primitives;
 
 // 作用域服务，在操作的处理器里使用
-public sealed class TenantOnboarding(TenantRecordStore tenants)
+public sealed class TenantOnboarding(ITenantAdministration tenants)
 {
     public async ValueTask<Result> CreateAsync(string tenantId, string displayName, string? connectionString, CancellationToken cancellationToken)
     {

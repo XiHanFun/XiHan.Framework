@@ -98,7 +98,7 @@ public sealed class SqlitePermissionGrantStoreTests
 
         // 数据库断开且缓存已失效：存储返回 SECURITY_UNAVAILABLE_001，不是空集合
         database.Unreachable = true;
-        store.Invalidate();
+        store.InvalidateAll();
         var read = await store.GetGrantsAsync(GrantSubject.ForUser("alice"), null, CancellationToken.None);
         Assert.Equal(SecurityErrors.StoreUnavailable, read.Error?.Code);
         Assert.Equal(0, store.CachedEntryCount);

@@ -47,7 +47,7 @@ builder.AddXiHan(xihan => xihan
 * `DatabaseMultiTenancyOptions`：缓存与列举上限
 * `TenantRecord`：租户存储行
 * `DatabaseTenantStore`：带缓存的 `ITenantStore`
-* `TenantRecordStore`：作用域内的写入、删除、列举
+* `TenantRecordStore`：实现租户管理 `ITenantAdministration`，作用域内的批量写入与删除；列举用 `ITenantStore.ListAsync`
 
 ## 更多文档
 

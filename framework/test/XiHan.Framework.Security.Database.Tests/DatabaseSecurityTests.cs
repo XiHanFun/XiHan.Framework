@@ -189,7 +189,7 @@ public sealed class DatabaseSecurityTests
         Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
 
         // 按主体失效后重新查库
-        store.Invalidate(_alice);
+        store.Invalidate([_alice]);
         Assert.Equal(0, store.CachedEntryCount);
         Assert.Equal([WriteOrderOperation.Permission], (await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
 
@@ -204,7 +204,7 @@ public sealed class DatabaseSecurityTests
         // 不给主体清空全部；经记录存储写入的立刻可见
         Assert.Empty((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.Equal(2, store.CachedEntryCount);
-        store.Invalidate();
+        store.InvalidateAll();
         Assert.Equal(0, store.CachedEntryCount);
         Assert.Empty((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.All(await GrantAsync(host, new PermissionGrant(_bob, "reports.read", "acme")), static r => Assert.True(r.IsSuccess));

@@ -60,7 +60,7 @@ public sealed class AIChatTests
         // 同一 Provider 复用客户端；失效后重建
         await chat.CompleteAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, "again")] }, CancellationToken.None);
         Assert.Single(factory.Created);
-        host.Services.GetRequiredService<IAIProviderCatalog>().Invalidate("fake");
+        host.Services.GetRequiredService<IAIProviderCatalog>().Invalidate(["fake"]);
         Assert.Equal(1, client.Disposed);
         await chat.CompleteAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, "again")] }, CancellationToken.None);
         Assert.Equal(2, factory.Created.Count);

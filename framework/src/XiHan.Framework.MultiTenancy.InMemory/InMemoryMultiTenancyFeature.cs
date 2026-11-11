@@ -68,6 +68,7 @@ public sealed class InMemoryMultiTenancyFeature : IFeature
             context.Services.AddSingleton(InMemoryMultiTenancyOptions.FromConfiguration(context.Configuration));
             context.Services.AddSingleton<InMemoryTenantStore>();
             context.Services.TryAddSingleton<ITenantStore>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
+            context.Services.TryAddSingleton<ITenantAdministration>(static sp => new InMemoryTenantAdministration(sp.GetRequiredService<InMemoryTenantStore>(), sp.GetService<ITenantShardResolver>()));
             // 存储自己就是健康项的贡献者：直接看租户数与容量
             context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<InMemoryTenantStore>());
             // 解析器的注册顺序就是解析顺序：先信已认证主体的声明，再看调用方自报的 Baggage，防止自报租户覆盖身份里的租户

@@ -4,7 +4,6 @@
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
-using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 
@@ -17,7 +16,7 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 /// 作用域服务，须在调用的 Transaction 阶段内使用，用调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入。写入后立即让 <see cref="DatabaseTenantStore"/> 与分片解析器（装配了才有）丢弃对应租户的缓存；写入在事务提交后才可见，失效与提交之间的窗口由缓存存活时间收敛
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class TenantRecordStore
+public sealed class TenantRecordStore : ITenantAdministration
 {
     /// <summary>
     /// 仓储（调用方作用域里的）
@@ -161,26 +160,11 @@ public sealed class TenantRecordStore
     }
 
     /// <summary>
-    /// 按 ID 排序分页列出租户，最多 <see cref="EntityQuery.DefaultMaxTake"/> 条一页
-    /// </summary>
-    /// <remarks>
-    /// 不走缓存。<paramref name="take"/> 超过上限时构造查询抛出携带 <c>PERSISTENCE_VALIDATION_005</c> 的异常，调用里由 Transaction 阶段转为同码的校验结果
-    /// </remarks>
-    public async Task<IReadOnlyList<TenantInfo>> ListAsync(int skip, int take, CancellationToken cancellationToken)
-    {
-        var records = await _repository.ListAsync(EntityQuery.All<TenantRecord>().OrderBy(static t => t.Id).Page(skip, take), cancellationToken).ConfigureAwait(false);
-        return records.Select(TenantRecordMapping.ToTenantInfo).ToList();
-    }
-
-    /// <summary>
     /// 让目录与分片解析器丢弃这些租户的缓存
     /// </summary>
     private void Invalidate(IReadOnlyList<string> tenantIds)
     {
-        foreach (var tenantId in tenantIds)
-        {
-            _catalog.Invalidate(tenantId);
-            _shards?.Invalidate(tenantId);
-        }
+        _catalog.Invalidate(tenantIds);
+        _shards?.Invalidate(tenantIds);
     }
 }

@@ -64,6 +64,7 @@ public sealed class DatabaseMultiTenancyFeature : IHostedFeature
         context.Services.AddRepository<TenantRecord, string>();
         context.Services.AddSingleton<DatabaseTenantStore>();
         context.Services.TryAddScoped<TenantRecordStore>();
+        context.Services.TryAddScoped<ITenantAdministration>(static sp => sp.GetRequiredService<TenantRecordStore>());
         // 只为被选中的能力注册：另有显式 Provider 提供租户上下文时，本包不登记存储、解析器与中间件（同类型中间件在管道里只能出现一次）
         if (context.Node.IsSelectedFor(MultiTenancyCapabilities.Context))
         {

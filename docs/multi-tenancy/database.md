@@ -106,16 +106,15 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 管理租户
 
-管理操作在处理器里经 `TenantRecordStore` 写入；Transaction 阶段已经开了工作单元，写入随调用一起提交：
+管理操作在处理器里经租户管理 `ITenantAdministration`（作用域服务，就是 `TenantRecordStore`）写入；Transaction 阶段已经开了工作单元，写入随调用一起提交。列出租户用 `ITenantStore.ListAsync(TenantQuery)`：
 
 ```csharp
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
-using XiHan.Framework.MultiTenancy.Database.Tenants;
 using XiHan.Framework.Primitives;
 
 // 作用域服务，在操作的处理器里使用
-public sealed class TenantOnboarding(TenantRecordStore tenants)
+public sealed class TenantOnboarding(ITenantAdministration tenants)
 {
     public async ValueTask<Result> CreateAsync(string tenantId, string displayName, string? connectionString, CancellationToken cancellationToken)
     {
@@ -137,10 +136,6 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
     // 不存在的 ID 逐项返回 MULTITENANCY_NOTFOUND_001
     public ValueTask<IReadOnlyList<Result>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
         => tenants.RemoveAsync(tenantIds, cancellationToken);
-
-    // 按 ID 分页列出
-    public Task<IReadOnlyList<TenantInfo>> PageAsync(int skip, int take, CancellationToken cancellationToken)
-        => tenants.ListAsync(skip, take, cancellationToken);
 }
 ```
 
@@ -150,7 +145,6 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 | --- | --- |
 | `UpsertAsync(tenants)` | 一次查询取回已有行，已有的更新、没有的新增，各用一次批量方法写入；同一批里同一租户后者整份覆盖前者，同一行只写一次，各项结果相同。整份覆盖：只想改启用标记时，先读出当前的 `TenantInfo` 再整体写回 |
 | `RemoveAsync(tenantIds)` | 一次批量删除；不存在的 ID 与同一批里重复出现的 ID 逐项返回 `MULTITENANCY_NOTFOUND_001` |
-| `ListAsync(skip, take)` | 按 ID 分页 |
 
 不合法的租户 ID 是编程错误，整批在访问数据库前抛出 `ArgumentException`；空集合直接返回空结果。这些方法由管理操作调用，操作契约要写上权限码（如 `tenants.manage`），由[授权与权限](/security/authorization)挡住无权的调用方。
 
@@ -159,7 +153,7 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 - `DatabaseTenantStore.FindAsync` 的结果按租户缓存，「不存在」也缓存；条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空，不逐条淘汰。不合法的租户 ID 直接返回无值，不查库，也不占缓存。
 - `TenantRecordStore` 在写入时就失效目录与分片解析器（`ITenantShardResolver.Invalidate`）的缓存。写入在调用方事务提交后才对其他调用可见，失效与提交之间的窗口由存活时间收敛。
 - 多实例部署时其他实例的缓存同样靠存活时间收敛，需要更快生效时调小 `CacheTimeToLiveSeconds`。
-- 绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate(tenantId)` 与 `ITenantShardResolver.Invalidate(tenantId)`，或等存活时间到期。`Invalidate()` 不带参数时清空全部。
+- 绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate([tenantId])` 与 `ITenantShardResolver.Invalidate([tenantId])`（清全部用 `InvalidateAll()``，或等存活时间到期。`Invalidate()` 不带参数时清空全部。
 - `ListAsync` 不走缓存，按 ID 排序、以偏移为续页令牌一页一页读，调用方读到令牌为空为止，不再有截断。
 
 ## 启动期核对持久化 Provider
@@ -193,7 +187,7 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 
 ### 为什么 `UpsertAsync` 把我的属性清空了
 
-它是整份覆盖，不是局部更新。改一个字段时先经 `ITenantStore.FindAsync` 或 `TenantRecordStore.ListAsync` 读出当前 `TenantInfo`，用 `with` 改字段后整体写回。
+它是整份覆盖，不是局部更新。改一个字段时先经 `ITenantStore.FindAsync` 或 `ITenantStore.ListAsync` 读出当前 `TenantInfo`，用 `with` 改字段后整体写回。
 
 ### 配了读写分离，目录会读到从库的旧数据吗
 

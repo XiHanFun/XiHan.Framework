@@ -159,3 +159,4 @@
 | [0157](0157-可选参数收进选项记录与作业令牌.md) | 公开方法不用一串可选参数（单个用重载、多个收进选项记录、令牌放最后，工具链包例外）；`App.CreateContext` 改为 `(services, ct)` 与 `(services, InvocationContextOptions, ct)`，`DomainEventBuffer` 改两个构造并交出只读视图；`IJob.RunAsync` 去掉重复的令牌；`LeaderLease.ReleaseAsync(ct)` 返回 `Result` | 已采纳 |
 | [0158](0158-授予管理的可选接口.md) | 新增可选接口 `IPermissionGrantAdministration`（批量授予与撤销同序逐项结果、`ListAsync(PermissionGrantQuery)` 偏移分页并计数，越界为 `SECURITY_VALIDATION_005`），租户过滤用显式的 `GrantTenantFilter`（`Any` / `Global` / `Of`）不用 null；内存与数据库实现都实现它，旧的同步方法与按 null 不过滤的列表删除；新增一致性套件 | 已采纳 |
 | [0159](0159-审计按资源查询与细节为JSON值.md) | `AuditQuery.Resource` 按 `xrn:` 文本精确过滤（数据库加 `(Resource, Sequence)` 索引）；`AuditEvent.Details` 改为名字到 `JsonElement`，`AddAuditDetail(key, JsonNode?)` 追加时固化，所有接收器读回同一类型 | 已采纳 |
+| [0160](0160-租户管理与缓存失效的形状.md) | 新增可选接口 `ITenantAdministration`（批量写入与删除同序逐项结果、写后失效目录与分片缓存），内存实现的 `Set` / `Remove` 与数据库实现的重复列表删除；缓存失效统一为 `Invalidate(ids)` 加 `InvalidateAll()`（分片解析器、租户目录、授予缓存、AI 目录）；新增一致性套件 | 已采纳 |

@@ -70,7 +70,8 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | `Resolution.BaggageTenantResolver` | 读 Baggage `xihan.tenant`，由进程内建上下文的地方放进去；HTTP、gRPC、MCP 入站不收这个键（ADR-0121） |
 | `Resolution.TenantResolutionMiddleware` | Tenant 阶段的中间件 |
 | `MultiTenancyOptions` | 选项，见上表 |
-| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantId?)` |
+| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantIds)`、`InvalidateAll()` |
+| `Tenants.ITenantAdministration` | 可选的租户管理：`UpsertAsync(tenants)`（整份覆盖）、`RemoveAsync(tenantIds)`（不存在为 `MULTITENANCY_NOTFOUND_001`），逐项结果与入参同序，写入后失效目录与分片缓存；内存与数据库实现都提供 |
 | `Sharding.TenantShard` | 分片：`TenantId`、`ConnectionString`、`Provider`（转小写，可空）、`Properties` |
 | `Sharding.TenantStoreShardResolver` | 从租户属性推出分片的缺省解析器，按租户有界缓存；`FromProperties(tenant)` 不带缓存地推出单个租户的分片 |
 | `Sharding.TenantShardKeys` | 租户属性键 `ConnectionString`、`DatabaseProvider`、前缀 `Shard.`，绑定属性键 `tenant`、`provider` |

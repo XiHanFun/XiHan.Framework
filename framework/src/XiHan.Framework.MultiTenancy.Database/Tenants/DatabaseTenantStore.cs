@@ -139,19 +139,25 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     }
 
     /// <summary>
-    /// 丢弃缓存：<paramref name="tenantId"/> 为空清全部，否则只清该租户（含“不存在”的条目）
+    /// 丢弃这些租户的缓存
     /// </summary>
-    public void Invalidate(string? tenantId = null)
+    /// <remarks>
+    /// 含「不存在」的条目；空集合什么也不做。清全部用 <see cref="InvalidateAll"/>（ADR-0160）
+    /// </remarks>
+    public void Invalidate(IReadOnlyList<string> tenantIds)
     {
-        if (tenantId is null)
+        ArgumentNullException.ThrowIfNull(tenantIds);
+        foreach (var tenantId in tenantIds)
         {
-            _cache.Clear();
-        }
-        else
-        {
+            ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
             _cache.TryRemove(tenantId, out _);
         }
     }
+
+    /// <summary>
+    /// 丢弃全部缓存
+    /// </summary>
+    public void InvalidateAll() => _cache.Clear();
 
     /// <summary>
     /// 一条缓存：租户（不存在为无值）与过期时刻（无存活时间为 <see langword="null"/>）

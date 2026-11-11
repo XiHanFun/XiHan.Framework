@@ -97,35 +97,31 @@ app.Run();
 | --- | --- |
 | `InMemoryMultiTenancyFeature` | 特性入口；`HealthName` = `multitenancy.inmemory.capacity` |
 | `InMemoryMultiTenancyOptions` | `MaxTenants`（缺省 1000）、`Tenants`（启动时装载的租户）；`FromConfiguration` 读取上面的配置 |
-| `InMemoryTenantStore` | `ITenantStore` 与健康项贡献者：`Set(tenant)` 新增或替换、`Remove(tenantId)` 删除、`Capacity`、`Count` |
+| `InMemoryTenantStore` | `ITenantStore` 与健康项贡献者：`Capacity`、`Count`；运行时写入经 `ITenantAdministration`（`UpsertAsync`、`RemoveAsync`，一次加锁处理整批，写入后失效分片缓存） |
 
 ## 使用示例
 
-运行时增删租户。`Set` 与 `Remove` 不会自动失效分片缓存，改了租户连接后要调用 `ITenantShardResolver.Invalidate`：
+运行时增删租户经租户管理 `ITenantAdministration`：写入后分片解析器的缓存随即失效，下次解析就落新库：
 
 ```csharp
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
-using XiHan.Framework.MultiTenancy.InMemory;
 using XiHan.Framework.Primitives;
 
-public sealed class TenantAdministration(InMemoryTenantStore store, ITenantShardResolver shards)
+public sealed class TenantMoves(ITenantAdministration tenants)
 {
-    public Result MoveToOwnDatabase(string tenantId, string connectionString)
+    public async ValueTask<Result> MoveToOwnDatabaseAsync(string tenantId, string connectionString, CancellationToken cancellationToken)
     {
-        var updated = store.Set(new TenantInfo
-        {
-            Id = tenantId,
-            Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = connectionString },
-        });
-
-        // 解析器缓存了旧结果（包括"无分片"），不失效就继续落旧库
-        if (updated.IsSuccess)
-        {
-            shards.Invalidate(tenantId);
-        }
-
-        return updated;
+        // 整份覆盖；解析器缓存的旧结果（包括"无分片"）随写入失效
+        var results = await tenants.UpsertAsync(
+        [
+            new TenantInfo
+            {
+                Id = tenantId,
+                Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = connectionString },
+            },
+        ], cancellationToken);
+        return results[0];
     }
 }
 ```

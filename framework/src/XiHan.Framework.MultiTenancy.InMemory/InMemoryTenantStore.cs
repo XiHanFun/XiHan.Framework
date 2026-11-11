@@ -41,9 +41,9 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     {
         ArgumentNullException.ThrowIfNull(options);
         Capacity = options.MaxTenants;
-        foreach (var tenant in options.Tenants)
+        foreach (var seeded in Upsert(options.Tenants))
         {
-            Set(tenant).ThrowIfFailure();
+            seeded.ThrowIfFailure();
         }
     }
 
@@ -116,36 +116,53 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     }
 
     /// <summary>
-    /// 新增或替换
+    /// 新增或替换一批，按顺序逐项返回
     /// </summary>
     /// <remarks>
-    /// 新增超出容量返回 <see cref="MultiTenancyErrors.CapacityExceeded"/>
+    /// 新增超出容量返回 <see cref="MultiTenancyErrors.CapacityExceeded"/>；经 <see cref="ITenantAdministration"/> 调用
     /// </remarks>
-    public Result Set(TenantInfo tenant)
+    internal IReadOnlyList<Result> Upsert(IReadOnlyList<TenantInfo> tenants)
     {
-        ArgumentNullException.ThrowIfNull(tenant);
+        var results = new Result[tenants.Count];
+        // 一次加锁处理整批：容量检查与写入必须在同一把锁内，否则并发新增可能越过上限；替换已有租户不占新容量
         lock (_gate)
         {
-            // 容量检查与写入必须在同一把锁内，否则并发新增可能越过上限；替换已有租户不占新容量
-            if (!_tenants.ContainsKey(tenant.Id) && _tenants.Count >= Capacity)
+            for (var index = 0; index < tenants.Count; index++)
             {
-                return Error.Unavailable(MultiTenancyErrors.CapacityExceeded, MultiTenancyMessages.CapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
-            }
+                var tenant = tenants[index];
+                if (!_tenants.ContainsKey(tenant.Id) && _tenants.Count >= Capacity)
+                {
+                    results[index] = Error.Unavailable(MultiTenancyErrors.CapacityExceeded, MultiTenancyMessages.CapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
+                    continue;
+                }
 
-            _tenants[tenant.Id] = tenant;
-            return Result.Success();
+                _tenants[tenant.Id] = tenant;
+                results[index] = Result.Success();
+            }
         }
+
+        return results;
     }
 
     /// <summary>
-    /// 删除
+    /// 删除一批，按顺序逐项返回
     /// </summary>
     /// <remarks>
-    /// 存在返回 <see langword="true"/>
+    /// 不存在返回 <see cref="MultiTenancyErrors.NotFound"/>；经 <see cref="ITenantAdministration"/> 调用
     /// </remarks>
-    public bool Remove(string tenantId)
+    internal IReadOnlyList<Result> Remove(IReadOnlyList<string> tenantIds)
     {
-        ArgumentNullException.ThrowIfNull(tenantId);
-        return _tenants.TryRemove(tenantId, out _);
+        var results = new Result[tenantIds.Count];
+        lock (_gate)
+        {
+            for (var index = 0; index < tenantIds.Count; index++)
+            {
+                results[index] = _tenants.TryRemove(tenantIds[index], out _)
+                    ? Result.Success()
+                    : Error.NotFound(MultiTenancyErrors.NotFound, MultiTenancyMessages.TenantNotFound, MessageArguments.Of(("tenantId", tenantIds[index])));
+            }
+        }
+
+        return results;
     }
 }

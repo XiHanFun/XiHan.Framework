@@ -233,7 +233,8 @@ XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.DefaultEmbeddingProvider.get -> string?
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.DefaultProvider.get -> string?
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.Find(string! name) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.AI.Abstractions.Providers.AIProviderOptions!>
-XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.Invalidate(string? name = null) -> void
+XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.Invalidate(System.Collections.Generic.IReadOnlyList<string!>! names) -> void
+XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.InvalidateAll() -> void
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.Providers.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.ResolveChatClient(string? name = null) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IChatClient!>
 XiHan.Framework.AI.Abstractions.Providers.IAIProviderCatalog.ResolveEmbeddingGenerator(string? name = null) -> XiHan.Framework.Primitives.Result<Microsoft.Extensions.AI.IEmbeddingGenerator<string!, Microsoft.Extensions.AI.Embedding<float>!>!>

@@ -57,10 +57,18 @@ public interface IAIProviderCatalog
     Result<IEmbeddingGenerator<string, Embedding<float>>> ResolveEmbeddingGenerator(string? name = null);
 
     /// <summary>
-    /// 丢弃缓存的实例（可释放的会被释放）
+    /// 丢弃这些提供方缓存的实例
     /// </summary>
     /// <remarks>
-    /// <paramref name="name"/> 为空清全部
+    /// 可释放的会被释放；空集合什么也不做。清全部用 <see cref="InvalidateAll"/>，不以 <see langword="null"/> 表示全部（ADR-0160）
     /// </remarks>
-    void Invalidate(string? name = null);
+    void Invalidate(IReadOnlyList<string> names);
+
+    /// <summary>
+    /// 丢弃全部缓存的实例
+    /// </summary>
+    /// <remarks>
+    /// 可释放的会被释放
+    /// </remarks>
+    void InvalidateAll();
 }

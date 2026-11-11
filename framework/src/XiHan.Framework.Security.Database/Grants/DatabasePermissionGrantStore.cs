@@ -131,26 +131,38 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
-    /// 使缓存失效：给主体时清掉该主体在所有租户下的条目，不给时清空全部
+    /// 使这些主体的缓存失效
     /// </summary>
-    public void Invalidate(GrantSubject? subject = null)
+    /// <remarks>
+    /// 清掉每个主体在所有租户下的条目；空集合什么也不做。清空全部用 <see cref="InvalidateAll"/>（ADR-0160）
+    /// </remarks>
+    public void Invalidate(IReadOnlyList<GrantSubject> subjects)
+    {
+        ArgumentNullException.ThrowIfNull(subjects);
+        lock (_gate)
+        {
+            foreach (var subject in subjects)
+            {
+                if (_tenantsBySubject.Remove(subject, out var tenants))
+                {
+                    foreach (var tenant in tenants)
+                    {
+                        _entries.Remove((subject, tenant));
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 使全部缓存失效
+    /// </summary>
+    public void InvalidateAll()
     {
         lock (_gate)
         {
-            if (subject is not { } target)
-            {
-                _entries.Clear();
-                _tenantsBySubject.Clear();
-                return;
-            }
-
-            if (_tenantsBySubject.Remove(target, out var tenants))
-            {
-                foreach (var tenant in tenants)
-                {
-                    _entries.Remove((target, tenant));
-                }
-            }
+            _entries.Clear();
+            _tenantsBySubject.Clear();
         }
     }
 

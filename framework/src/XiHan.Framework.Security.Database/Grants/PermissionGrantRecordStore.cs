@@ -214,11 +214,9 @@ public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration
         var subjects = new HashSet<GrantSubject>();
         foreach (var row in rows)
         {
-            var subject = new GrantSubject(row.SubjectKind, row.SubjectId);
-            if (subjects.Add(subject))
-            {
-                _grants.Invalidate(subject);
-            }
+            subjects.Add(new GrantSubject(row.SubjectKind, row.SubjectId));
         }
+
+        _grants.Invalidate([.. subjects]);
     }
 }
