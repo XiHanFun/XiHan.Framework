@@ -36,7 +36,8 @@ internal sealed class RecordingPermissionFilter(IReadOnlySet<string>? allowed) :
     /// <inheritdoc />
     public ValueTask<Result<bool>> AllowsAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
     {
-        Calls.Add((security.Principal.Id, permission));
+        // 检查器只为已认证主体调用过滤器，ID 一定有值
+        Calls.Add((security.Principal.Id ?? throw new InvalidOperationException("Permission filters are only called for authenticated principals."), permission));
         return ValueTask.FromResult(Failure is { } failure ? Result.Failure<bool>(failure) : Result.Success(Allowed is null || Allowed.Contains(permission)));
     }
 }

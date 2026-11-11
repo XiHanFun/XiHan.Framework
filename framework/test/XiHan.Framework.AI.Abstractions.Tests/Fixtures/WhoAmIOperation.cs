@@ -16,6 +16,6 @@ internal sealed class WhoAmIOperation : IOperation<EchoRequest, EchoResponse>
     public ValueTask<Result<EchoResponse>> HandleAsync(EchoRequest request, InvocationContext context)
     {
         var security = context.GetSecurity();
-        return ValueTask.FromResult(Result.Success(new EchoResponse(security.Principal.Id, context.TraceId, security.Tenant?.Id)));
+        return ValueTask.FromResult(Result.Success(new EchoResponse(security.Principal.Id ?? "-", context.TraceId, security.Tenant?.Id)));
     }
 }

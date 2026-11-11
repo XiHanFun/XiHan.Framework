@@ -36,9 +36,40 @@ public sealed class SecurityTests
         Assert.Equal("1001", name.Id);
         Assert.Equal("xrn:cn:orders:t-42:order/1001", name.ToString());
         Assert.True(ResourceName.TryParse("xrn:cn:orders::order/global", out var global));
-        Assert.Equal(string.Empty, global.Tenant);
+        Assert.Null(global.Tenant);
+        Assert.Equal("xrn:cn:orders::order/global", global.ToString());
         Assert.False(ResourceName.TryParse("arn:cn:orders:t:order/1", out _));
         Assert.Throws<ArgumentException>(() => ResourceName.Parse("xrn:cn:orders"));
+    }
+
+    [Fact]
+    public void ResourceName_Construction_ValidatesEverySegment_AndGlobalTenantIsNull()
+    {
+        // 构造与解析同一套文法：构造不出解析不回去的资源名
+        Assert.Equal("xrn:cn:shop::order/1", new ResourceName("cn", "shop", null, "order", "1").ToString());
+        Assert.Throws<ArgumentException>(() => new ResourceName("cn", "shop", string.Empty, "order", "1"));
+        Assert.Throws<ArgumentException>(() => new ResourceName("CN", "shop", null, "order", "1"));
+        Assert.Throws<ArgumentException>(() => new ResourceName("cn", "shop", "-acme", "order", "1"));
+        Assert.Throws<ArgumentException>(() => new ResourceName("cn", "shop", null, "Order", "1"));
+        Assert.Throws<ArgumentException>(() => new ResourceName("cn", "shop", null, "order", "a/b"));
+        Assert.Throws<ArgumentNullException>(() => new ResourceName(null!, "shop", null, "order", "1"));
+        var name = new ResourceName("cn", "shop", "acme", "order", "1");
+        Assert.Throws<ArgumentException>(() => name with { Service = "bad service" });
+    }
+
+    [Fact]
+    public void Principal_AnonymousHasNoId_AndAuthenticatedNeedsIdAndScheme()
+    {
+        Assert.Null(Principal.Anonymous.Id);
+        Assert.Null(Principal.Anonymous.AuthenticationScheme);
+        Assert.False(Principal.Anonymous.IsAuthenticated);
+        Assert.False((Principal.Anonymous with { Claims = [new("role", "admin")] }).IsAuthenticated);
+
+        var alice = new Principal("alice", "jwt");
+        Assert.True(alice.IsAuthenticated);
+        Assert.Equal("alice", alice.Id);
+        Assert.Throws<ArgumentException>(() => new Principal(string.Empty, "jwt"));
+        Assert.Throws<ArgumentException>(() => new Principal("alice", " "));
     }
 
     [Theory]

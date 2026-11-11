@@ -28,9 +28,11 @@ internal sealed class RecordingGrantSource(IReadOnlyDictionary<string, string[]>
     /// <inheritdoc />
     public ValueTask<Result<IReadOnlyCollection<string>>> GetGrantsAsync(SecurityContext security, CancellationToken cancellationToken)
     {
-        Calls.Add(security.Principal.Id);
+        // 检查器只为已认证主体调用来源，ID 一定有值
+        var principalId = security.Principal.Id ?? throw new InvalidOperationException("Grant sources are only called for authenticated principals.");
+        Calls.Add(principalId);
         return ValueTask.FromResult(Failure is { } failure
             ? Result.Failure<IReadOnlyCollection<string>>(failure)
-            : Result.Success<IReadOnlyCollection<string>>(grants.TryGetValue(security.Principal.Id, out var granted) ? granted : []));
+            : Result.Success<IReadOnlyCollection<string>>(grants.TryGetValue(principalId, out var granted) ? granted : []));
     }
 }

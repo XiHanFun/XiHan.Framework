@@ -259,7 +259,7 @@ public sealed class TenantResolutionMiddlewareTests
 
         // 未认证主体的声明不作数，退回 Baggage
         var (anonymous, reachedAnonymous) = Arrange(new MultiTenancyOptions(), baggageTenant: "acme", new ClaimTenantResolver(new MultiTenancyOptions()), new BaggageTenantResolver());
-        anonymous.SetSecurity(new SecurityContext(new Principal("ghost", null) { Claims = [new("tenant", "dormant")] }, null));
+        anonymous.SetSecurity(new SecurityContext(Principal.Anonymous with { Claims = [new("tenant", "dormant")] }, null));
         await new TenantResolutionMiddleware(new MultiTenancyOptions()).InvokeAsync(anonymous, Handler(reachedAnonymous));
         Assert.Equal("acme", anonymous.GetSecurity().Tenant?.Id);
     }

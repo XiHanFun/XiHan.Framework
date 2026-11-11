@@ -77,7 +77,7 @@ curl -s localhost:5000/missing -H "Accept-Language: zh-CN"
 curl -s -i localhost:5000/orders/stats
 ```
 
-第一条返回匿名主体：`{"principal":"","isAuthenticated":false,"tenant":null}`（匿名主体的 ID 是空串）；第二条返回 `alice` 与她的租户 `acme`；第三条返回 404 的 Problem Details，`code` 是 `SAMPLES_NOTFOUND_001`，`detail` 是中文文案；第四条返回 401，`code` 是 `SECURITY_DENIED_001`，响应头带 `WWW-Authenticate: ApiKey`。
+第一条返回匿名主体：`{"principal":null,"isAuthenticated":false,"tenant":null}`（匿名主体没有 ID）；第二条返回 `alice` 与她的租户 `acme`；第三条返回 404 的 Problem Details，`code` 是 `SAMPLES_NOTFOUND_001`，`detail` 是中文文案；第四条返回 401，`code` 是 `SECURITY_DENIED_001`，响应头带 `WWW-Authenticate: ApiKey`。
 
 ## 读调用上下文
 

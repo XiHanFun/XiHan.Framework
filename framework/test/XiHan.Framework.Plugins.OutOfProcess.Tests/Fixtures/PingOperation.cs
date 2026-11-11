@@ -19,6 +19,6 @@ internal sealed class PingOperation : IOperation<PingRequest, PingResponse>
     public ValueTask<Result<PingResponse>> HandleAsync(PingRequest request, InvocationContext context)
     {
         var principal = context.GetSecurity().Principal;
-        return ValueTask.FromResult(Result.Success(new PingResponse(request.Name, principal.Id, principal.AuthenticationScheme, context.Deadline)));
+        return ValueTask.FromResult(Result.Success(new PingResponse(request.Name, principal.Id ?? "-", principal.AuthenticationScheme, context.Deadline)));
     }
 }

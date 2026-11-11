@@ -104,7 +104,7 @@ public sealed record WhoAmIRequest();
 
 public sealed record WhoAmIResponse(
     string TraceId,
-    string Principal,
+    string? Principal,
     bool IsAuthenticated,
     string? Tenant,
     string? Correlation,

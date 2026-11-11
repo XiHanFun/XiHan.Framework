@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Security;
@@ -9,17 +10,52 @@ namespace XiHan.Framework.Kernel.Security;
 /// 当前操作的主体
 /// </summary>
 /// <remarks>
-/// 用户、服务或系统。不可变；由 Authenticate 阶段写入上下文
+/// 用户、服务或系统。不可变；由 Authenticate 阶段写入上下文。已认证的主体经构造给出 ID 与认证方案，匿名主体只有 <see cref="Anonymous"/> 一个，它的 ID 与方案都是 <see langword="null"/>（ADR-0145）
 /// </remarks>
-/// <param name="Id">主体 ID；匿名主体为空字符串</param>
-/// <param name="AuthenticationScheme">认证方案；匿名主体为 <see langword="null"/></param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record Principal(string Id, string? AuthenticationScheme)
+public sealed record Principal
 {
+    /// <summary>
+    /// 创建已认证的主体
+    /// </summary>
+    /// <param name="id">主体 ID</param>
+    /// <param name="authenticationScheme">认证方案</param>
+    /// <exception cref="ArgumentException"><paramref name="id"/> 或 <paramref name="authenticationScheme"/> 为空或空白</exception>
+    public Principal(string id, string authenticationScheme)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        ArgumentException.ThrowIfNullOrWhiteSpace(authenticationScheme);
+        Id = id;
+        AuthenticationScheme = authenticationScheme;
+    }
+
+    /// <summary>
+    /// 创建匿名主体
+    /// </summary>
+    private Principal()
+    {
+    }
+
     /// <summary>
     /// 匿名主体
     /// </summary>
-    public static Principal Anonymous { get; } = new(string.Empty, null);
+    public static Principal Anonymous { get; } = new();
+
+    /// <summary>
+    /// 主体 ID
+    /// </summary>
+    /// <remarks>
+    /// 匿名主体为 <see langword="null"/>；<see cref="IsAuthenticated"/> 为真时不为 <see langword="null"/>
+    /// </remarks>
+    public string? Id { get; }
+
+    /// <summary>
+    /// 认证方案
+    /// </summary>
+    /// <remarks>
+    /// 匿名主体为 <see langword="null"/>
+    /// </remarks>
+    public string? AuthenticationScheme { get; }
 
     /// <summary>
     /// 显示名
@@ -37,7 +73,11 @@ public sealed record Principal(string Id, string? AuthenticationScheme)
     /// <summary>
     /// 是否已认证
     /// </summary>
-    public bool IsAuthenticated => AuthenticationScheme is not null && Id.Length > 0;
+    /// <remarks>
+    /// 为真时 <see cref="Id"/> 与 <see cref="AuthenticationScheme"/> 都不为 <see langword="null"/>
+    /// </remarks>
+    [MemberNotNullWhen(true, nameof(Id), nameof(AuthenticationScheme))]
+    public bool IsAuthenticated => Id is not null && AuthenticationScheme is not null;
 
     /// <summary>
     /// 取指定类型的全部声明值

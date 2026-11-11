@@ -14,5 +14,8 @@ public interface IHasConcurrencyStamp
     /// <summary>
     /// 并发戳
     /// </summary>
+    /// <remarks>
+    /// 已持久化的实体一定有值，所以不可空；新建实体在新增前以 <see cref="string.Empty"/> 占位，新增时由持久化生成（ADR-0145）
+    /// </remarks>
     string ConcurrencyStamp { get; set; }
 }

@@ -34,6 +34,6 @@ internal sealed class WriteOrderOperation : IOperation<OrderRequest, OrderRespon
     public ValueTask<Result<OrderResponse>> HandleAsync(OrderRequest request, InvocationContext context)
     {
         var security = context.GetSecurity();
-        return ValueTask.FromResult(Result.Success(new OrderResponse(security.Principal.Id, security.Tenant?.Id)));
+        return ValueTask.FromResult(Result.Success(new OrderResponse(security.Principal.Id ?? "-", security.Tenant?.Id)));
     }
 }

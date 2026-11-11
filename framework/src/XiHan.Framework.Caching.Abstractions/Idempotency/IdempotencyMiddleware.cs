@@ -54,7 +54,7 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
 
         // 作用域键 = 租户 + 主体 + 幂等键：不同租户或用户即使提交相同的键也互不回放对方的结果
         var security = context.GetSecurity();
-        var principalId = security.Principal.Id.Length == 0 ? "-" : security.Principal.Id;
+        var principalId = security.Principal.Id ?? "-";
         var scoped = $"idem:{security.Tenant?.Id ?? "-"}:{principalId}:{idempotencyKey}";
         if (!CacheKey.IsValid(scoped))
         {

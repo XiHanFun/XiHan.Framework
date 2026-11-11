@@ -17,6 +17,7 @@
 - **调整** `Error.Unexpected` 的参数顺序改为 `(code, messageKey, details, inner)`，与构造函数一致；按位置传 `inner` 的写成 `inner: …`
 - **修复** `CapabilityDeclaration.TryParse` 与 `CapabilityRequirement.TryParse` 的输出标注为可空（`[NotNullWhen(true)]`），失败时为 `null`
 - **修复** `InvocationContext.Baggage` 构造时复制成只读副本，调用方之后改原字典不再影响上下文；`Items` 在派生上下文之间共享，并行写入时不再损坏
+- **调整** 匿名主体的 `Principal.Id` 由空字符串改为 `null`，`new Principal(id, scheme)` 只创建已认证主体（两者都不得为空），匿名用 `Principal.Anonymous`；判断 `IsAuthenticated` 之后可直接用 `Id`。`ResourceName.Tenant` 的全局资源由空字符串改为 `null`，构造时校验每一段
 - **调整** 内核的数据类型不再是位置记录：`AuditEvent`、`HealthSnapshot`、`OperationResponse`、`FeatureStatus` 按属性名写初始化器（`new AuditEvent { Timestamp = …, Action = …, Outcome = …, TraceId = … }`）；`AuthorizationRequest`、`ContributorStatus`、`PluginSource` 只保留两参构造，第三个实参改成初始化器（`new ContributorStatus(name, state) { Error = … }`）；这些类型都不再能解构
 
 ### 子系统

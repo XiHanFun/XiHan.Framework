@@ -77,6 +77,12 @@ public sealed class InvocationAuthenticationHandler(IOptionsMonitor<InvocationAu
             return Fail(authenticated.Error!);
         }
 
+        // 处理器给出匿名主体时与管道一致按匿名处理，不生成 ASP.NET Core 身份
+        if (!principal.IsAuthenticated)
+        {
+            return AuthenticateResult.NoResult();
+        }
+
         context.SetSecurity(new SecurityContext(principal, context.GetSecurity().Tenant));
         foreach (var filter in services.GetServices<IInvocationAuthenticationFilter>())
         {

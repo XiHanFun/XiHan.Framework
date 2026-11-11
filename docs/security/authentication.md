@@ -29,9 +29,9 @@
 
 | 成员 | 说明 |
 | --- | --- |
-| `Id` | 主体 ID；匿名主体为空字符串 |
+| `Id` | 主体 ID；匿名主体为 `null` |
 | `AuthenticationScheme` | 认证方案；匿名主体为 `null` |
-| `IsAuthenticated` | 方案不为空且 `Id` 非空 |
+| `IsAuthenticated` | `Id` 与方案都有值；为真时编译器知道 `Id` 不为 `null`，`if (principal.IsAuthenticated)` 之后直接用 `principal.Id` |
 | `DisplayName` | 显示名 |
 | `Claims` | 声明列表（`KeyValuePair<string, string>`），同一类型可以有多个值 |
 | `ClaimValues(type)` | 取某类型的全部声明值，类型按序数比较 |

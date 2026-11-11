@@ -485,31 +485,28 @@ XiHan.Framework.Kernel.Security.PermissionRegistry.RemoveOwnedBy(string! ownerId
 XiHan.Framework.Kernel.Security.Principal
 XiHan.Framework.Kernel.Security.Principal.<Clone>$() -> XiHan.Framework.Kernel.Security.Principal!
 XiHan.Framework.Kernel.Security.Principal.AuthenticationScheme.get -> string?
-XiHan.Framework.Kernel.Security.Principal.AuthenticationScheme.init -> void
 XiHan.Framework.Kernel.Security.Principal.ClaimValues(string! type) -> System.Collections.Generic.IEnumerable<string!>!
 XiHan.Framework.Kernel.Security.Principal.Claims.get -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string!, string!>>!
 XiHan.Framework.Kernel.Security.Principal.Claims.init -> void
-XiHan.Framework.Kernel.Security.Principal.Deconstruct(out string! Id, out string? AuthenticationScheme) -> void
 XiHan.Framework.Kernel.Security.Principal.DisplayName.get -> string?
 XiHan.Framework.Kernel.Security.Principal.DisplayName.init -> void
 XiHan.Framework.Kernel.Security.Principal.Equals(XiHan.Framework.Kernel.Security.Principal? other) -> bool
 XiHan.Framework.Kernel.Security.Principal.HasClaim(string! type, string! value) -> bool
-XiHan.Framework.Kernel.Security.Principal.Id.get -> string!
-XiHan.Framework.Kernel.Security.Principal.Id.init -> void
+XiHan.Framework.Kernel.Security.Principal.Id.get -> string?
 XiHan.Framework.Kernel.Security.Principal.IsAuthenticated.get -> bool
-XiHan.Framework.Kernel.Security.Principal.Principal(string! Id, string? AuthenticationScheme) -> void
+XiHan.Framework.Kernel.Security.Principal.Principal(string! id, string! authenticationScheme) -> void
 XiHan.Framework.Kernel.Security.ResourceName
-XiHan.Framework.Kernel.Security.ResourceName.Deconstruct(out string! Partition, out string! Service, out string! Tenant, out string! Type, out string! Id) -> void
+XiHan.Framework.Kernel.Security.ResourceName.Deconstruct(out string! Partition, out string! Service, out string? Tenant, out string! Type, out string! Id) -> void
 XiHan.Framework.Kernel.Security.ResourceName.Equals(XiHan.Framework.Kernel.Security.ResourceName other) -> bool
 XiHan.Framework.Kernel.Security.ResourceName.Id.get -> string!
 XiHan.Framework.Kernel.Security.ResourceName.Id.init -> void
 XiHan.Framework.Kernel.Security.ResourceName.Partition.get -> string!
 XiHan.Framework.Kernel.Security.ResourceName.Partition.init -> void
 XiHan.Framework.Kernel.Security.ResourceName.ResourceName() -> void
-XiHan.Framework.Kernel.Security.ResourceName.ResourceName(string! Partition, string! Service, string! Tenant, string! Type, string! Id) -> void
+XiHan.Framework.Kernel.Security.ResourceName.ResourceName(string! Partition, string! Service, string? Tenant, string! Type, string! Id) -> void
 XiHan.Framework.Kernel.Security.ResourceName.Service.get -> string!
 XiHan.Framework.Kernel.Security.ResourceName.Service.init -> void
-XiHan.Framework.Kernel.Security.ResourceName.Tenant.get -> string!
+XiHan.Framework.Kernel.Security.ResourceName.Tenant.get -> string?
 XiHan.Framework.Kernel.Security.ResourceName.Tenant.init -> void
 XiHan.Framework.Kernel.Security.ResourceName.Type.get -> string!
 XiHan.Framework.Kernel.Security.ResourceName.Type.init -> void

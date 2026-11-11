@@ -86,7 +86,7 @@ public sealed class PermissionChecker : IPermissionChecker
         }
 
         // 授予读不到是失败而不是"没有授予"：原样返回，调用以 503 结束，不能落到 403
-        var granted = await IsGrantedAsync(security, permission, cancellationToken).ConfigureAwait(false);
+        var granted = await IsGrantedAsync(security, security.Principal.Id, permission, cancellationToken).ConfigureAwait(false);
         if (granted.IsFailure || !granted.ValueOrThrow())
         {
             return granted;
@@ -112,9 +112,9 @@ public sealed class PermissionChecker : IPermissionChecker
     /// <remarks>
     /// 用户与它的全部角色一次读出（批量优先），存储没命中时再逐个查授予来源；来源任一命中即返回，避免多余的访问。读取失败立即返回该失败，不当作不持有
     /// </remarks>
-    private async ValueTask<Result<bool>> IsGrantedAsync(SecurityContext security, string permission, CancellationToken cancellationToken)
+    private async ValueTask<Result<bool>> IsGrantedAsync(SecurityContext security, string principalId, string permission, CancellationToken cancellationToken)
     {
-        List<GrantSubject> subjects = [GrantSubject.ForUser(security.Principal.Id)];
+        List<GrantSubject> subjects = [GrantSubject.ForUser(principalId)];
         subjects.AddRange(security.Principal.ClaimValues(_options.RoleClaim).Select(GrantSubject.ForRole));
         var stored = await _store.GetManyAsync(subjects, security.Tenant?.Id, cancellationToken).ConfigureAwait(false);
         if (!stored.TryGetValue(out var grants))

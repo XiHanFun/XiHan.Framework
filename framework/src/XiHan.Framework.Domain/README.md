@@ -28,7 +28,7 @@ public sealed class Order : IAggregateRoot<Guid>, IMultiTenant, ISoftDeletable, 
 {
     private readonly DomainEventBuffer _events = new();
     public Guid Id { get; init; }
-    public string TenantId { get; set; } = string.Empty;
+    public string TenantId { get; set; } = string.Empty; // 占位，新增时由持久化写入当前租户
     public bool IsDeleted { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

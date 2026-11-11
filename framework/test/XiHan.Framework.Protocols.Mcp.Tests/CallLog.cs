@@ -18,12 +18,12 @@ internal sealed class CallLog
     /// <summary>
     /// 记录
     /// </summary>
-    private readonly ConcurrentQueue<(string Principal, string? Tenant, string? Locale, string? Correlation, bool HasDeadline)> _calls = new();
+    private readonly ConcurrentQueue<(string? Principal, string? Tenant, string? Locale, string? Correlation, bool HasDeadline)> _calls = new();
 
     /// <summary>
     /// 已记录的调用快照
     /// </summary>
-    public IReadOnlyList<(string Principal, string? Tenant, string? Locale, string? Correlation, bool HasDeadline)> Calls => _calls.ToList();
+    public IReadOnlyList<(string? Principal, string? Tenant, string? Locale, string? Correlation, bool HasDeadline)> Calls => _calls.ToList();
 
     /// <summary>
     /// 记下调用上下文里的要素
