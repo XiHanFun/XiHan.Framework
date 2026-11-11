@@ -114,6 +114,20 @@ internal sealed class WorkflowTaskService : IWorkflowTaskService
             return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("take", query.Take), ("max", UserTaskQuery.MaxTake)));
         }
 
+        // 排序项与定义、实例查询同一套核对：项数，再逐项看字段是否定义
+        if (query.Sorts is { Count: > UserTaskQuery.MaxSorts } tooMany)
+        {
+            return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQuerySortsTooMany, MessageArguments.Of(("count", tooMany.Count), ("max", UserTaskQuery.MaxSorts)));
+        }
+
+        foreach (var sort in query.Sorts ?? [])
+        {
+            if (sort is null || !Enum.IsDefined(sort.Field))
+            {
+                return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.TaskQuerySortInvalid, MessageArguments.Of(("sort", sort?.Field.ToString() ?? "null")));
+            }
+        }
+
         var nodeId = query.NodeId?.Trim();
         var normalized = query with
         {

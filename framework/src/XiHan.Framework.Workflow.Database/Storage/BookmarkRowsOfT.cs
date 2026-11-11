@@ -171,7 +171,7 @@ internal sealed class BookmarkRows<TRow, TInstance>(IRepository<TRow, string> re
     /// </remarks>
     public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListUserTasksAsync(UserTaskQuery query, CancellationToken cancellationToken)
     {
-        var descending = query.Descending;
+        var descending = query.Sorts is [{ Field: UserTaskSortField.CreatedAt, Descending: true }, ..];
         var paged = UserTasks(query)
             .OrderBy(static record => record.CreatedAt, descending)
             .OrderBy(static record => record.Sequence, descending)

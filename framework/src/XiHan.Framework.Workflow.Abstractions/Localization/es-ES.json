@@ -202,6 +202,8 @@
   "workflow.task.not_claimable": "La tarea '{task}' no se puede reclamar con su política de finalización.",
   "workflow.task.outcome_invalid": "El resultado de tarea '{outcome}' no está permitido.",
   "workflow.task.query_page_invalid": "La página de la consulta de tareas está fuera de rango: skip {skip} no puede ser negativo y limit {take} debe estar entre 1 y {max}.",
+  "workflow.task.query_sort_invalid": "Las tareas de usuario no se pueden ordenar por '{sort}'.",
+  "workflow.task.query_sorts_too_many": "Las tareas de usuario admiten como máximo {max} criterios de ordenación; se indicaron {count}.",
   "workflow.task.query_target_missing": "La consulta de tareas necesita un ID de asignatario o un ID de instancia.",
   "workflow.variable.required": "La variable '{name}' es obligatoria."
 }

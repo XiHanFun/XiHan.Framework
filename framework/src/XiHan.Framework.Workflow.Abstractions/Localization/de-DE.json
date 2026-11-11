@@ -202,6 +202,8 @@
   "workflow.task.not_claimable": "Die Aufgabe '{task}' kann unter ihrer Abschlussrichtlinie nicht übernommen werden.",
   "workflow.task.outcome_invalid": "Das Aufgabenergebnis '{outcome}' ist nicht erlaubt.",
   "workflow.task.query_page_invalid": "Die Seite der Aufgabenabfrage liegt außerhalb des gültigen Bereichs: skip {skip} darf nicht negativ sein und limit {take} muss zwischen 1 und {max} liegen.",
+  "workflow.task.query_sort_invalid": "Benutzeraufgaben können nicht nach '{sort}' sortiert werden.",
+  "workflow.task.query_sorts_too_many": "Benutzeraufgaben akzeptieren höchstens {max} Sortierangaben; {count} wurden angegeben.",
   "workflow.task.query_target_missing": "Die Aufgabenabfrage benötigt eine Bearbeiter-ID oder eine Instanz-ID.",
   "workflow.variable.required": "Die Variable '{name}' ist erforderlich."
 }

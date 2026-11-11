@@ -202,6 +202,8 @@
   "workflow.task.not_claimable": "Задачу '{task}' нельзя взять при её политике завершения.",
   "workflow.task.outcome_invalid": "Результат задачи '{outcome}' не разрешён.",
   "workflow.task.query_page_invalid": "Страница запроса задач вне допустимого диапазона: skip {skip} не может быть отрицательным, а limit {take} должен быть от 1 до {max}.",
+  "workflow.task.query_sort_invalid": "Пользовательские задачи нельзя сортировать по «{sort}».",
+  "workflow.task.query_sorts_too_many": "Для пользовательских задач допускается не более {max} условий сортировки; указано {count}.",
   "workflow.task.query_target_missing": "Для запроса задач нужен идентификатор исполнителя или экземпляра.",
   "workflow.variable.required": "Переменная '{name}' обязательна."
 }

@@ -1072,8 +1072,6 @@ XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.CreatedTo.get -> Syste
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.CreatedTo.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.DefinitionName.get -> XiHan.Framework.Workflow.Abstractions.WorkflowName?
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.DefinitionName.init -> void
-XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Descending.get -> bool
-XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Descending.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Equals(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery? other) -> bool
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.InstanceId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.InstanceId.init -> void
@@ -1083,6 +1081,8 @@ XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.NodeId.get -> string?
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.NodeId.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Skip.get -> int
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Skip.init -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Sorts.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort!>?
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Sorts.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Take.get -> int
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.Take.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.UserTaskQuery() -> void
@@ -1102,6 +1102,17 @@ XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.TargetNodeId.get -> s
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.TargetNodeId.init -> void
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.TaskId.get -> string!
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.UserTaskReturn(string! taskId, string! actorId) -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort!
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.Deconstruct(out XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSortField Field, out bool Descending) -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.Descending.get -> bool
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.Descending.init -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.Equals(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort? other) -> bool
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.Field.get -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSortField
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.Field.init -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.UserTaskSort(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSortField Field, bool Descending = false) -> void
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSortField
+XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSortField.CreatedAt = 0 -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSortField
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer!
 XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer.ActorId.get -> string!
@@ -1167,6 +1178,7 @@ XiHan.Framework.Workflow.Abstractions.WorkflowOptions.WorkflowOptions() -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowServiceCollectionExtensions
 XiHan.Framework.Workflow.Abstractions.WorkflowSortKeys
 XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages
+XiHan.Framework.Workflow.Abstractions.WorkflowStatusOrder
 const XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.MaxLength = 64 -> int
 const XiHan.Framework.Workflow.Abstractions.Activities.ActivityTypes.Compensate = "Compensate" -> string!
 const XiHan.Framework.Workflow.Abstractions.Activities.ActivityTypes.Decision = "Decision" -> string!
@@ -1342,6 +1354,7 @@ const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Priority =
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Rejected = "rejected" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.ReminderIntervalSeconds = "intervalSeconds" -> string!
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskPayloadKeys.Title = "title" -> string!
+const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.MaxSorts = 1 -> int
 const XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskQuery.MaxTake = 1000 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowCapabilities.Execution = "workflow.execution" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowCapabilities.Version = 1 -> int
@@ -1569,6 +1582,8 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskNoReturnTarget 
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskNotClaimable = "workflow.task.not_claimable" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskOutcomeInvalid = "workflow.task.outcome_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryPageInvalid = "workflow.task.query_page_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQuerySortInvalid = "workflow.task.query_sort_invalid" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQuerySortsTooMany = "workflow.task.query_sorts_too_many" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryTargetMissing = "workflow.task.query_target_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.VariableRequired = "workflow.variable.required" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowName.MaxLength = 128 -> int
@@ -1691,6 +1706,9 @@ override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease.ToString() 
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.ToString() -> string!
+override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.Equals(object? obj) -> bool
+override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.GetHashCode() -> int
+override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.ToString() -> string!
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer.Equals(object? obj) -> bool
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer.GetHashCode() -> int
 override XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer.ToString() -> string!
@@ -1848,6 +1866,8 @@ static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease.operator !=(X
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskRelease? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskReturn? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort? right) -> bool
+static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskSort? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer.operator ==(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskTransfer? right) -> bool
 static XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskUrge.operator !=(XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskUrge? left, XiHan.Framework.Workflow.Abstractions.Tasks.UserTaskUrge? right) -> bool
@@ -1893,5 +1913,7 @@ static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.KeyOf(XiHan.
 static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.Localize(this XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus status) -> string!
 static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.Localize(this XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus status) -> string!
 static XiHan.Framework.Workflow.Abstractions.WorkflowStatusMessages.Localize(this XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus status) -> string!
+static XiHan.Framework.Workflow.Abstractions.WorkflowStatusOrder.Of(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionStatus status) -> int
+static XiHan.Framework.Workflow.Abstractions.WorkflowStatusOrder.Of(XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus status) -> int
 ~override XiHan.Framework.Workflow.Abstractions.Activities.ActivityType.Equals(object obj) -> bool
 ~override XiHan.Framework.Workflow.Abstractions.WorkflowName.Equals(object obj) -> bool

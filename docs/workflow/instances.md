@@ -55,7 +55,7 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 {
     // 第 page 页（从 0 起），最新的在前；Total 用来算页数
     public ValueTask<Result<UserTaskPage>> ListAsync(string userId, int page, CancellationToken cancellationToken)
-        => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Descending = true, Skip = page * 20, Take = 20 }, cancellationToken);
+        => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Sorts = [new(UserTaskSortField.CreatedAt, Descending: true)], Skip = page * 20, Take = 20 }, cancellationToken);
 
     public ValueTask<Result<WorkflowInstance>> ApproveAsync(string taskId, string userId, string? comment, CancellationToken cancellationToken)
         => tasks.CompleteAsync(new UserTaskCompletion(taskId, userId) { Outcome = UserTaskOutcomes.Approved, Comment = comment }, cancellationToken);
@@ -141,7 +141,7 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 
 | 方法 | 作用 | 主要错误 |
 | --- | --- | --- |
-| `QueryAsync(UserTaskQuery)` | 读待办的唯一入口：某人的待办给 `AssigneeId`，某实例的给 `InstanceId`，两者必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Take` 不在 1 到 1000） |
+| `QueryAsync(UserTaskQuery)` | 读待办的唯一入口：某人的待办给 `AssigneeId`，某实例的给 `InstanceId`，两者必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按排序项 `Sorts`（`UserTaskSort`，字段目前只有创建时间 `CreatedAt`，缺省升序，项数上限 `MaxSorts`；与定义、实例查询同一写法，2026-11-11 修订，ADR-0162）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Take` 不在 1 到 1000） |
 | `CompleteAsync(completions)` | 完成任务，可带结果、意见与变量 | `WORKFLOW_DENIED_001`（不是指派人）、`WORKFLOW_VALIDATION_002`（结果不允许）、`WORKFLOW_NOTFOUND_003` |
 | `TransferAsync(transfers)` | 转办给另一个人 | `WORKFLOW_CONFLICT_004`（目标已是指派人） |
 | `AddAssigneesAsync(additions)` | 加签：`Any` / `All` 立即加任务，`Sequential` 排到队尾 | `WORKFLOW_CONFLICT_004` |
@@ -156,7 +156,7 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 ```csharp
 // 待办搜索框：任务标题、流程标题、定义名或单据号（关联 ID）包含关键字即命中
 public ValueTask<Result<UserTaskPage>> SearchAsync(string userId, string keyword, int page, CancellationToken cancellationToken)
-    => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Descending = true, Skip = page * 20, Take = 20 }, cancellationToken);
+    => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Sorts = [new(UserTaskSortField.CreatedAt, Descending: true)], Skip = page * 20, Take = 20 }, cancellationToken);
 
 public ValueTask<Result> HandOverAsync(string taskId, string userId, string colleague, CancellationToken cancellationToken)
     => tasks.TransferAsync(new UserTaskTransfer(taskId, userId) { TargetAssigneeId = colleague, Comment = "出差，转同事处理" }, cancellationToken);

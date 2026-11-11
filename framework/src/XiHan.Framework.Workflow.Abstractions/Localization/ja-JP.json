@@ -202,6 +202,8 @@
   "workflow.task.not_claimable": "タスク '{task}' の完了ポリシーでは引き受けできません。",
   "workflow.task.outcome_invalid": "タスクの結果 '{outcome}' は許可されていません。",
   "workflow.task.query_page_invalid": "タスククエリのページ指定が範囲外です：スキップ数 {skip} は負にできず、ページサイズ {take} は 1 から {max} の間である必要があります。",
+  "workflow.task.query_sort_invalid": "タスククエリは '{sort}' で並べ替えできません。",
+  "workflow.task.query_sorts_too_many": "タスククエリの並べ替え項目は最大 {max} 件です（{count} 件が指定されました）。",
   "workflow.task.query_target_missing": "タスクのクエリには担当者 ID またはインスタンス ID が必要です。",
   "workflow.variable.required": "変数 '{name}' は必須です。"
 }

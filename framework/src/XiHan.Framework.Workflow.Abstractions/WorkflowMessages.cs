@@ -274,6 +274,22 @@ public static class WorkflowMessages
     public const string TaskQueryPageInvalid = "workflow.task.query_page_invalid";
 
     /// <summary>
+    /// 待办查询的排序项过多
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>count</c>、<c>max</c>
+    /// </remarks>
+    public const string TaskQuerySortsTooMany = "workflow.task.query_sorts_too_many";
+
+    /// <summary>
+    /// 待办查询的排序项不合法
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>sort</c>
+    /// </remarks>
+    public const string TaskQuerySortInvalid = "workflow.task.query_sort_invalid";
+
+    /// <summary>
     /// 实例查询的分页越界
     /// </summary>
     /// <remarks>

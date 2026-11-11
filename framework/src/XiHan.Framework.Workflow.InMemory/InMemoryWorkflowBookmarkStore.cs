@@ -143,7 +143,8 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     {
         ArgumentNullException.ThrowIfNull(query);
         var matched = UserTasks(tenantId, query);
-        var ordered = query.Descending
+        // 唯一的排序字段是创建时间：第一项决定方向，缺省升序
+        var ordered = query.Sorts is [{ Field: UserTaskSortField.CreatedAt, Descending: true }, ..]
             ? matched.OrderByDescending(static entry => entry.Bookmark.CreatedAt).ThenByDescending(static entry => entry.Sequence)
             : matched.OrderBy(static entry => entry.Bookmark.CreatedAt).ThenBy(static entry => entry.Sequence);
         IReadOnlyList<WorkflowBookmark> page = ordered.Skip(query.Skip).Take(query.Take).Select(static entry => entry.Bookmark).ToList();

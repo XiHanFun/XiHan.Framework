@@ -202,6 +202,8 @@
   "workflow.task.not_claimable": "La tâche '{task}' ne peut pas être réclamée avec sa politique d'achèvement.",
   "workflow.task.outcome_invalid": "Le résultat de tâche '{outcome}' n'est pas autorisé.",
   "workflow.task.query_page_invalid": "La page de la requête de tâches est hors limites : skip {skip} ne doit pas être négatif et limit {take} doit être compris entre 1 et {max}.",
+  "workflow.task.query_sort_invalid": "Les tâches utilisateur ne peuvent pas être triées par « {sort} ».",
+  "workflow.task.query_sorts_too_many": "Les tâches utilisateur acceptent au plus {max} critères de tri ; {count} ont été fournis.",
   "workflow.task.query_target_missing": "La requête de tâches nécessite un ID d'assigné ou un ID d'instance.",
   "workflow.variable.required": "La variable '{name}' est obligatoire."
 }

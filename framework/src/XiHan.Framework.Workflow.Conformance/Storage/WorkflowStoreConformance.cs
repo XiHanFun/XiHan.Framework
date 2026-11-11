@@ -490,7 +490,7 @@ public abstract class WorkflowStoreConformance
         {
             Assert.Equal([t1.Id, t2.Id, t5.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
             Assert.Equal(3, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice" }).ConfigureAwait(false));
-            Assert.Equal([t5.Id, t2.Id, t1.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Descending = true }).ConfigureAwait(false));
+            Assert.Equal([t5.Id, t2.Id, t1.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Sorts = [new(UserTaskSortField.CreatedAt, Descending: true)] }).ConfigureAwait(false));
             Assert.Equal([t2.Id], await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Take = 1 }).ConfigureAwait(false));
             Assert.Equal(3, await TaskCountAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Take = 1 }).ConfigureAwait(false));
             Assert.Empty(await TaskIdsAsync(s, new UserTaskQuery { AssigneeId = "alice", Skip = 3 }).ConfigureAwait(false));

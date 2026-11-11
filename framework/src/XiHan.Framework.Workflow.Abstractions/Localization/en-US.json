@@ -202,6 +202,8 @@
   "workflow.task.not_claimable": "Task '{task}' cannot be claimed under its completion policy.",
   "workflow.task.outcome_invalid": "Task outcome '{outcome}' is not allowed.",
   "workflow.task.query_page_invalid": "The task query page is out of range: skip {skip} must not be negative and take {take} must be between 1 and {max}.",
+  "workflow.task.query_sort_invalid": "User tasks cannot be sorted by '{sort}'.",
+  "workflow.task.query_sorts_too_many": "User tasks accept at most {max} sort items; {count} were given.",
   "workflow.task.query_target_missing": "The task query needs an assignee ID or an instance ID.",
   "workflow.variable.required": "Variable '{name}' is required."
 }

@@ -288,7 +288,7 @@ public abstract class WorkflowTaskConformance
         Assert.Equal(3, allPage.Total);
         Assert.Equal([first.Id, second.Id, third.Id], all.Select(static task => task.InstanceId));
         Assert.True(all.Zip(all.Skip(1)).All(static pair => pair.First.CreatedAt <= pair.Second.CreatedAt));
-        Assert.Equal([third.Id, second.Id, first.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Descending = true }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
+        Assert.Equal([third.Id, second.Id, first.Id], (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Sorts = [new(UserTaskSortField.CreatedAt, Descending: true)] }).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
         var page = (await QueryAsync(host, new UserTaskQuery { AssigneeId = "alice", Skip = 1, Take = 1 }).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(second.Id, Assert.Single(page.Items).InstanceId);
         Assert.Equal(3, page.Total);

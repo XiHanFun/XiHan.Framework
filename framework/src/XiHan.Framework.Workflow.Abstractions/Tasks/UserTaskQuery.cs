@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 /// 待办查询
 /// </summary>
 /// <remarks>
-/// <see cref="AssigneeId"/> 与 <see cref="InstanceId"/> 必填其一；其余过滤项可空、同时给出的取交集；按创建时间排序（<see cref="Descending"/>），跳过 <see cref="Skip"/> 条后最多 <see cref="Take"/> 条。过滤、排序与分页都由存储执行（ADR-0077）。分页越界不在构造时抛出，由 <see cref="IWorkflowTaskService.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入
+/// <see cref="AssigneeId"/> 与 <see cref="InstanceId"/> 必填其一；其余过滤项可空、同时给出的取交集；按创建时间排序（<see cref="Sorts"/>），跳过 <see cref="Skip"/> 条后最多 <see cref="Take"/> 条。过滤、排序与分页都由存储执行（ADR-0077）。分页越界不在构造时抛出，由 <see cref="IWorkflowTaskService.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record UserTaskQuery
@@ -61,12 +61,17 @@ public sealed record UserTaskQuery
     public const int MaxTake = 1000;
 
     /// <summary>
-    /// 是否按创建时间降序
+    /// 排序项最多的个数
+    /// </summary>
+    public const int MaxSorts = 1;
+
+    /// <summary>
+    /// 排序项
     /// </summary>
     /// <remarks>
-    /// 默认升序（先到先办）；同刻按写入先后
+    /// 为 <see langword="null"/> 或空列表时按创建时间升序（先到先办）；同刻按写入先后。项数超过 <see cref="MaxSorts"/>（<c>workflow.task.query_sorts_too_many</c>）、某项为空或字段不是 <see cref="UserTaskSortField"/> 里定义的值（<c>workflow.task.query_sort_invalid</c>）时 <see cref="IWorkflowTaskService.QueryAsync"/> 返回 <c>WORKFLOW_VALIDATION_002</c>（ADR-0162）
     /// </remarks>
-    public bool Descending { get; init; }
+    public IReadOnlyList<UserTaskSort>? Sorts { get; init; }
 
     /// <summary>
     /// 跳过条数

@@ -202,6 +202,8 @@
   "workflow.task.not_claimable": "任務 '{task}' 的完成策略不支援認領。",
   "workflow.task.outcome_invalid": "任務結果 '{outcome}' 不在允許範圍內。",
   "workflow.task.query_page_invalid": "待辦查詢的分頁越界：略過筆數 {skip} 不能為負，頁大小 {take} 必須在 1 到 {max} 之間。",
+  "workflow.task.query_sort_invalid": "待辦查詢不支援按 '{sort}' 排序。",
+  "workflow.task.query_sorts_too_many": "待辦查詢最多 {max} 個排序項，收到 {count} 個。",
   "workflow.task.query_target_missing": "待辦查詢需要指派人 ID 或實例 ID。",
   "workflow.variable.required": "變數 '{name}' 必填。"
 }
