@@ -4,10 +4,10 @@ XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Clock.get -> Sy
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Definition.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.EvaluateProperty(string! name) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<System.Text.Json.Nodes.JsonNode!>>
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Evaluator.get -> XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator!
-XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Instance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Instance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Invocation.get -> XiHan.Framework.Primitives.InvocationContext!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Node.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode!
-XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.NodeInstance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstance!
+XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.NodeInstance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView!
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Property(string! name) -> System.Text.Json.Nodes.JsonNode?
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.Property<T>(string! name, T? fallback = default(T?)) -> T?
 XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext.RenderProperty(string! name, string? fallback = null) -> XiHan.Framework.Primitives.Result<string!>
@@ -176,7 +176,7 @@ XiHan.Framework.Workflow.Abstractions.Activities.WorkflowHttpClient.WorkflowHttp
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Activity.get -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext!
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Definition.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!
-XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Instance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!
+XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Instance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView!
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Node.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode!
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Outcome.get -> string!
 XiHan.Framework.Workflow.Abstractions.Activities.WorkflowOutcomeContext.Services.get -> System.IServiceProvider!
@@ -185,7 +185,7 @@ XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution.Activity.get -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext!
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution.AssigneeResolution(XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule! rule, XiHan.Framework.Workflow.Abstractions.Activities.ActivityContext! activity) -> void
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution.Definition.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition!
-XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution.Instance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstance!
+XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution.Instance.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView!
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution.Node.get -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode!
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution.Rule.get -> XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeRule!
 XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolution.Services.get -> System.IServiceProvider!
@@ -892,6 +892,29 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus.Faulted =
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus.Running = 1 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus.Suspended = 2 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus.Terminated = 6 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.CancellationReason.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.CorrelationId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.CreatedAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.DefinitionId.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.DefinitionName.get -> XiHan.Framework.Workflow.Abstractions.WorkflowName
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.DefinitionVersion.get -> int
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.Depth.get -> int
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.DisplayName.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.EndedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.Fault.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.FaultNodeId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.FaultNodeInstanceId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.Id.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.IsFinal.get -> bool
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.Outcome.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.ParentInstanceId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.ParentNodeInstanceId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.StartedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.StarterId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.Status.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceStatus
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.TenantId.get -> string?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowInstanceView.Title.get -> string!
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowJoinState
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowJoinState.Arrived.get -> System.Collections.Generic.List<string!>!
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowJoinState.Arrived.set -> void
@@ -933,6 +956,17 @@ XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus.Compl
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus.Faulted = 5 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus.Running = 1 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus.Suspended = 2 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.ActivityType.get -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityType
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.Attempt.get -> int
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.CompensatedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.EndedAt.get -> System.DateTimeOffset?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.Fault.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowFault?
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.Id.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.InstanceId.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.NodeId.get -> string!
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.StartedAt.get -> System.DateTimeOffset
+XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceView.Status.get -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowNodeInstanceStatus
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowReusePolicy
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowReusePolicy.AllowDuplicate = 0 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowReusePolicy
 XiHan.Framework.Workflow.Abstractions.Instances.WorkflowReusePolicy.RejectActive = 1 -> XiHan.Framework.Workflow.Abstractions.Instances.WorkflowReusePolicy

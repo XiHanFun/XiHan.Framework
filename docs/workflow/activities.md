@@ -134,7 +134,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 | `TerminateInstance(reason)` | 终止实例 |
 | `CompleteWithChildren` / `SuspendWithChildren` | 同时启动子实例 |
 
-`ActivityContext` 提供 `Instance`、`Node`、`NodeInstance`、`Variables`、`State`（节点私有状态）、`Services`、`Invocation`（本次执行的调用上下文）与 `Clock`。`End` 节点带 `Outcome` 时，引擎先调用全部 `IWorkflowOutcomeHandler`（`AddWorkflowOutcomeHandler<T>()` 登记）再结束实例，审批结果回写业务表适合放在这里。
+`ActivityContext` 提供 `Instance`、`Node`、`NodeInstance`、`Variables`、`State`（节点私有状态）、`Services`、`Invocation`（本次执行的调用上下文）与 `Clock`。`Instance` 与 `NodeInstance` 是只读视图（`WorkflowInstanceView`、`WorkflowNodeInstanceView`），跟随引擎的修改；状态只经输出与结果改变，私有状态经 `State` 读写，结果处理器与指派规则拿到的实例也是同一种视图。`End` 节点带 `Outcome` 时，引擎先调用全部 `IWorkflowOutcomeHandler`（`AddWorkflowOutcomeHandler<T>()` 登记）再结束实例，审批结果回写业务表适合放在这里。
 
 ## 故障、重试与补偿
 

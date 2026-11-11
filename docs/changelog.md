@@ -12,6 +12,7 @@
 
 - **新增** `Messaging.Redis`：用 Redis Streams 提供 `messaging.queue@1`，只有 Redis 的部署也能跨进程收发消息；需显式 `UseFeature<RedisMessagingFeature>()`，配置节 `XiHan:Messaging:Redis`，可选绑定 `queue`（类型 `cache:distributed`），需要 Redis 6.2+，不提供 `messaging.stream@1`（见 [Messaging.Redis](/packages/messaging-redis)）
 - **修复** 工作流启动请求不再公开 `InstanceId`、`ParentInstanceId`、`ParentNodeInstanceId` 与 `Depth`：调用方原先能借它们伪造子流程的父链接、绕过嵌套深度上限；这几个字段只由引擎为子流程设置，给它们赋值的代码删掉即可，要幂等启动用 `CorrelationId` 与 `ReusePolicy`
+- **修复** 活动、结果处理器与指派规则拿到的 `Instance`、`NodeInstance` 改为只读视图 `WorkflowInstanceView` / `WorkflowNodeInstanceView`：原先交出的是引擎随后写回的对象，扩展代码改了状态或租户会被持久化；只读的代码不用改，要读变量与私有状态改用上下文的 `Variables` 与 `State`
 
 ## v5.0.0-preview.2（2026-11-06）
 

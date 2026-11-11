@@ -14,7 +14,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// 活动执行的上下文
 /// </summary>
 /// <remarks>
-/// 定义、实例（只读，不要修改）、节点、节点实例、变量视图、节点私有状态、本次执行的服务作用域与调用上下文，以及属性读取与模板渲染的便捷方法
+/// 定义、实例与节点实例的只读视图、节点、变量视图、节点私有状态、本次执行的服务作用域与调用上下文，以及属性读取与模板渲染的便捷方法
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public class ActivityContext
@@ -25,9 +25,11 @@ public class ActivityContext
     internal ActivityContext(WorkflowDefinition definition, WorkflowInstance instance, WorkflowNode node, WorkflowNodeInstance nodeInstance, WorkflowVariables variables, IServiceProvider services, InvocationContext invocation, IWorkflowExpressionEvaluator evaluator, TimeProvider clock)
     {
         Definition = definition;
-        Instance = instance;
+        InstanceRecord = instance;
+        Instance = new WorkflowInstanceView(instance);
         Node = node;
-        NodeInstance = nodeInstance;
+        NodeInstanceRecord = nodeInstance;
+        NodeInstance = new WorkflowNodeInstanceView(nodeInstance);
         Variables = variables;
         Services = services;
         Invocation = invocation;
@@ -46,7 +48,15 @@ public class ActivityContext
     /// <remarks>
     /// 只读视图；状态变更只经引擎
     /// </remarks>
-    public WorkflowInstance Instance { get; }
+    public WorkflowInstanceView Instance { get; }
+
+    /// <summary>
+    /// 引擎正在修改的实例
+    /// </summary>
+    /// <remarks>
+    /// 只给引擎派生恢复上下文用，不交给扩展代码：引擎在活动返回后把它写回存储
+    /// </remarks>
+    internal WorkflowInstance InstanceRecord { get; }
 
     /// <summary>
     /// 节点
@@ -56,7 +66,18 @@ public class ActivityContext
     /// <summary>
     /// 节点实例
     /// </summary>
-    public WorkflowNodeInstance NodeInstance { get; }
+    /// <remarks>
+    /// 只读视图；私有状态经 <see cref="State"/> 读写
+    /// </remarks>
+    public WorkflowNodeInstanceView NodeInstance { get; }
+
+    /// <summary>
+    /// 引擎正在修改的节点实例
+    /// </summary>
+    /// <remarks>
+    /// 只给引擎派生恢复上下文与暴露 <see cref="State"/> 用，不交给扩展代码
+    /// </remarks>
+    internal WorkflowNodeInstance NodeInstanceRecord { get; }
 
     /// <summary>
     /// 实例变量
@@ -69,7 +90,7 @@ public class ActivityContext
     /// <summary>
     /// 节点私有状态（可改，跨挂起保留）
     /// </summary>
-    public JsonObject State => NodeInstance.State;
+    public JsonObject State => NodeInstanceRecord.State;
 
     /// <summary>
     /// 本次执行的服务作用域

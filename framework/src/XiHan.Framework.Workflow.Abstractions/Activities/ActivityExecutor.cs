@@ -78,7 +78,7 @@ internal sealed partial class ActivityExecutor
                 return await activity.ExecuteAsync(context, context.Invocation.CancellationToken).ConfigureAwait(false);
             }
 
-            var resume = new ActivityResumeContext(context.Definition, context.Instance, context.Node, context.NodeInstance, context.Variables, context.Services, context.Invocation, context.Evaluator, context.Clock, bookmark, inputs ?? []);
+            var resume = new ActivityResumeContext(context.Definition, context.InstanceRecord, context.Node, context.NodeInstanceRecord, context.Variables, context.Services, context.Invocation, context.Evaluator, context.Clock, bookmark, inputs ?? []);
             if (activity is IResumableActivity resumable)
             {
                 return await resumable.ResumeAsync(resume, context.Invocation.CancellationToken).ConfigureAwait(false);

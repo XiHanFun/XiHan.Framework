@@ -42,7 +42,10 @@ public sealed class AssigneeResolution
     /// <summary>
     /// 实例
     /// </summary>
-    public WorkflowInstance Instance => Activity.Instance;
+    /// <remarks>
+    /// 只读视图；状态变更只经引擎
+    /// </remarks>
+    public WorkflowInstanceView Instance => Activity.Instance;
 
     /// <summary>
     /// 节点
