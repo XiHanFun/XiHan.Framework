@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using Microsoft.Extensions.AI;
 using XiHan.Framework.AI.Abstractions.Chat;
 using XiHan.Framework.Primitives;
 
@@ -22,10 +21,10 @@ public interface IAIGuardrail
     string Name { get; }
 
     /// <summary>
-    /// 检查消息
+    /// 检查一组消息
     /// </summary>
     /// <remarks>
-    /// 失败的 <see cref="Result"/> 表示护栏本身出错
+    /// 输入方向在调用模型之前、输出方向在非流式调用拿到响应之后执行；流式调用只有输入方向，已经推给调用方的内容收不回来。只关心一个方向的护栏对另一个方向直接放行（ADR-0166）
     /// </remarks>
-    ValueTask<Result<GuardrailVerdict>> InspectAsync(IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken);
+    ValueTask<Result<GuardrailVerdict>> InspectAsync(GuardrailInspection inspection, CancellationToken cancellationToken);
 }

@@ -71,7 +71,7 @@ internal sealed class FakeKnowledgeStore : IKnowledgeStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result> TrimAsync(string collection, string documentId, int chunkCount, CancellationToken cancellationToken)
+    public ValueTask<Result> TrimAsync(string collection, IReadOnlyList<KnowledgeTrim> trims, CancellationToken cancellationToken)
     {
         if (FailTrims)
         {
@@ -80,9 +80,12 @@ internal sealed class FakeKnowledgeStore : IKnowledgeStore
 
         if (_collections.TryGetValue(collection, out var table))
         {
-            foreach (var id in table.Values.Where(record => record.DocumentId == documentId && record.ChunkIndex >= chunkCount).Select(static record => record.Id).ToList())
+            foreach (var trim in trims)
             {
-                table.Remove(id);
+                foreach (var id in table.Values.Where(record => record.DocumentId == trim.DocumentId && record.ChunkIndex >= trim.ChunkCount).Select(static record => record.Id).ToList())
+                {
+                    table.Remove(id);
+                }
             }
         }
 
@@ -90,14 +93,15 @@ internal sealed class FakeKnowledgeStore : IKnowledgeStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<RetrievedChunk>>> SearchAsync(string collection, ReadOnlyMemory<float> vector, int top, RetrievalFilter? filter, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<RetrievedChunk>>> SearchAsync(string collection, KnowledgeSearch search, CancellationToken cancellationToken)
     {
         IReadOnlyList<RetrievedChunk> hits = _collections.TryGetValue(collection, out var table)
             ? table.Values
-                .Where(record => filter is null || filter.Matches(record.DocumentId, record.Metadata))
-                .Select(record => RetrievedChunk.From(record, Cosine(vector.Span, record.Vector.Span)))
+                .Where(record => search.Filter is null || search.Filter.Matches(record.DocumentId, record.Metadata))
+                .Select(record => RetrievedChunk.From(record, Cosine(search.Vector.Span, record.Vector.Span)))
+                .Where(chunk => search.MinScore is not { } minimum || chunk.Score >= minimum)
                 .OrderByDescending(static chunk => chunk.Score)
-                .Take(top)
+                .Take(search.Top)
                 .ToList()
             : [];
         return ValueTask.FromResult(Result.Success(hits));

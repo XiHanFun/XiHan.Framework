@@ -165,3 +165,4 @@
 | [0163](0163-分片句柄覆盖标志必填与文件系统存储只经工厂创建.md) | 分片句柄的 `Overwrite` 改为 `required` 初始化成员，重建时漏写编译不过；`FileSystemBlobStore` 构造与初始化改 internal，只经 `CreateAsync` 创建；对象存储一致性套件改为异步创建被测存储 | 已采纳 |
 | [0164](0164-雪花ID只经分解与命令超时为TimeSpan.md) | `SnowflakeId` 去掉位置参数与公开构造，只经 `Parse(value, epoch)` 分解得到；SqlSugar 的命令超时改为 `TimeSpan CommandTimeout`（配置键不变） | 已采纳 |
 | [0165](0165-锁句柄改为抽象基类.md) | `LockHandle` 改为抽象基类（受保护构造、`ReleaseCoreAsync`、原子的只释放一次），包外能实现 `IDistributedLock`；续约要存储层的比较后延期原语与远程操作集同步，留作后续 | 已采纳 |
+| [0166](0166-护栏方向与知识库检索请求.md) | 护栏改收 `GuardrailInspection`（方向与消息，以后只加属性），非流式调用的响应再以输出方向检查；知识库存储的检索改收 `KnowledgeSearch`（最低得分交给存储），裁剪改收 `KnowledgeTrim` 列表 | 已采纳 |

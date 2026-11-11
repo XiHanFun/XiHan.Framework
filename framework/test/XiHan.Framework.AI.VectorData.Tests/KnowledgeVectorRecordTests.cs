@@ -52,7 +52,7 @@ public sealed class KnowledgeVectorRecordTests
         var stored = await store.GetCollection<Guid, KnowledgeVectorRecord>("keys").GetAsync(KnowledgeVectorRecord.KeyOf("doc#3"));
         Assert.NotNull(stored);
         Assert.Equal("doc#3", stored.RecordId);
-        var hit = Assert.Single((await knowledge.SearchAsync("keys", vector, 1, null, CancellationToken.None)).ValueOrThrow());
+        var hit = Assert.Single((await knowledge.SearchAsync("keys", new KnowledgeSearch(vector, 1), CancellationToken.None)).ValueOrThrow());
         Assert.Equal("doc#3", hit.Id);
     }
 }

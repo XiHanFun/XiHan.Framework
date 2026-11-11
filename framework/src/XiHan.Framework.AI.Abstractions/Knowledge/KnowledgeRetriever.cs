@@ -90,12 +90,8 @@ internal sealed class KnowledgeRetriever : IKnowledgeRetriever
             return KnowledgeErrors.Dimensions(vector.Length, _options.Dimensions);
         }
 
-        var found = await _store.SearchAsync(query.Collection ?? _options.Collection, vector, query.Top ?? _options.Top, query.Filter, cancellationToken).ConfigureAwait(false);
-        if (!found.TryGetValue(out var chunks))
-        {
-            return found.Error!;
-        }
-
-        return query.MinScore is { } minimum ? Result.Success<IReadOnlyList<RetrievedChunk>>(chunks.Where(chunk => chunk.Score >= minimum).ToList()) : found;
+        // 最低得分交给存储：原生支持得分阈值的后端在服务端过滤，不合格的块不必传回来
+        var search = new KnowledgeSearch(vector, query.Top ?? _options.Top) { Filter = query.Filter, MinScore = query.MinScore };
+        return await _store.SearchAsync(query.Collection ?? _options.Collection, search, cancellationToken).ConfigureAwait(false);
     }
 }

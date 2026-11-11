@@ -45,7 +45,7 @@ var reply = await chat.CompleteAsync(new AIChatRequest
 * `IAIChat`、`AIChatRequest`：聊天入口，`CompleteAsync` / `StreamAsync`
 * `IAIProviderCatalog`：按名字解析聊天与嵌入客户端
 * `IAIPromptCatalog`、`AIPromptTemplate`：提示词模板
-* `IAIGuardrail`、`KeywordBlocklistGuardrail`：输入护栏
+* `IAIGuardrail`、`KeywordBlocklistGuardrail`：输入与输出护栏
 * `IAIToolCatalog`：工具目录
 * `IKnowledgeIngestor`、`IKnowledgeRetriever`、`IKnowledgeStore`：知识库流水线与存储契约
 

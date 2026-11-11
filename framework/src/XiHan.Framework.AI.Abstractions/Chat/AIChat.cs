@@ -109,7 +109,18 @@ internal sealed partial class AIChat : IAIChat
             return ModelErrors.Unavailable(_logger, call.Provider, exception);
         }
 
-        return timeout.ReturnedAfterTimeout() ? Timeout(call.Provider) : response;
+        if (timeout.ReturnedAfterTimeout())
+        {
+            return Timeout(call.Provider);
+        }
+
+        // 输出方向只在非流式调用上有：拿到完整响应才检查，被拦下就不交给调用方
+        if (!request.SkipGuardrails && await GuardAsync(GuardrailDirection.Output, [.. response.Messages], cancellationToken).ConfigureAwait(false) is { IsFailure: true } rejected)
+        {
+            return rejected.Error!;
+        }
+
+        return response;
     }
 
     /// <inheritdoc />
@@ -212,33 +223,9 @@ internal sealed partial class AIChat : IAIChat
             options.Tools = selected;
         }
 
-        if (!request.SkipGuardrails)
+        if (!request.SkipGuardrails && await GuardAsync(GuardrailDirection.Input, messages, cancellationToken).ConfigureAwait(false) is { IsFailure: true } blocked)
         {
-            foreach (var guardrail in _guardrails)
-            {
-                Result<GuardrailVerdict> inspected;
-                try
-                {
-                    inspected = await guardrail.InspectAsync(messages, cancellationToken).ConfigureAwait(false);
-                }
-                catch (Exception exception) when (exception is not OperationCanceledException)
-                {
-                    // 这个错误会写进响应，护栏又可以自写，异常消息可能带内部地址：reason 只写类型，完整异常只进日志
-                    LogGuardrailThrew(_logger, guardrail.Name, exception);
-                    var type = exception.GetType();
-                    return Error.Unexpected(AIErrors.Unexpected, AIMessages.GuardrailFailed, details: MessageArguments.Of(("guardrail", guardrail.Name), ("reason", type.FullName ?? type.Name)));
-                }
-
-                if (!inspected.TryGetValue(out var verdict))
-                {
-                    return Error.Unexpected(AIErrors.Unexpected, AIMessages.GuardrailFailed, details: MessageArguments.Of(("guardrail", guardrail.Name), ("reason", inspected.Error!.Message)));
-                }
-
-                if (verdict.Blocked)
-                {
-                    return Error.Denied(AIErrors.GuardrailBlocked, AIMessages.GuardrailBlocked, MessageArguments.Of(("guardrail", guardrail.Name), ("reason", verdict.Reason)));
-                }
-            }
+            return blocked.Error!;
         }
 
         // 默认名问目录而不是读配置：应用替换的目录（如落库的目录）有自己的默认名；名字在这里取定一次，解析、时限与错误细节都用同一个名字
@@ -270,6 +257,44 @@ internal sealed partial class AIChat : IAIChat
     /// 准备好的调用
     /// </summary>
     private sealed record PreparedCall(IChatClient Client, List<ChatMessage> Messages, ChatOptions? Options, string Provider, TimeSpan Timeout);
+
+    /// <summary>
+    /// 按登记顺序过一遍护栏
+    /// </summary>
+    /// <remarks>
+    /// 第一个拦下或出错的护栏决定结果，后面的不再执行
+    /// </remarks>
+    private async ValueTask<Result> GuardAsync(GuardrailDirection direction, IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken)
+    {
+        var inspection = new GuardrailInspection { Direction = direction, Messages = messages };
+        foreach (var guardrail in _guardrails)
+        {
+            Result<GuardrailVerdict> inspected;
+            try
+            {
+                inspected = await guardrail.InspectAsync(inspection, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                // 这个错误会写进响应，护栏又可以自写，异常消息可能带内部地址：reason 只写类型，完整异常只进日志
+                LogGuardrailThrew(_logger, guardrail.Name, exception);
+                var type = exception.GetType();
+                return Error.Unexpected(AIErrors.Unexpected, AIMessages.GuardrailFailed, details: MessageArguments.Of(("guardrail", guardrail.Name), ("reason", type.FullName ?? type.Name)));
+            }
+
+            if (!inspected.TryGetValue(out var verdict))
+            {
+                return Error.Unexpected(AIErrors.Unexpected, AIMessages.GuardrailFailed, details: MessageArguments.Of(("guardrail", guardrail.Name), ("reason", inspected.Error!.Message)));
+            }
+
+            if (verdict.Blocked)
+            {
+                return Error.Denied(AIErrors.GuardrailBlocked, AIMessages.GuardrailBlocked, MessageArguments.Of(("guardrail", guardrail.Name), ("reason", verdict.Reason)));
+            }
+        }
+
+        return Result.Success();
+    }
 
     /// <summary>
     /// 护栏抛出异常

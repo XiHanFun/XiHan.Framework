@@ -63,10 +63,17 @@ public sealed class KeywordBlocklistGuardrail : IAIGuardrail
     public string Name => GuardrailName;
 
     /// <inheritdoc />
-    public ValueTask<Result<GuardrailVerdict>> InspectAsync(IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken)
+    public ValueTask<Result<GuardrailVerdict>> InspectAsync(GuardrailInspection inspection, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(messages);
-        foreach (var message in messages)
+        ArgumentNullException.ThrowIfNull(inspection);
+
+        // 只看用户写的内容：输出方向的消息都是模型的，直接放行
+        if (inspection.Direction != GuardrailDirection.Input)
+        {
+            return ValueTask.FromResult(Result.Success(GuardrailVerdict.Allow()));
+        }
+
+        foreach (var message in inspection.Messages)
         {
             if (message.Role != ChatRole.User || string.IsNullOrEmpty(message.Text))
             {

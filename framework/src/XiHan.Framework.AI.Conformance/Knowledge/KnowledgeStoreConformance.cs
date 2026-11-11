@@ -12,7 +12,7 @@ namespace XiHan.Framework.AI.Conformance.Knowledge;
 /// 知识库存储的一致性套件（RFC-0022 §知识库）
 /// </summary>
 /// <remarks>
-/// 写入与按相似度排序、文档与元数据过滤、重写入替换、按文档删除、按块序号裁剪、集合隔离、空集合搜索。Provider 继承并实现 <see cref="StartAsync"/>
+/// 写入与按相似度排序、最低得分、文档与元数据过滤、重写入替换、按文档删除、按块序号批量裁剪、集合隔离、空集合搜索。Provider 继承并实现 <see cref="StartAsync"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class KnowledgeStoreConformance
@@ -34,7 +34,7 @@ public abstract class KnowledgeStoreConformance
         await using var host = await StartAsync().ConfigureAwait(false);
         var generator = new HashingEmbeddingGenerator(host.Dimensions);
         var collection = Collection("order");
-        Assert.Empty((await host.Store.SearchAsync(collection, generator.Embed("anything"), 5, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Empty((await host.Store.SearchAsync(collection, new KnowledgeSearch(generator.Embed("anything"), 5), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
 
         var records = new[]
         {
@@ -45,13 +45,13 @@ public abstract class KnowledgeStoreConformance
         };
         Assert.True((await host.Store.UpsertAsync(collection, records, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
 
-        var found = (await host.Store.SearchAsync(collection, generator.Embed("cats purr"), 3, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var found = (await host.Store.SearchAsync(collection, new KnowledgeSearch(generator.Embed("cats purr"), 3), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(3, found.Count);
         Assert.Equal("cats#0", found[0].Id);
         Assert.Equal("cats#1", found[1].Id);
         Assert.True(found[0].Score >= found[1].Score && found[1].Score >= found[2].Score);
         Assert.Equal(("cats", 0, "cats purr and chase mice"), (found[0].DocumentId, found[0].ChunkIndex, found[0].Text));
-        Assert.Single((await host.Store.SearchAsync(collection, generator.Embed("cats purr"), 1, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Single((await host.Store.SearchAsync(collection, new KnowledgeSearch(generator.Embed("cats purr"), 1), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>
@@ -72,17 +72,17 @@ public abstract class KnowledgeStoreConformance
         Assert.True((await host.Store.UpsertAsync(collection, records, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         var vector = generator.Embed("shared words here");
 
-        var byDocument = (await host.Store.SearchAsync(collection, vector, 10, new RetrievalFilter { DocumentIds = ["b", "c"] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var byDocument = (await host.Store.SearchAsync(collection, new KnowledgeSearch(vector, 10) { Filter = new RetrievalFilter { DocumentIds = ["b", "c"] } }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(["b", "c"], byDocument.Select(static chunk => chunk.DocumentId).Order(StringComparer.Ordinal));
 
-        var byMetadata = (await host.Store.SearchAsync(collection, vector, 10, new RetrievalFilter { Metadata = new Dictionary<string, string> { ["lang"] = "en", ["tier"] = "gold" } }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var byMetadata = (await host.Store.SearchAsync(collection, new KnowledgeSearch(vector, 10) { Filter = new RetrievalFilter { Metadata = new Dictionary<string, string> { ["lang"] = "en", ["tier"] = "gold" } } }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         var only = Assert.Single(byMetadata);
         Assert.Equal("a", only.DocumentId);
         Assert.Equal("gold", only.Metadata["tier"]);
 
-        var both = (await host.Store.SearchAsync(collection, vector, 10, new RetrievalFilter { DocumentIds = ["a", "b"], Metadata = new Dictionary<string, string> { ["tier"] = "silver" } }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var both = (await host.Store.SearchAsync(collection, new KnowledgeSearch(vector, 10) { Filter = new RetrievalFilter { DocumentIds = ["a", "b"], Metadata = new Dictionary<string, string> { ["tier"] = "silver" } } }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal("b", Assert.Single(both).DocumentId);
-        Assert.Empty((await host.Store.SearchAsync(collection, vector, 10, new RetrievalFilter { Metadata = new Dictionary<string, string> { ["lang"] = "fr" } }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Empty((await host.Store.SearchAsync(collection, new KnowledgeSearch(vector, 10) { Filter = new RetrievalFilter { Metadata = new Dictionary<string, string> { ["lang"] = "fr" } } }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>
@@ -99,14 +99,14 @@ public abstract class KnowledgeStoreConformance
         Assert.True((await host.Store.UpsertAsync(second, [Record(generator, "doc", 0, "other collection")], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
 
         Assert.True((await host.Store.UpsertAsync(first, [Record(generator, "doc", 0, "new text")], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        var all = (await host.Store.SearchAsync(first, generator.Embed("text"), 10, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var all = (await host.Store.SearchAsync(first, new KnowledgeSearch(generator.Embed("text"), 10), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(3, all.Count);
         Assert.Equal("new text", all.Single(static chunk => chunk.Id == "doc#0").Text);
 
         Assert.True((await host.Store.DeleteAsync(first, ["doc", "missing"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        var remaining = (await host.Store.SearchAsync(first, generator.Embed("text"), 10, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var remaining = (await host.Store.SearchAsync(first, new KnowledgeSearch(generator.Embed("text"), 10), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal("keep", Assert.Single(remaining).DocumentId);
-        Assert.Single((await host.Store.SearchAsync(second, generator.Embed("other collection"), 10, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Single((await host.Store.SearchAsync(second, new KnowledgeSearch(generator.Embed("other collection"), 10), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.True((await host.Store.DeleteAsync(Collection("never"), ["doc"], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
     }
 
@@ -131,23 +131,82 @@ public abstract class KnowledgeStoreConformance
         };
         Assert.True((await host.Store.UpsertAsync(collection, records, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
 
-        Assert.True((await host.Store.TrimAsync(collection, "doc", 1, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Store.TrimAsync(collection, [new KnowledgeTrim("doc", 1)], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.Equal(["doc#0", "other#3"], await IdsAsync(host, collection, generator).ConfigureAwait(false));
 
-        Assert.True((await host.Store.TrimAsync(collection, "doc", 5, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.True((await host.Store.TrimAsync(collection, "missing", 0, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.True((await host.Store.TrimAsync(Collection("never"), "doc", 0, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Store.TrimAsync(collection, [new KnowledgeTrim("doc", 5)], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Store.TrimAsync(collection, [new KnowledgeTrim("missing", 0)], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Store.TrimAsync(Collection("never"), [new KnowledgeTrim("doc", 0)], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.Equal(["doc#0", "other#3"], await IdsAsync(host, collection, generator).ConfigureAwait(false));
 
-        Assert.True((await host.Store.TrimAsync(collection, "doc", 0, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Store.TrimAsync(collection, [new KnowledgeTrim("doc", 0)], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.Equal(["other#3"], await IdsAsync(host, collection, generator).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 5：一次裁剪多篇文档，空集合不报错
+    /// </summary>
+    /// <remarks>
+    /// 每篇按自己的块数裁剪，不在集合里的文档不动
+    /// </remarks>
+    [Fact]
+    public async Task Trim_HandlesSeveralDocumentsInOneCall()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var generator = new HashingEmbeddingGenerator(host.Dimensions);
+        var collection = Collection("trim-many");
+        var records = new[]
+        {
+            Record(generator, "a", 0, "a first part"),
+            Record(generator, "a", 1, "a second part"),
+            Record(generator, "b", 0, "b first part"),
+            Record(generator, "b", 1, "b second part"),
+            Record(generator, "c", 0, "c first part"),
+            Record(generator, "c", 1, "c second part"),
+        };
+        Assert.True((await host.Store.UpsertAsync(collection, records, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        Assert.True((await host.Store.TrimAsync(collection, [], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.True((await host.Store.TrimAsync(collection, [new KnowledgeTrim("a", 1), new KnowledgeTrim("b", 0), new KnowledgeTrim("missing", 0)], CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+        Assert.Equal(["a#0", "c#0", "c#1"], await IdsAsync(host, collection, generator).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 6：最低得分由存储施加
+    /// </summary>
+    /// <remarks>
+    /// 得分低于它的块不返回；比最高得分还高时结果为空
+    /// </remarks>
+    [Fact]
+    public async Task Search_SkipsChunksBelowMinScore()
+    {
+        await using var host = await StartAsync().ConfigureAwait(false);
+        var generator = new HashingEmbeddingGenerator(host.Dimensions);
+        var collection = Collection("min-score");
+        var records = new[]
+        {
+            Record(generator, "cats", 0, "cats purr and chase mice"),
+            Record(generator, "dogs", 0, "dogs bark and fetch sticks"),
+            Record(generator, "cars", 0, "cars drive on roads"),
+        };
+        Assert.True((await host.Store.UpsertAsync(collection, records, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
+
+        var vector = generator.Embed("cats purr and chase mice");
+        var all = (await host.Store.SearchAsync(collection, new KnowledgeSearch(vector, 10), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal(3, all.Count);
+
+        // 门槛取第一与第二名之间：只剩完全相同的那块
+        var threshold = (all[0].Score + all[1].Score) / 2;
+        var above = (await host.Store.SearchAsync(collection, new KnowledgeSearch(vector, 10) { MinScore = threshold }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal("cats#0", Assert.Single(above).Id);
+        Assert.Empty((await host.Store.SearchAsync(collection, new KnowledgeSearch(vector, 10) { MinScore = all[0].Score + 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>
     /// 集合里全部记录的 ID（按序数排序）
     /// </summary>
     private static async Task<List<string>> IdsAsync(KnowledgeStoreHost host, string collection, HashingEmbeddingGenerator generator)
-        => (await host.Store.SearchAsync(collection, generator.Embed("part"), 100, null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static chunk => chunk.Id).Order(StringComparer.Ordinal).ToList();
+        => (await host.Store.SearchAsync(collection, new KnowledgeSearch(generator.Embed("part"), 100), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static chunk => chunk.Id).Order(StringComparer.Ordinal).ToList();
 
     /// <summary>
     /// 每次用例一个不重名的集合

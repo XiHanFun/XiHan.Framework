@@ -58,6 +58,7 @@
 - **调整** `MessageSubscriptions` 在消息运行时启动后只读：再 `Add` 抛 `InvalidOperationException`，`All` 与 `HandlersFor` 交出只读视图；订阅照旧在 `Configure` 里用 `AddMessageHandler` 登记
 - **调整** 缓存键管理的 `RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回新错误码 `CACHING_VALIDATION_004`（HTTP 400）而不是抛 `ArgumentException`；`CacheKeyQuery.Prefix` 不合法不再在构造时抛出，由 `ListKeysAsync` 以同一错误码返回；实现键管理的 Provider 在开头调 `CacheKeyQuery.ValidateRemovalPrefix`
 - **调整** `LockHandle` 改为抽象基类：包外实现 `IDistributedLock` 时派生它并实现 `ReleaseCoreAsync`，基类保证并发释放也只执行一次；只经 `TryAcquireAsync` 取句柄的调用方不用改
+- **调整** AI 护栏的 `InspectAsync` 改收 `GuardrailInspection`（`Direction` 与 `Messages`），`CompleteAsync` 拿到响应后再以输出方向检查一次；自写护栏改签名，只看输入的在 `Direction` 不是 `Input` 时放行。`IKnowledgeStore.SearchAsync` 改收 `KnowledgeSearch`（最低得分由存储施加），`TrimAsync` 改收 `KnowledgeTrim` 列表；自写存储按新签名实现
 - **调整** `IJob.RunAsync(run, context)` 去掉与 `context.CancellationToken` 重复的令牌参数，实现里的 `cancellationToken` 改为 `context.CancellationToken`；`LeaderLease.ReleaseAsync(cancellationToken)` 收令牌并返回 `Result`（幂等，后端没删掉时返回那个失败），实现租约的 Provider 改签名
 - **调整** `JobSchedule.Interval` 与 `At` 改为可空，不适用的计划为 `null`；`JobRunQuery.Trigger` 改名 `TriggerName`（与运行记录同名），新增按触发来源过滤的 `Triggers`；`IHostMonitor` 的七个方法改为 `Read…Async(cancellationToken)`，可能阻塞的读取不占调用方线程、可取消等待；`ConfigurationDocument` 与 `SecretsConfigurationOptions` 构造时复制调用方的字典，只差大小写的重复键抛 `ArgumentException`
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`

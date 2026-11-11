@@ -63,6 +63,17 @@ XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.InjectionPatterns.
 XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.InjectionPatterns.init -> void
 XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.UseBuiltInInjectionHeuristics.get -> bool
 XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.UseBuiltInInjectionHeuristics.init -> void
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailDirection
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailDirection.Input = 0 -> XiHan.Framework.AI.Abstractions.Guardrails.GuardrailDirection
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailDirection.Output = 1 -> XiHan.Framework.AI.Abstractions.Guardrails.GuardrailDirection
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.<Clone>$() -> XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection!
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.Direction.get -> XiHan.Framework.AI.Abstractions.Guardrails.GuardrailDirection
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.Direction.init -> void
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.Equals(XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection? other) -> bool
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.GuardrailInspection() -> void
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.Messages.get -> System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.AI.ChatMessage!>!
+XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.Messages.init -> void
 XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict
 XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.<Clone>$() -> XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict!
 XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.Blocked.get -> bool
@@ -71,10 +82,10 @@ XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.Reason.get -> string
 XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.ReasonArguments.get -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
 XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.ReasonKey.get -> string?
 XiHan.Framework.AI.Abstractions.Guardrails.IAIGuardrail
-XiHan.Framework.AI.Abstractions.Guardrails.IAIGuardrail.InspectAsync(System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.AI.ChatMessage!>! messages, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict!>>
+XiHan.Framework.AI.Abstractions.Guardrails.IAIGuardrail.InspectAsync(XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection! inspection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict!>>
 XiHan.Framework.AI.Abstractions.Guardrails.IAIGuardrail.Name.get -> string!
 XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail
-XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail.InspectAsync(System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.AI.ChatMessage!>! messages, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict!>>
+XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail.InspectAsync(XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection! inspection, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict!>>
 XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail.KeywordBlocklistGuardrail(XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions! options) -> void
 XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail.Name.get -> string!
 XiHan.Framework.AI.Abstractions.Knowledge.ChunkingOptions
@@ -97,8 +108,8 @@ XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeRetriever
 XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeRetriever.RetrieveAsync(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>!>>
 XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore
 XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.DeleteAsync(string! collection, System.Collections.Generic.IReadOnlyList<string!>! documentIds, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
-XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.SearchAsync(string! collection, System.ReadOnlyMemory<float> vector, int top, XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter? filter, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>!>>
-XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.TrimAsync(string! collection, string! documentId, int chunkCount, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.SearchAsync(string! collection, XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch! search, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>!>>
+XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.TrimAsync(string! collection, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim!>! trims, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.Abstractions.Knowledge.IKnowledgeStore.UpsertAsync(string! collection, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord!>! records, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.AI.Abstractions.Knowledge.IRagPromptAugmenter
 XiHan.Framework.AI.Abstractions.Knowledge.IRagPromptAugmenter.Augment(string! question, System.Collections.Generic.IReadOnlyList<XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!>! chunks) -> string!
@@ -171,6 +182,23 @@ XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Text.get -> string!
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Text.init -> void
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Vector.get -> System.ReadOnlyMemory<float>
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Vector.init -> void
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.<Clone>$() -> XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch!
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Equals(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch? other) -> bool
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Filter.get -> XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter?
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Filter.init -> void
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.KnowledgeSearch(System.ReadOnlyMemory<float> vector, int top) -> void
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.MinScore.get -> double?
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.MinScore.init -> void
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Top.get -> int
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Vector.get -> System.ReadOnlyMemory<float>
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.<Clone>$() -> XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim!
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.ChunkCount.get -> int
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.Deconstruct(out string! DocumentId, out int ChunkCount) -> void
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.DocumentId.get -> string!
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.Equals(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim? other) -> bool
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.KnowledgeTrim(string! DocumentId, int ChunkCount) -> void
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.<Clone>$() -> XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter!
 XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.DocumentIds.get -> System.Collections.Generic.IReadOnlyList<string!>?
@@ -302,6 +330,9 @@ override XiHan.Framework.AI.Abstractions.Chat.AIChatRequest.ToString() -> string
 override XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.Equals(object? obj) -> bool
 override XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.GetHashCode() -> int
 override XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.ToString() -> string!
+override XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.Equals(object? obj) -> bool
+override XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.GetHashCode() -> int
+override XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.ToString() -> string!
 override XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.Equals(object? obj) -> bool
 override XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.GetHashCode() -> int
 override XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.ToString() -> string!
@@ -320,6 +351,12 @@ override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeQuery.ToString() -> 
 override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.Equals(object? obj) -> bool
 override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.GetHashCode() -> int
 override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.ToString() -> string!
+override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Equals(object? obj) -> bool
+override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.GetHashCode() -> int
+override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.ToString() -> string!
+override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.Equals(object? obj) -> bool
+override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.GetHashCode() -> int
+override XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.ToString() -> string!
 override XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.Equals(object? obj) -> bool
 override XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.GetHashCode() -> int
 override XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.ToString() -> string!
@@ -354,6 +391,8 @@ static XiHan.Framework.AI.Abstractions.Chat.AIChatRequest.operator !=(XiHan.Fram
 static XiHan.Framework.AI.Abstractions.Chat.AIChatRequest.operator ==(XiHan.Framework.AI.Abstractions.Chat.AIChatRequest? left, XiHan.Framework.AI.Abstractions.Chat.AIChatRequest? right) -> bool
 static XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.operator !=(XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions? left, XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions? right) -> bool
 static XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions.operator ==(XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions? left, XiHan.Framework.AI.Abstractions.Guardrails.AIGuardrailOptions? right) -> bool
+static XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.operator !=(XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection? left, XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection? right) -> bool
+static XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection.operator ==(XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection? left, XiHan.Framework.AI.Abstractions.Guardrails.GuardrailInspection? right) -> bool
 static XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.Allow() -> XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict!
 static XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.Block(string! reasonKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? reasonArguments = null) -> XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict!
 static XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict.operator !=(XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict? left, XiHan.Framework.AI.Abstractions.Guardrails.GuardrailVerdict? right) -> bool
@@ -371,6 +410,10 @@ static XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeQuery.operator ==(XiHa
 static XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.IdOf(string! documentId, int chunkIndex) -> string!
 static XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.operator !=(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord? left, XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord? right) -> bool
 static XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord.operator ==(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord? left, XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord? right) -> bool
+static XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.operator !=(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch? left, XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch? right) -> bool
+static XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.operator ==(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch? left, XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch? right) -> bool
+static XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.operator !=(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim? left, XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim? right) -> bool
+static XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.operator ==(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim? left, XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim? right) -> bool
 static XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.operator !=(XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter? left, XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter? right) -> bool
 static XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.operator ==(XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter? left, XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter? right) -> bool
 static XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk.From(XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeRecord! record, double score) -> XiHan.Framework.AI.Abstractions.Knowledge.RetrievedChunk!

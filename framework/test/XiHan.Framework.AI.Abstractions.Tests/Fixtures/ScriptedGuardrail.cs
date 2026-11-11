@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using Microsoft.Extensions.AI;
 using XiHan.Framework.AI.Abstractions.Guardrails;
 using XiHan.Framework.Primitives;
 
@@ -31,14 +30,33 @@ internal sealed class ScriptedGuardrail : IAIGuardrail
     /// </remarks>
     public Error? Fail { get; set; }
 
+    /// <summary>
+    /// 要拦下的方向
+    /// </summary>
+    /// <remarks>
+    /// 空表示两个方向都放行
+    /// </remarks>
+    public GuardrailDirection? BlockDirection { get; set; }
+
+    /// <summary>
+    /// 收到过的检查（按调用顺序）
+    /// </summary>
+    public List<GuardrailInspection> Inspections { get; } = [];
+
     /// <inheritdoc />
-    public ValueTask<Result<GuardrailVerdict>> InspectAsync(IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken)
+    public ValueTask<Result<GuardrailVerdict>> InspectAsync(GuardrailInspection inspection, CancellationToken cancellationToken)
     {
+        Inspections.Add(inspection);
         if (Throw is { } exception)
         {
             throw exception;
         }
 
-        return new ValueTask<Result<GuardrailVerdict>>(Fail is { } error ? error : GuardrailVerdict.Allow());
+        if (Fail is { } error)
+        {
+            return new ValueTask<Result<GuardrailVerdict>>(error);
+        }
+
+        return new ValueTask<Result<GuardrailVerdict>>(BlockDirection == inspection.Direction ? GuardrailVerdict.Block("scripted block") : GuardrailVerdict.Allow());
     }
 }

@@ -85,7 +85,7 @@ public sealed class QdrantKnowledgeStoreTests : KnowledgeStoreConformance
         Assert.IsType<VectorStoreException>(logged.Exception);
 
         // 存储操作同样：错误只带类型，完整异常进日志
-        var search = await host.Services.GetRequiredService<IKnowledgeStore>().SearchAsync("knowledge", new float[VectorDataTestHost.Dimensions], 1, null, CancellationToken.None);
+        var search = await host.Services.GetRequiredService<IKnowledgeStore>().SearchAsync("knowledge", new KnowledgeSearch(new float[VectorDataTestHost.Dimensions], 1), CancellationToken.None);
         Assert.Equal(AIErrors.KnowledgeUnavailable, search.Error?.Code);
         Assert.Equal(typeof(VectorStoreException).FullName, search.Error?.Details?["reason"]);
         var failed = logs.Entries.Where(static entry => entry.Category == typeof(VectorDataKnowledgeStore).FullName).ToList();

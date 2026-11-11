@@ -127,11 +127,16 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result> TrimAsync(string collection, string documentId, int chunkCount, CancellationToken cancellationToken)
+    public async ValueTask<Result> TrimAsync(string collection, IReadOnlyList<KnowledgeTrim> trims, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(collection);
-        ArgumentNullException.ThrowIfNull(documentId);
-        ArgumentOutOfRangeException.ThrowIfNegative(chunkCount);
+        ArgumentNullException.ThrowIfNull(trims);
+        if (trims.Count == 0)
+        {
+            return Result.Success();
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             var target = Collection(collection);
@@ -140,7 +145,12 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
                 return Result.Success();
             }
 
-            await DeleteMatchingAsync(target, TrimFilter(documentId, chunkCount), cancellationToken).ConfigureAwait(false);
+            // 向量库没有按多个条件一次删除的统一接口：同一个集合句柄上逐篇删除
+            foreach (var trim in trims)
+            {
+                await DeleteMatchingAsync(target, TrimFilter(trim.DocumentId, trim.ChunkCount), cancellationToken).ConfigureAwait(false);
+            }
+
             return Result.Success();
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -150,10 +160,13 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<RetrievedChunk>>> SearchAsync(string collection, ReadOnlyMemory<float> vector, int top, RetrievalFilter? filter, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<RetrievedChunk>>> SearchAsync(string collection, KnowledgeSearch search, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(collection);
-        ArgumentOutOfRangeException.ThrowIfLessThan(top, 1);
+        ArgumentNullException.ThrowIfNull(search);
+        var vector = search.Vector;
+        var top = search.Top;
+        var filter = search.Filter;
         try
         {
             var target = Collection(collection);
@@ -173,6 +186,12 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
             {
                 var chunk = ToChunk(result.Record, result.Score ?? 0d);
                 if (byMetadata && !filter!.Matches(chunk.DocumentId, chunk.Metadata))
+                {
+                    continue;
+                }
+
+                // 连接器交回的顺序不可靠（下面还要重排），逐条判断而不是遇到第一条不合格就停
+                if (search.MinScore is { } minimum && chunk.Score < minimum)
                 {
                     continue;
                 }

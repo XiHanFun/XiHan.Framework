@@ -38,8 +38,8 @@ public sealed class VectorDataKnowledgeStoreErrorTests
         [
             (await knowledge.UpsertAsync("faq", [record], CancellationToken.None)).Error,
             (await knowledge.DeleteAsync("faq", ["doc"], CancellationToken.None)).Error,
-            (await knowledge.TrimAsync("faq", "doc", 0, CancellationToken.None)).Error,
-            (await knowledge.SearchAsync("faq", vector, 1, null, CancellationToken.None)).Error,
+            (await knowledge.TrimAsync("faq", [new KnowledgeTrim("doc", 0)], CancellationToken.None)).Error,
+            (await knowledge.SearchAsync("faq", new KnowledgeSearch(vector, 1), CancellationToken.None)).Error,
         ];
 
         Assert.All(errors, static error =>
@@ -79,7 +79,7 @@ public sealed class VectorDataKnowledgeStoreErrorTests
         var knowledge = host.Services.GetRequiredService<IKnowledgeStore>();
         store.OperationFault = new OperationCanceledException();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(async () => await knowledge.SearchAsync("faq", new float[VectorDataTestHost.Dimensions], 1, null, CancellationToken.None));
+        await Assert.ThrowsAsync<OperationCanceledException>(async () => await knowledge.SearchAsync("faq", new KnowledgeSearch(new float[VectorDataTestHost.Dimensions], 1), CancellationToken.None));
 
         Assert.DoesNotContain(logs.Entries, static entry => entry.Category == typeof(VectorDataKnowledgeStore).FullName);
     }

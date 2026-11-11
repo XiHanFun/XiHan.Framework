@@ -31,15 +31,18 @@ public interface IKnowledgeStore
     ValueTask<Result> DeleteAsync(string collection, IReadOnlyList<string> documentIds, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 删除一篇文档里块序号不小于 <paramref name="chunkCount"/> 的记录
+    /// 删除这些文档里多出来的块
     /// </summary>
     /// <remarks>
-    /// 块序号更小的记录不动。重新摄入在新块写入成功之后调用它，删掉旧版本多出来的块；文档不存在或没有多余的块时成功。不可达 → <see cref="AIErrors.KnowledgeUnavailable"/>
+    /// 每项删掉块序号不小于 <see cref="KnowledgeTrim.ChunkCount"/> 的记录，更小的不动。重新摄入在新块写入成功之后调用它；文档不存在或没有多余的块时成功，空集合不访问后端。整批成功或失败，不可达 → <see cref="AIErrors.KnowledgeUnavailable"/>（ADR-0166）
     /// </remarks>
-    ValueTask<Result> TrimAsync(string collection, string documentId, int chunkCount, CancellationToken cancellationToken);
+    ValueTask<Result> TrimAsync(string collection, IReadOnlyList<KnowledgeTrim> trims, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 按向量搜索，最多 <paramref name="top"/> 条，按得分降序
+    /// 按向量检索，按得分降序
     /// </summary>
-    ValueTask<Result<IReadOnlyList<RetrievedChunk>>> SearchAsync(string collection, ReadOnlyMemory<float> vector, int top, RetrievalFilter? filter, CancellationToken cancellationToken);
+    /// <remarks>
+    /// 最多 <see cref="KnowledgeSearch.Top"/> 条；过滤与最低得分都由存储施加，原生支持的后端交给服务端（ADR-0166）
+    /// </remarks>
+    ValueTask<Result<IReadOnlyList<RetrievedChunk>>> SearchAsync(string collection, KnowledgeSearch search, CancellationToken cancellationToken);
 }

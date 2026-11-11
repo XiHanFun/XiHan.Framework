@@ -150,7 +150,7 @@ internal sealed class KnowledgeIngestor : IKnowledgeIngestor
             return written.Error!;
         }
 
-        var trimmed = await _store.TrimAsync(collection, request.DocumentId, records.Count, cancellationToken).ConfigureAwait(false);
+        var trimmed = await _store.TrimAsync(collection, [new KnowledgeTrim(request.DocumentId, records.Count)], cancellationToken).ConfigureAwait(false);
         return trimmed.IsSuccess ? records.Count : trimmed.Error!;
     }
 }
