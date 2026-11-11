@@ -48,6 +48,8 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
     public OpenIdConnectAuthenticationHandler(OpenIdConnectOptions options, OpenIdConnectMetadataCache metadata)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        // 代码里构造的选项不经 FromConfiguration：这里再确认一次受众，缺了就不建处理器（ADR-0180）
+        options.EnsureAudience();
         _metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
     }
 
@@ -111,7 +113,7 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
     /// 由选项与一份元数据推出校验参数
     /// </summary>
     /// <remarks>
-    /// 签名、过期与有效期始终强制，签发者取选项覆盖或发现文档，受众只在配置了才校验
+    /// 签名、过期与有效期始终强制，签发者取选项覆盖或发现文档，受众缺省校验（只有显式关掉 <see cref="OpenIdConnectOptions.ValidateAudience"/> 才不校验）
     /// </remarks>
     private TokenValidationParameters Parameters(OpenIdConnectMetadata metadata) => new()
     {
@@ -123,7 +125,7 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
         ClockSkew = _options.ClockSkew,
         ValidateIssuer = true,
         ValidIssuer = _options.Issuer ?? metadata.Issuer,
-        ValidateAudience = _options.Audience is not null,
+        ValidateAudience = _options.ValidateAudience,
         ValidAudience = _options.Audience,
         NameClaimType = _options.NameClaim,
     };

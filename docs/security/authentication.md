@@ -209,7 +209,8 @@ app.Run();
 | `Authority` | 必填 | 签发者地址，绝对 http / https URI |
 | `MetadataAddress` | `<Authority>/.well-known/openid-configuration` | 发现文档地址 |
 | `Issuer` | 发现文档的 `issuer` | 期望的签发者，始终校验 |
-| `Audience` | 不校验 | 配置了才校验受众 |
+| `Audience` | 必填 | 期望的受众（本 API 的标识或客户端 ID）；没有即启动失败 |
+| `ValidateAudience` | `true` | 是否校验受众；只有签发者只为本 API 签发令牌时才设 `false`，此时不需要 `Audience` |
 | `RequireHttpsMetadata` | `true` | 发现文档必须经 HTTPS 取得；只在本地开发时关闭 |
 | `ClockSkewSeconds` | `60` | 有效期校验的时钟偏移 |
 | `RefreshIntervalSeconds` | `43200`（12 小时） | 元数据自动刷新间隔 |

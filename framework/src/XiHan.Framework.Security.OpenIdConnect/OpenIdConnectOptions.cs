@@ -59,9 +59,17 @@ public sealed record OpenIdConnectOptions
     /// 期望的受众
     /// </summary>
     /// <remarks>
-    /// 为空时不校验受众
+    /// <see cref="ValidateAudience"/> 为真（缺省）时必填，通常是本 API 的标识或客户端 ID
     /// </remarks>
     public string? Audience { get; init; }
+
+    /// <summary>
+    /// 是否校验受众
+    /// </summary>
+    /// <remarks>
+    /// 缺省是，此时 <see cref="Audience"/> 必填：多个应用共用一个身份提供方（Entra、Google、Auth0，或同一 realm 下的多个客户端）时，发给别的应用的令牌也由同一签发者签名，不校验受众就会被接受。只有签发者只为本 API 签发令牌时才显式关掉（ADR-0180）
+    /// </remarks>
+    public bool ValidateAudience { get; init; } = true;
 
     /// <summary>
     /// 发现文档与 JWKS 是否必须经 HTTPS 取得
@@ -146,6 +154,18 @@ public sealed record OpenIdConnectOptions
     }
 
     /// <summary>
+    /// 确认要校验受众时给了受众
+    /// </summary>
+    /// <exception cref="ArgumentException"><see cref="ValidateAudience"/> 为真而 <see cref="Audience"/> 为空</exception>
+    public void EnsureAudience()
+    {
+        if (ValidateAudience && string.IsNullOrWhiteSpace(Audience))
+        {
+            throw new ArgumentException($"{ConfigurationSection}:Audience is required: without it, tokens the same issuer signed for other applications are accepted. Set {ConfigurationSection}:ValidateAudience to false only when the issuer signs tokens for this API alone.");
+        }
+    }
+
+    /// <summary>
     /// 从配置读取
     /// </summary>
     /// <remarks>
@@ -161,6 +181,13 @@ public sealed record OpenIdConnectOptions
             Issuer = configuration[$"{ConfigurationSection}:Issuer"],
             Audience = configuration[$"{ConfigurationSection}:Audience"],
         };
+
+        if (configuration[$"{ConfigurationSection}:ValidateAudience"] is { } validateAudience)
+        {
+            options = bool.TryParse(validateAudience, out var value)
+                ? options with { ValidateAudience = value }
+                : throw new ArgumentException($"{ConfigurationSection}:ValidateAudience must be true or false, but was '{validateAudience}'.");
+        }
 
         if (configuration[$"{ConfigurationSection}:RequireHttpsMetadata"] is { } requireHttps)
         {
@@ -194,8 +221,9 @@ public sealed record OpenIdConnectOptions
             options = options with { NameClaim = nameClaim };
         }
 
-        // 启动时就暴露地址与 HTTPS 要求的冲突，而不是等到第一次认证
+        // 启动时就暴露地址与 HTTPS 要求的冲突、缺受众，而不是等到第一次认证
         _ = options.ResolveMetadataAddress();
+        options.EnsureAudience();
         return options;
     }
 

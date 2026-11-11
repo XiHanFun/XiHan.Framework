@@ -32,6 +32,7 @@ XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.BackchannelTimeout.g
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.BackchannelTimeout.init -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ClockSkew.get -> System.TimeSpan
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ClockSkew.init -> void
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.EnsureAudience() -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Equals(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions? other) -> bool
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Issuer.get -> string?
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.Issuer.init -> void
@@ -47,6 +48,8 @@ XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.RefreshInterval.init
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.RequireHttpsMetadata.get -> bool
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.RequireHttpsMetadata.init -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ResolveMetadataAddress() -> System.Uri!
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ValidateAudience.get -> bool
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions.ValidateAudience.init -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectSecurityFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!

@@ -25,7 +25,7 @@ dotnet add package XiHan.Framework.Security.OpenIdConnect --prerelease
 builder.AddXiHan(x => x.UseFeature<InMemorySecurityFeature>().UseFeature<OpenIdConnectSecurityFeature>());
 ```
 
-`Authority` 必填，`Audience` 配置了才校验：
+`Authority` 与 `Audience` 必填；受众缺省校验，只有签发者只为本 API 签发令牌时才设 `ValidateAudience: false`：
 
 ```json
 { "XiHan": { "Security": { "OpenIdConnect": { "Authority": "https://login.example.com/realms/shop", "Audience": "api" } } } }

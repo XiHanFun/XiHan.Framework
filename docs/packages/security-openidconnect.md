@@ -59,7 +59,8 @@ app.Run();
 | `Authority` | `string` | 必填 | 签发者地址，绝对 http / https URI |
 | `MetadataAddress` | `string` | `<Authority>/.well-known/openid-configuration` | 发现文档地址 |
 | `Issuer` | `string` | 发现文档的 `issuer` | 期望的签发者；签发者始终校验 |
-| `Audience` | `string` | 不校验 | 配置了才校验受众 |
+| `Audience` | `string` | 必填 | 期望的受众（本 API 的标识或客户端 ID）；没有即启动失败 |
+| `ValidateAudience` | `bool` | `true` | 是否校验受众；只有签发者只为本 API 签发令牌时才设 `false`，此时不需要 `Audience` |
 | `RequireHttpsMetadata` | `bool` | `true` | 发现文档与 JWKS 必须经 HTTPS 取得；只在本地开发时关闭 |
 | `ClockSkewSeconds` | `double` | 60 | 有效期校验允许的时钟偏移 |
 | `RefreshIntervalSeconds` | `double` | 43200（12 小时） | 元数据自动刷新间隔，必须大于 0 |
@@ -121,7 +122,7 @@ app.Run();
 
 ## 行为与限制
 
-- 签名、过期与有效期始终强制；签发者取 `Issuer` 或发现文档的 `issuer` 并始终校验；受众只在配置了 `Audience` 时校验。主体 ID 取 `NameClaim`，显示名取 `name` 声明。
+- 签名、过期与有效期始终强制；签发者取 `Issuer` 或发现文档的 `issuer` 并始终校验；受众缺省校验，`Audience` 必填：共用身份提供方时，发给别的应用的令牌也由同一签发者签名（ADR-0180）。主体 ID 取 `NameClaim`，显示名取 `name` 声明。
 - 校验失败返回 `SECURITY_DENIED_003`，不区分原因对外暴露；读不出的令牌直接拒绝，不为它访问签发者；令牌没有 `NameClaim` 声明同样是 `SECURITY_DENIED_003`。
 - 刷新失败时沿用最后一份密钥并记日志，`MinimumRefreshInterval` 后再试；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`（HTTP 503），5 秒退避期内不再请求签发者。
 - 发现文档缺 `issuer` 或 `jwks_uri`、JWKS 没有签名密钥、`RequireHttpsMetadata` 为真而 `jwks_uri` 不是 HTTPS，都按取数失败处理。

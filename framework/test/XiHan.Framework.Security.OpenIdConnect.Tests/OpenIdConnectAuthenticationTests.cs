@@ -212,6 +212,30 @@ public sealed class OpenIdConnectAuthenticationTests
         Assert.Equal(1, issuer.JwksRequests);
     }
 
+    /// <summary>
+    /// 受众缺省必须校验
+    /// </summary>
+    /// <remarks>
+    /// 安全审查 S-05（ADR-0180）：原先没配受众就不校验，共用身份提供方时，发给别的应用的令牌也被本 API 接受
+    /// </remarks>
+    [Fact]
+    public async Task Audience_IsRequired_UnlessValidationIsExplicitlyTurnedOff()
+    {
+        const string Prefix = "XiHan:Security:OpenIdConnect:";
+        var withoutAudience = new ConfigurationBuilder().AddInMemoryCollection([new(Prefix + "Authority", FakeIssuer.Authority)]).Build();
+        Assert.Throws<ArgumentException>(() => OpenIdConnectOptions.FromConfiguration(withoutAudience));
+
+        // 代码里构造的选项也拦：处理器建不出来
+        var coded = new OpenIdConnectOptions { Authority = FakeIssuer.Authority };
+        using var issuer = new FakeIssuer();
+        Assert.Throws<ArgumentException>(() => new OpenIdConnectAuthenticationHandler(coded, new OpenIdConnectMetadataCache(coded, new HttpClient(issuer), TimeProvider.System, NullLoggerFactory.Instance)));
+
+        // 显式关掉：发给任何受众的令牌都接受
+        var optedOut = new ConfigurationBuilder().AddInMemoryCollection([new(Prefix + "Authority", FakeIssuer.Authority), new(Prefix + "ValidateAudience", "false")]).Build();
+        var (handler, _, _) = Create(issuer, OpenIdConnectOptions.FromConfiguration(optedOut) with { ClockSkew = TimeSpan.Zero });
+        Assert.True((await AuthenticateAsync(handler, issuer.CreateToken(audience: "another-app"))).IsSuccess);
+    }
+
     [Fact]
     public void Options_FromConfiguration_RequireAuthority_AndHttps_AndParseRest()
     {
@@ -239,8 +263,8 @@ public sealed class OpenIdConnectAuthenticationTests
         Assert.Equal("uid", options.NameClaim);
         Assert.Equal(new Uri("https://login.test/realms/shop/.well-known/openid-configuration"), options.ResolveMetadataAddress());
 
-        Assert.Equal(new Uri("https://meta.test/oidc"), OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "https://login.test"), (Prefix + "MetadataAddress", "https://meta.test/oidc"))).ResolveMetadataAddress());
-        Assert.Equal(new Uri("http://localhost:8080/.well-known/openid-configuration"), OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "http://localhost:8080"), (Prefix + "RequireHttpsMetadata", "false"))).ResolveMetadataAddress());
+        Assert.Equal(new Uri("https://meta.test/oidc"), OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "https://login.test"), (Prefix + "Audience", "api"), (Prefix + "MetadataAddress", "https://meta.test/oidc"))).ResolveMetadataAddress());
+        Assert.Equal(new Uri("http://localhost:8080/.well-known/openid-configuration"), OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "http://localhost:8080"), (Prefix + "Audience", "api"), (Prefix + "RequireHttpsMetadata", "false"))).ResolveMetadataAddress());
 
         Assert.Throws<ArgumentException>(() => OpenIdConnectOptions.FromConfiguration(Build()));
         Assert.Throws<ArgumentException>(() => OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "not a uri"))));
