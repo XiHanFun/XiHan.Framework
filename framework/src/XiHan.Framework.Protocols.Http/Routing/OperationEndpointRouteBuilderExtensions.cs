@@ -25,7 +25,7 @@ public static class OperationEndpointRouteBuilderExtensions
     /// 映射全部暴露给 HTTP 且非 <see cref="Stability.Internal"/> 的操作
     /// </summary>
     /// <remarks>
-    /// 操作端点映射在一个空前缀的路由组里，路由模板不变；加在返回值上的约定（授权、限流、CORS、标签、过滤器）作用于每个操作端点，与其他 <c>MapXiHan*</c> 一样（ADR-0144）
+    /// 操作端点映射在一个空前缀的路由组里，路由模板不变；加在返回值上的约定（授权、限流、CORS、标签、过滤器）作用于每个操作端点，与其他 <c>MapXiHan*</c> 一样（ADR-0144）。授权约定与各操作契约的权限叠加判定，不顶替它（ADR-0174）
     /// </remarks>
     /// <returns>这组操作端点的约定构建器</returns>
     /// <exception cref="FrameworkException">两个操作推导出同一条路由（<see cref="HttpErrors.DuplicateRoute"/>）</exception>

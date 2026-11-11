@@ -68,6 +68,14 @@ public static class SecurityErrors
     public const string UnregisteredPolicy = "SECURITY_VALIDATION_004";
 
     /// <summary>
+    /// 授权要求挂在不会判定它的端点上（启动时核对）
+    /// </summary>
+    /// <remarks>
+    /// 绕过内核管道的端点（探针、OpenAPI、<c>.proto</c>、自己标注绕过的端点）上的 <c>RequireXiHan*</c> 从不判定；<c>UseXiHan()</c> 建请求管道时发现即启动失败，而不是静默放行（ADR-0175）
+    /// </remarks>
+    public const string RequirementBypassed = "SECURITY_VALIDATION_008";
+
+    /// <summary>
     /// 授予列表的分页越界
     /// </summary>
     /// <remarks>

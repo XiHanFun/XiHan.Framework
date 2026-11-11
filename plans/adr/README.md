@@ -173,3 +173,5 @@
 | [0171](0171-用户任务与外部任务的书签只经服务消费.md) | `IWorkflowEngine.ResumeAsync` 拒绝 `UserTask` 与 `External` 书签（`WORKFLOW_CONFLICT_003`，`workflow.bookmark.service_owned`）：原先能绕过任务服务的指派人校验与外部任务服务的持锁校验、不发完成事件；两个服务与轮询器改走引擎的内部入口；写明 `ResumeAsync` 是受信代码的系统级入口；新增一致性用例 | 已采纳 |
 | [0172](0172-文件系统不覆盖写入按平台选原子原语.md) | 修正 ADR-0168：文件系统存储的不覆盖提交在 Windows 上改回不替换的改名（本身原子），占位再替换只用于 Unix——Windows 上替换要求目标没有被打开，并发写入方探测占位的那一下就让占到位的一方以拒绝访问失败 | 已采纳 |
 | [0173](0173-SBOM、性能门禁与包验证基线接线.md) | P5-06：每个包经 `Microsoft.Sbom.Targets` 带 SPDX 2.2 清单，CI 核对；CI 新增「性能门禁」作业，按 `budgets.json` 的绝对预算与同机对照提交（5%、Mann-Whitney、复测确认）检查耗时、分配、冷启动与框架额外常驻内存，有意回退以 `[perf-accepted]` 放行；冷启动 50 ms 与常驻 30 MB 在 JIT 下达不到，只报告；包验证基线接为 `XiHanPackageBaselineVersion` 并预演；`SECURITY.md` 指向私密漏洞报告 | 已采纳 |
+| [0174](0174-授权要求叠加判定.md) | 安全审查 S-01：宿主写入的授权要求（端点与路由组上的每条约定）与操作契约的要求叠加判定，全部满足才放行，不再顶替契约的权限；`FindAuthorizationRequirement` 改为 `GetAuthorizationRequirements` | 已采纳 |
+| [0175](0175-端点授权要求不被静默跳过.md) | 安全审查 S-06：绕过管道的端点挂 `RequireXiHan*` 启动即失败（`SECURITY_VALIDATION_008`）；gRPC 方法端点改标 `PipelineBypassMetadata.SelfInvoking` 并在处理器里带上端点要求；`RequireXiHan*` 给端点包守卫，`UseXiHan()` 没判定到时端点拒绝执行 | 已采纳 |

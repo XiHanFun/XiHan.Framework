@@ -71,9 +71,16 @@ public static class ApplicationBuilderExtensions
         }
 
         var context = HttpInvocation.CreateContext(httpContext);
-        if (httpContext.GetEndpoint()?.Metadata.GetMetadata<AuthorizationRequirement>() is { } requirement)
+        // 端点上的要求全部带进上下文：组与端点各自加的约定都算，与操作契约的要求叠加判定（ADR-0174）
+        if (httpContext.GetEndpoint() is { } routed)
         {
-            context.RequireAuthorization(requirement);
+            foreach (var requirement in routed.Metadata.GetOrderedMetadata<AuthorizationRequirement>())
+            {
+                context.RequireAuthorization(requirement);
+            }
+
+            // 端点的守卫据此确认要求已经交给 Authorize 阶段（ADR-0175）
+            EndpointRequirementGuard.MarkEvaluated(httpContext);
         }
 
         // 操作端点把描述与载荷绑定挂在元数据上：进入管道前把描述放进上下文（Authorize 阶段按契约判定），并先绑定载荷（Validate 阶段按 Schema 校验并解码），端点内只剩执行；

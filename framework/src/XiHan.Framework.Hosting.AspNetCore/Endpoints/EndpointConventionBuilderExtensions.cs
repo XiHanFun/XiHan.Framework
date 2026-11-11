@@ -12,7 +12,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Endpoints;
 /// 把授权要求挂在端点元数据上
 /// </summary>
 /// <remarks>
-/// <c>UseXiHan()</c> 在构造调用上下文时读取它，Authorize 阶段据此判定
+/// <c>UseXiHan()</c> 在构造调用上下文时读取端点上的全部要求，Authorize 阶段把它们与操作契约的要求叠加判定：组上与端点上各加的约定都要满足，任何一条都不顶替契约的权限（ADR-0174）。要求不会被静默跳过：挂在绕过管道的端点上启动即失败，<c>UseXiHan()</c> 没判定到（没调或排在路由之前）时端点拒绝执行（ADR-0175）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static class EndpointConventionBuilderExtensions
@@ -24,7 +24,7 @@ public static class EndpointConventionBuilderExtensions
         where TBuilder : IEndpointConventionBuilder
     {
         ArgumentNullException.ThrowIfNull(builder);
-        return builder.WithMetadata(AuthorizationRequirement.Authenticated);
+        return Require(builder, AuthorizationRequirement.Authenticated);
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ public static class EndpointConventionBuilderExtensions
         where TBuilder : IEndpointConventionBuilder
     {
         ArgumentNullException.ThrowIfNull(builder);
-        return builder.WithMetadata(AuthorizationRequirement.Permission(permissionCode, resource));
+        return Require(builder, AuthorizationRequirement.Permission(permissionCode, resource));
     }
 
     /// <summary>
@@ -64,6 +64,20 @@ public static class EndpointConventionBuilderExtensions
         where TBuilder : IEndpointConventionBuilder
     {
         ArgumentNullException.ThrowIfNull(builder);
-        return builder.WithMetadata(new AuthorizationRequirement(policyName, resource));
+        return Require(builder, new AuthorizationRequirement(policyName, resource));
+    }
+
+    /// <summary>
+    /// 挂上要求，并在端点执行前确认它已被判定
+    /// </summary>
+    /// <remarks>
+    /// 守卫是最终约定：端点的处理委托生成之后才能包；同一端点多次加要求只包一层（ADR-0175）
+    /// </remarks>
+    private static TBuilder Require<TBuilder>(TBuilder builder, AuthorizationRequirement requirement)
+        where TBuilder : IEndpointConventionBuilder
+    {
+        builder.WithMetadata(requirement);
+        builder.Finally(EndpointRequirementGuard.Apply);
+        return builder;
     }
 }

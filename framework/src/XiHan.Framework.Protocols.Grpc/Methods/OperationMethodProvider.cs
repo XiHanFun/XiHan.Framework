@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Text.Json;
 using Grpc.AspNetCore.Server.Model;
 using Grpc.Core;
+using Microsoft.AspNetCore.Http;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
@@ -14,6 +15,8 @@ using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Grpc.Proto;
 using XiHan.Framework.Protocols.Grpc.Services;
+using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authorization;
 
 namespace XiHan.Framework.Protocols.Grpc.Methods;
 
@@ -84,8 +87,8 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
         foreach (var operation in _table.Operations)
         {
             var method = new Method<byte[], byte[]>(MethodType.Unary, operation.Method.FullServiceName(_table.Package), operation.Method.Method, _bytes, _bytes);
-            // 端点元数据带操作描述（供诊断与工具链），并绕过宿主管道：每次调用在处理器里以自己的上下文走完整管道
-            context.AddUnaryMethod(method, [operation.Descriptor, PipelineBypassMetadata.Instance], (_, request, call) => InvokeAsync(operation, request, call));
+            // 端点元数据带操作描述（供诊断与工具链），并绕过宿主管道：每次调用在处理器里以自己的上下文走完整管道，端点上的授权要求一并带进去（ADR-0175）
+            context.AddUnaryMethod(method, [operation.Descriptor, PipelineBypassMetadata.SelfInvoking], (_, request, call) => InvokeAsync(operation, request, call));
         }
     }
 
@@ -96,6 +99,14 @@ internal sealed class OperationMethodProvider : IServiceMethodProvider<Operation
     {
         var httpContext = call.GetHttpContext();
         var context = HttpInvocation.CreateContext(httpContext);
+        // MapXiHanGrpc() 上的授权约定与契约的权限叠加判定，与 UseXiHan() 对 HTTP 端点的做法一致（ADR-0174、ADR-0175）
+        if (httpContext.GetEndpoint() is { } endpoint)
+        {
+            foreach (var requirement in endpoint.Metadata.GetOrderedMetadata<AuthorizationRequirement>())
+            {
+                context.RequireAuthorization(requirement);
+            }
+        }
         // 协议与请求目标改记 gRPC 方法全名；远端地址与 User-Agent 沿用承载它的 HTTP/2 请求
         context.SetOrigin(context.FindOrigin().ValueOrThrow() with { Protocol = InvocationProtocols.Grpc, Target = call.Method });
         call.ResponseTrailers.Add(TraceIdTrailer, context.TraceId);

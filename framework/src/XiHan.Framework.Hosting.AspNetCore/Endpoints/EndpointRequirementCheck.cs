@@ -44,15 +44,31 @@ internal static class EndpointRequirementCheck
         }
 
         var violations = new SortedSet<string>(StringComparer.Ordinal);
+        var bypassed = new SortedSet<string>(StringComparer.Ordinal);
         foreach (var endpoint in sources.SelectMany(static s => s.Endpoints))
         {
-            if (endpoint.Metadata.GetMetadata<AuthorizationRequirement>() is { } requirement && !catalog.Find(requirement.Policy).HasValue)
+            // 绕过宿主管道的端点不会判定要求：除非处理器自己带着要求走管道（gRPC），挂了要求就是静默放行，启动即失败（ADR-0175）
+            if (endpoint.Metadata.GetMetadata<PipelineBypassMetadata>() is { EvaluatesEndpointRequirements: false } && endpoint.Metadata.GetMetadata<AuthorizationRequirement>() is not null)
             {
-                var name = endpoint.DisplayName ?? (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? endpoint.ToString() ?? string.Empty;
-                violations.Add(PermissionPolicy.CodeOf(requirement.Policy) is { } code
-                    ? $"'{name}' requires permission '{code}', which is not registered"
-                    : $"'{name}' requires policy '{requirement.Policy}', which is not registered");
+                bypassed.Add(endpoint.DisplayName ?? (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? endpoint.ToString() ?? string.Empty);
             }
+
+            // 端点上的要求全部核对：组与端点各自加的约定叠加判定（ADR-0174），每一条都要存在
+            foreach (var requirement in endpoint.Metadata.GetOrderedMetadata<AuthorizationRequirement>())
+            {
+                if (!catalog.Find(requirement.Policy).HasValue)
+                {
+                    var name = endpoint.DisplayName ?? (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? endpoint.ToString() ?? string.Empty;
+                    violations.Add(PermissionPolicy.CodeOf(requirement.Policy) is { } code
+                        ? $"'{name}' requires permission '{code}', which is not registered"
+                        : $"'{name}' requires policy '{requirement.Policy}', which is not registered");
+                }
+            }
+        }
+
+        if (bypassed.Count > 0)
+        {
+            throw new FrameworkException(SecurityErrors.RequirementBypassed, $"Endpoints that bypass the XiHan pipeline carry XiHan authorization requirements, which would never be evaluated: {string.Join("; ", bypassed.Select(static name => $"'{name}'"))}. Remove the bypass, remove the requirement, or protect the endpoint with ASP.NET Core authorization.");
         }
 
         if (violations.Count > 0)

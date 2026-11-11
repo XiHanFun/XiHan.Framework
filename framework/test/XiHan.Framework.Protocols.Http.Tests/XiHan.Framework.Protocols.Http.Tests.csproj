@@ -14,6 +14,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
     <!-- 幂等回放写出响应的用例要装配带幂等中间件的缓存默认实现 -->
     <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
+    <!-- 端点约定与契约权限叠加判定的用例要装配内存授权与 ApiKey 认证 -->
+    <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

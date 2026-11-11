@@ -8,6 +8,11 @@
 
 - **新增** 每个包带 SPDX 2.2 软件物料清单（包内 `_manifest/spdx_2.2/manifest.spdx.json`），列出包的组成与依赖
 
+### 安全
+
+- **修复** 端点或路由组上的授权约定原先顶替了操作契约的权限：在 `MapXiHanOperations()` 上加 `RequireXiHanAuthentication()` 后，没有授予的已登录用户能调用全部操作；现在两者叠加判定，全部满足才放行。`FindAuthorizationRequirement` 改为 `GetAuthorizationRequirements`，返回全部已写入的要求
+- **修复** 端点上的授权要求不再被静默跳过：挂在绕过管道的端点（OpenAPI、`.proto`、健康探针、自己标注绕过的）上时宿主启动失败（`SECURITY_VALIDATION_008`），原先从不判定；`UseXiHan()` 没调或排在 `UseRouting()` 之前时，带要求的端点拒绝执行；`MapXiHanGrpc()` 上的授权约定现在每次调用都判定
+
 ## v5.0.0-preview.3（2026-11-12）
 
 ::: warning 预览须知

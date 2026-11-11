@@ -137,7 +137,7 @@ curl -i -X POST -H "Authorization: ApiKey dev-bob-key" -H "Content-Type: applica
 
 `AuthorizationMiddleware` 的处理顺序：
 
-1. 取授权要求：显式要求优先，其次是操作契约（权限码优先于策略名）；都没有则放行。
+1. 取授权要求：宿主写入的全部要求（端点与路由组上的每条约定，以及 `RequireAuthorization` 追加的），再加上操作契约推导出的那一条（权限码优先于策略名），按顺序逐条判定，全部满足才放行；都没有则放行。端点或组上的约定叠加在契约的权限之上，不顶替它：在 `MapXiHanOperations()` 上加 `RequireXiHanAuthentication()`，每个操作仍要检查自己的权限。
 2. 在 `PolicyCatalog` 里按名查找策略。先找登记的 `IPolicy`（策略名区分大小写）；没有时，名字形如 `permission:<code>` 且权限码已登记，就动态创建 `PermissionPolicy`。
 3. 找不到策略返回 `SECURITY_NOTFOUND_001`。配置错误按拒绝处理，不会变成越权。按名引用的策略大多已在启动时核对（见下一节），走到这里的只剩启动时看不到的要求：应用代码以 `RequireAuthorization` 显式写入的、启动之后才加进来的端点，以及插件卸载时撤回、还没重新登记的权限码。
 4. 调用策略。`IPolicy.EvaluateAsync` 返回 `Result<AuthorizationResult>`：成功是允许或拒绝；失败是无法判定（授予存储读不到等），调用以该失败结束，既不放行，也不改写成拒绝。拒绝时返回策略给出的原因；策略返回未初始化的结果（`default`）按拒绝处理，原因为 `SECURITY_DENIED_002`。
@@ -160,6 +160,11 @@ curl -i -X POST -H "Authorization: ApiKey dev-bob-key" -H "Content-Type: applica
 ```csharp
 context.AddStartupCheck(static services => services.GetRequiredService<PolicyCatalog>().EnforceOn(services.GetRequiredService<OperationRegistry>()));
 ```
+
+端点上的要求不会被静默跳过：
+
+- 绕过内核管道的端点（健康探针、`MapXiHanOpenApi`、`MapXiHanProto`、自己用 `BypassXiHanPipeline` 标注的）不会判定要求，挂了 `RequireXiHan*` 宿主启动即失败（`SECURITY_VALIDATION_008`）。要保护这类端点，用 ASP.NET Core 自己的授权。`MapXiHanGrpc()` 例外：gRPC 处理器每次调用都带着端点上的要求走管道，组上的约定与契约的权限叠加判定。
+- `UseXiHan()` 没调，或者排在 `UseRouting()` 之前读不到端点时，带 `RequireXiHan*` 的端点不执行、抛出异常，不会放行。
 
 ## 自定义策略
 

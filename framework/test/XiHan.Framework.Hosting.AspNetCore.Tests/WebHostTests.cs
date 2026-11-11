@@ -105,7 +105,7 @@ public sealed class WebHostTests
         var response = await client.GetAsync("/secure");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(AuthorizationRequirement.Permission("orders.read"), captured.Context!.FindAuthorizationRequirement().ValueOrThrow());
+        Assert.Equal([AuthorizationRequirement.Permission("orders.read")], captured.Context!.GetAuthorizationRequirements());
     }
 
     [Fact]

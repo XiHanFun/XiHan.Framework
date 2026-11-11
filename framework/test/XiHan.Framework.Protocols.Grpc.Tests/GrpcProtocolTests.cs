@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
@@ -230,6 +231,37 @@ public sealed class GrpcProtocolTests
 
         using var alice = Call(channel, "Orders", "Create", request, ("authorization", "ApiKey dev-alice-key"));
         Assert.Equal(("orders.create", "widget"), Reply(await alice.ResponseAsync).Let(static r => (r.GetProperty("operation").GetString(), r.GetProperty("name").GetString())));
+    }
+
+    /// <summary>
+    /// <c>MapXiHanGrpc()</c> 上的授权约定在每次调用里与契约的权限叠加判定
+    /// </summary>
+    /// <remarks>
+    /// 安全审查 S-06（ADR-0175）：gRPC 方法端点绕过宿主管道、在处理器里以自己的上下文走管道，原先不读端点上的要求，约定加了等于没加
+    /// </remarks>
+    [Fact]
+    public async Task GrpcConventionRequirement_IsEvaluatedPerCall()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.Configuration.AddInMemoryCollection(_security.Select(static c => new KeyValuePair<string, string?>(c.Key, c.Value)));
+        builder.Services.AddSingleton<OriginLog>();
+        builder.AddXiHan(static xihan => xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<GrpcProtocolFeature>().UseFeature<OrdersFeature>());
+        await using var app = builder.Build();
+        app.UseXiHan();
+        app.MapXiHanGrpc().RequireXiHanAuthentication();
+        await app.StartAsync();
+        using var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions { HttpHandler = app.GetTestServer().CreateHandler() });
+        var request = ProtoBytes.StringField(1, "o-1");
+
+        // orders.get 的契约没有权限：约定要求登录，匿名调用被拒
+        var anonymous = await Assert.ThrowsAsync<RpcException>(async () => await Call(channel, "Orders", "Get", request).ResponseAsync);
+        Assert.Equal(StatusCode.Unauthenticated, anonymous.StatusCode);
+        Assert.Equal("SECURITY_DENIED_001", anonymous.Trailers.GetValue("xihan-error-code"));
+
+        using var bob = Call(channel, "Orders", "Get", request, ("authorization", "ApiKey dev-bob-key"));
+        Assert.Equal("orders.get", Reply(await bob.ResponseAsync).GetProperty("operation").GetString());
+        await app.StopAsync();
     }
 
     [Fact]

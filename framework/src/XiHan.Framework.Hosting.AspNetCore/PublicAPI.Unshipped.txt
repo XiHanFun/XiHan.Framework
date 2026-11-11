@@ -35,6 +35,7 @@ XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation
 XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationPayloadBinder
 XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationResponseWriter
 XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata
+XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.EvaluatesEndpointRequirements.get -> bool
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.<Clone>$() -> XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth!
 XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.CheckedAt.get -> System.DateTimeOffset?
@@ -131,6 +132,7 @@ static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.FormatBaggage
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.ParseBaggage(string? header) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.BypassXiHanPipeline<TBuilder>(TBuilder builder) -> TBuilder
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.Instance.get -> XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.SelfInvoking.get -> XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata!
 static XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.operator !=(XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.operator ==(XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? left, XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? right) -> bool

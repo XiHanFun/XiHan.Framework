@@ -358,6 +358,7 @@ const XiHan.Framework.Security.Abstractions.SecurityErrors.NotAuthenticated = "S
 const XiHan.Framework.Security.Abstractions.SecurityErrors.PermissionMissing = "SECURITY_DENIED_004" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyDenied = "SECURITY_DENIED_002" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.PolicyNotFound = "SECURITY_NOTFOUND_001" -> string!
+const XiHan.Framework.Security.Abstractions.SecurityErrors.RequirementBypassed = "SECURITY_VALIDATION_008" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.StoreUnavailable = "SECURITY_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.UnregisteredPolicy = "SECURITY_VALIDATION_004" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityErrors.UnsupportedScheme = "SECURITY_VALIDATION_001" -> string!
@@ -522,8 +523,8 @@ static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantPage.ope
 static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.operator !=(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.operator ==(XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? left, XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery? right) -> bool
 static XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantStoreExtensions.GetGrantsAsync(this XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore! store, XiHan.Framework.Security.Abstractions.Permissions.GrantSubject subject, string? tenantId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyCollection<string!>!>>
-static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.FindAuthorizationRequirement(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement!>
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.FindCredential(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential!>
+static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.GetAuthorizationRequirements(this XiHan.Framework.Primitives.InvocationContext! context) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement!>!
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.RequireAuthorization(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Security.Abstractions.Authorization.AuthorizationRequirement! requirement) -> void
 static XiHan.Framework.Security.Abstractions.SecurityInvocationExtensions.SetCredential(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential) -> void
 static XiHan.Framework.Security.Abstractions.SecurityMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!
