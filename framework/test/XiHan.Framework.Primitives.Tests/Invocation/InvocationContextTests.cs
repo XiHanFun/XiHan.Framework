@@ -124,4 +124,36 @@ public sealed class InvocationContextTests
         Assert.Null(Create().RemainingTime(now));
         Assert.False(Create().IsExpired(now));
     }
+
+    [Fact]
+    public void Baggage_IsCopiedAtConstruction_SoTheCallerCannotChangeItLater()
+    {
+        // 校验之后调用方再改原字典：既能绕过键格式校验，也会改到已经建好、可能已在别处使用的上下文
+        var source = new Dictionary<string, string>(StringComparer.Ordinal) { ["xihan.locale"] = "zh-CN" };
+        var context = Create(baggage: source);
+
+        source["xihan.locale"] = "en-US";
+        source["not a key"] = "x";
+
+        Assert.Equal("zh-CN", context.Baggage["xihan.locale"]);
+        Assert.Single(context.Baggage);
+    }
+
+    [Fact]
+    public async Task Items_SharedByDerivedContexts_TolerateConcurrentWriters()
+    {
+        // 派生上下文共享同一个 Items：并行的分支各自写入时不能弄坏它
+        var root = Create();
+        var derived = Enumerable.Range(0, 8).Select(index => root.WithCancellation(new CancellationTokenSource().Token)).ToList();
+
+        await Task.WhenAll(derived.Select((context, index) => Task.Run(() =>
+        {
+            for (var i = 0; i < 2000; i++)
+            {
+                context.Items[(index, i)] = i;
+            }
+        })));
+
+        Assert.Equal(8 * 2000, root.Items.Count);
+    }
 }

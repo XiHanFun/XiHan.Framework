@@ -16,6 +16,7 @@
 - **调整** 清单记录的可选字段改为初始化器：`new Binding(name, type) { Required = false }`、`new CapabilityRequirement(id, version) { Optional = true }`、`new ConfigContribution(section) { Schema = … }`、`new PipelineContribution(middleware, stage) { Before = …, After = … }`（`PipelineContribution` 不再是位置记录）
 - **调整** `Error.Unexpected` 的参数顺序改为 `(code, messageKey, details, inner)`，与构造函数一致；按位置传 `inner` 的写成 `inner: …`
 - **修复** `CapabilityDeclaration.TryParse` 与 `CapabilityRequirement.TryParse` 的输出标注为可空（`[NotNullWhen(true)]`），失败时为 `null`
+- **修复** `InvocationContext.Baggage` 构造时复制成只读副本，调用方之后改原字典不再影响上下文；`Items` 在派生上下文之间共享，并行写入时不再损坏
 
 ### 子系统
 

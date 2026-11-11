@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
@@ -20,16 +22,16 @@ public sealed partial class InvocationContext
     /// 调用作用域内的对象袋
     /// </summary>
     /// <remarks>
-    /// 派生上下文与源上下文共享同一个实例
+    /// 派生上下文与源上下文共享同一个实例；并发字典：并行的分支经各自的派生上下文同时写入时不会弄坏它（ADR-0138）
     /// </remarks>
-    private readonly Dictionary<object, object?> _items;
+    private readonly ConcurrentDictionary<object, object?> _items;
 
     /// <summary>
     /// 创建上下文
     /// </summary>
     public InvocationContext()
     {
-        _items = [];
+        _items = new ConcurrentDictionary<object, object?>();
     }
 
     /// <summary>
@@ -125,7 +127,7 @@ public sealed partial class InvocationContext
     /// 调用作用域内的对象袋
     /// </summary>
     /// <remarks>
-    /// 不跨进程传播。由 <see cref="WithBaggage"/> 派生的上下文共享同一个袋
+    /// 不跨进程传播。由 <see cref="WithBaggage"/> 与 <see cref="WithCancellation"/> 派生的上下文共享同一个袋，可以并发读写
     /// </remarks>
     public IDictionary<object, object?> Items => _items;
 
@@ -203,9 +205,9 @@ public sealed partial class InvocationContext
     /// 校验 Baggage 的每个键都符合 <c>xihan.&lt;name&gt;</c> 格式
     /// </summary>
     /// <remarks>
-    /// 通过时原样返回字典
+    /// 通过时返回一份只读副本：校验之后调用方再改原字典，既不能绕过键格式校验，也改不到已经建好的上下文（ADR-0138）
     /// </remarks>
-    private static IReadOnlyDictionary<string, string> ValidateBaggage(IReadOnlyDictionary<string, string> baggage)
+    private static FrozenDictionary<string, string> ValidateBaggage(IReadOnlyDictionary<string, string> baggage)
     {
         ArgumentNullException.ThrowIfNull(baggage);
         foreach (var key in baggage.Keys)
@@ -216,7 +218,7 @@ public sealed partial class InvocationContext
             }
         }
 
-        return baggage;
+        return baggage.ToFrozenDictionary(StringComparer.Ordinal);
     }
 
     /// <summary>
