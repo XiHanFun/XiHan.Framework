@@ -111,7 +111,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 
 ### 命名连接
 
-方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明命名连接，回调对每个命名连接各调用一次，`config.ConfigId` 是连接名；方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端。每个作用域的客户端都带上命名连接，工作单元首次写入时只在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开：业务调用不碰命名连接，那个库就不被业务事务锁住。普通工作单元里，登记到命名连接的实体照常参与整体事务（与 EF Core 不同）；绑定连接的工作单元（`UnitOfWorkOptions(Connection: name)`）只用这一个连接，操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。配置与代码示例见[连接与运行时数据源](/persistence/connections)。
+方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明命名连接，回调对每个命名连接各调用一次，`config.ConfigId` 是连接名；方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端。每个作用域的客户端都带上命名连接，工作单元首次写入时只在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开：业务调用不碰命名连接，那个库就不被业务事务锁住。普通工作单元里，登记到命名连接的实体照常参与整体事务（与 EF Core 不同）；绑定连接的工作单元（`UnitOfWorkOptions { Connection = name }`）只用这一个连接，操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。配置与代码示例见[连接与运行时数据源](/persistence/connections)。
 
 ## 分表
 
@@ -164,7 +164,7 @@ new SqlSugarPersistenceFeature((binding, config) =>
 
 `HitRate` 是字段，配置绑定绑不上，从配置读时自己赋值；不大于 0 的权重按 `Replicas:DefaultHitRate`（缺省 10）归一化。
 
-只读工作单元（动词 `get`、`list`，或 `UnitOfWorkOptions(IsReadOnly: true)`）的读走从库，设了 `ReadsPrimary` 的读主库；其余工作单元的读写都走主库，第一次写入之前的读也一样。工作单元之外直接用客户端时，事务内与写入走主库，事务外的读走从库。分片连接默认没有从库。跨调用读己之写不保证：写完马上发起的只读调用可能读到落后的从库，框架读授予和租户目录时因此读主库。
+只读工作单元（动词 `get`、`list`，或 `UnitOfWorkOptions { IsReadOnly = true }`）的读走从库，设了 `ReadsPrimary` 的读主库；其余工作单元的读写都走主库，第一次写入之前的读也一样。工作单元之外直接用客户端时，事务内与写入走主库，事务外的读走从库。分片连接默认没有从库。跨调用读己之写不保证：写完马上发起的只读调用可能读到落后的从库，框架读授予和租户目录时因此读主库。
 
 周期探测把不可读的从库摘除，全部不可读时读回到主库，恢复之后过了冷却窗口才放回读流量；健康项 `persistence.sqlsugar.replicas` 有从库不可读时是 Degraded（`PERSISTENCE_UNAVAILABLE_009`），应用仍然就绪，只探连通、不看复制延迟。主库不同的连接共用同一个从库是装配错误（`PERSISTENCE_VALIDATION_009`）：回调不看 `ConfigId` 时，租户的读会读到平台库。
 

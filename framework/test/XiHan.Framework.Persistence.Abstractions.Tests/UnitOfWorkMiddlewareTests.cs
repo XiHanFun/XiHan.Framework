@@ -42,10 +42,7 @@ public sealed class UnitOfWorkMiddlewareTests
         public UnitOfWorkState State { get; private set; }
 
         /// <inheritdoc />
-        public string? TenantId { get; private set; }
-
-        /// <inheritdoc />
-        public bool IsReadOnly { get; private set; }
+        public UnitOfWorkOptions Options { get; private set; } = UnitOfWorkOptions.Default;
 
         /// <inheritdoc />
         /// <remarks>
@@ -61,8 +58,7 @@ public sealed class UnitOfWorkMiddlewareTests
         {
             Calls.Add("begin");
             State = UnitOfWorkState.Active;
-            TenantId = options.TenantId;
-            IsReadOnly = options.IsReadOnly;
+            Options = options;
             return Task.CompletedTask;
         }
 
@@ -152,8 +148,8 @@ public sealed class UnitOfWorkMiddlewareTests
 
         await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => ValueTask.CompletedTask);
 
-        Assert.Equal("acme", unitOfWork.TenantId);
-        Assert.False(unitOfWork.IsReadOnly);
+        Assert.Equal("acme", unitOfWork.Options.TenantId);
+        Assert.False(unitOfWork.Options.IsReadOnly);
     }
 
     [Theory]
@@ -169,7 +165,7 @@ public sealed class UnitOfWorkMiddlewareTests
 
         await new UnitOfWorkMiddleware().InvokeAsync(context, static _ => ValueTask.CompletedTask);
 
-        Assert.Equal(expected, unitOfWork.IsReadOnly);
+        Assert.Equal(expected, unitOfWork.Options.IsReadOnly);
         Assert.Equal(["begin", "commit"], unitOfWork.Calls);
     }
 

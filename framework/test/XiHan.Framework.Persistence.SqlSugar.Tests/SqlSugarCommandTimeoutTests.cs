@@ -72,7 +72,7 @@ public sealed class SqlSugarCommandTimeoutTests : IDisposable
         scope.ServiceProvider.GetRequiredService<TenantShardScope>().Bind(new TenantShard("acme", _second.ConnectionString, "sqlite"));
         var client = scope.ServiceProvider.GetRequiredService<ISqlSugarClient>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme"), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme" }, CancellationToken.None);
 
         Assert.Equal(45, client.Ado.CommandTimeOut);
         Assert.Equal(45, client.AsTenant().GetConnection("audit").Ado.CommandTimeOut);

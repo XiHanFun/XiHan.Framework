@@ -41,10 +41,17 @@ internal sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
     public UnitOfWorkState State { get; private set; } = UnitOfWorkState.NotStarted;
 
     /// <inheritdoc />
-    public string? TenantId { get; private set; }
+    public UnitOfWorkOptions Options { get; private set; } = UnitOfWorkOptions.Default;
 
-    /// <inheritdoc />
-    public bool IsReadOnly { get; private set; }
+    /// <summary>
+    /// 当前租户
+    /// </summary>
+    internal string? TenantId => Options.TenantId;
+
+    /// <summary>
+    /// 是否只读
+    /// </summary>
+    internal bool IsReadOnly => Options.IsReadOnly;
 
     /// <inheritdoc />
     /// <remarks>
@@ -70,8 +77,7 @@ internal sealed class InMemoryUnitOfWork(InMemoryStore store) : IUnitOfWork
             throw new FrameworkException(PersistenceErrors.NotSupported, $"The in-memory persistence provider does not support binding a unit of work to the named connection '{connection}'.");
         }
 
-        TenantId = options.TenantId;
-        IsReadOnly = options.IsReadOnly;
+        Options = options;
         State = UnitOfWorkState.Active;
         return Task.CompletedTask;
     }

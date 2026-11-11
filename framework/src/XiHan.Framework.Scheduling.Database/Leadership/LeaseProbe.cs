@@ -49,7 +49,7 @@ internal sealed class LeaseProbe
     {
         await using var scope = _services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), cancellationToken).ConfigureAwait(false);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true }, cancellationToken).ConfigureAwait(false);
         try
         {
             _ = await scope.ServiceProvider.GetRequiredService<IRepository<SchedulerLeaseEntity, string>>().FindAsync(_resource, cancellationToken).ConfigureAwait(false);

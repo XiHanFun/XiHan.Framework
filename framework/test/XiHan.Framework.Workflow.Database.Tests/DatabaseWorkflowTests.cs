@@ -417,7 +417,7 @@ public sealed class DatabaseWorkflowTests
         await using var scope = host.Services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         // 绑定租约表的连接（未配置为缺省落点），与租约步骤一样只在租约库上开事务
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: host.Services.GetRequiredService<DatabaseWorkflowOptions>().LockConnection), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = host.Services.GetRequiredService<DatabaseWorkflowOptions>().LockConnection }, CancellationToken.None);
         await action(scope.ServiceProvider.GetRequiredService<IRepository<WorkflowLockRecord, string>>());
         (await unitOfWork.CommitAsync(CancellationToken.None)).ThrowIfFailure();
     }

@@ -76,9 +76,9 @@ public sealed class RepositoryRegistrationTests
     public void UnitOfWorkOptions_Connection_IsNullByDefault_AndMustNotBeBlank()
     {
         Assert.Null(UnitOfWorkOptions.Default.Connection);
-        Assert.Equal("leases", new UnitOfWorkOptions(Connection: "leases").Connection);
+        Assert.Equal("leases", new UnitOfWorkOptions { Connection = "leases" }.Connection);
         Assert.Equal("leases", (UnitOfWorkOptions.Default with { Connection = "leases" }).Connection);
-        Assert.Throws<ArgumentException>(static () => new UnitOfWorkOptions(Connection: ""));
+        Assert.Throws<ArgumentException>(static () => new UnitOfWorkOptions { Connection = "" });
         Assert.Throws<ArgumentException>(static () => UnitOfWorkOptions.Default with { Connection = " " });
     }
 

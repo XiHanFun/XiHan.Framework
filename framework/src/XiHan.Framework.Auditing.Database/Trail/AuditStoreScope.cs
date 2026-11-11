@@ -41,7 +41,7 @@ internal sealed class AuditStoreScope
     {
         await using var scope = _services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: readOnly), cancellationToken).ConfigureAwait(false);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = readOnly }, cancellationToken).ConfigureAwait(false);
         try
         {
             var value = await action(scope.ServiceProvider.GetRequiredService<IRepository<AuditRecord, Guid>>(), cancellationToken).ConfigureAwait(false);

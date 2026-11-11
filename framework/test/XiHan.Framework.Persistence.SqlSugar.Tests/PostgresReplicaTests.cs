@@ -47,7 +47,7 @@ public sealed class PostgresReplicaTests : IDisposable
         await using (var scope = host.Services.CreateAsyncScope())
         {
             var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true }, CancellationToken.None);
             Assert.True(IsOnStandby(unitOfWork.ConnectionFor(typeof(ConformanceOrder))));
         }
 
@@ -76,7 +76,7 @@ public sealed class PostgresReplicaTests : IDisposable
 
         await using var read = host.Services.CreateAsyncScope();
         var readOnly = read.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
-        await readOnly.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+        await readOnly.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true }, CancellationToken.None);
         Assert.True(IsOnStandby(readOnly.ConnectionFor(typeof(ConformanceOrder))));
         Assert.Equal("mine", (await read.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>().FindAsync(id, CancellationToken.None)).ValueOrThrow().Name);
     }

@@ -101,7 +101,7 @@ public sealed class InMemoryPersistenceTests
         Assert.Equal(PersistenceErrors.NotSupported, registered.Code);
 
         var (_, unitOfWork, _) = Arrange();
-        var begun = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "leases"), CancellationToken.None));
+        var begun = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = "leases" }, CancellationToken.None));
         Assert.Equal(PersistenceErrors.NotSupported, begun.Code);
         Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
     }
@@ -150,7 +150,7 @@ public sealed class InMemoryPersistenceTests
     public async Task ReadOnlyUnitOfWork_RejectsWritesImmediately_AndCommitReturnsTheRejection()
     {
         var (store, unitOfWork, repository) = Arrange();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true }, CancellationToken.None);
         var id = Guid.NewGuid();
 
         var added = await repository.AddAsync(new Widget { Id = id }, CancellationToken.None);
@@ -176,7 +176,7 @@ public sealed class InMemoryPersistenceTests
         var early = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.CommitAsync(CancellationToken.None));
         Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, early.Code);
 
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme"), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme" }, CancellationToken.None);
         Assert.Equal("acme", unitOfWork.TenantId);
         await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None));
 

@@ -44,7 +44,7 @@ internal sealed class LeaseTable
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _unitOfWork = new UnitOfWorkOptions(Connection: lockConnection);
+        _unitOfWork = new UnitOfWorkOptions { Connection = lockConnection };
     }
 
     /// <summary>

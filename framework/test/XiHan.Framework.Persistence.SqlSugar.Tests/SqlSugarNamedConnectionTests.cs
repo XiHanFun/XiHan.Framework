@@ -87,7 +87,7 @@ public sealed class SqlSugarNamedConnectionTests : IDisposable
             // 新作用域里绑定命名连接的工作单元：事务只开在命名库上，不去等默认库的写锁（连接串忙等 2 秒，等了就会失败）
             await using var scope = host.Services.CreateAsyncScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: Leases), ctx.CancellationToken);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = Leases }, ctx.CancellationToken);
             var items = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceItem, int>>();
             (await items.AddAsync(new ConformanceItem { Id = 1, Label = "lease" }, ctx.CancellationToken)).ThrowIfFailure();
             (await unitOfWork.CommitAsync(ctx.CancellationToken)).ThrowIfFailure();
@@ -105,7 +105,7 @@ public sealed class SqlSugarNamedConnectionTests : IDisposable
         await using var host = await StartHostAsync();
         await using var scope = host.Services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true, Connection: Leases), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true, Connection = Leases }, CancellationToken.None);
 
         // 只认绑定的连接：落在默认连接的实体按落点错误拒绝，不去读不在这个工作单元里的库
         Assert.Equal(Leases, unitOfWork.ConnectionFor(typeof(ConformanceItem)).CurrentConnectionConfig.ConfigId);
@@ -116,9 +116,9 @@ public sealed class SqlSugarNamedConnectionTests : IDisposable
 
         // 绑定的连接不在客户端里：开始时就是装配错误
         await using var other = host.Services.CreateAsyncScope();
-        var missing = await Assert.ThrowsAsync<FrameworkException>(() => other.ServiceProvider.GetRequiredService<IUnitOfWork>().BeginAsync(new UnitOfWorkOptions(Connection: "archive"), CancellationToken.None));
+        var missing = await Assert.ThrowsAsync<FrameworkException>(() => other.ServiceProvider.GetRequiredService<IUnitOfWork>().BeginAsync(new UnitOfWorkOptions { Connection = "archive" }, CancellationToken.None));
         Assert.Equal(PersistenceErrors.UnknownConnection, missing.Code);
-        Assert.Throws<ArgumentException>(static () => new UnitOfWorkOptions(Connection: " "));
+        Assert.Throws<ArgumentException>(static () => new UnitOfWorkOptions { Connection = " " });
     }
 
     [Fact]

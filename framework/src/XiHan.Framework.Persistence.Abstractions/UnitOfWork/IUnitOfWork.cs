@@ -20,20 +20,13 @@ public interface IUnitOfWork
     UnitOfWorkState State { get; }
 
     /// <summary>
-    /// 当前租户
+    /// 开启时给的选项
     /// </summary>
     /// <remarks>
-    /// 无租户为 <see langword="null"/>
+    /// 未开启时为 <see cref="UnitOfWorkOptions.Default"/>。租户、只读、命名连接与读主库都从这里读：以后选项加字段，接口不必跟着加成员（ADR-0141）。
+    /// 只读工作单元不开数据库事务，写入以 <see cref="PersistenceErrors.ReadOnly"/> 拒绝
     /// </remarks>
-    string? TenantId { get; }
-
-    /// <summary>
-    /// 是否只读
-    /// </summary>
-    /// <remarks>
-    /// 只读工作单元不开数据库事务，写入以 <see cref="PersistenceErrors.ReadOnly"/> 拒绝；拒绝过写入的工作单元提交时回滚并返回同一错误
-    /// </remarks>
-    bool IsReadOnly { get; }
+    UnitOfWorkOptions Options { get; }
 
     /// <summary>
     /// 是否已开数据库事务

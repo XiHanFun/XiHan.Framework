@@ -8,16 +8,32 @@ namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 /// <summary>
 /// 开启工作单元的选项
 /// </summary>
-/// <param name="TenantId">当前租户；多租户实体据此写入与过滤</param>
-/// <param name="IsReadOnly">只读：不开数据库事务，仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，Provider 的直接写入入口抛出携带它的异常。Transaction 阶段为只读操作开只读工作单元</param>
-/// <param name="Connection">绑定的命名连接，见 <see cref="Connection"/></param>
+/// <remarks>
+/// 字段都是 <c>init</c> 属性：以后加选项只加属性，构造与 <see cref="IUnitOfWork"/> 都不变（ADR-0141）
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly = false, string? Connection = null)
+public sealed record UnitOfWorkOptions
 {
     /// <summary>
     /// 无租户、可写、不绑定连接
     /// </summary>
     public static UnitOfWorkOptions Default { get; } = new();
+
+    /// <summary>
+    /// 当前租户
+    /// </summary>
+    /// <remarks>
+    /// 多租户实体据此写入与过滤；<see langword="null"/> 为平台
+    /// </remarks>
+    public string? TenantId { get; init; }
+
+    /// <summary>
+    /// 只读
+    /// </summary>
+    /// <remarks>
+    /// 不开数据库事务，仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/>，Provider 的直接写入入口抛出携带它的异常。Transaction 阶段为只读操作开只读工作单元
+    /// </remarks>
+    public bool IsReadOnly { get; init; }
 
     /// <summary>
     /// 绑定的命名连接
@@ -29,8 +45,8 @@ public sealed record UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly 
     public string? Connection
     {
         get => field;
-        init => field = Validate(value);
-    } = Validate(Connection);
+        init => field = value is null || !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The connection name must not be blank.", nameof(Connection));
+    }
 
     /// <summary>
     /// 只读工作单元也读主库
@@ -39,10 +55,4 @@ public sealed record UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly 
     /// 缺省为假：配了从库的 Provider 让只读工作单元读从库。读到落后的数据会放行不该放行的调用时设它（框架的授予与租户目录读取，ADR-0122）。只读的其余语义不变：不开事务，写入照样拒绝。可写工作单元本来就读主库，没有从库的 Provider 上也没有作用
     /// </remarks>
     public bool ReadsPrimary { get; init; }
-
-    /// <summary>
-    /// 核对连接名：<see langword="null"/> 或非空白
-    /// </summary>
-    private static string? Validate(string? connection)
-        => connection is null || !string.IsNullOrWhiteSpace(connection) ? connection : throw new ArgumentException("The connection name must not be blank.", nameof(connection));
 }

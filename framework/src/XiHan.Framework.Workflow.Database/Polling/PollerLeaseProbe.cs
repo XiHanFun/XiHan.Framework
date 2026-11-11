@@ -37,7 +37,7 @@ internal sealed class PollerLeaseProbe
     {
         ArgumentNullException.ThrowIfNull(options);
         _services = services ?? throw new ArgumentNullException(nameof(services));
-        _unitOfWork = new UnitOfWorkOptions(IsReadOnly: true, Connection: options.LockConnection);
+        _unitOfWork = new UnitOfWorkOptions { IsReadOnly = true, Connection = options.LockConnection };
     }
 
     /// <summary>

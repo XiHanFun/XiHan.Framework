@@ -145,7 +145,7 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 
         // 没有 Transaction 阶段代劳，工作单元自己开；租户由调用方给出，与绑定的租户一致
         var unitOfWork = services.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(tenantId, IsReadOnly: true), cancellationToken);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = tenantId, IsReadOnly = true }, cancellationToken);
         try
         {
             var invoices = services.GetRequiredService<IRepository<Invoice, Guid>>();

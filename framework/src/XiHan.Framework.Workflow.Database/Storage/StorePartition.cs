@@ -22,9 +22,9 @@ internal static class StorePartition
     public static void Ensure(IUnitOfWork unitOfWork, string? tenantId)
     {
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        if (!string.Equals(unitOfWork.TenantId, tenantId, StringComparison.Ordinal))
+        if (!string.Equals(unitOfWork.Options.TenantId, tenantId, StringComparison.Ordinal))
         {
-            throw new InvalidOperationException($"The workflow store was asked for the partition of tenant '{tenantId}' but the unit of work belongs to tenant '{unitOfWork.TenantId}'.");
+            throw new InvalidOperationException($"The workflow store was asked for the partition of tenant '{tenantId}' but the unit of work belongs to tenant '{unitOfWork.Options.TenantId}'.");
         }
     }
 

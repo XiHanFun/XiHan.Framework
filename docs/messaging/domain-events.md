@@ -221,7 +221,7 @@ if (pending.Count > 0)
 {
     // 派发器由 AddDomainEvent 注册；派发成功会清空各聚合的缓冲
     var dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
-    (await dispatcher.DispatchAsync(pending, unitOfWork.TenantId, cancellationToken)).ThrowIfFailure();
+    (await dispatcher.DispatchAsync(pending, unitOfWork.Options.TenantId, cancellationToken)).ThrowIfFailure();
 }
 
 (await unitOfWork.CommitAsync(cancellationToken)).ThrowIfFailure();

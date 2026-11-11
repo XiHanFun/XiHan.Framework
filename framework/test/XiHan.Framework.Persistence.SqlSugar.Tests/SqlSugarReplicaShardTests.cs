@@ -69,7 +69,7 @@ public sealed class SqlSugarReplicaShardTests : IDisposable
         await using var scope = host.Services.CreateAsyncScope();
         scope.ServiceProvider.GetRequiredService<TenantShardScope>().Bind(new TenantShard("acme", _shard.ConnectionString, "sqlite"));
         var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme", IsReadOnly: true), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme", IsReadOnly = true }, CancellationToken.None);
 
         Assert.Equal("shard", unitOfWork.ConnectionFor(typeof(ConformanceNote)).Ado.GetString(ReplicatedSqlite.ReadMarker));
         Assert.Equal("replica-a", unitOfWork.ConnectionFor(typeof(ConformanceOrder)).Ado.GetString(ReplicatedSqlite.ReadMarker));
@@ -117,7 +117,7 @@ public sealed class SqlSugarReplicaShardTests : IDisposable
         {
             scope.ServiceProvider.GetRequiredService<TenantShardScope>().Bind(shard);
             var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme", IsReadOnly: true), CancellationToken.None);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme", IsReadOnly = true }, CancellationToken.None);
             var connection = unitOfWork.ConnectionFor(typeof(ConformanceNote));
 
             Assert.Equal("shard-replica", connection.Ado.GetString(ReplicatedSqlite.ReadMarker));
@@ -129,7 +129,7 @@ public sealed class SqlSugarReplicaShardTests : IDisposable
         {
             scope.ServiceProvider.GetRequiredService<TenantShardScope>().Bind(shard);
             var unitOfWork = scope.ServiceProvider.GetRequiredService<SqlSugarUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme"), CancellationToken.None);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme" }, CancellationToken.None);
 
             Assert.Equal("shard", unitOfWork.ConnectionFor(typeof(ConformanceNote)).Ado.GetString(ReplicatedSqlite.ReadMarker));
         }

@@ -43,7 +43,7 @@ public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
         // 只读只看本次调用自己的契约：不带操作描述的调用（消息处理器、作业、直接交给 App.InvokeAsync 的处理器）可写；
         // 只读不跨调用传播，嵌套调用在自己的作用域里按自己的契约开工作单元
         var readOnly = context.GetOperation().Match(static operation => operation.Contract.IsReadOnly, static () => false);
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(context.GetSecurity().Tenant?.Id, readOnly), context.CancellationToken).ConfigureAwait(false);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = context.GetSecurity().Tenant?.Id, IsReadOnly = readOnly }, context.CancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -116,7 +116,7 @@ public sealed class UnitOfWorkMiddleware : IPipelineMiddleware
             return Error.Validation(PersistenceErrors.EventsUndispatched, PersistenceMessages.EventsUndispatched, MessageArguments.Of(("aggregate", aggregates[0].GetType().Name), ("count", count)));
         }
 
-        var dispatched = await dispatcher.DispatchAsync(aggregates, unitOfWork.TenantId, context.CancellationToken).ConfigureAwait(false);
+        var dispatched = await dispatcher.DispatchAsync(aggregates, unitOfWork.Options.TenantId, context.CancellationToken).ConfigureAwait(false);
         if (dispatched.IsSuccess)
         {
             unitOfWork.DomainEvents.Clear();

@@ -96,7 +96,7 @@ public sealed class EntityFrameworkCoreNamedConnectionTests : IDisposable
         await using (var scope = host.Services.CreateAsyncScope())
         {
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true, Connection: Leases), CancellationToken.None);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true, Connection = Leases }, CancellationToken.None);
             Assert.False((await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceItem, int>>().FindAsync(1, CancellationToken.None)).HasValue);
             var placed = await Assert.ThrowsAsync<FrameworkException>(async () => await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>().FindAsync(Guid.CreateVersion7(), CancellationToken.None));
             Assert.Equal(PersistenceErrors.UnknownConnection, placed.Code);
@@ -125,7 +125,7 @@ public sealed class EntityFrameworkCoreNamedConnectionTests : IDisposable
         await using (var scope = host.Services.CreateAsyncScope())
         {
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            var missing = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "archive"), CancellationToken.None));
+            var missing = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = "archive" }, CancellationToken.None));
             Assert.Equal(PersistenceErrors.UnknownConnection, missing.Code);
             Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
         }
@@ -135,7 +135,7 @@ public sealed class EntityFrameworkCoreNamedConnectionTests : IDisposable
         {
             _ = scope.ServiceProvider.GetRequiredService<ConformanceDbContext>();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            var built = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: Leases), CancellationToken.None));
+            var built = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = Leases }, CancellationToken.None));
             Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, built.Code);
             Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
         }
@@ -231,7 +231,7 @@ public sealed class EntityFrameworkCoreNamedConnectionTests : IDisposable
     {
         await using var scope = host.Services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: Leases), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = Leases }, CancellationToken.None);
         await action(scope.ServiceProvider.GetRequiredService<IRepository<ConformanceItem, int>>(), CancellationToken.None);
         (await unitOfWork.CommitAsync(CancellationToken.None)).ThrowIfFailure();
     }

@@ -1424,7 +1424,7 @@ public abstract class RepositoryConformance
         // 管道外的只读工作单元：读与被拒绝的写入之后为假，提交返回拒绝、之后仍为假
         await using var scope = host.Services.CreateAsyncScope();
         var manual = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await manual.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None).ConfigureAwait(false);
+        await manual.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true }, CancellationToken.None).ConfigureAwait(false);
         var orders = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
         Assert.True((await orders.FindAsync(existing, CancellationToken.None).ConfigureAwait(false)).HasValue);
         Assert.Equal(PersistenceErrors.ReadOnly, (await orders.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
@@ -1435,9 +1435,9 @@ public abstract class RepositoryConformance
         // 读主库的只读工作单元仍是只读的；没有从库的 Provider 上这个选项没有作用
         await using var pinnedScope = host.Services.CreateAsyncScope();
         var pinned = pinnedScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await pinned.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true) { ReadsPrimary = true }, CancellationToken.None).ConfigureAwait(false);
+        await pinned.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true, ReadsPrimary = true }, CancellationToken.None).ConfigureAwait(false);
         var pinnedOrders = pinnedScope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
-        Assert.True(pinned.IsReadOnly);
+        Assert.True(pinned.Options.IsReadOnly);
         Assert.True((await pinnedOrders.FindAsync(existing, CancellationToken.None).ConfigureAwait(false)).HasValue);
         Assert.Equal(PersistenceErrors.ReadOnly, (await pinnedOrders.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         Assert.False(pinned.HasTransaction);
@@ -1530,7 +1530,7 @@ public abstract class RepositoryConformance
         await using (var scope = host.Services.CreateAsyncScope())
         {
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: connection), CancellationToken.None).ConfigureAwait(false);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = connection }, CancellationToken.None).ConfigureAwait(false);
             var leases = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceLease, Guid>>();
             Assert.False(unitOfWork.HasTransaction);
             Assert.False((await leases.FindAsync(committedLease, CancellationToken.None).ConfigureAwait(false)).HasValue);
@@ -1545,7 +1545,7 @@ public abstract class RepositoryConformance
         await using (var scope = host.Services.CreateAsyncScope())
         {
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: connection), CancellationToken.None).ConfigureAwait(false);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = connection }, CancellationToken.None).ConfigureAwait(false);
             (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceLease, Guid>>().AddAsync(new ConformanceLease { Id = rolledBackLease, Holder = "second" }, CancellationToken.None).ConfigureAwait(false)).ThrowIfFailure();
             Assert.True(unitOfWork.HasTransaction);
             await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
@@ -1556,7 +1556,7 @@ public abstract class RepositoryConformance
         await using (var scope = host.Services.CreateAsyncScope())
         {
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true, Connection: connection), CancellationToken.None).ConfigureAwait(false);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true, Connection = connection }, CancellationToken.None).ConfigureAwait(false);
             var leases = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceLease, Guid>>();
             Assert.Equal("first", (await leases.FindAsync(committedLease, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Holder);
             Assert.False((await leases.FindAsync(rolledBackLease, CancellationToken.None).ConfigureAwait(false)).HasValue);
@@ -1590,7 +1590,7 @@ public abstract class RepositoryConformance
         {
             await using var scope = host.Services.CreateAsyncScope();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: connection), cancellationToken).ConfigureAwait(false);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = connection }, cancellationToken).ConfigureAwait(false);
             observed.Add(unitOfWork.HasTransaction);
             (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceLease, Guid>>().AddAsync(new ConformanceLease { Id = Guid.CreateVersion7(), Holder = "bound" }, cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
             observed.Add(unitOfWork.HasTransaction);

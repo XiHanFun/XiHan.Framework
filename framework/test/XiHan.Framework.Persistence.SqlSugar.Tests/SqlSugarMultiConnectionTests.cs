@@ -150,7 +150,7 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
             var bound = await scope.ServiceProvider.GetRequiredService<TenantShardScope>().BindTenantAsync("acme", CancellationToken.None);
             Assert.Equal(_second.ConnectionString, bound.ValueOrThrow().ValueOrThrow().ConnectionString);
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme"), CancellationToken.None);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme" }, CancellationToken.None);
             (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>().AddAsync(new ConformanceOrder { Id = orderId, Name = "platform" }, CancellationToken.None)).ThrowIfFailure();
             (await scope.ServiceProvider.GetRequiredService<IRepository<ConformanceNote, Guid>>().AddAsync(new ConformanceNote { Id = noteId, Text = "tenant" }, CancellationToken.None)).ThrowIfFailure();
             (await unitOfWork.CommitAsync(CancellationToken.None)).ThrowIfFailure();
@@ -172,7 +172,7 @@ public sealed class SqlSugarMultiConnectionTests : IDisposable
         await using (var plain = host.Services.CreateAsyncScope())
         {
             var unitOfWork = plain.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme", IsReadOnly: true), CancellationToken.None);
+            await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme", IsReadOnly = true }, CancellationToken.None);
             Assert.False((await plain.ServiceProvider.GetRequiredService<IRepository<ConformanceNote, Guid>>().FindAsync(noteId, CancellationToken.None)).HasValue);
             await unitOfWork.RollbackAsync(CancellationToken.None);
         }

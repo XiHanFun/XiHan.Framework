@@ -112,10 +112,17 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     public UnitOfWorkState State { get; private set; } = UnitOfWorkState.NotStarted;
 
     /// <inheritdoc />
-    public string? TenantId { get; private set; }
+    public UnitOfWorkOptions Options { get; private set; } = UnitOfWorkOptions.Default;
 
-    /// <inheritdoc />
-    public bool IsReadOnly { get; private set; }
+    /// <summary>
+    /// 当前租户
+    /// </summary>
+    internal string? TenantId => Options.TenantId;
+
+    /// <summary>
+    /// 是否只读
+    /// </summary>
+    internal bool IsReadOnly => Options.IsReadOnly;
 
     /// <inheritdoc />
     /// <remarks>
@@ -178,8 +185,7 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     private void Activate(UnitOfWorkOptions options)
     {
         _bound = options.Connection;
-        TenantId = options.TenantId;
-        IsReadOnly = options.IsReadOnly;
+        Options = options;
         State = UnitOfWorkState.Active;
     }
 

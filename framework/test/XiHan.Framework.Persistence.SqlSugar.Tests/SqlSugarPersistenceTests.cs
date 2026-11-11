@@ -283,7 +283,7 @@ public sealed class SqlSugarPersistenceTests : IDisposable
         await using var host = await _database.StartHostAsync();
         await using var scope = host.Services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true }, CancellationToken.None);
         var repository = scope.ServiceProvider.GetRequiredService<IRepository<ConformanceOrder, Guid>>();
 
         var added = await repository.AddAsync(new ConformanceOrder { Id = Guid.CreateVersion7() }, CancellationToken.None);
@@ -303,7 +303,7 @@ public sealed class SqlSugarPersistenceTests : IDisposable
 
         await using var scope = host.Services.CreateAsyncScope();
         var unitOfWork = (SqlSugarUnitOfWork)scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true), CancellationToken.None);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true }, CancellationToken.None);
 
         // 直接用客户端写入之前的事务入口：只读工作单元抛出携带 PERSISTENCE_UNEXPECTED_001 的异常，调用方的写入不会执行
         var thrown = await Assert.ThrowsAsync<FrameworkException>(async () => await unitOfWork.EnsureTransactionAsync(CancellationToken.None));
@@ -329,8 +329,8 @@ public sealed class SqlSugarPersistenceTests : IDisposable
         var early = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.CommitAsync(CancellationToken.None));
         Assert.Equal(PersistenceErrors.InvalidUnitOfWorkState, early.Code);
 
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions("acme"), CancellationToken.None);
-        Assert.Equal("acme", unitOfWork.TenantId);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = "acme" }, CancellationToken.None);
+        Assert.Equal("acme", unitOfWork.Options.TenantId);
         await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(UnitOfWorkOptions.Default, CancellationToken.None));
 
         await unitOfWork.RollbackAsync(CancellationToken.None);

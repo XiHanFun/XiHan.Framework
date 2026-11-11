@@ -283,10 +283,9 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.BeginAsync(XiHan
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.DomainEvents.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.DomainEventTracker!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.HasTransaction.get -> bool
-XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.IsReadOnly.get -> bool
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.Options.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.State.get -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
-XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork.TenantId.get -> string?
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware.UnitOfWorkMiddleware() -> void
@@ -294,7 +293,6 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions!
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Connection.get -> string?
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Connection.init -> void
-XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Deconstruct(out string? TenantId, out bool IsReadOnly, out string? Connection) -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.Equals(XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions? other) -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.IsReadOnly.get -> bool
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.IsReadOnly.init -> void
@@ -302,7 +300,7 @@ XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ReadsPrima
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.ReadsPrimary.init -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.TenantId.get -> string?
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.TenantId.init -> void
-XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.UnitOfWorkOptions(string? TenantId = null, bool IsReadOnly = false, string? Connection = null) -> void
+XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkOptions.UnitOfWorkOptions() -> void
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Active = 1 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
 XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState.Committed = 2 -> XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkState
