@@ -77,7 +77,7 @@ Provider 的实测用例靠环境变量门控，没有设置时跳过：`XIHAN_T
 | 包 ID 文法 | 包名由术语表与文法推出；命名空间等于包 ID，子命名空间最多一层；类型名不带 `XiHan` 前缀；`Default`、`Core`、`Common`、`Manager`、`Helper` 不进包名 |
 | 批量优先 | 对集合的操作提供批量方法，框架内部不在循环里调单条方法 |
 | 本地化 | 消息键常量与 `en-US.json` 一一对应，十种区域文件齐全、占位符一致，调用点只用常量 |
-| 公开 API | 公开类型有 `[ApiLevel]` 与 XML 文档；`PublicAPI.Unshipped.txt` 同步更新，已发布行不改 |
+| 公开 API | 公开类型有 `[ApiLevel]` 与 XML 文档；`PublicAPI.Unshipped.txt` 同步更新；`Stable` 的已发布行不改，`Preview` / `Experimental` 的破坏登记包验证豁免并写进更新日志（ADR-0131） |
 | XML 文档 | 所有类型与成员（含私有）写中文 `<summary>`，三行、只写一句，细节进 `<remarks>` |
 
 ## 代码规范

@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:ObjectStorage:FileSystem` |
 | 依赖 | `XiHan.Framework.ObjectStorage.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -78,7 +78,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 | 类型 | 说明 |
 | --- | --- |
 | `FileSystemObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`）；启动时扫描目录；被 S3 等存储顶替（或没被选为对象存储、分片上传只是兜底选出）时只登记命名实例 Provider；常量 `HealthName` = `objectstorage.filesystem.capacity` |
-| `FileSystemBlobStore` | 实现 `IBlobStore` 与 `IBlobMultipartStore`；`RootPath`、`UsedBytes`；不经宿主使用时先调用 `InitializeAsync` |
+| `FileSystemBlobStore` | 实现 `IBlobStore` 与 `IBlobMultipartStore`；`RootPath`、`UsedBytes`；不经宿主使用时用 `CreateAsync` 创建（建目录并扫描已用量后才交出，构造不公开） |
 | `FileSystemObjectStorageOptions` | 选项；`FromConfiguration`、`FromSettings`（命名实例的设置，未知键抛出） |
 | `FileSystemBlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `filesystem` |
 
@@ -90,17 +90,16 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.FileSystem;
 
-var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = "./data/blobs", MaxTotalBytes = 64L << 20 }, TimeProvider.System);
+var store = await FileSystemBlobStore.CreateAsync(new FileSystemObjectStorageOptions { RootPath = "./data/blobs", MaxTotalBytes = 64L << 20 }, TimeProvider.System, NullLoggerFactory.Instance, CancellationToken.None);
 // 扫描已用量、清理残留的临时文件与过期的分片上传
-await store.InitializeAsync(CancellationToken.None);
 
-var put = await store.PutAsync("reports", "2026/10/summary.txt", "hello"u8.ToArray(), BlobPutOptions.Default, CancellationToken.None);
+var put = await store.PutAsync(new ContainerName("reports"), new BlobKey("2026/10/summary.txt"), "hello"u8.ToArray(), BlobPutOptions.Default, CancellationToken.None);
 Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 ```
 
 ## 行为与限制
 
-- 原子性：读取方要么看到旧对象，要么看到完整的新对象。不覆盖的写入（含分片上传的完成）以不替换的移动原子占位，内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`：并发的不覆盖写入（含共享目录的多个进程）只有一个成功（ADR-0089）。
+- 原子性：读取方要么看到旧对象，要么看到完整的新对象。不覆盖的写入（含分片上传的完成）由文件系统原子判定谁先占住内容路径：Linux 与 macOS 上先以独占创建的空文件占位、再把内容原子替换上去，Windows 上不替换地改名；内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`，并发的不覆盖写入（含共享目录的多个进程）只有一个成功（ADR-0089、ADR-0168、ADR-0172）。
 - 配额：复制过程中逐段检查，超过 `MaxBlobBytes` 或 `MaxTotalBytes` 的项返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不留下内容。单进程计量正确，多进程共享目录时只是近似。
 - 列举：遍历容器目录、按序数排序、按前缀过滤，续页标记是上一页最后一个键；外部直接放进 `data/` 目录、没有元数据的文件按文件信息补一份元数据；文件名还原出的键不符合键文法的（含保留前缀 `.xihan` 下的，ADR-0090）跳过。
 - 范围读取：打开内容文件后定位到起点，只交出该段。

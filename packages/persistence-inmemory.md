@@ -13,11 +13,11 @@
 | 配置节 | `XiHan:Persistence:InMemory` |
 | 依赖 | `XiHan.Framework.Persistence.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
-存储 `InMemoryStore` 是进程内单例，按实体类型各有一张 `InMemoryTable<TEntity, TKey>`，容量有上限。工作单元 `InMemoryUnitOfWork` 是作用域服务：仓储的新增、更新、删除先写进它的覆盖层，同一工作单元里的查找与查询把覆盖层叠在表的快照上，所以能读到自己的写入。表与覆盖层只存副本，读取只交出副本。提交时给涉及的表依次加锁，校验通过后应用本工作单元的变更，跨表原子；回滚只丢弃覆盖层。
+存储 `InMemoryStore` 是进程内单例，按实体类型各有一张有界表。工作单元是作用域服务：仓储的新增、更新、删除先写进它的覆盖层，同一工作单元里的查找与查询把覆盖层叠在表的快照上，所以能读到自己的写入。表与覆盖层只存副本，读取只交出副本。提交时给涉及的表依次加锁，校验通过后应用本工作单元的变更，跨表原子；回滚只丢弃覆盖层。
 
 创建时间、修改时间、租户、并发戳与软删除按 `PersistenceConventions` 执行，语义与 EF Core、SqlSugar Provider 一致，三者通过同一套一致性用例。特性同时注册 `IIdGenerator<Guid>`（`GuidV7IdGenerator`）、Transaction 阶段的 `UnitOfWorkMiddleware` 与持久化消息目录。
 
@@ -68,10 +68,7 @@ builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());
 | --- | --- |
 | `InMemoryPersistenceFeature` | 特性入口；常量 `HealthName` 为 `persistence.inmemory.capacity` |
 | `InMemoryPersistenceOptions` | 选项：`MaxEntitiesPerType`；`FromConfiguration(configuration)` |
-| `InMemoryStore` | 单例存储；`Table<TEntity, TKey>()` 取表，`Clear()` 清空全部表，同时是健康项贡献者 |
-| `InMemoryTable<TEntity, TKey>` | 一种实体的有界表：`Find`、`Snapshot`（交出副本）、`Count`、`Capacity` |
-| `InMemoryUnitOfWork` | 作用域工作单元，带覆盖层 |
-| `InMemoryRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
+| `InMemoryStore` | 单例存储；`Clear()` 清空全部表，同时是健康项贡献者；表、工作单元与仓储实现不公开，经 `IRepository<TEntity, TKey>` 与 `IUnitOfWork` 使用 |
 
 应用代码只通过 `IRepository<TEntity, TKey>` 与 `IUnitOfWork` 使用它们；`InMemoryStore.Clear()` 可在测试之间重置数据。
 
@@ -100,10 +97,10 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
   - 不带并发戳的实体只校验行还在。
 - 更新沿用当前行的创建时间、租户与删除标记；软删除在当前行的副本上打标（调用方实例上的其他改动不写入），删除标记再同步回调用方实例。
 - 没有数据库事务，`HasTransaction` 与关系型 Provider 同义（ADR-0109）：可写工作单元里仓储第一次接受写入调用（单条，或集合非空的批量，不论结果）起为真，覆盖层从此可能有未提交、随回滚丢弃的变更；提交（含提交时校验失败）与回滚后为假，只读工作单元恒为假。
-- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）：写入在进覆盖层之前就返回 `PERSISTENCE_UNEXPECTED_001`（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败，提交回滚并返回同一错误。
+- 只读工作单元（只读操作或 `UnitOfWorkOptions { IsReadOnly = true }`）：写入在进覆盖层之前就返回 `PERSISTENCE_UNEXPECTED_001`（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败，提交回滚并返回同一错误。
 - 进程退出数据即丢失；多个进程之间不共享。
 - 健康项 `persistence.inmemory.capacity`：任一张表达到容量即 Degraded（`PERSISTENCE_UNAVAILABLE_002`，报告按实体名排序的第一个满表），否则 Ready。
-- 命名连接（ADR-0084）不支持：内存实现没有连接。实体登记到命名连接在装配时抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，`UnitOfWorkOptions(Connection: …)` 在 `BeginAsync` 抛出同码异常，不静默落在唯一的存储上。
+- 命名连接（ADR-0084）不支持：内存实现没有连接。实体登记到命名连接在装配时抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，`UnitOfWorkOptions { Connection = … }` 在 `BeginAsync` 抛出同码异常，不静默落在唯一的存储上。
 - 实体目录（ADR-0078）：表名取实体类型名，列取有公开 setter 的非集合属性、列名即属性名；库结构读取不支持，返回 `PERSISTENCE_UNAVAILABLE_008`。
 - 运行时数据源（ADR-0078）不支持：内存实现没有数据库。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。
 

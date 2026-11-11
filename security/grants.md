@@ -28,7 +28,7 @@
 4. 存储都没命中时，按登记顺序查询各 `IPermissionGrantSource`。
 5. 任一步命中即算授予命中，之后按登记顺序调用全部 `IPermissionFilter`，全部放行才算持有。
 
-存储、来源、过滤器、检查器都返回 `Result`：`GetGrantsAsync` 是 `Result<IReadOnlyCollection<string>>`，`AllowsAsync` 与 `HasPermissionAsync` 是 `Result<bool>`。没有授予是成功的空集合，读不到是失败；检查器遇到第一个失败即原样返回。
+存储、来源、过滤器、检查器都返回 `Result`：存储的 `GetManyAsync` 是与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`（检查器把用户与全部角色一次读出），来源的 `GetGrantsAsync` 是 `Result<IReadOnlyCollection<string>>`，`AllowsAsync` 与 `HasPermissionAsync` 是 `Result<bool>`。没有授予是成功的空集合，读不到是失败；检查器遇到第一个失败即原样返回。
 
 ::: warning 读不到不是没有
 授予存储、来源或过滤器读不到数据时返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束。不要用空集合或 `false` 代替：那会被判定为不持有，客户端会以为权限被收回，网关也不会重试。自己调用 `HasPermissionAsync` 的地方同样要处理失败，不能把失败当作不持有。
@@ -58,13 +58,13 @@
 
 `alice`（角色 `editor`）调用 `orders.create` 通过；`bob`（角色 `viewer`）调用 `orders.create` 得到 `SECURITY_DENIED_004`（HTTP 403）；匿名调用得到 `SECURITY_DENIED_001`（HTTP 401）。
 
-运行时增删授予用 `InMemoryPermissionGrantStore.Grant(grant)`（返回 `Result`，容量满时为 `SECURITY_UNAVAILABLE_002`）与 `Revoke(grant)`（不存在时返回 `false`），租户专属授予只能这样添加：`store.Grant(new PermissionGrant(GrantSubject.ForUser("bob"), "orders.write", "acme"))`。
+运行时增删授予用授予管理 `IPermissionGrantAdministration`（两个实现都提供）：`GrantAsync` / `RevokeAsync` 批量逐项返回结果，容量满时为 `SECURITY_UNAVAILABLE_002`，撤销不存在的授予为 `SECURITY_NOTFOUND_002`；单条用同名扩展方法。租户专属授予只能这样添加：`await grants.GrantAsync(new PermissionGrant(GrantSubject.ForUser("bob"), "orders.write", "acme"), cancellationToken)`。
 
 ## 两种授予存储
 
 | | `Security.InMemory` | `Security.Database` |
 | --- | --- | --- |
-| 装载 | 启动时读配置，运行时 `Grant` / `Revoke` 增删 | 数据库表，经 `PermissionGrantRecordStore` 批量授予、撤销 |
+| 装载 | 启动时读配置，运行时经 `IPermissionGrantAdministration` 增删 | 数据库表，经 `IPermissionGrantAdministration`（`PermissionGrantRecordStore`）批量授予、撤销 |
 | 上限 | `XiHan:Security:InMemory:MaxGrants`，缺省 10000 | 无条数上限；缓存 `CacheSize` 缺省 10000 条 |
 | 读取 | 进程内查表 | 按（主体，租户）一次查询，结果缓存 `CacheTimeToLiveSeconds`（缺省 30 秒） |
 | 适用 | 开发、测试、授予随配置提交 | 授予由管理后台维护、多实例共享的生产应用 |
@@ -116,13 +116,12 @@ app.Run();
 
 ```csharp
 using XiHan.Framework.Security.Abstractions.Permissions;
-using XiHan.Framework.Security.Database.Grants;
 
 // 作用域服务，在操作的处理器里使用
-public sealed class RoleAdministration(PermissionGrantRecordStore grants)
+public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 {
     // 一次授予多项：已存在的返回成功且不重复写
-    public ValueTask<IReadOnlyList<PermissionGrantResult>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
         => grants.GrantAsync(
         [
             new PermissionGrant(GrantSubject.ForRole("editor"), "orders.read"),
@@ -130,12 +129,12 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
         ], cancellationToken);
 
     // 不存在的授予逐项返回 SECURITY_NOTFOUND_002
-    public ValueTask<IReadOnlyList<PermissionGrantResult>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
         => grants.RevokeAsync([new PermissionGrant(GrantSubject.ForRole("editor"), "orders.write", tenantId)], cancellationToken);
 }
 ```
 
-`ListAsync(subject?, tenantId?, skip, take)` 分页列出授予行，每页最多 1000 条。行为要点：
+`ListAsync(PermissionGrantQuery)` 分页列出授予，返回 `PermissionGrantPage`（`Items` 与总数 `Total`）：按 `Subject` 过滤主体，按 `Tenant` 过滤租户（`GrantTenantFilter.Any` 缺省不过滤、`Global` 只要全局、`Of(tenantId)` 只要该租户），`Skip` / `Take`（最多 1000）越界返回 `SECURITY_VALIDATION_005`。行为要点：
 
 - 授予是平台级数据：`PermissionGrantRecord` 不实现 `IMultiTenant`，不受当前调用租户过滤。全局授予以空字符串（`PermissionGrantRecord.GlobalTenantId`）落库，契约边界仍以 `PermissionGrant.TenantId == null` 表示全局；空白租户是编程错误，在访问数据库前抛出 `ArgumentException`。
 - 授予已存在的返回成功且不重复写；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即成功。撤销不存在的授予返回 `SECURITY_NOTFOUND_002`。
@@ -270,7 +269,7 @@ public static class OfficeHoursCondition
 
 ### 配置里能写租户专属的授予吗
 
-不能，`XiHan:Security:InMemory:Grants` 里的授予都是全局的。租户专属授予在内存实现里用 `InMemoryPermissionGrantStore.Grant` 运行时添加，在数据库实现里经 `PermissionGrantRecordStore.GrantAsync` 带 `tenantId` 写入。用户授予、角色授予、来源任一命中即命中，没有「冲突」；要拿走权限用 `IPermissionFilter`。
+不能，`XiHan:Security:InMemory:Grants` 里的授予都是全局的。租户专属授予在两个实现里都经 `IPermissionGrantAdministration.GrantAsync` 带 `tenantId` 写入。用户授予、角色授予、来源任一命中即命中，没有「冲突」；要拿走权限用 `IPermissionFilter`。
 
 ### 条件引擎怎样接进授权
 

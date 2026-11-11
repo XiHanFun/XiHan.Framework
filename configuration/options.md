@@ -147,6 +147,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:Providers` | [Kernel](/packages/kernel) | `<能力 ID>` → 清单 ID，指定能力的提供者 |
 | `XiHan:Bindings` | [Kernel](/packages/kernel) | 资源绑定 |
 | `XiHan:Kernel` | [Kernel](/packages/kernel) | `StartTimeoutSeconds`、`StopTimeoutSeconds`、`FailurePolicy`、`UseBuiltInMiddleware` |
+| `XiHan:Kernel:Banner` | [Kernel](/packages/kernel) | `Enabled`：宿主启动时是否打印启动 Banner，见[装配入口](/startup/bootstrap#启动-banner) |
 | `XiHan:Kernel:Resilience` | [Kernel](/packages/kernel) | Resilience 阶段的默认策略，`Operations:<操作 ID>` 按操作覆盖，见[弹性与限流](/common/resilience) |
 | `XiHan:Persistence:InMemory` | [Persistence.InMemory](/packages/persistence-inmemory) | `MaxEntitiesPerType` |
 | `XiHan:Persistence:EntityFrameworkCore` | [Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore) | `EnsureCreated`、`HealthProbeIntervalSeconds` |
@@ -155,7 +156,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:MultiTenancy` | [MultiTenancy.Abstractions](/packages/multitenancy-abstractions) | `DefaultTenant`、`RequireTenant`、`TenantClaim`、`ValidateAgainstStore` |
 | `XiHan:MultiTenancy:InMemory` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | `MaxTenants` |
 | `XiHan:MultiTenancy:Tenants` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | 从配置装载的租户（`DisplayName`、`IsEnabled`、`Properties`） |
-| `XiHan:MultiTenancy:Database` | [MultiTenancy.Database](/packages/multitenancy-database) | `CacheSize`、`CacheTimeToLiveSeconds`、`MaxListedTenants` |
+| `XiHan:MultiTenancy:Database` | [MultiTenancy.Database](/packages/multitenancy-database) | `CacheSize`、`CacheTimeToLiveSeconds` |
 | `XiHan:Security` | [Security.Abstractions](/packages/security-abstractions) | `RequireAuthentication`、`RoleClaim` |
 | `XiHan:Security:Outbound` | [Kernel](/packages/kernel) | [出站地址策略](/security/outbound)：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Security:InMemory` | [Security.InMemory](/packages/security-inmemory) | 开发用主体与授予（`Principals`、`Grants`） |
@@ -172,7 +173,8 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:Messaging:Outbox` | [Messaging.Abstractions](/packages/messaging-abstractions) | 发件箱的 `PollIntervalSeconds`、`BatchSize`、`MaxAttempts`、`RetryDelaySeconds`、`MaxRetryDelaySeconds`、`DispatchedRetentionSeconds` |
 | `XiHan:Messaging:InMemory` | [Messaging.InMemory](/packages/messaging-inmemory) | `MaxQueuedMessages` |
 | `XiHan:Messaging:RabbitMQ` | [Messaging.RabbitMQ](/packages/messaging-rabbitmq) | `Configuration`、`QueuePrefix`、`PrefetchCount`、`HealthProbeIntervalSeconds` |
-| `XiHan:Messaging:Kafka` | [Messaging.Kafka](/packages/messaging-kafka) | `BootstrapServers`、`GroupId`、`TopicPrefix`、`HealthProbeIntervalSeconds`、`RedeliveryDelaySeconds`、`Properties:<key>` |
+| `XiHan:Messaging:Kafka` | [Messaging.Kafka](/packages/messaging-kafka) | `BootstrapServers`、`ConsumerGroup`、`TopicPrefix`、`HealthProbeIntervalSeconds`、`RedeliveryDelaySeconds`、`Properties:<key>` |
+| `XiHan:Messaging:Redis` | [Messaging.Redis](/packages/messaging-redis) | `Configuration`、`KeyPrefix`、`ConsumerGroup`、`BatchSize`、`PollIntervalSeconds`、`ClaimIdleTimeSeconds`、`MaxLength`、`HealthProbeIntervalSeconds` |
 | `XiHan:Scheduling` | [Scheduling.Abstractions](/packages/scheduling-abstractions) | 调度引擎与领导选举：轮询、租约、并发、错过阈值、历史保留 |
 | `XiHan:Scheduling:InMemory` | [Scheduling.InMemory](/packages/scheduling-inmemory) | `MaxRuns` |
 | `XiHan:Scheduling:Database` | [Scheduling.Database](/packages/scheduling-database) | `HealthProbeIntervalSeconds` |

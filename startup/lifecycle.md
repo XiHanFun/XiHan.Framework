@@ -53,7 +53,7 @@ Declared → Resolved → Configured → Started → Ready ⇄ Degraded
 
 `AddXiHan` 在容器里注册一个宿主服务，随 .NET 通用宿主启动和停止应用：
 
-1. 启动前先执行全部启动核对（见下文），任一失败即终止。
+1. 启动前先执行全部启动核对（见下文），任一失败即终止。在这之前，宿主的 `StartingAsync` 阶段已经打印了[启动 Banner](/startup/bootstrap#启动-banner)。
 2. 按能力图谱的拓扑顺序逐个启动特性：进入 `Started`，对实现了 `IHostedFeature` 的特性调用 `StartAsync`，完成后进入 `Ready`；声明的可选依赖缺失时进入 `Degraded`。只实现 `IFeature` 的特性直接从 `Started` 进入 `Ready`。
 3. 每个 `StartAsync` 受启动超时约束，超时或抛出异常即特性失败（`KERNEL_HOSTING_002`），按失败策略处理。
 4. 停止按逆拓扑顺序进行：依赖者先停，被依赖者后停，停止期间依赖仍可用。每个特性进入 `Draining`，调用 `StopAsync`，完成后进入 `Stopped`。

@@ -23,7 +23,7 @@
 | `CommitAsync(ct)` | 提交，返回 `Result`；并发冲突、标识重复、容量已满以失败结果返回 |
 | `RollbackAsync(ct)` | 回滚 |
 
-`UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 是开启选项：`TenantId` 是当前租户；`IsReadOnly` 开只读工作单元（不开事务、拒绝写入）；`Connection` 绑定一个命名连接，只在它上面读写、开事务（见[连接与运行时数据源](/persistence/connections)）；`ReadsPrimary` 让只读工作单元读主库；`UnitOfWorkOptions.Default` 是无租户、可写、不绑定连接。
+`UnitOfWorkOptions { TenantId, IsReadOnly, Connection, ReadsPrimary }` 是开启选项：`TenantId` 是当前租户；`IsReadOnly` 开只读工作单元（不开事务、拒绝写入）；`Connection` 绑定一个命名连接，只在它上面读写、开事务（见[连接与运行时数据源](/persistence/connections)）；`ReadsPrimary` 让只读工作单元读主库；`UnitOfWorkOptions.Default` 是无租户、可写、不绑定连接。
 
 工作单元由持久化 Provider 实现并注册；Provider 的特性同时把 `UnitOfWorkMiddleware` 登记到 Transaction 阶段。
 
@@ -122,7 +122,7 @@ public sealed class AdjustAmount(IRepository<Order, Guid> orders) : IOperation<A
 单例服务、`IHostedFeature` 的启动与停止、后台循环、定时清理这些代码不经管道，没有 Transaction 阶段替它们开工作单元。框架自己的发件箱投递循环与审计落库就是这样做的：每次操作建一个服务作用域，在里面开一个工作单元。
 
 1. 从根服务提供者 `CreateAsyncScope()`，一个作用域只承载一个工作单元；按租户分库时先用 `TenantShardScope.BindTenantAsync(tenantId, ct)` 绑定分片。
-2. 取 `IUnitOfWork`，`BeginAsync(UnitOfWorkOptions.Default, ct)`；读写租户数据时传 `new UnitOfWorkOptions(tenantId)`。
+2. 取 `IUnitOfWork`，`BeginAsync(UnitOfWorkOptions.Default, ct)`；读写租户数据时传 `new UnitOfWorkOptions { TenantId = tenantId }`。
 3. 取仓储读写，`CommitAsync` 并检查返回的 `Result`。
 4. 提交前任何一步抛出异常时，若工作单元仍是 `Active`，用 `CancellationToken.None` 回滚。
 
@@ -143,7 +143,7 @@ public sealed class OrderPurger(IServiceProvider services, TimeProvider clock)
         await using var scope = services.CreateAsyncScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         // 订单是多租户实体：工作单元不带租户就既看不到也写不了
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(tenantId), cancellationToken);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = tenantId }, cancellationToken);
         try
         {
             var orders = scope.ServiceProvider.GetRequiredService<IRepository<Order, Guid>>();
@@ -187,7 +187,7 @@ if (pending.Count > 0)
 {
     // 派发器由 AddDomainEvent 注册；派发成功会清空各聚合的缓冲
     var dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
-    (await dispatcher.DispatchAsync(pending, unitOfWork.TenantId, cancellationToken)).ThrowIfFailure();
+    (await dispatcher.DispatchAsync(pending, unitOfWork.Options.TenantId, cancellationToken)).ThrowIfFailure();
 }
 
 (await unitOfWork.CommitAsync(cancellationToken)).ThrowIfFailure();
@@ -195,7 +195,7 @@ if (pending.Count > 0)
 
 ## 只读操作与只读工作单元
 
-只读操作，也就是动词是 `get` / `list`，或以 `[Operation(..., ReadOnly = true)]` 声明的查询变体（`departments.tree`、`users.list-online`），在 Transaction 阶段得到只读工作单元。管道外用 `new UnitOfWorkOptions(IsReadOnly: true)` 开启的也一样：
+只读操作，也就是动词是 `get` / `list`，或以 `[Operation(..., ReadOnly = true)]` 声明的查询变体（`departments.tree`、`users.list-online`），在 Transaction 阶段得到只读工作单元。管道外用 `new UnitOfWorkOptions { IsReadOnly = true }` 开启的也一样：
 
 - 不开数据库事务；查找、查询、计数照常。
 - 仓储的新增、更新、删除与批量形式在写入时就拒绝、不碰后端，返回 `PERSISTENCE_UNEXPECTED_001`，并把工作单元记为失败：处理器忽略这个失败、照常返回成功时，提交回滚并返回同一错误，误写不会被悄悄吞掉。
@@ -207,7 +207,7 @@ if (pending.Count > 0)
 框架读取租户目录与权限授予、审计查询、探测租约时自己开只读工作单元；后台的统计、报表这类只读路径也建议用它，配了从库又要读主库时设 `ReadsPrimary`：
 
 ```csharp
-await unitOfWork.BeginAsync(new UnitOfWorkOptions(IsReadOnly: true) { ReadsPrimary = true }, cancellationToken);
+await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true, ReadsPrimary = true }, cancellationToken);
 ```
 
 ## 嵌套调用

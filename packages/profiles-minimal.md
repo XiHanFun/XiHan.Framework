@@ -13,7 +13,7 @@ Minimal 组合包（元包）：一个包引用带上原语层、内核、ASP.NE
 | 配置节 | — |
 | 依赖 | `XiHan.Framework.Primitives`、`XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Localization.InMemory` |
 | AOT | 兼容 |
-| 稳定性 | Stable |
+| 稳定性 | Preview：级别不高于组装的组件 |
 
 ## 概述
 

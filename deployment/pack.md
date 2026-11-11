@@ -173,6 +173,7 @@ Compose 用于本地联调：`stop_grace_period` 取 `shutdown.graceSeconds`，�
 | `db` | `connection:relational` | 持久化 Provider（EF Core、SqlSugar） |
 | `cache` | `cache:distributed` | `Caching.Redis` |
 | `queue` | `queue` | `Messaging.RabbitMQ` |
+| `queue` | `cache:distributed` | `Messaging.Redis`（依赖服务是 Redis） |
 | `objectstorage` | `blob` | `ObjectStorage.S3` |
 | `stream` | `stream` | `Messaging.Kafka` |
 | `nacos` | `configuration:remote` | `Configuration.Nacos` |

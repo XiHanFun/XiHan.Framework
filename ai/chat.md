@@ -133,7 +133,7 @@ app.Run();
 
 每个 Provider 有一个种类 `Kind`（必填，转成小写），由登记的 `IChatClientFactory` / `IEmbeddingGeneratorFactory` 的 `Kind` 匹配；Provider 包以 `AddAIChatClientFactory<T>()`、`AddAIEmbeddingGeneratorFactory<T>()` 登记工厂，同一种类登记两次以后者为准。Provider 名字、提示词名字与 `XiHan:AI:Knowledge:Collection` 的文法是 `^[a-z0-9][a-z0-9._-]{0,63}$`，不合法时构造选项抛出 `ArgumentException`。
 
-解析结果按名字缓存，同名并发解析只建一个实例。`Invalidate(name)` 释放缓存的实例，下次解析重建；`name` 为空时清全部。选项在装配时从配置读一次，`Invalidate` 用的仍是这份选项，改了 `XiHan:AI:Providers` 要重启应用才生效。
+解析结果按名字缓存，同名并发解析只建一个实例。`Invalidate(names)` 释放这些名字缓存的实例，下次解析重建；清全部用 `InvalidateAll()`。选项在装配时从配置读一次，`Invalidate` 用的仍是这份选项，改了 `XiHan:AI:Providers` 要重启应用才生效。
 
 直接从目录取 `IChatClient` 的调用不经提示词、护栏与工具绑定，需要这些时走 `IAIChat`。
 
@@ -143,9 +143,9 @@ app.Run();
 
 1. 提示词：`Prompt` 不为空时按 `PromptArguments` 渲染模板，结果作为首条 `System` 消息。
 2. 工具：`Tools` 列出的名字从工具目录绑定到当前调用；`Options.Tools` 会被绑定结果覆盖。
-3. 护栏：`SkipGuardrails` 为假时按登记顺序检查全部消息，任一拦截即返回。
+3. 护栏：`SkipGuardrails` 为假时按登记顺序以输入方向检查全部消息，任一拦截即返回。
 4. Provider：`Provider` 为空取目录的 `DefaultProvider`（没有即 `AI_NOTFOUND_001`），解析客户端。
-5. 调用模型。
+5. 调用模型；`CompleteAsync` 拿到响应后再以输出方向检查一次，被拦下就返回错误、不交出响应。
 
 | `AIChatRequest` 成员 | 说明 |
 | --- | --- |
@@ -195,7 +195,7 @@ builder.Services.AddAIPrompt(new AIPromptTemplate("assistant", "You are the orde
 
 ## 护栏
 
-护栏实现 `IAIGuardrail`，返回 `GuardrailVerdict.Allow()` 或 `GuardrailVerdict.Block(reasonKey, reasonArguments)`。原因是消息键加参数，`IAIChat` 拦截时返回 `AI_DENIED_001`，错误细节带 `guardrail`（护栏名）与 `reason`（按当前区域渲染的原因）。护栏抛出异常或返回失败时记 `AI_UNEXPECTED_001`：抛出时 `reason` 只写异常类型的全名，完整异常进日志（每次一条 Error，带护栏名）；返回失败时 `reason` 是那个错误的文案。
+护栏实现 `IAIGuardrail`，收到一个 `GuardrailInspection`（`Direction` 与 `Messages`），返回 `GuardrailVerdict.Allow()` 或 `GuardrailVerdict.Block(reasonKey, reasonArguments)`。原因是消息键加参数，`IAIChat` 拦截时返回 `AI_DENIED_001`，错误细节带 `guardrail`（护栏名）与 `reason`（按当前区域渲染的原因）。护栏抛出异常或返回失败时记 `AI_UNEXPECTED_001`：抛出时 `reason` 只写异常类型的全名，完整异常进日志（每次一条 Error，带护栏名）；返回失败时 `reason` 是那个错误的文案。
 
 ```csharp
 using Microsoft.Extensions.AI;
@@ -213,16 +213,22 @@ public sealed class QuestionLengthGuardrail : IAIGuardrail
 
     public string Name => "question-length";
 
-    public ValueTask<Result<GuardrailVerdict>> InspectAsync(IReadOnlyList<ChatMessage> messages, CancellationToken cancellationToken)
+    public ValueTask<Result<GuardrailVerdict>> InspectAsync(GuardrailInspection inspection, CancellationToken cancellationToken)
     {
-        var tooLong = messages.Any(static message => message.Role == ChatRole.User && message.Text.Length > Limit);
+        // 只管用户的提问：模型的回答直接放行
+        if (inspection.Direction != GuardrailDirection.Input)
+        {
+            return ValueTask.FromResult(Result.Success(GuardrailVerdict.Allow()));
+        }
+
+        var tooLong = inspection.Messages.Any(static message => message.Role == ChatRole.User && message.Text.Length > Limit);
         var verdict = tooLong ? GuardrailVerdict.Block(TooLong, MessageArguments.Of(("limit", Limit))) : GuardrailVerdict.Allow();
         return ValueTask.FromResult(Result.Success(verdict));
     }
 }
 ```
 
-护栏以 `AddAIGuardrail<T>()` 登记（下一页的 `AssistantsFeature` 里有示例），按登记顺序执行，收到的是包括渲染后系统提示在内的全部消息。消息键的写法见[全球化和本地化](/common/localization)。内置的 `KeywordBlocklistGuardrail`（名字 `keyword-blocklist`）在 `XiHan:AI:Guardrails:Enabled` 为 `true` 时登记，只检查 `User` 消息：
+护栏以 `AddAIGuardrail<T>()` 登记（下一页的 `AssistantsFeature` 里有示例），按登记顺序执行。输入方向（`GuardrailDirection.Input`）在调用模型之前，收到的是包括渲染后系统提示在内的全部消息；输出方向（`GuardrailDirection.Output`）只在 `CompleteAsync` 拿到响应之后，收到的是模型这次返回的消息。流式调用只有输入方向：已经推给调用方的内容收不回来，要审查回答就用 `CompleteAsync`。只关心一个方向的护栏对另一个方向直接放行。消息键的写法见[全球化和本地化](/common/localization)。内置的 `KeywordBlocklistGuardrail`（名字 `keyword-blocklist`）在 `XiHan:AI:Guardrails:Enabled` 为 `true` 时登记，只检查输入方向的 `User` 消息：
 
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |

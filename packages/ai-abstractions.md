@@ -90,15 +90,15 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 | `AIOptions`、`Providers.AIProviderOptions` | 选项；`ResolveDefaultProvider()`、`ResolveDefaultEmbeddingProvider()` 按配置推出框架自带目录的默认名；`AIProviderOptions.DefaultTimeout` 为 100 秒 |
 | `AIServiceCollectionExtensions` | `AddAI`、`AddAIChatClientFactory<T>`、`AddAIEmbeddingGeneratorFactory<T>`、`AddAIGuardrail<T>`、`AddAIPrompt`、`AddAITool` |
 | `AIToolsFeature` | `ai.tools@1` 的特性入口 |
-| `Providers.IAIProviderCatalog` | `Providers`、`DefaultProvider`、`DefaultEmbeddingProvider`、`Find`、`ResolveChatClient`、`ResolveEmbeddingGenerator`、`Invalidate`；框架实现 `AIProviderCatalog` |
+| `Providers.IAIProviderCatalog` | `Providers`、`DefaultProvider`、`DefaultEmbeddingProvider`、`Find`、`ResolveChatClient`、`ResolveEmbeddingGenerator`、`Invalidate`；框架的实现不公开，经接口从容器取用 |
 | `Providers.IChatClientFactory`、`IEmbeddingGeneratorFactory` | Provider 包实现：`Kind` 与 `Create(AIProviderOptions)` |
 | `Chat.IAIChat`、`Chat.AIChatRequest` | 聊天入口；`CompleteAsync`、`StreamAsync` |
 | `Prompts.IAIPromptCatalog`、`Prompts.AIPromptTemplate` | 提示词目录与模板；`Render`、`Placeholders` |
-| `Guardrails.IAIGuardrail`、`GuardrailVerdict`、`KeywordBlocklistGuardrail`、`AIGuardrailOptions` | 护栏 |
+| `Guardrails.IAIGuardrail`、`GuardrailInspection`、`GuardrailDirection`、`GuardrailVerdict`、`KeywordBlocklistGuardrail`、`AIGuardrailOptions` | 护栏：输入方向在调用模型前，输出方向在非流式调用拿到响应后 |
 | `Tools.IAIToolCatalog`、`Tools.OperationAIFunction`、`Tools.AIToolNameConvention` | 工具目录、操作工具（`OperationId`）、命名约定（`Derive`、`DescriptionKeyOf`，上限 64） |
 | `Knowledge.IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy` | 流水线；`KnowledgeIngestorExtensions` 提供单篇的 `IngestAsync` 与 `RemoveAsync` |
 | `Knowledge.KnowledgeMetadataKeys` | 框架认识的块元数据键：`Title`（`title`）、`Source`（`source`），提示增强依次用它们写片段的来源，都没有时用文档 ID |
-| `Knowledge.IKnowledgeStore` | Provider 契约：`UpsertAsync`、`DeleteAsync`、`TrimAsync`（删一篇文档里块序号不小于给定值的记录）、`SearchAsync`（按 `Score` 降序） |
+| `Knowledge.IKnowledgeStore` | Provider 契约：`UpsertAsync`、`DeleteAsync`、`TrimAsync`（按 `KnowledgeTrim` 列表删每篇文档里块序号不小于给定值的记录）、`SearchAsync`（收 `KnowledgeSearch`：向量、条数、过滤与最低得分，按 `Score` 降序） |
 | `Knowledge.KnowledgeIngestRequest`、`KnowledgeQuery`、`KnowledgeRecord`、`RetrievedChunk`、`RetrievalFilter`、`ChunkingOptions`、`KnowledgeOptions` | 知识库的数据类型；`KnowledgeRecord.IdOf(documentId, chunkIndex)` 生成 `<documentId>#<chunkIndex>` |
 | `AIIdentifiers` | 名字文法 `^[a-z0-9][a-z0-9._-]{0,63}$`，工具名 `^[A-Za-z0-9_-]{1,64}$` |
 | `AIErrors`、`AIMessages` | 错误码与消息键 |
@@ -171,7 +171,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 
 ## 行为与限制
 
-- 目录按名字缓存实例；`Invalidate(name)` 释放缓存（实现了 `IDisposable` 的实例被释放），下次解析重建。选项在装配时读一次，`Invalidate` 不重读配置。
+- 目录按名字缓存实例；`Invalidate(names)` / `InvalidateAll()` 释放缓存（实现了 `IDisposable` 的实例被释放），下次解析重建。选项在装配时读一次，`Invalidate` 不重读配置。
 - 默认名由目录给出（ADR-0110）：`IAIChat` 不写 Provider 时取 `DefaultProvider`，摄入与检索依次取请求的 `Provider`、`Knowledge:EmbeddingProvider`、`DefaultEmbeddingProvider`，都不读 `XiHan:AI` 的默认键。框架的 `AIProviderCatalog` 从配置推出默认名；应用替换的目录（如 Provider 存在库里）给出自己的。两个属性是同步的、不做 I/O，要查库的目录持内存快照。没有默认又没写名字时 `AI_NOTFOUND_001`（`ai.provider.default_missing` / `ai.provider.embedding_default_missing`）。
 - `IAIChat` 是作用域服务；没有当前调用时工具绑定到本作用域新建的调用上下文。
 - 护栏按登记顺序执行，只作用于 `IAIChat`；直接从目录取客户端的调用不经护栏。

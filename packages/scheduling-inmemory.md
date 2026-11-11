@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Scheduling`（引擎选项）、`XiHan:Scheduling:InMemory`（`MaxRuns`） |
 | 依赖 | `XiHan.Framework.Scheduling.Abstractions`；无第三方依赖 |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`InMemoryJobStore`、`InMemoryLeaderElection` 实现 Preview 的存储与选主接口，为 Preview |
 
 ## 概述
 
@@ -83,7 +83,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 | `InMemoryJobStore` | 进程内 `IJobStore`，`IsShared` 为假 |
 | `InMemoryLeaderElection` | 进程内 `ILeaderElection` |
 | `InMemorySchedulingOptions` | `MaxRuns` |
-| `InMemorySchedulingHealthContributor` | 健康项 `scheduling.inmemory.leader`（`InMemorySchedulingFeature.HealthName`） |
+| `InMemorySchedulingFeature.HealthName` | 健康项名 `scheduling.inmemory.leader`（实现不公开） |
 
 ## 使用示例
 
@@ -96,7 +96,7 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Scheduling.InMemory;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddJob<HeartbeatJob>("heartbeat", JobSchedule.Every(TimeSpan.FromSeconds(10)));
+builder.Services.AddJob<HeartbeatJob>(new JobName("heartbeat"), JobSchedule.Every(TimeSpan.FromSeconds(10)));
 builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 
 var app = builder.Build();
@@ -105,7 +105,7 @@ app.Run();
 
 public sealed class HeartbeatJob(ILogger<HeartbeatJob> logger) : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
     {
         logger.LogInformation("Heartbeat run {RunId}.", run.Id);
         return ValueTask.FromResult(Result.Success());

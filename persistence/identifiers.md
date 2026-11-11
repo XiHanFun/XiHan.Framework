@@ -144,7 +144,7 @@ EF Core 的 `DbContext` 里为它配置 `modelBuilder.Entity<Invoice>(static e =
 | 21–12（10 位） | 机器位 | 0–1023 |
 | 11–0（12 位） | 同一毫秒内的序列 | 0–4095 |
 
-这些位宽与上限是 `SnowflakeId` 上的常量：`TimestampBits`、`WorkerIdBits`、`SequenceBits`、`MaxWorkerId`、`MaxSequence`、`MaxTimestamp`。缺省 epoch 是 `2026-01-01T00:00:00Z`，41 位毫秒可用到 2095 年前后；用尽时 `NewId()` 抛出 `InvalidOperationException`。
+`SnowflakeId` 只能经 `SnowflakeId.Parse(value, epoch)` 从值分解得到，值与时刻、节点、序号总是一致。这些位宽与上限是它上面的常量：`TimestampBits`、`WorkerIdBits`、`SequenceBits`、`MaxWorkerId`、`MaxSequence`、`MaxTimestamp`。缺省 epoch 是 `2026-01-01T00:00:00Z`，41 位毫秒可用到 2095 年前后；用尽时 `NewId()` 抛出 `InvalidOperationException`。
 
 ## 配置
 
@@ -164,7 +164,7 @@ EF Core 的 `DbContext` 里为它配置 `modelBuilder.Entity<Invoice>(static e =
 雪花标识的唯一性完全依赖机器位独占，分配的每一步都选择拒绝生成而不是冒重复的风险。
 
 - 固定机器位（`FixedWorkerIdSource`）：取配置的 `WorkerId`，不登记健康项。
-- 租约分配（`LeasedWorkerIdSource`）：启动时从 0 起逐个尝试锁资源 `persistence:snowflake:worker:<n>`，取第一个空位；1024 个都被占用时启动失败。之后每三分之一存活时间（缺省 10 秒）续约一次；分布式锁本身不续约，续约就是释放再获取同一机器位。
+- 租约分配：启动时从 0 起逐个尝试锁资源 `persistence:snowflake:worker:<n>`，取第一个空位；1024 个都被占用时启动失败。之后每三分之一存活时间（缺省 10 秒）续约一次；分布式锁本身不续约，续约就是释放再获取同一机器位。
 - 续约时空位被别的实例拿走，或锁存储不可达，都按租约丢失处理，下一轮重新分配，新机器位可能与原来不同。
 - 本地按获取时刻加存活时间判定租约有效。获取时刻取在请求发出之前，本地到期不晚于存储侧到期；到期还没续上，生成器就没有机器位，`NewId()` 抛出 `PERSISTENCE_UNAVAILABLE_005`。
 - 应用停止时释放租约。

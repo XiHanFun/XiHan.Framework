@@ -48,7 +48,7 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 2. 调用经 `App.InvokeAsync` 进入管道。内核先设置 `IInvocationAccessor.Current`，并按 Baggage 里的区域安装消息作用域，让调用链里的 `key.L()` 取到调用方语言。
 3. 中间件依次执行，每个中间件决定是否调用下一步。拒绝调用的中间件把失败结果写进上下文（`context.SetOutcome(error)`）并直接返回，后续阶段不再执行。
 4. 处理器在所有中间件之内执行，结果写进上下文。
-5. 管道返回后，宿主读取 `context.GetOutcome()`，把 `Result` 与 `Error` 翻译回协议：HTTP 为 RFC 9457 Problem Details，gRPC 为状态码与 `xihan-error-code` 尾部元数据，命令行为退出码与 stderr。
+5. 管道返回后，宿主读取 `context.FindOutcome()`，把 `Result` 与 `Error` 翻译回协议：HTTP 为 RFC 9457 Problem Details，gRPC 为状态码与 `xihan-error-code` 尾部元数据，命令行为退出码与 stderr。
 
 `ObserveMiddleware` 为每次调用开启名为 `xihan.invoke` 的 Activity，记录 `xihan.invocations` 计数与 `xihan.invocation.duration` 耗时（毫秒），并把未处理异常转成 `KERNEL_UNEXPECTED_001` 结果；取消不在这里吞掉，由 `DeadlineMiddleware` 区分超时（`KERNEL_TIMEOUT_001`）与外部取消（`KERNEL_CANCELLED_001`）。采样规则见[日志与可观测性](/common/observability)。
 
@@ -119,7 +119,7 @@ Content-Type: application/problem+json
 
 - 中间件在每次调用时从 `context.Services` 解析，不缓存调用级状态；需要作用域服务时在 `InvokeAsync` 里从 `context.Services` 取。
 - 失败用 `Error` 表达并写进上下文，不抛异常；错误码按 `<域>_<KIND>_<NNN>` 文法，文案以消息键引用，见[结果与错误处理](/web/errors)。
-- `nextStep` 之后的代码在下游全部完成后执行，可以读 `context.GetOutcome()` 观察结果，但不要改写别的阶段已经写入的结果。
+- `nextStep` 之后的代码在下游全部完成后执行，可以读 `context.FindOutcome()` 观察结果，但不要改写别的阶段已经写入的结果。
 - 调用上下文的安全信息（`context.GetSecurity()`）在 Authenticate 与 Tenant 阶段之后才有值，之前读到的是匿名上下文。
 
 ## 登记中间件
@@ -171,7 +171,7 @@ builder.AddXiHan(xihan => xihan
 // pipeline 是装配时拿到的 PipelineBuilder（FeatureContext.Pipeline 或 AppBuilder.Pipeline），应用构建之后仍可以成组改动
 // 一组中间件归属同一个清单 ID：组内只能登记这个归属的中间件，约束只能挂在组内的中间件上（目标可以在组外）
 pipeline.UseOwned("xihan.plugins.audit", group => group
-    .UseNamedInstance("xihan.plugins.audit:trail", new AuditTrailMiddleware(), PipelineStage.Observe, owner: "xihan.plugins.audit")
+    .UseNamedInstance("xihan.plugins.audit:trail", new AuditTrailMiddleware(), PipelineStage.Observe, Placement.End, owner: "xihan.plugins.audit")
     .After("xihan.plugins.audit:trail", typeof(ObserveMiddleware).FullName!));
 
 // 撤回同一归属的全部中间件，返回撤回的个数
@@ -211,7 +211,7 @@ ASP.NET Core 宿主里，`app.UseXiHan()` 之后映射的最小 API 端点在 Ha
 
 ### 能不能只对某些操作生效
 
-管道对每次调用都执行，中间件自己决定是否放行：读 `context` 里的操作描述或 `GetOrigin()` 判断来源与目标，不相关的调用直接 `await nextStep(context)`。框架不提供按操作挂中间件的注册方式，这样做保证顺序只由阶段决定。
+管道对每次调用都执行，中间件自己决定是否放行：读 `context` 里的操作描述或 `FindOrigin()` 判断来源与目标，不相关的调用直接 `await nextStep(context)`。框架不提供按操作挂中间件的注册方式，这样做保证顺序只由阶段决定。
 
 ### 为什么我的中间件排在别人之前，却读不到对方写的值
 

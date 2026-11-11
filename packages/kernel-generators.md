@@ -19,8 +19,8 @@ Roslyn 源生成器：扫描标注 `[Operation]` 且实现 `IOperation<TRequest,
 
 内核零反射，运行期不读 `[Operation]`：契约要以 `OperationContract` 经 `FeatureContext.AddOperation<TOperation, TRequest, TResponse>(contract, requestInfo, responseInfo, schema)` 登记。生成器把这件事在编译期做掉，输出一个文件 `GeneratedOperations.g.cs`：
 
-- 静态类 `GeneratedOperations`，命名空间是项目的 `RootNamespace`（没有时取程序集名）。
-- 每个操作一个扩展方法 `Add<类名>(this FeatureContext)`（类名重复时依次加数字后缀），契约取自特性：ID、稳定性、`Expose`、`Policy` 或 `Permission`、`ReadOnly`；请求与响应的 `JsonTypeInfo` 取自项目里用 `[JsonSerializable]` 登记了该类型的 `JsonSerializerContext`。
+- `internal` 静态类 `GeneratedOperations`，命名空间是项目的 `RootNamespace`（没有时取程序集名）。它只在特性所在的程序集里调用，不进入项目的公开面；要让别的程序集登记这些操作，在本项目里包一个公开的扩展方法转调 `AddGeneratedOperations`。
+- 每个操作一个扩展方法 `Add<类名>(this FeatureContext)`（类名重复时依次加数字后缀），契约取自特性：ID、稳定性、`Expose`、`Policy` 或 `Permission`、`ReadOnly`，写成 `new OperationContract(id) { … }` 并只写非缺省值，枚举写成员名（ADR-0136）；请求与响应的 `JsonTypeInfo` 取自项目里用 `[JsonSerializable]` 登记了该类型的 `JsonSerializerContext`。
 - 登记全部操作的 `AddGeneratedOperations(this FeatureContext)`，在特性的 `Configure` 里调用一次。
 - 每个操作的请求与响应 JSON Schema（draft 2020-12），以 `OperationSchema` 随登记放进 `OperationDescriptor.Schema`。
 

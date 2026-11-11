@@ -17,7 +17,7 @@
 | 绑定声明 | `Binding(name, type, required = true)` | 写在清单的 `Bindings` 里；`type` 是资源类型，如 `connection:relational`、`cache:distributed` |
 | 绑定值 | `BindingValue(Name, Type, Value, Properties)` | 宿主解析出的结果：名字、类型、主值（连接字符串或地址）与其余属性；`Property(key)` 取单个属性 |
 | 解析器 | `BindingResolver.Resolve(configuration, serviceBindingRoot)` | 内核按固定顺序收集绑定 |
-| 取用 | `FeatureContext.GetBinding(name)` / `TryGetBinding(name)` | 在 `Configure` 里取；前者缺失时抛出，后者返回 `Maybe<BindingValue>` |
+| 取用 | `FeatureContext.GetBinding(name)` / `FindBinding(name)` | 在 `Configure` 里取；前者缺失时抛出，后者返回 `Maybe<BindingValue>` |
 | 来源一 | `SERVICE_BINDING_ROOT` 目录 | Service Binding 规范的目录布局，Kubernetes 里由 Secret 挂载 |
 | 来源二 | 配置节 `XiHan:Bindings:<name>` | 本地开发、Compose 与 Aspire 用环境变量注入 |
 
@@ -124,7 +124,7 @@ app.Run();
 | 必需绑定缺失 | 抛出 `KERNEL_HOSTING_001`，应用不启动 |
 | 来源声明了类型且与清单不一致 | 同上 |
 | 来源没有声明类型（空字符串） | 不比对类型，按名字匹配 |
-| 可选绑定（`required: false`）缺失 | 不报错，特性用 `TryGetBinding` 自行处理 |
+| 可选绑定（`{ Required = false }`）缺失 | 不报错，特性用 `FindBinding` 自行处理 |
 | `GetBinding` 取一个不存在的绑定 | 抛出 `KERNEL_HOSTING_001` |
 
 这正是「配置与编程错误抛异常、可恢复失败返回 `Result`」的分界：缺绑定是部署错误，不应该带着它运行，见[结果与错误处理](/web/errors)。
@@ -138,6 +138,7 @@ app.Run();
 | `db` | `connection:relational` | `Persistence.EntityFrameworkCore`、`Persistence.SqlSugar` | 交给应用传入特性的配置委托，主值是连接字符串 |
 | `cache` | `cache:distributed` | `Caching.Redis` | 主值覆盖 `XiHan:Caching:Redis:Configuration`；属性 `username`、`password` 覆盖连接字符串里的 `user`、`password` |
 | `queue` | `queue` | `Messaging.RabbitMQ` | 主值覆盖 `XiHan:Messaging:RabbitMQ:Configuration`；属性 `username`、`password` 覆盖 AMQP URI 里的用户名与密码 |
+| `queue` | `cache:distributed` | `Messaging.Redis` | 主值覆盖 `XiHan:Messaging:Redis:Configuration`；属性 `username`、`password` 覆盖连接字符串里的 `user`、`password`。绑定名与 RabbitMQ 相同（消息队列这个角色），类型是 Redis 服务；不读缓存的 `cache`，要共用一台 Redis 时让两个绑定指向它 |
 | `stream` | `stream` | `Messaging.Kafka` | 主值覆盖 `XiHan:Messaging:Kafka:BootstrapServers`；属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 覆盖 `Properties` 里的同名键（只认这四项） |
 | `nacos` | `configuration:remote` | `Configuration.Nacos` | 主值覆盖 `XiHan:Configuration:Nacos:ServerAddresses`；属性 `username`、`password` 覆盖 `Username`、`Password` |
 | `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置 |

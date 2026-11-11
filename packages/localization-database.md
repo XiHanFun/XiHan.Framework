@@ -87,7 +87,6 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 | `Translations.MessageTranslation` | 实体：`Id`（`Guid`）、`Key`（最长 256）、`Locale`（最长 35，即 `LocaleName.MaxLength`）、`Template`（长文本）、`ModifiedAt` |
 | `Translations.MessageTranslationEntry` | 要写入的一条：键、区域、模板；构造时校验 |
 | `Translations.MessageTranslationKey` | 自然键：键与区域 |
-| `Translations.MessageTranslationResult` | 批量写入或删除的一项结果：`Key` 与 `Outcome` |
 | `Translations.MessageTranslationStore` | 作用域服务：`UpsertAsync`、`RemoveAsync`、`ListAsync` |
 | `Translations.MessageTranslationLoader` | 单例：`ReloadAsync`、`LastLoadedAt`、`LastError`，同时是健康项的贡献者 |
 | `LocalizationMessages` | 本包的消息键与目录 |

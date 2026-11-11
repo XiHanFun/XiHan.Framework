@@ -102,7 +102,7 @@ using XiHan.Framework.Workflow.Abstractions.Tasks;
 
 public static class LeaveWorkflow
 {
-    public static WorkflowDefinition Build() => WorkflowDefinitionBuilder.Create("hr.leave", "请假审批")
+    public static WorkflowDefinition Build() => WorkflowDefinitionBuilder.Create(new WorkflowName("hr.leave"), "请假审批")
         .WithCategory("hr")
         .WithTimeout(TimeSpan.FromDays(7), WorkflowTimeoutAction.Terminate)
         .AddVariable("applicant", required: true)
@@ -288,9 +288,9 @@ var definition = parsed.ValueOrThrow();
 | `Status` | 状态 |
 | `CreatedFrom` / `CreatedTo` | 创建时间区间：下界含、上界不含 |
 | `Sorts` | 排序项（字段加方向），有序、可多个；空或没给时名字升序、版本降序 |
-| `Skip` / `Limit` | 缺省 0 与 100，`Limit` 最大 1000（`WorkflowDefinitionQuery.MaxLimit`） |
+| `Skip` / `Take` | 缺省 0 与 100，`Take` 最大 1000（`WorkflowDefinitionQuery.MaxTake`） |
 
-条件同时给出时取交集。过滤、排序、分页与计数都由存储执行，数据库实现是 SQL。分页越界（`Skip` 为负、`Limit` 不在 1～1000）不在构造时抛出，`QueryAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400，消息键 `workflow.definition.query_page_invalid`），不进存储；排序字段越界同样是 400。
+条件同时给出时取交集。过滤、排序、分页与计数都由存储执行，数据库实现是 SQL。分页越界（`Skip` 为负、`Take` 不在 1～1000）不在构造时抛出，`QueryAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400，消息键 `workflow.definition.query_page_invalid`），不进存储；排序字段越界同样是 400。
 
 ```csharp
 var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
@@ -303,7 +303,7 @@ var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
     // 状态升序（生命周期），同状态的创建时间降序
     Sorts = [new(WorkflowDefinitionSortField.Status), new(WorkflowDefinitionSortField.CreatedAt, Descending: true)],
     Skip = 0,
-    Limit = 20,
+    Take = 20,
 }, cancellationToken)).ValueOrThrow();
 // page.Items：这一页的摘要；page.Total：同条件的总数
 ```

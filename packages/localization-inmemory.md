@@ -13,15 +13,15 @@
 | 配置节 | `XiHan:Localization` |
 | 依赖 | `XiHan.Framework.Localization.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
-`InMemoryLocalizationFeature` 在装配时做三件事：从 `XiHan:Localization` 读 `LocalizationOptions`；注册原语层（`primitives`）与内核（`kernel`）的语言文件目录，这两层不能读嵌入资源，由本特性代为装载；登记 `MessageLocalizer`，同一个实例既是 `IMessageLocalizer`（显式区域）也是 `IMessageResolver`（环境作用域）。
+`InMemoryLocalizationFeature` 在装配时做三件事：从 `XiHan:Localization` 读 `LocalizationOptions`；注册原语层（`primitives`）与内核（`kernel`）的语言文件目录，这两层不能读嵌入资源，由本特性代为装载；登记 `InMemoryMessageLocalizer`，同一个实例既是 `IMessageLocalizer`（显式区域）也是 `IMessageResolver`（环境作用域）。
 
-启动时，特性把本地化器以默认区域设为进程默认的 `MessageScope`，于是启动日志、异常与 `Error.Message` 都有默认语言的文案；每次调用的入口由内核把 Baggage `xihan.locale` 经 `MessageLocalizer.Negotiate`（即 `LocalizationOptions.Negotiate`）协商成启用的区域，另装调用方区域的作用域，`key.L()` 与 `context.Localize`、Problem Details 因此是同一个区域。停止时不清除默认作用域，停机日志仍需要文案，下一个启动的应用会覆盖它。
+启动时，特性把本地化器以默认区域设为进程默认的 `MessageScope`，于是启动日志、异常与 `Error.Message` 都有默认语言的文案；每次调用的入口由内核把 Baggage `xihan.locale` 经 `InMemoryMessageLocalizer.Negotiate`（即 `LocalizationOptions.Negotiate`）协商成启用的区域，另装调用方区域的作用域，`key.L()` 与 `context.Localize`、Problem Details 因此是同一个区域。停止时不清除默认作用域，停机日志仍需要文案，下一个启动的应用会覆盖它。
 
-`MessageLocalizer` 在构造时取得容器里全部 `MessageCatalog` 的快照，之后不再变化；所有查找都在内存里完成，没有 IO。
+`InMemoryMessageLocalizer` 在构造时取得容器里全部 `MessageCatalog` 的快照，之后不再变化；所有查找都在内存里完成，没有 IO。
 
 ## 何时使用
 
@@ -55,7 +55,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryLocalizationFeature>());
 | 类型 | 说明 |
 | --- | --- |
 | `InMemoryLocalizationFeature` | 特性入口（`IHostedFeature`） |
-| `MessageLocalizer` | 实现 `IMessageLocalizer` 与 `IMessageResolver`；构造参数是目录集合与 `LocalizationOptions`，可在测试或工具里直接创建 |
+| `InMemoryMessageLocalizer` | 实现 `IMessageLocalizer` 与 `IMessageResolver`；构造参数是目录集合与 `LocalizationOptions`，可在测试或工具里直接创建 |
 
 ## 使用示例
 
@@ -72,7 +72,7 @@ var orders = new MessageCatalog("orders", new Dictionary<string, IReadOnlyDictio
     ["en-US"] = new Dictionary<string, string> { ["orders.order.not_found"] = "Order '{id}' was not found." },
     ["zh-CN"] = new Dictionary<string, string> { ["orders.order.not_found"] = "订单 '{id}' 不存在。" },
 });
-var localizer = new MessageLocalizer([orders], new LocalizationOptions());
+var localizer = new InMemoryMessageLocalizer([orders], new LocalizationOptions());
 
 Console.WriteLine(localizer.Localize("orders.order.not_found", "zh-TW", MessageArguments.Of(("id", 1))));
 // zh-TW 没有这条，同语言回退到 zh-CN：订单 '1' 不存在。

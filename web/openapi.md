@@ -103,7 +103,7 @@ var openApi = new OpenApiOptions
 {
     Title = "Orders API",
     Version = "v1",
-    Servers = [new OpenApiServer("https://api.example.com", "生产")],
+    Servers = [new OpenApiServer("https://api.example.com") { Description = "生产" }],
 };
 app.MapXiHanOpenApi(openApi);
 ```

@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:ObjectStorage:S3` |
 | 依赖 | `XiHan.Framework.ObjectStorage.Abstractions`；`AWSSDK.S3` |
 | AOT | 不兼容（AWS SDK 的请求编组基于运行时反射） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`S3BlobStoreProvider` 的构造依赖 Preview 的出站地址策略，为 Preview |
 
 ## 概述
 
@@ -134,7 +134,7 @@ done
 
 | 类型 | 说明 |
 | --- | --- |
-| `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替或其余能力只是兜底选出时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection`；`CreateClient(options)` 按选项建 `AmazonS3Client` |
+| `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替或其余能力只是兜底选出时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection` |
 | `S3BlobStore` | 实现 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner`；公开构造函数接收外部的 `IAmazonS3`，此时不拥有客户端 |
 | `S3ObjectStorageOptions` | 选项；`FromConfiguration(configuration, binding)`、`FromSettings`（命名实例的设置，未知键抛出） |
 | `S3BlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `s3`；每个实例按自己的端点、区域与密钥建客户端 |
@@ -163,7 +163,7 @@ var store = (await stores.GetOrAddAsync(definition, cancellationToken)).ValueOrT
 
 // S3 的命名实例同时是签名器，签出的地址直连该实例的端点
 var signer = (IBlobUrlSigner)store;
-var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlRequest.ForDownload(TimeSpan.FromMinutes(10)), cancellationToken)).ValueOrThrow();
+var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), BlobUrlRequest.ForDownload(TimeSpan.FromMinutes(10)), cancellationToken)).ValueOrThrow();
 ```
 
 `settings` 是应用保存的租户存储配置。

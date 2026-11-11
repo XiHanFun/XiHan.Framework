@@ -33,8 +33,7 @@
 | 其他类型 | 说明 |
 | --- | --- |
 | `DatabaseMultiTenancyFeature` | 特性入口（清单 `xihan.multitenancy.database`，`role: provider`）：登记 `TenantRecord` 的仓储、目录、解析器与 Tenant 阶段中间件，启动时核对持久化 Provider |
-| `DatabaseMultiTenancyOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期）、`MaxListedTenants` |
-| `TenantRecordResult` | 一项写入结果：`TenantId`、`Outcome`（`Result`） |
+| `DatabaseMultiTenancyOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
 
 ## 最小示例
 
@@ -74,7 +73,7 @@ app.Run();
     "Bindings": { "db": "Host=localhost;Database=app" },
     "MultiTenancy": {
       "RequireTenant": false,
-      "Database": { "CacheSize": 10000, "CacheTimeToLiveSeconds": 30, "MaxListedTenants": 10000 }
+      "Database": { "CacheSize": 10000, "CacheTimeToLiveSeconds": 30 }
     }
   }
 }
@@ -104,22 +103,20 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | --- | --- | --- | --- |
 | `CacheSize` | `int` | 10000 | 目录缓存条目上限，「不存在」也占一条；满时整体清空 |
 | `CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠 `Invalidate` 失效 |
-| `MaxListedTenants` | `int` | 10000 | `DatabaseTenantStore.ListAsync` 最多返回的租户数，超出部分不返回并记警告 |
 
 解析选项 `DefaultTenant`、`RequireTenant`、`ValidateAgainstStore`、`TenantClaim` 仍在 `XiHan:MultiTenancy`，见[租户解析与隔离](/multi-tenancy/resolution)。持久化 Provider 的连接来自绑定，SqlSugar 的绑定名是 `db`，见[资源绑定](/configuration/bindings)。
 
 ## 管理租户
 
-管理操作在处理器里经 `TenantRecordStore` 写入；Transaction 阶段已经开了工作单元，写入随调用一起提交：
+管理操作在处理器里经租户管理 `ITenantAdministration`（作用域服务，就是 `TenantRecordStore`）写入；Transaction 阶段已经开了工作单元，写入随调用一起提交。列出租户用 `ITenantStore.ListAsync(TenantQuery)`：
 
 ```csharp
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
-using XiHan.Framework.MultiTenancy.Database.Tenants;
 using XiHan.Framework.Primitives;
 
 // 作用域服务，在操作的处理器里使用
-public sealed class TenantOnboarding(TenantRecordStore tenants)
+public sealed class TenantOnboarding(ITenantAdministration tenants)
 {
     public async ValueTask<Result> CreateAsync(string tenantId, string displayName, string? connectionString, CancellationToken cancellationToken)
     {
@@ -131,20 +128,16 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
         }
 
         var results = await tenants.UpsertAsync([new TenantInfo { Id = tenantId, DisplayName = displayName, Properties = properties }], cancellationToken);
-        return results[0].Outcome;
+        return results[0];
     }
 
     // 整份覆盖：先读出当前记录再改启用标记写回，否则显示名与属性会被清空
-    public async ValueTask<IReadOnlyList<TenantRecordResult>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
         => await tenants.UpsertAsync([.. current.Select(static t => t with { IsEnabled = false })], cancellationToken);
 
     // 不存在的 ID 逐项返回 MULTITENANCY_NOTFOUND_001
-    public ValueTask<IReadOnlyList<TenantRecordResult>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
         => tenants.RemoveAsync(tenantIds, cancellationToken);
-
-    // 按 ID 分页列出
-    public Task<IReadOnlyList<TenantInfo>> PageAsync(int skip, int take, CancellationToken cancellationToken)
-        => tenants.ListAsync(skip, take, cancellationToken);
 }
 ```
 
@@ -154,7 +147,6 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 | --- | --- |
 | `UpsertAsync(tenants)` | 一次查询取回已有行，已有的更新、没有的新增，各用一次批量方法写入；同一批里同一租户后者整份覆盖前者，同一行只写一次，各项结果相同。整份覆盖：只想改启用标记时，先读出当前的 `TenantInfo` 再整体写回 |
 | `RemoveAsync(tenantIds)` | 一次批量删除；不存在的 ID 与同一批里重复出现的 ID 逐项返回 `MULTITENANCY_NOTFOUND_001` |
-| `ListAsync(skip, take)` | 按 ID 分页 |
 
 不合法的租户 ID 是编程错误，整批在访问数据库前抛出 `ArgumentException`；空集合直接返回空结果。这些方法由管理操作调用，操作契约要写上权限码（如 `tenants.manage`），由[授权与权限](/security/authorization)挡住无权的调用方。
 
@@ -163,8 +155,8 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 - `DatabaseTenantStore.FindAsync` 的结果按租户缓存，「不存在」也缓存；条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空，不逐条淘汰。不合法的租户 ID 直接返回无值，不查库，也不占缓存。
 - `TenantRecordStore` 在写入时就失效目录与分片解析器（`ITenantShardResolver.Invalidate`）的缓存。写入在调用方事务提交后才对其他调用可见，失效与提交之间的窗口由存活时间收敛。
 - 多实例部署时其他实例的缓存同样靠存活时间收敛，需要更快生效时调小 `CacheTimeToLiveSeconds`。
-- 绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate(tenantId)` 与 `ITenantShardResolver.Invalidate(tenantId)`，或等存活时间到期。`Invalidate()` 不带参数时清空全部。
-- `ListAsync` 不走缓存，按 ID 每页 1000 条读完；超过 `MaxListedTenants` 的部分不返回，并记一条警告。
+- 绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate([tenantId])` 与 `ITenantShardResolver.Invalidate([tenantId])`（清全部用 `InvalidateAll()``，或等存活时间到期。`Invalidate()` 不带参数时清空全部。
+- `ListAsync` 不走缓存，按 ID 排序、以偏移为续页令牌一页一页读，调用方读到令牌为空为止，不再有截断。
 
 ## 启动期核对持久化 Provider
 
@@ -174,7 +166,7 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 
 ## 行为与限制
 
-- 故障：连接失败、提交失败这类基础设施异常按 `ITenantStore` 契约原样抛出，不伪装成租户不存在；Tenant 阶段据此让调用失败，分片解析器把它映射为 `MULTITENANCY_UNAVAILABLE_002`。
+- 故障：连接失败、提交失败这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成租户不存在，也不进缓存；Tenant 阶段据此以 503 结束调用，分片解析器把它包进 `MULTITENANCY_UNAVAILABLE_002`。
 - 表结构由应用管理，`InitTables` / `EnsureCreated` 只用于开发与测试。`PropertiesJson` 用长文本类型（`text` / `nvarchar(max)` / `longtext`）。分片库的表结构同样由应用管理。
 - 测试里可以与 `Persistence.InMemory` 一起装配；本包通过 `MultiTenancy.Conformance` 的 `TenantStoreConformance` 与 `TenantShardResolverConformance`，并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。
 
@@ -197,7 +189,7 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 
 ### 为什么 `UpsertAsync` 把我的属性清空了
 
-它是整份覆盖，不是局部更新。改一个字段时先经 `ITenantStore.FindAsync` 或 `TenantRecordStore.ListAsync` 读出当前 `TenantInfo`，用 `with` 改字段后整体写回。
+它是整份覆盖，不是局部更新。改一个字段时先经 `ITenantStore.FindAsync` 或 `ITenantStore.ListAsync` 读出当前 `TenantInfo`，用 `with` 改字段后整体写回。
 
 ### 配了读写分离，目录会读到从库的旧数据吗
 

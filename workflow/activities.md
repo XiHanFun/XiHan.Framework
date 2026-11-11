@@ -123,7 +123,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 ```
 
 ::: v-pre
-`builder.Services.AddActivity<SmsActivity>(SmsActivity.TypeName)` 登记后，定义里写 `AddNode("notify", SmsActivity.TypeName, "短信通知", node => node.WithProperty("Phone", "{{ phone }}").WithProperty("Text", "申请已 {{ outcome }}").WithRetry(3, TimeSpan.FromSeconds(10), 2))`。`AddActivity` 的第三个参数是 `ActivityOutgoing`，第四个是给设计器的 `ActivityDescriptor`。运行后：流程走到 `notify` 时在当前调用的作用域里解析 `SmsActivity`，发送成功则变量里多出 `smsSent: true` 并沿出边继续；发送失败则节点记为 `Faulted`、10 秒后重试，三次都失败实例 `Faulted`，`FaultNodeId` 是 `notify`。`ActivityTypes()` 返回的描述符里也能看到 `Sms`。
+`builder.Services.AddActivity<SmsActivity>(new ActivityType(SmsActivity.TypeName))` 登记后，定义里写 `AddNode("notify", new ActivityType(SmsActivity.TypeName), "短信通知", node => node.WithProperty("Phone", "{{ phone }}").WithProperty("Text", "申请已 {{ outcome }}").WithRetry(3, TimeSpan.FromSeconds(10), 2))`。`AddActivity` 的第三个参数是 `ActivityOutgoing`，第四个是给设计器的 `ActivityDescriptor`。运行后：流程走到 `notify` 时在当前调用的作用域里解析 `SmsActivity`，发送成功则变量里多出 `smsSent: true` 并沿出边继续；发送失败则节点记为 `Faulted`、10 秒后重试，三次都失败实例 `Faulted`，`FaultNodeId` 是 `notify`。`ActivityTypes()` 返回的描述符里也能看到 `Sms`。
 :::
 
 活动的返回：
@@ -136,7 +136,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 | `TerminateInstance(reason)` | 终止实例 |
 | `CompleteWithChildren` / `SuspendWithChildren` | 同时启动子实例 |
 
-`ActivityContext` 提供 `Instance`、`Node`、`NodeInstance`、`Variables`、`State`（节点私有状态）、`Services`、`Invocation`（本次执行的调用上下文）与 `Clock`。`End` 节点带 `Outcome` 时，引擎先调用全部 `IWorkflowOutcomeHandler`（`AddWorkflowOutcomeHandler<T>()` 登记）再结束实例，审批结果回写业务表适合放在这里。
+`ActivityContext` 提供 `Instance`、`Node`、`NodeInstance`、`Variables`、`State`（节点私有状态）、`Services`、`Invocation`（本次执行的调用上下文）与 `Clock`。`Instance` 与 `NodeInstance` 是只读视图（`WorkflowInstanceView`、`WorkflowNodeInstanceView`），跟随引擎的修改；状态只经输出与结果改变，私有状态经 `State` 读写，结果处理器与指派规则拿到的实例也是同一种视图。`End` 节点带 `Outcome` 时，引擎先调用全部 `IWorkflowOutcomeHandler`（`AddWorkflowOutcomeHandler<T>()` 登记）再结束实例，审批结果回写业务表适合放在这里。
 
 ## 故障、重试与补偿
 
@@ -254,7 +254,7 @@ Provider 自己的键在各自的子节：内存实现 `XiHan:Workflow:InMemory`
 | `WORKFLOW_NOTFOUND_004` | 活动类型或指派规则类型未登记 |
 | `WORKFLOW_CONFLICT_001` | 实例状态不允许该操作 |
 | `WORKFLOW_CONFLICT_002` | 定义状态不允许该操作 |
-| `WORKFLOW_CONFLICT_003` | 书签不可恢复：实例不在运行中、键不匹配 |
+| `WORKFLOW_CONFLICT_003` | 书签不可恢复：实例不在运行中、键不匹配，或用户任务与外部任务的书签直接经引擎恢复（要经任务服务与外部任务服务） |
 | `WORKFLOW_CONFLICT_004` | 指派人已在任务上，或任务已被认领 |
 | `WORKFLOW_CONFLICT_005` | 同一关联 ID 下已有未结束的实例（`RejectActive`） |
 | `WORKFLOW_DENIED_001` | 操作者不是任务的指派人 |

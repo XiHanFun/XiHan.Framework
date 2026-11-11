@@ -119,7 +119,7 @@ public sealed record LeaderView(string Election, bool IsLeader);
 `HeartbeatFeature` 是一个依赖 `scheduling.jobs@1` 的能力包，在 `Configure` 里登记一个每 10 秒一次的作业：
 
 ```csharp
-context.Services.AddJob<HeartbeatJob>("heartbeat", JobSchedule.Every(TimeSpan.FromSeconds(10)));
+context.Services.AddJob<HeartbeatJob>(new JobName("heartbeat"), JobSchedule.Every(TimeSpan.FromSeconds(10)));
 ```
 
 作业缺省只在领导上运行（[作业与计划](/scheduling/jobs)），所以两个 Pod 里只有持有 Lease 的那个计数增长。本地运行并确认端点（在仓库根执行）：

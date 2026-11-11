@@ -91,7 +91,7 @@ app.Run();
 await using var scope = services.CreateAsyncScope();
 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 // 事务只开在 leases 上，不牵动默认连接
-await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "leases"), ct);
+await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = "leases" }, ct);
 // …经 IRepository<SyncCursor, string> 读写，然后 CommitAsync
 ```
 
@@ -100,7 +100,7 @@ await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "leases"), ct);
 命名连接解决的是「一部分平台数据要放在另一个库里、并在业务事务进行中另行提交」，用两样东西：
 
 - 实体登记到命名连接：`services.AddRepository<TEntity, TKey>(connection: "leases")`。它在那个连接上读写、建表。`connection` 为 `null` 是 Provider 的缺省落点，非空不能是空白；同一实体登记到两个不同的连接（含一次为空、一次非空）抛 `ArgumentException`。`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取登记的连接。
-- 绑定连接的工作单元：`new UnitOfWorkOptions(Connection: "leases")`，工作单元只用这个连接，事务只开在它上面，不牵动默认连接；操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接名空白抛 `ArgumentException`。
+- 绑定连接的工作单元：`new UnitOfWorkOptions { Connection = "leases" }`，工作单元只用这个连接，事务只开在它上面，不牵动默认连接；操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接名空白抛 `ArgumentException`。
 
 名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`；值不能空白。不合法时装配即抛 `ArgumentException`（消息只带名字，不带连接串）。
 

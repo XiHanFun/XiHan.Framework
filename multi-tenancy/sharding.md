@@ -17,7 +17,7 @@
 | `TenantStoreShardResolver` | 缺省解析器，从 `ITenantStore` 里租户的 `Properties` 推出分片，按租户缓存结果 |
 | `TenantShardKeys` | 租户属性键的常量 |
 | `TenantShardScope` | 作用域服务，给不经管道的作用域显式绑定分片 |
-| `context.GetTenantShard()` | 读调用上下文里的分片，`Maybe<TenantShard>` |
+| `context.FindTenantShard()` | 读调用上下文里的分片，`Maybe<TenantShard>` |
 
 两个多租户 Provider（`MultiTenancy.InMemory`、`MultiTenancy.Database`）在分片能力被选中时都注册 `TenantStoreShardResolver`，它按下面的租户属性推出分片：
 
@@ -77,7 +77,7 @@ app.UseXiHan();
 
 // 分片在 Tenant 阶段解析一次，写进调用上下文；共库租户与无租户的调用没有分片
 app.MapGet("/shard", (HttpContext http) =>
-    http.GetXiHanContext().ValueOrThrow().GetTenantShard().TryGetValue(out var shard)
+    http.FindXiHanContext().ValueOrThrow().FindTenantShard().TryGetValue(out var shard)
         ? $"{shard.TenantId} -> {shard.Provider ?? "default provider"}"
         : "shared");
 
@@ -147,7 +147,7 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 
         // 没有 Transaction 阶段代劳，工作单元自己开；租户由调用方给出，与绑定的租户一致
         var unitOfWork = services.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions(tenantId, IsReadOnly: true), cancellationToken);
+        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = tenantId, IsReadOnly = true }, cancellationToken);
         try
         {
             var invoices = services.GetRequiredService<IRepository<Invoice, Guid>>();

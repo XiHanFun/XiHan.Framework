@@ -216,7 +216,7 @@ builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.T
 [JsonSerializable(typeof(WhoAmI))]
 internal sealed partial class AppJsonContext : JsonSerializerContext;
 
-public sealed record WhoAmI(string Principal, bool IsAuthenticated, string? Tenant);
+public sealed record WhoAmI(string? Principal, bool IsAuthenticated, string? Tenant);
 ```
 
 操作契约的请求与响应类型也登记在同一个上下文里，操作的 JSON Schema 由 `Kernel.Generators` 在编译期生成。示例应用就是这样以 Native AOT 发布的，它同时装配了 HTTP、gRPC、MCP 与 CloudEvents 四个协议适配器。序列化与裁剪的完整要求见 [JSON 序列化与 Native AOT](/common/serialization)。

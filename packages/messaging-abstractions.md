@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Messaging`（`MaxAttempts`、`DeadLetterSuffix`、`InstanceId`，由 Provider 读取）、`XiHan:Messaging:Outbox` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Stable；`IMessageReplayer` 与领域事件类型（`DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher`）为 Preview |
+| 稳定性 | Stable；`IMessageReplayer` 与发件箱（`Outbox` 命名空间）为 Preview |
 
 ## 概述
 
@@ -23,12 +23,12 @@
 - 应用经 `IMessagePublisher` 发布，Provider 实现 `IMessageBroker`（发布、按订阅消费、至少一次、重试、死信）；流 Provider 另实现 `IMessageReplayer`。
 - 处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic, mode)` 订阅；订阅方式 `SubscriptionMode` 缺省 `Competing`（订阅了主题的实例里只有一个收到），`Broadcast` 是每个在线实例各收到一份（尽力而为、不进死信，[订阅方式](/messaging/pubsub)）。`MessageDispatcher` 为每条消息开新作用域、从扩展属性构造调用上下文、经完整管道执行与投递同一方式的处理器。
 - Provider 的特性先注册自己的 `IMessageBroker`，再调用 `MessagingRegistration.Configure(context)` 注册选项、派发器、`MessagingRuntime` 与缺省的 `DirectPublisher`，启停时调用 `MessagingRuntime.StartAsync` / `StopAsync`。
-- 领域事件：`AddDomainEvent<TEvent>` 登记事件到主题与 CloudEvents `type`，`DomainEventDispatcher` 实现持久化抽象的 `IDomainEventDispatcher`，在 Transaction 阶段提交前把聚合的事件发成信封。
+- 领域事件：`AddDomainEvent<TEvent>` 登记事件到主题与 CloudEvents `type`（最多 10000 种），本包实现持久化抽象的 `IDomainEventDispatcher`（登记表、映射与派发器是内部类型），在 Transaction 阶段提交前把聚合的事件发成信封。
 - 发件箱：`OutboxFeature` 把发布者换成 `OutboxPublisher`，有活动工作单元时写发件箱表，由 `OutboxDispatcher` 在提交后投递。
 
 ## 何时使用
 
-- 特性发布或订阅消息：引用本包，在清单里声明 `messaging.queue@1`；运行时用 [Messaging.InMemory](./messaging-inmemory)（随 `Profiles.Standard` 装配）、[Messaging.RabbitMQ](./messaging-rabbitmq) 或 [Messaging.Kafka](./messaging-kafka)。
+- 特性发布或订阅消息：引用本包，在清单里声明 `messaging.queue@1`；运行时用 [Messaging.InMemory](./messaging-inmemory)（随 `Profiles.Standard` 装配）、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka) 或 [Messaging.Redis](./messaging-redis)。
 - 需要事件与业务数据同事务：再装配本包的 `OutboxFeature`。
 - 写新的代理 Provider：实现 `IMessageBroker`，复用 `MessagingRegistration` 与 `MessagingRuntime`，并通过 [Messaging.Conformance](./conformance) 的 `MessageBrokerConformance`（流 Provider 还有 `MessageStreamConformance`）。
 
@@ -85,16 +85,15 @@ builder.AddXiHan(xihan => xihan
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |
 | `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约；一次投递的主题、信封、尝试号与订阅方式（`Mode`）；代理调用的派发委托 |
 | `MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按（主题，方式）分组的订阅表（`All`、`Topics`、`HandlersFor(topic, mode)`、`Add(topic, handlerType, mode)`）；一个订阅；订阅方式 `Competing` / `Broadcast` |
-| `MessageDispatcher` | 把投递变成一次内核调用，`GetDelivery(context)` 取当前投递 |
+| `MessageDispatcher` | 把投递变成一次内核调用，`FindDelivery(context)` 取当前投递 |
 | `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
 | `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](/messaging/pubsub)）；Provider 共用的装配；启停消费 |
-| `DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher` | 领域事件登记表（容量 `DefaultCapacity` 10000）、一种事件的映射（`ToEnvelope`）、派发器 |
 | `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避与保留期，`RetryDelayAfter(attempts)`） |
 | `MessagingCapabilities`、`MessagingErrors`、`MessagingMessages` | 能力 ID 与版本、错误码、消息键与消息目录 |
 
 ## 使用示例
 
-在中间件里区分消息投递与普通请求，给消息调用打上主题与尝试号（`MessageDispatcher.GetDelivery` 只在消息投递的调用里有值）：
+在中间件里区分消息投递与普通请求，给消息调用打上主题与尝试号（`MessageDispatcher.FindDelivery` 只在消息投递的调用里有值）：
 
 ```csharp
 using Microsoft.Extensions.Logging;
@@ -106,7 +105,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 {
     public async ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
-        if (MessageDispatcher.GetDelivery(context).TryGetValue(out var delivery) && delivery.Attempt > 1)
+        if (MessageDispatcher.FindDelivery(context).TryGetValue(out var delivery) && delivery.Attempt > 1)
         {
             logger.LogWarning("Retrying {MessageId} on {Topic}, attempt {Attempt}.", delivery.Envelope.Id, delivery.Topic, delivery.Attempt);
         }
@@ -144,7 +143,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 ## 相关
 
 - [消息与事件](/messaging/pubsub)
-- [Messaging.InMemory](./messaging-inmemory)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Protocols.CloudEvents](./protocols-cloudevents)
+- [Messaging.InMemory](./messaging-inmemory)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Messaging.Redis](./messaging-redis)、[Protocols.CloudEvents](./protocols-cloudevents)
 - [Persistence.Abstractions](./persistence-abstractions)：工作单元与 `IDomainEventDispatcher` 端口
 - [Conformance 一致性套件](./conformance)
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》；ADR-0012、ADR-0019、ADR-0025

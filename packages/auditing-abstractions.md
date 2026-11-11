@@ -13,11 +13,11 @@
 | 配置节 | `XiHan:Auditing` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview（`AuditEvent`、`IAuditSink` 在内核，Stable） |
+| 稳定性 | Stable（`AuditEvent`、`IAuditSink` 在内核，同为 Stable） |
 
 ## 概述
 
-内核定义审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认的 `NullAuditSink` 丢弃全部事件。本包补上产生事件与读回事件的部分：
+内核定义审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认的接收器丢弃全部事件。本包补上产生事件与读回事件的部分：
 
 - `AuditMiddleware` 挂在 Observe 阶段末尾，调用结束后按显式动作或 `AuditSelection` 决定是否记录；结果优先取管道写入的 outcome，主体与租户先取安全上下文、再回退 Baggage（ADR-0036）；接收器故障只记日志。
 - `AuditInvocationExtensions` 让处理器在调用期间写入动作、资源名与细节。
@@ -59,10 +59,10 @@ dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 | `AuditingOptions` | `Selection`、`IncludeSuccesses`、`Exclude`（init 时同样校验每一项）；`ConfigurationSection` 为 `XiHan:Auditing` |
 | `AuditSelection` | `Protected`（只记需要授权的操作：契约声明了 `Permission` 或 `Policy`）、`All`、`None`（只记显式动作） |
 | `Pipeline.AuditMiddleware` | Observe 阶段末尾的审计中间件 |
-| `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `GetAuditAction`、`GetAuditResource`、`GetAuditDetails` |
+| `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `FindAuditAction`、`FindAuditResource`、`FindAuditDetails`（只读副本） |
 | `Trail.IAuditTrail` | `QueryAsync(AuditQuery, CancellationToken)` → `Result<AuditPage>` |
-| `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`PrincipalId`、`TenantId`、`TraceId`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
-| `Trail.AuditPage` | `Events`（按写入顺序升序）与 `ContinuationToken`（没有下一页为 `null`） |
+| `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`Principal`（`AuditPrincipalFilter`）、`Tenant`（`AuditTenantFilter`）、`TraceId`、`Resource`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
+| `Trail.AuditPage` | `Items`（按写入顺序升序）与 `ContinuationToken`（没有下一页为 `null`） |
 | `AuditingFeatureContextExtensions` | `AddAuditing(this FeatureContext)`：注册消息目录 `auditing` 与选项，把中间件挂到 Observe 末尾 |
 | `AuditingErrors`、`AuditingMessages` | 错误码与消息键 |
 
@@ -100,7 +100,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 1. 清单声明 `Provides = [new CapabilityDeclaration(AuditingCapabilities.Trail, AuditingCapabilities.Version)]`，`Role = ManifestRole.Provider`，写法见[能力包与清单](/startup/features)。
 2. `Configure` 里把存储登记为单例；`context.Node.IsSelectedFor(AuditingCapabilities.Trail)` 为真时，用 `TryAddSingleton` 把同一个实例登记为 `IAuditSink` 与 `IAuditTrail`。特性先于内核的默认注册配置，所以 `TryAdd` 能先于 `NullAuditSink` 占住接收器。
 3. 同一分支里调用 `context.AddAuditing()`，注册消息目录与选项并挂上中间件；没被选中时不要调用，否则中间件会挂两次。
-4. `WriteAsync` 必须有界、不阻塞调用路径；`QueryAsync` 先调用 `query.Validate()`，续页令牌不可识别时返回 `AUDITING_VALIDATION_001`。
+4. `WriteAsync` 必须有界、不阻塞调用路径，并且不抛出：接收不下（队列满、已停止）或落地失败时自己丢弃、计数并节流告警，不把故障交给调用方；`QueryAsync` 先调用 `query.Validate()`，续页令牌不可识别时返回 `AUDITING_VALIDATION_001`。
 5. 测试项目继承 `Auditing.Conformance` 的 `AuditTrailConformance` 并通过全部用例。
 
 ## 行为与限制
@@ -108,7 +108,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 - 记录条件：有显式动作的调用总是记录；没有时只看操作调用并按 `Selection` 判定，再去掉 `Exclude` 命中的操作，非操作调用不记录。`IncludeSuccesses` 为假时成功的调用不记录。
 - 结果：管道写入的 outcome 优先；没写入而抛出了异常时，取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`，异常照常向外抛；正常返回却没写结果视为成功。
 - 接收器的写入不带调用的取消令牌，被取消的调用同样记录；接收器抛出的异常以 Error 级记一条日志，不影响调用结果。
-- 细节只允许 JSON 可表示的值，同名覆盖；资源名以 `xrn:` 文本保存。
+- 细节的值是 JSON：`AddAuditDetail(key, JsonNode?)` 追加时固化，事件的 `Details` 是 `IReadOnlyDictionary<string, JsonElement>`，内存与数据库读回同一类型；同名覆盖。资源名以 `xrn:` 文本保存，可按 `AuditQuery.Resource` 精确查询。
 - 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](/common/auditing#记录调用来源)。
 - 查询页大小 1 到 1000，缺省 100；续页令牌由实现自行校验。
 

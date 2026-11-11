@@ -163,7 +163,7 @@ public sealed class OrderReports(AppDbContext db)
 
 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明命名连接，值是连接串。名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`；值不能空白、不能写成子节，否则装配即 `ArgumentException`。
 
-EF Core 的规则是一个 `DbContext` 一个连接、建出后不换：`UnitOfWorkOptions(Connection: name)` 开启的工作单元先记下连接、再建本作用域的 `DbContext`，回调收到的绑定主值是那个连接串、属性沿用 `db` 绑定，事务只开在那个库上。所以登记到命名连接的实体（`AddRepository<TEntity, TKey>(connection)`）只能在绑定那个连接的工作单元里读写：
+EF Core 的规则是一个 `DbContext` 一个连接、建出后不换：`UnitOfWorkOptions { Connection = name }` 开启的工作单元先记下连接、再建本作用域的 `DbContext`，回调收到的绑定主值是那个连接串、属性沿用 `db` 绑定，事务只开在那个库上。所以登记到命名连接的实体（`AddRepository<TEntity, TKey>(connection)`）只能在绑定那个连接的工作单元里读写：
 
 | 情况 | 结果 |
 | --- | --- |

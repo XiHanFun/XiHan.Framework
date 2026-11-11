@@ -2,20 +2,26 @@
 
 # 发布与订阅
 
-这一页讲消息子系统的基本用法：它提供哪些能力与 Provider、消息的 CloudEvents 信封长什么样、怎样用 `IMessagePublisher` 发布、怎样写 `IMessageHandler` 并订阅主题、消息怎样经管道派发、竞争与广播两种订阅方式有什么区别，以及重试、死信、配置、健康项与错误码。读完你能让两个特性或两个服务之间通过消息解耦，并在单进程与 RabbitMQ、Kafka 之间切换而不改业务代码。前置知识是[特性与清单](/startup/features)与[执行管道](/startup/pipeline)。
+这一页讲消息子系统的基本用法：它提供哪些能力与 Provider、消息的 CloudEvents 信封长什么样、怎样用 `IMessagePublisher` 发布、怎样写 `IMessageHandler` 并订阅主题、消息怎样经管道派发、竞争与广播两种订阅方式有什么区别，以及重试、死信、配置、健康项与错误码。读完你能让两个特性或两个服务之间通过消息解耦，并在单进程与 RabbitMQ、Kafka、Redis 之间切换而不改业务代码。前置知识是[特性与清单](/startup/features)与[执行管道](/startup/pipeline)。
 
 ## 为什么需要
 
-订单创建后要通知库存、发邮件、更新报表，如果都写在下单操作里，任何一个下游变慢或出错都会拖垮下单本身，新增下游还得改下单代码。消息把「发生了什么」发到主题，关心的人各自订阅，发布方不知道也不等待订阅方。但消息系统自己有一堆细节：信封格式、租户与追踪怎样跟着消息走、失败了重试几次、多实例时谁收。框架把这些定成规范（RFC-0009《消息、CloudEvents 信封与发件箱》）：信封用 CloudEvents，投递经过与请求相同的内核管道，传输只负责至少一次投递、重试与死信。内存代理随 Standard 组合包装配，零配置可用；多实例时装配 RabbitMQ 或 Kafka 顶替。
+订单创建后要通知库存、发邮件、更新报表，如果都写在下单操作里，任何一个下游变慢或出错都会拖垮下单本身，新增下游还得改下单代码。消息把「发生了什么」发到主题，关心的人各自订阅，发布方不知道也不等待订阅方。但消息系统自己有一堆细节：信封格式、租户与追踪怎样跟着消息走、失败了重试几次、多实例时谁收。框架把这些定成规范（RFC-0009《消息、CloudEvents 信封与发件箱》）：信封用 CloudEvents，投递经过与请求相同的内核管道，传输只负责至少一次投递、重试与死信。内存代理随 Standard 组合包装配，零配置可用；多实例时装配 RabbitMQ、Kafka 或 Redis 顶替，只有 Redis 的部署也能跨进程收发消息。
 
 ## 能力与 Provider
 
 | 能力 | 含义 | 默认实现 | 显式 Provider |
 | --- | --- | --- | --- |
-| `messaging.queue@1` | 工作队列：发布、按主题消费、至少一次、重试、死信 | `Messaging.InMemory`（单进程） | `Messaging.RabbitMQ`、`Messaging.Kafka` |
+| `messaging.queue@1` | 工作队列：发布、按主题消费、至少一次、重试、死信 | `Messaging.InMemory`（单进程） | `Messaging.RabbitMQ`、`Messaging.Kafka`、`Messaging.Redis` |
 | `messaging.stream@1` | 有序分区流：在队列之上按分区键有序、按消费组保存位点、按时刻重放 | — | `Messaging.Kafka` |
 
-`Profiles.Standard` 装配了 `Messaging.InMemory`，不加 Provider 时消息只在本进程内流转、进程退出即丢失；内存代理只为本进程订阅了的主题缓冲消息。再 `UseFeature` 一个显式 Provider 就顶替它：`RabbitMQMessagingFeature` 只提供队列，`KafkaMessagingFeature` 同时提供队列与流。两个显式 Provider 同时提供 `messaging.queue` 时能力求解报 `KERNEL_CAPABILITY_004`，用 `XiHan:Providers:messaging.queue` 写清单 ID（`xihan.messaging.rabbitmq`、`xihan.messaging.kafka`）指定一个，规则见[能力图谱与 Provider](/startup/capabilities)。
+`Profiles.Standard` 装配了 `Messaging.InMemory`，不加 Provider 时消息只在本进程内流转、进程退出即丢失；内存代理只为本进程订阅了的主题缓冲消息。再 `UseFeature` 一个显式 Provider 就顶替它：
+
+- `RabbitMQMessagingFeature` 只提供队列。
+- `KafkaMessagingFeature` 同时提供队列与流。
+- `RedisMessagingFeature` 只提供队列，用 Redis Streams 与消费组。
+
+Redis Provider 不会因为装了 `Caching.Redis` 或连得上 Redis 就自动启用：它和另两个一样要显式 `UseFeature`，连不上时启动失败，不退回内存代理。两个显式 Provider 同时提供 `messaging.queue` 时能力求解报 `KERNEL_CAPABILITY_004`，用 `XiHan:Providers:messaging.queue` 写清单 ID（`xihan.messaging.rabbitmq`、`xihan.messaging.kafka`、`xihan.messaging.redis`）指定一个，规则见[能力图谱与 Provider](/startup/capabilities)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -30,7 +36,7 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<RabbitMQMessagingFeature>());
 ```
 
-连接配置（`XiHan:Messaging:RabbitMQ:Configuration`）缺失时装配失败，启动时连不上代理时启动失败（`MESSAGING_UNAVAILABLE_001`），不退回内存代理。两个 Provider 的配置与行为见[队列与流](/messaging/streams)。
+连接配置（`XiHan:Messaging:RabbitMQ:Configuration`）缺失时装配失败，启动时连不上代理时启动失败（`MESSAGING_UNAVAILABLE_001`），不退回内存代理。三个 Provider 的配置与行为见[队列与流](/messaging/streams)。
 
 ## 信封
 
@@ -172,7 +178,7 @@ public sealed class ShippingFeature : IFeature
 
 批量发布遵循批量优先约定：同一主题内保持入参顺序，空集合不触代理，重复的 `Id` 照发（去重是消费端的事）；主题不合法时每一项都是 `MESSAGING_VALIDATION_001`；内存代理容量不足时整批返回 `MESSAGING_UNAVAILABLE_002`，不写入半批；代理不可达时整批抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`。
 
-发布到没人订阅的主题照常成功：内存代理与 RabbitMQ 丢弃消息并记 Debug 日志，Kafka 的消息进主题、按保留期清理。调度、工作流等框架事件发到应用不一定订阅的主题，这是常态。
+发布到没人订阅的主题照常成功：内存代理、RabbitMQ 与 Redis 丢弃消息并记 Debug 日志（Redis 上主题的流只由订阅方建立，没有订阅者就没有流），Kafka 的消息进主题、按保留期清理。调度、工作流等框架事件发到应用不一定订阅的主题，这是常态。
 
 在调用内发布时（操作、消息处理器、作业里），`DirectPublisher` 与 `OutboxPublisher` 先从当前调用（`IInvocationAccessor`）给每个信封补上缺失的扩展：`traceparent` 取当前 Activity 或调用的追踪 ID、父跨度与采样标志，`xihantenant` 取安全上下文的租户，`xihanprincipal` 取已认证主体的 ID，`xihancorrelation` 与 `xihanlocale` 取同名 Baggage。信封上已有的扩展保持不变，要换成别的值就自己 `WithExtension`；不在调用内（单例的后台循环、自己建的作用域）发布时不补。在单例的后台服务里发布时先 `CreateAsyncScope()` 再取发布者。
 
@@ -180,7 +186,7 @@ public sealed class ShippingFeature : IFeature
 
 处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic)` 订阅；处理器注册为作用域服务，每条消息在新作用域里解析。`MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）、第几次尝试（`Attempt`，从 1 起）与订阅方式（`Mode`）。派发器 `MessageDispatcher` 为每条消息开新的作用域，用信封的扩展属性构造调用上下文（四个 `xihan*` 扩展进 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志，调用来源的协议是 `InvocationProtocols.Messaging`、目标是主题），然后经[执行管道](/startup/pipeline)的全部阶段执行，按订阅顺序依次执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。
 
-所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入与发布的消息随它提交或回滚。中间件里可以用 `MessageDispatcher.GetDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。消息没有凭据，Authenticate 阶段得到的是匿名主体；派发不写幂等键，Idempotency 阶段直接放行。
+所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入与发布的消息随它提交或回滚。中间件里可以用 `MessageDispatcher.FindDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。消息没有凭据，Authenticate 阶段得到的是匿名主体；派发不写幂等键，Idempotency 阶段直接放行。
 
 ## 订阅方式
 
@@ -213,7 +219,7 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 
 ## 重试与死信
 
-处理器返回失败或抛出异常都算投递失败。代理重试到 `XiHan:Messaging:MaxAttempts`（缺省 3，含首次），竞争订阅仍失败就进死信，广播订阅丢弃并记日志；重试之间不等待。内存代理把失败的消息以下一次尝试号重新入队到队尾，死信进该主题的有界列表 `DeadLetters(topic)`；RabbitMQ 与 Kafka 的重试与死信队列、死信主题见[队列与流](/messaging/streams)。
+处理器返回失败或抛出异常都算投递失败。代理重试到 `XiHan:Messaging:MaxAttempts`（缺省 3，含首次），竞争订阅仍失败就进死信，广播订阅丢弃并记日志；重试之间不等待。内存代理把失败的消息以下一次尝试号重新入队到队尾，死信进该主题的有界列表 `DeadLetters(topic)`；RabbitMQ、Kafka 与 Redis 的重试与死信队列、死信主题、死信流见[队列与流](/messaging/streams)。
 
 ::: warning 处理器必须能承受重复投递
 投递是至少一次：重试、重放、代理重投与发件箱的崩溃恢复都会让同一条消息再到达处理器。派发不经过幂等键，去重由处理器按信封的 `Id` + `Source` 自理。
@@ -228,11 +234,11 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 | `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 本实例在代理上的标识，广播订阅用；见[队列与流](/messaging/streams) |
 | `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 内存代理每个主题（及其死信列表）的条目上限 |
 
-非法值在装配时抛 `ArgumentException`。发件箱的 `XiHan:Messaging:Outbox:*` 见[领域事件与发件箱](/messaging/domain-events)，RabbitMQ 与 Kafka 的配置节见[队列与流](/messaging/streams)。
+非法值在装配时抛 `ArgumentException`。发件箱的 `XiHan:Messaging:Outbox:*` 见[领域事件与发件箱](/messaging/domain-events)，RabbitMQ、Kafka 与 Redis 的配置节见[队列与流](/messaging/streams)。
 
 ## 健康项与错误码
 
-内存代理的健康项 `messaging.inmemory.capacity` 在任一主题的队列排满时转为 Degraded（`MESSAGING_UNAVAILABLE_002`）；RabbitMQ 与 Kafka 的连接健康项见[队列与流](/messaging/streams)。
+内存代理的健康项 `messaging.inmemory.capacity` 在任一主题的队列排满时转为 Degraded（`MESSAGING_UNAVAILABLE_002`）；RabbitMQ、Kafka 与 Redis 的连接健康项见[队列与流](/messaging/streams)。
 
 | 错误码 | 含义 |
 | --- | --- |
@@ -248,7 +254,11 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 
 ### 发布到没人订阅的主题会报错吗
 
-不会，发布成功。内存代理与 RabbitMQ 丢弃消息并记 Debug 日志，Kafka 把消息留在主题里直到保留期结束。框架自己的调度、工作流事件就是这样发出的，应用订阅与否都行。
+不会，发布成功。内存代理、RabbitMQ 与 Redis 丢弃消息并记 Debug 日志，Kafka 把消息留在主题里直到保留期结束。框架自己的调度、工作流事件就是这样发出的，应用订阅与否都行。
+
+### 没装 RabbitMQ 时框架会自动用 Redis 当消息代理吗
+
+不会。Provider 由能力图谱按装配的特性选出，不按「连得上什么」挑选，也不自动降级：只装了 `Caching.Redis` 时消息仍走内存代理，只在本进程内流转。要用 Redis 跨进程收发消息就显式 `UseFeature<RedisMessagingFeature>()` 并配置 `XiHan:Messaging:Redis:Configuration`。它和缓存各自建连接、各读各的配置节与绑定，可以指向同一台 Redis；缓存 Redis 常用的 `allkeys-lru` 淘汰策略会删掉流，消息用的 Redis 要配 `noeviction` 或 `volatile-*`，见 [Messaging.Redis](/packages/messaging-redis)。
 
 ### 处理器一定要幂等吗
 
@@ -260,7 +270,7 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 
 ## 相关包与下一步
 
-- 包参考：[Messaging.Abstractions](/packages/messaging-abstractions)、[Messaging.InMemory](/packages/messaging-inmemory)、[Messaging.RabbitMQ](/packages/messaging-rabbitmq)、[Messaging.Kafka](/packages/messaging-kafka)
+- 包参考：[Messaging.Abstractions](/packages/messaging-abstractions)、[Messaging.InMemory](/packages/messaging-inmemory)、[Messaging.RabbitMQ](/packages/messaging-rabbitmq)、[Messaging.Kafka](/packages/messaging-kafka)、[Messaging.Redis](/packages/messaging-redis)
 - 处理器的调用上下文、Baggage 与追踪见[调用上下文](/startup/invocation-context)与[日志与可观测性](/common/observability)；租户解析见[租户解析与隔离](/multi-tenancy/resolution)
 - Provider 要通过的一致性套件见[一致性套件与门禁](/testing/conformance)
 - 下一步：[领域事件与发件箱](/messaging/domain-events)，让聚合里记录的事件随事务一起发出

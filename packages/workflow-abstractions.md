@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Workflow`（`WorkflowOptions`，由 Provider 读取） |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`（租户目录）、`XiHan.Framework.Scheduling.Abstractions`（cron）；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Preview；定义模型（`WorkflowDefinition`、`WorkflowNode`、`WorkflowTransition`、`WorkflowVariableDefinition`、`WorkflowRetryPolicy`、`WorkflowTimeoutAction`）、`WorkflowName`、`ActivityType`、状态枚举与 `WorkflowJson` 的定义部分为 Stable；`HttpActivity`、`WorkflowHttpClient` 为 Experimental |
 
 ## 概述
 
@@ -42,7 +42,7 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Assignees;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddActivity<AuditActivity>("Audit");
+builder.Services.AddActivity<AuditActivity>(new ActivityType("Audit"));
 builder.Services.AddAssigneeProvider<RoleAssigneeProvider>();
 
 public sealed class AuditActivity : IActivity
@@ -94,17 +94,18 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowDefinitionValidator` | 发布与启动前的校验，`Errors` 列出全部问题 |
 | `WorkflowJson` | 定义、实例、节点实例、书签、事件数据的 JSON 往返与深拷贝 |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionCatalogExtensions` | 定义生命周期：创建、更新、发布、新版本、停用、归档、删除、查询、活动描述符 |
-| `WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage` | 定义列表 `QueryAsync`：按关键字（名字、显示名、说明）、名字、分类、状态、创建时间区间过滤，按排序项 `Sorts`（`WorkflowDefinitionSort`：白名单字段加方向，有序、可多个、最多 6 项）排序（空时名字升序、版本降序），返回摘要的一页与总数；`Limit` 缺省 100、最大 1000，分页或排序字段越界是 `WORKFLOW_VALIDATION_002`（ADR-0096、ADR-0102） |
+| `WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage` | 定义列表 `QueryAsync`：按关键字（名字、显示名、说明）、名字、分类、状态、创建时间区间过滤，按排序项 `Sorts`（`WorkflowDefinitionSort`：白名单字段加方向，有序、可多个、最多 6 项）排序（空时名字升序、版本降序），返回摘要的一页与总数；`Take` 缺省 100、最大 1000，分页或排序字段越界是 `WORKFLOW_VALIDATION_002`（ADR-0096、ADR-0102） |
 | `WorkflowDefinitionSort`、`WorkflowInstanceSort`、`WorkflowDefinitionSortField`、`WorkflowInstanceSortField`、`WorkflowSortKeys` | 列表排序的白名单与排序键：定义 `Name` / `Title` / `Version` / `Status` / `CreatedAt` / `PublishedAt`，实例 `CreatedAt` / `EndedAt` / `Status` / `DefinitionName` / `Title`；标题按前 256 个字符（见 [工作流指南的列表排序](/workflow/definitions)，ADR-0102） |
 | `WorkflowKeyword` | 列表查询关键字的折叠与匹配规则（见 [工作流指南的关键字](/workflow/definitions)） |
-| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`（实例全部等待点的摘要 `WorkflowBookmarkSummary`，不含载荷，ADR-0096）；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法 |
+| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy`、`WorkflowReservedNames` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`（实例全部等待点的摘要 `WorkflowBookmarkSummary`，不含载荷，ADR-0096）；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法；引擎保留的变量名（`lastError`、`signal`）、子流程回调输入键与结果标签在 `WorkflowReservedNames`，引擎、目录与任务服务的实现类型不公开（ADR-0135） |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
-| `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Limit` 缺省 100、最大 1000；一组关联 ID `CorrelationIds` 最多 1000 个、空集合不匹配，只取顶层 `TopLevelOnly`，关键字 `Keyword` 匹配实例标题或关联 ID，排序项 `Sorts`（`WorkflowInstanceSort`，有序、可多个、最多 5 项）空时创建时间降序，ADR-0096、ADR-0099、ADR-0102） |
+| `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Take` 缺省 100、最大 1000；一组关联 ID `CorrelationIds` 最多 1000 个、空集合不匹配，只取顶层 `TopLevelOnly`，关键字 `Keyword` 匹配实例标题或关联 ID，排序项 `Sorts`（`WorkflowInstanceSort`，有序、可多个、最多 5 项）空时创建时间降序，ADR-0096、ADR-0099、ADR-0102） |
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityResumeContext`、`ActivityOutcome`、`ActivityOutgoing`、`ActivityDescriptor`、`ActivityRegistry` | 活动契约、执行上下文、返回值、出边模式与设计器描述符 |
+| `WorkflowInstanceView`、`WorkflowNodeInstanceView` | 交给活动、结果处理器与指派规则的实例与节点实例只读视图（ADR-0133） |
 | `ActivityTypes` 与 `StartActivity`、`UserTaskActivity`、`HttpActivity` 等 | 内置活动的类型名与属性名常量 |
 | `WorkflowHttpClient` | `Http` 活动用的 HTTP 客户端（单例，可替换；缺省的过[出站地址策略](/security/outbound)）；`SendAsync(request, ct)` 不另计时，超时由活动按引擎时钟落成令牌传进来、按令牌归因（ADR-0097） |
 | `IWorkflowOutcomeHandler`、`WorkflowOutcomeContext` | `End` 节点带结果时、结束实例之前调用 |
-| `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务；`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，ADR-0096、ADR-0099）、排序与分页下推到存储，返回 `UserTaskPage(Items, Total)`，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002` |
+| `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务；`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，ADR-0096、ADR-0099）、排序与分页下推到存储，返回 `UserTaskPage { Items, Total }`，`Take` 最大 1000，越界是 `WORKFLOW_VALIDATION_002` |
 | `IWorkflowExternalTaskService`、`ExternalTask`、`ExternalTaskCompletion`、`ExternalTaskFailure`、`ExternalTaskLockExtension` | 外部任务 |
 | `IAssigneeProvider`、`AssigneeRule`、`AssigneeResolution`、`AssigneeRuleTypes`、`EmptyAssigneeStrategy` | 指派规则；内置 `User`、`Starter`、`Expression` |
 | `IWorkflowExpressionEvaluator`、`WorkflowExpressionEvaluator`、`ExpressionScope` | 表达式：`Evaluate` 返回 `Result<Maybe<JsonNode>>`、`EvaluateCondition`、`Render`、`Validate` |
@@ -114,7 +115,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件 |
 | `WorkflowErrors`、`WorkflowMessages`、`WorkflowCapabilities` | 错误码、消息键（目录 `workflow`，故障原因也是消息键，`WorkflowFault.Localize()` / `ToError()` 按调用方的区域本地化，ADR-0105）、能力 ID |
 
-`WorkflowServiceCollectionExtensions` 提供 `AddActivity<TActivity>`、`AddAssigneeProvider<TProvider>`、`AddWorkflowOutcomeHandler<THandler>`、`GetActivityRegistry`，以及给 Provider 用的 `AddWorkflowEngine(options)`。`AddWorkflowEngine` 把引擎、目录、任务服务、外部任务服务注册为作用域服务，表达式求值器、轮询器与 `WorkflowHttpClient` 注册为单例，并登记 19 个内置活动。
+`WorkflowServiceCollectionExtensions` 提供 `AddActivity<TActivity>`、`AddAssigneeProvider<TProvider>`、`AddWorkflowOutcomeHandler<THandler>`，以及给 Provider 用的 `AddWorkflowEngine(options)`。`AddWorkflowEngine` 把引擎、目录、任务服务、外部任务服务注册为作用域服务，表达式求值器、轮询器与 `WorkflowHttpClient` 注册为单例，并登记 19 个内置活动。
 
 ## 使用示例
 
@@ -132,10 +133,10 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 {
     public async ValueTask<string?> RunAsync(string name, CancellationToken cancellationToken)
     {
-        var definition = WorkflowDefinitionBuilder.Create("demo.greeting")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("demo.greeting"))
             .AddVariable("name", required: true)
             .AddStart()
-            .AddNode("greet", ActivityTypes.SetVariable, configure: node => node
+            .AddNode("greet", new ActivityType(ActivityTypes.SetVariable), configure: node => node
                 .WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["greeting"] = "'hello ' + upper(name)" }))
             .AddEnd()
             .AddTransition("start", "greet").AddTransition("greet", "end")

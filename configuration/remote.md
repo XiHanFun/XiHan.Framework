@@ -115,8 +115,8 @@ public sealed class OrderLimits
 | 成员 | 说明 |
 | --- | --- |
 | `AddXiHanNacos(options, remote)` | 经工厂重载自建客户端（自带 HTTP 客户端），随配置根释放 |
-| `NacosOptions.FromConfiguration(configuration, binding)` | 从 `XiHan:Configuration:Nacos` 读取；传入绑定 `nacos` 时主值覆盖 `ServerAddresses`，属性 `username`、`password` 覆盖 `Username`、`Password` |
-| `NacosOptions` | `ServerAddresses`、`Group`、`Tenant`（Nacos 命名空间）、`Format`、`Username`、`Password`、`RequestTimeout`、`LongPollTimeout` |
+| `NacosOptions.FromConfiguration(configuration, binding)` | 从 `XiHan:Configuration:Nacos` 读取；传入绑定 `nacos` 时主值覆盖 `ServerAddresses`，属性 `username`、`password` 覆盖 `UserName`、`Password` |
+| `NacosOptions` | `ServerAddresses`、`Group`、`Tenant`（Nacos 命名空间）、`Format`、`UserName`、`Password`、`RequestTimeout`、`LongPollTimeout` |
 | `NacosConfigurationFeature` | 装配后运行期容器里登记 `IRemoteConfigurationClient`，供其他组件按需取文档；配置源本身不需要它 |
 
 ## 密钥
@@ -125,7 +125,7 @@ public sealed class OrderLimits
 
 - 批量读取，逐项返回 `SecretLookup(Name, Result<SecretValue>)`，顺序与入参一致，重复项各自作答，空集合返回空。
 - 只读。写入与轮换属于运维工具，不在应用契约里。
-- 密钥名 `SecretName` 的文法是 `^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..` 与 `//`，不以 `/` 结尾，大小写敏感；不合法在构造时抛出 `ArgumentException`。`string` 可隐式转换成 `SecretName`。
+- 密钥名 `SecretName` 的文法是 `^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..` 与 `//`，不以 `/` 结尾，大小写敏感；不合法在构造时抛出 `ArgumentException`。从 `string` 创建用构造或显式转换。
 - `SecretValue.ToString()` 固定返回 `***`（常量 `SecretValue.Redacted`），值不会经字符串插值进入日志或异常消息；读值用 `Value`，可选的 `Version` 记录密钥版本。
 - 单条读取用扩展方法 `store.GetAsync(name, cancellationToken)`，它转调批量方法。
 
@@ -133,7 +133,7 @@ public sealed class OrderLimits
 
 | 选项 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `Mappings` | `IReadOnlyDictionary<string, SecretName>` | 构造参数 | 配置键 → 密钥名，至少一项 |
+| `Mappings` | `IReadOnlyDictionary<string, SecretName>` | 构造参数 | 配置键 → 密钥名，至少一项；构造时复制成只读副本，键不区分大小写地不重复 |
 | `LoadTimeout` | `TimeSpan` | 10 秒 | 首次读取的超时 |
 | `RefreshInterval` | `TimeSpan?` | `null` | 周期重读的间隔，`null` 不重读 |
 | `Clock` | `TimeProvider` | 系统时钟 | 重读计时用的时钟 |
@@ -209,13 +209,13 @@ builder.Configuration.AddXiHanSecrets(
 
 ## 选项打印时遮蔽凭据
 
-框架的选项与携带凭据的记录在 `ToString()` 里把凭据打印成 `***`（`Redaction.Mask`），值为 `null` 时打印为空：看得出有没有配置，看不到值。访问密钥 ID（S3 的 `AccessKey`）是访问密钥的一半，同样遮蔽；与口令同在一个记录里的登录用户名（Redis 的 `User`、RabbitMQ 的 `UserName`、Nacos 的 `Username`）是登录凭据的另一半，也遮蔽；端点与令牌文件路径照常打印，排查连接问题要用到它们。连接串整串遮蔽。字典与列表照记录的缺省只打印类型名，不展开内容。
+框架的选项与携带凭据的记录在 `ToString()` 里把凭据打印成 `***`（`Redaction.Mask`），值为 `null` 时打印为空：看得出有没有配置，看不到值。访问密钥 ID（S3 的 `AccessKey`）是访问密钥的一半，同样遮蔽；与口令同在一个记录里的登录用户名（Redis、RabbitMQ 与 Nacos 的 `UserName`）是登录凭据的另一半，也遮蔽；端点与令牌文件路径照常打印，排查连接问题要用到它们。连接串整串遮蔽。字典与列表照记录的缺省只打印类型名，不展开内容。
 
 | 记录 | 遮蔽的成员 |
 | --- | --- |
-| `RedisCachingOptions` | `Configuration`（连接字符串）、`User`、`Password` |
+| `RedisCachingOptions` | `Configuration`（连接字符串）、`UserName`、`Password` |
 | `RabbitMQMessagingOptions` | `Configuration`（AMQP URI）、`UserName`、`Password` |
-| `NacosOptions` | `Username`、`Password` |
+| `NacosOptions` | `UserName`、`Password` |
 | `S3ObjectStorageOptions` | `AccessKey`、`SecretKey` |
 | `AIProviderOptions` | `ApiKey` |
 | `KubernetesSchedulingOptions` | `Token` |

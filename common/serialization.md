@@ -146,7 +146,7 @@ builder.Services.AddSingleton<ICacheSerializer>(new JsonCacheSerializer(new Json
 | 组合包 | `Profiles.Minimal`、`Profiles.Standard`、`Profiles.Full` | — |
 | 持久化 | `Persistence.InMemory` | `Persistence.EntityFrameworkCore`（EF Core 运行期构建模型）、`Persistence.SqlSugar`（实体映射与表达式翻译基于反射） |
 | 缓存 | `Caching.InMemory`、`Caching.Hybrid` | `Caching.Redis`（StackExchange.Redis 未声明 AOT 兼容）、`Caching.Remote`（无源生成序列化器时退回反射） |
-| 消息 | `Messaging.InMemory` | `Messaging.RabbitMQ`（RabbitMQ.Client 未声明 AOT 兼容）、`Messaging.Kafka`（librdkafka 本机库） |
+| 消息 | `Messaging.InMemory` | `Messaging.RabbitMQ`（RabbitMQ.Client 未声明 AOT 兼容）、`Messaging.Kafka`（librdkafka 本机库）、`Messaging.Redis`（StackExchange.Redis 未声明 AOT 兼容） |
 | 安全 | `Security.InMemory`、`Security.Database`、`Security.Ip2Region` | `Security.Jwt`、`Security.OpenIdConnect`（Microsoft.IdentityModel 未声明 AOT 兼容） |
 | 多租户、本地化、审计、调度、工作流 | 全部 `InMemory` 与 `Database` 实现、`Scheduling.Kubernetes` | — |
 | 对象存储 | `ObjectStorage.FileSystem` | `ObjectStorage.S3`（AWS SDK 请求编组基于反射） |

@@ -4,6 +4,94 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
+## v5.0.0-preview.3（2026-11-12）
+
+::: warning 预览须知
+- 这是预览版，安装要带 `--prerelease`；公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整
+- 这一版集中调整了正式版前的公共 API，多数条目要改调用代码，升级前逐条看下面的迁移写法
+:::
+
+### 版本与兼容
+
+- **调整** 稳定性级别的承诺：`Stable` 大版本内不破坏；`Preview` 与 `Experimental` 可能在小版本变更，补丁版本不变，每次变更在本页写明迁移方式；要求升级不改代码就只用 `Stable` 的 API（见 [稳定性分级](/getting-started/concepts#稳定性分级)）
+- **调整** 5.0 的级别定准：配置、对象存储、审计的抽象，七个默认实现与 Redis 缓存、RabbitMQ、SqlSugar、OpenTelemetry，调度的应用面（`IJob`、`IJobScheduler`、作业定义、计划与日历）、工作流的定义模型与 `WebApplicationBuilder.AddXiHan` 升为 `Stable`；三个 Profile、发件箱与全部一致性套件降为 `Preview`；`HttpActivity`、`WorkflowHttpClient` 与 SqlSugar 的读写分离、差异日志降为 `Experimental`。各包页的「稳定性」一行写明例外
+
+### 原语与内核
+
+- **新增** 宿主启动时向标准输出打印启动 Banner（版式同 4.x），`XiHan:Kernel:Banner:Enabled=false` 关闭，以 JSON 行收集 stdout 的部署应关掉；命令行宿主缺省不打印（见[装配入口](/startup/bootstrap#启动-banner)）
+- **移除** `CapabilityAttribute`：没有使用者，运行期也不读，随清单生成器一起提供；`CapabilityResolver` 与 `NullAuditSink` 不再公开，能力求解经 `AddXiHan` 装配，结果从 `ResolvedGraph` 读取
+- **调整** `OperationContract` 构造只收 ID，其余字段改为初始化器：手写的 `new OperationContract(id, stability, expose, policy, permission, readOnly)` 改成 `new OperationContract(id) { Stability = …, Expose = …, Policy = …, Permission = …, IsReadOnly = … }`；用生成器的项目重新编译即可，生成的 `GeneratedOperations` 变为 internal
+- **调整** `Expose.All` 冻结为 5.0 的五个协议：以后新增的协议不并入 `All`，要在新协议上发布须显式开启；现有行为不变
+- **调整** 清单记录的可选字段改为初始化器：`new Binding(name, type) { Required = false }`、`new CapabilityRequirement(id, version) { Optional = true }`、`new ConfigContribution(section) { Schema = … }`、`new PipelineContribution(middleware, stage) { Before = …, After = … }`（`PipelineContribution` 不再是位置记录）
+- **调整** `Error.Unexpected` 的参数顺序改为 `(code, messageKey, details, inner)`，与构造函数一致；只传内部错误的写成 `Error.Unexpected(code, messageKey, null, inner)`
+- **调整** `Stable` 的公开方法与构造不再带可选参数，改为重载（`Error` 的构造与工厂、`PipelineBuilder.UseAt` / `UseInstance` / `UseNamedInstance`、`FeatureContext.AddMiddleware`、`ProblemResponse.FromError`、`BlobUrlRequest.ForDownload` / `ForUpload` 等）：用命名实参跳过前面参数的调用补上被跳过的参数，如 `UseAt<T>(stage, Placement.End, owner)`、`ForDownload(null, fileName)`
+- **调整** `SchemaViolation` 的消息键与参数改为初始化器：`new SchemaViolation(path, reason, key, args)` 改成 `new SchemaViolation(path, reason) { MessageKey = key, Arguments = args }`
+- **新增** 分析器规则 XH0006～XH0008：`Stable` 的签名不得引用 `Preview` / `Experimental` 类型，成员级别不得高于所在类型，`Stable` 不得声明可选参数
+- **修复** `CapabilityDeclaration.TryParse` 与 `CapabilityRequirement.TryParse` 的输出标注为可空（`[NotNullWhen(true)]`），失败时为 `null`
+- **修复** `InvocationContext.Baggage` 构造时复制成只读副本，调用方之后改原字典不再影响上下文；`Items` 在派生上下文之间共享，并行写入时不再损坏
+- **调整** 匿名主体的 `Principal.Id` 由空字符串改为 `null`，`new Principal(id, scheme)` 只创建已认证主体（两者都不得为空），匿名用 `Principal.Anonymous`；判断 `IsAuthenticated` 之后可直接用 `Id`。`ResourceName.Tenant` 的全局资源由空字符串改为 `null`，构造时校验每一段
+- **调整** 内核的数据类型不再是位置记录：`AuditEvent`、`HealthSnapshot`、`OperationResponse`、`FeatureStatus` 按属性名写初始化器（`new AuditEvent { Timestamp = …, Action = …, Outcome = …, TraceId = … }`）；`AuthorizationRequest`、`ContributorStatus`、`PluginSource` 只保留两参构造，第三个实参改成初始化器（`new ContributorStatus(name, state) { Error = … }`）；这些类型都不再能解构
+- **调整** 返回 `Maybe` 的查找统一叫 `Find…`：`GetOutcome` / `GetOrigin` / `GetOperation…` / `GetCredential` / `GetAuthorizationRequirement` / `GetTenantShard` / `GetAuditAction` / `GetAuditResource` / `GetDelivery` / `GetRun` / `GetXiHanContext` 与按键读条目的 `Get<T>` 改成对应的 `Find…`，`TryGetBinding` 改成 `FindBinding`，插件宿主的 `Describe` 改成返回 `Maybe` 的 `FindStatus`；`GetAuditDetails` 改成 `FindAuditDetails` 并返回只读副本；`WorkflowVariables` 删掉 `Get` / `Get<T>`，改用索引器与 `TryGet<T>`
+- **调整** `App.CreateContext` 的可选参数收进新的 `InvocationContextOptions`：`App.CreateContext(sp, ct, deadline: d, baggage: b)` 改成 `App.CreateContext(sp, new InvocationContextOptions { Deadline = d, Baggage = b }, ct)`，只传服务与令牌的不用改；`DomainEventBuffer` 改为无参与 `(int capacity)` 两个构造，`Items` 交出只读视图
+
+### 子系统
+
+- **新增** `Security.WebAuthn`：通行密钥的依赖方实现，提供 `security.webauthn@1`。`WebAuthnCeremonies` 生成与 WebAuthn Level 3 JSON 同形的注册与认证选项，按 RFC-0008 的顺序核对响应（ES256 / PS256 / RS256，证明一律按 `none`）；无状态，挑战与凭据由应用保存。配置节 `XiHan:Security:WebAuthn`，`RelyingPartyId` 与 `Origins` 必填。新错误码 `SECURITY_VALIDATION_006` / `007`、`SECURITY_DENIED_005` / `006`（签名计数没有增加）（ADR-0170）
+- **新增** `Testing` 的 `WebAuthnTestAuthenticator` 与 `WebAuthnTestCeremony`：测试里生成合法或篡改过的通行密钥响应；`Testing` 随之依赖 `Security.WebAuthn` 与 `System.Formats.Cbor`
+- **新增** `Messaging.Redis`：用 Redis Streams 提供 `messaging.queue@1`，只有 Redis 的部署也能跨进程收发消息；需显式 `UseFeature<RedisMessagingFeature>()`，配置节 `XiHan:Messaging:Redis`，可选绑定 `queue`（类型 `cache:distributed`），需要 Redis 6.2+，不提供 `messaging.stream@1`（见 [Messaging.Redis](/packages/messaging-redis)）
+- **修复** 工作流启动请求不再公开 `InstanceId`、`ParentInstanceId`、`ParentNodeInstanceId` 与 `Depth`：调用方原先能借它们伪造子流程的父链接、绕过嵌套深度上限；这几个字段只由引擎为子流程设置，给它们赋值的代码删掉即可，要幂等启动用 `CorrelationId` 与 `ReusePolicy`
+- **修复** 活动、结果处理器与指派规则拿到的 `Instance`、`NodeInstance` 改为只读视图 `WorkflowInstanceView` / `WorkflowNodeInstanceView`：原先交出的是引擎随后写回的对象，扩展代码改了状态或租户会被持久化；只读的代码不用改，要读变量与私有状态改用上下文的 `Variables` 与 `State`
+- **修复** 用户任务与外部任务的书签不能再经 `IWorkflowEngine.ResumeAsync` 直接消费：原先绕过指派人与持锁工作者的校验、也不发完成事件，现在返回 `WORKFLOW_CONFLICT_003`；办理任务改用 `IWorkflowTaskService.CompleteAsync`，外部任务改用 `IWorkflowExternalTaskService.CompleteAsync` / `FailAsync`
+- **调整** 工作流的引擎、定义目录、任务与外部任务服务的实现类型，`ActivityRegistry.Add` 与 `GetActivityRegistry`，实例的 `JoinStates` 与 `WorkflowJoinState`，以及 `Workflow.Database` 的实例锁与轮询类型不再公开：经 `IWorkflowEngine` 等接口与 `AddActivity<TActivity>` 使用；`WorkflowEngine.LastErrorVariable` 等常量移到 `WorkflowReservedNames`，成员名不变，只改类名
+- **调整** 调度与配置的实现细节不再公开：`JobPlanner`、`InMemorySchedulingHealthContributor`、`NacosDocumentParser`，以及 `KubernetesSchedulingOptions` 的 `ResolveNamespace` / `ResolveHolder` / `ResolveApiServer` / `LeaseNameFor`；它们只在各自的包里用
+- **调整** `JobRegistry`、`JobTypeRegistry`、`JobCalendars` 的 `Add` 不再公开：装配之后只读，登记作业、作业类型与日历用 `AddJob`、`AddJobType`、`AddJobCalendar`
+- **调整** 持久化、本地化、缓存与消息的实现类型不再公开：三个 Provider 的仓储实现、`InMemoryUnitOfWork`、`InMemoryTable` 与 `InMemoryStore.Table`、`LeasedWorkerIdSource`、`RepositoryRegistrations.Items`、`MessageCatalog.ParseLocaleFile`、`CacheStoreDistributedCache.Translate`、领域事件的登记表、映射与派发器、三个消息代理的连接与探测成员、`OpenIdConnectMetadataCache.FailureRetryDelay`；照常经 `IRepository`、`IUnitOfWork`、`AddDomainEvent<TEvent>` 等入口使用
+- **调整** `IPermissionGrantStore` 改为批量读取 `GetManyAsync(subjects, tenantId)`，权限判定把用户与全部角色一次读出；实现授予存储的 Provider 把 `GetGrantsAsync` 换成 `GetManyAsync`，单主体的 `GetGrantsAsync` 仍可调用（扩展方法）
+- **新增** 授予管理的可选接口 `IPermissionGrantAdministration`，内存与数据库实现都提供：`GrantAsync` / `RevokeAsync` 与入参同序的逐项结果（撤销不存在是 `SECURITY_NOTFOUND_002`），`ListAsync(PermissionGrantQuery)` 按主体与租户（`GrantTenantFilter.Any` / `Global` / `Of(tenantId)`）过滤、分页并计数，越界为新错误码 `SECURITY_VALIDATION_005`；`InMemoryPermissionGrantStore.Grant` / `Revoke` 不再公开，`PermissionGrantRecordStore.ListAsync(subject, tenantId, skip, take)` 删除，改用接口
+- **调整** 审计查询新增 `AuditQuery.Resource`（`xrn:` 文本精确匹配），数据库实现加 `(Resource, Sequence)` 索引；审计细节统一为 JSON 值：`AddAuditDetail(key, JsonNode?)`（简单值写法不变），`AuditEvent.Details` 改为 `IReadOnlyDictionary<string, JsonElement>?`，内存与数据库读回同一类型，读细节的代码改用 `GetDecimal()` / `GetString()` 等
+- **调整** `AuditQuery` 的 `PrincipalId` / `TenantId` 改为显式过滤 `Principal`（`AuditPrincipalFilter`）与 `Tenant`（`AuditTenantFilter`），能只查匿名调用或平台级事件：`new AuditQuery { TenantId = id }` 改成 `new AuditQuery { Tenant = AuditTenantFilter.Of(id) }`，主体同理
+- **调整** `ITenantStore.FindAsync` 返回 `Result<Maybe<TenantInfo>>`，存储不可达是 `MULTITENANCY_UNAVAILABLE_003`（Tenant 阶段以 503 结束，不再当作 500 抛出）；`ListAsync(TenantQuery)` 改为分页，逐页读到 `ContinuationToken` 为空；自己实现租户存储的 Provider 改这两个方法
+- **新增** 租户管理的可选接口 `ITenantAdministration`（`UpsertAsync` / `RemoveAsync` 与入参同序的逐项结果，写后失效目录与分片缓存），内存与数据库实现都提供；`InMemoryTenantStore.Set` / `Remove` 不再公开（内存实现写入后也会失效分片缓存了），`TenantRecordStore.ListAsync(skip, take)` 删除，改用 `ITenantStore.ListAsync`
+- **调整** 缓存失效统一为 `Invalidate(ids)` 加 `InvalidateAll()`，不再以 `null` 表示全部：`ITenantShardResolver`、`IAIProviderCatalog`、`DatabaseTenantStore`、`DatabasePermissionGrantStore`；`Invalidate("acme")` 改为 `Invalidate(["acme"])`，无参调用改为 `InvalidateAll()`
+- **调整** `ITenantResolver.ResolveAsync` 返回 `Result<Maybe<string>>`，自定义解析器可以返回失败拒绝调用（以该错误结束，后面的解析器与默认租户不再顶替）；实现解析器的应用把返回值包进 `Result.Success(…)`
+- **调整** `IMessageLocalizer` 只留 `Options`、`Find`、`Resolve(key, locale, arguments)`，其余 `Localize` / `Resolve(error, …)` 改为 `MessageLocalizerExtensions` 的扩展方法：调用方不用改，自己实现本地化器的 Provider 删掉这 5 个成员
+- **调整** `IAuditSink.WriteAsync` 的契约写明不抛出：接收不下或落地失败时由实现自己丢弃、计数并告警，返回只表示已接收；自己实现接收器的 Provider 需通过一致性套件新增的用例
+- **移除** `XiHan:MultiTenancy:Database:MaxListedTenants`：租户列表分页之后不再截断，删掉这个配置键
+- **调整** `MessageDelivery` 改为初始化器（`new MessageDelivery { Topic = …, Envelope = …, Attempt = …, Mode = … }`），`MessageSubscription` 只保留 `(topic, mode)` 构造；`IdempotencyRecord` 不再公开，记录格式与回放不变
+- **调整** 调度器的状态与历史改为只读视图：`RunsAsync` 返回 `JobRunView`（失败结果在 `Outcome`），`JobStatus.Job` 是 `JobView`；`StatusesAsync()` 改为分页的 `ListStatusesAsync(new JobStatusQuery())`，按名批量用 `StatusesAsync(names)`，`StatusAsync(name)` 不变；`new JobTriggerRequest(name, data)` 改为 `new JobTriggerRequest(name) { Data = data }`，`JobRun`、`JobOutcome`、`JobTriggerStatus`、`JobStatus` 按属性名初始化
+- **调整** 调度器的批量方法中途取消不再抛出：已开始的项照常给出结果，未开始的项以 `KERNEL_CANCELLED_001` 结束；开始前已取消时仍抛出
+- **移除** `IWorkflowTaskService.PendingAsync` 与 `PendingByInstanceAsync`：待办一律分页读取，改为 `QueryAsync(new UserTaskQuery { AssigneeId = … })` 或 `{ InstanceId = … }`
+- **调整** 工作流的批量方法传空集合时直接返回空结果，不再开一次调用
+- **调整** `IBlobStoreProvider.CreateAsync` 与 `IDataSourceProvider.CreateAsync` 以结果报告失败（`Result<IBlobStore>` / `Result<IDataSource>`），不再抛出：自己写存储或数据源 Provider 的改返回类型，拒绝定义用 `BlobStoreFailures` / `DataSourceFailures`；经注册表使用的应用不受影响
+- **调整** 工作流的任务与控制请求改为初始化器：`new UserTaskCompletion(taskId, actorId) { Outcome = …, Comment = … }`，外部任务请求保留 `(taskId, workerId)`，`new WorkflowJump(instanceId, targetNodeId) { Reason = … }`、`new WorkflowVariableUpdate(instanceId) { Variables = …, Remove = … }`；`UserTaskPage`、`BlobMetadata`、`BlobPage`、`EntityColumnMapping`、`SqlSugarDiffLogData` 按属性名初始化，这些类型都不再能解构
+- **调整** 待办查询的 `UserTaskQuery.Descending` 改为排序项列表 `Sorts`（`UserTaskSort` / `UserTaskSortField`，与定义、实例查询同一写法）：`Descending = true` 改成 `Sorts = [new(UserTaskSortField.CreatedAt, Descending: true)]`；状态序号 `WorkflowStatusOrder.Of` 移到 `Workflow.Abstractions` 公开一份，存储实现共用
+- **调整** 字符串承载的标识（`CacheKey`、`BlobKey`、`ContainerName`、`JobName`、`WorkflowName`、`ActivityType`、`SecretName`）不再从 `string` 隐式转换：传字符串的地方写 `new JobName("cleanup")` 或 `(JobName)"cleanup"`；这些类型与 `GrantSubject`、`TriggerKey` 的 `default` 值读文本抛 `InvalidOperationException`，`PermissionGrant` 与 `TriggerKey` 拒收 `default` 成员
+- **调整** 分页统一成两种形状：偏移分页 `Skip` / `Take`（`MaxTake`，页为 `Items` 与 `long Total`），续页分页 `PageSize` / `ContinuationToken`（页为 `Items` 与 `ContinuationToken`）；调度运行历史与工作流的定义、实例、待办查询的 `Limit` / `MaxLimit` 改为 `Take` / `MaxTake`，`CacheKeyQuery` 的 `Limit` / `Continuation` 改为 `PageSize` / `ContinuationToken`，`CacheKeyPage.Keys` 与 `AuditPage.Events` 改为 `Items`，分页错误的参数 `limit` 改为 `take` / `pageSize`
+- **调整** 批量的逐项结果统一为与入参同序的 `Result` 列表：`BlobPutResult`、`BlobDeleteResult`、`JobTriggerResult`、`TenantRecordResult`、`MessageTranslationResult`、`PermissionGrantResult` 删除，读 `result.Outcome` 的地方直接用列表元素，要键时按下标取入参；实现 `IBlobStore` 的 Provider 改 `PutAsync` / `DeleteAsync` 的返回类型
+- **修复** 分片上传句柄 `BlobMultipartUpload` 的覆盖标志改为必填的初始化成员：原先重建句柄时漏传参数会把「不覆盖」静默变成「覆盖」（S3 完成时按句柄决定条件写入），写成 `new BlobMultipartUpload(container, key, uploadId) { Overwrite = … }`；`FileSystemBlobStore` 只经 `CreateAsync` 创建（扫描已用量后才交出），`BlobStoreConformance.CreateStore()` 改为 `CreateStoreAsync()`
+- **修复** 文件系统对象存储在 Linux 与 macOS 上并发的不覆盖写入（含分片上传的完成）偶发两个都成功、后写的覆盖先写的：改为先独占创建占位文件再替换内容；Windows 上仍用不替换的改名
+- **调整** `SnowflakeId` 不再能逐项构造，只经 `SnowflakeId.Parse(value, epoch)` 得到（值与分量总是一致）；`SqlSugarPersistenceOptions.CommandTimeoutSeconds` 改为 `TimeSpan CommandTimeout`（缺省 `StandardCommandTimeout`），配置键 `CommandTimeoutSeconds` 不变
+- **调整** `Caching.Hybrid.HybridCache` 改名 `HybridObjectCache`（与 BCL 的 `HybridCache` 不再同名），`Localization.InMemory.MessageLocalizer` 改名 `InMemoryMessageLocalizer`；Redis 缓存、Redis 消息与 Nacos 选项的用户名统一为 `UserName`，Kafka 的 `GroupId` 与 Redis 消息的 `GroupName` 统一为 `ConsumerGroup`，配置键改为 `XiHan:Messaging:Kafka:ConsumerGroup`、`XiHan:Messaging:Redis:ConsumerGroup`、`XiHan:Configuration:Nacos:UserName`（值不变，位点照常接续）
+- **调整** `MessageSubscriptions` 在消息运行时启动后只读：再 `Add` 抛 `InvalidOperationException`，`All` 与 `HandlersFor` 交出只读视图；订阅照旧在 `Configure` 里用 `AddMessageHandler` 登记
+- **调整** 缓存键管理的 `RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回新错误码 `CACHING_VALIDATION_004`（HTTP 400）而不是抛 `ArgumentException`；`CacheKeyQuery.Prefix` 不合法不再在构造时抛出，由 `ListKeysAsync` 以同一错误码返回；实现键管理的 Provider 在开头调 `CacheKeyQuery.ValidateRemovalPrefix`
+- **调整** `LockHandle` 改为抽象基类：包外实现 `IDistributedLock` 时派生它并实现 `ReleaseCoreAsync`，基类保证并发释放也只执行一次；只经 `TryAcquireAsync` 取句柄的调用方不用改
+- **调整** AI 护栏的 `InspectAsync` 改收 `GuardrailInspection`（`Direction` 与 `Messages`），`CompleteAsync` 拿到响应后再以输出方向检查一次；自写护栏改签名，只看输入的在 `Direction` 不是 `Input` 时放行。`IKnowledgeStore.SearchAsync` 改收 `KnowledgeSearch`（最低得分由存储施加），`TrimAsync` 改收 `KnowledgeTrim` 列表；自写存储按新签名实现
+- **调整** `IJob.RunAsync(run, context)` 去掉与 `context.CancellationToken` 重复的令牌参数，实现里的 `cancellationToken` 改为 `context.CancellationToken`；`LeaderLease.ReleaseAsync(cancellationToken)` 收令牌并返回 `Result`（幂等，后端没删掉时返回那个失败），实现租约的 Provider 改签名
+- **调整** `JobSchedule.Interval` 与 `At` 改为可空，不适用的计划为 `null`；`JobRunQuery.Trigger` 改名 `TriggerName`（与运行记录同名），新增按触发来源过滤的 `Triggers`；`IHostMonitor` 的七个方法改为 `Read…Async(cancellationToken)`，可能阻塞的读取不占调用方线程、可取消等待；`ConfigurationDocument` 与 `SecretsConfigurationOptions` 构造时复制调用方的字典，只差大小写的重复键抛 `ArgumentException`
+- **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
+
+### 宿主、协议与插件
+
+- **调整** AI、协议与宿主的实现类型不再公开：AI 的对话、知识库摄入与检索、提示增强、Provider / 工具 / 提示目录的默认实现，`McpServer` 的构造与 `HandleAsync`、`McpReply`、`McpStdioCommand`，命令行内置的 `graph` / `pipeline` / `operations` / `invoke` 命令，`HttpRouteConvention.Derive` 的布尔重载、`OpenApiDocumentBuilder.Build` 的五参重载，`ProtoMessage` 的构造与 `S3ObjectStorageFeature.CreateClient`；经接口与特性使用的写法不变
+- **调整** `McpTool`、`McpToolAnnotations`（提示缺省为假，只写为真的项）、`OutOfProcessPluginStatus`、`WasmPluginStatus`、`ParsedCommandLine` 改为初始化器；`new OpenApiServer(url) { Description = … }`、`new OpenApiDocumentSource(registry, options) { Permissions = … }`
+- **调整** `MapXiHanOperations()` 返回 `IEndpointConventionBuilder` 而不是端点数，可以在返回值上给全部操作端点统一加 CORS、限流等约定
+- **调整** `ProblemResponse`、`HealthResponse`、`FeatureHealth` 改为初始化器，按属性名赋值；响应的 JSON 不变
+- **修复** `Plugins.OutOfProcess`、`Plugins.Wasm`、`Plugins.Conformance` 对 `Plugins.Protocol`（以及 Conformance 对两个宿主）改为精确版本依赖：原先单独升级其中一个包，还原能通过，运行时才缺成员；这几个包要用同一版本
+
+### 包
+
+- **优化** NuGet 包换用新图标
+
 ## v5.0.0-preview.2（2026-11-06）
 
 ::: warning 预览须知

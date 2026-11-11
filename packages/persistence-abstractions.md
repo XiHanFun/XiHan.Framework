@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Persistence:Snowflake` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Domain`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`DomainEventTracker`、`IDomainEventDispatcher`、`TimeRange`、`LongTextAttribute`、`EntityIndexAttribute` / `EntityIndexes` / `EntityIndex` 与雪花标识相关类型为 Preview |
+| 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`IDomainEventDispatcher`、`LongTextAttribute`、`EntityIndexAttribute` / `EntityIndexes` / `EntityIndex` 与雪花标识相关类型为 Preview |
 
 ## 概述
 
@@ -85,7 +85,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `IRepositoryRegistrar`、`RepositoryRegistrations` | `…Abstractions.Repositories` | Provider 注册闭合泛型仓储的入口与登记集合；`ConnectionOf(type)` 取实体登记的命名连接 |
 | `EntityQuery<T>`、`EntityQuery` | `…Abstractions.Queries` | 不可变查询：`Where`、`OrderBy`、`Page`、`Within`、`IncludeDeleted`；`EntityQuery.All<T>()`、`DefaultMaxTake`（1000） |
 | `Ordering<T>`、`TimeRange` | `…Abstractions.Queries` | 一项排序；时间范围提示（两端都含，`From` 不能晚于 `To`） |
-| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、是否已开数据库事务（`HasTransaction`）、开启选项（`TenantId`、`IsReadOnly`、`ReadsPrimary`：只读但读主库；`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
+| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、是否已开数据库事务（`HasTransaction`）、开启时的选项（`Options`）；选项是初始化器记录（`TenantId`、`IsReadOnly`、`ReadsPrimary`：只读但读主库；`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
 | `UnitOfWorkMiddleware` | `…Abstractions.UnitOfWork` | Transaction 阶段的中间件，由 Provider 登记 |
 | `DomainEventTracker`、`IDomainEventDispatcher` | `…Abstractions.UnitOfWork` | 写过的聚合登记表；领域事件派发端口（Messaging 实现） |
 | `PersistenceConventions` | `…Abstractions` | `ApplyOnAdd`、`ApplyOnUpdate`（带存储行的重载让更新沿用存储的创建时间、租户与删除标记）、`TrySoftDelete`、`IsVisibleTo`、`IsDeleted`、`NewStamp` |
@@ -94,7 +94,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `PersistenceCapabilities`、`PersistenceErrors`、`PersistenceMessages` | `…Abstractions` | 能力 ID、错误码、消息键与消息目录 |
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | `…Abstractions.Identifiers` | 标识生成端口；UUID v7 实现 |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId` | `…Abstractions.Identifiers` | 雪花标识的特性、生成器、选项、位布局与解析 |
-| `IWorkerIdSource`、`FixedWorkerIdSource`、`LeasedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置或分布式锁租约 |
+| `IWorkerIdSource`、`FixedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置；分布式锁租约由 `SnowflakeIdFeature` 在内部装配 |
 | `ISchemaReader`、`SchemaReaderExtensions`、`SchemaLimits` | `…Abstractions.Schema` | 库结构读取：`ListTablesAsync`（关键字、分页、总数）、`GetTablesAsync`（批量，最多 100 张，逐项结果）、`GetTableAsync` |
 | `TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo` | `…Abstractions.Schema` | 列表查询（`Validate()` 核对分页，越界是 `PERSISTENCE_VALIDATION_007` / `005`）、一页表、表（分表的逻辑名与物理表）、表结构、列 |
 | `IEntityCatalog`、`EntityMapping`、`EntityColumnMapping`、`EntityProtocols` | `…Abstractions.Schema` | 已登记实体的目录：表、列映射、协议、`[EntityIndex]` 索引 |
@@ -102,7 +102,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `SchemaServiceCollectionExtensions` | `…Abstractions.Schema` | `AddUnsupportedSchemaReader()`：不能读结构的 Provider 登记，返回 `PERSISTENCE_UNAVAILABLE_008` |
 | `DataSourceRegistry` | `…Abstractions.DataSources` | 运行时数据源的注册表（单例，健康项贡献者）：`GetOrAddAsync`（同定义复用、变了替换）、`GetAsync`、`RemoveAsync`（批量失效）、`TestAsync`（测试连接，不登记）、`ProbeAsync`、`Names`、`IsSupported` |
 | `DataSourceDefinition`、`DatabaseTypes` | `…Abstractions.DataSources` | 定义：名字、数据库类型、连接串（`ToString` 不含连接串，`Redact` 脱敏）；常用的数据库类型名 |
-| `IDataSource`、`IDataSourceProvider` | `…Abstractions.DataSources` | 已建的数据源；按定义建数据源与探测的 Provider 端口（SqlSugar 实现） |
+| `IDataSource`、`IDataSourceProvider`、`DataSourceFailures` | `…Abstractions.DataSources` | 已建的数据源；按定义建数据源（`CreateAsync` → `Result<IDataSource>`，定义不合法用 `DataSourceFailures.Invalid`，原因统一脱敏）与探测的 Provider 端口（SqlSugar 实现） |
 | `DataSourceOptions`、`DataSourceServiceCollectionExtensions` | `…Abstractions.DataSources` | 选项；`AddDataSourceProvider<T>(configuration)`、`AddDataSourceRegistry()` |
 | `ConnectionStrings` | `…Abstractions.DataSources` | `Redact(text, connectionString)`、`Describe(exception, connectionString)`：把连接串与口令类键的值换成 `***` |
 
@@ -158,7 +158,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 工作单元状态机 `NotStarted → Active → Committed | RolledBack`，违反顺序抛出携带 `PERSISTENCE_VALIDATION_002` 的 `FrameworkException`；同一服务作用域里再经管道的嵌套调用由 `UnitOfWorkMiddleware` 以同码的结果结束（消息键 `persistence.unit_of_work.nested`），处理器不执行。
 - `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073、ADR-0081）。
 - 不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元；只读工作单元拒绝写入的错误消息键是 `persistence.unit_of_work.read_only`，处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束；空集合的批量写入不算写入。
-- 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 决定，`ReadsPrimary` 让只读工作单元读主库，其余仍是只读的语义，没有从库的 Provider 上没有作用（ADR-0122）。
+- 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。管道外自己开的工作单元由 `UnitOfWorkOptions { TenantId, IsReadOnly, Connection, ReadsPrimary }` 决定，`ReadsPrimary` 让只读工作单元读主库，其余仍是只读的语义，没有从库的 Provider 上没有作用（ADR-0122）。
 - 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109）：可写工作单元里仓储的单条写入或非空批量写入一经调用即为真（不论结果），`EnsureTransactionAsync` 同样；提交（成功或返回失败）与回滚后为假，只读工作单元恒为假；多连接一个值，绑定命名连接的工作单元只报告那个连接；内存实现第一次写入调用起同样为真。调用里要立即对外产生、不随回滚撤回的副作用之前据此判断，见[工作单元与事务](/persistence/unit-of-work)。
 - `HasTransaction` 的边界：查找、查询、计数与空批量不开事务；不同服务作用域的工作单元各报各的；不经仓储、也不经 `EnsureTransactionAsync` 直接对客户端执行的写入不在事务里，也不让它变真。
 - 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
@@ -177,7 +177,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 雪花失败的转换：`NewId()` 返回 `long`，失败只能抛出 `FrameworkException`；回拨超过阈值在时钟追上后自动恢复。转换成结果的中间件由本特性登记在 Resilience 阶段末尾，在幂等与工作单元之外，工作单元已回滚、幂等标记已清除；消息键 `persistence.snowflake.clock_moved_backwards` / `persistence.snowflake.worker_unavailable`，HTTP 映射为可重试的 503、gRPC 为 `Unavailable`。管道之外直接调用生成器仍是异常（ADR-0063）。
 - 雪花标识在 JSON 里保持 number（后端标准类型，不加字符串转换器）。超过 2^53（约 9.007 × 10^15）的整数在 JavaScript 的 `number` 里会丢精度，而雪花标识从 epoch 之后约 25 天起就全部超过 2^53：前端必须用能保留大整数的方式解析（`JSON.parse` 的 BigInt reviver、按字符串读取原文），以字符串或 `BigInt` 保存与回传，不能 `Number()` 换算。
 - 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。SqlSugar 两样都支持；EF Core 只支持绑定连接的工作单元（ADR-0087），普通工作单元里取用命名连接上的实体抛 `PERSISTENCE_UNAVAILABLE_008`（已定，ADR-0091）；内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 命名连接](/persistence/connections)。
-- 命名连接的细节：SQLite 只有一个写者，业务事务写过之后同一个库文件上的另一个事务要等它结束，所以工作流的租约行要放在另一个库文件。`AddRepository<TEntity, TKey>(connection)` 里 `null` 是 Provider 的缺省落点，非空不能是空白；同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取登记的连接。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。`UnitOfWorkOptions(Connection: name)` 的连接名空白抛 `ArgumentException`，实体不落在它上面时 `PERSISTENCE_VALIDATION_004`，事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。SqlSugar 的命名连接是客户端里同名 `ConfigId` 的连接（特性创建客户端时在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上。
+- 命名连接的细节：SQLite 只有一个写者，业务事务写过之后同一个库文件上的另一个事务要等它结束，所以工作流的租约行要放在另一个库文件。`AddRepository<TEntity, TKey>(connection)` 里 `null` 是 Provider 的缺省落点，非空不能是空白；同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取登记的连接。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。`UnitOfWorkOptions { Connection = name }` 的连接名空白抛 `ArgumentException`，实体不落在它上面时 `PERSISTENCE_VALIDATION_004`，事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。SqlSugar 的命名连接是客户端里同名 `ConfigId` 的连接（特性创建客户端时在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上。
 - 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](/persistence/connections)。
 - 运行时数据源的约定：Provider 经 `AddDataSourceProvider<T>(configuration)` 登记 `IDataSourceProvider`（目前是 SqlSugar）；名字 `^[a-z0-9][a-z0-9-]{0,63}$`，`default` 保留给缺省连接；数据库类型不区分大小写，认得哪些由 Provider 决定；`DataSourceDefinition.Describes` 比名字、类型（不区分大小写）与连接串（区分大小写）。注册表是进程内的，多实例时别的实例在下一次以新定义 `GetOrAddAsync` 时替换，所以每次使用都以记录里当前的定义 `GetOrAddAsync`，不要只按名字 `GetAsync`；约定连接 `default` / `shard` 与租户分片照旧。
 - 运行时数据源的健康与失败：健康项数据 `databaseType`、`provider`，在后台按 `HealthProbeIntervalSeconds` 探连通性（关系型 Provider 走一次数据库往返，ADR-0123）；尚未探过 Started，成功 Ready，失败或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness。连不上 `PERSISTENCE_UNAVAILABLE_006`（参数 `name`、`reason`）；数据库类型不认识或连接串格式错 `PERSISTENCE_VALIDATION_006`，同名的已登记实例不受影响；`GetAsync` 没有登记 `PERSISTENCE_NOTFOUND_002`；替换同名的不占名额。

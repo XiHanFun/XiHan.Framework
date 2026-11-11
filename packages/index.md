@@ -32,7 +32,7 @@ XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织
 
 1. 先选组合包：`Profiles.Minimal`（内核、ASP.NET Core 宿主、内存本地化）、`Profiles.Standard`（再加持久化、缓存、多租户、安全、消息的内存默认实现）、`Profiles.Full`（再加对象存储、调度、审计、工作流、AI 工具目录、OpenTelemetry、运行信息与四种协议适配器）。
 2. 按对外暴露的方式加协议适配器：`Protocols.Http`、`Protocols.Grpc`、`Protocols.Mcp`、`Protocols.CloudEvents`，或换成命令行宿主 `Hosting.CommandLine`。
-3. 按生产环境的外部设施加 Provider：`Persistence.EntityFrameworkCore` / `Persistence.SqlSugar`、`Caching.Redis`、`Messaging.RabbitMQ` / `Messaging.Kafka`、`Security.Jwt` / `Security.OpenIdConnect`、`ObjectStorage.S3` 等，每个都要 `UseFeature` 加入。
+3. 按生产环境的外部设施加 Provider：`Persistence.EntityFrameworkCore` / `Persistence.SqlSugar`、`Caching.Redis`、`Messaging.RabbitMQ` / `Messaging.Kafka` / `Messaging.Redis`、`Security.Jwt` / `Security.OpenIdConnect`、`ObjectStorage.S3` 等，每个都要 `UseFeature` 加入。
 4. 开发期依赖：`Kernel.Generators`（操作契约）与 `Persistence.Generators`（仓储登记）。
 
 ## Ring 0–1 原语与内核
@@ -68,8 +68,8 @@ XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织
 | 持久化 | [Persistence.InMemory](./persistence-inmemory) | [EntityFrameworkCore](./persistence-entityframeworkcore)、[SqlSugar](./persistence-sqlsugar) |
 | 缓存 | [Caching.InMemory](./caching-inmemory) | [Redis](./caching-redis)、[Hybrid](./caching-hybrid)、[Remote](./caching-remote)（Experimental） |
 | 多租户 | [MultiTenancy.InMemory](./multitenancy-inmemory) | [Database](./multitenancy-database) |
-| 安全 | [Security.InMemory](./security-inmemory) | [Database](./security-database)、[Jwt](./security-jwt)、[OpenIdConnect](./security-openidconnect)、[Ip2Region](./security-ip2region) |
-| 消息 | [Messaging.InMemory](./messaging-inmemory) | [RabbitMQ](./messaging-rabbitmq)、[Kafka](./messaging-kafka) |
+| 安全 | [Security.InMemory](./security-inmemory) | [Database](./security-database)、[Jwt](./security-jwt)、[OpenIdConnect](./security-openidconnect)、[Ip2Region](./security-ip2region)、[WebAuthn](./security-webauthn) |
+| 消息 | [Messaging.InMemory](./messaging-inmemory) | [RabbitMQ](./messaging-rabbitmq)、[Kafka](./messaging-kafka)、[Redis](./messaging-redis) |
 | 本地化 | [Localization.InMemory](./localization-inmemory) | [Database](./localization-database) |
 | 对象存储 | [ObjectStorage.FileSystem](./objectstorage-filesystem) | [S3](./objectstorage-s3) |
 | 调度 | [Scheduling.InMemory](./scheduling-inmemory) | [Database](./scheduling-database)、[Kubernetes](./scheduling-kubernetes) |

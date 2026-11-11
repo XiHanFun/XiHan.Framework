@@ -44,7 +44,7 @@ app.MapXiHanBlobs();   // GET / PUT <BaseUrl>/{container}/{**key}
 
 app.MapGet("/invoices/{id}/link", async (string id, IBlobUrlSigner signer, CancellationToken ct) =>
 {
-    var link = (await signer.SignAsync("invoices", $"2026/10/{id}.pdf", BlobUrlRequest.ForDownload(downloadFileName: "发票.pdf"), ct)).ValueOrThrow();
+    var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey($"2026/10/{id}.pdf"), BlobUrlRequest.ForDownload(expiresIn: null, downloadFileName: "发票.pdf"), ct)).ValueOrThrow();
     // link.Url 交给前端；link.ExpiresAt 之后失效
     return new { Url = link.Url.ToString(), link.ExpiresAt };
 });
@@ -72,7 +72,7 @@ app.Run();
 音视频拖动、断点续传下载只读一段：
 
 ```csharp
-var opened = await store.GetAsync("videos", "raw/intro.mp4", new BlobRange(offset: 1_048_576, length: 65_536), cancellationToken);
+var opened = await store.GetAsync(new ContainerName("videos"), new BlobKey("raw/intro.mp4"), new BlobRange(offset: 1_048_576, length: 65_536), cancellationToken);
 if (opened.TryGetValue(out var part))
 {
     await using (part)
@@ -143,7 +143,7 @@ using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 // 1. 发起：返回上传标识与每一片的签名地址
 app.MapPost("/videos/{name}/uploads", async (string name, int parts, IBlobMultipartStore multipart, IBlobUrlSigner signer, CancellationToken ct) =>
 {
-    var upload = (await multipart.StartAsync("videos", $"raw/{name}", new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
+    var upload = (await multipart.StartAsync(new ContainerName("videos"), new BlobKey($"raw/{name}"), new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
     var urls = new List<string>(parts);
     for (var number = 1; number <= parts; number++)
     {
@@ -156,10 +156,10 @@ app.MapPost("/videos/{name}/uploads", async (string name, int parts, IBlobMultip
 
 // 2. 客户端逐片 PUT 到签名地址，记下每个响应的 ETag
 
-// 3. 完成：上传标识可持久化，这里按同样的容器与键重建
+// 3. 完成：上传标识可持久化，这里按同样的容器、键与覆盖标志重建（覆盖标志必填，要与开始时一致）
 app.MapPost("/videos/{name}/uploads/{uploadId}/complete", async (string name, string uploadId, CompletedPart[] completed, IBlobMultipartStore multipart, CancellationToken ct) =>
 {
-    var upload = new BlobMultipartUpload("videos", $"raw/{name}", uploadId);
+    var upload = new BlobMultipartUpload(new ContainerName("videos"), new BlobKey($"raw/{name}"), uploadId) { Overwrite = true };
     var parts = completed.OrderBy(static p => p.Number).Select(static p => new BlobPart(p.Number, p.ETag)).ToList();
     var done = (await multipart.CompleteAsync(upload, parts, ct)).ValueOrThrow();
     return new { Key = done.Key.Value, done.Length, done.ETag };
@@ -225,7 +225,7 @@ var tenantStore = (await stores.GetOrAddAsync(definition, cancellationToken)).Va
 
 ```csharp
 var signer = app.Services.GetRequiredService<HostedBlobUrlSigner>().ForStore("archive");
-var url = (await signer.SignAsync("files", "docs/a.txt", BlobUrlRequest.ForDownload(), cancellationToken)).ValueOrThrow().Url;
+var url = (await signer.SignAsync(new ContainerName("files"), new BlobKey("docs/a.txt"), BlobUrlRequest.ForDownload(), cancellationToken)).ValueOrThrow().Url;
 ```
 
 每个实例一条健康项 `objectstorage.store.<name>`，按 `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds`（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；还没探过为 Started，探测失败为 Degraded，实例仍可取用。文件系统看总配额是否还有余量，S3 对实例的 `HealthBucket` 做 HEAD（没配时列桶），连通之后再看条件写入，尚未确认或不认时 Degraded。健康项的汇总见[生命周期与健康](/startup/lifecycle)。

@@ -18,7 +18,7 @@
 
 | 要做的事 | 入口 | 说明 |
 | --- | --- | --- |
-| 取当前调用上下文 | `http.GetXiHanContext()` | 返回 `Maybe<InvocationContext>`，没经过 `UseXiHan()` 时为无值 |
+| 取当前调用上下文 | `http.FindXiHanContext()` | 返回 `Maybe<InvocationContext>`，没经过 `UseXiHan()` 时为无值 |
 | 读主体与租户 | `context.GetSecurity()` | `SecurityContext`：`Principal`（`Id`、`IsAuthenticated`、声明）与 `Tenant`（可空） |
 | 返回框架错误 | `context.SetOutcome(Error)` | 失败结果留在上下文，宿主写 Problem Details |
 | 取调用方语言的文案 | `key.L()` | 按上下文里协商出的区域翻译 |
@@ -51,14 +51,14 @@ app.UseXiHan();
 // 读安全上下文：Authenticate 与 Tenant 阶段已经写好主体与租户
 app.MapGet("/whoami", (HttpContext http) =>
 {
-    var security = http.GetXiHanContext().ValueOrThrow().GetSecurity();
+    var security = http.FindXiHanContext().ValueOrThrow().GetSecurity();
     return new WhoAmI(security.Principal.Id, security.Principal.IsAuthenticated, security.Tenant?.Id);
 }).ExcludeFromDescription();
 
 // 返回框架错误：失败结果留在上下文里，管道结束后宿主写成 Problem Details
 app.MapGet("/missing", (HttpContext http) =>
 {
-    http.GetXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("SAMPLES_NOTFOUND_001", SampleMessages.ResourceMissing));
+    http.FindXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("SAMPLES_NOTFOUND_001", SampleMessages.ResourceMissing));
     return Results.Empty;
 });
 
@@ -79,13 +79,13 @@ curl -s localhost:5000/missing -H "Accept-Language: zh-CN"
 curl -s -i localhost:5000/orders/stats
 ```
 
-第一条返回匿名主体：`{"principal":"","isAuthenticated":false,"tenant":null}`（匿名主体的 ID 是空串）；第二条返回 `alice` 与她的租户 `acme`；第三条返回 404 的 Problem Details，`code` 是 `SAMPLES_NOTFOUND_001`，`detail` 是中文文案；第四条返回 401，`code` 是 `SECURITY_DENIED_001`，响应头带 `WWW-Authenticate: ApiKey`。
+第一条返回匿名主体：`{"principal":null,"isAuthenticated":false,"tenant":null}`（匿名主体没有 ID）；第二条返回 `alice` 与她的租户 `acme`；第三条返回 404 的 Problem Details，`code` 是 `SAMPLES_NOTFOUND_001`，`detail` 是中文文案；第四条返回 401，`code` 是 `SECURITY_DENIED_001`，响应头带 `WWW-Authenticate: ApiKey`。
 
 ## 读调用上下文
 
-`HttpContext.GetXiHanContext()` 返回 `Maybe<InvocationContext>`：请求经过了 `UseXiHan()` 时有值；绕过管道的端点、或者根本没调用 `UseXiHan()` 时为无值。端点确定自己在管道内时用 `ValueOrThrow()`，不确定时用 `TryGetValue(out var context)` 分支处理。
+`HttpContext.FindXiHanContext()` 返回 `Maybe<InvocationContext>`：请求经过了 `UseXiHan()` 时有值；绕过管道的端点、或者根本没调用 `UseXiHan()` 时为无值。端点确定自己在管道内时用 `ValueOrThrow()`，不确定时用 `TryGetValue(out var context)` 分支处理。
 
-上下文里的内容按阶段写入，端点执行时都已就位：`GetSecurity()` 取 Authenticate 与 Tenant 阶段写好的 `SecurityContext`；`TraceId`、`Baggage`、`Deadline` 来自请求头；`GetOperation()` 在普通端点上为无值，因为它不是操作。读主体声明的写法见[认证](/security/authentication)。
+上下文里的内容按阶段写入，端点执行时都已就位：`GetSecurity()` 取 Authenticate 与 Tenant 阶段写好的 `SecurityContext`；`TraceId`、`Baggage`、`Deadline` 来自请求头；`FindOperation()` 在普通端点上为无值，因为它不是操作。读主体声明的写法见[认证](/security/authentication)。
 
 调用链深处拿不到 `HttpContext` 的服务（领域服务、仓储装饰器、消息处理器里的辅助类）不要依赖 HTTP，改用作用域服务 `IInvocationAccessor.Current` 取当前调用的上下文，它同样返回 `Maybe<InvocationContext>`，对 HTTP、gRPC、命令行与消息投递都成立，见[调用上下文](/startup/invocation-context)。
 
@@ -101,7 +101,7 @@ using XiHan.Framework.Primitives;
 app.MapGet("/reports/{id}", (string id, HttpContext http) =>
 {
     // 结果写进上下文，Egress 由宿主翻译为 Problem Details；消息参数随错误一起带走，文案在 Egress 翻译
-    http.GetXiHanContext().ValueOrThrow().SetOutcome(
+    http.FindXiHanContext().ValueOrThrow().SetOutcome(
         Error.NotFound("SHOP_NOTFOUND_002", "shop.report.not_found", MessageArguments.Of(("id", id))));
     return Results.Empty;
 });
@@ -194,7 +194,7 @@ app.Run();
 | 主体 | 转成认证类型为 `XiHan` 的 `ClaimsPrincipal`：声明保留原始类型名，另加 `ClaimTypes.NameIdentifier` 承载主体 ID 并作名称声明，角色声明类型取 `XiHan:Security:RoleClaim`（缺省 `role`） |
 | 登记 | `AddXiHan` 可以多次调用，方案只登记一次、各次的配置依次生效；不设为缺省方案 |
 
-绕过管道的端点里 `GetXiHanContext()` 为无值。要在里面发起内核调用（如 Hub 方法调用操作），用 `HttpInvocation.CreateContext(httpContext, services)` 以请求建调用上下文，凭据按同一规则带上，调用经 `IOperationInvoker` 走完整管道时照常重新认证与授权。Hub 的完整写法、会话门禁与跨实例推送见[实时通信](/web/realtime)。
+绕过管道的端点里 `FindXiHanContext()` 为无值。要在里面发起内核调用（如 Hub 方法调用操作），用 `HttpInvocation.CreateContext(httpContext, services)` 以请求建调用上下文，凭据按同一规则带上，调用经 `IOperationInvoker` 走完整管道时照常重新认证与授权。Hub 的完整写法、会话门禁与跨实例推送见[实时通信](/web/realtime)。
 
 ## 常见问题
 
@@ -202,7 +202,7 @@ app.Run();
 
 输入输出是 JSON 对象、要暴露给多种协议或进 OpenAPI 文档、需要按 Schema 校验的，写成操作（[操作契约](/web/operations)）。返回文件、文本、重定向，或者形态只在 HTTP 上有意义的（下载、SSE、Hub），写普通端点。普通端点拿不到 Validate 阶段的 Schema 校验与 Transaction 阶段按契约的只读判断，其余阶段一样。
 
-### `GetXiHanContext().ValueOrThrow()` 抛了异常
+### `FindXiHanContext().ValueOrThrow()` 抛了异常
 
 说明请求没有经过 `UseXiHan()`：要么端点映射在 `UseXiHan()` 之前，要么端点带了 `PipelineBypassMetadata`，要么根本没调用 `UseXiHan()`。核对中间件顺序；绕过管道的端点要用 `HttpInvocation.CreateContext(httpContext, services)` 自己建上下文。
 

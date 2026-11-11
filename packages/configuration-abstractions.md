@@ -13,7 +13,7 @@
 | 配置节 | —（Provider 的配置节在各自包里，如 `XiHan:Configuration:Nacos`） |
 | 依赖 | `XiHan.Framework.Primitives`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -81,7 +81,7 @@ builder.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
 | `Remote.RemoteConfigurationBuilderExtensions` | `AddXiHanRemoteConfiguration(client, options)`：客户端由调用方持有，配置根释放时不释放它；`AddXiHanRemoteConfiguration(clientFactory, options)`：每次构建 Provider 按工厂新建一个客户端，随 Provider 释放 |
 | `Remote.RemoteConfigurationSource` | 传入现成客户端时对应的 `IConfigurationSource` |
 | `Secrets.ISecretStore` | `GetAsync(names, cancellationToken)` 批量逐项返回 `SecretLookup`，顺序与入参一致 |
-| `Secrets.SecretName` | 密钥名，`^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..`、`//`，不以 `/` 结尾，大小写敏感；可从 `string` 隐式转换 |
+| `Secrets.SecretName` | 密钥名，`^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..`、`//`，不以 `/` 结尾，大小写敏感；从 `string` 显式转换 |
 | `Secrets.SecretValue` | 值与可选版本；`ToString()` 返回 `Redacted`（`***`） |
 | `Secrets.SecretLookup` | 一项结果：`Name` 与 `Result<SecretValue>` |
 | `Secrets.SecretStoreExtensions` | 单条读取 `GetAsync(store, name, cancellationToken)`，转调批量方法 |
@@ -144,7 +144,7 @@ public sealed class DirectorySecretStoreConformanceTests : SecretStoreConformanc
 单条读取用扩展方法，失败时 `Error.Code` 是下表里的错误码：
 
 ```csharp
-var secret = await vault.GetAsync("orders/api-key", cancellationToken);
+var secret = await vault.GetAsync(new SecretName("orders/api-key"), cancellationToken);
 if (secret.TryGetValue(out var value))
 {
     // 插值或日志里 value 显示为 "***"，真正的值只从 Value 取

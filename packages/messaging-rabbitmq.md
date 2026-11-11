@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Messaging:RabbitMQ`、`XiHan:Messaging`；可选绑定 `queue`（类型 `queue`） |
 | 依赖 | `XiHan.Framework.Messaging.Abstractions`；`RabbitMQ.Client` |
 | AOT | 不兼容（`IsAotCompatible=false`，RabbitMQ.Client 未声明 AOT 兼容） |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -91,7 +91,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | `RabbitMQMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`queue`）、`HealthName`（`messaging.rabbitmq.connection`） |
 | `RabbitMQMessagingOptions` | `Configuration`、`QueuePrefix`、`Exchange`、`PrefetchCount`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
-| `RabbitMQMessageBroker` | 代理；`ConnectAsync`、`IsConnected`、`CheckConnection()`（健康项用） |
+| `RabbitMQMessageBroker` | 代理；连接与健康探测由特性在内部调用 |
 
 ## 使用示例
 
@@ -156,6 +156,6 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 ## 相关
 
 - [消息与事件](/messaging/pubsub)
-- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Kafka](./messaging-kafka)
+- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Kafka](./messaging-kafka)、[Messaging.Redis](./messaging-redis)
 - [部署与打包](/deployment/pack)：绑定 `queue` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》

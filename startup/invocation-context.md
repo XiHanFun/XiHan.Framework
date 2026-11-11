@@ -48,8 +48,8 @@ Baggage 是 W3C 格式的键值对，但框架只传播已登记的键，未登�
 | --- | --- | --- |
 | `GetSecurity()` | `XiHan.Framework.Kernel.Security` | 安全上下文 `SecurityContext`：`Principal`（`Id`、`IsAuthenticated`、`AuthenticationScheme`、`Claims`、`DisplayName`）与 `Tenant`（`TenantContext`：`Id`、`DisplayName`，可空）。Authenticate 与 Tenant 阶段之前读到的是 `SecurityContext.Anonymous` |
 | `SetSecurity(security)`、`SetTenant(tenant)` | 同上 | 由 Authenticate 与 Tenant 阶段写入，之后的阶段不应再改 |
-| `SetOutcome(result)`、`SetOutcomeIfMissing(result)`、`GetOutcome()` | `XiHan.Framework.Kernel.Pipeline` | 本次调用的结果：中间件短路或处理器完成时写入，宿主在 Egress 读出翻译成协议；`GetOutcome()` 返回 `Maybe<Result>`，没写过时无值，`App.InvokeAsync` 把无值当成功 |
-| `GetOrigin()`、`SetOrigin(origin)` | 同上 | 调用来源 `InvocationOrigin`，见下文；`GetOrigin()` 返回 `Maybe<InvocationOrigin>` |
+| `SetOutcome(result)`、`SetOutcomeIfMissing(result)`、`FindOutcome()` | `XiHan.Framework.Kernel.Pipeline` | 本次调用的结果：中间件短路或处理器完成时写入，宿主在 Egress 读出翻译成协议；`FindOutcome()` 返回 `Maybe<Result>`，没写过时无值，`App.InvokeAsync` 把无值当成功 |
+| `FindOrigin()`、`SetOrigin(origin)` | 同上 | 调用来源 `InvocationOrigin`，见下文；`FindOrigin()` 返回 `Maybe<InvocationOrigin>` |
 | `Get<T>(key)`、`Set<T>(key, value)` | 同上 | 用 `ContextItemKey<T>` 在 `Items` 里存取类型化的值，`Get` 返回 `Maybe<T>` |
 
 ## 最小示例
@@ -89,7 +89,7 @@ public sealed class WhoAmI(TimeProvider clock) : IOperation<WhoAmIRequest, WhoAm
         var now = clock.GetUtcNow();
         var security = context.GetSecurity();
         var correlation = context.TryGetBaggage(BaggageKeys.Correlation, out var value) ? value : null;
-        var enteredAt = context.Get(ContextItems.EnteredAt);
+        var enteredAt = context.Find(ContextItems.EnteredAt);
 
         return ValueTask.FromResult(Result.Success(new WhoAmIResponse(
             context.TraceId,
@@ -106,7 +106,7 @@ public sealed record WhoAmIRequest();
 
 public sealed record WhoAmIResponse(
     string TraceId,
-    string Principal,
+    string? Principal,
     bool IsAuthenticated,
     string? Tenant,
     string? Correlation,
@@ -135,7 +135,7 @@ Ingress 阶段由协议适配器或派发器完成，各自把载体上的信息
 
 | 来源 | 入口 | 追踪与截止时间 | Baggage | 调用来源 |
 | --- | --- | --- | --- | --- |
-| HTTP | `HttpInvocation.CreateContext(httpContext)`，`UseXiHan()` 内部调用；端点里用 `httpContext.GetXiHanContext()` 取已建好的 | `traceparent` 头；`xihan-deadline`（RFC 3339）或 `grpc-timeout` | `baggage` 头，只收 `xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；`Accept-Language` 补 `xihan.locale` | 协议 `http`，目标是方法加路径，带远端地址、`User-Agent`、`Referer`、路由模板与端点名 |
+| HTTP | `HttpInvocation.CreateContext(httpContext)`，`UseXiHan()` 内部调用；端点里用 `httpContext.FindXiHanContext()` 取已建好的 | `traceparent` 头；`xihan-deadline`（RFC 3339）或 `grpc-timeout` | `baggage` 头，只收 `xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；`Accept-Language` 补 `xihan.locale` | 协议 `http`，目标是方法加路径，带远端地址、`User-Agent`、`Referer`、路由模板与端点名 |
 | 命令行 | `CommandLineInvocation.Create(commandContext, operationId)`，`invoke` 命令内部调用；自定义命令发起多次调用时用 `Create(context, services, operationId)` 各建一个作用域 | 每次新生成 trace-id；`--timeout <秒>` | `--tenant`、`--correlation`、`--locale` | 协议 `cli`，目标是操作 ID，没有远端地址 |
 | 消息 | `MessageDispatcher` 为每条消息开新作用域 | 信封的 `traceparent` 扩展 | `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 四个扩展进对应的键；不写幂等键 | 协议 `messaging`，目标是主题 |
 | 作业 | `JobDispatcher` 为每次运行开新作用域 | 新链路 | `xihan.correlation` 是运行 ID | 协议 `job`，目标是作业名 |
@@ -159,9 +159,12 @@ public sealed class NightlyReconciler(App app, IServiceScopeFactory scopes)
         await using var scope = scopes.CreateAsyncScope();
         var context = App.CreateContext(
             scope.ServiceProvider,
-            cancellationToken,
-            deadline: DateTimeOffset.UtcNow.AddMinutes(10),
-            baggage: new Dictionary<string, string> { [BaggageKeys.Correlation] = runId });
+            new InvocationContextOptions
+            {
+                Deadline = DateTimeOffset.UtcNow.AddMinutes(10),
+                Baggage = new Dictionary<string, string> { [BaggageKeys.Correlation] = runId },
+            },
+            cancellationToken);
 
         // 处理器作为 Handle 阶段执行；不写结果时视为成功
         var result = await app.InvokeAsync(context, static ctx =>
@@ -173,7 +176,7 @@ public sealed class NightlyReconciler(App app, IServiceScopeFactory scopes)
 }
 ```
 
-`CreateContext` 的可选参数依次是 `traceId`、`spanId`、`deadline`、`baggage`、`traceFlags`；不给 `traceId` 时新开一条链路。调度子系统的作业已经由 `JobDispatcher` 这样做了，优先用[作业与计划](/scheduling/jobs)而不是自己写循环。
+`CreateContext(services, cancellationToken)` 建一个不带载体的上下文；要带截止时间、Baggage 或上游的追踪时传 `InvocationContextOptions`（`TraceId`、`SpanId`、`TraceFlags`、`Deadline`、`Baggage`，都可省略），令牌总在最后。不给 `TraceId` 时并入当前的 Activity，也没有时新开一条链路。调度子系统的作业已经由 `JobDispatcher` 这样做了，优先用[作业与计划](/scheduling/jobs)而不是自己写循环。
 
 ## 调用来源
 
@@ -187,7 +190,7 @@ public sealed class NightlyReconciler(App app, IServiceScopeFactory scopes)
 | `UserAgent`、`Referer` | 对应的请求头，没有时为空 |
 | `Route`、`EndpointName` | 匹配到的端点的路由模板与 `WithName` 名字，没有匹配到端点或协议没有端点时为空 |
 
-缓存回源、存储维护这类内部调用没有来源，`GetOrigin()` 返回无值。审计事件本身不带来源字段，需要远端地址或 User-Agent 时由应用写进细节，下面的中间件放在 Observe 阶段开头，被认证或授权拒绝的调用也能带上来源：
+缓存回源、存储维护这类内部调用没有来源，`FindOrigin()` 返回无值。审计事件本身不带来源字段，需要远端地址或 User-Agent 时由应用写进细节，下面的中间件放在 Observe 阶段开头，被认证或授权拒绝的调用也能带上来源：
 
 ```csharp
 using XiHan.Framework.Auditing.Abstractions.Pipeline;
@@ -200,7 +203,7 @@ public sealed class AuditOriginMiddleware : IPipelineMiddleware
 {
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
-        if (context.GetOrigin().TryGetValue(out var origin))
+        if (context.FindOrigin().TryGetValue(out var origin))
         {
             context.AddAuditDetail("protocol", origin.Protocol);
             context.AddAuditDetail("target", origin.Target);
@@ -217,7 +220,7 @@ public sealed class AuditOriginMiddleware : IPipelineMiddleware
 
 ## 调用链深处取上下文
 
-操作与中间件从参数拿上下文；端点里用 `httpContext.GetXiHanContext()`（返回 `Maybe<InvocationContext>`，请求没有经过 `UseXiHan()` 时无值）。调用链深处拿不到任何参数的服务注入作用域服务 `IInvocationAccessor`，它的 `Current` 是 `Maybe<InvocationContext>`：
+操作与中间件从参数拿上下文；端点里用 `httpContext.FindXiHanContext()`（返回 `Maybe<InvocationContext>`，请求没有经过 `UseXiHan()` 时无值）。调用链深处拿不到任何参数的服务注入作用域服务 `IInvocationAccessor`，它的 `Current` 是 `Maybe<InvocationContext>`：
 
 ```csharp
 using XiHan.Framework.Kernel.Pipeline;

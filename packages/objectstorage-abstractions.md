@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:ObjectStorage:Stores`、`XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -60,13 +60,12 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 
 | 类型 | 说明 |
 | --- | --- |
-| `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，可从 `string` 隐式转换 |
-| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`、`Validate`，可从 `string` 隐式转换 |
+| `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，从 `string` 显式转换 |
+| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`、`Validate`，从 `string` 显式转换 |
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
 | `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`）、`Overwrite`（缺省 `true`）；`Default` |
-| `Blobs.BlobPutResult` / `BlobDeleteResult` | 逐项结果：写入为元数据或错误；删除为是否存在过或错误 |
 | `Blobs.BlobMetadata` | 键、长度、内容类型、`ETag`、最后修改时间、自定义元数据 |
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |
@@ -80,7 +79,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Signing.BlobContentDisposition` | `Attachment(fileName)`：下载文件名的统一写法，非 ASCII 文件名带 `filename*` |
 | `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(name)`、`Names`、`Providers`；同时是健康项贡献者 |
 | `Stores.BlobStoreDefinition` | 实例名（`^[a-z0-9][a-z0-9-]{0,63}$`）、Provider 名与设置；`Describes(other)` 判断定义是否相同 |
-| `Stores.IBlobStoreProvider` | 存储包的命名实例工厂：`Name`、`CreateAsync(definition)`、`ProbeAsync(store)` |
+| `Stores.IBlobStoreProvider`、`Stores.BlobStoreFailures` | 存储包的命名实例工厂：`Name`、`CreateAsync(definition)` → `Result<IBlobStore>`（失败以结果返回，不抛出）、`ProbeAsync(store)`；`BlobStoreFailures` 给出定义不合法与后端不可用的标准错误 |
 | `Stores.BlobStoreSelection` | `ProvidesDefaultInstance(node)`：被选为对象存储返回 `true`（缺省存储）；没被选为对象存储、却被要求提供分片上传或预签名（有依赖或经配置指定）时抛 `OBJECTSTORAGE_VALIDATION_004`；两者都只是兜底选出时返回 `false`，存储包按被顶替处理 |
 | `Stores.BlobStoreServiceCollectionExtensions` | `AddBlobStoreProvider<TProvider>(configuration)`：存储包装配时登记 Provider，并确保注册表只登记一次 |
 | `ObjectStorageCapabilities` / `ObjectStorageErrors` / `ObjectStorageMessages` | 能力 ID、错误码与消息键常量，`ObjectStorageMessages.Catalog` 是本包的消息目录 |
@@ -93,11 +92,11 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Listing;
 
-var put = await store.PutAsync("invoices", "2026/10/inv-1.pdf", stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);
-var page = await store.ListAsync("invoices", new BlobQuery { Prefix = "2026/10/", PageSize = 100 }, ct);
-var deleted = await store.DeleteAsync("invoices", ["2026/10/inv-1.pdf", "2026/10/inv-2.pdf"], ct);   // 逐项：存在过 / 不存在 / 失败
+var put = await store.PutAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);
+var page = await store.ListAsync(new ContainerName("invoices"), new BlobQuery { Prefix = "2026/10/", PageSize = 100 }, ct);
+var deleted = await store.DeleteAsync(new ContainerName("invoices"), [new BlobKey("2026/10/inv-1.pdf"), new BlobKey("2026/10/inv-2.pdf")], ct);   // 逐项：存在过 / 不存在 / 失败
 
-await using var content = (await store.GetAsync("invoices", "2026/10/inv-1.pdf", ct)).ValueOrThrow();
+await using var content = (await store.GetAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), ct)).ValueOrThrow();
 await content.Content.CopyToAsync(destination, ct);
 ```
 
@@ -108,12 +107,12 @@ using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
 // 服务端发起，客户端按片直传，服务端完成
-var upload = (await multipart.StartAsync("videos", key, new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
-var partUrl = (await signer.SignAsync("videos", key, BlobUrlRequest.ForPart(upload, 1), ct)).ValueOrThrow();
+var upload = (await multipart.StartAsync(new ContainerName("videos"), key, new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
+var partUrl = (await signer.SignAsync(new ContainerName("videos"), key, BlobUrlRequest.ForPart(upload, 1), ct)).ValueOrThrow();
 var done = await multipart.CompleteAsync(upload, parts, ct);
 
 // 限时下载链接（缺省 30 分钟）
-var link = (await signer.SignAsync("invoices", key, BlobUrlRequest.ForDownload(downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
+var link = (await signer.SignAsync(new ContainerName("invoices"), key, BlobUrlRequest.ForDownload(expiresIn: null, downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
 ```
 
 实现自己的存储后端时，用一致性套件验证；测试项目引用 `XiHan.Framework.ObjectStorage.Conformance`：
@@ -128,7 +127,7 @@ namespace Storage.Tests;
 public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 {
     // 返回被测的存储；实现了 IBlobMultipartStore 时分片用例一并执行，否则跳过
-    protected override IBlobStore CreateStore() => new AzureBlobStore(TestSettings.ConnectionString);
+    protected override ValueTask<IBlobStore> CreateStoreAsync() => ValueTask.FromResult<IBlobStore>(new AzureBlobStore(TestSettings.ConnectionString));
 
     // 绕过契约直接写一个对象（键可以在保留前缀下），用来核对列举跳过框架自己的对象
     protected override Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content)

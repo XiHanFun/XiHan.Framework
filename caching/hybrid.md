@@ -10,7 +10,7 @@
 
 ## 两级缓存的概念
 
-`Caching.Hybrid` 提供 `caching.local@1` 并依赖 `caching.distributed@1`：装配后 `ICache` 变成 `HybridCache`，`ISharedCache` 仍是 L2 本身。
+`Caching.Hybrid` 提供 `caching.local@1` 并依赖 `caching.distributed@1`：装配后 `ICache` 变成 `HybridObjectCache`，`ISharedCache` 仍是 L2 本身。
 
 | 术语 | 说明 |
 | --- | --- |
@@ -19,7 +19,7 @@
 | `LocalCapacity` | L1 条目上限，缺省 10000，满时淘汰最久未访问的条目 |
 | `LocalTimeToLive` | L1 存活上限，缺省 30 秒；条目在 L1 里的寿命是自身过期与它的较小者 |
 | `ICacheChangeFeed` | L2 存储的变更通知；Redis 存储实现它，别的实例写入或删除后本实例 L1 立即失效 |
-| `HybridCache.InvalidatesAcrossInstances` | 是否订阅到了 L2 的变更通知 |
+| `HybridObjectCache.InvalidatesAcrossInstances` | 是否订阅到了 L2 的变更通知 |
 
 ## 最小示例
 
@@ -66,9 +66,9 @@ app.Run();
 
 ## 跨实例失效
 
-跨实例失效依赖 L2 存储的变更通知 `ICacheChangeFeed`。Redis 存储实现了它：每次写入与删除后同步通知本实例的订阅者，并以发后不等的方式向频道 `<KeyPrefix>__changes` 发布，其他实例收到后删掉 L1 里的这些键或前缀（`CacheChange.Keys` / `CacheChange.Prefix`）。`HybridCache.InvalidatesAcrossInstances` 表示是否订阅到了。通知是尽力而为的，断线期间可能丢失；`XiHan:Caching:Redis:PublishChanges` 设为 `false` 可以关掉发布。
+跨实例失效依赖 L2 存储的变更通知 `ICacheChangeFeed`。Redis 存储实现了它：每次写入与删除后同步通知本实例的订阅者，并以发后不等的方式向频道 `<KeyPrefix>__changes` 发布，其他实例收到后删掉 L1 里的这些键或前缀（`CacheChange.Keys` / `CacheChange.Prefix`）。`HybridObjectCache.InvalidatesAcrossInstances` 表示是否订阅到了。通知是尽力而为的，断线期间可能丢失；`XiHan:Caching:Redis:PublishChanges` 设为 `false` 可以关掉发布。
 
-L2 的存储没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridCache` 的写入（别的实例的写入，本实例直接经 `ISharedCache` 或管理界面的写入）不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`。需要强一致的键直接用 `ISharedCache`，不经 L1。
+L2 的存储没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridObjectCache` 的写入（别的实例的写入，本实例直接经 `ISharedCache` 或管理界面的写入）不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`。需要强一致的键直接用 `ISharedCache`，不经 L1。
 
 ## 键管理
 
@@ -110,10 +110,10 @@ public sealed class CacheAdmin(ISharedCache cache)
         string? continuation = null;
         do
         {
-            // 上限来自请求时越界是 CACHING_VALIDATION_003（400）；这里是常量，直接取值
-            var page = (await list(new CacheKeyQuery { Prefix = prefix, Limit = 200, Continuation = continuation })).ValueOrThrow();
-            keys.AddRange(page.Keys.Select(static k => k.Value));
-            continuation = page.Continuation;
+            // 每页条数来自请求时越界是 CACHING_VALIDATION_003（400）；这里是常量，直接取值
+            var page = (await list(new CacheKeyQuery { Prefix = prefix, PageSize = 200, ContinuationToken = continuation })).ValueOrThrow();
+            keys.AddRange(page.Items.Select(static k => k.Value));
+            continuation = page.ContinuationToken;
         }
         while (continuation is not null);
     }
@@ -122,11 +122,11 @@ public sealed class CacheAdmin(ISharedCache cache)
 
 三个方法的语义：
 
-- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法在构造查询时抛 `ArgumentException`）；`Limit` 为 1 到 1000（`CacheKeyQuery.MaxLimit`，默认 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate()` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `limit`、`max`），不访问后端；没有更多时 `Continuation` 为 `null`。已过期的键不列出。
+- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法不在构造时抛出，返回 `CACHING_VALIDATION_004`，参数 `prefix`、`max`）；`PageSize` 为 1 到 1000（`CacheKeyQuery.MaxPageSize`，缺省 `DefaultPageSize` 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate()` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `pageSize`、`max`），不访问后端；本页的键在 `Items`，没有更多时 `ContinuationToken` 为 `null`。已过期的键不列出。
 - `InspectAsync`：不存在或已过期为无值；读元数据不延长滑动过期，对象条目也不读出值。
-- `RemoveByPrefixAsync`：返回删除数；前缀不能为空，空前缀抛 `ArgumentException`，没有「清空全部」。
+- `RemoveByPrefixAsync`：返回 `Result<long>`（删除数）；前缀为空或不合法返回 `CACHING_VALIDATION_004`（HTTP 400）、不访问后端，没有「清空全部」。
 
-内存实现按键的序数顺序分页，续页标记是上一页最后一个键。Redis 用单个端点的 `SCAN`：续页标记是游标，`Limit` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符会被转义，按前缀匹配而不是按模式。读值、改值、删单个键仍走 `ICache` / `ICacheStore`。经 Redis 存储删除的键同样触发变更通知，各实例两级缓存的 L1 随之失效。
+内存实现按键的序数顺序分页，续页标记是上一页最后一个键。Redis 用单个端点的 `SCAN`：续页标记是游标，`PageSize` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符会被转义，按前缀匹配而不是按模式。读值、改值、删单个键仍走 `ICache` / `ICacheStore`。经 Redis 存储删除的键同样触发变更通知，各实例两级缓存的 L1 随之失效。
 
 ## 远程 Provider
 
@@ -180,7 +180,7 @@ L2 带变更通知（Redis）且通知没有丢时，别的实例一写入本实
 
 ### 装了 Hybrid 之后 ISharedCache 也走 L1 吗
 
-不走。`ISharedCache` 始终直接指向 L2，所以经它的写入与读取总是看到共享状态。只有 `ICache` 变成了 `HybridCache`。
+不走。`ISharedCache` 始终直接指向 L2，所以经它的写入与读取总是看到共享状态。只有 `ICache` 变成了 `HybridObjectCache`。
 
 ### 怎样清空整个缓存
 
@@ -188,7 +188,7 @@ L2 带变更通知（Redis）且通知没有丢时，别的实例一写入本实
 
 ### Redis 列键时同一个键出现了两次
 
-`SCAN` 的语义就是这样，`Limit` 只是提示、游标分页不保证不重复。管理界面在客户端去重即可；内存实现按序数顺序分页，没有这个问题。
+`SCAN` 的语义就是这样，`PageSize` 只是提示、游标分页不保证不重复。管理界面在客户端去重即可；内存实现按序数顺序分页，没有这个问题。
 
 ### 远程 Provider 能当生产方案吗
 

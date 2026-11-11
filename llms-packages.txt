@@ -1,6 +1,6 @@
 # 曦寒开发框架 · 包参考
 
-共 69 页。索引见 https://framework.docs.xihanfun.com/llms.txt
+共 71 页。索引见 https://framework.docs.xihanfun.com/llms.txt
 
 ---
 
@@ -96,15 +96,15 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 | `AIOptions`、`Providers.AIProviderOptions` | 选项；`ResolveDefaultProvider()`、`ResolveDefaultEmbeddingProvider()` 按配置推出框架自带目录的默认名；`AIProviderOptions.DefaultTimeout` 为 100 秒 |
 | `AIServiceCollectionExtensions` | `AddAI`、`AddAIChatClientFactory<T>`、`AddAIEmbeddingGeneratorFactory<T>`、`AddAIGuardrail<T>`、`AddAIPrompt`、`AddAITool` |
 | `AIToolsFeature` | `ai.tools@1` 的特性入口 |
-| `Providers.IAIProviderCatalog` | `Providers`、`DefaultProvider`、`DefaultEmbeddingProvider`、`Find`、`ResolveChatClient`、`ResolveEmbeddingGenerator`、`Invalidate`；框架实现 `AIProviderCatalog` |
+| `Providers.IAIProviderCatalog` | `Providers`、`DefaultProvider`、`DefaultEmbeddingProvider`、`Find`、`ResolveChatClient`、`ResolveEmbeddingGenerator`、`Invalidate`；框架的实现不公开，经接口从容器取用 |
 | `Providers.IChatClientFactory`、`IEmbeddingGeneratorFactory` | Provider 包实现：`Kind` 与 `Create(AIProviderOptions)` |
 | `Chat.IAIChat`、`Chat.AIChatRequest` | 聊天入口；`CompleteAsync`、`StreamAsync` |
 | `Prompts.IAIPromptCatalog`、`Prompts.AIPromptTemplate` | 提示词目录与模板；`Render`、`Placeholders` |
-| `Guardrails.IAIGuardrail`、`GuardrailVerdict`、`KeywordBlocklistGuardrail`、`AIGuardrailOptions` | 护栏 |
+| `Guardrails.IAIGuardrail`、`GuardrailInspection`、`GuardrailDirection`、`GuardrailVerdict`、`KeywordBlocklistGuardrail`、`AIGuardrailOptions` | 护栏：输入方向在调用模型前，输出方向在非流式调用拿到响应后 |
 | `Tools.IAIToolCatalog`、`Tools.OperationAIFunction`、`Tools.AIToolNameConvention` | 工具目录、操作工具（`OperationId`）、命名约定（`Derive`、`DescriptionKeyOf`，上限 64） |
 | `Knowledge.IKnowledgeIngestor`、`IKnowledgeRetriever`、`IRagPromptAugmenter`、`IChunkingStrategy` | 流水线；`KnowledgeIngestorExtensions` 提供单篇的 `IngestAsync` 与 `RemoveAsync` |
 | `Knowledge.KnowledgeMetadataKeys` | 框架认识的块元数据键：`Title`（`title`）、`Source`（`source`），提示增强依次用它们写片段的来源，都没有时用文档 ID |
-| `Knowledge.IKnowledgeStore` | Provider 契约：`UpsertAsync`、`DeleteAsync`、`TrimAsync`（删一篇文档里块序号不小于给定值的记录）、`SearchAsync`（按 `Score` 降序） |
+| `Knowledge.IKnowledgeStore` | Provider 契约：`UpsertAsync`、`DeleteAsync`、`TrimAsync`（按 `KnowledgeTrim` 列表删每篇文档里块序号不小于给定值的记录）、`SearchAsync`（收 `KnowledgeSearch`：向量、条数、过滤与最低得分，按 `Score` 降序） |
 | `Knowledge.KnowledgeIngestRequest`、`KnowledgeQuery`、`KnowledgeRecord`、`RetrievedChunk`、`RetrievalFilter`、`ChunkingOptions`、`KnowledgeOptions` | 知识库的数据类型；`KnowledgeRecord.IdOf(documentId, chunkIndex)` 生成 `<documentId>#<chunkIndex>` |
 | `AIIdentifiers` | 名字文法 `^[a-z0-9][a-z0-9._-]{0,63}$`，工具名 `^[A-Za-z0-9_-]{1,64}$` |
 | `AIErrors`、`AIMessages` | 错误码与消息键 |
@@ -177,7 +177,7 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 
 ## 行为与限制
 
-- 目录按名字缓存实例；`Invalidate(name)` 释放缓存（实现了 `IDisposable` 的实例被释放），下次解析重建。选项在装配时读一次，`Invalidate` 不重读配置。
+- 目录按名字缓存实例；`Invalidate(names)` / `InvalidateAll()` 释放缓存（实现了 `IDisposable` 的实例被释放），下次解析重建。选项在装配时读一次，`Invalidate` 不重读配置。
 - 默认名由目录给出（ADR-0110）：`IAIChat` 不写 Provider 时取 `DefaultProvider`，摄入与检索依次取请求的 `Provider`、`Knowledge:EmbeddingProvider`、`DefaultEmbeddingProvider`，都不读 `XiHan:AI` 的默认键。框架的 `AIProviderCatalog` 从配置推出默认名；应用替换的目录（如 Provider 存在库里）给出自己的。两个属性是同步的、不做 I/O，要查库的目录持内存快照。没有默认又没写名字时 `AI_NOTFOUND_001`（`ai.provider.default_missing` / `ai.provider.embedding_default_missing`）。
 - `IAIChat` 是作用域服务；没有当前调用时工具绑定到本作用域新建的调用上下文。
 - 护栏按登记顺序执行，只作用于 `IAIChat`；直接从目录取客户端的调用不经护栏。
@@ -516,11 +516,11 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 | 配置节 | `XiHan:Auditing` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview（`AuditEvent`、`IAuditSink` 在内核，Stable） |
+| 稳定性 | Stable（`AuditEvent`、`IAuditSink` 在内核，同为 Stable） |
 
 ## 概述
 
-内核定义审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认的 `NullAuditSink` 丢弃全部事件。本包补上产生事件与读回事件的部分：
+内核定义审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认的接收器丢弃全部事件。本包补上产生事件与读回事件的部分：
 
 - `AuditMiddleware` 挂在 Observe 阶段末尾，调用结束后按显式动作或 `AuditSelection` 决定是否记录；结果优先取管道写入的 outcome，主体与租户先取安全上下文、再回退 Baggage（ADR-0036）；接收器故障只记日志。
 - `AuditInvocationExtensions` 让处理器在调用期间写入动作、资源名与细节。
@@ -562,10 +562,10 @@ dotnet add package XiHan.Framework.Auditing.Abstractions --prerelease
 | `AuditingOptions` | `Selection`、`IncludeSuccesses`、`Exclude`（init 时同样校验每一项）；`ConfigurationSection` 为 `XiHan:Auditing` |
 | `AuditSelection` | `Protected`（只记需要授权的操作：契约声明了 `Permission` 或 `Policy`）、`All`、`None`（只记显式动作） |
 | `Pipeline.AuditMiddleware` | Observe 阶段末尾的审计中间件 |
-| `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `GetAuditAction`、`GetAuditResource`、`GetAuditDetails` |
+| `Pipeline.AuditInvocationExtensions` | `SetAuditAction`、`SetAuditResource`、`AddAuditDetail`，以及对应的 `FindAuditAction`、`FindAuditResource`、`FindAuditDetails`（只读副本） |
 | `Trail.IAuditTrail` | `QueryAsync(AuditQuery, CancellationToken)` → `Result<AuditPage>` |
-| `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`PrincipalId`、`TenantId`、`TraceId`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
-| `Trail.AuditPage` | `Events`（按写入顺序升序）与 `ContinuationToken`（没有下一页为 `null`） |
+| `Trail.AuditQuery` | 过滤项 `From`、`To`、`Action`、`Principal`（`AuditPrincipalFilter`）、`Tenant`（`AuditTenantFilter`）、`TraceId`、`Resource`、`Succeeded`，分页 `PageSize`、`ContinuationToken`；`Validate()`、`Matches(AuditEvent)` |
+| `Trail.AuditPage` | `Items`（按写入顺序升序）与 `ContinuationToken`（没有下一页为 `null`） |
 | `AuditingFeatureContextExtensions` | `AddAuditing(this FeatureContext)`：注册消息目录 `auditing` 与选项，把中间件挂到 Observe 末尾 |
 | `AuditingErrors`、`AuditingMessages` | 错误码与消息键 |
 
@@ -603,7 +603,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 1. 清单声明 `Provides = [new CapabilityDeclaration(AuditingCapabilities.Trail, AuditingCapabilities.Version)]`，`Role = ManifestRole.Provider`，写法见[能力包与清单](/startup/features)。
 2. `Configure` 里把存储登记为单例；`context.Node.IsSelectedFor(AuditingCapabilities.Trail)` 为真时，用 `TryAddSingleton` 把同一个实例登记为 `IAuditSink` 与 `IAuditTrail`。特性先于内核的默认注册配置，所以 `TryAdd` 能先于 `NullAuditSink` 占住接收器。
 3. 同一分支里调用 `context.AddAuditing()`，注册消息目录与选项并挂上中间件；没被选中时不要调用，否则中间件会挂两次。
-4. `WriteAsync` 必须有界、不阻塞调用路径；`QueryAsync` 先调用 `query.Validate()`，续页令牌不可识别时返回 `AUDITING_VALIDATION_001`。
+4. `WriteAsync` 必须有界、不阻塞调用路径，并且不抛出：接收不下（队列满、已停止）或落地失败时自己丢弃、计数并节流告警，不把故障交给调用方；`QueryAsync` 先调用 `query.Validate()`，续页令牌不可识别时返回 `AUDITING_VALIDATION_001`。
 5. 测试项目继承 `Auditing.Conformance` 的 `AuditTrailConformance` 并通过全部用例。
 
 ## 行为与限制
@@ -611,7 +611,7 @@ public sealed class CancelOrder : IOperation<CancelOrderRequest, CancelOrderResp
 - 记录条件：有显式动作的调用总是记录；没有时只看操作调用并按 `Selection` 判定，再去掉 `Exclude` 命中的操作，非操作调用不记录。`IncludeSuccesses` 为假时成功的调用不记录。
 - 结果：管道写入的 outcome 优先；没写入而抛出了异常时，取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`，异常照常向外抛；正常返回却没写结果视为成功。
 - 接收器的写入不带调用的取消令牌，被取消的调用同样记录；接收器抛出的异常以 Error 级记一条日志，不影响调用结果。
-- 细节只允许 JSON 可表示的值，同名覆盖；资源名以 `xrn:` 文本保存。
+- 细节的值是 JSON：`AddAuditDetail(key, JsonNode?)` 追加时固化，事件的 `Details` 是 `IReadOnlyDictionary<string, JsonElement>`，内存与数据库读回同一类型；同名覆盖。资源名以 `xrn:` 文本保存，可按 `AuditQuery.Resource` 精确查询。
 - 事件不带调用来源 `InvocationOrigin`，需要时由应用写进细节，见[审计](/common/auditing#记录调用来源)。
 - 查询页大小 1 到 1000，缺省 100；续页令牌由实现自行校验。
 
@@ -947,7 +947,7 @@ public sealed class AuditTrailTests
 
         var trail = host.Services.GetRequiredService<IAuditTrail>();
         var page = (await trail.QueryAsync(new AuditQuery { Action = "reports.rebuild" }, CancellationToken.None)).ValueOrThrow();
-        Assert.Single(page.Events);
+        Assert.Single(page.Items);
     }
 }
 ```
@@ -960,7 +960,7 @@ public sealed class AuditTrailTests
 - 续页令牌是十进制序号，不能解析或为负数时返回 `AUDITING_VALIDATION_001`；页大小越界、起止颠倒同样返回该错误码。
 - `LogEvents` 的日志模板是 `Audit {Action} {Outcome} by {PrincipalId} in tenant {TenantId} on {Resource} ({TraceId}).`，成功时 `Outcome` 为 `success`，失败时为错误码。
 - 单进程、重启即失，多实例之间不共享。
-- 记录不按租户分区，查询要显式传 `TenantId`。
+- 记录不按租户分区，查询要显式传 `Tenant = AuditTenantFilter.Of(…)`；只要平台级事件用 `AuditTenantFilter.Global`。
 
 ## 相关
 
@@ -1037,12 +1037,12 @@ dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
 | `ICache` | 类型化缓存：`GetAsync<T>`、`SetAsync<T>`、`RemoveAsync`、`GetOrCreateAsync<T>` 与批量方法；`Store` 暴露底层存储 |
 | `ISharedCache` | 跨进程共享的 `ICache`（`caching.distributed`） |
 | `SerializingCache` | `ICacheStore` + `ICacheSerializer` 组成的 `ISharedCache` |
-| `CacheKey` | 键：非空、无空白与控制字符、不超过 `MaxLength`（512）、区分大小写；可从字符串隐式转换；`IsValid`、`IsValidPrefix`、`Validate` |
+| `CacheKey` | 键：非空、无空白与控制字符、不超过 `MaxLength`（512）、区分大小写；从字符串显式转换；`IsValid`、`IsValidPrefix`、`Validate` |
 | `CacheEntryOptions` | 过期：`Expires(ttl)`、`Sliding(window)`、`Default`（Provider 默认存活时间），二选一，`Validated()` 校验组合 |
 | `CacheEntry` | `ICacheStore.SetManyAsync` 的一项：键、值、该项自己的过期选项 |
 | `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 值序列化；`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`；`TryAddJsonSerializer` 供 Provider 按已有登记选序列化器 |
 | `IDistributedLock`、`LockHandle`、`StoreDistributedLock`、`DistributedLockExtensions` | 租约锁：`TryAcquireAsync(resource, ttl)` 返回 `Maybe<LockHandle>`，结果式的 `AcquireAsync` 被占用时返回 `CACHING_CONFLICT_001`；句柄 `ReleaseAsync` / `DisposeAsync` 释放 |
-| `IdempotencyMiddleware`、`IdempotencyOptions`、`IdempotencyRecord` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（记录带 `Operation`、`Response`）；`WasReplayed(context)` 判断结果是否来自回放 |
+| `IdempotencyMiddleware`、`IdempotencyOptions` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（存储格式是内部的，记录带操作 ID 与响应）；`WasReplayed(context)` 判断结果是否来自回放 |
 | `CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions` | `IDistributedCache` 适配；`AddXiHanDistributedCache(services, store)` 幂等登记，已有登记不覆盖；`Translate` 换算过期选项 |
 | `ICacheStoreInspector`、`CacheKeyQuery`、`CacheKeyPage`、`CacheEntryInfo` | 可选的字节条目键管理：按前缀分页列键、读字节数与剩余存活、按前缀删除 |
 | `ICacheInspector`、`CachedObjectInfo` | 可选的对象条目键管理：进程内对象缓存的条目不在字节存储里，由它列出 |
@@ -1076,17 +1076,18 @@ public sealed class OneShotGate(ICacheStore store)
 - 基础设施失败（存储不可达、超时）抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不伪装成未命中。
 - 批量方法一次往返、结果与入参顺序一一对应、空集合不触后端；`SetManyAsync` 任一项选项不合法时整批不写；`RemoveManyAsync` 同一个键出现多次第二次为 `false`。
 - `GetOrCreateAsync` 不合并并发：多个未命中的调用方各自执行工厂，后写覆盖先写。
-- `LockHandle` 只释放一次；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。锁不可重入、不续约。
+- `LockHandle` 是抽象类，只释放一次（基类原子置位，并发释放也只执行一次）；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。包外实现 `IDistributedLock` 时派生它并实现 `ReleaseCoreAsync`。锁不可重入、不续约。
 - 幂等记录的作用域键是 `idem:<租户>:<主体>:<键>`，不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。
 - `CacheStoreDistributedCache`：绝对过期两种写法取较早者，已过去的时刻抛 `ArgumentOutOfRangeException`；与滑动过期同时给时绝对优先；都不给时用 Provider 的默认存活时间（内存与 Redis 缺省 5 分钟）；同步成员阻塞等待异步存储。
-- `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 拒绝空前缀；`CacheKeyQuery.Limit` 为 1 到 `MaxLimit`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
+- `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回 `CACHING_VALIDATION_004`、不访问后端；列键时不合法的前缀同样返回它；`CacheKeyQuery.PageSize` 为 1 到 `MaxPageSize`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；本实例的订阅者同步收到通知，其他实例经后端转发、不回送给发出者；跨实例通知尽力而为，可能丢失。
 
 | 错误码 | 含义 |
 | --- | --- |
 | `CACHING_VALIDATION_001` | 缓存键或幂等键不合法 |
 | `CACHING_VALIDATION_002` | 条目选项不合法（远程插件按操作集校验时返回，适配器原样传出；.NET 侧在调用插件之前抛 `ArgumentException`） |
-| `CACHING_VALIDATION_003` | 键列表的每页上限越界（`CacheKeyQuery.Limit` 不在 1～1000，参数 `limit`、`max`；HTTP 400） |
+| `CACHING_VALIDATION_003` | 键列表的每页条数越界（`CacheKeyQuery.PageSize` 不在 1～1000，参数 `pageSize`、`max`；HTTP 400） |
+| `CACHING_VALIDATION_004` | 键前缀不合法：列键时不合键的文法，或按前缀删除时为空或不合文法（参数 `prefix`、`max`；HTTP 400） |
 | `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败 |
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限（健康项 Degraded 的原因） |
 | `CACHING_CONFLICT_001` | 分布式锁被占用（`AcquireAsync` 返回；`TryAcquireAsync` 只返回无值） |
@@ -1121,7 +1122,7 @@ public sealed class OneShotGate(ICacheStore store)
 
 ## 概述
 
-`HybridCache` 实现 `ICache`：L1 是有界 LRU 的对象引用表，L2 是容器里的 `ISharedCache`（Redis、Remote，或单实例下内存实现提供的共享缓存）。`ISharedCache` 本身不变，仍直接指向 L2。
+`HybridObjectCache` 实现 `ICache`：L1 是有界 LRU 的对象引用表，L2 是容器里的 `ISharedCache`（Redis、Remote，或单实例下内存实现提供的共享缓存）。`ISharedCache` 本身不变，仍直接指向 L2。
 
 | 操作 | 行为 |
 | --- | --- |
@@ -1133,7 +1134,7 @@ public sealed class OneShotGate(ICacheStore store)
 
 L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive` 的较小者，滑动过期在 L1 里按绝对时间处理；从 L2 回填的条目存活 `LocalTimeToLive`。L1 存对象引用，调用方不得修改取回的对象；`ICache.Store` 是 L2 的字节存储。
 
-跨实例失效（ADR-0055）：L2 的存储实现了 `ICacheChangeFeed`（Redis）时 `HybridCache` 订阅它，本实例与其他实例的写入、删除、按前缀删除都让 L1 里对应的键立即失效；`InvalidatesAcrossInstances` 表示是否订阅到了，`HybridCache` 释放即退订。
+跨实例失效（ADR-0055）：L2 的存储实现了 `ICacheChangeFeed`（Redis）时 `HybridObjectCache` 订阅它，本实例与其他实例的写入、删除、按前缀删除都让 L1 里对应的键立即失效；`InvalidatesAcrossInstances` 表示是否订阅到了，`HybridObjectCache` 释放即退订。
 
 ## 何时使用
 
@@ -1183,9 +1184,9 @@ builder.AddXiHan(xihan => xihan
 
 | 类型 | 说明 |
 | --- | --- |
-| `HybridCachingFeature` | 特性入口；被选中提供 `caching.local` 时把 `ICache` 登记为 `HybridCache` |
+| `HybridCachingFeature` | 特性入口；被选中提供 `caching.local` 时把 `ICache` 登记为 `HybridObjectCache` |
 | `HybridCachingOptions` | `LocalCapacity`、`LocalTimeToLive`；`FromConfiguration` 从配置节读取 |
-| `HybridCache` | 两级缓存，实现 `ICache` 与 `IDisposable`；`InvalidatesAcrossInstances`、`LocalCount` |
+| `HybridObjectCache` | 两级缓存，实现 `ICache` 与 `IDisposable`；`InvalidatesAcrossInstances`、`LocalCount` |
 
 ## 使用示例
 
@@ -1200,7 +1201,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 {
     public void Report()
     {
-        if (cache is HybridCache hybrid && !hybrid.InvalidatesAcrossInstances)
+        if (cache is HybridObjectCache hybrid && !hybrid.InvalidatesAcrossInstances)
         {
             logger.LogWarning("L2 has no change feed; L1 entries may be stale for up to the local time to live.");
         }
@@ -1212,7 +1213,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 
 ## 行为与限制
 
-- L2 没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridCache` 的写入不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`；通知丢失时同样以此为上限。
+- L2 没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridObjectCache` 的写入不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`；通知丢失时同样以此为上限。
 - L2 是内存实现时，经 `ICacheInspector` 删除的对象条目在 L1 里最长 `LocalTimeToLive` 后才消失（ADR-0058）。
 - L1 命中不触达 L2，因此不会延长 L2 里的滑动过期；滑动过期的条目经两级缓存读取时实际按绝对时间到期。
 - 同一个键被写成别的类型时，L1 按 `T` 读取当作未命中，交给 L2 判定。
@@ -1241,7 +1242,7 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 | 配置节 | `XiHan:Caching:InMemory`；被选中提供 `caching.distributed` 时另读 `XiHan:Caching:Idempotency` |
 | 依赖 | `XiHan.Framework.Caching.Abstractions`；无第三方依赖 |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`InMemoryCacheStore`、`InMemoryObjectCache` 实现 Preview 的键管理与检视接口，与 `InMemoryCacheHealthContributor` 同为 Preview |
 
 ## 概述
 
@@ -1376,7 +1377,7 @@ public sealed class ObjectEntries(ICache cache)
 | 配置节 | `XiHan:Caching:Redis`、`XiHan:Caching:Idempotency`；可选绑定 `cache`（类型 `cache:distributed`） |
 | 依赖 | `XiHan.Framework.Caching.Abstractions`；`StackExchange.Redis` |
 | AOT | 不兼容（`IsAotCompatible=false`，StackExchange.Redis 未声明 AOT 兼容） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`RedisCacheStore` 实现 Preview 的键管理、检视与变更通知接口，为 Preview |
 
 ## 概述
 
@@ -1503,7 +1504,7 @@ public sealed class LocalMirror : IDisposable
 ## 行为与限制
 
 - 连接或超时失败抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不当成未命中。
-- 键管理 `ICacheStoreInspector` 用单个端点的 `SCAN`：续页标记是游标，`CacheKeyQuery.Limit` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符被转义，只按前缀匹配。读元数据把 `PTTL`、`STRLEN`、`GETRANGE` 放进一个批次，不延长滑动过期；按前缀删除逐页 `SCAN` 后 `DEL`。
+- 键管理 `ICacheStoreInspector` 用单个端点的 `SCAN`：续页标记是游标，`CacheKeyQuery.PageSize` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符被转义，只按前缀匹配。读元数据把 `PTTL`、`STRLEN`、`GETRANGE` 放进一个批次，不延长滑动过期；按前缀删除逐页 `SCAN` 后 `DEL`。
 - 变更通知：每次写入与删除（真的删到了才算，按前缀删除总是）后同步通知本实例的订阅者，再发后不等地向 `<KeyPrefix>__changes` 发布；消息带来源标识，不回送给发出者；第一次有人订阅时才订阅频道，释放存储即退订。发布失败不让写入失败，断线期间的通知会丢失。
 - 多个应用共用一个 Redis 时用不同的 `KeyPrefix` 隔开键与变更频道。
 - 测试：一致性套件需要真实 Redis，设置环境变量 `XIHAN_TEST_REDIS`（如 `localhost:6379`）后运行，未设置时跳过。
@@ -1855,7 +1856,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 | 配置节 | —（Provider 的配置节在各自包里，如 `XiHan:Configuration:Nacos`） |
 | 依赖 | `XiHan.Framework.Primitives`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -1923,7 +1924,7 @@ builder.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
 | `Remote.RemoteConfigurationBuilderExtensions` | `AddXiHanRemoteConfiguration(client, options)`：客户端由调用方持有，配置根释放时不释放它；`AddXiHanRemoteConfiguration(clientFactory, options)`：每次构建 Provider 按工厂新建一个客户端，随 Provider 释放 |
 | `Remote.RemoteConfigurationSource` | 传入现成客户端时对应的 `IConfigurationSource` |
 | `Secrets.ISecretStore` | `GetAsync(names, cancellationToken)` 批量逐项返回 `SecretLookup`，顺序与入参一致 |
-| `Secrets.SecretName` | 密钥名，`^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..`、`//`，不以 `/` 结尾，大小写敏感；可从 `string` 隐式转换 |
+| `Secrets.SecretName` | 密钥名，`^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..`、`//`，不以 `/` 结尾，大小写敏感；从 `string` 显式转换 |
 | `Secrets.SecretValue` | 值与可选版本；`ToString()` 返回 `Redacted`（`***`） |
 | `Secrets.SecretLookup` | 一项结果：`Name` 与 `Result<SecretValue>` |
 | `Secrets.SecretStoreExtensions` | 单条读取 `GetAsync(store, name, cancellationToken)`，转调批量方法 |
@@ -1986,7 +1987,7 @@ public sealed class DirectorySecretStoreConformanceTests : SecretStoreConformanc
 单条读取用扩展方法，失败时 `Error.Code` 是下表里的错误码：
 
 ```csharp
-var secret = await vault.GetAsync("orders/api-key", cancellationToken);
+var secret = await vault.GetAsync(new SecretName("orders/api-key"), cancellationToken);
 if (secret.TryGetValue(out var value))
 {
     // 插值或日志里 value 显示为 "***"，真正的值只从 Value 取
@@ -2085,7 +2086,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 | `ServerAddresses` | `string` | 无，必填 | 逗号或分号分隔的绝对 http / https 地址，按序尝试；地址的路径是 Nacos 的上下文路径，没有路径时用 `/nacos`（见下文）。有绑定 `nacos` 时被绑定的主值覆盖，两者都没有时抛出 `ArgumentException` |
 | `Group` | `string` | `DEFAULT_GROUP` | 配置分组 |
 | `Tenant` | `string` | 空（公共命名空间） | Nacos 命名空间 ID |
-| `Username` | `string` | — | 与 `Password` 都给出时先登录取 `accessToken` |
+| `UserName` | `string` | — | 与 `Password` 都给出时先登录取 `accessToken` |
 | `Password` | `string` | — | 登录密码 |
 | `Format` | `Json` / `Properties` | `Json` | 文档格式，不区分大小写 |
 | `LongPollTimeoutSeconds` | 正数 | 30 | 长轮询窗口 |
@@ -2099,7 +2100,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
         "ServerAddresses": "http://nacos-a:8848,http://nacos-b:8848",
         "Group": "DEFAULT_GROUP",
         "Tenant": "",
-        "Username": "dev",
+        "UserName": "dev",
         "Password": "dev-password",
         "Format": "Json",
         "LongPollTimeoutSeconds": 30,
@@ -2110,7 +2111,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 }
 ```
 
-服务地址与凭据也可以用绑定提供：绑定的主值覆盖配置里的 `ServerAddresses`，属性 `username` / `password` 各自覆盖 `Username` / `Password`（空白不算给出），分组、格式等其余键照读配置节：
+服务地址与凭据也可以用绑定提供：绑定的主值覆盖配置里的 `ServerAddresses`，属性 `username` / `password` 各自覆盖 `UserName` / `Password`（空白不算给出），分组、格式等其余键照读配置节：
 
 ```json
 { "XiHan": { "Bindings": { "nacos": { "type": "configuration:remote", "value": "http://localhost:8848", "username": "nacos", "password": "<来自密钥源>" } } } }
@@ -2124,8 +2125,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 | `NacosConfigurationBuilderExtensions` | `AddXiHanNacos(options, remote)`：配置构建期的入口，自建的客户端随配置根释放 |
 | `NacosConfigurationClient` | `IRemoteConfigurationClient` 实现；`Create(options, clock)` 自建 HTTP 客户端并在释放时关闭，公开构造函数接收外部的 `HttpClient`（超时应为无限，由本类按请求控制）；常量 `HttpClientName` |
 | `NacosOptions` | 选项；`FromConfiguration(configuration, binding)` 从配置与绑定读取；常量 `ConfigurationSection` |
-| `NacosConfigFormat` | `Json`、`Properties` |
-| `NacosDocumentParser` | `Parse(content, format)` 把文档展平成配置键值 |
+| `NacosConfigFormat` | `Json`、`Properties`；文档按格式展平成配置键值 |
 
 ## 使用示例
 
@@ -2158,7 +2158,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 ## 行为与限制
 
 - 格式：`Json` 要求根是对象，嵌套对象按 `A:B` 展平，数组按下标，`null` 保留为空值；`Properties` 把 `a.b=c` 展平成 `a:b`，`#` 与 `!` 开头的行是注释。文档不合法返回 `CONFIGURATION_VALIDATION_001`。
-- 登录：配置了 `Username` 与 `Password` 时调用上下文路径下的 `/v1/auth/login`（缺省即 `/nacos/v1/auth/login`）取 `accessToken`，在到期前一分钟续期；响应没有 `tokenTtl` 时按 18000 秒计。
+- 登录：配置了 `UserName` 与 `Password` 时调用上下文路径下的 `/v1/auth/login`（缺省即 `/nacos/v1/auth/login`）取 `accessToken`，在到期前一分钟续期；响应没有 `tokenTtl` 时按 18000 秒计。
 - 多地址：每次请求按 `ServerAddresses` 的顺序尝试，连接失败或超时换下一个，全部失败时返回不可达。
 - 版本：服务端没有给出 `Content-MD5`（例如中间的代理去掉了这个头）时，客户端按 Nacos 的算法自己算，即内容按 UTF-8 编码的 MD5（小写十六进制），监听接口照样认得这个版本，长轮询不受影响。
 - 上下文路径：地址的路径就是 Nacos 的上下文路径（`server.servlet.contextPath`），登录、取配置、监听的接口路径（`/v1/auth/login`、`/v1/cs/configs`、`/v1/cs/configs/listener`）接在它后面；地址没有路径（或只有 `/`）时用 Nacos 的缺省值 `/nacos`，所以 `http://nacos:8848` 与 `http://nacos:8848/nacos` 等价。Nacos 改了上下文路径时写 `http://nacos:8848/config`；经网关挂在前缀下时把网关前缀连同上下文路径写全，例如网关把 `/config-center/` 转发到 Nacos 的根上，就写 `http://gateway/config-center/nacos`。上下文路径设成根（`/`）的 Nacos 无法用地址表达，不受支持。
@@ -2193,7 +2193,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 | 配置节 | — |
 | 依赖 | 各领域的 `.Abstractions`（部分套件另引用 `XiHan.Framework.Testing`）；`xunit.v3.assert`、`xunit.v3.extensibility.core`（不引用元包 `xunit.v3`，套件包不是可执行测试项目） |
 | AOT | 不兼容（测试项目不以 AOT 发布） |
-| 稳定性 | 按基类的 `[ApiLevel]`，各节写明 |
+| 稳定性 | Preview：套件随子系统演进追加用例与夹具成员 |
 
 ## 用法
 
@@ -2210,7 +2210,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |
 | [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 5 |
-| [Auditing](#auditing) | `AuditTrailConformance` | 4 |
+| [Auditing](#auditing) | `AuditTrailConformance` | 5 |
 | [Caching](#caching) | `CacheStoreConformance` | 16 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
@@ -2219,7 +2219,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 13 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 36 + 3 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
-| [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 16 + 6 + 3 |
+| [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 18 + 6 + 3 |
 | [Security](#security) | `PermissionGrantStoreConformance` | 5 |
 | [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 15 + 40 + 8 |
 
@@ -2236,7 +2236,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 ## Auditing
 
-包 ID `XiHan.Framework.Auditing.Conformance`（RFC-0015，Preview）。基类 `AuditTrailConformance`，实现 `CreateFixtureAsync()` 返回 `AuditTrailFixture`（抽象属性 `Sink` 是被测 `IAuditSink`，`Trail` 是被测 `IAuditTrail`）。用例覆盖写入后按写入顺序读回且字段完整往返、各过滤项取交集、分页与续页令牌、不合法查询是 VALIDATION。用例以 trace-id 隔离数据，夹具可以共用一个存储。`Auditing.InMemory` 与 `Auditing.Database` 通过本套件。
+包 ID `XiHan.Framework.Auditing.Conformance`（RFC-0015，Preview）。基类 `AuditTrailConformance`，实现 `CreateFixtureAsync()` 返回 `AuditTrailFixture`（抽象属性 `Sink` 是被测 `IAuditSink`，`Trail` 是被测 `IAuditTrail`）。用例覆盖写入后按写入顺序读回且字段完整往返、各过滤项取交集、分页与续页令牌、不合法查询是 VALIDATION、接收器带着已取消的令牌也不抛出（ADR-0147）。用例以 trace-id 隔离数据，夹具可以共用一个存储。`Auditing.InMemory` 与 `Auditing.Database` 通过本套件。
 
 ## Caching
 
@@ -2301,7 +2301,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、ID 区分大小写、显示名、启用标记与属性完整往返、枚举全部租户 |
+| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、ID 区分大小写、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
 | `TenantShardResolverConformance` | Preview | `CreateResolverAsync(tenants)` 返回 `ITenantShardResolver`；种子租户 `Sharded`、`Shared` | 分库租户解析出连接串、小写的提供者名与去前缀的透传属性；共库与未知租户为成功无值；失效单个或全部后重解析结果一致 |
 
 `MultiTenancy.InMemory` 与 `MultiTenancy.Database` 通过两套用例。
@@ -2312,8 +2312,8 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `BlobStoreConformance` | `CreateStore()` 返回 `IBlobStore`；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、大对象流式读写 |
-| `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键被拒绝、经注册表同定义复用 / 定义变了替换 / 移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
+| `BlobStoreConformance` | `CreateStoreAsync()` 返回 `ValueTask<IBlobStore>`（被测存储初始化好再交出）；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、大对象流式读写 |
+| `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键以 `OBJECTSTORAGE_VALIDATION_003` 结果拒绝（不抛出）、经注册表同定义复用 / 定义变了替换 / 移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
 
 `ObjectStorage.FileSystem` 与 `ObjectStorage.S3` 通过两套用例。
 
@@ -2387,7 +2387,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `JobSchedulerConformance` | `StartAsync(configure, configuration)` 启动装配了被测调度器的宿主并返回 `JobSchedulerHost(scheduler, poll, host)`，`poll` 轮询一次并等本周期起的运行结束（`JobSchedulerEngine.PollOnceAsync`）；轮询周期设得很长（如 3600 秒），后台循环不动作；回调 `configure` 里套件登记 `RecordingJob`、`RecordingJobLog` 与本用例的时钟，要在 Provider 装配之前应用；可覆写 `WaitTimeout`（缺省 10 秒，只防挂死） | 手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复、运行历史的分页越界是校验错误（`SCHEDULING_VALIDATION_002`，计数不看分页） |
+| `JobSchedulerConformance` | `StartAsync(configure, configuration)` 启动装配了被测调度器的宿主并返回 `JobSchedulerHost(scheduler, poll, host)`，`poll` 轮询一次并等本周期起的运行结束（`JobSchedulerEngine.PollOnceAsync`）；轮询周期设得很长（如 3600 秒），后台循环不动作；回调 `configure` 里套件登记 `RecordingJob`、`RecordingJobLog` 与本用例的时钟，要在 Provider 装配之前应用；可覆写 `WaitTimeout`（缺省 10 秒，只防挂死） | 手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复、运行历史的分页越界是校验错误（`SCHEDULING_VALIDATION_002`，计数不看分页）、按名批量取状态与入参同序且分页按名字读完（越界与外来令牌为 `SCHEDULING_VALIDATION_003`）、批量在开始前已取消时抛出且不改变作业 |
 | `JobStoreConformance` | `CreateAsync()` 返回 `(IJobStore Store, IAsyncDisposable Host)` | 作业写入 / 查找 / 列表 / 替换 / 级联删除与快照语义、触发器全字段往返、到期抢占跨节点原子且按到期时刻与优先级排序、独占运行与阻塞 / 完成解除 / 查询 / 取消 / 清理、节点心跳与失联恢复 |
 | `LeaderElectionConformance` | `CreateElection(clock)` 返回 `ILeaderElection`，选举与它产生的租约按传入的时钟判定到期（用例推进时钟，不等真实时间）；可覆写 `LeaseTimeToLive`（缺省 400 毫秒，整数秒粒度的 Provider 如 Kubernetes Lease 改为 1 秒）；`StartNodeAsync(clock, probe)` 返回 `(ILeaderElection Competitor, IAsyncDisposable Host)`：起一个调度引擎用被测选举的节点（登记套件的时钟、轮询周期设得很长、`UseFeature(probe)` 装配套件给的探针特性），`Competitor` 是与节点争同一租约、节点启动到停止期间都在服务的另一个持有者（数据库实现是同一个库上的另一个节点，进程内实现是节点自己的选举），`Host` 释放这一切（节点可能已被用例停止） | 获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期；应用生命周期（ADR-0094）：启动中的周期不拿租约，进入服务后竞争者放手即由节点拿到，排空中的周期释放、竞争者在租约到期之前就拿到 |
 
@@ -2417,7 +2417,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、全局授予对任何租户生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
 
-`GetGrantsAsync` 返回 `Result<IReadOnlyCollection<string>>`：没有授予是成功的空集合，存储故障是失败。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
+`GetManyAsync` 返回与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`：没有授予是成功的空集合，存储故障整批失败；用例 6 核对顺序、重复项、种类不串与空集合。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
 
 在完整的应用宿主上给不可达的存储时，不要让整个宿主的库不可达（删库、断开默认连接）：宿主里别的子系统的后台循环——工作流轮询与它的领导权、发件箱、调度、翻译加载——在服务状态下会如实报存储不可达（如 `WORKFLOW_UNAVAILABLE_001`），那是真实的故障信号。用只装被测特性的最小宿主（框架 `Security.Database` 的测试就是这样），或只让被测存储用的连接不可达。
 
@@ -2581,7 +2581,7 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 | 配置节 | 环境变量 `XIHAN_CONFIG_PATH`；`XiHan:ObjectStorage:SignedUrls`（预签名地址特性）；方案 `XiHan` 读 `XiHan:Security:RoleClaim` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.ObjectStorage.Abstractions`；共享框架 `Microsoft.AspNetCore.App` |
 | AOT | 兼容（`IsAotCompatible`） |
-| 稳定性 | `UseXiHan`、`MapXiHanHealth`、`HttpInvocation`、`ProblemResponse`、端点约定为 Stable；`WebApplicationBuilder.AddXiHan`、认证方案 `XiHan`、`OperationPayloadBinder`、`OperationResponseWriter`、预签名地址为 Preview |
+| 稳定性 | `WebApplicationBuilder.AddXiHan`、`UseXiHan`、`MapXiHanHealth`、`HttpInvocation`、`ProblemResponse`、端点约定为 Stable；认证方案 `XiHan`、`OperationPayloadBinder`、`OperationResponseWriter`、预签名地址为 Preview |
 
 ## 概述
 
@@ -2623,7 +2623,7 @@ app.Run();
 | `XiHan:ObjectStorage:SignedUrls:Secret` | string | 无，必填 | 预签名地址的 HMAC-SHA256 密钥，至少 32 字节 UTF-8，多实例须一致 |
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | string | `/blobs` | 预签名地址的基址 |
 
-后两项只在装配 `HostedBlobUrlFeature` 时读取。
+后两项只在装配 `HostedBlobUrlFeature` 时读取。`AddXiHan` 还按 `XiHan:Kernel:Banner:Enabled` 登记[启动 Banner](/startup/bootstrap#启动-banner) 的选项，应用版本取自入口程序集的 `AssemblyInformationalVersion`（去掉 `+` 之后的提交哈希）。
 
 ```json
 {
@@ -2644,7 +2644,7 @@ app.Run();
 | --- | --- |
 | `WebApplicationBuilderExtensions` | `AddXiHan(configure)`：装载挂载的配置目录，再交给内核装配应用 |
 | `ApplicationBuilderExtensions` | `UseXiHan()`：请求桥接进内核管道；`MapXiHanHealth(prefix)`：`{prefix}/startup`、`/ready`、`/live` |
-| `Endpoints.HttpInvocation` | `GetXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
+| `Endpoints.HttpInvocation` | `FindXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
 | `Endpoints.EndpointConventionBuilderExtensions` | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)`；引用的权限码与策略在宿主建请求管道时核对，不存在即启动失败 |
 | `Endpoints.PipelineBypassMetadata` | 端点元数据：带它的端点不经内核管道；`BypassXiHanPipeline(builder)` 标注 |
 | `Endpoints.OperationPayloadBinder` | 协议适配器挂在端点上的载荷绑定委托，`UseXiHan()` 在进管道前调用 |
@@ -2669,7 +2669,7 @@ using XiHan.Framework.Primitives;
 // 已认证才进得来：Authenticate 与 Tenant 阶段已写好安全上下文
 app.MapGet("/me", (HttpContext http) =>
 {
-    var security = http.GetXiHanContext().ValueOrThrow().GetSecurity();
+    var security = http.FindXiHanContext().ValueOrThrow().GetSecurity();
     return $"{security.Principal.Id}@{security.Tenant?.Id ?? "-"}";
 }).RequireXiHanAuthentication();
 ```
@@ -2738,7 +2738,7 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)�
 
 ## 概述
 
-一次进程执行一条命令。`invoke <操作 ID>` 与简写 `<resource> <verb>` 把 `--json`、`--data` 或字段选项拼成载荷，把 `--tenant`、`--correlation`、`--locale`、`--timeout`、`--authorization` 翻译成调用上下文，经完整内核管道调用暴露给命令行（`Expose.CommandLine`）的操作。成功时响应 JSON 写到 stdout，失败时一行 `{"code","detail","traceId"}` 写到 stderr，退出码按错误码的 KIND 段决定。`AddXiHanCommandLine()` 把日志改成只写 stderr，stdout 只有命令输出。
+一次进程执行一条命令。`invoke <操作 ID>` 与简写 `<resource> <verb>` 把 `--json`、`--data` 或字段选项拼成载荷，把 `--tenant`、`--correlation`、`--locale`、`--timeout`、`--authorization` 翻译成调用上下文，经完整内核管道调用暴露给命令行（`Expose.CommandLine`）的操作。成功时响应 JSON 写到 stdout，失败时一行 `{"code","detail","traceId"}` 写到 stderr，退出码按错误码的 KIND 段决定。`AddXiHanCommandLine()` 把日志改成只写 stderr，stdout 只有命令输出；[启动 Banner](/startup/bootstrap#启动-banner) 缺省不打印，`XiHan:Kernel:Banner:Enabled=true` 打开时也只写 stderr，命令的 JSON 输出与 `mcp` 的 stdio 消息流不受影响。
 
 其他包可以登记自己的命令：实现 `ICommand` 后 `AddXiHanCommand<T>()`，`Protocols.Mcp` 就以这种方式提供 `mcp` 命令（MCP 的 stdio 传输）。
 
@@ -2771,11 +2771,11 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 | 类型 | 说明 |
 | --- | --- |
 | `HostApplicationBuilderConfigurationExtensions` | `AddXiHan(configure)`：先装载 `XIHAN_CONFIG_PATH` 目录（紧接 `appsettings.{环境}.json` 插入），再交给内核装配应用 |
-| `CommandLineServiceCollectionExtensions` | `AddXiHanCommandLine()` 登记运行器与内置命令并把日志改到 stderr；`AddXiHanCommand<TCommand>()` 登记命令 |
+| `CommandLineServiceCollectionExtensions` | `AddXiHanCommandLine()` 登记运行器与内置命令，把日志改到 stderr，把启动 Banner 换成缺省关闭、写 stderr；`AddXiHanCommand<TCommand>()` 登记命令 |
 | `CommandLineHostExtensions` | `RunXiHanCommandLineAsync(args)`：启动宿主、执行命令、停止宿主，返回退出码；Ctrl+C 取消命令 |
 | `Commands.ICommand` | 命令：`Name`、`DescriptionKey`（说明的消息键）、`ExecuteAsync(CommandContext)` |
 | `Commands.CommandContext` | 解析结果、作用域服务、`Output` / `Error`、取消令牌 |
-| `Commands.HelpCommand`、`GraphCommand`、`PipelineCommand`、`OperationsCommand`、`InvokeCommand` | 内置命令 |
+| `Commands.HelpCommand` | 内置的 `help` 命令；`graph`、`pipeline`、`operations`、`invoke` 由 `AddXiHanCommandLine` 登记，实现不公开 |
 | `Parsing.CommandLineParser`、`Parsing.ParsedCommandLine` | 参数解析 |
 | `Runtime.CommandLineInvocation` | `Create(context, operationId)` 按选项建调用上下文；`ReservedOptions`；`AuthorizationVariable` = `XIHAN_AUTHORIZATION` |
 | `Runtime.CommandLineFailure` | `WriteAsync(...)` 把失败写到 stderr 并给出退出码 |
@@ -2857,7 +2857,7 @@ XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织
 
 1. 先选组合包：`Profiles.Minimal`（内核、ASP.NET Core 宿主、内存本地化）、`Profiles.Standard`（再加持久化、缓存、多租户、安全、消息的内存默认实现）、`Profiles.Full`（再加对象存储、调度、审计、工作流、AI 工具目录、OpenTelemetry、运行信息与四种协议适配器）。
 2. 按对外暴露的方式加协议适配器：`Protocols.Http`、`Protocols.Grpc`、`Protocols.Mcp`、`Protocols.CloudEvents`，或换成命令行宿主 `Hosting.CommandLine`。
-3. 按生产环境的外部设施加 Provider：`Persistence.EntityFrameworkCore` / `Persistence.SqlSugar`、`Caching.Redis`、`Messaging.RabbitMQ` / `Messaging.Kafka`、`Security.Jwt` / `Security.OpenIdConnect`、`ObjectStorage.S3` 等，每个都要 `UseFeature` 加入。
+3. 按生产环境的外部设施加 Provider：`Persistence.EntityFrameworkCore` / `Persistence.SqlSugar`、`Caching.Redis`、`Messaging.RabbitMQ` / `Messaging.Kafka` / `Messaging.Redis`、`Security.Jwt` / `Security.OpenIdConnect`、`ObjectStorage.S3` 等，每个都要 `UseFeature` 加入。
 4. 开发期依赖：`Kernel.Generators`（操作契约）与 `Persistence.Generators`（仓储登记）。
 
 ## Ring 0–1 原语与内核
@@ -2893,8 +2893,8 @@ XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织
 | 持久化 | [Persistence.InMemory](./persistence-inmemory) | [EntityFrameworkCore](./persistence-entityframeworkcore)、[SqlSugar](./persistence-sqlsugar) |
 | 缓存 | [Caching.InMemory](./caching-inmemory) | [Redis](./caching-redis)、[Hybrid](./caching-hybrid)、[Remote](./caching-remote)（Experimental） |
 | 多租户 | [MultiTenancy.InMemory](./multitenancy-inmemory) | [Database](./multitenancy-database) |
-| 安全 | [Security.InMemory](./security-inmemory) | [Database](./security-database)、[Jwt](./security-jwt)、[OpenIdConnect](./security-openidconnect)、[Ip2Region](./security-ip2region) |
-| 消息 | [Messaging.InMemory](./messaging-inmemory) | [RabbitMQ](./messaging-rabbitmq)、[Kafka](./messaging-kafka) |
+| 安全 | [Security.InMemory](./security-inmemory) | [Database](./security-database)、[Jwt](./security-jwt)、[OpenIdConnect](./security-openidconnect)、[Ip2Region](./security-ip2region)、[WebAuthn](./security-webauthn) |
+| 消息 | [Messaging.InMemory](./messaging-inmemory) | [RabbitMQ](./messaging-rabbitmq)、[Kafka](./messaging-kafka)、[Redis](./messaging-redis) |
 | 本地化 | [Localization.InMemory](./localization-inmemory) | [Database](./localization-database) |
 | 对象存储 | [ObjectStorage.FileSystem](./objectstorage-filesystem) | [S3](./objectstorage-s3) |
 | 调度 | [Scheduling.InMemory](./scheduling-inmemory) | [Database](./scheduling-database)、[Kubernetes](./scheduling-kubernetes) |
@@ -2952,7 +2952,7 @@ XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织
 
 # XiHan.Framework.Kernel.Analyzers
 
-Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 零反射这些规则交给编译器执行，诊断 XH0001–XH0005 全部是错误级。框架的每个正式包都以分析器形式引用它；写框架扩展包的人可以在自己的项目里启用同一套规则。
+Roslyn 分析器：把公开 API 的稳定性标注与级别依赖、Stable 不用可选参数、类型命名与 Ring 0/1 零反射这些规则交给编译器执行，诊断 XH0001–XH0008 全部是错误级。框架的每个正式包都以分析器形式引用它；写框架扩展包的人可以在自己的项目里启用同一套规则。
 
 | 项 | 内容 |
 | --- | --- |
@@ -2963,7 +2963,7 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 | 配置节 | —（范围由 MSBuild 属性 `XiHanFrameworkPackage`、`XiHanRing` 控制） |
 | 依赖 | 只在构建期使用 `Microsoft.CodeAnalysis.CSharp`；目标 `netstandard2.0`，开发依赖，不进入运行时 |
 | AOT | 不适用（编译期组件） |
-| 稳定性 | —（编译期组件，不标注 `[ApiLevel]`；五条规则可用） |
+| 稳定性 | —（编译期组件，不标注 `[ApiLevel]`；八条规则可用） |
 
 ## 概述
 
@@ -2974,11 +2974,15 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 | `XH0003` | 所有引用了分析器的项目 | 不得在定义程序集之外使用标注为 `Stability.Internal` 的类型或成员 | `'{0}' is annotated with Internal stability and must not be used outside its own assembly` |
 | `XH0004` | 框架包 | 公开类型名不得用禁用词：`Default` 前缀，`Manager`、`Helper`、`Utils`、`Util`、`Common`、`Shared`、`Impl`、`Base` 后缀 | `Type name '{0}' uses the forbidden word '{1}'` |
 | `XH0005` | Ring 0/1 | 不得使用反射 API | `'{0}' is a reflection API, which is forbidden in the primitives and kernel rings` |
+| `XH0006` | 框架包 | 生效级别为 `Stable` 的公开类型与成员，签名不得引用 `Preview` 或 `Experimental` 的类型 | `'{0}' is Stable but its signature references '{1}', which is {2}` |
+| `XH0007` | 框架包 | 成员或嵌套类型单独标注的级别不得高于所在类型 | `'{0}' is annotated {1}, which is higher than {2} on its containing type '{3}'` |
+| `XH0008` | 框架包，`*.Testing` / `*.Conformance` 除外 | 生效级别为 `Stable` 的公开方法、构造与索引器不得声明可选参数 | `'{0}' is Stable and must not declare the optional parameter '{1}'; use an overload or an options record` |
 
 全部规则的类别是 `XiHan`、级别 Error，帮助链接指向本包 README 的规则表。判定细节：
 
 - XH0001 / XH0002 / XH0004 只看「有效公开」的类型（自身与全部包含类型都是 `public`），跳过编译器生成的类型；编译里找不到 `ApiLevelAttribute`（没引用原语层）时不报 XH0001。名字恰好等于禁用词本身（如 `Base`）不算；一个类型只报一次 XH0004。
 - XH0003 按 `[ApiLevel]` 构造参数的整数值判定 `Internal`（`Stability.Internal = 3`），以成员的原始定义判定，泛型实例化后仍能命中；类型或其任一包含类型标为 Internal 时，类型名出现在源码里也报。程序集内部可以用自己的 Internal API。
+- XH0006 / XH0007 / XH0008 的「生效级别」取符号自身的 `[ApiLevel]`，没有时逐层取包含类型的标注；没有任何标注的类型（BCL、第三方）不参与判定。XH0006 检查基类、实现的接口、泛型约束、参数、返回值与属性、字段、事件的类型，泛型实参一并展开，引用其他程序集的类型时读元数据上的标注；同一个不稳定类型在一个签名里只报一次。XH0007 只比较 `Experimental` → `Preview` → `Stable` 三级。XH0008 只约束 `Stable`：`Preview` 升 `Stable` 时这条规则随之生效；重写与接口实现照原声明不报，调用方信息参数（`CallerArgumentExpression`、`CallerMemberName` 等）不算可选参数。
 - XH0005 把 `System.Reflection` 命名空间下的一切视为反射，只放行 `MemberInfo` 上的 `Name`、`DeclaringType`、`ReflectedType`、`MemberType`、`MetadataToken`、`IsCollectible`；`Activator` 的任何成员都是反射；`Type` 上的成员查找（`GetMethod`、`GetProperty`、`GetCustomAttributes`、`MakeGenericType`、`Assembly` 等，以及带参数的 `Type.GetType(string)`）是反射，`object.GetType()` 不是。
 
 ## 何时使用
@@ -2999,7 +3003,7 @@ dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 
 ```xml
 <PropertyGroup>
-  <!-- 启用 XH0001 / XH0002 / XH0004 -->
+  <!-- 启用 XH0001 / XH0002 / XH0004 / XH0006～XH0008 -->
   <XiHanFrameworkPackage>true</XiHanFrameworkPackage>
 </PropertyGroup>
 ```
@@ -3010,7 +3014,7 @@ dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 
 | MSBuild 属性 | 值 | 作用 |
 | --- | --- | --- |
-| `XiHanFrameworkPackage` | `true`（不区分大小写） | 启用 XH0001、XH0002、XH0004 |
+| `XiHanFrameworkPackage` | `true`（不区分大小写） | 启用 XH0001、XH0002、XH0004、XH0006～XH0008 |
 | `XiHanRing` | `0` 或 `1` | 启用 XH0005；未设置或不是整数视为不在 Ring 0/1 |
 
 ## 主要类型
@@ -3020,6 +3024,8 @@ dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 | `PublicTypeAnalyzer` | XH0001、XH0002、XH0004 |
 | `InternalApiUsageAnalyzer` | XH0003 |
 | `ReflectionUsageAnalyzer` | XH0005 |
+| `StabilityDependencyAnalyzer` | XH0006、XH0007 |
+| `OptionalParameterAnalyzer` | XH0008 |
 
 ## 使用示例
 
@@ -3080,8 +3086,8 @@ Roslyn 源生成器：扫描标注 `[Operation]` 且实现 `IOperation<TRequest,
 
 内核零反射，运行期不读 `[Operation]`：契约要以 `OperationContract` 经 `FeatureContext.AddOperation<TOperation, TRequest, TResponse>(contract, requestInfo, responseInfo, schema)` 登记。生成器把这件事在编译期做掉，输出一个文件 `GeneratedOperations.g.cs`：
 
-- 静态类 `GeneratedOperations`，命名空间是项目的 `RootNamespace`（没有时取程序集名）。
-- 每个操作一个扩展方法 `Add<类名>(this FeatureContext)`（类名重复时依次加数字后缀），契约取自特性：ID、稳定性、`Expose`、`Policy` 或 `Permission`、`ReadOnly`；请求与响应的 `JsonTypeInfo` 取自项目里用 `[JsonSerializable]` 登记了该类型的 `JsonSerializerContext`。
+- `internal` 静态类 `GeneratedOperations`，命名空间是项目的 `RootNamespace`（没有时取程序集名）。它只在特性所在的程序集里调用，不进入项目的公开面；要让别的程序集登记这些操作，在本项目里包一个公开的扩展方法转调 `AddGeneratedOperations`。
+- 每个操作一个扩展方法 `Add<类名>(this FeatureContext)`（类名重复时依次加数字后缀），契约取自特性：ID、稳定性、`Expose`、`Policy` 或 `Permission`、`ReadOnly`，写成 `new OperationContract(id) { … }` 并只写非缺省值，枚举写成员名（ADR-0136）；请求与响应的 `JsonTypeInfo` 取自项目里用 `[JsonSerializable]` 登记了该类型的 `JsonSerializerContext`。
 - 登记全部操作的 `AddGeneratedOperations(this FeatureContext)`，在特性的 `Configure` 里调用一次。
 - 每个操作的请求与响应 JSON Schema（draft 2020-12），以 `OperationSchema` 随登记放进 `OperationDescriptor.Schema`。
 
@@ -3257,8 +3263,8 @@ public sealed class NotesFeature : IFeature
 
 | 命名空间 | 职责 |
 | --- | --- |
-| `Kernel.Hosting` | `AddXiHan`、`AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、资源绑定、健康快照与 `IHealthContributor`、`PeriodicHealthContributor` |
-| `Kernel.Capabilities` | `CapabilityResolver`、`ResolvedGraph`、`ResolvedNode`、`ManifestReader`（读写 `xihan.manifest.json`） |
+| `Kernel.Hosting` | `AddXiHan`、`AppBuilder`、`App`、`IFeature`、`IHostedFeature`、`FeatureContext`、`KernelOptions`、`StartupBannerOptions`、资源绑定、健康快照与 `IHealthContributor`、`PeriodicHealthContributor` |
+| `Kernel.Capabilities` | `ResolvedGraph`、`ResolvedNode`（能力求解的结果）、`ManifestReader`（读写 `xihan.manifest.json`） |
 | `Kernel.Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`Placement`、`DeadlineMiddleware`、`IInvocationAccessor`、调用来源 `InvocationOrigin`、上下文扩展 |
 | `Kernel.Operations` | `[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`IOperationInvoker` |
 | `Kernel.Validation` | `ValidationMiddleware`、`JsonSchemaValidator`、`SchemaViolation` |
@@ -3303,6 +3309,7 @@ await builder.Build().RunAsync();
 | `XiHan:Kernel:StopTimeoutSeconds` | `30` | 每个特性停止的超时 |
 | `XiHan:Kernel:FailurePolicy` | `TerminateStartup` | 特性启动失败时终止启动，或 `IsolateFeature` 只隔离该特性 |
 | `XiHan:Kernel:UseBuiltInMiddleware` | `true` | 是否登记 Observe、截止时间、Resilience、Validate 四个内置中间件 |
+| `XiHan:Kernel:Banner:Enabled` | `true` | 宿主启动时是否打印[启动 Banner](/startup/bootstrap#启动-banner)；命令行宿主缺省 `false` |
 | `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](/common/resilience) |
 | `XiHan:Security:Outbound:*` | 只能连公网地址 | [出站地址策略](/security/outbound)的放行项：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Providers:<能力 ID>` | — | 指定某能力的提供者清单 ID |
@@ -3319,13 +3326,14 @@ await builder.Build().RunAsync();
 | `App` | 运行中的应用：`State`、`Graph`、`Features`、`Health()`、`InvokeAsync`、`CreateContext`、`DescribeGraph()`、`DescribePipeline()` |
 | `IFeature` / `IHostedFeature` | 特性：`Manifest` + `Configure`；托管特性另有 `StartAsync` / `StopAsync` |
 | `IShadowAwareFeature` | 能力全部被顶替时内核改调 `ConfigureShadowed`，只登记与能力选择无关的服务（命名存储实例的 Provider）；不注册契约、不贡献中间件、不启动 |
-| `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`（归属为本特性的清单 ID）、`AddOperation`、`AddStartupCheck`（启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归失败策略管，ADR-0085）、`GetBinding` / `TryGetBinding` |
+| `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`（归属为本特性的清单 ID）、`AddOperation`、`AddStartupCheck`（启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归失败策略管，ADR-0085）、`GetBinding` / `FindBinding` |
 | `KernelOptions` / `FailurePolicy` | 内核选项与失败策略 |
+| `StartupBannerOptions` | 启动 Banner：`Enabled`（读 `XiHan:Kernel:Banner:Enabled`）、`Output`（写入目标，缺省标准输出）、`ApplicationVersion`（宿主包从入口程序集填入）；`FromConfiguration(configuration, defaults)` 让宿主给出自己的缺省 |
 | `IHealthContributor` / `PeriodicHealthContributor` / `ContributorStatus` / `HealthSnapshot` | 健康条目与快照 |
 | `ResolvedGraph` / `ResolvedNode` | 已解析的能力图谱，节点带被选中的能力、可选依赖缺失与 shadowed 标记；`IsRequestedFor` 区分被要求的选中（有依赖或经 `XiHan:Providers` / `UseProvider` 指定）与兜底选出 |
 | `PipelineBuilder` / `IPipelineMiddleware` / `PipelineStep` / `Placement` | 管道 |
 | `IInvocationAccessor` | 作用域服务，取当前调用的上下文 |
-| `InvocationContextExtensions` | `GetOutcome` / `SetOutcome`、`GetOrigin` / `SetOrigin`、`Get` / `Set`（`ContextItemKey<T>`） |
+| `InvocationContextExtensions` | `FindOutcome` / `SetOutcome`、`FindOrigin` / `SetOrigin`、`Get` / `Set`（`ContextItemKey<T>`） |
 | `IOperationInvoker` / `OperationRegistry` / `OperationDescriptor` | 操作调用与登记；`OperationRegistry(permissions)` 绑定核对用的权限登记表，`AddRange(owner, operations, permissions)` 一个归属的一组操作连同它定义的权限码全进或全不进；`RemoveOwnedBy(owner)` 在锁里一次撤回该归属的全部操作与权限码（插件卸载时用，之后可以再登记，ADR-0085）；`Enforce(check)` 核对已登记的操作并挂上核对，此后每次登记都经过它（授权能力用它核对契约的策略名，ADR-0080） |
 | `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous` |
 | `PermissionDefinition` / `PermissionRegistry` | 权限码登记，每个码记下归属（特性或插件的清单 ID）；`Add(owner, permission)` / `AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回，写入与撤回在锁内（插件运行期加载与卸载也会登记、撤回） |
@@ -3372,9 +3380,9 @@ app.Run();
 - 管道中间件的登记：按类型 `UseAt`、按实例 `UseInstance`、同类型多实例按名 `UseNamedInstance`；命名实例的次序约束用按名字的 `Before(名字, 目标)` / `After(名字, 目标)`。应用构建之后只能经 `UseOwned(归属, 回调)` 成组登记、经 `RemoveOwnedBy(归属)` 按归属撤回，两者都立即核对、全进或全不进；管道按版本构建，在途调用按进入时的管道走完。
 - 阶段内的基准次序按 `Placement`、归属清单 ID 字典序、注册序号，只保证可复现、不表达依赖：要用到别的包中间件产出的（认证后的主体、解析后的租户），必须显式 `Before` / `After` 约束，例如应用的会话门禁声明 `After<SessionGateMiddleware, AuthenticationMiddleware>()`。
 - `DeadlineMiddleware` 只看令牌归因：截止令牌已触发一律报 `KERNEL_TIMEOUT_001`，调用方同时取消也一样，下游抛出的取消与写下的 `KERNEL_CANCELLED_001` 结果同一规则；不另看时钟，截止令牌还没触发时调用方的取消仍报取消。
-- `InvocationOrigin` / `InvocationProtocols` 经 `GetOrigin()` / `SetOrigin()` 读写调用来源（协议、请求目标、远端地址、User-Agent、来源页、端点的路由模板与名字），由协议适配器建上下文时写入，内部调用没有。
+- `InvocationOrigin` / `InvocationProtocols` 经 `FindOrigin()` / `SetOrigin()` 读写调用来源（协议、请求目标、远端地址、User-Agent、来源页、端点的路由模板与名字），由协议适配器建上下文时写入，内部调用没有。
 - `IOperationResponseFilter`：成功响应写进上下文前按登记顺序过滤，四个调用入口与各协议编码都拿过滤后的结果。
-- 校验：`JsonSchemaValidator` 支持 draft 2020-12 的生成器子集（类型、必填、未声明属性、数组、枚举 / 常量、`$ref`、组合、数值范围、长度与模式、元素数），违规最多 32 条、深度上限 64；`SchemaViolation` 是 `$.path: reason`，另带 `kernel.validation.*` 消息键与参数供宿主按调用方区域翻译成字段级错误，`Field` 是去掉根 `$` 的点分字段键，`required` 违规挂在缺失属性自己的路径上。失败结果的细节有 `id`、`reason`、`violations`（文本）、`errors`（违规对象）。实现 `IValidatableObject` 的请求在解码后自校验，结果没有键、文案由应用给，成员名按 camelCase 转成序列化名。类型化调用按 `RequestInfo` 编码一次再校验；原始载荷与解码后的请求记录在上下文（`GetOperationPayload` / `GetOperationRequest`）。DataAnnotations 由 `Kernel.Generators` 折进 Schema，不在运行期反射。
+- 校验：`JsonSchemaValidator` 支持 draft 2020-12 的生成器子集（类型、必填、未声明属性、数组、枚举 / 常量、`$ref`、组合、数值范围、长度与模式、元素数），违规最多 32 条、深度上限 64；`SchemaViolation` 是 `$.path: reason`，另带 `kernel.validation.*` 消息键与参数供宿主按调用方区域翻译成字段级错误，`Field` 是去掉根 `$` 的点分字段键，`required` 违规挂在缺失属性自己的路径上。失败结果的细节有 `id`、`reason`、`violations`（文本）、`errors`（违规对象）。实现 `IValidatableObject` 的请求在解码后自校验，结果没有键、文案由应用给，成员名按 camelCase 转成序列化名。类型化调用按 `RequestInfo` 编码一次再校验；原始载荷与解码后的请求记录在上下文（`FindOperationPayload` / `FindOperationRequest`）。DataAnnotations 由 `Kernel.Generators` 折进 Schema，不在运行期反射。
 - 弹性：`Operations:<操作 ID>` 按操作覆盖，缺省键沿用默认策略；熔断连续 `FailureThreshold` 次失败打开 `BreakDuration`，到期半开只放一次试探，只有 KIND 为 UNAVAILABLE / TIMEOUT / UNEXPECTED 的结果与未处理异常算失败；限流是固定窗口（`PermitLimit` / `Window` / `QueueLimit`），并发有 `ConcurrencyLimit` / `ConcurrencyQueueLimit`；判定顺序熔断 → 限流 → 并发，拒绝时 `details` 带 `id`，限流与熔断带 `retryAfter` 秒；限制实例按操作 ID 各一份，没有操作描述的调用与没有任何限制的操作直接透传，排队受调用的取消令牌约束。限流与并发用 BCL 的 `System.Threading.RateLimiting`，熔断是内核自己的三态状态机。
 - `PeriodicHealthContributor` 是 Provider 连通性探针的宿主：后台按间隔重探、缓存最近结果，`Check()` 立即返回；探针异常记为 `KERNEL_UNAVAILABLE_005`；`ContributorStatus` 除名字、状态、错误外还带说明、检查时刻、耗时与标量数据。
 - `App.InvokeAsync` 把 Baggage `xihan.locale` 经 `IMessageResolver.Negotiate` 协商后安装 `MessageScope`，让 `key.L()` 在调用链里得到调用方语言，与 Problem Details 等按上下文解析的文案同一区域。
@@ -3442,7 +3450,7 @@ app.Run();
 
 - 应用或能力包有自己的文案：定义 `<领域>Messages` 键常量、写语言文件、用 `AddMessageCatalog` 注册目录。
 - 需要在调用链之外按指定区域取文案，或要知道命中的区域：注入 `IMessageLocalizer`。
-- 实现新的本地化 Provider：实现 `IMessageLocalizer` 与 `IMessageResolver`，并通过 `Localization.Conformance`。
+- 实现新的本地化 Provider：实现 `IMessageLocalizer`（`Options`、`Find`、`Resolve` 三个成员）与 `IMessageResolver`，并通过 `Localization.Conformance`。
 
 用法与回退规则的完整讲解见[国际化](/common/localization)。
 
@@ -3482,8 +3490,9 @@ dotnet add package XiHan.Framework.Localization.Abstractions --prerelease
 | `Locales.SupportedLocales` | `All` 与各区域常量（`EnglishUnitedStates`、`ChineseSimplified`、`ChineseTraditional`、`Japanese`、`Korean`、`German`、`Spanish`、`French`、`PortugueseBrazil`、`Russian`），`Default` = `en-US` |
 | `Locales.LocaleName` | `IsValid`、`Validate`、`Normalize`（`zh-cn` → `zh-CN`）、`LanguageOf`（`zh-CN` → `zh`）、`CultureOf`、`AreEqual`；`MaxLength` = 35 |
 | `LocalizationOptions` | `DefaultLocale`、`Locales`、`FallbackChain(locale)`、`Negotiate(candidates)`、`Resolve(context)`、`FromConfiguration`、`Validated()` |
-| `Messages.MessageCatalog` | 构造（目录名 + 区域 → 键 → 模板）、`FromEmbeddedResources(name, anchor, prefix)`、`ParseLocaleFile`、`Find(key, locale)`（精确匹配）、`Keys`、`Locales`、`LocalesOf(key)`；`DefaultResourcePrefix` = `Localization/` |
-| `Messages.IMessageLocalizer` | `Find`、`Resolve(key, locale, arguments)`、`Localize(...)`、`Resolve(error, locale)`、`Localize(error, ...)`、`Options` |
+| `Messages.MessageCatalog` | 构造（目录名 + 区域 → 键 → 模板）、`FromEmbeddedResources(name, anchor, prefix)`、`Find(key, locale)`（精确匹配）、`Keys`、`Locales`、`LocalesOf(key)`；`DefaultResourcePrefix` = `Localization/` |
+| `Messages.IMessageLocalizer` | `Find`、`Resolve(key, locale, arguments)`、`Options`；实现只需提供这三个 |
+| `Messages.MessageLocalizerExtensions` | 由 `Resolve` 推出的 `Localize(key, locale \| context, arguments)`、`Resolve(error, locale)`、`Localize(error, locale \| context)` |
 | `Messages.LocalizedText` | 一次解析的 `Text` 与实际命中的 `Locale` |
 | `Messages.InvocationContextLocalizationExtensions` | `context.Localize(key, arguments)`、`context.Localize(error)`；没有装配本地化时退回描述与 `Error.Message` |
 | `LocalizationServiceCollectionExtensions` | `AddMessageCatalog(catalog)`：同名目录合并为一份，同一键同一区域的模板不同时抛出 `LOCALIZATION_CONFLICT_001` |
@@ -3657,7 +3666,6 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 | `Translations.MessageTranslation` | 实体：`Id`（`Guid`）、`Key`（最长 256）、`Locale`（最长 35，即 `LocaleName.MaxLength`）、`Template`（长文本）、`ModifiedAt` |
 | `Translations.MessageTranslationEntry` | 要写入的一条：键、区域、模板；构造时校验 |
 | `Translations.MessageTranslationKey` | 自然键：键与区域 |
-| `Translations.MessageTranslationResult` | 批量写入或删除的一项结果：`Key` 与 `Outcome` |
 | `Translations.MessageTranslationStore` | 作用域服务：`UpsertAsync`、`RemoveAsync`、`ListAsync` |
 | `Translations.MessageTranslationLoader` | 单例：`ReloadAsync`、`LastLoadedAt`、`LastError`，同时是健康项的贡献者 |
 | `LocalizationMessages` | 本包的消息键与目录 |
@@ -3730,15 +3738,15 @@ if (reloaded.IsFailure)
 | 配置节 | `XiHan:Localization` |
 | 依赖 | `XiHan.Framework.Localization.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
-`InMemoryLocalizationFeature` 在装配时做三件事：从 `XiHan:Localization` 读 `LocalizationOptions`；注册原语层（`primitives`）与内核（`kernel`）的语言文件目录，这两层不能读嵌入资源，由本特性代为装载；登记 `MessageLocalizer`，同一个实例既是 `IMessageLocalizer`（显式区域）也是 `IMessageResolver`（环境作用域）。
+`InMemoryLocalizationFeature` 在装配时做三件事：从 `XiHan:Localization` 读 `LocalizationOptions`；注册原语层（`primitives`）与内核（`kernel`）的语言文件目录，这两层不能读嵌入资源，由本特性代为装载；登记 `InMemoryMessageLocalizer`，同一个实例既是 `IMessageLocalizer`（显式区域）也是 `IMessageResolver`（环境作用域）。
 
-启动时，特性把本地化器以默认区域设为进程默认的 `MessageScope`，于是启动日志、异常与 `Error.Message` 都有默认语言的文案；每次调用的入口由内核把 Baggage `xihan.locale` 经 `MessageLocalizer.Negotiate`（即 `LocalizationOptions.Negotiate`）协商成启用的区域，另装调用方区域的作用域，`key.L()` 与 `context.Localize`、Problem Details 因此是同一个区域。停止时不清除默认作用域，停机日志仍需要文案，下一个启动的应用会覆盖它。
+启动时，特性把本地化器以默认区域设为进程默认的 `MessageScope`，于是启动日志、异常与 `Error.Message` 都有默认语言的文案；每次调用的入口由内核把 Baggage `xihan.locale` 经 `InMemoryMessageLocalizer.Negotiate`（即 `LocalizationOptions.Negotiate`）协商成启用的区域，另装调用方区域的作用域，`key.L()` 与 `context.Localize`、Problem Details 因此是同一个区域。停止时不清除默认作用域，停机日志仍需要文案，下一个启动的应用会覆盖它。
 
-`MessageLocalizer` 在构造时取得容器里全部 `MessageCatalog` 的快照，之后不再变化；所有查找都在内存里完成，没有 IO。
+`InMemoryMessageLocalizer` 在构造时取得容器里全部 `MessageCatalog` 的快照，之后不再变化；所有查找都在内存里完成，没有 IO。
 
 ## 何时使用
 
@@ -3772,7 +3780,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryLocalizationFeature>());
 | 类型 | 说明 |
 | --- | --- |
 | `InMemoryLocalizationFeature` | 特性入口（`IHostedFeature`） |
-| `MessageLocalizer` | 实现 `IMessageLocalizer` 与 `IMessageResolver`；构造参数是目录集合与 `LocalizationOptions`，可在测试或工具里直接创建 |
+| `InMemoryMessageLocalizer` | 实现 `IMessageLocalizer` 与 `IMessageResolver`；构造参数是目录集合与 `LocalizationOptions`，可在测试或工具里直接创建 |
 
 ## 使用示例
 
@@ -3789,7 +3797,7 @@ var orders = new MessageCatalog("orders", new Dictionary<string, IReadOnlyDictio
     ["en-US"] = new Dictionary<string, string> { ["orders.order.not_found"] = "Order '{id}' was not found." },
     ["zh-CN"] = new Dictionary<string, string> { ["orders.order.not_found"] = "订单 '{id}' 不存在。" },
 });
-var localizer = new MessageLocalizer([orders], new LocalizationOptions());
+var localizer = new InMemoryMessageLocalizer([orders], new LocalizationOptions());
 
 Console.WriteLine(localizer.Localize("orders.order.not_found", "zh-TW", MessageArguments.Of(("id", 1))));
 // zh-TW 没有这条，同语言回退到 zh-CN：订单 '1' 不存在。
@@ -3835,7 +3843,7 @@ using (MessageScope.Use(localizer, "ja-JP"))
 | 配置节 | `XiHan:Messaging`（`MaxAttempts`、`DeadLetterSuffix`、`InstanceId`，由 Provider 读取）、`XiHan:Messaging:Outbox` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Stable；`IMessageReplayer` 与领域事件类型（`DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher`）为 Preview |
+| 稳定性 | Stable；`IMessageReplayer` 与发件箱（`Outbox` 命名空间）为 Preview |
 
 ## 概述
 
@@ -3845,12 +3853,12 @@ using (MessageScope.Use(localizer, "ja-JP"))
 - 应用经 `IMessagePublisher` 发布，Provider 实现 `IMessageBroker`（发布、按订阅消费、至少一次、重试、死信）；流 Provider 另实现 `IMessageReplayer`。
 - 处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic, mode)` 订阅；订阅方式 `SubscriptionMode` 缺省 `Competing`（订阅了主题的实例里只有一个收到），`Broadcast` 是每个在线实例各收到一份（尽力而为、不进死信，[订阅方式](/messaging/pubsub)）。`MessageDispatcher` 为每条消息开新作用域、从扩展属性构造调用上下文、经完整管道执行与投递同一方式的处理器。
 - Provider 的特性先注册自己的 `IMessageBroker`，再调用 `MessagingRegistration.Configure(context)` 注册选项、派发器、`MessagingRuntime` 与缺省的 `DirectPublisher`，启停时调用 `MessagingRuntime.StartAsync` / `StopAsync`。
-- 领域事件：`AddDomainEvent<TEvent>` 登记事件到主题与 CloudEvents `type`，`DomainEventDispatcher` 实现持久化抽象的 `IDomainEventDispatcher`，在 Transaction 阶段提交前把聚合的事件发成信封。
+- 领域事件：`AddDomainEvent<TEvent>` 登记事件到主题与 CloudEvents `type`（最多 10000 种），本包实现持久化抽象的 `IDomainEventDispatcher`（登记表、映射与派发器是内部类型），在 Transaction 阶段提交前把聚合的事件发成信封。
 - 发件箱：`OutboxFeature` 把发布者换成 `OutboxPublisher`，有活动工作单元时写发件箱表，由 `OutboxDispatcher` 在提交后投递。
 
 ## 何时使用
 
-- 特性发布或订阅消息：引用本包，在清单里声明 `messaging.queue@1`；运行时用 [Messaging.InMemory](./messaging-inmemory)（随 `Profiles.Standard` 装配）、[Messaging.RabbitMQ](./messaging-rabbitmq) 或 [Messaging.Kafka](./messaging-kafka)。
+- 特性发布或订阅消息：引用本包，在清单里声明 `messaging.queue@1`；运行时用 [Messaging.InMemory](./messaging-inmemory)（随 `Profiles.Standard` 装配）、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka) 或 [Messaging.Redis](./messaging-redis)。
 - 需要事件与业务数据同事务：再装配本包的 `OutboxFeature`。
 - 写新的代理 Provider：实现 `IMessageBroker`，复用 `MessagingRegistration` 与 `MessagingRuntime`，并通过 [Messaging.Conformance](./conformance) 的 `MessageBrokerConformance`（流 Provider 还有 `MessageStreamConformance`）。
 
@@ -3907,16 +3915,15 @@ builder.AddXiHan(xihan => xihan
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |
 | `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约；一次投递的主题、信封、尝试号与订阅方式（`Mode`）；代理调用的派发委托 |
 | `MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按（主题，方式）分组的订阅表（`All`、`Topics`、`HandlersFor(topic, mode)`、`Add(topic, handlerType, mode)`）；一个订阅；订阅方式 `Competing` / `Broadcast` |
-| `MessageDispatcher` | 把投递变成一次内核调用，`GetDelivery(context)` 取当前投递 |
+| `MessageDispatcher` | 把投递变成一次内核调用，`FindDelivery(context)` 取当前投递 |
 | `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
 | `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](/messaging/pubsub)）；Provider 共用的装配；启停消费 |
-| `DomainEventRegistry`、`DomainEventRegistration`、`DomainEventDispatcher` | 领域事件登记表（容量 `DefaultCapacity` 10000）、一种事件的映射（`ToEnvelope`）、派发器 |
 | `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避与保留期，`RetryDelayAfter(attempts)`） |
 | `MessagingCapabilities`、`MessagingErrors`、`MessagingMessages` | 能力 ID 与版本、错误码、消息键与消息目录 |
 
 ## 使用示例
 
-在中间件里区分消息投递与普通请求，给消息调用打上主题与尝试号（`MessageDispatcher.GetDelivery` 只在消息投递的调用里有值）：
+在中间件里区分消息投递与普通请求，给消息调用打上主题与尝试号（`MessageDispatcher.FindDelivery` 只在消息投递的调用里有值）：
 
 ```csharp
 using Microsoft.Extensions.Logging;
@@ -3928,7 +3935,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 {
     public async ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
-        if (MessageDispatcher.GetDelivery(context).TryGetValue(out var delivery) && delivery.Attempt > 1)
+        if (MessageDispatcher.FindDelivery(context).TryGetValue(out var delivery) && delivery.Attempt > 1)
         {
             logger.LogWarning("Retrying {MessageId} on {Topic}, attempt {Attempt}.", delivery.Envelope.Id, delivery.Topic, delivery.Attempt);
         }
@@ -3966,7 +3973,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 ## 相关
 
 - [消息与事件](/messaging/pubsub)
-- [Messaging.InMemory](./messaging-inmemory)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Protocols.CloudEvents](./protocols-cloudevents)
+- [Messaging.InMemory](./messaging-inmemory)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Messaging.Redis](./messaging-redis)、[Protocols.CloudEvents](./protocols-cloudevents)
 - [Persistence.Abstractions](./persistence-abstractions)：工作单元与 `IDomainEventDispatcher` 端口
 - [Conformance 一致性套件](./conformance)
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》；ADR-0012、ADR-0019、ADR-0025
@@ -3988,7 +3995,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 | 配置节 | `XiHan:Messaging:InMemory`、`XiHan:Messaging` |
 | 依赖 | `XiHan.Framework.Messaging.Abstractions`；无第三方依赖 |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -4007,7 +4014,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 ## 何时使用
 
 - 单进程部署、开发与测试；`Profiles.Standard` 已经装配它。
-- 多实例部署或需要持久化的消息：换 [Messaging.RabbitMQ](./messaging-rabbitmq) 或 [Messaging.Kafka](./messaging-kafka)；处理器与发布代码不变。
+- 多实例部署或需要持久化的消息：换 [Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka) 或 [Messaging.Redis](./messaging-redis)；处理器与发布代码不变。
 - 需要按分区键有序或按时刻重放：本包不提供 `messaging.stream`，用 Kafka。
 
 ## 安装与启用
@@ -4080,7 +4087,7 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 ## 相关
 
 - [消息与事件](/messaging/pubsub)
-- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)
+- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Messaging.Redis](./messaging-redis)
 - [Profiles.Standard](./profiles-standard)
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》
 
@@ -4110,8 +4117,8 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 - 主题映射为 `<TopicPrefix><topic>`（前缀缺省 `xihan.`）。消息值是 CloudEvents 结构化 JSON，头 `content-type` 为 `application/cloudevents+json`、`x-xihan-attempt` 为尝试次数。
 - 消息键取信封扩展属性 `xihankey`（`EnvelopeExtensions.PartitionKey`）：同键进同一分区，按发布顺序投递；没有键时由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 - 生产者幂等（`EnableIdempotence`）且 `acks=all`。批量发布连续交给客户端本地队列、合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
-- 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `GroupId`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
-- 广播订阅（[订阅方式](/messaging/pubsub)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](/messaging/pubsub)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
+- 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `ConsumerGroup`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
+- 广播订阅（[订阅方式](/messaging/pubsub)）用本实例独占的消费组 `<ConsumerGroup>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](/messaging/pubsub)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`ConsumerGroup` 前缀的 ACL 同样覆盖广播消费组。
 - 处理失败在原位重试到 `MaxAttempts`，不重新入队，分区内顺序不变；竞争订阅仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。无法解码的消息直接进死信。
 - 竞争订阅投递完成（成功或进死信）后才提交位点；停止时未完成的消息在重启后重新投递，仍是至少一次。
 - 死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，消费者回退到这条消息，等 `RedeliveryDelaySeconds` 后重新投递（处理器重新执行），期间这个分区不往后读；消费者本身出错同样等一会儿再取。消费循环只在停止时退出，每次重投记 Error 日志。
@@ -4150,7 +4157,7 @@ builder.AddXiHan(xihan => xihan
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:Kafka:BootstrapServers` | 字符串 | — | 引导地址，逗号分隔的 `host:port`；有绑定 `stream` 时被绑定的主值覆盖，两者都没有时装配失败。绑定的属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 各自覆盖 `Properties` 里的同名键，其余绑定属性不透传 |
-| `XiHan:Messaging:Kafka:GroupId` | 字符串 | `xihan` | 消费组，同一组的实例分摊分区 |
+| `XiHan:Messaging:Kafka:ConsumerGroup` | 字符串 | `xihan` | 消费组，同一组的实例分摊分区 |
 | `XiHan:Messaging:Kafka:TopicPrefix` | 字符串 | `xihan.` | 主题前缀 |
 | `XiHan:Messaging:Kafka:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Messaging:Kafka:RedeliveryDelaySeconds` | 正数 | 5 | 投递没有完成（死信发布失败等）时重新投递前的等待 |
@@ -4165,7 +4172,7 @@ builder.AddXiHan(xihan => xihan
     "Messaging": {
       "Kafka": {
         "BootstrapServers": "localhost:9092",
-        "GroupId": "orders",
+        "ConsumerGroup": "orders",
         "Properties": {
           "security.protocol": "SASL_SSL",
           "sasl.mechanism": "PLAIN",
@@ -4214,8 +4221,8 @@ done
 | 类型 | 说明 |
 | --- | --- |
 | `KafkaMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`stream`）、`HealthName`（`messaging.kafka.connection`） |
-| `KafkaMessagingOptions` | `BootstrapServers`、`GroupId`、`TopicPrefix`、`Properties`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
-| `KafkaMessageBroker` | 代理与重放器；`ConnectAsync`、`IsConnected`、`ProbeAsync`（健康项用）、`ReplayAsync` |
+| `KafkaMessagingOptions` | `BootstrapServers`、`ConsumerGroup`、`TopicPrefix`、`Properties`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
+| `KafkaMessageBroker` | 代理与重放器；`ReplayAsync`；连接与健康探测由特性在内部调用 |
 
 ## 使用示例
 
@@ -4241,7 +4248,7 @@ public sealed class LedgerStream(IMessagePublisher publisher, IMessageReplayer r
 
 ## 行为与限制
 
-- 重放：`ReplayAsync(topic, since)` 只投给竞争订阅，用一个新的独立消费组（`<GroupId>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
+- 重放：`ReplayAsync(topic, since)` 只投给竞争订阅，用一个新的独立消费组（`<ConsumerGroup>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
 - 原位重试会阻塞所在分区：一条消息重试期间，同分区后面的消息等待；重试之间不等待。
 - 重放与重试都是有意的重复投递，处理器按 `Id` + `Source` 去重。
 - 主题不存在（ADR-0079、ADR-0085）：集群开着自动建主题时由 broker 建出，没人订阅的主题里的消息只留到保留期；关了自动建主题时发布约 30 秒后失败、订阅一直等、死信发布回退重投，要预建主题，清单见[主题](#主题)。
@@ -4259,7 +4266,7 @@ docker run -d -p 9092:9092 apache/kafka
 ## 相关
 
 - [消息与事件](/messaging/streams)
-- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.InMemory](./messaging-inmemory)
+- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Redis](./messaging-redis)
 - [部署与打包](/deployment/pack)：绑定 `stream` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》「流」；ADR-0019
 
@@ -4280,7 +4287,7 @@ docker run -d -p 9092:9092 apache/kafka
 | 配置节 | `XiHan:Messaging:RabbitMQ`、`XiHan:Messaging`；可选绑定 `queue`（类型 `queue`） |
 | 依赖 | `XiHan.Framework.Messaging.Abstractions`；`RabbitMQ.Client` |
 | AOT | 不兼容（`IsAotCompatible=false`，RabbitMQ.Client 未声明 AOT 兼容） |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -4358,7 +4365,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | `RabbitMQMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`queue`）、`HealthName`（`messaging.rabbitmq.connection`） |
 | `RabbitMQMessagingOptions` | `Configuration`、`QueuePrefix`、`Exchange`、`PrefetchCount`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
-| `RabbitMQMessageBroker` | 代理；`ConnectAsync`、`IsConnected`、`CheckConnection()`（健康项用） |
+| `RabbitMQMessageBroker` | 代理；连接与健康探测由特性在内部调用 |
 
 ## 使用示例
 
@@ -4423,8 +4430,185 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 ## 相关
 
 - [消息与事件](/messaging/pubsub)
-- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Kafka](./messaging-kafka)
+- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Kafka](./messaging-kafka)、[Messaging.Redis](./messaging-redis)
 - [部署与打包](/deployment/pack)：绑定 `queue` 的来源
+- 规范：RFC-0009《消息、CloudEvents 信封与发件箱》
+
+---
+
+来源：https://framework.docs.xihanfun.com/packages/messaging-redis
+
+# XiHan.Framework.Messaging.Redis
+
+`messaging.queue@1` 的 Redis Streams Provider，基于 StackExchange.Redis：每个主题一条流，竞争订阅用消费组，广播订阅每个实例一个组，处理成功才确认，超时未确认的条目由别的实例回收。适用于只有 Redis、没有 RabbitMQ 或 Kafka 的多实例部署。
+
+| 项 | 内容 |
+| --- | --- |
+| 包 ID | `XiHan.Framework.Messaging.Redis` |
+| 环层 | Ring 3（实现） |
+| 能力 | 提供 `messaging.queue@1`（`role: provider`），不提供 `messaging.stream@1`；依赖 `kernel.hosting@1` |
+| 特性入口 | `RedisMessagingFeature`（清单 ID `xihan.messaging.redis`） |
+| 配置节 | `XiHan:Messaging:Redis`、`XiHan:Messaging`；可选绑定 `queue`（类型 `cache:distributed`） |
+| 依赖 | `XiHan.Framework.Messaging.Abstractions`；`StackExchange.Redis`（与 `Caching.Redis` 同一个中央包版本） |
+| Redis | 6.2 或更高（用到 `XAUTOCLAIM` 与 `XGROUP CREATECONSUMER`） |
+| AOT | 不兼容（`IsAotCompatible=false`，StackExchange.Redis 未声明 AOT 兼容） |
+| 稳定性 | Preview |
+
+## 概述
+
+`RedisMessageBroker` 实现 `IMessageBroker`。装配后它顶替内存代理，处理器、发布者与发件箱的代码不变（ADR-0130）。
+
+- 键：每个主题一条流 `<KeyPrefix><topic>`（前缀缺省 `xihan:messaging:`），条目字段 `envelope` 是 CloudEvents 结构化 JSON。死信流是 `<KeyPrefix><topic><DeadLetterSuffix>`，订阅主题 `<topic>.dlq` 就能消费死信。
+- 流只由订阅方建立：订阅方启动时建消费组（带 `MKSTREAM`，从 `$` 开始）与自己的消费者，发布用 `NOMKSTREAM`。所以订阅方第一次启动之前发布的消息不投递；之后订阅方离线期间的消息留在流里。
+- 发布：`XADD ... NOMKSTREAM MAXLEN ~ <MaxLength>`，Redis 应答了条目 ID 才算成功。流不存在（没有订阅者）时消息丢弃、发布照常成功，记一条 Debug 日志，与内存代理、RabbitMQ 一致。批量发布在一个 `MULTI` / `EXEC` 事务里，一次往返，整批写入或整批不写入，主题内保持入参顺序。
+- 消费：竞争订阅都在消费组 `ConsumerGroup`（缺省 `xihan`）里，组内的实例分摊条目；广播订阅用本实例独占的组 `<ConsumerGroup>@<InstanceId>`。每个订阅（主题加方式）一个消费循环，`XREADGROUP` 每次最多取 `BatchSize` 条，单线程依次派发，成功即 `XACK`。没取到就等 `PollIntervalSeconds` 再取：StackExchange.Redis 的多路复用连接不支持阻塞读，消费是轮询。
+- 重试：处理失败在原位立即重试到 `MaxAttempts`，不重新入流。每次重试前先把条目 `XCLAIM` 给自己，消费组的待确认列表因此记下投递次数，尝试号就是它：实例崩溃后接手的实例接着计数。
+- 死信：竞争订阅到上限时写进死信流（另带字段 `attempt` 与 `error`），写入得到应答后才确认原条目；广播订阅到上限时确认掉并记 Warning，不进死信。无法解码的条目不重试：竞争订阅原样进死信流，广播订阅丢弃。
+- 回收：每个消费循环每过 `min(ClaimIdleTimeSeconds, 10)` 秒维护一次，用 `XAUTOCLAIM` 认领组里空闲超过 `ClaimIdleTimeSeconds` 的条目，按投递次数接着投递，已超过 `MaxAttempts` 的直接进死信。这些条目来自崩溃或停止时没处理完的实例，以及死信写入、确认失败的投递。
+- 整理与清理：维护时还会做三件事，组与消费者的数量、流的长度都不会无界增长。
+  - 删除竞争组里空闲超时、没有待确认条目的消费者：实例标识每次启动不同，重启会留下旧消费者。
+  - 删除没有消费者或消费者全部空闲超时的 `<ConsumerGroup>@*` 广播组：实例崩溃会留下旧组。
+  - 按全部组的下限 `XTRIM MINID ~`，去掉全部组都确认过的条目，流里只留积压。
+- 停止时取消消费循环。正在处理的条目不确认，留给别的实例回收。之后清理本实例的痕迹：
+  - 广播订阅删除自己的组，流上不剩组时连流一起删除。
+  - 竞争订阅在没有待确认条目时删除自己的消费者。
+
+启动时先连接 Redis、为全部订阅建好组再开始消费，连不上时启动失败（`MESSAGING_UNAVAILABLE_001`），不退回内存代理；停止时先停健康探针与消费，再关闭连接。
+
+## 何时使用
+
+- 只有 Redis 的多实例部署：工作队列至少一次、按主题分摊给各实例；每个实例都要处理的通知用广播订阅。
+- 已经有 RabbitMQ：用 [Messaging.RabbitMQ](./messaging-rabbitmq)，持久性与运维工具更完整。
+- 需要同一分区键有序、或按时刻重放：用 [Messaging.Kafka](./messaging-kafka)。竞争组把条目轮流分给组内的消费者，本包满足不了同键有序，所以不提供 `messaging.stream@1`。
+- 单进程、开发与测试：[Messaging.InMemory](./messaging-inmemory)。
+
+## 安装与启用
+
+```bash
+dotnet add package XiHan.Framework.Messaging.Redis --prerelease
+```
+
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+
+```csharp
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Messaging.Redis;
+using XiHan.Framework.Profiles.Standard;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
+    .UseFeature<RedisMessagingFeature>());
+```
+
+与 `RabbitMQMessagingFeature` 或 `KafkaMessagingFeature` 同时装配时能力求解报 `KERNEL_CAPABILITY_004`，用 `XiHan:Providers:messaging.queue` 写 `xihan.messaging.redis` 指定它。
+
+## 配置
+
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `XiHan:Messaging:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有绑定 `queue` 时被绑定的主值覆盖，两者都没有时装配失败；绑定的属性 `username` / `password` 覆盖连接字符串里的 `user` / `password`（连接时设置，不改写字符串） |
+| `XiHan:Messaging:Redis:KeyPrefix` | 字符串 | `xihan:messaging:` | 流键的前缀；发布方与订阅方要一致 |
+| `XiHan:Messaging:Redis:ConsumerGroup` | 字符串 | `xihan` | 竞争订阅的消费组名，文法同实例标识（字母或数字开头、最多 64 个字符、不含 `@`）；只有订阅方用到，要分摊同一主题的实例要一致 |
+| `XiHan:Messaging:Redis:BatchSize` | 1–1000 | 10 | 每次最多取的条目数 |
+| `XiHan:Messaging:Redis:PollIntervalSeconds` | 正数 | 0.2 | 没取到新条目时再取之前的等待 |
+| `XiHan:Messaging:Redis:ClaimIdleTimeSeconds` | 至少 0.001 | 60 | 待确认条目空闲多久后可被回收，也是清理空闲消费者与遗留广播组的阈值 |
+| `XiHan:Messaging:Redis:MaxLength` | 正整数 | 100000 | 每条流（主题与死信）的近似长度上限 |
+| `XiHan:Messaging:Redis:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
+| `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
+| `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信流后缀 |
+| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 消费者名与广播组名里的实例标识；必须每个同时在线的实例唯一，重复时广播静默退化成竞争 |
+
+```json
+{
+  "XiHan": {
+    "Messaging": {
+      "MaxAttempts": 5,
+      "Redis": {
+        "Configuration": "localhost:6379",
+        "ConsumerGroup": "orders-api",
+        "ClaimIdleTimeSeconds": 120
+      }
+    }
+  }
+}
+```
+
+`ClaimIdleTimeSeconds` 必须大于一批条目的最长处理时间（`BatchSize` 乘处理器的最长耗时）。条目在被取到时就记进本消费者的待确认列表；处理得比这更久，别的实例会把还在处理的条目认领去，同一条消息被处理两次。处理器慢时调大它，或者调小 `BatchSize`。
+
+## 主要类型
+
+| 类型 | 说明 |
+| --- | --- |
+| `RedisMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`queue`）、`HealthName`（`messaging.redis.connection`） |
+| `RedisMessagingOptions` | `Configuration`、`UserName`、`Password`、`KeyPrefix`、`ConsumerGroup`、`BatchSize`、`PollInterval`、`ClaimIdleTime`、`MaxLength`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)`；`ToString()` 遮蔽连接字符串与凭据 |
+| `RedisMessageBroker` | 代理；连接与健康探测由特性在内部调用 |
+
+## 使用示例
+
+处理器与内存代理下完全相同。下面的服务把死信流里的消息重新发回原主题，修复处理器的缺陷之后用：死信流就是主题 `<topic>.dlq` 的流，这里直接用 StackExchange.Redis 读取。
+
+```csharp
+using StackExchange.Redis;
+using XiHan.Framework.Messaging.Abstractions.CloudEvents;
+using XiHan.Framework.Messaging.Abstractions.Publishing;
+using XiHan.Framework.Primitives;
+
+public sealed class DeadLetterReplayer(IConnectionMultiplexer redis, IMessagePublisher publisher)
+{
+    // 读出死信流里最早的 count 条，解码后批量发回原主题，成功后删掉这些死信
+    public async ValueTask<Result> ReplayAsync(string topic, int count, CancellationToken cancellationToken)
+    {
+        var database = redis.GetDatabase();
+        var key = $"xihan:messaging:{topic}.dlq";
+        var entries = await database.StreamRangeAsync(key, count: count);
+        var envelopes = entries.Select(static e => CloudEventsFormat.Decode((byte[])e["envelope"]!))
+            .Where(static r => r.IsSuccess)
+            .Select(static r => r.ValueOrThrow())
+            .ToList();
+
+        foreach (var result in await publisher.PublishManyAsync(topic, envelopes, cancellationToken))
+        {
+            if (result.IsFailure)
+            {
+                return result;
+            }
+        }
+
+        await database.StreamDeleteAsync(key, [.. entries.Select(static e => e.Id)]);
+        return Result.Success();
+    }
+}
+```
+
+`IConnectionMultiplexer` 由应用自己登记，本包不把内部的连接登记进容器。
+
+## 行为与限制
+
+- 连接或超时异常抛出携带 `MESSAGING_UNAVAILABLE_001` 的 `FrameworkException`，消息只写框架自己的文字，客户端的异常在 `InnerException`；没有订阅者的发布成功并丢弃；单条发布遇到不合法主题抛 `ArgumentException`（发布者已先校验，代理收到不合法主题是装配错误）。
+- 投递是至少一次。下面几种情况会重复投递，处理器按 `Id` + `Source` 去重：
+  - 处理成功但确认失败。
+  - 死信写入成功但确认失败。
+  - 处理时间超过 `ClaimIdleTimeSeconds`，条目被别的实例认领。
+- 重试在原位、之间不等待；同一个消费循环里后面的条目等这条重试完。组内有多个实例时条目轮流分给它们，主题内没有全局顺序。
+- 消费者落后超过 `MaxLength` 时，最旧的条目在投递前被 `MAXLEN ~` 裁掉，这些消息丢失；回收时发现待确认的条目被裁掉会记 Warning。按最长停机期间的积压设 `MaxLength`。
+- 持久性取决于 Redis 的部署：发布成功只表示主节点收下了条目，框架不等副本，主从切换时刚写入的条目可能丢失；Redis 重启后数据是否还在取决于 AOF / RDB。
+- 消息用的 Redis 不能淘汰流的键：`maxmemory-policy` 要是 `noeviction` 或 `volatile-*`（流的键没有过期时间，不会被淘汰）。连接时检查到 `allkeys-*` 记 Warning。缓存用的 Redis 常配 `allkeys-lru`，所以本包不读缓存的 `cache` 绑定；要共用一台 Redis 时让 `queue` 与 `cache` 两个绑定指向它，并按消息的要求配淘汰策略。
+- 组被外部删除或 Redis 丢了数据（`NOGROUP`）时，消费循环重新建组，从 `$` 开始，这期间写入的条目不再投递。
+- 实例崩溃留下的广播组，要等还订阅这个主题的实例在维护时删除；没有实例再订阅这个主题时它会一直留着，流也留着，最多 `MaxLength` 条。
+- 两个同时在线的实例配了同一个 `InstanceId`，它们共用同一个广播组，广播静默退化成竞争（每条只有一个实例收到）。
+- 测试：选项与装配的用例不需要 Redis；一致性套件与流上的行为用例（死信、回收、清理、整理与裁剪）需要真实 Redis，设置环境变量 `XIHAN_TEST_REDIS`（如 `localhost:6379`，与 `Caching.Redis` 的测试同一个变量）后运行，未设置时跳过。
+
+| 健康项 | 状态 |
+| --- | --- |
+| `messaging.redis.connection` | 启动后按 `HealthProbeIntervalSeconds` 在后台 `PING` 并缓存结果；连不上或超时时 Degraded，应用仍在服务 |
+
+## 相关
+
+- [发布与订阅](/messaging/pubsub)、[队列与流](/messaging/streams)
+- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Caching.Redis](./caching-redis)
+- [资源绑定](/configuration/bindings)：绑定 `queue` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》
 
 ---
@@ -4497,17 +4681,18 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | --- | --- |
 | `Tenants.TenantInfo` | 租户：`Id`、`DisplayName`、`IsEnabled`（缺省 `true`）、`Properties`（键区分大小写） |
 | `Tenants.TenantIdentifier` | 租户 ID 文法 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：`IsValid`、`Validate`、`MaxLength`（64） |
-| `Tenants.ITenantStore` | 租户存储：`FindAsync`、`ListAsync`；ID 区分大小写，基础设施失败抛异常 |
-| `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选，只解析不校验 |
+| `Tenants.ITenantStore`、`TenantQuery`、`TenantPage` | 租户存储：`FindAsync` → `Result<Maybe<TenantInfo>>`、`ListAsync(TenantQuery)` → `Result<TenantPage>`（`PageSize` 1～1000、续页令牌、`EnabledOnly`）；ID 区分大小写，存储不可达返回 `MULTITENANCY_UNAVAILABLE_003` |
+| `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选：`ResolveAsync` 返回 `Result<Maybe<string>>`，无值交给下一个解析器，失败即拒绝调用；格式、存在与启用由中间件核对 |
 | `Resolution.ClaimTenantResolver` | 读已认证主体的租户声明（第一个值）；未认证主体跳过 |
 | `Resolution.BaggageTenantResolver` | 读 Baggage `xihan.tenant`，由进程内建上下文的地方放进去；HTTP、gRPC、MCP 入站不收这个键（ADR-0121） |
 | `Resolution.TenantResolutionMiddleware` | Tenant 阶段的中间件 |
 | `MultiTenancyOptions` | 选项，见上表 |
-| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantId?)` |
+| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantIds)`、`InvalidateAll()` |
+| `Tenants.ITenantAdministration` | 可选的租户管理：`UpsertAsync(tenants)`（整份覆盖）、`RemoveAsync(tenantIds)`（不存在为 `MULTITENANCY_NOTFOUND_001`），逐项结果与入参同序，写入后失效目录与分片缓存；内存与数据库实现都提供 |
 | `Sharding.TenantShard` | 分片：`TenantId`、`ConnectionString`、`Provider`（转小写，可空）、`Properties` |
 | `Sharding.TenantStoreShardResolver` | 从租户属性推出分片的缺省解析器，按租户有界缓存；`FromProperties(tenant)` 不带缓存地推出单个租户的分片 |
 | `Sharding.TenantShardKeys` | 租户属性键 `ConnectionString`、`DatabaseProvider`、前缀 `Shard.`，绑定属性键 `tenant`、`provider` |
-| `Sharding.TenantShardInvocationExtensions` | `GetTenantShard()` / `SetTenantShard(shard)`：调用上下文里的分片 |
+| `Sharding.TenantShardInvocationExtensions` | `FindTenantShard()` / `SetTenantShard(shard)`：调用上下文里的分片 |
 | `Sharding.TenantShardBinding` | `Resolve(scopedServices, bindingName, bindingType, fallback)`：持久化 Provider 创建客户端时取分片连接绑定 |
 | `Sharding.TenantShardScope` | 作用域服务，管道外显式绑定分片：`BindTenantAsync`、`Bind`、`Shard`、`IsConnected` |
 | `MultiTenancyCapabilities` | 能力 ID 常量 `Context`、`Sharding` 与 `Version`（1） |
@@ -4529,11 +4714,15 @@ public sealed class FixedTenantStore : ITenantStore
         ["globex"] = new TenantInfo { Id = "globex", DisplayName = "Globex", IsEnabled = false },
     };
 
-    public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
-        => ValueTask.FromResult(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : Maybe.None<TenantInfo>());
+    public ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : Maybe.None<TenantInfo>()));
 
-    public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken)
-        => ValueTask.FromResult<IReadOnlyList<TenantInfo>>([.. _tenants.Values.OrderBy(static t => t.Id, StringComparer.Ordinal)]);
+    // 租户很少：一页返回全部，令牌为空即读完。租户多的存储按 query.PageSize 分页，越界返回 MULTITENANCY_VALIDATION_003
+    public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(new TenantPage
+        {
+            Items = [.. _tenants.Values.Where(t => !query.EnabledOnly || t.IsEnabled).OrderBy(static t => t.Id, StringComparer.Ordinal)],
+        }));
 }
 ```
 
@@ -4549,7 +4738,7 @@ public static class ShardInfo
 {
     // 共库租户与无租户的调用没有分片
     public static string Describe(InvocationContext context)
-        => context.GetTenantShard().TryGetValue(out var shard)
+        => context.FindTenantShard().TryGetValue(out var shard)
             ? $"{shard.TenantId} -> {shard.Provider ?? "default"}"
             : "shared";
 }
@@ -4574,7 +4763,9 @@ public static class ShardInfo
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 |
 | `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
-| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
+| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 是存储的错误码，存储的错误作为内部错误保留（ADR-0115） |
+| `MULTITENANCY_UNAVAILABLE_003` | 租户存储不可达（连接、超时、事务失败），不当作租户不存在 |
+| `MULTITENANCY_VALIDATION_003` | 租户列表查询不合法：每页条数越界或续页令牌无效 |
 
 六个消息键（`multitenancy.tenant.*`、`multitenancy.store.capacity_exceeded`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
 
@@ -4673,7 +4864,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | --- | --- | --- | --- |
 | `XiHan:MultiTenancy:Database:CacheSize` | `int` | 10000 | 目录缓存条目上限，"不存在"也占一条；满时整体清空 |
 | `XiHan:MultiTenancy:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠 `Invalidate` 失效 |
-| `XiHan:MultiTenancy:Database:MaxListedTenants` | `int` | 10000 | `DatabaseTenantStore.ListAsync` 最多返回的租户数 |
 
 解析选项 `DefaultTenant`、`RequireTenant`、`ValidateAgainstStore`、`TenantClaim` 见 [MultiTenancy.Abstractions](./multitenancy-abstractions#配置)。持久化 Provider 的连接来自绑定，SqlSugar 的绑定名是 `db`。
 
@@ -4683,7 +4873,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     "Bindings": { "db": "Host=localhost;Database=app" },
     "MultiTenancy": {
       "RequireTenant": false,
-      "Database": { "CacheSize": 10000, "CacheTimeToLiveSeconds": 30, "MaxListedTenants": 10000 }
+      "Database": { "CacheSize": 10000, "CacheTimeToLiveSeconds": 30 }
     }
   }
 }
@@ -4694,24 +4884,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | 类型 | 说明 |
 | --- | --- |
 | `DatabaseMultiTenancyFeature` | 特性入口：登记 `TenantRecord` 的仓储、目录、解析器与 Tenant 阶段中间件，启动时核对持久化 Provider |
-| `DatabaseMultiTenancyOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期）、`MaxListedTenants` |
+| `DatabaseMultiTenancyOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
 | `Tenants.TenantRecord` | 存储行：`Id`（主键，租户 ID）、`DisplayName`、`IsEnabled`、`PropertiesJson`、`CreatedAt`、`ModifiedAt`、`ConcurrencyStamp`；平台级数据，不实现 `IMultiTenant`、不软删除 |
-| `Tenants.DatabaseTenantStore` | 单例 `ITenantStore`：`FindAsync`（缓存）、`ListAsync`（按 ID 每页 1000 条读完，不走缓存）、`Invalidate(tenantId?)`、`CachedCount` |
-| `Tenants.TenantRecordStore` | 作用域服务：`UpsertAsync`、`RemoveAsync` 批量逐项结果，`ListAsync(skip, take)` 按 ID 分页 |
-| `Tenants.TenantRecordResult` | 一项结果：`TenantId`、`Outcome` |
+| `Tenants.DatabaseTenantStore` | 单例 `ITenantStore`：`FindAsync`（缓存）、`ListAsync`（按 ID 一页一页读，偏移作续页令牌，不走缓存）、`Invalidate(tenantId?)`、`CachedCount` |
+| `Tenants.TenantRecordStore` | 作用域服务，实现 `ITenantAdministration`：`UpsertAsync`、`RemoveAsync` 批量逐项结果；列出租户用 `ITenantStore.ListAsync` |
 
 ## 使用示例
 
-管理操作在处理器里经 `TenantRecordStore` 写入；Transaction 阶段已经开了工作单元，写入随调用一起提交：
+管理操作在处理器里经租户管理 `ITenantAdministration`（作用域服务，就是 `TenantRecordStore`）写入；Transaction 阶段已经开了工作单元，写入随调用一起提交。列出租户用 `ITenantStore.ListAsync(TenantQuery)`：
 
 ```csharp
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
-using XiHan.Framework.MultiTenancy.Database.Tenants;
 using XiHan.Framework.Primitives;
 
 // 作用域服务，在操作的处理器里使用
-public sealed class TenantOnboarding(TenantRecordStore tenants)
+public sealed class TenantOnboarding(ITenantAdministration tenants)
 {
     public async ValueTask<Result> CreateAsync(string tenantId, string displayName, string? connectionString, CancellationToken cancellationToken)
     {
@@ -4723,10 +4911,10 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
         }
 
         var results = await tenants.UpsertAsync([new TenantInfo { Id = tenantId, DisplayName = displayName, Properties = properties }], cancellationToken);
-        return results[0].Outcome;
+        return results[0];
     }
 
-    public async ValueTask<IReadOnlyList<TenantRecordResult>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
         => await tenants.UpsertAsync([.. current.Select(static t => t with { IsEnabled = false })], cancellationToken);
 }
 ```
@@ -4737,9 +4925,9 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 
 - 写入：`UpsertAsync` 一次查询取回已有行，已有的更新、没有的新增，各用一次批量方法写入；同一批里同一租户后者整份覆盖前者，同一行只写一次，各项结果相同。`RemoveAsync` 对不存在的 ID 与同一批里重复出现的 ID 逐项返回 `MULTITENANCY_NOTFOUND_001`；不合法的租户 ID 是编程错误，整批在访问数据库前抛出 `ArgumentException`。空集合直接返回空结果。
 - 可见性：写入在调用方事务提交后才对其他调用可见。`TenantRecordStore` 在写入时就失效缓存，失效与提交之间的窗口由 `CacheTimeToLive` 收敛；多实例部署时其他实例的缓存同样靠存活时间收敛。绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate` 与 `ITenantShardResolver.Invalidate`，或等存活时间到期。
-- 故障：连接失败、提交失败这类基础设施异常按 `ITenantStore` 契约原样抛出，不伪装成租户不存在；Tenant 阶段据此让调用失败，分片解析器把它映射为 `MULTITENANCY_UNAVAILABLE_002`。
+- 故障：连接失败、提交失败这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成租户不存在，也不进缓存；Tenant 阶段据此以 503 结束调用，分片解析器把它包进 `MULTITENANCY_UNAVAILABLE_002`。
 - 不合法的租户 ID 在 `FindAsync` 里直接返回无值，不查库，也不占缓存。
-- 枚举有界：`ListAsync` 超过 `MaxListedTenants` 的部分不返回，并记一条警告。
+- 枚举分页：`ListAsync` 按 ID 排序、以偏移为续页令牌一页一页读，每页至多 1000 条，不再有截断。
 - 表结构由应用管理，`InitTables` / `EnsureCreated` 只用于开发与测试。`PropertiesJson` 用长文本类型（`text` / `nvarchar(max)` / `longtext`）；租户 ID 列长度 128，显示名列长度 256。分片库的表结构同样由应用管理。
 - 测试里可以与 `Persistence.InMemory` 一起装配；本包通过 `MultiTenancy.Conformance` 的 `TenantStoreConformance` 与 `TenantShardResolverConformance`，并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。
 
@@ -4769,7 +4957,7 @@ public sealed class TenantOnboarding(TenantRecordStore tenants)
 | 配置节 | `XiHan:MultiTenancy`（含 `Tenants` 与 `InMemory` 子节） |
 | 依赖 | `XiHan.Framework.MultiTenancy.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -4855,35 +5043,31 @@ app.Run();
 | --- | --- |
 | `InMemoryMultiTenancyFeature` | 特性入口；`HealthName` = `multitenancy.inmemory.capacity` |
 | `InMemoryMultiTenancyOptions` | `MaxTenants`（缺省 1000）、`Tenants`（启动时装载的租户）；`FromConfiguration` 读取上面的配置 |
-| `InMemoryTenantStore` | `ITenantStore` 与健康项贡献者：`Set(tenant)` 新增或替换、`Remove(tenantId)` 删除、`Capacity`、`Count` |
+| `InMemoryTenantStore` | `ITenantStore` 与健康项贡献者：`Capacity`、`Count`；运行时写入经 `ITenantAdministration`（`UpsertAsync`、`RemoveAsync`，一次加锁处理整批，写入后失效分片缓存） |
 
 ## 使用示例
 
-运行时增删租户。`Set` 与 `Remove` 不会自动失效分片缓存，改了租户连接后要调用 `ITenantShardResolver.Invalidate`：
+运行时增删租户经租户管理 `ITenantAdministration`：写入后分片解析器的缓存随即失效，下次解析就落新库：
 
 ```csharp
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
-using XiHan.Framework.MultiTenancy.InMemory;
 using XiHan.Framework.Primitives;
 
-public sealed class TenantAdministration(InMemoryTenantStore store, ITenantShardResolver shards)
+public sealed class TenantMoves(ITenantAdministration tenants)
 {
-    public Result MoveToOwnDatabase(string tenantId, string connectionString)
+    public async ValueTask<Result> MoveToOwnDatabaseAsync(string tenantId, string connectionString, CancellationToken cancellationToken)
     {
-        var updated = store.Set(new TenantInfo
-        {
-            Id = tenantId,
-            Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = connectionString },
-        });
-
-        // 解析器缓存了旧结果（包括"无分片"），不失效就继续落旧库
-        if (updated.IsSuccess)
-        {
-            shards.Invalidate(tenantId);
-        }
-
-        return updated;
+        // 整份覆盖；解析器缓存的旧结果（包括"无分片"）随写入失效
+        var results = await tenants.UpsertAsync(
+        [
+            new TenantInfo
+            {
+                Id = tenantId,
+                Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = connectionString },
+            },
+        ], cancellationToken);
+        return results[0];
     }
 }
 ```
@@ -4923,7 +5107,7 @@ public sealed class TenantAdministration(InMemoryTenantStore store, ITenantShard
 | 配置节 | `XiHan:ObjectStorage:Stores`、`XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -4970,13 +5154,12 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 
 | 类型 | 说明 |
 | --- | --- |
-| `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，可从 `string` 隐式转换 |
-| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`、`Validate`，可从 `string` 隐式转换 |
+| `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，从 `string` 显式转换 |
+| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`、`Validate`，从 `string` 显式转换 |
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
 | `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`）、`Overwrite`（缺省 `true`）；`Default` |
-| `Blobs.BlobPutResult` / `BlobDeleteResult` | 逐项结果：写入为元数据或错误；删除为是否存在过或错误 |
 | `Blobs.BlobMetadata` | 键、长度、内容类型、`ETag`、最后修改时间、自定义元数据 |
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |
@@ -4990,7 +5173,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Signing.BlobContentDisposition` | `Attachment(fileName)`：下载文件名的统一写法，非 ASCII 文件名带 `filename*` |
 | `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(name)`、`Names`、`Providers`；同时是健康项贡献者 |
 | `Stores.BlobStoreDefinition` | 实例名（`^[a-z0-9][a-z0-9-]{0,63}$`）、Provider 名与设置；`Describes(other)` 判断定义是否相同 |
-| `Stores.IBlobStoreProvider` | 存储包的命名实例工厂：`Name`、`CreateAsync(definition)`、`ProbeAsync(store)` |
+| `Stores.IBlobStoreProvider`、`Stores.BlobStoreFailures` | 存储包的命名实例工厂：`Name`、`CreateAsync(definition)` → `Result<IBlobStore>`（失败以结果返回，不抛出）、`ProbeAsync(store)`；`BlobStoreFailures` 给出定义不合法与后端不可用的标准错误 |
 | `Stores.BlobStoreSelection` | `ProvidesDefaultInstance(node)`：被选为对象存储返回 `true`（缺省存储）；没被选为对象存储、却被要求提供分片上传或预签名（有依赖或经配置指定）时抛 `OBJECTSTORAGE_VALIDATION_004`；两者都只是兜底选出时返回 `false`，存储包按被顶替处理 |
 | `Stores.BlobStoreServiceCollectionExtensions` | `AddBlobStoreProvider<TProvider>(configuration)`：存储包装配时登记 Provider，并确保注册表只登记一次 |
 | `ObjectStorageCapabilities` / `ObjectStorageErrors` / `ObjectStorageMessages` | 能力 ID、错误码与消息键常量，`ObjectStorageMessages.Catalog` 是本包的消息目录 |
@@ -5003,11 +5186,11 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Listing;
 
-var put = await store.PutAsync("invoices", "2026/10/inv-1.pdf", stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);
-var page = await store.ListAsync("invoices", new BlobQuery { Prefix = "2026/10/", PageSize = 100 }, ct);
-var deleted = await store.DeleteAsync("invoices", ["2026/10/inv-1.pdf", "2026/10/inv-2.pdf"], ct);   // 逐项：存在过 / 不存在 / 失败
+var put = await store.PutAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), stream, new BlobPutOptions { ContentType = "application/pdf" }, ct);
+var page = await store.ListAsync(new ContainerName("invoices"), new BlobQuery { Prefix = "2026/10/", PageSize = 100 }, ct);
+var deleted = await store.DeleteAsync(new ContainerName("invoices"), [new BlobKey("2026/10/inv-1.pdf"), new BlobKey("2026/10/inv-2.pdf")], ct);   // 逐项：存在过 / 不存在 / 失败
 
-await using var content = (await store.GetAsync("invoices", "2026/10/inv-1.pdf", ct)).ValueOrThrow();
+await using var content = (await store.GetAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), ct)).ValueOrThrow();
 await content.Content.CopyToAsync(destination, ct);
 ```
 
@@ -5018,12 +5201,12 @@ using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 
 // 服务端发起，客户端按片直传，服务端完成
-var upload = (await multipart.StartAsync("videos", key, new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
-var partUrl = (await signer.SignAsync("videos", key, BlobUrlRequest.ForPart(upload, 1), ct)).ValueOrThrow();
+var upload = (await multipart.StartAsync(new ContainerName("videos"), key, new BlobPutOptions { ContentType = "video/mp4" }, ct)).ValueOrThrow();
+var partUrl = (await signer.SignAsync(new ContainerName("videos"), key, BlobUrlRequest.ForPart(upload, 1), ct)).ValueOrThrow();
 var done = await multipart.CompleteAsync(upload, parts, ct);
 
 // 限时下载链接（缺省 30 分钟）
-var link = (await signer.SignAsync("invoices", key, BlobUrlRequest.ForDownload(downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
+var link = (await signer.SignAsync(new ContainerName("invoices"), key, BlobUrlRequest.ForDownload(expiresIn: null, downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
 ```
 
 实现自己的存储后端时，用一致性套件验证；测试项目引用 `XiHan.Framework.ObjectStorage.Conformance`：
@@ -5038,7 +5221,7 @@ namespace Storage.Tests;
 public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 {
     // 返回被测的存储；实现了 IBlobMultipartStore 时分片用例一并执行，否则跳过
-    protected override IBlobStore CreateStore() => new AzureBlobStore(TestSettings.ConnectionString);
+    protected override ValueTask<IBlobStore> CreateStoreAsync() => ValueTask.FromResult<IBlobStore>(new AzureBlobStore(TestSettings.ConnectionString));
 
     // 绕过契约直接写一个对象（键可以在保留前缀下），用来核对列举跳过框架自己的对象
     protected override Task PlantOutsideContractAsync(ContainerName container, string key, byte[] content)
@@ -5102,7 +5285,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | 配置节 | `XiHan:ObjectStorage:FileSystem` |
 | 依赖 | `XiHan.Framework.ObjectStorage.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -5167,7 +5350,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 | 类型 | 说明 |
 | --- | --- |
 | `FileSystemObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`）；启动时扫描目录；被 S3 等存储顶替（或没被选为对象存储、分片上传只是兜底选出）时只登记命名实例 Provider；常量 `HealthName` = `objectstorage.filesystem.capacity` |
-| `FileSystemBlobStore` | 实现 `IBlobStore` 与 `IBlobMultipartStore`；`RootPath`、`UsedBytes`；不经宿主使用时先调用 `InitializeAsync` |
+| `FileSystemBlobStore` | 实现 `IBlobStore` 与 `IBlobMultipartStore`；`RootPath`、`UsedBytes`；不经宿主使用时用 `CreateAsync` 创建（建目录并扫描已用量后才交出，构造不公开） |
 | `FileSystemObjectStorageOptions` | 选项；`FromConfiguration`、`FromSettings`（命名实例的设置，未知键抛出） |
 | `FileSystemBlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `filesystem` |
 
@@ -5179,17 +5362,16 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.FileSystem;
 
-var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = "./data/blobs", MaxTotalBytes = 64L << 20 }, TimeProvider.System);
+var store = await FileSystemBlobStore.CreateAsync(new FileSystemObjectStorageOptions { RootPath = "./data/blobs", MaxTotalBytes = 64L << 20 }, TimeProvider.System, NullLoggerFactory.Instance, CancellationToken.None);
 // 扫描已用量、清理残留的临时文件与过期的分片上传
-await store.InitializeAsync(CancellationToken.None);
 
-var put = await store.PutAsync("reports", "2026/10/summary.txt", "hello"u8.ToArray(), BlobPutOptions.Default, CancellationToken.None);
+var put = await store.PutAsync(new ContainerName("reports"), new BlobKey("2026/10/summary.txt"), "hello"u8.ToArray(), BlobPutOptions.Default, CancellationToken.None);
 Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 ```
 
 ## 行为与限制
 
-- 原子性：读取方要么看到旧对象，要么看到完整的新对象。不覆盖的写入（含分片上传的完成）以不替换的移动原子占位，内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`：并发的不覆盖写入（含共享目录的多个进程）只有一个成功（ADR-0089）。
+- 原子性：读取方要么看到旧对象，要么看到完整的新对象。不覆盖的写入（含分片上传的完成）由文件系统原子判定谁先占住内容路径：Linux 与 macOS 上先以独占创建的空文件占位、再把内容原子替换上去，Windows 上不替换地改名；内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`，并发的不覆盖写入（含共享目录的多个进程）只有一个成功（ADR-0089、ADR-0168、ADR-0172）。
 - 配额：复制过程中逐段检查，超过 `MaxBlobBytes` 或 `MaxTotalBytes` 的项返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不留下内容。单进程计量正确，多进程共享目录时只是近似。
 - 列举：遍历容器目录、按序数排序、按前缀过滤，续页标记是上一页最后一个键；外部直接放进 `data/` 目录、没有元数据的文件按文件信息补一份元数据；文件名还原出的键不符合键文法的（含保留前缀 `.xihan` 下的，ADR-0090）跳过。
 - 范围读取：打开内容文件后定位到起点，只交出该段。
@@ -5234,7 +5416,7 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 | 配置节 | `XiHan:ObjectStorage:S3` |
 | 依赖 | `XiHan.Framework.ObjectStorage.Abstractions`；`AWSSDK.S3` |
 | AOT | 不兼容（AWS SDK 的请求编组基于运行时反射） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`S3BlobStoreProvider` 的构造依赖 Preview 的出站地址策略，为 Preview |
 
 ## 概述
 
@@ -5355,7 +5537,7 @@ done
 
 | 类型 | 说明 |
 | --- | --- |
-| `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替或其余能力只是兜底选出时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection`；`CreateClient(options)` 按选项建 `AmazonS3Client` |
+| `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替或其余能力只是兜底选出时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection` |
 | `S3BlobStore` | 实现 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner`；公开构造函数接收外部的 `IAmazonS3`，此时不拥有客户端 |
 | `S3ObjectStorageOptions` | 选项；`FromConfiguration(configuration, binding)`、`FromSettings`（命名实例的设置，未知键抛出） |
 | `S3BlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `s3`；每个实例按自己的端点、区域与密钥建客户端 |
@@ -5384,7 +5566,7 @@ var store = (await stores.GetOrAddAsync(definition, cancellationToken)).ValueOrT
 
 // S3 的命名实例同时是签名器，签出的地址直连该实例的端点
 var signer = (IBlobUrlSigner)store;
-var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlRequest.ForDownload(TimeSpan.FromMinutes(10)), cancellationToken)).ValueOrThrow();
+var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2026/10/inv-1.pdf"), BlobUrlRequest.ForDownload(TimeSpan.FromMinutes(10)), cancellationToken)).ValueOrThrow();
 ```
 
 `settings` 是应用保存的租户存储配置。
@@ -5447,7 +5629,7 @@ var link = (await signer.SignAsync("invoices", "2026/10/inv-1.pdf", BlobUrlReque
 
 内核的追踪与指标直接基于 `System.Diagnostics`，不需要抽象；本包只承载两件事：能力 ID 常量，供两个实现包与应用清单共用；运行信息的契约，供管理界面的服务监控读取（RFC-0023，ADR-0056）。
 
-`IHostMonitor` 的七个方法各返回一份不可变记录。契约约定读取不阻塞、不抛出、不启动外部命令；读不到的项为 `null`，不以 0 或空串顶替；使用率与速率取后台采样器最近一次的值，启动后第一个采样间隔内为空；CPU 型号与核心、GPU、主板首次读取后缓存。
+`IHostMonitor` 的七个方法各返回一份不可变记录。契约约定读取不抛出、不启动外部命令，方法都收取消令牌：可能阻塞的系统调用（挂起的网络盘、首次的硬件探测）不占调用方的线程，取消即不再等待；读不到的项为 `null`，不以 0 或空串顶替；使用率与速率取后台采样器最近一次的值，启动后第一个采样间隔内为空；CPU 型号与核心、GPU、主板首次读取后缓存。
 
 ## 何时使用
 
@@ -5486,21 +5668,22 @@ namespace MyApp.Diagnostics;
 
 public sealed class CapacityCheck(IHostMonitor monitor)
 {
-    public IReadOnlyList<string> FindAlerts()
+    public async ValueTask<IReadOnlyList<string>> FindAlertsAsync(CancellationToken cancellationToken)
     {
         var alerts = new List<string>();
-        if (monitor.ReadMemory().UsagePercent is > 90)
+        if ((await monitor.ReadMemoryAsync(cancellationToken)).UsagePercent is > 90)
         {
             alerts.Add("memory");
         }
 
         // 启动后第一个采样间隔内 UsagePercent 为 null，这里自然跳过
-        if (monitor.ReadProcessor().UsagePercent is > 95)
+        if ((await monitor.ReadProcessorAsync(cancellationToken)).UsagePercent is > 95)
         {
             alerts.Add("cpu");
         }
 
-        foreach (var disk in monitor.ReadDisks())
+        // 挂起的网络盘不占调用方的线程；取消即不再等待
+        foreach (var disk in await monitor.ReadDisksAsync(cancellationToken))
         {
             if (disk.UsagePercent is > 85)
             {
@@ -5631,12 +5814,12 @@ public sealed class MonitorTests
         if (OperatingSystem.IsLinux() || OperatingSystem.IsWindows())
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            while (monitor.ReadProcessor().UsagePercent is null)
+            while ((await monitor.ReadProcessorAsync(timeout.Token)).UsagePercent is null)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(20), timeout.Token);
             }
 
-            Assert.InRange(monitor.ReadProcessor().UsagePercent!.Value, 0d, 100d);
+            Assert.InRange((await monitor.ReadProcessorAsync(CancellationToken.None)).UsagePercent!.Value, 0d, 100d);
         }
     }
 }
@@ -5690,7 +5873,7 @@ public sealed class MonitorTests
 | 配置节 | `XiHan:Observability:OpenTelemetry` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`；`OpenTelemetry.Extensions.Hosting`、`OpenTelemetry.Exporter.OpenTelemetryProtocol`、`OpenTelemetry.Exporter.Console` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -5857,7 +6040,7 @@ public sealed class TracingTests
 | 配置节 | `XiHan:Persistence:Snowflake` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Domain`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`DomainEventTracker`、`IDomainEventDispatcher`、`TimeRange`、`LongTextAttribute`、`EntityIndexAttribute` / `EntityIndexes` / `EntityIndex` 与雪花标识相关类型为 Preview |
+| 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`IDomainEventDispatcher`、`LongTextAttribute`、`EntityIndexAttribute` / `EntityIndexes` / `EntityIndex` 与雪花标识相关类型为 Preview |
 
 ## 概述
 
@@ -5929,7 +6112,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `IRepositoryRegistrar`、`RepositoryRegistrations` | `…Abstractions.Repositories` | Provider 注册闭合泛型仓储的入口与登记集合；`ConnectionOf(type)` 取实体登记的命名连接 |
 | `EntityQuery<T>`、`EntityQuery` | `…Abstractions.Queries` | 不可变查询：`Where`、`OrderBy`、`Page`、`Within`、`IncludeDeleted`；`EntityQuery.All<T>()`、`DefaultMaxTake`（1000） |
 | `Ordering<T>`、`TimeRange` | `…Abstractions.Queries` | 一项排序；时间范围提示（两端都含，`From` 不能晚于 `To`） |
-| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、是否已开数据库事务（`HasTransaction`）、开启选项（`TenantId`、`IsReadOnly`、`ReadsPrimary`：只读但读主库；`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
+| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、是否已开数据库事务（`HasTransaction`）、开启时的选项（`Options`）；选项是初始化器记录（`TenantId`、`IsReadOnly`、`ReadsPrimary`：只读但读主库；`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
 | `UnitOfWorkMiddleware` | `…Abstractions.UnitOfWork` | Transaction 阶段的中间件，由 Provider 登记 |
 | `DomainEventTracker`、`IDomainEventDispatcher` | `…Abstractions.UnitOfWork` | 写过的聚合登记表；领域事件派发端口（Messaging 实现） |
 | `PersistenceConventions` | `…Abstractions` | `ApplyOnAdd`、`ApplyOnUpdate`（带存储行的重载让更新沿用存储的创建时间、租户与删除标记）、`TrySoftDelete`、`IsVisibleTo`、`IsDeleted`、`NewStamp` |
@@ -5938,7 +6121,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `PersistenceCapabilities`、`PersistenceErrors`、`PersistenceMessages` | `…Abstractions` | 能力 ID、错误码、消息键与消息目录 |
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | `…Abstractions.Identifiers` | 标识生成端口；UUID v7 实现 |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId` | `…Abstractions.Identifiers` | 雪花标识的特性、生成器、选项、位布局与解析 |
-| `IWorkerIdSource`、`FixedWorkerIdSource`、`LeasedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置或分布式锁租约 |
+| `IWorkerIdSource`、`FixedWorkerIdSource` | `…Abstractions.Identifiers` | 机器位来源：固定配置；分布式锁租约由 `SnowflakeIdFeature` 在内部装配 |
 | `ISchemaReader`、`SchemaReaderExtensions`、`SchemaLimits` | `…Abstractions.Schema` | 库结构读取：`ListTablesAsync`（关键字、分页、总数）、`GetTablesAsync`（批量，最多 100 张，逐项结果）、`GetTableAsync` |
 | `TableListQuery`、`TablePage`、`TableInfo`、`TableSchema`、`ColumnInfo` | `…Abstractions.Schema` | 列表查询（`Validate()` 核对分页，越界是 `PERSISTENCE_VALIDATION_007` / `005`）、一页表、表（分表的逻辑名与物理表）、表结构、列 |
 | `IEntityCatalog`、`EntityMapping`、`EntityColumnMapping`、`EntityProtocols` | `…Abstractions.Schema` | 已登记实体的目录：表、列映射、协议、`[EntityIndex]` 索引 |
@@ -5946,7 +6129,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `SchemaServiceCollectionExtensions` | `…Abstractions.Schema` | `AddUnsupportedSchemaReader()`：不能读结构的 Provider 登记，返回 `PERSISTENCE_UNAVAILABLE_008` |
 | `DataSourceRegistry` | `…Abstractions.DataSources` | 运行时数据源的注册表（单例，健康项贡献者）：`GetOrAddAsync`（同定义复用、变了替换）、`GetAsync`、`RemoveAsync`（批量失效）、`TestAsync`（测试连接，不登记）、`ProbeAsync`、`Names`、`IsSupported` |
 | `DataSourceDefinition`、`DatabaseTypes` | `…Abstractions.DataSources` | 定义：名字、数据库类型、连接串（`ToString` 不含连接串，`Redact` 脱敏）；常用的数据库类型名 |
-| `IDataSource`、`IDataSourceProvider` | `…Abstractions.DataSources` | 已建的数据源；按定义建数据源与探测的 Provider 端口（SqlSugar 实现） |
+| `IDataSource`、`IDataSourceProvider`、`DataSourceFailures` | `…Abstractions.DataSources` | 已建的数据源；按定义建数据源（`CreateAsync` → `Result<IDataSource>`，定义不合法用 `DataSourceFailures.Invalid`，原因统一脱敏）与探测的 Provider 端口（SqlSugar 实现） |
 | `DataSourceOptions`、`DataSourceServiceCollectionExtensions` | `…Abstractions.DataSources` | 选项；`AddDataSourceProvider<T>(configuration)`、`AddDataSourceRegistry()` |
 | `ConnectionStrings` | `…Abstractions.DataSources` | `Redact(text, connectionString)`、`Describe(exception, connectionString)`：把连接串与口令类键的值换成 `***` |
 
@@ -6002,7 +6185,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 工作单元状态机 `NotStarted → Active → Committed | RolledBack`，违反顺序抛出携带 `PERSISTENCE_VALIDATION_002` 的 `FrameworkException`；同一服务作用域里再经管道的嵌套调用由 `UnitOfWorkMiddleware` 以同码的结果结束（消息键 `persistence.unit_of_work.nested`），处理器不执行。
 - `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073、ADR-0081）。
 - 不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元；只读工作单元拒绝写入的错误消息键是 `persistence.unit_of_work.read_only`，处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束；空集合的批量写入不算写入。
-- 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。管道外自己开的工作单元由 `UnitOfWorkOptions(TenantId, IsReadOnly, Connection)` 决定，`ReadsPrimary` 让只读工作单元读主库，其余仍是只读的语义，没有从库的 Provider 上没有作用（ADR-0122）。
+- 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。管道外自己开的工作单元由 `UnitOfWorkOptions { TenantId, IsReadOnly, Connection, ReadsPrimary }` 决定，`ReadsPrimary` 让只读工作单元读主库，其余仍是只读的语义，没有从库的 Provider 上没有作用（ADR-0122）。
 - 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109）：可写工作单元里仓储的单条写入或非空批量写入一经调用即为真（不论结果），`EnsureTransactionAsync` 同样；提交（成功或返回失败）与回滚后为假，只读工作单元恒为假；多连接一个值，绑定命名连接的工作单元只报告那个连接；内存实现第一次写入调用起同样为真。调用里要立即对外产生、不随回滚撤回的副作用之前据此判断，见[工作单元与事务](/persistence/unit-of-work)。
 - `HasTransaction` 的边界：查找、查询、计数与空批量不开事务；不同服务作用域的工作单元各报各的；不经仓储、也不经 `EnsureTransactionAsync` 直接对客户端执行的写入不在事务里，也不让它变真。
 - 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
@@ -6021,7 +6204,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 雪花失败的转换：`NewId()` 返回 `long`，失败只能抛出 `FrameworkException`；回拨超过阈值在时钟追上后自动恢复。转换成结果的中间件由本特性登记在 Resilience 阶段末尾，在幂等与工作单元之外，工作单元已回滚、幂等标记已清除；消息键 `persistence.snowflake.clock_moved_backwards` / `persistence.snowflake.worker_unavailable`，HTTP 映射为可重试的 503、gRPC 为 `Unavailable`。管道之外直接调用生成器仍是异常（ADR-0063）。
 - 雪花标识在 JSON 里保持 number（后端标准类型，不加字符串转换器）。超过 2^53（约 9.007 × 10^15）的整数在 JavaScript 的 `number` 里会丢精度，而雪花标识从 epoch 之后约 25 天起就全部超过 2^53：前端必须用能保留大整数的方式解析（`JSON.parse` 的 BigInt reviver、按字符串读取原文），以字符串或 `BigInt` 保存与回传，不能 `Number()` 换算。
 - 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。SqlSugar 两样都支持；EF Core 只支持绑定连接的工作单元（ADR-0087），普通工作单元里取用命名连接上的实体抛 `PERSISTENCE_UNAVAILABLE_008`（已定，ADR-0091）；内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 命名连接](/persistence/connections)。
-- 命名连接的细节：SQLite 只有一个写者，业务事务写过之后同一个库文件上的另一个事务要等它结束，所以工作流的租约行要放在另一个库文件。`AddRepository<TEntity, TKey>(connection)` 里 `null` 是 Provider 的缺省落点，非空不能是空白；同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取登记的连接。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。`UnitOfWorkOptions(Connection: name)` 的连接名空白抛 `ArgumentException`，实体不落在它上面时 `PERSISTENCE_VALIDATION_004`，事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。SqlSugar 的命名连接是客户端里同名 `ConfigId` 的连接（特性创建客户端时在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上。
+- 命名连接的细节：SQLite 只有一个写者，业务事务写过之后同一个库文件上的另一个事务要等它结束，所以工作流的租约行要放在另一个库文件。`AddRepository<TEntity, TKey>(connection)` 里 `null` 是 Provider 的缺省落点，非空不能是空白；同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取登记的连接。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。`UnitOfWorkOptions { Connection = name }` 的连接名空白抛 `ArgumentException`，实体不落在它上面时 `PERSISTENCE_VALIDATION_004`，事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。SqlSugar 的命名连接是客户端里同名 `ConfigId` 的连接（特性创建客户端时在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上。
 - 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](/persistence/connections)。
 - 运行时数据源的约定：Provider 经 `AddDataSourceProvider<T>(configuration)` 登记 `IDataSourceProvider`（目前是 SqlSugar）；名字 `^[a-z0-9][a-z0-9-]{0,63}$`，`default` 保留给缺省连接；数据库类型不区分大小写，认得哪些由 Provider 决定；`DataSourceDefinition.Describes` 比名字、类型（不区分大小写）与连接串（区分大小写）。注册表是进程内的，多实例时别的实例在下一次以新定义 `GetOrAddAsync` 时替换，所以每次使用都以记录里当前的定义 `GetOrAddAsync`，不要只按名字 `GetAsync`；约定连接 `default` / `shard` 与租户分片照旧。
 - 运行时数据源的健康与失败：健康项数据 `databaseType`、`provider`，在后台按 `HealthProbeIntervalSeconds` 探连通性（关系型 Provider 走一次数据库往返，ADR-0123）；尚未探过 Started，成功 Ready，失败或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness。连不上 `PERSISTENCE_UNAVAILABLE_006`（参数 `name`、`reason`）；数据库类型不认识或连接串格式错 `PERSISTENCE_VALIDATION_006`，同名的已登记实例不受影响；`GetAsync` 没有登记 `PERSISTENCE_NOTFOUND_002`；替换同名的不占名额。
@@ -6186,7 +6369,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `EntityFrameworkCorePersistenceOptions` | 选项：`EnsureCreated`、`HealthProbeInterval`、`VerifiedShardCapacity`、`Connections`（命名连接）；`FromConfiguration(configuration)` |
 | `ModelBuilderExtensions.ApplyPersistenceConventions(Database)` | 对模型里已有的每个实体：`ConcurrencyStamp` 设为并发令牌、最大长度 32；`TenantId` 与 `IsDeleted` 建索引；实体上的 `[EntityIndex]` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与 SqlSugar 建出的相同（ADR-0072）；软删除实体的唯一索引加 `HasFilter`，条件按 `Database.ProviderName` 写方言（Npgsql、SQLite、SQL Server），其余关系型 Provider 建模时抛出 `PERSISTENCE_UNAVAILABLE_008`（ADR-0081）；SQLite 上 `DateTimeOffset` 与可空 `DateTimeOffset` 属性存成 UTC ticks 整数，应用已配转换的不动（ADR-0091） |
 | `EntityFrameworkCoreUnitOfWork` | 事务型工作单元；`Context` 是本作用域的 `DbContext`（开始时建出：绑定了命名连接就建在那个连接上）；由容器创建，构造不公开 |
-| `EntityFrameworkCoreRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 
 ## 使用示例
 
@@ -6217,7 +6399,7 @@ public sealed class OrderReports(AppDbContext db)
 - 读出后直接改了跟踪实例再更新：同样恢复这几个字段，写入路径也按原值判定可见性，所以读出后改了租户的实例照常更新，不会被当成不存在，也改不了租户。
 - 提交时还有残余变更（绕过仓储直接改了跟踪实体）会先保存再提交，其中的创建时间与租户同样恢复为原值；并发令牌不匹配返回 `PERSISTENCE_CONFLICT_001` 并回滚。
 - 并发新增同一标识：检查之后别的事务提交了同一标识，插入撞上主键约束。`SaveChanges` 在已有事务里会自动建保存点，失败时已回到保存点，事务仍可用。仓储把这次新增的实体移出跟踪，在同一事务里核对这些标识：确已存在就返回 `PERSISTENCE_CONFLICT_002`，批量时这次写入的项统一报告；否则异常原样抛出。之后工作单元只能回滚，处理器忽略失败返回成功时，提交回滚并返回同一错误。数据库是 MySQL 的可重复读这类快照隔离时，同一事务看不到对方刚提交的行，异常照常抛出。
-- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用 `DbContext` 写入之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）；绕过仓储改了跟踪实体而未保存的，提交时以它回滚——只读操作里不要把读出的实体当草稿改。
+- 只读工作单元（只读操作或 `UnitOfWorkOptions { IsReadOnly = true }`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用 `DbContext` 写入之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）；绕过仓储改了跟踪实体而未保存的，提交时以它回滚——只读操作里不要把读出的实体当草稿改。
 - 唯一键重复：新增、更新、删除的 `SaveChanges` 失败又不是标识重复时，在保存点之后的同一事务里核对模型里的唯一索引（这次保存里两项同键，或库里另一行同键；软删除实体的部分唯一索引只比较未删除的行），撞上就把这些实体移出跟踪、返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），工作单元随后只能回滚；核对不到的异常原样抛出。
 - 依赖 `Microsoft.EntityFrameworkCore.Relational`（索引名与表名是关系型元数据）。
 - 软删除实体的唯一索引只约束未删除的行（ADR-0081）：`HasFilter` 的条件 Npgsql `"IsDeleted" = false`、SQLite `"IsDeleted" = 0`、SQL Server `[IsDeleted] = 0`（键含可空列另加 `IS NOT NULL`）；Pomelo MySQL、Oracle 等不支持部分唯一索引的 Provider 建模即失败，要唯一约束就把 `IsDeleted` 显式写进列。
@@ -6230,7 +6412,7 @@ public sealed class OrderReports(AppDbContext db)
 - 整数主键按 EF Core 约定由数据库生成；应用自己生成整数标识时配 `ValueGeneratedNever()`，见[标识生成](/persistence/identifiers)。
 - 实体目录（ADR-0078）取 DbContext 模型（`GetTableName()`、`GetColumnName(表)`，影子属性不列）；库结构读取不支持，返回 `PERSISTENCE_UNAVAILABLE_008`——跨数据库读结构在 EF Core 里是设计期脚手架服务，`DbConnection.GetSchema` 各驱动不一致、SQLite 驱动不实现。
 - 索引与实体目录的补充：`ApplyPersistenceConventions(Database)` 的索引名取调用时的 `GetTableName()`，`ToTable` 要在它之前配置；从属类型与共享类型实体跳过。框架的数据库记录（授予、翻译、审计、调度、工作流、发件箱）在 `modelBuilder.Entity<T>()` 之后调用它即得到索引，不用再手写 `HasIndex`。实体目录的表名在没有映射到表时取类型名，从属类型不列，登记了却不在模型里的实体抛 `InvalidOperationException`；库结构读取在 EF Core 里对应的设计期脚手架服务是 `Microsoft.EntityFrameworkCore.Design` 的 `IDatabaseModelFactory`（按数据库 Provider 程序集反射发现）。
-- 命名连接（ADR-0087）：在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，值是连接串（名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`，值不能空白、不能写成子节，否则装配即 `ArgumentException`）。一个 `DbContext` 一个连接、建出后不换：`UnitOfWorkOptions(Connection: name)` 开启的工作单元先记下连接、再建本作用域的 `DbContext`，回调收到的绑定主值是那个连接串、属性沿用 `db` 绑定，事务只开在那个库上。所以登记到命名连接的实体（`AddRepository<TEntity, TKey>(connection)`）只能在绑定那个连接的工作单元里读写：普通工作单元里取用它的仓储抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，绑定连接的工作单元里取用落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。这一半是已定的（ADR-0091）：EF Core 不做「每个连接一个 `DbContext`、跨上下文顺序提交」的多上下文工作单元，普通工作单元里取用命名连接上的实体维持明确报错；要在业务事务里一起读写命名连接上的实体，用 `Persistence.SqlSugar`。登记到没有声明的连接装配即失败、绑定没有声明的连接 `BeginAsync` 抛出，都是 `PERSISTENCE_VALIDATION_004`；作用域里已经按别的连接建出 `DbContext`（先取用了它）再绑定，`BeginAsync` 抛 `PERSISTENCE_VALIDATION_002`，在新作用域里绑定即可。`EnsureCreated` 对登记了实体的每个命名连接各执行一次，按整个模型建表（那个库里多出的空表不用）。命名连接与默认连接用同一个配置回调，是同一种数据库 Provider。工作流的租约表就这样放到另一个库：SQLite 上 `XiHan:Workflow:Database:LockConnection` 指向这里声明的连接，调用方事务里取锁不再等自己的事务。
+- 命名连接（ADR-0087）：在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，值是连接串（名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`，值不能空白、不能写成子节，否则装配即 `ArgumentException`）。一个 `DbContext` 一个连接、建出后不换：`UnitOfWorkOptions { Connection = name }` 开启的工作单元先记下连接、再建本作用域的 `DbContext`，回调收到的绑定主值是那个连接串、属性沿用 `db` 绑定，事务只开在那个库上。所以登记到命名连接的实体（`AddRepository<TEntity, TKey>(connection)`）只能在绑定那个连接的工作单元里读写：普通工作单元里取用它的仓储抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，绑定连接的工作单元里取用落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。这一半是已定的（ADR-0091）：EF Core 不做「每个连接一个 `DbContext`、跨上下文顺序提交」的多上下文工作单元，普通工作单元里取用命名连接上的实体维持明确报错；要在业务事务里一起读写命名连接上的实体，用 `Persistence.SqlSugar`。登记到没有声明的连接装配即失败、绑定没有声明的连接 `BeginAsync` 抛出，都是 `PERSISTENCE_VALIDATION_004`；作用域里已经按别的连接建出 `DbContext`（先取用了它）再绑定，`BeginAsync` 抛 `PERSISTENCE_VALIDATION_002`，在新作用域里绑定即可。`EnsureCreated` 对登记了实体的每个命名连接各执行一次，按整个模型建表（那个库里多出的空表不用）。命名连接与默认连接用同一个配置回调，是同一种数据库 Provider。工作流的租约表就这样放到另一个库：SQLite 上 `XiHan:Workflow:Database:LockConnection` 指向这里声明的连接，调用方事务里取锁不再等自己的事务。
 - 运行时数据源（ADR-0078）不支持：EF Core 的数据库 Provider 由应用选、本包不引用，按数据库类型建不出连接。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。
 - 这两项（运行时数据源、库结构读取）不计划支持，已定（ADR-0084）：需要代码生成的读结构、外部数据源或零代码运行时的应用用 `Persistence.SqlSugar`。
 
@@ -6422,11 +6604,11 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 | 配置节 | `XiHan:Persistence:InMemory` |
 | 依赖 | `XiHan.Framework.Persistence.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
-存储 `InMemoryStore` 是进程内单例，按实体类型各有一张 `InMemoryTable<TEntity, TKey>`，容量有上限。工作单元 `InMemoryUnitOfWork` 是作用域服务：仓储的新增、更新、删除先写进它的覆盖层，同一工作单元里的查找与查询把覆盖层叠在表的快照上，所以能读到自己的写入。表与覆盖层只存副本，读取只交出副本。提交时给涉及的表依次加锁，校验通过后应用本工作单元的变更，跨表原子；回滚只丢弃覆盖层。
+存储 `InMemoryStore` 是进程内单例，按实体类型各有一张有界表。工作单元是作用域服务：仓储的新增、更新、删除先写进它的覆盖层，同一工作单元里的查找与查询把覆盖层叠在表的快照上，所以能读到自己的写入。表与覆盖层只存副本，读取只交出副本。提交时给涉及的表依次加锁，校验通过后应用本工作单元的变更，跨表原子；回滚只丢弃覆盖层。
 
 创建时间、修改时间、租户、并发戳与软删除按 `PersistenceConventions` 执行，语义与 EF Core、SqlSugar Provider 一致，三者通过同一套一致性用例。特性同时注册 `IIdGenerator<Guid>`（`GuidV7IdGenerator`）、Transaction 阶段的 `UnitOfWorkMiddleware` 与持久化消息目录。
 
@@ -6477,10 +6659,7 @@ builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());
 | --- | --- |
 | `InMemoryPersistenceFeature` | 特性入口；常量 `HealthName` 为 `persistence.inmemory.capacity` |
 | `InMemoryPersistenceOptions` | 选项：`MaxEntitiesPerType`；`FromConfiguration(configuration)` |
-| `InMemoryStore` | 单例存储；`Table<TEntity, TKey>()` 取表，`Clear()` 清空全部表，同时是健康项贡献者 |
-| `InMemoryTable<TEntity, TKey>` | 一种实体的有界表：`Find`、`Snapshot`（交出副本）、`Count`、`Capacity` |
-| `InMemoryUnitOfWork` | 作用域工作单元，带覆盖层 |
-| `InMemoryRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
+| `InMemoryStore` | 单例存储；`Clear()` 清空全部表，同时是健康项贡献者；表、工作单元与仓储实现不公开，经 `IRepository<TEntity, TKey>` 与 `IUnitOfWork` 使用 |
 
 应用代码只通过 `IRepository<TEntity, TKey>` 与 `IUnitOfWork` 使用它们；`InMemoryStore.Clear()` 可在测试之间重置数据。
 
@@ -6509,10 +6688,10 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
   - 不带并发戳的实体只校验行还在。
 - 更新沿用当前行的创建时间、租户与删除标记；软删除在当前行的副本上打标（调用方实例上的其他改动不写入），删除标记再同步回调用方实例。
 - 没有数据库事务，`HasTransaction` 与关系型 Provider 同义（ADR-0109）：可写工作单元里仓储第一次接受写入调用（单条，或集合非空的批量，不论结果）起为真，覆盖层从此可能有未提交、随回滚丢弃的变更；提交（含提交时校验失败）与回滚后为假，只读工作单元恒为假。
-- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）：写入在进覆盖层之前就返回 `PERSISTENCE_UNEXPECTED_001`（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败，提交回滚并返回同一错误。
+- 只读工作单元（只读操作或 `UnitOfWorkOptions { IsReadOnly = true }`）：写入在进覆盖层之前就返回 `PERSISTENCE_UNEXPECTED_001`（批量逐项都是它，空集合仍返回空列表），并把工作单元记为失败，提交回滚并返回同一错误。
 - 进程退出数据即丢失；多个进程之间不共享。
 - 健康项 `persistence.inmemory.capacity`：任一张表达到容量即 Degraded（`PERSISTENCE_UNAVAILABLE_002`，报告按实体名排序的第一个满表），否则 Ready。
-- 命名连接（ADR-0084）不支持：内存实现没有连接。实体登记到命名连接在装配时抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，`UnitOfWorkOptions(Connection: …)` 在 `BeginAsync` 抛出同码异常，不静默落在唯一的存储上。
+- 命名连接（ADR-0084）不支持：内存实现没有连接。实体登记到命名连接在装配时抛出携带 `PERSISTENCE_UNAVAILABLE_008` 的 `FrameworkException`，`UnitOfWorkOptions { Connection = … }` 在 `BeginAsync` 抛出同码异常，不静默落在唯一的存储上。
 - 实体目录（ADR-0078）：表名取实体类型名，列取有公开 setter 的非集合属性、列名即属性名；库结构读取不支持，返回 `PERSISTENCE_UNAVAILABLE_008`。
 - 运行时数据源（ADR-0078）不支持：内存实现没有数据库。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。
 
@@ -6553,7 +6732,7 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
 | 配置节 | `XiHan:Persistence:SqlSugar` |
 | 依赖 | `XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`、`SqlSugarCore`（自带各数据库驱动）、`Microsoft.Data.Sqlite` |
 | AOT | 不兼容（SqlSugar 的实体映射与表达式翻译基于运行时反射） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；数据源（`SqlSugarDataSource`、`SqlSugarDataSourceExtensions`）为 Preview，读写分离（`SqlSugarReplicaOptions` 与 `Replicas`）与差异日志（`SqlSugarDiffLogData` 与两处 `DiffLog`）为 Experimental |
 
 ## 概述
 
@@ -6662,13 +6841,12 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | 类型 | 说明 |
 | --- | --- |
 | `SqlSugarPersistenceFeature` | 特性入口；无参构造用应用注册的客户端，带回调的构造由特性创建客户端；`DiffLog` 选出开启差异日志的实体；常量 `ConnectionBinding`（`db`）与 `HealthName`（`persistence.sqlsugar.database`） |
-| `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`Connections`（方式一的命名连接）、`DiffLog`；`FromConfiguration(configuration)` |
+| `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`CommandTimeout`（`TimeSpan`，缺省 `StandardCommandTimeout` 300 秒，配置键是 `CommandTimeoutSeconds`）、`Connections`（方式一的命名连接）、`DiffLog`；`FromConfiguration(configuration)` |
 | `SqlSugarReplicaOptions` | 从库的权重与健康探测选项（`SqlSugarPersistenceOptions.Replicas`） |
 | `SqlSugarConventions` | `Apply(config)` 在连接配置上登记协议约定（保留配置里已有的实体服务与表服务回调，先执行它们）；`Configure(property, column)` 对单个属性施加约定；`ConfigureIndexes(type, entityInfo)` 把实体上的 `[EntityIndex]` 登记为 SqlSugar 索引（软删除实体的部分唯一索引除外）；`InitTables(client, entityTypes)` 按约定建表并补建软删除实体的部分唯一索引，应用自己建表（租户独立库）用它 |
 | `SqlSugarConnections` | 连接的 `ConfigId` 约定：`Default`（`default`）、`Shard`（`shard`） |
 | `IEntityConnectionSelector`、`SqlSugarConnectionSelector` | 实体落在哪个连接；默认规则见下文 |
 | `SqlSugarUnitOfWork` | 事务型工作单元；`Client` 是根连接，`ConnectionFor(Type)` 返回某种实体所用的连接；以 `UnitOfWorkOptions.Connection` 开启时只用那个命名连接 |
-| `SqlSugarRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 | `SqlSugarDiffLogData` | 差异日志的业务数据：`EntityType` 与仓储所在作用域的 `Services` |
 | `SqlSugarDataSource`、`SqlSugarDataSourceExtensions` | 运行时数据源：`Client` 是每个数据源一个的 `SqlSugarScope`；`source.GetSqlSugarClient()` 从中立的 `IDataSource` 取它 |
 
@@ -6735,14 +6913,14 @@ builder.Services.AddRepository<SyncCursor, string>(connection: "leases");
 // 管道外与业务事务互不等待的写入：工作单元绑定这个连接，事务只开在它上面
 await using var scope = services.CreateAsyncScope();
 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "leases"), ct);
+await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = "leases" }, ct);
 // …经 IRepository<SyncCursor, string> 读写，然后 CommitAsync
 ```
 
 - 名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`；值不能空白。不合法时装配即抛 `ArgumentException`（消息只带名字，不带连接串）。
 - 每个作用域的客户端都带上命名连接，排在默认连接之后，根连接仍是默认连接。工作单元首次写入时只在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开：业务调用不碰命名连接，那个库就不被业务事务锁住。
 - 普通工作单元里，登记到命名连接的实体照常参与整体事务（同一调用触及的连接顺序提交）；`InitTables` 把它建在那个连接上。
-- 绑定连接的工作单元（`UnitOfWorkOptions(Connection: name)`）只用这一个连接：操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接不在客户端里，`BeginAsync` 抛出同码异常。
+- 绑定连接的工作单元（`UnitOfWorkOptions { Connection = name }`）只用这一个连接：操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接不在客户端里，`BeginAsync` 抛出同码异常。
 - 方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端，配置里的 `Connections` 节对它不适用，写了即装配失败。
 
 ::: warning 跨库提交是顺序提交，不是两阶段提交
@@ -6882,7 +7060,7 @@ public sealed class ChangeBuffer
 - 软删除：在取回的当前行上打标并整行写回，调用方实例随后拿到删除标记，以及当前行的修改时间与并发戳。
 - 实体类型没有 `new()` 约束，写入经 `InsertableByObject` / `UpdateableByObject` / `DeleteableByObject`，语义与泛型构建器相同。
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
-- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
+- 只读工作单元（只读操作或 `UnitOfWorkOptions { IsReadOnly = true }`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 读写分离（ADR-0118）：回调在 `SlaveConnectionConfigs` 上给出从库，用法见[持久化](/persistence/sqlsugar)。配了从库的连接每个作用域一份配置副本；只读工作单元读从库，设了 `UnitOfWorkOptions.ReadsPrimary` 的除外（ADR-0122），其余工作单元读写都走主库。默认连接与命名连接的从库周期探测（走一次数据库往返，只探连通），不可读的摘除，全部不可读时读回到主库，见健康项 `SqlSugarPersistenceFeature.ReplicaHealthName`（`persistence.sqlsugar.replicas`）。分片连接的从库由回调按分片绑定给出，不探测。主库不同的连接共用从库是 `PERSISTENCE_VALIDATION_009`。没配从库时没有任何额外开销。
 - 运行时数据源（ADR-0078）：特性登记 SqlSugar 的数据源 Provider，数据库类型是 `DbType` 的名字（不区分大小写，`Custom` 与数字不认）。登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`；客户端是每个数据源一个的 `SqlSugarScope`（`IsAutoCloseConnection`），不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写；测试连接与健康探测另建客户端、打开原生 `DbConnection` 再关闭。运行时数据源不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。
@@ -7169,7 +7347,7 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `OutOfProcessPluginsFeature` | 特性入口，能力常量 `Capability`（`plugins.out-of-process`） |
-| `OutOfProcessPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`Describe(manifestId)` 返回诊断快照，`HostEndpoint` 是回调端点；常量 `PipelinePermission`、`MessagingPermission`、`PluginScheme`、`HealthPrefix` |
+| `OutOfProcessPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值），`HostEndpoint` 是回调端点；常量 `PipelinePermission`、`MessagingPermission`、`PluginScheme`、`HealthPrefix` |
 | `OutOfProcessPluginStatus` | 诊断快照：`Status`（`PluginStatus`）、`ProcessId`、`ProtocolVersion`、`Restarts`、`Lazy` |
 | `OutOfProcessPluginOptions` | 选项与 `FromConfiguration`、`GrantsFor`、`ResolveWorkDirectory` |
 
@@ -7185,8 +7363,8 @@ using XiHan.Framework.Plugins.OutOfProcess;
 static string Describe(IServiceProvider services, string manifestId)
 {
     var host = services.GetRequiredService<OutOfProcessPluginHost>();
-    // 未加载为 null；发现时被拒的插件也在宿主里，状态为 Failed、没有进程
-    return host.Describe(manifestId) is { } status
+    // 未加载时无值；发现时被拒的插件也在宿主里，状态为 Failed、没有进程
+    return host.FindStatus(manifestId).TryGetValue(out var status)
         ? $"{status.Status.State} pid={status.ProcessId} restarts={status.Restarts} lazy={status.Lazy}"
         : "not loaded";
 }
@@ -7202,7 +7380,7 @@ using XiHan.Framework.Kernel.Operations;
 static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 {
     await using var scope = services.CreateAsyncScope();
-    var context = App.CreateContext(scope.ServiceProvider, CancellationToken.None, deadline: DateTimeOffset.UtcNow.AddSeconds(5));
+    var context = App.CreateContext(scope.ServiceProvider, new InvocationContextOptions { Deadline = DateTimeOffset.UtcNow.AddSeconds(5) }, CancellationToken.None);
     var invoker = scope.ServiceProvider.GetRequiredService<IOperationInvoker>();
     return await invoker.InvokeAsync(context, new OperationRequest("echoes.create", Encoding.UTF8.GetBytes("""{"text":"ping"}""")));
 }
@@ -7212,7 +7390,7 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 
 ## 行为与限制
 
-- 发现失败不阻止应用启动，也不会静默消失：清单不合法（含写了 `contributes.pipeline`：只有 Wasm 插件能贡献中间件，消息键 `plugins.process.pipeline_unsupported`，细节 `middleware` 列出声明的中间件名）、权限未授予、可执行文件不存在的插件不启动进程，以 `Failed` 登记（出现在 `Plugins` 里、可 `Describe`、健康条目 `plugins.<清单 ID>`，清单读不出来时只有健康条目 `plugins.<目录名>`），宿主启动时记错误日志，不重试；握手失败的插件同样以 `Failed` 留在宿主里。运行期 `LoadAsync` 的同类失败直接返回给调用方、不登记。
+- 发现失败不阻止应用启动，也不会静默消失：清单不合法（含写了 `contributes.pipeline`：只有 Wasm 插件能贡献中间件，消息键 `plugins.process.pipeline_unsupported`，细节 `middleware` 列出声明的中间件名）、权限未授予、可执行文件不存在的插件不启动进程，以 `Failed` 登记（出现在 `Plugins` 里、可 `FindStatus`、健康条目 `plugins.<清单 ID>`，清单读不出来时只有健康条目 `plugins.<目录名>`），宿主启动时记错误日志，不重试；握手失败的插件同样以 `Failed` 留在宿主里。运行期 `LoadAsync` 的同类失败直接返回给调用方、不登记。
 - 启动阶段的握手、`Configure`、`Start` 失败按重启策略重试（`spec/plugin/lifecycle.md` §6）：宿主附着到容器后按与崩溃相同的退避在后台重试，计入 `RestartLimit`；运行期 `LoadAsync` 的这类失败返回给调用方，插件保持 `Failed` 并同样重试，直到 `UnloadAsync`。首次握手就失败的插件重试成功后，代理操作按运行期加载补登记（只对 `IOperationInvoker` 可见，协议适配器不新增路由），握手里的订阅与消息目录要宿主重启才生效（记警告）；声明登记不进去（声明的权限码与已登记的重复 `KERNEL_SECURITY_001`、与已有操作重名，或操作的 `permission` 既不是宿主已登记的、也不在本插件清单里，`KERNEL_VALIDATION_005`，或授权能力的启动核对之后操作的 `policy` 不存在，`SECURITY_VALIDATION_004`）则按发现时被拒处理、不再重试，一个权限码与代理操作都不留下（一个插件的权限码与操作全进或全不进，ADR-0071、ADR-0080）。懒激活插件首次调用时启动失败，该次调用失败，下一次调用再试。宿主附着后改用容器里的 `TimeProvider` 计时退避、健康轮询与停止等待。插件操作与应用操作重名、插件声明的权限码与宿主或别的插件已登记的码重复，都是配置错误，启动失败。
 - 崩溃（进程非 `Stop` 引起的退出，或健康轮询连续失败后被终止）进入 `Failed`（`PLUGINS_UNEXPECTED_002`），按 1 秒起翻倍、上限 60 秒退避重启；窗口内超过 `RestartLimit` 次后保持 `Failed`，直到 `UnloadAsync` + `LoadAsync`。重启后的握手声明必须与首次一致。
 - 插件 `Failed` 或 `Degraded` 让应用进入 `Degraded`，不让应用退出。
@@ -7462,7 +7640,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | 类型 | 说明 |
 | --- | --- |
 | `WasmPluginsFeature` | 特性入口，能力常量 `Capability`（`plugins.wasm`） |
-| `WasmPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`Describe(manifestId)` 返回诊断快照；常量 `HealthPrefix`（`plugins.`） |
+| `WasmPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值）；常量 `HealthPrefix`（`plugins.`） |
 | `WasmPluginStatus` | 诊断快照：`Status`、`AbiVersion`、`ProtocolVersion`、`Restarts`、`Lazy` |
 | `WasmPluginOptions` | 选项与 `FromConfiguration`、`GrantsFor`、`MountsFor`、`ResolveWorkDirectory` |
 
@@ -7531,7 +7709,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 卸载的插件的中间件被别的中间件以次序约束引用 | 卸载被拒（`KERNEL_PIPELINE_003`），什么都不撤，插件照常服务；先撤回引用方 |
 | 清单声明的权限码与已登记的重复（宿主特性定义的或另一个插件声明的）、声明的操作与已有操作重名，或 `permission` 既不是宿主已登记的、也不在本插件清单里，或 `policy` 不存在 | 配置阶段发现的启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`；`policy` 不存在在授权能力启动时报 `SECURITY_VALIDATION_004`）；运行期 `LoadAsync` 返回失败，一个权限码与代理操作都不留下 |
 | 清单 `contributes.permissions` 不合权限码文法或有重复 | 清单读不出，按发现时被拒（`PLUGINS_VALIDATION_001`） |
-| 发现时清单不合法、权限未授予或映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记（可 `Describe`、健康条目 `plugins.<清单 ID>`，清单读不出来时为 `plugins.<目录名>`），宿主启动时记错误日志，不重试 |
+| 发现时清单不合法、权限未授予或映射、模块文件不存在 | 不实例化，插件以 `Failed` 登记（可 `FindStatus`、健康条目 `plugins.<清单 ID>`，清单读不出来时为 `plugins.<目录名>`），宿主启动时记错误日志，不重试 |
 | Windows 进程强制用户态影子栈 | 创建 `WasmPluginHost` 时抛出 `FrameworkException`（`PLUGINS_UNAVAILABLE_003`） |
 
 - 重建次数在 `RestartWindowSeconds` 内超过 `RestartLimit` 后保持 `Failed`；每个插件是健康条目 `plugins.<清单 ID>`，`Failed` / `Degraded` 让应用进入 `Degraded`。
@@ -7708,7 +7886,7 @@ Full 组合包（元包）：Standard 加对象存储、调度、审计、工作
 | 配置节 | — |
 | 依赖 | `XiHan.Framework.Profiles.Standard`；`ObjectStorage`、`Scheduling`、`Auditing`、`Workflow` 的 `.Abstractions` 与默认实现；`Configuration.Abstractions`、`AI.Abstractions`、`Observability.OpenTelemetry`、`Observability.Host`；`Protocols.Http` / `.Grpc` / `.Mcp` / `.CloudEvents` |
 | AOT | 兼容 |
-| 稳定性 | Stable |
+| 稳定性 | Preview：级别不高于组装的组件 |
 
 ## 概述
 
@@ -7807,7 +7985,7 @@ Minimal 组合包（元包）：一个包引用带上原语层、内核、ASP.NE
 | 配置节 | — |
 | 依赖 | `XiHan.Framework.Primitives`、`XiHan.Framework.Kernel`、`XiHan.Framework.Hosting.AspNetCore`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Localization.InMemory` |
 | AOT | 兼容 |
-| 稳定性 | Stable |
+| 稳定性 | Preview：级别不高于组装的组件 |
 
 ## 概述
 
@@ -7874,7 +8052,7 @@ Standard 组合包（元包）：Minimal 加 `Domain` 与持久化、缓存、�
 | 配置节 | — |
 | 依赖 | `XiHan.Framework.Profiles.Minimal`、`XiHan.Framework.Domain`，以及 `Persistence`、`Caching`、`MultiTenancy`、`Security`、`Messaging` 各自的 `.Abstractions` 与 `.InMemory` |
 | AOT | 兼容 |
-| 稳定性 | Stable |
+| 稳定性 | Preview：级别不高于组装的组件 |
 
 ## 概述
 
@@ -8337,7 +8515,7 @@ OpenAPI 的标题、版本、`servers` 与分组不走配置，由传给 `MapXiH
 | --- | --- |
 | `HttpProtocolFeature` | 特性入口 |
 | `HttpProtocolOptions` | `RoutePrefix`、`Routes`；`RouteFor(descriptor)` 给出最终路由；`FromConfiguration` |
-| `Routing.OperationEndpointRouteBuilderExtensions` | `MapXiHanOperations()`，返回映射的端点数 |
+| `Routing.OperationEndpointRouteBuilderExtensions` | `MapXiHanOperations()`，返回这组操作端点的约定构建器（`IEndpointConventionBuilder`），加在上面的约定作用于每个操作端点 |
 | `Routing.HttpRouteConvention` | 推导规则：`Derive`、`HasIdentifier`、`HasNestedFields`、`SuccessStatusCode`；常量 `IdentifierProperty` = `id` |
 | `Routing.HttpRoute` | 方法与模板；`Parse("POST /orders:export")` |
 | `Routing.OperationRequestBinder` | `BindAsync`：路由值、请求体、查询串合并成载荷 |
@@ -8445,7 +8623,7 @@ MCP 协议版本 `2025-06-18`。`McpProtocolFeature` 登记选项、本包的消
 两种传输：
 
 - Streamable HTTP：`MapXiHanMcp()` 映射 `POST /mcp`，一条消息一个答复，通知回 202，不开 SSE、不建会话。`/mcp` 经过 `UseXiHan()`，请求凭据在外层认证，凭据无效时整个请求 401。
-- stdio：命令行宿主的 `mcp` 命令（`McpStdioCommand`），stdin / stdout 每行一条 JSON-RPC 消息，日志只写 stderr；stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8；会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自启动进程的命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`。凭据在每次调用的管道里认证，无效时需要认证的 tool 是 `isError`；选项不合法时退出码 64。
+- stdio：命令行宿主的 `mcp` 命令，stdin / stdout 每行一条 JSON-RPC 消息，日志只写 stderr；stdin 的字节按 UTF-8 解码，与控制台代码页无关（Windows 上重定向的标准输入不按 936、437 等代码页解码，中文参数不会成乱码）；答复里的非 ASCII 字符按 JSON 转义成 `\uXXXX`，只含 ASCII，按任何控制台输出代码页写出都是合法的 UTF-8；会话的凭据（`--authorization` 或 `XIHAN_AUTHORIZATION`）、租户、关联、区域与时限取自启动进程的命令行选项与环境变量，与 `invoke` 同一套映射，作用于每个 `tools/call`。凭据在每次调用的管道里认证，无效时需要认证的 tool 是 `isError`；选项不合法时退出码 64。
 
 ## 何时使用
 
@@ -8506,10 +8684,8 @@ app.Run();
 | `McpProtocolFeature` | 特性入口 |
 | `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`；`ToolNameFor(contract)` |
 | `Transports.McpEndpointRouteBuilderExtensions` | `MapXiHanMcp(pattern)`，缺省 `/mcp` |
-| `Transports.McpStdioCommand` | 命令行宿主的 `mcp` 命令；会话上下文取自命令行选项与环境变量 |
 | `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输；自己托管时按 UTF-8 构造 `input`（`new StreamReader(Console.OpenStandardInput(), Encoding.UTF8)`），不要直接用 `Console.In` |
-| `Server.McpServer` | JSON-RPC 服务端：`HandleAsync`、`Tools`、`FindTool`；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
-| `Server.McpReply` | 一条答复与是否为不合法消息（HTTP 400） |
+| `Server.McpServer` | JSON-RPC 服务端：`Tools`、`FindTool`，由特性构造、交给传输处理消息；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
 | `Tools.McpTool` | 一个 tool：名字、操作描述、输入 / 输出 Schema、提示 |
 | `Tools.McpToolAnnotations` | `For(contract)`：只读、破坏性、幂等提示 |
 | `Tools.McpToolName`、`Tools.McpToolNameConvention` | 名字校验与推导 |
@@ -8570,7 +8746,7 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 | 配置节 | `XiHan:Scheduling`（`SchedulerOptions`，由 Provider 读取） |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | 应用面 Stable：`IJob`、`IJobScheduler` 与其扩展、作业定义、计划与日历、状态与运行视图、查询、`AddJob` / `AddJobType` / `AddJobCalendar`、错误码与消息键；存储（`IJobStore` 与 `*Record`）、引擎、选主（`ILeaderElection`、`LeaderLease`）、登记表与事件为 Preview |
 
 ## 概述
 
@@ -8602,19 +8778,19 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 var builder = WebApplication.CreateBuilder(args);
 // 代码作业：同时登记类型
-builder.Services.AddJob<CleanupJob>("cleanup.nightly", JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
+builder.Services.AddJob<CleanupJob>(new JobName("cleanup.nightly"), JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
 // 只登记类型：供运行时 ScheduleAsync 新建的作业引用
 builder.Services.AddJobType<ArchiveJob>();
 
 public sealed class CleanupJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 
 public sealed class ArchiveJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 ```
@@ -8655,21 +8831,22 @@ public sealed class ArchiveJob : IJob
 
 | 类型 | 说明 |
 | --- | --- |
-| `IJob` | 作业：`RunAsync(JobRun, InvocationContext, CancellationToken)` → `ValueTask<Result>`，作用域服务 |
-| `JobName`、`TriggerKey` | 作业名（`^[a-z0-9][a-z0-9._-]{0,127}$`，可从字符串隐式转换）；触发器键 `(Job, Trigger)` |
+| `IJob` | 作业：`RunAsync(JobRun, InvocationContext)` → `ValueTask<Result>`（取消用 `context.CancellationToken`），作用域服务 |
+| `JobName`、`TriggerKey` | 作业名（`^[a-z0-9][a-z0-9._-]{0,127}$`，从字符串显式转换）；触发器键 `(Job, Trigger)` |
 | `JobDefinition` | 作业定义：`Name`、`JobType`、`Triggers`、`Data`、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`、`Retry`、`Timeout`、`Description` |
 | `JobTriggerDefinition` | 触发器：`Name`、`Schedule`、`Data`、`Priority`（缺省 5）、`MisfirePolicy`、`Description` |
 | `JobRetryPolicy`、`JobRetryBackoff` | 重试：`MaxRetries` 1–100、`Delay`、`Fixed` / `Exponential`、`MaxDelay`，等待最长 30 天；`DelayFor(n)` |
 | `JobSchedule`、`JobScheduleKind` | 计划：`Manual`、`Every`、`FromCron`、`Once`，加 `StartAt` / `EndAt` / `Calendar`；`ToString` / `Parse` 文本往返 |
 | `CronExpression` | 秒精度 cron：5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时；星期 0/7 = 周日 |
 | `MisfirePolicy` | `RunOnce`（缺省）、`Skip`、`RunAll` |
-| `IJobCalendar`、`HolidayCalendar`、`WeeklyCalendar`、`DailyCalendar`、`CronCalendar`、`CompositeCalendar`、`JobCalendars`、`JobPlanner` | 排除日历与按日历推算下一次 |
+| `IJobCalendar`、`HolidayCalendar`、`WeeklyCalendar`、`DailyCalendar`、`CronCalendar`、`CompositeCalendar`、`JobCalendars` | 排除日历；按日历推算下一次由引擎完成 |
 | `JobRun`、`JobTrigger` | 一次运行（`Id`、`Name`、`TriggerName`、`ScheduledAt`、`Trigger`、`Attempt`、`RetryOf`、`Data`）；触发来源 `Schedule` / `Manual` / `Recovery` / `Retry` |
-| `JobDispatcher` | 经管道执行一次运行；`GetRun(context)` 在管道内取当前运行 |
+| `JobDispatcher` | 经管道执行一次运行；`FindRun(context)` 在管道内取当前运行 |
 | `IJobScheduler`、`JobSchedulerExtensions` | 运行时管理：登记、删除、暂停、恢复、触发、入队、取消、状态、历史、计数、恢复为代码定义；全部批量，单条是扩展方法 |
-| `JobTriggerRequest`、`JobTriggerResult` | 手动触发的请求（名字与数据）与逐项结果 |
-| `JobStatus`、`JobTriggerStatus`、`JobOutcome` | 作业状态（含 `NextRun`、`Paused`、`IsRunning`、`Last`）、触发器状态、一次运行的结果 |
-| `JobRunRecord`、`JobRunQuery`、`JobRunState` | 运行历史记录、查询（`Limit` 缺省 100、最大 1000；越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`）、状态 `Running` / `Succeeded` / `Failed` / `Canceled` / `Lost` |
+| `JobTriggerRequest` | 手动触发的请求（名字与数据），批量触发返回与请求同序的 `Result` |
+| `JobStatus`、`JobView`、`JobTriggerStatus`、`JobOutcome` | 作业状态（含作业的只读视图 `Job`、`NextRun`、`Paused`、`IsRunning`、`Last`）、触发器状态、一次运行的结果；都经初始化器构造 |
+| `JobStatusQuery`、`JobStatusPage` | `ListStatusesAsync` 的分页查询（`PageSize` 1～1000、缺省 100，续页令牌；越界为 `SCHEDULING_VALIDATION_003`）与一页 |
+| `JobRunView`、`JobRunRecord`、`JobRunQuery`、`JobRunState` | 运行历史的只读视图（`RunsAsync` 返回）、存储记录（只给 `IJobStore`）、查询（`Take` 缺省 100、最大 1000；越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`）、状态 `Running` / `Succeeded` / `Failed` / `Canceled` / `Lost` |
 | `JobSource` | 作业来源：`Code`、`Runtime`、`Overridden` |
 | `JobRegistry`、`JobTypeRegistry` | 代码作业登记表；作业类型登记表（`Keys` 列出可选类型） |
 | `JobSchedulerEngine`、`SchedulerOptions` | 引擎（同时是 `IJobScheduler`）与选项；`NodeId`、`IsLeader`、`IsRunning`、`RunningCount`、`PollOnceAsync`（测试与一致性套件用：执行一个轮询周期，并等本周期起的运行连同收尾结束） |
@@ -8714,8 +8891,8 @@ public interface IExporter
 public sealed class ExportJob(IExporter exporter) : IJob
 {
     // hourly 触发器的数据覆盖作业数据的同名键 mode
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
-        => exporter.ExportAsync(run.Data["mode"]?.GetValue<string>() ?? "full", cancellationToken);
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
+        => exporter.ExportAsync(run.Data["mode"]?.GetValue<string>() ?? "full", context.CancellationToken);
 }
 ```
 
@@ -8741,7 +8918,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 
 ## 行为与限制
 
-- 名字、计划、策略的取值在构造时校验，越界抛 `ArgumentException` / `ArgumentOutOfRangeException`：作业名最长 128；`Every` 的间隔为正、`repeatCount` 至少 1；`MaxRetries` 1–100；`Delay`、`MaxDelay`、`Timeout` 大于零且不超过 30 天。运行历史查询的分页例外：`JobRunQuery` 的 `Skip` 与 `Limit` 不在构造时校验，越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400），因为它常由请求绑定而来。
+- 名字、计划、策略的取值在构造时校验，越界抛 `ArgumentException` / `ArgumentOutOfRangeException`：作业名最长 128；`Every` 的间隔为正、`repeatCount` 至少 1；`MaxRetries` 1–100；`Delay`、`MaxDelay`、`Timeout` 大于零且不超过 30 天。运行历史查询的分页例外：`JobRunQuery` 的 `Skip` 与 `Take` 不在构造时校验，越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400），因为它常由请求绑定而来。
 - cron 向前最多搜索 5 年；排除日历连续排除 10000 个候选时刻即视为没有下一次。
 - 本包不做持久化：运行时登记的作业、历史、节点放在哪里由 `IJobStore` 决定。`IJobStore.IsShared` 为假时，集群唯一的作业只在持有领导租约的实例上按计划运行。
 - 引擎在应用不在服务状态时（进入服务状态之前、开始排空之后）不按计划运行，领导租约也不拿不续，持有就立即释放，另一个实例下一个周期接手（ADR-0091）；停止时等待进行中的运行，宿主停止令牌触发后取消它们并再等它们收尾，最后释放租约。`ILeaderElection` 的 Provider 要保证应用不在服务状态时 `LeaderLease.ReleaseAsync` 照样生效。
@@ -8762,6 +8939,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 | `SCHEDULING_NOTFOUND_005` | 作业没有代码定义，不能恢复 |
 | `SCHEDULING_VALIDATION_001` | 作业定义不合法（触发器名重复、日历未登记） |
 | `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界（`SchedulingErrors.RunQueryInvalid`，HTTP 400） |
+| `SCHEDULING_VALIDATION_003` | 作业状态列表的查询不合法：每页条数越界或续页令牌不是调度器给出的（HTTP 400） |
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
 | `SCHEDULING_CONFLICT_002` | 领导租约被占用 |
 | `SCHEDULING_CONFLICT_003` | 运行被取消 |
@@ -8978,7 +9156,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | 配置节 | `XiHan:Scheduling`（引擎选项）、`XiHan:Scheduling:InMemory`（`MaxRuns`） |
 | 依赖 | `XiHan.Framework.Scheduling.Abstractions`；无第三方依赖 |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`InMemoryJobStore`、`InMemoryLeaderElection` 实现 Preview 的存储与选主接口，为 Preview |
 
 ## 概述
 
@@ -9048,7 +9226,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 | `InMemoryJobStore` | 进程内 `IJobStore`，`IsShared` 为假 |
 | `InMemoryLeaderElection` | 进程内 `ILeaderElection` |
 | `InMemorySchedulingOptions` | `MaxRuns` |
-| `InMemorySchedulingHealthContributor` | 健康项 `scheduling.inmemory.leader`（`InMemorySchedulingFeature.HealthName`） |
+| `InMemorySchedulingFeature.HealthName` | 健康项名 `scheduling.inmemory.leader`（实现不公开） |
 
 ## 使用示例
 
@@ -9061,7 +9239,7 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Scheduling.InMemory;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddJob<HeartbeatJob>("heartbeat", JobSchedule.Every(TimeSpan.FromSeconds(10)));
+builder.Services.AddJob<HeartbeatJob>(new JobName("heartbeat"), JobSchedule.Every(TimeSpan.FromSeconds(10)));
 builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 
 var app = builder.Build();
@@ -9070,7 +9248,7 @@ app.Run();
 
 public sealed class HeartbeatJob(ILogger<HeartbeatJob> logger) : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
     {
         logger.LogInformation("Heartbeat run {RunId}.", run.Id);
         return ValueTask.FromResult(Result.Success());
@@ -9214,7 +9392,7 @@ rules:
 | --- | --- |
 | `KubernetesSchedulingFeature` | 特性：注册选项、Lease 客户端与选举；被选中提供 `scheduling.leader` 时把 `ILeaderElection` 指向本包 |
 | `KubernetesLeaderElection` | `ILeaderElection` 实现；`Holder` 是本实例的持有者标识 |
-| `KubernetesSchedulingOptions` | 配置项，以及 `ResolveNamespace()`、`ResolveHolder()`、`ResolveApiServer()`、`LeaseNameFor(resource)` |
+| `KubernetesSchedulingOptions` | 配置项；命名空间、持有者、API 服务器地址与 Lease 名的推算规则见上文 |
 | `Leases.KubernetesLeaseClient` | Lease 的 GET / POST / PUT 客户端；`CreateInCluster(options)` 按 Pod 约定创建，应用或测试可预先注册自己的实例替代它 |
 
 ## 使用示例
@@ -9324,11 +9502,12 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | `Authorization.AuthorizationMiddleware` | Authorize 阶段的中间件；策略判定失败以该失败结束调用（ADR-0071） |
 | `Permissions.GrantSubject` | 授予的主体：`ForUser(id)`、`ForRole(name)`，种类常量 `User`、`Role` |
 | `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、租户（`null` 为全局） |
-| `Permissions.IPermissionGrantStore` | 授予存储：`GetGrantsAsync(subject, tenantId)` → `Result<IReadOnlyCollection<string>>`，全局授予加该租户的授予；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
+| `Permissions.IPermissionGrantStore`、`PermissionGrantStoreExtensions` | 授予存储：`GetManyAsync(subjects, tenantId)` → 与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`，单主体写法是扩展方法 `GetGrantsAsync(subject, tenantId)`；每项全局授予加该租户的授予；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
+| `Permissions.IPermissionGrantAdministration`、`PermissionGrantAdministrationExtensions`、`PermissionGrantQuery`、`GrantTenantFilter`、`PermissionGrantPage` | 可选的授予管理：`GrantAsync` / `RevokeAsync` 与入参同序的逐项结果（撤销不存在为 `SECURITY_NOTFOUND_002`），`ListAsync(query)` 按主体与租户过滤（`Any` / `Global` / `Of(tenantId)`）、偏移分页并计数，越界为 `SECURITY_VALIDATION_005`；单条写法是扩展方法 |
 | `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器：`HasPermissionAsync` → `Result<bool>`，存储、来源、过滤器的失败原样返回 |
 | `Permissions.IPermissionFilter` | 授予命中后的收窄（ADR-0039）：`AllowsAsync` → `Result<bool>` |
 | `Permissions.IPermissionGrantSource` | 存储之外的额外授予（ADR-0045）：`GetGrantsAsync` → `Result<IReadOnlyCollection<string>>` |
-| `SecurityInvocationExtensions` | `SetCredential` / `GetCredential`、`RequireAuthorization` / `GetAuthorizationRequirement` |
+| `SecurityInvocationExtensions` | `SetCredential` / `FindCredential`、`RequireAuthorization` / `FindAuthorizationRequirement` |
 | `SecurityOptions` | 选项，见上表 |
 | `Conditions.*` | 条件引擎（ADR-0046）：`ConditionSet` / `ConditionGroup` / `ConditionClause`、`ConditionOperator`、`ConditionValueKind`、`ConditionAttributeDescriptor`、`IConditionAttributeRegistry`、`IConditionCompiler`、`IConditionEvaluator`、`IConditionAttributeSource`、`DictionaryConditionAttributeSource`、`MemoizingConditionAttributeSource`、`ConditionOperatorRules`、`AddConditionAttributes` |
 | `Network.IIpRegionResolver` / `IpRegion` | IP 归属地（ADR-0047）：`Resolve(IPAddress)` → `Maybe<IpRegion>` |
@@ -9381,8 +9560,8 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
         // 端点没挂要求、契约也没写权限或策略时才补；显式要求优先于契约推导
-        if (!context.GetAuthorizationRequirement().HasValue
-            && context.GetOperation().TryGetValue(out var operation)
+        if (!context.FindAuthorizationRequirement().HasValue
+            && context.FindOperation().TryGetValue(out var operation)
             && operation.Contract is { Permission: null, Policy: null })
         {
             context.RequireAuthorization(AuthorizationRequirement.Authenticated);
@@ -9554,23 +9733,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `DatabaseSecurityFeature` | 特性入口：登记授予实体的仓储、授予存储、`PermissionChecker`、`authenticated` 策略、`PolicyCatalog` 与 `AuthorizationMiddleware`；不声明健康项 |
 | `DatabaseSecurityOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
 | `Grants.PermissionGrantRecord` | 授予行：`Id`、`SubjectKind`、`SubjectId`、`Permission`、`TenantId`、`CreatedAt`；`ToGrant()` 换算成 `PermissionGrant`；`TenantColumnOf(tenantId)` 给出租户列的值 |
-| `Grants.DatabasePermissionGrantStore` | 单例 `IPermissionGrantStore`：`GetGrantsAsync`（`Result`，数据库故障为 `SECURITY_UNAVAILABLE_001`）、`Invalidate(subject?)`、`CachedEntryCount` |
-| `Grants.PermissionGrantRecordStore` | 作用域服务：`GrantAsync`、`RevokeAsync` 批量逐项结果，`ListAsync(subject?, tenantId?, skip, take)` 分页 |
-| `Grants.PermissionGrantResult` | 一项结果：`Grant`、`Outcome` |
+| `Grants.DatabasePermissionGrantStore` | 单例 `IPermissionGrantStore`：`GetManyAsync`（缓存未命中的主体一次查库，`Result`，数据库故障为 `SECURITY_UNAVAILABLE_001`）、`Invalidate(subject?)`、`CachedEntryCount` |
+| `Grants.PermissionGrantRecordStore` | 作用域服务，实现 `IPermissionGrantAdministration`：`GrantAsync`、`RevokeAsync` 批量逐项结果，`ListAsync(PermissionGrantQuery)` 分页并计数 |
 
 ## 使用示例
 
-管理操作在处理器里经 `PermissionGrantRecordStore` 写入，Transaction 阶段已经开了工作单元：
+管理操作在处理器里经 `IPermissionGrantAdministration`（作用域服务，就是 `PermissionGrantRecordStore`）写入，Transaction 阶段已经开了工作单元：
 
 ```csharp
 using XiHan.Framework.Security.Abstractions.Permissions;
-using XiHan.Framework.Security.Database.Grants;
 
 // 作用域服务，在操作的处理器里使用
-public sealed class RoleAdministration(PermissionGrantRecordStore grants)
+public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 {
     // 一次授予多项：已存在的返回成功且不重复写
-    public ValueTask<IReadOnlyList<PermissionGrantResult>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
         => grants.GrantAsync(
         [
             new PermissionGrant(GrantSubject.ForRole("editor"), "orders.read"),
@@ -9578,7 +9755,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
         ], cancellationToken);
 
     // 不存在的授予逐项返回 SECURITY_NOTFOUND_002
-    public ValueTask<IReadOnlyList<PermissionGrantResult>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
         => grants.RevokeAsync([new PermissionGrant(GrantSubject.ForRole("editor"), "orders.write", tenantId)], cancellationToken);
 
     public Task<IReadOnlyList<PermissionGrantRecord>> ListAsync(string userId, CancellationToken cancellationToken)
@@ -9625,7 +9802,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
 | 配置节 | `XiHan:Security`（含 `InMemory` 子节） |
 | 依赖 | `XiHan.Framework.Security.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`InMemoryPermissionGrantStore` 实现 Preview 的授予管理接口，与 `InMemorySecurityHealthContributor` 同为 Preview |
 
 ## 概述
 
@@ -9698,7 +9875,7 @@ app.Run();
 }
 ```
 
-配置里的授予都是全局的（对任何租户生效）；租户专属授予只能在运行时经 `InMemoryPermissionGrantStore.Grant` 添加。
+配置里的授予都是全局的（对任何租户生效）；租户专属授予只能在运行时经授予管理 `IPermissionGrantAdministration.GrantAsync` 添加。
 
 ## 主要类型
 
@@ -9709,7 +9886,7 @@ app.Run();
 | `PrincipalRecord` | 配置里的一个主体：`Id`、`ApiKey`、`DisplayName`、`Roles`、`Tenant`、`Claims` |
 | `InMemoryPrincipalStore` | 主体存储：`FindByApiKey`（常量时间比较）、`Set`、`Remove`、`Capacity`、`Count` |
 | `ApiKeyAuthenticationHandler` | `ApiKey` 方案的处理器；`SchemeName` = `ApiKey` |
-| `InMemoryPermissionGrantStore` | 授予存储：`GetGrantsAsync`、`Grant`、`Revoke`、`Capacity`、`Count` |
+| `InMemoryPermissionGrantStore` | 授予存储，同时是 `IPermissionGrantAdministration`：`GetManyAsync`、`GrantAsync`、`RevokeAsync`（各一次加锁处理整批）、`ListAsync`、`Capacity`、`Count` |
 | `InMemorySecurityHealthContributor` | 健康项的贡献者 |
 
 ## 使用示例
@@ -9725,14 +9902,16 @@ curl -H "Authorization: ApiKey dev-alice-key" http://localhost:5000/whoami
 ```csharp
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Permissions;
-using XiHan.Framework.Security.InMemory;
 
-public sealed class TrialGrants(InMemoryPermissionGrantStore grants)
+public sealed class TrialGrants(IPermissionGrantAdministration grants)
 {
     // 只在 acme 租户里给 bob 导出权限；配置文件里写不了租户专属授予
-    public Result GrantExport() => grants.Grant(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"));
+    public ValueTask<Result> GrantExportAsync(CancellationToken cancellationToken)
+        => grants.GrantAsync(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"), cancellationToken);
 
-    public bool RevokeExport() => grants.Revoke(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"));
+    // 不存在时是 SECURITY_NOTFOUND_002
+    public ValueTask<Result> RevokeExportAsync(CancellationToken cancellationToken)
+        => grants.RevokeAsync(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"), cancellationToken);
 }
 ```
 
@@ -9876,7 +10055,7 @@ public sealed class LoginLocation(IServiceProvider services)
 }
 ```
 
-远端地址可以从调用来源 `context.GetOrigin()` 的 `RemoteAddress` 取。
+远端地址可以从调用来源 `context.FindOrigin()` 的 `RemoteAddress` 取。
 
 ## 行为与限制
 
@@ -10125,7 +10304,7 @@ app.Run();
 | --- | --- |
 | `OpenIdConnectSecurityFeature` | 特性入口 |
 | `OpenIdConnectOptions` | 上表各项（时长为 `TimeSpan`）；`DiscoveryPath`；`ResolveMetadataAddress()` 给出发现文档的最终地址 |
-| `OpenIdConnectMetadataCache` | 元数据缓存：`GetAsync`、`RefreshAsync`（受最短间隔限制）、`Current`；`FailureRetryDelay` 为 5 秒 |
+| `OpenIdConnectMetadataCache` | 元数据缓存：`GetAsync`、`RefreshAsync`（受最短间隔限制）、`Current`；取不到元数据时 5 秒后再试 |
 | `OpenIdConnectMetadata` | 一份元数据：`Issuer`、`JwksUri`、`SigningKeys`、`RetrievedAt` |
 | `OpenIdConnectAuthenticationHandler` | `Bearer` 方案的处理器；`SchemeName` = `Bearer` |
 
@@ -10175,6 +10354,161 @@ app.Run();
 
 ---
 
+来源：https://framework.docs.xihanfun.com/packages/security-webauthn
+
+# XiHan.Framework.Security.WebAuthn
+
+通行密钥（WebAuthn）的依赖方实现：生成注册与认证仪式的选项，按 RFC-0008「WebAuthn」的顺序核对浏览器交回的响应，提供 `security.webauthn@1`。适用于要做免密码、免用户名登录的应用。
+
+| 项 | 内容 |
+| --- | --- |
+| 包 ID | `XiHan.Framework.Security.WebAuthn` |
+| 环层 | Ring 3（实现） |
+| 能力 | 提供 `security.webauthn@1`；依赖 `kernel.hosting@1` |
+| 特性入口 | `WebAuthnSecurityFeature`（清单 `xihan.security.webauthn`，`role: provider`） |
+| 配置节 | `XiHan:Security:WebAuthn` |
+| 依赖 | `XiHan.Framework.Security.Abstractions`、`System.Formats.Cbor`；公开面不暴露第三方类型 |
+| AOT | 兼容 |
+| 稳定性 | Preview |
+
+## 概述
+
+`WebAuthnSecurityFeature` 登记单例 `WebAuthnCeremonies`（ADR-0170）。它是无状态的：
+
+- 挑战由应用保存到仪式结束（一次性、有时限），凭据由应用存储；框架不定义凭据存储，凭据的归属、命名、启停与租户是应用的业务。
+- 选项与响应和 WebAuthn Level 3 的 JSON 同形，二进制一律 base64url（无填充）；浏览器侧用 `PublicKeyCredential.parseCreationOptionsFromJSON` / `parseRequestOptionsFromJSON` 还原选项，用 `credential.toJSON()` 交回响应。
+- 证明一律请求 `none`，证明声明不校验：公钥是否真由认证器持有，由之后每次认证的签名证明。
+- 算法依次是 ES256（P-256）、PS256、RS256；EdDSA 不支持（BCL 没有 Ed25519）。
+
+## 何时使用
+
+- 登录页「用通行密钥登录」，免用户名、免密码：用本包，用户验证与可发现凭据都按缺省的 `Required`。
+- 只想把通行密钥当第二因素：同样用本包，`ResidentKey` 设为 `Discouraged`，认证时把用户已有的凭据放进 `allowCredentials`。
+- 需要证明信任链或元数据服务（只允许特定型号的安全密钥）：本包不做，自己在 `WebAuthnRegisteredCredential.Aaguid` 之上加校验并请求别的证明方式。
+
+## 安装与启用
+
+```bash
+dotnet add package XiHan.Framework.Security.WebAuthn --prerelease
+```
+
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+
+```csharp
+using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Profiles.Standard;
+using XiHan.Framework.Security.WebAuthn;
+
+var builder = WebApplication.CreateBuilder(args);
+builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<WebAuthnSecurityFeature>());
+
+var app = builder.Build();
+app.UseXiHan();
+app.Run();
+```
+
+## 配置
+
+| 键（`XiHan:Security:WebAuthn`） | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `RelyingPartyId` | `string` | 必填 | 可注册的域名（如 `example.com`、本地开发的 `localhost`），不带协议、端口与路径 |
+| `RelyingPartyName` | `string` | 同 `RelyingPartyId` | 认证器上显示的名称 |
+| `Origins` | `string[]` | 必填 | 允许的来源，形如 `scheme://host[:port]`；主机必须等于 RP ID 或是它的子域，`https` 之外只允许 `localhost` 的 `http` |
+| `UserVerification` | `Required` / `Preferred` / `Discouraged` | `Required` | 为 `Required` 时核对响应带 UV 标志 |
+| `ResidentKey` | `Required` / `Preferred` / `Discouraged` | `Required` | 是否要求可发现凭据 |
+| `TimeoutSeconds` | `int` | `300` | 仪式的超时，写进选项交给浏览器 |
+| `ChallengeSize` | `int` | `32` | 挑战的字节数，16 到 64 |
+
+```json
+{
+  "XiHan": {
+    "Security": {
+      "WebAuthn": {
+        "RelyingPartyId": "example.com",
+        "RelyingPartyName": "Example",
+        "Origins": [ "https://example.com", "https://admin.example.com" ]
+      }
+    }
+  }
+}
+```
+
+配置在装配时读一次，缺少必填项或值不合法即启动失败。前端开发服务器与后端端口不同时，来源写浏览器地址栏里的那个（如 `http://localhost:9100`）。
+
+## 主要类型
+
+| 类型 | 说明 |
+| --- | --- |
+| `WebAuthnSecurityFeature` | 特性入口 |
+| `WebAuthnOptions` | 上表的配置；`FromConfiguration` 读取并核对 |
+| `WebAuthnCeremonies` | `CreateRegistrationOptions`、`CreateAuthenticationOptions`、`VerifyRegistration`、`VerifyAuthentication` |
+| `WebAuthnCreationOptions` / `WebAuthnRequestOptions` | 交给浏览器的选项 |
+| `WebAuthnRegistrationResponse` / `WebAuthnAuthenticationResponse` | 浏览器交回的响应 |
+| `WebAuthnRegisteredCredential` | 注册核对通过的凭据：凭据 ID、COSE 公钥、算法、签名计数、AAGUID、BE / BS / UV、传输方式 |
+| `WebAuthnStoredCredential` | 应用存储的凭据，认证时交给核对 |
+| `WebAuthnVerifiedAssertion` | 认证核对通过的结果：新的签名计数、UV、BS |
+
+测试里用 [Testing](./testing) 的 `WebAuthnTestAuthenticator` 生成合法或篡改过的响应。
+
+## 使用示例
+
+注册：选项交给浏览器，挑战存进缓存；响应回来后取出挑战（只用一次）再核对。
+
+```csharp
+public sealed class PasskeyRegistration(WebAuthnCeremonies ceremonies, IPasskeyStore store, IChallengeStore challenges)
+{
+    public async Task<WebAuthnCreationOptions> BeginAsync(User user, CancellationToken ct)
+    {
+        var existing = await store.ListAsync(user.Id, ct);
+        var options = ceremonies.CreateRegistrationOptions(
+            new WebAuthnUserEntity(Base64Url.EncodeToString(user.Id.ToByteArray()), user.UserName, user.DisplayName),
+            [.. existing.Select(c => new WebAuthnCredentialDescriptor("public-key", c.CredentialId, c.Transports))]);
+        await challenges.SaveAsync(user.Id, options.Challenge, ceremonies.Options.Timeout, ct);
+        return options;
+    }
+
+    public async Task<Result> CompleteAsync(User user, WebAuthnRegistrationResponse response, CancellationToken ct)
+    {
+        var challenge = await challenges.TakeAsync(user.Id, ct);
+        if (challenge is null)
+        {
+            return Error.Validation("APP_VALIDATION_001", "app.passkey.expired");
+        }
+
+        var registered = ceremonies.VerifyRegistration(response, challenge);
+        return registered.TryGetValue(out var credential) ? await store.AddAsync(user.Id, credential, ct) : registered.Error!;
+    }
+}
+```
+
+认证：免用户名时 `allowCredentials` 为空；响应回来后按凭据 ID 找到存储的凭据，核对通过即更新签名计数。
+
+```csharp
+var stored = await store.FindAsync(response.Id, ct);
+var verified = ceremonies.VerifyAuthentication(response, challenge, new WebAuthnStoredCredential(stored.CredentialId, stored.PublicKey, stored.SignCount, stored.UserHandle));
+if (verified.TryGetValue(out var assertion))
+{
+    await store.UpdateSignCountAsync(stored.CredentialId, assertion.SignCount, ct);
+}
+```
+
+## 行为与限制
+
+- 核对的顺序与每条失败的 `reason` 见 RFC-0008「WebAuthn」：解析不了是 `SECURITY_VALIDATION_006`，算法不支持是 `SECURITY_VALIDATION_007`，核对不通过是 `SECURITY_DENIED_005`。
+- 签名计数：新旧值有一个不为 0 时新值必须大于旧值，否则 `SECURITY_DENIED_006`，参数 `stored`、`received`。它是认证器可能被复制的信号，应用应提醒本人或停用这把凭据；都为 0 的认证器（多数同步的通行密钥）不计数，放行。
+- 挑战定长比较；客户端数据的哈希在签名里，挑战与来源受签名保护。
+- 存储的凭据带用户句柄、响应也带 `userHandle` 时两者必须相同，拿别人的凭据 ID 冒充会被拒绝。
+- 客户端扩展结果不读；`crossOrigin` 为真（跨源的 iframe 里发起）一律拒绝。
+- 应用给的期望挑战或存储的凭据 ID 不是 base64url 抛 `ArgumentException`：那是调用方的错误。
+
+## 相关
+
+- [安全鉴权 · 通行密钥](/security/webauthn)
+- [Security.Abstractions](./security-abstractions)
+- 规范：RFC-0008《认证与授权》；ADR-0170；一致性向量 `conformance/vectors/security/webauthn.json`
+
+---
+
 来源：https://framework.docs.xihanfun.com/packages/testing
 
 # XiHan.Framework.Testing
@@ -10220,6 +10554,8 @@ dotnet add package XiHan.Framework.Testing --prerelease
 | `StubFeature` | 实现 `IHostedFeature` 的特性桩：构造时给清单，`OnConfigure` / `OnStart` / `OnStop` 注入行为，`Events` 按顺序记录 `configure`、`start`、`stop` |
 | `TestManifests` | `Create(id, provides, requires, role, kind, bindings)`：能力写成 `id@version` / `id@^version?` 文本，版本取框架版本、原语层 1、稳定性 Stable |
 | `TestInvocationContext` | `Create(services, deadline, baggage, cancellationToken)`：不依赖宿主的调用上下文，未给服务提供器时用什么都解析不到的空提供器 |
+| `WebAuthnTestAuthenticator` | 测试用的通行密钥认证器：构造时选算法（ES256、PS256、RS256），`Register` / `Authenticate` 按 WebAuthn 的格式生成响应，`SignCount` 原样写进认证器数据；`CredentialId`、`PublicKey` 与注册核对得到的相同 |
+| `WebAuthnTestCeremony` | 一次仪式的输入（挑战、来源、RP ID）与篡改项（仪式类型、跨源、UP / UV / BE / BS 标志、证明格式、改坏签名、用户句柄）；缺省值产生合法的响应 |
 
 ## 使用示例
 
@@ -10313,7 +10649,7 @@ Console.WriteLine(context.TraceId.Length);
 | 配置节 | `XiHan:Workflow`（`WorkflowOptions`，由 Provider 读取） |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`（租户目录）、`XiHan.Framework.Scheduling.Abstractions`（cron）；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Preview；定义模型（`WorkflowDefinition`、`WorkflowNode`、`WorkflowTransition`、`WorkflowVariableDefinition`、`WorkflowRetryPolicy`、`WorkflowTimeoutAction`）、`WorkflowName`、`ActivityType`、状态枚举与 `WorkflowJson` 的定义部分为 Stable；`HttpActivity`、`WorkflowHttpClient` 为 Experimental |
 
 ## 概述
 
@@ -10342,7 +10678,7 @@ using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Assignees;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddActivity<AuditActivity>("Audit");
+builder.Services.AddActivity<AuditActivity>(new ActivityType("Audit"));
 builder.Services.AddAssigneeProvider<RoleAssigneeProvider>();
 
 public sealed class AuditActivity : IActivity
@@ -10394,17 +10730,18 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowDefinitionValidator` | 发布与启动前的校验，`Errors` 列出全部问题 |
 | `WorkflowJson` | 定义、实例、节点实例、书签、事件数据的 JSON 往返与深拷贝 |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionCatalogExtensions` | 定义生命周期：创建、更新、发布、新版本、停用、归档、删除、查询、活动描述符 |
-| `WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage` | 定义列表 `QueryAsync`：按关键字（名字、显示名、说明）、名字、分类、状态、创建时间区间过滤，按排序项 `Sorts`（`WorkflowDefinitionSort`：白名单字段加方向，有序、可多个、最多 6 项）排序（空时名字升序、版本降序），返回摘要的一页与总数；`Limit` 缺省 100、最大 1000，分页或排序字段越界是 `WORKFLOW_VALIDATION_002`（ADR-0096、ADR-0102） |
+| `WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage` | 定义列表 `QueryAsync`：按关键字（名字、显示名、说明）、名字、分类、状态、创建时间区间过滤，按排序项 `Sorts`（`WorkflowDefinitionSort`：白名单字段加方向，有序、可多个、最多 6 项）排序（空时名字升序、版本降序），返回摘要的一页与总数；`Take` 缺省 100、最大 1000，分页或排序字段越界是 `WORKFLOW_VALIDATION_002`（ADR-0096、ADR-0102） |
 | `WorkflowDefinitionSort`、`WorkflowInstanceSort`、`WorkflowDefinitionSortField`、`WorkflowInstanceSortField`、`WorkflowSortKeys` | 列表排序的白名单与排序键：定义 `Name` / `Title` / `Version` / `Status` / `CreatedAt` / `PublishedAt`，实例 `CreatedAt` / `EndedAt` / `Status` / `DefinitionName` / `Title`；标题按前 256 个字符（见 [工作流指南的列表排序](/workflow/definitions)，ADR-0102） |
 | `WorkflowKeyword` | 列表查询关键字的折叠与匹配规则（见 [工作流指南的关键字](/workflow/definitions)） |
-| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`（实例全部等待点的摘要 `WorkflowBookmarkSummary`，不含载荷，ADR-0096）；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法 |
+| `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy`、`WorkflowReservedNames` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`（实例全部等待点的摘要 `WorkflowBookmarkSummary`，不含载荷，ADR-0096）；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法；引擎保留的变量名（`lastError`、`signal`）、子流程回调输入键与结果标签在 `WorkflowReservedNames`，引擎、目录与任务服务的实现类型不公开（ADR-0135） |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
-| `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Limit` 缺省 100、最大 1000；一组关联 ID `CorrelationIds` 最多 1000 个、空集合不匹配，只取顶层 `TopLevelOnly`，关键字 `Keyword` 匹配实例标题或关联 ID，排序项 `Sorts`（`WorkflowInstanceSort`，有序、可多个、最多 5 项）空时创建时间降序，ADR-0096、ADR-0099、ADR-0102） |
+| `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Take` 缺省 100、最大 1000；一组关联 ID `CorrelationIds` 最多 1000 个、空集合不匹配，只取顶层 `TopLevelOnly`，关键字 `Keyword` 匹配实例标题或关联 ID，排序项 `Sorts`（`WorkflowInstanceSort`，有序、可多个、最多 5 项）空时创建时间降序，ADR-0096、ADR-0099、ADR-0102） |
 | `IActivity`、`IResumableActivity`、`ICompensableActivity`、`ActivityContext`、`ActivityResumeContext`、`ActivityOutcome`、`ActivityOutgoing`、`ActivityDescriptor`、`ActivityRegistry` | 活动契约、执行上下文、返回值、出边模式与设计器描述符 |
+| `WorkflowInstanceView`、`WorkflowNodeInstanceView` | 交给活动、结果处理器与指派规则的实例与节点实例只读视图（ADR-0133） |
 | `ActivityTypes` 与 `StartActivity`、`UserTaskActivity`、`HttpActivity` 等 | 内置活动的类型名与属性名常量 |
 | `WorkflowHttpClient` | `Http` 活动用的 HTTP 客户端（单例，可替换；缺省的过[出站地址策略](/security/outbound)）；`SendAsync(request, ct)` 不另计时，超时由活动按引擎时钟落成令牌传进来、按令牌归因（ADR-0097） |
 | `IWorkflowOutcomeHandler`、`WorkflowOutcomeContext` | `End` 节点带结果时、结束实例之前调用 |
-| `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务；`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，ADR-0096、ADR-0099）、排序与分页下推到存储，返回 `UserTaskPage(Items, Total)`，`Limit` 最大 1000，越界是 `WORKFLOW_VALIDATION_002` |
+| `IWorkflowTaskService`、`WorkflowTaskServiceExtensions`、`UserTask`、`UserTaskQuery`、`UserTaskPage`、`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`、`UserTaskCompletionPolicy`、`UserTaskOutcomes` | 用户任务；`QueryAsync` 的过滤（含关键字 `Keyword`：任务标题、实例标题、定义名或关联 ID，ADR-0096、ADR-0099）、排序与分页下推到存储，返回 `UserTaskPage { Items, Total }`，`Take` 最大 1000，越界是 `WORKFLOW_VALIDATION_002` |
 | `IWorkflowExternalTaskService`、`ExternalTask`、`ExternalTaskCompletion`、`ExternalTaskFailure`、`ExternalTaskLockExtension` | 外部任务 |
 | `IAssigneeProvider`、`AssigneeRule`、`AssigneeResolution`、`AssigneeRuleTypes`、`EmptyAssigneeStrategy` | 指派规则；内置 `User`、`Starter`、`Expression` |
 | `IWorkflowExpressionEvaluator`、`WorkflowExpressionEvaluator`、`ExpressionScope` | 表达式：`Evaluate` 返回 `Result<Maybe<JsonNode>>`、`EvaluateCondition`、`Render`、`Validate` |
@@ -10414,7 +10751,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowTopics`、`WorkflowEventData` | `workflow.*` 事件 |
 | `WorkflowErrors`、`WorkflowMessages`、`WorkflowCapabilities` | 错误码、消息键（目录 `workflow`，故障原因也是消息键，`WorkflowFault.Localize()` / `ToError()` 按调用方的区域本地化，ADR-0105）、能力 ID |
 
-`WorkflowServiceCollectionExtensions` 提供 `AddActivity<TActivity>`、`AddAssigneeProvider<TProvider>`、`AddWorkflowOutcomeHandler<THandler>`、`GetActivityRegistry`，以及给 Provider 用的 `AddWorkflowEngine(options)`。`AddWorkflowEngine` 把引擎、目录、任务服务、外部任务服务注册为作用域服务，表达式求值器、轮询器与 `WorkflowHttpClient` 注册为单例，并登记 19 个内置活动。
+`WorkflowServiceCollectionExtensions` 提供 `AddActivity<TActivity>`、`AddAssigneeProvider<TProvider>`、`AddWorkflowOutcomeHandler<THandler>`，以及给 Provider 用的 `AddWorkflowEngine(options)`。`AddWorkflowEngine` 把引擎、目录、任务服务、外部任务服务注册为作用域服务，表达式求值器、轮询器与 `WorkflowHttpClient` 注册为单例，并登记 19 个内置活动。
 
 ## 使用示例
 
@@ -10432,10 +10769,10 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 {
     public async ValueTask<string?> RunAsync(string name, CancellationToken cancellationToken)
     {
-        var definition = WorkflowDefinitionBuilder.Create("demo.greeting")
+        var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("demo.greeting"))
             .AddVariable("name", required: true)
             .AddStart()
-            .AddNode("greet", ActivityTypes.SetVariable, configure: node => node
+            .AddNode("greet", new ActivityType(ActivityTypes.SetVariable), configure: node => node
                 .WithProperty(SetVariableActivity.ExpressionsProperty, new JsonObject { ["greeting"] = "'hello ' + upper(name)" }))
             .AddEnd()
             .AddTransition("start", "greet").AddTransition("greet", "end")
@@ -10526,14 +10863,14 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 
 ## 概述
 
-引擎仍是抽象包的 `WorkflowEngine`，本包实现三个存储、事务与实例锁契约并驱动轮询：
+引擎仍在抽象包里，本包实现三个存储、事务与实例锁契约并驱动轮询：
 
 | 组件 | 做法 |
 | --- | --- |
 | 三个存储（`Storage.DatabaseWorkflowDefinitionStore` 等） | 作用域服务；在所在作用域的工作单元里经仓储读写，不经管道、不自己提交。分区为空读写平台表，否则读写租户表；分区必须等于工作单元的租户 |
 | 事务 `DatabaseWorkflowTransaction` | 在调用里且 Transaction 阶段已开启工作单元时可加入；只读工作单元里写入返回 `PERSISTENCE_UNEXPECTED_001` |
-| 实例锁 `Locking.DatabaseWorkflowInstanceLock` | 租约式分布式锁：插入行即拿到；过期的行按并发戳接管；未过期就等待（50 毫秒起每次翻倍、封顶 500 毫秒），超过 `LockTimeout` 返回 `WORKFLOW_TIMEOUT_001`；持有期间每三分之一租约续约一次；释放只删自己的行。每一步在根提供者的新作用域里开可写工作单元自己提交，不经管道 |
-| 轮询 `Polling.DueBookmarkPollingLoop` + `Polling.PollerLeadership` | 每个周期先拿或续资源 `workflow.poller` 的租约（全局一份），持有时才逐个分区（平台与租户目录里启用的租户）轮询到期书签，到了维护周期按保留期清理；应用不在服务状态（启动中、排空中）的周期不拿也不续，持有就立即释放，另一个在服务的实例下个周期接手 |
+| 实例锁 | 租约式分布式锁：插入行即拿到；过期的行按并发戳接管；未过期就等待（50 毫秒起每次翻倍、封顶 500 毫秒），超过 `LockTimeout` 返回 `WORKFLOW_TIMEOUT_001`；持有期间每三分之一租约续约一次；释放只删自己的行。每一步在根提供者的新作用域里开可写工作单元自己提交，不经管道 |
+| 轮询 | 每个周期先拿或续资源 `workflow.poller` 的租约（全局一份），持有时才逐个分区（平台与租户目录里启用的租户）轮询到期书签，到了维护周期按保留期清理；应用不在服务状态（启动中、排空中）的周期不拿也不续，持有就立即释放，另一个在服务的实例下个周期接手 |
 
 存储加入调用方的工作单元，租约行不加入（ADR-0077）：引擎把取得的实例锁持有到调用的服务作用域结束（事务提交或回滚之后）才释放，别的节点拿到锁时读到的一定是提交后的状态；租约行自己提交，别的节点立刻看得见、不随业务回滚。轮询的领导权只为节省资源：多个节点同时轮询也不会重复执行，到期书签的恢复由实例锁串行化。
 
@@ -10633,8 +10970,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `Entities.WorkflowLockRecord` | 租约行：`Id` 是实例 ID 或资源名，`Holder`、`ExpiresAt`、并发戳 |
 | `Storage.DatabaseWorkflowDefinitionStore` / `DatabaseWorkflowInstanceStore` / `DatabaseWorkflowBookmarkStore` | 三个存储实现 |
 | `DatabaseWorkflowTransaction` | 与调用方事务的关系 |
-| `Locking.DatabaseWorkflowInstanceLock` | 实例锁实现 |
-| `Polling.PollerLeadership`、`Polling.DueBookmarkPollingLoop` | 轮询领导权（资源 `PollerLeadership.Resource` = `workflow.poller`）与轮询循环；`RunCycleAsync` 执行一个周期（测试推进注入的时钟后直接调用） |
 
 ## 使用示例
 

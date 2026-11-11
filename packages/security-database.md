@@ -110,23 +110,21 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | `DatabaseSecurityFeature` | 特性入口：登记授予实体的仓储、授予存储、`PermissionChecker`、`authenticated` 策略、`PolicyCatalog` 与 `AuthorizationMiddleware`；不声明健康项 |
 | `DatabaseSecurityOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
 | `Grants.PermissionGrantRecord` | 授予行：`Id`、`SubjectKind`、`SubjectId`、`Permission`、`TenantId`、`CreatedAt`；`ToGrant()` 换算成 `PermissionGrant`；`TenantColumnOf(tenantId)` 给出租户列的值 |
-| `Grants.DatabasePermissionGrantStore` | 单例 `IPermissionGrantStore`：`GetGrantsAsync`（`Result`，数据库故障为 `SECURITY_UNAVAILABLE_001`）、`Invalidate(subject?)`、`CachedEntryCount` |
-| `Grants.PermissionGrantRecordStore` | 作用域服务：`GrantAsync`、`RevokeAsync` 批量逐项结果，`ListAsync(subject?, tenantId?, skip, take)` 分页 |
-| `Grants.PermissionGrantResult` | 一项结果：`Grant`、`Outcome` |
+| `Grants.DatabasePermissionGrantStore` | 单例 `IPermissionGrantStore`：`GetManyAsync`（缓存未命中的主体一次查库，`Result`，数据库故障为 `SECURITY_UNAVAILABLE_001`）、`Invalidate(subject?)`、`CachedEntryCount` |
+| `Grants.PermissionGrantRecordStore` | 作用域服务，实现 `IPermissionGrantAdministration`：`GrantAsync`、`RevokeAsync` 批量逐项结果，`ListAsync(PermissionGrantQuery)` 分页并计数 |
 
 ## 使用示例
 
-管理操作在处理器里经 `PermissionGrantRecordStore` 写入，Transaction 阶段已经开了工作单元：
+管理操作在处理器里经 `IPermissionGrantAdministration`（作用域服务，就是 `PermissionGrantRecordStore`）写入，Transaction 阶段已经开了工作单元：
 
 ```csharp
 using XiHan.Framework.Security.Abstractions.Permissions;
-using XiHan.Framework.Security.Database.Grants;
 
 // 作用域服务，在操作的处理器里使用
-public sealed class RoleAdministration(PermissionGrantRecordStore grants)
+public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 {
     // 一次授予多项：已存在的返回成功且不重复写
-    public ValueTask<IReadOnlyList<PermissionGrantResult>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
         => grants.GrantAsync(
         [
             new PermissionGrant(GrantSubject.ForRole("editor"), "orders.read"),
@@ -134,7 +132,7 @@ public sealed class RoleAdministration(PermissionGrantRecordStore grants)
         ], cancellationToken);
 
     // 不存在的授予逐项返回 SECURITY_NOTFOUND_002
-    public ValueTask<IReadOnlyList<PermissionGrantResult>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
         => grants.RevokeAsync([new PermissionGrant(GrantSubject.ForRole("editor"), "orders.write", tenantId)], cancellationToken);
 
     public Task<IReadOnlyList<PermissionGrantRecord>> ListAsync(string userId, CancellationToken cancellationToken)

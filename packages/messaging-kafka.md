@@ -22,8 +22,8 @@
 - 主题映射为 `<TopicPrefix><topic>`（前缀缺省 `xihan.`）。消息值是 CloudEvents 结构化 JSON，头 `content-type` 为 `application/cloudevents+json`、`x-xihan-attempt` 为尝试次数。
 - 消息键取信封扩展属性 `xihankey`（`EnvelopeExtensions.PartitionKey`）：同键进同一分区，按发布顺序投递；没有键时由 Kafka 分配分区，只在主题只有一个分区时全局有序。
 - 生产者幂等（`EnableIdempotence`）且 `acks=all`。批量发布连续交给客户端本地队列、合并成批次发出，再一次等待全部投递报告，任一失败整批抛出 `MESSAGING_UNAVAILABLE_001`。
-- 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `GroupId`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
-- 广播订阅（[订阅方式](/messaging/pubsub)）用本实例独占的消费组 `<GroupId>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](/messaging/pubsub)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`GroupId` 前缀的 ACL 同样覆盖广播消费组。
+- 每个订阅（主题加方式）一个消费者，单线程按分区顺序派发。竞争订阅属于同一消费组 `ConsumerGroup`（缺省 `xihan`），没有已提交位点时从最早位点开始（订阅前发布的消息也会收到）。
+- 广播订阅（[订阅方式](/messaging/pubsub)）用本实例独占的消费组 `<ConsumerGroup>@<InstanceId>`（组内只有本实例、分到全部分区），从最新位点开始、不提交位点：消费组空了不留位点，重启时没有已提交的位点，不回放历史（实例标识缺省每次启动生成，是新的消费组；配了 `XiHan:Messaging:InstanceId` 时组名不变，但从未提交过位点，见[订阅方式](/messaging/pubsub)）。分区分配是异步的，启动后要等消费组分到分区（通常几秒）才开始收；重试耗尽或无法解码时丢弃并记 Warning 日志，不发布死信。按前缀授权消费组的集群，`ConsumerGroup` 前缀的 ACL 同样覆盖广播消费组。
 - 处理失败在原位重试到 `MaxAttempts`，不重新入队，分区内顺序不变；竞争订阅仍失败就发布到死信主题 `<TopicPrefix><topic><DeadLetterSuffix>`。无法解码的消息直接进死信。
 - 竞争订阅投递完成（成功或进死信）后才提交位点；停止时未完成的消息在重启后重新投递，仍是至少一次。
 - 死信发布没有落盘或失败（或投递因其他异常没有完成）时不提交，消费者回退到这条消息，等 `RedeliveryDelaySeconds` 后重新投递（处理器重新执行），期间这个分区不往后读；消费者本身出错同样等一会儿再取。消费循环只在停止时退出，每次重投记 Error 日志。
@@ -62,7 +62,7 @@ builder.AddXiHan(xihan => xihan
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:Kafka:BootstrapServers` | 字符串 | — | 引导地址，逗号分隔的 `host:port`；有绑定 `stream` 时被绑定的主值覆盖，两者都没有时装配失败。绑定的属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 各自覆盖 `Properties` 里的同名键，其余绑定属性不透传 |
-| `XiHan:Messaging:Kafka:GroupId` | 字符串 | `xihan` | 消费组，同一组的实例分摊分区 |
+| `XiHan:Messaging:Kafka:ConsumerGroup` | 字符串 | `xihan` | 消费组，同一组的实例分摊分区 |
 | `XiHan:Messaging:Kafka:TopicPrefix` | 字符串 | `xihan.` | 主题前缀 |
 | `XiHan:Messaging:Kafka:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Messaging:Kafka:RedeliveryDelaySeconds` | 正数 | 5 | 投递没有完成（死信发布失败等）时重新投递前的等待 |
@@ -77,7 +77,7 @@ builder.AddXiHan(xihan => xihan
     "Messaging": {
       "Kafka": {
         "BootstrapServers": "localhost:9092",
-        "GroupId": "orders",
+        "ConsumerGroup": "orders",
         "Properties": {
           "security.protocol": "SASL_SSL",
           "sasl.mechanism": "PLAIN",
@@ -126,8 +126,8 @@ done
 | 类型 | 说明 |
 | --- | --- |
 | `KafkaMessagingFeature` | 特性入口（`IHostedFeature`）；常量 `ConnectionBinding`（`stream`）、`HealthName`（`messaging.kafka.connection`） |
-| `KafkaMessagingOptions` | `BootstrapServers`、`GroupId`、`TopicPrefix`、`Properties`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
-| `KafkaMessageBroker` | 代理与重放器；`ConnectAsync`、`IsConnected`、`ProbeAsync`（健康项用）、`ReplayAsync` |
+| `KafkaMessagingOptions` | `BootstrapServers`、`ConsumerGroup`、`TopicPrefix`、`Properties`、`HealthProbeInterval`；`FromConfiguration(configuration, binding)` |
+| `KafkaMessageBroker` | 代理与重放器；`ReplayAsync`；连接与健康探测由特性在内部调用 |
 
 ## 使用示例
 
@@ -153,7 +153,7 @@ public sealed class LedgerStream(IMessagePublisher publisher, IMessageReplayer r
 
 ## 行为与限制
 
-- 重放：`ReplayAsync(topic, since)` 只投给竞争订阅，用一个新的独立消费组（`<GroupId>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
+- 重放：`ReplayAsync(topic, since)` 只投给竞争订阅，用一个新的独立消费组（`<ConsumerGroup>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
 - 原位重试会阻塞所在分区：一条消息重试期间，同分区后面的消息等待；重试之间不等待。
 - 重放与重试都是有意的重复投递，处理器按 `Id` + `Source` 去重。
 - 主题不存在（ADR-0079、ADR-0085）：集群开着自动建主题时由 broker 建出，没人订阅的主题里的消息只留到保留期；关了自动建主题时发布约 30 秒后失败、订阅一直等、死信发布回退重投，要预建主题，清单见[主题](#主题)。
@@ -171,6 +171,6 @@ docker run -d -p 9092:9092 apache/kafka
 ## 相关
 
 - [消息与事件](/messaging/streams)
-- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.InMemory](./messaging-inmemory)
+- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Redis](./messaging-redis)
 - [部署与打包](/deployment/pack)：绑定 `stream` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》「流」；ADR-0019

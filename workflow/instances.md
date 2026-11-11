@@ -57,10 +57,10 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 {
     // 第 page 页（从 0 起），最新的在前；Total 用来算页数
     public ValueTask<Result<UserTaskPage>> ListAsync(string userId, int page, CancellationToken cancellationToken)
-        => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
+        => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Sorts = [new(UserTaskSortField.CreatedAt, Descending: true)], Skip = page * 20, Take = 20 }, cancellationToken);
 
     public ValueTask<Result<WorkflowInstance>> ApproveAsync(string taskId, string userId, string? comment, CancellationToken cancellationToken)
-        => tasks.CompleteAsync(new UserTaskCompletion(taskId, userId, UserTaskOutcomes.Approved, comment), cancellationToken);
+        => tasks.CompleteAsync(new UserTaskCompletion(taskId, userId) { Outcome = UserTaskOutcomes.Approved, Comment = comment }, cancellationToken);
 }
 ```
 
@@ -78,7 +78,9 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 | `CorrelationId` | 业务关联 ID，信号按它匹配，重用策略按它查重 |
 | `ReusePolicy` | `AllowDuplicate`（缺省）、`RejectActive`（已有未结束实例 → `WORKFLOW_CONFLICT_005`）、`ReturnActive`（返回已有实例）；没有 `CorrelationId` 时忽略。查重只看同一分区的实例；查重与写入在同一把实例锁里，并发的同键启动只建一个实例；等锁超时是 `WORKFLOW_TIMEOUT_001` |
 | `StartAt` | 延迟启动：开始节点以定时书签挂起到该时刻 |
-| `DisplayName`、`InstanceId` | 实例显示名与指定的实例 ID |
+| `DisplayName` | 实例显示名，空取定义的 |
+
+实例 ID 由引擎生成。子流程的父实例、父节点实例与深度只由引擎在启动子实例时设置，不在启动请求里；要幂等启动，用 `CorrelationId` 与 `ReusePolicy`。
 
 实例属于调用方的分区。返回的是第一个波次结束后的实例：流程一路走到 `End` 时状态已是 `Completed`，停在用户任务上时是 `Running`。定义有实例级超时时，启动时就排好 `InstanceTimeout` 书签，到期按 `TimeoutAction` 让实例故障或终止。
 
@@ -93,18 +95,18 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 
-var onOrder = WorkflowDefinitionBuilder.Create("orders.fulfil")
-    .AddNode("start", ActivityTypes.Start, configure: node => node.WithProperty(StartActivity.SignalNameProperty, "order.created"))
+var onOrder = WorkflowDefinitionBuilder.Create(new WorkflowName("orders.fulfil"))
+    .AddNode("start", new ActivityType(ActivityTypes.Start), configure: node => node.WithProperty(StartActivity.SignalNameProperty, "order.created"))
     .AddExternalTask("ship", "warehouse.ship")
     .AddEnd()
     .AddTransition("start", "ship").AddTransition("ship", "end")
     .Build();
 
-var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
-    .AddNode("start", ActivityTypes.Start, configure: node => node
+var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconcile"))
+    .AddNode("start", new ActivityType(ActivityTypes.Start), configure: node => node
         .WithProperty(StartActivity.CronProperty, "0 0 2 * * *")
         .WithProperty(StartActivity.TimeZoneProperty, "Asia/Shanghai"))
-    .AddNode("log", ActivityTypes.Log, configure: node => node.WithProperty(LogActivity.MessageProperty, "reconcile started"))
+    .AddNode("log", new ActivityType(ActivityTypes.Log), configure: node => node.WithProperty(LogActivity.MessageProperty, "reconcile started"))
     .AddEnd()
     .AddTransition("start", "log").AddTransition("log", "end")
     .Build();
@@ -141,8 +143,7 @@ var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
 
 | 方法 | 作用 | 主要错误 |
 | --- | --- | --- |
-| `PendingAsync(assigneeId)` / `PendingByInstanceAsync(instanceId)` | 某人或某实例的待办 | — |
-| `QueryAsync(UserTaskQuery)` | 指派人或实例必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
+| `QueryAsync(UserTaskQuery)` | 读待办的唯一入口：某人的待办给 `AssigneeId`，某实例的给 `InstanceId`，两者必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按排序项 `Sorts`（`UserTaskSort`，字段目前只有创建时间 `CreatedAt`，缺省升序，项数上限 `MaxSorts`；与定义、实例查询同一写法，2026-11-11 修订，ADR-0162）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Take` 不在 1 到 1000） |
 | `CompleteAsync(completions)` | 完成任务，可带结果、意见与变量 | `WORKFLOW_DENIED_001`（不是指派人）、`WORKFLOW_VALIDATION_002`（结果不允许）、`WORKFLOW_NOTFOUND_003` |
 | `TransferAsync(transfers)` | 转办给另一个人 | `WORKFLOW_CONFLICT_004`（目标已是指派人） |
 | `AddAssigneesAsync(additions)` | 加签：`Any` / `All` 立即加任务，`Sequential` 排到队尾 | `WORKFLOW_CONFLICT_004` |
@@ -150,20 +151,20 @@ var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
 | `ReturnAsync(returns)` | 退回：目标缺省为本节点之前最近完成的用户任务节点，没有则退回 `Start` 之后的首个节点；以跳转实现 | `WORKFLOW_VALIDATION_002` |
 | `UrgeAsync(urges)` | 催办：发布 `workflow.task.urged`，不改状态 | — |
 
-任务标题是节点 `Title` 模板渲染的结果（缺省节点名），实例标题是启动时给的显示名、没给取定义的显示名、再没有取定义名。查询只返回当前分区、实例处于运行中的任务：实例挂起或故障时它的任务退出结果，恢复后回来。过滤、排序与分页都由存储执行，`Total` 是同条件的总数；`Limit` 缺省 100、最大 1000（`UserTaskQuery.MaxLimit`），越界在查询时返回校验错误，HTTP 是 400。关键字规则见[关键字](/workflow/definitions#关键字)。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
+任务标题是节点 `Title` 模板渲染的结果（缺省节点名），实例标题是启动时给的显示名、没给取定义的显示名、再没有取定义名。查询只返回当前分区、实例处于运行中的任务：实例挂起或故障时它的任务退出结果，恢复后回来。过滤、排序与分页都由存储执行，`Total` 是同条件的总数；`Take` 缺省 100、最大 1000（`UserTaskQuery.MaxTake`），越界在查询时返回校验错误，HTTP 是 400。关键字规则见[关键字](/workflow/definitions#关键字)。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
 
 在最小示例的 `Inbox` 上补搜索、转办与退回：
 
 ```csharp
 // 待办搜索框：任务标题、流程标题、定义名或单据号（关联 ID）包含关键字即命中
 public ValueTask<Result<UserTaskPage>> SearchAsync(string userId, string keyword, int page, CancellationToken cancellationToken)
-    => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Descending = true, Skip = page * 20, Limit = 20 }, cancellationToken);
+    => tasks.QueryAsync(new UserTaskQuery { AssigneeId = userId, Keyword = keyword, Sorts = [new(UserTaskSortField.CreatedAt, Descending: true)], Skip = page * 20, Take = 20 }, cancellationToken);
 
 public ValueTask<Result> HandOverAsync(string taskId, string userId, string colleague, CancellationToken cancellationToken)
-    => tasks.TransferAsync(new UserTaskTransfer(taskId, userId, colleague, "出差，转同事处理"), cancellationToken);
+    => tasks.TransferAsync(new UserTaskTransfer(taskId, userId) { TargetAssigneeId = colleague, Comment = "出差，转同事处理" }, cancellationToken);
 
 public ValueTask<Result<WorkflowInstance>> SendBackAsync(string taskId, string userId, CancellationToken cancellationToken)
-    => tasks.ReturnAsync(new UserTaskReturn(taskId, userId, Comment: "材料不全"), cancellationToken);
+    => tasks.ReturnAsync(new UserTaskReturn(taskId, userId) { Comment = "材料不全" }, cancellationToken);
 ```
 
 ### 自定义指派规则
@@ -211,7 +212,7 @@ public sealed class DepartmentManagerProvider(IOrgChart org) : IAssigneeProvider
 | `InstanceTimeout` | 定义 `Timeout` | 引擎直接处理 |
 | `DefinitionTimer` | `Start.Cron` | 引擎直接处理，`InstanceId` 是定义 ID |
 
-`ResumeAsync(bookmarkId, inputs, expectedKey)` 消费一个书签并恢复节点；实例不在运行中，或 `expectedKey` 与书签的 `Key` 不同时返回 `WORKFLOW_CONFLICT_003`，轮询器遇到这类书签把到期时间后推 `NotResumableBackoff`（缺省 5 分钟）。`SignalAsync(name, payload, correlationId)` 消费当前分区里匹配的全部信号书签（书签的 `CorrelationId` 为空时接受任意关联），再按信号启动规则启动实例，返回消费数加启动数。
+`ResumeAsync(bookmarkId, inputs, expectedKey)` 消费一个书签并恢复节点；实例不在运行中，或 `expectedKey` 与书签的 `Key` 不同时返回 `WORKFLOW_CONFLICT_003`，轮询器遇到这类书签把到期时间后推 `NotResumableBackoff`（缺省 5 分钟）。用户任务与外部任务的书签只能经任务服务与外部任务服务消费（它们校验指派人与持锁的工作者、发布完成事件），`ResumeAsync` 对这两种也返回 `WORKFLOW_CONFLICT_003`。`ResumeAsync` 不校验调用者身份，`inputs` 原样交给活动，是给受信代码的入口，不要把它直接做成面向最终用户的接口。`SignalAsync(name, payload, correlationId)` 消费当前分区里匹配的全部信号书签（书签的 `CorrelationId` 为空时接受任意关联），再按信号启动规则启动实例，返回消费数加启动数。
 
 ```csharp
 using System.Text.Json.Nodes;
@@ -244,12 +245,12 @@ public sealed class ShippingWorker(IWorkflowExternalTaskService external)
             var order = task.Payload?["order"]?.GetValue<string>();
             if (order is { Length: > 0 })
             {
-                await external.CompleteAsync(new ExternalTaskCompletion(task.Id, "worker-1", new JsonObject { ["shipped"] = true }), cancellationToken);
+                await external.CompleteAsync(new ExternalTaskCompletion(task.Id, "worker-1") { Outputs = new JsonObject { ["shipped"] = true } }, cancellationToken);
             }
             else
             {
                 // 带 RetryAfter：解锁并推迟，任务的 Attempt 加一；不带则节点以该错误故障，按节点重试策略处理
-                await external.FailAsync(new ExternalTaskFailure(task.Id, "worker-1", "order missing", TimeSpan.FromMinutes(1)), cancellationToken);
+                await external.FailAsync(new ExternalTaskFailure(task.Id, "worker-1") { Error = "order missing", RetryAfter = TimeSpan.FromMinutes(1) }, cancellationToken);
             }
         }
     }
@@ -276,7 +277,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
             DefinitionName = "hr.leave",
             Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended],
             Skip = page * 20,
-            Limit = 20,
+            Take = 20,
         };
         var items = (await engine.ListInstancesAsync(query, cancellationToken)).ValueOrThrow();
         var total = (await engine.CountInstancesAsync(query, cancellationToken)).ValueOrThrow();
@@ -293,7 +294,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 }
 ```
 
-`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、关键字、创建时间范围（`CreatedFrom` / `CreatedTo`）、结束时间上界（`EndedBefore`）过滤，同时给出的取交集，按排序项 `Sorts` 排序（可多个，缺省创建时间降序，字段与规则见[列表排序](/workflow/definitions#列表排序)）；过滤、排序、分页与计数都由存储执行。`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxLimit`）。分页越界不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页。
+`WorkflowInstanceQuery` 按状态（`Status` 或 `Statuses`）、定义名、关联 ID 集合、父实例、只取顶层、发起人、关键字、创建时间范围（`CreatedFrom` / `CreatedTo`）、结束时间上界（`EndedBefore`）过滤，同时给出的取交集，按排序项 `Sorts` 排序（可多个，缺省创建时间降序，字段与规则见[列表排序](/workflow/definitions#列表排序)）；过滤、排序、分页与计数都由存储执行。`Skip` 缺省 0，`Take` 缺省 100、最大 1000（`WorkflowInstanceQuery.MaxTake`）。分页越界不在构造时抛出，`ListInstancesAsync` 返回 `WORKFLOW_VALIDATION_002`（HTTP 400），不进存储；`CountInstancesAsync` 不看分页。
 
 | 条件 | 说明 |
 | --- | --- |
@@ -304,9 +305,9 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 
 ```csharp
 // 审批中心「我发起的」：只取顶层，带标题搜索
-var mine = new WorkflowInstanceQuery { StarterId = userId, TopLevelOnly = true, Keyword = keyword, Skip = page * 20, Limit = 20 };
+var mine = new WorkflowInstanceQuery { StarterId = userId, TopLevelOnly = true, Keyword = keyword, Skip = page * 20, Take = 20 };
 // 实例列表点「结束时间」列升序
-var finished = new WorkflowInstanceQuery { Sorts = [new(WorkflowInstanceSortField.EndedAt)], Skip = page * 20, Limit = 20 };
+var finished = new WorkflowInstanceQuery { Sorts = [new(WorkflowInstanceSortField.EndedAt)], Skip = page * 20, Take = 20 };
 // 状态升序（生命周期），同状态的定义名升序，再同的创建时间降序
 var grouped = new WorkflowInstanceQuery
 {
@@ -317,7 +318,7 @@ var grouped = new WorkflowInstanceQuery
         new(WorkflowInstanceSortField.CreatedAt, Descending: true),
     ],
     Skip = page * 20,
-    Limit = 20,
+    Take = 20,
 };
 
 // 一页单据的审批进度：一次查询，按关联 ID 分组
@@ -326,7 +327,7 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
     DefinitionName = "permission-request",
     CorrelationIds = requests.Select(static r => r.Id.ToString()).ToList(),
     TopLevelOnly = true,
-    Limit = WorkflowInstanceQuery.MaxLimit,
+    Take = WorkflowInstanceQuery.MaxTake,
 }, cancellationToken)).ValueOrThrow().ToLookup(static instance => instance.CorrelationId);
 ```
 
@@ -339,8 +340,8 @@ var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 | `CancelAsync(ids, reason)` | `Running`、`Suspended`、`Faulted` | 取消：清掉未结束节点与全部书签，`EnableCompensation` 时补偿，级联到未结束的子流程 |
 | `TerminateAsync(ids, reason)` | `Running`、`Suspended`、`Faulted` | 终止：同取消，但不补偿 |
 | `RetryAsync(ids)` | `Faulted` 且有故障节点 | 清故障，从故障节点再执行一次（`Attempt + 1`） |
-| `SetVariablesAsync(updates)` | `Running`、`Suspended` | `WorkflowVariableUpdate(instanceId, variables, remove)`：合并变量、删除指定键 |
-| `JumpAsync(jumps)` | `Running`、`Suspended`、`Faulted` | `WorkflowJump(instanceId, targetNodeId, reason, variables, actorId)`：取消全部未结束节点与书签，从目标节点重新执行 |
+| `SetVariablesAsync(updates)` | `Running`、`Suspended` | `new WorkflowVariableUpdate(instanceId) { Variables = …, Remove = … }`：合并变量、删除指定键 |
+| `JumpAsync(jumps)` | `Running`、`Suspended`、`Faulted` | `new WorkflowJump(instanceId, targetNodeId) { Reason = …, Variables = …, ActorId = … }`：取消全部未结束节点与书签，从目标节点重新执行 |
 | `MigrateAsync(migrations)` | `Running`、`Suspended` | `WorkflowMigration(instanceId, targetDefinitionId)`：迁到同名的另一个已发布版本；未结束节点在目标版本里必须存在且活动类型相同 |
 | `PurgeAsync(request)` | 已结束 | `WorkflowPurgeRequest`：删除早于 `EndedBefore` 结束的实例及其节点实例与书签，可按 `Statuses` 与 `DefinitionName` 过滤，一次最多 `Limit` 条（1～1000，缺省 1000；越界返回 `WORKFLOW_VALIDATION_002`，不开事务） |
 
@@ -349,12 +350,14 @@ using System.Text.Json.Nodes;
 using XiHan.Framework.Workflow.Abstractions.Engine;
 
 // 改一个变量并删掉一个过期的键
-await engine.SetVariablesAsync(new WorkflowVariableUpdate(instanceId, new JsonObject { ["days"] = 2 }, Remove: ["draft"]), cancellationToken);
+await engine.SetVariablesAsync(new WorkflowVariableUpdate(instanceId) { Variables = new JsonObject { ["days"] = 2 }, Remove = ["draft"] }, cancellationToken);
 // 管理员把卡住的实例跳回主管审批
-await engine.JumpAsync(new WorkflowJump(instanceId, "manager", Reason: "重新审批", ActorId: adminId), cancellationToken);
+await engine.JumpAsync(new WorkflowJump(instanceId, "manager") { Reason = "重新审批", ActorId = adminId }, cancellationToken);
 // 迁到新发布的版本
 await engine.MigrateAsync(new WorkflowMigration(instanceId, newVersion.Id), cancellationToken);
 ```
+
+批量方法（这里的控制、任务与外部任务服务的操作）返回与入参等长、同序的逐项结果，空集合直接返回空结果、不开事务。自己开调用时整批一个事务：某一项失败不回滚其余项，失败的项没有写入；提交失败时每一项都报告提交的错误；在调用方的工作单元里时并入调用方的事务。取消在任何时刻都整批回滚并抛出 `OperationCanceledException`，不留下半批。
 
 调用只操作得了自己分区的实例：别的分区的实例按不存在处理，返回 `WORKFLOW_NOTFOUND_002`，`PurgeAsync` 只清自己的分区；按书签 ID 的 `ResumeAsync` 遇到别的分区的书签返回 `WORKFLOW_NOTFOUND_003`。状态不允许时返回 `WORKFLOW_CONFLICT_001`；已经结束的实例上取消与终止幂等返回。跳转目标不存在、迁移目标不兼容返回 `WORKFLOW_VALIDATION_002`；死汇合、波次上限这类引擎级故障没有故障节点，不能重试。所有控制操作都是批量、逐项结果，单条写法在 `WorkflowEngineExtensions` 里。`XiHan:Workflow:RetentionDays` 大于 0 时，轮询器每 `HousekeepingIntervalSeconds` 逐个分区自动清理一次。
 

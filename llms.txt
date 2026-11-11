@@ -6,9 +6,9 @@
 
 ## 机读资产
 
-- [llms-full.txt](https://framework.docs.xihanfun.com/llms-full.txt): 全部 160 页正文
-- [llms-guide.txt](https://framework.docs.xihanfun.com/llms-guide.txt): 89 页教程
-- [llms-packages.txt](https://framework.docs.xihanfun.com/llms-packages.txt): 69 页包参考
+- [llms-full.txt](https://framework.docs.xihanfun.com/llms-full.txt): 全部 163 页正文
+- [llms-guide.txt](https://framework.docs.xihanfun.com/llms-guide.txt): 90 页教程
+- [llms-packages.txt](https://framework.docs.xihanfun.com/llms-packages.txt): 71 页包参考
 - 每页 Markdown：把站点地址后缀成 `.md`，如 https://framework.docs.xihanfun.com/agents/agents.md
 
 ## 首页与更新日志
@@ -40,7 +40,7 @@
 
 ## 应用启动
 
-- [装配入口](https://framework.docs.xihanfun.com/startup/bootstrap): 这一页讲 XiHan 应用是怎样被「装起来」的：`AddXiHan` 在两种宿主构建器上的写法、回调里拿到的 `AppBuilder` 能做什么、装配完成后容器里的 `App` 对象提供哪些信息，以及启动日志里那两段文本（能力图谱与管道）该怎么读。
+- [装配入口](https://framework.docs.xihanfun.com/startup/bootstrap): 这一页讲 XiHan 应用是怎样被「装起来」的：`AddXiHan` 在两种宿主构建器上的写法、回调里拿到的 `AppBuilder` 能做什么、装配完成后容器里的 `App` 对象提供哪些信息、启动时打印的 Banner 怎样关闭，以及启动日志里那两段文本（能力图谱与管道）该怎么读。
 - [能力图谱与 Provider](https://framework.docs.xihanfun.com/startup/capabilities): 这一页讲内核怎样把一堆清单变成一张图：能力 ID 与接口版本的文法、求解的六个步骤、可选依赖缺失时的 `Degraded`、同一能力有多个候选时怎样选出 Provider，以及求解失败时的五个错误码。
 - [依赖注入](https://framework.docs.xihanfun.com/startup/dependency-injection): 这一页讲框架怎样使用 .NET 原生的依赖注入：服务在哪两个位置注册、框架自己登记的类型是什么生命周期、每次调用对应的服务作用域从哪里来，以及在调用之外运行的代码怎样取得作用域服务。
 - [特性与清单](https://framework.docs.xihanfun.com/startup/features): 这一页讲框架装配的最小单元：特性（`IFeature`）与它随身携带的清单（`Manifest`）。
@@ -91,6 +91,7 @@
 - [RBAC 授予与条件](https://framework.docs.xihanfun.com/security/grants): 这一页讲权限怎样落到主体身上：授予 `PermissionGrant` 与检查器的判定顺序、内存与数据库两种授予存储、用 `IPermissionFilter` 收窄与用 `IPermissionGrantSource` 扩展授予，以及与存储无关的条件引擎。
 - [IP 归属地](https://framework.docs.xihanfun.com/security/ip-region): 这一页讲怎样把调用方的 IP 地址解析成国家、省份、城市与运营商：契约 `IIpRegionResolver` 与结果 `IpRegion`，离线库 Provider `Security.Ip2Region` 的装配与 xdb 文件配置，怎样在操作里拿到调用来源的远端地址去解析，以及它与条件引擎的配合。
 - [出站地址策略](https://framework.docs.xihanfun.com/security/outbound): 这一页讲框架怎样防服务端请求伪造（SSRF）：向用户给的地址发请求时，缺省只能连公网地址，回环、私网、链路本地这些地址都要在配置里放行。
+- [通行密钥](https://framework.docs.xihanfun.com/security/webauthn): 这一页讲怎样让用户用通行密钥（WebAuthn）登录：依赖方要做的两次仪式、框架替你做的核对、应用要自己保存的状态，以及浏览器侧的写法。
 
 ## 分布式缓存
 
@@ -102,7 +103,7 @@
 
 - [领域事件与发件箱](https://framework.docs.xihanfun.com/messaging/domain-events): 这一页讲聚合里记录的领域事件怎样变成消息：事件缓冲在聚合里、用 `AddDomainEvent` 登记映射、Transaction 阶段在提交前派发；再讲事务性发件箱 `OutboxFeature` 怎样让「写业务数据」与「发消息」落进同一个事务。
 - [发布与订阅](https://framework.docs.xihanfun.com/messaging/pubsub): 这一页讲消息子系统的基本用法：它提供哪些能力与 Provider、消息的 CloudEvents 信封长什么样、怎样用 `IMessagePublisher` 发布、怎样写 `IMessageHandler` 并订阅主题、消息怎样经管道派发、竞争与广播两种订阅方式有什么区别，以及重试、死信、配置、健康项与错误码。
-- [队列与流](https://framework.docs.xihanfun.com/messaging/streams): 这一页讲消息子系统的两个能力 `messaging.queue` 与 `messaging.stream` 到底差在哪里，以及两个生产级 Provider 的行为：RabbitMQ 的持久队列、手动确认、订阅方声明队列、广播队列与死信队列；Kafka 的幂等生产者、消费组位点、分区键有序、按时刻重放、预建主题与死信主题。
+- [队列与流](https://framework.docs.xihanfun.com/messaging/streams): 这一页讲消息子系统的两个能力 `messaging.queue` 与 `messaging.stream` 到底差在哪里，以及三个生产级 Provider 的行为：RabbitMQ 的持久队列、手动确认、订阅方声明队列、广播队列与死信队列；Kafka 的幂等生产者、消费组位点、分区键有序、按时刻重放、预建主题与死信主题；Redis 的流与消费组、原位重试、超时回收、死信流与长度上限。
 
 ## 多协议暴露
 
@@ -189,7 +190,7 @@
 - [XiHan.Framework.Hosting.AspNetCore](https://framework.docs.xihanfun.com/packages/hosting-aspnetcore): ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核管道执行，映射探针端点，用 RFC 9457 Problem Details 回写失败结果。
 - [XiHan.Framework.Hosting.CommandLine](https://framework.docs.xihanfun.com/packages/hosting-commandline): 命令行宿主：在 .NET 通用宿主里把命令行参数翻译成内核调用，内置 `help`、`graph`、`pipeline`、`operations`、`invoke` 命令。
 - [包总览](https://framework.docs.xihanfun.com/packages/): XiHan Framework 由一组可以独立引用的 NuGet 包组成，按环层组织。
-- [XiHan.Framework.Kernel.Analyzers](https://framework.docs.xihanfun.com/packages/kernel-analyzers): Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 零反射这些规则交给编译器执行，诊断 XH0001–XH0005 全部是错误级。
+- [XiHan.Framework.Kernel.Analyzers](https://framework.docs.xihanfun.com/packages/kernel-analyzers): Roslyn 分析器：把公开 API 的稳定性标注与级别依赖、Stable 不用可选参数、类型命名与 Ring 0/1 零反射这些规则交给编译器执行，诊断 XH0001–XH0008 全部是错误级。
 - [XiHan.Framework.Kernel.Generators](https://framework.docs.xihanfun.com/packages/kernel-generators): Roslyn 源生成器：扫描标注 `[Operation]` 且实现 `IOperation<TRequest, TResponse>` 的类，生成操作登记代码 `GeneratedOperations` 与每个操作的请求 / 响应 JSON Schema。
 - [XiHan.Framework.Kernel](https://framework.docs.xihanfun.com/packages/kernel): 微内核：应用构建、能力图谱求解、执行管道与内置中间件、操作契约与调用器、安全原语、健康与插件抽象。
 - [XiHan.Framework.Localization.Abstractions](https://framework.docs.xihanfun.com/packages/localization-abstractions): 本地化的抽象包：区域名与内置 10 种区域、按键与区域取模板的消息目录 `MessageCatalog`、显式区域的解析接口 `IMessageLocalizer` 与目录注册。
@@ -199,6 +200,7 @@
 - [XiHan.Framework.Messaging.InMemory](https://framework.docs.xihanfun.com/packages/messaging-inmemory): 消息的默认实现：进程内的内存代理，每个主题一条有界通道、单消费者顺序投递、重试与死信，提供 `messaging.queue@1`。
 - [XiHan.Framework.Messaging.Kafka](https://framework.docs.xihanfun.com/packages/messaging-kafka): `messaging.queue@1` 与 `messaging.stream@1` 的 Kafka Provider，基于 Confluent.Kafka：幂等生产者、按消费组提交位点、分区键有序、按时刻重放、重试与死信主题。
 - [XiHan.Framework.Messaging.RabbitMQ](https://framework.docs.xihanfun.com/packages/messaging-rabbitmq): `messaging.queue@1` 的 RabbitMQ Provider，基于 RabbitMQ.Client 7：发布到一个 direct 交换机，订阅方为每个主题声明持久队列并绑定，手动确认、重试与死信队列。
+- [XiHan.Framework.Messaging.Redis](https://framework.docs.xihanfun.com/packages/messaging-redis): `messaging.queue@1` 的 Redis Streams Provider，基于 StackExchange.Redis：每个主题一条流，竞争订阅用消费组，广播订阅每个实例一个组，处理成功才确认，超时未确认的条目由别的实例回收。
 - [XiHan.Framework.MultiTenancy.Abstractions](https://framework.docs.xihanfun.com/packages/multitenancy-abstractions): 多租户的抽象包：定义租户信息、租户存储、租户解析器、Tenant 阶段中间件与租户分片契约，能力 `multitenancy.context@1` 与 `multitenancy.sharding@1` 由多租户 Provider 提供。
 - [XiHan.Framework.MultiTenancy.Database](https://framework.docs.xihanfun.com/packages/multitenancy-database): 多租户的数据库 Provider：租户目录是数据库里的 `TenantRecord` 行，经 `persistence.relational@1` 的仓储读写，提供 `multitenancy.context@1` 与 `multitenancy.sharding@1`。
 - [XiHan.Framework.MultiTenancy.InMemory](https://framework.docs.xihanfun.com/packages/multitenancy-inmemory): 多租户的默认实现：启动时从配置装载租户，存在进程内存里，有容量上限，运行时可增删。
@@ -235,6 +237,7 @@
 - [XiHan.Framework.Security.Ip2Region](https://framework.docs.xihanfun.com/packages/security-ip2region): IP 归属地的 ip2region 离线库 Provider：按宿主提供的 IPv4 / IPv6 xdb 文件把 IP 地址解析为国家、省份、城市与运营商，不访问网络，提供 `security.ip-region@1`。
 - [XiHan.Framework.Security.Jwt](https://framework.docs.xihanfun.com/packages/security-jwt): 认证的 JWT Provider：校验 HS256 对称密钥签名的 `Bearer` 令牌（签名、有效期、签发者、受众），把令牌映射为主体，提供 `security.authentication@1`。
 - [XiHan.Framework.Security.OpenIdConnect](https://framework.docs.xihanfun.com/packages/security-openidconnect): 认证的 OpenID Connect Provider：从签发者的发现文档与 JWKS 取签名密钥，校验 `Bearer` 令牌（非对称签名、签发者、受众、有效期），密钥轮换时按需刷新，提供 `security.authentication@1`。
+- [XiHan.Framework.Security.WebAuthn](https://framework.docs.xihanfun.com/packages/security-webauthn): 通行密钥（WebAuthn）的依赖方实现：生成注册与认证仪式的选项，按 RFC-0008「WebAuthn」的顺序核对浏览器交回的响应，提供 `security.webauthn@1`。
 - [XiHan.Framework.Testing](https://framework.docs.xihanfun.com/packages/testing): 测试基座：没有 HTTP 的内存测试宿主、可注入行为的特性桩、按能力 ID 文本构造清单与独立调用上下文的工具。
 - [XiHan.Framework.Workflow.Abstractions](https://framework.docs.xihanfun.com/packages/workflow-abstractions): 工作流子系统的契约与引擎：定义模型与校验、定义目录、19 个内置活动、实例与书签、用户任务与外部任务、表达式语言、存储契约，以及经内核管道执行活动的引擎与到期书签轮询器。
 - [XiHan.Framework.Workflow.Database](https://framework.docs.xihanfun.com/packages/workflow-database): 工作流的数据库 Provider，提供 `workflow.execution@1`。

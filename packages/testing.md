@@ -43,6 +43,8 @@ dotnet add package XiHan.Framework.Testing --prerelease
 | `StubFeature` | 实现 `IHostedFeature` 的特性桩：构造时给清单，`OnConfigure` / `OnStart` / `OnStop` 注入行为，`Events` 按顺序记录 `configure`、`start`、`stop` |
 | `TestManifests` | `Create(id, provides, requires, role, kind, bindings)`：能力写成 `id@version` / `id@^version?` 文本，版本取框架版本、原语层 1、稳定性 Stable |
 | `TestInvocationContext` | `Create(services, deadline, baggage, cancellationToken)`：不依赖宿主的调用上下文，未给服务提供器时用什么都解析不到的空提供器 |
+| `WebAuthnTestAuthenticator` | 测试用的通行密钥认证器：构造时选算法（ES256、PS256、RS256），`Register` / `Authenticate` 按 WebAuthn 的格式生成响应，`SignCount` 原样写进认证器数据；`CredentialId`、`PublicKey` 与注册核对得到的相同 |
+| `WebAuthnTestCeremony` | 一次仪式的输入（挑战、来源、RP ID）与篡改项（仪式类型、跨源、UP / UV / BE / BS 标志、证明格式、改坏签名、用户句柄）；缺省值产生合法的响应 |
 
 ## 使用示例
 

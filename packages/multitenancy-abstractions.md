@@ -66,17 +66,18 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | --- | --- |
 | `Tenants.TenantInfo` | 租户：`Id`、`DisplayName`、`IsEnabled`（缺省 `true`）、`Properties`（键区分大小写） |
 | `Tenants.TenantIdentifier` | 租户 ID 文法 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：`IsValid`、`Validate`、`MaxLength`（64） |
-| `Tenants.ITenantStore` | 租户存储：`FindAsync`、`ListAsync`；ID 区分大小写，基础设施失败抛异常 |
-| `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选，只解析不校验 |
+| `Tenants.ITenantStore`、`TenantQuery`、`TenantPage` | 租户存储：`FindAsync` → `Result<Maybe<TenantInfo>>`、`ListAsync(TenantQuery)` → `Result<TenantPage>`（`PageSize` 1～1000、续页令牌、`EnabledOnly`）；ID 区分大小写，存储不可达返回 `MULTITENANCY_UNAVAILABLE_003` |
+| `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选：`ResolveAsync` 返回 `Result<Maybe<string>>`，无值交给下一个解析器，失败即拒绝调用；格式、存在与启用由中间件核对 |
 | `Resolution.ClaimTenantResolver` | 读已认证主体的租户声明（第一个值）；未认证主体跳过 |
 | `Resolution.BaggageTenantResolver` | 读 Baggage `xihan.tenant`，由进程内建上下文的地方放进去；HTTP、gRPC、MCP 入站不收这个键（ADR-0121） |
 | `Resolution.TenantResolutionMiddleware` | Tenant 阶段的中间件 |
 | `MultiTenancyOptions` | 选项，见上表 |
-| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantId?)` |
+| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantIds)`、`InvalidateAll()` |
+| `Tenants.ITenantAdministration` | 可选的租户管理：`UpsertAsync(tenants)`（整份覆盖）、`RemoveAsync(tenantIds)`（不存在为 `MULTITENANCY_NOTFOUND_001`），逐项结果与入参同序，写入后失效目录与分片缓存；内存与数据库实现都提供 |
 | `Sharding.TenantShard` | 分片：`TenantId`、`ConnectionString`、`Provider`（转小写，可空）、`Properties` |
 | `Sharding.TenantStoreShardResolver` | 从租户属性推出分片的缺省解析器，按租户有界缓存；`FromProperties(tenant)` 不带缓存地推出单个租户的分片 |
 | `Sharding.TenantShardKeys` | 租户属性键 `ConnectionString`、`DatabaseProvider`、前缀 `Shard.`，绑定属性键 `tenant`、`provider` |
-| `Sharding.TenantShardInvocationExtensions` | `GetTenantShard()` / `SetTenantShard(shard)`：调用上下文里的分片 |
+| `Sharding.TenantShardInvocationExtensions` | `FindTenantShard()` / `SetTenantShard(shard)`：调用上下文里的分片 |
 | `Sharding.TenantShardBinding` | `Resolve(scopedServices, bindingName, bindingType, fallback)`：持久化 Provider 创建客户端时取分片连接绑定 |
 | `Sharding.TenantShardScope` | 作用域服务，管道外显式绑定分片：`BindTenantAsync`、`Bind`、`Shard`、`IsConnected` |
 | `MultiTenancyCapabilities` | 能力 ID 常量 `Context`、`Sharding` 与 `Version`（1） |
@@ -98,11 +99,15 @@ public sealed class FixedTenantStore : ITenantStore
         ["globex"] = new TenantInfo { Id = "globex", DisplayName = "Globex", IsEnabled = false },
     };
 
-    public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
-        => ValueTask.FromResult(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : Maybe.None<TenantInfo>());
+    public ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : Maybe.None<TenantInfo>()));
 
-    public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken)
-        => ValueTask.FromResult<IReadOnlyList<TenantInfo>>([.. _tenants.Values.OrderBy(static t => t.Id, StringComparer.Ordinal)]);
+    // 租户很少：一页返回全部，令牌为空即读完。租户多的存储按 query.PageSize 分页，越界返回 MULTITENANCY_VALIDATION_003
+    public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(new TenantPage
+        {
+            Items = [.. _tenants.Values.Where(t => !query.EnabledOnly || t.IsEnabled).OrderBy(static t => t.Id, StringComparer.Ordinal)],
+        }));
 }
 ```
 
@@ -118,7 +123,7 @@ public static class ShardInfo
 {
     // 共库租户与无租户的调用没有分片
     public static string Describe(InvocationContext context)
-        => context.GetTenantShard().TryGetValue(out var shard)
+        => context.FindTenantShard().TryGetValue(out var shard)
             ? $"{shard.TenantId} -> {shard.Provider ?? "default"}"
             : "shared";
 }
@@ -143,7 +148,9 @@ public static class ShardInfo
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 |
 | `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
-| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
+| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 是存储的错误码，存储的错误作为内部错误保留（ADR-0115） |
+| `MULTITENANCY_UNAVAILABLE_003` | 租户存储不可达（连接、超时、事务失败），不当作租户不存在 |
+| `MULTITENANCY_VALIDATION_003` | 租户列表查询不合法：每页条数越界或续页令牌无效 |
 
 六个消息键（`multitenancy.tenant.*`、`multitenancy.store.capacity_exceeded`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
 

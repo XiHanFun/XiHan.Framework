@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Caching:Redis`、`XiHan:Caching:Idempotency`；可选绑定 `cache`（类型 `cache:distributed`） |
 | 依赖 | `XiHan.Framework.Caching.Abstractions`；`StackExchange.Redis` |
 | AOT | 不兼容（`IsAotCompatible=false`，StackExchange.Redis 未声明 AOT 兼容） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`RedisCacheStore` 实现 Preview 的键管理、检视与变更通知接口，为 Preview |
 
 ## 概述
 
@@ -140,7 +140,7 @@ public sealed class LocalMirror : IDisposable
 ## 行为与限制
 
 - 连接或超时失败抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不当成未命中。
-- 键管理 `ICacheStoreInspector` 用单个端点的 `SCAN`：续页标记是游标，`CacheKeyQuery.Limit` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符被转义，只按前缀匹配。读元数据把 `PTTL`、`STRLEN`、`GETRANGE` 放进一个批次，不延长滑动过期；按前缀删除逐页 `SCAN` 后 `DEL`。
+- 键管理 `ICacheStoreInspector` 用单个端点的 `SCAN`：续页标记是游标，`CacheKeyQuery.PageSize` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符被转义，只按前缀匹配。读元数据把 `PTTL`、`STRLEN`、`GETRANGE` 放进一个批次，不延长滑动过期；按前缀删除逐页 `SCAN` 后 `DEL`。
 - 变更通知：每次写入与删除（真的删到了才算，按前缀删除总是）后同步通知本实例的订阅者，再发后不等地向 `<KeyPrefix>__changes` 发布；消息带来源标识，不回送给发出者；第一次有人订阅时才订阅频道，释放存储即退订。发布失败不让写入失败，断线期间的通知会丢失。
 - 多个应用共用一个 Redis 时用不同的 `KeyPrefix` 隔开键与变更频道。
 - 测试：一致性套件需要真实 Redis，设置环境变量 `XIHAN_TEST_REDIS`（如 `localhost:6379`）后运行，未设置时跳过。

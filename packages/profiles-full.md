@@ -13,7 +13,7 @@ Full 组合包（元包）：Standard 加对象存储、调度、审计、工作
 | 配置节 | — |
 | 依赖 | `XiHan.Framework.Profiles.Standard`；`ObjectStorage`、`Scheduling`、`Auditing`、`Workflow` 的 `.Abstractions` 与默认实现；`Configuration.Abstractions`、`AI.Abstractions`、`Observability.OpenTelemetry`、`Observability.Host`；`Protocols.Http` / `.Grpc` / `.Mcp` / `.CloudEvents` |
 | AOT | 兼容 |
-| 稳定性 | Stable |
+| 稳定性 | Preview：级别不高于组装的组件 |
 
 ## 概述
 

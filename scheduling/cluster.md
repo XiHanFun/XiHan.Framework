@@ -23,8 +23,8 @@
 | `TriggerAsync(requests)` | 在本实例立即运行并等待结果，按顺序逐项；不受暂停和领导权限制 | `SCHEDULING_NOTFOUND_001`、`SCHEDULING_CONFLICT_001`、`SCHEDULING_UNAVAILABLE_001` |
 | `EnqueueAsync(requests)` | 插入一个立即到期的一次性触发器（`manual-` 前缀），由集群任一节点运行，不等待；返回触发器名 | `SCHEDULING_NOTFOUND_001` |
 | `CancelRunsAsync(runIds)` | 本实例的运行立即取消令牌，其他节点的在下一个轮询周期取消 | `SCHEDULING_NOTFOUND_004` |
-| `StatusAsync(name)` / `StatusesAsync()` | 作业状态：是否暂停、各触发器的状态与下一次时刻、运行中数量、最近一次完成的结果 | — |
-| `RunsAsync(query)` / `CountRunsAsync(query)` | 运行历史与同一组过滤条件下的总数 | `SCHEDULING_VALIDATION_002`（`RunsAsync` 分页越界） |
+| `StatusesAsync(names)` / `StatusAsync(name)` / `ListStatusesAsync(query)` | 作业状态：是否暂停、各触发器的状态与下一次时刻、运行中数量、最近一次完成的结果；按名批量（与入参同序、未登记为无值）或按名字分页列出 | `SCHEDULING_VALIDATION_003`（`ListStatusesAsync` 分页越界或外来令牌） |
+| `RunsAsync(query)` / `CountRunsAsync(query)` | 运行历史（只读视图 `JobRunView`）与同一组过滤条件下的总数 | `SCHEDULING_VALIDATION_002`（`RunsAsync` 分页越界） |
 | `RestoreAsync(names)` | 把运行时改过的代码作业恢复为代码定义 | `SCHEDULING_NOTFOUND_005` |
 
 `JobTriggerRequest(Name, Data)` 能从 `JobName` 隐式转换，手动触发带的数据覆盖作业数据的同名键。`TriggerAsync` 在本实例同步运行并拿到结果，适合「立即执行」；`EnqueueAsync` 只写存储，由集群任一节点运行，适合「排队跑一次」。
@@ -46,7 +46,7 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 public sealed class TenantSyncJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 
@@ -70,7 +70,11 @@ public sealed class TenantSyncPlanner(IJobScheduler scheduler)
 
 调用 `EnableAsync("acme")` 后，`tenant-acme.sync` 每十分钟运行一次，失败后每 30 秒重试、最多三次。类型未登记时 `ScheduleAsync` 返回 `SCHEDULING_NOTFOUND_002`。多节点部署时每个节点都要登记同一组类型：节点抢到类型未登记的触发器时把它改为 `Error` 并记录原因。
 
-查状态用 `StatusAsync(name)`，返回 `Result<Maybe<JobStatus>>`，`JobStatus` 里有 `NextRun`、`Paused`、`RunningCount`、各触发器的 `NextFireAt` 与 `State`、最近一次完成的结果。查历史用 `RunsAsync(query)`：`JobRunQuery` 按作业、状态集合、计划时刻范围（`From` 含、`To` 不含）、触发器名、执行节点、有无错误码过滤，`Skip` 缺省 0，`Limit` 缺省 100、最大 1000（`JobRunQuery.MaxLimit`）；结果按计划时刻降序。`CountRunsAsync` 用同一组过滤项给出总数，不看分页。分页越界不在构造时抛出，`RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入。
+查状态用 `StatusAsync(name)`，返回 `Result<Maybe<JobStatus>>`，`JobStatus` 里有作业的只读视图 `Job`、`NextRun`、`Paused`、`RunningCount`、各触发器的 `NextFireAt` 与 `State`、最近一次完成的结果；一次取多个用 `StatusesAsync(names)`，管理界面列全部作业用 `ListStatusesAsync(new JobStatusQuery { PageSize = 50 })`，把返回的 `ContinuationToken` 原样传给下一页，读到为空为止。
+
+批量方法都返回与入参等长、同序的逐项结果。取消在开始前检查，已取消时抛出 `OperationCanceledException`；开始之后取消，已开始的项照常完成并给出结果，尚未开始的项以 `KERNEL_CANCELLED_001` 结束，方法不抛出。
+
+查历史用 `RunsAsync(query)`，返回只读视图 `JobRunView`，失败的结果在 `Outcome` 里：`JobRunQuery` 按作业、状态集合、计划时刻范围（`From` 含、`To` 不含）、触发器名 `TriggerName`、触发来源集合 `Triggers`（按计划、手动、恢复、重试）、执行节点、有无错误码过滤，`Skip` 缺省 0，`Take` 缺省 100、最大 1000（`JobRunQuery.MaxTake`）；结果按计划时刻降序。`CountRunsAsync` 用同一组过滤项给出总数，不看分页。分页越界不在构造时抛出，`RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400）：查询常由请求绑定而来，越界是调用方可以改正的输入。
 
 ## 代码作业的运行时修改与指纹
 
@@ -215,6 +219,7 @@ Lease 名缺省是 `xihan-scheduler`，用 `XiHan:Scheduling:Kubernetes:Lease` �
 | `SCHEDULING_NOTFOUND_005` | 作业没有代码定义，不能恢复 |
 | `SCHEDULING_VALIDATION_001` | 作业定义不合法：触发器名重复、日历未登记 |
 | `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界（HTTP 400） |
+| `SCHEDULING_VALIDATION_003` | 作业状态列表的分页越界或续页令牌无效（HTTP 400） |
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
 | `SCHEDULING_CONFLICT_002` | 领导租约被其他持有者占用 |
 | `SCHEDULING_CONFLICT_003` | 运行被取消 |

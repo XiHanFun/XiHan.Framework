@@ -63,12 +63,12 @@ dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
 | `ICache` | 类型化缓存：`GetAsync<T>`、`SetAsync<T>`、`RemoveAsync`、`GetOrCreateAsync<T>` 与批量方法；`Store` 暴露底层存储 |
 | `ISharedCache` | 跨进程共享的 `ICache`（`caching.distributed`） |
 | `SerializingCache` | `ICacheStore` + `ICacheSerializer` 组成的 `ISharedCache` |
-| `CacheKey` | 键：非空、无空白与控制字符、不超过 `MaxLength`（512）、区分大小写；可从字符串隐式转换；`IsValid`、`IsValidPrefix`、`Validate` |
+| `CacheKey` | 键：非空、无空白与控制字符、不超过 `MaxLength`（512）、区分大小写；从字符串显式转换；`IsValid`、`IsValidPrefix`、`Validate` |
 | `CacheEntryOptions` | 过期：`Expires(ttl)`、`Sliding(window)`、`Default`（Provider 默认存活时间），二选一，`Validated()` 校验组合 |
 | `CacheEntry` | `ICacheStore.SetManyAsync` 的一项：键、值、该项自己的过期选项 |
 | `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 值序列化；`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`；`TryAddJsonSerializer` 供 Provider 按已有登记选序列化器 |
 | `IDistributedLock`、`LockHandle`、`StoreDistributedLock`、`DistributedLockExtensions` | 租约锁：`TryAcquireAsync(resource, ttl)` 返回 `Maybe<LockHandle>`，结果式的 `AcquireAsync` 被占用时返回 `CACHING_CONFLICT_001`；句柄 `ReleaseAsync` / `DisposeAsync` 释放 |
-| `IdempotencyMiddleware`、`IdempotencyOptions`、`IdempotencyRecord` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（记录带 `Operation`、`Response`）；`WasReplayed(context)` 判断结果是否来自回放 |
+| `IdempotencyMiddleware`、`IdempotencyOptions` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（存储格式是内部的，记录带操作 ID 与响应）；`WasReplayed(context)` 判断结果是否来自回放 |
 | `CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions` | `IDistributedCache` 适配；`AddXiHanDistributedCache(services, store)` 幂等登记，已有登记不覆盖；`Translate` 换算过期选项 |
 | `ICacheStoreInspector`、`CacheKeyQuery`、`CacheKeyPage`、`CacheEntryInfo` | 可选的字节条目键管理：按前缀分页列键、读字节数与剩余存活、按前缀删除 |
 | `ICacheInspector`、`CachedObjectInfo` | 可选的对象条目键管理：进程内对象缓存的条目不在字节存储里，由它列出 |
@@ -102,17 +102,18 @@ public sealed class OneShotGate(ICacheStore store)
 - 基础设施失败（存储不可达、超时）抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不伪装成未命中。
 - 批量方法一次往返、结果与入参顺序一一对应、空集合不触后端；`SetManyAsync` 任一项选项不合法时整批不写；`RemoveManyAsync` 同一个键出现多次第二次为 `false`。
 - `GetOrCreateAsync` 不合并并发：多个未命中的调用方各自执行工厂，后写覆盖先写。
-- `LockHandle` 只释放一次；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。锁不可重入、不续约。
+- `LockHandle` 是抽象类，只释放一次（基类原子置位，并发释放也只执行一次）；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。包外实现 `IDistributedLock` 时派生它并实现 `ReleaseCoreAsync`。锁不可重入、不续约。
 - 幂等记录的作用域键是 `idem:<租户>:<主体>:<键>`，不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。
 - `CacheStoreDistributedCache`：绝对过期两种写法取较早者，已过去的时刻抛 `ArgumentOutOfRangeException`；与滑动过期同时给时绝对优先；都不给时用 Provider 的默认存活时间（内存与 Redis 缺省 5 分钟）；同步成员阻塞等待异步存储。
-- `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 拒绝空前缀；`CacheKeyQuery.Limit` 为 1 到 `MaxLimit`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
+- `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回 `CACHING_VALIDATION_004`、不访问后端；列键时不合法的前缀同样返回它；`CacheKeyQuery.PageSize` 为 1 到 `MaxPageSize`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；本实例的订阅者同步收到通知，其他实例经后端转发、不回送给发出者；跨实例通知尽力而为，可能丢失。
 
 | 错误码 | 含义 |
 | --- | --- |
 | `CACHING_VALIDATION_001` | 缓存键或幂等键不合法 |
 | `CACHING_VALIDATION_002` | 条目选项不合法（远程插件按操作集校验时返回，适配器原样传出；.NET 侧在调用插件之前抛 `ArgumentException`） |
-| `CACHING_VALIDATION_003` | 键列表的每页上限越界（`CacheKeyQuery.Limit` 不在 1～1000，参数 `limit`、`max`；HTTP 400） |
+| `CACHING_VALIDATION_003` | 键列表的每页条数越界（`CacheKeyQuery.PageSize` 不在 1～1000，参数 `pageSize`、`max`；HTTP 400） |
+| `CACHING_VALIDATION_004` | 键前缀不合法：列键时不合键的文法，或按前缀删除时为空或不合文法（参数 `prefix`、`max`；HTTP 400） |
 | `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败 |
 | `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限（健康项 Degraded 的原因） |
 | `CACHING_CONFLICT_001` | 分布式锁被占用（`AcquireAsync` 返回；`TryAcquireAsync` 只返回无值） |

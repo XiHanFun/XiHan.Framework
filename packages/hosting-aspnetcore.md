@@ -13,7 +13,7 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 | 配置节 | 环境变量 `XIHAN_CONFIG_PATH`；`XiHan:ObjectStorage:SignedUrls`（预签名地址特性）；方案 `XiHan` 读 `XiHan:Security:RoleClaim` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.ObjectStorage.Abstractions`；共享框架 `Microsoft.AspNetCore.App` |
 | AOT | 兼容（`IsAotCompatible`） |
-| 稳定性 | `UseXiHan`、`MapXiHanHealth`、`HttpInvocation`、`ProblemResponse`、端点约定为 Stable；`WebApplicationBuilder.AddXiHan`、认证方案 `XiHan`、`OperationPayloadBinder`、`OperationResponseWriter`、预签名地址为 Preview |
+| 稳定性 | `WebApplicationBuilder.AddXiHan`、`UseXiHan`、`MapXiHanHealth`、`HttpInvocation`、`ProblemResponse`、端点约定为 Stable；认证方案 `XiHan`、`OperationPayloadBinder`、`OperationResponseWriter`、预签名地址为 Preview |
 
 ## 概述
 
@@ -55,7 +55,7 @@ app.Run();
 | `XiHan:ObjectStorage:SignedUrls:Secret` | string | 无，必填 | 预签名地址的 HMAC-SHA256 密钥，至少 32 字节 UTF-8，多实例须一致 |
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | string | `/blobs` | 预签名地址的基址 |
 
-后两项只在装配 `HostedBlobUrlFeature` 时读取。
+后两项只在装配 `HostedBlobUrlFeature` 时读取。`AddXiHan` 还按 `XiHan:Kernel:Banner:Enabled` 登记[启动 Banner](/startup/bootstrap#启动-banner) 的选项，应用版本取自入口程序集的 `AssemblyInformationalVersion`（去掉 `+` 之后的提交哈希）。
 
 ```json
 {
@@ -76,7 +76,7 @@ app.Run();
 | --- | --- |
 | `WebApplicationBuilderExtensions` | `AddXiHan(configure)`：装载挂载的配置目录，再交给内核装配应用 |
 | `ApplicationBuilderExtensions` | `UseXiHan()`：请求桥接进内核管道；`MapXiHanHealth(prefix)`：`{prefix}/startup`、`/ready`、`/live` |
-| `Endpoints.HttpInvocation` | `GetXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
+| `Endpoints.HttpInvocation` | `FindXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
 | `Endpoints.EndpointConventionBuilderExtensions` | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)`；引用的权限码与策略在宿主建请求管道时核对，不存在即启动失败 |
 | `Endpoints.PipelineBypassMetadata` | 端点元数据：带它的端点不经内核管道；`BypassXiHanPipeline(builder)` 标注 |
 | `Endpoints.OperationPayloadBinder` | 协议适配器挂在端点上的载荷绑定委托，`UseXiHan()` 在进管道前调用 |
@@ -101,7 +101,7 @@ using XiHan.Framework.Primitives;
 // 已认证才进得来：Authenticate 与 Tenant 阶段已写好安全上下文
 app.MapGet("/me", (HttpContext http) =>
 {
-    var security = http.GetXiHanContext().ValueOrThrow().GetSecurity();
+    var security = http.FindXiHanContext().ValueOrThrow().GetSecurity();
     return $"{security.Principal.Id}@{security.Tenant?.Id ?? "-"}";
 }).RequireXiHanAuthentication();
 ```

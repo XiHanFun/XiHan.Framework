@@ -31,9 +31,9 @@
 
 | 成员 | 说明 |
 | --- | --- |
-| `Id` | 主体 ID；匿名主体为空字符串 |
+| `Id` | 主体 ID；匿名主体为 `null` |
 | `AuthenticationScheme` | 认证方案；匿名主体为 `null` |
-| `IsAuthenticated` | 方案不为空且 `Id` 非空 |
+| `IsAuthenticated` | `Id` 与方案都有值；为真时编译器知道 `Id` 不为 `null`，`if (principal.IsAuthenticated)` 之后直接用 `principal.Id` |
 | `DisplayName` | 显示名 |
 | `Claims` | 声明列表（`KeyValuePair<string, string>`），同一类型可以有多个值 |
 | `ClaimValues(type)` | 取某类型的全部声明值，类型按序数比较 |
@@ -86,7 +86,7 @@ app.UseXiHan();
 // 经 UseXiHan() 的端点在 Handle 阶段内执行，主体已由 Authenticate 阶段写进安全上下文
 app.MapGet("/whoami", (HttpContext http) =>
 {
-    var security = http.GetXiHanContext().ValueOrThrow().GetSecurity();
+    var security = http.FindXiHanContext().ValueOrThrow().GetSecurity();
     return security.Principal.IsAuthenticated
         ? $"{security.Principal.Id} ({security.Principal.AuthenticationScheme}) @ {security.Tenant?.Id ?? "-"}"
         : "anonymous";
@@ -221,7 +221,7 @@ app.Run();
 
 元数据按需取得：首次认证时取发现文档的 `issuer` 与 `jwks_uri`，再取 JWKS 的签名密钥并缓存，并发认证只发一次请求。令牌的 `kid` 不在 JWKS 里时（签发者轮换了密钥）按需刷新一次再校验，两次按需刷新至少间隔 `MinimumRefreshInterval`，伪造的 `kid` 不会让签发者被反复请求。
 
-刷新失败时沿用最后一份密钥；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`（HTTP 503），5 秒（`OpenIdConnectMetadataCache.FailureRetryDelay`）后再试。读不出的令牌直接返回 `SECURITY_DENIED_003`，不为它访问签发者。`RequireHttpsMetadata` 为真而发现文档地址不是 HTTPS 时，启动读取配置就抛出 `InvalidOperationException`。主体与声明的映射与 JWT Provider 相同。
+刷新失败时沿用最后一份密钥；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`（HTTP 503），5 秒后再试。读不出的令牌直接返回 `SECURITY_DENIED_003`，不为它访问签发者。`RequireHttpsMetadata` 为真而发现文档地址不是 HTTPS 时，启动读取配置就抛出 `InvalidOperationException`。主体与声明的映射与 JWT Provider 相同。
 
 ## 凭据无效与 401 质询
 
@@ -281,7 +281,7 @@ SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道，Authe
 
 ## 相关包与下一步
 
-- 包参考：[Security.Abstractions](/packages/security-abstractions)、[Security.InMemory](/packages/security-inmemory)、[Security.Jwt](/packages/security-jwt)、[Security.OpenIdConnect](/packages/security-openidconnect)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)
+- 包参考：[Security.Abstractions](/packages/security-abstractions)、[Security.InMemory](/packages/security-inmemory)、[Security.Jwt](/packages/security-jwt)、[Security.OpenIdConnect](/packages/security-openidconnect)、[Security.WebAuthn](/packages/security-webauthn)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)
 - 规范：RFC-0008《认证与授权》
-- 相关章节：[租户解析与隔离](/multi-tenancy/resolution)、[端点里使用框架](/web/endpoints)、[命令行宿主](/protocols/command-line)
+- 相关章节：[通行密钥](/security/webauthn)、[租户解析与隔离](/multi-tenancy/resolution)、[端点里使用框架](/web/endpoints)、[命令行宿主](/protocols/command-line)
 - 下一步：[授权与权限](/security/authorization)

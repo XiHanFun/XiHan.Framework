@@ -40,8 +40,8 @@
 | `Kind` | 是 | `ManifestKind` | 见下表 |
 | `Role` | 否 | `ManifestRole` | `Provider`（缺省）或 `Default` |
 | `Provides` | 否 | `CapabilityDeclaration` 列表 | 提供的能力与接口版本，`new CapabilityDeclaration(id, version)` |
-| `Requires` | 否 | `CapabilityRequirement` 列表 | 依赖的能力、接口版本与是否可选，`new CapabilityRequirement(id, version, optional)` |
-| `Bindings` | 否 | `Binding` 列表 | 需要宿主注入的资源（连接串、端点），`new Binding(name, type, required)`，见[资源绑定](/configuration/bindings) |
+| `Requires` | 否 | `CapabilityRequirement` 列表 | 依赖的能力、接口版本与是否可选，`new CapabilityRequirement(id, version) { Optional = true }` |
+| `Bindings` | 否 | `Binding` 列表 | 需要宿主注入的资源（连接串、端点），`new Binding(name, type) { Required = false }`（缺省必需），见[资源绑定](/configuration/bindings) |
 | `Contributes` | 否 | `Contributions` | 贡献点，见下一节 |
 | `Activation` | 否 | `string` 列表 | 激活事件，插件按需激活时使用 |
 | `Isolation` | 插件 | `PluginIsolation?` | `InProcess`、`Wasm`、`OutOfProcess`，见[隔离级别与清单](/plugins/overview) |
@@ -92,7 +92,7 @@
 | `AddPermission(PermissionDefinition)` | 登记权限码；操作契约引用的权限码在装配完成时核对，未登记即启动失败（`KERNEL_VALIDATION_005`）；端点引用的权限码在宿主建请求管道时核对（`SECURITY_VALIDATION_004`） |
 | `AddOperation<TOperation, TRequest, TResponse>(contract, requestInfo, responseInfo, schema)` | 登记操作契约，通常由生成的 `AddGeneratedOperations()` 代劳，见[操作契约](/web/operations) |
 | `AddStartupCheck(Action<IServiceProvider>)` | 登记要等容器建好才能做的装配核对，在任何特性启动之前执行，抛出即终止启动，见[生命周期与健康](/startup/lifecycle) |
-| `GetBinding(name)`、`TryGetBinding(name)` | 读取宿主解析出的资源绑定，后者返回 `Maybe<BindingValue>` |
+| `GetBinding(name)`、`FindBinding(name)` | 读取宿主解析出的资源绑定，后者返回 `Maybe<BindingValue>` |
 | `Pipeline`、`Permissions`、`Operations`、`Bindings` | 底层的管道构建器、权限表、操作登记表与绑定表 |
 
 ## 最小示例
@@ -164,7 +164,7 @@ public sealed class OrdersFeature : IFeature
             // 操作带权限，要求授权能力在场；装配了 Standard 组合时由 Security.InMemory 提供
             new CapabilityRequirement(SecurityCapabilities.Authorization, SecurityCapabilities.Version),
             // 可选依赖：没有消息能力时特性进入 Degraded，应用照常启动
-            new CapabilityRequirement(MessagingCapabilities.Queue, MessagingCapabilities.Version, optional: true),
+            new CapabilityRequirement(MessagingCapabilities.Queue, MessagingCapabilities.Version) { Optional = true },
         ],
         Contributes = new Contributions
         {

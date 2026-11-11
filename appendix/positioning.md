@@ -68,7 +68,7 @@ XiHan Framework 是一套语言中立的应用框架规范（XiHan Spec）及其
 ## 版本与兼容
 
 - 全部包共享一条版本线，大版本每三年一次并对齐一个 .NET LTS，小版本约每六个月，补丁随时。
-- 公开类型都带稳定性标记：`Stable`、`Preview`、`Experimental`、`Internal`、`Deprecated`。原语层在 `Stable` 之上再加「冻结」承诺。
+- 公开类型都带稳定性标记：`Stable`、`Preview`、`Experimental`、`Internal`、`Deprecated`。`Stable` 大版本内不破坏；`Preview` 与 `Experimental` 可能在小版本变更，每次变更都在更新日志给出迁移方式。原语层在 `Stable` 之上再加「冻结」承诺。
 - 破坏性变更走三阶段弃用：先标 `Deprecated` 并给出迁移说明，至少保留两个小版本；下一个大版本前升级为编译错误；大版本移除并提供代码修复。
 - 当前是预览版，公开面多数标为 `Preview` 或 `Experimental`，正式版前仍可能调整。
 

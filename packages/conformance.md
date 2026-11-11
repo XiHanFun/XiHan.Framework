@@ -13,7 +13,7 @@
 | 配置节 | — |
 | 依赖 | 各领域的 `.Abstractions`（部分套件另引用 `XiHan.Framework.Testing`）；`xunit.v3.assert`、`xunit.v3.extensibility.core`（不引用元包 `xunit.v3`，套件包不是可执行测试项目） |
 | AOT | 不兼容（测试项目不以 AOT 发布） |
-| 稳定性 | 按基类的 `[ApiLevel]`，各节写明 |
+| 稳定性 | Preview：套件随子系统演进追加用例与夹具成员 |
 
 ## 用法
 
@@ -30,7 +30,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |
 | [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 5 |
-| [Auditing](#auditing) | `AuditTrailConformance` | 4 |
+| [Auditing](#auditing) | `AuditTrailConformance` | 5 |
 | [Caching](#caching) | `CacheStoreConformance` | 16 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
@@ -39,7 +39,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 13 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 36 + 3 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
-| [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 16 + 6 + 3 |
+| [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 18 + 6 + 3 |
 | [Security](#security) | `PermissionGrantStoreConformance` | 5 |
 | [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 15 + 40 + 8 |
 
@@ -56,7 +56,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 ## Auditing
 
-包 ID `XiHan.Framework.Auditing.Conformance`（RFC-0015，Preview）。基类 `AuditTrailConformance`，实现 `CreateFixtureAsync()` 返回 `AuditTrailFixture`（抽象属性 `Sink` 是被测 `IAuditSink`，`Trail` 是被测 `IAuditTrail`）。用例覆盖写入后按写入顺序读回且字段完整往返、各过滤项取交集、分页与续页令牌、不合法查询是 VALIDATION。用例以 trace-id 隔离数据，夹具可以共用一个存储。`Auditing.InMemory` 与 `Auditing.Database` 通过本套件。
+包 ID `XiHan.Framework.Auditing.Conformance`（RFC-0015，Preview）。基类 `AuditTrailConformance`，实现 `CreateFixtureAsync()` 返回 `AuditTrailFixture`（抽象属性 `Sink` 是被测 `IAuditSink`，`Trail` 是被测 `IAuditTrail`）。用例覆盖写入后按写入顺序读回且字段完整往返、各过滤项取交集、分页与续页令牌、不合法查询是 VALIDATION、接收器带着已取消的令牌也不抛出（ADR-0147）。用例以 trace-id 隔离数据，夹具可以共用一个存储。`Auditing.InMemory` 与 `Auditing.Database` 通过本套件。
 
 ## Caching
 
@@ -121,7 +121,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、ID 区分大小写、显示名、启用标记与属性完整往返、枚举全部租户 |
+| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、ID 区分大小写、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
 | `TenantShardResolverConformance` | Preview | `CreateResolverAsync(tenants)` 返回 `ITenantShardResolver`；种子租户 `Sharded`、`Shared` | 分库租户解析出连接串、小写的提供者名与去前缀的透传属性；共库与未知租户为成功无值；失效单个或全部后重解析结果一致 |
 
 `MultiTenancy.InMemory` 与 `MultiTenancy.Database` 通过两套用例。
@@ -132,8 +132,8 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `BlobStoreConformance` | `CreateStore()` 返回 `IBlobStore`；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、大对象流式读写 |
-| `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键被拒绝、经注册表同定义复用 / 定义变了替换 / 移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
+| `BlobStoreConformance` | `CreateStoreAsync()` 返回 `ValueTask<IBlobStore>`（被测存储初始化好再交出）；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、大对象流式读写 |
+| `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键以 `OBJECTSTORAGE_VALIDATION_003` 结果拒绝（不抛出）、经注册表同定义复用 / 定义变了替换 / 移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
 
 `ObjectStorage.FileSystem` 与 `ObjectStorage.S3` 通过两套用例。
 
@@ -207,7 +207,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `JobSchedulerConformance` | `StartAsync(configure, configuration)` 启动装配了被测调度器的宿主并返回 `JobSchedulerHost(scheduler, poll, host)`，`poll` 轮询一次并等本周期起的运行结束（`JobSchedulerEngine.PollOnceAsync`）；轮询周期设得很长（如 3600 秒），后台循环不动作；回调 `configure` 里套件登记 `RecordingJob`、`RecordingJobLog` 与本用例的时钟，要在 Provider 装配之前应用；可覆写 `WaitTimeout`（缺省 10 秒，只防挂死） | 手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复、运行历史的分页越界是校验错误（`SCHEDULING_VALIDATION_002`，计数不看分页） |
+| `JobSchedulerConformance` | `StartAsync(configure, configuration)` 启动装配了被测调度器的宿主并返回 `JobSchedulerHost(scheduler, poll, host)`，`poll` 轮询一次并等本周期起的运行结束（`JobSchedulerEngine.PollOnceAsync`）；轮询周期设得很长（如 3600 秒），后台循环不动作；回调 `configure` 里套件登记 `RecordingJob`、`RecordingJobLog` 与本用例的时钟，要在 Provider 装配之前应用；可覆写 `WaitTimeout`（缺省 10 秒，只防挂死） | 手动触发经管道运行并记录结果、未登记的作业、间隔计划反复运行、不允许并发时的冲突、作业异常翻译为失败、状态报告、失败重试（成功即止、次数用尽即止、每实例作业在本实例重试）、执行时限超时与取消不重试、重试策略与时限的运行时修改和恢复、运行历史的分页越界是校验错误（`SCHEDULING_VALIDATION_002`，计数不看分页）、按名批量取状态与入参同序且分页按名字读完（越界与外来令牌为 `SCHEDULING_VALIDATION_003`）、批量在开始前已取消时抛出且不改变作业 |
 | `JobStoreConformance` | `CreateAsync()` 返回 `(IJobStore Store, IAsyncDisposable Host)` | 作业写入 / 查找 / 列表 / 替换 / 级联删除与快照语义、触发器全字段往返、到期抢占跨节点原子且按到期时刻与优先级排序、独占运行与阻塞 / 完成解除 / 查询 / 取消 / 清理、节点心跳与失联恢复 |
 | `LeaderElectionConformance` | `CreateElection(clock)` 返回 `ILeaderElection`，选举与它产生的租约按传入的时钟判定到期（用例推进时钟，不等真实时间）；可覆写 `LeaseTimeToLive`（缺省 400 毫秒，整数秒粒度的 Provider 如 Kubernetes Lease 改为 1 秒）；`StartNodeAsync(clock, probe)` 返回 `(ILeaderElection Competitor, IAsyncDisposable Host)`：起一个调度引擎用被测选举的节点（登记套件的时钟、轮询周期设得很长、`UseFeature(probe)` 装配套件给的探针特性），`Competitor` 是与节点争同一租约、节点启动到停止期间都在服务的另一个持有者（数据库实现是同一个库上的另一个节点，进程内实现是节点自己的选举），`Host` 释放这一切（节点可能已被用例停止） | 获取、被占用时拒绝、释放后可再获取、过期后可被他人获取且原持有者续约失败、续约延长到期；应用生命周期（ADR-0094）：启动中的周期不拿租约，进入服务后竞争者放手即由节点拿到，排空中的周期释放、竞争者在租约到期之前就拿到 |
 
@@ -237,7 +237,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、全局授予对任何租户生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
 
-`GetGrantsAsync` 返回 `Result<IReadOnlyCollection<string>>`：没有授予是成功的空集合，存储故障是失败。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
+`GetManyAsync` 返回与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`：没有授予是成功的空集合，存储故障整批失败；用例 6 核对顺序、重复项、种类不串与空集合。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
 
 在完整的应用宿主上给不可达的存储时，不要让整个宿主的库不可达（删库、断开默认连接）：宿主里别的子系统的后台循环——工作流轮询与它的领导权、发件箱、调度、翻译加载——在服务状态下会如实报存储不可达（如 `WORKFLOW_UNAVAILABLE_001`），那是真实的故障信号。用只装被测特性的最小宿主（框架 `Security.Database` 的测试就是这样），或只让被测存储用的连接不可达。
 

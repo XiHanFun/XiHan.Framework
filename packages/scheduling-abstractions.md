@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Scheduling`（`SchedulerOptions`，由 Provider 读取） |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | 应用面 Stable：`IJob`、`IJobScheduler` 与其扩展、作业定义、计划与日历、状态与运行视图、查询、`AddJob` / `AddJobType` / `AddJobCalendar`、错误码与消息键；存储（`IJobStore` 与 `*Record`）、引擎、选主（`ILeaderElection`、`LeaderLease`）、登记表与事件为 Preview |
 
 ## 概述
 
@@ -45,19 +45,19 @@ using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
 var builder = WebApplication.CreateBuilder(args);
 // 代码作业：同时登记类型
-builder.Services.AddJob<CleanupJob>("cleanup.nightly", JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
+builder.Services.AddJob<CleanupJob>(new JobName("cleanup.nightly"), JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
 // 只登记类型：供运行时 ScheduleAsync 新建的作业引用
 builder.Services.AddJobType<ArchiveJob>();
 
 public sealed class CleanupJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 
 public sealed class ArchiveJob : IJob
 {
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
         => ValueTask.FromResult(Result.Success());
 }
 ```
@@ -98,21 +98,22 @@ public sealed class ArchiveJob : IJob
 
 | 类型 | 说明 |
 | --- | --- |
-| `IJob` | 作业：`RunAsync(JobRun, InvocationContext, CancellationToken)` → `ValueTask<Result>`，作用域服务 |
-| `JobName`、`TriggerKey` | 作业名（`^[a-z0-9][a-z0-9._-]{0,127}$`，可从字符串隐式转换）；触发器键 `(Job, Trigger)` |
+| `IJob` | 作业：`RunAsync(JobRun, InvocationContext)` → `ValueTask<Result>`（取消用 `context.CancellationToken`），作用域服务 |
+| `JobName`、`TriggerKey` | 作业名（`^[a-z0-9][a-z0-9._-]{0,127}$`，从字符串显式转换）；触发器键 `(Job, Trigger)` |
 | `JobDefinition` | 作业定义：`Name`、`JobType`、`Triggers`、`Data`、`AllowConcurrent`、`RunOnEveryInstance`、`RequestsRecovery`、`Retry`、`Timeout`、`Description` |
 | `JobTriggerDefinition` | 触发器：`Name`、`Schedule`、`Data`、`Priority`（缺省 5）、`MisfirePolicy`、`Description` |
 | `JobRetryPolicy`、`JobRetryBackoff` | 重试：`MaxRetries` 1–100、`Delay`、`Fixed` / `Exponential`、`MaxDelay`，等待最长 30 天；`DelayFor(n)` |
 | `JobSchedule`、`JobScheduleKind` | 计划：`Manual`、`Every`、`FromCron`、`Once`，加 `StartAt` / `EndAt` / `Calendar`；`ToString` / `Parse` 文本往返 |
 | `CronExpression` | 秒精度 cron：5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时；星期 0/7 = 周日 |
 | `MisfirePolicy` | `RunOnce`（缺省）、`Skip`、`RunAll` |
-| `IJobCalendar`、`HolidayCalendar`、`WeeklyCalendar`、`DailyCalendar`、`CronCalendar`、`CompositeCalendar`、`JobCalendars`、`JobPlanner` | 排除日历与按日历推算下一次 |
+| `IJobCalendar`、`HolidayCalendar`、`WeeklyCalendar`、`DailyCalendar`、`CronCalendar`、`CompositeCalendar`、`JobCalendars` | 排除日历；按日历推算下一次由引擎完成 |
 | `JobRun`、`JobTrigger` | 一次运行（`Id`、`Name`、`TriggerName`、`ScheduledAt`、`Trigger`、`Attempt`、`RetryOf`、`Data`）；触发来源 `Schedule` / `Manual` / `Recovery` / `Retry` |
-| `JobDispatcher` | 经管道执行一次运行；`GetRun(context)` 在管道内取当前运行 |
+| `JobDispatcher` | 经管道执行一次运行；`FindRun(context)` 在管道内取当前运行 |
 | `IJobScheduler`、`JobSchedulerExtensions` | 运行时管理：登记、删除、暂停、恢复、触发、入队、取消、状态、历史、计数、恢复为代码定义；全部批量，单条是扩展方法 |
-| `JobTriggerRequest`、`JobTriggerResult` | 手动触发的请求（名字与数据）与逐项结果 |
-| `JobStatus`、`JobTriggerStatus`、`JobOutcome` | 作业状态（含 `NextRun`、`Paused`、`IsRunning`、`Last`）、触发器状态、一次运行的结果 |
-| `JobRunRecord`、`JobRunQuery`、`JobRunState` | 运行历史记录、查询（`Limit` 缺省 100、最大 1000；越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`）、状态 `Running` / `Succeeded` / `Failed` / `Canceled` / `Lost` |
+| `JobTriggerRequest` | 手动触发的请求（名字与数据），批量触发返回与请求同序的 `Result` |
+| `JobStatus`、`JobView`、`JobTriggerStatus`、`JobOutcome` | 作业状态（含作业的只读视图 `Job`、`NextRun`、`Paused`、`IsRunning`、`Last`）、触发器状态、一次运行的结果；都经初始化器构造 |
+| `JobStatusQuery`、`JobStatusPage` | `ListStatusesAsync` 的分页查询（`PageSize` 1～1000、缺省 100，续页令牌；越界为 `SCHEDULING_VALIDATION_003`）与一页 |
+| `JobRunView`、`JobRunRecord`、`JobRunQuery`、`JobRunState` | 运行历史的只读视图（`RunsAsync` 返回）、存储记录（只给 `IJobStore`）、查询（`Take` 缺省 100、最大 1000；越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`）、状态 `Running` / `Succeeded` / `Failed` / `Canceled` / `Lost` |
 | `JobSource` | 作业来源：`Code`、`Runtime`、`Overridden` |
 | `JobRegistry`、`JobTypeRegistry` | 代码作业登记表；作业类型登记表（`Keys` 列出可选类型） |
 | `JobSchedulerEngine`、`SchedulerOptions` | 引擎（同时是 `IJobScheduler`）与选项；`NodeId`、`IsLeader`、`IsRunning`、`RunningCount`、`PollOnceAsync`（测试与一致性套件用：执行一个轮询周期，并等本周期起的运行连同收尾结束） |
@@ -157,8 +158,8 @@ public interface IExporter
 public sealed class ExportJob(IExporter exporter) : IJob
 {
     // hourly 触发器的数据覆盖作业数据的同名键 mode
-    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context, CancellationToken cancellationToken)
-        => exporter.ExportAsync(run.Data["mode"]?.GetValue<string>() ?? "full", cancellationToken);
+    public ValueTask<Result> RunAsync(JobRun run, InvocationContext context)
+        => exporter.ExportAsync(run.Data["mode"]?.GetValue<string>() ?? "full", context.CancellationToken);
 }
 ```
 
@@ -184,7 +185,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 
 ## 行为与限制
 
-- 名字、计划、策略的取值在构造时校验，越界抛 `ArgumentException` / `ArgumentOutOfRangeException`：作业名最长 128；`Every` 的间隔为正、`repeatCount` 至少 1；`MaxRetries` 1–100；`Delay`、`MaxDelay`、`Timeout` 大于零且不超过 30 天。运行历史查询的分页例外：`JobRunQuery` 的 `Skip` 与 `Limit` 不在构造时校验，越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400），因为它常由请求绑定而来。
+- 名字、计划、策略的取值在构造时校验，越界抛 `ArgumentException` / `ArgumentOutOfRangeException`：作业名最长 128；`Every` 的间隔为正、`repeatCount` 至少 1；`MaxRetries` 1–100；`Delay`、`MaxDelay`、`Timeout` 大于零且不超过 30 天。运行历史查询的分页例外：`JobRunQuery` 的 `Skip` 与 `Take` 不在构造时校验，越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`（HTTP 400），因为它常由请求绑定而来。
 - cron 向前最多搜索 5 年；排除日历连续排除 10000 个候选时刻即视为没有下一次。
 - 本包不做持久化：运行时登记的作业、历史、节点放在哪里由 `IJobStore` 决定。`IJobStore.IsShared` 为假时，集群唯一的作业只在持有领导租约的实例上按计划运行。
 - 引擎在应用不在服务状态时（进入服务状态之前、开始排空之后）不按计划运行，领导租约也不拿不续，持有就立即释放，另一个实例下一个周期接手（ADR-0091）；停止时等待进行中的运行，宿主停止令牌触发后取消它们并再等它们收尾，最后释放租约。`ILeaderElection` 的 Provider 要保证应用不在服务状态时 `LeaderLease.ReleaseAsync` 照样生效。
@@ -205,6 +206,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 | `SCHEDULING_NOTFOUND_005` | 作业没有代码定义，不能恢复 |
 | `SCHEDULING_VALIDATION_001` | 作业定义不合法（触发器名重复、日历未登记） |
 | `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界（`SchedulingErrors.RunQueryInvalid`，HTTP 400） |
+| `SCHEDULING_VALIDATION_003` | 作业状态列表的查询不合法：每页条数越界或续页令牌不是调度器给出的（HTTP 400） |
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
 | `SCHEDULING_CONFLICT_002` | 领导租约被占用 |
 | `SCHEDULING_CONFLICT_003` | 运行被取消 |

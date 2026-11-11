@@ -90,7 +90,7 @@ app.Run();
 | --- | --- |
 | `OpenIdConnectSecurityFeature` | 特性入口 |
 | `OpenIdConnectOptions` | 上表各项（时长为 `TimeSpan`）；`DiscoveryPath`；`ResolveMetadataAddress()` 给出发现文档的最终地址 |
-| `OpenIdConnectMetadataCache` | 元数据缓存：`GetAsync`、`RefreshAsync`（受最短间隔限制）、`Current`；`FailureRetryDelay` 为 5 秒 |
+| `OpenIdConnectMetadataCache` | 元数据缓存：`GetAsync`、`RefreshAsync`（受最短间隔限制）、`Current`；取不到元数据时 5 秒后再试 |
 | `OpenIdConnectMetadata` | 一份元数据：`Issuer`、`JwksUri`、`SigningKeys`、`RetrievedAt` |
 | `OpenIdConnectAuthenticationHandler` | `Bearer` 方案的处理器；`SchemeName` = `Bearer` |
 

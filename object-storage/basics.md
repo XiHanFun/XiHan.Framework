@@ -82,7 +82,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | 键 `BlobKey` | `/` 分段，1 到 1024 个字符；每段非空、不是 `.` 或 `..`；不含空白、控制字符与 `\`；首段不是 `.xihan`（保留给框架）；区分大小写 | `2026/10/inv-1.pdf` |
 | 自定义元数据名 | `^[a-z0-9][a-z0-9-]{0,63}$`，值为任意字符串 | `uploaded-by` |
 
-`ContainerName` 与 `BlobKey` 都能从 `string` 隐式转换，不合法在构造时抛出 `ArgumentException`，不会进入 Provider。来自用户输入的键先用 `BlobKey.IsValid` 判断。
+`ContainerName` 与 `BlobKey` 用构造或显式转换从 `string` 创建，不合法时抛出 `ArgumentException`，不会进入 Provider；`default` 值不是合法标识，读 `Value` 抛 `InvalidOperationException`。来自用户输入的键先用 `BlobKey.IsValid` 判断。
 
 首段是 `.xihan` 的键（`BlobKey.ReservedSegment`，`.xihan` 本身与 `.xihan/…`，区分大小写）保留给框架自己的对象，例如 S3 的条件写入探测键 `.xihan/probe/conditional-write`：业务写不进、读不到、删不掉，各存储列举时跳过存储里已有的这类对象，所以它们不会混进业务列举。以 `.xihan` 开头的查询前缀不报错，列举结果总是空的。
 
@@ -118,10 +118,10 @@ app.MapPut("/files/{name}", async (string name, HttpContext http, IBlobStore sto
         // 不覆盖：同名对象已存在时返回 OBJECTSTORAGE_CONFLICT_001，宿主映射为 409
         Overwrite = false,
     };
-    var put = await store.PutAsync("uploads", key, http.Request.Body, options, ct);
+    var put = await store.PutAsync(new ContainerName("uploads"), new BlobKey(key), http.Request.Body, options, ct);
     if (!put.TryGetValue(out var metadata))
     {
-        http.GetXiHanContext().ValueOrThrow().SetOutcome(put.Error!);
+        http.FindXiHanContext().ValueOrThrow().SetOutcome(put.Error!);
         return Results.Empty;
     }
 
@@ -135,10 +135,10 @@ app.MapGet("/files/{**key}", async (string key, HttpContext http, IBlobStore sto
         return Results.NotFound();
     }
 
-    var opened = await store.GetAsync("uploads", key, ct);
+    var opened = await store.GetAsync(new ContainerName("uploads"), new BlobKey(key), ct);
     if (!opened.TryGetValue(out var blob))
     {
-        http.GetXiHanContext().ValueOrThrow().SetOutcome(opened.Error!);
+        http.FindXiHanContext().ValueOrThrow().SetOutcome(opened.Error!);
         return Results.Empty;
     }
 
@@ -156,18 +156,23 @@ app.Run();
 
 单条写入用扩展方法 `PutAsync(container, key, content, options, cancellationToken)`，`content` 是 `Stream` 或 `ReadOnlyMemory<byte>`，它转调批量方法。写入选项 `BlobPutOptions` 有内容类型 `ContentType`（缺省 `application/octet-stream`）、自定义元数据 `Metadata` 与 `Overwrite`（缺省 `true`）。
 
-批量写入 `PutAsync(container, uploads, cancellationToken)` 按顺序逐项执行，返回与入参同序的逐项结果 `BlobPutResult`（`Key` 与 `Outcome`）；两项之间检查取消，已完成的项不回滚。空列表返回空，重复的键按顺序各执行一次：
+批量写入 `PutAsync(container, uploads, cancellationToken)` 按顺序逐项执行，返回与入参同序的逐项结果 `Result<BlobMetadata>`；两项之间检查取消，已完成的项不回滚。空列表返回空，重复的键按顺序各执行一次：
 
 ```csharp
-var results = await store.PutAsync("invoices",
+BlobUpload[] uploads =
 [
-    new BlobUpload("2026/10/inv-1.pdf", first, new BlobPutOptions { ContentType = "application/pdf" }),
-    new BlobUpload("2026/10/inv-2.pdf", second, new BlobPutOptions { ContentType = "application/pdf" }),
-], cancellationToken);
+    new BlobUpload(new BlobKey("2026/10/inv-1.pdf"), first, new BlobPutOptions { ContentType = "application/pdf" }),
+    new BlobUpload(new BlobKey("2026/10/inv-2.pdf"), second, new BlobPutOptions { ContentType = "application/pdf" }),
+];
+var results = await store.PutAsync(new ContainerName("invoices"), uploads, cancellationToken);
 
-foreach (var result in results.Where(static r => r.Outcome.IsFailure))
+for (var i = 0; i < results.Count; i++)
 {
-    logger.LogWarning("Storing {Key} failed: {Code}", result.Key, result.Outcome.Error!.Code);
+    // 逐项结果与入参同序：第 i 项对应第 i 个上传
+    if (!results[i].IsSuccess)
+    {
+        logger.LogWarning("Storing {Key} failed: {Code}", uploads[i].Key, results[i].Error?.Code);
+    }
 }
 ```
 
@@ -181,11 +186,11 @@ foreach (var result in results.Where(static r => r.Outcome.IsFailure))
 
 ## 删除
 
-`DeleteAsync(container, keys, cancellationToken)` 批量删除，逐项结果 `BlobDeleteResult` 的 `Outcome` 为 `true` 表示存在过并已删除，`false` 表示本来就不存在，失败时带错误。同一批里重复的键第二次报告不存在：
+`DeleteAsync(container, keys, cancellationToken)` 批量删除，逐项结果 `Result<bool>` 与入参同序，值为 `true` 表示存在过并已删除，`false` 表示本来就不存在，失败时带错误。同一批里重复的键第二次报告不存在：
 
 ```csharp
-var deleted = await store.DeleteAsync("invoices", ["2026/10/inv-1.pdf", "2026/10/inv-2.pdf"], cancellationToken);
-var removed = deleted.Count(static d => d.Outcome.ValueOr(false));
+var deleted = await store.DeleteAsync(new ContainerName("invoices"), [new BlobKey("2026/10/inv-1.pdf"), new BlobKey("2026/10/inv-2.pdf")], cancellationToken);
+var removed = deleted.Count(static d => d.ValueOr(false));
 ```
 
 单条删除用扩展方法 `DeleteAsync(container, key, cancellationToken)`，返回 `Result<bool>`。
@@ -198,7 +203,7 @@ var removed = deleted.Count(static d => d.Outcome.ValueOr(false));
 var query = new BlobQuery { Prefix = "2026/10/", PageSize = 100 };
 while (true)
 {
-    var page = (await store.ListAsync("invoices", query, cancellationToken)).ValueOrThrow();
+    var page = (await store.ListAsync(new ContainerName("invoices"), query, cancellationToken)).ValueOrThrow();
     foreach (var item in page.Items)
     {
         Console.WriteLine($"{item.Key} {item.Length}");
@@ -221,7 +226,7 @@ S3 的列举条目只有键、长度、`ETag` 与修改时间，内容类型为�
 | --- | --- | --- |
 | 清单角色 | `role: default`，`Profiles.Full` 装配 | `role: provider` |
 | 布局 | `<RootPath>/<container>/data/<key>` 存内容，`meta/<key>.json` 存元数据 | 容器即桶，键即对象键 |
-| 原子性 | 先写同目录临时文件再原子替换；不覆盖写入以不替换的移动原子占位 | 服务端保证；不覆盖写入带 `If-None-Match: *`，服务是否认它先探明（启动时探一次，没探明就后台重试，探明之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`） |
+| 原子性 | 先写同目录临时文件再原子替换；不覆盖写入在 Linux 与 macOS 上先独占创建占位文件、再把内容替换上去，在 Windows 上不替换地改名 | 服务端保证；不覆盖写入带 `If-None-Match: *`，服务是否认它先探明（启动时探一次，没探明就后台重试，探明之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`） |
 | `ETag` | 内容的 SHA-256 | 服务端给出 |
 | 配额 | `MaxTotalBytes`（缺省 1 GiB）、`MaxBlobBytes`（缺省 256 MiB），超限 `OBJECTSTORAGE_UNAVAILABLE_002` | 无，由桶策略管理 |
 | 健康项 | `objectstorage.filesystem.capacity`：用量达到总配额为 Degraded | `objectstorage.s3.connection`：按 `HealthProbeIntervalSeconds`（缺省 15 秒）重探连通性，并入条件写入的状态（连不上 Degraded；不认，以及启动之后才被拒绝或缺桶 Failed） |

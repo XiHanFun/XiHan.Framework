@@ -2,7 +2,7 @@
 
 # XiHan.Framework.Kernel.Analyzers
 
-Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 零反射这些规则交给编译器执行，诊断 XH0001–XH0005 全部是错误级。框架的每个正式包都以分析器形式引用它；写框架扩展包的人可以在自己的项目里启用同一套规则。
+Roslyn 分析器：把公开 API 的稳定性标注与级别依赖、Stable 不用可选参数、类型命名与 Ring 0/1 零反射这些规则交给编译器执行，诊断 XH0001–XH0008 全部是错误级。框架的每个正式包都以分析器形式引用它；写框架扩展包的人可以在自己的项目里启用同一套规则。
 
 | 项 | 内容 |
 | --- | --- |
@@ -13,7 +13,7 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 | 配置节 | —（范围由 MSBuild 属性 `XiHanFrameworkPackage`、`XiHanRing` 控制） |
 | 依赖 | 只在构建期使用 `Microsoft.CodeAnalysis.CSharp`；目标 `netstandard2.0`，开发依赖，不进入运行时 |
 | AOT | 不适用（编译期组件） |
-| 稳定性 | —（编译期组件，不标注 `[ApiLevel]`；五条规则可用） |
+| 稳定性 | —（编译期组件，不标注 `[ApiLevel]`；八条规则可用） |
 
 ## 概述
 
@@ -24,11 +24,15 @@ Roslyn 分析器：把公开 API 的稳定性标注、类型命名与 Ring 0/1 �
 | `XH0003` | 所有引用了分析器的项目 | 不得在定义程序集之外使用标注为 `Stability.Internal` 的类型或成员 | `'{0}' is annotated with Internal stability and must not be used outside its own assembly` |
 | `XH0004` | 框架包 | 公开类型名不得用禁用词：`Default` 前缀，`Manager`、`Helper`、`Utils`、`Util`、`Common`、`Shared`、`Impl`、`Base` 后缀 | `Type name '{0}' uses the forbidden word '{1}'` |
 | `XH0005` | Ring 0/1 | 不得使用反射 API | `'{0}' is a reflection API, which is forbidden in the primitives and kernel rings` |
+| `XH0006` | 框架包 | 生效级别为 `Stable` 的公开类型与成员，签名不得引用 `Preview` 或 `Experimental` 的类型 | `'{0}' is Stable but its signature references '{1}', which is {2}` |
+| `XH0007` | 框架包 | 成员或嵌套类型单独标注的级别不得高于所在类型 | `'{0}' is annotated {1}, which is higher than {2} on its containing type '{3}'` |
+| `XH0008` | 框架包，`*.Testing` / `*.Conformance` 除外 | 生效级别为 `Stable` 的公开方法、构造与索引器不得声明可选参数 | `'{0}' is Stable and must not declare the optional parameter '{1}'; use an overload or an options record` |
 
 全部规则的类别是 `XiHan`、级别 Error，帮助链接指向本包 README 的规则表。判定细节：
 
 - XH0001 / XH0002 / XH0004 只看「有效公开」的类型（自身与全部包含类型都是 `public`），跳过编译器生成的类型；编译里找不到 `ApiLevelAttribute`（没引用原语层）时不报 XH0001。名字恰好等于禁用词本身（如 `Base`）不算；一个类型只报一次 XH0004。
 - XH0003 按 `[ApiLevel]` 构造参数的整数值判定 `Internal`（`Stability.Internal = 3`），以成员的原始定义判定，泛型实例化后仍能命中；类型或其任一包含类型标为 Internal 时，类型名出现在源码里也报。程序集内部可以用自己的 Internal API。
+- XH0006 / XH0007 / XH0008 的「生效级别」取符号自身的 `[ApiLevel]`，没有时逐层取包含类型的标注；没有任何标注的类型（BCL、第三方）不参与判定。XH0006 检查基类、实现的接口、泛型约束、参数、返回值与属性、字段、事件的类型，泛型实参一并展开，引用其他程序集的类型时读元数据上的标注；同一个不稳定类型在一个签名里只报一次。XH0007 只比较 `Experimental` → `Preview` → `Stable` 三级。XH0008 只约束 `Stable`：`Preview` 升 `Stable` 时这条规则随之生效；重写与接口实现照原声明不报，调用方信息参数（`CallerArgumentExpression`、`CallerMemberName` 等）不算可选参数。
 - XH0005 把 `System.Reflection` 命名空间下的一切视为反射，只放行 `MemberInfo` 上的 `Name`、`DeclaringType`、`ReflectedType`、`MemberType`、`MetadataToken`、`IsCollectible`；`Activator` 的任何成员都是反射；`Type` 上的成员查找（`GetMethod`、`GetProperty`、`GetCustomAttributes`、`MakeGenericType`、`Assembly` 等，以及带参数的 `Type.GetType(string)`）是反射，`object.GetType()` 不是。
 
 ## 何时使用
@@ -49,7 +53,7 @@ dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 
 ```xml
 <PropertyGroup>
-  <!-- 启用 XH0001 / XH0002 / XH0004 -->
+  <!-- 启用 XH0001 / XH0002 / XH0004 / XH0006～XH0008 -->
   <XiHanFrameworkPackage>true</XiHanFrameworkPackage>
 </PropertyGroup>
 ```
@@ -60,7 +64,7 @@ dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 
 | MSBuild 属性 | 值 | 作用 |
 | --- | --- | --- |
-| `XiHanFrameworkPackage` | `true`（不区分大小写） | 启用 XH0001、XH0002、XH0004 |
+| `XiHanFrameworkPackage` | `true`（不区分大小写） | 启用 XH0001、XH0002、XH0004、XH0006～XH0008 |
 | `XiHanRing` | `0` 或 `1` | 启用 XH0005；未设置或不是整数视为不在 Ring 0/1 |
 
 ## 主要类型
@@ -70,6 +74,8 @@ dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 | `PublicTypeAnalyzer` | XH0001、XH0002、XH0004 |
 | `InternalApiUsageAnalyzer` | XH0003 |
 | `ReflectionUsageAnalyzer` | XH0005 |
+| `StabilityDependencyAnalyzer` | XH0006、XH0007 |
+| `OptionalParameterAnalyzer` | XH0008 |
 
 ## 使用示例
 

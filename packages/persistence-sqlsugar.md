@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Persistence:SqlSugar` |
 | 依赖 | `XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`、`SqlSugarCore`（自带各数据库驱动）、`Microsoft.Data.Sqlite` |
 | AOT | 不兼容（SqlSugar 的实体映射与表达式翻译基于运行时反射） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；数据源（`SqlSugarDataSource`、`SqlSugarDataSourceExtensions`）为 Preview，读写分离（`SqlSugarReplicaOptions` 与 `Replicas`）与差异日志（`SqlSugarDiffLogData` 与两处 `DiffLog`）为 Experimental |
 
 ## 概述
 
@@ -122,13 +122,12 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | 类型 | 说明 |
 | --- | --- |
 | `SqlSugarPersistenceFeature` | 特性入口；无参构造用应用注册的客户端，带回调的构造由特性创建客户端；`DiffLog` 选出开启差异日志的实体；常量 `ConnectionBinding`（`db`）与 `HealthName`（`persistence.sqlsugar.database`） |
-| `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`Connections`（方式一的命名连接）、`DiffLog`；`FromConfiguration(configuration)` |
+| `SqlSugarPersistenceOptions` | 选项：`InitTables`、`HealthProbeInterval`、`CommandTimeout`（`TimeSpan`，缺省 `StandardCommandTimeout` 300 秒，配置键是 `CommandTimeoutSeconds`）、`Connections`（方式一的命名连接）、`DiffLog`；`FromConfiguration(configuration)` |
 | `SqlSugarReplicaOptions` | 从库的权重与健康探测选项（`SqlSugarPersistenceOptions.Replicas`） |
 | `SqlSugarConventions` | `Apply(config)` 在连接配置上登记协议约定（保留配置里已有的实体服务与表服务回调，先执行它们）；`Configure(property, column)` 对单个属性施加约定；`ConfigureIndexes(type, entityInfo)` 把实体上的 `[EntityIndex]` 登记为 SqlSugar 索引（软删除实体的部分唯一索引除外）；`InitTables(client, entityTypes)` 按约定建表并补建软删除实体的部分唯一索引，应用自己建表（租户独立库）用它 |
 | `SqlSugarConnections` | 连接的 `ConfigId` 约定：`Default`（`default`）、`Shard`（`shard`） |
 | `IEntityConnectionSelector`、`SqlSugarConnectionSelector` | 实体落在哪个连接；默认规则见下文 |
 | `SqlSugarUnitOfWork` | 事务型工作单元；`Client` 是根连接，`ConnectionFor(Type)` 返回某种实体所用的连接；以 `UnitOfWorkOptions.Connection` 开启时只用那个命名连接 |
-| `SqlSugarRepository<TEntity, TKey>` | 仓储实现，由特性按登记注册 |
 | `SqlSugarDiffLogData` | 差异日志的业务数据：`EntityType` 与仓储所在作用域的 `Services` |
 | `SqlSugarDataSource`、`SqlSugarDataSourceExtensions` | 运行时数据源：`Client` 是每个数据源一个的 `SqlSugarScope`；`source.GetSqlSugarClient()` 从中立的 `IDataSource` 取它 |
 
@@ -195,14 +194,14 @@ builder.Services.AddRepository<SyncCursor, string>(connection: "leases");
 // 管道外与业务事务互不等待的写入：工作单元绑定这个连接，事务只开在它上面
 await using var scope = services.CreateAsyncScope();
 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-await unitOfWork.BeginAsync(new UnitOfWorkOptions(Connection: "leases"), ct);
+await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = "leases" }, ct);
 // …经 IRepository<SyncCursor, string> 读写，然后 CommitAsync
 ```
 
 - 名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`；值不能空白。不合法时装配即抛 `ArgumentException`（消息只带名字，不带连接串）。
 - 每个作用域的客户端都带上命名连接，排在默认连接之后，根连接仍是默认连接。工作单元首次写入时只在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开：业务调用不碰命名连接，那个库就不被业务事务锁住。
 - 普通工作单元里，登记到命名连接的实体照常参与整体事务（同一调用触及的连接顺序提交）；`InitTables` 把它建在那个连接上。
-- 绑定连接的工作单元（`UnitOfWorkOptions(Connection: name)`）只用这一个连接：操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接不在客户端里，`BeginAsync` 抛出同码异常。
+- 绑定连接的工作单元（`UnitOfWorkOptions { Connection = name }`）只用这一个连接：操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接不在客户端里，`BeginAsync` 抛出同码异常。
 - 方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端，配置里的 `Connections` 节对它不适用，写了即装配失败。
 
 ::: warning 跨库提交是顺序提交，不是两阶段提交
@@ -342,7 +341,7 @@ public sealed class ChangeBuffer
 - 软删除：在取回的当前行上打标并整行写回，调用方实例随后拿到删除标记，以及当前行的修改时间与并发戳。
 - 实体类型没有 `new()` 约束，写入经 `InsertableByObject` / `UpdateableByObject` / `DeleteableByObject`，语义与泛型构建器相同。
 - 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
-- 只读工作单元（只读操作或 `UnitOfWorkOptions(IsReadOnly: true)`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
+- 只读工作单元（只读操作或 `UnitOfWorkOptions { IsReadOnly = true }`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
 - 读写分离（ADR-0118）：回调在 `SlaveConnectionConfigs` 上给出从库，用法见[持久化](/persistence/sqlsugar)。配了从库的连接每个作用域一份配置副本；只读工作单元读从库，设了 `UnitOfWorkOptions.ReadsPrimary` 的除外（ADR-0122），其余工作单元读写都走主库。默认连接与命名连接的从库周期探测（走一次数据库往返，只探连通），不可读的摘除，全部不可读时读回到主库，见健康项 `SqlSugarPersistenceFeature.ReplicaHealthName`（`persistence.sqlsugar.replicas`）。分片连接的从库由回调按分片绑定给出，不探测。主库不同的连接共用从库是 `PERSISTENCE_VALIDATION_009`。没配从库时没有任何额外开销。
 - 运行时数据源（ADR-0078）：特性登记 SqlSugar 的数据源 Provider，数据库类型是 `DbType` 的名字（不区分大小写，`Custom` 与数字不认）。登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`；客户端是每个数据源一个的 `SqlSugarScope`（`IsAutoCloseConnection`），不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写；测试连接与健康探测另建客户端、打开原生 `DbConnection` 再关闭。运行时数据源不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。

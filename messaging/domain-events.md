@@ -15,7 +15,7 @@
 | `IDomainEvent` | 领域事件接口，只有 `OccurredAt`；事件通常是 `record` |
 | `DomainEventBuffer` / `IHasDomainEvents` | 聚合用缓冲收集事件并经 `DomainEvents` 暴露、`ClearDomainEvents()` 清空；缓冲有容量上限（缺省 256） |
 | `AddDomainEvent<TEvent>(topic, type, info, subject)` | 登记一种事件的主题、CloudEvents `type`、源生成的 `JsonTypeInfo<TEvent>` 与可选的 `subject` 选择器；首次调用时注册 `IDomainEventDispatcher` |
-| `IDomainEventDispatcher` | 持久化定义的派发契约，由消息子系统的 `DomainEventDispatcher` 实现 |
+| `IDomainEventDispatcher` | 持久化定义的派发契约，由消息子系统实现，首次 `AddDomainEvent<TEvent>` 时注册 |
 | Transaction 阶段 | 处理器成功后、提交前，`UnitOfWorkMiddleware` 把工作单元登记的、带未派发事件的聚合交给派发器 |
 | `OutboxFeature` | 事务性发件箱：`IMessagePublisher` 换成 `OutboxPublisher`，后台 `OutboxDispatcher` 轮询 `OutboxMessage` 表投递 |
 
@@ -223,7 +223,7 @@ if (pending.Count > 0)
 {
     // 派发器由 AddDomainEvent 注册；派发成功会清空各聚合的缓冲
     var dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
-    (await dispatcher.DispatchAsync(pending, unitOfWork.TenantId, cancellationToken)).ThrowIfFailure();
+    (await dispatcher.DispatchAsync(pending, unitOfWork.Options.TenantId, cancellationToken)).ThrowIfFailure();
 }
 
 (await unitOfWork.CommitAsync(cancellationToken)).ThrowIfFailure();

@@ -10,7 +10,7 @@
 
 ## 审计事件与接收器
 
-内核定义了审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认注册的 `NullAuditSink` 丢弃全部事件。审计子系统在此之上补三件事：挂在 Observe 阶段的 `AuditMiddleware` 在调用结束时决定是否生成事件；调用上下文上的 `SetAuditAction`、`SetAuditResource`、`AddAuditDetail` 让处理器补充信息；查询契约 `IAuditTrail` 按条件分页读回。
+内核定义了审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认注册的接收器丢弃全部事件。审计子系统在此之上补三件事：挂在 Observe 阶段的 `AuditMiddleware` 在调用结束时决定是否生成事件；调用上下文上的 `SetAuditAction`、`SetAuditResource`、`AddAuditDetail` 让处理器补充信息；查询契约 `IAuditTrail` 按条件分页读回。
 
 能力 `auditing.trail@1` 的 Provider 同时实现 `IAuditSink` 与 `IAuditTrail`。被能力图谱选中时，Provider 先占住 `IAuditSink`，再注册消息目录与选项，并把 `AuditMiddleware` 挂到 Observe 阶段末尾，也就是内核的 `ObserveMiddleware` 之内。Observe 之后的各阶段都在它里面执行，所以认证、授权、校验阶段的拒绝也会以结果的形式被它看到。
 
@@ -25,7 +25,7 @@
 | `Resource` | `SetAuditResource` 写入的 `xrn:` 资源名 |
 | `PrincipalId` | 认证后的主体 ID，没有时取 Baggage `xihan.principal` |
 | `TenantId` | 解析出的租户 ID，没有时取 Baggage `xihan.tenant` |
-| `Details` | `AddAuditDetail` 追加的键值，只允许 JSON 可表示的值 |
+| `Details` | `AddAuditDetail` 追加的键值，值是 JSON（`JsonElement`），经任何接收器写入再读回都是同一类型 |
 
 ## 启用
 
@@ -94,7 +94,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 | --- | --- |
 | `SetAuditAction(action)` | 动作不能为空白；声明后这次调用一定记录，非操作调用也一样 |
 | `SetAuditResource(resource)` | 参数是 `ResourceName`，事件里存它的 `xrn:<partition>:<service>:<tenant>:<type>/<id>` 文本；租户段可以为空 |
-| `AddAuditDetail(key, value)` | 键不能为空白，同名覆盖；值只用 JSON 可表示的类型，数据库存储按类型写成 JSON |
+| `AddAuditDetail(key, value)` | 键不能为空白，同名覆盖；值是 `JsonNode?`，字符串、数值、布尔、日期与 `Guid` 都能直接传（隐式转换），`null` 记为 JSON null；追加时即固化，事件里读回的是 `JsonElement` |
 
 ## 哪些调用会被记录
 
@@ -136,7 +136,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 2. 没有写入结果而抛出了异常的，记为失败：取消记 `KERNEL_CANCELLED_001`，其他异常记 `KERNEL_UNEXPECTED_001`。异常继续向外抛给 `ObserveMiddleware`，由它转成调用结果。
 3. 正常返回却没有写结果的，记为成功。
 
-写接收器时不带调用的取消令牌，被取消的调用同样留下记录。接收器抛出的异常只以 Error 级写一条日志，不改变调用结果；`IAuditSink` 的契约要求实现有界、不阻塞调用路径，两个内置实现的写入都不等待存储。
+写接收器时不带调用的取消令牌，被取消的调用同样留下记录。`IAuditSink.WriteAsync` 的契约与日志接收器相同：有界、不阻塞调用路径，返回只表示已接收；不抛出，接收不下或落地失败时由实现自己丢弃、计数并节流告警。两个内置实现的写入都不等待存储。接收器违反契约抛出的异常只以 Error 级写一条日志，不改变调用结果。
 
 ## 主体与租户从哪里来
 
@@ -154,7 +154,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 | `UserAgent`、`Referer` | 对应的请求头，没有时为空 |
 | `Route`、`EndpointName` | 匹配到的端点的路由模板与 `WithName` 名字，没有匹配到端点或协议没有端点时为空 |
 
-缓存回源、存储维护这类内部调用没有来源，`GetOrigin()` 返回无值。下面的中间件放在 Ingress 阶段开头，被认证或授权拒绝的调用也能带上来源：
+缓存回源、存储维护这类内部调用没有来源，`FindOrigin()` 返回无值。下面的中间件放在 Ingress 阶段开头，被认证或授权拒绝的调用也能带上来源：
 
 ```csharp
 using XiHan.Framework.Auditing.Abstractions.Pipeline;
@@ -168,7 +168,7 @@ public sealed class AuditOriginMiddleware : IPipelineMiddleware
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
         // 审计事件不带调用来源；需要远端地址与 User-Agent 时写进细节
-        if (context.GetOrigin().TryGetValue(out var origin))
+        if (context.FindOrigin().TryGetValue(out var origin))
         {
             context.AddAuditDetail("protocol", origin.Protocol);
             context.AddAuditDetail("target", origin.Target);
@@ -227,7 +227,9 @@ public sealed class OrdersFeature : IFeature
 | `AuditQuery` 成员 | 说明 |
 | --- | --- |
 | `From`、`To` | 时间范围，两端都包含；`From` 晚于 `To` 时查询不合法 |
-| `Action`、`PrincipalId`、`TenantId`、`TraceId` | 区分大小写的精确匹配 |
+| `Action`、`TraceId`、`Resource` | 区分大小写的精确匹配；`Resource` 是 `xrn:` 文本，查某个资源的全部历史 |
+| `Principal` | `AuditPrincipalFilter`：缺省 `Any` 不过滤，`Anonymous` 只要匿名调用，`Of(id)` 只要某个主体 |
+| `Tenant` | `AuditTenantFilter`：缺省 `Any` 不过滤，`Global` 只要不属于任何租户的事件，`Of(id)` 只要某个租户 |
 | `Succeeded` | `true` 只取成功，`false` 只取失败 |
 | `PageSize` | 缺省 100，取值 1 到 `AuditQuery.MaxPageSize`（1000） |
 | `ContinuationToken` | 上一页返回的续页令牌 |
@@ -249,14 +251,14 @@ public sealed class FailureStatistics(IAuditTrail trail)
         string? token = null;
         do
         {
-            var query = new AuditQuery { TenantId = tenantId, From = from, To = to, Succeeded = false, PageSize = AuditQuery.MaxPageSize, ContinuationToken = token };
+            var query = new AuditQuery { Tenant = AuditTenantFilter.Of(tenantId), From = from, To = to, Succeeded = false, PageSize = AuditQuery.MaxPageSize, ContinuationToken = token };
             var page = await trail.QueryAsync(query, cancellationToken);
             if (!page.TryGetValue(out var current))
             {
                 return page.Error!;
             }
 
-            foreach (var auditEvent in current.Events)
+            foreach (var auditEvent in current.Items)
             {
                 counts[auditEvent.Action] = counts.GetValueOrDefault(auditEvent.Action) + 1;
             }
@@ -273,7 +275,7 @@ public sealed class FailureStatistics(IAuditTrail trail)
 `FailureStatistics` 以 `builder.Services.AddSingleton<FailureStatistics>()` 登记。
 
 ::: warning 审计记录是平台级数据
-审计记录不实现 `IMultiTenant`，`IAuditTrail` 不按当前租户自动过滤。给租户管理员看的界面必须显式传 `TenantId`；数据库存储里独立库租户的记录也落在应用的默认连接，靠租户列区分（规范 RFC-0015《审计》）。
+审计记录不实现 `IMultiTenant`，`IAuditTrail` 不按当前租户自动过滤。给租户管理员看的界面必须显式传 `Tenant = AuditTenantFilter.Of(…)`；数据库存储里独立库租户的记录也落在应用的默认连接，靠租户列区分（规范 RFC-0015《审计》）。
 :::
 
 ## 内存存储
@@ -383,7 +385,7 @@ Problem Details、日志与审计事件共用 trace-id：拿到请求返回的 t
 
 ### 租户管理员能看别的租户的审计吗
 
-`IAuditTrail` 不按当前租户过滤，给租户看的界面必须由应用显式传 `TenantId` 并做好授权。审计是平台级数据，不随租户分库。
+`IAuditTrail` 不按当前租户过滤，给租户看的界面必须由应用显式传 `AuditTenantFilter.Of(…)` 并做好授权。审计是平台级数据，不随租户分库。
 
 ## 相关包与下一步
 

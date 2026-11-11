@@ -57,7 +57,7 @@ app.UseXiHan();
 // 调用来源的远端地址由 UseXiHan() 写进调用上下文；回环与内网地址解析为无值
 app.MapGet("/where", (HttpContext http, IIpRegionResolver regions) =>
 {
-    var origin = http.GetXiHanContext().ValueOrThrow().GetOrigin();
+    var origin = http.FindXiHanContext().ValueOrThrow().FindOrigin();
     return origin.TryGetValue(out var o)
         && IPAddress.TryParse(o.RemoteAddress, out var address)
         && regions.Resolve(address).TryGetValue(out var region)
@@ -96,7 +96,7 @@ app.Run();
 
 ## 在操作里用调用来源解析
 
-调用来源 `InvocationOrigin` 由宿主在构造调用上下文时写入，`context.GetOrigin()` 读它；HTTP 宿主填的 `RemoteAddress` 是连接的对端地址（宿主在 `UseXiHan()` 之前 `UseForwardedHeaders()` 时即为转发头改写后的客户端地址，IPv4 映射的 IPv6 还原为 IPv4）。依赖契约而不是 Provider，没装时照常工作：
+调用来源 `InvocationOrigin` 由宿主在构造调用上下文时写入，`context.FindOrigin()` 读它；HTTP 宿主填的 `RemoteAddress` 是连接的对端地址（宿主在 `UseXiHan()` 之前 `UseForwardedHeaders()` 时即为转发头改写后的客户端地址，IPv4 映射的 IPv6 还原为 IPv4）。依赖契约而不是 Provider，没装时照常工作：
 
 ```csharp
 using System.Net;
@@ -109,7 +109,7 @@ public sealed class CallerLocation(IIpRegionResolver? regions = null)
     // 没装归属地 Provider、没有调用来源、回环或内网地址、查不到时都返回 null
     public string? Describe(InvocationContext context)
     {
-        if (regions is null || !context.GetOrigin().TryGetValue(out var origin))
+        if (regions is null || !context.FindOrigin().TryGetValue(out var origin))
         {
             return null;
         }

@@ -19,7 +19,7 @@
 | `Messaging.Conformance` | `MessageBrokerConformance` / `MessageStreamConformance` / `OutboxConformance` | `CreateFeature()` 返回提供 `messaging.queue@1`（或流、持久化）的特性；可覆写 `Configuration`、`DeliveryTimeout`、`SupportsMultipleInstances` |
 | `Persistence.Conformance` | `RepositoryConformance` / `DataSourceConformance` / `SchemaConformance` / `IdGeneratorConformance<TKey>` | `CreateFeature()`；数据源与结构套件另实现 `CreateDefinition(name)` 等；标识生成器实现 `CreateGenerator(clock)` |
 | `MultiTenancy.Conformance` | `TenantStoreConformance` / `TenantShardResolverConformance` | `CreateStoreAsync(tenants)` / `CreateResolverAsync(tenants)` |
-| `ObjectStorage.Conformance` | `BlobStoreConformance` / `BlobStoreProviderConformance` | `CreateStore()` 与 `PlantOutsideContractAsync(...)`；`CreateProvider()`、`ValidSettings()`、`OtherValidSettings()` |
+| `ObjectStorage.Conformance` | `BlobStoreConformance` / `BlobStoreProviderConformance` | `CreateStoreAsync()` 与 `PlantOutsideContractAsync(...)`；`CreateProvider()`、`ValidSettings()`、`OtherValidSettings()` |
 | `Localization.Conformance` | `MessageLocalizerConformance` | `CreateLocalizer(catalogs, options)` |
 | `Scheduling.Conformance` | `JobSchedulerConformance` / `JobStoreConformance` / `LeaderElectionConformance` | `StartAsync(configure, configuration)` 返回 `JobSchedulerHost`；`CreateAsync()`；`CreateElection(clock)` 与 `StartNodeAsync(clock, probe)` |
 | `Workflow.Conformance` | `WorkflowStoreConformance` / `WorkflowEngineConformance` / `WorkflowTaskConformance` | `StartAsync()` 或 `StartAsync(configure, configuration)` 返回套件的宿主句柄 |
@@ -130,7 +130,7 @@ xihan-conformance vectors
 | --- | --- | --- |
 | 编译 | `framework/Directory.Build.props` | `TreatWarningsAsErrors`、Nullable、`AnalysisLevel=latest-recommended`、`EnforceCodeStyleInBuild`（命名 IDE1006 与未使用 using IDE0005 在构建期即错误）、NuGet 高危 / 严重漏洞中断构建 |
 | 公开面与包 | `framework/src/Directory.Build.props` | `PublicAPI.Shipped.txt` / `PublicAPI.Unshipped.txt` 必须与公开面一致、包验证、AOT 分析（`IsAotCompatible` 缺省为真） |
-| 分析器 | `Kernel.Analyzers` | XH0001–XH0005：`[ApiLevel]`、`XiHan` 前缀、禁用词、Internal API、Ring 0/1 零反射（[Kernel.Analyzers](/packages/kernel-analyzers)） |
+| 分析器 | `Kernel.Analyzers` | XH0001–XH0008：`[ApiLevel]`、`XiHan` 前缀、禁用词、Internal API、Ring 0/1 零反射、级别依赖、Stable 不用可选参数（[Kernel.Analyzers](/packages/kernel-analyzers)） |
 | 架构测试 | `framework/test/XiHan.Framework.Architecture.Tests` | 见下表 |
 | 冒烟 | CI | `dotnet pack` 触发包验证；`samples/SimpleApp` 以 Native AOT 发布 |
 

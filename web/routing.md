@@ -51,7 +51,7 @@ app.MapXiHanOperations();   // orders.create → POST /orders，orders.list → 
 app.Run();
 ```
 
-`OrdersFeature` 是示例应用的订单能力包，登记了 `orders.create` 与 `orders.list` 两个操作（见[操作契约](/web/operations)）。`MapXiHanOperations()` 返回映射的端点数。运行后：
+`OrdersFeature` 是示例应用的订单能力包，登记了 `orders.create` 与 `orders.list` 两个操作（见[操作契约](/web/operations)）。`MapXiHanOperations()` 返回这组操作端点的约定构建器，要给全部操作端点统一加 ASP.NET Core 约定（CORS、限流、端点过滤器等）就写在返回值上，如 `app.MapXiHanOperations().RequireCors("web")`，路由模板不受影响。运行后：
 
 ```bash
 curl -s -X POST localhost:5000/orders -H "Authorization: ApiKey dev-alice-key" \

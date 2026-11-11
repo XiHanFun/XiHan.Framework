@@ -13,7 +13,7 @@
 | 配置节 | `XiHan:Security`（含 `InMemory` 子节） |
 | 依赖 | `XiHan.Framework.Security.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`InMemoryPermissionGrantStore` 实现 Preview 的授予管理接口，与 `InMemorySecurityHealthContributor` 同为 Preview |
 
 ## 概述
 
@@ -86,7 +86,7 @@ app.Run();
 }
 ```
 
-配置里的授予都是全局的（对任何租户生效）；租户专属授予只能在运行时经 `InMemoryPermissionGrantStore.Grant` 添加。
+配置里的授予都是全局的（对任何租户生效）；租户专属授予只能在运行时经授予管理 `IPermissionGrantAdministration.GrantAsync` 添加。
 
 ## 主要类型
 
@@ -97,7 +97,7 @@ app.Run();
 | `PrincipalRecord` | 配置里的一个主体：`Id`、`ApiKey`、`DisplayName`、`Roles`、`Tenant`、`Claims` |
 | `InMemoryPrincipalStore` | 主体存储：`FindByApiKey`（常量时间比较）、`Set`、`Remove`、`Capacity`、`Count` |
 | `ApiKeyAuthenticationHandler` | `ApiKey` 方案的处理器；`SchemeName` = `ApiKey` |
-| `InMemoryPermissionGrantStore` | 授予存储：`GetGrantsAsync`、`Grant`、`Revoke`、`Capacity`、`Count` |
+| `InMemoryPermissionGrantStore` | 授予存储，同时是 `IPermissionGrantAdministration`：`GetManyAsync`、`GrantAsync`、`RevokeAsync`（各一次加锁处理整批）、`ListAsync`、`Capacity`、`Count` |
 | `InMemorySecurityHealthContributor` | 健康项的贡献者 |
 
 ## 使用示例
@@ -113,14 +113,16 @@ curl -H "Authorization: ApiKey dev-alice-key" http://localhost:5000/whoami
 ```csharp
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Permissions;
-using XiHan.Framework.Security.InMemory;
 
-public sealed class TrialGrants(InMemoryPermissionGrantStore grants)
+public sealed class TrialGrants(IPermissionGrantAdministration grants)
 {
     // 只在 acme 租户里给 bob 导出权限；配置文件里写不了租户专属授予
-    public Result GrantExport() => grants.Grant(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"));
+    public ValueTask<Result> GrantExportAsync(CancellationToken cancellationToken)
+        => grants.GrantAsync(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"), cancellationToken);
 
-    public bool RevokeExport() => grants.Revoke(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"));
+    // 不存在时是 SECURITY_NOTFOUND_002
+    public ValueTask<Result> RevokeExportAsync(CancellationToken cancellationToken)
+        => grants.RevokeAsync(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"), cancellationToken);
 }
 ```
 
