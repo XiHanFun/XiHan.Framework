@@ -65,10 +65,11 @@ XiHan.Framework.Primitives.LifecycleState.Stopped = 7 -> XiHan.Framework.Primiti
 XiHan.Framework.Primitives.LifecycleStateExtensions
 XiHan.Framework.Primitives.Manifests.Binding
 XiHan.Framework.Primitives.Manifests.Binding.<Clone>$() -> XiHan.Framework.Primitives.Manifests.Binding!
-XiHan.Framework.Primitives.Manifests.Binding.Binding(string! name, string! type, bool required = true) -> void
+XiHan.Framework.Primitives.Manifests.Binding.Binding(string! name, string! type) -> void
 XiHan.Framework.Primitives.Manifests.Binding.Equals(XiHan.Framework.Primitives.Manifests.Binding? other) -> bool
 XiHan.Framework.Primitives.Manifests.Binding.Name.get -> string!
 XiHan.Framework.Primitives.Manifests.Binding.Required.get -> bool
+XiHan.Framework.Primitives.Manifests.Binding.Required.init -> void
 XiHan.Framework.Primitives.Manifests.Binding.Type.get -> string!
 XiHan.Framework.Primitives.Manifests.CapabilityDeclaration
 XiHan.Framework.Primitives.Manifests.CapabilityDeclaration.<Clone>$() -> XiHan.Framework.Primitives.Manifests.CapabilityDeclaration!
@@ -79,17 +80,19 @@ XiHan.Framework.Primitives.Manifests.CapabilityDeclaration.Version.get -> int
 XiHan.Framework.Primitives.Manifests.CapabilityId
 XiHan.Framework.Primitives.Manifests.CapabilityRequirement
 XiHan.Framework.Primitives.Manifests.CapabilityRequirement.<Clone>$() -> XiHan.Framework.Primitives.Manifests.CapabilityRequirement!
-XiHan.Framework.Primitives.Manifests.CapabilityRequirement.CapabilityRequirement(string! id, int version, bool optional = false) -> void
+XiHan.Framework.Primitives.Manifests.CapabilityRequirement.CapabilityRequirement(string! id, int version) -> void
 XiHan.Framework.Primitives.Manifests.CapabilityRequirement.Equals(XiHan.Framework.Primitives.Manifests.CapabilityRequirement? other) -> bool
 XiHan.Framework.Primitives.Manifests.CapabilityRequirement.Id.get -> string!
 XiHan.Framework.Primitives.Manifests.CapabilityRequirement.IsSatisfiedBy(XiHan.Framework.Primitives.Manifests.CapabilityDeclaration! declaration) -> bool
 XiHan.Framework.Primitives.Manifests.CapabilityRequirement.Optional.get -> bool
+XiHan.Framework.Primitives.Manifests.CapabilityRequirement.Optional.init -> void
 XiHan.Framework.Primitives.Manifests.CapabilityRequirement.Version.get -> int
 XiHan.Framework.Primitives.Manifests.ConfigContribution
 XiHan.Framework.Primitives.Manifests.ConfigContribution.<Clone>$() -> XiHan.Framework.Primitives.Manifests.ConfigContribution!
-XiHan.Framework.Primitives.Manifests.ConfigContribution.ConfigContribution(string! section, string? schema = null) -> void
+XiHan.Framework.Primitives.Manifests.ConfigContribution.ConfigContribution(string! section) -> void
 XiHan.Framework.Primitives.Manifests.ConfigContribution.Equals(XiHan.Framework.Primitives.Manifests.ConfigContribution? other) -> bool
 XiHan.Framework.Primitives.Manifests.ConfigContribution.Schema.get -> string?
+XiHan.Framework.Primitives.Manifests.ConfigContribution.Schema.init -> void
 XiHan.Framework.Primitives.Manifests.ConfigContribution.Section.get -> string!
 XiHan.Framework.Primitives.Manifests.Contributions
 XiHan.Framework.Primitives.Manifests.Contributions.<Clone>$() -> XiHan.Framework.Primitives.Manifests.Contributions!
@@ -154,13 +157,13 @@ XiHan.Framework.Primitives.Manifests.ManifestRole.Provider = 0 -> XiHan.Framewor
 XiHan.Framework.Primitives.Manifests.PipelineContribution
 XiHan.Framework.Primitives.Manifests.PipelineContribution.<Clone>$() -> XiHan.Framework.Primitives.Manifests.PipelineContribution!
 XiHan.Framework.Primitives.Manifests.PipelineContribution.After.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Primitives.Manifests.PipelineContribution.After.init -> void
 XiHan.Framework.Primitives.Manifests.PipelineContribution.Before.get -> System.Collections.Generic.IReadOnlyList<string!>!
-XiHan.Framework.Primitives.Manifests.PipelineContribution.Deconstruct(out string! Middleware, out XiHan.Framework.Primitives.PipelineStage Stage, out System.Collections.Generic.IReadOnlyList<string!>? Before, out System.Collections.Generic.IReadOnlyList<string!>? After) -> void
+XiHan.Framework.Primitives.Manifests.PipelineContribution.Before.init -> void
 XiHan.Framework.Primitives.Manifests.PipelineContribution.Equals(XiHan.Framework.Primitives.Manifests.PipelineContribution? other) -> bool
 XiHan.Framework.Primitives.Manifests.PipelineContribution.Middleware.get -> string!
-XiHan.Framework.Primitives.Manifests.PipelineContribution.PipelineContribution(string! Middleware, XiHan.Framework.Primitives.PipelineStage Stage, System.Collections.Generic.IReadOnlyList<string!>? Before = null, System.Collections.Generic.IReadOnlyList<string!>? After = null) -> void
+XiHan.Framework.Primitives.Manifests.PipelineContribution.PipelineContribution(string! middleware, XiHan.Framework.Primitives.PipelineStage stage) -> void
 XiHan.Framework.Primitives.Manifests.PipelineContribution.Stage.get -> XiHan.Framework.Primitives.PipelineStage
-XiHan.Framework.Primitives.Manifests.PipelineContribution.Stage.init -> void
 XiHan.Framework.Primitives.Manifests.PluginIsolation
 XiHan.Framework.Primitives.Manifests.PluginIsolation.InProcess = 0 -> XiHan.Framework.Primitives.Manifests.PluginIsolation
 XiHan.Framework.Primitives.Manifests.PluginIsolation.OutOfProcess = 2 -> XiHan.Framework.Primitives.Manifests.PluginIsolation
@@ -294,7 +297,7 @@ static XiHan.Framework.Primitives.Error.Denied(string! code, string! messageKey,
 static XiHan.Framework.Primitives.Error.Literal(string! code, string! text, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null, XiHan.Framework.Primitives.Error? inner = null) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Primitives.Error.NotFound(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Primitives.Error.Unavailable(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
-static XiHan.Framework.Primitives.Error.Unexpected(string! code, string! messageKey, XiHan.Framework.Primitives.Error? inner = null, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
+static XiHan.Framework.Primitives.Error.Unexpected(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null, XiHan.Framework.Primitives.Error? inner = null) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Primitives.Error.Validation(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details = null) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Primitives.Error.operator !=(XiHan.Framework.Primitives.Error? left, XiHan.Framework.Primitives.Error? right) -> bool
 static XiHan.Framework.Primitives.Error.operator ==(XiHan.Framework.Primitives.Error? left, XiHan.Framework.Primitives.Error? right) -> bool
@@ -311,14 +314,14 @@ static XiHan.Framework.Primitives.LifecycleStateExtensions.IsTerminal(this XiHan
 static XiHan.Framework.Primitives.Manifests.Binding.operator !=(XiHan.Framework.Primitives.Manifests.Binding? left, XiHan.Framework.Primitives.Manifests.Binding? right) -> bool
 static XiHan.Framework.Primitives.Manifests.Binding.operator ==(XiHan.Framework.Primitives.Manifests.Binding? left, XiHan.Framework.Primitives.Manifests.Binding? right) -> bool
 static XiHan.Framework.Primitives.Manifests.CapabilityDeclaration.Parse(string! text) -> XiHan.Framework.Primitives.Manifests.CapabilityDeclaration!
-static XiHan.Framework.Primitives.Manifests.CapabilityDeclaration.TryParse(string? text, out XiHan.Framework.Primitives.Manifests.CapabilityDeclaration! declaration) -> bool
+static XiHan.Framework.Primitives.Manifests.CapabilityDeclaration.TryParse(string? text, out XiHan.Framework.Primitives.Manifests.CapabilityDeclaration? declaration) -> bool
 static XiHan.Framework.Primitives.Manifests.CapabilityDeclaration.operator !=(XiHan.Framework.Primitives.Manifests.CapabilityDeclaration? left, XiHan.Framework.Primitives.Manifests.CapabilityDeclaration? right) -> bool
 static XiHan.Framework.Primitives.Manifests.CapabilityDeclaration.operator ==(XiHan.Framework.Primitives.Manifests.CapabilityDeclaration? left, XiHan.Framework.Primitives.Manifests.CapabilityDeclaration? right) -> bool
 static XiHan.Framework.Primitives.Manifests.CapabilityId.DomainOf(string! id) -> string!
 static XiHan.Framework.Primitives.Manifests.CapabilityId.IsValid(string? id) -> bool
 static XiHan.Framework.Primitives.Manifests.CapabilityId.Validate(string! id, string? paramName = null) -> string!
 static XiHan.Framework.Primitives.Manifests.CapabilityRequirement.Parse(string! text) -> XiHan.Framework.Primitives.Manifests.CapabilityRequirement!
-static XiHan.Framework.Primitives.Manifests.CapabilityRequirement.TryParse(string? text, out XiHan.Framework.Primitives.Manifests.CapabilityRequirement! requirement) -> bool
+static XiHan.Framework.Primitives.Manifests.CapabilityRequirement.TryParse(string? text, out XiHan.Framework.Primitives.Manifests.CapabilityRequirement? requirement) -> bool
 static XiHan.Framework.Primitives.Manifests.CapabilityRequirement.operator !=(XiHan.Framework.Primitives.Manifests.CapabilityRequirement? left, XiHan.Framework.Primitives.Manifests.CapabilityRequirement? right) -> bool
 static XiHan.Framework.Primitives.Manifests.CapabilityRequirement.operator ==(XiHan.Framework.Primitives.Manifests.CapabilityRequirement? left, XiHan.Framework.Primitives.Manifests.CapabilityRequirement? right) -> bool
 static XiHan.Framework.Primitives.Manifests.ConfigContribution.operator !=(XiHan.Framework.Primitives.Manifests.ConfigContribution? left, XiHan.Framework.Primitives.Manifests.ConfigContribution? right) -> bool

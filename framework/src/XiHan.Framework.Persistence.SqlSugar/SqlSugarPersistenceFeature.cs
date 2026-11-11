@@ -136,9 +136,9 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         Requires =
         [
             new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
-            new CapabilityRequirement(MultiTenancyCapabilities.Sharding, MultiTenancyCapabilities.Version, optional: true),
+            new CapabilityRequirement(MultiTenancyCapabilities.Sharding, MultiTenancyCapabilities.Version) { Optional = true },
         ],
-        Bindings = [new Binding(ConnectionBinding, ConnectionBindingType, required: false)],
+        Bindings = [new Binding(ConnectionBinding, ConnectionBindingType) { Required = false }],
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution(typeof(UnitOfWorkMiddleware).FullName!, PipelineStage.Transaction)],

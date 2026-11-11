@@ -135,17 +135,13 @@ public static class ManifestReader
                     _ => throw new ArgumentException($"The value '{document.Isolation}' of field 'isolation' is not valid."),
                 },
                 Provides = (document.Provides ?? []).Select(static p => new CapabilityDeclaration(p.Id ?? throw Missing("provides.id"), ParseInt(p.Version ?? throw Missing("provides.version"), "provides.version"))).ToList(),
-                Requires = (document.Requires ?? []).Select(static r => new CapabilityRequirement(r.Id ?? throw Missing("requires.id"), ParseVersion(r.Version ?? throw Missing("requires.version")), r.Optional ?? false)).ToList(),
-                Bindings = (document.Bindings ?? []).Select(static b => new Binding(b.Name ?? throw Missing("bindings.name"), b.Type ?? throw Missing("bindings.type"), b.Required ?? true)).ToList(),
+                Requires = (document.Requires ?? []).Select(static r => new CapabilityRequirement(r.Id ?? throw Missing("requires.id"), ParseVersion(r.Version ?? throw Missing("requires.version"))) { Optional = r.Optional ?? false }).ToList(),
+                Bindings = (document.Bindings ?? []).Select(static b => new Binding(b.Name ?? throw Missing("bindings.name"), b.Type ?? throw Missing("bindings.type")) { Required = b.Required ?? true }).ToList(),
                 Contributes = document.Contributes is null ? Contributions.Empty : new Contributions
                 {
-                    Pipeline = (document.Contributes.Pipeline ?? []).Select(static p => new PipelineContribution(
-                        p.Middleware ?? throw Missing("contributes.pipeline.middleware"),
-                        PipelineStageExtensions.TryParse(p.Stage, out var stage) ? stage : throw new FrameworkException(KernelErrors.UnknownStage, $"Unknown pipeline stage '{p.Stage}'."),
-                        p.Before,
-                        p.After)).ToList(),
+                    Pipeline = (document.Contributes.Pipeline ?? []).Select(static p => new PipelineContribution(p.Middleware ?? throw Missing("contributes.pipeline.middleware"), PipelineStageExtensions.TryParse(p.Stage, out var stage) ? stage : throw new FrameworkException(KernelErrors.UnknownStage, $"Unknown pipeline stage '{p.Stage}'.")) { Before = p.Before, After = p.After }).ToList(),
                     Operations = document.Contributes.Operations ?? [],
-                    Config = document.Contributes.Config is null ? null : new ConfigContribution(document.Contributes.Config.Section ?? throw Missing("contributes.config.section"), document.Contributes.Config.Schema),
+                    Config = document.Contributes.Config is null ? null : new ConfigContribution(document.Contributes.Config.Section ?? throw Missing("contributes.config.section")) { Schema = document.Contributes.Config.Schema },
                     Permissions = PermissionCodes(document.Contributes.Permissions ?? []),
                     Health = document.Contributes.Health ?? [],
                 },

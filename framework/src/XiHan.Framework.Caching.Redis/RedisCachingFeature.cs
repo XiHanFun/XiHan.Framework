@@ -64,7 +64,7 @@ public sealed class RedisCachingFeature : IHostedFeature
         Role = ManifestRole.Provider,
         Provides = [new CapabilityDeclaration(CachingCapabilities.Distributed, CachingCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "cache:distributed", required: false)],
+        Bindings = [new Binding(ConnectionBinding, "cache:distributed") { Required = false }],
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution(typeof(IdempotencyMiddleware).FullName!, PipelineStage.Idempotency)],

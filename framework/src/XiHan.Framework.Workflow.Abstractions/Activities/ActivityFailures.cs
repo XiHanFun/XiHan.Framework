@@ -40,17 +40,17 @@ internal static class ActivityFailures
         // 引擎回调给的是终态的枚举名；手工恢复书签给的别的值没有对应的说法，报通用的键、状态原样
         if (string.Equals(status, nameof(WorkflowInstanceStatus.Faulted), StringComparison.OrdinalIgnoreCase))
         {
-            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFaulted, inner, details);
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFaulted, details, inner);
         }
 
         if (string.Equals(status, nameof(WorkflowInstanceStatus.Canceled), StringComparison.OrdinalIgnoreCase))
         {
-            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildCanceled, inner, details);
+            return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildCanceled, details, inner);
         }
 
         return string.Equals(status, nameof(WorkflowInstanceStatus.Terminated), StringComparison.OrdinalIgnoreCase)
-            ? Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildTerminated, inner, details)
-            : Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, inner, details);
+            ? Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildTerminated, details, inner)
+            : Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, details, inner);
     }
 
     /// <summary>

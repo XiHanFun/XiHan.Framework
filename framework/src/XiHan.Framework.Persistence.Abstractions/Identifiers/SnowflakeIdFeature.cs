@@ -49,7 +49,7 @@ public sealed class SnowflakeIdFeature : IHostedFeature
         [
             new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
             // 只为启停顺序：租约要在锁存储启动之后取得、停止之前释放；固定机器位时用不到锁，所以是可选依赖
-            new CapabilityRequirement(CachingCapabilities.Distributed, CachingCapabilities.Version, optional: true),
+            new CapabilityRequirement(CachingCapabilities.Distributed, CachingCapabilities.Version) { Optional = true },
         ],
         Contributes = new Contributions
         {

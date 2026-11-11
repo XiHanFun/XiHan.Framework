@@ -19,8 +19,7 @@ public sealed partial record Binding
     /// </summary>
     /// <param name="name">绑定名，小写字母、数字、连字符</param>
     /// <param name="type">资源类型，例如 <c>connection:relational</c>、<c>cache:distributed</c>、<c>queue</c>、<c>blob</c></param>
-    /// <param name="required">是否必需</param>
-    public Binding(string name, string type, bool required = true)
+    public Binding(string name, string type)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(type);
@@ -36,7 +35,6 @@ public sealed partial record Binding
 
         Name = name;
         Type = type;
-        Required = required;
     }
 
     /// <summary>
@@ -52,7 +50,10 @@ public sealed partial record Binding
     /// <summary>
     /// 是否必需
     /// </summary>
-    public bool Required { get; }
+    /// <remarks>
+    /// 缺省必需；可选绑定经初始化器声明，以后加字段只加属性、不改构造签名（ADR-0137）
+    /// </remarks>
+    public bool Required { get; init; } = true;
 
     /// <summary>
     /// 绑定名格式的正则：小写字母开头的小写字母、数字、连字符

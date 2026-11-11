@@ -141,7 +141,7 @@ public sealed partial class App : IDisposable
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
                     // 健康采集不能因为某个贡献者出错而失败：把异常本身记成一条 Failed 条目
-                    contributions.Add(new ContributorStatus(contributor.GetType().FullName ?? contributor.GetType().Name, LifecycleState.Failed, Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, exception is FrameworkException framework ? framework.ToError() : null)));
+                    contributions.Add(new ContributorStatus(contributor.GetType().FullName ?? contributor.GetType().Name, LifecycleState.Failed, Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, inner: exception is FrameworkException framework ? framework.ToError() : null)));
                 }
             }
 

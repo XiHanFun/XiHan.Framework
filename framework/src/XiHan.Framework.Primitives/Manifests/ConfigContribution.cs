@@ -18,8 +18,7 @@ public sealed partial record ConfigContribution
     /// 创建配置贡献
     /// </summary>
     /// <param name="section">配置节，格式 <c>XiHan:&lt;领域&gt;</c> 或 <c>XiHan:&lt;领域&gt;:&lt;子节&gt;…</c></param>
-    /// <param name="schema">JSON Schema 的相对路径</param>
-    public ConfigContribution(string section, string? schema = null)
+    public ConfigContribution(string section)
     {
         ArgumentNullException.ThrowIfNull(section);
         if (!SectionPattern().IsMatch(section))
@@ -28,7 +27,6 @@ public sealed partial record ConfigContribution
         }
 
         Section = section;
-        Schema = schema;
     }
 
     /// <summary>
@@ -39,7 +37,10 @@ public sealed partial record ConfigContribution
     /// <summary>
     /// JSON Schema 的相对路径
     /// </summary>
-    public string? Schema { get; }
+    /// <remarks>
+    /// 经初始化器设置（ADR-0137）
+    /// </remarks>
+    public string? Schema { get; init; }
 
     /// <summary>
     /// 配置节格式的正则

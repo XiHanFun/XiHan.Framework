@@ -22,7 +22,7 @@ public sealed class WorkflowFaultTests
     public void From_KeepsKeyArgumentsAndInner_AndLocalizesInTheCurrentScope()
     {
         var inner = Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFaultRaised, details: MessageArguments.Of(("message", "Budget exceeded")));
-        var fault = WorkflowFault.From(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, inner, MessageArguments.Of(("id", "c1"), ("status", "Faulted"))));
+        var fault = WorkflowFault.From(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, MessageArguments.Of(("id", "c1"), ("status", "Faulted")), inner));
 
         Assert.Equal((WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, "c1", "Faulted"), (fault.Code, fault.MessageKey, fault.Arguments!["id"], fault.Arguments["status"]));
         Assert.Equal((WorkflowMessages.ActivityFaultRaised, "Budget exceeded"), (fault.Inner?.MessageKey, fault.Inner?.Arguments?["message"]));
@@ -70,7 +70,7 @@ public sealed class WorkflowFaultTests
             DefinitionId = "d1",
             DefinitionName = new WorkflowName("rt"),
             Status = WorkflowInstanceStatus.Faulted,
-            Fault = WorkflowFault.From(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, inner, MessageArguments.Of(("id", "c1"), ("status", "Faulted")))),
+            Fault = WorkflowFault.From(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ChildFailed, MessageArguments.Of(("id", "c1"), ("status", "Faulted")), inner)),
         };
 
         var json = JsonNode.Parse(WorkflowJson.Serialize(instance))!;

@@ -250,7 +250,7 @@ public sealed partial class InProcessPluginHost : IPluginHost, IAsyncDisposable
             }
 
             context.Unload();
-            return Error.Unexpected(PluginErrors.LoadFailed, PluginMessages.LoadFailed, exception is FrameworkException framework ? framework.ToError() : null, MessageArguments.Of(("id", manifest.Id), ("reason", exception.Message)));
+            return Error.Unexpected(PluginErrors.LoadFailed, PluginMessages.LoadFailed, MessageArguments.Of(("id", manifest.Id), ("reason", exception.Message)), exception is FrameworkException framework ? framework.ToError() : null);
         }
     }
 

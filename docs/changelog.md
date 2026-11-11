@@ -13,6 +13,9 @@
 - **移除** `CapabilityAttribute`：没有使用者，运行期也不读，随清单生成器一起提供；`CapabilityResolver` 与 `NullAuditSink` 不再公开，能力求解经 `AddXiHan` 装配，结果从 `ResolvedGraph` 读取
 - **调整** `OperationContract` 构造只收 ID，其余字段改为初始化器：手写的 `new OperationContract(id, stability, expose, policy, permission, readOnly)` 改成 `new OperationContract(id) { Stability = …, Expose = …, Policy = …, Permission = …, IsReadOnly = … }`；用生成器的项目重新编译即可，生成的 `GeneratedOperations` 变为 internal
 - **调整** `Expose.All` 冻结为 5.0 的五个协议：以后新增的协议不并入 `All`，要在新协议上发布须显式开启；现有行为不变
+- **调整** 清单记录的可选字段改为初始化器：`new Binding(name, type) { Required = false }`、`new CapabilityRequirement(id, version) { Optional = true }`、`new ConfigContribution(section) { Schema = … }`、`new PipelineContribution(middleware, stage) { Before = …, After = … }`（`PipelineContribution` 不再是位置记录）
+- **调整** `Error.Unexpected` 的参数顺序改为 `(code, messageKey, details, inner)`，与构造函数一致；按位置传 `inner` 的写成 `inner: …`
+- **修复** `CapabilityDeclaration.TryParse` 与 `CapabilityRequirement.TryParse` 的输出标注为可空（`[NotNullWhen(true)]`），失败时为 `null`
 
 ### 子系统
 

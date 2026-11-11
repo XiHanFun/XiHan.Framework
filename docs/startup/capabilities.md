@@ -68,7 +68,7 @@ public sealed class NotificationsFeature : IFeature
         Requires =
         [
             new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
-            new CapabilityRequirement(MessagingCapabilities.Queue, MessagingCapabilities.Version, optional: true),
+            new CapabilityRequirement(MessagingCapabilities.Queue, MessagingCapabilities.Version) { Optional = true },
         ],
         Entry = typeof(NotificationsFeature).FullName,
     };

@@ -76,7 +76,7 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
         }
         catch (Exception exception)
         {
-            thrown = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, exception is FrameworkException framework ? framework.ToError() : null);
+            thrown = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, inner: exception is FrameworkException framework ? framework.ToError() : null);
             throw;
         }
         finally

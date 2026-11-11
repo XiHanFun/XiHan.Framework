@@ -44,7 +44,7 @@ public sealed class ErrorMessageKeyTests
     public void WithCode_AndWithText_CopyEverythingElse()
     {
         var inner = Error.Literal("PERSISTENCE_UNAVAILABLE_001", "Database unavailable.");
-        var error = Error.Unexpected("ORDERS_UNEXPECTED_001", "orders.order.failed", inner, MessageArguments.Of(("id", 1)));
+        var error = Error.Unexpected("ORDERS_UNEXPECTED_001", "orders.order.failed", MessageArguments.Of(("id", 1)), inner);
 
         var recoded = error.WithCode("KERNEL_UNEXPECTED_001");
         Assert.Equal("KERNEL_UNEXPECTED_001", recoded.Code);

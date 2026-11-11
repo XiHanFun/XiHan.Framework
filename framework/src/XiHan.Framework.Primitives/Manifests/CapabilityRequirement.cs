@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace XiHan.Framework.Primitives.Manifests;
@@ -19,13 +20,14 @@ public sealed record CapabilityRequirement
     /// </summary>
     /// <param name="id">能力 ID</param>
     /// <param name="version">接口版本，正整数</param>
-    /// <param name="optional">是否可选；可选依赖缺失不阻止启动，特性进入 Degraded</param>
-    public CapabilityRequirement(string id, int version, bool optional = false)
+    /// <remarks>
+    /// 可选依赖经初始化器 <see cref="Optional"/> 声明：以后加字段只加属性，不改构造签名（ADR-0137）
+    /// </remarks>
+    public CapabilityRequirement(string id, int version)
     {
         Id = CapabilityId.Validate(id);
         ArgumentOutOfRangeException.ThrowIfLessThan(version, 1);
         Version = version;
-        Optional = optional;
     }
 
     /// <summary>
@@ -41,7 +43,10 @@ public sealed record CapabilityRequirement
     /// <summary>
     /// 是否可选
     /// </summary>
-    public bool Optional { get; }
+    /// <remarks>
+    /// 可选依赖缺失不阻止启动，特性进入 Degraded
+    /// </remarks>
+    public bool Optional { get; init; }
 
     /// <summary>
     /// 声明是否满足本依赖：能力 ID 相同且接口版本相同
@@ -66,10 +71,9 @@ public sealed record CapabilityRequirement
     /// <summary>
     /// 尝试解析 <c>id@version[?]</c> 形式
     /// </summary>
-    public static bool TryParse(string? text, out CapabilityRequirement requirement)
+    public static bool TryParse(string? text, [NotNullWhen(true)] out CapabilityRequirement? requirement)
     {
-        // 失败时 out 参数不应被读取；null! 只是为了满足定赋值要求
-        requirement = null!;
+        requirement = null;
         if (text is null)
         {
             return false;
@@ -96,7 +100,7 @@ public sealed record CapabilityRequirement
             return false;
         }
 
-        requirement = new CapabilityRequirement(body[..at], version, optional);
+        requirement = new CapabilityRequirement(body[..at], version) { Optional = optional };
         return true;
     }
 

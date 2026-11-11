@@ -768,7 +768,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 return result;
             }
 
-            error = Error.Unexpected(PluginErrors.Unexpected, PluginMessages.ProcessFailed, result.Error, MessageArguments.Of(("id", Manifest.Id), ("phase", phase), ("reason", result.Error!.Code)));
+            error = Error.Unexpected(PluginErrors.Unexpected, PluginMessages.ProcessFailed, MessageArguments.Of(("id", Manifest.Id), ("phase", phase), ("reason", result.Error!.Code)), result.Error);
         }
         else
         {

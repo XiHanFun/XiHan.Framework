@@ -61,7 +61,7 @@ public sealed class DatabaseWorkflowFeature : IHostedFeature
             new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
             new CapabilityRequirement(PersistenceCapabilities.Relational, PersistenceCapabilities.Version),
             // 轮询器要从租户目录取租户：装配了多租户时排在它之后启动；没有装配时只轮询平台
-            new CapabilityRequirement(MultiTenancyCapabilities.Context, MultiTenancyCapabilities.Version, optional: true),
+            new CapabilityRequirement(MultiTenancyCapabilities.Context, MultiTenancyCapabilities.Version) { Optional = true },
         ],
         Contributes = new Contributions
         {

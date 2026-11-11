@@ -82,7 +82,7 @@ HTTP 的映射在 `Hosting.AspNetCore` 的 `ProblemResponse.StatusCodeFor`，命
 | `Error.Conflict(code, messageKey, details)` | `CONFLICT` |
 | `Error.Denied(code, messageKey, details)` | `DENIED` |
 | `Error.Unavailable(code, messageKey, details)` | `UNAVAILABLE` |
-| `Error.Unexpected(code, messageKey, inner, details)` | `UNEXPECTED` |
+| `Error.Unexpected(code, messageKey, details, inner)` | `UNEXPECTED` |
 | `new Error(code, messageKey, details, inner)` | 其他种类（`TIMEOUT`、`CANCELLED` 与领域自定义） |
 
 | 成员 | 说明 |
@@ -299,7 +299,7 @@ app.Run();
 
 ### 需要带上内部原因怎么办
 
-用 `Inner`：`Error.Unexpected(code, messageKey, inner)` 或 `new Error(code, messageKey, details, inner)`。`Inner` 进日志，不进 Problem Details。
+用 `Inner`：`Error.Unexpected(code, messageKey, inner: inner)` 或 `new Error(code, messageKey, details, inner)`。`Inner` 进日志，不进 Problem Details。
 
 ## 相关包与下一步
 

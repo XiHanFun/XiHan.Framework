@@ -69,7 +69,7 @@ public sealed class RedisMessagingFeature : IHostedFeature
         Role = ManifestRole.Provider,
         Provides = [new CapabilityDeclaration(MessagingCapabilities.Queue, MessagingCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "cache:distributed", required: false)],
+        Bindings = [new Binding(ConnectionBinding, "cache:distributed") { Required = false }],
         Contributes = new Contributions
         {
             Config = new ConfigContribution("XiHan:Messaging"),

@@ -23,6 +23,6 @@ public sealed class FaultActivity : IActivity
         // 作者写的消息原样作参数，外层的键照常本地化；模板渲染失败时用模板原文，渲染错误作内层原因
         var rendered = context.RenderProperty(MessageProperty);
         var message = rendered.TryGetValue(out var text) ? text : context.Property<string>(MessageProperty) ?? string.Empty;
-        return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFaultRaised, rendered.IsFailure ? rendered.Error : null, MessageArguments.Of(("message", message)))));
+        return ValueTask.FromResult(Result.Failure<ActivityOutcome>(Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.ActivityFaultRaised, MessageArguments.Of(("message", message)), rendered.IsFailure ? rendered.Error : null)));
     }
 }

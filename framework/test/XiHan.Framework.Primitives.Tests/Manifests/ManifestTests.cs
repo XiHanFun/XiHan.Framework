@@ -37,7 +37,7 @@ public sealed class ManifestTests
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution("XiHan.Framework.Caching.IdempotencyMiddleware", PipelineStage.Idempotency)],
-            Config = new ConfigContribution("XiHan:Caching", "schemas/caching.schema.json"),
+            Config = new ConfigContribution("XiHan:Caching") { Schema = "schemas/caching.schema.json" },
             Health = ["caching.local.capacity"],
         },
         Entry = "XiHan.Framework.Caching.InMemory.InMemoryCachingFeature",

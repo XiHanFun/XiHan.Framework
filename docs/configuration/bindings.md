@@ -122,7 +122,7 @@ app.Run();
 | 必需绑定缺失 | 抛出 `KERNEL_HOSTING_001`，应用不启动 |
 | 来源声明了类型且与清单不一致 | 同上 |
 | 来源没有声明类型（空字符串） | 不比对类型，按名字匹配 |
-| 可选绑定（`required: false`）缺失 | 不报错，特性用 `TryGetBinding` 自行处理 |
+| 可选绑定（`{ Required = false }`）缺失 | 不报错，特性用 `TryGetBinding` 自行处理 |
 | `GetBinding` 取一个不存在的绑定 | 抛出 `KERNEL_HOSTING_001` |
 
 这正是「配置与编程错误抛异常、可恢复失败返回 `Result`」的分界：缺绑定是部署错误，不应该带着它运行，见[结果与错误处理](/web/errors)。

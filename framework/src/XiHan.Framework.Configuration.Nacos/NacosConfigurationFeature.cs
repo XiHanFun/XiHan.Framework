@@ -42,7 +42,7 @@ public sealed class NacosConfigurationFeature : IFeature
         Role = ManifestRole.Provider,
         Provides = [new CapabilityDeclaration(ConfigurationCapabilities.Remote, ConfigurationCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "configuration:remote", required: false)],
+        Bindings = [new Binding(ConnectionBinding, "configuration:remote") { Required = false }],
         Contributes = new Contributions
         {
             Config = new ConfigContribution(NacosOptions.ConfigurationSection),

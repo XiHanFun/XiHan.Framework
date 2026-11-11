@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace XiHan.Framework.Primitives.Manifests;
@@ -47,10 +48,9 @@ public sealed record CapabilityDeclaration
     /// <summary>
     /// 尝试解析 <c>id@version</c> 形式
     /// </summary>
-    public static bool TryParse(string? text, out CapabilityDeclaration declaration)
+    public static bool TryParse(string? text, [NotNullWhen(true)] out CapabilityDeclaration? declaration)
     {
-        // 失败时 out 参数不应被读取；null! 只是为了满足定赋值要求
-        declaration = null!;
+        declaration = null;
         if (text is null)
         {
             return false;

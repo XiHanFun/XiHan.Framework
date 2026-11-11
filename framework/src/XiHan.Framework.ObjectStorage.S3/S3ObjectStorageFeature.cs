@@ -86,7 +86,7 @@ public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
             new CapabilityDeclaration(ObjectStorageCapabilities.Presign, ObjectStorageCapabilities.Version),
         ],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "blob", required: false)],
+        Bindings = [new Binding(ConnectionBinding, "blob") { Required = false }],
         Contributes = new Contributions
         {
             Config = new ConfigContribution("XiHan:ObjectStorage"),

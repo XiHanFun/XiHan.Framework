@@ -157,9 +157,9 @@ public sealed record Error
     /// 创建未预期错误
     /// </summary>
     /// <remarks>
-    /// 错误码的 KIND 段必须是 <c>UNEXPECTED</c>
+    /// 错误码的 KIND 段必须是 <c>UNEXPECTED</c>；参数顺序与构造函数、<see cref="Literal"/> 一致：先细节、后内部错误（ADR-0137）
     /// </remarks>
-    public static Error Unexpected(string code, string messageKey, Error? inner = null, IReadOnlyDictionary<string, object?>? details = null)
+    public static Error Unexpected(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null, Error? inner = null)
         => new(RequireKind(code, "UNEXPECTED"), messageKey, details, inner);
 
     /// <summary>

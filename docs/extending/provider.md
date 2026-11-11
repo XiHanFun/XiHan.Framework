@@ -175,7 +175,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 | --- | --- | --- |
 | `Kind` / `Role` | `Provider` / `Provider` | 让内核在能力求解时把它排在默认实现之前 |
 | `Provides` | 能力 ID 加接口版本 | 依赖按能力 ID 声明，不按包名；只提供真正实现了的能力，`Security.Database` 就只提供授权、不提供认证 |
-| `Requires` | 用到的能力 | 缺失报 `KERNEL_CAPABILITY_001`，循环报 `KERNEL_CAPABILITY_002`；可选依赖写 `optional: true` |
+| `Requires` | 用到的能力 | 缺失报 `KERNEL_CAPABILITY_001`，循环报 `KERNEL_CAPABILITY_002`；可选依赖写 `new CapabilityRequirement(id, version) { Optional = true }` |
 | `Contributes.Pipeline` | 中间件类型全名与阶段 | 与 `AddMiddleware` 的阶段一致，`xihan graph` / `pipeline` 据此展示 |
 | `Contributes.Config` | `XiHan:<领域>` 或其子节 | 写特性在本领域里读取的配置的最近公共节：只读自己子节写子节（如 `XiHan:Caching:Hybrid`），同时读领域公共选项写领域节（本例还读 `SecurityOptions`，所以写 `XiHan:Security`） |
 | `Contributes.Health` | 条目名 `<领域>.<机制>.<对象>` | 声明的条目必须由同一个包以 `IHealthContributor` 实现，反之亦然 |

@@ -73,7 +73,7 @@ public sealed class KafkaMessagingFeature : IHostedFeature
             new CapabilityDeclaration(MessagingCapabilities.Stream, MessagingCapabilities.Version),
         ],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "stream", required: false)],
+        Bindings = [new Binding(ConnectionBinding, "stream") { Required = false }],
         Contributes = new Contributions
         {
             Config = new ConfigContribution("XiHan:Messaging"),

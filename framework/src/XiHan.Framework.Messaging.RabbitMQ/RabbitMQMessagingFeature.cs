@@ -66,7 +66,7 @@ public sealed class RabbitMQMessagingFeature : IHostedFeature
         Role = ManifestRole.Provider,
         Provides = [new CapabilityDeclaration(MessagingCapabilities.Queue, MessagingCapabilities.Version)],
         Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Bindings = [new Binding(ConnectionBinding, "queue", required: false)],
+        Bindings = [new Binding(ConnectionBinding, "queue") { Required = false }],
         Contributes = new Contributions
         {
             Config = new ConfigContribution("XiHan:Messaging"),
