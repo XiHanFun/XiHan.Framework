@@ -11,7 +11,6 @@ XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature
 XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.NacosConfigurationFeature() -> void
-XiHan.Framework.Configuration.Nacos.NacosDocumentParser
 XiHan.Framework.Configuration.Nacos.NacosOptions
 XiHan.Framework.Configuration.Nacos.NacosOptions.<Clone>$() -> XiHan.Framework.Configuration.Nacos.NacosOptions!
 XiHan.Framework.Configuration.Nacos.NacosOptions.Equals(XiHan.Framework.Configuration.Nacos.NacosOptions? other) -> bool
@@ -40,7 +39,6 @@ override XiHan.Framework.Configuration.Nacos.NacosOptions.GetHashCode() -> int
 override XiHan.Framework.Configuration.Nacos.NacosOptions.ToString() -> string!
 static XiHan.Framework.Configuration.Nacos.NacosConfigurationBuilderExtensions.AddXiHanNacos(this Microsoft.Extensions.Configuration.IConfigurationBuilder! builder, XiHan.Framework.Configuration.Nacos.NacosOptions! options, XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions! remote) -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
 static XiHan.Framework.Configuration.Nacos.NacosConfigurationClient.Create(XiHan.Framework.Configuration.Nacos.NacosOptions! options, System.TimeProvider? clock = null) -> XiHan.Framework.Configuration.Nacos.NacosConfigurationClient!
-static XiHan.Framework.Configuration.Nacos.NacosDocumentParser.Parse(string! content, XiHan.Framework.Configuration.Nacos.NacosConfigFormat format) -> System.Collections.Generic.IReadOnlyDictionary<string!, string?>!
 static XiHan.Framework.Configuration.Nacos.NacosOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!> binding = default(XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!>)) -> XiHan.Framework.Configuration.Nacos.NacosOptions!
 static XiHan.Framework.Configuration.Nacos.NacosOptions.operator !=(XiHan.Framework.Configuration.Nacos.NacosOptions? left, XiHan.Framework.Configuration.Nacos.NacosOptions? right) -> bool
 static XiHan.Framework.Configuration.Nacos.NacosOptions.operator ==(XiHan.Framework.Configuration.Nacos.NacosOptions? left, XiHan.Framework.Configuration.Nacos.NacosOptions? right) -> bool

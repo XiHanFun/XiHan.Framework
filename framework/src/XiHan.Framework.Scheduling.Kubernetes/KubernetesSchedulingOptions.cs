@@ -139,7 +139,7 @@ public sealed partial record KubernetesSchedulingOptions
     /// <summary>
     /// 解析命名空间
     /// </summary>
-    public string ResolveNamespace()
+    internal string ResolveNamespace()
     {
         if (!string.IsNullOrWhiteSpace(Namespace))
         {
@@ -158,7 +158,7 @@ public sealed partial record KubernetesSchedulingOptions
     /// <summary>
     /// 解析持有者标识
     /// </summary>
-    public string ResolveHolder()
+    internal string ResolveHolder()
         => !string.IsNullOrWhiteSpace(Holder) ? Holder
             : Environment.GetEnvironmentVariable("XIHAN_POD_NAME") is { Length: > 0 } pod ? pod
             : Environment.GetEnvironmentVariable("HOSTNAME") is { Length: > 0 } host ? host
@@ -167,7 +167,7 @@ public sealed partial record KubernetesSchedulingOptions
     /// <summary>
     /// 解析 API Server 地址
     /// </summary>
-    public Uri ResolveApiServer()
+    internal Uri ResolveApiServer()
     {
         if (ApiServer is not null)
         {
@@ -192,7 +192,7 @@ public sealed partial record KubernetesSchedulingOptions
     /// <remarks>
     /// 默认资源用 <see cref="Lease"/>，其他资源追加成 <c>&lt;Lease&gt;-&lt;资源&gt;</c>（点与下划线换成连字符，截到 63 字符）
     /// </remarks>
-    public string LeaseNameFor(JobName resource)
+    internal string LeaseNameFor(JobName resource)
     {
         if (string.Equals(resource.Value, DefaultResource, StringComparison.Ordinal))
         {

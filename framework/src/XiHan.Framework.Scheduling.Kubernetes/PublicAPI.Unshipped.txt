@@ -19,12 +19,8 @@ XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Holder.init ->
 XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.KubernetesSchedulingOptions() -> void
 XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Lease.get -> string!
 XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Lease.init -> void
-XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.LeaseNameFor(XiHan.Framework.Scheduling.Abstractions.Jobs.JobName resource) -> string!
 XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Namespace.get -> string?
 XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Namespace.init -> void
-XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ResolveApiServer() -> System.Uri!
-XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ResolveHolder() -> string!
-XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.ResolveNamespace() -> string!
 XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Token.get -> string?
 XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.Token.init -> void
 XiHan.Framework.Scheduling.Kubernetes.KubernetesSchedulingOptions.TokenPath.get -> string!

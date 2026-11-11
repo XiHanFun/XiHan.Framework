@@ -104,7 +104,7 @@ public sealed class ArchiveJob : IJob
 | `JobSchedule`、`JobScheduleKind` | 计划：`Manual`、`Every`、`FromCron`、`Once`，加 `StartAt` / `EndAt` / `Calendar`；`ToString` / `Parse` 文本往返 |
 | `CronExpression` | 秒精度 cron：5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时；星期 0/7 = 周日 |
 | `MisfirePolicy` | `RunOnce`（缺省）、`Skip`、`RunAll` |
-| `IJobCalendar`、`HolidayCalendar`、`WeeklyCalendar`、`DailyCalendar`、`CronCalendar`、`CompositeCalendar`、`JobCalendars`、`JobPlanner` | 排除日历与按日历推算下一次 |
+| `IJobCalendar`、`HolidayCalendar`、`WeeklyCalendar`、`DailyCalendar`、`CronCalendar`、`CompositeCalendar`、`JobCalendars` | 排除日历；按日历推算下一次由引擎完成 |
 | `JobRun`、`JobTrigger` | 一次运行（`Id`、`Name`、`TriggerName`、`ScheduledAt`、`Trigger`、`Attempt`、`RetryOf`、`Data`）；触发来源 `Schedule` / `Manual` / `Recovery` / `Retry` |
 | `JobDispatcher` | 经管道执行一次运行；`GetRun(context)` 在管道内取当前运行 |
 | `IJobScheduler`、`JobSchedulerExtensions` | 运行时管理：登记、删除、暂停、恢复、触发、入队、取消、状态、历史、计数、恢复为代码定义；全部批量，单条是扩展方法 |

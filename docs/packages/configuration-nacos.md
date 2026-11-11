@@ -97,8 +97,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 | `NacosConfigurationBuilderExtensions` | `AddXiHanNacos(options, remote)`：配置构建期的入口，自建的客户端随配置根释放 |
 | `NacosConfigurationClient` | `IRemoteConfigurationClient` 实现；`Create(options, clock)` 自建 HTTP 客户端并在释放时关闭，公开构造函数接收外部的 `HttpClient`（超时应为无限，由本类按请求控制）；常量 `HttpClientName` |
 | `NacosOptions` | 选项；`FromConfiguration(configuration, binding)` 从配置与绑定读取；常量 `ConfigurationSection` |
-| `NacosConfigFormat` | `Json`、`Properties` |
-| `NacosDocumentParser` | `Parse(content, format)` 把文档展平成配置键值 |
+| `NacosConfigFormat` | `Json`、`Properties`；文档按格式展平成配置键值 |
 
 ## 使用示例
 

@@ -9,8 +9,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 /// <summary>
 /// 计划推算：在 <see cref="JobSchedule.NextRun"/> 之上套用排除日历与次数上限
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
-public static class JobPlanner
+internal static class JobPlanner
 {
     /// <summary>
     /// 跳过被排除时刻的最大尝试次数：防止日历排除一切时无限循环

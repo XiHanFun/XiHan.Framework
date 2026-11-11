@@ -81,7 +81,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 | `InMemoryJobStore` | 进程内 `IJobStore`，`IsShared` 为假 |
 | `InMemoryLeaderElection` | 进程内 `ILeaderElection` |
 | `InMemorySchedulingOptions` | `MaxRuns` |
-| `InMemorySchedulingHealthContributor` | 健康项 `scheduling.inmemory.leader`（`InMemorySchedulingFeature.HealthName`） |
+| `InMemorySchedulingFeature.HealthName` | 健康项名 `scheduling.inmemory.leader`（实现不公开） |
 
 ## 使用示例
 

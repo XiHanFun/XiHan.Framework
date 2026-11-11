@@ -18,6 +18,7 @@
 - **修复** 工作流启动请求不再公开 `InstanceId`、`ParentInstanceId`、`ParentNodeInstanceId` 与 `Depth`：调用方原先能借它们伪造子流程的父链接、绕过嵌套深度上限；这几个字段只由引擎为子流程设置，给它们赋值的代码删掉即可，要幂等启动用 `CorrelationId` 与 `ReusePolicy`
 - **修复** 活动、结果处理器与指派规则拿到的 `Instance`、`NodeInstance` 改为只读视图 `WorkflowInstanceView` / `WorkflowNodeInstanceView`：原先交出的是引擎随后写回的对象，扩展代码改了状态或租户会被持久化；只读的代码不用改，要读变量与私有状态改用上下文的 `Variables` 与 `State`
 - **调整** 工作流的引擎、定义目录、任务与外部任务服务的实现类型，`ActivityRegistry.Add` 与 `GetActivityRegistry`，实例的 `JoinStates` 与 `WorkflowJoinState`，以及 `Workflow.Database` 的实例锁与轮询类型不再公开：经 `IWorkflowEngine` 等接口与 `AddActivity<TActivity>` 使用；`WorkflowEngine.LastErrorVariable` 等常量移到 `WorkflowReservedNames`，成员名不变，只改类名
+- **调整** 调度与配置的实现细节不再公开：`JobPlanner`、`InMemorySchedulingHealthContributor`、`NacosDocumentParser`，以及 `KubernetesSchedulingOptions` 的 `ResolveNamespace` / `ResolveHolder` / `ResolveApiServer` / `LeaseNameFor`；它们只在各自的包里用
 
 ### 宿主、协议与插件
 

@@ -33,9 +33,6 @@ XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.InMemoryScheduling
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingHealthContributor
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingHealthContributor.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
-XiHan.Framework.Scheduling.InMemory.InMemorySchedulingHealthContributor.InMemorySchedulingHealthContributor(XiHan.Framework.Scheduling.Abstractions.Schedulers.JobSchedulerEngine? engine) -> void
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.<Clone>$() -> XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions!
 XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions.Equals(XiHan.Framework.Scheduling.InMemory.InMemorySchedulingOptions? other) -> bool

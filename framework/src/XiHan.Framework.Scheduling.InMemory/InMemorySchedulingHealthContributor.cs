@@ -13,8 +13,7 @@ namespace XiHan.Framework.Scheduling.InMemory;
 /// <remarks>
 /// 报告领导权状态。进程内的租约没有别的竞争者，持有与未持有都是 Ready；引擎停止（或已停止）为 Stopped；本包的作业能力被别的 Provider 顶替、没有引擎时也是 Ready。同步计算，不起后台循环
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public sealed class InMemorySchedulingHealthContributor : IHealthContributor
+internal sealed class InMemorySchedulingHealthContributor : IHealthContributor
 {
     /// <summary>
     /// 引擎

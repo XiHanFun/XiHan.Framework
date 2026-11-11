@@ -379,7 +379,6 @@ XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression.HasSeconds.get 
 XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression.IncludesYears.get -> bool
 XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression.Next(System.DateTimeOffset after) -> XiHan.Framework.Primitives.Maybe<System.DateTimeOffset>
 XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression.Next(System.DateTimeOffset after, System.TimeZoneInfo! timeZone) -> XiHan.Framework.Primitives.Maybe<System.DateTimeOffset>
-XiHan.Framework.Scheduling.Abstractions.Schedules.JobPlanner
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.<Clone>$() -> XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule!
 XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.At.get -> System.DateTimeOffset
@@ -550,7 +549,6 @@ const XiHan.Framework.Scheduling.Abstractions.SchedulingCapabilities.Leader = "s
 const XiHan.Framework.Scheduling.Abstractions.SchedulingCapabilities.Version = 1 -> int
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.CodeDefinitionNotFound = "SCHEDULING_NOTFOUND_005" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.DefinitionInvalid = "SCHEDULING_VALIDATION_001" -> string!
-const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.RunQueryInvalid = "SCHEDULING_VALIDATION_002" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobFailed = "SCHEDULING_UNEXPECTED_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobNotFound = "SCHEDULING_NOTFOUND_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.JobRunning = "SCHEDULING_CONFLICT_001" -> string!
@@ -559,6 +557,7 @@ const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.LeaseHeld = "SCHE
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.LeaseUnavailable = "SCHEDULING_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.RunCanceled = "SCHEDULING_CONFLICT_003" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.RunNotFound = "SCHEDULING_NOTFOUND_004" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.RunQueryInvalid = "SCHEDULING_VALIDATION_002" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.RunTimedOut = "SCHEDULING_TIMEOUT_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.SchedulerUnavailable = "SCHEDULING_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.StoreCapacity = "SCHEDULING_UNAVAILABLE_004" -> string!
@@ -567,7 +566,6 @@ const XiHan.Framework.Scheduling.Abstractions.SchedulingErrors.TriggerNotFound =
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.CatalogName = "scheduling" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.CodeDefinitionNotFound = "scheduling.job.code_definition_not_found" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.DefinitionInvalid = "scheduling.definition.invalid" -> string!
-const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.RunQueryPageInvalid = "scheduling.run.query_page_invalid" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobFailed = "scheduling.job.failed" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobNotFound = "scheduling.job.not_found" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.JobRunning = "scheduling.job.running" -> string!
@@ -576,6 +574,7 @@ const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.LeaseHeld = "sc
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.LeaseUnavailable = "scheduling.lease.unavailable" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.RunCanceled = "scheduling.run.canceled" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.RunNotFound = "scheduling.run.not_found" -> string!
+const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.RunQueryPageInvalid = "scheduling.run.query_page_invalid" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.RunTimedOut = "scheduling.run.timed_out" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.SchedulerUnavailable = "scheduling.scheduler.unavailable" -> string!
 const XiHan.Framework.Scheduling.Abstractions.SchedulingMessages.StoreCapacity = "scheduling.store.capacity" -> string!
@@ -677,7 +676,6 @@ static XiHan.Framework.Scheduling.Abstractions.Schedulers.SchedulerOptions.opera
 static XiHan.Framework.Scheduling.Abstractions.Schedulers.SchedulerOptions.operator ==(XiHan.Framework.Scheduling.Abstractions.Schedulers.SchedulerOptions? left, XiHan.Framework.Scheduling.Abstractions.Schedulers.SchedulerOptions? right) -> bool
 static XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression.Parse(string! expression) -> XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression!
 static XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression.TryParse(string? expression, out XiHan.Framework.Scheduling.Abstractions.Schedules.CronExpression? parsed) -> bool
-static XiHan.Framework.Scheduling.Abstractions.Schedules.JobPlanner.NextFire(XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule! schedule, System.DateTimeOffset after, XiHan.Framework.Scheduling.Abstractions.Calendars.IJobCalendar? calendar, long fireCount = 0) -> XiHan.Framework.Primitives.Maybe<System.DateTimeOffset>
 static XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Every(System.TimeSpan interval, int? repeatCount = null) -> XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule!
 static XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.FromCron(string! expression, string? timeZoneId = null) -> XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule!
 static XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule.Manual.get -> XiHan.Framework.Scheduling.Abstractions.Schedules.JobSchedule!

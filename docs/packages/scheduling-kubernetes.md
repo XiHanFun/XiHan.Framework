@@ -110,7 +110,7 @@ rules:
 | --- | --- |
 | `KubernetesSchedulingFeature` | 特性：注册选项、Lease 客户端与选举；被选中提供 `scheduling.leader` 时把 `ILeaderElection` 指向本包 |
 | `KubernetesLeaderElection` | `ILeaderElection` 实现；`Holder` 是本实例的持有者标识 |
-| `KubernetesSchedulingOptions` | 配置项，以及 `ResolveNamespace()`、`ResolveHolder()`、`ResolveApiServer()`、`LeaseNameFor(resource)` |
+| `KubernetesSchedulingOptions` | 配置项；命名空间、持有者、API 服务器地址与 Lease 名的推算规则见上文 |
 | `Leases.KubernetesLeaseClient` | Lease 的 GET / POST / PUT 客户端；`CreateInCluster(options)` 按 Pod 约定创建，应用或测试可预先注册自己的实例替代它 |
 
 ## 使用示例

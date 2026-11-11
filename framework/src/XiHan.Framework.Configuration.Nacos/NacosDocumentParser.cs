@@ -2,7 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json;
-using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Configuration.Nacos;
 
@@ -12,8 +11,7 @@ namespace XiHan.Framework.Configuration.Nacos;
 /// <remarks>
 /// JSON 对象按 <c>A:B</c> 与数组下标展平，properties 按行解析。格式不合法抛出 <see cref="FormatException"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
-public static class NacosDocumentParser
+internal static class NacosDocumentParser
 {
     /// <summary>
     /// 解析
