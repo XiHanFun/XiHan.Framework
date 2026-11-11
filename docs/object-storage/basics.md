@@ -224,7 +224,7 @@ S3 的列举条目只有键、长度、`ETag` 与修改时间，内容类型为�
 | --- | --- | --- |
 | 清单角色 | `role: default`，`Profiles.Full` 装配 | `role: provider` |
 | 布局 | `<RootPath>/<container>/data/<key>` 存内容，`meta/<key>.json` 存元数据 | 容器即桶，键即对象键 |
-| 原子性 | 先写同目录临时文件再原子替换；不覆盖写入以不替换的移动原子占位 | 服务端保证；不覆盖写入带 `If-None-Match: *`，服务是否认它先探明（启动时探一次，没探明就后台重试，探明之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`） |
+| 原子性 | 先写同目录临时文件再原子替换；不覆盖写入先独占创建占位文件，再把内容替换上去 | 服务端保证；不覆盖写入带 `If-None-Match: *`，服务是否认它先探明（启动时探一次，没探明就后台重试，探明之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`） |
 | `ETag` | 内容的 SHA-256 | 服务端给出 |
 | 配额 | `MaxTotalBytes`（缺省 1 GiB）、`MaxBlobBytes`（缺省 256 MiB），超限 `OBJECTSTORAGE_UNAVAILABLE_002` | 无，由桶策略管理 |
 | 健康项 | `objectstorage.filesystem.capacity`：用量达到总配额为 Degraded | `objectstorage.s3.connection`：按 `HealthProbeIntervalSeconds`（缺省 15 秒）重探连通性，并入条件写入的状态（连不上 Degraded；不认，以及启动之后才被拒绝或缺桶 Failed） |

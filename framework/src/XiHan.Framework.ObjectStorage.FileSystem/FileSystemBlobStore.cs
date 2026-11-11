@@ -469,7 +469,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 提交写好的临时内容文件
     /// </summary>
     /// <remarks>
-    /// 原子替换为对象内容、写元数据（同样先临时文件再替换）、按与旧对象的长度差更新用量。写入与分片上传的完成共用。<paramref name="overwrite"/> 为 <see langword="false"/> 时以不替换的移动原子占位，内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不写元数据、不计用量
+    /// 原子替换为对象内容、写元数据（同样先临时文件再替换）、按与旧对象的长度差更新用量。写入与分片上传的完成共用。<paramref name="overwrite"/> 为 <see langword="false"/> 时先以独占创建的空文件占住内容路径，再把内容原子替换上去；内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不写元数据、不计用量（ADR-0168）
     /// </remarks>
     internal async ValueTask<Result<BlobMetadata>> CommitAsync(ContainerName container, BlobKey key, string temporary, long length, string etag, string contentType, IReadOnlyDictionary<string, string> metadata, long previousLength, bool overwrite, CancellationToken cancellationToken)
     {
@@ -484,14 +484,20 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         {
             try
             {
-                // 调用方先查过元数据，但查与写之间另一个写入方可能已经写入：不替换的移动由文件系统原子判定，
-                // 目标已存在就失败，两个不覆盖的写入方只有一个能占位，后到的不会静默覆盖先到的
-                File.Move(temporary, dataPath, overwrite: false);
+                // 调用方先查过元数据，但查与写之间另一个写入方可能已经写入，要由文件系统原子判定谁先占位。
+                // 不用不替换的移动：.NET 在 Unix 上把它实现为先查目标再改名，两步之间别的写入方能抢先，后到的静默覆盖先到的；
+                // 独占创建（O_CREAT | O_EXCL，Windows 上的 CREATE_NEW）在各平台的本地文件系统上都原子，目标已存在就失败
+                using (new FileStream(dataPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                }
             }
             catch (IOException) when (File.Exists(dataPath))
             {
                 return Exists(container, key);
             }
+
+            // 占到位的才替换：改名覆盖本进程刚建的空文件，读取方要么看不到对象（元数据还没写），要么看到完整内容
+            File.Move(temporary, dataPath, overwrite: true);
         }
 
         var document = new BlobMetadataDocument

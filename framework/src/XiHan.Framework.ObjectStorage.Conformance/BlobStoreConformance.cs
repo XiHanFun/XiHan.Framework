@@ -397,29 +397,34 @@ public abstract class BlobStoreConformance
     /// 用例 12：并发的不覆盖写入只有一个成功
     /// </summary>
     /// <remarks>
-    /// 多个写入方同时以 <c>Overwrite = false</c> 写同一个新键：恰好一个成功，其余都是 CONFLICT，对象内容是成功者写的。先查是否存在再写的实现在并发下会让后写的静默覆盖先写的，过不了本用例；原子的实现每次都过
+    /// 多个写入方同时以 <c>Overwrite = false</c> 写同一个新键：恰好一个成功，其余都是 CONFLICT，对象内容是成功者写的。先查是否存在再写的实现在并发下会让后写的静默覆盖先写的，过不了本用例；原子的实现每次都过。
+    /// 竞争窗口很窄，一轮未必撞上，所以跑多轮、每轮一个新键：.NET 在 Unix 上的不替换移动是先查目标再改名，单轮时偶尔才露出两个成功者（ADR-0168）
     /// </remarks>
     [Fact]
     public async Task Put_WithoutOverwrite_IsAtomicUnderConcurrentWriters()
     {
         const int writers = 8;
+        const int rounds = 16;
         var store = await CreateStoreAsync().ConfigureAwait(false);
-        var key = Key("race/once");
-        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var writes = Enumerable.Range(0, writers).Select(index => Task.Run(async () =>
+        for (var round = 0; round < rounds; round++)
         {
-            // 全部写入方就位后同时放行，尽量让"查是否存在"与"写入"在各写入方之间交错
-            await start.Task.ConfigureAwait(false);
-            using var content = Bytes("writer-" + index);
-            return await store.PutAsync(Container, key, content, new BlobPutOptions { Overwrite = false }, CancellationToken.None).ConfigureAwait(false);
-        })).ToArray();
-        start.SetResult();
-        var results = await Task.WhenAll(writes).ConfigureAwait(false);
+            var key = Key("race/once-" + round);
+            var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var writes = Enumerable.Range(0, writers).Select(index => Task.Run(async () =>
+            {
+                // 全部写入方就位后同时放行，尽量让"查是否存在"与"写入"在各写入方之间交错
+                await start.Task.ConfigureAwait(false);
+                using var content = Bytes("writer-" + index);
+                return await store.PutAsync(Container, key, content, new BlobPutOptions { Overwrite = false }, CancellationToken.None).ConfigureAwait(false);
+            })).ToArray();
+            start.SetResult();
+            var results = await Task.WhenAll(writes).ConfigureAwait(false);
 
-        var winners = Enumerable.Range(0, writers).Where(index => results[index].IsSuccess).ToList();
-        var winner = Assert.Single(winners);
-        Assert.All(results.Where(static r => r.IsFailure), static r => Assert.Equal(ObjectStorageErrors.BlobExists, r.Error?.Code));
-        Assert.Equal("writer-" + winner, Text((await store.ReadAllBytesAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
+            var winners = Enumerable.Range(0, writers).Where(index => results[index].IsSuccess).ToList();
+            var winner = Assert.Single(winners);
+            Assert.All(results.Where(static r => r.IsFailure), static r => Assert.Equal(ObjectStorageErrors.BlobExists, r.Error?.Code));
+            Assert.Equal("writer-" + winner, Text((await store.ReadAllBytesAsync(Container, key, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()));
+        }
     }
 
     /// <summary>

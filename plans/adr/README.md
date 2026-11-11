@@ -167,3 +167,4 @@
 | [0165](0165-锁句柄改为抽象基类.md) | `LockHandle` 改为抽象基类（受保护构造、`ReleaseCoreAsync`、原子的只释放一次），包外能实现 `IDistributedLock`；续约要存储层的比较后延期原语与远程操作集同步，留作后续 | 已采纳 |
 | [0166](0166-护栏方向与知识库检索请求.md) | 护栏改收 `GuardrailInspection`（方向与消息，以后只加属性），非流式调用的响应再以输出方向检查；知识库存储的检索改收 `KnowledgeSearch`（最低得分交给存储），裁剪改收 `KnowledgeTrim` 列表 | 已采纳 |
 | [0167](0167-GA前级别调整与级别门禁.md) | 分析器新增 XH0006（Stable 签名不得引用不稳定类型）、XH0007（成员级别不得高于类型）、XH0008（Stable 不得有可选参数）；按审查第五节调整级别（161 个类型升 Stable，含 `AddXiHan`；Profile、发件箱与一致性套件降 Preview），实现 Preview 接口的类型随接口；Stable 上的可选参数改为重载；新增发版用的 `Ship-PublicApi.ps1`，基线与豁免门禁在 5.0.0 发布后落地 | 已采纳 |
+| [0168](0168-文件系统不覆盖写入以独占创建占位.md) | 文件系统存储的不覆盖提交先以 `FileMode.CreateNew` 独占创建占位文件再替换内容，不再用 `File.Move(…, overwrite: false)`（.NET 在 Unix 上先查目标再改名，并发时偶发两个成功）；一致性用例跑 16 轮；修正 ADR-0089 的理由 | 已采纳 |
