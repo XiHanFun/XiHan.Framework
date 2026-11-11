@@ -10,12 +10,53 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <summary>
 /// 一个触发器的状态
 /// </summary>
-/// <param name="Name">触发器名</param>
-/// <param name="Schedule">计划</param>
-/// <param name="State">状态</param>
-/// <param name="NextFireAt">下一次运行时刻；没有为空</param>
-/// <param name="PreviousFireAt">上一次运行时刻；没运行过为空</param>
-/// <param name="FireCount">已运行次数</param>
-/// <param name="Error">状态为 <see cref="TriggerState.Error"/> 时的原因</param>
+/// <remarks>
+/// 成员都经初始化器给出，以后加字段只加属性（ADR-0142、ADR-0148）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record JobTriggerStatus(string Name, JobSchedule Schedule, TriggerState State, DateTimeOffset? NextFireAt, DateTimeOffset? PreviousFireAt, long FireCount, string? Error);
+public sealed record JobTriggerStatus
+{
+    /// <summary>
+    /// 触发器名
+    /// </summary>
+    public required string Name { get; init; }
+
+    /// <summary>
+    /// 计划
+    /// </summary>
+    public required JobSchedule Schedule { get; init; }
+
+    /// <summary>
+    /// 状态
+    /// </summary>
+    public required TriggerState State { get; init; }
+
+    /// <summary>
+    /// 下一次运行时刻
+    /// </summary>
+    /// <remarks>
+    /// 没有为 <see langword="null"/>
+    /// </remarks>
+    public DateTimeOffset? NextFireAt { get; init; }
+
+    /// <summary>
+    /// 上一次运行时刻
+    /// </summary>
+    /// <remarks>
+    /// 没运行过为 <see langword="null"/>
+    /// </remarks>
+    public DateTimeOffset? PreviousFireAt { get; init; }
+
+    /// <summary>
+    /// 已运行次数
+    /// </summary>
+    public required long FireCount { get; init; }
+
+    /// <summary>
+    /// 状态为 <see cref="TriggerState.Error"/> 时的原因
+    /// </summary>
+    /// <remarks>
+    /// 其他状态为 <see langword="null"/>
+    /// </remarks>
+    public string? Error { get; init; }
+}

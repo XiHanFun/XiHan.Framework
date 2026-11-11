@@ -12,6 +12,8 @@
   "scheduling.run.query_page_invalid": "Страница запроса истории запусков вне диапазона: skip {skip} не может быть отрицательным, а limit {limit} должен быть от 1 до {max}.",
   "scheduling.run.timed_out": "Запуск '{id}' превысил лимит времени {timeout}.",
   "scheduling.scheduler.unavailable": "Планировщик заданий не запущен.",
+  "scheduling.status.query_page_invalid": "Размер страницы списка состояний заданий {pageSize} должен быть от 1 до {max}.",
+  "scheduling.status.query_token_invalid": "Токен продолжения списка состояний заданий недействителен; передайте токен, возвращённый предыдущей страницей.",
   "scheduling.store.capacity": "Хранилище заданий '{store}' заполнено (лимит {limit}).",
   "scheduling.store.unavailable": "Хранилище заданий недоступно: {reason}",
   "scheduling.trigger.not_found": "Триггер '{trigger}' задания '{job}' не существует."

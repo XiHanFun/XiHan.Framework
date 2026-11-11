@@ -100,7 +100,7 @@ public sealed class JobRunRecord
     /// <summary>
     /// 还原为运行
     /// </summary>
-    public JobRun ToRun() => new(Id, Job, TriggerName, ScheduledAt, Trigger, (JsonObject)Data.DeepClone()) { Attempt = Attempt, RetryOf = RetryOf };
+    public JobRun ToRun() => new() { Id = Id, Name = Job, TriggerName = TriggerName, ScheduledAt = ScheduledAt, Trigger = Trigger, Data = (JsonObject)Data.DeepClone(), Attempt = Attempt, RetryOf = RetryOf };
 
     /// <summary>
     /// 还原为结果：成功，或按错误码与消息还原的失败（文案按原样还原，不再翻译）
@@ -115,7 +115,31 @@ public sealed class JobRunRecord
     /// <remarks>
     /// 运行中为空
     /// </remarks>
-    public JobOutcome? ToOutcome() => CompletedAt is { } completed ? new JobOutcome(ToRun(), StartedAt, completed, ToResult()) : null;
+    public JobOutcome? ToOutcome() => CompletedAt is { } completed ? new JobOutcome { Run = ToRun(), StartedAt = StartedAt, CompletedAt = completed, Result = ToResult() } : null;
+
+    /// <summary>
+    /// 还原为交给应用的只读视图
+    /// </summary>
+    /// <remarks>
+    /// 数据是副本；运行中的结果为 <see langword="null"/>
+    /// </remarks>
+    internal JobRunView ToView() => new()
+    {
+        Id = Id,
+        Job = Job,
+        Trigger = Trigger,
+        Attempt = Attempt,
+        ScheduledAt = ScheduledAt,
+        StartedAt = StartedAt,
+        State = State,
+        NodeId = NodeId,
+        TriggerName = TriggerName,
+        RetryOf = RetryOf,
+        CompletedAt = CompletedAt,
+        Outcome = CompletedAt is null ? (Result?)null : ToResult(),
+        CancelRequested = CancelRequested,
+        Data = (JsonObject)Data.DeepClone(),
+    };
 
     /// <summary>
     /// 深拷贝

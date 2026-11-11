@@ -29,7 +29,7 @@ public static class JobSchedulerExtensions
     public static async ValueTask<Result> TriggerAsync(this IJobScheduler scheduler, JobName name, JsonObject? data, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scheduler);
-        var results = await scheduler.TriggerAsync([new JobTriggerRequest(name, data)], cancellationToken).ConfigureAwait(false);
+        var results = await scheduler.TriggerAsync([new JobTriggerRequest(name) { Data = data }], cancellationToken).ConfigureAwait(false);
         return results[0].Outcome;
     }
 
@@ -41,6 +41,19 @@ public static class JobSchedulerExtensions
         ArgumentNullException.ThrowIfNull(scheduler);
         ArgumentNullException.ThrowIfNull(names);
         return scheduler.TriggerAsync(names.Select(static name => new JobTriggerRequest(name)).ToList(), cancellationToken);
+    }
+
+    /// <summary>
+    /// 取一个作业的状态
+    /// </summary>
+    /// <remarks>
+    /// 未登记为无值；存储读不到时失败
+    /// </remarks>
+    public static async ValueTask<Result<Maybe<JobStatus>>> StatusAsync(this IJobScheduler scheduler, JobName name, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(scheduler);
+        var statuses = await scheduler.StatusesAsync([name], cancellationToken).ConfigureAwait(false);
+        return statuses.TryGetValue(out var items) ? items[0] : statuses.Error!;
     }
 
     /// <summary>
@@ -89,7 +102,7 @@ public static class JobSchedulerExtensions
     public static async ValueTask<Result<string>> EnqueueAsync(this IJobScheduler scheduler, JobName name, JsonObject? data, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scheduler);
-        var results = await scheduler.EnqueueAsync([new JobTriggerRequest(name, data)], cancellationToken).ConfigureAwait(false);
+        var results = await scheduler.EnqueueAsync([new JobTriggerRequest(name) { Data = data }], cancellationToken).ConfigureAwait(false);
         return results[0];
     }
 

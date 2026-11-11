@@ -8,9 +8,29 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <summary>
 /// 一次运行的结果：起止时刻、触发来源与调用结果
 /// </summary>
-/// <param name="Run">运行</param>
-/// <param name="StartedAt">开始时刻</param>
-/// <param name="CompletedAt">结束时刻</param>
-/// <param name="Result">调用结果</param>
+/// <remarks>
+/// 成员都经初始化器给出，以后加字段只加属性（ADR-0142、ADR-0148）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record JobOutcome(JobRun Run, DateTimeOffset StartedAt, DateTimeOffset CompletedAt, Result Result);
+public sealed record JobOutcome
+{
+    /// <summary>
+    /// 运行
+    /// </summary>
+    public required JobRun Run { get; init; }
+
+    /// <summary>
+    /// 开始时刻
+    /// </summary>
+    public required DateTimeOffset StartedAt { get; init; }
+
+    /// <summary>
+    /// 结束时刻
+    /// </summary>
+    public required DateTimeOffset CompletedAt { get; init; }
+
+    /// <summary>
+    /// 调用结果
+    /// </summary>
+    public required Result Result { get; init; }
+}

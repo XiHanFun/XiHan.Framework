@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Primitives;
@@ -383,69 +384,65 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     public async ValueTask<IReadOnlyList<Result>> ScheduleAsync(IReadOnlyList<JobDefinition> definitions, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(definitions);
+        cancellationToken.ThrowIfCancellationRequested();
         // 先把代码作业写进存储：首个轮询周期之前的修改也按代码作业判定来源，不被随后的同步冲掉
         await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
-        var results = new List<Result>(definitions.Count);
-        foreach (var definition in definitions)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            results.Add(await ScheduleOneAsync(definition, JobSource.Runtime, cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return await EachAsync(definitions, definition => ScheduleOneAsync(definition, JobSource.Runtime, CancellationToken.None), static (_, error) => error, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<Result>> RestoreAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(names);
+        cancellationToken.ThrowIfCancellationRequested();
         // 先把代码作业写进存储：首个轮询周期之前的修改也按代码作业判定来源，不被随后的同步冲掉
         await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
-        var results = new List<Result>(names.Count);
-        foreach (var name in names)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            results.Add(_codeJobs.Find(name).TryGetValue(out var definition)
-                ? await ScheduleOneAsync(definition, JobSource.Code, cancellationToken, force: true).ConfigureAwait(false)
-                : Error.NotFound(SchedulingErrors.CodeDefinitionNotFound, SchedulingMessages.CodeDefinitionNotFound, MessageArguments.Of(("name", name.Value))));
-        }
-
-        return results;
+        return await EachAsync(
+            names,
+            async name => _codeJobs.Find(name).TryGetValue(out var definition)
+                ? await ScheduleOneAsync(definition, JobSource.Code, CancellationToken.None, force: true).ConfigureAwait(false)
+                : Error.NotFound(SchedulingErrors.CodeDefinitionNotFound, SchedulingMessages.CodeDefinitionNotFound, MessageArguments.Of(("name", name.Value))),
+            static (_, error) => error,
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<Result>> UnscheduleAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(names);
+        cancellationToken.ThrowIfCancellationRequested();
         // 先把代码作业写进存储：首个轮询周期之前的修改也按代码作业判定来源，不被随后的同步冲掉
         await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
-        var results = new List<Result>(names.Count);
-        foreach (var name in names)
+        return await EachAsync(names, UnscheduleOneAsync, static (_, error) => error, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 删除一个作业与它的触发器
+    /// </summary>
+    /// <remarks>
+    /// 已开始的项不随调用方取消中断，写入与事件一起完成
+    /// </remarks>
+    private async ValueTask<Result> UnscheduleOneAsync(JobName name)
+    {
+        var found = await _store.FindJobAsync(name, CancellationToken.None).ConfigureAwait(false);
+        if (!found.TryGetValue(out var maybe))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var found = await _store.FindJobAsync(name, cancellationToken).ConfigureAwait(false);
-            if (!found.TryGetValue(out var maybe))
-            {
-                results.Add(found.Error!);
-                continue;
-            }
-
-            if (!maybe.HasValue)
-            {
-                results.Add(JobNotFound(name));
-                continue;
-            }
-
-            var deleted = await UnderTriggerLockAsync(() => _store.DeleteJobsAsync([name], cancellationToken), cancellationToken).ConfigureAwait(false);
-            results.Add(deleted);
-            if (deleted.IsSuccess)
-            {
-                ForgetLocal(name);
-                await PublishAsync(SchedulingTopics.JobUnscheduled, new SchedulingEventData { Job = name.Value, NodeId = NodeId, At = _clock.GetUtcNow() }, cancellationToken).ConfigureAwait(false);
-            }
+            return found.Error!;
         }
 
-        return results;
+        if (!maybe.HasValue)
+        {
+            return JobNotFound(name);
+        }
+
+        var deleted = await UnderTriggerLockAsync(() => _store.DeleteJobsAsync([name], CancellationToken.None), CancellationToken.None).ConfigureAwait(false);
+        if (deleted.IsSuccess)
+        {
+            ForgetLocal(name);
+            await PublishAsync(SchedulingTopics.JobUnscheduled, new SchedulingEventData { Job = name.Value, NodeId = NodeId, At = _clock.GetUtcNow() }, CancellationToken.None).ConfigureAwait(false);
+        }
+
+        return deleted;
     }
 
     /// <inheritdoc />
@@ -468,70 +465,151 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     public async ValueTask<IReadOnlyList<JobTriggerResult>> TriggerAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(requests);
-        var results = new List<JobTriggerResult>(requests.Count);
-        foreach (var request in requests)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            results.Add(new JobTriggerResult(request.Name, await TriggerOneAsync(request, cancellationToken).ConfigureAwait(false)));
-        }
-
-        return results;
+        cancellationToken.ThrowIfCancellationRequested();
+        // 运行等待的是调用方：令牌照常传进运行，取消即取消运行，结果里报告运行被取消
+        return await EachAsync(
+            requests,
+            async request =>
+            {
+                try
+                {
+                    return new JobTriggerResult(request.Name, await TriggerOneAsync(request, cancellationToken).ConfigureAwait(false));
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    // 运行开始之前就被取消：没有留下运行记录，按取消报告这一项
+                    return new JobTriggerResult(request.Name, CancelledError());
+                }
+            },
+            static (request, error) => new JobTriggerResult(request.Name, error),
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<Result<string>>> EnqueueAsync(IReadOnlyList<JobTriggerRequest> requests, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(requests);
-        var results = new List<Result<string>>(requests.Count);
-        foreach (var request in requests)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var resolved = await ResolveJobAsync(request.Name, cancellationToken).ConfigureAwait(false);
-            if (!resolved.TryGetValue(out var job))
-            {
-                results.Add(resolved.Error!);
-                continue;
-            }
+        cancellationToken.ThrowIfCancellationRequested();
+        return await EachAsync(requests, EnqueueOneAsync, static (_, error) => Result.Failure<string>(error), cancellationToken).ConfigureAwait(false);
+    }
 
-            var trigger = TransientTrigger(job.Record.Name, ManualTriggerPrefix + JobRun.NewId(), JobTrigger.Manual, request.Data, _clock.GetUtcNow());
-            var saved = await _store.SaveTriggersAsync([trigger], cancellationToken).ConfigureAwait(false);
-            results.Add(saved.IsSuccess ? Result.Success(trigger.Name) : saved.Error!);
+    /// <summary>
+    /// 入队一次立即到期的运行
+    /// </summary>
+    /// <remarks>
+    /// 已开始的项不随调用方取消中断
+    /// </remarks>
+    private async ValueTask<Result<string>> EnqueueOneAsync(JobTriggerRequest request)
+    {
+        var resolved = await ResolveJobAsync(request.Name, CancellationToken.None).ConfigureAwait(false);
+        if (!resolved.TryGetValue(out var job))
+        {
+            return resolved.Error!;
         }
 
-        return results;
+        var trigger = TransientTrigger(job.Record.Name, ManualTriggerPrefix + JobRun.NewId(), JobTrigger.Manual, request.Data, _clock.GetUtcNow());
+        var saved = await _store.SaveTriggersAsync([trigger], CancellationToken.None).ConfigureAwait(false);
+        return saved.IsSuccess ? Result.Success(trigger.Name) : saved.Error!;
     }
 
     /// <inheritdoc />
     public async ValueTask<IReadOnlyList<Result>> CancelRunsAsync(IReadOnlyList<string> runIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(runIds);
-        var results = new List<Result>(runIds.Count);
-        foreach (var runId in runIds)
+        cancellationToken.ThrowIfCancellationRequested();
+        return await EachAsync(runIds, CancelRunAsync, static (_, error) => error, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 请求取消一次运行
+    /// </summary>
+    /// <remarks>
+    /// 本节点的运行直接取消令牌，其他节点的经存储标记
+    /// </remarks>
+    private async ValueTask<Result> CancelRunAsync(string runId)
+    {
+        RunningRun? local;
+        lock (_lock)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            RunningRun? local;
-            lock (_lock)
-            {
-                _running.TryGetValue(runId, out local);
-            }
-
-            if (local is not null)
-            {
-                // 本节点的运行：直接取消令牌，不必绕存储
-                await local.Cancellation.CancelAsync().ConfigureAwait(false);
-                results.Add(Result.Success());
-                continue;
-            }
-
-            var requested = await _store.RequestCancelAsync([runId], cancellationToken).ConfigureAwait(false);
-            results.Add(requested[0]);
+            _running.TryGetValue(runId, out local);
         }
 
-        return results;
+        if (local is not null)
+        {
+            // 本节点的运行：直接取消令牌，不必绕存储
+            await local.Cancellation.CancelAsync().ConfigureAwait(false);
+            return Result.Success();
+        }
+
+        var requested = await _store.RequestCancelAsync([runId], CancellationToken.None).ConfigureAwait(false);
+        return requested[0];
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<Maybe<JobStatus>>> StatusAsync(JobName name, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<Maybe<JobStatus>>>> StatusesAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(names);
+        if (names.Count == 0)
+        {
+            return Result.Success<IReadOnlyList<Maybe<JobStatus>>>([]);
+        }
+
+        // 读取没有半批的问题：任一项读不到就整批失败，不把存储故障当作未登记；重复的名字只读一次
+        var statuses = new Dictionary<JobName, Maybe<JobStatus>>();
+        foreach (var name in names)
+        {
+            if (statuses.ContainsKey(name))
+            {
+                continue;
+            }
+
+            var status = await StatusOfAsync(name, cancellationToken).ConfigureAwait(false);
+            if (!status.TryGetValue(out var found))
+            {
+                return status.Error!;
+            }
+
+            statuses[name] = found;
+        }
+
+        return Result.Success<IReadOnlyList<Maybe<JobStatus>>>(names.Select(name => statuses[name]).ToList());
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<Result<JobStatusPage>> ListStatusesAsync(JobStatusQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var valid = query.Validate();
+        if (valid.IsFailure)
+        {
+            return valid.Error!;
+        }
+
+        var all = await AllStatusesAsync(cancellationToken).ConfigureAwait(false);
+        if (!all.TryGetValue(out var statuses))
+        {
+            return all.Error!;
+        }
+
+        // 键集分页：令牌是上一页最后一个作业名，下一页从它之后开始；中途新增或删除的作业不会让翻页重复或跳过别的作业
+        var rest = query.ContinuationToken is { } token
+            ? statuses.Where(status => string.CompareOrdinal(status.Name.Value, token) > 0).ToList()
+            : statuses;
+        var items = rest.Take(query.PageSize).ToList();
+        return new JobStatusPage
+        {
+            Items = items,
+            ContinuationToken = rest.Count > items.Count ? items[^1].Name.Value : null,
+        };
+    }
+
+    /// <summary>
+    /// 一个作业的状态
+    /// </summary>
+    /// <remarks>
+    /// 未登记为无值
+    /// </remarks>
+    private async ValueTask<Result<Maybe<JobStatus>>> StatusOfAsync(JobName name, CancellationToken cancellationToken)
     {
         var found = await FindJobRecordAsync(name, cancellationToken).ConfigureAwait(false);
         if (!found.TryGetValue(out var maybe))
@@ -565,8 +643,10 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         return Maybe.Some(BuildStatus(job, triggerList, runningList.Count, lastList.Count > 0 ? lastList[0] : null));
     }
 
-    /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<JobStatus>>> StatusesAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// 全部作业的状态，按作业名的序数升序
+    /// </summary>
+    private async ValueTask<Result<IReadOnlyList<JobStatus>>> AllStatusesAsync(CancellationToken cancellationToken)
     {
         var jobs = await _store.ListJobsAsync(cancellationToken).ConfigureAwait(false);
         if (!jobs.TryGetValue(out var jobList))
@@ -621,16 +701,18 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<JobRunView>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         // 分页越界是调用方可以改正的输入（查询常由请求绑定）：以校验错误返回而不是抛出，也不进存储；上限与持久化的查询条数上限一致
         if (query.Skip < 0 || query.Limit is < 1 or > JobRunQuery.MaxLimit)
         {
-            return ValueTask.FromResult<Result<IReadOnlyList<JobRunRecord>>>(Error.Validation(SchedulingErrors.RunQueryInvalid, SchedulingMessages.RunQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", JobRunQuery.MaxLimit))));
+            return Error.Validation(SchedulingErrors.RunQueryInvalid, SchedulingMessages.RunQueryPageInvalid, MessageArguments.Of(("skip", query.Skip), ("limit", query.Limit), ("max", JobRunQuery.MaxLimit)));
         }
 
-        return _store.RunsAsync(query, cancellationToken);
+        // 存储记录是可变的存储形态：交给应用的是只读视图
+        var runs = await _store.RunsAsync(query, cancellationToken).ConfigureAwait(false);
+        return runs.TryGetValue(out var records) ? Result.Success<IReadOnlyList<JobRunView>>(records.Select(static record => record.ToView()).ToList()) : runs.Error!;
     }
 
     /// <inheritdoc />
@@ -1778,15 +1860,9 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private async ValueTask<IReadOnlyList<Result>> SetPausedAsync(IReadOnlyList<JobName> names, bool paused, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(names);
+        cancellationToken.ThrowIfCancellationRequested();
         await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
-        var results = new List<Result>(names.Count);
-        foreach (var name in names)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            results.Add(await SetPausedOneAsync(name, paused, cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return await EachAsync(names, name => SetPausedOneAsync(name, paused, CancellationToken.None), static (_, error) => error, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1859,15 +1935,9 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     private async ValueTask<IReadOnlyList<Result>> SetTriggersPausedAsync(IReadOnlyList<TriggerKey> keys, bool paused, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(keys);
+        cancellationToken.ThrowIfCancellationRequested();
         await EnsureSyncedAsync(cancellationToken).ConfigureAwait(false);
-        var results = new List<Result>(keys.Count);
-        foreach (var key in keys)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            results.Add(await UnderTriggerLockAsync(() => SetTriggerPausedLockedAsync(key, paused, cancellationToken), cancellationToken).ConfigureAwait(false));
-        }
-
-        return results;
+        return await EachAsync(keys, key => UnderTriggerLockAsync(() => SetTriggerPausedLockedAsync(key, paused, CancellationToken.None), CancellationToken.None), static (_, error) => error, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -2050,8 +2120,30 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             }
         }
 
-        return new JobStatus(job, statuses, runningCount, last?.ToOutcome());
+        return new JobStatus { Job = job.ToView(), Triggers = statuses, RunningCount = runningCount, Last = last?.ToOutcome() };
     }
+
+    /// <summary>
+    /// 批量逐项执行
+    /// </summary>
+    /// <remarks>
+    /// 调用方已在开始前检查过取消。之后取消时不再开始新项，尚未开始的项以 <see cref="KernelErrors.Cancelled"/> 结束；已开始的项照常给出结果，不在中途抛出而丢掉已完成项的结果（ADR-0148）
+    /// </remarks>
+    private static async ValueTask<IReadOnlyList<TResult>> EachAsync<TItem, TResult>(IReadOnlyList<TItem> items, Func<TItem, ValueTask<TResult>> run, Func<TItem, Error, TResult> cancelled, CancellationToken cancellationToken)
+    {
+        var results = new List<TResult>(items.Count);
+        foreach (var item in items)
+        {
+            results.Add(cancellationToken.IsCancellationRequested ? cancelled(item, CancelledError()) : await run(item).ConfigureAwait(false));
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// 批量里因取消而没有开始的项的错误
+    /// </summary>
+    private static Error CancelledError() => new(KernelErrors.Cancelled, KernelMessages.Cancelled);
 
     /// <summary>
     /// 到期触发器的 misfire 判定与计划时刻

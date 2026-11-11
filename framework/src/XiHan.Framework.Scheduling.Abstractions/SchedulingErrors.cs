@@ -56,6 +56,14 @@ public static class SchedulingErrors
     public const string RunQueryInvalid = "SCHEDULING_VALIDATION_002";
 
     /// <summary>
+    /// 作业状态列表的查询不合法
+    /// </summary>
+    /// <remarks>
+    /// 每页条数不在 1 到 <see cref="Schedulers.JobStatusQuery.MaxPageSize"/> 之间，或续页令牌不是调度器给出的；以结果返回（HTTP 400），不进存储（ADR-0148）
+    /// </remarks>
+    public const string StatusQueryInvalid = "SCHEDULING_VALIDATION_003";
+
+    /// <summary>
     /// 作业正在运行且不允许并发
     /// </summary>
     public const string JobRunning = "SCHEDULING_CONFLICT_001";

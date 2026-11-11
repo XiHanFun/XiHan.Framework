@@ -12,6 +12,8 @@
   "scheduling.run.query_page_invalid": "Die Seite der Ausführungsverlaufsabfrage liegt außerhalb des Bereichs: skip {skip} darf nicht negativ sein und limit {limit} muss zwischen 1 und {max} liegen.",
   "scheduling.run.timed_out": "Der Lauf '{id}' hat sein Zeitlimit von {timeout} überschritten.",
   "scheduling.scheduler.unavailable": "Der Job-Scheduler läuft nicht.",
+  "scheduling.status.query_page_invalid": "Die Seitengröße {pageSize} der Auftragsstatusliste muss zwischen 1 und {max} liegen.",
+  "scheduling.status.query_token_invalid": "Das Fortsetzungstoken der Auftragsstatusliste ist ungültig; übergeben Sie das Token der vorherigen Seite.",
   "scheduling.store.capacity": "Der Jobspeicher '{store}' ist voll (Limit {limit}).",
   "scheduling.store.unavailable": "Der Jobspeicher ist nicht verfügbar: {reason}",
   "scheduling.trigger.not_found": "Der Trigger '{trigger}' des Jobs '{job}' existiert nicht."

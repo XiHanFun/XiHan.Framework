@@ -12,6 +12,8 @@
   "scheduling.run.query_page_invalid": "A página da consulta do histórico de execuções está fora do intervalo: skip {skip} não pode ser negativo e limit {limit} deve estar entre 1 e {max}.",
   "scheduling.run.timed_out": "A execução '{id}' excedeu o limite de tempo de {timeout}.",
   "scheduling.scheduler.unavailable": "O agendador de trabalhos não está em execução.",
+  "scheduling.status.query_page_invalid": "O tamanho de página {pageSize} da lista de status de tarefas deve estar entre 1 e {max}.",
+  "scheduling.status.query_token_invalid": "O token de continuação da lista de status de tarefas é inválido; passe o token retornado pela página anterior.",
   "scheduling.store.capacity": "O armazenamento de jobs '{store}' está cheio (limite {limit}).",
   "scheduling.store.unavailable": "O armazenamento de jobs está indisponível: {reason}",
   "scheduling.trigger.not_found": "O gatilho '{trigger}' do job '{job}' não existe."

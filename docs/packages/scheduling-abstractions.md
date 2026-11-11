@@ -109,8 +109,9 @@ public sealed class ArchiveJob : IJob
 | `JobDispatcher` | 经管道执行一次运行；`GetRun(context)` 在管道内取当前运行 |
 | `IJobScheduler`、`JobSchedulerExtensions` | 运行时管理：登记、删除、暂停、恢复、触发、入队、取消、状态、历史、计数、恢复为代码定义；全部批量，单条是扩展方法 |
 | `JobTriggerRequest`、`JobTriggerResult` | 手动触发的请求（名字与数据）与逐项结果 |
-| `JobStatus`、`JobTriggerStatus`、`JobOutcome` | 作业状态（含 `NextRun`、`Paused`、`IsRunning`、`Last`）、触发器状态、一次运行的结果 |
-| `JobRunRecord`、`JobRunQuery`、`JobRunState` | 运行历史记录、查询（`Limit` 缺省 100、最大 1000；越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`）、状态 `Running` / `Succeeded` / `Failed` / `Canceled` / `Lost` |
+| `JobStatus`、`JobView`、`JobTriggerStatus`、`JobOutcome` | 作业状态（含作业的只读视图 `Job`、`NextRun`、`Paused`、`IsRunning`、`Last`）、触发器状态、一次运行的结果；都经初始化器构造 |
+| `JobStatusQuery`、`JobStatusPage` | `ListStatusesAsync` 的分页查询（`PageSize` 1～1000、缺省 100，续页令牌；越界为 `SCHEDULING_VALIDATION_003`）与一页 |
+| `JobRunView`、`JobRunRecord`、`JobRunQuery`、`JobRunState` | 运行历史的只读视图（`RunsAsync` 返回）、存储记录（只给 `IJobStore`）、查询（`Limit` 缺省 100、最大 1000；越界由 `RunsAsync` 返回 `SCHEDULING_VALIDATION_002`）、状态 `Running` / `Succeeded` / `Failed` / `Canceled` / `Lost` |
 | `JobSource` | 作业来源：`Code`、`Runtime`、`Overridden` |
 | `JobRegistry`、`JobTypeRegistry` | 代码作业登记表；作业类型登记表（`Keys` 列出可选类型） |
 | `JobSchedulerEngine`、`SchedulerOptions` | 引擎（同时是 `IJobScheduler`）与选项；`NodeId`、`IsLeader`、`IsRunning`、`RunningCount`、`PollOnceAsync`（测试与一致性套件用：执行一个轮询周期，并等本周期起的运行连同收尾结束） |
@@ -203,6 +204,7 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 | `SCHEDULING_NOTFOUND_005` | 作业没有代码定义，不能恢复 |
 | `SCHEDULING_VALIDATION_001` | 作业定义不合法（触发器名重复、日历未登记） |
 | `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界（`SchedulingErrors.RunQueryInvalid`，HTTP 400） |
+| `SCHEDULING_VALIDATION_003` | 作业状态列表的查询不合法：每页条数越界或续页令牌不是调度器给出的（HTTP 400） |
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
 | `SCHEDULING_CONFLICT_002` | 领导租约被占用 |
 | `SCHEDULING_CONFLICT_003` | 运行被取消 |

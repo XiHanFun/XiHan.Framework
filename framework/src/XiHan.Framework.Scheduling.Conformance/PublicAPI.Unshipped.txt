@@ -1,5 +1,6 @@
 #nullable enable
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Batch_CancelledBeforeItStarts_Throws_AndChangesNothing() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.CancelRun_StopsTheJob_AndRecordsCanceled() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ConcurrentTrigger_ConflictsUnlessAllowed() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Enqueue_RunsOnceWithoutWaiting() -> System.Threading.Tasks.Task!
@@ -13,6 +14,7 @@ XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.MultipleTriggers_
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.RetryAndTimeout_AreInTheStatus_OverriddenAndRestored() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Retry_FailedRuns_AreRetried_UntilSuccessOrExhausted() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Schedule_AddsRuntimeJob_PauseResume_AndUnschedule() -> System.Threading.Tasks.Task!
+XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Statuses_AreIndexAligned_AndTheListPagesByName() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ThrowingJob_IsAFailureResult() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Timeout_FailsAndRetries_ButCanceledRunsAreNotRetried() -> System.Threading.Tasks.Task!
 XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.Trigger_RunsTheJob_AndReportsOutcomeAndStatus() -> System.Threading.Tasks.Task!
@@ -53,7 +55,7 @@ abstract XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.StartAsy
 abstract XiHan.Framework.Scheduling.Conformance.JobStoreConformance.CreateAsync() -> System.Threading.Tasks.Task<(XiHan.Framework.Scheduling.Abstractions.Storage.IJobStore! Store, System.IAsyncDisposable! Host)>!
 abstract XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.CreateElection(System.TimeProvider! clock) -> XiHan.Framework.Scheduling.Abstractions.Leadership.ILeaderElection!
 abstract XiHan.Framework.Scheduling.Conformance.LeaderElectionConformance.StartNodeAsync(System.TimeProvider! clock, XiHan.Framework.Kernel.Hosting.IFeature! probe) -> System.Threading.Tasks.Task<(XiHan.Framework.Scheduling.Abstractions.Leadership.ILeaderElection! Competitor, System.IAsyncDisposable! Host)>!
-static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.AttemptsAsync(XiHan.Framework.Scheduling.Conformance.JobSchedulerHost! host, XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunRecord!>!>!
+static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.AttemptsAsync(XiHan.Framework.Scheduling.Conformance.JobSchedulerHost! host, XiHan.Framework.Scheduling.Abstractions.Jobs.JobName name) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Scheduling.Abstractions.Jobs.JobRunView!>!>!
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ConcurrentJob.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.IntervalJob.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName
 static XiHan.Framework.Scheduling.Conformance.JobSchedulerConformance.ManualJob.get -> XiHan.Framework.Scheduling.Abstractions.Jobs.JobName

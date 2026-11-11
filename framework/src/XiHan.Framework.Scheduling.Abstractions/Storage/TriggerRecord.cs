@@ -124,7 +124,7 @@ public sealed class TriggerRecord
     /// <summary>
     /// 状态视图
     /// </summary>
-    public JobTriggerStatus ToStatus() => new(Name, Schedule, State, NextFireAt, PreviousFireAt, FireCount, Error);
+    public JobTriggerStatus ToStatus() => new() { Name = Name, Schedule = Schedule, State = State, NextFireAt = NextFireAt, PreviousFireAt = PreviousFireAt, FireCount = FireCount, Error = Error };
 
     /// <summary>
     /// 深拷贝

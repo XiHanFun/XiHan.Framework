@@ -36,6 +36,8 @@
 - **调整** `IAuditSink.WriteAsync` 的契约写明不抛出：接收不下或落地失败时由实现自己丢弃、计数并告警，返回只表示已接收；自己实现接收器的 Provider 需通过一致性套件新增的用例
 - **移除** `XiHan:MultiTenancy:Database:MaxListedTenants`：租户列表分页之后不再截断，删掉这个配置键
 - **调整** `MessageDelivery` 改为初始化器（`new MessageDelivery { Topic = …, Envelope = …, Attempt = …, Mode = … }`），`MessageSubscription` 只保留 `(topic, mode)` 构造；`IdempotencyRecord` 不再公开，记录格式与回放不变
+- **调整** 调度器的状态与历史改为只读视图：`RunsAsync` 返回 `JobRunView`（失败结果在 `Outcome`），`JobStatus.Job` 是 `JobView`；`StatusesAsync()` 改为分页的 `ListStatusesAsync(new JobStatusQuery())`，按名批量用 `StatusesAsync(names)`，`StatusAsync(name)` 不变；`new JobTriggerRequest(name, data)` 改为 `new JobTriggerRequest(name) { Data = data }`，`JobRun`、`JobOutcome`、`JobTriggerStatus`、`JobStatus` 按属性名初始化
+- **调整** 调度器的批量方法中途取消不再抛出：已开始的项照常给出结果，未开始的项以 `KERNEL_CANCELLED_001` 结束；开始前已取消时仍抛出
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
 
 ### 宿主、协议与插件

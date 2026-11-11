@@ -12,6 +12,8 @@
   "scheduling.run.query_page_invalid": "実行履歴クエリのページ指定が範囲外です。スキップ数 {skip} は負にできず、取得件数 {limit} は 1 から {max} の範囲で指定してください。",
   "scheduling.run.timed_out": "実行 '{id}' が制限時間 {timeout} を超えました。",
   "scheduling.scheduler.unavailable": "ジョブスケジューラーは実行されていません。",
+  "scheduling.status.query_page_invalid": "ジョブ状態一覧のページサイズ {pageSize} は 1 から {max} の範囲で指定してください。",
+  "scheduling.status.query_token_invalid": "ジョブ状態一覧の継続トークンが無効です。前のページで返されたトークンを渡してください。",
   "scheduling.store.capacity": "ジョブストア '{store}' は満杯です（上限 {limit}）。",
   "scheduling.store.unavailable": "ジョブストアを利用できません：{reason}",
   "scheduling.trigger.not_found": "ジョブ '{job}' のトリガー '{trigger}' は存在しません。"

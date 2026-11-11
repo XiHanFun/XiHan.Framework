@@ -96,6 +96,28 @@ public sealed class JobRecord
     public TimeSpan? Timeout { get; set; }
 
     /// <summary>
+    /// 还原为交给应用的只读视图
+    /// </summary>
+    /// <remarks>
+    /// 不含引擎的簿记字段；数据是副本
+    /// </remarks>
+    internal JobView ToView() => new()
+    {
+        Name = Name,
+        JobTypeName = JobTypeName,
+        Source = Source,
+        Paused = Paused,
+        AllowConcurrent = AllowConcurrent,
+        RunOnEveryInstance = RunOnEveryInstance,
+        RequestsRecovery = RequestsRecovery,
+        UpdatedAt = UpdatedAt,
+        Description = Description,
+        Retry = Retry,
+        Timeout = Timeout,
+        Data = (JsonObject)Data.DeepClone(),
+    };
+
+    /// <summary>
     /// 深拷贝
     /// </summary>
     public JobRecord Clone() => new()

@@ -100,7 +100,7 @@ public abstract class JobSchedulerConformance
         Assert.Equal(run.Id, status.Last!.Run.Id);
         Assert.True(status.Last.Result.IsSuccess);
         Assert.True(status.Last.CompletedAt >= status.Last.StartedAt);
-        Assert.Contains((await host.Scheduler.StatusesAsync(CancellationToken.None).ConfigureAwait(false)).ValueOrThrow(), s => s.Name == ManualJob);
+        Assert.Contains((await host.Scheduler.ListStatusesAsync(new JobStatusQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items, s => s.Name == ManualJob);
         // 失败的结果原样返回并记入状态与历史；推进时钟让两次运行的计划时刻不同，历史按它降序
         _clock.Advance(TimeSpan.FromSeconds(1));
         log.FailWith = Error.Conflict("CONFORMANCE_CONFLICT_001", "conformance.job.rejected");
@@ -109,7 +109,7 @@ public abstract class JobSchedulerConformance
         Assert.Equal("CONFORMANCE_CONFLICT_001", (await StatusAsync(host, ManualJob).ConfigureAwait(false)).Last!.Result.Error?.Code);
         var history = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([JobRunState.Failed, JobRunState.Succeeded], history.Select(static r => r.State));
-        Assert.Equal("CONFORMANCE_CONFLICT_001", history[0].ErrorCode);
+        Assert.Equal("CONFORMANCE_CONFLICT_001", history[0].Outcome?.Error?.Code);
     }
 
     /// <summary>
@@ -418,7 +418,7 @@ public abstract class JobSchedulerConformance
         var page = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Skip = 1, Limit = 2 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(all.Skip(1).Take(2).Select(static r => r.Id), page.Select(static r => r.Id));
         var failed = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, States = [JobRunState.Failed] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
-        Assert.Equal("CONFORMANCE_CONFLICT_001", Assert.Single(failed).ErrorCode);
+        Assert.Equal("CONFORMANCE_CONFLICT_001", Assert.Single(failed).Outcome?.Error?.Code);
         Assert.Empty((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, To = all[^1].ScheduledAt }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
@@ -559,7 +559,7 @@ public abstract class JobSchedulerConformance
         _clock.Advance(limit);
         await polling.ConfigureAwait(false);
         var timedOut = await AttemptsAsync(host, slow).ConfigureAwait(false);
-        Assert.Equal([(1, JobRunState.Failed, SchedulingErrors.RunTimedOut), (2, JobRunState.Failed, SchedulingErrors.RunTimedOut)], timedOut.Select(static run => (run.Attempt, run.State, run.ErrorCode)));
+        Assert.Equal([(1, JobRunState.Failed, SchedulingErrors.RunTimedOut), (2, JobRunState.Failed, SchedulingErrors.RunTimedOut)], timedOut.Select(static run => (run.Attempt, run.State, run.Outcome?.Error?.Code)));
 
         var canceled = host.Scheduler.TriggerAsync(cancelable, CancellationToken.None).AsTask();
         await log.WaitAsync(cancelable, 1, WaitTimeout).ConfigureAwait(false);
@@ -602,11 +602,72 @@ public abstract class JobSchedulerConformance
     /// <summary>
     /// 一个作业的全部运行，按尝试次数排序
     /// </summary>
-    protected static async Task<IReadOnlyList<JobRunRecord>> AttemptsAsync(JobSchedulerHost host, JobName name)
+    protected static async Task<IReadOnlyList<JobRunView>> AttemptsAsync(JobSchedulerHost host, JobName name)
     {
         ArgumentNullException.ThrowIfNull(host);
         var runs = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = name }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         return [.. runs.OrderBy(static run => run.Attempt)];
+    }
+
+    /// <summary>
+    /// 按名批量取状态与名字的分页列表
+    /// </summary>
+    /// <remarks>
+    /// 批量结果与入参等长、同序，未登记的为无值，重复的名字各得一份，空集合返回空结果；分页按作业名的序数升序、续页令牌读到空为止，越界的每页条数与外来令牌是 VALIDATION（ADR-0148）
+    /// </remarks>
+    [Fact]
+    public async Task Statuses_AreIndexAligned_AndTheListPagesByName()
+    {
+        var log = new RecordingJobLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        var missing = new JobName("conformance.missing");
+
+        var statuses = (await host.Scheduler.StatusesAsync([ManualJob, missing, ManualJob], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal([true, false, true], statuses.Select(static status => status.HasValue));
+        Assert.Equal(ManualJob, statuses[0].ValueOrThrow().Name);
+        Assert.Empty((await host.Scheduler.StatusesAsync([], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+
+        var whole = (await host.Scheduler.ListStatusesAsync(new JobStatusQuery { PageSize = JobStatusQuery.MaxPageSize }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Null(whole.ContinuationToken);
+        var names = whole.Items.Select(static status => status.Name.Value).ToList();
+        Assert.Equal(names.Order(StringComparer.Ordinal), names);
+        Assert.Contains(ManualJob.Value, names);
+
+        var paged = new List<string>();
+        string? token = null;
+        do
+        {
+            var page = (await host.Scheduler.ListStatusesAsync(new JobStatusQuery { PageSize = 1, ContinuationToken = token }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+            Assert.True(page.Items.Count <= 1);
+            paged.AddRange(page.Items.Select(static status => status.Name.Value));
+            token = page.ContinuationToken;
+        }
+        while (token is not null);
+
+        Assert.Equal(names, paged);
+        Assert.Equal(SchedulingErrors.StatusQueryInvalid, (await host.Scheduler.ListStatusesAsync(new JobStatusQuery { PageSize = 0 }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+        Assert.Equal(SchedulingErrors.StatusQueryInvalid, (await host.Scheduler.ListStatusesAsync(new JobStatusQuery { ContinuationToken = "not a job name" }, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
+    }
+
+    /// <summary>
+    /// 批量在开始前已取消时抛出，什么也不做
+    /// </summary>
+    /// <remarks>
+    /// 取消在进入存储之前检查（ADR-0148）：作业保持原样
+    /// </remarks>
+    [Fact]
+    public async Task Batch_CancelledBeforeItStarts_Throws_AndChangesNothing()
+    {
+        var log = new RecordingJobLog();
+        await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync().ConfigureAwait(false);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await host.Scheduler.PauseAsync([ManualJob], cancelled.Token).ConfigureAwait(false)).ConfigureAwait(false);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await host.Scheduler.TriggerAsync([new JobTriggerRequest(ManualJob)], cancelled.Token).ConfigureAwait(false)).ConfigureAwait(false);
+
+        Assert.False((await StatusAsync(host, ManualJob).ConfigureAwait(false)).Paused);
+        Assert.DoesNotContain(log.Runs, static r => r.Run.Name == ManualJob);
     }
 
     /// <summary>

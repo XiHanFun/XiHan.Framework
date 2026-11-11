@@ -12,6 +12,8 @@
   "scheduling.run.query_page_invalid": "執行歷史查詢的分頁越界：略過筆數 {skip} 不能為負，頁大小 {limit} 必須在 1 到 {max} 之間。",
   "scheduling.run.timed_out": "執行 '{id}' 超過了執行時限 {timeout}。",
   "scheduling.scheduler.unavailable": "作業排程器未執行。",
+  "scheduling.status.query_page_invalid": "作業狀態清單的每頁筆數 {pageSize} 必須介於 1 到 {max} 之間。",
+  "scheduling.status.query_token_invalid": "作業狀態清單的續頁權杖無效，請傳入上一頁傳回的權杖。",
   "scheduling.store.capacity": "作業儲存 '{store}' 已滿（上限 {limit}）。",
   "scheduling.store.unavailable": "作業儲存不可用：{reason}",
   "scheduling.trigger.not_found": "作業 '{job}' 的觸發器 '{trigger}' 不存在。"

@@ -12,6 +12,8 @@
   "scheduling.run.query_page_invalid": "La página de la consulta del historial de ejecuciones está fuera de rango: skip {skip} no puede ser negativo y limit {limit} debe estar entre 1 y {max}.",
   "scheduling.run.timed_out": "La ejecución '{id}' superó su límite de tiempo de {timeout}.",
   "scheduling.scheduler.unavailable": "El programador de trabajos no está en ejecución.",
+  "scheduling.status.query_page_invalid": "El tamaño de página {pageSize} de la lista de estados de trabajos debe estar entre 1 y {max}.",
+  "scheduling.status.query_token_invalid": "El token de continuación de la lista de estados de trabajos no es válido; pase el token devuelto por la página anterior.",
   "scheduling.store.capacity": "El almacén de trabajos '{store}' está lleno (límite {limit}).",
   "scheduling.store.unavailable": "El almacén de trabajos no está disponible: {reason}",
   "scheduling.trigger.not_found": "El disparador '{trigger}' del trabajo '{job}' no existe."

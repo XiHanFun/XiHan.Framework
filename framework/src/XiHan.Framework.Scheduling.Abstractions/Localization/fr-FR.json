@@ -12,6 +12,8 @@
   "scheduling.run.query_page_invalid": "La page de la requête d'historique des exécutions est hors limites : skip {skip} ne doit pas être négatif et limit {limit} doit être compris entre 1 et {max}.",
   "scheduling.run.timed_out": "L'exécution '{id}' a dépassé sa limite de temps de {timeout}.",
   "scheduling.scheduler.unavailable": "Le planificateur de travaux n'est pas en cours d'exécution.",
+  "scheduling.status.query_page_invalid": "La taille de page {pageSize} de la liste des états des tâches doit être comprise entre 1 et {max}.",
+  "scheduling.status.query_token_invalid": "Le jeton de continuation de la liste des états des tâches n'est pas valide ; transmettez le jeton renvoyé par la page précédente.",
   "scheduling.store.capacity": "Le magasin de tâches '{store}' est plein (limite {limit}).",
   "scheduling.store.unavailable": "Le magasin de tâches est indisponible : {reason}",
   "scheduling.trigger.not_found": "Le déclencheur '{trigger}' de la tâche '{job}' n'existe pas."

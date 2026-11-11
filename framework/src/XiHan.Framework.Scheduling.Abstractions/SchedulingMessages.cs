@@ -146,6 +146,19 @@ public static class SchedulingMessages
     public const string RunQueryPageInvalid = "scheduling.run.query_page_invalid";
 
     /// <summary>
+    /// 作业状态列表的每页条数越界
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>pageSize</c>、<c>max</c>
+    /// </remarks>
+    public const string StatusQueryPageInvalid = "scheduling.status.query_page_invalid";
+
+    /// <summary>
+    /// 作业状态列表的续页令牌无效
+    /// </summary>
+    public const string StatusQueryTokenInvalid = "scheduling.status.query_token_invalid";
+
+    /// <summary>
     /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(SchedulingMessages));

@@ -10,11 +10,34 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 /// <summary>
 /// 手动触发的请求
 /// </summary>
-/// <param name="Name">作业名</param>
-/// <param name="Data">覆盖作业数据的数据</param>
+/// <remarks>
+/// 作业名经构造给出，其余成员经初始化器给出，以后加字段只加属性、不改构造签名（ADR-0142、ADR-0148）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record JobTriggerRequest(JobName Name, JsonObject? Data = null)
+public sealed record JobTriggerRequest
 {
+    /// <summary>
+    /// 创建手动触发的请求
+    /// </summary>
+    /// <param name="name">作业名</param>
+    public JobTriggerRequest(JobName name)
+    {
+        Name = name;
+    }
+
+    /// <summary>
+    /// 作业名
+    /// </summary>
+    public JobName Name { get; }
+
+    /// <summary>
+    /// 覆盖作业数据的数据
+    /// </summary>
+    /// <remarks>
+    /// 不覆盖为 <see langword="null"/>
+    /// </remarks>
+    public JsonObject? Data { get; init; }
+
     /// <summary>
     /// 从作业名隐式转换
     /// </summary>

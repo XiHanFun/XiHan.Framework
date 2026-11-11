@@ -10,7 +10,13 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 /// 作业调度器（RFC-0013）
 /// </summary>
 /// <remarks>
-/// 登记、暂停、触发、状态与历史。全部批量、逐项结果
+/// 登记、暂停、触发、状态与历史。写入与按标识的操作都是批量、逐项结果（ADR-0148）：
+/// <list type="bullet">
+/// <item>结果与入参等长、同序；空集合不访问存储，返回空结果</item>
+/// <item>重复项按入参顺序逐项施加，后一项看见前一项的效果</item>
+/// <item>取消在开始前检查，已取消时抛出 <see cref="OperationCanceledException"/>；开始之后取消，已开始的项照常给出结果，尚未开始的项以 <c>KERNEL_CANCELLED_001</c> 结束，方法不抛出</item>
+/// <item>存储不可达是该项的 <see cref="SchedulingErrors.StoreUnavailable"/>，不伪装成成功</item>
+/// </list>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IJobScheduler
@@ -88,25 +94,28 @@ public interface IJobScheduler
     ValueTask<IReadOnlyList<Result>> CancelRunsAsync(IReadOnlyList<string> runIds, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 一个作业的状态
+    /// 按名取作业的状态
     /// </summary>
     /// <remarks>
-    /// 未登记为无值
+    /// 与入参等长、同序，未登记的为无值，重复的名字各得一份；空集合不访问存储。存储读不到时整批失败（<see cref="SchedulingErrors.StoreUnavailable"/>），不当作未登记。单个作业用扩展方法 <c>StatusAsync(name)</c>
     /// </remarks>
-    ValueTask<Result<Maybe<JobStatus>>> StatusAsync(JobName name, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<Maybe<JobStatus>>>> StatusesAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 全部作业的状态，按名字排序
+    /// 分页列出作业的状态，按作业名的序数升序
     /// </summary>
-    ValueTask<Result<IReadOnlyList<JobStatus>>> StatusesAsync(CancellationToken cancellationToken);
+    /// <remarks>
+    /// 读到 <see cref="JobStatusPage.ContinuationToken"/> 为 <see langword="null"/> 为止；查询不合法 → <see cref="SchedulingErrors.StatusQueryInvalid"/>（HTTP 400），不进存储
+    /// </remarks>
+    ValueTask<Result<JobStatusPage>> ListStatusesAsync(JobStatusQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 运行历史
     /// </summary>
     /// <remarks>
-    /// <see cref="JobRunQuery.Skip"/> 为负或 <see cref="JobRunQuery.Limit"/> 不在 1 到 <see cref="JobRunQuery.MaxLimit"/> 之间 → <see cref="SchedulingErrors.RunQueryInvalid"/>（HTTP 400），不进存储
+    /// 返回只读视图，不是存储记录。<see cref="JobRunQuery.Skip"/> 为负或 <see cref="JobRunQuery.Limit"/> 不在 1 到 <see cref="JobRunQuery.MaxLimit"/> 之间 → <see cref="SchedulingErrors.RunQueryInvalid"/>（HTTP 400），不进存储
     /// </remarks>
-    ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<JobRunView>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 运行历史的总数

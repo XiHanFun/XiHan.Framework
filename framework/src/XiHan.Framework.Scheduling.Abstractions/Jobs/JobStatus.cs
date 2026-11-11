@@ -9,13 +9,35 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <summary>
 /// 一个作业的状态快照
 /// </summary>
-/// <param name="Job">作业记录（定义的持久化形态）</param>
-/// <param name="Triggers">每个触发器的状态</param>
-/// <param name="RunningCount">运行中的数量（整个集群）</param>
-/// <param name="Last">最近一次完成的运行；没有为空</param>
+/// <remarks>
+/// 成员都经初始化器给出，以后加字段只加属性（ADR-0142）；作业是只读视图，不是存储记录（ADR-0148）
+/// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed record JobStatus(JobRecord Job, IReadOnlyList<JobTriggerStatus> Triggers, int RunningCount, JobOutcome? Last)
+public sealed record JobStatus
 {
+    /// <summary>
+    /// 作业
+    /// </summary>
+    public required JobView Job { get; init; }
+
+    /// <summary>
+    /// 每个触发器的状态，按触发器名的序数升序
+    /// </summary>
+    public required IReadOnlyList<JobTriggerStatus> Triggers { get; init; }
+
+    /// <summary>
+    /// 运行中的数量（整个集群）
+    /// </summary>
+    public required int RunningCount { get; init; }
+
+    /// <summary>
+    /// 最近一次完成的运行
+    /// </summary>
+    /// <remarks>
+    /// 没有为 <see langword="null"/>
+    /// </remarks>
+    public JobOutcome? Last { get; init; }
+
     /// <summary>
     /// 作业名
     /// </summary>

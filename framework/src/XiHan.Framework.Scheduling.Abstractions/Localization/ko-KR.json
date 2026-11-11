@@ -12,6 +12,8 @@
   "scheduling.run.query_page_invalid": "실행 기록 조회의 페이지 범위를 벗어났습니다. 건너뛸 개수 {skip}은(는) 음수일 수 없고, 페이지 크기 {limit}은(는) 1에서 {max} 사이여야 합니다.",
   "scheduling.run.timed_out": "실행 '{id}'이(가) 제한 시간 {timeout}을(를) 초과했습니다.",
   "scheduling.scheduler.unavailable": "작업 스케줄러가 실행 중이 아닙니다.",
+  "scheduling.status.query_page_invalid": "작업 상태 목록의 페이지 크기 {pageSize}은(는) 1에서 {max} 사이여야 합니다.",
+  "scheduling.status.query_token_invalid": "작업 상태 목록의 연속 토큰이 올바르지 않습니다. 이전 페이지에서 반환된 토큰을 전달하세요.",
   "scheduling.store.capacity": "작업 저장소 '{store}'이(가) 가득 찼습니다(상한 {limit}).",
   "scheduling.store.unavailable": "작업 저장소를 사용할 수 없습니다: {reason}",
   "scheduling.trigger.not_found": "작업 '{job}'의 트리거 '{trigger}'이(가) 존재하지 않습니다."
