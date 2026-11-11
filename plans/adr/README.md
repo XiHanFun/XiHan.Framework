@@ -134,3 +134,4 @@
 | [0132](0132-启动请求的子流程字段只由引擎设置.md) | `WorkflowStartRequest` 的 `InstanceId`、`ParentInstanceId`、`ParentNodeInstanceId`、`Depth` 改为 `internal init`，只由引擎为子流程设置：公开时同分区调用方能伪造父链接恢复别人子流程的书签、负深度绕过 `MaxSubWorkflowDepth` | 已采纳 |
 | [0133](0133-活动上下文交出实例的只读视图.md) | 活动、结果处理器与指派规则的 `Instance` / `NodeInstance` 改为密封只读视图 `WorkflowInstanceView` / `WorkflowNodeInstanceView`（跟随引擎修改、不含变量与汇合记录），原先交出引擎随后写回的可写对象；`ActivityContext.Variables` 的可写留到 5.x | 已采纳 |
 | [0134](0134-共享internal的包按精确版本依赖.md) | 经 `InternalsVisibleTo` 共享 internal 的正式包之间，项目引用标 `XiHanExactVersion="true"`，打包时依赖写成 `[版本]`（`Directory.Build.targets` 改写 `_ProjectReferencesWithVersions`）：包验证不比较 internal，「≥」依赖下单独升级会在运行时缺成员；Plugins 的五条引用，架构测试守护 | 已采纳 |
+| [0135](0135-GA前实现细节改为internal.md) | GA 前把只在本包用的实现细节改为 internal：判定标准（被别的包或下游使用、文档写明的扩展点、公开签名的一部分才保持公开）；删除 `CapabilityAttribute`（修订 ADR-0075）；引擎保留名常量移到 `WorkflowReservedNames`；调度登记表的 `Add` 装配后只读；核对后保持公开的七项及原因 | 已采纳 |
