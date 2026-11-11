@@ -357,7 +357,7 @@ public sealed class WorkflowDefinitionValidator
     /// 记一条问题：错误的消息键与参数原样带上，原因文本是错误按进程默认区域渲染的消息
     /// </summary>
     private static void Add(List<SchemaViolation> issues, string path, Error error)
-        => issues.Add(new SchemaViolation(path, error.Message, error.MessageKey, error.Details));
+        => issues.Add(new SchemaViolation(path, error.Message) { MessageKey = error.MessageKey, Arguments = error.Details });
 
     /// <summary>
     /// 第 <paramref name="index"/> 个节点的路径

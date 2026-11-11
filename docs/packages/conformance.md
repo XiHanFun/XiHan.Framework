@@ -11,7 +11,7 @@
 | 配置节 | — |
 | 依赖 | 各领域的 `.Abstractions`（部分套件另引用 `XiHan.Framework.Testing`）；`xunit.v3.assert`、`xunit.v3.extensibility.core`（不引用元包 `xunit.v3`，套件包不是可执行测试项目） |
 | AOT | 不兼容（测试项目不以 AOT 发布） |
-| 稳定性 | 按基类的 `[ApiLevel]`，各节写明 |
+| 稳定性 | Preview：套件随子系统演进追加用例与夹具成员 |
 
 ## 用法
 

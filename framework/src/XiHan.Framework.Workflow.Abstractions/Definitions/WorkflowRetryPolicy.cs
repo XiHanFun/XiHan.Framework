@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// <summary>
 /// 节点的重试策略：失败后按指数退避再试，总尝试次数含首次
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record WorkflowRetryPolicy
 {
     /// <summary>

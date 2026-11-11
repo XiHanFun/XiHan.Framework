@@ -8,7 +8,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <summary>
 /// 运行记录的状态
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public enum JobRunState
 {
     /// <summary>

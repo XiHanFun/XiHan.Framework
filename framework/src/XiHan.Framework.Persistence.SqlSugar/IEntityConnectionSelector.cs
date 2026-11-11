@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// <remarks>
 /// 默认实现是 <see cref="SqlSugarConnectionSelector"/>；应用在装配前注册自己的实现即可替换规则。同一工作单元内对同一实体类型的选择结果必须稳定
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface IEntityConnectionSelector
 {
     /// <summary>

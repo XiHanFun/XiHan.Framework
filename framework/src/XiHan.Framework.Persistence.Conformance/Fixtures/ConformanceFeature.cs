@@ -16,7 +16,7 @@ namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 /// <remarks>
 /// 在 Tenant 阶段把 Baggage 里的 <c>xihan.tenant</c> 写入安全上下文，让用例不依赖 MultiTenancy 子系统。另登记两个执行用例脚本的操作：只读的 <c>conformance-scripts.get</c> 与可写的 <c>conformance-scripts.run</c>，只读工作单元与嵌套调用的用例经它们走真实的操作契约
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConformanceFeature : IFeature
 {
     /// <inheritdoc />

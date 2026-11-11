@@ -7,11 +7,25 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Persistence.Abstractions.Repositories;
 
 /// <summary>
-/// 一个以 <see cref="RepositoryServiceCollectionExtensions.AddRepository{TEntity, TKey}"/> 登记的实体
+/// 一个以 <see cref="RepositoryServiceCollectionExtensions.AddRepository{TEntity, TKey}(Microsoft.Extensions.DependencyInjection.IServiceCollection)"/> 登记的实体
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class RegisteredEntity
 {
+    /// <summary>
+    /// 创建
+    /// </summary>
+    /// <remarks>
+    /// <c>connection</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="entityType">实体类型</param>
+    /// <param name="keyType">标识类型</param>
+    /// <exception cref="ArgumentException"><c>connection</c> 为空白</exception>
+    public RegisteredEntity([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type entityType, Type keyType)
+        : this(entityType, keyType, null)
+    {
+    }
+
     /// <summary>
     /// 创建
     /// </summary>
@@ -19,7 +33,7 @@ public sealed class RegisteredEntity
     /// <param name="keyType">标识类型</param>
     /// <param name="connection">实体落点的命名连接；<see langword="null"/> 是 Provider 的缺省落点</param>
     /// <exception cref="ArgumentException"><paramref name="connection"/> 为空白</exception>
-    public RegisteredEntity([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type entityType, Type keyType, string? connection = null)
+    public RegisteredEntity([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type entityType, Type keyType, string? connection)
     {
         EntityType = entityType ?? throw new ArgumentNullException(nameof(entityType));
         KeyType = keyType ?? throw new ArgumentNullException(nameof(keyType));

@@ -9,7 +9,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 /// <summary>
 /// 密钥配置源的选项：把配置键映射到密钥名
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record SecretsConfigurationOptions
 {
     /// <summary>

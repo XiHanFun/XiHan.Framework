@@ -13,7 +13,7 @@ namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 /// <remarks>
 /// 实现全部持久化协议的聚合根。Provider 的测试需要把它映射到存储
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConformanceOrder : IAggregateRoot<Guid>, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp, ISoftDeletable
 {
     /// <summary>

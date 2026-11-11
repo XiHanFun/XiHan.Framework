@@ -15,7 +15,7 @@ namespace XiHan.Framework.Scheduling.Abstractions;
 /// <summary>
 /// 作业、作业类型、日历与引擎的登记
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class SchedulingServiceCollectionExtensions
 {
     /// <summary>
@@ -84,18 +84,21 @@ public static class SchedulingServiceCollectionExtensions
     /// <summary>
     /// 取（没有就创建）代码作业登记表
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static JobRegistry GetJobRegistry(this IServiceCollection services)
         => services.GetOrAddInstance(static () => new JobRegistry());
 
     /// <summary>
     /// 取（没有就创建）作业类型登记表
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static JobTypeRegistry GetJobTypeRegistry(this IServiceCollection services)
         => services.GetOrAddInstance(static () => new JobTypeRegistry());
 
     /// <summary>
     /// 取（没有就创建）日历登记表
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static JobCalendars GetJobCalendars(this IServiceCollection services)
         => services.GetOrAddInstance(static () => new JobCalendars());
 
@@ -105,6 +108,7 @@ public static class SchedulingServiceCollectionExtensions
     /// <remarks>
     /// Provider 在注册了 <c>IJobStore</c> 与 <c>ILeaderElection</c> 后调用；引擎同时作为 <see cref="IJobScheduler"/>
     /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static IServiceCollection AddJobSchedulerEngine(this IServiceCollection services, SchedulerOptions options)
     {
         ArgumentNullException.ThrowIfNull(services);

@@ -81,9 +81,29 @@ public sealed record ProblemResponse
     /// 从错误构造响应体
     /// </summary>
     /// <remarks>
+    /// <c>detail</c> 给出时作为本地化后的说明，否则用 <see cref="Error.Message"/>；<c>translate</c> 把一条违规翻译成字段消息（宿主按调用方区域取文案），不给时用违规的原因文本
+    /// <c>detail</c> 取 <c>null</c>、<c>translate</c> 取 <c>null</c>
+    /// </remarks>
+    public static ProblemResponse FromError(Error error, string instance, string traceId)
+        => FromError(error, instance, traceId, null, null);
+
+    /// <summary>
+    /// 从错误构造响应体
+    /// </summary>
+    /// <remarks>
+    /// <c>detail</c> 给出时作为本地化后的说明，否则用 <see cref="Error.Message"/>；<c>translate</c> 把一条违规翻译成字段消息（宿主按调用方区域取文案），不给时用违规的原因文本
+    /// <c>translate</c> 取 <c>null</c>
+    /// </remarks>
+    public static ProblemResponse FromError(Error error, string instance, string traceId, string? detail)
+        => FromError(error, instance, traceId, detail, null);
+
+    /// <summary>
+    /// 从错误构造响应体
+    /// </summary>
+    /// <remarks>
     /// <paramref name="detail"/> 给出时作为本地化后的说明，否则用 <see cref="Error.Message"/>；<paramref name="translate"/> 把一条违规翻译成字段消息（宿主按调用方区域取文案），不给时用违规的原因文本
     /// </remarks>
-    public static ProblemResponse FromError(Error error, string instance, string traceId, string? detail = null, Func<SchemaViolation, string>? translate = null)
+    public static ProblemResponse FromError(Error error, string instance, string traceId, string? detail, Func<SchemaViolation, string>? translate)
     {
         ArgumentNullException.ThrowIfNull(error);
         ArgumentNullException.ThrowIfNull(instance);

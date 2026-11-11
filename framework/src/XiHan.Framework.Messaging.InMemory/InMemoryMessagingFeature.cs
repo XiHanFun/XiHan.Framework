@@ -19,7 +19,7 @@ namespace XiHan.Framework.Messaging.InMemory;
 /// <remarks>
 /// 默认提供 <c>messaging.queue@1</c>；启动时消费全部订阅主题，停止时等待进行中的投递结束
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemoryMessagingFeature : IHostedFeature
 {
     /// <summary>

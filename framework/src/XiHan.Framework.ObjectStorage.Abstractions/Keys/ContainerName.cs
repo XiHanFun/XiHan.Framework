@@ -13,7 +13,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Keys;
 /// <remarks>
 /// 小写字母、数字与连字符，3 到 63 个字符，首尾是字母或数字（与 S3 桶名兼容）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public readonly partial record struct ContainerName
 {
     /// <summary>

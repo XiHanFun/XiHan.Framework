@@ -16,7 +16,7 @@ namespace XiHan.Framework.Hosting.AspNetCore;
 /// <remarks>
 /// 在内核的 <c>AddXiHan</c> 之前把 <c>XIHAN_CONFIG_PATH</c> 目录里的 JSON 文件作为可重载的配置源，插在 <c>appsettings.{环境}.json</c> 之后（RFC-0016）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class WebApplicationBuilderExtensions
 {
     /// <summary>

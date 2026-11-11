@@ -10,7 +10,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <summary>
 /// 作业名（也用作领导选举的资源名）：<c>^[a-z0-9][a-z0-9._-]{0,127}$</c>
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public readonly partial record struct JobName
 {
     /// <summary>

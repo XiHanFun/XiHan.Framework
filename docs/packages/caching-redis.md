@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Caching:Redis`、`XiHan:Caching:Idempotency`；可选绑定 `cache`（类型 `cache:distributed`） |
 | 依赖 | `XiHan.Framework.Caching.Abstractions`；`StackExchange.Redis` |
 | AOT | 不兼容（`IsAotCompatible=false`，StackExchange.Redis 未声明 AOT 兼容） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`RedisCacheStore` 实现 Preview 的键管理、检视与变更通知接口，为 Preview |
 
 ## 概述
 

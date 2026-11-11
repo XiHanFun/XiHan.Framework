@@ -55,9 +55,21 @@ public sealed class OperationRegistry
     /// <summary>
     /// 创建登记表
     /// </summary>
+    /// <remarks>
+    /// <c>capacity</c> 取 <c>DefaultCapacity</c>
+    /// </remarks>
+    /// <param name="permissions">核对操作引用的权限码、登记一组操作的归属定义的权限码所用的权限登记表</param>
+    public OperationRegistry(PermissionRegistry permissions)
+        : this(permissions, DefaultCapacity)
+    {
+    }
+
+    /// <summary>
+    /// 创建登记表
+    /// </summary>
     /// <param name="permissions">核对操作引用的权限码、登记一组操作的归属定义的权限码所用的权限登记表</param>
     /// <param name="capacity">容量上限，至少 1</param>
-    public OperationRegistry(PermissionRegistry permissions, int capacity = DefaultCapacity)
+    public OperationRegistry(PermissionRegistry permissions, int capacity)
     {
         ArgumentNullException.ThrowIfNull(permissions);
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);

@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 /// <remarks>
 /// 缺省的 <see cref="Blobs.IBlobStore"/>、<see cref="Multipart.IBlobMultipartStore"/> 与 <see cref="Signing.IBlobUrlSigner"/> 必须落在同一存储上，只约束被要求的契约（ADR-0082）：存储包被要求提供 <c>objectstorage.multipart</c> 或 <c>objectstorage.presign</c>（有清单依赖该能力，或 <c>XiHan:Providers</c> / <c>UseProvider</c> 指定了它，见 <see cref="ResolvedNode.IsRequestedFor"/>）时必须同时被选为 <c>objectstorage.blob</c>；只是兜底选出的不约束，存储包按被顶替处理。宿主代收发的签名器（<c>xihan.hosting.blob-urls</c>）经缺省 <see cref="Blobs.IBlobStore"/> 收发，不是存储包，不受此约束。存储包在 <c>Configure</c> 开头调用 <see cref="ProvidesDefaultInstance"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class BlobStoreSelection
 {
     /// <summary>

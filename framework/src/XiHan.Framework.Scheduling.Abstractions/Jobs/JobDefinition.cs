@@ -10,7 +10,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <summary>
 /// 作业定义：名字、作业类型、触发器、数据与运行方式
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobDefinition
 {
     /// <summary>

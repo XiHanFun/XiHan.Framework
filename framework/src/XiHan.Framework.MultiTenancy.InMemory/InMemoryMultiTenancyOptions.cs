@@ -14,7 +14,7 @@ namespace XiHan.Framework.MultiTenancy.InMemory;
 /// <remarks>
 /// 容量与从配置装载的租户。配置节 <c>XiHan:MultiTenancy:InMemory</c> 与 <c>XiHan:MultiTenancy:Tenants</c>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record InMemoryMultiTenancyOptions
 {
     /// <summary>

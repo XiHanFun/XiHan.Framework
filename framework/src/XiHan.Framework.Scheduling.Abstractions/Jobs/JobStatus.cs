@@ -12,7 +12,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <remarks>
 /// 成员都经初始化器给出，以后加字段只加属性（ADR-0142）；作业是只读视图，不是存储记录（ADR-0148）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobStatus
 {
     /// <summary>

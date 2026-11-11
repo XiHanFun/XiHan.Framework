@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Persistence:InMemory` |
 | 依赖 | `XiHan.Framework.Persistence.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 

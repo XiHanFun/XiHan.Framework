@@ -13,7 +13,7 @@ namespace XiHan.Framework.Messaging.Conformance;
 /// <remarks>
 /// 处理器把每次投递写进来，用例按条件等待。可指定某些事件 ID 失败或抛异常
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed class DeliveryLog
 {
     /// <summary>

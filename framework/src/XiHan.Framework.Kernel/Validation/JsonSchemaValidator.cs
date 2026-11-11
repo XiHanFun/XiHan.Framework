@@ -350,13 +350,13 @@ public static class JsonSchemaValidator
     /// 构造带消息键与参数的违规
     /// </summary>
     private static SchemaViolation Violation(string path, string messageKey, string reason, params ReadOnlySpan<(string Name, object? Value)> arguments)
-        => new(path, reason, messageKey, arguments.Length == 0 ? null : MessageArguments.Of(arguments));
+        => new(path, reason) { MessageKey = messageKey, Arguments = arguments.Length == 0 ? null : MessageArguments.Of(arguments) };
 
     /// <summary>
     /// 带单个 <c>limit</c> 参数的违规：原因 = 前缀 + 界限
     /// </summary>
     private static SchemaViolation Limit(string path, string messageKey, string prefix, object limit)
-        => new(path, prefix + limit, messageKey, MessageArguments.Of(("limit", limit)));
+        => new(path, prefix + limit) { MessageKey = messageKey, Arguments = MessageArguments.Of(("limit", limit)) };
 
     /// <summary>
     /// 解析本地 <c>$ref</c>（只支持 <c>#/$defs/名字</c>）

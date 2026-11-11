@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Scheduling`（引擎选项）、`XiHan:Scheduling:InMemory`（`MaxRuns`） |
 | 依赖 | `XiHan.Framework.Scheduling.Abstractions`；无第三方依赖 |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`InMemoryJobStore`、`InMemoryLeaderElection` 实现 Preview 的存储与选主接口，为 Preview |
 
 ## 概述
 

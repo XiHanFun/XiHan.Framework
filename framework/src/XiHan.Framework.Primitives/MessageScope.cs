@@ -7,7 +7,7 @@ namespace XiHan.Framework.Primitives;
 /// 消息解析的环境作用域
 /// </summary>
 /// <remarks>
-/// 当前异步流里的解析器与区域。内核在每次调用的入口按 Baggage 里的区域安装一个作用域，本地化特性启动时用默认区域设置进程默认；于是 <c>key.L()</c> 在调用链任何位置都得到调用方语言，<see cref="Error.Message"/> 得到默认语言。没有任何作用域时文案退回 <see cref="MessageTemplate.Describe"/>
+/// 当前异步流里的解析器与区域。内核在每次调用的入口按 Baggage 里的区域安装一个作用域，本地化特性启动时用默认区域设置进程默认；于是 <c>key.L()</c> 在调用链任何位置都得到调用方语言，<see cref="Error.Message"/> 得到默认语言。没有任何作用域时文案退回 <see cref="MessageTemplate.Describe(string)"/>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class MessageScope : IDisposable
@@ -111,8 +111,18 @@ public sealed class MessageScope : IDisposable
     /// </summary>
     /// <remarks>
     /// 没有解析器、找不到键或占位符缺值时退回键与参数的描述
+    /// <c>arguments</c> 取 <c>null</c>
     /// </remarks>
-    public string Resolve(string key, IReadOnlyDictionary<string, object?>? arguments = null)
+    public string Resolve(string key)
+        => Resolve(key, null);
+
+    /// <summary>
+    /// 用本作用域解析并格式化
+    /// </summary>
+    /// <remarks>
+    /// 没有解析器、找不到键或占位符缺值时退回键与参数的描述
+    /// </remarks>
+    public string Resolve(string key, IReadOnlyDictionary<string, object?>? arguments)
     {
         ArgumentNullException.ThrowIfNull(key);
         return Resolver is not null && Resolver.TryResolve(key, Locale, arguments, out var text)

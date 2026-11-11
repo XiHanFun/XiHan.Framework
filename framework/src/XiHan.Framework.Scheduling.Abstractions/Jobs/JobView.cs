@@ -12,7 +12,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <remarks>
 /// 调度器交给应用的作业快照；存储里的可变形态 <see cref="Storage.JobRecord"/> 只留给 <see cref="Storage.IJobStore"/>，引擎的簿记字段（进行中的运行、代码指纹）不在这里（ADR-0148）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobView
 {
     /// <summary>

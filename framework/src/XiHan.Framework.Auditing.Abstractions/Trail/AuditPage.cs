@@ -12,7 +12,7 @@ namespace XiHan.Framework.Auditing.Abstractions.Trail;
 /// <remarks>
 /// 成员经初始化器给出，与其他续页分页同名（ADR-0154）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record AuditPage
 {
     /// <summary>

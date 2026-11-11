@@ -17,9 +17,21 @@ public sealed record OperationRequest
     /// <summary>
     /// 创建请求消息
     /// </summary>
+    /// <remarks>
+    /// <c>payload</c> 取 <c>default</c>
+    /// </remarks>
+    /// <param name="id">符合 <see cref="OperationId"/> 文法的操作 ID</param>
+    public OperationRequest(string id)
+        : this(id, default)
+    {
+    }
+
+    /// <summary>
+    /// 创建请求消息
+    /// </summary>
     /// <param name="id">符合 <see cref="OperationId"/> 文法的操作 ID</param>
     /// <param name="payload">请求类型的 UTF-8 JSON；空表示 <c>{}</c></param>
-    public OperationRequest(string id, ReadOnlyMemory<byte> payload = default)
+    public OperationRequest(string id, ReadOnlyMemory<byte> payload)
     {
         Id = OperationId.Validate(id);
         Payload = payload;

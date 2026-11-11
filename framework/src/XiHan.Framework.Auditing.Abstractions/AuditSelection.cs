@@ -11,7 +11,7 @@ namespace XiHan.Framework.Auditing.Abstractions;
 /// <remarks>
 /// 显式 <c>SetAuditAction</c> 的调用总是记录
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public enum AuditSelection
 {
     /// <summary>

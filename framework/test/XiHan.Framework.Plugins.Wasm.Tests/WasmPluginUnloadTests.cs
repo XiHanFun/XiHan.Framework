@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Plugins.Protocol;
@@ -170,7 +171,7 @@ public sealed class WasmPluginUnloadTests
         // 宿主中间件声明排在插件的 echo-guard 之后：撤回 echo-guard 会留下指向不存在的中间件的约束
         await using var host = await EchoWasmPluginHost.StartAsync(static b => b.UseFeature(PingFeature()).UseFeature(new StubFeature(TestManifests.Create("xihan.app.marker"))
         {
-            OnConfigure = static ctx => ctx.Pipeline.UseInstance(new MarkerMiddleware(), PipelineStage.Observe, owner: "xihan.app.marker").After(typeof(MarkerMiddleware).FullName!, $"{EchoWasmPluginHost.PluginId}:echo-guard"),
+            OnConfigure = static ctx => ctx.Pipeline.UseInstance(new MarkerMiddleware(), PipelineStage.Observe, Placement.End, owner: "xihan.app.marker").After(typeof(MarkerMiddleware).FullName!, $"{EchoWasmPluginHost.PluginId}:echo-guard"),
         }));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
         var pipeline = host.App.DescribePipeline();

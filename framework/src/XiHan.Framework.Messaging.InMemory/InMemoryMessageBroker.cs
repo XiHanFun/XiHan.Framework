@@ -22,7 +22,7 @@ namespace XiHan.Framework.Messaging.InMemory;
 /// 单进程就是一个实例（RFC-0009「订阅方式」）：一条消息给主题的每种订阅方式各入队一份投递，竞争订阅与广播订阅各收到一次、各自重试；广播投递到上限后丢弃并记日志，不进死信列表
 /// 批量发布一次入队：容量不足整批返回队列已满，不写入半批。通道数不超过订阅表里的主题数（订阅表在装配时定好、之后只读），不随发布增长，所以不另设主题数上限（ADR-0082）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions options, MessagingOptions messaging, MessageSubscriptions subscriptions, App app, ILoggerFactory loggerFactory) : IMessageBroker, IHealthContributor, IDisposable
 {
     /// <summary>

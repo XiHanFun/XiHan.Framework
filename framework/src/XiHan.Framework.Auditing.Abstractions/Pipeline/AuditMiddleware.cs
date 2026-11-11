@@ -17,7 +17,7 @@ namespace XiHan.Framework.Auditing.Abstractions.Pipeline;
 /// <remarks>
 /// 调用结束后，按显式动作或选择规则决定是否把这次调用写成一条 <see cref="AuditEvent"/>。接收器的故障只记日志，不影响调用结果。主体与租户优先取安全上下文（认证后的 <see cref="Principal"/>、解析后的 <see cref="TenantContext"/>），没有时回退到 Baggage 的 <see cref="BaggageKeys.Principal"/> / <see cref="BaggageKeys.Tenant"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class AuditMiddleware : IPipelineMiddleware
 {
     /// <summary>
@@ -76,7 +76,7 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
         }
         catch (Exception exception)
         {
-            thrown = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, inner: exception is FrameworkException framework ? framework.ToError() : null);
+            thrown = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, null, exception is FrameworkException framework ? framework.ToError() : null);
             throw;
         }
         finally

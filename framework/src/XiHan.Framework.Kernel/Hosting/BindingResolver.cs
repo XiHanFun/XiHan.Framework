@@ -27,8 +27,18 @@ public static class BindingResolver
     /// </summary>
     /// <remarks>
     /// 同名时配置优先于目录
+    /// <c>serviceBindingRoot</c> 取 <c>null</c>
     /// </remarks>
-    public static IReadOnlyDictionary<string, BindingValue> Resolve(IConfiguration configuration, string? serviceBindingRoot = null)
+    public static IReadOnlyDictionary<string, BindingValue> Resolve(IConfiguration configuration)
+        => Resolve(configuration, null);
+
+    /// <summary>
+    /// 解析全部绑定
+    /// </summary>
+    /// <remarks>
+    /// 同名时配置优先于目录
+    /// </remarks>
+    public static IReadOnlyDictionary<string, BindingValue> Resolve(IConfiguration configuration, string? serviceBindingRoot)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var result = new Dictionary<string, BindingValue>(StringComparer.Ordinal);

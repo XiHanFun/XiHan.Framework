@@ -18,7 +18,16 @@ public static class InvocationContextLocalizationExtensions
     /// <summary>
     /// 按上下文里的区域解析消息键
     /// </summary>
-    public static string Localize(this InvocationContext context, string key, IReadOnlyDictionary<string, object?>? arguments = null)
+    /// <remarks>
+    /// <c>arguments</c> 取 <c>null</c>
+    /// </remarks>
+    public static string Localize(this InvocationContext context, string key)
+        => Localize(context, key, null);
+
+    /// <summary>
+    /// 按上下文里的区域解析消息键
+    /// </summary>
+    public static string Localize(this InvocationContext context, string key, IReadOnlyDictionary<string, object?>? arguments)
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(key);

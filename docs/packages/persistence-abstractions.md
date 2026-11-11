@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Persistence:Snowflake` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Domain`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`DomainEventTracker`、`IDomainEventDispatcher`、`TimeRange`、`LongTextAttribute`、`EntityIndexAttribute` / `EntityIndexes` / `EntityIndex` 与雪花标识相关类型为 Preview |
+| 稳定性 | 仓储、工作单元、查询、错误码为 Stable；`IDomainEventDispatcher`、`LongTextAttribute`、`EntityIndexAttribute` / `EntityIndexes` / `EntityIndex` 与雪花标识相关类型为 Preview |
 
 ## 概述
 

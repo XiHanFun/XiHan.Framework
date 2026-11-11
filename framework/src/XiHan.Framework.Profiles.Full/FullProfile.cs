@@ -24,7 +24,7 @@ namespace XiHan.Framework.Profiles.Full;
 /// <remarks>
 /// Standard + 对象存储、调度、审计、工作流的默认实现 + AI 工具桥 + OpenTelemetry 导出与运行信息 + HTTP / gRPC / MCP / CloudEvents 协议适配器。远程配置与密钥没有默认实现（.NET 原生文件与环境变量），按需装配 Provider
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public static class FullProfile
 {
     /// <summary>

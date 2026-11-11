@@ -22,7 +22,7 @@ namespace XiHan.Framework.Messaging.RabbitMQ;
 /// <remarks>
 /// 发布方只声明交换机：消息发到持久的 direct 交换机 <see cref="RabbitMQMessagingOptions.Exchange"/>，路由键是前缀加主题；队列只由订阅方声明并绑定（ADR-0079）。发布到没有队列绑定的路由（mandatory 退回，即没有订阅者）丢弃并记 Debug 日志，发布照常成功。竞争订阅每主题一个持久队列，广播订阅每个实例一个独占、随连接删除的队列（<c>&lt;QueuePrefix&gt;&lt;topic&gt;@&lt;InstanceId&gt;</c>），都以主题的路由键绑定；手动确认，失败经默认交换机重新发布到所消费队列的队尾，竞争订阅到上限进死信队列，广播订阅到上限丢弃。发布通道开启发布确认，每次发布（含重试与死信的重新发布）都等代理确认，代理拒绝（nack）按失败处理。批量发布在同一通道上连续发布、一次持锁，再一次等待全部确认
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDisposable
 {
     /// <summary>

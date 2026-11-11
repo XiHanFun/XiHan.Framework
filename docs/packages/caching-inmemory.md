@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Caching:InMemory`；被选中提供 `caching.distributed` 时另读 `XiHan:Caching:Idempotency` |
 | 依赖 | `XiHan.Framework.Caching.Abstractions`；无第三方依赖 |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`InMemoryCacheStore`、`InMemoryObjectCache` 实现 Preview 的键管理与检视接口，与 `InMemoryCacheHealthContributor` 同为 Preview |
 
 ## 概述
 

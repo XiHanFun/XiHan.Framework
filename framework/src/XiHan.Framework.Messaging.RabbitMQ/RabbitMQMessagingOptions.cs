@@ -15,7 +15,7 @@ namespace XiHan.Framework.Messaging.RabbitMQ;
 /// <remarks>
 /// 从配置节 <c>XiHan:Messaging:RabbitMQ</c> 与绑定 <c>queue</c> 显式读取（RFC-0016「资源绑定与配置节」）：绑定的主值覆盖 <c>Configuration</c>，绑定的属性 <c>username</c> / <c>password</c> 覆盖 URI 里的用户信息
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record RabbitMQMessagingOptions
 {
     /// <summary>

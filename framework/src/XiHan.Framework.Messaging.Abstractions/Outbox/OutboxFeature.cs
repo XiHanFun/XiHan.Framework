@@ -19,7 +19,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 /// <remarks>
 /// 需要 <c>messaging.queue@1</c> 与 <c>persistence.relational@1</c>；把 <see cref="IMessagePublisher"/> 换成 <see cref="OutboxPublisher"/>，登记 <see cref="OutboxMessage"/> 实体，启动后运行投递循环
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed class OutboxFeature : IHostedFeature, IDisposable
 {
     /// <summary>

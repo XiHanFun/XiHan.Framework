@@ -15,10 +15,23 @@ public class FrameworkException : Exception
     /// <summary>
     /// 创建异常
     /// </summary>
+    /// <remarks>
+    /// <c>innerException</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="code">符合 <see cref="ErrorCode"/> 格式的错误码</param>
+    /// <param name="message">面向人的说明</param>
+    public FrameworkException(string code, string message)
+        : this(code, message, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建异常
+    /// </summary>
     /// <param name="code">符合 <see cref="ErrorCode"/> 格式的错误码</param>
     /// <param name="message">面向人的说明</param>
     /// <param name="innerException">内部异常</param>
-    public FrameworkException(string code, string message, Exception? innerException = null)
+    public FrameworkException(string code, string message, Exception? innerException)
         : base(message, innerException)
     {
         Code = ErrorCode.Validate(code);

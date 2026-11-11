@@ -23,9 +23,20 @@ public static class MessagingServiceCollectionExtensions
     /// 订阅主题：处理器注册为作用域服务，每条消息在新作用域内解析
     /// </summary>
     /// <remarks>
+    /// <c>mode</c> 缺省为竞争消费：订阅了主题的实例里只有一个收到；<see cref="SubscriptionMode.Broadcast"/> 时每个在线实例各收到一份，尽力而为、不进死信（RFC-0009「订阅方式」）。同一主题可以同时以两种方式订阅
+    /// <c>mode</c> 取 <c>SubscriptionMode.Competing</c>
+    /// </remarks>
+    public static IServiceCollection AddMessageHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(this IServiceCollection services, string topic)
+        where THandler : class, IMessageHandler
+        => AddMessageHandler<THandler>(services, topic, SubscriptionMode.Competing);
+
+    /// <summary>
+    /// 订阅主题：处理器注册为作用域服务，每条消息在新作用域内解析
+    /// </summary>
+    /// <remarks>
     /// <paramref name="mode"/> 缺省为竞争消费：订阅了主题的实例里只有一个收到；<see cref="SubscriptionMode.Broadcast"/> 时每个在线实例各收到一份，尽力而为、不进死信（RFC-0009「订阅方式」）。同一主题可以同时以两种方式订阅
     /// </remarks>
-    public static IServiceCollection AddMessageHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(this IServiceCollection services, string topic, SubscriptionMode mode = SubscriptionMode.Competing)
+    public static IServiceCollection AddMessageHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(this IServiceCollection services, string topic, SubscriptionMode mode)
         where THandler : class, IMessageHandler
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -38,9 +49,20 @@ public static class MessagingServiceCollectionExtensions
     /// 登记一种领域事件（RFC-0009）
     /// </summary>
     /// <remarks>
+    /// 聚合记录的 <typeparamref name="TEvent"/> 在工作单元提交前发布到 <paramref name="topic"/>，CloudEvents <c>type</c> 为 <paramref name="type"/>，数据用 <paramref name="info"/> 序列化（源生成，不经反射），<c>subject</c> 给出信封的 <c>subject</c>。首次调用同时注册 <see cref="IDomainEventDispatcher"/> 的实现 <see cref="DomainEventDispatcher"/>（作用域）
+    /// <c>subject</c> 取 <c>null</c>
+    /// </remarks>
+    public static IServiceCollection AddDomainEvent<TEvent>(this IServiceCollection services, string topic, string type, JsonTypeInfo<TEvent> info)
+        where TEvent : IDomainEvent
+        => AddDomainEvent<TEvent>(services, topic, type, info, null);
+
+    /// <summary>
+    /// 登记一种领域事件（RFC-0009）
+    /// </summary>
+    /// <remarks>
     /// 聚合记录的 <typeparamref name="TEvent"/> 在工作单元提交前发布到 <paramref name="topic"/>，CloudEvents <c>type</c> 为 <paramref name="type"/>，数据用 <paramref name="info"/> 序列化（源生成，不经反射），<paramref name="subject"/> 给出信封的 <c>subject</c>。首次调用同时注册 <see cref="IDomainEventDispatcher"/> 的实现 <see cref="DomainEventDispatcher"/>（作用域）
     /// </remarks>
-    public static IServiceCollection AddDomainEvent<TEvent>(this IServiceCollection services, string topic, string type, JsonTypeInfo<TEvent> info, Func<TEvent, string?>? subject = null)
+    public static IServiceCollection AddDomainEvent<TEvent>(this IServiceCollection services, string topic, string type, JsonTypeInfo<TEvent> info, Func<TEvent, string?>? subject)
         where TEvent : IDomainEvent
     {
         ArgumentNullException.ThrowIfNull(services);

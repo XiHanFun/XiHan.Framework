@@ -13,7 +13,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 /// <remarks>
 /// <c>^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$</c>，不含 <c>..</c> 与 <c>//</c>，不以 <c>/</c> 结尾；大小写敏感
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public readonly partial record struct SecretName
 {
     /// <summary>

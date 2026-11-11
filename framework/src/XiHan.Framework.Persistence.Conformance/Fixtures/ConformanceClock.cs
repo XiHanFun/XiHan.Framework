@@ -8,7 +8,7 @@ namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 /// <summary>
 /// 套件用的可拨动时钟
 /// </summary>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConformanceClock(DateTimeOffset start) : TimeProvider
 {
     /// <summary>

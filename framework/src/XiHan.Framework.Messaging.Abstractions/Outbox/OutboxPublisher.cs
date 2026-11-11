@@ -24,7 +24,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 /// <param name="broker">没有活动工作单元时直接发布的目标代理</param>
 /// <param name="timeProvider">时间源</param>
 /// <param name="invocation">当前调用的访问器；为 <see langword="null"/> 时不补扩展</param>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed class OutboxPublisher(IUnitOfWork unitOfWork, IRepository<OutboxMessage, Guid> outbox, IIdGenerator<Guid> ids, IMessageBroker broker, TimeProvider timeProvider, IInvocationAccessor? invocation = null) : IMessagePublisher
 {
     /// <summary>

@@ -103,13 +103,43 @@ public sealed class FeatureContext
     /// <summary>
     /// 把中间件注册为单例并加入管道指定阶段，归属为本特性的清单 ID
     /// </summary>
-    public FeatureContext AddMiddleware<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage, Placement placement = Placement.End)
+    /// <remarks>
+    /// <c>placement</c> 取 <c>Placement.End</c>
+    /// </remarks>
+    public FeatureContext AddMiddleware<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage)
+        where TMiddleware : class, IPipelineMiddleware
+        => AddMiddleware<TMiddleware>(stage, Placement.End);
+
+    /// <summary>
+    /// 把中间件注册为单例并加入管道指定阶段，归属为本特性的清单 ID
+    /// </summary>
+    public FeatureContext AddMiddleware<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage, Placement placement)
         where TMiddleware : class, IPipelineMiddleware
     {
         Services.TryAddSingleton<TMiddleware>();
         Pipeline.UseAt<TMiddleware>(stage, placement, Manifest.Id);
         return this;
     }
+
+    /// <summary>
+    /// 登记一个操作
+    /// </summary>
+    /// <remarks>
+    /// 实现按作用域注册到容器，描述以本特性为归属进入登记表；重复 ID 或超限抛出对应错误
+    /// <c>schema</c> 取 <c>null</c>
+    /// </remarks>
+    /// <typeparam name="TOperation">操作实现</typeparam>
+    /// <typeparam name="TRequest">请求类型</typeparam>
+    /// <typeparam name="TResponse">响应类型</typeparam>
+    /// <param name="contract">契约</param>
+    /// <param name="requestInfo">请求类型的序列化元数据（源生成）</param>
+    /// <param name="responseInfo">响应类型的序列化元数据（源生成）</param>
+    public FeatureContext AddOperation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TOperation, TRequest, TResponse>(
+        OperationContract contract,
+        JsonTypeInfo<TRequest> requestInfo,
+        JsonTypeInfo<TResponse> responseInfo)
+        where TOperation : class, IOperation<TRequest, TResponse>
+        => AddOperation<TOperation, TRequest, TResponse>(contract, requestInfo, responseInfo, null);
 
     /// <summary>
     /// 登记一个操作
@@ -128,7 +158,7 @@ public sealed class FeatureContext
         OperationContract contract,
         JsonTypeInfo<TRequest> requestInfo,
         JsonTypeInfo<TResponse> responseInfo,
-        OperationSchema? schema = null)
+        OperationSchema? schema)
         where TOperation : class, IOperation<TRequest, TResponse>
     {
         ArgumentNullException.ThrowIfNull(contract);

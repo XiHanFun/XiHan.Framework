@@ -13,7 +13,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// <remarks>
 /// 活动类型加属性；字符串属性支持 <c>{{ 表达式 }}</c> 模板
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record WorkflowNode
 {
     /// <summary>

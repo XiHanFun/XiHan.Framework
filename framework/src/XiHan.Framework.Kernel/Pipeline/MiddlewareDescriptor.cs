@@ -19,7 +19,7 @@ public sealed record MiddlewareDescriptor(Type Middleware, PipelineStage Stage, 
     /// 实例名字
     /// </summary>
     /// <remarks>
-    /// 按类型登记的中间件为空，按名字登记的实例（<see cref="PipelineBuilder.UseNamedInstance"/>）为其名字
+    /// 按类型登记的中间件为空，按名字登记的实例（<see cref="PipelineBuilder.UseNamedInstance(string, IPipelineMiddleware, PipelineStage)"/>）为其名字
     /// </remarks>
     public string? Name { get; init; }
 

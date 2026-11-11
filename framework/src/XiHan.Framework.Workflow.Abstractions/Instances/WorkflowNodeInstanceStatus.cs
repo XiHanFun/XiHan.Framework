@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 /// <summary>
 /// 节点实例的状态
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowNodeInstanceStatus>))]
 public enum WorkflowNodeInstanceStatus
 {

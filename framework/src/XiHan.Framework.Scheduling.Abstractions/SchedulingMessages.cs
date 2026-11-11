@@ -12,7 +12,7 @@ namespace XiHan.Framework.Scheduling.Abstractions;
 /// <remarks>
 /// 各语言文案在本包的 <c>Localization/&lt;区域&gt;.json</c>，Provider 装配时注册 <see cref="Catalog"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class SchedulingMessages
 {
     /// <summary>

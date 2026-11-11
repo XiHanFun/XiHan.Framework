@@ -8,7 +8,7 @@ namespace XiHan.Framework.Observability.OpenTelemetry;
 /// <summary>
 /// OTLP 的传输协议
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public enum OtlpProtocol
 {
     /// <summary>

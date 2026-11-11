@@ -18,7 +18,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 /// <item>存储不可达是该项的 <see cref="SchedulingErrors.StoreUnavailable"/>，不伪装成成功</item>
 /// </list>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface IJobScheduler
 {
     /// <summary>

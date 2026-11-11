@@ -14,7 +14,7 @@ namespace XiHan.Framework.Security.InMemory;
 /// <remarks>
 /// 配置节 <c>XiHan:Security:InMemory</c>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record InMemorySecurityOptions
 {
     /// <summary>

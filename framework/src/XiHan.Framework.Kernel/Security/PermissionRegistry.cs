@@ -41,8 +41,19 @@ public sealed class PermissionRegistry
     /// <summary>
     /// 创建注册表
     /// </summary>
+    /// <remarks>
+    /// <c>capacity</c> 取 <c>DefaultCapacity</c>
+    /// </remarks>
+    public PermissionRegistry()
+        : this(DefaultCapacity)
+    {
+    }
+
+    /// <summary>
+    /// 创建注册表
+    /// </summary>
     /// <param name="capacity">容量上限</param>
-    public PermissionRegistry(int capacity = DefaultCapacity)
+    public PermissionRegistry(int capacity)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 1);
         _capacity = capacity;

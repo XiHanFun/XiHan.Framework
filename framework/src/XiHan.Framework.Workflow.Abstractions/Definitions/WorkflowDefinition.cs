@@ -13,7 +13,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// <remarks>
 /// 一张有向图加变量声明；同名多版本，只有已发布的版本能启动实例
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record WorkflowDefinition
 {
     /// <summary>

@@ -46,9 +46,9 @@ public sealed class ProblemExtensionsTests
     {
         IReadOnlyList<SchemaViolation> violations =
         [
-            new("$.name", "length must be >= 2", KernelMessages.ValidationMinLength, MessageArguments.Of(("limit", 2))),
+            new("$.name", "length must be >= 2") { MessageKey = KernelMessages.ValidationMinLength, Arguments = MessageArguments.Of(("limit", 2)) },
             new("$.name", "Name is reserved."),
-            new("$.lines[0].sku", "required property 'sku' is missing", KernelMessages.ValidationRequired, MessageArguments.Of(("name", "sku"))),
+            new("$.lines[0].sku", "required property 'sku' is missing") { MessageKey = KernelMessages.ValidationRequired, Arguments = MessageArguments.Of(("name", "sku")) },
         ];
         return Error.Validation("ORDERS_VALIDATION_001", "orders.order.invalid", MessageArguments.Of(("id", "orders.create"), ("errors", violations), ("violations", new List<string> { "x" })));
     }

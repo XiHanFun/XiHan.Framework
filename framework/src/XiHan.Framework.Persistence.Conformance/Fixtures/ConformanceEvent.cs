@@ -11,5 +11,5 @@ namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 /// </summary>
 /// <param name="Name">事件名</param>
 /// <param name="OccurredAt">发生时间</param>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed record ConformanceEvent(string Name, DateTimeOffset OccurredAt) : IDomainEvent;

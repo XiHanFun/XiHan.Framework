@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 /// <remarks>
 /// <see cref="BlobStores"/> 据 <see cref="BlobStoreDefinition.Provider"/> 选中它。建出的实例实现了 <c>IBlobMultipartStore</c> / <c>IBlobUrlSigner</c> 时同样可用；实例持有需要释放的资源（如 S3 客户端）时实现 <see cref="IDisposable"/> 或 <see cref="IAsyncDisposable"/>，由注册表在移除、替换与停止时释放
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface IBlobStoreProvider
 {
     /// <summary>

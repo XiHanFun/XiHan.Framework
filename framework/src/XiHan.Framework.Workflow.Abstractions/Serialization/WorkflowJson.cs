@@ -16,7 +16,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Serialization;
 /// <remarks>
 /// 存储以此持久化，设计器以此交换定义
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class WorkflowJson
 {
     /// <summary>
@@ -70,6 +70,7 @@ public static class WorkflowJson
     /// <summary>
     /// 实例 → JSON
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static string Serialize(WorkflowInstance instance)
     {
         ArgumentNullException.ThrowIfNull(instance);
@@ -82,6 +83,7 @@ public static class WorkflowJson
     /// <remarks>
     /// 不合法抛出 <see cref="JsonException"/>
     /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static WorkflowInstance DeserializeInstance(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -91,6 +93,7 @@ public static class WorkflowJson
     /// <summary>
     /// 节点实例 → JSON
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static string Serialize(WorkflowNodeInstance nodeInstance)
     {
         ArgumentNullException.ThrowIfNull(nodeInstance);
@@ -103,6 +106,7 @@ public static class WorkflowJson
     /// <remarks>
     /// 不合法抛出 <see cref="JsonException"/>
     /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static WorkflowNodeInstance DeserializeNodeInstance(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -112,6 +116,7 @@ public static class WorkflowJson
     /// <summary>
     /// 书签 → JSON
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static string Serialize(WorkflowBookmark bookmark)
     {
         ArgumentNullException.ThrowIfNull(bookmark);
@@ -124,6 +129,7 @@ public static class WorkflowJson
     /// <remarks>
     /// 不合法抛出 <see cref="JsonException"/>
     /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static WorkflowBookmark DeserializeBookmark(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -138,16 +144,19 @@ public static class WorkflowJson
     /// <summary>
     /// 深拷贝实例
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static WorkflowInstance Clone(WorkflowInstance instance) => DeserializeInstance(Serialize(instance));
 
     /// <summary>
     /// 深拷贝节点实例
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static WorkflowNodeInstance Clone(WorkflowNodeInstance nodeInstance) => DeserializeNodeInstance(Serialize(nodeInstance));
 
     /// <summary>
     /// 深拷贝书签
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static WorkflowBookmark Clone(WorkflowBookmark bookmark) => DeserializeBookmark(Serialize(bookmark));
 
     /// <summary>
@@ -166,6 +175,7 @@ public static class WorkflowJson
     /// <summary>
     /// 事件数据 → UTF-8 JSON
     /// </summary>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static byte[] SerializeEvent(WorkflowEventData data)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -178,6 +188,7 @@ public static class WorkflowJson
     /// <remarks>
     /// 不合法抛出 <see cref="JsonException"/>
     /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static WorkflowEventData DeserializeEvent(ReadOnlySpan<byte> json)
         => JsonSerializer.Deserialize(json, WorkflowJsonContext.Default.WorkflowEventData) ?? throw new JsonException("The event JSON is null.");
 
@@ -187,6 +198,7 @@ public static class WorkflowJson
     /// <remarks>
     /// <c>code</c>、<c>message</c>、<c>messageKey</c>、<c>arguments</c>、<c>inner</c>（没有的不写）：子流程回调输入 <c>childFault</c> 与变量 <c>lastError</c> 都是这个形状（ADR-0105、ADR-0106）
     /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static JsonObject SerializeFault(WorkflowFault fault)
     {
         ArgumentNullException.ThrowIfNull(fault);
@@ -199,6 +211,7 @@ public static class WorkflowJson
     /// <remarks>
     /// 读 <c>childFault</c> 输入或 <c>lastError</c> 变量；不是 JSON 对象（没有故障）时为 <see langword="null"/>，对象不合法抛出 <see cref="JsonException"/>。只有 <c>code</c> 与 <c>message</c> 的旧形状照读，<see cref="WorkflowFault.Localize"/> 返回 <c>message</c> 原文
     /// </remarks>
+    [ApiLevel(Stability.Preview, "5.0")]
     public static WorkflowFault? DeserializeFault(JsonNode? node)
         => node is JsonObject value ? value.Deserialize(WorkflowJsonContext.Default.WorkflowFault) : null;
 }

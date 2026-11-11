@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Serialization;
 /// <summary>
 /// <see cref="WorkflowName"/> 以字符串序列化
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class WorkflowNameJsonConverter : JsonConverter<WorkflowName>
 {
     /// <inheritdoc />

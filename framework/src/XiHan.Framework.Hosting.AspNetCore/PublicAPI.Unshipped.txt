@@ -110,7 +110,8 @@ override XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.ToString() -> 
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Equals(object? obj) -> bool
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ToString() -> string!
-static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix = "/health") -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.UseXiHan(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
 static XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationBuilderExtensions.AddXiHan(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, System.Action<XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions!>? configure = null) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
 static XiHan.Framework.Hosting.AspNetCore.Blobs.BlobEndpointRouteBuilderExtensions.MapXiHanBlobs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
@@ -118,8 +119,10 @@ static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.FromConfigu
 static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.operator !=(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? left, XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.operator ==(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? left, XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanAuthentication<TBuilder>(this TBuilder builder) -> TBuilder
-static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPermission<TBuilder>(this TBuilder builder, string! permissionCode, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
-static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPolicy<TBuilder>(this TBuilder builder, string! policyName, XiHan.Framework.Kernel.Security.ResourceName? resource = null) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPermission<TBuilder>(this TBuilder builder, string! permissionCode) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPermission<TBuilder>(this TBuilder builder, string! permissionCode, XiHan.Framework.Kernel.Security.ResourceName? resource) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPolicy<TBuilder>(this TBuilder builder, string! policyName) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions.RequireXiHanPolicy<TBuilder>(this TBuilder builder, string! policyName, XiHan.Framework.Kernel.Security.ResourceName? resource) -> TBuilder
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.AcceptedLocales(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> System.Collections.Generic.IReadOnlyList<string!>!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.CreateContext(Microsoft.AspNetCore.Http.HttpContext! httpContext, System.IServiceProvider! services) -> XiHan.Framework.Primitives.InvocationContext!
@@ -133,7 +136,9 @@ static XiHan.Framework.Hosting.AspNetCore.Health.FeatureHealth.operator ==(XiHan
 static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator !=(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.operator ==(XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? left, XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FieldErrorsOf(XiHan.Framework.Primitives.Error! error, System.Func<XiHan.Framework.Kernel.Validation.SchemaViolation!, string!>! translate) -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>?
-static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail = null, System.Func<XiHan.Framework.Kernel.Validation.SchemaViolation!, string!>? translate = null) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
+static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.FromError(XiHan.Framework.Primitives.Error! error, string! instance, string! traceId, string? detail, System.Func<XiHan.Framework.Kernel.Validation.SchemaViolation!, string!>? translate) -> XiHan.Framework.Hosting.AspNetCore.ProblemResponse!
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.IsAuthenticationFailure(XiHan.Framework.Primitives.Error! error) -> bool
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ScalarDetailsOf(XiHan.Framework.Primitives.Error! error) -> System.Collections.Generic.IReadOnlyDictionary<string!, object?>?
 static XiHan.Framework.Hosting.AspNetCore.ProblemResponse.StatusCodeFor(XiHan.Framework.Primitives.Error! error) -> int

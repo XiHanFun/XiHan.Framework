@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// <summary>
 /// 定义声明的变量：启动时缺省补默认值，必填且没给值则启动失败
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record WorkflowVariableDefinition
 {
     /// <summary>

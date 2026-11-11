@@ -12,7 +12,7 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// <remarks>
 /// Provider 把连通性探针（PING、HEAD、打开连接）交给它，由它在后台按 <see cref="Interval"/> 重探并缓存最近一次结果，<see cref="Check"/> 只返回缓存、立即返回且不抛出。<see cref="StartAsync"/> 先同步探一次（超时取 <see cref="Interval"/>）再起循环，探针抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/>；探针返回的失败结果原样作为条目错误
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsyncDisposable
 {
     /// <summary>
@@ -65,13 +65,29 @@ public sealed partial class PeriodicHealthContributor : IHealthContributor, IAsy
     /// <summary>
     /// 创建
     /// </summary>
+    /// <remarks>
+    /// <c>description</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="name">条目名，即清单 <c>contributes.health</c> 里声明的名字</param>
+    /// <param name="probe">探针：成功表示可达，失败结果原样作为条目错误，抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/></param>
+    /// <param name="interval">重探间隔，也是单次探测的超时；必须为正</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="loggerFactory">日志工厂</param>
+    public PeriodicHealthContributor(string name, Func<CancellationToken, ValueTask<Result>> probe, TimeSpan interval, TimeProvider clock, ILoggerFactory loggerFactory)
+        : this(name, probe, interval, clock, loggerFactory, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
     /// <param name="name">条目名，即清单 <c>contributes.health</c> 里声明的名字</param>
     /// <param name="probe">探针：成功表示可达，失败结果原样作为条目错误，抛出的异常记为 <see cref="KernelErrors.HealthProbeFailed"/></param>
     /// <param name="interval">重探间隔，也是单次探测的超时；必须为正</param>
     /// <param name="clock">时钟</param>
     /// <param name="loggerFactory">日志工厂</param>
     /// <param name="description">条目检查的是什么；可空</param>
-    public PeriodicHealthContributor(string name, Func<CancellationToken, ValueTask<Result>> probe, TimeSpan interval, TimeProvider clock, ILoggerFactory loggerFactory, string? description = null)
+    public PeriodicHealthContributor(string name, Func<CancellationToken, ValueTask<Result>> probe, TimeSpan interval, TimeProvider clock, ILoggerFactory loggerFactory, string? description)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(probe);

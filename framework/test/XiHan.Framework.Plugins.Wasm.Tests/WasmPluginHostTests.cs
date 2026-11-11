@@ -9,6 +9,7 @@ using Wasmtime;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions.Messages;
@@ -79,7 +80,7 @@ public sealed class WasmPluginHostTests
         await using var host = await TestHost.StartAsync(
             static b => b.UseFeature<WasmPluginsFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.app.marker"))
             {
-                OnConfigure = static ctx => ctx.Pipeline.UseInstance(new MarkerMiddleware(), PipelineStage.Observe, owner: "xihan.app.marker"),
+                OnConfigure = static ctx => ctx.Pipeline.UseInstance(new MarkerMiddleware(), PipelineStage.Observe, Placement.End, owner: "xihan.app.marker"),
             }),
             [new("XiHan:Plugins:Wasm:Directories:0", plugin.Directory)]);
         Assert.Equal(LifecycleState.Ready, EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status.State);

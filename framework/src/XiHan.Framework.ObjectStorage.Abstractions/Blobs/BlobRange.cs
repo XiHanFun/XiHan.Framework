@@ -11,15 +11,27 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 /// <remarks>
 /// 从 <see cref="Offset"/> 起 <see cref="Length"/> 个字节，长度为空表示读到末尾；超出末尾的部分截掉。起点必须落在对象内，否则 <see cref="ObjectStorageErrors.RangeNotSatisfiable"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobRange
 {
     /// <summary>
     /// 创建
     /// </summary>
+    /// <remarks>
+    /// <c>length</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="offset">起点（从 0 起）</param>
+    public BlobRange(long offset)
+        : this(offset, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
     /// <param name="offset">起点（从 0 起）</param>
     /// <param name="length">长度；为 <see langword="null"/> 表示读到末尾</param>
-    public BlobRange(long offset, long? length = null)
+    public BlobRange(long offset, long? length)
     {
         Offset = offset >= 0 ? offset : throw new ArgumentOutOfRangeException(nameof(offset), offset, "The range offset must not be negative.");
         Length = length is null or > 0 ? length : throw new ArgumentOutOfRangeException(nameof(length), length, "The range length must be positive.");

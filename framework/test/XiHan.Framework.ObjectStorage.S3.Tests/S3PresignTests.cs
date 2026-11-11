@@ -37,7 +37,7 @@ public sealed class S3PresignTests
         Assert.True((await store.PutAsync(new ContainerName(Bucket), new BlobKey(key), Encoding.UTF8.GetBytes("0123456789"), new BlobPutOptions { ContentType = "text/plain" }, CancellationToken.None)).IsSuccess);
 
         // 下载：整读带保存文件名，范围请求 206
-        var download = (await store.SignAsync(new ContainerName(Bucket), new BlobKey(key), BlobUrlRequest.ForDownload(downloadFileName: "报告.txt"), CancellationToken.None)).ValueOrThrow();
+        var download = (await store.SignAsync(new ContainerName(Bucket), new BlobKey(key), BlobUrlRequest.ForDownload(expiresIn: null, downloadFileName: "报告.txt"), CancellationToken.None)).ValueOrThrow();
         Assert.True(download.Url.IsAbsoluteUri);
         using (var whole = await _http.GetAsync(download.Url))
         {
@@ -54,7 +54,7 @@ public sealed class S3PresignTests
 
         // 上传：限定内容类型，请求带上签出的头即成功，存进去的内容类型就是它
         var target = Guid.NewGuid().ToString("N")[..8] + "/upload.md";
-        var upload = (await store.SignAsync(new ContainerName(Bucket), new BlobKey(target), BlobUrlRequest.ForUpload(contentType: "text/markdown"), CancellationToken.None)).ValueOrThrow();
+        var upload = (await store.SignAsync(new ContainerName(Bucket), new BlobKey(target), BlobUrlRequest.ForUpload(expiresIn: null, contentType: "text/markdown"), CancellationToken.None)).ValueOrThrow();
         using (var put = await _http.PutAsync(upload.Url, new ByteArrayContent(Encoding.UTF8.GetBytes("# hi")) { Headers = { ContentType = new MediaTypeHeaderValue(upload.Headers["Content-Type"]) } }))
         {
             Assert.Equal(HttpStatusCode.OK, put.StatusCode);

@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <remarks>
 /// 只有失败的运行重试（作业返回失败、抛出异常或超过执行时限），被取消与失联的不重试；重试是一次新运行，<see cref="JobRun.Attempt"/> 加一（RFC-0013，ADR-0060）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobRetryPolicy
 {
     /// <summary>
@@ -82,7 +82,16 @@ public sealed record JobRetryPolicy
     /// <summary>
     /// 指数退避的策略
     /// </summary>
-    public static JobRetryPolicy Exponential(int maxRetries, TimeSpan delay, TimeSpan? maxDelay = null)
+    /// <remarks>
+    /// <c>maxDelay</c> 取 <c>null</c>
+    /// </remarks>
+    public static JobRetryPolicy Exponential(int maxRetries, TimeSpan delay)
+        => Exponential(maxRetries, delay, null);
+
+    /// <summary>
+    /// 指数退避的策略
+    /// </summary>
+    public static JobRetryPolicy Exponential(int maxRetries, TimeSpan delay, TimeSpan? maxDelay)
         => new(maxRetries, delay) { Backoff = JobRetryBackoff.Exponential, MaxDelay = maxDelay };
 
     /// <summary>

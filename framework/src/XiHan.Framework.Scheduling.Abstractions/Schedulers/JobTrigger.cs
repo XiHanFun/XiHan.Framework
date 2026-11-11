@@ -8,7 +8,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 /// <summary>
 /// 一次运行的触发来源
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public enum JobTrigger
 {
     /// <summary>

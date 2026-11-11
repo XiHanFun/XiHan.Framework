@@ -15,7 +15,7 @@ namespace XiHan.Framework.Caching.Redis;
 /// <remarks>
 /// 从配置节 <c>XiHan:Caching:Redis</c> 与绑定 <c>cache</c> 显式读取（RFC-0016「资源绑定与配置节」）：绑定的主值覆盖 <c>Configuration</c>，绑定的属性 <c>username</c> / <c>password</c> 覆盖连接字符串里的 <c>user</c> / <c>password</c>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record RedisCachingOptions
 {
     /// <summary>

@@ -10,7 +10,7 @@ namespace XiHan.Framework.Configuration.Abstractions;
 /// <summary>
 /// 配置子系统的能力 ID 与接口版本
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class ConfigurationCapabilities
 {
     /// <summary>

@@ -30,7 +30,17 @@ public static class EndpointConventionBuilderExtensions
     /// <summary>
     /// 端点要求权限（权限码须由某个特性登记）
     /// </summary>
-    public static TBuilder RequireXiHanPermission<TBuilder>(this TBuilder builder, string permissionCode, ResourceName? resource = null)
+    /// <remarks>
+    /// <c>resource</c> 取 <c>null</c>
+    /// </remarks>
+    public static TBuilder RequireXiHanPermission<TBuilder>(this TBuilder builder, string permissionCode)
+        where TBuilder : IEndpointConventionBuilder
+        => RequireXiHanPermission<TBuilder>(builder, permissionCode, null);
+
+    /// <summary>
+    /// 端点要求权限（权限码须由某个特性登记）
+    /// </summary>
+    public static TBuilder RequireXiHanPermission<TBuilder>(this TBuilder builder, string permissionCode, ResourceName? resource)
         where TBuilder : IEndpointConventionBuilder
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -40,7 +50,17 @@ public static class EndpointConventionBuilderExtensions
     /// <summary>
     /// 端点要求命名策略
     /// </summary>
-    public static TBuilder RequireXiHanPolicy<TBuilder>(this TBuilder builder, string policyName, ResourceName? resource = null)
+    /// <remarks>
+    /// <c>resource</c> 取 <c>null</c>
+    /// </remarks>
+    public static TBuilder RequireXiHanPolicy<TBuilder>(this TBuilder builder, string policyName)
+        where TBuilder : IEndpointConventionBuilder
+        => RequireXiHanPolicy<TBuilder>(builder, policyName, null);
+
+    /// <summary>
+    /// 端点要求命名策略
+    /// </summary>
+    public static TBuilder RequireXiHanPolicy<TBuilder>(this TBuilder builder, string policyName, ResourceName? resource)
         where TBuilder : IEndpointConventionBuilder
     {
         ArgumentNullException.ThrowIfNull(builder);

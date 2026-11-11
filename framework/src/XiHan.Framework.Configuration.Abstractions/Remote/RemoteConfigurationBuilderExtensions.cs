@@ -9,7 +9,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 /// <summary>
 /// 远程配置的构建器扩展
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class RemoteConfigurationBuilderExtensions
 {
     /// <summary>

@@ -20,7 +20,7 @@ namespace XiHan.Framework.Messaging.RabbitMQ;
 /// <remarks>
 /// 提供 <c>messaging.queue@1</c>；启动时连接并消费全部订阅主题，停止时关闭。健康项 <see cref="HealthName"/> 按 <see cref="RabbitMQMessagingOptions.HealthProbeInterval"/> 周期检查连接与发布通道是否打开
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class RabbitMQMessagingFeature : IHostedFeature
 {
     /// <summary>

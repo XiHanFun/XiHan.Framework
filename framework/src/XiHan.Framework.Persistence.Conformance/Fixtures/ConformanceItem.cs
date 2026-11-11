@@ -9,7 +9,7 @@ namespace XiHan.Framework.Persistence.Conformance.Fixtures;
 /// <summary>
 /// 套件实体：整数标识、不实现任何协议，删除即物理删除
 /// </summary>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed class ConformanceItem : IEntity<int>
 {
     /// <inheritdoc />

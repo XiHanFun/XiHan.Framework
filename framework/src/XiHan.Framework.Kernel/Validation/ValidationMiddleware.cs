@@ -140,12 +140,12 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
             var members = result.MemberNames.Where(static m => !string.IsNullOrWhiteSpace(m)).ToList();
             if (members.Count == 0)
             {
-                violations.Add(new SchemaViolation("$", reason, messageKey));
+                violations.Add(new SchemaViolation("$", reason) { MessageKey = messageKey });
             }
 
             foreach (var member in members)
             {
-                violations.Add(new SchemaViolation($"$.{JsonNamingPolicy.CamelCase.ConvertName(member)}", reason, messageKey));
+                violations.Add(new SchemaViolation($"$.{JsonNamingPolicy.CamelCase.ConvertName(member)}", reason) { MessageKey = messageKey });
             }
 
             if (violations.Count >= JsonSchemaValidator.MaxViolations)

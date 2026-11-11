@@ -13,4 +13,14 @@ namespace XiHan.Framework.Persistence.Abstractions.Queries;
 /// <param name="KeySelector">排序键</param>
 /// <param name="Descending">是否降序</param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record Ordering<T>(Expression<Func<T, object?>> KeySelector, bool Descending = false);
+public sealed record Ordering<T>(Expression<Func<T, object?>> KeySelector, bool Descending)
+{
+    /// <summary>
+    /// 升序的一项排序
+    /// </summary>
+    /// <param name="keySelector">排序键</param>
+    public Ordering(Expression<Func<T, object?>> keySelector)
+        : this(keySelector, false)
+    {
+    }
+}

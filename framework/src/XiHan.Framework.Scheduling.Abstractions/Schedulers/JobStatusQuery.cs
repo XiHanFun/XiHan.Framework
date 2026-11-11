@@ -12,7 +12,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 /// <remarks>
 /// 按作业名的序数升序分页；续页令牌对调用方不透明，传上一页 <see cref="JobStatusPage.ContinuationToken"/> 的原值（ADR-0148）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobStatusQuery
 {
     /// <summary>

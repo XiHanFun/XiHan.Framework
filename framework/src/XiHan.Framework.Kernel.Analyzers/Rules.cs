@@ -96,6 +96,45 @@ internal static class Rules
         helpLinkUri: HelpLink);
 
     /// <summary>
+    /// XH0006：Stable 的签名引用了不稳定的类型
+    /// </summary>
+    /// <remarks>
+    /// 生效级别为 Stable 的公开类型或成员，签名引用了 Preview 或 Experimental 的类型
+    /// </remarks>
+    public static readonly DiagnosticDescriptor StableReferencesUnstable = new(
+        "XH0006",
+        "Stable API must not reference unstable types",
+        "'{0}' is Stable but its signature references '{1}', which is {2}",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: HelpLink);
+
+    /// <summary>
+    /// XH0007：成员或嵌套类型单独标注的级别高于所在类型的生效级别
+    /// </summary>
+    public static readonly DiagnosticDescriptor MemberAboveType = new(
+        "XH0007",
+        "Member stability must not exceed its containing type",
+        "'{0}' is annotated {1}, which is higher than {2} on its containing type '{3}'",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: HelpLink);
+
+    /// <summary>
+    /// XH0008：生效级别为 Stable 的公开方法、构造或索引器声明了可选参数
+    /// </summary>
+    public static readonly DiagnosticDescriptor StableOptionalParameter = new(
+        "XH0008",
+        "Stable API must not declare optional parameters",
+        "'{0}' is Stable and must not declare the optional parameter '{1}'; use an overload or an options record",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: HelpLink);
+
+    /// <summary>
     /// 诊断消息里的符号写法：<c>Type.Member(参数类型)</c>，不带返回类型与命名空间
     /// </summary>
     public static readonly SymbolDisplayFormat DisplayFormat = new(

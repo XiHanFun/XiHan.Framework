@@ -18,7 +18,7 @@ namespace XiHan.Framework.Profiles.Standard;
 /// <remarks>
 /// Minimal（含本地化）加五个子系统的内存默认实现。显式 Provider 顶替同能力的默认实现
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public static class StandardProfile
 {
     /// <summary>

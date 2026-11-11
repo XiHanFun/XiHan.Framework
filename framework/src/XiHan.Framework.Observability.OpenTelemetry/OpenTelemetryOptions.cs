@@ -14,7 +14,7 @@ namespace XiHan.Framework.Observability.OpenTelemetry;
 /// <remarks>
 /// 从配置节 <c>XiHan:Observability:OpenTelemetry</c> 显式读取：<c>ServiceName</c>、<c>ServiceVersion</c>、<c>Tracing</c>、<c>Metrics</c>、<c>Logging</c>、<c>SamplingRatio</c>、<c>Otlp:Enabled</c>、<c>Otlp:Endpoint</c>、<c>Otlp:Protocol</c>、<c>Console</c>、<c>Sources</c>（逗号分隔）、<c>Meters</c>（逗号分隔）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record OpenTelemetryOptions
 {
     /// <summary>

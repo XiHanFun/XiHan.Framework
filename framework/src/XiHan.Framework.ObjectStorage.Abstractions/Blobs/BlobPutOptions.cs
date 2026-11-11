@@ -9,7 +9,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 /// <summary>
 /// 写入选项：内容类型、自定义元数据（名 <c>^[a-z0-9][a-z0-9-]{0,63}$</c>）、是否允许覆盖
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed partial record BlobPutOptions
 {
     /// <summary>

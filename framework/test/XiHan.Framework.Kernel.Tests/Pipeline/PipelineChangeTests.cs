@@ -27,9 +27,9 @@ public sealed class PipelineChangeTests
     {
         var log = new List<string>();
         var builder = new PipelineBuilder()
-            .UseNamedInstance("p:first", new MiddlewareA(log), PipelineStage.Observe, owner: Plugin)
-            .UseAt<MiddlewareB>(PipelineStage.Observe, owner: "xihan.a")
-            .UseNamedInstance("p:second", new MiddlewareA(log), PipelineStage.Observe, owner: Plugin)
+            .UseNamedInstance("p:first", new MiddlewareA(log), PipelineStage.Observe, Placement.End, owner: Plugin)
+            .UseAt<MiddlewareB>(PipelineStage.Observe, Placement.End, owner: "xihan.a")
+            .UseNamedInstance("p:second", new MiddlewareA(log), PipelineStage.Observe, Placement.End, owner: Plugin)
             .Before("p:second", typeof(MiddlewareB).FullName!);
         var original = builder.Dump();
 
@@ -40,8 +40,8 @@ public sealed class PipelineChangeTests
 
         // 同名再登记不撞上自己留下的登记，排序规则把它放回原来的位置
         builder.UseOwned(Plugin, static p => p
-            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
-            .UseNamedInstance("p:second", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
+            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
+            .UseNamedInstance("p:second", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
             .Before("p:second", typeof(MiddlewareB).FullName!));
         Assert.Equal(original, builder.Dump());
     }
@@ -49,46 +49,46 @@ public sealed class PipelineChangeTests
     [Fact]
     public void UseOwned_ThatCannotBeOrdered_LeavesThePipelineUnchanged()
     {
-        var builder = new PipelineBuilder().UseAt<MiddlewareB>(PipelineStage.Observe, owner: "xihan.a");
+        var builder = new PipelineBuilder().UseAt<MiddlewareB>(PipelineStage.Observe, Placement.End, owner: "xihan.a");
         var original = builder.Dump();
 
         // 目标未登记：回调里的单项登记都成功了，回调之后的核对整组撤掉
         var missing = Assert.Throws<FrameworkException>(() => builder.UseOwned(Plugin, static p => p
-            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
+            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
             .After("p:first", "xihan.other:missing")));
         Assert.Equal(KernelErrors.PipelineRegistration, missing.Code);
         Assert.Equal(original, builder.Dump());
 
         // 组内成环
         var cycle = Assert.Throws<FrameworkException>(() => builder.UseOwned(Plugin, static p => p
-            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
-            .UseNamedInstance("p:second", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
+            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
+            .UseNamedInstance("p:second", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
             .Before("p:first", "p:second")
             .Before("p:second", "p:first")));
         Assert.Equal(KernelErrors.PipelineCycle, cycle.Code);
         Assert.Equal(original, builder.Dump());
 
         // 撤掉的名字可以再登记：去重索引也一并还原
-        builder.UseOwned(Plugin, static p => p.UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin));
+        builder.UseOwned(Plugin, static p => p.UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin));
         Assert.Contains("[p:first]", builder.Dump(), StringComparison.Ordinal);
     }
 
     [Fact]
     public void UseOwned_RejectsOtherOwners_ConstraintsOutsideTheGroup_AndNesting()
     {
-        var builder = new PipelineBuilder().UseAt<MiddlewareB>(PipelineStage.Observe, owner: "xihan.a");
+        var builder = new PipelineBuilder().UseAt<MiddlewareB>(PipelineStage.Observe, Placement.End, owner: "xihan.a");
         var original = builder.Dump();
 
         // 一组只有一个归属：混进别的归属会被错撤或漏撤
         Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => builder.UseOwned(Plugin, static p => p
-            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
-            .UseNamedInstance("q:first", new MiddlewareA([]), PipelineStage.Observe, owner: "xihan.plugins.q"))).Code);
+            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
+            .UseNamedInstance("q:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: "xihan.plugins.q"))).Code);
         // 约束只能挂在组内的中间件上：挂在组外的不会随这一组撤回
         Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => builder.UseOwned(Plugin, static p => p
-            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
+            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
             .After(typeof(MiddlewareB).FullName!, "p:first"))).Code);
         Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => builder.UseOwned(Plugin, static p => p
-            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
+            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
             .UseOwned(Plugin, static _ => { }))).Code);
         Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => builder.UseOwned(Plugin, static p => p.RemoveOwnedBy("xihan.a"))).Code);
 
@@ -100,8 +100,8 @@ public sealed class PipelineChangeTests
     {
         // 别的归属的中间件以次序约束引用了插件的中间件：撤回会让它指向不存在的中间件
         var builder = new PipelineBuilder()
-            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, owner: Plugin)
-            .UseAt<MiddlewareB>(PipelineStage.Observe, owner: "xihan.a")
+            .UseNamedInstance("p:first", new MiddlewareA([]), PipelineStage.Observe, Placement.End, owner: Plugin)
+            .UseAt<MiddlewareB>(PipelineStage.Observe, Placement.End, owner: "xihan.a")
             .After(typeof(MiddlewareB).FullName!, "p:first");
         var original = builder.Dump();
 
@@ -121,7 +121,7 @@ public sealed class PipelineChangeTests
         {
             pipeline = b.Pipeline;
             b.UseFeature(new EchoFeature());
-            b.Pipeline.UseInstance(new TracingMiddleware(log, "P"), PipelineStage.Observe, owner: Plugin);
+            b.Pipeline.UseInstance(new TracingMiddleware(log, "P"), PipelineStage.Observe, Placement.End, owner: Plugin);
         });
         using var _ = provider;
         await app.StartAsync(CancellationToken.None);
@@ -156,7 +156,7 @@ public sealed class PipelineChangeTests
         Assert.Equal(["enter:P", "exit:P"], log);
 
         // 再成组登记回来：之后的调用又经过它
-        pipeline.UseOwned(Plugin, p => p.UseInstance(new TracingMiddleware(log, "Q"), PipelineStage.Observe, owner: Plugin));
+        pipeline.UseOwned(Plugin, p => p.UseInstance(new TracingMiddleware(log, "Q"), PipelineStage.Observe, Placement.End, owner: Plugin));
         Assert.True((await InvokeAsync(provider, app, static _ => ValueTask.CompletedTask)).IsSuccess);
         Assert.Equal(["enter:P", "exit:P", "enter:Q", "exit:Q"], log);
     }
@@ -177,12 +177,12 @@ public sealed class PipelineChangeTests
         Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => pipeline.UseInstance(new MiddlewareA([]), PipelineStage.Observe)).Code);
         Assert.Equal(KernelErrors.PipelineRegistration, Assert.Throws<FrameworkException>(() => pipeline.After(typeof(OperationCaptureMiddleware).FullName!, "xihan.other:missing")).Code);
         // 容器已经建好：按类型登记的中间件进不了容器
-        var byType = Assert.Throws<FrameworkException>(() => pipeline.UseOwned(Plugin, static p => p.UseAt<MiddlewareC>(PipelineStage.Observe, owner: Plugin)));
+        var byType = Assert.Throws<FrameworkException>(() => pipeline.UseOwned(Plugin, static p => p.UseAt<MiddlewareC>(PipelineStage.Observe, Placement.End, owner: Plugin)));
         Assert.Equal(KernelErrors.PipelineRegistration, byType.Code);
         Assert.Contains("UseNamedInstance", byType.Message, StringComparison.Ordinal);
         Assert.Equal(original, app.DescribePipeline());
 
-        pipeline.UseOwned(Plugin, static p => p.UseInstance(new MiddlewareC([]), PipelineStage.Observe, owner: Plugin));
+        pipeline.UseOwned(Plugin, static p => p.UseInstance(new MiddlewareC([]), PipelineStage.Observe, Placement.End, owner: Plugin));
         Assert.Contains(typeof(MiddlewareC).FullName!, app.DescribePipeline(), StringComparison.Ordinal);
     }
 

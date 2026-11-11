@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 /// <remarks>
 /// 键、内容流与选项。流由调用方负责释放；Provider 从当前位置读到末尾
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobUpload
 {
     /// <summary>

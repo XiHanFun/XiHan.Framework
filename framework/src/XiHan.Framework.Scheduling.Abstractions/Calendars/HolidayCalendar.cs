@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 /// <remarks>
 /// 日期按给定时区的墙上日期判断，缺省 UTC
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class HolidayCalendar : IJobCalendar
 {
     /// <summary>
@@ -27,7 +27,18 @@ public sealed class HolidayCalendar : IJobCalendar
     /// <summary>
     /// 创建
     /// </summary>
-    public HolidayCalendar(IEnumerable<DateOnly> dates, TimeZoneInfo? timeZone = null)
+    /// <remarks>
+    /// <c>timeZone</c> 取 <c>null</c>
+    /// </remarks>
+    public HolidayCalendar(IEnumerable<DateOnly> dates)
+        : this(dates, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
+    public HolidayCalendar(IEnumerable<DateOnly> dates, TimeZoneInfo? timeZone)
     {
         ArgumentNullException.ThrowIfNull(dates);
         _dates = [.. dates];

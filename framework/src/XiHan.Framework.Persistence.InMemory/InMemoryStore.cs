@@ -15,7 +15,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// <remarks>
 /// 每种实体一张有界的表。单例。同时是健康项 <see cref="InMemoryPersistenceFeature.HealthName"/> 的贡献者：任一张表满即 Degraded
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemoryStore(InMemoryPersistenceOptions options) : IHealthContributor
 {
     /// <summary>

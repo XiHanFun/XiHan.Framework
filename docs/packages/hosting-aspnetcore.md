@@ -11,7 +11,7 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 | 配置节 | 环境变量 `XIHAN_CONFIG_PATH`；`XiHan:ObjectStorage:SignedUrls`（预签名地址特性）；方案 `XiHan` 读 `XiHan:Security:RoleClaim` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Security.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.ObjectStorage.Abstractions`；共享框架 `Microsoft.AspNetCore.App` |
 | AOT | 兼容（`IsAotCompatible`） |
-| 稳定性 | `UseXiHan`、`MapXiHanHealth`、`HttpInvocation`、`ProblemResponse`、端点约定为 Stable；`WebApplicationBuilder.AddXiHan`、认证方案 `XiHan`、`OperationPayloadBinder`、`OperationResponseWriter`、预签名地址为 Preview |
+| 稳定性 | `WebApplicationBuilder.AddXiHan`、`UseXiHan`、`MapXiHanHealth`、`HttpInvocation`、`ProblemResponse`、端点约定为 Stable；认证方案 `XiHan`、`OperationPayloadBinder`、`OperationResponseWriter`、预签名地址为 Preview |
 
 ## 概述
 

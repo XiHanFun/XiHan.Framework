@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 /// <remarks>
 /// 以后加字段只加初始化器属性（ADR-0142）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobMetadata
 {
     /// <summary>

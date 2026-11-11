@@ -26,7 +26,7 @@ namespace XiHan.Framework.Persistence.Conformance;
 /// <remarks>
 /// 继承并实现 <see cref="CreateFeature"/>，全部用例随之执行。每个用例都以 <see cref="TestHost"/> 走完整管道：工作单元由 Transaction 阶段的中间件开启、提交或回滚
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public abstract class RepositoryConformance
 {
     /// <summary>

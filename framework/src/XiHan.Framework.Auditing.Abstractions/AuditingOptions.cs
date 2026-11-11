@@ -13,7 +13,7 @@ namespace XiHan.Framework.Auditing.Abstractions;
 /// <remarks>
 /// 从配置节 <c>XiHan:Auditing</c> 显式读取：<c>Selection</c>、<c>IncludeSuccesses</c>、<c>Exclude</c>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed partial record AuditingOptions
 {
     /// <summary>

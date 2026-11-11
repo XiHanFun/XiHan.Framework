@@ -17,7 +17,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// <remarks>
 /// 实体不需要继承 SqlSugar 基类或标注 <c>[SugarColumn]</c>。<c>Id</c> 是主键（是否自增沿用实体自己的声明），<see cref="IHasConcurrencyStamp"/> 的并发戳长度 32，字符串列的长度按 <see cref="StringLengthAttribute"/> / <see cref="MaxLengthAttribute"/>，<see cref="LongTextAttribute"/>（或无参的 <c>[MaxLength]</c>）为长文本类型，<see cref="DateTimeOffset"/> 按 UTC 时刻往返，可空值类型与可空引用类型的列可空，没有公开 setter 的属性与集合属性不映射到列，实体上的 <see cref="EntityIndexAttribute"/> 在 <c>InitTables</c> 时建成索引（见 <see cref="ConfigureIndexes"/>，软删除实体的部分唯一索引由 <see cref="InitTables"/> 补建）；经 <see cref="Apply"/> 施加时，PostgreSQL 上非可空的数值 / 枚举 / 布尔 / Guid 列另带 CLR 缺省值，<c>InitTables</c> 才能给已有行的表加这类列（见 <see cref="ConfigureDefault"/>），字符串的 <c>Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 按字面匹配，PostgreSQL 的连接固定 <c>standard_conforming_strings = on</c>（见 <see cref="Apply"/>）。由本特性创建客户端时自动应用；应用自己注册 <c>ISqlSugarClient</c> 时，须在创建客户端前对 <c>ConnectionConfig</c> 调用 <see cref="Apply"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class SqlSugarConventions
 {
     /// <summary>

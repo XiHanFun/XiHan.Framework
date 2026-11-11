@@ -1,13 +1,21 @@
 #nullable enable
 XiHan.Framework.Kernel.Analyzers.InternalApiUsageAnalyzer
 XiHan.Framework.Kernel.Analyzers.InternalApiUsageAnalyzer.InternalApiUsageAnalyzer() -> void
+XiHan.Framework.Kernel.Analyzers.OptionalParameterAnalyzer
+XiHan.Framework.Kernel.Analyzers.OptionalParameterAnalyzer.OptionalParameterAnalyzer() -> void
 XiHan.Framework.Kernel.Analyzers.PublicTypeAnalyzer
 XiHan.Framework.Kernel.Analyzers.PublicTypeAnalyzer.PublicTypeAnalyzer() -> void
 XiHan.Framework.Kernel.Analyzers.ReflectionUsageAnalyzer
 XiHan.Framework.Kernel.Analyzers.ReflectionUsageAnalyzer.ReflectionUsageAnalyzer() -> void
+XiHan.Framework.Kernel.Analyzers.StabilityDependencyAnalyzer
+XiHan.Framework.Kernel.Analyzers.StabilityDependencyAnalyzer.StabilityDependencyAnalyzer() -> void
 override XiHan.Framework.Kernel.Analyzers.InternalApiUsageAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
 override XiHan.Framework.Kernel.Analyzers.InternalApiUsageAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>
+override XiHan.Framework.Kernel.Analyzers.OptionalParameterAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
+override XiHan.Framework.Kernel.Analyzers.OptionalParameterAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>
 override XiHan.Framework.Kernel.Analyzers.PublicTypeAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
 override XiHan.Framework.Kernel.Analyzers.PublicTypeAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>
 override XiHan.Framework.Kernel.Analyzers.ReflectionUsageAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
 override XiHan.Framework.Kernel.Analyzers.ReflectionUsageAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>
+override XiHan.Framework.Kernel.Analyzers.StabilityDependencyAnalyzer.Initialize(Microsoft.CodeAnalysis.Diagnostics.AnalysisContext! context) -> void
+override XiHan.Framework.Kernel.Analyzers.StabilityDependencyAnalyzer.SupportedDiagnostics.get -> System.Collections.Immutable.ImmutableArray<Microsoft.CodeAnalysis.DiagnosticDescriptor!>

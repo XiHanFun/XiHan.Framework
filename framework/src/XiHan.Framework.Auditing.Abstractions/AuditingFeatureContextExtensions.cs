@@ -13,7 +13,7 @@ namespace XiHan.Framework.Auditing.Abstractions;
 /// <summary>
 /// 审计 Provider 装配时的公共步骤
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class AuditingFeatureContextExtensions
 {
     /// <summary>

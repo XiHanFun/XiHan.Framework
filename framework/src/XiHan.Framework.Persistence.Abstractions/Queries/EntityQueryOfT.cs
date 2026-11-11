@@ -82,7 +82,16 @@ public sealed record EntityQuery<T>
     /// <summary>
     /// 派生追加排序的查询
     /// </summary>
-    public EntityQuery<T> OrderBy(Expression<Func<T, object?>> keySelector, bool descending = false)
+    /// <remarks>
+    /// <c>descending</c> 取 <c>false</c>
+    /// </remarks>
+    public EntityQuery<T> OrderBy(Expression<Func<T, object?>> keySelector)
+        => OrderBy(keySelector, false);
+
+    /// <summary>
+    /// 派生追加排序的查询
+    /// </summary>
+    public EntityQuery<T> OrderBy(Expression<Func<T, object?>> keySelector, bool descending)
     {
         ArgumentNullException.ThrowIfNull(keySelector);
         return this with { Orderings = [.. Orderings, new Ordering<T>(keySelector, descending)] };

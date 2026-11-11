@@ -12,7 +12,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 /// <remarks>
 /// 通常经 <see cref="RemoteConfigurationBuilderExtensions.AddXiHanRemoteConfiguration(IConfigurationBuilder, IRemoteConfigurationClient, RemoteConfigurationOptions)"/> 使用。客户端由调用方持有，Provider 释放时不释放它
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class RemoteConfigurationSource : IConfigurationSource
 {
     /// <summary>

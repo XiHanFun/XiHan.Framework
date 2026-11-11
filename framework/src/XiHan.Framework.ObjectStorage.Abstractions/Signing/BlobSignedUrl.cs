@@ -15,5 +15,5 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 /// <param name="Method">方法</param>
 /// <param name="ExpiresAt">失效时刻（UTC）</param>
 /// <param name="Headers">请求必须带的头</param>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobSignedUrl(Uri Url, BlobUrlMethod Method, DateTimeOffset ExpiresAt, IReadOnlyDictionary<string, string> Headers);

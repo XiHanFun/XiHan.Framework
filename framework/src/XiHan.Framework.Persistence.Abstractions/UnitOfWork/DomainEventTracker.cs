@@ -12,7 +12,7 @@ namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 /// <remarks>
 /// 仓储在新增 / 更新 / 删除成功后登记实体，实现 <see cref="IHasDomainEvents"/> 的按首次写入顺序记一次（按引用去重）；Transaction 阶段提交前取出带有未派发事件的聚合交给 <see cref="IDomainEventDispatcher"/>。工作单元是作用域服务，不需要并发保护
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class DomainEventTracker
 {
     /// <summary>

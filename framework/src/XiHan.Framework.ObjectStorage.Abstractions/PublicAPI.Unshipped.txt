@@ -46,7 +46,8 @@ XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.Overwrite.get ->
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.Overwrite.init -> void
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange!
-XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange.BlobRange(long offset, long? length = null) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange.BlobRange(long offset) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange.BlobRange(long offset, long? length) -> void
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange.Equals(XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange? other) -> bool
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange.Length.get -> long?
 XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobRange.Offset.get -> long
@@ -107,7 +108,8 @@ XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.Overwri
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.UploadId.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart!
-XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart.BlobPart(int partNumber, string! eTag, long length = 0) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart.BlobPart(int partNumber, string! eTag) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart.BlobPart(int partNumber, string! eTag, long length) -> void
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart.ETag.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart.Equals(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart? other) -> bool
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobPart.Length.get -> long
@@ -161,7 +163,8 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreFailures
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreSelection
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreServiceCollectionExtensions
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores
-XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.BlobStores(System.Collections.Generic.IEnumerable<XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!>! providers, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, Microsoft.Extensions.Configuration.IConfiguration? configuration = null) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.BlobStores(System.Collections.Generic.IEnumerable<XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!>! providers, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.BlobStores(System.Collections.Generic.IEnumerable<XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider!>! providers, System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, Microsoft.Extensions.Configuration.IConfiguration? configuration) -> void
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.Check() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Hosting.ContributorStatus!>!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.DisposeAsync() -> System.Threading.Tasks.ValueTask
 XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.GetAsync(string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore!>>
@@ -309,9 +312,14 @@ static XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.Catalog.
 static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobContentDisposition.Attachment(string! fileName) -> string!
 static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl? left, XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl? left, XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl? right) -> bool
-static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForDownload(System.TimeSpan? expiresIn = null, string? downloadFileName = null) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
-static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForPart(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload! upload, int partNumber, System.TimeSpan? expiresIn = null) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
-static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForUpload(System.TimeSpan? expiresIn = null, string? contentType = null) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
+static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForDownload() -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
+static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForDownload(System.TimeSpan? expiresIn) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
+static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForDownload(System.TimeSpan? expiresIn, string? downloadFileName) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
+static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForPart(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload! upload, int partNumber) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
+static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForPart(XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload! upload, int partNumber, System.TimeSpan? expiresIn) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
+static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForUpload() -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
+static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForUpload(System.TimeSpan? expiresIn) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
+static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.ForUpload(System.TimeSpan? expiresIn, string? contentType) -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest!
 static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest? left, XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest? left, XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlRequest? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStoreDefinition.IsValidName(string? name) -> bool

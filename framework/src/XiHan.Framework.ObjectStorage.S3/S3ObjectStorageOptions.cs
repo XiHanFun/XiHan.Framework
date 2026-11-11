@@ -15,7 +15,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// <remarks>
 /// 从配置节 <c>XiHan:ObjectStorage:S3</c> 显式读取：<c>ServiceUrl</c>、<c>Region</c>、<c>AccessKey</c>、<c>SecretKey</c>、<c>ForcePathStyle</c>、<c>EnsureBuckets</c>、<c>HealthBucket</c>、<c>ConditionalWrites</c>、<c>HealthProbeIntervalSeconds</c>；绑定 <c>objectstorage</c> 存在时其主值与属性（<c>region</c>、<c>accessKey</c>、<c>secretKey</c>、<c>forcePathStyle</c>）逐项覆盖配置，空白的不算给出（RFC-0016「资源绑定与配置节」）。命名实例（Provider <c>s3</c>）的设置用同样的键（不含 <c>HealthProbeIntervalSeconds</c>）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record S3ObjectStorageOptions
 {
     /// <summary>
@@ -117,7 +117,16 @@ public sealed record S3ObjectStorageOptions
     /// <summary>
     /// 从配置读取，再用绑定（若有）覆盖
     /// </summary>
-    public static S3ObjectStorageOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding = default)
+    /// <remarks>
+    /// <c>binding</c> 取 <c>default</c>
+    /// </remarks>
+    public static S3ObjectStorageOptions FromConfiguration(IConfiguration configuration)
+        => FromConfiguration(configuration, default);
+
+    /// <summary>
+    /// 从配置读取，再用绑定（若有）覆盖
+    /// </summary>
+    public static S3ObjectStorageOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = Parse(name => configuration[$"{ConfigurationSection}:{name}"], ConfigurationSection + ":");

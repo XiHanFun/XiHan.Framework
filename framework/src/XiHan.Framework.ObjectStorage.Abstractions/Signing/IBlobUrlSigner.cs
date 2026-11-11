@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 /// <remarks>
 /// 签出一个限时的地址，客户端不带凭据直接下载、上传或上传分片。原生支持的存储（S3）由存储签名、客户端直连存储；不支持的存储（文件系统）由宿主的签名端点代为收发。签名是本地计算，不检查对象是否存在
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface IBlobUrlSigner
 {
     /// <summary>

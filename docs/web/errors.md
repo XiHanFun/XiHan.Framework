@@ -299,7 +299,7 @@ app.Run();
 
 ### 需要带上内部原因怎么办
 
-用 `Inner`：`Error.Unexpected(code, messageKey, inner: inner)` 或 `new Error(code, messageKey, details, inner)`。`Inner` 进日志，不进 Problem Details。
+用 `Inner`：`Error.Unexpected(code, messageKey, null, inner)` 或 `new Error(code, messageKey, details, inner)`。`Inner` 进日志，不进 Problem Details。
 
 ## 相关包与下一步
 

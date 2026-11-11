@@ -11,7 +11,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 /// <remarks>
 /// 元数据与内容流；释放时关闭流
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class BlobContent : IAsyncDisposable
 {
     /// <summary>

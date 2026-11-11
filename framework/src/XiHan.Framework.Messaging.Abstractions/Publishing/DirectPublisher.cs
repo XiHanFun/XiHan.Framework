@@ -16,8 +16,17 @@ namespace XiHan.Framework.Messaging.Abstractions.Publishing;
 /// <param name="broker">目标代理</param>
 /// <param name="invocation">当前调用的访问器；为 <see langword="null"/> 时不补扩展</param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed class DirectPublisher(IMessageBroker broker, IInvocationAccessor? invocation = null) : IMessagePublisher
+public sealed class DirectPublisher(IMessageBroker broker, IInvocationAccessor? invocation) : IMessagePublisher
 {
+    /// <summary>
+    /// 不补扩展的直接发布
+    /// </summary>
+    /// <param name="broker">目标代理</param>
+    public DirectPublisher(IMessageBroker broker)
+        : this(broker, null)
+    {
+    }
+
     /// <summary>
     /// 目标代理
     /// </summary>

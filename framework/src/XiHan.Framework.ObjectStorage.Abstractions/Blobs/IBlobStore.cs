@@ -13,7 +13,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 /// <remarks>
 /// 容器里按键存放字节与元数据。写入与删除是批量的（按顺序逐项执行，返回逐项结果，两项之间检查取消，已完成的不回滚）；单条便捷方法见 <see cref="BlobStoreExtensions"/>。标识不合法在构造时抛出；基础设施失败返回 <see cref="ObjectStorageErrors.StoreUnavailable"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface IBlobStore
 {
     /// <summary>

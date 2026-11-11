@@ -11,7 +11,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// <remarks>
 /// 由特性创建客户端时默认连接是 <see cref="Default"/>，带租户分片的调用再加一个 <see cref="Shard"/> 连接；应用自己注册客户端时按同样的名字提供连接即可让 <see cref="SqlSugarConnectionSelector"/> 的默认规则生效
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class SqlSugarConnections
 {
     /// <summary>

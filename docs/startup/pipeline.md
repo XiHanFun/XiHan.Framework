@@ -169,7 +169,7 @@ builder.AddXiHan(xihan => xihan
 // pipeline 是装配时拿到的 PipelineBuilder（FeatureContext.Pipeline 或 AppBuilder.Pipeline），应用构建之后仍可以成组改动
 // 一组中间件归属同一个清单 ID：组内只能登记这个归属的中间件，约束只能挂在组内的中间件上（目标可以在组外）
 pipeline.UseOwned("xihan.plugins.audit", group => group
-    .UseNamedInstance("xihan.plugins.audit:trail", new AuditTrailMiddleware(), PipelineStage.Observe, owner: "xihan.plugins.audit")
+    .UseNamedInstance("xihan.plugins.audit:trail", new AuditTrailMiddleware(), PipelineStage.Observe, Placement.End, owner: "xihan.plugins.audit")
     .After("xihan.plugins.audit:trail", typeof(ObserveMiddleware).FullName!));
 
 // 撤回同一归属的全部中间件，返回撤回的个数

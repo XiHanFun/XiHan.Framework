@@ -10,7 +10,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 /// <summary>
 /// <see cref="IJobScheduler"/> 的单项便利写法：单项是批量的特例
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class JobSchedulerExtensions
 {
     /// <summary>

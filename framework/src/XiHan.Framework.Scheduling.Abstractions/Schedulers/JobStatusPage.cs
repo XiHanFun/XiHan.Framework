@@ -9,7 +9,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedulers;
 /// <summary>
 /// 作业状态列表的一页
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobStatusPage
 {
     /// <summary>

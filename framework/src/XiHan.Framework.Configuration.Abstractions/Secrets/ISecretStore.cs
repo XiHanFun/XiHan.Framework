@@ -11,7 +11,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 /// <remarks>
 /// 按名字批量读取，只读；写入与轮换属于运维工具，不在应用契约里
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface ISecretStore
 {
     /// <summary>

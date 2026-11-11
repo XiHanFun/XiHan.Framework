@@ -11,7 +11,7 @@ namespace XiHan.Framework.Configuration.Abstractions;
 /// <remarks>
 /// 登记在 <c>spec/conventions/error-codes.md</c>。选项与名字不合法是编程错误，在构造时抛出
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class ConfigurationErrors
 {
     /// <summary>

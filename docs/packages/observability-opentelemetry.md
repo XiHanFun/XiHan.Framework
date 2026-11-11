@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Observability:OpenTelemetry` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Observability.Abstractions`；`OpenTelemetry.Extensions.Hosting`、`OpenTelemetry.Exporter.OpenTelemetryProtocol`、`OpenTelemetry.Exporter.Console` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 

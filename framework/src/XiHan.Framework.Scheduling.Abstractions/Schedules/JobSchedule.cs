@@ -13,7 +13,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 /// <remarks>
 /// 手动、固定间隔（可限次数）、cron（可指定时区）或一次；任何计划可带起止窗口与排除日历。文本形式可往返（<see cref="ToString"/> / <see cref="Parse"/>），存储以文本持久化
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobSchedule
 {
     /// <summary>
@@ -118,9 +118,19 @@ public sealed record JobSchedule
     /// 固定间隔
     /// </summary>
     /// <remarks>
+    /// 上一次完成后再等一个间隔；<paramref name="interval"/> 必须为正，<c>repeatCount</c> 为总运行次数（空为无限，否则至少 1）
+    /// <c>repeatCount</c> 取 <c>null</c>
+    /// </remarks>
+    public static JobSchedule Every(TimeSpan interval)
+        => Every(interval, null);
+
+    /// <summary>
+    /// 固定间隔
+    /// </summary>
+    /// <remarks>
     /// 上一次完成后再等一个间隔；<paramref name="interval"/> 必须为正，<paramref name="repeatCount"/> 为总运行次数（空为无限，否则至少 1）
     /// </remarks>
-    public static JobSchedule Every(TimeSpan interval, int? repeatCount = null)
+    public static JobSchedule Every(TimeSpan interval, int? repeatCount)
     {
         if (interval <= TimeSpan.Zero)
         {
@@ -139,9 +149,19 @@ public sealed record JobSchedule
     /// cron 表达式
     /// </summary>
     /// <remarks>
+    /// 不合法抛出 <see cref="ArgumentException"/>。<c>timeZoneId</c> 为 <see cref="TimeZoneInfo"/> 的 ID（IANA 或 Windows），空为 UTC；找不到的时区抛出 <see cref="ArgumentException"/>
+    /// <c>timeZoneId</c> 取 <c>null</c>
+    /// </remarks>
+    public static JobSchedule FromCron(string expression)
+        => FromCron(expression, null);
+
+    /// <summary>
+    /// cron 表达式
+    /// </summary>
+    /// <remarks>
     /// 不合法抛出 <see cref="ArgumentException"/>。<paramref name="timeZoneId"/> 为 <see cref="TimeZoneInfo"/> 的 ID（IANA 或 Windows），空为 UTC；找不到的时区抛出 <see cref="ArgumentException"/>
     /// </remarks>
-    public static JobSchedule FromCron(string expression, string? timeZoneId = null)
+    public static JobSchedule FromCron(string expression, string? timeZoneId)
     {
         var cron = CronExpression.Parse(expression);
         if (!string.IsNullOrWhiteSpace(timeZoneId))

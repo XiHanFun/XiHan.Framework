@@ -11,7 +11,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 /// <remarks>
 /// <see cref="IBlobStoreProvider.CreateAsync"/> 以结果报告失败（ADR-0150）；各 Provider 用这里的工厂，让注册表与调用方看到同一组错误码与参数
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class BlobStoreFailures
 {
     /// <summary>

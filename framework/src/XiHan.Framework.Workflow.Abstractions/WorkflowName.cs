@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Abstractions;
 /// <remarks>
 /// <c>^[a-z0-9][a-z0-9._-]{0,127}$</c>（与主题文法相同）；一个名字下有多个版本
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 [JsonConverter(typeof(WorkflowNameJsonConverter))]
 public readonly partial record struct WorkflowName
 {

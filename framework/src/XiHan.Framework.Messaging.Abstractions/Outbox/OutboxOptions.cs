@@ -14,7 +14,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 /// <remarks>
 /// 从配置节 <c>XiHan:Messaging:Outbox</c> 显式读取
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed record OutboxOptions
 {
     /// <summary>

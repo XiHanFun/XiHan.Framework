@@ -11,7 +11,7 @@ namespace XiHan.Framework.Auditing.Abstractions;
 /// <remarks>
 /// 登记在 <c>spec/conventions/error-codes.md</c>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class AuditingErrors
 {
     /// <summary>

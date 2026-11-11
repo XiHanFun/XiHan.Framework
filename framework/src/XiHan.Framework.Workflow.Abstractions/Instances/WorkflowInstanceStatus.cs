@@ -12,7 +12,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Instances;
 /// <remarks>
 /// <see cref="Completed"/>、<see cref="Canceled"/>、<see cref="Faulted"/>、<see cref="Terminated"/> 是终态（故障可重试）。成员的声明顺序就是生命周期的先后，实例列表按状态排序时照这个顺序（ADR-0103）；新增状态要在 RFC-0021 里定它在顺序里的位置
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowInstanceStatus>))]
 public enum WorkflowInstanceStatus
 {

@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 /// <remarks>
 /// 时段按给定时区的墙上时间判断，缺省 UTC。<see cref="From"/> 晚于 <see cref="To"/> 表示跨午夜
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class DailyCalendar : IJobCalendar
 {
     /// <summary>
@@ -24,8 +24,20 @@ public sealed class DailyCalendar : IJobCalendar
     /// </summary>
     /// <remarks>
     /// <paramref name="from"/> 与 <paramref name="to"/> 相等是编程错误
+    /// <c>timeZone</c> 取 <c>null</c>
     /// </remarks>
-    public DailyCalendar(TimeOnly from, TimeOnly to, TimeZoneInfo? timeZone = null)
+    public DailyCalendar(TimeOnly from, TimeOnly to)
+        : this(from, to, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="from"/> 与 <paramref name="to"/> 相等是编程错误
+    /// </remarks>
+    public DailyCalendar(TimeOnly from, TimeOnly to, TimeZoneInfo? timeZone)
     {
         if (from == to)
         {

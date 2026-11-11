@@ -11,7 +11,7 @@ namespace XiHan.Framework.Security.InMemory;
 /// <summary>
 /// 内存主体存储：按 API Key 查主体
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemoryPrincipalStore
 {
     /// <summary>

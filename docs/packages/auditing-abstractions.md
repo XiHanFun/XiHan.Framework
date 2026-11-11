@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Auditing` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview（`AuditEvent`、`IAuditSink` 在内核，Stable） |
+| 稳定性 | Stable（`AuditEvent`、`IAuditSink` 在内核，同为 Stable） |
 
 ## 概述
 

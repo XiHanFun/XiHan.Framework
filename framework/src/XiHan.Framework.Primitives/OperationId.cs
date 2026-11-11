@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace XiHan.Framework.Primitives;
@@ -32,7 +33,7 @@ public static partial class OperationId
     /// <remarks>
     /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
-    public static string Validate(string id, string? paramName = null)
+    public static string Validate(string id, [CallerArgumentExpression(nameof(id))] string? paramName = null)
     {
         ArgumentNullException.ThrowIfNull(id, paramName ?? nameof(id));
         return IsValid(id)

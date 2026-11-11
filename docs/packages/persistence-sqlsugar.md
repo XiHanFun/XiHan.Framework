@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Persistence:SqlSugar` |
 | 依赖 | `XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`、`SqlSugarCore`（自带各数据库驱动）、`Microsoft.Data.Sqlite` |
 | AOT | 不兼容（SqlSugar 的实体映射与表达式翻译基于运行时反射） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；数据源（`SqlSugarDataSource`、`SqlSugarDataSourceExtensions`）为 Preview，读写分离（`SqlSugarReplicaOptions` 与 `Replicas`）与差异日志（`SqlSugarDiffLogData` 与两处 `DiffLog`）为 Experimental |
 
 ## 概述
 

@@ -101,7 +101,7 @@ internal sealed partial class CatalogInvocation
     /// <paramref name="cause"/> 作为内部错误保留，不进响应
     /// </remarks>
     private static Error Unavailable(Error? cause)
-        => new(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable, inner: cause);
+        => new(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable, null, cause);
 
     /// <summary>
     /// 工作单元仍活动时回滚

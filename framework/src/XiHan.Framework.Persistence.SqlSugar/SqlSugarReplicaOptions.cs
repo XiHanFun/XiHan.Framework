@@ -11,7 +11,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// <remarks>
 /// 从配置节 <c>XiHan:Persistence:SqlSugar:Replicas</c> 读取。从库本身由连接配置回调设在 <c>ConnectionConfig.SlaveConnectionConfigs</c> 上（RFC-0005「读写分离」），这里不列从库；没配从库时这些选项都不起作用
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Experimental, "5.0")]
 public sealed record SqlSugarReplicaOptions
 {
     /// <summary>

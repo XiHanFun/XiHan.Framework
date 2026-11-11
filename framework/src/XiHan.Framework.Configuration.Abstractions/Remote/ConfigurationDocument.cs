@@ -9,7 +9,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 /// <summary>
 /// 远程配置的一份文档：版本与已展平的键值（键是 <c>IConfiguration</c> 的 <c>A:B:C</c> 形式）
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class ConfigurationDocument
 {
     /// <summary>

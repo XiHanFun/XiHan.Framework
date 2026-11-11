@@ -11,7 +11,7 @@ namespace XiHan.Framework.Messaging.Conformance;
 /// <summary>
 /// 套件记录的一次到达：投递、Baggage 快照、追踪 ID 与调用来源
 /// </summary>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed record ReceivedMessage(MessageDelivery Delivery, IReadOnlyDictionary<string, string> Baggage, string TraceId)
 {
     /// <summary>

@@ -13,7 +13,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 /// <remarks>
 /// 大文件分段上传、断点续传。发起得到上传标识；各分片（编号 1 到 <see cref="BlobMultipart.MaxPartNumber"/>，可乱序、可重传，后一次覆盖前一次）独立上传；完成时按编号升序给出要拼接的分片与其 ETag，除最后一片外每片至少 <see cref="BlobMultipart.MinPartBytes"/>，对象原子出现；放弃即丢弃已上传的分片。完成前对象不可见，分片不计入读取与列举
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface IBlobMultipartStore
 {
     /// <summary>

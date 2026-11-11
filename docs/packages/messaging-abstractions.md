@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Messaging`（`MaxAttempts`、`DeadLetterSuffix`、`InstanceId`，由 Provider 读取）、`XiHan:Messaging:Outbox` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Stable；`IMessageReplayer` 为 Preview |
+| 稳定性 | Stable；`IMessageReplayer` 与发件箱（`Outbox` 命名空间）为 Preview |
 
 ## 概述
 

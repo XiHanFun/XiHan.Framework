@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -37,7 +38,7 @@ public static partial class MessageTemplate
     /// <remarks>
     /// 不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
-    public static string ValidateKey(string key, string? paramName = null)
+    public static string ValidateKey(string key, [CallerArgumentExpression(nameof(key))] string? paramName = null)
     {
         ArgumentNullException.ThrowIfNull(key, paramName ?? nameof(key));
         return IsValidKey(key)
@@ -59,8 +60,18 @@ public static partial class MessageTemplate
     /// </summary>
     /// <remarks>
     /// 键后跟参数列表，如 <c>persistence.entity.not_found (entity=Order, id=42)</c>。没有本地化器或目录里没有该键时，<see cref="Error.Message"/> 与本地化器都退回到它，让键与参数在日志里可见
+    /// <c>arguments</c> 取 <c>null</c>
     /// </remarks>
-    public static string Describe(string key, IReadOnlyDictionary<string, object?>? arguments = null)
+    public static string Describe(string key)
+        => Describe(key, null);
+
+    /// <summary>
+    /// 未解析时的开发者可读形式
+    /// </summary>
+    /// <remarks>
+    /// 键后跟参数列表，如 <c>persistence.entity.not_found (entity=Order, id=42)</c>。没有本地化器或目录里没有该键时，<see cref="Error.Message"/> 与本地化器都退回到它，让键与参数在日志里可见
+    /// </remarks>
+    public static string Describe(string key, IReadOnlyDictionary<string, object?>? arguments)
     {
         ArgumentNullException.ThrowIfNull(key);
         if (arguments is null || arguments.Count == 0)
@@ -88,9 +99,19 @@ public static partial class MessageTemplate
     /// 宽松格式化
     /// </summary>
     /// <remarks>
+    /// 缺值的占位符原样保留；<c>provider</c> 为空时用不变文化
+    /// <c>provider</c> 取 <c>null</c>
+    /// </remarks>
+    public static string Format(string text, IReadOnlyDictionary<string, object?>? arguments)
+        => Format(text, arguments, null);
+
+    /// <summary>
+    /// 宽松格式化
+    /// </summary>
+    /// <remarks>
     /// 缺值的占位符原样保留；<paramref name="provider"/> 为空时用不变文化
     /// </remarks>
-    public static string Format(string text, IReadOnlyDictionary<string, object?>? arguments, IFormatProvider? provider = null)
+    public static string Format(string text, IReadOnlyDictionary<string, object?>? arguments, IFormatProvider? provider)
     {
         ArgumentNullException.ThrowIfNull(text);
         Render(text, arguments, provider ?? CultureInfo.InvariantCulture, strict: false, out var result);

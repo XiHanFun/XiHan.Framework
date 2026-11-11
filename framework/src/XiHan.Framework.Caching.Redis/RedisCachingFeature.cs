@@ -26,7 +26,7 @@ namespace XiHan.Framework.Caching.Redis;
 /// <remarks>
 /// 提供 <c>caching.distributed@1</c>，注册共享缓存、分布式锁与幂等中间件。启动时建立连接，停止时关闭；健康项 <see cref="HealthName"/> 按 <see cref="RedisCachingOptions.HealthProbeInterval"/> 周期 PING，连不上时条目 Degraded
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class RedisCachingFeature : IHostedFeature
 {
     /// <summary>

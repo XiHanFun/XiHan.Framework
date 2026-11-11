@@ -9,7 +9,7 @@ namespace XiHan.Framework.Primitives;
 /// <remarks>
 /// 选项与携带凭据的记录在 <c>ToString()</c>（记录的 <c>PrintMembers</c>）里以它打印口令、密钥、令牌与整串连接串，防止它们随对象进入日志、异常消息或调试输出（RFC-0014「选项里的凭据」）。用户名、访问密钥 ID 与端点不是机密，照常打印
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class Redaction
 {
     /// <summary>

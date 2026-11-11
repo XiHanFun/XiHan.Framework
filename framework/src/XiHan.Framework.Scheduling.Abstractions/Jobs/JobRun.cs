@@ -13,7 +13,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <remarks>
 /// 成员都经初始化器给出，以后加字段只加属性（ADR-0142、ADR-0148）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobRun
 {
     /// <summary>
@@ -94,6 +94,24 @@ public sealed record JobRun
     /// <summary>
     /// 创建一次新运行
     /// </summary>
-    public static JobRun Create(JobName name, DateTimeOffset scheduledAt, JobTrigger trigger, string? triggerName = null, JsonObject? data = null)
+    /// <remarks>
+    /// <c>triggerName</c> 取 <c>null</c>、<c>data</c> 取 <c>null</c>
+    /// </remarks>
+    public static JobRun Create(JobName name, DateTimeOffset scheduledAt, JobTrigger trigger)
+        => Create(name, scheduledAt, trigger, null, null);
+
+    /// <summary>
+    /// 创建一次新运行
+    /// </summary>
+    /// <remarks>
+    /// <c>data</c> 取 <c>null</c>
+    /// </remarks>
+    public static JobRun Create(JobName name, DateTimeOffset scheduledAt, JobTrigger trigger, string? triggerName)
+        => Create(name, scheduledAt, trigger, triggerName, null);
+
+    /// <summary>
+    /// 创建一次新运行
+    /// </summary>
+    public static JobRun Create(JobName name, DateTimeOffset scheduledAt, JobTrigger trigger, string? triggerName, JsonObject? data)
         => new() { Id = NewId(), Name = name, TriggerName = triggerName, ScheduledAt = scheduledAt, Trigger = trigger, Data = data is null ? [] : (JsonObject)data.DeepClone() };
 }

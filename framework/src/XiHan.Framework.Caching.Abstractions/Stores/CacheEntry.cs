@@ -16,8 +16,20 @@ public sealed record CacheEntry
     /// </summary>
     /// <remarks>
     /// 不给选项时用 Provider 的默认存活时间
+    /// <c>options</c> 取 <c>null</c>
     /// </remarks>
-    public CacheEntry(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions? options = null)
+    public CacheEntry(CacheKey key, ReadOnlyMemory<byte> value)
+        : this(key, value, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建条目
+    /// </summary>
+    /// <remarks>
+    /// 不给选项时用 Provider 的默认存活时间
+    /// </remarks>
+    public CacheEntry(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions? options)
     {
         Key = key;
         Value = value;

@@ -11,7 +11,7 @@ namespace XiHan.Framework.Localization.Abstractions.Messages;
 /// 只读的消息目录
 /// </summary>
 /// <remarks>
-/// 消息键 → 区域 → 模板。一种语言一个文件（<c>Localization/&lt;区域&gt;.json</c>，内容是键 → 模板的平面对象），各包用 <see cref="FromEmbeddedResources"/> 装载自己嵌入的全部语言文件。区域名在装载时规范化，查找不区分大小写
+/// 消息键 → 区域 → 模板。一种语言一个文件（<c>Localization/&lt;区域&gt;.json</c>，内容是键 → 模板的平面对象），各包用 <see cref="FromEmbeddedResources(string, Type)"/> 装载自己嵌入的全部语言文件。区域名在装载时规范化，查找不区分大小写
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class MessageCatalog
@@ -109,11 +109,23 @@ public sealed class MessageCatalog
     /// </summary>
     /// <remarks>
     /// 没有任何语言文件或文件不合法时抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>
+    /// <c>prefix</c> 取 <c>DefaultResourcePrefix</c>
+    /// </remarks>
+    /// <param name="name">目录名</param>
+    /// <param name="anchor">目录所在程序集里的任意类型，用于定位程序集</param>
+    public static MessageCatalog FromEmbeddedResources(string name, Type anchor)
+        => FromEmbeddedResources(name, anchor, DefaultResourcePrefix);
+
+    /// <summary>
+    /// 从 <paramref name="anchor"/> 所在程序集的嵌入资源装载全部 <c>&lt;前缀&gt;&lt;区域&gt;.json</c>
+    /// </summary>
+    /// <remarks>
+    /// 没有任何语言文件或文件不合法时抛出携带 <see cref="LocalizationErrors.InvalidCatalog"/> 的 <see cref="FrameworkException"/>
     /// </remarks>
     /// <param name="name">目录名</param>
     /// <param name="anchor">目录所在程序集里的任意类型，用于定位程序集</param>
     /// <param name="prefix">嵌入资源的逻辑名前缀，默认 <see cref="DefaultResourcePrefix"/></param>
-    public static MessageCatalog FromEmbeddedResources(string name, Type anchor, string prefix = DefaultResourcePrefix)
+    public static MessageCatalog FromEmbeddedResources(string name, Type anchor, string prefix)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(anchor);

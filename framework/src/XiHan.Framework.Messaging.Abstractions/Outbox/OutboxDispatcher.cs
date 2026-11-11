@@ -20,7 +20,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 /// <remarks>
 /// 每轮一个工作单元：按创建时间取到期的未投递消息（未投递、未进死信、到了下一次投递时间），首次投递的按主题分组批量发布，重试的逐条单独发布；成功记投递时间（保留期为 0 时直接删除），失败——代理返回失败结果，或代理抛出（调用方取消除外）——累加次数、记原因并按指数退避推后，次数用尽或无法解码进死信，最后批量更新；再删掉超过保留期的已投递行。一次发布抛出后本轮不再发布，余下的消息不计尝试、留到下一轮（ADR-0108）。退避中与死信的消息不占批次，不挡后面的消息
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class OutboxDispatcher(IServiceProvider services, IMessageBroker broker, OutboxOptions options, TimeProvider timeProvider, ILoggerFactory loggerFactory)
 {
     /// <summary>

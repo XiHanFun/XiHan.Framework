@@ -11,7 +11,7 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// <remarks>
 /// 条目名与状态经构造给出，其余成员经初始化器给出，以后加字段只加属性、不改构造签名（ADR-0142）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record ContributorStatus
 {
     /// <summary>

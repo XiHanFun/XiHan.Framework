@@ -9,7 +9,7 @@ namespace XiHan.Framework.Primitives;
 /// 可恢复失败的描述
 /// </summary>
 /// <remarks>
-/// <see cref="Code"/> 面向程序，<see cref="MessageKey"/> 与 <see cref="Details"/> 决定面向人的文案；客户端只应依赖错误码。文案不写在代码里：本地化器按消息键与调用方区域从语言文件解析（宿主在 Egress 自动做，任何地方可用 <c>key.L()</c>）。没有本地化器时 <see cref="Message"/> 是键与参数的描述；来自线上或异常的自由文本用 <see cref="Literal"/> 创建。线上编码：<c>{"code":"…","message":"…","messageKey":"…","details":{…},"inner":{…}}</c>
+/// <see cref="Code"/> 面向程序，<see cref="MessageKey"/> 与 <see cref="Details"/> 决定面向人的文案；客户端只应依赖错误码。文案不写在代码里：本地化器按消息键与调用方区域从语言文件解析（宿主在 Egress 自动做，任何地方可用 <c>key.L()</c>）。没有本地化器时 <see cref="Message"/> 是键与参数的描述；来自线上或异常的自由文本用 <see cref="Literal(string, string)"/> 创建。线上编码：<c>{"code":"…","message":"…","messageKey":"…","details":{…},"inner":{…}}</c>
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 [SuppressMessage("Naming", "CA1716:Identifiers should not match keywords", Justification = "Error 是 XiHan Spec 的规范术语，与 Go error、Rust Err 对齐；框架不面向 Visual Basic 使用者。")]
@@ -18,11 +18,38 @@ public sealed record Error
     /// <summary>
     /// 用消息键创建错误
     /// </summary>
+    /// <remarks>
+    /// <c>details</c> 取 <c>null</c>、<c>inner</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="code">符合 <see cref="ErrorCode"/> 格式的错误码</param>
+    /// <param name="messageKey">符合 <see cref="MessageTemplate.IsValidKey"/> 文法的消息键，来自所属包的 <c>&lt;领域&gt;Messages</c> 常量</param>
+    public Error(string code, string messageKey)
+        : this(code, messageKey, null, null)
+    {
+    }
+
+    /// <summary>
+    /// 用消息键创建错误
+    /// </summary>
+    /// <remarks>
+    /// <c>inner</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="code">符合 <see cref="ErrorCode"/> 格式的错误码</param>
+    /// <param name="messageKey">符合 <see cref="MessageTemplate.IsValidKey"/> 文法的消息键，来自所属包的 <c>&lt;领域&gt;Messages</c> 常量</param>
+    /// <param name="details">模板参数，同时作为结构化细节；只允许 JSON 可表示的值</param>
+    public Error(string code, string messageKey, IReadOnlyDictionary<string, object?>? details)
+        : this(code, messageKey, details, null)
+    {
+    }
+
+    /// <summary>
+    /// 用消息键创建错误
+    /// </summary>
     /// <param name="code">符合 <see cref="ErrorCode"/> 格式的错误码</param>
     /// <param name="messageKey">符合 <see cref="MessageTemplate.IsValidKey"/> 文法的消息键，来自所属包的 <c>&lt;领域&gt;Messages</c> 常量</param>
     /// <param name="details">模板参数，同时作为结构化细节；只允许 JSON 可表示的值</param>
     /// <param name="inner">可选的内部错误</param>
-    public Error(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null, Error? inner = null)
+    public Error(string code, string messageKey, IReadOnlyDictionary<string, object?>? details, Error? inner)
         : this(ErrorCode.Validate(code), MessageTemplate.ValidateKey(messageKey, nameof(messageKey)), null, details, inner)
     {
     }
@@ -51,7 +78,7 @@ public sealed record Error
     /// 消息键
     /// </summary>
     /// <remarks>
-    /// 用 <see cref="Literal"/> 创建的自由文本错误为 <see langword="null"/>
+    /// 用 <see cref="Literal(string, string)"/> 创建的自由文本错误为 <see langword="null"/>
     /// </remarks>
     public string? MessageKey { get; }
 
@@ -97,12 +124,37 @@ public sealed record Error
     /// </summary>
     /// <remarks>
     /// 用于线上编码的还原与异常转换
+    /// <c>details</c> 取 <c>null</c>、<c>inner</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="code">符合 <see cref="ErrorCode"/> 格式的错误码</param>
+    /// <param name="text">面向人的说明，不能为空白</param>
+    public static Error Literal(string code, string text)
+        => Literal(code, text, null, null);
+
+    /// <summary>
+    /// 用自由文本创建错误，不参与本地化
+    /// </summary>
+    /// <remarks>
+    /// 用于线上编码的还原与异常转换
+    /// <c>inner</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="code">符合 <see cref="ErrorCode"/> 格式的错误码</param>
+    /// <param name="text">面向人的说明，不能为空白</param>
+    /// <param name="details">可选的结构化细节，只允许 JSON 可表示的值</param>
+    public static Error Literal(string code, string text, IReadOnlyDictionary<string, object?>? details)
+        => Literal(code, text, details, null);
+
+    /// <summary>
+    /// 用自由文本创建错误，不参与本地化
+    /// </summary>
+    /// <remarks>
+    /// 用于线上编码的还原与异常转换
     /// </remarks>
     /// <param name="code">符合 <see cref="ErrorCode"/> 格式的错误码</param>
     /// <param name="text">面向人的说明，不能为空白</param>
     /// <param name="details">可选的结构化细节，只允许 JSON 可表示的值</param>
     /// <param name="inner">可选的内部错误</param>
-    public static Error Literal(string code, string text, IReadOnlyDictionary<string, object?>? details = null, Error? inner = null)
+    public static Error Literal(string code, string text, IReadOnlyDictionary<string, object?>? details, Error? inner)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         return new(ErrorCode.Validate(code), null, text, details, inner);
@@ -113,8 +165,18 @@ public sealed record Error
     /// </summary>
     /// <remarks>
     /// 错误码的 KIND 段必须是 <c>VALIDATION</c>
+    /// <c>details</c> 取 <c>null</c>
     /// </remarks>
-    public static Error Validation(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null)
+    public static Error Validation(string code, string messageKey)
+        => Validation(code, messageKey, null);
+
+    /// <summary>
+    /// 创建校验错误
+    /// </summary>
+    /// <remarks>
+    /// 错误码的 KIND 段必须是 <c>VALIDATION</c>
+    /// </remarks>
+    public static Error Validation(string code, string messageKey, IReadOnlyDictionary<string, object?>? details)
         => new(RequireKind(code, "VALIDATION"), messageKey, details);
 
     /// <summary>
@@ -122,8 +184,18 @@ public sealed record Error
     /// </summary>
     /// <remarks>
     /// 错误码的 KIND 段必须是 <c>NOTFOUND</c>
+    /// <c>details</c> 取 <c>null</c>
     /// </remarks>
-    public static Error NotFound(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null)
+    public static Error NotFound(string code, string messageKey)
+        => NotFound(code, messageKey, null);
+
+    /// <summary>
+    /// 创建未找到错误
+    /// </summary>
+    /// <remarks>
+    /// 错误码的 KIND 段必须是 <c>NOTFOUND</c>
+    /// </remarks>
+    public static Error NotFound(string code, string messageKey, IReadOnlyDictionary<string, object?>? details)
         => new(RequireKind(code, "NOTFOUND"), messageKey, details);
 
     /// <summary>
@@ -131,8 +203,18 @@ public sealed record Error
     /// </summary>
     /// <remarks>
     /// 错误码的 KIND 段必须是 <c>CONFLICT</c>
+    /// <c>details</c> 取 <c>null</c>
     /// </remarks>
-    public static Error Conflict(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null)
+    public static Error Conflict(string code, string messageKey)
+        => Conflict(code, messageKey, null);
+
+    /// <summary>
+    /// 创建冲突错误
+    /// </summary>
+    /// <remarks>
+    /// 错误码的 KIND 段必须是 <c>CONFLICT</c>
+    /// </remarks>
+    public static Error Conflict(string code, string messageKey, IReadOnlyDictionary<string, object?>? details)
         => new(RequireKind(code, "CONFLICT"), messageKey, details);
 
     /// <summary>
@@ -140,8 +222,18 @@ public sealed record Error
     /// </summary>
     /// <remarks>
     /// 错误码的 KIND 段必须是 <c>DENIED</c>
+    /// <c>details</c> 取 <c>null</c>
     /// </remarks>
-    public static Error Denied(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null)
+    public static Error Denied(string code, string messageKey)
+        => Denied(code, messageKey, null);
+
+    /// <summary>
+    /// 创建拒绝错误
+    /// </summary>
+    /// <remarks>
+    /// 错误码的 KIND 段必须是 <c>DENIED</c>
+    /// </remarks>
+    public static Error Denied(string code, string messageKey, IReadOnlyDictionary<string, object?>? details)
         => new(RequireKind(code, "DENIED"), messageKey, details);
 
     /// <summary>
@@ -149,17 +241,47 @@ public sealed record Error
     /// </summary>
     /// <remarks>
     /// 错误码的 KIND 段必须是 <c>UNAVAILABLE</c>
+    /// <c>details</c> 取 <c>null</c>
     /// </remarks>
-    public static Error Unavailable(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null)
+    public static Error Unavailable(string code, string messageKey)
+        => Unavailable(code, messageKey, null);
+
+    /// <summary>
+    /// 创建不可用错误
+    /// </summary>
+    /// <remarks>
+    /// 错误码的 KIND 段必须是 <c>UNAVAILABLE</c>
+    /// </remarks>
+    public static Error Unavailable(string code, string messageKey, IReadOnlyDictionary<string, object?>? details)
         => new(RequireKind(code, "UNAVAILABLE"), messageKey, details);
 
     /// <summary>
     /// 创建未预期错误
     /// </summary>
     /// <remarks>
-    /// 错误码的 KIND 段必须是 <c>UNEXPECTED</c>；参数顺序与构造函数、<see cref="Literal"/> 一致：先细节、后内部错误（ADR-0137）
+    /// 错误码的 KIND 段必须是 <c>UNEXPECTED</c>；参数顺序与构造函数、<see cref="Literal(string, string)"/> 一致：先细节、后内部错误（ADR-0137）
+    /// <c>details</c> 取 <c>null</c>、<c>inner</c> 取 <c>null</c>
     /// </remarks>
-    public static Error Unexpected(string code, string messageKey, IReadOnlyDictionary<string, object?>? details = null, Error? inner = null)
+    public static Error Unexpected(string code, string messageKey)
+        => Unexpected(code, messageKey, null, null);
+
+    /// <summary>
+    /// 创建未预期错误
+    /// </summary>
+    /// <remarks>
+    /// 错误码的 KIND 段必须是 <c>UNEXPECTED</c>；参数顺序与构造函数、<see cref="Literal(string, string)"/> 一致：先细节、后内部错误（ADR-0137）
+    /// <c>inner</c> 取 <c>null</c>
+    /// </remarks>
+    public static Error Unexpected(string code, string messageKey, IReadOnlyDictionary<string, object?>? details)
+        => Unexpected(code, messageKey, details, null);
+
+    /// <summary>
+    /// 创建未预期错误
+    /// </summary>
+    /// <remarks>
+    /// 错误码的 KIND 段必须是 <c>UNEXPECTED</c>；参数顺序与构造函数、<see cref="Literal(string, string)"/> 一致：先细节、后内部错误（ADR-0137）
+    /// </remarks>
+    public static Error Unexpected(string code, string messageKey, IReadOnlyDictionary<string, object?>? details, Error? inner)
         => new(RequireKind(code, "UNEXPECTED"), messageKey, details, inner);
 
     /// <summary>

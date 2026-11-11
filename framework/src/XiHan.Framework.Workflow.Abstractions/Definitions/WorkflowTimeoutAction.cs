@@ -9,7 +9,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// <summary>
 /// 实例级超时（<see cref="WorkflowDefinition.Timeout"/>）到期时的处理
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowTimeoutAction>))]
 public enum WorkflowTimeoutAction
 {

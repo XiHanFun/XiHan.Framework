@@ -29,7 +29,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// 提供 <c>persistence.relational@1</c>，以作用域内的 <see cref="ISqlSugarClient"/> 实现仓储与工作单元。客户端有两种来源：由本特性按配置回调创建（自动应用 <see cref="SqlSugarConventions"/>；默认连接 <c>ConfigId</c> 为 <see cref="SqlSugarConnections.Default"/>，<see cref="SqlSugarPersistenceOptions.Connections"/> 的命名连接随后，带租户分片的调用再加一个 <see cref="SqlSugarConnections.Shard"/> 连接），或由应用自己注册（应用须先对连接配置调用 <see cref="SqlSugarConventions.Apply"/>，多连接时自己决定 <c>ConfigId</c>）。实体落在哪个连接由 <see cref="IEntityConnectionSelector"/> 决定。健康项 <see cref="HealthName"/> 按 <see cref="SqlSugarPersistenceOptions.HealthProbeInterval"/> 周期在独立作用域里打开再关闭默认连接
 /// 回调在 <c>ConnectionConfig.SlaveConnectionConfigs</c> 上给出从库时读写分离（RFC-0005「读写分离」，ADR-0118）：只读工作单元读从库，会写的工作单元读写都走主库；固定连接的从库周期探测，不可读的摘除，全部不可读时读回到主库，见健康项 <see cref="ReplicaHealthName"/>。回调对每个连接都调用，从库只给它所属的连接（看 <c>ConfigId</c>），主库不同的连接共用从库是 <see cref="PersistenceErrors.ReplicaMisplaced"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegistrar
 {
     /// <summary>
@@ -120,6 +120,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// <remarks>
     /// 为 <see langword="null"/> 时一个都不开
     /// </remarks>
+    [ApiLevel(Stability.Experimental, "5.0")]
     public Func<Type, bool>? DiffLog { get; init; }
 
     /// <inheritdoc />

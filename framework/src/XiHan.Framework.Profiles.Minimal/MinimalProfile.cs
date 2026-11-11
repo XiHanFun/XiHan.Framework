@@ -10,7 +10,7 @@ namespace XiHan.Framework.Profiles.Minimal;
 /// <summary>
 /// Minimal 组合：内核、宿主与本地化，不装配任何子系统
 /// </summary>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public static class MinimalProfile
 {
     /// <summary>

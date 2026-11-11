@@ -12,7 +12,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 /// <remarks>
 /// 通常经 <see cref="SecretsConfigurationBuilderExtensions.AddXiHanSecrets"/> 使用
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class SecretsConfigurationSource : IConfigurationSource
 {
     /// <summary>

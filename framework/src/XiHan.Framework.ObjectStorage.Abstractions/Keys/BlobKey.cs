@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Keys;
 /// <remarks>
 /// <c>/</c> 分段的路径，1 到 <see cref="MaxLength"/> 个字符；每段非空、不是 <c>.</c> 或 <c>..</c>；不含空白、控制字符与 <c>\</c>；首段不是保留段 <see cref="ReservedSegment"/>（框架自己的对象，ADR-0090）。区分大小写
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct BlobKey
 {
     /// <summary>

@@ -8,7 +8,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// <summary>
 /// 两个节点之间的转移：条件为空即无条件，默认出边只在没有其他出边匹配时走
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record WorkflowTransition
 {
     /// <summary>

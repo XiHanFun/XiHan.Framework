@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 /// <remarks>
 /// 应用要跨请求续传时持久化这四项，之后原样构造回来交给 <see cref="IBlobMultipartStore"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobMultipartUpload
 {
     /// <summary>

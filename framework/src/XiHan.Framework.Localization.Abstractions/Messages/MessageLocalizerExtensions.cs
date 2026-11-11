@@ -18,7 +18,7 @@ public static class MessageLocalizerExtensions
     /// 按区域取文案并格式化
     /// </summary>
     /// <remarks>
-    /// 没有模板或占位符缺值时返回键与参数的描述（<see cref="MessageTemplate.Describe"/>）
+    /// 没有模板或占位符缺值时返回键与参数的描述（<see cref="MessageTemplate.Describe(string)"/>）
     /// </remarks>
     public static string Localize(this IMessageLocalizer localizer, string key, string locale, IReadOnlyDictionary<string, object?>? arguments)
     {

@@ -16,7 +16,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 /// <remarks>
 /// 按 <see cref="BlobStoreDefinition"/> 经对应的 <see cref="IBlobStoreProvider"/> 建实例，按名缓存。实例有两个来源：配置节 <c>XiHan:ObjectStorage:Stores:&lt;name&gt;</c>（<c>Provider</c> 加该 Provider 的设置，首次取用时建出），与应用运行时登记（<see cref="GetOrAddAsync"/>，如存放在库里的存储配置）。同名同定义返回同一实例；定义变了（Provider 或任一设置不同）建新实例替换旧的并释放旧的——替换时仍在旧实例上进行的调用可能失败。缺省的 <see cref="IBlobStore"/> 注入方式不受影响。同时是健康项的贡献者：每个实例一条 <c>objectstorage.store.&lt;name&gt;</c>，按 <c>XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds</c>（缺省 15 秒）在后台逐个探测，新实例建出后立即探一次；尚未探过的条目为 Started
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
 {
     /// <summary>
@@ -95,12 +95,27 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
     /// </summary>
     /// <remarks>
     /// 容器解析时 <paramref name="providers"/> 是全部登记的 Provider
+    /// <c>configuration</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="providers">Provider；同名重复是装配错误</param>
+    /// <param name="clock">时钟</param>
+    /// <param name="loggerFactory">日志工厂</param>
+    public BlobStores(IEnumerable<IBlobStoreProvider> providers, TimeProvider clock, ILoggerFactory loggerFactory)
+        : this(providers, clock, loggerFactory, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
+    /// <remarks>
+    /// 容器解析时 <paramref name="providers"/> 是全部登记的 Provider
     /// </remarks>
     /// <param name="providers">Provider；同名重复是装配错误</param>
     /// <param name="clock">时钟</param>
     /// <param name="loggerFactory">日志工厂</param>
     /// <param name="configuration">配置；为 <see langword="null"/> 时没有配置定义的实例</param>
-    public BlobStores(IEnumerable<IBlobStoreProvider> providers, TimeProvider clock, ILoggerFactory loggerFactory, IConfiguration? configuration = null)
+    public BlobStores(IEnumerable<IBlobStoreProvider> providers, TimeProvider clock, ILoggerFactory loggerFactory, IConfiguration? configuration)
     {
         ArgumentNullException.ThrowIfNull(providers);
         ArgumentNullException.ThrowIfNull(loggerFactory);

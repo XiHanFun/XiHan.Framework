@@ -23,8 +23,8 @@ public sealed class PipelineBuilderTests
         var log = new List<string>();
         var services = new ServiceCollection().BuildServiceProvider();
         var builder = new PipelineBuilder()
-            .UseNamedInstance("first", new MiddlewareA(log), PipelineStage.Observe, owner: "xihan.plugins.a")
-            .UseNamedInstance("second", new MiddlewareA(log), PipelineStage.Observe, owner: "xihan.plugins.b");
+            .UseNamedInstance("first", new MiddlewareA(log), PipelineStage.Observe, Placement.End, owner: "xihan.plugins.a")
+            .UseNamedInstance("second", new MiddlewareA(log), PipelineStage.Observe, Placement.End, owner: "xihan.plugins.b");
 
         Assert.Equal(["first", "second"], builder.Describe().Select(static d => d.Name));
         Assert.Contains("MiddlewareA[first]", builder.Dump(), StringComparison.Ordinal);
@@ -58,9 +58,9 @@ public sealed class PipelineBuilderTests
         var log = new List<string>();
         // 基准次序：B（归属 xihan.a）、first、second（归属 xihan.plugins.p，按登记顺序）
         var builder = new PipelineBuilder()
-            .UseNamedInstance("p:first", new MiddlewareA(log), PipelineStage.Observe, owner: "xihan.plugins.p")
-            .UseNamedInstance("p:second", new MiddlewareA(log), PipelineStage.Observe, owner: "xihan.plugins.p")
-            .UseAt<MiddlewareB>(PipelineStage.Observe, owner: "xihan.a")
+            .UseNamedInstance("p:first", new MiddlewareA(log), PipelineStage.Observe, Placement.End, owner: "xihan.plugins.p")
+            .UseNamedInstance("p:second", new MiddlewareA(log), PipelineStage.Observe, Placement.End, owner: "xihan.plugins.p")
+            .UseAt<MiddlewareB>(PipelineStage.Observe, Placement.End, owner: "xihan.a")
             .After("p:first", "p:second")
             .Before("p:second", typeof(MiddlewareB).FullName!);
 
@@ -102,8 +102,8 @@ public sealed class PipelineBuilderTests
     {
         var builder = new PipelineBuilder()
             .UseAt<MiddlewareA>(PipelineStage.Handle)
-            .UseAt<MiddlewareB>(PipelineStage.Ingress, owner: "xihan.z")
-            .UseAt<MiddlewareC>(PipelineStage.Ingress, owner: "xihan.a")
+            .UseAt<MiddlewareB>(PipelineStage.Ingress, Placement.End, owner: "xihan.z")
+            .UseAt<MiddlewareC>(PipelineStage.Ingress, Placement.End, owner: "xihan.a")
             .UseAt<MiddlewareD>(PipelineStage.Ingress, Placement.Beginning, owner: "xihan.z");
 
         var order = builder.Describe().Select(static d => d.Middleware).ToList();

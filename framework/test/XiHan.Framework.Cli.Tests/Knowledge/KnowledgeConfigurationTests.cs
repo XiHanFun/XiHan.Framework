@@ -203,11 +203,17 @@ public sealed class KnowledgeConfigurationTests
     /// <summary>
     /// 找 Options 类的 <c>FromConfiguration(IConfiguration, …)</c>
     /// </summary>
+    /// <remarks>
+    /// 有重载时取参数最少的那个：Stable 的可选值以重载给出（ADR-0167），短重载只读配置
+    /// </remarks>
     private static MethodInfo Reader(string options)
     {
         var package = _knowledge.Value.Sections.Single(s => s.Options == options).Package;
         var type = Assembly.Load(new AssemblyName(package)).GetType(options, throwOnError: true)!;
-        return type.GetMethods(BindingFlags.Public | BindingFlags.Static).Single(static m => m.Name == "FromConfiguration" && m.GetParameters() is [{ ParameterType: var p }, ..] && p == typeof(IConfiguration));
+        return type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(static m => m.Name == "FromConfiguration" && m.GetParameters() is [{ ParameterType: var p }, ..] && p == typeof(IConfiguration))
+            .OrderBy(static m => m.GetParameters().Length)
+            .First();
     }
 
     /// <summary>

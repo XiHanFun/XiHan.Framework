@@ -12,7 +12,7 @@ namespace XiHan.Framework.Observability.OpenTelemetry;
 /// <remarks>
 /// 内核自己的，以及 .NET 运行时与 ASP.NET Core 内置的（无需检测包）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class OpenTelemetryDefaults
 {
     /// <summary>

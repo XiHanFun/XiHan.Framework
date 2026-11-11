@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <remarks>
 /// <see langword="default"/> 值不是合法键，读取成员抛出 <see cref="InvalidOperationException"/>（RFC-0001「标识值」）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public readonly record struct TriggerKey
 {
     /// <summary>

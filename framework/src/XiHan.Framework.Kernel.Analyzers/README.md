@@ -10,6 +10,8 @@
 * `XH0002` / `XH0004`：公开类型名不得以 `XiHan` 开头，不得使用 `Manager`、`Helper`、`Default` 等禁用词
 * `XH0003`：不得在程序集之外使用标注为 `Stability.Internal` 的 API
 * `XH0005`：原语层与内核不得使用反射 API
+* `XH0006` / `XH0007`：`Stable` 的签名不得引用 `Preview` / `Experimental` 类型，成员的级别不得高于所在类型
+* `XH0008`：`Stable` 的公开方法、构造与索引器不得声明可选参数
 
 ## 如何使用
 
@@ -25,7 +27,7 @@ dotnet add package XiHan.Framework.Kernel.Analyzers --prerelease
 
 ```xml
 <PropertyGroup>
-  <XiHanFrameworkPackage>true</XiHanFrameworkPackage>   <!-- 启用 XH0001 / XH0002 / XH0004 -->
+  <XiHanFrameworkPackage>true</XiHanFrameworkPackage>   <!-- 启用 XH0001 / XH0002 / XH0004 / XH0006～XH0008 -->
   <XiHanRing>1</XiHanRing>                              <!-- 启用 XH0005，仅原语层与内核 -->
 </PropertyGroup>
 ```
@@ -45,6 +47,8 @@ public sealed class ReportExporter;   // XH0001
 * `PublicTypeAnalyzer`：`XH0001`、`XH0002`、`XH0004`
 * `InternalApiUsageAnalyzer`：`XH0003`
 * `ReflectionUsageAnalyzer`：`XH0005`
+* `StabilityDependencyAnalyzer`：`XH0006`、`XH0007`
+* `OptionalParameterAnalyzer`：`XH0008`
 
 ## 更多文档
 

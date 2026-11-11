@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Security`（含 `InMemory` 子节） |
 | 依赖 | `XiHan.Framework.Security.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`InMemoryPermissionGrantStore` 实现 Preview 的授予管理接口，与 `InMemorySecurityHealthContributor` 同为 Preview |
 
 ## 概述
 

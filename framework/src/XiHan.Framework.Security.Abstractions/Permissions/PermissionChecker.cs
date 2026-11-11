@@ -51,13 +51,42 @@ public sealed class PermissionChecker : IPermissionChecker
     /// 创建检查器
     /// </summary>
     /// <remarks>
+    /// 容器解析时 <c>filters</c> 与 <c>sources</c> 是全部登记的 <see cref="IPermissionFilter"/> 与 <see cref="IPermissionGrantSource"/>（没有就是空集合）
+    /// <c>filters</c> 取 <c>null</c>、<c>sources</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="store">授予存储</param>
+    /// <param name="options">安全选项</param>
+    public PermissionChecker(IPermissionGrantStore store, SecurityOptions options)
+        : this(store, options, null, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建检查器
+    /// </summary>
+    /// <remarks>
+    /// 容器解析时 <c>filters</c> 与 <c>sources</c> 是全部登记的 <see cref="IPermissionFilter"/> 与 <see cref="IPermissionGrantSource"/>（没有就是空集合）
+    /// <c>sources</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="store">授予存储</param>
+    /// <param name="options">安全选项</param>
+    /// <param name="filters">授予命中之后的收窄过滤器；<see langword="null"/> 视为没有</param>
+    public PermissionChecker(IPermissionGrantStore store, SecurityOptions options, IEnumerable<IPermissionFilter>? filters)
+        : this(store, options, filters, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建检查器
+    /// </summary>
+    /// <remarks>
     /// 容器解析时 <paramref name="filters"/> 与 <paramref name="sources"/> 是全部登记的 <see cref="IPermissionFilter"/> 与 <see cref="IPermissionGrantSource"/>（没有就是空集合）
     /// </remarks>
     /// <param name="store">授予存储</param>
     /// <param name="options">安全选项</param>
     /// <param name="filters">授予命中之后的收窄过滤器；<see langword="null"/> 视为没有</param>
     /// <param name="sources">存储之外的授予来源；<see langword="null"/> 视为没有</param>
-    public PermissionChecker(IPermissionGrantStore store, SecurityOptions options, IEnumerable<IPermissionFilter>? filters = null, IEnumerable<IPermissionGrantSource>? sources = null)
+    public PermissionChecker(IPermissionGrantStore store, SecurityOptions options, IEnumerable<IPermissionFilter>? filters, IEnumerable<IPermissionGrantSource>? sources)
     {
         _store = store ?? throw new ArgumentNullException(nameof(store));
         _options = options ?? throw new ArgumentNullException(nameof(options));

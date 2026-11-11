@@ -8,7 +8,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 /// <summary>
 /// 预签名地址允许的 HTTP 方法
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public enum BlobUrlMethod
 {
     /// <summary>

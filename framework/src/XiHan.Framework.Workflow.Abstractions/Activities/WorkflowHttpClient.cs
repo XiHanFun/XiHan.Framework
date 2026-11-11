@@ -12,7 +12,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// <remarks>
 /// 流程定义里的地址不可信，缺省的客户端过出站地址策略（ADR-0117）。应用可在装配前注册自己的实例替换（如带代理、认证处理器），替换后由应用的客户端决定能连哪里
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Experimental, "5.0")]
 public sealed class WorkflowHttpClient : IDisposable
 {
     /// <summary>

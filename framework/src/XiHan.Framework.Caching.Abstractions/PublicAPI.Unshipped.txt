@@ -88,7 +88,8 @@ XiHan.Framework.Caching.Abstractions.Stores.CacheChange.Keys.get -> System.Colle
 XiHan.Framework.Caching.Abstractions.Stores.CacheChange.Prefix.get -> string?
 XiHan.Framework.Caching.Abstractions.Stores.CacheEntry
 XiHan.Framework.Caching.Abstractions.Stores.CacheEntry.<Clone>$() -> XiHan.Framework.Caching.Abstractions.Stores.CacheEntry!
-XiHan.Framework.Caching.Abstractions.Stores.CacheEntry.CacheEntry(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions? options = null) -> void
+XiHan.Framework.Caching.Abstractions.Stores.CacheEntry.CacheEntry(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> value) -> void
+XiHan.Framework.Caching.Abstractions.Stores.CacheEntry.CacheEntry(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions? options) -> void
 XiHan.Framework.Caching.Abstractions.Stores.CacheEntry.Equals(XiHan.Framework.Caching.Abstractions.Stores.CacheEntry? other) -> bool
 XiHan.Framework.Caching.Abstractions.Stores.CacheEntry.Key.get -> XiHan.Framework.Caching.Abstractions.Stores.CacheKey
 XiHan.Framework.Caching.Abstractions.Stores.CacheEntry.Options.get -> XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions!

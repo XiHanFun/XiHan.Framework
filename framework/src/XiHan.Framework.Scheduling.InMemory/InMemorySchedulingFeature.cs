@@ -21,7 +21,7 @@ namespace XiHan.Framework.Scheduling.InMemory;
 /// <remarks>
 /// 提供 <c>scheduling.jobs@1</c>（进程内作业存储 + 抽象包的引擎）与 <c>scheduling.leader@1</c>（进程内租约）。被显式 Provider 顶替的能力只留本包自己的类型
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemorySchedulingFeature : IHostedFeature
 {
     /// <summary>

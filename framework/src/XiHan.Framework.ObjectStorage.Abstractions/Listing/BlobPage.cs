@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Listing;
 /// <remarks>
 /// 按键的序数顺序；还有下一页时带续页标记。以后加字段只加初始化器属性（ADR-0142）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobPage
 {
     /// <summary>

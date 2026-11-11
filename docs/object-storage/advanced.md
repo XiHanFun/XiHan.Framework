@@ -42,7 +42,7 @@ app.MapXiHanBlobs();   // GET / PUT <BaseUrl>/{container}/{**key}
 
 app.MapGet("/invoices/{id}/link", async (string id, IBlobUrlSigner signer, CancellationToken ct) =>
 {
-    var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey($"2026/10/{id}.pdf"), BlobUrlRequest.ForDownload(downloadFileName: "发票.pdf"), ct)).ValueOrThrow();
+    var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey($"2026/10/{id}.pdf"), BlobUrlRequest.ForDownload(expiresIn: null, downloadFileName: "发票.pdf"), ct)).ValueOrThrow();
     // link.Url 交给前端；link.ExpiresAt 之后失效
     return new { Url = link.Url.ToString(), link.ExpiresAt };
 });

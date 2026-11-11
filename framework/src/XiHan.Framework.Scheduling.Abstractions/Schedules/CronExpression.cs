@@ -13,7 +13,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 /// <remarks>
 /// 5 段 <c>分 时 日 月 周</c>（秒视为 0）、6 段 <c>秒 分 时 日 月 周</c>，或 7 段再加 <c>年</c>（1970 到 2099）。每段支持 <c>*</c>、数值、列表 <c>a,b</c>、范围 <c>a-b</c>、步长 <c>*/n</c>、<c>a/n</c>（从 a 起到上限每 n）与 <c>a-b/n</c>；日与周还可写 <c>?</c>（等价于 <c>*</c>）；月可写 <c>JAN</c> 到 <c>DEC</c>，周可写 <c>SUN</c> 到 <c>SAT</c>，均不区分大小写。周按 Unix 约定：0 与 7 都是周日、1 是周一（不采用 Quartz 的 1 = 周日）。日段特殊写法：<c>L</c>（当月最后一天）、<c>L-n</c>（最后一天往前 n 天）、<c>nW</c>（离 n 日最近的工作日，不跨月）、<c>LW</c>（最后一个工作日）；周段特殊写法：<c>nL</c> / <c>FRIL</c>（当月最后一个周 n）、<c>n#k</c> / <c>FRI#2</c>（当月第 k 个周 n，k 为 1 到 5，不存在时该月不触发）。日与周同时限定时任一匹配即可（标准 cron 语义，不要求其一为 <c>?</c>）。下一次匹配默认按 UTC；<see cref="Next(DateTimeOffset, TimeZoneInfo)"/> 按指定时区的墙上时间匹配，夏令时跳过的墙上时间不触发、重复的墙上时间只取第一次出现。向前最多搜索 5 年，没有匹配即无值
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class CronExpression
 {
     /// <summary>

@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 /// <remarks>
 /// 各签名实现用同一写法，非 ASCII 文件名按 RFC 6266 / RFC 5987 带 <c>filename*</c>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class BlobContentDisposition
 {
     /// <summary>

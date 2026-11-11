@@ -136,7 +136,7 @@ Ring 0  原语层          Primitives
 | `Internal` | 不对外承诺，分析器阻止外部引用 |
 | `Deprecated` | 将在下一个大版本移除 |
 
-级别在同一大版本内只升不降，`Stable` 的成员不依赖 `Preview` 或 `Experimental` 的类型。要求升级时不改代码，就只用 `Stable` 的 API。
+级别在同一大版本内只升不降，`Stable` 的成员不依赖 `Preview` 或 `Experimental` 的类型，也不声明可选参数（重载或选项记录代替）；这两条由分析器 XH0006 与 XH0008 在编译期检查。要求升级时不改代码，就只用 `Stable` 的 API。
 
 ## 下一步
 

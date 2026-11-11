@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 /// <remarks>
 /// 星期按给定时区的墙上日期判断，缺省 UTC。缺省排除周六与周日
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class WeeklyCalendar : IJobCalendar
 {
     /// <summary>
@@ -28,9 +28,33 @@ public sealed class WeeklyCalendar : IJobCalendar
     /// 创建
     /// </summary>
     /// <remarks>
+    /// <c>excludedDays</c> 为空时排除周六与周日
+    /// <c>excludedDays</c> 取 <c>null</c>、<c>timeZone</c> 取 <c>null</c>
+    /// </remarks>
+    public WeeklyCalendar()
+        : this(null, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
+    /// <remarks>
+    /// <c>excludedDays</c> 为空时排除周六与周日
+    /// <c>timeZone</c> 取 <c>null</c>
+    /// </remarks>
+    public WeeklyCalendar(IEnumerable<DayOfWeek>? excludedDays)
+        : this(excludedDays, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
+    /// <remarks>
     /// <paramref name="excludedDays"/> 为空时排除周六与周日
     /// </remarks>
-    public WeeklyCalendar(IEnumerable<DayOfWeek>? excludedDays = null, TimeZoneInfo? timeZone = null)
+    public WeeklyCalendar(IEnumerable<DayOfWeek>? excludedDays, TimeZoneInfo? timeZone)
     {
         _days = excludedDays is null ? [DayOfWeek.Saturday, DayOfWeek.Sunday] : [.. excludedDays];
         _timeZone = timeZone ?? TimeZoneInfo.Utc;

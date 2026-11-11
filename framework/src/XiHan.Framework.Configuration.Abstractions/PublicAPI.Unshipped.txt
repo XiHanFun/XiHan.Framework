@@ -49,7 +49,8 @@ XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.SecretName(string!
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.Value.get -> string!
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretStoreExtensions
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue.SecretValue(string! value, string? version = null) -> void
+XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue.SecretValue(string! value) -> void
+XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue.SecretValue(string! value, string? version) -> void
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue.Value.get -> string!
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue.Version.get -> string?
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretsConfigurationBuilderExtensions

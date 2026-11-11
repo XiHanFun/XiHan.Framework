@@ -11,7 +11,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 /// <remarks>
 /// <see cref="ToString"/> 固定返回遮蔽文本，防止值进入日志或异常消息
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class SecretValue
 {
     /// <summary>
@@ -22,7 +22,18 @@ public sealed class SecretValue
     /// <summary>
     /// 创建
     /// </summary>
-    public SecretValue(string value, string? version = null)
+    /// <remarks>
+    /// <c>version</c> 取 <c>null</c>
+    /// </remarks>
+    public SecretValue(string value)
+        : this(value, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
+    public SecretValue(string value, string? version)
     {
         Value = value ?? throw new ArgumentNullException(nameof(value));
         Version = version;

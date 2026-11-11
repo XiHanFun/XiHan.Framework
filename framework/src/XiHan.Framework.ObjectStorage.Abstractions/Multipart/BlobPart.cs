@@ -8,16 +8,29 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 /// <summary>
 /// 一个已上传的分片：编号、ETag（完成时用来确认拼接的是这一版）与长度
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobPart
 {
+    /// <summary>
+    /// 创建
+    /// </summary>
+    /// <remarks>
+    /// <c>length</c> 取 <c>0</c>
+    /// </remarks>
+    /// <param name="partNumber">编号（1 到 <see cref="BlobMultipart.MaxPartNumber"/>）</param>
+    /// <param name="eTag">分片的 ETag</param>
+    public BlobPart(int partNumber, string eTag)
+        : this(partNumber, eTag, 0)
+    {
+    }
+
     /// <summary>
     /// 创建
     /// </summary>
     /// <param name="partNumber">编号（1 到 <see cref="BlobMultipart.MaxPartNumber"/>）</param>
     /// <param name="eTag">分片的 ETag</param>
     /// <param name="length">长度（字节）；只用于说明，完成时不校验</param>
-    public BlobPart(int partNumber, string eTag, long length = 0)
+    public BlobPart(int partNumber, string eTag, long length)
     {
         PartNumber = BlobMultipart.ValidatePartNumber(partNumber);
         ETag = !string.IsNullOrWhiteSpace(eTag) ? eTag : throw new ArgumentException("The part ETag must not be empty.", nameof(eTag));

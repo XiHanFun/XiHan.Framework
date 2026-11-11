@@ -21,7 +21,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpTimedOut"/>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>
 /// 地址由流程定义给出、不可信：缺省的客户端过出站地址策略（ADR-0117），目标被拒绝是节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpAddressDenied"/>）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Experimental, "5.0")]
 public sealed partial class HttpActivity : IActivity
 {
     /// <summary>

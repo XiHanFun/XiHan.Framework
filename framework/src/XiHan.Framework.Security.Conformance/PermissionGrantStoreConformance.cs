@@ -14,7 +14,7 @@ namespace XiHan.Framework.Security.Conformance;
 /// <remarks>
 /// 继承并实现 <see cref="CreateStoreAsync"/>，全部用例随之执行；访问外部存储的 Provider 还要覆写 <see cref="CreateUnavailableStoreAsync"/>
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public abstract class PermissionGrantStoreConformance
 {
     /// <summary>

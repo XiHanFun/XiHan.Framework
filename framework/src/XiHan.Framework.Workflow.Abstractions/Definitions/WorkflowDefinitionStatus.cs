@@ -12,7 +12,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Definitions;
 /// <remarks>
 /// 成员的声明顺序就是生命周期的先后，定义列表按状态排序时照这个顺序（ADR-0103）；新增状态要在 RFC-0021 里定它在顺序里的位置
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 [JsonConverter(typeof(JsonStringEnumConverter<WorkflowDefinitionStatus>))]
 public enum WorkflowDefinitionStatus
 {

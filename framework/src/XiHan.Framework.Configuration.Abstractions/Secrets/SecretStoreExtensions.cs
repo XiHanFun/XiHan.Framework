@@ -8,7 +8,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 /// <summary>
 /// 单条便捷方法
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class SecretStoreExtensions
 {
     /// <summary>

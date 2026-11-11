@@ -8,7 +8,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 /// <summary>
 /// 远程配置源的选项
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record RemoteConfigurationOptions
 {
     /// <summary>

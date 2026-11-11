@@ -14,7 +14,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// <remarks>
 /// 从配置节 <c>XiHan:Persistence:SqlSugar</c> 显式读取
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record SqlSugarPersistenceOptions
 {
     /// <summary>
@@ -56,6 +56,7 @@ public sealed record SqlSugarPersistenceOptions
     /// <remarks>
     /// <c>EnableDiffLogEvent</c>，业务数据为 <see cref="SqlSugarDiffLogData"/>。应用在连接配置的 <c>AopEvents.OnDiffLogEvent</c> 上接收。缺省一个都不开。开启的实体每次写入多一次按主键的读取（更新与删除读写前值，插入读写后值），只给需要审计前后值的实体开。不从配置读取，经 <see cref="SqlSugarPersistenceFeature.DiffLog"/> 设置
     /// </remarks>
+    [ApiLevel(Stability.Experimental, "5.0")]
     public Func<Type, bool> DiffLog
     {
         get => field;
@@ -93,6 +94,7 @@ public sealed record SqlSugarPersistenceOptions
     /// <remarks>
     /// 来自 <c>XiHan:Persistence:SqlSugar:Replicas</c>
     /// </remarks>
+    [ApiLevel(Stability.Experimental, "5.0")]
     public SqlSugarReplicaOptions Replicas
     {
         get => field;

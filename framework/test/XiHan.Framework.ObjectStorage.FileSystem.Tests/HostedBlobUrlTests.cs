@@ -71,7 +71,7 @@ public sealed class HostedBlobUrlTests : IDisposable
         Assert.IsType<HostedBlobUrlSigner>(signer);
         Assert.True((await store.PutAsync(new ContainerName(Container), new BlobKey("docs/report.txt"), Encoding.UTF8.GetBytes("0123456789"), new BlobPutOptions { ContentType = "text/plain" }, CancellationToken.None)).IsSuccess);
 
-        var url = (await signer.SignAsync(new ContainerName(Container), new BlobKey("docs/report.txt"), BlobUrlRequest.ForDownload(downloadFileName: "报告 2026.txt"), CancellationToken.None)).ValueOrThrow();
+        var url = (await signer.SignAsync(new ContainerName(Container), new BlobKey("docs/report.txt"), BlobUrlRequest.ForDownload(expiresIn: null, downloadFileName: "报告 2026.txt"), CancellationToken.None)).ValueOrThrow();
         Assert.Equal((BlobUrlMethod.Get, _clock.GetUtcNow() + BlobUrlRequest.DefaultExpiresIn), (url.Method, url.ExpiresAt));
         Assert.False(url.Url.IsAbsoluteUri);
         Assert.StartsWith("/blobs/files/docs/report.txt?", url.Url.OriginalString, StringComparison.Ordinal);
@@ -118,7 +118,7 @@ public sealed class HostedBlobUrlTests : IDisposable
         var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
 
         // 整个对象：限定内容类型，类型不符 403，相符 200 并带 ETag，存进去的内容类型就是它
-        var upload = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/note.txt"), BlobUrlRequest.ForUpload(contentType: "text/markdown"), CancellationToken.None)).ValueOrThrow();
+        var upload = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/note.txt"), BlobUrlRequest.ForUpload(expiresIn: null, contentType: "text/markdown"), CancellationToken.None)).ValueOrThrow();
         Assert.Equal("text/markdown", upload.Headers["Content-Type"]);
         Assert.Equal(HttpStatusCode.Forbidden, (await client.PutAsync(upload.Url, new StringContent("# hi", Encoding.UTF8, new MediaTypeHeaderValue("text/plain")))).StatusCode);
         using (var accepted = await client.PutAsync(upload.Url, new ByteArrayContent(Encoding.UTF8.GetBytes("# hi")) { Headers = { ContentType = new MediaTypeHeaderValue("text/markdown") } }))

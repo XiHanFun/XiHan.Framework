@@ -17,7 +17,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Stores;
 /// <remarks>
 /// 存储包在装配时登记自己的 <see cref="IBlobStoreProvider"/>，注册表 <see cref="BlobStores"/> 与它的健康项只登记一次
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class BlobStoreServiceCollectionExtensions
 {
     /// <summary>

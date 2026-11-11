@@ -27,7 +27,7 @@ namespace XiHan.Framework.ObjectStorage.S3;
 /// <remarks>
 /// 显式 Provider，提供 <c>objectstorage.blob@1</c>、<c>objectstorage.multipart@1</c> 与 <c>objectstorage.presign@1</c>（原生分片与预签名，客户端直连存储）。客户端由本特性按选项创建（应用已注册 <see cref="IAmazonS3"/> 时沿用），停止时释放。启动时探一次服务是否认条件写入（<see cref="S3ObjectStorageOptions.ConditionalWrites"/>，与健康项的首次探测并行，ADR-0089、ADR-0090、ADR-0093）：探明不认、被拒绝或探测桶不存在都启动失败；只有连不上照常启动，在后台按退避重试，探明之前不覆盖写入返回 <c>OBJECTSTORAGE_UNAVAILABLE_004</c>。健康项 <see cref="HealthName"/> 按 <see cref="S3ObjectStorageOptions.HealthProbeInterval"/> 周期对 <see cref="S3ObjectStorageOptions.HealthBucket"/> HEAD（没配时列桶），并即时并入条件写入的状态（数据 <c>conditionalWrites</c>；连不上 Degraded，不认以及启动之后才被拒绝或缺桶 Failed）。被要求提供分片上传或预签名时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="S3BlobStoreProvider"/>（名 <c>s3</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而其余能力都只是兜底选出时，只登记它（被顶替时经 <see cref="ConfigureShadowed"/>），不建缺省客户端、不探测
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class S3ObjectStorageFeature : IHostedFeature, IShadowAwareFeature
 {
     /// <summary>

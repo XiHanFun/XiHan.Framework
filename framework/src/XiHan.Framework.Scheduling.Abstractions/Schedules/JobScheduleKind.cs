@@ -8,7 +8,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 /// <summary>
 /// 计划的种类
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public enum JobScheduleKind
 {
     /// <summary>

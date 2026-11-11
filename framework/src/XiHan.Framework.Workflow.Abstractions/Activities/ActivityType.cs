@@ -15,7 +15,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// <remarks>
 /// <c>^[A-Za-z][A-Za-z0-9._-]{0,63}$</c>；内置活动用 PascalCase 名（<c>Start</c>、<c>UserTask</c>）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 [JsonConverter(typeof(ActivityTypeJsonConverter))]
 public readonly partial record struct ActivityType
 {

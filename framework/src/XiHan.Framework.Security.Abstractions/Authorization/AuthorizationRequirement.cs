@@ -12,8 +12,17 @@ namespace XiHan.Framework.Security.Abstractions.Authorization;
 /// <param name="Policy">策略名；<c>permission:&lt;code&gt;</c> 映射为权限策略</param>
 /// <param name="Resource">资源名；无具体资源时为 <see langword="null"/></param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record AuthorizationRequirement(string Policy, ResourceName? Resource = null)
+public sealed record AuthorizationRequirement(string Policy, ResourceName? Resource)
 {
+    /// <summary>
+    /// 不针对具体资源的授权要求
+    /// </summary>
+    /// <param name="policy">策略名</param>
+    public AuthorizationRequirement(string policy)
+        : this(policy, null)
+    {
+    }
+
     /// <summary>
     /// 策略名
     /// </summary>
@@ -27,5 +36,14 @@ public sealed record AuthorizationRequirement(string Policy, ResourceName? Resou
     /// <summary>
     /// 要求权限
     /// </summary>
-    public static AuthorizationRequirement Permission(string code, ResourceName? resource = null) => new(PermissionPolicy.NameFor(code), resource);
+    /// <remarks>
+    /// <c>resource</c> 取 <c>null</c>
+    /// </remarks>
+    public static AuthorizationRequirement Permission(string code)
+        => Permission(code, null);
+
+    /// <summary>
+    /// 要求权限
+    /// </summary>
+    public static AuthorizationRequirement Permission(string code, ResourceName? resource) => new(PermissionPolicy.NameFor(code), resource);
 }

@@ -14,7 +14,7 @@ namespace XiHan.Framework.Security.InMemory;
 /// <remarks>
 /// 把配置里的主体记录变成 <see cref="Principal"/>（角色声明、租户声明与附加声明）；角色声明类型取 <see cref="SecurityOptions.RoleClaim"/>，租户声明类型取 <see cref="InMemorySecurityOptions.TenantClaim"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, SecurityOptions options, InMemorySecurityOptions inMemoryOptions) : IAuthenticationHandler
 {
     /// <summary>

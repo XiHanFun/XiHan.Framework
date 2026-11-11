@@ -16,7 +16,7 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// </remarks>
 /// <param name="clock">时钟</param>
 /// <param name="loggerFactory">日志工厂</param>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class FileSystemBlobStoreProvider(TimeProvider clock, ILoggerFactory loggerFactory) : IBlobStoreProvider
 {
     /// <summary>

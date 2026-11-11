@@ -73,10 +73,23 @@ public sealed class RepositoryRegistrations
     /// </summary>
     /// <remarks>
     /// 同一实体可以登记多次（只记一条），但落点必须相同
+    /// <c>connection</c> 取 <c>null</c>
+    /// </remarks>
+    /// <exception cref="ArgumentException"><c>connection</c> 为空白，或实体已登记到另一个连接（含一次为空、一次非空）</exception>
+    public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>()
+        where TEntity : class, IEntity<TKey>
+        where TKey : notnull, IEquatable<TKey>
+        => Add<TEntity, TKey>(null);
+
+    /// <summary>
+    /// 登记实体
+    /// </summary>
+    /// <remarks>
+    /// 同一实体可以登记多次（只记一条），但落点必须相同
     /// </remarks>
     /// <param name="connection">实体落点的命名连接，见 <see cref="RegisteredEntity.Connection"/>；<see langword="null"/> 是 Provider 的缺省落点</param>
     /// <exception cref="ArgumentException"><paramref name="connection"/> 为空白，或实体已登记到另一个连接（含一次为空、一次非空）</exception>
-    public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>(string? connection = null)
+    public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity, TKey>(string? connection)
         where TEntity : class, IEntity<TKey>
         where TKey : notnull, IEquatable<TKey>
     {

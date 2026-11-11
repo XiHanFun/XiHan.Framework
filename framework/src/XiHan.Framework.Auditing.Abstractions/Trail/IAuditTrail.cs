@@ -11,7 +11,7 @@ namespace XiHan.Framework.Auditing.Abstractions.Trail;
 /// <remarks>
 /// Provider 同时实现 <c>IAuditSink</c>（写入）与本接口（读取）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface IAuditTrail
 {
     /// <summary>

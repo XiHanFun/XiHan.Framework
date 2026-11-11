@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Testing;
 namespace XiHan.Framework.Kernel.Analyzers.Tests;
 
 /// <summary>
-/// 五条规则的端到端验证
+/// 八条规则的端到端验证
 /// </summary>
 /// <remarks>
 /// 用内联源码与 <c>.globalconfig</c> 模拟框架包、环层与跨程序集引用
@@ -209,4 +209,228 @@ public sealed class AnalyzerTests
         """,
         frameworkPackage: true,
         ring: 5);
+
+    [Fact]
+    public Task XH0006_StableSignatureReferencingUnstableTypes_IsReported() => RunAsync<StabilityDependencyAnalyzer>(
+        """
+        using System.Collections.Generic;
+        using XiHan.Framework.Primitives;
+
+        namespace Demo
+        {
+            [ApiLevel(Stability.Preview, "5.0")]
+            public sealed class Draft { }
+
+            [ApiLevel(Stability.Experimental, "5.0")]
+            public interface ITrial { }
+
+            [ApiLevel(Stability.Preview, "5.0")]
+            public abstract class DraftBase { }
+
+            [ApiLevel(Stability.Stable, "5.0")]
+            public sealed class {|#0:Settled|} : DraftBase, ITrial
+            {
+                private readonly Draft _field = new Draft();
+
+                public Draft {|#1:Current|} { get; } = new Draft();
+
+                public IReadOnlyList<Draft> {|#2:All|}() => new List<Draft>();
+
+                public void {|#3:Take|}(Draft[] drafts, Draft single) { }
+
+                internal Draft Hidden() => _field;
+
+                [ApiLevel(Stability.Preview, "5.0")]
+                public Draft Experimenting() => _field;
+            }
+
+            [ApiLevel(Stability.Preview, "5.0")]
+            public sealed class Loose
+            {
+                public Draft Current { get; } = new Draft();
+            }
+        }
+        """,
+        frameworkPackage: true,
+        expected:
+        [
+            DiagnosticResult.CompilerError("XH0006").WithLocation(0).WithArguments("Settled", "DraftBase", "Preview"),
+            DiagnosticResult.CompilerError("XH0006").WithLocation(0).WithArguments("Settled", "ITrial", "Experimental"),
+            DiagnosticResult.CompilerError("XH0006").WithLocation(1).WithArguments("Settled.Current", "Draft", "Preview"),
+            DiagnosticResult.CompilerError("XH0006").WithLocation(2).WithArguments("Settled.All()", "Draft", "Preview"),
+            DiagnosticResult.CompilerError("XH0006").WithLocation(3).WithArguments("Settled.Take(Draft[], Draft)", "Draft", "Preview"),
+        ]);
+
+    [Fact]
+    public Task XH0006_NotReported_OutsideFrameworkPackages() => RunAsync<StabilityDependencyAnalyzer>(
+        """
+        using XiHan.Framework.Primitives;
+
+        namespace Demo
+        {
+            [ApiLevel(Stability.Preview, "5.0")]
+            public sealed class Draft { }
+
+            [ApiLevel(Stability.Stable, "5.0")]
+            public static class Settled
+            {
+                public static Draft Create() => new Draft();
+            }
+        }
+        """,
+        frameworkPackage: false);
+
+    [Fact]
+    public async Task XH0006_UnstableTypeFromAnotherAssembly_IsReported()
+    {
+        var test = new CSharpAnalyzerTest<StabilityDependencyAnalyzer, DefaultVerifier>
+        {
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net80,
+            TestCode = """
+                using XiHan.Framework.Primitives;
+
+                namespace Demo
+                {
+                    [ApiLevel(Stability.Stable, "5.0")]
+                    public static class Consumer
+                    {
+                        public static Library.Draft {|#0:Create|}() => new Library.Draft();
+
+                        public static Library.Settled Settle() => new Library.Settled();
+                    }
+                }
+                """,
+        };
+
+        // 被引用的类型来自元数据，级别经元数据上的特性读出
+        var library = new ProjectState("Library", LanguageNames.CSharp, "Library", "cs");
+        library.Sources.Add(ApiLevelSource);
+        library.Sources.Add("""
+            using XiHan.Framework.Primitives;
+
+            namespace Library
+            {
+                [ApiLevel(Stability.Preview, "5.0")]
+                public sealed class Draft { }
+
+                [ApiLevel(Stability.Stable, "5.0")]
+                public sealed class Settled { }
+            }
+            """);
+        test.TestState.AdditionalProjects.Add("Library", library);
+        test.TestState.AdditionalProjectReferences.Add("Library");
+        test.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", """
+            is_global = true
+            build_property.XiHanFrameworkPackage = true
+            """));
+        test.ExpectedDiagnostics.Add(DiagnosticResult.CompilerError("XH0006").WithLocation(0).WithArguments("Consumer.Create()", "Draft", "Preview"));
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public Task XH0007_MemberAnnotatedAboveItsType_IsReported() => RunAsync<StabilityDependencyAnalyzer>(
+        """
+        using XiHan.Framework.Primitives;
+
+        namespace Demo
+        {
+            [ApiLevel(Stability.Preview, "5.0")]
+            public sealed class Draft
+            {
+                [ApiLevel(Stability.Stable, "5.0")]
+                public void {|#0:Promise|}() { }
+
+                [ApiLevel(Stability.Experimental, "5.0")]
+                public void Try() { }
+
+                [ApiLevel(Stability.Stable, "5.0")]
+                public sealed class {|#1:Inner|} { }
+            }
+        }
+        """,
+        frameworkPackage: true,
+        expected:
+        [
+            DiagnosticResult.CompilerError("XH0007").WithLocation(0).WithArguments("Draft.Promise()", "Stable", "Preview", "Draft"),
+            DiagnosticResult.CompilerError("XH0007").WithLocation(1).WithArguments("Draft.Inner", "Stable", "Preview", "Draft"),
+        ]);
+
+    [Fact]
+    public Task XH0008_StableOptionalParameters_AreReported() => RunAsync<OptionalParameterAnalyzer>(
+        """
+        using System.Runtime.CompilerServices;
+        using XiHan.Framework.Primitives;
+
+        namespace Demo
+        {
+            [ApiLevel(Stability.Stable, "5.0")]
+            public interface IRunner
+            {
+                void Run(int {|#0:times|} = 1);
+            }
+
+            [ApiLevel(Stability.Stable, "5.0")]
+            public sealed class Runner : IRunner
+            {
+                public Runner(string name, int {|#1:capacity|} = 10) { }
+
+                public void Run(int times = 1) { }
+
+                public static string Check(string value, [CallerArgumentExpression(nameof(value))] string? name = null) => value;
+
+                public void Stop(bool {|#2:force|} = false, string? {|#3:reason|} = null) { }
+
+                internal void Hidden(int count = 0) { }
+
+                [ApiLevel(Stability.Preview, "5.0")]
+                public void Trial(int count = 0) { }
+            }
+
+            [ApiLevel(Stability.Preview, "5.0")]
+            public static class Draft
+            {
+                public static void Run(int count = 0) { }
+            }
+        }
+        """,
+        frameworkPackage: true,
+        expected:
+        [
+            DiagnosticResult.CompilerError("XH0008").WithLocation(0).WithArguments("IRunner.Run(int)", "times"),
+            DiagnosticResult.CompilerError("XH0008").WithLocation(1).WithArguments("Runner.Runner(string, int)", "capacity"),
+            DiagnosticResult.CompilerError("XH0008").WithLocation(2).WithArguments("Runner.Stop(bool, string)", "force"),
+            DiagnosticResult.CompilerError("XH0008").WithLocation(3).WithArguments("Runner.Stop(bool, string)", "reason"),
+        ]);
+
+    [Fact]
+    public async Task XH0008_NotReported_InToolingPackages()
+    {
+        var test = new CSharpAnalyzerTest<OptionalParameterAnalyzer, DefaultVerifier>
+        {
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net80,
+            TestCode = """
+                using XiHan.Framework.Primitives;
+
+                namespace Demo
+                {
+                    [ApiLevel(Stability.Stable, "5.0")]
+                    public static class Host
+                    {
+                        public static void Start(int port = 0) { }
+                    }
+                }
+                """,
+        };
+        test.TestState.Sources.Add(ApiLevelSource);
+        test.TestState.AnalyzerConfigFiles.Add(("/.globalconfig", """
+            is_global = true
+            build_property.XiHanFrameworkPackage = true
+            """));
+
+        // 面向源码使用的工具链包按程序集名识别
+        test.SolutionTransforms.Add(static (solution, projectId) => solution.WithProjectAssemblyName(projectId, "Demo.Testing"));
+
+        await test.RunAsync();
+    }
 }

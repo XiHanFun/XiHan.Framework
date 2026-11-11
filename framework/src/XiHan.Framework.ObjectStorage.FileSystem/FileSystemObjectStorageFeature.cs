@@ -22,7 +22,7 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// <remarks>
 /// 默认提供 <c>objectstorage.blob@1</c> 与 <c>objectstorage.multipart@1</c>（分片暂存在容器的 <c>uploads</c> 目录）；启动时建根目录、扫描已用量并清理过期的分片上传。预签名地址由宿主的签名端点代为收发（<c>Hosting.AspNetCore</c> 的 <c>HostedBlobUrlFeature</c>）。被要求提供分片上传时必须同时被选为 <c>objectstorage.blob</c>（缺省的三个契约落在同一存储上，<see cref="BlobStoreSelection"/>）。命名实例的 Provider <see cref="FileSystemBlobStoreProvider"/>（名 <c>filesystem</c>）总是登记：能力全部被别的存储顶替，或没被选为 <c>objectstorage.blob</c> 而分片上传只是兜底选出时，只登记它（<see cref="ConfigureShadowed"/>），不建缺省实例、不启动
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class FileSystemObjectStorageFeature : IHostedFeature, IShadowAwareFeature
 {
     /// <summary>

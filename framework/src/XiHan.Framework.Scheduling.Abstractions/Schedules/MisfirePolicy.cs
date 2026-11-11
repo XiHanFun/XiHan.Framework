@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 /// <remarks>
 /// 停机、暂停、节点失联造成
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public enum MisfirePolicy
 {
     /// <summary>

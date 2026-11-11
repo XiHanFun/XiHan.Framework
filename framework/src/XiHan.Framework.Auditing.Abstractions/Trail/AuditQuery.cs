@@ -9,7 +9,7 @@ namespace XiHan.Framework.Auditing.Abstractions.Trail;
 /// <summary>
 /// 审计查询：过滤项全部可选且取交集，按写入顺序升序分页
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record AuditQuery
 {
     /// <summary>

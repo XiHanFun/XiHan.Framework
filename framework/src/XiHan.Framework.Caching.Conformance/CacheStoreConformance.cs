@@ -16,7 +16,7 @@ namespace XiHan.Framework.Caching.Conformance;
 /// <remarks>
 /// 继承并实现 <see cref="CreateStore"/>，全部用例随之执行
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 public abstract class CacheStoreConformance
 {
     /// <summary>

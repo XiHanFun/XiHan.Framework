@@ -9,7 +9,7 @@ namespace XiHan.Framework.Security.InMemory;
 /// <summary>
 /// 配置里的一个主体：API Key、显示名、角色、租户与附加声明
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record PrincipalRecord
 {
     /// <summary>

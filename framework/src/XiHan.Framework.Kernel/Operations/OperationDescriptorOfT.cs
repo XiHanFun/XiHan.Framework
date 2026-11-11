@@ -39,12 +39,27 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// <summary>
     /// 创建描述
     /// </summary>
+    /// <remarks>
+    /// <c>schema</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="contract">契约</param>
+    /// <param name="ownerId">登记它的特性清单 ID</param>
+    /// <param name="requestInfo">请求类型的序列化元数据（源生成）</param>
+    /// <param name="responseInfo">响应类型的序列化元数据（源生成）</param>
+    public OperationDescriptor(OperationContract contract, string ownerId, JsonTypeInfo<TRequest> requestInfo, JsonTypeInfo<TResponse> responseInfo)
+        : this(contract, ownerId, requestInfo, responseInfo, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建描述
+    /// </summary>
     /// <param name="contract">契约</param>
     /// <param name="ownerId">登记它的特性清单 ID</param>
     /// <param name="requestInfo">请求类型的序列化元数据（源生成）</param>
     /// <param name="responseInfo">响应类型的序列化元数据（源生成）</param>
     /// <param name="schema">请求与响应的 JSON Schema；手写登记可不提供</param>
-    public OperationDescriptor(OperationContract contract, string ownerId, JsonTypeInfo<TRequest> requestInfo, JsonTypeInfo<TResponse> responseInfo, OperationSchema? schema = null)
+    public OperationDescriptor(OperationContract contract, string ownerId, JsonTypeInfo<TRequest> requestInfo, JsonTypeInfo<TResponse> responseInfo, OperationSchema? schema)
         : base(contract, ownerId, typeof(TOperation), typeof(TRequest), typeof(TResponse), schema)
     {
         _requestInfo = requestInfo ?? throw new ArgumentNullException(nameof(requestInfo));

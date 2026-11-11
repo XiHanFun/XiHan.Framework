@@ -12,7 +12,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Listing;
 /// <remarks>
 /// 页大小越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 Provider 列举时经 <see cref="Validate"/> 返回 <c>OBJECTSTORAGE_VALIDATION_005</c>（HTTP 400）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobQuery
 {
     /// <summary>

@@ -15,8 +15,18 @@ namespace XiHan.Framework.Security.Abstractions.Permissions;
 /// <param name="Permission">权限码，或 <see cref="All"/></param>
 /// <param name="TenantId">租户；<see langword="null"/> 为全局</param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record PermissionGrant(GrantSubject Subject, string Permission, string? TenantId = null)
+public sealed record PermissionGrant(GrantSubject Subject, string Permission, string? TenantId)
 {
+    /// <summary>
+    /// 对所有租户生效的授予
+    /// </summary>
+    /// <param name="subject">主体</param>
+    /// <param name="permission">权限码，或 <see cref="All"/></param>
+    public PermissionGrant(GrantSubject subject, string permission)
+        : this(subject, permission, null)
+    {
+    }
+
     /// <summary>
     /// 通配：全部权限
     /// </summary>

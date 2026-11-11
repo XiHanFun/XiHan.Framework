@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:ObjectStorage:S3` |
 | 依赖 | `XiHan.Framework.ObjectStorage.Abstractions`；`AWSSDK.S3` |
 | AOT | 不兼容（AWS SDK 的请求编组基于运行时反射） |
-| 稳定性 | Preview |
+| 稳定性 | Stable；`S3BlobStoreProvider` 的构造依赖 Preview 的出站地址策略，为 Preview |
 
 ## 概述
 

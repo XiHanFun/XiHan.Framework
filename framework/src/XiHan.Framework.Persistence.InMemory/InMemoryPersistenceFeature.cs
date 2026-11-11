@@ -21,7 +21,7 @@ namespace XiHan.Framework.Persistence.InMemory;
 /// <summary>
 /// 内存持久化的能力包入口：提供 <c>persistence.relational@1</c>，角色为默认实现
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemoryPersistenceFeature : IFeature, IRepositoryRegistrar
 {
     /// <summary>

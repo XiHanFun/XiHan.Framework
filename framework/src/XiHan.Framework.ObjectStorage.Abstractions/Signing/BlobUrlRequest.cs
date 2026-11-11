@@ -10,9 +10,9 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Signing;
 /// 要签的地址
 /// </summary>
 /// <remarks>
-/// 方法、有效期（缺省 <see cref="DefaultExpiresIn"/>），下载可带保存的文件名，上传可限定内容类型，或者是某次分片上传的某一片。用 <see cref="ForDownload"/>、<see cref="ForUpload"/>、<see cref="ForPart"/> 构造
+/// 方法、有效期（缺省 <see cref="DefaultExpiresIn"/>），下载可带保存的文件名，上传可限定内容类型，或者是某次分片上传的某一片。用 <see cref="ForDownload()"/>、<see cref="ForUpload()"/>、<see cref="ForPart(BlobMultipartUpload, int)"/> 构造
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobUrlRequest
 {
     /// <summary>
@@ -86,18 +86,68 @@ public sealed record BlobUrlRequest
     /// <summary>
     /// 下载地址
     /// </summary>
+    /// <remarks>
+    /// <c>expiresIn</c> 取 <c>null</c>、<c>downloadFileName</c> 取 <c>null</c>
+    /// </remarks>
+    public static BlobUrlRequest ForDownload()
+        => ForDownload(null, null);
+
+    /// <summary>
+    /// 下载地址
+    /// </summary>
+    /// <remarks>
+    /// <c>downloadFileName</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="expiresIn">有效期；缺省 30 分钟</param>
+    public static BlobUrlRequest ForDownload(TimeSpan? expiresIn)
+        => ForDownload(expiresIn, null);
+
+    /// <summary>
+    /// 下载地址
+    /// </summary>
     /// <param name="expiresIn">有效期；缺省 30 分钟</param>
     /// <param name="downloadFileName">保存的文件名；缺省不带 <c>Content-Disposition</c></param>
-    public static BlobUrlRequest ForDownload(TimeSpan? expiresIn = null, string? downloadFileName = null)
+    public static BlobUrlRequest ForDownload(TimeSpan? expiresIn, string? downloadFileName)
         => new(BlobUrlMethod.Get, expiresIn, null, NonEmptyOrNull(downloadFileName, nameof(downloadFileName)), null, null);
+
+    /// <summary>
+    /// 整个对象的上传地址（覆盖已有对象）
+    /// </summary>
+    /// <remarks>
+    /// <c>expiresIn</c> 取 <c>null</c>、<c>contentType</c> 取 <c>null</c>
+    /// </remarks>
+    public static BlobUrlRequest ForUpload()
+        => ForUpload(null, null);
+
+    /// <summary>
+    /// 整个对象的上传地址（覆盖已有对象）
+    /// </summary>
+    /// <remarks>
+    /// <c>contentType</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="expiresIn">有效期；缺省 30 分钟</param>
+    public static BlobUrlRequest ForUpload(TimeSpan? expiresIn)
+        => ForUpload(expiresIn, null);
 
     /// <summary>
     /// 整个对象的上传地址（覆盖已有对象）
     /// </summary>
     /// <param name="expiresIn">有效期；缺省 30 分钟</param>
     /// <param name="contentType">客户端必须发送的内容类型；缺省不限定</param>
-    public static BlobUrlRequest ForUpload(TimeSpan? expiresIn = null, string? contentType = null)
+    public static BlobUrlRequest ForUpload(TimeSpan? expiresIn, string? contentType)
         => new(BlobUrlMethod.Put, expiresIn, NonEmptyOrNull(contentType, nameof(contentType)), null, null, null);
+
+    /// <summary>
+    /// 分片上传中某一片的上传地址
+    /// </summary>
+    /// <remarks>
+    /// 响应的 <c>ETag</c> 头即该分片的 ETag
+    /// <c>expiresIn</c> 取 <c>null</c>
+    /// </remarks>
+    /// <param name="upload">分片上传</param>
+    /// <param name="partNumber">编号</param>
+    public static BlobUrlRequest ForPart(BlobMultipartUpload upload, int partNumber)
+        => ForPart(upload, partNumber, null);
 
     /// <summary>
     /// 分片上传中某一片的上传地址
@@ -108,7 +158,7 @@ public sealed record BlobUrlRequest
     /// <param name="upload">分片上传</param>
     /// <param name="partNumber">编号</param>
     /// <param name="expiresIn">有效期；缺省 30 分钟</param>
-    public static BlobUrlRequest ForPart(BlobMultipartUpload upload, int partNumber, TimeSpan? expiresIn = null)
+    public static BlobUrlRequest ForPart(BlobMultipartUpload upload, int partNumber, TimeSpan? expiresIn)
     {
         ArgumentNullException.ThrowIfNull(upload);
         return new(BlobUrlMethod.Put, expiresIn, null, null, upload, BlobMultipart.ValidatePartNumber(partNumber));

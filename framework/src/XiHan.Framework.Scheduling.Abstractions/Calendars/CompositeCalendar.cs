@@ -8,7 +8,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 /// <summary>
 /// 组合日历：任一成员排除即排除
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class CompositeCalendar : IJobCalendar
 {
     /// <summary>

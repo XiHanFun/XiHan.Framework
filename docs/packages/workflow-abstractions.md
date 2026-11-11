@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Workflow`（`WorkflowOptions`，由 Provider 读取） |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`（租户目录）、`XiHan.Framework.Scheduling.Abstractions`（cron）；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Preview；定义模型（`WorkflowDefinition`、`WorkflowNode`、`WorkflowTransition`、`WorkflowVariableDefinition`、`WorkflowRetryPolicy`、`WorkflowTimeoutAction`）、`WorkflowName`、`ActivityType`、状态枚举与 `WorkflowJson` 的定义部分为 Stable；`HttpActivity`、`WorkflowHttpClient` 为 Experimental |
 
 ## 概述
 

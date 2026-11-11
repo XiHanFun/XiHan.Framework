@@ -8,7 +8,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 /// <summary>
 /// 分片上传的限制（与 S3 一致，各 Provider 统一按它校验）
 /// </summary>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class BlobMultipart
 {
     /// <summary>

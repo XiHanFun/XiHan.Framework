@@ -12,7 +12,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Calendars;
 /// <remarks>
 /// 时区缺省 UTC。例如 <c>* * 0-7 * * *</c> 排除每天 0 点到 8 点
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class CronCalendar : IJobCalendar
 {
     /// <summary>
@@ -23,7 +23,18 @@ public sealed class CronCalendar : IJobCalendar
     /// <summary>
     /// 创建
     /// </summary>
-    public CronCalendar(CronExpression expression, TimeZoneInfo? timeZone = null)
+    /// <remarks>
+    /// <c>timeZone</c> 取 <c>null</c>
+    /// </remarks>
+    public CronCalendar(CronExpression expression)
+        : this(expression, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建
+    /// </summary>
+    public CronCalendar(CronExpression expression, TimeZoneInfo? timeZone)
     {
         Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         _timeZone = timeZone;

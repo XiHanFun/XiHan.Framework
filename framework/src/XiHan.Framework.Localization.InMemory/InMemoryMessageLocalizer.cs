@@ -15,7 +15,7 @@ namespace XiHan.Framework.Localization.InMemory;
 /// <remarks>
 /// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>；同一键先注册的目录优先。占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemoryMessageLocalizer : IMessageLocalizer, IMessageResolver
 {
     /// <summary>

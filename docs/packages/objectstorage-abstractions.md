@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:ObjectStorage:Stores`、`XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 
@@ -110,7 +110,7 @@ var partUrl = (await signer.SignAsync(new ContainerName("videos"), key, BlobUrlR
 var done = await multipart.CompleteAsync(upload, parts, ct);
 
 // 限时下载链接（缺省 30 分钟）
-var link = (await signer.SignAsync(new ContainerName("invoices"), key, BlobUrlRequest.ForDownload(downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
+var link = (await signer.SignAsync(new ContainerName("invoices"), key, BlobUrlRequest.ForDownload(expiresIn: null, downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
 ```
 
 实现自己的存储后端时，用一致性套件验证；测试项目引用 `XiHan.Framework.ObjectStorage.Conformance`：

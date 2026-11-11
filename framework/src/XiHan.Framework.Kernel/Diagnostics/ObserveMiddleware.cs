@@ -44,7 +44,7 @@ public sealed partial class ObserveMiddleware(ILoggerFactory loggerFactory) : IP
         {
             // 取消不在这里吞掉：由 Resilience 阶段的 DeadlineMiddleware 区分超时与外部取消并写入结果
             LogUnexpected(_logger, exception, context.TraceId);
-            context.SetOutcome(Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, inner: exception is FrameworkException framework ? framework.ToError() : null));
+            context.SetOutcome(Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, null, exception is FrameworkException framework ? framework.ToError() : null));
         }
         finally
         {

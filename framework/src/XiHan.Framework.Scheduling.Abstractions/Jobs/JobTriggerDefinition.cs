@@ -13,7 +13,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// <remarks>
 /// 何时运行作业。一个作业可以有多个触发器，各自推算下一次运行
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobTriggerDefinition
 {
     /// <summary>

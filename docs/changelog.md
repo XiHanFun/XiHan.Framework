@@ -7,6 +7,7 @@
 ### 版本与兼容
 
 - **调整** 稳定性级别的承诺：`Stable` 大版本内不破坏；`Preview` 与 `Experimental` 可能在小版本变更，补丁版本不变，每次变更在本页写明迁移方式；要求升级不改代码就只用 `Stable` 的 API（见 [稳定性分级](/getting-started/concepts#稳定性分级)）
+- **调整** 5.0 的级别定准：配置、对象存储、审计的抽象，七个默认实现与 Redis 缓存、RabbitMQ、SqlSugar、OpenTelemetry，调度的应用面（`IJob`、`IJobScheduler`、作业定义、计划与日历）、工作流的定义模型与 `WebApplicationBuilder.AddXiHan` 升为 `Stable`；三个 Profile、发件箱与全部一致性套件降为 `Preview`；`HttpActivity`、`WorkflowHttpClient` 与 SqlSugar 的读写分离、差异日志降为 `Experimental`。各包页的「稳定性」一行写明例外
 
 ### 原语与内核
 
@@ -14,7 +15,10 @@
 - **调整** `OperationContract` 构造只收 ID，其余字段改为初始化器：手写的 `new OperationContract(id, stability, expose, policy, permission, readOnly)` 改成 `new OperationContract(id) { Stability = …, Expose = …, Policy = …, Permission = …, IsReadOnly = … }`；用生成器的项目重新编译即可，生成的 `GeneratedOperations` 变为 internal
 - **调整** `Expose.All` 冻结为 5.0 的五个协议：以后新增的协议不并入 `All`，要在新协议上发布须显式开启；现有行为不变
 - **调整** 清单记录的可选字段改为初始化器：`new Binding(name, type) { Required = false }`、`new CapabilityRequirement(id, version) { Optional = true }`、`new ConfigContribution(section) { Schema = … }`、`new PipelineContribution(middleware, stage) { Before = …, After = … }`（`PipelineContribution` 不再是位置记录）
-- **调整** `Error.Unexpected` 的参数顺序改为 `(code, messageKey, details, inner)`，与构造函数一致；按位置传 `inner` 的写成 `inner: …`
+- **调整** `Error.Unexpected` 的参数顺序改为 `(code, messageKey, details, inner)`，与构造函数一致；只传内部错误的写成 `Error.Unexpected(code, messageKey, null, inner)`
+- **调整** `Stable` 的公开方法与构造不再带可选参数，改为重载（`Error` 的构造与工厂、`PipelineBuilder.UseAt` / `UseInstance` / `UseNamedInstance`、`FeatureContext.AddMiddleware`、`ProblemResponse.FromError`、`BlobUrlRequest.ForDownload` / `ForUpload` 等）：用命名实参跳过前面参数的调用补上被跳过的参数，如 `UseAt<T>(stage, Placement.End, owner)`、`ForDownload(null, fileName)`
+- **调整** `SchemaViolation` 的消息键与参数改为初始化器：`new SchemaViolation(path, reason, key, args)` 改成 `new SchemaViolation(path, reason) { MessageKey = key, Arguments = args }`
+- **新增** 分析器规则 XH0006～XH0008：`Stable` 的签名不得引用 `Preview` / `Experimental` 类型，成员级别不得高于所在类型，`Stable` 不得声明可选参数
 - **修复** `CapabilityDeclaration.TryParse` 与 `CapabilityRequirement.TryParse` 的输出标注为可空（`[NotNullWhen(true)]`），失败时为 `null`
 - **修复** `InvocationContext.Baggage` 构造时复制成只读副本，调用方之后改原字典不再影响上下文；`Items` 在派生上下文之间共享，并行写入时不再损坏
 - **调整** 匿名主体的 `Principal.Id` 由空字符串改为 `null`，`new Principal(id, scheme)` 只创建已认证主体（两者都不得为空），匿名用 `Principal.Anonymous`；判断 `IsAuthenticated` 之后可直接用 `Id`。`ResourceName.Tenant` 的全局资源由空字符串改为 `null`，构造时校验每一段

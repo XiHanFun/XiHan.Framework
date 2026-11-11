@@ -13,7 +13,7 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// <remarks>
 /// 从配置节 <c>XiHan:ObjectStorage:FileSystem</c> 显式读取：<c>RootPath</c>、<c>MaxTotalBytes</c>、<c>MaxBlobBytes</c>、<c>MultipartExpiryHours</c>；命名实例（Provider <c>filesystem</c>）的设置用同样的键
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record FileSystemObjectStorageOptions
 {
     /// <summary>

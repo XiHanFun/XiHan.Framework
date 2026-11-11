@@ -105,7 +105,8 @@ XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Filter.get -> Xi
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Filter.init -> void
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.IncludeDeleted.get -> bool
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.IncludeDeleted.init -> void
-XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.OrderBy(System.Linq.Expressions.Expression<System.Func<T, object?>!>! keySelector, bool descending = false) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.OrderBy(System.Linq.Expressions.Expression<System.Func<T, object?>!>! keySelector) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.OrderBy(System.Linq.Expressions.Expression<System.Func<T, object?>!>! keySelector, bool descending) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Orderings.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>!>!
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Orderings.init -> void
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Page(int skip, int take) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
@@ -125,7 +126,8 @@ XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Descending.init -> 
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Equals(XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? other) -> bool
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.KeySelector.get -> System.Linq.Expressions.Expression<System.Func<T, object?>!>!
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.KeySelector.init -> void
-XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Ordering(System.Linq.Expressions.Expression<System.Func<T, object?>!>! KeySelector, bool Descending = false) -> void
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Ordering(System.Linq.Expressions.Expression<System.Func<T, object?>!>! KeySelector, bool Descending) -> void
+XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.Ordering(System.Linq.Expressions.Expression<System.Func<T, object?>!>! keySelector) -> void
 XiHan.Framework.Persistence.Abstractions.Queries.TimeRange
 XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Queries.TimeRange!
 XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.Equals(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? other) -> bool
@@ -149,9 +151,11 @@ XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity
 XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.Connection.get -> string?
 XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.EntityType.get -> System.Type!
 XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.KeyType.get -> System.Type!
-XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.RegisteredEntity(System.Type! entityType, System.Type! keyType, string? connection = null) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.RegisteredEntity(System.Type! entityType, System.Type! keyType) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity.RegisteredEntity(System.Type! entityType, System.Type! keyType, string? connection) -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations
-XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Add<TEntity, TKey>(string? connection = null) -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Add<TEntity, TKey>() -> void
+XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Add<TEntity, TKey>(string? connection) -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.ApplyTo(Microsoft.Extensions.DependencyInjection.IServiceCollection! services, XiHan.Framework.Persistence.Abstractions.Repositories.IRepositoryRegistrar! registrar) -> void
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.ConnectionOf(System.Type! entityType) -> string?
 XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations.Entities.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Persistence.Abstractions.Repositories.RegisteredEntity!>!
@@ -451,7 +455,8 @@ static XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.operator !=(
 static XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? left, XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.operator !=(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? left, XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Queries.TimeRange.operator ==(XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? left, XiHan.Framework.Persistence.Abstractions.Queries.TimeRange? right) -> bool
-static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string? connection = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.AddRepository<TEntity, TKey>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string? connection) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryServiceCollectionExtensions.GetRepositoryRegistrations(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> XiHan.Framework.Persistence.Abstractions.Repositories.RepositoryRegistrations!
 static XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.operator !=(XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? left, XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? right) -> bool
 static XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo.operator ==(XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? left, XiHan.Framework.Persistence.Abstractions.Schema.ColumnInfo? right) -> bool

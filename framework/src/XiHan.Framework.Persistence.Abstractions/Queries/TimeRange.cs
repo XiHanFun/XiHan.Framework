@@ -11,7 +11,7 @@ namespace XiHan.Framework.Persistence.Abstractions.Queries;
 /// <remarks>
 /// 按时间分表 / 分区的 Provider 据此只扫描范围内的表。它不是过滤条件，见 <see cref="EntityQuery{T}.TimeRange"/>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record TimeRange
 {
     /// <summary>

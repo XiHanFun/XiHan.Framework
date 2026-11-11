@@ -15,7 +15,7 @@ namespace XiHan.Framework.MultiTenancy.InMemory;
 /// <remarks>
 /// ID 区分大小写。同时是健康项 <see cref="InMemoryMultiTenancyFeature.HealthName"/> 的贡献者：租户数达到容量即 Degraded
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
 {
     /// <summary>

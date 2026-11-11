@@ -14,7 +14,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// <remarks>
 /// 首次写入时经 <see cref="ITenant"/> 在默认连接与已经取用过的连接上开启数据库事务、此后首次取用的连接再补开（只读调用不开事务；开没开见 <see cref="HasTransaction"/>），提交即逐连接提交，回滚即逐连接回滚。客户端可以带多个连接（默认连接与租户分片连接），每种实体由 <see cref="IEntityConnectionSelector"/> 决定落在哪个连接；跨连接的提交是顺序提交，不是两阶段提交。延迟开启让多个只读调用与一个写入调用能在 SQLite 这类单写者数据库上并存。SqlSugar 没有变更跟踪，仓储的每次写入都立即执行。仓储在写入阶段发现并发新增撞上同一标识后把工作单元标为失败（PostgreSQL 系此时事务已中止），此后提交只回滚并返回那个错误，不会提交一个已中止的事务。只读工作单元从不开事务：仓储写入返回 <see cref="PersistenceErrors.ReadOnly"/> 并同样把工作单元标为失败，<see cref="EnsureTransactionAsync"/> 抛出携带它的异常。以 <see cref="UnitOfWorkOptions.Connection"/> 绑定命名连接时只用客户端里那个 <c>ConfigId</c> 的连接：实体必须落在它上面，事务只开在它上面，默认连接不被触及（RFC-0005「命名连接」）。连接配了从库时，只读工作单元读从库（设了 <see cref="UnitOfWorkOptions.ReadsPrimary"/> 的除外），其余工作单元读写都走主库（RFC-0005「读写分离」）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
 {
     /// <summary>

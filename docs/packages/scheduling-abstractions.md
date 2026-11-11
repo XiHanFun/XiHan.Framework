@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Scheduling`（`SchedulerOptions`，由 Provider 读取） |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.Messaging.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | 应用面 Stable：`IJob`、`IJobScheduler` 与其扩展、作业定义、计划与日历、状态与运行视图、查询、`AddJob` / `AddJobType` / `AddJobCalendar`、错误码与消息键；存储（`IJobStore` 与 `*Record`）、引擎、选主（`ILeaderElection`、`LeaderLease`）、登记表与事件为 Preview |
 
 ## 概述
 

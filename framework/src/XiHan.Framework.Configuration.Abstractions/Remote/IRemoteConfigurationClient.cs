@@ -11,7 +11,7 @@ namespace XiHan.Framework.Configuration.Abstractions.Remote;
 /// <remarks>
 /// 按命名空间取整份带版本的文档。实现可以长轮询：<c>knownVersion</c> 未变化时阻塞到变化或自己的窗口到期，收到取消时返回无值而不是抛出
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public interface IRemoteConfigurationClient
 {
     /// <summary>

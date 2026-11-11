@@ -77,7 +77,7 @@ public sealed class ErrorTests
     public void Unexpected_CarriesInnerError()
     {
         var inner = Error.Literal("PERSISTENCE_UNAVAILABLE_001", "Database unavailable.");
-        var outer = Error.Literal("ORDERS_UNEXPECTED_001", "Failed to create order.", inner: inner);
+        var outer = Error.Literal("ORDERS_UNEXPECTED_001", "Failed to create order.", null, inner);
 
         Assert.Same(inner, outer.Inner);
     }

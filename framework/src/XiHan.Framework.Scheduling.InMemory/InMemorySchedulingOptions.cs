@@ -13,7 +13,7 @@ namespace XiHan.Framework.Scheduling.InMemory;
 /// <remarks>
 /// 引擎选项在 <c>XiHan:Scheduling</c>
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record InMemorySchedulingOptions
 {
     /// <summary>

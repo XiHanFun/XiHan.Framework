@@ -11,7 +11,7 @@ Standard 组合包（元包）：Minimal 加 `Domain` 与持久化、缓存、�
 | 配置节 | — |
 | 依赖 | `XiHan.Framework.Profiles.Minimal`、`XiHan.Framework.Domain`，以及 `Persistence`、`Caching`、`MultiTenancy`、`Security`、`Messaging` 各自的 `.Abstractions` 与 `.InMemory` |
 | AOT | 兼容 |
-| 稳定性 | Stable |
+| 稳定性 | Preview：级别不高于组装的组件 |
 
 ## 概述
 

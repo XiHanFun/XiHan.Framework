@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:MultiTenancy`（含 `Tenants` 与 `InMemory` 子节） |
 | 依赖 | `XiHan.Framework.MultiTenancy.Abstractions` |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 

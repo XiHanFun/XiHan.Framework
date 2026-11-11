@@ -17,7 +17,7 @@ namespace XiHan.Framework.Persistence.SqlSugar;
 /// <remarks>
 /// 实体带 SqlSugar <see cref="TenantAttribute"/>（<c>[Tenant(configId)]</c>）→ 客户端里该 <c>ConfigId</c> 的连接；登记时指定了命名连接（<see cref="RepositoryRegistrations.ConnectionOf"/>）→ 同名 <c>ConfigId</c> 的连接；实体实现 <see cref="IMultiTenant"/> 且客户端有 <see cref="SqlSugarConnections.Shard"/> 连接 → 分片连接；其余 → 根（默认）连接。平台目录表因此始终落默认连接，租户表在带分片的调用里落分片连接。<c>[Tenant]</c> 与登记的连接都有而不同、或指向的连接不在客户端里，抛出携带 <see cref="PersistenceErrors.UnknownConnection"/> 的 <see cref="FrameworkException"/>，不回退到默认连接
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class SqlSugarConnectionSelector : IEntityConnectionSelector
 {
     /// <summary>

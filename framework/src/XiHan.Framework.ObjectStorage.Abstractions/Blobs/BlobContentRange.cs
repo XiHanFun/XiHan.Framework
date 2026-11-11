@@ -14,7 +14,7 @@ namespace XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 /// <param name="Offset">起点</param>
 /// <param name="Length">长度（至少 1）</param>
 /// <param name="TotalLength">对象总长</param>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed record BlobContentRange(long Offset, long Length, long TotalLength)
 {
     /// <summary>

@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Messaging:InMemory`、`XiHan:Messaging` |
 | 依赖 | `XiHan.Framework.Messaging.Abstractions`；无第三方依赖 |
 | AOT | 兼容 |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 

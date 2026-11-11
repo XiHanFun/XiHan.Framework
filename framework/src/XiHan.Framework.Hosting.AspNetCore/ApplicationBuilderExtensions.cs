@@ -121,8 +121,18 @@ public static class ApplicationBuilderExtensions
     /// </summary>
     /// <remarks>
     /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道
+    /// <c>prefix</c> 取 <c>"/health"</c>
     /// </remarks>
-    public static IEndpointRouteBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints, string prefix = "/health")
+    public static IEndpointRouteBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints)
+        => MapXiHanHealth(endpoints, "/health");
+
+    /// <summary>
+    /// 映射探针端点
+    /// </summary>
+    /// <remarks>
+    /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道
+    /// </remarks>
+    public static IEndpointRouteBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints, string prefix)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         ArgumentNullException.ThrowIfNull(prefix);

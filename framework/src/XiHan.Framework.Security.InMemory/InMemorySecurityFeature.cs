@@ -23,7 +23,7 @@ namespace XiHan.Framework.Security.InMemory;
 /// <remarks>
 /// 默认提供 <c>security.authentication@1</c>（ApiKey）与 <c>security.authorization@1</c>（RBAC 授予）。只为被选中的能力注册服务与中间件；被选为授权能力时登记启动核对，核对操作契约引用的策略（ADR-0080、ADR-0085）
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemorySecurityFeature : IFeature
 {
     /// <summary>

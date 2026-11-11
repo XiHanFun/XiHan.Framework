@@ -99,15 +99,57 @@ public sealed class PipelineBuilder
     /// </summary>
     /// <remarks>
     /// 构建应用时内核以单例把中间件类型补登记进容器，应用已有的登记不覆盖（RFC-0004「登记入口」）
+    /// <c>placement</c> 取 <c>Placement.End</c>、<c>owner</c> 取 <c>AppOwner</c>
     /// </remarks>
-    public PipelineBuilder UseAt<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage, Placement placement = Placement.End, string owner = AppOwner)
+    public PipelineBuilder UseAt<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage)
+        where TMiddleware : class, IPipelineMiddleware
+        => UseAt<TMiddleware>(stage, Placement.End, AppOwner);
+
+    /// <summary>
+    /// 在指定阶段添加从调用作用域解析的中间件
+    /// </summary>
+    /// <remarks>
+    /// 构建应用时内核以单例把中间件类型补登记进容器，应用已有的登记不覆盖（RFC-0004「登记入口」）
+    /// <c>owner</c> 取 <c>AppOwner</c>
+    /// </remarks>
+    public PipelineBuilder UseAt<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage, Placement placement)
+        where TMiddleware : class, IPipelineMiddleware
+        => UseAt<TMiddleware>(stage, placement, AppOwner);
+
+    /// <summary>
+    /// 在指定阶段添加从调用作用域解析的中间件
+    /// </summary>
+    /// <remarks>
+    /// 构建应用时内核以单例把中间件类型补登记进容器，应用已有的登记不覆盖（RFC-0004「登记入口」）
+    /// </remarks>
+    public PipelineBuilder UseAt<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMiddleware>(PipelineStage stage, Placement placement, string owner)
         where TMiddleware : class, IPipelineMiddleware
         => Add(typeof(TMiddleware), null, stage, placement, owner, static services => services.GetRequiredService<TMiddleware>(), static services => services.TryAddSingleton<TMiddleware>());
 
     /// <summary>
     /// 在指定阶段添加一个已创建的中间件实例
     /// </summary>
-    public PipelineBuilder UseInstance<TMiddleware>(TMiddleware instance, PipelineStage stage, Placement placement = Placement.End, string owner = AppOwner)
+    /// <remarks>
+    /// <c>placement</c> 取 <c>Placement.End</c>、<c>owner</c> 取 <c>AppOwner</c>
+    /// </remarks>
+    public PipelineBuilder UseInstance<TMiddleware>(TMiddleware instance, PipelineStage stage)
+        where TMiddleware : class, IPipelineMiddleware
+        => UseInstance<TMiddleware>(instance, stage, Placement.End, AppOwner);
+
+    /// <summary>
+    /// 在指定阶段添加一个已创建的中间件实例
+    /// </summary>
+    /// <remarks>
+    /// <c>owner</c> 取 <c>AppOwner</c>
+    /// </remarks>
+    public PipelineBuilder UseInstance<TMiddleware>(TMiddleware instance, PipelineStage stage, Placement placement)
+        where TMiddleware : class, IPipelineMiddleware
+        => UseInstance<TMiddleware>(instance, stage, placement, AppOwner);
+
+    /// <summary>
+    /// 在指定阶段添加一个已创建的中间件实例
+    /// </summary>
+    public PipelineBuilder UseInstance<TMiddleware>(TMiddleware instance, PipelineStage stage, Placement placement, string owner)
         where TMiddleware : class, IPipelineMiddleware
     {
         ArgumentNullException.ThrowIfNull(instance);
@@ -119,8 +161,28 @@ public sealed class PipelineBuilder
     /// </summary>
     /// <remarks>
     /// 同一类型可按不同名字登记多次（如插件贡献的多个中间件），名字在同类型内唯一。按类型声明的相对约束（<see cref="Before{TMiddleware, TOther}"/> / <see cref="After{TMiddleware, TOther}"/>）在该类型有多个实例时不可用，改用按名字的 <see cref="Before(string, string)"/> / <see cref="After(string, string)"/>
+    /// <c>placement</c> 取 <c>Placement.End</c>、<c>owner</c> 取 <c>AppOwner</c>
     /// </remarks>
-    public PipelineBuilder UseNamedInstance(string name, IPipelineMiddleware instance, PipelineStage stage, Placement placement = Placement.End, string owner = AppOwner)
+    public PipelineBuilder UseNamedInstance(string name, IPipelineMiddleware instance, PipelineStage stage)
+        => UseNamedInstance(name, instance, stage, Placement.End, AppOwner);
+
+    /// <summary>
+    /// 在指定阶段添加一个带名字的中间件实例
+    /// </summary>
+    /// <remarks>
+    /// 同一类型可按不同名字登记多次（如插件贡献的多个中间件），名字在同类型内唯一。按类型声明的相对约束（<see cref="Before{TMiddleware, TOther}"/> / <see cref="After{TMiddleware, TOther}"/>）在该类型有多个实例时不可用，改用按名字的 <see cref="Before(string, string)"/> / <see cref="After(string, string)"/>
+    /// <c>owner</c> 取 <c>AppOwner</c>
+    /// </remarks>
+    public PipelineBuilder UseNamedInstance(string name, IPipelineMiddleware instance, PipelineStage stage, Placement placement)
+        => UseNamedInstance(name, instance, stage, placement, AppOwner);
+
+    /// <summary>
+    /// 在指定阶段添加一个带名字的中间件实例
+    /// </summary>
+    /// <remarks>
+    /// 同一类型可按不同名字登记多次（如插件贡献的多个中间件），名字在同类型内唯一。按类型声明的相对约束（<see cref="Before{TMiddleware, TOther}"/> / <see cref="After{TMiddleware, TOther}"/>）在该类型有多个实例时不可用，改用按名字的 <see cref="Before(string, string)"/> / <see cref="After(string, string)"/>
+    /// </remarks>
+    public PipelineBuilder UseNamedInstance(string name, IPipelineMiddleware instance, PipelineStage stage, Placement placement, string owner)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(instance);
@@ -212,7 +274,7 @@ public sealed class PipelineBuilder
     /// </summary>
     /// <remarks>
     /// <para><paramref name="configure"/> 在构建器的锁里执行，只应调用本构建器的登记方法：组内登记的归属都必须是 <paramref name="owner"/>，次序约束只能声明在组内的中间件上（目标可以在组外），否则抛出 <see cref="KernelErrors.PipelineRegistration"/>——这样 <see cref="RemoveOwnedBy"/> 撤回的恰好是这一组</para>
-    /// <para>回调返回后立即按排序规则核对整条管道，约束目标未登记、有歧义、跨阶段（<see cref="KernelErrors.PipelineRegistration"/>）或成环（<see cref="KernelErrors.PipelineCycle"/>）时撤掉组内的全部登记再抛出，管道不变；不像配置阶段的单项登记那样等到构建或打印管道时才报。应用构建之后（容器已建好）组内只能按实例登记（<see cref="UseInstance"/>、<see cref="UseNamedInstance"/>）。成功后管道版本前进：之后开始的调用经过新登记的中间件，已经取到管道委托、正在执行的调用不受影响。不能嵌套</para>
+    /// <para>回调返回后立即按排序规则核对整条管道，约束目标未登记、有歧义、跨阶段（<see cref="KernelErrors.PipelineRegistration"/>）或成环（<see cref="KernelErrors.PipelineCycle"/>）时撤掉组内的全部登记再抛出，管道不变；不像配置阶段的单项登记那样等到构建或打印管道时才报。应用构建之后（容器已建好）组内只能按实例登记（<see cref="UseInstance{TMiddleware}(TMiddleware, PipelineStage)"/>、<see cref="UseNamedInstance(string, IPipelineMiddleware, PipelineStage)"/>）。成功后管道版本前进：之后开始的调用经过新登记的中间件，已经取到管道委托、正在执行的调用不受影响。不能嵌套</para>
     /// </remarks>
     /// <param name="owner">这一组的归属（插件或特性的清单 ID）</param>
     /// <param name="configure">在构建器上登记这一组的回调</param>

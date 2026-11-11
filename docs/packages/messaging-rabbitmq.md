@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Messaging:RabbitMQ`、`XiHan:Messaging`；可选绑定 `queue`（类型 `queue`） |
 | 依赖 | `XiHan.Framework.Messaging.Abstractions`；`RabbitMQ.Client` |
 | AOT | 不兼容（`IsAotCompatible=false`，RabbitMQ.Client 未声明 AOT 兼容） |
-| 稳定性 | Preview |
+| 稳定性 | Stable |
 
 ## 概述
 

@@ -16,7 +16,7 @@ namespace XiHan.Framework.Auditing.Abstractions.Pipeline;
 /// <remarks>
 /// 显式动作（让非操作调用或未声明权限的操作也被记录）、资源名与细节
 /// </remarks>
-[ApiLevel(Stability.Preview, "5.0")]
+[ApiLevel(Stability.Stable, "5.0")]
 public static class AuditInvocationExtensions
 {
     /// <summary>

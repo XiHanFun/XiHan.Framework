@@ -15,7 +15,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 /// <remarks>
 /// 状态由三个时间决定：<see cref="DispatchedAt"/> 非空为已投递（保留 <see cref="OutboxOptions.DispatchedRetention"/> 后删除），<see cref="DeadLetteredAt"/> 非空为死信（不再投递），都为空时到了 <see cref="NextAttemptAt"/>（为空即已到）才会被取到。索引 <c>(DispatchedAt, DeadLetteredAt, CreatedAt)</c>：投递循环取「未投递、未进死信」的行按创建时间排序，保留期清理按投递时间范围删除，都走它
 /// </remarks>
-[ApiLevel(Stability.Stable, "5.0")]
+[ApiLevel(Stability.Preview, "5.0")]
 [EntityIndex(nameof(DispatchedAt), nameof(DeadLetteredAt), nameof(CreatedAt))]
 public sealed class OutboxMessage : IEntity<Guid>, IHasCreationTime
 {

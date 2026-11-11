@@ -18,7 +18,18 @@ public sealed partial record PermissionDefinition
     /// <summary>
     /// 创建权限定义
     /// </summary>
-    public PermissionDefinition(string code, string displayName, string? description = null)
+    /// <remarks>
+    /// <c>description</c> 取 <c>null</c>
+    /// </remarks>
+    public PermissionDefinition(string code, string displayName)
+        : this(code, displayName, null)
+    {
+    }
+
+    /// <summary>
+    /// 创建权限定义
+    /// </summary>
+    public PermissionDefinition(string code, string displayName, string? description)
     {
         ArgumentNullException.ThrowIfNull(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
