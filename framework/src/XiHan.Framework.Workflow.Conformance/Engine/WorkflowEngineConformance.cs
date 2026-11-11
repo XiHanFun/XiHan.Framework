@@ -1182,7 +1182,7 @@ public abstract class WorkflowEngineConformance
                 Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.CompleteAsync(new UserTaskCompletion(t1Task.Id, "alice", UserTaskOutcomes.Approved, null, null), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.TransferAsync(new UserTaskTransfer(t1Task.Id, "alice", "bob"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 Assert.Equal(WorkflowErrors.BookmarkNotFound, (await tasks.AddAssigneesAsync(new UserTaskAddition(t1Task.Id, "alice", ["bob"]), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
-                Assert.Equal([mine.Id], (await tasks.PendingAsync("alice", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Select(static task => task.InstanceId));
+                Assert.Equal([mine.Id], (await tasks.QueryAsync(new UserTaskQuery { AssigneeId = "alice" }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static task => task.InstanceId));
                 var externals = sp.GetRequiredService<IWorkflowExternalTaskService>();
                 Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.CompleteAsync(new ExternalTaskCompletion(fetched.Id, "w1", null), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
                 Assert.Equal(WorkflowErrors.BookmarkNotFound, (await externals.FailAsync(new ExternalTaskFailure(fetched.Id, "w1", "boom"), CancellationToken.None).ConfigureAwait(false)).Error?.Code);
@@ -1580,7 +1580,7 @@ public abstract class WorkflowEngineConformance
         Assert.Equal(("signal", "conf-waits-go"), waits.Where(static wait => wait.Kind == BookmarkKinds.Signal).Select(static wait => (wait.NodeId, wait.Key)).Single());
         Assert.All(waits.Where(static wait => wait.Kind is BookmarkKinds.Timer or BookmarkKinds.NodeTimeout), static wait => Assert.NotNull(wait.DueAt));
         // 用户任务的摘要 ID 就是任务 ID
-        var tasks = await host.AsTenantAsync("t1", async sp => (await sp.GetRequiredService<IWorkflowTaskService>().PendingByInstanceAsync(instance.Id, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow()).ConfigureAwait(false);
+        var tasks = await host.AsTenantAsync("t1", async sp => (await sp.GetRequiredService<IWorkflowTaskService>().QueryAsync(new UserTaskQuery { InstanceId = instance.Id, Limit = UserTaskQuery.MaxLimit }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items).ConfigureAwait(false);
         Assert.Equal(tasks.Select(static task => task.Id).Order(StringComparer.Ordinal), waits.Where(static wait => wait.Kind == BookmarkKinds.UserTask).Select(static wait => wait.Id).Order(StringComparer.Ordinal));
 
         // 别的分区与不存在的实例都按不存在处理

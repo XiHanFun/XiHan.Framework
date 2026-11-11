@@ -141,8 +141,7 @@ var nightly = WorkflowDefinitionBuilder.Create("finance.reconcile")
 
 | 方法 | 作用 | 主要错误 |
 | --- | --- | --- |
-| `PendingAsync(assigneeId)` / `PendingByInstanceAsync(instanceId)` | 某人或某实例的待办 | — |
-| `QueryAsync(UserTaskQuery)` | 指派人或实例必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
+| `QueryAsync(UserTaskQuery)` | 读待办的唯一入口：某人的待办给 `AssigneeId`，某实例的给 `InstanceId`，两者必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按创建时间升序或降序（`Descending`）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Limit` 不在 1 到 1000） |
 | `CompleteAsync(completions)` | 完成任务，可带结果、意见与变量 | `WORKFLOW_DENIED_001`（不是指派人）、`WORKFLOW_VALIDATION_002`（结果不允许）、`WORKFLOW_NOTFOUND_003` |
 | `TransferAsync(transfers)` | 转办给另一个人 | `WORKFLOW_CONFLICT_004`（目标已是指派人） |
 | `AddAssigneesAsync(additions)` | 加签：`Any` / `All` 立即加任务，`Sequential` 排到队尾 | `WORKFLOW_CONFLICT_004` |
@@ -355,6 +354,8 @@ await engine.JumpAsync(new WorkflowJump(instanceId, "manager", Reason: "重新�
 // 迁到新发布的版本
 await engine.MigrateAsync(new WorkflowMigration(instanceId, newVersion.Id), cancellationToken);
 ```
+
+批量方法（这里的控制、任务与外部任务服务的操作）返回与入参等长、同序的逐项结果，空集合直接返回空结果、不开事务。自己开调用时整批一个事务：某一项失败不回滚其余项，失败的项没有写入；提交失败时每一项都报告提交的错误；在调用方的工作单元里时并入调用方的事务。取消在任何时刻都整批回滚并抛出 `OperationCanceledException`，不留下半批。
 
 调用只操作得了自己分区的实例：别的分区的实例按不存在处理，返回 `WORKFLOW_NOTFOUND_002`，`PurgeAsync` 只清自己的分区；按书签 ID 的 `ResumeAsync` 遇到别的分区的书签返回 `WORKFLOW_NOTFOUND_003`。状态不允许时返回 `WORKFLOW_CONFLICT_001`；已经结束的实例上取消与终止幂等返回。跳转目标不存在、迁移目标不兼容返回 `WORKFLOW_VALIDATION_002`；死汇合、波次上限这类引擎级故障没有故障节点，不能重试。所有控制操作都是批量、逐项结果，单条写法在 `WorkflowEngineExtensions` 里。`XiHan:Workflow:RetentionDays` 大于 0 时，轮询器每 `HousekeepingIntervalSeconds` 逐个分区自动清理一次。
 

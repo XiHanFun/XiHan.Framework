@@ -11,7 +11,14 @@ namespace XiHan.Framework.Workflow.Abstractions.Engine;
 /// 引擎
 /// </summary>
 /// <remarks>
-/// 启动实例、消费书签、发信号、控制实例。按标识的控制操作都是批量、逐项结果；单实例的写法见 <see cref="WorkflowEngineExtensions"/>
+/// 启动实例、消费书签、发信号、控制实例。按标识的控制操作都是批量、逐项结果；单实例的写法见 <see cref="WorkflowEngineExtensions"/>。批量语义（任务与外部任务服务相同，ADR-0149）：
+/// <list type="bullet">
+/// <item>结果与入参等长、同序；空集合直接返回空结果，不开事务、不访问存储</item>
+/// <item>重复的 ID 按入参顺序逐项施加，后一项看见前一项的效果</item>
+/// <item>自己开调用时整批一个事务：逐项失败不回滚其余项，失败的项没有写入；提交失败时每一项都报告提交的错误。在调用方的工作单元里时并入调用方的事务</item>
+/// <item>取消在任何时刻都整批回滚并抛出 <see cref="OperationCanceledException"/>：事务里不留下半批</item>
+/// <item>引擎不强加批次上限，批次大小由调用方控制</item>
+/// </list>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowEngine

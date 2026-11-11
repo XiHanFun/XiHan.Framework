@@ -10,21 +10,11 @@ namespace XiHan.Framework.Workflow.Abstractions.Tasks;
 /// 用户任务
 /// </summary>
 /// <remarks>
-/// 待办查询、完成、转办、加签。查询只含当前调用租户下、实例运行中的任务；操作都是批量、逐项结果
+/// 待办查询、完成、转办、加签。查询只含当前调用租户下、实例运行中的任务，一律经 <see cref="QueryAsync"/> 分页（某人或某实例的待办给 <see cref="UserTaskQuery.AssigneeId"/> 或 <see cref="UserTaskQuery.InstanceId"/>，ADR-0149）；操作都是批量、逐项结果，语义见 <see cref="Engine.IWorkflowEngine"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowTaskService
 {
-    /// <summary>
-    /// 某人的待办
-    /// </summary>
-    ValueTask<Result<IReadOnlyList<UserTask>>> PendingAsync(string assigneeId, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// 某实例的待办
-    /// </summary>
-    ValueTask<Result<IReadOnlyList<UserTask>>> PendingByInstanceAsync(string instanceId, CancellationToken cancellationToken);
-
     /// <summary>
     /// 完成任务
     /// </summary>

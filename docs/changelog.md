@@ -38,6 +38,8 @@
 - **调整** `MessageDelivery` 改为初始化器（`new MessageDelivery { Topic = …, Envelope = …, Attempt = …, Mode = … }`），`MessageSubscription` 只保留 `(topic, mode)` 构造；`IdempotencyRecord` 不再公开，记录格式与回放不变
 - **调整** 调度器的状态与历史改为只读视图：`RunsAsync` 返回 `JobRunView`（失败结果在 `Outcome`），`JobStatus.Job` 是 `JobView`；`StatusesAsync()` 改为分页的 `ListStatusesAsync(new JobStatusQuery())`，按名批量用 `StatusesAsync(names)`，`StatusAsync(name)` 不变；`new JobTriggerRequest(name, data)` 改为 `new JobTriggerRequest(name) { Data = data }`，`JobRun`、`JobOutcome`、`JobTriggerStatus`、`JobStatus` 按属性名初始化
 - **调整** 调度器的批量方法中途取消不再抛出：已开始的项照常给出结果，未开始的项以 `KERNEL_CANCELLED_001` 结束；开始前已取消时仍抛出
+- **移除** `IWorkflowTaskService.PendingAsync` 与 `PendingByInstanceAsync`：待办一律分页读取，改为 `QueryAsync(new UserTaskQuery { AssigneeId = … })` 或 `{ InstanceId = … }`
+- **调整** 工作流的批量方法传空集合时直接返回空结果，不再开一次调用
 - **调整** `UnitOfWorkOptions` 改为初始化器：`new UnitOfWorkOptions { TenantId = …, IsReadOnly = true, Connection = … }`；`IUnitOfWork.TenantId` / `IsReadOnly` 改为 `unitOfWork.Options.TenantId` / `Options.IsReadOnly`，自己实现工作单元的 Provider 实现 `Options`
 
 ### 宿主、协议与插件

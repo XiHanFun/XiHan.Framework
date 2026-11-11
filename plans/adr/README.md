@@ -148,3 +148,4 @@
 | [0146](0146-本地化器接口只留原语.md) | `IMessageLocalizer` 只留 `Options`、`Find`、`Resolve(key, locale, arguments)` 三个原语，按上下文取、翻译错误、退回描述的 5 个形式移到 `MessageLocalizerExtensions`，各实现不再复制；调用方源码不变 | 已采纳 |
 | [0147](0147-审计接收器不抛出.md) | `IAuditSink.WriteAsync` 保持 `ValueTask`，契约写明有界、不阻塞、返回只表示已接收、不抛出（接收不下由实现自己丢弃计数并节流告警）、取消时可放弃但不抛；不改返回 `Result`（排队的成功不等于落地，双重告警）；套件新增用例 5 | 已采纳 |
 | [0148](0148-调度器交出只读视图与批量语义.md) | 调度器交出只读视图 `JobView` / `JobRunView`，存储记录只留给 `IJobStore`；`StatusesAsync(names)` 按名批量、`ListStatusesAsync(JobStatusQuery)` 按名字键集分页（越界为 `SCHEDULING_VALIDATION_003`）；批量取消开始前抛出、开始后未开始的项以 `KERNEL_CANCELLED_001` 结束不丢结果；五个位置记录改初始化器；不加 `MaxBatchSize` | 已采纳 |
+| [0149](0149-工作流的批量语义与待办只经查询读取.md) | 工作流批量语义写进接口与 RFC（等长同序、整批一个事务逐项失败不回滚其余、取消整批回滚、不设上限），空集合不开事务；删除不分页、与 `QueryAsync` 重复的 `PendingAsync` / `PendingByInstanceAsync`；书签与定义存储的分页需配合快照游标与逐页事务，另行设计 | 已采纳 |

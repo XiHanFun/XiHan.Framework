@@ -156,11 +156,11 @@ internal sealed class WorkflowScope : IAsyncDisposable, IDisposable
     /// 逐项结果的批量操作
     /// </summary>
     /// <remarks>
-    /// 自己开调用时整批一个事务：逐项失败不回滚其余项（失败的项没有写入），提交失败时每一项都报告提交的错误
+    /// 自己开调用时整批一个事务：逐项失败不回滚其余项（失败的项没有写入），提交失败时每一项都报告提交的错误。空集合直接返回空结果，不开调用也不开事务（批量优先第 5 条，ADR-0149）
     /// </remarks>
     public ValueTask<IReadOnlyList<Result<T>>> RunBatchAsync<TService, T>(int count, string target, Func<ValueTask<IReadOnlyList<Result<T>>>> body, Func<TService, ValueTask<IReadOnlyList<Result<T>>>> nested, CancellationToken cancellationToken)
         where TService : notnull
-        => RunAsync(true, target, body, nested, static _ => Result.Success(), error => (IReadOnlyList<Result<T>>)Enumerable.Repeat(Result.Failure<T>(error), count).ToList(), cancellationToken);
+        => count == 0 ? ValueTask.FromResult<IReadOnlyList<Result<T>>>([]) : RunAsync(true, target, body, nested, static _ => Result.Success(), error => (IReadOnlyList<Result<T>>)Enumerable.Repeat(Result.Failure<T>(error), count).ToList(), cancellationToken);
 
     /// <summary>
     /// 逐项结果、没有返回值的批量操作
@@ -170,7 +170,7 @@ internal sealed class WorkflowScope : IAsyncDisposable, IDisposable
     /// </remarks>
     public ValueTask<IReadOnlyList<Result>> RunBatchAsync<TService>(int count, string target, Func<ValueTask<IReadOnlyList<Result>>> body, Func<TService, ValueTask<IReadOnlyList<Result>>> nested, CancellationToken cancellationToken)
         where TService : notnull
-        => RunAsync(true, target, body, nested, static _ => Result.Success(), error => (IReadOnlyList<Result>)Enumerable.Repeat(Result.Failure(error), count).ToList(), cancellationToken);
+        => count == 0 ? ValueTask.FromResult<IReadOnlyList<Result>>([]) : RunAsync(true, target, body, nested, static _ => Result.Success(), error => (IReadOnlyList<Result>)Enumerable.Repeat(Result.Failure(error), count).ToList(), cancellationToken);
 
     /// <summary>
     /// 取实例锁

@@ -87,30 +87,6 @@ internal sealed class WorkflowTaskService : IWorkflowTaskService
     private string? Tenant => _scope.TenantId;
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<UserTask>>> PendingAsync(string assigneeId, CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(assigneeId);
-        return _scope.RunAsync<IWorkflowTaskService, IReadOnlyList<UserTask>>(false, "workflow.task.pending", async () =>
-        {
-            var found = await _bookmarks.ByKindAndKeyAsync(Tenant, BookmarkKinds.UserTask, assigneeId, cancellationToken).ConfigureAwait(false);
-            return found.TryGetValue(out var bookmarks) ? await ToTasksAsync(bookmarks, cancellationToken).ConfigureAwait(false) : found.Error!;
-        }, service => service.PendingAsync(assigneeId, cancellationToken), cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<UserTask>>> PendingByInstanceAsync(string instanceId, CancellationToken cancellationToken)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(instanceId);
-        return _scope.RunAsync<IWorkflowTaskService, IReadOnlyList<UserTask>>(false, "workflow.task.pending-by-instance", async () =>
-        {
-            var found = await _bookmarks.ByInstanceAsync(Tenant, instanceId, cancellationToken).ConfigureAwait(false);
-            return found.TryGetValue(out var bookmarks)
-                ? await ToTasksAsync(bookmarks.Where(static bookmark => string.Equals(bookmark.Kind, BookmarkKinds.UserTask, StringComparison.Ordinal)).ToList(), cancellationToken).ConfigureAwait(false)
-                : found.Error!;
-        }, service => service.PendingByInstanceAsync(instanceId, cancellationToken), cancellationToken);
-    }
-
-    /// <inheritdoc />
     public ValueTask<Result<UserTaskPage>> QueryAsync(UserTaskQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
