@@ -177,3 +177,4 @@
 | [0175](0175-端点授权要求不被静默跳过.md) | 安全审查 S-06：绕过管道的端点挂 `RequireXiHan*` 启动即失败（`SECURITY_VALIDATION_008`）；gRPC 方法端点改标 `PipelineBypassMetadata.SelfInvoking` 并在处理器里带上端点要求；`RequireXiHan*` 给端点包守卫，`UseXiHan()` 没判定到时端点拒绝执行 | 已采纳 |
 | [0176](0176-操作请求体在授权之后读取.md) | 安全审查 S-07：内核新增载荷来源 `OperationPayloadSource`，`UseXiHan()` 不在进管道前读请求体，Validate 阶段（授权之后）才读；HTTP 操作请求体上限 `MaxRequestBodyBytes`（缺省 4 MiB，`PROTOCOLS_VALIDATION_011`），有请求体时必须是 JSON 类型（`PROTOCOLS_VALIDATION_012`） | 已采纳 |
 | [0177](0177-插件读宿主配置与绑定要授予.md) | 安全审查 S-02：进程外与 Wasm 插件读清单点名的宿主配置节与绑定，要运营方在 `Grants` 里授予 `config:<配置节>`、`binding:<绑定名>`，否则发现时以 `PLUGINS_DENIED_001` 拒绝；`PermissionGrant.MissingConfigurationGrants`；进程内插件不受此限 | 已采纳 |
+| [0178](0178-S3命名实例必须自带密钥.md) | 安全审查 S-03：S3 命名实例必须给出 `AccessKey` 与 `SecretKey`，只给一项总是拒绝，两项都不给只在运营方打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials` 时用宿主凭据链；缺省实例不变 | 已采纳 |

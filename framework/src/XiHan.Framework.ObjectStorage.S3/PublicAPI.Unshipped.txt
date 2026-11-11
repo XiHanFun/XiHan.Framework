@@ -20,6 +20,7 @@ XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.CreateAsync(XiHan.Framework
 XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.Name.get -> string!
 XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.ProbeAsync(XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.S3BlobStoreProvider(System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, XiHan.Framework.Kernel.Security.OutboundAddressPolicy! addresses) -> void
+XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.S3BlobStoreProvider(System.TimeProvider! clock, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, XiHan.Framework.Kernel.Security.OutboundAddressPolicy! addresses, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.ConfigureShadowed(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
@@ -49,6 +50,7 @@ XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SecretKey.get -> string?
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.SecretKey.init -> void
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.get -> string?
 XiHan.Framework.ObjectStorage.S3.S3ObjectStorageOptions.ServiceUrl.init -> void
+const XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.AmbientCredentialsKey = "XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3BlobStoreProvider.ProviderName = "s3" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.ConnectionBinding = "objectstorage" -> string!
 const XiHan.Framework.ObjectStorage.S3.S3ObjectStorageFeature.HealthName = "objectstorage.s3.connection" -> string!

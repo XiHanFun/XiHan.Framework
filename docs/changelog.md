@@ -14,6 +14,7 @@
 - **修复** 端点上的授权要求不再被静默跳过：挂在绕过管道的端点（OpenAPI、`.proto`、健康探针、自己标注绕过的）上时宿主启动失败（`SECURITY_VALIDATION_008`），原先从不判定；`UseXiHan()` 没调或排在 `UseRouting()` 之前时，带要求的端点拒绝执行；`MapXiHanGrpc()` 上的授权约定现在每次调用都判定
 - **修复** HTTP 操作的请求体改在授权之后才读，原先进管道前就整读解析，匿名调用方也能让宿主为每个请求缓冲几十 MB；请求体上限 `XiHan:Protocols:Http:MaxRequestBodyBytes`（缺省 4 MiB，超过为 `PROTOCOLS_VALIDATION_011`），有请求体时 `Content-Type` 必须是 JSON（否则 `PROTOCOLS_VALIDATION_012`）：以 `text/plain` 或表单发 JSON 的客户端要改成 `application/json`
 - **修复** 进程外与 Wasm 插件读宿主配置节与绑定要运营方授予：原先插件在清单里点名哪个 `XiHan:*` 节、哪个绑定就拿到哪个，零权限的插件也能拿到 JWT 密钥、连接串与签名密钥；现在要在 `XiHan:Plugins:<OutOfProcess|Wasm>:Grants:<清单 ID>` 里授予 `config:<配置节>` 与 `binding:<绑定名>`，没有授予即拒绝加载（`PLUGINS_DENIED_001`）
+- **修复** S3 命名实例必须给出 `AccessKey` 与 `SecretKey`：原先没给密钥就用宿主的 AWS 凭据链，能登记存储实例的租户管理员可以以宿主的身份读写任何桶；要用环境凭据由运营方打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials`
 
 ## v5.0.0-preview.3（2026-11-12）
 

@@ -322,7 +322,7 @@ public sealed class S3ConditionalWriteRetryTests
     /// 命名实例的定义
     /// </summary>
     private static BlobStoreDefinition Definition(string name, string serviceUrl)
-        => new(name, S3BlobStoreProvider.ProviderName, new Dictionary<string, string> { ["ServiceUrl"] = serviceUrl, ["HealthBucket"] = Bucket });
+        => new(name, S3BlobStoreProvider.ProviderName, new Dictionary<string, string> { ["ServiceUrl"] = serviceUrl, ["HealthBucket"] = Bucket, ["AccessKey"] = "key", ["SecretKey"] = "secret" });
 
     /// <summary>
     /// 以不覆盖方式写一个对象

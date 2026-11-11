@@ -265,15 +265,15 @@ public sealed class S3ConditionalWriteTests
         await using (registry)
         {
             // 配置错误在登记实例时就报给调用方：注册表原样返回 Provider 的错误码，不登记
-            var refused = await registry.GetOrAddAsync(new BlobStoreDefinition("denied", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://denied:9000", ["HealthBucket"] = Bucket }), CancellationToken.None);
+            var refused = await registry.GetOrAddAsync(new BlobStoreDefinition("denied", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://denied:9000", ["HealthBucket"] = Bucket, ["AccessKey"] = "key", ["SecretKey"] = "secret" }), CancellationToken.None);
             Assert.Equal(ObjectStorageErrors.ProbeDenied, refused.Error?.Code);
-            var absent = await registry.GetOrAddAsync(new BlobStoreDefinition("absent", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://missing:9000", ["HealthBucket"] = Bucket }), CancellationToken.None);
+            var absent = await registry.GetOrAddAsync(new BlobStoreDefinition("absent", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://missing:9000", ["HealthBucket"] = Bucket, ["AccessKey"] = "key", ["SecretKey"] = "secret" }), CancellationToken.None);
             Assert.Equal(ObjectStorageErrors.BlobNotFound, absent.Error?.Code);
             Assert.Empty(registry.Names);
 
             // 下次取用重新探测：桶建好后建出
             missing.AddBucket(Bucket);
-            Assert.True((await registry.GetOrAddAsync(new BlobStoreDefinition("absent", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://missing:9000", ["HealthBucket"] = Bucket }), CancellationToken.None)).IsSuccess);
+            Assert.True((await registry.GetOrAddAsync(new BlobStoreDefinition("absent", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://missing:9000", ["HealthBucket"] = Bucket, ["AccessKey"] = "key", ["SecretKey"] = "secret" }), CancellationToken.None)).IsSuccess);
             Assert.Equal(["absent"], registry.Names);
         }
     }
@@ -347,7 +347,7 @@ public sealed class S3ConditionalWriteTests
             Assert.Equal(ObjectStorageErrors.StoreDefinitionInvalid, invalid.Error?.Code);
 
             // 关闭条件写入：建实例不发请求
-            var unprobed = (await registry.GetOrAddAsync(new BlobStoreDefinition("unprobed", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://127.0.0.1:1", ["ConditionalWrites"] = "false" }), CancellationToken.None)).ValueOrThrow();
+            var unprobed = (await registry.GetOrAddAsync(new BlobStoreDefinition("unprobed", "s3", new Dictionary<string, string> { ["ServiceUrl"] = "http://127.0.0.1:1", ["ConditionalWrites"] = "false", ["AccessKey"] = "ak", ["SecretKey"] = "sk" }), CancellationToken.None)).ValueOrThrow();
             Assert.Equal(ObjectStorageErrors.ConditionalWriteUnavailable, (await unprobed.PutAsync(new ContainerName("media"), new BlobKey("a.txt"), Encoding.UTF8.GetBytes("a"), new BlobPutOptions { Overwrite = false }, CancellationToken.None)).Error?.Code);
         }
     }
