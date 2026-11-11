@@ -51,7 +51,7 @@ public sealed class McpCommandTests
             """{"jsonrpc":"2.0","method":"notifications/initialized"}""",
             """{"jsonrpc":"2.0","id":2,"method":"tools/list"}""",
             Call(3, "xihan_framework_info", """{"name":"Messaging.Kafka"}"""),
-            Call(4, "xihan_framework_config", """{"query":"XiHan:Messaging:Kafka:GroupId"}"""),
+            Call(4, "xihan_framework_config", """{"query":"XiHan:Messaging:Kafka:ConsumerGroup"}"""),
             Call(5, "xihan_framework_search", """{"page":"0016"}"""),
             Call(6, "xihan_framework_info", """{"name":"no-such-thing"}"""),
             Call(7, "xihan_framework_search", """{"query":"kafka","limit":99}"""));
@@ -85,7 +85,7 @@ public sealed class McpCommandTests
         Assert.Contains(text, static c => char.GetUnicodeCategory(c) == System.Globalization.UnicodeCategory.OtherLetter);
 
         var key = Structured(replies[3]).GetProperty("sections")[0].GetProperty("keys")[0];
-        Assert.Equal("XiHan:Messaging:Kafka:GroupId", key.GetProperty("path").GetString());
+        Assert.Equal("XiHan:Messaging:Kafka:ConsumerGroup", key.GetProperty("path").GetString());
         Assert.Equal("xihan", key.GetProperty("default").GetString());
 
         Assert.Equal("framework/spec/rfcs/0016-packaging.md", Structured(replies[4]).GetProperty("page").GetProperty("path").GetString());

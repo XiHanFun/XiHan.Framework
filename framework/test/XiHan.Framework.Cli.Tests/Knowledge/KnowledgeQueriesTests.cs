@@ -114,9 +114,9 @@ public sealed class KnowledgeQueriesTests
     [Fact]
     public void Config_ByKeyPath_ReturnsOnlyThatKey_AndMatchesPlaceholders()
     {
-        var section = Assert.Single(KnowledgeQueries.Config(Knowledge, "XiHan:Messaging:Kafka:GroupId").ValueOrThrow().Sections!);
+        var section = Assert.Single(KnowledgeQueries.Config(Knowledge, "XiHan:Messaging:Kafka:ConsumerGroup").ValueOrThrow().Sections!);
         var key = Assert.Single(section.Keys);
-        Assert.Equal("XiHan:Messaging:Kafka:GroupId", key.Path);
+        Assert.Equal("XiHan:Messaging:Kafka:ConsumerGroup", key.Path);
         Assert.Equal("xihan", key.Default);
 
         var principal = Assert.Single(KnowledgeQueries.Config(Knowledge, "XiHan:Security:InMemory:Principals:alice:ApiKey").ValueOrThrow().Sections!);
@@ -144,7 +144,7 @@ public sealed class KnowledgeQueriesTests
                 "Messaging": {
                   "Kafka": {
                     "BootstrapServers": "localhost:9092",
-                    "GroupId": "xihan",
+                    "ConsumerGroup": "xihan",
                     "TopicPrefix": "xihan.",
                     "HealthProbeIntervalSeconds": 15,
                     "RedeliveryDelaySeconds": 5
