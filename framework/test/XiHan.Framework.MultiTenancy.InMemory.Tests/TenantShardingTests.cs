@@ -60,7 +60,7 @@ public sealed class TenantShardingTests
     }
 
     [Fact]
-    public async Task Resolver_ReturnsUnavailable_WhenStoreThrows()
+    public async Task Resolver_ReturnsUnavailable_WhenTheStoreIsUnavailable()
     {
         var logs = new LogCapture();
         var resolver = new TenantStoreShardResolver(new ThrowingStore(), new MultiTenancyOptions(), logs);
@@ -68,12 +68,11 @@ public sealed class TenantShardingTests
         var result = await resolver.ResolveAsync("acme", CancellationToken.None);
 
         Assert.Equal(MultiTenancyErrors.ShardUnavailable, result.Error?.Code);
-        // 这个错误会返回给调用方：reason 只写类型，完整异常进日志
-        Assert.Equal(typeof(InvalidOperationException).FullName, result.Error?.Details?["reason"]);
-        Assert.DoesNotContain("store offline", result.Error?.Message ?? string.Empty, StringComparison.Ordinal);
+        // 这个错误会返回给调用方：reason 只写存储的错误码，存储的错误作为内部错误保留，失败不进缓存
+        Assert.Equal(MultiTenancyErrors.StoreUnavailable, result.Error?.Details?["reason"]);
+        Assert.Equal(MultiTenancyErrors.StoreUnavailable, result.Error?.Inner?.Code);
         var logged = Assert.Single(logs.Entries);
         Assert.Equal(LogLevel.Warning, logged.Level);
-        Assert.Contains("store offline", logged.Exception?.Message, StringComparison.Ordinal);
         Assert.Equal(0, resolver.CachedCount);
         await Assert.ThrowsAsync<OperationCanceledException>(async () => await resolver.ResolveAsync("acme", new CancellationToken(canceled: true)));
     }
@@ -155,19 +154,19 @@ public sealed class TenantShardingTests
     }
 
     /// <summary>
-    /// 查找即抛异常的租户存储，模拟存储不可达
+    /// 查找总是返回存储不可达的租户存储
     /// </summary>
     private sealed class ThrowingStore : ITenantStore
     {
         /// <inheritdoc />
-        public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
+        public ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            throw new InvalidOperationException("store offline");
+            return ValueTask.FromResult(Result.Failure<Maybe<TenantInfo>>(Error.Unavailable(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable)));
         }
 
         /// <inheritdoc />
-        public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken) => throw new InvalidOperationException("store offline");
+        public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Failure<TenantPage>(Error.Unavailable(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable)));
     }
 
     /// <summary>

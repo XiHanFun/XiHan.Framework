@@ -1,8 +1,11 @@
 {
   "multitenancy.shard.unavailable": "The data shard of tenant '{tenantId}' could not be resolved: {reason}",
   "multitenancy.store.capacity_exceeded": "The in-memory tenant store has reached its capacity of {capacity}.",
+  "multitenancy.store.unavailable": "The tenant store is unavailable.",
   "multitenancy.tenant.disabled": "Tenant '{tenantId}' is disabled.",
   "multitenancy.tenant.invalid_id": "Tenant ID '{tenantId}' is invalid.",
   "multitenancy.tenant.not_found": "Tenant '{tenantId}' does not exist.",
+  "multitenancy.tenant.query_page_invalid": "The tenant list page size {pageSize} must be between 1 and {max}.",
+  "multitenancy.tenant.query_token_invalid": "The continuation token of the tenant list is invalid; pass the token returned by the previous page.",
   "multitenancy.tenant.required": "This call requires a tenant, but none was resolved."
 }

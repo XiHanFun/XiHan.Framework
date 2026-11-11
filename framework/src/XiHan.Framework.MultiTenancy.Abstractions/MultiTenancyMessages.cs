@@ -66,6 +66,30 @@ public static class MultiTenancyMessages
     public const string ShardUnavailable = "multitenancy.shard.unavailable";
 
     /// <summary>
+    /// 租户存储不可达
+    /// </summary>
+    /// <remarks>
+    /// 无参数；底层异常只进日志（ADR-0115）
+    /// </remarks>
+    public const string StoreUnavailable = "multitenancy.store.unavailable";
+
+    /// <summary>
+    /// 租户列表的每页条数越界
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>pageSize</c>、<c>max</c>
+    /// </remarks>
+    public const string QueryPageInvalid = "multitenancy.tenant.query_page_invalid";
+
+    /// <summary>
+    /// 租户列表的续页令牌无效
+    /// </summary>
+    /// <remarks>
+    /// 无参数
+    /// </remarks>
+    public const string QueryTokenInvalid = "multitenancy.tenant.query_token_invalid";
+
+    /// <summary>
     /// 延迟装载的目录
     /// </summary>
     /// <remarks>

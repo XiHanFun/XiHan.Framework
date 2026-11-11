@@ -2,10 +2,12 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Collections.Concurrent;
+using System.Globalization;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Domain.Specifications;
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Persistence.Abstractions.Queries;
-using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.MultiTenancy.Database.Tenants;
@@ -14,7 +16,7 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 /// 数据库租户目录（单例）
 /// </summary>
 /// <remarks>
-/// 按 ID 读 <see cref="TenantRecord"/>，结果按租户有界缓存（不存在也缓存），每条带存活时间；<see cref="ListAsync"/> 按 ID 分页读完、不走缓存。读取直接开工作单元（见 <see cref="CatalogInvocation"/>），基础设施异常原样抛出，不伪装成不存在。写入经 <see cref="TenantRecordStore"/>，它写完即失效对应条目；失效与提交之间的窗口由存活时间收敛
+/// 按 ID 读 <see cref="TenantRecord"/>，结果按租户有界缓存（不存在也缓存），每条带存活时间；<see cref="ListAsync"/> 按 ID 一页一页读、不走缓存。读取直接开工作单元（见 <see cref="CatalogInvocation"/>），数据库故障以 <see cref="MultiTenancyErrors.StoreUnavailable"/> 返回，不伪装成不存在。写入经 <see cref="TenantRecordStore"/>，它写完即失效对应条目；失效与提交之间的窗口由存活时间收敛
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DatabaseTenantStore : ITenantStore
@@ -25,7 +27,7 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     private readonly CatalogInvocation _catalog;
 
     /// <summary>
-    /// 缓存容量、存活时间与枚举上限
+    /// 缓存容量与存活时间
     /// </summary>
     private readonly DatabaseMultiTenancyOptions _options;
 
@@ -56,7 +58,7 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     public DatabaseTenantStore(IServiceProvider services, DatabaseMultiTenancyOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
-        _catalog = new CatalogInvocation(services);
+        _catalog = new CatalogInvocation(services, loggerFactory.CreateLogger<CatalogInvocation>());
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _logger = loggerFactory.CreateLogger<DatabaseTenantStore>();
@@ -68,13 +70,13 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     public int CachedCount => _cache.Count;
 
     /// <inheritdoc />
-    public async ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
+    public async ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenantId);
         // 先校验文法再查库：不合法的 ID 不可能有行，也不让它占缓存
         if (!TenantIdentifier.IsValid(tenantId))
         {
-            return default;
+            return Maybe.None<TenantInfo>();
         }
 
         if (_cache.TryGetValue(tenantId, out var entry) && !entry.IsExpired(_clock.GetUtcNow()))
@@ -82,7 +84,13 @@ public sealed partial class DatabaseTenantStore : ITenantStore
             return entry.Tenant;
         }
 
-        var found = await _catalog.ReadAsync((repository, ct) => repository.FindAsync(tenantId, ct), cancellationToken).ConfigureAwait(false);
+        var read = await _catalog.ReadAsync((repository, ct) => repository.FindAsync(tenantId, ct), cancellationToken).ConfigureAwait(false);
+        // 失败不进缓存：存储恢复后下一次解析立即重新查库，而不是在存活时间内一直报不可达
+        if (!read.TryGetValue(out var found))
+        {
+            return read.Error!;
+        }
+
         var tenant = found.TryGetValue(out var record) ? Maybe.Some(TenantRecordMapping.ToTenantInfo(record)) : Maybe.None<TenantInfo>();
         // 有界：满了整体清空，比逐条淘汰简单且足够（租户数远小于容量）；不存在也缓存，避免反复查不存在的租户
         if (_cache.Count >= _options.CacheSize)
@@ -95,15 +103,39 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken)
+    /// <remarks>
+    /// 续页令牌是下一页的起始偏移，对调用方不透明；按 ID 排序分页，期间有租户增删时相邻两页可能错开一条。
+    /// 不多取一条判断有没有下一页：每页条数可以取到仓储的单次上限，恰好读完时最后会多一个空页
+    /// </remarks>
+    public async ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
     {
-        var (records, truncated) = await _catalog.ReadAsync(ReadAllAsync, cancellationToken).ConfigureAwait(false);
-        if (truncated)
+        ArgumentNullException.ThrowIfNull(query);
+        var valid = query.Validate();
+        if (valid.IsFailure)
         {
-            LogLimitReached(_logger, _options.MaxListedTenants);
+            return valid.Error!;
         }
 
-        return records.Select(TenantRecordMapping.ToTenantInfo).ToList();
+        var skip = 0;
+        if (query.ContinuationToken is { } token && !(int.TryParse(token, NumberStyles.None, CultureInfo.InvariantCulture, out skip) && skip > 0))
+        {
+            return Error.Validation(MultiTenancyErrors.QueryInvalid, MultiTenancyMessages.QueryTokenInvalid);
+        }
+
+        var source = EntityQuery.All<TenantRecord>();
+        var filtered = query.EnabledOnly ? source.Where(new Specification<TenantRecord>(static r => r.IsEnabled)) : source;
+        var page = filtered.OrderBy(static r => r.Id).Page(skip, query.PageSize);
+        var read = await _catalog.ReadAsync((repository, ct) => new ValueTask<IReadOnlyList<TenantRecord>>(repository.ListAsync(page, ct)), cancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var records))
+        {
+            return read.Error!;
+        }
+
+        return new TenantPage
+        {
+            Items = records.Select(TenantRecordMapping.ToTenantInfo).ToList(),
+            ContinuationToken = records.Count == query.PageSize ? (skip + records.Count).ToString(CultureInfo.InvariantCulture) : null,
+        };
     }
 
     /// <summary>
@@ -120,41 +152,6 @@ public sealed partial class DatabaseTenantStore : ITenantStore
             _cache.TryRemove(tenantId, out _);
         }
     }
-
-    /// <summary>
-    /// 在一个工作单元里按 ID 分页读完全部行
-    /// </summary>
-    /// <remarks>
-    /// 达到上限即停止并报告截断
-    /// </remarks>
-    private async ValueTask<(List<TenantRecord> Records, bool Truncated)> ReadAllAsync(IRepository<TenantRecord, string> repository, CancellationToken cancellationToken)
-    {
-        var loaded = new List<TenantRecord>();
-        var skip = 0;
-        while (true)
-        {
-            // 按 ID 分页读到不足一页或达到上限；上限之外的租户不返回，枚举不能无界
-            var take = Math.Min(EntityQuery.DefaultMaxTake, _options.MaxListedTenants - loaded.Count);
-            var page = await repository.ListAsync(EntityQuery.All<TenantRecord>().OrderBy(static t => t.Id).Page(skip, take), cancellationToken).ConfigureAwait(false);
-            loaded.AddRange(page);
-            if (page.Count < take)
-            {
-                return (loaded, false);
-            }
-
-            skip += page.Count;
-            if (loaded.Count >= _options.MaxListedTenants)
-            {
-                return (loaded, true);
-            }
-        }
-    }
-
-    /// <summary>
-    /// 枚举达到上限
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Only the first {Limit} tenants were listed; raise XiHan:MultiTenancy:Database:MaxListedTenants to list the rest.")]
-    private static partial void LogLimitReached(ILogger logger, int limit);
 
     /// <summary>
     /// 一条缓存：租户（不存在为无值）与过期时刻（无存活时间为 <see langword="null"/>）

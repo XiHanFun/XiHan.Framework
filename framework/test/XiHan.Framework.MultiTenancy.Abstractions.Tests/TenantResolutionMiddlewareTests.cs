@@ -32,14 +32,21 @@ public sealed class TenantResolutionMiddlewareTests
         /// <summary>
         /// 按 ID 查找
         /// </summary>
-        public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
-            => ValueTask.FromResult(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : default);
+        public ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
+            => ValueTask.FromResult(Failure is { } failure
+                ? Result.Failure<Maybe<TenantInfo>>(failure)
+                : Result.Success(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : default));
 
         /// <summary>
-        /// 枚举全部租户
+        /// 不为 <see langword="null"/> 时查找返回的失败，模拟存储不可达
         /// </summary>
-        public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken)
-            => ValueTask.FromResult<IReadOnlyList<TenantInfo>>(_tenants.Values.ToList());
+        public Error? Failure { get; set; }
+
+        /// <summary>
+        /// 一页列出全部租户
+        /// </summary>
+        public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
+            => ValueTask.FromResult(Result.Success(new TenantPage { Items = [.. _tenants.Values.Where(tenant => !query.EnabledOnly || tenant.IsEnabled)] }));
     }
 
     /// <summary>
@@ -74,9 +81,15 @@ public sealed class TenantResolutionMiddlewareTests
     /// <paramref name="baggageTenant"/> 不为 <see langword="null"/> 时放入租户 Baggage。返回的数组用于记录处理器是否被执行
     /// </remarks>
     private static (InvocationContext Context, bool[] Reached) Arrange(MultiTenancyOptions options, string? baggageTenant = null, params ITenantResolver[] resolvers)
+        => Arrange(new DictionaryTenantStore(_acme, _dormant), options, baggageTenant, resolvers);
+
+    /// <summary>
+    /// 装配给定存储、选项与解析器的上下文
+    /// </summary>
+    private static (InvocationContext Context, bool[] Reached) Arrange(DictionaryTenantStore store, MultiTenancyOptions options, string? baggageTenant, params ITenantResolver[] resolvers)
     {
         var services = new ServiceCollection();
-        services.AddSingleton<ITenantStore>(new DictionaryTenantStore(_acme, _dormant));
+        services.AddSingleton<ITenantStore>(store);
         services.AddSingleton(options);
         foreach (var resolver in resolvers)
         {
@@ -96,6 +109,20 @@ public sealed class TenantResolutionMiddlewareTests
         reached[0] = true;
         return ValueTask.CompletedTask;
     };
+
+    [Fact]
+    public async Task UnavailableStore_FailsTheCall_InsteadOfReportingTheTenantMissing()
+    {
+        // 存储读不到不是没有：故障原样返回（503），不当作租户不存在（404），也不进处理器
+        var store = new DictionaryTenantStore(_acme) { Failure = Error.Unavailable(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable) };
+        var (context, reached) = Arrange(store, new MultiTenancyOptions(), "acme", new BaggageTenantResolver());
+
+        await new TenantResolutionMiddleware(context.Services.GetRequiredService<MultiTenancyOptions>()).InvokeAsync(context, Handler(reached));
+
+        Assert.False(reached[0]);
+        Assert.Equal(MultiTenancyErrors.StoreUnavailable, context.GetOutcome().ValueOrThrow().Error?.Code);
+        Assert.Null(context.GetSecurity().Tenant);
+    }
 
     [Fact]
     public async Task ResolvedAndEnabled_SetsTenantWithDisplayName()

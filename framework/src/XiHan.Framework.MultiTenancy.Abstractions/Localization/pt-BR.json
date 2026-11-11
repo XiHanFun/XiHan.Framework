@@ -1,8 +1,11 @@
 {
   "multitenancy.shard.unavailable": "O fragmento de dados do locatário '{tenantId}' não pôde ser resolvido: {reason}",
   "multitenancy.store.capacity_exceeded": "O armazenamento de locatários em memória atingiu sua capacidade de {capacity}.",
+  "multitenancy.store.unavailable": "O armazenamento de locatários está indisponível.",
   "multitenancy.tenant.disabled": "O locatário '{tenantId}' está desativado.",
   "multitenancy.tenant.invalid_id": "O identificador de locatário '{tenantId}' não é válido.",
   "multitenancy.tenant.not_found": "O locatário '{tenantId}' não existe.",
+  "multitenancy.tenant.query_page_invalid": "O tamanho de página {pageSize} da lista de locatários deve estar entre 1 e {max}.",
+  "multitenancy.tenant.query_token_invalid": "O token de continuação da lista de locatários é inválido; passe o token retornado pela página anterior.",
   "multitenancy.tenant.required": "Esta chamada requer um locatário, mas nenhum foi resolvido."
 }

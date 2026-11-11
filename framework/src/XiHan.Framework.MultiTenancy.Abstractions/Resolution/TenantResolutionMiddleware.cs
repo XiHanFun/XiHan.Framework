@@ -57,7 +57,14 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
         {
             var store = context.Services.GetRequiredService<ITenantStore>();
             var found = await store.FindAsync(tenantId, context.CancellationToken).ConfigureAwait(false);
-            if (!found.TryGetValue(out var info))
+            // 存储读不到不是没有：故障原样返回（503），不当作租户不存在（404）
+            if (!found.TryGetValue(out var maybe))
+            {
+                context.SetOutcome(found.Error!);
+                return;
+            }
+
+            if (!maybe.TryGetValue(out var info))
             {
                 context.SetOutcome(Error.NotFound(MultiTenancyErrors.NotFound, MultiTenancyMessages.TenantNotFound, MessageArguments.Of(("tenantId", tenantId))));
                 return;

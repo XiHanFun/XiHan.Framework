@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 using Xunit;
@@ -50,7 +51,7 @@ public abstract class TenantStoreConformance
     {
         var store = await CreateStoreAsync([Acme, Dormant]).ConfigureAwait(false);
 
-        var acme = (await store.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var acme = (await FoundAsync(store, "acme").ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal("acme", acme.Id);
         Assert.Equal("Acme Corp", acme.DisplayName);
         Assert.True(acme.IsEnabled);
@@ -58,7 +59,7 @@ public abstract class TenantStoreConformance
         Assert.Equal("gold", acme.Properties["Tier"]);
         Assert.False(acme.Properties.ContainsKey("tier"));
 
-        Assert.False((await store.FindAsync("nobody", CancellationToken.None).ConfigureAwait(false)).HasValue);
+        Assert.False((await FoundAsync(store, "nobody").ConfigureAwait(false)).HasValue);
     }
 
     /// <summary>
@@ -69,9 +70,9 @@ public abstract class TenantStoreConformance
     {
         var store = await CreateStoreAsync([Acme, Dormant]).ConfigureAwait(false);
 
-        Assert.True((await store.FindAsync("Dormant-01", CancellationToken.None).ConfigureAwait(false)).HasValue);
-        Assert.False((await store.FindAsync("dormant-01", CancellationToken.None).ConfigureAwait(false)).HasValue);
-        Assert.False((await store.FindAsync("ACME", CancellationToken.None).ConfigureAwait(false)).HasValue);
+        Assert.True((await FoundAsync(store, "Dormant-01").ConfigureAwait(false)).HasValue);
+        Assert.False((await FoundAsync(store, "dormant-01").ConfigureAwait(false)).HasValue);
+        Assert.False((await FoundAsync(store, "ACME").ConfigureAwait(false)).HasValue);
     }
 
     /// <summary>
@@ -82,23 +83,84 @@ public abstract class TenantStoreConformance
     {
         var store = await CreateStoreAsync([Dormant]).ConfigureAwait(false);
 
-        var dormant = (await store.FindAsync("Dormant-01", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var dormant = (await FoundAsync(store, "Dormant-01").ConfigureAwait(false)).ValueOrThrow();
         Assert.False(dormant.IsEnabled);
         Assert.Null(dormant.DisplayName);
         Assert.Empty(dormant.Properties);
     }
 
     /// <summary>
-    /// 用例 4：枚举返回全部租户，空存储返回空列表
+    /// 用例 4：分页列出全部租户，每页不超过每页条数，续页令牌为空即读完
+    /// </summary>
+    /// <remarks>
+    /// 只核对集合与分页的边界，不核对跨页的先后：关系库按自己的排序规则排 ID，与序数不一定相同
+    /// </remarks>
+    [Fact]
+    public async Task List_PagesThroughAllTenants_AndFiltersEnabled()
+    {
+        TenantInfo[] seeded = [Acme, Dormant, new() { Id = "beta" }, new() { Id = "delta" }, new() { Id = "gamma" }];
+        var store = await CreateStoreAsync(seeded).ConfigureAwait(false);
+
+        var all = await ListAllAsync(store, new TenantQuery { PageSize = 2 }).ConfigureAwait(false);
+        Assert.Equal(seeded.Select(static t => t.Id).Order(StringComparer.Ordinal), all.Select(static t => t.Id).Order(StringComparer.Ordinal));
+
+        var enabled = await ListAllAsync(store, new TenantQuery { PageSize = 2, EnabledOnly = true }).ConfigureAwait(false);
+        Assert.DoesNotContain(enabled, static t => t.Id == Dormant.Id);
+        Assert.Equal(4, enabled.Count);
+
+        var empty = await CreateStoreAsync([]).ConfigureAwait(false);
+        var page = (await empty.ListAsync(new TenantQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Empty(page.Items);
+        Assert.Null(page.ContinuationToken);
+    }
+
+    /// <summary>
+    /// 用例 5：每页条数越界或续页令牌不是存储给出的，以校验错误返回
     /// </summary>
     [Fact]
-    public async Task List_ReturnsAllTenants()
+    public async Task List_RejectsOutOfRangePagesAndForeignTokens()
     {
-        var store = await CreateStoreAsync([Acme, Dormant]).ConfigureAwait(false);
-        var empty = await CreateStoreAsync([]).ConfigureAwait(false);
+        var store = await CreateStoreAsync([Acme]).ConfigureAwait(false);
 
-        var all = await store.ListAsync(CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal(["Dormant-01", "acme"], all.Select(static t => t.Id).OrderBy(static id => id, StringComparer.Ordinal));
-        Assert.Empty(await empty.ListAsync(CancellationToken.None).ConfigureAwait(false));
+        foreach (var query in new[] { new TenantQuery { PageSize = 0 }, new TenantQuery { PageSize = TenantQuery.MaxPageSize + 1 }, new TenantQuery { ContinuationToken = "%%%" } })
+        {
+            var listed = await store.ListAsync(query, CancellationToken.None).ConfigureAwait(false);
+            Assert.True(listed.IsFailure, $"The query {query} should be rejected.");
+            Assert.Equal(MultiTenancyErrors.QueryInvalid, listed.Error!.Code);
+        }
+    }
+
+    /// <summary>
+    /// 按 ID 查找并要求成功：套件的存储都可达，失败即不符合套件
+    /// </summary>
+    private static async Task<Maybe<TenantInfo>> FoundAsync(ITenantStore store, string tenantId)
+    {
+        var found = await store.FindAsync(tenantId, CancellationToken.None).ConfigureAwait(false);
+        Assert.True(found.IsSuccess, $"Finding tenant '{tenantId}' failed: {found.Error}.");
+        return found.ValueOrThrow();
+    }
+
+    /// <summary>
+    /// 逐页读完，并核对每页不超过每页条数、同一租户不出现两次
+    /// </summary>
+    private static async Task<List<TenantInfo>> ListAllAsync(ITenantStore store, TenantQuery query)
+    {
+        var all = new List<TenantInfo>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        while (true)
+        {
+            var listed = await store.ListAsync(query, CancellationToken.None).ConfigureAwait(false);
+            Assert.True(listed.IsSuccess, $"Listing tenants failed: {listed.Error}.");
+            var page = listed.ValueOrThrow();
+            Assert.True(page.Items.Count <= query.PageSize, $"A page returned {page.Items.Count} tenants, more than the page size {query.PageSize}.");
+            Assert.All(page.Items, tenant => Assert.True(seen.Add(tenant.Id), $"Tenant '{tenant.Id}' was listed twice."));
+            all.AddRange(page.Items);
+            if (page.ContinuationToken is null)
+            {
+                return all;
+            }
+
+            query = query with { ContinuationToken = page.ContinuationToken };
+        }
     }
 }

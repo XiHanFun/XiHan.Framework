@@ -1,8 +1,11 @@
 {
   "multitenancy.shard.unavailable": "无法解析租户 '{tenantId}' 的数据分片：{reason}",
   "multitenancy.store.capacity_exceeded": "内存租户存储已达到容量上限 {capacity}。",
+  "multitenancy.store.unavailable": "租户存储不可用。",
   "multitenancy.tenant.disabled": "租户 '{tenantId}' 已禁用。",
   "multitenancy.tenant.invalid_id": "租户 ID '{tenantId}' 不合法。",
   "multitenancy.tenant.not_found": "租户 '{tenantId}' 不存在。",
+  "multitenancy.tenant.query_page_invalid": "租户列表的每页条数 {pageSize} 必须在 1 到 {max} 之间。",
+  "multitenancy.tenant.query_token_invalid": "租户列表的续页令牌无效，请传入上一页返回的令牌。",
   "multitenancy.tenant.required": "此调用必须带租户，但没有解析到租户。"
 }

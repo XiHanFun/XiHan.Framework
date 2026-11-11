@@ -127,9 +127,9 @@ public sealed class TenantShardScopeTests
     private sealed class UnreachableStore : ITenantStore
     {
         /// <inheritdoc />
-        public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken) => throw new TimeoutException("store unreachable");
+        public ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Failure<Maybe<TenantInfo>>(Error.Unavailable(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable)));
 
         /// <inheritdoc />
-        public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken) => throw new TimeoutException("store unreachable");
+        public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Failure<TenantPage>(Error.Unavailable(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable)));
     }
 }

@@ -20,9 +20,10 @@ internal sealed class FixedTenants(params string[] ids) : ITenantStore
     private readonly IReadOnlyList<TenantInfo> _tenants = [.. ids.Select(static id => new TenantInfo { Id = id })];
 
     /// <inheritdoc />
-    public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
-        => ValueTask.FromResult(_tenants.FirstOrDefault(tenant => string.Equals(tenant.Id, tenantId, StringComparison.Ordinal)) is { } found ? Maybe.Some(found) : Maybe.None<TenantInfo>());
+    public ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(_tenants.FirstOrDefault(tenant => string.Equals(tenant.Id, tenantId, StringComparison.Ordinal)) is { } found ? Maybe.Some(found) : Maybe.None<TenantInfo>()));
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken) => ValueTask.FromResult(_tenants);
+    public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(new TenantPage { Items = [.. _tenants.Where(tenant => !query.EnabledOnly || tenant.IsEnabled)] }));
 }

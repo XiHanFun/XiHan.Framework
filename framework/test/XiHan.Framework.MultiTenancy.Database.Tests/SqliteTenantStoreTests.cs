@@ -44,16 +44,16 @@ public sealed class SqliteTenantStoreTests
         // 另一个宿主从同一个文件读：显示名、禁用标记与属性 JSON（含大小写不同的键与非 ASCII 值）都经真实数据库往返
         var reader = await database.StartHostAsync();
         var store = reader.Services.GetRequiredService<ITenantStore>();
-        var found = (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow();
+        var found = (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow();
         Assert.Equal("Acme Corp", found.DisplayName);
         Assert.True(found.IsEnabled);
         Assert.Equal(acme.Properties.OrderBy(static p => p.Key, StringComparer.Ordinal), found.Properties.OrderBy(static p => p.Key, StringComparer.Ordinal));
-        var dormantFound = (await store.FindAsync("Dormant-01", CancellationToken.None)).ValueOrThrow();
+        var dormantFound = (await store.FindAsync("Dormant-01", CancellationToken.None)).ValueOrThrow().ValueOrThrow();
         Assert.False(dormantFound.IsEnabled);
         Assert.Null(dormantFound.DisplayName);
         Assert.Empty(dormantFound.Properties);
-        Assert.False((await store.FindAsync("dormant-01", CancellationToken.None)).HasValue);
-        Assert.Equal(["Dormant-01", "acme"], (await store.ListAsync(CancellationToken.None)).Select(static t => t.Id));
+        Assert.False((await store.FindAsync("dormant-01", CancellationToken.None)).ValueOrThrow().HasValue);
+        Assert.Equal(["Dormant-01", "acme"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
 
         // Tenant 阶段解析到数据库里的租户，并把从属性推出的分片写进调用上下文
         TenantContext? tenant = null;
@@ -80,10 +80,10 @@ public sealed class SqliteTenantStoreTests
             Assert.All(await records.RemoveAsync(["Dormant-01"], context.CancellationToken), static r => Assert.True(r.Outcome.IsSuccess, r.Outcome.ToString()));
         });
         Assert.True(written.IsSuccess, written.ToString());
-        Assert.Equal("Acme Corp", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme Corp", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         reader.Services.GetRequiredService<DatabaseTenantStore>().Invalidate();
-        Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
-        Assert.False((await store.FindAsync("Dormant-01", CancellationToken.None)).HasValue);
-        Assert.Equal(["acme"], (await store.ListAsync(CancellationToken.None)).Select(static t => t.Id));
+        Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
+        Assert.False((await store.FindAsync("Dormant-01", CancellationToken.None)).ValueOrThrow().HasValue);
+        Assert.Equal(["acme"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
     }
 }

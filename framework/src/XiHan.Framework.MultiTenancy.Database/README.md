@@ -34,7 +34,7 @@ builder.AddXiHan(xihan => xihan
 ```
 
 ```json
-{ "XiHan": { "MultiTenancy": { "Database": { "CacheSize": 10000, "CacheTimeToLiveSeconds": 30, "MaxListedTenants": 10000 } } } }
+{ "XiHan": { "MultiTenancy": { "Database": { "CacheSize": 10000, "CacheTimeToLiveSeconds": 30 } } } }
 ```
 
 表结构由应用管理；`PropertiesJson` 列用长文本类型。

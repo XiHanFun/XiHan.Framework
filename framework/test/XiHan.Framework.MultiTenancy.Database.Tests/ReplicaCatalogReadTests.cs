@@ -25,7 +25,7 @@ public sealed class ReplicaCatalogReadTests
         var host = await primary.StartReplicatedHostAsync(replica);
         await TenantHosts.SeedAsync(host, [new TenantInfo { Id = "acme", IsEnabled = false }]);
 
-        var found = (await host.Services.GetRequiredService<ITenantStore>().FindAsync("acme", CancellationToken.None)).ValueOrThrow();
+        var found = (await host.Services.GetRequiredService<ITenantStore>().FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow();
         Assert.False(found.IsEnabled);
     }
 
@@ -38,6 +38,6 @@ public sealed class ReplicaCatalogReadTests
 
         var host = await primary.StartReplicatedHostAsync(replica);
 
-        Assert.False((await host.Services.GetRequiredService<ITenantStore>().FindAsync("acme", CancellationToken.None)).HasValue);
+        Assert.False((await host.Services.GetRequiredService<ITenantStore>().FindAsync("acme", CancellationToken.None)).ValueOrThrow().HasValue);
     }
 }

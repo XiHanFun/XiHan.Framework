@@ -28,6 +28,8 @@
 - **调整** `JobRegistry`、`JobTypeRegistry`、`JobCalendars` 的 `Add` 不再公开：装配之后只读，登记作业、作业类型与日历用 `AddJob`、`AddJobType`、`AddJobCalendar`
 - **调整** 持久化、本地化、缓存与消息的实现类型不再公开：三个 Provider 的仓储实现、`InMemoryUnitOfWork`、`InMemoryTable` 与 `InMemoryStore.Table`、`LeasedWorkerIdSource`、`RepositoryRegistrations.Items`、`MessageCatalog.ParseLocaleFile`、`CacheStoreDistributedCache.Translate`、领域事件的登记表、映射与派发器、三个消息代理的连接与探测成员、`OpenIdConnectMetadataCache.FailureRetryDelay`；照常经 `IRepository`、`IUnitOfWork`、`AddDomainEvent<TEvent>` 等入口使用
 - **调整** `IPermissionGrantStore` 改为批量读取 `GetManyAsync(subjects, tenantId)`，权限判定把用户与全部角色一次读出；实现授予存储的 Provider 把 `GetGrantsAsync` 换成 `GetManyAsync`，单主体的 `GetGrantsAsync` 仍可调用（扩展方法）
+- **调整** `ITenantStore.FindAsync` 返回 `Result<Maybe<TenantInfo>>`，存储不可达是 `MULTITENANCY_UNAVAILABLE_003`（Tenant 阶段以 503 结束，不再当作 500 抛出）；`ListAsync(TenantQuery)` 改为分页，逐页读到 `ContinuationToken` 为空；自己实现租户存储的 Provider 改这两个方法
+- **移除** `XiHan:MultiTenancy:Database:MaxListedTenants`：租户列表分页之后不再截断，删掉这个配置键
 
 ### 宿主、协议与插件
 

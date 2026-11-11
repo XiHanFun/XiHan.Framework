@@ -936,13 +936,6 @@
           "default": "30",
           "minimum": 0,
           "summary": "缓存条目的存活时间（秒）；0 表示不过期，只靠 Invalidate 失效"
-        },
-        {
-          "key": "MaxListedTenants",
-          "type": "integer",
-          "default": "10000",
-          "minimum": 1,
-          "summary": "ListAsync 返回的租户数上限，超出部分不返回并记警告"
         }
       ]
     },

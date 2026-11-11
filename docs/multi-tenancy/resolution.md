@@ -45,7 +45,7 @@ var tenant = context.GetSecurity().Tenant;   // TenantContext?，没有租户时
 
 租户 ID 的文法是 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：字母或数字开头，之后是字母、数字、`.`、`_`、`-`，最长 64 个字符（`TenantIdentifier.MaxLength`），区分大小写。`TenantIdentifier.IsValid` 判断是否合法，`TenantIdentifier.Validate` 不合法时抛出 `ArgumentException`。
 
-存储契约 `ITenantStore` 只有两个方法：`FindAsync(tenantId)` 按 ID 查找，不存在时返回无值的 `Maybe<TenantInfo>`；`ListAsync()` 枚举全部租户。存储连不上这类基础设施故障以异常抛出，不伪装成「租户不存在」，Tenant 阶段据此让调用失败而不是放行。
+存储契约 `ITenantStore` 只有两个方法：`FindAsync(tenantId)` 按 ID 查找，返回 `Result<Maybe<TenantInfo>>`，不存在是成功的无值；`ListAsync(TenantQuery)` 返回 `Result<TenantPage>`，按 ID 一页一页读（`PageSize` 1～1000、不透明的 `ContinuationToken`、`EnabledOnly`），令牌为空即读完。存储连不上这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成「租户不存在」，Tenant 阶段据此以 503 结束调用而不是放行。
 
 ## 最小示例
 
@@ -107,7 +107,7 @@ Tenant 阶段按下面的顺序处理，任一步失败即以结果结束调用�
 1. 按注册顺序调用全部 `ITenantResolver`，第一个给出值的生效。
 2. 都没有值时用 `DefaultTenant`；仍没有时，`RequireTenant` 为真返回 `MULTITENANCY_VALIDATION_002`，否则以无租户继续。
 3. 校验租户 ID 文法，不合法返回 `MULTITENANCY_VALIDATION_001`。先校验再查存储，未经校验的外部输入不会交给 Provider。
-4. `ValidateAgainstStore` 为真（缺省）时查 `ITenantStore`：不存在返回 `MULTITENANCY_NOTFOUND_001`，已禁用返回 `MULTITENANCY_DENIED_001`；存在且启用时以存储里的记录为准，显示名随之带入。关闭存储核对时只校验文法，安全上下文里没有显示名。
+4. `ValidateAgainstStore` 为真（缺省）时查 `ITenantStore`：存储不可达返回 `MULTITENANCY_UNAVAILABLE_003`，不存在返回 `MULTITENANCY_NOTFOUND_001`，已禁用返回 `MULTITENANCY_DENIED_001`；存在且启用时以存储里的记录为准，显示名随之带入。关闭存储核对时只校验文法，安全上下文里没有显示名。
 5. 写入 `SecurityContext.Tenant`。
 6. 容器里有 `ITenantShardResolver` 时解析分片并写进调用上下文，见[租户分片与分库](/multi-tenancy/sharding)。
 

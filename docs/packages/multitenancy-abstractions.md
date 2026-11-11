@@ -64,7 +64,7 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | --- | --- |
 | `Tenants.TenantInfo` | 租户：`Id`、`DisplayName`、`IsEnabled`（缺省 `true`）、`Properties`（键区分大小写） |
 | `Tenants.TenantIdentifier` | 租户 ID 文法 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：`IsValid`、`Validate`、`MaxLength`（64） |
-| `Tenants.ITenantStore` | 租户存储：`FindAsync`、`ListAsync`；ID 区分大小写，基础设施失败抛异常 |
+| `Tenants.ITenantStore`、`TenantQuery`、`TenantPage` | 租户存储：`FindAsync` → `Result<Maybe<TenantInfo>>`、`ListAsync(TenantQuery)` → `Result<TenantPage>`（`PageSize` 1～1000、续页令牌、`EnabledOnly`）；ID 区分大小写，存储不可达返回 `MULTITENANCY_UNAVAILABLE_003` |
 | `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选，只解析不校验 |
 | `Resolution.ClaimTenantResolver` | 读已认证主体的租户声明（第一个值）；未认证主体跳过 |
 | `Resolution.BaggageTenantResolver` | 读 Baggage `xihan.tenant`，由进程内建上下文的地方放进去；HTTP、gRPC、MCP 入站不收这个键（ADR-0121） |
@@ -96,11 +96,15 @@ public sealed class FixedTenantStore : ITenantStore
         ["globex"] = new TenantInfo { Id = "globex", DisplayName = "Globex", IsEnabled = false },
     };
 
-    public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
-        => ValueTask.FromResult(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : Maybe.None<TenantInfo>());
+    public ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : Maybe.None<TenantInfo>()));
 
-    public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken)
-        => ValueTask.FromResult<IReadOnlyList<TenantInfo>>([.. _tenants.Values.OrderBy(static t => t.Id, StringComparer.Ordinal)]);
+    // 租户很少：一页返回全部，令牌为空即读完。租户多的存储按 query.PageSize 分页，越界返回 MULTITENANCY_VALIDATION_003
+    public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
+        => ValueTask.FromResult(Result.Success(new TenantPage
+        {
+            Items = [.. _tenants.Values.Where(t => !query.EnabledOnly || t.IsEnabled).OrderBy(static t => t.Id, StringComparer.Ordinal)],
+        }));
 }
 ```
 
@@ -141,7 +145,9 @@ public static class ShardInfo
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 |
 | `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
-| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
+| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 是存储的错误码，存储的错误作为内部错误保留（ADR-0115） |
+| `MULTITENANCY_UNAVAILABLE_003` | 租户存储不可达（连接、超时、事务失败），不当作租户不存在 |
+| `MULTITENANCY_VALIDATION_003` | 租户列表查询不合法：每页条数越界或续页令牌无效 |
 
 六个消息键（`multitenancy.tenant.*`、`multitenancy.store.capacity_exceeded`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
 

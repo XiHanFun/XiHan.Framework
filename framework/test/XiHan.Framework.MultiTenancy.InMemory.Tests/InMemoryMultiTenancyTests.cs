@@ -60,7 +60,7 @@ public sealed class InMemoryMultiTenancyTests
         var full = store.Set(new TenantInfo { Id = "c" });
         Assert.Equal(MultiTenancyErrors.CapacityExceeded, full.Error?.Code);
         Assert.True(store.Set(new TenantInfo { Id = "a", DisplayName = "replaced" }).IsSuccess);
-        Assert.Equal("replaced", (await store.FindAsync("a", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("replaced", (await store.FindAsync("a", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         Assert.Equal(2, store.Count);
 
         Assert.True(store.Remove("a"));

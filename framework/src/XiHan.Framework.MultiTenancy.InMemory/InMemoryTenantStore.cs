@@ -70,15 +70,47 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     }
 
     /// <inheritdoc />
-    public ValueTask<Maybe<TenantInfo>> FindAsync(string tenantId, CancellationToken cancellationToken)
+    /// <remarks>
+    /// 进程内的表，读取不会失败
+    /// </remarks>
+    public ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenantId);
-        return ValueTask.FromResult(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : default);
+        return ValueTask.FromResult(Result.Success(_tenants.TryGetValue(tenantId, out var tenant) ? Maybe.Some(tenant) : default));
     }
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<TenantInfo>> ListAsync(CancellationToken cancellationToken)
-        => ValueTask.FromResult<IReadOnlyList<TenantInfo>>(_tenants.Values.OrderBy(static t => t.Id, StringComparer.Ordinal).ToList());
+    /// <remarks>
+    /// 续页令牌是上一页最后一个租户的 ID：从它之后（序数）接着列，期间增删的租户不会让后面的页重复或遗漏已有的租户
+    /// </remarks>
+    public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var valid = query.Validate();
+        if (valid.IsFailure)
+        {
+            return ValueTask.FromResult(Result.Failure<TenantPage>(valid.Error!));
+        }
+
+        if (query.ContinuationToken is { } token && !TenantIdentifier.IsValid(token))
+        {
+            return ValueTask.FromResult(Result.Failure<TenantPage>(Error.Validation(MultiTenancyErrors.QueryInvalid, MultiTenancyMessages.QueryTokenInvalid)));
+        }
+
+        // 多取一条判断后面还有没有：恰好读完时不给令牌，调用方少一次空页往返
+        var items = _tenants.Values
+            .Where(t => (query.ContinuationToken is null || string.CompareOrdinal(t.Id, query.ContinuationToken) > 0) && (!query.EnabledOnly || t.IsEnabled))
+            .OrderBy(static t => t.Id, StringComparer.Ordinal)
+            .Take(query.PageSize + 1)
+            .ToList();
+        var more = items.Count > query.PageSize;
+        if (more)
+        {
+            items.RemoveAt(items.Count - 1);
+        }
+
+        return ValueTask.FromResult(Result.Success(new TenantPage { Items = items, ContinuationToken = more ? items[^1].Id : null }));
+    }
 
     /// <summary>
     /// 新增或替换

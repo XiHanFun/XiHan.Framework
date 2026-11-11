@@ -39,7 +39,7 @@ await shardScope.BindTenantAsync("acme", cancellationToken);
 此库提供的主要类型：
 
 * `TenantInfo`：租户 ID、显示名、启用标记与属性
-* `ITenantStore`：按 ID 查找与枚举租户
+* `ITenantStore`：按 ID 查找与分页列出租户（`TenantQuery`、`TenantPage`）
 * `ITenantResolver`：从调用上下文解析租户 ID
 * `MultiTenancyOptions`：默认租户、是否必须有租户、是否核对存储
 * `ITenantShardResolver`、`TenantShardScope`：租户分片

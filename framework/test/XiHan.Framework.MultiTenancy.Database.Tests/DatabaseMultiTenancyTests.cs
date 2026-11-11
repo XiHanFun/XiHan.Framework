@@ -119,29 +119,29 @@ public sealed class DatabaseMultiTenancyTests
         var store = host.Services.GetRequiredService<DatabaseTenantStore>();
         await TenantHosts.SeedAsync(host, [Acme()]);
 
-        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
-        Assert.False((await store.FindAsync("ghost", CancellationToken.None)).HasValue);
+        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
+        Assert.False((await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.Equal(2, store.CachedCount);
 
         // 绕过 TenantRecordStore 直接改表：命中缓存看不到变化，“不存在”同样被缓存
         await TenantHosts.EditRowAsync(host, "acme", static row => row.DisplayName = "Acme 2");
         await TenantHosts.AddRowAsync(host, new TenantRecord { Id = "ghost", DisplayName = "Ghost" });
-        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
-        Assert.False((await store.FindAsync("ghost", CancellationToken.None)).HasValue);
+        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
+        Assert.False((await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().HasValue);
 
         // 单个失效只重查该租户；整体失效后两者都重查
         store.Invalidate("acme");
         Assert.Equal(1, store.CachedCount);
-        Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
-        Assert.False((await store.FindAsync("ghost", CancellationToken.None)).HasValue);
+        Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
+        Assert.False((await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().HasValue);
         store.Invalidate();
         Assert.Equal(0, store.CachedCount);
-        Assert.Equal("Ghost", (await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Ghost", (await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
 
         // 不合法的 ID 不查库也不占缓存；枚举不走缓存
-        Assert.False((await store.FindAsync("bad id", CancellationToken.None)).HasValue);
+        Assert.False((await store.FindAsync("bad id", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.Equal(1, store.CachedCount);
-        Assert.Equal(["acme", "ghost"], (await store.ListAsync(CancellationToken.None)).Select(static t => t.Id));
+        Assert.Equal(["acme", "ghost"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
     }
 
     [Fact]
@@ -151,26 +151,26 @@ public sealed class DatabaseMultiTenancyTests
         await using var host = await TenantHosts.StartAsync(services: services => services.AddSingleton<TimeProvider>(clock));
         var store = host.Services.GetRequiredService<DatabaseTenantStore>();
         await TenantHosts.SeedAsync(host, [Acme()]);
-        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         await TenantHosts.EditRowAsync(host, "acme", static row => row.DisplayName = "Acme 2");
 
         // 默认 30 秒：29 秒后仍命中，到期后重查
         clock.Advance(TimeSpan.FromSeconds(29));
-        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         clock.Advance(TimeSpan.FromSeconds(1));
-        Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
 
         // 0 表示不过期：只靠失效
         var frozen = new FakeTimeProvider(clock.GetUtcNow());
         await using var forever = await TenantHosts.StartAsync([new(Section + "CacheTimeToLiveSeconds", "0")], services => services.AddSingleton<TimeProvider>(frozen));
         var foreverStore = forever.Services.GetRequiredService<DatabaseTenantStore>();
         await TenantHosts.SeedAsync(forever, [Acme()]);
-        Assert.Equal("Acme", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         await TenantHosts.EditRowAsync(forever, "acme", static row => row.DisplayName = "Acme 2");
         frozen.Advance(TimeSpan.FromDays(365));
-        Assert.Equal("Acme", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         foreverStore.Invalidate("acme");
-        Assert.Equal("Acme 2", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme 2", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
     }
 
     [Fact]
@@ -180,12 +180,12 @@ public sealed class DatabaseMultiTenancyTests
         var store = host.Services.GetRequiredService<DatabaseTenantStore>();
         await TenantHosts.SeedAsync(host, [new TenantInfo { Id = "a" }, new TenantInfo { Id = "b" }, new TenantInfo { Id = "c" }]);
 
-        Assert.True((await store.FindAsync("a", CancellationToken.None)).HasValue);
-        Assert.True((await store.FindAsync("b", CancellationToken.None)).HasValue);
+        Assert.True((await store.FindAsync("a", CancellationToken.None)).ValueOrThrow().HasValue);
+        Assert.True((await store.FindAsync("b", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.Equal(2, store.CachedCount);
 
         // 容量到顶整体清空后再装入新租户
-        Assert.True((await store.FindAsync("c", CancellationToken.None)).HasValue);
+        Assert.True((await store.FindAsync("c", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.Equal(1, store.CachedCount);
     }
 
@@ -197,7 +197,7 @@ public sealed class DatabaseMultiTenancyTests
         var shards = host.Services.GetRequiredService<ITenantShardResolver>();
         await TenantHosts.SeedAsync(host, [Acme(connectionString: "Host=a")]);
         Assert.Equal("Host=a", (await shards.ResolveAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
-        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
 
         // 同一批里后者整份覆盖前者，三项结果都成功；分页列表不走缓存
         var written = await host.InvokeAsync(async context =>
@@ -212,9 +212,9 @@ public sealed class DatabaseMultiTenancyTests
         Assert.True(written.IsSuccess, written.ToString());
 
         // 写入即失效：目录与分片解析器都看到新值
-        Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().DisplayName);
+        Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         Assert.Equal("Host=a2", (await shards.ResolveAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
-        Assert.True((await store.FindAsync("beta", CancellationToken.None)).HasValue);
+        Assert.True((await store.FindAsync("beta", CancellationToken.None)).ValueOrThrow().HasValue);
 
         var removed = await host.InvokeAsync(async context =>
         {
@@ -228,19 +228,25 @@ public sealed class DatabaseMultiTenancyTests
             await Assert.ThrowsAsync<ArgumentException>(async () => await records.RemoveAsync(["beta", "bad id"], context.CancellationToken));
         });
         Assert.True(removed.IsSuccess, removed.ToString());
-        Assert.False((await store.FindAsync("acme", CancellationToken.None)).HasValue);
+        Assert.False((await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.False((await shards.ResolveAsync("acme", CancellationToken.None)).ValueOrThrow().HasValue);
-        Assert.Equal(["beta"], (await store.ListAsync(CancellationToken.None)).Select(static t => t.Id));
+        Assert.Equal(["beta"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
     }
 
     [Fact]
-    public async Task List_IsBoundedByMaxListedTenants()
+    public async Task List_PagesByTheContinuationToken_InsteadOfTruncating()
     {
-        await using var host = await TenantHosts.StartAsync([new(Section + "MaxListedTenants", "2")]);
+        await using var host = await TenantHosts.StartAsync();
         await TenantHosts.SeedAsync(host, [new TenantInfo { Id = "c" }, new TenantInfo { Id = "a" }, new TenantInfo { Id = "b" }]);
+        var store = host.Services.GetRequiredService<ITenantStore>();
 
-        // 按 ID 排序只返回前两个
-        Assert.Equal(["a", "b"], (await host.Services.GetRequiredService<ITenantStore>().ListAsync(CancellationToken.None)).Select(static t => t.Id));
+        // 按 ID 排序逐页读：第一页满页给出令牌，读到不满一页时令牌为空，不再有截断
+        var first = (await store.ListAsync(new TenantQuery { PageSize = 2 }, CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(["a", "b"], first.Items.Select(static t => t.Id));
+        Assert.NotNull(first.ContinuationToken);
+        var second = (await store.ListAsync(new TenantQuery { PageSize = 2, ContinuationToken = first.ContinuationToken }, CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(["c"], second.Items.Select(static t => t.Id));
+        Assert.Null(second.ContinuationToken);
     }
 
     [Fact]
@@ -261,18 +267,16 @@ public sealed class DatabaseMultiTenancyTests
     [Fact]
     public void Options_FromConfiguration_ParseAndValidate()
     {
-        var options = DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheSize", "5"), ("CacheTimeToLiveSeconds", "0"), ("MaxListedTenants", "7")));
-        Assert.Equal((5, (TimeSpan?)null, 7), (options.CacheSize, options.CacheTimeToLive, options.MaxListedTenants));
+        var options = DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheSize", "5"), ("CacheTimeToLiveSeconds", "0")));
+        Assert.Equal((5, (TimeSpan?)null), (options.CacheSize, options.CacheTimeToLive));
         Assert.Equal(TimeSpan.FromSeconds(2.5), DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheTimeToLiveSeconds", "2.5"))).CacheTimeToLive);
 
         var defaults = DatabaseMultiTenancyOptions.FromConfiguration(Build());
-        Assert.Equal((10_000, TimeSpan.FromSeconds(30), 10_000), (defaults.CacheSize, defaults.CacheTimeToLive, defaults.MaxListedTenants));
+        Assert.Equal((10_000, TimeSpan.FromSeconds(30)), (defaults.CacheSize, defaults.CacheTimeToLive));
 
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseMultiTenancyOptions { CacheSize = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseMultiTenancyOptions { CacheTimeToLive = TimeSpan.Zero });
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseMultiTenancyOptions { MaxListedTenants = 0 });
         Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheSize", "-1"))));
         Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheTimeToLiveSeconds", "-1"))));
-        Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("MaxListedTenants", "many"))));
     }
 }

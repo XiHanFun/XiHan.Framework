@@ -304,7 +304,7 @@ public sealed partial class DueBookmarkPoller : IDisposable
     /// 要覆盖的分区：平台（空）加上租户目录里启用的租户
     /// </summary>
     /// <remarks>
-    /// 没有装配多租户时只有平台。租户目录读取失败记日志、本周期只覆盖平台，下个周期再试
+    /// 没有装配多租户时只有平台。租户目录按页读完；读取失败记日志、本周期只覆盖平台，下个周期再试
     /// </remarks>
     private async ValueTask<IReadOnlyList<string?>> PartitionsAsync(CancellationToken cancellationToken)
     {
@@ -314,23 +314,26 @@ public sealed partial class DueBookmarkPoller : IDisposable
             return partitions;
         }
 
-        try
+        // 停用的租户不轮询：恢复会在 Tenant 阶段被拒绝，它的到期书签等租户重新启用后再接续。目录逐页读完，不一次取回无界的列表
+        var query = new TenantQuery { PageSize = TenantQuery.MaxPageSize, EnabledOnly = true };
+        while (true)
         {
-            foreach (var tenant in await tenants.ListAsync(cancellationToken).ConfigureAwait(false))
+            var page = await tenants.ListAsync(query, cancellationToken).ConfigureAwait(false);
+            if (!page.TryGetValue(out var listed))
             {
-                // 停用的租户不轮询：恢复会在 Tenant 阶段被拒绝，它的到期书签等租户重新启用后再接续
-                if (tenant.IsEnabled)
-                {
-                    partitions.Add(tenant.Id);
-                }
+                // 读到一半失败：本周期只覆盖平台，下个周期再试，已经读到的租户也不轮询，免得每个周期覆盖的范围忽大忽小
+                LogTenantsFailed(_logger, page.Error!.Code);
+                return [null];
             }
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            LogTenantsFailed(_logger, exception);
-        }
 
-        return partitions;
+            partitions.AddRange(listed.Items.Select(static tenant => tenant.Id));
+            if (listed.ContinuationToken is null)
+            {
+                return partitions;
+            }
+
+            query = query with { ContinuationToken = listed.ContinuationToken };
+        }
     }
 
     /// <summary>
@@ -448,8 +451,8 @@ public sealed partial class DueBookmarkPoller : IDisposable
     /// <summary>
     /// 租户目录读取失败
     /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Listing tenants for workflow polling threw; only the platform partition is polled this cycle.")]
-    private static partial void LogTenantsFailed(ILogger logger, Exception exception);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Listing tenants for workflow polling failed with '{ErrorCode}'; only the platform partition is polled this cycle.")]
+    private static partial void LogTenantsFailed(ILogger logger, string errorCode);
 
     /// <summary>
     /// 恢复失败

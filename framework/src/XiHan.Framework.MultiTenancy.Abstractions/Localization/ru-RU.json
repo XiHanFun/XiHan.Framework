@@ -1,8 +1,11 @@
 {
   "multitenancy.shard.unavailable": "Не удалось определить сегмент данных арендатора '{tenantId}': {reason}",
   "multitenancy.store.capacity_exceeded": "Хранилище арендаторов в памяти достигло предела ёмкости {capacity}.",
+  "multitenancy.store.unavailable": "Хранилище арендаторов недоступно.",
   "multitenancy.tenant.disabled": "Арендатор '{tenantId}' отключён.",
   "multitenancy.tenant.invalid_id": "Недопустимый идентификатор арендатора '{tenantId}'.",
   "multitenancy.tenant.not_found": "Арендатор '{tenantId}' не существует.",
+  "multitenancy.tenant.query_page_invalid": "Размер страницы списка арендаторов {pageSize} должен быть от 1 до {max}.",
+  "multitenancy.tenant.query_token_invalid": "Токен продолжения списка арендаторов недействителен; передайте токен, возвращённый предыдущей страницей.",
   "multitenancy.tenant.required": "Для этого вызова требуется арендатор, но он не определён."
 }

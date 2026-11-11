@@ -1,8 +1,11 @@
 {
   "multitenancy.shard.unavailable": "Der Datenshard des Mandanten '{tenantId}' konnte nicht ermittelt werden: {reason}",
   "multitenancy.store.capacity_exceeded": "Der In-Memory-Mandantenspeicher hat seine Kapazität von {capacity} erreicht.",
+  "multitenancy.store.unavailable": "Der Mandantenspeicher ist nicht verfügbar.",
   "multitenancy.tenant.disabled": "Der Mandant '{tenantId}' ist deaktiviert.",
   "multitenancy.tenant.invalid_id": "Die Mandanten-ID '{tenantId}' ist ungültig.",
   "multitenancy.tenant.not_found": "Der Mandant '{tenantId}' existiert nicht.",
+  "multitenancy.tenant.query_page_invalid": "Die Seitengröße {pageSize} der Mandantenliste muss zwischen 1 und {max} liegen.",
+  "multitenancy.tenant.query_token_invalid": "Das Fortsetzungstoken der Mandantenliste ist ungültig; übergeben Sie das Token der vorherigen Seite.",
   "multitenancy.tenant.required": "Dieser Aufruf erfordert einen Mandanten, es wurde jedoch keiner ermittelt."
 }

@@ -63,17 +63,12 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
             return Result.Success(cached);
         }
 
-        Maybe<TenantInfo> found;
-        try
+        var read = await _store.FindAsync(tenantId, cancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var found))
         {
-            found = await _store.FindAsync(tenantId, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            // 这个错误由解析中间件返回给调用方，存储的异常消息可能带数据库信息：reason 只写类型，完整异常只进日志
-            LogStoreFailed(_logger, tenantId, exception);
-            var type = exception.GetType();
-            return Error.Unavailable(MultiTenancyErrors.ShardUnavailable, MultiTenancyMessages.ShardUnavailable, MessageArguments.Of(("tenantId", tenantId), ("reason", type.FullName ?? type.Name)));
+            // 存储的错误作为内部错误保留；reason 只写错误码，存储的细节只进日志（ADR-0115）
+            LogStoreFailed(_logger, tenantId, read.Error!.Code);
+            return new Error(MultiTenancyErrors.ShardUnavailable, MultiTenancyMessages.ShardUnavailable, MessageArguments.Of(("tenantId", tenantId), ("reason", read.Error.Code)), read.Error);
         }
 
         var shard = found.TryGetValue(out var info) ? FromProperties(info) : Maybe.None<TenantShard>();
@@ -130,6 +125,6 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     /// <summary>
     /// 查租户存储失败
     /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Resolving the shard of tenant '{TenantId}' failed.")]
-    private static partial void LogStoreFailed(ILogger logger, string tenantId, Exception exception);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Resolving the shard of tenant '{TenantId}' failed: the tenant store returned '{ErrorCode}'.")]
+    private static partial void LogStoreFailed(ILogger logger, string tenantId, string errorCode);
 }

@@ -1,8 +1,11 @@
 {
   "multitenancy.shard.unavailable": "테넌트 '{tenantId}'의 데이터 샤드를 확인할 수 없습니다: {reason}",
   "multitenancy.store.capacity_exceeded": "메모리 내 테넌트 저장소가 용량 한도 {capacity}에 도달했습니다.",
+  "multitenancy.store.unavailable": "테넌트 저장소를 사용할 수 없습니다.",
   "multitenancy.tenant.disabled": "테넌트 '{tenantId}'이(가) 비활성화되었습니다.",
   "multitenancy.tenant.invalid_id": "테넌트 ID '{tenantId}'이(가) 올바르지 않습니다.",
   "multitenancy.tenant.not_found": "테넌트 '{tenantId}'이(가) 없습니다.",
+  "multitenancy.tenant.query_page_invalid": "테넌트 목록의 페이지 크기 {pageSize}은(는) 1에서 {max} 사이여야 합니다.",
+  "multitenancy.tenant.query_token_invalid": "테넌트 목록의 연속 토큰이 올바르지 않습니다. 이전 페이지에서 반환된 토큰을 전달하세요.",
   "multitenancy.tenant.required": "이 호출에는 테넌트가 필요하지만 확인되지 않았습니다."
 }

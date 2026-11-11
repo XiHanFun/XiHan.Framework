@@ -1,8 +1,11 @@
 {
   "multitenancy.shard.unavailable": "Le fragment de données du locataire '{tenantId}' n'a pas pu être résolu : {reason}",
   "multitenancy.store.capacity_exceeded": "Le magasin de locataires en mémoire a atteint sa capacité de {capacity}.",
+  "multitenancy.store.unavailable": "Le magasin de locataires est indisponible.",
   "multitenancy.tenant.disabled": "Le locataire '{tenantId}' est désactivé.",
   "multitenancy.tenant.invalid_id": "L'identifiant de locataire '{tenantId}' n'est pas valide.",
   "multitenancy.tenant.not_found": "Le locataire '{tenantId}' n'existe pas.",
+  "multitenancy.tenant.query_page_invalid": "La taille de page {pageSize} de la liste des locataires doit être comprise entre 1 et {max}.",
+  "multitenancy.tenant.query_token_invalid": "Le jeton de continuation de la liste des locataires n'est pas valide ; transmettez le jeton renvoyé par la page précédente.",
   "multitenancy.tenant.required": "Cet appel nécessite un locataire, mais aucun n'a été résolu."
 }

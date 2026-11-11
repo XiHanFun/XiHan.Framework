@@ -12,7 +12,7 @@ namespace XiHan.Framework.MultiTenancy.Database;
 /// 数据库租户目录选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:MultiTenancy:Database</c> 显式读取：<c>CacheSize</c>、<c>CacheTimeToLiveSeconds</c>（0 不过期）、<c>MaxListedTenants</c>
+/// 从配置节 <c>XiHan:MultiTenancy:Database</c> 显式读取：<c>CacheSize</c>、<c>CacheTimeToLiveSeconds</c>（0 不过期）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseMultiTenancyOptions
@@ -47,18 +47,6 @@ public sealed record DatabaseMultiTenancyOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
-    /// <see cref="DatabaseTenantStore.ListAsync"/> 返回的租户数上限（有界枚举）
-    /// </summary>
-    /// <remarks>
-    /// 默认 10000，超出的部分不返回并记警告
-    /// </remarks>
-    public int MaxListedTenants
-    {
-        get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum number of listed tenants must be at least 1.");
-    } = 10_000;
-
-    /// <summary>
     /// 从配置读取
     /// </summary>
     public static DatabaseMultiTenancyOptions FromConfiguration(IConfiguration configuration)
@@ -78,13 +66,6 @@ public sealed record DatabaseMultiTenancyOptions
             options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
                 ? options with { CacheTimeToLive = seconds == 0 ? null : TimeSpan.FromSeconds(seconds) }
                 : throw new ArgumentException($"{ConfigurationSection}:CacheTimeToLiveSeconds must be a non-negative number, but was '{ttl}'.");
-        }
-
-        if (configuration[$"{ConfigurationSection}:MaxListedTenants"] is { } max)
-        {
-            options = int.TryParse(max, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) && parsed >= 1
-                ? options with { MaxListedTenants = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxListedTenants must be a positive integer, but was '{max}'.");
         }
 
         return options;

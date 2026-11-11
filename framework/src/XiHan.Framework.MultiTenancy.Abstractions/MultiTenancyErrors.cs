@@ -43,4 +43,14 @@ public static class MultiTenancyErrors
     /// 租户分片无法解析（租户存储不可达）
     /// </summary>
     public const string ShardUnavailable = "MULTITENANCY_UNAVAILABLE_002";
+
+    /// <summary>
+    /// 租户存储不可达（连接、超时、事务失败）
+    /// </summary>
+    public const string StoreUnavailable = "MULTITENANCY_UNAVAILABLE_003";
+
+    /// <summary>
+    /// 租户列表查询不合法（每页条数越界、续页令牌无效）
+    /// </summary>
+    public const string QueryInvalid = "MULTITENANCY_VALIDATION_003";
 }
