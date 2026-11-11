@@ -117,7 +117,7 @@ jobs:
 
       - name: 测试（MTP 模式，采集覆盖率）
         env:
-          # Caching.Redis、Messaging.RabbitMQ、Persistence.SqlSugar（PostgreSQL、SQL Server、MySQL）与 Workflow.Database（PostgreSQL）的门控用例只在设置了这些变量时运行；
+          # Caching.Redis、Messaging.Redis、Messaging.RabbitMQ、Persistence.SqlSugar（PostgreSQL、SQL Server、MySQL）与 Workflow.Database（PostgreSQL）的门控用例只在设置了这些变量时运行；
           # Oracle 的门控用例（XIHAN_TEST_ORACLE）在下面单独的 oracle 作业里跑，这里不设、跳过
           XIHAN_TEST_REDIS: localhost:6379
           XIHAN_TEST_RABBITMQ: amqp://guest:guest@localhost:5672

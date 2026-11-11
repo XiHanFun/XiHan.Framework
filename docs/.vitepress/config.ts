@@ -308,6 +308,7 @@ const packagesGroup: DefaultTheme.SidebarItem = {
         pkg("Messaging.InMemory", "messaging-inmemory"),
         pkg("Messaging.RabbitMQ", "messaging-rabbitmq"),
         pkg("Messaging.Kafka", "messaging-kafka"),
+        pkg("Messaging.Redis", "messaging-redis"),
       ],
     },
     {

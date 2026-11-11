@@ -53,6 +53,7 @@ framework/
 | `XiHan.Framework.Messaging.InMemory` | 3 | 内存消息代理默认实现：有界通道、顺序投递、重试与死信 |
 | `XiHan.Framework.Messaging.RabbitMQ` | 3 | RabbitMQ Provider：持久队列、手动确认、重试与死信队列（非 AOT） |
 | `XiHan.Framework.Messaging.Kafka` | 3 | Kafka Provider：队列与流，幂等生产者、消费组位点、`xihankey` 分区键有序、按时刻重放、原位重试与死信主题（非 AOT） |
+| `XiHan.Framework.Messaging.Redis` | 3 | Redis Streams Provider：只提供队列，竞争订阅用消费组、广播每个实例一个组，原位重试、`XAUTOCLAIM` 回收超时未确认的条目、死信流，`MAXLEN ~` 封顶并整理已确认的条目（非 AOT） |
 | `XiHan.Framework.Configuration.Nacos` | 3 | Nacos Provider：HTTP 接口直连取整份文档，`Content-MD5` 为版本并长轮询，JSON / properties 展平，登录续令牌，多地址 |
 | `XiHan.Framework.Localization.Database` | 3 | 数据库本地化 Provider：翻译经仓储读写，启动后加载并周期刷新，优先于嵌入目录 |
 | `XiHan.Framework.ObjectStorage.FileSystem` | 3 | 文件系统对象存储默认实现：原子替换写入、SHA-256 ETag、总量与单对象配额、范围读取、分片上传 |

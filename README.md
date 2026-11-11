@@ -102,7 +102,7 @@ Three tiers of promise, after the I Ching's unchanging (不易), simple (简易)
 | --- | --- | --- |
 | [Persistence](https://framework.docs.xihanfun.com/persistence/overview) | In-memory | EF Core, SqlSugar |
 | [Caching and distributed locks](https://framework.docs.xihanfun.com/caching/basics) | In-memory | Redis, two-level cache, remote plugin |
-| [Messaging](https://framework.docs.xihanfun.com/messaging/pubsub) | In-memory, with outbox | RabbitMQ, Kafka, CloudEvents webhook |
+| [Messaging](https://framework.docs.xihanfun.com/messaging/pubsub) | In-memory, with outbox | RabbitMQ, Kafka, Redis Streams, CloudEvents webhook |
 | [Multi-tenancy](https://framework.docs.xihanfun.com/multi-tenancy/resolution) | In-memory | Database, with per-tenant databases |
 | [Authentication](https://framework.docs.xihanfun.com/security/authentication) and [authorization](https://framework.docs.xihanfun.com/security/authorization) | In-memory (API key, RBAC) | JWT, OpenID Connect, database |
 | [Scheduling](https://framework.docs.xihanfun.com/scheduling/jobs) | In-memory | Database (clustered), Kubernetes (leader election) |

@@ -2,6 +2,12 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
+## 未发布
+
+### 子系统
+
+- **新增** `Messaging.Redis`：用 Redis Streams 提供 `messaging.queue@1`，只有 Redis 的部署也能跨进程收发消息；需显式 `UseFeature<RedisMessagingFeature>()`，配置节 `XiHan:Messaging:Redis`，可选绑定 `queue`（类型 `cache:distributed`），需要 Redis 6.2+，不提供 `messaging.stream@1`（见 [Messaging.Redis](/packages/messaging-redis)）
+
 ## v5.0.0-preview.2（2026-11-06）
 
 ::: warning 预览须知

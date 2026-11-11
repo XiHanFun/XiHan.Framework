@@ -818,6 +818,69 @@
       ]
     },
     {
+      "section": "XiHan:Messaging:Redis",
+      "options": "XiHan.Framework.Messaging.Redis.RedisMessagingOptions",
+      "package": "XiHan.Framework.Messaging.Redis",
+      "binding": "queue",
+      "keys": [
+        {
+          "key": "Configuration",
+          "type": "string",
+          "required": true,
+          "sample": "localhost:6379",
+          "summary": "StackExchange.Redis 连接字符串（Redis 6.2+）；绑定 queue（类型 cache:distributed）的值优先，没有绑定或其值为空时读本键；绑定的属性 username / password 覆盖其中的 user / password"
+        },
+        {
+          "key": "KeyPrefix",
+          "type": "string",
+          "default": "xihan:messaging:",
+          "summary": "流键的前缀：主题的流是前缀加主题，死信流再加 DeadLetterSuffix；发布方与订阅方要一致"
+        },
+        {
+          "key": "GroupName",
+          "type": "string",
+          "default": "xihan",
+          "summary": "竞争订阅的消费组名（字母或数字开头、≤64 字符、不含 @）；广播订阅的组是它加 @ 与实例标识"
+        },
+        {
+          "key": "BatchSize",
+          "type": "integer",
+          "default": "10",
+          "minimum": 1,
+          "maximum": 1000,
+          "summary": "每次从流里最多取的条目数；ClaimIdleTimeSeconds 要大于整批的最长处理时间"
+        },
+        {
+          "key": "PollIntervalSeconds",
+          "type": "number",
+          "default": "0.2",
+          "exclusiveMinimum": 0,
+          "summary": "没有取到新条目时再取之前的等待（秒）；消费是轮询，消息最多晚这么久被取到"
+        },
+        {
+          "key": "ClaimIdleTimeSeconds",
+          "type": "number",
+          "default": "60",
+          "minimum": 0.001,
+          "summary": "待确认条目空闲多久后由 XAUTOCLAIM 回收（秒），也是清理空闲消费者与遗留广播组的阈值；必须大于一批条目的最长处理时间"
+        },
+        {
+          "key": "MaxLength",
+          "type": "integer",
+          "default": "100000",
+          "minimum": 1,
+          "summary": "每条流（主题与死信）的近似长度上限（MAXLEN ~）；消费者落后超过它时最旧的条目在投递前被裁掉"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 messaging.redis.connection 的重探间隔（秒），也是单次探测的超时"
+        }
+      ]
+    },
+    {
       "section": "XiHan:MultiTenancy",
       "options": "XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions",
       "package": "XiHan.Framework.MultiTenancy.Abstractions",

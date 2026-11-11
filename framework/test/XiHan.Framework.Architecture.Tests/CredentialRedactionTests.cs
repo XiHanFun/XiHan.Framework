@@ -44,6 +44,7 @@ public sealed partial class CredentialRedactionTests
     [
         ("XiHan.Framework.Caching.Redis.RedisCachingOptions", "Configuration"),
         ("XiHan.Framework.Messaging.RabbitMQ.RabbitMQMessagingOptions", "Configuration"),
+        ("XiHan.Framework.Messaging.Redis.RedisMessagingOptions", "Configuration"),
         ("XiHan.Framework.Kernel.Hosting.BindingValue", "Value"),
     ];
 

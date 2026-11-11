@@ -154,6 +154,6 @@ context.Services.AddMessageHandler<PaymentCapturedHandler>("payments");
 ## 相关
 
 - [消息与事件](/messaging/pubsub)
-- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Kafka](./messaging-kafka)
+- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.InMemory](./messaging-inmemory)、[Messaging.Kafka](./messaging-kafka)、[Messaging.Redis](./messaging-redis)
 - [部署与打包](/deployment/pack)：绑定 `queue` 的来源
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》

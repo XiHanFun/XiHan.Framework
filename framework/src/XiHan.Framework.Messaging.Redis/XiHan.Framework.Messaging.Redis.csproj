@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PackageId>XiHan.Framework.Messaging.Redis</PackageId>
+    <RootNamespace>XiHan.Framework.Messaging.Redis</RootNamespace>
+    <Description>曦寒框架消息的 Redis Streams 提供程序</Description>
+    <PackageTags>xihan;framework;messaging;redis;streams</PackageTags>
+    <!-- StackExchange.Redis 未声明 AOT 兼容；Native AOT 场景另行验证 -->
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../XiHan.Framework.Messaging.Abstractions/XiHan.Framework.Messaging.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StackExchange.Redis" />
+  </ItemGroup>
+</Project>

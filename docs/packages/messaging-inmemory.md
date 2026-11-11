@@ -30,7 +30,7 @@
 ## 何时使用
 
 - 单进程部署、开发与测试；`Profiles.Standard` 已经装配它。
-- 多实例部署或需要持久化的消息：换 [Messaging.RabbitMQ](./messaging-rabbitmq) 或 [Messaging.Kafka](./messaging-kafka)；处理器与发布代码不变。
+- 多实例部署或需要持久化的消息：换 [Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka) 或 [Messaging.Redis](./messaging-redis)；处理器与发布代码不变。
 - 需要按分区键有序或按时刻重放：本包不提供 `messaging.stream`，用 Kafka。
 
 ## 安装与启用
@@ -103,6 +103,6 @@ public sealed class DeadLetterProbe(InMemoryMessageBroker broker)
 ## 相关
 
 - [消息与事件](/messaging/pubsub)
-- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)
+- [Messaging.Abstractions](./messaging-abstractions)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Messaging.Redis](./messaging-redis)
 - [Profiles.Standard](./profiles-standard)
 - 规范：RFC-0009《消息、CloudEvents 信封与发件箱》

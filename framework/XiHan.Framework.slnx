@@ -39,6 +39,7 @@
     <Project Path="src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Messaging.RabbitMQ/XiHan.Framework.Messaging.RabbitMQ.csproj" />
     <Project Path="src/XiHan.Framework.Messaging.Kafka/XiHan.Framework.Messaging.Kafka.csproj" />
+    <Project Path="src/XiHan.Framework.Messaging.Redis/XiHan.Framework.Messaging.Redis.csproj" />
     <Project Path="src/XiHan.Framework.Configuration.Nacos/XiHan.Framework.Configuration.Nacos.csproj" />
     <Project Path="src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
     <Project Path="src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />
@@ -131,6 +132,7 @@
     <Project Path="test/XiHan.Framework.Messaging.InMemory.Tests/XiHan.Framework.Messaging.InMemory.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Messaging.RabbitMQ.Tests/XiHan.Framework.Messaging.RabbitMQ.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Messaging.Kafka.Tests/XiHan.Framework.Messaging.Kafka.Tests.csproj" />
+    <Project Path="test/XiHan.Framework.Messaging.Redis.Tests/XiHan.Framework.Messaging.Redis.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Configuration.Nacos.Tests/XiHan.Framework.Configuration.Nacos.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.Abstractions.Tests/XiHan.Framework.Localization.Abstractions.Tests.csproj" />
     <Project Path="test/XiHan.Framework.Localization.InMemory.Tests/XiHan.Framework.Localization.InMemory.Tests.csproj" />

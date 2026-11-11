@@ -51,7 +51,7 @@
 | 宿主 | `Hosting.AspNetCore`、`Hosting.CommandLine` |
 | 持久化 | `Persistence.Abstractions`、`Persistence.InMemory`、`Persistence.EntityFrameworkCore`、`Persistence.SqlSugar`、`Persistence.Generators` |
 | 缓存 | `Caching.Abstractions`、`Caching.InMemory`、`Caching.Redis`、`Caching.Hybrid`、`Caching.Remote` |
-| 消息 | `Messaging.Abstractions`、`Messaging.InMemory`、`Messaging.RabbitMQ`、`Messaging.Kafka` |
+| 消息 | `Messaging.Abstractions`、`Messaging.InMemory`、`Messaging.RabbitMQ`、`Messaging.Kafka`、`Messaging.Redis` |
 | 安全 | `Security.Abstractions`、`Security.InMemory`、`Security.Database`、`Security.Jwt`、`Security.OpenIdConnect`、`Security.Ip2Region` |
 | 多租户 | `MultiTenancy.Abstractions`、`MultiTenancy.InMemory`、`MultiTenancy.Database` |
 | 其他子系统 | `ObjectStorage.*`、`Scheduling.*`、`Workflow.*`、`Auditing.*`、`Localization.*`、`Configuration.*`、`Observability.*`、`AI.*` |

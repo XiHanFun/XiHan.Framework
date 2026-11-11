@@ -581,6 +581,22 @@
       "frameworkReferences": []
     },
     {
+      "id": "XiHan.Framework.Messaging.Redis",
+      "ring": "3",
+      "summary": "Redis Streams Provider：只提供队列，竞争订阅用消费组、广播每个实例一个组，原位重试、`XAUTOCLAIM` 回收超时未确认的条目、死信流，`MAXLEN ~` 封顶并整理已确认的条目（非 AOT）",
+      "description": "曦寒框架消息的 Redis Streams 提供程序",
+      "references": [
+        "XiHan.Framework.Messaging.Abstractions"
+      ],
+      "dependencies": [
+        {
+          "id": "StackExchange.Redis",
+          "version": "3.4.31"
+        }
+      ],
+      "frameworkReferences": []
+    },
+    {
       "id": "XiHan.Framework.MultiTenancy.Abstractions",
       "ring": "2",
       "summary": "租户信息与存储、租户解析器、租户分片契约与默认解析器、Tenant 阶段中间件",
@@ -1930,6 +1946,38 @@
       "permissions": [],
       "health": [
         "messaging.rabbitmq.connection"
+      ]
+    },
+    {
+      "type": "XiHan.Framework.Messaging.Redis.RedisMessagingFeature",
+      "package": "XiHan.Framework.Messaging.Redis",
+      "id": "xihan.messaging.redis",
+      "kind": "provider",
+      "role": "provider",
+      "stability": "preview",
+      "provides": [
+        "messaging.queue@1"
+      ],
+      "requires": [
+        {
+          "id": "kernel.hosting",
+          "version": 1,
+          "optional": false
+        }
+      ],
+      "bindings": [
+        {
+          "name": "queue",
+          "type": "cache:distributed",
+          "required": false
+        }
+      ],
+      "config": "XiHan:Messaging",
+      "pipeline": [],
+      "operations": [],
+      "permissions": [],
+      "health": [
+        "messaging.redis.connection"
       ]
     },
     {

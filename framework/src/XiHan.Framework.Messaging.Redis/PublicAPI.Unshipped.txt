@@ -1,0 +1,51 @@
+#nullable enable
+XiHan.Framework.Messaging.Redis.RedisMessageBroker
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.ConnectAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.DisposeAsync() -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.IsConnected.get -> bool
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.ProbeAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.RedisMessageBroker(XiHan.Framework.Messaging.Redis.RedisMessagingOptions! options, XiHan.Framework.Messaging.Abstractions.MessagingOptions! messaging, XiHan.Framework.Messaging.Abstractions.MessagingInstance! instance, XiHan.Framework.Kernel.Hosting.App! app, System.TimeProvider! timeProvider, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.StartAsync(System.Collections.Generic.IReadOnlyCollection<XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription!>! subscriptions, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch! dispatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Redis.RedisMessageBroker.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Redis.RedisMessagingFeature
+XiHan.Framework.Messaging.Redis.RedisMessagingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
+XiHan.Framework.Messaging.Redis.RedisMessagingFeature.RedisMessagingFeature() -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingFeature.StartAsync(System.IServiceProvider! services, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Redis.RedisMessagingFeature.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.<Clone>$() -> XiHan.Framework.Messaging.Redis.RedisMessagingOptions!
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.BatchSize.get -> int
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.BatchSize.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ClaimIdleTime.get -> System.TimeSpan
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ClaimIdleTime.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Configuration.get -> string!
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Configuration.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Equals(XiHan.Framework.Messaging.Redis.RedisMessagingOptions? other) -> bool
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.GroupName.get -> string!
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.GroupName.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.HealthProbeInterval.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.KeyPrefix.get -> string!
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.KeyPrefix.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.MaxLength.get -> long
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.MaxLength.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Password.get -> string?
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Password.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.PollInterval.get -> System.TimeSpan
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.PollInterval.init -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.RedisMessagingOptions() -> void
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.User.get -> string?
+XiHan.Framework.Messaging.Redis.RedisMessagingOptions.User.init -> void
+const XiHan.Framework.Messaging.Redis.RedisMessagingFeature.ConnectionBinding = "queue" -> string!
+const XiHan.Framework.Messaging.Redis.RedisMessagingFeature.HealthName = "messaging.redis.connection" -> string!
+const XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ConfigurationSection = "XiHan:Messaging:Redis" -> string!
+const XiHan.Framework.Messaging.Redis.RedisMessagingOptions.MaxBatchSize = 1000 -> int
+override XiHan.Framework.Messaging.Redis.RedisMessagingOptions.Equals(object? obj) -> bool
+override XiHan.Framework.Messaging.Redis.RedisMessagingOptions.GetHashCode() -> int
+override XiHan.Framework.Messaging.Redis.RedisMessagingOptions.ToString() -> string!
+static XiHan.Framework.Messaging.Redis.RedisMessagingOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Hosting.BindingValue!> binding) -> XiHan.Framework.Messaging.Redis.RedisMessagingOptions!
+static XiHan.Framework.Messaging.Redis.RedisMessagingOptions.operator !=(XiHan.Framework.Messaging.Redis.RedisMessagingOptions? left, XiHan.Framework.Messaging.Redis.RedisMessagingOptions? right) -> bool
+static XiHan.Framework.Messaging.Redis.RedisMessagingOptions.operator ==(XiHan.Framework.Messaging.Redis.RedisMessagingOptions? left, XiHan.Framework.Messaging.Redis.RedisMessagingOptions? right) -> bool

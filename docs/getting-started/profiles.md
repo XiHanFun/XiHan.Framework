@@ -72,7 +72,7 @@ Minimal 与 Standard 不含协议适配器，按对外暴露的方式加：
 | --- | --- | --- |
 | 持久化 | `Persistence.InMemory` | `Persistence.EntityFrameworkCore`、`Persistence.SqlSugar` |
 | 缓存与分布式锁 | `Caching.InMemory` | `Caching.Redis`、`Caching.Hybrid`、`Caching.Remote` |
-| 消息 | `Messaging.InMemory` | `Messaging.RabbitMQ`、`Messaging.Kafka` |
+| 消息 | `Messaging.InMemory` | `Messaging.RabbitMQ`、`Messaging.Kafka`、`Messaging.Redis` |
 | 认证 | `Security.InMemory`（ApiKey） | `Security.Jwt`、`Security.OpenIdConnect` |
 | 授权 | `Security.InMemory`（RBAC 授予） | `Security.Database` |
 | 多租户 | `MultiTenancy.InMemory` | `MultiTenancy.Database` |

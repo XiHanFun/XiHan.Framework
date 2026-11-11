@@ -172,6 +172,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:Messaging:InMemory` | [Messaging.InMemory](/packages/messaging-inmemory) | `MaxQueuedMessages` |
 | `XiHan:Messaging:RabbitMQ` | [Messaging.RabbitMQ](/packages/messaging-rabbitmq) | `Configuration`、`QueuePrefix`、`PrefetchCount`、`HealthProbeIntervalSeconds` |
 | `XiHan:Messaging:Kafka` | [Messaging.Kafka](/packages/messaging-kafka) | `BootstrapServers`、`GroupId`、`TopicPrefix`、`HealthProbeIntervalSeconds`、`RedeliveryDelaySeconds`、`Properties:<key>` |
+| `XiHan:Messaging:Redis` | [Messaging.Redis](/packages/messaging-redis) | `Configuration`、`KeyPrefix`、`GroupName`、`BatchSize`、`PollIntervalSeconds`、`ClaimIdleTimeSeconds`、`MaxLength`、`HealthProbeIntervalSeconds` |
 | `XiHan:Scheduling` | [Scheduling.Abstractions](/packages/scheduling-abstractions) | 调度引擎与领导选举：轮询、租约、并发、错过阈值、历史保留 |
 | `XiHan:Scheduling:InMemory` | [Scheduling.InMemory](/packages/scheduling-inmemory) | `MaxRuns` |
 | `XiHan:Scheduling:Database` | [Scheduling.Database](/packages/scheduling-database) | `HealthProbeIntervalSeconds` |
