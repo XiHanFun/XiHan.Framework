@@ -202,12 +202,25 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// 在宽限内等待进程自行退出
     /// </summary>
     /// <remarks>
-    /// 返回是否退出
+    /// 返回是否退出；取消与宽限到期一样返回假，由调用方继续终止进程
     /// </remarks>
     public async Task<bool> WaitForExitAsync(TimeSpan grace, TimeProvider clock, CancellationToken cancellationToken)
     {
-        var completed = await Task.WhenAny(_exited.Task, Task.Delay(grace, clock, cancellationToken)).ConfigureAwait(false);
-        return completed == _exited.Task;
+        try
+        {
+            // WaitAsync 在进程先退出时撤掉计时器，不像 Task.Delay 那样空跑到宽限结束
+            await _exited.Task.WaitAsync(grace, clock, cancellationToken).ConfigureAwait(false);
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 停止流程被取消也不能留下进程：按未退出返回，调用方随后发终止信号
+            return false;
+        }
     }
 
     /// <summary>
@@ -259,7 +272,17 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     private async Task<Result<PluginEndpoint>> ReadHandshakeLineAsync(TimeSpan timeout, TimeProvider clock, CancellationToken cancellationToken)
     {
         var read = _process.StandardOutput.ReadLineAsync(cancellationToken).AsTask();
-        var completed = await Task.WhenAny(read, _exited.Task, Task.Delay(timeout, clock, cancellationToken)).ConfigureAwait(false);
+        Task completed;
+        try
+        {
+            // 超时交给 WaitAsync：读到行或进程退出时计时器随之撤销，不像 Task.Delay 那样空跑到握手时限；取消照常抛出
+            completed = await Task.WhenAny(read, _exited.Task).WaitAsync(timeout, clock, cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            return new Error(PluginErrors.Timeout, PluginMessages.ProcessTimeout, MessageArguments.Of(("id", _pluginId), ("phase", "handshake")));
+        }
+
         if (completed == read)
         {
             var line = await read.ConfigureAwait(false);
@@ -273,13 +296,8 @@ internal sealed partial class PluginProcess : IAsyncDisposable
                 : new Error(PluginErrors.InvalidHandshake, PluginMessages.HandshakeInvalid, MessageArguments.Of(("id", _pluginId), ("reason", $"invalid handshake line '{line}'")));
         }
 
-        if (completed == _exited.Task)
-        {
-            return Error.Unexpected(PluginErrors.Crashed, PluginMessages.ProcessCrashed, details: MessageArguments.Of(("id", _pluginId), ("exitCode", _exited.Task.Result)));
-        }
-
-        cancellationToken.ThrowIfCancellationRequested();
-        return new Error(PluginErrors.Timeout, PluginMessages.ProcessTimeout, MessageArguments.Of(("id", _pluginId), ("phase", "handshake")));
+        // 没读到行就是进程先退出了
+        return Error.Unexpected(PluginErrors.Crashed, PluginMessages.ProcessCrashed, details: MessageArguments.Of(("id", _pluginId), ("exitCode", _exited.Task.Result)));
     }
 
     /// <summary>

@@ -58,7 +58,7 @@ internal static partial class ProcessTermination
             SignalTerminate(process);
         }
 
-        if (await Task.WhenAny(exited, Task.Delay(SignalGrace, clock)).ConfigureAwait(false) == exited)
+        if (await WaitForExitAsync(exited, SignalGrace, clock).ConfigureAwait(false))
         {
             return true;
         }
@@ -87,7 +87,30 @@ internal static partial class ProcessTermination
             // 进程已经退出或无法再被操作：按已退出处理
         }
 
-        await Task.WhenAny(exited, Task.Delay(KillWait, clock)).ConfigureAwait(false);
+        _ = await WaitForExitAsync(exited, KillWait, clock).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 在限时内等待进程退出，返回是否已退出
+    /// </summary>
+    /// <remarks>
+    /// 用 <see cref="Task.WaitAsync(TimeSpan, TimeProvider)"/> 而不是 <c>Task.WhenAny</c> 配 <c>Task.Delay</c>：进程先退出时计时器随之撤销，不会空跑到限时（CA2027）
+    /// </remarks>
+    /// <param name="exited">进程退出时完成的任务</param>
+    /// <param name="timeout">限时</param>
+    /// <param name="clock">时钟</param>
+    private static async Task<bool> WaitForExitAsync(Task exited, TimeSpan timeout, TimeProvider clock)
+    {
+        try
+        {
+            await exited.WaitAsync(timeout, clock).ConfigureAwait(false);
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            // 限时已到而进程仍在运行：由调用方决定强制终止还是放弃等待
+            return false;
+        }
     }
 
     /// <summary>
