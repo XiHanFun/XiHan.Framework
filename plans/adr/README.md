@@ -205,3 +205,4 @@
 | [0203](0203-极远的截止时间不再报500.md) | 安全审查 S-21：`grpc-timeout` 换算溢出时截到 `DateTimeOffset.MaxValue`；剩余时间超过定时取消上限（约 49.7 天）时 `DeadlineMiddleware` 不起定时器，不再以 500 结束 | 已采纳 |
 | [0204](0204-Baggage的值在建上下文时核对.md) | 安全审查 S-23：已登记 Baggage 键的值在 `App.CreateContext` 时核对，为空、超过 256 个字符或含控制字符的丢弃（幂等键除外）；HTTP 入站不合文法的 `xihan.locale` 当作没给 | 已采纳 |
 | [0205](0205-幂等作用域键无歧义与内层调用的幂等键.md) | 安全审查 S-24：幂等作用域键里主体写成 `<长度>.<主体 ID>`；匿名共用命名空间已知并接受；新端点元数据 `InnerInvocationsMetadata`，MCP 的外层请求把幂等键交给 `tools/call` | 已采纳 |
+| [0206](0206-出站地址策略补齐云的IPv6元数据地址.md) | 安全审查 S-25：出站地址策略在开了私网时同样拒绝 GCP `fd20:ce::254` 与 Oracle `fd00:c1::a9fe:a9fe` 的 IPv6 元数据地址 | 已采纳 |

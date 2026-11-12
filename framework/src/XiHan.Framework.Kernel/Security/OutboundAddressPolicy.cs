@@ -24,12 +24,12 @@ public sealed partial class OutboundAddressPolicy
     private static readonly IPNetwork[] _loopback = [IPNetwork.Parse("127.0.0.0/8"), IPNetwork.Parse("::1/128")];
 
     /// <summary>
-    /// 落在私网段里的云元数据地址：AWS 的 IPv6 元数据服务
+    /// 落在私网段里的云元数据地址
     /// </summary>
     /// <remarks>
-    /// 其他云的元数据地址在链路本地或运营商级 NAT 段，本来就不属于私网
+    /// AWS（<c>fd00:ec2::254</c>）、GCP（<c>fd20:ce::254</c>）与 Oracle（<c>fd00:c1::a9fe:a9fe</c>）的 IPv6 元数据服务都在 <c>fc00::/7</c> 里，开私网不等于开元数据（ADR-0206）。其他云的元数据地址在链路本地或运营商级 NAT 段，本来就不属于私网
     /// </remarks>
-    private static readonly IPNetwork[] _metadata = [IPNetwork.Parse("fd00:ec2::254/128")];
+    private static readonly IPNetwork[] _metadata = [IPNetwork.Parse("fd00:ec2::254/128"), IPNetwork.Parse("fd20:ce::254/128"), IPNetwork.Parse("fd00:c1::a9fe:a9fe/128")];
 
     /// <summary>
     /// 私网地址

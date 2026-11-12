@@ -103,6 +103,9 @@ public sealed class OutboundAddressPolicyTests
     [InlineData("169.254.169.254", false)]
     [InlineData("100.100.100.200", false)]
     [InlineData("fd00:ec2::254", false)]
+    // GCP 与 Oracle 的 IPv6 元数据地址同样在 fc00::/7 里：修之前开了私网就能连（ADR-0206）
+    [InlineData("fd20:ce::254", false)]
+    [InlineData("fd00:c1::a9fe:a9fe", false)]
     public void AllowPrivateNetwork_LeavesLoopbackAndMetadataDenied(string address, bool allowed)
         => Assert.Equal(allowed, Policy(new OutboundAddressOptions { AllowPrivateNetwork = true }).IsAllowed(IPAddress.Parse(address)));
 
