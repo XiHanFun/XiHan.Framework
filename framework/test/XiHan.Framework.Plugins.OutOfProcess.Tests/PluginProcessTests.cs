@@ -47,11 +47,11 @@ public sealed class PluginProcessTests
     [Fact]
     public async Task Launch_KillsTheProcess_WhenCancelledDuringTheHandshake()
     {
-        // 复制成独一无二的文件名，才能按进程名认出这次启动的进程，不和并行测试里的同名程序混淆（Linux 的进程名最多 15 个字符）
+        // 用独一无二的文件名启动，才能按进程名认出这次启动的进程，不和并行测试里的同名程序混淆（Linux 的进程名最多 15 个字符）
         var directory = Directory.CreateTempSubdirectory("xihan-silent-");
         var name = "xs" + Guid.NewGuid().ToString("N")[..8];
         var executable = Path.Combine(directory.FullName, OperatingSystem.IsWindows() ? name + ".exe" : name);
-        File.Copy(_silentExecutable, executable);
+        CreateSilentExecutable(executable);
         try
         {
             using var cancellation = new CancellationTokenSource();
@@ -70,6 +70,24 @@ public sealed class PluginProcessTests
             KillAll(name);
             directory.Delete(recursive: true);
         }
+    }
+
+    /// <summary>
+    /// 在 <paramref name="path"/> 建一个读 stdin 却不输出的可执行文件
+    /// </summary>
+    /// <remarks>
+    /// Windows 上复制 <c>sort</c>。Unix 上不复制 <c>cat</c>：Ubuntu 25.10 起的 uutils 是按 <c>argv[0]</c> 分派的多调用程序，改了名的副本认不出自己是 cat，一启动就退出；换成只用内建 <c>read</c> 的 shell 脚本，没有子进程，内核按脚本的文件名设进程名
+    /// </remarks>
+    private static void CreateSilentExecutable(string path)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            File.Copy(_silentExecutable, path);
+            return;
+        }
+
+        File.WriteAllText(path, "#!/bin/sh\nwhile read -r line; do :; done\n");
+        File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
     }
 
     /// <summary>
