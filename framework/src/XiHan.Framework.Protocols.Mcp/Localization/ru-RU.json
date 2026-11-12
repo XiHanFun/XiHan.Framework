@@ -5,5 +5,8 @@
   "protocols.mcp.method_unknown": "Метод '{method}' не поддерживается.",
   "protocols.mcp.stdio_description": "Предоставляет MCP через stdio: одно сообщение JSON-RPC на строку в stdin и stdout, журналы в stderr.",
   "protocols.mcp.tool_unknown": "Инструмент '{tool}' не зарегистрирован.",
-  "protocols.mcp.version_unsupported": "Версия протокола MCP '{version}' не поддерживается; этот сервер поддерживает {supported}."
+  "protocols.mcp.version_unsupported": "Версия протокола MCP '{version}' не поддерживается; этот сервер поддерживает {supported}.",
+  "protocols.mcp.origin_denied": "Запросы из источника '{origin}' не разрешены; добавьте его в XiHan:Protocols:Mcp:AllowedOrigins.",
+  "protocols.mcp.content_type_invalid": "Конечная точка MCP принимает только application/json, а не '{contentType}'.",
+  "protocols.mcp.request_body_too_large": "Тело запроса превышает {max} байт."
 }

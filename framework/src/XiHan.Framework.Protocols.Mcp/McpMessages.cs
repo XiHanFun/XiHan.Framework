@@ -39,6 +39,30 @@ public static class McpMessages
     public const string VersionUnsupported = "protocols.mcp.version_unsupported";
 
     /// <summary>
+    /// HTTP 请求的源不被允许
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>origin</c>
+    /// </remarks>
+    public const string OriginDenied = "protocols.mcp.origin_denied";
+
+    /// <summary>
+    /// HTTP 请求的内容类型不是 JSON
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>contentType</c>
+    /// </remarks>
+    public const string ContentTypeInvalid = "protocols.mcp.content_type_invalid";
+
+    /// <summary>
+    /// HTTP 请求体超过上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>max</c>
+    /// </remarks>
+    public const string BodyTooLarge = "protocols.mcp.request_body_too_large";
+
+    /// <summary>
     /// 方法不受支持
     /// </summary>
     /// <remarks>

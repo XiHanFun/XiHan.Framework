@@ -8,9 +8,14 @@ XiHan.Framework.Protocols.Mcp.McpProtocolFeature.Manifest.get -> XiHan.Framework
 XiHan.Framework.Protocols.Mcp.McpProtocolFeature.McpProtocolFeature() -> void
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.<Clone>$() -> XiHan.Framework.Protocols.Mcp.McpProtocolOptions!
+XiHan.Framework.Protocols.Mcp.McpProtocolOptions.AllowedOrigins.get -> System.Collections.Generic.IReadOnlyList<string!>!
+XiHan.Framework.Protocols.Mcp.McpProtocolOptions.AllowedOrigins.init -> void
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.Equals(XiHan.Framework.Protocols.Mcp.McpProtocolOptions? other) -> bool
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.Instructions.get -> string?
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.Instructions.init -> void
+XiHan.Framework.Protocols.Mcp.McpProtocolOptions.IsAllowedOrigin(string! origin) -> bool
+XiHan.Framework.Protocols.Mcp.McpProtocolOptions.MaxRequestBodyBytes.get -> long
+XiHan.Framework.Protocols.Mcp.McpProtocolOptions.MaxRequestBodyBytes.init -> void
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.McpProtocolOptions() -> void
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ServerName.get -> string?
 XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ServerName.init -> void
@@ -51,24 +56,31 @@ XiHan.Framework.Protocols.Mcp.Tools.McpToolName
 XiHan.Framework.Protocols.Mcp.Tools.McpToolNameConvention
 XiHan.Framework.Protocols.Mcp.Transports.McpEndpointRouteBuilderExtensions
 XiHan.Framework.Protocols.Mcp.Transports.McpStdioTransport
+const XiHan.Framework.Protocols.Mcp.McpErrors.BodyTooLarge = "PROTOCOLS_VALIDATION_016" -> string!
+const XiHan.Framework.Protocols.Mcp.McpErrors.ContentTypeInvalid = "PROTOCOLS_VALIDATION_015" -> string!
 const XiHan.Framework.Protocols.Mcp.McpErrors.DuplicateToolName = "PROTOCOLS_CONFLICT_001" -> string!
 const XiHan.Framework.Protocols.Mcp.McpErrors.InvalidArguments = "PROTOCOLS_VALIDATION_003" -> string!
 const XiHan.Framework.Protocols.Mcp.McpErrors.InvalidMessage = "PROTOCOLS_VALIDATION_001" -> string!
 const XiHan.Framework.Protocols.Mcp.McpErrors.InvalidToolName = "PROTOCOLS_VALIDATION_004" -> string!
+const XiHan.Framework.Protocols.Mcp.McpErrors.OriginDenied = "PROTOCOLS_DENIED_001" -> string!
 const XiHan.Framework.Protocols.Mcp.McpErrors.UnknownMethod = "PROTOCOLS_NOTFOUND_001" -> string!
 const XiHan.Framework.Protocols.Mcp.McpErrors.UnknownTool = "PROTOCOLS_NOTFOUND_002" -> string!
 const XiHan.Framework.Protocols.Mcp.McpErrors.UnsupportedVersion = "PROTOCOLS_VALIDATION_002" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.ArgumentsInvalid = "protocols.mcp.arguments_invalid" -> string!
+const XiHan.Framework.Protocols.Mcp.McpMessages.BodyTooLarge = "protocols.mcp.request_body_too_large" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.CatalogName = "protocols.mcp" -> string!
+const XiHan.Framework.Protocols.Mcp.McpMessages.ContentTypeInvalid = "protocols.mcp.content_type_invalid" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.MessageInvalid = "protocols.mcp.message_invalid" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.MessageNotJson = "protocols.mcp.message_not_json" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.MethodUnknown = "protocols.mcp.method_unknown" -> string!
+const XiHan.Framework.Protocols.Mcp.McpMessages.OriginDenied = "protocols.mcp.origin_denied" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.StdioDescription = "protocols.mcp.stdio_description" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.ToolUnknown = "protocols.mcp.tool_unknown" -> string!
 const XiHan.Framework.Protocols.Mcp.McpMessages.VersionUnsupported = "protocols.mcp.version_unsupported" -> string!
 const XiHan.Framework.Protocols.Mcp.McpProtocolCapabilities.Mcp = "protocols.mcp" -> string!
 const XiHan.Framework.Protocols.Mcp.McpProtocolCapabilities.Version = 1 -> int
 const XiHan.Framework.Protocols.Mcp.McpProtocolOptions.ConfigurationSection = "XiHan:Protocols:Mcp" -> string!
+const XiHan.Framework.Protocols.Mcp.McpProtocolOptions.DefaultMaxRequestBodyBytes = 4194304 -> long
 const XiHan.Framework.Protocols.Mcp.Server.McpServer.ProtocolVersion = "2025-06-18" -> string!
 const XiHan.Framework.Protocols.Mcp.Server.McpServer.ProtocolVersionHeader = "MCP-Protocol-Version" -> string!
 const XiHan.Framework.Protocols.Mcp.Tools.McpTool.DefaultInputSchema = "{\"type\":\"object\"}" -> string!

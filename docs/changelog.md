@@ -36,6 +36,7 @@
 - **修复** 租户 ID 只用小写（`^[a-z0-9][a-z0-9._-]{0,63}$`，整串匹配）：原先区分大小写，数据库缺省排序规则下 `ACME` 的调用能读写 `acme` 的行；`acme\n` 这类结尾带换行的 ID 也曾被放过。含大写的 ID 为 `MULTITENANCY_VALIDATION_001`。升级前把租户目录、`TenantId` 列、授予与资源名里的租户 ID 改成小写，只有大小写不同的两个租户先拆开数据
 - **修复** 没有租户的授予只对平台调用生效：原先它对每个租户生效，平台授给 `role:admin` 的权限落到每个租户里带同名角色、同一用户 ID 的人身上。要对每个租户生效的授予把范围写成 `*`（`PermissionGrant.AnyTenant`，数据库租户列存 `*`，内存配置写在 `XiHan:Security:InMemory:AnyTenantGrants`）；`GrantTenantFilter.Global` 改名 `Platform`，`PermissionGrantRecord.GlobalTenantId` 改名 `PlatformTenantId`
 - **修复** 多租户实体的唯一索引必须含 `TenantId`：原先不要求，撞上不含租户的唯一索引会告诉调用方别的租户已有这个键。不含又没写 `AcrossTenants = true` 的声明在启动时失败；主键仍全局唯一，多租户实体的标识应由服务端生成
+- **修复** MCP 的 HTTP 端点校验 `Origin`、`Content-Type` 与请求体大小：原先任意网页都能用 `text/plain` 的简单请求调用本机 MCP 服务的匿名 tool，请求体也只受 Kestrel 的 30 MB 限制。带 `Origin` 的请求要在 `XiHan:Protocols:Mcp:AllowedOrigins` 里（否则 403），只收 `application/json`（否则 415），请求体最多 `MaxRequestBodyBytes`（缺省 4 MiB，否则 413）；浏览器里的 MCP 客户端要把它的源配进去
 
 ## v5.0.0-preview.3（2026-11-12）
 

@@ -131,6 +131,19 @@ public sealed class McpServer
     }
 
     /// <summary>
+    /// HTTP 入口校验不过时的答复
+    /// </summary>
+    /// <remarks>
+    /// 没有 id，JSON-RPC 码为 -32600，<c>data.code</c> 是框架错误码（ADR-0199）
+    /// </remarks>
+    internal static ReadOnlyMemory<byte> TransportErrorReply(string errorCode, string message)
+    {
+        ArgumentNullException.ThrowIfNull(errorCode);
+        ArgumentNullException.ThrowIfNull(message);
+        return WriteError(default, JsonRpcErrorCodes.InvalidRequest, errorCode, message);
+    }
+
+    /// <summary>
     /// 处理一条 JSON-RPC 消息
     /// </summary>
     /// <remarks>

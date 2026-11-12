@@ -5,5 +5,8 @@
   "protocols.mcp.method_unknown": "不支援方法 '{method}'。",
   "protocols.mcp.stdio_description": "經 stdio 提供 MCP：stdin / stdout 每行一則 JSON-RPC 訊息，日誌走 stderr。",
   "protocols.mcp.tool_unknown": "工具 '{tool}' 未登記。",
-  "protocols.mcp.version_unsupported": "不支援 MCP 協定版本 '{version}'；本伺服端支援 {supported}。"
+  "protocols.mcp.version_unsupported": "不支援 MCP 協定版本 '{version}'；本伺服端支援 {supported}。",
+  "protocols.mcp.origin_denied": "不允許來自來源 '{origin}' 的請求；請將它加入 XiHan:Protocols:Mcp:AllowedOrigins。",
+  "protocols.mcp.content_type_invalid": "MCP 端點只接受 application/json，不接受 '{contentType}'。",
+  "protocols.mcp.request_body_too_large": "請求本文超過 {max} 位元組。"
 }

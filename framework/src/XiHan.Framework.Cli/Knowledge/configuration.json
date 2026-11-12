@@ -1686,6 +1686,19 @@
           "type": "string",
           "sample": "Use orders_create to place an order.",
           "summary": "initialize 答复里给客户端模型的使用说明；不写表示不给"
+        },
+        {
+          "key": "AllowedOrigins:{index}",
+          "type": "string",
+          "sample": "https://console.example.com",
+          "summary": "HTTP 入口允许的浏览器源（scheme://host[:port]，http 或 https，没有路径）；请求带的 Origin 不在其中即 403"
+        },
+        {
+          "key": "MaxRequestBodyBytes",
+          "type": "integer",
+          "default": "4194304",
+          "minimum": 1,
+          "summary": "HTTP 入口的请求体上限（字节），超过即 413"
         }
       ]
     },

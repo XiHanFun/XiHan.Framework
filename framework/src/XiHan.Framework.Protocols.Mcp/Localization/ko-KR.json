@@ -5,5 +5,8 @@
   "protocols.mcp.method_unknown": "메서드 '{method}'은(는) 지원되지 않습니다.",
   "protocols.mcp.stdio_description": "stdio를 통해 MCP를 제공합니다: stdin과 stdout에서 한 줄에 하나의 JSON-RPC 메시지, 로그는 stderr로 출력합니다.",
   "protocols.mcp.tool_unknown": "도구 '{tool}'이(가) 등록되지 않았습니다.",
-  "protocols.mcp.version_unsupported": "MCP 프로토콜 버전 '{version}'은(는) 지원되지 않습니다. 이 서버는 {supported}을(를) 지원합니다."
+  "protocols.mcp.version_unsupported": "MCP 프로토콜 버전 '{version}'은(는) 지원되지 않습니다. 이 서버는 {supported}을(를) 지원합니다.",
+  "protocols.mcp.origin_denied": "원본 '{origin}'의 요청은 허용되지 않습니다. XiHan:Protocols:Mcp:AllowedOrigins에 추가하십시오.",
+  "protocols.mcp.content_type_invalid": "MCP 엔드포인트는 application/json만 받으며 '{contentType}'은(는) 받지 않습니다.",
+  "protocols.mcp.request_body_too_large": "요청 본문이 {max}바이트를 초과합니다."
 }

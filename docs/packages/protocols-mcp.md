@@ -61,6 +61,8 @@ app.Run();
 | `XiHan:Protocols:Mcp:ServerVersion` | string | 框架版本 | `serverInfo.version` |
 | `XiHan:Protocols:Mcp:Instructions` | string | 空 | `initialize` 答复的 `instructions` |
 | `XiHan:Protocols:Mcp:Tools:<操作 ID>` | string | — | 显式 tool 名，匹配 `^[A-Za-z0-9_-]{1,64}$` |
+| `XiHan:Protocols:Mcp:AllowedOrigins:<序号>` | string | 空 | HTTP 入口允许的浏览器源（`scheme://host[:port]`）；请求带的 `Origin` 不在其中即 403 |
+| `XiHan:Protocols:Mcp:MaxRequestBodyBytes` | 正整数 | 4194304 | HTTP 入口的请求体上限，超过即 413 |
 
 ```json
 {
@@ -81,7 +83,7 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `McpProtocolFeature` | 特性入口 |
-| `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`；`ToolNameFor(contract)` |
+| `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`、`AllowedOrigins`、`MaxRequestBodyBytes`；`ToolNameFor(contract)`、`IsAllowedOrigin(origin)` |
 | `Transports.McpEndpointRouteBuilderExtensions` | `MapXiHanMcp(pattern)`，缺省 `/mcp` |
 | `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输；自己托管时按 UTF-8 构造 `input`（`new StreamReader(Console.OpenStandardInput(), Encoding.UTF8)`），不要直接用 `Console.In` |
 | `Server.McpServer` | JSON-RPC 服务端：`Tools`、`FindTool`，由特性构造、交给传输处理消息；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
@@ -108,6 +110,7 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 - `tools/call` 成功时 `content[0].text` 是响应 JSON，响应是对象时同时给 `structuredContent`。
 - `tools/call` 的调用来源记 `mcp` 与 tool 名，HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求（ADR-0043）；stdio 的答复只含 ASCII，`mcp` 命令按 UTF-8 解码 stdin、不随控制台代码页，直接调用 `McpStdioTransport` 时自己按 UTF-8 构造读取器。
 - 不开 SSE 流、不建会话（不发 `Mcp-Session-Id`），`GET` / `DELETE` 为 405；`MCP-Protocol-Version` 不受支持时 400，缺失按当前版本处理。
+- HTTP 入口先校验源、内容类型与请求体大小（ADR-0199）：带 `Origin` 而不在 `AllowedOrigins` 里 403，`Content-Type` 不是 `application/json` 415，请求体超过 `MaxRequestBodyBytes` 413。
 - stdio 调用以匿名主体执行，要求权限或登录的操作总是得到 `isError` 结果。
 
 | 错误码 | 情形 | JSON-RPC `error.code` |
@@ -116,6 +119,9 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 | `PROTOCOLS_VALIDATION_002` | 协议版本不受支持 | -32600 |
 | `PROTOCOLS_VALIDATION_003` | tool 参数不是 JSON 对象 | -32602 |
 | `PROTOCOLS_VALIDATION_004` | 推导或配置的 tool 名不合法（启动失败） | — |
+| `PROTOCOLS_DENIED_001` | HTTP 请求的 `Origin` 不在 `AllowedOrigins` 里（HTTP 403） | -32600 |
+| `PROTOCOLS_VALIDATION_015` | HTTP 请求的 `Content-Type` 不是 `application/json`（HTTP 415） | -32600 |
+| `PROTOCOLS_VALIDATION_016` | HTTP 请求体超过 `MaxRequestBodyBytes`（HTTP 413） | -32600 |
 | `PROTOCOLS_NOTFOUND_001` | JSON-RPC 方法不受支持 | -32601 |
 | `PROTOCOLS_NOTFOUND_002` | tool 未登记 | -32602 |
 | `PROTOCOLS_CONFLICT_001` | 两个操作得到同一个 tool 名（启动失败） | — |

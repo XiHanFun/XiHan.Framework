@@ -35,6 +35,30 @@ public static class McpErrors
     public const string InvalidToolName = "PROTOCOLS_VALIDATION_004";
 
     /// <summary>
+    /// HTTP 请求的 <c>Origin</c> 不在允许的源里
+    /// </summary>
+    /// <remarks>
+    /// HTTP 403（ADR-0199）
+    /// </remarks>
+    public const string OriginDenied = "PROTOCOLS_DENIED_001";
+
+    /// <summary>
+    /// HTTP 请求的 <c>Content-Type</c> 不是 <c>application/json</c>
+    /// </summary>
+    /// <remarks>
+    /// HTTP 415（ADR-0199）
+    /// </remarks>
+    public const string ContentTypeInvalid = "PROTOCOLS_VALIDATION_015";
+
+    /// <summary>
+    /// HTTP 请求体超过上限
+    /// </summary>
+    /// <remarks>
+    /// HTTP 413（ADR-0199）
+    /// </remarks>
+    public const string BodyTooLarge = "PROTOCOLS_VALIDATION_016";
+
+    /// <summary>
     /// JSON-RPC 方法不受支持
     /// </summary>
     public const string UnknownMethod = "PROTOCOLS_NOTFOUND_001";

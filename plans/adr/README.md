@@ -198,3 +198,4 @@
 | [0196](0196-租户ID只用小写.md) | 安全审查 S-11：租户 ID 文法改为 `^[a-z0-9][a-z0-9._-]{0,63}$` 整串匹配，按序数与不区分大小写的比较结论相同，不再依赖数据库排序规则；资源名各段同样整串匹配；数据库租户目录按序数核对读回的 ID | 已采纳 |
 | [0197](0197-授予的范围拆成平台与租户.md) | 安全审查 S-10：授予的范围拆成平台（`null`，只对不带租户的调用生效）、每个租户（`*`，`PermissionGrant.AnyTenant`）与租户专属，平台与租户两边互不渗透；`GrantTenantFilter.Global` 改名 `Platform`；内存配置新增 `AnyTenantGrants` | 已采纳 |
 | [0198](0198-多租户实体的唯一索引含租户.md) | 安全审查 S-33：多租户实体的唯一索引必须含 `TenantId`，跨租户唯一显式声明 `AcrossTenants = true`，违反时 `EntityIndexes.Resolve` 抛出、启动失败；主键仍全局唯一，多租户实体的标识由服务端生成 | 已采纳 |
+| [0199](0199-MCP的HTTP入口校验源与内容类型.md) | 安全审查 S-12：MCP 的 HTTP 端点按 `AllowedOrigins` 校验 `Origin`（缺省为空，不在其中 403）、只收 `application/json`（415）、请求体最多 `MaxRequestBodyBytes`（缺省 4 MiB，413） | 已采纳 |

@@ -140,6 +140,120 @@ public sealed class McpProtocolTests
     }
 
     [Fact]
+    public async Task HttpEntry_RejectsBrowserOriginsThatAreNotAllowed()
+    {
+        var (app, client) = await StartAsync(("XiHan:Protocols:Mcp:AllowedOrigins:0", "https://console.example.com"));
+        await using var _ = app;
+
+        // 修之前任意网页发来的请求都能调用匿名 tool（ADR-0199）
+        var (denied, text) = await PostAsync(client, Rpc("ping"), ("Origin", "https://evil.example"));
+        Assert.Equal(HttpStatusCode.Forbidden, denied);
+        Assert.Equal(McpErrors.OriginDenied, ErrorCodeOf(text));
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(client, Rpc("ping"), ("Origin", "null"))).Status);
+        Assert.Equal(HttpStatusCode.Forbidden, (await PostAsync(client, Rpc("ping"), ("Origin", "https://console.example.com.evil.example"))).Status);
+
+        // 源按 scheme://host[:port] 比较，不分大小写、缺省端口省略；不带 Origin 的客户端不受影响
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(client, Rpc("ping"), ("Origin", "https://CONSOLE.example.com:443"))).Status);
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(client, Rpc("ping"))).Status);
+    }
+
+    [Fact]
+    public async Task HttpEntry_RequiresJsonContent()
+    {
+        var (app, client) = await StartAsync();
+        await using var _ = app;
+
+        // 浏览器的简单请求用 text/plain：修之前照常执行（ADR-0199）
+        using var plain = new StringContent(Rpc("ping"), Encoding.UTF8, "text/plain");
+        var (status, text) = await SendAsync(client, plain);
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, status);
+        Assert.Equal(McpErrors.ContentTypeInvalid, ErrorCodeOf(text));
+
+        using var json = new StringContent(Rpc("ping"), Encoding.UTF8, "Application/JSON");
+        Assert.Equal(HttpStatusCode.OK, (await SendAsync(client, json)).Status);
+    }
+
+    [Fact]
+    public async Task HttpEntry_BoundsTheRequestBody()
+    {
+        var (app, client) = await StartAsync(("XiHan:Protocols:Mcp:MaxRequestBodyBytes", "64"));
+        await using var _ = app;
+        var large = Encoding.UTF8.GetBytes($$$"""{"jsonrpc":"2.0","id":1,"method":"ping","params":{"pad":"{{{new string('x', 100)}}}"}}""");
+
+        // 修之前整个读进内存，只受 Kestrel 的 30 MB 限制（ADR-0199）；声明了长度与没有声明长度的都拦住
+        using var sized = new ByteArrayContent(large);
+        sized.Headers.ContentType = new("application/json");
+        var (status, text) = await SendAsync(client, sized);
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, status);
+        Assert.Equal(McpErrors.BodyTooLarge, ErrorCodeOf(text));
+        using var unsized = new UnsizedContent(large);
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, (await SendAsync(client, unsized)).Status);
+
+        Assert.Equal(HttpStatusCode.OK, (await PostAsync(client, Rpc("ping"))).Status);
+    }
+
+    [Theory]
+    [InlineData("https://console.example.com/path")]
+    [InlineData("console.example.com")]
+    [InlineData("ftp://console.example.com")]
+    [InlineData("null")]
+    [InlineData("*")]
+    public void AllowedOrigins_MustBeOrigins(string origin)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Protocols:Mcp:AllowedOrigins:0", origin)]).Build();
+
+        Assert.Throws<ArgumentException>(() => McpProtocolOptions.FromConfiguration(configuration));
+    }
+
+    /// <summary>
+    /// 以给定内容发到 /mcp，返回状态码与正文
+    /// </summary>
+    private static async Task<(HttpStatusCode Status, string Text)> SendAsync(HttpClient client, HttpContent content)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/mcp") { Content = content };
+        using var response = await client.SendAsync(request);
+        return (response.StatusCode, await response.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// JSON-RPC 错误里的框架错误码
+    /// </summary>
+    private static string? ErrorCodeOf(string text) => Root(text).GetProperty("error").GetProperty("data").GetProperty("code").GetString();
+
+    /// <summary>
+    /// 不声明长度的 JSON 请求体
+    /// </summary>
+    /// <remarks>
+    /// 按分块传输发出，服务端只能边读边计数
+    /// </remarks>
+    private sealed class UnsizedContent : HttpContent
+    {
+        /// <summary>
+        /// 请求体
+        /// </summary>
+        private readonly byte[] _body;
+
+        /// <summary>
+        /// 以给定字节创建
+        /// </summary>
+        public UnsizedContent(byte[] body)
+        {
+            _body = body;
+            Headers.ContentType = new("application/json");
+        }
+
+        /// <inheritdoc />
+        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context) => stream.WriteAsync(_body, 0, _body.Length);
+
+        /// <inheritdoc />
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+    }
+
+    [Fact]
     public void ToolNames_FollowConvention_AndOptionsOverride()
     {
         Assert.Equal("orders_create", McpToolNameConvention.Derive(new OperationContract("orders.create")));

@@ -5,5 +5,8 @@
   "protocols.mcp.method_unknown": "メソッド '{method}' はサポートされていません。",
   "protocols.mcp.stdio_description": "stdio 経由で MCP を提供します: stdin と stdout では 1 行につき 1 つの JSON-RPC メッセージ、ログは stderr に出力します。",
   "protocols.mcp.tool_unknown": "ツール '{tool}' は登録されていません。",
-  "protocols.mcp.version_unsupported": "MCP プロトコルバージョン '{version}' はサポートされていません。このサーバーは {supported} をサポートします。"
+  "protocols.mcp.version_unsupported": "MCP プロトコルバージョン '{version}' はサポートされていません。このサーバーは {supported} をサポートします。",
+  "protocols.mcp.origin_denied": "オリジン '{origin}' からのリクエストは許可されていません。XiHan:Protocols:Mcp:AllowedOrigins に追加してください。",
+  "protocols.mcp.content_type_invalid": "MCP エンドポイントは application/json のみを受け付けます。'{contentType}' は受け付けません。",
+  "protocols.mcp.request_body_too_large": "リクエスト本文が {max} バイトを超えています。"
 }
