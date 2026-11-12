@@ -13,11 +13,17 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 /// 租户目录的批量读写
 /// </summary>
 /// <remarks>
-/// 作用域服务，须在调用的 Transaction 阶段内使用，用调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入。写入后立即让 <see cref="DatabaseTenantStore"/> 与分片解析器（装配了才有）丢弃对应租户的缓存；写入在事务提交后才可见，失效与提交之间的窗口由缓存存活时间收敛
+/// 作用域服务，须在调用的 Transaction 阶段内使用，用调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入。写入后立即让 <see cref="DatabaseTenantStore"/> 与分片解析器（装配了才有）丢弃对应租户的缓存。
+/// 写入在事务提交后才对别的调用可见，所以失效两次（ADR-0194）：写入时一次，作用域释放时（调用已提交或回滚）再一次；缓存按代数丢弃失效之前开始的读取，提交之前读回的旧租户不会留在缓存里
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class TenantRecordStore : ITenantAdministration
+public sealed class TenantRecordStore : ITenantAdministration, IDisposable
 {
+    /// <summary>
+    /// 本作用域里写过的租户：作用域释放时（提交或回滚之后）再失效一次
+    /// </summary>
+    private readonly HashSet<string> _written = new(StringComparer.Ordinal);
+
     /// <summary>
     /// 仓储（调用方作用域里的）
     /// </summary>
@@ -164,7 +170,27 @@ public sealed class TenantRecordStore : ITenantAdministration
     /// </summary>
     private void Invalidate(IReadOnlyList<string> tenantIds)
     {
+        _written.UnionWith(tenantIds);
         _catalog.Invalidate(tenantIds);
         _shards?.Invalidate(tenantIds);
+    }
+
+    /// <summary>
+    /// 作用域释放：再让写过的租户失效一次
+    /// </summary>
+    /// <remarks>
+    /// 管道里的调用先提交、后释放作用域：此后的读取看到的是提交之后的行。可以重复调用
+    /// </remarks>
+    public void Dispose()
+    {
+        if (_written.Count == 0)
+        {
+            return;
+        }
+
+        string[] written = [.. _written];
+        _written.Clear();
+        _catalog.Invalidate(written);
+        _shards?.Invalidate(written);
     }
 }

@@ -43,6 +43,19 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     private readonly ConcurrentDictionary<string, (Maybe<TenantShard> Shard, DateTimeOffset? ExpiresAt)> _cache = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// 保护代数与「核对代数再写回」的锁
+    /// </summary>
+    private readonly Lock _gate = new();
+
+    /// <summary>
+    /// 缓存的代数
+    /// </summary>
+    /// <remarks>
+    /// 每次失效加一。解析在读租户存储之前记下它，写回缓存时不一致就丢弃：失效之前开始的解析可能读到写入提交之前的租户（ADR-0194）
+    /// </remarks>
+    private long _generation;
+
+    /// <summary>
     /// 日志
     /// </summary>
     private readonly ILogger _logger;
@@ -77,6 +90,12 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
             return Result.Success(cached.Shard);
         }
 
+        long generation;
+        lock (_gate)
+        {
+            generation = _generation;
+        }
+
         var read = await _store.FindAsync(tenantId, cancellationToken).ConfigureAwait(false);
         if (!read.TryGetValue(out var found))
         {
@@ -86,13 +105,21 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
         }
 
         var shard = found.TryGetValue(out var info) ? FromProperties(info) : Maybe.None<TenantShard>();
-        // 有界：满了整体清空，比逐条淘汰简单且足够（租户数远小于容量）
-        if (_cache.Count >= _capacity)
+        lock (_gate)
         {
-            _cache.Clear();
+            // 读存储之后有过失效：这次结果可能早于那次写入的提交，照常返回但不缓存
+            if (generation == _generation)
+            {
+                // 有界：满了整体清空，比逐条淘汰简单且足够（租户数远小于容量）
+                if (_cache.Count >= _capacity)
+                {
+                    _cache.Clear();
+                }
+
+                _cache[tenantId] = (shard, now + _timeToLive);
+            }
         }
 
-        _cache[tenantId] = (shard, now + _timeToLive);
         return Result.Success(shard);
     }
 
@@ -100,15 +127,26 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     public void Invalidate(IReadOnlyList<string> tenantIds)
     {
         ArgumentNullException.ThrowIfNull(tenantIds);
-        foreach (var tenantId in tenantIds)
+        lock (_gate)
         {
-            ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
-            _cache.TryRemove(tenantId, out _);
+            _generation++;
+            foreach (var tenantId in tenantIds)
+            {
+                ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
+                _cache.TryRemove(tenantId, out _);
+            }
         }
     }
 
     /// <inheritdoc />
-    public void InvalidateAll() => _cache.Clear();
+    public void InvalidateAll()
+    {
+        lock (_gate)
+        {
+            _generation++;
+            _cache.Clear();
+        }
+    }
 
     /// <summary>
     /// 从租户属性建分片

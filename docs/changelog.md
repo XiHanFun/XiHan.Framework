@@ -31,6 +31,7 @@
 - **修复** 配了 `XiHan:MultiTenancy:DefaultTenant` 或 `RequireTenant` 的宿主里，工作流轮询平台分区不再失败：原先平台分区的调用被补上缺省租户（存储发现分区不符即抛出）或因不带租户被拒绝。内核新增 `MarkPlatformCall()` / `IsPlatformCall()`，Tenant 阶段对声明的平台调用不补缺省租户、不要求带租户
 - **修复** 租户分片的解析缓存过了 `XiHan:MultiTenancy:ShardCacheTimeToLiveSeconds`（缺省 30 秒）即重新读租户存储：原先从不过期，多实例部署里别的实例改了租户的连接串，本实例一直往旧库写。`TenantStoreShardResolver` 的构造多了 `TimeProvider`
 - **修复** 数据库授予的撤销在提交之后立即生效：原先只在写入时清缓存，撤销提交之前的判定会把已撤销的授予写回缓存，保留到存活时间结束（`CacheTimeToLiveSeconds` 为 0 时永久保留）；现在作用域结束时再失效一次，缓存丢弃失效之前开始的读取
+- **修复** 数据库租户目录的停用与改连接串在提交之后立即生效：原先只在写入时清目录与分片缓存，提交之前的解析会把旧租户写回缓存，停用的租户在存活时间内仍被当作启用、仍指向旧库
 
 ## v5.0.0-preview.3（2026-11-12）
 

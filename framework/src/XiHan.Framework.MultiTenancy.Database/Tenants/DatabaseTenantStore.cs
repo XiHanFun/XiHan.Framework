@@ -53,6 +53,19 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     private readonly ConcurrentDictionary<string, CacheEntry> _cache = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// 保护代数与「核对代数再写回」的锁
+    /// </summary>
+    private readonly Lock _gate = new();
+
+    /// <summary>
+    /// 缓存的代数
+    /// </summary>
+    /// <remarks>
+    /// 每次失效加一。读取在查库之前记下它，写回缓存时不一致就丢弃：失效之前开始的读取可能读到写入提交之前的旧行（ADR-0194）
+    /// </remarks>
+    private long _generation;
+
+    /// <summary>
     /// 创建
     /// </summary>
     public DatabaseTenantStore(IServiceProvider services, DatabaseMultiTenancyOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
@@ -84,6 +97,13 @@ public sealed partial class DatabaseTenantStore : ITenantStore
             return entry.Tenant;
         }
 
+        // 查库之前记下代数：查的过程中有失效（目录写入正在提交），读回的行可能是提交之前的旧值，不写回缓存
+        long generation;
+        lock (_gate)
+        {
+            generation = _generation;
+        }
+
         var read = await _catalog.ReadAsync((repository, ct) => repository.FindAsync(tenantId, ct), cancellationToken).ConfigureAwait(false);
         // 失败不进缓存：存储恢复后下一次解析立即重新查库，而不是在存活时间内一直报不可达
         if (!read.TryGetValue(out var found))
@@ -93,12 +113,20 @@ public sealed partial class DatabaseTenantStore : ITenantStore
 
         var tenant = found.TryGetValue(out var record) ? Maybe.Some(TenantRecordMapping.ToTenantInfo(record)) : Maybe.None<TenantInfo>();
         // 有界：满了整体清空，比逐条淘汰简单且足够（租户数远小于容量）；不存在也缓存，避免反复查不存在的租户
-        if (_cache.Count >= _options.CacheSize)
+        lock (_gate)
         {
-            _cache.Clear();
+            // 查库之后有过失效：这次读回的结果可能早于那次写入的提交，照常返回但不缓存
+            if (generation == _generation)
+            {
+                if (_cache.Count >= _options.CacheSize)
+                {
+                    _cache.Clear();
+                }
+
+                _cache[tenantId] = new CacheEntry(tenant, _options.CacheTimeToLive is { } ttl ? _clock.GetUtcNow() + ttl : null);
+            }
         }
 
-        _cache[tenantId] = new CacheEntry(tenant, _options.CacheTimeToLive is { } ttl ? _clock.GetUtcNow() + ttl : null);
         return tenant;
     }
 
@@ -147,17 +175,29 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     public void Invalidate(IReadOnlyList<string> tenantIds)
     {
         ArgumentNullException.ThrowIfNull(tenantIds);
-        foreach (var tenantId in tenantIds)
+        lock (_gate)
         {
-            ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
-            _cache.TryRemove(tenantId, out _);
+            // 代数在锁内加一：此刻还在查库的读取都不能把结果写回来
+            _generation++;
+            foreach (var tenantId in tenantIds)
+            {
+                ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
+                _cache.TryRemove(tenantId, out _);
+            }
         }
     }
 
     /// <summary>
     /// 丢弃全部缓存
     /// </summary>
-    public void InvalidateAll() => _cache.Clear();
+    public void InvalidateAll()
+    {
+        lock (_gate)
+        {
+            _generation++;
+            _cache.Clear();
+        }
+    }
 
     /// <summary>
     /// 一条缓存：租户（不存在为无值）与过期时刻（无存活时间为 <see langword="null"/>）
