@@ -65,9 +65,11 @@ internal sealed class WasmInstance : IDisposable
     /// <param name="functions">宿主导入函数</param>
     /// <param name="wasi">WASI 配置</param>
     /// <param name="memoryLimit">线性内存上限（字节）</param>
+    /// <param name="tableLimit">每个表的元素数上限</param>
+    /// <param name="shims">替换 WASI 睡眠与时钟的实现</param>
     /// <param name="epochInterval">epoch 递增间隔</param>
     /// <param name="startupTimeout">实例化与初始化的时限</param>
-    public WasmInstance(Engine engine, WasmModule module, WasmHostFunctions functions, WasiConfiguration wasi, long memoryLimit, TimeSpan epochInterval, TimeSpan startupTimeout)
+    public WasmInstance(Engine engine, WasmModule module, WasmHostFunctions functions, WasiConfiguration wasi, long memoryLimit, int tableLimit, WasiClockShims shims, TimeSpan epochInterval, TimeSpan startupTimeout)
     {
         _epochInterval = epochInterval;
         _pump = functions.Pump;
@@ -75,9 +77,15 @@ internal sealed class WasmInstance : IDisposable
         _linker = new Linker(engine);
         try
         {
-            _store.SetLimits(memorySize: memoryLimit);
+            // 线性内存与表分别设上限：table.grow 不受线性内存上限约束（ADR-0186）
+            _store.SetLimits(memorySize: memoryLimit, tableElements: (uint)tableLimit);
             _store.SetWasiConfiguration(wasi);
             _linker.DefineWasi();
+            // poll_oneoff 的睡眠在宿主函数里，epoch 中断不了：换成以调用截止时间为上限的实现，时钟随之一起换
+            _linker.AllowShadowing = true;
+            _linker.DefineFunction(WasiClockShims.Module, "poll_oneoff", (Caller caller, int input, int output, int count, int events) => shims.PollOneoff(caller, input, output, count, events));
+            _linker.DefineFunction(WasiClockShims.Module, "clock_time_get", (Caller caller, int id, long precision, int result) => WasiClockShims.ClockTimeGet(caller, id, precision, result));
+            _linker.AllowShadowing = false;
             // 三个导入始终定义；模块没有导入它们时多余的定义无害
             _linker.DefineFunction(WasmModule.ImportModule, "log", (Caller caller, int level, int ptr, int len) => functions.Log(caller, level, ptr, len));
             _linker.DefineFunction(WasmModule.ImportModule, "invoke", (Caller caller, int ptr, int len) => functions.Invoke(caller, ptr, len));

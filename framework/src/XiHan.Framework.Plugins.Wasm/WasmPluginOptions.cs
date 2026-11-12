@@ -53,6 +53,18 @@ public sealed record WasmPluginOptions
     } = 64L * 1024 * 1024;
 
     /// <summary>
+    /// 每个表的元素数上限
+    /// </summary>
+    /// <remarks>
+    /// 默认 100000。<see cref="MemoryLimitBytes"/> 只管线性内存，<c>table.grow</c> 另由它约束，超过时增长失败（返回 -1），不占宿主内存（ADR-0186）
+    /// </remarks>
+    public int MaxTableElements
+    {
+        get => field;
+        init => field = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The table element limit must be positive.");
+    } = 100_000;
+
+    /// <summary>
     /// Wasm 栈上限
     /// </summary>
     /// <remarks>
@@ -149,7 +161,7 @@ public sealed record WasmPluginOptions
     } = TimeSpan.FromMinutes(10);
 
     /// <summary>
-    /// 插件工作目录的根（每个插件一个子目录，存放 WASI 的 stdout / stderr）
+    /// 插件工作目录的根（每个插件一个子目录）
     /// </summary>
     /// <remarks>
     /// 为空时取临时目录下的 <c>xihan-plugins-wasm</c>
@@ -190,7 +202,7 @@ public sealed record WasmPluginOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 时长以秒为单位（<c>CallTimeoutSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）或毫秒为单位（<c>EpochIntervalMilliseconds</c>、<c>MiddlewareTimeoutMilliseconds</c>）。取值范围与属性一致：时长是正数，<c>MemoryLimitBytes</c>、<c>StackLimitBytes</c>、<c>HealthFailures</c> 是正整数，<c>RestartLimit</c> 是非负整数；不合规的值以带配置键的 <see cref="ArgumentException"/> 拒绝
+    /// 时长以秒为单位（<c>CallTimeoutSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）或毫秒为单位（<c>EpochIntervalMilliseconds</c>、<c>MiddlewareTimeoutMilliseconds</c>）。取值范围与属性一致：时长是正数，<c>MemoryLimitBytes</c>、<c>StackLimitBytes</c>、<c>MaxTableElements</c>、<c>HealthFailures</c> 是正整数，<c>RestartLimit</c> 是非负整数；不合规的值以带配置键的 <see cref="ArgumentException"/> 拒绝
     /// </remarks>
     public static WasmPluginOptions FromConfiguration(IConfiguration configuration)
     {
@@ -218,6 +230,11 @@ public sealed record WasmPluginOptions
         if (Integer(section, "StackLimitBytes", minimum: 1, maximum: int.MaxValue) is { } stack)
         {
             options = options with { StackLimitBytes = (int)stack };
+        }
+
+        if (Integer(section, "MaxTableElements", minimum: 1, maximum: int.MaxValue) is { } table)
+        {
+            options = options with { MaxTableElements = (int)table };
         }
 
         if (Positive(section, "EpochIntervalMilliseconds") is { } epoch)

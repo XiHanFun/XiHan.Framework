@@ -23,6 +23,8 @@ XiHan.Framework.Plugins.Wasm.WasmPluginOptions.HealthFailures.get -> int
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.HealthFailures.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.HealthInterval.get -> System.TimeSpan
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.HealthInterval.init -> void
+XiHan.Framework.Plugins.Wasm.WasmPluginOptions.MaxTableElements.get -> int
+XiHan.Framework.Plugins.Wasm.WasmPluginOptions.MaxTableElements.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.MemoryLimitBytes.get -> long
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.MemoryLimitBytes.init -> void
 XiHan.Framework.Plugins.Wasm.WasmPluginOptions.MiddlewareTimeout.get -> System.TimeSpan

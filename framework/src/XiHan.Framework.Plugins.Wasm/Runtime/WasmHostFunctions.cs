@@ -28,8 +28,16 @@ namespace XiHan.Framework.Plugins.Wasm.Runtime;
 /// <remarks>
 /// 读客体内存里的请求，经 <c>xihan_alloc</c> 写回响应；权限要在清单里声明并且已被宿主授予，回调嵌套深度有上限。回调期间管道再次进入同一插件的调用经 <see cref="Pump"/> 回到执行线程上同步完成
 /// </remarks>
-internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGrant permissions, WasmHostContext host, ILogger logger)
+internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGrant permissions, WasmHostContext host, Func<ILogger> logger)
 {
+    /// <summary>
+    /// <c>xihan.log</c> 一条最多读取的字节数
+    /// </summary>
+    /// <remarks>
+    /// 超过的部分不读、不记，另记一条告警（ADR-0186）
+    /// </remarks>
+    public const int MaxLogBytes = 16 * 1024;
+
     /// <summary>
     /// 本插件的调用泵：外层调用登记执行线程，回调引发的再入在这条线程上泵出
     /// </summary>
@@ -77,6 +85,19 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     private CancellationToken _cancellation;
 
     /// <summary>
+    /// 当前调用的截止时间
+    /// </summary>
+    /// <remarks>
+    /// 没有当前调用时为空；WASI 的睡眠以它为上限
+    /// </remarks>
+    public DateTimeOffset? CurrentDeadline => _deadline;
+
+    /// <summary>
+    /// 当前调用的取消令牌
+    /// </summary>
+    public CancellationToken CurrentCancellation => _cancellation;
+
+    /// <summary>
     /// 以一次导出调用的截止时间与取消运行它
     /// </summary>
     /// <remarks>
@@ -102,13 +123,20 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// </summary>
     public void Log(Caller caller, int level, int pointer, int length)
     {
-        if (!TryRead(caller, pointer, length, out var bytes))
+        // 长度由客体给出：越界照旧不记；超过上限只读前面的部分，宿主不为一条日志复制客体的整块内存
+        if (length < 0 || pointer < 0 || !TryRead(caller, pointer, Math.Min(length, MaxLogBytes), out var bytes) || pointer + (long)length > (caller.GetMemory("memory")?.GetLength() ?? 0))
         {
             return;
         }
 
+        var current = logger();
+        if (length > MaxLogBytes)
+        {
+            LogGuestTruncated(current, manifest.Id, length, MaxLogBytes);
+        }
+
         var text = System.Text.Encoding.UTF8.GetString(bytes);
-        LogGuest(logger, level switch
+        LogGuest(current, level switch
         {
             0 => LogLevel.Trace,
             1 => LogLevel.Debug,
@@ -388,4 +416,10 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// </summary>
     [LoggerMessage(Message = "[plugins.{PluginId}] {Line}")]
     private static partial void LogGuest(ILogger logger, LogLevel level, string pluginId, string line);
+
+    /// <summary>
+    /// 插件写了超长的一条日志
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin '{PluginId}' wrote a log entry of {Length} bytes; only the first {MaxBytes} bytes were kept.")]
+    private static partial void LogGuestTruncated(ILogger logger, string pluginId, int length, int maxBytes);
 }

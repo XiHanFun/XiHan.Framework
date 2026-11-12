@@ -1469,6 +1469,14 @@
           "summary": "线性内存上限（字节），默认 64 MiB"
         },
         {
+          "key": "MaxTableElements",
+          "type": "integer",
+          "default": "100000",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "summary": "每个表的元素数上限，table.grow 超过即失败"
+        },
+        {
           "key": "StackLimitBytes",
           "type": "integer",
           "default": "1048576",

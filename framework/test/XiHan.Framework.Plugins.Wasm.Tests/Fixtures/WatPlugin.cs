@@ -104,6 +104,19 @@ internal sealed class WatPlugin : IDisposable
             }),
         }, permissions, null);
 
+    /// <summary>
+    /// 生成一个 <c>xihan_invoke</c> 由用例给出的插件
+    /// </summary>
+    /// <remarks>
+    /// 用来核对沙箱的资源上限。<paramref name="body"/> 里的 <c>{ok}</c> 换成回成功应答的表达式；<c>60000</c> 起到第一页末尾是没有数据段的空白，可作暂存
+    /// </remarks>
+    /// <param name="imports">额外的导入（WAT 文本）</param>
+    /// <param name="body"><c>xihan_invoke</c> 的函数体</param>
+    /// <param name="pages">线性内存页数</param>
+    /// <param name="fields">额外的模块字段（表等）</param>
+    public static WatPlugin Custom(string imports, string body, int pages = Pages, string fields = "")
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], null, customImports: imports, customBody: body, pages: pages, fields: fields);
+
     /// <inheritdoc />
     public void Dispose()
     {
@@ -129,7 +142,11 @@ internal sealed class WatPlugin : IDisposable
         IReadOnlyList<string>? declaredPermissions = null,
         string pluginId = PluginId,
         string operation = Operation,
-        string? operationPolicy = null)
+        string? operationPolicy = null,
+        string customImports = "",
+        string? customBody = null,
+        int pages = Pages,
+        string fields = "")
     {
         var contributes = new JsonObject { ["operations"] = new JsonArray(operation) };
         if (pipeline is not null)
@@ -185,10 +202,13 @@ internal sealed class WatPlugin : IDisposable
             throw new InvalidOperationException("The data segments overflow into the heap.");
         }
 
-        // invoke：宿主的 InvokeResponse 原样作为自己的应答；publish：丢弃宿主的 PublishResponse，回成功
-        var call = import == "invoke"
-            ? $"(call $callback (i32.const {requestData.Offset}) (i32.const {requestData.Length}))"
-            : $"(drop (call $callback (i32.const {requestData.Offset}) (i32.const {requestData.Length}))) (call $pack (i32.const {okData.Offset}) (i32.const {okData.Length}))";
+        // invoke：宿主的 InvokeResponse 原样作为自己的应答；publish：丢弃宿主的 PublishResponse，回成功；用例给了函数体时用它
+        var ok = $"(call $pack (i32.const {okData.Offset}) (i32.const {okData.Length}))";
+        var call = customBody is not null
+            ? customBody.Replace("{ok}", ok, StringComparison.Ordinal)
+            : import == "invoke"
+                ? $"(call $callback (i32.const {requestData.Offset}) (i32.const {requestData.Length}))"
+                : $"(drop (call $callback (i32.const {requestData.Offset}) (i32.const {requestData.Length}))) {ok}";
         // 贡献了中间件才导出 xihan_middleware：总是回 CONTINUE
         var middleware = pipeline is null
             ? string.Empty
@@ -196,14 +216,16 @@ internal sealed class WatPlugin : IDisposable
         var module = $$"""
             (module
               (import "xihan" "{{import}}" (func $callback (param i32 i32) (result i64)))
-              (memory (export "memory") {{Pages}})
+              {{customImports}}
+              (memory (export "memory") {{pages}})
+              {{fields}}
               (global $heap (mut i32) (i32.const {{HeapStart}}))
             {{segments}}
               (func $pack (param $pointer i32) (param $length i32) (result i64)
                 (i64.or (i64.shl (i64.extend_i32_u (local.get $pointer)) (i64.const 32)) (i64.extend_i32_u (local.get $length))))
               (func (export "xihan_abi_version") (result i32) (i32.const 1))
               (func (export "xihan_alloc") (param $size i32) (result i32) (local $pointer i32)
-                (if (i32.gt_u (i32.add (global.get $heap) (local.get $size)) (i32.const {{Pages * 65536}}))
+                (if (i32.gt_u (i32.add (global.get $heap) (local.get $size)) (i32.const {{pages * 65536}}))
                   (then (global.set $heap (i32.const {{HeapStart}}))))
                 (local.set $pointer (global.get $heap))
                 (global.set $heap (i32.add (global.get $heap) (local.get $size)))

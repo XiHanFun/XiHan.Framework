@@ -74,6 +74,11 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     private readonly WasmHostFunctions _functions;
 
     /// <summary>
+    /// 替换 WASI 睡眠与时钟的实现
+    /// </summary>
+    private readonly WasiClockShims _shims;
+
+    /// <summary>
     /// 已编译的模块
     /// </summary>
     /// <remarks>
@@ -168,7 +173,9 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         Mounts = mounts;
         _host = host;
         Logger = logger;
-        _functions = new WasmHostFunctions(manifest, permissions, host, logger);
+        // 日志器经属性取：发现阶段的运行时在附着到宿主容器后才换成宿主日志，客体日志要跟着换
+        _functions = new WasmHostFunctions(manifest, permissions, host, () => Logger);
+        _shims = new WasiClockShims(_functions, host);
     }
 
     /// <summary>
@@ -674,7 +681,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         {
             var workDirectory = Path.Combine(_host.WorkRoot, Manifest.Id);
             System.IO.Directory.CreateDirectory(workDirectory);
-            instance = await Task.Run(() => new WasmInstance(_host.Engine, _module, _functions, BuildWasi(workDirectory), _host.Options.MemoryLimitBytes, _host.Options.EpochInterval, _host.Options.CallTimeout), cancellationToken).ConfigureAwait(false);
+            instance = await Task.Run(() => new WasmInstance(_host.Engine, _module, _functions, BuildWasi(), _host.Options.MemoryLimitBytes, _host.Options.MaxTableElements, _shims, _host.Options.EpochInterval, _host.Options.CallTimeout), cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is WasmtimeException or InvalidOperationException)
         {
@@ -1124,17 +1131,18 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     }
 
     /// <summary>
-    /// WASI 配置：协议约定的环境变量、stdout / stderr 写到工作目录、按权限预开放目录
+    /// WASI 配置：协议约定的环境变量、按权限预开放目录
     /// </summary>
-    private WasiConfiguration BuildWasi(string workDirectory)
+    /// <remarks>
+    /// stdout / stderr 不配置，写入即丢弃：Wasmtime 只能把它们接到文件上，文件大小没有上限（ADR-0186）；插件的日志走 <c>xihan.log</c>
+    /// </remarks>
+    private WasiConfiguration BuildWasi()
     {
         var wasi = new WasiConfiguration()
             .WithEnvironmentVariable(PluginProtocol.PrimitivesVariable, _host.Primitives.ToString(CultureInfo.InvariantCulture))
             .WithEnvironmentVariable(PluginProtocol.ProtocolVersionsVariable, string.Join(',', PluginProtocol.SupportedVersions.Select(static v => v.ToString(CultureInfo.InvariantCulture))))
             .WithEnvironmentVariable(PluginProtocol.InstanceVariable, $"{Manifest.Id}#{_instanceNo.ToString(CultureInfo.InvariantCulture)}")
-            .WithEnvironmentVariable(PluginProtocol.LocaleVariable, _host.DefaultLocale)
-            .WithStandardOutput(Path.Combine(workDirectory, "stdout.log"))
-            .WithStandardError(Path.Combine(workDirectory, "stderr.log"));
+            .WithEnvironmentVariable(PluginProtocol.LocaleVariable, _host.DefaultLocale);
         foreach (var permission in Manifest.Permissions)
         {
             // fs.read:<客体路径> / fs.write:<客体路径>：发现阶段已确认映射存在
