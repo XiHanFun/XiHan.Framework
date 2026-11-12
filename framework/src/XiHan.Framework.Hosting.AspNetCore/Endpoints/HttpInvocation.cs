@@ -115,6 +115,12 @@ public static partial class HttpInvocation
 
         // Accept-Language 只在调用方没有显式给出 xihan.locale 时生效：按权重排序的候选经本地化选项协商成启用的区域；
         // 没有装配本地化时取第一个合法值并规范化，让下游服务仍能拿到调用方语言
+        // 显式给的区域不合文法就当作没给，让 Accept-Language 照常协商，不让一个坏值把调用挡在默认区域（ADR-0204）
+        if (baggage.TryGetValue(BaggageKeys.Locale, out var explicitLocale) && !LocaleName.IsValid(explicitLocale))
+        {
+            baggage.Remove(BaggageKeys.Locale);
+        }
+
         if (!baggage.ContainsKey(BaggageKeys.Locale))
         {
             var accepted = AcceptedLocales(httpContext);

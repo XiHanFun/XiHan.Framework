@@ -246,6 +246,7 @@ XiHan.Framework.Primitives.TypedId<TTag, TValue>.Value.init -> void
 const XiHan.Framework.Primitives.BaggageKeys.Correlation = "xihan.correlation" -> string!
 const XiHan.Framework.Primitives.BaggageKeys.IdempotencyKey = "xihan.idempotency-key" -> string!
 const XiHan.Framework.Primitives.BaggageKeys.Locale = "xihan.locale" -> string!
+const XiHan.Framework.Primitives.BaggageKeys.MaxValueLength = 256 -> int
 const XiHan.Framework.Primitives.BaggageKeys.Principal = "xihan.principal" -> string!
 const XiHan.Framework.Primitives.BaggageKeys.Tenant = "xihan.tenant" -> string!
 const XiHan.Framework.Primitives.ErrorCode.InvalidArgument = "PRIMITIVES_VALIDATION_001" -> string!
@@ -293,6 +294,7 @@ override XiHan.Framework.Primitives.Result<T>.GetHashCode() -> int
 override XiHan.Framework.Primitives.Result<T>.ToString() -> string!
 override XiHan.Framework.Primitives.TypedId<TTag, TValue>.GetHashCode() -> int
 override XiHan.Framework.Primitives.TypedId<TTag, TValue>.ToString() -> string!
+static XiHan.Framework.Primitives.BaggageKeys.IsAcceptableValue(string? value) -> bool
 static XiHan.Framework.Primitives.BaggageKeys.IsRegistered(string? key) -> bool
 static XiHan.Framework.Primitives.BaggageKeys.IsWellFormed(string? key) -> bool
 static XiHan.Framework.Primitives.BaggageKeys.Registered.get -> System.Collections.Generic.IReadOnlyList<string!>!

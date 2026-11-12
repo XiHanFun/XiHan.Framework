@@ -36,7 +36,7 @@ Baggage 是 W3C 格式的键值对，但框架只传播已登记的键，未登�
 | `BaggageKeys.IdempotencyKey` | `xihan.idempotency-key` | 幂等键，Idempotency 阶段据此去重 | HTTP `baggage` 头；消息派发不写它 |
 | `BaggageKeys.Locale` | `xihan.locale` | 调用方区域，失败文案与 `key.L()` 据此翻译 | HTTP `baggage` 头或 `Accept-Language`、命令行 `--locale`、消息扩展 `xihanlocale` |
 
-`BaggageKeys.Registered` 列出全部已登记的键，`IsRegistered(key)` 与 `IsWellFormed(key)` 供自定义载体校验。HTTP 入站不接受 `xihan.tenant` 与 `xihan.principal`，是因为任何客户端都能写请求头，租户与主体必须由凭据推出；消息派发接受它们，是因为消息的发送方是经过授权的服务，审计把 `xihan.principal` 记为发起者。
+`BaggageKeys.Registered` 列出全部已登记的键，`IsRegistered(key)` 与 `IsWellFormed(key)` 供自定义载体校验。已登记键的值在建调用上下文时核对：为空、超过 `BaggageKeys.MaxValueLength`（256 个字符）或含控制字符（换行、制表符）的丢弃，与 W3C Baggage 忽略不合法的成员一致；这些值会写进日志作用域、审计与消息信封，换行能伪造日志行（ADR-0204）。幂等键例外，不合法时由 Idempotency 阶段以校验错误拒绝，不会被悄悄丢掉。HTTP 入站显式给的 `xihan.locale` 不合 BCP 47 文法时当作没给，`Accept-Language` 照常协商。HTTP 入站不接受 `xihan.tenant` 与 `xihan.principal`，是因为任何客户端都能写请求头，租户与主体必须由凭据推出；消息派发接受它们，是因为消息的发送方是经过授权的服务，审计把 `xihan.principal` 记为发起者。
 
 ## 内核附加的信息
 

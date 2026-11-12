@@ -67,6 +67,23 @@ public sealed class InboundBaggageTests
         Assert.Equal("tenant=none;baggage=xihan.correlation,xihan.idempotency-key,xihan.locale", await response.Content.ReadAsStringAsync());
     }
 
+    [Theory]
+    [InlineData("xihan.correlation=line%0D%0Aforged")]
+    [InlineData("xihan.correlation=tab%09inside")]
+    [InlineData(null)]
+    public async Task BaggageValues_TooLongOrWithControlCharacters_AreDropped(string? correlation)
+    {
+        // 修之前原样进上下文：换行写进日志作用域能伪造日志行，超长的值进日志、审计与信封（ADR-0204）
+        await using var app = await StartAsync();
+        var client = app.GetTestClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/whoami");
+        request.Headers.TryAddWithoutValidation("baggage", (correlation ?? "xihan.correlation=" + new string('c', BaggageKeys.MaxValueLength + 1)) + ",xihan.locale=zh-CN");
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal("tenant=none;baggage=xihan.locale", await response.Content.ReadAsStringAsync());
+    }
+
     [Fact]
     public async Task InProcessContext_KeepsItsTenant()
     {

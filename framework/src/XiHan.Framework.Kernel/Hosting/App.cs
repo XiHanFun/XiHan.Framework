@@ -254,7 +254,7 @@ public sealed partial class App : IDisposable
         var spanId = options.SpanId;
         var traceFlags = options.TraceFlags;
         var deadline = options.Deadline;
-        var baggage = options.Baggage;
+        var baggage = Acceptable(options.Baggage);
         ActivityTraceFlags? flags;
         if (traceId is not null)
         {
@@ -283,6 +283,26 @@ public sealed partial class App : IDisposable
             Baggage = baggage ?? new Dictionary<string, string>(StringComparer.Ordinal),
             Services = scopedServices,
         };
+    }
+
+    /// <summary>
+    /// 去掉不能进入调用上下文的 Baggage 值
+    /// </summary>
+    /// <remarks>
+    /// 已登记的键里超长、为空或含控制字符的值丢弃，与 W3C Baggage 忽略不合法的成员一致（<see cref="BaggageKeys.IsAcceptableValue"/>，ADR-0204）。幂等键例外：丢了它重复的调用会被执行两次，留给 Idempotency 阶段按校验错误拒绝。没有要丢的时原样返回
+    /// </remarks>
+    private static IReadOnlyDictionary<string, string>? Acceptable(IReadOnlyDictionary<string, string>? baggage)
+    {
+        if (baggage is null || baggage.All(static pair => Keeps(pair.Key, pair.Value)))
+        {
+            return baggage;
+        }
+
+        return baggage.Where(static pair => Keeps(pair.Key, pair.Value)).ToDictionary(static pair => pair.Key, static pair => pair.Value, StringComparer.Ordinal);
+
+        // 未登记的键不在这里管（载体与插件协议各自剥离）；登记的键按值核对
+        static bool Keeps(string key, string value)
+            => !BaggageKeys.IsRegistered(key) || key == BaggageKeys.IdempotencyKey || BaggageKeys.IsAcceptableValue(value);
     }
 
     /// <summary>

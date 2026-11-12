@@ -106,6 +106,8 @@ public sealed class LocalizationTests
         Assert.Equal("zh-CN", await (await GetAsync(client, "/locale", acceptLanguage: "zh-HK, ja;q=0.8")).Content.ReadAsStringAsync());
         // 显式 Baggage 优先于 Accept-Language
         Assert.Equal("ko-KR", await (await GetAsync(client, "/locale", acceptLanguage: "zh-CN", baggage: "xihan.locale=ko-KR")).Content.ReadAsStringAsync());
+        // 显式给的区域不合文法时当作没给：修之前它挡住 Accept-Language，调用落到默认区域（ADR-0204）
+        Assert.Equal("zh-CN", await (await GetAsync(client, "/locale", acceptLanguage: "zh-CN", baggage: "xihan.locale=not%20a%20locale")).Content.ReadAsStringAsync());
         // 都没有时 Baggage 不写区域，由本地化按默认区域处理
         Assert.Equal("-", await (await GetAsync(client, "/locale")).Content.ReadAsStringAsync());
     }
