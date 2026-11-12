@@ -107,6 +107,7 @@ const XiHan.Framework.Protocols.Grpc.GrpcMessages.ResponseUnencodable = "protoco
 const XiHan.Framework.Protocols.Grpc.GrpcProtocolCapabilities.Grpc = "protocols.grpc" -> string!
 const XiHan.Framework.Protocols.Grpc.GrpcProtocolCapabilities.Version = 1 -> int
 const XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.ConfigurationSection = "XiHan:Protocols:Grpc" -> string!
+const XiHan.Framework.Protocols.Grpc.Proto.ProtoDecoder.MaxDepth = 64 -> int
 override XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.GetHashCode() -> int
 override XiHan.Framework.Protocols.Grpc.GrpcProtocolOptions.ToString() -> string!

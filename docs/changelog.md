@@ -25,6 +25,7 @@
 - **修复** Wasm 插件沙箱补齐资源上限：睡在 WASI `poll_oneoff` 里的调用原先中断不了，宿主要等它睡完，现在最多睡到调用的截止时间即以 `KERNEL_TIMEOUT_001` 结束；`table.grow` 受 `XiHan:Plugins:Wasm:MaxTableElements`（缺省 100000）约束；`xihan.log` 一条最多 16384 字节；stdout / stderr 不再写进工作目录的文件，日志走 `xihan.log`
 - **修复** CloudEvents 入站端点的请求体与 batch 条数有了上限：原先整读请求体、batch 不限条数，派发模式下每个事件都走一次完整管道。现在请求体最多 `XiHan:Protocols:CloudEvents:MaxRequestBodyBytes`（缺省 1 MiB，超过为 `PROTOCOLS_VALIDATION_013`），batch 最多 `MaxBatchSize` 个事件（缺省 100，超过为 `PROTOCOLS_VALIDATION_014`）；`CloudEventsHttpBinding.ReadAsync` 多了 `options` 参数
 - **修复** CloudEvents Webhook 发布方不再读接收方的响应体：原先先把整个响应缓冲进内存（上限约 2 GiB）再看状态码，接收方返回超大正文就能耗尽宿主内存；现在读到响应头即判定
+- **修复** gRPC 解码嵌套消息最多 64 层：原先递归的消息描述能嵌套到第 1000 层，写 JSON 时以非预期异常失败，调用方得到 `Internal`；现在超过即 `InvalidArgument` + `PROTOCOLS_VALIDATION_005`
 
 ## v5.0.0-preview.3（2026-11-12）
 

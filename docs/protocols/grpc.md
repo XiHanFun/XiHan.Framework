@@ -208,7 +208,7 @@ gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用：
 
 | 情形 | 状态 | 错误码 |
 | --- | --- | --- |
-| 请求不是合法 protobuf 或与 Schema 不符 | `InvalidArgument` | `PROTOCOLS_VALIDATION_005` |
+| 请求不是合法 protobuf 或与 Schema 不符，或嵌套消息超过 64 层 | `InvalidArgument` | `PROTOCOLS_VALIDATION_005` |
 | 响应编码不成 protobuf | `Internal` | `PROTOCOLS_UNEXPECTED_001` |
 | 未登记的方法 | `Unimplemented` | gRPC 服务端默认 |
 | 应用未就绪（启动中或正在停止） | `Unavailable` | `KERNEL_UNAVAILABLE_001`，不进管道，同样带两个尾部元数据 |

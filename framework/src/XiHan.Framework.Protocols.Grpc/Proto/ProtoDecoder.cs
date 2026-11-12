@@ -19,6 +19,14 @@ namespace XiHan.Framework.Protocols.Grpc.Proto;
 public static class ProtoDecoder
 {
     /// <summary>
+    /// 嵌套消息的深度上限（根消息算第 1 层）
+    /// </summary>
+    /// <remarks>
+    /// 与 JSON 请求体的深度上限相同；递归的消息描述配上调用方构造的深层嵌套，超过即 <see cref="ProtoException"/>（ADR-0189）
+    /// </remarks>
+    public const int MaxDepth = 64;
+
+    /// <summary>
     /// varint 线类型
     /// </summary>
     private const int WireVarint = 0;
@@ -41,10 +49,27 @@ public static class ProtoDecoder
     /// <summary>
     /// 解码一个消息，写成 JSON 对象
     /// </summary>
+    /// <remarks>
+    /// 嵌套超过 <see cref="MaxDepth"/> 层抛出 <see cref="ProtoException"/>
+    /// </remarks>
     public static void Decode(ProtoMessage message, ReadOnlyMemory<byte> input, Utf8JsonWriter writer)
     {
         ArgumentNullException.ThrowIfNull(message);
         ArgumentNullException.ThrowIfNull(writer);
+        Decode(message, input, writer, 1);
+    }
+
+    /// <summary>
+    /// 解码第 <paramref name="depth"/> 层的消息
+    /// </summary>
+    private static void Decode(ProtoMessage message, ReadOnlyMemory<byte> input, Utf8JsonWriter writer, int depth)
+    {
+        // 递归的消息描述（树）能嵌套到任意深度：在解析与写出之前判定，不等写 JSON 的那一层以非预期异常失败
+        if (depth > MaxDepth)
+        {
+            throw new ProtoException($"The message nesting exceeds {MaxDepth} levels at '{message.Name}'.");
+        }
+
         var values = Parse(input);
         writer.WriteStartObject();
         foreach (var field in message.Fields)
@@ -67,11 +92,11 @@ public static class ProtoDecoder
                         // 可打包的标量以长度前缀出现时是打包形式，否则是单个元素
                         if (field.Value.IsPackable && raw.WireType == WireLengthDelimited)
                         {
-                            WritePacked(field.Value, raw.Bytes, writer, path);
+                            WritePacked(field.Value, raw.Bytes, writer, path, depth);
                         }
                         else
                         {
-                            WriteValue(field.Value, raw, writer, path);
+                            WriteValue(field.Value, raw, writer, path, depth);
                         }
                     }
 
@@ -81,13 +106,13 @@ public static class ProtoDecoder
                     writer.WriteStartObject();
                     foreach (var raw in raws)
                     {
-                        WriteMapEntry(field.Value, raw, writer, path);
+                        WriteMapEntry(field.Value, raw, writer, path, depth);
                     }
 
                     writer.WriteEndObject();
                     break;
                 default:
-                    WriteValue(field.Value, raws[^1], writer, path);
+                    WriteValue(field.Value, raws[^1], writer, path, depth);
                     break;
             }
         }
@@ -164,7 +189,10 @@ public static class ProtoDecoder
     /// <summary>
     /// 写一个单值
     /// </summary>
-    private static void WriteValue(ProtoValueType type, RawValue raw, Utf8JsonWriter writer, string path)
+    /// <remarks>
+    /// <paramref name="depth"/> 是值所在消息的层数，嵌套消息在下一层
+    /// </remarks>
+    private static void WriteValue(ProtoValueType type, RawValue raw, Utf8JsonWriter writer, string path, int depth)
     {
         switch (type.Kind)
         {
@@ -206,7 +234,7 @@ public static class ProtoDecoder
                 break;
             case ProtoKind.Message:
                 Expect(raw, WireLengthDelimited, path);
-                Decode(type.Message!, raw.Bytes, writer);
+                Decode(type.Message!, raw.Bytes, writer, depth + 1);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown proto kind '{type.Kind}'.");
@@ -216,7 +244,7 @@ public static class ProtoDecoder
     /// <summary>
     /// 写打包的标量序列：varint 连读，或按 4 / 8 字节连读
     /// </summary>
-    private static void WritePacked(ProtoValueType type, ReadOnlyMemory<byte> payload, Utf8JsonWriter writer, string path)
+    private static void WritePacked(ProtoValueType type, ReadOnlyMemory<byte> payload, Utf8JsonWriter writer, string path, int depth)
     {
         var position = 0;
         while (position < payload.Length)
@@ -227,7 +255,7 @@ public static class ProtoDecoder
                 ProtoKind.Fixed64 => new RawValue(WireFixed64, ReadFixed(payload.Span, ref position, sizeof(ulong)), default),
                 _ => new RawValue(WireVarint, ReadVarint(payload.Span, ref position), default),
             };
-            WriteValue(type, raw, writer, path);
+            WriteValue(type, raw, writer, path, depth);
         }
     }
 
@@ -237,7 +265,7 @@ public static class ProtoDecoder
     /// <remarks>
     /// 条目消息里 1 是键、2 是值；缺键按空串，缺值按类型默认值
     /// </remarks>
-    private static void WriteMapEntry(ProtoValueType valueType, RawValue raw, Utf8JsonWriter writer, string path)
+    private static void WriteMapEntry(ProtoValueType valueType, RawValue raw, Utf8JsonWriter writer, string path, int depth)
     {
         Expect(raw, WireLengthDelimited, path);
         var entry = Parse(raw.Bytes);
@@ -246,7 +274,7 @@ public static class ProtoDecoder
         writer.WritePropertyName(ValidUtf8(key.Bytes.Span, path + ".key"));
         if (entry.TryGetValue(2, out var values))
         {
-            WriteValue(valueType, values[^1], writer, path + ".value");
+            WriteValue(valueType, values[^1], writer, path + ".value", depth);
         }
         else
         {

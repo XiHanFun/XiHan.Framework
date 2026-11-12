@@ -188,3 +188,4 @@
 | [0186](0186-Wasm沙箱的资源上限补齐.md) | 安全审查 S-19：宿主实现 WASI 的 `poll_oneoff` 与 `clock_time_get`，睡眠最多到调用的截止时间、到了即以 epoch 中断结束；`MaxTableElements`（缺省 100000）约束 `table.grow`；`xihan.log` 一条最多 16384 字节；stdout / stderr 不落盘；客体日志随运行时换成宿主日志 | 已采纳 |
 | [0187](0187-CloudEvents入站的请求体与批量上限.md) | 安全审查 S-20：CloudEvents 入站请求体最多 `MaxRequestBodyBytes`（缺省 1 MiB，`PROTOCOLS_VALIDATION_013`），batch 最多 `MaxBatchSize` 个事件（缺省 100，`PROTOCOLS_VALIDATION_014`），都在处理之前判定；重放沿用处理器按 `id` + `source` 去重 | 已采纳 |
 | [0188](0188-CloudEvents的Webhook不读响应体.md) | 安全审查 S-26：CloudEvents Webhook 发布方以 `ResponseHeadersRead` 发送，只按状态码判定，响应体不读 | 已采纳 |
+| [0189](0189-gRPC解码的嵌套上限.md) | 安全审查 S-28：`ProtoDecoder` 嵌套消息最多 64 层（`MaxDepth`，与 JSON 请求体相同），超过即 `ProtoException` → `InvalidArgument` + `PROTOCOLS_VALIDATION_005` | 已采纳 |
