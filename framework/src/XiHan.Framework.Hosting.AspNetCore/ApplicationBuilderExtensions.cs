@@ -131,7 +131,7 @@ public static class ApplicationBuilderExtensions
     /// 映射探针端点
     /// </summary>
     /// <remarks>
-    /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道
+    /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道，所以只给状态，特性与贡献条目的详情由 <see cref="MapXiHanHealthDetails(IEndpointRouteBuilder)"/> 给出（ADR-0209）
     /// </remarks>
     public static IEndpointRouteBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints, string prefix)
     {
@@ -139,16 +139,42 @@ public static class ApplicationBuilderExtensions
         ArgumentNullException.ThrowIfNull(prefix);
         var xihan = endpoints.ServiceProvider.GetRequiredService<App>();
 
-        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/startup", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Started)));
-        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/ready", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Ready)));
-        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/live", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Live)));
+        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/startup", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Started, detailed: false)));
+        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/ready", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Ready, detailed: false)));
+        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/live", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Live, detailed: false)));
         return endpoints;
+    }
+
+    /// <summary>
+    /// 在 <c>/health/details</c> 映射健康详情端点
+    /// </summary>
+    /// <remarks>
+    /// 同 <see cref="MapXiHanHealthDetails(IEndpointRouteBuilder, string)"/>
+    /// </remarks>
+    public static IEndpointConventionBuilder MapXiHanHealthDetails(this IEndpointRouteBuilder endpoints)
+        => MapXiHanHealthDetails(endpoints, "/health/details");
+
+    /// <summary>
+    /// 映射健康详情端点
+    /// </summary>
+    /// <remarks>
+    /// <c>GET {pattern}</c> 写出各特性与贡献条目的状态、描述与数据，就绪时 200，否则 503。它经内核管道，返回的约定构建器能加访问要求（如 <c>RequireXiHanPermission</c>），应用未就绪时与其他端点一样是 503。详情会暴露装配了哪些特性与 Provider，不要匿名开放（ADR-0209）
+    /// </remarks>
+    public static IEndpointConventionBuilder MapXiHanHealthDetails(this IEndpointRouteBuilder endpoints, string pattern)
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+        ArgumentException.ThrowIfNullOrWhiteSpace(pattern);
+        var xihan = endpoints.ServiceProvider.GetRequiredService<App>();
+        return endpoints.MapGet(pattern, httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Ready, detailed: true));
     }
 
     /// <summary>
     /// 取应用健康快照，按探针谓词写出 200 或 503 以及 <see cref="HealthResponse"/> 正文
     /// </summary>
-    private static Task WriteHealthAsync(HttpContext httpContext, App app, Func<HealthSnapshot, bool> probe)
+    /// <remarks>
+    /// <paramref name="detailed"/> 为假（探针）时只写状态：探针不经管道，谁都能访问，特性与贡献条目的描述和数据会告诉访问者装配了什么
+    /// </remarks>
+    private static Task WriteHealthAsync(HttpContext httpContext, App app, Func<HealthSnapshot, bool> probe, bool detailed)
     {
         var snapshot = app.Health();
         var pass = probe(snapshot);
@@ -156,13 +182,13 @@ public static class ApplicationBuilderExtensions
         {
             Status = pass ? "pass" : "fail",
             State = snapshot.State.ToString(),
-            Features = snapshot.Features.Select(static f => new FeatureHealth
+            Features = !detailed ? null : snapshot.Features.Select(static f => new FeatureHealth
             {
                 Id = f.Manifest.Id,
                 State = f.State.ToString(),
                 Error = f.Error?.Code,
             }).ToList(),
-            Contributions = snapshot.Contributions.Select(static c => new FeatureHealth
+            Contributions = !detailed ? null : snapshot.Contributions.Select(static c => new FeatureHealth
             {
                 Id = c.Name,
                 State = c.State.ToString(),

@@ -46,6 +46,7 @@
 - **修复** 出站地址策略在开了私网时同样拒绝 GCP（`fd20:ce::254`）与 Oracle（`fd00:c1::a9fe:a9fe`）的 IPv6 元数据地址：原先只拒绝 AWS 的，另两个能连到并取得实例凭据
 - **修复** 插件工作目录缺省按用户分开（`<临时目录>/xihan-plugins-<用户名>`、`xihan-plugins-wasm-<用户名>`），Unix 上必须是本用户私有的真实目录：原先是临时目录下名字固定的目录，别的用户能抢先建成指向别处的链接。插件留在旧缺省目录里的数据不会自动搬过去，要保留就把 `WorkDirectory` 配回旧位置
 - **修复** 进程外插件不再按 `GO` 前缀继承宿主的环境变量：原先 `GOOGLE_APPLICATION_CREDENTIALS` 等 Google 云凭据随之交给了插件；现在 Go 只继承 `GOMAXPROCS`、`GOGC`、`GOMEMLIMIT`、`GODEBUG`、`GOTRACEBACK`
+- **调整** 健康探针只给 `status` 与 `state`：原先匿名访问者能读到全部特性、健康条目与它们的描述和数据。详情改由新的 `MapXiHanHealthDetails()`（`/health/details`）给出，它经内核管道、能加访问要求。MCP 的 `serverInfo.version` 缺省改为应用的版本，不再是框架版本
 
 ## v5.0.0-preview.3（2026-11-12）
 

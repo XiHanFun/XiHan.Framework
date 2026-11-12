@@ -296,7 +296,9 @@ public sealed class WebHostTests
             using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             Assert.Equal("pass", body.RootElement.GetProperty("status").GetString());
             Assert.Equal("Ready", body.RootElement.GetProperty("state").GetString());
-            Assert.Equal("xihan.test.web", body.RootElement.GetProperty("features")[0].GetProperty("id").GetString());
+            // 探针只给状态：修之前匿名访问者能读到全部特性、贡献条目与它们的描述和数据（ADR-0209）
+            Assert.False(body.RootElement.TryGetProperty("features", out var features), features.ToString());
+            Assert.False(body.RootElement.TryGetProperty("contributions", out var contributions), contributions.ToString());
         }
 
         // 只停内核应用、不停 TestServer：探针应报 503，普通端点应被 UseXiHan 拦下返回 503

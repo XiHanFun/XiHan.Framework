@@ -165,7 +165,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `ServerName` | string | 宿主的应用名 | `initialize` 答复的 `serverInfo.name` |
-| `ServerVersion` | string | 框架版本 | `serverInfo.version` |
+| `ServerVersion` | string | 应用的版本 | `serverInfo.version`；缺省取入口程序集的信息版本（去掉构建元数据），不写框架版本（ADR-0209） |
 | `Instructions` | string | 空 | `initialize` 答复的 `instructions`，给大模型的使用说明，空时不写 |
 | `Tools:<操作 ID>` | string | — | 显式 tool 名 |
 | `AllowedOrigins:<序号>` | string | 空 | HTTP 入口允许的浏览器源，`scheme://host[:port]`（http 或 https，没有路径）；不是源的值启动失败 |

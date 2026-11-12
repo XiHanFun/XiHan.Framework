@@ -306,7 +306,9 @@ public sealed class McpProtocolTests
         var initialized = await ResultOf(client, Rpc("initialize", """{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1"}}"""));
         Assert.Equal(McpServer.ProtocolVersion, initialized.GetProperty("protocolVersion").GetString());
         Assert.Equal("Orders", initialized.GetProperty("serverInfo").GetProperty("name").GetString());
-        Assert.Equal(FrameworkInfo.Version, initialized.GetProperty("serverInfo").GetProperty("version").GetString());
+        // 缺省是应用（入口程序集）的版本，不是框架版本（ADR-0209）
+        var application = System.Reflection.Assembly.GetEntryAssembly()!.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false).OfType<System.Reflection.AssemblyInformationalVersionAttribute>().Single().InformationalVersion.Split('+')[0];
+        Assert.Equal(application, initialized.GetProperty("serverInfo").GetProperty("version").GetString());
         Assert.False(initialized.GetProperty("capabilities").GetProperty("tools").GetProperty("listChanged").GetBoolean());
         Assert.Equal("Use the orders tools.", initialized.GetProperty("instructions").GetString());
 

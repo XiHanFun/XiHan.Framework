@@ -35,7 +35,7 @@ public sealed record McpProtocolOptions
     /// <c>initialize</c> 答复里的服务端版本
     /// </summary>
     /// <remarks>
-    /// 默认为框架版本
+    /// 默认为应用的版本（入口程序集的信息版本，去掉 <c>+</c> 之后的构建元数据；取不到为 <c>0.0.0</c>），不是框架版本：<c>initialize</c> 匿名可调，框架版本会告诉访问者该找哪个版本的已知缺陷（ADR-0209）
     /// </remarks>
     public string ServerVersion
     {
@@ -45,7 +45,26 @@ public sealed record McpProtocolOptions
             ArgumentException.ThrowIfNullOrWhiteSpace(value);
             field = value;
         }
-    } = FrameworkInfo.Version;
+    } = ApplicationVersion();
+
+    /// <summary>
+    /// 应用的版本
+    /// </summary>
+    /// <remarks>
+    /// 入口程序集的信息版本去掉构建元数据，没有时取程序集版本，都取不到为 <c>0.0.0</c>
+    /// </remarks>
+    private static string ApplicationVersion()
+    {
+        var entry = System.Reflection.Assembly.GetEntryAssembly();
+        var informational = entry?.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), inherit: false).OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion;
+        if (!string.IsNullOrWhiteSpace(informational))
+        {
+            var plus = informational.IndexOf('+', StringComparison.Ordinal);
+            return plus > 0 ? informational[..plus] : informational;
+        }
+
+        return entry?.GetName().Version?.ToString(3) ?? "0.0.0";
+    }
 
     /// <summary>
     /// <c>initialize</c> 答复里给客户端模型的使用说明
@@ -166,7 +185,7 @@ public sealed record McpProtocolOptions
         return new McpProtocolOptions
         {
             ServerName = section["ServerName"],
-            ServerVersion = section["ServerVersion"] ?? FrameworkInfo.Version,
+            ServerVersion = section["ServerVersion"] ?? ApplicationVersion(),
             Instructions = section["Instructions"],
             Tools = tools,
             AllowedOrigins = section.GetSection("AllowedOrigins").GetChildren().Select(static child => child.Value ?? string.Empty).ToList(),

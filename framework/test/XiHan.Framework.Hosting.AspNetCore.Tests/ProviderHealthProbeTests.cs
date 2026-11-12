@@ -27,9 +27,11 @@ public sealed class ProviderHealthProbeTests
         await using var _ = app;
         app.UseXiHan();
         app.MapXiHanHealth();
+        app.MapXiHanHealthDetails();
         await app.StartAsync();
 
-        var response = await app.GetTestClient().GetAsync("/health/ready");
+        // 条目的详情只在详情端点里，探针只给状态（ADR-0209）
+        var response = await app.GetTestClient().GetAsync("/health/details");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());

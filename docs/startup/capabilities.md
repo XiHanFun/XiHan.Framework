@@ -110,7 +110,7 @@ xihan.shop.notifications 1.0.0
   requires messaging.queue@1 -> (missing, optional)
 ```
 
-`curl -s localhost:5000/health/ready` 返回 200，应用仍在服务，但状态是 `Degraded`：
+`curl -s localhost:5000/health/ready` 返回 200，应用仍在服务，但状态是 `Degraded`；健康详情端点（`MapXiHanHealthDetails()`）里看得到是哪个特性：
 
 ```json
 {
