@@ -9,6 +9,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Messaging.InMemory/XiHan.Framework.Messaging.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
     <!-- 只保证示例插件先构建，不引用其程序集：测试以其输出目录作为插件目录启动进程 -->
     <ProjectReference Include="../../samples/EchoPlugin/EchoPlugin.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>

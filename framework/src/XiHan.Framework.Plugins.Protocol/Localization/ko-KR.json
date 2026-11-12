@@ -1,5 +1,6 @@
 {
   "plugins.callback.denied": "플러그인 '{id}'은(는) 권한 '{permission}'을(를) 사용할 수 없습니다. 권한은 매니페스트에 선언되고 호스트가 부여해야 합니다.",
+  "plugins.callback.tenant_denied": "플러그인 '{id}'은(는) 테넌트 '{tenant}'에서 실행할 수 없습니다. 콜백에는 호스트가 플러그인에 맡긴 호출의 테넌트만 담을 수 있습니다.",
   "plugins.callback.messaging_unavailable": "호스트에 메시지 발행자가 없어 플러그인 '{id}'이(가) 발행할 수 없습니다.",
   "plugins.callback.session_invalid": "플러그인 세션 토큰이 없거나 잘못되었습니다.",
   "plugins.handshake.invalid": "플러그인 '{id}' 핸드셰이크에 실패했습니다: {reason}",

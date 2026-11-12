@@ -57,6 +57,23 @@ internal sealed class WatPlugin : IDisposable
         => Create("invoke", new JsonObject { ["operation"] = operation, ["payload"] = Convert.ToBase64String("""{"name":"wat"}"""u8) }, permissions, null);
 
     /// <summary>
+    /// 生成一个经 <c>xihan.invoke</c> 调用宿主操作、回调元数据带着给定 Baggage 的插件
+    /// </summary>
+    /// <remarks>
+    /// 用来核对回调能不能自报租户（ADR-0195）
+    /// </remarks>
+    public static WatPlugin InvokingWithBaggage(string operation, IReadOnlyList<string> permissions, IReadOnlyDictionary<string, string> baggage)
+    {
+        var entries = new JsonObject();
+        foreach (var (key, value) in baggage)
+        {
+            entries[key] = value;
+        }
+
+        return Create("invoke", new JsonObject { ["operation"] = operation, ["payload"] = Convert.ToBase64String("""{"name":"wat"}"""u8), ["metadata"] = new JsonObject { ["baggage"] = entries } }, permissions, null);
+    }
+
+    /// <summary>
     /// 生成一个声明 <see cref="Operation"/> 要求权限码 <paramref name="permission"/> 的插件
     /// </summary>
     /// <remarks>
@@ -89,6 +106,15 @@ internal sealed class WatPlugin : IDisposable
         => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], pipeline);
 
     /// <summary>
+    /// 生成一个贡献中间件、<c>CONTINUE</c> 时改写给定 Baggage 的插件
+    /// </summary>
+    /// <remarks>
+    /// 用来核对中间件能不能改写租户（ADR-0195）
+    /// </remarks>
+    public static WatPlugin WithMiddleware(JsonArray pipeline, IReadOnlyDictionary<string, string> baggage)
+        => Create("invoke", new JsonObject { ["operation"] = "pings.create", ["payload"] = Convert.ToBase64String("{}"u8) }, [], pipeline, middlewareBaggage: baggage);
+
+    /// <summary>
     /// 生成一个经 <c>xihan.publish</c> 发布一条消息的插件
     /// </summary>
     public static WatPlugin Publishing(string topic, IReadOnlyList<string> permissions)
@@ -101,6 +127,26 @@ internal sealed class WatPlugin : IDisposable
                 ["source"] = "wat",
                 ["type"] = "wat.created",
                 ["data"] = Convert.ToBase64String("{}"u8),
+            }),
+        }, permissions, null);
+
+    /// <summary>
+    /// 生成一个经 <c>xihan.publish</c> 发布一条信封自带租户扩展的消息的插件
+    /// </summary>
+    /// <remarks>
+    /// 用来核对发布能不能自报租户（ADR-0195）
+    /// </remarks>
+    public static WatPlugin PublishingAs(string topic, IReadOnlyList<string> permissions, string tenant)
+        => Create("publish", new JsonObject
+        {
+            ["envelopes"] = new JsonArray(new JsonObject
+            {
+                ["topic"] = topic,
+                ["id"] = "wat-1",
+                ["source"] = "wat",
+                ["type"] = "wat.created",
+                ["data"] = Convert.ToBase64String("{}"u8),
+                ["extensions"] = new JsonObject { ["xihantenant"] = tenant },
             }),
         }, permissions, null);
 
@@ -146,7 +192,8 @@ internal sealed class WatPlugin : IDisposable
         string customImports = "",
         string? customBody = null,
         int pages = Pages,
-        string fields = "")
+        string fields = "",
+        IReadOnlyDictionary<string, string>? middlewareBaggage = null)
     {
         var contributes = new JsonObject { ["operations"] = new JsonArray(operation) };
         if (pipeline is not null)
@@ -196,7 +243,19 @@ internal sealed class WatPlugin : IDisposable
         var okData = Place("""{"status":{"ok":true}}""");
         var healthData = Place("""{"state":"LIFECYCLE_STATE_READY"}""");
         var requestData = Place(request.ToJsonString());
-        var continueData = Place("""{"action":"MIDDLEWARE_ACTION_CONTINUE"}""");
+        var continueJson = new JsonObject { ["action"] = "MIDDLEWARE_ACTION_CONTINUE" };
+        if (middlewareBaggage is not null)
+        {
+            var entries = new JsonObject();
+            foreach (var (key, value) in middlewareBaggage)
+            {
+                entries[key] = value;
+            }
+
+            continueJson["baggage"] = entries;
+        }
+
+        var continueData = Place(continueJson.ToJsonString());
         if (offset >= HeapStart)
         {
             throw new InvalidOperationException("The data segments overflow into the heap.");

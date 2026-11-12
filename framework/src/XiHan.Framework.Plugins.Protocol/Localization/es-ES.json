@@ -1,5 +1,6 @@
 {
   "plugins.callback.denied": "El plugin '{id}' no puede usar el permiso '{permission}': debe declararse en el manifiesto y concederlo el host.",
+  "plugins.callback.tenant_denied": "El plugin '{id}' no puede actuar en el inquilino '{tenant}': una devolución de llamada solo puede llevar el inquilino de una llamada que el host haya entregado al plugin.",
   "plugins.callback.messaging_unavailable": "El host no tiene un publicador de mensajes; el plugin '{id}' no puede publicar.",
   "plugins.callback.session_invalid": "El token de sesión del plugin falta o no es válido.",
   "plugins.handshake.invalid": "El plugin '{id}' falló en el handshake: {reason}",

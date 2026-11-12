@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Grpc.Core;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 
@@ -38,7 +39,34 @@ internal static partial class PluginMetadata
             }
         }
 
+        // 租户写这次调用的租户，插件回调能带的租户以它为限（ADR-0195）：裁定过时不是调用方自报的那个
+        if (TenantOf(context) is { } tenant)
+        {
+            metadata.Baggage[BaggageKeys.Tenant] = tenant;
+        }
+        else
+        {
+            metadata.Baggage.Remove(BaggageKeys.Tenant);
+        }
+
         return metadata;
+    }
+
+    /// <summary>
+    /// 宿主随这次调用交给插件的租户
+    /// </summary>
+    /// <remarks>
+    /// <c>spec/plugin/invocation.md</c> §2（ADR-0195）：安全上下文有租户时取它；Tenant 阶段裁定为无租户时为 <see langword="null"/>，不回退到调用方自报的 Baggage；还没有裁定（宿主没有 Tenant 阶段，或调用还没走到它）时取调用携带的 Baggage
+    /// </remarks>
+    public static string? TenantOf(InvocationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        if (context.GetSecurity().Tenant is { } tenant)
+        {
+            return tenant.Id;
+        }
+
+        return !context.IsTenantResolved() && context.TryGetBaggage(BaggageKeys.Tenant, out var carried) ? carried : null;
     }
 
     /// <summary>

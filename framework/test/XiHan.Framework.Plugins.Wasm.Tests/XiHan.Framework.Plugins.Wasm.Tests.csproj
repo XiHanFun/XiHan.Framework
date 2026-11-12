@@ -14,6 +14,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
     <!-- 插件操作的策略名在授权能力启动时与登记时核对（ADR-0080） -->
     <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

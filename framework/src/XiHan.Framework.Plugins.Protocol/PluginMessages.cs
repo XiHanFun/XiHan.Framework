@@ -141,6 +141,14 @@ public static class PluginMessages
     public const string CallbackDenied = "plugins.callback.denied";
 
     /// <summary>
+    /// 插件回调或发布带的租户不是宿主交给插件处理的调用的租户
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>tenant</c>（ADR-0195）
+    /// </remarks>
+    public const string CallbackTenantDenied = "plugins.callback.tenant_denied";
+
+    /// <summary>
     /// 插件回调的会话令牌无效
     /// </summary>
     public const string SessionInvalid = "plugins.callback.session_invalid";

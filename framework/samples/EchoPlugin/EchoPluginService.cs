@@ -174,12 +174,19 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     /// 经宿主回调调用 <c>payload.operation</c>，把宿主的结果原样返回
     /// </summary>
     /// <remarks>
-    /// 回调被拒时把尾部元数据里的错误码作为失败返回
+    /// 转发收到的元数据，<c>payload.tenant</c> 给了时改写其中的租户（测试用：宿主拒绝插件自报的租户）；回调被拒时把尾部元数据里的错误码作为失败返回
     /// </remarks>
     private async Task<InvokeResponse> RelayAsync(JsonObject payload, InvocationMetadata? metadata, CancellationToken cancellationToken)
     {
         var operation = payload["operation"]?.GetValue<string>() ?? string.Empty;
         var inner = payload["payload"]?.ToJsonString() ?? "{}";
+        // 给了 tenant 时改写转发元数据里的租户：宿主只接受它随调用交给插件的那个租户（ADR-0195）
+        if (payload["tenant"]?.GetValue<string>() is { } tenant)
+        {
+            metadata = metadata?.Clone() ?? new InvocationMetadata();
+            metadata.Baggage["xihan.tenant"] = tenant;
+        }
+
         try
         {
             var relayed = await host.InvokeAsync(operation, ByteString.CopyFromUtf8(inner), metadata, cancellationToken).ConfigureAwait(false);

@@ -85,6 +85,14 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     private CancellationToken _cancellation;
 
     /// <summary>
+    /// 宿主随当前调用交给插件的租户
+    /// </summary>
+    /// <remarks>
+    /// 由 <see cref="RunCall{T}"/> 设置；回调与发布只能带它（ADR-0195）。没有当前调用或当前调用没有租户时为空，回调不能带租户
+    /// </remarks>
+    private string? _tenant;
+
+    /// <summary>
     /// 当前调用的截止时间
     /// </summary>
     /// <remarks>
@@ -101,20 +109,20 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// 以一次导出调用的截止时间与取消运行它
     /// </summary>
     /// <remarks>
-    /// 期间的导入回调都受这两者约束（<c>spec/plugin/wasm.md</c> §4）。调用串行：执行线程上同一时刻只有一次外层调用，再入不经过这里、沿用外层的约束
+    /// 期间的导入回调都受这两者约束（<c>spec/plugin/wasm.md</c> §4），只能带 <paramref name="tenant"/> 这个租户（ADR-0195）。调用串行：执行线程上同一时刻只有一次外层调用，再入不经过这里、沿用外层的约束
     /// </remarks>
-    public T RunCall<T>(Func<T> call, DateTimeOffset deadline, CancellationToken cancellationToken)
+    public T RunCall<T>(Func<T> call, DateTimeOffset deadline, string? tenant, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(call);
-        var (previousDeadline, previousCancellation) = (_deadline, _cancellation);
-        (_deadline, _cancellation) = (deadline, cancellationToken);
+        var (previousDeadline, previousCancellation, previousTenant) = (_deadline, _cancellation, _tenant);
+        (_deadline, _cancellation, _tenant) = (deadline, cancellationToken, tenant);
         try
         {
             return call();
         }
         finally
         {
-            (_deadline, _cancellation) = (previousDeadline, previousCancellation);
+            (_deadline, _cancellation, _tenant) = (previousDeadline, previousCancellation, previousTenant);
         }
     }
 
@@ -199,6 +207,12 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
         if (!PluginCallbackPermissions.IsAllowed(manifest, permissions, PipelinePermission))
         {
             return new InvokeResponse { Status = PluginErrorMapper.ToStatus(Error.Denied(PluginErrors.CallbackDenied, PluginMessages.CallbackDenied, MessageArguments.Of(("id", manifest.Id), ("permission", PipelinePermission)))) };
+        }
+
+        // 权限之后判租户：插件身份没有租户声明，Tenant 阶段会照单采用元数据里的租户，只能在这里限定为当前调用的租户
+        if (PluginCallbackTenants.Check(request.Metadata, manifest.Id, IsCurrentTenant) is { } outside)
+        {
+            return new InvokeResponse { Status = PluginErrorMapper.ToStatus(outside) };
         }
 
         if (host.Services is not { } services)
@@ -287,7 +301,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
             using var flow = Pump.EnterCallback();
             var publisher = scope?.ServiceProvider.GetService<IMessagePublisher>();
             // 逐项校验主题与信封，通过的按主题分组、每组一次批量发布；结果按原始位置回填
-            var batches = PluginPublishBatches.Collect(request.Envelopes, statuses, publisher is null ? Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", manifest.Id))) : null);
+            var batches = PluginPublishBatches.Collect(request.Envelopes, statuses, publisher is null ? Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", manifest.Id))) : null, envelope => PluginCallbackTenants.Check(envelope, manifest.Id, IsCurrentTenant));
             foreach (var (topic, indexes, messages) in batches)
             {
                 pending = publisher!.PublishManyAsync(topic, messages, linked.Token).AsTask();
@@ -309,6 +323,11 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
 
         response.Results.AddRange(statuses);
     }
+
+    /// <summary>
+    /// 是不是宿主随当前调用交给插件的租户
+    /// </summary>
+    private bool IsCurrentTenant(string tenant) => _tenant is not null && string.Equals(tenant, _tenant, StringComparison.Ordinal);
 
     /// <summary>
     /// 当前调用的截止时间与剩余时间

@@ -43,8 +43,8 @@ internal sealed class WasmMiddleware(WasmPluginRuntime runtime, string name, Pip
         var downstream = context;
         foreach (var (key, value) in decision.Baggage)
         {
-            // 只合并已登记的键；主体不可改写
-            if (BaggageKeys.IsRegistered(key) && key != BaggageKeys.Principal)
+            // 只合并已登记的键；主体与租户不可改写：插件不能替调用选租户，Tenant 阶段之前的中间件改写了它就能把调用放进任意启用的租户（ADR-0195）
+            if (BaggageKeys.IsRegistered(key) && key != BaggageKeys.Principal && key != BaggageKeys.Tenant)
             {
                 downstream = downstream.WithBaggage(key, value);
             }

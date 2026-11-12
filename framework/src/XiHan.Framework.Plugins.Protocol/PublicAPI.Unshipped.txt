@@ -29,6 +29,7 @@ const XiHan.Framework.Plugins.Protocol.PluginErrors.Unavailable = "PLUGINS_UNAVA
 const XiHan.Framework.Plugins.Protocol.PluginErrors.Unexpected = "PLUGINS_UNEXPECTED_001" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.AlreadyLoaded = "plugins.process.already_loaded" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.CallbackDenied = "plugins.callback.denied" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.CallbackTenantDenied = "plugins.callback.tenant_denied" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.CatalogName = "plugins.protocol" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.EntryRequired = "plugins.process.entry_required" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.ExecutableMissing = "plugins.process.executable_missing" -> string!

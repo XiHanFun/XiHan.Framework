@@ -1,5 +1,6 @@
 {
   "plugins.callback.denied": "Das Plugin '{id}' darf die Berechtigung '{permission}' nicht verwenden: Sie muss im Manifest deklariert und vom Host erteilt sein.",
+  "plugins.callback.tenant_denied": "Das Plugin '{id}' darf nicht im Mandanten '{tenant}' handeln: Ein Rückruf kann nur den Mandanten eines Aufrufs tragen, den der Host an das Plugin übergeben hat.",
   "plugins.callback.messaging_unavailable": "Der Host hat keinen Nachrichten-Publisher; Plugin '{id}' kann nicht veröffentlichen.",
   "plugins.callback.session_invalid": "Das Sitzungstoken des Plugins fehlt oder ist ungültig.",
   "plugins.handshake.invalid": "Der Handshake des Plugins '{id}' ist fehlgeschlagen: {reason}",

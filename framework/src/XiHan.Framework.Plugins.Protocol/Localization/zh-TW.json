@@ -1,5 +1,6 @@
 {
   "plugins.callback.denied": "外掛 '{id}' 不能使用權限 '{permission}'：權限須在清單中宣告並由主機授予。",
+  "plugins.callback.tenant_denied": "外掛 '{id}' 不能在租用戶 '{tenant}' 中執行：回呼只能帶主機交給外掛處理的呼叫的租用戶。",
   "plugins.callback.messaging_unavailable": "主機沒有訊息發佈器，外掛 '{id}' 無法發佈訊息。",
   "plugins.callback.session_invalid": "外掛工作階段權杖缺失或無效。",
   "plugins.handshake.invalid": "外掛 '{id}' 交握失敗：{reason}",

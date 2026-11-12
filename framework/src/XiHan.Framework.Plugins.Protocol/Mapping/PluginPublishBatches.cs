@@ -28,10 +28,12 @@ internal static class PluginPublishBatches
     /// <param name="envelopes">请求的信封</param>
     /// <param name="statuses">与信封等长的结果数组；校验失败的位置在此写入</param>
     /// <param name="unavailable">宿主没有消息发布器时的错误</param>
-    public static IReadOnlyList<(string Topic, IReadOnlyList<int> Indexes, IReadOnlyList<MessageEnvelope> Messages)> Collect(IReadOnlyList<Envelope> envelopes, ProtoStatus[] statuses, Error? unavailable)
+    /// <param name="admit">逐项准入：返回错误的那一项写该错误、不发布（如信封自报的租户越界，ADR-0195）</param>
+    public static IReadOnlyList<(string Topic, IReadOnlyList<int> Indexes, IReadOnlyList<MessageEnvelope> Messages)> Collect(IReadOnlyList<Envelope> envelopes, ProtoStatus[] statuses, Error? unavailable, Func<Envelope, Error?> admit)
     {
         ArgumentNullException.ThrowIfNull(envelopes);
         ArgumentNullException.ThrowIfNull(statuses);
+        ArgumentNullException.ThrowIfNull(admit);
         var groups = new Dictionary<string, (List<int> Indexes, List<MessageEnvelope> Messages)>(StringComparer.Ordinal);
         var topics = new List<string>();
         for (var index = 0; index < envelopes.Count; index++)
@@ -46,6 +48,12 @@ internal static class PluginPublishBatches
             if (!TopicName.IsValid(envelope.Topic))
             {
                 statuses[index] = PluginErrorMapper.ToStatus(Error.Validation(MessagingErrors.InvalidTopic, MessagingMessages.InvalidTopic, MessageArguments.Of(("topic", envelope.Topic))));
+                continue;
+            }
+
+            if (admit(envelope) is { } denied)
+            {
+                statuses[index] = PluginErrorMapper.ToStatus(denied);
                 continue;
             }
 

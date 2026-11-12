@@ -63,6 +63,14 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     private readonly CancellationTokenSource _lifetime = new();
 
     /// <summary>
+    /// 宿主正交给插件处理的调用的租户
+    /// </summary>
+    /// <remarks>
+    /// 回调与发布能带的租户以它为限（ADR-0195）
+    /// </remarks>
+    private readonly PluginTenantCalls _tenants = new();
+
+    /// <summary>
     /// 当前状态
     /// </summary>
     private LifecycleState _state = LifecycleState.Declared;
@@ -368,6 +376,8 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             Payload = ByteString.CopyFrom(payload.Span),
             Metadata = PluginMetadata.FromContext(context),
         };
+        // 调用在途期间插件的回调可以带这次调用的租户，调用返回即撤销
+        using var tenant = _tenants.Enter(PluginMetadata.TenantOf(context));
         try
         {
             var response = await process.Client.InvokeAsync(request, PluginMetadata.CallOptionsFor(context)).ConfigureAwait(false);
@@ -404,6 +414,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             Metadata = PluginMetadata.FromContext(context),
             Attempt = (uint)delivery.Attempt,
         };
+        using var tenant = _tenants.Enter(PluginMetadata.TenantOf(context));
         try
         {
             var response = await process.Client.HandleEventAsync(request, PluginMetadata.CallOptionsFor(context)).ConfigureAwait(false);
@@ -415,6 +426,14 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             return PluginErrorMapper.FromRpc(exception, Manifest.Id, "event", State, processExited: process.HasExited, callerCancelled: context.CancellationToken.IsCancellationRequested);
         }
     }
+
+    /// <summary>
+    /// 是不是宿主此刻交给插件处理的某个调用的租户
+    /// </summary>
+    /// <remarks>
+    /// 回调与发布据此限定插件能带的租户（<c>spec/plugin/invocation.md</c> §5，ADR-0195）
+    /// </remarks>
+    public bool IsHandlingTenant(string tenant) => _tenants.Contains(tenant);
 
     /// <summary>
     /// 释放同步原语

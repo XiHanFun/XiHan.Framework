@@ -1,5 +1,6 @@
 {
   "plugins.callback.denied": "Plugin '{id}' may not use permission '{permission}': it must be declared in the manifest and granted by the host.",
+  "plugins.callback.tenant_denied": "Plugin '{id}' may not act in tenant '{tenant}': a callback can only carry the tenant of a call the host has handed to the plugin.",
   "plugins.callback.messaging_unavailable": "The host has no message publisher; plugin '{id}' cannot publish.",
   "plugins.callback.session_invalid": "The plugin session token is missing or invalid.",
   "plugins.handshake.invalid": "Plugin '{id}' failed the handshake: {reason}",

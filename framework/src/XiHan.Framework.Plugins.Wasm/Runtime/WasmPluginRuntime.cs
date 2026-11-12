@@ -364,7 +364,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             if (_instance is { } instance && State is LifecycleState.Configured or LifecycleState.Started or LifecycleState.Ready or LifecycleState.Degraded)
             {
                 SetState(LifecycleState.Draining, null);
-                var stopped = await CallAsync<StopResponse>(instance, "xihan_stop", new StopRequest { GraceSeconds = (uint)Math.Ceiling(_host.Options.CallTimeout.TotalSeconds), Reason = reason }, _host.Options.CallTimeout, null, cancellationToken).ConfigureAwait(false);
+                var stopped = await CallAsync<StopResponse>(instance, "xihan_stop", new StopRequest { GraceSeconds = (uint)Math.Ceiling(_host.Options.CallTimeout.TotalSeconds), Reason = reason }, _host.Options.CallTimeout, null, null, cancellationToken).ConfigureAwait(false);
                 if (stopped.IsFailure)
                 {
                     LogStopFailed(Logger, Manifest.Id, stopped.Error!.Code);
@@ -397,7 +397,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             }
 
             var request = new InvokeRequest { Operation = operation, Payload = ByteString.CopyFrom(payload.Span), Metadata = PluginMetadata.FromContext(context) };
-            var response = await CallAsync<InvokeResponse>(instance, "xihan_invoke", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
+            var response = await CallAsync<InvokeResponse>(instance, "xihan_invoke", request, Timeout(context), context.Deadline, PluginMetadata.TenantOf(context), context.CancellationToken).ConfigureAwait(false);
             if (!response.TryGetValue(out var invoked))
             {
                 return response.Error!;
@@ -434,7 +434,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             }
 
             var request = new HandleEventRequest { Envelope = PluginEnvelopeMapper.ToProto(delivery.Topic, delivery.Envelope), Metadata = PluginMetadata.FromContext(context), Attempt = (uint)delivery.Attempt };
-            var response = await CallAsync<HandleEventResponse>(instance, "xihan_handle_event", request, Timeout(context), context.Deadline, context.CancellationToken).ConfigureAwait(false);
+            var response = await CallAsync<HandleEventResponse>(instance, "xihan_handle_event", request, Timeout(context), context.Deadline, PluginMetadata.TenantOf(context), context.CancellationToken).ConfigureAwait(false);
             // 同上：取消交给 DeadlineMiddleware 归因
             return response.TryGetValue(out var handled) ? PluginErrorMapper.FromStatus(handled.Status, Manifest.Id, "event") : Result.Failure(response.Error!);
         }
@@ -475,7 +475,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 request.Outcome = PluginErrorMapper.ToStatus(downstream);
             }
 
-            return await CallAsync<MiddlewareResponse>(instance, "xihan_middleware", request, _host.Options.MiddlewareTimeout, null, cancellationToken).ConfigureAwait(false);
+            return await CallAsync<MiddlewareResponse>(instance, "xihan_middleware", request, _host.Options.MiddlewareTimeout, null, PluginMetadata.TenantOf(context), cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -699,7 +699,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         }
 
         _instance = instance;
-        var handshake = await CallAsync<HandshakeResponse>(instance, "xihan_handshake", BuildHandshake(), _host.Options.CallTimeout, null, cancellationToken).ConfigureAwait(false);
+        var handshake = await CallAsync<HandshakeResponse>(instance, "xihan_handshake", BuildHandshake(), _host.Options.CallTimeout, null, null, cancellationToken).ConfigureAwait(false);
         if (!handshake.TryGetValue(out var response))
         {
             await DropInstanceAsync().ConfigureAwait(false);
@@ -772,7 +772,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     private async Task<Result> StepAsync<TResponse>(WasmInstance instance, string export, IMessage request, Func<TResponse, Status?> status, string phase, CancellationToken cancellationToken)
         where TResponse : IMessage<TResponse>, new()
     {
-        var called = await CallAsync<TResponse>(instance, export, request, _host.Options.CallTimeout, null, cancellationToken).ConfigureAwait(false);
+        var called = await CallAsync<TResponse>(instance, export, request, _host.Options.CallTimeout, null, null, cancellationToken).ConfigureAwait(false);
         Error error;
         if (called.TryGetValue(out var response))
         {
@@ -798,9 +798,9 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// 串行地做一次调用并解码响应
     /// </summary>
     /// <remarks>
-    /// 陷阱、超时与无响应都让实例失效（在途的崩溃处理由 <see cref="HandleCrashAsync"/> 负责）
+    /// 陷阱、超时与无响应都让实例失效（在途的崩溃处理由 <see cref="HandleCrashAsync"/> 负责）。<paramref name="tenant"/> 是宿主随这次调用交给插件的租户，期间的回调与发布只能带它（ADR-0195）
     /// </remarks>
-    private async Task<Result<TResponse>> CallAsync<TResponse>(WasmInstance instance, string export, IMessage request, TimeSpan timeout, DateTimeOffset? deadline, CancellationToken cancellationToken)
+    private async Task<Result<TResponse>> CallAsync<TResponse>(WasmInstance instance, string export, IMessage request, TimeSpan timeout, DateTimeOffset? deadline, string? tenant, CancellationToken cancellationToken)
         where TResponse : IMessage<TResponse>, new()
     {
         var encoded = PluginJsonCodec.Encode(request);
@@ -831,7 +831,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 }
 
                 // Wasm 执行是同步的 CPU 工作：放到线程池，不占用调用方的异步链
-                outcome = await Task.Run(() => _functions.RunCall(() => instance.Call(export, encoded, timeout), budget, cancellationToken), cancellationToken).ConfigureAwait(false);
+                outcome = await Task.Run(() => _functions.RunCall(() => instance.Call(export, encoded, timeout), budget, tenant, cancellationToken), cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -1023,7 +1023,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             Result<HealthResponse> health;
             try
             {
-                health = await CallAsync<HealthResponse>(instance, "xihan_health", new HealthRequest(), _host.Options.CallTimeout, null, token).ConfigureAwait(false);
+                health = await CallAsync<HealthResponse>(instance, "xihan_health", new HealthRequest(), _host.Options.CallTimeout, null, null, token).ConfigureAwait(false);
             }
             finally
             {

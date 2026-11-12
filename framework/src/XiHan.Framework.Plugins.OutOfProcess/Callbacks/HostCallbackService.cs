@@ -34,9 +34,15 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
         var runtime = RuntimeOf(context);
         Require(runtime, OutOfProcessPluginHost.PipelinePermission);
 
+        // 权限之后判租户：插件身份没有租户声明，Tenant 阶段会照单采用元数据里的租户，只能在这里限定为在途调用的租户
+        if (PluginCallbackTenants.Check(request.Metadata, runtime.Manifest.Id, runtime.IsHandlingTenant) is { } outside)
+        {
+            return new InvokeResponse { Status = PluginErrorMapper.ToStatus(outside) };
+        }
+
         await using var scope = host.Root.CreateAsyncScope();
         var invocation = PluginMetadata.CreateContext(scope.ServiceProvider, request.Metadata, runtime.Manifest.Id, context.CancellationToken);
-        // 宿主以插件身份执行：主体 ID 为清单 ID、方案 Plugin、无声明；租户由 Tenant 阶段按 Baggage 解析
+        // 宿主以插件身份执行：主体 ID 为清单 ID、方案 Plugin、无声明；租户由 Tenant 阶段按 Baggage 解析（上面已限定为在途调用的租户）
         invocation.SetSecurity(new SecurityContext(new Principal(runtime.Manifest.Id, OutOfProcessPluginHost.PluginScheme), null));
         var response = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(invocation, new OperationRequest(request.Operation, request.Payload.Memory)).ConfigureAwait(false);
         return new InvokeResponse
@@ -58,7 +64,7 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
         var publisher = scope.ServiceProvider.GetService<IMessagePublisher>();
         // 逐项校验主题与信封，通过的按主题分组、每组一次批量发布；结果按原始位置回填，与请求的信封一一对应
         var statuses = new ProtoStatus[request.Envelopes.Count];
-        var batches = PluginPublishBatches.Collect(request.Envelopes, statuses, publisher is null ? Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", runtime.Manifest.Id))) : null);
+        var batches = PluginPublishBatches.Collect(request.Envelopes, statuses, publisher is null ? Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", runtime.Manifest.Id))) : null, envelope => PluginCallbackTenants.Check(envelope, runtime.Manifest.Id, runtime.IsHandlingTenant));
         foreach (var (topic, indexes, messages) in batches)
         {
             var results = await publisher!.PublishManyAsync(topic, messages, context.CancellationToken).ConfigureAwait(false);
