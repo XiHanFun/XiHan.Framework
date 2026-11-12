@@ -37,18 +37,35 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// 允许原样传给插件的环境变量
     /// </summary>
     /// <remarks>
-    /// PATH、用户目录、临时目录、区域与时区，以及操作系统运行所需的系统变量
+    /// PATH、用户目录、临时目录、区域与时区、操作系统运行所需的系统变量，以及 Go 运行时的调优变量。Go 只列这几个名字，不按 <c>GO</c> 前缀放行：
+    /// 那样 <c>GOOGLE_APPLICATION_CREDENTIALS</c> 等 Google 云凭据也会交给插件（ADR-0208）；构建期的 <c>GOPATH</c>、<c>GOROOT</c> 编译好的插件用不到
     /// </remarks>
     private static readonly string[] _inheritedVariables =
     [
         "PATH", "HOME", "USERPROFILE", "TMP", "TEMP", "TMPDIR", "LANG", "LC_ALL", "TZ",
         "SystemRoot", "windir", "ComSpec", "PATHEXT", "SystemDrive", "APPDATA", "LOCALAPPDATA", "ProgramData", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432",
+        "GOMAXPROCS", "GOGC", "GOMEMLIMIT", "GODEBUG", "GOTRACEBACK",
     ];
 
     /// <summary>
     /// 允许按前缀传给插件的环境变量
     /// </summary>
-    private static readonly string[] _inheritedPrefixes = ["DOTNET_", "GO"];
+    /// <remarks>
+    /// 只有 .NET 运行时的 <c>DOTNET_</c>：它是运行时的配置，不放凭据
+    /// </remarks>
+    private static readonly string[] _inheritedPrefixes = ["DOTNET_"];
+
+    /// <summary>
+    /// 环境变量是否原样传给插件
+    /// </summary>
+    /// <remarks>
+    /// 白名单里的名字，或白名单前缀开头的名字，不分大小写（handshake.md §1）
+    /// </remarks>
+    internal static bool IsInherited(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return _inheritedVariables.Contains(name, StringComparer.OrdinalIgnoreCase) || _inheritedPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
     /// 进程
@@ -169,7 +186,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
         info.Environment.Clear();
         foreach (var (name, value) in inherited)
         {
-            if (value is not null && (_inheritedVariables.Contains(name, StringComparer.OrdinalIgnoreCase) || _inheritedPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))))
+            if (value is not null && IsInherited(name))
             {
                 info.Environment[name] = value;
             }
