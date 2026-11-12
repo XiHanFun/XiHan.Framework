@@ -18,6 +18,7 @@
 - **修复** WebAuthn 认证核对凭据属于谁：原先只在存储与响应都带用户句柄时才比对，知道口令的攻击者能用自己账号下的通行密钥完成别人的登录。`WebAuthnStoredCredential.UserHandle` 改为必填，`VerifyAuthentication` 增加 `expectedUserHandle`（先认出用户时传他，免用户名传 `null`，此时响应必须带句柄），结果新增 `UserHandle`
 - **修复** OpenID Connect 缺省校验受众：原先没配 `Audience` 就不校验，共用身份提供方时发给别的应用的令牌也被接受。现在 `XiHan:Security:OpenIdConnect:Audience` 必填，没有即启动失败；签发者只为本 API 签发令牌时可以显式设 `ValidateAudience: false`
 - **修复** 工作流 `Http` 活动的正文读到 4 MiB 即停：原先先整体缓冲（上限约 2 GiB）再截断，能发布流程定义的租户用户把地址指向自己的服务器就能耗尽宿主内存。`TimeoutSeconds` 不超过 `XiHan:Workflow:MaxHttpTimeoutSeconds`（缺省 300），不是正的秒数时发布即校验失败，原先静默取缺省值
+- **修复** 工作流的扇出与变量大小有了上限：原先并行 `ForEach` 的子实例数不受限，`s + s` 几十步就能拼出上 GB 的字符串，级联取消只处理最新的 1000 个子实例。现在 `ForEach` 最多 `XiHan:Workflow:MaxForEachItems` 项（缺省 1000），实例变量序列化后最多 `MaxVariablesBytes`（缺省 8 MiB），`+` 拼出的字符串最长 4194304 个字符，级联覆盖全部子实例
 
 ## v5.0.0-preview.3（2026-11-12）
 

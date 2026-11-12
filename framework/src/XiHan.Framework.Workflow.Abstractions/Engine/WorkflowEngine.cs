@@ -446,7 +446,8 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
                     session.Variables.Remove(name);
                 }
 
-                return ValueTask.FromResult(Result.Success());
+                // 超过上限即拒绝：操作失败不写回，会话里改过的变量随之作废
+                return ValueTask.FromResult(WorkflowVariableLimit.Check(session.Instance.Variables, _options, input: true) is { } tooLarge ? Result.Failure(tooLarge) : Result.Success());
             }, cancellationToken).ConfigureAwait(false));
         }
 
@@ -494,6 +495,12 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
                 instance.FaultNodeId = null;
                 instance.FaultNodeInstanceId = null;
                 session.Variables.Merge(jump.Variables);
+                if (WorkflowVariableLimit.Check(instance.Variables, _options, input: true) is { } tooLarge)
+                {
+                    // 操作失败不写回：上面作废的节点、书签与改过的变量都留在会话里，随之丢弃
+                    return tooLarge;
+                }
+
                 session.Publish(WorkflowTopics.InstanceJumped, session.EventData() with { NodeId = target.Id, Reason = jump.Reason, ActorId = jump.ActorId });
                 session.Queue.Enqueue(new WorkItem(WorkItemKind.Fresh, target));
                 await RunBurstAsync(session).ConfigureAwait(false);
@@ -975,15 +982,26 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
 
         if (session.CascadeToChildren is { } cascade)
         {
-            var children = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { ParentInstanceId = instance.Id, Take = WorkflowInstanceQuery.MaxTake }, cancellationToken).ConfigureAwait(false);
-            if (children.TryGetValue(out var list))
+            // 逐页处理全部子实例：查询不按状态过滤，取消只改状态、不改创建时间，按缺省排序（创建时间加次序键）分页不重不漏（ADR-0182）
+            for (var skip = 0; ; skip += WorkflowInstanceQuery.MaxTake)
             {
+                var children = await _instances.ListAsync(Tenant, new WorkflowInstanceQuery { ParentInstanceId = instance.Id, Skip = skip, Take = WorkflowInstanceQuery.MaxTake }, cancellationToken).ConfigureAwait(false);
+                if (!children.TryGetValue(out var list))
+                {
+                    break;
+                }
+
                 var open = list.Where(static child => !child.IsFinal).Select(static child => child.Id).ToList();
                 if (open.Count > 0)
                 {
                     _ = cascade == WorkflowInstanceStatus.Canceled
                         ? await CancelAsync(open, instance.CancellationReason, cancellationToken).ConfigureAwait(false)
                         : await TerminateAsync(open, instance.CancellationReason, cancellationToken).ConfigureAwait(false);
+                }
+
+                if (list.Count < WorkflowInstanceQuery.MaxTake)
+                {
+                    break;
                 }
             }
         }
@@ -1129,7 +1147,11 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
                 session.Queue.Clear();
                 return;
             default:
-                SuspendNode(session, node, nodeInstance, outcome, item.Kind == WorkItemKind.Resume);
+                if (SuspendNode(session, node, nodeInstance, outcome, item.Kind == WorkItemKind.Resume) is { } suspendError)
+                {
+                    HandleFault(session, node, nodeInstance, suspendError);
+                }
+
                 return;
         }
     }
@@ -1138,7 +1160,7 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     /// 节点完成
     /// </summary>
     /// <remarks>
-    /// 记输出与结果标签、合并变量、套用输出映射、登记子流程、清掉剩余书签；输出映射求值失败返回错误
+    /// 记输出与结果标签、合并变量、套用输出映射、登记子流程、清掉剩余书签；输出映射求值失败返回错误。合并之后变量超过上限时放回写入之前的值、不留输出，返回错误（ADR-0182）
     /// </remarks>
     private Error? CompleteNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome)
     {
@@ -1151,6 +1173,7 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
         }
 
         nodeInstance.Outputs = outputs;
+        var previous = CaptureVariables(session.Instance.Variables, outcome.Outputs, node.OutputMappings);
         session.Variables.Merge(outcome.Outputs);
         if (node.OutputMappings is { Count: > 0 } mappings)
         {
@@ -1168,6 +1191,14 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
             }
         }
 
+        if (WorkflowVariableLimit.Check(session.Instance.Variables, _options, input: false) is { } tooLarge)
+        {
+            // 节点故障之后可能重试或继续出错：变量放回写入之前，节点实例也不留这份超限的输出
+            RestoreVariables(session.Instance.Variables, previous);
+            nodeInstance.Outputs = [];
+            return tooLarge;
+        }
+
         session.ScheduleChildren(nodeInstance, outcome.Children);
         session.RemoveBookmarksOf(nodeInstance.Id);
         session.Touch(nodeInstance);
@@ -1179,12 +1210,19 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
     /// 节点挂起
     /// </summary>
     /// <remarks>
-    /// 建书签（用户任务发创建事件、外部任务发创建事件）、首次挂起且有超时时加超时书签
+    /// 建书签（用户任务发创建事件、外部任务发创建事件）、首次挂起且有超时时加超时书签。合并输出之后变量超过上限时放回写入之前的值，不建书签，返回错误（ADR-0182）
     /// </remarks>
-    private static void SuspendNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome, bool resumed)
+    private Error? SuspendNode(WorkflowSession session, WorkflowNode node, WorkflowNodeInstance nodeInstance, ActivityOutcome outcome, bool resumed)
     {
         nodeInstance.Status = WorkflowNodeInstanceStatus.Suspended;
+        var previous = CaptureVariables(session.Instance.Variables, outcome.Outputs, null);
         session.Variables.Merge(outcome.Outputs);
+        if (WorkflowVariableLimit.Check(session.Instance.Variables, _options, input: false) is { } tooLarge)
+        {
+            RestoreVariables(session.Instance.Variables, previous);
+            return tooLarge;
+        }
+
         session.ScheduleChildren(nodeInstance, outcome.Children);
         session.Touch(nodeInstance);
         foreach (var request in outcome.Bookmarks)
@@ -1207,6 +1245,46 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
         }
 
         session.Publish(WorkflowTopics.NodeExecuted, session.EventData(nodeInstance));
+        return null;
+    }
+
+    /// <summary>
+    /// 记下将被节点输出或输出映射覆盖的变量
+    /// </summary>
+    /// <remarks>
+    /// 每项是名字、原来有没有、原来的值。覆盖时旧值脱离父节点、引用仍然有效，放回不用再拷贝
+    /// </remarks>
+    private static List<(string Name, bool Existed, JsonNode? Value)> CaptureVariables(JsonObject variables, JsonObject? outputs, IReadOnlyDictionary<string, string>? mappings)
+    {
+        var captured = new List<(string Name, bool Existed, JsonNode? Value)>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var name in (outputs?.Select(static pair => pair.Key) ?? []).Concat(mappings?.Keys ?? []))
+        {
+            if (seen.Add(name))
+            {
+                captured.Add((name, variables.TryGetPropertyValue(name, out var value), value));
+            }
+        }
+
+        return captured;
+    }
+
+    /// <summary>
+    /// 把 <see cref="CaptureVariables"/> 记下的变量放回
+    /// </summary>
+    private static void RestoreVariables(JsonObject variables, List<(string Name, bool Existed, JsonNode? Value)> captured)
+    {
+        foreach (var (name, existed, value) in captured)
+        {
+            if (existed)
+            {
+                variables[name] = value;
+            }
+            else
+            {
+                variables.Remove(name);
+            }
+        }
     }
 
     /// <summary>
@@ -1620,6 +1698,12 @@ internal sealed partial class WorkflowEngine : IWorkflowEngine
             {
                 return Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.VariableRequired, MessageArguments.Of(("name", declared.Name)));
             }
+        }
+
+        // 写入之前核对：子流程的起始变量超限时启动失败，父节点照「子流程没起来」收到故障回调
+        if (WorkflowVariableLimit.Check(variables, _options, input: true) is { } tooLarge)
+        {
+            return tooLarge;
         }
 
         var now = _clock.GetUtcNow();

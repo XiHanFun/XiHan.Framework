@@ -1166,12 +1166,16 @@ XiHan.Framework.Workflow.Abstractions.WorkflowOptions.HttpTimeout.get -> System.
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.HttpTimeout.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.LockTimeout.get -> System.TimeSpan
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.LockTimeout.init -> void
+XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxForEachItems.get -> int
+XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxForEachItems.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxHttpTimeout.get -> System.TimeSpan
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxHttpTimeout.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxNodeExecutionsPerBurst.get -> int
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxNodeExecutionsPerBurst.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxSubWorkflowDepth.get -> int
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxSubWorkflowDepth.init -> void
+XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxVariablesBytes.get -> int
+XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxVariablesBytes.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.NotResumableBackoff.get -> System.TimeSpan
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.NotResumableBackoff.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.Retention.get -> System.TimeSpan
@@ -1504,6 +1508,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNotNumber
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotBoolean = "workflow.expression.operands_not_boolean" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotNumeric = "workflow.expression.operands_not_numeric" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotScalar = "workflow.expression.operands_not_scalar" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionStringTooLong = "workflow.expression.string_too_long" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionTokenExpected = "workflow.expression.token_expected" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionTooDeep = "workflow.expression.too_deep" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionTooLong = "workflow.expression.too_long" -> string!
@@ -1573,6 +1578,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotTimeZone
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotUrl = "workflow.activity.property_not_url" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotWorkflowName = "workflow.activity.property_not_workflow_name" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertySecondsOverLimit = "workflow.activity.property_seconds_over_limit" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyTooManyItems = "workflow.activity.property_too_many_items" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyUnknownValue = "workflow.activity.property_unknown_value" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PurgeLimitInvalid = "workflow.purge.limit_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.StoreCapacity = "workflow.store.capacity" -> string!
@@ -1590,6 +1596,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQuerySortInvali
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQuerySortsTooMany = "workflow.task.query_sorts_too_many" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.TaskQueryTargetMissing = "workflow.task.query_target_missing" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.VariableRequired = "workflow.variable.required" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.VariablesTooLarge = "workflow.instance.variables_too_large" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowName.MaxLength = 128 -> int
 const XiHan.Framework.Workflow.Abstractions.WorkflowOptions.ConfigurationSection = "XiHan:Workflow" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowSortKeys.MaxTitleLength = 256 -> int

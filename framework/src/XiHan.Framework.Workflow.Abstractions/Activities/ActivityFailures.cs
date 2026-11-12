@@ -66,6 +66,12 @@ internal static class ActivityFailures
         => Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.PropertySecondsOverLimit, MessageArguments.Of(("name", name), ("max", max.TotalSeconds)));
 
     /// <summary>
+    /// 属性的项数超过上限
+    /// </summary>
+    public static Error TooManyItems(string name, int count, int max)
+        => Error.Validation(WorkflowErrors.InputInvalid, WorkflowMessages.PropertyTooManyItems, MessageArguments.Of(("name", name), ("count", count), ("max", max)));
+
+    /// <summary>
     /// 属性必须是日期时间
     /// </summary>
     public static Error NotDateTime(string name)

@@ -66,6 +66,8 @@ public sealed class InMemoryWorkflowTests
             [$"{WorkflowOptions.ConfigurationSection}:HousekeepingIntervalSeconds"] = "120",
             [$"{WorkflowOptions.ConfigurationSection}:HttpTimeoutSeconds"] = "45",
             [$"{WorkflowOptions.ConfigurationSection}:MaxHttpTimeoutSeconds"] = "90",
+            [$"{WorkflowOptions.ConfigurationSection}:MaxForEachItems"] = "12",
+            [$"{WorkflowOptions.ConfigurationSection}:MaxVariablesBytes"] = "4096",
         }).Build();
 
         var options = InMemoryWorkflowOptions.FromConfiguration(configuration);
@@ -73,6 +75,7 @@ public sealed class InMemoryWorkflowTests
         var engine = WorkflowOptions.FromConfiguration(configuration);
         Assert.Equal((10, 3, TimeSpan.FromSeconds(1.5), TimeSpan.FromSeconds(60), 11), (engine.MaxNodeExecutionsPerBurst, engine.MaxSubWorkflowDepth, engine.LockTimeout, engine.NotResumableBackoff, engine.ExpressionCacheSize));
         Assert.Equal((TimeSpan.FromDays(7.5), TimeSpan.FromMinutes(2), TimeSpan.FromSeconds(45), TimeSpan.FromSeconds(90)), (engine.Retention, engine.HousekeepingInterval, engine.HttpTimeout, engine.MaxHttpTimeout));
+        Assert.Equal((12, 4096), (engine.MaxForEachItems, engine.MaxVariablesBytes));
         Assert.Equal(TimeSpan.Zero, WorkflowOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"{WorkflowOptions.ConfigurationSection}:RetentionDays"] = "0" }).Build()).Retention);
         Assert.Throws<ArgumentOutOfRangeException>(() => new InMemoryWorkflowOptions { MaxInstances = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new WorkflowOptions { LockTimeout = TimeSpan.Zero });
@@ -91,6 +94,8 @@ public sealed class InMemoryWorkflowTests
     [InlineData("XiHan:Workflow:HousekeepingIntervalSeconds", "NaN")]
     [InlineData("XiHan:Workflow:HttpTimeoutSeconds", "")]
     [InlineData("XiHan:Workflow:MaxHttpTimeoutSeconds", "0")]
+    [InlineData("XiHan:Workflow:MaxForEachItems", "0")]
+    [InlineData("XiHan:Workflow:MaxVariablesBytes", "8 MiB")]
     [InlineData("XiHan:Workflow:InMemory:MaxDefinitions", "lots")]
     [InlineData("XiHan:Workflow:InMemory:MaxInstances", "0")]
     [InlineData("XiHan:Workflow:InMemory:MaxNodeInstances", "1.5")]

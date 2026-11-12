@@ -14,10 +14,18 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// </summary>
 /// <remarks>
 /// 递归下降解析成闭包树。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；<c>==</c> 跨数字类型宽松、字符串序数比较；未知根变量是错误，缺少的成员或键是 null
-/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）
+/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）；<c>+</c> 拼出的字符串不超过 <see cref="MaxStringLength"/>（ADR-0182）
 /// </remarks>
 internal sealed class ExpressionCompiler
 {
+    /// <summary>
+    /// <c>+</c> 拼出的字符串的长度上限（字符）
+    /// </summary>
+    /// <remarks>
+    /// 与 <c>Http</c> 活动保留的正文同量级。<c>s + s</c> 每求值一次长度翻倍，几十步就超过 1 GB：在分配之前按两侧长度核对
+    /// </remarks>
+    public const int MaxStringLength = 4 * 1024 * 1024;
+
     /// <summary>
     /// 表达式的长度上限（字符，空白也算）
     /// </summary>
@@ -553,7 +561,16 @@ internal sealed class ExpressionCompiler
     {
         if (IsString(left) || IsString(right))
         {
-            return JsonValue.Create(Text(left) + Text(right));
+            var first = Text(left);
+            var second = Text(right);
+            // 先按长度核对再拼接：超长的结果一次也不分配
+            var length = (long)first.Length + second.Length;
+            if (length > MaxStringLength)
+            {
+                throw new ExpressionException(WorkflowMessages.ExpressionStringTooLong, MessageArguments.Of(("length", length), ("max", MaxStringLength)));
+            }
+
+            return JsonValue.Create(first + second);
         }
 
         return JsonValue.Create(Number(left, "+") + Number(right, "+"));

@@ -63,6 +63,14 @@ public static class WorkflowMessages
     public const string InstanceRunaway = "workflow.instance.runaway";
 
     /// <summary>
+    /// 实例变量序列化后超过大小上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>size</c>、<c>max</c>（字节）
+    /// </remarks>
+    public const string VariablesTooLarge = "workflow.instance.variables_too_large";
+
+    /// <summary>
     /// 汇合节点等待的分支已死
     /// </summary>
     /// <remarks>
@@ -463,6 +471,14 @@ public static class WorkflowMessages
     public const string PropertySecondsOverLimit = "workflow.activity.property_seconds_over_limit";
 
     /// <summary>
+    /// 活动属性的项数超过上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>count</c>、<c>max</c>
+    /// </remarks>
+    public const string PropertyTooManyItems = "workflow.activity.property_too_many_items";
+
+    /// <summary>
     /// 活动属性必须是日期时间
     /// </summary>
     /// <remarks>
@@ -806,6 +822,14 @@ public static class WorkflowMessages
     /// 参数：<c>expression</c>（截断的）、<c>length</c>、<c>max</c>
     /// </remarks>
     public const string ExpressionTooLong = "workflow.expression.too_long";
+
+    /// <summary>
+    /// 表达式拼出的字符串超过长度上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>length</c>、<c>max</c>
+    /// </remarks>
+    public const string ExpressionStringTooLong = "workflow.expression.string_too_long";
 
     /// <summary>
     /// 表达式超过嵌套上限

@@ -127,10 +127,34 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromMinutes(5);
 
     /// <summary>
+    /// <c>ForEach</c> 一次最多处理的项数
+    /// </summary>
+    /// <remarks>
+    /// 默认 1000，顺序与并行模式都算。每项是一个子实例，项数由定义里的表达式给出：超过即节点故障，一个子实例也不启动（ADR-0182）
+    /// </remarks>
+    public int MaxForEachItems
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The item limit must be at least 1.");
+    } = 1000;
+
+    /// <summary>
+    /// 一个实例的变量序列化后的字节数上限
+    /// </summary>
+    /// <remarks>
+    /// 默认 8 MiB，按存储的写法计数。启动、改变量与跳转时超过是校验错误；节点的输出、输出映射与 <c>ForEach</c> 的结果超过时节点故障，变量保持写入之前的样子（ADR-0182）
+    /// </remarks>
+    public int MaxVariablesBytes
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The variable size limit must be at least 1 byte.");
+    } = 8 * 1024 * 1024;
+
+    /// <summary>
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>、<c>RetentionDays</c>、<c>HousekeepingIntervalSeconds</c>、<c>HttpTimeoutSeconds</c>、<c>MaxHttpTimeoutSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理
+    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>、<c>RetentionDays</c>、<c>HousekeepingIntervalSeconds</c>、<c>HttpTimeoutSeconds</c>、<c>MaxHttpTimeoutSeconds</c>、<c>MaxForEachItems</c>、<c>MaxVariablesBytes</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理
     /// </remarks>
     public static WorkflowOptions FromConfiguration(IConfiguration configuration)
     {
@@ -179,6 +203,16 @@ public sealed record WorkflowOptions
         if (Seconds(configuration, "MaxHttpTimeoutSeconds") is { } maxHttp)
         {
             options = options with { MaxHttpTimeout = maxHttp };
+        }
+
+        if (Integer(configuration, "MaxForEachItems", 1) is { } items)
+        {
+            options = options with { MaxForEachItems = items };
+        }
+
+        if (Integer(configuration, "MaxVariablesBytes", 1) is { } variables)
+        {
+            options = options with { MaxVariablesBytes = variables };
         }
 
         return options;

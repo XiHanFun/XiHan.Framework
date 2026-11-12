@@ -2206,6 +2206,20 @@
           "default": "300",
           "exclusiveMinimum": 0,
           "summary": "流程定义里 Http 活动 TimeoutSeconds 的上限（秒）"
+        },
+        {
+          "key": "MaxForEachItems",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 1,
+          "summary": "ForEach 一次最多处理的项数（每项一个子实例），超过即节点故障"
+        },
+        {
+          "key": "MaxVariablesBytes",
+          "type": "integer",
+          "default": "8388608",
+          "minimum": 1,
+          "summary": "一个实例的变量序列化后的字节数上限"
         }
       ]
     },

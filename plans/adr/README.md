@@ -181,3 +181,4 @@
 | [0179](0179-WebAuthn认证核对凭据归属.md) | 安全审查 S-04：`WebAuthnStoredCredential.UserHandle` 必填；`VerifyAuthentication` 增加 `expectedUserHandle`，先认出用户时凭据必须属于他，免用户名时响应必须带句柄，响应的句柄必须等于所属用户；结果新增 `UserHandle`；向量新增 `expectedUserHandle` 与三条样例 | 已采纳 |
 | [0180](0180-OIDC缺省校验受众.md) | 安全审查 S-05：OpenID Connect 新增 `ValidateAudience`（缺省 `true`），此时 `Audience` 必填，读配置与构造处理器时都核对，缺了启动失败；签发者只为本 API 签发令牌时才显式关掉 | 已采纳 |
 | [0181](0181-工作流Http活动的响应体与超时上限.md) | 安全审查 S-08：`Http` 活动读到响应头即交回，正文读到 4 MiB 多一个字节即停；`TimeoutSeconds` 不超过新的引擎选项 `MaxHttpTimeoutSeconds`（缺省 300），不是正的秒数或超过上限时校验与执行两处都报属性错误 | 已采纳 |
+| [0182](0182-工作流扇出与变量大小的上限.md) | 安全审查 S-09：`ForEach` 最多 `MaxForEachItems` 项（缺省 1000）；实例变量序列化后最多 `MaxVariablesBytes`（缺省 8 MiB），调用方给的超限是校验错误、节点写出的超限是节点故障且变量放回；`ForEach` 结果原地追加、只在给了 `ResultVariable` 时收集；`+` 拼出的字符串最长 4194304 个字符；级联逐页覆盖全部子实例 | 已采纳 |

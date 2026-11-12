@@ -25,7 +25,7 @@
 | `WaitSignal` | AllMatched | `SignalName`、`AcceptAnyCorrelation` |
 | `EventGateway` | AllMatched | `Signals`、`TimeoutSeconds`、`AcceptAnyCorrelation`：先到的信号胜出，结果标签是信号名或 `timeout`，输出 `signal`、`payload` |
 | `SubWorkflow` | AllMatched | `DefinitionName`、`DefinitionVersion`、`Variables`、`VariableExpressions`、`WaitForCompletion`、`ResultVariable`、`FailOnChildFault` |
-| `ForEach` | AllMatched | `Items`（求值为数组）、`ItemVariable`、`Parallel`、`FailFast`，子流程属性同 `SubWorkflow` |
+| `ForEach` | AllMatched | `Items`（求值为数组，最多 `MaxForEachItems` 项）、`ItemVariable`、`Parallel`、`FailFast`，子流程属性同 `SubWorkflow` |
 | `Log` | AllMatched | `Message`、`Level` |
 | `Fault` | None | `Message`：让实例故障 |
 | `Compensate` | AllMatched | `NodeIds`：对指定的已完成节点（缺省为之前全部已完成节点）逆序补偿后继续 |
@@ -78,7 +78,17 @@
 - `Render` 把无值渲染成空串。
 - 写回变量、输出与子流程变量时，无值写成 JSON 的 `null`。
 
-表达式最长 4000 个字符，嵌套最多 64 层（括号、函数实参、索引、一元运算符都算，`a + b + c` 这样的链不算）。超限在发布时进校验结果，运行时是 `WORKFLOW_VALIDATION_003`（`workflow.expression.too_long`、`workflow.expression.too_deep`）。
+表达式最长 4000 个字符，嵌套最多 64 层（括号、函数实参、索引、一元运算符都算，`a + b + c` 这样的链不算）。超限在发布时进校验结果，运行时是 `WORKFLOW_VALIDATION_003`（`workflow.expression.too_long`、`workflow.expression.too_deep`）。`+` 拼出的字符串最长 4194304 个字符，超过是 `workflow.expression.string_too_long`。
+
+### 扇出与变量的上限
+
+流程定义由租户用户编辑，引擎限制一个定义能占多少资源（ADR-0182）：
+
+- `ForEach` 的 `Items` 最多 `MaxForEachItems` 项（缺省 1000），超过时节点故障，一个子实例也不启动。
+- 实例变量序列化后最多 `MaxVariablesBytes` 字节（缺省 8 MiB）。启动、改变量和跳转时超过是校验错误；节点输出写进变量后超过时节点故障，变量保持写入之前的样子。
+- `ForEach` 只在给了 `ResultVariable` 时收集子实例的变量，累计超过变量上限即故障。
+
+取消或终止父实例时，级联处理它的全部子实例。
 
 **未知的根变量是错误，不是无值**：`amount > 100` 在没有 `amount` 变量时返回 `WORKFLOW_VALIDATION_003`，实例故障；判断可选变量用在启动时给默认值，或者把它放进对象里按成员访问。已解析的表达式按文本缓存，上限 `ExpressionCacheSize`（缺省 10000），满了整体清空重来。
 
@@ -225,6 +235,8 @@ Provider 实现五个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceSto
 | `HousekeepingIntervalSeconds` | 秒 | 3600 | 自动清理的周期 |
 | `HttpTimeoutSeconds` | 秒 | 30 | `Http` 活动的缺省超时 |
 | `MaxHttpTimeoutSeconds` | 秒 | 300 | 定义里 `TimeoutSeconds` 的上限，不限 `HttpTimeoutSeconds` |
+| `MaxForEachItems` | 整数 | 1000 | `ForEach` 一次最多处理的项数 |
+| `MaxVariablesBytes` | 字节 | 8388608 | 一个实例的变量序列化后的大小上限 |
 
 Provider 自己的键在各自的子节：内存实现 `XiHan:Workflow:InMemory`（`MaxDefinitions`、`MaxInstances`、`MaxNodeInstances`、`MaxBookmarks`、`PollIntervalSeconds`、`BatchSize`），数据库实现 `XiHan:Workflow:Database`（`PollIntervalSeconds`、`BatchSize`、`LockLeaseSeconds`、`HolderId`、`LockConnection`、`HealthProbeIntervalSeconds`），缺省值见 [Workflow.InMemory](/packages/workflow-inmemory#配置) 与 [Workflow.Database](/packages/workflow-database#配置)。
 
