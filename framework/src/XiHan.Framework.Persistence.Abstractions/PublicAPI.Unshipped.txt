@@ -43,6 +43,8 @@ XiHan.Framework.Persistence.Abstractions.EntityIndex.IsUnique.get -> bool
 XiHan.Framework.Persistence.Abstractions.EntityIndex.Name.get -> string!
 XiHan.Framework.Persistence.Abstractions.EntityIndex.Properties.get -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.AcrossTenants.get -> bool
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.AcrossTenants.set -> void
 XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.EntityIndexAttribute(params string![]! properties) -> void
 XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.IsUnique.get -> bool
 XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.IsUnique.set -> void

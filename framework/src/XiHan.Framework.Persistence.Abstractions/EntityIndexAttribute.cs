@@ -39,4 +39,12 @@ public sealed class EntityIndexAttribute : Attribute
     /// 业务上唯一的键（如租户 + 名字）声明为唯一。关系型 Provider 写入撞上唯一索引时返回 <see cref="PersistenceErrors.UniqueKeyConflict"/>（同一批里两项同键、库里另一行同键），工作单元随后只能回滚。软删除实体只在未删除的行之间唯一；数据库不支持部分索引时启动失败，要么不声明唯一，要么把 <c>IsDeleted</c> 显式写进列（普通唯一索引，同一业务键最多一行已删除）
     /// </remarks>
     public bool IsUnique { get; set; }
+
+    /// <summary>
+    /// 多租户实体的唯一索引是否跨租户唯一
+    /// </summary>
+    /// <remarks>
+    /// 实体实现 <c>IMultiTenant</c> 时唯一索引的列必须含 <c>TenantId</c>，撞键只发生在同一租户里（ADR-0198）。确实要跨租户唯一的键（全局唯一的登录名之类）显式设为 <see langword="true"/>，接受撞键告诉调用方别的租户已有这个键。只用在不含 <c>TenantId</c> 的多租户唯一索引上，别处设置是声明错误
+    /// </remarks>
+    public bool AcrossTenants { get; set; }
 }

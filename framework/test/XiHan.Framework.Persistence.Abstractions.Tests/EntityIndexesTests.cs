@@ -69,6 +69,10 @@ public sealed class EntityIndexesTests
     [InlineData(typeof(UnknownProperty), "on 'Missing', which is not a public instance property")]
     [InlineData(typeof(CollidingNames), "more than one index named 'IX_CollidingNames_TeId'")]
     [InlineData(typeof(SameColumns), "more than one index on ('Code')")]
+    // 多租户实体的唯一索引不含 TenantId：修之前照建，撞键告诉调用方别的租户已有这个键（ADR-0198）
+    [InlineData(typeof(TenantlessUnique), "unique index 'UX_TenantlessUnique_Co' of multi-tenant entity")]
+    [InlineData(typeof(AcrossTenantsWithTenant), "declares AcrossTenants on index 'UX_AcrossTenantsWithTenant_TeId_Co'")]
+    [InlineData(typeof(AcrossTenantsOnPlatformEntity), "declares AcrossTenants on index 'UX_AcrossTenantsOnPlatformEntity_Co'")]
     public void Resolve_RejectsInvalidDeclarations(Type entityType, string reason)
     {
         var error = Assert.Throws<InvalidOperationException>(() => EntityIndexes.Resolve(entityType, entityType.Name));
@@ -227,6 +231,104 @@ public sealed class EntityIndexesTests
         /// 模板
         /// </summary>
         public string TemplateId { get; set; } = string.Empty;
+    }
+
+    [Fact]
+    public void Resolve_AcceptsAMultiTenantUniqueIndexAcrossTenants_OnlyWhenDeclared()
+    {
+        var index = Assert.Single(EntityIndexes.Resolve(typeof(AcrossTenantsUnique), "Account"));
+
+        Assert.Equal("UX_Account_Co", index.Name);
+        Assert.True(index.IsUnique);
+        Assert.Equal(["TenantId", "Code"], Assert.Single(EntityIndexes.Resolve(typeof(TenantScopedUnique), "Account"), static i => i.IsUnique).Properties);
+    }
+
+    /// <summary>
+    /// 多租户实体的唯一索引不含租户
+    /// </summary>
+    [EntityIndex(nameof(Code), IsUnique = true)]
+    private sealed class TenantlessUnique : IEntity<Guid>, IMultiTenant
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <inheritdoc />
+        public string TenantId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 多租户实体的唯一索引含租户
+    /// </summary>
+    [EntityIndex(nameof(TenantId), nameof(Code), IsUnique = true)]
+    [EntityIndex(nameof(Code))]
+    private sealed class TenantScopedUnique : IEntity<Guid>, IMultiTenant
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <inheritdoc />
+        public string TenantId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 多租户实体显式声明跨租户唯一
+    /// </summary>
+    [EntityIndex(nameof(Code), IsUnique = true, AcrossTenants = true)]
+    private sealed class AcrossTenantsUnique : IEntity<Guid>, IMultiTenant
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <inheritdoc />
+        public string TenantId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 含租户的唯一索引又声明跨租户
+    /// </summary>
+    [EntityIndex(nameof(TenantId), nameof(Code), IsUnique = true, AcrossTenants = true)]
+    private sealed class AcrossTenantsWithTenant : IEntity<Guid>, IMultiTenant
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <inheritdoc />
+        public string TenantId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 平台实体声明跨租户
+    /// </summary>
+    [EntityIndex(nameof(Code), IsUnique = true, AcrossTenants = true)]
+    private sealed class AcrossTenantsOnPlatformEntity : IEntity<Guid>
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
     }
 
     /// <summary>

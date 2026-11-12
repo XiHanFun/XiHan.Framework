@@ -16,6 +16,7 @@ namespace XiHan.Framework.Persistence.Abstractions;
 /// <para>Provider 共用：SqlSugar 与 EF Core 都经它取得索引，名字与列在两边一致</para>
 /// <para>命名：<c>IX_</c>（唯一为 <c>UX_</c>）+ 表名 + 每列一段缩写，以下划线连接，如 <c>UX_MessageTranslation_Ke_Lo</c>。缩写取属性名每个词的前两个字符（<c>TenantId → TeId</c>、<c>NextFireAt → NeFiAt</c>）；词从首字符、小写或数字之后的大写字母、连续大写里后跟小写的那个大写字母开始，下划线只分词不计入。表名里字母、数字、下划线以外的字符（如架构名的点）换成下划线。全名不超过 <see cref="MaxNameLength"/>（PostgreSQL 的标识符上限；MySQL 64、SQL Server 128 都容得下），超过不截断、直接报错——PostgreSQL 会静默截断超长的名字，下一次建表按全名查不到已有索引，再建就撞名</para>
 /// <para>软删除：实体实现 <see cref="ISoftDeletable"/> 时，唯一索引是只约束未删除行的部分唯一索引（<see cref="EntityIndex.ExcludesDeleted"/>）：列就是声明的列，条件 <c>IsDeleted = false</c> 由 Provider 按数据库方言写出；未删除的行之间唯一，已删除的行不受约束，同一业务键删除、重建、再删除任意多次都不冲突。声明的列里显式写了 <c>IsDeleted</c> 时不加条件，是普通唯一索引（同一业务键最多一行已删除）——不支持部分索引的数据库上要唯一约束，只能这样显式选择。只有 PostgreSQL、SQLite、SQL Server 支持部分唯一索引，其余数据库上 Provider 在启动时失败（<see cref="PersistenceErrors.NotSupported"/>）</para>
+/// <para>多租户：实体实现 <see cref="IMultiTenant"/> 时，唯一索引的列必须含 <c>TenantId</c>，撞键只发生在同一租户里；确实要跨租户唯一的显式声明 <see cref="EntityIndexAttribute.AcrossTenants"/>，接受撞键告诉调用方别的租户已有这个键（ADR-0198）</para>
 /// <para>写入撞上唯一索引：关系型 Provider 在写入失败后核对，按 <see cref="PersistenceErrors.UniqueKeyConflict"/> 报告，工作单元随后只能回滚</para>
 /// <para>声明错误在 Provider 建模或建表时以 <see cref="InvalidOperationException"/> 报出：没有列、列名空白或重复、列不是公开实例属性、名字超长、同一实体两个索引同名或同列</para>
 /// </remarks>
@@ -45,6 +46,7 @@ public static class EntityIndexes
         }
 
         var softDeletable = typeof(ISoftDeletable).IsAssignableFrom(entityType);
+        var multiTenant = typeof(IMultiTenant).IsAssignableFrom(entityType);
         var resolved = new List<EntityIndex>(declared.Count);
         // 名字按不区分大小写去重：PostgreSQL 把不加引号的索引名折成小写，只差大小写的两个名字在那里是同一个
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -56,6 +58,19 @@ public static class EntityIndexes
             if (name.Length > MaxNameLength)
             {
                 throw new InvalidOperationException($"Index '{name}' of entity '{entityType.FullName}' is longer than {MaxNameLength} characters; shorten the table name or index fewer columns.");
+            }
+
+            // 多租户实体的唯一索引要含租户：不含时撞键发生在租户之间，写入失败告诉调用方别的租户已有这个键（ADR-0198）
+            // 跨租户唯一只能显式声明，而且只用在确实不含租户的多租户唯一索引上，别处声明说明作者对索引的范围理解有误
+            var tenantless = multiTenant && declaration.IsUnique && !declaration.Properties.Contains(nameof(IMultiTenant.TenantId), StringComparer.Ordinal);
+            if (declaration.AcrossTenants && !tenantless)
+            {
+                throw new InvalidOperationException($"Entity '{entityType.FullName}' declares AcrossTenants on index '{name}'; it only applies to a unique index of a multi-tenant entity that does not include 'TenantId'.");
+            }
+
+            if (tenantless && !declaration.AcrossTenants)
+            {
+                throw new InvalidOperationException($"The unique index '{name}' of multi-tenant entity '{entityType.FullName}' does not include 'TenantId'; add it, or declare AcrossTenants = true to accept that a conflict tells the caller another tenant already has the key.");
             }
 
             // 软删除实体的唯一索引只约束未删除的行：删除标记放进条件而不是列，已删除的行不占业务键，同一键可以反复删除

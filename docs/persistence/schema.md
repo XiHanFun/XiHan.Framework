@@ -70,6 +70,7 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | --- | --- |
 | 列 | 按声明顺序、全部升序；列必须是实体的公开属性；一个实体可以声明多个索引 |
 | 唯一 | `IsUnique = true` 是唯一索引，业务上唯一的键（租户 + 名字之类）这样声明 |
+| 多租户 | 实体实现 `IMultiTenant` 时，唯一索引的列必须含 `TenantId`：同一业务键在每个租户各有一行，撞键只发生在同一租户里，写入失败不会告诉调用方别的租户用过这个键。确实要跨租户唯一的（全局唯一的登录名之类）写 `AcrossTenants = true`，接受这一点；不含 `TenantId` 又没写，启动时抛 `InvalidOperationException`（ADR-0198） |
 | 名字 | 由规则推出，不手写：`IX_`（唯一 `UX_`）+ 表名 + 每列一段缩写，缩写用下划线连接；属性名每个词取前两个字符（`TenantId → TeId`、`NextFireAt → NeFiAt`）；表名里字母、数字、下划线以外的字符换成下划线；全名不超过 63 个字符，超过即报错、不截断 |
 | 建出 | EF Core 由 `ApplyPersistenceConventions(Database)` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`；SqlSugar 经表服务回调转成 `SugarIndexAttribute`，`InitTables` 按名字查不到才建，已有的不改不删。两个 Provider 建出同名的索引 |
 | 声明错误 | 没有列、列名重复、不是公开属性、名字超长、同名或同列：建模 / 建表时抛出 `InvalidOperationException`，启动失败 |
