@@ -1,5 +1,7 @@
 {
   "protocols.cloudevents.content_type_unsupported": "The request is not a CloudEvent: content type '{contentType}' is neither the CloudEvents structured nor batch format and there is no 'ce-specversion' header.",
+  "protocols.cloudevents.body_too_large": "The request body is larger than {max} bytes.",
+  "protocols.cloudevents.batch_too_large": "The batch has {count} events, over the limit of {max}.",
   "protocols.cloudevents.no_subscriber": "No handler is subscribed to topic '{topic}'.",
   "protocols.cloudevents.topic_unresolved": "No topic is configured for event type '{type}' and the type itself is not a valid topic.",
   "protocols.cloudevents.webhook_failed": "The webhook for topic '{topic}' responded with HTTP {status}.",

@@ -1565,6 +1565,21 @@
           "summary": "入站处理方式：Dispatch 在请求内派发，Publish 发布到代理后立即 202；不区分大小写"
         },
         {
+          "key": "MaxRequestBodyBytes",
+          "type": "integer",
+          "default": "1048576",
+          "minimum": 1,
+          "summary": "入站请求体的字节上限，超过为 PROTOCOLS_VALIDATION_013"
+        },
+        {
+          "key": "MaxBatchSize",
+          "type": "integer",
+          "default": "100",
+          "minimum": 1,
+          "maximum": 2147483647,
+          "summary": "入站 batch 的事件数上限，超过为 PROTOCOLS_VALIDATION_014"
+        },
+        {
           "key": "Outbound",
           "type": "enum",
           "default": "Binary",

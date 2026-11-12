@@ -75,29 +75,63 @@ public static class CloudEventsHttpBinding
     /// 读请求里的事件
     /// </summary>
     /// <remarks>
-    /// batch 以外总是一个元素。不是 CloudEvent 返回 <see cref="CloudEventsErrors.UnsupportedContentType"/>，信封不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>
+    /// batch 以外总是一个元素。不是 CloudEvent 返回 <see cref="CloudEventsErrors.UnsupportedContentType"/>，信封不合法返回 <see cref="MessagingErrors.InvalidEnvelope"/>；请求体超过 <see cref="CloudEventsProtocolOptions.MaxRequestBodyBytes"/> 返回 <see cref="CloudEventsErrors.BodyTooLarge"/>，batch 的事件数超过 <see cref="CloudEventsProtocolOptions.MaxBatchSize"/> 返回 <see cref="CloudEventsErrors.BatchTooLarge"/>（ADR-0187）
     /// </remarks>
-    public static async ValueTask<Result<IReadOnlyList<MessageEnvelope>>> ReadAsync(HttpRequest request, CancellationToken cancellationToken)
+    public static async ValueTask<Result<IReadOnlyList<MessageEnvelope>>> ReadAsync(HttpRequest request, CloudEventsProtocolOptions options, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(options);
         if (!ModeOf(request).TryGetValue(out var mode))
         {
             return Error.Validation(CloudEventsErrors.UnsupportedContentType, CloudEventsMessages.ContentTypeUnsupported, MessageArguments.Of(("contentType", request.ContentType ?? string.Empty)));
         }
 
-        using var memory = new MemoryStream();
-        await request.Body.CopyToAsync(memory, cancellationToken).ConfigureAwait(false);
-        var body = memory.ToArray();
+        var read = await ReadBodyAsync(request, options.MaxRequestBodyBytes, cancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var body))
+        {
+            return Error.Validation(CloudEventsErrors.BodyTooLarge, CloudEventsMessages.BodyTooLarge, MessageArguments.Of(("max", options.MaxRequestBodyBytes)));
+        }
+
         switch (mode)
         {
             case CloudEventsContentMode.Structured:
                 var decoded = CloudEventsFormat.Decode(body);
                 return decoded.TryGetValue(out var envelope) ? Result.Success<IReadOnlyList<MessageEnvelope>>([envelope]) : decoded.Error!;
             case CloudEventsContentMode.Batch:
-                return ReadBatch(body);
+                return ReadBatch(body, options.MaxBatchSize);
             default:
                 return ReadBinary(request, body);
         }
+    }
+
+    /// <summary>
+    /// 读请求体，最多 <paramref name="max"/> 字节
+    /// </summary>
+    /// <remarks>
+    /// 超过时没有值。<c>Content-Length</c> 已经超过的不读；没有声明长度的边读边计数，读到上限多一个字节即停
+    /// </remarks>
+    private static async ValueTask<Maybe<byte[]>> ReadBodyAsync(HttpRequest request, long max, CancellationToken cancellationToken)
+    {
+        if (request.ContentLength > max)
+        {
+            return default(Maybe<byte[]>);
+        }
+
+        using var memory = new MemoryStream();
+        var buffer = new byte[16 * 1024];
+        int read;
+        while ((read = await request.Body.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            // 计数在写进内存之前：超过上限的那一段不留
+            if (memory.Length + read > max)
+            {
+                return default(Maybe<byte[]>);
+            }
+
+            memory.Write(buffer, 0, read);
+        }
+
+        return memory.ToArray();
     }
 
     /// <summary>
@@ -214,9 +248,9 @@ public static class CloudEventsHttpBinding
     /// batch
     /// </summary>
     /// <remarks>
-    /// JSON 数组，每个元素一个结构化事件；第一个不合法的元素让整批失败
+    /// JSON 数组，每个元素一个结构化事件；元素数超过 <paramref name="max"/> 时整批失败、一个也不解码，第一个不合法的元素让整批失败
     /// </remarks>
-    private static Result<IReadOnlyList<MessageEnvelope>> ReadBatch(byte[] body)
+    private static Result<IReadOnlyList<MessageEnvelope>> ReadBatch(byte[] body, int max)
     {
         JsonDocument document;
         try
@@ -233,6 +267,12 @@ public static class CloudEventsHttpBinding
             if (document.RootElement.ValueKind != JsonValueKind.Array)
             {
                 return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidJson, MessageArguments.Of(("reason", "a batch must be a JSON array of events")));
+            }
+
+            var count = document.RootElement.GetArrayLength();
+            if (count > max)
+            {
+                return Error.Validation(CloudEventsErrors.BatchTooLarge, CloudEventsMessages.BatchTooLarge, MessageArguments.Of(("count", count), ("max", max)));
             }
 
             var envelopes = new List<MessageEnvelope>();

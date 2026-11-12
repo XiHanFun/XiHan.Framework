@@ -12,6 +12,10 @@ XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.CloudEventsProt
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Equals(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? other) -> bool
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Inbound.get -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsInboundMode
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Inbound.init -> void
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.MaxBatchSize.get -> int
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.MaxBatchSize.init -> void
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.MaxRequestBodyBytes.get -> long
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.MaxRequestBodyBytes.init -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Outbound.get -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Outbound.init -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.PropagateTraceContext.get -> bool
@@ -34,12 +38,16 @@ XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher
 XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher.CloudEventsWebhookPublisher(System.Net.Http.IHttpClientFactory! httpClientFactory, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions! options, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Protocols.CloudEvents.Outbound.CloudEventsWebhookPublisher.PublishManyAsync(string! topic, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.BatchTooLarge = "PROTOCOLS_VALIDATION_014" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.BodyTooLarge = "PROTOCOLS_VALIDATION_013" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.NoSubscriber = "PROTOCOLS_NOTFOUND_003" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.TopicUnresolved = "PROTOCOLS_VALIDATION_009" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.UnsupportedContentType = "PROTOCOLS_VALIDATION_008" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookFailed = "PROTOCOLS_UNAVAILABLE_001" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookMissing = "PROTOCOLS_NOTFOUND_004" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsErrors.WebhookUnreachable = "PROTOCOLS_UNAVAILABLE_002" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.BatchTooLarge = "protocols.cloudevents.batch_too_large" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.BodyTooLarge = "protocols.cloudevents.body_too_large" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.CatalogName = "protocols.cloudevents" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.ContentTypeUnsupported = "protocols.cloudevents.content_type_unsupported" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.NoSubscriber = "protocols.cloudevents.no_subscriber" -> string!
@@ -65,6 +73,6 @@ static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsEndpointRouteBui
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.DecodeHeaderValue(string! value) -> string!
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.EncodeHeaderValue(string! value) -> string!
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.ModeOf(Microsoft.AspNetCore.Http.HttpRequest! request) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode>
-static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.ReadAsync(Microsoft.AspNetCore.Http.HttpRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>!>>
+static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.ReadAsync(Microsoft.AspNetCore.Http.HttpRequest! request, XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>!>>
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.Write(XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Net.Http.HttpRequestMessage! request, XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsContentMode mode) -> void
 static XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsHttpBinding.WriteBatch(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!>! envelopes, System.Net.Http.HttpRequestMessage! request) -> void

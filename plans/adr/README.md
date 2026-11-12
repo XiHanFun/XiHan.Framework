@@ -186,3 +186,4 @@
 | [0184](0184-文件系统分片暂存有界.md) | 安全审查 S-16：文件系统的暂存分片计入总配额；未完成的上传最多 `MaxMultipartUploads`（缺省 1000）；过期的上传当作不存在并就地清掉，启动时与运行期间发起新上传时按周期清理；修订 ADR-0049 | 已采纳 |
 | [0185](0185-插件输出的单行长度上限.md) | 安全审查 S-27：进程外插件的 stdout / stderr 一行最多 16384 个字符，超出部分读掉丢弃并记告警；握手行读到上限即不合法，不等行尾 | 已采纳 |
 | [0186](0186-Wasm沙箱的资源上限补齐.md) | 安全审查 S-19：宿主实现 WASI 的 `poll_oneoff` 与 `clock_time_get`，睡眠最多到调用的截止时间、到了即以 epoch 中断结束；`MaxTableElements`（缺省 100000）约束 `table.grow`；`xihan.log` 一条最多 16384 字节；stdout / stderr 不落盘；客体日志随运行时换成宿主日志 | 已采纳 |
+| [0187](0187-CloudEvents入站的请求体与批量上限.md) | 安全审查 S-20：CloudEvents 入站请求体最多 `MaxRequestBodyBytes`（缺省 1 MiB，`PROTOCOLS_VALIDATION_013`），batch 最多 `MaxBatchSize` 个事件（缺省 100，`PROTOCOLS_VALIDATION_014`），都在处理之前判定；重放沿用处理器按 `id` + `source` 去重 | 已采纳 |

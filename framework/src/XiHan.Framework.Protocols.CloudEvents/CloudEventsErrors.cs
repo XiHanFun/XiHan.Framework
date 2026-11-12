@@ -28,6 +28,16 @@ public static class CloudEventsErrors
     public const string TopicUnresolved = "PROTOCOLS_VALIDATION_009";
 
     /// <summary>
+    /// 入站请求体超过 <see cref="CloudEventsProtocolOptions.MaxRequestBodyBytes"/>
+    /// </summary>
+    public const string BodyTooLarge = "PROTOCOLS_VALIDATION_013";
+
+    /// <summary>
+    /// 入站 batch 的事件数超过 <see cref="CloudEventsProtocolOptions.MaxBatchSize"/>
+    /// </summary>
+    public const string BatchTooLarge = "PROTOCOLS_VALIDATION_014";
+
+    /// <summary>
     /// 派发模式下主题没有处理器
     /// </summary>
     public const string NoSubscriber = "PROTOCOLS_NOTFOUND_003";

@@ -16,6 +16,11 @@ namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 public sealed class CloudEventsHttpBindingTests
 {
     /// <summary>
+    /// 缺省选项（请求体与 batch 的上限）
+    /// </summary>
+    private static readonly CloudEventsProtocolOptions _options = new();
+
+    /// <summary>
     /// 一个带时间、主题、租户扩展与 JSON 数据的信封
     /// </summary>
     private static readonly MessageEnvelope _envelope = new MessageEnvelope
@@ -57,7 +62,7 @@ public sealed class CloudEventsHttpBindingTests
             ("ce-time", "2026-10-23T08:00:00Z"), ("ce-subject", "order/%E4%B8%AD%E6%96%87%201"), ("ce-xihantenant", "acme"), ("CE-Trace", "x"));
 
         Assert.Equal(CloudEventsContentMode.Binary, CloudEventsHttpBinding.ModeOf(request).ValueOrThrow());
-        var envelope = Assert.Single((await CloudEventsHttpBinding.ReadAsync(request, CancellationToken.None)).ValueOrThrow());
+        var envelope = Assert.Single((await CloudEventsHttpBinding.ReadAsync(request, _options, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(("evt-1", "/orders", "orders.placed"), (envelope.Id, envelope.Source, envelope.Type));
         Assert.Equal(_envelope.Time, envelope.Time);
         Assert.Equal("order/中文 1", envelope.Subject);
@@ -67,28 +72,28 @@ public sealed class CloudEventsHttpBindingTests
         Assert.Equal("x", envelope.Extension("trace").ValueOrThrow());
 
         // 缺必填属性、规范版本不对、时间不合法、扩展名不合法
-        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1")), CancellationToken.None)).Error?.Code);
-        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "0.3"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t")), CancellationToken.None)).Error?.Code);
-        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-time", "yesterday")), CancellationToken.None)).Error?.Code);
-        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-a-b", "x")), CancellationToken.None)).Error?.Code);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1")), _options, CancellationToken.None)).Error?.Code);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "0.3"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t")), _options, CancellationToken.None)).Error?.Code);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-time", "yesterday")), _options, CancellationToken.None)).Error?.Code);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-a-b", "x")), _options, CancellationToken.None)).Error?.Code);
     }
 
     [Fact]
     public async Task Read_StructuredAndBatchModes_UseTheStructuredFormat()
     {
         var structured = Encoding.UTF8.GetString(CloudEventsFormat.Encode(_envelope));
-        var one = Assert.Single((await CloudEventsHttpBinding.ReadAsync(Request("application/cloudevents+json; charset=utf-8", structured), CancellationToken.None)).ValueOrThrow());
+        var one = Assert.Single((await CloudEventsHttpBinding.ReadAsync(Request("application/cloudevents+json; charset=utf-8", structured), _options, CancellationToken.None)).ValueOrThrow());
         EnvelopeAssert.Same(_envelope, one);
 
-        var batch = (await CloudEventsHttpBinding.ReadAsync(Request(CloudEventsHttpBinding.BatchContentType, $"[{structured},{structured.Replace("evt-1", "evt-2", StringComparison.Ordinal)}]"), CancellationToken.None)).ValueOrThrow();
+        var batch = (await CloudEventsHttpBinding.ReadAsync(Request(CloudEventsHttpBinding.BatchContentType, $"[{structured},{structured.Replace("evt-1", "evt-2", StringComparison.Ordinal)}]"), _options, CancellationToken.None)).ValueOrThrow();
         Assert.Equal(["evt-1", "evt-2"], batch.Select(static e => e.Id));
 
-        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request(CloudEventsHttpBinding.BatchContentType, structured), CancellationToken.None)).Error?.Code);
-        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request(CloudEventsHttpBinding.BatchContentType, "[{}]"), CancellationToken.None)).Error?.Code);
-        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request(CloudEventsHttpBinding.StructuredContentType, "nope"), CancellationToken.None)).Error?.Code);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request(CloudEventsHttpBinding.BatchContentType, structured), _options, CancellationToken.None)).Error?.Code);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request(CloudEventsHttpBinding.BatchContentType, "[{}]"), _options, CancellationToken.None)).Error?.Code);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request(CloudEventsHttpBinding.StructuredContentType, "nope"), _options, CancellationToken.None)).Error?.Code);
 
         // 既不是结构化内容类型也没有 ce-specversion
-        var plain = await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}"), CancellationToken.None);
+        var plain = await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}"), _options, CancellationToken.None);
         Assert.Equal(CloudEventsErrors.UnsupportedContentType, plain.Error?.Code);
         Assert.False(CloudEventsHttpBinding.ModeOf(Request(null, "{}")).HasValue);
     }

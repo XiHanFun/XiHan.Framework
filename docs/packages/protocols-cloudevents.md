@@ -56,6 +56,8 @@ app.Run();
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Protocols:CloudEvents:Inbound` | `Dispatch` / `Publish` | `Dispatch` | 入站事件派发给处理器，或发布到消息代理；不区分大小写 |
+| `XiHan:Protocols:CloudEvents:MaxRequestBodyBytes` | 正整数 | 1048576（1 MiB） | 入站请求体的字节上限，超过为 `PROTOCOLS_VALIDATION_013` |
+| `XiHan:Protocols:CloudEvents:MaxBatchSize` | 正整数 | 100 | 入站 batch 的事件数上限，超过为 `PROTOCOLS_VALIDATION_014` |
 | `XiHan:Protocols:CloudEvents:Outbound` | `Binary` / `Structured` | `Binary` | 出站单条事件的内容模式；不接受 `Batch` |
 | `XiHan:Protocols:CloudEvents:PropagateTraceContext` | bool | `false` | 出站 Webhook 是否在 HTTP 头里写追踪上下文（`traceparent`、`tracestate`、`baggage`）；只作用于 Webhook 的命名客户端 |
 | `XiHan:Protocols:CloudEvents:Topics:<事件类型>` | string | — | 事件类型到主题的映射，值须满足主题文法 |
@@ -134,6 +136,8 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 | `PROTOCOLS_VALIDATION_008` | 请求不是 CloudEvent（400） |
 | `MESSAGING_VALIDATION_002` | 信封不合法（400） |
 | `PROTOCOLS_VALIDATION_009` | 事件类型没有映射到主题，类型本身也不是合法主题（400） |
+| `PROTOCOLS_VALIDATION_013` | 入站请求体超过 `MaxRequestBodyBytes`（400） |
+| `PROTOCOLS_VALIDATION_014` | 入站 batch 的事件数超过 `MaxBatchSize`（400） |
 | `PROTOCOLS_NOTFOUND_003` | 派发模式下主题在本实例两种订阅方式都没有处理器（404） |
 | `PROTOCOLS_NOTFOUND_004` | 主题没有配置出站 Webhook |
 | `PROTOCOLS_UNAVAILABLE_001` | Webhook 返回非 2xx，`status` 在错误细节里 |

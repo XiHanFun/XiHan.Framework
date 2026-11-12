@@ -29,6 +29,22 @@ public static class CloudEventsMessages
     public const string ContentTypeUnsupported = "protocols.cloudevents.content_type_unsupported";
 
     /// <summary>
+    /// 入站请求体超过上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>max</c>
+    /// </remarks>
+    public const string BodyTooLarge = "protocols.cloudevents.body_too_large";
+
+    /// <summary>
+    /// 入站 batch 的事件数超过上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>count</c>、<c>max</c>
+    /// </remarks>
+    public const string BatchTooLarge = "protocols.cloudevents.batch_too_large";
+
+    /// <summary>
     /// 事件类型没有映射到主题
     /// </summary>
     /// <remarks>

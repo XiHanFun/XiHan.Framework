@@ -133,6 +133,8 @@ batch 先把每个事件的类型解析成主题，任一事件没有映射时�
 | 不是 CloudEvent（内容类型既不是 structured / batch，也没有 `ce-specversion`） | 400 | `PROTOCOLS_VALIDATION_008` |
 | 信封不合法（规范版本、必填属性、时间、扩展名） | 400 | `MESSAGING_VALIDATION_002` |
 | 事件类型没有映射，类型本身也不是合法主题 | 400 | `PROTOCOLS_VALIDATION_009` |
+| 请求体超过 `MaxRequestBodyBytes`（缺省 1 MiB） | 400 | `PROTOCOLS_VALIDATION_013` |
+| batch 的事件数超过 `MaxBatchSize`（缺省 100） | 400 | `PROTOCOLS_VALIDATION_014` |
 | 派发模式下主题没有处理器 | 404 | `PROTOCOLS_NOTFOUND_003` |
 | 处理器或发布失败 | 按错误 KIND | 处理器或代理返回的错误码 |
 

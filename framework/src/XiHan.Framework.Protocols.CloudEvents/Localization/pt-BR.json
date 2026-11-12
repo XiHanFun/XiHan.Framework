@@ -1,5 +1,7 @@
 {
   "protocols.cloudevents.content_type_unsupported": "A requisição não é um CloudEvent: o tipo de conteúdo '{contentType}' não é o formato estruturado nem o formato em lote do CloudEvents, e não há cabeçalho 'ce-specversion'.",
+  "protocols.cloudevents.body_too_large": "O corpo da solicitação ultrapassa {max} bytes.",
+  "protocols.cloudevents.batch_too_large": "O lote tem {count} eventos e ultrapassa o limite de {max}.",
   "protocols.cloudevents.no_subscriber": "Nenhum manipulador está inscrito no tópico '{topic}'.",
   "protocols.cloudevents.topic_unresolved": "Nenhum tópico está configurado para o tipo de evento '{type}' e o próprio tipo não é um tópico válido.",
   "protocols.cloudevents.webhook_failed": "O webhook do tópico '{topic}' respondeu com HTTP {status}.",

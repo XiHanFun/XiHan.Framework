@@ -31,6 +31,30 @@ public sealed record CloudEventsProtocolOptions
     public CloudEventsInboundMode Inbound { get; init; } = CloudEventsInboundMode.Dispatch;
 
     /// <summary>
+    /// 入站请求体的字节上限
+    /// </summary>
+    /// <remarks>
+    /// 默认 1 MiB。端点边读边计数，超过即 <see cref="CloudEventsErrors.BodyTooLarge"/>（HTTP 400），一个事件也不处理（ADR-0187）
+    /// </remarks>
+    public long MaxRequestBodyBytes
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The request body limit must be positive.");
+    } = 1024 * 1024;
+
+    /// <summary>
+    /// 入站 batch 的事件数上限
+    /// </summary>
+    /// <remarks>
+    /// 默认 100。派发模式下每个事件都经一次完整的内核管道；超过即 <see cref="CloudEventsErrors.BatchTooLarge"/>（HTTP 400），一个事件也不处理（ADR-0187）
+    /// </remarks>
+    public int MaxBatchSize
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The batch size limit must be positive.");
+    } = 100;
+
+    /// <summary>
     /// 出站 Webhook 的内容模式
     /// </summary>
     /// <remarks>
@@ -105,7 +129,7 @@ public sealed record CloudEventsProtocolOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 枚举值或布尔值不合法时抛出 <see cref="ArgumentException"/>
+    /// 枚举值、布尔值或上限不合法时抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static CloudEventsProtocolOptions FromConfiguration(IConfiguration configuration)
     {
@@ -132,6 +156,8 @@ public sealed record CloudEventsProtocolOptions
         return new CloudEventsProtocolOptions
         {
             Inbound = ParseEnum<CloudEventsInboundMode>(section["Inbound"], "Inbound"),
+            MaxRequestBodyBytes = ParsePositive(section["MaxRequestBodyBytes"], "MaxRequestBodyBytes", 1024 * 1024, long.MaxValue),
+            MaxBatchSize = (int)ParsePositive(section["MaxBatchSize"], "MaxBatchSize", 100, int.MaxValue),
             Outbound = ParseEnum<CloudEventsContentMode>(section["Outbound"], "Outbound"),
             PropagateTraceContext = ParseBoolean(section["PropagateTraceContext"], "PropagateTraceContext"),
             Topics = topics,
@@ -151,6 +177,24 @@ public sealed record CloudEventsProtocolOptions
         }
 
         return TopicName.IsValid(type) ? type : default(Maybe<string>);
+    }
+
+    /// <summary>
+    /// 读正整数配置值
+    /// </summary>
+    /// <remarks>
+    /// 缺失用 <paramref name="fallback"/>，不是 1 到 <paramref name="maximum"/> 之间的整数时抛出
+    /// </remarks>
+    private static long ParsePositive(string? text, string key, long fallback, long maximum)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return fallback;
+        }
+
+        return long.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var value) && value >= 1 && value <= maximum
+            ? value
+            : throw new ArgumentException($"'{ConfigurationSection}:{key}' must be a positive integer, but the value is '{text}'.", key);
     }
 
     /// <summary>

@@ -1,5 +1,7 @@
 {
   "protocols.cloudevents.content_type_unsupported": "Запрос не является CloudEvent: тип содержимого '{contentType}' не является ни структурированным, ни пакетным форматом CloudEvents, и заголовок 'ce-specversion' отсутствует.",
+  "protocols.cloudevents.body_too_large": "Тело запроса больше {max} байт.",
+  "protocols.cloudevents.batch_too_large": "Пакет содержит {count} событий, это больше предела {max}.",
   "protocols.cloudevents.no_subscriber": "Ни один обработчик не подписан на тему '{topic}'.",
   "protocols.cloudevents.topic_unresolved": "Для типа события '{type}' не настроена тема, и сам тип не является допустимой темой.",
   "protocols.cloudevents.webhook_failed": "Webhook темы '{topic}' ответил HTTP {status}.",
