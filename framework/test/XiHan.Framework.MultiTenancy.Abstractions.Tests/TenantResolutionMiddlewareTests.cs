@@ -161,6 +161,9 @@ public sealed class TenantResolutionMiddlewareTests
     [InlineData("ghost", MultiTenancyErrors.NotFound)]
     [InlineData("dormant", MultiTenancyErrors.Disabled)]
     [InlineData("bad id", MultiTenancyErrors.InvalidTenantId)]
+    // 大写不合文法：修之前它是另一个租户，在不区分大小写的排序规则下读写的却是 acme 的行（ADR-0196）
+    [InlineData("ACME", MultiTenancyErrors.InvalidTenantId)]
+    [InlineData("acme\n", MultiTenancyErrors.InvalidTenantId)]
     public async Task UnknownDisabledOrMalformed_IsRejectedWithoutReachingHandler(string tenantId, string expectedCode)
     {
         var (context, reached) = Arrange(new MultiTenancyOptions(), baggageTenant: tenantId, new BaggageTenantResolver());

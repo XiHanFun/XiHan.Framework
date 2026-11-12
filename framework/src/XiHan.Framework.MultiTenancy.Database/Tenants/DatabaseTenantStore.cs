@@ -111,7 +111,10 @@ public sealed partial class DatabaseTenantStore : ITenantStore
             return read.Error!;
         }
 
-        var tenant = found.TryGetValue(out var record) ? Maybe.Some(TenantRecordMapping.ToTenantInfo(record)) : Maybe.None<TenantInfo>();
+        // 数据库的排序规则可能不区分大小写：读回的行按序数核对 ID，迁移之前留下的大写 ID 不被当作它的小写形式（ADR-0196）
+        var tenant = found.TryGetValue(out var record) && string.Equals(record.Id, tenantId, StringComparison.Ordinal)
+            ? Maybe.Some(TenantRecordMapping.ToTenantInfo(record))
+            : Maybe.None<TenantInfo>();
         // 有界：满了整体清空，比逐条淘汰简单且足够（租户数远小于容量）；不存在也缓存，避免反复查不存在的租户
         lock (_gate)
         {

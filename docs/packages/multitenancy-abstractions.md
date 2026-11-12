@@ -64,7 +64,7 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | 类型 | 说明 |
 | --- | --- |
 | `Tenants.TenantInfo` | 租户：`Id`、`DisplayName`、`IsEnabled`（缺省 `true`）、`Properties`（键区分大小写） |
-| `Tenants.TenantIdentifier` | 租户 ID 文法 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：`IsValid`、`Validate`、`MaxLength`（64） |
+| `Tenants.TenantIdentifier` | 租户 ID 文法 `^[a-z0-9][a-z0-9._-]{0,63}$`（只用小写、整串匹配，ADR-0196）：`IsValid`、`Validate`、`MaxLength`（64） |
 | `Tenants.ITenantStore`、`TenantQuery`、`TenantPage` | 租户存储：`FindAsync` → `Result<Maybe<TenantInfo>>`、`ListAsync(TenantQuery)` → `Result<TenantPage>`（`PageSize` 1～1000、续页令牌、`EnabledOnly`）；ID 区分大小写，存储不可达返回 `MULTITENANCY_UNAVAILABLE_003` |
 | `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选：`ResolveAsync` 返回 `Result<Maybe<string>>`，无值交给下一个解析器，失败即拒绝调用；格式、存在与启用由中间件核对 |
 | `Resolution.ClaimTenantResolver` | 读已认证主体的租户声明（第一个值）；未认证主体跳过 |

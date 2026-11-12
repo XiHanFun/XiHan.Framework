@@ -30,7 +30,7 @@ public abstract class TenantStoreConformance
     /// <summary>
     /// 套件租户：禁用、无显示名
     /// </summary>
-    public static TenantInfo Dormant { get; } = new() { Id = "Dormant-01", IsEnabled = false };
+    public static TenantInfo Dormant { get; } = new() { Id = "dormant-01", IsEnabled = false };
 
     /// <summary>
     /// 用给定租户创建被测存储
@@ -63,15 +63,18 @@ public abstract class TenantStoreConformance
     }
 
     /// <summary>
-    /// 用例 2：ID 区分大小写
+    /// 用例 2：大写的 ID 不合文法，找不到它的小写形式
     /// </summary>
+    /// <remarks>
+    /// 租户 ID 只用小写（ADR-0196）：排序规则不区分大小写的数据库也不能把 <c>ACME</c> 当作 <c>acme</c>
+    /// </remarks>
     [Fact]
-    public async Task Find_IsCaseSensitive()
+    public async Task Find_DoesNotMatchCaseVariants()
     {
         var store = await CreateStoreAsync([Acme, Dormant]).ConfigureAwait(false);
 
-        Assert.True((await FoundAsync(store, "Dormant-01").ConfigureAwait(false)).HasValue);
-        Assert.False((await FoundAsync(store, "dormant-01").ConfigureAwait(false)).HasValue);
+        Assert.True((await FoundAsync(store, "dormant-01").ConfigureAwait(false)).HasValue);
+        Assert.False((await FoundAsync(store, "Dormant-01").ConfigureAwait(false)).HasValue);
         Assert.False((await FoundAsync(store, "ACME").ConfigureAwait(false)).HasValue);
     }
 
@@ -83,7 +86,7 @@ public abstract class TenantStoreConformance
     {
         var store = await CreateStoreAsync([Dormant]).ConfigureAwait(false);
 
-        var dormant = (await FoundAsync(store, "Dormant-01").ConfigureAwait(false)).ValueOrThrow();
+        var dormant = (await FoundAsync(store, "dormant-01").ConfigureAwait(false)).ValueOrThrow();
         Assert.False(dormant.IsEnabled);
         Assert.Null(dormant.DisplayName);
         Assert.Empty(dormant.Properties);

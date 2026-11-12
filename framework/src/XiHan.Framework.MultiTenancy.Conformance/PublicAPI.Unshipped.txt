@@ -9,7 +9,7 @@ XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Resolve_
 XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Resolve_ReturnsShard_ForShardedTenant() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.TenantShardResolverConformance() -> void
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance
-XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_IsCaseSensitive() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_DoesNotMatchCaseVariants() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_PreservesDisabledFlag_AndMissingDisplayName() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Find_ReturnsSeededTenant_AndNoneForMissing() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.List_PagesThroughAllTenants_AndFiltersEnabled() -> System.Threading.Tasks.Task!

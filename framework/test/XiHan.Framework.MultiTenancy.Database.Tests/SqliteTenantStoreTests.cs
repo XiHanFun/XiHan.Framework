@@ -38,7 +38,7 @@ public sealed class SqliteTenantStoreTests
                 ["Region"] = "华东",
             },
         };
-        var dormant = new TenantInfo { Id = "Dormant-01", IsEnabled = false };
+        var dormant = new TenantInfo { Id = "dormant-01", IsEnabled = false };
         await TenantHosts.SeedAsync(writer, [acme, dormant]);
 
         // 另一个宿主从同一个文件读：显示名、禁用标记与属性 JSON（含大小写不同的键与非 ASCII 值）都经真实数据库往返
@@ -48,12 +48,13 @@ public sealed class SqliteTenantStoreTests
         Assert.Equal("Acme Corp", found.DisplayName);
         Assert.True(found.IsEnabled);
         Assert.Equal(acme.Properties.OrderBy(static p => p.Key, StringComparer.Ordinal), found.Properties.OrderBy(static p => p.Key, StringComparer.Ordinal));
-        var dormantFound = (await store.FindAsync("Dormant-01", CancellationToken.None)).ValueOrThrow().ValueOrThrow();
+        var dormantFound = (await store.FindAsync("dormant-01", CancellationToken.None)).ValueOrThrow().ValueOrThrow();
         Assert.False(dormantFound.IsEnabled);
         Assert.Null(dormantFound.DisplayName);
         Assert.Empty(dormantFound.Properties);
-        Assert.False((await store.FindAsync("dormant-01", CancellationToken.None)).ValueOrThrow().HasValue);
-        Assert.Equal(["Dormant-01", "acme"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
+        // 租户 ID 只用小写：大写形式不合文法，找不到小写的那个租户（ADR-0196）
+        Assert.False((await store.FindAsync("Dormant-01", CancellationToken.None)).ValueOrThrow().HasValue);
+        Assert.Equal(["acme", "dormant-01"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
 
         // Tenant 阶段解析到数据库里的租户，并把从属性推出的分片写进调用上下文
         TenantContext? tenant = null;
@@ -69,7 +70,7 @@ public sealed class SqliteTenantStoreTests
         Assert.Equal("Host=acme;Database=acme", shard?.ConnectionString);
         Assert.Equal("postgresql", shard?.Provider);
         Assert.Equal("acme", shard?.Properties["schema"]);
-        var disabled = await reader.InvokeAsync(static _ => ValueTask.CompletedTask, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "Dormant-01" });
+        var disabled = await reader.InvokeAsync(static _ => ValueTask.CompletedTask, baggage: new Dictionary<string, string> { [BaggageKeys.Tenant] = "dormant-01" });
         Assert.Equal(MultiTenancyErrors.Disabled, disabled.Error?.Code);
 
         // 写宿主改与删并提交后，读宿主的缓存还是旧值，失效后才看到
@@ -77,13 +78,13 @@ public sealed class SqliteTenantStoreTests
         {
             var records = context.Services.GetRequiredService<TenantRecordStore>();
             Assert.All(await records.UpsertAsync([acme with { DisplayName = "Acme 2" }], context.CancellationToken), static r => Assert.True(r.IsSuccess, r.ToString()));
-            Assert.All(await records.RemoveAsync(["Dormant-01"], context.CancellationToken), static r => Assert.True(r.IsSuccess, r.ToString()));
+            Assert.All(await records.RemoveAsync(["dormant-01"], context.CancellationToken), static r => Assert.True(r.IsSuccess, r.ToString()));
         });
         Assert.True(written.IsSuccess, written.ToString());
         Assert.Equal("Acme Corp", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         reader.Services.GetRequiredService<DatabaseTenantStore>().InvalidateAll();
         Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
-        Assert.False((await store.FindAsync("Dormant-01", CancellationToken.None)).ValueOrThrow().HasValue);
+        Assert.False((await store.FindAsync("dormant-01", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.Equal(["acme"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
     }
 }

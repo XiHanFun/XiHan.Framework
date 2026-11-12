@@ -119,7 +119,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、ID 区分大小写、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
+| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、大写的 ID 找不到小写的租户、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
 | `TenantShardResolverConformance` | Preview | `CreateResolverAsync(tenants)` 返回 `ITenantShardResolver`；种子租户 `Sharded`、`Shared` | 分库租户解析出连接串、小写的提供者名与去前缀的透传属性；共库与未知租户为成功无值；失效单个或全部后重解析结果一致 |
 
 `MultiTenancy.InMemory` 与 `MultiTenancy.Database` 通过两套用例。

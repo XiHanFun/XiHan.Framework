@@ -43,7 +43,9 @@ var tenant = context.GetSecurity().Tenant;   // TenantContext?，没有租户时
 | `IsEnabled` | `bool` | 缺省 `true`；禁用的租户在 Tenant 阶段被拒绝 |
 | `Properties` | `IReadOnlyDictionary<string, string>` | 租户专属属性（连接串、配额等），键区分大小写 |
 
-租户 ID 的文法是 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：字母或数字开头，之后是字母、数字、`.`、`_`、`-`，最长 64 个字符（`TenantIdentifier.MaxLength`），区分大小写。`TenantIdentifier.IsValid` 判断是否合法，`TenantIdentifier.Validate` 不合法时抛出 `ArgumentException`。
+租户 ID 的文法是 `^[a-z0-9][a-z0-9._-]{0,63}$`（整串匹配）：小写字母或数字开头，之后是小写字母、数字、`.`、`_`、`-`，最长 64 个字符（`TenantIdentifier.MaxLength`）。`TenantIdentifier.IsValid` 判断是否合法，`TenantIdentifier.Validate` 不合法时抛出 `ArgumentException`。
+
+只用小写：租户 ID 要在数据库列、文件路径与主机名里比较，SQL Server 与 MySQL 的缺省排序规则、Windows 与 macOS 的文件系统、主机名都不区分大小写，`Acme` 与 `acme` 在那里是同一个值。只用小写时，按序数比较与不区分大小写的比较结论相同，不必为租户列配区分大小写的排序规则。含大写的 ID 不合文法，Tenant 阶段解析出来的为 `MULTITENANCY_VALIDATION_001`；框架不把它改成小写（ADR-0196）。
 
 存储契约 `ITenantStore` 只有两个方法：`FindAsync(tenantId)` 按 ID 查找，返回 `Result<Maybe<TenantInfo>>`，不存在是成功的无值；`ListAsync(TenantQuery)` 返回 `Result<TenantPage>`，按 ID 一页一页读（`PageSize` 1～1000、不透明的 `ContinuationToken`、`EnabledOnly`），令牌为空即读完。存储连不上这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成「租户不存在」，Tenant 阶段据此以 503 结束调用而不是放行。
 

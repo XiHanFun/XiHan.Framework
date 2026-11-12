@@ -23,8 +23,13 @@ public sealed class TenantContractTests
 
     [Theory]
     [InlineData("acme", true)]
-    [InlineData("Acme-01", true)]
+    [InlineData("acme-01", true)]
     [InlineData("t.1_x", true)]
+    // 只有小写：大写的 ID 在不区分大小写的排序规则、文件系统与主机名里会与小写的同一个 ID 撞在一起（ADR-0196）
+    [InlineData("Acme-01", false)]
+    [InlineData("ACME", false)]
+    // 整串匹配：结尾的换行不被 $ 放过
+    [InlineData("acme\n", false)]
     [InlineData("", false)]
     [InlineData("-lead", false)]
     [InlineData("has space", false)]
@@ -47,7 +52,9 @@ public sealed class TenantContractTests
     [InlineData("Acme")]
     [InlineData("acme.cn")]
     [InlineData("t_42")]
+    [InlineData("acme-01")]
     [InlineData("Acme-01")]
+    [InlineData("acme\n")]
     [InlineData("-lead")]
     [InlineData(".lead")]
     [InlineData("has space")]
@@ -64,9 +71,9 @@ public sealed class TenantContractTests
             Assert.Equal(value, name.Tenant);
         }
 
-        var longest = new string('A', TenantIdentifier.MaxLength);
+        var longest = new string('a', TenantIdentifier.MaxLength);
         Assert.True(ResourceName.TryParse($"xrn:cn:shop:{longest}:order/1", out _));
-        Assert.False(ResourceName.TryParse($"xrn:cn:shop:{longest}A:order/1", out _));
+        Assert.False(ResourceName.TryParse($"xrn:cn:shop:{longest}a:order/1", out _));
     }
 
     [Fact]
