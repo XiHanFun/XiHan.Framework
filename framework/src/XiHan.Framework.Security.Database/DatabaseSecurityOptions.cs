@@ -37,7 +37,7 @@ public sealed record DatabaseSecurityOptions
     /// 缓存条目的存活时间
     /// </summary>
     /// <remarks>
-    /// 默认 30 秒，<see langword="null"/> 不过期（只靠失效与容量清空）
+    /// 默认 30 秒，<see langword="null"/> 不过期（只靠失效与容量清空）。失效只作用于本实例，多实例部署里别的实例靠存活时间看到撤销，不过期只适用于单实例部署
     /// </remarks>
     public TimeSpan? CacheTimeToLive
     {

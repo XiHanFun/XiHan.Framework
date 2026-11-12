@@ -108,7 +108,7 @@ app.Run();
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Security:Database:CacheSize` | `int` | 10000 | 缓存条目上限，每个（主体，租户）组合一条；满时整体清空 |
-| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠失效与容量清空 |
+| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠失效与容量清空，只适用于单实例部署 |
 
 读写分成两个类型，与数据库租户目录同一套做法：`DatabasePermissionGrantStore` 是单例 `IPermissionGrantStore`，Authorize 阶段经检查器查它，它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库），结果进有界的 TTL 缓存；`PermissionGrantRecordStore` 是作用域服务，管理操作在 Transaction 阶段内用调用方的工作单元批量授予、撤销，逐项返回结果，写入后失效涉及主体的缓存：
 
@@ -136,7 +136,7 @@ public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 
 - 授予是平台级数据：`PermissionGrantRecord` 不实现 `IMultiTenant`，不受当前调用租户过滤。全局授予以空字符串（`PermissionGrantRecord.GlobalTenantId`）落库，契约边界仍以 `PermissionGrant.TenantId == null` 表示全局；空白租户是编程错误，在访问数据库前抛出 `ArgumentException`。
 - 授予已存在的返回成功且不重复写；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即成功。撤销不存在的授予返回 `SECURITY_NOTFOUND_002`。
-- 缓存条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空；写入在事务提交后才对其他调用可见，失效与提交之间的窗口以及其他实例的缓存都靠存活时间收敛。
+- 缓存条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空。写入在事务提交后才对其他调用可见：本实例在写入时与调用结束（提交之后）各失效一次，提交之前读回的旧值不留在缓存里，撤销在提交之后立即生效（ADR-0194）；其他实例的缓存靠存活时间收敛。
 - 数据库故障返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束，不会落到 403；失败不进缓存，恢复后下一次判定立即重新查库。
 - 表结构由应用管理，`InitTables` 只用于开发与测试；唯一索引 `(SubjectKind, SubjectId, Permission, TenantId)` 由 `[EntityIndex]` 建出。被选为授权能力时同样登记启动核对 `PolicyCatalog.EnforceOn`。
 

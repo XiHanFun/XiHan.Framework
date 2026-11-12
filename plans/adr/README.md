@@ -193,3 +193,4 @@
 | [0191](0191-审计的租户不回退到被拒绝的Baggage.md) | 安全审查 S-34：内核新增 `MarkTenantResolved` / `IsTenantResolved`，Tenant 阶段一进入就标记；审计在 Tenant 阶段裁定过租户时只取安全上下文，被拒绝的调用没有租户，不回退到调用方自报的 Baggage | 已采纳 |
 | [0192](0192-平台调用不补缺省租户.md) | 安全审查 S-32：内核新增 `MarkPlatformCall` / `IsPlatformCall`；Tenant 阶段对声明的平台调用不问解析器、不补 `DefaultTenant`、不要求带租户；工作流为平台分区开的调用声明为平台调用 | 已采纳 |
 | [0193](0193-分片解析缓存的存活时间.md) | 安全审查 S-31：`TenantStoreShardResolver` 的缓存条目过了 `ShardCacheTimeToLive`（缺省 30 秒，0 不过期）即重新读租户存储，别的实例改过的连接串在存活时间之后生效；构造多了 `TimeProvider` | 已采纳 |
+| [0194](0194-缓存在写入提交之后失效.md) | 安全审查 S-14：授予缓存记代数、丢弃失效之前开始的读取；`PermissionGrantRecordStore` 写入时与作用域释放时各失效一次，撤销与授予在提交之后立即生效；数据库租户目录同一做法 | 已采纳 |

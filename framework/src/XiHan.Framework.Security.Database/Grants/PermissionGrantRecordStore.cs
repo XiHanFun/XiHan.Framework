@@ -15,11 +15,17 @@ namespace XiHan.Framework.Security.Database.Grants;
 /// 授予的批量读写
 /// </summary>
 /// <remarks>
-/// 作用域服务，须在调用的 Transaction 阶段内使用，走调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入，写入后让 <see cref="DatabasePermissionGrantStore"/> 的缓存按主体失效。写入在调用方的事务提交后才对别的调用可见；失效与提交之间的窗口由缓存的存活时间收敛
+/// 作用域服务，须在调用的 Transaction 阶段内使用，走调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入，写入后让 <see cref="DatabasePermissionGrantStore"/> 的缓存按主体失效。
+/// 写入在调用方的事务提交后才对别的调用可见，所以失效两次（ADR-0194）：写入时一次，作用域释放时（调用已提交或回滚）再一次。缓存按代数丢弃失效之前开始的读取，提交之前读回的旧行不会留在缓存里
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration
+public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration, IDisposable
 {
+    /// <summary>
+    /// 本作用域里写过的主体：作用域释放时（提交或回滚之后）再失效一次
+    /// </summary>
+    private readonly HashSet<GrantSubject> _written = [];
+
     /// <summary>
     /// 仓储
     /// </summary>
@@ -217,6 +223,24 @@ public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration
             subjects.Add(new GrantSubject(row.SubjectKind, row.SubjectId));
         }
 
+        _written.UnionWith(subjects);
         _grants.Invalidate([.. subjects]);
+    }
+
+    /// <summary>
+    /// 作用域释放：再让写过的主体失效一次
+    /// </summary>
+    /// <remarks>
+    /// 管道里的调用先提交、后释放作用域：此后的读取看到的是提交之后的行。可以重复调用（经接口与具体类型各解析一次时容器会释放两次）
+    /// </remarks>
+    public void Dispose()
+    {
+        if (_written.Count == 0)
+        {
+            return;
+        }
+
+        _grants.Invalidate([.. _written]);
+        _written.Clear();
     }
 }

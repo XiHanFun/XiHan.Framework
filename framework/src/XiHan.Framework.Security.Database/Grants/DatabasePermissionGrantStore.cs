@@ -64,6 +64,28 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     }
 
     /// <summary>
+    /// 缓存的代数
+    /// </summary>
+    /// <remarks>
+    /// 每次失效加一（在锁内）。读取在查库之前记下它，写回缓存时不一致就丢弃：失效之前开始的读取可能读到写入提交之前的旧行（ADR-0194）
+    /// </remarks>
+    private long _generation;
+
+    /// <summary>
+    /// 当前的代数
+    /// </summary>
+    private long Generation
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _generation;
+            }
+        }
+    }
+
+    /// <summary>
     /// 当前缓存的条目数（含尚未被访问到的已过期条目）
     /// </summary>
     public int CachedEntryCount
@@ -102,9 +124,11 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
             }
         }
 
-        // 未命中的主体一次查库；在锁外查，并发未命中各自查一次，后写入的覆盖前者，结果相同
+        // 未命中的主体一次查库；在锁外查，并发未命中各自查一次，后写入的覆盖前者，结果相同。
+        // 查库之前记下代数：查的过程中有失效（撤销或授予正在提交），读回的行可能是提交之前的旧值，不写回缓存
         if (missing.Count > 0)
         {
+            var generation = Generation;
             var query = EntityQuery.All<PermissionGrantRecord>().Where(GrantRows.EffectiveForAny(missing, tenant)).OrderBy(static r => r.Id);
             var read = await _invocation.ReadAsync((repository, ct) => GrantRows.ListAllAsync(repository, query, ct), cancellationToken).ConfigureAwait(false);
             // 失败不进缓存：存储恢复后下一次判定立即重新查库，而不是在 TTL 内一直报不可达
@@ -122,7 +146,7 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
             foreach (var subject in missing)
             {
                 var grants = bySubject.GetValueOrDefault(subject) ?? FrozenSet<string>.Empty;
-                Store(subject, tenant, grants);
+                Store(subject, tenant, grants, generation);
                 found[subject] = grants;
             }
         }
@@ -141,6 +165,8 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
         ArgumentNullException.ThrowIfNull(subjects);
         lock (_gate)
         {
+            // 代数在锁内加一：此刻还在查库的读取都不能把结果写回来
+            _generation++;
             foreach (var subject in subjects)
             {
                 if (_tenantsBySubject.Remove(subject, out var tenants))
@@ -161,6 +187,7 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     {
         lock (_gate)
         {
+            _generation++;
             _entries.Clear();
             _tenantsBySubject.Clear();
         }
@@ -203,11 +230,17 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     /// <remarks>
     /// 新增条目前已满就整体清空（不做逐条淘汰，容量只是防止无界增长）
     /// </remarks>
-    private void Store(GrantSubject subject, string? tenant, FrozenSet<string> grants)
+    private void Store(GrantSubject subject, string? tenant, FrozenSet<string> grants, long generation)
     {
         var expiresAt = _options.CacheTimeToLive is { } ttl ? _clock.GetUtcNow() + ttl : (DateTimeOffset?)null;
         lock (_gate)
         {
+            // 查库之后有过失效：这次读回的结果可能早于那次写入的提交，丢掉，下一次判定重新查库
+            if (generation != _generation)
+            {
+                return;
+            }
+
             if (!_entries.ContainsKey((subject, tenant)) && _entries.Count >= _options.CacheSize)
             {
                 _entries.Clear();
