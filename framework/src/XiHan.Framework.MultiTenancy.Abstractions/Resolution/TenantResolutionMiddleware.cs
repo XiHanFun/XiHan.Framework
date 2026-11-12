@@ -32,6 +32,14 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
 
         // 先记下由本阶段裁定租户：之后拒绝也好、裁定为无租户也好，审计等观察者都只信安全上下文，不回退到调用方自报的 Baggage
         context.MarkTenantResolved();
+
+        // 平台调用由进程内的代码声明、有意不带租户：缺省租户与「必须带租户」只为外部调用里缺的租户而设，不把它改成某个租户的调用
+        if (context.IsPlatformCall())
+        {
+            context.SetTenant(null);
+            await nextStep(context).ConfigureAwait(false);
+            return;
+        }
         // 解析器拒绝即结束调用；都没给出结果时才退回默认租户，默认租户同样要走下面的格式与存储校验
         var resolution = await ResolveAsync(context).ConfigureAwait(false);
         if (!resolution.TryGetValue(out var candidate))

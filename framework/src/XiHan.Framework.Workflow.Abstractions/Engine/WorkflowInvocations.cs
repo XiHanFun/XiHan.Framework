@@ -52,6 +52,11 @@ internal static class WorkflowInvocations
                 // 预先放进安全上下文：没有装配多租户（没有 Tenant 阶段）时租户也在，工作单元按它开启；装配了时 Tenant 阶段按 Baggage 解析出同一个租户并校验
                 context.SetTenant(new TenantContext(tenantId));
             }
+            else
+            {
+                // 平台分区：声明为平台调用，宿主配的缺省租户与「必须带租户」不把它改成某个租户的调用（ADR-0192）
+                context.MarkPlatformCall();
+            }
 
             context.SetOrigin(new InvocationOrigin { Protocol = InvocationProtocols.Workflow, Target = target });
             context.Set(OwnedKey, true);

@@ -876,7 +876,9 @@ static XiHan.Framework.Kernel.Security.SecurityContext.Anonymous.get -> XiHan.Fr
 static XiHan.Framework.Kernel.Security.SecurityContext.operator !=(XiHan.Framework.Kernel.Security.SecurityContext? left, XiHan.Framework.Kernel.Security.SecurityContext? right) -> bool
 static XiHan.Framework.Kernel.Security.SecurityContext.operator ==(XiHan.Framework.Kernel.Security.SecurityContext? left, XiHan.Framework.Kernel.Security.SecurityContext? right) -> bool
 static XiHan.Framework.Kernel.Security.SecurityContextExtensions.GetSecurity(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Kernel.Security.SecurityContext!
+static XiHan.Framework.Kernel.Security.SecurityContextExtensions.IsPlatformCall(this XiHan.Framework.Primitives.InvocationContext! context) -> bool
 static XiHan.Framework.Kernel.Security.SecurityContextExtensions.IsTenantResolved(this XiHan.Framework.Primitives.InvocationContext! context) -> bool
+static XiHan.Framework.Kernel.Security.SecurityContextExtensions.MarkPlatformCall(this XiHan.Framework.Primitives.InvocationContext! context) -> void
 static XiHan.Framework.Kernel.Security.SecurityContextExtensions.MarkTenantResolved(this XiHan.Framework.Primitives.InvocationContext! context) -> void
 static XiHan.Framework.Kernel.Security.SecurityContextExtensions.SetSecurity(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Security.SecurityContext! security) -> void
 static XiHan.Framework.Kernel.Security.SecurityContextExtensions.SetTenant(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Security.TenantContext? tenant) -> void

@@ -105,7 +105,7 @@ curl http://localhost:5000/tenant                                            # -
 Tenant 阶段按下面的顺序处理，任一步失败即以结果结束调用，后面的阶段不再执行：
 
 1. 按注册顺序调用 `ITenantResolver`，第一个给出值的生效；某个解析器返回失败时以它的错误结束调用，后面的解析器不再调用，默认租户也不顶替。
-2. 都没有值时用 `DefaultTenant`；仍没有时，`RequireTenant` 为真返回 `MULTITENANCY_VALIDATION_002`，否则以无租户继续。
+2. 都没有值时用 `DefaultTenant`；仍没有时，`RequireTenant` 为真返回 `MULTITENANCY_VALIDATION_002`，否则以无租户继续。框架自己声明的平台调用（如工作流轮询平台分区）例外：不补缺省租户、不要求带租户（ADR-0192）。
 3. 校验租户 ID 文法，不合法返回 `MULTITENANCY_VALIDATION_001`。先校验再查存储，未经校验的外部输入不会交给 Provider。
 4. `ValidateAgainstStore` 为真（缺省）时查 `ITenantStore`：存储不可达返回 `MULTITENANCY_UNAVAILABLE_003`，不存在返回 `MULTITENANCY_NOTFOUND_001`，已禁用返回 `MULTITENANCY_DENIED_001`；存在且启用时以存储里的记录为准，显示名随之带入。关闭存储核对时只校验文法，安全上下文里没有显示名。
 5. 写入 `SecurityContext.Tenant`。
