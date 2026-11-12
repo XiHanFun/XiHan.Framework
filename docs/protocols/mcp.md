@@ -118,6 +118,8 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Autho
 
 入口校验按顺序进行，任一不过即以 JSON-RPC 错误答复、不进入 JSON-RPC（ADR-0199）：请求带 `Origin` 时它必须在 `AllowedOrigins` 里，否则 403（`PROTOCOLS_DENIED_001`）；`Content-Type` 必须是 `application/json`，否则 415（`PROTOCOLS_VALIDATION_015`）；请求体不超过 `MaxRequestBodyBytes`，否则 413（`PROTOCOLS_VALIDATION_016`）。不带 `Origin` 的非浏览器客户端不受第一条影响；浏览器里的客户端（如 MCP Inspector）要把它的源配进 `AllowedOrigins`。这样本机开着的 MCP 服务不会被任意网页用简单请求调用，也不会借 DNS 重绑定被读到结果。
 
+幂等键（Baggage `xihan.idempotency-key`）交给 `tools/call`：外层的 `/mcp` 请求不按它去重，每个 `tools/call` 按它去重与回放，重试同一个调用得到首次的结果（ADR-0205）。
+
 `/mcp` 本身是经过 `UseXiHan()` 的普通端点：请求凭据在外层认证，凭据无效时整个请求以 401 Problem Details 拒绝、带 `WWW-Authenticate` 质询，不进入 JSON-RPC；应用未就绪时 503。没有凭据的请求照常进入，按契约的授权在每个 `tools/call` 的管道里判定，所以匿名客户端能 `tools/list`，调需要权限的 tool 时得到 `isError`。
 
 | 情形 | `error.code` | `error.data.code` | HTTP |

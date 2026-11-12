@@ -35,7 +35,8 @@ public static class McpEndpointRouteBuilderExtensions
             ?? throw new FrameworkException(KernelErrors.InvalidAppState, "MapXiHanMcp() requires the MCP protocol feature; add UseFeature<McpProtocolFeature>() to the application.");
         var options = endpoints.ServiceProvider.GetRequiredService<McpProtocolOptions>();
 
-        return endpoints.MapPost(pattern, httpContext => HandleAsync(httpContext, server, options)).WithName("xihan.protocols.mcp");
+        // 每个 tools/call 另起内层调用：幂等键交给它，外层请求不去重（ADR-0205）
+        return InnerInvocationsMetadata.HandsIdempotencyToInnerInvocations(endpoints.MapPost(pattern, httpContext => HandleAsync(httpContext, server, options)).WithName("xihan.protocols.mcp"));
     }
 
     /// <summary>

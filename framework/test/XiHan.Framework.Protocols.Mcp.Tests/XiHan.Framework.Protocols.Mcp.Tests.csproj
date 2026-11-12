@@ -11,6 +11,7 @@
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.Mcp/XiHan.Framework.Protocols.Mcp.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

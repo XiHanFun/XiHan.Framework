@@ -32,6 +32,7 @@ XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.SignAsync(XiHan.Fra
 XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlSigner.Store.get -> string?
 XiHan.Framework.Hosting.AspNetCore.Endpoints.EndpointConventionBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation
+XiHan.Framework.Hosting.AspNetCore.Endpoints.InnerInvocationsMetadata
 XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationPayloadBinder
 XiHan.Framework.Hosting.AspNetCore.Endpoints.OperationResponseWriter
 XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata
@@ -130,6 +131,8 @@ static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.CreateContext
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.FindXiHanContext(this Microsoft.AspNetCore.Http.HttpContext! httpContext) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.InvocationContext!>
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.FormatBaggage(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! baggage) -> string!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.HttpInvocation.ParseBaggage(string? header) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.InnerInvocationsMetadata.HandsIdempotencyToInnerInvocations<TBuilder>(TBuilder builder) -> TBuilder
+static XiHan.Framework.Hosting.AspNetCore.Endpoints.InnerInvocationsMetadata.Instance.get -> XiHan.Framework.Hosting.AspNetCore.Endpoints.InnerInvocationsMetadata!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.BypassXiHanPipeline<TBuilder>(TBuilder builder) -> TBuilder
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.Instance.get -> XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata!
 static XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata.SelfInvoking.get -> XiHan.Framework.Hosting.AspNetCore.Endpoints.PipelineBypassMetadata!

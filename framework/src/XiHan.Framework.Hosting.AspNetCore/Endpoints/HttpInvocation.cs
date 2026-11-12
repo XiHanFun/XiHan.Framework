@@ -52,7 +52,9 @@ public static partial class HttpInvocation
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
-        var context = CreateContext(httpContext, httpContext.RequestServices);
+        // 端点为请求里的消息另起内层调用时，外层不带幂等键：键交给内层调用去重（ADR-0205）
+        var handsOver = httpContext.GetEndpoint()?.Metadata.GetMetadata<InnerInvocationsMetadata>() is not null;
+        var context = Create(httpContext, httpContext.RequestServices, keepIdempotencyKey: !handsOver);
         httpContext.Items[ContextItemKey] = context;
         return context;
     }
@@ -67,6 +69,17 @@ public static partial class HttpInvocation
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         ArgumentNullException.ThrowIfNull(services);
+        return Create(httpContext, services, keepIdempotencyKey: true);
+    }
+
+    /// <summary>
+    /// 从请求头构造调用上下文
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="keepIdempotencyKey"/> 为假时不带幂等键：外层请求把它交给端点另起的内层调用
+    /// </remarks>
+    private static InvocationContext Create(HttpContext httpContext, IServiceProvider services, bool keepIdempotencyKey)
+    {
         var headers = httpContext.Request.Headers;
 
         // traceparent 不合法时视为缺失，不把坏值带进链路：内核并入 ASP.NET Core 当前的请求 Activity，也没有时生成新的 trace-id；
@@ -112,6 +125,10 @@ public static partial class HttpInvocation
         // 任何没有租户声明的令牌都能进入任意租户；xihan.principal 同理，审计会把它当作没认证调用的主体（ADR-0121）
         baggage.Remove(BaggageKeys.Tenant);
         baggage.Remove(BaggageKeys.Principal);
+        if (!keepIdempotencyKey)
+        {
+            baggage.Remove(BaggageKeys.IdempotencyKey);
+        }
 
         // Accept-Language 只在调用方没有显式给出 xihan.locale 时生效：按权重排序的候选经本地化选项协商成启用的区域；
         // 没有装配本地化时取第一个合法值并规范化，让下游服务仍能拿到调用方语言

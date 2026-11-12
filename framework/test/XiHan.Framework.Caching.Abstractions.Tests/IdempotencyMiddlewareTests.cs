@@ -162,7 +162,23 @@ public sealed class IdempotencyMiddlewareTests
         Assert.Equal(3, _executions);
         Assert.NotNull(_store["idem:t1:-:shared"]);
         Assert.NotNull(_store["idem:t2:-:shared"]);
-        Assert.NotNull(_store["idem:t1:user-7:shared"]);
+        Assert.NotNull(_store["idem:t1:6.user-7:shared"]);
+    }
+
+    [Fact]
+    public async Task PrincipalsWithColons_DoNotShareRecords()
+    {
+        // 修之前作用域键是 idem:租户:主体:键，主体 a:b 配键 c 与主体 a 配键 b:c 拼出同一个键，后者回放前者的结果（ADR-0205）
+        var first = Context("c");
+        first.SetSecurity(new SecurityContext(new Principal("a:b", "test"), null));
+        var second = Context("b:c");
+        second.SetSecurity(new SecurityContext(new Principal("a", "test"), null));
+
+        await _middleware.InvokeAsync(first, Handler);
+        await _middleware.InvokeAsync(second, Handler);
+
+        Assert.Equal(2, _executions);
+        Assert.False(IdempotencyMiddleware.WasReplayed(second));
     }
 
     [Fact]

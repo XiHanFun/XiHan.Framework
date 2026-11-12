@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text;
+using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Caching.Abstractions.Caches;
@@ -52,10 +53,12 @@ public sealed class IdempotencyMiddleware(IdempotencyOptions options) : IPipelin
             return;
         }
 
-        // 作用域键 = 租户 + 主体 + 幂等键：不同租户或用户即使提交相同的键也互不回放对方的结果
+        // 作用域键 = 租户 + 主体 + 幂等键：不同租户或用户即使提交相同的键也互不回放对方的结果。
+        // 主体 ID 带长度前缀：它能含冒号，直接拼接时主体 a:b 配键 c 与主体 a 配键 b:c 是同一个键（ADR-0205）；
+        // 租户 ID 不含冒号，匿名记为 -（长度前缀以数字开头，不会与它混淆）
         var security = context.GetSecurity();
-        var principalId = security.Principal.Id ?? "-";
-        var scoped = $"idem:{security.Tenant?.Id ?? "-"}:{principalId}:{idempotencyKey}";
+        var principal = security.Principal.Id is { } id ? $"{id.Length.ToString(CultureInfo.InvariantCulture)}.{id}" : "-";
+        var scoped = $"idem:{security.Tenant?.Id ?? "-"}:{principal}:{idempotencyKey}";
         if (!CacheKey.IsValid(scoped))
         {
             context.SetOutcome(Error.Validation(CachingErrors.InvalidKey, CachingMessages.InvalidIdempotencyKey));
