@@ -117,6 +117,14 @@ public static class ObjectStorageMessages
     public const string UploadNotFound = "objectstorage.multipart.upload_not_found";
 
     /// <summary>
+    /// 未完成的分片上传数已达上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>limit</c>
+    /// </remarks>
+    public const string UploadsExhausted = "objectstorage.multipart.uploads_exhausted";
+
+    /// <summary>
     /// 分片清单为空
     /// </summary>
     public const string PartsEmpty = "objectstorage.multipart.parts_empty";

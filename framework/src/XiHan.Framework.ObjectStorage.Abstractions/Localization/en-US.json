@@ -13,6 +13,7 @@
   "objectstorage.multipart.parts_rejected": "The object storage rejected the part list: {reason}",
   "objectstorage.multipart.parts_unordered": "Part {part} is out of order: part numbers must be strictly ascending.",
   "objectstorage.multipart.upload_not_found": "The multipart upload '{upload}' of blob '{key}' in container '{container}' does not exist or has already ended.",
+  "objectstorage.multipart.uploads_exhausted": "There are already {limit} unfinished multipart uploads; complete or abort one first.",
   "objectstorage.quota.exceeded": "The object storage quota of {limit} bytes would be exceeded by writing {requested} bytes.",
   "objectstorage.quota.reached": "The object storage quota of {limit} bytes is exhausted: {used} bytes are in use.",
   "objectstorage.range.not_satisfiable": "The range starting at byte {offset} cannot be satisfied: the blob is {length} bytes long.",

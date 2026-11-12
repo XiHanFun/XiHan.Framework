@@ -13,6 +13,7 @@
   "objectstorage.multipart.parts_rejected": "Хранилище объектов отклонило список частей: {reason}",
   "objectstorage.multipart.parts_unordered": "Часть {part} нарушает порядок: номера частей должны строго возрастать.",
   "objectstorage.multipart.upload_not_found": "Составная загрузка '{upload}' объекта '{key}' в контейнере '{container}' не существует или уже завершена.",
+  "objectstorage.multipart.uploads_exhausted": "Уже есть {limit} незавершённых составных загрузок; сначала завершите или отмените одну из них.",
   "objectstorage.quota.exceeded": "Запись {requested} байт превысит квоту объектного хранилища в {limit} байт.",
   "objectstorage.quota.reached": "Квота объектного хранилища в {limit} байт исчерпана: используется {used} байт.",
   "objectstorage.range.not_satisfiable": "Диапазон, начинающийся с байта {offset}, не может быть выполнен: длина объекта {length} байт.",

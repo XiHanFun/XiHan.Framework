@@ -13,6 +13,7 @@
   "objectstorage.multipart.parts_rejected": "物件儲存拒絕了分段清單：{reason}",
   "objectstorage.multipart.parts_unordered": "分段 {part} 順序不對：分段編號必須嚴格遞增。",
   "objectstorage.multipart.upload_not_found": "容器 '{container}' 中物件 '{key}' 的分段上傳 '{upload}' 不存在或已結束。",
+  "objectstorage.multipart.uploads_exhausted": "未完成的分段上傳已有 {limit} 個，請先完成或放棄其中一個。",
   "objectstorage.quota.exceeded": "寫入 {requested} 位元組會超出物件儲存配額 {limit} 位元組。",
   "objectstorage.quota.reached": "物件儲存配額 {limit} 位元組已用盡：已使用 {used} 位元組。",
   "objectstorage.range.not_satisfiable": "從第 {offset} 位元組起的範圍無法滿足：物件長 {length} 位元組。",

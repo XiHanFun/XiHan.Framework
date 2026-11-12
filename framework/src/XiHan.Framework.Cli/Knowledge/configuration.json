@@ -1004,7 +1004,14 @@
           "type": "number",
           "default": "168",
           "exclusiveMinimum": 0,
-          "summary": "未完成的分片上传保留多久（小时），启动扫描时清掉更早发起的"
+          "summary": "未完成的分片上传保留多久（小时）；过期即拒绝再传分片与完成，启动时与运行期间清掉"
+        },
+        {
+          "key": "MaxMultipartUploads",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 1,
+          "summary": "未完成的分片上传数上限；暂存的分片另计入总配额"
         }
       ]
     },

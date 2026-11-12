@@ -13,6 +13,7 @@
   "objectstorage.multipart.parts_rejected": "O armazenamento de objetos rejeitou a lista de partes: {reason}",
   "objectstorage.multipart.parts_unordered": "A parte {part} está fora de ordem: os números das partes devem ser estritamente crescentes.",
   "objectstorage.multipart.upload_not_found": "O upload em várias partes '{upload}' do objeto '{key}' no contêiner '{container}' não existe ou já terminou.",
+  "objectstorage.multipart.uploads_exhausted": "Já existem {limit} uploads multipart não concluídos; conclua ou cancele um primeiro.",
   "objectstorage.quota.exceeded": "Gravar {requested} bytes excederia a cota de armazenamento de objetos de {limit} bytes.",
   "objectstorage.quota.reached": "A cota de armazenamento de objetos de {limit} bytes está esgotada: {used} bytes em uso.",
   "objectstorage.range.not_satisfiable": "O intervalo que começa no byte {offset} não pode ser atendido: o objeto tem {length} bytes.",

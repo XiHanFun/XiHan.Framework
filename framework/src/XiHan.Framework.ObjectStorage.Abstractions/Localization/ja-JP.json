@@ -13,6 +13,7 @@
   "objectstorage.multipart.parts_rejected": "オブジェクトストレージがパートの一覧を拒否しました：{reason}",
   "objectstorage.multipart.parts_unordered": "パート {part} の順序が正しくありません。パート番号は厳密に昇順である必要があります。",
   "objectstorage.multipart.upload_not_found": "コンテナー '{container}' のオブジェクト '{key}' のマルチパートアップロード '{upload}' は存在しないか、すでに終了しています。",
+  "objectstorage.multipart.uploads_exhausted": "未完了のマルチパートアップロードがすでに {limit} 件あります。先にいずれかを完了するか中止してください。",
   "objectstorage.quota.exceeded": "{requested} バイトを書き込むとオブジェクトストレージのクォータ {limit} バイトを超えます。",
   "objectstorage.quota.reached": "オブジェクトストレージのクォータ {limit} バイトを使い切りました: {used} バイト使用中です。",
   "objectstorage.range.not_satisfiable": "{offset} バイト目から始まる範囲は満たせません。オブジェクトの長さは {length} バイトです。",

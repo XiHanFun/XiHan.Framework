@@ -13,6 +13,7 @@
   "objectstorage.multipart.parts_rejected": "Le stockage d'objets a refusé la liste des parties : {reason}",
   "objectstorage.multipart.parts_unordered": "La partie {part} n'est pas dans l'ordre : les numéros de partie doivent être strictement croissants.",
   "objectstorage.multipart.upload_not_found": "Le téléversement en plusieurs parties '{upload}' de l'objet '{key}' dans le conteneur '{container}' n'existe pas ou est déjà terminé.",
+  "objectstorage.multipart.uploads_exhausted": "Il y a déjà {limit} chargements en plusieurs parties inachevés ; terminez-en ou abandonnez-en un d'abord.",
   "objectstorage.quota.exceeded": "L'écriture de {requested} octets dépasserait le quota de stockage d'objets de {limit} octets.",
   "objectstorage.quota.reached": "Le quota de stockage d'objets de {limit} octets est épuisé : {used} octets sont utilisés.",
   "objectstorage.range.not_satisfiable": "La plage commençant à l'octet {offset} ne peut pas être satisfaite : l'objet fait {length} octets.",

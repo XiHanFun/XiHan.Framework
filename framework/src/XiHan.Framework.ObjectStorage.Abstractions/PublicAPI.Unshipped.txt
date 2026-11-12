@@ -227,6 +227,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreNotF
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreProviderUnknown = "objectstorage.store.provider_unknown" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.StoreUnavailable = "objectstorage.store.unavailable" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.UploadNotFound = "objectstorage.multipart.upload_not_found" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.UploadsExhausted = "objectstorage.multipart.uploads_exhausted" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.ConfigurationSection = "XiHan:ObjectStorage:Stores" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Stores.BlobStores.HealthPrefix = "objectstorage.store." -> string!
 override XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobContentRange.Equals(object? obj) -> bool

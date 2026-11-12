@@ -70,9 +70,21 @@ public sealed record FileSystemObjectStorageOptions
     } = TimeSpan.FromDays(7);
 
     /// <summary>
+    /// 未完成的分片上传数上限
+    /// </summary>
+    /// <remarks>
+    /// 默认 1000。暂存的分片计入总配额；上传数另设上限，压住上传目录与清单的数量。达到上限时发起新上传返回 <c>OBJECTSTORAGE_UNAVAILABLE_002</c>，完成、放弃或过期后让出名额（ADR-0184）
+    /// </remarks>
+    public int MaxMultipartUploads
+    {
+        get => field;
+        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The multipart upload limit must be positive.");
+    } = 1000;
+
+    /// <summary>
     /// 设置键（配置节下的键与命名实例的设置共用）
     /// </summary>
-    private static readonly string[] _settingKeys = ["RootPath", "MaxTotalBytes", "MaxBlobBytes", "MultipartExpiryHours"];
+    private static readonly string[] _settingKeys = ["RootPath", "MaxTotalBytes", "MaxBlobBytes", "MultipartExpiryHours", "MaxMultipartUploads"];
 
     /// <summary>
     /// 从配置读取
@@ -139,6 +151,14 @@ public sealed record FileSystemObjectStorageOptions
             options = double.TryParse(expiry, NumberStyles.Float, CultureInfo.InvariantCulture, out var hours) && hours > 0 && !double.IsInfinity(hours)
                 ? options with { MultipartExpiry = TimeSpan.FromHours(hours) }
                 : throw new ArgumentException($"{prefix}MultipartExpiryHours must be a positive number, but was '{expiry}'.");
+        }
+
+        var uploads = read("MaxMultipartUploads");
+        if (uploads is not null)
+        {
+            options = int.TryParse(uploads, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
+                ? options with { MaxMultipartUploads = value }
+                : throw new ArgumentException($"{prefix}MaxMultipartUploads must be a positive integer, but was '{uploads}'.");
         }
 
         return options;

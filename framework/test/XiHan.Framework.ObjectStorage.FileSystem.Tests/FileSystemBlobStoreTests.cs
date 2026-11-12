@@ -180,12 +180,12 @@ public sealed class FileSystemBlobStoreTests : IDisposable
         var recent = (await store.StartAsync(new ContainerName("uploads"), new BlobKey("recent.bin"), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
         Assert.True((await store.UploadPartAsync(recent, 1, new MemoryStream(Bytes("part")), CancellationToken.None)).IsSuccess);
 
-        // 第一次发起后 25 小时：过期的清掉，20 小时后发起的那次还在且分片完好；分片不计入用量
+        // 第一次发起后 25 小时：过期的清掉，20 小时后发起的那次还在且分片完好；暂存的分片计入用量（ADR-0184）
         clock.Advance(TimeSpan.FromHours(5));
         await store.InitializeAsync(CancellationToken.None);
         Assert.Equal(ObjectStorageErrors.UploadNotFound, (await store.ListPartsAsync(stale, CancellationToken.None)).Error?.Code);
         Assert.Single((await store.ListPartsAsync(recent, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(0, store.UsedBytes);
+        Assert.Equal(4, store.UsedBytes);
 
         // 伪造的上传标识（不是本实现发出的格式）一律当作不存在，不会拼出根目录外的路径
         Assert.Equal(ObjectStorageErrors.UploadNotFound, (await store.ListPartsAsync(new BlobMultipartUpload(new ContainerName("uploads"), new BlobKey("recent.bin"), "../../escape") { Overwrite = true }, CancellationToken.None)).Error?.Code);

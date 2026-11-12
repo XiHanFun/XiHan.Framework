@@ -159,15 +159,19 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 建根目录并扫描已用量，清掉过期（早于 <see cref="FileSystemObjectStorageOptions.MultipartExpiry"/>）的分片上传
     /// </summary>
     /// <remarks>
-    /// 可重复调用，每次重新扫描
+    /// 可重复调用，每次重新扫描。已用量含对象内容与未完成上传暂存的分片，并数出未完成的上传（ADR-0184）
     /// </remarks>
     internal Task InitializeAsync(CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(_options.RootPath);
         long total = 0;
+        var uploads = 0;
         foreach (var container in Directory.EnumerateDirectories(_options.RootPath))
         {
             _multipart.RemoveExpired(container, cancellationToken);
+            var (staged, open) = FileSystemMultipartUploads.Scan(container, cancellationToken);
+            total += staged;
+            uploads += open;
             var data = Path.Combine(container, DataDirectory);
             if (!Directory.Exists(data))
             {
@@ -193,6 +197,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             _usedBytes = total;
         }
 
+        _multipart.ResetOpenCount(uploads);
         return Task.CompletedTask;
     }
 
@@ -701,6 +706,52 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
 
             _reservedBytes += bytes;
             return true;
+        }
+    }
+
+    /// <summary>
+    /// 把临时文件换到 <paramref name="path"/>，并把它的预留转成用量
+    /// </summary>
+    /// <remarks>
+    /// 调用方已为 <paramref name="length"/> 预留了额度。改名与记账在配额锁里一并完成：目标已存在时按它此刻的实际长度扣减（同一编号、同样内容的分片再传会替换同名文件）。改名失败时释放预留并抛出
+    /// </remarks>
+    internal void ReplaceCounted(string temporary, string path, long length)
+    {
+        try
+        {
+            lock (_quota)
+            {
+                var previous = File.Exists(path) ? new FileInfo(path).Length : 0;
+                File.Move(temporary, path, overwrite: true);
+                _reservedBytes -= length;
+                _usedBytes += length - previous;
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Release(length);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 删掉一个计入用量的文件，并扣减它此刻的实际长度
+    /// </summary>
+    /// <remarks>
+    /// 量长度、删除与记账在配额锁里一并完成，并发删除同一个文件只扣一次；文件不存在时什么也不做
+    /// </remarks>
+    internal void DeleteCounted(string path)
+    {
+        lock (_quota)
+        {
+            if (!File.Exists(path))
+            {
+                return;
+            }
+
+            var length = new FileInfo(path).Length;
+            File.Delete(path);
+            _usedBytes = Math.Max(0, _usedBytes - length);
         }
     }
 

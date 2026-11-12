@@ -51,7 +51,8 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 | `RootPath` | `string` | `<AppContext.BaseDirectory>/blobs` | 根目录；相对路径按当前目录解析 |
 | `MaxTotalBytes` | 正整数 | 1073741824（1 GiB） | 全部对象的总字节上限 |
 | `MaxBlobBytes` | 正整数 | 268435456（256 MiB） | 单个对象的字节上限，分片与拼接后的对象同样受它约束 |
-| `MultipartExpiryHours` | 正数 | 168（7 天） | 未完成的分片上传保留多久，启动扫描时清掉更早发起的 |
+| `MultipartExpiryHours` | 正数 | 168（7 天） | 未完成的分片上传保留多久；过期即拒绝再传分片与完成，启动时与运行期间清掉 |
+| `MaxMultipartUploads` | 正整数 | 1000 | 未完成的分片上传数上限 |
 
 ```json
 {
@@ -101,7 +102,7 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 - 配额：复制过程中逐段检查并预留额度，超过 `MaxBlobBytes` 或 `MaxTotalBytes`（已用量加正在写入的全部预留）的项返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不留下内容；并发写入合计也超不过总配额。覆盖写入期间新旧内容同时在盘上，要有新内容全长的余量，旧对象的字节在替换后才释放（ADR-0183）。单进程计量正确，多进程共享目录时只是近似。
 - 列举：遍历容器目录、按序数排序、按前缀过滤，续页标记是上一页最后一个键；外部直接放进 `data/` 目录、没有元数据的文件按文件信息补一份元数据；文件名还原出的键不符合键文法的（含保留前缀 `.xihan` 下的，ADR-0090）跳过。
 - 范围读取：打开内容文件后定位到起点，只交出该段。
-- 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片不计入配额。上传标识只认本实现发出的 32 位小写十六进制。
+- 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片计入总配额，未完成的上传最多 `MaxMultipartUploads` 个，过期的上传拒绝再传分片与完成（ADR-0184）。上传标识只认本实现发出的 32 位小写十六进制。
 - 健康项 `objectstorage.filesystem.capacity` 由存储同步计算：已用量达到 `MaxTotalBytes` 即 Degraded（`OBJECTSTORAGE_UNAVAILABLE_002`），否则 Ready。命名实例的探测用同一口径。
 - 命名实例建出时即建目录并扫描用量，预签名用宿主签名器的 `ForStore(name)`。本包被别的存储顶替时仍登记 `filesystem` Provider，命名实例照常可用。
 - 与 S3 混装、以本包为缺省实例时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可，S3 只登记命名实例；要缺省的分片上传再把 `objectstorage.multipart` 指定给本包，要缺省的预签名装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。有特性依赖分片上传或预签名却没指定时，那项能力解析到 S3 且是被要求的，`OBJECTSTORAGE_VALIDATION_004` 启动失败（见[对象存储](/object-storage/advanced)）。

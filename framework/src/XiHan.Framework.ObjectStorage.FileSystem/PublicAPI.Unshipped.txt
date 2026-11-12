@@ -32,6 +32,8 @@ XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.Equals(X
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.FileSystemObjectStorageOptions() -> void
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxBlobBytes.get -> long
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxBlobBytes.init -> void
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxMultipartUploads.get -> int
+XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxMultipartUploads.init -> void
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxTotalBytes.get -> long
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MaxTotalBytes.init -> void
 XiHan.Framework.ObjectStorage.FileSystem.FileSystemObjectStorageOptions.MultipartExpiry.get -> System.TimeSpan
