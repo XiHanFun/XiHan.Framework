@@ -22,7 +22,7 @@
 | `TraceId` | 调用上下文的 trace-id |
 | `Resource` | `SetAuditResource` 写入的 `xrn:` 资源名 |
 | `PrincipalId` | 认证后的主体 ID，没有时取 Baggage `xihan.principal` |
-| `TenantId` | 解析出的租户 ID，没有时取 Baggage `xihan.tenant` |
+| `TenantId` | 解析出的租户 ID；没有装配多租户时取 Baggage `xihan.tenant` |
 | `Details` | `AddAuditDetail` 追加的键值，值是 JSON（`JsonElement`），经任何接收器写入再读回都是同一类型 |
 
 ## 启用
@@ -138,7 +138,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 
 ## 主体与租户从哪里来
 
-事件在调用结束时构造，此时 Authenticate 与 Tenant 阶段已经把安全上下文写好。中间件先看安全上下文：主体已认证时取 `Principal.Id`，否则回退到 Baggage 的 `xihan.principal`；解析出租户时取 `TenantContext.Id`，否则回退到 Baggage 的 `xihan.tenant`。HTTP 加 JWT 或 API Key 的调用走第一条路；插件协议、消息派发、命令行这类只带 Baggage 的调用走回退路径。认证中间件不把主体回写到 Baggage：Baggage 是跨进程传播的载体，不是进程内状态的副本。
+事件在调用结束时构造，此时 Authenticate 与 Tenant 阶段已经把安全上下文写好。中间件先看安全上下文：主体已认证时取 `Principal.Id`，否则回退到 Baggage 的 `xihan.principal`；解析出租户时取 `TenantContext.Id`；没有装配多租户（没有 Tenant 阶段）时回退到 Baggage 的 `xihan.tenant`。装配了多租户时 Tenant 阶段裁定过租户，被它拒绝的调用（租户不存在、已禁用、文法不对）记为没有租户，调用方自报的租户在结果的错误参数 `tenantId` 里，不会让失败的调用落进它自报的租户的审计（ADR-0191）。HTTP 加 JWT 或 API Key 的调用走第一条路；插件协议、消息派发、命令行这类只带 Baggage 的调用走回退路径。认证中间件不把主体回写到 Baggage：Baggage 是跨进程传播的载体，不是进程内状态的副本。
 
 ## 记录调用来源
 

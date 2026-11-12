@@ -117,8 +117,10 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
         }
 
         // 主体与租户先看安全上下文：Observe 在 Authenticate 之外、事件在调用结束时构造，认证后的主体与解析后的租户此时都已就绪，
-        // 而 HTTP + JWT 这条路上没有中间件写 Baggage；匿名调用或只带 Baggage 的调用（插件协议、消息派发、命令行）再回退到 Baggage
+        // 而 HTTP + JWT 这条路上没有中间件写 Baggage；匿名调用或只带 Baggage 的调用（插件协议、消息派发、命令行）再回退到 Baggage。
+        // Tenant 阶段裁定过租户就不回退：被它拒绝的调用没有租户，调用方自报的租户只是请求的内容，已在结果的错误参数里（ADR-0191）
         var security = context.GetSecurity();
+        var tenantId = security.Tenant?.Id ?? (!context.IsTenantResolved() && context.TryGetBaggage(BaggageKeys.Tenant, out var tenant) ? tenant : null);
         var auditEvent = new AuditEvent
         {
             Timestamp = _clock.GetUtcNow(),
@@ -127,7 +129,7 @@ public sealed partial class AuditMiddleware : IPipelineMiddleware
             TraceId = context.TraceId,
             Resource = context.FindAuditResource().TryGetValue(out var resource) ? resource : null,
             PrincipalId = security.Principal.IsAuthenticated ? security.Principal.Id : context.TryGetBaggage(BaggageKeys.Principal, out var principal) ? principal : null,
-            TenantId = security.Tenant?.Id ?? (context.TryGetBaggage(BaggageKeys.Tenant, out var tenant) ? tenant : null),
+            TenantId = tenantId,
             Details = context.FindAuditDetails().TryGetValue(out var details) ? details : null,
         };
 

@@ -6,6 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/XiHan.Framework.Auditing.Abstractions/XiHan.Framework.Auditing.Abstractions.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.MultiTenancy.InMemory/XiHan.Framework.MultiTenancy.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -18,6 +18,11 @@ public static class SecurityContextExtensions
     private static readonly ContextItemKey<SecurityContext> _key = new("xihan.security");
 
     /// <summary>
+    /// 「Tenant 阶段已裁定这次调用的租户」在 <see cref="InvocationContext.Items"/> 中的键
+    /// </summary>
+    private static readonly ContextItemKey<bool> _tenantResolvedKey = new("xihan.security.tenant-resolved");
+
+    /// <summary>
     /// 读取安全上下文
     /// </summary>
     /// <remarks>
@@ -38,4 +43,20 @@ public static class SecurityContextExtensions
     /// </summary>
     public static void SetTenant(this InvocationContext context, TenantContext? tenant)
         => context.Set(_key, context.GetSecurity() with { Tenant = tenant });
+
+    /// <summary>
+    /// 记下 Tenant 阶段已裁定这次调用的租户
+    /// </summary>
+    /// <remarks>
+    /// Tenant 阶段一进入就调用，不论之后解析出租户、裁定为无租户还是拒绝调用：此后安全上下文里的租户就是这次调用唯一可信的租户，观察者（审计等）不再回退到调用方自报的 Baggage（ADR-0191）
+    /// </remarks>
+    public static void MarkTenantResolved(this InvocationContext context) => context.Set(_tenantResolvedKey, true);
+
+    /// <summary>
+    /// Tenant 阶段是否已裁定这次调用的租户
+    /// </summary>
+    /// <remarks>
+    /// 没有装配多租户（没有 Tenant 阶段）时为 <see langword="false"/>
+    /// </remarks>
+    public static bool IsTenantResolved(this InvocationContext context) => context.Find(_tenantResolvedKey).ValueOr(false);
 }

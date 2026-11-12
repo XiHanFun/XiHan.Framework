@@ -30,6 +30,8 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(nextStep);
 
+        // 先记下由本阶段裁定租户：之后拒绝也好、裁定为无租户也好，审计等观察者都只信安全上下文，不回退到调用方自报的 Baggage
+        context.MarkTenantResolved();
         // 解析器拒绝即结束调用；都没给出结果时才退回默认租户，默认租户同样要走下面的格式与存储校验
         var resolution = await ResolveAsync(context).ConfigureAwait(false);
         if (!resolution.TryGetValue(out var candidate))

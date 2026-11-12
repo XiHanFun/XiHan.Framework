@@ -190,3 +190,4 @@
 | [0188](0188-CloudEvents的Webhook不读响应体.md) | 安全审查 S-26：CloudEvents Webhook 发布方以 `ResponseHeadersRead` 发送，只按状态码判定，响应体不读 | 已采纳 |
 | [0189](0189-gRPC解码的嵌套上限.md) | 安全审查 S-28：`ProtoDecoder` 嵌套消息最多 64 层（`MaxDepth`，与 JSON 请求体相同），超过即 `ProtoException` → `InvalidArgument` + `PROTOCOLS_VALIDATION_005` | 已采纳 |
 | [0190](0190-知识库检索的条数与文档过滤上限.md) | 安全审查 S-29：检索条数在 1 到 `KnowledgeSearch.MaxTop`（1000）之间，`RetrievalFilter.DocumentIds` 最多 `MaxDocumentIds`（1000）个且保存副本，超过在构造时抛出；向量存储的文档过滤拼成平衡的或树 | 已采纳 |
+| [0191](0191-审计的租户不回退到被拒绝的Baggage.md) | 安全审查 S-34：内核新增 `MarkTenantResolved` / `IsTenantResolved`，Tenant 阶段一进入就标记；审计在 Tenant 阶段裁定过租户时只取安全上下文，被拒绝的调用没有租户，不回退到调用方自报的 Baggage | 已采纳 |
