@@ -58,11 +58,29 @@ $regressions = [System.Collections.Generic.List[string]]::new()
 $report = [System.Collections.Generic.List[string]]::new()
 New-Item -ItemType Directory -Force -Path $Artifacts | Out-Null
 
+# 启动 dotnet 并等它退出，返回退出码；参数经 ArgumentList 原样传给子进程
+# 不用 & dotnet：Linux 上 pwsh 调外部命令会把含通配符的参数按当前目录展开（--filter * 变成仓库根的文件名），Windows 上不会
+function Invoke-Dotnet([string[]]$arguments, [switch]$Quiet) {
+    $start = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+    foreach ($argument in $arguments) { $start.ArgumentList.Add($argument) }
+    # 与 & 一致，以 PowerShell 的当前位置为工作目录，相对路径照旧解析
+    $start.WorkingDirectory = (Get-Location).ProviderPath
+    # 不重定向时子进程直接写进作业日志；-Quiet 读掉输出丢弃，免得管道写满卡住子进程
+    $start.RedirectStandardOutput = [bool]$Quiet
+    $process = [System.Diagnostics.Process]::Start($start)
+    try {
+        if ($Quiet) { $null = $process.StandardOutput.ReadToEnd() }
+        $process.WaitForExit()
+        $process.ExitCode
+    }
+    finally { $process.Dispose() }
+}
+
 # 跑一组基准，返回 全名 → 结果；$filters 是按「命名空间.类型.方法」的过滤，参数化的基准整组跑
 function Invoke-Benchmarks([string]$dir, [string]$name, [string[]]$filters) {
     $out = Join-Path $Artifacts $name
-    & dotnet (Join-Path $dir $program) --filter @filters --exporters fulljson --artifacts $out | Out-Host
-    if ($LASTEXITCODE -ne 0) { throw "Benchmark run '$name' exited with code $LASTEXITCODE." }
+    $exitCode = Invoke-Dotnet (@((Join-Path $dir $program), '--filter') + $filters + @('--exporters', 'fulljson', '--artifacts', $out))
+    if ($exitCode -ne 0) { throw "Benchmark run '$name' exited with code $exitCode." }
     $results = @{}
     foreach ($file in Get-ChildItem (Join-Path $out 'results') -Filter '*-report-full.json' -ErrorAction SilentlyContinue) {
         foreach ($benchmark in (Get-Content $file.FullName -Raw -Encoding utf8 | ConvertFrom-Json).Benchmarks) {
@@ -138,8 +156,8 @@ function Measure-Probe([string]$dir, [string]$name) {
     $samples = [System.Collections.Generic.List[object]]::new()
     foreach ($run in 1..$probeRuns) {
         $file = Join-Path $Artifacts "$name-probe-$run.json"
-        & dotnet (Join-Path $dir $program) --resident-memory $file | Out-Null
-        if ($LASTEXITCODE -ne 0 -or -not (Test-Path $file)) { return $null }
+        $exitCode = Invoke-Dotnet @((Join-Path $dir $program), '--resident-memory', $file) -Quiet
+        if ($exitCode -ne 0 -or -not (Test-Path $file)) { return $null }
         $probe = Get-Content $file -Raw | ConvertFrom-Json
         if ($null -eq $probe.coldStartMilliseconds) { return $null }
         $samples.Add([pscustomobject]@{
