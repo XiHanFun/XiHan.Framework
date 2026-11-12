@@ -29,6 +29,7 @@
 - **修复** 知识库检索的条数与文档过滤有了上限：`Top` 最多 1000（`KnowledgeSearch.MaxTop`），`RetrievalFilter.DocumentIds` 最多 1000 个（`MaxDocumentIds`），超过在构造时抛出；原先条数不限、带元数据过滤时乘以超取倍数会溢出，向量存储把文档 ID 逐个左接成过滤表达式，现在拼成平衡的或树
 - **修复** 审计不再把被 Tenant 阶段拒绝的租户记成事件的租户：原先安全上下文没有租户就回退到调用方自报的 Baggage，失败的调用落进不存在或已禁用的租户的审计；现在装配了多租户时只取安全上下文，自报的租户在结果的错误参数里。内核新增 `MarkTenantResolved()` / `IsTenantResolved()`
 - **修复** 配了 `XiHan:MultiTenancy:DefaultTenant` 或 `RequireTenant` 的宿主里，工作流轮询平台分区不再失败：原先平台分区的调用被补上缺省租户（存储发现分区不符即抛出）或因不带租户被拒绝。内核新增 `MarkPlatformCall()` / `IsPlatformCall()`，Tenant 阶段对声明的平台调用不补缺省租户、不要求带租户
+- **修复** 租户分片的解析缓存过了 `XiHan:MultiTenancy:ShardCacheTimeToLiveSeconds`（缺省 30 秒）即重新读租户存储：原先从不过期，多实例部署里别的实例改了租户的连接串，本实例一直往旧库写。`TenantStoreShardResolver` 的构造多了 `TimeProvider`
 
 ## v5.0.0-preview.3（2026-11-12）
 

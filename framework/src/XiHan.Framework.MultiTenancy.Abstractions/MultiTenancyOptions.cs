@@ -63,6 +63,18 @@ public sealed record MultiTenancyOptions
     } = 10_000;
 
     /// <summary>
+    /// <see cref="Sharding.TenantStoreShardResolver"/> 缓存条目的存活时间
+    /// </summary>
+    /// <remarks>
+    /// 默认 30 秒，与数据库租户存储的缓存一致；<see langword="null"/> 不过期，只靠失效通知。多实例部署里别的实例改了租户的连接串，本实例收不到失效通知，过了存活时间才重新读租户存储（ADR-0193）
+    /// </remarks>
+    public TimeSpan? ShardCacheTimeToLive
+    {
+        get => field;
+        init => field = value is null || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The shard cache time to live must be positive.");
+    } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
     /// 承载租户 ID 的声明类型
     /// </summary>
     /// <remarks>
@@ -78,7 +90,7 @@ public sealed record MultiTenancyOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>DefaultTenant</c>、<c>RequireTenant</c>、<c>ValidateAgainstStore</c>、<c>TenantClaim</c>、<c>ShardCacheSize</c>（正整数）；取值不合法抛出 <see cref="ArgumentException"/>
+    /// <c>DefaultTenant</c>、<c>RequireTenant</c>、<c>ValidateAgainstStore</c>、<c>TenantClaim</c>、<c>ShardCacheSize</c>（正整数）、<c>ShardCacheTimeToLiveSeconds</c>（非负数，0 不过期）；取值不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static MultiTenancyOptions FromConfiguration(IConfiguration configuration)
     {
@@ -110,6 +122,13 @@ public sealed record MultiTenancyOptions
             options = int.TryParse(shardCacheSize, NumberStyles.None, CultureInfo.InvariantCulture, out var size) && size >= 1
                 ? options with { ShardCacheSize = size }
                 : throw new ArgumentException($"{ConfigurationSection}:ShardCacheSize must be a positive integer, but was '{shardCacheSize}'.");
+        }
+
+        if (configuration[$"{ConfigurationSection}:ShardCacheTimeToLiveSeconds"] is { } shardTtl)
+        {
+            options = double.TryParse(shardTtl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && double.IsFinite(seconds) && seconds >= 0
+                ? options with { ShardCacheTimeToLive = seconds == 0 ? null : TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"{ConfigurationSection}:ShardCacheTimeToLiveSeconds must be a non-negative number, but was '{shardTtl}'.");
         }
 
         return options;

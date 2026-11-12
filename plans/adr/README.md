@@ -192,3 +192,4 @@
 | [0190](0190-知识库检索的条数与文档过滤上限.md) | 安全审查 S-29：检索条数在 1 到 `KnowledgeSearch.MaxTop`（1000）之间，`RetrievalFilter.DocumentIds` 最多 `MaxDocumentIds`（1000）个且保存副本，超过在构造时抛出；向量存储的文档过滤拼成平衡的或树 | 已采纳 |
 | [0191](0191-审计的租户不回退到被拒绝的Baggage.md) | 安全审查 S-34：内核新增 `MarkTenantResolved` / `IsTenantResolved`，Tenant 阶段一进入就标记；审计在 Tenant 阶段裁定过租户时只取安全上下文，被拒绝的调用没有租户，不回退到调用方自报的 Baggage | 已采纳 |
 | [0192](0192-平台调用不补缺省租户.md) | 安全审查 S-32：内核新增 `MarkPlatformCall` / `IsPlatformCall`；Tenant 阶段对声明的平台调用不问解析器、不补 `DefaultTenant`、不要求带租户；工作流为平台分区开的调用声明为平台调用 | 已采纳 |
+| [0193](0193-分片解析缓存的存活时间.md) | 安全审查 S-31：`TenantStoreShardResolver` 的缓存条目过了 `ShardCacheTimeToLive`（缺省 30 秒，0 不过期）即重新读租户存储，别的实例改过的连接串在存活时间之后生效；构造多了 `TimeProvider` | 已采纳 |

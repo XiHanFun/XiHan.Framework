@@ -12,7 +12,7 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 /// 从 <see cref="ITenantStore"/> 的租户属性推出分片
 /// </summary>
 /// <remarks>
-/// <c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。结果按租户缓存（有界，满时整体清空）
+/// <c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。结果按租户缓存（有界，满时整体清空），条目过了 <see cref="MultiTenancyOptions.ShardCacheTimeToLive"/> 即重新读租户存储：多实例部署里失效通知只到本实例（ADR-0193）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class TenantStoreShardResolver : ITenantShardResolver
@@ -28,9 +28,19 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     private readonly int _capacity;
 
     /// <summary>
-    /// 租户 ID → 分片（无分片也缓存，避免每次调用都查存储）
+    /// 缓存条目的存活时间，为空不过期
     /// </summary>
-    private readonly ConcurrentDictionary<string, Maybe<TenantShard>> _cache = new(StringComparer.Ordinal);
+    private readonly TimeSpan? _timeToLive;
+
+    /// <summary>
+    /// 时钟
+    /// </summary>
+    private readonly TimeProvider _clock;
+
+    /// <summary>
+    /// 租户 ID → 分片与过期时刻（无分片也缓存，避免每次调用都查存储）
+    /// </summary>
+    private readonly ConcurrentDictionary<string, (Maybe<TenantShard> Shard, DateTimeOffset? ExpiresAt)> _cache = new(StringComparer.Ordinal);
 
     /// <summary>
     /// 日志
@@ -40,13 +50,15 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     /// <summary>
     /// 创建
     /// </summary>
-    public TenantStoreShardResolver(ITenantStore store, MultiTenancyOptions options, ILoggerFactory loggerFactory)
+    public TenantStoreShardResolver(ITenantStore store, MultiTenancyOptions options, ILoggerFactory loggerFactory, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _logger = loggerFactory.CreateLogger<TenantStoreShardResolver>();
         _store = store ?? throw new ArgumentNullException(nameof(store));
+        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _capacity = options.ShardCacheSize;
+        _timeToLive = options.ShardCacheTimeToLive;
     }
 
     /// <summary>
@@ -58,9 +70,11 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     public async ValueTask<Result<Maybe<TenantShard>>> ResolveAsync(string tenantId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenantId);
-        if (_cache.TryGetValue(tenantId, out var cached))
+        var now = _clock.GetUtcNow();
+        // 过期的条目当作没有：重新读租户存储，别的实例改过的连接串在存活时间之后生效
+        if (_cache.TryGetValue(tenantId, out var cached) && (cached.ExpiresAt is not { } expiresAt || now < expiresAt))
         {
-            return Result.Success(cached);
+            return Result.Success(cached.Shard);
         }
 
         var read = await _store.FindAsync(tenantId, cancellationToken).ConfigureAwait(false);
@@ -78,7 +92,7 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
             _cache.Clear();
         }
 
-        _cache[tenantId] = shard;
+        _cache[tenantId] = (shard, now + _timeToLive);
         return Result.Success(shard);
     }
 

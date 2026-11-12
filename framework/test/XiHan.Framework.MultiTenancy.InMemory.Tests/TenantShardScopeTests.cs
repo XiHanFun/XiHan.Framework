@@ -89,7 +89,7 @@ public sealed class TenantShardScopeTests
         Assert.False((await plain.BindTenantAsync("acme", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.Throws<ArgumentException>(() => plain.BindTenantAsync(" ", CancellationToken.None).AsTask().GetAwaiter().GetResult());
 
-        var failing = new TenantShardScope(new TenantStoreShardResolver(new UnreachableStore(), new MultiTenancyOptions(), NullLoggerFactory.Instance));
+        var failing = new TenantShardScope(new TenantStoreShardResolver(new UnreachableStore(), new MultiTenancyOptions(), NullLoggerFactory.Instance, TimeProvider.System));
         var failed = await failing.BindTenantAsync("acme", CancellationToken.None);
         Assert.Equal(MultiTenancyErrors.ShardUnavailable, failed.Error?.Code);
         Assert.False(failing.Shard.HasValue);

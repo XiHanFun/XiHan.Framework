@@ -38,7 +38,7 @@ public sealed class TenantShardingTests
                 new TenantInfo { Id = "c", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=c" } },
             ],
         });
-        var resolver = new TenantStoreShardResolver(store, new MultiTenancyOptions { ShardCacheSize = 2 }, NullLoggerFactory.Instance);
+        var resolver = new TenantStoreShardResolver(store, new MultiTenancyOptions { ShardCacheSize = 2 }, NullLoggerFactory.Instance, TimeProvider.System);
 
         Assert.Equal("Host=a", (await resolver.ResolveAsync("a", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
         Assert.False((await resolver.ResolveAsync("b", CancellationToken.None)).ValueOrThrow().HasValue);
@@ -63,7 +63,7 @@ public sealed class TenantShardingTests
     public async Task Resolver_ReturnsUnavailable_WhenTheStoreIsUnavailable()
     {
         var logs = new LogCapture();
-        var resolver = new TenantStoreShardResolver(new ThrowingStore(), new MultiTenancyOptions(), logs);
+        var resolver = new TenantStoreShardResolver(new ThrowingStore(), new MultiTenancyOptions(), logs, TimeProvider.System);
 
         var result = await resolver.ResolveAsync("acme", CancellationToken.None);
 

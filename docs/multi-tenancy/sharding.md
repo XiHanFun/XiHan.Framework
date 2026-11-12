@@ -88,7 +88,7 @@ app.Run();
 
 分片在 Tenant 阶段解析一次，写进调用上下文；解析失败即调用失败（`MULTITENANCY_UNAVAILABLE_002`），不降级为共库，因为降级会把租户数据写进平台库。无租户的调用没有分片。
 
-`TenantStoreShardResolver` 的结果按租户缓存，「无分片」也缓存；缓存条目数达到 `XiHan:MultiTenancy:ShardCacheSize`（缺省 10000）时整体清空。租户连接变更后调用 `ITenantShardResolver.Invalidate(tenantId)`；经数据库目录的 `TenantRecordStore` 写入时会自动失效，见[数据库租户目录](/multi-tenancy/database)。
+`TenantStoreShardResolver` 的结果按租户缓存，「无分片」也缓存；缓存条目数达到 `XiHan:MultiTenancy:ShardCacheSize`（缺省 10000）时整体清空，条目过了 `ShardCacheTimeToLiveSeconds`（缺省 30 秒）即重新读租户存储。租户连接变更后调用 `ITenantShardResolver.Invalidate(tenantId)`，失效只作用于本实例，多实例部署里别的实例在存活时间之后才用上新连接（ADR-0193）；经数据库目录的 `TenantRecordStore` 写入时会自动失效，见[数据库租户目录](/multi-tenancy/database)。
 
 想自己决定分片规则（按租户哈希选库、从独立的分片表读连接）时，实现 `ITenantShardResolver` 并在特性里登记为单例；中间件与持久化 Provider 只认契约。自带分片 Provider 的应用同样要登记 `TenantShardScope`。
 

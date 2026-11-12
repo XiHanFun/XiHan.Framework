@@ -21,5 +21,5 @@ public sealed class InMemoryTenantShardResolverConformanceTests : TenantShardRes
     /// 用给定租户建内存存储，再在其上建分片解析器
     /// </summary>
     protected override ValueTask<ITenantShardResolver> CreateResolverAsync(IReadOnlyList<TenantInfo> tenants)
-        => ValueTask.FromResult<ITenantShardResolver>(new TenantStoreShardResolver(new InMemoryTenantStore(new InMemoryMultiTenancyOptions { Tenants = tenants }), new MultiTenancyOptions(), NullLoggerFactory.Instance));
+        => ValueTask.FromResult<ITenantShardResolver>(new TenantStoreShardResolver(new InMemoryTenantStore(new InMemoryMultiTenancyOptions { Tenants = tenants }), new MultiTenancyOptions(), NullLoggerFactory.Instance, TimeProvider.System));
 }
