@@ -183,7 +183,7 @@ builder.Services.AddHttpClient(CloudEventsWebhookPublisher.HttpClientName, clien
 | 情形 | 错误码 |
 | --- | --- |
 | 主题没有配置 Webhook | `PROTOCOLS_NOTFOUND_004` |
-| Webhook 返回非 2xx（`details.status` 是状态码） | `PROTOCOLS_UNAVAILABLE_001` |
+| Webhook 返回非 2xx（`details.status` 是状态码；只看状态码，响应体不读） | `PROTOCOLS_UNAVAILABLE_001` |
 | 连接失败 | `PROTOCOLS_UNAVAILABLE_002`，`reason` 只写异常类型的全名，完整异常进日志 |
 | 地址被[出站地址策略](/security/outbound)拒绝 | `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名，不发起连接 |
 

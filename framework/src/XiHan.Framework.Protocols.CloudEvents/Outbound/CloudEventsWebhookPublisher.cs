@@ -97,11 +97,15 @@ public sealed partial class CloudEventsWebhookPublisher : IMessagePublisher
     /// <summary>
     /// 发送请求：2xx 成功，其余状态码为 Webhook 失败，连不上为不可达
     /// </summary>
+    /// <remarks>
+    /// 结果只看状态码：读到响应头即判定，响应体一个字节也不读，接收方返回的正文再大也不进内存（ADR-0188）
+    /// </remarks>
     private async Task<Result> SendAsync(HttpRequestMessage request, string topic, CancellationToken cancellationToken)
     {
         try
         {
-            using var response = await _httpClientFactory.CreateClient(HttpClientName).SendAsync(request, cancellationToken).ConfigureAwait(false);
+            // 不缓冲响应体：释放响应时连接随之中止或回池
+            using var response = await _httpClientFactory.CreateClient(HttpClientName).SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             return response.IsSuccessStatusCode
                 ? Result.Success()
                 : Error.Unavailable(CloudEventsErrors.WebhookFailed, CloudEventsMessages.WebhookFailed, MessageArguments.Of(("topic", topic), ("status", (int)response.StatusCode)));
