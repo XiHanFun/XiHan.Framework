@@ -12,12 +12,26 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 public sealed record RetrievalFilter
 {
     /// <summary>
+    /// 文档过滤最多的文档数
+    /// </summary>
+    /// <remarks>
+    /// 文档 ID 常由调用方的输入而来，向量存储把它们拼成过滤表达式交给后端（ADR-0190）
+    /// </remarks>
+    public const int MaxDocumentIds = 1000;
+
+    /// <summary>
     /// 只在这些文档里找
     /// </summary>
     /// <remarks>
-    /// 空表示不限
+    /// 空表示不限；最多 <see cref="MaxDocumentIds"/> 个，超过抛出 <see cref="ArgumentOutOfRangeException"/>。保存的是副本，之后改传入的列表不影响过滤
     /// </remarks>
-    public IReadOnlyList<string>? DocumentIds { get; init; }
+    public IReadOnlyList<string>? DocumentIds
+    {
+        get => field;
+        init => field = value is null
+            ? null
+            : value.Count <= MaxDocumentIds ? [.. value] : throw new ArgumentOutOfRangeException(nameof(value), value.Count, $"A filter may name at most {MaxDocumentIds} documents.");
+    }
 
     /// <summary>
     /// 元数据必须等于这些键值

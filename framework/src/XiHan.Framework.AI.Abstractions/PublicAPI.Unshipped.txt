@@ -320,6 +320,8 @@ const XiHan.Framework.AI.Abstractions.Guardrails.KeywordBlocklistGuardrail.Guard
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys.Source = "source" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys.Title = "title" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.DefaultCollection = "knowledge" -> string!
+const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.MaxTop = 1000 -> int
+const XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.MaxDocumentIds = 1000 -> int
 const XiHan.Framework.AI.Abstractions.Tools.AIToolNameConvention.MaxLength = 64 -> int
 override XiHan.Framework.AI.Abstractions.AIOptions.Equals(object? obj) -> bool
 override XiHan.Framework.AI.Abstractions.AIOptions.GetHashCode() -> int

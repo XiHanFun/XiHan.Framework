@@ -28,12 +28,12 @@ public sealed record KnowledgeQuery
     /// 条数
     /// </summary>
     /// <remarks>
-    /// 空取 <see cref="KnowledgeOptions.Top"/>
+    /// 空取 <see cref="KnowledgeOptions.Top"/>；给了就在 1 到 <see cref="KnowledgeSearch.MaxTop"/> 之间
     /// </remarks>
     public int? Top
     {
         get => field;
-        init => field = value is null or >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Top must be at least 1.");
+        init => field = value is null or >= 1 and <= KnowledgeSearch.MaxTop ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"Top must be between 1 and {KnowledgeSearch.MaxTop}.");
     }
 
     /// <summary>

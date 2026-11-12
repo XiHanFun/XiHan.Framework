@@ -291,18 +291,19 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
     /// <summary>
     /// <c>r.DocumentId == id1 || r.DocumentId == id2 …</c>（常量比较，连接器都能翻译）
     /// </summary>
+    /// <remarks>
+    /// 拼成平衡的或树：连接器翻译表达式是递归的，逐个左接的链有多少个文档就有多深（ADR-0190）
+    /// </remarks>
     private static Expression<Func<KnowledgeVectorRecord, bool>> DocumentFilter(IReadOnlyList<string> documentIds)
     {
         var record = Expression.Parameter(typeof(KnowledgeVectorRecord), "record");
         var property = Expression.Property(record, nameof(KnowledgeVectorRecord.DocumentId));
-        Expression? body = null;
-        foreach (var documentId in documentIds)
-        {
-            var equals = Expression.Equal(property, Expression.Constant(documentId, typeof(string)));
-            body = body is null ? equals : Expression.OrElse(body, equals);
-        }
+        Expression Range(int start, int count)
+            => count == 1
+                ? Expression.Equal(property, Expression.Constant(documentIds[start], typeof(string)))
+                : Expression.OrElse(Range(start, count / 2), Range(start + (count / 2), count - (count / 2)));
 
-        return Expression.Lambda<Func<KnowledgeVectorRecord, bool>>(body ?? Expression.Constant(false), record);
+        return Expression.Lambda<Func<KnowledgeVectorRecord, bool>>(documentIds.Count == 0 ? Expression.Constant(false) : Range(0, documentIds.Count), record);
     }
 
     /// <summary>

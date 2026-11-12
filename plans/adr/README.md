@@ -189,3 +189,4 @@
 | [0187](0187-CloudEvents入站的请求体与批量上限.md) | 安全审查 S-20：CloudEvents 入站请求体最多 `MaxRequestBodyBytes`（缺省 1 MiB，`PROTOCOLS_VALIDATION_013`），batch 最多 `MaxBatchSize` 个事件（缺省 100，`PROTOCOLS_VALIDATION_014`），都在处理之前判定；重放沿用处理器按 `id` + `source` 去重 | 已采纳 |
 | [0188](0188-CloudEvents的Webhook不读响应体.md) | 安全审查 S-26：CloudEvents Webhook 发布方以 `ResponseHeadersRead` 发送，只按状态码判定，响应体不读 | 已采纳 |
 | [0189](0189-gRPC解码的嵌套上限.md) | 安全审查 S-28：`ProtoDecoder` 嵌套消息最多 64 层（`MaxDepth`，与 JSON 请求体相同），超过即 `ProtoException` → `InvalidArgument` + `PROTOCOLS_VALIDATION_005` | 已采纳 |
+| [0190](0190-知识库检索的条数与文档过滤上限.md) | 安全审查 S-29：检索条数在 1 到 `KnowledgeSearch.MaxTop`（1000）之间，`RetrievalFilter.DocumentIds` 最多 `MaxDocumentIds`（1000）个且保存副本，超过在构造时抛出；向量存储的文档过滤拼成平衡的或树 | 已采纳 |

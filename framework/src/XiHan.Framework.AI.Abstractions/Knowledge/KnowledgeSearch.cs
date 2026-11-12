@@ -15,14 +15,23 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 public sealed record KnowledgeSearch
 {
     /// <summary>
+    /// 一次检索最多返回的条数
+    /// </summary>
+    /// <remarks>
+    /// 条数常由调用方的输入而来，存储会按它（带元数据过滤时乘以超取倍数）向后端取数（ADR-0190）
+    /// </remarks>
+    public const int MaxTop = 1000;
+
+    /// <summary>
     /// 创建
     /// </summary>
     /// <param name="vector">查询向量</param>
-    /// <param name="top">最多返回的条数，至少 1</param>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="top"/> 小于 1</exception>
+    /// <param name="top">最多返回的条数，1 到 <see cref="MaxTop"/></param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="top"/> 小于 1 或大于 <see cref="MaxTop"/></exception>
     public KnowledgeSearch(ReadOnlyMemory<float> vector, int top)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(top, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(top, MaxTop);
         Vector = vector;
         Top = top;
     }

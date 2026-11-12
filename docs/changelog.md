@@ -26,6 +26,7 @@
 - **修复** CloudEvents 入站端点的请求体与 batch 条数有了上限：原先整读请求体、batch 不限条数，派发模式下每个事件都走一次完整管道。现在请求体最多 `XiHan:Protocols:CloudEvents:MaxRequestBodyBytes`（缺省 1 MiB，超过为 `PROTOCOLS_VALIDATION_013`），batch 最多 `MaxBatchSize` 个事件（缺省 100，超过为 `PROTOCOLS_VALIDATION_014`）；`CloudEventsHttpBinding.ReadAsync` 多了 `options` 参数
 - **修复** CloudEvents Webhook 发布方不再读接收方的响应体：原先先把整个响应缓冲进内存（上限约 2 GiB）再看状态码，接收方返回超大正文就能耗尽宿主内存；现在读到响应头即判定
 - **修复** gRPC 解码嵌套消息最多 64 层：原先递归的消息描述能嵌套到第 1000 层，写 JSON 时以非预期异常失败，调用方得到 `Internal`；现在超过即 `InvalidArgument` + `PROTOCOLS_VALIDATION_005`
+- **修复** 知识库检索的条数与文档过滤有了上限：`Top` 最多 1000（`KnowledgeSearch.MaxTop`），`RetrievalFilter.DocumentIds` 最多 1000 个（`MaxDocumentIds`），超过在构造时抛出；原先条数不限、带元数据过滤时乘以超取倍数会溢出，向量存储把文档 ID 逐个左接成过滤表达式，现在拼成平衡的或树
 
 ## v5.0.0-preview.3（2026-11-12）
 

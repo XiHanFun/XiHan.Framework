@@ -76,7 +76,7 @@ public sealed record KnowledgeOptions
     public int Top
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "Top must be at least 1.");
+        init => field = value is >= 1 and <= KnowledgeSearch.MaxTop ? value : throw new ArgumentOutOfRangeException(nameof(value), value, $"Top must be between 1 and {KnowledgeSearch.MaxTop}.");
     } = 5;
 
     /// <summary>
