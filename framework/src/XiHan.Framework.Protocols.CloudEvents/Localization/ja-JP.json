@@ -4,6 +4,7 @@
   "protocols.cloudevents.batch_too_large": "batch のイベント数は {count} で、上限 {max} を超えています。",
   "protocols.cloudevents.no_subscriber": "トピック '{topic}' を購読しているハンドラーがありません。",
   "protocols.cloudevents.topic_unresolved": "イベントタイプ '{type}' にトピックが設定されておらず、タイプ自体も有効なトピックではありません。",
+  "protocols.cloudevents.type_unmapped": "イベント型 '{type}' はトピックにマッピングされていません。XiHan:Protocols:CloudEvents:Topics でマッピングしてください。",
   "protocols.cloudevents.webhook_failed": "トピック '{topic}' の Webhook が HTTP {status} を返しました。",
   "protocols.cloudevents.webhook_missing": "トピック '{topic}' に Webhook が設定されていません。",
   "protocols.cloudevents.webhook_unreachable": "トピック '{topic}' の Webhook に接続できません: {reason}"

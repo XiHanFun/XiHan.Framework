@@ -75,6 +75,8 @@ public sealed class CloudEventsInboundLimitTests
         var log = new DeliveryLog();
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        // 这些用例把主题名直接当事件类型发：显式接受没有映射的类型（缺省不接受，ADR-0200），用例自己的配置在后面、能覆盖它
+        builder.Configuration.AddInMemoryCollection([new("XiHan:Protocols:CloudEvents:AcceptUnmappedTypes", "true")]);
         builder.Configuration.AddInMemoryCollection(configuration.Select(static c => new KeyValuePair<string, string?>(c.Key, c.Value)));
         builder.AddXiHan(static xihan => xihan.UseMinimalProfile().UseFeature<InMemoryMessagingFeature>().UseFeature<CloudEventsProtocolFeature>().UseFeature<EventsFeature>());
         builder.Services.AddSingleton(log);

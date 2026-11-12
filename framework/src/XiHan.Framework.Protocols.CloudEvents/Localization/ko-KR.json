@@ -4,6 +4,7 @@
   "protocols.cloudevents.batch_too_large": "batch의 이벤트가 {count}개로 상한 {max}을(를) 초과합니다.",
   "protocols.cloudevents.no_subscriber": "토픽 '{topic}'을(를) 구독하는 핸들러가 없습니다.",
   "protocols.cloudevents.topic_unresolved": "이벤트 유형 '{type}'에 토픽이 구성되지 않았고 유형 자체도 유효한 토픽이 아닙니다.",
+  "protocols.cloudevents.type_unmapped": "이벤트 형식 '{type}'이(가) 토픽에 매핑되지 않았습니다. XiHan:Protocols:CloudEvents:Topics에서 매핑하십시오.",
   "protocols.cloudevents.webhook_failed": "토픽 '{topic}'의 웹훅이 HTTP {status}을(를) 반환했습니다.",
   "protocols.cloudevents.webhook_missing": "토픽 '{topic}'에 웹훅이 구성되지 않았습니다.",
   "protocols.cloudevents.webhook_unreachable": "토픽 '{topic}'의 웹훅에 연결할 수 없습니다: {reason}"

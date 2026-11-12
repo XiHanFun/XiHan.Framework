@@ -8,6 +8,8 @@ XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolFeature.Configure(XiHan
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolFeature.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.<Clone>$() -> XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions!
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.AcceptUnmappedTypes.get -> bool
+XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.AcceptUnmappedTypes.init -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.CloudEventsProtocolOptions() -> void
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Equals(XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions? other) -> bool
 XiHan.Framework.Protocols.CloudEvents.CloudEventsProtocolOptions.Inbound.get -> XiHan.Framework.Protocols.CloudEvents.Inbound.CloudEventsInboundMode
@@ -52,6 +54,7 @@ const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.CatalogName = "p
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.ContentTypeUnsupported = "protocols.cloudevents.content_type_unsupported" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.NoSubscriber = "protocols.cloudevents.no_subscriber" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.TopicUnresolved = "protocols.cloudevents.topic_unresolved" -> string!
+const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.TypeUnmapped = "protocols.cloudevents.type_unmapped" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookFailed = "protocols.cloudevents.webhook_failed" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookMissing = "protocols.cloudevents.webhook_missing" -> string!
 const XiHan.Framework.Protocols.CloudEvents.CloudEventsMessages.WebhookUnreachable = "protocols.cloudevents.webhook_unreachable" -> string!

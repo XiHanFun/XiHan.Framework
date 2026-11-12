@@ -18,7 +18,7 @@ CloudEvents 1.0 是 CNCF 定义的事件信封标准，框架的消息子系统�
 | batch | `Content-Type: application/cloudevents-batch+json` | 请求体是结构化事件的数组，按顺序处理 |
 | binary | 其他内容类型且有 `ce-specversion` 头 | `ce-id`、`ce-source`、`ce-type` 必填，`ce-time`（RFC 3339）、`ce-subject` 可选，其余 `ce-*` 头是扩展属性，头值按百分号解码；`Content-Type` 是数据内容类型，请求体是数据 |
 
-事件类型先查配置 `XiHan:Protocols:CloudEvents:Topics:<事件类型>`，没有映射时类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
+事件类型查配置 `XiHan:Protocols:CloudEvents:Topics:<事件类型>` 得到主题，没有映射的类型是 400 `PROTOCOLS_VALIDATION_009`。缺省只收映射过的类型：发送方由宿主授权投递某几种事件，没有映射就以类型本身为主题时，它能投进任何有订阅的主题，包括插件订阅的主题（ADR-0200）。发送方可信、想让类型直接当主题时打开 `XiHan:Protocols:CloudEvents:AcceptUnmappedTypes`，此时没有映射的类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
 
 配置 `Inbound` 决定事件的去向：
 

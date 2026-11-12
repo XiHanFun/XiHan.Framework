@@ -1601,6 +1601,12 @@
           "type": "boolean",
           "default": "false",
           "summary": "出站 Webhook 是否在 HTTP 头里写追踪上下文（traceparent、tracestate、baggage）；缺省不写，只作用于 Webhook 的命名客户端"
+        },
+        {
+          "key": "AcceptUnmappedTypes",
+          "type": "boolean",
+          "default": "false",
+          "summary": "入站是否接受没有在 Topics 映射的事件类型（以类型本身为主题）；缺省只收映射过的类型"
         }
       ]
     },

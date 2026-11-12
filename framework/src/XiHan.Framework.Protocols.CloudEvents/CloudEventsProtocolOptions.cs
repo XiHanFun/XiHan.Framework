@@ -12,7 +12,7 @@ namespace XiHan.Framework.Protocols.CloudEvents;
 /// CloudEvents 协议适配器选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:Protocols:CloudEvents</c> 显式读取：<c>Inbound</c>（<c>Dispatch</c> / <c>Publish</c>）、<c>Outbound</c>（<c>Binary</c> / <c>Structured</c>），<c>Topics:&lt;事件类型&gt;</c> = 主题，<c>Webhooks:&lt;主题&gt;</c> = 出站 URL，<c>PropagateTraceContext</c>（<c>true</c> / <c>false</c>）
+/// 从配置节 <c>XiHan:Protocols:CloudEvents</c> 显式读取：<c>Inbound</c>（<c>Dispatch</c> / <c>Publish</c>）、<c>Outbound</c>（<c>Binary</c> / <c>Structured</c>），<c>Topics:&lt;事件类型&gt;</c> = 主题，<c>AcceptUnmappedTypes</c>（<c>true</c> / <c>false</c>），<c>Webhooks:&lt;主题&gt;</c> = 出站 URL，<c>PropagateTraceContext</c>（<c>true</c> / <c>false</c>）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record CloudEventsProtocolOptions
@@ -81,6 +81,14 @@ public sealed record CloudEventsProtocolOptions
     /// 缺省 <see langword="false"/>：Webhook 的命名客户端不写 <c>traceparent</c>、<c>tracestate</c>、<c>baggage</c> 头——接收方是第三方，内部的追踪 ID 与 Baggage 不外推，与信封不补内部扩展同理。为 <see langword="true"/> 时按 .NET 的全局传播器写。只作用于 Webhook 的命名客户端，不改进程全局的传播
     /// </remarks>
     public bool PropagateTraceContext { get; init; }
+
+    /// <summary>
+    /// 入站是否接受没有映射的事件类型
+    /// </summary>
+    /// <remarks>
+    /// 缺省 <see langword="false"/>：只有 <see cref="Topics"/> 映射过的类型能进来，其余是 <see cref="CloudEventsErrors.TopicUnresolved"/>。为 <see langword="true"/> 时没有映射的类型以它本身为主题（须是合法主题），发送方能投进任何有订阅的主题，包括插件订阅的主题，只在发送方可信时打开（ADR-0200）
+    /// </remarks>
+    public bool AcceptUnmappedTypes { get; init; }
 
     /// <summary>
     /// 事件类型 → 主题
@@ -160,14 +168,18 @@ public sealed record CloudEventsProtocolOptions
             MaxBatchSize = (int)ParsePositive(section["MaxBatchSize"], "MaxBatchSize", 100, int.MaxValue),
             Outbound = ParseEnum<CloudEventsContentMode>(section["Outbound"], "Outbound"),
             PropagateTraceContext = ParseBoolean(section["PropagateTraceContext"], "PropagateTraceContext"),
+            AcceptUnmappedTypes = ParseBoolean(section["AcceptUnmappedTypes"], "AcceptUnmappedTypes"),
             Topics = topics,
             Webhooks = webhooks,
         };
     }
 
     /// <summary>
-    /// 事件类型对应的主题：显式映射优先，否则类型本身须是合法主题
+    /// 事件类型对应的主题
     /// </summary>
+    /// <remarks>
+    /// 显式映射优先；没有映射时只在 <see cref="AcceptUnmappedTypes"/> 打开、类型本身是合法主题时以类型为主题，否则无值（ADR-0200）
+    /// </remarks>
     public Maybe<string> TopicFor(string type)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -176,7 +188,7 @@ public sealed record CloudEventsProtocolOptions
             return topic;
         }
 
-        return TopicName.IsValid(type) ? type : default(Maybe<string>);
+        return AcceptUnmappedTypes && TopicName.IsValid(type) ? type : default(Maybe<string>);
     }
 
     /// <summary>

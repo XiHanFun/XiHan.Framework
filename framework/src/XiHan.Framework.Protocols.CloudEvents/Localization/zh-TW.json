@@ -4,6 +4,7 @@
   "protocols.cloudevents.batch_too_large": "batch 有 {count} 個事件，超過上限 {max}。",
   "protocols.cloudevents.no_subscriber": "沒有處理器訂閱主題 '{topic}'。",
   "protocols.cloudevents.topic_unresolved": "事件類型 '{type}' 沒有設定主題，類型本身也不是合法的主題。",
+  "protocols.cloudevents.type_unmapped": "事件類型 '{type}' 沒有對應到主題；請在 XiHan:Protocols:CloudEvents:Topics 下對應它。",
   "protocols.cloudevents.webhook_failed": "主題 '{topic}' 的 Webhook 回傳了 HTTP {status}。",
   "protocols.cloudevents.webhook_missing": "主題 '{topic}' 沒有設定 Webhook。",
   "protocols.cloudevents.webhook_unreachable": "無法連線主題 '{topic}' 的 Webhook：{reason}"

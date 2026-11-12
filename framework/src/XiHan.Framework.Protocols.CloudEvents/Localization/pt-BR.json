@@ -4,6 +4,7 @@
   "protocols.cloudevents.batch_too_large": "O lote tem {count} eventos e ultrapassa o limite de {max}.",
   "protocols.cloudevents.no_subscriber": "Nenhum manipulador está inscrito no tópico '{topic}'.",
   "protocols.cloudevents.topic_unresolved": "Nenhum tópico está configurado para o tipo de evento '{type}' e o próprio tipo não é um tópico válido.",
+  "protocols.cloudevents.type_unmapped": "O tipo de evento '{type}' não está mapeado para um tópico; mapeie-o em XiHan:Protocols:CloudEvents:Topics.",
   "protocols.cloudevents.webhook_failed": "O webhook do tópico '{topic}' respondeu com HTTP {status}.",
   "protocols.cloudevents.webhook_missing": "Nenhum webhook está configurado para o tópico '{topic}'.",
   "protocols.cloudevents.webhook_unreachable": "Não foi possível alcançar o webhook do tópico '{topic}': {reason}"

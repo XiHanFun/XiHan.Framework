@@ -4,6 +4,7 @@
   "protocols.cloudevents.batch_too_large": "Le lot contient {count} événements et dépasse la limite de {max}.",
   "protocols.cloudevents.no_subscriber": "Aucun gestionnaire n'est abonné au sujet '{topic}'.",
   "protocols.cloudevents.topic_unresolved": "Aucun sujet n'est configuré pour le type d'événement '{type}' et le type lui-même n'est pas un sujet valide.",
+  "protocols.cloudevents.type_unmapped": "Le type d'événement '{type}' n'est associé à aucun sujet ; associez-le sous XiHan:Protocols:CloudEvents:Topics.",
   "protocols.cloudevents.webhook_failed": "Le webhook du sujet '{topic}' a répondu HTTP {status}.",
   "protocols.cloudevents.webhook_missing": "Aucun webhook n'est configuré pour le sujet '{topic}'.",
   "protocols.cloudevents.webhook_unreachable": "Le webhook du sujet '{topic}' est injoignable : {reason}"

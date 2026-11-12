@@ -60,7 +60,8 @@ app.Run();
 | `XiHan:Protocols:CloudEvents:MaxBatchSize` | 正整数 | 100 | 入站 batch 的事件数上限，超过为 `PROTOCOLS_VALIDATION_014` |
 | `XiHan:Protocols:CloudEvents:Outbound` | `Binary` / `Structured` | `Binary` | 出站单条事件的内容模式；不接受 `Batch` |
 | `XiHan:Protocols:CloudEvents:PropagateTraceContext` | bool | `false` | 出站 Webhook 是否在 HTTP 头里写追踪上下文（`traceparent`、`tracestate`、`baggage`）；只作用于 Webhook 的命名客户端 |
-| `XiHan:Protocols:CloudEvents:Topics:<事件类型>` | string | — | 事件类型到主题的映射，值须满足主题文法 |
+| `XiHan:Protocols:CloudEvents:Topics:<事件类型>` | string | — | 事件类型到主题的映射，值须满足主题文法；入站只收映射过的类型 |
+| `XiHan:Protocols:CloudEvents:AcceptUnmappedTypes` | bool | `false` | 入站是否接受没有映射的类型（以类型本身为主题）；打开后发送方能投进任何有订阅的主题，只在发送方可信时打开（ADR-0200） |
 | `XiHan:Protocols:CloudEvents:Webhooks:<主题>` | string | — | 出站 Webhook 地址，绝对的 `http` / `https` 地址 |
 
 ```json

@@ -4,6 +4,7 @@
   "protocols.cloudevents.batch_too_large": "Пакет содержит {count} событий, это больше предела {max}.",
   "protocols.cloudevents.no_subscriber": "Ни один обработчик не подписан на тему '{topic}'.",
   "protocols.cloudevents.topic_unresolved": "Для типа события '{type}' не настроена тема, и сам тип не является допустимой темой.",
+  "protocols.cloudevents.type_unmapped": "Тип события '{type}' не сопоставлен с темой; сопоставьте его в XiHan:Protocols:CloudEvents:Topics.",
   "protocols.cloudevents.webhook_failed": "Webhook темы '{topic}' ответил HTTP {status}.",
   "protocols.cloudevents.webhook_missing": "Для темы '{topic}' не настроен webhook.",
   "protocols.cloudevents.webhook_unreachable": "Не удалось связаться с webhook темы '{topic}': {reason}"

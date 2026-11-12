@@ -39,6 +39,8 @@ public sealed class CloudEventsProtocolTests
         var outbound = new CapturingHandler();
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        // 这些用例把主题名直接当事件类型发：显式接受没有映射的类型（缺省不接受，ADR-0200），用例自己的配置在后面、能覆盖它
+        builder.Configuration.AddInMemoryCollection([new("XiHan:Protocols:CloudEvents:AcceptUnmappedTypes", "true")]);
         builder.Configuration.AddInMemoryCollection(configuration.Select(static c => new KeyValuePair<string, string?>(c.Key, c.Value)));
         builder.AddXiHan(static xihan => xihan.UseMinimalProfile().UseFeature<InMemoryMessagingFeature>().UseFeature<CloudEventsProtocolFeature>().UseFeature<EventsFeature>());
         builder.Services.AddSingleton(log);
@@ -133,6 +135,22 @@ public sealed class CloudEventsProtocolTests
         var cached = log.Records[2];
         Assert.Equal(("caches", SubscriptionMode.Broadcast), (cached.Delivery.Topic, cached.Delivery.Mode));
         Assert.Equal(3, log.Records.Count);
+    }
+
+    [Fact]
+    public async Task Inbound_RejectsUnmappedTypes_UnlessAccepted()
+    {
+        var (app, client, log, _) = await StartAsync(("XiHan:Protocols:CloudEvents:AcceptUnmappedTypes", "false"), ("XiHan:Protocols:CloudEvents:Topics:orders.placed", "orders"));
+        await using var host = app;
+
+        // 修之前没有映射的类型以它本身为主题：只该投 orders.placed 的发送方能投进 notices 等任何有订阅的主题（ADR-0200）
+        var unmapped = await PostBinaryAsync(client, EventsFeature.NoticesTopic);
+        Assert.Equal(HttpStatusCode.BadRequest, unmapped.StatusCode);
+        Assert.Equal(CloudEventsErrors.TopicUnresolved, await CodeOf(unmapped));
+        Assert.Empty(log.Records);
+
+        Assert.Equal(HttpStatusCode.Accepted, (await PostBinaryAsync(client, "orders.placed")).StatusCode);
+        Assert.Equal("orders", Assert.Single(log.Records).Delivery.Topic);
     }
 
     [Fact]
@@ -299,6 +317,7 @@ public sealed class CloudEventsProtocolTests
 
         var options = CloudEventsProtocolOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
+            ["XiHan:Protocols:CloudEvents:AcceptUnmappedTypes"] = "true",
             ["XiHan:Protocols:CloudEvents:Inbound"] = "publish",
             ["XiHan:Protocols:CloudEvents:Outbound"] = "structured",
             ["XiHan:Protocols:CloudEvents:Topics:orders.placed"] = "orders",
@@ -308,6 +327,8 @@ public sealed class CloudEventsProtocolTests
         Assert.Equal("orders", options.TopicFor("orders.placed").ValueOrThrow());
         Assert.Equal("orders.shipped", options.TopicFor("orders.shipped").ValueOrThrow());
         Assert.False(options.TopicFor("Orders.Shipped").HasValue);
+        // 缺省不接受没有映射的类型（ADR-0200）
+        Assert.False(new CloudEventsProtocolOptions().TopicFor("orders.shipped").HasValue);
         Assert.Equal("https://hooks.test/orders", options.Webhooks["orders"].ToString());
         Assert.Throws<ArgumentException>(static () => CloudEventsProtocolOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Protocols:CloudEvents:Inbound"] = "sometimes" }).Build()));
     }

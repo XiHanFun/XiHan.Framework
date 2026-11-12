@@ -4,6 +4,7 @@
   "protocols.cloudevents.batch_too_large": "The batch has {count} events, over the limit of {max}.",
   "protocols.cloudevents.no_subscriber": "No handler is subscribed to topic '{topic}'.",
   "protocols.cloudevents.topic_unresolved": "No topic is configured for event type '{type}' and the type itself is not a valid topic.",
+  "protocols.cloudevents.type_unmapped": "Event type '{type}' is not mapped to a topic; map it under XiHan:Protocols:CloudEvents:Topics.",
   "protocols.cloudevents.webhook_failed": "The webhook for topic '{topic}' responded with HTTP {status}.",
   "protocols.cloudevents.webhook_missing": "No webhook is configured for topic '{topic}'.",
   "protocols.cloudevents.webhook_unreachable": "The webhook for topic '{topic}' could not be reached: {reason}"

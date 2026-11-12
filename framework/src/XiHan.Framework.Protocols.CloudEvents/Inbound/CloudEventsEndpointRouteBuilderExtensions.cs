@@ -70,7 +70,10 @@ public static class CloudEventsEndpointRouteBuilderExtensions
         {
             if (!options.TopicFor(envelopes[index].Type).TryGetValue(out var topic))
             {
-                context.SetOutcome(Error.Validation(CloudEventsErrors.TopicUnresolved, CloudEventsMessages.TopicUnresolved, MessageArguments.Of(("type", envelopes[index].Type))));
+                // 两种原因同一个错误码：没有映射又不接受未映射的类型（缺省），或接受了但类型本身不是合法主题
+                context.SetOutcome(options.AcceptUnmappedTypes
+                    ? Error.Validation(CloudEventsErrors.TopicUnresolved, CloudEventsMessages.TopicUnresolved, MessageArguments.Of(("type", envelopes[index].Type)))
+                    : Error.Validation(CloudEventsErrors.TopicUnresolved, CloudEventsMessages.TypeUnmapped, MessageArguments.Of(("type", envelopes[index].Type))));
                 return;
             }
 

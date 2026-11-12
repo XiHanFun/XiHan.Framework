@@ -53,6 +53,14 @@ public static class CloudEventsMessages
     public const string TopicUnresolved = "protocols.cloudevents.topic_unresolved";
 
     /// <summary>
+    /// 事件类型没有映射，也不接受没有映射的类型
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>type</c>（ADR-0200）
+    /// </remarks>
+    public const string TypeUnmapped = "protocols.cloudevents.type_unmapped";
+
+    /// <summary>
     /// 主题没有处理器
     /// </summary>
     /// <remarks>
