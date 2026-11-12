@@ -25,6 +25,14 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Processes;
 internal sealed partial class PluginProcess : IAsyncDisposable
 {
     /// <summary>
+    /// 插件 stdout / stderr 一行最多保留的字符数
+    /// </summary>
+    /// <remarks>
+    /// 插件不可信：超过的部分读掉丢弃、不进内存，行照常转成日志并另记一条告警；握手行超过即握手不合法（ADR-0185）
+    /// </remarks>
+    internal const int MaxOutputLineChars = 16 * 1024;
+
+    /// <summary>
     /// 允许原样传给插件的环境变量
     /// </summary>
     /// <remarks>
@@ -67,6 +75,11 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     private readonly TaskCompletionSource<int> _exited = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
+    /// stdout 的按行读取：握手行与之后的普通输出共用，缓冲里读多的部分留给下一行
+    /// </summary>
+    private readonly PluginOutputReader _stdout;
+
+    /// <summary>
     /// 到插件端点的通道
     /// </summary>
     /// <remarks>
@@ -92,8 +105,9 @@ internal sealed partial class PluginProcess : IAsyncDisposable
         _logger = logger;
         _clock = clock;
         SessionToken = sessionToken;
+        _stdout = new PluginOutputReader(process.StandardOutput, MaxOutputLineChars);
         _ = MonitorExitAsync();
-        _ = PumpAsync(process.StandardError);
+        _ = PumpAsync(new PluginOutputReader(process.StandardError, MaxOutputLineChars));
     }
 
     /// <summary>
@@ -205,7 +219,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
         handle._channel = PluginChannelFactory.Create(endpoint);
         handle._client = new Plugin.PluginClient(handle._channel);
         // 握手行之后 stdout 只是普通输出，按 Information 记录
-        _ = handle.PumpAsync(process.StandardOutput);
+        _ = handle.PumpAsync(handle._stdout);
         return handle;
     }
 
@@ -282,7 +296,8 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// </summary>
     private async Task<Result<PluginEndpoint>> ReadHandshakeLineAsync(TimeSpan timeout, TimeProvider clock, CancellationToken cancellationToken)
     {
-        var read = _process.StandardOutput.ReadLineAsync(cancellationToken).AsTask();
+        // 超过上限即返回：握手行超长就不合法，不等行尾，也不把整行留在内存里
+        var read = _stdout.ReadLineAsync(stopAtLimit: true, cancellationToken).AsTask();
         Task completed;
         try
         {
@@ -296,10 +311,14 @@ internal sealed partial class PluginProcess : IAsyncDisposable
 
         if (completed == read)
         {
-            var line = await read.ConfigureAwait(false);
-            if (line is null)
+            if (await read.ConfigureAwait(false) is not var (line, truncated))
             {
                 return Error.Unexpected(PluginErrors.Crashed, PluginMessages.ProcessCrashed, details: MessageArguments.Of(("id", _pluginId), ("exitCode", HasExited ? _exited.Task.Result : -1)));
+            }
+
+            if (truncated)
+            {
+                return new Error(PluginErrors.InvalidHandshake, PluginMessages.HandshakeInvalid, MessageArguments.Of(("id", _pluginId), ("reason", $"handshake line longer than {MaxOutputLineChars} characters")));
             }
 
             return PluginEndpoint.TryParseHandshakeLine(line, out var endpoint)
@@ -331,14 +350,19 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// 逐行把插件输出转为日志
     /// </summary>
     /// <remarks>
-    /// 以 <c>{</c> 开头且能解析的行按结构化日志（<c>level</c>、<c>message</c>）处理，其余按 Information
+    /// 以 <c>{</c> 开头且能解析的行按结构化日志（<c>level</c>、<c>message</c>）处理，其余按 Information。超过 <see cref="MaxOutputLineChars"/> 的行只记前面的部分，另记一条告警
     /// </remarks>
-    private async Task PumpAsync(StreamReader reader)
+    private async Task PumpAsync(PluginOutputReader reader)
     {
         try
         {
-            while (await reader.ReadLineAsync().ConfigureAwait(false) is { } line)
+            while (await reader.ReadLineAsync(stopAtLimit: false, CancellationToken.None).ConfigureAwait(false) is var (line, truncated))
             {
+                if (truncated)
+                {
+                    LogLineTruncated(_logger, _pluginId, MaxOutputLineChars);
+                }
+
                 if (line.Length == 0)
                 {
                     continue;
@@ -399,4 +423,10 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// </summary>
     [LoggerMessage(Message = "[plugins.{PluginId}] {Line}")]
     private static partial void LogOutput(ILogger logger, LogLevel level, string pluginId, string line);
+
+    /// <summary>
+    /// 插件写了超长的一行
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin '{PluginId}' wrote an output line longer than {MaxChars} characters; the rest of the line was dropped.")]
+    private static partial void LogLineTruncated(ILogger logger, string pluginId, int maxChars);
 }

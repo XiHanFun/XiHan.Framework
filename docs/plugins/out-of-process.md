@@ -243,7 +243,7 @@ builder.AddXiHan(xihan => xihan
 
 ### 插件进程起来了，宿主却报握手超时
 
-宿主要在 `HandshakeTimeoutSeconds` 内读到 stdout 的握手行并完成 `Handshake`。常见原因：日志写到了 stdout（只能走 stderr）、`tcp` 地址不是回环地址、握手发回的清单与目录里的文件不一致。`xihan-conformance plugin --dir <目录>` 的 `handshake` 用例能直接定位。
+宿主要在 `HandshakeTimeoutSeconds` 内读到 stdout 的握手行并完成 `Handshake`。stdout 与 stderr 的一行最多 16384 个字符，超过的部分被丢弃，握手行超过即握手失败（ADR-0185）。常见原因：日志写到了 stdout（只能走 stderr）、`tcp` 地址不是回环地址、握手发回的清单与目录里的文件不一致。`xihan-conformance plugin --dir <目录>` 的 `handshake` 用例能直接定位。
 
 ### 插件崩溃后多久恢复，一直崩会怎样
 
