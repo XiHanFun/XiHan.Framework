@@ -38,6 +38,7 @@
 - **修复** 多租户实体的唯一索引必须含 `TenantId`：原先不要求，撞上不含租户的唯一索引会告诉调用方别的租户已有这个键。不含又没写 `AcrossTenants = true` 的声明在启动时失败；主键仍全局唯一，多租户实体的标识应由服务端生成
 - **修复** MCP 的 HTTP 端点校验 `Origin`、`Content-Type` 与请求体大小：原先任意网页都能用 `text/plain` 的简单请求调用本机 MCP 服务的匿名 tool，请求体也只受 Kestrel 的 30 MB 限制。带 `Origin` 的请求要在 `XiHan:Protocols:Mcp:AllowedOrigins` 里（否则 403），只收 `application/json`（否则 415），请求体最多 `MaxRequestBodyBytes`（缺省 4 MiB，否则 413）；浏览器里的 MCP 客户端要把它的源配进去
 - **修复** CloudEvents 入站缺省只收 `XiHan:Protocols:CloudEvents:Topics` 映射过的事件类型：原先没有映射的类型以它本身为主题，只被允许投递某一种事件的发送方能投进任何有订阅的主题，包括插件订阅的主题。依赖类型直接当主题的应用把类型映射进 `Topics`，或在发送方可信时打开 `AcceptUnmappedTypes`
+- **修复** Kubernetes 租约客户端校验 API Server 证书的主机名与服务端认证用途：原先只核对证书链通到集群 CA，持有集群 CA 签发的任意证书就能冒充 API Server、拿到 ServiceAccount 令牌并伪造租约
 
 ## v5.0.0-preview.3（2026-11-12）
 

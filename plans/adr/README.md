@@ -200,3 +200,4 @@
 | [0198](0198-多租户实体的唯一索引含租户.md) | 安全审查 S-33：多租户实体的唯一索引必须含 `TenantId`，跨租户唯一显式声明 `AcrossTenants = true`，违反时 `EntityIndexes.Resolve` 抛出、启动失败；主键仍全局唯一，多租户实体的标识由服务端生成 | 已采纳 |
 | [0199](0199-MCP的HTTP入口校验源与内容类型.md) | 安全审查 S-12：MCP 的 HTTP 端点按 `AllowedOrigins` 校验 `Origin`（缺省为空，不在其中 403）、只收 `application/json`（415）、请求体最多 `MaxRequestBodyBytes`（缺省 4 MiB，413） | 已采纳 |
 | [0200](0200-CloudEvents入站只收映射过的类型.md) | 安全审查 S-13：CloudEvents 入站缺省只收 `Topics` 映射过的事件类型，没有映射为 `PROTOCOLS_VALIDATION_009`；`AcceptUnmappedTypes` 打开时才以类型本身为主题 | 已采纳 |
+| [0201](0201-Kubernetes租约客户端照常校验主机名.md) | 安全审查 S-17：Pod 内租约客户端改用 `CertificateChainPolicy` 的自定义根信任，平台照常校验主机名，叶证书要有服务端认证用途 | 已采纳 |

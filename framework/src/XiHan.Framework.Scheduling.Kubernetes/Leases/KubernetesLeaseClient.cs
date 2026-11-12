@@ -4,6 +4,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions;
@@ -48,10 +49,15 @@ public sealed class KubernetesLeaseClient
     public string Namespace { get; }
 
     /// <summary>
+    /// 扩展密钥用途「服务端认证」的 OID
+    /// </summary>
+    private const string ServerAuthentication = "1.3.6.1.5.5.7.3.1";
+
+    /// <summary>
     /// 按 Pod 内约定创建
     /// </summary>
     /// <remarks>
-    /// API Server 地址、ServiceAccount 的 CA（存在时作为唯一信任根）与令牌
+    /// API Server 地址、ServiceAccount 的 CA（存在时作为唯一信任根）与令牌。证书照常校验主机名，链要通到这个 CA、叶证书要有服务端认证用途（ADR-0201）
     /// </remarks>
     public static KubernetesLeaseClient CreateInCluster(KubernetesSchedulingOptions options)
     {
@@ -59,21 +65,17 @@ public sealed class KubernetesLeaseClient
         var handler = new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) };
         if (File.Exists(options.CertificateAuthorityPath))
         {
-            // 集群 CA 不在系统信任里：只信任 ServiceAccount 挂载的 CA
-            var authority = X509CertificateLoader.LoadCertificateFromFile(options.CertificateAuthorityPath);
-            handler.SslOptions.RemoteCertificateValidationCallback = (_, certificate, _, _) =>
+            // 集群 CA 不在系统信任里：只信任 ServiceAccount 挂载的 CA。换的是链策略而不是证书回调：
+            // 平台照常校验主机名，只是信任根换成这个 CA；自己写回调只建链会丢掉主机名校验，集群 CA 签发的任何证书都能冒充 API Server
+            var policy = new X509ChainPolicy
             {
-                if (certificate is null)
-                {
-                    return false;
-                }
-
-                using var chain = new X509Chain();
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                chain.ChainPolicy.CustomTrustStore.Add(authority);
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                return chain.Build(new X509Certificate2(certificate));
+                TrustMode = X509ChainTrustMode.CustomRootTrust,
+                RevocationMode = X509RevocationMode.NoCheck,
             };
+            policy.CustomTrustStore.Add(X509CertificateLoader.LoadCertificateFromFile(options.CertificateAuthorityPath));
+            // 叶证书要能用于服务端认证：同一个 CA 签发的客户端证书（kubelet 等）不能当 API Server 的证书
+            policy.ApplicationPolicy.Add(new Oid(ServerAuthentication));
+            handler.SslOptions.CertificateChainPolicy = policy;
         }
 
         return new KubernetesLeaseClient(new HttpClient(handler) { BaseAddress = options.ResolveApiServer(), Timeout = TimeSpan.FromSeconds(10) }, options);
