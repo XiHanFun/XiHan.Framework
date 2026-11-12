@@ -23,6 +23,14 @@ public sealed class DeadlineMiddleware(TimeProvider timeProvider) : IPipelineMid
     /// </remarks>
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 
+    /// <summary>
+    /// 定时取消能表示的最长时长
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CancellationTokenSource"/> 的延迟上限是 <see cref="uint.MaxValue"/> 减一毫秒
+    /// </remarks>
+    internal static readonly TimeSpan MaxTimerDuration = TimeSpan.FromMilliseconds(uint.MaxValue - 1.0);
+
     /// <inheritdoc />
     public async ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
@@ -37,9 +45,10 @@ public sealed class DeadlineMiddleware(TimeProvider timeProvider) : IPipelineMid
             return;
         }
 
-        // 没有截止时间就原样透传上下文，不派生新实例、不创建定时器
+        // 没有截止时间就原样透传上下文，不派生新实例、不创建定时器；截止时间远于定时器能表示的范围（约 49.7 天）时同样不起定时器：
+        // 调用不会跑那么久，起定时器反而抛出参数异常、以 500 结束（ADR-0203）
         var remaining = context.RemainingTime(now);
-        if (remaining is null)
+        if (remaining is null || remaining.Value > MaxTimerDuration)
         {
             await Invoke(context, context, nextStep, CancellationToken.None).ConfigureAwait(false);
             return;

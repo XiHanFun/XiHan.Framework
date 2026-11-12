@@ -40,6 +40,7 @@
 - **修复** CloudEvents 入站缺省只收 `XiHan:Protocols:CloudEvents:Topics` 映射过的事件类型：原先没有映射的类型以它本身为主题，只被允许投递某一种事件的发送方能投进任何有订阅的主题，包括插件订阅的主题。依赖类型直接当主题的应用把类型映射进 `Topics`，或在发送方可信时打开 `AcceptUnmappedTypes`
 - **修复** Kubernetes 租约客户端校验 API Server 证书的主机名与服务端认证用途：原先只核对证书链通到集群 CA，持有集群 CA 签发的任意证书就能冒充 API Server、拿到 ServiceAccount 令牌并伪造租约
 - **修复** 宿主调用进程外插件时每次都带会话令牌，回调套接字放进私有目录：原先只有回调带令牌，本机其他用户或同一 Pod 的边车直接连插件端点就能冒充宿主，宿主的回调套接字也直接放在共享的临时目录下。插件必须校验 `xihan-plugin-session`，不符即 `Unauthenticated`；自己实现协议的插件要补上这道校验（.NET 写法见 `samples/EchoPlugin/SessionGuard.cs`）
+- **修复** 极远的截止时间不再让调用以 500 结束：原先 `grpc-timeout` 的大数值溢出时间范围，超过约 49.7 天的截止时间让定时器构造抛出，匿名调用方能随意制造错误日志；现在前者截到最远的时刻，后者不起定时器
 
 ## v5.0.0-preview.3（2026-11-12）
 

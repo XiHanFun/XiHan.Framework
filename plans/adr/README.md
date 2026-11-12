@@ -202,3 +202,4 @@
 | [0200](0200-CloudEvents入站只收映射过的类型.md) | 安全审查 S-13：CloudEvents 入站缺省只收 `Topics` 映射过的事件类型，没有映射为 `PROTOCOLS_VALIDATION_009`；`AcceptUnmappedTypes` 打开时才以类型本身为主题 | 已采纳 |
 | [0201](0201-Kubernetes租约客户端照常校验主机名.md) | 安全审查 S-17：Pod 内租约客户端改用 `CertificateChainPolicy` 的自定义根信任，平台照常校验主机名，叶证书要有服务端认证用途 | 已采纳 |
 | [0202](0202-宿主调用插件带会话令牌.md) | 安全审查 S-18：宿主调用进程外插件的每次 RPC 都带会话令牌，插件按常数时间校验、不符即 `Unauthenticated`；Unix 套接字放进新建的 0700 私有目录、文件 0600，命名管道只允许当前用户；一致性套件与 Go 运行器新增令牌用例 | 已采纳 |
+| [0203](0203-极远的截止时间不再报500.md) | 安全审查 S-21：`grpc-timeout` 换算溢出时截到 `DateTimeOffset.MaxValue`；剩余时间超过定时取消上限（约 49.7 天）时 `DeadlineMiddleware` 不起定时器，不再以 500 结束 | 已采纳 |

@@ -266,6 +266,23 @@ public sealed class WebHostTests
         Assert.Equal("KERNEL_TIMEOUT_001", problem.RootElement.GetProperty("code").GetString());
     }
 
+    [Theory]
+    [InlineData(HttpInvocation.GrpcTimeoutHeader, "99999999H")]
+    [InlineData(HttpInvocation.DeadlineHeader, "9999-12-31T23:59:59Z")]
+    [InlineData(HttpInvocation.GrpcTimeoutHeader, "1200H")]
+    public async Task FarDeadlines_RunTheCall_InsteadOfFailingWithA500(string header, string value)
+    {
+        var (app, client, _) = await StartAsync();
+        await using var _ = app;
+
+        // 修之前：grpc-timeout 的八位小时数溢出 DateTimeOffset，超过约 49.7 天的截止时间让定时器构造抛出，调用都以 500 结束（ADR-0203）
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/ok");
+        request.Headers.Add(header, value);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     [Fact]
     public async Task HealthEndpoints_ReflectApplicationState()
     {

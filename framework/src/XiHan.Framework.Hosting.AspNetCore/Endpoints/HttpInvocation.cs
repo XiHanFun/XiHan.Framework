@@ -101,7 +101,9 @@ public static partial class HttpInvocation
                 "u" => TimeSpan.FromMicroseconds(amount),
                 _ => TimeSpan.FromTicks(amount / 100),
             };
-            deadline = (services.GetService<TimeProvider>() ?? TimeProvider.System).GetUtcNow() + duration;
+            // 八位数的小时能到一万多年，加上当前时刻会溢出 DateTimeOffset：截到能表示的最远时刻，等同于调用期间不会到期（ADR-0203）
+            var now = (services.GetService<TimeProvider>() ?? TimeProvider.System).GetUtcNow();
+            deadline = duration < DateTimeOffset.MaxValue - now ? now + duration : DateTimeOffset.MaxValue;
         }
 
         var baggage = ParseBaggageCore(headers["baggage"].ToString());
