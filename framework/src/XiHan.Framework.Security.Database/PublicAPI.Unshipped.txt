@@ -39,7 +39,7 @@ XiHan.Framework.Security.Database.Grants.PermissionGrantRecordStore.ListAsync(Xi
 XiHan.Framework.Security.Database.Grants.PermissionGrantRecordStore.PermissionGrantRecordStore(XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<XiHan.Framework.Security.Database.Grants.PermissionGrantRecord!, System.Guid>! repository, XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<System.Guid>! ids, XiHan.Framework.Security.Database.Grants.DatabasePermissionGrantStore! grants) -> void
 XiHan.Framework.Security.Database.Grants.PermissionGrantRecordStore.RevokeAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>! grants, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 const XiHan.Framework.Security.Database.DatabaseSecurityOptions.ConfigurationSection = "XiHan:Security:Database" -> string!
-const XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.GlobalTenantId = "" -> string!
+const XiHan.Framework.Security.Database.Grants.PermissionGrantRecord.PlatformTenantId = "" -> string!
 override XiHan.Framework.Security.Database.DatabaseSecurityOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Security.Database.DatabaseSecurityOptions.GetHashCode() -> int
 override XiHan.Framework.Security.Database.DatabaseSecurityOptions.ToString() -> string!

@@ -18,16 +18,19 @@ namespace XiHan.Framework.Security.Conformance;
 public abstract class PermissionGrantStoreConformance
 {
     /// <summary>
-    /// 套件的种子授予：角色与用户、全局与租户专属、仅大小写不同的用户 ID 各占一例
+    /// 套件的种子授予
     /// </summary>
+    /// <remarks>
+    /// 角色与用户、平台、每个租户与租户专属、仅大小写不同的用户 ID 各占一例
+    /// </remarks>
     private static readonly PermissionGrant[] _seed =
     [
-        new(GrantSubject.ForRole("editor"), "orders.read"),
-        new(GrantSubject.ForRole("editor"), "orders.write"),
-        new(GrantSubject.ForRole("admin"), PermissionGrant.All),
-        new(GrantSubject.ForUser("alice"), "reports.read"),
+        new(GrantSubject.ForRole("editor"), "orders.read", PermissionGrant.AnyTenant),
+        new(GrantSubject.ForRole("editor"), "orders.write", PermissionGrant.AnyTenant),
+        new(GrantSubject.ForRole("admin"), PermissionGrant.All, null),
+        new(GrantSubject.ForUser("alice"), "reports.read", PermissionGrant.AnyTenant),
         new(GrantSubject.ForUser("alice"), "reports.export", "acme"),
-        new(GrantSubject.ForUser("Bob"), "audit.read"),
+        new(GrantSubject.ForUser("Bob"), "audit.read", null),
     ];
 
     /// <summary>
@@ -57,24 +60,32 @@ public abstract class PermissionGrantStoreConformance
     {
         var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
 
-        Assert.Equal(["orders.read", "orders.write"], Sorted(await GrantsAsync(store, GrantSubject.ForRole("editor"), null, CancellationToken.None).ConfigureAwait(false)));
+        Assert.Equal(["orders.read", "orders.write"], Sorted(await GrantsAsync(store, GrantSubject.ForRole("editor"), "acme", CancellationToken.None).ConfigureAwait(false)));
         Assert.Equal([PermissionGrant.All], Sorted(await GrantsAsync(store, GrantSubject.ForRole("admin"), null, CancellationToken.None).ConfigureAwait(false)));
-        Assert.Equal(["reports.read"], Sorted(await GrantsAsync(store, GrantSubject.ForUser("alice"), null, CancellationToken.None).ConfigureAwait(false)));
-        Assert.Empty(await GrantsAsync(store, GrantSubject.ForUser("nobody"), null, CancellationToken.None).ConfigureAwait(false));
-        Assert.Empty(await GrantsAsync(store, GrantSubject.ForRole("alice"), null, CancellationToken.None).ConfigureAwait(false));
+        Assert.Equal(["reports.read"], Sorted(await GrantsAsync(store, GrantSubject.ForUser("alice"), "other", CancellationToken.None).ConfigureAwait(false)));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForUser("nobody"), "acme", CancellationToken.None).ConfigureAwait(false));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForRole("alice"), "acme", CancellationToken.None).ConfigureAwait(false));
     }
 
     /// <summary>
-    /// 用例 2：全局授予对任何租户生效，租户专属授予只对该租户生效
+    /// 用例 2：平台与租户两边的授予互不渗透
     /// </summary>
+    /// <remarks>
+    /// 平台授予只对不带租户的调用生效，每个租户的授予只对带租户的调用生效，租户专属授予只对该租户生效（ADR-0197）：平台授给 <c>role:admin</c> 的 <c>*</c> 不落到租户里带同名角色的人身上；调用的租户不能是 <see cref="PermissionGrant.AnyTenant"/>
+    /// </remarks>
     [Fact]
-    public async Task TenantScopedGrants_ApplyOnlyToThatTenant()
+    public async Task GrantScopes_DoNotLeakBetweenPlatformAndTenants()
     {
         var store = await CreateStoreAsync(_seed).ConfigureAwait(false);
 
         Assert.Equal(["reports.export", "reports.read"], Sorted(await GrantsAsync(store, GrantSubject.ForUser("alice"), "acme", CancellationToken.None).ConfigureAwait(false)));
         Assert.Equal(["reports.read"], Sorted(await GrantsAsync(store, GrantSubject.ForUser("alice"), "other", CancellationToken.None).ConfigureAwait(false)));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForUser("alice"), null, CancellationToken.None).ConfigureAwait(false));
         Assert.Equal(["orders.read", "orders.write"], Sorted(await GrantsAsync(store, GrantSubject.ForRole("editor"), "acme", CancellationToken.None).ConfigureAwait(false)));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForRole("editor"), null, CancellationToken.None).ConfigureAwait(false));
+        Assert.Equal([PermissionGrant.All], Sorted(await GrantsAsync(store, GrantSubject.ForRole("admin"), null, CancellationToken.None).ConfigureAwait(false)));
+        Assert.Empty(await GrantsAsync(store, GrantSubject.ForRole("admin"), "acme", CancellationToken.None).ConfigureAwait(false));
+        await Assert.ThrowsAsync<ArgumentException>(async () => await store.GetManyAsync([GrantSubject.ForRole("admin")], PermissionGrant.AnyTenant, CancellationToken.None).ConfigureAwait(false)).ConfigureAwait(false);
     }
 
     /// <summary>

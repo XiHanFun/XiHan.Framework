@@ -34,6 +34,7 @@
 - **修复** 数据库租户目录的停用与改连接串在提交之后立即生效：原先只在写入时清目录与分片缓存，提交之前的解析会把旧租户写回缓存，停用的租户在存活时间内仍被当作启用、仍指向旧库
 - **修复** 插件回调与发布只能带宿主交给插件的租户：原先回调元数据里的 `xihan.tenant` 原样采用、Wasm 中间件也能改写它，插件能在任何启用的租户里调用宿主操作、发布消息。越界的回调与信封为 `PLUGINS_DENIED_002`，中间件改写租户被丢弃；原样转发收到的元数据的插件不受影响
 - **修复** 租户 ID 只用小写（`^[a-z0-9][a-z0-9._-]{0,63}$`，整串匹配）：原先区分大小写，数据库缺省排序规则下 `ACME` 的调用能读写 `acme` 的行；`acme\n` 这类结尾带换行的 ID 也曾被放过。含大写的 ID 为 `MULTITENANCY_VALIDATION_001`。升级前把租户目录、`TenantId` 列、授予与资源名里的租户 ID 改成小写，只有大小写不同的两个租户先拆开数据
+- **修复** 没有租户的授予只对平台调用生效：原先它对每个租户生效，平台授给 `role:admin` 的权限落到每个租户里带同名角色、同一用户 ID 的人身上。要对每个租户生效的授予把范围写成 `*`（`PermissionGrant.AnyTenant`，数据库租户列存 `*`，内存配置写在 `XiHan:Security:InMemory:AnyTenantGrants`）；`GrantTenantFilter.Global` 改名 `Platform`，`PermissionGrantRecord.GlobalTenantId` 改名 `PlatformTenantId`
 
 ## v5.0.0-preview.3（2026-11-12）
 

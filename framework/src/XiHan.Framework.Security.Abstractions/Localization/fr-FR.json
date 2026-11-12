@@ -21,6 +21,7 @@
   "security.condition.value_invalid": "La valeur de condition '{value}' n'est pas un {kind} valide.",
   "security.condition.value_required": "La valeur de la condition ne doit pas être vide.",
   "security.grant.not_found": "L'attribution de la permission '{permission}' à '{subject}' dans le locataire '{tenant}' est introuvable.",
+  "security.grant.platform_not_found": "L'attribution de plateforme de la permission '{permission}' à '{subject}' est introuvable.",
   "security.grant.query_page_invalid": "La page de la liste des attributions est hors limites : skip {skip} ne doit pas être négatif et take {take} doit être compris entre 1 et {max}.",
   "security.grant_store.capacity_exceeded": "Le magasin d'octrois en mémoire a atteint sa capacité de {capacity}.",
   "security.grant_store.unavailable": "Le magasin d'octrois d'autorisations est indisponible. Réessayez plus tard.",

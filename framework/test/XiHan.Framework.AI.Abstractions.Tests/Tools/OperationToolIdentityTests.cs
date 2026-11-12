@@ -33,7 +33,8 @@ public sealed class OperationToolIdentityTests
         ("XiHan:Security:InMemory:Principals:alice:Roles", "reader"),
         ("XiHan:Security:InMemory:Principals:bob:ApiKey", "dev-bob-key"),
         ("XiHan:Security:InMemory:Principals:bob:Roles", "guest"),
-        ("XiHan:Security:InMemory:Grants:role:reader", GuardedFeature.Permission),
+        // 调用带租户：授予要对每个租户生效，平台授予不落到租户里（ADR-0197）
+        ("XiHan:Security:InMemory:AnyTenantGrants:role:reader", GuardedFeature.Permission),
     ];
 
     [Fact]

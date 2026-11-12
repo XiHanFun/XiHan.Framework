@@ -46,7 +46,7 @@ framework/
 | `XiHan.Framework.MultiTenancy.InMemory` | 3 | 内存租户存储默认实现：从配置装载、有界 |
 | `XiHan.Framework.MultiTenancy.Database` | 3 | 数据库租户目录 Provider：租户以实体经仓储读写，单例目录直接开工作单元读取并按租户有界缓存（带存活时间、写入即失效），分片从租户属性推出 |
 | `XiHan.Framework.Security.InMemory` | 3 | 内存安全默认实现：ApiKey 主体与 RBAC 授予，从配置装载 |
-| `XiHan.Framework.Security.Database` | 3 | 数据库授权 Provider：只提供 `security.authorization@1`，授予以实体经仓储读写（全局授予以空字符串租户列落库），授予存储带有界 TTL 缓存，`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果 |
+| `XiHan.Framework.Security.Database` | 3 | 数据库授权 Provider：只提供 `security.authorization@1`，授予以实体经仓储读写（平台授予以空字符串、每个租户的授予以 `*` 落在租户列），授予存储带有界 TTL 缓存，`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果 |
 | `XiHan.Framework.Security.Jwt` | 3 | JWT Bearer 认证 Provider（非 AOT） |
 | `XiHan.Framework.Security.OpenIdConnect` | 3 | OpenID Connect Bearer 认证 Provider：发现文档 + JWKS，密钥轮换时限速刷新（非 AOT） |
 | `XiHan.Framework.Security.Ip2Region` | 3 | IP 归属地 Provider（`security.ip-region@1`）：ip2region 离线库，IPv4 / IPv6 xdb 由宿主提供，缺失只记警告 |

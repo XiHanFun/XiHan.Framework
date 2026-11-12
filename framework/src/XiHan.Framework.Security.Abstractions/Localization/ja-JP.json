@@ -21,6 +21,7 @@
   "security.condition.value_invalid": "条件値 '{value}' は有効な {kind} ではありません。",
   "security.condition.value_required": "条件値を空にすることはできません。",
   "security.grant.not_found": "テナント '{tenant}' における '{subject}' への権限 '{permission}' の付与が見つかりません。",
+  "security.grant.platform_not_found": "'{subject}' への権限 '{permission}' のプラットフォーム付与が見つかりません。",
   "security.grant.query_page_invalid": "付与一覧のページ指定が範囲外です。skip {skip} は負にできず、take {take} は 1 から {max} の間である必要があります。",
   "security.grant_store.capacity_exceeded": "インメモリ権限付与ストアは容量上限 {capacity} に達しました。",
   "security.grant_store.unavailable": "権限付与ストアは現在利用できません。しばらくしてから再試行してください。",

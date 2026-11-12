@@ -1249,7 +1249,7 @@
     {
       "id": "XiHan.Framework.Security.Database",
       "ring": "3",
-      "summary": "数据库授权 Provider：只提供 `security.authorization@1`，授予以实体经仓储读写（全局授予以空字符串租户列落库），授予存储带有界 TTL 缓存，`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果",
+      "summary": "数据库授权 Provider：只提供 `security.authorization@1`，授予以实体经仓储读写（平台授予以空字符串、每个租户的授予以 `*` 落在租户列），授予存储带有界 TTL 缓存，`PermissionGrantRecordStore` 批量授予 / 撤销逐项结果",
       "description": "曦寒框架授权的数据库提供程序",
       "references": [
         "XiHan.Framework.Security.Abstractions",

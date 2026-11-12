@@ -17,25 +17,19 @@ namespace XiHan.Framework.Security.Database.Grants;
 internal static class GrantRows
 {
     /// <summary>
-    /// 一组主体在租户下的有效授予行
+    /// 一组主体对一次调用生效的授予行
     /// </summary>
     /// <remarks>
-    /// 全局行加该租户的行；<paramref name="tenantId"/> 为 <see langword="null"/>（或空）时只有全局行。主体种类与主体 ID 各取集合做 <c>IN</c> 过滤，
-    /// 两个集合的笛卡尔积可能多取回别的主体的行，调用方按完整的主体精确匹配
+    /// 范围按 <see cref="PermissionGrant.VisibleScopes"/>：<paramref name="tenantId"/> 为 <see langword="null"/>（或空）时只有平台行，否则是每个租户的行加该租户的行（ADR-0197）。主体种类、主体 ID 与范围各取集合做 <c>IN</c> 过滤，
+    /// 主体两个集合的笛卡尔积可能多取回别的主体的行，调用方按完整的主体精确匹配
     /// </remarks>
     public static Specification<PermissionGrantRecord> EffectiveForAny(IReadOnlyCollection<GrantSubject> subjects, string? tenantId)
     {
         var kinds = subjects.Select(static s => s.Kind).Distinct(StringComparer.Ordinal).ToList();
         var ids = subjects.Select(static s => s.Id).Distinct(StringComparer.Ordinal).ToList();
-        var global = PermissionGrantRecord.GlobalTenantId;
-        // 没有租户时只要全局行；条件里不写 "|| TenantId == null"，列本身非空
-        if (string.IsNullOrEmpty(tenantId))
-        {
-            return new Specification<PermissionGrantRecord>(r => kinds.Contains(r.SubjectKind) && ids.Contains(r.SubjectId) && r.TenantId == global);
-        }
-
-        var tenant = tenantId;
-        return new Specification<PermissionGrantRecord>(r => kinds.Contains(r.SubjectKind) && ids.Contains(r.SubjectId) && (r.TenantId == global || r.TenantId == tenant));
+        // 范围换成列值：平台是空字符串，条件里不写 "|| TenantId == null"，列本身非空
+        var scopes = PermissionGrant.VisibleScopes(tenantId).Select(PermissionGrantRecord.TenantColumnOf).ToList();
+        return new Specification<PermissionGrantRecord>(r => kinds.Contains(r.SubjectKind) && ids.Contains(r.SubjectId) && scopes.Contains(r.TenantId));
     }
 
     /// <summary>

@@ -119,6 +119,12 @@ public sealed class DatabaseSecurityTests
         Assert.True((await WriteOrderAsync(host, "dev-alice-key")).IsSuccess);
         Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-bob-key")).Error?.Code);
 
+        // 平台授予不落到租户里：修之前平台授给 role:editor 的权限对每个租户里带 editor 角色的人都生效（ADR-0197）
+        Assert.Equal(SecurityErrors.PermissionMissing, (await WriteOrderAsync(host, "dev-alice-key", tenant: "acme")).Error?.Code);
+        Assert.All(await GrantAsync(host, new PermissionGrant(_editor, WriteOrderOperation.Permission, PermissionGrant.AnyTenant)), static r => Assert.True(r.IsSuccess));
+        Assert.True((await WriteOrderAsync(host, "dev-alice-key", tenant: "acme")).IsSuccess);
+        Assert.All(await RevokeAsync(host, new PermissionGrant(_editor, WriteOrderOperation.Permission, PermissionGrant.AnyTenant)), static r => Assert.True(r.IsSuccess));
+
         // 租户专属授予只对该租户放行
         Assert.All(await GrantAsync(host, new PermissionGrant(_bob, WriteOrderOperation.Permission, "acme")), static r => Assert.True(r.IsSuccess));
         var scoped = await WriteOrderAsync(host, "dev-bob-key", tenant: "acme");
@@ -131,35 +137,35 @@ public sealed class DatabaseSecurityTests
     public async Task RecordStore_GrantsIdempotently_RevokesPerItem_AndLists()
     {
         await using var host = await StartAsync();
-        var global = new PermissionGrant(_alice, WriteOrderOperation.Permission);
+        var platform = new PermissionGrant(_alice, WriteOrderOperation.Permission);
         var scoped = new PermissionGrant(_alice, WriteOrderOperation.Permission, "acme");
         var wildcard = new PermissionGrant(_editor, PermissionGrant.All);
 
         // 同一批里的重复项与已存在的项都成功，只落一行
-        var granted = await GrantAsync(host, global, global, scoped, wildcard);
+        var granted = await GrantAsync(host, platform, platform, scoped, wildcard);
         Assert.All(granted, static r => Assert.True(r.IsSuccess));
         Assert.Equal(4, granted.Count);
-        Assert.All(await GrantAsync(host, global), static r => Assert.True(r.IsSuccess));
+        Assert.All(await GrantAsync(host, platform), static r => Assert.True(r.IsSuccess));
 
-        // 按主体种类、主体 ID、权限码、租户排序；全局行的租户列是空字符串，换算回契约是 null
+        // 按主体种类、主体 ID、权限码、范围排序；平台行的租户列是空字符串，换算回契约是 null
         var all = await ListAsync(host, new PermissionGrantQuery { Take = 10 });
-        Assert.Equal([wildcard, global, scoped], all.Items);
+        Assert.Equal([wildcard, platform, scoped], all.Items);
         Assert.Equal(3, all.Total);
-        Assert.Equal([global, scoped], (await ListAsync(host, new PermissionGrantQuery { Subject = _alice })).Items);
+        Assert.Equal([platform, scoped], (await ListAsync(host, new PermissionGrantQuery { Subject = _alice })).Items);
         Assert.Equal([scoped], (await ListAsync(host, new PermissionGrantQuery { Tenant = GrantTenantFilter.Of("acme") })).Items);
-        Assert.Equal([wildcard, global], (await ListAsync(host, new PermissionGrantQuery { Tenant = GrantTenantFilter.Global })).Items);
+        Assert.Equal([wildcard, platform], (await ListAsync(host, new PermissionGrantQuery { Tenant = GrantTenantFilter.Platform })).Items);
         var second = await ListAsync(host, new PermissionGrantQuery { Skip = 1, Take = 1 });
-        Assert.Equal([global], second.Items);
+        Assert.Equal([platform], second.Items);
         Assert.Equal(3, second.Total);
 
-        // 撤销逐项：存在的成功，同一批第二次与从未存在的都不存在，错误能按调用方语言翻译
+        // 撤销逐项：存在的成功，同一批第二次与从未存在的都不存在，错误能按调用方语言翻译；平台授予用自己的文案（ADR-0197）
         var missing = new PermissionGrant(GrantSubject.ForUser("carol"), "reports.read");
-        var revoked = await RevokeAsync(host, global, global, missing, new PermissionGrant(_alice, "reports.read", "acme"));
+        var revoked = await RevokeAsync(host, platform, platform, missing, new PermissionGrant(_alice, "reports.read", "acme"));
         Assert.True(revoked[0].IsSuccess);
         Assert.All(revoked.Skip(1), static r => Assert.Equal(SecurityErrors.GrantNotFound, r.Error?.Code));
         var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
-        Assert.Equal("Grant of 'reports.read' to 'user:carol' in tenant '*' was not found.", localizer.Localize(revoked[2].Error!, "en-US"));
-        Assert.Equal("租户 '*' 中对 'user:carol' 的权限 'reports.read' 授予不存在。", localizer.Localize(revoked[2].Error!, "zh-CN"));
+        Assert.Equal("Platform grant of 'reports.read' to 'user:carol' was not found.", localizer.Localize(revoked[2].Error!, "en-US"));
+        Assert.Equal("对 'user:carol' 的权限 'reports.read' 的平台授予不存在。", localizer.Localize(revoked[2].Error!, "zh-CN"));
         Assert.Equal("租户 'acme' 中对 'user:alice' 的权限 'reports.read' 授予不存在。", localizer.Localize(revoked[3].Error!, "zh-CN"));
         Assert.Equal([wildcard, scoped], (await ListAsync(host, new PermissionGrantQuery())).Items);
 

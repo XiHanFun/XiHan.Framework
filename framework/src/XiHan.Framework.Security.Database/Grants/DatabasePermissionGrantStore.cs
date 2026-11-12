@@ -103,12 +103,14 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
     public async ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(subjects);
+        // 调用的租户不能是每个租户的范围：在读缓存与查库之前拒绝（ADR-0197）
+        _ = PermissionGrant.VisibleScopes(tenantId);
         if (subjects.Count == 0)
         {
             return Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>([]);
         }
 
-        // 空租户与无租户同义：都只有全局授予，缓存键也归一
+        // 空租户与无租户同义：都只有平台授予，缓存键也归一
         var tenant = string.IsNullOrEmpty(tenantId) ? null : tenantId;
         var found = new Dictionary<GrantSubject, FrozenSet<string>>();
         var missing = new HashSet<GrantSubject>();

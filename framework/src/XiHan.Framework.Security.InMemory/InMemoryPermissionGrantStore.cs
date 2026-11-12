@@ -17,8 +17,11 @@ namespace XiHan.Framework.Security.InMemory;
 public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore, IPermissionGrantAdministration
 {
     /// <summary>
-    /// 授予表：键为主体种类、主体 ID 与租户（<see langword="null"/> 为全局），值为权限码集合
+    /// 授予表：键为主体种类、主体 ID 与范围，值为权限码集合
     /// </summary>
+    /// <remarks>
+    /// 范围 <see langword="null"/> 为平台，<c>*</c> 为每个租户，其余为租户 ID
+    /// </remarks>
     private readonly Dictionary<(string Kind, string Id, string? Tenant), HashSet<string>> _grants = [];
 
     /// <summary>
@@ -96,23 +99,22 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore, IPermi
     public ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(subjects);
+        var scopes = PermissionGrant.VisibleScopes(tenantId);
         var results = new IReadOnlyCollection<string>[subjects.Count];
         // 一次加锁读完整批：同一批里各主体看到的是同一时刻的表
         lock (_gate)
         {
             for (var i = 0; i < subjects.Count; i++)
             {
-                // 全局授予与该租户的授予取并集；没有租户时只有全局授予
+                // 这次调用看得到的范围取并集：平台调用只有平台授予，租户调用是每个租户的授予加该租户的授予（ADR-0197）
                 var subject = subjects[i];
                 var result = new HashSet<string>(StringComparer.Ordinal);
-                if (_grants.TryGetValue((subject.Kind, subject.Id, null), out var global))
+                foreach (var scope in scopes)
                 {
-                    result.UnionWith(global);
-                }
-
-                if (tenantId is not null && _grants.TryGetValue((subject.Kind, subject.Id, tenantId), out var scoped))
-                {
-                    result.UnionWith(scoped);
+                    if (_grants.TryGetValue((subject.Kind, subject.Id, scope), out var granted))
+                    {
+                        result.UnionWith(granted);
+                    }
                 }
 
                 results[i] = result;
@@ -156,7 +158,9 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore, IPermi
                 var grant = grants[index];
                 results[index] = RevokeLocked(grant)
                     ? Result.Success()
-                    : Error.NotFound(SecurityErrors.GrantNotFound, SecurityMessages.GrantNotFound, MessageArguments.Of(("subject", grant.Subject.ToString()), ("permission", grant.Permission), ("tenant", grant.TenantId ?? PermissionGrant.All)));
+                    : (grant.TenantId is { } scope
+                    ? Error.NotFound(SecurityErrors.GrantNotFound, SecurityMessages.GrantNotFound, MessageArguments.Of(("subject", grant.Subject.ToString()), ("permission", grant.Permission), ("tenant", scope)))
+                    : Error.NotFound(SecurityErrors.GrantNotFound, SecurityMessages.PlatformGrantNotFound, MessageArguments.Of(("subject", grant.Subject.ToString()), ("permission", grant.Permission))));
             }
         }
 
@@ -197,7 +201,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore, IPermi
             }
         }
 
-        // 序数顺序与数据库实现一致：种类、主体 ID、权限码，全局（null）排在租户之前
+        // 序数顺序与数据库实现一致：种类、主体 ID、权限码，平台（null）在前、每个租户（*）其次，然后按租户 ID
         var page = matched
             .OrderBy(static g => g.Subject.Kind, StringComparer.Ordinal)
             .ThenBy(static g => g.Subject.Id, StringComparer.Ordinal)
@@ -277,7 +281,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore, IPermi
             ArgumentNullException.ThrowIfNull(grant, nameof(grants));
             if (grant.TenantId is not null && string.IsNullOrWhiteSpace(grant.TenantId))
             {
-                throw new ArgumentException($"The tenant of a grant must not be blank; use null for a global grant ('{grant.Subject}', '{grant.Permission}').", nameof(grants));
+                throw new ArgumentException($"The tenant of a grant must not be blank; use null for a platform grant ('{grant.Subject}', '{grant.Permission}').", nameof(grants));
             }
         }
     }

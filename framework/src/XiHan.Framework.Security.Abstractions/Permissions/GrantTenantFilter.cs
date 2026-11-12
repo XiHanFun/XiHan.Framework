@@ -6,10 +6,10 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.Security.Abstractions.Permissions;
 
 /// <summary>
-/// 列出授予时的租户过滤
+/// 列出授予时的范围过滤
 /// </summary>
 /// <remarks>
-/// 三种之一：不按租户过滤（<see cref="Any"/>）、只要全局授予（<see cref="Global"/>）、只要某个租户的专属授予（<see cref="Of"/>）。不用 <see langword="null"/> 表示「不过滤」，因为契约里 <see langword="null"/> 租户就是全局（RFC-0001「缺失用 null」，ADR-0158）
+/// 三种之一：不按范围过滤（<see cref="Any"/>）、只要平台授予（<see cref="Platform"/>）、只要某个范围的授予（<see cref="Of"/>，<see cref="PermissionGrant.AnyTenant"/> 是每个租户的授予）。不用 <see langword="null"/> 表示「不过滤」，因为契约里 <see langword="null"/> 租户就是平台（RFC-0001「缺失用 null」，ADR-0158、ADR-0197）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record GrantTenantFilter
@@ -29,9 +29,9 @@ public sealed record GrantTenantFilter
     public static GrantTenantFilter Any { get; } = new(isAny: true, tenantId: null);
 
     /// <summary>
-    /// 只要全局授予
+    /// 只要平台授予
     /// </summary>
-    public static GrantTenantFilter Global { get; } = new(isAny: false, tenantId: null);
+    public static GrantTenantFilter Platform { get; } = new(isAny: false, tenantId: null);
 
     /// <summary>
     /// 是否不按租户过滤
@@ -42,13 +42,16 @@ public sealed record GrantTenantFilter
     /// 要的租户
     /// </summary>
     /// <remarks>
-    /// <see cref="IsAny"/> 为假时，<see langword="null"/> 表示全局
+    /// <see cref="IsAny"/> 为假时，<see langword="null"/> 表示平台
     /// </remarks>
     public string? TenantId { get; }
 
     /// <summary>
-    /// 只要某个租户的专属授予
+    /// 只要某个范围的授予
     /// </summary>
+    /// <remarks>
+    /// 租户 ID 是该租户的专属授予，<see cref="PermissionGrant.AnyTenant"/> 是每个租户的授予
+    /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="tenantId"/> 为空或空白</exception>
     public static GrantTenantFilter Of(string tenantId)
     {

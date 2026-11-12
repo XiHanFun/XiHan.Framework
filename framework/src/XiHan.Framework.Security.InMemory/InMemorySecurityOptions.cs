@@ -76,7 +76,7 @@ public sealed record InMemorySecurityOptions
     } = [];
 
     /// <summary>
-    /// 装载的授予（全局）
+    /// 装载的授予
     /// </summary>
     public IReadOnlyList<PermissionGrant> Grants
     {
@@ -88,7 +88,7 @@ public sealed record InMemorySecurityOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、<c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码）；租户声明类型另从 <see cref="TenantClaimKey"/> 读取
+    /// <c>MaxPrincipals</c>、<c>MaxGrants</c>、<c>Principals:&lt;id&gt;:{ApiKey, DisplayName, Roles, Tenant, Claims:*}</c>、<c>Grants:role:&lt;role&gt;</c> 与 <c>Grants:user:&lt;id&gt;</c>（逗号分隔的权限码，平台授予）、<c>AnyTenantGrants:role:&lt;role&gt;</c> 与 <c>AnyTenantGrants:user:&lt;id&gt;</c>（每个租户的授予，ADR-0197）；租户声明类型另从 <see cref="TenantClaimKey"/> 读取
     /// </remarks>
     public static InMemorySecurityOptions FromConfiguration(IConfiguration configuration)
     {
@@ -126,15 +126,18 @@ public sealed record InMemorySecurityOptions
             });
         }
 
-        // 配置里的授予都是全局的（无租户）；租户专属授予只能在运行时通过 Grant 添加
+        // Grants 是平台授予、AnyTenantGrants 是每个租户的授予（ADR-0197）；租户专属授予只能在运行时通过 Grant 添加
         var grants = new List<PermissionGrant>();
-        foreach (var kind in new[] { GrantSubject.Role, GrantSubject.User })
+        foreach (var (section, scope) in new (string Section, string? Scope)[] { ("Grants", null), ("AnyTenantGrants", PermissionGrant.AnyTenant) })
         {
-            foreach (var subject in configuration.GetSection($"{ConfigurationSection}:Grants:{kind}").GetChildren())
+            foreach (var kind in new[] { GrantSubject.Role, GrantSubject.User })
             {
-                foreach (var permission in Split(subject.Value))
+                foreach (var subject in configuration.GetSection($"{ConfigurationSection}:{section}:{kind}").GetChildren())
                 {
-                    grants.Add(new PermissionGrant(new GrantSubject(kind, subject.Key), permission));
+                    foreach (var permission in Split(subject.Value))
+                    {
+                        grants.Add(new PermissionGrant(new GrantSubject(kind, subject.Key), permission, scope));
+                    }
                 }
             }
         }

@@ -47,18 +47,19 @@ public sealed class SqlitePermissionGrantStoreTests
         granted.ThrowIfFailure();
 
         Assert.Equal(["orders.write"], (await store.GetGrantsAsync(editor, null, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(["orders.write"], (await store.GetGrantsAsync(editor, "acme", CancellationToken.None)).ValueOrThrow());
+        // 平台授予不落到租户里（ADR-0197）
+        Assert.Empty((await store.GetGrantsAsync(editor, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.Empty((await store.GetGrantsAsync(alice, null, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(["reports.export"], (await store.GetGrantsAsync(alice, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.Empty((await store.GetGrantsAsync(alice, "other", CancellationToken.None)).ValueOrThrow());
 
-        // 全局行的租户列是空字符串，能原样写入与读回；创建时间由仓储写入
+        // 平台行的租户列是空字符串，能原样写入与读回；创建时间由仓储写入
         var listed = await host.InvokeAsync(async context =>
         {
             var rows = await context.Services.GetRequiredService<IRepository<PermissionGrantRecord, Guid>>().ListAsync(
                 EntityQuery.All<PermissionGrantRecord>().OrderBy(static r => r.SubjectKind).OrderBy(static r => r.SubjectId),
                 context.CancellationToken);
-            Assert.Equal([("role", "editor", "orders.write", PermissionGrantRecord.GlobalTenantId), ("user", "alice", "reports.export", "acme")], rows.Select(static r => (r.SubjectKind, r.SubjectId, r.Permission, r.TenantId)));
+            Assert.Equal([("role", "editor", "orders.write", PermissionGrantRecord.PlatformTenantId), ("user", "alice", "reports.export", "acme")], rows.Select(static r => (r.SubjectKind, r.SubjectId, r.Permission, r.TenantId)));
             Assert.Null(rows[0].ToGrant().TenantId);
             Assert.All(rows, static r => Assert.NotEqual(default, r.CreatedAt));
         });

@@ -21,6 +21,7 @@
   "security.condition.value_invalid": "Der Bedingungswert '{value}' ist kein gültiger Wert vom Typ {kind}.",
   "security.condition.value_required": "Der Bedingungswert darf nicht leer sein.",
   "security.grant.not_found": "Die Zuweisung der Berechtigung '{permission}' an '{subject}' im Mandanten '{tenant}' wurde nicht gefunden.",
+  "security.grant.platform_not_found": "Die Plattformzuweisung der Berechtigung '{permission}' an '{subject}' wurde nicht gefunden.",
   "security.grant.query_page_invalid": "Die Seite der Berechtigungsliste liegt außerhalb des Bereichs: skip {skip} darf nicht negativ sein und take {take} muss zwischen 1 und {max} liegen.",
   "security.grant_store.capacity_exceeded": "Der In-Memory-Berechtigungsspeicher hat seine Kapazität von {capacity} erreicht.",
   "security.grant_store.unavailable": "Der Berechtigungsspeicher ist nicht verfügbar. Versuchen Sie es später erneut.",

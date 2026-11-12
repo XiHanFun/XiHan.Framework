@@ -32,7 +32,7 @@ internal sealed class DictionaryGrantStore(params PermissionGrant[] grants) : IP
             ? Result.Failure<IReadOnlyList<IReadOnlyCollection<string>>>(failure)
             : Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>(subjects
                 .Select(subject => (IReadOnlyCollection<string>)grants
-                    .Where(g => g.Subject == subject && (g.TenantId is null || g.TenantId == tenantId))
+                    .Where(g => g.Subject == subject && PermissionGrant.VisibleScopes(tenantId).Contains(g.TenantId))
                     .Select(static g => g.Permission)
                     .ToList())
                 .ToList()));

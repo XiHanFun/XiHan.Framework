@@ -18,9 +18,9 @@ namespace XiHan.Framework.Security.Conformance;
 public abstract class PermissionGrantAdministrationConformance
 {
     /// <summary>
-    /// 全局的角色授予
+    /// 每个租户的角色授予
     /// </summary>
-    private static readonly PermissionGrant _editorRead = new(GrantSubject.ForRole("editor"), "orders.read");
+    private static readonly PermissionGrant _editorRead = new(GrantSubject.ForRole("editor"), "orders.read", PermissionGrant.AnyTenant);
 
     /// <summary>
     /// 租户专属的用户授予
@@ -62,7 +62,8 @@ public abstract class PermissionGrantAdministrationConformance
         Assert.All(granted, static r => Assert.True(r.IsSuccess, r.Error?.ToString()));
         Assert.True(Assert.Single(again).IsSuccess);
         Assert.Empty(empty);
-        Assert.Equal(["orders.read"], (await store.GetGrantsAsync(GrantSubject.ForRole("editor"), null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Equal(["orders.read"], (await store.GetGrantsAsync(GrantSubject.ForRole("editor"), "other", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Empty((await store.GetGrantsAsync(GrantSubject.ForRole("editor"), null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal(["reports.export"], (await store.GetGrantsAsync(GrantSubject.ForUser("alice"), "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.Empty((await store.GetGrantsAsync(GrantSubject.ForUser("alice"), "other", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
@@ -71,7 +72,7 @@ public abstract class PermissionGrantAdministrationConformance
     /// 用例 2：撤销逐项报告，不存在的是 <see cref="SecurityErrors.GrantNotFound"/>
     /// </summary>
     /// <remarks>
-    /// 同一批里同一授予第二次撤销看见第一次的效果，报告不存在；全局与租户专属是两条不同的授予
+    /// 同一批里同一授予第二次撤销看见第一次的效果，报告不存在；平台、每个租户与租户专属是不同的授予
     /// </remarks>
     [Fact]
     public async Task Revoke_ReportsMissingItems_PerItem()
@@ -79,44 +80,48 @@ public abstract class PermissionGrantAdministrationConformance
         var store = await StartAsync().ConfigureAwait(false);
         await AdministerAsync((grants, ct) => grants.GrantAsync([_editorRead, _aliceExport], ct)).ConfigureAwait(false);
 
-        var revoked = await AdministerAsync((grants, ct) => grants.RevokeAsync([_editorRead, _editorRead, new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", "acme"), new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export")], ct)).ConfigureAwait(false);
+        var revoked = await AdministerAsync((grants, ct) => grants.RevokeAsync([_editorRead, _editorRead, new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", "acme"), new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", PermissionGrant.AnyTenant)], ct)).ConfigureAwait(false);
 
         Assert.Equal(4, revoked.Count);
         Assert.True(revoked[0].IsSuccess, revoked[0].Error?.ToString());
         Assert.Equal(SecurityErrors.GrantNotFound, revoked[1].Error?.Code);
         Assert.True(revoked[2].IsSuccess, revoked[2].Error?.ToString());
         Assert.Equal(SecurityErrors.GrantNotFound, revoked[3].Error?.Code);
-        Assert.Empty((await store.GetGrantsAsync(GrantSubject.ForRole("editor"), null, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Empty((await store.GetGrantsAsync(GrantSubject.ForRole("editor"), "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.Empty((await store.GetGrantsAsync(GrantSubject.ForUser("alice"), "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>
-    /// 用例 3：列出按主体与租户过滤、序数顺序分页，总数不受分页影响
+    /// 用例 3：列出按主体与范围过滤、序数顺序分页，总数不受分页影响
     /// </summary>
     /// <remarks>
-    /// 顺序是主体种类、主体 ID、权限码、租户（全局在前）
+    /// 顺序是主体种类、主体 ID、权限码、范围（平台在前、每个租户其次，然后按租户 ID）
     /// </remarks>
     [Fact]
     public async Task List_FiltersBySubjectAndTenant_AndPagesInOrdinalOrder()
     {
         await StartAsync().ConfigureAwait(false);
-        var adminAll = new PermissionGrant(GrantSubject.ForRole("admin"), PermissionGrant.All);
-        var aliceRead = new PermissionGrant(GrantSubject.ForUser("alice"), "reports.read");
-        await AdministerAsync((grants, ct) => grants.GrantAsync([_aliceExport, aliceRead, _editorRead, adminAll], ct)).ConfigureAwait(false);
+        var adminAll = new PermissionGrant(GrantSubject.ForRole("admin"), PermissionGrant.All, null);
+        var aliceRead = new PermissionGrant(GrantSubject.ForUser("alice"), "reports.read", PermissionGrant.AnyTenant);
+        var aliceExportEverywhere = new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", PermissionGrant.AnyTenant);
+        var aliceExportPlatform = new PermissionGrant(GrantSubject.ForUser("alice"), "reports.export", null);
+        await AdministerAsync((grants, ct) => grants.GrantAsync([_aliceExport, aliceRead, _editorRead, adminAll, aliceExportEverywhere, aliceExportPlatform], ct)).ConfigureAwait(false);
 
         var all = await ListAsync(new PermissionGrantQuery()).ConfigureAwait(false);
         var alice = await ListAsync(new PermissionGrantQuery { Subject = GrantSubject.ForUser("alice") }).ConfigureAwait(false);
-        var global = await ListAsync(new PermissionGrantQuery { Tenant = GrantTenantFilter.Global }).ConfigureAwait(false);
+        var platform = await ListAsync(new PermissionGrantQuery { Tenant = GrantTenantFilter.Platform }).ConfigureAwait(false);
+        var everyTenant = await ListAsync(new PermissionGrantQuery { Tenant = GrantTenantFilter.Of(PermissionGrant.AnyTenant) }).ConfigureAwait(false);
         var acme = await ListAsync(new PermissionGrantQuery { Tenant = GrantTenantFilter.Of("acme") }).ConfigureAwait(false);
         var page = await ListAsync(new PermissionGrantQuery { Skip = 1, Take = 2 }).ConfigureAwait(false);
 
-        Assert.Equal([adminAll, _editorRead, _aliceExport, aliceRead], all.Items);
-        Assert.Equal(4, all.Total);
-        Assert.Equal([_aliceExport, aliceRead], alice.Items);
-        Assert.Equal([adminAll, _editorRead, aliceRead], global.Items);
+        Assert.Equal([adminAll, _editorRead, aliceExportPlatform, aliceExportEverywhere, _aliceExport, aliceRead], all.Items);
+        Assert.Equal(6, all.Total);
+        Assert.Equal([aliceExportPlatform, aliceExportEverywhere, _aliceExport, aliceRead], alice.Items);
+        Assert.Equal([adminAll, aliceExportPlatform], platform.Items);
+        Assert.Equal([_editorRead, aliceExportEverywhere, aliceRead], everyTenant.Items);
         Assert.Equal([_aliceExport], acme.Items);
-        Assert.Equal([_editorRead, _aliceExport], page.Items);
-        Assert.Equal(4, page.Total);
+        Assert.Equal([_editorRead, aliceExportPlatform], page.Items);
+        Assert.Equal(6, page.Total);
     }
 
     /// <summary>

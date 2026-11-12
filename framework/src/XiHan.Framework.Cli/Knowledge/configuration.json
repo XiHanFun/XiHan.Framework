@@ -1934,13 +1934,25 @@
           "key": "Grants:role:{role}",
           "type": "string",
           "sample": "orders.read,orders.write",
-          "summary": "授予角色的全局权限码，逗号分隔；* 为全部权限"
+          "summary": "授予角色的平台权限码（只对不带租户的调用生效），逗号分隔；* 为全部权限"
         },
         {
           "key": "Grants:user:{user}",
           "type": "string",
           "sample": "orders.read",
-          "summary": "授予用户的全局权限码，逗号分隔；* 为全部权限"
+          "summary": "授予用户的平台权限码（只对不带租户的调用生效），逗号分隔；* 为全部权限"
+        },
+        {
+          "key": "AnyTenantGrants:role:{role}",
+          "type": "string",
+          "sample": "orders.read,orders.write",
+          "summary": "授予角色的每个租户的权限码（对带任何租户的调用生效），逗号分隔；* 为全部权限"
+        },
+        {
+          "key": "AnyTenantGrants:user:{user}",
+          "type": "string",
+          "sample": "orders.read",
+          "summary": "授予用户的每个租户的权限码（对带任何租户的调用生效），逗号分隔；* 为全部权限"
         }
       ]
     },

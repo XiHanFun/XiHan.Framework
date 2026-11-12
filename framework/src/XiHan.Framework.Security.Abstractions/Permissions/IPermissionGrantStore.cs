@@ -18,7 +18,7 @@ public interface IPermissionGrantStore
     /// 取一组主体在租户下的有效授予
     /// </summary>
     /// <remarks>
-    /// 结果与 <paramref name="subjects"/> 等长、顺序一致，每项是该主体的全局授予加该租户的授予；<paramref name="tenantId"/> 为 <see langword="null"/> 时只有全局授予；没有授予的主体是空集合；重复的主体各得一份相同的结果；空集合不访问后端，返回空列表。
+    /// 结果与 <paramref name="subjects"/> 等长、顺序一致，每项是该主体对这次调用生效的授予：<paramref name="tenantId"/> 为 <see langword="null"/> 时是平台授予，否则是每个租户的授予加该租户的授予（<see cref="PermissionGrant.VisibleScopes"/>，ADR-0197），<paramref name="tenantId"/> 是 <see cref="PermissionGrant.AnyTenant"/> 时抛出 <see cref="ArgumentException"/>；没有授予的主体是空集合；重复的主体各得一份相同的结果；空集合不访问后端，返回空列表。
     /// 存储不可达（连接、超时、事务失败）整批返回 <see cref="SecurityErrors.StoreUnavailable"/>，不能以空集合代替：空集合会被判定为不持有（403），故障必须以 503 结束
     /// </remarks>
     ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken);

@@ -61,9 +61,17 @@ public static class SecurityMessages
     /// 要撤销的权限授予不存在
     /// </summary>
     /// <remarks>
-    /// 参数：<c>subject</c>、<c>permission</c>、<c>tenant</c>（全局为 <c>*</c>）
+    /// 参数：<c>subject</c>、<c>permission</c>、<c>tenant</c>（每个租户的授予为 <c>*</c>）；平台授予用 <see cref="PlatformGrantNotFound"/>
     /// </remarks>
     public const string GrantNotFound = "security.grant.not_found";
+
+    /// <summary>
+    /// 要撤销的平台授予不存在
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>subject</c>、<c>permission</c>（ADR-0197）
+    /// </remarks>
+    public const string PlatformGrantNotFound = "security.grant.platform_not_found";
 
     /// <summary>
     /// 授予列表的分页越界

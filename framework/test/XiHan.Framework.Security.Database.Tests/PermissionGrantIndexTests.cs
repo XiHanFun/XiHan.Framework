@@ -59,10 +59,10 @@ public sealed class PermissionGrantIndexTests : IDisposable
             ["UX_PermissionGrantRecord_SuKi_SuId_Pe_TeId unique SubjectKind,SubjectId,Permission,TenantId"],
             client.Ado.SqlQuery<string>(IndexQuery, new { table = nameof(PermissionGrantRecord) }));
 
-        client.Insertable(Grant(PermissionGrantRecord.GlobalTenantId)).ExecuteCommand();
+        client.Insertable(Grant(PermissionGrantRecord.PlatformTenantId)).ExecuteCommand();
         client.Insertable(Grant("acme")).ExecuteCommand();
         // 全局授予的租户列是空字符串而不是 NULL，唯一索引同样约束它
-        Assert.ThrowsAny<Exception>(() => client.Insertable(Grant(PermissionGrantRecord.GlobalTenantId)).ExecuteCommand());
+        Assert.ThrowsAny<Exception>(() => client.Insertable(Grant(PermissionGrantRecord.PlatformTenantId)).ExecuteCommand());
         Assert.ThrowsAny<Exception>(() => client.Insertable(Grant("acme")).ExecuteCommand());
     }
 

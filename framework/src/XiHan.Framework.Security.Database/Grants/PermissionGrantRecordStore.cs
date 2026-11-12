@@ -153,7 +153,9 @@ public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration,
             var grant = grants[index];
             Result outcome = slots[index] >= 0
                 ? removed[slots[index]]
-                : Error.NotFound(SecurityErrors.GrantNotFound, SecurityMessages.GrantNotFound, MessageArguments.Of(("subject", grant.Subject.ToString()), ("permission", grant.Permission), ("tenant", grant.TenantId ?? PermissionGrant.All)));
+                : (grant.TenantId is { } scope
+                    ? Error.NotFound(SecurityErrors.GrantNotFound, SecurityMessages.GrantNotFound, MessageArguments.Of(("subject", grant.Subject.ToString()), ("permission", grant.Permission), ("tenant", scope)))
+                    : Error.NotFound(SecurityErrors.GrantNotFound, SecurityMessages.PlatformGrantNotFound, MessageArguments.Of(("subject", grant.Subject.ToString()), ("permission", grant.Permission))));
             results[index] = outcome;
         }
 
@@ -162,7 +164,7 @@ public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration,
 
     /// <inheritdoc />
     /// <remarks>
-    /// 过滤、排序、分页与计数都在数据库里执行。全局授予在列里是空字符串，所以「只要全局」按空字符串查、序数顺序里排在租户之前
+    /// 过滤、排序、分页与计数都在数据库里执行。平台授予在列里是空字符串、每个租户的授予是 <c>*</c>，所以「只要平台」按空字符串查，序数顺序里平台在前、每个租户其次（ADR-0197）
     /// </remarks>
     public async ValueTask<Result<PermissionGrantPage>> ListAsync(PermissionGrantQuery query, CancellationToken cancellationToken)
     {
@@ -183,8 +185,8 @@ public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration,
 
         if (!query.Tenant.IsAny)
         {
-            // 契约的 null 租户是全局，落库为空字符串（PermissionGrantRecord.GlobalTenantId）
-            var tenant = query.Tenant.TenantId ?? PermissionGrantRecord.GlobalTenantId;
+            // 契约的 null 范围是平台，落库为空字符串（PermissionGrantRecord.PlatformTenantId）
+            var tenant = PermissionGrantRecord.TenantColumnOf(query.Tenant.TenantId);
             filter = filter.Where(new Specification<PermissionGrantRecord>(r => r.TenantId == tenant));
         }
 
