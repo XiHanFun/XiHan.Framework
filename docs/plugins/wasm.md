@@ -37,7 +37,7 @@ Wasm 插件是在宿主进程内、由 wasmtime 沙箱运行的 WebAssembly 模�
 | `invoke` | `(ptr: i32, len: i32) -> i64` | `capability:kernel.pipeline` | 同 `Host.Invoke`：以插件身份经宿主完整管道调用操作 |
 | `publish` | `(ptr: i32, len: i32) -> i64` | `capability:messaging.queue` | 同 `Host.Publish`：按主题分组批量发布 |
 
-模块不是 reactor、`xihan_abi_version` 不是 1、缺必需导出、签名不符或导入了宿主不提供的函数，加载失败 `PLUGINS_VALIDATION_005`。没有 `WatchHealth` 与 `InvokeStream`：健康只轮询，声明流式操作在握手时按 `PLUGINS_VALIDATION_004` 拒绝；未声明的操作由 `xihan_invoke` 返回 `KERNEL_NOTFOUND_001` 的失败状态。回调权限须在清单声明且已授予，未声明或未授予不陷阱，返回 `PLUGINS_DENIED_002`。回调与发布只能带当前调用的租户，带别的租户同样返回 `PLUGINS_DENIED_002`（ADR-0195）。回调受当前调用（宿主进入模块的那次导出调用）的截止时间与取消约束，到期返回 `KERNEL_TIMEOUT_001`，嵌套深度上限 8；回调期间管道可能再次进入同一插件，再入在同一线程上、导入函数返回前同步完成，模块跨导入调用不得持有不可重入的锁。WASI 的 stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`，日志应走 `xihan.log`；环境变量只有 `XIHAN_PLUGIN_PRIMITIVES`、`XIHAN_PLUGIN_PROTOCOL_VERSIONS`、`XIHAN_PLUGIN_INSTANCE`、`XIHAN_PLUGIN_LOCALE`。
+模块不是 reactor、`xihan_abi_version` 不是 1、缺必需导出、签名不符或导入了宿主不提供的函数，加载失败 `PLUGINS_VALIDATION_005`。没有 `WatchHealth` 与 `InvokeStream`：健康只轮询，声明流式操作在握手时按 `PLUGINS_VALIDATION_004` 拒绝；未声明的操作由 `xihan_invoke` 返回 `KERNEL_NOTFOUND_001` 的失败状态。回调权限须在清单声明且已授予，未声明或未授予不陷阱，返回 `PLUGINS_DENIED_002`。回调与发布只能带当前调用的租户，带别的租户同样返回 `PLUGINS_DENIED_002`（ADR-0195）。回调受当前调用（宿主进入模块的那次导出调用）的截止时间与取消约束，到期返回 `KERNEL_TIMEOUT_001`，嵌套深度上限 8；回调期间管道可能再次进入同一插件，再入在同一线程上、导入函数返回前同步完成，模块跨导入调用不得持有不可重入的锁。WASI 的 stdout / stderr 写入即丢弃（ADR-0186），日志走 `xihan.log`；环境变量只有 `XIHAN_PLUGIN_PRIMITIVES`、`XIHAN_PLUGIN_PROTOCOL_VERSIONS`、`XIHAN_PLUGIN_INSTANCE`、`XIHAN_PLUGIN_LOCALE`。
 
 ## 最小示例
 
