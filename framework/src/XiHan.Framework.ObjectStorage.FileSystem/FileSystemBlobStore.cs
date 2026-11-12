@@ -74,6 +74,14 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     private long _usedBytes = -1;
 
     /// <summary>
+    /// 正在写入、尚未提交的字节
+    /// </summary>
+    /// <remarks>
+    /// 写入方边复制边预留，提交时转成已用量，失败时释放；总配额按已用量加预留量判定，并发写入合计也超不过它（ADR-0183）
+    /// </remarks>
+    private long _reservedBytes;
+
+    /// <summary>
     /// 分片上传的暂存与拼接
     /// </summary>
     private readonly FileSystemMultipartUploads _multipart;
@@ -399,22 +407,21 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 写一个对象
     /// </summary>
     /// <remarks>
-    /// 配额预检、流式复制到临时文件并计算 SHA-256、原子替换（不覆盖时原子占位）、写元数据、更新用量
+    /// 流式复制到临时文件并计算 SHA-256、逐段预留额度、原子替换（不覆盖时原子占位）、写元数据、把预留转成用量。覆盖时新旧内容同时在盘上，预留按新内容的全长，旧对象的字节到提交时才释放
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
         var dataPath = DataPath(container, upload.Key);
         var metaPath = MetaPath(container, upload.Key);
         var temporary = dataPath + TemporaryMarker + Guid.NewGuid().ToString("N");
+        long reserved = 0;
         try
         {
-            var existing = ReadMetadata(container, upload.Key);
-            if (existing.HasValue && !upload.Options.Overwrite)
+            if (!upload.Options.Overwrite && ReadMetadata(container, upload.Key).HasValue)
             {
                 return Exists(container, upload.Key);
             }
 
-            var previousLength = existing.TryGetValue(out var previous) ? previous.Length : 0;
             Directory.CreateDirectory(Path.GetDirectoryName(dataPath)!);
             Directory.CreateDirectory(Path.GetDirectoryName(metaPath)!);
 
@@ -430,11 +437,13 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
                     while ((read = await upload.Content.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
                     {
                         length += read;
-                        // 单对象上限与总配额在复制过程中逐段检查，超限立即停止，不把超限的内容留在磁盘上
-                        if (length > _options.MaxBlobBytes || !FitsQuota(length - previousLength))
+                        // 单对象上限与总配额在复制过程中逐段检查、逐段预留，超限立即停止，不把超限的内容留在磁盘上
+                        if (length > _options.MaxBlobBytes || !TryReserve(read))
                         {
                             return QuotaExceeded(length);
                         }
+
+                        reserved += read;
 
                         hash.AppendData(buffer, 0, read);
                         await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
@@ -446,7 +455,9 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
                 etag = Convert.ToHexStringLower(hash.GetHashAndReset());
             }
 
-            return await CommitAsync(container, upload.Key, temporary, length, etag, upload.Options.ContentType, upload.Options.Metadata, previousLength, upload.Options.Overwrite, cancellationToken).ConfigureAwait(false);
+            // 提交接手这份预留：成功即转成用量，失败也由它释放
+            reserved = 0;
+            return await CommitAsync(container, upload.Key, temporary, length, etag, upload.Options.ContentType, upload.Options.Metadata, upload.Options.Overwrite, cancellationToken).ConfigureAwait(false);
         }
         catch (IOException exception)
         {
@@ -458,6 +469,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         }
         finally
         {
+            Release(reserved);
             if (File.Exists(temporary))
             {
                 File.Delete(temporary);
@@ -469,13 +481,56 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 提交写好的临时内容文件
     /// </summary>
     /// <remarks>
-    /// 原子替换为对象内容、写元数据（同样先临时文件再替换）、按与旧对象的长度差更新用量。写入与分片上传的完成共用。<paramref name="overwrite"/> 为 <see langword="false"/> 时由文件系统原子判定谁先占住内容路径：Windows 上不替换地改名，其他平台先以独占创建的空文件占位、再把内容原子替换上去；内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不写元数据、不计用量（ADR-0168、ADR-0172）
+    /// 调用方已为 <paramref name="length"/> 预留了额度，本方法接手：成功转成用量，失败释放。原子替换为对象内容、写元数据（同样先临时文件再替换）。写入与分片上传的完成共用。替换与记账在配额锁里一并完成，按此刻磁盘上旧内容的实际长度计算差值，并发覆盖与删除同一个键时用量与磁盘一致（ADR-0183）。<paramref name="overwrite"/> 为 <see langword="false"/> 时由文件系统原子判定谁先占住内容路径：Windows 上不替换地改名，其他平台先以独占创建的空文件占位、再把内容原子替换上去；内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不写元数据、不计用量（ADR-0168、ADR-0172）
     /// </remarks>
-    internal async ValueTask<Result<BlobMetadata>> CommitAsync(ContainerName container, BlobKey key, string temporary, long length, string etag, string contentType, IReadOnlyDictionary<string, string> metadata, long previousLength, bool overwrite, CancellationToken cancellationToken)
+    internal async ValueTask<Result<BlobMetadata>> CommitAsync(ContainerName container, BlobKey key, string temporary, long length, string etag, string contentType, IReadOnlyDictionary<string, string> metadata, bool overwrite, CancellationToken cancellationToken)
     {
         var metaPath = MetaPath(container, key);
         var dataPath = DataPath(container, key);
-        Directory.CreateDirectory(Path.GetDirectoryName(metaPath)!);
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(metaPath)!);
+            // 改名只是元数据操作，锁里只放它与记账；复制与写元数据都在锁外
+            lock (_quota)
+            {
+                if (ReplaceContent(container, key, temporary, dataPath, length, overwrite) is { } exists)
+                {
+                    _reservedBytes -= length;
+                    return exists;
+                }
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // 没换上去：预留原样释放，异常交给调用方按基础设施失败报告
+            Release(length);
+            throw;
+        }
+
+        var document = new BlobMetadataDocument
+        {
+            Length = length,
+            ContentType = contentType,
+            ETag = etag,
+            LastModified = _clock.GetUtcNow(),
+            Metadata = new Dictionary<string, string>(metadata, StringComparer.Ordinal),
+        };
+        var metaTemporary = metaPath + TemporaryMarker + Guid.NewGuid().ToString("N");
+        await File.WriteAllBytesAsync(metaTemporary, JsonSerializer.SerializeToUtf8Bytes(document, FileSystemJsonContext.Default.BlobMetadataDocument), cancellationToken).ConfigureAwait(false);
+        File.Move(metaTemporary, metaPath, overwrite: true);
+        return Result.Success(ToMetadata(key, document));
+    }
+
+    /// <summary>
+    /// 把临时内容文件换上去，并把预留转成用量
+    /// </summary>
+    /// <remarks>
+    /// 调用方持有配额锁。不覆盖且内容文件已存在时返回冲突，不动用量与预留（由调用方释放）；成功为空
+    /// </remarks>
+    private Error? ReplaceContent(ContainerName container, BlobKey key, string temporary, string dataPath, long length, bool overwrite)
+    {
+        // 旧内容按此刻磁盘上的实际长度计：调用方开始写入时读到的元数据可能已被并发的覆盖或删除改掉
+        var previous = File.Exists(dataPath) ? new FileInfo(dataPath).Length : 0;
         if (overwrite)
         {
             File.Move(temporary, dataPath, overwrite: true);
@@ -513,24 +568,9 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             File.Move(temporary, dataPath, overwrite: true);
         }
 
-        var document = new BlobMetadataDocument
-        {
-            Length = length,
-            ContentType = contentType,
-            ETag = etag,
-            LastModified = _clock.GetUtcNow(),
-            Metadata = new Dictionary<string, string>(metadata, StringComparer.Ordinal),
-        };
-        var metaTemporary = metaPath + TemporaryMarker + Guid.NewGuid().ToString("N");
-        await File.WriteAllBytesAsync(metaTemporary, JsonSerializer.SerializeToUtf8Bytes(document, FileSystemJsonContext.Default.BlobMetadataDocument), cancellationToken).ConfigureAwait(false);
-        File.Move(metaTemporary, metaPath, overwrite: true);
-
-        lock (_quota)
-        {
-            _usedBytes += length - previousLength;
-        }
-
-        return Result.Success(ToMetadata(key, document));
+        _reservedBytes -= length;
+        _usedBytes += length - previous;
+        return null;
     }
 
     /// <summary>
@@ -563,25 +603,23 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         {
             // File.Delete 对不存在的文件不报错，但目录不存在会抛出：先判断存在再删
             var dataPath = DataPath(container, key);
-            var existed = File.Exists(dataPath);
-            var length = existed ? new FileInfo(dataPath).Length : 0;
-            if (existed)
+            bool existed;
+            // 量长度、删除与记账在配额锁里一并完成：并发的覆盖提交要么在前（量到它的长度），要么在后（看到文件已删）
+            lock (_quota)
             {
-                File.Delete(dataPath);
+                existed = File.Exists(dataPath);
+                if (existed)
+                {
+                    var length = new FileInfo(dataPath).Length;
+                    File.Delete(dataPath);
+                    _usedBytes = Math.Max(0, _usedBytes - length);
+                }
             }
 
             var metaPath = MetaPath(container, key);
             if (File.Exists(metaPath))
             {
                 File.Delete(metaPath);
-            }
-
-            if (existed)
-            {
-                lock (_quota)
-                {
-                    _usedBytes = Math.Max(0, _usedBytes - length);
-                }
             }
 
             return Result.Success(existed);
@@ -647,13 +685,38 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         };
 
     /// <summary>
-    /// 再写 <paramref name="delta"/> 字节是否仍在总配额内
+    /// 为将要写入的 <paramref name="bytes"/> 字节预留额度
     /// </summary>
-    internal bool FitsQuota(long delta)
+    /// <remarks>
+    /// 已用量加全部预留量仍在总配额内才预留；返回是否预留成功
+    /// </remarks>
+    internal bool TryReserve(long bytes)
     {
         lock (_quota)
         {
-            return _usedBytes + delta <= _options.MaxTotalBytes;
+            if (Math.Max(_usedBytes, 0) + _reservedBytes + bytes > _options.MaxTotalBytes)
+            {
+                return false;
+            }
+
+            _reservedBytes += bytes;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// 释放没有用上的预留
+    /// </summary>
+    internal void Release(long bytes)
+    {
+        if (bytes <= 0)
+        {
+            return;
+        }
+
+        lock (_quota)
+        {
+            _reservedBytes -= bytes;
         }
     }
 

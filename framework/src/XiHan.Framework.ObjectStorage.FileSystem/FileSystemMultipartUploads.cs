@@ -179,7 +179,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
     /// 完成
     /// </summary>
     /// <remarks>
-    /// 校验清单（非空、严格升序、每片已上传且 ETag 相符、非末片不小于最小分片），校验覆盖选项与配额，拼接后经存储提交，再删上传目录。清单不合法时上传保留
+    /// 校验清单（非空、严格升序、每片已上传且 ETag 相符、非末片不小于最小分片），校验覆盖选项，为拼出的全长预留配额，拼接后经存储提交，再删上传目录。清单不合法时上传保留
     /// </remarks>
     public async ValueTask<Result<BlobMetadata>> CompleteAsync(BlobMultipartUpload upload, IReadOnlyList<BlobPart> parts, CancellationToken cancellationToken)
     {
@@ -196,6 +196,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
         }
 
         string? temporary = null;
+        long reserved = 0;
         try
         {
             var uploaded = Parts(directory);
@@ -224,17 +225,18 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
             }
 
             var key = upload.Key;
-            var existing = store.ReadMetadata(upload.Container, key);
-            if (existing.HasValue && !manifest.Overwrite)
+            if (!manifest.Overwrite && store.ReadMetadata(upload.Container, key).HasValue)
             {
                 return FileSystemBlobStore.Exists(upload.Container, key);
             }
 
-            var previousLength = existing.TryGetValue(out var previous) ? previous.Length : 0;
-            if (total > options.MaxBlobBytes || !store.FitsQuota(total - previousLength))
+            // 拼接期间分片与拼好的临时文件同时在盘上：为拼出的全长预留，提交时转成用量（ADR-0183）
+            if (total > options.MaxBlobBytes || !store.TryReserve(total))
             {
                 return store.QuotaExceeded(total);
             }
+
+            reserved = total;
 
             temporary = store.TemporaryDataPath(upload.Container, key);
             string etag;
@@ -264,7 +266,9 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
                 etag = Convert.ToHexStringLower(hash.GetHashAndReset());
             }
 
-            var committed = await store.CommitAsync(upload.Container, key, temporary, total, etag, manifest.ContentType, manifest.Metadata, previousLength, manifest.Overwrite, cancellationToken).ConfigureAwait(false);
+            // 提交接手这份预留：成功即转成用量，失败也由它释放
+            reserved = 0;
+            var committed = await store.CommitAsync(upload.Container, key, temporary, total, etag, manifest.ContentType, manifest.Metadata, manifest.Overwrite, cancellationToken).ConfigureAwait(false);
             if (committed.IsFailure)
             {
                 // 不覆盖的完成被并发写入方抢先：上传保留（与先查到已存在时相同），调用方可以放弃或改为覆盖重传
@@ -284,6 +288,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
         }
         finally
         {
+            store.Release(reserved);
             if (temporary is not null && File.Exists(temporary))
             {
                 File.Delete(temporary);
