@@ -63,7 +63,7 @@ app.Run();
 | `HealthFailures` | 正整数 | 3 | 连续多少次健康轮询失败视为进程失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重启多少次，之后保持 `Failed` |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重启次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins` | 插件工作目录的根，每个插件一个子目录，宿主停止时不删除 |
+| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-<用户名>` | 插件工作目录的根，每个插件一个子目录（Unix 上 0700），宿主停止时不删除；缺省的根在 Unix 上必须是本用户私有的真实目录（0700、不是链接），否则启动插件失败（ADR-0207） |
 
 ```json
 {

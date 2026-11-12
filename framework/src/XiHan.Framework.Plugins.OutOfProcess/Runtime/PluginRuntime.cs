@@ -965,8 +965,8 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// </summary>
     private ConfigureRequest BuildConfigure()
     {
-        var workDirectory = Path.Combine(_host.WorkRoot, Manifest.Id);
-        System.IO.Directory.CreateDirectory(workDirectory);
+        // 缺省的根要先核对是私有的，子目录只给本用户（ADR-0207）
+        var workDirectory = PluginWorkDirectories.Prepare(_host.WorkRoot, Manifest.Id, _host.Options.WorkDirectory is null);
         var request = new ConfigureRequest
         {
             Configuration = Manifest.Contributes.Config is { } config ? PluginJson.SerializeSection(_host.Configuration.GetSection(config.Section)) : "{}",

@@ -679,8 +679,8 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         WasmInstance instance;
         try
         {
-            var workDirectory = Path.Combine(_host.WorkRoot, Manifest.Id);
-            System.IO.Directory.CreateDirectory(workDirectory);
+            // 缺省的根要先核对是私有的，子目录只给本用户（ADR-0207）
+            PluginWorkDirectories.Prepare(_host.WorkRoot, Manifest.Id, _host.Options.WorkDirectory is null);
             instance = await Task.Run(() => new WasmInstance(_host.Engine, _module, _functions, BuildWasi(), _host.Options.MemoryLimitBytes, _host.Options.MaxTableElements, _shims, _host.Options.EpochInterval, _host.Options.CallTimeout), cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is WasmtimeException or InvalidOperationException)

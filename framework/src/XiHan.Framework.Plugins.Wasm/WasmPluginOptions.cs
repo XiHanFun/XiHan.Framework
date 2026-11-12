@@ -4,6 +4,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Plugins;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Plugins.Wasm;
@@ -164,7 +165,7 @@ public sealed record WasmPluginOptions
     /// 插件工作目录的根（每个插件一个子目录）
     /// </summary>
     /// <remarks>
-    /// 为空时取临时目录下的 <c>xihan-plugins-wasm</c>
+    /// 为空时取临时目录下按用户分开的 <c>xihan-plugins-wasm-&lt;用户名&gt;</c>，Unix 上它必须是私有目录（权限 0700、不是链接，ADR-0207）
     /// </remarks>
     public string? WorkDirectory { get; init; }
 
@@ -196,7 +197,7 @@ public sealed record WasmPluginOptions
     /// 工作目录根的绝对路径
     /// </summary>
     public string ResolveWorkDirectory()
-        => Path.GetFullPath(WorkDirectory ?? Path.Combine(Path.GetTempPath(), "xihan-plugins-wasm"));
+        => WorkDirectory is { } configured ? Path.GetFullPath(configured) : PluginWorkDirectories.DefaultRoot("xihan-plugins-wasm");
 
     /// <summary>
     /// 从配置读取

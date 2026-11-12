@@ -4,6 +4,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Plugins;
+using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Plugins.OutOfProcess;
@@ -139,8 +140,11 @@ public sealed record OutOfProcessPluginOptions
     /// <summary>
     /// 工作目录根的绝对路径
     /// </summary>
+    /// <remarks>
+    /// 没有配置时是临时目录下按用户分开的 <c>xihan-plugins-&lt;用户名&gt;</c>，Unix 上必须是私有目录（ADR-0207）
+    /// </remarks>
     public string ResolveWorkDirectory()
-        => Path.GetFullPath(WorkDirectory ?? Path.Combine(Path.GetTempPath(), "xihan-plugins"));
+        => WorkDirectory is { } configured ? Path.GetFullPath(configured) : PluginWorkDirectories.DefaultRoot("xihan-plugins");
 
     /// <summary>
     /// 从配置读取

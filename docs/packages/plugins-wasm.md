@@ -75,7 +75,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | `HealthFailures` | 正整数 | 3 | 连续多少次健康探测失败视为实例失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重建多少次，之后保持 `Failed` |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重建次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm` | 插件工作目录的根，每个插件一个子目录，经 `Configure` 交给插件 |
+| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm-<用户名>` | 插件工作目录的根，每个插件一个子目录（Unix 上 0700），经 `Configure` 交给插件；缺省的根在 Unix 上必须是本用户私有的真实目录，否则启动插件失败（ADR-0207） |
 
 ```json
 {
