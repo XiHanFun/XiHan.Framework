@@ -20,6 +20,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Activities;
 /// <c>Url</c>（模板）、<c>Method</c>（默认 GET）、<c>Headers</c>（对象，值为模板）、<c>Body</c>（字符串模板或对象 → JSON）、<c>ContentType</c>、<c>TimeoutSeconds</c>、<c>ResultVariable</c>（默认 <c>http</c>）、<c>FailOnErrorStatus</c>（默认 <see langword="true"/>）。输出 <c>{ status, headers, body }</c>，JSON 响应解析为对象
 /// 超时按引擎的时钟计时、按令牌归因（RFC-0021「HTTP 活动的超时与取消」，ADR-0097）：活动的超时令牌已触发即节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpTimedOut"/>），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 <see cref="OperationCanceledException"/>
 /// 地址由流程定义给出、不可信：缺省的客户端过出站地址策略（ADR-0117），目标被拒绝是节点故障（<see cref="WorkflowErrors.ActivityFailed"/>，消息键 <see cref="WorkflowMessages.HttpAddressDenied"/>）
+/// 对端也不可信（ADR-0181）：正文在超时之内边读边计数，保留前 4 MiB、读到第 4 MiB 多一个字节即停并标 <c>truncated</c>；<c>TimeoutSeconds</c> 不超过引擎选项 <c>MaxHttpTimeoutSeconds</c>，不是正的秒数或超过上限都是属性错误（<see cref="WorkflowErrors.InputInvalid"/>）
 /// </remarks>
 [ApiLevel(Stability.Experimental, "5.0")]
 public sealed partial class HttpActivity : IActivity
@@ -53,8 +54,11 @@ public sealed partial class HttpActivity : IActivity
     public const string ContentTypeProperty = "ContentType";
 
     /// <summary>
-    /// 属性：超时秒数（默认取引擎选项 <c>HttpTimeoutSeconds</c>）
+    /// 属性：超时秒数
     /// </summary>
+    /// <remarks>
+    /// 缺省取引擎选项 <c>HttpTimeoutSeconds</c>；写了不超过 <c>MaxHttpTimeoutSeconds</c>
+    /// </remarks>
     public const string TimeoutSecondsProperty = "TimeoutSeconds";
 
     /// <summary>
@@ -73,9 +77,14 @@ public sealed partial class HttpActivity : IActivity
     public const string DefaultResultVariable = "http";
 
     /// <summary>
-    /// 响应体最大读取字节数：防止把超大响应装进实例变量
+    /// 响应体最多保留的字节数：防止把超大响应装进实例变量
     /// </summary>
     private const int MaxBodyBytes = 4 * 1024 * 1024;
+
+    /// <summary>
+    /// 读正文的初始缓冲上限
+    /// </summary>
+    private const int InitialBodyBuffer = 64 * 1024;
 
     /// <summary>
     /// 允许的方法
@@ -133,9 +142,14 @@ public sealed partial class HttpActivity : IActivity
         }
 
         request.Content = content;
-        var timeout = context.Property(TimeoutSecondsProperty) is { } timeoutNode && WorkflowValues.TryConvert<double>(timeoutNode, out var seconds) && seconds > 0
-            ? TimeSpan.FromSeconds(seconds)
-            : context.Services.GetRequiredService<WorkflowOptions>().HttpTimeout;
+        // 定义可能早于上限发布、或校验之后宿主调低了上限：发请求之前再核对一次
+        var options = context.Services.GetRequiredService<WorkflowOptions>();
+        if (CheckTimeout(context.Property(TimeoutSecondsProperty), options.MaxHttpTimeout, out var requested) is { } timeoutError)
+        {
+            return timeoutError;
+        }
+
+        var timeout = requested ?? options.HttpTimeout;
         var client = context.Services.GetRequiredService<WorkflowHttpClient>();
         // 活动自己持有超时令牌：按引擎的时钟计时，与调用方令牌链接后交给客户端，归因只看这两个令牌
         using var timer = new CancellationTokenSource(timeout, context.Clock);
@@ -172,7 +186,31 @@ public sealed partial class HttpActivity : IActivity
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            var result = await ReadResultAsync(response, cancellationToken).ConfigureAwait(false);
+            // 客户端读到响应头即交回：正文在同一个时限里读，归因与发送一致
+            JsonObject result;
+            try
+            {
+                result = await ReadResultAsync(response, linked.Token).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (IsTimeout(exception, timer.Token, cancellationToken))
+            {
+                return TimedOut();
+            }
+            catch (Exception exception) when (exception is HttpRequestException or IOException)
+            {
+                // 正文读到一半连接断开：与发送失败同一种故障，reason 只写类型
+                LogRequestFailed(context.Services.GetRequiredService<ILoggerFactory>().CreateLogger<HttpActivity>(), exception);
+                var type = exception.GetType();
+                return Error.Unexpected(WorkflowErrors.ActivityFailed, WorkflowMessages.HttpFailed, details: MessageArguments.Of(("status", 0), ("reason", type.FullName ?? type.Name)));
+            }
+
+            // 读正文的流可能接住了取消、照常结束，同发送一样按令牌归因
+            if (timer.IsCancellationRequested)
+            {
+                return TimedOut();
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
             var status = (int)response.StatusCode;
             if (!response.IsSuccessStatusCode && context.Property(FailOnErrorStatusProperty, true))
             {
@@ -280,9 +318,9 @@ public sealed partial class HttpActivity : IActivity
             headers[header.Key] = string.Join(", ", header.Value);
         }
 
-        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-        var truncated = bytes.Length > MaxBodyBytes;
-        var text = Encoding.UTF8.GetString(bytes, 0, Math.Min(bytes.Length, MaxBodyBytes));
+        var (bytes, length) = await ReadBodyAsync(response.Content, cancellationToken).ConfigureAwait(false);
+        var truncated = length > MaxBodyBytes;
+        var text = Encoding.UTF8.GetString(bytes, 0, Math.Min(length, MaxBodyBytes));
         JsonNode? body = text;
         var mediaType = response.Content.Headers.ContentType?.MediaType;
         if (!truncated && mediaType is not null && mediaType.Contains("json", StringComparison.OrdinalIgnoreCase) && text.Length > 0)
@@ -304,6 +342,71 @@ public sealed partial class HttpActivity : IActivity
             ["body"] = body,
             ["truncated"] = truncated,
         };
+    }
+
+    /// <summary>
+    /// 读正文，最多读到上限多一个字节
+    /// </summary>
+    /// <remarks>
+    /// 返回缓冲与读到的字节数；字节数大于 <see cref="MaxBodyBytes"/> 表示还有没读的部分
+    /// </remarks>
+    private static async Task<(byte[] Bytes, int Length)> ReadBodyAsync(HttpContent content, CancellationToken cancellationToken)
+    {
+        // 多读的那一个字节只用来判断是否截断；其余不读，释放响应时连接随之中止，对端再大、再慢也只占这么多
+        const int limit = MaxBodyBytes + 1;
+        // Content-Length 由对端给出、不可信：初始缓冲另设上限，按实际读到的再扩
+        var buffer = new byte[(int)Math.Clamp(content.Headers.ContentLength ?? InitialBodyBuffer, 1, Math.Min(limit, InitialBodyBuffer))];
+        var length = 0;
+        var stream = await content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using (stream.ConfigureAwait(false))
+        {
+            while (length < limit)
+            {
+                if (length == buffer.Length)
+                {
+                    Array.Resize(ref buffer, Math.Min(buffer.Length * 2, limit));
+                }
+
+                var read = await stream.ReadAsync(buffer.AsMemory(length), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                {
+                    break;
+                }
+
+                length += read;
+            }
+        }
+
+        return (buffer, length);
+    }
+
+    /// <summary>
+    /// 核对 <c>TimeoutSeconds</c>
+    /// </summary>
+    /// <remarks>
+    /// 没写时 <paramref name="timeout"/> 为空（取引擎缺省）；写了必须是正的有限秒数且不超过 <paramref name="max"/>。返回属性错误，合法为空。定义校验与活动执行共用
+    /// </remarks>
+    internal static Error? CheckTimeout(JsonNode? value, TimeSpan max, out TimeSpan? timeout)
+    {
+        timeout = null;
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (!UserTaskActivity.TryParseSeconds(value, out var seconds))
+        {
+            return ActivityFailures.NotSeconds(TimeoutSecondsProperty);
+        }
+
+        // 先按秒数比较再换算：极大的秒数换成 TimeSpan 会溢出
+        if (seconds > max.TotalSeconds)
+        {
+            return ActivityFailures.SecondsOverLimit(TimeoutSecondsProperty, max);
+        }
+
+        timeout = TimeSpan.FromSeconds(seconds);
+        return null;
     }
 
     /// <summary>

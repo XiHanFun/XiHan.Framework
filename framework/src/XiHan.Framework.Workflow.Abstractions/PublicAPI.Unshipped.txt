@@ -386,7 +386,7 @@ XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionSummary.Work
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.Diagnose(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Validation.SchemaViolation!>!
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.Validate(XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinition! definition) -> XiHan.Framework.Primitives.Result
-XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.WorkflowDefinitionValidator(XiHan.Framework.Workflow.Abstractions.Activities.ActivityRegistry! registry, XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator! evaluator, XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver! assignees) -> void
+XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowDefinitionValidator.WorkflowDefinitionValidator(XiHan.Framework.Workflow.Abstractions.Activities.ActivityRegistry! registry, XiHan.Framework.Workflow.Abstractions.Expressions.IWorkflowExpressionEvaluator! evaluator, XiHan.Framework.Workflow.Abstractions.Assignees.AssigneeResolver! assignees, XiHan.Framework.Workflow.Abstractions.WorkflowOptions! options) -> void
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode.<Clone>$() -> XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode!
 XiHan.Framework.Workflow.Abstractions.Definitions.WorkflowNode.ActivityType.get -> XiHan.Framework.Workflow.Abstractions.Activities.ActivityType
@@ -1166,6 +1166,8 @@ XiHan.Framework.Workflow.Abstractions.WorkflowOptions.HttpTimeout.get -> System.
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.HttpTimeout.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.LockTimeout.get -> System.TimeSpan
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.LockTimeout.init -> void
+XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxHttpTimeout.get -> System.TimeSpan
+XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxHttpTimeout.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxNodeExecutionsPerBurst.get -> int
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxNodeExecutionsPerBurst.init -> void
 XiHan.Framework.Workflow.Abstractions.WorkflowOptions.MaxSubWorkflowDepth.get -> int
@@ -1570,6 +1572,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotThreshol
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotTimeZone = "workflow.activity.property_not_time_zone" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotUrl = "workflow.activity.property_not_url" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyNotWorkflowName = "workflow.activity.property_not_workflow_name" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertySecondsOverLimit = "workflow.activity.property_seconds_over_limit" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PropertyUnknownValue = "workflow.activity.property_unknown_value" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.PurgeLimitInvalid = "workflow.purge.limit_invalid" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.StoreCapacity = "workflow.store.capacity" -> string!

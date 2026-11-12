@@ -455,6 +455,14 @@ public static class WorkflowMessages
     public const string PropertyNotSeconds = "workflow.activity.property_not_seconds";
 
     /// <summary>
+    /// 活动属性的秒数超过上限
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>、<c>max</c>（秒）
+    /// </remarks>
+    public const string PropertySecondsOverLimit = "workflow.activity.property_seconds_over_limit";
+
+    /// <summary>
     /// 活动属性必须是日期时间
     /// </summary>
     /// <remarks>

@@ -17,6 +17,7 @@
   "workflow.activity.property_not_integer": "Die Aktivitätseigenschaft '{name}' muss eine ganze Zahl sein.",
   "workflow.activity.property_not_media_type": "Der Wert '{value}' der Aktivitätseigenschaft '{name}' ist kein Medientyp.",
   "workflow.activity.property_not_seconds": "Die Aktivitätseigenschaft '{name}' muss eine positive Anzahl von Sekunden sein.",
+  "workflow.activity.property_seconds_over_limit": "Die Aktivitätseigenschaft '{name}' darf {max} Sekunden nicht überschreiten.",
   "workflow.activity.property_not_threshold": "Die Aktivitätseigenschaft '{name}' muss eine positive ganze Zahl oder ein Prozentsatz wie '60%' sein.",
   "workflow.activity.property_not_time_zone": "Der Wert '{value}' der Aktivitätseigenschaft '{name}' ist keine Zeitzone.",
   "workflow.activity.property_not_url": "Der Wert '{value}' der Aktivitätseigenschaft '{name}' ist keine absolute HTTP-URL.",

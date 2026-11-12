@@ -36,9 +36,11 @@
 
 ### Http 活动
 
-`Http` 经单例 `WorkflowHttpClient` 发请求，超时缺省 `XiHan:Workflow:HttpTimeoutSeconds`（30 秒）。需要代理或认证处理器时，在装配前注册自己的实例 `new WorkflowHttpClient(httpClient)` 替换它（`HttpClient.Timeout` 设成无限，超时由活动给出）。
+`Http` 经单例 `WorkflowHttpClient` 发请求，超时缺省 `XiHan:Workflow:HttpTimeoutSeconds`（30 秒），定义里的 `TimeoutSeconds` 不能超过 `XiHan:Workflow:MaxHttpTimeoutSeconds`（300 秒）。需要代理或认证处理器时，在装配前注册自己的实例 `new WorkflowHttpClient(httpClient)` 替换它（`HttpClient.Timeout` 设成无限，超时由活动给出）。
 
 地址由流程定义给出，不可信：缺省的客户端过[出站地址策略](/security/outbound)，只能连公网地址，重定向的目标同样检查。目标被拒绝时节点故障 `WORKFLOW_UNEXPECTED_001`，消息键 `workflow.http.address_denied`，参数 `host` 是请求里的主机名。流程要调内网服务时，把服务写进 `XiHan:Security:Outbound:AllowedHosts`。注册自己的 `WorkflowHttpClient` 之后，由它决定能连哪里。
+
+对端同样不可信（ADR-0181）：正文边读边计数，只保留前 4 MiB，再多就停止读取，结果的 `truncated` 为 `true`，`body` 是前 4 MiB 的文本。`TimeoutSeconds` 不是正的秒数或超过上限时，发布定义即校验失败；已发布的定义执行到这里时节点故障、不发请求。活动等响应期间占着事务与实例锁，上限按业务能接受的最长占用来定。
 
 超时由活动自己计时、按令牌归因：`TimeoutSeconds` 按引擎的 `TimeProvider` 落成定时取消，与这次调用的取消令牌链接后交给客户端，时限从发出请求到读完响应体。
 
@@ -222,6 +224,7 @@ Provider 实现五个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceSto
 | `RetentionDays` | 天 | 0 | 已结束实例的保留期，0 为不自动清理 |
 | `HousekeepingIntervalSeconds` | 秒 | 3600 | 自动清理的周期 |
 | `HttpTimeoutSeconds` | 秒 | 30 | `Http` 活动的缺省超时 |
+| `MaxHttpTimeoutSeconds` | 秒 | 300 | 定义里 `TimeoutSeconds` 的上限，不限 `HttpTimeoutSeconds` |
 
 Provider 自己的键在各自的子节：内存实现 `XiHan:Workflow:InMemory`（`MaxDefinitions`、`MaxInstances`、`MaxNodeInstances`、`MaxBookmarks`、`PollIntervalSeconds`、`BatchSize`），数据库实现 `XiHan:Workflow:Database`（`PollIntervalSeconds`、`BatchSize`、`LockLeaseSeconds`、`HolderId`、`LockConnection`、`HealthProbeIntervalSeconds`），缺省值见 [Workflow.InMemory](/packages/workflow-inmemory#配置) 与 [Workflow.Database](/packages/workflow-database#配置)。
 

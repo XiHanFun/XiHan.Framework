@@ -115,10 +115,22 @@ public sealed record WorkflowOptions
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
+    /// 流程定义里 <c>Http</c> 活动的 <c>TimeoutSeconds</c> 的上限
+    /// </summary>
+    /// <remarks>
+    /// 默认 5 分钟。流程定义由租户用户编辑：活动等响应期间占着事务、实例锁与数据库连接，时限不能由定义随意放大。定义校验与活动执行两处都核对，超过即属性错误（ADR-0181）。只限定义里写的值：<see cref="HttpTimeout"/> 是宿主自己的配置，不受它限制
+    /// </remarks>
+    public TimeSpan MaxHttpTimeout
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The HTTP timeout limit must be positive.");
+    } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>、<c>RetentionDays</c>、<c>HousekeepingIntervalSeconds</c>、<c>HttpTimeoutSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理
+    /// <c>MaxNodeExecutionsPerBurst</c>、<c>MaxSubWorkflowDepth</c>、<c>LockTimeoutSeconds</c>、<c>NotResumableBackoffSeconds</c>、<c>ExpressionCacheSize</c>、<c>RetentionDays</c>、<c>HousekeepingIntervalSeconds</c>、<c>HttpTimeoutSeconds</c>、<c>MaxHttpTimeoutSeconds</c>。值不合法抛出 <see cref="ArgumentException"/>（消息带配置键与原值），不按缺省处理
     /// </remarks>
     public static WorkflowOptions FromConfiguration(IConfiguration configuration)
     {
@@ -162,6 +174,11 @@ public sealed record WorkflowOptions
         if (Seconds(configuration, "HttpTimeoutSeconds") is { } http)
         {
             options = options with { HttpTimeout = http };
+        }
+
+        if (Seconds(configuration, "MaxHttpTimeoutSeconds") is { } maxHttp)
+        {
+            options = options with { MaxHttpTimeout = maxHttp };
         }
 
         return options;

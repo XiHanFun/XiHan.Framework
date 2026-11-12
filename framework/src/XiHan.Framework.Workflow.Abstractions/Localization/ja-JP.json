@@ -17,6 +17,7 @@
   "workflow.activity.property_not_integer": "アクティビティのプロパティ '{name}' は整数でなければなりません。",
   "workflow.activity.property_not_media_type": "アクティビティのプロパティ '{name}' の値 '{value}' はメディアタイプではありません。",
   "workflow.activity.property_not_seconds": "アクティビティのプロパティ '{name}' は正の秒数でなければなりません。",
+  "workflow.activity.property_seconds_over_limit": "アクティビティのプロパティ '{name}' は {max} 秒を超えてはなりません。",
   "workflow.activity.property_not_threshold": "アクティビティのプロパティ '{name}' は正の整数または '60%' のような百分率でなければなりません。",
   "workflow.activity.property_not_time_zone": "アクティビティのプロパティ '{name}' の値 '{value}' はタイムゾーンではありません。",
   "workflow.activity.property_not_url": "アクティビティのプロパティ '{name}' の値 '{value}' は絶対 HTTP URL ではありません。",

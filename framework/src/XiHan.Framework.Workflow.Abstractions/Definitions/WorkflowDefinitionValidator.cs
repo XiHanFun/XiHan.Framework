@@ -38,13 +38,19 @@ public sealed class WorkflowDefinitionValidator
     private readonly AssigneeResolver _assignees;
 
     /// <summary>
+    /// 引擎选项（活动属性的上限）
+    /// </summary>
+    private readonly WorkflowOptions _options;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public WorkflowDefinitionValidator(ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, AssigneeResolver assignees)
+    public WorkflowDefinitionValidator(ActivityRegistry registry, IWorkflowExpressionEvaluator evaluator, AssigneeResolver assignees, WorkflowOptions options)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _evaluator = evaluator ?? throw new ArgumentNullException(nameof(evaluator));
         _assignees = assignees ?? throw new ArgumentNullException(nameof(assignees));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     /// <summary>
@@ -261,6 +267,11 @@ public sealed class WorkflowDefinitionValidator
                 if (properties.TryGetPropertyValue(HttpActivity.MethodProperty, out var method) && method is JsonValue methodValue && !HttpActivity.IsValidMethod(WorkflowValues.AsString(methodValue)))
                 {
                     Add(issues, NodePath(index, HttpActivity.MethodProperty), ActivityFailures.NotHttpMethod(HttpActivity.MethodProperty, WorkflowValues.AsString(methodValue)));
+                }
+
+                if (HttpActivity.CheckTimeout(properties.TryGetPropertyValue(HttpActivity.TimeoutSecondsProperty, out var timeout) ? timeout : null, _options.MaxHttpTimeout, out _) is { } timeoutError)
+                {
+                    Add(issues, NodePath(index, HttpActivity.TimeoutSecondsProperty), timeoutError);
                 }
 
                 break;

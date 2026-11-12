@@ -17,6 +17,7 @@
   "workflow.activity.property_not_integer": "活动属性 '{name}' 必须是整数。",
   "workflow.activity.property_not_media_type": "活动属性 '{name}' 的值 '{value}' 不是媒体类型。",
   "workflow.activity.property_not_seconds": "活动属性 '{name}' 必须是正的秒数。",
+  "workflow.activity.property_seconds_over_limit": "活动属性 '{name}' 不能超过 {max} 秒。",
   "workflow.activity.property_not_threshold": "活动属性 '{name}' 必须是正整数或形如 '60%' 的百分比。",
   "workflow.activity.property_not_time_zone": "活动属性 '{name}' 的值 '{value}' 不是时区。",
   "workflow.activity.property_not_url": "活动属性 '{name}' 的值 '{value}' 不是绝对 HTTP URL。",

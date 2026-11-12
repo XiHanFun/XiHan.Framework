@@ -17,6 +17,7 @@
   "workflow.activity.property_not_integer": "A propriedade de atividade '{name}' deve ser um número inteiro.",
   "workflow.activity.property_not_media_type": "O valor '{value}' da propriedade de atividade '{name}' não é um tipo de mídia.",
   "workflow.activity.property_not_seconds": "A propriedade de atividade '{name}' deve ser um número positivo de segundos.",
+  "workflow.activity.property_seconds_over_limit": "A propriedade de atividade '{name}' não pode ultrapassar {max} segundos.",
   "workflow.activity.property_not_threshold": "A propriedade de atividade '{name}' deve ser um inteiro positivo ou uma porcentagem como '60%'.",
   "workflow.activity.property_not_time_zone": "O valor '{value}' da propriedade de atividade '{name}' não é um fuso horário.",
   "workflow.activity.property_not_url": "O valor '{value}' da propriedade de atividade '{name}' não é uma URL HTTP absoluta.",

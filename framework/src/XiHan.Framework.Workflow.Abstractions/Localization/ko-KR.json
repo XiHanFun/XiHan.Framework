@@ -17,6 +17,7 @@
   "workflow.activity.property_not_integer": "활동 속성 '{name}'은(는) 정수여야 합니다.",
   "workflow.activity.property_not_media_type": "활동 속성 '{name}'의 값 '{value}'은(는) 미디어 유형이 아닙니다.",
   "workflow.activity.property_not_seconds": "활동 속성 '{name}'은(는) 양수의 초 단위 값이어야 합니다.",
+  "workflow.activity.property_seconds_over_limit": "활동 속성 '{name}'은(는) {max}초를 초과할 수 없습니다.",
   "workflow.activity.property_not_threshold": "활동 속성 '{name}'은(는) 양의 정수이거나 '60%' 같은 백분율이어야 합니다.",
   "workflow.activity.property_not_time_zone": "활동 속성 '{name}'의 값 '{value}'은(는) 시간대가 아닙니다.",
   "workflow.activity.property_not_url": "활동 속성 '{name}'의 값 '{value}'은(는) 절대 HTTP URL이 아닙니다.",

@@ -37,15 +37,15 @@ public sealed class WorkflowHttpClient : IDisposable
     }
 
     /// <summary>
-    /// 发送请求并读完响应体
+    /// 发送请求，读到响应头即交回
     /// </summary>
     /// <remarks>
-    /// 客户端不另计时：<c>Http</c> 活动把它的超时按引擎的时钟落成令牌、与调用方令牌链接后传进来，令牌触发即以 <see cref="OperationCanceledException"/> 结束，超时与取消由活动按令牌归因（RFC-0021「HTTP 活动的超时与取消」）
+    /// 正文由调用方读：<c>Http</c> 活动在同一个时限里读，读到上限即停，不先整体缓冲（ADR-0181）。客户端不另计时：<c>Http</c> 活动把它的超时按引擎的时钟落成令牌、与调用方令牌链接后传进来，令牌触发即以 <see cref="OperationCanceledException"/> 结束，超时与取消由活动按令牌归因（RFC-0021「HTTP 活动的超时与取消」）
     /// </remarks>
     public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return _client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
+        return _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
     }
 
     /// <inheritdoc />

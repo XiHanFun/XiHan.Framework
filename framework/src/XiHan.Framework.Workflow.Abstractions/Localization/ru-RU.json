@@ -17,6 +17,7 @@
   "workflow.activity.property_not_integer": "Свойство действия '{name}' должно быть целым числом.",
   "workflow.activity.property_not_media_type": "Значение '{value}' свойства действия '{name}' не является типом носителя.",
   "workflow.activity.property_not_seconds": "Свойство действия '{name}' должно быть положительным числом секунд.",
+  "workflow.activity.property_seconds_over_limit": "Свойство действия '{name}' не должно превышать {max} с.",
   "workflow.activity.property_not_threshold": "Свойство действия '{name}' должно быть положительным целым числом или процентом, например '60%'.",
   "workflow.activity.property_not_time_zone": "Значение '{value}' свойства действия '{name}' не является часовым поясом.",
   "workflow.activity.property_not_url": "Значение '{value}' свойства действия '{name}' не является абсолютным HTTP URL.",

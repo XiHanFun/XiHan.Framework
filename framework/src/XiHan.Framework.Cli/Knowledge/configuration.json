@@ -2199,6 +2199,13 @@
           "default": "30",
           "exclusiveMinimum": 0,
           "summary": "Http 活动的默认超时（秒）"
+        },
+        {
+          "key": "MaxHttpTimeoutSeconds",
+          "type": "number",
+          "default": "300",
+          "exclusiveMinimum": 0,
+          "summary": "流程定义里 Http 活动 TimeoutSeconds 的上限（秒）"
         }
       ]
     },

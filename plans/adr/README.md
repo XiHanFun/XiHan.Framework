@@ -180,3 +180,4 @@
 | [0178](0178-S3命名实例必须自带密钥.md) | 安全审查 S-03：S3 命名实例必须给出 `AccessKey` 与 `SecretKey`，只给一项总是拒绝，两项都不给只在运营方打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials` 时用宿主凭据链；缺省实例不变 | 已采纳 |
 | [0179](0179-WebAuthn认证核对凭据归属.md) | 安全审查 S-04：`WebAuthnStoredCredential.UserHandle` 必填；`VerifyAuthentication` 增加 `expectedUserHandle`，先认出用户时凭据必须属于他，免用户名时响应必须带句柄，响应的句柄必须等于所属用户；结果新增 `UserHandle`；向量新增 `expectedUserHandle` 与三条样例 | 已采纳 |
 | [0180](0180-OIDC缺省校验受众.md) | 安全审查 S-05：OpenID Connect 新增 `ValidateAudience`（缺省 `true`），此时 `Audience` 必填，读配置与构造处理器时都核对，缺了启动失败；签发者只为本 API 签发令牌时才显式关掉 | 已采纳 |
+| [0181](0181-工作流Http活动的响应体与超时上限.md) | 安全审查 S-08：`Http` 活动读到响应头即交回，正文读到 4 MiB 多一个字节即停；`TimeoutSeconds` 不超过新的引擎选项 `MaxHttpTimeoutSeconds`（缺省 300），不是正的秒数或超过上限时校验与执行两处都报属性错误 | 已采纳 |

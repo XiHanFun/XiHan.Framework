@@ -75,6 +75,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `XiHan:Workflow:RetentionDays` | ≥ 0 | 0 | 已结束实例的保留天数，0 为不自动清理 |
 | `XiHan:Workflow:HousekeepingIntervalSeconds` | 正数 | 3600 | 自动清理周期 |
 | `XiHan:Workflow:HttpTimeoutSeconds` | 正数 | 30 | `Http` 活动的缺省超时 |
+| `XiHan:Workflow:MaxHttpTimeoutSeconds` | 正数 | 300 | 定义里 `Http` 活动 `TimeoutSeconds` 的上限 |
 
 ```json
 { "XiHan": { "Workflow": { "LockTimeoutSeconds": 10, "MaxSubWorkflowDepth": 16, "RetentionDays": 90 } } }
