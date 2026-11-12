@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
@@ -44,10 +45,16 @@ internal sealed class KnowledgeRetriever : IKnowledgeRetriever
     private readonly ILogger _logger;
 
     /// <summary>
+    /// 当前调用：请求没有指明集合时据它的租户选集合
+    /// </summary>
+    private readonly IInvocationAccessor? _invocation;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public KnowledgeRetriever(AIOptions options, IAIProviderCatalog providers, TimeProvider timeProvider, ILoggerFactory loggerFactory, IKnowledgeStore? store = null)
+    public KnowledgeRetriever(AIOptions options, IAIProviderCatalog providers, TimeProvider timeProvider, ILoggerFactory loggerFactory, IKnowledgeStore? store = null, IInvocationAccessor? invocation = null)
     {
+        _invocation = invocation;
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _logger = loggerFactory.CreateLogger<KnowledgeRetriever>();
@@ -92,6 +99,12 @@ internal sealed class KnowledgeRetriever : IKnowledgeRetriever
 
         // 最低得分交给存储：原生支持得分阈值的后端在服务端过滤，不合格的块不必传回来
         var search = new KnowledgeSearch(vector, query.Top ?? _options.Top) { Filter = query.Filter, MinScore = query.MinScore };
-        return await _store.SearchAsync(query.Collection ?? _options.Collection, search, cancellationToken).ConfigureAwait(false);
+        var collection = KnowledgeErrors.CollectionFor(query.Collection, _options, _invocation);
+        if (!collection.TryGetValue(out var name))
+        {
+            return collection.Error!;
+        }
+
+        return await _store.SearchAsync(name, search, cancellationToken).ConfigureAwait(false);
     }
 }

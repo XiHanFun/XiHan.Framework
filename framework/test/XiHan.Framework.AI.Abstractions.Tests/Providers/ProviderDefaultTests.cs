@@ -89,17 +89,17 @@ public sealed class ProviderDefaultTests
     {
         var store = new FakeKnowledgeStore();
         await using var host = await StartAsync(new FakeChatClientFactory(), new AIOptions { Providers = Providers(StoredChat, StoredEmbedding), DefaultProvider = StoredChat, DefaultEmbeddingProvider = StoredEmbedding }, store);
-        var ingested = await host.Services.GetRequiredService<IKnowledgeIngestor>().IngestAsync([new KnowledgeIngestRequest { DocumentId = "faq", Text = "Reset the password from the settings page." }], CancellationToken.None);
+        var ingested = await host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>().IngestAsync([new KnowledgeIngestRequest { DocumentId = "faq", Text = "Reset the password from the settings page." }], CancellationToken.None);
         Assert.True(ingested[0].IsSuccess, $"The unnamed ingestion failed: {ingested[0].Error}.");
         Assert.NotEmpty(store.Records(KnowledgeOptions.DefaultCollection));
 
-        var retrieved = await host.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "password" }, CancellationToken.None);
+        var retrieved = await host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "password" }, CancellationToken.None);
         Assert.True(retrieved.IsSuccess, $"The unnamed retrieval failed: {retrieved.Error}.");
         Assert.Equal("faq", retrieved.ValueOrThrow()[0].DocumentId);
 
         // 知识库配置写了嵌入 Provider 时先于目录的默认名：写的名字不在目录里即未配置
         await using var configured = await StartAsync(new FakeChatClientFactory(), new AIOptions { Providers = Providers(StoredChat, StoredEmbedding), DefaultEmbeddingProvider = StoredEmbedding }, new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:EmbeddingProvider", "elsewhere"));
-        var overridden = await configured.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "password" }, CancellationToken.None);
+        var overridden = await configured.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "password" }, CancellationToken.None);
         Assert.Equal(AIMessages.ProviderNotFound, overridden.Error?.MessageKey);
         Assert.Equal("elsewhere", overridden.Error?.Details?["name"]);
     }
@@ -118,15 +118,15 @@ public sealed class ProviderDefaultTests
         Assert.Equal(AIMessages.DefaultProviderMissing, (await chat.StreamAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, "hi")] }, CancellationToken.None)).Error?.MessageKey);
         Assert.Empty(factory.Created);
 
-        var ingested = await host.Services.GetRequiredService<IKnowledgeIngestor>().IngestAsync([new KnowledgeIngestRequest { DocumentId = "faq", Text = "Reset the password." }], CancellationToken.None);
+        var ingested = await host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>().IngestAsync([new KnowledgeIngestRequest { DocumentId = "faq", Text = "Reset the password." }], CancellationToken.None);
         Assert.Equal(AIErrors.ProviderNotFound, ingested[0].Error?.Code);
         Assert.Equal(AIMessages.DefaultEmbeddingProviderMissing, ingested[0].Error?.MessageKey);
-        var retrieved = await host.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "password" }, CancellationToken.None);
+        var retrieved = await host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "password" }, CancellationToken.None);
         Assert.Equal(AIMessages.DefaultEmbeddingProviderMissing, retrieved.Error?.MessageKey);
 
         // 写了名字照常
         Assert.True((await chat.CompleteAsync(new AIChatRequest { Messages = [new ChatMessage(ChatRole.User, "hi")], Provider = StoredChat }, CancellationToken.None)).IsSuccess);
-        Assert.True((await host.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "password", Provider = StoredEmbedding }, CancellationToken.None)).IsSuccess);
+        Assert.True((await host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "password", Provider = StoredEmbedding }, CancellationToken.None)).IsSuccess);
     }
 
     /// <summary>

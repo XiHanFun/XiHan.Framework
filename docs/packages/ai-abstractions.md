@@ -58,7 +58,7 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 | `Guardrails:Enabled` | `false` | 登记内置护栏 |
 | `Guardrails:BlockedKeywords`、`InjectionPatterns` | 空 | 数组 |
 | `Guardrails:UseBuiltInInjectionHeuristics` | `true` | 内置中英文提示注入模式 |
-| `Knowledge:Collection` | `knowledge` | 默认集合 |
+| `Knowledge:Collection` | `knowledge` | 默认集合；带租户的调用用 `<Collection>.<租户 ID>`，请求显式指明的集合原样使用（ADR-0210） |
 | `Knowledge:Dimensions` | 1536 | 嵌入维度 |
 | `Knowledge:ChunkSize`、`ChunkOverlap` | 1000、100 | 切块（字符） |
 | `Knowledge:Top` | 5 | 默认检索条数 |

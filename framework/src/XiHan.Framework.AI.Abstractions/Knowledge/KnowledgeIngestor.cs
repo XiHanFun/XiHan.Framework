@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
@@ -49,10 +50,16 @@ internal sealed class KnowledgeIngestor : IKnowledgeIngestor
     private readonly ILogger _logger;
 
     /// <summary>
+    /// 当前调用：请求没有指明集合时据它的租户选集合
+    /// </summary>
+    private readonly IInvocationAccessor? _invocation;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public KnowledgeIngestor(AIOptions options, IAIProviderCatalog providers, IChunkingStrategy chunking, TimeProvider timeProvider, ILoggerFactory loggerFactory, IKnowledgeStore? store = null)
+    public KnowledgeIngestor(AIOptions options, IAIProviderCatalog providers, IChunkingStrategy chunking, TimeProvider timeProvider, ILoggerFactory loggerFactory, IKnowledgeStore? store = null, IInvocationAccessor? invocation = null)
     {
+        _invocation = invocation;
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _logger = loggerFactory.CreateLogger<KnowledgeIngestor>();
@@ -81,9 +88,16 @@ internal sealed class KnowledgeIngestor : IKnowledgeIngestor
     public ValueTask<Result> RemoveAsync(string? collection, IReadOnlyList<string> documentIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(documentIds);
-        return _store is null
-            ? ValueTask.FromResult(Result.Failure(KnowledgeErrors.NoStore()))
-            : _store.DeleteAsync(collection ?? _options.Collection, documentIds, cancellationToken);
+        if (_store is null)
+        {
+            return ValueTask.FromResult(Result.Failure(KnowledgeErrors.NoStore()));
+        }
+
+        // 与摄入同一规则：没有指明集合时删的是这次调用的租户集合，删不到别的租户的文档（ADR-0210）
+        var resolved = KnowledgeErrors.CollectionFor(collection, _options, _invocation);
+        return resolved.TryGetValue(out var name)
+            ? _store.DeleteAsync(name, documentIds, cancellationToken)
+            : ValueTask.FromResult(Result.Failure(resolved.Error!));
     }
 
     /// <summary>
@@ -101,7 +115,12 @@ internal sealed class KnowledgeIngestor : IKnowledgeIngestor
             return KnowledgeErrors.NoStore();
         }
 
-        var collection = request.Collection ?? _options.Collection;
+        var resolved = KnowledgeErrors.CollectionFor(request.Collection, _options, _invocation);
+        if (!resolved.TryGetValue(out var collection))
+        {
+            return resolved.Error!;
+        }
+
         var chunks = _chunking.Chunk(request.Text, request.Chunking ?? _options.Chunking);
         if (chunks.Count == 0)
         {

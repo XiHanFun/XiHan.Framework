@@ -73,13 +73,13 @@ public sealed class ModelErrorTests
                 services.AddSingleton<ILoggerFactory>(logs);
             });
 
-        var ingested = await host.Services.GetRequiredService<IKnowledgeIngestor>().IngestAsync(new KnowledgeIngestRequest { DocumentId = "doc", Text = "text", Provider = "broken" }, CancellationToken.None);
+        var ingested = await host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>().IngestAsync(new KnowledgeIngestRequest { DocumentId = "doc", Text = "text", Provider = "broken" }, CancellationToken.None);
         AssertOnlyTheType(ingested.Error, typeof(HttpRequestException), "broken");
         var ingesting = Assert.Single(ModelEntries(logs, typeof(KnowledgeIngestor)));
         Assert.Equal(LogLevel.Warning, ingesting.Level);
         Assert.IsType<HttpRequestException>(ingesting.Exception);
 
-        var retrieved = await host.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "text", Provider = "broken" }, CancellationToken.None);
+        var retrieved = await host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "text", Provider = "broken" }, CancellationToken.None);
         AssertOnlyTheType(retrieved.Error, typeof(HttpRequestException), "broken");
         var retrieving = Assert.Single(ModelEntries(logs, typeof(KnowledgeRetriever)));
         Assert.Equal(LogLevel.Warning, retrieving.Level);

@@ -209,3 +209,4 @@
 | [0207](0207-插件工作目录缺省按用户分开.md) | 安全审查 S-37：插件工作目录的缺省根改为临时目录下按用户分开的目录，Unix 上必须是本用户私有的真实目录（0700、不是链接），插件子目录 0700 | 已采纳 |
 | [0208](0208-插件环境变量不按GO前缀继承.md) | 安全审查 S-38：进程外插件只继承 Go 运行时的 `GOMAXPROCS`、`GOGC`、`GOMEMLIMIT`、`GODEBUG`、`GOTRACEBACK`，不再按 `GO` 前缀继承（`GOOGLE_*` 凭据不交给插件）；Go 运行器同步 | 已采纳 |
 | [0209](0209-探针只给状态详情另经管道.md) | 安全审查 S-22：健康探针只给 `status` 与 `state`；新增经管道、能加访问要求的 `MapXiHanHealthDetails`；MCP 的 `serverInfo.version` 缺省为应用的版本 | 已采纳 |
+| [0210](0210-知识库的默认集合按租户分开.md) | 安全审查 S-35：知识库请求没有指明集合时，带租户的调用用 `<Collection>.<租户 ID>`；`IKnowledgeIngestor` 与 `IKnowledgeRetriever` 改为作用域服务 | 已采纳 |

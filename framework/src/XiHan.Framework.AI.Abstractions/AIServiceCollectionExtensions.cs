@@ -53,8 +53,8 @@ public static class AIServiceCollectionExtensions
         services.TryAddSingleton<IAIToolCatalog, AIToolCatalog>();
         services.TryAddScoped<IAIChat, AIChat>();
         services.TryAddSingleton<IChunkingStrategy, FixedWindowChunkingStrategy>();
-        services.TryAddSingleton<IKnowledgeIngestor, KnowledgeIngestor>();
-        services.TryAddSingleton<IKnowledgeRetriever, KnowledgeRetriever>();
+        services.TryAddScoped<IKnowledgeIngestor, KnowledgeIngestor>();
+        services.TryAddScoped<IKnowledgeRetriever, KnowledgeRetriever>();
         services.TryAddSingleton<IRagPromptAugmenter, RagPromptAugmenter>();
         if (options.Guardrails.Enabled)
         {

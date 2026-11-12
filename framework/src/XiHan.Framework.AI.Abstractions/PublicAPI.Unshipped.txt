@@ -140,6 +140,7 @@ XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.ChunkSize.init -> voi
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.Chunking.get -> XiHan.Framework.AI.Abstractions.Knowledge.ChunkingOptions!
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.Collection.get -> string!
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.Collection.init -> void
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.DefaultCollectionFor(string? tenantId) -> XiHan.Framework.Primitives.Maybe<string!>
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.Dimensions.get -> int
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.Dimensions.init -> void
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.EmbeddingProvider.get -> string?

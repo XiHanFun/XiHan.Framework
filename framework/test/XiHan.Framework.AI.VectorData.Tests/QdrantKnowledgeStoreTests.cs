@@ -32,8 +32,8 @@ public sealed class QdrantKnowledgeStoreTests : KnowledgeStoreConformance
     public async Task Ingest_Retrieve_Reingest_AndRemove()
     {
         await using var qdrant = await QdrantTestHost.StartAsync(("XiHan:AI:Knowledge:Collection", "faq-" + Guid.NewGuid().ToString("N")[..8]));
-        var ingestor = qdrant.Host.Services.GetRequiredService<IKnowledgeIngestor>();
-        var retriever = qdrant.Host.Services.GetRequiredService<IKnowledgeRetriever>();
+        var ingestor = qdrant.Host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>();
+        var retriever = qdrant.Host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>();
         Assert.Equal(LifecycleState.Ready, Assert.Single(qdrant.Host.App.Health().Contributions, static c => c.Name == VectorDataKnowledgeFeature.HealthName).State);
 
         var ingested = await ingestor.IngestAsync(

@@ -23,13 +23,30 @@ public sealed record KnowledgeOptions
     /// 默认集合
     /// </summary>
     /// <remarks>
-    /// 默认 <c>knowledge</c>
+    /// 默认 <c>knowledge</c>。请求没有指明集合时，不带租户的调用用它，带租户的调用用 <see cref="DefaultCollectionFor"/> 派生出的租户集合（ADR-0210）
     /// </remarks>
     public string Collection
     {
         get => field;
         init => field = AIIdentifiers.ValidateName(value, nameof(value));
     } = DefaultCollection;
+
+    /// <summary>
+    /// 一次调用在请求没有指明集合时用的集合
+    /// </summary>
+    /// <remarks>
+    /// 不带租户时是 <see cref="Collection"/>；带租户时是 <c>&lt;Collection&gt;.&lt;租户 ID&gt;</c>，各租户的知识互不可见（ADR-0210）。拼出的名字超过 AI 名字的文法（最长 64 个字符）时无值，调用方要显式指明集合
+    /// </remarks>
+    public Maybe<string> DefaultCollectionFor(string? tenantId)
+    {
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            return Collection;
+        }
+
+        var scoped = $"{Collection}.{tenantId}";
+        return AIIdentifiers.IsValidName(scoped) ? scoped : default(Maybe<string>);
+    }
 
     /// <summary>
     /// 嵌入维度

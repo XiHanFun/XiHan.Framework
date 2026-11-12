@@ -6,6 +6,7 @@ using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.AI.Abstractions.Prompts;
 using XiHan.Framework.AI.Abstractions.Tests.Fixtures;
 using XiHan.Framework.AI.Conformance.Embeddings;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
 
@@ -53,12 +54,36 @@ public sealed class KnowledgeTests
     }
 
     [Fact]
+    public async Task DefaultCollection_IsPerTenant_InTenantCalls()
+    {
+        var store = new FakeKnowledgeStore();
+        await using var host = await StartAsync(store);
+
+        (await host.InvokeAsync(static async context =>
+        {
+            context.SetTenant(new TenantContext("acme"));
+            var ingested = await context.Services.GetRequiredService<IKnowledgeIngestor>().IngestAsync([new KnowledgeIngestRequest { DocumentId = "cats", Text = "Cats purr when they are happy." }], context.CancellationToken);
+            Assert.True(ingested.Single().IsSuccess, ingested.Single().ToString());
+        })).ThrowIfFailure();
+
+        // 修之前写进所有租户共享的 knowledge 集合，别的租户检索得到 acme 的内容（ADR-0210）
+        Assert.Empty(store.Records(KnowledgeOptions.DefaultCollection));
+        Assert.NotEmpty(store.Records("knowledge.acme"));
+        (await host.InvokeAsync(static async context =>
+        {
+            context.SetTenant(new TenantContext("globex"));
+            var found = await context.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "cats purr" }, context.CancellationToken);
+            Assert.Empty(found.ValueOrThrow());
+        })).ThrowIfFailure();
+    }
+
+    [Fact]
     public async Task Ingest_Retrieve_Replace_AndRemove()
     {
         var store = new FakeKnowledgeStore();
         await using var host = await StartAsync(store);
-        var ingestor = host.Services.GetRequiredService<IKnowledgeIngestor>();
-        var retriever = host.Services.GetRequiredService<IKnowledgeRetriever>();
+        var ingestor = host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>();
+        var retriever = host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>();
 
         var results = await ingestor.IngestAsync(
         [
@@ -105,8 +130,8 @@ public sealed class KnowledgeTests
             ("XiHan:AI:Providers:narrow:Kind", "hashing"),
             ("XiHan:AI:Providers:narrow:EmbeddingDimensions", "32"),
             ("XiHan:AI:DefaultProvider", "hash"));
-        var ingestor = host.Services.GetRequiredService<IKnowledgeIngestor>();
-        var retriever = host.Services.GetRequiredService<IKnowledgeRetriever>();
+        var ingestor = host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>();
+        var retriever = host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>();
         const string original = "Cats purr when they are happy. Kittens chase string all day long.";
         Assert.Equal(2, (await ingestor.IngestAsync(new KnowledgeIngestRequest { DocumentId = "cats", Text = original }, CancellationToken.None)).ValueOrThrow());
         var before = Snapshot(store);
@@ -140,13 +165,13 @@ public sealed class KnowledgeTests
     public async Task DimensionMismatch_AndMissingStore_AreReported()
     {
         await using var mismatched = await StartAsync(new FakeKnowledgeStore(), ("XiHan:AI:Knowledge:Dimensions", "32"));
-        Assert.Equal(AIErrors.DimensionsMismatch, (await mismatched.Services.GetRequiredService<IKnowledgeIngestor>().IngestAsync(new KnowledgeIngestRequest { DocumentId = "d", Text = "text" }, CancellationToken.None)).Error?.Code);
-        Assert.Equal(AIErrors.DimensionsMismatch, (await mismatched.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "text" }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(AIErrors.DimensionsMismatch, (await mismatched.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>().IngestAsync(new KnowledgeIngestRequest { DocumentId = "d", Text = "text" }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(AIErrors.DimensionsMismatch, (await mismatched.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "text" }, CancellationToken.None)).Error?.Code);
 
         await using var noStore = await StartAsync(null);
-        Assert.Equal(AIErrors.KnowledgeUnavailable, (await noStore.Services.GetRequiredService<IKnowledgeIngestor>().IngestAsync(new KnowledgeIngestRequest { DocumentId = "d", Text = "text" }, CancellationToken.None)).Error?.Code);
-        Assert.Equal(AIErrors.KnowledgeUnavailable, (await noStore.Services.GetRequiredService<IKnowledgeIngestor>().RemoveAsync(null, "d", CancellationToken.None)).Error?.Code);
-        Assert.Equal(AIErrors.KnowledgeUnavailable, (await noStore.Services.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "text" }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(AIErrors.KnowledgeUnavailable, (await noStore.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>().IngestAsync(new KnowledgeIngestRequest { DocumentId = "d", Text = "text" }, CancellationToken.None)).Error?.Code);
+        Assert.Equal(AIErrors.KnowledgeUnavailable, (await noStore.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>().RemoveAsync(null, "d", CancellationToken.None)).Error?.Code);
+        Assert.Equal(AIErrors.KnowledgeUnavailable, (await noStore.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>().RetrieveAsync(new KnowledgeQuery { Text = "text" }, CancellationToken.None)).Error?.Code);
     }
 
     [Fact]

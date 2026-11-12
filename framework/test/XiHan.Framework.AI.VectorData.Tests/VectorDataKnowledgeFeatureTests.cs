@@ -60,8 +60,8 @@ public sealed class VectorDataKnowledgeFeatureTests
     {
         var store = new TestVectorStore();
         await using var host = await VectorDataTestHost.StartAsync(store, ("XiHan:AI:Knowledge:Collection", "faq"));
-        var ingestor = host.Services.GetRequiredService<IKnowledgeIngestor>();
-        var retriever = host.Services.GetRequiredService<IKnowledgeRetriever>();
+        var ingestor = host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeIngestor>();
+        var retriever = host.Services.CreateScope().ServiceProvider.GetRequiredService<IKnowledgeRetriever>();
 
         var ingested = await ingestor.IngestAsync(
         [

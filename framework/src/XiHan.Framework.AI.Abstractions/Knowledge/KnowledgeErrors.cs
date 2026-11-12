@@ -4,6 +4,8 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.Kernel.Pipeline;
+using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
@@ -13,6 +15,26 @@ namespace XiHan.Framework.AI.Abstractions.Knowledge;
 /// </summary>
 internal static class KnowledgeErrors
 {
+    /// <summary>
+    /// 一次摄入或检索用的集合
+    /// </summary>
+    /// <remarks>
+    /// 请求指明了就用它；没有指明时按当前调用的租户取 <see cref="KnowledgeOptions.DefaultCollectionFor"/>，派生不出合法的名字（租户 ID 太长）时以校验错误结束（ADR-0210）
+    /// </remarks>
+    public static Result<string> CollectionFor(string? requested, KnowledgeOptions options, IInvocationAccessor? invocation)
+    {
+        if (requested is not null)
+        {
+            return requested;
+        }
+
+        // 不在调用内（后台任务直接用）按不带租户处理
+        var tenant = invocation is not null && invocation.Current.TryGetValue(out var context) ? context.GetSecurity().Tenant?.Id : null;
+        return options.DefaultCollectionFor(tenant).TryGetValue(out var collection)
+            ? collection
+            : Error.Validation(AIErrors.RequestInvalid, AIMessages.RequestInvalid, MessageArguments.Of(("reason", $"the default collection for tenant '{tenant}' would exceed 64 characters; name the collection explicitly")));
+    }
+
     /// <summary>
     /// 没有 <c>ai.knowledge</c> Provider
     /// </summary>
