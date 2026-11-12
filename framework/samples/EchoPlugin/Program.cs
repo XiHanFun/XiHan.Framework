@@ -8,16 +8,24 @@ using EchoPlugin;
 var endpoint = PluginListener.Create();
 var builder = WebApplication.CreateEmptyBuilder(new WebApplicationOptions { Args = args, ApplicationName = "EchoPlugin" });
 builder.WebHost.UseKestrelCore();
+// 命名管道只允许当前用户连接（handshake.md §4）
+if (OperatingSystem.IsWindows())
+{
+    builder.WebHost.UseNamedPipes(static pipes => pipes.CurrentUserOnly = true);
+}
 builder.WebHost.ConfigureKestrel(kestrel => endpoint.Listen(kestrel));
 builder.Services.AddLogging(static logging => logging.AddConsole(static console => console.LogToStandardErrorThreshold = LogLevel.Trace));
 builder.Services.AddRoutingCore();
-builder.Services.AddGrpc();
+// 只接受带本次会话令牌的调用（handshake.md §4）
+builder.Services.AddGrpc(static grpc => grpc.Interceptors.Add<SessionGuard>());
 builder.Services.AddSingleton<PluginState>();
 builder.Services.AddSingleton<HostClient>();
 
 var app = builder.Build();
+app.Lifetime.ApplicationStopped.Register(endpoint.Delete);
 app.MapGrpcService<EchoPluginService>();
 await app.StartAsync().ConfigureAwait(false);
+endpoint.Restrict();
 
 // 握手行：宿主读到后才连接（handshake.md §2）
 Console.Out.WriteLine(endpoint.HandshakeLine);

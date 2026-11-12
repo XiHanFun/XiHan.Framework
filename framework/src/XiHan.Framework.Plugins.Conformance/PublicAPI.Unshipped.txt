@@ -1,5 +1,6 @@
 #nullable enable
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Calls_WithoutTheSessionToken_AreUnauthenticated() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.HandleEvent_ForADeclaredSubscription_IsAcknowledged() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_PublishesAnEndpoint_NegotiatesTheVersion_AndMatchesTheManifest() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_WithoutACommonVersion_IsRefused() -> System.Threading.Tasks.Task!
@@ -24,6 +25,7 @@ virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Configurat
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Timeout.get -> System.TimeSpan
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.VerifiesSessionToken.get -> bool
 virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.ConfigurationJson.get -> string!
 virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
 virtual XiHan.Framework.Plugins.Conformance.WasmPluginConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!

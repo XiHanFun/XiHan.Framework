@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Plugins.Protocol;
@@ -217,7 +218,13 @@ internal sealed partial class PluginProcess : IAsyncDisposable
 
         handle.Endpoint = endpoint;
         handle._channel = PluginChannelFactory.Create(endpoint);
-        handle._client = new Plugin.PluginClient(handle._channel);
+        // 每次调用都带会话令牌：插件据此认出宿主，本机别的进程连上插件端点也冒充不了宿主（handshake.md §4，ADR-0202）
+        var session = launch.SessionToken;
+        handle._client = new Plugin.PluginClient(handle._channel.Intercept(metadata =>
+        {
+            metadata.Add(PluginProtocol.SessionMetadataKey, session);
+            return metadata;
+        }));
         // 握手行之后 stdout 只是普通输出，按 Information 记录
         _ = handle.PumpAsync(handle._stdout);
         return handle;

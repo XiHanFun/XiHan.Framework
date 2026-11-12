@@ -67,6 +67,14 @@ public abstract class PluginProtocolConformance
     protected virtual IReadOnlySet<string> ExcludedOperations => new HashSet<string>(StringComparer.Ordinal);
 
     /// <summary>
+    /// 插件是否校验宿主调用带的会话令牌
+    /// </summary>
+    /// <remarks>
+    /// 缺省 <see langword="true"/>，规范要求校验（<c>spec/plugin/handshake.md</c> §4，ADR-0202）；只在插件 SDK 还没有发布校验令牌的版本时临时覆写为 <see langword="false"/>，用例随之跳过
+    /// </remarks>
+    protected virtual bool VerifiesSessionToken => true;
+
+    /// <summary>
     /// 用例 1：握手与清单相符
     /// </summary>
     /// <remarks>
@@ -205,6 +213,28 @@ public abstract class PluginProtocolConformance
         var response = await session.Client.HandleEventAsync(request, deadline: Deadline()).ConfigureAwait(false);
 
         Assert.True(response.Status?.Ok, "The plugin must acknowledge a message on a declared subscription.");
+    }
+
+    /// <summary>
+    /// 用例 8：不带会话令牌或令牌不对的调用以 Unauthenticated 拒绝
+    /// </summary>
+    /// <remarks>
+    /// 本机别的进程连上插件端点也冒充不了宿主；带对了照常握手（<c>spec/plugin/handshake.md</c> §4，ADR-0202）
+    /// </remarks>
+    [Fact]
+    public async Task Calls_WithoutTheSessionToken_AreUnauthenticated()
+    {
+        Assert.SkipWhen(!VerifiesSessionToken, "The plugin SDK does not verify the session token yet (ADR-0202).");
+        await using var process = await StartProcessAsync().ConfigureAwait(false);
+        using var channel = PluginChannelFactory.Create(process.Endpoint!);
+        var anonymous = new Plugin.PluginClient(channel);
+
+        var missing = await Assert.ThrowsAsync<RpcException>(async () => await anonymous.HandshakeAsync(HandshakeRequest(PluginProtocol.SupportedVersions), deadline: Deadline()).ConfigureAwait(false)).ConfigureAwait(false);
+        var wrong = await Assert.ThrowsAsync<RpcException>(async () => await anonymous.HandshakeAsync(HandshakeRequest(PluginProtocol.SupportedVersions), new Metadata { { PluginProtocol.SessionMetadataKey, "not-the-session-token" } }, Deadline()).ConfigureAwait(false)).ConfigureAwait(false);
+
+        Assert.Equal(StatusCode.Unauthenticated, missing.StatusCode);
+        Assert.Equal(StatusCode.Unauthenticated, wrong.StatusCode);
+        Assert.NotNull(await process.Client.HandshakeAsync(HandshakeRequest(PluginProtocol.SupportedVersions), deadline: Deadline()).ConfigureAwait(false));
     }
 
     /// <summary>

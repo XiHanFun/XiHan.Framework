@@ -201,3 +201,4 @@
 | [0199](0199-MCP的HTTP入口校验源与内容类型.md) | 安全审查 S-12：MCP 的 HTTP 端点按 `AllowedOrigins` 校验 `Origin`（缺省为空，不在其中 403）、只收 `application/json`（415）、请求体最多 `MaxRequestBodyBytes`（缺省 4 MiB，413） | 已采纳 |
 | [0200](0200-CloudEvents入站只收映射过的类型.md) | 安全审查 S-13：CloudEvents 入站缺省只收 `Topics` 映射过的事件类型，没有映射为 `PROTOCOLS_VALIDATION_009`；`AcceptUnmappedTypes` 打开时才以类型本身为主题 | 已采纳 |
 | [0201](0201-Kubernetes租约客户端照常校验主机名.md) | 安全审查 S-17：Pod 内租约客户端改用 `CertificateChainPolicy` 的自定义根信任，平台照常校验主机名，叶证书要有服务端认证用途 | 已采纳 |
+| [0202](0202-宿主调用插件带会话令牌.md) | 安全审查 S-18：宿主调用进程外插件的每次 RPC 都带会话令牌，插件按常数时间校验、不符即 `Unauthenticated`；Unix 套接字放进新建的 0700 私有目录、文件 0600，命名管道只允许当前用户；一致性套件与 Go 运行器新增令牌用例 | 已采纳 |

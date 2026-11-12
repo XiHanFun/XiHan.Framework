@@ -141,6 +141,7 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 - 插件 `Failed` 或 `Degraded` 让应用进入 `Degraded`，不让应用退出。
 - 停止：发 `Stop`（宽限秒数与原因 `shutdown` / `unload` / `restart`）→ 在宽限内等待退出 → 超时先发终止信号：关闭插件的 stdin，Unix 上同时发 SIGTERM（Windows 没有 SIGTERM，关闭 stdin 就是等价的信号）→ 5 秒内仍未退出才终止进程树；两种结局都记为 `Failed`（`PLUGINS_TIMEOUT_001`）。插件应把 SIGTERM 与 stdin 关闭都当作立即收尾退出的请求。
 - 运行期 `LoadAsync` 的代理操作只对 `IOperationInvoker` 可见，协议适配器不会为它新增路由。卸载先按归属撤回插件的代理操作与声明的权限码、再停止进程（ADR-0085）：之后调用返回 `KERNEL_NOTFOUND_001`，在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再加载，不用重启宿主。卸载之后才完成的重试握手不再登记（只登记仍是宿主当前运行时的插件）。订阅与消息目录不随卸载撤回。
+- 宿主调用插件的每一次 RPC 都带会话令牌（元数据 `xihan-plugin-session`），插件必须校验、不符即 `Unauthenticated`（ADR-0202）；宿主的回调套接字在新建的私有目录里（`0700`，文件 `0600`），命名管道只允许当前用户。
 - 回调需要会话令牌（元数据 `xihan-plugin-session`），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
 - 回调元数据的 `xihan.tenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则 `Status.error` 为 `PLUGINS_DENIED_002`（gRPC 状态 `OK`）；`Host.Publish` 的信封带 `xihantenant` 时逐项判定（ADR-0195）。
 - 不负责：流式操作在 .NET 侧的发布（协议已定义 `InvokeStream` 帧）、操作系统沙箱（`net.outbound:` / `fs.*:` 只核对授予）、Wasm。
