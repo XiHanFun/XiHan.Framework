@@ -133,7 +133,7 @@ internal sealed partial class PluginProcess : IAsyncDisposable
     /// 启动进程、读握手行并建立通道
     /// </summary>
     /// <remarks>
-    /// 任一步失败都终止进程并返回错误
+    /// 任一步失败都终止进程并返回错误；握手期间取消同样先终止进程，再抛出 <see cref="OperationCanceledException"/>
     /// </remarks>
     public static async Task<Result<PluginProcess>> LaunchAsync(PluginLaunch launch, TimeProvider clock, ILogger logger, CancellationToken cancellationToken)
     {
@@ -183,7 +183,18 @@ internal sealed partial class PluginProcess : IAsyncDisposable
         }
 
         var handle = new PluginProcess(process, launch.PluginId, launch.SessionToken, logger, clock);
-        var line = await handle.ReadHandshakeLineAsync(launch.HandshakeTimeout, clock, cancellationToken).ConfigureAwait(false);
+        Result<PluginEndpoint> line;
+        try
+        {
+            line = await handle.ReadHandshakeLineAsync(launch.HandshakeTimeout, clock, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // 取消或读 stdout 出错时进程已经启动，调用方拿不到句柄：先终止并释放，再把异常原样抛出
+            await handle.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
         if (!line.TryGetValue(out var endpoint))
         {
             await handle.DisposeAsync().ConfigureAwait(false);

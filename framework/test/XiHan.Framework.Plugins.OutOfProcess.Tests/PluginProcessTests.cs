@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Plugins.OutOfProcess.Processes;
@@ -43,6 +44,34 @@ public sealed class PluginProcessTests
         Assert.Equal(PluginErrors.Timeout, launched.Error?.Code);
     }
 
+    [Fact]
+    public async Task Launch_KillsTheProcess_WhenCancelledDuringTheHandshake()
+    {
+        // 复制成独一无二的文件名，才能按进程名认出这次启动的进程，不和并行测试里的同名程序混淆（Linux 的进程名最多 15 个字符）
+        var directory = Directory.CreateTempSubdirectory("xihan-silent-");
+        var name = "xs" + Guid.NewGuid().ToString("N")[..8];
+        var executable = Path.Combine(directory.FullName, OperatingSystem.IsWindows() ? name + ".exe" : name);
+        File.Copy(_silentExecutable, executable);
+        try
+        {
+            using var cancellation = new CancellationTokenSource();
+            var launching = PluginProcess.LaunchAsync(SilentLaunch(executable), new FakeTimeProvider(), NullLogger.Instance, cancellation.Token);
+            Assert.False(launching.IsCompleted);
+            Assert.Equal(1, CountRunning(name));
+
+            await cancellation.CancelAsync();
+
+            // 取消照常抛给调用方，但已经启动的进程不能留下
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => launching.WaitAsync(TimeSpan.FromSeconds(30)));
+            Assert.Equal(0, CountRunning(name));
+        }
+        finally
+        {
+            KillAll(name);
+            directory.Delete(recursive: true);
+        }
+    }
+
     /// <summary>
     /// 启动一个读 stdin 却不写握手行的进程的参数
     /// </summary>
@@ -52,5 +81,42 @@ public sealed class PluginProcessTests
             ? new PluginEndpoint(PluginEndpoint.NamedPipe, @"\\.\pipe\xihan-silent-host")
             : new PluginEndpoint(PluginEndpoint.Unix, Path.Combine(Path.GetTempPath(), "xihan-silent-host.sock"));
         return new PluginLaunch("xihan.test.silent", executable, Path.GetTempPath(), "silent-session", host, "xihan.test.silent#1", 1, "en-US", _handshakeTimeout);
+    }
+
+    /// <summary>
+    /// 按进程名统计仍在运行的进程
+    /// </summary>
+    private static int CountRunning(string name)
+    {
+        var processes = Process.GetProcessesByName(name);
+        try
+        {
+            return processes.Count(static process => !process.HasExited);
+        }
+        finally
+        {
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 终止按进程名找到的全部进程，测试失败时也不留下子进程
+    /// </summary>
+    private static void KillAll(string name)
+    {
+        foreach (var process in Process.GetProcessesByName(name))
+        {
+            using (process)
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill();
+                    process.WaitForExit(TimeSpan.FromSeconds(10));
+                }
+            }
+        }
     }
 }
