@@ -210,3 +210,4 @@
 | [0208](0208-插件环境变量不按GO前缀继承.md) | 安全审查 S-38：进程外插件只继承 Go 运行时的 `GOMAXPROCS`、`GOGC`、`GOMEMLIMIT`、`GODEBUG`、`GOTRACEBACK`，不再按 `GO` 前缀继承（`GOOGLE_*` 凭据不交给插件）；Go 运行器同步 | 已采纳 |
 | [0209](0209-探针只给状态详情另经管道.md) | 安全审查 S-22：健康探针只给 `status` 与 `state`；新增经管道、能加访问要求的 `MapXiHanHealthDetails`；MCP 的 `serverInfo.version` 缺省为应用的版本 | 已采纳 |
 | [0210](0210-知识库的默认集合按租户分开.md) | 安全审查 S-35：知识库请求没有指明集合时，带租户的调用用 `<Collection>.<租户 ID>`；`IKnowledgeIngestor` 与 `IKnowledgeRetriever` 改为作用域服务 | 已采纳 |
+| [0211](0211-发件箱投递覆盖租户分片库.md) | 安全审查 S-36：发件箱投递循环先投递默认库、再逐个投递租户分片库（按连接去重）；新增 `IncludeShards` 与 `ShardRefreshInterval` | 已采纳 |

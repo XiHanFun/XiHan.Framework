@@ -772,6 +772,19 @@
           "default": "86400",
           "minimum": 0,
           "summary": "投递成功的行保留多久（秒）；0 表示投递成功即删除，死信行不自动删"
+        },
+        {
+          "key": "IncludeShards",
+          "type": "boolean",
+          "default": "true",
+          "summary": "装配了租户分片时也投递各分片库里的发件箱行；SqlSugar 把发件箱行留在默认库，可关掉省去多余的查询"
+        },
+        {
+          "key": "ShardRefreshIntervalSeconds",
+          "type": "number",
+          "default": "60",
+          "exclusiveMinimum": 0,
+          "summary": "分片库清单多久从租户目录重读一次（秒），新建的分片库最迟在这之后纳入投递"
         }
       ]
     },

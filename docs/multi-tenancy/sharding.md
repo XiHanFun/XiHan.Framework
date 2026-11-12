@@ -186,6 +186,10 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 
 框架只做库级分片。Schema 级隔离把 Schema 名写进 `Shard.<key>` 属性透传给持久化 Provider，由应用在 Provider 的配置回调里按 `TenantShard.Properties` 处理。
 
+### 带分片的调用发的消息怎样投递
+
+经发件箱发布时，发件箱行随调用的事务写入，EF Core Provider 写进分片库，SqlSugar Provider 写进默认库。发件箱投递循环每轮先投递默认库，再逐个投递分片库，所以两种 Provider 下消息都会发出；EF Core 下分片库要建发件箱表。见[领域事件与发件箱](/messaging/domain-events)。
+
 ### 同一调用里能同时读平台表和租户表吗
 
 能。SqlSugar Provider 的客户端同时持有默认连接与分片连接，按实体是否实现 `IMultiTenant` 落点；两个连接上的事务依次提交，不是两阶段提交，跨库一致性由应用的补偿或发件箱保证。EF Core Provider 一个 `DbContext` 一个连接，平台表要另起 `DbContext`。

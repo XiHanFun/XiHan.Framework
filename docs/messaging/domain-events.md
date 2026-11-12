@@ -239,6 +239,8 @@ if (pending.Count > 0)
 | `XiHan:Messaging:Outbox:RetryDelaySeconds` | 正数 | 5 | 第一次失败后的重试间隔，之后每失败一次翻倍 |
 | `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限 |
 | `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
+| `XiHan:Messaging:Outbox:IncludeShards` | 布尔 | `true` | 装配了租户分片时也投递各分片库里的发件箱行；SqlSugar 把发件箱行留在默认库，可设为 `false` 省去多余的查询 |
+| `XiHan:Messaging:Outbox:ShardRefreshIntervalSeconds` | 正数 | 60 | 分片库清单多久从租户目录重读一次，新建的分片库最迟在这之后纳入投递 |
 
 非法值在装配时抛 `ArgumentException`。
 
@@ -263,6 +265,10 @@ if (pending.Count > 0)
 ### 为什么 AddDomainEvent 要传源生成的 JsonTypeInfo
 
 事件要序列化成信封的 `Data`。传 `JsonTypeInfo<TEvent>` 既让序列化不走反射、兼容 Native AOT，也让登记时就确定每种事件的编码方式。把事件类型加进 `[JsonSerializable]` 上下文即可，见[JSON 序列化与 Native AOT](/common/serialization)。
+
+### 租户分库时发件箱里的消息怎样发出
+
+发件箱行与业务写入同一个事务，落在哪个库由持久化 Provider 决定：EF Core Provider 在带分片的调用里整个 `DbContext` 连到租户库，发件箱行也在租户库；SqlSugar Provider 把发件箱这类平台表留在默认库。投递循环每轮先投递默认库，再逐个投递分片库（按连接去重，每个库各自一个工作单元），分片库的清单从租户目录读出、每 `ShardRefreshIntervalSeconds` 重读一次。EF Core 下带分片的调用要发消息，租户库就要建发件箱表；没有建的库每轮投递失败、记日志，不影响别的库。
 
 ### 发件箱能用在非关系型存储上吗
 

@@ -101,7 +101,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 3. 实体实现 `IMultiTenant`，且客户端里有 `shard` 连接：落到分片连接。
 4. 其余：根（默认）连接。
 
-装配了 `multitenancy.sharding@1` 时，带分片的调用把分片绑定交给同一个回调，再建一个 `ConfigId = shard` 的连接：租户实体落分片库，租户目录、授予、发件箱这类平台表仍落默认库，同一调用里一起提交或回滚。方式二由应用自己提供名为 `shard` 的连接。见[租户分片与分库](/multi-tenancy/sharding)。
+装配了 `multitenancy.sharding@1` 时，带分片的调用把分片绑定交给同一个回调，再建一个 `ConfigId = shard` 的连接：租户实体落分片库，租户目录、授予、发件箱这类平台表仍落默认库，同一调用里一起提交或回滚。发件箱投递循环的分片轮次因此查到的仍是默认库，可以把 `XiHan:Messaging:Outbox:IncludeShards` 设为 `false` 省去多余的查询。方式二由应用自己提供名为 `shard` 的连接。见[租户分片与分库](/multi-tenancy/sharding)。
 
 把审计类实体固定到 `audit` 库（配合上面方式二的客户端），实体类上标 SqlSugar 的 `[Tenant("audit")]` 即可，其余照常实现协议接口。替换规则时，在装配特性之前注册自己的实现：`builder.Services.AddSingleton<IEntityConnectionSelector, MySelector>()`。同一工作单元里对同一实体类型的选择结果必须稳定。工作单元在第一次写入时经 `AsTenant()` 在客户端的全部连接上开事务，提交逐连接提交，回滚逐连接回滚。
 

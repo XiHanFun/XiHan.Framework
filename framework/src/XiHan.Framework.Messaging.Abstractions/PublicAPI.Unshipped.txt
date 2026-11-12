@@ -119,6 +119,8 @@ XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.BatchSize.init -> vo
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.DispatchedRetention.get -> System.TimeSpan
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.DispatchedRetention.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.Equals(XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? other) -> bool
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.IncludeShards.get -> bool
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.IncludeShards.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.MaxAttempts.get -> int
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.MaxAttempts.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.MaxRetryDelay.get -> System.TimeSpan
@@ -129,6 +131,8 @@ XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.PollInterval.init ->
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.RetryDelay.get -> System.TimeSpan
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.RetryDelay.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.RetryDelayAfter(int attempts) -> System.TimeSpan
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.ShardRefreshInterval.get -> System.TimeSpan
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.ShardRefreshInterval.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxPublisher
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxPublisher.OutboxPublisher(XiHan.Framework.Persistence.Abstractions.UnitOfWork.IUnitOfWork! unitOfWork, XiHan.Framework.Persistence.Abstractions.Repositories.IRepository<XiHan.Framework.Messaging.Abstractions.Outbox.OutboxMessage!, System.Guid>! outbox, XiHan.Framework.Persistence.Abstractions.Identifiers.IIdGenerator<System.Guid>! ids, XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker! broker, System.TimeProvider! timeProvider, XiHan.Framework.Kernel.Pipeline.IInvocationAccessor? invocation = null) -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxPublisher.PublishAsync(string! topic, XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope! envelope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>

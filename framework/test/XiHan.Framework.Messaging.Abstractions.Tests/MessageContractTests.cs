@@ -420,5 +420,14 @@ public sealed class MessageContractTests
         Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:RetryDelaySeconds", "0"))));
         Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:DispatchedRetentionSeconds", "-1"))));
         Assert.Throws<ArgumentOutOfRangeException>(static () => new OutboxOptions { DispatchedRetention = TimeSpan.FromSeconds(-1) });
+
+        // 分片库的投递：默认开、清单每分钟重读（ADR-0211）
+        Assert.True(defaults.IncludeShards);
+        Assert.Equal(TimeSpan.FromMinutes(1), defaults.ShardRefreshInterval);
+        var shards = OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:IncludeShards", "false"), ("XiHan:Messaging:Outbox:ShardRefreshIntervalSeconds", "30")));
+        Assert.False(shards.IncludeShards);
+        Assert.Equal(TimeSpan.FromSeconds(30), shards.ShardRefreshInterval);
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:IncludeShards", "sometimes"))));
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:ShardRefreshIntervalSeconds", "0"))));
     }
 }

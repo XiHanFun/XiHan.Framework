@@ -95,6 +95,26 @@ public sealed record OutboxOptions
     } = TimeSpan.FromDays(1);
 
     /// <summary>
+    /// 是否也投递租户分片库里的发件箱行
+    /// </summary>
+    /// <remarks>
+    /// 默认是。装配了租户分片时，投递器在默认库之外逐个投递分片库（ADR-0211）。持久化 Provider 把发件箱行留在默认库时（SqlSugar），分片轮次查到的仍是默认库，可以关掉省去多余的查询
+    /// </remarks>
+    public bool IncludeShards { get; init; } = true;
+
+    /// <summary>
+    /// 分片清单多久重读一次
+    /// </summary>
+    /// <remarks>
+    /// 默认 1 分钟。投递器从租户目录读出分片库的清单，新建的分片库最迟在这之后纳入投递
+    /// </remarks>
+    public TimeSpan ShardRefreshInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The shard refresh interval must be positive.");
+    } = TimeSpan.FromMinutes(1);
+
+    /// <summary>
     /// 第几次失败之后的重试间隔
     /// </summary>
     /// <remarks>
@@ -113,7 +133,7 @@ public sealed record OutboxOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 键：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>MaxAttempts</c>、<c>RetryDelaySeconds</c>、<c>MaxRetryDelaySeconds</c>、<c>DispatchedRetentionSeconds</c>；非法值抛出 <see cref="ArgumentException"/>
+    /// 键：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>MaxAttempts</c>、<c>RetryDelaySeconds</c>、<c>MaxRetryDelaySeconds</c>、<c>DispatchedRetentionSeconds</c>、<c>IncludeShards</c>、<c>ShardRefreshIntervalSeconds</c>；非法值抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static OutboxOptions FromConfiguration(IConfiguration configuration)
     {
@@ -147,6 +167,19 @@ public sealed record OutboxOptions
         if (ReadSeconds(configuration, "DispatchedRetentionSeconds", allowZero: true) is { } retention)
         {
             options = options with { DispatchedRetention = retention };
+        }
+
+        if (configuration[$"{ConfigurationSection}:IncludeShards"] is { } include)
+        {
+            options = options with
+            {
+                IncludeShards = bool.TryParse(include, out var shards) ? shards : throw new ArgumentException($"{ConfigurationSection}:IncludeShards must be 'true' or 'false', but was '{include}'."),
+            };
+        }
+
+        if (ReadSeconds(configuration, "ShardRefreshIntervalSeconds", allowZero: false) is { } refresh)
+        {
+            options = options with { ShardRefreshInterval = refresh };
         }
 
         return options;

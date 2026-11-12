@@ -494,6 +494,7 @@
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Localization.Abstractions",
+        "XiHan.Framework.MultiTenancy.Abstractions",
         "XiHan.Framework.Persistence.Abstractions"
       ],
       "dependencies": [

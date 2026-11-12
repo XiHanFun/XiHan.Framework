@@ -175,7 +175,7 @@ EF Core 不做「每个连接一个 `DbContext`、跨上下文顺序提交」的
 
 ## 租户分库
 
-装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。EF Core 没有 SqlSugar Provider 那样按实体分库的落点规则：一次调用要么全在默认库，要么全在分片库。细节见[租户分片与分库](/multi-tenancy/sharding)。
+装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。EF Core 没有 SqlSugar Provider 那样按实体分库的落点规则：一次调用要么全在默认库，要么全在分片库。发件箱行也随带分片的调用落进分片库，发件箱投递循环逐个投递分片库，分片库要建发件箱表（ADR-0211）。细节见[租户分片与分库](/multi-tenancy/sharding)。
 
 ## SQLite 注意事项
 
