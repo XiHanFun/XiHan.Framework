@@ -88,7 +88,8 @@ internal static partial class ProjectDetector
             var directory = pending.Pop();
             foreach (var child in Directory.EnumerateDirectories(directory))
             {
-                if (!_skippedDirectories.Contains(Path.GetFileName(child)))
+                // 不跟随目录链接：链接成环时遍历不停，指向树外时读到别的项目（ADR-0221）
+                if (!_skippedDirectories.Contains(Path.GetFileName(child)) && new DirectoryInfo(child).LinkTarget is null)
                 {
                     pending.Push(child);
                 }

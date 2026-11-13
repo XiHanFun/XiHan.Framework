@@ -133,14 +133,15 @@ internal sealed class MigrationRunner(string path, string version, IReadOnlyList
     /// 递归枚举文件
     /// </summary>
     /// <remarks>
-    /// 跳过 bin / obj / .git / .vs / node_modules 与生成的 <c>*.g.cs</c>、<c>*.Designer.cs</c>
+    /// 跳过 bin / obj / .git / .vs / node_modules、生成的 <c>*.g.cs</c>、<c>*.Designer.cs</c>，以及符号链接与目录联接（ADR-0221）
     /// </remarks>
     private static IEnumerable<string> Enumerate(string directory)
     {
         foreach (var file in Directory.EnumerateFiles(directory))
         {
             var name = Path.GetFileName(file);
-            if (!name.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) && !name.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase))
+            // 文件链接可能指向 --path 之外：迁移只改写树里的文件，不经链接改写别处的
+            if (!name.EndsWith(".g.cs", StringComparison.OrdinalIgnoreCase) && !name.EndsWith(".Designer.cs", StringComparison.OrdinalIgnoreCase) && new FileInfo(file).LinkTarget is null)
             {
                 yield return file;
             }
@@ -148,7 +149,8 @@ internal sealed class MigrationRunner(string path, string version, IReadOnlyList
 
         foreach (var child in Directory.EnumerateDirectories(directory))
         {
-            if (_skippedDirectories.Contains(Path.GetFileName(child), StringComparer.OrdinalIgnoreCase))
+            // 目录链接可能指向树外，也可能成环让遍历不停；LinkTarget 只认符号链接与目录联接，云盘的占位文件不算
+            if (_skippedDirectories.Contains(Path.GetFileName(child), StringComparer.OrdinalIgnoreCase) || new DirectoryInfo(child).LinkTarget is not null)
             {
                 continue;
             }

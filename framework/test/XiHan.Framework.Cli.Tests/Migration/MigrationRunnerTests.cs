@@ -62,6 +62,40 @@ public sealed class MigrationRunnerTests
     }
 
     [Fact]
+    public void Run_DoesNotFollowSymbolicLinks_OutOfTheTree()
+    {
+        // 加固（ADR-0221）：原先遍历跟随目录链接，链接指向 --path 之外时迁移会改写别处的文件，链接成环时无限遍历
+        using var fixture = new MigrationFixture();
+        var outside = Path.Combine(Path.GetTempPath(), "xihan-migrate-outside-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outside);
+        try
+        {
+            var target = Path.Combine(outside, "Outside.cs");
+            File.WriteAllText(target, MigrationFixture.UntouchedSource);
+            try
+            {
+                Directory.CreateSymbolicLink(fixture.PathOf("Linked"), outside);
+                File.CreateSymbolicLink(fixture.PathOf("Services/LinkedClock.cs"), target);
+                Directory.CreateSymbolicLink(fixture.PathOf("Loop"), fixture.Project);
+            }
+            catch (Exception exception) when (exception is UnauthorizedAccessException or IOException)
+            {
+                Assert.Skip("Creating symbolic links is not permitted here: " + exception.Message);
+            }
+
+            var report = Run(fixture);
+
+            Assert.Equal(MigrationFixture.UntouchedSource, File.ReadAllText(target));
+            Assert.DoesNotContain(report.Rules.SelectMany(static rule => rule.Files), static file => file.Contains("Linked", StringComparison.Ordinal) || file.Contains("Loop", StringComparison.Ordinal));
+            Assert.Equal(["Shop.Orders/Services/LegacyClock.cs", "Shop.Orders/Services/OrderService.cs"], report.Rules[0].Files);
+        }
+        finally
+        {
+            Directory.Delete(outside, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Run_Again_ChangesNothing_AndStillReportsEveryRule()
     {
         using var fixture = new MigrationFixture();
