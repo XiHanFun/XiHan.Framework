@@ -201,7 +201,8 @@ public sealed class KubernetesLeaseTlsTests : IDisposable
                 {
                     client = await _listener.AcceptTcpClientAsync().ConfigureAwait(false);
                 }
-                catch (Exception exception) when (exception is SocketException or ObjectDisposedException)
+                // 停止监听可能早于这一轮开始接受：那时抛的是「没有在监听」，同样表示该退出了
+                catch (Exception exception) when (exception is SocketException or ObjectDisposedException or InvalidOperationException)
                 {
                     return;
                 }
