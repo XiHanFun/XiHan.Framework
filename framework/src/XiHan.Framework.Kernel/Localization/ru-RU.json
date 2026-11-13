@@ -22,6 +22,7 @@
   "kernel.operation.invalid_payload": "Полезная нагрузка операции '{id}' недопустима: {reason}",
   "kernel.operation.no_response": "Операция '{id}' завершилась, не создав ответа.",
   "kernel.operation.permission_unregistered": "Операция '{id}' компонента '{owner}' требует код разрешения '{permission}', который не зарегистрирован.",
+  "kernel.operation.authorization_missing": "Операция '{id}' из '{owner}' требует авторизации, но на этапе Authorize нет ни одного промежуточного ПО.",
   "kernel.operation.registry_full": "Реестр операций достиг предела ёмкости {capacity}.",
   "kernel.operation.request_invalid": "Запрос операции '{id}' недопустим: {reason}",
   "kernel.operation.schema_violation": "Запрос операции '{id}' не соответствует её контракту: {reason}",

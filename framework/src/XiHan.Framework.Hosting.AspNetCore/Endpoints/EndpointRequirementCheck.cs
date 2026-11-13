@@ -4,6 +4,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Abstractions.Authorization;
@@ -25,11 +26,7 @@ internal static class EndpointRequirementCheck
     public static void Verify(IApplicationBuilder app)
     {
         var services = app.ApplicationServices;
-        if (services.GetService<PolicyCatalog>() is not { } catalog)
-        {
-            return;
-        }
-
+        var catalog = services.GetService<PolicyCatalog>();
         // 路由的全局数据源（UseEndpoints 交进来的）是主要来源；WebApplication 自己的数据源也看一遍，
         // 应对没有经过 UseEndpoints 的装配方式。同一端点可能从两处各读到一次，按文字去重
         var sources = new List<EndpointDataSource>();
@@ -45,12 +42,24 @@ internal static class EndpointRequirementCheck
 
         var violations = new SortedSet<string>(StringComparer.Ordinal);
         var bypassed = new SortedSet<string>(StringComparer.Ordinal);
+        var unjudged = new SortedSet<string>(StringComparer.Ordinal);
         foreach (var endpoint in sources.SelectMany(static s => s.Endpoints))
         {
             // 绕过宿主管道的端点不会判定要求：除非处理器自己带着要求走管道（gRPC），挂了要求就是静默放行，启动即失败（ADR-0175）
             if (endpoint.Metadata.GetMetadata<PipelineBypassMetadata>() is { EvaluatesEndpointRequirements: false } && endpoint.Metadata.GetMetadata<AuthorizationRequirement>() is not null)
             {
                 bypassed.Add(endpoint.DisplayName ?? (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? endpoint.ToString() ?? string.Empty);
+            }
+
+            // 没有装配授权能力：要求只会进上下文、不被判定，端点等于敞开，挂了要求就启动失败（ADR-0217）
+            if (catalog is null)
+            {
+                if (endpoint.Metadata.GetMetadata<AuthorizationRequirement>() is not null)
+                {
+                    unjudged.Add(endpoint.DisplayName ?? (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? endpoint.ToString() ?? string.Empty);
+                }
+
+                continue;
             }
 
             // 端点上的要求全部核对：组与端点各自加的约定叠加判定（ADR-0174），每一条都要存在
@@ -64,6 +73,11 @@ internal static class EndpointRequirementCheck
                         : $"'{name}' requires policy '{requirement.Policy}', which is not registered");
                 }
             }
+        }
+
+        if (unjudged.Count > 0)
+        {
+            throw new FrameworkException(KernelErrors.AuthorizationMissing, $"Endpoints carry XiHan authorization requirements, but no 'security.authorization@1' provider is assembled, so they would never be checked: {string.Join("; ", unjudged.Select(static name => $"'{name}'"))}. Assemble an authorization provider, or remove the requirements.");
         }
 
         if (bypassed.Count > 0)

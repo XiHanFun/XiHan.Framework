@@ -290,7 +290,7 @@ public sealed class WasmPluginHostTests
     public async Task LoadAsync_AtRuntime_RegistersOperationsRequiringRegisteredPermissions()
     {
         using var guarded = WatPlugin.Guarded("wat.call-permission");
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.app.permissions"))
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(PassThroughAuthorization.Feature()).UseFeature(new StubFeature(TestManifests.Create("xihan.app.permissions"))
         {
             OnConfigure = static ctx => ctx.AddPermission(new PermissionDefinition("wat.call-permission", "Call the WAT plugin")),
         }));
@@ -319,7 +319,7 @@ public sealed class WasmPluginHostTests
     {
         // 清单声明了 wat.call-permission 与 wat.audit：宿主替插件登记，操作引用自己声明的码照常登记（ADR-0080）
         using var declaring = WatPlugin.Declaring(["wat.call-permission", "wat.audit"], "wat.call-permission");
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(PassThroughAuthorization.Feature()));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
         var loaded = await plugins.LoadAsync(new PluginSource(declaring.Directory, new PermissionGrant([])), CancellationToken.None);
@@ -374,7 +374,7 @@ public sealed class WasmPluginHostTests
     {
         using var first = WatPlugin.Declaring(["wat.shared"], "wat.shared", "xihan.tests.wat-a", "wat-a.call");
         using var second = WatPlugin.Declaring(["wat.shared"], "wat.shared", "xihan.tests.wat-b", "wat-b.call");
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(PassThroughAuthorization.Feature()));
         var plugins = host.Services.GetRequiredService<IPluginHost>();
 
         Assert.True((await plugins.LoadAsync(new PluginSource(first.Directory, new PermissionGrant([])), CancellationToken.None)).IsSuccess);
@@ -394,7 +394,7 @@ public sealed class WasmPluginHostTests
         using var declaring = WatPlugin.Declaring(["wat.call-permission"], "wat.call-permission");
 
         // 配置阶段发现时就登记了声明的码：装配完成时的核对看得到它
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>(), [new("XiHan:Plugins:Wasm:Directories:0", declaring.Directory)]);
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>().UseFeature(PassThroughAuthorization.Feature()), [new("XiHan:Plugins:Wasm:Directories:0", declaring.Directory)]);
 
         Assert.True(host.Services.GetRequiredService<PermissionRegistry>().Find("wat.call-permission").HasValue);
         Assert.Equal("wat.call-permission", host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).ValueOrThrow().Contract.Permission);

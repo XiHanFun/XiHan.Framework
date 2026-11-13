@@ -151,6 +151,7 @@ curl -i -X POST -H "Authorization: ApiKey dev-bob-key" -H "Content-Type: applica
 | 操作契约的 `Permission` | 装配完成时（`AppBuilder.Build`），之后登记的操作（插件握手之后）在登记时 | `KERNEL_VALIDATION_005`：一次列出全部未登记的权限码，应用启动失败 |
 | 操作契约的 `Policy` | 授权能力（`Security.InMemory` / `Security.Database`）登记的启动核对：容器建好之后、任何特性启动之前，经 `PolicyCatalog.EnforceOn` 一次核对已登记的全部操作；之后登记的操作在登记时逐个核对 | `SECURITY_VALIDATION_004`：宿主启动失败，不论失败策略（`IsolateFeature` 也一样）；插件整体登记失败 |
 | 端点上的 `RequireXiHanPermission` / `RequireXiHanPolicy` / `RequireXiHanAuthentication` | `UseXiHan()` 在宿主建请求管道时（路由已全部映射） | `SECURITY_VALIDATION_004`：宿主启动失败（`app.StartAsync` / `app.Run` 抛出） |
+| 有要求却没有判定者：契约声明了权限码或策略而 Authorize 阶段没有中间件，或端点挂了要求而没有装配授权能力 | 装配完成时；宿主建请求管道时；之后登记的操作在登记时 | `KERNEL_VALIDATION_006`：启动失败，插件登记失败（ADR-0217；以前要求静默失效） |
 
 - 异常一次列出全部违规项，如 `'orders.approve' of 'xihan.app.orders' requires policy 'approvers'`。
 - 权限码在装配完成时核对，所以可以由别的特性登记；策略名在容器建好之后才知道（`IPolicy` 是容器里的服务），所以在启动核对里核对。
@@ -237,12 +238,17 @@ public static class OrderRequirements
 | `SECURITY_UNAVAILABLE_001` | 授予存储、授予来源或收窄过滤器读不到数据，不当作不持有 | 503 |
 | `KERNEL_SECURITY_001` / `KERNEL_SECURITY_002` | 权限码重复 / 权限登记表已满，装配时抛出 | — |
 | `KERNEL_VALIDATION_005` | 操作契约引用了未登记的权限码：装配完成时抛出、启动失败；插件握手之后登记的操作在登记时返回，插件登记失败 | — |
+| `KERNEL_VALIDATION_006` | 要求授权而没有判定者：契约声明了权限码或策略而 Authorize 阶段没有中间件，或端点挂了要求而没有装配授权能力：启动时抛出；之后登记的操作登记失败 | — |
 
 ## 常见问题
 
 ### 启动时报 `KERNEL_VALIDATION_005`，说权限码没登记
 
 某个操作契约的 `Permission` 写了一个没有经 `AddPermission` 登记的码。异常一次列出全部，按清单逐个在对应特性的 `Configure` 里补登记，或改正拼写。权限码可以由别的特性登记，但要保证那个特性确实被装配了。
+
+### 启动时报 `KERNEL_VALIDATION_006`，说没有中间件判定授权
+
+操作契约声明了 `Permission` 或 `Policy`、或端点挂了 `RequireXiHan*`，而应用没有装配授权能力（`security.authorization@1`）。要求没人判定就等于没有，框架宁可启动失败。装配一个授权 Provider（`Security.InMemory` 或 `Security.Database`）；确实不需要授权的应用，去掉这些要求。测试里只想要契约上的权限、不想验授权时，在 Authorize 阶段挂一个放行的测试替身中间件。
 
 ### 403 和 401 怎么区分
 

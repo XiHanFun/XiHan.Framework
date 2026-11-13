@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Authentication;
@@ -47,6 +48,11 @@ public static class SecurityInvocationExtensions
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(requirement);
+        // 没有装配授权能力时没有谁判定它：宁可让调用失败，也不让要求静默失效（ADR-0217）
+        if (context.Services.GetService<PolicyCatalog>() is null)
+        {
+            throw new InvalidOperationException($"The authorization requirement '{requirement.Policy}' cannot be checked: no 'security.authorization@1' provider is assembled.");
+        }
         // 复制后追加：上下文条目可能被别的线程读着（ADR-0138），不原地改数组
         var current = context.Find(_requirementsKey).TryGetValue(out var existing) ? existing : [];
         context.Set(_requirementsKey, [.. current, requirement]);

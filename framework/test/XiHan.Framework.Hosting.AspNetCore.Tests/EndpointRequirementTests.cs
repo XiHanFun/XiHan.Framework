@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
+using XiHan.Framework.Security.Abstractions.Authorization;
 using XiHan.Framework.Security.InMemory;
 using XiHan.Framework.Testing;
 
@@ -18,7 +20,7 @@ namespace XiHan.Framework.Hosting.AspNetCore.Tests;
 /// 端点元数据上的授权要求在宿主建请求管道时核对（ADR-0080）
 /// </summary>
 /// <remarks>
-/// 装配了授权能力时，<c>RequireXiHanPermission</c> 的权限码未登记、<c>RequireXiHanPolicy</c> 的策略未注册，宿主启动即失败，不等到调用时 404；没有装配授权能力时不判定也不核对（见 <see cref="WebHostTests"/>）
+/// 装配了授权能力时，<c>RequireXiHanPermission</c> 的权限码未登记、<c>RequireXiHanPolicy</c> 的策略未注册，宿主启动即失败，不等到调用时 404；没有装配授权能力时挂了要求同样启动失败（ADR-0217）
 /// </remarks>
 public sealed class EndpointRequirementTests
 {
@@ -68,6 +70,40 @@ public sealed class EndpointRequirementTests
         Assert.Contains("/orders/purge", exception.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("'orders.read'", exception.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("/me", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task EndpointRequirements_WithoutAnAuthorizationProvider_FailTheHostStart()
+    {
+        // 安全审查 S-44（ADR-0217）：原先没有授权能力时要求只进上下文、不被判定，端点等于敞开
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.AddXiHan(static xihan => xihan.UseFeature(new StubFeature(TestManifests.Create("xihan.app.orders"))
+        {
+            OnConfigure = static ctx => ctx.AddPermission(new PermissionDefinition("orders.read", "Read orders")),
+        }));
+        await using var app = builder.Build();
+        app.UseXiHan();
+        app.MapGet("/orders", static () => "ok").RequireXiHanPermission("orders.read");
+        app.MapGet("/me", static () => "ok").RequireXiHanAuthentication();
+        app.MapGet("/open", static () => "ok");
+
+        var exception = await Assert.ThrowsAsync<FrameworkException>(() => app.StartAsync());
+        Assert.Equal(KernelErrors.AuthorizationMissing, exception.Code);
+        Assert.Contains("/orders", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("/me", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("/open", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RequireAuthorization_WithoutAnAuthorizationProvider_Throws()
+    {
+        // 启动之后才写进上下文的要求：没有谁判定它，宁可失败不可放行（ADR-0217）
+        using var services = new ServiceCollection().BuildServiceProvider();
+        var context = TestInvocationContext.Create(services);
+
+        Assert.Throws<InvalidOperationException>(() => context.RequireAuthorization(AuthorizationRequirement.Authenticated));
+        Assert.Empty(context.GetAuthorizationRequirements());
     }
 
     [Fact]

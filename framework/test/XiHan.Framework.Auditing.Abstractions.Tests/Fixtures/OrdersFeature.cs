@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
 
@@ -23,6 +24,8 @@ internal sealed class OrdersFeature : IFeature
     public void Configure(FeatureContext context)
     {
         context.AddPermission(new PermissionDefinition("orders.write", "Write orders"));
+        // 契约上的权限只用来给审计分类：Authorize 阶段放一个放行的替身，不验授权（ADR-0217）
+        context.AddMiddleware<PassThroughAuthorization>(PipelineStage.Authorize);
         context.AddOperation<CreateOrder, CreateOrderRequest, OrderResponse>(new(CreateOrder.Id) { Permission = "orders.write" }, OrdersJsonContext.Default.CreateOrderRequest, OrdersJsonContext.Default.OrderResponse);
         context.AddOperation<ListOrders, ListOrdersRequest, OrderResponse>(new(ListOrders.Id), OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);
         context.AddOperation<ExportOrders, ListOrdersRequest, OrderResponse>(new(ExportOrders.Id), OrdersJsonContext.Default.ListOrdersRequest, OrdersJsonContext.Default.OrderResponse);

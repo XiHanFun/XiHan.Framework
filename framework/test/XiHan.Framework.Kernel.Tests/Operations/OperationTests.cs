@@ -271,6 +271,33 @@ public sealed class OperationTests
     }
 
     [Fact]
+    public void OperationsRequiringAuthorization_FailTheBuild_WhenNothingRunsInTheAuthorizeStage()
+    {
+        // 安全审查 S-44（ADR-0217）：原先 Authorize 阶段为空时契约上的权限照样登记，调用时没有谁判定，操作等于敞开
+        var exception = Assert.Throws<FrameworkException>(static () => Hosts.BuildApp(static b => b.UseFeature(new EchoFeature(capture: false))));
+
+        Assert.Equal(KernelErrors.AuthorizationMissing, exception.Code);
+        Assert.Contains("'echoes.create' of 'xihan.test.echo' requires 'echoes.write'", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WithoutAnAuthorizeStage_LateOperationsRequiringAuthorization_AreRejected()
+    {
+        var (provider, app) = await StartAsync(new PermissionsFeature("xihan.test.permissions", "echoes.write"));
+        var registry = provider.GetRequiredService<OperationRegistry>();
+        OperationDescriptor Describe(string id, string? permission) => new OperationDescriptor<EchoOperation, EchoRequest, EchoResponse>(new(id) { Permission = permission }, "xihan.test.plugin", EchoJsonContext.Default.EchoRequest, EchoJsonContext.Default.EchoResponse);
+
+        // 插件握手之后登记：要求授权的操作登记失败，不要求的照常
+        var rejected = registry.Add(Describe("echoes.purge", "echoes.write"));
+        Assert.Equal(KernelErrors.AuthorizationMissing, rejected.Error?.Code);
+        Assert.Equal("VALIDATION", rejected.Error?.Kind);
+        Assert.False(registry.Find("echoes.purge").HasValue);
+        Assert.True(registry.Add(Describe("echoes.list", null)).IsSuccess);
+        await app.StopAsync(CancellationToken.None);
+        await provider.DisposeAsync();
+    }
+
+    [Fact]
     public async Task Permissions_AreCheckedWhenAssemblyCompletes_AndLateRegistrationsAreRejected()
     {
         // 权限码由另一个特性登记：登记操作的那一刻还没有它，装配完成时已经有了

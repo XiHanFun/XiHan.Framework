@@ -22,6 +22,7 @@
   "kernel.operation.invalid_payload": "The payload of operation '{id}' is not valid: {reason}",
   "kernel.operation.no_response": "Operation '{id}' completed without producing a response.",
   "kernel.operation.permission_unregistered": "Operation '{id}' of '{owner}' requires permission '{permission}', which is not registered.",
+  "kernel.operation.authorization_missing": "Operation '{id}' of '{owner}' requires authorization, but no middleware runs in the Authorize stage.",
   "kernel.operation.registry_full": "The operation registry has reached its capacity of {capacity}.",
   "kernel.operation.request_invalid": "The request of operation '{id}' is invalid: {reason}",
   "kernel.operation.schema_violation": "The request of operation '{id}' does not match its contract: {reason}",

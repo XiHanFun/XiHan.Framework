@@ -221,6 +221,22 @@ public sealed class OperationRegistry
     }
 
     /// <summary>
+    /// 管道里没有授权中间件时，核对没有操作要求授权
+    /// </summary>
+    /// <remarks>
+    /// 装配完成、Authorize 阶段为空时由应用构建器调用：契约声明了权限码或策略的操作不会被判定，等于敞开，抛出 <see cref="KernelErrors.AuthorizationMissing"/>（一次列出全部）。此后登记的操作经同一核对，声明了权限码或策略即登记失败（ADR-0217）
+    /// </remarks>
+    internal void RequireNoAuthorization()
+    {
+        var unguarded = Enforce(UnguardedOf);
+        if (unguarded.Count > 0)
+        {
+            var violations = unguarded.Select(static d => $"'{d.Id}' of '{d.OwnerId}' requires '{d.Contract.Permission ?? d.Contract.Policy}'");
+            throw new FrameworkException(KernelErrors.AuthorizationMissing, $"Operations declare permissions or policies, but no middleware runs in the Authorize stage, so they would never be checked: {string.Join("; ", violations)}. Assemble a 'security.authorization@1' provider, or remove the requirements.");
+        }
+    }
+
+    /// <summary>
     /// 全部操作，按 ID 排序
     /// </summary>
     public IReadOnlyList<OperationDescriptor> All() => _operations.Values.OrderBy(static d => d.Id, StringComparer.Ordinal).ToList();
@@ -256,6 +272,14 @@ public sealed class OperationRegistry
     /// <remarks>
     /// 没有权限要求或已登记时为 <see langword="null"/>
     /// </remarks>
+    private static Error? UnguardedOf(OperationDescriptor descriptor)
+        => descriptor.Contract.Permission is not null || descriptor.Contract.Policy is not null
+            ? Error.Validation(KernelErrors.AuthorizationMissing, KernelMessages.OperationAuthorizationMissing, MessageArguments.Of(("id", descriptor.Id), ("owner", descriptor.OwnerId)))
+            : null;
+
+    /// <summary>
+    /// 操作引用了未登记的权限码时的错误
+    /// </summary>
     private Error? UnregisteredPermissionOf(OperationDescriptor descriptor)
         => descriptor.Contract.Permission is { } code && !_permissions.Find(code).HasValue
             ? Error.Validation(KernelErrors.UnregisteredPermission, KernelMessages.OperationPermissionUnregistered, MessageArguments.Of(("id", descriptor.Id), ("owner", descriptor.OwnerId), ("permission", code)))

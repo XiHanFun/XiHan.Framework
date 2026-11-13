@@ -22,6 +22,7 @@
   "kernel.operation.invalid_payload": "La carga útil de la operación '{id}' no es válida: {reason}",
   "kernel.operation.no_response": "La operación '{id}' se completó sin producir una respuesta.",
   "kernel.operation.permission_unregistered": "La operación '{id}' de '{owner}' requiere el código de permiso '{permission}', que no está registrado.",
+  "kernel.operation.authorization_missing": "La operación '{id}' de '{owner}' requiere autorización, pero no se ejecuta ningún middleware en la etapa Authorize.",
   "kernel.operation.registry_full": "El registro de operaciones alcanzó su capacidad de {capacity}.",
   "kernel.operation.request_invalid": "La solicitud de la operación '{id}' no es válida: {reason}",
   "kernel.operation.schema_violation": "La solicitud de la operación '{id}' no cumple su contrato: {reason}",

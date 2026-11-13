@@ -22,6 +22,8 @@ using XiHan.Framework.Protocols.Http.OpenApi;
 using XiHan.Framework.Protocols.Http.Routing;
 using XiHan.Framework.Protocols.Http.Tests.Fixtures;
 using XiHan.Framework.Security.Abstractions.Authentication;
+using XiHan.Framework.Security.InMemory;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Protocols.Http.Tests;
 
@@ -52,7 +54,7 @@ public sealed class OpenApiExtensionsTests
     /// <remarks>
     /// 可加本地化、Bearer 认证桩、文档选项与额外端点
     /// </remarks>
-    private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool localization = false, bool bearer = false, OpenApiOptions? options = null, Action<WebApplication>? map = null)
+    private static async Task<(WebApplication App, HttpClient Client)> StartAsync(bool localization = false, bool bearer = false, OpenApiOptions? options = null, Action<WebApplication>? map = null, bool security = false)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -68,6 +70,15 @@ public sealed class OpenApiExtensionsTests
             if (localization)
             {
                 xihan.UseFeature<InMemoryLocalizationFeature>();
+            }
+
+            // 端点挂了权限：要有授权能力判定它，权限码也要登记，否则启动失败（ADR-0217）
+            if (security)
+            {
+                xihan.UseFeature<InMemorySecurityFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.test.attachments", requires: ["security.authorization@1"]))
+                {
+                    OnConfigure = static ctx => ctx.AddPermission(new PermissionDefinition("orders.write", "Write orders")),
+                });
             }
         });
 
@@ -246,7 +257,7 @@ public sealed class OpenApiExtensionsTests
     [Fact]
     public async Task OpenApi_IncludesPlainEndpoints_ByMetadata_WithBinaryFormTextAndSchemaReferences()
     {
-        var (app, client) = await StartAsync(map: static web =>
+        var (app, client) = await StartAsync(security: true, map: static web =>
         {
             // 表单上传：multipart 请求体、端点级权限、端点名 / 摘要 / 标签
             web.MapPost("/attachments/{orderId}", static (string orderId, IFormFile file) => Results.Created())

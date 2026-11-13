@@ -122,7 +122,7 @@ using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 app.MapXiHanCloudEvents().RequireXiHanPermission("events.deliver");
 ```
 
-权限不按租户收窄，只授给平台的服务账号或服务角色，不要授给租户里的角色。没有装配授权能力 `security.authorization@1` 时，这个要求只进入上下文、不被判定，端点等于敞开。授权的写法见[授权与权限](/security/authorization)。
+权限不按租户收窄，只授给平台的服务账号或服务角色，不要授给租户里的角色。没有装配授权能力 `security.authorization@1` 时，挂了这个要求宿主就启动失败（`KERNEL_VALIDATION_006`，ADR-0217），不会静默敞开。授权的写法见[授权与权限](/security/authorization)。
 
 ## 批量、去重与错误
 

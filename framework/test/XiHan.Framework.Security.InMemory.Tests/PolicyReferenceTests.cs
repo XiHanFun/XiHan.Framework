@@ -112,7 +112,10 @@ public sealed class PolicyReferenceTests
     public async Task NotSelectedForAuthorization_DoesNotCheckPolicies()
     {
         // 显式 Provider 顶替了内存特性的授权能力，内存特性只剩认证：由那个 Provider 负责核对，内存特性不核对
-        var authorization = new StubFeature(TestManifests.Create("xihan.app.authorization", provides: ["security.authorization@1"], requires: ["kernel.hosting@1"]));
+        var authorization = new StubFeature(TestManifests.Create("xihan.app.authorization", provides: ["security.authorization@1"], requires: ["kernel.hosting@1"]))
+        {
+            OnConfigure = static context => context.AddMiddleware<PassThroughAuthorization>(PipelineStage.Authorize),
+        };
         await using var host = await TestHost.StartAsync(b => b.UseFeature<InMemorySecurityFeature>().UseFeature(authorization).UseFeature(Approvals(new OperationContract("approvals.approve") { Policy = "approvers" })));
 
         Assert.Equal(["security.authentication"], host.App.Graph["xihan.security.inmemory"].SelectedCapabilities);

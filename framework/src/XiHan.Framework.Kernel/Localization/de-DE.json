@@ -22,6 +22,7 @@
   "kernel.operation.invalid_payload": "Die Nutzlast der Operation '{id}' ist ungültig: {reason}",
   "kernel.operation.no_response": "Die Operation '{id}' wurde abgeschlossen, ohne eine Antwort zu erzeugen.",
   "kernel.operation.permission_unregistered": "Die Operation '{id}' von '{owner}' erfordert den Berechtigungscode '{permission}', der nicht registriert ist.",
+  "kernel.operation.authorization_missing": "Die Operation '{id}' von '{owner}' erfordert eine Autorisierung, aber in der Authorize-Phase läuft keine Middleware.",
   "kernel.operation.registry_full": "Die Operationsregistrierung hat ihre Kapazität von {capacity} erreicht.",
   "kernel.operation.request_invalid": "Die Anfrage der Operation '{id}' ist ungültig: {reason}",
   "kernel.operation.schema_violation": "Die Anfrage der Operation '{id}' entspricht nicht ihrem Vertrag: {reason}",

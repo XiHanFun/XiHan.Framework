@@ -17,6 +17,7 @@ using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Abstractions.Authentication;
 using XiHan.Framework.Security.Abstractions.Authorization;
+using XiHan.Framework.Security.InMemory;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Hosting.AspNetCore.Tests;
@@ -89,7 +90,6 @@ public sealed class WebHostTests
             return Results.Empty;
         });
         app.MapGet("/boom", static string () => throw new InvalidOperationException("boom"));
-        app.MapGet("/secure", () => "secure").RequireXiHanPermission("orders.read");
         app.MapGet("/orders/{id}", static (string id) => id).WithName("orders.get");
         await app.StartAsync();
         return (app, app.GetTestClient(), captured);
@@ -98,13 +98,18 @@ public sealed class WebHostTests
     [Fact]
     public async Task EndpointMetadata_BecomesAuthorizationRequirement()
     {
-        var (app, client, captured) = await StartAsync();
+        var (app, client, captured) = await StartAsync(
+            static xihan => xihan.UseFeature<InMemorySecurityFeature>().UseFeature(new StubFeature(TestManifests.Create("xihan.test.orders", requires: ["security.authorization@1"]))
+            {
+                OnConfigure = static ctx => ctx.AddPermission(new PermissionDefinition("orders.read", "Read orders")),
+            }),
+            static web => web.MapGet("/secure", () => "secure").RequireXiHanPermission("orders.read"));
         await using var _ = app;
 
-        // 没有装配安全子系统时要求只进入上下文，不被判定
+        // 端点上的要求在 Authorize 之前进入上下文（捕获在 Tenant 阶段），再由授权判定：匿名调用被拒
         var response = await client.GetAsync("/secure");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Equal([AuthorizationRequirement.Permission("orders.read")], captured.Context!.GetAuthorizationRequirements());
     }
 

@@ -165,6 +165,14 @@ public static class KernelMessages
     public const string OperationPermissionUnregistered = "kernel.operation.permission_unregistered";
 
     /// <summary>
+    /// 操作要求授权而 Authorize 阶段没有中间件
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>owner</c>
+    /// </remarks>
+    public const string OperationAuthorizationMissing = "kernel.operation.authorization_missing";
+
+    /// <summary>
     /// 操作成功结束却没有产生响应对象
     /// </summary>
     /// <remarks>

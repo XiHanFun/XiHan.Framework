@@ -176,6 +176,14 @@ public static class KernelErrors
     public const string UnregisteredPermission = "KERNEL_VALIDATION_005";
 
     /// <summary>
+    /// 要求授权而没有判定者
+    /// </summary>
+    /// <remarks>
+    /// 操作契约声明了权限码或策略，管道的 Authorize 阶段却没有中间件；或端点挂了授权要求，却没有装配授权能力。装配完成或宿主建请求管道时以 <see cref="FrameworkException"/> 抛出、启动失败；装配之后登记的操作以同码的校验错误登记失败（ADR-0217）
+    /// </remarks>
+    public const string AuthorizationMissing = "KERNEL_VALIDATION_006";
+
+    /// <summary>
     /// 操作 ID 重复登记
     /// </summary>
     public const string DuplicateOperation = "KERNEL_OPERATION_001";

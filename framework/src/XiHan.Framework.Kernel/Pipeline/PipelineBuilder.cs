@@ -355,6 +355,20 @@ public sealed class PipelineBuilder
     }
 
     /// <summary>
+    /// 是否有中间件登记在给定阶段
+    /// </summary>
+    /// <remarks>
+    /// 只看登记、不排序：顺序约束的错误留到构建或打印管道时报告。应用构建器据此判断 Authorize 阶段有没有判定者（ADR-0217）
+    /// </remarks>
+    internal bool Occupies(PipelineStage stage)
+    {
+        lock (_gate)
+        {
+            return _registrations.Exists(registration => registration.Stage == stage);
+        }
+    }
+
+    /// <summary>
     /// 计算最终顺序
     /// </summary>
     /// <remarks>

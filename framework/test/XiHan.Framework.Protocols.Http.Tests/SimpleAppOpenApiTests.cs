@@ -10,6 +10,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Protocols.Http.OpenApi;
 using XiHan.Framework.Protocols.Http.Routing;
 using XiHan.Framework.Protocols.Http.Tests.Fixtures;
+using XiHan.Framework.Security.InMemory;
 
 namespace XiHan.Framework.Protocols.Http.Tests;
 
@@ -26,7 +27,8 @@ public sealed class SimpleAppOpenApiTests
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        builder.AddXiHan(static xihan => xihan.UseFeature<HttpProtocolFeature>().UseFeature<SampleOrdersFeature>());
+        // 契约带权限码：要有授权能力判定它，否则装配失败（ADR-0217）
+        builder.AddXiHan(static xihan => xihan.UseFeature<HttpProtocolFeature>().UseFeature<InMemorySecurityFeature>().UseFeature<SampleOrdersFeature>());
 
         await using var app = builder.Build();
         app.UseXiHan();
