@@ -437,6 +437,12 @@
           "default": "10",
           "exclusiveMinimum": 0,
           "summary": "单次请求（取文档、登录）的超时（秒）"
+        },
+        {
+          "key": "AllowInsecureHttp",
+          "type": "boolean",
+          "default": "false",
+          "summary": "配置了用户名密码时是否允许非本机的 http 地址；默认否，口令与令牌在 http 上是明文"
         }
       ]
     },

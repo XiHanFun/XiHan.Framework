@@ -169,7 +169,8 @@ public sealed class NacosConfigurationTests
         // 地址的路径是上下文路径（Nacos 改过 contextPath，或经网关挂在前缀下），没有路径时用缺省的 /nacos；登录、取配置、监听都接在它后面
         using var handler = new NacosStubHandler { ContextPath = contextPath, Content = """{"Greeting":"hello"}""", ContentMd5 = "c2d231ffe3913f930fc713f76c0bfbf1", SendContentMd5Header = true };
         using var http = new HttpClient(handler, disposeHandler: false);
-        using var client = new NacosConfigurationClient(new NacosOptions { ServerAddresses = [address], UserName = "nacos", Password = "secret" }, http, TimeProvider.System);
+        // 替身地址是 http：带凭据时要显式允许（ADR-0220）
+        using var client = new NacosConfigurationClient(new NacosOptions { ServerAddresses = [address], UserName = "nacos", Password = "secret", AllowInsecureHttp = true }, http, TimeProvider.System);
 
         var document = (await client.FetchAsync("orders", null, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
         Assert.Equal("hello", document.Values["Greeting"]);

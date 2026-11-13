@@ -57,6 +57,7 @@
 - **调整** 没有装配授权能力时，契约声明了权限或策略的操作、挂了 `RequireXiHan*` 的端点让启动失败（`KERNEL_VALIDATION_006`）：原先要求静默失效，操作与端点等于敞开。之后登记的这类插件操作登记失败，启动之后才写入的 `RequireAuthorization` 抛出 `InvalidOperationException`。迁移：装配 `Security.InMemory` 或 `Security.Database`，或去掉这些要求
 - **调整** 已认证主体带多个值不同的租户声明时拒绝调用（`MULTITENANCY_VALIDATION_004`）：原先取第一个，签发方给出矛盾的身份时调用落进其中任意一个租户
 - **调整** 预签名限定的内容类型须合内容类型文法，保存的文件名不含控制字符、最长 255 个字符：原先只要求不空白，带换行的值能在宿主签名的规范串里把一项挪成另一项
+- **调整** Nacos 的令牌改走 `Authorization: Bearer` 请求头、不进查询串，失败原因不再带响应正文；配置了用户名密码时非本机的 `http` 地址默认拒绝，链路另有保护时设 `XiHan:Configuration:Nacos:AllowInsecureHttp` 为 `true`
 
 ## v5.0.0-preview.3（2026-11-12）
 

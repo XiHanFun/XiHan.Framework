@@ -49,6 +49,16 @@ internal sealed class NacosStubHandler : HttpMessageHandler
     public ConcurrentQueue<string> ListenedMd5 { get; } = new();
 
     /// <summary>
+    /// 登录之后的请求怎样带令牌：<c>Authorization</c> 头与查询串
+    /// </summary>
+    public ConcurrentQueue<(string? Authorization, string Query)> Credentials { get; } = new();
+
+    /// <summary>
+    /// 为非空时取配置以这个状态码与正文失败
+    /// </summary>
+    public (HttpStatusCode Status, string Body)? FailFetch { get; set; }
+
+    /// <summary>
     /// 是否已释放
     /// </summary>
     public bool Disposed { get; private set; }
@@ -66,6 +76,16 @@ internal sealed class NacosStubHandler : HttpMessageHandler
         if (request.Method == HttpMethod.Post && path == ContextPath + "/v1/auth/login")
         {
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"accessToken":"stub-token","tokenTtl":18000}""", Encoding.UTF8, "application/json") };
+        }
+
+        if (path != ContextPath + "/v1/auth/login")
+        {
+            Credentials.Enqueue((request.Headers.Authorization?.ToString(), request.RequestUri.Query));
+        }
+
+        if (request.Method == HttpMethod.Get && path == ContextPath + "/v1/cs/configs" && FailFetch is { } failure)
+        {
+            return new HttpResponseMessage(failure.Status) { Content = new StringContent(failure.Body) };
         }
 
         if (request.Method == HttpMethod.Get && path == ContextPath + "/v1/cs/configs")

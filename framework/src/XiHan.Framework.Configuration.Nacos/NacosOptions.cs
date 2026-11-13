@@ -86,6 +86,14 @@ public sealed record NacosOptions
     public string? Password { get; init; }
 
     /// <summary>
+    /// 是否允许经非本机的 http 地址发送凭据
+    /// </summary>
+    /// <remarks>
+    /// 默认否：配置了 <see cref="UserName"/> / <see cref="Password"/> 时，非回环的 <c>http</c> 地址让建客户端时抛出 <see cref="ArgumentException"/>，登录的口令与随后每个请求的令牌都是明文（ADR-0220）。只在链路另有保护（同机、服务网格的双向 TLS）时打开
+    /// </remarks>
+    public bool AllowInsecureHttp { get; init; }
+
+    /// <summary>
     /// 配置内容的格式
     /// </summary>
     /// <remarks>
@@ -160,6 +168,14 @@ public sealed record NacosOptions
             options = options with { RequestTimeout = Seconds(request, "RequestTimeoutSeconds") };
         }
 
+        if (Text(configuration, "AllowInsecureHttp") is { } insecure)
+        {
+            options = options with
+            {
+                AllowInsecureHttp = bool.TryParse(insecure, out var allowed) ? allowed : throw new ArgumentException($"{ConfigurationSection}:AllowInsecureHttp must be 'true' or 'false', but was '{insecure}'."),
+            };
+        }
+
         return options;
     }
 
@@ -208,7 +224,8 @@ public sealed record NacosOptions
             .Append(", Password = ").Append(Redaction.Redact(Password))
             .Append(", Format = ").Append(Format)
             .Append(", LongPollTimeout = ").Append(LongPollTimeout)
-            .Append(", RequestTimeout = ").Append(RequestTimeout);
+            .Append(", RequestTimeout = ").Append(RequestTimeout)
+            .Append(", AllowInsecureHttp = ").Append(AllowInsecureHttp);
         return true;
     }
 }

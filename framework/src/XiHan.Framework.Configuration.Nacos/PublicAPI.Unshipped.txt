@@ -13,6 +13,8 @@ XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.Manifest.get -> Xi
 XiHan.Framework.Configuration.Nacos.NacosConfigurationFeature.NacosConfigurationFeature() -> void
 XiHan.Framework.Configuration.Nacos.NacosOptions
 XiHan.Framework.Configuration.Nacos.NacosOptions.<Clone>$() -> XiHan.Framework.Configuration.Nacos.NacosOptions!
+XiHan.Framework.Configuration.Nacos.NacosOptions.AllowInsecureHttp.get -> bool
+XiHan.Framework.Configuration.Nacos.NacosOptions.AllowInsecureHttp.init -> void
 XiHan.Framework.Configuration.Nacos.NacosOptions.Equals(XiHan.Framework.Configuration.Nacos.NacosOptions? other) -> bool
 XiHan.Framework.Configuration.Nacos.NacosOptions.Format.get -> XiHan.Framework.Configuration.Nacos.NacosConfigFormat
 XiHan.Framework.Configuration.Nacos.NacosOptions.Format.init -> void

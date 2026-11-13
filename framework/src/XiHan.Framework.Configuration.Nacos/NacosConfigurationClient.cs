@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -101,6 +102,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     private NacosConfigurationClient(NacosOptions options, HttpClient httpClient, TimeProvider clock, bool ownsHttpClient)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
+        RequireProtectedTransport(options);
         _http = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _ownsHttp = ownsHttpClient;
@@ -196,7 +198,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
             return Maybe.None<(string, string)>();
         }
 
-        await EnsureSuccessAsync(response, "fetch", cancellationToken).ConfigureAwait(false);
+        EnsureSuccess(response, "fetch");
         var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         var version = response.Content.Headers.NonValidated.TryGetValues("Content-MD5", out var md5) ? md5.FirstOrDefault() : null;
         return Maybe.Some((text, string.IsNullOrWhiteSpace(version) ? Fingerprint(text) : version));
@@ -213,14 +215,14 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
         var timeout = _options.LongPollTimeout + _options.RequestTimeout;
         using var response = await SendAsync(address =>
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, WithToken(Endpoint(address, ListenerPath)).Uri)
+            var request = new HttpRequestMessage(HttpMethod.Post, Endpoint(address, ListenerPath).Uri)
             {
                 Content = new FormUrlEncodedContent([new KeyValuePair<string, string>("Listening-Configs", listening)]),
             };
             request.Headers.TryAddWithoutValidation("Long-Pulling-Timeout", ((long)_options.LongPollTimeout.TotalMilliseconds).ToString(CultureInfo.InvariantCulture));
             return request;
         }, timeout, cancellationToken).ConfigureAwait(false);
-        await EnsureSuccessAsync(response, "listen", cancellationToken).ConfigureAwait(false);
+        EnsureSuccess(response, "listen");
         var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         return !string.IsNullOrWhiteSpace(body);
     }
@@ -238,6 +240,12 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
         foreach (var address in _options.ServerAddresses)
         {
             using var request = build(new Uri(address));
+            // 令牌走请求头而不是查询串：查询串会进 Nacos、网关与代理的访问日志。Nacos 1.x 与 2.x 都认 Bearer 头（ADR-0220）
+            if (_token is { } token)
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
             using var window = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             window.CancelAfter(timeout);
             try
@@ -330,17 +338,37 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     }
 
     /// <summary>
-    /// 非 2xx（404 除外，由调用方处理）视为不可达，把状态码与响应正文带进原因
+    /// 非 2xx（404 除外，由调用方处理）视为不可达，原因只带动作与状态码
     /// </summary>
-    private static async Task EnsureSuccessAsync(HttpResponseMessage response, string action, CancellationToken cancellationToken)
+    /// <remarks>
+    /// 不带响应正文：原因会进错误结果与日志，正文里可能有服务端回显的请求内容（ADR-0220）
+    /// </remarks>
+    private static void EnsureSuccess(HttpResponseMessage response, string action)
     {
-        if (response.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Nacos {action} failed with status {(int)response.StatusCode}.");
+        }
+    }
+
+    /// <summary>
+    /// 配置了凭据时，非本机的 http 地址要显式允许
+    /// </summary>
+    /// <remarks>
+    /// 登录把口令以表单明文发出，令牌随每个请求发出；回环地址不出本机，不要求（ADR-0220）
+    /// </remarks>
+    private static void RequireProtectedTransport(NacosOptions options)
+    {
+        if (options.AllowInsecureHttp || (options.UserName is null && options.Password is null))
         {
             return;
         }
 
-        var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        throw new HttpRequestException($"Nacos {action} failed with status {(int)response.StatusCode}: {body}");
+        var exposed = options.ServerAddresses.Where(static address => new Uri(address) is { Scheme: "http", IsLoopback: false }).ToList();
+        if (exposed.Count > 0)
+        {
+            throw new ArgumentException($"Nacos credentials would be sent in clear text to {string.Join(", ", exposed.Select(static address => $"'{address}'"))}. Use https, or set '{NacosOptions.ConfigurationSection}:AllowInsecureHttp' to true when the link is otherwise protected.", nameof(options));
+        }
     }
 
     /// <summary>
@@ -350,7 +378,7 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     {
         var builder = Endpoint(address, ConfigsPath);
         builder.Query = $"dataId={Uri.EscapeDataString(dataId)}&group={Uri.EscapeDataString(_options.Group)}" + (_options.Tenant.Length == 0 ? string.Empty : $"&tenant={Uri.EscapeDataString(_options.Tenant)}");
-        return WithToken(builder).Uri;
+        return builder.Uri;
     }
 
     /// <summary>
@@ -363,21 +391,6 @@ public sealed class NacosConfigurationClient : IRemoteConfigurationClient, IDisp
     {
         var contextPath = address.AbsolutePath.TrimEnd('/');
         return new UriBuilder(address) { Path = (contextPath.Length == 0 ? DefaultContextPath : contextPath) + apiPath };
-    }
-
-    /// <summary>
-    /// 有令牌时追加 <c>accessToken</c> 查询参数
-    /// </summary>
-    private UriBuilder WithToken(UriBuilder builder)
-    {
-        if (_token is null)
-        {
-            return builder;
-        }
-
-        var query = builder.Query.TrimStart('?');
-        builder.Query = (query.Length == 0 ? string.Empty : query + "&") + "accessToken=" + Uri.EscapeDataString(_token);
-        return builder;
     }
 
     /// <summary>

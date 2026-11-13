@@ -51,6 +51,8 @@ internal static class NacosTestServer
         ServerAddresses = [RequireServiceUrl()],
         UserName = Environment.GetEnvironmentVariable("XIHAN_TEST_NACOS_USERNAME"),
         Password = Environment.GetEnvironmentVariable("XIHAN_TEST_NACOS_PASSWORD"),
+        // 测试容器只开了 http（ADR-0220）
+        AllowInsecureHttp = true,
         Format = format,
         LongPollTimeout = TimeSpan.FromSeconds(10),
     };

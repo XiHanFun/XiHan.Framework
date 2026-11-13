@@ -63,6 +63,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 | `Format` | `Json` / `Properties` | `Json` | 文档格式，不区分大小写 |
 | `LongPollTimeoutSeconds` | 正数 | 30 | 长轮询窗口 |
 | `RequestTimeoutSeconds` | 正数 | 10 | 单次请求（取文档、登录）的超时 |
+| `AllowInsecureHttp` | 布尔 | `false` | 配置了用户名密码时是否允许非本机的 `http` 地址；默认否，口令与令牌在 http 上是明文，建客户端时抛 `ArgumentException`。只在链路另有保护时打开 |
 
 ```json
 {
@@ -130,7 +131,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 ## 行为与限制
 
 - 格式：`Json` 要求根是对象，嵌套对象按 `A:B` 展平，数组按下标，`null` 保留为空值；`Properties` 把 `a.b=c` 展平成 `a:b`，`#` 与 `!` 开头的行是注释。文档不合法返回 `CONFIGURATION_VALIDATION_001`。
-- 登录：配置了 `UserName` 与 `Password` 时调用上下文路径下的 `/v1/auth/login`（缺省即 `/nacos/v1/auth/login`）取 `accessToken`，在到期前一分钟续期；响应没有 `tokenTtl` 时按 18000 秒计。
+- 登录：配置了 `UserName` 与 `Password` 时调用上下文路径下的 `/v1/auth/login`（缺省即 `/nacos/v1/auth/login`）取 `accessToken`，在到期前一分钟续期；响应没有 `tokenTtl` 时按 18000 秒计。令牌经请求头 `Authorization: Bearer <令牌>` 发送，不进查询串（查询串会进访问日志）；请求失败时原因只带动作与状态码，不带响应正文（ADR-0220）。
 - 多地址：每次请求按 `ServerAddresses` 的顺序尝试，连接失败或超时换下一个，全部失败时返回不可达。
 - 版本：服务端没有给出 `Content-MD5`（例如中间的代理去掉了这个头）时，客户端按 Nacos 的算法自己算，即内容按 UTF-8 编码的 MD5（小写十六进制），监听接口照样认得这个版本，长轮询不受影响。
 - 上下文路径：地址的路径就是 Nacos 的上下文路径（`server.servlet.contextPath`），登录、取配置、监听的接口路径（`/v1/auth/login`、`/v1/cs/configs`、`/v1/cs/configs/listener`）接在它后面；地址没有路径（或只有 `/`）时用 Nacos 的缺省值 `/nacos`，所以 `http://nacos:8848` 与 `http://nacos:8848/nacos` 等价。Nacos 改了上下文路径时写 `http://nacos:8848/config`；经网关挂在前缀下时把网关前缀连同上下文路径写全，例如网关把 `/config-center/` 转发到 Nacos 的根上，就写 `http://gateway/config-center/nacos`。上下文路径设成根（`/`）的 Nacos 无法用地址表达，不受支持。
