@@ -847,7 +847,10 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     private string Within(string path)
     {
         var full = Path.GetFullPath(path);
-        return full.StartsWith(_options.RootPath + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+        // 根路径已去掉结尾分隔符，只有文件系统的根目录（C:\、/）还以分隔符结尾，不能再补一个
+        var root = _options.RootPath;
+        var prefix = Path.EndsInDirectorySeparator(root) ? root : root + Path.DirectorySeparatorChar;
+        return full.StartsWith(prefix, StringComparison.Ordinal)
             ? full
             : throw new InvalidOperationException($"Path '{full}' escapes the object storage root '{_options.RootPath}'.");
     }

@@ -48,7 +48,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `RootPath` | `string` | `<AppContext.BaseDirectory>/blobs` | 根目录；相对路径按当前目录解析 |
+| `RootPath` | `string` | `<AppContext.BaseDirectory>/blobs` | 根目录；相对路径按当前目录解析，结尾的目录分隔符去掉 |
 | `MaxTotalBytes` | 正整数 | 1073741824（1 GiB） | 全部对象的总字节上限 |
 | `MaxBlobBytes` | 正整数 | 268435456（256 MiB） | 单个对象的字节上限，分片与拼接后的对象同样受它约束 |
 | `MultipartExpiryHours` | 正数 | 168（7 天） | 未完成的分片上传保留多久；过期即拒绝再传分片与完成，启动时与运行期间清掉 |

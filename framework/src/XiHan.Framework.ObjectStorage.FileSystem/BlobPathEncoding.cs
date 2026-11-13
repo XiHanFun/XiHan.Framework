@@ -11,7 +11,7 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// 键的段与文件名之间的可逆编码
 /// </summary>
 /// <remarks>
-/// 键区分大小写而常见文件系统（Windows、macOS 默认）不区分，所以大写字母、非 ASCII、<c>%</c>、Windows 保留字符、保留设备名与结尾的点都按 UTF-8 字节百分号编码；小写字母、数字与 <c>._-</c> 原样保留，常见的键在目录里仍可读
+/// 键区分大小写而常见文件系统（Windows、macOS 默认）不区分，所以大写字母、非 ASCII、<c>%</c>、Windows 保留字符、保留设备名（首个点之前是设备名的段，ADR-0213）与结尾的点都按 UTF-8 字节百分号编码；小写字母、数字与 <c>._-</c> 原样保留，常见的键在目录里仍可读
 /// </remarks>
 internal static class BlobPathEncoding
 {
@@ -19,13 +19,13 @@ internal static class BlobPathEncoding
     /// Windows 保留的设备名（不区分大小写）
     /// </summary>
     /// <remarks>
-    /// 作为文件名会失败，必须编码
+    /// 作为文件名会失败，必须编码。带上标数字的 <c>COM¹</c> 等与带 <c>$</c> 的 <c>CONIN$</c> 等含非安全字符，本来就会编码
     /// </remarks>
     private static readonly HashSet<string> _reservedNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "con", "prn", "aux", "nul",
-        "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
-        "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+        "com0", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
+        "lpt0", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
     };
 
     /// <summary>
@@ -43,8 +43,9 @@ internal static class BlobPathEncoding
     /// </summary>
     public static string EncodeSegment(string segment)
     {
-        // 保留设备名整体编码首字符即可打破匹配；结尾的点在 Windows 上会被去掉，也要编码
-        var escapeFirst = _reservedNames.Contains(segment) || _reservedNames.Contains(Path.GetFileNameWithoutExtension(segment));
+        // Windows 只看首个点之前：NUL.tar.gz 与 NUL 等价，不能只去掉最后一个扩展名再比。编码首字符即可打破匹配；结尾的点在 Windows 上会被去掉，也要编码
+        var dot = segment.IndexOf('.', StringComparison.Ordinal);
+        var escapeFirst = _reservedNames.Contains(dot < 0 ? segment : segment[..dot]);
         var builder = new StringBuilder(segment.Length + 8);
         Span<byte> utf8 = stackalloc byte[4];
         for (var index = 0; index < segment.Length; index++)

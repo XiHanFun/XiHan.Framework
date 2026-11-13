@@ -25,12 +25,12 @@ public sealed record FileSystemObjectStorageOptions
     /// 根目录
     /// </summary>
     /// <remarks>
-    /// 默认 <c>&lt;AppContext.BaseDirectory&gt;/blobs</c>。相对路径按当前目录解析
+    /// 默认 <c>&lt;AppContext.BaseDirectory&gt;/blobs</c>。相对路径按当前目录解析，结尾的目录分隔符去掉（文件系统的根目录除外，ADR-0213）
     /// </remarks>
     public string RootPath
     {
         get => field;
-        init => field = !string.IsNullOrWhiteSpace(value) ? Path.GetFullPath(value) : throw new ArgumentException("The root path must not be empty.", nameof(value));
+        init => field = !string.IsNullOrWhiteSpace(value) ? Path.TrimEndingDirectorySeparator(Path.GetFullPath(value)) : throw new ArgumentException("The root path must not be empty.", nameof(value));
     } = Path.Combine(AppContext.BaseDirectory, "blobs");
 
     /// <summary>
