@@ -17,6 +17,11 @@ internal sealed class PluginState
     private readonly ConcurrentQueue<string> _events = new();
 
     /// <summary>
+    /// 收到的投递，记为「方式:事件 ID」（按投递顺序）
+    /// </summary>
+    private readonly ConcurrentQueue<string> _deliveries = new();
+
+    /// <summary>
     /// 健康状态变化的订阅者
     /// </summary>
     private readonly ConcurrentDictionary<Guid, Func<Task>> _watchers = new();
@@ -47,6 +52,11 @@ internal sealed class PluginState
     public IReadOnlyList<string> Events => _events.ToArray();
 
     /// <summary>
+    /// 收到的投递快照，每项是「方式:事件 ID」
+    /// </summary>
+    public IReadOnlyList<string> Deliveries => _deliveries.ToArray();
+
+    /// <summary>
     /// 采纳 Configure
     /// </summary>
     public void Configure(string configurationJson, IEnumerable<string> granted)
@@ -56,9 +66,13 @@ internal sealed class PluginState
     }
 
     /// <summary>
-    /// 记一条收到的事件
+    /// 记一条收到的事件与它投递的订阅方式
     /// </summary>
-    public void Record(string eventId) => _events.Enqueue(eventId);
+    public void Record(string eventId, string mode)
+    {
+        _events.Enqueue(eventId);
+        _deliveries.Enqueue($"{mode}:{eventId}");
+    }
 
     /// <summary>
     /// 进入某状态并通知健康订阅者

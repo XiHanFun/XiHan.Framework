@@ -413,6 +413,8 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             Envelope = PluginEnvelopeMapper.ToProto(delivery.Topic, delivery.Envelope),
             Metadata = PluginMetadata.FromContext(context),
             Attempt = (uint)delivery.Attempt,
+            // 插件按（主题，方式）找处理器：同一主题的不同类型可以各用一种方式，一条消息可能以两种方式各到一次（ADR-0226）
+            Mode = PluginSubscriptionModes.ToProto(delivery.Mode),
         };
         using var tenant = _tenants.Enter(PluginMetadata.TenantOf(context));
         try

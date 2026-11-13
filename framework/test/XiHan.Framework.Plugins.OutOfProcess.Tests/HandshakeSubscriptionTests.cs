@@ -70,6 +70,33 @@ public sealed class HandshakeSubscriptionTests
         Assert.Contains("declared more than once", twice.Error?.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(SubscriptionMode.Competing, "competing")]
+    [InlineData(SubscriptionMode.Broadcast, "broadcast")]
+    public void DeliveryMode_IsAlwaysWrittenOut_AndReadsBack(SubscriptionMode mode, string text)
+    {
+        // 投递的 HandleEventRequest.mode 不写空：插件据此只交给以这种方式订阅的处理器（ADR-0226）
+        Assert.Equal(text, PluginSubscriptionModes.ToProto(mode));
+        Assert.True(PluginSubscriptionModes.TryParse(text, out var parsed));
+        Assert.Equal(mode, parsed);
+    }
+
+    [Theory]
+    [InlineData("Broadcast")]
+    [InlineData("COMPETING")]
+    [InlineData("fanout")]
+    [InlineData(" ")]
+    public void ModeText_OtherThanEmptyCompetingOrBroadcast_IsNotParsed(string text)
+    {
+        Assert.False(PluginSubscriptionModes.TryParse(text, out _));
+    }
+
+    [Fact]
+    public void UndefinedMode_CannotBeWrittenOut()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(static () => PluginSubscriptionModes.ToProto((SubscriptionMode)7));
+    }
+
     /// <summary>
     /// 用给定的订阅构造握手响应并核对
     /// </summary>

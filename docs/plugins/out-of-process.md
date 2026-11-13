@@ -172,7 +172,7 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 
 ## 事件投递
 
-握手里的每个订阅让宿主按它的 `mode` 向消息代理订阅该主题：空或 `competing` 是竞争消费（订阅了主题的宿主实例里只有一个把消息交给插件），`broadcast` 是广播（每个在线的宿主实例都交给自己的插件，见[发布与订阅](/messaging/pubsub)）；`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。消息到达时派发器开新作用域、经完整管道，在 Handle 阶段把信封（CloudEvents 属性平铺，`attempt` 从 1 起）发给插件；订阅写了消息类型时只投递类型相同的消息。投递至少一次，插件处理器必须幂等，可用 Baggage 里的 `xihan.idempotency-key` 或信封 `id` 去重；插件返回失败或不可用时由代理按自己的重试与死信策略处理，宿主不缓冲消息。宿主要装配一个消息代理，Standard 组合已带内存默认实现。
+握手里的每个订阅让宿主按它的 `mode` 向消息代理订阅该主题：空或 `competing` 是竞争消费（订阅了主题的宿主实例里只有一个把消息交给插件），`broadcast` 是广播（每个在线的宿主实例都交给自己的插件，见[发布与订阅](/messaging/pubsub)）；`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。消息到达时派发器开新作用域、经完整管道，在 Handle 阶段把信封（CloudEvents 属性平铺，`attempt` 从 1 起）发给插件；订阅写了消息类型时只投递类型相同的消息。投递带这次的订阅方式 `mode`（`competing` 或 `broadcast`），插件按（主题，方式）找处理器再看类型：同一主题的不同类型可以各用一种方式，一条消息以两种方式各到一次时，各交给自己方式的处理器。投递至少一次，插件处理器必须幂等，可用 Baggage 里的 `xihan.idempotency-key` 或信封 `id` 去重；插件返回失败或不可用时由代理按自己的重试与死信策略处理，宿主不缓冲消息。宿主要装配一个消息代理，Standard 组合已带内存默认实现。
 
 ## 回调：Host.Invoke 与 Host.Publish
 

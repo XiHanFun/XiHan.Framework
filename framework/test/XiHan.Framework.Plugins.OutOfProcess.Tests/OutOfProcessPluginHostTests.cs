@@ -350,6 +350,31 @@ public sealed class OutOfProcessPluginHostTests
     }
 
     [Fact]
+    public async Task Events_CarryTheDeliveryMode_SoEachSubscriptionOfATopicGetsItsOwn()
+    {
+        // 插件订阅 echo.events：不限类型的竞争订阅，加上只收 echo.cleared 的广播订阅
+        await using var host = await EchoPluginHost.StartAsync(static b => b.UseFeature<InMemoryMessagingFeature>());
+        await using var scope = host.Services.CreateAsyncScope();
+        var publisher = scope.ServiceProvider.GetRequiredService<IMessagePublisher>();
+
+        var created = await publisher.PublishAsync("echo.events", new MessageEnvelope { Id = "evt-created", Source = "tests", Type = "echo.created", Data = "{}"u8.ToArray() }, CancellationToken.None);
+        var cleared = await publisher.PublishAsync("echo.events", new MessageEnvelope { Id = "evt-cleared", Source = "tests", Type = "echo.cleared", Data = "{}"u8.ToArray() }, CancellationToken.None);
+        Assert.True(created.IsSuccess, created.ToString());
+        Assert.True(cleared.IsSuccess, cleared.ToString());
+
+        // echo.cleared 以两种方式各到一次、各带自己的方式；echo.created 只有竞争订阅收
+        string[] expected = ["competing:evt-created", "competing:evt-cleared", "broadcast:evt-cleared"];
+        string[] deliveries = [];
+        Assert.True(await EchoPluginHost.WaitUntilAsync(() =>
+        {
+            var listed = EchoPluginHost.InvokeAsync(host, "events.list", "{}").GetAwaiter().GetResult();
+            deliveries = listed.Outcome.IsSuccess ? [.. EchoPluginHost.Payload(listed).GetProperty("deliveries").EnumerateArray().Select(static d => d.GetString()!)] : [];
+            return expected.All(deliveries.Contains);
+        }, TimeSpan.FromSeconds(10)), string.Join(", ", deliveries));
+        Assert.Equal(expected.Order(StringComparer.Ordinal), deliveries.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public async Task HandshakeFailureAtStartup_IsRetriedByTheRestartPolicy_AndTheOperationsAreRegisteredLate()
     {
         // 副本拿掉一个依赖：进程启动即崩溃、写不出握手行（发现阶段的握手失败）

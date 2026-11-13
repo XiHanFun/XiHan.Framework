@@ -208,6 +208,8 @@ public abstract class PluginProtocolConformance
             },
             Metadata = new InvocationMetadata { TraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01" },
             Attempt = 1,
+            // 与宿主一样按订阅声明的方式投递（ADR-0226）
+            Mode = PluginSubscriptionModes.ToProto(subscription.Mode),
         };
 
         var response = await session.Client.HandleEventAsync(request, deadline: Deadline()).ConfigureAwait(false);

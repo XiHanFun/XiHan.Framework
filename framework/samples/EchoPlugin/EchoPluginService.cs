@@ -52,6 +52,8 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
         response.Operations.Add(new OperationDeclaration { Id = "echoes.crash", Stability = "internal" });
         response.Operations.Add(new OperationDeclaration { Id = "events.list", Stability = "experimental", Expose = { "http" } });
         response.Subscriptions.Add(new Subscription { Topic = "echo.events" });
+        // 同一主题的另一个类型用广播：echo.cleared 以两种方式各到一次，插件靠投递带来的 mode 区分（ADR-0226）
+        response.Subscriptions.Add(new Subscription { Topic = "echo.events", MessageType = "echo.cleared", Mode = "broadcast" });
         var catalog = new MessageCatalog { Name = "echo" };
         catalog.Locales.Add(new LocaleTemplates { Locale = "en-US", Templates = { ["echo.text.empty"] = "The text must not be empty." } });
         catalog.Locales.Add(new LocaleTemplates { Locale = "zh-CN", Templates = { ["echo.text.empty"] = "文本不能为空。" } });
@@ -156,7 +158,11 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
                 Environment.Exit(3);
                 return new InvokeResponse();
             case "events.list":
-                return Success(new JsonObject { ["ids"] = new JsonArray(state.Events.Select(static id => (JsonNode)id).ToArray()) });
+                return Success(new JsonObject
+                {
+                    ["ids"] = new JsonArray(state.Events.Select(static id => (JsonNode)id).ToArray()),
+                    ["deliveries"] = new JsonArray(state.Deliveries.Select(static delivery => (JsonNode)delivery).ToArray()),
+                });
             default:
                 throw new RpcException(new Grpc.Core.Status(StatusCode.Unimplemented, $"Operation '{request.Operation}' is not served by this plugin."));
         }
@@ -165,8 +171,8 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     /// <inheritdoc />
     public override Task<HandleEventResponse> HandleEvent(HandleEventRequest request, ServerCallContext context)
     {
-        state.Record(request.Envelope.Id);
-        LogEvent(logger, request.Envelope.Id, request.Envelope.Type, request.Envelope.Topic, request.Attempt);
+        state.Record(request.Envelope.Id, request.Mode);
+        LogEvent(logger, request.Envelope.Id, request.Envelope.Type, request.Envelope.Topic, request.Mode, request.Attempt);
         return Task.FromResult(new HandleEventResponse { Status = Ok() });
     }
 
@@ -234,6 +240,6 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     [LoggerMessage(Level = LogLevel.Warning, Message = "Crashing on request.")]
     private static partial void LogCrash(ILogger logger);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Received event {Id} of type {Type} on {Topic} (attempt {Attempt}).")]
-    private static partial void LogEvent(ILogger logger, string id, string type, string topic, uint attempt);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Received event {Id} of type {Type} on {Topic} in mode '{Mode}' (attempt {Attempt}).")]
+    private static partial void LogEvent(ILogger logger, string id, string type, string topic, string mode, uint attempt);
 }

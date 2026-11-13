@@ -433,7 +433,8 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 return acquired.Error!;
             }
 
-            var request = new HandleEventRequest { Envelope = PluginEnvelopeMapper.ToProto(delivery.Topic, delivery.Envelope), Metadata = PluginMetadata.FromContext(context), Attempt = (uint)delivery.Attempt };
+            // 带上投递的订阅方式，插件据此只交给以这种方式订阅的处理器（ADR-0226）
+            var request = new HandleEventRequest { Envelope = PluginEnvelopeMapper.ToProto(delivery.Topic, delivery.Envelope), Metadata = PluginMetadata.FromContext(context), Attempt = (uint)delivery.Attempt, Mode = PluginSubscriptionModes.ToProto(delivery.Mode) };
             var response = await CallAsync<HandleEventResponse>(instance, "xihan_handle_event", request, Timeout(context), context.Deadline, PluginMetadata.TenantOf(context), context.CancellationToken).ConfigureAwait(false);
             // 同上：取消交给 DeadlineMiddleware 归因
             return response.TryGetValue(out var handled) ? PluginErrorMapper.FromStatus(handled.Status, Manifest.Id, "event") : Result.Failure(response.Error!);

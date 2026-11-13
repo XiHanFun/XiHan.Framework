@@ -64,6 +64,10 @@
 - **修复** EF Core 的多租户实体加全局查询过滤器 `xihan:tenant`：原先只有仓储按租户过滤，直接用工作单元的 `Context` 或注入的 DbContext 查询能读到别的租户的行。有意跨租户时用 `IgnoreQueryFilters([ModelBuilderExtensions.TenantQueryFilter])`；多租户实体上已有匿名过滤器的要给它起名
 - **调整** 删除租户留墓碑：删除的 ID 读不到，也不能再新建（`MULTITENANCY_CONFLICT_001`）。原先删了再建同一个 ID，新租户会接手旧租户留下的数据。`TenantRecord` 改为软删除，已有的表要加 `IsDeleted`、`DeletedAt` 两列；内存实现的墓碑计入 `MaxTenants`
 
+### 宿主、协议与插件
+
+- **新增** 插件协议的 `HandleEventRequest` 带这次投递的订阅方式 `mode`，宿主总是填写，插件只交给以这种方式订阅的处理器。原先同一主题的不同类型各用一种方式时，插件分不出投递来自哪种订阅。自己从 `plugin.proto` 生成桩的插件要重新生成，并在 `HandleEvent` 里按 `mode` 分派
+
 ## v5.0.0-preview.3（2026-11-12）
 
 ::: warning 预览须知
