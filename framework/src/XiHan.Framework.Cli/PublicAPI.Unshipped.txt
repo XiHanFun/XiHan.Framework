@@ -28,6 +28,7 @@ const XiHan.Framework.Cli.CliMessages.MigrateSummary = "cli.migrate.summary" -> 
 const XiHan.Framework.Cli.CliMessages.MigrateTableHeader = "cli.migrate.table_header" -> string!
 const XiHan.Framework.Cli.CliMessages.MigrateVersionUnknown = "cli.migrate.version_unknown" -> string!
 const XiHan.Framework.Cli.CliMessages.OperationsDescription = "cli.operations.description" -> string!
+const XiHan.Framework.Cli.CliMessages.PackConfigSecret = "cli.pack.config_secret" -> string!
 const XiHan.Framework.Cli.CliMessages.PackDescription = "cli.pack.description" -> string!
 const XiHan.Framework.Cli.CliMessages.PackKindUnknown = "cli.pack.kind_unknown" -> string!
 const XiHan.Framework.Cli.CliMessages.PackWritten = "cli.pack.written" -> string!

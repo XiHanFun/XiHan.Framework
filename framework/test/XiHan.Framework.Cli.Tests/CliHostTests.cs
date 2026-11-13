@@ -97,6 +97,36 @@ public sealed class CliHostTests
     }
 
     [Fact]
+    public async Task Pack_RefusesToPutCredentialsIntoTheConfigMap()
+    {
+        // 加固（ADR-0222）：原先配置文件原样进 ConfigMap，连接串与密钥跟着进了不加密的 ConfigMap 和提交的部署文件
+        using var fixture = new ManifestFixture();
+        File.WriteAllText(Path.Combine(fixture.Directory, "appsettings.Production.json"), """
+            {
+              "ConnectionStrings": { "Default": "Server=db;Password=hunter2" },
+              "XiHan": { "Security": { "Jwt": { "SigningSecret": "s3cr3t", "Issuer": "orders" }, "ApiKeys": [ { "Name": "ci", "Password": "" } ] } }
+            }
+            """);
+
+        var (exit, output, error) = await RunAsync(null, "pack", "--manifest", fixture.ManifestPath, "--locale", "en-US");
+
+        Assert.Equal(CommandLineExitCodes.Validation, exit);
+        Assert.Equal(CliErrors.ConfigSecretEmbedded, CodeOf(error));
+        var detail = FieldOf(error, "detail");
+        Assert.Contains("ConnectionStrings", detail, StringComparison.Ordinal);
+        Assert.Contains("XiHan:Security:Jwt:SigningSecret", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("ApiKeys", detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("hunter2", error, StringComparison.Ordinal);
+        Assert.DoesNotContain("s3cr3t", error, StringComparison.Ordinal);
+        Assert.Empty(output);
+        Assert.False(Directory.Exists(fixture.OutputDirectory));
+
+        // 只生成别的产物时不看 ConfigMap 的内容
+        var (composeExit, _, _) = await RunAsync(null, "pack", "--manifest", fixture.ManifestPath, "--only", "compose");
+        Assert.Equal(CommandLineExitCodes.Success, composeExit);
+    }
+
+    [Fact]
     public async Task Forwarding_RunsTheApplicationCommandLineHost()
     {
         var launcher = new RecordingLauncher { ExitCode = 3 };

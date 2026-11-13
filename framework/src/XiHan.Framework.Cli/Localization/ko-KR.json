@@ -27,6 +27,7 @@
   "cli.migrate.version_unknown": "원본 '{version}'에 대한 마이그레이션 규칙 집합이 없습니다. 사용 가능: {known}.",
   "cli.operations.description": "애플리케이션의 작업을 나열합니다('dotnet run -- operations'로 전달).",
   "cli.pack.description": "xihan.app.json에서 배포 산출물을 생성합니다: pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire].",
+  "cli.pack.config_secret": "'{file}'이(가) 자격 증명을 ConfigMap에 기록합니다: {keys}. 바인딩 Secret이나 환경 변수로 옮기거나 비워 두세요.",
   "cli.pack.kind_unknown": "알 수 없는 산출물 종류 '{kind}'입니다. dockerfile, kustomize, compose, aspire 중 하나여야 합니다.",
   "cli.pack.written": "{count}개 파일을 '{output}'에 썼습니다.",
   "cli.pipeline.description": "애플리케이션의 파이프라인을 출력합니다('dotnet run -- pipeline'으로 전달).",

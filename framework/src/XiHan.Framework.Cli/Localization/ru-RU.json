@@ -27,6 +27,7 @@
   "cli.migrate.version_unknown": "Для исходной версии '{version}' нет набора правил миграции; доступны: {known}.",
   "cli.operations.description": "Выводит список операций приложения (передаётся в 'dotnet run -- operations').",
   "cli.pack.description": "Создаёт артефакты развёртывания из xihan.app.json: pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire].",
+  "cli.pack.config_secret": "'{file}' поместит учётные данные в ConfigMap: {keys}. Перенесите их в Secret привязки или в переменные среды либо оставьте пустыми.",
   "cli.pack.kind_unknown": "Неизвестный вид артефакта '{kind}'; ожидается dockerfile, kustomize, compose или aspire.",
   "cli.pack.written": "Записано файлов: {count} в '{output}'.",
   "cli.pipeline.description": "Выводит конвейер приложения (передаётся в 'dotnet run -- pipeline').",

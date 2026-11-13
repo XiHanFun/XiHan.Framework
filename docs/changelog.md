@@ -59,6 +59,7 @@
 - **调整** 预签名限定的内容类型须合内容类型文法，保存的文件名不含控制字符、最长 255 个字符：原先只要求不空白，带换行的值能在宿主签名的规范串里把一项挪成另一项
 - **调整** Nacos 的令牌改走 `Authorization: Bearer` 请求头、不进查询串，失败原因不再带响应正文；配置了用户名密码时非本机的 `http` 地址默认拒绝，链路另有保护时设 `XiHan:Configuration:Nacos:AllowInsecureHttp` 为 `true`
 - **修复** `xihan migrate` 与 `xihan setup` 遍历时不再跟随符号链接与目录联接：原先链接指向 `--path` 之外时迁移会改写别处的文件，链接成环时遍历到路径过长才失败
+- **调整** `xihan pack` 发现进 ConfigMap 的配置文件里有带值的凭据键时失败（`CLI_VALIDATION_007`），只列键的路径、不带值：原先配置文件原样进不加密的 ConfigMap。凭据改放绑定的 Secret 或环境变量，或在这些文件里留空
 
 ## v5.0.0-preview.3（2026-11-12）
 

@@ -56,6 +56,19 @@ internal sealed class PackCommand : ICommand
         }
 
         var manifestDirectory = Path.GetDirectoryName(manifestPath)!;
+        // ConfigMap 不加密、读得到它的人多：进它的配置文件里有带值的凭据就不生成，也不写任何文件（ADR-0222）
+        if (kinds.HasFlag(PackKinds.Kustomize))
+        {
+            foreach (var file in manifest.Config.Files)
+            {
+                var path = Path.Combine(manifestDirectory, file);
+                if (File.Exists(path) && ConfigSecretScanner.Scan(await File.ReadAllTextAsync(path, context.CancellationToken).ConfigureAwait(false)) is { Count: > 0 } keys)
+                {
+                    return await CommandLineFailure.WriteAsync(context.Error, Error.Validation(CliErrors.ConfigSecretEmbedded, CliMessages.PackConfigSecret, MessageArguments.Of(("file", file), ("keys", string.Join(", ", keys)))), context.Services, null).ConfigureAwait(false);
+                }
+            }
+        }
+
         var outputDirectory = Path.GetFullPath(context.Option("output").TryGetValue(out var explicitOutput) ? explicitOutput : Path.Combine(manifestDirectory, "deploy"));
         var outputs = Packager.Generate(manifest, manifestDirectory, outputDirectory, kinds);
         await Packager.WriteAsync(outputs, outputDirectory, context.CancellationToken).ConfigureAwait(false);

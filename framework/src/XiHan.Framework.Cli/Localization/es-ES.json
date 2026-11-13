@@ -27,6 +27,7 @@
   "cli.migrate.version_unknown": "No hay un conjunto de reglas de migración para el origen '{version}'; disponibles: {known}.",
   "cli.operations.description": "Lista las operaciones de la aplicación (reenvía a 'dotnet run -- operations').",
   "cli.pack.description": "Genera los artefactos de despliegue a partir de xihan.app.json: pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire].",
+  "cli.pack.config_secret": "'{file}' pondría credenciales en el ConfigMap: {keys}. Muévalas a un Secret de enlace o a variables de entorno, o déjelas vacías.",
   "cli.pack.kind_unknown": "Tipo de artefacto desconocido '{kind}'; se esperaba dockerfile, kustomize, compose o aspire.",
   "cli.pack.written": "{count} archivos escritos en '{output}'.",
   "cli.pipeline.description": "Imprime la canalización de la aplicación (reenvía a 'dotnet run -- pipeline').",

@@ -42,6 +42,14 @@ public static class CliMessages
     public const string PackKindUnknown = "cli.pack.kind_unknown";
 
     /// <summary>
+    /// 进 ConfigMap 的配置文件里有带值的凭据
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>file</c>、<c>keys</c>（逗号分隔的配置路径，不带值）
+    /// </remarks>
+    public const string PackConfigSecret = "cli.pack.config_secret";
+
+    /// <summary>
     /// 应用清单文件不存在
     /// </summary>
     /// <remarks>

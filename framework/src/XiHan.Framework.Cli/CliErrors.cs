@@ -76,4 +76,12 @@ internal static class CliErrors
     /// <c>setup --check</c>：配置未就绪
     /// </summary>
     public const string SetupNotReady = "CLI_CONFLICT_001";
+
+    /// <summary>
+    /// <c>pack</c>：进 ConfigMap 的配置文件里有带值的凭据
+    /// </summary>
+    /// <remarks>
+    /// ConfigMap 不加密、读得到它的人多，凭据要走绑定的 Secret 或环境变量（ADR-0222）
+    /// </remarks>
+    public const string ConfigSecretEmbedded = "CLI_VALIDATION_007";
 }

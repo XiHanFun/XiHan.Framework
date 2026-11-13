@@ -27,6 +27,7 @@
   "cli.migrate.version_unknown": "No migration rule set for source '{version}'; available: {known}.",
   "cli.operations.description": "List the application's operations (forwards to 'dotnet run -- operations').",
   "cli.pack.description": "Generate deployment artifacts from xihan.app.json: pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire].",
+  "cli.pack.config_secret": "'{file}' would put credentials into the ConfigMap: {keys}. Move them to a binding Secret or environment variables, or leave them empty.",
   "cli.pack.kind_unknown": "Unknown artifact kind '{kind}'; expected dockerfile, kustomize, compose or aspire.",
   "cli.pack.written": "{count} files written to '{output}'.",
   "cli.pipeline.description": "Print the application's pipeline (forwards to 'dotnet run -- pipeline').",

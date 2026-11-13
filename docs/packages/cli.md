@@ -149,6 +149,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 | `setup` 的 `--client` 或 `--mode` 不认识 | `CLI_VALIDATION_005` | 64 |
 | `setup` 找不到项目根 | `CLI_NOTFOUND_004` | 3 |
 | `setup` 要合并的配置文件读不了（不改动任何文件） | `CLI_VALIDATION_006` | 2 |
+| `pack` 进 ConfigMap 的配置文件里有带值的凭据（`detail` 列出键的路径，不带值；不写任何文件） | `CLI_VALIDATION_007` | 2 |
 | `setup --check` 未就绪（`detail` 列出各项） | `CLI_CONFLICT_001` | 5 |
 | `mcp` 在 stdin 关闭后 | — | 0 |
 | 被 Ctrl+C 取消 | — | 8 |

@@ -27,6 +27,7 @@
   "cli.migrate.version_unknown": "來源版本 '{version}' 沒有遷移規則集；可用：{known}。",
   "cli.operations.description": "列出應用的操作（轉送給 'dotnet run -- operations'）。",
   "cli.pack.description": "從 xihan.app.json 產生部署產物：pack [--manifest <path>] [--output <dir>] [--only dockerfile,kustomize,compose,aspire]。",
+  "cli.pack.config_secret": "'{file}' 會把憑證寫進 ConfigMap：{keys}。改放到繫結的 Secret 或環境變數裡，或者留空。",
   "cli.pack.kind_unknown": "不認識的產物種類 '{kind}'；可選 dockerfile、kustomize、compose、aspire。",
   "cli.pack.written": "已寫出 {count} 個檔案到 '{output}'。",
   "cli.pipeline.description": "列印應用的管線（轉送給 'dotnet run -- pipeline'）。",
