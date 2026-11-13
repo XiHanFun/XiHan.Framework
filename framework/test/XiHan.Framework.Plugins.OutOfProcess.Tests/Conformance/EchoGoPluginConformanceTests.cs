@@ -28,12 +28,6 @@ public sealed class EchoGoPluginConformanceTests : PluginProtocolConformance
     protected override string ConfigurationJson => """{"greeting":"conformance"}""";
 
     /// <inheritdoc />
-    /// <remarks>
-    /// 示例钉住的 Go SDK 版本还不校验会话令牌：SDK 发布校验令牌的版本、示例升级之后去掉这个覆写（ADR-0202）
-    /// </remarks>
-    protected override bool VerifiesSessionToken => false;
-
-    /// <inheritdoc />
     protected override IReadOnlySet<string> ExcludedOperations => new HashSet<string>(StringComparer.Ordinal) { "echoes.crash" };
 
     /// <inheritdoc />

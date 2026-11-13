@@ -2,7 +2,7 @@ module cachegoplugin
 
 go 1.26
 
-require github.com/xihanfun/framework-sdk-go v0.0.0-20261023040634-c61b10a657a6
+require github.com/xihanfun/framework-sdk-go v0.0.0-20261113050831-b78e905b53b6
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect

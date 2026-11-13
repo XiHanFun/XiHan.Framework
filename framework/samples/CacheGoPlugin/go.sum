@@ -4,10 +4,10 @@ github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
-github.com/xihanfun/framework-sdk-go v0.0.0-20261023040634-c61b10a657a6 h1:G/10Z0yBAvq5VepNrocJmVur2vXjPT0DT4uE8bBrzjs=
-github.com/xihanfun/framework-sdk-go v0.0.0-20261023040634-c61b10a657a6/go.mod h1:0SMHoaaO+BEFrc2rQtR1BwormfKKBd7tuOkgK38tveU=
-github.com/xihanfun/framework-spec/conformance v0.0.0-20261023035602-bc5f112b4ed1 h1:niOMApNsTyymlD8PzDJ/bK3lVeYblgr6j3cQdoQUpaM=
-github.com/xihanfun/framework-spec/conformance v0.0.0-20261023035602-bc5f112b4ed1/go.mod h1:6RM9e3ziIR2vYSvIDUx7WoxI3ktV0JFsZtYZWhA2zQY=
+github.com/xihanfun/framework-sdk-go v0.0.0-20261113050831-b78e905b53b6 h1:p900Neza4qmfATena0Q/G32hOmKISl1PAS17t1kN92s=
+github.com/xihanfun/framework-sdk-go v0.0.0-20261113050831-b78e905b53b6/go.mod h1:qF23PT/LSkcZzwBR3dQKc7vf7oEXtFVL/2iZMr/SCCA=
+github.com/xihanfun/framework-spec/conformance v0.0.0-20261113044648-d62b59de463f h1:TrfBZ+GGJ8RiBlEEeFnW1syFBEi2OxzepMiuIr0zxqs=
+github.com/xihanfun/framework-spec/conformance v0.0.0-20261113044648-d62b59de463f/go.mod h1:6RM9e3ziIR2vYSvIDUx7WoxI3ktV0JFsZtYZWhA2zQY=
 golang.org/x/net v0.57.0 h1:K5+3DljvIuDG9/Jv9rvyMywYNFCQ9RSUY6OOTTkT+tE=
 golang.org/x/net v0.57.0/go.mod h1:KpXc8iv+r3XplLAG/f7Jsf9RPszJzdR0f58q9vGOuEU=
 golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=

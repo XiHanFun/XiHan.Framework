@@ -20,14 +20,6 @@ public sealed class RemoteCacheStoreConformanceTests(RemoteHostFixture fixture) 
     protected override TimeSpan ExpirationGrace => TimeSpan.FromMilliseconds(500);
 
     /// <summary>
-    /// 暂时跳过比较后重设到期的用例
-    /// </summary>
-    /// <remarks>
-    /// cache-go 插件的操作集来自 framework-sdk-go 的 examples/cache，那边还没有实现 <c>cache-entries.try-refresh</c>（ADR-0215）。SDK 实现并发布之后升级 <c>samples/CacheGoPlugin/go.mod</c>，删掉这个覆写
-    /// </remarks>
-    protected override bool SupportsRefresh => false;
-
-    /// <summary>
     /// 共用宿主里的远程存储，按用例加随机键前缀
     /// </summary>
     protected override ICacheStore CreateStore() => new PrefixedCacheStore(fixture.Store);
