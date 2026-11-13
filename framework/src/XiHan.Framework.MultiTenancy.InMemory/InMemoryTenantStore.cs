@@ -32,6 +32,14 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     private readonly Lock _gate = new();
 
     /// <summary>
+    /// 已删除的租户 ID（墓碑）
+    /// </summary>
+    /// <remarks>
+    /// 只在 <see cref="_gate"/> 内读写。不能再新建，计入容量，所以有界（ADR-0225）
+    /// </remarks>
+    private readonly HashSet<string> _retired = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// 创建存储并装载选项里的租户
     /// </summary>
     /// <remarks>
@@ -55,7 +63,24 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     /// <summary>
     /// 当前租户数
     /// </summary>
+    /// <remarks>
+    /// 不含墓碑
+    /// </remarks>
     public int Count => _tenants.Count;
+
+    /// <summary>
+    /// 已占用的容量：租户加墓碑
+    /// </summary>
+    private int Occupied
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _tenants.Count + _retired.Count;
+            }
+        }
+    }
 
     /// <inheritdoc />
     public IReadOnlyList<ContributorStatus> Check()
@@ -63,7 +88,7 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
         // 租户数达到容量即 Degraded：再登记新租户会被拒绝
         return
         [
-            _tenants.Count >= Capacity
+            Occupied >= Capacity
                 ? new ContributorStatus(InMemoryMultiTenancyFeature.HealthName, LifecycleState.Degraded)
                 {
                     Error = Error.Unavailable(MultiTenancyErrors.CapacityExceeded, MultiTenancyMessages.CapacityExceeded, MessageArguments.Of(("capacity", Capacity))),
@@ -119,7 +144,7 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     /// 新增或替换一批，按顺序逐项返回
     /// </summary>
     /// <remarks>
-    /// 新增超出容量返回 <see cref="MultiTenancyErrors.CapacityExceeded"/>；经 <see cref="ITenantAdministration"/> 调用
+    /// 新增超出容量返回 <see cref="MultiTenancyErrors.CapacityExceeded"/>，删除过的 ID 返回 <see cref="MultiTenancyErrors.IdRetired"/>；经 <see cref="ITenantAdministration"/> 调用
     /// </remarks>
     internal IReadOnlyList<Result> Upsert(IReadOnlyList<TenantInfo> tenants)
     {
@@ -130,7 +155,15 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
             for (var index = 0; index < tenants.Count; index++)
             {
                 var tenant = tenants[index];
-                if (!_tenants.ContainsKey(tenant.Id) && _tenants.Count >= Capacity)
+                // 墓碑：按租户 ID 归属的数据不随删除清理，复用这个 ID 的新租户会接手它们（ADR-0225）
+                if (_retired.Contains(tenant.Id))
+                {
+                    results[index] = Error.Conflict(MultiTenancyErrors.IdRetired, MultiTenancyMessages.TenantIdRetired, MessageArguments.Of(("tenantId", tenant.Id)));
+                    continue;
+                }
+
+                // 墓碑同样占容量：删了再建不能绕过上限
+                if (!_tenants.ContainsKey(tenant.Id) && _tenants.Count + _retired.Count >= Capacity)
                 {
                     results[index] = Error.Unavailable(MultiTenancyErrors.CapacityExceeded, MultiTenancyMessages.CapacityExceeded, MessageArguments.Of(("capacity", Capacity)));
                     continue;
@@ -148,7 +181,7 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     /// 删除一批，按顺序逐项返回
     /// </summary>
     /// <remarks>
-    /// 不存在返回 <see cref="MultiTenancyErrors.NotFound"/>；经 <see cref="ITenantAdministration"/> 调用
+    /// 不存在返回 <see cref="MultiTenancyErrors.NotFound"/>；删除的 ID 留作墓碑。经 <see cref="ITenantAdministration"/> 调用
     /// </remarks>
     internal IReadOnlyList<Result> Remove(IReadOnlyList<string> tenantIds)
     {
@@ -157,9 +190,15 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
         {
             for (var index = 0; index < tenantIds.Count; index++)
             {
-                results[index] = _tenants.TryRemove(tenantIds[index], out _)
-                    ? Result.Success()
-                    : Error.NotFound(MultiTenancyErrors.NotFound, MultiTenancyMessages.TenantNotFound, MessageArguments.Of(("tenantId", tenantIds[index])));
+                if (_tenants.TryRemove(tenantIds[index], out _))
+                {
+                    _retired.Add(tenantIds[index]);
+                    results[index] = Result.Success();
+                }
+                else
+                {
+                    results[index] = Error.NotFound(MultiTenancyErrors.NotFound, MultiTenancyMessages.TenantNotFound, MessageArguments.Of(("tenantId", tenantIds[index])));
+                }
             }
         }
 

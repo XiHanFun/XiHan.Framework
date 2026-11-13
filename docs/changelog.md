@@ -62,6 +62,7 @@
 - **调整** `xihan pack` 发现进 ConfigMap 的配置文件里有带值的凭据键时失败（`CLI_VALIDATION_007`），只列键的路径、不带值：原先配置文件原样进不加密的 ConfigMap。凭据改放绑定的 Secret 或环境变量，或在这些文件里留空
 - **修复** 客户端建在租户分片上时，工作单元的租户必须是这个分片的租户，不一致即抛出 `PERSISTENCE_VALIDATION_010`：原先不核对，管道外以别的租户开工作单元会把那个租户的行写进这个分片库
 - **修复** EF Core 的多租户实体加全局查询过滤器 `xihan:tenant`：原先只有仓储按租户过滤，直接用工作单元的 `Context` 或注入的 DbContext 查询能读到别的租户的行。有意跨租户时用 `IgnoreQueryFilters([ModelBuilderExtensions.TenantQueryFilter])`；多租户实体上已有匿名过滤器的要给它起名
+- **调整** 删除租户留墓碑：删除的 ID 读不到，也不能再新建（`MULTITENANCY_CONFLICT_001`）。原先删了再建同一个 ID，新租户会接手旧租户留下的数据。`TenantRecord` 改为软删除，已有的表要加 `IsDeleted`、`DeletedAt` 两列；内存实现的墓碑计入 `MaxTenants`
 
 ## v5.0.0-preview.3（2026-11-12）
 

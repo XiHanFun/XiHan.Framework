@@ -61,4 +61,12 @@ public static class MultiTenancyErrors
     /// 签发方给出了矛盾的身份，取哪个都可能是错的租户，不取其中任何一个（ADR-0218）
     /// </remarks>
     public const string ClaimsConflict = "MULTITENANCY_VALIDATION_004";
+
+    /// <summary>
+    /// 租户 ID 属于已删除的租户，不能再新建
+    /// </summary>
+    /// <remarks>
+    /// 删除租户留墓碑：按租户 ID 归属的数据不随删除清理，复用 ID 的新租户会接手（ADR-0225）
+    /// </remarks>
+    public const string IdRetired = "MULTITENANCY_CONFLICT_001";
 }

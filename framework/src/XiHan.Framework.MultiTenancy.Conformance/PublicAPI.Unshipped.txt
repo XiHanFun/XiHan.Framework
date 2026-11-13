@@ -1,6 +1,7 @@
 #nullable enable
 XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance
 XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Remove_ReportsMissingItems_PerItem() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Remove_RetiresTheId_SoItCannotBeRecreated() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.TenantAdministrationConformance() -> void
 XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Upsert_IsIndexAligned_LaterItemsWin_AndVisibleToTheCatalog() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance

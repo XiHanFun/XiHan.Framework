@@ -25,10 +25,14 @@ XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.ConcurrencyStamp.get 
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.ConcurrencyStamp.set -> void
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.CreatedAt.get -> System.DateTimeOffset
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.CreatedAt.set -> void
+XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.DeletedAt.get -> System.DateTimeOffset?
+XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.DeletedAt.set -> void
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.DisplayName.get -> string?
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.DisplayName.set -> void
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.Id.get -> string!
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.Id.set -> void
+XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.IsDeleted.get -> bool
+XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.IsDeleted.set -> void
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.IsEnabled.get -> bool
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.IsEnabled.set -> void
 XiHan.Framework.MultiTenancy.Database.Tenants.TenantRecord.ModifiedAt.get -> System.DateTimeOffset?

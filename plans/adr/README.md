@@ -224,3 +224,4 @@
 | [0222](0222-pack不把凭据写进ConfigMap.md) | 安全审查加固：`xihan pack` 发现进 ConfigMap 的配置里有带值的凭据键即失败（`CLI_VALIDATION_007`） | 已采纳 |
 | [0223](0223-工作单元的租户必须与绑定的分片一致.md) | 安全审查加固：客户端建在分片上时，工作单元的租户必须是分片的租户，不一致抛出 `PERSISTENCE_VALIDATION_010` | 已采纳 |
 | [0224](0224-EF多租户实体的全局查询过滤器.md) | 安全审查加固：EF Core 多租户实体加命名查询过滤器 `xihan:tenant`，直接用 DbContext 查询也按工作单元的租户过滤 | 已采纳 |
+| [0225](0225-删除租户留墓碑.md) | 安全审查加固：删除租户留墓碑，删除的 ID 不能再新建（`MULTITENANCY_CONFLICT_001`）；`TenantRecord` 改为软删除 | 已采纳 |

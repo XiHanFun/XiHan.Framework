@@ -12,10 +12,10 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 /// 租户目录的存储行
 /// </summary>
 /// <remarks>
-/// 主键是租户 ID（文法由 <c>TenantIdentifier</c> 校验），显示名、启用标记各一列，属性整份放在 JSON 列里。平台级数据：不实现 <c>IMultiTenant</c>、不软删除，读写不受当前调用租户影响。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;TenantRecord&gt;()</c>，SqlSugar 按约定映射
+/// 主键是租户 ID（文法由 <c>TenantIdentifier</c> 校验），显示名、启用标记各一列，属性整份放在 JSON 列里。平台级数据：不实现 <c>IMultiTenant</c>，读写不受当前调用租户影响。软删除：删除的行是墓碑，这个 ID 不能再新建（ADR-0225）。EF Core 应用在自己的 <c>DbContext</c> 里 <c>modelBuilder.Entity&lt;TenantRecord&gt;()</c>，SqlSugar 按约定映射
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class TenantRecord : IEntity<string>, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp
+public sealed class TenantRecord : IEntity<string>, IHasCreationTime, IHasModificationTime, IHasConcurrencyStamp, ISoftDeletable
 {
     /// <inheritdoc />
     [StringLength(128)]
@@ -53,4 +53,13 @@ public sealed class TenantRecord : IEntity<string>, IHasCreationTime, IHasModifi
     /// <inheritdoc />
     [StringLength(32)]
     public string ConcurrencyStamp { get; set; } = string.Empty;
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 删除的租户留作墓碑：读不到，也不能再用这个 ID 新建（ADR-0225）
+    /// </remarks>
+    public bool IsDeleted { get; set; }
+
+    /// <inheritdoc />
+    public DateTimeOffset? DeletedAt { get; set; }
 }

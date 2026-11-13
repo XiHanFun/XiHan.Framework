@@ -4,6 +4,7 @@
   "multitenancy.store.unavailable": "O armazenamento de locatários está indisponível.",
   "multitenancy.tenant.claims_conflict": "A credencial do chamador contém declarações de locatário conflitantes.",
   "multitenancy.tenant.disabled": "O locatário '{tenantId}' está desativado.",
+  "multitenancy.tenant.id_retired": "O ID de locatário '{tenantId}' pertenceu a um locatário excluído e não pode ser reutilizado.",
   "multitenancy.tenant.invalid_id": "O identificador de locatário '{tenantId}' não é válido.",
   "multitenancy.tenant.not_found": "O locatário '{tenantId}' não existe.",
   "multitenancy.tenant.query_page_invalid": "O tamanho de página {pageSize} da lista de locatários deve estar entre 1 e {max}.",

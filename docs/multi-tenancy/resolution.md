@@ -252,6 +252,7 @@ Transaction 阶段的 `UnitOfWorkMiddleware` 用安全上下文里的租户开�
 | `MULTITENANCY_VALIDATION_004` | 已认证主体带多个值不同的租户声明 | 400 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 | 404 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 | 403 |
+| `MULTITENANCY_CONFLICT_001` | 管理接口新建的租户 ID 属于已删除的租户（墓碑） | 409 |
 | `MULTITENANCY_UNAVAILABLE_001` | 内存租户存储容量已满（`InMemoryTenantStore.Set` 与健康项 `multitenancy.inmemory.capacity`） | 503 |
 | `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达） | 503 |
 | `PERSISTENCE_VALIDATION_001` | 多租户实体在没有租户的调用中新增 | 400 |

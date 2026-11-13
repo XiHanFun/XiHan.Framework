@@ -4,6 +4,7 @@
   "multitenancy.store.unavailable": "テナントストアを利用できません。",
   "multitenancy.tenant.claims_conflict": "呼び出し元の資格情報に矛盾するテナント クレームが含まれています。",
   "multitenancy.tenant.disabled": "テナント '{tenantId}' は無効化されています。",
+  "multitenancy.tenant.id_retired": "テナント ID '{tenantId}' は削除済みのテナントのもので、再利用できません。",
   "multitenancy.tenant.invalid_id": "テナント ID '{tenantId}' が不正です。",
   "multitenancy.tenant.not_found": "テナント '{tenantId}' は存在しません。",
   "multitenancy.tenant.query_page_invalid": "テナント一覧のページサイズ {pageSize} は 1 から {max} の範囲で指定してください。",

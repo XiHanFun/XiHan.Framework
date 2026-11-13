@@ -75,4 +75,27 @@ public abstract class TenantAdministrationConformance
         Assert.False((await store.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
         Assert.Empty(await AdministerAsync((tenants, ct) => tenants.RemoveAsync([], ct)).ConfigureAwait(false));
     }
+
+    /// <summary>
+    /// 用例 3：删除的 ID 留墓碑，不能再新建
+    /// </summary>
+    /// <remarks>
+    /// 删除之后读不到它，再新建这一项为 <see cref="MultiTenancyErrors.IdRetired"/>，同一批里别的项照常；再删一次是不存在（ADR-0225）
+    /// </remarks>
+    [Fact]
+    public async Task Remove_RetiresTheId_SoItCannotBeRecreated()
+    {
+        var store = await StartAsync().ConfigureAwait(false);
+        await AdministerAsync((tenants, ct) => tenants.UpsertAsync([new TenantInfo { Id = "acme" }], ct)).ConfigureAwait(false);
+        Assert.True((await AdministerAsync((tenants, ct) => tenants.RemoveAsync(["acme"], ct)).ConfigureAwait(false))[0].IsSuccess);
+
+        var recreated = await AdministerAsync((tenants, ct) => tenants.UpsertAsync([new TenantInfo { Id = "acme" }, new TenantInfo { Id = "beta" }], ct)).ConfigureAwait(false);
+        Assert.Equal(MultiTenancyErrors.IdRetired, recreated[0].Error?.Code);
+        Assert.Equal("acme", recreated[0].Error?.Details?["tenantId"]);
+        Assert.True(recreated[1].IsSuccess, recreated[1].Error?.ToString());
+
+        Assert.False((await store.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        Assert.Equal(["beta"], (await store.ListAsync(new TenantQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static t => t.Id));
+        Assert.Equal(MultiTenancyErrors.NotFound, (await AdministerAsync((tenants, ct) => tenants.RemoveAsync(["acme"], ct)).ConfigureAwait(false))[0].Error?.Code);
+    }
 }

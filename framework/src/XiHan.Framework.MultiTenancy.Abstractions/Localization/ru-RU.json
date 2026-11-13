@@ -4,6 +4,7 @@
   "multitenancy.store.unavailable": "Хранилище арендаторов недоступно.",
   "multitenancy.tenant.claims_conflict": "Учётные данные вызывающей стороны содержат противоречивые утверждения о клиенте.",
   "multitenancy.tenant.disabled": "Арендатор '{tenantId}' отключён.",
+  "multitenancy.tenant.id_retired": "Идентификатор клиента '{tenantId}' принадлежал удалённому клиенту и не может использоваться повторно.",
   "multitenancy.tenant.invalid_id": "Недопустимый идентификатор арендатора '{tenantId}'.",
   "multitenancy.tenant.not_found": "Арендатор '{tenantId}' не существует.",
   "multitenancy.tenant.query_page_invalid": "Размер страницы списка арендаторов {pageSize} должен быть от 1 до {max}.",

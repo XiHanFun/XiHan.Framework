@@ -4,6 +4,7 @@
   "multitenancy.store.unavailable": "Le magasin de locataires est indisponible.",
   "multitenancy.tenant.claims_conflict": "Les informations d'identification de l'appelant contiennent des revendications de locataire contradictoires.",
   "multitenancy.tenant.disabled": "Le locataire '{tenantId}' est désactivé.",
+  "multitenancy.tenant.id_retired": "L'ID de locataire '{tenantId}' appartenait à un locataire supprimé et ne peut pas être réutilisé.",
   "multitenancy.tenant.invalid_id": "L'identifiant de locataire '{tenantId}' n'est pas valide.",
   "multitenancy.tenant.not_found": "Le locataire '{tenantId}' n'existe pas.",
   "multitenancy.tenant.query_page_invalid": "La taille de page {pageSize} de la liste des locataires doit être comprise entre 1 et {max}.",

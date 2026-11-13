@@ -95,6 +95,14 @@ public static class MultiTenancyMessages
     public const string ClaimsConflict = "multitenancy.tenant.claims_conflict";
 
     /// <summary>
+    /// 租户 ID 属于已删除的租户
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>tenantId</c>
+    /// </remarks>
+    public const string TenantIdRetired = "multitenancy.tenant.id_retired";
+
+    /// <summary>
     /// 延迟装载的目录
     /// </summary>
     /// <remarks>

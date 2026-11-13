@@ -4,6 +4,7 @@
   "multitenancy.store.unavailable": "El almacén de inquilinos no está disponible.",
   "multitenancy.tenant.claims_conflict": "La credencial del llamador contiene notificaciones de inquilino contradictorias.",
   "multitenancy.tenant.disabled": "El inquilino '{tenantId}' está deshabilitado.",
+  "multitenancy.tenant.id_retired": "El ID de inquilino '{tenantId}' perteneció a un inquilino eliminado y no se puede reutilizar.",
   "multitenancy.tenant.invalid_id": "El identificador de inquilino '{tenantId}' no es válido.",
   "multitenancy.tenant.not_found": "El inquilino '{tenantId}' no existe.",
   "multitenancy.tenant.query_page_invalid": "El tamaño de página {pageSize} de la lista de inquilinos debe estar entre 1 y {max}.",

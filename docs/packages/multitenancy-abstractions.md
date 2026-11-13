@@ -146,6 +146,7 @@ public static class ShardInfo
 | `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 |
+| `MULTITENANCY_CONFLICT_001` | 租户 ID 属于已删除的租户，不能再新建（ADR-0225） |
 | `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
 | `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 是存储的错误码，存储的错误作为内部错误保留（ADR-0115） |
 | `MULTITENANCY_UNAVAILABLE_003` | 租户存储不可达（连接、超时、事务失败），不当作租户不存在 |

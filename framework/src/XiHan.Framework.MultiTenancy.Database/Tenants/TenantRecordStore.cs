@@ -1,9 +1,11 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
+using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 
@@ -74,6 +76,7 @@ public sealed class TenantRecordStore : ITenantAdministration, IDisposable
 
         var ids = tenants.Select(static t => t.Id).Distinct(StringComparer.Ordinal).ToList();
         var existing = (await _repository.FindManyAsync(ids, cancellationToken).ConfigureAwait(false)).ToDictionary(static r => r.Id, StringComparer.Ordinal);
+        var retired = await RetiredAsync([.. ids.Where(id => !existing.ContainsKey(id))], cancellationToken).ConfigureAwait(false);
         // 同一租户在一批里只对应一行：已有的更新、没有的新增；后出现的项整份覆盖同一行，各项结果指向同一行的结果
         var rows = new Dictionary<string, int>(StringComparer.Ordinal);
         var updates = new List<TenantRecord>();
@@ -82,6 +85,13 @@ public sealed class TenantRecordStore : ITenantAdministration, IDisposable
         for (var index = 0; index < tenants.Count; index++)
         {
             var tenant = tenants[index];
+            // 墓碑：按租户 ID 归属的数据不随删除清理，复用这个 ID 的新租户会接手它们（ADR-0225）
+            if (retired.Contains(tenant.Id))
+            {
+                slots[index] = int.MinValue;
+                continue;
+            }
+
             if (rows.TryGetValue(tenant.Id, out var slot))
             {
                 TenantRecordMapping.Apply(slot >= 0 ? updates[slot] : additions[~slot], tenant);
@@ -111,7 +121,9 @@ public sealed class TenantRecordStore : ITenantAdministration, IDisposable
         for (var index = 0; index < tenants.Count; index++)
         {
             var slot = slots[index];
-            results[index] = slot >= 0 ? updated[slot] : added[~slot];
+            results[index] = slot == int.MinValue
+                ? Error.Conflict(MultiTenancyErrors.IdRetired, MultiTenancyMessages.TenantIdRetired, MessageArguments.Of(("tenantId", tenants[index].Id)))
+                : slot >= 0 ? updated[slot] : added[~slot];
         }
 
         Invalidate(ids);
@@ -119,10 +131,34 @@ public sealed class TenantRecordStore : ITenantAdministration, IDisposable
     }
 
     /// <summary>
+    /// 在给定的 ID 里找出已删除的（墓碑）
+    /// </summary>
+    /// <remarks>
+    /// 只查读不到的那些 ID；按查询的取出上限分段
+    /// </remarks>
+    private async ValueTask<HashSet<string>> RetiredAsync(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        var retired = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var chunk in ids.Chunk(EntityQuery.DefaultMaxTake))
+        {
+            var query = EntityQuery.All<TenantRecord>().Where(new Specification<TenantRecord>(r => chunk.Contains(r.Id))).Page(0, chunk.Length) with { IncludeDeleted = true };
+            foreach (var row in await _repository.ListAsync(query, cancellationToken).ConfigureAwait(false))
+            {
+                if (row.IsDeleted)
+                {
+                    retired.Add(row.Id);
+                }
+            }
+        }
+
+        return retired;
+    }
+
+    /// <summary>
     /// 删除，按顺序逐项返回
     /// </summary>
     /// <remarks>
-    /// 不存在 → <see cref="MultiTenancyErrors.NotFound"/>，同一批里同一 ID 第二次同样不存在。ID 不合法是编程错误，整批在触库前抛出
+    /// 不存在 → <see cref="MultiTenancyErrors.NotFound"/>，同一批里同一 ID 第二次同样不存在。ID 不合法是编程错误，整批在触库前抛出。删除是软删除，行留作墓碑（ADR-0225）
     /// </remarks>
     public async ValueTask<IReadOnlyList<Result>> RemoveAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
     {

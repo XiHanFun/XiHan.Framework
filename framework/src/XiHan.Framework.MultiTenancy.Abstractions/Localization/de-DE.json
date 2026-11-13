@@ -4,6 +4,7 @@
   "multitenancy.store.unavailable": "Der Mandantenspeicher ist nicht verfügbar.",
   "multitenancy.tenant.claims_conflict": "Die Anmeldeinformationen des Aufrufers enthalten widersprüchliche Mandanten-Claims.",
   "multitenancy.tenant.disabled": "Der Mandant '{tenantId}' ist deaktiviert.",
+  "multitenancy.tenant.id_retired": "Die Mandanten-ID '{tenantId}' gehörte einem gelöschten Mandanten und kann nicht wiederverwendet werden.",
   "multitenancy.tenant.invalid_id": "Die Mandanten-ID '{tenantId}' ist ungültig.",
   "multitenancy.tenant.not_found": "Der Mandant '{tenantId}' existiert nicht.",
   "multitenancy.tenant.query_page_invalid": "Die Seitengröße {pageSize} der Mandantenliste muss zwischen 1 und {max} liegen.",

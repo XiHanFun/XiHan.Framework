@@ -25,8 +25,9 @@
 | `PropertiesJson` | 整份租户属性的 JSON 对象，长文本类型 |
 | `CreatedAt`、`ModifiedAt` | 创建与修改时间 |
 | `ConcurrencyStamp` | 并发戳 |
+| `IsDeleted`、`DeletedAt` | 软删除标记与时刻：删除的行是墓碑（ADR-0225） |
 
-`TenantRecord` 是平台级数据：不实现 `IMultiTenant`，不受当前租户过滤，不软删除。
+`TenantRecord` 是平台级数据：不实现 `IMultiTenant`，不受当前租户过滤。删除是软删除，行留作墓碑：读不到这个租户，也不能再用这个 ID 新建（`MULTITENANCY_CONFLICT_001`）——租户的数据按 ID 归属、不随删除清理，复用 ID 的新租户会接手它们。确实要释放一个 ID，先清理它的数据，再由运维直接删掉那一行。已有的表要加上这两列（SqlSugar 的 `InitTables` 会补列，EF Core 用迁移）。
 
 | 其他类型 | 说明 |
 | --- | --- |

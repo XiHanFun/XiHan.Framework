@@ -4,6 +4,7 @@
   "multitenancy.store.unavailable": "The tenant store is unavailable.",
   "multitenancy.tenant.claims_conflict": "The caller's credential carries conflicting tenant claims.",
   "multitenancy.tenant.disabled": "Tenant '{tenantId}' is disabled.",
+  "multitenancy.tenant.id_retired": "Tenant ID '{tenantId}' belonged to a deleted tenant and cannot be reused.",
   "multitenancy.tenant.invalid_id": "Tenant ID '{tenantId}' is invalid.",
   "multitenancy.tenant.not_found": "Tenant '{tenantId}' does not exist.",
   "multitenancy.tenant.query_page_invalid": "The tenant list page size {pageSize} must be between 1 and {max}.",

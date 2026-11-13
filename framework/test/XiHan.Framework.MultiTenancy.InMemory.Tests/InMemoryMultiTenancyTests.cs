@@ -70,7 +70,11 @@ public sealed class InMemoryMultiTenancyTests
         var removed = await tenants.RemoveAsync(["a", "a"], CancellationToken.None);
         Assert.True(removed[0].IsSuccess);
         Assert.Equal(MultiTenancyErrors.NotFound, removed[1].Error?.Code);
-        Assert.True((await tenants.UpsertAsync([new TenantInfo { Id = "c" }], CancellationToken.None))[0].IsSuccess);
+        // 删除留墓碑（ADR-0225）：墓碑占容量，删了再建腾不出位置；删除过的 a 也不能再建
+        var afterRemoval = await tenants.UpsertAsync([new TenantInfo { Id = "c" }, new TenantInfo { Id = "a" }], CancellationToken.None);
+        Assert.Equal(MultiTenancyErrors.CapacityExceeded, afterRemoval[0].Error?.Code);
+        Assert.Equal(MultiTenancyErrors.IdRetired, afterRemoval[1].Error?.Code);
+        Assert.Equal(1, store.Count);
         Assert.Empty(await tenants.UpsertAsync([], CancellationToken.None));
         Assert.Throws<FrameworkException>(static () => new InMemoryTenantStore(new InMemoryMultiTenancyOptions { MaxTenants = 1, Tenants = [new TenantInfo { Id = "a" }, new TenantInfo { Id = "b" }] }));
     }
