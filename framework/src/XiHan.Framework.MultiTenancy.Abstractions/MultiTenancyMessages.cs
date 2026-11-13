@@ -90,6 +90,11 @@ public static class MultiTenancyMessages
     public const string QueryTokenInvalid = "multitenancy.tenant.query_token_invalid";
 
     /// <summary>
+    /// 已认证主体带多个值不同的租户声明
+    /// </summary>
+    public const string ClaimsConflict = "multitenancy.tenant.claims_conflict";
+
+    /// <summary>
     /// 延迟装载的目录
     /// </summary>
     /// <remarks>

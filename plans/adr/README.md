@@ -217,3 +217,4 @@
 | [0215](0215-锁可原子续约雪花机器位不再释放再获取.md) | 安全审查 S-42：`ICacheStore.TryRefreshAsync` 与 `LockHandle.TryExtendAsync` 原子续约，雪花机器位租约不再释放再获取；远程操作集加 `cache-entries.try-refresh` | 已采纳 |
 | [0216](0216-WebAuthn所属用户在验签之后判定并限RSA模长.md) | 安全审查 S-43：WebAuthn 认证在验签之后判定所属用户、RSA 模长 2048 到 4096 位；AAGUID 不能当型号白名单 | 已采纳 |
 | [0217](0217-没有授权能力时带要求的契约与端点让启动失败.md) | 安全审查 S-44：契约声明了权限或策略而 Authorize 阶段没有中间件、端点挂了要求而没有装配授权能力时启动失败（`KERNEL_VALIDATION_006`） | 已采纳 |
+| [0218](0218-租户声明矛盾时拒绝.md) | 安全审查加固：已认证主体带多个值不同的租户声明时拒绝（`MULTITENANCY_VALIDATION_004`），不取第一个 | 已采纳 |

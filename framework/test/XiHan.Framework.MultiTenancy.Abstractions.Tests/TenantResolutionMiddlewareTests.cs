@@ -267,4 +267,23 @@ public sealed class TenantResolutionMiddlewareTests
         await new TenantResolutionMiddleware(new MultiTenancyOptions()).InvokeAsync(anonymous, Handler(reachedAnonymous));
         Assert.Equal("acme", anonymous.GetSecurity().Tenant?.Id);
     }
+
+    [Fact]
+    public async Task ClaimResolver_RejectsConflictingTenantClaims_AndCollapsesDuplicates()
+    {
+        // 加固（ADR-0218）：原先取第一个声明，签发方给出两个不同的租户时调用落进其中任意一个
+        var (conflicting, reachedConflicting) = Arrange(new MultiTenancyOptions(), baggageTenant: null, new ClaimTenantResolver(new MultiTenancyOptions()));
+        conflicting.SetSecurity(new SecurityContext(new Principal("u1", "test") { Claims = [new("tenant", "acme"), new("tenant", "dormant")] }, null));
+        await new TenantResolutionMiddleware(new MultiTenancyOptions()).InvokeAsync(conflicting, Handler(reachedConflicting));
+        Assert.False(reachedConflicting[0]);
+        Assert.Equal(MultiTenancyErrors.ClaimsConflict, conflicting.FindOutcome().ValueOrThrow().Error?.Code);
+        Assert.Null(conflicting.GetSecurity().Tenant);
+
+        // 同一个值出现两次不算矛盾
+        var (duplicated, reachedDuplicated) = Arrange(new MultiTenancyOptions(), baggageTenant: null, new ClaimTenantResolver(new MultiTenancyOptions()));
+        duplicated.SetSecurity(new SecurityContext(new Principal("u1", "test") { Claims = [new("tenant", "acme"), new("tenant", "acme")] }, null));
+        await new TenantResolutionMiddleware(new MultiTenancyOptions()).InvokeAsync(duplicated, Handler(reachedDuplicated));
+        Assert.True(reachedDuplicated[0]);
+        Assert.Equal("acme", duplicated.GetSecurity().Tenant?.Id);
+    }
 }

@@ -55,6 +55,7 @@
 - **修复** 雪花机器位租约改为原子续约：原先续约是释放再获取，释放的那一刻别的实例能拿到同一机器位，两边会发出相同的 ID。`ICacheStore` 新增 `TryRefreshAsync`（比较后重设到期），`LockHandle` 新增 `TryExtendAsync`；自己实现 `ICacheStore` 或派生 `LockHandle` 的要补上这两个成员。远程缓存插件的操作集新增 `cache-entries.try-refresh`，插件要实现它
 - **修复** WebAuthn 认证在验签之后才判定凭据属于谁，RSA 公钥的模长不超过 4096 位：原先没有私钥的人能从失败原因分辨凭据属于哪个用户，几万位的模数让每次验签都很慢。文档不再建议拿 `Aaguid` 做型号白名单（`none` 证明下它是认证器自报的）
 - **调整** 没有装配授权能力时，契约声明了权限或策略的操作、挂了 `RequireXiHan*` 的端点让启动失败（`KERNEL_VALIDATION_006`）：原先要求静默失效，操作与端点等于敞开。之后登记的这类插件操作登记失败，启动之后才写入的 `RequireAuthorization` 抛出 `InvalidOperationException`。迁移：装配 `Security.InMemory` 或 `Security.Database`，或去掉这些要求
+- **调整** 已认证主体带多个值不同的租户声明时拒绝调用（`MULTITENANCY_VALIDATION_004`）：原先取第一个，签发方给出矛盾的身份时调用落进其中任意一个租户
 
 ## v5.0.0-preview.3（2026-11-12）
 

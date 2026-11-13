@@ -2,6 +2,7 @@
   "multitenancy.shard.unavailable": "Не удалось определить сегмент данных арендатора '{tenantId}': {reason}",
   "multitenancy.store.capacity_exceeded": "Хранилище арендаторов в памяти достигло предела ёмкости {capacity}.",
   "multitenancy.store.unavailable": "Хранилище арендаторов недоступно.",
+  "multitenancy.tenant.claims_conflict": "Учётные данные вызывающей стороны содержат противоречивые утверждения о клиенте.",
   "multitenancy.tenant.disabled": "Арендатор '{tenantId}' отключён.",
   "multitenancy.tenant.invalid_id": "Недопустимый идентификатор арендатора '{tenantId}'.",
   "multitenancy.tenant.not_found": "Арендатор '{tenantId}' не существует.",

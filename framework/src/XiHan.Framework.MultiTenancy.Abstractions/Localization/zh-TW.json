@@ -2,6 +2,7 @@
   "multitenancy.shard.unavailable": "無法解析租戶 '{tenantId}' 的資料分片：{reason}",
   "multitenancy.store.capacity_exceeded": "記憶體租戶儲存已達到容量上限 {capacity}。",
   "multitenancy.store.unavailable": "租戶儲存不可用。",
+  "multitenancy.tenant.claims_conflict": "呼叫方的憑證帶有相互矛盾的租戶宣告。",
   "multitenancy.tenant.disabled": "租戶 '{tenantId}' 已停用。",
   "multitenancy.tenant.invalid_id": "租戶 ID '{tenantId}' 不合法。",
   "multitenancy.tenant.not_found": "租戶 '{tenantId}' 不存在。",

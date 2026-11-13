@@ -2,6 +2,7 @@
   "multitenancy.shard.unavailable": "No se pudo resolver el fragmento de datos del inquilino '{tenantId}': {reason}",
   "multitenancy.store.capacity_exceeded": "El almacén de inquilinos en memoria alcanzó su capacidad de {capacity}.",
   "multitenancy.store.unavailable": "El almacén de inquilinos no está disponible.",
+  "multitenancy.tenant.claims_conflict": "La credencial del llamador contiene notificaciones de inquilino contradictorias.",
   "multitenancy.tenant.disabled": "El inquilino '{tenantId}' está deshabilitado.",
   "multitenancy.tenant.invalid_id": "El identificador de inquilino '{tenantId}' no es válido.",
   "multitenancy.tenant.not_found": "El inquilino '{tenantId}' no existe.",

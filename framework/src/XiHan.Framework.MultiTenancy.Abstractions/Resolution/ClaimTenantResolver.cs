@@ -28,12 +28,20 @@ public sealed class ClaimTenantResolver(MultiTenancyOptions options) : ITenantRe
             return ValueTask.FromResult(Result.Success(Maybe.None<string>()));
         }
 
-        // 同类声明可能有多个，只取第一个
+        // 同类声明可能有多个：值都相同按一个算；值不同是签发方给出了矛盾的身份，取哪个都可能是错的租户，拒绝而不是取第一个（ADR-0218）
+        string? tenant = null;
         foreach (var value in principal.ClaimValues(_options.TenantClaim))
         {
-            return ValueTask.FromResult(Result.Success(Maybe.Some(value)));
+            if (tenant is null)
+            {
+                tenant = value;
+            }
+            else if (!string.Equals(tenant, value, StringComparison.Ordinal))
+            {
+                return ValueTask.FromResult<Result<Maybe<string>>>(Error.Validation(MultiTenancyErrors.ClaimsConflict, MultiTenancyMessages.ClaimsConflict));
+            }
         }
 
-        return ValueTask.FromResult(Result.Success(Maybe.None<string>()));
+        return ValueTask.FromResult(Result.Success(tenant is null ? Maybe.None<string>() : Maybe.Some(tenant)));
     }
 }

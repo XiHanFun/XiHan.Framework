@@ -117,7 +117,7 @@ Tenant 阶段按下面的顺序处理，任一步失败即以结果结束调用�
 
 | 顺序 | 解析器 | 读什么 |
 | --- | --- | --- |
-| 1 | `ClaimTenantResolver` | 已认证主体的租户声明（类型由 `TenantClaim` 决定，缺省 `tenant`），同类声明有多个时取第一个；未认证主体直接跳过 |
+| 1 | `ClaimTenantResolver` | 已认证主体的租户声明（类型由 `TenantClaim` 决定，缺省 `tenant`），同类声明有多个时值都相同按一个算，值不同返回 `MULTITENANCY_VALIDATION_004`（签发方给了矛盾的身份，不取其中任何一个，ADR-0218）；未认证主体直接跳过 |
 | 2 | `BaggageTenantResolver` | 调用上下文的 Baggage `xihan.tenant`，由进程内建上下文的地方放进去 |
 
 应用登记自己的 `ITenantResolver` 会排在这两个之后。解析器只负责给出候选 ID，校验都在中间件里。
@@ -249,6 +249,7 @@ Transaction 阶段的 `UnitOfWorkMiddleware` 用安全上下文里的租户开�
 | --- | --- | --- |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 | 400 |
 | `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 | 400 |
+| `MULTITENANCY_VALIDATION_004` | 已认证主体带多个值不同的租户声明 | 400 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 | 404 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 | 403 |
 | `MULTITENANCY_UNAVAILABLE_001` | 内存租户存储容量已满（`InMemoryTenantStore.Set` 与健康项 `multitenancy.inmemory.capacity`） | 503 |

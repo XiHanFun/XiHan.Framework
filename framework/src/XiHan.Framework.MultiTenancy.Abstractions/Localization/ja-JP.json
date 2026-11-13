@@ -2,6 +2,7 @@
   "multitenancy.shard.unavailable": "テナント '{tenantId}' のデータ シャードを解決できませんでした: {reason}",
   "multitenancy.store.capacity_exceeded": "インメモリテナントストアは容量上限 {capacity} に達しました。",
   "multitenancy.store.unavailable": "テナントストアを利用できません。",
+  "multitenancy.tenant.claims_conflict": "呼び出し元の資格情報に矛盾するテナント クレームが含まれています。",
   "multitenancy.tenant.disabled": "テナント '{tenantId}' は無効化されています。",
   "multitenancy.tenant.invalid_id": "テナント ID '{tenantId}' が不正です。",
   "multitenancy.tenant.not_found": "テナント '{tenantId}' は存在しません。",

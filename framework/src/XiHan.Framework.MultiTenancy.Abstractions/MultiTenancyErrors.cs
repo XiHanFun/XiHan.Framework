@@ -53,4 +53,12 @@ public static class MultiTenancyErrors
     /// 租户列表查询不合法（每页条数越界、续页令牌无效）
     /// </summary>
     public const string QueryInvalid = "MULTITENANCY_VALIDATION_003";
+
+    /// <summary>
+    /// 已认证主体带多个值不同的租户声明
+    /// </summary>
+    /// <remarks>
+    /// 签发方给出了矛盾的身份，取哪个都可能是错的租户，不取其中任何一个（ADR-0218）
+    /// </remarks>
+    public const string ClaimsConflict = "MULTITENANCY_VALIDATION_004";
 }
