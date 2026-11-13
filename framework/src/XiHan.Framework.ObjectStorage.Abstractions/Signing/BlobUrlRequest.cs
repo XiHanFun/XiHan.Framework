@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 using XiHan.Framework.Primitives;
 
@@ -24,6 +25,11 @@ public sealed record BlobUrlRequest
     /// 最长有效期：7 天（S3 签名 V4 的上限）
     /// </summary>
     public static readonly TimeSpan MaxExpiresIn = TimeSpan.FromDays(7);
+
+    /// <summary>
+    /// 保存的文件名的最大长度
+    /// </summary>
+    public const int MaxDownloadFileNameLength = 255;
 
     /// <summary>
     /// 创建
@@ -106,9 +112,9 @@ public sealed record BlobUrlRequest
     /// 下载地址
     /// </summary>
     /// <param name="expiresIn">有效期；缺省 30 分钟</param>
-    /// <param name="downloadFileName">保存的文件名；缺省不带 <c>Content-Disposition</c></param>
+    /// <param name="downloadFileName">保存的文件名，1 到 <see cref="MaxDownloadFileNameLength"/> 个字符、不含控制字符（ADR-0219）；缺省不带 <c>Content-Disposition</c></param>
     public static BlobUrlRequest ForDownload(TimeSpan? expiresIn, string? downloadFileName)
-        => new(BlobUrlMethod.Get, expiresIn, null, NonEmptyOrNull(downloadFileName, nameof(downloadFileName)), null, null);
+        => new(BlobUrlMethod.Get, expiresIn, null, FileNameOrNull(downloadFileName), null, null);
 
     /// <summary>
     /// 整个对象的上传地址（覆盖已有对象）
@@ -133,9 +139,9 @@ public sealed record BlobUrlRequest
     /// 整个对象的上传地址（覆盖已有对象）
     /// </summary>
     /// <param name="expiresIn">有效期；缺省 30 分钟</param>
-    /// <param name="contentType">客户端必须发送的内容类型；缺省不限定</param>
+    /// <param name="contentType">客户端必须发送的内容类型，须满足 <see cref="BlobPutOptions.IsValidContentType"/>（ADR-0219）；缺省不限定</param>
     public static BlobUrlRequest ForUpload(TimeSpan? expiresIn, string? contentType)
-        => new(BlobUrlMethod.Put, expiresIn, NonEmptyOrNull(contentType, nameof(contentType)), null, null, null);
+        => new(BlobUrlMethod.Put, expiresIn, ContentTypeOrNull(contentType), null, null, null);
 
     /// <summary>
     /// 分片上传中某一片的上传地址
@@ -165,8 +171,31 @@ public sealed record BlobUrlRequest
     }
 
     /// <summary>
-    /// 可选文本：给了就不能是空白
+    /// 可选的内容类型：给了就要合内容类型文法
     /// </summary>
-    private static string? NonEmptyOrNull(string? value, string name)
-        => value is null || !string.IsNullOrWhiteSpace(value) ? value : throw new ArgumentException("The value must not be blank.", name);
+    /// <remarks>
+    /// 宿主签名的规范串以换行分隔各限定项，值里带换行就能把一项挪成另一项；S3 的响应头覆盖也会把它写进头（ADR-0219）
+    /// </remarks>
+    private static string? ContentTypeOrNull(string? contentType)
+        => contentType is null || BlobPutOptions.IsValidContentType(contentType)
+            ? contentType
+            : throw new ArgumentException($"The content type must be a media type 'type/subtype' with optional ';' parameters of printable ASCII, at most {BlobPutOptions.MaxContentTypeLength} characters.", nameof(contentType));
+
+    /// <summary>
+    /// 可选的保存文件名：给了就不能是空白、不能含控制字符、不能过长
+    /// </summary>
+    /// <remarks>
+    /// 它进签名的规范串与 <c>Content-Disposition</c> 头，换行同样能挪动限定项或拆出别的头（ADR-0219）
+    /// </remarks>
+    private static string? FileNameOrNull(string? fileName)
+    {
+        if (fileName is null)
+        {
+            return null;
+        }
+
+        return !string.IsNullOrWhiteSpace(fileName) && fileName.Length <= MaxDownloadFileNameLength && !fileName.Any(char.IsControl)
+            ? fileName
+            : throw new ArgumentException($"The download file name must be 1 to {MaxDownloadFileNameLength} characters without control characters.", nameof(fileName));
+    }
 }
