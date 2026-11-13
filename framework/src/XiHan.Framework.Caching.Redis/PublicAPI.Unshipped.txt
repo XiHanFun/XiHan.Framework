@@ -13,6 +13,7 @@ XiHan.Framework.Caching.Redis.RedisCacheStore.SetAsync(XiHan.Framework.Caching.A
 XiHan.Framework.Caching.Redis.RedisCacheStore.SetManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheEntry!>! entries, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Caching.Redis.RedisCacheStore.Subscribe(System.Action<XiHan.Framework.Caching.Abstractions.Stores.CacheChange!>! handler) -> System.IDisposable!
 XiHan.Framework.Caching.Redis.RedisCacheStore.TryAddAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Caching.Redis.RedisCacheStore.TryRefreshAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> expectedValue, System.TimeSpan timeToLive, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 XiHan.Framework.Caching.Redis.RedisCacheStore.TryRemoveAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.ReadOnlyMemory<byte> expectedValue, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
 XiHan.Framework.Caching.Redis.RedisCachingFeature
 XiHan.Framework.Caching.Redis.RedisCachingFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void

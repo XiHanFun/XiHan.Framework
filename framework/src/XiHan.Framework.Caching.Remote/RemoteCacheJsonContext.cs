@@ -16,6 +16,8 @@ namespace XiHan.Framework.Caching.Remote;
 [JsonSerializable(typeof(RemoteCacheOperations.AddedResponse))]
 [JsonSerializable(typeof(RemoteCacheOperations.RemovedResponse))]
 [JsonSerializable(typeof(RemoteCacheOperations.TryRemoveRequest))]
+[JsonSerializable(typeof(RemoteCacheOperations.TryRefreshRequest))]
+[JsonSerializable(typeof(RemoteCacheOperations.RefreshedResponse))]
 [JsonSerializable(typeof(RemoteCacheOperations.KeysRequest))]
 [JsonSerializable(typeof(RemoteCacheOperations.GetManyResponse))]
 [JsonSerializable(typeof(RemoteCacheOperations.SetManyRequest))]

@@ -26,6 +26,7 @@
 | `TryAddAsync` | `cache-entries.try-add` | 同 `set` → `{ added }` |
 | `RemoveAsync` | `cache-entries.remove` | `{ key }` → `{ removed }` |
 | `TryRemoveAsync` | `cache-entries.try-remove` | `{ key, expected }` → `{ removed }` |
+| `TryRefreshAsync` | `cache-entries.try-refresh` | `{ key, expected, ttlMs }` → `{ refreshed }` |
 | `GetManyAsync` | `cache-entries.get-many` | `{ keys }` → `{ values }`，与 `keys` 等长 |
 | `SetManyAsync` | `cache-entries.set-many` | `{ entries }` → `{}` |
 | `RemoveManyAsync` | `cache-entries.remove-many` | `{ keys }` → `{ removed }`，与 `keys` 等长 |
@@ -108,7 +109,7 @@ builder.AddXiHan(xihan => xihan
   "isolation": "out-of-process",
   "requires": [ { "id": "kernel.plugins", "version": "1" } ],
   "contributes": {
-    "operations": [ "cache-entries.get", "cache-entries.set", "cache-entries.try-add", "cache-entries.remove", "cache-entries.try-remove", "cache-entries.get-many", "cache-entries.set-many", "cache-entries.remove-many" ]
+    "operations": [ "cache-entries.get", "cache-entries.set", "cache-entries.try-add", "cache-entries.remove", "cache-entries.try-remove", "cache-entries.try-refresh", "cache-entries.get-many", "cache-entries.set-many", "cache-entries.remove-many" ]
   }
 }
 ```

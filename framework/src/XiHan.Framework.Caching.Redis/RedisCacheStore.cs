@@ -33,6 +33,21 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
         """;
 
     /// <summary>
+    /// 服务端比较后重设到期的脚本
+    /// </summary>
+    /// <remarks>
+    /// 跳过编码头部后比较载荷，相同才 PEXPIRE，整段在 Redis 内原子执行。只改到期时刻、不改值：滑动窗口在编码头部里，原样保留
+    /// </remarks>
+    private const string CompareAndExpireScript = """
+        local v = redis.call('GET', KEYS[1])
+        if not v then return 0 end
+        local off = 2
+        if string.byte(v, 1) == 1 then off = 10 end
+        if string.sub(v, off) == ARGV[1] then return redis.call('PEXPIRE', KEYS[1], ARGV[2]) end
+        return 0
+        """;
+
+    /// <summary>
     /// 由能力包管理生命周期的 Redis 连接
     /// </summary>
     private readonly IConnectionMultiplexer _connection = connection ?? throw new ArgumentNullException(nameof(connection));
@@ -301,6 +316,23 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
         }
 
         return removed;
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeToLive, TimeSpan.Zero);
+        try
+        {
+            // GET 与 PEXPIRE 分两次往返会有竞争窗口：中间锁到期、被别人取得时会把别人的锁续上，所以交给 Lua 脚本原子完成
+            var milliseconds = Math.Max(1, (long)Math.Ceiling(timeToLive.TotalMilliseconds));
+            var result = await _connection.GetDatabase().ScriptEvaluateAsync(CompareAndExpireScript, [Key(key)], [expectedValue.ToArray(), milliseconds]).ConfigureAwait(false);
+            return (long)result == 1;
+        }
+        catch (Exception exception) when (exception is RedisException or TimeoutException)
+        {
+            throw Unavailable(exception);
+        }
     }
 
     /// <inheritdoc />

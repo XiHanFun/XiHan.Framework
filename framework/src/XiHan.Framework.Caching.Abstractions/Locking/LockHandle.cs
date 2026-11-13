@@ -73,6 +73,19 @@ public abstract class LockHandle : IAsyncDisposable
         return await ReleaseCoreAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// 续约
+    /// </summary>
+    /// <remarks>
+    /// 仍持有时把到期时刻重设为现在加 <paramref name="timeToLive"/> 并返回 <see langword="true"/>；已到期、被他人持有或已调用过释放返回 <see langword="false"/>。原子，锁在续约期间一直被持有（ADR-0215）
+    /// </remarks>
+    public ValueTask<bool> TryExtendAsync(TimeSpan timeToLive, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeToLive, TimeSpan.Zero);
+        // 释放过的句柄不再代表持有：即使存储里的条目恰好还在（释放失败），也不能续回来
+        return Volatile.Read(ref _released) == 1 ? ValueTask.FromResult(false) : ExtendCoreAsync(timeToLive, cancellationToken);
+    }
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
@@ -87,4 +100,12 @@ public abstract class LockHandle : IAsyncDisposable
     /// 由 <see cref="ReleaseAsync"/> 至多调用一次；仍持有并删除返回 <see langword="true"/>，已到期或令牌不再匹配返回 <see langword="false"/>
     /// </remarks>
     protected abstract ValueTask<bool> ReleaseCoreAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 按令牌比较后重设到期时刻
+    /// </summary>
+    /// <remarks>
+    /// 由 <see cref="TryExtendAsync"/> 在未释放时调用；仍持有并重设返回 <see langword="true"/>，已到期或令牌不再匹配返回 <see langword="false"/>
+    /// </remarks>
+    protected abstract ValueTask<bool> ExtendCoreAsync(TimeSpan timeToLive, CancellationToken cancellationToken);
 }

@@ -42,6 +42,7 @@
 | `TryAddAsync` | 不存在（或已过期）才写入，原子 |
 | `RemoveAsync` | 删除，返回删除前是否存在 |
 | `TryRemoveAsync` | 当前值等于期望值才删除，原子 |
+| `TryRefreshAsync` | 当前值等于期望值才把到期时刻重设为现在加给定的存活时间，原子；不改值，锁续约用它 |
 | `GetManyAsync` / `SetManyAsync` / `RemoveManyAsync` | 批量版本，见[批量方法](#批量方法) |
 
 类型化缓存 `ICache`（`ISharedCache` 是它的跨进程版本）在存储之上提供 `GetAsync<T>`、`SetAsync<T>`、`RemoveAsync`、`GetOrCreateAsync<T>` 与批量方法。两类实现的存法不同：

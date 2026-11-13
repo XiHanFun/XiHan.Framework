@@ -96,6 +96,36 @@ public sealed class LeasedWorkerIdSourceTests
     }
 
     [Fact]
+    public async Task RenewAsync_NeverFreesTheSlot_SoAnotherInstanceCannotTakeItWhileItIsInUse()
+    {
+        var clock = new FakeTimeProvider(_start);
+        var store = new SwitchableCacheStore(Store(clock));
+        await using var source = Create(store, clock);
+        await source.RenewAsync(CancellationToken.None);
+        Assert.Equal(0, source.Current.ValueOrThrow());
+
+        // 别的实例只要看到锁条目不在就去抢：抢到的那一刻本实例若仍在用 0，两边会发出相同的雪花 ID（ADR-0215）
+        var contenderWon = false;
+        var overlapped = false;
+        store.AfterRemoved = async key =>
+        {
+            if (key == LockKey(0) && await store.TryAddAsync(key, "contender"u8.ToArray(), CacheEntryOptions.Expires(_timeToLive), CancellationToken.None))
+            {
+                contenderWon = true;
+                overlapped = source.Current.HasValue;
+            }
+        };
+
+        clock.Advance(source.RenewInterval);
+        await source.RenewAsync(CancellationToken.None);
+
+        Assert.False(contenderWon);
+        Assert.False(overlapped);
+        Assert.Equal(0, source.Current.ValueOrThrow());
+        Assert.Equal(_start + source.RenewInterval + _timeToLive, source.ExpiresAt);
+    }
+
+    [Fact]
     public async Task RenewAsync_ReallocatesWorkerId_WhenTheSlotWasTaken()
     {
         var clock = new FakeTimeProvider(_start);

@@ -127,6 +127,13 @@ public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
     public ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken)
         => ValueTask.FromResult(_table.Remove(key.Value, current => expectedValue.Span.SequenceEqual(current)));
 
+    /// <inheritdoc />
+    public ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeToLive, TimeSpan.Zero);
+        return ValueTask.FromResult(_table.Refresh(key.Value, current => expectedValue.Span.SequenceEqual(current), timeToLive));
+    }
+
     /// <summary>
     /// 清空
     /// </summary>

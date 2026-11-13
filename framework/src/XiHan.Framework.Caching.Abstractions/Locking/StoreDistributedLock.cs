@@ -47,5 +47,8 @@ public sealed class StoreDistributedLock(ICacheStore store) : IDistributedLock
     {
         /// <inheritdoc />
         protected override ValueTask<bool> ReleaseCoreAsync(CancellationToken cancellationToken) => store.TryRemoveAsync(entry, tokenBytes, cancellationToken);
+
+        /// <inheritdoc />
+        protected override ValueTask<bool> ExtendCoreAsync(TimeSpan timeToLive, CancellationToken cancellationToken) => store.TryRefreshAsync(entry, tokenBytes, timeToLive, cancellationToken);
     }
 }

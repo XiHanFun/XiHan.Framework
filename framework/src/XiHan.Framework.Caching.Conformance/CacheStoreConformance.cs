@@ -25,6 +25,14 @@ public abstract class CacheStoreConformance
     protected virtual TimeSpan ExpirationGrace => TimeSpan.FromMilliseconds(300);
 
     /// <summary>
+    /// 被测存储是否实现了比较后重设到期
+    /// </summary>
+    /// <remarks>
+    /// 默认是，<see cref="ICacheStore.TryRefreshAsync"/> 是契约的一部分（ADR-0215）。只有接入尚未跟上契约的外部实现时临时关掉，相关用例跳过
+    /// </remarks>
+    protected virtual bool SupportsRefresh => true;
+
+    /// <summary>
     /// 创建被测存储
     /// </summary>
     /// <remarks>
@@ -440,6 +448,75 @@ public abstract class CacheStoreConformance
         while (continuation is not null);
         Assert.Equal(listed, widest);
         Assert.Equal(2, (await inspector.RemoveByPrefixAsync(prefix, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+    }
+
+    /// <summary>
+    /// 用例 15：比较后重设到期只在值相同时生效
+    /// </summary>
+    /// <remarks>
+    /// 重设之后过了原来的到期时刻仍能读到，值不变；不存在的键与值不同都不重设（ADR-0215）
+    /// </remarks>
+    [Fact]
+    public async Task TryRefresh_RequiresMatchingValue_AndPostponesExpiry()
+    {
+        SkipUnlessRefreshSupported();
+        var store = CreateStore();
+        var key = Key();
+        var timeToLive = TimeSpan.FromMilliseconds(400);
+        Assert.True(await store.TryAddAsync(key, Bytes("token-a"), CacheEntryOptions.Expires(timeToLive), CancellationToken.None).ConfigureAwait(false));
+
+        Assert.False(await store.TryRefreshAsync(key, Bytes("token-b"), TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false));
+        Assert.False(await store.TryRefreshAsync(Key(), Bytes("token-a"), TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false));
+        Assert.True(await store.TryRefreshAsync(key, Bytes("token-a"), TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false));
+
+        await Task.Delay(timeToLive + ExpirationGrace).ConfigureAwait(false);
+        Assert.Equal("token-a", Text(await store.GetAsync(key, CancellationToken.None).ConfigureAwait(false)));
+
+        // 到期之后不能再续：重设到短的存活时间，等它过去
+        Assert.True(await store.TryRefreshAsync(key, Bytes("token-a"), timeToLive, CancellationToken.None).ConfigureAwait(false));
+        await Task.Delay(timeToLive + ExpirationGrace).ConfigureAwait(false);
+        Assert.False(await store.TryRefreshAsync(key, Bytes("token-a"), TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false));
+        Assert.False((await store.GetAsync(key, CancellationToken.None).ConfigureAwait(false)).HasValue);
+    }
+
+    /// <summary>
+    /// 用例 16：锁在持有期间可续约，续约期间别人一直拿不到
+    /// </summary>
+    /// <remarks>
+    /// 释放之后与到期被他人取得之后，原句柄都续不回来（ADR-0215）
+    /// </remarks>
+    [Fact]
+    public async Task DistributedLock_Extends_WhileHeld_AndNotAfterReleaseOrExpiry()
+    {
+        SkipUnlessRefreshSupported();
+        var store = CreateStore();
+        var locks = new StoreDistributedLock(store);
+        var resource = Key();
+        var timeToLive = TimeSpan.FromMilliseconds(400);
+
+        var held = (await locks.TryAcquireAsync(resource, timeToLive, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.True(await held.TryExtendAsync(TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false));
+        await Task.Delay(timeToLive + ExpirationGrace).ConfigureAwait(false);
+        Assert.False((await locks.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).HasValue, "An extended lock should still be held after its original expiry.");
+        Assert.True(await held.ReleaseAsync(CancellationToken.None).ConfigureAwait(false));
+        Assert.False(await held.TryExtendAsync(TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false));
+
+        var expiring = (await locks.TryAcquireAsync(resource, timeToLive, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        await Task.Delay(timeToLive + ExpirationGrace).ConfigureAwait(false);
+        await using var successor = (await locks.TryAcquireAsync(resource, TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.False(await expiring.TryExtendAsync(TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false), "After expiry, extending must not take the lock back from its new holder.");
+        Assert.True(await successor.TryExtendAsync(TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 被测存储没有实现比较后重设到期时跳过当前用例
+    /// </summary>
+    private void SkipUnlessRefreshSupported()
+    {
+        if (!SupportsRefresh)
+        {
+            Assert.Skip("The store under test does not implement TryRefreshAsync yet.");
+        }
     }
 
     /// <summary>

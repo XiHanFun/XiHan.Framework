@@ -71,4 +71,7 @@ internal sealed class FeedingStore(TimeProvider clock) : ICacheStore, ICacheChan
 
     /// <inheritdoc />
     public ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken) => _inner.TryRemoveAsync(key, expectedValue, cancellationToken);
+
+    /// <inheritdoc />
+    public ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken) => _inner.TryRefreshAsync(key, expectedValue, timeToLive, cancellationToken);
 }

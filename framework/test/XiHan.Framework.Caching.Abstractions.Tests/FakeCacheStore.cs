@@ -150,4 +150,16 @@ internal sealed class FakeCacheStore : ICacheStore
             return ValueTask.FromResult(false);
         }
     }
+
+    /// <summary>
+    /// 记录 <c>car:</c>，当前值与期望值相同时报告重设
+    /// </summary>
+    /// <remarks>
+    /// 本替身不判定过期，只核对值
+    /// </remarks>
+    public ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken)
+    {
+        Operations.Add("car:" + key.Value);
+        return ValueTask.FromResult(_entries.TryGetValue(key.Value, out var current) && expectedValue.Span.SequenceEqual(current));
+    }
 }

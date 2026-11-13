@@ -61,6 +61,9 @@ public sealed class CustomLockHandleTests
                 Interlocked.Increment(ref owner._releases);
                 return true;
             }
+
+            /// <inheritdoc />
+            protected override ValueTask<bool> ExtendCoreAsync(TimeSpan timeToLive, CancellationToken cancellationToken) => ValueTask.FromResult(true);
         }
     }
 }

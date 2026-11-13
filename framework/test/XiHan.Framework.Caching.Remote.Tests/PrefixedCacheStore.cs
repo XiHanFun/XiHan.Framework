@@ -32,6 +32,9 @@ internal sealed class PrefixedCacheStore(ICacheStore inner) : ICacheStore
     public ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken) => inner.TryRemoveAsync(Prefix(key), expectedValue, cancellationToken);
 
     /// <inheritdoc />
+    public ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken) => inner.TryRefreshAsync(Prefix(key), expectedValue, timeToLive, cancellationToken);
+
+    /// <inheritdoc />
     public ValueTask<IReadOnlyList<Maybe<ReadOnlyMemory<byte>>>> GetManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken) => inner.GetManyAsync(Prefix(keys), cancellationToken);
 
     /// <inheritdoc />

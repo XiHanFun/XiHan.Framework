@@ -142,6 +142,15 @@ public sealed class RemoteCacheStore : ICacheStore
         return response.Removed;
     }
 
+    /// <inheritdoc />
+    public async ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(timeToLive, TimeSpan.Zero);
+        var request = new RemoteCacheOperations.TryRefreshRequest(key.Value, Convert.ToBase64String(expectedValue.Span), Milliseconds(timeToLive));
+        var response = await ExecuteAsync(RemoteCacheOperations.TryRefresh, request, RemoteCacheJsonContext.Default.TryRefreshRequest, RemoteCacheJsonContext.Default.RefreshedResponse, cancellationToken).ConfigureAwait(false);
+        return response.Refreshed;
+    }
+
     /// <summary>
     /// 组装写入请求：过期时间换算成毫秒，没有设置的字段不写出
     /// </summary>

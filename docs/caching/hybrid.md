@@ -128,7 +128,7 @@ public sealed class CacheAdmin(ISharedCache cache)
 
 ## 远程 Provider
 
-`Caching.Remote` 让任意语言写的进程外插件承担 `caching.distributed`（规范 RFC-0019《远程 Provider》）。插件实现固定的操作集 `cache-entries.get / set / try-add / remove / try-remove / get-many / set-many / remove-many`（常量在 `RemoteCacheOperations`），由 `Plugins.OutOfProcess` 按目录发现并登记代理操作；`Caching.Remote` 按操作 ID 直接执行这些代理操作（不经过管道，否则幂等中间件会递归），把它接成 `ISharedCache`、`IDistributedLock`、`IDistributedCache` 与幂等中间件。
+`Caching.Remote` 让任意语言写的进程外插件承担 `caching.distributed`（规范 RFC-0019《远程 Provider》）。插件实现固定的操作集 `cache-entries.get / set / try-add / remove / try-remove / try-refresh / get-many / set-many / remove-many`（常量在 `RemoteCacheOperations`），由 `Plugins.OutOfProcess` 按目录发现并登记代理操作；`Caching.Remote` 按操作 ID 直接执行这些代理操作（不经过管道，否则幂等中间件会递归），把它接成 `ISharedCache`、`IDistributedLock`、`IDistributedCache` 与幂等中间件。
 
 ```csharp
 using XiHan.Framework.Caching.Remote;

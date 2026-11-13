@@ -13,7 +13,7 @@ namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
 /// 经 <see cref="IDistributedLock"/> 租约分配的机器位
 /// </summary>
 /// <remarks>
-/// 启动时从 0 起逐个尝试锁 <c>persistence:snowflake:worker:&lt;n&gt;</c>，取得第一个空位；每三分之一存活时间续约一次（锁不续约，续约 = 释放再获取同一机器位），续约失败按丢失处理并重新分配。本地按获取时刻 + 存活时间判定有效：到期未续上即没有机器位，宁可拒绝生成也不冒重复的风险。同时是健康项 <see cref="HealthName"/> 的贡献者
+/// 启动时从 0 起逐个尝试锁 <c>persistence:snowflake:worker:&lt;n&gt;</c>，取得第一个空位；每三分之一存活时间经 <see cref="LockHandle.TryExtendAsync"/> 原子续约一次，锁条目一直在、别的实例拿不到这个机器位（ADR-0215），续约失败按丢失处理并重新分配。本地按获取时刻 + 存活时间判定有效：到期未续上即没有机器位，宁可拒绝生成也不冒重复的风险。同时是健康项 <see cref="HealthName"/> 的贡献者
 /// </remarks>
 internal sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthContributor, IAsyncDisposable
 {
@@ -201,7 +201,7 @@ internal sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthCon
     /// 续约一次
     /// </summary>
     /// <remarks>
-    /// 持有时释放再获取同一机器位，失败即视为丢失并重新分配；没有租约时直接重新分配。存储不可达时按丢失处理（存储侧租约可能已被删掉，继续用不安全）
+    /// 持有时原子延长同一租约，延长失败（存储侧已到期或被他人持有）即视为丢失并重新分配；没有租约时直接重新分配。存储不可达时按丢失处理（存储侧租约可能已被删掉，继续用不安全）
     /// </remarks>
     public async ValueTask RenewAsync(CancellationToken cancellationToken)
     {
@@ -211,11 +211,11 @@ internal sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthCon
             var lease = _lease;
             if (lease is not null)
             {
-                var acquiredAt = _clock.GetUtcNow();
-                var handle = await TryRenewAsync(lease, cancellationToken).ConfigureAwait(false);
-                if (handle is not null)
+                // 续约时刻取在请求发出之前：本地到期不晚于存储侧到期
+                var renewedAt = _clock.GetUtcNow();
+                if (await TryRenewAsync(lease, cancellationToken).ConfigureAwait(false))
                 {
-                    _lease = new Lease(lease.WorkerId, handle, acquiredAt + _timeToLive);
+                    _lease = lease with { ExpiresAt = renewedAt + _timeToLive };
                     return;
                 }
 
@@ -288,23 +288,17 @@ internal sealed partial class LeasedWorkerIdSource : IWorkerIdSource, IHealthCon
     }
 
     /// <summary>
-    /// 释放再获取同一机器位
+    /// 原子延长同一租约
     /// </summary>
     /// <remarks>
-    /// 任一步失败或抛出都先把租约置空再返回或传播——存储侧的租约可能已被删掉，继续用不安全
+    /// 抛出时先把租约置空再传播——存储侧的租约可能已被删掉，继续用不安全
     /// </remarks>
-    private async Task<LockHandle?> TryRenewAsync(Lease lease, CancellationToken cancellationToken)
+    private async Task<bool> TryRenewAsync(Lease lease, CancellationToken cancellationToken)
     {
         try
         {
-            // 锁契约不续约：只能释放再获取。释放到重新获取之间空位可能被别的实例拿走，那就按丢失处理重新分配
-            if (!await lease.Handle.ReleaseAsync(cancellationToken).ConfigureAwait(false))
-            {
-                return null;
-            }
-
-            var renewed = await _lock.TryAcquireAsync(Resource(lease.WorkerId), _timeToLive, cancellationToken).ConfigureAwait(false);
-            return renewed.TryGetValue(out var handle) ? handle : null;
+            // 不释放：锁条目一直在，续约期间别的实例拿不到这个机器位。以前释放再获取，释放的那一刻别人就能拿走，本实例在发现之前还在用它（ADR-0215）
+            return await lease.Handle.TryExtendAsync(_timeToLive, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

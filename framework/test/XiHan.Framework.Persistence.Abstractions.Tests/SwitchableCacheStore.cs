@@ -26,6 +26,14 @@ internal sealed class SwitchableCacheStore(ICacheStore inner) : ICacheStore
     /// </summary>
     public bool Fail { get; set; }
 
+    /// <summary>
+    /// 比较删成功之后立即执行的动作
+    /// </summary>
+    /// <remarks>
+    /// 模拟别的实例恰好在锁条目被删的那一刻来抢同一个资源
+    /// </remarks>
+    public Func<CacheKey, ValueTask>? AfterRemoved { get; set; }
+
     /// <inheritdoc />
     public ValueTask<Maybe<ReadOnlyMemory<byte>>> GetAsync(CacheKey key, CancellationToken cancellationToken)
     {
@@ -76,10 +84,23 @@ internal sealed class SwitchableCacheStore(ICacheStore inner) : ICacheStore
     }
 
     /// <inheritdoc />
-    public ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken)
+    public async ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken)
     {
         Guard();
-        return inner.TryRemoveAsync(key, expectedValue, cancellationToken);
+        var removed = await inner.TryRemoveAsync(key, expectedValue, cancellationToken).ConfigureAwait(false);
+        if (removed && AfterRemoved is { } after)
+        {
+            await after(key).ConfigureAwait(false);
+        }
+
+        return removed;
+    }
+
+    /// <inheritdoc />
+    public ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken)
+    {
+        Guard();
+        return inner.TryRefreshAsync(key, expectedValue, timeToLive, cancellationToken);
     }
 
     /// <summary>

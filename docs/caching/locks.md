@@ -18,7 +18,7 @@
 | `LockHandle.ReleaseAsync(ct)` / `DisposeAsync()` | 按令牌比较删除；只释放一次（并发释放也只执行一次），重复释放返回 `false` |
 | 自己实现 `IDistributedLock` | 派生抽象类 `LockHandle`（受保护构造收资源与令牌），实现 `ReleaseCoreAsync`；基类保证释放只调用它一次 |
 
-锁不可重入、不续约，到期后别人可以获取，原持有者再释放返回 `false`，不会误删别人的锁。`IDistributedLock` 由被选中提供 `caching.distributed` 的 Provider（内存、Redis、远程）登记在容器里，用的 `ICacheStore` 与 `ISharedCache.Store` 是同一个实例。
+锁不可重入。持有期间可以用 `LockHandle.TryExtendAsync(ttl)` 续约：仍持有时把到期时刻重设为现在加 `ttl` 并返回 `true`，锁在续约期间一直被持有；已到期、被他人持有或已释放时返回 `false`（ADR-0215）。到期后别人可以获取，原持有者再释放返回 `false`，不会误删别人的锁。`IDistributedLock` 由被选中提供 `caching.distributed` 的 Provider（内存、Redis、远程）登记在容器里，用的 `ICacheStore` 与 `ISharedCache.Store` 是同一个实例。
 
 ## 幂等的概念
 
@@ -160,7 +160,7 @@ curl -X POST http://localhost:5000/orders \
 
 ### 工作还没做完锁就到期了怎么办
 
-锁不续约，到期后别的实例可以拿到，原持有者释放时按令牌比较删除会返回 `false`，不会删掉别人的锁。把存活时间设得大于工作的最长耗时；确实需要长时间持有的工作，在 `ICacheStore` 的 `TryAddAsync` 与 `TryRemoveAsync` 之上自己实现带续约的锁。
+到期后别的实例可以拿到，原持有者释放时按令牌比较删除会返回 `false`，不会删掉别人的锁。需要长时间持有时，按存活时间的几分之一定时调用 `TryExtendAsync` 续约；它返回 `false` 说明锁已经丢了，立即停下手里的工作。不要用「释放再获取」续约：释放的那一刻别人就能拿走。
 
 ### 同一个实例能重复获取同一把锁吗
 

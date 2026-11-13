@@ -40,6 +40,14 @@ public static class RemoteCacheOperations
     public const string TryRemove = "cache-entries.try-remove";
 
     /// <summary>
+    /// 当前值等于期望值才重设到期时间，原子
+    /// </summary>
+    /// <remarks>
+    /// 分布式锁的续约用它（ADR-0215）
+    /// </remarks>
+    public const string TryRefresh = "cache-entries.try-refresh";
+
+    /// <summary>
     /// 批量读取：逐键同 <see cref="Get"/>，一次往返
     /// </summary>
     public const string GetMany = "cache-entries.get-many";
@@ -57,7 +65,7 @@ public static class RemoteCacheOperations
     /// <summary>
     /// 操作集的全部操作，按规范顺序
     /// </summary>
-    public static IReadOnlyList<string> All { get; } = [Get, Set, TryAdd, Remove, TryRemove, GetMany, SetMany, RemoveMany];
+    public static IReadOnlyList<string> All { get; } = [Get, Set, TryAdd, Remove, TryRemove, TryRefresh, GetMany, SetMany, RemoveMany];
 
     /// <summary>
     /// <c>cache-entries.get</c> 与 <c>cache-entries.remove</c> 的请求
@@ -103,6 +111,18 @@ public static class RemoteCacheOperations
     /// </summary>
     [ApiLevel(Stability.Experimental, "5.0")]
     public sealed record TryRemoveRequest(string Key, string Expected);
+
+    /// <summary>
+    /// <c>cache-entries.try-refresh</c> 的请求
+    /// </summary>
+    [ApiLevel(Stability.Experimental, "5.0")]
+    public sealed record TryRefreshRequest(string Key, string Expected, long TtlMs);
+
+    /// <summary>
+    /// <c>cache-entries.try-refresh</c> 的响应
+    /// </summary>
+    [ApiLevel(Stability.Experimental, "5.0")]
+    public sealed record RefreshedResponse(bool Refreshed);
 
     /// <summary>
     /// <c>cache-entries.get-many</c> 与 <c>cache-entries.remove-many</c> 的请求

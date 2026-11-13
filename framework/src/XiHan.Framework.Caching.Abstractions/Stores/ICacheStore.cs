@@ -74,4 +74,12 @@ public interface ICacheStore
     /// 删除返回 <see langword="true"/>。原子
     /// </remarks>
     ValueTask<bool> TryRemoveAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 当前值等于 <paramref name="expectedValue"/> 时才把到期时刻重设为现在加 <paramref name="timeToLive"/>
+    /// </summary>
+    /// <remarks>
+    /// 重设返回 <see langword="true"/>；不存在、已过期或值不同返回 <see langword="false"/>。原子，不改值，滑动过期的条目只重设这一次的到期时刻、滑动窗口不变。分布式锁的续约用它（ADR-0215）
+    /// </remarks>
+    ValueTask<bool> TryRefreshAsync(CacheKey key, ReadOnlyMemory<byte> expectedValue, TimeSpan timeToLive, CancellationToken cancellationToken);
 }

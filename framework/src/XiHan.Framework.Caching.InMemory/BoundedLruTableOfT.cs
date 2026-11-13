@@ -146,6 +146,30 @@ internal sealed class BoundedLruTable<TValue>(int capacity, TimeSpan defaultTime
     }
 
     /// <summary>
+    /// 当前值满足条件时把到期时刻重设为现在加 <paramref name="timeToLive"/>
+    /// </summary>
+    /// <remarks>
+    /// 重设返回 <see langword="true"/>。比较与重设在同一把锁内，因此是原子的；滑动窗口不变，条目移到最近使用
+    /// </remarks>
+    public bool Refresh(string key, Func<TValue, bool> condition, TimeSpan timeToLive)
+    {
+        lock (_gate)
+        {
+            // 已过期的条目视为不存在：比较不会匹配到它，到期之后别人取得的锁也续不到旧持有者手里
+            var node = Live(key);
+            if (node is null || !condition(node.Value.Value))
+            {
+                return false;
+            }
+
+            node.Value.ExpiresAt = timeProvider.GetUtcNow() + timeToLive;
+            _recency.Remove(node);
+            _recency.AddFirst(node);
+            return true;
+        }
+    }
+
+    /// <summary>
     /// 批量删除
     /// </summary>
     /// <remarks>
