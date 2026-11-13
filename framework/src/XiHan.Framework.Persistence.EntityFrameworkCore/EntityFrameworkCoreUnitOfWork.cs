@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using XiHan.Framework.Domain.Entities;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -160,6 +161,13 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
         // 命名连接的绑定优先于分片，DbContext 建在命名连接上时没有分片要核对
         if (_connection.Shard is { } shard)
         {
+            // 分片按租户选库：工作单元的租户必须是这个分片的租户，否则按一个租户过滤与写入、连的却是别的租户的库（ADR-0223）
+            var shardTenant = shard.Properties.TryGetValue(TenantShardKeys.TenantProperty, out var bound) ? bound : null;
+            if (!string.Equals(shardTenant, options.TenantId, StringComparison.Ordinal))
+            {
+                throw new FrameworkException(PersistenceErrors.ShardTenantMismatch, $"The unit of work is for tenant '{options.TenantId ?? "(none)"}', but its DbContext is bound to the shard of tenant '{shardTenant}'.");
+            }
+
             return BeginOnShardAsync(options, shard, cancellationToken);
         }
 

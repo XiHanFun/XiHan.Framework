@@ -195,8 +195,12 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
                 }
 
                 List<ConnectionConfig> configs = [root, .. named.Select(config => replicas?.ForScope(config) ?? config)];
-                if (shard.HasValue)
+                if (shard.TryGetValue(out var onShard))
                 {
+                    // 记下分片的租户，工作单元开始时核对它的租户与之一致（ADR-0223）
+                    var bound = sp.GetRequiredService<SqlSugarShardTenant>();
+                    bound.IsBound = true;
+                    bound.TenantId = onShard.Properties.TryGetValue(TenantShardKeys.TenantProperty, out var tenant) ? tenant : null;
                     // 分片连接的配置本来就是这个作用域现建的，从库由回调按分片绑定给出；核对它没有拿别的库的从库，分片不探测
                     var config = CreateConfig(configure, shard, SqlSugarConnections.Shard, defaultHitRate);
                     SqlSugarReplicaRules.EnsureOwn(config, owners);
@@ -218,7 +222,9 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
         }
 
         context.Services.TryAddSingleton<IEntityConnectionSelector, SqlSugarConnectionSelector>();
-        context.Services.TryAddScoped<SqlSugarUnitOfWork>();
+        context.Services.TryAddScoped<SqlSugarShardTenant>();
+        // 先取客户端：建出带分片的客户端时才写入分片的租户，工作单元开始时核对
+        context.Services.TryAddScoped(static sp => new SqlSugarUnitOfWork(sp.GetRequiredService<ISqlSugarClient>(), sp.GetRequiredService<IEntityConnectionSelector>()) { Shard = sp.GetRequiredService<SqlSugarShardTenant>() });
         context.Services.TryAddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<SqlSugarUnitOfWork>());
         context.Services.TryAddSingleton<IIdGenerator<Guid>, GuidV7IdGenerator>();
         // 运行时数据源：按应用记录里的定义连外部库，与上面的作用域客户端互不相干（RFC-0005「运行时数据源」）

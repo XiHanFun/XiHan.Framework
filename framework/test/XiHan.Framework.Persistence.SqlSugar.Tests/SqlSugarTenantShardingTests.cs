@@ -6,7 +6,9 @@ using SqlSugar;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.MultiTenancy.InMemory;
+using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.Conformance.Fixtures;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -38,6 +40,58 @@ public sealed class SqlSugarTenantShardingTests : IDisposable
     {
         _default.Dispose();
         _shard.Dispose();
+    }
+
+    [Fact]
+    public async Task UnitOfWork_OnAShard_MustBeForTheShardsTenant()
+    {
+        // 加固（ADR-0223）：原先不核对，工作单元按 beta 过滤与写入、连的却是 acme 的库，beta 的行写进了 acme 的库
+        await using var host = await StartShardedAsync();
+
+        foreach (var tenant in new[] { "beta", null })
+        {
+            await using var scope = host.Services.CreateAsyncScope();
+            Assert.True((await scope.ServiceProvider.GetRequiredService<TenantShardScope>().BindTenantAsync("acme", CancellationToken.None)).ValueOrThrow().HasValue);
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
+            var exception = await Assert.ThrowsAsync<FrameworkException>(() => unitOfWork.BeginAsync(UnitOfWorkOptions.Default with { TenantId = tenant }, CancellationToken.None));
+            Assert.Equal(PersistenceErrors.ShardTenantMismatch, exception.Code);
+            Assert.Equal(UnitOfWorkState.NotStarted, unitOfWork.State);
+        }
+
+        // 与绑定的租户一致照常
+        await using (var scope = host.Services.CreateAsyncScope())
+        {
+            Assert.True((await scope.ServiceProvider.GetRequiredService<TenantShardScope>().BindTenantAsync("acme", CancellationToken.None)).ValueOrThrow().HasValue);
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            await unitOfWork.BeginAsync(UnitOfWorkOptions.Default with { TenantId = "acme" }, CancellationToken.None);
+            Assert.Equal(UnitOfWorkState.Active, unitOfWork.State);
+            await unitOfWork.RollbackAsync(CancellationToken.None);
+        }
+    }
+
+    /// <summary>
+    /// 启动带 acme 分片的宿主
+    /// </summary>
+    /// <remarks>
+    /// 分片库先用独立客户端建表
+    /// </remarks>
+    private async Task<TestHost> StartShardedAsync()
+    {
+        using (var client = CreateClient(_shard.ConnectionString))
+        {
+            client.CodeFirst.InitTables<ConformanceNote>();
+        }
+
+        return await TestHost.StartAsync(
+            static b => b.UseFeature<InMemoryMultiTenancyFeature>().UseFeature(SqliteDatabase.CreateFeature()),
+            [
+                .. _default.Configuration,
+                new("XiHan:MultiTenancy:Tenants:acme:Properties:" + TenantShardKeys.ConnectionString, _shard.ConnectionString),
+                new("XiHan:MultiTenancy:Tenants:acme:Properties:" + TenantShardKeys.DatabaseProvider, "sqlite"),
+                new("XiHan:MultiTenancy:Tenants:beta:DisplayName", "Beta"),
+            ],
+            static services => services.AddRepository<ConformanceNote, Guid>());
     }
 
     [Fact]

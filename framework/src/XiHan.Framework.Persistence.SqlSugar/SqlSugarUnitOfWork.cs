@@ -58,6 +58,14 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <summary>
+    /// 客户端建在哪个租户的分片上
+    /// </summary>
+    /// <remarks>
+    /// 特性登记的工作单元带上它；为空或没有绑定时不核对
+    /// </remarks>
+    internal SqlSugarShardTenant? Shard { get; init; }
+
+    /// <summary>
     /// 本作用域的 SqlSugar 客户端
     /// </summary>
     /// <remarks>
@@ -120,6 +128,12 @@ public sealed class SqlSugarUnitOfWork : IUnitOfWork, IAsyncDisposable
         if (State != UnitOfWorkState.NotStarted)
         {
             throw new FrameworkException(PersistenceErrors.InvalidUnitOfWorkState, $"The unit of work is in state '{State}' and cannot be started again.");
+        }
+
+        // 租户实体落在分片连接上：工作单元的租户必须是这个分片的租户，否则一个租户的行会写进别的租户的库（ADR-0223）
+        if (Shard is { IsBound: true } shard && !string.Equals(shard.TenantId, options.TenantId, StringComparison.Ordinal))
+        {
+            throw new FrameworkException(PersistenceErrors.ShardTenantMismatch, $"The unit of work is for tenant '{options.TenantId ?? "(none)"}', but the SqlSugar client is bound to the shard of tenant '{shard.TenantId}'.");
         }
 
         if (options.Connection is { } name)

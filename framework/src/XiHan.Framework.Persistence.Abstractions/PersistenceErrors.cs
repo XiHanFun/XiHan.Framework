@@ -120,6 +120,14 @@ public static class PersistenceErrors
     public const string ReplicaMisplaced = "PERSISTENCE_VALIDATION_009";
 
     /// <summary>
+    /// 工作单元的租户与客户端绑定的分片的租户不一致
+    /// </summary>
+    /// <remarks>
+    /// 含工作单元不带租户。开始工作单元时抛出，工作单元保持未开始：不一致时按一个租户过滤与写入、连的却是另一个租户的库（ADR-0223）
+    /// </remarks>
+    public const string ShardTenantMismatch = "PERSISTENCE_VALIDATION_010";
+
+    /// <summary>
     /// 没有活动的工作单元
     /// </summary>
     public const string NoActiveUnitOfWork = "PERSISTENCE_UNAVAILABLE_001";

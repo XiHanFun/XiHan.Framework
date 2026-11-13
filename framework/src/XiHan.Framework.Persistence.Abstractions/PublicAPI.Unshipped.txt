@@ -345,6 +345,7 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.NotSupported = 
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ReadOnly = "PERSISTENCE_UNEXPECTED_001" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ReplicaMisplaced = "PERSISTENCE_VALIDATION_009" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ReplicaUnavailable = "PERSISTENCE_UNAVAILABLE_009" -> string!
+const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.ShardTenantMismatch = "PERSISTENCE_VALIDATION_010" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.StorageFormatMismatch = "PERSISTENCE_VALIDATION_008" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.StoreUnavailable = "PERSISTENCE_UNAVAILABLE_003" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceErrors.TableNotFound = "PERSISTENCE_NOTFOUND_003" -> string!

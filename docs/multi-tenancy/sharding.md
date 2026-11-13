@@ -166,7 +166,7 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 }
 ```
 
-工作单元的租户不会从绑定推导出来，两者都由调用方给出；管道外开工作单元、派发领域事件的完整写法见[工作单元与事务](/persistence/unit-of-work)。两个多租户 Provider 都登记 `TenantShardScope`，与是否选中分片能力无关。
+工作单元的租户不会从绑定推导出来，两者都由调用方给出，必须一致：客户端建在分片上时，开始工作单元即核对，不一致（含不带租户）抛出 `PERSISTENCE_VALIDATION_010`，工作单元保持未开始（ADR-0223）；管道外开工作单元、派发领域事件的完整写法见[工作单元与事务](/persistence/unit-of-work)。两个多租户 Provider 都登记 `TenantShardScope`，与是否选中分片能力无关。
 
 ## 常见问题
 

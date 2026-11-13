@@ -222,3 +222,4 @@
 | [0220](0220-Nacos凭据与令牌的传输.md) | 安全审查加固：Nacos 令牌走 `Authorization: Bearer` 头、失败原因不带正文、带凭据的非本机 http 要 `AllowInsecureHttp` | 已采纳 |
 | [0221](0221-命令行遍历不跟随符号链接.md) | 安全审查加固：`xihan migrate` 与 `setup` 遍历时跳过符号链接与目录联接 | 已采纳 |
 | [0222](0222-pack不把凭据写进ConfigMap.md) | 安全审查加固：`xihan pack` 发现进 ConfigMap 的配置里有带值的凭据键即失败（`CLI_VALIDATION_007`） | 已采纳 |
+| [0223](0223-工作单元的租户必须与绑定的分片一致.md) | 安全审查加固：客户端建在分片上时，工作单元的租户必须是分片的租户，不一致抛出 `PERSISTENCE_VALIDATION_010` | 已采纳 |
