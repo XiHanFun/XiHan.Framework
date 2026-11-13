@@ -432,7 +432,8 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
             foreach (var file in Directory.EnumerateFiles(directory))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (file.Contains(FileSystemBlobStore.TemporaryMarker, StringComparison.Ordinal))
+                // 上传目录里的文件名都由本实现起，旧版与新版的临时文件都可以直接删
+                if (FileSystemBlobStore.IsTemporary(file) || FileSystemBlobStore.IsLegacyTemporary(file))
                 {
                     File.Delete(file);
                 }

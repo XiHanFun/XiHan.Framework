@@ -49,6 +49,7 @@
 - **调整** 健康探针只给 `status` 与 `state`：原先匿名访问者能读到全部特性、健康条目与它们的描述和数据。详情改由新的 `MapXiHanHealthDetails()`（`/health/details`）给出，它经内核管道、能加访问要求。MCP 的 `serverInfo.version` 缺省改为应用的版本，不再是框架版本
 - **修复** 知识库的默认集合按租户分开：原先请求不指明集合时所有租户共用 `knowledge`，一个租户摄入的内容别的租户检索得到。带租户的调用现在用 `knowledge.<租户 ID>`，要共享就显式指明集合；`IKnowledgeIngestor` 与 `IKnowledgeRetriever` 改为作用域服务，在根容器里直接取用的代码要先建作用域；已经摄入在共享集合里的内容要重新按租户摄入
 - **修复** 发件箱投递循环覆盖租户分片库：原先只轮询默认库，EF Core 在带分片的调用里写进租户库的消息发不出去。每轮先投递默认库，再逐个投递分片库；新增 `XiHan:Messaging:Outbox:IncludeShards`（默认 `true`）与 `ShardRefreshIntervalSeconds`（默认 60）。EF Core 下带分片的调用要发消息，分片库要建发件箱表
+- **修复** 文件系统对象存储不再把键里含 `.xihan-tmp-` 的对象当作临时文件：原先这样的对象列举不到、重启时被删除，根路径含这段文字时整个存储重启后清空。临时文件片段改为 `~xihan-tmp-`，只按文件名判定
 
 ## v5.0.0-preview.3（2026-11-12）
 

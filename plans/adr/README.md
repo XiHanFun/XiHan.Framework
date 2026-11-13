@@ -211,3 +211,4 @@
 | [0209](0209-探针只给状态详情另经管道.md) | 安全审查 S-22：健康探针只给 `status` 与 `state`；新增经管道、能加访问要求的 `MapXiHanHealthDetails`；MCP 的 `serverInfo.version` 缺省为应用的版本 | 已采纳 |
 | [0210](0210-知识库的默认集合按租户分开.md) | 安全审查 S-35：知识库请求没有指明集合时，带租户的调用用 `<Collection>.<租户 ID>`；`IKnowledgeIngestor` 与 `IKnowledgeRetriever` 改为作用域服务 | 已采纳 |
 | [0211](0211-发件箱投递覆盖租户分片库.md) | 安全审查 S-36：发件箱投递循环先投递默认库、再逐个投递租户分片库（按连接去重）；新增 `IncludeShards` 与 `ShardRefreshInterval` | 已采纳 |
+| [0212](0212-文件系统存储的临时文件名与对象互不混淆.md) | 安全审查 S-39：文件系统存储的临时文件片段改为 `~xihan-tmp-`，只按文件名判定；旧版临时文件没有元数据的启动时清掉 | 已采纳 |

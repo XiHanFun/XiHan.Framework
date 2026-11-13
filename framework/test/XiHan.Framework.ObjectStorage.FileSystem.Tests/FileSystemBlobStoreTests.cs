@@ -58,7 +58,7 @@ public sealed class FileSystemBlobStoreTests : IDisposable
         Assert.Equal(_clock.GetUtcNow(), written.LastModified);
         Assert.Equal("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", written.ETag);
         Assert.Equal(5, store.UsedBytes);
-        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root.Path, "docs", "data"), "*.xihan-tmp-*", SearchOption.AllDirectories));
+        Assert.Empty(Directory.EnumerateFiles(Path.Combine(_root.Path, "docs", "data"), "*~xihan-tmp-*", SearchOption.AllDirectories));
 
         // 覆盖后用量按差额更新；删除后归零
         Assert.True((await store.PutAsync(new ContainerName("docs"), new BlobKey("2026/a.txt"), Bytes("hello world"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
@@ -87,7 +87,7 @@ public sealed class FileSystemBlobStoreTests : IDisposable
         Assert.True((await store.PutAsync(new ContainerName("quota"), new BlobKey("a"), Bytes("1234"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
         Assert.True((await store.PutAsync(new ContainerName("quota"), new BlobKey("b"), Bytes("12345"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
         Assert.Equal(9, store.UsedBytes);
-        Assert.Empty(Directory.EnumerateFiles(_root.Path, "*.xihan-tmp-*", SearchOption.AllDirectories));
+        Assert.Empty(Directory.EnumerateFiles(_root.Path, "*~xihan-tmp-*", SearchOption.AllDirectories));
     }
 
     [Fact]
@@ -97,13 +97,13 @@ public sealed class FileSystemBlobStoreTests : IDisposable
         Assert.True((await first.PutAsync(new ContainerName("ctr"), new BlobKey("x/y"), Bytes("12345"), BlobPutOptions.Default, CancellationToken.None)).IsSuccess);
         var data = Path.Combine(_root.Path, "ctr", "data");
         await File.WriteAllBytesAsync(Path.Combine(data, "foreign.bin"), new byte[7]);
-        await File.WriteAllBytesAsync(Path.Combine(data, "x", "y.xihan-tmp-dead"), new byte[100]);
+        await File.WriteAllBytesAsync(Path.Combine(data, "x", "y~xihan-tmp-dead"), new byte[100]);
 
         var second = Store();
         Assert.Equal(0, second.UsedBytes);
         await second.InitializeAsync(CancellationToken.None);
         Assert.Equal(12, second.UsedBytes);
-        Assert.False(File.Exists(Path.Combine(data, "x", "y.xihan-tmp-dead")));
+        Assert.False(File.Exists(Path.Combine(data, "x", "y~xihan-tmp-dead")));
 
         // 没有元数据文件的外部文件按文件信息补元数据，列举时可见
         var foreign = (await second.HeadAsync(new ContainerName("ctr"), new BlobKey("foreign.bin"), CancellationToken.None)).ValueOrThrow();

@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -38,9 +39,22 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 临时文件的名字片段
     /// </summary>
     /// <remarks>
-    /// 列举时跳过
+    /// 以 <c>~</c> 开头：键的编码只产出小写字母、数字、<c>._-</c> 与 <c>%XX</c>，对象的文件名里不会出现它，键里写什么都不会被当作临时文件（ADR-0212）。列举时跳过，启动时清掉
     /// </remarks>
-    internal const string TemporaryMarker = ".xihan-tmp-";
+    internal const string TemporaryMarker = "~xihan-tmp-";
+
+    /// <summary>
+    /// 旧版临时文件的名字片段
+    /// </summary>
+    /// <remarks>
+    /// ADR-0212 之前的写法，后面跟 32 位十六进制。只用于启动时清掉旧版崩溃留下的临时文件
+    /// </remarks>
+    private const string LegacyTemporaryMarker = ".xihan-tmp-";
+
+    /// <summary>
+    /// 小写十六进制数字
+    /// </summary>
+    private static readonly SearchValues<char> _lowerHexDigits = SearchValues.Create("0123456789abcdef");
 
     /// <summary>
     /// 元数据文件后缀
@@ -181,8 +195,8 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             foreach (var file in Directory.EnumerateFiles(data, "*", SearchOption.AllDirectories))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                // 上次崩溃留下的临时文件不算用量，顺手清掉
-                if (file.Contains(TemporaryMarker, StringComparison.Ordinal))
+                // 上次崩溃留下的临时文件不算用量，顺手清掉。旧版的临时文件名与键的编码会重合，没有元数据文件的才是临时文件
+                if (IsTemporary(file) || (IsLegacyTemporary(file) && !File.Exists(Path.Combine(container, MetaDirectory, Path.GetRelativePath(data, file) + MetaSuffix))))
                 {
                     File.Delete(file);
                     continue;
@@ -371,7 +385,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             foreach (var file in Directory.EnumerateFiles(data, "*", SearchOption.AllDirectories))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (file.Contains(TemporaryMarker, StringComparison.Ordinal))
+                if (IsTemporary(file))
                 {
                     continue;
                 }
@@ -589,6 +603,33 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         var dataPath = DataPath(container, key);
         Directory.CreateDirectory(Path.GetDirectoryName(dataPath)!);
         return dataPath + TemporaryMarker + Guid.NewGuid().ToString("N");
+    }
+
+    /// <summary>
+    /// 是不是临时文件
+    /// </summary>
+    /// <remarks>
+    /// 只看文件名：所在目录（键的前缀段）与根路径里出现同样的文字不算
+    /// </remarks>
+    internal static bool IsTemporary(string path) => Path.GetFileName(path).Contains(TemporaryMarker, StringComparison.Ordinal);
+
+    /// <summary>
+    /// 文件名是不是旧版临时文件的样子
+    /// </summary>
+    /// <remarks>
+    /// 以 <c>.xihan-tmp-</c> 加 32 位小写十六进制结尾。键也能写成这个样子，调用方还要看有没有元数据文件
+    /// </remarks>
+    internal static bool IsLegacyTemporary(string path)
+    {
+        var name = Path.GetFileName(path.AsSpan());
+        const int Suffix = 32;
+        if (name.Length <= LegacyTemporaryMarker.Length + Suffix)
+        {
+            return false;
+        }
+
+        var tail = name[^(LegacyTemporaryMarker.Length + Suffix)..];
+        return tail.StartsWith(LegacyTemporaryMarker, StringComparison.Ordinal) && !tail[LegacyTemporaryMarker.Length..].ContainsAnyExcept(_lowerHexDigits);
     }
 
     /// <summary>
