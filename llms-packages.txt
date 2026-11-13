@@ -66,7 +66,7 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 | `Guardrails:Enabled` | `false` | 登记内置护栏 |
 | `Guardrails:BlockedKeywords`、`InjectionPatterns` | 空 | 数组 |
 | `Guardrails:UseBuiltInInjectionHeuristics` | `true` | 内置中英文提示注入模式 |
-| `Knowledge:Collection` | `knowledge` | 默认集合 |
+| `Knowledge:Collection` | `knowledge` | 默认集合；带租户的调用用 `<Collection>.<租户 ID>`，请求显式指明的集合原样使用（ADR-0210） |
 | `Knowledge:Dimensions` | 1536 | 嵌入维度 |
 | `Knowledge:ChunkSize`、`ChunkOverlap` | 1000、100 | 切块（字符） |
 | `Knowledge:Top` | 5 | 默认检索条数 |
@@ -522,7 +522,7 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 
 内核定义审计事件 `AuditEvent` 与接收器 `IAuditSink`，默认的接收器丢弃全部事件。本包补上产生事件与读回事件的部分：
 
-- `AuditMiddleware` 挂在 Observe 阶段末尾，调用结束后按显式动作或 `AuditSelection` 决定是否记录；结果优先取管道写入的 outcome，主体与租户先取安全上下文、再回退 Baggage（ADR-0036）；接收器故障只记日志。
+- `AuditMiddleware` 挂在 Observe 阶段末尾，调用结束后按显式动作或 `AuditSelection` 决定是否记录；结果优先取管道写入的 outcome，主体与租户先取安全上下文、再回退 Baggage（ADR-0036），Tenant 阶段裁定过租户时租户不回退（ADR-0191）；接收器故障只记日志。
 - `AuditInvocationExtensions` 让处理器在调用期间写入动作、资源名与细节。
 - `IAuditTrail` 按时间、动作、主体、租户、trace-id、成败过滤，按写入顺序升序分页。
 
@@ -991,10 +991,10 @@ public sealed class AuditTrailTests
 
 ## 概述
 
-子系统只有一个存储契约 `ICacheStore`：读、写、不存在才写（`TryAddAsync`）、删、比较删（`TryRemoveAsync`）五个原子操作，加上批量的 `GetManyAsync` / `SetManyAsync` / `RemoveManyAsync`。Provider 只实现这一个接口，类型化缓存、分布式锁与幂等去重都由本包建立在它之上：
+子系统只有一个存储契约 `ICacheStore`：读、写、不存在才写（`TryAddAsync`）、删、比较删（`TryRemoveAsync`）、比较后重设到期（`TryRefreshAsync`）六个原子操作，加上批量的 `GetManyAsync` / `SetManyAsync` / `RemoveManyAsync`。Provider 只实现这一个接口，类型化缓存、分布式锁与幂等去重都由本包建立在它之上：
 
 - `SerializingCache` 把存储与 `ICacheSerializer` 组合成 `ISharedCache`，跨进程的 Provider（Redis、Remote）直接用它。
-- `StoreDistributedLock` 用 `TryAddAsync` 写入 `lock:<resource>` 与唯一令牌、用 `TryRemoveAsync` 按令牌释放，任何存储都能复用。
+- `StoreDistributedLock` 用 `TryAddAsync` 写入 `lock:<resource>` 与唯一令牌、用 `TryRemoveAsync` 按令牌释放、用 `TryRefreshAsync` 按令牌续约，任何存储都能复用。
 - `IdempotencyMiddleware` 用 `TryAddAsync` 写「处理中」标记，用 `SetAsync` 写完成记录，用 `TryRemoveAsync` 清理。
 - `CacheStoreDistributedCache` 把 .NET 的 `IDistributedCache` 架在存储上。
 
@@ -1076,8 +1076,8 @@ public sealed class OneShotGate(ICacheStore store)
 - 基础设施失败（存储不可达、超时）抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不伪装成未命中。
 - 批量方法一次往返、结果与入参顺序一一对应、空集合不触后端；`SetManyAsync` 任一项选项不合法时整批不写；`RemoveManyAsync` 同一个键出现多次第二次为 `false`。
 - `GetOrCreateAsync` 不合并并发：多个未命中的调用方各自执行工厂，后写覆盖先写。
-- `LockHandle` 是抽象类，只释放一次（基类原子置位，并发释放也只执行一次）；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。包外实现 `IDistributedLock` 时派生它并实现 `ReleaseCoreAsync`。锁不可重入、不续约。
-- 幂等记录的作用域键是 `idem:<租户>:<主体>:<键>`，不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。
+- `LockHandle` 是抽象类，只释放一次（基类原子置位，并发释放也只执行一次）；锁到期后被他人获取会换成新令牌，原句柄释放返回 `false`。包外实现 `IDistributedLock` 时派生它并实现 `ReleaseCoreAsync` 与 `ExtendCoreAsync`。锁不可重入；`TryExtendAsync` 原子续约，释放之后返回 `false`。
+- 幂等记录的作用域键是 `idem:<租户>:<长度>.<主体>:<键>`（匿名与没有租户为 `-`，主体带长度前缀，ADR-0205），不满足 `CacheKey` 文法时以 `CACHING_VALIDATION_001` 结束调用；处理中返回 `CACHING_CONFLICT_002`；成功与失败的结果都会回放，操作调用回放时还原首次的响应（XGI 载荷、类型化对象、HTTP 状态码与正文），记录属于另一个调用或响应无法还原时返回 `CACHING_CONFLICT_003`（ADR-0064）。
 - `CacheStoreDistributedCache`：绝对过期两种写法取较早者，已过去的时刻抛 `ArgumentOutOfRangeException`；与滑动过期同时给时绝对优先；都不给时用 Provider 的默认存活时间（内存与 Redis 缺省 5 分钟）；同步成员阻塞等待异步存储。
 - `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回 `CACHING_VALIDATION_004`、不访问后端；列键时不合法的前缀同样返回它；`CacheKeyQuery.PageSize` 为 1 到 `MaxPageSize`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；本实例的订阅者同步收到通知，其他实例经后端转发、不回送给发出者；跨实例通知尽力而为，可能丢失。
@@ -1552,6 +1552,7 @@ public sealed class LocalMirror : IDisposable
 | `TryAddAsync` | `cache-entries.try-add` | 同 `set` → `{ added }` |
 | `RemoveAsync` | `cache-entries.remove` | `{ key }` → `{ removed }` |
 | `TryRemoveAsync` | `cache-entries.try-remove` | `{ key, expected }` → `{ removed }` |
+| `TryRefreshAsync` | `cache-entries.try-refresh` | `{ key, expected, ttlMs }` → `{ refreshed }` |
 | `GetManyAsync` | `cache-entries.get-many` | `{ keys }` → `{ values }`，与 `keys` 等长 |
 | `SetManyAsync` | `cache-entries.set-many` | `{ entries }` → `{}` |
 | `RemoveManyAsync` | `cache-entries.remove-many` | `{ keys }` → `{ removed }`，与 `keys` 等长 |
@@ -1634,7 +1635,7 @@ builder.AddXiHan(xihan => xihan
   "isolation": "out-of-process",
   "requires": [ { "id": "kernel.plugins", "version": "1" } ],
   "contributes": {
-    "operations": [ "cache-entries.get", "cache-entries.set", "cache-entries.try-add", "cache-entries.remove", "cache-entries.try-remove", "cache-entries.get-many", "cache-entries.set-many", "cache-entries.remove-many" ]
+    "operations": [ "cache-entries.get", "cache-entries.set", "cache-entries.try-add", "cache-entries.remove", "cache-entries.try-remove", "cache-entries.try-refresh", "cache-entries.get-many", "cache-entries.set-many", "cache-entries.remove-many" ]
   }
 }
 ```
@@ -1754,7 +1755,7 @@ xihan orders create --name widget --amount 3
 xihan migrate <来源版本> [--path <目录|.csproj|.slnx>] [--fixers <规则编号,…>] [--dry-run] [--report <文件>]
 ```
 
-工具当前没有登记任何规则集，所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。
+工具当前没有登记任何规则集，所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`，不跟随符号链接与目录联接（链接可能指向 `--path` 之外，ADR-0221）。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。
 
 ### mcp
 
@@ -1823,6 +1824,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 | `setup` 的 `--client` 或 `--mode` 不认识 | `CLI_VALIDATION_005` | 64 |
 | `setup` 找不到项目根 | `CLI_NOTFOUND_004` | 3 |
 | `setup` 要合并的配置文件读不了（不改动任何文件） | `CLI_VALIDATION_006` | 2 |
+| `pack` 进 ConfigMap 的配置文件里有带值的凭据（`detail` 列出键的路径，不带值；不写任何文件） | `CLI_VALIDATION_007` | 2 |
 | `setup --check` 未就绪（`detail` 列出各项） | `CLI_CONFLICT_001` | 5 |
 | `mcp` 在 stdin 关闭后 | — | 0 |
 | 被 Ctrl+C 取消 | — | 8 |
@@ -2091,6 +2093,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<NacosConfigurati
 | `Format` | `Json` / `Properties` | `Json` | 文档格式，不区分大小写 |
 | `LongPollTimeoutSeconds` | 正数 | 30 | 长轮询窗口 |
 | `RequestTimeoutSeconds` | 正数 | 10 | 单次请求（取文档、登录）的超时 |
+| `AllowInsecureHttp` | 布尔 | `false` | 配置了用户名密码时是否允许非本机的 `http` 地址；默认否，口令与令牌在 http 上是明文，建客户端时抛 `ArgumentException`。只在链路另有保护时打开 |
 
 ```json
 {
@@ -2158,7 +2161,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 ## 行为与限制
 
 - 格式：`Json` 要求根是对象，嵌套对象按 `A:B` 展平，数组按下标，`null` 保留为空值；`Properties` 把 `a.b=c` 展平成 `a:b`，`#` 与 `!` 开头的行是注释。文档不合法返回 `CONFIGURATION_VALIDATION_001`。
-- 登录：配置了 `UserName` 与 `Password` 时调用上下文路径下的 `/v1/auth/login`（缺省即 `/nacos/v1/auth/login`）取 `accessToken`，在到期前一分钟续期；响应没有 `tokenTtl` 时按 18000 秒计。
+- 登录：配置了 `UserName` 与 `Password` 时调用上下文路径下的 `/v1/auth/login`（缺省即 `/nacos/v1/auth/login`）取 `accessToken`，在到期前一分钟续期；响应没有 `tokenTtl` 时按 18000 秒计。令牌经请求头 `Authorization: Bearer <令牌>` 发送，不进查询串（查询串会进访问日志）；请求失败时原因只带动作与状态码，不带响应正文（ADR-0220）。
 - 多地址：每次请求按 `ServerAddresses` 的顺序尝试，连接失败或超时换下一个，全部失败时返回不可达。
 - 版本：服务端没有给出 `Content-MD5`（例如中间的代理去掉了这个头）时，客户端按 Nacos 的算法自己算，即内容按 UTF-8 编码的 MD5（小写十六进制），监听接口照样认得这个版本，长轮询不受影响。
 - 上下文路径：地址的路径就是 Nacos 的上下文路径（`server.servlet.contextPath`），登录、取配置、监听的接口路径（`/v1/auth/login`、`/v1/cs/configs`、`/v1/cs/configs/listener`）接在它后面；地址没有路径（或只有 `/`）时用 Nacos 的缺省值 `/nacos`，所以 `http://nacos:8848` 与 `http://nacos:8848/nacos` 等价。Nacos 改了上下文路径时写 `http://nacos:8848/config`；经网关挂在前缀下时把网关前缀连同上下文路径写全，例如网关把 `/config-center/` 转发到 Nacos 的根上，就写 `http://gateway/config-center/nacos`。上下文路径设成根（`/`）的 Nacos 无法用地址表达，不受支持。
@@ -2211,7 +2214,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | --- | --- | --- |
 | [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 5 |
 | [Auditing](#auditing) | `AuditTrailConformance` | 5 |
-| [Caching](#caching) | `CacheStoreConformance` | 16 |
+| [Caching](#caching) | `CacheStoreConformance` | 18 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
 | [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 14 + 2 + 4 |
@@ -2242,7 +2245,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 包 ID `XiHan.Framework.Caching.Conformance`（RFC-0006，Stable）。任何 `ICacheStore` 实现（无论提供 `caching.local` 还是 `caching.distributed`）都继承 `CacheStoreConformance`，实现 `CreateStore()`，每个用例创建一个新存储。
 
-覆盖：读写与未命中、覆盖、键区分大小写、删除并报告是否存在、批量读写保持顺序与后写覆盖、批量的逐项过期与滑动延长、批量删除逐项结果、空批量、不存在才写只有一个赢家（含并发）、比较删、绝对过期、滑动过期在读取时延长、大值、基于存储的分布式锁的互斥 / 释放 / 到期，以及存储实现 `ICacheStoreInspector` 时的按前缀分页列键、读元数据与按前缀删除、每页上限越界（0、1001）返回 `CACHING_VALIDATION_003` 而边界值（1、1000）照常（不实现即跳过）。过期用例用真实时间等待，`ExpirationGrace`（缺省 300 毫秒）可按 Provider 调整；`Key()`、`Bytes(text)`、`Text(value)` 是供派生类补充用例的辅助方法。
+覆盖：读写与未命中、覆盖、键区分大小写、删除并报告是否存在、批量读写保持顺序与后写覆盖、批量的逐项过期与滑动延长、批量删除逐项结果、空批量、不存在才写只有一个赢家（含并发）、比较删、比较后重设到期（值不同、不存在、已到期都不重设）、绝对过期、滑动过期在读取时延长、大值、基于存储的分布式锁的互斥 / 释放 / 到期与续约（释放后、到期被他人取得后续不回来），以及存储实现 `ICacheStoreInspector` 时的按前缀分页列键、读元数据与按前缀删除、每页上限越界（0、1001）返回 `CACHING_VALIDATION_003` 而边界值（1、1000）照常（不实现即跳过）。过期用例用真实时间等待，`ExpirationGrace`（缺省 300 毫秒）可按 Provider 调整；`SupportsRefresh`（缺省 `true`）只在接入尚未跟上契约的外部实现时临时关掉；`Key()`、`Bytes(text)`、`Text(value)` 是供派生类补充用例的辅助方法。
 
 ```csharp
 using XiHan.Framework.Caching.Abstractions.Stores;
@@ -2301,7 +2304,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、ID 区分大小写、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
+| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、大写的 ID 找不到小写的租户、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
 | `TenantShardResolverConformance` | Preview | `CreateResolverAsync(tenants)` 返回 `ITenantShardResolver`；种子租户 `Sharded`、`Shared` | 分库租户解析出连接串、小写的提供者名与去前缀的透传属性；共库与未知租户为成功无值；失效单个或全部后重解析结果一致 |
 
 `MultiTenancy.InMemory` 与 `MultiTenancy.Database` 通过两套用例。
@@ -2415,7 +2418,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 ## Security
 
-包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、全局授予对任何租户生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
+包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、平台授予只对不带租户的调用生效、每个租户的授予只对带租户的调用生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
 
 `GetManyAsync` 返回与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`：没有授予是成功的空集合，存储故障整批失败；用例 6 核对顺序、重复项、种类不串与空集合。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
 
@@ -2643,14 +2646,14 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `WebApplicationBuilderExtensions` | `AddXiHan(configure)`：装载挂载的配置目录，再交给内核装配应用 |
-| `ApplicationBuilderExtensions` | `UseXiHan()`：请求桥接进内核管道；`MapXiHanHealth(prefix)`：`{prefix}/startup`、`/ready`、`/live` |
+| `ApplicationBuilderExtensions` | `UseXiHan()`：请求桥接进内核管道；`MapXiHanHealth(prefix)`：`{prefix}/startup`、`/ready`、`/live`，只给状态；`MapXiHanHealthDetails(pattern)`：各特性与健康条目的详情，经管道、能加访问要求（ADR-0209） |
 | `Endpoints.HttpInvocation` | `FindXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
 | `Endpoints.EndpointConventionBuilderExtensions` | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)`；引用的权限码与策略在宿主建请求管道时核对，不存在即启动失败 |
 | `Endpoints.PipelineBypassMetadata` | 端点元数据：带它的端点不经内核管道；`BypassXiHanPipeline(builder)` 标注 |
 | `Endpoints.OperationPayloadBinder` | 协议适配器挂在端点上的载荷绑定委托，`UseXiHan()` 在进管道前调用 |
 | `Endpoints.OperationResponseWriter` | 协议适配器挂在端点上的成功响应写出委托（状态码、内容类型与正文）；幂等回放时端点不执行，`UseXiHan()` 在管道成功结束、响应未开始而上下文里有响应对象时用它写出 |
 | `ProblemResponse` | Problem Details 响应体；`FromError`、`StatusCodeFor`、`IsAuthenticationFailure`、`FieldErrorsOf`、`ScalarDetailsOf`、`WriteTo` |
-| `Health.HealthResponse`、`Health.FeatureHealth` | 探针响应体 |
+| `Health.HealthResponse`、`Health.FeatureHealth` | 探针与健康详情的响应体；探针不写 `features` 与 `contributions` |
 | `Authentication.InvocationAuthenticationBuilderExtensions` | `AddXiHan(configure)`：登记 ASP.NET Core 认证方案 `XiHan` |
 | `Authentication.InvocationAuthenticationOptions` | `QueryTokenPaths`：接受查询串 `access_token` 的路径前缀 |
 | `Authentication.IInvocationAuthenticationFilter` | 方案 `XiHan` 认证成功后的挂点（会话门禁） |
@@ -2707,6 +2710,7 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)�
 | 未认证 / 凭据无效 | 401，带 `WWW-Authenticate` | `SECURITY_DENIED_001` / `SECURITY_DENIED_003` |
 | 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
 | 预签名地址无效或已过期 | 403 | `OBJECTSTORAGE_DENIED_001` |
+| 直传请求的内容类型不合文法（签名没有限定内容类型时） | 400 | `OBJECTSTORAGE_VALIDATION_006` |
 
 状态码按错误码 KIND 的完整映射见 [HTTP 与 OpenAPI](/web/routing)。
 
@@ -3369,8 +3373,8 @@ app.Run();
 | --- | --- |
 | 公开类型 | ≤ 120 |
 | 第三方依赖 | 0（只允许 `Microsoft.Extensions.*` 抽象包与 `System.Threading.RateLimiting`） |
-| 启动额外开销 | < 50 ms |
-| 空应用常驻内存 | < 30 MB |
+| 启动额外开销 | JIT 下 ≤ 100 ms，Native AOT 下 < 50 ms |
+| 空应用常驻内存 | 框架额外 ≤ 15 MB |
 | 运行时反射 | 0 |
 
 失败结果只携带消息键（`KernelMessages`）与参数，文案在包内 10 种区域的 `Localization/<区域>.json`，由 `Localization.InMemory` 装载；启动期抛出的 `FrameworkException` 不本地化。
@@ -3404,6 +3408,7 @@ app.Run();
 | `KERNEL_NOTFOUND_001` | 操作未登记 |
 | `KERNEL_VALIDATION_001`–`004` | 载荷非法、类型化调用类型不符、不满足 Schema、自校验失败 |
 | `KERNEL_VALIDATION_005` | 操作契约引用了未登记的权限码：装配完成时抛出、启动失败；装配之后的登记（插件握手之后）返回失败 |
+| `KERNEL_VALIDATION_006` | 要求授权而没有判定者：操作契约声明了权限码或策略，Authorize 阶段却没有中间件；或端点挂了授权要求，却没有装配授权能力。启动失败；装配之后登记的这类操作登记失败（ADR-0217） |
 | `KERNEL_OPERATION_001` / `002` | 操作 ID 重复 / 登记表已满 |
 
 ## 相关
@@ -3841,7 +3846,7 @@ using (MessageScope.Use(localizer, "ja-JP"))
 | 能力 | 定义 `messaging.queue@1`、`messaging.stream@1`（`MessagingCapabilities`），本包不提供；`OutboxFeature` 依赖 `kernel.hosting@1`、`messaging.queue@1`、`persistence.relational@1` |
 | 特性入口 | `OutboxFeature`（清单 ID `xihan.messaging.outbox`，可选） |
 | 配置节 | `XiHan:Messaging`（`MaxAttempts`、`DeadLetterSuffix`、`InstanceId`，由 Provider 读取）、`XiHan:Messaging:Outbox` |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Localization.Abstractions`、`XiHan.Framework.MultiTenancy.Abstractions`（发件箱投递覆盖分片库）；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions`、`Microsoft.Extensions.Logging.Abstractions` |
 | AOT | 兼容 |
 | 稳定性 | Stable；`IMessageReplayer` 与发件箱（`Outbox` 命名空间）为 Preview |
 
@@ -3895,6 +3900,8 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Messaging:Outbox:RetryDelaySeconds` | 正数 | 5 | 第一次失败后的重试间隔，之后每失败一次翻倍 |
 | `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限 |
 | `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
+| `XiHan:Messaging:Outbox:IncludeShards` | 布尔 | `true` | 装配了租户分片时也投递各分片库里的发件箱行；SqlSugar 把发件箱行留在默认库，可设为 `false` 省去多余的查询 |
+| `XiHan:Messaging:Outbox:ShardRefreshIntervalSeconds` | 正数 | 60 | 分片库清单多久从租户目录重读一次，新建的分片库最迟在这之后纳入投递 |
 
 ```json
 { "XiHan": { "Messaging": { "MaxAttempts": 5, "Outbox": { "PollIntervalSeconds": 0.5 } } } }
@@ -4661,6 +4668,7 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | `ValidateAgainstStore` | `bool` | `true` | 租户必须在存储中存在且启用；关闭后只校验文法 |
 | `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型 |
 | `ShardCacheSize` | `int` | 10000 | `TenantStoreShardResolver` 按租户缓存分片结果的条目上限，满时整体清空；必须是正整数 |
+| `ShardCacheTimeToLiveSeconds` | 秒 | 30 | 分片缓存条目的存活时间；0 不过期 |
 
 ```json
 {
@@ -4680,7 +4688,7 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | 类型 | 说明 |
 | --- | --- |
 | `Tenants.TenantInfo` | 租户：`Id`、`DisplayName`、`IsEnabled`（缺省 `true`）、`Properties`（键区分大小写） |
-| `Tenants.TenantIdentifier` | 租户 ID 文法 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：`IsValid`、`Validate`、`MaxLength`（64） |
+| `Tenants.TenantIdentifier` | 租户 ID 文法 `^[a-z0-9][a-z0-9._-]{0,63}$`（只用小写、整串匹配，ADR-0196）：`IsValid`、`Validate`、`MaxLength`（64） |
 | `Tenants.ITenantStore`、`TenantQuery`、`TenantPage` | 租户存储：`FindAsync` → `Result<Maybe<TenantInfo>>`、`ListAsync(TenantQuery)` → `Result<TenantPage>`（`PageSize` 1～1000、续页令牌、`EnabledOnly`）；ID 区分大小写，存储不可达返回 `MULTITENANCY_UNAVAILABLE_003` |
 | `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选：`ResolveAsync` 返回 `Result<Maybe<string>>`，无值交给下一个解析器，失败即拒绝调用；格式、存在与启用由中间件核对 |
 | `Resolution.ClaimTenantResolver` | 读已认证主体的租户声明（第一个值）；未认证主体跳过 |
@@ -4751,7 +4759,7 @@ public static class ShardInfo
 - 解析顺序就是 `ITenantResolver` 的注册顺序。Provider 先注册 `ClaimTenantResolver` 再注册 `BaggageTenantResolver`，已认证主体所属的租户优先于调用方自报的租户；主体没有租户声明时 Baggage 生效，中间件只核对文法与存储，不判断主体是否属于该租户。
 - 默认租户同样经过文法与存储校验；关闭存储核对后安全上下文里没有显示名。
 - 分片解析失败（租户存储不可达）返回 `MULTITENANCY_UNAVAILABLE_002`，调用失败，不降级为共库。
-- `TenantStoreShardResolver` 缓存"无分片"与未知租户的结果；条目数达到 `ShardCacheSize` 时整体清空，不逐条淘汰；租户连接变更后调用 `Invalidate`。
+- `TenantStoreShardResolver` 缓存"无分片"与未知租户的结果；条目数达到 `ShardCacheSize` 时整体清空，不逐条淘汰；条目过了 `ShardCacheTimeToLive` 即重新读存储；租户连接变更后调用 `Invalidate`（只作用于本实例）。
 - Baggage 里的租户只来自进程内建上下文的地方（消息派发、作业、工作流、命令行宿主）；HTTP、gRPC、MCP 的网络入站不收这个键（ADR-0121），这些调用方的租户只来自认证。CloudEvents 入站的 `xihantenant` 经消息派发进来，由宿主给端点加的权限把关。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
 - 分库的表结构由应用管理；租户属性 `ConnectionString` 有值即分库，`Shard.<key>` 透传。
 - `TenantShardScope` 必须在作用域首次创建持久化客户端之前绑定；之后再绑定或改绑另一分片抛出 `InvalidOperationException`，同一分片重复绑定无副作用。`BindTenantAsync` 不看租户是否启用、不受应用状态影响；没有分片解析器时成功且不绑定。
@@ -4762,10 +4770,12 @@ public static class ShardInfo
 | `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 |
+| `MULTITENANCY_CONFLICT_001` | 租户 ID 属于已删除的租户，不能再新建（ADR-0225） |
 | `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
 | `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 是存储的错误码，存储的错误作为内部错误保留（ADR-0115） |
 | `MULTITENANCY_UNAVAILABLE_003` | 租户存储不可达（连接、超时、事务失败），不当作租户不存在 |
 | `MULTITENANCY_VALIDATION_003` | 租户列表查询不合法：每页条数越界或续页令牌无效 |
+| `MULTITENANCY_VALIDATION_004` | 已认证主体带多个值不同的租户声明（ADR-0218） |
 
 六个消息键（`multitenancy.tenant.*`、`multitenancy.store.capacity_exceeded`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
 
@@ -4924,7 +4934,7 @@ public sealed class TenantOnboarding(ITenantAdministration tenants)
 ## 行为与限制
 
 - 写入：`UpsertAsync` 一次查询取回已有行，已有的更新、没有的新增，各用一次批量方法写入；同一批里同一租户后者整份覆盖前者，同一行只写一次，各项结果相同。`RemoveAsync` 对不存在的 ID 与同一批里重复出现的 ID 逐项返回 `MULTITENANCY_NOTFOUND_001`；不合法的租户 ID 是编程错误，整批在访问数据库前抛出 `ArgumentException`。空集合直接返回空结果。
-- 可见性：写入在调用方事务提交后才对其他调用可见。`TenantRecordStore` 在写入时就失效缓存，失效与提交之间的窗口由 `CacheTimeToLive` 收敛；多实例部署时其他实例的缓存同样靠存活时间收敛。绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate` 与 `ITenantShardResolver.Invalidate`，或等存活时间到期。
+- 可见性：写入在调用方事务提交后才对其他调用可见。`TenantRecordStore` 在写入时与作用域释放时各失效一次缓存，缓存丢弃失效之前开始的读取，本实例在提交之后立即生效（ADR-0194）；多实例部署时其他实例的缓存同样靠存活时间收敛。绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate` 与 `ITenantShardResolver.Invalidate`，或等存活时间到期。
 - 故障：连接失败、提交失败这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成租户不存在，也不进缓存；Tenant 阶段据此以 503 结束调用，分片解析器把它包进 `MULTITENANCY_UNAVAILABLE_002`。
 - 不合法的租户 ID 在 `FindAsync` 里直接返回无值，不查库，也不占缓存。
 - 枚举分页：`ListAsync` 按 ID 排序、以偏移为续页令牌一页一页读，每页至多 1000 条，不再有截断。
@@ -5159,7 +5169,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
-| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`）、`Overwrite`（缺省 `true`）；`Default` |
+| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，`IsValidContentType` 判定）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符，名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
 | `Blobs.BlobMetadata` | 键、长度、内容类型、`ETag`、最后修改时间、自定义元数据 |
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |
@@ -5168,7 +5178,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Multipart.BlobMultipartUpload` | 一次分片上传：容器、键、上传标识、是否覆盖；可持久化后续传 |
 | `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB |
 | `Signing.IBlobUrlSigner` | `SignAsync(container, key, request)` → `BlobSignedUrl` |
-| `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天 |
+| `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法，保存的文件名最长 `MaxDownloadFileNameLength`（255）、不含控制字符 |
 | `Signing.BlobSignedUrl` | 地址、方法、失效时刻与客户端必须发送的请求头 |
 | `Signing.BlobContentDisposition` | `Attachment(fileName)`：下载文件名的统一写法，非 ASCII 文件名带 `filename*` |
 | `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(name)`、`Names`、`Providers`；同时是健康项贡献者 |
@@ -5251,6 +5261,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_VALIDATION_003` | `StoreDefinitionInvalid` | 命名实例的定义不合法 |
 | `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
 | `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小越界（HTTP 400，不在构造时抛出） |
+| `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：请求的内容类型不合文法（HTTP 400，不写入） |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
 | `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
@@ -5297,7 +5308,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 <RootPath>/<container>/uploads/<上传标识>/  未完成的分片上传
 ```
 
-键的各段经编码后作为路径，大小写不敏感的文件系统上键仍区分大小写；容器目录按需创建。写入先落同目录的临时文件（名字含 `.xihan-tmp-`），复制完成后原子替换，再写元数据。配额在进程内计量：启动时扫描目录得到已用量并清理残留的临时文件，之后每次写入与删除更新。
+键的各段经编码后作为路径，大小写不敏感的文件系统上键仍区分大小写；容器目录按需创建。写入先落同目录的临时文件（名字含 `~xihan-tmp-`，键的编码不会产出 `~`，键里写什么都不会被当作临时文件），复制完成后原子替换，再写元数据。配额在进程内计量：启动时扫描目录得到已用量并清理残留的临时文件，之后每次写入与删除更新。
 
 预签名不是文件系统的能力。需要限时地址时装 `Hosting.AspNetCore` 的 `HostedBlobUrlFeature` 并 `MapXiHanBlobs()`，由宿主代收发，见[对象存储](/object-storage/advanced)。
 
@@ -5322,10 +5333,11 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `RootPath` | `string` | `<AppContext.BaseDirectory>/blobs` | 根目录；相对路径按当前目录解析 |
+| `RootPath` | `string` | `<AppContext.BaseDirectory>/blobs` | 根目录；相对路径按当前目录解析，结尾的目录分隔符去掉 |
 | `MaxTotalBytes` | 正整数 | 1073741824（1 GiB） | 全部对象的总字节上限 |
 | `MaxBlobBytes` | 正整数 | 268435456（256 MiB） | 单个对象的字节上限，分片与拼接后的对象同样受它约束 |
-| `MultipartExpiryHours` | 正数 | 168（7 天） | 未完成的分片上传保留多久，启动扫描时清掉更早发起的 |
+| `MultipartExpiryHours` | 正数 | 168（7 天） | 未完成的分片上传保留多久；过期即拒绝再传分片与完成，启动时与运行期间清掉 |
+| `MaxMultipartUploads` | 正整数 | 1000 | 未完成的分片上传数上限 |
 
 ```json
 {
@@ -5372,10 +5384,10 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 ## 行为与限制
 
 - 原子性：读取方要么看到旧对象，要么看到完整的新对象。不覆盖的写入（含分片上传的完成）由文件系统原子判定谁先占住内容路径：Linux 与 macOS 上先以独占创建的空文件占位、再把内容原子替换上去，Windows 上不替换地改名；内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`，并发的不覆盖写入（含共享目录的多个进程）只有一个成功（ADR-0089、ADR-0168、ADR-0172）。
-- 配额：复制过程中逐段检查，超过 `MaxBlobBytes` 或 `MaxTotalBytes` 的项返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不留下内容。单进程计量正确，多进程共享目录时只是近似。
+- 配额：复制过程中逐段检查并预留额度，超过 `MaxBlobBytes` 或 `MaxTotalBytes`（已用量加正在写入的全部预留）的项返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不留下内容；并发写入合计也超不过总配额。覆盖写入期间新旧内容同时在盘上，要有新内容全长的余量，旧对象的字节在替换后才释放（ADR-0183）。单进程计量正确，多进程共享目录时只是近似。
 - 列举：遍历容器目录、按序数排序、按前缀过滤，续页标记是上一页最后一个键；外部直接放进 `data/` 目录、没有元数据的文件按文件信息补一份元数据；文件名还原出的键不符合键文法的（含保留前缀 `.xihan` 下的，ADR-0090）跳过。
 - 范围读取：打开内容文件后定位到起点，只交出该段。
-- 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片不计入配额。上传标识只认本实现发出的 32 位小写十六进制。
+- 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片计入总配额，未完成的上传最多 `MaxMultipartUploads` 个，过期的上传拒绝再传分片与完成（ADR-0184）。上传标识只认本实现发出的 32 位小写十六进制。
 - 健康项 `objectstorage.filesystem.capacity` 由存储同步计算：已用量达到 `MaxTotalBytes` 即 Degraded（`OBJECTSTORAGE_UNAVAILABLE_002`），否则 Ready。命名实例的探测用同一口径。
 - 命名实例建出时即建目录并扫描用量，预签名用宿主签名器的 `ForStore(name)`。本包被别的存储顶替时仍登记 `filesystem` Provider，命名实例照常可用。
 - 与 S3 混装、以本包为缺省实例时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可，S3 只登记命名实例；要缺省的分片上传再把 `objectstorage.multipart` 指定给本包，要缺省的预签名装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。有特性依赖分片上传或预签名却没指定时，那项能力解析到 S3 且是被要求的，`OBJECTSTORAGE_VALIDATION_004` 启动失败（见[对象存储](/object-storage/advanced)）。
@@ -5450,7 +5462,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | --- | --- | --- | --- |
 | `ServiceUrl` | 绝对 http / https 地址 | 空（Amazon S3） | 兼容服务的端点，如 `http://localhost:9000` |
 | `Region` | `string` | `us-east-1` | 访问 Amazon S3 时选端点，访问兼容服务时作签名区域 |
-| `AccessKey` | `string` | 空 | 访问密钥 ID；与 `SecretKey` 都为空时走 SDK 默认凭据链；与 `SecretKey` 一样在选项的 `ToString()` 里打印为 `***` |
+| `AccessKey` | `string` | 空 | 访问密钥 ID；缺省实例与 `SecretKey` 都为空时走 SDK 默认凭据链（命名实例见下文）；与 `SecretKey` 一样在选项的 `ToString()` 里打印为 `***` |
 | `SecretKey` | `string` | 空 | 访问密钥 |
 | `ForcePathStyle` | `bool` | `true` | 桶名放在路径而不是主机名里；各兼容服务对两种寻址的支持不同，按服务商说明设置 |
 | `EnsureBuckets` | `bool` | `false` | 写入遇到桶不存在时建桶再重试一次；缺省由基础设施预先建桶 |
@@ -5488,6 +5500,8 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 绑定的解析规则见[配置与选项](/configuration/options)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
 
 命名实例的客户端过[出站地址策略](/security/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。缺省实例的端点是运维配的，不过策略。
+
+命名实例必须给出 `AccessKey` 与 `SecretKey`，否则建实例失败（`OBJECTSTORAGE_VALIDATION_003`）。设置可以由租户填写，没给密钥就会用宿主的 AWS 凭据链，填设置的人就能以宿主的身份访问它能访问的任何桶。确实要让命名实例用实例角色等环境凭据时，由运营方在配置里打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials: true`；只给一项密钥总是拒绝。
 
 ## 条件写入探测
 
@@ -6117,7 +6131,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `DomainEventTracker`、`IDomainEventDispatcher` | `…Abstractions.UnitOfWork` | 写过的聚合登记表；领域事件派发端口（Messaging 实现） |
 | `PersistenceConventions` | `…Abstractions` | `ApplyOnAdd`、`ApplyOnUpdate`（带存储行的重载让更新沿用存储的创建时间、租户与删除标记）、`TrySoftDelete`、`IsVisibleTo`、`IsDeleted`、`NewStamp` |
 | `LongTextAttribute` | `…Abstractions` | 标记长文本列（`[LongText]`） |
-| `EntityIndexAttribute`、`EntityIndexes`、`EntityIndex` | `…Abstractions` | 在实体类上声明索引（`[EntityIndex(nameof(A), nameof(B), IsUnique = true)]`）；`EntityIndexes.Resolve(type, table)` 按统一规则推出索引名与列（软删除实体的唯一索引只约束未删除的行：`EntityIndex.ExcludesDeleted`），`MaxNameLength` 63；Provider 都经它建索引 |
+| `EntityIndexAttribute`、`EntityIndexes`、`EntityIndex` | `…Abstractions` | 在实体类上声明索引（`[EntityIndex(nameof(A), nameof(B), IsUnique = true)]`）；`EntityIndexes.Resolve(type, table)` 按统一规则推出索引名与列（软删除实体的唯一索引只约束未删除的行：`EntityIndex.ExcludesDeleted`；多租户实体的唯一索引必须含 `TenantId`，跨租户唯一要显式写 `AcrossTenants = true`，ADR-0198），`MaxNameLength` 63；Provider 都经它建索引 |
 | `PersistenceCapabilities`、`PersistenceErrors`、`PersistenceMessages` | `…Abstractions` | 能力 ID、错误码、消息键与消息目录 |
 | `IIdGenerator<TKey>`、`GuidV7IdGenerator` | `…Abstractions.Identifiers` | 标识生成端口；UUID v7 实现 |
 | `SnowflakeIdFeature`、`SnowflakeIdGenerator`、`SnowflakeOptions`、`SnowflakeId` | `…Abstractions.Identifiers` | 雪花标识的特性、生成器、选项、位布局与解析 |
@@ -6199,7 +6213,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 唯一键冲突的核对与报告：关系型 Provider 在写入失败后核对（同一批里两项同键、库里另一行同键；更新把键改成已有的值同样算；部分唯一索引只比较未删除的行），返回 `PERSISTENCE_CONFLICT_003`（消息键 `persistence.entity.unique_key_conflict`，参数 `entity`、`index`），这次写入的项统一报告，工作单元随后只能回滚、调用以同一错误结束（与写入阶段才发现的标识重复相同）。核对不到的（大小写不敏感排序规则下只差大小写、SqlSugar 上与本工作单元先前未提交的行冲突、键含空值）异常原样抛出。
 - 雪花生成器单实例每毫秒最多 4096 个标识；时钟回拨超过阈值抛 `PERSISTENCE_UNAVAILABLE_004`，没有机器位抛 `PERSISTENCE_UNAVAILABLE_005`，在调用里由特性的中间件转为同码的 UNAVAILABLE 结果（HTTP 503）；租约状态以健康项 `persistence.snowflake.worker` 上报。
 - 雪花位布局：符号位 0、41 位自 epoch 起的毫秒（约 69.7 年）、10 位机器位、12 位序列，用尽等下一毫秒，线程安全；时钟早于 epoch 是配置错误，启动即失败。`generator.Parse(id)` 或 `SnowflakeId.Parse(id, epoch)` 还原生成时刻、机器位与序列，排障用。
-- 机器位租约：没有配置 `WorkerId` 时启动期从 0 起逐个尝试锁 `persistence:snowflake:worker:<n>`，取第一个空位；锁不续约，续约就是释放再获取同一机器位，空位被别的实例拿走或锁存储不可达都按丢失处理并重新分配；本地按获取时刻加存活时间判定有效，到期未续上即没有机器位。容器里没有 `IDistributedLock`、或 1024 个机器位都被占用时启动失败，不做随机机器位。健康项 `persistence.snowflake.worker`：持有为 Ready，没有为 Degraded（`PERSISTENCE_UNAVAILABLE_005`）。
+- 机器位租约：没有配置 `WorkerId` 时启动期从 0 起逐个尝试锁 `persistence:snowflake:worker:<n>`，取第一个空位；每三分之一存活时间经 `LockHandle.TryExtendAsync` 原子续约，锁条目一直在、别的实例拿不到这个机器位，续约失败（存储侧已到期或被他人持有）或锁存储不可达都按丢失处理并重新分配；本地按获取时刻加存活时间判定有效，到期未续上即没有机器位。容器里没有 `IDistributedLock`、或 1024 个机器位都被占用时启动失败，不做随机机器位。健康项 `persistence.snowflake.worker`：持有为 Ready，没有为 Degraded（`PERSISTENCE_UNAVAILABLE_005`）。
 - 启停顺序：清单声明可选依赖 `caching.distributed@1`，装配了缓存 Provider 时它先于雪花特性启动、后于雪花特性停止，租约在锁存储可用时取得与释放，与 `UseFeature` 的先后无关；固定机器位又没有任何 `caching.distributed` Provider 时按可选依赖缺失处理，特性是 Degraded，生成不受影响。
 - 雪花失败的转换：`NewId()` 返回 `long`，失败只能抛出 `FrameworkException`；回拨超过阈值在时钟追上后自动恢复。转换成结果的中间件由本特性登记在 Resilience 阶段末尾，在幂等与工作单元之外，工作单元已回滚、幂等标记已清除；消息键 `persistence.snowflake.clock_moved_backwards` / `persistence.snowflake.worker_unavailable`，HTTP 映射为可重试的 503、gRPC 为 `Unavailable`。管道之外直接调用生成器仍是异常（ADR-0063）。
 - 雪花标识在 JSON 里保持 number（后端标准类型，不加字符串转换器）。超过 2^53（约 9.007 × 10^15）的整数在 JavaScript 的 `number` 里会丢精度，而雪花标识从 epoch 之后约 25 天起就全部超过 2^53：前端必须用能保留大整数的方式解析（`JSON.parse` 的 BigInt reviver、按字符串读取原文），以字符串或 `BigInt` 保存与回传，不能 `Number()` 换算。
@@ -7274,7 +7288,7 @@ Console.WriteLine(unloaded.IsSuccess);
 
 启动阶段启动回调服务器（Windows 上是命名管道，其他系统是 Unix 域套接字）与 `onStartup` 的插件：`Configure`（下发配置节 JSON、权限、绑定与工作目录）→ `Start` → 健康监视。懒激活的插件在握手后停止进程，首次调用或投递时再启动。停止阶段按与登记相反的顺序停止全部插件，再关闭回调服务器。
 
-运行期每次调用带 `traceparent`、截止时间与已登记的 Baggage；业务失败来自插件的 `Status.error`，用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001`、`KERNEL_TIMEOUT_001` 等。插件回调 `Host.Invoke` / `Host.Publish` 以插件身份执行（主体 ID 为清单 ID，方案 `Plugin`）。每个插件是应用的一个健康条目 `plugins.<清单 ID>`。
+运行期每次调用带 `traceparent`、截止时间与已登记的 Baggage；业务失败来自插件的 `Status.error`，用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001`、`KERNEL_TIMEOUT_001` 等。插件回调 `Host.Invoke` / `Host.Publish` 以插件身份执行（主体 ID 为清单 ID，方案 `Plugin`），只能带在途调用的租户（ADR-0195）。每个插件是应用的一个健康条目 `plugins.<清单 ID>`。
 
 ## 何时使用
 
@@ -7310,7 +7324,7 @@ app.Run();
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `Directories` | 字符串数组 | 空 | 启动时装载的插件目录，一个目录一个插件；相对路径相对当前目录 |
-| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予该插件的权限；清单声明的权限必须全部授予才能加载 |
+| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予该插件的权限；清单声明的权限必须全部授予才能加载。清单要读的宿主配置节与绑定也在这里授予：`config:<配置节>`、`binding:<绑定名>`，没有授予即拒绝加载 |
 | `HandshakeTimeoutSeconds` | 正数 | 10 | 读到握手行并完成 `Handshake` 的时限 |
 | `StartTimeoutSeconds` | 正数 | 30 | `Configure` 与 `Start` 各自的时限 |
 | `StopGraceSeconds` | 正数 | 取 `XiHan:Kernel:StopTimeoutSeconds`（缺省 30） | 停止宽限；超时先发终止信号，5 秒后仍未退出再终止进程树 |
@@ -7318,7 +7332,7 @@ app.Run();
 | `HealthFailures` | 正整数 | 3 | 连续多少次健康轮询失败视为进程失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重启多少次，之后保持 `Failed` |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重启次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins` | 插件工作目录的根，每个插件一个子目录，宿主停止时不删除 |
+| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-<用户名>` | 插件工作目录的根，每个插件一个子目录（Unix 上 0700），宿主停止时不删除；缺省的根在 Unix 上必须是本用户私有的真实目录（0700、不是链接），否则启动插件失败（ADR-0207） |
 
 ```json
 {
@@ -7326,7 +7340,7 @@ app.Run();
     "Plugins": {
       "OutOfProcess": {
         "Directories": [ "plugins/echo" ],
-        "Grants": { "xihan.samples.echo": [ "capability:kernel.pipeline" ] },
+        "Grants": { "xihan.samples.echo": [ "capability:kernel.pipeline", "config:XiHan:Echo" ] },
         "HandshakeTimeoutSeconds": 10,
         "StartTimeoutSeconds": 30,
         "HealthIntervalSeconds": 10,
@@ -7396,7 +7410,9 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 - 插件 `Failed` 或 `Degraded` 让应用进入 `Degraded`，不让应用退出。
 - 停止：发 `Stop`（宽限秒数与原因 `shutdown` / `unload` / `restart`）→ 在宽限内等待退出 → 超时先发终止信号：关闭插件的 stdin，Unix 上同时发 SIGTERM（Windows 没有 SIGTERM，关闭 stdin 就是等价的信号）→ 5 秒内仍未退出才终止进程树；两种结局都记为 `Failed`（`PLUGINS_TIMEOUT_001`）。插件应把 SIGTERM 与 stdin 关闭都当作立即收尾退出的请求。
 - 运行期 `LoadAsync` 的代理操作只对 `IOperationInvoker` 可见，协议适配器不会为它新增路由。卸载先按归属撤回插件的代理操作与声明的权限码、再停止进程（ADR-0085）：之后调用返回 `KERNEL_NOTFOUND_001`，在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再加载，不用重启宿主。卸载之后才完成的重试握手不再登记（只登记仍是宿主当前运行时的插件）。订阅与消息目录不随卸载撤回。
+- 宿主调用插件的每一次 RPC 都带会话令牌（元数据 `xihan-plugin-session`），插件必须校验、不符即 `Unauthenticated`（ADR-0202）；宿主的回调套接字在新建的私有目录里（`0700`，文件 `0600`），命名管道只允许当前用户。
 - 回调需要会话令牌（元数据 `xihan-plugin-session`），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
+- 回调元数据的 `xihan.tenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则 `Status.error` 为 `PLUGINS_DENIED_002`（gRPC 状态 `OK`）；`Host.Publish` 的信封带 `xihantenant` 时逐项判定（ADR-0195）。
 - 不负责：流式操作在 .NET 侧的发布（协议已定义 `InvokeStream` 帧）、操作系统沙箱（`net.outbound:` / `fs.*:` 只核对授予）、Wasm。
 - 事件订阅：握手的每个 `Subscription` 按它的 `mode` 订阅主题（`spec/plugin/invocation.md` §4）：空或 `competing` 是竞争消费（订阅了主题的宿主实例里只有一个把消息交给插件），`broadcast` 是广播（每个在线的宿主实例都交给自己的插件进程，尽力而为、不进死信，RFC-0009「订阅方式」）。宿主每个（主题，方式）登记一次转交处理器，只把投递交给以同一方式订阅了主题的插件；`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
 - 清单的 `contributes.config` 声明 `XiHan:Plugins:OutOfProcess`。宿主另读别的领域的两项共享设置，不在清单里（RFC-0002「配置节」）：`XiHan:Kernel:StopTimeoutSeconds`（插件停止宽限的缺省）与 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域）；每个插件收到的是它自己清单声明的配置节。
@@ -7510,7 +7526,7 @@ static bool IsTransient(Error error)
 | `InvalidModule` | `PLUGINS_VALIDATION_005` | Wasm 模块不合法（不是 reactor、ABI 版本不支持、缺少必需导出或签名不符、导入了宿主不提供的函数） |
 | `NotFound` | `PLUGINS_NOTFOUND_001` | 插件目录、清单或可执行文件不存在，或插件未加载 |
 | `PermissionDenied` | `PLUGINS_DENIED_001` | 插件声明的权限未被宿主授予 |
-| `CallbackDenied` | `PLUGINS_DENIED_002` | 插件回调的会话令牌无效，或所需权限未在清单声明、未被授予 |
+| `CallbackDenied` | `PLUGINS_DENIED_002` | 插件回调的会话令牌无效，所需权限未在清单声明、未被授予，或带的租户不是宿主交给插件的租户（ADR-0195） |
 | `AlreadyLoaded` | `PLUGINS_CONFLICT_001` | 同一清单 ID 的插件已加载 |
 | `Unavailable` | `PLUGINS_UNAVAILABLE_001` | 插件未就绪、正在停止、已退出或不可达；Wasm 中间件失败即关闭 |
 | `ResourceExhausted` | `PLUGINS_UNAVAILABLE_002` | Wasm 沙箱资源不足：回调嵌套超限、客体内存分配失败 |
@@ -7550,9 +7566,9 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 特性在配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`，校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予），编译 `entry` 指向的模块（`.wasm`，参考实现也接受 `.wat` 文本），校验导出与导入表（ABI v1，`spec/plugin/wasm.md`），实例化并调用 `xihan_handshake`，核对清单。声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码连同它们一次登记进 `PermissionRegistry`（ADR-0080），消息目录接进本地化器，订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（不允许 `handle` 阶段）。启动阶段对 `onStartup` 的插件依次调用 `xihan_configure`、`xihan_start` 并开始健康轮询；懒激活的插件在握手后丢弃实例，首次调用时再实例化。
 
-每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`，日志应走导入 `xihan.log`。
+每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写入即丢弃（ADR-0186），日志走导入 `xihan.log`。
 
-回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，受当前调用的截止时间与取消约束（`xihan.invoke` 新调用的截止时间取请求元数据与当前调用中较早者，`xihan.publish` 随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
+回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，只能带当前调用的租户（ADR-0195），受当前调用的截止时间与取消约束（`xihan.invoke` 新调用的截止时间取请求元数据与当前调用中较早者，`xihan.publish` 随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
 
 ## 何时使用
 
@@ -7597,7 +7613,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `Directories` | 字符串数组 | 空 | 启动时装载的插件目录（含清单与模块文件）；相对路径相对当前目录 |
-| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限 |
+| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限，以及清单要读的宿主配置节与绑定：`config:<配置节>`、`binding:<绑定名>`，没有授予即拒绝加载 |
 | `Mounts:<清单 ID>:<客体路径>` | 字符串 | 空 | 客体路径映射到的宿主目录；清单的 `fs.read:` / `fs.write:` 只有映射了才算授予 |
 | `MemoryLimitBytes` | 正整数 | 67108864（64 MiB） | 线性内存上限 |
 | `StackLimitBytes` | 正整数 | 1048576（1 MiB） | Wasm 栈上限 |
@@ -7608,7 +7624,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | `HealthFailures` | 正整数 | 3 | 连续多少次健康探测失败视为实例失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重建多少次，之后保持 `Failed` |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重建次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm` | 插件工作目录的根，每个插件一个子目录，存放 `stdout.log` / `stderr.log` |
+| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm-<用户名>` | 插件工作目录的根，每个插件一个子目录（Unix 上 0700），经 `Configure` 交给插件；缺省的根在 Unix 上必须是本用户私有的真实目录，否则启动插件失败（ADR-0207） |
 
 ```json
 {
@@ -7616,7 +7632,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
     "Plugins": {
       "Wasm": {
         "Directories": [ "plugins/echo-wasm" ],
-        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline" ] },
+        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline", "config:XiHan:Echo" ] },
         "Mounts": { "xihan.samples.echowasm": { "/data": "/var/lib/app/echo-wasm" } },
         "MemoryLimitBytes": 67108864,
         "StackLimitBytes": 1048576,
@@ -7713,7 +7729,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | Windows 进程强制用户态影子栈 | 创建 `WasmPluginHost` 时抛出 `FrameworkException`（`PLUGINS_UNAVAILABLE_003`） |
 
 - 重建次数在 `RestartWindowSeconds` 内超过 `RestartLimit` 后保持 `Failed`；每个插件是健康条目 `plugins.<清单 ID>`，`Failed` / `Degraded` 让应用进入 `Degraded`。
-- 中间件只看得到元数据、操作 ID 与结果，看不到载荷；before 的 `CONTINUE` 可改写已登记的 Baggage（`xihan.principal` 除外），after 只观察。中间件以 `<清单 ID>:<middleware>` 为名登记在所在阶段末尾，清单的 `before` / `after` 按 RFC-0004 参与排序：先按本插件的中间件名解析，否则作为管道里的中间件名（另一个插件的 `<清单 ID>:<middleware>` 或只登记一次的宿主中间件类型全名）；目标未登记、有歧义或跨阶段为 `KERNEL_PIPELINE_003`，成环为 `KERNEL_PIPELINE_001`。
+- 中间件只看得到元数据、操作 ID 与结果，看不到载荷；before 的 `CONTINUE` 可改写已登记的 Baggage（`xihan.principal` 与 `xihan.tenant` 除外），after 只观察。中间件以 `<清单 ID>:<middleware>` 为名登记在所在阶段末尾，清单的 `before` / `after` 按 RFC-0004 参与排序：先按本插件的中间件名解析，否则作为管道里的中间件名（另一个插件的 `<清单 ID>:<middleware>` 或只登记一次的宿主中间件类型全名）；目标未登记、有歧义或跨阶段为 `KERNEL_PIPELINE_003`，成环为 `KERNEL_PIPELINE_001`。
 - 不负责：组件模型 / WIT（ABI v2）、流式操作、多实例并发、`net.outbound`。
 - 事件订阅与进程外插件相同：握手的 `Subscription.mode` 为空或 `competing` 是竞争消费，`broadcast` 是广播（每个宿主实例都交给自己的插件实例，RFC-0009「订阅方式」）；宿主只把投递交给以同一方式订阅了主题的插件，`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
 - 清单的 `contributes.config` 声明 `XiHan:Plugins:Wasm`。宿主另读 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域），属于本地化领域，不在清单里（RFC-0002「配置节」）；每个插件收到的是它自己清单声明的配置节。
@@ -7774,7 +7790,7 @@ dotnet add package XiHan.Framework.Primitives --prerelease
 | `Maybe` / `Maybe<T>` | 类型层面的「可能没有」，`default` 即无值 |
 | `ITypedId<TValue>` / `TypedId<TTag, TValue>` | 强类型标识，线上编码为底层值 |
 | `InvocationContext` | 取消令牌、截止时间、W3C Trace、Baggage、作用域对象袋与作用域服务 |
-| `BaggageKeys` | 已登记的 Baggage 键：`xihan.tenant`、`xihan.principal`、`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale` |
+| `BaggageKeys` | 已登记的 Baggage 键：`xihan.tenant`、`xihan.principal`、`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；值的约束 `MaxValueLength`（256）与 `IsAcceptableValue(value)`（非空、不超长、不含控制字符，ADR-0204） |
 | `PipelineStage` / `PipelineStageExtensions` | 固定的十一个管道阶段及其清单名 |
 | `LifecycleState` / `LifecycleStateExtensions` | 九个生命周期状态与合法迁移（`CanTransitionTo`、`IsServing`） |
 | `Stability` / `ApiLevelAttribute` | 稳定性分级 |
@@ -8190,9 +8206,12 @@ app.Run();
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Protocols:CloudEvents:Inbound` | `Dispatch` / `Publish` | `Dispatch` | 入站事件派发给处理器，或发布到消息代理；不区分大小写 |
+| `XiHan:Protocols:CloudEvents:MaxRequestBodyBytes` | 正整数 | 1048576（1 MiB） | 入站请求体的字节上限，超过为 `PROTOCOLS_VALIDATION_013` |
+| `XiHan:Protocols:CloudEvents:MaxBatchSize` | 正整数 | 100 | 入站 batch 的事件数上限，超过为 `PROTOCOLS_VALIDATION_014` |
 | `XiHan:Protocols:CloudEvents:Outbound` | `Binary` / `Structured` | `Binary` | 出站单条事件的内容模式；不接受 `Batch` |
 | `XiHan:Protocols:CloudEvents:PropagateTraceContext` | bool | `false` | 出站 Webhook 是否在 HTTP 头里写追踪上下文（`traceparent`、`tracestate`、`baggage`）；只作用于 Webhook 的命名客户端 |
-| `XiHan:Protocols:CloudEvents:Topics:<事件类型>` | string | — | 事件类型到主题的映射，值须满足主题文法 |
+| `XiHan:Protocols:CloudEvents:Topics:<事件类型>` | string | — | 事件类型到主题的映射，值须满足主题文法；入站只收映射过的类型 |
+| `XiHan:Protocols:CloudEvents:AcceptUnmappedTypes` | bool | `false` | 入站是否接受没有映射的类型（以类型本身为主题）；打开后发送方能投进任何有订阅的主题，只在发送方可信时打开（ADR-0200） |
 | `XiHan:Protocols:CloudEvents:Webhooks:<主题>` | string | — | 出站 Webhook 地址，绝对的 `http` / `https` 地址 |
 
 ```json
@@ -8260,7 +8279,7 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 - 入站内容模式：`Content-Type: application/cloudevents+json`（structured）、`application/cloudevents-batch+json`（batch，事件数组），否则有 `ce-specversion` 头即 binary（属性在 `ce-*` 头，`Content-Type` 是数据内容类型，请求体是数据，头值按规范百分号解码）；都不是返回 400 `PROTOCOLS_VALIDATION_008`。`Inbound = Publish` 时发布到消息代理后立即 202，重试与死信由代理负责；派发只发生在接收请求的实例。batch 在派发模式按顺序处理、第一个失败即停止并作为响应，发布模式按主题分组一次批量发布、第一个失败的结果作为响应。
 - 过出站地址策略（RFC-0008、ADR-0117）：Webhook 地址是运维配的，但接收方是第三方，它的 3xx 能把请求引到内网，所以命名客户端的连接与重定向都检查。接收方在内网时写进 `XiHan:Security:Outbound:AllowedHosts`；被拒绝按连接失败报告 `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名。
 - HTTP 追踪头缺省不传播（ADR-0083）：启用追踪时 .NET 的 HttpClient 本会按当前 Activity 写 `traceparent`、`tracestate` 与 `baggage` 头（不是信封扩展），这会把内部追踪 ID 与 Baggage 推给第三方，所以命名客户端的主处理器缺省是关掉传播器的 `SocketsHttpHandler`（`ActivityHeadersPropagator = null`）。`PropagateTraceContext = true` 显式打开，按 .NET 的全局传播器写，只影响这个客户端，出站请求的客户端跨度照常记录；调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器（设置保留），用 `ConfigurePrimaryHttpMessageHandler` 整个替换主处理器时由替换后的处理器决定是否传播。
-- 入站端点经过 `UseXiHan()`，请求凭据在外层认证；框架不给端点加任何要求，权限要由宿主自己加（ADR-0121）：`MapXiHanCloudEvents().RequireXiHanPermission(...)`，只授给平台的服务账号或服务角色。扩展属性 `xihantenant`、`xihanprincipal` 是发送方给的，派发时不和请求的身份核对，能调端点的人就能选租户、写审计主体，权限也不按租户收窄；没有装配 `security.authorization@1` 时要求只进入上下文、不被判定，端点等于敞开。
+- 入站端点经过 `UseXiHan()`，请求凭据在外层认证；框架不给端点加任何要求，权限要由宿主自己加（ADR-0121）：`MapXiHanCloudEvents().RequireXiHanPermission(...)`，只授给平台的服务账号或服务角色。扩展属性 `xihantenant`、`xihanprincipal` 是发送方给的，派发时不和请求的身份核对，能调端点的人就能选租户、写审计主体，权限也不按租户收窄；没有装配 `security.authorization@1` 时挂了要求宿主就启动失败（`KERNEL_VALIDATION_006`，ADR-0217），不会静默敞开。
 - 发布者自己不重试；超时与重试经命名 HttpClient `xihan.protocols.cloudevents` 配置，或放在消息处理器 / 发件箱里获得至少一次语义。
 
 | 错误码 | 情形 |
@@ -8268,6 +8287,8 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 | `PROTOCOLS_VALIDATION_008` | 请求不是 CloudEvent（400） |
 | `MESSAGING_VALIDATION_002` | 信封不合法（400） |
 | `PROTOCOLS_VALIDATION_009` | 事件类型没有映射到主题，类型本身也不是合法主题（400） |
+| `PROTOCOLS_VALIDATION_013` | 入站请求体超过 `MaxRequestBodyBytes`（400） |
+| `PROTOCOLS_VALIDATION_014` | 入站 batch 的事件数超过 `MaxBatchSize`（400） |
 | `PROTOCOLS_NOTFOUND_003` | 派发模式下主题在本实例两种订阅方式都没有处理器（404） |
 | `PROTOCOLS_NOTFOUND_004` | 主题没有配置出站 Webhook |
 | `PROTOCOLS_UNAVAILABLE_001` | Webhook 返回非 2xx，`status` 在错误细节里 |
@@ -8416,7 +8437,7 @@ JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 C
 
 | 错误码 | 情形 |
 | --- | --- |
-| `PROTOCOLS_VALIDATION_005` | 请求不是合法的 protobuf 或与 Schema 不符（`InvalidArgument`） |
+| `PROTOCOLS_VALIDATION_005` | 请求不是合法的 protobuf 或与 Schema 不符，或嵌套消息超过 64 层（`InvalidArgument`） |
 | `PROTOCOLS_VALIDATION_006` | 暴露给 gRPC 的操作没有 Schema，或 Schema 无法映射为 protobuf（启动失败） |
 | `PROTOCOLS_VALIDATION_007` | 推导或配置的服务 / 方法名不合法（启动失败） |
 | `PROTOCOLS_CONFLICT_004` | 两个操作得到同一个服务 / 方法名（启动失败） |
@@ -8659,9 +8680,11 @@ app.Run();
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Protocols:Mcp:ServerName` | string | 宿主的应用名 | `initialize` 答复的 `serverInfo.name` |
-| `XiHan:Protocols:Mcp:ServerVersion` | string | 框架版本 | `serverInfo.version` |
+| `XiHan:Protocols:Mcp:ServerVersion` | string | 应用的版本 | `serverInfo.version`；缺省取入口程序集的信息版本（去掉构建元数据），不写框架版本（ADR-0209） |
 | `XiHan:Protocols:Mcp:Instructions` | string | 空 | `initialize` 答复的 `instructions` |
 | `XiHan:Protocols:Mcp:Tools:<操作 ID>` | string | — | 显式 tool 名，匹配 `^[A-Za-z0-9_-]{1,64}$` |
+| `XiHan:Protocols:Mcp:AllowedOrigins:<序号>` | string | 空 | HTTP 入口允许的浏览器源（`scheme://host[:port]`）；请求带的 `Origin` 不在其中即 403 |
+| `XiHan:Protocols:Mcp:MaxRequestBodyBytes` | 正整数 | 4194304 | HTTP 入口的请求体上限，超过即 413 |
 
 ```json
 {
@@ -8682,7 +8705,7 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `McpProtocolFeature` | 特性入口 |
-| `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`；`ToolNameFor(contract)` |
+| `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`、`AllowedOrigins`、`MaxRequestBodyBytes`；`ToolNameFor(contract)`、`IsAllowedOrigin(origin)` |
 | `Transports.McpEndpointRouteBuilderExtensions` | `MapXiHanMcp(pattern)`，缺省 `/mcp` |
 | `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输；自己托管时按 UTF-8 构造 `input`（`new StreamReader(Console.OpenStandardInput(), Encoding.UTF8)`），不要直接用 `Console.In` |
 | `Server.McpServer` | JSON-RPC 服务端：`Tools`、`FindTool`，由特性构造、交给传输处理消息；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
@@ -8709,6 +8732,7 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 - `tools/call` 成功时 `content[0].text` 是响应 JSON，响应是对象时同时给 `structuredContent`。
 - `tools/call` 的调用来源记 `mcp` 与 tool 名，HTTP 传输时远端地址、User-Agent 与来源页沿用外层请求（ADR-0043）；stdio 的答复只含 ASCII，`mcp` 命令按 UTF-8 解码 stdin、不随控制台代码页，直接调用 `McpStdioTransport` 时自己按 UTF-8 构造读取器。
 - 不开 SSE 流、不建会话（不发 `Mcp-Session-Id`），`GET` / `DELETE` 为 405；`MCP-Protocol-Version` 不受支持时 400，缺失按当前版本处理。
+- HTTP 入口先校验源、内容类型与请求体大小（ADR-0199）：带 `Origin` 而不在 `AllowedOrigins` 里 403，`Content-Type` 不是 `application/json` 415，请求体超过 `MaxRequestBodyBytes` 413。
 - stdio 调用以匿名主体执行，要求权限或登录的操作总是得到 `isError` 结果。
 
 | 错误码 | 情形 | JSON-RPC `error.code` |
@@ -8717,6 +8741,9 @@ tool 描述的消息键、提示的推导表与 JSON-RPC 错误表见 [gRPC、MC
 | `PROTOCOLS_VALIDATION_002` | 协议版本不受支持 | -32600 |
 | `PROTOCOLS_VALIDATION_003` | tool 参数不是 JSON 对象 | -32602 |
 | `PROTOCOLS_VALIDATION_004` | 推导或配置的 tool 名不合法（启动失败） | — |
+| `PROTOCOLS_DENIED_001` | HTTP 请求的 `Origin` 不在 `AllowedOrigins` 里（HTTP 403） | -32600 |
+| `PROTOCOLS_VALIDATION_015` | HTTP 请求的 `Content-Type` 不是 `application/json`（HTTP 415） | -32600 |
+| `PROTOCOLS_VALIDATION_016` | HTTP 请求体超过 `MaxRequestBodyBytes`（HTTP 413） | -32600 |
 | `PROTOCOLS_NOTFOUND_001` | JSON-RPC 方法不受支持 | -32601 |
 | `PROTOCOLS_NOTFOUND_002` | tool 未登记 | -32602 |
 | `PROTOCOLS_CONFLICT_001` | 两个操作得到同一个 tool 名（启动失败） | — |
@@ -9378,7 +9405,7 @@ rules:
 | `XiHan:Scheduling:Kubernetes:Holder` | 字符串 | 按 Pod 约定解析 | 持有者标识 |
 | `XiHan:Scheduling:Kubernetes:ApiServer` | 绝对 URI | 按 Pod 约定解析 | API Server 地址 |
 | `XiHan:Scheduling:Kubernetes:TokenPath` | 路径 | `/var/run/secrets/kubernetes.io/serviceaccount/token` | ServiceAccount 令牌文件 |
-| `XiHan:Scheduling:Kubernetes:CertificateAuthorityPath` | 路径 | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` | CA 证书文件 |
+| `XiHan:Scheduling:Kubernetes:CertificateAuthorityPath` | 路径 | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` | CA 证书文件；存在时是 API Server 证书的唯一信任根，主机名与服务端认证用途照常校验（ADR-0201） |
 
 ```json
 { "XiHan": { "Scheduling": { "Kubernetes": { "Lease": "orders-scheduler" } } } }
@@ -9501,13 +9528,13 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | `Authorization.PermissionPolicy` | 权限策略：`Prefix`（`permission:`）、`NameFor(code)`、`CodeOf(name)` |
 | `Authorization.AuthorizationMiddleware` | Authorize 阶段的中间件；策略判定失败以该失败结束调用（ADR-0071） |
 | `Permissions.GrantSubject` | 授予的主体：`ForUser(id)`、`ForRole(name)`，种类常量 `User`、`Role` |
-| `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、租户（`null` 为全局） |
-| `Permissions.IPermissionGrantStore`、`PermissionGrantStoreExtensions` | 授予存储：`GetManyAsync(subjects, tenantId)` → 与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`，单主体写法是扩展方法 `GetGrantsAsync(subject, tenantId)`；每项全局授予加该租户的授予；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
-| `Permissions.IPermissionGrantAdministration`、`PermissionGrantAdministrationExtensions`、`PermissionGrantQuery`、`GrantTenantFilter`、`PermissionGrantPage` | 可选的授予管理：`GrantAsync` / `RevokeAsync` 与入参同序的逐项结果（撤销不存在为 `SECURITY_NOTFOUND_002`），`ListAsync(query)` 按主体与租户过滤（`Any` / `Global` / `Of(tenantId)`）、偏移分页并计数，越界为 `SECURITY_VALIDATION_005`；单条写法是扩展方法 |
+| `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、范围（`null` 为平台，`AnyTenant` = `*` 为每个租户，否则为该租户，ADR-0197）；`VisibleScopes(tenantId)` 给出一次调用看得到的范围 |
+| `Permissions.IPermissionGrantStore`、`PermissionGrantStoreExtensions` | 授予存储：`GetManyAsync(subjects, tenantId)` → 与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`，单主体写法是扩展方法 `GetGrantsAsync(subject, tenantId)`；每项是该主体对这次调用生效的授予（不带租户是平台授予，带租户是每个租户的授予加该租户的授予，`PermissionGrant.VisibleScopes`）；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
+| `Permissions.IPermissionGrantAdministration`、`PermissionGrantAdministrationExtensions`、`PermissionGrantQuery`、`GrantTenantFilter`、`PermissionGrantPage` | 可选的授予管理：`GrantAsync` / `RevokeAsync` 与入参同序的逐项结果（撤销不存在为 `SECURITY_NOTFOUND_002`），`ListAsync(query)` 按主体与范围过滤（`Any` / `Platform` / `Of(tenantId)`，`Of("*")` 是每个租户的授予）、偏移分页并计数，越界为 `SECURITY_VALIDATION_005`；单条写法是扩展方法 |
 | `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器：`HasPermissionAsync` → `Result<bool>`，存储、来源、过滤器的失败原样返回 |
 | `Permissions.IPermissionFilter` | 授予命中后的收窄（ADR-0039）：`AllowsAsync` → `Result<bool>` |
 | `Permissions.IPermissionGrantSource` | 存储之外的额外授予（ADR-0045）：`GetGrantsAsync` → `Result<IReadOnlyCollection<string>>` |
-| `SecurityInvocationExtensions` | `SetCredential` / `FindCredential`、`RequireAuthorization` / `FindAuthorizationRequirement` |
+| `SecurityInvocationExtensions` | `SetCredential` / `FindCredential`、`RequireAuthorization`（追加一条要求）/ `GetAuthorizationRequirements` |
 | `SecurityOptions` | 选项，见上表 |
 | `Conditions.*` | 条件引擎（ADR-0046）：`ConditionSet` / `ConditionGroup` / `ConditionClause`、`ConditionOperator`、`ConditionValueKind`、`ConditionAttributeDescriptor`、`IConditionAttributeRegistry`、`IConditionCompiler`、`IConditionEvaluator`、`IConditionAttributeSource`、`DictionaryConditionAttributeSource`、`MemoizingConditionAttributeSource`、`ConditionOperatorRules`、`AddConditionAttributes` |
 | `Network.IIpRegionResolver` / `IpRegion` | IP 归属地（ADR-0047）：`Resolve(IPAddress)` → `Maybe<IpRegion>` |
@@ -9559,8 +9586,8 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 {
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
-        // 端点没挂要求、契约也没写权限或策略时才补；显式要求优先于契约推导
-        if (!context.FindAuthorizationRequirement().HasValue
+        // 端点没挂要求、契约也没写权限或策略时才补；写入的要求与契约的要求叠加判定
+        if (context.GetAuthorizationRequirements().Count == 0
             && context.FindOperation().TryGetValue(out var operation)
             && operation.Contract is { Permission: null, Policy: null })
         {
@@ -9645,7 +9672,7 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 - `DatabasePermissionGrantStore` 是单例 `IPermissionGrantStore`，Authorize 阶段经检查器查它。它按（主体，租户）一次查询全局行加该租户的行，在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库，ADR-0122），不经 `App.InvokeAsync`：授予在 Authorize 阶段被查询，嵌套调用会再过一遍 Tenant 与 Authorize 阶段，而且要求应用处于服务状态。结果进有界的 TTL 缓存，返回冻结集合，调用方改不了缓存。
 - `PermissionGrantRecordStore` 是作用域服务，在调用的 Transaction 阶段内用调用方的工作单元批量授予、撤销，逐项返回结果，写入后失效涉及主体的缓存。
 
-授予是平台级数据：`PermissionGrantRecord` 不实现 `IMultiTenant`，不受当前调用租户过滤，不软删除，租户在授予表自己的列里。全局授予以空字符串（`PermissionGrantRecord.GlobalTenantId`）落库，因为唯一索引对 `NULL` 的语义各数据库不一致；契约边界仍以 `PermissionGrant.TenantId == null` 表示全局。
+授予是平台级数据：`PermissionGrantRecord` 不实现 `IMultiTenant`，不受当前调用租户过滤，不软删除，租户在授予表自己的列里。平台授予以空字符串（`PermissionGrantRecord.PlatformTenantId`）落库，因为唯一索引对 `NULL` 的语义各数据库不一致；契约边界仍以 `PermissionGrant.TenantId == null` 表示全局。
 
 本包不提供认证。与 `Security.InMemory` 同时装配时顶替它的授权部分，内存实现只剩 ApiKey 认证；认证也可以换成 `Security.Jwt` 或 `Security.OpenIdConnect`。被别的显式授权 Provider 顶替时，本包只保留自己的类型，不注册检查器与中间件，也不核对策略引用。
 
@@ -9696,7 +9723,7 @@ using XiHan.Framework.Security.Database.Grants;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    // 全局授予的 TenantId 是空字符串而不是 NULL，唯一索引在各数据库上语义一致
+    // 平台授予的 TenantId 是空字符串而不是 NULL，唯一索引在各数据库上语义一致；每个租户的授予是 *
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<PermissionGrantRecord>();
@@ -9710,7 +9737,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Security:Database:CacheSize` | `int` | 10000 | 缓存条目上限，每个（主体，租户）组合一条；满时整体清空 |
-| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠失效与容量清空 |
+| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠失效与容量清空，只适用于单实例部署 |
 
 `XiHan:Security:RoleClaim` 决定检查器从哪类声明取角色，见 [Security.Abstractions](./security-abstractions#配置)。
 
@@ -9767,10 +9794,10 @@ public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 
 - 被选为授权能力时，特性在 `Configure` 里登记启动核对 `PolicyCatalog.EnforceOn`，核对操作契约按名引用的策略：内核在容器建好之后、任何特性启动之前执行它，不存在（含 `permission:<code>` 的权限码未登记）即抛出 `SECURITY_VALIDATION_004`、宿主启动失败，不论失败策略（`IsolateFeature` 也一样，不包成 `KERNEL_HOSTING_002`）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080、ADR-0085）。特性本身不实现 `IHostedFeature`。
 - 授予：一次查询取回已有行（主体种类、主体 ID、权限码、租户各取集合做 `IN`，再在内存里精确匹配），已存在的返回成功且不重复写，同一批里重复的项同样成功，没有的用一次 `AddRangeAsync` 写入。空集合直接返回空结果。
-- 租户：全局授予的 `TenantId` 用 `null`；`GrantAsync` 与 `RevokeAsync` 遇到空白租户视为编程错误，在访问数据库前抛出 `ArgumentException`。
+- 范围：平台授予的 `TenantId` 用 `null`，每个租户的授予用 `PermissionGrant.AnyTenant`（ADR-0197）；`GrantAsync` 与 `RevokeAsync` 遇到空白租户视为编程错误，在访问数据库前抛出 `ArgumentException`。
 - 撤销：一次 `RemoveRangeAsync`；不存在的授予与同一批里第二次出现的同一授予返回 `SECURITY_NOTFOUND_002`（消息键 `security.grant.not_found`，参数 `subject` / `permission` / `tenant`，全局时 `tenant` 为 `*`）。
 - 列表：按主体种类、主体 ID、权限码、租户排序；`subject` 为 `null` 不按主体过滤，`tenantId` 为 `null` 不按租户过滤，否则只列该租户专属的行；每页最多 1000 条。
-- 缓存：条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空，不逐条淘汰。`PermissionGrantRecordStore` 写入后对涉及的每个主体调用一次 `Invalidate`；写入在调用方事务提交后才对其他调用可见，失效与提交之间的窗口由存活时间收敛。多实例部署时其他实例的缓存同样靠存活时间收敛，需要更快生效时调小 `CacheTimeToLiveSeconds`。
+- 缓存：条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空，不逐条淘汰。`PermissionGrantRecordStore` 写入后对涉及的每个主体调用一次 `Invalidate`，作用域释放时（调用已提交或回滚）再调用一次；缓存按代数丢弃失效之前开始的读取，提交之前读回的旧行不留在缓存里（ADR-0194）。多实例部署时其他实例的缓存同样靠存活时间收敛，需要更快生效时调小 `CacheTimeToLiveSeconds`。
 - 故障：开启、读取、提交只读工作单元时的数据库故障（连接、命令超时、事务失败）返回 `SECURITY_UNAVAILABLE_001`（消息键 `security.grant_store.unavailable`，不带参数），检查器原样返回，调用以 503 结束——不会落到 403。底层原因只记警告日志，不进响应。失败不进缓存，数据库恢复后下一次判定立即重新查库。调用方取消照常抛出；容器里缺工作单元或仓储是装配错误，照常抛出（ADR-0071）。
 - 已有的库按唯一索引的名字补建索引；表里有重复授予时先去重。
 - 表结构由应用管理，`InitTables` 只用于开发与测试。唯一索引 `UX_PermissionGrantRecord_SuKi_SuId_Pe_TeId`（`(SubjectKind, SubjectId, Permission, TenantId)`，实体上的 `[EntityIndex]`，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建，ADR-0072），按主体的查询走它的 `(SubjectKind, SubjectId)` 前缀；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即成功（已存在）；列长度：`SubjectKind` 32、`SubjectId` 256、`Permission` 256、`TenantId` 128。
@@ -9849,8 +9876,10 @@ app.Run();
 | `Principals:<id>:Roles` | `string` | 无 | 逗号分隔的角色 |
 | `Principals:<id>:Tenant` | `string` | 无 | 所属租户，写成 `tenant` 声明 |
 | `Principals:<id>:Claims:<type>` | `string` | 无 | 附加声明 |
-| `Grants:role:<role>` | `string` | 无 | 授予角色的权限码，逗号分隔，`*` 为全部 |
-| `Grants:user:<id>` | `string` | 无 | 授予用户的权限码，逗号分隔 |
+| `Grants:role:<role>` | `string` | 无 | 授予角色的平台权限码（只对不带租户的调用生效），逗号分隔，`*` 为全部 |
+| `Grants:user:<id>` | `string` | 无 | 授予用户的平台权限码，逗号分隔 |
+| `AnyTenantGrants:role:<role>` | `string` | 无 | 授予角色的每个租户的权限码（对带任何租户的调用生效），逗号分隔，`*` 为全部 |
+| `AnyTenantGrants:user:<id>` | `string` | 无 | 授予用户的每个租户的权限码，逗号分隔 |
 | `MaxPrincipals` | `int` | 1000 | 主体上限 |
 | `MaxGrants` | `int` | 10000 | 授予上限，按（主体，权限码，租户）计数 |
 
@@ -9865,7 +9894,7 @@ app.Run();
           "alice": { "ApiKey": "dev-alice-key", "DisplayName": "Alice", "Roles": "admin,editor", "Tenant": "acme", "Claims": { "email": "alice@example.com" } },
           "bob": { "ApiKey": "dev-bob-key", "DisplayName": "Bob", "Roles": "viewer", "Tenant": "acme" }
         },
-        "Grants": {
+        "AnyTenantGrants": {
           "role": { "admin": "*", "editor": "orders.read,orders.write", "viewer": "orders.read" },
           "user": { "alice": "reports.read" }
         }
@@ -9875,7 +9904,7 @@ app.Run();
 }
 ```
 
-配置里的授予都是全局的（对任何租户生效）；租户专属授予只能在运行时经授予管理 `IPermissionGrantAdministration.GrantAsync` 添加。
+`Grants` 下是平台授予，只对不带租户的调用生效；`AnyTenantGrants` 下是每个租户的授予（ADR-0197）。租户专属授予只能在运行时经授予管理 `IPermissionGrantAdministration.GrantAsync` 添加。
 
 ## 主要类型
 
@@ -10275,7 +10304,8 @@ app.Run();
 | `Authority` | `string` | 必填 | 签发者地址，绝对 http / https URI |
 | `MetadataAddress` | `string` | `<Authority>/.well-known/openid-configuration` | 发现文档地址 |
 | `Issuer` | `string` | 发现文档的 `issuer` | 期望的签发者；签发者始终校验 |
-| `Audience` | `string` | 不校验 | 配置了才校验受众 |
+| `Audience` | `string` | 必填 | 期望的受众（本 API 的标识或客户端 ID）；没有即启动失败 |
+| `ValidateAudience` | `bool` | `true` | 是否校验受众；只有签发者只为本 API 签发令牌时才设 `false`，此时不需要 `Audience` |
 | `RequireHttpsMetadata` | `bool` | `true` | 发现文档与 JWKS 必须经 HTTPS 取得；只在本地开发时关闭 |
 | `ClockSkewSeconds` | `double` | 60 | 有效期校验允许的时钟偏移 |
 | `RefreshIntervalSeconds` | `double` | 43200（12 小时） | 元数据自动刷新间隔，必须大于 0 |
@@ -10337,7 +10367,7 @@ app.Run();
 
 ## 行为与限制
 
-- 签名、过期与有效期始终强制；签发者取 `Issuer` 或发现文档的 `issuer` 并始终校验；受众只在配置了 `Audience` 时校验。主体 ID 取 `NameClaim`，显示名取 `name` 声明。
+- 签名、过期与有效期始终强制；签发者取 `Issuer` 或发现文档的 `issuer` 并始终校验；受众缺省校验，`Audience` 必填：共用身份提供方时，发给别的应用的令牌也由同一签发者签名（ADR-0180）。主体 ID 取 `NameClaim`，显示名取 `name` 声明。
 - 校验失败返回 `SECURITY_DENIED_003`，不区分原因对外暴露；读不出的令牌直接拒绝，不为它访问签发者；令牌没有 `NameClaim` 声明同样是 `SECURITY_DENIED_003`。
 - 刷新失败时沿用最后一份密钥并记日志，`MinimumRefreshInterval` 后再试；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`（HTTP 503），5 秒退避期内不再请求签发者。
 - 发现文档缺 `issuer` 或 `jwks_uri`、JWKS 没有签名密钥、`RequireHttpsMetadata` 为真而 `jwks_uri` 不是 HTTPS，都按取数失败处理。
@@ -10384,7 +10414,7 @@ app.Run();
 
 - 登录页「用通行密钥登录」，免用户名、免密码：用本包，用户验证与可发现凭据都按缺省的 `Required`。
 - 只想把通行密钥当第二因素：同样用本包，`ResidentKey` 设为 `Discouraged`，认证时把用户已有的凭据放进 `allowCredentials`。
-- 需要证明信任链或元数据服务（只允许特定型号的安全密钥）：本包不做，自己在 `WebAuthnRegisteredCredential.Aaguid` 之上加校验并请求别的证明方式。
+- 需要证明信任链或元数据服务（只允许特定型号的安全密钥）：本包不做。`WebAuthnRegisteredCredential.Aaguid` 在 `none` 证明下是认证器自报的型号，没有经过证明，任何认证器都能报成别的型号，不能拿来做型号白名单；要限制型号须请求 `direct` 或 `enterprise` 证明，自己核对证明声明的信任链与元数据服务（ADR-0216）。
 
 ## 安装与启用
 
@@ -10481,23 +10511,31 @@ public sealed class PasskeyRegistration(WebAuthnCeremonies ceremonies, IPasskeyS
 }
 ```
 
-认证：免用户名时 `allowCredentials` 为空；响应回来后按凭据 ID 找到存储的凭据，核对通过即更新签名计数。
+认证：免用户名时 `allowCredentials` 为空；响应回来后按凭据 ID 找到存储的凭据（连同所属用户的句柄），核对通过即更新签名计数。
+
+- 登录前已认出用户（先填账号、作为第二因素）：把这个用户的句柄传给 `expectedUserHandle`，凭据不属于他即拒绝。不传的话，知道口令的攻击者能用自己账号下的通行密钥完成别人的登录。
+- 免用户名：传 `null`，响应必须带 `userHandle`；登录的用户取结果的 `UserHandle`（来自存储的凭据），不取响应里的句柄。
 
 ```csharp
 var stored = await store.FindAsync(response.Id, ct);
-var verified = ceremonies.VerifyAuthentication(response, challenge, new WebAuthnStoredCredential(stored.CredentialId, stored.PublicKey, stored.SignCount, stored.UserHandle));
+// 先填账号的流程传那个用户的句柄；免用户名的流程传 null
+var verified = ceremonies.VerifyAuthentication(response, challenge, new WebAuthnStoredCredential(stored.CredentialId, stored.PublicKey, stored.SignCount, stored.UserHandle), expectedUserHandle);
 if (verified.TryGetValue(out var assertion))
 {
     await store.UpdateSignCountAsync(stored.CredentialId, assertion.SignCount, ct);
+    var userHandle = assertion.UserHandle;
 }
 ```
+
+注册时把选项里的 `user.id` 作为凭据的所属用户存下来，并拒绝已经登记过的凭据 ID：凭据 ID 由认证器给出，同一 ID 不应属于两个用户。
 
 ## 行为与限制
 
 - 核对的顺序与每条失败的 `reason` 见 RFC-0008「WebAuthn」：解析不了是 `SECURITY_VALIDATION_006`，算法不支持是 `SECURITY_VALIDATION_007`，核对不通过是 `SECURITY_DENIED_005`。
 - 签名计数：新旧值有一个不为 0 时新值必须大于旧值，否则 `SECURITY_DENIED_006`，参数 `stored`、`received`。它是认证器可能被复制的信号，应用应提醒本人或停用这把凭据；都为 0 的认证器（多数同步的通行密钥）不计数，放行。
 - 挑战定长比较；客户端数据的哈希在签名里，挑战与来源受签名保护。
-- 存储的凭据带用户句柄、响应也带 `userHandle` 时两者必须相同，拿别人的凭据 ID 冒充会被拒绝。
+- 凭据属于谁（ADR-0179）：存储的凭据必须记下所属用户；传了 `expectedUserHandle` 时凭据必须属于他，没传时响应必须带 `userHandle`；响应带了句柄就必须等于所属用户。任一不满足为 `user_handle`。它在验签之后判定：签名不对的响应只得到 `signature`，没有私钥的人试不出凭据属于谁（ADR-0216）。
+- RSA 公钥的模长 2048 到 4096 位，超出为 `public_key`：验签的开销随模长增长（ADR-0216）。
 - 客户端扩展结果不读；`crossOrigin` 为真（跨源的 iframe 里发起）一律拒绝。
 - 应用给的期望挑战或存储的凭据 ID 不是 base64url 抛 `ArgumentException`：那是调用方的错误。
 
@@ -10713,6 +10751,9 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `XiHan:Workflow:RetentionDays` | ≥ 0 | 0 | 已结束实例的保留天数，0 为不自动清理 |
 | `XiHan:Workflow:HousekeepingIntervalSeconds` | 正数 | 3600 | 自动清理周期 |
 | `XiHan:Workflow:HttpTimeoutSeconds` | 正数 | 30 | `Http` 活动的缺省超时 |
+| `XiHan:Workflow:MaxHttpTimeoutSeconds` | 正数 | 300 | 定义里 `Http` 活动 `TimeoutSeconds` 的上限 |
+| `XiHan:Workflow:MaxForEachItems` | 整数 ≥ 1 | 1000 | `ForEach` 一次最多处理的项数，超过即节点故障 |
+| `XiHan:Workflow:MaxVariablesBytes` | 整数 ≥ 1 | 8388608 | 一个实例的变量序列化后的字节数上限 |
 
 ```json
 { "XiHan": { "Workflow": { "LockTimeoutSeconds": 10, "MaxSubWorkflowDepth": 16, "RetentionDays": 90 } } }
@@ -10802,7 +10843,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 - `Start.Cron` 的定义在发布时排定时启动；定义还支持实例级超时（`Timeout` / `TimeoutAction`）与补偿（取消时 / 故障时）。
 - 启动的 `ReusePolicy` 幂等：查重与写入在同一把实例锁里，并发启动同一关联 ID 也只建一个实例。
 - 结果标签：节点以结果标签完成时（用户任务的 `approved` / `rejected` / `timeout`、事件网关的信号名、`ContinueOnError` 的 `error`、活动自定的标签），标签写进实例变量 `outcome`，当前节点与后继决策节点的出边条件都按它选边；条件都不成立时才走默认出边。
-- 表达式：最长 4000 个字符，嵌套最多 64 层（ADR-0120）；`Evaluate` 与 `ActivityContext.EvaluateProperty` 的结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串。
+- 表达式：最长 4000 个字符，嵌套最多 64 层（ADR-0120），`+` 拼出的字符串最长 4194304 个字符（ADR-0182）；`Evaluate` 与 `ActivityContext.EvaluateProperty` 的结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串。
 - `Http` 活动的地址由流程定义给出，不可信：缺省的 `WorkflowHttpClient` 过出站地址策略（ADR-0117），只能连公网地址，重定向的目标同样检查；目标被拒绝是节点故障，消息键 `workflow.http.address_denied`。
 - `Http` 活动的超时按引擎的 `TimeProvider` 计时、按令牌归因（ADR-0097）：活动的超时令牌已触发即节点故障 `WORKFLOW_UNEXPECTED_001`（消息键 `workflow.http.timed_out`），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 `OperationCanceledException`（操作随调用回滚）；两个都没触发时客户端抛出的取消与 `TimeoutException` 也按超时。
 - 故障（ADR-0105、ADR-0106）：实例与节点实例的 `WorkflowFault` 存错误码、消息键、参数与内层原因，不存渲染好的文案；展示用 `Localize()`（按调用链里调用方的区域），返回给调用方用 `ToError()`；`Message` 按进程默认区域渲染，只供日志。引擎与内置活动的失败原因都是消息键，应用或第三方给的文本（异常消息、HTTP 原因短语、外部任务的错误、`Fault` 节点的消息）原样放在参数里。子流程回调输入 `childFault` 是子实例故障的 JSON，父节点的故障按子实例状态是 `workflow.child.faulted` / `canceled` / `terminated`，内层是子实例的故障。设计期诊断（校验的逐条问题、表达式诊断、`DeserializeDefinition` 的错误）、变量 `lastError`（故障的 JSON，表达式照旧读 `code`）、活动描述符与状态名同样是消息键，状态的展示名用 `WorkflowStatusMessages`。

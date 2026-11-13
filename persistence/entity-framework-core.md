@@ -91,6 +91,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | --- | --- |
 | `ConcurrencyStamp` | 设为并发令牌，最大长度 32 |
 | `TenantId`、`IsDeleted` | 建索引 |
+| 租户查询过滤器 | 多租户实体的继承根加名为 `xihan:tenant` 的查询过滤器：上下文在 XiHan 工作单元里时只看到工作单元租户的行，不在工作单元里的不过滤（ADR-0224）；实体已有匿名过滤器时建模抛出，给它起名 |
 | `[EntityIndex]` | 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`，名字与 SqlSugar 建出的相同；软删除实体的唯一索引加 `HasFilter`，条件按 `Database.ProviderName` 写方言（Npgsql、SQLite、SQL Server），其余 Provider 建模时抛出 `PERSISTENCE_UNAVAILABLE_008` |
 | `DateTimeOffset`（SQLite） | 与可空 `DateTimeOffset` 属性存成 UTC ticks 整数，应用已配转换的不动 |
 | 字符串匹配（SQLite） | `Contains` / `StartsWith` / `EndsWith` 一律译成 `LIKE … ESCAPE '\'`，按字面匹配、只对 ASCII 字母不区分大小写 |
@@ -126,7 +127,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 直接使用 DbContext
 
-仓储覆盖不了的查询直接注入应用的 `DbContext`。它与仓储共享同一个实例和同一个事务，但不带软删除与租户过滤，要自己加（或用生成的 `<实体>Filters` 规约）：
+仓储覆盖不了的查询直接注入应用的 `DbContext`。它与仓储共享同一个实例和同一个事务；多租户实体由全局查询过滤器 `xihan:tenant` 按工作单元的租户过滤，软删除不过滤，要自己加（或用生成的 `<实体>Filters` 规约）：
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
@@ -135,10 +136,10 @@ namespace SimpleApp.Orders;
 
 public sealed class OrderReports(AppDbContext db)
 {
-    // 直接查询绕过仓储的过滤：软删除与租户条件要自己写
-    public Task<int> TotalAmountAsync(string tenantId, CancellationToken cancellationToken)
+    // 租户由全局查询过滤器按工作单元的租户过滤；软删除条件要自己写
+    public Task<int> TotalAmountAsync(CancellationToken cancellationToken)
         => db.Set<Order>()
-            .Where(o => !o.IsDeleted && o.TenantId == tenantId)
+            .Where(static o => !o.IsDeleted)
             .SumAsync(static o => o.Amount, cancellationToken);
 }
 ```
@@ -177,7 +178,7 @@ EF Core 不做「每个连接一个 `DbContext`、跨上下文顺序提交」的
 
 ## 租户分库
 
-装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。EF Core 没有 SqlSugar Provider 那样按实体分库的落点规则：一次调用要么全在默认库，要么全在分片库。细节见[租户分片与分库](/multi-tenancy/sharding)。
+装配了 `multitenancy.sharding@1` 时，`DbContext` 选项按作用域构建；带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，整个 `DbContext` 连到分片库，其余调用用默认连接。分片库的表结构由应用管理，`EnsureCreated` 只作用于默认连接。EF Core 没有 SqlSugar Provider 那样按实体分库的落点规则：一次调用要么全在默认库，要么全在分片库。发件箱行也随带分片的调用落进分片库，发件箱投递循环逐个投递分片库，分片库要建发件箱表（ADR-0211）。细节见[租户分片与分库](/multi-tenancy/sharding)。
 
 ## SQLite 注意事项
 
@@ -209,9 +210,9 @@ SQLite 只有一个写者：业务事务写过之后，同一个库文件上的�
 
 两处：`OnModelCreating` 末尾加一行 `modelBuilder.ApplyPersistenceConventions(Database)`；`Program.cs` 把原来的 `AddDbContext` 换成装配 `EntityFrameworkCorePersistenceFeature<AppDbContext>`，连接配置搬进回调。原来直接用 `DbContext` 的代码继续工作，只是写入前要经 `EnsureTransactionAsync`，才能与仓储在同一事务里。
 
-### 为什么我直接 `db.Set<Order>()` 查到了别的租户的数据
+### 直接 `db.Set<Order>()` 会查到别的租户的数据吗
 
-仓储的软删除与租户过滤是显式施加在仓储查询上的，不是全局查询过滤器，`DbContext` 上的 LINQ 不带它们。直接查询时自己写条件，或用生成的 `OrderFilters.ActiveFor(tenantId).Criteria`。
+不会。多租户实体带全局查询过滤器 `xihan:tenant`，上下文在 XiHan 工作单元里时只看到工作单元租户的行（ADR-0224；以前没有这个过滤器，直接查询能读到别的租户的行）。应用自己 `new` 出来、不在工作单元里的上下文不过滤；有意跨租户查询时用 `IgnoreQueryFilters([ModelBuilderExtensions.TenantQueryFilter])` 只忽略这一个。软删除不是全局过滤器，直接查询时自己写条件，或用生成的 `OrderFilters.ActiveFor(tenantId).Criteria`。
 
 ### 启动报 `PERSISTENCE_VALIDATION_008`
 

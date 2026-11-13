@@ -98,7 +98,7 @@ dotnet run
 
 ## 容器与 Kubernetes 里的热更新
 
-应用清单 `xihan.app.json` 的 `config.files` 列出要做成 ConfigMap 的文件，`xihan pack` 据此生成 ConfigMap（`<name>-config`），只读挂到 `mountPath`，并在 Deployment 里设两个环境变量：
+应用清单 `xihan.app.json` 的 `config.files` 列出要做成 ConfigMap 的文件，`xihan pack` 据此生成 ConfigMap（`<name>-config`），只读挂到 `mountPath`，并在 Deployment 里设两个环境变量。ConfigMap 不加密、读得到它的人多，文件里有带值的凭据键（`Password`、`Secret`、`ApiKey`、`ConnectionStrings` 节这类，规则同选项里的凭据）时 `pack` 以 `CLI_VALIDATION_007` 失败，凭据要放进绑定的 Secret 或环境变量（ADR-0222）。两个环境变量：
 
 | 环境变量 | 值 | 作用 |
 | --- | --- | --- |

@@ -40,7 +40,7 @@ dotnet add package XiHan.Framework.Primitives --prerelease
 | `Maybe` / `Maybe<T>` | 类型层面的「可能没有」，`default` 即无值 |
 | `ITypedId<TValue>` / `TypedId<TTag, TValue>` | 强类型标识，线上编码为底层值 |
 | `InvocationContext` | 取消令牌、截止时间、W3C Trace、Baggage、作用域对象袋与作用域服务 |
-| `BaggageKeys` | 已登记的 Baggage 键：`xihan.tenant`、`xihan.principal`、`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale` |
+| `BaggageKeys` | 已登记的 Baggage 键：`xihan.tenant`、`xihan.principal`、`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；值的约束 `MaxValueLength`（256）与 `IsAcceptableValue(value)`（非空、不超长、不含控制字符，ADR-0204） |
 | `PipelineStage` / `PipelineStageExtensions` | 固定的十一个管道阶段及其清单名 |
 | `LifecycleState` / `LifecycleStateExtensions` | 九个生命周期状态与合法迁移（`CanTransitionTo`、`IsServing`） |
 | `Stability` / `ApiLevelAttribute` | 稳定性分级 |

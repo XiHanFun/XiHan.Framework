@@ -56,7 +56,7 @@
 | `isolation` | `in-process` / `wasm` / `out-of-process` |
 | `entry` | 进程内：入口类型全名，程序集按 `package` 取 `<package>.dll`；进程外：相对插件目录的可执行文件（Windows 上没有扩展名时补 `.exe`）；Wasm：相对插件目录的 `.wasm` |
 | `contributes.operations` | 插件服务的全部操作 ID，握手声明的操作必须都在其中 |
-| `contributes.config.section` | `Configure` 时宿主下发的配置节（如 `XiHan:Echo`），序列化为 JSON 对象；没有声明为 `{}` |
+| `contributes.config.section` | `Configure` 时宿主下发的配置节（如 `XiHan:Echo`），序列化为 JSON 对象，运营方要在 `Grants` 里授予 `config:<配置节>` 才下发（进程内插件除外）；没有声明为 `{}` |
 | `contributes.health` | 插件自报的健康项名，未声明的健康项是握手不一致 |
 | `contributes.pipeline` | 只用于 Wasm：中间件名与阶段。进程外与进程内插件写了非空值，在发现或加载时以 `PLUGINS_VALIDATION_001` 拒绝，不静默忽略 |
 | `contributes.permissions` | 插件定义的权限码，见下文 |
@@ -73,7 +73,7 @@
     "Plugins": {
       "Wasm": {
         "Directories": [ "plugins/echo-wasm" ],
-        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline" ] },
+        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline", "config:XiHan:Echo" ] },
         "Mounts": { "xihan.samples.echowasm": { "/data": "/var/lib/app/echo-wasm" } }
       }
     }
@@ -108,7 +108,7 @@
 - 权限码与代理操作一次登记、全进或全不进；卸载时按归属一次撤回，之后可以直接再加载。
 - 进程内插件有自己的容器，不向应用的登记表贡献操作，也不登记权限码。
 
-回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`）并经宿主完整管道，Authorize 阶段照常按操作契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予目标操作要求的权限码。
+回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`）并经宿主完整管道，Authorize 阶段照常按操作契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予目标操作要求的权限码。插件身份没有租户声明，回调与发布只能带宿主交给插件处理的调用的租户，带别的租户为 `PLUGINS_DENIED_002`（ADR-0195）。
 
 ## 最小示例
 
@@ -146,7 +146,7 @@ app.Run();
     "Plugins": {
       "OutOfProcess": {
         "Directories": [ "plugins/echo" ],
-        "Grants": { "xihan.samples.echo": [ "capability:kernel.pipeline" ] }
+        "Grants": { "xihan.samples.echo": [ "capability:kernel.pipeline", "config:XiHan:Echo" ] }
       }
     },
     "Echo": { "Greeting": "hello" }

@@ -98,7 +98,7 @@ rules:
 | `XiHan:Scheduling:Kubernetes:Holder` | 字符串 | 按 Pod 约定解析 | 持有者标识 |
 | `XiHan:Scheduling:Kubernetes:ApiServer` | 绝对 URI | 按 Pod 约定解析 | API Server 地址 |
 | `XiHan:Scheduling:Kubernetes:TokenPath` | 路径 | `/var/run/secrets/kubernetes.io/serviceaccount/token` | ServiceAccount 令牌文件 |
-| `XiHan:Scheduling:Kubernetes:CertificateAuthorityPath` | 路径 | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` | CA 证书文件 |
+| `XiHan:Scheduling:Kubernetes:CertificateAuthorityPath` | 路径 | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` | CA 证书文件；存在时是 API Server 证书的唯一信任根，主机名与服务端认证用途照常校验（ADR-0201） |
 
 ```json
 { "XiHan": { "Scheduling": { "Kubernetes": { "Lease": "orders-scheduler" } } } }

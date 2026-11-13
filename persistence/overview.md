@@ -194,6 +194,7 @@ app.Run();
 | `PERSISTENCE_VALIDATION_006` / `007` | 运行时数据源的数据库类型不认识、连接串格式错 / 表列表的 `Skip` 为负或 `Take` 小于 1 | `Result`（HTTP 400） |
 | `PERSISTENCE_VALIDATION_008` | EF Core + SQLite：时间列在库里还是旧的文本形式 | 启动失败；租户分片库在首次绑定时核对，那次调用是 `KERNEL_UNEXPECTED_001` |
 | `PERSISTENCE_VALIDATION_009` | 主库不同的连接共用同一个从库 | 启动失败；分片连接在那次调用失败 |
+| `PERSISTENCE_VALIDATION_010` | 工作单元的租户与客户端绑定的分片的租户不一致（含不带租户） | 开始工作单元时抛出，工作单元保持未开始 |
 | `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
 | `PERSISTENCE_NOTFOUND_002` / `003` | 运行时数据源没有在本进程登记 / 要读结构的表不在库里 | `Result` / 逐项 `Result` |
 | `PERSISTENCE_CONFLICT_001` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现行已被别人改过或删掉 | `Result`；后者是提交结果 |

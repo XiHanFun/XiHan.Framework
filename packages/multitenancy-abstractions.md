@@ -46,6 +46,7 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | `ValidateAgainstStore` | `bool` | `true` | 租户必须在存储中存在且启用；关闭后只校验文法 |
 | `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型 |
 | `ShardCacheSize` | `int` | 10000 | `TenantStoreShardResolver` 按租户缓存分片结果的条目上限，满时整体清空；必须是正整数 |
+| `ShardCacheTimeToLiveSeconds` | 秒 | 30 | 分片缓存条目的存活时间；0 不过期 |
 
 ```json
 {
@@ -65,7 +66,7 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | 类型 | 说明 |
 | --- | --- |
 | `Tenants.TenantInfo` | 租户：`Id`、`DisplayName`、`IsEnabled`（缺省 `true`）、`Properties`（键区分大小写） |
-| `Tenants.TenantIdentifier` | 租户 ID 文法 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：`IsValid`、`Validate`、`MaxLength`（64） |
+| `Tenants.TenantIdentifier` | 租户 ID 文法 `^[a-z0-9][a-z0-9._-]{0,63}$`（只用小写、整串匹配，ADR-0196）：`IsValid`、`Validate`、`MaxLength`（64） |
 | `Tenants.ITenantStore`、`TenantQuery`、`TenantPage` | 租户存储：`FindAsync` → `Result<Maybe<TenantInfo>>`、`ListAsync(TenantQuery)` → `Result<TenantPage>`（`PageSize` 1～1000、续页令牌、`EnabledOnly`）；ID 区分大小写，存储不可达返回 `MULTITENANCY_UNAVAILABLE_003` |
 | `Resolution.ITenantResolver` | 从调用上下文解析租户 ID 候选：`ResolveAsync` 返回 `Result<Maybe<string>>`，无值交给下一个解析器，失败即拒绝调用；格式、存在与启用由中间件核对 |
 | `Resolution.ClaimTenantResolver` | 读已认证主体的租户声明（第一个值）；未认证主体跳过 |
@@ -136,7 +137,7 @@ public static class ShardInfo
 - 解析顺序就是 `ITenantResolver` 的注册顺序。Provider 先注册 `ClaimTenantResolver` 再注册 `BaggageTenantResolver`，已认证主体所属的租户优先于调用方自报的租户；主体没有租户声明时 Baggage 生效，中间件只核对文法与存储，不判断主体是否属于该租户。
 - 默认租户同样经过文法与存储校验；关闭存储核对后安全上下文里没有显示名。
 - 分片解析失败（租户存储不可达）返回 `MULTITENANCY_UNAVAILABLE_002`，调用失败，不降级为共库。
-- `TenantStoreShardResolver` 缓存"无分片"与未知租户的结果；条目数达到 `ShardCacheSize` 时整体清空，不逐条淘汰；租户连接变更后调用 `Invalidate`。
+- `TenantStoreShardResolver` 缓存"无分片"与未知租户的结果；条目数达到 `ShardCacheSize` 时整体清空，不逐条淘汰；条目过了 `ShardCacheTimeToLive` 即重新读存储；租户连接变更后调用 `Invalidate`（只作用于本实例）。
 - Baggage 里的租户只来自进程内建上下文的地方（消息派发、作业、工作流、命令行宿主）；HTTP、gRPC、MCP 的网络入站不收这个键（ADR-0121），这些调用方的租户只来自认证。CloudEvents 入站的 `xihantenant` 经消息派发进来，由宿主给端点加的权限把关。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
 - 分库的表结构由应用管理；租户属性 `ConnectionString` 有值即分库，`Shard.<key>` 透传。
 - `TenantShardScope` 必须在作用域首次创建持久化客户端之前绑定；之后再绑定或改绑另一分片抛出 `InvalidOperationException`，同一分片重复绑定无副作用。`BindTenantAsync` 不看租户是否启用、不受应用状态影响；没有分片解析器时成功且不绑定。
@@ -147,10 +148,12 @@ public static class ShardInfo
 | `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 |
+| `MULTITENANCY_CONFLICT_001` | 租户 ID 属于已删除的租户，不能再新建（ADR-0225） |
 | `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
 | `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 是存储的错误码，存储的错误作为内部错误保留（ADR-0115） |
 | `MULTITENANCY_UNAVAILABLE_003` | 租户存储不可达（连接、超时、事务失败），不当作租户不存在 |
 | `MULTITENANCY_VALIDATION_003` | 租户列表查询不合法：每页条数越界或续页令牌无效 |
+| `MULTITENANCY_VALIDATION_004` | 已认证主体带多个值不同的租户声明（ADR-0218） |
 
 六个消息键（`multitenancy.tenant.*`、`multitenancy.store.capacity_exceeded`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
 

@@ -90,7 +90,7 @@ app.Run();
 
 分片在 Tenant 阶段解析一次，写进调用上下文；解析失败即调用失败（`MULTITENANCY_UNAVAILABLE_002`），不降级为共库，因为降级会把租户数据写进平台库。无租户的调用没有分片。
 
-`TenantStoreShardResolver` 的结果按租户缓存，「无分片」也缓存；缓存条目数达到 `XiHan:MultiTenancy:ShardCacheSize`（缺省 10000）时整体清空。租户连接变更后调用 `ITenantShardResolver.Invalidate(tenantId)`；经数据库目录的 `TenantRecordStore` 写入时会自动失效，见[数据库租户目录](/multi-tenancy/database)。
+`TenantStoreShardResolver` 的结果按租户缓存，「无分片」也缓存；缓存条目数达到 `XiHan:MultiTenancy:ShardCacheSize`（缺省 10000）时整体清空，条目过了 `ShardCacheTimeToLiveSeconds`（缺省 30 秒）即重新读租户存储。租户连接变更后调用 `ITenantShardResolver.Invalidate(tenantId)`，失效只作用于本实例，多实例部署里别的实例在存活时间之后才用上新连接（ADR-0193）；经数据库目录的 `TenantRecordStore` 写入时会自动失效，见[数据库租户目录](/multi-tenancy/database)。
 
 想自己决定分片规则（按租户哈希选库、从独立的分片表读连接）时，实现 `ITenantShardResolver` 并在特性里登记为单例；中间件与持久化 Provider 只认契约。自带分片 Provider 的应用同样要登记 `TenantShardScope`。
 
@@ -168,7 +168,7 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 }
 ```
 
-工作单元的租户不会从绑定推导出来，两者都由调用方给出；管道外开工作单元、派发领域事件的完整写法见[工作单元与事务](/persistence/unit-of-work)。两个多租户 Provider 都登记 `TenantShardScope`，与是否选中分片能力无关。
+工作单元的租户不会从绑定推导出来，两者都由调用方给出，必须一致：客户端建在分片上时，开始工作单元即核对，不一致（含不带租户）抛出 `PERSISTENCE_VALIDATION_010`，工作单元保持未开始（ADR-0223）；管道外开工作单元、派发领域事件的完整写法见[工作单元与事务](/persistence/unit-of-work)。两个多租户 Provider 都登记 `TenantShardScope`，与是否选中分片能力无关。
 
 ## 常见问题
 
@@ -187,6 +187,10 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 ### 能按租户切换 Schema 而不是整库吗
 
 框架只做库级分片。Schema 级隔离把 Schema 名写进 `Shard.<key>` 属性透传给持久化 Provider，由应用在 Provider 的配置回调里按 `TenantShard.Properties` 处理。
+
+### 带分片的调用发的消息怎样投递
+
+经发件箱发布时，发件箱行随调用的事务写入，EF Core Provider 写进分片库，SqlSugar Provider 写进默认库。发件箱投递循环每轮先投递默认库，再逐个投递分片库，所以两种 Provider 下消息都会发出；EF Core 下分片库要建发件箱表。见[领域事件与发件箱](/messaging/domain-events)。
 
 ### 同一调用里能同时读平台表和租户表吗
 

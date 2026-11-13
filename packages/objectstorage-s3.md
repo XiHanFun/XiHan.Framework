@@ -47,7 +47,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | --- | --- | --- | --- |
 | `ServiceUrl` | 绝对 http / https 地址 | 空（Amazon S3） | 兼容服务的端点，如 `http://localhost:9000` |
 | `Region` | `string` | `us-east-1` | 访问 Amazon S3 时选端点，访问兼容服务时作签名区域 |
-| `AccessKey` | `string` | 空 | 访问密钥 ID；与 `SecretKey` 都为空时走 SDK 默认凭据链；与 `SecretKey` 一样在选项的 `ToString()` 里打印为 `***` |
+| `AccessKey` | `string` | 空 | 访问密钥 ID；缺省实例与 `SecretKey` 都为空时走 SDK 默认凭据链（命名实例见下文）；与 `SecretKey` 一样在选项的 `ToString()` 里打印为 `***` |
 | `SecretKey` | `string` | 空 | 访问密钥 |
 | `ForcePathStyle` | `bool` | `true` | 桶名放在路径而不是主机名里；各兼容服务对两种寻址的支持不同，按服务商说明设置 |
 | `EnsureBuckets` | `bool` | `false` | 写入遇到桶不存在时建桶再重试一次；缺省由基础设施预先建桶 |
@@ -85,6 +85,8 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 绑定的解析规则见[配置与选项](/configuration/options)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
 
 命名实例的客户端过[出站地址策略](/security/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。缺省实例的端点是运维配的，不过策略。
+
+命名实例必须给出 `AccessKey` 与 `SecretKey`，否则建实例失败（`OBJECTSTORAGE_VALIDATION_003`）。设置可以由租户填写，没给密钥就会用宿主的 AWS 凭据链，填设置的人就能以宿主的身份访问它能访问的任何桶。确实要让命名实例用实例角色等环境凭据时，由运营方在配置里打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials: true`；只给一项密钥总是拒绝。
 
 ## 条件写入探测
 

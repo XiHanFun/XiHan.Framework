@@ -82,7 +82,7 @@ xihan orders create --name widget --amount 3
 xihan migrate <来源版本> [--path <目录|.csproj|.slnx>] [--fixers <规则编号,…>] [--dry-run] [--report <文件>]
 ```
 
-工具当前没有登记任何规则集，所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。
+工具当前没有登记任何规则集，所以任何来源版本都以 `CLI_VALIDATION_002` 失败，退出码 64。机制本身保留给之后的大版本升级（RFC-0020，`spec/migration/README.md`）：语法级 Roslyn 重写，不加载 MSBuild 工作区；先扫描收集跨文件事实，再按规则顺序改写回写，之后写生成文件、删除与改名；改不了的位置留 `// xihan-migrate(<规则编号>): <说明>` 标记；对已迁移的代码再跑一遍零改动；跳过 `bin/`、`obj/`、`.git/`、`.vs/`、`node_modules/`、`*.g.cs`、`*.Designer.cs`，不跟随符号链接与目录联接（链接可能指向 `--path` 之外，ADR-0221）。`--dry-run` 只出报告不写文件，`--report` 把 JSON 报告写到文件。
 
 ### mcp
 
@@ -151,6 +151,7 @@ dnx XiHan.Framework.Cli@<版本> --yes -- setup --client claude    # 不安装�
 | `setup` 的 `--client` 或 `--mode` 不认识 | `CLI_VALIDATION_005` | 64 |
 | `setup` 找不到项目根 | `CLI_NOTFOUND_004` | 3 |
 | `setup` 要合并的配置文件读不了（不改动任何文件） | `CLI_VALIDATION_006` | 2 |
+| `pack` 进 ConfigMap 的配置文件里有带值的凭据（`detail` 列出键的路径，不带值；不写任何文件） | `CLI_VALIDATION_007` | 2 |
 | `setup --check` 未就绪（`detail` 列出各项） | `CLI_CONFLICT_001` | 5 |
 | `mcp` 在 stdin 关闭后 | — | 0 |
 | 被 Ctrl+C 取消 | — | 8 |

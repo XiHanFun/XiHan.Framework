@@ -20,7 +20,7 @@ CloudEvents 1.0 是 CNCF 定义的事件信封标准，框架的消息子系统�
 | batch | `Content-Type: application/cloudevents-batch+json` | 请求体是结构化事件的数组，按顺序处理 |
 | binary | 其他内容类型且有 `ce-specversion` 头 | `ce-id`、`ce-source`、`ce-type` 必填，`ce-time`（RFC 3339）、`ce-subject` 可选，其余 `ce-*` 头是扩展属性，头值按百分号解码；`Content-Type` 是数据内容类型，请求体是数据 |
 
-事件类型先查配置 `XiHan:Protocols:CloudEvents:Topics:<事件类型>`，没有映射时类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
+事件类型查配置 `XiHan:Protocols:CloudEvents:Topics:<事件类型>` 得到主题，没有映射的类型是 400 `PROTOCOLS_VALIDATION_009`。缺省只收映射过的类型：发送方由宿主授权投递某几种事件，没有映射就以类型本身为主题时，它能投进任何有订阅的主题，包括插件订阅的主题（ADR-0200）。发送方可信、想让类型直接当主题时打开 `XiHan:Protocols:CloudEvents:AcceptUnmappedTypes`，此时没有映射的类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
 
 配置 `Inbound` 决定事件的去向：
 
@@ -124,7 +124,7 @@ using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 app.MapXiHanCloudEvents().RequireXiHanPermission("events.deliver");
 ```
 
-权限不按租户收窄，只授给平台的服务账号或服务角色，不要授给租户里的角色。没有装配授权能力 `security.authorization@1` 时，这个要求只进入上下文、不被判定，端点等于敞开。授权的写法见[授权与权限](/security/authorization)。
+权限不按租户收窄，只授给平台的服务账号或服务角色，不要授给租户里的角色。没有装配授权能力 `security.authorization@1` 时，挂了这个要求宿主就启动失败（`KERNEL_VALIDATION_006`，ADR-0217），不会静默敞开。授权的写法见[授权与权限](/security/authorization)。
 
 ## 批量、去重与错误
 
@@ -135,6 +135,8 @@ batch 先把每个事件的类型解析成主题，任一事件没有映射时�
 | 不是 CloudEvent（内容类型既不是 structured / batch，也没有 `ce-specversion`） | 400 | `PROTOCOLS_VALIDATION_008` |
 | 信封不合法（规范版本、必填属性、时间、扩展名） | 400 | `MESSAGING_VALIDATION_002` |
 | 事件类型没有映射，类型本身也不是合法主题 | 400 | `PROTOCOLS_VALIDATION_009` |
+| 请求体超过 `MaxRequestBodyBytes`（缺省 1 MiB） | 400 | `PROTOCOLS_VALIDATION_013` |
+| batch 的事件数超过 `MaxBatchSize`（缺省 100） | 400 | `PROTOCOLS_VALIDATION_014` |
 | 派发模式下主题没有处理器 | 404 | `PROTOCOLS_NOTFOUND_003` |
 | 处理器或发布失败 | 按错误 KIND | 处理器或代理返回的错误码 |
 
@@ -183,7 +185,7 @@ builder.Services.AddHttpClient(CloudEventsWebhookPublisher.HttpClientName, clien
 | 情形 | 错误码 |
 | --- | --- |
 | 主题没有配置 Webhook | `PROTOCOLS_NOTFOUND_004` |
-| Webhook 返回非 2xx（`details.status` 是状态码） | `PROTOCOLS_UNAVAILABLE_001` |
+| Webhook 返回非 2xx（`details.status` 是状态码；只看状态码，响应体不读） | `PROTOCOLS_UNAVAILABLE_001` |
 | 连接失败 | `PROTOCOLS_UNAVAILABLE_002`，`reason` 只写异常类型的全名，完整异常进日志 |
 | 地址被[出站地址策略](/security/outbound)拒绝 | `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名，不发起连接 |
 

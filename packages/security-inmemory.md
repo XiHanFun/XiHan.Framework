@@ -60,8 +60,10 @@ app.Run();
 | `Principals:<id>:Roles` | `string` | 无 | 逗号分隔的角色 |
 | `Principals:<id>:Tenant` | `string` | 无 | 所属租户，写成 `tenant` 声明 |
 | `Principals:<id>:Claims:<type>` | `string` | 无 | 附加声明 |
-| `Grants:role:<role>` | `string` | 无 | 授予角色的权限码，逗号分隔，`*` 为全部 |
-| `Grants:user:<id>` | `string` | 无 | 授予用户的权限码，逗号分隔 |
+| `Grants:role:<role>` | `string` | 无 | 授予角色的平台权限码（只对不带租户的调用生效），逗号分隔，`*` 为全部 |
+| `Grants:user:<id>` | `string` | 无 | 授予用户的平台权限码，逗号分隔 |
+| `AnyTenantGrants:role:<role>` | `string` | 无 | 授予角色的每个租户的权限码（对带任何租户的调用生效），逗号分隔，`*` 为全部 |
+| `AnyTenantGrants:user:<id>` | `string` | 无 | 授予用户的每个租户的权限码，逗号分隔 |
 | `MaxPrincipals` | `int` | 1000 | 主体上限 |
 | `MaxGrants` | `int` | 10000 | 授予上限，按（主体，权限码，租户）计数 |
 
@@ -76,7 +78,7 @@ app.Run();
           "alice": { "ApiKey": "dev-alice-key", "DisplayName": "Alice", "Roles": "admin,editor", "Tenant": "acme", "Claims": { "email": "alice@example.com" } },
           "bob": { "ApiKey": "dev-bob-key", "DisplayName": "Bob", "Roles": "viewer", "Tenant": "acme" }
         },
-        "Grants": {
+        "AnyTenantGrants": {
           "role": { "admin": "*", "editor": "orders.read,orders.write", "viewer": "orders.read" },
           "user": { "alice": "reports.read" }
         }
@@ -86,7 +88,7 @@ app.Run();
 }
 ```
 
-配置里的授予都是全局的（对任何租户生效）；租户专属授予只能在运行时经授予管理 `IPermissionGrantAdministration.GrantAsync` 添加。
+`Grants` 下是平台授予，只对不带租户的调用生效；`AnyTenantGrants` 下是每个租户的授予（ADR-0197）。租户专属授予只能在运行时经授予管理 `IPermissionGrantAdministration.GrantAsync` 添加。
 
 ## 主要类型
 

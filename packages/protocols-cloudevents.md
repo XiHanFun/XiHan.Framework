@@ -58,9 +58,12 @@ app.Run();
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Protocols:CloudEvents:Inbound` | `Dispatch` / `Publish` | `Dispatch` | 入站事件派发给处理器，或发布到消息代理；不区分大小写 |
+| `XiHan:Protocols:CloudEvents:MaxRequestBodyBytes` | 正整数 | 1048576（1 MiB） | 入站请求体的字节上限，超过为 `PROTOCOLS_VALIDATION_013` |
+| `XiHan:Protocols:CloudEvents:MaxBatchSize` | 正整数 | 100 | 入站 batch 的事件数上限，超过为 `PROTOCOLS_VALIDATION_014` |
 | `XiHan:Protocols:CloudEvents:Outbound` | `Binary` / `Structured` | `Binary` | 出站单条事件的内容模式；不接受 `Batch` |
 | `XiHan:Protocols:CloudEvents:PropagateTraceContext` | bool | `false` | 出站 Webhook 是否在 HTTP 头里写追踪上下文（`traceparent`、`tracestate`、`baggage`）；只作用于 Webhook 的命名客户端 |
-| `XiHan:Protocols:CloudEvents:Topics:<事件类型>` | string | — | 事件类型到主题的映射，值须满足主题文法 |
+| `XiHan:Protocols:CloudEvents:Topics:<事件类型>` | string | — | 事件类型到主题的映射，值须满足主题文法；入站只收映射过的类型 |
+| `XiHan:Protocols:CloudEvents:AcceptUnmappedTypes` | bool | `false` | 入站是否接受没有映射的类型（以类型本身为主题）；打开后发送方能投进任何有订阅的主题，只在发送方可信时打开（ADR-0200） |
 | `XiHan:Protocols:CloudEvents:Webhooks:<主题>` | string | — | 出站 Webhook 地址，绝对的 `http` / `https` 地址 |
 
 ```json
@@ -128,7 +131,7 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 - 入站内容模式：`Content-Type: application/cloudevents+json`（structured）、`application/cloudevents-batch+json`（batch，事件数组），否则有 `ce-specversion` 头即 binary（属性在 `ce-*` 头，`Content-Type` 是数据内容类型，请求体是数据，头值按规范百分号解码）；都不是返回 400 `PROTOCOLS_VALIDATION_008`。`Inbound = Publish` 时发布到消息代理后立即 202，重试与死信由代理负责；派发只发生在接收请求的实例。batch 在派发模式按顺序处理、第一个失败即停止并作为响应，发布模式按主题分组一次批量发布、第一个失败的结果作为响应。
 - 过出站地址策略（RFC-0008、ADR-0117）：Webhook 地址是运维配的，但接收方是第三方，它的 3xx 能把请求引到内网，所以命名客户端的连接与重定向都检查。接收方在内网时写进 `XiHan:Security:Outbound:AllowedHosts`；被拒绝按连接失败报告 `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名。
 - HTTP 追踪头缺省不传播（ADR-0083）：启用追踪时 .NET 的 HttpClient 本会按当前 Activity 写 `traceparent`、`tracestate` 与 `baggage` 头（不是信封扩展），这会把内部追踪 ID 与 Baggage 推给第三方，所以命名客户端的主处理器缺省是关掉传播器的 `SocketsHttpHandler`（`ActivityHeadersPropagator = null`）。`PropagateTraceContext = true` 显式打开，按 .NET 的全局传播器写，只影响这个客户端，出站请求的客户端跨度照常记录；调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器（设置保留），用 `ConfigurePrimaryHttpMessageHandler` 整个替换主处理器时由替换后的处理器决定是否传播。
-- 入站端点经过 `UseXiHan()`，请求凭据在外层认证；框架不给端点加任何要求，权限要由宿主自己加（ADR-0121）：`MapXiHanCloudEvents().RequireXiHanPermission(...)`，只授给平台的服务账号或服务角色。扩展属性 `xihantenant`、`xihanprincipal` 是发送方给的，派发时不和请求的身份核对，能调端点的人就能选租户、写审计主体，权限也不按租户收窄；没有装配 `security.authorization@1` 时要求只进入上下文、不被判定，端点等于敞开。
+- 入站端点经过 `UseXiHan()`，请求凭据在外层认证；框架不给端点加任何要求，权限要由宿主自己加（ADR-0121）：`MapXiHanCloudEvents().RequireXiHanPermission(...)`，只授给平台的服务账号或服务角色。扩展属性 `xihantenant`、`xihanprincipal` 是发送方给的，派发时不和请求的身份核对，能调端点的人就能选租户、写审计主体，权限也不按租户收窄；没有装配 `security.authorization@1` 时挂了要求宿主就启动失败（`KERNEL_VALIDATION_006`，ADR-0217），不会静默敞开。
 - 发布者自己不重试；超时与重试经命名 HttpClient `xihan.protocols.cloudevents` 配置，或放在消息处理器 / 发件箱里获得至少一次语义。
 
 | 错误码 | 情形 |
@@ -136,6 +139,8 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 | `PROTOCOLS_VALIDATION_008` | 请求不是 CloudEvent（400） |
 | `MESSAGING_VALIDATION_002` | 信封不合法（400） |
 | `PROTOCOLS_VALIDATION_009` | 事件类型没有映射到主题，类型本身也不是合法主题（400） |
+| `PROTOCOLS_VALIDATION_013` | 入站请求体超过 `MaxRequestBodyBytes`（400） |
+| `PROTOCOLS_VALIDATION_014` | 入站 batch 的事件数超过 `MaxBatchSize`（400） |
 | `PROTOCOLS_NOTFOUND_003` | 派发模式下主题在本实例两种订阅方式都没有处理器（404） |
 | `PROTOCOLS_NOTFOUND_004` | 主题没有配置出站 Webhook |
 | `PROTOCOLS_UNAVAILABLE_001` | Webhook 返回非 2xx，`status` 在错误细节里 |

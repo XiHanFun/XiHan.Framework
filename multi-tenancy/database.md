@@ -27,8 +27,9 @@
 | `PropertiesJson` | 整份租户属性的 JSON 对象，长文本类型 |
 | `CreatedAt`、`ModifiedAt` | 创建与修改时间 |
 | `ConcurrencyStamp` | 并发戳 |
+| `IsDeleted`、`DeletedAt` | 软删除标记与时刻：删除的行是墓碑（ADR-0225） |
 
-`TenantRecord` 是平台级数据：不实现 `IMultiTenant`，不受当前租户过滤，不软删除。
+`TenantRecord` 是平台级数据：不实现 `IMultiTenant`，不受当前租户过滤。删除是软删除，行留作墓碑：读不到这个租户，也不能再用这个 ID 新建（`MULTITENANCY_CONFLICT_001`）——租户的数据按 ID 归属、不随删除清理，复用 ID 的新租户会接手它们。确实要释放一个 ID，先清理它的数据，再由运维直接删掉那一行。已有的表要加上这两列（SqlSugar 的 `InitTables` 会补列，EF Core 用迁移）。
 
 | 其他类型 | 说明 |
 | --- | --- |
@@ -153,7 +154,7 @@ public sealed class TenantOnboarding(ITenantAdministration tenants)
 ## 缓存与失效
 
 - `DatabaseTenantStore.FindAsync` 的结果按租户缓存，「不存在」也缓存；条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空，不逐条淘汰。不合法的租户 ID 直接返回无值，不查库，也不占缓存。
-- `TenantRecordStore` 在写入时就失效目录与分片解析器（`ITenantShardResolver.Invalidate`）的缓存。写入在调用方事务提交后才对其他调用可见，失效与提交之间的窗口由存活时间收敛。
+- `TenantRecordStore` 在写入时与调用结束（提交之后）各失效一次目录与分片解析器（`ITenantShardResolver.Invalidate`）的缓存，两处缓存丢弃失效之前开始的读取：停用、改连接串在提交之后立即对本实例生效（ADR-0194）。
 - 多实例部署时其他实例的缓存同样靠存活时间收敛，需要更快生效时调小 `CacheTimeToLiveSeconds`。
 - 绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate([tenantId])` 与 `ITenantShardResolver.Invalidate([tenantId])`（清全部用 `InvalidateAll()``，或等存活时间到期。`Invalidate()` 不带参数时清空全部。
 - `ListAsync` 不走缓存，按 ID 排序、以偏移为续页令牌一页一页读，调用方读到令牌为空为止，不再有截断。

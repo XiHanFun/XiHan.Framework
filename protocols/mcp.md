@@ -118,6 +118,10 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Autho
 
 消息为 JSON-RPC 2.0，HTTP 上是 Streamable HTTP 传输：`POST` 一条消息一个答复（`application/json`）；通知（没有 `id`，如 `notifications/initialized`）与客户端发来的响应不答复，回 202；不开 SSE 流、不建会话，`GET` 与 `DELETE` 为 405。请求带的 `MCP-Protocol-Version` 头与服务端版本不同时回 400，缺失按当前版本处理。
 
+入口校验按顺序进行，任一不过即以 JSON-RPC 错误答复、不进入 JSON-RPC（ADR-0199）：请求带 `Origin` 时它必须在 `AllowedOrigins` 里，否则 403（`PROTOCOLS_DENIED_001`）；`Content-Type` 必须是 `application/json`，否则 415（`PROTOCOLS_VALIDATION_015`）；请求体不超过 `MaxRequestBodyBytes`，否则 413（`PROTOCOLS_VALIDATION_016`）。不带 `Origin` 的非浏览器客户端不受第一条影响；浏览器里的客户端（如 MCP Inspector）要把它的源配进 `AllowedOrigins`。这样本机开着的 MCP 服务不会被任意网页用简单请求调用，也不会借 DNS 重绑定被读到结果。
+
+幂等键（Baggage `xihan.idempotency-key`）交给 `tools/call`：外层的 `/mcp` 请求不按它去重，每个 `tools/call` 按它去重与回放，重试同一个调用得到首次的结果（ADR-0205）。
+
 `/mcp` 本身是经过 `UseXiHan()` 的普通端点：请求凭据在外层认证，凭据无效时整个请求以 401 Problem Details 拒绝、带 `WWW-Authenticate` 质询，不进入 JSON-RPC；应用未就绪时 503。没有凭据的请求照常进入，按契约的授权在每个 `tools/call` 的管道里判定，所以匿名客户端能 `tools/list`，调需要权限的 tool 时得到 `isError`。
 
 | 情形 | `error.code` | `error.data.code` | HTTP |
@@ -125,6 +129,9 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Autho
 | 请求体不是 JSON | -32700 | `PROTOCOLS_VALIDATION_001` | 400 |
 | 不是 JSON-RPC 2.0 请求（非对象、`jsonrpc` 不是 `2.0`、缺 `method`、`id` 为 `null`、`params` 不是对象） | -32600 | `PROTOCOLS_VALIDATION_001` | 400 |
 | `MCP-Protocol-Version` 不受支持 | -32600 | `PROTOCOLS_VALIDATION_002` | 400 |
+| `Origin` 不在 `AllowedOrigins` 里 | -32600 | `PROTOCOLS_DENIED_001` | 403 |
+| `Content-Type` 不是 `application/json` | -32600 | `PROTOCOLS_VALIDATION_015` | 415 |
+| 请求体超过 `MaxRequestBodyBytes` | -32600 | `PROTOCOLS_VALIDATION_016` | 413 |
 | 方法不受支持 | -32601 | `PROTOCOLS_NOTFOUND_001` | 200 |
 | `tools/call` 缺 `name` | -32602 | `PROTOCOLS_VALIDATION_001` | 200 |
 | tool 未登记 | -32602 | `PROTOCOLS_NOTFOUND_002` | 200 |
@@ -160,9 +167,11 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `ServerName` | string | 宿主的应用名 | `initialize` 答复的 `serverInfo.name` |
-| `ServerVersion` | string | 框架版本 | `serverInfo.version` |
+| `ServerVersion` | string | 应用的版本 | `serverInfo.version`；缺省取入口程序集的信息版本（去掉构建元数据），不写框架版本（ADR-0209） |
 | `Instructions` | string | 空 | `initialize` 答复的 `instructions`，给大模型的使用说明，空时不写 |
 | `Tools:<操作 ID>` | string | — | 显式 tool 名 |
+| `AllowedOrigins:<序号>` | string | 空 | HTTP 入口允许的浏览器源，`scheme://host[:port]`（http 或 https，没有路径）；不是源的值启动失败 |
+| `MaxRequestBodyBytes` | 正整数 | 4194304（4 MiB） | HTTP 入口的请求体上限 |
 
 `initialize` 总是答复本服务端的协议版本与 `capabilities.tools.listChanged = false`，由客户端决定是否继续；`ping` 答复 `{}`。
 

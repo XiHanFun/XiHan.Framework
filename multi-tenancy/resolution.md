@@ -45,7 +45,9 @@ var tenant = context.GetSecurity().Tenant;   // TenantContext?，没有租户时
 | `IsEnabled` | `bool` | 缺省 `true`；禁用的租户在 Tenant 阶段被拒绝 |
 | `Properties` | `IReadOnlyDictionary<string, string>` | 租户专属属性（连接串、配额等），键区分大小写 |
 
-租户 ID 的文法是 `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`：字母或数字开头，之后是字母、数字、`.`、`_`、`-`，最长 64 个字符（`TenantIdentifier.MaxLength`），区分大小写。`TenantIdentifier.IsValid` 判断是否合法，`TenantIdentifier.Validate` 不合法时抛出 `ArgumentException`。
+租户 ID 的文法是 `^[a-z0-9][a-z0-9._-]{0,63}$`（整串匹配）：小写字母或数字开头，之后是小写字母、数字、`.`、`_`、`-`，最长 64 个字符（`TenantIdentifier.MaxLength`）。`TenantIdentifier.IsValid` 判断是否合法，`TenantIdentifier.Validate` 不合法时抛出 `ArgumentException`。
+
+只用小写：租户 ID 要在数据库列、文件路径与主机名里比较，SQL Server 与 MySQL 的缺省排序规则、Windows 与 macOS 的文件系统、主机名都不区分大小写，`Acme` 与 `acme` 在那里是同一个值。只用小写时，按序数比较与不区分大小写的比较结论相同，不必为租户列配区分大小写的排序规则。含大写的 ID 不合文法，Tenant 阶段解析出来的为 `MULTITENANCY_VALIDATION_001`；框架不把它改成小写（ADR-0196）。
 
 存储契约 `ITenantStore` 只有两个方法：`FindAsync(tenantId)` 按 ID 查找，返回 `Result<Maybe<TenantInfo>>`，不存在是成功的无值；`ListAsync(TenantQuery)` 返回 `Result<TenantPage>`，按 ID 一页一页读（`PageSize` 1～1000、不透明的 `ContinuationToken`、`EnabledOnly`），令牌为空即读完。存储连不上这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成「租户不存在」，Tenant 阶段据此以 503 结束调用而不是放行。
 
@@ -107,7 +109,7 @@ curl http://localhost:5000/tenant                                            # -
 Tenant 阶段按下面的顺序处理，任一步失败即以结果结束调用，后面的阶段不再执行：
 
 1. 按注册顺序调用 `ITenantResolver`，第一个给出值的生效；某个解析器返回失败时以它的错误结束调用，后面的解析器不再调用，默认租户也不顶替。
-2. 都没有值时用 `DefaultTenant`；仍没有时，`RequireTenant` 为真返回 `MULTITENANCY_VALIDATION_002`，否则以无租户继续。
+2. 都没有值时用 `DefaultTenant`；仍没有时，`RequireTenant` 为真返回 `MULTITENANCY_VALIDATION_002`，否则以无租户继续。框架自己声明的平台调用（如工作流轮询平台分区）例外：不补缺省租户、不要求带租户（ADR-0192）。
 3. 校验租户 ID 文法，不合法返回 `MULTITENANCY_VALIDATION_001`。先校验再查存储，未经校验的外部输入不会交给 Provider。
 4. `ValidateAgainstStore` 为真（缺省）时查 `ITenantStore`：存储不可达返回 `MULTITENANCY_UNAVAILABLE_003`，不存在返回 `MULTITENANCY_NOTFOUND_001`，已禁用返回 `MULTITENANCY_DENIED_001`；存在且启用时以存储里的记录为准，显示名随之带入。关闭存储核对时只校验文法，安全上下文里没有显示名。
 5. 写入 `SecurityContext.Tenant`。
@@ -117,7 +119,7 @@ Tenant 阶段按下面的顺序处理，任一步失败即以结果结束调用�
 
 | 顺序 | 解析器 | 读什么 |
 | --- | --- | --- |
-| 1 | `ClaimTenantResolver` | 已认证主体的租户声明（类型由 `TenantClaim` 决定，缺省 `tenant`），同类声明有多个时取第一个；未认证主体直接跳过 |
+| 1 | `ClaimTenantResolver` | 已认证主体的租户声明（类型由 `TenantClaim` 决定，缺省 `tenant`），同类声明有多个时值都相同按一个算，值不同返回 `MULTITENANCY_VALIDATION_004`（签发方给了矛盾的身份，不取其中任何一个，ADR-0218）；未认证主体直接跳过 |
 | 2 | `BaggageTenantResolver` | 调用上下文的 Baggage `xihan.tenant`，由进程内建上下文的地方放进去 |
 
 应用登记自己的 `ITenantResolver` 会排在这两个之后。解析器只负责给出候选 ID，校验都在中间件里。
@@ -181,6 +183,7 @@ public sealed class SubdomainTenantResolver(IHttpContextAccessor http) : ITenant
 | `ValidateAgainstStore` | `bool` | `true` | 为真时租户必须在存储中存在且启用；为假时只校验文法 |
 | `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型，不能为空 |
 | `ShardCacheSize` | `int` | 10000 | 分片解析器按租户缓存结果的条目上限，满时整体清空；必须是正整数 |
+| `ShardCacheTimeToLiveSeconds` | 秒 | 30 | 分片缓存条目的存活时间，过了即重新读租户存储；0 不过期 |
 
 布尔值只接受 `true` / `false`，`ShardCacheSize` 只接受正整数，其他写法在启动时抛出 `ArgumentException`。
 
@@ -248,8 +251,10 @@ Transaction 阶段的 `UnitOfWorkMiddleware` 用安全上下文里的租户开�
 | --- | --- | --- |
 | `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 | 400 |
 | `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 | 400 |
+| `MULTITENANCY_VALIDATION_004` | 已认证主体带多个值不同的租户声明 | 400 |
 | `MULTITENANCY_NOTFOUND_001` | 租户不存在 | 404 |
 | `MULTITENANCY_DENIED_001` | 租户已禁用 | 403 |
+| `MULTITENANCY_CONFLICT_001` | 管理接口新建的租户 ID 属于已删除的租户（墓碑） | 409 |
 | `MULTITENANCY_UNAVAILABLE_001` | 内存租户存储容量已满（`InMemoryTenantStore.Set` 与健康项 `multitenancy.inmemory.capacity`） | 503 |
 | `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达） | 503 |
 | `PERSISTENCE_VALIDATION_001` | 多租户实体在没有租户的调用中新增 | 400 |

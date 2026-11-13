@@ -69,13 +69,13 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | `Authorization.PermissionPolicy` | 权限策略：`Prefix`（`permission:`）、`NameFor(code)`、`CodeOf(name)` |
 | `Authorization.AuthorizationMiddleware` | Authorize 阶段的中间件；策略判定失败以该失败结束调用（ADR-0071） |
 | `Permissions.GrantSubject` | 授予的主体：`ForUser(id)`、`ForRole(name)`，种类常量 `User`、`Role` |
-| `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、租户（`null` 为全局） |
-| `Permissions.IPermissionGrantStore`、`PermissionGrantStoreExtensions` | 授予存储：`GetManyAsync(subjects, tenantId)` → 与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`，单主体写法是扩展方法 `GetGrantsAsync(subject, tenantId)`；每项全局授予加该租户的授予；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
-| `Permissions.IPermissionGrantAdministration`、`PermissionGrantAdministrationExtensions`、`PermissionGrantQuery`、`GrantTenantFilter`、`PermissionGrantPage` | 可选的授予管理：`GrantAsync` / `RevokeAsync` 与入参同序的逐项结果（撤销不存在为 `SECURITY_NOTFOUND_002`），`ListAsync(query)` 按主体与租户过滤（`Any` / `Global` / `Of(tenantId)`）、偏移分页并计数，越界为 `SECURITY_VALIDATION_005`；单条写法是扩展方法 |
+| `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、范围（`null` 为平台，`AnyTenant` = `*` 为每个租户，否则为该租户，ADR-0197）；`VisibleScopes(tenantId)` 给出一次调用看得到的范围 |
+| `Permissions.IPermissionGrantStore`、`PermissionGrantStoreExtensions` | 授予存储：`GetManyAsync(subjects, tenantId)` → 与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`，单主体写法是扩展方法 `GetGrantsAsync(subject, tenantId)`；每项是该主体对这次调用生效的授予（不带租户是平台授予，带租户是每个租户的授予加该租户的授予，`PermissionGrant.VisibleScopes`）；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
+| `Permissions.IPermissionGrantAdministration`、`PermissionGrantAdministrationExtensions`、`PermissionGrantQuery`、`GrantTenantFilter`、`PermissionGrantPage` | 可选的授予管理：`GrantAsync` / `RevokeAsync` 与入参同序的逐项结果（撤销不存在为 `SECURITY_NOTFOUND_002`），`ListAsync(query)` 按主体与范围过滤（`Any` / `Platform` / `Of(tenantId)`，`Of("*")` 是每个租户的授予）、偏移分页并计数，越界为 `SECURITY_VALIDATION_005`；单条写法是扩展方法 |
 | `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器：`HasPermissionAsync` → `Result<bool>`，存储、来源、过滤器的失败原样返回 |
 | `Permissions.IPermissionFilter` | 授予命中后的收窄（ADR-0039）：`AllowsAsync` → `Result<bool>` |
 | `Permissions.IPermissionGrantSource` | 存储之外的额外授予（ADR-0045）：`GetGrantsAsync` → `Result<IReadOnlyCollection<string>>` |
-| `SecurityInvocationExtensions` | `SetCredential` / `FindCredential`、`RequireAuthorization` / `FindAuthorizationRequirement` |
+| `SecurityInvocationExtensions` | `SetCredential` / `FindCredential`、`RequireAuthorization`（追加一条要求）/ `GetAuthorizationRequirements` |
 | `SecurityOptions` | 选项，见上表 |
 | `Conditions.*` | 条件引擎（ADR-0046）：`ConditionSet` / `ConditionGroup` / `ConditionClause`、`ConditionOperator`、`ConditionValueKind`、`ConditionAttributeDescriptor`、`IConditionAttributeRegistry`、`IConditionCompiler`、`IConditionEvaluator`、`IConditionAttributeSource`、`DictionaryConditionAttributeSource`、`MemoizingConditionAttributeSource`、`ConditionOperatorRules`、`AddConditionAttributes` |
 | `Network.IIpRegionResolver` / `IpRegion` | IP 归属地（ADR-0047）：`Resolve(IPAddress)` → `Maybe<IpRegion>` |
@@ -127,8 +127,8 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 {
     public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
     {
-        // 端点没挂要求、契约也没写权限或策略时才补；显式要求优先于契约推导
-        if (!context.FindAuthorizationRequirement().HasValue
+        // 端点没挂要求、契约也没写权限或策略时才补；写入的要求与契约的要求叠加判定
+        if (context.GetAuthorizationRequirements().Count == 0
             && context.FindOperation().TryGetValue(out var operation)
             && operation.Contract is { Permission: null, Policy: null })
         {

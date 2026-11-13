@@ -69,7 +69,7 @@ curl -s localhost:5000/
 curl -s localhost:5000/health/ready
 ```
 
-第一条得到 `ok`，第二条得到一段 JSON，`status` 是 `pass`，`state` 是 `Ready`，`features` 里列出每个已装配特性的状态。这个请求经过了完整的内核管道，只是没有任何阶段拒绝它；`/health/ready` 则不经管道，应用还没启动完也能访问。
+第一条得到 `ok`，第二条得到一段 JSON，`status` 是 `pass`，`state` 是 `Ready`。这个请求经过了完整的内核管道，只是没有任何阶段拒绝它；`/health/ready` 则不经管道，应用还没启动完也能访问。
 
 ## 装配时发生了什么
 
@@ -108,7 +108,19 @@ curl -s localhost:5000/health/ready
 | `/health/ready` | 应用处于服务状态（`Ready` 或 `Degraded`） |
 | `/health/live` | 应用状态不是 `Failed` |
 
-下面的响应只截取了 `features` 里的一条：
+探针谁都能访问，只给状态（ADR-0209）：
+
+```json
+{ "status": "pass", "state": "Ready" }
+```
+
+各特性与健康条目的详情由 `MapXiHanHealthDetails(pattern)`（缺省 `/health/details`）给出。它经内核管道，返回的约定构建器能加访问要求，详情会告诉访问者装配了哪些特性与 Provider，不要匿名开放：
+
+```csharp
+app.MapXiHanHealthDetails().RequireXiHanPermission("health.read");
+```
+
+下面的详情只截取了 `features` 里的一条：
 
 ```json
 {
@@ -121,7 +133,7 @@ curl -s localhost:5000/health/ready
 }
 ```
 
-响应体是 `HealthResponse`：`state` 是应用的聚合状态；`features` 每个特性一条（`id`、`state`，失败时有 `error` 错误码）；`contributions` 是 `IHealthContributor` 上报的条目（如每个进程外插件），另带 `description`、`checkedAt`、`durationMs` 与 `data`，有才写。某个条目 `Degraded` 或 `Failed` 时应用聚合为 `Degraded`，仍在服务，`/health/ready` 仍通过。状态机与健康贡献见[生命周期与健康](/startup/lifecycle)，Kubernetes 探针的配置见 [Kubernetes](/deployment/kubernetes)。
+响应体是 `HealthResponse`：`state` 是应用的聚合状态；详情端点里 `features` 每个特性一条（`id`、`state`，失败时有 `error` 错误码）；`contributions` 是 `IHealthContributor` 上报的条目（如每个进程外插件），另带 `description`、`checkedAt`、`durationMs` 与 `data`，有才写。某个条目 `Degraded` 或 `Failed` 时应用聚合为 `Degraded`，仍在服务，`/health/ready` 仍通过。状态机与健康贡献见[生命周期与健康](/startup/lifecycle)，Kubernetes 探针的配置见 [Kubernetes](/deployment/kubernetes)。
 
 ## Problem Details
 
@@ -229,6 +241,7 @@ public sealed record WhoAmI(string? Principal, bool IsAuthenticated, string? Ten
 | 进入管道时截止时间已过 | 504 | `KERNEL_TIMEOUT_001` |
 | 端点抛出未处理异常 | 500 | `KERNEL_UNEXPECTED_001` |
 | 操作端点的请求体不是 JSON 对象 | 400 | `KERNEL_VALIDATION_001` |
+| 操作端点的请求体超过上限 / 不是 JSON 类型 | 400 | `PROTOCOLS_VALIDATION_011` / `PROTOCOLS_VALIDATION_012` |
 | 未认证 / 凭据无效、过期或签名不符 | 401 | `SECURITY_DENIED_001` / `SECURITY_DENIED_003` |
 | 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
 | 授予存储、授予来源或收窄过滤器读不到数据（授权无法判定） | 503 | `SECURITY_UNAVAILABLE_001` |

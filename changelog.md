@@ -4,6 +4,78 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
+## v5.0.0-rc.1（2026-11-13）
+
+::: warning 候选版须知
+- 这是候选版，安装要带 `--prerelease`；正式版前只收修复与文档
+- 这一版集中修复 5.0 安全审查的发现，多条要改配置或调用代码，升级前逐条看下面的迁移写法
+:::
+
+### 版本与兼容
+
+- **新增** 每个包带 SPDX 2.2 软件物料清单（包内 `_manifest/spdx_2.2/manifest.spdx.json`），列出包的组成与依赖
+
+### 安全
+
+- **修复** 端点或路由组上的授权约定原先顶替了操作契约的权限：在 `MapXiHanOperations()` 上加 `RequireXiHanAuthentication()` 后，没有授予的已登录用户能调用全部操作；现在两者叠加判定，全部满足才放行。`FindAuthorizationRequirement` 改为 `GetAuthorizationRequirements`，返回全部已写入的要求
+- **修复** 端点上的授权要求不再被静默跳过：挂在绕过管道的端点（OpenAPI、`.proto`、健康探针、自己标注绕过的）上时宿主启动失败（`SECURITY_VALIDATION_008`），原先从不判定；`UseXiHan()` 没调或排在 `UseRouting()` 之前时，带要求的端点拒绝执行；`MapXiHanGrpc()` 上的授权约定现在每次调用都判定
+- **修复** HTTP 操作的请求体改在授权之后才读，原先进管道前就整读解析，匿名调用方也能让宿主为每个请求缓冲几十 MB；请求体上限 `XiHan:Protocols:Http:MaxRequestBodyBytes`（缺省 4 MiB，超过为 `PROTOCOLS_VALIDATION_011`），有请求体时 `Content-Type` 必须是 JSON（否则 `PROTOCOLS_VALIDATION_012`）：以 `text/plain` 或表单发 JSON 的客户端要改成 `application/json`
+- **修复** 进程外与 Wasm 插件读宿主配置节与绑定要运营方授予：原先插件在清单里点名哪个 `XiHan:*` 节、哪个绑定就拿到哪个，零权限的插件也能拿到 JWT 密钥、连接串与签名密钥；现在要在 `XiHan:Plugins:<OutOfProcess|Wasm>:Grants:<清单 ID>` 里授予 `config:<配置节>` 与 `binding:<绑定名>`，没有授予即拒绝加载（`PLUGINS_DENIED_001`）
+- **修复** S3 命名实例必须给出 `AccessKey` 与 `SecretKey`：原先没给密钥就用宿主的 AWS 凭据链，能登记存储实例的租户管理员可以以宿主的身份读写任何桶；要用环境凭据由运营方打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials`
+- **修复** WebAuthn 认证核对凭据属于谁：原先只在存储与响应都带用户句柄时才比对，知道口令的攻击者能用自己账号下的通行密钥完成别人的登录。`WebAuthnStoredCredential.UserHandle` 改为必填，`VerifyAuthentication` 增加 `expectedUserHandle`（先认出用户时传他，免用户名传 `null`，此时响应必须带句柄），结果新增 `UserHandle`
+- **修复** OpenID Connect 缺省校验受众：原先没配 `Audience` 就不校验，共用身份提供方时发给别的应用的令牌也被接受。现在 `XiHan:Security:OpenIdConnect:Audience` 必填，没有即启动失败；签发者只为本 API 签发令牌时可以显式设 `ValidateAudience: false`
+- **修复** 工作流 `Http` 活动的正文读到 4 MiB 即停：原先先整体缓冲（上限约 2 GiB）再截断，能发布流程定义的租户用户把地址指向自己的服务器就能耗尽宿主内存。`TimeoutSeconds` 不超过 `XiHan:Workflow:MaxHttpTimeoutSeconds`（缺省 300），不是正的秒数时发布即校验失败，原先静默取缺省值
+- **修复** 工作流的扇出与变量大小有了上限：原先并行 `ForEach` 的子实例数不受限，`s + s` 几十步就能拼出上 GB 的字符串，级联取消只处理最新的 1000 个子实例。现在 `ForEach` 最多 `XiHan:Workflow:MaxForEachItems` 项（缺省 1000），实例变量序列化后最多 `MaxVariablesBytes`（缺省 8 MiB），`+` 拼出的字符串最长 4194304 个字符，级联覆盖全部子实例
+- **修复** 文件系统对象存储的配额改为边写边预留：原先只检查不预留，并发写入能合计超出 `MaxTotalBytes`，并发覆盖或删除同一个键会少记用量、之后一直能写到重启。覆盖写入现在需要新内容全长的余量
+- **修复** 文件系统对象存储的分片暂存有了上限：原先暂存的分片不计入配额、上传数不限，过期的上传只在启动时清掉且之前照样能传分片。现在暂存计入 `MaxTotalBytes`，未完成的上传最多 `XiHan:ObjectStorage:FileSystem:MaxMultipartUploads`（缺省 1000），过期的上传拒绝再传分片与完成，运行期间也会清掉
+- **修复** 进程外插件的 stdout / stderr 一行最多 16384 个字符：原先宿主按行整读，插件写一行不带换行的几十 MB 输出就让宿主整行装进内存。超过的部分丢弃并记一条告警，握手行超长即握手失败
+- **修复** Wasm 插件沙箱补齐资源上限：睡在 WASI `poll_oneoff` 里的调用原先中断不了，宿主要等它睡完，现在最多睡到调用的截止时间即以 `KERNEL_TIMEOUT_001` 结束；`table.grow` 受 `XiHan:Plugins:Wasm:MaxTableElements`（缺省 100000）约束；`xihan.log` 一条最多 16384 字节；stdout / stderr 不再写进工作目录的文件，日志走 `xihan.log`
+- **修复** CloudEvents 入站端点的请求体与 batch 条数有了上限：原先整读请求体、batch 不限条数，派发模式下每个事件都走一次完整管道。现在请求体最多 `XiHan:Protocols:CloudEvents:MaxRequestBodyBytes`（缺省 1 MiB，超过为 `PROTOCOLS_VALIDATION_013`），batch 最多 `MaxBatchSize` 个事件（缺省 100，超过为 `PROTOCOLS_VALIDATION_014`）；`CloudEventsHttpBinding.ReadAsync` 多了 `options` 参数
+- **修复** CloudEvents Webhook 发布方不再读接收方的响应体：原先先把整个响应缓冲进内存（上限约 2 GiB）再看状态码，接收方返回超大正文就能耗尽宿主内存；现在读到响应头即判定
+- **修复** gRPC 解码嵌套消息最多 64 层：原先递归的消息描述能嵌套到第 1000 层，写 JSON 时以非预期异常失败，调用方得到 `Internal`；现在超过即 `InvalidArgument` + `PROTOCOLS_VALIDATION_005`
+- **修复** 知识库检索的条数与文档过滤有了上限：`Top` 最多 1000（`KnowledgeSearch.MaxTop`），`RetrievalFilter.DocumentIds` 最多 1000 个（`MaxDocumentIds`），超过在构造时抛出；原先条数不限、带元数据过滤时乘以超取倍数会溢出，向量存储把文档 ID 逐个左接成过滤表达式，现在拼成平衡的或树
+- **修复** 审计不再把被 Tenant 阶段拒绝的租户记成事件的租户：原先安全上下文没有租户就回退到调用方自报的 Baggage，失败的调用落进不存在或已禁用的租户的审计；现在装配了多租户时只取安全上下文，自报的租户在结果的错误参数里。内核新增 `MarkTenantResolved()` / `IsTenantResolved()`
+- **修复** 配了 `XiHan:MultiTenancy:DefaultTenant` 或 `RequireTenant` 的宿主里，工作流轮询平台分区不再失败：原先平台分区的调用被补上缺省租户（存储发现分区不符即抛出）或因不带租户被拒绝。内核新增 `MarkPlatformCall()` / `IsPlatformCall()`，Tenant 阶段对声明的平台调用不补缺省租户、不要求带租户
+- **修复** 租户分片的解析缓存过了 `XiHan:MultiTenancy:ShardCacheTimeToLiveSeconds`（缺省 30 秒）即重新读租户存储：原先从不过期，多实例部署里别的实例改了租户的连接串，本实例一直往旧库写。`TenantStoreShardResolver` 的构造多了 `TimeProvider`
+- **修复** 数据库授予的撤销在提交之后立即生效：原先只在写入时清缓存，撤销提交之前的判定会把已撤销的授予写回缓存，保留到存活时间结束（`CacheTimeToLiveSeconds` 为 0 时永久保留）；现在作用域结束时再失效一次，缓存丢弃失效之前开始的读取
+- **修复** 数据库租户目录的停用与改连接串在提交之后立即生效：原先只在写入时清目录与分片缓存，提交之前的解析会把旧租户写回缓存，停用的租户在存活时间内仍被当作启用、仍指向旧库
+- **修复** 插件回调与发布只能带宿主交给插件的租户：原先回调元数据里的 `xihan.tenant` 原样采用、Wasm 中间件也能改写它，插件能在任何启用的租户里调用宿主操作、发布消息。越界的回调与信封为 `PLUGINS_DENIED_002`，中间件改写租户被丢弃；原样转发收到的元数据的插件不受影响
+- **修复** 租户 ID 只用小写（`^[a-z0-9][a-z0-9._-]{0,63}$`，整串匹配）：原先区分大小写，数据库缺省排序规则下 `ACME` 的调用能读写 `acme` 的行；`acme\n` 这类结尾带换行的 ID 也曾被放过。含大写的 ID 为 `MULTITENANCY_VALIDATION_001`。升级前把租户目录、`TenantId` 列、授予与资源名里的租户 ID 改成小写，只有大小写不同的两个租户先拆开数据
+- **修复** 没有租户的授予只对平台调用生效：原先它对每个租户生效，平台授给 `role:admin` 的权限落到每个租户里带同名角色、同一用户 ID 的人身上。要对每个租户生效的授予把范围写成 `*`（`PermissionGrant.AnyTenant`，数据库租户列存 `*`，内存配置写在 `XiHan:Security:InMemory:AnyTenantGrants`）；`GrantTenantFilter.Global` 改名 `Platform`，`PermissionGrantRecord.GlobalTenantId` 改名 `PlatformTenantId`
+- **修复** 多租户实体的唯一索引必须含 `TenantId`：原先不要求，撞上不含租户的唯一索引会告诉调用方别的租户已有这个键。不含又没写 `AcrossTenants = true` 的声明在启动时失败；主键仍全局唯一，多租户实体的标识应由服务端生成
+- **修复** MCP 的 HTTP 端点校验 `Origin`、`Content-Type` 与请求体大小：原先任意网页都能用 `text/plain` 的简单请求调用本机 MCP 服务的匿名 tool，请求体也只受 Kestrel 的 30 MB 限制。带 `Origin` 的请求要在 `XiHan:Protocols:Mcp:AllowedOrigins` 里（否则 403），只收 `application/json`（否则 415），请求体最多 `MaxRequestBodyBytes`（缺省 4 MiB，否则 413）；浏览器里的 MCP 客户端要把它的源配进去
+- **修复** CloudEvents 入站缺省只收 `XiHan:Protocols:CloudEvents:Topics` 映射过的事件类型：原先没有映射的类型以它本身为主题，只被允许投递某一种事件的发送方能投进任何有订阅的主题，包括插件订阅的主题。依赖类型直接当主题的应用把类型映射进 `Topics`，或在发送方可信时打开 `AcceptUnmappedTypes`
+- **修复** Kubernetes 租约客户端校验 API Server 证书的主机名与服务端认证用途：原先只核对证书链通到集群 CA，持有集群 CA 签发的任意证书就能冒充 API Server、拿到 ServiceAccount 令牌并伪造租约
+- **修复** 宿主调用进程外插件时每次都带会话令牌，回调套接字放进私有目录：原先只有回调带令牌，本机其他用户或同一 Pod 的边车直接连插件端点就能冒充宿主，宿主的回调套接字也直接放在共享的临时目录下。插件必须校验 `xihan-plugin-session`，不符即 `Unauthenticated`；自己实现协议的插件要补上这道校验（.NET 写法见 `samples/EchoPlugin/SessionGuard.cs`）
+- **修复** 极远的截止时间不再让调用以 500 结束：原先 `grpc-timeout` 的大数值溢出时间范围，超过约 49.7 天的截止时间让定时器构造抛出，匿名调用方能随意制造错误日志；现在前者截到最远的时刻，后者不起定时器
+- **修复** Baggage 的值在建调用上下文时核对：原先原样进上下文，调用方能把换行写进关联 ID 伪造日志行，超长的值进日志、审计与信封。为空、超过 256 个字符或含控制字符的值丢弃（幂等键除外，照旧由 Idempotency 阶段拒绝）；HTTP 入站不合文法的 `xihan.locale` 当作没给，`Accept-Language` 照常协商
+- **修复** 幂等的作用域键里主体带长度前缀：原先主体 ID 直接拼接，主体 `a:b` 配键 `c` 与主体 `a` 配键 `b:c` 共用一条记录，能回放别人的结果；升级前写下的幂等记录不再命中（保留期内的重试会再执行一次）。MCP 的 HTTP 传输把幂等键交给 `tools/call`：原先外层请求先写下「处理中」，同一个键的工具调用一次也执行不了
+- **修复** 出站地址策略在开了私网时同样拒绝 GCP（`fd20:ce::254`）与 Oracle（`fd00:c1::a9fe:a9fe`）的 IPv6 元数据地址：原先只拒绝 AWS 的，另两个能连到并取得实例凭据
+- **修复** 插件工作目录缺省按用户分开（`<临时目录>/xihan-plugins-<用户名>`、`xihan-plugins-wasm-<用户名>`），Unix 上必须是本用户私有的真实目录：原先是临时目录下名字固定的目录，别的用户能抢先建成指向别处的链接。插件留在旧缺省目录里的数据不会自动搬过去，要保留就把 `WorkDirectory` 配回旧位置
+- **修复** 进程外插件不再按 `GO` 前缀继承宿主的环境变量：原先 `GOOGLE_APPLICATION_CREDENTIALS` 等 Google 云凭据随之交给了插件；现在 Go 只继承 `GOMAXPROCS`、`GOGC`、`GOMEMLIMIT`、`GODEBUG`、`GOTRACEBACK`
+- **调整** 健康探针只给 `status` 与 `state`：原先匿名访问者能读到全部特性、健康条目与它们的描述和数据。详情改由新的 `MapXiHanHealthDetails()`（`/health/details`）给出，它经内核管道、能加访问要求。MCP 的 `serverInfo.version` 缺省改为应用的版本，不再是框架版本
+- **修复** 知识库的默认集合按租户分开：原先请求不指明集合时所有租户共用 `knowledge`，一个租户摄入的内容别的租户检索得到。带租户的调用现在用 `knowledge.<租户 ID>`，要共享就显式指明集合；`IKnowledgeIngestor` 与 `IKnowledgeRetriever` 改为作用域服务，在根容器里直接取用的代码要先建作用域；已经摄入在共享集合里的内容要重新按租户摄入
+- **修复** 发件箱投递循环覆盖租户分片库：原先只轮询默认库，EF Core 在带分片的调用里写进租户库的消息发不出去。每轮先投递默认库，再逐个投递分片库；新增 `XiHan:Messaging:Outbox:IncludeShards`（默认 `true`）与 `ShardRefreshIntervalSeconds`（默认 60）。EF Core 下带分片的调用要发消息，分片库要建发件箱表
+- **修复** 文件系统对象存储不再把键里含 `.xihan-tmp-` 的对象当作临时文件：原先这样的对象列举不到、重启时被删除，根路径含这段文字时整个存储重启后清空。临时文件片段改为 `~xihan-tmp-`，只按文件名判定
+- **修复** 文件系统对象存储按首个点之前判定 Windows 设备名并补上 `com0`、`lpt0`，`RootPath` 去掉结尾的分隔符：原先 `con.tar.gz` 这样的键段在 Windows 上写不进去，`RootPath` 以分隔符结尾时每个操作都抛异常。Linux 与 macOS 上已有的这类键（如 `nul.tar.gz`、`com0`）换了文件名，升级后要重新写入，或把文件与元数据文件的首字符改成 `%XX`
+- **调整** 对象的内容类型按媒体类型文法（最长 255 个字符），自定义元数据值不含控制字符、名与值合计不超过 2048 个 UTF-8 字节：原先换行能进 S3 的请求头，元数据不限大小。不合法时 `BlobPutOptions` 抛出 `ArgumentException`；把客户端给的内容类型交给它之前先用 `BlobPutOptions.IsValidContentType` 判断。宿主直传端点对不合法的请求内容类型返回 `OBJECTSTORAGE_VALIDATION_006`（HTTP 400）
+- **修复** 雪花机器位租约改为原子续约：原先续约是释放再获取，释放的那一刻别的实例能拿到同一机器位，两边会发出相同的 ID。`ICacheStore` 新增 `TryRefreshAsync`（比较后重设到期），`LockHandle` 新增 `TryExtendAsync`；自己实现 `ICacheStore` 或派生 `LockHandle` 的要补上这两个成员。远程缓存插件的操作集新增 `cache-entries.try-refresh`，插件要实现它
+- **修复** WebAuthn 认证在验签之后才判定凭据属于谁，RSA 公钥的模长不超过 4096 位：原先没有私钥的人能从失败原因分辨凭据属于哪个用户，几万位的模数让每次验签都很慢。文档不再建议拿 `Aaguid` 做型号白名单（`none` 证明下它是认证器自报的）
+- **调整** 没有装配授权能力时，契约声明了权限或策略的操作、挂了 `RequireXiHan*` 的端点让启动失败（`KERNEL_VALIDATION_006`）：原先要求静默失效，操作与端点等于敞开。之后登记的这类插件操作登记失败，启动之后才写入的 `RequireAuthorization` 抛出 `InvalidOperationException`。迁移：装配 `Security.InMemory` 或 `Security.Database`，或去掉这些要求
+- **调整** 已认证主体带多个值不同的租户声明时拒绝调用（`MULTITENANCY_VALIDATION_004`）：原先取第一个，签发方给出矛盾的身份时调用落进其中任意一个租户
+- **调整** 预签名限定的内容类型须合内容类型文法，保存的文件名不含控制字符、最长 255 个字符：原先只要求不空白，带换行的值能在宿主签名的规范串里把一项挪成另一项
+- **调整** Nacos 的令牌改走 `Authorization: Bearer` 请求头、不进查询串，失败原因不再带响应正文；配置了用户名密码时非本机的 `http` 地址默认拒绝，链路另有保护时设 `XiHan:Configuration:Nacos:AllowInsecureHttp` 为 `true`
+- **修复** `xihan migrate` 与 `xihan setup` 遍历时不再跟随符号链接与目录联接：原先链接指向 `--path` 之外时迁移会改写别处的文件，链接成环时遍历到路径过长才失败
+- **调整** `xihan pack` 发现进 ConfigMap 的配置文件里有带值的凭据键时失败（`CLI_VALIDATION_007`），只列键的路径、不带值：原先配置文件原样进不加密的 ConfigMap。凭据改放绑定的 Secret 或环境变量，或在这些文件里留空
+- **修复** 客户端建在租户分片上时，工作单元的租户必须是这个分片的租户，不一致即抛出 `PERSISTENCE_VALIDATION_010`：原先不核对，管道外以别的租户开工作单元会把那个租户的行写进这个分片库
+- **修复** EF Core 的多租户实体加全局查询过滤器 `xihan:tenant`：原先只有仓储按租户过滤，直接用工作单元的 `Context` 或注入的 DbContext 查询能读到别的租户的行。有意跨租户时用 `IgnoreQueryFilters([ModelBuilderExtensions.TenantQueryFilter])`；多租户实体上已有匿名过滤器的要给它起名
+- **调整** 删除租户留墓碑：删除的 ID 读不到，也不能再新建（`MULTITENANCY_CONFLICT_001`）。原先删了再建同一个 ID，新租户会接手旧租户留下的数据。`TenantRecord` 改为软删除，已有的表要加 `IsDeleted`、`DeletedAt` 两列；内存实现的墓碑计入 `MaxTenants`
+
+### 宿主、协议与插件
+
+- **新增** 插件协议的 `HandleEventRequest` 带这次投递的订阅方式 `mode`，宿主总是填写，插件只交给以这种方式订阅的处理器。原先同一主题的不同类型各用一种方式时，插件分不出投递来自哪种订阅。自己从 `plugin.proto` 生成桩的插件要重新生成，并在 `HandleEvent` 里按 `mode` 分派
+- **修复** 进程外插件在握手期间被取消时先终止并回收进程：原先取消越过释放，已启动的插件进程无人回收；插件进程先退出时，终止与握手的等待随即结束，不再空等到时限
+
 ## v5.0.0-preview.3（2026-11-12）
 
 ::: warning 预览须知

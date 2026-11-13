@@ -19,9 +19,9 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 特性在配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`，校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予），编译 `entry` 指向的模块（`.wasm`，参考实现也接受 `.wat` 文本），校验导出与导入表（ABI v1，`spec/plugin/wasm.md`），实例化并调用 `xihan_handshake`，核对清单。声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码连同它们一次登记进 `PermissionRegistry`（ADR-0080），消息目录接进本地化器，订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（不允许 `handle` 阶段）。启动阶段对 `onStartup` 的插件依次调用 `xihan_configure`、`xihan_start` 并开始健康轮询；懒激活的插件在握手后丢弃实例，首次调用时再实例化。
 
-每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`，日志应走导入 `xihan.log`。
+每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写入即丢弃（ADR-0186），日志走导入 `xihan.log`。
 
-回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，受当前调用的截止时间与取消约束（`xihan.invoke` 新调用的截止时间取请求元数据与当前调用中较早者，`xihan.publish` 随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
+回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，只能带当前调用的租户（ADR-0195），受当前调用的截止时间与取消约束（`xihan.invoke` 新调用的截止时间取请求元数据与当前调用中较早者，`xihan.publish` 随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
 
 ## 何时使用
 
@@ -66,7 +66,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `Directories` | 字符串数组 | 空 | 启动时装载的插件目录（含清单与模块文件）；相对路径相对当前目录 |
-| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限 |
+| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限，以及清单要读的宿主配置节与绑定：`config:<配置节>`、`binding:<绑定名>`，没有授予即拒绝加载 |
 | `Mounts:<清单 ID>:<客体路径>` | 字符串 | 空 | 客体路径映射到的宿主目录；清单的 `fs.read:` / `fs.write:` 只有映射了才算授予 |
 | `MemoryLimitBytes` | 正整数 | 67108864（64 MiB） | 线性内存上限 |
 | `StackLimitBytes` | 正整数 | 1048576（1 MiB） | Wasm 栈上限 |
@@ -77,7 +77,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | `HealthFailures` | 正整数 | 3 | 连续多少次健康探测失败视为实例失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重建多少次，之后保持 `Failed` |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重建次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm` | 插件工作目录的根，每个插件一个子目录，存放 `stdout.log` / `stderr.log` |
+| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm-<用户名>` | 插件工作目录的根，每个插件一个子目录（Unix 上 0700），经 `Configure` 交给插件；缺省的根在 Unix 上必须是本用户私有的真实目录，否则启动插件失败（ADR-0207） |
 
 ```json
 {
@@ -85,7 +85,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
     "Plugins": {
       "Wasm": {
         "Directories": [ "plugins/echo-wasm" ],
-        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline" ] },
+        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline", "config:XiHan:Echo" ] },
         "Mounts": { "xihan.samples.echowasm": { "/data": "/var/lib/app/echo-wasm" } },
         "MemoryLimitBytes": 67108864,
         "StackLimitBytes": 1048576,
@@ -182,7 +182,7 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | Windows 进程强制用户态影子栈 | 创建 `WasmPluginHost` 时抛出 `FrameworkException`（`PLUGINS_UNAVAILABLE_003`） |
 
 - 重建次数在 `RestartWindowSeconds` 内超过 `RestartLimit` 后保持 `Failed`；每个插件是健康条目 `plugins.<清单 ID>`，`Failed` / `Degraded` 让应用进入 `Degraded`。
-- 中间件只看得到元数据、操作 ID 与结果，看不到载荷；before 的 `CONTINUE` 可改写已登记的 Baggage（`xihan.principal` 除外），after 只观察。中间件以 `<清单 ID>:<middleware>` 为名登记在所在阶段末尾，清单的 `before` / `after` 按 RFC-0004 参与排序：先按本插件的中间件名解析，否则作为管道里的中间件名（另一个插件的 `<清单 ID>:<middleware>` 或只登记一次的宿主中间件类型全名）；目标未登记、有歧义或跨阶段为 `KERNEL_PIPELINE_003`，成环为 `KERNEL_PIPELINE_001`。
+- 中间件只看得到元数据、操作 ID 与结果，看不到载荷；before 的 `CONTINUE` 可改写已登记的 Baggage（`xihan.principal` 与 `xihan.tenant` 除外），after 只观察。中间件以 `<清单 ID>:<middleware>` 为名登记在所在阶段末尾，清单的 `before` / `after` 按 RFC-0004 参与排序：先按本插件的中间件名解析，否则作为管道里的中间件名（另一个插件的 `<清单 ID>:<middleware>` 或只登记一次的宿主中间件类型全名）；目标未登记、有歧义或跨阶段为 `KERNEL_PIPELINE_003`，成环为 `KERNEL_PIPELINE_001`。
 - 不负责：组件模型 / WIT（ABI v2）、流式操作、多实例并发、`net.outbound`。
 - 事件订阅与进程外插件相同：握手的 `Subscription.mode` 为空或 `competing` 是竞争消费，`broadcast` 是广播（每个宿主实例都交给自己的插件实例，RFC-0009「订阅方式」）；宿主只把投递交给以同一方式订阅了主题的插件，`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
 - 清单的 `contributes.config` 声明 `XiHan:Plugins:Wasm`。宿主另读 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域），属于本地化领域，不在清单里（RFC-0002「配置节」）；每个插件收到的是它自己清单声明的配置节。

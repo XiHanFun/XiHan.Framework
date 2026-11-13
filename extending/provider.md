@@ -51,7 +51,7 @@ public sealed class FileGrantStore(IReadOnlyList<PermissionGrant> grants) : IPer
 
     public ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)
     {
-        // 结果与 subjects 等长、顺序一致；全局授予（TenantId 为空）对任何租户生效，租户授予只对该租户生效。
+        // 结果与 subjects 等长、顺序一致；按 PermissionGrant.VisibleScopes(tenantId) 取范围：平台授予只对不带租户的调用生效，每个租户的授予（*）与该租户的授予只对带租户的调用生效。
         // 文件在启动时已读进内存，这里不会失败。读外部存储的实现一次查完整批，故障时整批返回 SECURITY_UNAVAILABLE_001，不能返回空集合
         IReadOnlyList<IReadOnlyCollection<string>> permissions = subjects
             .Select(subject => (IReadOnlyCollection<string>)grants
@@ -64,7 +64,7 @@ public sealed class FileGrantStore(IReadOnlyList<PermissionGrant> grants) : IPer
 }
 ```
 
-语义以对应的一致性套件为准：主体与权限区分大小写、全局授予对任何租户生效、通配授予 `*` 原样返回、没有授予是成功的空集合、存储故障是失败而不是空集合。批量优先：契约里有批量方法的（如 `ICacheStore.SetManyAsync`），Provider 要给出明确的逐项结果、空集合与重复项语义，能用后端原生批量接口时覆写成一次请求。
+语义以对应的一致性套件为准：主体与权限区分大小写、平台与租户两边的授予互不渗透、通配授予 `*` 原样返回、没有授予是成功的空集合、存储故障是失败而不是空集合。批量优先：契约里有批量方法的（如 `ICacheStore.SetManyAsync`），Provider 要给出明确的逐项结果、空集合与重复项语义，能用后端原生批量接口时覆写成一次请求。
 
 ## 写特性与清单
 

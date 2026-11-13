@@ -133,7 +133,7 @@ JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 C
 
 | 错误码 | 情形 |
 | --- | --- |
-| `PROTOCOLS_VALIDATION_005` | 请求不是合法的 protobuf 或与 Schema 不符（`InvalidArgument`） |
+| `PROTOCOLS_VALIDATION_005` | 请求不是合法的 protobuf 或与 Schema 不符，或嵌套消息超过 64 层（`InvalidArgument`） |
 | `PROTOCOLS_VALIDATION_006` | 暴露给 gRPC 的操作没有 Schema，或 Schema 无法映射为 protobuf（启动失败） |
 | `PROTOCOLS_VALIDATION_007` | 推导或配置的服务 / 方法名不合法（启动失败） |
 | `PROTOCOLS_CONFLICT_004` | 两个操作得到同一个服务 / 方法名（启动失败） |

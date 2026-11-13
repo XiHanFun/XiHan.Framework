@@ -25,13 +25,13 @@
 
 ## 握手与生命周期
 
-宿主只继承必要的环境变量（`PATH`、用户与临时目录、区域与时区、`DOTNET_*`、`GO*` 等），再追加下表的变量启动进程，工作目录是插件目录：
+宿主只继承必要的环境变量（`PATH`、用户与临时目录、区域与时区、`DOTNET_*`，以及 Go 运行时的 `GOMAXPROCS`、`GOGC`、`GOMEMLIMIT`、`GODEBUG`、`GOTRACEBACK` 等；不按 `GO` 前缀继承，`GOOGLE_*` 凭据不交给插件，ADR-0208），再追加下表的变量启动进程，工作目录是插件目录：
 
 | 环境变量 | 含义 |
 | --- | --- |
 | `XIHAN_PLUGIN_PROTOCOL_VERSIONS` | 宿主支持的协议版本，逗号分隔、升序，当前为 `1` |
 | `XIHAN_PLUGIN_PRIMITIVES` | 宿主的原语层大版本 |
-| `XIHAN_PLUGIN_SESSION` | 本次启动的会话令牌，回调时放在元数据 `xihan-plugin-session` |
+| `XIHAN_PLUGIN_SESSION` | 本次启动的会话令牌：宿主调用插件时、插件回调宿主时都放在元数据 `xihan-plugin-session` |
 | `XIHAN_PLUGIN_HOST_ADDRESS` | 宿主回调端点 `<network> <address>`（Windows 命名管道，其他系统 Unix 域套接字） |
 | `XIHAN_PLUGIN_INSTANCE` | 实例 ID |
 | `XIHAN_PLUGIN_LOCALE` | 宿主默认区域 |
@@ -174,7 +174,7 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 
 ## 事件投递
 
-握手里的每个订阅让宿主按它的 `mode` 向消息代理订阅该主题：空或 `competing` 是竞争消费（订阅了主题的宿主实例里只有一个把消息交给插件），`broadcast` 是广播（每个在线的宿主实例都交给自己的插件，见[发布与订阅](/messaging/pubsub)）；`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。消息到达时派发器开新作用域、经完整管道，在 Handle 阶段把信封（CloudEvents 属性平铺，`attempt` 从 1 起）发给插件；订阅写了消息类型时只投递类型相同的消息。投递至少一次，插件处理器必须幂等，可用 Baggage 里的 `xihan.idempotency-key` 或信封 `id` 去重；插件返回失败或不可用时由代理按自己的重试与死信策略处理，宿主不缓冲消息。宿主要装配一个消息代理，Standard 组合已带内存默认实现。
+握手里的每个订阅让宿主按它的 `mode` 向消息代理订阅该主题：空或 `competing` 是竞争消费（订阅了主题的宿主实例里只有一个把消息交给插件），`broadcast` 是广播（每个在线的宿主实例都交给自己的插件，见[发布与订阅](/messaging/pubsub)）；`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。消息到达时派发器开新作用域、经完整管道，在 Handle 阶段把信封（CloudEvents 属性平铺，`attempt` 从 1 起）发给插件；订阅写了消息类型时只投递类型相同的消息。投递带这次的订阅方式 `mode`（`competing` 或 `broadcast`），插件按（主题，方式）找处理器再看类型：同一主题的不同类型可以各用一种方式，一条消息以两种方式各到一次时，各交给自己方式的处理器。投递至少一次，插件处理器必须幂等，可用 Baggage 里的 `xihan.idempotency-key` 或信封 `id` 去重；插件返回失败或不可用时由代理按自己的重试与死信策略处理，宿主不缓冲消息。宿主要装配一个消息代理，Standard 组合已带内存默认实现。
 
 ## 回调：Host.Invoke 与 Host.Publish
 
@@ -185,7 +185,7 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 | 调用操作 | `Host.Invoke` | `capability:kernel.pipeline` | 以新的调用经宿主完整管道执行操作，未登记的操作为 `KERNEL_NOTFOUND_001` |
 | 发布消息 | `Host.Publish` | `capability:messaging.queue` | 按主题分组批量经宿主消息发布器发布，逐项返回结果；宿主没有发布器时每项为 `PLUGINS_UNAVAILABLE_001` |
 
-回调必须带 `xihan-plugin-session` 元数据，令牌缺失或不匹配为 gRPC `Unauthenticated`（`PLUGINS_DENIED_002`）；令牌只对本次进程有效，宿主端点只接受本机连接。权限未声明或未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002`。回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`），元数据里的 `xihan.principal` 被忽略，`xihan.tenant` 等已登记的 Baggage 照常采用；Authorize 阶段按目标操作的契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予相应权限码。
+回调必须带 `xihan-plugin-session` 元数据，令牌缺失或不匹配为 gRPC `Unauthenticated`（`PLUGINS_DENIED_002`）；令牌只对本次进程有效。反方向同样：宿主调用插件的每一次 RPC（含 `Handshake`）都带这个令牌，插件必须按常数时间比较校验，缺失或不匹配以 `Unauthenticated` 拒绝，本机别的进程连上插件端点也冒充不了宿主（ADR-0202；.NET 写法见 `samples/EchoPlugin/SessionGuard.cs`，Go SDK 的校验随它的下一个版本提供）。两端的 Unix 域套接字都放在新建的私有目录里（`0700`，名字随机，已存在即不用），套接字文件 `0600`；命名管道只允许当前用户；TCP 只绑定回环地址，那里的隔离只靠令牌。权限未声明或未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002`。回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`），元数据里的 `xihan.principal` 被忽略，其余已登记的 Baggage 照常采用。回调与发布只能带宿主交给插件的租户：宿主调用插件时元数据里的 `xihan.tenant` 是这次调用的租户（Tenant 阶段裁定过时取裁定结果），回调元数据的 `xihan.tenant` 与发布信封的 `xihantenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则为 `PLUGINS_DENIED_002`；不带租户的回调是无租户调用（ADR-0195）。插件并发处理多个租户的调用时，回调可以带其中任何一个；原样转发收到的元数据即可。Authorize 阶段按目标操作的契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予相应权限码。
 
 ## 失败降级
 
@@ -229,7 +229,7 @@ builder.AddXiHan(xihan => xihan
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `Directories` | 字符串数组 | 空 | 启动时装载的插件目录，一个目录一个插件；相对路径相对当前目录 |
-| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予该插件的权限；清单声明的权限必须全部授予才能加载 |
+| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予该插件的权限；清单声明的权限必须全部授予才能加载。清单要读的宿主配置节与绑定也在这里授予：`config:<配置节>`、`binding:<绑定名>`，没有授予即拒绝加载 |
 | `HandshakeTimeoutSeconds` | 正数 | 10 | 读到握手行并完成 `Handshake` 的时限 |
 | `StartTimeoutSeconds` | 正数 | 30 | `Configure` 与 `Start` 各自的时限 |
 | `StopGraceSeconds` | 正数 | 取 `XiHan:Kernel:StopTimeoutSeconds` | 停止宽限 |
@@ -245,7 +245,7 @@ builder.AddXiHan(xihan => xihan
 
 ### 插件进程起来了，宿主却报握手超时
 
-宿主要在 `HandshakeTimeoutSeconds` 内读到 stdout 的握手行并完成 `Handshake`。常见原因：日志写到了 stdout（只能走 stderr）、`tcp` 地址不是回环地址、握手发回的清单与目录里的文件不一致。`xihan-conformance plugin --dir <目录>` 的 `handshake` 用例能直接定位。
+宿主要在 `HandshakeTimeoutSeconds` 内读到 stdout 的握手行并完成 `Handshake`。stdout 与 stderr 的一行最多 16384 个字符，超过的部分被丢弃，握手行超过即握手失败（ADR-0185）。常见原因：日志写到了 stdout（只能走 stderr）、`tcp` 地址不是回环地址、握手发回的清单与目录里的文件不一致。`xihan-conformance plugin --dir <目录>` 的 `handshake` 用例能直接定位。
 
 ### 插件崩溃后多久恢复，一直崩会怎样
 

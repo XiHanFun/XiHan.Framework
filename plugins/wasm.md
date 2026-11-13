@@ -39,7 +39,7 @@ Wasm 插件是在宿主进程内、由 wasmtime 沙箱运行的 WebAssembly 模�
 | `invoke` | `(ptr: i32, len: i32) -> i64` | `capability:kernel.pipeline` | 同 `Host.Invoke`：以插件身份经宿主完整管道调用操作 |
 | `publish` | `(ptr: i32, len: i32) -> i64` | `capability:messaging.queue` | 同 `Host.Publish`：按主题分组批量发布 |
 
-模块不是 reactor、`xihan_abi_version` 不是 1、缺必需导出、签名不符或导入了宿主不提供的函数，加载失败 `PLUGINS_VALIDATION_005`。没有 `WatchHealth` 与 `InvokeStream`：健康只轮询，声明流式操作在握手时按 `PLUGINS_VALIDATION_004` 拒绝；未声明的操作由 `xihan_invoke` 返回 `KERNEL_NOTFOUND_001` 的失败状态。回调权限须在清单声明且已授予，未声明或未授予不陷阱，返回 `PLUGINS_DENIED_002`。回调受当前调用（宿主进入模块的那次导出调用）的截止时间与取消约束，到期返回 `KERNEL_TIMEOUT_001`，嵌套深度上限 8；回调期间管道可能再次进入同一插件，再入在同一线程上、导入函数返回前同步完成，模块跨导入调用不得持有不可重入的锁。WASI 的 stdout / stderr 写到插件工作目录下的 `stdout.log` / `stderr.log`，日志应走 `xihan.log`；环境变量只有 `XIHAN_PLUGIN_PRIMITIVES`、`XIHAN_PLUGIN_PROTOCOL_VERSIONS`、`XIHAN_PLUGIN_INSTANCE`、`XIHAN_PLUGIN_LOCALE`。
+模块不是 reactor、`xihan_abi_version` 不是 1、缺必需导出、签名不符或导入了宿主不提供的函数，加载失败 `PLUGINS_VALIDATION_005`。没有 `WatchHealth` 与 `InvokeStream`：健康只轮询，声明流式操作在握手时按 `PLUGINS_VALIDATION_004` 拒绝；未声明的操作由 `xihan_invoke` 返回 `KERNEL_NOTFOUND_001` 的失败状态。回调权限须在清单声明且已授予，未声明或未授予不陷阱，返回 `PLUGINS_DENIED_002`。回调与发布只能带当前调用的租户，带别的租户同样返回 `PLUGINS_DENIED_002`（ADR-0195）。回调受当前调用（宿主进入模块的那次导出调用）的截止时间与取消约束，到期返回 `KERNEL_TIMEOUT_001`，嵌套深度上限 8；回调期间管道可能再次进入同一插件，再入在同一线程上、导入函数返回前同步完成，模块跨导入调用不得持有不可重入的锁。WASI 的 stdout / stderr 写入即丢弃（ADR-0186），日志走 `xihan.log`；环境变量只有 `XIHAN_PLUGIN_PRIMITIVES`、`XIHAN_PLUGIN_PROTOCOL_VERSIONS`、`XIHAN_PLUGIN_INSTANCE`、`XIHAN_PLUGIN_LOCALE`。
 
 ## 最小示例
 
@@ -152,7 +152,7 @@ app.Run();
     "Plugins": {
       "Wasm": {
         "Directories": [ "plugins/echo-wasm" ],
-        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline" ] }
+        "Grants": { "xihan.samples.echowasm": [ "capability:kernel.pipeline", "config:XiHan:Echo" ] }
       }
     },
     "Echo": { "Greeting": "hello" }
@@ -168,7 +168,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 
 | 阶段 | 插件应答 | 宿主行为 |
 | --- | --- | --- |
-| before | `CONTINUE` | 合并应答里的 Baggage（未登记的键丢弃，`xihan.principal` 不可改写）后进入下游 |
+| before | `CONTINUE` | 合并应答里的 Baggage（未登记的键丢弃，`xihan.principal` 与 `xihan.tenant` 不可改写）后进入下游 |
 | before | `SHORT_CIRCUIT` | 把应答里的失败结果写为调用结果，不进入下游；结果缺失或不是失败按 `KERNEL_VALIDATION_001` 处理 |
 | after | 任意 | 只观察下游结果，动作与 Baggage 忽略 |
 
@@ -190,9 +190,10 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `Directories` | 字符串数组 | 空 | 启动时装载的插件目录（含清单与模块文件） |
-| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限 |
+| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限，以及清单要读的宿主配置节与绑定：`config:<配置节>`、`binding:<绑定名>`，没有授予即拒绝加载 |
 | `Mounts:<清单 ID>:<客体路径>` | 字符串 | 空 | 客体路径映射到的宿主目录；清单的 `fs.read:` / `fs.write:` 只有映射了才算授予 |
 | `MemoryLimitBytes` | 正整数 | 67108864（64 MiB） | 线性内存上限 |
+| `MaxTableElements` | 正整数 | 100000 | 每个表的元素数上限，`table.grow` 超过即失败 |
 | `StackLimitBytes` | 正整数 | 1048576（1 MiB） | Wasm 栈上限 |
 | `EpochIntervalMilliseconds` | 正数 | 10 | epoch 递增间隔，即 CPU 截止的粒度 |
 | `CallTimeoutSeconds` | 正数 | 30 | 生命周期调用与没有截止时间的调用的时限 |
@@ -201,7 +202,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | `HealthFailures` | 正整数 | 3 | 连续多少次健康探测失败视为实例失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重建多少次，之后保持 `Failed` |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重建次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm` | 插件工作目录的根，存放 `stdout.log` / `stderr.log` |
+| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm` | 插件工作目录的根，每个插件一个子目录 |
 
 取值不合类型与范围时，`WasmPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。CPU 按 epoch 中断强制截止：操作与事件用调用上下文的剩余时间（没有时取 `CallTimeout`），中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`。
 
@@ -236,7 +237,7 @@ wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈�
 - ABI v1 只有核心模块：不支持组件模型 / WIT，不支持流式操作，每插件一个实例、不并发。
 - 没有网络：`net.outbound:` 永不授予，声明了即加载失败。需要访问外部服务的逻辑经 `xihan.invoke` 回调宿主操作完成。
 - 文件系统只有 `Mounts` 映射的预开放目录，对应清单的 `fs.read:` / `fs.write:`。
-- 事件订阅与进程外插件相同（竞争或广播，至少一次投递，处理器须幂等）。
+- 事件订阅与进程外插件相同（竞争或广播，至少一次投递，处理器须幂等；`HandleEventRequest.mode` 带这次投递的方式）。
 - 包不兼容 Native AOT（wasmtime 原生绑定与 protobuf 未声明 AOT 兼容）。
 
 ## 常见问题

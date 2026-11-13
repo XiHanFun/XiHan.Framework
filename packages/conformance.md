@@ -31,7 +31,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | --- | --- | --- |
 | [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 5 |
 | [Auditing](#auditing) | `AuditTrailConformance` | 5 |
-| [Caching](#caching) | `CacheStoreConformance` | 16 |
+| [Caching](#caching) | `CacheStoreConformance` | 18 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
 | [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 14 + 2 + 4 |
@@ -62,7 +62,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 包 ID `XiHan.Framework.Caching.Conformance`（RFC-0006，Stable）。任何 `ICacheStore` 实现（无论提供 `caching.local` 还是 `caching.distributed`）都继承 `CacheStoreConformance`，实现 `CreateStore()`，每个用例创建一个新存储。
 
-覆盖：读写与未命中、覆盖、键区分大小写、删除并报告是否存在、批量读写保持顺序与后写覆盖、批量的逐项过期与滑动延长、批量删除逐项结果、空批量、不存在才写只有一个赢家（含并发）、比较删、绝对过期、滑动过期在读取时延长、大值、基于存储的分布式锁的互斥 / 释放 / 到期，以及存储实现 `ICacheStoreInspector` 时的按前缀分页列键、读元数据与按前缀删除、每页上限越界（0、1001）返回 `CACHING_VALIDATION_003` 而边界值（1、1000）照常（不实现即跳过）。过期用例用真实时间等待，`ExpirationGrace`（缺省 300 毫秒）可按 Provider 调整；`Key()`、`Bytes(text)`、`Text(value)` 是供派生类补充用例的辅助方法。
+覆盖：读写与未命中、覆盖、键区分大小写、删除并报告是否存在、批量读写保持顺序与后写覆盖、批量的逐项过期与滑动延长、批量删除逐项结果、空批量、不存在才写只有一个赢家（含并发）、比较删、比较后重设到期（值不同、不存在、已到期都不重设）、绝对过期、滑动过期在读取时延长、大值、基于存储的分布式锁的互斥 / 释放 / 到期与续约（释放后、到期被他人取得后续不回来），以及存储实现 `ICacheStoreInspector` 时的按前缀分页列键、读元数据与按前缀删除、每页上限越界（0、1001）返回 `CACHING_VALIDATION_003` 而边界值（1、1000）照常（不实现即跳过）。过期用例用真实时间等待，`ExpirationGrace`（缺省 300 毫秒）可按 Provider 调整；`SupportsRefresh`（缺省 `true`）只在接入尚未跟上契约的外部实现时临时关掉；`Key()`、`Bytes(text)`、`Text(value)` 是供派生类补充用例的辅助方法。
 
 ```csharp
 using XiHan.Framework.Caching.Abstractions.Stores;
@@ -121,7 +121,7 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、ID 区分大小写、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
+| `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、大写的 ID 找不到小写的租户、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
 | `TenantShardResolverConformance` | Preview | `CreateResolverAsync(tenants)` 返回 `ITenantShardResolver`；种子租户 `Sharded`、`Shared` | 分库租户解析出连接串、小写的提供者名与去前缀的透传属性；共库与未知租户为成功无值；失效单个或全部后重解析结果一致 |
 
 `MultiTenancy.InMemory` 与 `MultiTenancy.Database` 通过两套用例。
@@ -235,7 +235,7 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 
 ## Security
 
-包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、全局授予对任何租户生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
+包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、平台授予只对不带租户的调用生效、每个租户的授予只对带租户的调用生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
 
 `GetManyAsync` 返回与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`：没有授予是成功的空集合，存储故障整批失败；用例 6 核对顺序、重复项、种类不串与空集合。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
 

@@ -136,7 +136,7 @@ app.MapGet("/orders/export", () => Results.Text("id,name"))
     .RequireXiHanPermission("orders.read");
 ```
 
-判定由安全子系统完成：没有装配 `security.authorization@1` 时要求只进入上下文，不被判定。权限码必须由某个特性用 `FeatureContext.AddPermission` 登记；装配了授权能力时，`UseXiHan()` 在宿主建请求管道时核对全部端点的要求，未登记的权限码与不存在的策略让宿主启动失败（`SECURITY_VALIDATION_004`，一次列出全部）。端点上的要求优先于操作契约上的权限或策略。认证与授权的配置见[认证](/security/authentication)与[授权与权限](/security/authorization)。
+判定由安全子系统完成：没有装配 `security.authorization@1` 时，挂了要求的端点让宿主启动失败（`KERNEL_VALIDATION_006`，一次列出全部，ADR-0217），要求不会静默失效。权限码必须由某个特性用 `FeatureContext.AddPermission` 登记；装配了授权能力时，`UseXiHan()` 在宿主建请求管道时核对全部端点的要求，未登记的权限码与不存在的策略让宿主启动失败（`SECURITY_VALIDATION_004`，一次列出全部）。端点上的要求优先于操作契约上的权限或策略。认证与授权的配置见[认证](/security/authentication)与[授权与权限](/security/authorization)。
 
 这三个扩展与 ASP.NET Core 自己的 `RequireAuthorization()` 不是一回事：前者由内核管道的 Authorize 阶段判定，对管道内的端点用；后者由 ASP.NET Core 授权中间件判定，只给下文绕过管道的端点用。
 

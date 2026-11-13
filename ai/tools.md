@@ -164,7 +164,7 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 - 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入先写后删：新块全部嵌入、校验维度并写入成功后，才删掉旧版本多出来的块（块序号不小于新块数的），同 ID 的块由写入覆盖。嵌入、维度校验或写入失败时不删任何旧块，旧文档照常可检索；写入中途失败最多留下新旧混合的块，按返回的错误重试摄入即恢复一致。删多余旧块这一步失败时返回该错误，新块已经在库里。新文本切不出块时整篇删除，返回 0。
 - 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度，并换一个集合。
 - 摄入与检索的嵌入 Provider 依次取请求的 `Provider`、`XiHan:AI:Knowledge:EmbeddingProvider`、目录的 `DefaultEmbeddingProvider`，都没有时返回 `AI_NOTFOUND_001`（`ai.provider.embedding_default_missing`）。
-- 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`；`Filter`（`RetrievalFilter`）的 `DocumentIds` 与 `Metadata`（键值相等）取交集；`MinScore` 与过滤一起交给存储施加，原生支持得分阈值的后端在服务端过滤。
+- 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`，最多 1000；`Filter`（`RetrievalFilter`）的 `DocumentIds`（最多 1000 个）与 `Metadata`（键值相等）取交集，超过上限在构造时抛出 `ArgumentOutOfRangeException`（ADR-0190）；`MinScore` 与过滤一起交给存储施加，原生支持得分阈值的后端在服务端过滤。
 - `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`，配置里的或 `AddAIPrompt` 登记的都行），没配置时用内置英文模板。模板在启动时校验：`AIToolsFeature`、`VectorDataKnowledgeFeature` 与 `OpenAIFeature` 启动时都解析增强器（只装其中任何一个也一样），模板不存在（`AI_NOTFOUND_002`）或引用了这两个以外的占位符、用代表性参数试渲染失败（`AI_VALIDATION_001`）即启动失败，不会悄悄换成内置模板。
 - `{context}` 里每个片段一段：先是 `[序号] Source: 来源` 一行，再是片段文本。来源依次取块元数据的 `KnowledgeMetadataKeys.Title`（`title`）、`KnowledgeMetadataKeys.Source`（`source`），都没有时取文档 ID。文档 ID 多半是 Guid，模型拿它说不清依据，所以摄入时最好带上标题。
 - 没有装配 `ai.knowledge` Provider 时，摄入、删除与检索都返回 `AI_UNAVAILABLE_002`。
@@ -204,7 +204,7 @@ builder.AddXiHan(xihan => xihan
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:AI:Tools:<操作 ID>` | string | 按约定推导 | 覆盖操作工具名 |
-| `XiHan:AI:Knowledge:Collection` | string | `knowledge` | 默认集合 |
+| `XiHan:AI:Knowledge:Collection` | string | `knowledge` | 默认集合；带租户的调用用 `<Collection>.<租户 ID>`，各租户互不可见（ADR-0210） |
 | `XiHan:AI:Knowledge:Dimensions` | int，至少 1 | 1536 | 嵌入维度 |
 | `XiHan:AI:Knowledge:ChunkSize` | int，至少 1 | 1000 | 切块大小（字符） |
 | `XiHan:AI:Knowledge:ChunkOverlap` | int，不小于 0 | 100 | 相邻块的重叠（字符） |

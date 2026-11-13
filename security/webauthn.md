@@ -15,11 +15,11 @@
 | 仪式 | 服务端第一步 | 浏览器 | 服务端第二步 |
 | --- | --- | --- | --- |
 | 注册 | `CreateRegistrationOptions(user, existing)`，保存挑战 | `navigator.credentials.create` | `VerifyRegistration(response, challenge)`，存下凭据 ID、公钥与签名计数 |
-| 认证 | `CreateAuthenticationOptions(allowed)`，保存挑战 | `navigator.credentials.get` | 按凭据 ID 找到存储的凭据，`VerifyAuthentication(response, challenge, stored)`，更新签名计数 |
+| 认证 | `CreateAuthenticationOptions(allowed)`，保存挑战 | `navigator.credentials.get` | 按凭据 ID 找到存储的凭据，`VerifyAuthentication(response, challenge, stored, expectedUserHandle)`（先认出用户时传他，免用户名传 `null`），更新签名计数 |
 
 挑战是一次性的秘密：存进有时限的缓存，第二步取出即删，过期或取不到就让用户重来。时限不短于 `Timeout`（缺省 5 分钟）。
 
-免用户名登录时 `allowed` 为空，浏览器列出本站的全部通行密钥让用户选；响应里的 `userHandle` 是注册时给的用户句柄，应用据此找到用户。用户句柄用不含个人信息的标识（如用户 ID 的字节），1 到 64 字节。
+免用户名登录时 `allowed` 为空，浏览器列出本站的全部通行密钥让用户选；响应必须带 `userHandle`，核对要求它等于存储的凭据所属用户，登录的用户取核对结果的 `UserHandle`，不直接取响应里的句柄。先填账号或作为第二因素时，把已认出的用户传给 `expectedUserHandle`，凭据不属于他即拒绝。用户句柄用不含个人信息的标识（如用户 ID 的字节），1 到 64 字节。
 
 ## 浏览器侧
 

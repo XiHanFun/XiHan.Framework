@@ -219,7 +219,7 @@ public sealed class ExportQueueHealth(ExportQueue queue) : IHealthContributor
 | `/health/ready` | 应用处于 `Ready` 或 `Degraded` | readinessProbe |
 | `/health/live` | 应用不是 `Failed` | livenessProbe |
 
-通过返回 200、`status` 为 `pass`，否则 503、`status` 为 `fail`。响应体列出应用状态、每个特性与每个健康条目：
+通过返回 200、`status` 为 `pass`，否则 503、`status` 为 `fail`。探针只给 `status` 与 `state`；每个特性与每个健康条目的详情由经管道、能加访问要求的 `MapXiHanHealthDetails()`（`/health/details`）给出（ADR-0209）：
 
 ```json
 {
