@@ -5,7 +5,9 @@
 .DESCRIPTION
     CI 的「性能门禁」作业执行（开发计划第九节、总体方案 11.2，ADR-0173）。任一检查不过即以非零退出：
     1. 绝对预算：framework/benchmarks/budgets.json 里列出的基准都要有结果，带 maxMeanNanoseconds 的平均耗时不超过它；
-       列出的程序集合计不超过 assemblies.maxBytes。
+       列出的程序集合计不超过 assemblies.maxBytes；全新进程里装配空应用并启动（ResidentMemoryProbe，7 次取中位数），
+       JIT 下的冷启动不超过 coldStart.jitMaxMilliseconds，框架额外常驻内存（装配之后减去运行时自己）不超过
+       residentMemory.overheadMaxBytes。超线时再测一轮，仍超线才失败（ADR-0227）。
     2. 相对回退（给了 -Base 时）：同一台机器上先测对照提交、再测当前提交。
        - 耗时：逐个基准比较每次操作的耗时，慢了超过 regressionThreshold 且单侧 Mann-Whitney 检验的 p 值小于 significance 才算回退；
          有回退时两边各重测一次这几个基准，复测仍回退才失败——共享运行器的噪声会偶发一次，很难连续两次同向。
@@ -15,8 +17,7 @@
          冷启动耗时、框架额外常驻内存（装配之后减去运行时自己）增加超过 regressionThreshold 时复测一次，仍超过才失败。
     有意的回退（新增能力本来就要多分配、多花时间）用 -AcceptRegression 放行：相对回退记为「已接受」不阻断，绝对预算照常；
     CI 在最后一个提交的说明带 [perf-accepted] 或 PR 带 perf-accepted 标签时传它。对照提交随每次推送前移，接受只管这一次。
-    冷启动 coldStart.targetMilliseconds 与常驻内存 residentMemory.targetBytes 两个绝对目标只报告不阻断：
-    JIT 模式下实测都达不到（Linux 上运行时自己就占约 27 MB），口径待定（ADR-0173）。
+    Native AOT 下的冷启动（-AotProbe 给出按 AOT 发布的 XiHan.Framework.StartupProbe）对照 coldStart.aotTargetMilliseconds 只报告不阻断（ADR-0227）。
     结果写成 Markdown，CI 里追加到作业摘要。
 
 .PARAMETER Head
@@ -34,6 +35,9 @@
 .PARAMETER Budgets
     预算文件，缺省是本脚本旁边的 ../benchmarks/budgets.json
 
+.PARAMETER AotProbe
+    按 Native AOT 发布的冷启动探针（XiHan.Framework.StartupProbe 的可执行文件）；空则不测 AOT 下的冷启动
+
 .EXAMPLE
     pwsh -File framework/scripts/Test-Benchmarks.ps1 -Head framework/benchmarks/XiHan.Framework.Benchmarks/bin/Release/net10.0 -Artifacts artifacts/benchmarks
 #>
@@ -42,6 +46,7 @@ param(
     [string]$Base = '',
     [Parameter(Mandatory)][string]$Artifacts,
     [string]$Budgets = (Join-Path $PSScriptRoot '../benchmarks/budgets.json'),
+    [string]$AotProbe = '',
     [switch]$AcceptRegression
 )
 
@@ -58,10 +63,10 @@ $regressions = [System.Collections.Generic.List[string]]::new()
 $report = [System.Collections.Generic.List[string]]::new()
 New-Item -ItemType Directory -Force -Path $Artifacts | Out-Null
 
-# 启动 dotnet 并等它退出，返回退出码；参数经 ArgumentList 原样传给子进程
+# 启动一个程序并等它退出，返回退出码；参数经 ArgumentList 原样传给子进程
 # 不用 & dotnet：Linux 上 pwsh 调外部命令会把含通配符的参数按当前目录展开（--filter * 变成仓库根的文件名），Windows 上不会
-function Invoke-Dotnet([string[]]$arguments, [switch]$Quiet) {
-    $start = [System.Diagnostics.ProcessStartInfo]::new('dotnet')
+function Invoke-Program([string]$fileName, [string[]]$arguments, [switch]$Quiet) {
+    $start = [System.Diagnostics.ProcessStartInfo]::new($fileName)
     foreach ($argument in $arguments) { $start.ArgumentList.Add($argument) }
     # 与 & 一致，以 PowerShell 的当前位置为工作目录，相对路径照旧解析
     $start.WorkingDirectory = (Get-Location).ProviderPath
@@ -75,6 +80,8 @@ function Invoke-Dotnet([string[]]$arguments, [switch]$Quiet) {
     }
     finally { $process.Dispose() }
 }
+
+function Invoke-Dotnet([string[]]$arguments, [switch]$Quiet) { Invoke-Program 'dotnet' $arguments -Quiet:$Quiet }
 
 # 跑一组基准，返回 全名 → 结果；$filters 是按「命名空间.类型.方法」的过滤，参数化的基准整组跑
 function Invoke-Benchmarks([string]$dir, [string]$name, [string[]]$filters) {
@@ -152,11 +159,12 @@ function Compare-Runs($headResults, $baseResults, [string]$label, [bool]$checkAl
 }
 
 # 全新进程里的冷启动与常驻内存，跑 $probeRuns 次取中位数；探针不存在（对照提交还没有它）时返回 $null
-function Measure-Probe([string]$dir, [string]$name) {
+# $fileName 与 $prefix 是启动探针的程序与它前面的参数：JIT 口径是 dotnet 加基准程序，AOT 口径是发布出来的可执行文件
+function Measure-Probe([string]$name, [string]$fileName, [string[]]$prefix) {
     $samples = [System.Collections.Generic.List[object]]::new()
     foreach ($run in 1..$probeRuns) {
         $file = Join-Path $Artifacts "$name-probe-$run.json"
-        $exitCode = Invoke-Dotnet @((Join-Path $dir $program), '--resident-memory', $file) -Quiet
+        $exitCode = Invoke-Program $fileName (@($prefix) + @('--resident-memory', $file)) -Quiet
         if ($exitCode -ne 0 -or -not (Test-Path $file)) { return $null }
         $probe = Get-Content $file -Raw | ConvertFrom-Json
         if ($null -eq $probe.coldStartMilliseconds) { return $null }
@@ -200,12 +208,32 @@ $report.Add('')
 $report.Add(('程序集 {0} 合计 {1:N0} B，上限 {2:N0} B。' -f ($budget.assemblies.files -join ' + '), $size, [long]$budget.assemblies.maxBytes))
 if ($size -gt [long]$budget.assemblies.maxBytes) { $failures.Add("Assemblies total $size B, over the budget $($budget.assemblies.maxBytes) B.") }
 
-$headProbe = Measure-Probe $Head 'head'
+$jitProbe = @((Join-Path $Head $program))
+$headProbe = Measure-Probe 'head' 'dotnet' $jitProbe
 if ($null -eq $headProbe) { throw 'The resident memory probe of the head commit produced no result.' }
-$coldTarget = [double]$budget.coldStart.targetMilliseconds
-$memoryTarget = [double]$budget.residentMemory.targetBytes
-$report.Add(('冷启动 {0:N1} ms，目标 {1:N0} ms{2}。' -f $headProbe.ColdStart, $coldTarget, $(if ($headProbe.ColdStart -gt $coldTarget) { '（未达到，只报告）' } else { '' })))
-$report.Add(('空应用常驻内存 {0:N1} MB，其中框架额外 {1:N1} MB，目标 {2:N0} MB{3}。' -f ($headProbe.Resident / 1MB), ($headProbe.Overhead / 1MB), ($memoryTarget / 1MB), $(if ($headProbe.Resident -gt $memoryTarget) { '（未达到，只报告）' } else { '' })))
+$coldMax = [double]$budget.coldStart.jitMaxMilliseconds
+$overheadMax = [double]$budget.residentMemory.overheadMaxBytes
+if ($headProbe.ColdStart -gt $coldMax -or $headProbe.Overhead -gt $overheadMax) {
+    # 共享运行器的噪声会偶发一次：超线时在全新进程里再测一轮，仍超线才失败
+    $report.Add(('首测冷启动 {0:N1} ms、框架额外常驻内存 {1:N1} MB 超出预算，复测一轮。' -f $headProbe.ColdStart, ($headProbe.Overhead / 1MB)))
+    $headProbe = Measure-Probe 'head-budget' 'dotnet' $jitProbe
+    if ($null -eq $headProbe) { throw 'The resident memory probe of the head commit produced no result on the retest.' }
+}
+
+$report.Add(('冷启动（JIT）{0:N1} ms，上限 {1:N0} ms。' -f $headProbe.ColdStart, $coldMax))
+$report.Add(('空应用常驻内存 {0:N1} MB，其中框架额外 {1:N1} MB，上限 {2:N0} MB。' -f ($headProbe.Resident / 1MB), ($headProbe.Overhead / 1MB), ($overheadMax / 1MB)))
+if ($headProbe.ColdStart -gt $coldMax) { $failures.Add("Cold start under JIT is $([math]::Round($headProbe.ColdStart, 1)) ms, over the budget $coldMax ms.") }
+if ($headProbe.Overhead -gt $overheadMax) { $failures.Add("Framework resident memory is $([math]::Round($headProbe.Overhead / 1MB, 1)) MB, over the budget $([math]::Round($overheadMax / 1MB, 1)) MB.") }
+
+# AOT 口径只报告：探针发布失败或没给时说明没测，不当作失败
+$aotTarget = [double]$budget.coldStart.aotTargetMilliseconds
+$aotResult = if ($AotProbe) { Measure-Probe 'aot' $AotProbe @() } else { $null }
+if ($null -ne $aotResult) {
+    $report.Add(('冷启动（Native AOT）{0:N1} ms，目标 {1:N0} ms{2}；整个进程常驻 {3:N1} MB，其中框架额外 {4:N1} MB。' -f $aotResult.ColdStart, $aotTarget, $(if ($aotResult.ColdStart -gt $aotTarget) { '（未达到，只报告）' } else { '' }), ($aotResult.Resident / 1MB), ($aotResult.Overhead / 1MB)))
+}
+else {
+    $report.Add(('冷启动（Native AOT）未测：{0}。' -f $(if ($AotProbe) { 'AOT 探针没有给出结果' } else { '没有给出 AOT 探针' })))
+}
 
 # 2：相对回退
 if ($Base) {
@@ -223,7 +251,7 @@ if ($Base) {
         }
     }
 
-    $baseProbe = Measure-Probe $Base 'base'
+    $baseProbe = Measure-Probe 'base' 'dotnet' @((Join-Path $Base $program))
     $report.Add('')
     if ($null -eq $baseProbe) {
         $report.Add('对照提交还没有冷启动与常驻内存探针，跳过这两项的相对比较。')
@@ -232,7 +260,7 @@ if ($Base) {
         $change = Compare-Probes $headProbe $baseProbe
         $report.Add(('冷启动相对对照提交 {0:+0.0%;-0.0%;0.0%}，框架额外常驻内存 {1:+0.0%;-0.0%;0.0%}。' -f $change.ColdStart, $change.Overhead))
         if ($change.ColdStart -gt $threshold -or $change.Overhead -gt $threshold) {
-            $baseProbe = Measure-Probe $Base 'base-confirm'; $headProbe = Measure-Probe $Head 'head-confirm'
+            $baseProbe = Measure-Probe 'base-confirm' 'dotnet' @((Join-Path $Base $program)); $headProbe = Measure-Probe 'head-confirm' 'dotnet' $jitProbe
             $change = Compare-Probes $headProbe $baseProbe
             $report.Add(('复测：冷启动 {0:+0.0%;-0.0%;0.0%}，框架额外常驻内存 {1:+0.0%;-0.0%;0.0%}。' -f $change.ColdStart, $change.Overhead))
             if ($change.ColdStart -gt $threshold) { $regressions.Add("Cold start is slower than the base commit by $([math]::Round($change.ColdStart * 100, 1))% in two runs.") }

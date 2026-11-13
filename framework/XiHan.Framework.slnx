@@ -99,6 +99,7 @@
     <Project Path="src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" />
     <Project Path="src/XiHan.Framework.Cli/XiHan.Framework.Cli.csproj" />
     <Project Path="benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj" />
+    <Project Path="benchmarks/XiHan.Framework.StartupProbe/XiHan.Framework.StartupProbe.csproj" />
   </Folder>
   <Folder Name="/7.Tests/">
     <Project Path="test/XiHan.Framework.Architecture.Tests/XiHan.Framework.Architecture.Tests.csproj" />

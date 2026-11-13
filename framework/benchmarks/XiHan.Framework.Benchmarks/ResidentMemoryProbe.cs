@@ -13,7 +13,7 @@ namespace XiHan.Framework.Benchmarks;
 /// 空应用的常驻内存探针
 /// </summary>
 /// <remarks>
-/// 开发计划第九节的两项预算要在一个干净的进程里测，BenchmarkDotNet 测不了：装配不带任何特性的应用并启动，记下冷启动耗时（含 JIT，目标 &lt; 50 ms），回收之后读常驻内存（Linux 上是 RSS，Windows 上是工作集），连同装配前运行时自己的常驻内存写成一行 JSON：<c>{"residentBytes":…,"runtimeBytes":…,"coldStartMilliseconds":…}</c>
+/// 开发计划第九节的两项预算要在一个干净的进程里测，BenchmarkDotNet 测不了：装配不带任何特性的应用并启动，记下冷启动耗时（JIT 下上限 100 ms；同一份代码按 Native AOT 发布成 <c>XiHan.Framework.StartupProbe</c>，目标 50 ms，ADR-0227），回收之后读常驻内存（Linux 上是 RSS，Windows 上是工作集），连同装配前运行时自己的常驻内存写成一行 JSON：<c>{"residentBytes":…,"runtimeBytes":…,"coldStartMilliseconds":…}</c>
 /// </remarks>
 internal static class ResidentMemoryProbe
 {

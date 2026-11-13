@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>XiHan.Framework.Benchmarks</RootNamespace>
+    <!-- 冷启动的 Native AOT 口径（ADR-0227）：与 JIT 口径同一份探针，按 AOT 发布后由性能门禁测，目标 50 ms 只报告 -->
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 同一份探针代码：两个口径测的是同一件事，只差 JIT 与 AOT -->
+    <Compile Include="../XiHan.Framework.Benchmarks/ResidentMemoryProbe.cs" Link="ResidentMemoryProbe.cs" />
+  </ItemGroup>
+</Project>

@@ -193,6 +193,18 @@ jobs:
       - name: 构建当前提交的基准
         run: dotnet build framework/benchmarks/XiHan.Framework.Benchmarks/XiHan.Framework.Benchmarks.csproj --configuration Release
 
+      - name: 发布 AOT 冷启动探针
+        id: aot
+        # 冷启动的 Native AOT 口径（ADR-0227）：目标 50 ms 只报告。发布要 clang 与 zlib；发布失败（多半是有了 AOT 不兼容的代码）只警告，不挡门禁
+        run: |
+          sudo apt-get install -y -q clang zlib1g-dev || echo "::warning::装 AOT 工具链失败，照常尝试发布"
+          out="$RUNNER_TEMP/aot-probe"
+          if dotnet publish framework/benchmarks/XiHan.Framework.StartupProbe/XiHan.Framework.StartupProbe.csproj --configuration Release --runtime linux-x64 --output "$out"; then
+            echo "path=$out/XiHan.Framework.StartupProbe" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::AOT 冷启动探针发布失败，这次不测 AOT 下的冷启动"
+          fi
+
       - name: 构建对照提交的基准
         id: base
         env:
@@ -223,6 +235,7 @@ jobs:
           -Head framework/benchmarks/XiHan.Framework.Benchmarks/bin/Release/net10.0
           -Base "${{ steps.base.outputs.dir }}"
           -Artifacts "${{ runner.temp }}/benchmarks"
+          -AotProbe "${{ steps.aot.outputs.path }}"
           -AcceptRegression:$($env:ACCEPT -eq 'true')
 
       - name: 上传基准结果

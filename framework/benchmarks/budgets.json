@@ -11,6 +11,6 @@
     "maxBytes": 512000,
     "files": [ "XiHan.Framework.Primitives.dll", "XiHan.Framework.Kernel.dll" ]
   },
-  "coldStart": { "targetMilliseconds": 50 },
-  "residentMemory": { "targetBytes": 31457280 }
+  "coldStart": { "jitMaxMilliseconds": 100, "aotTargetMilliseconds": 50 },
+  "residentMemory": { "overheadMaxBytes": 15728640 }
 }
