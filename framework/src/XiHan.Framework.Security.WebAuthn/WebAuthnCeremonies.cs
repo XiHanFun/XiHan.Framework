@@ -266,25 +266,6 @@ public sealed class WebAuthnCeremonies
             return dataFailure;
         }
 
-        // 凭据属于谁（WebAuthn §7.2 第 6 步）：登录前已认出用户时，凭据必须属于他，否则攻击者能用自己账号下的凭据签受害者的挑战；
-        // 没有认出用户（免用户名）时响应必须带句柄。响应带了句柄就必须等于存储的所属用户，防止拿别人的句柄冒充（ADR-0179）
-        if (expectedOwner is not null && !expectedOwner.AsSpan().SequenceEqual(ownerHandle))
-        {
-            return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
-        }
-
-        if (assertionResponse.UserHandle is { Length: > 0 } receivedHandle)
-        {
-            if (!Base64UrlText.TryDecode(receivedHandle, out var actualHandle) || !actualHandle.AsSpan().SequenceEqual(ownerHandle))
-            {
-                return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
-            }
-        }
-        else if (expectedOwner is null)
-        {
-            return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
-        }
-
         if (!Base64UrlText.TryDecode(credential.PublicKey, out var publicKey))
         {
             return WebAuthnFailures.Malformed(WebAuthnReasons.PublicKey);
@@ -303,6 +284,26 @@ public sealed class WebAuthnCeremonies
         if (!Base64UrlText.TryDecode(assertionResponse.Signature, out var signature) || !coseKey.Verify(signed, signature))
         {
             return WebAuthnFailures.Denied(WebAuthnReasons.Signature);
+        }
+
+        // 凭据属于谁（WebAuthn §7.2 第 6 步）：登录前已认出用户时，凭据必须属于他，否则攻击者能用自己账号下的凭据签受害者的挑战；
+        // 没有认出用户（免用户名）时响应必须带句柄。响应带了句柄就必须等于存储的所属用户，防止拿别人的句柄冒充（ADR-0179）
+        // 放在验签之后：签名不对的响应只得到 signature，没有私钥的人试不出凭据属于谁（ADR-0216）
+        if (expectedOwner is not null && !expectedOwner.AsSpan().SequenceEqual(ownerHandle))
+        {
+            return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
+        }
+
+        if (assertionResponse.UserHandle is { Length: > 0 } receivedHandle)
+        {
+            if (!Base64UrlText.TryDecode(receivedHandle, out var actualHandle) || !actualHandle.AsSpan().SequenceEqual(ownerHandle))
+            {
+                return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
+            }
+        }
+        else if (expectedOwner is null)
+        {
+            return WebAuthnFailures.Denied(WebAuthnReasons.UserHandle);
         }
 
         // 计数在签名之后判定：签名不对的响应不该泄露存储的计数；都为 0 是不计数的认证器

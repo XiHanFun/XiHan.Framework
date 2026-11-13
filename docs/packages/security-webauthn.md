@@ -26,7 +26,7 @@
 
 - 登录页「用通行密钥登录」，免用户名、免密码：用本包，用户验证与可发现凭据都按缺省的 `Required`。
 - 只想把通行密钥当第二因素：同样用本包，`ResidentKey` 设为 `Discouraged`，认证时把用户已有的凭据放进 `allowCredentials`。
-- 需要证明信任链或元数据服务（只允许特定型号的安全密钥）：本包不做，自己在 `WebAuthnRegisteredCredential.Aaguid` 之上加校验并请求别的证明方式。
+- 需要证明信任链或元数据服务（只允许特定型号的安全密钥）：本包不做。`WebAuthnRegisteredCredential.Aaguid` 在 `none` 证明下是认证器自报的型号，没有经过证明，任何认证器都能报成别的型号，不能拿来做型号白名单；要限制型号须请求 `direct` 或 `enterprise` 证明，自己核对证明声明的信任链与元数据服务（ADR-0216）。
 
 ## 安装与启用
 
@@ -146,7 +146,8 @@ if (verified.TryGetValue(out var assertion))
 - 核对的顺序与每条失败的 `reason` 见 RFC-0008「WebAuthn」：解析不了是 `SECURITY_VALIDATION_006`，算法不支持是 `SECURITY_VALIDATION_007`，核对不通过是 `SECURITY_DENIED_005`。
 - 签名计数：新旧值有一个不为 0 时新值必须大于旧值，否则 `SECURITY_DENIED_006`，参数 `stored`、`received`。它是认证器可能被复制的信号，应用应提醒本人或停用这把凭据；都为 0 的认证器（多数同步的通行密钥）不计数，放行。
 - 挑战定长比较；客户端数据的哈希在签名里，挑战与来源受签名保护。
-- 凭据属于谁（ADR-0179）：存储的凭据必须记下所属用户；传了 `expectedUserHandle` 时凭据必须属于他，没传时响应必须带 `userHandle`；响应带了句柄就必须等于所属用户。任一不满足为 `user_handle`。
+- 凭据属于谁（ADR-0179）：存储的凭据必须记下所属用户；传了 `expectedUserHandle` 时凭据必须属于他，没传时响应必须带 `userHandle`；响应带了句柄就必须等于所属用户。任一不满足为 `user_handle`。它在验签之后判定：签名不对的响应只得到 `signature`，没有私钥的人试不出凭据属于谁（ADR-0216）。
+- RSA 公钥的模长 2048 到 4096 位，超出为 `public_key`：验签的开销随模长增长（ADR-0216）。
 - 客户端扩展结果不读；`crossOrigin` 为真（跨源的 iframe 里发起）一律拒绝。
 - 应用给的期望挑战或存储的凭据 ID 不是 base64url 抛 `ArgumentException`：那是调用方的错误。
 

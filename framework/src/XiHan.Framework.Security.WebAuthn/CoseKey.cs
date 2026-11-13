@@ -51,6 +51,14 @@ internal sealed class CoseKey
     private const int MinimumRsaModulusLength = 256;
 
     /// <summary>
+    /// RSA 模长的上限（字节）
+    /// </summary>
+    /// <remarks>
+    /// 4096 位。验签的开销随模长增长，不设上限时几万位的模数让每次认证都很慢（ADR-0216）
+    /// </remarks>
+    private const int MaximumRsaModulusLength = 512;
+
+    /// <summary>
     /// EC 公钥参数
     /// </summary>
     /// <remarks>
@@ -233,7 +241,7 @@ internal sealed class CoseKey
     /// </summary>
     private static Result<CoseKey> Rsa(int algorithm, byte[]? modulus, byte[]? exponent)
     {
-        if (modulus is null || modulus.Length < MinimumRsaModulusLength || exponent is not { Length: > 0 and <= 8 })
+        if (modulus is not { Length: >= MinimumRsaModulusLength and <= MaximumRsaModulusLength } || exponent is not { Length: > 0 and <= 8 })
         {
             return Malformed();
         }

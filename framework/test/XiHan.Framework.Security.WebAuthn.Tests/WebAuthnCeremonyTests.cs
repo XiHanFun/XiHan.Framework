@@ -179,6 +179,66 @@ public sealed class WebAuthnCeremonyTests
         Assert.Equal(_userHandle, Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge) with { UserHandle = _userHandle }), challenge, stored, null).ValueOrThrow().UserHandle);
     }
 
+    /// <summary>
+    /// 所属用户在验签之后判定
+    /// </summary>
+    /// <remarks>
+    /// 安全审查 S-43（ADR-0216）：原先在验签之前判定，没有私钥的人拿任意凭据 ID 与句柄试，就能从 user_handle 与 signature 两种原因分辨凭据属于谁
+    /// </remarks>
+    [Fact]
+    public void Ownership_IsCheckedAfterTheSignature_SoItCannotBeProbedWithoutTheKey()
+    {
+        using var authenticator = new WebAuthnTestAuthenticator();
+        var stored = Registered(authenticator);
+        var challenge = NewChallenge();
+        var someoneElse = Base64Url.EncodeToString(Guid.NewGuid().ToByteArray());
+        var unsigned = Ceremony(challenge) with { CorruptSignature = true };
+
+        // 签名不对：无论猜的是不是所属用户，原因都只是签名
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(unsigned), challenge, stored, someoneElse), SecurityErrors.WebAuthnVerificationFailed, "signature");
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(unsigned), challenge, stored, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "signature");
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(unsigned with { UserHandle = someoneElse }), challenge, stored, null), SecurityErrors.WebAuthnVerificationFailed, "signature");
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(unsigned), challenge, stored, null), SecurityErrors.WebAuthnVerificationFailed, "signature");
+
+        // 签名对了才看所属用户
+        AssertFailure(Ceremonies.VerifyAuthentication(authenticator.Authenticate(Ceremony(challenge)), challenge, stored, someoneElse), SecurityErrors.WebAuthnVerificationFailed, "user_handle");
+    }
+
+    /// <summary>
+    /// RSA 公钥的模长有上限
+    /// </summary>
+    /// <remarks>
+    /// 安全审查 S-43（ADR-0216）：原先只设下限，几万位的模数让每次验签都很慢
+    /// </remarks>
+    [Fact]
+    public void RsaModulus_LongerThan4096Bits_IsRejected()
+    {
+        using var authenticator = new WebAuthnTestAuthenticator();
+        var stored = Registered(authenticator);
+        var challenge = NewChallenge();
+        var response = authenticator.Authenticate(Ceremony(challenge));
+
+        AssertFailure(Ceremonies.VerifyAuthentication(response, challenge, stored with { PublicKey = Base64Url.EncodeToString(CoseRsaKey(1024)) }, _userHandle), SecurityErrors.WebAuthnResponseMalformed, "public_key");
+        // 4096 位照常读得出公钥，只是这份响应不是它签的
+        AssertFailure(Ceremonies.VerifyAuthentication(response, challenge, stored with { PublicKey = Base64Url.EncodeToString(CoseRsaKey(512)) }, _userHandle), SecurityErrors.WebAuthnVerificationFailed, "signature");
+    }
+
+    /// <summary>
+    /// 手写一个 RS256 的 COSE 公钥
+    /// </summary>
+    /// <remarks>
+    /// 映射 {1: 3, 3: -257, -1: 模数, -2: 65537}；模数最高位置 1、末位为奇数
+    /// </remarks>
+    private static byte[] CoseRsaKey(int modulusLength)
+    {
+        var modulus = System.Security.Cryptography.RandomNumberGenerator.GetBytes(modulusLength);
+        modulus[0] |= 0x80;
+        modulus[^1] |= 0x01;
+        byte[] head = [0xA4, 0x01, 0x03, 0x03, 0x39, 0x01, 0x00, 0x20, 0x59, (byte)(modulusLength >> 8), (byte)modulusLength];
+        byte[] tail = [0x21, 0x43, 0x01, 0x00, 0x01];
+        return [.. head, .. modulus, .. tail];
+    }
+
     [Fact]
     public void SignCount_MustIncrease_UnlessBothAreZero()
     {

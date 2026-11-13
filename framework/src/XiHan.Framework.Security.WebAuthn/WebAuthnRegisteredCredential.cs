@@ -15,7 +15,7 @@ namespace XiHan.Framework.Security.WebAuthn;
 /// <param name="PublicKey">COSE 公钥（base64url）</param>
 /// <param name="Algorithm">COSE 算法编号</param>
 /// <param name="SignCount">签名计数；不计数的认证器恒为 0</param>
-/// <param name="Aaguid">认证器型号；按 <c>none</c> 证明时多为全零</param>
+/// <param name="Aaguid">认证器自报的型号；按 <c>none</c> 证明时多为全零，没有经过证明，不能拿来限制型号（ADR-0216）</param>
 /// <param name="UserVerified">本次是否做过用户验证</param>
 /// <param name="BackupEligible">凭据能否在设备间同步（BE）</param>
 /// <param name="BackedUp">凭据是否已同步备份（BS）</param>
