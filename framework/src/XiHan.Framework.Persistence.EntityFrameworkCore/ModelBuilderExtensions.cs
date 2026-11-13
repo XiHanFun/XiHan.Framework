@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Linq.Expressions;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -33,6 +34,14 @@ public static class ModelBuilderExtensions
     internal const string NpgsqlProvider = "Npgsql.EntityFrameworkCore.PostgreSQL";
 
     /// <summary>
+    /// 多租户实体的全局查询过滤器名
+    /// </summary>
+    /// <remarks>
+    /// 要在工作单元里有意跨租户查询时，<c>IgnoreQueryFilters([TenantQueryFilter])</c> 只忽略这一个（ADR-0224）
+    /// </remarks>
+    public const string TenantQueryFilter = "xihan:tenant";
+
+    /// <summary>
     /// 对已注册的每个实体
     /// </summary>
     /// <remarks>
@@ -46,7 +55,42 @@ public static class ModelBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
         ArgumentNullException.ThrowIfNull(database);
-        return Apply(modelBuilder, database.ProviderName, database.IsRelational());
+        Apply(modelBuilder, database.ProviderName, database.IsRelational());
+        // 过滤器引用建模时的上下文：EF Core 在每次查询时把它换成执行查询的上下文，所以按各自的工作单元取租户
+        FilterByTenant(modelBuilder, database.GetService<ICurrentDbContext>().Context);
+        return modelBuilder;
+    }
+
+    /// <summary>
+    /// 给多租户实体加按工作单元租户过滤的命名查询过滤器
+    /// </summary>
+    /// <remarks>
+    /// 仓储本来就按租户过滤，但工作单元的 <c>Context</c> 与作用域里的 DbContext 是公开的，直接查询会读到别的租户的行（ADR-0224）。条件：上下文在 XiHan 工作单元里时只留工作单元租户的行，不在时不过滤。只加在继承体系的根上；实体已有匿名过滤器时抛出，EF Core 不能混用匿名与命名过滤器
+    /// </remarks>
+    private static void FilterByTenant(ModelBuilder modelBuilder, DbContext context)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes().ToList())
+        {
+            var clrType = entityType.ClrType;
+            if (!typeof(IMultiTenant).IsAssignableFrom(clrType) || entityType.BaseType is not null || entityType.IsOwned() || entityType.HasSharedClrType)
+            {
+                continue;
+            }
+
+            if (entityType.GetDeclaredQueryFilters().Any(static filter => filter.IsAnonymous))
+            {
+                throw new InvalidOperationException($"Entity '{clrType.FullName}' has an anonymous query filter, but XiHan adds the named tenant filter '{TenantQueryFilter}' and EF Core cannot combine anonymous and named filters. Give the existing filter a name with HasQueryFilter(\"<name>\", ...).");
+            }
+
+            // e => !Applies(context) || EF.Property<string>(e, "TenantId") == TenantOf(context)
+            var entity = Expression.Parameter(clrType, "e");
+            var current = Expression.Constant(context, typeof(DbContext));
+            var applies = Expression.Call(((Func<DbContext, bool>)TenantQueryFilters.Applies).Method, current);
+            var tenant = Expression.Call(((Func<DbContext, string?>)TenantQueryFilters.TenantOf).Method, current);
+            var column = Expression.Call(typeof(EF), nameof(EF.Property), [typeof(string)], entity, Expression.Constant(nameof(IMultiTenant.TenantId)));
+            var body = Expression.OrElse(Expression.Not(applies), Expression.Equal(column, tenant));
+            modelBuilder.Entity(clrType).HasQueryFilter(TenantQueryFilter, Expression.Lambda(body, entity));
+        }
     }
 
     /// <summary>

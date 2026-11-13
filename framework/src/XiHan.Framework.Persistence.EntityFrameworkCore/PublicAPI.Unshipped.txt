@@ -33,6 +33,7 @@ XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions
 const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.ConnectionBinding = "db" -> string!
 const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceFeature<TContext>.HealthName = "persistence.entityframeworkcore.database" -> string!
 const XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.ConfigurationSection = "XiHan:Persistence:EntityFrameworkCore" -> string!
+const XiHan.Framework.Persistence.EntityFrameworkCore.ModelBuilderExtensions.TenantQueryFilter = "xihan:tenant" -> string!
 override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.GetHashCode() -> int
 override XiHan.Framework.Persistence.EntityFrameworkCore.EntityFrameworkCorePersistenceOptions.ToString() -> string!

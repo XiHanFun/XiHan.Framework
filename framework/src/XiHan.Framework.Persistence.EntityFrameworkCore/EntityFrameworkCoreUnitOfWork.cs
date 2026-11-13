@@ -194,6 +194,8 @@ public sealed class EntityFrameworkCoreUnitOfWork : IUnitOfWork, IAsyncDisposabl
     {
         _bound = options.Connection;
         Options = options;
+        // 多租户实体的全局查询过滤器按它取租户：直接用 Context 查询也只看到本工作单元租户的行（ADR-0224）
+        TenantQueryFilters.Bind(Context, options.TenantId);
         State = UnitOfWorkState.Active;
     }
 
