@@ -166,7 +166,8 @@ public sealed class TenantResolutionMiddlewareTests
     [InlineData("acme\n", MultiTenancyErrors.InvalidTenantId)]
     public async Task UnknownDisabledOrMalformed_IsRejectedWithoutReachingHandler(string tenantId, string expectedCode)
     {
-        var (context, reached) = Arrange(new MultiTenancyOptions(), baggageTenant: tenantId, new BaggageTenantResolver());
+        // 经解析器送入，而不是 Baggage：带换行等不可接受字符的 Baggage 值在建上下文时就被丢弃（ADR-0204），到不了这里
+        var (context, reached) = Arrange(new MultiTenancyOptions(), baggageTenant: null, new FixedResolver(tenantId));
 
         await new TenantResolutionMiddleware(new MultiTenancyOptions()).InvokeAsync(context, Handler(reached));
 
