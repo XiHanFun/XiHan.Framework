@@ -91,9 +91,15 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: 构建
+        # 先构建完再打包，与 ci.yml 同一顺序：构建与打包混在一次调用里时，并行生成 SBOM 曾在打出 26 个包后停住半小时（v5.0.0-rc.1）
+        run: dotnet build framework/XiHan.Framework.slnx --configuration Release
+
       - name: 打包
-        # 包统一输出到 framework/artifacts/packages/；包验证与 README 检查在打包时执行。
-        run: dotnet pack framework/XiHan.Framework.slnx --configuration Release
+        # 包统一输出到 framework/artifacts/packages/；包验证、README 检查与 SBOM 在打包时执行。
+        # 平时两分钟内打完；超时即失败，推送步骤不会执行，不会发出半套包
+        timeout-minutes: 20
+        run: dotnet pack framework/XiHan.Framework.slnx --configuration Release --no-build
 
       - name: NuGet 可信发布登录（OIDC 换临时 API Key）
         # 经 nuget.org 受信任发布策略校验后返回 1 小时有效的临时 Key，无长期机密。
