@@ -207,6 +207,14 @@ public static class ObjectStorageMessages
     public const string PageSizeInvalid = "objectstorage.list.page_size_invalid";
 
     /// <summary>
+    /// 直传请求的内容类型不合法
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>max</c>
+    /// </remarks>
+    public const string ContentTypeInvalid = "objectstorage.blob.content_type_invalid";
+
+    /// <summary>
     /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(ObjectStorageMessages));

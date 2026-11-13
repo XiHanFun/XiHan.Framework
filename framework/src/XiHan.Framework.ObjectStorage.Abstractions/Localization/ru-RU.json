@@ -7,6 +7,7 @@
   "objectstorage.conditional_write.unconfirmed": "Пока невозможно записать объект '{key}' в контейнер '{container}' без перезаписи: ещё не подтверждено, что хранилище поддерживает условную запись (последняя проверка: {reason}). Проверка повторяется в фоне; повторите попытку позже.",
   "objectstorage.conditional_write.unsupported": "Объектное хранилище игнорирует условную запись ('If-None-Match: *' в {operation} в бакете '{bucket}'), поэтому запись с Overwrite = false может незаметно перезаписать существующий объект. Используйте сервис с поддержкой условной записи или задайте ConditionalWrites = false, если приложение никогда не записывает с Overwrite = false.",
   "objectstorage.list.page_size_invalid": "Размер страницы списка {pageSize} должен быть от 1 до {max}.",
+  "objectstorage.blob.content_type_invalid": "Тип содержимого запроса должен быть типом носителя длиной не более {max} символов.",
   "objectstorage.multipart.part_too_small": "Часть {part} имеет размер {length} байт; каждая часть, кроме последней, должна быть не меньше {minimum} байт.",
   "objectstorage.multipart.part_unknown": "Часть {part} не загружена или её ETag не совпадает.",
   "objectstorage.multipart.parts_empty": "Список частей не может быть пустым.",

@@ -7,6 +7,7 @@
   "objectstorage.conditional_write.unconfirmed": "Impossible pour l'instant d'écrire l'objet '{key}' du conteneur '{container}' sans écraser : la prise en charge des écritures conditionnelles par le stockage n'est pas encore confirmée (dernière vérification : {reason}). La vérification est relancée en arrière-plan ; réessayez plus tard.",
   "objectstorage.conditional_write.unsupported": "Le stockage d'objets ignore les écritures conditionnelles ('If-None-Match: *' sur {operation} dans le bucket '{bucket}') : une écriture avec Overwrite = false pourrait écraser silencieusement un objet existant. Utilisez un service qui prend en charge les écritures conditionnelles, ou définissez ConditionalWrites sur false si l'application n'écrit jamais avec Overwrite = false.",
   "objectstorage.list.page_size_invalid": "La taille de page {pageSize} de la liste doit être comprise entre 1 et {max}.",
+  "objectstorage.blob.content_type_invalid": "Le type de contenu de la requête doit être un type de média d'au plus {max} caractères.",
   "objectstorage.multipart.part_too_small": "La partie {part} fait {length} octets ; chaque partie sauf la dernière doit faire au moins {minimum} octets.",
   "objectstorage.multipart.part_unknown": "La partie {part} n'a pas été téléversée ou son ETag ne correspond pas.",
   "objectstorage.multipart.parts_empty": "La liste des parties ne doit pas être vide.",

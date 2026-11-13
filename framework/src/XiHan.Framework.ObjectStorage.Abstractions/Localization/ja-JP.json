@@ -7,6 +7,7 @@
   "objectstorage.conditional_write.unconfirmed": "コンテナー '{container}' のオブジェクト '{key}' はまだ上書きなしで書き込めません：ストアが条件付き書き込みに対応しているか確認できていません（直近の検査：{reason}）。検査はバックグラウンドで再試行されます。しばらくしてから再試行してください。",
   "objectstorage.conditional_write.unsupported": "オブジェクトストレージが条件付き書き込み（バケット '{bucket}' の {operation} に対する 'If-None-Match: *'）を無視するため、Overwrite = false の書き込みが既存のオブジェクトを黙って上書きする可能性があります。条件付き書き込みに対応したサービスを使うか、アプリケーションが Overwrite = false で書き込まない場合は ConditionalWrites を false に設定してください。",
   "objectstorage.list.page_size_invalid": "一覧のページサイズ {pageSize} は 1 から {max} の範囲で指定してください。",
+  "objectstorage.blob.content_type_invalid": "リクエストのコンテンツタイプは {max} 文字以内のメディアタイプでなければなりません。",
   "objectstorage.multipart.part_too_small": "パート {part} は {length} バイトです。最後のパート以外は {minimum} バイト以上である必要があります。",
   "objectstorage.multipart.part_unknown": "パート {part} はアップロードされていないか、ETag が一致しません。",
   "objectstorage.multipart.parts_empty": "パートの一覧を空にすることはできません。",

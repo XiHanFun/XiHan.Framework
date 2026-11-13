@@ -7,6 +7,7 @@
   "objectstorage.conditional_write.unconfirmed": "Das Objekt '{key}' im Container '{container}' kann noch nicht ohne Überschreiben geschrieben werden: Es ist noch nicht bestätigt, dass der Speicher bedingte Schreibvorgänge unterstützt (letzte Prüfung: {reason}). Die Prüfung wird im Hintergrund wiederholt; versuchen Sie es später erneut.",
   "objectstorage.conditional_write.unsupported": "Der Objektspeicher ignoriert bedingte Schreibvorgänge ('If-None-Match: *' bei {operation} im Bucket '{bucket}'), daher könnte ein Schreibvorgang mit Overwrite = false ein vorhandenes Objekt stillschweigend überschreiben. Verwenden Sie einen Dienst, der bedingte Schreibvorgänge unterstützt, oder setzen Sie ConditionalWrites auf false, wenn die Anwendung nie mit Overwrite = false schreibt.",
   "objectstorage.list.page_size_invalid": "Die Seitengröße {pageSize} der Auflistung muss zwischen 1 und {max} liegen.",
+  "objectstorage.blob.content_type_invalid": "Der Inhaltstyp der Anfrage muss ein Medientyp mit höchstens {max} Zeichen sein.",
   "objectstorage.multipart.part_too_small": "Teil {part} ist {length} Bytes groß; jeder Teil außer dem letzten muss mindestens {minimum} Bytes groß sein.",
   "objectstorage.multipart.part_unknown": "Teil {part} wurde nicht hochgeladen oder sein ETag stimmt nicht überein.",
   "objectstorage.multipart.parts_empty": "Die Liste der Teile darf nicht leer sein.",

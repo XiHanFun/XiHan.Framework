@@ -7,6 +7,7 @@
   "objectstorage.conditional_write.unconfirmed": "暂不能以不覆盖方式写入容器 '{container}' 中的对象 '{key}'：尚未确认存储认条件写入（最近一次探测：{reason}）。探测在后台重试，请稍后再试。",
   "objectstorage.conditional_write.unsupported": "对象存储不认条件写入（桶 '{bucket}' 上 {operation} 的 'If-None-Match: *'），Overwrite = false 的写入可能静默覆盖已有对象。请换用支持条件写入的服务；应用从不以 Overwrite = false 写入时，可把 ConditionalWrites 设为 false。",
   "objectstorage.list.page_size_invalid": "列举的页大小 {pageSize} 必须在 1 到 {max} 之间。",
+  "objectstorage.blob.content_type_invalid": "请求的内容类型必须是不超过 {max} 个字符的媒体类型。",
   "objectstorage.multipart.part_too_small": "分片 {part} 只有 {length} 字节；除最后一片外每片至少 {minimum} 字节。",
   "objectstorage.multipart.part_unknown": "分片 {part} 未上传或 ETag 不符。",
   "objectstorage.multipart.parts_empty": "分片清单不能为空。",

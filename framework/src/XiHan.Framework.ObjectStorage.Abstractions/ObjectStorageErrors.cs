@@ -81,6 +81,14 @@ public static class ObjectStorageErrors
     public const string PageSizeInvalid = "OBJECTSTORAGE_VALIDATION_005";
 
     /// <summary>
+    /// 直传请求的内容类型不合法
+    /// </summary>
+    /// <remarks>
+    /// 宿主的直传端点：签名没有限定内容类型，请求的 <c>Content-Type</c> 不满足 <see cref="Blobs.BlobPutOptions.IsValidContentType"/>；HTTP 400，不写入（ADR-0214）
+    /// </remarks>
+    public const string ContentTypeInvalid = "OBJECTSTORAGE_VALIDATION_006";
+
+    /// <summary>
     /// 不覆盖写入在本存储上无法保证
     /// </summary>
     /// <remarks>

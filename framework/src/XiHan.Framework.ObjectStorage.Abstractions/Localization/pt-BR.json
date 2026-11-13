@@ -7,6 +7,7 @@
   "objectstorage.conditional_write.unconfirmed": "Ainda não é possível gravar o objeto '{key}' do contêiner '{container}' sem sobrescrever: ainda não foi confirmado que o armazenamento oferece suporte a gravações condicionais (última verificação: {reason}). A verificação é repetida em segundo plano; tente novamente mais tarde.",
   "objectstorage.conditional_write.unsupported": "O armazenamento de objetos ignora gravações condicionais ('If-None-Match: *' em {operation} no bucket '{bucket}'), portanto uma gravação com Overwrite = false poderia sobrescrever silenciosamente um objeto existente. Use um serviço que ofereça suporte a gravações condicionais ou defina ConditionalWrites como false se a aplicação nunca grava com Overwrite = false.",
   "objectstorage.list.page_size_invalid": "O tamanho de página {pageSize} da listagem deve estar entre 1 e {max}.",
+  "objectstorage.blob.content_type_invalid": "O tipo de conteúdo da solicitação deve ser um tipo de mídia com no máximo {max} caracteres.",
   "objectstorage.multipart.part_too_small": "A parte {part} tem {length} bytes; todas as partes, exceto a última, devem ter pelo menos {minimum} bytes.",
   "objectstorage.multipart.part_unknown": "A parte {part} não foi enviada ou seu ETag não corresponde.",
   "objectstorage.multipart.parts_empty": "A lista de partes não pode estar vazia.",

@@ -194,6 +194,13 @@ public static class BlobEndpointRouteBuilderExtensions
             return;
         }
 
+        // 签名没限定内容类型时对象的内容类型取请求头，是客户端给的：不合文法以校验错误结束，不交给写入选项去抛异常（ADR-0214）
+        if (grant.ContentType is null && !string.IsNullOrWhiteSpace(requestType) && !BlobPutOptions.IsValidContentType(requestType))
+        {
+            context.SetOutcome(Error.Validation(ObjectStorageErrors.ContentTypeInvalid, ObjectStorageMessages.ContentTypeInvalid, MessageArguments.Of(("max", BlobPutOptions.MaxContentTypeLength))));
+            return;
+        }
+
         // 大文件直传：请求体上限交给存储（单对象上限、配额）而不是服务器的缺省值
         if (http.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
         {

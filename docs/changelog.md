@@ -51,6 +51,7 @@
 - **修复** 发件箱投递循环覆盖租户分片库：原先只轮询默认库，EF Core 在带分片的调用里写进租户库的消息发不出去。每轮先投递默认库，再逐个投递分片库；新增 `XiHan:Messaging:Outbox:IncludeShards`（默认 `true`）与 `ShardRefreshIntervalSeconds`（默认 60）。EF Core 下带分片的调用要发消息，分片库要建发件箱表
 - **修复** 文件系统对象存储不再把键里含 `.xihan-tmp-` 的对象当作临时文件：原先这样的对象列举不到、重启时被删除，根路径含这段文字时整个存储重启后清空。临时文件片段改为 `~xihan-tmp-`，只按文件名判定
 - **修复** 文件系统对象存储按首个点之前判定 Windows 设备名并补上 `com0`、`lpt0`，`RootPath` 去掉结尾的分隔符：原先 `con.tar.gz` 这样的键段在 Windows 上写不进去，`RootPath` 以分隔符结尾时每个操作都抛异常。Linux 与 macOS 上已有的这类键（如 `nul.tar.gz`、`com0`）换了文件名，升级后要重新写入，或把文件与元数据文件的首字符改成 `%XX`
+- **调整** 对象的内容类型按媒体类型文法（最长 255 个字符），自定义元数据值不含控制字符、名与值合计不超过 2048 个 UTF-8 字节：原先换行能进 S3 的请求头，元数据不限大小。不合法时 `BlobPutOptions` 抛出 `ArgumentException`；把客户端给的内容类型交给它之前先用 `BlobPutOptions.IsValidContentType` 判断。宿主直传端点对不合法的请求内容类型返回 `OBJECTSTORAGE_VALIDATION_006`（HTTP 400）
 
 ## v5.0.0-preview.3（2026-11-12）
 

@@ -151,6 +151,30 @@ public sealed class HostedBlobUrlTests : IDisposable
     }
 
     [Fact]
+    public async Task Uploads_WithoutASignedContentType_RejectAnInvalidRequestContentType()
+    {
+        await using var app = await StartAsync();
+        using var client = app.GetTestClient();
+        var store = app.Services.GetRequiredService<IBlobStore>();
+        var signer = app.Services.GetRequiredService<IBlobUrlSigner>();
+        var upload = (await signer.SignAsync(new ContainerName(Container), new BlobKey("inbox/any.txt"), BlobUrlRequest.ForUpload(), CancellationToken.None)).ValueOrThrow();
+
+        // 签名没限定内容类型时取请求头：超过 255 个字符不合文法，400 且不写入（ADR-0214）
+        using (var rejected = await client.PutAsync(upload.Url, new ByteArrayContent(Encoding.UTF8.GetBytes("x")) { Headers = { ContentType = new MediaTypeHeaderValue("text/" + new string('x', 300)) } }))
+        {
+            Assert.Equal((HttpStatusCode.BadRequest, ObjectStorageErrors.ContentTypeInvalid), (rejected.StatusCode, await CodeOf(rejected)));
+        }
+
+        Assert.False((await store.ExistsAsync(new ContainerName(Container), new BlobKey("inbox/any.txt"), CancellationToken.None)).ValueOrThrow());
+        using (var accepted = await client.PutAsync(upload.Url, new ByteArrayContent(Encoding.UTF8.GetBytes("x")) { Headers = { ContentType = new MediaTypeHeaderValue("text/plain") } }))
+        {
+            Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        }
+
+        Assert.Equal("text/plain", (await store.HeadAsync(new ContainerName(Container), new BlobKey("inbox/any.txt"), CancellationToken.None)).ValueOrThrow().ContentType);
+    }
+
+    [Fact]
     public async Task StoreBoundSigner_ServesNamedStores_AndBindsTheStoreIntoTheSignature()
     {
         await using var app = await StartAsync(

@@ -178,6 +178,8 @@ XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.CreateAsync
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.Name.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Stores.IBlobStoreProvider.ProbeAsync(XiHan.Framework.ObjectStorage.Abstractions.Blobs.IBlobStore! store, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 const XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.DefaultContentType = "application/octet-stream" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.MaxContentTypeLength = 255 -> int
+const XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.MaxMetadataBytes = 2048 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.MaxLength = 1024 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.ReservedSegment = ".xihan" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.Separator = '/' -> char
@@ -192,6 +194,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.BlobExists 
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.BlobNotFound = "OBJECTSTORAGE_NOTFOUND_001" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.ConditionalWriteUnavailable = "OBJECTSTORAGE_UNAVAILABLE_003" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.ConditionalWriteUnconfirmed = "OBJECTSTORAGE_UNAVAILABLE_004" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.ContentTypeInvalid = "OBJECTSTORAGE_VALIDATION_006" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.PageSizeInvalid = "OBJECTSTORAGE_VALIDATION_005" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.PartsInvalid = "OBJECTSTORAGE_VALIDATION_002" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageErrors.ProbeDenied = "OBJECTSTORAGE_DENIED_002" -> string!
@@ -211,6 +214,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.Condition
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.ConditionalWriteProbeDenied = "objectstorage.conditional_write.probe_denied" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.ConditionalWriteUnconfirmed = "objectstorage.conditional_write.unconfirmed" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.ConditionalWriteUnsupported = "objectstorage.conditional_write.unsupported" -> string!
+const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.ContentTypeInvalid = "objectstorage.blob.content_type_invalid" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PageSizeInvalid = "objectstorage.list.page_size_invalid" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PartTooSmall = "objectstorage.multipart.part_too_small" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages.PartUnknown = "objectstorage.multipart.part_unknown" -> string!
@@ -275,6 +279,7 @@ static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobContentRange.operato
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata? left, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata? left, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobMetadata? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.Default.get -> XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions!
+static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.IsValidContentType(string? contentType) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.IsValidMetadataName(string? name) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.operator !=(XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions? left, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions? right) -> bool
 static XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions.operator ==(XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions? left, XiHan.Framework.ObjectStorage.Abstractions.Blobs.BlobPutOptions? right) -> bool
