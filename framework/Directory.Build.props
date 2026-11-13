@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>5.0.0-preview.3</Version>
+    <Version>5.0.0-rc.1</Version>
     <!-- 包验证基线：同一大版本最近一次发布的版本，空表示不比对。5.0.0 上 NuGet 之后在发版提交里填上（ADR-0131） -->
     <XiHanPackageBaselineVersion></XiHanPackageBaselineVersion>
     <Authors>XiHanFun</Authors>
