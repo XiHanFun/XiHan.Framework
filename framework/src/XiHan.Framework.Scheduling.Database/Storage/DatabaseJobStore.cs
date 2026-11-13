@@ -306,6 +306,12 @@ public sealed class DatabaseJobStore : IJobStore
     public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(JobRunQuery.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         // 计划时刻降序，同刻按写入序号降序，再按 ID 补成全序
         var filtered = Filter(query)
             .OrderBy(static run => run.ScheduledAt, descending: true)
@@ -323,6 +329,12 @@ public sealed class DatabaseJobStore : IJobStore
     public async ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(JobRunQuery.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         var filtered = Filter(query);
         return StoreInvocation.OrUnavailable(await _invocation.RunAsync<long>(async ctx =>
             Result.Success(await StoreInvocation.Repository<JobRunEntity>(ctx).CountAsync(filtered, ctx.CancellationToken).ConfigureAwait(false)), cancellationToken).ConfigureAwait(false));

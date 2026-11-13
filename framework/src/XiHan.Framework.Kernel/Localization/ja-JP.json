@@ -23,6 +23,7 @@
   "kernel.operation.no_response": "操作 '{id}' は完了しましたが、応答を生成しませんでした。",
   "kernel.operation.permission_unregistered": "'{owner}' の操作 '{id}' が要求する権限コード '{permission}' は登録されていません。",
   "kernel.operation.authorization_missing": "'{owner}' の操作 '{id}' は認可を要求していますが、Authorize ステージにミドルウェアがありません。",
+  "kernel.query.revision_unsupported": "クエリ '{query}' はリビジョン {required} の条件を使用していますが、このプロバイダーはリビジョン {supported} までしかサポートしていません。プロバイダーのパッケージを更新してください。",
   "kernel.operation.registry_full": "操作レジストリは容量上限 {capacity} に達しました。",
   "kernel.operation.request_invalid": "操作 '{id}' のリクエストが無効です：{reason}",
   "kernel.operation.schema_violation": "操作 '{id}' のリクエストが契約に一致しません：{reason}",

@@ -96,6 +96,8 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     public async Task<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure();
         var source = Filtered(query);
         // 第一项排序用 OrderBy，后续用 ThenBy 叠加，保证多级排序按声明顺序翻译成 SQL
         IOrderedQueryable<TEntity>? ordered = null;
@@ -113,6 +115,8 @@ internal sealed class EntityFrameworkCoreRepository<TEntity, TKey>(EntityFramewo
     public Task<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure();
         return Filtered(query).LongCountAsync(cancellationToken);
     }
 

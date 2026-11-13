@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using XiHan.Framework.Kernel.Diagnostics;
+using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Auditing.Abstractions.Trail;
@@ -15,6 +16,22 @@ namespace XiHan.Framework.Auditing.Abstractions.Trail;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record AuditQuery
 {
+    /// <summary>
+    /// 本版查询条件的修订号
+    /// </summary>
+    /// <remarks>
+    /// Provider 在入口以 <c>Validate(AuditQuery.Revision)</c> 传入，常量在编译时写进 Provider，遇到更新的条件即失败；以后新增条件时加 1，新条件记在新修订号下（RFC-0001「Provider 契约的演进」，ADR-0228）。修订 1：5.0 的全部条件
+    /// </remarks>
+    public const int Revision = 1;
+
+    /// <summary>
+    /// 这次查询用到的条件里最高的修订号
+    /// </summary>
+    /// <remarks>
+    /// 没有用到新条件时不变，旧 Provider 照常服务。5.0 的条件都属于修订 1；以后新增条件时改为实例方法，按设置了的条件取其中最高的修订号，不要直接返回 <see cref="Revision"/>
+    /// </remarks>
+    private static int RequiredRevision() => 1;
+
     /// <summary>
     /// 页大小上限
     /// </summary>
@@ -96,8 +113,16 @@ public sealed record AuditQuery
     /// <remarks>
     /// 不合法返回 <see cref="AuditingErrors.QueryInvalid"/>。续页令牌由实现自己校验
     /// </remarks>
-    public Result Validate()
+    /// <param name="supportedRevision">Provider 编译时取到的 <see cref="Revision"/>，先于其余校验核对</param>
+    public Result Validate(int supportedRevision)
     {
+        // 先核对修订号：用到了 Provider 不认识的条件时，其余校验无从谈起
+        var revision = QueryRevision.Check(nameof(AuditQuery), RequiredRevision(), supportedRevision);
+        if (revision.IsFailure)
+        {
+            return revision;
+        }
+
         if (PageSize is < 1 or > MaxPageSize)
         {
             return Error.Validation(AuditingErrors.QueryInvalid, AuditingMessages.QueryInvalid, MessageArguments.Of(("reason", $"page size must be between 1 and {MaxPageSize}")));

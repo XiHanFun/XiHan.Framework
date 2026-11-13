@@ -169,7 +169,7 @@ public sealed class PermissionGrantRecordStore : IPermissionGrantAdministration,
     public async ValueTask<Result<PermissionGrantPage>> ListAsync(PermissionGrantQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (query.Validate() is { IsFailure: true } invalid)
+        if (query.Validate(PermissionGrantQuery.Revision) is { IsFailure: true } invalid)
         {
             return invalid.Error!;
         }

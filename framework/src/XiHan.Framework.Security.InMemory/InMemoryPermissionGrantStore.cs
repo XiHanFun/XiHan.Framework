@@ -171,7 +171,7 @@ public sealed class InMemoryPermissionGrantStore : IPermissionGrantStore, IPermi
     public ValueTask<Result<PermissionGrantPage>> ListAsync(PermissionGrantQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (query.Validate() is { IsFailure: true } invalid)
+        if (query.Validate(PermissionGrantQuery.Revision) is { IsFailure: true } invalid)
         {
             return ValueTask.FromResult(Result.Failure<PermissionGrantPage>(invalid.Error!));
         }

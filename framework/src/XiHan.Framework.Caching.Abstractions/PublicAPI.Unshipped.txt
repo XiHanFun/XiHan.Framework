@@ -140,7 +140,7 @@ XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.PageSize.get -> int
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.PageSize.init -> void
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Prefix.get -> string!
 XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Prefix.init -> void
-XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Validate() -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Validate(int supportedRevision) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Caching.Abstractions.Stores.ICacheChangeFeed
 XiHan.Framework.Caching.Abstractions.Stores.ICacheChangeFeed.Subscribe(System.Action<XiHan.Framework.Caching.Abstractions.Stores.CacheChange!>! handler) -> System.IDisposable!
 XiHan.Framework.Caching.Abstractions.Stores.ICacheStore
@@ -186,6 +186,7 @@ const XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyOptions.Config
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKey.MaxLength = 512 -> int
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.DefaultPageSize = 100 -> int
 const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.MaxPageSize = 1000 -> int
+const XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery.Revision = 1 -> int
 override XiHan.Framework.Caching.Abstractions.Caches.CachedObjectInfo.Equals(object? obj) -> bool
 override XiHan.Framework.Caching.Abstractions.Caches.CachedObjectInfo.GetHashCode() -> int
 override XiHan.Framework.Caching.Abstractions.Caches.CachedObjectInfo.ToString() -> string!

@@ -304,7 +304,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     {
         ArgumentNullException.ThrowIfNull(query);
         // 页大小越界是调用方可以改正的输入（RFC-0012）：以校验错误返回，不发请求（S3 对越界的 MaxKeys 会截断或报错，各家兼容服务不一）
-        if (query.Validate() is { IsFailure: true } invalid)
+        if (query.Validate(BlobQuery.Revision) is { IsFailure: true } invalid)
         {
             return invalid.Error!;
         }

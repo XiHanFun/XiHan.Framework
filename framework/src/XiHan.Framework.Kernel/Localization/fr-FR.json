@@ -23,6 +23,7 @@
   "kernel.operation.no_response": "L'opération '{id}' s'est terminée sans produire de réponse.",
   "kernel.operation.permission_unregistered": "L'opération '{id}' de '{owner}' requiert le code d'autorisation '{permission}', qui n'est pas enregistré.",
   "kernel.operation.authorization_missing": "L'opération '{id}' de '{owner}' exige une autorisation, mais aucun middleware ne s'exécute à l'étape Authorize.",
+  "kernel.query.revision_unsupported": "La requête '{query}' utilise des critères de la révision {required}, mais ce fournisseur ne prend en charge que jusqu'à la révision {supported} ; mettez à jour le paquet du fournisseur.",
   "kernel.operation.registry_full": "Le registre des opérations a atteint sa capacité de {capacity}.",
   "kernel.operation.request_invalid": "La requête de l'opération '{id}' n'est pas valide : {reason}",
   "kernel.operation.schema_violation": "La requête de l'opération '{id}' ne respecte pas son contrat : {reason}",

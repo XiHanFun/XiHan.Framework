@@ -88,6 +88,12 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
     public async ValueTask<Result<IReadOnlyList<WorkflowInstance>>> ListAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(WorkflowInstanceQuery.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         Enter(tenantId);
         return StorePartition.OrUnavailable(tenantId is null ? await _platform.ListAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.ListAsync(query, cancellationToken).ConfigureAwait(false));
     }
@@ -96,6 +102,12 @@ public sealed class DatabaseWorkflowInstanceStore : IWorkflowInstanceStore
     public async ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowInstanceQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(WorkflowInstanceQuery.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         Enter(tenantId);
         return StorePartition.OrUnavailable(tenantId is null ? await _platform.CountAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.CountAsync(query, cancellationToken).ConfigureAwait(false));
     }

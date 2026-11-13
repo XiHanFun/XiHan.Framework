@@ -164,7 +164,7 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     public async ValueTask<Result<AuditPage>> QueryAsync(AuditQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var validation = query.Validate();
+        var validation = query.Validate(AuditQuery.Revision);
         if (validation.IsFailure)
         {
             return validation.Error!;

@@ -141,7 +141,7 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     public async ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var valid = query.Validate();
+        var valid = query.Validate(TenantQuery.Revision);
         if (valid.IsFailure)
         {
             return valid.Error!;

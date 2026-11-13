@@ -192,6 +192,7 @@ XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.KnowledgeSearch(System
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.MinScore.get -> double?
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.MinScore.init -> void
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Top.get -> int
+XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Validate(int supportedRevision) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Vector.get -> System.ReadOnlyMemory<float>
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim
 XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim.<Clone>$() -> XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeTrim!
@@ -322,6 +323,7 @@ const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys.Source = "
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeMetadataKeys.Title = "title" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeOptions.DefaultCollection = "knowledge" -> string!
 const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.MaxTop = 1000 -> int
+const XiHan.Framework.AI.Abstractions.Knowledge.KnowledgeSearch.Revision = 1 -> int
 const XiHan.Framework.AI.Abstractions.Knowledge.RetrievalFilter.MaxDocumentIds = 1000 -> int
 const XiHan.Framework.AI.Abstractions.Tools.AIToolNameConvention.MaxLength = 64 -> int
 override XiHan.Framework.AI.Abstractions.AIOptions.Equals(object? obj) -> bool

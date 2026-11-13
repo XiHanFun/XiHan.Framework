@@ -2,6 +2,12 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
+## 未发布
+
+### 版本与兼容
+
+- **调整** 交给 Provider 的查询（`AuditQuery`、`EntityQuery<T>`、`WorkflowInstanceQuery` 等 12 个）带修订号常量 `Revision`，`Validate()` 改为 `Validate(int supportedRevision)`：以后查询加了条件而 Provider 没升级时返回 `KERNEL_VALIDATION_007`，不再静默忽略新条件。自己实现存储接口的 Provider 在入口加一行 `query.Validate(XxxQuery.Revision)`，仓储写成 `query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure()`（见[写一个 Provider](/extending/provider#跟上抽象包的新版本)）
+
 ## v5.0.0-rc.1（2026-11-13）
 
 ::: warning 候选版须知

@@ -118,6 +118,7 @@ XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Take.get -> int
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Take.init -> void
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.TimeRange.get -> XiHan.Framework.Persistence.Abstractions.Queries.TimeRange?
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.TimeRange.init -> void
+XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Validate(int supportedRevision) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Where(XiHan.Framework.Domain.Specifications.ISpecification<T>! filter) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
 XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Within(System.DateTimeOffset from, System.DateTimeOffset to) -> XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>!
 XiHan.Framework.Persistence.Abstractions.Queries.Ordering<T>
@@ -251,7 +252,7 @@ XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Skip.init -> void
 XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.TableListQuery() -> void
 XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Take.get -> int
 XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Take.init -> void
-XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Validate() -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Validate(int supportedRevision) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.<Clone>$() -> XiHan.Framework.Persistence.Abstractions.Schema.TablePage!
 XiHan.Framework.Persistence.Abstractions.Schema.TablePage.Equals(XiHan.Framework.Persistence.Abstractions.Schema.TablePage? other) -> bool
@@ -385,7 +386,9 @@ const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.TooManyTables
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.UniqueKeyConflict = "persistence.entity.unique_key_conflict" -> string!
 const XiHan.Framework.Persistence.Abstractions.PersistenceMessages.WorkerIdUnavailable = "persistence.snowflake.worker_unavailable" -> string!
 const XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery.DefaultMaxTake = 1000 -> int
+const XiHan.Framework.Persistence.Abstractions.Queries.EntityQuery<T>.Revision = 1 -> int
 const XiHan.Framework.Persistence.Abstractions.Schema.SchemaLimits.MaxTablesPerRead = 100 -> int
+const XiHan.Framework.Persistence.Abstractions.Schema.TableListQuery.Revision = 1 -> int
 override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceDefinition.ToString() -> string!
 override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Persistence.Abstractions.DataSources.DataSourceOptions.GetHashCode() -> int

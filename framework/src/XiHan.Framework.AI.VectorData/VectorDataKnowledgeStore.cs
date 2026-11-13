@@ -164,6 +164,12 @@ public sealed partial class VectorDataKnowledgeStore : IKnowledgeStore
     {
         ArgumentNullException.ThrowIfNull(collection);
         ArgumentNullException.ThrowIfNull(search);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (search.Validate(KnowledgeSearch.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         var vector = search.Vector;
         var top = search.Top;
         var filter = search.Filter;

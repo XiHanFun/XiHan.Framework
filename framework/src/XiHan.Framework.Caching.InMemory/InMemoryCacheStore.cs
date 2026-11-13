@@ -44,7 +44,7 @@ public sealed class InMemoryCacheStore : ICacheStore, ICacheStoreInspector
     {
         ArgumentNullException.ThrowIfNull(query);
         // 先核对上限再读表：越界是调用方的输入错误，按校验结果返回，不按上限截断
-        var valid = query.Validate();
+        var valid = query.Validate(CacheKeyQuery.Revision);
         return ValueTask.FromResult(valid.IsSuccess ? Result.Success(_table.ListKeys(query)) : Result.Failure<CacheKeyPage>(valid.Error!));
     }
 

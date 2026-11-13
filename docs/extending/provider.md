@@ -192,6 +192,29 @@ public sealed class FileSecurityFeature : IHostedFeature
 - AOT：包缺省按 AOT 兼容写（`<IsAotCompatible>true</IsAotCompatible>`，序列化走源生成）。依赖的第三方库不兼容时设为 `false` 并在 README 写明；必须用反射的入口标 `RequiresDynamicCode` / `RequiresUnreferencedCode`，把警告交给调用方。
 - 资源有界：缓存、队列、注册表不能无界增长，容量、过期、清理与并发语义都要有测试；不加静默兜底与无限重试。
 
+## 跟上抽象包的新版本
+
+Provider 发布之后，抽象包还会出新的小版本。规范 RFC-0001「Provider 契约的演进」保证旧 Provider 不会在不知情时给出错误的结果，Provider 这边要做两件事。
+
+**接收查询时先核对修订号。** 交给 Provider 的查询（`AuditQuery`、`EntityQuery<T>`、`WorkflowInstanceQuery` 等）各有一个修订号常量 `Revision`，以后加了过滤项或排序键就加 1。Provider 在入口把常量传给 `Validate`：常量在编译时写进 Provider，查询用到了 Provider 编译之后才加的条件时返回 `KERNEL_VALIDATION_007`，不会静默忽略新条件、给出放宽了的结果。
+
+```csharp
+public async ValueTask<Result<AuditPage>> QueryAsync(AuditQuery query, CancellationToken cancellationToken)
+{
+    ArgumentNullException.ThrowIfNull(query);
+    if (query.Validate(AuditQuery.Revision).Error is { } invalid)
+    {
+        return invalid;
+    }
+
+    // 按查询的过滤项读取…
+}
+```
+
+仓储的 `ListAsync`、`CountAsync` 不返回 `Result`，写成 `query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure()`。遇到这个错误码，升级 Provider 包即可。
+
+**新能力看可选接口。** 抽象包不在已有接口上加成员，新能力是单独的可选接口，如 `ICacheStoreInspector`、`IBlobMultipartStore`、`IPermissionGrantAdministration`。能做就实现，调用方按类型判断；不实现，调用方走降级路径或返回「不支持」。
+
 ## 通过一致性套件
 
 为 Provider 建一个测试项目，继承对应的套件基类，全部用例通过才算语义与默认实现一致：

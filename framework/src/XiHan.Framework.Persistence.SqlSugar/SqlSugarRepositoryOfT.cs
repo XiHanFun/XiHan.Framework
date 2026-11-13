@@ -127,6 +127,8 @@ internal sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitO
     public async Task<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure();
         var source = Split(Filtered(query), query.TimeRange);
         // SqlSugar 的 OrderBy 可以叠加，多级排序按声明顺序追加；排序键重新包成不带可空标注的委托类型，表达式体不变
         foreach (var ordering in query.Orderings)
@@ -142,6 +144,8 @@ internal sealed class SqlSugarRepository<TEntity, TKey>(SqlSugarUnitOfWork unitO
     public async Task<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure();
         return await Split(Filtered(query), query.TimeRange).CountAsync(cancellationToken).ConfigureAwait(false);
     }
 

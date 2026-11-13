@@ -254,10 +254,10 @@ public sealed class AuditMiddlewareTests
         Assert.Throws<ArgumentException>(static () => AuditingOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Auditing:Selection"] = "some" }).Build()));
         Assert.Throws<ArgumentException>(static () => AuditingOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Auditing:IncludeSuccesses"] = "maybe" }).Build()));
 
-        Assert.True(new AuditQuery().Validate().IsSuccess);
-        Assert.Equal(AuditingErrors.QueryInvalid, new AuditQuery { PageSize = 0 }.Validate().Error?.Code);
-        Assert.Equal(AuditingErrors.QueryInvalid, new AuditQuery { PageSize = AuditQuery.MaxPageSize + 1 }.Validate().Error?.Code);
-        Assert.Equal(AuditingErrors.QueryInvalid, new AuditQuery { From = DateTimeOffset.UnixEpoch.AddDays(1), To = DateTimeOffset.UnixEpoch }.Validate().Error?.Code);
+        Assert.True(new AuditQuery().Validate(AuditQuery.Revision).IsSuccess);
+        Assert.Equal(AuditingErrors.QueryInvalid, new AuditQuery { PageSize = 0 }.Validate(AuditQuery.Revision).Error?.Code);
+        Assert.Equal(AuditingErrors.QueryInvalid, new AuditQuery { PageSize = AuditQuery.MaxPageSize + 1 }.Validate(AuditQuery.Revision).Error?.Code);
+        Assert.Equal(AuditingErrors.QueryInvalid, new AuditQuery { From = DateTimeOffset.UnixEpoch.AddDays(1), To = DateTimeOffset.UnixEpoch }.Validate(AuditQuery.Revision).Error?.Code);
 
         var auditEvent = new AuditEvent
         {

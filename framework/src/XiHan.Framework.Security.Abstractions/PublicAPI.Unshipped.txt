@@ -319,7 +319,7 @@ XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Take.get 
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Take.init -> void
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Tenant.get -> XiHan.Framework.Security.Abstractions.Permissions.GrantTenantFilter!
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Tenant.init -> void
-XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Validate() -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Validate(int supportedRevision) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantStoreExtensions
 XiHan.Framework.Security.Abstractions.SecurityCapabilities
 XiHan.Framework.Security.Abstractions.SecurityErrors
@@ -340,6 +340,7 @@ const XiHan.Framework.Security.Abstractions.Permissions.GrantSubject.User = "use
 const XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.All = "*" -> string!
 const XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant.AnyTenant = "*" -> string!
 const XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.MaxTake = 1000 -> int
+const XiHan.Framework.Security.Abstractions.Permissions.PermissionGrantQuery.Revision = 1 -> int
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authentication = "security.authentication" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.Authorization = "security.authorization" -> string!
 const XiHan.Framework.Security.Abstractions.SecurityCapabilities.IpRegion = "security.ip-region" -> string!

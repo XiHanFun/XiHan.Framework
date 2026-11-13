@@ -142,6 +142,12 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     public ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(UserTaskQuery.Revision).Error is { } unsupported)
+        {
+            return ValueTask.FromResult(Result.Failure<IReadOnlyList<WorkflowBookmark>>(unsupported));
+        }
+
         var matched = UserTasks(tenantId, query);
         // 唯一的排序字段是创建时间：第一项决定方向，缺省升序
         var ordered = query.Sorts is [{ Field: UserTaskSortField.CreatedAt, Descending: true }, ..]
@@ -155,6 +161,12 @@ public sealed class InMemoryWorkflowBookmarkStore : IWorkflowBookmarkStore
     public ValueTask<Result<long>> CountUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(UserTaskQuery.Revision).Error is { } unsupported)
+        {
+            return ValueTask.FromResult(Result.Failure<long>(unsupported));
+        }
+
         return ValueTask.FromResult(Result.Success((long)UserTasks(tenantId, query).Count));
     }
 

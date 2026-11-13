@@ -227,3 +227,4 @@
 | [0225](0225-删除租户留墓碑.md) | 安全审查加固：删除租户留墓碑，删除的 ID 不能再新建（`MULTITENANCY_CONFLICT_001`）；`TenantRecord` 改为软删除 | 已采纳 |
 | [0226](0226-插件投递带订阅方式.md) | 插件协议：`HandleEventRequest` 带这次投递的订阅方式 `mode`，插件只交给以这种方式订阅的处理器 | 已采纳 |
 | [0227](0227-冷启动与常驻内存预算的口径.md) | 冷启动 JIT 下 ≤ 100 ms 阻断、Native AOT 下 50 ms 只报告；常驻内存只算框架额外，≤ 15 MB 阻断 | 已采纳 |
+| [0228](0228-Provider契约的演进与查询修订号.md) | Provider 契约的演进（API 审查 R2）：新能力走可选接口、不在已有接口上加成员；交给 Provider 的 12 个查询带修订号常量 `Revision`，Provider 在入口以编译时的常量 `Validate(XxxQuery.Revision)` 核对，用到不认识的条件即 `KERNEL_VALIDATION_007`；架构测试 `QueryRevisionTests` 守护 |

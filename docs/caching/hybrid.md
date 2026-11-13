@@ -120,7 +120,7 @@ public sealed class CacheAdmin(ISharedCache cache)
 
 三个方法的语义：
 
-- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法不在构造时抛出，返回 `CACHING_VALIDATION_004`，参数 `prefix`、`max`）；`PageSize` 为 1 到 1000（`CacheKeyQuery.MaxPageSize`，缺省 `DefaultPageSize` 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate()` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `pageSize`、`max`），不访问后端；本页的键在 `Items`，没有更多时 `ContinuationToken` 为 `null`。已过期的键不列出。
+- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法不在构造时抛出，返回 `CACHING_VALIDATION_004`，参数 `prefix`、`max`）；`PageSize` 为 1 到 1000（`CacheKeyQuery.MaxPageSize`，缺省 `DefaultPageSize` 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate(CacheKeyQuery.Revision)` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `pageSize`、`max`），不访问后端；本页的键在 `Items`，没有更多时 `ContinuationToken` 为 `null`。已过期的键不列出。
 - `InspectAsync`：不存在或已过期为无值；读元数据不延长滑动过期，对象条目也不读出值。
 - `RemoveByPrefixAsync`：返回 `Result<long>`（删除数）；前缀为空或不合法返回 `CACHING_VALIDATION_004`（HTTP 400）、不访问后端，没有「清空全部」。
 

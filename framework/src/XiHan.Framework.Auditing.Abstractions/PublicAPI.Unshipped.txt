@@ -60,7 +60,7 @@ XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.To.get -> System.DateTime
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.To.init -> void
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.TraceId.get -> string?
 XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.TraceId.init -> void
-XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Validate() -> XiHan.Framework.Primitives.Result
+XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Validate(int supportedRevision) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter
 XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.<Clone>$() -> XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter!
 XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter.Equals(XiHan.Framework.Auditing.Abstractions.Trail.AuditTenantFilter? other) -> bool
@@ -78,6 +78,7 @@ const XiHan.Framework.Auditing.Abstractions.AuditingMessages.QueryInvalid = "aud
 const XiHan.Framework.Auditing.Abstractions.AuditingMessages.TrailUnavailable = "auditing.trail.unavailable" -> string!
 const XiHan.Framework.Auditing.Abstractions.AuditingOptions.ConfigurationSection = "XiHan:Auditing" -> string!
 const XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.MaxPageSize = 1000 -> int
+const XiHan.Framework.Auditing.Abstractions.Trail.AuditQuery.Revision = 1 -> int
 override XiHan.Framework.Auditing.Abstractions.AuditingOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Auditing.Abstractions.AuditingOptions.GetHashCode() -> int
 override XiHan.Framework.Auditing.Abstractions.AuditingOptions.ToString() -> string!

@@ -93,6 +93,12 @@ public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
     public async ValueTask<Result<IReadOnlyList<WorkflowBookmark>>> ListUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(UserTaskQuery.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         Enter(tenantId);
         return StorePartition.OrUnavailable(tenantId is null ? await _platform.ListUserTasksAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.ListUserTasksAsync(query, cancellationToken).ConfigureAwait(false));
     }
@@ -101,6 +107,12 @@ public sealed class DatabaseWorkflowBookmarkStore : IWorkflowBookmarkStore
     public async ValueTask<Result<long>> CountUserTasksAsync(string? tenantId, UserTaskQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(UserTaskQuery.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         Enter(tenantId);
         return StorePartition.OrUnavailable(tenantId is null ? await _platform.CountUserTasksAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.CountUserTasksAsync(query, cancellationToken).ConfigureAwait(false));
     }

@@ -114,7 +114,7 @@ public sealed class InMemoryTenantStore : ITenantStore, IHealthContributor
     public ValueTask<Result<TenantPage>> ListAsync(TenantQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var valid = query.Validate();
+        var valid = query.Validate(TenantQuery.Revision);
         if (valid.IsFailure)
         {
             return ValueTask.FromResult(Result.Failure<TenantPage>(valid.Error!));

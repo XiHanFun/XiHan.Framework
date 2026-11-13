@@ -108,7 +108,7 @@ public sealed partial class InMemoryAuditTrail : IAuditSink, IAuditTrail
     public ValueTask<Result<AuditPage>> QueryAsync(AuditQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var validation = query.Validate();
+        var validation = query.Validate(AuditQuery.Revision);
         if (validation.IsFailure)
         {
             return ValueTask.FromResult<Result<AuditPage>>(validation.Error!);

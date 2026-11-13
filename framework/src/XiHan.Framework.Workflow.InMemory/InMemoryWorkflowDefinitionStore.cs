@@ -130,6 +130,12 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     public ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(WorkflowDefinitionQuery.Revision).Error is { } unsupported)
+        {
+            return ValueTask.FromResult(Result.Failure<IReadOnlyList<WorkflowDefinitionSummary>>(unsupported));
+        }
+
         lock (_lock)
         {
             IReadOnlyList<WorkflowDefinitionSummary> page = Sorted(InPartition(tenantId).Where(query.Matches), query)
@@ -205,6 +211,12 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
     public ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(WorkflowDefinitionQuery.Revision).Error is { } unsupported)
+        {
+            return ValueTask.FromResult(Result.Failure<long>(unsupported));
+        }
+
         lock (_lock)
         {
             return ValueTask.FromResult(Result.Success(InPartition(tenantId).LongCount(query.Matches)));

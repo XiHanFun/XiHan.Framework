@@ -284,6 +284,12 @@ public sealed class InMemoryJobStore : IJobStore
     public ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(JobRunQuery.Revision).Error is { } unsupported)
+        {
+            return ValueTask.FromResult(Result.Failure<IReadOnlyList<JobRunRecord>>(unsupported));
+        }
+
         lock (_lock)
         {
             IReadOnlyList<JobRunRecord> listed = _runs.Values
@@ -302,6 +308,12 @@ public sealed class InMemoryJobStore : IJobStore
     public ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(JobRunQuery.Revision).Error is { } unsupported)
+        {
+            return ValueTask.FromResult(Result.Failure<long>(unsupported));
+        }
+
         lock (_lock)
         {
             return ValueTask.FromResult(Result.Success((long)_runs.Values.Count(query.Matches)));

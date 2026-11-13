@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Caching.Abstractions.Stores;
@@ -14,6 +15,22 @@ namespace XiHan.Framework.Caching.Abstractions.Stores;
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record CacheKeyQuery
 {
+    /// <summary>
+    /// 本版查询条件的修订号
+    /// </summary>
+    /// <remarks>
+    /// Provider 在入口以 <c>Validate(CacheKeyQuery.Revision)</c> 传入，常量在编译时写进 Provider，遇到更新的条件即失败；以后新增条件时加 1，新条件记在新修订号下（RFC-0001「Provider 契约的演进」，ADR-0228）。修订 1：5.0 的全部条件
+    /// </remarks>
+    public const int Revision = 1;
+
+    /// <summary>
+    /// 这次查询用到的条件里最高的修订号
+    /// </summary>
+    /// <remarks>
+    /// 没有用到新条件时不变，旧 Provider 照常服务。5.0 的条件都属于修订 1；以后新增条件时改为实例方法，按设置了的条件取其中最高的修订号，不要直接返回 <see cref="Revision"/>
+    /// </remarks>
+    private static int RequiredRevision() => 1;
+
     /// <summary>
     /// 每页条数的最大值
     /// </summary>
@@ -59,8 +76,16 @@ public sealed record CacheKeyQuery
     /// 存储在 <c>ListKeysAsync</c> 开头调用，失败时原样返回、不访问后端
     /// </remarks>
     /// <returns>成功；前缀不合法时为 <see cref="CachingErrors.PrefixInvalid"/>，条数不在 1 到 <see cref="MaxPageSize"/> 之间时为 <see cref="CachingErrors.ListPageSizeInvalid"/></returns>
-    public Result Validate()
+    /// <param name="supportedRevision">Provider 编译时取到的 <see cref="Revision"/>，先于其余校验核对</param>
+    public Result Validate(int supportedRevision)
     {
+        // 先核对修订号：用到了 Provider 不认识的条件时，其余校验无从谈起
+        var revision = QueryRevision.Check(nameof(CacheKeyQuery), RequiredRevision(), supportedRevision);
+        if (revision.IsFailure)
+        {
+            return revision;
+        }
+
         if (!CacheKey.IsValidPrefix(Prefix))
         {
             return PrefixInvalid(Prefix);

@@ -184,6 +184,14 @@ public static class KernelErrors
     public const string AuthorizationMissing = "KERNEL_VALIDATION_006";
 
     /// <summary>
+    /// Provider 不认识查询用到的条件
+    /// </summary>
+    /// <remarks>
+    /// 查询所需的修订号高于 Provider 编译时的修订号；Provider 不读不认识的条件、不给出放宽了的结果，升级 Provider 包即可（RFC-0001「Provider 契约的演进」，ADR-0228）
+    /// </remarks>
+    public const string QueryRevisionUnsupported = "KERNEL_VALIDATION_007";
+
+    /// <summary>
     /// 操作 ID 重复登记
     /// </summary>
     public const string DuplicateOperation = "KERNEL_OPERATION_001";

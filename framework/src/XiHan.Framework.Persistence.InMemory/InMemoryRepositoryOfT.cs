@@ -70,6 +70,8 @@ internal sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InM
     public Task<IReadOnlyList<TEntity>> ListAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure();
         IEnumerable<TEntity> items = Visible(query);
         // 第一项排序用 OrderBy，后续用 ThenBy 叠加，保证多级排序按声明顺序生效而不是互相覆盖
         foreach (var ordering in query.Orderings)
@@ -88,6 +90,8 @@ internal sealed class InMemoryRepository<TEntity, TKey>(InMemoryStore store, InM
     public Task<long> CountAsync(EntityQuery<TEntity> query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure();
         return Task.FromResult(Visible(query).LongCount());
     }
 

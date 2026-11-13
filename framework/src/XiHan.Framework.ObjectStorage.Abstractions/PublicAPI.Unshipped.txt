@@ -95,7 +95,7 @@ XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.PageSize.get -> int
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.PageSize.init -> void
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Prefix.get -> string!
 XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Prefix.init -> void
-XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Validate() -> XiHan.Framework.Primitives.Result
+XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Validate(int supportedRevision) -> XiHan.Framework.Primitives.Result
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipart
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload
 XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipartUpload!
@@ -184,6 +184,7 @@ const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.MaxLength = 1024 -
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.ReservedSegment = ".xihan" -> string!
 const XiHan.Framework.ObjectStorage.Abstractions.Keys.BlobKey.Separator = '/' -> char
 const XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.MaxPageSize = 1000 -> int
+const XiHan.Framework.ObjectStorage.Abstractions.Listing.BlobQuery.Revision = 1 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipart.MaxPartNumber = 10000 -> int
 const XiHan.Framework.ObjectStorage.Abstractions.Multipart.BlobMultipart.MinPartBytes = 5242880 -> long
 const XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageCapabilities.Blob = "objectstorage.blob" -> string!

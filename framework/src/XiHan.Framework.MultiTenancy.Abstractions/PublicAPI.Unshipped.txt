@@ -93,7 +93,7 @@ XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.Equals(XiHan.Frame
 XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.PageSize.get -> int
 XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.PageSize.init -> void
 XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.TenantQuery() -> void
-XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.Validate() -> XiHan.Framework.Primitives.Result
+XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.Validate(int supportedRevision) -> XiHan.Framework.Primitives.Result
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyCapabilities.Context = "multitenancy.context" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyCapabilities.Sharding = "multitenancy.sharding" -> string!
 const XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyCapabilities.Version = 1 -> int
@@ -128,6 +128,7 @@ const XiHan.Framework.MultiTenancy.Abstractions.Sharding.TenantShardKeys.TenantP
 const XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantIdentifier.MaxLength = 64 -> int
 const XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.DefaultPageSize = 100 -> int
 const XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.MaxPageSize = 1000 -> int
+const XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantQuery.Revision = 1 -> int
 override XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.Equals(object? obj) -> bool
 override XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.GetHashCode() -> int
 override XiHan.Framework.MultiTenancy.Abstractions.MultiTenancyOptions.ToString() -> string!

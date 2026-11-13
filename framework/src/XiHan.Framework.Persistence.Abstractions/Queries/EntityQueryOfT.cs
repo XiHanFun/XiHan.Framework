@@ -3,6 +3,7 @@
 
 using System.Linq.Expressions;
 using XiHan.Framework.Domain.Specifications;
+using XiHan.Framework.Kernel.Validation;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.Abstractions.Queries;
@@ -17,6 +18,29 @@ namespace XiHan.Framework.Persistence.Abstractions.Queries;
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record EntityQuery<T>
 {
+    /// <summary>
+    /// 本版查询条件的修订号
+    /// </summary>
+    /// <remarks>
+    /// Provider 在入口以 <c>Validate(EntityQuery&lt;T&gt;.Revision)</c> 传入，常量在编译时写进 Provider，遇到更新的条件即失败；以后新增条件时加 1，新条件记在新修订号下（RFC-0001「Provider 契约的演进」，ADR-0228）。修订 1：5.0 的全部条件
+    /// </remarks>
+    public const int Revision = 1;
+
+    /// <summary>
+    /// 这次查询用到的条件里最高的修订号
+    /// </summary>
+    /// <remarks>
+    /// 没有用到新条件时不变，旧 Provider 照常服务。5.0 的条件都属于修订 1；以后新增条件时改为实例方法，按设置了的条件取其中最高的修订号，不要直接返回 <see cref="Revision"/>
+    /// </remarks>
+    private static int RequiredRevision() => 1;
+
+    /// <summary>
+    /// 核对这次用到的条件 Provider 是否都认识
+    /// </summary>
+    /// <param name="supportedRevision">Provider 编译时取到的 <see cref="Revision"/></param>
+    /// <returns>成功；用到了更新的条件时为 <c>KERNEL_VALIDATION_007</c></returns>
+    public Result Validate(int supportedRevision) => QueryRevision.Check(nameof(EntityQuery<T>), RequiredRevision(), supportedRevision);
+
     /// <summary>
     /// 过滤规约
     /// </summary>

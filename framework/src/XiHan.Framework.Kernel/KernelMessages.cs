@@ -173,6 +173,14 @@ public static class KernelMessages
     public const string OperationAuthorizationMissing = "kernel.operation.authorization_missing";
 
     /// <summary>
+    /// 查询用到的条件比 Provider 支持的修订号新
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>query</c>、<c>required</c>、<c>supported</c>
+    /// </remarks>
+    public const string QueryRevisionUnsupported = "kernel.query.revision_unsupported";
+
+    /// <summary>
     /// 操作成功结束却没有产生响应对象
     /// </summary>
     /// <remarks>

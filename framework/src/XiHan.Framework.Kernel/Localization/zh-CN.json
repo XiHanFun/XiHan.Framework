@@ -23,6 +23,7 @@
   "kernel.operation.no_response": "操作 '{id}' 已完成，但没有产生响应。",
   "kernel.operation.permission_unregistered": "'{owner}' 的操作 '{id}' 要求的权限码 '{permission}' 未登记。",
   "kernel.operation.authorization_missing": "'{owner}' 的操作 '{id}' 要求授权，但 Authorize 阶段没有任何中间件。",
+  "kernel.query.revision_unsupported": "查询 '{query}' 用到了修订 {required} 的条件，Provider 只支持到修订 {supported}，请升级 Provider 包。",
   "kernel.operation.registry_full": "操作登记表已达到容量上限 {capacity}。",
   "kernel.operation.request_invalid": "操作 '{id}' 的请求无效：{reason}",
   "kernel.operation.schema_violation": "操作 '{id}' 的请求不符合契约：{reason}",

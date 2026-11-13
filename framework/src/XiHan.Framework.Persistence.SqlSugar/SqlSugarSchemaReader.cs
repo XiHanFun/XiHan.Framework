@@ -40,7 +40,7 @@ internal sealed class SqlSugarSchemaReader(IServiceProvider services, DataSource
     {
         ArgumentNullException.ThrowIfNull(query);
         // 先核对分页：越界是调用方的输入错误，不连库、不登记运行时数据源
-        if (query.Validate() is { IsFailure: true } invalid)
+        if (query.Validate(TableListQuery.Revision) is { IsFailure: true } invalid)
         {
             return Result.Failure<TablePage>(invalid.Error!);
         }

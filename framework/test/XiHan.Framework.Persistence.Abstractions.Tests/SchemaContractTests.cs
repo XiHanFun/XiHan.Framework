@@ -28,7 +28,7 @@ public sealed class SchemaContractTests
         // 构造不抛出：查询常由请求绑定，越界由读结构的 Provider 以 400 的校验结果返回
         var query = new TableListQuery { Skip = skip, Take = take };
 
-        var validated = query.Validate();
+        var validated = query.Validate(TableListQuery.Revision);
 
         Assert.Equal(code, validated.Error?.Code);
         if (code == PersistenceErrors.ListPageInvalid)

@@ -343,7 +343,7 @@ public sealed class RedisCacheStore(IConnectionMultiplexer connection, RedisCach
     {
         ArgumentNullException.ThrowIfNull(query);
         // 先核对上限：越界是调用方的输入错误，不把它当作 SCAN 的提示值发出去
-        if (query.Validate() is { IsFailure: true } invalid)
+        if (query.Validate(CacheKeyQuery.Revision) is { IsFailure: true } invalid)
         {
             return Result.Failure<CacheKeyPage>(invalid.Error!);
         }

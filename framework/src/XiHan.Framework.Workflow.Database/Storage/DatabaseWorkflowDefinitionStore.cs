@@ -95,6 +95,12 @@ public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
     public async ValueTask<Result<IReadOnlyList<WorkflowDefinitionSummary>>> ListSummariesAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(WorkflowDefinitionQuery.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         Enter(tenantId);
         return StorePartition.OrUnavailable(tenantId is null ? await _platform.ListSummariesAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.ListSummariesAsync(query, cancellationToken).ConfigureAwait(false));
     }
@@ -103,6 +109,12 @@ public sealed class DatabaseWorkflowDefinitionStore : IWorkflowDefinitionStore
     public async ValueTask<Result<long>> CountAsync(string? tenantId, WorkflowDefinitionQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
+        if (query.Validate(WorkflowDefinitionQuery.Revision).Error is { } unsupported)
+        {
+            return unsupported;
+        }
+
         Enter(tenantId);
         return StorePartition.OrUnavailable(tenantId is null ? await _platform.CountAsync(query, cancellationToken).ConfigureAwait(false) : await _tenant.CountAsync(query, cancellationToken).ConfigureAwait(false));
     }
