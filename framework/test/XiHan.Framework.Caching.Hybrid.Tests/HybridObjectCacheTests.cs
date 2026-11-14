@@ -187,6 +187,59 @@ public sealed class HybridObjectCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task InvalidationDuringTheRemoteRead_DoesNotBackfillTheStaleValue()
+    {
+        var feed = new FeedingStore(_clock);
+        var shared = new RecordingSharedCache(_clock, feed);
+        using var cache = new HybridObjectCache(shared, new HybridCachingOptions { LocalTimeToLive = TimeSpan.FromMinutes(5) }, _clock);
+        var user = new CacheKey("user:1");
+        await shared.SetAsync<string>(user, "old", CacheEntryOptions.Default, CancellationToken.None);
+
+        // 读 L2 的途中别的实例写了这个键：变更通知先到（L1 里本来没有），读回的旧值后到
+        shared.AfterRead = keys =>
+        {
+            shared.AfterRead = null;
+            shared.SetAsync<string>(keys[0], "new", CacheEntryOptions.Default, CancellationToken.None).AsTask().GetAwaiter().GetResult();
+            feed.Raise(CacheChange.ForKeys([keys[0]]));
+        };
+        Assert.Equal("old", (await cache.GetAsync<string>(user, CancellationToken.None)).ValueOrThrow());
+
+        // 修之前旧值回填进 L1，留到 LocalTimeToLive；现在不回填，下一次读取回 L2 取到新值
+        Assert.Equal(0, cache.LocalCount);
+        Assert.Equal("new", (await cache.GetAsync<string>(user, CancellationToken.None)).ValueOrThrow());
+        Assert.Equal(1, cache.LocalCount);
+
+        // 批量读同样：途中失效的键不回填
+        var role = new CacheKey("role:1");
+        await shared.SetAsync<string>(role, "old", CacheEntryOptions.Default, CancellationToken.None);
+        shared.AfterRead = keys =>
+        {
+            shared.AfterRead = null;
+            feed.Raise(CacheChange.ForKeys([role]));
+        };
+        Assert.Equal(["old"], (await cache.GetManyAsync<string>([role], CancellationToken.None)).Select(static v => v.ValueOrThrow()));
+        shared.Operations.Clear();
+        await cache.GetAsync<string>(role, CancellationToken.None);
+        Assert.Equal(["get:role:1"], shared.Operations);
+
+        // 按前缀失效挡住所有键的回填；途中没有失效时照常回填
+        var other = new CacheKey("other:1");
+        await shared.SetAsync<string>(other, "x", CacheEntryOptions.Default, CancellationToken.None);
+        shared.AfterRead = _ =>
+        {
+            shared.AfterRead = null;
+            feed.Raise(CacheChange.ForPrefix("nothing-matches:"));
+        };
+        await cache.GetAsync<string>(other, CancellationToken.None);
+        shared.Operations.Clear();
+        await cache.GetAsync<string>(other, CancellationToken.None);
+        Assert.Equal(["get:other:1"], shared.Operations);
+        shared.Operations.Clear();
+        await cache.GetAsync<string>(other, CancellationToken.None);
+        Assert.Empty(shared.Operations);
+    }
+
+    [Fact]
     public void Options_FromConfiguration_ParsesAndRejectsInvalid()
     {
         static IConfiguration Build(params (string Key, string Value)[] values)

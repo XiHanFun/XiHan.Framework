@@ -8,6 +8,10 @@
 
 - **调整** 交给 Provider 的查询（`AuditQuery`、`EntityQuery<T>`、`WorkflowInstanceQuery` 等 12 个）带修订号常量 `Revision`，`Validate()` 改为 `Validate(int supportedRevision)`：以后查询加了条件而 Provider 没升级时返回 `KERNEL_VALIDATION_007`，不再静默忽略新条件。自己实现存储接口的 Provider 在入口加一行 `query.Validate(XxxQuery.Revision)`，仓储写成 `query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure()`（见[写一个 Provider](/extending/provider#跟上抽象包的新版本)）
 
+### 缓存与多实例
+
+- **修复** 两级缓存读 L2 的途中收到失效时不再把读回的旧值回填 L1：原先旧值留到 `LocalTimeToLive`
+
 ## v5.0.0-rc.1（2026-11-13）
 
 ::: warning 候选版须知

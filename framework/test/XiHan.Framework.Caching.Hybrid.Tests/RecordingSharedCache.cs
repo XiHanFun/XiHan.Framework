@@ -48,21 +48,33 @@ internal sealed class RecordingSharedCache : ISharedCache
     /// </summary>
     public List<string> Operations { get; } = [];
 
+    /// <summary>
+    /// 读完、返回之前调用
+    /// </summary>
+    /// <remarks>
+    /// 用来在读 L2 的途中插入别的实例的写入与变更通知，复现回填竞争
+    /// </remarks>
+    public Action<IReadOnlyList<CacheKey>>? AfterRead { get; set; }
+
     /// <inheritdoc />
     public ICacheStore Store { get; }
 
     /// <inheritdoc />
-    public ValueTask<Maybe<T>> GetAsync<T>(CacheKey key, CancellationToken cancellationToken)
+    public async ValueTask<Maybe<T>> GetAsync<T>(CacheKey key, CancellationToken cancellationToken)
     {
         Operations.Add("get:" + key.Value);
-        return _inner.GetAsync<T>(key, cancellationToken);
+        var value = await _inner.GetAsync<T>(key, cancellationToken);
+        AfterRead?.Invoke([key]);
+        return value;
     }
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<Maybe<T>>> GetManyAsync<T>(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Maybe<T>>> GetManyAsync<T>(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
     {
         Operations.Add("getmany:" + string.Join(",", keys.Select(static k => k.Value)));
-        return _inner.GetManyAsync<T>(keys, cancellationToken);
+        var values = await _inner.GetManyAsync<T>(keys, cancellationToken);
+        AfterRead?.Invoke(keys);
+        return values;
     }
 
     /// <inheritdoc />
