@@ -19,19 +19,24 @@
 
 | 操作 | 行为 |
 | --- | --- |
-| `GetAsync<T>` | L1 命中直接返回；未命中读 L2，命中后回填 L1 |
-| `GetManyAsync<T>` | 先在 L1 取全部，只把未命中的键一次交给 L2 |
+| `GetAsync<T>` | L1 命中直接返回；未命中读 L2，命中后回填 L1（读的途中这个键失效过就不回填） |
+| `GetManyAsync<T>` | 先在 L1 取全部，只把未命中的键一次交给 L2；读的途中失效过的键不回填 |
 | `SetAsync<T>` / `SetManyAsync<T>` | 先写 L2 再写 L1；L2 失败时 L1 不留下别的实例看不到的值 |
 | `RemoveAsync` / `RemoveManyAsync` | 先删 L2 再删 L1；两级任一存在过即报告删到 |
-| `GetOrCreateAsync<T>` | L1 未命中时交给 L2 的 `GetOrCreateAsync`（两级都未命中才执行工厂），结果回填 L1 |
+| `GetOrCreateAsync<T>` | L1 未命中时交给 L2 的 `GetOrCreateAsync`（两级都未命中才执行工厂），结果回填 L1；途中有失效（含工厂写入 L2 引起的本实例通知）就不回填，下一次读取再去 L2 |
 
 L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive` 的较小者，滑动过期在 L1 里按绝对时间处理；从 L2 回填的条目存活 `LocalTimeToLive`。L1 存对象引用，调用方不得修改取回的对象；`ICache.Store` 是 L2 的字节存储。
 
 跨实例失效（ADR-0055）：L2 的存储实现了 `ICacheChangeFeed`（Redis）时 `HybridObjectCache` 订阅它，本实例与其他实例的写入、删除、按前缀删除都让 L1 里对应的键立即失效；`InvalidatesAcrossInstances` 表示是否订阅到了，`HybridObjectCache` 释放即退订。
 
+回填与失效的竞争（ADR-0229）：L1 按键的散列分 64 个条带记失效轮次，删除一个键让它所在条带的轮次加一，按前缀删除让全部条带加一。读 L2 之前记下轮次，回填前核对，读的途中有过失效就不回填：否则别的实例写入的通知先到、读回的旧值后到，旧值会在 L1 里留到 `LocalTimeToLive`。条带数固定，内存有界；同条带的无关失效也会挡掉一次回填，只多读一次 L2。
+
+框架的授予缓存（`Security.Database`）、租户目录缓存（`MultiTenancy.Database`）与翻译版本戳（`Localization.Database`）都走 `ICache`，多实例部署装本包与 `Caching.Redis` 后，它们的命中在 L1、写入后经变更通知在所有实例上立即失效。
+
 ## 何时使用
 
 - 多实例部署，热点数据读多写少，可以接受最长 `LocalTimeToLive` 的旧值窗口（L2 是 Redis 时通常只在通知丢失时出现）。
+- 多实例部署装了 `Security.Database`、`MultiTenancy.Database` 或 `Localization.Database`：只装 Redis 时 `ICache` 仍是进程内的，授予撤销、租户停用与新翻译要等存活时间才传到其他实例。
 - 需要强一致的键直接用 `ISharedCache`，不经 L1。
 - 不需要 L1：不装配本包，`ICache` 由 [Caching.InMemory](./caching-inmemory) 提供。
 
@@ -116,4 +121,4 @@ public sealed class HybridCacheCheck(ICache cache, ILogger<HybridCacheCheck> log
 
 - [缓存与分布式锁](/caching/hybrid)
 - [Caching.Abstractions](./caching-abstractions)、[Caching.Redis](./caching-redis)、[Caching.InMemory](./caching-inmemory)
-- 规范：RFC-0006《缓存、分布式锁与幂等》「两级缓存」；ADR-0019、ADR-0055、ADR-0058
+- 规范：RFC-0006《缓存、分布式锁与幂等》「两级缓存」；ADR-0019、ADR-0055、ADR-0058、ADR-0229

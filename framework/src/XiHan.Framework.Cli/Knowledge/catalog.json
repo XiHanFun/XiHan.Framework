@@ -470,7 +470,8 @@
       "description": "曦寒框架本地化的数据库提供程序",
       "references": [
         "XiHan.Framework.Localization.Abstractions",
-        "XiHan.Framework.Persistence.Abstractions"
+        "XiHan.Framework.Persistence.Abstractions",
+        "XiHan.Framework.Caching.Abstractions"
       ],
       "dependencies": [],
       "frameworkReferences": []
@@ -641,7 +642,8 @@
       "description": "曦寒框架多租户的数据库提供程序",
       "references": [
         "XiHan.Framework.MultiTenancy.Abstractions",
-        "XiHan.Framework.Persistence.Abstractions"
+        "XiHan.Framework.Persistence.Abstractions",
+        "XiHan.Framework.Caching.Abstractions"
       ],
       "dependencies": [],
       "frameworkReferences": []
@@ -1254,7 +1256,8 @@
       "description": "曦寒框架授权的数据库提供程序",
       "references": [
         "XiHan.Framework.Security.Abstractions",
-        "XiHan.Framework.Persistence.Abstractions"
+        "XiHan.Framework.Persistence.Abstractions",
+        "XiHan.Framework.Caching.Abstractions"
       ],
       "dependencies": [],
       "frameworkReferences": []
@@ -1345,6 +1348,7 @@
       "description": "曦寒框架测试工具库",
       "references": [
         "XiHan.Framework.Kernel",
+        "XiHan.Framework.Caching.Abstractions",
         "XiHan.Framework.Security.WebAuthn"
       ],
       "dependencies": [
@@ -1812,6 +1816,11 @@
           "id": "persistence.relational",
           "version": 1,
           "optional": false
+        },
+        {
+          "id": "caching.local",
+          "version": 1,
+          "optional": false
         }
       ],
       "bindings": [],
@@ -2016,6 +2025,11 @@
       "requires": [
         {
           "id": "kernel.hosting",
+          "version": 1,
+          "optional": false
+        },
+        {
+          "id": "caching.local",
           "version": 1,
           "optional": false
         }
@@ -2613,6 +2627,11 @@
         },
         {
           "id": "persistence.relational",
+          "version": 1,
+          "optional": false
+        },
+        {
+          "id": "caching.local",
           "version": 1,
           "optional": false
         }

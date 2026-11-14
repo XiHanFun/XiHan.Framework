@@ -69,13 +69,13 @@
 | | `Security.InMemory` | `Security.Database` |
 | --- | --- | --- |
 | 装载 | 启动时读配置，运行时经 `IPermissionGrantAdministration` 增删 | 数据库表，经 `IPermissionGrantAdministration`（`PermissionGrantRecordStore`）批量授予、撤销 |
-| 上限 | `XiHan:Security:InMemory:MaxGrants`，缺省 10000 | 无条数上限；缓存 `CacheSize` 缺省 10000 条 |
-| 读取 | 进程内查表 | 按（主体，租户）一次查询，结果缓存 `CacheTimeToLiveSeconds`（缺省 30 秒） |
+| 上限 | `XiHan:Security:InMemory:MaxGrants`，缺省 10000 | 无条数上限；缓存容量由 `caching.local` 的 Provider 管 |
+| 读取 | 进程内查表 | 按（主体，租户）一次查询，结果经 `ICache` 缓存，写入后所有共用缓存的实例立即失效；`CacheTimeToLiveSeconds`（缺省 30 秒）兜底 |
 | 适用 | 开发、测试、授予随配置提交 | 授予由管理后台维护、多实例共享的生产应用 |
 
 ## 数据库授予：Security.Database
 
-`Security.Database` 只换授予存储：检查器、策略目录与 Authorize 阶段中间件与内存实现是同一套，`IPermissionFilter` 与 `IPermissionGrantSource` 照常生效。它只提供 `security.authorization@1`，不提供认证：与 `Security.InMemory` 同时装配时顶替它的授权部分，内存实现只剩 ApiKey 认证；认证也可以换成 `Security.Jwt` 或 `Security.OpenIdConnect`。
+`Security.Database` 只换授予存储：检查器、策略目录与 Authorize 阶段中间件与内存实现是同一套，`IPermissionFilter` 与 `IPermissionGrantSource` 照常生效。它只提供 `security.authorization@1`，不提供认证：与 `Security.InMemory` 同时装配时顶替它的授权部分，内存实现只剩 ApiKey 认证；认证也可以换成 `Security.Jwt` 或 `Security.OpenIdConnect`。它依赖 `persistence.relational@1` 与 `caching.local@1`：Standard / Full 组合包已带内存缓存，自己挑特性的宿主要加 `InMemoryCachingFeature`。
 
 ```bash
 dotnet add package XiHan.Framework.Security.Database --prerelease
@@ -113,10 +113,11 @@ app.Run();
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Security:Database:CacheSize` | `int` | 10000 | 缓存条目上限，每个（主体，租户）组合一条；满时整体清空 |
-| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠失效与容量清空，只适用于单实例部署 |
+| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间，必须为正，`0` 与负数让装配失败。授予与撤销经失效立即生效，存活时间只是兜底 |
 
-读写分成两个类型，与数据库租户目录同一套做法：`DatabasePermissionGrantStore` 是单例 `IPermissionGrantStore`，Authorize 阶段经检查器查它，它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库），结果进有界的 TTL 缓存；`PermissionGrantRecordStore` 是作用域服务，管理操作在 Transaction 阶段内用调用方的工作单元批量授予、撤销，逐项返回结果，写入后失效涉及主体的缓存：
+缓存容量由提供 `caching.local` 的 Provider 管（`XiHan:Caching:InMemory:MaxEntries` 或 `XiHan:Caching:Hybrid:LocalCapacity`）；以前的 `XiHan:Security:Database:CacheSize` 已删除，配置里留着也被忽略。
+
+读写分成两个类型，与数据库租户目录同一套做法：`DatabasePermissionGrantStore` 是单例 `IPermissionGrantStore`，Authorize 阶段经检查器查它，它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库），结果经 `ICache` 缓存（区 `security:grants`）；`PermissionGrantRecordStore` 是作用域服务，管理操作在 Transaction 阶段内用调用方的工作单元批量授予、撤销，逐项返回结果，写入后失效涉及主体的缓存：
 
 ```csharp
 using XiHan.Framework.Security.Abstractions.Permissions;
@@ -142,8 +143,11 @@ public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 
 - 授予是平台级数据：`PermissionGrantRecord` 不实现 `IMultiTenant`，不受当前调用租户过滤。平台授予以空字符串（`PermissionGrantRecord.PlatformTenantId`）落库、每个租户的授予以 `*` 落库，契约边界仍以 `PermissionGrant.TenantId == null` 表示平台；空白租户是编程错误，在访问数据库前抛出 `ArgumentException`。
 - 授予已存在的返回成功且不重复写；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即成功。撤销不存在的授予返回 `SECURITY_NOTFOUND_002`。
-- 缓存条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空。写入在事务提交后才对其他调用可见：本实例在写入时与调用结束（提交之后）各失效一次，提交之前读回的旧值不留在缓存里，撤销在提交之后立即生效（ADR-0194）；其他实例的缓存靠存活时间收敛。
+- 缓存按主体失效（范围是主体、条目是租户，[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），失效作用于所有共用这个缓存的实例。写入在事务提交后才对其他调用可见，所以写入时与调用结束（提交之后）各失效一次，提交之前读回的旧值不会被当作命中，授予与撤销在提交之后立即生效（ADR-0194、ADR-0229）。
+- 多实例部署要装 `Caching.Redis` 与 `Caching.Hybrid`：判定命中在本机一级缓存、不出进程，一个实例写入后其他实例经 Redis 的变更通知立即失效。只装 Redis 时 `ICache` 仍是进程内的，其他实例的缓存只能靠存活时间收敛。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`。
 - 数据库故障返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束，不会落到 403；失败不进缓存，恢复后下一次判定立即重新查库。
+- 缓存后端（如 Redis）故障时判定直接查库、不写缓存，结果仍然正确，警告日志每 10 秒最多一条。授予、撤销时的失效遇到缓存故障，写入调用失败（`KERNEL_UNEXPECTED_001`，HTTP 500，原因 `CACHING_UNAVAILABLE_001`）、事务回滚：撤销传不到其他实例时不报成功。提交之后的那次失效失败只记错误日志，已提交的写入在存活时间内对所有实例生效。
+- 绕过 `PermissionGrantRecordStore` 直接改表后，调用 `await DatabasePermissionGrantStore.InvalidateAsync(subjects, ct)`（清全部用 `InvalidateAllAsync(ct)`），或等存活时间到期。
 - 表结构由应用管理，`InitTables` 只用于开发与测试；唯一索引 `(SubjectKind, SubjectId, Permission, TenantId)` 由 `[EntityIndex]` 建出。被选为授权能力时同样登记启动核对 `PolicyCatalog.EnforceOn`。
 
 ## 收窄：IPermissionFilter

@@ -12,7 +12,7 @@ namespace XiHan.Framework.Caching.Hybrid;
 /// </summary>
 /// <remarks>
 /// L1 是进程内对象引用（有界 LRU，存活时间不超过 <see cref="HybridCachingOptions.LocalTimeToLive"/>），L2 是被选中的 <see cref="ISharedCache"/>。读：L1 命中直接返回，未命中读 L2 并回填；批量读只把 L1 未命中的键一次交给 L2。写与删：先 L2 再 L1
-/// L2 的存储实现了 <see cref="ICacheChangeFeed"/> 时（Redis），本实例与其他实例对存储的写入与删除让 L1 里的这些键（或前缀）立即失效；没有时别的实例的写入要等 <see cref="HybridCachingOptions.LocalTimeToLive"/> 才看得到（ADR-0055）。L1 直接存对象引用，调用方不得修改取回的对象
+/// L2 的存储实现了 <see cref="ICacheChangeFeed"/> 时（Redis），本实例与其他实例对存储的写入与删除让 L1 里的这些键（或前缀）立即失效；没有时别的实例的写入要等 <see cref="HybridCachingOptions.LocalTimeToLive"/> 才看得到（ADR-0055）。读 L2 的途中收到这个键的失效时，读回的值不回填 L1（它可能早于那次写入，ADR-0229）。L1 直接存对象引用，调用方不得修改取回的对象
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class HybridObjectCache : ICache, IDisposable
@@ -101,10 +101,12 @@ public sealed class HybridObjectCache : ICache, IDisposable
             return Maybe.Some(hit);
         }
 
+        // 读 L2 之前记下失效轮次：读的途中别的实例写了这个键，通知先到、读回的旧值后到，不能回填
+        var epoch = _local.EpochOf(key.Value);
         var fetched = await _shared.GetAsync<T>(key, cancellationToken).ConfigureAwait(false);
         if (fetched.TryGetValue(out var value))
         {
-            _local.Set(key.Value, value!, ExpiresAt(CacheEntryOptions.Default));
+            _local.SetIfUnchanged(key.Value, value!, ExpiresAt(CacheEntryOptions.Default), epoch);
         }
 
         return fetched;
@@ -133,7 +135,13 @@ public sealed class HybridObjectCache : ICache, IDisposable
             return results;
         }
 
-        // 只把 L1 未命中的键一次交给 L2，命中的回填 L1
+        // 只把 L1 未命中的键一次交给 L2，命中的回填 L1；读之前记下各键的失效轮次，读的途中失效过的键不回填
+        var epochs = new long[missing.Count];
+        for (var position = 0; position < missing.Count; position++)
+        {
+            epochs[position] = _local.EpochOf(keys[missing[position]].Value);
+        }
+
         var fetched = await _shared.GetManyAsync<T>([.. missing.Select(index => keys[index])], cancellationToken).ConfigureAwait(false);
         var expiresAt = ExpiresAt(CacheEntryOptions.Default);
         for (var position = 0; position < missing.Count; position++)
@@ -142,7 +150,7 @@ public sealed class HybridObjectCache : ICache, IDisposable
             results[index] = fetched[position];
             if (fetched[position].TryGetValue(out var value))
             {
-                _local.Set(keys[index].Value, value!, expiresAt);
+                _local.SetIfUnchanged(keys[index].Value, value!, expiresAt, epochs[position]);
             }
         }
 
@@ -214,10 +222,11 @@ public sealed class HybridObjectCache : ICache, IDisposable
             return hit;
         }
 
-        // L2 未命中才执行工厂（由 L2 判定与写入），结果回填 L1
+        // L2 未命中才执行工厂（由 L2 判定与写入），结果回填 L1。读之前记下失效轮次：途中有失效（含工厂写入 L2 引起的本实例通知）就不回填，下一次读取再去 L2
         var validated = options.Validated();
+        var epoch = _local.EpochOf(key.Value);
         var value = await _shared.GetOrCreateAsync(key, factory, validated, cancellationToken).ConfigureAwait(false);
-        _local.Set(key.Value, value, ExpiresAt(validated));
+        _local.SetIfUnchanged(key.Value, value, ExpiresAt(validated), epoch);
         return value;
     }
 

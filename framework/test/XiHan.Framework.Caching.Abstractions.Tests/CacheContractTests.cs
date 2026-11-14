@@ -171,6 +171,33 @@ public sealed class CacheContractTests
     }
 
     [Fact]
+    public void CacheSerializerRegistration_AppendsComponentTypeInfo_AfterTheApplicationResolver()
+    {
+        var entry = new GenerationCacheEntry<string[]>("region", "scope", ["orders.write"]);
+
+        // 应用的上下文只认识自己的类型：框架组件的缓存类型序列化不了
+        var bare = new ServiceCollection().AddSingleton(new JsonSerializerOptions { TypeInfoResolver = ApplicationJsonContext.Default });
+        Assert.True(CacheSerializerRegistration.TryAddJsonSerializer(bare));
+        Assert.Throws<NotSupportedException>(() => bare.BuildServiceProvider().GetRequiredService<ICacheSerializer>().Serialize(entry));
+
+        // 组件登记了自己的上下文（重复登记只留一份，登记早于或晚于序列化器都行）：两边的类型都能往返
+        var services = new ServiceCollection().AddSingleton(new JsonSerializerOptions { TypeInfoResolver = ApplicationJsonContext.Default });
+        Assert.True(CacheSerializerRegistration.TryAddJsonSerializer(services));
+        CacheSerializerRegistration.AddTypeInfo(services, GenerationCacheJsonContext.Default);
+        CacheSerializerRegistration.AddTypeInfo(services, GenerationCacheJsonContext.Default);
+        Assert.Single(services, static d => d.ServiceType == typeof(CacheTypeInfoSource));
+        var serializer = services.BuildServiceProvider().GetRequiredService<ICacheSerializer>();
+        Assert.Equal(["orders.write"], serializer.Deserialize<GenerationCacheEntry<string[]>>(serializer.Serialize(entry)).Value);
+        Assert.Equal(42, serializer.Deserialize<int>(serializer.Serialize(42)));
+
+        // 应用选项没有解析器仍是配置错误，不因为组件登记了上下文就放过
+        var unresolved = new ServiceCollection().AddSingleton(new JsonSerializerOptions());
+        CacheSerializerRegistration.AddTypeInfo(unresolved, GenerationCacheJsonContext.Default);
+        Assert.True(CacheSerializerRegistration.TryAddJsonSerializer(unresolved));
+        Assert.Throws<ArgumentException>(() => unresolved.BuildServiceProvider().GetRequiredService<ICacheSerializer>());
+    }
+
+    [Fact]
     public void IdempotencyOptions_FromConfiguration_ParsesAndRejectsInvalid()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(

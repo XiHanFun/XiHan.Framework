@@ -1,6 +1,6 @@
 # 缓存读写
 
-这一页讲缓存子系统最常用的部分：它提供哪两个能力、字节存储与类型化缓存是什么关系、怎样启用内存与 Redis 实现、怎样读写、设置过期、批量操作、挑选序列化器，以及对应的配置、健康项与错误码。读完你能给自己的特性加上一层缓存，并在单实例与多实例部署之间切换 Provider 而不改业务代码。前置知识是[特性与清单](/startup/features)与[能力图谱与 Provider](/startup/capabilities)：缓存和别的子系统一样，按能力 ID 声明依赖、按清单选实现。
+这一页讲缓存子系统最常用的部分：它提供哪两个能力、字节存储与类型化缓存是什么关系、怎样启用内存与 Redis 实现、怎样读写、设置过期、批量操作、用按范围失效的缓存区缓存会被写入改变的数据、挑选序列化器，以及对应的配置、健康项与错误码。读完你能给自己的特性加上一层缓存，并在单实例与多实例部署之间切换 Provider 而不改业务代码。前置知识是[特性与清单](/startup/features)与[能力图谱与 Provider](/startup/capabilities)：缓存和别的子系统一样，按能力 ID 声明依赖、按清单选实现。
 
 ## 为什么需要
 
@@ -30,6 +30,8 @@
 ::: warning 内存实现的共享缓存只在单实例下正确
 没有显式 Provider 时，`ISharedCache`、分布式锁与幂等去重都只在本进程内有效。部署多个实例前必须装配 `Caching.Redis` 或 `Caching.Remote`，否则锁不互斥、幂等键在实例之间互不可见。
 :::
+
+框架自己的几处缓存也走 `ICache`：`Security.Database` 的授予缓存、`MultiTenancy.Database` 的租户目录缓存、`Localization.Database` 的翻译版本戳，三个包的清单都依赖 `caching.local@1`。它们在写入后让所有共用缓存的实例立即失效，前提是 `ICache` 本身跨实例失效：多实例部署装 `Caching.Redis` 与 `Caching.Hybrid`。只装 Redis 时 `ICache` 仍是进程内的内存实现，这些缓存跨实例只靠存活时间收敛。
 
 ## 字节存储与类型化缓存
 
@@ -209,6 +211,60 @@ await cache.SetManyAsync(
 
 Redis 用 `MGET` 读、把 `SET` 与 `DEL` 放进一个批次写删；内存实现一次加锁逐项处理；远程 Provider 调用对应的 `cache-entries.get-many / set-many / remove-many` 操作。
 
+## 按范围失效的缓存区
+
+上面的读穿透有两个缺口：写入要失效一批条目时，必须知道缓存里有哪些键（`ICache` 没有按前缀删除）；一次读取在写入之前查了源、在失效之后才写回，旧值就留到过期。`GenerationCache<T>`（Preview）架在 `ICache` 上补这两处，框架的授予缓存（[RBAC 授予与条件](/security/grants)）与租户目录缓存（[数据库租户目录](/multi-tenancy/database)）就用它。
+
+条目按两段定位：范围（如主体、租户）与范围下的条目（如租户、商品类别），写成 `GenerationCacheKey(scope, entry)`，只有范围时用 `GenerationCacheKey.ForScope(scope)`（条目为空字符串）。
+
+| 成员 | 语义 |
+| --- | --- |
+| `GenerationCache(cache, region, timeToLive, logger)` | `region` 是所有键的前缀，须是合法的缓存键文本、不超过 128 个字符（`MaxRegionLength`）；`timeToLive` 必须为正 |
+| `GetOrLoadManyAsync(keys, load, ct)` | 批量读，返回 `Result<IReadOnlyList<T>>`，与 `keys` 顺序一一对应；重复的位置只读一次、只查一次源，空集合不触缓存。未命中的位置去重后一次交给 `load`，它按同样的顺序返回同样多的值（条数不符抛 `InvalidOperationException`）；`load` 失败原样返回、不写缓存 |
+| `InvalidateAsync(scopes, ct)` | 让这些范围下的全部条目失效，一次批量写入；空集合什么也不做 |
+| `InvalidateAllAsync(ct)` | 让整个区失效 |
+| `TimeToLive` | 条目的存活时间 |
+
+```csharp
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Primitives;
+
+public sealed record PriceList(string TenantId, string Category, IReadOnlyDictionary<string, decimal> Prices);
+
+// 应用自己的批量查询：按入参顺序返回，查不到的给空价目表；读库失败返回失败
+public interface IPriceSource
+{
+    ValueTask<Result<IReadOnlyList<PriceList>>> LoadManyAsync(IReadOnlyList<GenerationCacheKey> keys, CancellationToken cancellationToken);
+}
+
+// 单例：缓存区记着故障日志的节流状态
+public sealed class TenantPriceCache(ICache cache, IPriceSource source, ILogger<TenantPriceCache> logger)
+{
+    // 范围是租户，条目是商品类别
+    private readonly GenerationCache<PriceList> _prices = new(cache, "acme:prices", TimeSpan.FromMinutes(5), logger);
+
+    public ValueTask<Result<IReadOnlyList<PriceList>>> GetAsync(string tenantId, IReadOnlyList<string> categories, CancellationToken cancellationToken)
+        => _prices.GetOrLoadManyAsync([.. categories.Select(category => new GenerationCacheKey(tenantId, category))], source.LoadManyAsync, cancellationToken);
+
+    // 租户调价：它下面所有类别的条目一起作废，所有共用这个缓存的实例都看得到
+    public ValueTask InvalidateAsync(string tenantId, CancellationToken cancellationToken)
+        => _prices.InvalidateAsync([tenantId], cancellationToken);
+}
+```
+
+它怎样做到：
+
+- 区与每个范围各有一个代数（随机令牌），也存在 `ICache` 里。条目写回时记下读取开始时的区代数与范围代数，读取时两个代数都还是当前值才算命中。失效就是换一个新代数，不需要知道范围下有哪些条目。
+- 读取在查源之前取代数，缺代数（从未写过、已过期或被淘汰）时先写下新代数再查源。失效之前开始的读取写回的条目带着旧代数，不会被当作命中，失效之后才开始的读取看到新代数。
+- 代数的存活时间是条目的 10 倍；代数丢了只会让旧条目作废、多查一次源，不会把旧条目当作命中。
+- 键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`。范围与条目写成 `<长度>.<文本>`；含空白、控制字符或超过 128 个字符的换成 `#<SHA-256 十六进制>`。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`，否则同名的区会互相覆盖。
+- 跨进程缓存里存的是 `GenerationCacheEntry<T>`（区代数、范围代数、值）与 `string`（代数），序列化器要认识这两种类型，见下一节。
+
+缓存后端故障（`CACHING_UNAVAILABLE_001`）时，`GetOrLoadManyAsync` 绕过缓存直接查源、不写回，结果仍然正确，每个区每 10 秒最多记一条警告；`InvalidateAsync` 与 `InvalidateAllAsync` 把异常抛给调用方，由它决定拒绝写入还是记日志。写入方的常见做法与框架相同：在写入的事务里失效一次，失败就让调用失败、事务回滚；提交之后再失效一次，挡住在提交之前读到旧数据的读取，这次失败只记错误日志，靠存活时间收敛。
+
+多实例一致的前提是 `ICache` 跨实例失效：装 `Caching.Redis` 与 `Caching.Hybrid` 后，代数与条目都在本机一级缓存里命中、读取不出进程，一个实例换了代数，Redis 的变更通知让其他实例的一级缓存丢掉旧代数（[两级缓存与键管理](/caching/hybrid)）。只装 Redis 时 `ICache` 仍是进程内的，其他实例只能等存活时间。
+
 ## 序列化器
 
 跨进程缓存（Redis、Remote）把值序列化后存进字节存储。序列化器按下面的顺序决定，在特性装配时（`AddXiHan` 内部）检查服务集合：
@@ -245,6 +301,26 @@ internal sealed partial class CacheJsonContext : JsonSerializerContext;
 ```
 
 内存实现不序列化，所以只在内存缓存下跑过的代码换成 Redis 后，值类型第一次需要能被序列化；不在上下文里的类型会在那时抛出。源生成上下文的写法见[JSON 序列化与 Native AOT](/common/serialization)。
+
+组件放进缓存的类型不必写进应用的上下文：组件在特性的 `Configure` 里用 `CacheSerializerRegistration.AddTypeInfo(services, resolver)` 登记自己的源生成上下文（容器里是 `CacheTypeInfoSource`，同一个解析器只登记一次）。三种情况的处理不同：
+
+- 应用登记了 `JsonSerializerOptions`（第 2 种）：组件登记的上下文并在应用的解析器之后，同一类型两边都有时按应用的。
+- 退回反射（第 3 种）：本来就认识全部类型，不需要处理。
+- 应用自己登记 `ICacheSerializer`（第 1 种）：要自己处理。框架的 `Security.Database`、`MultiTenancy.Database`、`Localization.Database` 会往 `ICache` 里放 `GenerationCacheEntry<GrantSetEntry>`、`GenerationCacheEntry<TenantCacheValue>` 与 `string`，前两个值类型是包内部的，用工厂登记、从容器取出组件的上下文并进来：
+
+```csharp
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
+using XiHan.Framework.Caching.Abstractions.Serialization;
+
+// 工厂在容器建好后才执行，那时各特性的 AddTypeInfo 都已登记
+builder.Services.AddSingleton<ICacheSerializer>(static sp => new JsonCacheSerializer(new JsonSerializerOptions
+{
+    TypeInfoResolver = JsonTypeInfoResolver.Combine([CacheJsonContext.Default, .. sp.GetServices<CacheTypeInfoSource>().Select(static source => source.Resolver)]),
+}));
+```
+
+自己的组件把 `GenerationCache<T>` 放进跨进程缓存时，上下文里写 `[JsonSerializable(typeof(GenerationCacheEntry<T>))]` 与 `[JsonSerializable(typeof(string))]`，再用 `AddTypeInfo` 登记。
 
 ## 配置
 

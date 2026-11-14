@@ -12,7 +12,8 @@ namespace XiHan.Framework.MultiTenancy.Conformance;
 /// <see cref="ITenantAdministration"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="StartAsync"/> 与 <see cref="AdministerAsync"/>，全部用例随之执行。每个用例先 <see cref="StartAsync"/> 得到一个空的租户表与读它的租户目录，再经 <see cref="AdministerAsync"/> 在一次调用里使用租户管理：持久化的实现要在调用的事务里写入（ADR-0160）
+/// 继承并实现 <see cref="StartAsync"/> 与 <see cref="AdministerAsync"/>，全部用例随之执行。每个用例先 <see cref="StartAsync"/> 得到一个空的租户表与读它的租户目录，再经 <see cref="AdministerAsync"/> 在一次调用里使用租户管理：持久化的实现要在调用的事务里写入（ADR-0160）。
+/// 目录有缓存的实现，写入之前查过的租户在写入之后也要立即看见变化（用例 4）；多实例部署要一致的实现覆写 <see cref="StartPeerAsync"/>，另一个实例在 <see cref="PeerVisibilityTimeout"/> 内看见变化（用例 5，ADR-0229）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class TenantAdministrationConformance
@@ -29,6 +30,22 @@ public abstract class TenantAdministrationConformance
     /// 在一次调用里使用租户管理
     /// </summary>
     protected abstract ValueTask<T> AdministerAsync<T>(Func<ITenantAdministration, CancellationToken, ValueTask<T>> action);
+
+    /// <summary>
+    /// 启动读同一张表的另一个实例
+    /// </summary>
+    /// <remarks>
+    /// 在 <see cref="StartAsync"/> 之后调用，返回与那个实例共用持久化与缓存后端的另一个实例的租户目录。默认 <see langword="null"/>：实现不承诺多实例一致，用例 5 跳过
+    /// </remarks>
+    protected virtual ValueTask<ITenantStore?> StartPeerAsync() => ValueTask.FromResult<ITenantStore?>(null);
+
+    /// <summary>
+    /// 另一个实例看见变化的时限
+    /// </summary>
+    /// <remarks>
+    /// 失效经缓存后端的变更通知异步到达另一个实例（如 Redis 频道），给几秒余量；远小于缓存的存活时间，过了时限还看不见说明只靠过期收敛
+    /// </remarks>
+    protected virtual TimeSpan PeerVisibilityTimeout => TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// 用例 1：写入逐项同序，同一批里后一项整份覆盖前一项，目录随即看见
@@ -97,5 +114,64 @@ public abstract class TenantAdministrationConformance
         Assert.False((await store.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
         Assert.Equal(["beta"], (await store.ListAsync(new TenantQuery(), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Items.Select(static t => t.Id));
         Assert.Equal(MultiTenancyErrors.NotFound, (await AdministerAsync((tenants, ct) => tenants.RemoveAsync(["acme"], ct)).ConfigureAwait(false))[0].Error?.Code);
+    }
+
+    /// <summary>
+    /// 用例 4：写入之前查过的租户，写入之后立即看见新增、停用与删除
+    /// </summary>
+    /// <remarks>
+    /// 目录有缓存时（含缓存「不存在」），写入要让它失效，不能等存活时间
+    /// </remarks>
+    [Fact]
+    public async Task Changes_AreVisibleToLookupsThatReadBeforeTheWrite()
+    {
+        var store = await StartAsync().ConfigureAwait(false);
+        Assert.False((await store.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+
+        await AdministerAsync((tenants, ct) => tenants.UpsertAsync([new TenantInfo { Id = "acme" }], ct)).ConfigureAwait(false);
+        Assert.True((await store.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().IsEnabled);
+
+        await AdministerAsync((tenants, ct) => tenants.UpsertAsync([new TenantInfo { Id = "acme", IsEnabled = false }], ct)).ConfigureAwait(false);
+        Assert.False((await store.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().IsEnabled);
+
+        await AdministerAsync((tenants, ct) => tenants.RemoveAsync(["acme"], ct)).ConfigureAwait(false);
+        Assert.False((await store.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+    }
+
+    /// <summary>
+    /// 用例 5：另一个实例在时限内看见新增、停用与删除
+    /// </summary>
+    /// <remarks>
+    /// 另一个实例写入之前已经查过（缓存了旧结果），之后只能靠失效看见变化；<see cref="StartPeerAsync"/> 返回 <see langword="null"/> 时跳过
+    /// </remarks>
+    [Fact]
+    public async Task Changes_AreVisibleToAnotherInstance_WithoutWaitingForExpiry()
+    {
+        await StartAsync().ConfigureAwait(false);
+        var peer = await StartPeerAsync().ConfigureAwait(false);
+        Assert.SkipWhen(peer is null, "The implementation does not start a second instance; override StartPeerAsync when it promises consistency across instances.");
+        Assert.False((await peer.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+
+        await AdministerAsync((tenants, ct) => tenants.UpsertAsync([new TenantInfo { Id = "acme" }], ct)).ConfigureAwait(false);
+        await WithinAsync(async () => (await peer.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue).ConfigureAwait(false);
+
+        await AdministerAsync((tenants, ct) => tenants.UpsertAsync([new TenantInfo { Id = "acme", IsEnabled = false }], ct)).ConfigureAwait(false);
+        await WithinAsync(async () => !(await peer.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow().IsEnabled).ConfigureAwait(false);
+
+        await AdministerAsync((tenants, ct) => tenants.RemoveAsync(["acme"], ct)).ConfigureAwait(false);
+        await WithinAsync(async () => !(await peer.FindAsync("acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 在 <see cref="PeerVisibilityTimeout"/> 内轮询到条件成立
+    /// </summary>
+    private async Task WithinAsync(Func<Task<bool>> condition)
+    {
+        var deadline = DateTimeOffset.UtcNow + PeerVisibilityTimeout;
+        while (!await condition().ConfigureAwait(false))
+        {
+            Assert.True(DateTimeOffset.UtcNow < deadline, $"The other instance did not see the change within {PeerVisibilityTimeout}.");
+            await Task.Delay(20).ConfigureAwait(false);
+        }
     }
 }

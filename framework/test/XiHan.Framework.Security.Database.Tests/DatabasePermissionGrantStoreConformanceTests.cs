@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Persistence.InMemory;
 using XiHan.Framework.Security.Abstractions.Permissions;
@@ -39,7 +40,7 @@ public sealed class DatabasePermissionGrantStoreConformanceTests : PermissionGra
     /// <inheritdoc />
     protected override async ValueTask<IPermissionGrantStore> CreateStoreAsync(IReadOnlyList<PermissionGrant> grants)
     {
-        var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseSecurityFeature>());
+        var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseSecurityFeature>());
         _hosts.Add(host);
         var seeded = await host.InvokeAsync(async context =>
         {

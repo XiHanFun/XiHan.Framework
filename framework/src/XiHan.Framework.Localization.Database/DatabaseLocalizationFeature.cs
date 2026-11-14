@@ -3,6 +3,8 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Caching.Abstractions;
+using XiHan.Framework.Caching.Abstractions.Serialization;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
@@ -19,7 +21,7 @@ namespace XiHan.Framework.Localization.Database;
 /// 数据库本地化的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>localization.resources@1</c>，依赖 <c>persistence.relational@1</c>。装配后顶替默认的内存本地化。健康项 <see cref="HealthName"/> 由 <see cref="MessageTranslationLoader"/> 以最近一次加载的结果报告：失败（上一份快照仍在生效）为 Degraded
+/// 提供 <c>localization.resources@1</c>，依赖 <c>persistence.relational@1</c> 与 <c>caching.local@1</c>（翻译版本戳放在 <c>ICache</c> 里，多实例装两级缓存即一致，ADR-0229）。装配后顶替默认的内存本地化。健康项 <see cref="HealthName"/> 由 <see cref="MessageTranslationLoader"/> 以最近一次加载的结果报告：失败（上一份快照仍在生效）为 Degraded
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseLocalizationFeature : IHostedFeature
@@ -49,6 +51,7 @@ public sealed class DatabaseLocalizationFeature : IHostedFeature
         [
             new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
             new CapabilityRequirement(PersistenceCapabilities.Relational, PersistenceCapabilities.Version),
+            new CapabilityRequirement(CachingCapabilities.Local, CachingCapabilities.Version),
         ],
         Contributes = new Contributions
         {
@@ -69,6 +72,8 @@ public sealed class DatabaseLocalizationFeature : IHostedFeature
         context.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("primitives", typeof(Error)));
         context.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("kernel", typeof(App)));
         context.Services.AddRepository<MessageTranslation, Guid>();
+        // 翻译版本戳交给跨进程缓存的序列化器，应用的序列化上下文不必登记它
+        CacheSerializerRegistration.AddTypeInfo(context.Services, TranslationCacheJsonContext.Default);
         context.Services.TryAddScoped<MessageTranslationStore>();
         context.Services.AddSingleton<DatabaseMessageLocalizer>();
         context.Services.AddSingleton<MessageTranslationLoader>();

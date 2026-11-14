@@ -5,6 +5,9 @@ using System.Collections.Frozen;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
+using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Stores;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
@@ -69,7 +72,7 @@ public sealed class DatabaseSecurityTests
 
         Assert.Equal(("xihan.security.database", ManifestRole.Provider, ManifestKind.Provider), (feature.Manifest.Id, feature.Manifest.Role, feature.Manifest.Kind));
         Assert.Equal([SecurityCapabilities.Authorization], feature.Manifest.Provides.Select(static capability => capability.Id));
-        Assert.Equal(["kernel.hosting", "persistence.relational"], feature.Manifest.Requires.Select(static requirement => requirement.Id).Order(StringComparer.Ordinal));
+        Assert.Equal(["caching.local", "kernel.hosting", "persistence.relational"], feature.Manifest.Requires.Select(static requirement => requirement.Id).Order(StringComparer.Ordinal));
         Assert.Equal([(typeof(AuthorizationMiddleware).FullName!, PipelineStage.Authorize)], feature.Manifest.Contributes.Pipeline.Select(static p => (p.Middleware, p.Stage)));
         Assert.Equal(SecurityOptions.ConfigurationSection, feature.Manifest.Contributes.Config?.Section);
         Assert.Empty(feature.Manifest.Contributes.Health);
@@ -85,7 +88,7 @@ public sealed class DatabaseSecurityTests
         };
 
         var exception = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(
-            b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemorySecurityFeature>().UseFeature<DatabaseSecurityFeature>().UseFeature<OrdersFeature>().UseFeature(approvals),
+            b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemorySecurityFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseSecurityFeature>().UseFeature<OrdersFeature>().UseFeature(approvals),
             _configuration));
 
         Assert.Equal(SecurityErrors.UnregisteredPolicy, exception.Code);
@@ -188,15 +191,15 @@ public sealed class DatabaseSecurityTests
         var store = Assert.IsType<DatabasePermissionGrantStore>(host.Services.GetRequiredService<IPermissionGrantStore>());
 
         Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(1, store.CachedEntryCount);
 
         // 绕过记录存储直接写行（不触发失效）：缓存命中，不再查库
         await InsertRowAsync(host, _alice, WriteOrderOperation.Permission);
         Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
 
-        // 按主体失效后重新查库
-        store.Invalidate([_alice]);
-        Assert.Equal(0, store.CachedEntryCount);
+        // 按主体失效后重新查库；空集合什么也不做
+        await store.InvalidateAsync([], CancellationToken.None);
+        Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
+        await store.InvalidateAsync([_alice], CancellationToken.None);
         Assert.Equal([WriteOrderOperation.Permission], (await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
 
         // 过了存活时间也重新查库
@@ -209,9 +212,10 @@ public sealed class DatabaseSecurityTests
 
         // 不给主体清空全部；经记录存储写入的立刻可见
         Assert.Empty((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(2, store.CachedEntryCount);
-        store.InvalidateAll();
-        Assert.Equal(0, store.CachedEntryCount);
+        await InsertRowAsync(host, _alice, "audit.read");
+        Assert.Equal(2, ((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow()).Count);
+        await store.InvalidateAllAsync(CancellationToken.None);
+        Assert.Equal(3, ((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow()).Count);
         Assert.Empty((await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
         Assert.All(await GrantAsync(host, new PermissionGrant(_bob, "reports.read", "acme")), static r => Assert.True(r.IsSuccess));
         Assert.Equal(["reports.read"], (await store.GetGrantsAsync(_bob, "acme", CancellationToken.None)).ValueOrThrow());
@@ -221,44 +225,33 @@ public sealed class DatabaseSecurityTests
     }
 
     [Fact]
-    public async Task Cache_ClearsWhenFull_AndNeverExpiresWithoutTimeToLive()
+    public async Task Cache_LivesInTheHostsICache_UnderItsRegion()
     {
-        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 27, 0, 0, 0, TimeSpan.Zero));
-        await using var host = await StartAsync(clock, new("XiHan:Security:Database:CacheSize", "2"), new("XiHan:Security:Database:CacheTimeToLiveSeconds", "0"));
+        await using var host = await StartAsync();
         var store = Assert.IsType<DatabasePermissionGrantStore>(host.Services.GetRequiredService<IPermissionGrantStore>());
-        Assert.Null(host.Services.GetRequiredService<DatabaseSecurityOptions>().CacheTimeToLive);
+        var cache = host.Services.GetRequiredService<InMemoryObjectCache>();
+        Assert.Same(cache, host.Services.GetRequiredService<ICache>());
+        Assert.Equal(["caching.local@1", "kernel.hosting@1", "persistence.relational@1"], host.App.Graph["xihan.security.database"].Manifest.Requires.Select(static r => r.ToString()).Order(StringComparer.Ordinal));
 
-        Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
-        Assert.Empty((await store.GetGrantsAsync(_alice, "acme", CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(2, store.CachedEntryCount);
-
-        // 不过期：一天后仍是缓存里的旧结果
-        await InsertRowAsync(host, _alice, WriteOrderOperation.Permission);
-        clock.Advance(TimeSpan.FromDays(1));
-        Assert.Empty((await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
-
-        // 第三个条目进来时已满：整体清空后再写入，之前的主体重新查库
-        Assert.Empty((await store.GetGrantsAsync(_bob, null, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(1, store.CachedEntryCount);
-        Assert.Equal([WriteOrderOperation.Permission], (await store.GetGrantsAsync(_alice, null, CancellationToken.None)).ValueOrThrow());
-        Assert.Equal(2, store.CachedEntryCount);
+        Assert.Empty((await store.GetManyAsync([_alice, _bob], "acme", CancellationToken.None)).ValueOrThrow().SelectMany(static g => g));
+        // 条目与代数都在容器里的 ICache：区代数、两个主体的范围代数与两个条目，键都在区名之下
+        var page = (await cache.ListKeysAsync(new CacheKeyQuery { Prefix = DatabasePermissionGrantStore.CacheRegion + ":", PageSize = 100 }, CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(5, page.Items.Count);
+        Assert.All(page.Items, static key => Assert.StartsWith("security:grants:", key.Value, StringComparison.Ordinal));
     }
 
     [Fact]
     public void Options_ParseAndValidate()
     {
-        var defaults = new DatabaseSecurityOptions();
-        Assert.Equal((10_000, TimeSpan.FromSeconds(30)), (defaults.CacheSize, defaults.CacheTimeToLive));
+        Assert.Equal(TimeSpan.FromSeconds(30), new DatabaseSecurityOptions().CacheTimeToLive);
+        Assert.Equal(TimeSpan.FromSeconds(1.5), DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "1.5"))).CacheTimeToLive);
+        // 容量交给缓存 Provider：旧的 CacheSize 键不再读取
+        Assert.Equal(new DatabaseSecurityOptions(), DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheSize", "5"))));
 
-        var options = DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheSize", "5"), ("CacheTimeToLiveSeconds", "1.5")));
-        Assert.Equal((5, TimeSpan.FromSeconds(1.5)), (options.CacheSize, options.CacheTimeToLive));
-        Assert.Null(DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "0"))).CacheTimeToLive);
-
-        Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheSize", "0"))));
-        Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheSize", "-1"))));
+        // 不再有「不过期」：0、负数与非数字都是配置错误
+        Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "0"))));
         Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "-1"))));
         Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "soon"))));
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseSecurityOptions { CacheSize = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseSecurityOptions { CacheTimeToLive = TimeSpan.Zero });
     }
 
@@ -270,7 +263,7 @@ public sealed class DatabaseSecurityTests
     /// </remarks>
     private static Task<TestHost> StartAsync(FakeTimeProvider? clock = null, params KeyValuePair<string, string?>[] extra)
         => TestHost.StartAsync(
-            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemorySecurityFeature>().UseFeature<DatabaseSecurityFeature>().UseFeature<OrdersFeature>(),
+            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemorySecurityFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseSecurityFeature>().UseFeature<OrdersFeature>(),
             _configuration.Concat(extra),
             services =>
             {

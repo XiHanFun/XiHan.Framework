@@ -1,4 +1,16 @@
 #nullable enable
+XiHan.Framework.Testing.FaultyCache
+XiHan.Framework.Testing.FaultyCache.Failing.get -> bool
+XiHan.Framework.Testing.FaultyCache.Failing.set -> void
+XiHan.Framework.Testing.FaultyCache.FaultyCache(XiHan.Framework.Caching.Abstractions.Caches.ICache! inner) -> void
+XiHan.Framework.Testing.FaultyCache.GetAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<T>>
+XiHan.Framework.Testing.FaultyCache.GetManyAsync<T>(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Maybe<T>>!>
+XiHan.Framework.Testing.FaultyCache.GetOrCreateAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>>! factory, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T>
+XiHan.Framework.Testing.FaultyCache.RemoveAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+XiHan.Framework.Testing.FaultyCache.RemoveManyAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<bool>!>
+XiHan.Framework.Testing.FaultyCache.SetAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, T value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Testing.FaultyCache.SetManyAsync<T>(System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<XiHan.Framework.Caching.Abstractions.Stores.CacheKey, T>>! entries, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+XiHan.Framework.Testing.FaultyCache.Store.get -> XiHan.Framework.Caching.Abstractions.Stores.ICacheStore!
 XiHan.Framework.Testing.StubFeature
 XiHan.Framework.Testing.StubFeature.Configure(XiHan.Framework.Kernel.Hosting.FeatureContext! context) -> void
 XiHan.Framework.Testing.StubFeature.Events.get -> System.Collections.Generic.IReadOnlyList<string!>!

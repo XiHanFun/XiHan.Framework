@@ -4,6 +4,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Localization.Database.Translations;
 using XiHan.Framework.Localization.InMemory;
@@ -63,7 +64,7 @@ public sealed class MessageTranslationUpsertTests : IDisposable
     public async Task Upsert_UpdatesEveryExistingRow_WhenTheyExceedOneQueryPage()
     {
         await using var host = await TestHost.StartAsync(
-            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseLocalizationFeature>(),
+            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseLocalizationFeature>(),
             [new("XiHan:Localization:Database:RefreshIntervalSeconds", "0")]);
         // 150 个键 × 10 个区域 = 1500 行，超过查询一页的上限 1000
         var locales = new[] { "en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR", "de-DE", "es-ES", "fr-FR", "pt-BR", "ru-RU" };
@@ -105,7 +106,7 @@ public sealed class MessageTranslationUpsertTests : IDisposable
     {
         EnsureWriteAheadLog();
         await using var host = await TestHost.StartAsync(
-            static b => b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseLocalizationFeature>(),
+            static b => b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseLocalizationFeature>(),
             [new("XiHan:Persistence:SqlSugar:InitTables", "true"), new("XiHan:Localization:Database:RefreshIntervalSeconds", "0")],
             services => services.AddScoped<ISqlSugarClient>(_ => RacingClient()));
 

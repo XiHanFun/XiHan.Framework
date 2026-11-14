@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
@@ -15,11 +17,12 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 /// 租户目录的批量读写
 /// </summary>
 /// <remarks>
-/// 作用域服务，须在调用的 Transaction 阶段内使用，用调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入。写入后立即让 <see cref="DatabaseTenantStore"/> 与分片解析器（装配了才有）丢弃对应租户的缓存。
-/// 写入在事务提交后才对别的调用可见，所以失效两次（ADR-0194）：写入时一次，作用域释放时（调用已提交或回滚）再一次；缓存按代数丢弃失效之前开始的读取，提交之前读回的旧租户不会留在缓存里
+/// 作用域服务，须在调用的 Transaction 阶段内使用，用调用方的工作单元。一次查询取回已有行，再用仓储的批量方法一次写入。写入后立即让 <see cref="DatabaseTenantStore"/>（所有共用缓存的实例，ADR-0229）与分片解析器（装配了才有）丢弃对应租户的缓存。
+/// 写入在事务提交后才对别的调用可见，所以失效两次（ADR-0194）：写入时一次，作用域释放时（调用已提交或回滚）再一次；缓存按代数丢弃失效之前开始的读取，提交之前读回的旧租户不会留在缓存里。
+/// 写入时的失效遇到缓存后端故障就抛出（携带 <c>CACHING_UNAVAILABLE_001</c>），调用失败、事务回滚：停用、迁库传不到别的实例时不报成功。释放时的失效遇到故障只记错误日志，已提交的写入在 <see cref="DatabaseMultiTenancyOptions.CacheTimeToLive"/> 内对所有实例生效
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class TenantRecordStore : ITenantAdministration, IDisposable
+public sealed partial class TenantRecordStore : ITenantAdministration, IAsyncDisposable, IDisposable
 {
     /// <summary>
     /// 本作用域里写过的租户：作用域释放时（提交或回滚之后）再失效一次
@@ -48,15 +51,25 @@ public sealed class TenantRecordStore : ITenantAdministration, IDisposable
     private readonly ITenantShardResolver? _shards;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    /// <remarks>
+    /// 记释放时失效失败
+    /// </remarks>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
     /// <remarks>
     /// <paramref name="shards"/> 是可选依赖，容器里没有时为 <see langword="null"/>
     /// </remarks>
-    public TenantRecordStore(IRepository<TenantRecord, string> repository, DatabaseTenantStore catalog, ITenantShardResolver? shards = null)
+    public TenantRecordStore(IRepository<TenantRecord, string> repository, DatabaseTenantStore catalog, ILoggerFactory loggerFactory, ITenantShardResolver? shards = null)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+        _logger = loggerFactory.CreateLogger<TenantRecordStore>();
         _shards = shards;
     }
 
@@ -126,7 +139,7 @@ public sealed class TenantRecordStore : ITenantAdministration, IDisposable
                 : slot >= 0 ? updated[slot] : added[~slot];
         }
 
-        Invalidate(ids);
+        await InvalidateAsync(ids, cancellationToken).ConfigureAwait(false);
         return results;
     }
 
@@ -197,27 +210,31 @@ public sealed class TenantRecordStore : ITenantAdministration, IDisposable
             results[index] = outcome;
         }
 
-        Invalidate(ids);
+        await InvalidateAsync(ids, cancellationToken).ConfigureAwait(false);
         return results;
     }
 
     /// <summary>
     /// 让目录与分片解析器丢弃这些租户的缓存
     /// </summary>
-    private void Invalidate(IReadOnlyList<string> tenantIds)
+    /// <remarks>
+    /// 目录的失效遇到缓存后端故障时抛出：写入还没提交，调用失败即回滚
+    /// </remarks>
+    private async ValueTask InvalidateAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
     {
+        // 先记下再失效：失效抛出时调用已失败，释放时的第二次失效对回滚无害
         _written.UnionWith(tenantIds);
-        _catalog.Invalidate(tenantIds);
         _shards?.Invalidate(tenantIds);
+        await _catalog.InvalidateAsync(tenantIds, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// 作用域释放：再让写过的租户失效一次
     /// </summary>
     /// <remarks>
-    /// 管道里的调用先提交、后释放作用域：此后的读取看到的是提交之后的行。可以重复调用
+    /// 管道里的调用先提交、后释放作用域：此后的读取看到的是提交之后的行。可以重复调用。缓存后端故障只记错误日志、不抛出：写入已经提交，作用域释放不能失败
     /// </remarks>
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         if (_written.Count == 0)
         {
@@ -226,7 +243,36 @@ public sealed class TenantRecordStore : ITenantAdministration, IDisposable
 
         string[] written = [.. _written];
         _written.Clear();
-        _catalog.Invalidate(written);
         _shards?.Invalidate(written);
+        try
+        {
+            // 释放时没有调用方的取消令牌，也不应被取消：这一次失效决定已提交的写入多快对别的实例可见
+            await _catalog.InvalidateAsync(written, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (FrameworkException exception) when (exception.Code == CachingErrors.StoreUnavailable)
+        {
+            LogInvalidationFailed(_logger, written.Length, exception);
+        }
     }
+
+    /// <summary>
+    /// 同步释放：等待 <see cref="DisposeAsync"/> 完成
+    /// </summary>
+    /// <remarks>
+    /// 容器同步释放作用域时走这里；内存缓存同步完成，跨进程缓存会阻塞到失效写完，应优先异步释放作用域
+    /// </remarks>
+    public void Dispose()
+    {
+        var pending = DisposeAsync();
+        if (!pending.IsCompletedSuccessfully)
+        {
+            pending.AsTask().GetAwaiter().GetResult();
+        }
+    }
+
+    /// <summary>
+    /// 释放时失效失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "Invalidating the cached catalog entries of {Count} tenants after the write failed because the cache is unavailable; other instances see the change once their cached entries expire.")]
+    private static partial void LogInvalidationFailed(ILogger logger, int count, Exception exception);
 }

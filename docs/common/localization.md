@@ -310,7 +310,7 @@ Baggage 随调用传播：HTTP 的 `baggage` 头、CloudEvents 的扩展属性�
 
 ## 数据库翻译 Provider
 
-`Localization.Database` 把翻译存进关系数据库，运营人员改了译文，应用不重新发布就生效。它是 `localization.resources@1` 的显式 Provider，装配后顶替默认的内存实现，依赖 `persistence.relational@1`：
+`Localization.Database` 把翻译存进关系数据库，运营人员改了译文，应用不重新发布就生效。它是 `localization.resources@1` 的显式 Provider，装配后顶替默认的内存实现，依赖 `persistence.relational@1` 与 `caching.local@1`（翻译版本戳放在 `ICache` 里；Standard 组合包已带内存缓存，自己挑特性的宿主要加 `InMemoryCachingFeature`）：
 
 ```csharp
 builder.AddXiHan(xihan => xihan
@@ -330,8 +330,11 @@ modelBuilder.ApplyPersistenceConventions(Database);
 快照的加载：
 
 1. 宿主进入服务状态后，`MessageTranslationLoader` 经完整管道首次加载：按 ID 分页读取（每页 1000 条），最多 `MaxTranslations` 条，超出的不加载并记警告；读完后整份替换快照。宿主就绪之前只有嵌入目录的文案。
-2. 之后按 `RefreshIntervalSeconds` 周期刷新，`0` 关闭周期刷新。
-3. 加载失败时保留上一份快照，失败记到 `LastError`，健康项 `localization.database.translations` 报 Degraded，应用仍在服务。
+2. 之后按 `ChangeCheckIntervalSeconds`（缺省 1 秒）核对 `ICache` 里的翻译版本戳（键 `localization:translations:version`），变了就重新加载；`0` 关闭核对。
+3. 另按 `RefreshIntervalSeconds` 周期刷新兜底，覆盖绕过写入方直接改表与版本戳丢失；`0` 关闭周期刷新。
+4. 加载失败时保留上一份快照，失败记到 `LastError`，健康项 `localization.database.translations` 报 Degraded，应用仍在服务。
+
+查找是同步的，翻译仍在进程内快照里，`ICache` 只承载跨实例的信号。装了两级缓存（`Caching.Redis` + `Caching.Hybrid`）时核对版本戳是本机一级缓存命中，别的实例换了版本戳经 Redis 的变更通知让它失效；只装 Redis 时 `ICache` 仍是进程内的，别的实例只能等周期刷新。重新加载彼此串行，读版本戳遇到缓存后端故障时跳过这次核对。
 
 `MessageTranslation.Locale` 列最长 35 个字符，与区域名文法的上限一致。已有表的这一列更短时要手工放宽（SqlSugar 的 `InitTables` 不改已有列的长度），做法见 [Localization.Database](/packages/localization-database)。
 
@@ -368,11 +371,12 @@ public sealed class SetTranslations(MessageTranslationStore store) : IOperation<
 
 操作的登记、请求类型的序列化上下文与权限定义见[操作契约](/web/operations)。`MessageTranslationEntry` 在构造时校验：键必须符合消息键文法，区域规范化大小写，模板不能为空白，不合法抛出 `ArgumentException`。`RemoveAsync` 按键与区域批量删除，不存在的项返回 `LOCALIZATION_NOTFOUND_001`；`ListAsync(locale, skip, take)` 按键排序分页列出。
 
-写入要等这次调用的事务提交后才落库。新译文在下一次周期刷新时生效；要立即生效，在写入的调用成功返回之后调用 `MessageTranslationLoader.ReloadAsync`，不要在同一个操作里调用，那时事务还没提交。
+写入要等这次调用的事务提交后才落库，所以 `MessageTranslationStore` 在作用域释放时（调用已提交）才经 `MessageTranslationLoader.PublishChangeAsync` 换版本戳：本实例立即重新加载，其他实例在 `ChangeCheckIntervalSeconds` 内重新加载，不用再手动调用 `ReloadAsync`。换版本戳遇到缓存后端故障只记错误日志：写入已经提交，本实例照常重新加载，其他实例等周期刷新。绕过 `MessageTranslationStore` 直接改表后，调用 `PublishChangeAsync` 让所有实例重新加载；`ReloadAsync` 只重新加载本实例。
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Localization:Database:RefreshIntervalSeconds` | 非负数 | 300 | 周期刷新的间隔，`0` 只在启动后加载一次 |
+| `XiHan:Localization:Database:ChangeCheckIntervalSeconds` | 非负数 | 1 | 核对翻译版本戳的间隔，`0` 不核对（其他实例只靠周期刷新看到写入） |
+| `XiHan:Localization:Database:RefreshIntervalSeconds` | 非负数 | 300 | 周期刷新的间隔，`0` 关闭周期刷新 |
 | `XiHan:Localization:Database:MaxTranslations` | 正整数 | 100000 | 快照的条数上限 |
 
 持久化 Provider 的装配见[持久化与 Provider](/persistence/overview)。

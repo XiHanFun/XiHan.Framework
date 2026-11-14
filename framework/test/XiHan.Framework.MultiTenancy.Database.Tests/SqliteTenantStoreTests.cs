@@ -82,7 +82,7 @@ public sealed class SqliteTenantStoreTests
         });
         Assert.True(written.IsSuccess, written.ToString());
         Assert.Equal("Acme Corp", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
-        reader.Services.GetRequiredService<DatabaseTenantStore>().InvalidateAll();
+        await reader.Services.GetRequiredService<DatabaseTenantStore>().InvalidateAllAsync(CancellationToken.None);
         Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         Assert.False((await store.FindAsync("dormant-01", CancellationToken.None)).ValueOrThrow().HasValue);
         Assert.Equal(["acme"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));

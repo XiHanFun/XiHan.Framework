@@ -35,7 +35,7 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 
 ## 配置
 
-`MultiTenancyOptions.FromConfiguration` 读取 `XiHan:MultiTenancy` 下的五个键：
+`MultiTenancyOptions.FromConfiguration` 读取 `XiHan:MultiTenancy` 下的四个键：
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
@@ -43,8 +43,8 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | `RequireTenant` | `bool` | `false` | 没有租户的调用返回 `MULTITENANCY_VALIDATION_002` |
 | `ValidateAgainstStore` | `bool` | `true` | 租户必须在存储中存在且启用；关闭后只校验文法 |
 | `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型 |
-| `ShardCacheSize` | `int` | 10000 | `TenantStoreShardResolver` 按租户缓存分片结果的条目上限，满时整体清空；必须是正整数 |
-| `ShardCacheTimeToLiveSeconds` | 秒 | 30 | 分片缓存条目的存活时间；0 不过期 |
+
+以前的 `ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已删除（`TenantStoreShardResolver` 不再缓存），配置里留着也被忽略。
 
 ```json
 {
@@ -71,10 +71,10 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | `Resolution.BaggageTenantResolver` | 读 Baggage `xihan.tenant`，由进程内建上下文的地方放进去；HTTP、gRPC、MCP 入站不收这个键（ADR-0121） |
 | `Resolution.TenantResolutionMiddleware` | Tenant 阶段的中间件 |
 | `MultiTenancyOptions` | 选项，见上表 |
-| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantIds)`、`InvalidateAll()` |
-| `Tenants.ITenantAdministration` | 可选的租户管理：`UpsertAsync(tenants)`（整份覆盖）、`RemoveAsync(tenantIds)`（不存在为 `MULTITENANCY_NOTFOUND_001`），逐项结果与入参同序，写入后失效目录与分片缓存；内存与数据库实现都提供 |
+| `Sharding.ITenantShardResolver` | 分片解析器：`ResolveAsync` → `Result<Maybe<TenantShard>>`、`Invalidate(tenantIds)`、`InvalidateAll()`（自己缓存的实现靠它们失效） |
+| `Tenants.ITenantAdministration` | 可选的租户管理：`UpsertAsync(tenants)`（整份覆盖）、`RemoveAsync(tenantIds)`（不存在为 `MULTITENANCY_NOTFOUND_001`），逐项结果与入参同序，写入后失效目录缓存并通知分片解析器；内存与数据库实现都提供 |
 | `Sharding.TenantShard` | 分片：`TenantId`、`ConnectionString`、`Provider`（转小写，可空）、`Properties` |
-| `Sharding.TenantStoreShardResolver` | 从租户属性推出分片的缺省解析器，按租户有界缓存；`FromProperties(tenant)` 不带缓存地推出单个租户的分片 |
+| `Sharding.TenantStoreShardResolver` | 从租户属性推出分片的缺省解析器，构造参数 `(ITenantStore, ILoggerFactory)`；自己不缓存，每次读租户存储，`Invalidate` / `InvalidateAll` 什么也不做（只校验入参）；`FromProperties(tenant)` 推出单个租户的分片 |
 | `Sharding.TenantShardKeys` | 租户属性键 `ConnectionString`、`DatabaseProvider`、前缀 `Shard.`，绑定属性键 `tenant`、`provider` |
 | `Sharding.TenantShardInvocationExtensions` | `FindTenantShard()` / `SetTenantShard(shard)`：调用上下文里的分片 |
 | `Sharding.TenantShardBinding` | `Resolve(scopedServices, bindingName, bindingType, fallback)`：持久化 Provider 创建客户端时取分片连接绑定 |
@@ -135,7 +135,7 @@ public static class ShardInfo
 - 解析顺序就是 `ITenantResolver` 的注册顺序。Provider 先注册 `ClaimTenantResolver` 再注册 `BaggageTenantResolver`，已认证主体所属的租户优先于调用方自报的租户；主体没有租户声明时 Baggage 生效，中间件只核对文法与存储，不判断主体是否属于该租户。
 - 默认租户同样经过文法与存储校验；关闭存储核对后安全上下文里没有显示名。
 - 分片解析失败（租户存储不可达）返回 `MULTITENANCY_UNAVAILABLE_002`，调用失败，不降级为共库。
-- `TenantStoreShardResolver` 缓存"无分片"与未知租户的结果；条目数达到 `ShardCacheSize` 时整体清空，不逐条淘汰；条目过了 `ShardCacheTimeToLive` 即重新读存储；租户连接变更后调用 `Invalidate`（只作用于本实例）。
+- `TenantStoreShardResolver` 不缓存：每次解析读租户存储，从属性推出分片的开销是一次字典遍历。缓存与失效只在租户存储一处（数据库租户存储走 `ICache`，写入时所有实例一起失效），租户迁库、改连接串、删除经租户管理写入后，下一次解析就用上新结果（ADR-0229）。自己实现的解析器仍可以缓存，要多实例一致就把缓存放进 `ICache`。
 - Baggage 里的租户只来自进程内建上下文的地方（消息派发、作业、工作流、命令行宿主）；HTTP、gRPC、MCP 的网络入站不收这个键（ADR-0121），这些调用方的租户只来自认证。CloudEvents 入站的 `xihantenant` 经消息派发进来，由宿主给端点加的权限把关。当前租户经 `context.GetSecurity().Tenant` 读取，没有环境态访问器。
 - 分库的表结构由应用管理；租户属性 `ConnectionString` 有值即分库，`Shard.<key>` 透传。
 - `TenantShardScope` 必须在作用域首次创建持久化客户端之前绑定；之后再绑定或改绑另一分片抛出 `InvalidOperationException`，同一分片重复绑定无副作用。`BindTenantAsync` 不看租户是否启用、不受应用状态影响；没有分片解析器时成功且不绑定。
@@ -161,4 +161,4 @@ public static class ShardInfo
 - [MultiTenancy.InMemory](./multitenancy-inmemory)
 - [MultiTenancy.Database](./multitenancy-database)
 - [Conformance 一致性套件](./conformance)
-- 规范：RFC-0007《多租户》；ADR-0018、ADR-0057
+- 规范：RFC-0007《多租户》；ADR-0018、ADR-0057、ADR-0229

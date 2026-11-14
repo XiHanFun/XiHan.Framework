@@ -3,6 +3,8 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Caching.Abstractions;
+using XiHan.Framework.Caching.Abstractions.Serialization;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
@@ -23,7 +25,7 @@ namespace XiHan.Framework.Security.Database;
 /// 数据库授权的能力包入口
 /// </summary>
 /// <remarks>
-/// 只提供 <c>security.authorization@1</c>（授予在数据库里），依赖 <c>persistence.relational@1</c>；认证仍由 <c>Security.InMemory</c>（ApiKey）、<c>Security.Jwt</c> 或 <c>Security.OpenIdConnect</c> 提供。装配后顶替默认内存实现的授权部分，内存实现只剩认证。被选为授权能力时登记启动核对，核对操作契约引用的策略（ADR-0080、ADR-0085）
+/// 只提供 <c>security.authorization@1</c>（授予在数据库里），依赖 <c>persistence.relational@1</c> 与 <c>caching.local@1</c>（授予缓存走 <c>ICache</c>，多实例装两级缓存即一致，ADR-0229）；认证仍由 <c>Security.InMemory</c>（ApiKey）、<c>Security.Jwt</c> 或 <c>Security.OpenIdConnect</c> 提供。装配后顶替默认内存实现的授权部分，内存实现只剩认证。被选为授权能力时登记启动核对，核对操作契约引用的策略（ADR-0080、ADR-0085）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseSecurityFeature : IFeature
@@ -43,6 +45,7 @@ public sealed class DatabaseSecurityFeature : IFeature
         [
             new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
             new CapabilityRequirement(PersistenceCapabilities.Relational, PersistenceCapabilities.Version),
+            new CapabilityRequirement(CachingCapabilities.Local, CachingCapabilities.Version),
         ],
         Contributes = new Contributions
         {
@@ -62,6 +65,8 @@ public sealed class DatabaseSecurityFeature : IFeature
         context.Services.TryAddSingleton(SecurityOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton(DatabaseSecurityOptions.FromConfiguration(context.Configuration));
         context.Services.AddRepository<PermissionGrantRecord, Guid>();
+        // 授予缓存的值类型交给跨进程缓存的序列化器，应用的序列化上下文不必认识它们
+        CacheSerializerRegistration.AddTypeInfo(context.Services, GrantCacheJsonContext.Default);
         context.Services.AddSingleton<DatabasePermissionGrantStore>();
         context.Services.TryAddScoped<PermissionGrantRecordStore>();
         context.Services.TryAddScoped<IPermissionGrantAdministration>(static sp => sp.GetRequiredService<PermissionGrantRecordStore>());

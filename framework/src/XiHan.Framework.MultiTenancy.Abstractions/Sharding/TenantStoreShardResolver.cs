@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
@@ -12,7 +11,8 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 /// 从 <see cref="ITenantStore"/> 的租户属性推出分片
 /// </summary>
 /// <remarks>
-/// <c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。结果按租户缓存（有界，满时整体清空），条目过了 <see cref="MultiTenancyOptions.ShardCacheTimeToLive"/> 即重新读租户存储：多实例部署里失效通知只到本实例（ADR-0193）
+/// <c>ConnectionString</c> 有值即分库，<c>DatabaseProvider</c> 为提供者名，<c>Shard.*</c> 透传。自己不缓存：每次解析读租户存储，缓存与失效只在租户存储一处（数据库租户存储走 <c>ICache</c>，所有实例一起失效），
+/// 租户迁库、改连接串、删除经租户管理写入后，所有实例的下一次解析就用上新结果（ADR-0229；以前另有一层按存活时间过期的进程内缓存，别的实例要等它过期，ADR-0193）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class TenantStoreShardResolver : ITenantShardResolver
@@ -23,39 +23,6 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     private readonly ITenantStore _store;
 
     /// <summary>
-    /// 缓存容量
-    /// </summary>
-    private readonly int _capacity;
-
-    /// <summary>
-    /// 缓存条目的存活时间，为空不过期
-    /// </summary>
-    private readonly TimeSpan? _timeToLive;
-
-    /// <summary>
-    /// 时钟
-    /// </summary>
-    private readonly TimeProvider _clock;
-
-    /// <summary>
-    /// 租户 ID → 分片与过期时刻（无分片也缓存，避免每次调用都查存储）
-    /// </summary>
-    private readonly ConcurrentDictionary<string, (Maybe<TenantShard> Shard, DateTimeOffset? ExpiresAt)> _cache = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// 保护代数与「核对代数再写回」的锁
-    /// </summary>
-    private readonly Lock _gate = new();
-
-    /// <summary>
-    /// 缓存的代数
-    /// </summary>
-    /// <remarks>
-    /// 每次失效加一。解析在读租户存储之前记下它，写回缓存时不一致就丢弃：失效之前开始的解析可能读到写入提交之前的租户（ADR-0194）
-    /// </remarks>
-    private long _generation;
-
-    /// <summary>
     /// 日志
     /// </summary>
     private readonly ILogger _logger;
@@ -63,39 +30,17 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
     /// <summary>
     /// 创建
     /// </summary>
-    public TenantStoreShardResolver(ITenantStore store, MultiTenancyOptions options, ILoggerFactory loggerFactory, TimeProvider clock)
+    public TenantStoreShardResolver(ITenantStore store, ILoggerFactory loggerFactory)
     {
-        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _logger = loggerFactory.CreateLogger<TenantStoreShardResolver>();
         _store = store ?? throw new ArgumentNullException(nameof(store));
-        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _capacity = options.ShardCacheSize;
-        _timeToLive = options.ShardCacheTimeToLive;
     }
-
-    /// <summary>
-    /// 已缓存的租户数
-    /// </summary>
-    public int CachedCount => _cache.Count;
 
     /// <inheritdoc />
     public async ValueTask<Result<Maybe<TenantShard>>> ResolveAsync(string tenantId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenantId);
-        var now = _clock.GetUtcNow();
-        // 过期的条目当作没有：重新读租户存储，别的实例改过的连接串在存活时间之后生效
-        if (_cache.TryGetValue(tenantId, out var cached) && (cached.ExpiresAt is not { } expiresAt || now < expiresAt))
-        {
-            return Result.Success(cached.Shard);
-        }
-
-        long generation;
-        lock (_gate)
-        {
-            generation = _generation;
-        }
-
         var read = await _store.FindAsync(tenantId, cancellationToken).ConfigureAwait(false);
         if (!read.TryGetValue(out var found))
         {
@@ -104,48 +49,28 @@ public sealed partial class TenantStoreShardResolver : ITenantShardResolver
             return new Error(MultiTenancyErrors.ShardUnavailable, MultiTenancyMessages.ShardUnavailable, MessageArguments.Of(("tenantId", tenantId), ("reason", read.Error.Code)), read.Error);
         }
 
-        var shard = found.TryGetValue(out var info) ? FromProperties(info) : Maybe.None<TenantShard>();
-        lock (_gate)
-        {
-            // 读存储之后有过失效：这次结果可能早于那次写入的提交，照常返回但不缓存
-            if (generation == _generation)
-            {
-                // 有界：满了整体清空，比逐条淘汰简单且足够（租户数远小于容量）
-                if (_cache.Count >= _capacity)
-                {
-                    _cache.Clear();
-                }
-
-                _cache[tenantId] = (shard, now + _timeToLive);
-            }
-        }
-
-        return Result.Success(shard);
+        return Result.Success(found.TryGetValue(out var info) ? FromProperties(info) : Maybe.None<TenantShard>());
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 本实现不缓存，什么也不做：失效由租户存储负责（数据库租户存储经 <c>TenantRecordStore</c> 写入时失效）
+    /// </remarks>
     public void Invalidate(IReadOnlyList<string> tenantIds)
     {
         ArgumentNullException.ThrowIfNull(tenantIds);
-        lock (_gate)
+        foreach (var tenantId in tenantIds)
         {
-            _generation++;
-            foreach (var tenantId in tenantIds)
-            {
-                ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
-                _cache.TryRemove(tenantId, out _);
-            }
+            ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
         }
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 本实现不缓存，什么也不做
+    /// </remarks>
     public void InvalidateAll()
     {
-        lock (_gate)
-        {
-            _generation++;
-            _cache.Clear();
-        }
     }
 
     /// <summary>

@@ -12,7 +12,7 @@ namespace XiHan.Framework.MultiTenancy.Database;
 /// 数据库租户目录选项
 /// </summary>
 /// <remarks>
-/// 从配置节 <c>XiHan:MultiTenancy:Database</c> 显式读取：<c>CacheSize</c>、<c>CacheTimeToLiveSeconds</c>（0 不过期）
+/// 从配置节 <c>XiHan:MultiTenancy:Database</c> 显式读取：<c>CacheTimeToLiveSeconds</c>（正数）。缓存容量由提供 <c>caching.local</c> 的 Provider 管（ADR-0229）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record DatabaseMultiTenancyOptions
@@ -23,27 +23,15 @@ public sealed record DatabaseMultiTenancyOptions
     public const string ConfigurationSection = "XiHan:MultiTenancy:Database";
 
     /// <summary>
-    /// <see cref="DatabaseTenantStore"/> 的缓存容量（租户数，不存在的租户也占一条）
+    /// <see cref="DatabaseTenantStore"/> 缓存条目的存活时间
     /// </summary>
     /// <remarks>
-    /// 默认 10000，满时整体清空
+    /// 默认 30 秒。经 <see cref="TenantRecordStore"/> 的写入（停用、改连接串、删除）立即对所有共用缓存的实例生效，存活时间只是兜底：失效通知丢失、缓存后端在释放时的失效里故障，或绕过它直接改表时，旧租户信息最多留这么久。必须为正，不再有「不过期」（ADR-0229）
     /// </remarks>
-    public int CacheSize
+    public TimeSpan CacheTimeToLive
     {
         get => field;
-        init => field = value >= 1 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The cache size must be at least 1.");
-    } = 10_000;
-
-    /// <summary>
-    /// 缓存条目的存活时间
-    /// </summary>
-    /// <remarks>
-    /// 默认 30 秒，<see langword="null"/> 不过期（只靠 <see cref="DatabaseTenantStore.Invalidate"/> 失效）
-    /// </remarks>
-    public TimeSpan? CacheTimeToLive
-    {
-        get => field;
-        init => field = value is null || value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The cache time to live must be positive.");
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The cache time to live must be positive.");
     } = TimeSpan.FromSeconds(30);
 
     /// <summary>
@@ -53,19 +41,12 @@ public sealed record DatabaseMultiTenancyOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new DatabaseMultiTenancyOptions();
-        if (configuration[$"{ConfigurationSection}:CacheSize"] is { } size)
-        {
-            options = int.TryParse(size, NumberStyles.None, CultureInfo.InvariantCulture, out var parsed) && parsed >= 1
-                ? options with { CacheSize = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:CacheSize must be a positive integer, but was '{size}'.");
-        }
-
         if (configuration[$"{ConfigurationSection}:CacheTimeToLiveSeconds"] is { } ttl)
         {
-            // 0 表示不过期；负数与非数字是配置错误
-            options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
-                ? options with { CacheTimeToLive = seconds == 0 ? null : TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:CacheTimeToLiveSeconds must be a non-negative number, but was '{ttl}'.");
+            // 0、负数与非数字都是配置错误：缓存条目必须会过期，失效丢失时才有上限
+            options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
+                ? options with { CacheTimeToLive = TimeSpan.FromSeconds(seconds) }
+                : throw new ArgumentException($"{ConfigurationSection}:CacheTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
         }
 
         return options;

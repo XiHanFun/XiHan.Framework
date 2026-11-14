@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.MultiTenancy.Conformance;
@@ -26,7 +27,7 @@ public sealed class DatabaseTenantAdministrationConformanceTests : TenantAdminis
     /// <inheritdoc />
     protected override async ValueTask<ITenantStore> StartAsync()
     {
-        _host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseMultiTenancyFeature>());
+        _host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseMultiTenancyFeature>());
         return _host.Services.GetRequiredService<ITenantStore>();
     }
 

@@ -228,3 +228,4 @@
 | [0226](0226-插件投递带订阅方式.md) | 插件协议：`HandleEventRequest` 带这次投递的订阅方式 `mode`，插件只交给以这种方式订阅的处理器 | 已采纳 |
 | [0227](0227-冷启动与常驻内存预算的口径.md) | 冷启动 JIT 下 ≤ 100 ms 阻断、Native AOT 下 50 ms 只报告；常驻内存只算框架额外，≤ 15 MB 阻断 | 已采纳 |
 | [0228](0228-Provider契约的演进与查询修订号.md) | Provider 契约的演进（API 审查 R2）：新能力走可选接口、不在已有接口上加成员；交给 Provider 的 12 个查询带修订号常量 `Revision`，Provider 在入口以编译时的常量 `Validate(XxxQuery.Revision)` 核对，用到不认识的条件即 `KERNEL_VALIDATION_007`；架构测试 `QueryRevisionTests` 守护 |
+| [0229](0229-框架缓存走ICache与跨实例失效.md) | 框架会被写入改变的缓存走 `ICache`：`Caching.Abstractions` 新增代数缓存区 `GenerationCache<T>`（代数也放进缓存，失效之前开始的读取跨实例也不算命中）与 `CacheSerializerRegistration.AddTypeInfo`；两级缓存读 L2 途中有失效不回填 L1；授予与租户目录改用它、失效作用于所有实例，分片解析器不再缓存，数据库翻译经 `ICache` 版本戳跨实例重新加载；缓存故障时读取直查、写入时失效失败即回滚；修订 ADR-0027、取代 ADR-0193 | 已采纳 |

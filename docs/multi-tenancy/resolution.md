@@ -180,10 +180,8 @@ public sealed class SubdomainTenantResolver(IHttpContextAccessor http) : ITenant
 | `RequireTenant` | `bool` | `false` | 为真时没有租户的调用返回 `MULTITENANCY_VALIDATION_002` |
 | `ValidateAgainstStore` | `bool` | `true` | 为真时租户必须在存储中存在且启用；为假时只校验文法 |
 | `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型，不能为空 |
-| `ShardCacheSize` | `int` | 10000 | 分片解析器按租户缓存结果的条目上限，满时整体清空；必须是正整数 |
-| `ShardCacheTimeToLiveSeconds` | 秒 | 30 | 分片缓存条目的存活时间，过了即重新读租户存储；0 不过期 |
 
-布尔值只接受 `true` / `false`，`ShardCacheSize` 只接受正整数，其他写法在启动时抛出 `ArgumentException`。
+布尔值只接受 `true` / `false`，其他写法在启动时抛出 `ArgumentException`。以前的 `ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已删除（缺省分片解析器不再缓存，见[租户分片与分库](/multi-tenancy/sharding)），配置里留着也被忽略。
 
 ```json
 {
@@ -271,7 +269,7 @@ HTTP、gRPC、MCP 入站不收这个键。网络调用方的租户只来自认�
 
 ### 禁用一个租户后它的调用会怎样
 
-Tenant 阶段核对存储时发现 `IsEnabled` 为假，调用以 `MULTITENANCY_DENIED_001`（HTTP 403）结束，不进入授权与业务代码。内存实现运行时用 `InMemoryTenantStore.Set` 改写记录即可生效；数据库目录的生效时机受缓存存活时间影响，见[数据库租户目录](/multi-tenancy/database)。
+Tenant 阶段核对存储时发现 `IsEnabled` 为假，调用以 `MULTITENANCY_DENIED_001`（HTTP 403）结束，不进入授权与业务代码。运行时经租户管理 `ITenantAdministration.UpsertAsync` 把 `IsEnabled` 写成假：内存实现写入即生效；数据库目录在写入的调用提交之后立即生效，多实例部署要装两级缓存才能让所有实例一起生效，见[数据库租户目录](/multi-tenancy/database)。
 
 ### 不需要多租户的应用要关掉它吗
 

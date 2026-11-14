@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Localization.Database.Translations;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Persistence.InMemory;
@@ -22,7 +23,7 @@ public sealed class DatabaseLocalizationHealthTests
     public async Task Health_IsStartedBeforeTheFirstLoad_ThenReady()
     {
         await using var host = await TestHost.StartAsync(
-            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseLocalizationFeature>(),
+            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseLocalizationFeature>(),
             [new("XiHan:Localization:Database:RefreshIntervalSeconds", "0")]);
         var loader = host.Services.GetRequiredService<MessageTranslationLoader>();
 

@@ -105,17 +105,18 @@ public sealed class TenantContractTests
             ("XiHan:MultiTenancy:ValidateAgainstStore", "false"),
             ("XiHan:MultiTenancy:TenantClaim", "tid"),
             ("XiHan:MultiTenancy:ShardCacheSize", "256")));
+        // 分片解析器不再缓存（ADR-0229）：旧的 ShardCacheSize / ShardCacheTimeToLiveSeconds 键不再读取，写了也不报错
+        Assert.Equal(options, MultiTenancyOptions.FromConfiguration(Build(
+            ("XiHan:MultiTenancy:DefaultTenant", "acme"),
+            ("XiHan:MultiTenancy:RequireTenant", "true"),
+            ("XiHan:MultiTenancy:ValidateAgainstStore", "false"),
+            ("XiHan:MultiTenancy:TenantClaim", "tid"),
+            ("XiHan:MultiTenancy:ShardCacheTimeToLiveSeconds", "-1"))));
 
         Assert.Equal("acme", options.DefaultTenant);
         Assert.True(options.RequireTenant);
         Assert.False(options.ValidateAgainstStore);
         Assert.Equal("tid", options.TenantClaim);
-        Assert.Equal(256, options.ShardCacheSize);
-        Assert.Equal(10_000, MultiTenancyOptions.FromConfiguration(Build()).ShardCacheSize);
-        foreach (var invalid in new[] { "0", "-1", "many", "1.5" })
-        {
-            Assert.Throws<ArgumentException>(() => MultiTenancyOptions.FromConfiguration(Build(("XiHan:MultiTenancy:ShardCacheSize", invalid))));
-        }
 
         var defaults = MultiTenancyOptions.FromConfiguration(Build());
         Assert.Null(defaults.DefaultTenant);

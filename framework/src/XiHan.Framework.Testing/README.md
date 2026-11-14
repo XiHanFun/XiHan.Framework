@@ -10,6 +10,7 @@
 * `StubFeature` 注入配置、启动、停止行为并记录事件
 * 不依赖宿主就能构造调用上下文
 * 内存里的通行密钥认证器，按 WebAuthn 格式生成可篡改的响应
+* `FaultyCache`：可以随时切换成「缓存后端不可达」的 `ICache` 包装，测组件在缓存故障时的行为
 
 ## 如何使用
 
@@ -36,6 +37,18 @@ var result = await host.InvokeAsync(static context =>
 });
 ```
 
+在装配特性之前把 `FaultyCache` 登记为 `ICache` 单例，测试中途让缓存后端「断线」：
+
+```csharp
+var cache = new FaultyCache(innerCache);
+await using var host = await TestHost.StartAsync(b => b.UseFeature(feature), services: s => s.AddSingleton<ICache>(cache));
+
+// 之后每个 ICache 操作都抛出携带 CACHING_UNAVAILABLE_001 的 FrameworkException
+cache.Failing = true;
+```
+
+几个宿主登记同一个实例时共用一份缓存，可以模拟多实例共用的缓存后端。
+
 ## 主要类型
 
 此库提供的主要类型：
@@ -45,6 +58,7 @@ var result = await host.InvokeAsync(static context =>
 * `TestManifests`：用能力 ID 文本构造清单
 * `TestInvocationContext`：不依赖宿主的调用上下文
 * `WebAuthnTestAuthenticator`：测试用的通行密钥认证器，生成注册与认证响应
+* `FaultyCache`：可切换成缓存后端不可达的 `ICache` 包装
 
 ## 更多文档
 

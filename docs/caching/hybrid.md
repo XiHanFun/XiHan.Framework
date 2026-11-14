@@ -58,7 +58,8 @@ app.Run();
 ## 读写规则
 
 - 读：L1 命中直接返回，未命中读 L2，命中后回填 L1；批量读只把 L1 未命中的键一次交给 L2。
-- 写与删：先 L2 再 L1，L2 失败时 L1 不留下别的实例看不到的值；`GetOrCreateAsync` 两级都未命中才执行工厂。
+- 回填：读 L2 之前记下这个键的失效轮次，回填前核对；读的途中收到过这个键的失效（别的实例刚写了它），读回的值可能早于那次写入，不回填 L1，下一次读取再去 L2。`GetAsync`、`GetManyAsync`、`GetOrCreateAsync` 都按这条规则（ADR-0229）。
+- 写与删：先 L2 再 L1，L2 失败时 L1 不留下别的实例看不到的值；写入后照旧写进 L1；`GetOrCreateAsync` 两级都未命中才执行工厂。
 - L1 的存活时间是条目自己的过期时长与 `LocalTimeToLive` 的较小者，滑动过期在 L1 里按绝对时间处理；`LocalCapacity` 满时淘汰最久未访问的条目。
 - L1 存对象引用，取回的对象不得修改，与内存实现的约定一致。
 
@@ -67,6 +68,10 @@ app.Run();
 跨实例失效依赖 L2 存储的变更通知 `ICacheChangeFeed`。Redis 存储实现了它：每次写入与删除后同步通知本实例的订阅者，并以发后不等的方式向频道 `<KeyPrefix>__changes` 发布，其他实例收到后删掉 L1 里的这些键或前缀（`CacheChange.Keys` / `CacheChange.Prefix`）。`HybridObjectCache.InvalidatesAcrossInstances` 表示是否订阅到了。通知是尽力而为的，断线期间可能丢失；`XiHan:Caching:Redis:PublishChanges` 设为 `false` 可以关掉发布。
 
 L2 的存储没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridObjectCache` 的写入（别的实例的写入，本实例直接经 `ISharedCache` 或管理界面的写入）不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`。需要强一致的键直接用 `ISharedCache`，不经 L1。
+
+通知和读取会赛跑：L1 未命中时去读 L2，读的途中另一个实例写了这个键，变更通知先到（L1 里本来没有，删了个空），读回的旧值后到。为此 L1 按键的散列分 64 个条带记失效轮次：删除一个键让它所在条带的轮次加一，按前缀删除让全部条带加一，回填前轮次变了就不回填。条带数固定，内存有界；代价是与本键同条带的无关失效也会挡掉一次回填，只多读一次 L2。
+
+框架自己的授予缓存、租户目录缓存与翻译版本戳都走 `ICache`（[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），多实例部署装上 Redis 与两级缓存后，它们的命中都在 L1、判定与租户解析不出进程，一个实例写入后其他实例经变更通知立即失效。
 
 ## 键管理
 
@@ -175,6 +180,10 @@ L2 带变更通知（Redis）且通知没有丢时，别的实例一写入本实
 ### 单实例要不要装两级缓存
 
 不必要。单实例下 `ICache` 本来就是内存实现，没有网络往返可省。两级缓存的价值在于 L2 是 Redis 或远程存储、而读又很频繁的多实例部署。
+
+### 多实例部署只装 Redis 够吗
+
+装了 `Security.Database`、`MultiTenancy.Database` 或 `Localization.Database` 时不够。只装 Redis 时 `ICache` 仍是每个实例各自的内存实现，授予撤销、租户停用与新翻译在其他实例上要等存活时间（授予与租户目录缺省 30 秒，翻译等周期刷新，缺省 5 分钟）。再加 `HybridCachingFeature`，`ICache` 的失效才经 Redis 传到每个实例。
 
 ### 装了 Hybrid 之后 ISharedCache 也走 L1 吗
 
