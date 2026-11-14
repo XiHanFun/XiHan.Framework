@@ -11,7 +11,7 @@
 | 配置节 | `XiHan:Caching:Idempotency`（由提供 `caching.distributed` 的 Provider 读取） |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Caching.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容；`JsonCacheSerializer.CreateReflectionBased()` 标了 `RequiresUnreferencedCode` / `RequiresDynamicCode`，AOT 下不可用 |
-| 稳定性 | Stable；`CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions`、键管理与变更通知类型为 Preview |
+| 稳定性 | Stable；`CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions`、键管理与变更通知类型、`GenerationCache<T>` 系列、`CacheSerializerRegistration.AddTypeInfo` 与 `CacheTypeInfoSource` 为 Preview |
 
 ## 概述
 
@@ -21,6 +21,7 @@
 - `StoreDistributedLock` 用 `TryAddAsync` 写入 `lock:<resource>` 与唯一令牌、用 `TryRemoveAsync` 按令牌释放、用 `TryRefreshAsync` 按令牌续约，任何存储都能复用。
 - `IdempotencyMiddleware` 用 `TryAddAsync` 写「处理中」标记，用 `SetAsync` 写完成记录，用 `TryRemoveAsync` 清理。
 - `CacheStoreDistributedCache` 把 .NET 的 `IDistributedCache` 架在存储上。
+- `GenerationCache<T>` 架在 `ICache` 上：按范围失效、丢弃失效之前开始的读取的读穿缓存区，框架的授予缓存与租户目录缓存用它（ADR-0229）。
 
 本包另有两个可选接口给管理界面（`ICacheStoreInspector`、`ICacheInspector`）和一个给两级缓存的变更通知接口（`ICacheChangeFeed`），存储或缓存能做就实现，业务代码不依赖它们。
 
@@ -64,7 +65,9 @@ dotnet add package XiHan.Framework.Caching.Abstractions --prerelease
 | `CacheKey` | 键：非空、无空白与控制字符、不超过 `MaxLength`（512）、区分大小写；从字符串显式转换；`IsValid`、`IsValidPrefix`、`Validate` |
 | `CacheEntryOptions` | 过期：`Expires(ttl)`、`Sliding(window)`、`Default`（Provider 默认存活时间），二选一，`Validated()` 校验组合 |
 | `CacheEntry` | `ICacheStore.SetManyAsync` 的一项：键、值、该项自己的过期选项 |
-| `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 值序列化；`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`；`TryAddJsonSerializer` 供 Provider 按已有登记选序列化器 |
+| `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration` | 值序列化；`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`；`TryAddJsonSerializer` 供 Provider 按已有登记选序列化器，用应用登记的 `JsonSerializerOptions` 时把组件登记的类型元数据并在应用解析器之后；`AddTypeInfo(services, resolver)` 供组件登记自己放进缓存的类型的源生成上下文，同一个解析器只登记一次 |
+| `CacheTypeInfoSource` | `AddTypeInfo` 在容器里的登记（`Resolver`）；应用自己登记 `ICacheSerializer` 时从容器取出并进自己的解析器 |
+| `GenerationCache<T>`、`GenerationCacheKey`、`GenerationCacheEntry<T>` | 按范围失效的读穿缓存区：`GetOrLoadManyAsync(keys, load)` 批量读、未命中一次查源，`InvalidateAsync(scopes)` / `InvalidateAllAsync()` 换代数让范围或整个区失效；键是（范围，条目），`ForScope(scope)` 只有范围；`GenerationCacheEntry<T>`（区代数、范围代数、值）是跨进程缓存里的存储形状 |
 | `IDistributedLock`、`LockHandle`、`StoreDistributedLock`、`DistributedLockExtensions` | 租约锁：`TryAcquireAsync(resource, ttl)` 返回 `Maybe<LockHandle>`，结果式的 `AcquireAsync` 被占用时返回 `CACHING_CONFLICT_001`；句柄 `ReleaseAsync` / `DisposeAsync` 释放 |
 | `IdempotencyMiddleware`、`IdempotencyOptions` | Idempotency 阶段：按 Baggage `xihan.idempotency-key` 去重，回放结果与操作的响应（存储格式是内部的，记录带操作 ID 与响应）；`WasReplayed(context)` 判断结果是否来自回放 |
 | `CacheStoreDistributedCache`、`DistributedCacheServiceCollectionExtensions` | `IDistributedCache` 适配；`AddXiHanDistributedCache(services, store)` 幂等登记，已有登记不覆盖；`Translate` 换算过期选项 |
@@ -105,6 +108,7 @@ public sealed class OneShotGate(ICacheStore store)
 - `CacheStoreDistributedCache`：绝对过期两种写法取较早者，已过去的时刻抛 `ArgumentOutOfRangeException`；与滑动过期同时给时绝对优先；都不给时用 Provider 的默认存活时间（内存与 Redis 缺省 5 分钟）；同步成员阻塞等待异步存储。
 - `ICacheStoreInspector.RemoveByPrefixAsync` 与 `ICacheInspector.RemoveByPrefixAsync` 返回 `Result<long>`，空前缀或不合法的前缀返回 `CACHING_VALIDATION_004`、不访问后端；列键时不合法的前缀同样返回它；`CacheKeyQuery.PageSize` 为 1 到 `MaxPageSize`（1000），默认 100，越界不在构造时抛出，`ListKeysAsync`（返回 `Result<CacheKeyPage>`）以 `CACHING_VALIDATION_003` 返回、不访问后端（ADR-0084）。
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；本实例的订阅者同步收到通知，其他实例经后端转发、不回送给发出者；跨实例通知尽力而为，可能丢失。
+- `GenerationCache<T>`：区名是合法的缓存键文本、不超过 128 个字符，存活时间必须为正。区与每个范围各有一个随机代数，存在同一个 `ICache` 里，存活时间是条目的 10 倍；读取在查源之前取代数，写回的条目带着读取开始时的代数，两个代数都还是当前值才算命中，所以失效之前开始的读取写回的旧值不会被当作命中。结果与入参顺序一一对应，重复位置只查一次，空集合不触缓存；查源失败原样返回、不写缓存。键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`，段写成 `<长度>.<文本>`，含空白、控制字符或超过 128 个字符的换成 `#<SHA-256>`。缓存后端故障时读取直接查源、不写回，每个区每 10 秒最多一条警告；失效把 `CACHING_UNAVAILABLE_001` 抛给调用方。用法见[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)。
 
 | 错误码 | 含义 |
 | --- | --- |
@@ -123,4 +127,4 @@ public sealed class OneShotGate(ICacheStore store)
 - [缓存与分布式锁](/caching/basics)
 - [Caching.InMemory](./caching-inmemory)、[Caching.Redis](./caching-redis)、[Caching.Hybrid](./caching-hybrid)、[Caching.Remote](./caching-remote)
 - [Conformance 一致性套件](./conformance)
-- 规范：RFC-0006《缓存、分布式锁与幂等》；ADR-0012、ADR-0055、ADR-0058
+- 规范：RFC-0006《缓存、分布式锁与幂等》；ADR-0012、ADR-0055、ADR-0058、ADR-0229

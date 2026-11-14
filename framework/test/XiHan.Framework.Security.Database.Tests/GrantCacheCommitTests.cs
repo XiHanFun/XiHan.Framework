@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Persistence.InMemory;
 using XiHan.Framework.Security.Abstractions.Permissions;
@@ -26,7 +27,7 @@ public sealed class GrantCacheCommitTests
     [Fact]
     public async Task ReadBetweenTheRevokeAndItsCommit_DoesNotKeepTheRevokedGrantInTheCache()
     {
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseSecurityFeature>());
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseSecurityFeature>());
         var store = host.Services.GetRequiredService<IPermissionGrantStore>();
         (await host.InvokeAsync(static async context => await context.Services.GetRequiredService<PermissionGrantRecordStore>().GrantAsync([new PermissionGrant(_editor, "orders.write")], context.CancellationToken))).ThrowIfFailure();
         Assert.Equal(["orders.write"], (await store.GetGrantsAsync(_editor, null, CancellationToken.None)).ValueOrThrow());
@@ -46,7 +47,7 @@ public sealed class GrantCacheCommitTests
     [Fact]
     public async Task ReadBetweenTheGrantAndItsCommit_DoesNotHideTheNewGrant()
     {
-        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseSecurityFeature>());
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseSecurityFeature>());
         var store = host.Services.GetRequiredService<IPermissionGrantStore>();
         Assert.Empty((await store.GetGrantsAsync(_editor, null, CancellationToken.None)).ValueOrThrow());
 

@@ -12,7 +12,8 @@ namespace XiHan.Framework.Security.Conformance;
 /// <see cref="IPermissionGrantAdministration"/> 的一致性套件
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="StartAsync"/> 与 <see cref="AdministerAsync"/>，全部用例随之执行。每个用例先 <see cref="StartAsync"/> 得到一个空的授予表与读它的判定存储，再经 <see cref="AdministerAsync"/> 在一次调用里使用授予管理：持久化的实现要在调用的事务里写入（ADR-0158）
+/// 继承并实现 <see cref="StartAsync"/> 与 <see cref="AdministerAsync"/>，全部用例随之执行。每个用例先 <see cref="StartAsync"/> 得到一个空的授予表与读它的判定存储，再经 <see cref="AdministerAsync"/> 在一次调用里使用授予管理：持久化的实现要在调用的事务里写入（ADR-0158）。
+/// 判定存储有缓存的实现，写入之前读过的判定在写入之后也要立即看见变化（用例 5）；多实例部署要一致的实现覆写 <see cref="StartPeerAsync"/>，另一个实例在 <see cref="PeerVisibilityTimeout"/> 内看见变化（用例 6，ADR-0229）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class PermissionGrantAdministrationConformance
@@ -42,6 +43,22 @@ public abstract class PermissionGrantAdministrationConformance
     /// 用 <see cref="StartAsync"/> 启动的那张表；持久化的实现在调用的工作单元里执行，调用结束即提交
     /// </remarks>
     protected abstract ValueTask<T> AdministerAsync<T>(Func<IPermissionGrantAdministration, CancellationToken, ValueTask<T>> action);
+
+    /// <summary>
+    /// 启动读同一张表的另一个实例
+    /// </summary>
+    /// <remarks>
+    /// 在 <see cref="StartAsync"/> 之后调用，返回与那个实例共用持久化与缓存后端的另一个实例的判定存储。默认 <see langword="null"/>：实现不承诺多实例一致，用例 6 跳过
+    /// </remarks>
+    protected virtual ValueTask<IPermissionGrantStore?> StartPeerAsync() => ValueTask.FromResult<IPermissionGrantStore?>(null);
+
+    /// <summary>
+    /// 另一个实例看见变化的时限
+    /// </summary>
+    /// <remarks>
+    /// 失效经缓存后端的变更通知异步到达另一个实例（如 Redis 频道），给几秒余量；远小于缓存的存活时间，过了时限还看不见说明只靠过期收敛
+    /// </remarks>
+    protected virtual TimeSpan PeerVisibilityTimeout => TimeSpan.FromSeconds(5);
 
     /// <summary>
     /// 用例 1：授予逐项同序、已存在的幂等成功，判定立即看见
@@ -150,5 +167,60 @@ public abstract class PermissionGrantAdministrationConformance
         var listed = await AdministerAsync((grants, ct) => grants.ListAsync(query, ct)).ConfigureAwait(false);
         Assert.True(listed.IsSuccess, $"Listing the grants failed: {listed.Error}.");
         return listed.ValueOrThrow();
+    }
+
+    /// <summary>
+    /// 用例 5：写入之前读过的判定，写入之后立即看见授予与撤销
+    /// </summary>
+    /// <remarks>
+    /// 判定存储有缓存时，写入要让它失效，不能等存活时间
+    /// </remarks>
+    [Fact]
+    public async Task Changes_AreVisibleToChecksThatReadBeforeTheWrite()
+    {
+        var store = await StartAsync().ConfigureAwait(false);
+        var editor = GrantSubject.ForRole("editor");
+        Assert.Empty((await store.GetGrantsAsync(editor, "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+
+        await AdministerAsync((grants, ct) => grants.GrantAsync([_editorRead], ct)).ConfigureAwait(false);
+        Assert.Equal(["orders.read"], (await store.GetGrantsAsync(editor, "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+
+        await AdministerAsync((grants, ct) => grants.RevokeAsync([_editorRead], ct)).ConfigureAwait(false);
+        Assert.Empty((await store.GetGrantsAsync(editor, "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+    }
+
+    /// <summary>
+    /// 用例 6：另一个实例在时限内看见授予与撤销
+    /// </summary>
+    /// <remarks>
+    /// 另一个实例写入之前已经读过（缓存了旧结果），之后只能靠失效看见变化；<see cref="StartPeerAsync"/> 返回 <see langword="null"/> 时跳过
+    /// </remarks>
+    [Fact]
+    public async Task Changes_AreVisibleToAnotherInstance_WithoutWaitingForExpiry()
+    {
+        await StartAsync().ConfigureAwait(false);
+        var peer = await StartPeerAsync().ConfigureAwait(false);
+        Assert.SkipWhen(peer is null, "The implementation does not start a second instance; override StartPeerAsync when it promises consistency across instances.");
+        var editor = GrantSubject.ForRole("editor");
+        Assert.Empty((await peer.GetGrantsAsync(editor, "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+
+        await AdministerAsync((grants, ct) => grants.GrantAsync([_editorRead], ct)).ConfigureAwait(false);
+        await WithinAsync(async () => (await peer.GetGrantsAsync(editor, "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count == 1).ConfigureAwait(false);
+
+        await AdministerAsync((grants, ct) => grants.RevokeAsync([_editorRead], ct)).ConfigureAwait(false);
+        await WithinAsync(async () => (await peer.GetGrantsAsync(editor, "acme", CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().Count == 0).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 在 <see cref="PeerVisibilityTimeout"/> 内轮询到条件成立
+    /// </summary>
+    private async Task WithinAsync(Func<Task<bool>> condition)
+    {
+        var deadline = DateTimeOffset.UtcNow + PeerVisibilityTimeout;
+        while (!await condition().ConfigureAwait(false))
+        {
+            Assert.True(DateTimeOffset.UtcNow < deadline, $"The other instance did not see the change within {PeerVisibilityTimeout}.");
+            await Task.Delay(20).ConfigureAwait(false);
+        }
     }
 }

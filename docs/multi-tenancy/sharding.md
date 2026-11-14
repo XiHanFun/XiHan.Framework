@@ -10,9 +10,9 @@
 
 | 类型 | 说明 |
 | --- | --- |
-| `ITenantShardResolver` | `ResolveAsync(tenantId)` 返回 `Result<Maybe<TenantShard>>`：共库租户与未知租户是成功且无值；租户存储不可达返回 `MULTITENANCY_UNAVAILABLE_002`。`Invalidate(tenantId?)` 丢弃缓存，参数为 `null` 时清空全部 |
+| `ITenantShardResolver` | `ResolveAsync(tenantId)` 返回 `Result<Maybe<TenantShard>>`：共库租户与未知租户是成功且无值；租户存储不可达返回 `MULTITENANCY_UNAVAILABLE_002`。`Invalidate(tenantIds)` 丢弃这些租户缓存的分片，`InvalidateAll()` 丢弃全部；自己缓存的解析器靠它们失效 |
 | `TenantShard` | 一个分片：`TenantId`、`ConnectionString`、可选的 `Provider`（提供者名，转成小写，如 `postgresql`）与透传属性 `Properties` |
-| `TenantStoreShardResolver` | 缺省解析器，从 `ITenantStore` 里租户的 `Properties` 推出分片，按租户缓存结果 |
+| `TenantStoreShardResolver` | 缺省解析器，每次从 `ITenantStore` 里租户的 `Properties` 推出分片，自己不缓存 |
 | `TenantShardKeys` | 租户属性键的常量 |
 | `TenantShardScope` | 作用域服务，给不经管道的作用域显式绑定分片 |
 | `context.FindTenantShard()` | 读调用上下文里的分片，`Maybe<TenantShard>` |
@@ -88,9 +88,11 @@ app.Run();
 
 分片在 Tenant 阶段解析一次，写进调用上下文；解析失败即调用失败（`MULTITENANCY_UNAVAILABLE_002`），不降级为共库，因为降级会把租户数据写进平台库。无租户的调用没有分片。
 
-`TenantStoreShardResolver` 的结果按租户缓存，「无分片」也缓存；缓存条目数达到 `XiHan:MultiTenancy:ShardCacheSize`（缺省 10000）时整体清空，条目过了 `ShardCacheTimeToLiveSeconds`（缺省 30 秒）即重新读租户存储。租户连接变更后调用 `ITenantShardResolver.Invalidate(tenantId)`，失效只作用于本实例，多实例部署里别的实例在存活时间之后才用上新连接（ADR-0193）；经数据库目录的 `TenantRecordStore` 写入时会自动失效，见[数据库租户目录](/multi-tenancy/database)。
+`TenantStoreShardResolver` 自己不缓存：每次解析读租户存储，再从属性推出分片，开销是一次字典遍历。缓存与失效只在租户存储一处：内存目录本来就在内存里，数据库目录经 `ICache` 缓存、写入时失效所有共用缓存的实例（ADR-0229）。所以租户迁库、改连接串、删除经租户管理 `ITenantAdministration` 写入后，下一次解析就用上新结果；多实例部署装了 `Caching.Redis` 与 `Caching.Hybrid` 时，所有实例一起生效，见[数据库租户目录](/multi-tenancy/database)。它的 `Invalidate` 与 `InvalidateAll` 什么也不做，只校验入参。
 
-想自己决定分片规则（按租户哈希选库、从独立的分片表读连接）时，实现 `ITenantShardResolver` 并在特性里登记为单例；中间件与持久化 Provider 只认契约。自带分片 Provider 的应用同样要登记 `TenantShardScope`。
+以前的缺省解析器在租户存储之上又缓存一层，配置键 `XiHan:MultiTenancy:ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已随之删除，配置里留着也被忽略。直接构造 `TenantStoreShardResolver` 的代码改为传 `(ITenantStore, ILoggerFactory)`。
+
+想自己决定分片规则（按租户哈希选库、从独立的分片表读连接）时，实现 `ITenantShardResolver` 并在特性里登记为单例；中间件与持久化 Provider 只认契约。自己的解析器可以缓存，`TenantRecordStore` 写入后会调用它的 `Invalidate`，但这只作用于本实例；多实例要一致就把缓存放进 `ICache`（参考[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)）。自带分片 Provider 的应用同样要登记 `TenantShardScope`。
 
 ## 持久化 Provider 按分片选连接
 
@@ -172,7 +174,7 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 
 ### 租户配了连接串但数据还是写进了默认库
 
-先确认装配的持久化 Provider 是 `Persistence.SqlSugar` 或 `Persistence.EntityFrameworkCore`：`Persistence.InMemory` 不接分片能力。再确认实体实现了 `IMultiTenant`：分片只作用于多租户实体，平台表始终走默认连接。最后看 `/shard` 这样的端点能不能读到分片；读不到说明调用里没有租户，或者分片解析器的缓存还是旧值，调用 `Invalidate(tenantId)`。
+先确认装配的持久化 Provider 是 `Persistence.SqlSugar` 或 `Persistence.EntityFrameworkCore`：`Persistence.InMemory` 不接分片能力。再确认实体实现了 `IMultiTenant`：分片只作用于多租户实体，平台表始终走默认连接。最后看 `/shard` 这样的端点能不能读到分片；读不到说明调用里没有租户；用数据库目录时，也可能是连接串绕过租户管理直接改表写入、目录缓存还是旧值，调用 `DatabaseTenantStore.InvalidateAsync([tenantId], ct)` 或等存活时间。
 
 ### 租户库连不上时调用会降级到共库吗
 

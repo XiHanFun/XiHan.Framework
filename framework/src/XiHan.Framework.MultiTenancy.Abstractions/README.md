@@ -8,7 +8,7 @@
 
 * 从已认证主体的声明与 Baggage 解析租户，按注册顺序先到先得
 * Tenant 阶段校验格式、核对存储（存在且启用）并写入安全上下文
-* 租户属性 `ConnectionString` 有值即分库，解析失败不降级为共库
+* 租户属性 `ConnectionString` 有值即分库，解析失败不降级为共库；缺省分片解析器不另行缓存，租户存储一变下一次解析就用上
 * `TenantShardScope` 在管道外显式绑定分片
 
 ## 如何使用
@@ -31,7 +31,7 @@ await shardScope.BindTenantAsync("acme", cancellationToken);
 ```
 
 ```json
-{ "XiHan": { "MultiTenancy": { "RequireTenant": false, "ShardCacheSize": 10000 } } }
+{ "XiHan": { "MultiTenancy": { "RequireTenant": false, "TenantClaim": "tenant" } } }
 ```
 
 ## 主要类型

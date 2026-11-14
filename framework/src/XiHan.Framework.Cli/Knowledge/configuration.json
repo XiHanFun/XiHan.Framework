@@ -633,7 +633,14 @@
           "type": "number",
           "default": "300",
           "minimum": 0,
-          "summary": "周期刷新翻译的间隔（秒）；0 关闭周期刷新，只在启动时加载"
+          "summary": "周期刷新翻译的间隔（秒），兜住直接改表与版本戳丢失；0 关闭周期刷新"
+        },
+        {
+          "key": "ChangeCheckIntervalSeconds",
+          "type": "number",
+          "default": "1",
+          "minimum": 0,
+          "summary": "核对 ICache 里翻译版本戳的间隔（秒），变了就重新加载，多实例由此在一个间隔内用上新翻译；0 不核对"
         },
         {
           "key": "MaxTranslations",
@@ -927,20 +934,6 @@
           "type": "string",
           "default": "tenant",
           "summary": "承载租户 ID 的声明类型"
-        },
-        {
-          "key": "ShardCacheSize",
-          "type": "integer",
-          "default": "10000",
-          "minimum": 1,
-          "summary": "TenantStoreShardResolver 的缓存容量（租户数），满时整体清空"
-        },
-        {
-          "key": "ShardCacheTimeToLiveSeconds",
-          "type": "number",
-          "default": "30",
-          "minimum": 0,
-          "summary": "分片缓存条目的存活时间（秒）；0 表示不过期，只靠 Invalidate 失效"
         }
       ]
     },
@@ -950,18 +943,11 @@
       "package": "XiHan.Framework.MultiTenancy.Database",
       "keys": [
         {
-          "key": "CacheSize",
-          "type": "integer",
-          "default": "10000",
-          "minimum": 1,
-          "summary": "DatabaseTenantStore 的缓存容量（租户数，不存在的租户也占一条），满时整体清空"
-        },
-        {
           "key": "CacheTimeToLiveSeconds",
           "type": "number",
           "default": "30",
-          "minimum": 0,
-          "summary": "缓存条目的存活时间（秒）；0 表示不过期，只靠 Invalidate 失效"
+          "exclusiveMinimum": 0,
+          "summary": "租户目录缓存条目的存活时间（秒），只兜住失效丢失；缓存走 ICache，写入后所有实例立即失效，容量由 caching.local 的 Provider 管"
         }
       ]
     },
@@ -1898,18 +1884,11 @@
       "package": "XiHan.Framework.Security.Database",
       "keys": [
         {
-          "key": "CacheSize",
-          "type": "integer",
-          "default": "10000",
-          "minimum": 1,
-          "summary": "授予缓存条目上限（每个主体与租户组合一条），满时整体清空"
-        },
-        {
           "key": "CacheTimeToLiveSeconds",
           "type": "number",
           "default": "30",
-          "minimum": 0,
-          "summary": "授予缓存条目的存活时间（秒）；0 为不过期"
+          "exclusiveMinimum": 0,
+          "summary": "授予缓存条目的存活时间（秒），只兜住失效丢失；缓存走 ICache，授予与撤销后所有实例立即失效，容量由 caching.local 的 Provider 管"
         }
       ]
     },

@@ -1,9 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Collections.Concurrent;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.MultiTenancy.Abstractions;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
@@ -16,121 +16,59 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 /// 数据库租户目录（单例）
 /// </summary>
 /// <remarks>
-/// 按 ID 读 <see cref="TenantRecord"/>，结果按租户有界缓存（不存在也缓存），每条带存活时间；<see cref="ListAsync"/> 按 ID 一页一页读、不走缓存。读取直接开工作单元（见 <see cref="CatalogInvocation"/>），数据库故障以 <see cref="MultiTenancyErrors.StoreUnavailable"/> 返回，不伪装成不存在。写入经 <see cref="TenantRecordStore"/>，它写完即失效对应条目；失效与提交之间的窗口由存活时间收敛
+/// 按 ID 读 <see cref="TenantRecord"/>，结果经 <see cref="ICache"/> 缓存（<see cref="GenerationCache{T}"/>，区 <see cref="CacheRegion"/>，不存在也缓存）：失效按租户换代数，所有共用缓存的实例一起失效（ADR-0229）。装了两级缓存时命中在本机一级缓存，租户解析不出进程。<see cref="ListAsync"/> 按 ID 一页一页读、不走缓存。
+/// 读取直接开工作单元（见 <see cref="CatalogInvocation"/>），数据库故障以 <see cref="MultiTenancyErrors.StoreUnavailable"/> 返回，不伪装成不存在，也不进缓存；缓存后端故障时直接查库、不写缓存。写入经 <see cref="TenantRecordStore"/>，它写入时与作用域释放时各失效一次（ADR-0194）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class DatabaseTenantStore : ITenantStore
+public sealed class DatabaseTenantStore : ITenantStore
 {
+    /// <summary>
+    /// 租户目录缓存在 <see cref="ICache"/> 里的区名
+    /// </summary>
+    /// <remarks>
+    /// 所有键以它开头；共用一个缓存后端的多个应用要用不同的键前缀（如 Redis 的 <c>KeyPrefix</c>）
+    /// </remarks>
+    public const string CacheRegion = "multitenancy:tenants";
+
     /// <summary>
     /// 开作用域与工作单元读仓储的方式
     /// </summary>
     private readonly CatalogInvocation _catalog;
 
     /// <summary>
-    /// 缓存容量与存活时间
+    /// 按租户失效的缓存区
     /// </summary>
-    private readonly DatabaseMultiTenancyOptions _options;
-
-    /// <summary>
-    /// 时钟
-    /// </summary>
-    /// <remarks>
-    /// 判定缓存条目是否过期
-    /// </remarks>
-    private readonly TimeProvider _clock;
-
-    /// <summary>
-    /// 日志
-    /// </summary>
-    private readonly ILogger _logger;
-
-    /// <summary>
-    /// 租户 ID → 缓存条目
-    /// </summary>
-    /// <remarks>
-    /// 读取无锁
-    /// </remarks>
-    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// 保护代数与「核对代数再写回」的锁
-    /// </summary>
-    private readonly Lock _gate = new();
-
-    /// <summary>
-    /// 缓存的代数
-    /// </summary>
-    /// <remarks>
-    /// 每次失效加一。读取在查库之前记下它，写回缓存时不一致就丢弃：失效之前开始的读取可能读到写入提交之前的旧行（ADR-0194）
-    /// </remarks>
-    private long _generation;
+    private readonly GenerationCache<TenantCacheValue> _cache;
 
     /// <summary>
     /// 创建
     /// </summary>
-    public DatabaseTenantStore(IServiceProvider services, DatabaseMultiTenancyOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
+    public DatabaseTenantStore(IServiceProvider services, DatabaseMultiTenancyOptions options, ICache cache, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(cache);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _catalog = new CatalogInvocation(services, loggerFactory.CreateLogger<CatalogInvocation>());
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _logger = loggerFactory.CreateLogger<DatabaseTenantStore>();
+        _cache = new GenerationCache<TenantCacheValue>(cache, CacheRegion, options.CacheTimeToLive, loggerFactory.CreateLogger<DatabaseTenantStore>());
     }
-
-    /// <summary>
-    /// 已缓存的条目数（含“不存在”的条目）
-    /// </summary>
-    public int CachedCount => _cache.Count;
 
     /// <inheritdoc />
     public async ValueTask<Result<Maybe<TenantInfo>>> FindAsync(string tenantId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenantId);
-        // 先校验文法再查库：不合法的 ID 不可能有行，也不让它占缓存
+        // 先校验文法再查缓存：不合法的 ID 不可能有行，也不让它占缓存
         if (!TenantIdentifier.IsValid(tenantId))
         {
             return Maybe.None<TenantInfo>();
         }
 
-        if (_cache.TryGetValue(tenantId, out var entry) && !entry.IsExpired(_clock.GetUtcNow()))
-        {
-            return entry.Tenant;
-        }
-
-        // 查库之前记下代数：查的过程中有失效（目录写入正在提交），读回的行可能是提交之前的旧值，不写回缓存
-        long generation;
-        lock (_gate)
-        {
-            generation = _generation;
-        }
-
-        var read = await _catalog.ReadAsync((repository, ct) => repository.FindAsync(tenantId, ct), cancellationToken).ConfigureAwait(false);
-        // 失败不进缓存：存储恢复后下一次解析立即重新查库，而不是在存活时间内一直报不可达
-        if (!read.TryGetValue(out var found))
+        var read = await _cache.GetOrLoadManyAsync([GenerationCacheKey.ForScope(tenantId)], LoadAsync, cancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var values))
         {
             return read.Error!;
         }
 
-        // 数据库的排序规则可能不区分大小写：读回的行按序数核对 ID，迁移之前留下的大写 ID 不被当作它的小写形式（ADR-0196）
-        var tenant = found.TryGetValue(out var record) && string.Equals(record.Id, tenantId, StringComparison.Ordinal)
-            ? Maybe.Some(TenantRecordMapping.ToTenantInfo(record))
-            : Maybe.None<TenantInfo>();
-        // 有界：满了整体清空，比逐条淘汰简单且足够（租户数远小于容量）；不存在也缓存，避免反复查不存在的租户
-        lock (_gate)
-        {
-            // 查库之后有过失效：这次读回的结果可能早于那次写入的提交，照常返回但不缓存
-            if (generation == _generation)
-            {
-                if (_cache.Count >= _options.CacheSize)
-                {
-                    _cache.Clear();
-                }
-
-                _cache[tenantId] = new CacheEntry(tenant, _options.CacheTimeToLive is { } ttl ? _clock.GetUtcNow() + ttl : null);
-            }
-        }
-
-        return tenant;
+        return values[0].Tenant is { } tenant ? Maybe.Some(tenant) : Maybe.None<TenantInfo>();
     }
 
     /// <inheritdoc />
@@ -170,46 +108,59 @@ public sealed partial class DatabaseTenantStore : ITenantStore
     }
 
     /// <summary>
-    /// 丢弃这些租户的缓存
+    /// 丢弃这些租户的缓存（所有共用缓存的实例）
     /// </summary>
     /// <remarks>
-    /// 含「不存在」的条目；空集合什么也不做。清全部用 <see cref="InvalidateAll"/>（ADR-0160）
+    /// 含「不存在」的条目；空集合什么也不做。清全部用 <see cref="InvalidateAllAsync"/>（ADR-0160）。缓存后端故障时抛出：失效没有传到别的实例，调用方据此拒绝写入
     /// </remarks>
-    public void Invalidate(IReadOnlyList<string> tenantIds)
+    public ValueTask InvalidateAsync(IReadOnlyList<string> tenantIds, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(tenantIds);
-        lock (_gate)
+        foreach (var tenantId in tenantIds)
         {
-            // 代数在锁内加一：此刻还在查库的读取都不能把结果写回来
-            _generation++;
-            foreach (var tenantId in tenantIds)
-            {
-                ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
-                _cache.TryRemove(tenantId, out _);
-            }
+            ArgumentNullException.ThrowIfNull(tenantId, nameof(tenantIds));
         }
+
+        return _cache.InvalidateAsync(tenantIds, cancellationToken);
     }
 
     /// <summary>
-    /// 丢弃全部缓存
+    /// 丢弃全部缓存（所有共用缓存的实例）
     /// </summary>
-    public void InvalidateAll()
-    {
-        lock (_gate)
-        {
-            _generation++;
-            _cache.Clear();
-        }
-    }
+    /// <remarks>
+    /// 缓存后端故障时抛出
+    /// </remarks>
+    public ValueTask InvalidateAllAsync(CancellationToken cancellationToken) => _cache.InvalidateAllAsync(cancellationToken);
 
     /// <summary>
-    /// 一条缓存：租户（不存在为无值）与过期时刻（无存活时间为 <see langword="null"/>）
+    /// 按 ID 一次查库
     /// </summary>
-    private readonly record struct CacheEntry(Maybe<TenantInfo> Tenant, DateTimeOffset? ExpiresAt)
+    /// <remarks>
+    /// 缓存区按未命中的位置调用；结果与 <paramref name="missing"/> 顺序一一对应，查不到的为不存在
+    /// </remarks>
+    private async ValueTask<Result<IReadOnlyList<TenantCacheValue>>> LoadAsync(IReadOnlyList<GenerationCacheKey> missing, CancellationToken cancellationToken)
     {
-        /// <summary>
-        /// 到 <paramref name="now"/> 是否已过期
-        /// </summary>
-        public bool IsExpired(DateTimeOffset now) => ExpiresAt is { } expiresAt && expiresAt <= now;
+        string[] ids = [.. missing.Select(static key => key.Scope)];
+        var read = await _catalog.ReadAsync((repository, ct) => new ValueTask<IReadOnlyList<TenantRecord>>(repository.FindManyAsync(ids, ct)), cancellationToken).ConfigureAwait(false);
+        // 失败不进缓存：存储恢复后下一次解析立即重新查库，而不是在存活时间内一直报不可达
+        if (!read.TryGetValue(out var records))
+        {
+            return read.Error!;
+        }
+
+        // 数据库的排序规则可能不区分大小写：读回的行按序数核对 ID，迁移之前留下的大写 ID 不被当作它的小写形式（ADR-0196）
+        var byId = new Dictionary<string, TenantRecord>(StringComparer.Ordinal);
+        foreach (var record in records)
+        {
+            byId.TryAdd(record.Id, record);
+        }
+
+        var values = new TenantCacheValue[ids.Length];
+        for (var index = 0; index < ids.Length; index++)
+        {
+            values[index] = new TenantCacheValue(byId.TryGetValue(ids[index], out var record) ? TenantRecordMapping.ToTenantInfo(record) : null);
+        }
+
+        return Result.Success<IReadOnlyList<TenantCacheValue>>(values);
     }
 }

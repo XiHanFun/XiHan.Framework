@@ -36,8 +36,8 @@ public sealed class LookupNamingTests
         var failures = new List<string>();
         foreach (var method in PublicMethods().Where(static m => m.Name.StartsWith("Get", StringComparison.Ordinal)))
         {
-            // 缓存条目的读沿用键值存储的词汇（批量优先的命名表），外部接口的成员照原接口命名
-            if (method.DeclaringType!.Namespace?.StartsWith("XiHan.Framework.Caching", StringComparison.Ordinal) == true || ImplementsForeignInterface(method))
+            // 缓存条目的读沿用键值存储的词汇（批量优先的命名表），缓存接口的实现（如测试支持里的缓存包装）同样照接口命名；外部接口的成员照原接口命名
+            if (method.DeclaringType!.Namespace?.StartsWith("XiHan.Framework.Caching", StringComparison.Ordinal) == true || ImplementsCachingInterface(method) || ImplementsForeignInterface(method))
             {
                 continue;
             }
@@ -68,6 +68,20 @@ public sealed class LookupNamingTests
     /// </summary>
     private static bool ContainsMaybe(Type type)
         => type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(Maybe<>) || type.GetGenericArguments().Any(ContainsMaybe));
+
+    /// <summary>
+    /// 是否实现了缓存子系统声明的接口成员
+    /// </summary>
+    private static bool ImplementsCachingInterface(MethodInfo method)
+    {
+        var type = method.DeclaringType!;
+        if (type.IsInterface || method.IsStatic)
+        {
+            return false;
+        }
+
+        return type.GetInterfaces().Any(contract => contract.Namespace?.StartsWith("XiHan.Framework.Caching", StringComparison.Ordinal) == true && type.GetInterfaceMap(contract).TargetMethods.Contains(method));
+    }
 
     /// <summary>
     /// 是否实现了框架之外声明的接口成员

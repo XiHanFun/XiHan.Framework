@@ -33,12 +33,12 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
 | [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 14 + 2 + 4 |
-| [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance` | 4 + 3 |
+| [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance`、`TenantAdministrationConformance` | 5 + 3 + 5 |
 | [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 13 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 36 + 3 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 18 + 6 + 3 |
-| [Security](#security) | `PermissionGrantStoreConformance` | 5 |
+| [Security](#security) | `PermissionGrantStoreConformance`、`PermissionGrantAdministrationConformance` | 6 + 6 |
 | [Workflow](#workflow) | `WorkflowStoreConformance`、`WorkflowEngineConformance`、`WorkflowTaskConformance` | 15 + 40 + 8 |
 
 ## AI
@@ -121,8 +121,11 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 | --- | --- | --- | --- |
 | `TenantStoreConformance` | Stable | `CreateStoreAsync(tenants)` 返回装好给定租户的 `ITenantStore`；种子租户 `Acme`、`Dormant` | 按 ID 查找、不存在为无值、大写的 ID 找不到小写的租户、显示名、启用标记与属性完整往返、分页列出全部租户与只列启用的租户、越界的每页条数与外来令牌被拒 |
 | `TenantShardResolverConformance` | Preview | `CreateResolverAsync(tenants)` 返回 `ITenantShardResolver`；种子租户 `Sharded`、`Shared` | 分库租户解析出连接串、小写的提供者名与去前缀的透传属性；共库与未知租户为成功无值；失效单个或全部后重解析结果一致 |
+| `TenantAdministrationConformance` | Preview | `StartAsync()` 返回读空租户表的 `ITenantStore`，`AdministerAsync(action)` 在一次调用里使用 `ITenantAdministration`（持久化的实现在调用的事务里写入）；可覆写 `StartPeerAsync()` 与 `PeerVisibilityTimeout` | 写入逐项同序、同一批后者覆盖前者；删除逐项报告不存在；删除的 ID 留墓碑不能再建；写入之前查过的租户在写入之后立即看见新增、停用与删除（用例 4）；另一个实例在时限内看见同样的变化（用例 5） |
 
-`MultiTenancy.InMemory` 与 `MultiTenancy.Database` 通过两套用例。
+`MultiTenancy.InMemory` 与 `MultiTenancy.Database` 通过三套用例。
+
+`TenantAdministrationConformance` 的用例 5 验证多实例一致：`StartPeerAsync()` 在 `StartAsync()` 之后调用，返回与被测实例共用持久化与缓存后端的另一个实例的目录，另一个实例在写入之前已经查过（缓存了旧结果），要在 `PeerVisibilityTimeout`（缺省 5 秒，远小于缓存存活时间）内看见变化。默认返回 `null`，表示实现不承诺多实例一致，用例跳过。`MultiTenancy.Database` 的测试让两个宿主连同一个 SQLite 文件、登记同一个 `ICache` 实例来模拟两个实例。
 
 ## ObjectStorage
 
@@ -236,6 +239,8 @@ public sealed class InMemoryJobSchedulerConformanceTests : JobSchedulerConforman
 包 ID `XiHan.Framework.Security.Conformance`（RFC-0008，Stable）。基类 `PermissionGrantStoreConformance`，实现 `CreateStoreAsync(grants)` 返回装好给定授予的 `IPermissionGrantStore`。用例覆盖用户与角色授予、平台授予只对不带租户的调用生效、每个租户的授予只对带租户的调用生效、租户专属授予只对该租户生效、未知主体为空、主体与权限区分大小写、通配授予 `*` 原样返回、空存储，以及存储不可达时返回 `SECURITY_UNAVAILABLE_001` 而不是空集合（访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync`）。`Security.InMemory` 与 `Security.Database` 通过本套件。
 
 `GetManyAsync` 返回与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`：没有授予是成功的空集合，存储故障整批失败；用例 6 核对顺序、重复项、种类不串与空集合。不覆写 `CreateUnavailableStoreAsync` 时存储不可达的用例跳过，只有进程内、读取不会失败的存储可以不覆写。
+
+授予管理另有基类 `PermissionGrantAdministrationConformance`（Preview）：实现 `StartAsync()` 返回读空授予表的 `IPermissionGrantStore`，`AdministerAsync(action)` 在一次调用里使用 `IPermissionGrantAdministration`（持久化的实现在调用的事务里写入）。用例覆盖授予逐项同序且已存在的幂等成功、撤销逐项报告不存在（`SECURITY_NOTFOUND_002`）、列出按主体与范围过滤并按序数分页、分页越界为 `SECURITY_VALIDATION_005`，以及写入之前读过的判定在写入之后立即看见授予与撤销（用例 5）、另一个实例在时限内看见同样的变化（用例 6）。用例 6 的另一个实例由可覆写的 `StartPeerAsync()` 给出（与被测实例共用持久化与缓存后端，在 `StartAsync()` 之后调用），时限是 `PeerVisibilityTimeout`（缺省 5 秒）；默认返回 `null`，表示实现不承诺多实例一致，用例跳过。`Security.InMemory` 与 `Security.Database` 通过本套件，后者在 SQLite 上让两个宿主共用一个文件与一个 `ICache` 实例跑用例 6。
 
 在完整的应用宿主上给不可达的存储时，不要让整个宿主的库不可达（删库、断开默认连接）：宿主里别的子系统的后台循环——工作流轮询与它的领导权、发件箱、调度、翻译加载——在服务状态下会如实报存储不可达（如 `WORKFLOW_UNAVAILABLE_001`），那是真实的故障信号。用只装被测特性的最小宿主（框架 `Security.Database` 的测试就是这样），或只让被测存储用的连接不可达。
 

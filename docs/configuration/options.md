@@ -154,11 +154,11 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:MultiTenancy` | [MultiTenancy.Abstractions](/packages/multitenancy-abstractions) | `DefaultTenant`、`RequireTenant`、`TenantClaim`、`ValidateAgainstStore` |
 | `XiHan:MultiTenancy:InMemory` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | `MaxTenants` |
 | `XiHan:MultiTenancy:Tenants` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | 从配置装载的租户（`DisplayName`、`IsEnabled`、`Properties`） |
-| `XiHan:MultiTenancy:Database` | [MultiTenancy.Database](/packages/multitenancy-database) | `CacheSize`、`CacheTimeToLiveSeconds` |
+| `XiHan:MultiTenancy:Database` | [MultiTenancy.Database](/packages/multitenancy-database) | `CacheTimeToLiveSeconds`（目录缓存的兜底存活时间，容量由 `caching.local` 的 Provider 管） |
 | `XiHan:Security` | [Security.Abstractions](/packages/security-abstractions) | `RequireAuthentication`、`RoleClaim` |
 | `XiHan:Security:Outbound` | [Kernel](/packages/kernel) | [出站地址策略](/security/outbound)：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Security:InMemory` | [Security.InMemory](/packages/security-inmemory) | 开发用主体与授予（`Principals`、`Grants`） |
-| `XiHan:Security:Database` | [Security.Database](/packages/security-database) | `CacheSize`、`CacheTimeToLiveSeconds` |
+| `XiHan:Security:Database` | [Security.Database](/packages/security-database) | `CacheTimeToLiveSeconds`（授予缓存的兜底存活时间，容量由 `caching.local` 的 Provider 管） |
 | `XiHan:Security:Jwt` | [Security.Jwt](/packages/security-jwt) | `Issuer`、`Audience`、`Secret`、`ClockSkewSeconds`、`NameClaim` |
 | `XiHan:Security:OpenIdConnect` | [Security.OpenIdConnect](/packages/security-openidconnect) | `Authority`、`Audience`、元数据地址与刷新间隔 |
 | `XiHan:Security:Ip2Region` | [Security.Ip2Region](/packages/security-ip2region) | xdb 数据文件路径 `V4Database`、`V6Database` |
@@ -181,7 +181,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:Workflow:InMemory` | [Workflow.InMemory](/packages/workflow-inmemory) | 各存储容量、轮询周期与批大小 |
 | `XiHan:Workflow:Database` | [Workflow.Database](/packages/workflow-database) | 到期书签的轮询与批大小、租约时长、`HolderId` |
 | `XiHan:Localization` | [Localization.Abstractions](/packages/localization-abstractions) | `DefaultLocale`、`Locales` |
-| `XiHan:Localization:Database` | [Localization.Database](/packages/localization-database) | `RefreshIntervalSeconds`、`MaxTranslations` |
+| `XiHan:Localization:Database` | [Localization.Database](/packages/localization-database) | `RefreshIntervalSeconds`、`ChangeCheckIntervalSeconds`、`MaxTranslations` |
 | `XiHan:ObjectStorage:FileSystem` | [ObjectStorage.FileSystem](/packages/objectstorage-filesystem) | `RootPath`、`MaxTotalBytes`、`MaxBlobBytes`、`MultipartExpiryHours` |
 | `XiHan:ObjectStorage:S3` | [ObjectStorage.S3](/packages/objectstorage-s3) | `ServiceUrl`、`Region`、`AccessKey`、`SecretKey`、`ForcePathStyle` 等 |
 | `XiHan:ObjectStorage:Stores` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 命名存储实例：`<name>:Provider` 加该 Provider 的设置 |

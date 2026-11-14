@@ -4,6 +4,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Locales;
 using XiHan.Framework.Localization.Abstractions.Messages;
@@ -37,7 +38,7 @@ public sealed class DatabaseLocalizationTests
     /// </summary>
     private static Task<TestHost> StartAsync(params KeyValuePair<string, string?>[] configuration)
         => TestHost.StartAsync(
-            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseLocalizationFeature>(),
+            static b => b.UseFeature<InMemoryPersistenceFeature>().UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseLocalizationFeature>(),
             configuration,
             static services => services.AddMessageCatalog(_orders));
 
@@ -69,8 +70,9 @@ public sealed class DatabaseLocalizationTests
         });
         Assert.True(written.IsSuccess);
 
-        // 重载前仍是目录文案；重载后数据库优先，同一批里后者覆盖前者
-        Assert.Equal("订单 '1' 不存在。", localizer.Localize("orders.order.not_found", "zh-CN", MessageArguments.Of(("id", 1))));
+        // 写入提交后换了版本戳，本实例不等周期刷新（这个宿主关了它）就重新加载：数据库优先，同一批里后者覆盖前者
+        await WaitUntilAsync(() => localizer.Localize("orders.order.not_found", "zh-CN", MessageArguments.Of(("id", 1))) == "订单 '1' 真的找不到。");
+        // 显式重新加载照样可用
         Assert.True((await loader.ReloadAsync(CancellationToken.None)).IsSuccess);
         Assert.NotNull(loader.LastLoadedAt);
         Assert.Equal(2, ((DatabaseMessageLocalizer)localizer).TranslationCount);
@@ -165,6 +167,12 @@ public sealed class DatabaseLocalizationTests
         }).Build());
         Assert.Equal((null, 5), (options.RefreshInterval, options.MaxTranslations));
         Assert.Equal(TimeSpan.FromMinutes(5), new DatabaseLocalizationOptions().RefreshInterval);
+        // 版本戳核对：缺省 1 秒，0 关闭，负数是配置错误
+        Assert.Equal(TimeSpan.FromSeconds(1), new DatabaseLocalizationOptions().ChangeCheckInterval);
+        Assert.Equal(TimeSpan.FromSeconds(0.25), DatabaseLocalizationOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Localization:Database:ChangeCheckIntervalSeconds"] = "0.25" }).Build()).ChangeCheckInterval);
+        Assert.Null(DatabaseLocalizationOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Localization:Database:ChangeCheckIntervalSeconds"] = "0" }).Build()).ChangeCheckInterval);
+        Assert.Throws<ArgumentException>(static () => DatabaseLocalizationOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Localization:Database:ChangeCheckIntervalSeconds"] = "-1" }).Build()));
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseLocalizationOptions { ChangeCheckInterval = TimeSpan.Zero });
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseLocalizationOptions { MaxTranslations = 0 });
         Assert.Throws<ArgumentException>(static () => DatabaseLocalizationOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Localization:Database:RefreshIntervalSeconds"] = "-1" }).Build()));
     }

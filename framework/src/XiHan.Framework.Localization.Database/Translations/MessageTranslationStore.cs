@@ -1,6 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Caching.Abstractions;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Locales;
@@ -15,11 +17,20 @@ namespace XiHan.Framework.Localization.Database.Translations;
 /// 翻译的批量读写（作用域服务，须在调用的 Transaction 阶段内使用）
 /// </summary>
 /// <remarks>
-/// 一次查询取回已有行，再用仓储的批量方法一次写入。写入后调用 <see cref="MessageTranslationLoader.ReloadAsync"/> 或等待周期刷新才会生效
+/// 一次查询取回已有行，再用仓储的批量方法一次写入。写入在调用方的事务提交后才可见，所以作用域释放时（调用已提交）才经 <see cref="MessageTranslationLoader.PublishChangeAsync"/> 换翻译版本戳：本实例立即重新加载，其他实例在 <see cref="DatabaseLocalizationOptions.ChangeCheckInterval"/> 内重新加载（ADR-0229）。
+/// 换版本戳遇到缓存后端故障只记错误日志、不抛出：写入已经提交，本实例照常重新加载，其他实例靠 <see cref="DatabaseLocalizationOptions.RefreshInterval"/> 的周期刷新收敛
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed class MessageTranslationStore
+public sealed partial class MessageTranslationStore : IAsyncDisposable, IDisposable
 {
+    /// <summary>
+    /// 本作用域里是否写过翻译
+    /// </summary>
+    /// <remarks>
+    /// 作用域释放时据此换版本戳
+    /// </remarks>
+    private bool _changed;
+
     /// <summary>
     /// 仓储
     /// </summary>
@@ -36,13 +47,29 @@ public sealed class MessageTranslationStore
     private readonly TimeProvider _clock;
 
     /// <summary>
+    /// 加载器
+    /// </summary>
+    /// <remarks>
+    /// 写入提交后经它换版本戳并让本实例重新加载
+    /// </remarks>
+    private readonly MessageTranslationLoader _loader;
+
+    /// <summary>
+    /// 日志
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public MessageTranslationStore(IRepository<MessageTranslation, Guid> repository, IIdGenerator<Guid> ids, TimeProvider clock)
+    public MessageTranslationStore(IRepository<MessageTranslation, Guid> repository, IIdGenerator<Guid> ids, TimeProvider clock, MessageTranslationLoader loader, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(loggerFactory);
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _ids = ids ?? throw new ArgumentNullException(nameof(ids));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _loader = loader ?? throw new ArgumentNullException(nameof(loader));
+        _logger = loggerFactory.CreateLogger<MessageTranslationStore>();
     }
 
     /// <summary>
@@ -96,6 +123,8 @@ public sealed class MessageTranslationStore
             slots[index] = slot;
         }
 
+        // 先记下再写：写到一半抛出时调用失败回滚，释放时换版本戳只多一次无害的重新加载
+        _changed = true;
         var updated = updates.Count == 0 ? [] : await _repository.UpdateRangeAsync(updates, cancellationToken).ConfigureAwait(false);
         var added = additions.Count == 0 ? [] : await _repository.AddRangeAsync(additions, cancellationToken).ConfigureAwait(false);
         var results = new Result[entries.Count];
@@ -140,6 +169,7 @@ public sealed class MessageTranslationStore
             }
         }
 
+        _changed |= removals.Count > 0;
         var removed = removals.Count == 0 ? [] : await _repository.RemoveRangeAsync(removals, cancellationToken).ConfigureAwait(false);
         var results = new Result[keys.Count];
         for (var index = 0; index < keys.Count; index++)
@@ -211,4 +241,50 @@ public sealed class MessageTranslationStore
 
         return found;
     }
+
+    /// <summary>
+    /// 作用域释放：写过翻译就换版本戳
+    /// </summary>
+    /// <remarks>
+    /// 管道里的调用先提交、后释放作用域，此后重新加载读到的是提交之后的行；回滚之后换版本戳只多一次无害的重新加载。可以重复调用
+    /// </remarks>
+    public async ValueTask DisposeAsync()
+    {
+        if (!_changed)
+        {
+            return;
+        }
+
+        _changed = false;
+        try
+        {
+            // 释放时没有调用方的取消令牌，也不应被取消：这一次决定已提交的翻译多快对别的实例生效
+            await _loader.PublishChangeAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (FrameworkException exception) when (exception.Code == CachingErrors.StoreUnavailable)
+        {
+            LogPublishFailed(_logger, exception);
+        }
+    }
+
+    /// <summary>
+    /// 同步释放：等待 <see cref="DisposeAsync"/> 完成
+    /// </summary>
+    /// <remarks>
+    /// 容器同步释放作用域时走这里；内存缓存同步完成，跨进程缓存会阻塞到版本戳写完，应优先异步释放作用域
+    /// </remarks>
+    public void Dispose()
+    {
+        var pending = DisposeAsync();
+        if (!pending.IsCompletedSuccessfully)
+        {
+            pending.AsTask().GetAwaiter().GetResult();
+        }
+    }
+
+    /// <summary>
+    /// 换版本戳失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Error, Message = "Publishing the message translation version after the write failed because the cache is unavailable; other instances pick up the change at their next periodic refresh.")]
+    private static partial void LogPublishFailed(ILogger logger, Exception exception);
 }

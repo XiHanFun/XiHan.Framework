@@ -1,5 +1,7 @@
 #nullable enable
 XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance
+XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Changes_AreVisibleToAnotherInstance_WithoutWaitingForExpiry() -> System.Threading.Tasks.Task!
+XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Changes_AreVisibleToLookupsThatReadBeforeTheWrite() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Remove_ReportsMissingItems_PerItem() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.Remove_RetiresTheId_SoItCannotBeRecreated() -> System.Threading.Tasks.Task!
 XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.TenantAdministrationConformance() -> void
@@ -24,3 +26,5 @@ static XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.S
 static XiHan.Framework.MultiTenancy.Conformance.TenantShardResolverConformance.Shared.get -> XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!
 static XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Acme.get -> XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!
 static XiHan.Framework.MultiTenancy.Conformance.TenantStoreConformance.Dormant.get -> XiHan.Framework.MultiTenancy.Abstractions.Tenants.TenantInfo!
+virtual XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.PeerVisibilityTimeout.get -> System.TimeSpan
+virtual XiHan.Framework.MultiTenancy.Conformance.TenantAdministrationConformance.StartPeerAsync() -> System.Threading.Tasks.ValueTask<XiHan.Framework.MultiTenancy.Abstractions.Tenants.ITenantStore?>

@@ -4,6 +4,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.SqlSugar;
 using XiHan.Framework.Testing;
@@ -22,9 +23,9 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     /// 已启动的宿主
     /// </summary>
     /// <remarks>
-    /// 释放时停止
+    /// 同一个库可以起多个宿主，模拟多实例部署；释放时全部停止
     /// </remarks>
-    private TestHost? _host;
+    private readonly List<TestHost> _hosts = [];
 
     /// <summary>
     /// 数据库文件的完整路径
@@ -61,7 +62,8 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     /// </summary>
     /// <param name="configuration">追加的配置</param>
     /// <param name="features">追加装配的特性（如认证与业务特性）</param>
-    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<AppBuilder>? features = null)
+    /// <param name="services">在特性之前登记的服务（如几个宿主共用的缓存）</param>
+    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<AppBuilder>? features = null, Action<IServiceCollection>? services = null)
     {
         EnsureWriteAheadLog();
         var settings = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) { ["XiHan:Persistence:SqlSugar:InitTables"] = "true" };
@@ -70,15 +72,20 @@ internal sealed class SqliteDatabase : IAsyncDisposable
             settings[pair.Key] = pair.Value;
         }
 
-        _host = await TestHost.StartAsync(
+        var host = await TestHost.StartAsync(
             b =>
             {
-                b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<DatabaseSecurityFeature>();
+                b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseSecurityFeature>();
                 features?.Invoke(b);
             },
             settings,
-            collection => collection.AddScoped<ISqlSugarClient>(_ => CreateClient()));
-        return _host;
+            collection =>
+            {
+                collection.AddScoped<ISqlSugarClient>(_ => CreateClient());
+                services?.Invoke(collection);
+            });
+        _hosts.Add(host);
+        return host;
     }
 
     /// <summary>
@@ -97,10 +104,11 @@ internal sealed class SqliteDatabase : IAsyncDisposable
             config.ConnectionString = binding.ValueOrThrow().Value;
             config.SlaveConnectionConfigs = [new SlaveConnectionConfig { ConnectionString = replica.ConnectionString, HitRate = 10 }];
         });
-        _host = await TestHost.StartAsync(
-            b => b.UseFeature(feature).UseFeature<DatabaseSecurityFeature>(),
+        var host = await TestHost.StartAsync(
+            b => b.UseFeature(feature).UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseSecurityFeature>(),
             [new("XiHan:Bindings:db", ConnectionString), new("XiHan:Persistence:SqlSugar:InitTables", "true")]);
-        return _host;
+        _hosts.Add(host);
+        return host;
     }
 
     /// <summary>
@@ -108,11 +116,12 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        if (_host is not null)
+        foreach (var host in _hosts)
         {
-            await _host.DisposeAsync();
-            _host = null;
+            await host.DisposeAsync();
         }
+
+        _hosts.Clear();
 
         // SQLite 连接会被池化并持有文件句柄，先清空本库的连接池，Windows 上才能删除文件
         // 只清本库连接串的连接池（连接池按连接串分组）。不用 SqliteConnection.ClearAllPools()：它清整个进程的连接池，会把并行用例此刻正在打开的连接当作泄漏回收并关掉句柄，那个用例随即以 ObjectDisposedException（SQLitePCL.sqlite3）失败

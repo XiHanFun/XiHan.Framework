@@ -13,10 +13,10 @@
 | 套件包 | 基类 | 实现什么 |
 | --- | --- | --- |
 | `Caching.Conformance` | `CacheStoreConformance` | `CreateStore()` 返回 `ICacheStore`；可覆写 `ExpirationGrace` |
-| `Security.Conformance` | `PermissionGrantStoreConformance` | `CreateStoreAsync(grants)` 返回装好授予的 `IPermissionGrantStore`；访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync()` |
+| `Security.Conformance` | `PermissionGrantStoreConformance` / `PermissionGrantAdministrationConformance` | `CreateStoreAsync(grants)` 返回装好授予的 `IPermissionGrantStore`，访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync()`；授予管理实现 `StartAsync()` 与 `AdministerAsync(action)`，承诺多实例一致的覆写 `StartPeerAsync()`（可调 `PeerVisibilityTimeout`） |
 | `Messaging.Conformance` | `MessageBrokerConformance` / `MessageStreamConformance` / `OutboxConformance` | `CreateFeature()` 返回提供 `messaging.queue@1`（或流、持久化）的特性；可覆写 `Configuration`、`DeliveryTimeout`、`SupportsMultipleInstances` |
 | `Persistence.Conformance` | `RepositoryConformance` / `DataSourceConformance` / `SchemaConformance` / `IdGeneratorConformance<TKey>` | `CreateFeature()`；数据源与结构套件另实现 `CreateDefinition(name)` 等；标识生成器实现 `CreateGenerator(clock)` |
-| `MultiTenancy.Conformance` | `TenantStoreConformance` / `TenantShardResolverConformance` | `CreateStoreAsync(tenants)` / `CreateResolverAsync(tenants)` |
+| `MultiTenancy.Conformance` | `TenantStoreConformance` / `TenantShardResolverConformance` / `TenantAdministrationConformance` | `CreateStoreAsync(tenants)` / `CreateResolverAsync(tenants)`；租户管理实现 `StartAsync()` 与 `AdministerAsync(action)`，承诺多实例一致的覆写 `StartPeerAsync()`（可调 `PeerVisibilityTimeout`） |
 | `ObjectStorage.Conformance` | `BlobStoreConformance` / `BlobStoreProviderConformance` | `CreateStoreAsync()` 与 `PlantOutsideContractAsync(...)`；`CreateProvider()`、`ValidSettings()`、`OtherValidSettings()` |
 | `Localization.Conformance` | `MessageLocalizerConformance` | `CreateLocalizer(catalogs, options)` |
 | `Scheduling.Conformance` | `JobSchedulerConformance` / `JobStoreConformance` / `LeaderElectionConformance` | `StartAsync(configure, configuration)` 返回 `JobSchedulerHost`；`CreateAsync()`；`CreateElection(clock)` 与 `StartNodeAsync(clock, probe)` |

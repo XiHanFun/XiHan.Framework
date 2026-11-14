@@ -2,12 +2,13 @@
 
 ## 关于
 
-`XiHan.Framework.MultiTenancy.Database` 是多租户的数据库提供程序：租户目录以实体经仓储读写，按租户有界缓存，分片从租户属性推出。装配后顶替默认的内存实现，需要同时装配一个持久化提供程序。
+`XiHan.Framework.MultiTenancy.Database` 是多租户的数据库提供程序：租户目录以实体经仓储读写，经 `ICache` 按租户缓存，分片从租户属性推出。装配后顶替默认的内存实现，需要同时装配一个持久化提供程序与一个提供 `caching.local` 的缓存提供程序（Standard 组合包已带内存缓存）。
 
 ## 主要特性
 
-* 租户目录存在数据库里，`TenantRecordStore` 批量写入与删除，写后自动失效缓存
-* 缓存容量与存活时间可配
+* 租户目录存在数据库里，`TenantRecordStore` 批量写入与删除，写后让所有共用缓存的实例立即失效
+* 多实例部署装 `Caching.Redis` 与 `Caching.Hybrid` 即一致：命中在本机一级缓存，新增、停用、改连接串、删除立即传到每个实例
+* 缓存后端故障时直接查库；写入时失效失败则调用失败、事务回滚
 * 与分库配合：租户属性 `ConnectionString` 有值即分库
 
 ## 如何使用
@@ -34,19 +35,19 @@ builder.AddXiHan(xihan => xihan
 ```
 
 ```json
-{ "XiHan": { "MultiTenancy": { "Database": { "CacheSize": 10000, "CacheTimeToLiveSeconds": 30 } } } }
+{ "XiHan": { "MultiTenancy": { "Database": { "CacheTimeToLiveSeconds": 30 } } } }
 ```
 
-表结构由应用管理；`PropertiesJson` 列用长文本类型。
+存活时间必须为正（写入经失效立即生效，存活时间只是兜底）；缓存容量由缓存提供程序管。表结构由应用管理；`PropertiesJson` 列用长文本类型。
 
 ## 主要类型
 
 此库提供的主要类型：
 
 * `DatabaseMultiTenancyFeature`：特性入口
-* `DatabaseMultiTenancyOptions`：缓存与列举上限
+* `DatabaseMultiTenancyOptions`：目录缓存的存活时间
 * `TenantRecord`：租户存储行
-* `DatabaseTenantStore`：带缓存的 `ITenantStore`
+* `DatabaseTenantStore`：带缓存的 `ITenantStore`，`InvalidateAsync` / `InvalidateAllAsync` 失效所有实例的目录缓存
 * `TenantRecordStore`：实现租户管理 `ITenantAdministration`，作用域内的批量写入与删除；列举用 `ITenantStore.ListAsync`
 
 ## 更多文档

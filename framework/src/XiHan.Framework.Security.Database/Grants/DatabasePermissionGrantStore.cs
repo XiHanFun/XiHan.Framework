@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Collections.Frozen;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Caching.Abstractions.Caches;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
@@ -14,89 +14,41 @@ namespace XiHan.Framework.Security.Database.Grants;
 /// 数据库授予存储（单例）
 /// </summary>
 /// <remarks>
-/// 按主体与租户一次查询全局行加该租户的行，结果进有界的 TTL 缓存。读数据库不经管道而是直接开只读工作单元（见 <see cref="GrantInvocation"/>）；数据库故障（连接、超时、事务失败）返回 <see cref="SecurityErrors.StoreUnavailable"/>（HTTP 503）并记警告日志，失败不进缓存，下一次判定重新查库——不能以空集合代替，否则会被判定为不持有（403）。缓存键是（主体种类、主体 ID、租户）；条目按 <see cref="DatabaseSecurityOptions.CacheTimeToLive"/> 过期，条目数达到 <see cref="DatabaseSecurityOptions.CacheSize"/> 时整体清空；<see cref="PermissionGrantRecordStore"/> 写入后对涉及的主体调用 <see cref="Invalidate"/>
+/// 按主体与租户一次查询全局行加该租户的行，结果经 <see cref="ICache"/> 缓存（<see cref="GenerationCache{T}"/>，区 <see cref="CacheRegion"/>）：范围是主体、条目是租户，失效按主体换代数，所有共用缓存的实例一起失效（ADR-0229）。装了两级缓存时命中在本机一级缓存，判定不出进程。
+/// 读数据库不经管道而是直接开只读工作单元（见 <see cref="GrantInvocation"/>）；数据库故障（连接、超时、事务失败）返回 <see cref="SecurityErrors.StoreUnavailable"/>（HTTP 503）并记警告日志，失败不进缓存，下一次判定重新查库——不能以空集合代替，否则会被判定为不持有（403）。
+/// 缓存后端故障时判定直接查库、不写缓存，结果仍然正确；条目按 <see cref="DatabaseSecurityOptions.CacheTimeToLive"/> 过期，容量由提供 <c>caching.local</c> 的 Provider 管。<see cref="PermissionGrantRecordStore"/> 写入后对涉及的主体调用 <see cref="InvalidateAsync"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
 {
+    /// <summary>
+    /// 授予缓存在 <see cref="ICache"/> 里的区名
+    /// </summary>
+    /// <remarks>
+    /// 所有键以它开头；共用一个缓存后端的多个应用要用不同的键前缀（如 Redis 的 <c>KeyPrefix</c>）
+    /// </remarks>
+    public const string CacheRegion = "security:grants";
+
     /// <summary>
     /// 数据库读取
     /// </summary>
     private readonly GrantInvocation _invocation;
 
     /// <summary>
-    /// 选项：容量与存活时间
+    /// 按主体失效的缓存区
     /// </summary>
-    private readonly DatabaseSecurityOptions _options;
-
-    /// <summary>
-    /// 时钟
-    /// </summary>
-    /// <remarks>
-    /// 判定条目过期
-    /// </remarks>
-    private readonly TimeProvider _clock;
-
-    /// <summary>
-    /// 保护缓存表与主体索引的锁
-    /// </summary>
-    private readonly Lock _gate = new();
-
-    /// <summary>
-    /// 缓存表：键为主体与租户（<see langword="null"/> 为无租户），值为授予集合与过期时刻
-    /// </summary>
-    private readonly Dictionary<(GrantSubject Subject, string? Tenant), CacheEntry> _entries = [];
-
-    /// <summary>
-    /// 主体索引：主体 → 缓存了哪些租户的条目，供按主体失效
-    /// </summary>
-    private readonly Dictionary<GrantSubject, HashSet<string?>> _tenantsBySubject = [];
+    private readonly GenerationCache<GrantSetEntry> _cache;
 
     /// <summary>
     /// 创建
     /// </summary>
-    public DatabasePermissionGrantStore(IServiceProvider services, DatabaseSecurityOptions options, TimeProvider clock, ILoggerFactory loggerFactory)
+    public DatabasePermissionGrantStore(IServiceProvider services, DatabaseSecurityOptions options, ICache cache, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(cache);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         _invocation = new GrantInvocation(services, loggerFactory.CreateLogger<DatabasePermissionGrantStore>());
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-    }
-
-    /// <summary>
-    /// 缓存的代数
-    /// </summary>
-    /// <remarks>
-    /// 每次失效加一（在锁内）。读取在查库之前记下它，写回缓存时不一致就丢弃：失效之前开始的读取可能读到写入提交之前的旧行（ADR-0194）
-    /// </remarks>
-    private long _generation;
-
-    /// <summary>
-    /// 当前的代数
-    /// </summary>
-    private long Generation
-    {
-        get
-        {
-            lock (_gate)
-            {
-                return _generation;
-            }
-        }
-    }
-
-    /// <summary>
-    /// 当前缓存的条目数（含尚未被访问到的已过期条目）
-    /// </summary>
-    public int CachedEntryCount
-    {
-        get
-        {
-            lock (_gate)
-            {
-                return _entries.Count;
-            }
-        }
+        _cache = new GenerationCache<GrantSetEntry>(cache, CacheRegion, options.CacheTimeToLive, loggerFactory.CreateLogger<DatabasePermissionGrantStore>());
     }
 
     /// <inheritdoc />
@@ -110,158 +62,104 @@ public sealed class DatabasePermissionGrantStore : IPermissionGrantStore
             return Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>([]);
         }
 
-        // 空租户与无租户同义：都只有平台授予，缓存键也归一
+        // 空租户与无租户同义：都只有平台授予，缓存条目也归一为空字符串（租户 ID 不会是空字符串）
         var tenant = string.IsNullOrEmpty(tenantId) ? null : tenantId;
-        var found = new Dictionary<GrantSubject, FrozenSet<string>>();
-        var missing = new HashSet<GrantSubject>();
-        foreach (var subject in subjects)
+        var keys = new GenerationCacheKey[subjects.Count];
+        for (var index = 0; index < subjects.Count; index++)
         {
-            if (TryGetCached(subject, tenant, out var cached))
-            {
-                found[subject] = cached;
-            }
-            else
-            {
-                missing.Add(subject);
-            }
+            keys[index] = new GenerationCacheKey(ScopeOf(subjects[index]), tenant ?? string.Empty);
         }
 
-        // 未命中的主体一次查库；在锁外查，并发未命中各自查一次，后写入的覆盖前者，结果相同。
-        // 查库之前记下代数：查的过程中有失效（撤销或授予正在提交），读回的行可能是提交之前的旧值，不写回缓存
-        if (missing.Count > 0)
+        var read = await _cache.GetOrLoadManyAsync(keys, (missing, ct) => LoadAsync(missing, tenant, ct), cancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var entries))
         {
-            var generation = Generation;
-            var query = EntityQuery.All<PermissionGrantRecord>().Where(GrantRows.EffectiveForAny(missing, tenant)).OrderBy(static r => r.Id);
-            var read = await _invocation.ReadAsync((repository, ct) => GrantRows.ListAllAsync(repository, query, ct), cancellationToken).ConfigureAwait(false);
-            // 失败不进缓存：存储恢复后下一次判定立即重新查库，而不是在 TTL 内一直报不可达
-            if (!read.TryGetValue(out var rows))
-            {
-                return read.Error!;
-            }
-
-            // IN 的笛卡尔积可能带回别的主体的行：按完整主体精确匹配，查不到行的主体是空集合
-            var bySubject = rows
-                .Select(static r => (Subject: new GrantSubject(r.SubjectKind, r.SubjectId), r.Permission))
-                .Where(row => missing.Contains(row.Subject))
-                .GroupBy(static row => row.Subject)
-                .ToDictionary(static g => g.Key, static g => g.Select(static row => row.Permission).ToFrozenSet(StringComparer.Ordinal));
-            foreach (var subject in missing)
-            {
-                var grants = bySubject.GetValueOrDefault(subject) ?? FrozenSet<string>.Empty;
-                Store(subject, tenant, grants, generation);
-                found[subject] = grants;
-            }
+            return read.Error!;
         }
 
-        return Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>(subjects.Select(subject => (IReadOnlyCollection<string>)found[subject]).ToList());
+        var results = new IReadOnlyCollection<string>[entries.Count];
+        for (var index = 0; index < entries.Count; index++)
+        {
+            results[index] = entries[index].Set;
+        }
+
+        return Result.Success<IReadOnlyList<IReadOnlyCollection<string>>>(results);
     }
 
     /// <summary>
-    /// 使这些主体的缓存失效
+    /// 使这些主体的缓存失效（所有共用缓存的实例）
     /// </summary>
     /// <remarks>
-    /// 清掉每个主体在所有租户下的条目；空集合什么也不做。清空全部用 <see cref="InvalidateAll"/>（ADR-0160）
+    /// 主体在所有租户下的条目都作废；空集合什么也不做。清空全部用 <see cref="InvalidateAllAsync"/>（ADR-0160）。缓存后端故障时抛出：失效没有传到别的实例，调用方据此拒绝写入
     /// </remarks>
-    public void Invalidate(IReadOnlyList<GrantSubject> subjects)
+    public ValueTask InvalidateAsync(IReadOnlyList<GrantSubject> subjects, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(subjects);
-        lock (_gate)
+        if (subjects.Count == 0)
         {
-            // 代数在锁内加一：此刻还在查库的读取都不能把结果写回来
-            _generation++;
-            foreach (var subject in subjects)
-            {
-                if (_tenantsBySubject.Remove(subject, out var tenants))
-                {
-                    foreach (var tenant in tenants)
-                    {
-                        _entries.Remove((subject, tenant));
-                    }
-                }
-            }
+            return ValueTask.CompletedTask;
         }
+
+        var scopes = new string[subjects.Count];
+        for (var index = 0; index < subjects.Count; index++)
+        {
+            scopes[index] = ScopeOf(subjects[index]);
+        }
+
+        return _cache.InvalidateAsync(scopes, cancellationToken);
     }
 
     /// <summary>
-    /// 使全部缓存失效
-    /// </summary>
-    public void InvalidateAll()
-    {
-        lock (_gate)
-        {
-            _generation++;
-            _entries.Clear();
-            _tenantsBySubject.Clear();
-        }
-    }
-
-    /// <summary>
-    /// 取未过期的缓存条目
+    /// 使全部缓存失效（所有共用缓存的实例）
     /// </summary>
     /// <remarks>
-    /// 过期的条目顺手移除
+    /// 缓存后端故障时抛出
     /// </remarks>
-    private bool TryGetCached(GrantSubject subject, string? tenant, out FrozenSet<string> grants)
-    {
-        lock (_gate)
-        {
-            if (_entries.TryGetValue((subject, tenant), out var entry))
-            {
-                if (entry.ExpiresAt is not { } expiresAt || expiresAt > _clock.GetUtcNow())
-                {
-                    grants = entry.Grants;
-                    return true;
-                }
-
-                // 过期条目不再可用：从表与索引里移除，由调用方重新查库
-                _entries.Remove((subject, tenant));
-                if (_tenantsBySubject.TryGetValue(subject, out var tenants) && tenants.Remove(tenant) && tenants.Count == 0)
-                {
-                    _tenantsBySubject.Remove(subject);
-                }
-            }
-        }
-
-        grants = FrozenSet<string>.Empty;
-        return false;
-    }
+    public ValueTask InvalidateAllAsync(CancellationToken cancellationToken) => _cache.InvalidateAllAsync(cancellationToken);
 
     /// <summary>
-    /// 写入缓存
+    /// 主体在缓存里的范围
     /// </summary>
     /// <remarks>
-    /// 新增条目前已满就整体清空（不做逐条淘汰，容量只是防止无界增长）
+    /// 种类只有 <c>user</c> / <c>role</c>、不含冒号，拼上 ID 不会与别的主体相同；ID 区分大小写
     /// </remarks>
-    private void Store(GrantSubject subject, string? tenant, FrozenSet<string> grants, long generation)
-    {
-        var expiresAt = _options.CacheTimeToLive is { } ttl ? _clock.GetUtcNow() + ttl : (DateTimeOffset?)null;
-        lock (_gate)
-        {
-            // 查库之后有过失效：这次读回的结果可能早于那次写入的提交，丢掉，下一次判定重新查库
-            if (generation != _generation)
-            {
-                return;
-            }
-
-            if (!_entries.ContainsKey((subject, tenant)) && _entries.Count >= _options.CacheSize)
-            {
-                _entries.Clear();
-                _tenantsBySubject.Clear();
-            }
-
-            _entries[(subject, tenant)] = new CacheEntry(grants, expiresAt);
-            if (!_tenantsBySubject.TryGetValue(subject, out var tenants))
-            {
-                tenants = [];
-                _tenantsBySubject[subject] = tenants;
-            }
-
-            tenants.Add(tenant);
-        }
-    }
+    private static string ScopeOf(GrantSubject subject) => subject.Kind + ":" + subject.Id;
 
     /// <summary>
-    /// 一条缓存条目：授予集合（不可变，可直接返回给调用方）与过期时刻（<see langword="null"/> 不过期）
+    /// 一次查库取这些主体在这个租户下生效的授予
     /// </summary>
-    private readonly record struct CacheEntry(FrozenSet<string> Grants, DateTimeOffset? ExpiresAt);
+    /// <remarks>
+    /// 缓存区按未命中的位置调用；结果与 <paramref name="missing"/> 顺序一一对应，查不到行的主体是空集合
+    /// </remarks>
+    private async ValueTask<Result<IReadOnlyList<GrantSetEntry>>> LoadAsync(IReadOnlyList<GenerationCacheKey> missing, string? tenant, CancellationToken cancellationToken)
+    {
+        var subjects = new List<GrantSubject>(missing.Count);
+        foreach (var key in missing)
+        {
+            var separator = key.Scope.IndexOf(':', StringComparison.Ordinal);
+            var subject = new GrantSubject(key.Scope[..separator], key.Scope[(separator + 1)..]);
+            subjects.Add(subject);
+        }
+
+        var query = EntityQuery.All<PermissionGrantRecord>().Where(GrantRows.EffectiveForAny(subjects, tenant)).OrderBy(static r => r.Id);
+        var read = await _invocation.ReadAsync((repository, ct) => GrantRows.ListAllAsync(repository, query, ct), cancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var rows))
+        {
+            return read.Error!;
+        }
+
+        // IN 的笛卡尔积可能带回别的主体的行：按完整主体精确匹配
+        var wanted = new HashSet<GrantSubject>(subjects);
+        var grouped = rows
+            .Select(static r => (Subject: new GrantSubject(r.SubjectKind, r.SubjectId), r.Permission))
+            .Where(row => wanted.Contains(row.Subject))
+            .GroupBy(static row => row.Subject)
+            .ToDictionary(static g => g.Key, static g => g.Select(static row => row.Permission).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray());
+        var entries = new GrantSetEntry[subjects.Count];
+        for (var index = 0; index < subjects.Count; index++)
+        {
+            entries[index] = new GrantSetEntry(grouped.GetValueOrDefault(subjects[index]) ?? []);
+        }
+
+        return Result.Success<IReadOnlyList<GrantSetEntry>>(entries);
+    }
 }

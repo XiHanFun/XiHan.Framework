@@ -4,6 +4,8 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using SqlSugar;
+using XiHan.Framework.Caching.InMemory;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Persistence.SqlSugar;
 using XiHan.Framework.Testing;
@@ -48,9 +50,12 @@ internal sealed class SqliteDatabase : IAsyncDisposable
     /// 启动装配了本数据库与 <see cref="DatabaseMultiTenancyFeature"/> 的宿主
     /// </summary>
     /// <remarks>
-    /// 开启 <c>InitTables</c> 建表，后给的配置覆盖默认配置
+    /// 开启 <c>InitTables</c> 建表，后给的配置覆盖默认配置。同一个库可以起多个宿主，模拟多实例部署
     /// </remarks>
-    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null)
+    /// <param name="configuration">追加的配置</param>
+    /// <param name="features">追加装配的特性（如 Redis 与两级缓存）</param>
+    /// <param name="services">在特性之前登记的服务（如几个宿主共用的缓存）</param>
+    public async Task<TestHost> StartHostAsync(IEnumerable<KeyValuePair<string, string?>>? configuration = null, Action<AppBuilder>? features = null, Action<IServiceCollection>? services = null)
     {
         EnsureWriteAheadLog();
         // 内存配置不接受重复键：后给的覆盖默认的
@@ -61,9 +66,17 @@ internal sealed class SqliteDatabase : IAsyncDisposable
         }
 
         var host = await TestHost.StartAsync(
-            static b => b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseMultiTenancyFeature>(),
+            b =>
+            {
+                b.UseFeature(new SqlSugarPersistenceFeature()).UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseMultiTenancyFeature>();
+                features?.Invoke(b);
+            },
             settings,
-            collection => collection.AddScoped<ISqlSugarClient>(_ => CreateClient()));
+            collection =>
+            {
+                collection.AddScoped<ISqlSugarClient>(_ => CreateClient());
+                services?.Invoke(collection);
+            });
         _hosts.Add(host);
         return host;
     }
@@ -85,7 +98,7 @@ internal sealed class SqliteDatabase : IAsyncDisposable
             config.SlaveConnectionConfigs = [new SlaveConnectionConfig { ConnectionString = replica.ConnectionString, HitRate = 10 }];
         });
         var host = await TestHost.StartAsync(
-            b => b.UseFeature(feature).UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseMultiTenancyFeature>(),
+            b => b.UseFeature(feature).UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseMultiTenancyFeature>(),
             [new("XiHan:Bindings:db", ConnectionString), new("XiHan:Persistence:SqlSugar:InitTables", "true")]);
         _hosts.Add(host);
         return host;

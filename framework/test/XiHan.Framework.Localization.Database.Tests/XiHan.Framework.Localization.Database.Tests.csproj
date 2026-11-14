@@ -7,6 +7,9 @@
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Database/XiHan.Framework.Localization.Database.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.Conformance/XiHan.Framework.Localization.Conformance.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Localization.InMemory/XiHan.Framework.Localization.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.InMemory/XiHan.Framework.Caching.InMemory.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Hybrid/XiHan.Framework.Caching.Hybrid.csproj" />
+    <ProjectReference Include="../../src/XiHan.Framework.Caching.Redis/XiHan.Framework.Caching.Redis.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.InMemory/XiHan.Framework.Persistence.InMemory.csproj" />
     <!-- 翻译表的索引在 SQLite 上经 SqlSugar 建表验证 -->
     <ProjectReference Include="../../src/XiHan.Framework.Persistence.SqlSugar/XiHan.Framework.Persistence.SqlSugar.csproj" />

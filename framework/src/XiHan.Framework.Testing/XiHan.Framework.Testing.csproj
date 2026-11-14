@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../XiHan.Framework.Kernel/XiHan.Framework.Kernel.csproj" />
+    <ProjectReference Include="../XiHan.Framework.Caching.Abstractions/XiHan.Framework.Caching.Abstractions.csproj" />
     <ProjectReference Include="../XiHan.Framework.Security.WebAuthn/XiHan.Framework.Security.WebAuthn.csproj" />
   </ItemGroup>
 

@@ -5,6 +5,9 @@ using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
+using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.Abstractions.Stores;
+using XiHan.Framework.Caching.InMemory;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Localization.Abstractions.Messages;
@@ -66,7 +69,7 @@ public sealed class DatabaseMultiTenancyTests
             .UseFeature<InMemoryPersistenceFeature>()
             .UseFeature<InMemoryLocalizationFeature>()
             .UseFeature<InMemoryMultiTenancyFeature>()
-            .UseFeature<DatabaseMultiTenancyFeature>());
+            .UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseMultiTenancyFeature>());
 
         // 显式 Provider 拿到两个能力，默认的内存实现一个都没选中、不被装配
         Assert.Equal(
@@ -103,7 +106,7 @@ public sealed class DatabaseMultiTenancyTests
     {
         // 清单不能声明 persistence.relational@1（会与持久化 Provider 的可选分片依赖成环），所以在启动期核对
         var exception = await Assert.ThrowsAsync<FrameworkException>(static async () =>
-            await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>().UseFeature<DatabaseMultiTenancyFeature>()));
+            await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>().UseFeature<InMemoryCachingFeature>().UseFeature<DatabaseMultiTenancyFeature>()));
 
         // 宿主把特性启动失败包成 FeatureStartFailed，本包的缺失能力错误在内部异常里
         Assert.Equal(KernelErrors.FeatureStartFailed, exception.Code);
@@ -121,7 +124,6 @@ public sealed class DatabaseMultiTenancyTests
 
         Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         Assert.False((await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().HasValue);
-        Assert.Equal(2, store.CachedCount);
 
         // 绕过 TenantRecordStore 直接改表：命中缓存看不到变化，“不存在”同样被缓存
         await TenantHosts.EditRowAsync(host, "acme", static row => row.DisplayName = "Acme 2");
@@ -129,18 +131,19 @@ public sealed class DatabaseMultiTenancyTests
         Assert.Equal("Acme", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         Assert.False((await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().HasValue);
 
-        // 单个失效只重查该租户；整体失效后两者都重查
-        store.Invalidate(["acme"]);
-        Assert.Equal(1, store.CachedCount);
+        // 单个失效只重查该租户（空集合什么也不做）；整体失效后两者都重查
+        await store.InvalidateAsync([], CancellationToken.None);
+        await store.InvalidateAsync(["acme"], CancellationToken.None);
         Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
         Assert.False((await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().HasValue);
-        store.InvalidateAll();
-        Assert.Equal(0, store.CachedCount);
+        await store.InvalidateAllAsync(CancellationToken.None);
         Assert.Equal("Ghost", (await store.FindAsync("ghost", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
 
         // 不合法的 ID 不查库也不占缓存；枚举不走缓存
+        var cache = host.Services.GetRequiredService<InMemoryObjectCache>();
+        var before = cache.Count;
         Assert.False((await store.FindAsync("bad id", CancellationToken.None)).ValueOrThrow().HasValue);
-        Assert.Equal(1, store.CachedCount);
+        Assert.Equal(before, cache.Count);
         Assert.Equal(["acme", "ghost"], (await store.ListAsync(new TenantQuery(), CancellationToken.None)).ValueOrThrow().Items.Select(static t => t.Id));
     }
 
@@ -160,33 +163,25 @@ public sealed class DatabaseMultiTenancyTests
         clock.Advance(TimeSpan.FromSeconds(1));
         Assert.Equal("Acme 2", (await store.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
 
-        // 0 表示不过期：只靠失效
-        var frozen = new FakeTimeProvider(clock.GetUtcNow());
-        await using var forever = await TenantHosts.StartAsync([new(Section + "CacheTimeToLiveSeconds", "0")], services => services.AddSingleton<TimeProvider>(frozen));
-        var foreverStore = forever.Services.GetRequiredService<DatabaseTenantStore>();
-        await TenantHosts.SeedAsync(forever, [Acme()]);
-        Assert.Equal("Acme", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
-        await TenantHosts.EditRowAsync(forever, "acme", static row => row.DisplayName = "Acme 2");
-        frozen.Advance(TimeSpan.FromDays(365));
-        Assert.Equal("Acme", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
-        foreverStore.Invalidate(["acme"]);
-        Assert.Equal("Acme 2", (await foreverStore.FindAsync("acme", CancellationToken.None)).ValueOrThrow().ValueOrThrow().DisplayName);
+        // 存活时间不再接受 0（不过期）：装配即失败
+        await Assert.ThrowsAsync<ArgumentException>(static async () => await TenantHosts.StartAsync([new(Section + "CacheTimeToLiveSeconds", "0")]));
     }
 
     [Fact]
-    public async Task Find_ClearsCache_WhenCapacityIsReached()
+    public async Task Find_KeepsEntriesInTheHostsICache_UnderItsRegion()
     {
-        await using var host = await TenantHosts.StartAsync([new(Section + "CacheSize", "2")]);
+        await using var host = await TenantHosts.StartAsync();
         var store = host.Services.GetRequiredService<DatabaseTenantStore>();
-        await TenantHosts.SeedAsync(host, [new TenantInfo { Id = "a" }, new TenantInfo { Id = "b" }, new TenantInfo { Id = "c" }]);
+        var cache = host.Services.GetRequiredService<InMemoryObjectCache>();
+        Assert.Same(cache, host.Services.GetRequiredService<ICache>());
+        Assert.Contains("caching.local@1", host.App.Graph["xihan.multitenancy.database"].Manifest.Requires.Select(static r => r.ToString()));
+        await TenantHosts.SeedAsync(host, [new TenantInfo { Id = "a" }]);
 
+        // 区代数、两个租户的范围代数与两个条目（含不存在的租户），键都在区名之下；容量由内存缓存的上限管
         Assert.True((await store.FindAsync("a", CancellationToken.None)).ValueOrThrow().HasValue);
-        Assert.True((await store.FindAsync("b", CancellationToken.None)).ValueOrThrow().HasValue);
-        Assert.Equal(2, store.CachedCount);
-
-        // 容量到顶整体清空后再装入新租户
-        Assert.True((await store.FindAsync("c", CancellationToken.None)).ValueOrThrow().HasValue);
-        Assert.Equal(1, store.CachedCount);
+        Assert.False((await store.FindAsync("b", CancellationToken.None)).ValueOrThrow().HasValue);
+        var page = (await cache.ListKeysAsync(new CacheKeyQuery { Prefix = DatabaseTenantStore.CacheRegion + ":" }, CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(5, page.Items.Count);
     }
 
     [Fact]
@@ -260,7 +255,7 @@ public sealed class DatabaseMultiTenancyTests
 
         // 属性列不是 JSON 对象：异常原样抛出、不缓存；Tenant 阶段据此让调用失败而不是当作不存在
         await Assert.ThrowsAsync<JsonException>(async () => await store.FindAsync("broken", CancellationToken.None));
-        Assert.Equal(0, store.CachedCount);
+        await Assert.ThrowsAsync<JsonException>(async () => await store.FindAsync("broken", CancellationToken.None));
         var outcome = await host.InvokeAsync(static _ => ValueTask.CompletedTask, baggage: Tenant("broken"));
         Assert.True(outcome.IsFailure);
         Assert.NotEqual(MultiTenancyErrors.NotFound, outcome.Error?.Code);
@@ -269,16 +264,13 @@ public sealed class DatabaseMultiTenancyTests
     [Fact]
     public void Options_FromConfiguration_ParseAndValidate()
     {
-        var options = DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheSize", "5"), ("CacheTimeToLiveSeconds", "0")));
-        Assert.Equal((5, (TimeSpan?)null), (options.CacheSize, options.CacheTimeToLive));
         Assert.Equal(TimeSpan.FromSeconds(2.5), DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheTimeToLiveSeconds", "2.5"))).CacheTimeToLive);
+        Assert.Equal(TimeSpan.FromSeconds(30), DatabaseMultiTenancyOptions.FromConfiguration(Build()).CacheTimeToLive);
+        // 容量交给缓存 Provider：旧的 CacheSize 键不再读取
+        Assert.Equal(new DatabaseMultiTenancyOptions(), DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheSize", "5"))));
 
-        var defaults = DatabaseMultiTenancyOptions.FromConfiguration(Build());
-        Assert.Equal((10_000, TimeSpan.FromSeconds(30)), (defaults.CacheSize, defaults.CacheTimeToLive));
-
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseMultiTenancyOptions { CacheSize = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseMultiTenancyOptions { CacheTimeToLive = TimeSpan.Zero });
-        Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheSize", "-1"))));
+        Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheTimeToLiveSeconds", "0"))));
         Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheTimeToLiveSeconds", "-1"))));
     }
 }

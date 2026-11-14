@@ -19,7 +19,7 @@
 
 - 总是注册 `MultiTenancyOptions`（从配置读取）与作用域服务 `TenantShardScope`（与是否选中分片无关）。
 - 租户上下文能力被选中时：`InMemoryMultiTenancyOptions`、`InMemoryTenantStore` 与 `ITenantStore`；解析器 `ClaimTenantResolver` → `BaggageTenantResolver`，注册顺序即解析顺序；Tenant 阶段的 `TenantResolutionMiddleware`；健康项 `multitenancy.inmemory.capacity`，由存储自己同步计算。
-- 分片能力被选中时的 `TenantStoreShardResolver`。
+- 分片能力被选中时的 `TenantStoreShardResolver`（不缓存，每次从存储里的租户属性推出分片）。
 
 清单角色是 `default`：装配一个显式的多租户 Provider（如 `MultiTenancy.Database`）后本包被顶替，不装配、不启动。应用自带的 Provider 只提供 `multitenancy.context@1` 时，本包只提供分片：存储、解析器、健康项与 Tenant 阶段中间件都由应用的 Provider 注册（它可以复用抽象包的 `TenantResolutionMiddleware`），分片从它的 `ITenantStore` 推出。
 
@@ -97,11 +97,11 @@ app.Run();
 | --- | --- |
 | `InMemoryMultiTenancyFeature` | 特性入口；`HealthName` = `multitenancy.inmemory.capacity` |
 | `InMemoryMultiTenancyOptions` | `MaxTenants`（缺省 1000）、`Tenants`（启动时装载的租户）；`FromConfiguration` 读取上面的配置 |
-| `InMemoryTenantStore` | `ITenantStore` 与健康项贡献者：`Capacity`、`Count`；运行时写入经 `ITenantAdministration`（`UpsertAsync`、`RemoveAsync`，一次加锁处理整批，写入后失效分片缓存） |
+| `InMemoryTenantStore` | `ITenantStore` 与健康项贡献者：`Capacity`、`Count`；运行时写入经 `ITenantAdministration`（`UpsertAsync`、`RemoveAsync`，一次加锁处理整批，写入后通知分片解析器） |
 
 ## 使用示例
 
-运行时增删租户经租户管理 `ITenantAdministration`：写入后分片解析器的缓存随即失效，下次解析就落新库：
+运行时增删租户经租户管理 `ITenantAdministration`：缺省分片解析器每次读存储，写入之后的下一次解析就落新库：
 
 ```csharp
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
@@ -112,7 +112,7 @@ public sealed class TenantMoves(ITenantAdministration tenants)
 {
     public async ValueTask<Result> MoveToOwnDatabaseAsync(string tenantId, string connectionString, CancellationToken cancellationToken)
     {
-        // 整份覆盖；解析器缓存的旧结果（包括"无分片"）随写入失效
+        // 整份覆盖；之后的解析读到新属性，"无分片"变成分库
         var results = await tenants.UpsertAsync(
         [
             new TenantInfo
@@ -134,7 +134,7 @@ public sealed class TenantMoves(ITenantAdministration tenants)
 - 健康项 `multitenancy.inmemory.capacity`：租户数达到上限即 Degraded（原因 `MULTITENANCY_UNAVAILABLE_001`），否则 Ready。
 - ID 区分大小写；`ListAsync` 按 ID 序数排序返回全部租户。
 - 数据只在进程内存里：多实例部署时各实例各有一份，运行时的增删不会同步到其他实例，重启后恢复为配置内容。
-- 分片缓存容量由 `XiHan:MultiTenancy:ShardCacheSize` 决定，缺省 10000，必须是正整数。
+- 缺省分片解析器不缓存，以前的 `XiHan:MultiTenancy:ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已删除，配置里留着也被忽略。
 
 ## 相关
 

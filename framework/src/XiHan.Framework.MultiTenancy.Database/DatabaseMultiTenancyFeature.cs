@@ -3,6 +3,8 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using XiHan.Framework.Caching.Abstractions;
+using XiHan.Framework.Caching.Abstractions.Serialization;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
@@ -22,7 +24,7 @@ namespace XiHan.Framework.MultiTenancy.Database;
 /// 数据库租户目录的能力包入口
 /// </summary>
 /// <remarks>
-/// 提供 <c>multitenancy.context@1</c> 与 <c>multitenancy.sharding@1</c>，需要 <c>persistence.relational@1</c>（启动时核对，见 <see cref="StartAsync"/>）；注册租户目录、解析器（先声明后 Baggage）与 Tenant 阶段中间件。装配后顶替默认的 <c>MultiTenancy.InMemory</c>
+/// 提供 <c>multitenancy.context@1</c> 与 <c>multitenancy.sharding@1</c>，需要 <c>caching.local@1</c>（租户目录缓存走 <c>ICache</c>，ADR-0229）与 <c>persistence.relational@1</c>（启动时核对，见 <see cref="StartAsync"/>）；注册租户目录、解析器（先声明后 Baggage）与 Tenant 阶段中间件。装配后顶替默认的 <c>MultiTenancy.InMemory</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class DatabaseMultiTenancyFeature : IHostedFeature
@@ -44,7 +46,12 @@ public sealed class DatabaseMultiTenancyFeature : IHostedFeature
         ],
         // persistence.relational@1 不写进 requires：持久化 Provider（SqlSugar / EF Core）可选依赖 multitenancy.sharding@1 以按分片选连接，
         // 内核把满足了的可选依赖也当作排序边，这里再声明持久化就成环；实际的依赖改在启动时核对
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
+        // 租户目录的缓存走 ICache（ADR-0229）：多实例装两级缓存即一致
+        Requires =
+        [
+            new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
+            new CapabilityRequirement(CachingCapabilities.Local, CachingCapabilities.Version),
+        ],
         Contributes = new Contributions
         {
             Pipeline = [new PipelineContribution(typeof(TenantResolutionMiddleware).FullName!, PipelineStage.Tenant)],
@@ -62,6 +69,8 @@ public sealed class DatabaseMultiTenancyFeature : IHostedFeature
         context.Services.AddSingleton(MultiTenancyOptions.FromConfiguration(context.Configuration));
         context.Services.AddSingleton(DatabaseMultiTenancyOptions.FromConfiguration(context.Configuration));
         context.Services.AddRepository<TenantRecord, string>();
+        // 租户目录缓存的值类型交给跨进程缓存的序列化器，应用的序列化上下文不必认识它们
+        CacheSerializerRegistration.AddTypeInfo(context.Services, TenantCacheJsonContext.Default);
         context.Services.AddSingleton<DatabaseTenantStore>();
         context.Services.TryAddScoped<TenantRecordStore>();
         context.Services.TryAddScoped<ITenantAdministration>(static sp => sp.GetRequiredService<TenantRecordStore>());

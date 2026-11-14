@@ -1,6 +1,6 @@
 # XiHan.Framework.Testing
 
-测试基座：没有 HTTP 的内存测试宿主、可注入行为的特性桩、按能力 ID 文本构造清单与独立调用上下文的工具。供框架自身、Provider 与应用的测试项目引用，也是各一致性套件装配宿主的基础。
+测试基座：没有 HTTP 的内存测试宿主、可注入行为的特性桩、按能力 ID 文本构造清单与独立调用上下文的工具，以及可以切换成后端不可达的缓存包装。供框架自身、Provider 与应用的测试项目引用，也是各一致性套件装配宿主的基础。
 
 | 项 | 内容 |
 | --- | --- |
@@ -9,9 +9,9 @@
 | 能力 | — |
 | 特性入口 | —（`StubFeature` 是测试用的特性桩） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection` |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Caching.Abstractions`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection` |
 | AOT | 兼容 |
-| 稳定性 | Stable |
+| 稳定性 | Stable；`FaultyCache` 为 Preview |
 
 ## 概述
 
@@ -24,6 +24,7 @@
 - 测自己的特性、中间件与操作：用 `TestHost` 装配，用 `StubFeature` 注入要测的那一小段装配逻辑。
 - 测 HTTP 路由、模型绑定与 Problem Details：用 ASP.NET Core 的 `WebApplicationFactory` 测真实宿主，本包不覆盖协议层。
 - 写 Provider：先继承对应的一致性套件（[Conformance](./conformance)），再用本包补 Provider 特有行为的测试。
+- 测组件在缓存后端故障时的行为（读取是否绕过缓存、写入是否拒绝）：用 `FaultyCache` 包住一个 `ICache`。
 
 ## 安装与启用
 
@@ -43,6 +44,7 @@ dotnet add package XiHan.Framework.Testing --prerelease
 | `TestInvocationContext` | `Create(services, deadline, baggage, cancellationToken)`：不依赖宿主的调用上下文，未给服务提供器时用什么都解析不到的空提供器 |
 | `WebAuthnTestAuthenticator` | 测试用的通行密钥认证器：构造时选算法（ES256、PS256、RS256），`Register` / `Authenticate` 按 WebAuthn 的格式生成响应，`SignCount` 原样写进认证器数据；`CredentialId`、`PublicKey` 与注册核对得到的相同 |
 | `WebAuthnTestCeremony` | 一次仪式的输入（挑战、来源、RP ID）与篡改项（仪式类型、跨源、UP / UV / BE / BS 标志、证明格式、改坏签名、用户句柄）；缺省值产生合法的响应 |
+| `FaultyCache` | 包住一个 `ICache`（构造参数 `inner`）：`Failing` 为真时每个操作都抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，与 Redis 断线时一样；为假时原样转给内层缓存，`Store` 是内层的存储 |
 
 ## 使用示例
 
@@ -107,12 +109,54 @@ Console.WriteLine(context.TraceId.Length);
 
 中间件与操作的完整测试写法见[测试与一致性套件](/testing/basics)。
 
+`FaultyCache` 让缓存后端在测试中途「断线」。下面验证一个[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)在缓存故障时读取照常、失效报错（内层缓存来自 `Caching.InMemory`）：
+
+```csharp
+using Microsoft.Extensions.Logging.Abstractions;
+using XiHan.Framework.Caching.Abstractions;
+using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Caching.InMemory;
+using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
+using Xunit;
+
+public sealed class PriceCacheOutageTests
+{
+    [Fact]
+    public async Task CacheOutage_ReadsTheSource_AndInvalidationThrows()
+    {
+        var options = new InMemoryCachingOptions();
+        var cache = new FaultyCache(new InMemoryObjectCache(new InMemoryCacheStore(options, TimeProvider.System), options, TimeProvider.System));
+        var prices = new GenerationCache<string>(cache, "test:prices", TimeSpan.FromMinutes(5), NullLogger.Instance);
+        var loads = 0;
+        ValueTask<Result<IReadOnlyList<string>>> LoadAsync(IReadOnlyList<GenerationCacheKey> keys, CancellationToken cancellationToken)
+        {
+            loads++;
+            return ValueTask.FromResult(Result.Success<IReadOnlyList<string>>([.. keys.Select(static key => key.Entry)]));
+        }
+
+        // 缓存后端不可达：读取绕过缓存直接查源，结果仍然正确
+        cache.Failing = true;
+        var read = await prices.GetOrLoadManyAsync([new GenerationCacheKey("acme", "books")], LoadAsync, CancellationToken.None);
+        Assert.Equal(["books"], read.ValueOrThrow());
+        Assert.Equal(1, loads);
+
+        // 失效把故障抛给调用方，由它决定拒绝写入还是记日志
+        var failed = await Assert.ThrowsAsync<FrameworkException>(async () => await prices.InvalidateAsync(["acme"], CancellationToken.None));
+        Assert.Equal(CachingErrors.StoreUnavailable, failed.Code);
+    }
+}
+```
+
+测宿主里的组件时，在装配特性之前把它登记为 `ICache` 单例（`TestHost.StartAsync(..., services: s => s.AddSingleton<ICache>(cache))`）。几个宿主登记同一个 `FaultyCache`（或同一个 `ICache`）实例时，它们共用一份缓存，可以模拟多实例共用的缓存后端：一个宿主写入，另一个宿主应当立即看到变化。
+
 ## 行为与限制
 
 - 每次 `InvokeAsync` / `InvokeOperation*Async` 一个独立的服务作用域；释放后再调用抛 `ObjectDisposedException`。
 - 特性启动抛出异常时 `StartAsync` 抛出内核的 `FrameworkException`（`KernelErrors.FeatureStartFailed`，即 `KERNEL_HOSTING_002`），容器已释放。
 - 配置只有传入的内存键值对，不读 `appsettings.json` 与环境变量；需要时在 `configuration` 参数里给出。
 - 调用不经过 Ingress 的协议绑定：`Accept-Language` 协商、HTTP 认证头之类由宿主适配器做的事不发生，Baggage 以 `baggage` 参数直接给出。
+- `FaultyCache` 只模拟 `ICache` 层面的故障：`Store` 原样返回内层存储，直接经 `ICacheStore` 或 `ISharedCache` 的读写不受 `Failing` 影响。`Failing` 可以在任何线程随时切换。
 
 ## 相关
 

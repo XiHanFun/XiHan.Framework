@@ -1,5 +1,7 @@
 #nullable enable
 XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance
+XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.Changes_AreVisibleToAnotherInstance_WithoutWaitingForExpiry() -> System.Threading.Tasks.Task!
+XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.Changes_AreVisibleToChecksThatReadBeforeTheWrite() -> System.Threading.Tasks.Task!
 XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.Grant_IsIndexAligned_Idempotent_AndVisibleToChecks() -> System.Threading.Tasks.Task!
 XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.List_FiltersBySubjectAndTenant_AndPagesInOrdinalOrder() -> System.Threading.Tasks.Task!
 XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.List_OutOfRangePage_ReturnsValidationError() -> System.Threading.Tasks.Task!
@@ -16,4 +18,6 @@ XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.Unavailable
 abstract XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.AdministerAsync<T>(System.Func<XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantAdministration!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>>! action) -> System.Threading.Tasks.ValueTask<T>
 abstract XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.StartAsync() -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore!>
 abstract XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.CreateStoreAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Security.Abstractions.Permissions.PermissionGrant!>! grants) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore!>
+virtual XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.PeerVisibilityTimeout.get -> System.TimeSpan
+virtual XiHan.Framework.Security.Conformance.PermissionGrantAdministrationConformance.StartPeerAsync() -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore?>
 virtual XiHan.Framework.Security.Conformance.PermissionGrantStoreConformance.CreateUnavailableStoreAsync() -> System.Threading.Tasks.ValueTask<XiHan.Framework.Security.Abstractions.Permissions.IPermissionGrantStore?>

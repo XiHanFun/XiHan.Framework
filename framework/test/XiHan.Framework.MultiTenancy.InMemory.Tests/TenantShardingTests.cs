@@ -27,7 +27,7 @@ public sealed class TenantShardingTests
     private const string Acme = "XiHan:MultiTenancy:Tenants:acme:";
 
     [Fact]
-    public async Task Resolver_CachesPerTenant_AndIsBounded()
+    public async Task Resolver_ReadsTheStoreEachTime_SoAdministrationIsVisibleAtOnce()
     {
         var store = new InMemoryTenantStore(new InMemoryMultiTenancyOptions
         {
@@ -35,35 +35,24 @@ public sealed class TenantShardingTests
             [
                 new TenantInfo { Id = "a", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=a" } },
                 new TenantInfo { Id = "b" },
-                new TenantInfo { Id = "c", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=c" } },
             ],
         });
-        var resolver = new TenantStoreShardResolver(store, new MultiTenancyOptions { ShardCacheSize = 2 }, NullLoggerFactory.Instance, TimeProvider.System);
+        var resolver = new TenantStoreShardResolver(store, NullLoggerFactory.Instance);
 
         Assert.Equal("Host=a", (await resolver.ResolveAsync("a", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
         Assert.False((await resolver.ResolveAsync("b", CancellationToken.None)).ValueOrThrow().HasValue);
-        Assert.Equal(2, resolver.CachedCount);
+        Assert.False((await resolver.ResolveAsync("nobody", CancellationToken.None)).ValueOrThrow().HasValue);
 
-        // 容量到顶整体清空后再装入新租户
-        Assert.Equal("Host=c", (await resolver.ResolveAsync("c", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
-        Assert.Equal(1, resolver.CachedCount);
-
-        // 缓存命中：存储里的变更要经失效才可见
-        Assert.True((await new InMemoryTenantAdministration(store, shards: null).UpsertAsync([new TenantInfo { Id = "c", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=c2" } }], CancellationToken.None))[0].IsSuccess);
-        Assert.Equal("Host=c", (await resolver.ResolveAsync("c", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
-        resolver.Invalidate(["c"]);
-        Assert.Equal("Host=c2", (await resolver.ResolveAsync("c", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
-        resolver.InvalidateAll();
-        Assert.Equal(0, resolver.CachedCount);
-
-        Assert.Throws<ArgumentOutOfRangeException>(static () => new MultiTenancyOptions { ShardCacheSize = 0 });
+        // 解析器自己不缓存（ADR-0229）：存储里的变更不经失效也立即可见
+        Assert.True((await new InMemoryTenantAdministration(store, shards: null).UpsertAsync([new TenantInfo { Id = "a", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { [TenantShardKeys.ConnectionString] = "Host=a2" } }], CancellationToken.None))[0].IsSuccess);
+        Assert.Equal("Host=a2", (await resolver.ResolveAsync("a", CancellationToken.None)).ValueOrThrow().ValueOrThrow().ConnectionString);
     }
 
     [Fact]
     public async Task Resolver_ReturnsUnavailable_WhenTheStoreIsUnavailable()
     {
         var logs = new LogCapture();
-        var resolver = new TenantStoreShardResolver(new ThrowingStore(), new MultiTenancyOptions(), logs, TimeProvider.System);
+        var resolver = new TenantStoreShardResolver(new ThrowingStore(), logs);
 
         var result = await resolver.ResolveAsync("acme", CancellationToken.None);
 
@@ -73,7 +62,6 @@ public sealed class TenantShardingTests
         Assert.Equal(MultiTenancyErrors.StoreUnavailable, result.Error?.Inner?.Code);
         var logged = Assert.Single(logs.Entries);
         Assert.Equal(LogLevel.Warning, logged.Level);
-        Assert.Equal(0, resolver.CachedCount);
         await Assert.ThrowsAsync<OperationCanceledException>(async () => await resolver.ResolveAsync("acme", new CancellationToken(canceled: true)));
     }
 

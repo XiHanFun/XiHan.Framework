@@ -10,6 +10,8 @@
 * 绝对或滑动过期
 * 基于存储的分布式租约锁
 * `IDistributedCache` 适配与操作调用的幂等去重
+* `GenerationCache<T>`：按范围失效、丢弃失效之前开始的读取的读穿缓存区，装了两级缓存时失效作用于所有实例
+* 组件经 `CacheSerializerRegistration.AddTypeInfo` 登记自己放进缓存的类型，应用的序列化上下文不必认识它们
 
 ## 如何使用
 
@@ -34,6 +36,18 @@ var profile = await cache.GetOrCreateAsync(
 
 存储不可达时抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不会伪装成未命中。
 
+数据会被写入改变、写入后要让一批条目一起失效时，用 `GenerationCache<T>`：
+
+```csharp
+var prices = new GenerationCache<PriceList>(cache, "acme:prices", TimeSpan.FromMinutes(5), logger);
+// 范围是租户、条目是类别；未命中的位置一次交给 loadMany 查源，查源失败不写缓存
+var read = await prices.GetOrLoadManyAsync([new GenerationCacheKey(tenantId, "books")], loadMany, ct);
+// 租户调价：这个租户下的条目一起作废，失效之前开始的读取写回的旧值不会被当作命中
+await prices.InvalidateAsync([tenantId], ct);
+```
+
+缓存后端故障时读取直接查源、不写回；失效把异常抛给调用方，由它决定拒绝写入还是记日志。
+
 ## 主要类型
 
 此库提供的主要类型：
@@ -42,7 +56,8 @@ var profile = await cache.GetOrCreateAsync(
 * `ICacheStore`：字节级存储，提供程序实现它
 * `CacheKey`、`CacheEntryOptions`：键与过期选项
 * `IDistributedLock`、`LockHandle`：分布式锁
-* `ICacheSerializer`、`JsonCacheSerializer`：共享缓存的值序列化
+* `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration`、`CacheTypeInfoSource`：共享缓存的值序列化与组件类型的登记
+* `GenerationCache<T>`、`GenerationCacheKey`、`GenerationCacheEntry<T>`：按范围失效的缓存区
 * `IdempotencyMiddleware`：按幂等键去重
 
 ## 更多文档
