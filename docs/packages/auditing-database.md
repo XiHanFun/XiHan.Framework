@@ -130,7 +130,7 @@ EF Core Provider 的装配见 [Persistence.EntityFrameworkCore](./persistence-en
 | `ErrorMessage` | 长文本 | 写入时按进程默认区域渲染的错误文案 |
 | `ErrorDetailsJson` | 长文本 | 错误细节的 JSON 对象 |
 | `TraceId` | 字符串，64 | trace-id |
-| `Resource` | 字符串，1024 | `xrn:` 资源名 |
+| `Resource` | 字符串，512 | `xrn:` 资源名 |
 | `PrincipalId` | 字符串，256 | 主体 ID |
 | `TenantId` | 字符串，128 | 租户 ID，普通列 |
 | `DetailsJson` | 长文本 | 细节的 JSON 对象 |

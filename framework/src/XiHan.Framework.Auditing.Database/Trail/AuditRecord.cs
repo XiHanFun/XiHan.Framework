@@ -91,7 +91,7 @@ public sealed class AuditRecord : IEntity<Guid>
     /// <summary>
     /// 资源名（<c>xrn:</c>）
     /// </summary>
-    [StringLength(1024)]
+    [StringLength(512)]
     public string? Resource { get; set; }
 
     /// <summary>

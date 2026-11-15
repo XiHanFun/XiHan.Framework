@@ -41,7 +41,7 @@ public sealed class SqliteAuditTrailTests
             Assert.Equal(StaticConfig.CodeFirst_BigString, Column(name).DataType);
         }
 
-        Assert.Equal((256, 64, 256, 64, 1024, 256, 128), (
+        Assert.Equal((256, 64, 256, 64, 512, 256, 128), (
             Column(nameof(AuditRecord.Action)).Length,
             Column(nameof(AuditRecord.ErrorCode)).Length,
             Column(nameof(AuditRecord.ErrorMessageKey)).Length,
