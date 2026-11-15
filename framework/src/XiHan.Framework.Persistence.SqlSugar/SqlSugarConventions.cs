@@ -73,6 +73,7 @@ public static class SqlSugarConventions
             previous?.Invoke(property, column);
             Configure(property, column);
             // 数据库类型在回调执行时读取：应用可能在 Apply 之后才设置它
+            ConfigureTimestamp(property, column, config.DbType);
             ConfigureDefault(property, column, config.DbType);
         };
         // 表级回调先让已有的回调定下表名，索引名再按最终的表名推出
@@ -168,6 +169,55 @@ public static class SqlSugarConventions
         if (split.Length > 0)
         {
             client.CodeFirst.SplitTables().InitTables(split);
+        }
+    }
+
+    /// <summary>
+    /// 日期时间列的小数秒精度
+    /// </summary>
+    internal const int TimestampPrecision = 6;
+
+    /// <summary>
+    /// 给日期时间列定小数秒精度
+    /// </summary>
+    /// <remarks>
+    /// SqlSugar 把 <see cref="DateTimeOffset"/> 与 <see cref="DateTime"/> 在 MySQL 上建成 <c>datetime</c>、在 Oracle 上建成 <c>DATE</c>，都只到秒，同一秒内写入的行按时间排序不确定、时刻比较也只到秒；SQL Server 上的 <see cref="DateTime"/> 建成 <c>datetime</c>，只到 1/300 秒。这里改成 MySQL <c>datetime(6)</c>、Oracle <c>timestamp(6)</c>、SQL Server（只 <see cref="DateTime"/>）<c>datetime2(6)</c>，与 PostgreSQL 的 <c>timestamptz</c> 同为微秒（<see cref="TimestampPrecision"/>）。实体自己的 <c>[SugarColumn(ColumnDataType)]</c> 已给列类型时不动。SQL Server 的 <c>datetimeoffset</c> 已到 100 纳秒，但 SqlClient 把 <see cref="System.Data.DbType.DateTime"/> 的参数当 <c>datetime</c> 传，所以 SQL Server 上两种类型的写入参数都按 <c>datetime2</c> 传。PostgreSQL 与 SQLite 不受影响。列类型只影响建表与加列，已经建成的列不随之改变
+    /// </remarks>
+    internal static void ConfigureTimestamp(PropertyInfo property, EntityColumnInfo column, DbType dbType)
+    {
+        if (IsBclMember(property) || column.IsIgnore)
+        {
+            return;
+        }
+
+        var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+        // SqlClient 把 DbType.DateTime 的参数当 datetime 传，写进列之前就只剩 1/300 秒：SQL Server 上写入参数一律按 datetime2
+        if (dbType == DbType.SqlServer && type == typeof(DateTimeOffset) && Equals(column.SqlParameterDbType, typeof(DateTimeOffsetConverter)))
+        {
+            column.SqlParameterDbType = typeof(SqlServerDateTimeOffsetConverter);
+        }
+        else if (dbType == DbType.SqlServer && type == typeof(DateTime) && column.SqlParameterDbType is null)
+        {
+            column.SqlParameterDbType = System.Data.DbType.DateTime2;
+        }
+
+        if (!string.IsNullOrEmpty(column.DataType))
+        {
+            return;
+        }
+
+        // 类型与精度分开给：写成 "datetime(6)" 时 SqlSugar 每次 InitTables 都判为列类型不同、重发一次改列
+        var dataType = dbType switch
+        {
+            DbType.MySql when type == typeof(DateTimeOffset) || type == typeof(DateTime) => "datetime",
+            DbType.Oracle when type == typeof(DateTimeOffset) || type == typeof(DateTime) => "timestamp",
+            DbType.SqlServer when type == typeof(DateTime) => "datetime2",
+            _ => null,
+        };
+        if (dataType is not null)
+        {
+            column.DataType = dataType;
+            column.Length = TimestampPrecision;
         }
     }
 
