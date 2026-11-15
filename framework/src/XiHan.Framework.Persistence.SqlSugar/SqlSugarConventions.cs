@@ -74,6 +74,7 @@ public static class SqlSugarConventions
             Configure(property, column);
             // 数据库类型在回调执行时读取：应用可能在 Apply 之后才设置它
             ConfigureTimestamp(property, column, config.DbType);
+            ConfigureText(property, column, config.DbType);
             ConfigureDefault(property, column, config.DbType);
         };
         // 表级回调先让已有的回调定下表名，索引名再按最终的表名推出
@@ -219,6 +220,31 @@ public static class SqlSugarConventions
             column.DataType = dataType;
             column.Length = TimestampPrecision;
         }
+    }
+
+    /// <summary>
+    /// Oracle 与 SQL Server 上字符串列存 Unicode、按字符计长
+    /// </summary>
+    /// <remarks>
+    /// SqlSugar 在这两种库上把字符串建成 <c>varchar(n)</c>：SQL Server 的 <c>varchar</c> 按排序规则的代码页存，汉字写进去变成 <c>?</c>；Oracle 的长度按库的缺省是字节数，AL32UTF8 的库里一个汉字 3 字节，<c>[StringLength(n)]</c> 的 n 个字符装不下。它自己的 <c>SqlServerCodeFirstNvarchar</c> / <c>OracleCodeFirstNvarchar2</c> 开关是连接级的，Oracle 的只管建表、不管加列。这里把有长度的字符串列定为 SQL Server <c>nvarchar(n)</c>（超过 4000 时是 <c>nvarchar(max)</c>）、Oracle <c>nvarchar2(n)</c>（最长 2000，更长的用 <c>[LongText]</c>，即 <c>clob</c>）。实体自己给了列类型的不动
+    /// </remarks>
+    internal static void ConfigureText(PropertyInfo property, EntityColumnInfo column, DbType dbType)
+    {
+        if (IsBclMember(property)
+            || column.IsIgnore
+            || property.PropertyType != typeof(string)
+            || column.Length <= 0
+            || !string.IsNullOrEmpty(column.DataType))
+        {
+            return;
+        }
+
+        column.DataType = dbType switch
+        {
+            DbType.SqlServer => "nvarchar",
+            DbType.Oracle => "nvarchar2",
+            _ => column.DataType,
+        };
     }
 
     /// <summary>
