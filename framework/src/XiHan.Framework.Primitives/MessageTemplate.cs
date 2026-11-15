@@ -89,7 +89,7 @@ public static partial class MessageTemplate
             }
 
             first = false;
-            builder.Append(name).Append('=').Append(Convert.ToString(value, CultureInfo.InvariantCulture));
+            builder.Append(name).Append('=').Append(Stringify(value, null, CultureInfo.InvariantCulture));
         }
 
         return builder.Append(')').ToString();
@@ -151,7 +151,7 @@ public static partial class MessageTemplate
     /// 逐段渲染模板
     /// </summary>
     /// <remarks>
-    /// 占位符取值并格式化（<see cref="IFormattable"/> 用格式说明符与文化，其余用 <see cref="Convert.ToString(object?, IFormatProvider?)"/>），转义还原为单个花括号
+    /// 占位符取值并按 <see cref="Stringify"/> 格式化，转义还原为单个花括号
     /// </remarks>
     /// <returns>严格模式下任一占位符缺值返回 <see langword="false"/></returns>
     private static bool Render(string text, IReadOnlyDictionary<string, object?>? arguments, IFormatProvider provider, bool strict, out string? result)
@@ -180,12 +180,27 @@ public static partial class MessageTemplate
                 continue;
             }
 
-            builder.Append(value is IFormattable formattable ? formattable.ToString(format, provider) : Convert.ToString(value, provider));
+            builder.Append(Stringify(value, format, provider));
         }
 
         result = builder.ToString();
         return true;
     }
+
+    /// <summary>
+    /// 参数值的文本形式
+    /// </summary>
+    /// <remarks>
+    /// 布尔写 <c>true</c> / <c>false</c>，与 JSON 和各语言 SDK 一致（RFC-0010「模板」，ADR-0233）；<see cref="IFormattable"/> 用格式说明符与文化；其余用 <see cref="Convert.ToString(object?, IFormatProvider?)"/>，<see langword="null"/> 为空串
+    /// </remarks>
+    private static string? Stringify(object? value, string? format, IFormatProvider provider)
+        => value switch
+        {
+            // bool 不实现 IFormattable，交给 Convert.ToString 会写成 .NET 独有的 True / False
+            bool flag => flag ? "true" : "false",
+            IFormattable formattable => formattable.ToString(format, provider),
+            _ => Convert.ToString(value, provider),
+        };
 
     /// <summary>
     /// 从 <paramref name="index"/> 读取下一段
