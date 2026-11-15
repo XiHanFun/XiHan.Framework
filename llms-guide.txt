@@ -4527,11 +4527,11 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:MultiTenancy` | [MultiTenancy.Abstractions](/packages/multitenancy-abstractions) | `DefaultTenant`、`RequireTenant`、`TenantClaim`、`ValidateAgainstStore` |
 | `XiHan:MultiTenancy:InMemory` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | `MaxTenants` |
 | `XiHan:MultiTenancy:Tenants` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | 从配置装载的租户（`DisplayName`、`IsEnabled`、`Properties`） |
-| `XiHan:MultiTenancy:Database` | [MultiTenancy.Database](/packages/multitenancy-database) | `CacheSize`、`CacheTimeToLiveSeconds` |
+| `XiHan:MultiTenancy:Database` | [MultiTenancy.Database](/packages/multitenancy-database) | `CacheTimeToLiveSeconds`（目录缓存的兜底存活时间，容量由 `caching.local` 的 Provider 管） |
 | `XiHan:Security` | [Security.Abstractions](/packages/security-abstractions) | `RequireAuthentication`、`RoleClaim` |
 | `XiHan:Security:Outbound` | [Kernel](/packages/kernel) | [出站地址策略](/security/outbound)：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Security:InMemory` | [Security.InMemory](/packages/security-inmemory) | 开发用主体与授予（`Principals`、`Grants`） |
-| `XiHan:Security:Database` | [Security.Database](/packages/security-database) | `CacheSize`、`CacheTimeToLiveSeconds` |
+| `XiHan:Security:Database` | [Security.Database](/packages/security-database) | `CacheTimeToLiveSeconds`（授予缓存的兜底存活时间，容量由 `caching.local` 的 Provider 管） |
 | `XiHan:Security:Jwt` | [Security.Jwt](/packages/security-jwt) | `Issuer`、`Audience`、`Secret`、`ClockSkewSeconds`、`NameClaim` |
 | `XiHan:Security:OpenIdConnect` | [Security.OpenIdConnect](/packages/security-openidconnect) | `Authority`、`Audience`、元数据地址与刷新间隔 |
 | `XiHan:Security:Ip2Region` | [Security.Ip2Region](/packages/security-ip2region) | xdb 数据文件路径 `V4Database`、`V6Database` |
@@ -4554,7 +4554,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:Workflow:InMemory` | [Workflow.InMemory](/packages/workflow-inmemory) | 各存储容量、轮询周期与批大小 |
 | `XiHan:Workflow:Database` | [Workflow.Database](/packages/workflow-database) | 到期书签的轮询与批大小、租约时长、`HolderId` |
 | `XiHan:Localization` | [Localization.Abstractions](/packages/localization-abstractions) | `DefaultLocale`、`Locales` |
-| `XiHan:Localization:Database` | [Localization.Database](/packages/localization-database) | `RefreshIntervalSeconds`、`MaxTranslations` |
+| `XiHan:Localization:Database` | [Localization.Database](/packages/localization-database) | `RefreshIntervalSeconds`、`ChangeCheckIntervalSeconds`、`MaxTranslations` |
 | `XiHan:ObjectStorage:FileSystem` | [ObjectStorage.FileSystem](/packages/objectstorage-filesystem) | `RootPath`、`MaxTotalBytes`、`MaxBlobBytes`、`MultipartExpiryHours` |
 | `XiHan:ObjectStorage:S3` | [ObjectStorage.S3](/packages/objectstorage-s3) | `ServiceUrl`、`Region`、`AccessKey`、`SecretKey`、`ForcePathStyle` 等 |
 | `XiHan:ObjectStorage:Stores` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 命名存储实例：`<name>:Provider` 加该 Provider 的设置 |
@@ -9157,8 +9157,8 @@ var recorded = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>
 
 | 类型 | 生命周期 | 作用 |
 | --- | --- | --- |
-| `DatabaseTenantStore` | 单例 `ITenantStore` | Tenant 阶段查它。它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库），不经 `App.InvokeAsync`：目录是 Tenant 阶段自己要查的东西，嵌套调用会再过一遍 Tenant 与 Authorize 阶段，`RequireTenant` 为真时会自我拒绝，启动期也读不了。查找结果按租户缓存，「不存在」也缓存，每条带存活时间 |
-| `TenantRecordStore` | 作用域服务 | 管理操作在 Transaction 阶段内用调用方的工作单元批量新增、覆盖、删除租户，逐项返回结果；写入后立即失效目录与分片解析器的缓存 |
+| `DatabaseTenantStore` | 单例 `ITenantStore` | Tenant 阶段查它。它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库），不经 `App.InvokeAsync`：目录是 Tenant 阶段自己要查的东西，嵌套调用会再过一遍 Tenant 与 Authorize 阶段，`RequireTenant` 为真时会自我拒绝，启动期也读不了。查找结果经 `ICache` 按租户缓存（区 `multitenancy:tenants`），「不存在」也缓存；装了两级缓存时命中在本机一级缓存，租户解析不出进程 |
+| `TenantRecordStore` | 作用域服务 | 管理操作在 Transaction 阶段内用调用方的工作单元批量新增、覆盖、删除租户，逐项返回结果；写入后立即失效目录缓存（所有共用缓存的实例），并通知分片解析器 |
 
 存储行 `TenantRecord` 的列：
 
@@ -9176,8 +9176,8 @@ var recorded = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>
 
 | 其他类型 | 说明 |
 | --- | --- |
-| `DatabaseMultiTenancyFeature` | 特性入口（清单 `xihan.multitenancy.database`，`role: provider`）：登记 `TenantRecord` 的仓储、目录、解析器与 Tenant 阶段中间件，启动时核对持久化 Provider |
-| `DatabaseMultiTenancyOptions` | `CacheSize`、`CacheTimeToLive`（`TimeSpan?`，`null` 不过期） |
+| `DatabaseMultiTenancyFeature` | 特性入口（清单 `xihan.multitenancy.database`，`role: provider`）：依赖 `caching.local@1`，登记 `TenantRecord` 的仓储、目录、解析器与 Tenant 阶段中间件，启动时核对持久化 Provider |
+| `DatabaseMultiTenancyOptions` | `CacheTimeToLive`（`TimeSpan`，必须为正，缺省 30 秒） |
 
 ## 最小示例
 
@@ -9217,7 +9217,7 @@ app.Run();
     "Bindings": { "db": "Host=localhost;Database=app" },
     "MultiTenancy": {
       "RequireTenant": false,
-      "Database": { "CacheSize": 10000, "CacheTimeToLiveSeconds": 30 }
+      "Database": { "CacheTimeToLiveSeconds": 30 }
     }
   }
 }
@@ -9241,12 +9241,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 配置
 
-缓存与枚举的配置在 `XiHan:MultiTenancy:Database`：
+目录缓存的配置在 `XiHan:MultiTenancy:Database`：
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `CacheSize` | `int` | 10000 | 目录缓存条目上限，「不存在」也占一条；满时整体清空 |
-| `CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠 `Invalidate` 失效 |
+| `CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间，必须为正，`0` 与负数让装配失败。写入经失效立即生效，存活时间只是兜底 |
+
+缓存的容量由提供 `caching.local` 的 Provider 管：内存实现是 `XiHan:Caching:InMemory:MaxEntries`，两级缓存是 `XiHan:Caching:Hybrid:LocalCapacity`。以前的 `CacheSize` 已删除，配置里留着也被忽略。
 
 解析选项 `DefaultTenant`、`RequireTenant`、`ValidateAgainstStore`、`TenantClaim` 仍在 `XiHan:MultiTenancy`，见[租户解析与隔离](/multi-tenancy/resolution)。持久化 Provider 的连接来自绑定，SqlSugar 的绑定名是 `db`，见[资源绑定](/configuration/bindings)。
 
@@ -9267,7 +9268,7 @@ public sealed class TenantOnboarding(ITenantAdministration tenants)
         var properties = new Dictionary<string, string>(StringComparer.Ordinal);
         if (connectionString is not null)
         {
-            // 有连接串即分库；写入后目录与分片解析器的缓存随即失效
+            // 有连接串即分库；写入后目录缓存随即失效，分片解析器下一次解析就用上新连接
             properties[TenantShardKeys.ConnectionString] = connectionString;
         }
 
@@ -9296,15 +9297,17 @@ public sealed class TenantOnboarding(ITenantAdministration tenants)
 
 ## 缓存与失效
 
-- `DatabaseTenantStore.FindAsync` 的结果按租户缓存，「不存在」也缓存；条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空，不逐条淘汰。不合法的租户 ID 直接返回无值，不查库，也不占缓存。
-- `TenantRecordStore` 在写入时与调用结束（提交之后）各失效一次目录与分片解析器（`ITenantShardResolver.Invalidate`）的缓存，两处缓存丢弃失效之前开始的读取：停用、改连接串在提交之后立即对本实例生效（ADR-0194）。
-- 多实例部署时其他实例的缓存同样靠存活时间收敛，需要更快生效时调小 `CacheTimeToLiveSeconds`。
-- 绕过 `TenantRecordStore` 直接改表时，自行调用 `DatabaseTenantStore.Invalidate([tenantId])` 与 `ITenantShardResolver.Invalidate([tenantId])`（清全部用 `InvalidateAll()``，或等存活时间到期。`Invalidate()` 不带参数时清空全部。
+- `DatabaseTenantStore.FindAsync` 的结果经 `ICache` 按租户缓存（区 `multitenancy:tenants`），「不存在」也缓存；条目按 `CacheTimeToLive` 过期，容量与淘汰由 `caching.local` 的 Provider 决定。不合法的租户 ID 直接返回无值，不查库，也不占缓存。
+- 失效按租户换代数（[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），作用于所有共用这个缓存的实例。`TenantRecordStore` 在写入时与调用结束（提交之后）各失效一次，失效之前开始的读取写回的旧条目不会被当作命中：新增、停用、改连接串、删除在提交之后立即生效（ADR-0194、ADR-0229）。
+- 多实例部署要装 `Caching.Redis` 与 `Caching.Hybrid`，这时命中在本机一级缓存，一个实例写入后别的实例经 Redis 的变更通知立即失效。只装 Redis 时 `ICache` 仍是进程内的，别的实例只能等存活时间。
+- 写入时的失效遇到缓存后端故障，写入调用失败（`KERNEL_UNEXPECTED_001`，HTTP 500，原因 `CACHING_UNAVAILABLE_001`），事务回滚：停用、迁库传不到别的实例时不报成功。提交之后的那次失效失败只记错误日志，靠存活时间收敛。
+- 缓存后端故障时 `FindAsync` 直接查库、不写缓存，结果仍然正确，警告日志每 10 秒最多一条。
+- 绕过 `TenantRecordStore` 直接改表时，自行 `await DatabaseTenantStore.InvalidateAsync([tenantId], ct)`（清全部用 `InvalidateAllAsync(ct)`），或等存活时间到期。
 - `ListAsync` 不走缓存，按 ID 排序、以偏移为续页令牌一页一页读，调用方读到令牌为空为止，不再有截断。
 
 ## 启动期核对持久化 Provider
 
-本包的清单不声明 `persistence.relational@1`：持久化 Provider 以可选依赖引用 `multitenancy.sharding@1` 来按分片选连接，内核把满足了的可选依赖也当作排序边，再声明持久化就成环。实际依赖改在 `StartAsync` 核对，能力图谱里没有持久化 Provider 时以 `KERNEL_CAPABILITY_001` 中断启动，不会带着一个查不了库的目录运行。
+本包的清单声明 `caching.local@1`（Standard / Full 组合包已带内存缓存，自己挑特性的宿主要加 `InMemoryCachingFeature`），但不声明 `persistence.relational@1`：持久化 Provider 以可选依赖引用 `multitenancy.sharding@1` 来按分片选连接，内核把满足了的可选依赖也当作排序边，再声明持久化就成环。实际依赖改在 `StartAsync` 核对，能力图谱里没有持久化 Provider 时以 `KERNEL_CAPABILITY_001` 中断启动，不会带着一个查不了库的目录运行。
 
 特性只为被选中的能力注册服务：另有显式 Provider 提供租户上下文时，本包不注册存储、解析器与中间件；另有分片 Provider 时不注册 `TenantStoreShardResolver`。`TenantShardScope` 总会注册。
 
@@ -9312,7 +9315,7 @@ public sealed class TenantOnboarding(ITenantAdministration tenants)
 
 - 故障：连接失败、提交失败这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成租户不存在，也不进缓存；Tenant 阶段据此以 503 结束调用，分片解析器把它包进 `MULTITENANCY_UNAVAILABLE_002`。
 - 表结构由应用管理，`InitTables` / `EnsureCreated` 只用于开发与测试。`PropertiesJson` 用长文本类型（`text` / `nvarchar(max)` / `longtext`）。分片库的表结构同样由应用管理。
-- 测试里可以与 `Persistence.InMemory` 一起装配；本包通过 `MultiTenancy.Conformance` 的 `TenantStoreConformance` 与 `TenantShardResolverConformance`，并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。
+- 测试里可以与 `Persistence.InMemory` 一起装配；本包通过 `MultiTenancy.Conformance` 的 `TenantStoreConformance`、`TenantShardResolverConformance` 与 `TenantAdministrationConformance`（含另一个实例的用例：两个宿主共用一个 SQLite 文件与一个 `ICache`），并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。缓存故障的行为可以用 `XiHan.Framework.Testing` 的 `FaultyCache` 复现，见[测试支持](/packages/testing)。
 
 | 错误码 | 含义 | HTTP |
 | --- | --- | --- |
@@ -9325,7 +9328,11 @@ public sealed class TenantOnboarding(ITenantAdministration tenants)
 
 ### 刚创建的租户马上调用为什么还是 404
 
-`TenantRecordStore` 写入时已经失效本实例的缓存，但写入要等调用方的事务提交后才可见；如果创建与首次调用几乎同时发生，或首次调用落在另一个实例上，其他实例的「不存在」缓存要等 `CacheTimeToLiveSeconds` 到期。要更快生效就调小存活时间，或在创建流程里等待提交完成再通知客户端。
+写入要等调用方的事务提交后才可见：创建的调用还没返回、首次调用就到了时，读到的是提交之前的表，确实不存在。`TenantRecordStore` 在提交之后（作用域释放时）再失效一次，所以创建的调用返回之后，本实例与共用两级缓存的其他实例都能立即查到。仍然 404 时检查多实例部署是否装了 `Caching.Redis` 与 `Caching.Hybrid`：只装 Redis 时 `ICache` 是进程内的，其他实例的「不存在」缓存要等 `CacheTimeToLiveSeconds` 到期；另外看日志里有没有提交之后失效失败的错误，那时也只能等存活时间。
+
+### 多实例部署要做什么才能让停用立即生效
+
+装 `Caching.Redis` 与 `Caching.Hybrid`，让 `ICache` 成为两级缓存。目录缓存的代数存在共享缓存里，一个实例写入后换代数，Redis 的变更通知让其他实例的一级缓存丢掉旧代数，它们的下一次解析就回到数据库。共用一个 Redis 的多个应用要用不同的 `XiHan:Caching:Redis:KeyPrefix`，否则区名 `multitenancy:tenants` 下的键会互相覆盖。
 
 ### 能用 `TenantRecordStore` 在后台任务里批量导入租户吗
 
@@ -9536,10 +9543,8 @@ public sealed class SubdomainTenantResolver(IHttpContextAccessor http) : ITenant
 | `RequireTenant` | `bool` | `false` | 为真时没有租户的调用返回 `MULTITENANCY_VALIDATION_002` |
 | `ValidateAgainstStore` | `bool` | `true` | 为真时租户必须在存储中存在且启用；为假时只校验文法 |
 | `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型，不能为空 |
-| `ShardCacheSize` | `int` | 10000 | 分片解析器按租户缓存结果的条目上限，满时整体清空；必须是正整数 |
-| `ShardCacheTimeToLiveSeconds` | 秒 | 30 | 分片缓存条目的存活时间，过了即重新读租户存储；0 不过期 |
 
-布尔值只接受 `true` / `false`，`ShardCacheSize` 只接受正整数，其他写法在启动时抛出 `ArgumentException`。
+布尔值只接受 `true` / `false`，其他写法在启动时抛出 `ArgumentException`。以前的 `ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已删除（缺省分片解析器不再缓存，见[租户分片与分库](/multi-tenancy/sharding)），配置里留着也被忽略。
 
 ```json
 {
@@ -9627,7 +9632,7 @@ HTTP、gRPC、MCP 入站不收这个键。网络调用方的租户只来自认�
 
 ### 禁用一个租户后它的调用会怎样
 
-Tenant 阶段核对存储时发现 `IsEnabled` 为假，调用以 `MULTITENANCY_DENIED_001`（HTTP 403）结束，不进入授权与业务代码。内存实现运行时用 `InMemoryTenantStore.Set` 改写记录即可生效；数据库目录的生效时机受缓存存活时间影响，见[数据库租户目录](/multi-tenancy/database)。
+Tenant 阶段核对存储时发现 `IsEnabled` 为假，调用以 `MULTITENANCY_DENIED_001`（HTTP 403）结束，不进入授权与业务代码。运行时经租户管理 `ITenantAdministration.UpsertAsync` 把 `IsEnabled` 写成假：内存实现写入即生效；数据库目录在写入的调用提交之后立即生效，多实例部署要装两级缓存才能让所有实例一起生效，见[数据库租户目录](/multi-tenancy/database)。
 
 ### 不需要多租户的应用要关掉它吗
 
@@ -9660,9 +9665,9 @@ Tenant 阶段核对存储时发现 `IsEnabled` 为假，调用以 `MULTITENANCY_
 
 | 类型 | 说明 |
 | --- | --- |
-| `ITenantShardResolver` | `ResolveAsync(tenantId)` 返回 `Result<Maybe<TenantShard>>`：共库租户与未知租户是成功且无值；租户存储不可达返回 `MULTITENANCY_UNAVAILABLE_002`。`Invalidate(tenantId?)` 丢弃缓存，参数为 `null` 时清空全部 |
+| `ITenantShardResolver` | `ResolveAsync(tenantId)` 返回 `Result<Maybe<TenantShard>>`：共库租户与未知租户是成功且无值；租户存储不可达返回 `MULTITENANCY_UNAVAILABLE_002`。`Invalidate(tenantIds)` 丢弃这些租户缓存的分片，`InvalidateAll()` 丢弃全部；自己缓存的解析器靠它们失效 |
 | `TenantShard` | 一个分片：`TenantId`、`ConnectionString`、可选的 `Provider`（提供者名，转成小写，如 `postgresql`）与透传属性 `Properties` |
-| `TenantStoreShardResolver` | 缺省解析器，从 `ITenantStore` 里租户的 `Properties` 推出分片，按租户缓存结果 |
+| `TenantStoreShardResolver` | 缺省解析器，每次从 `ITenantStore` 里租户的 `Properties` 推出分片，自己不缓存 |
 | `TenantShardKeys` | 租户属性键的常量 |
 | `TenantShardScope` | 作用域服务，给不经管道的作用域显式绑定分片 |
 | `context.FindTenantShard()` | 读调用上下文里的分片，`Maybe<TenantShard>` |
@@ -9738,9 +9743,11 @@ app.Run();
 
 分片在 Tenant 阶段解析一次，写进调用上下文；解析失败即调用失败（`MULTITENANCY_UNAVAILABLE_002`），不降级为共库，因为降级会把租户数据写进平台库。无租户的调用没有分片。
 
-`TenantStoreShardResolver` 的结果按租户缓存，「无分片」也缓存；缓存条目数达到 `XiHan:MultiTenancy:ShardCacheSize`（缺省 10000）时整体清空，条目过了 `ShardCacheTimeToLiveSeconds`（缺省 30 秒）即重新读租户存储。租户连接变更后调用 `ITenantShardResolver.Invalidate(tenantId)`，失效只作用于本实例，多实例部署里别的实例在存活时间之后才用上新连接（ADR-0193）；经数据库目录的 `TenantRecordStore` 写入时会自动失效，见[数据库租户目录](/multi-tenancy/database)。
+`TenantStoreShardResolver` 自己不缓存：每次解析读租户存储，再从属性推出分片，开销是一次字典遍历。缓存与失效只在租户存储一处：内存目录本来就在内存里，数据库目录经 `ICache` 缓存、写入时失效所有共用缓存的实例（ADR-0229）。所以租户迁库、改连接串、删除经租户管理 `ITenantAdministration` 写入后，下一次解析就用上新结果；多实例部署装了 `Caching.Redis` 与 `Caching.Hybrid` 时，所有实例一起生效，见[数据库租户目录](/multi-tenancy/database)。它的 `Invalidate` 与 `InvalidateAll` 什么也不做，只校验入参。
 
-想自己决定分片规则（按租户哈希选库、从独立的分片表读连接）时，实现 `ITenantShardResolver` 并在特性里登记为单例；中间件与持久化 Provider 只认契约。自带分片 Provider 的应用同样要登记 `TenantShardScope`。
+以前的缺省解析器在租户存储之上又缓存一层，配置键 `XiHan:MultiTenancy:ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已随之删除，配置里留着也被忽略。直接构造 `TenantStoreShardResolver` 的代码改为传 `(ITenantStore, ILoggerFactory)`。
+
+想自己决定分片规则（按租户哈希选库、从独立的分片表读连接）时，实现 `ITenantShardResolver` 并在特性里登记为单例；中间件与持久化 Provider 只认契约。自己的解析器可以缓存，`TenantRecordStore` 写入后会调用它的 `Invalidate`，但这只作用于本实例；多实例要一致就把缓存放进 `ICache`（参考[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)）。自带分片 Provider 的应用同样要登记 `TenantShardScope`。
 
 ## 持久化 Provider 按分片选连接
 
@@ -9822,7 +9829,7 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 
 ### 租户配了连接串但数据还是写进了默认库
 
-先确认装配的持久化 Provider 是 `Persistence.SqlSugar` 或 `Persistence.EntityFrameworkCore`：`Persistence.InMemory` 不接分片能力。再确认实体实现了 `IMultiTenant`：分片只作用于多租户实体，平台表始终走默认连接。最后看 `/shard` 这样的端点能不能读到分片；读不到说明调用里没有租户，或者分片解析器的缓存还是旧值，调用 `Invalidate(tenantId)`。
+先确认装配的持久化 Provider 是 `Persistence.SqlSugar` 或 `Persistence.EntityFrameworkCore`：`Persistence.InMemory` 不接分片能力。再确认实体实现了 `IMultiTenant`：分片只作用于多租户实体，平台表始终走默认连接。最后看 `/shard` 这样的端点能不能读到分片；读不到说明调用里没有租户；用数据库目录时，也可能是连接串绕过租户管理直接改表写入、目录缓存还是旧值，调用 `DatabaseTenantStore.InvalidateAsync([tenantId], ct)` 或等存活时间。
 
 ### 租户库连不上时调用会降级到共库吗
 
@@ -10492,13 +10499,13 @@ public static class OrderRequirements
 | | `Security.InMemory` | `Security.Database` |
 | --- | --- | --- |
 | 装载 | 启动时读配置，运行时经 `IPermissionGrantAdministration` 增删 | 数据库表，经 `IPermissionGrantAdministration`（`PermissionGrantRecordStore`）批量授予、撤销 |
-| 上限 | `XiHan:Security:InMemory:MaxGrants`，缺省 10000 | 无条数上限；缓存 `CacheSize` 缺省 10000 条 |
-| 读取 | 进程内查表 | 按（主体，租户）一次查询，结果缓存 `CacheTimeToLiveSeconds`（缺省 30 秒） |
+| 上限 | `XiHan:Security:InMemory:MaxGrants`，缺省 10000 | 无条数上限；缓存容量由 `caching.local` 的 Provider 管 |
+| 读取 | 进程内查表 | 按（主体，租户）一次查询，结果经 `ICache` 缓存，写入后所有共用缓存的实例立即失效；`CacheTimeToLiveSeconds`（缺省 30 秒）兜底 |
 | 适用 | 开发、测试、授予随配置提交 | 授予由管理后台维护、多实例共享的生产应用 |
 
 ## 数据库授予：Security.Database
 
-`Security.Database` 只换授予存储：检查器、策略目录与 Authorize 阶段中间件与内存实现是同一套，`IPermissionFilter` 与 `IPermissionGrantSource` 照常生效。它只提供 `security.authorization@1`，不提供认证：与 `Security.InMemory` 同时装配时顶替它的授权部分，内存实现只剩 ApiKey 认证；认证也可以换成 `Security.Jwt` 或 `Security.OpenIdConnect`。
+`Security.Database` 只换授予存储：检查器、策略目录与 Authorize 阶段中间件与内存实现是同一套，`IPermissionFilter` 与 `IPermissionGrantSource` 照常生效。它只提供 `security.authorization@1`，不提供认证：与 `Security.InMemory` 同时装配时顶替它的授权部分，内存实现只剩 ApiKey 认证；认证也可以换成 `Security.Jwt` 或 `Security.OpenIdConnect`。它依赖 `persistence.relational@1` 与 `caching.local@1`：Standard / Full 组合包已带内存缓存，自己挑特性的宿主要加 `InMemoryCachingFeature`。
 
 ```bash
 dotnet add package XiHan.Framework.Security.Database --prerelease
@@ -10536,10 +10543,11 @@ app.Run();
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Security:Database:CacheSize` | `int` | 10000 | 缓存条目上限，每个（主体，租户）组合一条；满时整体清空 |
-| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间；`0` 表示不过期，只靠失效与容量清空，只适用于单实例部署 |
+| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间，必须为正，`0` 与负数让装配失败。授予与撤销经失效立即生效，存活时间只是兜底 |
 
-读写分成两个类型，与数据库租户目录同一套做法：`DatabasePermissionGrantStore` 是单例 `IPermissionGrantStore`，Authorize 阶段经检查器查它，它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库），结果进有界的 TTL 缓存；`PermissionGrantRecordStore` 是作用域服务，管理操作在 Transaction 阶段内用调用方的工作单元批量授予、撤销，逐项返回结果，写入后失效涉及主体的缓存：
+缓存容量由提供 `caching.local` 的 Provider 管（`XiHan:Caching:InMemory:MaxEntries` 或 `XiHan:Caching:Hybrid:LocalCapacity`）；以前的 `XiHan:Security:Database:CacheSize` 已删除，配置里留着也被忽略。
+
+读写分成两个类型，与数据库租户目录同一套做法：`DatabasePermissionGrantStore` 是单例 `IPermissionGrantStore`，Authorize 阶段经检查器查它，它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库），结果经 `ICache` 缓存（区 `security:grants`）；`PermissionGrantRecordStore` 是作用域服务，管理操作在 Transaction 阶段内用调用方的工作单元批量授予、撤销，逐项返回结果，写入后失效涉及主体的缓存：
 
 ```csharp
 using XiHan.Framework.Security.Abstractions.Permissions;
@@ -10565,8 +10573,11 @@ public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 
 - 授予是平台级数据：`PermissionGrantRecord` 不实现 `IMultiTenant`，不受当前调用租户过滤。平台授予以空字符串（`PermissionGrantRecord.PlatformTenantId`）落库、每个租户的授予以 `*` 落库，契约边界仍以 `PermissionGrant.TenantId == null` 表示平台；空白租户是编程错误，在访问数据库前抛出 `ArgumentException`。
 - 授予已存在的返回成功且不重复写；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即成功。撤销不存在的授予返回 `SECURITY_NOTFOUND_002`。
-- 缓存条目按 `CacheTimeToLive` 过期，条目数达到 `CacheSize` 时整体清空。写入在事务提交后才对其他调用可见：本实例在写入时与调用结束（提交之后）各失效一次，提交之前读回的旧值不留在缓存里，撤销在提交之后立即生效（ADR-0194）；其他实例的缓存靠存活时间收敛。
+- 缓存按主体失效（范围是主体、条目是租户，[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），失效作用于所有共用这个缓存的实例。写入在事务提交后才对其他调用可见，所以写入时与调用结束（提交之后）各失效一次，提交之前读回的旧值不会被当作命中，授予与撤销在提交之后立即生效（ADR-0194、ADR-0229）。
+- 多实例部署要装 `Caching.Redis` 与 `Caching.Hybrid`：判定命中在本机一级缓存、不出进程，一个实例写入后其他实例经 Redis 的变更通知立即失效。只装 Redis 时 `ICache` 仍是进程内的，其他实例的缓存只能靠存活时间收敛。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`。
 - 数据库故障返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束，不会落到 403；失败不进缓存，恢复后下一次判定立即重新查库。
+- 缓存后端（如 Redis）故障时判定直接查库、不写缓存，结果仍然正确，警告日志每 10 秒最多一条。授予、撤销时的失效遇到缓存故障，写入调用失败（`KERNEL_UNEXPECTED_001`，HTTP 500，原因 `CACHING_UNAVAILABLE_001`）、事务回滚：撤销传不到其他实例时不报成功。提交之后的那次失效失败只记错误日志，已提交的写入在存活时间内对所有实例生效。
+- 绕过 `PermissionGrantRecordStore` 直接改表后，调用 `await DatabasePermissionGrantStore.InvalidateAsync(subjects, ct)`（清全部用 `InvalidateAllAsync(ct)`），或等存活时间到期。
 - 表结构由应用管理，`InitTables` 只用于开发与测试；唯一索引 `(SubjectKind, SubjectId, Permission, TenantId)` 由 `[EntityIndex]` 建出。被选为授权能力时同样登记启动核对 `PolicyCatalog.EnforceOn`。
 
 ## 收窄：IPermissionFilter
@@ -11261,7 +11272,7 @@ var registered = ceremonies.VerifyRegistration(response, options.Challenge).Valu
 
 # 缓存读写
 
-这一页讲缓存子系统最常用的部分：它提供哪两个能力、字节存储与类型化缓存是什么关系、怎样启用内存与 Redis 实现、怎样读写、设置过期、批量操作、挑选序列化器，以及对应的配置、健康项与错误码。读完你能给自己的特性加上一层缓存，并在单实例与多实例部署之间切换 Provider 而不改业务代码。前置知识是[特性与清单](/startup/features)与[能力图谱与 Provider](/startup/capabilities)：缓存和别的子系统一样，按能力 ID 声明依赖、按清单选实现。
+这一页讲缓存子系统最常用的部分：它提供哪两个能力、字节存储与类型化缓存是什么关系、怎样启用内存与 Redis 实现、怎样读写、设置过期、批量操作、用按范围失效的缓存区缓存会被写入改变的数据、挑选序列化器，以及对应的配置、健康项与错误码。读完你能给自己的特性加上一层缓存，并在单实例与多实例部署之间切换 Provider 而不改业务代码。前置知识是[特性与清单](/startup/features)与[能力图谱与 Provider](/startup/capabilities)：缓存和别的子系统一样，按能力 ID 声明依赖、按清单选实现。
 
 ## 为什么需要
 
@@ -11291,6 +11302,8 @@ var registered = ceremonies.VerifyRegistration(response, options.Challenge).Valu
 ::: warning 内存实现的共享缓存只在单实例下正确
 没有显式 Provider 时，`ISharedCache`、分布式锁与幂等去重都只在本进程内有效。部署多个实例前必须装配 `Caching.Redis` 或 `Caching.Remote`，否则锁不互斥、幂等键在实例之间互不可见。
 :::
+
+框架自己的几处缓存也走 `ICache`：`Security.Database` 的授予缓存、`MultiTenancy.Database` 的租户目录缓存、`Localization.Database` 的翻译版本戳，三个包的清单都依赖 `caching.local@1`。它们在写入后让所有共用缓存的实例立即失效，前提是 `ICache` 本身跨实例失效：多实例部署装 `Caching.Redis` 与 `Caching.Hybrid`。只装 Redis 时 `ICache` 仍是进程内的内存实现，这些缓存跨实例只靠存活时间收敛。
 
 ## 字节存储与类型化缓存
 
@@ -11470,6 +11483,60 @@ await cache.SetManyAsync(
 
 Redis 用 `MGET` 读、把 `SET` 与 `DEL` 放进一个批次写删；内存实现一次加锁逐项处理；远程 Provider 调用对应的 `cache-entries.get-many / set-many / remove-many` 操作。
 
+## 按范围失效的缓存区
+
+上面的读穿透有两个缺口：写入要失效一批条目时，必须知道缓存里有哪些键（`ICache` 没有按前缀删除）；一次读取在写入之前查了源、在失效之后才写回，旧值就留到过期。`GenerationCache<T>`（Preview）架在 `ICache` 上补这两处，框架的授予缓存（[RBAC 授予与条件](/security/grants)）与租户目录缓存（[数据库租户目录](/multi-tenancy/database)）就用它。
+
+条目按两段定位：范围（如主体、租户）与范围下的条目（如租户、商品类别），写成 `GenerationCacheKey(scope, entry)`，只有范围时用 `GenerationCacheKey.ForScope(scope)`（条目为空字符串）。
+
+| 成员 | 语义 |
+| --- | --- |
+| `GenerationCache(cache, region, timeToLive, logger)` | `region` 是所有键的前缀，须是合法的缓存键文本、不超过 128 个字符（`MaxRegionLength`）；`timeToLive` 必须为正 |
+| `GetOrLoadManyAsync(keys, load, ct)` | 批量读，返回 `Result<IReadOnlyList<T>>`，与 `keys` 顺序一一对应；重复的位置只读一次、只查一次源，空集合不触缓存。未命中的位置去重后一次交给 `load`，它按同样的顺序返回同样多的值（条数不符抛 `InvalidOperationException`）；`load` 失败原样返回、不写缓存 |
+| `InvalidateAsync(scopes, ct)` | 让这些范围下的全部条目失效，一次批量写入；空集合什么也不做 |
+| `InvalidateAllAsync(ct)` | 让整个区失效 |
+| `TimeToLive` | 条目的存活时间 |
+
+```csharp
+using Microsoft.Extensions.Logging;
+using XiHan.Framework.Caching.Abstractions.Caches;
+using XiHan.Framework.Primitives;
+
+public sealed record PriceList(string TenantId, string Category, IReadOnlyDictionary<string, decimal> Prices);
+
+// 应用自己的批量查询：按入参顺序返回，查不到的给空价目表；读库失败返回失败
+public interface IPriceSource
+{
+    ValueTask<Result<IReadOnlyList<PriceList>>> LoadManyAsync(IReadOnlyList<GenerationCacheKey> keys, CancellationToken cancellationToken);
+}
+
+// 单例：缓存区记着故障日志的节流状态
+public sealed class TenantPriceCache(ICache cache, IPriceSource source, ILogger<TenantPriceCache> logger)
+{
+    // 范围是租户，条目是商品类别
+    private readonly GenerationCache<PriceList> _prices = new(cache, "acme:prices", TimeSpan.FromMinutes(5), logger);
+
+    public ValueTask<Result<IReadOnlyList<PriceList>>> GetAsync(string tenantId, IReadOnlyList<string> categories, CancellationToken cancellationToken)
+        => _prices.GetOrLoadManyAsync([.. categories.Select(category => new GenerationCacheKey(tenantId, category))], source.LoadManyAsync, cancellationToken);
+
+    // 租户调价：它下面所有类别的条目一起作废，所有共用这个缓存的实例都看得到
+    public ValueTask InvalidateAsync(string tenantId, CancellationToken cancellationToken)
+        => _prices.InvalidateAsync([tenantId], cancellationToken);
+}
+```
+
+它怎样做到：
+
+- 区与每个范围各有一个代数（随机令牌），也存在 `ICache` 里。条目写回时记下读取开始时的区代数与范围代数，读取时两个代数都还是当前值才算命中。失效就是换一个新代数，不需要知道范围下有哪些条目。
+- 读取在查源之前取代数，缺代数（从未写过、已过期或被淘汰）时先写下新代数再查源。失效之前开始的读取写回的条目带着旧代数，不会被当作命中，失效之后才开始的读取看到新代数。
+- 代数的存活时间是条目的 10 倍；代数丢了只会让旧条目作废、多查一次源，不会把旧条目当作命中。
+- 键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`。范围与条目写成 `<长度>.<文本>`；含空白、控制字符或超过 128 个字符的换成 `#<SHA-256 十六进制>`。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`，否则同名的区会互相覆盖。
+- 跨进程缓存里存的是 `GenerationCacheEntry<T>`（区代数、范围代数、值）与 `string`（代数），序列化器要认识这两种类型，见下一节。
+
+缓存后端故障（`CACHING_UNAVAILABLE_001`）时，`GetOrLoadManyAsync` 绕过缓存直接查源、不写回，结果仍然正确，每个区每 10 秒最多记一条警告；`InvalidateAsync` 与 `InvalidateAllAsync` 把异常抛给调用方，由它决定拒绝写入还是记日志。写入方的常见做法与框架相同：在写入的事务里失效一次，失败就让调用失败、事务回滚；提交之后再失效一次，挡住在提交之前读到旧数据的读取，这次失败只记错误日志，靠存活时间收敛。
+
+多实例一致的前提是 `ICache` 跨实例失效：装 `Caching.Redis` 与 `Caching.Hybrid` 后，代数与条目都在本机一级缓存里命中、读取不出进程，一个实例换了代数，Redis 的变更通知让其他实例的一级缓存丢掉旧代数（[两级缓存与键管理](/caching/hybrid)）。只装 Redis 时 `ICache` 仍是进程内的，其他实例只能等存活时间。
+
 ## 序列化器
 
 跨进程缓存（Redis、Remote）把值序列化后存进字节存储。序列化器按下面的顺序决定，在特性装配时（`AddXiHan` 内部）检查服务集合：
@@ -11506,6 +11573,26 @@ internal sealed partial class CacheJsonContext : JsonSerializerContext;
 ```
 
 内存实现不序列化，所以只在内存缓存下跑过的代码换成 Redis 后，值类型第一次需要能被序列化；不在上下文里的类型会在那时抛出。源生成上下文的写法见[JSON 序列化与 Native AOT](/common/serialization)。
+
+组件放进缓存的类型不必写进应用的上下文：组件在特性的 `Configure` 里用 `CacheSerializerRegistration.AddTypeInfo(services, resolver)` 登记自己的源生成上下文（容器里是 `CacheTypeInfoSource`，同一个解析器只登记一次）。三种情况的处理不同：
+
+- 应用登记了 `JsonSerializerOptions`（第 2 种）：组件登记的上下文并在应用的解析器之后，同一类型两边都有时按应用的。
+- 退回反射（第 3 种）：本来就认识全部类型，不需要处理。
+- 应用自己登记 `ICacheSerializer`（第 1 种）：要自己处理。框架的 `Security.Database`、`MultiTenancy.Database`、`Localization.Database` 会往 `ICache` 里放 `GenerationCacheEntry<GrantSetEntry>`、`GenerationCacheEntry<TenantCacheValue>` 与 `string`，前两个值类型是包内部的，用工厂登记、从容器取出组件的上下文并进来：
+
+```csharp
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
+using XiHan.Framework.Caching.Abstractions.Serialization;
+
+// 工厂在容器建好后才执行，那时各特性的 AddTypeInfo 都已登记
+builder.Services.AddSingleton<ICacheSerializer>(static sp => new JsonCacheSerializer(new JsonSerializerOptions
+{
+    TypeInfoResolver = JsonTypeInfoResolver.Combine([CacheJsonContext.Default, .. sp.GetServices<CacheTypeInfoSource>().Select(static source => source.Resolver)]),
+}));
+```
+
+自己的组件把 `GenerationCache<T>` 放进跨进程缓存时，上下文里写 `[JsonSerializable(typeof(GenerationCacheEntry<T>))]` 与 `[JsonSerializable(typeof(string))]`，再用 `AddTypeInfo` 登记。
 
 ## 配置
 
@@ -11626,7 +11713,8 @@ app.Run();
 ## 读写规则
 
 - 读：L1 命中直接返回，未命中读 L2，命中后回填 L1；批量读只把 L1 未命中的键一次交给 L2。
-- 写与删：先 L2 再 L1，L2 失败时 L1 不留下别的实例看不到的值；`GetOrCreateAsync` 两级都未命中才执行工厂。
+- 回填：读 L2 之前记下这个键的失效轮次，回填前核对；读的途中收到过这个键的失效（别的实例刚写了它），读回的值可能早于那次写入，不回填 L1，下一次读取再去 L2。`GetAsync`、`GetManyAsync`、`GetOrCreateAsync` 都按这条规则（ADR-0229）。
+- 写与删：先 L2 再 L1，L2 失败时 L1 不留下别的实例看不到的值；写入后照旧写进 L1；`GetOrCreateAsync` 两级都未命中才执行工厂。
 - L1 的存活时间是条目自己的过期时长与 `LocalTimeToLive` 的较小者，滑动过期在 L1 里按绝对时间处理；`LocalCapacity` 满时淘汰最久未访问的条目。
 - L1 存对象引用，取回的对象不得修改，与内存实现的约定一致。
 
@@ -11635,6 +11723,10 @@ app.Run();
 跨实例失效依赖 L2 存储的变更通知 `ICacheChangeFeed`。Redis 存储实现了它：每次写入与删除后同步通知本实例的订阅者，并以发后不等的方式向频道 `<KeyPrefix>__changes` 发布，其他实例收到后删掉 L1 里的这些键或前缀（`CacheChange.Keys` / `CacheChange.Prefix`）。`HybridObjectCache.InvalidatesAcrossInstances` 表示是否订阅到了。通知是尽力而为的，断线期间可能丢失；`XiHan:Caching:Redis:PublishChanges` 设为 `false` 可以关掉发布。
 
 L2 的存储没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridObjectCache` 的写入（别的实例的写入，本实例直接经 `ISharedCache` 或管理界面的写入）不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`。需要强一致的键直接用 `ISharedCache`，不经 L1。
+
+通知和读取会赛跑：L1 未命中时去读 L2，读的途中另一个实例写了这个键，变更通知先到（L1 里本来没有，删了个空），读回的旧值后到。为此 L1 按键的散列分 64 个条带记失效轮次：删除一个键让它所在条带的轮次加一，按前缀删除让全部条带加一，回填前轮次变了就不回填。条带数固定，内存有界；代价是与本键同条带的无关失效也会挡掉一次回填，只多读一次 L2。
+
+框架自己的授予缓存、租户目录缓存与翻译版本戳都走 `ICache`（[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），多实例部署装上 Redis 与两级缓存后，它们的命中都在 L1、判定与租户解析不出进程，一个实例写入后其他实例经变更通知立即失效。
 
 ## 键管理
 
@@ -11688,7 +11780,7 @@ public sealed class CacheAdmin(ISharedCache cache)
 
 三个方法的语义：
 
-- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法不在构造时抛出，返回 `CACHING_VALIDATION_004`，参数 `prefix`、`max`）；`PageSize` 为 1 到 1000（`CacheKeyQuery.MaxPageSize`，缺省 `DefaultPageSize` 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate()` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `pageSize`、`max`），不访问后端；本页的键在 `Items`，没有更多时 `ContinuationToken` 为 `null`。已过期的键不列出。
+- `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法不在构造时抛出，返回 `CACHING_VALIDATION_004`，参数 `prefix`、`max`）；`PageSize` 为 1 到 1000（`CacheKeyQuery.MaxPageSize`，缺省 `DefaultPageSize` 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate(CacheKeyQuery.Revision)` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `pageSize`、`max`），不访问后端；本页的键在 `Items`，没有更多时 `ContinuationToken` 为 `null`。已过期的键不列出。
 - `InspectAsync`：不存在或已过期为无值；读元数据不延长滑动过期，对象条目也不读出值。
 - `RemoveByPrefixAsync`：返回 `Result<long>`（删除数）；前缀为空或不合法返回 `CACHING_VALIDATION_004`（HTTP 400）、不访问后端，没有「清空全部」。
 
@@ -11743,6 +11835,10 @@ L2 带变更通知（Redis）且通知没有丢时，别的实例一写入本实
 ### 单实例要不要装两级缓存
 
 不必要。单实例下 `ICache` 本来就是内存实现，没有网络往返可省。两级缓存的价值在于 L2 是 Redis 或远程存储、而读又很频繁的多实例部署。
+
+### 多实例部署只装 Redis 够吗
+
+装了 `Security.Database`、`MultiTenancy.Database` 或 `Localization.Database` 时不够。只装 Redis 时 `ICache` 仍是每个实例各自的内存实现，授予撤销、租户停用与新翻译在其他实例上要等存活时间（授予与租户目录缺省 30 秒，翻译等周期刷新，缺省 5 分钟）。再加 `HybridCachingFeature`，`ICache` 的失效才经 Redis 传到每个实例。
 
 ### 装了 Hybrid 之后 ISharedCache 也走 L1 吗
 
@@ -16663,7 +16759,7 @@ Baggage 随调用传播：HTTP 的 `baggage` 头、CloudEvents 的扩展属性�
 
 ## 数据库翻译 Provider
 
-`Localization.Database` 把翻译存进关系数据库，运营人员改了译文，应用不重新发布就生效。它是 `localization.resources@1` 的显式 Provider，装配后顶替默认的内存实现，依赖 `persistence.relational@1`：
+`Localization.Database` 把翻译存进关系数据库，运营人员改了译文，应用不重新发布就生效。它是 `localization.resources@1` 的显式 Provider，装配后顶替默认的内存实现，依赖 `persistence.relational@1` 与 `caching.local@1`（翻译版本戳放在 `ICache` 里；Standard 组合包已带内存缓存，自己挑特性的宿主要加 `InMemoryCachingFeature`）：
 
 ```csharp
 builder.AddXiHan(xihan => xihan
@@ -16683,8 +16779,11 @@ modelBuilder.ApplyPersistenceConventions(Database);
 快照的加载：
 
 1. 宿主进入服务状态后，`MessageTranslationLoader` 经完整管道首次加载：按 ID 分页读取（每页 1000 条），最多 `MaxTranslations` 条，超出的不加载并记警告；读完后整份替换快照。宿主就绪之前只有嵌入目录的文案。
-2. 之后按 `RefreshIntervalSeconds` 周期刷新，`0` 关闭周期刷新。
-3. 加载失败时保留上一份快照，失败记到 `LastError`，健康项 `localization.database.translations` 报 Degraded，应用仍在服务。
+2. 之后按 `ChangeCheckIntervalSeconds`（缺省 1 秒）核对 `ICache` 里的翻译版本戳（键 `localization:translations:version`），变了就重新加载；`0` 关闭核对。
+3. 另按 `RefreshIntervalSeconds` 周期刷新兜底，覆盖绕过写入方直接改表与版本戳丢失；`0` 关闭周期刷新。
+4. 加载失败时保留上一份快照，失败记到 `LastError`，健康项 `localization.database.translations` 报 Degraded，应用仍在服务。
+
+查找是同步的，翻译仍在进程内快照里，`ICache` 只承载跨实例的信号。装了两级缓存（`Caching.Redis` + `Caching.Hybrid`）时核对版本戳是本机一级缓存命中，别的实例换了版本戳经 Redis 的变更通知让它失效；只装 Redis 时 `ICache` 仍是进程内的，别的实例只能等周期刷新。重新加载彼此串行，读版本戳遇到缓存后端故障时跳过这次核对。
 
 `MessageTranslation.Locale` 列最长 35 个字符，与区域名文法的上限一致。已有表的这一列更短时要手工放宽（SqlSugar 的 `InitTables` 不改已有列的长度），做法见 [Localization.Database](/packages/localization-database)。
 
@@ -16721,11 +16820,12 @@ public sealed class SetTranslations(MessageTranslationStore store) : IOperation<
 
 操作的登记、请求类型的序列化上下文与权限定义见[操作契约](/web/operations)。`MessageTranslationEntry` 在构造时校验：键必须符合消息键文法，区域规范化大小写，模板不能为空白，不合法抛出 `ArgumentException`。`RemoveAsync` 按键与区域批量删除，不存在的项返回 `LOCALIZATION_NOTFOUND_001`；`ListAsync(locale, skip, take)` 按键排序分页列出。
 
-写入要等这次调用的事务提交后才落库。新译文在下一次周期刷新时生效；要立即生效，在写入的调用成功返回之后调用 `MessageTranslationLoader.ReloadAsync`，不要在同一个操作里调用，那时事务还没提交。
+写入要等这次调用的事务提交后才落库，所以 `MessageTranslationStore` 在作用域释放时（调用已提交）才经 `MessageTranslationLoader.PublishChangeAsync` 换版本戳：本实例立即重新加载，其他实例在 `ChangeCheckIntervalSeconds` 内重新加载，不用再手动调用 `ReloadAsync`。换版本戳遇到缓存后端故障只记错误日志：写入已经提交，本实例照常重新加载，其他实例等周期刷新。绕过 `MessageTranslationStore` 直接改表后，调用 `PublishChangeAsync` 让所有实例重新加载；`ReloadAsync` 只重新加载本实例。
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Localization:Database:RefreshIntervalSeconds` | 非负数 | 300 | 周期刷新的间隔，`0` 只在启动后加载一次 |
+| `XiHan:Localization:Database:ChangeCheckIntervalSeconds` | 非负数 | 1 | 核对翻译版本戳的间隔，`0` 不核对（其他实例只靠周期刷新看到写入） |
+| `XiHan:Localization:Database:RefreshIntervalSeconds` | 非负数 | 300 | 周期刷新的间隔，`0` 关闭周期刷新 |
 | `XiHan:Localization:Database:MaxTranslations` | 正整数 | 100000 | 快照的条数上限 |
 
 持久化 Provider 的装配见[持久化与 Provider](/persistence/overview)。
@@ -19600,10 +19700,10 @@ File.Delete(path);
 | 套件包 | 基类 | 实现什么 |
 | --- | --- | --- |
 | `Caching.Conformance` | `CacheStoreConformance` | `CreateStore()` 返回 `ICacheStore`；可覆写 `ExpirationGrace` |
-| `Security.Conformance` | `PermissionGrantStoreConformance` | `CreateStoreAsync(grants)` 返回装好授予的 `IPermissionGrantStore`；访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync()` |
+| `Security.Conformance` | `PermissionGrantStoreConformance` / `PermissionGrantAdministrationConformance` | `CreateStoreAsync(grants)` 返回装好授予的 `IPermissionGrantStore`，访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync()`；授予管理实现 `StartAsync()` 与 `AdministerAsync(action)`，承诺多实例一致的覆写 `StartPeerAsync()`（可调 `PeerVisibilityTimeout`） |
 | `Messaging.Conformance` | `MessageBrokerConformance` / `MessageStreamConformance` / `OutboxConformance` | `CreateFeature()` 返回提供 `messaging.queue@1`（或流、持久化）的特性；可覆写 `Configuration`、`DeliveryTimeout`、`SupportsMultipleInstances` |
 | `Persistence.Conformance` | `RepositoryConformance` / `DataSourceConformance` / `SchemaConformance` / `IdGeneratorConformance<TKey>` | `CreateFeature()`；数据源与结构套件另实现 `CreateDefinition(name)` 等；标识生成器实现 `CreateGenerator(clock)` |
-| `MultiTenancy.Conformance` | `TenantStoreConformance` / `TenantShardResolverConformance` | `CreateStoreAsync(tenants)` / `CreateResolverAsync(tenants)` |
+| `MultiTenancy.Conformance` | `TenantStoreConformance` / `TenantShardResolverConformance` / `TenantAdministrationConformance` | `CreateStoreAsync(tenants)` / `CreateResolverAsync(tenants)`；租户管理实现 `StartAsync()` 与 `AdministerAsync(action)`，承诺多实例一致的覆写 `StartPeerAsync()`（可调 `PeerVisibilityTimeout`） |
 | `ObjectStorage.Conformance` | `BlobStoreConformance` / `BlobStoreProviderConformance` | `CreateStoreAsync()` 与 `PlantOutsideContractAsync(...)`；`CreateProvider()`、`ValidSettings()`、`OtherValidSettings()` |
 | `Localization.Conformance` | `MessageLocalizerConformance` | `CreateLocalizer(catalogs, options)` |
 | `Scheduling.Conformance` | `JobSchedulerConformance` / `JobStoreConformance` / `LeaderElectionConformance` | `StartAsync(configure, configuration)` 返回 `JobSchedulerHost`；`CreateAsync()`；`CreateElection(clock)` 与 `StartNodeAsync(clock, probe)` |
@@ -20170,6 +20270,29 @@ public sealed class FileSecurityFeature : IHostedFeature
 - 外部资源的连接串经绑定取得：清单 `Bindings` 声明绑定名与类型，`Configure` 里用 `context.GetBinding(name)` / `FindBinding(name)` 读值，同一个 Provider 在 Compose 里读环境变量、在 Kubernetes 里读 Secret（[资源绑定](/configuration/bindings)）。
 - AOT：包缺省按 AOT 兼容写（`<IsAotCompatible>true</IsAotCompatible>`，序列化走源生成）。依赖的第三方库不兼容时设为 `false` 并在 README 写明；必须用反射的入口标 `RequiresDynamicCode` / `RequiresUnreferencedCode`，把警告交给调用方。
 - 资源有界：缓存、队列、注册表不能无界增长，容量、过期、清理与并发语义都要有测试；不加静默兜底与无限重试。
+
+## 跟上抽象包的新版本
+
+Provider 发布之后，抽象包还会出新的小版本。规范 RFC-0001「Provider 契约的演进」保证旧 Provider 不会在不知情时给出错误的结果，Provider 这边要做两件事。
+
+**接收查询时先核对修订号。** 交给 Provider 的查询（`AuditQuery`、`EntityQuery<T>`、`WorkflowInstanceQuery` 等）各有一个修订号常量 `Revision`，以后加了过滤项或排序键就加 1。Provider 在入口把常量传给 `Validate`：常量在编译时写进 Provider，查询用到了 Provider 编译之后才加的条件时返回 `KERNEL_VALIDATION_007`，不会静默忽略新条件、给出放宽了的结果。
+
+```csharp
+public async ValueTask<Result<AuditPage>> QueryAsync(AuditQuery query, CancellationToken cancellationToken)
+{
+    ArgumentNullException.ThrowIfNull(query);
+    if (query.Validate(AuditQuery.Revision).Error is { } invalid)
+    {
+        return invalid;
+    }
+
+    // 按查询的过滤项读取…
+}
+```
+
+仓储的 `ListAsync`、`CountAsync` 不返回 `Result`，写成 `query.Validate(EntityQuery<TEntity>.Revision).ThrowIfFailure()`。遇到这个错误码，升级 Provider 包即可。
+
+**新能力看可选接口。** 抽象包不在已有接口上加成员，新能力是单独的可选接口，如 `ICacheStoreInspector`、`IBlobMultipartStore`、`IPermissionGrantAdministration`。能做就实现，调用方按类型判断；不实现，调用方走降级路径或返回「不支持」。
 
 ## 通过一致性套件
 

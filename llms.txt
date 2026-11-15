@@ -95,7 +95,7 @@
 
 ## 分布式缓存
 
-- [缓存读写](https://framework.docs.xihanfun.com/caching/basics): 这一页讲缓存子系统最常用的部分：它提供哪两个能力、字节存储与类型化缓存是什么关系、怎样启用内存与 Redis 实现、怎样读写、设置过期、批量操作、挑选序列化器，以及对应的配置、健康项与错误码。
+- [缓存读写](https://framework.docs.xihanfun.com/caching/basics): 这一页讲缓存子系统最常用的部分：它提供哪两个能力、字节存储与类型化缓存是什么关系、怎样启用内存与 Redis 实现、怎样读写、设置过期、批量操作、用按范围失效的缓存区缓存会被写入改变的数据、挑选序列化器，以及对应的配置、健康项与错误码。
 - [两级缓存与键管理](https://framework.docs.xihanfun.com/caching/hybrid): 这一页讲三件进阶的事：`Caching.Hybrid` 把进程内缓存与共享缓存叠成两级、读少一次网络往返；`ICacheStoreInspector` / `ICacheInspector` / `ICacheChangeFeed` 给管理界面列键、看元数据、按前缀删除与订阅变更；`Caching.Remote` 让任意语言写的进程外插件承担共享缓存。
 - [分布式锁与幂等](https://framework.docs.xihanfun.com/caching/locks): 这一页讲建立在共享缓存存储之上的两样东西：`IDistributedLock` 租约锁，以及按幂等键给调用去重、回放首次结果的 Idempotency 阶段；最后说明怎样让沿用 .NET `IDistributedCache` 的代码接到同一个存储上。
 
@@ -194,7 +194,7 @@
 - [XiHan.Framework.Kernel.Generators](https://framework.docs.xihanfun.com/packages/kernel-generators): Roslyn 源生成器：扫描标注 `[Operation]` 且实现 `IOperation<TRequest, TResponse>` 的类，生成操作登记代码 `GeneratedOperations` 与每个操作的请求 / 响应 JSON Schema。
 - [XiHan.Framework.Kernel](https://framework.docs.xihanfun.com/packages/kernel): 微内核：应用构建、能力图谱求解、执行管道与内置中间件、操作契约与调用器、安全原语、健康与插件抽象。
 - [XiHan.Framework.Localization.Abstractions](https://framework.docs.xihanfun.com/packages/localization-abstractions): 本地化的抽象包：区域名与内置 10 种区域、按键与区域取模板的消息目录 `MessageCatalog`、显式区域的解析接口 `IMessageLocalizer` 与目录注册。
-- [XiHan.Framework.Localization.Database](https://framework.docs.xihanfun.com/packages/localization-database): `localization.resources@1` 的数据库 Provider：翻译以实体 `MessageTranslation` 经仓储读写，宿主就绪后装进内存快照并按周期刷新，数据库里的翻译优先于嵌入的语言文件。
+- [XiHan.Framework.Localization.Database](https://framework.docs.xihanfun.com/packages/localization-database): `localization.resources@1` 的数据库 Provider：翻译以实体 `MessageTranslation` 经仓储读写，宿主就绪后装进内存快照，写入后经 `ICache` 里的版本戳让所有实例重新加载，数据库里的翻译优先于嵌入的语言文件。
 - [XiHan.Framework.Localization.InMemory](https://framework.docs.xihanfun.com/packages/localization-inmemory): 本地化的默认实现：汇集容器里注册的全部消息目录，按精确区域、同语言、默认区域、`en-US` 的回退链取模板并格式化，同时作为 `MessageScope` 的解析器让 `key.L()` 在任何地方可用。
 - [XiHan.Framework.Messaging.Abstractions](https://framework.docs.xihanfun.com/packages/messaging-abstractions): 消息子系统的抽象包：CloudEvents 信封、发布者与代理契约、处理器订阅、经内核管道的派发、领域事件派发与事务性发件箱。
 - [XiHan.Framework.Messaging.InMemory](https://framework.docs.xihanfun.com/packages/messaging-inmemory): 消息的默认实现：进程内的内存代理，每个主题一条有界通道、单消费者顺序投递、重试与死信，提供 `messaging.queue@1`。
@@ -232,13 +232,13 @@
 - [XiHan.Framework.Scheduling.InMemory](https://framework.docs.xihanfun.com/packages/scheduling-inmemory): 调度的默认实现，同时提供 `scheduling.jobs@1`（进程内作业存储加抽象包的引擎）与 `scheduling.leader@1`（进程内租约）。
 - [XiHan.Framework.Scheduling.Kubernetes](https://framework.docs.xihanfun.com/packages/scheduling-kubernetes): `scheduling.leader@1` 的 Kubernetes Provider：用 `coordination.k8s.io/v1` 的 Lease 对象在 Pod 之间选出领导，直接调用 API Server，不依赖 Kubernetes 客户端库。
 - [XiHan.Framework.Security.Abstractions](https://framework.docs.xihanfun.com/packages/security-abstractions): 安全的抽象包：凭据与认证处理器、授权要求与策略目录、RBAC 授予存储与检查器、收窄过滤器与授予来源、Authenticate / Authorize 阶段中间件，以及条件引擎与 IP 归属地契约。
-- [XiHan.Framework.Security.Database](https://framework.docs.xihanfun.com/packages/security-database): 授权的数据库 Provider：权限授予是数据库里的 `PermissionGrantRecord` 行，经 `persistence.relational@1` 的仓储读写，授予存储带有界的 TTL 缓存。
+- [XiHan.Framework.Security.Database](https://framework.docs.xihanfun.com/packages/security-database): 授权的数据库 Provider：权限授予是数据库里的 `PermissionGrantRecord` 行，经 `persistence.relational@1` 的仓储读写，授予存储经 `ICache` 缓存，写入后所有共用缓存的实例立即失效。
 - [XiHan.Framework.Security.InMemory](https://framework.docs.xihanfun.com/packages/security-inmemory): 安全的默认实现：从配置装载 API Key 主体与权限授予，提供 `security.authentication@1`（`ApiKey` 方案）与 `security.authorization@1`（RBAC 授予存储）。
 - [XiHan.Framework.Security.Ip2Region](https://framework.docs.xihanfun.com/packages/security-ip2region): IP 归属地的 ip2region 离线库 Provider：按宿主提供的 IPv4 / IPv6 xdb 文件把 IP 地址解析为国家、省份、城市与运营商，不访问网络，提供 `security.ip-region@1`。
 - [XiHan.Framework.Security.Jwt](https://framework.docs.xihanfun.com/packages/security-jwt): 认证的 JWT Provider：校验 HS256 对称密钥签名的 `Bearer` 令牌（签名、有效期、签发者、受众），把令牌映射为主体，提供 `security.authentication@1`。
 - [XiHan.Framework.Security.OpenIdConnect](https://framework.docs.xihanfun.com/packages/security-openidconnect): 认证的 OpenID Connect Provider：从签发者的发现文档与 JWKS 取签名密钥，校验 `Bearer` 令牌（非对称签名、签发者、受众、有效期），密钥轮换时按需刷新，提供 `security.authentication@1`。
 - [XiHan.Framework.Security.WebAuthn](https://framework.docs.xihanfun.com/packages/security-webauthn): 通行密钥（WebAuthn）的依赖方实现：生成注册与认证仪式的选项，按 RFC-0008「WebAuthn」的顺序核对浏览器交回的响应，提供 `security.webauthn@1`。
-- [XiHan.Framework.Testing](https://framework.docs.xihanfun.com/packages/testing): 测试基座：没有 HTTP 的内存测试宿主、可注入行为的特性桩、按能力 ID 文本构造清单与独立调用上下文的工具。
+- [XiHan.Framework.Testing](https://framework.docs.xihanfun.com/packages/testing): 测试基座：没有 HTTP 的内存测试宿主、可注入行为的特性桩、按能力 ID 文本构造清单与独立调用上下文的工具，以及可以切换成后端不可达的缓存包装。
 - [XiHan.Framework.Workflow.Abstractions](https://framework.docs.xihanfun.com/packages/workflow-abstractions): 工作流子系统的契约与引擎：定义模型与校验、定义目录、19 个内置活动、实例与书签、用户任务与外部任务、表达式语言、存储契约，以及经内核管道执行活动的引擎与到期书签轮询器。
 - [XiHan.Framework.Workflow.Database](https://framework.docs.xihanfun.com/packages/workflow-database): 工作流的数据库 Provider，提供 `workflow.execution@1`。
 - [XiHan.Framework.Workflow.InMemory](https://framework.docs.xihanfun.com/packages/workflow-inmemory): 工作流的默认实现，提供 `workflow.execution@1`：有界内存的定义、实例与书签存储，进程内实例锁，单进程轮询到期书签。
