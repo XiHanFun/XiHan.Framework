@@ -35,6 +35,8 @@ internal static class SqlServerTestServer
         using (var maintenance = Maintenance(server))
         {
             maintenance.Ado.ExecuteCommand($"CREATE DATABASE [{name}]");
+            // 读已提交按快照读：未提交的写入对别的工作单元不可见且不挡读，与 PostgreSQL、MySQL 一致（缺省的加锁读会让读等到写入方提交）
+            maintenance.Ado.ExecuteCommand($"ALTER DATABASE [{name}] SET READ_COMMITTED_SNAPSHOT ON");
         }
 
         return new SqlServerDatabase(server, name);
