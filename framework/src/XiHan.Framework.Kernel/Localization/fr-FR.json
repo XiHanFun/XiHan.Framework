@@ -27,7 +27,7 @@
   "kernel.operation.registry_full": "Le registre des opérations a atteint sa capacité de {capacity}.",
   "kernel.operation.request_invalid": "La requête de l'opération '{id}' n'est pas valide : {reason}",
   "kernel.operation.schema_violation": "La requête de l'opération '{id}' ne respecte pas son contrat : {reason}",
-  "kernel.operation.type_mismatch": "L'opération '{id}' traite '{expected}', mais '{actual}' a été fourni.",
+  "kernel.operation.type_mismatch": "L'opération '{id}' a été appelée avec des types de requête ou de réponse qui ne correspondent pas à son enregistrement.",
   "kernel.operation.unknown": "L'opération '{id}' n'est pas enregistrée.",
   "kernel.permission.duplicate": "Le code de permission '{code}' est déjà enregistré.",
   "kernel.permission.registry_full": "Le registre des permissions a atteint sa capacité de {capacity}.",

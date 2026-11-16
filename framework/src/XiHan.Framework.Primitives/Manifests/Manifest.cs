@@ -204,18 +204,18 @@ public sealed partial record Manifest
     /// <summary>
     /// SemVer 2.0 版本号的正则：三段数字，可选预发布与构建元数据
     /// </summary>
-    [GeneratedRegex("^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$")]
+    [GeneratedRegex("^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?\\z")]
     private static partial Regex SemVerPattern();
 
     /// <summary>
     /// 激活事件的正则：<c>onStartup</c>、<c>onOperation:&lt;模式&gt;</c> 或 <c>onEvent:&lt;模式&gt;</c>
     /// </summary>
-    [GeneratedRegex("^(onStartup|onOperation:[a-z0-9.*-]+|onEvent:[a-z0-9.*-]+)$")]
+    [GeneratedRegex("^(onStartup|onOperation:[a-z0-9.*-]+|onEvent:[a-z0-9.*-]+)\\z")]
     private static partial Regex ActivationPattern();
 
     /// <summary>
     /// 插件权限的正则：<c>net.outbound</c>、<c>fs.read</c>、<c>fs.write</c> 或 <c>capability</c> 前缀加冒号与目标
     /// </summary>
-    [GeneratedRegex("^(net\\.outbound|fs\\.read|fs\\.write|capability):.+$")]
+    [GeneratedRegex("^(net\\.outbound|fs\\.read|fs\\.write|capability):.+\\z")]
     private static partial Regex PermissionPattern();
 }

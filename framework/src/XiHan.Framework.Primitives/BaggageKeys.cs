@@ -92,6 +92,6 @@ public static partial class BaggageKeys
     /// <summary>
     /// 键名格式的正则：<c>xihan.</c> 前缀，其后为小写字母开头的小写字母、数字、连字符
     /// </summary>
-    [GeneratedRegex("^xihan\\.[a-z][a-z0-9-]*$")]
+    [GeneratedRegex("^xihan\\.[a-z][a-z0-9-]*\\z")]
     private static partial Regex Pattern();
 }

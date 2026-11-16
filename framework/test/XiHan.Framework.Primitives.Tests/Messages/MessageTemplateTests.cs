@@ -58,12 +58,30 @@ public sealed class MessageTemplateTests
     }
 
     [Fact]
-    public void Format_UsesFormatSpecifierAndCulture()
+    public void Format_UsesOnlyPortableSpecifiersAndTheLocaleSymbols()
     {
         var arguments = MessageArguments.Of(("amount", 1234.5m), ("when", new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)));
 
-        Assert.Equal("1,234.50 on 2026-10-21", MessageTemplate.Format("{amount:N2} on {when:yyyy-MM-dd}", arguments, CultureInfo.InvariantCulture));
+        // 日期时间不在值模型里，按不变文化的文本写出；.NET 的格式串不是可移植的说明符，按无格式（RFC-0010「模板」，ADR-0236）
+        Assert.Equal("1,234.50 on 10/21/2026 00:00:00", MessageTemplate.Format("{amount:N2} on {when:yyyy-MM-dd}", arguments, CultureInfo.InvariantCulture));
         Assert.Equal("1.234,50", MessageTemplate.Format("{amount:N2}", arguments, CultureInfo.GetCultureInfo("de-DE")));
+
+        // 区域只改变小数点与分组符，NaN 与无穷不随区域变化
+        Assert.Equal("Infinity", MessageTemplate.Format("{v}", MessageArguments.Of(("v", double.PositiveInfinity)), CultureInfo.GetCultureInfo("en-US")));
+        Assert.Equal("NaN", MessageTemplate.Format("{v:N2}", MessageArguments.Of(("v", double.NaN)), CultureInfo.GetCultureInfo("zh-TW")));
+    }
+
+    [Fact]
+    public void Format_MapsNativeValuesIntoTheValueModel()
+    {
+        // 各宽度的整数在 64 位范围内是整数，超出时是浮点；单精度与十进制小数先换成双精度
+        Assert.Equal("9223372036854775807", MessageTemplate.Format("{v:D}", MessageArguments.Of(("v", (ulong)long.MaxValue)), null));
+        Assert.Equal("1.8446744073709552E+19", MessageTemplate.Format("{v}", MessageArguments.Of(("v", ulong.MaxValue)), null));
+        Assert.Equal("0.10000000149011612", MessageTemplate.Format("{v}", MessageArguments.Of(("v", 0.1f)), null));
+        Assert.Equal("2.5", MessageTemplate.Format("{v}", MessageArguments.Of(("v", 2.50m)), null));
+        Assert.Equal("c", MessageTemplate.Format("{v}", MessageArguments.Of(("v", 'c')), null));
+        Assert.Equal("[1,2]", MessageTemplate.Format("{v}", MessageArguments.Of(("v", new[] { 1, 2 })), null));
+        Assert.Equal("{\"a\":1,\"b\":[\"x\"]}", MessageTemplate.Format("{v}", MessageArguments.Of(("v", new Dictionary<string, object?> { ["b"] = new[] { "x" }, ["a"] = 1 })), null));
     }
 
     [Fact]

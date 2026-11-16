@@ -4,6 +4,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
@@ -104,16 +105,14 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
     /// </remarks>
     private Error? ValidateSchema(OperationDescriptor descriptor, OperationSchema schema, ReadOnlyMemory<byte> payload)
     {
-        JsonDocument instance;
-        try
+        // 与解码同一套读取检查：语法错误写 $，重复成员写它的路径（RFC-0011 规则 2，ADR-0236）；通过后解析不会再失败
+        var json = payload.IsEmpty ? _emptyObject : payload;
+        if (JsonText.Check(json.Span) is { } problem)
         {
-            instance = JsonDocument.Parse(payload.IsEmpty ? _emptyObject : payload);
+            return Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", descriptor.Id), ("reason", problem.Path)));
         }
-        catch (JsonException exception)
-        {
-            // reason 只写路径，不带解析器的英文消息（RFC-0011 规则 2，ADR-0235）；语法错误的位置各解析器不同，没有路径时写根
-            return Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", descriptor.Id), ("reason", exception.Path ?? "$")));
-        }
+
+        var instance = JsonDocument.Parse(json);
 
         using (instance)
         {

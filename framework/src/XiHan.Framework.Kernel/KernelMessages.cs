@@ -18,7 +18,7 @@ public static class KernelMessages
     /// 清单不是合法 JSON
     /// </summary>
     /// <remarks>
-    /// 参数：<c>reason</c>
+    /// 参数：<c>reason</c>，语法错误时为 <c>$</c>，重复成员时为它的路径（RFC-0002，ADR-0236）
     /// </remarks>
     public const string ManifestInvalidJson = "kernel.manifest.invalid_json";
 
@@ -39,7 +39,7 @@ public static class KernelMessages
     /// 清单内容不合法
     /// </summary>
     /// <remarks>
-    /// 参数：<c>reason</c>
+    /// 参数：<c>reason</c>，不合 Schema 的第一处的路径（RFC-0002，ADR-0236）
     /// </remarks>
     public const string ManifestInvalid = "kernel.manifest.invalid";
 
@@ -136,7 +136,7 @@ public static class KernelMessages
     /// 类型化调用的类型与登记不符
     /// </summary>
     /// <remarks>
-    /// 参数：<c>id</c>、<c>expected</c>、<c>actual</c>
+    /// 参数：<c>id</c>。不带类型名：类型名是实现语言的，各语言写不出同样的参数（ADR-0236）
     /// </remarks>
     public const string OperationTypeMismatch = "kernel.operation.type_mismatch";
 

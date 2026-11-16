@@ -46,6 +46,6 @@ public static partial class CapabilityId
     /// <summary>
     /// 能力 ID 格式的正则：小写领域段，点，小写字母开头的能力段（允许数字与连字符）
     /// </summary>
-    [GeneratedRegex("^[a-z][a-z0-9]*\\.[a-z][a-z0-9-]*$")]
+    [GeneratedRegex("^[a-z][a-z0-9]*\\.[a-z][a-z0-9-]*\\z")]
     private static partial Regex Pattern();
 }

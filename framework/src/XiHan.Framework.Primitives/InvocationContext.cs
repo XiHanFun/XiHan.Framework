@@ -230,12 +230,12 @@ public sealed partial class InvocationContext
     /// <summary>
     /// trace-id 格式的正则：32 位小写十六进制
     /// </summary>
-    [GeneratedRegex("^[0-9a-f]{32}$")]
+    [GeneratedRegex("^[0-9a-f]{32}\\z")]
     private static partial Regex TraceIdPattern();
 
     /// <summary>
     /// parent-id 格式的正则：16 位小写十六进制
     /// </summary>
-    [GeneratedRegex("^[0-9a-f]{16}$")]
+    [GeneratedRegex("^[0-9a-f]{16}\\z")]
     private static partial Regex SpanIdPattern();
 }

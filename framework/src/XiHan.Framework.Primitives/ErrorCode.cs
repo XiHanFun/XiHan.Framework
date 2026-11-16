@@ -69,6 +69,6 @@ public static partial class ErrorCode
     /// <summary>
     /// 错误码格式的正则：三段大写标识，末段为三位数字
     /// </summary>
-    [GeneratedRegex("^[A-Z][A-Z0-9]*_[A-Z][A-Z0-9]*_[0-9]{3}$")]
+    [GeneratedRegex("^[A-Z][A-Z0-9]*_[A-Z][A-Z0-9]*_[0-9]{3}\\z")]
     private static partial Regex Pattern();
 }

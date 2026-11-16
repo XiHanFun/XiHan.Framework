@@ -65,6 +65,6 @@ public static partial class OperationId
     /// <remarks>
     /// 资源与动词都是小写字母开头、连字符分隔的小写字母数字段，中间一个点
     /// </remarks>
-    [GeneratedRegex("^[a-z][a-z0-9]*(-[a-z0-9]+)*\\.[a-z][a-z0-9]*(-[a-z0-9]+)*$")]
+    [GeneratedRegex("^[a-z][a-z0-9]*(-[a-z0-9]+)*\\.[a-z][a-z0-9]*(-[a-z0-9]+)*\\z")]
     private static partial Regex Pattern();
 }

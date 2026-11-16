@@ -11,7 +11,7 @@ namespace XiHan.Framework.Kernel.Tests.Operations;
 /// 回放载荷错误路径的一致性向量
 /// </summary>
 /// <remarks>
-/// <c>operations/payload-reasons.json</c>：载荷不合法时 <c>reason</c> 的路径（RFC-0011 规则 2，ADR-0235），经真实的 <see cref="OperationDescriptor"/> 解码，参考实现与各语言 SDK 必须给出同样的路径
+/// <c>operations/payload-reasons.json</c>：载荷能否解码、不合法时 <c>reason</c> 的路径（RFC-0011 规则 2，ADR-0235、ADR-0236），经真实的 <see cref="OperationDescriptor"/> 解码，参考实现与各语言 SDK 必须给出同样的结果
 /// </remarks>
 public sealed class PayloadReasonVectorTests
 {
@@ -21,12 +21,13 @@ public sealed class PayloadReasonVectorTests
     private static readonly PayloadVectors _vectors = SpecVectors.Load<PayloadVectors>("operations/payload-reasons.json");
 
     /// <summary>
-    /// 向量里的两个请求类型对应的描述
+    /// 向量里的三个请求类型对应的描述
     /// </summary>
     private static readonly Dictionary<string, OperationDescriptor> _descriptors = new(StringComparer.Ordinal)
     {
         ["counts"] = new OperationDescriptor<VectorCountsOperation, Dictionary<string, int>, VectorOrder>(VectorCountsOperation.Contract, "vectors", VectorJsonContext.Default.DictionaryStringInt32, VectorJsonContext.Default.VectorOrder),
         ["order"] = new OperationDescriptor<VectorOrderOperation, VectorOrder, VectorOrder>(VectorOrderOperation.Contract, "vectors", VectorJsonContext.Default.VectorOrder, VectorJsonContext.Default.VectorOrder),
+        ["profile"] = new OperationDescriptor<VectorProfileOperation, VectorProfile, VectorOrder>(VectorProfileOperation.Contract, "vectors", VectorJsonContext.Default.VectorProfile, VectorJsonContext.Default.VectorOrder),
     };
 
     [Fact]
@@ -37,41 +38,33 @@ public sealed class PayloadReasonVectorTests
         foreach (var vector in _vectors.Cases)
         {
             var result = _descriptors[vector.Request].DecodeRequest(Encoding.UTF8.GetBytes(vector.Payload));
-            var reason = result.IsFailure && result.Error!.Code == KernelErrors.InvalidOperationPayload && result.Error.Details!.TryGetValue("reason", out var value) ? value as string : null;
-            if (reason != vector.Reason)
+            if (result.IsSuccess)
             {
-                failures.Add($"{vector.Name}: reason '{reason ?? "<not an invalid payload>"}', expected '{vector.Reason}'");
+                if (vector.Reason is not null)
+                {
+                    failures.Add($"{vector.Name}: decoded, expected reason '{vector.Reason}'");
+                }
+
+                continue;
+            }
+
+            var reason = result.Error!.Code == KernelErrors.InvalidOperationPayload && result.Error.Details!.TryGetValue("reason", out var value) ? value as string : null;
+            if (reason is null || reason != vector.Reason)
+            {
+                failures.Add($"{vector.Name}: reason '{reason ?? "<not an invalid payload>"}', expected '{vector.Reason ?? "<decoded>"}'");
             }
         }
 
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
     }
 
-    [Fact]
-    public void DecodeRequest_RootsSyntaxErrorsAtTheDocument()
-    {
-        Assert.NotEmpty(_vectors.SyntaxErrors);
-        foreach (var vector in _vectors.SyntaxErrors)
-        {
-            var result = _descriptors[vector.Request].DecodeRequest(Encoding.UTF8.GetBytes(vector.Payload));
-            Assert.True(result.IsFailure, vector.Payload);
-            Assert.Equal(KernelErrors.InvalidOperationPayload, result.Error!.Code);
-            Assert.StartsWith("$", Assert.IsType<string>(result.Error.Details!["reason"]), StringComparison.Ordinal);
-        }
-    }
-
     /// <summary>
     /// 向量文件的对象模型
     /// </summary>
-    private sealed record PayloadVectors(PayloadCase[] Cases, SyntaxErrorCase[] SyntaxErrors);
+    private sealed record PayloadVectors(PayloadCase[] Cases);
 
     /// <summary>
-    /// 一次解码：载荷原文与期望的 reason
+    /// 一次解码：载荷原文与期望的 reason，<see langword="null"/> 表示解码成功
     /// </summary>
-    private sealed record PayloadCase(string Name, string Request, string Payload, string Reason);
-
-    /// <summary>
-    /// 一个 JSON 语法错误的载荷
-    /// </summary>
-    private sealed record SyntaxErrorCase(string Request, string Payload);
+    private sealed record PayloadCase(string Name, string Request, string Payload, string? Reason);
 }

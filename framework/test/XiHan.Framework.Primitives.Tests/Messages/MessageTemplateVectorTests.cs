@@ -34,10 +34,12 @@ public sealed class MessageTemplateVectorTests
         foreach (var vector in _vectors.Format)
         {
             var arguments = ToArguments(vector.Arguments);
+            // 区域只决定小数点与分组符（RFC-0010「模板」，ADR-0236）；没有时按不变文化
+            var culture = vector.Locale is { } locale ? CultureInfo.GetCultureInfo(locale) : CultureInfo.InvariantCulture;
             string lenient;
             try
             {
-                lenient = MessageTemplate.Format(vector.Template, arguments, CultureInfo.InvariantCulture);
+                lenient = MessageTemplate.Format(vector.Template, arguments, culture);
             }
             catch (FormatException exception)
             {
@@ -51,7 +53,7 @@ public sealed class MessageTemplateVectorTests
                 failures.Add($"{vector.Name}: lenient '{lenient}', expected '{vector.Lenient}'");
             }
 
-            var strict = MessageTemplate.TryFormat(vector.Template, arguments, CultureInfo.InvariantCulture, out var text) ? text : null;
+            var strict = MessageTemplate.TryFormat(vector.Template, arguments, culture, out var text) ? text : null;
             if (strict != vector.Strict)
             {
                 failures.Add($"{vector.Name}: strict '{strict ?? "<failed>"}', expected '{vector.Strict ?? "<failed>"}'");
@@ -72,7 +74,7 @@ public sealed class MessageTemplateVectorTests
     /// 把向量里的 JSON 参数转成模板参数
     /// </summary>
     /// <remarks>
-    /// <c>null</c> 表示没有参数；整数写法的数字为 <see cref="long"/>，其余数字为 <see cref="double"/>，与 SDK 按 JSON 取值的方式一致
+    /// <c>null</c> 表示没有参数；整数写法且在 64 位范围内的数字为 <see cref="long"/>，其余数字为 <see cref="double"/>，数组为列表，对象为字典，与 SDK 按 JSON 取值的方式一致
     /// </remarks>
     private static Dictionary<string, object?>? ToArguments(JsonElement element)
         => element.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined
@@ -80,7 +82,7 @@ public sealed class MessageTemplateVectorTests
             : element.EnumerateObject().ToDictionary(property => property.Name, property => ToValue(property.Value));
 
     /// <summary>
-    /// 一个 JSON 标量的 .NET 值
+    /// 一个 JSON 值的 .NET 值
     /// </summary>
     private static object? ToValue(JsonElement value)
         => value.ValueKind switch
@@ -91,7 +93,8 @@ public sealed class MessageTemplateVectorTests
             JsonValueKind.True => true,
             JsonValueKind.False => false,
             JsonValueKind.Null => null,
-            _ => throw new InvalidOperationException($"Template vectors only use scalar arguments, got '{value.ValueKind}'."),
+            JsonValueKind.Array => value.EnumerateArray().Select(ToValue).ToList(),
+            _ => value.EnumerateObject().ToDictionary(static property => property.Name, static property => ToValue(property.Value)),
         };
 
     /// <summary>
@@ -105,12 +108,15 @@ public sealed class MessageTemplateVectorTests
     private sealed record KeyVectors(string[] Valid, string[] Invalid);
 
     /// <summary>
-    /// 一次格式化，<see cref="Strict"/> 为 <see langword="null"/> 表示严格格式化失败
+    /// 一次格式化
     /// </summary>
-    private sealed record FormatVector(string Name, string Template, JsonElement Arguments, string Lenient, string? Strict);
+    /// <remarks>
+    /// <see cref="Strict"/> 为 <see langword="null"/> 表示严格格式化失败；<see cref="Locale"/> 为空时按不变文化
+    /// </remarks>
+    private sealed record FormatVector(string Name, string Template, JsonElement Arguments, string? Locale, string Lenient, string? Strict);
 
     /// <summary>
-    /// 一次 Describe，至多一个参数
+    /// 一次 Describe
     /// </summary>
     private sealed record DescribeVector(string Key, JsonElement Arguments, string Text);
 }

@@ -37,6 +37,6 @@ public static partial class ManifestId
     /// <remarks>
     /// <c>xihan.</c> 前缀，小写领域段，小写字母开头的名称段（允许数字与连字符）
     /// </remarks>
-    [GeneratedRegex("^xihan\\.[a-z][a-z0-9]*\\.[a-z][a-z0-9-]*$")]
+    [GeneratedRegex("^xihan\\.[a-z][a-z0-9]*\\.[a-z][a-z0-9-]*\\z")]
     private static partial Regex Pattern();
 }

@@ -95,7 +95,8 @@ public sealed record CapabilityRequirement
             versionText = versionText[1..];
         }
 
-        if (!int.TryParse(versionText, NumberStyles.None, CultureInfo.InvariantCulture, out var version) || version < 1)
+        // 版本是不带前导零、符号与空白的正整数，在 32 位范围内（ADR-0236）
+        if (!InterfaceVersionText.TryParse(versionText, out var version))
         {
             return false;
         }

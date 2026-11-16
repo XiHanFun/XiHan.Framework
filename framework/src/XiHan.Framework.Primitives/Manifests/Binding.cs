@@ -58,12 +58,12 @@ public sealed partial record Binding
     /// <summary>
     /// 绑定名格式的正则：小写字母开头的小写字母、数字、连字符
     /// </summary>
-    [GeneratedRegex("^[a-z][a-z0-9-]*$")]
+    [GeneratedRegex("^[a-z][a-z0-9-]*\\z")]
     private static partial Regex NamePattern();
 
     /// <summary>
     /// 资源类型格式的正则：小写类别，可选冒号加小写子类
     /// </summary>
-    [GeneratedRegex("^[a-z]+(:[a-z]+)?$")]
+    [GeneratedRegex("^[a-z]+(:[a-z]+)?\\z")]
     private static partial Regex TypePattern();
 }

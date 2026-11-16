@@ -4,6 +4,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Operations;
@@ -75,18 +76,34 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
     /// <inheritdoc />
     public override Result<object> DecodeRequest(ReadOnlyMemory<byte> payload)
     {
+        var json = payload.IsEmpty ? _emptyObject : payload;
+
+        // 先过共同的读取检查：语法错误一律写 $，重复成员写它的路径（RFC-0011 规则 2，ADR-0236）
+        if (JsonText.Check(json.Span) is { } problem)
+        {
+            return InvalidPayload(problem.Path);
+        }
+
+        using var document = JsonDocument.Parse(json);
+
+        // 再按序列化元数据以规范的顺序核对形状：System.Text.Json 报哪一处随类型的声明方式而变，这里不随
+        if (JsonRequestShape.FindProblem(document.RootElement, _requestInfo) is { } path)
+        {
+            return InvalidPayload(path);
+        }
+
         try
         {
-            var request = JsonSerializer.Deserialize(payload.IsEmpty ? _emptyObject : payload.Span, _requestInfo);
+            var request = document.RootElement.Deserialize(_requestInfo);
             // JSON 字面量 null 不是请求对象：按载荷不合法处理，不让空请求进入操作；reason 与其他载荷错误一样只写路径（RFC-0011 规则 2，ADR-0235）
             return request is null
-                ? InvalidPayload("$")
+                ? InvalidPayload(JsonPath.Root)
                 : Result.Success<object>(request);
         }
         catch (JsonException exception)
         {
-            // 只留路径：消息带目标类型的全名，这个错误要回给调用方（ADR-0124）
-            return InvalidPayload(exception.Path ?? "$");
+            // 只留路径：消息带目标类型的全名，这个错误要回给调用方（ADR-0124）。读取器的错误（序列化上下文把 MaxDepth 设得更小时）与语法错误同样写 $
+            return InvalidPayload(exception.InnerException is JsonException ? JsonPath.Root : exception.Path ?? JsonPath.Root);
         }
     }
 
@@ -104,7 +121,8 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
         ArgumentNullException.ThrowIfNull(request);
         if (request is not TRequest typed)
         {
-            return new Error(KernelErrors.OperationTypeMismatch, KernelMessages.OperationTypeMismatch, MessageArguments.Of(("id", Id), ("expected", typeof(TRequest).Name), ("actual", request.GetType().Name)));
+            // 只带操作 ID：类型名是实现语言的，各语言写不出同样的参数（RFC-0011「错误码」，ADR-0236）
+            return new Error(KernelErrors.OperationTypeMismatch, KernelMessages.OperationTypeMismatch, MessageArguments.Of(("id", Id)));
         }
 
         // 操作按作用域解析：每次调用一个作用域，操作里的仓储、工作单元等作用域服务与中间件共享同一实例

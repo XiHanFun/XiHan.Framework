@@ -27,7 +27,7 @@
   "kernel.operation.registry_full": "O registro de operações atingiu sua capacidade de {capacity}.",
   "kernel.operation.request_invalid": "A solicitação da operação '{id}' é inválida: {reason}",
   "kernel.operation.schema_violation": "A solicitação da operação '{id}' não corresponde ao seu contrato: {reason}",
-  "kernel.operation.type_mismatch": "A operação '{id}' processa '{expected}', mas '{actual}' foi fornecido.",
+  "kernel.operation.type_mismatch": "A operação '{id}' foi chamada com tipos de solicitação ou resposta que não correspondem ao seu registro.",
   "kernel.operation.unknown": "A operação '{id}' não está registrada.",
   "kernel.permission.duplicate": "O código de permissão '{code}' já está registrado.",
   "kernel.permission.registry_full": "O registro de permissões atingiu sua capacidade de {capacity}.",

@@ -13,7 +13,7 @@ namespace XiHan.Framework.Primitives;
 /// 消息键文法与模板格式化
 /// </summary>
 /// <remarks>
-/// 消息键是专门的代码（如 <c>security.token.subject_missing</c>），各包在 <c>&lt;领域&gt;Messages</c> 常量类里定义，文案只存在于语言文件 <c>Localization/&lt;区域&gt;.json</c>（一种语言一个文件，含默认语言 <c>en-US</c>），由本地化器按调用方区域解析。模板语法：<c>{name}</c>（按名字）或 <c>{0}</c>（按位置）占位符从参数取值，可带 <c>:format</c> 格式说明符并按目标区域的文化格式化，<c>{{</c> 与 <c>}}</c> 是转义
+/// 消息键是专门的代码（如 <c>security.token.subject_missing</c>），各包在 <c>&lt;领域&gt;Messages</c> 常量类里定义，文案只存在于语言文件 <c>Localization/&lt;区域&gt;.json</c>（一种语言一个文件，含默认语言 <c>en-US</c>），由本地化器按调用方区域解析。模板语法：<c>{name}</c>（按名字）或 <c>{0}</c>（按位置）占位符从参数取值，可带 <c>:format</c> 格式说明符，<c>{{</c> 与 <c>}}</c> 是转义。值的文本形式、格式说明符与区域的数字符号都按 RFC-0010 的规则，不交给 .NET 的格式化：只认可移植的 <c>D</c>、<c>X</c>、<c>F</c>、<c>N</c>，区域只改变小数点与分组符，各语言 SDK 写出逐字相同的文本（ADR-0236）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public static partial class MessageTemplate
@@ -111,7 +111,7 @@ public static partial class MessageTemplate
     /// 宽松格式化
     /// </summary>
     /// <remarks>
-    /// 缺值的占位符原样保留；<paramref name="provider"/> 为空时用不变文化
+    /// 缺值的占位符原样保留；<paramref name="provider"/> 是 <see cref="CultureInfo"/> 时按它的名字取规范里的小数点与分组符（表外的区域与空值按不变文化）
     /// </remarks>
     public static string Format(string text, IReadOnlyDictionary<string, object?>? arguments, IFormatProvider? provider)
     {
@@ -123,6 +123,9 @@ public static partial class MessageTemplate
     /// <summary>
     /// 严格格式化：任一占位符缺值返回 <see langword="false"/>，供本地化拒绝半截译文
     /// </summary>
+    /// <remarks>
+    /// <paramref name="provider"/> 的含义与 <see cref="Format(string, IReadOnlyDictionary{string, object?}?, IFormatProvider?)"/> 相同
+    /// </remarks>
     public static bool TryFormat(string text, IReadOnlyDictionary<string, object?>? arguments, IFormatProvider? provider, [NotNullWhen(true)] out string? result)
     {
         ArgumentNullException.ThrowIfNull(text);
@@ -193,16 +196,10 @@ public static partial class MessageTemplate
     /// 参数值的文本形式
     /// </summary>
     /// <remarks>
-    /// 布尔写 <c>true</c> / <c>false</c>，与 JSON 和各语言 SDK 一致（RFC-0010「模板」，ADR-0233）；<see cref="IFormattable"/> 用格式说明符与文化；其余用 <see cref="Convert.ToString(object?, IFormatProvider?)"/>，<see langword="null"/> 为空串
+    /// 按 RFC-0010「模板」的值模型、可移植的格式说明符与区域数字符号写出，见 <see cref="MessageValueText"/>（ADR-0236）
     /// </remarks>
-    private static string? Stringify(object? value, string? format, IFormatProvider provider)
-        => value switch
-        {
-            // bool 不实现 IFormattable，交给 Convert.ToString 会写成 .NET 独有的 True / False
-            bool flag => flag ? "true" : "false",
-            IFormattable formattable => formattable.ToString(format, provider),
-            _ => Convert.ToString(value, provider),
-        };
+    private static string Stringify(object? value, string? format, IFormatProvider provider)
+        => MessageValueText.Format(value, format, provider);
 
     /// <summary>
     /// 从 <paramref name="index"/> 读取下一段
@@ -260,12 +257,12 @@ public static partial class MessageTemplate
     /// <summary>
     /// 消息键文法：小写字母开头的点分段，首段只含字母数字，其余段可含下划线
     /// </summary>
-    [GeneratedRegex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$")]
+    [GeneratedRegex("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\\z")]
     private static partial Regex KeyPattern();
 
     /// <summary>
     /// 占位符名文法：字母开头的字母、数字与下划线（按名字），或纯数字（按位置）
     /// </summary>
-    [GeneratedRegex("^([A-Za-z][A-Za-z0-9_]*|[0-9]+)$")]
+    [GeneratedRegex("^([A-Za-z][A-Za-z0-9_]*|[0-9]+)\\z")]
     private static partial Regex PlaceholderName();
 }

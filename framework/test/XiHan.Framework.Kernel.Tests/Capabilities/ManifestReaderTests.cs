@@ -115,7 +115,8 @@ public sealed class ManifestReaderTests
         Assert.Equal(KernelErrors.InvalidManifest, Fail("\"capability:kernel.pipeline\"").Code);
         var duplicated = Fail("\"echoes.read\", \"echoes.read\"");
         Assert.Equal(KernelErrors.InvalidManifest, duplicated.Code);
-        Assert.Contains("more than once", duplicated.Details?["reason"]?.ToString(), StringComparison.Ordinal);
+        // reason 是第二次出现的项的路径（RFC-0002 解析规则 2，ADR-0236）
+        Assert.Equal("$.contributes.permissions[1]", duplicated.Details?["reason"]?.ToString());
     }
 
     [Fact]

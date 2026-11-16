@@ -198,10 +198,8 @@ internal sealed class OperationInvoker : IOperationInvoker
         descriptor = found;
         if (found.RequestType != typeof(TRequest) || found.ResponseType != typeof(TResponse))
         {
-            error = new Error(
-                KernelErrors.OperationTypeMismatch,
-                KernelMessages.OperationTypeMismatch,
-                MessageArguments.Of(("id", operationId), ("expected", $"{found.RequestType.Name} -> {found.ResponseType.Name}"), ("actual", $"{typeof(TRequest).Name} -> {typeof(TResponse).Name}")));
+            // 只带操作 ID：类型名是实现语言的，各语言写不出同样的参数（RFC-0011「错误码」，ADR-0236）
+            error = new Error(KernelErrors.OperationTypeMismatch, KernelMessages.OperationTypeMismatch, MessageArguments.Of(("id", operationId)));
             return false;
         }
 

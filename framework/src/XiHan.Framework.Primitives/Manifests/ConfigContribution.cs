@@ -48,6 +48,6 @@ public sealed partial record ConfigContribution
     /// <remarks>
     /// <c>XiHan:</c> 前缀加 PascalCase 领域词，其后可接任意层 PascalCase 子节
     /// </remarks>
-    [GeneratedRegex("^XiHan:[A-Z][A-Za-z0-9]*(:[A-Z][A-Za-z0-9]*)*$")]
+    [GeneratedRegex("^XiHan:[A-Z][A-Za-z0-9]*(:[A-Z][A-Za-z0-9]*)*\\z")]
     private static partial Regex SectionPattern();
 }

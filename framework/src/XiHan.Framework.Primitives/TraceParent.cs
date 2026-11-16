@@ -116,6 +116,6 @@ public readonly partial record struct TraceParent
     /// <summary>
     /// 版本 00 的 <c>traceparent</c> 文法
     /// </summary>
-    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$")]
+    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})\\z")]
     private static partial Regex Grammar();
 }

@@ -2,9 +2,9 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
-using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Kernel.Json;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
@@ -14,10 +14,10 @@ namespace XiHan.Framework.Kernel.Capabilities;
 /// <c>xihan.manifest.json</c> 与 <see cref="Manifest"/> 的互转
 /// </summary>
 /// <remarks>
-/// JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义；序列化经源生成，不用反射
+/// JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义，读取的检查顺序与写出的排版由 RFC-0002 规定（ADR-0236），各语言逐字一致；序列化经源生成，不用反射
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public static partial class ManifestReader
+public static class ManifestReader
 {
     /// <summary>
     /// 清单文件名
@@ -25,98 +25,47 @@ public static partial class ManifestReader
     public const string FileName = "xihan.manifest.json";
 
     /// <summary>
+    /// 写出的 <c>$schema</c>
+    /// </summary>
+    private const string SchemaUri = "https://spec.xihanfun.com/manifest/v1.json";
+
+    /// <summary>
+    /// 严格的 UTF-8 编码
+    /// </summary>
+    /// <remarks>
+    /// 文本里的孤立代理项不悄悄换成 U+FFFD，按不是 JSON 处理
+    /// </remarks>
+    private static readonly UTF8Encoding _strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>
     /// 从 JSON 文本读取清单
     /// </summary>
     /// <remarks>
-    /// 格式或约束错误以 <see cref="KernelErrors.InvalidManifest"/> 返回
+    /// 失败都是 <see cref="KernelErrors.InvalidManifest"/>：不是 JSON 为 <c>kernel.manifest.invalid_json</c>（<c>reason</c> 为 <c>$</c>，重复成员时为它的路径），字面量 <c>null</c> 为 <c>kernel.manifest.empty</c>，
+    /// 不合 Schema 为 <c>kernel.manifest.invalid</c>（<c>reason</c> 为第一处问题的路径），跨字段约束失败保留 <see cref="Manifest.Validate"/> 的消息键与参数
     /// </remarks>
     public static Result<Manifest> Read(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
-        JsonDocument parsed;
+        byte[] utf8;
         try
         {
-            // 重复成员在解析时就拒绝：不取第一个也不取最后一个（RFC-0002 解析规则 2，ADR-0235）
-            parsed = JsonDocument.Parse(json, new JsonDocumentOptions { AllowDuplicateProperties = false });
+            utf8 = _strictUtf8.GetBytes(json);
         }
-        catch (JsonException exception)
+        catch (EncoderFallbackException)
         {
-            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalidJson, MessageArguments.Of(("reason", exception.Message)));
+            return InvalidJson(JsonPath.Root);
         }
 
-        using (parsed)
-        {
-            // 字面量 "null" 不是清单
-            if (parsed.RootElement.ValueKind == JsonValueKind.Null)
-            {
-                return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestEmpty);
-            }
-
-            // 可选成员缺失表示没有，写成 null 不合法；反序列化分不出两者，所以先在 JSON 上找
-            if (FindNull(parsed.RootElement, "$") is { } path)
-            {
-                return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", $"Field '{path}' is null; leave it out instead.")));
-            }
-
-            ManifestDocument? document;
-            try
-            {
-                document = parsed.RootElement.Deserialize(ManifestJsonContext.Default.ManifestDocument);
-            }
-            catch (JsonException exception)
-            {
-                // 类型不符、大小写不对的成员与 Schema 之外的成员都在这里，成员名区分大小写
-                return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", exception.Message)));
-            }
-
-            return document is null
-                ? new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestEmpty)
-                : Convert(document);
-        }
-    }
-
-    /// <summary>
-    /// 找出清单里第一个值为 <c>null</c> 的成员或数组项
-    /// </summary>
-    /// <remarks>
-    /// Schema 里没有哪个成员或数组项能取 <c>null</c>（配置节的 Schema 也是字符串），所以整份清单都查
-    /// </remarks>
-    /// <returns>该值的路径；没有时为 <see langword="null"/></returns>
-    private static string? FindNull(JsonElement element, string path)
-    {
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Null:
-                return path;
-            case JsonValueKind.Object:
-                foreach (var property in element.EnumerateObject())
-                {
-                    if (FindNull(property.Value, $"{path}.{property.Name}") is { } found)
-                    {
-                        return found;
-                    }
-                }
-
-                return null;
-            case JsonValueKind.Array:
-                var index = 0;
-                foreach (var item in element.EnumerateArray())
-                {
-                    if (FindNull(item, $"{path}[{index++}]") is { } found)
-                    {
-                        return found;
-                    }
-                }
-
-                return null;
-            default:
-                return null;
-        }
+        return ReadUtf8(utf8);
     }
 
     /// <summary>
     /// 从文件读取清单
     /// </summary>
+    /// <remarks>
+    /// 文件按 UTF-8 读，开头的 UTF-8 BOM 跳过；不是合法 UTF-8 的文件按不是 JSON 处理（RFC-0002，ADR-0236）
+    /// </remarks>
     public static Result<Manifest> ReadFile(string path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -125,237 +74,318 @@ public static partial class ManifestReader
             return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestFileMissing, MessageArguments.Of(("path", path)));
         }
 
-        return Read(File.ReadAllText(path));
+        var bytes = File.ReadAllBytes(path);
+        var start = bytes.AsSpan().StartsWith("\uFEFF"u8) ? 3 : 0;
+        return ReadUtf8(bytes.AsMemory(start));
     }
 
     /// <summary>
     /// 把清单写为 JSON 文本
     /// </summary>
+    /// <remarks>
+    /// 排版是规范的一部分（RFC-0002，ADR-0236）：两个空格缩进、换行只用 LF、末尾不换行，成员按 Schema 的顺序，没有值的可选成员不写，列表总写（空列表写 <c>[]</c>）；字符串只转义必须转义的字符
+    /// </remarks>
     public static string Write(Manifest manifest)
     {
         ArgumentNullException.ThrowIfNull(manifest);
-        // 枚举统一写为小写名，与 schema 的枚举值一致；隔离边界的 kebab-case 映射与 Convert 中的读取一一对应
-        var document = new ManifestDocument
+        var writer = new IndentedWriter();
+        writer.StartObject();
+        writer.Member("$schema").String(SchemaUri);
+        writer.Member("id").String(manifest.Id);
+        if (manifest.Package is { } package)
         {
-            Schema = "https://spec.xihanfun.com/manifest/v1.json",
-            Id = manifest.Id,
-            Package = manifest.Package,
-            Version = manifest.Version,
-            Primitives = manifest.Primitives.ToString(CultureInfo.InvariantCulture),
-            Stability = manifest.Stability.ToString().ToLowerInvariant(),
-            Kind = manifest.Kind.ToString().ToLowerInvariant(),
-            Role = manifest.Role.ToString().ToLowerInvariant(),
-            Isolation = manifest.Isolation switch
+            writer.Member("package").String(package);
+        }
+
+        writer.Member("version").String(manifest.Version);
+        writer.Member("primitives").String(manifest.Primitives.ToString(CultureInfo.InvariantCulture));
+        writer.Member("stability").String(manifest.Stability.ToString().ToLowerInvariant());
+        writer.Member("kind").String(manifest.Kind.ToString().ToLowerInvariant());
+        writer.Member("role").String(manifest.Role.ToString().ToLowerInvariant());
+        if (manifest.Isolation is { } isolation)
+        {
+            writer.Member("isolation").String(isolation switch
             {
                 PluginIsolation.InProcess => "in-process",
                 PluginIsolation.OutOfProcess => "out-of-process",
-                PluginIsolation.Wasm => "wasm",
-                _ => null,
-            },
-            Provides = manifest.Provides.Select(static p => new CapabilityDocument { Id = p.Id, Version = p.Version.ToString(CultureInfo.InvariantCulture) }).ToList(),
-            Requires = manifest.Requires.Select(static r => new RequirementDocument { Id = r.Id, Version = r.Version.ToString(CultureInfo.InvariantCulture), Optional = r.Optional }).ToList(),
-            Bindings = manifest.Bindings.Select(static b => new BindingDocument { Name = b.Name, Type = b.Type, Required = b.Required }).ToList(),
-            Contributes = new ContributionsDocument
+                _ => "wasm",
+            });
+        }
+
+        writer.Member("provides").Objects(manifest.Provides, static (w, p) =>
+        {
+            w.Member("id").String(p.Id);
+            w.Member("version").String(p.Version.ToString(CultureInfo.InvariantCulture));
+        });
+        writer.Member("requires").Objects(manifest.Requires, static (w, r) =>
+        {
+            w.Member("id").String(r.Id);
+            w.Member("version").String(r.Version.ToString(CultureInfo.InvariantCulture));
+            w.Member("optional").Boolean(r.Optional);
+        });
+        writer.Member("bindings").Objects(manifest.Bindings, static (w, b) =>
+        {
+            w.Member("name").String(b.Name);
+            w.Member("type").String(b.Type);
+            w.Member("required").Boolean(b.Required);
+        });
+        writer.Member("contributes").StartObject();
+        writer.Member("pipeline").Objects(manifest.Contributes.Pipeline, static (w, p) =>
+        {
+            w.Member("middleware").String(p.Middleware);
+            w.Member("stage").String(p.Stage.ToManifestName());
+            w.Member("before").Strings(p.Before);
+            w.Member("after").Strings(p.After);
+        });
+        writer.Member("operations").Strings(manifest.Contributes.Operations);
+        if (manifest.Contributes.Config is { } config)
+        {
+            writer.Member("config").StartObject();
+            writer.Member("section").String(config.Section);
+            if (config.Schema is { } schema)
             {
-                Pipeline = manifest.Contributes.Pipeline.Select(static p => new PipelineDocument { Middleware = p.Middleware, Stage = p.Stage.ToManifestName(), Before = p.Before.ToList(), After = p.After.ToList() }).ToList(),
-                Operations = manifest.Contributes.Operations.ToList(),
-                Config = manifest.Contributes.Config is null ? null : new ConfigDocument { Section = manifest.Contributes.Config.Section, Schema = manifest.Contributes.Config.Schema },
-                Permissions = manifest.Contributes.Permissions.ToList(),
-                Health = manifest.Contributes.Health.ToList(),
+                writer.Member("schema").String(schema);
+            }
+
+            writer.EndObject();
+        }
+
+        writer.Member("permissions").Strings(manifest.Contributes.Permissions);
+        writer.Member("health").Strings(manifest.Contributes.Health);
+        writer.EndObject();
+        writer.Member("activation").Strings(manifest.Activation);
+        writer.Member("permissions").Strings(manifest.Permissions);
+        if (manifest.Entry is { } entry)
+        {
+            writer.Member("entry").String(entry);
+        }
+
+        writer.EndObject();
+        return writer.ToString();
+    }
+
+    /// <summary>
+    /// 从 UTF-8 文本读取清单
+    /// </summary>
+    /// <remarks>
+    /// 顺序：共同的 JSON 读取检查（语法、重复成员）→ 字面量 null → Schema 形状 → 跨字段约束；每一步只报第一处问题
+    /// </remarks>
+    private static Result<Manifest> ReadUtf8(ReadOnlyMemory<byte> utf8)
+    {
+        if (JsonText.Check(utf8.Span) is { } problem)
+        {
+            return InvalidJson(problem.Path);
+        }
+
+        using var parsed = JsonDocument.Parse(utf8);
+        var root = parsed.RootElement;
+        if (root.ValueKind == JsonValueKind.Null)
+        {
+            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestEmpty);
+        }
+
+        if (ManifestShape.FindProblem(root) is { } path)
+        {
+            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", path)));
+        }
+
+        // 形状已核对：反序列化与原语的格式校验不会再失败，失败即两处规则不一致，按缺陷抛出
+        var document = root.Deserialize(ManifestJsonContext.Default.ManifestDocument)!;
+        var manifest = Convert(document);
+        var validation = manifest.Validate();
+        return validation.IsSuccess ? manifest : validation.Error!.WithCode(KernelErrors.InvalidManifest);
+    }
+
+    /// <summary>
+    /// 不是 JSON 的失败结果
+    /// </summary>
+    private static Error InvalidJson(string path)
+        => new(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalidJson, MessageArguments.Of(("reason", path)));
+
+    /// <summary>
+    /// 把已核对形状的 JSON 形态转换为 <see cref="Manifest"/>
+    /// </summary>
+    private static Manifest Convert(ManifestDocument document)
+    {
+        var contributes = document.Contributes;
+        return new Manifest
+        {
+            Id = document.Id!,
+            Package = document.Package,
+            Version = document.Version!,
+            Primitives = int.Parse(document.Primitives!, NumberStyles.None, CultureInfo.InvariantCulture),
+            Stability = ParseEnum<Stability>(document.Stability!),
+            Kind = ParseEnum<ManifestKind>(document.Kind!),
+            Role = document.Role is null ? ManifestRole.Provider : ParseEnum<ManifestRole>(document.Role),
+            Isolation = document.Isolation switch
+            {
+                null => null,
+                "in-process" => PluginIsolation.InProcess,
+                "out-of-process" => PluginIsolation.OutOfProcess,
+                _ => PluginIsolation.Wasm,
             },
-            Activation = manifest.Activation.ToList(),
-            Permissions = manifest.Permissions.ToList(),
-            Entry = manifest.Entry,
+            Provides = (document.Provides ?? []).Select(static p => new CapabilityDeclaration(p.Id!, int.Parse(p.Version!, NumberStyles.None, CultureInfo.InvariantCulture))).ToList(),
+            Requires = (document.Requires ?? []).Select(static r => new CapabilityRequirement(r.Id!, int.Parse(r.Version!.TrimStart('^'), NumberStyles.None, CultureInfo.InvariantCulture)) { Optional = r.Optional ?? false }).ToList(),
+            Bindings = (document.Bindings ?? []).Select(static b => new Binding(b.Name!, b.Type!) { Required = b.Required ?? true }).ToList(),
+            Contributes = contributes is null ? Contributions.Empty : new Contributions
+            {
+                Pipeline = (contributes.Pipeline ?? []).Select(static p => new PipelineContribution(p.Middleware!, PipelineStageExtensions.TryParse(p.Stage, out var stage) ? stage : default) { Before = p.Before ?? [], After = p.After ?? [] }).ToList(),
+                Operations = contributes.Operations ?? [],
+                Config = contributes.Config is null ? null : new ConfigContribution(contributes.Config.Section!) { Schema = contributes.Config.Schema },
+                Permissions = contributes.Permissions ?? [],
+                Health = contributes.Health ?? [],
+            },
+            // 缺省为 onStartup；写了就至少一项（形状检查已拒绝空数组）
+            Activation = document.Activation ?? ["onStartup"],
+            Permissions = document.Permissions ?? [],
+            Entry = document.Entry,
         };
-
-        return JsonSerializer.Serialize(document, ManifestJsonContext.Default.ManifestDocument);
     }
 
     /// <summary>
-    /// 把 JSON 形态转换为 <see cref="Manifest"/>
+    /// 把小写名解析为枚举
     /// </summary>
     /// <remarks>
-    /// 必填字段缺失、格式错误与跨字段约束失败都收敛为 <see cref="KernelErrors.InvalidManifest"/>
+    /// 只认 <see cref="Write"/> 写出的小写名；形状检查已保证是其中之一
     /// </remarks>
-    private static Result<Manifest> Convert(ManifestDocument document)
-    {
-        // 原语层以 ArgumentException 报告单字段格式错误，阶段名未知以 FrameworkException 报告；
-        // 这里把两者都翻译成 Result 失败，调用方不需要区分异常来源
-        try
-        {
-            var manifest = new Manifest
-            {
-                Id = document.Id ?? throw Missing("id"),
-                Package = document.Package,
-                Version = document.Version ?? throw Missing("version"),
-                Primitives = ParseInt(document.Primitives ?? throw Missing("primitives"), "primitives"),
-                Stability = ParseEnum<Stability>(document.Stability ?? throw Missing("stability"), "stability"),
-                Kind = ParseEnum<ManifestKind>(document.Kind ?? throw Missing("kind"), "kind"),
-                Role = document.Role is null ? ManifestRole.Provider : ParseEnum<ManifestRole>(document.Role, "role"),
-                Isolation = document.Isolation switch
-                {
-                    null => null,
-                    "in-process" => PluginIsolation.InProcess,
-                    "out-of-process" => PluginIsolation.OutOfProcess,
-                    "wasm" => PluginIsolation.Wasm,
-                    _ => throw new ArgumentException($"The value '{document.Isolation}' of field 'isolation' is not valid."),
-                },
-                Provides = (document.Provides ?? []).Select(static p => new CapabilityDeclaration(p.Id ?? throw Missing("provides.id"), ParseInt(p.Version ?? throw Missing("provides.version"), "provides.version"))).ToList(),
-                Requires = (document.Requires ?? []).Select(static r => new CapabilityRequirement(r.Id ?? throw Missing("requires.id"), ParseVersion(r.Version ?? throw Missing("requires.version"))) { Optional = r.Optional ?? false }).ToList(),
-                Bindings = (document.Bindings ?? []).Select(static b => new Binding(b.Name ?? throw Missing("bindings.name"), b.Type ?? throw Missing("bindings.type")) { Required = b.Required ?? true }).ToList(),
-                Contributes = document.Contributes is null ? Contributions.Empty : new Contributions
-                {
-                    Pipeline = (document.Contributes.Pipeline ?? []).Select(static p => new PipelineContribution(p.Middleware ?? throw Missing("contributes.pipeline.middleware"), PipelineStageExtensions.TryParse(p.Stage, out var stage) ? stage : throw new FrameworkException(KernelErrors.UnknownStage, $"Unknown pipeline stage '{p.Stage}'.")) { Before = p.Before, After = p.After }).ToList(),
-                    Operations = OperationIds(document.Contributes.Operations ?? []),
-                    Config = document.Contributes.Config is null ? null : new ConfigContribution(document.Contributes.Config.Section ?? throw Missing("contributes.config.section")) { Schema = document.Contributes.Config.Schema },
-                    Permissions = PermissionCodes(document.Contributes.Permissions ?? []),
-                    Health = document.Contributes.Health ?? [],
-                },
-                Activation = ActivationEvents(document.Activation),
-                Permissions = document.Permissions ?? [],
-                Entry = document.Entry,
-            };
-
-            var validation = manifest.Validate();
-            return validation.IsSuccess ? manifest : validation.Error!.WithCode(KernelErrors.InvalidManifest);
-        }
-        catch (ArgumentException exception)
-        {
-            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", exception.Message)));
-        }
-        catch (FrameworkException exception)
-        {
-            return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", exception.Message)));
-        }
-    }
-
-    /// <summary>
-    /// 核对 <c>contributes.operations</c> 的操作 ID
-    /// </summary>
-    /// <remarks>
-    /// 每项合操作 ID 文法（manifest.schema.json，RFC-0011）。读取时就拒绝，不等到插件握手或登记操作时才发现（ADR-0235）；不合法抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static List<string> OperationIds(List<string> ids)
-    {
-        foreach (var id in ids)
-        {
-            if (!OperationId.IsValid(id))
-            {
-                throw new ArgumentException($"The operation ID '{id}' in 'contributes.operations' is not valid.");
-            }
-        }
-
-        return ids;
-    }
-
-    /// <summary>
-    /// 核对 <c>activation</c> 的激活事件
-    /// </summary>
-    /// <remarks>
-    /// 缺省为 <c>onStartup</c>；给出时至少一项且每项合激活事件文法（manifest.schema.json）。空数组不是「不激活」，是不合法的清单（ADR-0235）；不合法抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static List<string> ActivationEvents(List<string>? events)
-    {
-        if (events is null)
-        {
-            return ["onStartup"];
-        }
-
-        if (events.Count == 0)
-        {
-            throw new ArgumentException("Field 'activation' must list at least one activation event; leave it out for 'onStartup'.");
-        }
-
-        foreach (var activation in events)
-        {
-            if (!ActivationPattern().IsMatch(activation))
-            {
-                throw new ArgumentException($"The activation event '{activation}' is not valid.");
-            }
-        }
-
-        return events;
-    }
-
-    /// <summary>
-    /// 激活事件文法（manifest.schema.json 的 <c>activation.items.pattern</c>）
-    /// </summary>
-    [GeneratedRegex("^(onStartup|onOperation:[a-z0-9.*-]+|onEvent:[a-z0-9.*-]+)$")]
-    private static partial Regex ActivationPattern();
-
-    /// <summary>
-    /// 核对 <c>contributes.permissions</c>：每项合权限码文法、不重复（manifest.schema.json）
-    /// </summary>
-    /// <remarks>
-    /// 插件宿主按这一列表替插件登记权限码（ADR-0080），不合法的清单在读取时就拒绝，而不是登记到一半才失败。不合法抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static List<string> PermissionCodes(List<string> codes)
-    {
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var code in codes)
-        {
-            if (!PermissionDefinition.IsValidCode(code))
-            {
-                throw new ArgumentException($"The permission code '{code}' in field 'contributes.permissions' is not well-formed; expected a lowercase dot-separated code such as 'orders.read'.");
-            }
-
-            if (!seen.Add(code))
-            {
-                throw new ArgumentException($"The permission code '{code}' appears more than once in field 'contributes.permissions'.");
-            }
-        }
-
-        return codes;
-    }
-
-    /// <summary>
-    /// 构造"必填字段缺失"异常
-    /// </summary>
-    /// <remarks>
-    /// 在对象初始化器里以 <c>?? throw</c> 形式使用
-    /// </remarks>
-    /// <param name="field">字段的 JSON 路径，例如 <c>provides.id</c></param>
-    private static ArgumentException Missing(string field) => new($"The manifest is missing the required field '{field}'.");
-
-    /// <summary>
-    /// 把字段文本解析为正整数
-    /// </summary>
-    /// <remarks>
-    /// 非数字或小于 1 时抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    /// <param name="text">原始文本</param>
-    /// <param name="field">字段的 JSON 路径，用于错误信息</param>
-    private static int ParseInt(string text, string field)
-        => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-            ? value
-            : throw new ArgumentException($"The value '{text}' of field '{field}' must be a positive integer.");
-
-    /// <summary>
-    /// 解析 <c>requires.version</c>：允许 <c>^</c> 前缀，语义与不带前缀相同
-    /// </summary>
-    private static int ParseVersion(string text)
-        => ParseInt(text.StartsWith('^') ? text[1..] : text, "requires.version");
-
-    /// <summary>
-    /// 把字段文本解析为枚举
-    /// </summary>
-    /// <remarks>
-    /// 只认 Schema 的枚举值，也就是 <see cref="Write"/> 写出的小写名，区分大小写（ADR-0235）；以前按 <see cref="Enum.TryParse{TEnum}(string, bool, out TEnum)"/> 不区分大小写，连 <c>"1"</c> 这样的数字文本也会被接受。其余抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    /// <typeparam name="TEnum">枚举类型</typeparam>
-    /// <param name="text">原始文本</param>
-    /// <param name="field">字段的 JSON 路径，用于错误信息</param>
-    private static TEnum ParseEnum<TEnum>(string text, string field)
+    private static TEnum ParseEnum<TEnum>(string text)
         where TEnum : struct, Enum
+        => Enum.GetValues<TEnum>().First(value => string.Equals(value.ToString().ToLowerInvariant(), text, StringComparison.Ordinal));
+
+    /// <summary>
+    /// 按规范排版写 JSON 的写入器
+    /// </summary>
+    /// <remarks>
+    /// 只覆盖清单用到的写法：对象、字符串列表、对象列表、字符串与布尔
+    /// </remarks>
+    private sealed class IndentedWriter
     {
-        foreach (var value in Enum.GetValues<TEnum>())
+        /// <summary>
+        /// 输出
+        /// </summary>
+        private readonly StringBuilder _builder = new();
+
+        /// <summary>
+        /// 每一层是否已写过成员或项
+        /// </summary>
+        private readonly Stack<bool> _written = new();
+
+        /// <summary>
+        /// 开始一个对象
+        /// </summary>
+        public IndentedWriter StartObject()
         {
-            if (string.Equals(value.ToString().ToLowerInvariant(), text, StringComparison.Ordinal))
-            {
-                return value;
-            }
+            _builder.Append('{');
+            _written.Push(false);
+            return this;
         }
 
-        throw new ArgumentException($"The value '{text}' of field '{field}' is not valid.");
+        /// <summary>
+        /// 结束一个对象
+        /// </summary>
+        public void EndObject() => Close('}');
+
+        /// <summary>
+        /// 写成员名
+        /// </summary>
+        public IndentedWriter Member(string name)
+        {
+            BeforeItem();
+            JsonStringText.Write(_builder, name);
+            _builder.Append(": ");
+            return this;
+        }
+
+        /// <summary>
+        /// 写字符串值
+        /// </summary>
+        public void String(string value)
+        {
+            JsonStringText.Write(_builder, value);
+        }
+
+        /// <summary>
+        /// 写布尔值
+        /// </summary>
+        public void Boolean(bool value)
+        {
+            _builder.Append(value ? "true" : "false");
+        }
+
+        /// <summary>
+        /// 写字符串列表
+        /// </summary>
+        public void Strings(IReadOnlyList<string> values)
+        {
+            if (values.Count == 0)
+            {
+                _builder.Append("[]");
+                return;
+            }
+
+            _builder.Append('[');
+            _written.Push(false);
+            foreach (var value in values)
+            {
+                BeforeItem();
+                JsonStringText.Write(_builder, value);
+            }
+
+            Close(']');
+        }
+
+        /// <summary>
+        /// 写对象列表
+        /// </summary>
+        public void Objects<T>(IReadOnlyList<T> values, Action<IndentedWriter, T> members)
+        {
+            if (values.Count == 0)
+            {
+                _builder.Append("[]");
+                return;
+            }
+
+            _builder.Append('[');
+            _written.Push(false);
+            foreach (var value in values)
+            {
+                BeforeItem();
+                StartObject();
+                members(this, value);
+                EndObject();
+            }
+
+            Close(']');
+        }
+
+        /// <inheritdoc />
+        public override string ToString() => _builder.ToString();
+
+        /// <summary>
+        /// 成员或列表项之前：逗号、换行与缩进
+        /// </summary>
+        private void BeforeItem()
+        {
+            if (_written.Pop())
+            {
+                _builder.Append(',');
+            }
+
+            _written.Push(true);
+            _builder.Append('\n').Append(' ', _written.Count * 2);
+        }
+
+        /// <summary>
+        /// 结束一层：有内容时换行并按外层缩进
+        /// </summary>
+        private void Close(char bracket)
+        {
+            if (_written.Pop())
+            {
+                _builder.Append('\n').Append(' ', _written.Count * 2);
+            }
+
+            _builder.Append(bracket);
+        }
     }
 }

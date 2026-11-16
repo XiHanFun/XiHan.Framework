@@ -62,8 +62,8 @@ public sealed record CapabilityDeclaration
             return false;
         }
 
-        // 版本只接受无符号十进制整数且至少为 1，拒绝 "+1"、"01" 之外的前缀与空白
-        if (!int.TryParse(text[(at + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out var version) || version < 1)
+        // 版本是不带前导零、符号与空白的正整数，在 32 位范围内（ADR-0236）
+        if (!InterfaceVersionText.TryParse(text.AsSpan(at + 1), out var version))
         {
             return false;
         }
