@@ -2,8 +2,6 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Diagnostics;
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
@@ -121,19 +119,10 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
     /// 从 <c>traceparent</c> 扩展取追踪 ID、父跨度 ID 与采样标志
     /// </summary>
     /// <remarks>
-    /// 缺失或格式不符时三者都为 <see langword="null"/>，内核另起追踪；标志原样保留，上游「不采样」不被改成采样（RFC-0003 规则 7）
+    /// 缺失或不合 <see cref="TraceParent"/> 的文法时三者都为 <see langword="null"/>，内核另起追踪；采样位原样保留，上游「不采样」不被改成采样（RFC-0003 规则 7）
     /// </remarks>
     private static (string? TraceId, string? SpanId, ActivityTraceFlags? TraceFlags) TraceOf(MessageEnvelope envelope)
-        => envelope.Extension(EnvelopeExtensions.TraceParent).TryGetValue(out var traceparent) && TraceParent().Match(traceparent) is { Success: true } match
-            ? (match.Groups["trace"].Value, match.Groups["span"].Value, (ActivityTraceFlags)byte.Parse(match.Groups["flags"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture))
+        => envelope.Extension(EnvelopeExtensions.TraceParent).TryGetValue(out var text) && TraceParent.TryParse(text, out var traceparent)
+            ? (traceparent.TraceId, traceparent.SpanId, traceparent.Sampled ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None)
             : (null, null, null);
-
-    /// <summary>
-    /// W3C <c>traceparent</c> 版本 00 的文法
-    /// </summary>
-    /// <remarks>
-    /// 追踪 ID 32 位、跨度 ID 16 位、标志 2 位十六进制
-    /// </remarks>
-    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$")]
-    private static partial Regex TraceParent();
 }

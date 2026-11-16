@@ -111,7 +111,8 @@ public sealed class ValidationMiddleware : IPipelineMiddleware
         }
         catch (JsonException exception)
         {
-            return Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", descriptor.Id), ("reason", exception.Message)));
+            // reason 只写路径，不带解析器的英文消息（RFC-0011 规则 2，ADR-0235）；语法错误的位置各解析器不同，没有路径时写根
+            return Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", descriptor.Id), ("reason", exception.Path ?? "$")));
         }
 
         using (instance)

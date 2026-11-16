@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Pipeline;
@@ -20,6 +21,27 @@ public static class InvocationContextExtensions
     /// 调用来源在 <see cref="InvocationContext.Items"/> 中的键
     /// </summary>
     private static readonly ContextItemKey<InvocationOrigin> _originKey = new("xihan.origin");
+
+    /// <summary>
+    /// 这次调用写往下游的 <c>traceparent</c>
+    /// </summary>
+    /// <remarks>
+    /// RFC-0003 规则 7「写出」：当前 Activity 是这次调用的 Span（与调用同一 trace，且有采样决定：经具名 ActivitySource 创建或有父级）时以它为父级、取它的采样位；否则用调用的父跨度与标志，上游「不采样」原样传下去，没有上游时按已采样传下去。消息信封与插件调用的元数据共用这一取法（ADR-0235）
+    /// </remarks>
+    public static TraceParent OutgoingTraceParent(this InvocationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        // 不经 ActivitySource 直接构造的根 Activity 的标志只是缺省值，不代表「不采样」，所以要求有具名来源或父级
+        if (Activity.Current is { IdFormat: ActivityIdFormat.W3C } current
+            && string.Equals(current.TraceId.ToHexString(), context.TraceId, StringComparison.Ordinal)
+            && (current.Source.Name.Length > 0 || current.ParentSpanId != default))
+        {
+            return new TraceParent(context.TraceId, current.SpanId.ToHexString(), current.ActivityTraceFlags.HasFlag(ActivityTraceFlags.Recorded));
+        }
+
+        return new TraceParent(context.TraceId, context.SpanId, context.TraceFlags is not { } flags || flags.HasFlag(ActivityTraceFlags.Recorded));
+    }
 
     /// <summary>
     /// 读取强类型项

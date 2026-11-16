@@ -44,7 +44,9 @@ internal sealed class WasmMiddleware(WasmPluginRuntime runtime, string name, Pip
         foreach (var (key, value) in decision.Baggage)
         {
             // 只合并已登记的键；主体与租户不可改写：插件不能替调用选租户，Tenant 阶段之前的中间件改写了它就能把调用放进任意启用的租户（ADR-0195）
-            if (BaggageKeys.IsRegistered(key) && key != BaggageKeys.Principal && key != BaggageKeys.Tenant)
+            // 插件给的值是外部输入：不合值约束的成员丢弃、原有的值保留，与载体入站一致（ADR-0204、ADR-0235）；幂等键照常交给 Idempotency 阶段核对
+            if (BaggageKeys.IsRegistered(key) && key != BaggageKeys.Principal && key != BaggageKeys.Tenant
+                && (key == BaggageKeys.IdempotencyKey || BaggageKeys.IsAcceptableValue(value)))
             {
                 downstream = downstream.WithBaggage(key, value);
             }

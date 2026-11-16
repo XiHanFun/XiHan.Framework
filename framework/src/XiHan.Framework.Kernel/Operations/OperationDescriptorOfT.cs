@@ -78,9 +78,9 @@ public sealed class OperationDescriptor<TOperation, TRequest, TResponse> : Opera
         try
         {
             var request = JsonSerializer.Deserialize(payload.IsEmpty ? _emptyObject : payload.Span, _requestInfo);
-            // JSON 字面量 null 不是请求对象：按载荷不合法处理，不让空请求进入操作
+            // JSON 字面量 null 不是请求对象：按载荷不合法处理，不让空请求进入操作；reason 与其他载荷错误一样只写路径（RFC-0011 规则 2，ADR-0235）
             return request is null
-                ? InvalidPayload("the payload is null")
+                ? InvalidPayload("$")
                 : Result.Success<object>(request);
         }
         catch (JsonException exception)

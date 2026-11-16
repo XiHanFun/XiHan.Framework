@@ -9,11 +9,12 @@ namespace XiHan.Framework.Kernel.Capabilities;
 /// <see cref="ManifestDocument"/> 的源生成序列化上下文
 /// </summary>
 /// <remarks>
-/// camelCase 属性名、读取不区分大小写、写出时省略 null 并缩进。内核零反射，清单序列化只能走这里
+/// camelCase 属性名，写出时省略 null 并缩进。读取按 Schema 严格执行（RFC-0002 解析规则 2，ADR-0235）：成员名区分大小写、未知成员与重复成员拒绝。内核零反射，清单序列化只能走这里
 /// </remarks>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    PropertyNameCaseInsensitive = true,
+    UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+    AllowDuplicateProperties = false,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     WriteIndented = true)]
 [JsonSerializable(typeof(ManifestDocument))]

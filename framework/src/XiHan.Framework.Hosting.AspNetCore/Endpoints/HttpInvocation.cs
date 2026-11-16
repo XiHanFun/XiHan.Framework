@@ -83,16 +83,15 @@ public static partial class HttpInvocation
         var headers = httpContext.Request.Headers;
 
         // traceparent 不合法时视为缺失，不把坏值带进链路：内核并入 ASP.NET Core 当前的请求 Activity，也没有时生成新的 trace-id；
-        // 合法时连同 trace-flags 一起取，上游「不采样」原样保留（RFC-0003 规则 7）
+        // 合法时连同采样位一起取，上游「不采样」原样保留（RFC-0003 规则 7）；文法由原语 TraceParent 统一判断，全零的标识同样视为缺失（ADR-0235）
         string? traceId = null;
         string? spanId = null;
         ActivityTraceFlags? traceFlags = null;
-        var traceparent = TraceParent().Match(headers["traceparent"].ToString());
-        if (traceparent.Success)
+        if (TraceParent.TryParse(headers["traceparent"].ToString(), out var traceparent))
         {
-            traceId = traceparent.Groups["trace"].Value;
-            spanId = traceparent.Groups["span"].Value;
-            traceFlags = (ActivityTraceFlags)byte.Parse(traceparent.Groups["flags"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            traceId = traceparent.TraceId;
+            spanId = traceparent.SpanId;
+            traceFlags = traceparent.Sampled ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None;
         }
 
         // 截止时间按不变文化解析并统一为 UTC；解析失败视为没有截止时间
@@ -310,15 +309,6 @@ public static partial class HttpInvocation
         ArgumentNullException.ThrowIfNull(baggage);
         return string.Join(",", baggage.Where(static pair => BaggageKeys.IsRegistered(pair.Key)).Select(static pair => $"{pair.Key}={Uri.EscapeDataString(pair.Value)}"));
     }
-
-    /// <summary>
-    /// W3C <c>traceparent</c> 头（版本 00）的匹配
-    /// </summary>
-    /// <remarks>
-    /// 捕获 32 位 trace-id、16 位 span-id 与 2 位 trace-flags
-    /// </remarks>
-    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-(?<flags>[0-9a-f]{2})$")]
-    private static partial Regex TraceParent();
 
     /// <summary>
     /// gRPC <c>grpc-timeout</c> 头的匹配：最多 8 位数值加单位

@@ -69,7 +69,7 @@ public static partial class MessageTemplate
     /// 未解析时的开发者可读形式
     /// </summary>
     /// <remarks>
-    /// 键后跟参数列表，如 <c>persistence.entity.not_found (entity=Order, id=42)</c>。没有本地化器或目录里没有该键时，<see cref="Error.Message"/> 与本地化器都退回到它，让键与参数在日志里可见
+    /// 键后跟按名字序数排序的参数列表，如 <c>persistence.entity.not_found (entity=Order, id=42)</c>。没有本地化器或目录里没有该键时，<see cref="Error.Message"/> 与本地化器都退回到它，让键与参数在日志里可见
     /// </remarks>
     public static string Describe(string key, IReadOnlyDictionary<string, object?>? arguments)
     {
@@ -81,7 +81,9 @@ public static partial class MessageTemplate
 
         var builder = new StringBuilder(key.Length + 16 * arguments.Count).Append(key).Append(" (");
         var first = true;
-        foreach (var (name, value) in arguments)
+
+        // 按名字的序数顺序列出：参数字典的枚举顺序不是契约，无序映射的语言也要写出同样的文本（RFC-0010「模板」，ADR-0235）
+        foreach (var (name, value) in arguments.OrderBy(static pair => pair.Key, StringComparer.Ordinal))
         {
             if (!first)
             {

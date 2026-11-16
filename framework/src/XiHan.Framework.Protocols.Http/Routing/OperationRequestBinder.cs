@@ -55,7 +55,8 @@ public static class OperationRequestBinder
         using var document = parsed.TryGetValue(out var present) ? present : null;
         if (document is not null && document.RootElement.ValueKind != JsonValueKind.Object)
         {
-            return Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", descriptor.Id), ("reason", "the request body must be a JSON object")));
+            // 请求体不是对象是根上的错误，reason 写根路径（RFC-0011 规则 2，ADR-0235）
+            return Error.Validation(KernelErrors.InvalidOperationPayload, KernelMessages.InvalidOperationPayload, MessageArguments.Of(("id", descriptor.Id), ("reason", "$")));
         }
 
         using (var writer = new Utf8JsonWriter(buffer))

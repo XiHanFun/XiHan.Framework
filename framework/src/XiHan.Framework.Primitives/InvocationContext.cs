@@ -152,7 +152,7 @@ public sealed partial class InvocationContext
     /// 派生一个新增或覆盖了一项 Baggage 的上下文
     /// </summary>
     /// <remarks>
-    /// 其余字段与 <see cref="Items"/> 共享
+    /// 其余字段与 <see cref="Items"/> 共享。已登记的键（幂等键除外）的值必须通过 <see cref="BaggageKeys.IsAcceptableValue"/>，否则抛出 <see cref="ArgumentException"/>：程序内派生给出不合法的值是编程错误；外部输入要先按 <c>conventions/baggage-keys.md</c> 丢弃不合的成员再派生（ADR-0235）
     /// </remarks>
     public InvocationContext WithBaggage(string key, string value)
     {
@@ -160,6 +160,12 @@ public sealed partial class InvocationContext
         if (!BaggageKeys.IsWellFormed(key))
         {
             throw new ArgumentException($"Baggage key '{key}' does not match the 'xihan.<name>' format.", nameof(key));
+        }
+
+        // 值约束只管已登记的键，未登记的键不出进程；幂等键不合法时由 Idempotency 阶段以校验错误拒绝，丢掉它会让重复调用执行两次（ADR-0204）
+        if (BaggageKeys.IsRegistered(key) && key != BaggageKeys.IdempotencyKey && !BaggageKeys.IsAcceptableValue(value))
+        {
+            throw new ArgumentException($"The value of Baggage key '{key}' is empty, longer than {BaggageKeys.MaxValueLength} UTF-16 code units or contains control characters.", nameof(value));
         }
 
         // Baggage 不可变：复制一份再写入，源上下文看不到新键

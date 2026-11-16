@@ -1,10 +1,11 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics;
 using System.Globalization;
-using System.Text.RegularExpressions;
 using Grpc.Core;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
@@ -17,14 +18,17 @@ namespace XiHan.Framework.Plugins.Protocol.Handshake;
 /// <remarks>
 /// RFC-0003、<c>spec/plugin/invocation.md</c>
 /// </remarks>
-internal static partial class PluginMetadata
+internal static class PluginMetadata
 {
     /// <summary>
     /// 上下文 → 元数据：traceparent、绝对截止时间与已登记的 Baggage
     /// </summary>
+    /// <remarks>
+    /// traceparent 与消息信封同一取法（<see cref="InvocationContextExtensions.OutgoingTraceParent"/>）：以前标志写死为 <c>01</c>，上游「不采样」传不到插件（ADR-0235）
+    /// </remarks>
     public static InvocationMetadata FromContext(InvocationContext context)
     {
-        var metadata = new InvocationMetadata { TraceParent = $"00-{context.TraceId}-{context.SpanId}-01" };
+        var metadata = new InvocationMetadata { TraceParent = context.OutgoingTraceParent().ToString() };
         if (context.Deadline is { } deadline)
         {
             metadata.Deadline = deadline.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
@@ -85,14 +89,17 @@ internal static partial class PluginMetadata
     {
         string? traceId = null;
         string? spanId = null;
+        ActivityTraceFlags? traceFlags = null;
         DateTimeOffset? deadline = null;
         var baggage = new Dictionary<string, string>(StringComparer.Ordinal);
         if (metadata is not null)
         {
-            if (TraceParent().Match(metadata.TraceParent) is { Success: true } match)
+            // 与其他载体同一文法，连同采样位一起取（RFC-0003 规则 7，ADR-0235）
+            if (TraceParent.TryParse(metadata.TraceParent, out var traceparent))
             {
-                traceId = match.Groups["trace"].Value;
-                spanId = match.Groups["span"].Value;
+                traceId = traceparent.TraceId;
+                spanId = traceparent.SpanId;
+                traceFlags = traceparent.Sampled ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None;
             }
 
             if (DateTimeOffset.TryParse(metadata.Deadline, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed))
@@ -116,12 +123,6 @@ internal static partial class PluginMetadata
 
         // 回调不能冒充别的主体：xihan.principal 一律改写成插件的清单 ID（invocation.md §5）
         baggage[BaggageKeys.Principal] = principalId;
-        return App.CreateContext(scopedServices, new InvocationContextOptions { TraceId = traceId, SpanId = spanId, Deadline = deadline, Baggage = baggage }, cancellationToken);
+        return App.CreateContext(scopedServices, new InvocationContextOptions { TraceId = traceId, SpanId = spanId, TraceFlags = traceFlags, Deadline = deadline, Baggage = baggage }, cancellationToken);
     }
-
-    /// <summary>
-    /// W3C traceparent 文法
-    /// </summary>
-    [GeneratedRegex("^00-(?<trace>[0-9a-f]{32})-(?<span>[0-9a-f]{16})-[0-9a-f]{2}$")]
-    private static partial Regex TraceParent();
 }

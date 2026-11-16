@@ -840,6 +840,7 @@ static XiHan.Framework.Kernel.Operations.OperationSchema.operator ==(XiHan.Frame
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.Find<T>(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>! key) -> XiHan.Framework.Primitives.Maybe<T>
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.FindOrigin(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Pipeline.InvocationOrigin!>
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.FindOutcome(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Primitives.Result>
+static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.OutgoingTraceParent(this XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.TraceParent
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.Set<T>(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.ContextItemKey<T>! key, T value) -> void
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.SetOrigin(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.InvocationOrigin! origin) -> void
 static XiHan.Framework.Kernel.Pipeline.InvocationContextExtensions.SetOutcome(this XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Primitives.Result outcome) -> void

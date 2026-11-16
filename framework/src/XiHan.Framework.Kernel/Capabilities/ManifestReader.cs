@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -16,7 +17,7 @@ namespace XiHan.Framework.Kernel.Capabilities;
 /// JSON 形态由 <c>spec/manifest/manifest.schema.json</c> 定义；序列化经源生成，不用反射
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public static class ManifestReader
+public static partial class ManifestReader
 {
     /// <summary>
     /// 清单文件名
@@ -32,20 +33,85 @@ public static class ManifestReader
     public static Result<Manifest> Read(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
-        ManifestDocument? document;
+        JsonDocument parsed;
         try
         {
-            document = JsonSerializer.Deserialize(json, ManifestJsonContext.Default.ManifestDocument);
+            // 重复成员在解析时就拒绝：不取第一个也不取最后一个（RFC-0002 解析规则 2，ADR-0235）
+            parsed = JsonDocument.Parse(json, new JsonDocumentOptions { AllowDuplicateProperties = false });
         }
         catch (JsonException exception)
         {
             return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalidJson, MessageArguments.Of(("reason", exception.Message)));
         }
 
-        // 字面量 "null" 能成功反序列化为 null，同样视为非法清单
-        return document is null
-            ? new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestEmpty)
-            : Convert(document);
+        using (parsed)
+        {
+            // 字面量 "null" 不是清单
+            if (parsed.RootElement.ValueKind == JsonValueKind.Null)
+            {
+                return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestEmpty);
+            }
+
+            // 可选成员缺失表示没有，写成 null 不合法；反序列化分不出两者，所以先在 JSON 上找
+            if (FindNull(parsed.RootElement, "$") is { } path)
+            {
+                return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", $"Field '{path}' is null; leave it out instead.")));
+            }
+
+            ManifestDocument? document;
+            try
+            {
+                document = parsed.RootElement.Deserialize(ManifestJsonContext.Default.ManifestDocument);
+            }
+            catch (JsonException exception)
+            {
+                // 类型不符、大小写不对的成员与 Schema 之外的成员都在这里，成员名区分大小写
+                return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", exception.Message)));
+            }
+
+            return document is null
+                ? new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestEmpty)
+                : Convert(document);
+        }
+    }
+
+    /// <summary>
+    /// 找出清单里第一个值为 <c>null</c> 的成员或数组项
+    /// </summary>
+    /// <remarks>
+    /// Schema 里没有哪个成员或数组项能取 <c>null</c>（配置节的 Schema 也是字符串），所以整份清单都查
+    /// </remarks>
+    /// <returns>该值的路径；没有时为 <see langword="null"/></returns>
+    private static string? FindNull(JsonElement element, string path)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Null:
+                return path;
+            case JsonValueKind.Object:
+                foreach (var property in element.EnumerateObject())
+                {
+                    if (FindNull(property.Value, $"{path}.{property.Name}") is { } found)
+                    {
+                        return found;
+                    }
+                }
+
+                return null;
+            case JsonValueKind.Array:
+                var index = 0;
+                foreach (var item in element.EnumerateArray())
+                {
+                    if (FindNull(item, $"{path}[{index++}]") is { } found)
+                    {
+                        return found;
+                    }
+                }
+
+                return null;
+            default:
+                return null;
+        }
     }
 
     /// <summary>
@@ -140,12 +206,12 @@ public static class ManifestReader
                 Contributes = document.Contributes is null ? Contributions.Empty : new Contributions
                 {
                     Pipeline = (document.Contributes.Pipeline ?? []).Select(static p => new PipelineContribution(p.Middleware ?? throw Missing("contributes.pipeline.middleware"), PipelineStageExtensions.TryParse(p.Stage, out var stage) ? stage : throw new FrameworkException(KernelErrors.UnknownStage, $"Unknown pipeline stage '{p.Stage}'.")) { Before = p.Before, After = p.After }).ToList(),
-                    Operations = document.Contributes.Operations ?? [],
+                    Operations = OperationIds(document.Contributes.Operations ?? []),
                     Config = document.Contributes.Config is null ? null : new ConfigContribution(document.Contributes.Config.Section ?? throw Missing("contributes.config.section")) { Schema = document.Contributes.Config.Schema },
                     Permissions = PermissionCodes(document.Contributes.Permissions ?? []),
                     Health = document.Contributes.Health ?? [],
                 },
-                Activation = document.Activation ?? ["onStartup"],
+                Activation = ActivationEvents(document.Activation),
                 Permissions = document.Permissions ?? [],
                 Entry = document.Entry,
             };
@@ -162,6 +228,60 @@ public static class ManifestReader
             return new Error(KernelErrors.InvalidManifest, KernelMessages.ManifestInvalid, MessageArguments.Of(("reason", exception.Message)));
         }
     }
+
+    /// <summary>
+    /// 核对 <c>contributes.operations</c> 的操作 ID
+    /// </summary>
+    /// <remarks>
+    /// 每项合操作 ID 文法（manifest.schema.json，RFC-0011）。读取时就拒绝，不等到插件握手或登记操作时才发现（ADR-0235）；不合法抛出 <see cref="ArgumentException"/>
+    /// </remarks>
+    private static List<string> OperationIds(List<string> ids)
+    {
+        foreach (var id in ids)
+        {
+            if (!OperationId.IsValid(id))
+            {
+                throw new ArgumentException($"The operation ID '{id}' in 'contributes.operations' is not valid.");
+            }
+        }
+
+        return ids;
+    }
+
+    /// <summary>
+    /// 核对 <c>activation</c> 的激活事件
+    /// </summary>
+    /// <remarks>
+    /// 缺省为 <c>onStartup</c>；给出时至少一项且每项合激活事件文法（manifest.schema.json）。空数组不是「不激活」，是不合法的清单（ADR-0235）；不合法抛出 <see cref="ArgumentException"/>
+    /// </remarks>
+    private static List<string> ActivationEvents(List<string>? events)
+    {
+        if (events is null)
+        {
+            return ["onStartup"];
+        }
+
+        if (events.Count == 0)
+        {
+            throw new ArgumentException("Field 'activation' must list at least one activation event; leave it out for 'onStartup'.");
+        }
+
+        foreach (var activation in events)
+        {
+            if (!ActivationPattern().IsMatch(activation))
+            {
+                throw new ArgumentException($"The activation event '{activation}' is not valid.");
+            }
+        }
+
+        return events;
+    }
+
+    /// <summary>
+    /// 激活事件文法（manifest.schema.json 的 <c>activation.items.pattern</c>）
+    /// </summary>
+    [GeneratedRegex("^(onStartup|onOperation:[a-z0-9.*-]+|onEvent:[a-z0-9.*-]+)$")]
+    private static partial Regex ActivationPattern();
 
     /// <summary>
     /// 核对 <c>contributes.permissions</c>：每项合权限码文法、不重复（manifest.schema.json）
@@ -217,17 +337,25 @@ public static class ManifestReader
         => ParseInt(text.StartsWith('^') ? text[1..] : text, "requires.version");
 
     /// <summary>
-    /// 把字段文本解析为枚举，不区分大小写
+    /// 把字段文本解析为枚举
     /// </summary>
     /// <remarks>
-    /// 未定义的值抛出 <see cref="ArgumentException"/>
+    /// 只认 Schema 的枚举值，也就是 <see cref="Write"/> 写出的小写名，区分大小写（ADR-0235）；以前按 <see cref="Enum.TryParse{TEnum}(string, bool, out TEnum)"/> 不区分大小写，连 <c>"1"</c> 这样的数字文本也会被接受。其余抛出 <see cref="ArgumentException"/>
     /// </remarks>
     /// <typeparam name="TEnum">枚举类型</typeparam>
     /// <param name="text">原始文本</param>
     /// <param name="field">字段的 JSON 路径，用于错误信息</param>
     private static TEnum ParseEnum<TEnum>(string text, string field)
         where TEnum : struct, Enum
-        => Enum.TryParse<TEnum>(text, ignoreCase: true, out var value) && Enum.IsDefined(value)
-            ? value
-            : throw new ArgumentException($"The value '{text}' of field '{field}' is not valid.");
+    {
+        foreach (var value in Enum.GetValues<TEnum>())
+        {
+            if (string.Equals(value.ToString().ToLowerInvariant(), text, StringComparison.Ordinal))
+            {
+                return value;
+            }
+        }
+
+        throw new ArgumentException($"The value '{text}' of field '{field}' is not valid.");
+    }
 }
