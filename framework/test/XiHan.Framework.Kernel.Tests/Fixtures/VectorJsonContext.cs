@@ -14,4 +14,5 @@ namespace XiHan.Framework.Kernel.Tests.Fixtures;
 [JsonSerializable(typeof(VectorOrder))]
 [JsonSerializable(typeof(VectorProfile))]
 [JsonSerializable(typeof(JsonElement))]
+[JsonSerializable(typeof(RatioResponse))]
 internal sealed partial class VectorJsonContext : JsonSerializerContext;

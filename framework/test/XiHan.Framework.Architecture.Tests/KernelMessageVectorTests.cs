@@ -6,6 +6,7 @@ using System.Text.Json;
 using XiHan.Framework.Architecture.Tests.Model;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
 
 namespace XiHan.Framework.Architecture.Tests;
 
@@ -29,7 +30,7 @@ public sealed class KernelMessageVectorTests
             File.ReadAllText(Path.Combine(Workspace.SpecRoot, "conformance", "vectors", "primitives", "kernel-messages.json")),
             _options)!;
         var codes = Constants(typeof(KernelErrors)).Concat(Constants(typeof(ErrorCode))).ToHashSet(StringComparer.Ordinal);
-        var keys = Constants(typeof(KernelMessages)).Concat(Constants(typeof(ResultMessages))).ToHashSet(StringComparer.Ordinal);
+        var keys = Constants(typeof(KernelMessages)).Concat(Constants(typeof(ResultMessages))).Concat(Constants(typeof(ManifestMessages))).ToHashSet(StringComparer.Ordinal);
         var catalog = EnglishCatalog("XiHan.Framework.Primitives").Concat(EnglishCatalog("XiHan.Framework.Kernel")).ToDictionary(StringComparer.Ordinal);
         var failures = new List<string>();
 
@@ -43,7 +44,7 @@ public sealed class KernelMessageVectorTests
 
             if (!keys.Contains(message.Key))
             {
-                failures.Add($"{message.Key}: not a constant of 'KernelMessages' or 'ResultMessages'");
+                failures.Add($"{message.Key}: not a constant of 'KernelMessages', 'ResultMessages' or 'ManifestMessages'");
             }
 
             if (!catalog.TryGetValue(message.Key, out var template) || template != message.Template)

@@ -743,10 +743,10 @@ public sealed class PipelineBuilder
             }
         }
 
-        // 有节点始终入度不为零，说明约束之间成环；把仍被卡住的节点列出来
+        // 有节点始终入度不为零，说明约束之间成环；把仍被卡住的节点按标签列出来，按名字登记的实例带名字（ADR-0236）
         if (ordered.Count != candidates.Count)
         {
-            var stuck = candidates.Where(r => indegree[r] > 0).Select(static r => $"'{r.Middleware.FullName}'");
+            var stuck = candidates.Where(r => indegree[r] > 0).Select(static r => $"'{r.Label}'");
             throw new FrameworkException(KernelErrors.PipelineCycle, $"Middleware ordering constraints in stage '{stage.ToManifestName()}' form a cycle: {string.Join(", ", stuck)}.");
         }
 

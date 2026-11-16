@@ -45,8 +45,8 @@ public sealed class PipelineVectorTests
         {
             var builder = new PipelineBuilder();
             var failedAt = -1;
-            string? code = null;
-            for (var index = 0; index < vector.Steps.Length && code is null; index++)
+            FrameworkException? failure = null;
+            for (var index = 0; index < vector.Steps.Length && failure is null; index++)
             {
                 try
                 {
@@ -54,16 +54,15 @@ public sealed class PipelineVectorTests
                 }
                 catch (FrameworkException exception)
                 {
-                    (code, failedAt) = (exception.Code, index);
+                    (failure, failedAt) = (exception, index);
                 }
             }
 
-            if (code is null)
-            {
-                code = Assert.Throws<FrameworkException>(() => builder.Dump()).Code;
-            }
+            failure ??= Assert.Throws<FrameworkException>(() => builder.Dump());
 
-            Assert.Equal(vector.Error, code);
+            // 消息原文逐字相等（ADR-0236），按名字登记的实例的类型名写成 {type}
+            Assert.Equal(vector.Error, failure.Code);
+            Assert.Equal(vector.Message, failure.Message.Replace(typeof(VectorMiddleware).FullName!, "{type}", StringComparison.Ordinal));
             Assert.Equal(vector.At.ValueKind == JsonValueKind.Number ? vector.At.GetInt32().ToString(System.Globalization.CultureInfo.InvariantCulture) : vector.At.GetString(), failedAt < 0 ? "sort" : failedAt.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
     }
@@ -109,7 +108,7 @@ public sealed class PipelineVectorTests
     /// <summary>
     /// 一组登记与期望的错误码、报出的那一步（或排序时）
     /// </summary>
-    private sealed record OrderingError(string Name, JsonElement[] Steps, string Error, JsonElement At);
+    private sealed record OrderingError(string Name, JsonElement[] Steps, string Error, JsonElement At, string Message);
 
     /// <summary>
     /// 按名字登记的向量中间件

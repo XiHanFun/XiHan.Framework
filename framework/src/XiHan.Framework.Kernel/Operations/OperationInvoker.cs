@@ -218,7 +218,20 @@ internal sealed class OperationInvoker : IOperationInvoker
             return new OperationResponse { Outcome = outcome };
         }
 
-        return new OperationResponse { Outcome = outcome, Payload = descriptor.EncodeResponse(response) };
+        ReadOnlyMemory<byte> payload;
+        try
+        {
+            payload = descriptor.EncodeResponse(response);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // 响应写不出（如浮点成员是 NaN）与处理器抛出异常一样按未处理的异常结束，不抛给调用方（RFC-0011 规则 5，ADR-0236）；编码在管道之后，中间件看到的仍是成功
+            var failure = Error.Unexpected(KernelErrors.Unexpected, KernelMessages.UnhandledException, null, exception is FrameworkException framework ? framework.ToError() : null);
+            context.SetOutcome(failure);
+            return OperationResponse.Failure(failure);
+        }
+
+        return new OperationResponse { Outcome = outcome, Payload = payload };
     }
 
     /// <summary>

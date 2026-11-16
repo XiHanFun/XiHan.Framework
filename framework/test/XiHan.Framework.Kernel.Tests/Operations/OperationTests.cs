@@ -99,6 +99,21 @@ public sealed class OperationTests
     }
 
     [Fact]
+    public async Task InvokeAsync_ResponseThatCannotBeEncoded_EndsAsUnhandledException()
+    {
+        // 响应写不出时按未处理的异常结束，不把异常抛给调用方（RFC-0011 规则 5，ADR-0236）
+        var (provider, _) = await StartAsync(new RatioFeature());
+        await using var owned = provider;
+        await using var scope = provider.CreateAsyncScope();
+        var response = await provider.GetRequiredService<IOperationInvoker>().InvokeAsync(Hosts.Context(scope.ServiceProvider), new OperationRequest(RatioOperation.Id, Encoding.UTF8.GetBytes("""{"text":"x"}""")));
+
+        Assert.True(response.Outcome.IsFailure);
+        Assert.Equal(KernelErrors.Unexpected, response.Outcome.Error!.Code);
+        Assert.Equal(KernelMessages.UnhandledException, response.Outcome.Error.MessageKey);
+        Assert.True(response.Payload.IsEmpty);
+    }
+
+    [Fact]
     public void Registry_AddRange_WithPermissions_RegistersTheGroupAllOrNothing()
     {
         var permissions = new PermissionRegistry();
