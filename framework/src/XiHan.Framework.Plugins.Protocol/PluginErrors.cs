@@ -52,6 +52,9 @@ public static class PluginErrors
     /// <summary>
     /// 插件进程未就绪、正在停止、已退出或不可达
     /// </summary>
+    /// <remarks>
+    /// 插件一侧：回调时连不上宿主或没有可用的回调端点（RFC-0017，ADR-0237）
+    /// </remarks>
     public const string Unavailable = "PLUGINS_UNAVAILABLE_001";
 
     /// <summary>
@@ -62,6 +65,9 @@ public static class PluginErrors
     /// <summary>
     /// 配置、启动、停止或调用时发生未预期的失败
     /// </summary>
+    /// <remarks>
+    /// 含对方写来的错误不合法、没有对应的 gRPC 状态、插件的生命周期或健康回调抛出、配置节不是 JSON 对象（RFC-0017，ADR-0237）
+    /// </remarks>
     public const string Unexpected = "PLUGINS_UNEXPECTED_001";
 
     /// <summary>

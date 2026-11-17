@@ -13,8 +13,9 @@ namespace XiHan.Framework.Plugins.Conformance;
 /// </summary>
 /// <param name="Process">进程</param>
 /// <param name="Manifest">目录里的清单</param>
+/// <param name="Response">插件写回的握手响应原文</param>
 /// <param name="Handshake">核对后的握手结果</param>
-internal sealed record PluginSession(PluginProcess Process, Manifest Manifest, HandshakeInfo Handshake) : IAsyncDisposable
+internal sealed record PluginSession(PluginProcess Process, Manifest Manifest, HandshakeResponse Response, HandshakeInfo Handshake) : IAsyncDisposable
 {
     /// <summary>
     /// 插件服务客户端

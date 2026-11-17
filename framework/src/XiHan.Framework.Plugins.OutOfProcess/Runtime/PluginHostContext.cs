@@ -10,7 +10,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Runtime;
 /// <summary>
 /// 宿主侧所有插件共享的环境
 /// </summary>
-/// <param name="HostEndpoint">宿主回调端点</param>
+/// <param name="HostEndpoints">宿主回调端点，按偏好排序（<c>handshake.md</c> §4）</param>
 /// <param name="Primitives">宿主原语层大版本</param>
 /// <param name="DefaultLocale">宿主默认区域</param>
 /// <param name="Application">应用名；可空</param>
@@ -21,7 +21,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Runtime;
 /// <param name="Sessions">会话登记表</param>
 /// <param name="StopGrace">停止宽限</param>
 internal sealed record PluginHostContext(
-    PluginEndpoint HostEndpoint,
+    IReadOnlyList<PluginEndpoint> HostEndpoints,
     int Primitives,
     string DefaultLocale,
     string Application,

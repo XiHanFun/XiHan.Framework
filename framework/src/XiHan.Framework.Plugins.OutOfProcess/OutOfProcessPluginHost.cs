@@ -121,7 +121,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// 回调服务器
     /// </summary>
     /// <remarks>
-    /// 附着后启动
+    /// 端点在创建宿主时选定并占住（配置阶段启动的插件经环境变量拿到它们），附着后才监听；停止时释放
     /// </remarks>
     private PluginCallbackServer? _server;
 
@@ -129,7 +129,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// 创建宿主
     /// </summary>
     /// <remarks>
-    /// 回调端点在此刻选定（启动插件时经环境变量下发），服务器在 <see cref="AttachAsync"/> 时才监听
+    /// 回调端点在此刻选定（启动插件时经环境变量下发），回环 TCP 的端口由系统分配并在此刻占住；服务器在 <see cref="AttachAsync"/> 时才监听
     /// </remarks>
     /// <param name="options">选项</param>
     /// <param name="configuration">宿主配置（插件配置节与绑定从中读取）</param>
@@ -145,9 +145,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         ArgumentException.ThrowIfNullOrWhiteSpace(defaultLocale);
         _logger = loggerFactory.CreateLogger<OutOfProcessPluginHost>();
-        HostEndpoint = PluginCallbackServer.CreateEndpoint();
+        var server = PluginCallbackServer.Reserve();
+        _server = server;
+        HostEndpoints = server.Endpoints;
         _context = new PluginHostContext(
-            HostEndpoint,
+            HostEndpoints,
             int.Parse(FrameworkInfo.SpecVersion, System.Globalization.CultureInfo.InvariantCulture),
             defaultLocale,
             Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty,
@@ -160,9 +162,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 宿主回调端点
+    /// 宿主回调端点，按偏好排序
     /// </summary>
-    public PluginEndpoint HostEndpoint { get; }
+    /// <remarks>
+    /// Windows 上是只允许当前用户的命名管道加回环 TCP，其他系统上是私有目录里的 Unix 域套接字加回环 TCP（临时目录的路径含空白或 <c>;</c> 时只有回环 TCP）；回环 TCP 总在最后（<c>handshake.md</c> §4，ADR-0237）。以 <c>;</c> 分隔写进插件的 <c>XIHAN_PLUGIN_HOST_ADDRESS</c>，第一项写进 <c>HandshakeRequest.host_endpoint</c>
+    /// </remarks>
+    public IReadOnlyList<PluginEndpoint> HostEndpoints { get; }
 
     /// <inheritdoc />
     public IReadOnlyList<PluginStatus> Plugins => _plugins.Values.Select(static r => r.Status).OrderBy(static s => s.Manifest.Id, StringComparer.Ordinal).ToList();
@@ -282,9 +287,9 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             runtime.Logger = _loggerFactory.CreateLogger<PluginRuntime>();
         }
 
-        _server = new PluginCallbackServer(HostEndpoint, _sessions, services, _loggerFactory);
-        await _server.StartAsync(cancellationToken).ConfigureAwait(false);
-        LogServer(_logger, HostEndpoint);
+        var server = _server ?? throw new ObjectDisposedException(nameof(OutOfProcessPluginHost));
+        await server.StartAsync(_sessions, services, _loggerFactory, cancellationToken).ConfigureAwait(false);
+        LogServer(_logger, server);
 
         // 配置阶段还没有宿主日志：清单读不出来、发现时被拒与握手失败的插件在这里补记
         foreach (var (directory, error) in _unreadable)
@@ -662,8 +667,8 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// <summary>
     /// 记录回调服务器已监听
     /// </summary>
-    [LoggerMessage(Level = LogLevel.Information, Message = "Plugin host callback server is listening on {Endpoint}.")]
-    private static partial void LogServer(ILogger logger, PluginEndpoint endpoint);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Plugin host callback server is listening on {Endpoints}.")]
+    private static partial void LogServer(ILogger logger, PluginCallbackServer endpoints);
 
     /// <summary>
     /// 记录发现阶段失败的插件（宿主继续运行）

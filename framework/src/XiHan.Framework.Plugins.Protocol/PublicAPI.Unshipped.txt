@@ -10,6 +10,7 @@ XiHan.Framework.Plugins.Protocol.PluginErrors
 XiHan.Framework.Plugins.Protocol.PluginMessages
 XiHan.Framework.Plugins.Protocol.PluginProtocol
 const XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.HandshakeLinePrefix = "xihan-plugin/1" -> string!
+const XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.ListSeparator = ';' -> char
 const XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.NamedPipe = "npipe" -> string!
 const XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.Tcp = "tcp" -> string!
 const XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.Unix = "unix" -> string!
@@ -32,9 +33,11 @@ const XiHan.Framework.Plugins.Protocol.PluginMessages.CallbackDenied = "plugins.
 const XiHan.Framework.Plugins.Protocol.PluginMessages.CallbackTenantDenied = "plugins.callback.tenant_denied" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.CatalogName = "plugins.protocol" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.EntryRequired = "plugins.process.entry_required" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.EventUnsubscribed = "plugins.event.unsubscribed" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.ExecutableMissing = "plugins.process.executable_missing" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.HandshakeInvalid = "plugins.handshake.invalid" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.HandshakeMismatch = "plugins.handshake.mismatch" -> string!
+const XiHan.Framework.Plugins.Protocol.PluginMessages.HostUnavailable = "plugins.host.unavailable" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.ManifestInvalid = "plugins.process.manifest_invalid" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.MessagingUnavailable = "plugins.callback.messaging_unavailable" -> string!
 const XiHan.Framework.Plugins.Protocol.PluginMessages.ModuleInvalid = "plugins.module.invalid" -> string!
@@ -61,8 +64,10 @@ const XiHan.Framework.Plugins.Protocol.PluginProtocol.Version = 1 -> uint
 override XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.Equals(object? obj) -> bool
 override XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.GetHashCode() -> int
 override XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.ToString() -> string!
+static XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.FormatList(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint!>! endpoints) -> string!
 static XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.TryParse(string? text, out XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint? endpoint) -> bool
 static XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.TryParseHandshakeLine(string? line, out XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint? endpoint) -> bool
+static XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.TryParseList(string? text, out System.Collections.Generic.IReadOnlyList<XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint!>? endpoints) -> bool
 static XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.operator !=(XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint? left, XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint? right) -> bool
 static XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint.operator ==(XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint? left, XiHan.Framework.Plugins.Protocol.Handshake.PluginEndpoint? right) -> bool
 static XiHan.Framework.Plugins.Protocol.PluginMessages.Catalog.get -> XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!

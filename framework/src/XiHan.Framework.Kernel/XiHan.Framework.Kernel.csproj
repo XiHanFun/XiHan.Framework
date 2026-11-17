@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 插件协议读对方写来的错误细节时先过同一份 JSON 文本检查（JsonText），不经管道的回调（Host.Publish）在回调上下文里发布要设当前调用（InvocationAccessor）；ADR-0237 -->
+    <InternalsVisibleTo Include="XiHan.Framework.Plugins.Protocol" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- 消息模板的译文：一种语言一个文件（RFC-0010），由本地化目录按 Localization/<区域>.json 读取 -->
     <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
   </ItemGroup>

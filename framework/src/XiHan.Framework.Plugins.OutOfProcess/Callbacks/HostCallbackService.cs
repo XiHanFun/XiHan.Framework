@@ -22,7 +22,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 /// 宿主回调服务 <c>xihan.plugin.v1.Host</c>
 /// </summary>
 /// <remarks>
-/// 以插件身份经完整管道调用操作、经消息发布器发布消息；所需权限要在清单里声明并且已被宿主授予（<c>spec/plugin/invocation.md</c> §5）
+/// 以插件身份经完整管道调用操作、经消息发布器发布消息；所需权限要在清单里声明并且已被宿主授予（<c>spec/plugin/invocation.md</c> §5）。依次核对会话令牌（拦截器）、权限、元数据的租户，然后执行。两者都按 <c>invocation.md</c> §2 从元数据建调用上下文，截止时间取元数据与 gRPC 调用自身截止时间中较早的
 /// </remarks>
 internal sealed class HostCallbackService(HostServices host) : Host.HostBase
 {
@@ -41,9 +41,7 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
         }
 
         await using var scope = host.Root.CreateAsyncScope();
-        var invocation = PluginMetadata.CreateContext(scope.ServiceProvider, request.Metadata, runtime.Manifest.Id, context.CancellationToken);
-        // 宿主以插件身份执行：主体 ID 为清单 ID、方案 Plugin、无声明；租户由 Tenant 阶段按 Baggage 解析（上面已限定为在途调用的租户）
-        invocation.SetSecurity(new SecurityContext(new Principal(runtime.Manifest.Id, OutOfProcessPluginHost.PluginScheme), null));
+        var invocation = CreateContext(scope.ServiceProvider, request.Metadata, runtime, context);
         var response = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(invocation, new OperationRequest(request.Operation, request.Payload.Memory)).ConfigureAwait(false);
         return new InvokeResponse
         {
@@ -59,11 +57,24 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
         ArgumentNullException.ThrowIfNull(context);
         var runtime = RuntimeOf(context);
         Require(runtime, OutOfProcessPluginHost.MessagingPermission);
+        var statuses = new ProtoStatus[request.Envelopes.Count];
+        var response = new PublishResponse();
+
+        // 元数据的租户是整批的：越界即一项也不发布，每一项都是这个错误（invocation.md §5，ADR-0237）
+        if (PluginCallbackTenants.Check(request.Metadata, runtime.Manifest.Id, runtime.IsHandlingTenant) is { } outside)
+        {
+            Array.Fill(statuses, PluginErrorMapper.ToStatus(outside));
+            response.Results.AddRange(statuses);
+            return response;
+        }
 
         await using var scope = host.Root.CreateAsyncScope();
+        // 在回调上下文里发布：发布器从当前调用补齐信封缺的租户、主体、关联 ID、区域与追踪（RFC-0009），与进程内的发布一致；
+        // 以前不读元数据，插件处理某个租户的调用时发布的消息不带租户
+        var invocation = CreateContext(scope.ServiceProvider, request.Metadata, runtime, context);
+        using var current = PluginMetadata.Enter(invocation);
         var publisher = scope.ServiceProvider.GetService<IMessagePublisher>();
-        // 逐项校验主题与信封，通过的按主题分组、每组一次批量发布；结果按原始位置回填，与请求的信封一一对应
-        var statuses = new ProtoStatus[request.Envelopes.Count];
+        // 逐项校验发布器、主题、信封自带的租户与转换，通过的按主题分组、每组一次批量发布；结果按原始位置回填，与请求的信封一一对应
         var batches = PluginPublishBatches.Collect(request.Envelopes, statuses, publisher is null ? Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", runtime.Manifest.Id))) : null, envelope => PluginCallbackTenants.Check(envelope, runtime.Manifest.Id, runtime.IsHandlingTenant));
         foreach (var (topic, indexes, messages) in batches)
         {
@@ -71,9 +82,21 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
             PluginPublishBatches.Scatter(statuses, indexes, results);
         }
 
-        var response = new PublishResponse();
         response.Results.AddRange(statuses);
         return response;
+    }
+
+    /// <summary>
+    /// 回调的调用上下文
+    /// </summary>
+    /// <remarks>
+    /// 宿主以插件身份执行：主体 ID 为清单 ID、方案 Plugin、无声明，元数据里的 <c>xihan.principal</c> 被覆盖；租户由 Tenant 阶段按 Baggage 解析（调用方已限定为在途调用的租户）。截止时间取元数据与 gRPC 调用自身截止时间中较早的（<c>invocation.md</c> §2）
+    /// </remarks>
+    private static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, PluginRuntime runtime, ServerCallContext call)
+    {
+        var invocation = PluginMetadata.CreateContext(scopedServices, metadata, runtime.Manifest.Id, call.CancellationToken, PluginDeadlines.FromCall(call.Deadline));
+        invocation.SetSecurity(new SecurityContext(new Principal(runtime.Manifest.Id, OutOfProcessPluginHost.PluginScheme), null));
+        return invocation;
     }
 
     /// <summary>

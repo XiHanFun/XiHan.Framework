@@ -90,6 +90,6 @@ public sealed class PluginOutputLimitTests : IDisposable
         var host = OperatingSystem.IsWindows()
             ? new PluginEndpoint(PluginEndpoint.NamedPipe, @"\\.\pipe\xihan-flood-host")
             : new PluginEndpoint(PluginEndpoint.Unix, Path.Combine(_directory.FullName, "host.sock"));
-        return new PluginLaunch("xihan.test.flood", script, _directory.FullName, "flood-session", host, "xihan.test.flood#1", 1, "en-US", TimeSpan.FromSeconds(30));
+        return new PluginLaunch("xihan.test.flood", script, _directory.FullName, "flood-session", [host], "xihan.test.flood#1", 1, "en-US", TimeSpan.FromSeconds(30));
     }
 }

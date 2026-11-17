@@ -1,14 +1,20 @@
 #nullable enable
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Calls_WithoutTheSessionToken_AreUnauthenticated() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Configuration_NotAJsonObject_FailsThePlugin() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.HandleEvent_ForADeclaredSubscription_IsAcknowledged() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_PublishesAnEndpoint_NegotiatesTheVersion_AndMatchesTheManifest() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Handshake_WithoutACommonVersion_IsRefused() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.InvokeStream_EndsOnTheFirstFrame() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Invoke_DeclaredOperations_ReturnAStatus() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Invoke_UnknownOperation_IsUnimplemented() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Lifecycle_ConfigureStartHealthStop_FollowTheProtocol() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Order_CallsOutOfSequence_AreFailedPrecondition() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.PluginProtocolConformance() -> void
 XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Process_ExitsWhenStdinCloses() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Stop_BeforeStart_AnswersAndExits() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Unavailable_BeforeStart_CallsAndDeliveriesAreRefused() -> System.Threading.Tasks.Task!
+XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Unsubscribed_DeliveryWithoutASubscription_IsNotFound() -> System.Threading.Tasks.Task!
 XiHan.Framework.Plugins.Conformance.WasmPluginConformance
 XiHan.Framework.Plugins.Conformance.WasmPluginConformance.HandleEvent_ForADeclaredSubscription_IsAcknowledged() -> void
 XiHan.Framework.Plugins.Conformance.WasmPluginConformance.Handshake_MatchesTheManifest() -> void
@@ -23,6 +29,7 @@ abstract XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.PluginDir
 abstract XiHan.Framework.Plugins.Conformance.WasmPluginConformance.PluginDirectory.get -> string!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ConfigurationJson.get -> string!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
+virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.FollowsPluginSideRules.get -> bool
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Timeout.get -> System.TimeSpan
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.VerifiesSessionToken.get -> bool

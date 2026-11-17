@@ -38,7 +38,7 @@
   "isolation": "out-of-process",
   "requires": [ { "id": "kernel.plugins", "version": "1" } ],
   "contributes": {
-    "operations": [ "echoes.create", "echoes.relay", "echoes.crash", "events.list" ],
+    "operations": [ "echoes.create", "echoes.relay", "echoes.publish", "echoes.crash", "events.list" ],
     "config": { "section": "XiHan:Echo" },
     "health": [ "echo" ]
   },

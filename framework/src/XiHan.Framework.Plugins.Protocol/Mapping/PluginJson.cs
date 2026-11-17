@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Json;
 
 namespace XiHan.Framework.Plugins.Protocol.Mapping;
 
@@ -43,42 +44,42 @@ internal static class PluginJson
     /// 解析错误细节
     /// </summary>
     /// <remarks>
-    /// 不是 JSON 对象返回空
+    /// 先过 RFC-0001 的共同 JSON 读取检查（<see cref="JsonText"/>：语法、64 层、合法 Unicode、任何一层的重复成员），通不过或不是 JSON 对象都当作没有细节，返回空（<c>invocation.md</c> §3，ADR-0237）。以前直接交给 <see cref="JsonDocument"/>：重复成员取最后一个，转义出的孤立代理项在读值时抛出
     /// </remarks>
     public static IReadOnlyDictionary<string, object?>? ParseDetails(string json)
     {
-        if (string.IsNullOrWhiteSpace(json))
+        if (string.IsNullOrEmpty(json))
         {
             return null;
         }
 
-        try
-        {
-            using var document = JsonDocument.Parse(json);
-            if (document.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                return null;
-            }
-
-            var details = new Dictionary<string, object?>(StringComparer.Ordinal);
-            foreach (var property in document.RootElement.EnumerateObject())
-            {
-                details[property.Name] = ReadValue(property.Value);
-            }
-
-            return details;
-        }
-        catch (JsonException)
+        var utf8 = Encoding.UTF8.GetBytes(json);
+        if (JsonText.Check(utf8) is not null)
         {
             return null;
         }
+
+        // 检查通过之后的文本 JsonDocument 一定读得出：深度同为 64 层，字符串都能取值
+        using var document = JsonDocument.Parse(utf8, new JsonDocumentOptions { MaxDepth = JsonText.MaxDepth });
+        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var details = new Dictionary<string, object?>(StringComparer.Ordinal);
+        foreach (var property in document.RootElement.EnumerateObject())
+        {
+            details[property.Name] = ReadValue(property.Value);
+        }
+
+        return details;
     }
 
     /// <summary>
     /// 配置节序列化为 JSON
     /// </summary>
     /// <remarks>
-    /// 没有子项的节是标量，子键都是从 0 起的连续整数时是数组，否则是对象
+    /// <c>lifecycle.md</c> §2（ADR-0237）：根总是对象；没有子项的节是叶子，写成 JSON 字符串（值为 null 写 <c>null</c>）；子项名恰好是 <c>0</c>、<c>1</c>…（十进制、不带前导零与符号）的节写成数组，其余写成对象，成员按 <see cref="IConfiguration.GetChildren"/> 的顺序
     /// </remarks>
     public static string SerializeSection(IConfigurationSection section)
     {
@@ -113,7 +114,8 @@ internal static class PluginJson
             return;
         }
 
-        var isArray = children.Select(static (child, index) => int.TryParse(child.Key, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number) && number == index).All(static ok => ok);
+        // 子项名要逐字等于下标：int.TryParse 认 "+0"、" 1"、"01"，那样的键在别的语言里读成对象成员
+        var isArray = !root && children.Select(static (child, index) => string.Equals(child.Key, index.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)).All(static ok => ok);
         if (isArray)
         {
             writer.WriteStartArray();

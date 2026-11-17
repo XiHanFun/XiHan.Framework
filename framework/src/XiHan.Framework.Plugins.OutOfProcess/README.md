@@ -8,7 +8,8 @@
 
 * 任意语言写插件，独立进程与独立依赖
 * 崩溃按退避自动重启，每个插件是一个健康条目
-* 插件可回调宿主的操作调用与消息发布，需在清单声明并授予权限
+* 插件可回调宿主的操作调用与消息发布，需在清单声明并授予权限；发布在按元数据建的回调上下文里进行，信封缺的租户、主体与关联 ID 由发布器补齐
+* 回调端点有两个：Windows 上是只允许当前用户的命名管道加回环 TCP，其他系统是私有目录里的 Unix 域套接字加回环 TCP，各语言的 gRPC 库至少能连上回环 TCP
 
 ## 如何使用
 
@@ -42,7 +43,7 @@ builder.AddXiHan(x => x
 此库提供的主要类型：
 
 * `OutOfProcessPluginsFeature`：特性入口
-* `OutOfProcessPluginHost`：实现 `IPluginHost`，`FindStatus` 查找诊断快照（未加载时无值）
+* `OutOfProcessPluginHost`：实现 `IPluginHost`，`FindStatus` 查找诊断快照（未加载时无值），`HostEndpoints` 是按偏好排序的回调端点
 * `OutOfProcessPluginOptions`：目录、授予、超时、重启策略
 
 ## 更多文档

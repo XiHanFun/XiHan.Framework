@@ -6,7 +6,8 @@
 
 ## 主要特性
 
-* 解析与生成握手行，端点只接受本机回环地址
+* 解析与生成握手行，端点只接受本机回环地址，写法按规范固定（`127.1`、`0177.0.0.1` 这类简写不合法）
+* 读写宿主回调端点列表 `XIHAN_PLUGIN_HOST_ADDRESS`（按偏好排序、以 `;` 分隔）
 * 协议版本协商
 * `PluginErrors` 常量，便于按错误码区分插件失败
 
@@ -28,6 +29,11 @@ if (PluginEndpoint.TryParseHandshakeLine("xihan-plugin/1 tcp 127.0.0.1:50123", o
     Console.WriteLine($"{endpoint.Network} {endpoint.Address}");
 }
 
+if (PluginEndpoint.TryParseList(@"npipe \\.\pipe\xihan-host-1f3a;tcp 127.0.0.1:50124", out var hosts))
+{
+    Console.WriteLine(PluginEndpoint.FormatList(hosts));
+}
+
 static bool IsTransient(Error error)
     => error.Code is PluginErrors.Unavailable or PluginErrors.Crashed;
 ```
@@ -36,9 +42,9 @@ static bool IsTransient(Error error)
 
 此库提供的主要类型：
 
-* `PluginEndpoint`：本机 gRPC 端点，解析与生成握手行
+* `PluginEndpoint`：本机 gRPC 端点，解析与生成握手行与回调端点列表
 * `PluginProtocol`：协议版本、版本协商、元数据键与环境变量名
-* `PluginErrors`、`PluginMessages`：错误码与消息键
+* `PluginErrors`、`PluginMessages`：错误码与消息键，含插件运行时与宿主共用的键（`plugins.event.unsubscribed`、`plugins.host.unavailable` 等）
 
 ## 更多文档
 

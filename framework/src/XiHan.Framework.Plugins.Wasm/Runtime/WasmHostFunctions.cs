@@ -268,10 +268,10 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     }
 
     /// <summary>
-    /// 发布的核心：权限、宿主容器、按主题分组批量发布
+    /// 发布的核心：权限、元数据的租户、宿主容器、按主题分组批量发布
     /// </summary>
     /// <remarks>
-    /// 发布受当前调用的截止时间与取消约束，到期不再等待，尚未完成的各项为超时（<c>spec/plugin/wasm.md</c> §4）
+    /// 发布受当前调用的截止时间与取消约束，到期不再等待，尚未完成的各项为超时（<c>spec/plugin/wasm.md</c> §4）。语义同 <c>Host.Publish</c>（<c>invocation.md</c> §5，ADR-0237）：元数据的租户越界即整批不发布，在按元数据建的回调上下文里发布，发布器从上下文补齐信封缺的扩展
     /// </remarks>
     private void PublishCore(PublishRequest request, PublishResponse response)
     {
@@ -279,6 +279,14 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
         if (!PluginCallbackPermissions.IsAllowed(manifest, permissions, MessagingPermission))
         {
             Array.Fill(statuses, PluginErrorMapper.ToStatus(Error.Denied(PluginErrors.CallbackDenied, PluginMessages.CallbackDenied, MessageArguments.Of(("id", manifest.Id), ("permission", MessagingPermission)))));
+            response.Results.AddRange(statuses);
+            return;
+        }
+
+        // 元数据的租户是整批的：越界即一项也不发布，每一项都是这个错误
+        if (PluginCallbackTenants.Check(request.Metadata, manifest.Id, IsCurrentTenant) is { } outside)
+        {
+            Array.Fill(statuses, PluginErrorMapper.ToStatus(outside));
             response.Results.AddRange(statuses);
             return;
         }
@@ -299,6 +307,8 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
         {
             // 标记回调流：订阅了该主题的本插件会在发布期间被再次进入
             using var flow = Pump.EnterCallback();
+            // 在回调上下文里发布：主体是插件自己，截止时间不晚于当前调用
+            using var current = scope is null ? null : PluginMetadata.Enter(PublishContext(scope.ServiceProvider, request.Metadata, deadline, linked.Token));
             var publisher = scope?.ServiceProvider.GetService<IMessagePublisher>();
             // 逐项校验主题与信封，通过的按主题分组、每组一次批量发布；结果按原始位置回填
             var batches = PluginPublishBatches.Collect(request.Envelopes, statuses, publisher is null ? Error.Unavailable(PluginErrors.Unavailable, PluginMessages.MessagingUnavailable, MessageArguments.Of(("id", manifest.Id))) : null, envelope => PluginCallbackTenants.Check(envelope, manifest.Id, IsCurrentTenant));
@@ -322,6 +332,19 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
         }
 
         response.Results.AddRange(statuses);
+    }
+
+    /// <summary>
+    /// 发布的回调上下文
+    /// </summary>
+    /// <remarks>
+    /// 与 <c>invoke</c> 同一取法：按元数据还原，主体覆盖为插件的清单 ID、方案 Plugin
+    /// </remarks>
+    private InvocationContext PublishContext(IServiceProvider scopedServices, InvocationMetadata? metadata, DateTimeOffset deadline, CancellationToken cancellationToken)
+    {
+        var context = PluginMetadata.CreateContext(scopedServices, metadata, manifest.Id, cancellationToken, deadline);
+        context.SetSecurity(new SecurityContext(new Principal(manifest.Id, PluginScheme), null));
+        return context;
     }
 
     /// <summary>

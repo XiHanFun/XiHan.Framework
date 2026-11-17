@@ -98,7 +98,7 @@ public sealed class PluginProcessTests
         var host = OperatingSystem.IsWindows()
             ? new PluginEndpoint(PluginEndpoint.NamedPipe, @"\\.\pipe\xihan-silent-host")
             : new PluginEndpoint(PluginEndpoint.Unix, Path.Combine(Path.GetTempPath(), "xihan-silent-host.sock"));
-        return new PluginLaunch("xihan.test.silent", executable, Path.GetTempPath(), "silent-session", host, "xihan.test.silent#1", 1, "en-US", _handshakeTimeout);
+        return new PluginLaunch("xihan.test.silent", executable, Path.GetTempPath(), "silent-session", [host], "xihan.test.silent#1", 1, "en-US", _handshakeTimeout);
     }
 
     /// <summary>

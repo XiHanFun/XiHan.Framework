@@ -195,7 +195,8 @@ internal sealed partial class PluginProcess : IAsyncDisposable
         info.Environment[PluginProtocol.ProtocolVersionsVariable] = string.Join(',', PluginProtocol.SupportedVersions.Select(static v => v.ToString(CultureInfo.InvariantCulture)));
         info.Environment[PluginProtocol.PrimitivesVariable] = launch.Primitives.ToString(CultureInfo.InvariantCulture);
         info.Environment[PluginProtocol.SessionVariable] = launch.SessionToken;
-        info.Environment[PluginProtocol.HostAddressVariable] = launch.HostEndpoint.ToString();
+        // 按偏好排序的全部端点：插件取第一个自己的 gRPC 库能连的（handshake.md §4，ADR-0237）
+        info.Environment[PluginProtocol.HostAddressVariable] = PluginEndpoint.FormatList(launch.HostEndpoints);
         info.Environment[PluginProtocol.InstanceVariable] = launch.InstanceId;
         info.Environment[PluginProtocol.LocaleVariable] = launch.Locale;
 

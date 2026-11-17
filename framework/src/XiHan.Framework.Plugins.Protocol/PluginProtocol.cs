@@ -42,8 +42,11 @@ public static class PluginProtocol
     public const string SessionVariable = "XIHAN_PLUGIN_SESSION";
 
     /// <summary>
-    /// 环境变量：宿主回调端点（<c>&lt;network&gt; &lt;address&gt;</c>）
+    /// 环境变量：宿主回调端点
     /// </summary>
+    /// <remarks>
+    /// 一个或多个 <c>&lt;network&gt; &lt;address&gt;</c>，按宿主的偏好排序、以 <c>;</c> 分隔（<c>spec/plugin/handshake.md</c> §4，ADR-0237）；读写用 <see cref="Handshake.PluginEndpoint.TryParseList"/> 与 <see cref="Handshake.PluginEndpoint.FormatList"/>
+    /// </remarks>
     public const string HostAddressVariable = "XIHAN_PLUGIN_HOST_ADDRESS";
 
     /// <summary>

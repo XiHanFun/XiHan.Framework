@@ -551,7 +551,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     {
         var token = _host.Sessions.Issue(this);
         var instance = $"{Manifest.Id}#{Interlocked.Increment(ref _instance).ToString(CultureInfo.InvariantCulture)}";
-        var launch = new PluginLaunch(Manifest.Id, Executable, Directory, token, _host.HostEndpoint, instance, _host.Primitives, _host.DefaultLocale, _host.Options.HandshakeTimeout);
+        var launch = new PluginLaunch(Manifest.Id, Executable, Directory, token, _host.HostEndpoints, instance, _host.Primitives, _host.DefaultLocale, _host.Options.HandshakeTimeout);
         var launched = await PluginProcess.LaunchAsync(launch, _host.Clock, Logger, cancellationToken).ConfigureAwait(false);
         if (!launched.TryGetValue(out var process))
         {
@@ -568,7 +568,8 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
                 Primitives = (uint)_host.Primitives,
                 InstanceId = instance,
                 Host = new HostInfo { FrameworkVersion = FrameworkInfo.Version, Sdk = "dotnet", SdkVersion = Environment.Version.ToString(), Application = _host.Application },
-                HostEndpoint = new Endpoint { Network = _host.HostEndpoint.Network, Address = _host.HostEndpoint.Address },
+                // 只供诊断：插件选回调端点以环境变量为准（handshake.md §3）
+                HostEndpoint = new Endpoint { Network = _host.HostEndpoints[0].Network, Address = _host.HostEndpoints[0].Address },
                 DefaultLocale = _host.DefaultLocale,
             };
             request.ProtocolVersions.AddRange(PluginProtocol.SupportedVersions);

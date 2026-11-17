@@ -131,6 +131,34 @@ internal sealed class WatPlugin : IDisposable
         }, permissions, null);
 
     /// <summary>
+    /// 生成一个经 <c>xihan.publish</c> 发布一条消息、元数据带着给定 Baggage 的插件
+    /// </summary>
+    /// <remarks>
+    /// 用来核对发布按元数据建回调上下文、整批核对租户（ADR-0237）
+    /// </remarks>
+    public static WatPlugin PublishingWithBaggage(string topic, IReadOnlyList<string> permissions, IReadOnlyDictionary<string, string> baggage)
+    {
+        var entries = new JsonObject();
+        foreach (var (key, value) in baggage)
+        {
+            entries[key] = value;
+        }
+
+        return Create("publish", new JsonObject
+        {
+            ["envelopes"] = new JsonArray(new JsonObject
+            {
+                ["topic"] = topic,
+                ["id"] = "wat-1",
+                ["source"] = "wat",
+                ["type"] = "wat.created",
+                ["data"] = Convert.ToBase64String("{}"u8),
+            }),
+            ["metadata"] = new JsonObject { ["baggage"] = entries },
+        }, permissions, null);
+    }
+
+    /// <summary>
     /// 生成一个经 <c>xihan.publish</c> 发布一条信封自带租户扩展的消息的插件
     /// </summary>
     /// <remarks>

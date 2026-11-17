@@ -162,6 +162,22 @@ public static class PluginMessages
     public const string MessagingUnavailable = "plugins.callback.messaging_unavailable";
 
     /// <summary>
+    /// 投递找不到（主题，方式，类型）匹配的订阅
+    /// </summary>
+    /// <remarks>
+    /// 插件一侧报给宿主，错误码 <c>KERNEL_NOTFOUND_001</c>（<c>invocation.md</c> §4、§8，ADR-0237）。参数：<c>id</c>、<c>topic</c>、<c>type</c>、<c>mode</c>（空写 <c>competing</c>）
+    /// </remarks>
+    public const string EventUnsubscribed = "plugins.event.unsubscribed";
+
+    /// <summary>
+    /// 插件回调连不上宿主或没有可用的回调端点
+    /// </summary>
+    /// <remarks>
+    /// 插件一侧的回调失败，错误码 <see cref="PluginErrors.Unavailable"/>（<c>handshake.md</c> §4、<c>invocation.md</c> §5、§8，ADR-0237）；宿主要有它的目录才翻译得出插件转来的错误。参数：<c>id</c>、<c>reason</c>
+    /// </remarks>
+    public const string HostUnavailable = "plugins.host.unavailable";
+
+    /// <summary>
     /// Wasm 模块不合法
     /// </summary>
     /// <remarks>

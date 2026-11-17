@@ -506,7 +506,7 @@ public sealed class OutOfProcessPluginHostTests
         var plugins = EchoPluginHost.PluginHost(host);
         var operations = host.Services.GetRequiredService<OperationRegistry>();
         var permissions = host.Services.GetRequiredService<PermissionRegistry>();
-        Assert.Equal(4, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));
+        Assert.Equal(5, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));
 
         Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
 
@@ -518,7 +518,7 @@ public sealed class OutOfProcessPluginHostTests
         // 同一插件直接再加载：重新登记，不撞上自己上一次留下的操作与码（KERNEL_OPERATION_001 / KERNEL_SECURITY_001）
         var reloaded = await plugins.LoadAsync(new PluginSource(copy.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
         Assert.Equal(LifecycleState.Ready, reloaded.ValueOrThrow().State);
-        Assert.Equal(4, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));
+        Assert.Equal(5, operations.All().Count(static d => d.OwnerId == EchoPluginHost.PluginId));
         Assert.True(permissions.Find("echoes.audit").HasValue);
         var after = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"reloaded"}""");
         Assert.True(after.Outcome.IsSuccess, after.Outcome.ToString());

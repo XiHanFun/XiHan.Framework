@@ -12,7 +12,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Processes;
 /// <param name="Executable">可执行文件的绝对路径</param>
 /// <param name="Directory">插件目录（工作目录）</param>
 /// <param name="SessionToken">会话令牌</param>
-/// <param name="HostEndpoint">宿主回调端点</param>
+/// <param name="HostEndpoints">宿主回调端点，按偏好排序</param>
 /// <param name="InstanceId">实例 ID</param>
 /// <param name="Primitives">宿主原语层大版本</param>
 /// <param name="Locale">宿主默认区域</param>
@@ -22,7 +22,7 @@ internal sealed record PluginLaunch(
     string Executable,
     string Directory,
     string SessionToken,
-    PluginEndpoint HostEndpoint,
+    IReadOnlyList<PluginEndpoint> HostEndpoints,
     string InstanceId,
     int Primitives,
     string Locale,

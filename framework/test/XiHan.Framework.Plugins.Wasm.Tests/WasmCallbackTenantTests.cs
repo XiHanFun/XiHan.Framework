@@ -1,11 +1,13 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.MultiTenancy.InMemory;
 using XiHan.Framework.Plugins.Protocol;
@@ -60,6 +62,34 @@ public sealed class WasmCallbackTenantTests
         // 插件丢弃 xihan.publish 的应答、回成功；修之前信封带着插件自报的 globex 交给发布器，订阅方在 globex 里处理
         Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
         Assert.Equal(0, publisher.Published);
+    }
+
+    [Fact]
+    public async Task Publish_NamingAnotherTenantInTheMetadata_PublishesNothing()
+    {
+        using var plugin = WatPlugin.PublishingWithBaggage("wat.events", [WasmHostFunctions.MessagingPermission], Tenant("globex"));
+        var publisher = new ProbePublisher();
+        await using var host = await StartAsync(plugin, [WasmHostFunctions.MessagingPermission], s => s.AddSingleton<IMessagePublisher>(publisher));
+
+        var response = await CallAsync(host, WatPlugin.Operation, Tenant("acme"));
+
+        // 元数据的租户整批核对（ADR-0237）：修之前发布不读元数据，这条消息照样交给发布器
+        Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
+        Assert.Equal(0, publisher.Published);
+    }
+
+    [Fact]
+    public async Task Publish_RunsInTheCallbackContextBuiltFromTheMetadata()
+    {
+        using var plugin = WatPlugin.PublishingWithBaggage("wat.events", [WasmHostFunctions.MessagingPermission], Tenant("acme"));
+        var published = new ConcurrentQueue<(string? Tenant, string? Principal)>();
+        await using var host = await StartAsync(plugin, [WasmHostFunctions.MessagingPermission], s => s.AddScoped<IMessagePublisher>(sp => new ContextPublisher(sp.GetRequiredService<IInvocationAccessor>(), published)));
+
+        var response = await CallAsync(host, WatPlugin.Operation, Tenant("acme"));
+
+        // 修之前发布不在任何调用里：发布器取不到当前调用，补不了信封的租户与主体
+        Assert.True(response.Outcome.IsSuccess, response.Outcome.ToString());
+        Assert.Equal(("acme", WatPlugin.PluginId), Assert.Single(published));
     }
 
     [Fact]
