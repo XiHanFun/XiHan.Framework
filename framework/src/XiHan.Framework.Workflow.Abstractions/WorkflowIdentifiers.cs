@@ -34,6 +34,6 @@ public static partial class WorkflowIdentifiers
     /// <summary>
     /// 元素 ID 的匹配
     /// </summary>
-    [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")]
+    [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\\z")]
     private static partial Regex ElementId();
 }

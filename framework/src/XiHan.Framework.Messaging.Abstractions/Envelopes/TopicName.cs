@@ -39,6 +39,6 @@ public static partial class TopicName
     /// <summary>
     /// 主题文法的正则：首字符小写字母或数字，总长不超过 <see cref="MaxLength"/>
     /// </summary>
-    [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,127}$")]
+    [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,127}\\z")]
     private static partial Regex Pattern();
 }

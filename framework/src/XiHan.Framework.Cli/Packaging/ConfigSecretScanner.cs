@@ -99,6 +99,6 @@ internal static partial class ConfigSecretScanner
     /// <remarks>
     /// 配置键不区分大小写；规则同 RFC-0014「选项里的凭据」，外加 <c>ConnectionStrings</c>
     /// </remarks>
-    [GeneratedRegex("(Password|Passphrase|Secret|SecretKey|AccessKey|AccessKeyId|ApiKey|PrivateKey|ConnectionStrings?|Credentials?)$|^(Access|Refresh|Bearer|Session)?Token$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("(Password|Passphrase|Secret|SecretKey|AccessKey|AccessKeyId|ApiKey|PrivateKey|ConnectionStrings?|Credentials?)\\z|^(Access|Refresh|Bearer|Session)?Token\\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex CredentialName();
 }

@@ -99,6 +99,6 @@ public sealed partial record GrpcProtocolOptions
     /// <summary>
     /// protobuf 包名的匹配
     /// </summary>
-    [GeneratedRegex(@"^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)*$")]
+    [GeneratedRegex(@"^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)*\z")]
     private static partial Regex PackageName();
 }

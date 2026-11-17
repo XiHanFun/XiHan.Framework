@@ -192,24 +192,24 @@ internal static partial class AppManifestReader
     /// <summary>
     /// DNS 标签
     /// </summary>
-    [GeneratedRegex("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")]
+    [GeneratedRegex("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?\\z")]
     private static partial Regex DnsLabel();
 
     /// <summary>
     /// 绑定名
     /// </summary>
-    [GeneratedRegex("^[a-z][a-z0-9-]*$")]
+    [GeneratedRegex("^[a-z][a-z0-9-]*\\z")]
     private static partial Regex BindingName();
 
     /// <summary>
     /// k8s 数量
     /// </summary>
-    [GeneratedRegex("^[0-9]+(\\.[0-9]+)?(m|k|Ki|M|Mi|G|Gi|T|Ti)?$")]
+    [GeneratedRegex("^[0-9]+(\\.[0-9]+)?(m|k|Ki|M|Mi|G|Gi|T|Ti)?\\z")]
     private static partial Regex Quantity();
 
     /// <summary>
     /// 环境变量名
     /// </summary>
-    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*$")]
+    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*\\z")]
     private static partial Regex EnvironmentName();
 }

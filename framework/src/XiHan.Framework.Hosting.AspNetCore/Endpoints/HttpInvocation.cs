@@ -313,6 +313,6 @@ public static partial class HttpInvocation
     /// <summary>
     /// gRPC <c>grpc-timeout</c> 头的匹配：最多 8 位数值加单位
     /// </summary>
-    [GeneratedRegex("^(?<value>[0-9]{1,8})(?<unit>[HMSmun])$")]
+    [GeneratedRegex("^(?<value>[0-9]{1,8})(?<unit>[HMSmun])\\z")]
     private static partial Regex GrpcTimeout();
 }

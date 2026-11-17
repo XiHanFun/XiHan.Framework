@@ -82,6 +82,6 @@ public readonly partial record struct SecretName
     /// <summary>
     /// 名字的匹配
     /// </summary>
-    [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$")]
+    [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}\\z")]
     private static partial Regex Pattern();
 }

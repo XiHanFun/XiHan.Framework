@@ -126,6 +126,6 @@ public sealed partial record AuditingOptions
     /// <remarks>
     /// 小写字母开头，只含小写字母、数字与连字符，至多一个点，以 <c>*</c> 结尾
     /// </remarks>
-    [GeneratedRegex("^[a-z][a-z0-9-]*(\\.[a-z0-9-]*)?\\*$")]
+    [GeneratedRegex("^[a-z][a-z0-9-]*(\\.[a-z0-9-]*)?\\*\\z")]
     private static partial Regex ExclusionPrefix();
 }

@@ -76,6 +76,6 @@ public readonly partial record struct ContainerName
     /// <summary>
     /// 容器名的匹配
     /// </summary>
-    [GeneratedRegex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")]
+    [GeneratedRegex("^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\\z")]
     private static partial Regex Pattern();
 }

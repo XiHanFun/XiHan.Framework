@@ -125,12 +125,12 @@ public sealed partial record PluginEndpoint
     /// <summary>
     /// 握手行文法
     /// </summary>
-    [GeneratedRegex(@"^xihan-plugin/1 (?<network>unix|tcp|npipe) (?<address>\S+)$")]
+    [GeneratedRegex(@"^xihan-plugin/1 (?<network>unix|tcp|npipe) (?<address>\S+)\z")]
     private static partial Regex HandshakeLine();
 
     /// <summary>
     /// 环境变量形式的文法
     /// </summary>
-    [GeneratedRegex(@"^(?<network>unix|tcp|npipe) (?<address>\S+)$")]
+    [GeneratedRegex(@"^(?<network>unix|tcp|npipe) (?<address>\S+)\z")]
     private static partial Regex EndpointText();
 }

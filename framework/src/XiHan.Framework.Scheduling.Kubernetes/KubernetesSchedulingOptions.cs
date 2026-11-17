@@ -206,7 +206,7 @@ public sealed partial record KubernetesSchedulingOptions
     /// <summary>
     /// DNS 标签
     /// </summary>
-    [GeneratedRegex("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$")]
+    [GeneratedRegex("^[a-z]([a-z0-9-]{0,61}[a-z0-9])?\\z")]
     private static partial Regex DnsLabel();
 
     /// <summary>

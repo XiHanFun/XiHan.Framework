@@ -106,6 +106,6 @@ public static partial class LocaleName
     /// <summary>
     /// 区域名文法：2–3 个字母的语言子标签，之后是 0 到多个 2–8 位字母数字子标签
     /// </summary>
-    [GeneratedRegex("^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$")]
+    [GeneratedRegex("^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*\\z")]
     private static partial Regex Pattern();
 }

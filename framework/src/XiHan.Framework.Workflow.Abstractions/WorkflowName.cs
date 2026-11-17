@@ -84,6 +84,6 @@ public readonly partial record struct WorkflowName
     /// <summary>
     /// 名字的匹配
     /// </summary>
-    [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,127}$")]
+    [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,127}\\z")]
     private static partial Regex Pattern();
 }

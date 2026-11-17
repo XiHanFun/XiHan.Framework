@@ -75,6 +75,6 @@ public sealed partial record BlobStoreDefinition
     /// <summary>
     /// 实例名的匹配
     /// </summary>
-    [GeneratedRegex("^[a-z0-9][a-z0-9-]{0,63}$")]
+    [GeneratedRegex("^[a-z0-9][a-z0-9-]{0,63}\\z")]
     private static partial Regex NamePattern();
 }

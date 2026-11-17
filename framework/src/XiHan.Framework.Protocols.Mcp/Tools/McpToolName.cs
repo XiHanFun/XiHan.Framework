@@ -42,6 +42,6 @@ public static partial class McpToolName
     /// <summary>
     /// tool 名的匹配
     /// </summary>
-    [GeneratedRegex("^[A-Za-z0-9_-]{1,64}$")]
+    [GeneratedRegex("^[A-Za-z0-9_-]{1,64}\\z")]
     private static partial Regex Pattern();
 }

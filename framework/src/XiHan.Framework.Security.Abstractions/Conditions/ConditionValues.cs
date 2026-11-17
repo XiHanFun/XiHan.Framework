@@ -316,6 +316,6 @@ internal static partial class ConditionValues
     /// <summary>
     /// 日期时间文本末尾的偏移（<c>Z</c> 或 <c>±hh:mm</c>）
     /// </summary>
-    [GeneratedRegex(@"(Z|[+-]\d{2}:?\d{2})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"(Z|[+-]\d{2}:?\d{2})\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex OffsetSuffix();
 }

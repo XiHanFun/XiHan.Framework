@@ -43,12 +43,12 @@ public static partial class AIIdentifiers
     /// <summary>
     /// 名字文法
     /// </summary>
-    [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,63}$")]
+    [GeneratedRegex("^[a-z0-9][a-z0-9._-]{0,63}\\z")]
     private static partial Regex Name();
 
     /// <summary>
     /// 工具名文法
     /// </summary>
-    [GeneratedRegex("^[A-Za-z0-9_-]{1,64}$")]
+    [GeneratedRegex("^[A-Za-z0-9_-]{1,64}\\z")]
     private static partial Regex ToolName();
 }

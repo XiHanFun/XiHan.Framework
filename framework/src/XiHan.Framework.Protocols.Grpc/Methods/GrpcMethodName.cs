@@ -85,6 +85,6 @@ public sealed partial record GrpcMethodName
     /// <summary>
     /// protobuf 标识符的匹配
     /// </summary>
-    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*$")]
+    [GeneratedRegex("^[A-Za-z_][A-Za-z0-9_]*\\z")]
     private static partial Regex Identifier();
 }

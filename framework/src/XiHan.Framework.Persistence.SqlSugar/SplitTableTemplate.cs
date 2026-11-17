@@ -38,7 +38,8 @@ internal sealed partial class SplitTableTemplate
             last = match.Index + match.Length;
         }
 
-        builder.Append(Regex.Escape(template[last..])).Append('$');
+        // 以 \z 收尾：$ 在末尾的换行之前也算匹配，表名后跟换行不能当成分表（ADR-0236）
+        builder.Append(Regex.Escape(template[last..])).Append("\\z");
         _pattern = new Regex(builder.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
     }
 

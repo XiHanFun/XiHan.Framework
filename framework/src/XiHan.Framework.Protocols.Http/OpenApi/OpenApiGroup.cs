@@ -56,6 +56,6 @@ public sealed partial record OpenApiGroup
     /// <summary>
     /// 组名的匹配
     /// </summary>
-    [GeneratedRegex("^[a-z][a-z0-9-]*$")]
+    [GeneratedRegex("^[a-z][a-z0-9-]*\\z")]
     private static partial Regex NamePattern();
 }

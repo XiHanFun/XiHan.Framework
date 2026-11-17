@@ -113,7 +113,7 @@ public sealed partial record BlobPutOptions
     /// <summary>
     /// 元数据名的匹配
     /// </summary>
-    [GeneratedRegex("^[a-z0-9][a-z0-9-]{0,63}$")]
+    [GeneratedRegex("^[a-z0-9][a-z0-9-]{0,63}\\z")]
     private static partial Regex MetadataName();
 
     /// <summary>

@@ -67,6 +67,6 @@ public static partial class EnvelopeExtensions
     /// <summary>
     /// 扩展属性名文法：小写字母与数字，1 到 20 个字符
     /// </summary>
-    [GeneratedRegex("^[a-z0-9]{1,20}$")]
+    [GeneratedRegex("^[a-z0-9]{1,20}\\z")]
     private static partial Regex NamePattern();
 }
