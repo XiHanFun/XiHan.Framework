@@ -61,11 +61,13 @@ SDK 按成熟度分级：Reference（.NET）、Stable（通过全部向量）、
 | --- | --- | --- | --- |
 | .NET | `XiHan.Framework.*` | [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) | 参考实现 |
 | Go | `github.com/xihanfun/framework-sdk-go` | [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) | 通过全部向量；用于进程外插件与远程 Provider |
-| TypeScript | npm 组织 `@xihan-framework/*` | [framework-sdk-typescript](https://github.com/XiHanFun/framework-sdk-typescript) | 占位，Go 之后的下一个 |
-| Rust | crate `xihan-framework` | [framework-sdk-rust](https://github.com/XiHanFun/framework-sdk-rust) | 占位，面向进程外与 Wasm 插件 |
-| Java | `com.xihanfun:xihan-framework` | [framework-sdk-java](https://github.com/XiHanFun/framework-sdk-java) | 占位 |
-| Python | `xihan-framework` | [framework-sdk-python](https://github.com/XiHanFun/framework-sdk-python) | 占位 |
-| PHP | `xihanfun/xihan-framework` | [framework-sdk-php](https://github.com/XiHanFun/framework-sdk-php) | 占位 |
+| TypeScript | npm `xihan-framework` | [framework-sdk-typescript](https://github.com/XiHanFun/framework-sdk-typescript) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
+| Rust | crate `xihan-framework` | [framework-sdk-rust](https://github.com/XiHanFun/framework-sdk-rust) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
+| Java | `com.xihanfun:xihan-framework` | [framework-sdk-java](https://github.com/XiHanFun/framework-sdk-java) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
+| Python | `xihan-framework` | [framework-sdk-python](https://github.com/XiHanFun/framework-sdk-python) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
+| PHP | `xihanfun/xihan-framework` | [framework-sdk-php](https://github.com/XiHanFun/framework-sdk-php) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
+
+除 .NET 参考实现外，每种语言的 SDK 只有一个包，包名都是 `xihan-framework`，需要写所有者的生态用 `xihanfun`；Go 的模块路径必须是仓库地址，所以跟着仓库名。
 
 各语言的领域词与术语表一致，只换大小写风格。
 
