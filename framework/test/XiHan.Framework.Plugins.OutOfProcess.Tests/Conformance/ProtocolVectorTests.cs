@@ -230,6 +230,99 @@ public sealed class ProtocolVectorTests
         Assert.Equal("DataLoss: boom", unmapped.Details!["reason"]);
     }
 
+    [Fact]
+    public void ErrorReading_FollowsTheVectors()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "error-reading.json")));
+        var pluginId = document.RootElement.GetProperty("pluginId").GetString()!;
+        foreach (var @case in document.RootElement.GetProperty("cases").EnumerateArray())
+        {
+            var name = @case.GetProperty("name").GetString()!;
+            var read = PluginErrorMapper.FromProto(ProtoErrorOf(@case.GetProperty("error")), pluginId);
+            AssertError(@case.GetProperty("expected"), read, name);
+        }
+
+        // 宿主读插件：Status.ok 为假却没有 error，与整个 status 缺失相同；插件读宿主的几项由插件 SDK 回放
+        foreach (var @case in document.RootElement.GetProperty("statusWithoutError").EnumerateArray().Where(static c => c.GetProperty("reader").GetString() == "host"))
+        {
+            var phase = @case.GetProperty("phase").GetString()!;
+            AssertError(@case.GetProperty("expected"), PluginErrorMapper.FromStatus(new ProtoStatus { Ok = false }, pluginId, phase).Error, "ok false without an error, phase " + phase);
+            AssertError(@case.GetProperty("expected"), PluginErrorMapper.FromStatus(null, pluginId, phase).Error, "no status, phase " + phase);
+        }
+    }
+
+    /// <summary>
+    /// 向量里的线上 Error
+    /// </summary>
+    private static ProtoError ProtoErrorOf(JsonElement error)
+    {
+        var proto = new ProtoError
+        {
+            Code = error.GetProperty("code").GetString()!,
+            MessageKey = error.GetProperty("message_key").GetString()!,
+            Text = error.GetProperty("text").GetString()!,
+            Details = error.GetProperty("details").GetString()!,
+        };
+        if (error.TryGetProperty("inner", out var inner) && inner.ValueKind == JsonValueKind.Object)
+        {
+            proto.Inner = ProtoErrorOf(inner);
+        }
+
+        return proto;
+    }
+
+    /// <summary>
+    /// 读入后的错误与向量的期望一致
+    /// </summary>
+    /// <remarks>
+    /// <c>details</c> 按 JSON 值比较：写回 JSON 再逐值比较，数按双精度比较
+    /// </remarks>
+    private static void AssertError(JsonElement expected, Error? actual, string name)
+    {
+        Assert.True(actual is not null, name);
+        Assert.Equal(expected.GetProperty("code").GetString(), actual.Code);
+        Assert.True(expected.GetProperty("key").GetString() == actual.MessageKey, $"{name}: key '{actual.MessageKey}'");
+        Assert.True(expected.GetProperty("text").GetString() == actual.Text, $"{name}: text '{actual.Text}'");
+        var details = expected.GetProperty("details");
+        if (details.ValueKind == JsonValueKind.Null)
+        {
+            Assert.True(actual.Details is null, $"{name}: details {(actual.Details is null ? string.Empty : PluginJson.SerializeDetails(actual.Details))}");
+        }
+        else
+        {
+            Assert.True(actual.Details is not null, $"{name}: no details");
+            using var written = JsonDocument.Parse(PluginJson.SerializeDetails(actual.Details));
+            Assert.True(SameJson(details, written.RootElement), $"{name}: details {written.RootElement.GetRawText()}, want {details.GetRawText()}");
+        }
+
+        var inner = expected.GetProperty("inner");
+        if (inner.ValueKind == JsonValueKind.Null)
+        {
+            Assert.True(actual.Inner is null, $"{name}: unexpected inner");
+        }
+        else
+        {
+            AssertError(inner, actual.Inner, name + " (inner)");
+        }
+    }
+
+    /// <summary>
+    /// 两个 JSON 值相等
+    /// </summary>
+    /// <remarks>
+    /// 对象成员顺序不计，数按双精度比较（<c>1e+20</c> 与 <c>1E+20</c>、<c>0</c> 与 <c>0.0</c> 相等）
+    /// </remarks>
+    private static bool SameJson(JsonElement left, JsonElement right) => (left.ValueKind, right.ValueKind) switch
+    {
+        (JsonValueKind.Object, JsonValueKind.Object) => left.EnumerateObject().Count() == right.EnumerateObject().Count()
+            && left.EnumerateObject().All(member => right.TryGetProperty(member.Name, out var other) && SameJson(member.Value, other)),
+        (JsonValueKind.Array, JsonValueKind.Array) => left.GetArrayLength() == right.GetArrayLength()
+            && left.EnumerateArray().Zip(right.EnumerateArray()).All(static pair => SameJson(pair.First, pair.Second)),
+        (JsonValueKind.Number, JsonValueKind.Number) => left.GetDouble().Equals(right.GetDouble()),
+        (JsonValueKind.String, JsonValueKind.String) => left.GetString() == right.GetString(),
+        var (a, b) => a == b && a is JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null,
+    };
+
     /// <summary>
     /// 向量里精确到纳秒的 UTC 时刻
     /// </summary>

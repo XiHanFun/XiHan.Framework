@@ -70,9 +70,10 @@
 
 - **调用次序**：`Handshake` 只在 `Declared`、`Configure` 只在 `Resolved`、`Start` 只在 `Configured` 时接受，`Stop` 在 `Declared`、`Draining`、`Stopped` 之外都接受；其余组合（重复握手、没握手就配置、配置两次、没配置就启动、启动两次、没握手就停止、停止中再停止）以 gRPC `FailedPrecondition` 拒绝、什么都不做。会话令牌先于次序核对，元数据里必须恰好一个 `xihan-plugin-session` 值。
 - **配置**：`configuration` 为空等同 `{}`；不是 JSON 对象（或通不过共同的 JSON 读取检查）时插件进入 `Failed`，`ConfigureResponse.status` 是 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 为 `configure`）。
-- **就绪与健康**：启动回调成功后立即求一次健康，按结果进入 `Ready`、`Degraded` 或 `Failed` 再应答 `Start`；只有 `Ready` 与 `Degraded` 可服务。`Start` 之前的 `Health` 报本地状态（`Declared`、`Resolved`、`Configured`），没有健康项。
+- **就绪与健康**：启动回调成功后立即求一次健康，按结果进入 `Ready`、`Degraded` 或 `Failed` 再应答 `Start`（健康回调报其他状态的按 `Ready`，抛出的按 `Degraded`）；只有 `Ready` 与 `Degraded` 可服务。`Start` 之前的 `Health` 报本地状态（`Declared`、`Resolved`、`Configured`），没有健康项。可服务期间每次 `Health` 都求一次健康回调，报 `Ready`、`Degraded`、`Failed` 的照办、报其他状态的不改变状态；回调抛出时这一次是 `Degraded`（`error` 为 `plugins.process.failed`，`phase` 为 `health`，没有健康项），状态也迁到 `Degraded`。健康项名不在清单 `contributes.health` 里的丢掉；静态声明的健康项名在启动前就核对。
 - **调用与投递**：`Invoke` 先看操作是否声明（否则 gRPC `Unimplemented`），再看是否可服务（否则 `PLUGINS_UNAVAILABLE_001` + `plugins.process.unavailable`）。`HandleEvent` 没有信封或 `mode` 不是空、`competing`、`broadcast` 时为 gRPC `InvalidArgument`；找不到（主题，方式，类型）的订阅为 `KERNEL_NOTFOUND_001` + `plugins.event.unsubscribed`；匹配多个订阅时按声明顺序依次交给处理器，第一个失败即为结果。`InvokeStream` 在流式契约之前一律不实现：第一帧不是 `start` 为 `InvalidArgument`，是 `start` 为 `Unimplemented`。
 - **错误的写出**：带消息键的错误 `text` 留空，由宿主按目录翻译成调用方的语言；运行时自己的消息键（`plugins.process.*`、`plugins.event.unsubscribed`、`plugins.host.unavailable`、`plugins.callback.*`）由宿主的目录提供，SDK 不随握手发送。
+- **回调客户端**：发出之前依次核对：有没有可用的回调端点（没有为 `plugins.host.unavailable`）、权限（清单声明且已授予，否则 `plugins.callback.denied`）、上下文的租户（否则 `plugins.callback.tenant_denied`），最后回调上下文的截止时间已过或已被取消时也不发请求，结果分别按 `DeadlineExceeded` 与「调用方已取消的 `Cancelled`」映射。gRPC 库按截止时间在本端中止调用时报的状态（如 tonic 的 `Cancelled: Timeout expired`）按 `DeadlineExceeded`，映射之外不再按时钟或令牌改写结果。
 - **停止与收尾**：启动回调没成功过时 `Stop` 不调停止回调、应答后以退出码 0 退出；启动过的进入 `Draining`、等在途调用最长到宽限期（`0` 按 5 秒）再调停止回调。stdin 读到结尾与 SIGTERM 都是收尾请求：立即取消在途调用，最多 3 秒后以退出码 0 退出。
 
 ## 最小示例
@@ -172,7 +173,7 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 
 握手声明的每个操作在宿主的 `OperationRegistry` 里登记为代理操作，归属是插件清单 ID，契约（`stability`、`expose`、权限码或策略）与 Schema 取自声明。代理操作和本地[操作契约](/web/operations)没有区别：协议适配器按 `expose` 发布，调用经宿主完整[管道](/startup/pipeline)，Authorize 阶段按契约判定，Handle 阶段把 JSON 载荷与上下文发给插件。
 
-上下文平铺为元数据：`traceparent` / `tracestate`、截止时间（同时设为 gRPC 调用的截止时间）、只含已登记 `xihan.*` 键的 Baggage；`Items` 与服务不传播。插件返回的业务失败原样成为调用结果，宿主用握手时拿到的消息目录翻译消息键（[全球化和本地化](/common/localization)）；传输层失败按下表映射：
+上下文平铺为元数据：`traceparent` / `tracestate`、截止时间（同时设为 gRPC 调用的截止时间）、只含已登记 `xihan.*` 键的 Baggage；`Items` 与服务不传播。插件返回的业务失败原样成为调用结果，宿主用握手时拿到的消息目录翻译消息键（[全球化和本地化](/common/localization)）。读入插件写来的 `Error` 时（宿主读插件、插件读宿主同一规则，ADR-0237）：错误码不合文法的整个换成 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 一律为 `invoke`，原来的 `inner` 丢掉）；带消息键的错误不取 `text`；`details` 为空、只有空白、是空对象、通不过共同的 JSON 读取检查、不是对象，或任何一层有读成双精度会溢出的数时当作没有细节；`ok` 为假却没有 `error`（或整个 `status` 缺失）是 `plugins.process.failed`。传输层失败按下表映射：
 
 | 插件侧 | 宿主错误码 |
 | --- | --- |
@@ -196,7 +197,7 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 | 调用操作 | `Host.Invoke` | `capability:kernel.pipeline` | 以新的调用经宿主完整管道执行操作，未登记的操作为 `KERNEL_NOTFOUND_001` |
 | 发布消息 | `Host.Publish` | `capability:messaging.queue` | 以元数据建调用上下文（主体同样是插件），在这个上下文里按主题分组批量经宿主消息发布器发布：信封缺的租户、主体、关联 ID、区域与追踪由发布器从上下文补齐，与进程内的发布一致；逐项返回结果，逐项依次核对发布器（没有时 `PLUGINS_UNAVAILABLE_001`）、主题、信封的 `xihantenant` 与转换 |
 
-回调必须恰好带一个 `xihan-plugin-session` 元数据值，令牌缺失、不匹配或带了两个值为 gRPC `Unauthenticated`（`PLUGINS_DENIED_002`）；令牌只对本次进程有效，宿主的各个回调端点认同一套令牌。回调的截止时间取元数据 `deadline`（按规范的文法严格读，读不出当作没有）与 gRPC 调用自身截止时间中较早的一个。反方向同样：宿主调用插件的每一次 RPC（含 `Handshake`）都带这个令牌，插件必须按常数时间比较校验，缺失或不匹配以 `Unauthenticated` 拒绝，本机别的进程连上插件端点也冒充不了宿主（ADR-0202；.NET 写法见 `samples/EchoPlugin/SessionGuard.cs`，Go SDK 的校验随它的下一个版本提供）。两端的 Unix 域套接字都放在新建的私有目录里（`0700`，名字随机，已存在即不用），套接字文件 `0600`；宿主的命名管道只允许当前用户，插件的命名管道在运行时给不了访问控制表时（Node 的 libuv、不用 unsafe 的 Rust）用系统缺省的安全描述符，其他本机用户只能以只读打开、发不出请求；TCP 只绑定回环地址，那里的隔离只靠令牌。权限未声明或未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002`。回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`），元数据里的 `xihan.principal` 被忽略，其余已登记的 Baggage 照常采用。回调与发布只能带宿主交给插件的租户：宿主调用插件时元数据里的 `xihan.tenant` 是这次调用的租户（Tenant 阶段裁定过时取裁定结果），回调元数据的 `xihan.tenant` 与发布信封的 `xihantenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则为 `PLUGINS_DENIED_002`（`Host.Publish` 的元数据越界时整批不发布，每一项都是这个错误）；不带租户的回调是无租户调用（ADR-0195）。插件并发处理多个租户的调用时，回调可以带其中任何一个；原样转发收到的元数据即可。Authorize 阶段按目标操作的契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予相应权限码。
+回调必须恰好带一个 `xihan-plugin-session` 元数据值，令牌缺失、不匹配或带了两个值为 gRPC `Unauthenticated`（`PLUGINS_DENIED_002`）；令牌只对本次进程有效，宿主的各个回调端点认同一套令牌。回调的截止时间取元数据 `deadline`（按规范的文法严格读，读不出当作没有）与 gRPC 调用自身截止时间中较早的一个。反方向同样：宿主调用插件的每一次 RPC（含 `Handshake`）都带这个令牌，插件必须按常数时间比较校验，缺失或不匹配以 `Unauthenticated` 拒绝，本机别的进程连上插件端点也冒充不了宿主（ADR-0202；.NET 写法见 `samples/EchoPlugin/SessionGuard.cs`，Go SDK 的校验随它的下一个版本提供）。两端的 Unix 域套接字都放在新建的私有目录里（`0700`，名字随机，已存在即不用），套接字文件 `0600`；宿主的命名管道只允许当前用户并拒绝远程客户端；插件的命名管道应同样如此，运行时给不了访问控制表或拒绝远程客户端的标志时（Node 的 libuv 两样都给不了，不用 unsafe 的 Rust 只能拒绝远程客户端）用系统缺省的安全描述符，其他用户只能以只读打开、发不出请求，需要只接受本机连接的改用回环 TCP；TCP 只绑定回环地址，那里的隔离只靠令牌。权限未声明或未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002`。回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`），元数据里的 `xihan.principal` 被忽略，其余已登记的 Baggage 照常采用。回调与发布只能带宿主交给插件的租户：宿主调用插件时元数据里的 `xihan.tenant` 是这次调用的租户（Tenant 阶段裁定过时取裁定结果），回调元数据的 `xihan.tenant` 与发布信封的 `xihantenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则为 `PLUGINS_DENIED_002`（`Host.Publish` 的元数据越界时整批不发布，每一项都是这个错误）；不带租户的回调是无租户调用（ADR-0195）。插件并发处理多个租户的调用时，回调可以带其中任何一个；原样转发收到的元数据即可。Authorize 阶段按目标操作的契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予相应权限码。
 
 ## 失败降级
 

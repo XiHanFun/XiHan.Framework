@@ -44,7 +44,7 @@ internal static class PluginJson
     /// 解析错误细节
     /// </summary>
     /// <remarks>
-    /// 先过 RFC-0001 的共同 JSON 读取检查（<see cref="JsonText"/>：语法、64 层、合法 Unicode、任何一层的重复成员），通不过或不是 JSON 对象都当作没有细节，返回空（<c>invocation.md</c> §3，ADR-0237）。以前直接交给 <see cref="JsonDocument"/>：重复成员取最后一个，转义出的孤立代理项在读值时抛出
+    /// 先过 RFC-0001 的共同 JSON 读取检查（<see cref="JsonText"/>：语法、64 层、合法 Unicode、任何一层的重复成员）；通不过、不是 JSON 对象、是空对象，或任何一层有读成双精度会溢出（±∞）的数，都当作没有细节，返回空（<c>invocation.md</c> §3，ADR-0237，向量 <c>error-reading.json</c>）。下溢的数读成 0，超出 64 位的整数读成双精度。以前直接交给 <see cref="JsonDocument"/>：重复成员取最后一个，转义出的孤立代理项在读值时抛出，溢出的数读成无穷
     /// </remarks>
     public static IReadOnlyDictionary<string, object?>? ParseDetails(string json)
     {
@@ -61,7 +61,8 @@ internal static class PluginJson
 
         // 检查通过之后的文本 JsonDocument 一定读得出：深度同为 64 层，字符串都能取值
         using var document = JsonDocument.Parse(utf8, new JsonDocumentOptions { MaxDepth = JsonText.MaxDepth });
-        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        // 空对象与没有细节相同；溢出的数在别的语言里读不出来，整份细节都不要，而不是带着无穷往下传
+        if (document.RootElement.ValueKind != JsonValueKind.Object || !document.RootElement.EnumerateObject().Any() || !IsFinite(document.RootElement))
         {
             return null;
         }
@@ -74,6 +75,20 @@ internal static class PluginJson
 
         return details;
     }
+
+    /// <summary>
+    /// 任何一层的数读成双精度都不溢出
+    /// </summary>
+    /// <remarks>
+    /// 64 位范围内的整数按整数读，不会溢出；其余的数在 .NET 上溢出时读成 ±∞
+    /// </remarks>
+    private static bool IsFinite(JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.Number => element.TryGetInt64(out _) || (element.TryGetDouble(out var value) && double.IsFinite(value)),
+        JsonValueKind.Array => element.EnumerateArray().All(IsFinite),
+        JsonValueKind.Object => element.EnumerateObject().All(static property => IsFinite(property.Value)),
+        _ => true,
+    };
 
     /// <summary>
     /// 配置节序列化为 JSON

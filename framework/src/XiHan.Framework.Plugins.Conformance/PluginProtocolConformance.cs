@@ -35,7 +35,10 @@ public abstract class PluginProtocolConformance
     /// <summary>
     /// Start 之后健康应答里可接受的状态
     /// </summary>
-    private static readonly ProtoLifecycleState[] _serving = [ProtoLifecycleState.Started, ProtoLifecycleState.Ready, ProtoLifecycleState.Degraded];
+    /// <remarks>
+    /// Start 应答之前插件已经按一次健康的结果进入 Ready、Degraded 或 Failed（<c>lifecycle.md</c> §7.3），Started 只是应答之前的过渡，Failed 不可服务
+    /// </remarks>
+    private static readonly ProtoLifecycleState[] _serving = [ProtoLifecycleState.Ready, ProtoLifecycleState.Degraded];
 
     /// <summary>
     /// 用例调用携带的 W3C traceparent
@@ -191,7 +194,7 @@ public abstract class PluginProtocolConformance
     /// 用例 lifecycle：Configure 与 Start 成功
     /// </summary>
     /// <remarks>
-    /// Health 与 WatchHealth 报可服务状态；Stop 成功后进程在宽限内退出
+    /// Start 之后的 Health 与 WatchHealth 的第一次推送报 Ready 或 Degraded（<c>lifecycle.md</c> §7.3，ADR-0237）；Stop 成功后进程在宽限内退出
     /// </remarks>
     [Fact]
     public async Task Lifecycle_ConfigureStartHealthStop_FollowTheProtocol()
@@ -200,12 +203,12 @@ public abstract class PluginProtocolConformance
         await StartAsync(session).ConfigureAwait(false);
 
         var health = await session.Client.HealthAsync(new HealthRequest(), deadline: Deadline()).ConfigureAwait(false);
-        Assert.Contains(health.State, _serving);
+        Assert.True(_serving.Contains(health.State), $"Health after Start reported {health.State}, want Ready or Degraded.");
         Assert.All(health.Items, item => Assert.Contains(item.Name, session.Manifest.Contributes.Health));
 
         using var watch = session.Client.WatchHealth(new HealthRequest(), deadline: Deadline());
         Assert.True(await watch.ResponseStream.MoveNext(CancellationToken.None).ConfigureAwait(false), "WatchHealth must push the current state first.");
-        Assert.Contains(watch.ResponseStream.Current.State, _serving);
+        Assert.True(_serving.Contains(watch.ResponseStream.Current.State), $"WatchHealth after Start first pushed {watch.ResponseStream.Current.State}, want Ready or Degraded.");
 
         var stopped = await session.Client.StopAsync(new StopRequest { GraceSeconds = 5, Reason = "unload" }, deadline: Deadline()).ConfigureAwait(false);
         Assert.True(stopped.Status?.Ok, "Stop must succeed.");

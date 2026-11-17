@@ -231,6 +231,30 @@ internal sealed class PluginState : IDisposable
     }
 
     /// <summary>
+    /// 可服务期间按健康的结果迁移状态
+    /// </summary>
+    /// <remarks>
+    /// 只在 Ready 与 Degraded 之间与到 Failed 迁移，Failed 之后不再回来（lifecycle.md §7.4、lifecycle-transitions.json）；其他时候什么都不做
+    /// </remarks>
+    public void ApplyHealth(LifecycleState next)
+    {
+        bool changed;
+        lock (_gate)
+        {
+            changed = _state is LifecycleState.Ready or LifecycleState.Degraded && _state != next;
+            if (changed)
+            {
+                _state = next;
+            }
+        }
+
+        if (changed)
+        {
+            Notify();
+        }
+    }
+
+    /// <summary>
     /// 登记一次在途调用或投递
     /// </summary>
     /// <remarks>

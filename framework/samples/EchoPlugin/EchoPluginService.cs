@@ -134,7 +134,7 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     public override Task<StartResponse> Start(StartRequest request, ServerCallContext context)
     {
         // 启动回调成功后立即求一次健康，按结果进入 Ready / Degraded / Failed，然后才应答（lifecycle.md §7.3）
-        if (!state.TryStart(EvaluateHealth))
+        if (!state.TryStart(StartHealth))
         {
             throw OutOfOrder("Start");
         }
@@ -441,14 +441,55 @@ internal sealed partial class EchoPluginService(PluginState state, HostClient ho
     private HealthResponse CurrentHealth()
     {
         var current = state.State;
-        var response = new HealthResponse { State = current };
-        if (current is LifecycleState.Ready or LifecycleState.Degraded)
+        if (current is not (LifecycleState.Ready or LifecycleState.Degraded))
         {
-            response.State = EvaluateHealth();
-            response.Items.Add(new HealthItem { Name = HealthItem, Status = HealthStatus.Healthy });
+            return new HealthResponse { State = current };
         }
 
+        LifecycleState reported;
+        try
+        {
+            reported = EvaluateHealth();
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // 健康回调抛出：这一次是 Degraded，带 health 阶段的错误、没有健康项，状态与回调报了 Degraded 一样迁移（lifecycle.md §7.4）
+            state.ApplyHealth(LifecycleState.Degraded);
+            return new HealthResponse
+            {
+                State = state.State,
+                Error = Failure("PLUGINS_UNEXPECTED_001", "plugins.process.failed", new JsonObject { ["id"] = PluginId, ["phase"] = "health", ["reason"] = exception.GetType().Name }).Error,
+            };
+        }
+
+        // 报 Ready、Degraded、Failed 的照办，报其他状态的不改变状态
+        if (reported is LifecycleState.Ready or LifecycleState.Degraded or LifecycleState.Failed)
+        {
+            state.ApplyHealth(reported);
+        }
+
+        var response = new HealthResponse { State = state.State };
+        response.Items.Add(new HealthItem { Name = HealthItem, Status = HealthStatus.Healthy });
         return response;
+    }
+
+    /// <summary>
+    /// Start 应答之前求的那一次健康
+    /// </summary>
+    /// <remarks>
+    /// 回调报 Ready、Degraded、Failed 的照办，报其他状态的按 Ready，抛出的按 Degraded（lifecycle.md §7.3）
+    /// </remarks>
+    private static LifecycleState StartHealth()
+    {
+        try
+        {
+            var reported = EvaluateHealth();
+            return reported is LifecycleState.Ready or LifecycleState.Degraded or LifecycleState.Failed ? reported : LifecycleState.Ready;
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            return LifecycleState.Degraded;
+        }
     }
 
     /// <summary>

@@ -22,6 +22,9 @@ public sealed class PluginJsonTests
     [InlineData("""{"id":"a",}""")]
     [InlineData("""["id"]""")]
     [InlineData(" ")]
+    [InlineData("{}")]
+    [InlineData("""{"id":"a","n":1e400}""")]
+    [InlineData("""{"id":"a","x":[{"n":-1e400}]}""")]
     public void ParseDetails_ThatFailTheCommonJsonCheckOrAreNotAnObject_AreNoDetails(string json)
     {
         // 修之前重复成员取最后一个，转义出的孤立代理项在读值时抛出 InvalidOperationException
