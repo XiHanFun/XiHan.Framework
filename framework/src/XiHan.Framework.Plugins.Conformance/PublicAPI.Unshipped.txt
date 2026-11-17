@@ -29,7 +29,6 @@ abstract XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.PluginDir
 abstract XiHan.Framework.Plugins.Conformance.WasmPluginConformance.PluginDirectory.get -> string!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ConfigurationJson.get -> string!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.ExcludedOperations.get -> System.Collections.Generic.IReadOnlySet<string!>!
-virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.FollowsPluginSideRules.get -> bool
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.SampleRequests.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.Timeout.get -> System.TimeSpan
 virtual XiHan.Framework.Plugins.Conformance.PluginProtocolConformance.VerifiesSessionToken.get -> bool

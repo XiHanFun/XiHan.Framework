@@ -129,19 +129,6 @@ public abstract class PluginProtocolConformance
     protected virtual bool VerifiesSessionToken => true;
 
     /// <summary>
-    /// 插件是否实现了插件一侧的规则
-    /// </summary>
-    /// <remarks>
-    /// 缺省 <see langword="true"/>，规范要求（<c>lifecycle.md</c> §7、<c>invocation.md</c> §1、§4，ADR-0237）；只在插件 SDK 还没有发布实现这些规则的版本时临时覆写为 <see langword="false"/>：用例 order、unavailable、unsubscribed、stream、configuration、stop-early 随之跳过，handshake 不做插件一侧写法的补充核对
-    /// </remarks>
-    protected virtual bool FollowsPluginSideRules => true;
-
-    /// <summary>
-    /// 插件一侧的规则还没实现时跳过的原因
-    /// </summary>
-    private const string PluginSideRulesPending = "The plugin SDK does not follow the plugin-side rules yet (ADR-0237).";
-
-    /// <summary>
     /// 用例 handshake：握手与清单相符
     /// </summary>
     /// <remarks>
@@ -157,10 +144,6 @@ public abstract class PluginProtocolConformance
         Assert.NotNull(session.Process.Endpoint);
         Assert.All(session.Handshake.Operations, operation => Assert.Contains(operation.Contract.Id, session.Manifest.Contributes.Operations));
         Assert.All(session.Handshake.Catalogs, catalog => Assert.NotEmpty(catalog.Locales));
-        if (!FollowsPluginSideRules)
-        {
-            return;
-        }
 
         Assert.True(session.Response.Primitives == session.Manifest.Primitives, $"The handshake reports primitives {session.Response.Primitives}, want the manifest's {session.Manifest.Primitives}.");
         Assert.False(session.Response.Manifest.StartsWith(ByteOrderMark), "The manifest in the handshake must not start with a byte order mark.");
@@ -224,7 +207,6 @@ public abstract class PluginProtocolConformance
     [Fact]
     public async Task Order_CallsOutOfSequence_AreFailedPrecondition()
     {
-        Assert.SkipWhen(!FollowsPluginSideRules, PluginSideRulesPending);
         await using var process = await StartProcessAsync().ConfigureAwait(false);
         var client = process.Client;
         var manifest = ReadManifest();
@@ -304,7 +286,6 @@ public abstract class PluginProtocolConformance
     [Fact]
     public async Task Unavailable_BeforeStart_CallsAndDeliveriesAreRefused()
     {
-        Assert.SkipWhen(!FollowsPluginSideRules, PluginSideRulesPending);
         await using var session = await LaunchAsync().ConfigureAwait(false);
         await ConfigureAsync(session.Client, session.Manifest).ConfigureAwait(false);
 
@@ -352,7 +333,6 @@ public abstract class PluginProtocolConformance
     [Fact]
     public async Task Unsubscribed_DeliveryWithoutASubscription_IsNotFound()
     {
-        Assert.SkipWhen(!FollowsPluginSideRules, PluginSideRulesPending);
         await using var session = await LaunchAsync().ConfigureAwait(false);
         await StartAsync(session).ConfigureAwait(false);
 
@@ -380,7 +360,6 @@ public abstract class PluginProtocolConformance
     [Fact]
     public async Task InvokeStream_EndsOnTheFirstFrame()
     {
-        Assert.SkipWhen(!FollowsPluginSideRules, PluginSideRulesPending);
         await using var session = await LaunchAsync().ConfigureAwait(false);
         await StartAsync(session).ConfigureAwait(false);
 
@@ -407,7 +386,6 @@ public abstract class PluginProtocolConformance
     [Fact]
     public async Task Configuration_NotAJsonObject_FailsThePlugin()
     {
-        Assert.SkipWhen(!FollowsPluginSideRules, PluginSideRulesPending);
         foreach (var configuration in new[] { "[]", """{"a":""" })
         {
             await using var session = await LaunchAsync().ConfigureAwait(false);
@@ -430,7 +408,6 @@ public abstract class PluginProtocolConformance
     [Fact]
     public async Task Stop_BeforeStart_AnswersAndExits()
     {
-        Assert.SkipWhen(!FollowsPluginSideRules, PluginSideRulesPending);
         await using var session = await LaunchAsync().ConfigureAwait(false);
 
         await StopAndExitAsync(session, 0, "right after the handshake").ConfigureAwait(false);

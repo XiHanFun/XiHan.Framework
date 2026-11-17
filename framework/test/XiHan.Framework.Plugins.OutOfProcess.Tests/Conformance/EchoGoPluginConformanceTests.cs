@@ -25,12 +25,6 @@ public sealed class EchoGoPluginConformanceTests : PluginProtocolConformance
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// <c>go.mod</c> 锁定的 framework-sdk-go 早于 ADR-0237：插件一侧的次序、就绪、投递与配置规则要等 SDK 发布实现它们的版本、示例升级之后才打开
-    /// </remarks>
-    protected override bool FollowsPluginSideRules => false;
-
-    /// <inheritdoc />
     protected override string ConfigurationJson => """{"greeting":"conformance"}""";
 
     /// <inheritdoc />

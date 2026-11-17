@@ -36,7 +36,7 @@ public sealed class EchoPluginConformanceTests : PluginProtocolConformance
 * `PluginProtocolConformance`：进程外插件套件
 * `WasmPluginConformance`：Wasm 插件套件，`TrapOperation` 指定故意陷阱的操作
 * `SampleRequests`、`ExcludedOperations`：为操作提供样例请求、排除故意崩溃的操作
-* `VerifiesSessionToken`、`FollowsPluginSideRules`：缺省为真，只在插件 SDK 还没有发布对应版本时临时关掉，相关用例随之跳过
+* `VerifiesSessionToken`：缺省为真，只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉，令牌用例随之跳过
 
 ## 更多文档
 

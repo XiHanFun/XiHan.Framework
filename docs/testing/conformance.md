@@ -94,7 +94,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 }
 ```
 
-可覆写的成员：`Timeout`（每次协议调用，缺省 15 秒，进程外）、`VerifiesSessionToken` 与 `FollowsPluginSideRules`（进程外，缺省为真；只在插件 SDK 还没有发布实现会话令牌或插件一侧规则的版本时临时关掉）、`ConfigurationJson`（`Configure` 下发的配置节，缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`TrapOperation`（Wasm，给出时才跑陷阱后重建用例）。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`：套件会故意触发陷阱，影子栈强制时整个测试进程 fail-fast（[Wasm 插件](/plugins/wasm)）。
+可覆写的成员：`Timeout`（每次协议调用，缺省 15 秒，进程外）、`VerifiesSessionToken`（进程外，缺省为真；只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉）、`ConfigurationJson`（`Configure` 下发的配置节，缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`TrapOperation`（Wasm，给出时才跑陷阱后重建用例）。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`：套件会故意触发陷阱，影子栈强制时整个测试进程 fail-fast（[Wasm 插件](/plugins/wasm)）。
 
 非 .NET 的插件用 Go 运行器，不需要 .NET 环境：
 
