@@ -4,6 +4,8 @@
     <RootNamespace>XiHan.Framework.ObjectStorage.FileSystem</RootNamespace>
     <Description>曦寒框架对象存储的文件系统默认实现</Description>
     <PackageTags>xihan;framework;objectstorage;filesystem;blob</PackageTags>
+    <!-- PosixRename 在 Windows 上以 POSIX 语义替换改名的 LibraryImport 生成代码需要 unsafe；源码本身不写 unsafe -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

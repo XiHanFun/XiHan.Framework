@@ -20,7 +20,7 @@ namespace XiHan.Framework.ObjectStorage.FileSystem;
 /// 文件系统对象存储
 /// </summary>
 /// <remarks>
-/// <c>&lt;root&gt;/&lt;container&gt;/data/&lt;key&gt;</c> 存内容，<c>&lt;root&gt;/&lt;container&gt;/meta/&lt;key&gt;.json</c> 存元数据（键的段按 <see cref="BlobPathEncoding"/> 编码，大小写不敏感的文件系统上仍区分大小写）。写入先落同目录的临时文件再原子替换，读取方要么看到旧对象要么看到完整的新对象；ETag 是内容的 SHA-256。配额在进程内计量：<see cref="InitializeAsync"/> 扫描目录得到已用量，之后每次写入与删除更新；多进程共享目录时只是近似。同时是健康项 <see cref="FileSystemObjectStorageFeature.HealthName"/> 的贡献者：已用量达到 <see cref="FileSystemObjectStorageOptions.MaxTotalBytes"/> 即 Degraded。范围读取打开内容文件后定位到起点、只交出该段；分片上传暂存在 <c>&lt;root&gt;/&lt;container&gt;/uploads/&lt;上传标识&gt;/</c>，完成时拼接成临时文件再原子替换（见 <see cref="FileSystemMultipartUploads"/>）
+/// <c>&lt;root&gt;/&lt;container&gt;/data/&lt;key&gt;</c> 存内容，<c>&lt;root&gt;/&lt;container&gt;/meta/&lt;key&gt;.json</c> 存元数据（键的段按 <see cref="BlobPathEncoding"/> 编码，大小写不敏感的文件系统上仍区分大小写）。写入先落同目录的临时文件再原子替换，读取方要么看到旧对象要么看到完整的新对象；正在读的对象照样能覆盖与删除（Windows 上要求卷支持 POSIX 语义的改名），读取方读完打开时的那一版，进程内的读取拿到的元数据总属于打开的内容（ADR-0241）；ETag 是内容的 SHA-256。配额在进程内计量：<see cref="InitializeAsync"/> 扫描目录得到已用量，之后每次写入与删除更新；多进程共享目录时只是近似。同时是健康项 <see cref="FileSystemObjectStorageFeature.HealthName"/> 的贡献者：已用量达到 <see cref="FileSystemObjectStorageOptions.MaxTotalBytes"/> 即 Degraded。范围读取打开内容文件后定位到起点、只交出该段；分片上传暂存在 <c>&lt;root&gt;/&lt;container&gt;/uploads/&lt;上传标识&gt;/</c>，完成时拼接成临时文件再原子替换（见 <see cref="FileSystemMultipartUploads"/>）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStore, IHealthContributor
@@ -77,7 +77,26 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// <summary>
     /// 保护配额计量的锁
     /// </summary>
+    /// <remarks>
+    /// 同时让每个对象的内容与元数据成对变更：提交在锁里换上两者，删除在锁里删掉两者（ADR-0239），并推进 <see cref="_changes"/>。读取平时不进锁，被并发的变更打断时才在锁里重读（ADR-0241）。锁里只有改名、删文件、量长度这几个元数据操作，以及重读时的打开文件与读不超过几 KiB 的元数据，复制内容都在锁外
+    /// </remarks>
     private readonly Lock _quota = new();
+
+    /// <summary>
+    /// 内容与元数据的变更代数
+    /// </summary>
+    /// <remarks>
+    /// 偶数表示进程内没有成对的变更在进行。提交与删除在配额锁里动内容与元数据之前、之后各加一；读取不进锁，前后读到同一个偶数就说明读的期间没有变更，拿到的元数据与打开的内容属于同一版，否则在锁里重读一次（ADR-0241）
+    /// </remarks>
+    private long _changes;
+
+    /// <summary>
+    /// 卷是否已知不支持 POSIX 语义的替换改名
+    /// </summary>
+    /// <remarks>
+    /// 只在 Windows 上置位，只在配额锁里写。第一次被卷拒绝后记下，此后直接用普通的替换改名，不再每次多两次系统调用（SMB 共享上是两次网络往返）；读取也一律进锁，不让进程内的读取打开着元数据挡住替换
+    /// </remarks>
+    private bool _withoutPosixRename;
 
     /// <summary>
     /// 已用字节
@@ -305,33 +324,46 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 打开内容
     /// </summary>
     /// <remarks>
-    /// 整对象，或定位到范围起点并只交出该段（起点不在对象内时返回 <see cref="ObjectStorageErrors.RangeNotSatisfiable"/>）
+    /// 整对象，或定位到范围起点并只交出该段（起点不在对象内时返回 <see cref="ObjectStorageErrors.RangeNotSatisfiable"/>）。先不进锁读元数据并打开内容，读的期间 <see cref="_changes"/> 变了就丢掉、在配额锁里重来，交出的元数据总属于打开的内容。内容由调用方在锁外读，读的期间同一个键照样能被覆盖或删除，读完的是打开时的那一版（ADR-0241）
     /// </remarks>
     private Result<BlobContent> Open(ContainerName container, BlobKey key, BlobRange? range)
     {
         EnsureInitialized();
         try
         {
-            var metadata = ReadMetadata(container, key);
-            if (!metadata.TryGetValue(out var found))
+            var before = Volatile.Read(ref _changes);
+            if (CanReadWithoutLock(before))
             {
-                return NotFound(container, key);
+                Result<BlobContent>? attempt = null;
+                try
+                {
+                    attempt = OpenCore(container, key, range);
+                }
+                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException && Volatile.Read(ref _changes) != before)
+                {
+                    // 读的期间有变更，异常可能就是它造成的（打开内容时它刚被删掉）：下面在锁里重来
+                }
+
+                if (attempt is { } opened)
+                {
+                    if (Volatile.Read(ref _changes) == before)
+                    {
+                        return opened;
+                    }
+
+                    // 读元数据与打开内容之间换上或删掉了一对：两者可能不是同一版，丢掉重来
+                    if (opened.TryGetValue(out var stale))
+                    {
+                        stale.Content.Dispose();
+                    }
+                }
             }
 
-            if (range is null)
+            // 提交与删除在这把锁里成对变更内容与元数据（ADR-0239），锁里重来的这一次不会再被打断
+            lock (_quota)
             {
-                var whole = new FileStream(DataPath(container, key), FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, bufferSize: 64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-                return Result.Success(new BlobContent(found, whole));
+                return OpenCore(container, key, range);
             }
-
-            if (!range.Resolve(found.Length).TryGetValue(out var resolved))
-            {
-                return Error.Validation(ObjectStorageErrors.RangeNotSatisfiable, ObjectStorageMessages.RangeNotSatisfiable, MessageArguments.Of(("offset", range.Offset), ("length", found.Length)));
-            }
-
-            var file = new FileStream(DataPath(container, key), FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, bufferSize: 64 * 1024, FileOptions.Asynchronous);
-            file.Seek(resolved.Offset, SeekOrigin.Begin);
-            return Result.Success(new BlobContent(found, new BoundedReadStream(file, resolved.Length), resolved));
         }
         catch (FileNotFoundException)
         {
@@ -350,6 +382,49 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             return Unavailable(exception);
         }
     }
+
+    /// <summary>
+    /// 读元数据并打开内容
+    /// </summary>
+    /// <remarks>
+    /// 不管锁：调用方核对 <see cref="_changes"/> 或持有配额锁
+    /// </remarks>
+    private Result<BlobContent> OpenCore(ContainerName container, BlobKey key, BlobRange? range)
+    {
+        if (!ReadMetadataCore(container, key).TryGetValue(out var found))
+        {
+            return NotFound(container, key);
+        }
+
+        BlobContentRange? resolved = null;
+        if (range is not null)
+        {
+            if (!range.Resolve(found.Length).TryGetValue(out var within))
+            {
+                return Error.Validation(ObjectStorageErrors.RangeNotSatisfiable, ObjectStorageMessages.RangeNotSatisfiable, MessageArguments.Of(("offset", range.Offset), ("length", found.Length)));
+            }
+
+            resolved = within;
+        }
+
+        // 容许删除共享：读的期间覆盖（Windows 上以 POSIX 语义改名）与删除照样进行，这个句柄读完的是打开时的那一版
+        var file = new FileStream(DataPath(container, key), FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, bufferSize: 64 * 1024, resolved is null ? FileOptions.Asynchronous | FileOptions.SequentialScan : FileOptions.Asynchronous);
+        if (resolved is null)
+        {
+            return Result.Success(new BlobContent(found, file));
+        }
+
+        file.Seek(resolved.Offset, SeekOrigin.Begin);
+        return Result.Success(new BlobContent(found, new BoundedReadStream(file, resolved.Length), resolved));
+    }
+
+    /// <summary>
+    /// 能否不进锁读
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="changes"/> 是读之前的变更代数，偶数才表示没有变更在进行。卷不支持 POSIX 语义的改名时一律进锁：不进锁的读取打开着元数据，会让进程内的替换以拒绝访问失败
+    /// </remarks>
+    private bool CanReadWithoutLock(long changes) => (changes & 1) == 0 && !Volatile.Read(ref _withoutPosixRename);
 
     /// <inheritdoc />
     public ValueTask<Result<BlobMetadata>> HeadAsync(ContainerName container, BlobKey key, CancellationToken cancellationToken)
@@ -524,7 +599,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 提交写好的临时内容文件
     /// </summary>
     /// <remarks>
-    /// 调用方已为 <paramref name="length"/> 预留了额度，本方法接手：成功转成用量，失败释放。元数据先写到同目录的临时文件，再把内容与元数据依次原子替换上去。写入与分片上传的完成共用。两次替换与记账在配额锁里一并完成，按此刻磁盘上旧内容的实际长度计算差值，并发覆盖与删除同一个键时用量与磁盘一致（ADR-0183）；后换上内容的写入方也后换上元数据，留下的元数据总属于盘上的内容，两个写入方的元数据改名也不会同时替换同一个目标（ADR-0239）。<paramref name="overwrite"/> 为 <see langword="false"/> 时由文件系统原子判定谁先占住内容路径：Windows 上不替换地改名，其他平台先以独占创建的空文件占位、再把内容原子替换上去；内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不换元数据、不计用量（ADR-0168、ADR-0172）
+    /// 调用方已为 <paramref name="length"/> 预留了额度，本方法接手：成功转成用量，失败释放。元数据先写到同目录的临时文件，再把内容与元数据依次原子替换上去。写入与分片上传的完成共用。两次替换与记账在配额锁里一并完成，按此刻磁盘上旧内容的实际长度计算差值，并发覆盖与删除同一个键时用量与磁盘一致（ADR-0183）；后换上内容的写入方也后换上元数据，留下的元数据总属于盘上的内容，两个写入方的元数据改名也不会同时替换同一个目标（ADR-0239）。替换经 <see cref="Replace"/>，读取方正打开着旧的内容或元数据时照样换上（ADR-0241）。<paramref name="overwrite"/> 为 <see langword="false"/> 时由文件系统原子判定谁先占住内容路径：Windows 上不替换地改名，其他平台先以独占创建的空文件占位、再把内容原子替换上去；内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不换元数据、不计用量（ADR-0168、ADR-0172）
     /// </remarks>
     internal async ValueTask<Result<BlobMetadata>> CommitAsync(ContainerName container, BlobKey key, string temporary, long length, string etag, string contentType, IReadOnlyDictionary<string, string> metadata, bool overwrite, CancellationToken cancellationToken)
     {
@@ -548,18 +623,27 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             await File.WriteAllBytesAsync(metaTemporary, JsonSerializer.SerializeToUtf8Bytes(document, FileSystemJsonContext.Default.BlobMetadataDocument), cancellationToken).ConfigureAwait(false);
             lock (_quota)
             {
-                // 内容先换：不覆盖时要由它原子判定谁占到位，没占到的不能动元数据
-                var exists = ReplaceContent(container, key, temporary, dataPath, length, overwrite);
-                settled = true;
-                if (exists is not null)
+                // 动内容与元数据之前、之后各推进一次代数：这期间不进锁的读取会发现它变了，改在锁里重读（ADR-0241）
+                Interlocked.Increment(ref _changes);
+                try
                 {
-                    _reservedBytes -= length;
-                    return exists;
-                }
+                    // 内容先换：不覆盖时要由它原子判定谁占到位，没占到的不能动元数据
+                    var exists = ReplaceContent(container, key, temporary, dataPath, length, overwrite);
+                    settled = true;
+                    if (exists is not null)
+                    {
+                        _reservedBytes -= length;
+                        return exists;
+                    }
 
-                // 元数据紧跟着在同一个临界区里换：锁外换时，先换上内容的写入方可能后换元数据，留下另一个写入方的长度与 ETag；
-                // 两个写入方同时替换同一个元数据文件，Windows 上还会有一个以拒绝访问失败
-                File.Move(metaTemporary, metaPath, overwrite: true);
+                    // 元数据紧跟着在同一个临界区里换：锁外换时，先换上内容的写入方可能后换元数据，留下另一个写入方的长度与 ETag；
+                    // 两个写入方同时替换同一个元数据文件，Windows 上还会有一个以拒绝访问失败
+                    Replace(metaTemporary, metaPath);
+                }
+                finally
+                {
+                    Interlocked.Increment(ref _changes);
+                }
             }
         }
         finally
@@ -591,7 +675,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         var previous = File.Exists(dataPath) ? new FileInfo(dataPath).Length : 0;
         if (overwrite)
         {
-            File.Move(temporary, dataPath, overwrite: true);
+            Replace(temporary, dataPath);
         }
         else if (OperatingSystem.IsWindows())
         {
@@ -629,6 +713,29 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         _reservedBytes -= length;
         _usedBytes += length - previous;
         return null;
+    }
+
+    /// <summary>
+    /// 把 <paramref name="source"/> 改名为 <paramref name="destination"/>，目标存在就原子替换
+    /// </summary>
+    /// <remarks>
+    /// 调用方持有配额锁。读取方打开内容与元数据时都容许删除共享：Unix 的 <c>rename(2)</c> 本来就与目标是否被打开无关；Windows 上以 POSIX 语义改名（<see cref="PosixRename"/>），目标正被打开时照样换上，已打开它的读取方读完旧内容。卷不支持这种改名时（SMB 共享、FAT 等）记一次警告，此后用普通的替换改名，目标正被打开时以拒绝访问失败，与以前相同（ADR-0241）
+    /// </remarks>
+    private void Replace(string source, string destination)
+    {
+        if (OperatingSystem.IsWindows() && !_withoutPosixRename)
+        {
+            if (PosixRename.TryReplace(source, destination))
+            {
+                return;
+            }
+
+            // 卷拒绝的是这种改名本身，什么都没动：记下来，这次与以后都退回普通的替换改名
+            Volatile.Write(ref _withoutPosixRename, true);
+            LogPosixRenameUnsupported(_logger, _options.RootPath);
+        }
+
+        File.Move(source, destination, overwrite: true);
     }
 
     /// <summary>
@@ -693,19 +800,29 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             // 量长度、删除与记账在配额锁里一并完成：并发的覆盖提交要么在前（量到它的长度），要么在后（看到文件已删）
             lock (_quota)
             {
-                existed = File.Exists(dataPath);
-                if (existed)
+                // 与提交一样在动内容与元数据前后推进代数，不进锁的读取据此发现两步之间被删（ADR-0241）
+                Interlocked.Increment(ref _changes);
+                try
                 {
-                    var length = new FileInfo(dataPath).Length;
-                    File.Delete(dataPath);
-                    _usedBytes = Math.Max(0, _usedBytes - length);
-                }
+                    existed = File.Exists(dataPath);
+                    if (existed)
+                    {
+                        // 读取方正打开着它也能删（读取都容许删除共享），读取方读完打开时的那一版
+                        var length = new FileInfo(dataPath).Length;
+                        File.Delete(dataPath);
+                        _usedBytes = Math.Max(0, _usedBytes - length);
+                    }
 
-                // 元数据在同一个临界区里删：锁外删时，并发的覆盖能在两步之间换上内容与元数据，
-                // 这里再删掉它的元数据，留下没有元数据的新内容（ADR-0239）
-                if (File.Exists(metaPath))
+                    // 元数据在同一个临界区里删：锁外删时，并发的覆盖能在两步之间换上内容与元数据，
+                    // 这里再删掉它的元数据，留下没有元数据的新内容（ADR-0239）
+                    if (File.Exists(metaPath))
+                    {
+                        File.Delete(metaPath);
+                    }
+                }
+                finally
                 {
-                    File.Delete(metaPath);
+                    Interlocked.Increment(ref _changes);
                 }
             }
 
@@ -725,42 +842,84 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 读元数据文件
     /// </summary>
     /// <remarks>
-    /// 内容文件在而元数据缺失（外部写入）时按文件信息补一份
+    /// 先不进锁读，读的期间 <see cref="_changes"/> 变了就在配额锁里重读，读到的内容存在与否和元数据属于同一刻：以前不核对，先看内容在不在、再打开元数据的两步之间被删的对象以 <see cref="FileNotFoundException"/> 落成 <see cref="ObjectStorageErrors.StoreUnavailable"/>，列举整页失败（ADR-0241）
     /// </remarks>
     internal Maybe<BlobMetadata> ReadMetadata(ContainerName container, BlobKey key)
     {
-        var dataPath = DataPath(container, key);
-        if (!File.Exists(dataPath))
+        var before = Volatile.Read(ref _changes);
+        if (CanReadWithoutLock(before))
         {
+            try
+            {
+                var read = ReadMetadataCore(container, key);
+                if (Volatile.Read(ref _changes) == before)
+                {
+                    return read;
+                }
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException && Volatile.Read(ref _changes) != before)
+            {
+                // 读的期间有变更，异常可能就是它造成的：下面在锁里重读
+            }
+        }
+
+        // 提交与删除在这把锁里成对变更内容与元数据（ADR-0239），锁里重读的这一次不会再被打断
+        lock (_quota)
+        {
+            return ReadMetadataCore(container, key);
+        }
+    }
+
+    /// <summary>
+    /// 读元数据文件
+    /// </summary>
+    /// <remarks>
+    /// 不管锁：调用方核对 <see cref="_changes"/> 或持有配额锁。元数据不超过几 KiB，读完就关。内容文件在而元数据缺失（外部写入）时按文件信息补一份
+    /// </remarks>
+    private Maybe<BlobMetadata> ReadMetadataCore(ContainerName container, BlobKey key)
+    {
+        var dataPath = DataPath(container, key);
+        try
+        {
+            if (!File.Exists(dataPath))
+            {
+                return default;
+            }
+
+            var metaPath = MetaPath(container, key);
+            if (File.Exists(metaPath))
+            {
+                BlobMetadataDocument? document;
+                // 容许删除共享：改名刚换上元数据、还没关掉句柄时那个句柄带着删除权限，不容许删除共享的打开以共享冲突失败（ADR-0239）；
+                // 读取不进锁，提交正好替换这个元数据文件时，这个句柄也不挡 POSIX 语义的改名
+                using (var file = new FileStream(metaPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
+                {
+                    document = JsonSerializer.Deserialize(file, FileSystemJsonContext.Default.BlobMetadataDocument);
+                }
+
+                if (document is not null)
+                {
+                    return ToMetadata(key, document);
+                }
+            }
+
+            var info = new FileInfo(dataPath);
+            return new BlobMetadata
+            {
+                Key = key,
+                Length = info.Length,
+                ContentType = BlobPutOptions.DefaultContentType,
+                ETag = info.LastWriteTimeUtc.Ticks.ToString("x", System.Globalization.CultureInfo.InvariantCulture),
+                LastModified = new DateTimeOffset(info.LastWriteTimeUtc),
+                Metadata = new Dictionary<string, string>(StringComparer.Ordinal),
+            };
+        }
+        catch (Exception exception) when (exception is FileNotFoundException or DirectoryNotFoundException)
+        {
+            // 两步之间被删掉了（先删内容、后删元数据）：进程内的删除由调用方按代数发现并在锁里重读，
+            // 共享目录的另一个进程删的无从核对，按不存在
             return default;
         }
-
-        var metaPath = MetaPath(container, key);
-        if (File.Exists(metaPath))
-        {
-            BlobMetadataDocument? document;
-            // 容许删除共享：改名刚换上元数据、还没关掉句柄时那个句柄带着删除权限，不容许删除共享的打开以共享冲突失败（ADR-0239）
-            using (var file = new FileStream(metaPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
-            {
-                document = JsonSerializer.Deserialize(file, FileSystemJsonContext.Default.BlobMetadataDocument);
-            }
-
-            if (document is not null)
-            {
-                return ToMetadata(key, document);
-            }
-        }
-
-        var info = new FileInfo(dataPath);
-        return new BlobMetadata
-        {
-            Key = key,
-            Length = info.Length,
-            ContentType = BlobPutOptions.DefaultContentType,
-            ETag = info.LastWriteTimeUtc.Ticks.ToString("x", System.Globalization.CultureInfo.InvariantCulture),
-            LastModified = new DateTimeOffset(info.LastWriteTimeUtc),
-            Metadata = new Dictionary<string, string>(StringComparer.Ordinal),
-        };
     }
 
     /// <summary>
@@ -969,4 +1128,13 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "A file system operation of the blob store failed.")]
     private static partial void LogIoFailed(ILogger logger, Exception exception);
+
+    /// <summary>
+    /// 卷不支持 POSIX 语义的替换改名
+    /// </summary>
+    /// <remarks>
+    /// 每个存储只记一次：此后正被读取的对象覆盖时以拒绝访问失败
+    /// </remarks>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The volume under '{RootPath}' does not support replacing a file with POSIX semantics; overwriting a blob while it is being read fails until the reader closes it.")]
+    private static partial void LogPosixRenameUnsupported(ILogger logger, string rootPath);
 }
