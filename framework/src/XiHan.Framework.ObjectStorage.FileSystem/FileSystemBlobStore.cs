@@ -173,7 +173,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 建根目录并扫描已用量，清掉过期（早于 <see cref="FileSystemObjectStorageOptions.MultipartExpiry"/>）的分片上传
     /// </summary>
     /// <remarks>
-    /// 可重复调用，每次重新扫描。已用量含对象内容与未完成上传暂存的分片，并数出未完成的上传（ADR-0184）
+    /// 可重复调用，每次重新扫描。已用量含对象内容与未完成上传暂存的分片，并数出未完成的上传（ADR-0184）。内容、元数据与上传目录里上次崩溃留下的临时文件一并清掉（ADR-0212、ADR-0240）
     /// </remarks>
     internal Task InitializeAsync(CancellationToken cancellationToken)
     {
@@ -186,6 +186,8 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             var (staged, open) = FileSystemMultipartUploads.Scan(container, cancellationToken);
             total += staged;
             uploads += open;
+            // 在判断内容目录之前清：元数据目录的清理不取决于内容目录在不在
+            RemoveTemporaryMetadata(Path.Combine(container, MetaDirectory), cancellationToken);
             var data = Path.Combine(container, DataDirectory);
             if (!Directory.Exists(data))
             {
@@ -213,6 +215,29 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
 
         _multipart.ResetOpenCount(uploads);
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 清掉元数据目录里上次崩溃留下的临时文件
+    /// </summary>
+    /// <remarks>
+    /// 元数据的临时文件在锁外写好、进配额锁才换上（ADR-0239），进程在两步之间崩溃就留在这里：不计用量、不被列举，不清会无界累积。元数据文件名都是键的编码加 <c>.json</c>，不含 <c>~</c>，也不会以旧版临时文件的十六进制后缀结尾，两种临时文件都直接删，不必像内容目录那样再看有没有元数据文件（ADR-0240）
+    /// </remarks>
+    private static void RemoveTemporaryMetadata(string meta, CancellationToken cancellationToken)
+    {
+        if (!Directory.Exists(meta))
+        {
+            return;
+        }
+
+        foreach (var file in Directory.EnumerateFiles(meta, "*", SearchOption.AllDirectories))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsTemporary(file) || IsLegacyTemporary(file))
+            {
+                File.Delete(file);
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -631,7 +656,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 文件名是不是旧版临时文件的样子
     /// </summary>
     /// <remarks>
-    /// 以 <c>.xihan-tmp-</c> 加 32 位小写十六进制结尾。键也能写成这个样子，调用方还要看有没有元数据文件
+    /// 以 <c>.xihan-tmp-</c> 加 32 位小写十六进制结尾。键也能写成这个样子，内容目录里调用方还要看有没有元数据文件；元数据文件以 <c>.json</c> 结尾，元数据目录里不必再看（ADR-0240）
     /// </remarks>
     internal static bool IsLegacyTemporary(string path)
     {

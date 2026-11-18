@@ -77,6 +77,39 @@ public sealed class FileSystemTemporaryFileTests : IDisposable
         Assert.Equal(["x/" + lookalike], await KeysAsync(second, container));
     }
 
+    [Fact]
+    public async Task Initialize_CleansCurrentAndLegacyTemporaryMetadataFiles_ButKeepsTheMetadataOfObjects()
+    {
+        var container = new ContainerName("ctr");
+        var text = new BlobPutOptions { ContentType = "text/plain" };
+        var first = await CreateAsync(_root.Path);
+        // 键 x/y 的旧版元数据临时文件名恰好是另一个对象的内容文件名；那个对象自己的元数据文件仍以 .json 结尾
+        var suffix = Guid.NewGuid().ToString("N");
+        var lookalike = "x/y.json.xihan-tmp-" + suffix;
+        Assert.True((await first.PutAsync(container, new BlobKey("x/y"), Bytes("12345"), text, CancellationToken.None)).IsSuccess);
+        Assert.True((await first.PutAsync(container, new BlobKey(lookalike), Bytes("67"), text, CancellationToken.None)).IsSuccess);
+
+        // 进程在写好元数据临时文件之后、换上之前崩溃留下的（ADR-0239）
+        var meta = Path.Combine(_root.Path, "ctr", "meta", "x");
+        var current = Path.Combine(meta, "y.json" + FileSystemBlobStore.TemporaryMarker + Guid.NewGuid().ToString("N"));
+        var legacy = Path.Combine(meta, "y.json.xihan-tmp-" + suffix);
+        await File.WriteAllBytesAsync(current, new byte[100]);
+        await File.WriteAllBytesAsync(legacy, new byte[100]);
+
+        var second = await CreateAsync(_root.Path);
+        Assert.False(File.Exists(current));
+        Assert.False(File.Exists(legacy));
+        Assert.True(File.Exists(Path.Combine(meta, "y.json")));
+        Assert.True(File.Exists(Path.Combine(meta, "y.json.xihan-tmp-" + suffix + ".json")));
+        Assert.Equal(7, second.UsedBytes);
+        Assert.Equal(["x/y", lookalike], await KeysAsync(second, container));
+        // 内容类型是写入时给的，不是元数据缺失时按文件信息补出的缺省值
+        foreach (var key in new[] { "x/y", lookalike })
+        {
+            Assert.Equal("text/plain", (await second.HeadAsync(container, new BlobKey(key), CancellationToken.None)).ValueOrThrow().ContentType);
+        }
+    }
+
     /// <summary>
     /// 在给定根目录上建出并初始化存储
     /// </summary>
