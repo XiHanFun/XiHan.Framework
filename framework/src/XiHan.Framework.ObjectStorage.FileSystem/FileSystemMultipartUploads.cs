@@ -150,13 +150,12 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
                     while ((read = await content.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
                     {
                         length += read;
-                        // 暂存的分片同样占盘：与对象写入共用总配额，逐段预留
-                        if (length > options.MaxBlobBytes || !store.TryReserve(read))
+                        // 暂存的分片同样占盘：与对象写入共用总配额，逐段预留；预留不到时已预留的部分当场退还（ADR-0238）
+                        if (length > options.MaxBlobBytes || !store.TryReserve(read, ref reserved))
                         {
                             return store.QuotaExceeded(length);
                         }
 
-                        reserved += read;
                         hash.AppendData(buffer, 0, read);
                         await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
                     }
@@ -281,12 +280,10 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
             }
 
             // 拼接期间分片与拼好的临时文件同时在盘上：为拼出的全长预留，提交时转成用量（ADR-0183）
-            if (total > options.MaxBlobBytes || !store.TryReserve(total))
+            if (total > options.MaxBlobBytes || !store.TryReserve(total, ref reserved))
             {
                 return store.QuotaExceeded(total);
             }
-
-            reserved = total;
 
             temporary = store.TemporaryDataPath(upload.Container, key);
             string etag;

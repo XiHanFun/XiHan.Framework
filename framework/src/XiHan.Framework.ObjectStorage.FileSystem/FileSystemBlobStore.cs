@@ -91,7 +91,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 正在写入、尚未提交的字节
     /// </summary>
     /// <remarks>
-    /// 写入方边复制边预留，提交时转成已用量，失败时释放；总配额按已用量加预留量判定，并发写入合计也超不过它（ADR-0183）
+    /// 写入方边复制边预留，提交时转成已用量，失败时释放；总配额按已用量加预留量判定，并发写入合计也超不过它（ADR-0183）。被总配额拒绝的写入方在判定的同一把锁里退还已预留的部分（ADR-0238）
     /// </remarks>
     private long _reservedBytes;
 
@@ -426,7 +426,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 写一个对象
     /// </summary>
     /// <remarks>
-    /// 流式复制到临时文件并计算 SHA-256、逐段预留额度、原子替换（不覆盖时原子占位）、写元数据、把预留转成用量。覆盖时新旧内容同时在盘上，预留按新内容的全长，旧对象的字节到提交时才释放
+    /// 流式复制到临时文件并计算 SHA-256、逐段预留额度、原子替换（不覆盖时原子占位）、写元数据、把预留转成用量。覆盖时新旧内容同时在盘上，预留按新内容的全长，旧对象的字节到提交时才释放。总配额预留不到即停，已预留的部分在判定时一并退还，并发写入不会同时被拒到一个都写不成（ADR-0238）
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
@@ -456,13 +456,12 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
                     while ((read = await upload.Content.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
                     {
                         length += read;
-                        // 单对象上限与总配额在复制过程中逐段检查、逐段预留，超限立即停止，不把超限的内容留在磁盘上
-                        if (length > _options.MaxBlobBytes || !TryReserve(read))
+                        // 单对象上限与总配额在复制过程中逐段检查、逐段预留，超限立即停止，不把超限的内容留在磁盘上；
+                        // 总配额预留不到时已预留的部分由 TryReserve 当场退还，超过单对象上限的由 finally 释放
+                        if (length > _options.MaxBlobBytes || !TryReserve(read, ref reserved))
                         {
                             return QuotaExceeded(length);
                         }
-
-                        reserved += read;
 
                         hash.AppendData(buffer, 0, read);
                         await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
@@ -734,18 +733,24 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 为将要写入的 <paramref name="bytes"/> 字节预留额度
     /// </summary>
     /// <remarks>
-    /// 已用量加全部预留量仍在总配额内才预留；返回是否预留成功
+    /// <paramref name="held"/> 是调用方这次写入已经预留的字节。已用量加全部预留量仍在总配额内才预留，并计入 <paramref name="held"/>；预留不到时在同一把锁里退还 <paramref name="held"/> 并清零，调用方不必再释放。返回是否预留成功（ADR-0238）
     /// </remarks>
-    internal bool TryReserve(long bytes)
+    internal bool TryReserve(long bytes, ref long held)
     {
         lock (_quota)
         {
             if (Math.Max(_usedBytes, 0) + _reservedBytes + bytes > _options.MaxTotalBytes)
             {
+                // 被拒的写入方不会再用这份预留，判定的同一个临界区里就退还：留到关掉临时文件之后再退，
+                // 同时被拒的几个写入方互相看到对方还没退的额度，单独放得下的那个也一起被拒，谁都写不成；
+                // 当场退还之后，争用总配额的写入方只剩一个时它的下一段总能预留到
+                _reservedBytes -= held;
+                held = 0;
                 return false;
             }
 
             _reservedBytes += bytes;
+            held += bytes;
             return true;
         }
     }

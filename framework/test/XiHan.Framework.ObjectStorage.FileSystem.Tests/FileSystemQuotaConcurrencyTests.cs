@@ -10,10 +10,10 @@ using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 并发写入时的配额（ADR-0183）
+/// 并发写入时的配额（ADR-0183、ADR-0238）
 /// </summary>
 /// <remarks>
-/// 写入边复制边在锁内预留额度，提交时按磁盘上实际的旧长度计算差值：并发写入不能合计超过总配额，并发覆盖与删除不会少记用量。内容流在交完全部字节之后挂在闸门上，所有写入方都复制完、谁也没提交，由用例放行，次序不靠运气
+/// 写入边复制边在锁内预留额度，被总配额拒绝时在同一把锁里退还已预留的部分，提交时按磁盘上实际的旧长度计算差值：并发写入不能合计超过总配额，也不会同时被拒到一个都写不成，并发覆盖与删除不会少记用量。内容流在交完全部字节之后挂在闸门上，等每个写入方要么停在提交之前、要么已被拒，再由用例放行，次序不靠运气
 /// </remarks>
 public sealed class FileSystemQuotaConcurrencyTests : IDisposable
 {
@@ -48,6 +48,34 @@ public sealed class FileSystemQuotaConcurrencyTests : IDisposable
         Assert.All(results.Where(static r => r.IsFailure), static r => Assert.Equal(ObjectStorageErrors.QuotaExceeded, r.Error!.Code));
         Assert.Equal(written, store.UsedBytes);
         Assert.Equal(written, DiskBytes());
+    }
+
+    [Fact]
+    public async Task ConcurrentWritesThatRunOutOfQuotaTogether_LetOneOfThemFinish()
+    {
+        // 8 个写入各预留两段（128 KiB）后会合，合起来正好占满 1 MiB，再同时继续：下一段谁都预留不到；
+        // 修之前预留不到的写入方关掉临时文件之后才在 finally 里退还预留，同时被拒的几个互相看到对方还没退的额度，一个都写不成
+        // （负载下的 ConcurrentWrites_CannotTogetherExceedTheTotalQuota 也因此偶发失败）
+        const long quota = 1024 * 1024;
+        const int each = 768 * 1024;
+        var store = Store(quota);
+        for (var round = 0; round < LockstepRounds; round++)
+        {
+            var lockstep = new Lockstep(participants: 8, stallAt: 2 * Lockstep.Chunk);
+            var keys = Enumerable.Range(0, 8).Select(i => new BlobKey($"r{round}-k{i}")).ToList();
+
+            var results = await Task.WhenAll(keys.Select(key => store.PutAsync(_container, key, lockstep.Stream(each), BlobPutOptions.Default, CancellationToken.None).AsTask()));
+
+            var written = results.Where(static r => r.IsSuccess).Sum(static r => r.ValueOrThrow().Length);
+            Assert.InRange(written, each, quota);
+            Assert.All(results.Where(static r => r.IsFailure), static r => Assert.Equal(ObjectStorageErrors.QuotaExceeded, r.Error!.Code));
+            Assert.Equal(written, store.UsedBytes);
+            Assert.Equal(written, DiskBytes());
+
+            // 下一轮从空的容器开始
+            Assert.All(await store.DeleteAsync(_container, keys, CancellationToken.None), static r => r.ValueOrThrow());
+            Assert.Equal(0, store.UsedBytes);
+        }
     }
 
     [Fact]
@@ -118,6 +146,130 @@ public sealed class FileSystemQuotaConcurrencyTests : IDisposable
     {
         var data = Path.Combine(_root.Path, _container.Value, "data");
         return Directory.Exists(data) ? Directory.EnumerateFiles(data, "*", SearchOption.AllDirectories).Sum(static f => new FileInfo(f).Length) : 0;
+    }
+
+    /// <summary>
+    /// 会合用例重复的轮数
+    /// </summary>
+    /// <remarks>
+    /// 修之前的缺陷要几个写入方恰好同时被拒才出现，单轮不一定碰上，多跑几轮把它稳定地暴露出来；修之后每一轮都确定通过
+    /// </remarks>
+    private const int LockstepRounds = 5;
+
+    /// <summary>
+    /// 一组内容流共用的会合点
+    /// </summary>
+    /// <remarks>
+    /// 每个流交出 <c>stallAt</c> 个字节后停下，全部到齐才一起交出下一段，让各写入方的下一次预留几乎同时发生
+    /// </remarks>
+    private sealed class Lockstep(int participants, int stallAt)
+    {
+        /// <summary>
+        /// 每次读取至多交出的字节数，与存储复制时的缓冲区一样大
+        /// </summary>
+        public const int Chunk = 64 * 1024;
+
+        /// <summary>
+        /// 全部到齐
+        /// </summary>
+        private readonly TaskCompletionSource _together = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>
+        /// 已到会合点的流数
+        /// </summary>
+        private int _arrived;
+
+        /// <summary>
+        /// 会合点：每个流交出这么多字节后停下
+        /// </summary>
+        private int Stall => stallAt;
+
+        /// <summary>
+        /// 给出 <paramref name="length"/> 个字节、中途在会合点停一次的流
+        /// </summary>
+        public Stream Stream(int length) => new LockstepStream(this, length);
+
+        /// <summary>
+        /// 到会合点：最后一个到的放行全部
+        /// </summary>
+        private Task ArriveAsync()
+        {
+            if (Interlocked.Increment(ref _arrived) == participants)
+            {
+                _together.TrySetResult();
+            }
+
+            return _together.Task;
+        }
+
+        /// <summary>
+        /// 中途在会合点停一次的只读流
+        /// </summary>
+        private sealed class LockstepStream(Lockstep lockstep, int length) : System.IO.Stream
+        {
+            /// <summary>
+            /// 已交出的字节数
+            /// </summary>
+            private int _served;
+
+            /// <summary>
+            /// 是否已在会合点停过
+            /// </summary>
+            private bool _arrived;
+
+            /// <inheritdoc />
+            public override bool CanRead => true;
+
+            /// <inheritdoc />
+            public override bool CanSeek => false;
+
+            /// <inheritdoc />
+            public override bool CanWrite => false;
+
+            /// <inheritdoc />
+            public override long Length => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+            /// <inheritdoc />
+            public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                if (_served == lockstep.Stall && !_arrived)
+                {
+                    _arrived = true;
+                    await lockstep.ArriveAsync().WaitAsync(cancellationToken);
+                }
+
+                // 不越过会合点：之前的每次读取都在它之前结束，停下时已交出的正好是 stallAt 个字节
+                var end = _served < lockstep.Stall ? lockstep.Stall : length;
+                var take = Math.Min(Math.Min(buffer.Length, Chunk), end - _served);
+                buffer.Span[..take].Clear();
+                _served += take;
+                return take;
+            }
+
+            /// <inheritdoc />
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+                => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+            /// <inheritdoc />
+            public override void Flush()
+            {
+            }
+
+            /// <inheritdoc />
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
     }
 
     /// <summary>
