@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Security.Cryptography;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.ObjectStorage.Abstractions;
@@ -10,10 +11,10 @@ using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
 /// <summary>
-/// 并发写入时的配额（ADR-0183、ADR-0238）
+/// 并发写入时的配额与元数据（ADR-0183、ADR-0238、ADR-0239）
 /// </summary>
 /// <remarks>
-/// 写入边复制边在锁内预留额度，被总配额拒绝时在同一把锁里退还已预留的部分，提交时按磁盘上实际的旧长度计算差值：并发写入不能合计超过总配额，也不会同时被拒到一个都写不成，并发覆盖与删除不会少记用量。内容流在交完全部字节之后挂在闸门上，等每个写入方要么停在提交之前、要么已被拒，再由用例放行，次序不靠运气
+/// 写入边复制边在锁内预留额度，被总配额拒绝时在同一把锁里退还已预留的部分，提交时按磁盘上实际的旧长度计算差值：并发写入不能合计超过总配额，也不会同时被拒到一个都写不成，并发覆盖与删除不会少记用量。内容与元数据在同一个临界区里换上，并发覆盖同一个键留下的元数据属于盘上的内容。内容流在交完全部字节之后挂在闸门上，等每个写入方要么停在提交之前、要么已被拒，再由用例放行，次序不靠运气
 /// </remarks>
 public sealed class FileSystemQuotaConcurrencyTests : IDisposable
 {
@@ -97,6 +98,56 @@ public sealed class FileSystemQuotaConcurrencyTests : IDisposable
         // 修之前两个覆盖都按开始时读到的旧长度 512 KiB 扣减，用量记成负数，之后的写入不受配额约束
         Assert.Equal(100 * 1024, store.UsedBytes);
         Assert.Equal(100 * 1024, DiskBytes());
+    }
+
+    [Fact]
+    public async Task ConcurrentOverwritesOfOneKey_KeepTheMetadataOfTheContentOnDisk()
+    {
+        // 后换上内容的写入方也要后换上元数据。修之前元数据在配额锁外改名：A 先换上内容、停在取修改时间的那一下，
+        // B 随后换上内容并写完元数据，A 再写，留下 B 的内容与 A 的长度、ETag；
+        // 负载下两个元数据改名同时替换同一个目标，Windows 还会以拒绝访问让其中一个失败（ADR-0239）
+        using var clock = new PausingClock();
+        var store = new FileSystemBlobStore(new FileSystemObjectStorageOptions { RootPath = _root.Path, MaxTotalBytes = 1L << 30, MaxBlobBytes = 1L << 30 }, clock, NullLoggerFactory.Instance);
+        var key = new BlobKey("contested");
+        (await store.PutAsync(_container, key, new byte[512 * 1024], BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+        var first = new Gate();
+        var second = new Gate();
+        var a = store.PutAsync(_container, key, first.Stream(100 * 1024), BlobPutOptions.Default, CancellationToken.None).AsTask();
+        var b = store.PutAsync(_container, key, second.Stream(200 * 1024), BlobPutOptions.Default, CancellationToken.None).AsTask();
+        await first.WaitUntilSettledAsync<Primitives.Result<BlobMetadata>>([a]);
+        await second.WaitUntilSettledAsync<Primitives.Result<BlobMetadata>>([b]);
+
+        // 先放行 A，等它停在提交途中取修改时间的那一下，再放行 B、等 B 写完，最后让 A 继续
+        clock.PauseNextRead();
+        first.Open();
+        try
+        {
+            await clock.WaitUntilPausedAsync(a);
+            second.Open();
+            await Task.WhenAny(b, Task.Delay(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            clock.Resume();
+        }
+
+        var results = await Task.WhenAll(a, b);
+
+        Assert.All(results, static r => Assert.True(r.IsSuccess, r.Error?.ToString()));
+        var head = (await store.HeadAsync(_container, key, CancellationToken.None)).ValueOrThrow();
+        var content = (await store.GetAsync(_container, key, CancellationToken.None)).ValueOrThrow();
+        byte[] bytes;
+        await using (content)
+        {
+            using var copy = new MemoryStream();
+            await content.Content.CopyToAsync(copy, TestContext.Current.CancellationToken);
+            bytes = copy.ToArray();
+        }
+
+        Assert.Equal(bytes.Length, head.Length);
+        Assert.Equal(Convert.ToHexStringLower(SHA256.HashData(bytes)), head.ETag);
+        Assert.Equal(bytes.Length, store.UsedBytes);
+        Assert.Equal(bytes.Length, DiskBytes());
     }
 
     [Fact]
@@ -270,6 +321,81 @@ public sealed class FileSystemQuotaConcurrencyTests : IDisposable
             /// <inheritdoc />
             public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
+    }
+
+    /// <summary>
+    /// 能让下一次读数停住的时钟
+    /// </summary>
+    /// <remarks>
+    /// 存储提交时读它取元数据的修改时间：用例借此让一个写入方停在提交途中，再让另一个写入方走完，次序不靠运气
+    /// </remarks>
+    private sealed class PausingClock : TimeProvider, IDisposable
+    {
+        /// <summary>
+        /// 固定的读数
+        /// </summary>
+        private static readonly DateTimeOffset _now = new(2026, 11, 18, 8, 0, 0, TimeSpan.Zero);
+
+        /// <summary>
+        /// 停住的读数何时继续
+        /// </summary>
+        private readonly ManualResetEventSlim _resume = new(initialState: true);
+
+        /// <summary>
+        /// 有读数停住了
+        /// </summary>
+        private readonly TaskCompletionSource _paused = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>
+        /// 下一次读数是否要停住（1 为是）
+        /// </summary>
+        private int _armed;
+
+        /// <summary>
+        /// 让下一次读数停住，直到 <see cref="Resume"/>
+        /// </summary>
+        public void PauseNextRead()
+        {
+            _resume.Reset();
+            Volatile.Write(ref _armed, 1);
+        }
+
+        /// <summary>
+        /// 等有读数停住
+        /// </summary>
+        /// <remarks>
+        /// <paramref name="reader"/> 先结束（不再读时钟）也不再等，断言失败
+        /// </remarks>
+        public async Task WaitUntilPausedAsync(Task reader)
+        {
+            var settled = await Task.WhenAny(_paused.Task, reader).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Same(_paused.Task, settled);
+        }
+
+        /// <summary>
+        /// 让停住的读数继续，之后的读数不再停
+        /// </summary>
+        public void Resume()
+        {
+            Volatile.Write(ref _armed, 0);
+            _resume.Set();
+        }
+
+        /// <inheritdoc />
+        public override DateTimeOffset GetUtcNow()
+        {
+            // 只停住布置之后的第一次读数：之后读时钟的写入方照常走
+            if (Interlocked.Exchange(ref _armed, 0) == 1)
+            {
+                _paused.TrySetResult();
+                _resume.Wait();
+            }
+
+            return _now;
+        }
+
+        /// <inheritdoc />
+        public void Dispose() => _resume.Dispose();
     }
 
     /// <summary>

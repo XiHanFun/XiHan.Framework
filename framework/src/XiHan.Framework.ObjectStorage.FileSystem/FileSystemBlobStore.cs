@@ -426,7 +426,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 写一个对象
     /// </summary>
     /// <remarks>
-    /// 流式复制到临时文件并计算 SHA-256、逐段预留额度、原子替换（不覆盖时原子占位）、写元数据、把预留转成用量。覆盖时新旧内容同时在盘上，预留按新内容的全长，旧对象的字节到提交时才释放。总配额预留不到即停，已预留的部分在判定时一并退还，并发写入不会同时被拒到一个都写不成（ADR-0238）
+    /// 流式复制到临时文件并计算 SHA-256、逐段预留额度，再由 <see cref="CommitAsync"/> 原子替换内容（不覆盖时原子占位）与元数据、把预留转成用量。覆盖时新旧内容同时在盘上，预留按新内容的全长，旧对象的字节到提交时才释放。总配额预留不到即停，已预留的部分在判定时一并退还，并发写入不会同时被拒到一个都写不成（ADR-0238）
     /// </remarks>
     private async ValueTask<Result<BlobMetadata>> PutOneAsync(ContainerName container, BlobUpload upload, CancellationToken cancellationToken)
     {
@@ -499,32 +499,12 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
     /// 提交写好的临时内容文件
     /// </summary>
     /// <remarks>
-    /// 调用方已为 <paramref name="length"/> 预留了额度，本方法接手：成功转成用量，失败释放。原子替换为对象内容、写元数据（同样先临时文件再替换）。写入与分片上传的完成共用。替换与记账在配额锁里一并完成，按此刻磁盘上旧内容的实际长度计算差值，并发覆盖与删除同一个键时用量与磁盘一致（ADR-0183）。<paramref name="overwrite"/> 为 <see langword="false"/> 时由文件系统原子判定谁先占住内容路径：Windows 上不替换地改名，其他平台先以独占创建的空文件占位、再把内容原子替换上去；内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不写元数据、不计用量（ADR-0168、ADR-0172）
+    /// 调用方已为 <paramref name="length"/> 预留了额度，本方法接手：成功转成用量，失败释放。元数据先写到同目录的临时文件，再把内容与元数据依次原子替换上去。写入与分片上传的完成共用。两次替换与记账在配额锁里一并完成，按此刻磁盘上旧内容的实际长度计算差值，并发覆盖与删除同一个键时用量与磁盘一致（ADR-0183）；后换上内容的写入方也后换上元数据，留下的元数据总属于盘上的内容，两个写入方的元数据改名也不会同时替换同一个目标（ADR-0239）。<paramref name="overwrite"/> 为 <see langword="false"/> 时由文件系统原子判定谁先占住内容路径：Windows 上不替换地改名，其他平台先以独占创建的空文件占位、再把内容原子替换上去；内容文件已存在（并发的另一个写入方先占了位）返回 <see cref="ObjectStorageErrors.BlobExists"/>，不换元数据、不计用量（ADR-0168、ADR-0172）
     /// </remarks>
     internal async ValueTask<Result<BlobMetadata>> CommitAsync(ContainerName container, BlobKey key, string temporary, long length, string etag, string contentType, IReadOnlyDictionary<string, string> metadata, bool overwrite, CancellationToken cancellationToken)
     {
         var metaPath = MetaPath(container, key);
         var dataPath = DataPath(container, key);
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(metaPath)!);
-            // 改名只是元数据操作，锁里只放它与记账；复制与写元数据都在锁外
-            lock (_quota)
-            {
-                if (ReplaceContent(container, key, temporary, dataPath, length, overwrite) is { } exists)
-                {
-                    _reservedBytes -= length;
-                    return exists;
-                }
-            }
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            // 没换上去：预留原样释放，异常交给调用方按基础设施失败报告
-            Release(length);
-            throw;
-        }
-
         var document = new BlobMetadataDocument
         {
             Length = length,
@@ -534,8 +514,43 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
             Metadata = new Dictionary<string, string>(metadata, StringComparer.Ordinal),
         };
         var metaTemporary = metaPath + TemporaryMarker + Guid.NewGuid().ToString("N");
-        await File.WriteAllBytesAsync(metaTemporary, JsonSerializer.SerializeToUtf8Bytes(document, FileSystemJsonContext.Default.BlobMetadataDocument), cancellationToken).ConfigureAwait(false);
-        File.Move(metaTemporary, metaPath, overwrite: true);
+        // 预留是否已在锁里转成用量或退还：换上内容之前的任何失败（含写元数据临时文件时取消）都由 finally 原样释放
+        var settled = false;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(metaPath)!);
+            // 写文件是 IO，放在锁外；锁里只有两次改名与记账
+            await File.WriteAllBytesAsync(metaTemporary, JsonSerializer.SerializeToUtf8Bytes(document, FileSystemJsonContext.Default.BlobMetadataDocument), cancellationToken).ConfigureAwait(false);
+            lock (_quota)
+            {
+                // 内容先换：不覆盖时要由它原子判定谁占到位，没占到的不能动元数据
+                var exists = ReplaceContent(container, key, temporary, dataPath, length, overwrite);
+                settled = true;
+                if (exists is not null)
+                {
+                    _reservedBytes -= length;
+                    return exists;
+                }
+
+                // 元数据紧跟着在同一个临界区里换：锁外换时，先换上内容的写入方可能后换元数据，留下另一个写入方的长度与 ETag；
+                // 两个写入方同时替换同一个元数据文件，Windows 上还会有一个以拒绝访问失败
+                File.Move(metaTemporary, metaPath, overwrite: true);
+            }
+        }
+        finally
+        {
+            if (!settled)
+            {
+                Release(length);
+            }
+
+            // 没换上去的元数据临时文件不留在盘上（换上去之后它已不在原处）
+            if (File.Exists(metaTemporary))
+            {
+                File.Delete(metaTemporary);
+            }
+        }
+
         return Result.Success(ToMetadata(key, document));
     }
 
@@ -648,6 +663,7 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         {
             // File.Delete 对不存在的文件不报错，但目录不存在会抛出：先判断存在再删
             var dataPath = DataPath(container, key);
+            var metaPath = MetaPath(container, key);
             bool existed;
             // 量长度、删除与记账在配额锁里一并完成：并发的覆盖提交要么在前（量到它的长度），要么在后（看到文件已删）
             lock (_quota)
@@ -659,12 +675,13 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
                     File.Delete(dataPath);
                     _usedBytes = Math.Max(0, _usedBytes - length);
                 }
-            }
 
-            var metaPath = MetaPath(container, key);
-            if (File.Exists(metaPath))
-            {
-                File.Delete(metaPath);
+                // 元数据在同一个临界区里删：锁外删时，并发的覆盖能在两步之间换上内容与元数据，
+                // 这里再删掉它的元数据，留下没有元数据的新内容（ADR-0239）
+                if (File.Exists(metaPath))
+                {
+                    File.Delete(metaPath);
+                }
             }
 
             return Result.Success(existed);
@@ -696,7 +713,13 @@ public sealed partial class FileSystemBlobStore : IBlobStore, IBlobMultipartStor
         var metaPath = MetaPath(container, key);
         if (File.Exists(metaPath))
         {
-            var document = JsonSerializer.Deserialize(File.ReadAllBytes(metaPath), FileSystemJsonContext.Default.BlobMetadataDocument);
+            BlobMetadataDocument? document;
+            // 容许删除共享：改名刚换上元数据、还没关掉句柄时那个句柄带着删除权限，不容许删除共享的打开以共享冲突失败（ADR-0239）
+            using (var file = new FileStream(metaPath, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
+            {
+                document = JsonSerializer.Deserialize(file, FileSystemJsonContext.Default.BlobMetadataDocument);
+            }
+
             if (document is not null)
             {
                 return ToMetadata(key, document);

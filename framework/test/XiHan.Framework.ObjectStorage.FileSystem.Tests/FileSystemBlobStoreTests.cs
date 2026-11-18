@@ -1,6 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Security.AccessControl;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -66,6 +67,31 @@ public sealed class FileSystemBlobStoreTests : IDisposable
         Assert.True((await store.DeleteAsync(new ContainerName("docs"), new BlobKey("2026/a.txt"), CancellationToken.None)).ValueOrThrow());
         Assert.Equal(0, store.UsedBytes);
         Assert.False(File.Exists(Path.Combine(_root.Path, "docs", "meta", "2026", "a.txt.json")));
+    }
+
+    [Fact]
+    public async Task Head_WhileTheRenameThatPutTheMetadataInPlaceStillHoldsIt_ReadsIt()
+    {
+        // 改名换上元数据之后、关掉句柄之前，改名的句柄还带着删除权限：读取方打开时不容许删除共享就以共享冲突失败。
+        // 元数据紧跟内容换上之后，并发的不覆盖写入先查是否存在时偶发撞上，得到 OBJECTSTORAGE_UNAVAILABLE_001 而不是冲突（ADR-0239）
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Skip("Sharing violations against a handle that holds delete access only happen on Windows.");
+            return;
+        }
+
+        var store = Store();
+        var container = new ContainerName("docs");
+        var key = new BlobKey("held.txt");
+        (await store.PutAsync(container, key, Bytes("hello"), BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+
+        // 与改名的句柄一样带删除权限、容许任何共享
+        using (new FileInfo(Path.Combine(_root.Path, "docs", "meta", "held.txt.json")).Create(FileMode.Open, FileSystemRights.Read | FileSystemRights.Delete, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.None, null))
+        {
+            var head = await store.HeadAsync(container, key, CancellationToken.None);
+
+            Assert.Equal(5, head.ValueOrThrow().Length);
+        }
     }
 
     [Fact]
