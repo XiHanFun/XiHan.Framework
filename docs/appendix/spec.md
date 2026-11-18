@@ -48,8 +48,8 @@ spec/
 
 | 层 | 形式 | 谁用 |
 | --- | --- | --- |
-| 数据驱动向量 | `conformance/vectors/` 下的 JSON 文件：`Result` 与 `Error` 编码、清单校验、版本解析、管道排序、上下文传播、包 ID 与能力 ID 文法 | 各语言 SDK 的单元测试直接读取 |
-| 黑盒运行器 | `xihan-conformance plugin --dir <插件目录>`：以宿主身份启动任意语言写的进程外插件，核对握手行与版本协商、清单一致性、生命周期、未知操作的拒绝、声明的操作都返回状态、订阅投递确认、stdin 关闭即退出 | 插件作者、远程 Provider 作者 |
+| 数据驱动向量 | `conformance/vectors/` 下的 JSON 文件：`Result` 与 `Error` 编码、清单校验、版本解析、管道排序、上下文传播、包 ID 与能力 ID 文法，以及插件的握手行、回调端点、截止时间、回调状态的映射与错误的读入 | 各语言 SDK 的单元测试直接读取 |
+| 黑盒运行器 | `xihan-conformance plugin --dir <插件目录>`：以宿主身份启动任意语言写的进程外插件，核对握手行与版本协商、会话令牌、清单一致性、生命周期与调用次序、配置不合法与未启动即停止的处理、未知操作与流式调用的拒绝、启动前的调用与未订阅事件的错误、声明的操作都返回状态、订阅投递确认、stdin 关闭即退出 | 插件作者、远程 Provider 作者 |
 
 .NET 侧另有每个子系统的 `<领域>.Conformance` 包，是 xUnit 套件：默认实现与 Provider 都要通过，远程 Provider 跑同一套。用法见[一致性套件与门禁](/testing/conformance)。
 
@@ -61,11 +61,11 @@ SDK 按成熟度分级：Reference（.NET）、Stable（通过全部向量）、
 | --- | --- | --- | --- |
 | .NET | `XiHan.Framework.*` | [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) | 参考实现 |
 | Go | `github.com/xihanfun/framework-sdk-go` | [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) | 通过全部向量；用于进程外插件与远程 Provider |
-| TypeScript | npm `xihan-framework` | [framework-sdk-typescript](https://github.com/XiHanFun/framework-sdk-typescript) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
-| Rust | crate `xihan-framework` | [framework-sdk-rust](https://github.com/XiHanFun/framework-sdk-rust) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
-| Java | `com.xihanfun:xihan-framework` | [framework-sdk-java](https://github.com/XiHanFun/framework-sdk-java) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
-| Python | `xihan-framework` | [framework-sdk-python](https://github.com/XiHanFun/framework-sdk-python) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
-| PHP | `xihanfun/xihan-framework` | [framework-sdk-php](https://github.com/XiHanFun/framework-sdk-php) | 原语、清单、调用上下文、管道与操作契约；插件运行时未实现 |
+| TypeScript | npm `xihan-framework` | [framework-sdk-typescript](https://github.com/XiHanFun/framework-sdk-typescript) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
+| Rust | crate `xihan-framework` | [framework-sdk-rust](https://github.com/XiHanFun/framework-sdk-rust) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
+| Java | `com.xihanfun:xihan-framework` | [framework-sdk-java](https://github.com/XiHanFun/framework-sdk-java) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
+| Python | `xihan-framework` | [framework-sdk-python](https://github.com/XiHanFun/framework-sdk-python) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
+| PHP | `xihanfun/xihan-framework` | [framework-sdk-php](https://github.com/XiHanFun/framework-sdk-php) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
 
 除 .NET 参考实现外，每种语言的 SDK 只有一个包，包名都是 `xihan-framework`，需要写所有者的生态用 `xihanfun`；Go 的模块路径必须是仓库地址，所以跟着仓库名。
 
