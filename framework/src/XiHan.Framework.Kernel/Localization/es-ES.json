@@ -55,5 +55,7 @@
   "kernel.validation.required": "Falta la propiedad obligatoria '{name}'",
   "kernel.validation.type": "Se esperaba el tipo {expected}, pero se encontró {actual}",
   "kernel.validation.undeclared": "La propiedad no está declarada en el contrato",
-  "kernel.validation.unresolved_reference": "No se puede resolver la referencia de esquema '{reference}'"
+  "kernel.validation.unresolved_reference": "No se puede resolver la referencia de esquema '{reference}'",
+  "kernel.wire.invalid": "El Result o Error recibido no es válido: {reason}",
+  "kernel.wire.invalid_json": "El Result o Error recibido no es un JSON válido: {reason}"
 }

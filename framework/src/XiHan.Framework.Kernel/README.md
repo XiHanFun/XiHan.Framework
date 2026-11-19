@@ -44,6 +44,7 @@ await builder.Build().RunAsync();
 * `PipelineBuilder`、`IPipelineMiddleware`、`PipelineStage`：执行管道
 * `OperationAttribute`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`：操作契约与调用
 * `SecurityContext`、`Principal`、`PermissionRegistry`：安全上下文与权限登记
+* `ResultJson`：Result 与 Error 的线上 JSON 编码，与各语言 SDK 逐字一致
 
 ## 更多文档
 

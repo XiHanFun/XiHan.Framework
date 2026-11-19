@@ -55,5 +55,7 @@
   "kernel.validation.required": "Отсутствует обязательное свойство '{name}'",
   "kernel.validation.type": "Ожидался тип {expected}, но найден {actual}",
   "kernel.validation.undeclared": "Свойство не объявлено в контракте",
-  "kernel.validation.unresolved_reference": "Ссылка на схему '{reference}' не может быть разрешена"
+  "kernel.validation.unresolved_reference": "Ссылка на схему '{reference}' не может быть разрешена",
+  "kernel.wire.invalid": "Переданный Result или Error недопустим: {reason}",
+  "kernel.wire.invalid_json": "Переданный Result или Error не является корректным JSON: {reason}"
 }

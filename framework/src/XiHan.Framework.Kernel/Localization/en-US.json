@@ -55,5 +55,7 @@
   "kernel.validation.required": "required property '{name}' is missing",
   "kernel.validation.type": "expected type {expected} but found {actual}",
   "kernel.validation.undeclared": "property is not declared by the contract",
-  "kernel.validation.unresolved_reference": "schema reference '{reference}' cannot be resolved"
+  "kernel.validation.unresolved_reference": "schema reference '{reference}' cannot be resolved",
+  "kernel.wire.invalid": "The Result or Error on the wire is not valid: {reason}",
+  "kernel.wire.invalid_json": "The Result or Error on the wire is not valid JSON: {reason}"
 }

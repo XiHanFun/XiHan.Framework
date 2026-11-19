@@ -55,5 +55,7 @@
   "kernel.validation.required": "La propriété obligatoire '{name}' est absente",
   "kernel.validation.type": "Type attendu {expected}, mais {actual} trouvé",
   "kernel.validation.undeclared": "La propriété n'est pas déclarée par le contrat",
-  "kernel.validation.unresolved_reference": "La référence de schéma '{reference}' ne peut pas être résolue"
+  "kernel.validation.unresolved_reference": "La référence de schéma '{reference}' ne peut pas être résolue",
+  "kernel.wire.invalid": "Le Result ou l'Error transmis n'est pas valide : {reason}",
+  "kernel.wire.invalid_json": "Le Result ou l'Error transmis n'est pas un JSON valide : {reason}"
 }

@@ -209,6 +209,7 @@ XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Equals(XiHan.Framework.Kerne
 XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Output.get -> System.IO.TextWriter?
 XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Output.init -> void
 XiHan.Framework.Kernel.Hosting.StartupBannerOptions.StartupBannerOptions() -> void
+XiHan.Framework.Kernel.Json.ResultJson
 XiHan.Framework.Kernel.KernelCapabilities
 XiHan.Framework.Kernel.KernelErrors
 XiHan.Framework.Kernel.KernelMessages
@@ -681,6 +682,8 @@ const XiHan.Framework.Kernel.KernelMessages.ValidationRequired = "kernel.validat
 const XiHan.Framework.Kernel.KernelMessages.ValidationType = "kernel.validation.type" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ValidationUndeclared = "kernel.validation.undeclared" -> string!
 const XiHan.Framework.Kernel.KernelMessages.ValidationUnresolvedReference = "kernel.validation.unresolved_reference" -> string!
+const XiHan.Framework.Kernel.KernelMessages.WireInvalid = "kernel.wire.invalid" -> string!
+const XiHan.Framework.Kernel.KernelMessages.WireInvalidJson = "kernel.wire.invalid_json" -> string!
 const XiHan.Framework.Kernel.Operations.OperationRegistry.DefaultCapacity = 10000 -> int
 const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.CommandLine = "cli" -> string!
 const XiHan.Framework.Kernel.Pipeline.InvocationProtocols.Grpc = "grpc" -> string!
@@ -817,6 +820,14 @@ static XiHan.Framework.Kernel.Hosting.KernelOptions.operator ==(XiHan.Framework.
 static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? defaults = null) -> XiHan.Framework.Kernel.Hosting.StartupBannerOptions!
 static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.operator !=(XiHan.Framework.Kernel.Hosting.StartupBannerOptions? left, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? right) -> bool
 static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.operator ==(XiHan.Framework.Kernel.Hosting.StartupBannerOptions? left, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? right) -> bool
+static XiHan.Framework.Kernel.Json.ResultJson.Read(string! json) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Result>
+static XiHan.Framework.Kernel.Json.ResultJson.Read<T>(string! json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! valueInfo) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Result<T>>
+static XiHan.Framework.Kernel.Json.ResultJson.ReadError(string! json) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Error!>
+static XiHan.Framework.Kernel.Json.ResultJson.ReadMaybe<T>(string! json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! valueInfo) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<T>>>
+static XiHan.Framework.Kernel.Json.ResultJson.Write(XiHan.Framework.Primitives.Result result) -> string!
+static XiHan.Framework.Kernel.Json.ResultJson.Write<T>(XiHan.Framework.Primitives.Result<T> result, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! valueInfo) -> string!
+static XiHan.Framework.Kernel.Json.ResultJson.WriteError(XiHan.Framework.Primitives.Error! error) -> string!
+static XiHan.Framework.Kernel.Json.ResultJson.WriteMaybe<T>(XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Maybe<T>> result, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! valueInfo) -> string!
 static XiHan.Framework.Kernel.KernelCapabilities.Manifest.get -> XiHan.Framework.Primitives.Manifests.Manifest!
 static XiHan.Framework.Kernel.Operations.OperationContract.operator !=(XiHan.Framework.Kernel.Operations.OperationContract? left, XiHan.Framework.Kernel.Operations.OperationContract? right) -> bool
 static XiHan.Framework.Kernel.Operations.OperationContract.operator ==(XiHan.Framework.Kernel.Operations.OperationContract? left, XiHan.Framework.Kernel.Operations.OperationContract? right) -> bool

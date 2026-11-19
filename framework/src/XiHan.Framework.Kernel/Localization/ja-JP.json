@@ -55,5 +55,7 @@
   "kernel.validation.required": "必須プロパティ '{name}' がありません",
   "kernel.validation.type": "型 {expected} が必要ですが、{actual} が指定されました",
   "kernel.validation.undeclared": "プロパティは契約で宣言されていません",
-  "kernel.validation.unresolved_reference": "スキーマ参照 '{reference}' を解決できません"
+  "kernel.validation.unresolved_reference": "スキーマ参照 '{reference}' を解決できません",
+  "kernel.wire.invalid": "受信した Result または Error が不正です: {reason}",
+  "kernel.wire.invalid_json": "受信した Result または Error は有効な JSON ではありません: {reason}"
 }

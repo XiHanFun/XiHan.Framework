@@ -55,5 +55,7 @@
   "kernel.validation.required": "缺少必填属性 '{name}'",
   "kernel.validation.type": "期望类型 {expected}，实际是 {actual}",
   "kernel.validation.undeclared": "属性未在契约中声明",
-  "kernel.validation.unresolved_reference": "无法解析 Schema 引用 '{reference}'"
+  "kernel.validation.unresolved_reference": "无法解析 Schema 引用 '{reference}'",
+  "kernel.wire.invalid": "线上的 Result 或 Error 不合法：{reason}",
+  "kernel.wire.invalid_json": "线上的 Result 或 Error 不是合法的 JSON：{reason}"
 }

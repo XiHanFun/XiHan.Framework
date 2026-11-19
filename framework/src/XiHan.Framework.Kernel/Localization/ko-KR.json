@@ -55,5 +55,7 @@
   "kernel.validation.required": "필수 속성 '{name}'이(가) 없습니다",
   "kernel.validation.type": "{expected} 형식이 필요하지만 {actual}이(가) 지정되었습니다",
   "kernel.validation.undeclared": "속성이 계약에 선언되어 있지 않습니다",
-  "kernel.validation.unresolved_reference": "스키마 참조 '{reference}'을(를) 확인할 수 없습니다"
+  "kernel.validation.unresolved_reference": "스키마 참조 '{reference}'을(를) 확인할 수 없습니다",
+  "kernel.wire.invalid": "전송된 Result 또는 Error가 올바르지 않습니다: {reason}",
+  "kernel.wire.invalid_json": "전송된 Result 또는 Error가 올바른 JSON이 아닙니다: {reason}"
 }

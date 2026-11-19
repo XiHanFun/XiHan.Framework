@@ -55,5 +55,7 @@
   "kernel.validation.required": "Die Pflichteigenschaft '{name}' fehlt",
   "kernel.validation.type": "Erwarteter Typ {expected}, gefunden {actual}",
   "kernel.validation.undeclared": "Die Eigenschaft ist im Vertrag nicht deklariert",
-  "kernel.validation.unresolved_reference": "Der Schemaverweis '{reference}' kann nicht aufgelöst werden"
+  "kernel.validation.unresolved_reference": "Der Schemaverweis '{reference}' kann nicht aufgelöst werden",
+  "kernel.wire.invalid": "Das übertragene Result oder der übertragene Error ist ungültig: {reason}",
+  "kernel.wire.invalid_json": "Das übertragene Result oder der übertragene Error ist kein gültiges JSON: {reason}"
 }

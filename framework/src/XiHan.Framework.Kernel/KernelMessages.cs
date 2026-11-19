@@ -44,6 +44,22 @@ public static class KernelMessages
     public const string ManifestInvalid = "kernel.manifest.invalid";
 
     /// <summary>
+    /// 线上的 Result 或 Error 不是合法 JSON
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>，语法错误时为 <c>$</c>，重复成员时为它的路径（RFC-0001「JSON 文本」，ADR-0244）
+    /// </remarks>
+    public const string WireInvalidJson = "kernel.wire.invalid_json";
+
+    /// <summary>
+    /// 线上的 Result 或 Error 不合编码规则
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>reason</c>，第一处不合规则的成员的路径，如 <c>$.ok</c>、<c>$.value</c>、<c>$.error.inner.code</c>（RFC-0001「Result」，ADR-0244）
+    /// </remarks>
+    public const string WireInvalid = "kernel.wire.invalid";
+
+    /// <summary>
     /// 调用期间发生未处理异常
     /// </summary>
     public const string UnhandledException = "kernel.invocation.unhandled_exception";

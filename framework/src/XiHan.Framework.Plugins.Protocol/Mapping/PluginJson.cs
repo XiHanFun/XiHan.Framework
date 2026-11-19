@@ -1,9 +1,7 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Collections;
 using System.Globalization;
-using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
@@ -20,7 +18,7 @@ internal static class PluginJson
     /// 错误细节（模板参数）写成 JSON 对象
     /// </summary>
     /// <remarks>
-    /// 只处理 JSON 可表示的值，其余按 <see cref="object.ToString"/>
+    /// 值按内核的值模型写出（<see cref="JsonValues"/>，与 Result 和 Error 的线上编码同一份）：只处理 JSON 可表示的值，其余按 <see cref="object.ToString"/>
     /// </remarks>
     public static string SerializeDetails(IReadOnlyDictionary<string, object?> details)
     {
@@ -31,7 +29,7 @@ internal static class PluginJson
             foreach (var (name, value) in details)
             {
                 writer.WritePropertyName(name);
-                WriteValue(writer, value);
+                JsonValues.Write(writer, value);
             }
 
             writer.WriteEndObject();
@@ -62,33 +60,13 @@ internal static class PluginJson
         // 检查通过之后的文本 JsonDocument 一定读得出：深度同为 64 层，字符串都能取值
         using var document = JsonDocument.Parse(utf8, new JsonDocumentOptions { MaxDepth = JsonText.MaxDepth });
         // 空对象与没有细节相同；溢出的数在别的语言里读不出来，整份细节都不要，而不是带着无穷往下传
-        if (document.RootElement.ValueKind != JsonValueKind.Object || !document.RootElement.EnumerateObject().Any() || !IsFinite(document.RootElement))
+        if (document.RootElement.ValueKind != JsonValueKind.Object || !document.RootElement.EnumerateObject().Any() || !JsonValues.IsFinite(document.RootElement))
         {
             return null;
         }
 
-        var details = new Dictionary<string, object?>(StringComparer.Ordinal);
-        foreach (var property in document.RootElement.EnumerateObject())
-        {
-            details[property.Name] = ReadValue(property.Value);
-        }
-
-        return details;
+        return JsonValues.ReadObject(document.RootElement);
     }
-
-    /// <summary>
-    /// 任何一层的数读成双精度都不溢出
-    /// </summary>
-    /// <remarks>
-    /// 64 位范围内的整数按整数读，不会溢出；其余的数在 .NET 上溢出时读成 ±∞
-    /// </remarks>
-    private static bool IsFinite(JsonElement element) => element.ValueKind switch
-    {
-        JsonValueKind.Number => element.TryGetInt64(out _) || (element.TryGetDouble(out var value) && double.IsFinite(value)),
-        JsonValueKind.Array => element.EnumerateArray().All(IsFinite),
-        JsonValueKind.Object => element.EnumerateObject().All(static property => IsFinite(property.Value)),
-        _ => true,
-    };
 
     /// <summary>
     /// 配置节序列化为 JSON
@@ -152,142 +130,4 @@ internal static class PluginJson
 
         writer.WriteEndObject();
     }
-
-    /// <summary>
-    /// 写一个细节值
-    /// </summary>
-    private static void WriteValue(Utf8JsonWriter writer, object? value)
-    {
-        switch (value)
-        {
-            case null:
-                writer.WriteNullValue();
-                break;
-            case string text:
-                writer.WriteStringValue(text);
-                break;
-            case bool boolean:
-                writer.WriteBooleanValue(boolean);
-                break;
-            // 数字按 RFC-0010 的值模型（ADR-0236）：64 位范围内的整数原样，超出时与浮点一样写成双精度
-            case int or long or short or byte or sbyte or ushort or uint:
-                writer.WriteNumberValue(Convert.ToInt64(value, CultureInfo.InvariantCulture));
-                break;
-            case ulong unsigned:
-                WriteInteger(writer, unsigned <= long.MaxValue ? (long)unsigned : null, unsigned);
-                break;
-            case Int128 wide:
-                WriteInteger(writer, wide >= long.MinValue && wide <= long.MaxValue ? (long)wide : null, (double)wide);
-                break;
-            case UInt128 wide:
-                WriteInteger(writer, wide <= long.MaxValue ? (long)wide : null, (double)wide);
-                break;
-            case BigInteger big:
-                WriteInteger(writer, big >= long.MinValue && big <= long.MaxValue ? (long)big : null, (double)big);
-                break;
-            case float or double or decimal:
-                WriteFloat(writer, Convert.ToDouble(value, CultureInfo.InvariantCulture));
-                break;
-            case Half half:
-                WriteFloat(writer, (double)half);
-                break;
-            case char character:
-                writer.WriteStringValue(character.ToString());
-                break;
-            case JsonElement element:
-                element.WriteTo(writer);
-                break;
-            case IReadOnlyDictionary<string, object?> nested:
-                writer.WriteStartObject();
-                foreach (var (name, item) in nested)
-                {
-                    writer.WritePropertyName(name);
-                    WriteValue(writer, item);
-                }
-
-                writer.WriteEndObject();
-                break;
-            case IDictionary dictionary:
-                // 非字符串键按键的文本（与模板里对象的写法一致）
-                writer.WriteStartObject();
-                foreach (DictionaryEntry entry in dictionary)
-                {
-                    writer.WritePropertyName(entry.Key as string ?? (entry.Key as IFormattable)?.ToString(null, CultureInfo.InvariantCulture) ?? entry.Key.ToString() ?? string.Empty);
-                    WriteValue(writer, entry.Value);
-                }
-
-                writer.WriteEndObject();
-                break;
-            case IEnumerable items:
-                writer.WriteStartArray();
-                foreach (var item in items)
-                {
-                    WriteValue(writer, item);
-                }
-
-                writer.WriteEndArray();
-                break;
-            case IFormattable formattable:
-                writer.WriteStringValue(formattable.ToString(null, CultureInfo.InvariantCulture));
-                break;
-            default:
-                writer.WriteStringValue(value.ToString());
-                break;
-        }
-    }
-
-    /// <summary>
-    /// 写一个整数：64 位范围内原样，超出时写成双精度
-    /// </summary>
-    private static void WriteInteger(Utf8JsonWriter writer, long? exact, double approximate)
-    {
-        if (exact is { } integer)
-        {
-            writer.WriteNumberValue(integer);
-        }
-        else
-        {
-            WriteFloat(writer, approximate);
-        }
-    }
-
-    /// <summary>
-    /// 写一个双精度浮点，往返后仍是浮点
-    /// </summary>
-    /// <remarks>
-    /// 整数值的浮点带 <c>.0</c>（<c>2.0</c>、<c>-0.0</c>），否则对方读成整数，<c>D</c> 与 <c>X</c> 的结果就变了；非有限值在 JSON 里写不出，写成字符串 <c>NaN</c>、<c>Infinity</c>、<c>-Infinity</c>，与模板里的文本相同（RFC-0001「Result」，ADR-0236）
-    /// </remarks>
-    private static void WriteFloat(Utf8JsonWriter writer, double value)
-    {
-        if (!double.IsFinite(value))
-        {
-            writer.WriteStringValue(value.ToString(CultureInfo.InvariantCulture));
-            return;
-        }
-
-        var text = value.ToString("R", CultureInfo.InvariantCulture);
-        writer.WriteRawValue(text.AsSpan().IndexOfAny('.', 'E') < 0 ? text + ".0" : text, skipInputValidation: true);
-    }
-
-    /// <summary>
-    /// 读一个细节值
-    /// </summary>
-    /// <remarks>
-    /// 按 RFC-0010 的值模型：字符串、64 位范围内整数写法的数字为整数、其余数字为双精度、布尔、空；数组为列表，对象为字典，模板里写出的文本与发出方相同
-    /// </remarks>
-    private static object? ReadValue(JsonElement element) => element.ValueKind switch
-    {
-        JsonValueKind.String => element.GetString(),
-        JsonValueKind.Number when element.TryGetInt64(out var integer) => integer,
-        JsonValueKind.Number => element.GetDouble(),
-        JsonValueKind.True => true,
-        JsonValueKind.False => false,
-        JsonValueKind.Array => element.EnumerateArray().Select(ReadValue).ToList(),
-        JsonValueKind.Object => element.EnumerateObject().Aggregate(new Dictionary<string, object?>(StringComparer.Ordinal), static (members, property) =>
-        {
-            members[property.Name] = ReadValue(property.Value);
-            return members;
-        }),
-        _ => null,
-    };
 }

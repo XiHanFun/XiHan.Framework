@@ -30,6 +30,7 @@ public sealed partial class LocalizationTests
         "XiHan.Framework.Scheduling.Abstractions/Jobs/JobRunRecord.cs",
         "XiHan.Framework.Auditing.Database/Trail/AuditRecordMapping.cs",
         "XiHan.Framework.Plugins.Protocol/Mapping/PluginErrorMapper.cs",
+        "XiHan.Framework.Kernel/Json/WireErrorReader.cs",
     ];
 
     /// <summary>

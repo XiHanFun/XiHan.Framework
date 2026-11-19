@@ -85,7 +85,7 @@ spec/
 
 | 语言 | 包名 | 仓库 | 状态 |
 | --- | --- | --- | --- |
-| .NET | `XiHan.Framework.*` | [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) | 参考实现；缺口是 `core` 的 Result 与 Error 的 JSON 编解码 |
+| .NET | `XiHan.Framework.*` | [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) | 参考实现；认领 `plugin` 之外的全部档，没有缺口 |
 | Go | `github.com/xihanfun/framework-sdk-go` | [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) | 认领 `core`、`plugin`、`provider:caching.distributed@1`，没有缺口；用于进程外插件与远程 Provider |
 | TypeScript | npm `xihan-framework` | [framework-sdk-typescript](https://github.com/XiHanFun/framework-sdk-typescript) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
 | Rust | crate `xihan-framework` | [framework-sdk-rust](https://github.com/XiHanFun/framework-sdk-rust) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |

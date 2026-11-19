@@ -27,12 +27,9 @@ public sealed partial class SpecVectorCoverageTests
     /// 认领的档里没有回放的向量与理由
     /// </summary>
     /// <remarks>
-    /// 路径相对 <c>conformance/vectors</c>；与规范 README 生态一节列的缺口一致
+    /// 路径相对 <c>conformance/vectors</c>，值是理由；与规范 README 生态一节列的缺口一致。现在没有缺口：最后一个 <c>primitives/wire-encoding.json</c> 由内核的 <c>ResultJson</c> 回放（ADR-0244）
     /// </remarks>
-    private static readonly Dictionary<string, string> _gaps = new(StringComparer.Ordinal)
-    {
-        ["primitives/wire-encoding.json"] = "The primitives layer has no JSON codec for Result and Error; on the wire .NET carries errors as protobuf Status and Problem Details.",
-    };
+    private static readonly Dictionary<string, string> _gaps = new(StringComparer.Ordinal);
 
     [Fact]
     public void EveryVectorOfTheClaimedProfiles_IsReplayedOrAGap()
