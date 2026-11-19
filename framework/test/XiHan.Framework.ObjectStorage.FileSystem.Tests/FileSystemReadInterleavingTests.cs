@@ -123,32 +123,30 @@ public sealed class FileSystemReadInterleavingTests : IDisposable
         // 修之前读取先读元数据、再打开内容，两步之间被覆盖时元数据是上一版的长度与 ETag、内容是下一版；
         // Windows 上覆盖还会撞上正被读取的内容或元数据，以 OBJECTSTORAGE_UNAVAILABLE_001 失败。
         // 两步之间没有能让读取方停住的位置，靠轮数：对象小、提交快、8 个读取方。修之前本机连跑 6 次都失败；
-        // 只换成 POSIX 语义的改名、读取不核对变更代数时，8 次里 6 次碰上错配
+        // 只换成 POSIX 语义的改名、读取不核对变更代数时，8 次里 6 次碰上错配。
+        // 起跑与收尾经 Interleaving 会合，每个读取方都在覆盖期间读完过：原先读取方各自查写入方结束没有，
+        // 线程池线程少时晚排上的读取方一次都没读到（4 核 Linux 上连跑 10 次都是如此）
         var store = Store();
         var key = new BlobKey("flipping.bin");
         var versions = new[] { Filled(4 * 1024, (byte)'a'), Filled(6 * 1024, (byte)'b') };
         var etags = versions.Select(Sha256).ToArray();
         (await store.PutAsync(_container, key, versions[0], BlobPutOptions.Default, CancellationToken.None)).ValueOrThrow();
+        var interleaving = new Interleaving(readers: 8);
 
-        var writing = Task.Run(async () =>
+        var failures = new List<string>();
+        var writing = Task.Run(() => interleaving.WriteAsync(OverwriteRounds, async round =>
         {
-            var failures = new List<string>();
-            for (var i = 1; i <= OverwriteRounds; i++)
+            var written = await store.PutAsync(_container, key, versions[(round + 1) % 2], BlobPutOptions.Default, CancellationToken.None);
+            if (written.IsFailure)
             {
-                var written = await store.PutAsync(_container, key, versions[i % 2], BlobPutOptions.Default, CancellationToken.None);
-                if (written.IsFailure)
-                {
-                    failures.Add(written.Error!.ToString());
-                }
+                failures.Add(written.Error!.ToString());
             }
-
-            return failures;
-        });
-        var readers = Enumerable.Range(0, 8).Select(reader => Task.Run(async () =>
+        }));
+        var readers = Enumerable.Range(0, interleaving.Readers).Select(reader => Task.Run(async () =>
         {
             var mismatches = new List<string>();
             var reads = 0;
-            while (!writing.IsCompleted)
+            await interleaving.ReadAsync(reader, async () =>
             {
                 // 整个对象与范围读取轮流：两种读取都要拿到同一版的元数据与内容
                 var ranged = reads++ % 2 == 1;
@@ -158,7 +156,7 @@ public sealed class FileSystemReadInterleavingTests : IDisposable
                 if (opened.IsFailure)
                 {
                     mismatches.Add($"read failed: {opened.Error}");
-                    continue;
+                    return;
                 }
 
                 var content = opened.ValueOrThrow();
@@ -172,17 +170,16 @@ public sealed class FileSystemReadInterleavingTests : IDisposable
                         mismatches.Add($"metadata length {content.Metadata.Length} with {bytes.Length} bytes of '{(bytes.Length > 0 ? (char)bytes[0] : '-')}' (ranged: {ranged})");
                     }
                 }
-            }
+            });
 
-            return (reads, mismatches);
+            return mismatches;
         })).ToList();
 
-        var failures = await writing;
+        await writing;
         var observed = await Task.WhenAll(readers);
 
         Assert.Empty(failures);
-        Assert.Empty(observed.SelectMany(static r => r.mismatches));
-        Assert.All(observed, static r => Assert.True(r.reads > 0, "Every reader must have read at least once."));
+        Assert.Empty(observed.SelectMany(static mismatches => mismatches));
     }
 
     [Fact]
@@ -190,33 +187,29 @@ public sealed class FileSystemReadInterleavingTests : IDisposable
     {
         // 修之前读元数据先看内容在不在、再打开元数据：两步之间被删时以 FileNotFoundException 落到 OBJECTSTORAGE_UNAVAILABLE_001，
         // 列举整页失败，而它应当跳过这个键。窗口只有一次 stat 那么宽，这里只是守住修正：修之前本机这 300 轮连跑 6 次都没碰上，
-        // 3000 轮的诊断里两次分别有 56 与 25 次 Head、36 与 22 次列举失败
+        // 3000 轮的诊断里两次分别有 56 与 25 次 Head、36 与 22 次列举失败。
+        // 起跑与收尾经 Interleaving 会合，每个探测方都在写入又删除期间探测过：原先探测方各自查写入方结束没有，
+        // Head 与列举同步完成、探测方从不让出线程，CI 的 4 核运行器上 4 个探测方里有 2 个一次都没探测到
         var store = Store();
         var key = new BlobKey("blinking.bin");
         var content = Filled(4 * 1024, (byte)'a');
+        var interleaving = new Interleaving(readers: 4);
 
-        var churning = Task.Run(async () =>
+        var failures = new List<string>();
+        var churning = Task.Run(() => interleaving.WriteAsync(ChurnRounds, async _ =>
         {
-            var failures = new List<string>();
-            for (var i = 0; i < ChurnRounds; i++)
+            var written = await store.PutAsync(_container, key, content, BlobPutOptions.Default, CancellationToken.None);
+            var deleted = await store.DeleteAsync(_container, key, CancellationToken.None);
+            if (written.IsFailure || deleted.IsFailure)
             {
-                var written = await store.PutAsync(_container, key, content, BlobPutOptions.Default, CancellationToken.None);
-                var deleted = await store.DeleteAsync(_container, key, CancellationToken.None);
-                if (written.IsFailure || deleted.IsFailure)
-                {
-                    failures.Add((written.Error ?? deleted.Error)!.ToString());
-                }
+                failures.Add((written.Error ?? deleted.Error)!.ToString());
             }
-
-            return failures;
-        });
-        var probers = Enumerable.Range(0, 4).Select(prober => Task.Run(async () =>
+        }));
+        var probers = Enumerable.Range(0, interleaving.Readers).Select(prober => Task.Run(async () =>
         {
             var unexpected = new List<string>();
-            var reads = 0;
-            while (!churning.IsCompleted)
+            await interleaving.ReadAsync(prober, async () =>
             {
-                reads++;
                 var head = await store.HeadAsync(_container, key, CancellationToken.None);
                 if (head.IsFailure && head.Error!.Code != ObjectStorageErrors.BlobNotFound)
                 {
@@ -232,26 +225,25 @@ public sealed class FileSystemReadInterleavingTests : IDisposable
                 {
                     unexpected.Add($"list: {page.Error}");
                 }
-            }
+            });
 
-            return (reads, unexpected);
+            return unexpected;
         })).ToList();
 
-        var failures = await churning;
+        await churning;
         var observed = await Task.WhenAll(probers);
 
         Assert.Empty(failures);
-        Assert.Empty(observed.SelectMany(static r => r.unexpected));
-        Assert.All(observed, static r => Assert.True(r.reads > 0, "Every prober must have probed at least once."));
+        Assert.Empty(observed.SelectMany(static unexpected => unexpected));
     }
 
     /// <summary>
-    /// 读取期间覆盖的轮数
+    /// 读取期间至少覆盖的轮数
     /// </summary>
     private const int OverwriteRounds = 600;
 
     /// <summary>
-    /// 探测期间写入又删除的轮数
+    /// 探测期间至少写入又删除的轮数
     /// </summary>
     private const int ChurnRounds = 300;
 
