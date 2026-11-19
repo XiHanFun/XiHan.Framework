@@ -14,7 +14,7 @@ namespace XiHan.Framework.Kernel.Json;
 /// <remarks>
 /// 照 RFC-0011 规则 2 的顺序找出解码会报的第一处问题（ADR-0236）：按文本顺序逐个成员核对类型，缺少必填成员在所在对象结束时报该对象的路径。
 /// System.Text.Json 自己报哪一处取决于类型的声明方式：源生成对带 <c>required</c>、<c>init</c> 成员或主构造函数的类型先读完构造参数、再填其余成员，缺少成员会先于写在前面的类型不符报出。
-/// 先在这里按规范的顺序查一遍，反序列化就只在这里查不到的地方失败。只认各语言共有的类型（字符串、整数、浮点、布尔、数组、字典、对象与任意 JSON）以及能用 <see cref="JsonElement"/> 判定的 .NET 类型；带自定义转换器、多态与其他类型的部分不查，交给反序列化报
+/// 先在这里按规范的顺序查一遍，反序列化就只在这里查不到的地方失败。只认各语言共有的类型（字符串、整数、浮点、布尔、数组、字典、对象与任意 JSON）以及能用 <see cref="JsonElement"/> 判定的 .NET 类型，枚举交给它自己的转换器读一次；带自定义转换器、多态与其他类型的部分不查，交给反序列化报
 /// </remarks>
 internal static class JsonRequestShape
 {
@@ -53,6 +53,11 @@ internal static class JsonRequestShape
         if (info.PolymorphismOptions is not null)
         {
             return null;
+        }
+
+        if (type.IsEnum)
+        {
+            return VisitEnum(value, info, path);
         }
 
         return info.Kind switch
@@ -244,13 +249,27 @@ internal static class JsonRequestShape
             return path;
         }
 
-        // 缺省的枚举转换器只读整数
-        if (type.IsEnum)
-        {
-            return value.ValueKind == JsonValueKind.Number && FitsNumber(value, Enum.GetUnderlyingType(type)) ? null : path;
-        }
-
         return null;
+    }
+
+    /// <summary>
+    /// 核对一个枚举值
+    /// </summary>
+    /// <remarks>
+    /// 缺省的枚举转换器只读整数，字符串枚举转换器（<see cref="JsonStringEnumConverter"/>、源生成的 <c>UseStringEnumConverter</c>）读成员名、通常也读整数；
+    /// 两者是同一个内部类型，只差构造时的选项，从元数据看不出读不读字符串，所以由枚举自己的转换器读这一个值。只读这一处，报错的位置与先后仍按文本顺序（ADR-0247）
+    /// </remarks>
+    private static string? VisitEnum(JsonElement value, JsonTypeInfo info, string path)
+    {
+        try
+        {
+            _ = value.Deserialize(info);
+            return null;
+        }
+        catch (JsonException)
+        {
+            return path;
+        }
     }
 
     /// <summary>
