@@ -58,16 +58,28 @@ public sealed partial class NamingTests
     public void ErrorCodes_AreRegisteredOnce()
     {
         // 域内序号唯一（conventions/error-codes.md）：同一个错误码登记两次，意味着它对应两种不同的失败
-        var path = Path.Combine(Workspace.SpecRoot, "conventions", "error-codes.md");
-        var codes = File.ReadAllLines(path)
-            .Select(static line => RegisteredErrorCode().Match(line))
-            .Where(static match => match.Success)
-            .Select(static match => match.Groups["code"].Value)
-            .ToList();
+        var codes = RegisteredErrorCodes();
         var duplicates = codes.GroupBy(static code => code, StringComparer.Ordinal).Where(static g => g.Count() > 1).Select(static g => g.Key).ToList();
 
-        Assert.True(codes.Count >= 100, $"Only {codes.Count} error codes were found, which suggests the table failed to parse: '{path}'.");
+        Assert.True(codes.Count >= 100, $"Only {codes.Count} error codes were found, which suggests the table failed to parse: '{ErrorCodesPath}'.");
         Assert.True(duplicates.Count == 0, "Error codes registered more than once: " + string.Join(", ", duplicates));
+    }
+
+    [Fact]
+    public void ErrorCodes_InSourcesAreRegistered()
+    {
+        // 正式包里写成字面量的框架错误码（域在术语表里）必须已登记；示例与一致性套件夹具的域不在术语表里，不归登记表管（ADR-0242）
+        var registered = RegisteredErrorCodes().ToHashSet(StringComparer.Ordinal);
+        var domains = Vocabulary.Entries.Select(static e => e.ErrorDomain).Where(static d => d != "—").ToHashSet(StringComparer.Ordinal);
+        var failures = Workspace.SourceFiles(Workspace.SourceRoot)
+            .SelectMany(static file => ErrorCodeLiteral().Matches(File.ReadAllText(file)).Select(m => (File: file, Code: m.Groups["code"].Value, Domain: m.Groups["domain"].Value)))
+            .Where(c => domains.Contains(c.Domain) && !registered.Contains(c.Code))
+            .Select(static c => $"{Workspace.Relative(c.File)}: {c.Code}")
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        Assert.True(failures.Count == 0, $"Error codes that '{ErrorCodesPath}' does not register:{Environment.NewLine}" + string.Join(Environment.NewLine, failures));
     }
 
     [Fact]
@@ -197,6 +209,39 @@ public sealed partial class NamingTests
     }
 
     /// <summary>
+    /// 规范的错误码登记表
+    /// </summary>
+    private static string ErrorCodesPath => Path.Combine(Workspace.SpecRoot, "conventions", "error-codes.md");
+
+    /// <summary>
+    /// 读出登记表「已登记的框架错误码」一节的全部错误码，保留重复
+    /// </summary>
+    /// <remarks>
+    /// 「已撤销的错误码」一节里的码不再由任何路径产生，不算登记
+    /// </remarks>
+    private static List<string> RegisteredErrorCodes()
+    {
+        var codes = new List<string>();
+        var inRegistered = false;
+        foreach (var line in File.ReadAllLines(ErrorCodesPath))
+        {
+            if (line.StartsWith("## ", StringComparison.Ordinal))
+            {
+                inRegistered = string.Equals(line[3..].Trim(), "已登记的框架错误码", StringComparison.Ordinal);
+                continue;
+            }
+
+            var match = RegisteredErrorCode().Match(line);
+            if (inRegistered && match.Success)
+            {
+                codes.Add(match.Groups["code"].Value);
+            }
+        }
+
+        return codes;
+    }
+
+    /// <summary>
     /// 错误码登记表一行的正则
     /// </summary>
     /// <remarks>
@@ -204,6 +249,12 @@ public sealed partial class NamingTests
     /// </remarks>
     [GeneratedRegex(@"^\|\s*`(?<code>[A-Z]+_[A-Z]+_[0-9]{3})`\s*\|")]
     private static partial Regex RegisteredErrorCode();
+
+    /// <summary>
+    /// 源码里写成字符串字面量的错误码，捕获错误码与域
+    /// </summary>
+    [GeneratedRegex("\"(?<code>(?<domain>[A-Z]+)_[A-Z]+_[0-9]{3})\"")]
+    private static partial Regex ErrorCodeLiteral();
 
     /// <summary>
     /// PascalCase 标识符的正则

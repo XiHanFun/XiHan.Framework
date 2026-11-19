@@ -87,6 +87,8 @@ jobs:
         ports:
           - 6334:6334
     runs-on: ubuntu-latest
+    # 近期一次约 9–12 分钟；卡死的服务容器或测试不该占满默认的 6 小时（ADR-0242）
+    timeout-minutes: 30
 
     steps:
       - name: 检出

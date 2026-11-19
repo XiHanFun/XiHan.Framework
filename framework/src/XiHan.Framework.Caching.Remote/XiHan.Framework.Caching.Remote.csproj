@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 测试回放规范向量时用同一个源生成序列化上下文核对消息形态 -->
+    <InternalsVisibleTo Include="XiHan.Framework.Caching.Remote.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- 插件侧错误的译文：一种语言一个文件（RFC-0010） -->
     <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
   </ItemGroup>
