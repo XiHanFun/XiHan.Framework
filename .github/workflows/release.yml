@@ -3,11 +3,12 @@ name: 发布 NuGet
 # 推送 v* 标签（如 vX.Y.Z-preview.N、vX.Y.Z）触发，打包 framework/XiHan.Framework.slnx，
 # 包在 framework/artifacts/packages/，统一推送 nuget.org（--skip-duplicate 幂等）。
 #
-# 发包必须同时满足两条，由 guard job 把关，缺一不发：
+# 发包必须同时满足三条，由 guard job 把关，缺一不发：
 # ① 标签指向的提交在发布分支的历史里：带预发布后缀的是预览版，看 preview；不带的是正式版，看 main。
 #    标签本身不带分支信息，所以要查祖先关系——打在别处的 v* 标签一律拒发。
 # ② 标签号就是 framework/Directory.Build.props 的 <Version>——否则发出去的不是你以为的那个版本，
 #    而 --skip-duplicate 还会把这种错静默吞掉。
+# ③ framework/spec 子模块正好在规范的标签上：预览版可钉规范的 rc 标签，正式版只钉规范的正式版标签（RFC-0024）。
 # 手动 Run workflow 时必须选中一个版本标签；选分支会被 ① 拦下。
 #
 # 只管发布，不跑测试：测试门禁在 ci.yml，提交进发布分支时已经跑过；
@@ -70,6 +71,29 @@ jobs:
             exit 1
           fi
           echo "标签 $GITHUB_REF_NAME 与 <Version> 的 $version 一致，放行"
+
+      # ③ 规范子模块正好在规范标签上（RFC-0024「实现钉规范」）：发出去的包实现的是哪一版规范要说得清。
+      #    预览版可钉规范的 rc 标签，正式版只钉规范的正式版标签。guard 不检出子模块，读树里记的指针，
+      #    再到规范仓库的远端标签里找指向它的；附注标签看剥开后的 ^{} 行，conformance/ 前缀的 Go 模块标签不算
+      - name: 规范子模块钉在规范标签上
+        run: |
+          pinned="$(git ls-tree HEAD framework/spec | awk '{print $3}')"
+          if [ -z "$pinned" ]; then
+            echo "::error::树里没有 framework/spec 子模块，拒绝发布。"
+            exit 1
+          fi
+          tags="$(git ls-remote --tags https://github.com/XiHanFun/framework-spec.git \
+            | awk -v sha="$pinned" '$1 == sha { name = $2; sub(/^refs\/tags\//, "", name); sub(/\^\{\}$/, "", name); print name }' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' | sort -u || true)"
+          case "$GITHUB_REF_NAME" in
+            *-*) wanted="$tags" ;;
+            *) wanted="$(printf '%s\n' "$tags" | grep -v -- '-' || true)" ;;
+          esac
+          if [ -z "$wanted" ]; then
+            echo "::error::framework/spec 指向的规范提交 $pinned 上没有可用的规范标签（预览版要 vX.Y.Z 或 vX.Y.Z-rc.N，正式版要 vX.Y.Z），拒绝发布。先给规范打标签并把子模块指到那个标签，再发版（RFC-0024）。"
+            exit 1
+          fi
+          echo "framework/spec 在规范标签 $(echo $wanted | tr '\n' ' ')上，放行"
 
   publish:
     name: 构建并推送 NuGet 包

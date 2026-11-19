@@ -22,6 +22,7 @@ description: 为 XiHan.Framework 准备版本、更新 framework/Directory.Build
 3. 执行 Release 还原、构建、MTP 测试与打包，检查 `framework/artifacts/packages/` 的包数量、版本与内容。
 4. 版本提交使用 `build: vX.Y.Z`；推 `dev`，等 `ci.yml` 全绿。
 5. 正式版（不带预发布后缀）的版本提交里执行 `framework/scripts/Ship-PublicApi.ps1`，把各包 `PublicAPI.Unshipped.txt` 移进 `Shipped`（先 `-Check` 预览）。
+6. 规范子模块要正好在规范标签上（RFC-0024）：预览版可钉规范的 `vX.Y.Z-rc.N`，正式版只钉规范的 `vX.Y.Z`。规范没有对应标签时，先在规范仓库 `main` 上打 `vX.Y.Z[-rc.N]` 与同一提交的 `conformance/vX.Y.Z[-rc.N]`（打规范标签同样要用户明确要求），再把 `framework/spec` 指过去，与版本提交一起进 `dev`。
 
 ## 包验证基线
 
@@ -39,6 +40,6 @@ description: 为 XiHan.Framework 准备版本、更新 framework/Directory.Build
 
 只有用户明确要求发布，才可创建并推送版本标签或手动触发 `.github/workflows/release.yml`（手动运行须选中版本标签，选分支会被拒）。
 
-`release.yml` 的 guard 查两条：带预发布后缀的标签要在 `preview` 的历史里，不带的要在 `main` 的历史里；标签号等于 `<Version>`。任一不满足拒发。
+`release.yml` 的 guard 查三条：带预发布后缀的标签要在 `preview` 的历史里，不带的要在 `main` 的历史里；标签号等于 `<Version>`；`framework/spec` 指向的提交上有规范标签（正式版要不带预发布后缀的）。任一不满足拒发。
 
 工作流先由 guard 校验标签，再通过 OIDC 登录 NuGet、打包并逐包推送；测试门禁归 `ci.yml`，发布链不重跑。发布后核对工作流、NuGet 版本和文档；任何包、测试或登录失败都应停止并报告。不得移动已发布标签、手改 nupkg、跳过测试或用 `--skip-duplicate` 掩盖版本不一致。
