@@ -251,7 +251,7 @@ JSON 文本的共同读取检查是自带的逐字节读取器（`primitives::js
 
 - 认领的档：`core` 与 `plugin`。
 - 缺口：无。
-- 钉的规范版本：仓库 `spec/` 子模块指向的提交；规范还没有打标签，规范的版本规则见[规范与多语言](/appendix/spec)。
+- 钉的规范版本：仓库 `spec/` 子模块指向的规范标签，规范的版本规则见[规范与多语言](/appendix/spec)。
 
 原语、清单、调用上下文、管道、操作与进程外插件运行时可用，通过规范仓库 `conformance/vectors/` 下 primitives（含 `json-text.json`）、manifest、pipeline、operations 与 plugin（握手行、回调端点列表、版本协商、截止时间、消息键、回调失败的映射、读入 Error）的全部向量；示例 echo 通过黑盒运行器 `xihan-conformance plugin` 的全部用例。在有钉在规范标签上的发布版之前，成熟度是 Experimental。
 
