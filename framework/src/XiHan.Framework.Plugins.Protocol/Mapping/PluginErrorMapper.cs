@@ -76,9 +76,11 @@ internal static class PluginErrorMapper
 
         var details = string.IsNullOrEmpty(error.Details) ? null : PluginJson.ParseDetails(error.Details);
         var inner = error.Inner is { } nested ? FromProto(nested, pluginId) : null;
+        // text 为空或只有空白（RFC-0001「空白字符」，与 char.IsWhiteSpace 同一集合）时文案取错误码：Error 的文案不能只有空白，
+        // 原先只查空串，插件写来只有空白的 text 会让 Error.Literal 抛出（ADR-0245）
         return !string.IsNullOrEmpty(error.MessageKey) && MessageTemplate.IsValidKey(error.MessageKey)
             ? new Error(error.Code, error.MessageKey, details, inner)
-            : Error.Literal(error.Code, string.IsNullOrEmpty(error.Text) ? error.Code : error.Text, details, inner);
+            : Error.Literal(error.Code, string.IsNullOrWhiteSpace(error.Text) ? error.Code : error.Text, details, inner);
     }
 
     /// <summary>
