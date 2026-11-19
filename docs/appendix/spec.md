@@ -22,14 +22,14 @@ spec/
 ├─ packaging/      规范性：应用清单 xihan.app.json 与 xihan pack 的产物映射
 ├─ provider/       规范性：远程 Provider 的通用规则与各能力的操作集
 ├─ migration/      规范性：xihan migrate 的通用约定
-└─ conformance/    一致性向量与黑盒运行器
+└─ conformance/    一致性档表、向量与黑盒运行器
 ```
 
 ## 规范性与信息性
 
 不是所有东西都要各语言一致。规范把内容分成两类：
 
-| 规范性（各语言必须一致） | 信息性（各语言自选） |
+| 规范性（认领了所属档的实现必须一致） | 信息性（各语言自选） |
 | --- | --- |
 | 原语语义与线上编码（`Result`、`Error`、`Maybe` 的 JSON 形态） | 内部 API 形态 |
 | 清单 Schema | 包管理与目录布局 |
@@ -42,6 +42,17 @@ spec/
 
 举例说，`orders.create` 在任何语言的实现里都推导为 `POST /orders`，失败时都返回 RFC 9457 的 Problem Details，错误码都是 `<领域大写>_<KIND>_<三位序号>`；但 Go 用 `context.Context` 传递取消、.NET 用 `CancellationToken`，这是各语言自己的事。
 
+规范性内容又按一致性档划分（RFC-0024）。一个实现认领若干档，只对认领的档负责，档表在规范仓库的 `conformance/profiles.json`：
+
+| 档 | 内容 | 谁认领 |
+| --- | --- | --- |
+| `core` | 原语与线上编码、清单读写、调用上下文、管道阶段与排序、消息模板、操作契约与载荷、命名约定 | 所有实现 |
+| `plugin` | 进程外插件的插件一侧，并通过黑盒运行器 | 六个 SDK |
+| `host` | 能力求解、进程外插件宿主、协议映射、应用清单与打包、版本迁移 | .NET |
+| `wasm` | Wasm 插件 ABI（Experimental） | .NET |
+| 子系统档 | 一个子系统 RFC 一档：`persistence`、`caching`、`messaging` 等 | .NET |
+| `provider:caching.distributed@1` | 远程 Provider 的分布式缓存操作集 | .NET（适配器）、Go（插件） |
+
 ## 一致性测试
 
 一致性有两层：
@@ -53,14 +64,29 @@ spec/
 
 .NET 侧另有每个子系统的 `<领域>.Conformance` 包，是 xUnit 套件：默认实现与 Provider 都要通过，远程 Provider 跑同一套。用法见[一致性套件与门禁](/testing/conformance)。
 
-SDK 按成熟度分级：Reference（.NET）、Stable（通过全部向量）、Experimental（部分向量）、Community（社区维护）。
+成熟度按认领的档判定（RFC-0024）：
+
+- Reference：.NET。
+- Stable：认领的档里每个向量都回放并通过，运行器全部通过，且有钉在规范正式版标签上的发布版。
+- Experimental：有没回放的向量（缺口），或还没有这样的发布版。
+- Community：社区维护。
+
+## 规范的版本
+
+规范以独立的语义化版本 `vX.Y.Z` 打标签，与框架的版本线分开（RFC-0024）：
+
+- PATCH 不改规范性内容。
+- MINOR 只增，或把以前不作规定的行为写死，但不能让按较早 MINOR 实现的对端互通失败。
+- MAJOR 改已经写明的行为、删除内容或线上不兼容，与上一个大版本并存。
+
+大版本与线上的数字一致：`FrameworkInfo.SpecVersion`、清单的 `primitives` 都是 `1`。5.0 正式版之前规范打 `v1.0.0-rc.N`，正式版时打 `v1.0.0`。实现的日常分支可以指向规范的任意提交；发版时子模块必须正好在规范标签上，正式版只钉正式版标签。
 
 ## 各语言 SDK
 
 | 语言 | 包名 | 仓库 | 状态 |
 | --- | --- | --- | --- |
-| .NET | `XiHan.Framework.*` | [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) | 参考实现 |
-| Go | `github.com/xihanfun/framework-sdk-go` | [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) | 通过全部向量；用于进程外插件与远程 Provider |
+| .NET | `XiHan.Framework.*` | [XiHan.Framework](https://github.com/XiHanFun/XiHan.Framework) | 参考实现；缺口是 `core` 的 Result 与 Error 的 JSON 编解码 |
+| Go | `github.com/xihanfun/framework-sdk-go` | [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) | 认领 `core`、`plugin`、`provider:caching.distributed@1`，没有缺口；用于进程外插件与远程 Provider |
 | TypeScript | npm `xihan-framework` | [framework-sdk-typescript](https://github.com/XiHanFun/framework-sdk-typescript) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
 | Rust | crate `xihan-framework` | [framework-sdk-rust](https://github.com/XiHanFun/framework-sdk-rust) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
 | Java | `com.xihanfun:xihan-framework` | [framework-sdk-java](https://github.com/XiHanFun/framework-sdk-java) | 原语、清单、调用上下文、管道、操作契约与进程外插件运行时 |
@@ -110,6 +136,7 @@ SDK 按成熟度分级：Reference（.NET）、Stable（通过全部向量）、
 | 0021 | 工作流 | `Workflow.*` |
 | 0022 | AI | `AI.*` |
 | 0023 | 可观测性与运行信息 | `Observability.*` |
+| 0024 | 规范的版本与一致性档 | 架构测试 `SpecVectorCoverageTests` |
 
 正文见规范仓库的 `rfcs/` 目录。
 
