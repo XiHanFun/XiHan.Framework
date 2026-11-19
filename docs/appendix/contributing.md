@@ -10,7 +10,7 @@
 | 改文档 | 本站每页底部有「在 GitHub 上编辑此页」；源文件在仓库 `docs/` 下 |
 | 写一个 Provider | 先读[写一个 Provider](/extending/provider)，通过对应的一致性套件后提 PR |
 | 改公开契约 | 先在规范仓库提 RFC，见下文「规范先于实现」 |
-| 另一种语言的 SDK | 读[规范与多语言](/appendix/spec)，在对应的 `framework-sdk-<语言>` 仓库里做 |
+| 另一种语言的 SDK | 读[规范与多语言](/appendix/spec)与「多语言 SDK」一章的对应页（如 [Go SDK](/sdks/go)），在对应的 `framework-sdk-<语言>` 仓库里做；开发约定、门禁与发布流程见该仓库的 `AGENTS.md` |
 
 ## 准备环境
 

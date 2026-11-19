@@ -205,6 +205,18 @@ const chapters: Chapter[] = [
     ],
   },
   {
+    text: "多语言 SDK",
+    dir: "sdks",
+    pages: [
+      ["Go SDK", "go"],
+      ["TypeScript SDK", "typescript"],
+      ["Rust SDK", "rust"],
+      ["Java SDK", "java"],
+      ["Python SDK", "python"],
+      ["PHP SDK", "php"],
+    ],
+  },
+  {
     text: "托管、部署、发布",
     dir: "deployment",
     pages: [
@@ -449,8 +461,13 @@ const nav: DefaultTheme.NavItem[] = [
       {
         text: "规范与 SDK",
         items: [
-          { text: "XiHan Spec", link: "https://github.com/XiHanFun/framework-spec" },
-          { text: "Go SDK", link: "https://github.com/XiHanFun/framework-sdk-go" },
+          { text: "XiHan Spec", link: "/appendix/spec" },
+          { text: "Go SDK", link: "/sdks/go" },
+          { text: "TypeScript SDK", link: "/sdks/typescript" },
+          { text: "Rust SDK", link: "/sdks/rust" },
+          { text: "Java SDK", link: "/sdks/java" },
+          { text: "Python SDK", link: "/sdks/python" },
+          { text: "PHP SDK", link: "/sdks/php" },
         ],
       },
       {
