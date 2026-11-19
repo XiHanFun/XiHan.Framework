@@ -19,9 +19,9 @@
 
 特性在配置阶段按 `Directories` 同步发现插件：读 `xihan.manifest.json`（要求 `kind: plugin`、`isolation: out-of-process`），核对 `Grants` 授予的权限，以插件目录为工作目录启动 `entry` 指向的可执行文件，只继承必要的环境变量并追加 `XIHAN_PLUGIN_*`，在 `HandshakeTimeout` 内读到 stdout 上的握手行、连上插件端点并调用 `Handshake`，再按 `spec/plugin/handshake.md` 核对清单与声明。声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码连同它们一次登记进 `PermissionRegistry`（显示名取码本身，同组的操作可以引用，ADR-0080），消息目录接进本地化器，订阅的主题登记事件处理器。
 
-启动阶段启动回调服务器（Windows 上是命名管道，其他系统是 Unix 域套接字）与 `onStartup` 的插件：`Configure`（下发配置节 JSON、权限、绑定与工作目录）→ `Start` → 健康监视。懒激活的插件在握手后停止进程，首次调用或投递时再启动。停止阶段按与登记相反的顺序停止全部插件，再关闭回调服务器。
+回调服务器的端点在创建宿主时选定：Windows 上是只允许当前用户的命名管道加回环 TCP，其他系统是私有目录里的 Unix 域套接字加回环 TCP（临时目录的路径含空白或 `;` 时只有回环 TCP），回环 TCP 的端口由系统分配并在此刻占住；端点按这个偏好以 `;` 分隔写进插件的 `XIHAN_PLUGIN_HOST_ADDRESS`，插件取第一个自己能连的（ADR-0237）。启动阶段让回调服务器在这些端点上监听，再启动 `onStartup` 的插件：`Configure`（下发配置节 JSON、权限、绑定与工作目录）→ `Start` → 健康监视。懒激活的插件在握手后停止进程，首次调用或投递时再启动。停止阶段按与登记相反的顺序停止全部插件，再关闭回调服务器。
 
-运行期每次调用带 `traceparent`、截止时间与已登记的 Baggage；业务失败来自插件的 `Status.error`，用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001`、`KERNEL_TIMEOUT_001` 等。插件回调 `Host.Invoke` / `Host.Publish` 以插件身份执行（主体 ID 为清单 ID，方案 `Plugin`），只能带在途调用的租户（ADR-0195）。每个插件是应用的一个健康条目 `plugins.<清单 ID>`。
+运行期每次调用带 `traceparent`、截止时间与已登记的 Baggage；业务失败来自插件的 `Status.error`，用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001`、`KERNEL_TIMEOUT_001` 等。插件回调 `Host.Invoke` / `Host.Publish` 以插件身份执行（主体 ID 为清单 ID，方案 `Plugin`），只能带在途调用的租户（ADR-0195）；两者都按元数据建调用上下文，截止时间取元数据与 gRPC 调用自身截止时间中较早的，`Host.Publish` 在这个上下文里发布，信封缺的租户、主体、关联 ID、区域与追踪由发布器补齐（ADR-0237）。每个插件是应用的一个健康条目 `plugins.<清单 ID>`。
 
 ## 何时使用
 
@@ -94,7 +94,7 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `OutOfProcessPluginsFeature` | 特性入口，能力常量 `Capability`（`plugins.out-of-process`） |
-| `OutOfProcessPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值），`HostEndpoint` 是回调端点；常量 `PipelinePermission`、`MessagingPermission`、`PluginScheme`、`HealthPrefix` |
+| `OutOfProcessPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值），`HostEndpoints` 是按偏好排序的回调端点（回环 TCP 在最后）；常量 `PipelinePermission`、`MessagingPermission`、`PluginScheme`、`HealthPrefix` |
 | `OutOfProcessPluginStatus` | 诊断快照：`Status`（`PluginStatus`）、`ProcessId`、`ProtocolVersion`、`Restarts`、`Lazy` |
 | `OutOfProcessPluginOptions` | 选项与 `FromConfiguration`、`GrantsFor`、`ResolveWorkDirectory` |
 
@@ -143,9 +143,9 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 - 插件 `Failed` 或 `Degraded` 让应用进入 `Degraded`，不让应用退出。
 - 停止：发 `Stop`（宽限秒数与原因 `shutdown` / `unload` / `restart`）→ 在宽限内等待退出 → 超时先发终止信号：关闭插件的 stdin，Unix 上同时发 SIGTERM（Windows 没有 SIGTERM，关闭 stdin 就是等价的信号）→ 5 秒内仍未退出才终止进程树；两种结局都记为 `Failed`（`PLUGINS_TIMEOUT_001`）。插件应把 SIGTERM 与 stdin 关闭都当作立即收尾退出的请求。
 - 运行期 `LoadAsync` 的代理操作只对 `IOperationInvoker` 可见，协议适配器不会为它新增路由。卸载先按归属撤回插件的代理操作与声明的权限码、再停止进程（ADR-0085）：之后调用返回 `KERNEL_NOTFOUND_001`，在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再加载，不用重启宿主。卸载之后才完成的重试握手不再登记（只登记仍是宿主当前运行时的插件）。订阅与消息目录不随卸载撤回。
-- 宿主调用插件的每一次 RPC 都带会话令牌（元数据 `xihan-plugin-session`），插件必须校验、不符即 `Unauthenticated`（ADR-0202）；宿主的回调套接字在新建的私有目录里（`0700`，文件 `0600`），命名管道只允许当前用户。
-- 回调需要会话令牌（元数据 `xihan-plugin-session`），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
-- 回调元数据的 `xihan.tenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则 `Status.error` 为 `PLUGINS_DENIED_002`（gRPC 状态 `OK`）；`Host.Publish` 的信封带 `xihantenant` 时逐项判定（ADR-0195）。
+- 宿主调用插件的每一次 RPC 都带会话令牌（元数据 `xihan-plugin-session`），插件必须校验、不符即 `Unauthenticated`（ADR-0202）；宿主的回调套接字在新建的私有目录里（`0700`，文件 `0600`），命名管道只允许当前用户，回环 TCP 同机的其他用户连得上，隔离靠令牌。
+- 回调需要会话令牌（元数据 `xihan-plugin-session`，恰好一个值：带两个即使其中一个正确也不认），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`，两个端点认同一套令牌；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
+- 回调元数据的 `xihan.tenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则 `Status.error` 为 `PLUGINS_DENIED_002`（gRPC 状态 `OK`）；`Host.Publish` 的元数据越界即整批不发布、每一项都是 `PLUGINS_DENIED_002` + `plugins.callback.tenant_denied`，信封带 `xihantenant` 时逐项判定（ADR-0195、ADR-0237）。
 - 不负责：流式操作在 .NET 侧的发布（协议已定义 `InvokeStream` 帧）、操作系统沙箱（`net.outbound:` / `fs.*:` 只核对授予）、Wasm。
 - 事件订阅：握手的每个 `Subscription` 按它的 `mode` 订阅主题（`spec/plugin/invocation.md` §4）：空或 `competing` 是竞争消费（订阅了主题的宿主实例里只有一个把消息交给插件），`broadcast` 是广播（每个在线的宿主实例都交给自己的插件进程，尽力而为、不进死信，RFC-0009「订阅方式」）。宿主每个（主题，方式）登记一次转交处理器，只把投递交给以同一方式订阅了主题的插件；`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
 - 清单的 `contributes.config` 声明 `XiHan:Plugins:OutOfProcess`。宿主另读别的领域的两项共享设置，不在清单里（RFC-0002「配置节」）：`XiHan:Kernel:StopTimeoutSeconds`（插件停止宽限的缺省）与 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域）；每个插件收到的是它自己清单声明的配置节。

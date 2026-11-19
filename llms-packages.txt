@@ -764,7 +764,7 @@ EF Core Provider 的装配见 [Persistence.EntityFrameworkCore](./persistence-en
 | `ErrorMessage` | 长文本 | 写入时按进程默认区域渲染的错误文案 |
 | `ErrorDetailsJson` | 长文本 | 错误细节的 JSON 对象 |
 | `TraceId` | 字符串，64 | trace-id |
-| `Resource` | 字符串，1024 | `xrn:` 资源名 |
+| `Resource` | 字符串，512 | `xrn:` 资源名 |
 | `PrincipalId` | 字符串，256 | 主体 ID |
 | `TenantId` | 字符串，128 | 租户 ID，普通列 |
 | `DetailsJson` | 长文本 | 细节的 JSON 对象 |
@@ -2370,10 +2370,10 @@ public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
 
 | 基类 | 稳定性 | 实现 | 可覆写 |
 | --- | --- | --- | --- |
-| `PluginProtocolConformance` | Preview | `PluginDirectory`：含 `xihan.manifest.json` 与 `entry` 指向的可执行文件 | `Timeout`（每次协议调用，缺省 15 秒）、`ConfigurationJson`（缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作） |
+| `PluginProtocolConformance` | Preview | `PluginDirectory`：含 `xihan.manifest.json` 与 `entry` 指向的可执行文件 | `Timeout`（每次协议调用，缺省 15 秒）、`ConfigurationJson`（缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`VerifiesSessionToken`（缺省为真，只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉，令牌用例随之跳过） |
 | `WasmPluginConformance` | Experimental | `PluginDirectory`：含清单与模块文件 | `ConfigurationJson`、`SampleRequests`、`ExcludedOperations`、`TrapOperation`（故意陷阱的操作，给出时才跑陷阱后重建用例） |
 
-进程外用例（以宿主身份启动进程）：握手行合法、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅在清单声明范围内；没有共同协议版本时以 `FailedPrecondition` 拒绝；`Configure` 与 `Start` 成功，`Health` 与 `WatchHealth` 报可服务状态且健康项都已声明，`Stop` 后进程在宽限内退出；未声明的操作以 gRPC `Unimplemented` 结束；每个声明的一元操作都返回带 `status` 的应答（成功时载荷是 JSON，失败时错误码合法）；向声明的订阅投递消息得到确认；stdin 关闭后进程自行退出。
+进程外用例（以宿主身份启动进程）：握手行合法、协商出宿主支持的版本、原语层版本相同、清单与目录里的文件一致、操作与订阅在清单声明范围内；没有共同协议版本时以 `FailedPrecondition` 拒绝；`Configure` 与 `Start` 成功，之后 `Health` 与 `WatchHealth` 的第一次推送报 `Ready` 或 `Degraded` 且健康项都已声明，`Stop` 后进程在宽限内退出；未声明的操作以 gRPC `Unimplemented` 结束；每个声明的一元操作都返回带 `status` 的应答（成功时载荷是 JSON，失败时错误码合法）；向声明的订阅投递消息得到确认；stdin 关闭后进程自行退出；不带、带错或带了两个会话令牌值的调用以 `Unauthenticated` 拒绝。插件一侧的规则（ADR-0237）：握手的 `primitives` 取自清单、清单原文不以 BOM 开头、只声明一元操作、订阅的方式总是写出；调用次序不对以 `FailedPrecondition` 拒绝，`Start` 之前的 `Health` 报本地状态且没有健康项，`Start` 应答后是 `Ready` 或 `Degraded`；`Start` 之前的调用与投递报 `plugins.process.unavailable`（未声明的操作仍先报 `Unimplemented`）；投递找不到订阅报 `plugins.event.unsubscribed`，未知的方式与没有信封为 `InvalidArgument`；`InvokeStream` 第一帧不是 `start` 为 `InvalidArgument`、是 `start` 为 `Unimplemented`；配置节不是 JSON 对象时进入 `Failed`、`Stop` 后以退出码 0 退出；`Start` 之前的 `Stop` 应答后以退出码 0 退出。失败的错误都核对码、消息键、`text` 为空，`details` 按 JSON 值比较。每个用例都以两项的 `XIHAN_PLUGIN_HOST_ADDRESS`（首选端点加回环 TCP，都没人监听）启动插件。
 进程外用例还要求清单不写 `contributes.pipeline`（进程外插件不能贡献中间件，宿主在发现时拒绝）。Wasm 套件会故意触发陷阱，Windows 上影子栈强制时整个进程会 fail-fast，所以套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝；陷阱之后从同一个模块重建实例，重走握手的声明与首次相同（`wasm.md` §5）。
 
 
@@ -3286,6 +3286,7 @@ public sealed class NotesFeature : IFeature
 | `Kernel.Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`Placement`、`DeadlineMiddleware`、`IInvocationAccessor`、调用来源 `InvocationOrigin`、上下文扩展 |
 | `Kernel.Operations` | `[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`IOperationInvoker` |
 | `Kernel.Validation` | `ValidationMiddleware`、`JsonSchemaValidator`、`SchemaViolation` |
+| `Kernel.Json` | `ResultJson`（Result 与 Error 的线上 JSON 编码，RFC-0001「Result」） |
 | `Kernel.Resilience` | `ResilienceMiddleware`、`ResilienceOptions`、`ResiliencePolicy` |
 | `Kernel.Diagnostics` | `ObserveMiddleware`、`ActivitySource` 与 `Meter` 桥、`IAuditSink` |
 | `Kernel.Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`（`EvaluateAsync` → `Result<AuthorizationResult>`：成功是允许或拒绝，失败是无法判定）、`AuthorizationResult`、`PermissionDefinition`、`PermissionRegistry` |
@@ -3356,6 +3357,7 @@ await builder.Build().RunAsync();
 | `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous` |
 | `PermissionDefinition` / `PermissionRegistry` | 权限码登记，每个码记下归属（特性或插件的清单 ID）；`Add(owner, permission)` / `AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回，写入与撤回在锁内（插件运行期加载与卸载也会登记、撤回） |
 | `OutboundAddressPolicy` / `OutboundAddressOptions` / `OutboundAddressDeniedException` | [出站地址策略](/security/outbound)：宿主登记的单例，`Apply(SocketsHttpHandler)` 让连接按实际 IP 过策略，`ConnectAsync(host, port, ct)` 给不是 HTTP 的连接，`IsAllowed(IPAddress)` 判断一个 IP |
+| `ResultJson` | Result 与 Error 的线上 JSON 编码：`Write` / `WriteMaybe` / `WriteError` 写出，`Read` / `ReadMaybe` / `ReadError` 读取；值经调用方给的 `JsonTypeInfo<T>`（源生成） |
 | `KernelCapabilities` | 能力 ID 常量与内核清单 |
 
 ## 使用示例
@@ -3405,6 +3407,7 @@ app.Run();
 - `PeriodicHealthContributor` 是 Provider 连通性探针的宿主：后台按间隔重探、缓存最近结果，`Check()` 立即返回；探针异常记为 `KERNEL_UNAVAILABLE_005`；`ContributorStatus` 除名字、状态、错误外还带说明、检查时刻、耗时与标量数据。
 - `App.InvokeAsync` 把 Baggage `xihan.locale` 经 `IMessageResolver.Negotiate` 协商后安装 `MessageScope`，让 `key.L()` 在调用链里得到调用方语言，与 Problem Details 等按上下文解析的文案同一区域。
 - 出站地址策略的宿主总是登记为单例；`ConnectAsync` 给不是 HTTP 的连接。
+- `ResultJson` 与各语言 SDK 逐字一致（向量 `primitives/wire-encoding.json`）：无值成功只写 `{"ok":true}`，`Error` 按 `code`、`message`、`messageKey`、`details`、`inner` 的顺序写出，`message` 是 `Error.Message`；读取先过共同的 JSON 读取检查，再核对成员。读取返回结果的结果：外层失败是编码不合法（`PRIMITIVES_VALIDATION_001`，消息键 `kernel.wire.invalid_json` 或 `kernel.wire.invalid`，`reason` 是出错的路径，如 `$.value`、`$.error.inner.code`），外层成功时内层才是对方的成功或失败。可能没有的值用 `ReadMaybe` / `WriteMaybe`（无值是 `"value":null`）。值的数字写法由 `JsonTypeInfo<T>` 决定，System.Text.Json 把整数值的 `double` 写成 `2`；要按值模型原样往返任意 JSON 用 `JsonElement`，错误细节按值模型读写。`message` 只有空白时读成不合法：.NET 的错误文案不能是空白。
 
 | 错误码 | 情形 |
 | --- | --- |
@@ -3841,7 +3844,7 @@ using (MessageScope.Use(localizer, "ja-JP"))
 ## 行为与限制
 
 - 回退链：精确区域 → 启用列表里同语言的其他区域 → 默认区域 → `en-US`。在链上的每个区域，按注册顺序查各目录，先注册的目录优先。
-- 格式化用命中区域的文化：`{amount:N2}` 在 `de-DE` 得到 `1.234,50`。
+- 数字按命中区域换小数点与分组符：`{amount:N2}` 在 `de-DE` 得到 `1.234,50`。符号取自规范的固定表，与各语言 SDK 相同，不读操作系统的区域数据。
 - 找不到键，或模板的占位符缺值时整条模板不采用：`Resolve` 无值，`Localize` 与 `key.L()` 返回 `MessageTemplate.Describe` 的描述（`kernel.feature.start_failed (id=…, reason=…)`）。
 - 自由文本错误（`Error.Literal`）没有键，`Resolve(error, locale)` 无值，`Localize(error, locale)` 返回原文。
 - 容器建好后再注册的目录不会被已创建的本地化器看到，目录要在 `Build()` 之前注册。
@@ -5337,7 +5340,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 <RootPath>/<container>/uploads/<上传标识>/  未完成的分片上传
 ```
 
-键的各段经编码后作为路径，大小写不敏感的文件系统上键仍区分大小写；容器目录按需创建。写入先落同目录的临时文件（名字含 `~xihan-tmp-`，键的编码不会产出 `~`，键里写什么都不会被当作临时文件），复制完成后原子替换，再写元数据。配额在进程内计量：启动时扫描目录得到已用量并清理残留的临时文件，之后每次写入与删除更新。
+键的各段经编码后作为路径，大小写不敏感的文件系统上键仍区分大小写；容器目录按需创建。写入先落同目录的临时文件（名字含 `~xihan-tmp-`，键的编码不会产出 `~`，键里写什么都不会被当作临时文件），复制完成后先把元数据也写成临时文件，再依次原子替换内容与元数据。配额在进程内计量：启动时扫描目录得到已用量，并清理内容、元数据与上传目录里上次崩溃残留的临时文件（ADR-0212、ADR-0240），之后每次写入与删除更新。
 
 预签名不是文件系统的能力。需要限时地址时装 `Hosting.AspNetCore` 的 `HostedBlobUrlFeature` 并 `MapXiHanBlobs()`，由宿主代收发，见[对象存储](/object-storage/advanced)。
 
@@ -5412,8 +5415,9 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 
 ## 行为与限制
 
-- 原子性：读取方要么看到旧对象，要么看到完整的新对象。不覆盖的写入（含分片上传的完成）由文件系统原子判定谁先占住内容路径：Linux 与 macOS 上先以独占创建的空文件占位、再把内容原子替换上去，Windows 上不替换地改名；内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`，并发的不覆盖写入（含共享目录的多个进程）只有一个成功（ADR-0089、ADR-0168、ADR-0172）。
-- 配额：复制过程中逐段检查并预留额度，超过 `MaxBlobBytes` 或 `MaxTotalBytes`（已用量加正在写入的全部预留）的项返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不留下内容；并发写入合计也超不过总配额。覆盖写入期间新旧内容同时在盘上，要有新内容全长的余量，旧对象的字节在替换后才释放（ADR-0183）。单进程计量正确，多进程共享目录时只是近似。
+- 原子性：读取方要么看到旧对象，要么看到完整的新对象。不覆盖的写入（含分片上传的完成）由文件系统原子判定谁先占住内容路径：Linux 与 macOS 上先以独占创建的空文件占位、再把内容原子替换上去，Windows 上不替换地改名；内容文件已存在即 `OBJECTSTORAGE_CONFLICT_001`，并发的不覆盖写入（含共享目录的多个进程）只有一个成功（ADR-0089、ADR-0168、ADR-0172）。内容与元数据在同一把锁里成对换上或删除：并发覆盖同一个键时都成功，留下的长度、`ETag`、内容类型与自定义元数据属于盘上的内容；覆盖与删除同一个键时，结果要么是已删除，要么是覆盖写入的内容带着它的元数据（ADR-0239）。
+- 读取与覆盖、删除交错：正在读的对象照样能覆盖与删除，读取方读完的是打开时的那一版；被换掉或删掉的旧内容在最后一个读取方关闭之前仍占磁盘，不计入用量。Windows 上替换以 POSIX 语义改名，卷不支持时（SMB 共享、FAT 等）退回普通的替换改名并在日志里记一条警告，这时正被读取的对象覆盖会以 `OBJECTSTORAGE_UNAVAILABLE_001` 失败。一次读取（`Get`、`Head`、列举的每一项）拿到的元数据总属于打开的内容，读取期间被删的对象报不存在。多个进程共享目录时这两条与配额一样只是近似（ADR-0241）。
+- 配额：复制过程中逐段检查并预留额度，超过 `MaxBlobBytes` 或 `MaxTotalBytes`（已用量加正在写入的全部预留）的项返回 `OBJECTSTORAGE_UNAVAILABLE_002`，不留下内容；并发写入合计也超不过总配额。被总配额拒绝的写入当场退还已预留的部分，配额将满时并发写入不会一起被拒，单独放得下的至少一个写得成（ADR-0238）。覆盖写入期间新旧内容同时在盘上，要有新内容全长的余量，旧对象的字节在替换后才释放（ADR-0183）。单进程计量正确，多进程共享目录时只是近似。
 - 列举：遍历容器目录、按序数排序、按前缀过滤，续页标记是上一页最后一个键；外部直接放进 `data/` 目录、没有元数据的文件按文件信息补一份元数据；文件名还原出的键不符合键文法的（含保留前缀 `.xihan` 下的，ADR-0090）跳过。
 - 范围读取：打开内容文件后定位到起点，只交出该段。
 - 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片计入总配额，未完成的上传最多 `MaxMultipartUploads` 个，过期的上传拒绝再传分片与完成（ADR-0184）。上传标识只认本实现发出的 32 位小写十六进制。
@@ -7071,6 +7075,9 @@ public sealed class ChangeBuffer
 | 并发戳 | `ConcurrencyStamp` 长度 32 |
 | 字符串长度 | `[StringLength(n)]` 或 `[MaxLength(n)]` → 长度 n；`[LongText]` 或无参 `[MaxLength]` → 长文本类型；实体自己的 `[SugarColumn]` 已给长度或类型时不动；没有注解的沿用 SqlSugar 缺省（PostgreSQL 为 `varchar(255)`） |
 | `DateTimeOffset` | 经转换器按 UTC 时刻往返；读取按驱动交出的 `DateTime.Kind` 还原（ADR-0037） |
+| 日期时间精度 | `DateTimeOffset` 与 `DateTime` 在 MySQL 上建成 `datetime(6)`、在 Oracle 上建成 `timestamp(6)`，SQL Server 的 `DateTime` 建成 `datetime2(6)`，都到微秒；SQL Server 上写入参数按 `datetime2` 传；实体自己给了列类型的不动，已经建成的列不改（ADR-0231） |
+| SQL Server 与 Oracle 字符串 | 有长度的字符串列建成 SQL Server `nvarchar(n)`、Oracle `nvarchar2(n)`，存 Unicode、按字符计长；Oracle 最长 2000，更长的用 `[LongText]`；SqlSugar 缺省的 `varchar(n)` 在 SQL Server 上存不了汉字、在 Oracle 上按字节计长（ADR-0232） |
+| SQL Server 隔离 | 库要打开 `READ_COMMITTED_SNAPSHOT`（`ALTER DATABASE [库名] SET READ_COMMITTED_SNAPSHOT ON`）：缺省的读已提交是加锁读，别的工作单元读未提交的行要等写入方结束（ADR-0234） |
 | 可空 | 可空值类型与可空引用类型的列可空 |
 | 忽略 | 没有公开 setter 的属性与集合属性（字符串、字节数组除外）不映射 |
 | PostgreSQL 缺省值 | 非可空的数值、枚举、布尔与 `Guid` 列配 CLR 缺省值（`0`、`false`、全零 Guid），`InitTables` 才能给已有行的表加这类列（ADR-0040） |
@@ -7315,9 +7322,9 @@ Console.WriteLine(unloaded.IsSuccess);
 
 特性在配置阶段按 `Directories` 同步发现插件：读 `xihan.manifest.json`（要求 `kind: plugin`、`isolation: out-of-process`），核对 `Grants` 授予的权限，以插件目录为工作目录启动 `entry` 指向的可执行文件，只继承必要的环境变量并追加 `XIHAN_PLUGIN_*`，在 `HandshakeTimeout` 内读到 stdout 上的握手行、连上插件端点并调用 `Handshake`，再按 `spec/plugin/handshake.md` 核对清单与声明。声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码连同它们一次登记进 `PermissionRegistry`（显示名取码本身，同组的操作可以引用，ADR-0080），消息目录接进本地化器，订阅的主题登记事件处理器。
 
-启动阶段启动回调服务器（Windows 上是命名管道，其他系统是 Unix 域套接字）与 `onStartup` 的插件：`Configure`（下发配置节 JSON、权限、绑定与工作目录）→ `Start` → 健康监视。懒激活的插件在握手后停止进程，首次调用或投递时再启动。停止阶段按与登记相反的顺序停止全部插件，再关闭回调服务器。
+回调服务器的端点在创建宿主时选定：Windows 上是只允许当前用户的命名管道加回环 TCP，其他系统是私有目录里的 Unix 域套接字加回环 TCP（临时目录的路径含空白或 `;` 时只有回环 TCP），回环 TCP 的端口由系统分配并在此刻占住；端点按这个偏好以 `;` 分隔写进插件的 `XIHAN_PLUGIN_HOST_ADDRESS`，插件取第一个自己能连的（ADR-0237）。启动阶段让回调服务器在这些端点上监听，再启动 `onStartup` 的插件：`Configure`（下发配置节 JSON、权限、绑定与工作目录）→ `Start` → 健康监视。懒激活的插件在握手后停止进程，首次调用或投递时再启动。停止阶段按与登记相反的顺序停止全部插件，再关闭回调服务器。
 
-运行期每次调用带 `traceparent`、截止时间与已登记的 Baggage；业务失败来自插件的 `Status.error`，用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001`、`KERNEL_TIMEOUT_001` 等。插件回调 `Host.Invoke` / `Host.Publish` 以插件身份执行（主体 ID 为清单 ID，方案 `Plugin`），只能带在途调用的租户（ADR-0195）。每个插件是应用的一个健康条目 `plugins.<清单 ID>`。
+运行期每次调用带 `traceparent`、截止时间与已登记的 Baggage；业务失败来自插件的 `Status.error`，用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001`、`KERNEL_TIMEOUT_001` 等。插件回调 `Host.Invoke` / `Host.Publish` 以插件身份执行（主体 ID 为清单 ID，方案 `Plugin`），只能带在途调用的租户（ADR-0195）；两者都按元数据建调用上下文，截止时间取元数据与 gRPC 调用自身截止时间中较早的，`Host.Publish` 在这个上下文里发布，信封缺的租户、主体、关联 ID、区域与追踪由发布器补齐（ADR-0237）。每个插件是应用的一个健康条目 `plugins.<清单 ID>`。
 
 ## 何时使用
 
@@ -7390,7 +7397,7 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `OutOfProcessPluginsFeature` | 特性入口，能力常量 `Capability`（`plugins.out-of-process`） |
-| `OutOfProcessPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值），`HostEndpoint` 是回调端点；常量 `PipelinePermission`、`MessagingPermission`、`PluginScheme`、`HealthPrefix` |
+| `OutOfProcessPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值），`HostEndpoints` 是按偏好排序的回调端点（回环 TCP 在最后）；常量 `PipelinePermission`、`MessagingPermission`、`PluginScheme`、`HealthPrefix` |
 | `OutOfProcessPluginStatus` | 诊断快照：`Status`（`PluginStatus`）、`ProcessId`、`ProtocolVersion`、`Restarts`、`Lazy` |
 | `OutOfProcessPluginOptions` | 选项与 `FromConfiguration`、`GrantsFor`、`ResolveWorkDirectory` |
 
@@ -7439,9 +7446,9 @@ static async Task<OperationResponse> EchoAsync(IServiceProvider services)
 - 插件 `Failed` 或 `Degraded` 让应用进入 `Degraded`，不让应用退出。
 - 停止：发 `Stop`（宽限秒数与原因 `shutdown` / `unload` / `restart`）→ 在宽限内等待退出 → 超时先发终止信号：关闭插件的 stdin，Unix 上同时发 SIGTERM（Windows 没有 SIGTERM，关闭 stdin 就是等价的信号）→ 5 秒内仍未退出才终止进程树；两种结局都记为 `Failed`（`PLUGINS_TIMEOUT_001`）。插件应把 SIGTERM 与 stdin 关闭都当作立即收尾退出的请求。
 - 运行期 `LoadAsync` 的代理操作只对 `IOperationInvoker` 可见，协议适配器不会为它新增路由。卸载先按归属撤回插件的代理操作与声明的权限码、再停止进程（ADR-0085）：之后调用返回 `KERNEL_NOTFOUND_001`，在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再加载，不用重启宿主。卸载之后才完成的重试握手不再登记（只登记仍是宿主当前运行时的插件）。订阅与消息目录不随卸载撤回。
-- 宿主调用插件的每一次 RPC 都带会话令牌（元数据 `xihan-plugin-session`），插件必须校验、不符即 `Unauthenticated`（ADR-0202）；宿主的回调套接字在新建的私有目录里（`0700`，文件 `0600`），命名管道只允许当前用户。
-- 回调需要会话令牌（元数据 `xihan-plugin-session`），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
-- 回调元数据的 `xihan.tenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则 `Status.error` 为 `PLUGINS_DENIED_002`（gRPC 状态 `OK`）；`Host.Publish` 的信封带 `xihantenant` 时逐项判定（ADR-0195）。
+- 宿主调用插件的每一次 RPC 都带会话令牌（元数据 `xihan-plugin-session`），插件必须校验、不符即 `Unauthenticated`（ADR-0202）；宿主的回调套接字在新建的私有目录里（`0700`，文件 `0600`），命名管道只允许当前用户，回环 TCP 同机的其他用户连得上，隔离靠令牌。
+- 回调需要会话令牌（元数据 `xihan-plugin-session`，恰好一个值：带两个即使其中一个正确也不认），缺失或不符为 `Unauthenticated` + `PLUGINS_DENIED_002`，两个端点认同一套令牌；`Host.Invoke` 要 `capability:kernel.pipeline`，`Host.Publish` 要 `capability:messaging.queue`，权限须在清单声明且已授予（授予多于声明的部分不生效），未声明或未授予为 `PermissionDenied` + `PLUGINS_DENIED_002`。
+- 回调元数据的 `xihan.tenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则 `Status.error` 为 `PLUGINS_DENIED_002`（gRPC 状态 `OK`）；`Host.Publish` 的元数据越界即整批不发布、每一项都是 `PLUGINS_DENIED_002` + `plugins.callback.tenant_denied`，信封带 `xihantenant` 时逐项判定（ADR-0195、ADR-0237）。
 - 不负责：流式操作在 .NET 侧的发布（协议已定义 `InvokeStream` 帧）、操作系统沙箱（`net.outbound:` / `fs.*:` 只核对授予）、Wasm。
 - 事件订阅：握手的每个 `Subscription` 按它的 `mode` 订阅主题（`spec/plugin/invocation.md` §4）：空或 `competing` 是竞争消费（订阅了主题的宿主实例里只有一个把消息交给插件），`broadcast` 是广播（每个在线的宿主实例都交给自己的插件进程，尽力而为、不进死信，RFC-0009「订阅方式」）。宿主每个（主题，方式）登记一次转交处理器，只把投递交给以同一方式订阅了主题的插件；`mode` 不合法或同一（主题，类型）以两种方式各声明一次是 `PLUGINS_VALIDATION_004`。
 - 清单的 `contributes.config` 声明 `XiHan:Plugins:OutOfProcess`。宿主另读别的领域的两项共享设置，不在清单里（RFC-0002「配置节」）：`XiHan:Kernel:StopTimeoutSeconds`（插件停止宽限的缺省）与 `XiHan:Localization:DefaultLocale`（握手时告诉插件的缺省区域）；每个插件收到的是它自己清单声明的配置节。
@@ -7496,10 +7503,10 @@ dotnet add package XiHan.Framework.Plugins.Protocol --prerelease
 
 | 类型 | 说明 |
 | --- | --- |
-| `PluginEndpoint` | 本机 gRPC 端点：`Network`（`unix` / `tcp` / `npipe`）与 `Address`；`tcp` 只接受带端口的回环地址。`TryParseHandshakeLine` 解析握手行，`TryParse` 解析环境变量形式 `<network> <address>`，`ToHandshakeLine()` 生成握手行 |
+| `PluginEndpoint` | 本机 gRPC 端点：`Network`（`unix` / `tcp` / `npipe`）与 `Address`；地址是一个或多个非空白字符（空白与 .NET 正则的 `\s` 相同），`tcp` 只接受写法固定的回环地址加端口（`127.0.0.0/8` 的点分十进制、不带前导零，或 `[::1]`；端口 1–65535、不带前导零）。`TryParseHandshakeLine` 解析握手行，`TryParse` 解析单个端点 `<network> <address>`，`TryParseList` / `FormatList` 读写 `XIHAN_PLUGIN_HOST_ADDRESS` 的端点列表（以 `ListSeparator` 即 `;` 分隔、按偏好排序，列表里的地址不得含 `;`），`ToHandshakeLine()` 生成握手行 |
 | `PluginProtocol` | 协议版本 `Version`（`1`）与 `SupportedVersions`、版本协商 `Negotiate`、会话元数据键 `SessionMetadataKey`（`xihan-plugin-session`）、错误码尾部元数据键 `ErrorCodeTrailer`（`xihan-error-code`）、六个环境变量名 |
 | `PluginErrors` | 进程外与 Wasm 载体共用的 `PLUGINS_*` 错误码常量 |
-| `PluginMessages` | 对应的消息键常量与消息目录 `Catalog` |
+| `PluginMessages` | 对应的消息键常量与消息目录 `Catalog`；含插件运行时与宿主共用的键（`spec/plugin/invocation.md` §8），如 `EventUnsubscribed`（`plugins.event.unsubscribed`）、`HostUnavailable`（`plugins.host.unavailable`），宿主要有它们的目录才翻译得出插件转来的错误 |
 
 `PluginProtocol` 的环境变量常量：
 
@@ -7508,7 +7515,7 @@ dotnet add package XiHan.Framework.Plugins.Protocol --prerelease
 | `ProtocolVersionsVariable` | `XIHAN_PLUGIN_PROTOCOL_VERSIONS` |
 | `PrimitivesVariable` | `XIHAN_PLUGIN_PRIMITIVES` |
 | `SessionVariable` | `XIHAN_PLUGIN_SESSION` |
-| `HostAddressVariable` | `XIHAN_PLUGIN_HOST_ADDRESS` |
+| `HostAddressVariable` | `XIHAN_PLUGIN_HOST_ADDRESS`（一个或多个端点，`;` 分隔） |
 | `InstanceVariable` | `XIHAN_PLUGIN_INSTANCE` |
 | `LocaleVariable` | `XIHAN_PLUGIN_LOCALE` |
 
@@ -7525,8 +7532,15 @@ if (PluginEndpoint.TryParseHandshakeLine("xihan-plugin/1 tcp 127.0.0.1:50123", o
     Console.WriteLine($"{endpoint.Network} {endpoint.Address}");
 }
 
-// 非回环的 TCP 地址不是合法端点
+// 非回环的 TCP 地址与 127.1 这样的简写都不是合法端点
 Console.WriteLine(PluginEndpoint.TryParseHandshakeLine("xihan-plugin/1 tcp 10.0.0.5:50123", out _));
+Console.WriteLine(PluginEndpoint.TryParseHandshakeLine("xihan-plugin/1 tcp 127.1:50123", out _));
+
+// 宿主回调端点列表：按偏好排序，插件取第一个自己能连的
+if (PluginEndpoint.TryParseList(@"npipe \\.\pipe\xihan-host-1f3a;tcp 127.0.0.1:50123", out var hosts))
+{
+    Console.WriteLine(hosts[^1]);
+}
 
 // 取双方都支持的最高版本；没有交集为无值
 var negotiated = PluginProtocol.Negotiate(PluginProtocol.SupportedVersions, [1u, 2u]);
@@ -7597,7 +7611,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写入即丢弃（ADR-0186），日志走导入 `xihan.log`。
 
-回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，只能带当前调用的租户（ADR-0195），受当前调用的截止时间与取消约束（`xihan.invoke` 新调用的截止时间取请求元数据与当前调用中较早者，`xihan.publish` 随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
+回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，只能带当前调用的租户（ADR-0195），受当前调用的截止时间与取消约束（`xihan.invoke` 新调用的截止时间取请求元数据与当前调用中较早者，`xihan.publish` 随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；`xihan.publish` 与 `Host.Publish` 一样按请求元数据建回调上下文、在其中发布（信封缺的租户、主体与关联 ID 由发布器补齐），元数据的租户越界即整批不发布（ADR-0237）；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
 
 ## 何时使用
 

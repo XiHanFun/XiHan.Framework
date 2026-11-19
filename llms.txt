@@ -6,8 +6,8 @@
 
 ## 机读资产
 
-- [llms-full.txt](https://framework.docs.xihanfun.com/llms-full.txt): 全部 163 页正文
-- [llms-guide.txt](https://framework.docs.xihanfun.com/llms-guide.txt): 90 页教程
+- [llms-full.txt](https://framework.docs.xihanfun.com/llms-full.txt): 全部 169 页正文
+- [llms-guide.txt](https://framework.docs.xihanfun.com/llms-guide.txt): 96 页教程
 - [llms-packages.txt](https://framework.docs.xihanfun.com/llms-packages.txt): 71 页包参考
 - 每页 Markdown：把站点地址后缀成 `.md`，如 https://framework.docs.xihanfun.com/agents/agents.md
 
@@ -146,6 +146,15 @@
 - [进程外插件](https://framework.docs.xihanfun.com/plugins/out-of-process): 进程外插件是宿主启动的子进程，经本机 gRPC 按协议 `xihan.plugin.v1` 与宿主通信。
 - [隔离级别与清单](https://framework.docs.xihanfun.com/plugins/overview): 插件是在运行期装载、与宿主隔离的代码。
 - [Wasm 插件](https://framework.docs.xihanfun.com/plugins/wasm): Wasm 插件是在宿主进程内、由 wasmtime 沙箱运行的 WebAssembly 模块。
+
+## 多语言 SDK
+
+- [Go SDK](https://framework.docs.xihanfun.com/sdks/go): framework-sdk-go 是 XiHan Spec 的 Go 实现：原语层、清单、调用上下文、管道、操作契约与进程外插件运行时，以及 `caching.distributed@1` 远程 Provider 的插件侧。
+- [Java SDK](https://framework.docs.xihanfun.com/sdks/java): framework-sdk-java 是 XiHan Spec 的 Java 实现：原语层、清单、调用上下文、管道、操作契约与进程外插件运行时。
+- [PHP SDK](https://framework.docs.xihanfun.com/sdks/php): PHP SDK 是 XiHan Spec 的 PHP 实现，仓库在 XiHanFun/framework-sdk-php，Composer 包名 `xihanfun/xihan-framework`：原语层、清单、调用上下文、管道、操作契约与进程外插件运行时。
+- [Python SDK](https://framework.docs.xihanfun.com/sdks/python): framework-sdk-python 是 XiHan Spec 的 Python 实现：原语层、清单、调用上下文、管道、操作契约与进程外插件运行时。
+- [Rust SDK](https://framework.docs.xihanfun.com/sdks/rust): Rust SDK 是 XiHan Spec 的 Rust 实现，仓库是 XiHanFun/framework-sdk-rust：提供原语层、清单、调用上下文、管道与操作契约，以及进程外插件运行时（cargo feature `plugin`），语义与线上编码按规范的 RFC。
+- [TypeScript SDK](https://framework.docs.xihanfun.com/sdks/typescript): TypeScript SDK 是 XiHan Spec 的 TypeScript 实现：原语层、清单、调用上下文、管道、操作契约与进程外插件运行时。
 
 ## 托管、部署、发布
 

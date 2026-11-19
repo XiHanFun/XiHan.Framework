@@ -39,10 +39,10 @@ dotnet add package XiHan.Framework.Plugins.Protocol --prerelease
 
 | 类型 | 说明 |
 | --- | --- |
-| `PluginEndpoint` | 本机 gRPC 端点：`Network`（`unix` / `tcp` / `npipe`）与 `Address`；`tcp` 只接受带端口的回环地址。`TryParseHandshakeLine` 解析握手行，`TryParse` 解析环境变量形式 `<network> <address>`，`ToHandshakeLine()` 生成握手行 |
+| `PluginEndpoint` | 本机 gRPC 端点：`Network`（`unix` / `tcp` / `npipe`）与 `Address`；地址是一个或多个非空白字符（空白与 .NET 正则的 `\s` 相同），`tcp` 只接受写法固定的回环地址加端口（`127.0.0.0/8` 的点分十进制、不带前导零，或 `[::1]`；端口 1–65535、不带前导零）。`TryParseHandshakeLine` 解析握手行，`TryParse` 解析单个端点 `<network> <address>`，`TryParseList` / `FormatList` 读写 `XIHAN_PLUGIN_HOST_ADDRESS` 的端点列表（以 `ListSeparator` 即 `;` 分隔、按偏好排序，列表里的地址不得含 `;`），`ToHandshakeLine()` 生成握手行 |
 | `PluginProtocol` | 协议版本 `Version`（`1`）与 `SupportedVersions`、版本协商 `Negotiate`、会话元数据键 `SessionMetadataKey`（`xihan-plugin-session`）、错误码尾部元数据键 `ErrorCodeTrailer`（`xihan-error-code`）、六个环境变量名 |
 | `PluginErrors` | 进程外与 Wasm 载体共用的 `PLUGINS_*` 错误码常量 |
-| `PluginMessages` | 对应的消息键常量与消息目录 `Catalog` |
+| `PluginMessages` | 对应的消息键常量与消息目录 `Catalog`；含插件运行时与宿主共用的键（`spec/plugin/invocation.md` §8），如 `EventUnsubscribed`（`plugins.event.unsubscribed`）、`HostUnavailable`（`plugins.host.unavailable`），宿主要有它们的目录才翻译得出插件转来的错误 |
 
 `PluginProtocol` 的环境变量常量：
 
@@ -51,7 +51,7 @@ dotnet add package XiHan.Framework.Plugins.Protocol --prerelease
 | `ProtocolVersionsVariable` | `XIHAN_PLUGIN_PROTOCOL_VERSIONS` |
 | `PrimitivesVariable` | `XIHAN_PLUGIN_PRIMITIVES` |
 | `SessionVariable` | `XIHAN_PLUGIN_SESSION` |
-| `HostAddressVariable` | `XIHAN_PLUGIN_HOST_ADDRESS` |
+| `HostAddressVariable` | `XIHAN_PLUGIN_HOST_ADDRESS`（一个或多个端点，`;` 分隔） |
 | `InstanceVariable` | `XIHAN_PLUGIN_INSTANCE` |
 | `LocaleVariable` | `XIHAN_PLUGIN_LOCALE` |
 
@@ -68,8 +68,15 @@ if (PluginEndpoint.TryParseHandshakeLine("xihan-plugin/1 tcp 127.0.0.1:50123", o
     Console.WriteLine($"{endpoint.Network} {endpoint.Address}");
 }
 
-// 非回环的 TCP 地址不是合法端点
+// 非回环的 TCP 地址与 127.1 这样的简写都不是合法端点
 Console.WriteLine(PluginEndpoint.TryParseHandshakeLine("xihan-plugin/1 tcp 10.0.0.5:50123", out _));
+Console.WriteLine(PluginEndpoint.TryParseHandshakeLine("xihan-plugin/1 tcp 127.1:50123", out _));
+
+// 宿主回调端点列表：按偏好排序，插件取第一个自己能连的
+if (PluginEndpoint.TryParseList(@"npipe \\.\pipe\xihan-host-1f3a;tcp 127.0.0.1:50123", out var hosts))
+{
+    Console.WriteLine(hosts[^1]);
+}
 
 // 取双方都支持的最高版本；没有交集为无值
 var negotiated = PluginProtocol.Negotiate(PluginProtocol.SupportedVersions, [1u, 2u]);

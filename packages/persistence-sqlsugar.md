@@ -309,6 +309,9 @@ public sealed class ChangeBuffer
 | 并发戳 | `ConcurrencyStamp` 长度 32 |
 | 字符串长度 | `[StringLength(n)]` 或 `[MaxLength(n)]` → 长度 n；`[LongText]` 或无参 `[MaxLength]` → 长文本类型；实体自己的 `[SugarColumn]` 已给长度或类型时不动；没有注解的沿用 SqlSugar 缺省（PostgreSQL 为 `varchar(255)`） |
 | `DateTimeOffset` | 经转换器按 UTC 时刻往返；读取按驱动交出的 `DateTime.Kind` 还原（ADR-0037） |
+| 日期时间精度 | `DateTimeOffset` 与 `DateTime` 在 MySQL 上建成 `datetime(6)`、在 Oracle 上建成 `timestamp(6)`，SQL Server 的 `DateTime` 建成 `datetime2(6)`，都到微秒；SQL Server 上写入参数按 `datetime2` 传；实体自己给了列类型的不动，已经建成的列不改（ADR-0231） |
+| SQL Server 与 Oracle 字符串 | 有长度的字符串列建成 SQL Server `nvarchar(n)`、Oracle `nvarchar2(n)`，存 Unicode、按字符计长；Oracle 最长 2000，更长的用 `[LongText]`；SqlSugar 缺省的 `varchar(n)` 在 SQL Server 上存不了汉字、在 Oracle 上按字节计长（ADR-0232） |
+| SQL Server 隔离 | 库要打开 `READ_COMMITTED_SNAPSHOT`（`ALTER DATABASE [库名] SET READ_COMMITTED_SNAPSHOT ON`）：缺省的读已提交是加锁读，别的工作单元读未提交的行要等写入方结束（ADR-0234） |
 | 可空 | 可空值类型与可空引用类型的列可空 |
 | 忽略 | 没有公开 setter 的属性与集合属性（字符串、字节数组除外）不映射 |
 | PostgreSQL 缺省值 | 非可空的数值、枚举、布尔与 `Guid` 列配 CLR 缺省值（`0`、`false`、全零 Guid），`InitTables` 才能给已有行的表加这类列（ADR-0040） |

@@ -26,6 +26,7 @@
 | `Kernel.Pipeline` | `IPipelineMiddleware`、`PipelineBuilder`、`PipelineStep`、`Placement`、`DeadlineMiddleware`、`IInvocationAccessor`、调用来源 `InvocationOrigin`、上下文扩展 |
 | `Kernel.Operations` | `[Operation]`、`IOperation<TRequest, TResponse>`、`OperationContract`、`OperationDescriptor`、`OperationSchema`、`OperationRegistry`、`IOperationInvoker` |
 | `Kernel.Validation` | `ValidationMiddleware`、`JsonSchemaValidator`、`SchemaViolation` |
+| `Kernel.Json` | `ResultJson`（Result 与 Error 的线上 JSON 编码，RFC-0001「Result」） |
 | `Kernel.Resilience` | `ResilienceMiddleware`、`ResilienceOptions`、`ResiliencePolicy` |
 | `Kernel.Diagnostics` | `ObserveMiddleware`、`ActivitySource` 与 `Meter` 桥、`IAuditSink` |
 | `Kernel.Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`（`EvaluateAsync` → `Result<AuthorizationResult>`：成功是允许或拒绝，失败是无法判定）、`AuthorizationResult`、`PermissionDefinition`、`PermissionRegistry` |
@@ -96,6 +97,7 @@ await builder.Build().RunAsync();
 | `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous` |
 | `PermissionDefinition` / `PermissionRegistry` | 权限码登记，每个码记下归属（特性或插件的清单 ID）；`Add(owner, permission)` / `AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回，写入与撤回在锁内（插件运行期加载与卸载也会登记、撤回） |
 | `OutboundAddressPolicy` / `OutboundAddressOptions` / `OutboundAddressDeniedException` | [出站地址策略](/security/outbound)：宿主登记的单例，`Apply(SocketsHttpHandler)` 让连接按实际 IP 过策略，`ConnectAsync(host, port, ct)` 给不是 HTTP 的连接，`IsAllowed(IPAddress)` 判断一个 IP |
+| `ResultJson` | Result 与 Error 的线上 JSON 编码：`Write` / `WriteMaybe` / `WriteError` 写出，`Read` / `ReadMaybe` / `ReadError` 读取；值经调用方给的 `JsonTypeInfo<T>`（源生成） |
 | `KernelCapabilities` | 能力 ID 常量与内核清单 |
 
 ## 使用示例
@@ -145,6 +147,7 @@ app.Run();
 - `PeriodicHealthContributor` 是 Provider 连通性探针的宿主：后台按间隔重探、缓存最近结果，`Check()` 立即返回；探针异常记为 `KERNEL_UNAVAILABLE_005`；`ContributorStatus` 除名字、状态、错误外还带说明、检查时刻、耗时与标量数据。
 - `App.InvokeAsync` 把 Baggage `xihan.locale` 经 `IMessageResolver.Negotiate` 协商后安装 `MessageScope`，让 `key.L()` 在调用链里得到调用方语言，与 Problem Details 等按上下文解析的文案同一区域。
 - 出站地址策略的宿主总是登记为单例；`ConnectAsync` 给不是 HTTP 的连接。
+- `ResultJson` 与各语言 SDK 逐字一致（向量 `primitives/wire-encoding.json`）：无值成功只写 `{"ok":true}`，`Error` 按 `code`、`message`、`messageKey`、`details`、`inner` 的顺序写出，`message` 是 `Error.Message`；读取先过共同的 JSON 读取检查，再核对成员。读取返回结果的结果：外层失败是编码不合法（`PRIMITIVES_VALIDATION_001`，消息键 `kernel.wire.invalid_json` 或 `kernel.wire.invalid`，`reason` 是出错的路径，如 `$.value`、`$.error.inner.code`），外层成功时内层才是对方的成功或失败。可能没有的值用 `ReadMaybe` / `WriteMaybe`（无值是 `"value":null`）。值的数字写法由 `JsonTypeInfo<T>` 决定，System.Text.Json 把整数值的 `double` 写成 `2`；要按值模型原样往返任意 JSON 用 `JsonElement`，错误细节按值模型读写。`message` 只有空白时读成不合法：.NET 的错误文案不能是空白。
 
 | 错误码 | 情形 |
 | --- | --- |

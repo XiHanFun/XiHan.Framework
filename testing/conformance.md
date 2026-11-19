@@ -96,7 +96,7 @@ public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
 }
 ```
 
-可覆写的成员：`Timeout`（每次协议调用，缺省 15 秒，进程外）、`ConfigurationJson`（`Configure` 下发的配置节，缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`TrapOperation`（Wasm，给出时才跑陷阱后重建用例）。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`：套件会故意触发陷阱，影子栈强制时整个测试进程 fail-fast（[Wasm 插件](/plugins/wasm)）。
+可覆写的成员：`Timeout`（每次协议调用，缺省 15 秒，进程外）、`VerifiesSessionToken`（进程外，缺省为真；只在插件 SDK 还没有发布校验会话令牌的版本时临时关掉）、`ConfigurationJson`（`Configure` 下发的配置节，缺省 `{}`）、`SampleRequests`（没有样例的操作以 `{}` 调用）、`ExcludedOperations`（故意崩溃或依赖宿主回调的操作）、`TrapOperation`（Wasm，给出时才跑陷阱后重建用例）。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`：套件会故意触发陷阱，影子栈强制时整个测试进程 fail-fast（[Wasm 插件](/plugins/wasm)）。
 
 非 .NET 的插件用 Go 运行器，不需要 .NET 环境：
 
@@ -118,7 +118,7 @@ xihan-conformance vectors
 | `--json` | 结果输出为 JSON |
 | `--quiet` | 不转发插件的 stderr |
 
-用例：`handshake`（握手行、版本协商、原语层版本、清单一致、声明在清单范围内、目录至少一种区域）、`refusal`（没有共同版本时以 `FailedPrecondition` 拒绝）、`lifecycle`（`Configure` / `Start` / `Health` / `WatchHealth` / `Stop`，进程在宽限内退出）、`unknown-operation`（`Unimplemented`）、`declared-operations`（每个声明的操作都返回 `status`）、`event`（订阅投递得到确认，没有订阅时跳过）、`stdin`（关闭 stdin 后进程自行退出）。每个用例单独启动一次插件进程。退出码：`0` 全部通过（含跳过），`1` 有用例失败，`2` 参数或目录错误。`xihan-conformance vectors` 自检规范仓库 `conformance/vectors/` 下的数据向量（错误码、Baggage 键、握手行、版本协商等的合法与非法样例），各语言 SDK 的单元测试也直接读这些文件。
+用例：`handshake`（握手行、版本协商、原语层版本、清单一致、声明在清单范围内、目录至少一种区域；`primitives` 取自清单、清单不以 BOM 开头、只声明一元操作、订阅方式总是写出）、`refusal`（没有共同版本时以 `FailedPrecondition` 拒绝）、`session`（不带、带错、带两个会话令牌值都以 `Unauthenticated` 拒绝）、`lifecycle`（`Configure` / `Start` / `Health` / `WatchHealth` / `Stop`，`Start` 之后报 `Ready` 或 `Degraded`，进程在宽限内退出）、`order`（调用次序不对以 `FailedPrecondition` 拒绝，`Start` 之前的 `Health` 报本地状态）、`unknown-operation`（`Unimplemented`）、`declared-operations`（每个声明的操作都返回 `status`）、`unavailable`（`Start` 之前的调用与投递报 `plugins.process.unavailable`）、`event`（订阅投递得到确认，没有订阅时跳过）、`unsubscribed`（找不到订阅报 `plugins.event.unsubscribed`，未知方式与没有信封为 `InvalidArgument`）、`stream`（`InvokeStream` 按第一帧以 `InvalidArgument` 或 `Unimplemented` 结束）、`configuration`（配置节不是对象时进入 `Failed`，`Stop` 后以退出码 0 退出）、`stop-early`（握手后直接 `Stop`，以退出码 0 退出）、`stdin`（关闭 stdin 后进程自行退出）。.NET 套件的用例说明里写着它对应的运行器用例名。每个用例单独启动一次插件进程，`XIHAN_PLUGIN_HOST_ADDRESS` 与 .NET 宿主一样是两项的列表（首选端点加回环 TCP，都没人监听）。退出码：`0` 全部通过（含跳过），`1` 有用例失败，`2` 参数或目录错误。`xihan-conformance vectors` 自检规范仓库 `conformance/vectors/` 下的数据向量（错误码、Baggage 键、握手行、版本协商等的合法与非法样例），各语言 SDK 的单元测试也直接读这些文件。
 
 两份套件都不提供宿主回调服务，`Host.Invoke` / `Host.Publish` 的令牌与权限、崩溃重启由宿主实现的测试覆盖。
 

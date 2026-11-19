@@ -4,6 +4,50 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
+## v5.0.0-rc.3（2026-11-20）
+
+::: warning 候选版须知
+- 这是候选版，安装要带 `--prerelease`；正式版前只收修复与文档
+- 进程外插件要换成新版 SDK 才连得上宿主；SQL Server 的库要打开 `READ_COMMITTED_SNAPSHOT`；清单、载荷、消息模板与 ID 的校验按规范收紧，升级前看下面的迁移写法
+:::
+
+### 版本与兼容
+
+- **调整** 框架钉在规范 `v1.0.0-rc.1` 上，与六个语言 SDK 的线上行为、消息与校验全部一致
+- **新增** 文档新增「[多语言 SDK](/sdks/go)」一章，Go、TypeScript、Rust、Java、Python、PHP 各一页
+
+### 内核与原语
+
+- **新增** `Kernel.Json.ResultJson`：`Result` 与 `Error` 的线上 JSON 编码，与各语言 SDK 逐字一致（见[内核包页](/packages/kernel)）
+- **新增** 原语 `TraceParent`（W3C `traceparent` 的解析与写出）与 `InvocationContext.OutgoingTraceParent()`
+- **调整** 清单按 Schema 严格读取：大小写不对、未知或重复成员、`null`、不合文法的操作 ID 与空的 `activation` 以 `KERNEL_CAPABILITY_006` 失败，错误的 `reason` 改为出错的路径
+- **调整** 载荷校验：重复成员与孤立代理项是 `KERNEL_VALIDATION_001`，语法错误与空载荷的 `reason` 为 `$`，按文本顺序报第一处问题
+- **调整** 消息模板与 `Describe` 里的布尔写 `true` / `false`；模板只认 `D` / `X` / `F` / `N` 加两位精度，`{when:yyyy-MM-dd}` 这类 .NET 格式串按无格式输出，要格式就传已格式化的文本
+- **调整** 键、ID、`traceparent` 与框架内置的正则按整串匹配，结尾带换行的值不再通过；能力依赖的版本不接受前导零
+- **调整** `InvocationContext.WithBaggage` 对已登记键的不合法值抛出 `ArgumentException`
+- **修复** XGI 入口写不出响应时以 `unhandled_exception` 结束，不再抛给调用方
+
+### 插件
+
+- **调整** 进程外插件的 `XIHAN_PLUGIN_HOST_ADDRESS` 改为 `;` 分隔的端点列表，只读一项的旧插件连不上宿主，插件要换成新版 SDK；`OutOfProcessPluginHost.HostEndpoint` 改为 `HostEndpoints`（列表）
+- **调整** 回调的截止时间取元数据与 gRPC 截止时间中较早的，宽松写法的 `deadline` 不再生效；带两个会话令牌值的回调以 `Unauthenticated` 拒绝；握手行里 `127.1`、前导零端口这类 `tcp` 地址不再合法
+- **修复** `Host.Publish` 与 `xihan.publish` 发布的事件带上回调上下文的租户、主体、关联 ID、区域与追踪，租户越界时整批不发布；插件收到的 `traceparent` 标志随调用的采样决定
+- **修复** 插件错误的 `details` 为空对象、有重复成员或溢出的数时当作没有细节，只有空白的 `text` 取错误码，不再让宿主抛异常
+- **调整** 插件一致性套件的 lifecycle 在 `Start` 之后只认 `Ready` 或 `Degraded`，新增调用次序、启动前调用、未订阅事件、流式调用、配置节与启动前停止的用例
+
+### 持久化与审计
+
+- **调整** SQL Server 的库要执行一次 `ALTER DATABASE [库名] SET READ_COMMITTED_SNAPSHOT ON`，否则读未提交的行要等写入方结束（见 [Persistence.SqlSugar](/packages/persistence-sqlsugar)）
+- **修复** MySQL、Oracle 的日期时间列与 SQL Server 的 `DateTime` 列建成微秒精度，SQL Server 写入不再截到 1/300 秒；已经建成的列不改，要精度的库自己改列（`datetime(6)` / `timestamp(6)`）
+- **修复** SQL Server 与 Oracle 上有长度的字符串列建成 `nvarchar(n)` / `nvarchar2(n)`，中文不再存成 `?`、按字符计长；已经建成的 `varchar` 列不改，Oracle 上超过 2000 个字符的列改用 `[LongText]`
+- **修复** 审计记录的资源列收到 512，MySQL 上 `audit_record` 建得出来；资源名超过 512 个字符的事件写入失败
+
+### 对象存储
+
+- **修复** 文件系统存储正在读的对象照样能覆盖（Windows 上原先以 `OBJECTSTORAGE_UNAVAILABLE_001` 失败），一次读取的元数据总属于打开的内容；读取期间被删的对象 `Head` 报 `OBJECTSTORAGE_NOTFOUND_001`、列举跳过它
+- **修复** 文件系统存储并发覆盖同一个键都成功、留下的元数据属于盘上的内容；配额将满时并发写入至少有一个写得成
+- **修复** 文件系统存储启动时清掉崩溃留在元数据目录里的临时文件
+
 ## v5.0.0-rc.2（2026-11-15）
 
 ::: warning 候选版须知

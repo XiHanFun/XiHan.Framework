@@ -87,7 +87,7 @@ using (MessageScope.Use(localizer, "ja-JP"))
 ## 行为与限制
 
 - 回退链：精确区域 → 启用列表里同语言的其他区域 → 默认区域 → `en-US`。在链上的每个区域，按注册顺序查各目录，先注册的目录优先。
-- 格式化用命中区域的文化：`{amount:N2}` 在 `de-DE` 得到 `1.234,50`。
+- 数字按命中区域换小数点与分组符：`{amount:N2}` 在 `de-DE` 得到 `1.234,50`。符号取自规范的固定表，与各语言 SDK 相同，不读操作系统的区域数据。
 - 找不到键，或模板的占位符缺值时整条模板不采用：`Resolve` 无值，`Localize` 与 `key.L()` 返回 `MessageTemplate.Describe` 的描述（`kernel.feature.start_failed (id=…, reason=…)`）。
 - 自由文本错误（`Error.Literal`）没有键，`Resolve(error, locale)` 无值，`Localize(error, locale)` 返回原文。
 - 容器建好后再注册的目录不会被已创建的本地化器看到，目录要在 `Build()` 之前注册。

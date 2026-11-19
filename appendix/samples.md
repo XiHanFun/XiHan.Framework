@@ -12,7 +12,7 @@
 | `SimpleCli` | Minimal | 同一份操作契约作为命令行命令与 MCP stdio tool | 无 |
 | `KubernetesApp` | Full | 探针、优雅停机、ConfigMap 热更新、Lease 领导选举；`deploy/` 是 `xihan pack` 生成的部署产物 | 本地无；集群验证需要 kind 或任意 Kubernetes |
 | `SamplePlugin` | 进程内插件 | 用 .NET 写的进程内插件，贡献一个操作 | 无 |
-| `EchoPlugin` | 进程外插件 | 用 .NET 写的进程外插件子进程：握手、操作、事件订阅、崩溃 | 无 |
+| `EchoPlugin` | 进程外插件 | 用 .NET 写的进程外插件子进程：握手、调用次序、操作、经宿主回调与发布、事件订阅、崩溃、收尾 | 无 |
 | `EchoGoPlugin` | 进程外插件 | 用 Go SDK 写的进程外插件，在 .NET 宿主里服务一个操作 | Go 工具链 |
 | `CacheGoPlugin` | 远程 Provider | 用 Go 实现 `caching.distributed`，经 `Caching.Remote` 适配器通过缓存一致性套件 | Go 工具链 |
 | `EchoWasmPlugin` | Wasm 插件 | 用 Rust 写的 Wasm 插件：操作、陷阱、忙等，验证沙箱上限与崩溃重建 | Rust 工具链（产物已提交，运行不需要） |
