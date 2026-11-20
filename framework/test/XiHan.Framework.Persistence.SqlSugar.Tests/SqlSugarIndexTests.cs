@@ -10,11 +10,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 
 /// <summary>
-/// <c>[EntityIndex]</c> 到 SqlSugar 索引的映射（ADR-0072、ADR-0081）
+/// <c>[EntityIndex]</c> 到 SqlSugar 索引的映射（ADR-0072、ADR-0081、ADR-0249）
 /// </summary>
 /// <remarks>
 /// 经约定映射为 SqlSugar 索引，<c>InitTables</c> 建出（RFC-0005「索引声明」）
-/// 名字按映射出的表名推出；唯一索引真实拒绝重复；软删除实体的唯一索引是只约束未删除行的部分唯一索引，由 <see cref="SqlSugarConventions.InitTables"/> 补建（SQLite、PostgreSQL、SQL Server），同一编码可以反复删除；再次建表不重复建；不支持部分索引的数据库在建表前与启动时失败；分表实体不支持
+/// 名字按映射出的表名推出；唯一索引真实拒绝重复；软删除实体的唯一索引是只约束未删除行的部分唯一索引，由 <see cref="SqlSugarConventions.InitTables"/> 补建（SQLite、PostgreSQL、SQL Server 带条件，MySQL、Oracle 是函数索引），同一编码可以反复删除；显式的名字原样使用，两个实体同名在建表前失败；再次建表不重复建；不支持部分索引的数据库在建表前与启动时失败；分表实体不支持
 /// </remarks>
 public sealed class SqlSugarIndexTests
 {
@@ -34,9 +34,19 @@ public sealed class SqlSugarIndexTests
     private const string SqlServerConfigId = "index-mssql";
 
     /// <summary>
-    /// MySQL 客户端的 ConfigId（只取映射、不连库）
+    /// MySQL 客户端的 ConfigId
     /// </summary>
     private const string MySqlConfigId = "index-mysql";
+
+    /// <summary>
+    /// Oracle 客户端的 ConfigId
+    /// </summary>
+    private const string OracleConfigId = "index-oracle";
+
+    /// <summary>
+    /// 达梦客户端的 ConfigId（只取映射、不连库）
+    /// </summary>
+    private const string DmConfigId = "index-dm";
 
     [Fact]
     public void Conventions_MapDeclaredIndexes_ToAscendingSugarIndexes_ExceptPartialOnes()
@@ -139,16 +149,128 @@ public sealed class SqlSugarIndexTests
     }
 
     [Fact]
+    public void PartialUniqueIndex_ConstrainsUndeletedRowsOnly_OnMySql()
+    {
+        using var database = MySqlTestServer.CreateDatabase();
+        using var client = Client(DbType.MySql, database.ConnectionString, MySqlConfigId);
+        SqlSugarConventions.InitTables(client, typeof(SoftDeletedIndexedRecord));
+        // 再建一次：MySQL 没有 IF NOT EXISTS，先按表与名字查到已有索引就跳过
+        SqlSugarConventions.InitTables(client, typeof(SoftDeletedIndexedRecord));
+
+        // 函数索引：唯一一个键是表达式，不是列
+        var expression = Assert.Single(client.Ado.SqlQuery<string>("SELECT expression FROM information_schema.statistics WHERE table_schema = DATABASE() AND index_name = 'UX_soft_deleted_indexed_record_Co'"));
+        Assert.Contains("case when", expression, StringComparison.OrdinalIgnoreCase);
+        ConstrainsUndeletedRowsOnly(client);
+    }
+
+    [Fact]
+    public void PartialUniqueIndex_ConstrainsUndeletedRowsOnly_OnOracle()
+    {
+        using var schema = OracleTestServer.CreateSchema();
+        using var client = Client(DbType.Oracle, schema.ConnectionString, OracleConfigId);
+        SqlSugarConventions.InitTables(client, typeof(SoftDeletedIndexedRecord));
+        // 再建一次：先按大写的名字查到已有索引就跳过
+        SqlSugarConventions.InitTables(client, typeof(SoftDeletedIndexedRecord));
+
+        // 名字不加引号、存成大写；函数索引
+        Assert.Equal("FUNCTION-BASED NORMAL", Assert.Single(client.Ado.SqlQuery<string>("SELECT index_type FROM user_indexes WHERE index_name = 'UX_SOFT_DELETED_INDEXED_RECORD_CO'")));
+        ConstrainsUndeletedRowsOnly(client);
+    }
+
+    [Fact]
+    public void ExplicitlyNamedPartialUniqueIndex_SkipsRowsWithANullKey_OnSqlite()
+    {
+        using var database = new SqliteDatabase();
+        using var client = Client(DbType.Sqlite, database.ConnectionString, SqliteConfigId);
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+
+        // 显式的名字原样使用
+        Assert.Equal(
+            [("ux_named_soft_deleted_record_code_region", true, "Code,Region")],
+            SqliteSchema.Indexes(client, "named_soft_deleted_record").Select(static i => (i.Name, i.IsUnique, string.Join(',', i.Columns))));
+        SkipsRowsWithANullKey(client);
+    }
+
+    [Fact]
+    public void ExplicitlyNamedPartialUniqueIndex_SkipsRowsWithANullKey_OnPostgreSql()
+    {
+        using var database = PostgresTestServer.CreateDatabase();
+        using var client = Client(DbType.PostgreSQL, database.ConnectionString, PostgresConfigId);
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+
+        Assert.Equal(["ux_named_soft_deleted_record_code_region"], client.Ado.SqlQuery<string>("SELECT indexname FROM pg_indexes WHERE tablename = 'named_soft_deleted_record' AND indexname NOT LIKE '%pkey'"));
+        SkipsRowsWithANullKey(client);
+    }
+
+    [Fact]
+    public void ExplicitlyNamedPartialUniqueIndex_SkipsRowsWithANullKey_OnSqlServer()
+    {
+        using var database = SqlServerTestServer.CreateDatabase();
+        using var client = Client(DbType.SqlServer, database.ConnectionString, SqlServerConfigId);
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+
+        Assert.Single(client.Ado.SqlQuery<string>("SELECT name FROM sys.indexes WHERE name = 'ux_named_soft_deleted_record_code_region' AND has_filter = 1"));
+        SkipsRowsWithANullKey(client);
+    }
+
+    [Fact]
+    public void ExplicitlyNamedPartialUniqueIndex_SkipsRowsWithANullKey_OnMySql()
+    {
+        using var database = MySqlTestServer.CreateDatabase();
+        using var client = Client(DbType.MySql, database.ConnectionString, MySqlConfigId);
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+
+        // 两列各一个表达式键
+        Assert.Equal(2, client.Ado.GetInt("SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND index_name = 'ux_named_soft_deleted_record_code_region' AND expression IS NOT NULL"));
+        SkipsRowsWithANullKey(client);
+    }
+
+    [Fact]
+    public void ExplicitlyNamedPartialUniqueIndex_SkipsRowsWithANullKey_OnOracle()
+    {
+        using var schema = OracleTestServer.CreateSchema();
+        using var client = Client(DbType.Oracle, schema.ConnectionString, OracleConfigId);
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+        SqlSugarConventions.InitTables(client, typeof(NamedSoftDeletedRecord));
+
+        Assert.Single(client.Ado.SqlQuery<string>("SELECT index_name FROM user_indexes WHERE index_name = 'UX_NAMED_SOFT_DELETED_RECORD_CODE_REGION'"));
+        // Oracle 的组合键有一列不为空就比较：可空的键列写进条件，区域为空的行整键为空、不受约束
+        SkipsRowsWithANullKey(client);
+    }
+
+    [Fact]
+    public void InitTables_WithTwoEntitiesSharingAnIndexName_FailsBeforeCreatingTables()
+    {
+        using var database = new SqliteDatabase();
+        using var client = Client(DbType.Sqlite, database.ConnectionString, SqliteConfigId);
+
+        // SQLite 的索引名按库唯一：后建的那个按 IF NOT EXISTS 静默跳过，那张表就少了索引
+        var error = Assert.Throws<InvalidOperationException>(() => SqlSugarConventions.InitTables(client, typeof(SameIndexNameRecordA), typeof(SameIndexNameRecordB)));
+
+        Assert.Contains(typeof(SameIndexNameRecordA).FullName!, error.Message, StringComparison.Ordinal);
+        Assert.Contains(typeof(SameIndexNameRecordB).FullName!, error.Message, StringComparison.Ordinal);
+        Assert.Contains("'ix_same_index_name_code'", error.Message, StringComparison.Ordinal);
+        Assert.False(client.DbMaintenance.IsAnyTable("same_index_name_record_a", false));
+        // 同一实体写了两次不算重名
+        SqlSugarConventions.InitTables(client, typeof(SameIndexNameRecordA), typeof(SameIndexNameRecordA));
+        Assert.True(client.DbMaintenance.IsAnyTable("same_index_name_record_a", false));
+    }
+
+    [Fact]
     public void InitTables_OnADatabaseWithoutPartialIndexes_FailsBeforeCreatingTables()
     {
-        // 只取映射、不连库：核对在建表之前，MySQL 上不会建出缺了唯一约束的表
-        using var client = Client(DbType.MySql, "Server=127.0.0.1;Port=1;Database=unused;Uid=unused;Pwd=unused", MySqlConfigId);
+        // 只取映射、不连库：核对在建表之前，达梦上不会建出缺了唯一约束的表
+        using var client = Client(DbType.Dm, "Server=127.0.0.1;Port=1;User Id=unused;PWD=unused", DmConfigId);
 
         var error = Assert.Throws<FrameworkException>(() => SqlSugarConventions.InitTables(client, typeof(IndexedRecord), typeof(SoftDeletedIndexedRecord)));
 
         Assert.Equal(PersistenceErrors.NotSupported, error.Code);
         Assert.Contains(typeof(SoftDeletedIndexedRecord).FullName!, error.Message, StringComparison.Ordinal);
-        Assert.Contains("MySql", error.Message, StringComparison.Ordinal);
+        Assert.Contains("Dm", error.Message, StringComparison.Ordinal);
         Assert.DoesNotContain(typeof(IndexedRecord).FullName + "'", error.Message, StringComparison.Ordinal);
     }
 
@@ -158,8 +280,8 @@ public sealed class SqlSugarIndexTests
         // 生产库不开 InitTables、由迁移脚本建表：唯一约束同样建不出来，启动时就失败，不等写入时才发现
         var feature = new SqlSugarPersistenceFeature(static (_, config) =>
         {
-            config.DbType = DbType.MySql;
-            config.ConnectionString = "Server=127.0.0.1;Port=1;Database=unused;Uid=unused;Pwd=unused";
+            config.DbType = DbType.Dm;
+            config.ConnectionString = "Server=127.0.0.1;Port=1;User Id=unused;PWD=unused";
         });
 
         var error = await Assert.ThrowsAsync<FrameworkException>(() => TestHost.StartAsync(
@@ -230,6 +352,20 @@ public sealed class SqlSugarIndexTests
     }
 
     /// <summary>
+    /// 键含可空列：区域为空的行不受约束，区域不为空的未删除行之间唯一
+    /// </summary>
+    private static void SkipsRowsWithANullKey(SqlSugarClient client)
+    {
+        client.Insertable(Named("A", null, deleted: false)).ExecuteCommand();
+        client.Insertable(Named("A", null, deleted: false)).ExecuteCommand();
+        client.Insertable(Named("A", "east", deleted: true)).ExecuteCommand();
+        client.Insertable(Named("A", "east", deleted: false)).ExecuteCommand();
+
+        Assert.ThrowsAny<Exception>(() => client.Insertable(Named("A", "east", deleted: false)).ExecuteCommand());
+        Assert.Equal(4, client.Queryable<NamedSoftDeletedRecord>().Count());
+    }
+
+    /// <summary>
     /// 按协议约定配置的客户端
     /// </summary>
     private static SqlSugarClient Client(DbType dbType, string connectionString, string configId)
@@ -240,6 +376,12 @@ public sealed class SqlSugarIndexTests
     /// </summary>
     private static IndexedRecord Record(string tenantId, string code)
         => new() { Id = Guid.CreateVersion7(), TenantId = tenantId, Code = code, Category = "c", At = new DateTimeOffset(2026, 11, 1, 8, 0, 0, TimeSpan.Zero) };
+
+    /// <summary>
+    /// 一行显式命名索引的软删除实体
+    /// </summary>
+    private static NamedSoftDeletedRecord Named(string code, string? region, bool deleted)
+        => new() { Id = Guid.CreateVersion7(), Code = code, Region = region, IsDeleted = deleted, DeletedAt = deleted ? new DateTimeOffset(2026, 11, 20, 8, 0, 0, TimeSpan.Zero) : null };
 
     /// <summary>
     /// 一行软删除实体

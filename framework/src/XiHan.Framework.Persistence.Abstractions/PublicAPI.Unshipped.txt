@@ -48,6 +48,8 @@ XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.AcrossTenants.set 
 XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.EntityIndexAttribute(params string![]! properties) -> void
 XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.IsUnique.get -> bool
 XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.IsUnique.set -> void
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.Name.get -> string?
+XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.Name.set -> void
 XiHan.Framework.Persistence.Abstractions.EntityIndexAttribute.Properties.get -> System.Collections.Generic.IReadOnlyList<string!>!
 XiHan.Framework.Persistence.Abstractions.EntityIndexes
 XiHan.Framework.Persistence.Abstractions.Identifiers.FixedWorkerIdSource

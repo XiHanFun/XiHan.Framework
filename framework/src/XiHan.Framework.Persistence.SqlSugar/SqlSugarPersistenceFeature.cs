@@ -319,7 +319,7 @@ public sealed class SqlSugarPersistenceFeature : IHostedFeature, IRepositoryRegi
     /// 启动时核对部分唯一索引的数据库支持
     /// </summary>
     /// <remarks>
-    /// 已登记的软删除实体声明了唯一索引（只约束未删除的行），而它落的连接的数据库类型不支持部分索引（PostgreSQL、SQLite、SQL Server 之外）时，一次列出全部实体、以 <see cref="PersistenceErrors.NotSupported"/> 中断启动——不论是否开着 <c>InitTables</c>：生产库由迁移脚本建表时，唯一约束同样建不出来，不能等到写入时才发现。<see cref="SqlSugarConnections.Shard"/> 只在带租户分片的调用里存在，不在启动时核对，分片库由应用经 <see cref="SqlSugarConventions.InitTables"/> 建表时核对。没有这样的实体时不取客户端
+    /// 已登记的软删除实体声明了唯一索引（只约束未删除的行），而它落的连接的数据库类型不支持部分索引（PostgreSQL、SQLite、SQL Server、MySQL、Oracle 之外）时，一次列出全部实体、以 <see cref="PersistenceErrors.NotSupported"/> 中断启动——不论是否开着 <c>InitTables</c>：生产库由迁移脚本建表时，唯一约束同样建不出来，不能等到写入时才发现。<see cref="SqlSugarConnections.Shard"/> 只在带租户分片的调用里存在，不在启动时核对，分片库由应用经 <see cref="SqlSugarConventions.InitTables"/> 建表时核对。没有这样的实体时不取客户端
     /// </remarks>
     private async Task ValidatePartialIndexesAsync(IServiceProvider services)
     {

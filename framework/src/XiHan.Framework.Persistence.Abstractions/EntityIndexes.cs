@@ -14,11 +14,11 @@ namespace XiHan.Framework.Persistence.Abstractions;
 /// </summary>
 /// <remarks>
 /// <para>Provider 共用：SqlSugar 与 EF Core 都经它取得索引，名字与列在两边一致</para>
-/// <para>命名：<c>IX_</c>（唯一为 <c>UX_</c>）+ 表名 + 每列一段缩写，以下划线连接，如 <c>UX_MessageTranslation_Ke_Lo</c>。缩写取属性名每个词的前两个字符（<c>TenantId → TeId</c>、<c>NextFireAt → NeFiAt</c>）；词从首字符、小写或数字之后的大写字母、连续大写里后跟小写的那个大写字母开始，下划线只分词不计入。表名里字母、数字、下划线以外的字符（如架构名的点）换成下划线。全名不超过 <see cref="MaxNameLength"/>（PostgreSQL 的标识符上限；MySQL 64、SQL Server 128 都容得下），超过不截断、直接报错——PostgreSQL 会静默截断超长的名字，下一次建表按全名查不到已有索引，再建就撞名</para>
-/// <para>软删除：实体实现 <see cref="ISoftDeletable"/> 时，唯一索引是只约束未删除行的部分唯一索引（<see cref="EntityIndex.ExcludesDeleted"/>）：列就是声明的列，条件 <c>IsDeleted = false</c> 由 Provider 按数据库方言写出；未删除的行之间唯一，已删除的行不受约束，同一业务键删除、重建、再删除任意多次都不冲突。声明的列里显式写了 <c>IsDeleted</c> 时不加条件，是普通唯一索引（同一业务键最多一行已删除）——不支持部分索引的数据库上要唯一约束，只能这样显式选择。只有 PostgreSQL、SQLite、SQL Server 支持部分唯一索引，其余数据库上 Provider 在启动时失败（<see cref="PersistenceErrors.NotSupported"/>）</para>
+/// <para>命名：<c>IX_</c>（唯一为 <c>UX_</c>）+ 表名 + 每列一段缩写，以下划线连接，如 <c>UX_MessageTranslation_Ke_Lo</c>。缩写取属性名每个词的前两个字符（<c>TenantId → TeId</c>、<c>NextFireAt → NeFiAt</c>）；词从首字符、小写或数字之后的大写字母、连续大写里后跟小写的那个大写字母开始，下划线只分词不计入。表名里字母、数字、下划线以外的字符（如架构名的点）换成下划线。全名不超过 <see cref="MaxNameLength"/>（PostgreSQL 的标识符上限；MySQL 64、SQL Server 128 都容得下），超过不截断、直接报错——PostgreSQL 会静默截断超长的名字，下一次建表按全名查不到已有索引，再建就撞名。声明里给了 <see cref="EntityIndexAttribute.Name"/> 时用它，不推（ADR-0249）：字母开头、只含 ASCII 字母、数字与下划线，长度上限相同——这样的名字在五种数据库上都不必加引号</para>
+/// <para>软删除：实体实现 <see cref="ISoftDeletable"/> 时，唯一索引是只约束未删除行的部分唯一索引（<see cref="EntityIndex.ExcludesDeleted"/>）：列就是声明的列，条件 <c>IsDeleted = false</c> 由 Provider 按数据库方言写出；未删除的行之间唯一，已删除的行不受约束，同一业务键删除、重建、再删除任意多次都不冲突。声明的列里显式写了 <c>IsDeleted</c> 时不加条件，是普通唯一索引（同一业务键最多一行已删除）——不支持部分索引的数据库上要唯一约束，只能这样显式选择。PostgreSQL、SQLite、SQL Server 写成带条件的索引，SqlSugar 在 MySQL（8.0.13 起）与 Oracle 上写成函数索引（ADR-0249），其余数据库上 Provider 在启动时失败（<see cref="PersistenceErrors.NotSupported"/>）</para>
 /// <para>多租户：实体实现 <see cref="IMultiTenant"/> 时，唯一索引的列必须含 <c>TenantId</c>，撞键只发生在同一租户里；确实要跨租户唯一的显式声明 <see cref="EntityIndexAttribute.AcrossTenants"/>，接受撞键告诉调用方别的租户已有这个键（ADR-0198）</para>
 /// <para>写入撞上唯一索引：关系型 Provider 在写入失败后核对，按 <see cref="PersistenceErrors.UniqueKeyConflict"/> 报告，工作单元随后只能回滚</para>
-/// <para>声明错误在 Provider 建模或建表时以 <see cref="InvalidOperationException"/> 报出：没有列、列名空白或重复、列不是公开实例属性、名字超长、同一实体两个索引同名或同列</para>
+/// <para>声明错误在 Provider 建模或建表时以 <see cref="InvalidOperationException"/> 报出：没有列、列名空白或重复、列不是公开实例属性、显式的名字不合法、名字超长、同一实体两个索引同名或同列</para>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class EntityIndexes
@@ -54,10 +54,12 @@ public static class EntityIndexes
         foreach (var declaration in declared)
         {
             Validate(entityType, declaration.Properties);
-            var name = NameOf(table, declaration.Properties, declaration.IsUnique);
+            var name = declaration.Name is { } given ? ExplicitName(entityType, given) : NameOf(table, declaration.Properties, declaration.IsUnique);
             if (name.Length > MaxNameLength)
             {
-                throw new InvalidOperationException($"Index '{name}' of entity '{entityType.FullName}' is longer than {MaxNameLength} characters; shorten the table name or index fewer columns.");
+                throw new InvalidOperationException(declaration.Name is null
+                    ? $"Index '{name}' of entity '{entityType.FullName}' is longer than {MaxNameLength} characters; shorten the table name or index fewer columns."
+                    : $"Index '{name}' of entity '{entityType.FullName}' is longer than {MaxNameLength} characters; shorten the name.");
             }
 
             // 多租户实体的唯一索引要含租户：不含时撞键发生在租户之间，写入失败告诉调用方别的租户已有这个键（ADR-0198）
@@ -116,6 +118,22 @@ public static class EntityIndexes
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// 校验显式给出的索引名
+    /// </summary>
+    /// <remarks>
+    /// 名字原样拼进建索引的语句（PostgreSQL、SQLite 加引号，MySQL、Oracle 不加），所以只收在各数据库上都不必转义的标识符：字母开头，只含 ASCII 字母、数字与下划线
+    /// </remarks>
+    private static string ExplicitName(Type entityType, string name)
+    {
+        if (name.Length == 0 || !char.IsAsciiLetter(name[0]) || !name.All(static c => char.IsAsciiLetterOrDigit(c) || c == '_'))
+        {
+            throw new InvalidOperationException($"Entity '{entityType.FullName}' declares an index named '{name}'; an explicit name starts with a letter and contains only ASCII letters, digits and underscores.");
+        }
+
+        return name;
     }
 
     /// <summary>

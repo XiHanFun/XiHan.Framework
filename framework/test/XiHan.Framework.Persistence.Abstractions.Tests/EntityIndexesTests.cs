@@ -6,7 +6,7 @@ using XiHan.Framework.Domain.Entities;
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
 /// <summary>
-/// <see cref="EntityIndexes.Resolve"/>：命名规则、软删除实体的唯一索引、声明错误
+/// <see cref="EntityIndexes.Resolve"/>：命名规则、显式的名字、软删除实体的唯一索引、声明错误
 /// </summary>
 public sealed class EntityIndexesTests
 {
@@ -22,6 +22,18 @@ public sealed class EntityIndexesTests
                 ("UX_Order_TeId_NeFiAt", new[] { nameof(Order.TenantId), nameof(Order.NextFireAt) }, true),
             ],
             indexes.Select(static i => (i.Name, i.Properties.ToArray(), i.IsUnique)));
+    }
+
+    [Fact]
+    public void Resolve_UsesTheDeclaredName_InsteadOfDerivingIt()
+    {
+        var indexes = EntityIndexes.Resolve(typeof(Named), "named_record").ToDictionary(static i => i.Name);
+
+        // 显式的名字原样使用，不带表名与缩写；没给名字的照规则推出
+        Assert.Equal(["IX_named_record_Sl", "ux_named_record_tenant_id_slug"], indexes.Keys.Order(StringComparer.Ordinal));
+        Assert.Equal([nameof(Named.TenantId), nameof(Named.Slug)], indexes["ux_named_record_tenant_id_slug"].Properties);
+        // 软删除实体的唯一索引照样只约束未删除的行
+        Assert.True(indexes["ux_named_record_tenant_id_slug"].ExcludesDeleted);
     }
 
     [Fact]
@@ -69,6 +81,13 @@ public sealed class EntityIndexesTests
     [InlineData(typeof(UnknownProperty), "on 'Missing', which is not a public instance property")]
     [InlineData(typeof(CollidingNames), "more than one index named 'IX_CollidingNames_TeId'")]
     [InlineData(typeof(SameColumns), "more than one index on ('Code')")]
+    // 显式的名字原样拼进语句：只收各数据库上都不必加引号的标识符
+    [InlineData(typeof(EmptyName), "declares an index named ''; an explicit name starts with a letter")]
+    [InlineData(typeof(DigitFirstName), "declares an index named '1ux_code'; an explicit name starts with a letter")]
+    [InlineData(typeof(QuotedName), "declares an index named 'ux\"code'; an explicit name starts with a letter")]
+    [InlineData(typeof(LongName), "is longer than 63 characters; shorten the name")]
+    // 显式的名字与推出的名字只差大小写也是同名：PostgreSQL 折成小写、Oracle 存成大写（报出的是后读到的那个，特性的读出顺序不保证）
+    [InlineData(typeof(ExplicitCollision), "more than one index named")]
     // 多租户实体的唯一索引不含 TenantId：修之前照建，撞键告诉调用方别的租户已有这个键（ADR-0198）
     [InlineData(typeof(TenantlessUnique), "unique index 'UX_TenantlessUnique_Co' of multi-tenant entity")]
     [InlineData(typeof(AcrossTenantsWithTenant), "declares AcrossTenants on index 'UX_AcrossTenantsWithTenant_TeId_Co'")]
@@ -165,6 +184,114 @@ public sealed class EntityIndexesTests
 
         /// <inheritdoc />
         public DateTimeOffset? DeletedAt { get; set; }
+    }
+
+    /// <summary>
+    /// 软删除实体，一个索引显式给了名字
+    /// </summary>
+    [EntityIndex(nameof(TenantId), nameof(Slug), IsUnique = true, Name = "ux_named_record_tenant_id_slug")]
+    [EntityIndex(nameof(Slug))]
+    private sealed class Named : IEntity<Guid>, ISoftDeletable
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <summary>
+        /// 租户
+        /// </summary>
+        public string TenantId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 路径名
+        /// </summary>
+        public string Slug { get; set; } = string.Empty;
+
+        /// <inheritdoc />
+        public bool IsDeleted { get; set; }
+
+        /// <inheritdoc />
+        public DateTimeOffset? DeletedAt { get; set; }
+    }
+
+    /// <summary>
+    /// 显式的名字是空串
+    /// </summary>
+    [EntityIndex(nameof(Code), Name = "")]
+    private sealed class EmptyName : IEntity<Guid>
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 显式的名字以数字开头
+    /// </summary>
+    [EntityIndex(nameof(Code), Name = "1ux_code")]
+    private sealed class DigitFirstName : IEntity<Guid>
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 显式的名字带引号
+    /// </summary>
+    [EntityIndex(nameof(Code), Name = "ux\"code")]
+    private sealed class QuotedName : IEntity<Guid>
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 显式的名字 64 个字符
+    /// </summary>
+    [EntityIndex(nameof(Code), Name = "ux_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")]
+    private sealed class LongName : IEntity<Guid>
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 显式的名字与另一个推出的名字只差大小写
+    /// </summary>
+    [EntityIndex(nameof(Code))]
+    [EntityIndex(nameof(Slug), Name = "ix_explicitcollision_co")]
+    private sealed class ExplicitCollision : IEntity<Guid>
+    {
+        /// <inheritdoc />
+        public Guid Id { get; init; }
+
+        /// <summary>
+        /// 编码
+        /// </summary>
+        public string Code { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 路径名
+        /// </summary>
+        public string Slug { get; set; } = string.Empty;
     }
 
     /// <summary>

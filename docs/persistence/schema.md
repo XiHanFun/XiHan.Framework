@@ -71,9 +71,9 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | 列 | 按声明顺序、全部升序；列必须是实体的公开属性；一个实体可以声明多个索引 |
 | 唯一 | `IsUnique = true` 是唯一索引，业务上唯一的键（租户 + 名字之类）这样声明 |
 | 多租户 | 实体实现 `IMultiTenant` 时，唯一索引的列必须含 `TenantId`：同一业务键在每个租户各有一行，撞键只发生在同一租户里，写入失败不会告诉调用方别的租户用过这个键。确实要跨租户唯一的（全局唯一的登录名之类）写 `AcrossTenants = true`，接受这一点；不含 `TenantId` 又没写，启动时抛 `InvalidOperationException`（ADR-0198） |
-| 名字 | 由规则推出，不手写：`IX_`（唯一 `UX_`）+ 表名 + 每列一段缩写，缩写用下划线连接；属性名每个词取前两个字符（`TenantId → TeId`、`NextFireAt → NeFiAt`）；表名里字母、数字、下划线以外的字符换成下划线；全名不超过 63 个字符，超过即报错、不截断 |
+| 名字 | 缺省由规则推出：`IX_`（唯一 `UX_`）+ 表名 + 每列一段缩写，缩写用下划线连接；属性名每个词取前两个字符（`TenantId → TeId`、`NextFireAt → NeFiAt`）；表名里字母、数字、下划线以外的字符换成下划线。也可以用 `Name` 显式给出，原样使用（PostgreSQL 上折成小写）：字母开头，只含 ASCII 字母、数字与下划线（ADR-0249）。全名不超过 63 个字符，超过即报错、不截断 |
 | 建出 | EF Core 由 `ApplyPersistenceConventions(Database)` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`；SqlSugar 经表服务回调转成 `SugarIndexAttribute`，`InitTables` 按名字查不到才建，已有的不改不删。两个 Provider 建出同名的索引 |
-| 声明错误 | 没有列、列名重复、不是公开属性、名字超长、同名或同列：建模 / 建表时抛出 `InvalidOperationException`，启动失败 |
+| 声明错误 | 没有列、列名重复、不是公开属性、显式的名字不合法、名字超长、同名或同列：建模 / 建表时抛出 `InvalidOperationException`，启动失败。SqlSugar 的 `InitTables` 还核对一起建表的实体之间不重名（显式的名字可能撞上，PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，按名字查到已有的会跳过） |
 | 内存实现 | 不建索引、不校验唯一性 |
 
 `EntityIndexes.Resolve(type, table)` 是两个 Provider 共用的解析入口，返回每个索引的名字、列、`IsUnique` 与 `ExcludesDeleted`；应用自己的建表工具也可以用它。
@@ -86,7 +86,8 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | --- | --- | --- |
 | PostgreSQL、SQLite | 支持 | EF Core 加 `HasFilter`；SqlSugar 的 `InitTables` 建表后补建 `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE IsDeleted = false / 0` |
 | SQL Server | 支持 | EF Core 加 `HasFilter`；SqlSugar 建筛选索引 `WHERE [IsDeleted] = 0`（键含可空列另加 `IS NOT NULL`） |
-| MySQL 系、Oracle 系，以及没有验证过的 PostgreSQL 衍生库（人大金仓、openGauss 等） | 不支持 | 有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引 |
+| MySQL（8.0.13 起）、Oracle | SqlSugar 支持，EF Core 不支持 | SqlSugar 建函数索引，每列一个 `CASE WHEN IsDeleted = 0 THEN 列 END`（键含可空列时条件另加 `IS NOT NULL`）：已删除的行整键为空、不参与唯一（ADR-0249）；EF Core 写不出函数索引，建模即失败 |
+| MySQL 与 Oracle 的兼容库（TiDB、OceanBase、达梦等）、MariaDB，以及没有验证过的 PostgreSQL 衍生库（人大金仓、openGauss 等） | 不支持 | 有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引；MariaDB 的 `DbType` 也是 MySQL，没有函数索引，建索引的语句失败、`InitTables` 报错 |
 
 在不支持的数据库上要唯一约束，就把 `IsDeleted` 显式写进列（普通唯一索引，同一业务键最多一行已删除），或不声明唯一。SqlSugar 的部分唯一索引不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表之后补建，应用自己给租户库建表时也要经它；库里已有同名的带 `IsDeleted` 列的唯一索引时 `IF NOT EXISTS` 会跳过，要先手动删掉那个索引。
 
@@ -124,11 +125,11 @@ EF Core 的迁移会把 `ApplyPersistenceConventions` 加进模型的索引、�
 
 ### 索引名能不能自己指定
 
-不能。名字由规则推出，保证两个 Provider 一致、迁移脚本与排障时按同一名字查。超过 63 个字符会报错，这时缩短属性名或减少列数。
+能，写 `[EntityIndex(…, Name = "ux_order_tenant_id_code")]`（ADR-0249）。不写时由规则推出。显式的名字给已经按自己的规则建好了索引的库用：换成 `[EntityIndex]` 后名字不变，库里的索引原样沿用，不用改名。两个 Provider 用同一个名字；名字只收字母开头、ASCII 字母数字与下划线，不超过 63 个字符。PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，两个实体给了同一个名字时 SqlSugar 的 `InitTables` 在建表之前报错。
 
-### 软删除实体的唯一索引在 MySQL 上启动失败
+### 软删除实体的唯一索引在 MySQL 上怎么建
 
-MySQL 没有部分唯一索引，框架不退化成普通唯一索引（那会让同一业务键删除后无法重建）。两条路：把 `IsDeleted` 显式写进 `[EntityIndex]` 的列，接受「同一业务键最多一行已删除」；或不声明唯一，在操作里先查再写。
+MySQL 没有带条件的索引。SqlSugar 在 MySQL 8.0.13 起用函数索引代替（ADR-0249）：每列包成 `CASE WHEN IsDeleted = 0 THEN 列 END`，已删除的行整键为空，MySQL 的唯一索引不约束含 NULL 的键，所以已删除的行不参与唯一。更早的 MySQL 与 MariaDB 没有函数索引，建索引的语句失败；EF Core 写不出函数索引，在 MySQL 上建模即失败。这些情况下两条路：把 `IsDeleted` 显式写进 `[EntityIndex]` 的列，接受「同一业务键最多一行已删除」；或不声明唯一，在操作里先查再写。
 
 ### 字符串没写 `[StringLength]` 会怎样
 

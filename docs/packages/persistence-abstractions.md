@@ -163,7 +163,7 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 - 领域事件在处理器成功后、提交前由中间件把带有未派发事件的聚合交给 `IDomainEventDispatcher`（Messaging 子系统实现，用发件箱时与业务写入同事务），成功即清空缓冲、失败即回滚。
 - 协议字段只由 Provider 写入：更新沿用存储里的创建时间、租户与删除标记，调用方实例上的这些值不生效（`PersistenceConventions.ApplyOnUpdate(entity, stored, now)`）。
 - `PersistenceConventions.NewStamp()` 生成 32 位十六进制并发戳（`Guid` 的 `N` 格式）。
-- 索引声明（ADR-0072）：名字是 `IX_` / `UX_` + 表名 + 每列缩写（属性名每个词的前两个字符），不超过 63 个字符、超过不截断而报错；软删除实体的唯一索引是只约束未删除行的部分唯一索引（ADR-0081，PostgreSQL、SQLite、SQL Server 支持，其余数据库启动失败；列里显式写 `IsDeleted` 则是普通唯一索引）；声明错误（没有列、列名重复、不是公开属性、名字超长、同名或同列）在建模 / 建表时抛 `InvalidOperationException`。关系型 Provider 写入撞上唯一索引返回 `PERSISTENCE_CONFLICT_003`，内存实现不建索引、不校验。
+- 索引声明（ADR-0072）：名字缺省是 `IX_` / `UX_` + 表名 + 每列缩写（属性名每个词的前两个字符），也可以用 `Name` 显式给出（ADR-0249，字母开头、只含 ASCII 字母数字与下划线），都不超过 63 个字符、超过不截断而报错；软删除实体的唯一索引是只约束未删除行的部分唯一索引（ADR-0081，PostgreSQL、SQLite、SQL Server 带条件，SqlSugar 在 MySQL 8.0.13 起与 Oracle 上建成函数索引，其余数据库启动失败；列里显式写 `IsDeleted` 则是普通唯一索引）；声明错误（没有列、列名重复、不是公开属性、显式的名字不合法、名字超长、同名或同列）在建模 / 建表时抛 `InvalidOperationException`。关系型 Provider 写入撞上唯一索引返回 `PERSISTENCE_CONFLICT_003`，内存实现不建索引、不校验。
 - 索引声明的补充：框架自己的表（发件箱、审计、授予、翻译、调度、工作流）也用 `[EntityIndex]` 声明，不直接标 SqlSugar 的 `[SugarIndex]` 或 EF Core 的 `[Index]`，实体只依赖本包；索引全部升序，一个实体上可以声明多个、多列、可唯一。缩写例：`TenantId → TeId`、`NextFireAt → NeFiAt`，缩写用下划线连接，表名里字母、数字、下划线以外的字符换成下划线。
 - 部分唯一索引的列就是声明的列，条件是 `IsDeleted = false`：同一业务键删除、重建、再删除任意多次都不冲突，未删除的行之间唯一；不支持的数据库不退化成普通唯一索引，启动失败的错误码是 `PERSISTENCE_UNAVAILABLE_008`，要唯一约束就把 `IsDeleted` 显式写进列（同一业务键最多一行已删除），或不声明唯一。
 - 唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行（SQL Server 把 NULL 当相等；EF Core 在 SQL Server 上给这种唯一索引自动加 `IS NOT NULL` 过滤）；要让「全局」这类空值参与唯一性，存成非空的哨兵值（如授予表的空字符串租户）。

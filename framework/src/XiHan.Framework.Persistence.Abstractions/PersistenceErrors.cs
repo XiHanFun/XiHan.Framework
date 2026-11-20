@@ -175,7 +175,7 @@ public static class PersistenceErrors
     /// 当前的持久化 Provider 不支持该能力
     /// </summary>
     /// <remarks>
-    /// 运行时数据源与库结构读取、命名连接（实体登记到命名连接、绑定连接的工作单元）：EF Core 与内存实现。软删除实体声明了唯一索引（部分唯一索引）而所连数据库不支持部分索引：Provider 在启动时以异常抛出（SqlSugar 只支持 PostgreSQL、SQLite、SQL Server，EF Core 只支持 Npgsql、SQLite、SQL Server 的 Provider）
+    /// 运行时数据源与库结构读取、命名连接（实体登记到命名连接、绑定连接的工作单元）：EF Core 与内存实现。软删除实体声明了唯一索引（部分唯一索引）而所连数据库不支持部分索引：Provider 在启动时以异常抛出（SqlSugar 支持 PostgreSQL、SQLite、SQL Server、MySQL、Oracle，EF Core 只支持 Npgsql、SQLite、SQL Server 的 Provider）
     /// </remarks>
     public const string NotSupported = "PERSISTENCE_UNAVAILABLE_008";
 

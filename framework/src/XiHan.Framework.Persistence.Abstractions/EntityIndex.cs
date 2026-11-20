@@ -29,7 +29,7 @@ public sealed class EntityIndex
     /// 索引名
     /// </summary>
     /// <remarks>
-    /// 不超过 <see cref="EntityIndexes.MaxNameLength"/> 个字符
+    /// 声明里显式给了就是它，否则按规则推出；不超过 <see cref="EntityIndexes.MaxNameLength"/> 个字符
     /// </remarks>
     public string Name { get; }
 
@@ -50,7 +50,7 @@ public sealed class EntityIndex
     /// 是否只约束未删除的行（部分唯一索引）
     /// </summary>
     /// <remarks>
-    /// 软删除实体（<c>ISoftDeletable</c>）的唯一索引、声明的列里没有删除标记时为真：Provider 建成带条件 <c>IsDeleted = false</c> 的唯一索引（PostgreSQL、SQLite 的 <c>WHERE</c>，SQL Server 的筛选索引），已删除的行不受约束，同一业务键删除、重建、再删除任意多次都不冲突。数据库不支持部分索引时 Provider 在启动时失败（<see cref="PersistenceErrors.NotSupported"/>），不退化成普通唯一索引
+    /// 软删除实体（<c>ISoftDeletable</c>）的唯一索引、声明的列里没有删除标记时为真：Provider 建成带条件 <c>IsDeleted = false</c> 的唯一索引（PostgreSQL、SQLite 的 <c>WHERE</c>，SQL Server 的筛选索引；SqlSugar 在 MySQL 与 Oracle 上是每列 <c>CASE WHEN</c> 的函数索引，已删除的行整键为空），已删除的行不受约束，同一业务键删除、重建、再删除任意多次都不冲突。数据库不支持部分索引时 Provider 在启动时失败（<see cref="PersistenceErrors.NotSupported"/>），不退化成普通唯一索引
     /// </remarks>
     public bool ExcludesDeleted { get; }
 }

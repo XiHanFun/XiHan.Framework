@@ -145,11 +145,12 @@ public static class SqlSugarConventions
     /// 按约定为实体建表，并补建软删除实体的部分唯一索引
     /// </summary>
     /// <remarks>
-    /// 普通实体与分表实体各走 SqlSugar 的建表入口，之后补建部分唯一索引。在客户端当前的连接上建；特性开着 <c>InitTables</c> 时按实体的落点逐个连接调用它，应用自己建表（租户独立库、迁移工具）也要经它而不是直接调 <c>CodeFirst.InitTables</c>，否则软删除实体的唯一索引建不出来。部分唯一索引只约束未删除的行（<c>WHERE IsDeleted = false</c>），PostgreSQL、SQLite、SQL Server 支持；连接的数据库类型不支持而实体声明了它时，在建任何表之前抛出，不建出缺了唯一约束的表。已有同名的索引不改、不删（从此前的预览升级、库里已有带 <c>IsDeleted</c> 列的同名唯一索引的，要手动删掉旧索引再建）
+    /// 普通实体与分表实体各走 SqlSugar 的建表入口，之后补建部分唯一索引。在客户端当前的连接上建；特性开着 <c>InitTables</c> 时按实体的落点逐个连接调用它，应用自己建表（租户独立库、迁移工具）也要经它而不是直接调 <c>CodeFirst.InitTables</c>，否则软删除实体的唯一索引建不出来。部分唯一索引只约束未删除的行：PostgreSQL、SQLite、SQL Server 带条件（<c>WHERE IsDeleted = false</c>），MySQL（8.0.13 起）与 Oracle 是函数索引（ADR-0249）；连接的数据库类型不支持而实体声明了它时，在建任何表之前抛出，不建出缺了唯一约束的表。这批实体里两个实体的 <c>[EntityIndex]</c> 同名（不区分大小写，多半是显式给的名字撞了）同样在建表之前抛出：PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，按名字查到已有的就跳过，后建的那张表会静默少一个索引。已有同名的索引不改、不删（从此前的预览升级、库里已有带 <c>IsDeleted</c> 列的同名唯一索引的，要手动删掉旧索引再建）
     /// </remarks>
     /// <param name="client">要建表的连接</param>
     /// <param name="entityTypes">实体类型；带 <c>[SplitTable]</c> 的走分表的建表入口</param>
     /// <exception cref="FrameworkException">有实体声明了部分唯一索引而连接的数据库类型不支持（<see cref="PersistenceErrors.NotSupported"/>）</exception>
+    /// <exception cref="InvalidOperationException">两个实体的索引同名，或索引声明不合法（见 <see cref="EntityIndexes"/>）</exception>
     public static void InitTables(ISqlSugarClient client, params Type[] entityTypes)
     {
         ArgumentNullException.ThrowIfNull(client);
@@ -164,6 +165,7 @@ public static class SqlSugarConventions
         // 分表实体走分表的建表入口（按当前周期建第一张表，之后的分表由写入时按需建出），普通实体走常规建表；分表实体不支持 [EntityIndex]，没有部分唯一索引
         var split = Array.FindAll(entityTypes, static type => type.IsDefined(typeof(SplitTableAttribute), inherit: false));
         var plain = Array.FindAll(entityTypes, static type => !type.IsDefined(typeof(SplitTableAttribute), inherit: false));
+        EnsureDistinctIndexNames(client, plain);
         if (plain.Length > 0)
         {
             client.CodeFirst.InitTables(plain);
@@ -176,6 +178,28 @@ public static class SqlSugarConventions
         if (split.Length > 0)
         {
             client.CodeFirst.SplitTables().InitTables(split);
+        }
+    }
+
+    /// <summary>
+    /// 核对这批实体的 <c>[EntityIndex]</c> 不跨实体同名
+    /// </summary>
+    /// <remarks>
+    /// 推出的名字带表名，不会跨实体相同；显式给的名字可能相同（ADR-0249）。同一实体在入参里出现两次不算
+    /// </remarks>
+    private static void EnsureDistinctIndexNames(ISqlSugarClient client, Type[] entityTypes)
+    {
+        // 名字不区分大小写：PostgreSQL 折成小写、Oracle 存成大写，只差大小写的两个名字在那里是同一个
+        var owners = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        foreach (var type in entityTypes)
+        {
+            foreach (var index in EntityIndexes.Resolve(type, client.EntityMaintenance.GetEntityInfo(type).DbTableName))
+            {
+                if (!owners.TryAdd(index.Name, type) && owners[index.Name] != type)
+                {
+                    throw new InvalidOperationException($"Entities '{owners[index.Name].FullName}' and '{type.FullName}' both declare an index named '{index.Name}'; index names are unique per schema on PostgreSQL, SQLite and Oracle, so the second index would silently not be created.");
+                }
+            }
         }
     }
 

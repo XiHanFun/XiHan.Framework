@@ -17,7 +17,7 @@ namespace XiHan.Framework.Persistence.SqlSugar.Tests;
 /// </summary>
 /// <remarks>
 /// 仓储返回 <c>PERSISTENCE_CONFLICT_003</c>，不让数据库异常逃出（RFC-0005「索引声明」）
-/// 新增（同一批两项同键、已提交的另一行同键）、更新把键改成已有的值；之后工作单元只能回滚，调用以同一错误结束，库里不留这次的写入。软删除实体的唯一索引只约束未删除的行（ADR-0081）：同一键删除两次不冲突，未删除的同键行照样冲突，按部分唯一索引的名字报告。PostgreSQL 上语句失败后事务已中止，核对走另开的连接，同样在真实库上验证（<c>XIHAN_TEST_POSTGRES</c>）
+/// 新增（同一批两项同键、已提交的另一行同键）、更新把键改成已有的值；之后工作单元只能回滚，调用以同一错误结束，库里不留这次的写入。软删除实体的唯一索引只约束未删除的行（ADR-0081）：同一键删除两次不冲突，未删除的同键行照样冲突，按部分唯一索引的名字报告。PostgreSQL 上语句失败后事务已中止，核对走另开的连接，同样在真实库上验证（<c>XIHAN_TEST_POSTGRES</c>）；MySQL 与 Oracle 上部分唯一索引是函数索引（ADR-0249），同样在真实库上验证（<c>XIHAN_TEST_MYSQL</c>、<c>XIHAN_TEST_ORACLE</c>）
 /// </remarks>
 public sealed class SqlSugarUniqueKeyConflictTests
 {
@@ -98,6 +98,22 @@ public sealed class SqlSugarUniqueKeyConflictTests
     }
 
     [Fact]
+    public async Task SoftDelete_OfTheSameKeyAgainAndAgain_DoesNotConflict_OnMySql()
+    {
+        using var database = MySqlTestServer.CreateDatabase();
+        await using var host = await StartAsync(MySqlDatabase.CreateFeature(), database.Configuration);
+        await DeletesTheSameKeyRepeatedlyAsync(host);
+    }
+
+    [Fact]
+    public async Task SoftDelete_OfTheSameKeyAgainAndAgain_DoesNotConflict_OnOracle()
+    {
+        using var schema = OracleTestServer.CreateSchema();
+        await using var host = await StartAsync(OracleSchema.CreateFeature(), schema.Configuration);
+        await DeletesTheSameKeyRepeatedlyAsync(host);
+    }
+
+    [Fact]
     public async Task Add_OfAnUndeletedTwin_ReportsUniqueKeyConflict_OnTheSoftDeletableEntity_OnSqlite()
     {
         using var database = new SqliteDatabase();
@@ -110,6 +126,23 @@ public sealed class SqlSugarUniqueKeyConflictTests
     {
         using var database = PostgresTestServer.CreateDatabase();
         await using var host = await StartAsync(PostgresDatabase.CreateFeature(), database.Configuration);
+        await AddsAnUndeletedTwinAsync(host);
+    }
+
+    [Fact]
+    public async Task Add_OfAnUndeletedTwin_ReportsUniqueKeyConflict_OnTheSoftDeletableEntity_OnMySql()
+    {
+        // MySQL 与 Oracle 上部分唯一索引是函数索引：撞上后照样按声明的名字核对出唯一键重复（ADR-0249）
+        using var database = MySqlTestServer.CreateDatabase();
+        await using var host = await StartAsync(MySqlDatabase.CreateFeature(), database.Configuration);
+        await AddsAnUndeletedTwinAsync(host);
+    }
+
+    [Fact]
+    public async Task Add_OfAnUndeletedTwin_ReportsUniqueKeyConflict_OnTheSoftDeletableEntity_OnOracle()
+    {
+        using var schema = OracleTestServer.CreateSchema();
+        await using var host = await StartAsync(OracleSchema.CreateFeature(), schema.Configuration);
         await AddsAnUndeletedTwinAsync(host);
     }
 

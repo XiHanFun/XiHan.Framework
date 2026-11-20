@@ -9,7 +9,7 @@ namespace XiHan.Framework.Persistence.Abstractions;
 /// 在实体类上声明一个数据库索引
 /// </summary>
 /// <remarks>
-/// 与 <see cref="LongTextAttribute"/> 同一套路：实体只引用本包，Provider 据此建索引——SqlSugar 的约定在 <c>InitTables</c> 时建出，EF Core 的 <c>ApplyPersistenceConventions(Database)</c> 映射为 <c>HasIndex</c>。列按声明顺序、全部升序；同一实体可以声明多个。名字不由调用方给，按 <see cref="EntityIndexes"/> 的规则从表名与列推出（<c>IX_</c> / <c>UX_</c> 前缀、表名、各列缩写），两个 Provider 建出同名的索引。实体实现 <c>ISoftDeletable</c> 时唯一索引只约束未删除的行（部分唯一索引，见 <see cref="EntityIndex.ExcludesDeleted"/>）。不叫 <c>IndexAttribute</c>：EF Core 有同名特性，两个命名空间同时引入时会冲突
+/// 与 <see cref="LongTextAttribute"/> 同一套路：实体只引用本包，Provider 据此建索引——SqlSugar 的约定在 <c>InitTables</c> 时建出，EF Core 的 <c>ApplyPersistenceConventions(Database)</c> 映射为 <c>HasIndex</c>。列按声明顺序、全部升序；同一实体可以声明多个。名字缺省按 <see cref="EntityIndexes"/> 的规则从表名与列推出（<c>IX_</c> / <c>UX_</c> 前缀、表名、各列缩写），也可以用 <see cref="Name"/> 显式给出（ADR-0249），两个 Provider 建出同名的索引。实体实现 <c>ISoftDeletable</c> 时唯一索引只约束未删除的行（部分唯一索引，见 <see cref="EntityIndex.ExcludesDeleted"/>）。不叫 <c>IndexAttribute</c>：EF Core 有同名特性，两个命名空间同时引入时会冲突
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
@@ -36,7 +36,7 @@ public sealed class EntityIndexAttribute : Attribute
     /// 是否唯一索引
     /// </summary>
     /// <remarks>
-    /// 业务上唯一的键（如租户 + 名字）声明为唯一。关系型 Provider 写入撞上唯一索引时返回 <see cref="PersistenceErrors.UniqueKeyConflict"/>（同一批里两项同键、库里另一行同键），工作单元随后只能回滚。软删除实体只在未删除的行之间唯一；数据库不支持部分索引时启动失败，要么不声明唯一，要么把 <c>IsDeleted</c> 显式写进列（普通唯一索引，同一业务键最多一行已删除）
+    /// 业务上唯一的键（如租户 + 名字）声明为唯一。关系型 Provider 写入撞上唯一索引时返回 <see cref="PersistenceErrors.UniqueKeyConflict"/>（同一批里两项同键、库里另一行同键），工作单元随后只能回滚。软删除实体只在未删除的行之间唯一（部分唯一索引：PostgreSQL、SQLite、SQL Server 带条件，SqlSugar 在 MySQL 与 Oracle 上建成函数索引）；数据库不支持部分索引时启动失败，要么不声明唯一，要么把 <c>IsDeleted</c> 显式写进列（普通唯一索引，同一业务键最多一行已删除）
     /// </remarks>
     public bool IsUnique { get; set; }
 
@@ -47,4 +47,12 @@ public sealed class EntityIndexAttribute : Attribute
     /// 实体实现 <c>IMultiTenant</c> 时唯一索引的列必须含 <c>TenantId</c>，撞键只发生在同一租户里（ADR-0198）。确实要跨租户唯一的键（全局唯一的登录名之类）显式设为 <see langword="true"/>，接受撞键告诉调用方别的租户已有这个键。只用在不含 <c>TenantId</c> 的多租户唯一索引上，别处设置是声明错误
     /// </remarks>
     public bool AcrossTenants { get; set; }
+
+    /// <summary>
+    /// 显式的索引名
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> 时按 <see cref="EntityIndexes"/> 的规则推出。显式的名字原样使用（PostgreSQL 上仍折成小写）：字母开头，只含 ASCII 字母、数字与下划线，不超过 <see cref="EntityIndexes.MaxNameLength"/> 个字符，同一实体里不与别的索引同名（不区分大小写），否则是声明错误。PostgreSQL、SQLite 与 Oracle 的索引名在整个架构里唯一，两个实体显式给了同一个名字时 SqlSugar 的 <c>InitTables</c> 在建表之前报错（ADR-0249）。用于已经按自己的规则建好了索引的应用：换成本特性后名字不变，库里的索引原样沿用
+    /// </remarks>
+    public string? Name { get; set; }
 }
