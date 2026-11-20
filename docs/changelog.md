@@ -2,6 +2,24 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
+## v5.0.0-rc.5（2026-11-20）
+
+::: warning 候选版须知
+- 这是候选版，安装要带 `--prerelease`
+- SqlSugar 应用在 MySQL 或 Oracle 上登记了带唯一索引的软删除实体，以前启动即失败，这一版起建出函数索引
+:::
+
+### 版本与兼容
+
+- **调整** 框架钉在规范 `v1.0.0-rc.2` 上
+
+### 持久化
+
+- **修复** SqlSugar 的实体映射按数据库类型分开缓存：`ConfigId` 相同、数据库类型不同的连接（如同一进程里先连 SQLite 再连 SQL Server，或租户分片 `shard` 连到不同类型的库）不再沿用先建好的那份映射，SQL Server 的时间不再被截成 1/300 秒（ADR-0248）
+- **新增** `[EntityIndex]` 可以用 `Name` 显式给出索引名（字母开头，只含 ASCII 字母、数字与下划线），没给照旧按规则推出；已经按自己的规则建好索引的库换用 `[EntityIndex]` 后名字不变，库不用动（ADR-0249）
+- **调整** SqlSugar 在 MySQL（8.0.13 起）与 Oracle 上以函数索引建软删除实体的部分唯一索引，写入撞上时同样返回 `PERSISTENCE_CONFLICT_003`；更早的 MySQL 与 MariaDB 上建索引的语句失败，EF Core 在这两种库上仍不支持（ADR-0249）
+- **调整** `SqlSugarConventions.InitTables` 在建表之前核对一起建表的实体之间 `[EntityIndex]` 不同名，同名即抛 `InvalidOperationException`：PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，以前后建的那个会被静默跳过（ADR-0249）
+
 ## v5.0.0-rc.4（2026-11-20）
 
 ::: warning 候选版须知
