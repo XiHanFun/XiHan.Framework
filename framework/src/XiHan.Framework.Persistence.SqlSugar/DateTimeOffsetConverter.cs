@@ -21,10 +21,21 @@ internal class DateTimeOffsetConverter : ISugarDataConverter
     protected virtual System.Data.DbType ParameterType => System.Data.DbType.DateTime;
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 条件右边是嵌套闭包里的变量（如方法参数与循环变量各在一层）时，SqlSugar 先转换一次取出值，按列追加参数时再转换一次，第二次收到的是上一次写出的 UTC <see cref="DateTime"/>；
+    /// <see cref="DateTime"/> 按 C# 隐式转换成 <see cref="DateTimeOffset"/> 的规则解释（Utc 原样，Local 与 Unspecified 按本地时间），所以重复转换不改变时刻。
+    /// 别的类型直接抛出，不当成空值写入：与 NULL 比较的条件什么都查不到
+    /// </remarks>
     public SugarParameter ParameterConverter<T>(object value, int columnIndex)
     {
         // 参数名按列序号区分，SqlSugar 要求同一语句内唯一；空值按数据库空值写入
-        object parameterValue = value is DateTimeOffset moment ? moment.UtcDateTime : DBNull.Value;
+        object parameterValue = value switch
+        {
+            DateTimeOffset moment => moment.UtcDateTime,
+            DateTime dateTime => new DateTimeOffset(dateTime).UtcDateTime,
+            null or DBNull => DBNull.Value,
+            _ => throw new NotSupportedException($"A value of type '{value.GetType().FullName}' cannot be written to a DateTimeOffset column."),
+        };
         return new SugarParameter($"@xihan_dto_{columnIndex}", parameterValue, ParameterType);
     }
 

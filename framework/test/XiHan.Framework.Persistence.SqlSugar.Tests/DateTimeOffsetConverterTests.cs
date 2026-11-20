@@ -53,7 +53,35 @@ public sealed class DateTimeOffsetConverterTests
         Assert.Equal(DateTimeKind.Utc, written.Kind);
         Assert.Equal("@xihan_dto_3", parameter.ParameterName);
         Assert.Equal(DBNull.Value, converter.ParameterConverter<DateTimeOffset>(null!, 0).Value);
+        Assert.Equal(DBNull.Value, converter.ParameterConverter<DateTimeOffset>(DBNull.Value, 0).Value);
     }
+
+    [Fact]
+    public void ParameterConverter_GivenItsOwnOutput_WritesTheSameInstant()
+    {
+        // SqlSugar 对嵌套闭包里的变量转换两次，第二次收到第一次写出的 UTC 时间
+        var converter = new DateTimeOffsetConverter();
+        var once = converter.ParameterConverter<DateTimeOffset>(_moment, 1).Value!;
+        var twice = Assert.IsType<DateTime>(converter.ParameterConverter<DateTimeOffset>(once, 1).Value);
+
+        Assert.Equal(_moment.UtcDateTime, twice);
+        Assert.Equal(DateTimeKind.Utc, twice.Kind);
+    }
+
+    [Fact]
+    public void ParameterConverter_ReadsDateTime_AsTheImplicitConversionDoes()
+    {
+        var converter = new DateTimeOffsetConverter();
+        var local = _moment.UtcDateTime.ToLocalTime();
+        var unspecified = DateTime.SpecifyKind(local, DateTimeKind.Unspecified);
+
+        Assert.Equal(_moment.UtcDateTime, converter.ParameterConverter<DateTimeOffset>(local, 0).Value);
+        Assert.Equal(((DateTimeOffset)unspecified).UtcDateTime, converter.ParameterConverter<DateTimeOffset>(unspecified, 0).Value);
+    }
+
+    [Fact]
+    public void ParameterConverter_RejectsOtherTypes_InsteadOfWritingNull()
+        => Assert.Throws<NotSupportedException>(static () => new DateTimeOffsetConverter().ParameterConverter<DateTimeOffset>("2026-10-27 19:34:39", 0));
 
     /// <summary>
     /// 把一个值放进单列单行的表，经 <see cref="DataTableReader"/> 以 <see cref="IDataRecord"/> 的形态交给转换器
