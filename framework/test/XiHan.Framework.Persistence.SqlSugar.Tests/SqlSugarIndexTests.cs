@@ -21,9 +21,6 @@ public sealed class SqlSugarIndexTests
     /// <summary>
     /// SQLite 客户端的 ConfigId
     /// </summary>
-    /// <remarks>
-    /// SqlSugar 按类型与 ConfigId 缓存实体映射，几种数据库用不同的 ConfigId 才不会串用对方的列定义
-    /// </remarks>
     private const string SqliteConfigId = "index-sqlite";
 
     /// <summary>

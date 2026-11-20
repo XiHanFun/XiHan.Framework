@@ -32,7 +32,7 @@ public static class SqlSugarConventions
     /// 在连接配置上施加协议约定
     /// </summary>
     /// <remarks>
-    /// 登记实体服务、表服务回调与字符串匹配的翻译，并固定 PostgreSQL 会话的字面量规则。配置里已有的回调先执行，本约定之后施加：列约定挂在 <c>EntityService</c>，索引挂在 <c>EntityNameService</c>。<c>string.Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 以同名的外部函数（<c>SqlFuncServices</c>）接管翻译，在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成按字面匹配的 <c>LIKE … ESCAPE '!'</c>——实参里的 <c>%</c>、<c>_</c>（SQL Server 还有 <c>[</c>）与反斜杠不再是通配符或转义符；经仓储的规约与直接用这个客户端的查询都一样；需要通配的查询用 <c>SqlFunc.Like</c>。列表里已有同名的外部函数时以它为准（应用自己的 <c>SqlFuncServices</c> 在调用本方法之前设好；之后整体替换列表会丢掉这三个翻译）。数据库类型是 PostgreSQL 时，连接串（含读写分离的从库连接串）的启动参数 <c>Options</c> 追加 <c>-c standard_conforming_strings=on</c>：SqlSugar 在多行写入、批量更新、按主键删除、<c>In</c> 与集合 <c>Contains</c> 里内联的字符串字面量只在它为 on 时正确，库或角色把它设成 off 时含反斜杠的值会让语句出错或被静默改掉；数据库类型与连接串要在调用本方法之前设好，之后再改的连接串不带这个参数。返回同一配置以便链式调用
+    /// 登记实体服务、表服务回调与字符串匹配的翻译，并固定 PostgreSQL 会话的字面量规则。配置里已有的回调先执行，本约定之后施加：列约定挂在 <c>EntityService</c>，索引挂在 <c>EntityNameService</c>。<c>string.Contains</c> / <c>StartsWith</c> / <c>EndsWith</c> 以同名的外部函数（<c>SqlFuncServices</c>）接管翻译，在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成按字面匹配的 <c>LIKE … ESCAPE '!'</c>——实参里的 <c>%</c>、<c>_</c>（SQL Server 还有 <c>[</c>）与反斜杠不再是通配符或转义符；经仓储的规约与直接用这个客户端的查询都一样；需要通配的查询用 <c>SqlFunc.Like</c>。列表里已有同名的外部函数时以它为准（应用自己的 <c>SqlFuncServices</c> 在调用本方法之前设好；之后整体替换列表会丢掉这三个翻译）。数据库类型是 PostgreSQL 时，连接串（含读写分离的从库连接串）的启动参数 <c>Options</c> 追加 <c>-c standard_conforming_strings=on</c>：SqlSugar 在多行写入、批量更新、按主键删除、<c>In</c> 与集合 <c>Contains</c> 里内联的字符串字面量只在它为 on 时正确，库或角色把它设成 off 时含反斜杠的值会让语句出错或被静默改掉；数据库类型与连接串要在调用本方法之前设好，之后再改的连接串不带这个参数。列约定随数据库类型而变，SqlSugar 的实体映射缓存却只按实体类型与 <c>ConfigId</c> 区分：这里把配置的反射信息缓存（<c>ReflectionInoCacheService</c>，应用设过的也一样）包一层，键带上数据库类型，<c>ConfigId</c> 相同的不同库各建各的映射。返回同一配置以便链式调用
     /// </remarks>
     /// <exception cref="ArgumentException">PostgreSQL 连接串的启动参数把 <c>standard_conforming_strings</c> 设成了 on 以外的值</exception>
     public static ConnectionConfig Apply(ConnectionConfig config)
@@ -65,6 +65,12 @@ public static class SqlSugarConventions
         }
 
         config.ConfigureExternalServices ??= new ConfigureExternalServices();
+        // SqlSugar 的实体映射按类型与 ConfigId 缓存、进程内共用，下面的列约定却随数据库类型而变：键加上数据库类型，ConfigId 相同的不同库各建各的映射（ADR-0248）
+        if (config.ConfigureExternalServices.ReflectionInoCacheService is not DbTypeScopedReflectionCache)
+        {
+            config.ConfigureExternalServices.ReflectionInoCacheService = new DbTypeScopedReflectionCache(config.ConfigureExternalServices.ReflectionInoCacheService, config);
+        }
+
         // SqlSugar 把这三个方法译成不转义的 LIKE，实参里的通配符会误匹配；同名外部函数先于内置翻译被查到（ADR-0098）
         LiteralStringMatching.Register(config.ConfigureExternalServices);
         var previous = config.ConfigureExternalServices.EntityService;

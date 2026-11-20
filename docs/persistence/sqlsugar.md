@@ -85,6 +85,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 - `[EntityIndex]` 经表服务回调转成 `SugarIndexAttribute`；软删除实体的唯一索引由 `InitTables` 建表后补建成部分唯一索引。
 - 字符串的 `Contains` / `StartsWith` / `EndsWith` 以同名外部函数接管翻译，按字面匹配，直接用施加了约定的客户端写的查询也一样；要通配用 `SqlFunc.Like`。
 - PostgreSQL 连接串的启动参数追加 `standard_conforming_strings=on`，见下文。
+- 实体映射按数据库类型分开缓存：`ConfigId` 相同、库类型不同的连接（如不同库类型的租户分片都是 `shard`）各用各的列定义（ADR-0248）。
 
 软删除与租户过滤以表达式显式施加在每个查询上，不用 SqlSugar 的全局过滤器。列与索引的完整约定见[建表约定与索引](/persistence/schema)。
 
