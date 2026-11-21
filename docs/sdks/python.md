@@ -5,12 +5,12 @@
 ## 安装
 
 ```bash
-pip install xihan-framework
+pip install "xihan-framework==<版本>"
 ```
 
 导入名是 `xihan_framework`。核心五块运行时零依赖；写进程外插件要装 extra `plugin`（见[写一个插件](#写一个插件)）。
 
-PyPI 上目前只有占名用的版本，首个版本尚未发布，现在从源码安装：克隆仓库，在仓库根建好虚拟环境后执行 `python -m pip install -e ".[plugin]"`（Windows 上建虚拟环境用 `py -3.13 -m venv .venv`）。
+目前只有预发布版，要写明版本号：`<版本>` 换成 PyPI 上的版本，按 PEP 440 写（标签的 `-rc.N` 写作 `rcN`），版本列表见 [Releases](https://github.com/XiHanFun/framework-sdk-python/releases)；不写版本会装到 PyPI 上占名用的旧版本。
 
 ## 模块
 
@@ -21,7 +21,7 @@ PyPI 上目前只有占名用的版本，首个版本尚未发布，现在从源
 | `invocation` | 不可变的 `Context`：截止时间、可跨线程触发的 `Cancellation`、W3C 追踪（`traceparent` 只认版本 `00` 与小写十六进制、不合法的当作没给，采样只看标志的最低位，写出只带采样位 `00` / `01`，没有上游时写 `01`）、已登记的 Baggage（已登记键的值非空、按 UTF-16 码元计最多 256、不含控制字符，由一组 Baggage 构造上下文时丢弃不合的成员，`with_baggage` 给出不合的值则抛 `ValueError`，幂等键两种情形都例外）、类型化键的对象袋；`Context.run(call)` 进入时截止时间已过即返回 `KERNEL_TIMEOUT_001` + `kernel.invocation.deadline_before_start`（不核对取消），之后把一个派生的上下文交给 `call`，它的信号在调用方取消或到达截止时间时触发；取消与截止时间只经信号通知，不取消 `call` 的任务，`call` 抛出 `CancelledError` 或写下取消结果时翻译为 `KERNEL_TIMEOUT_001` / `KERNEL_CANCELLED_001`，照常返回的结果原样交回 | RFC-0003 |
 | `pipeline` | 固定阶段的 `Builder`：`use` / `use_at` / `use_named_instance`、`before` / `after`（按类型名或实例名）、阶段可写成清单里的名字、`extend` 接上另一个构建器；命名实例只按实例名引用、默认实例按类型名引用；重复登记、未知阶段与约束主体未登记或有歧义在登记时报，约束目标的问题与成环在排序时报（逐个阶段处理），消息是各语言逐字相同的英文原文，命名实例写成 `类型名[名字]`，成环时列出全部卡住的中间件；`describe` / `dump`、`build`；排序规则与错误码 `KERNEL_PIPELINE_00x` | RFC-0004 |
 | `operation` | `Contract`、`Schema`、异步处理器、容量 10000 的 `Registry`、经完整管道执行的 `Invoker`（XGI：JSON 请求与响应，带三个内置步骤）与类型化入口 `invoke_typed` | RFC-0011 |
-| `plugin` | 进程外插件运行时（协议 `xihan.plugin.v1`）：`Plugin` 在监听之前核对清单与声明，读宿主下发的环境变量，在本机端点上以 `grpc.aio` 提供 `Plugin` 服务并写握手行；每个 RPC 先按常数时间核对会话令牌；按 lifecycle.md §7 处理调用次序、配置（含类型化读取）、就绪、健康、停止，以及 stdin 关闭或 SIGTERM 的收尾（最多 3 秒）；调用经 SDK 的 `Invoker` 与完整管道执行，事件按（主题，订阅方式，类型）依次交给处理器；宿主回调客户端 `Host`（`invoke` 与批量的 `publish`，端点取 `XIHAN_PLUGIN_HOST_ADDRESS` 里第一个 grpcio 能连的项，发出前在本地核对权限与租户）；stderr 上的 JSON 日志；运行时的消息目录（10 种区域，供本地渲染，不随握手发送）。协议代码在 `plugin.v1`，由 `spec/plugin/plugin.proto` 生成。依赖 grpcio 与 protobuf，装 extra：`pip install "xihan-framework[plugin]"` | RFC-0017、`spec/plugin/` |
+| `plugin` | 进程外插件运行时（协议 `xihan.plugin.v1`）：`Plugin` 在监听之前核对清单与声明，读宿主下发的环境变量，在本机端点上以 `grpc.aio` 提供 `Plugin` 服务并写握手行；每个 RPC 先按常数时间核对会话令牌；按 lifecycle.md §7 处理调用次序、配置（含类型化读取）、就绪、健康、停止，以及 stdin 关闭或 SIGTERM 的收尾（最多 3 秒）；调用经 SDK 的 `Invoker` 与完整管道执行，事件按（主题，订阅方式，类型）依次交给处理器；宿主回调客户端 `Host`（`invoke` 与批量的 `publish`，端点取 `XIHAN_PLUGIN_HOST_ADDRESS` 里第一个 grpcio 能连的项，发出前在本地核对权限与租户）；stderr 上的 JSON 日志；运行时的消息目录（10 种区域，供本地渲染，不随握手发送）。协议代码在 `plugin.v1`，由 `spec/plugin/plugin.proto` 生成。依赖 grpcio 与 protobuf，装 extra：`pip install "xihan-framework[plugin]==<版本>"` | RFC-0017、`spec/plugin/` |
 
 ## 快速开始
 
@@ -89,7 +89,7 @@ asyncio.run(main())
 这一节是插件一侧的写法；宿主怎样发现、启动与降级插件，见[进程外插件](/plugins/out-of-process)。
 
 ```bash
-pip install "xihan-framework[plugin]"
+pip install "xihan-framework[plugin]==<版本>"
 ```
 
 grpcio 与 protobuf 只在 extra `plugin` 里，核心五块不依赖它们；没有装就导入 `xihan_framework.plugin` 时，错误里给出这条安装命令。
@@ -208,9 +208,9 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --exclude echoes.cras
 - 钉的规范版本：SDK 仓库 `spec/` 子模块指向的提交。
 - 认领的档（RFC-0024）：`core` 与 `plugin`。
 - 缺口：无。
-- 成熟度：在有钉在规范标签上的发布版之前是 Experimental。
+- 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 怎样验证：单元测试直接读取 `spec/conformance/vectors/` 下的向量回放；SDK 仓库的 `tests/test_vectors.py` 按档表 `spec/conformance/profiles.json` 核对认领的档要求的每个向量要么有测试回放、要么列为缺口并写明理由；示例插件 echo 由规范的黑盒运行器跑全部用例。CI 在 Linux 与 Windows 上都跑这些测试。
 
 ## 破坏性改动与迁移
 
-首个版本尚未发布，还没有登记的破坏性改动。
+还没有登记的破坏性改动。

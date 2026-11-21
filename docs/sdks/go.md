@@ -222,7 +222,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - 认领的档：`core`、`plugin` 与 `provider:caching.distributed@1`；档的定义见规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)。
 - 缺口：无。
 - 钉的规范版本：见 SDK 仓库的 `spec/` 子模块与 `go.mod` 里的一致性模块 `github.com/xihanfun/framework-spec/conformance`，两者是同一个规范提交。
-- 成熟度：在有钉在规范标签上的发布版之前是 Experimental。
+- 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 范围：流式操作在流式契约的 RFC 之前不提供（`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）；Wasm 载体不在本 SDK 范围。
 
 怎样验证：
