@@ -15,7 +15,7 @@
 ./build.ps1          # 产物在 bin/：echo-go(.exe) + xihan.manifest.json
 ```
 
-需要 Go 1.26+。`go.mod` 以伪版本锁定 SDK 的提交；升级 SDK 用 `go get github.com/xihanfun/framework-sdk-go@<提交或标签>`。
+需要 Go 1.26+。`go.mod` 锁定 SDK 的版本；升级 SDK 用 `go get github.com/xihanfun/framework-sdk-go@<提交或标签>`。
 
 ## 测试
 
