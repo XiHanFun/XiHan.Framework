@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Primitives;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions.Messages;
@@ -16,7 +17,7 @@ namespace XiHan.Framework.Protocols.Mcp.Server;
 /// MCP 服务端核心，与传输无关
 /// </summary>
 /// <remarks>
-/// 把登记表里暴露给 MCP 的操作变成 tool 表，处理 JSON-RPC 2.0 消息（<c>initialize</c>、<c>ping</c>、<c>tools/list</c>、<c>tools/call</c>；通知不答复）。<c>tools/call</c> 以新的调用上下文经完整内核管道执行操作（认证、按契约授权、事务……），操作失败按 MCP 约定以 <c>isError</c> 结果返回而不是协议错误。tool 的 <c>title</c> 与 <c>description</c> 来自消息目录里的 <c>&lt;操作 ID&gt;.title</c> / <c>.description</c>（ID 里的 <c>-</c> 换成 <c>_</c>），按调用方区域翻译；没有就不给
+/// 把登记表里暴露给 MCP 的操作变成 tool 表（跟随登记表，运行期登记的随即是 tool、撤回的随即不是，ADR-0251），处理 JSON-RPC 2.0 消息（<c>initialize</c>、<c>ping</c>、<c>tools/list</c>、<c>tools/call</c>；通知不答复）。<c>tools/call</c> 以新的调用上下文经完整内核管道执行操作（认证、按契约授权、事务……），操作失败按 MCP 约定以 <c>isError</c> 结果返回而不是协议错误。tool 的 <c>title</c> 与 <c>description</c> 来自消息目录里的 <c>&lt;操作 ID&gt;.title</c> / <c>.description</c>（ID 里的 <c>-</c> 换成 <c>_</c>），按调用方区域翻译；没有就不给
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class McpServer
@@ -68,20 +69,28 @@ public sealed class McpServer
     private readonly IMessageLocalizer? _localizer;
 
     /// <summary>
-    /// tool 名 → tool，按名字排序
+    /// 操作登记表
     /// </summary>
-    private readonly SortedDictionary<string, McpTool> _tools;
+    private readonly OperationRegistry _registry;
 
     /// <summary>
-    /// 按名字排序的 tool 列表
+    /// 重建 tool 表的互斥锁
     /// </summary>
-    private readonly IReadOnlyList<McpTool> _toolList;
+    private readonly Lock _gate = new();
+
+    /// <summary>
+    /// 当前的 tool 表
+    /// </summary>
+    /// <remarks>
+    /// 登记表变了之后第一次用时在 <see cref="_gate"/> 内重建并整体替换，读不取锁
+    /// </remarks>
+    private volatile ToolTable _table;
 
     /// <summary>
     /// 创建服务端
     /// </summary>
     /// <remarks>
-    /// 登记表此时必须已定型，tool 表在这里一次建成，名字不合法或重复即失败
+    /// tool 表在这里建成，已登记的操作名字不合法或重复即失败；此后跟随登记表重建，并挂上 tool 名的整组核对：此后登记的不合法或重名，整组不登记（ADR-0251）
     /// </remarks>
     /// <param name="registry">操作登记表</param>
     /// <param name="invoker">操作调用器</param>
@@ -94,12 +103,17 @@ public sealed class McpServer
         ArgumentNullException.ThrowIfNull(invoker);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
+        _registry = registry;
         _invoker = invoker;
         _options = options;
         _localizer = localizer;
         ServerName = serverName;
-        _tools = BuildTools(registry, options);
-        _toolList = _tools.Values.ToList();
+        _table = BuildTable();
+        // 建表时已核对过已登记的；挂上时再有冲突只可能是并发登记进来的，同样按配置错误终止
+        if (registry.EnforceAdditions((existing, added) => ToolNameConflictOf(options, existing, added)) is { } conflict)
+        {
+            throw new FrameworkException(conflict.Code, $"Tool names of the registered operations conflict: {conflict.Message}");
+        }
     }
 
     /// <summary>
@@ -110,7 +124,10 @@ public sealed class McpServer
     /// <summary>
     /// 发布的 tool，按名字排序
     /// </summary>
-    public IReadOnlyList<McpTool> Tools => _toolList;
+    /// <remarks>
+    /// 按此刻的登记表（ADR-0251）
+    /// </remarks>
+    public IReadOnlyList<McpTool> Tools => Current().List;
 
     /// <summary>
     /// 按名字找 tool
@@ -118,7 +135,7 @@ public sealed class McpServer
     public Maybe<McpTool> FindTool(string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return _tools.TryGetValue(name, out var tool) ? Maybe.Some(tool) : default;
+        return Current().ByName.TryGetValue(name, out var tool) ? Maybe.Some(tool) : default;
     }
 
     /// <summary>
@@ -203,10 +220,89 @@ public sealed class McpServer
     }
 
     /// <summary>
+    /// 新增的一组与已登记的 tool 名冲突时的错误
+    /// </summary>
+    /// <remarks>
+    /// 经 <c>OperationRegistry.EnforceAdditions</c> 挂上（ADR-0251）：只看发布给 MCP 且不是内部稳定性的操作；新增的名字不合法为 <see cref="McpErrors.InvalidToolName"/>，与已登记的或组内的重名为 <see cref="McpErrors.DuplicateToolName"/>，都没有为 <see langword="null"/>
+    /// </remarks>
+    private static Error? ToolNameConflictOf(McpProtocolOptions options, IReadOnlyList<OperationDescriptor> existing, IReadOnlyList<OperationDescriptor> added)
+    {
+        var names = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var descriptor in existing.Where(IsPublished))
+        {
+            names.TryAdd(options.ToolNameFor(descriptor.Contract), descriptor.Id);
+        }
+
+        foreach (var descriptor in added.Where(IsPublished))
+        {
+            var name = options.ToolNameFor(descriptor.Contract);
+            if (!McpToolName.IsValid(name))
+            {
+                return Error.Validation(McpErrors.InvalidToolName, McpMessages.ToolNameInvalid, MessageArguments.Of(("name", name), ("id", descriptor.Id)));
+            }
+
+            if (!names.TryAdd(name, descriptor.Id))
+            {
+                return Error.Conflict(McpErrors.DuplicateToolName, McpMessages.ToolNameDuplicate, MessageArguments.Of(("name", name), ("existing", names[name]), ("id", descriptor.Id)));
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// 是否发布为 tool
+    /// </summary>
+    /// <remarks>
+    /// 内部稳定性的操作只供进程内调用，不对外发布
+    /// </remarks>
+    private static bool IsPublished(OperationDescriptor descriptor)
+        => descriptor.Contract.IsExposedTo(Expose.Mcp) && descriptor.Contract.Stability != Stability.Internal;
+
+    /// <summary>
+    /// 此刻的 tool 表
+    /// </summary>
+    /// <remarks>
+    /// 登记表在上次建表之后变过（令牌已触发）即重建：插件运行期加载的操作随即是 tool，撤回的随即不是（ADR-0251）
+    /// </remarks>
+    private ToolTable Current()
+    {
+        var table = _table;
+        if (!table.Built.HasChanged)
+        {
+            return table;
+        }
+
+        // 双重检查：并发的消息只有一条重建，其余等它建完直接用
+        lock (_gate)
+        {
+            if (_table.Built.HasChanged)
+            {
+                _table = BuildTable();
+            }
+
+            return _table;
+        }
+    }
+
+    /// <summary>
+    /// 按登记表此刻的内容建 tool 表
+    /// </summary>
+    /// <remarks>
+    /// 先取令牌再读登记表：读的过程中又变了，令牌已经触发，下次用时再建
+    /// </remarks>
+    private ToolTable BuildTable()
+    {
+        var built = _registry.GetChangeToken();
+        var tools = BuildTools(_registry, _options);
+        return new ToolTable(tools, [.. tools.Values], built);
+    }
+
+    /// <summary>
     /// 从登记表建 tool 表
     /// </summary>
     /// <remarks>
-    /// 排除内部稳定性与未暴露给 MCP 的操作；名字按选项覆盖或约定推导，不合法或重复视为配置错误
+    /// 排除内部稳定性与未暴露给 MCP 的操作；名字按选项覆盖或约定推导，不合法或重复视为配置错误。此后登记的冲突在登记时已整组被拒，重建时不会遇到
     /// </remarks>
     private static SortedDictionary<string, McpTool> BuildTools(OperationRegistry registry, McpProtocolOptions options)
     {
@@ -318,7 +414,7 @@ public sealed class McpServer
     {
         var locale = _localizer?.Options.Resolve(context);
         writer.WriteStartArray("tools");
-        foreach (var tool in _toolList)
+        foreach (var tool in Current().List)
         {
             writer.WriteStartObject();
             writer.WriteString("name", tool.Name);
@@ -377,7 +473,7 @@ public sealed class McpServer
         }
 
         var name = nameElement.GetString()!;
-        if (!_tools.TryGetValue(name, out var tool))
+        if (!Current().ByName.TryGetValue(name, out var tool))
         {
             return WriteError(id, JsonRpcErrorCodes.InvalidParams, McpErrors.UnknownTool, McpMessages.ToolUnknown.L(("tool", name)));
         }
@@ -508,4 +604,12 @@ public sealed class McpServer
         writer.WritePropertyName("id");
         id.WriteTo(writer);
     }
+
+    /// <summary>
+    /// 一份 tool 表
+    /// </summary>
+    /// <param name="ByName">tool 名 → tool，按名字排序</param>
+    /// <param name="List">按名字排序的 tool 列表</param>
+    /// <param name="Built">建表之前取的登记表令牌，触发了即要重建</param>
+    private sealed record ToolTable(SortedDictionary<string, McpTool> ByName, IReadOnlyList<McpTool> List, IChangeToken Built);
 }

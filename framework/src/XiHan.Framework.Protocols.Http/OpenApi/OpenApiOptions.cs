@@ -63,26 +63,41 @@ public sealed record OpenApiOptions
         init
         {
             ArgumentNullException.ThrowIfNull(value);
-            var names = new HashSet<string>(StringComparer.Ordinal) { OpenApiEndpointRouteBuilderExtensions.FullDocumentName };
-            var owners = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var group in value)
-            {
-                ArgumentNullException.ThrowIfNull(group, nameof(value));
-                if (!names.Add(group.Name))
-                {
-                    throw new ArgumentException($"The OpenAPI group name '{group.Name}' is reserved or used twice.", nameof(value));
-                }
-
-                foreach (var owner in group.Owners)
-                {
-                    if (!owners.Add(owner))
-                    {
-                        throw new ArgumentException($"Feature '{owner}' belongs to more than one OpenAPI group.", nameof(value));
-                    }
-                }
-            }
-
-            field = [.. value];
+            field = Validated(value, nameof(value));
         }
     } = [];
+
+    /// <summary>
+    /// 核对一组分组并复制
+    /// </summary>
+    /// <remarks>
+    /// 组名唯一且不是 <c>all</c>（全量文档的名字），一个特性只属于一个组；选项与运行期的分组来源（<see cref="IOpenApiGroupSource"/>）合在一起时用同一套规则
+    /// </remarks>
+    /// <param name="groups">分组</param>
+    /// <param name="paramName">报错时的参数名</param>
+    /// <exception cref="ArgumentException">分组里有 <see langword="null"/>、组名重复或保留、一个特性属于多个组</exception>
+    internal static IReadOnlyList<OpenApiGroup> Validated(IEnumerable<OpenApiGroup> groups, string paramName)
+    {
+        var copied = groups.ToList();
+        var names = new HashSet<string>(StringComparer.Ordinal) { OpenApiEndpointRouteBuilderExtensions.FullDocumentName };
+        var owners = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var group in copied)
+        {
+            ArgumentNullException.ThrowIfNull(group, paramName);
+            if (!names.Add(group.Name))
+            {
+                throw new ArgumentException($"The OpenAPI group name '{group.Name}' is reserved or used twice.", paramName);
+            }
+
+            foreach (var owner in group.Owners)
+            {
+                if (!owners.Add(owner))
+                {
+                    throw new ArgumentException($"Feature '{owner}' belongs to more than one OpenAPI group.", paramName);
+                }
+            }
+        }
+
+        return copied;
+    }
 }

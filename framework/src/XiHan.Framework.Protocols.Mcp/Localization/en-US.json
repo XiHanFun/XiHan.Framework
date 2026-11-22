@@ -8,5 +8,7 @@
   "protocols.mcp.version_unsupported": "MCP protocol version '{version}' is not supported; this server supports {supported}.",
   "protocols.mcp.origin_denied": "Requests from origin '{origin}' are not allowed; add it to XiHan:Protocols:Mcp:AllowedOrigins.",
   "protocols.mcp.content_type_invalid": "The MCP endpoint accepts only application/json, not '{contentType}'.",
-  "protocols.mcp.request_body_too_large": "The request body exceeds {max} bytes."
+  "protocols.mcp.request_body_too_large": "The request body exceeds {max} bytes.",
+  "protocols.mcp.tool_name_invalid": "Tool name '{name}' derived for operation '{id}' is not valid.",
+  "protocols.mcp.tool_name_duplicate": "Tool name '{name}' is used by both operation '{existing}' and operation '{id}'."
 }

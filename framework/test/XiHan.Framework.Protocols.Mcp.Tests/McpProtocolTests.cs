@@ -452,4 +452,68 @@ public sealed class McpProtocolTests
         Assert.Equal(["ApiKey"], rejected.Headers.WwwAuthenticate.Select(static h => h.ToString()));
         Assert.Equal("SECURITY_DENIED_003", Root(await rejected.Content.ReadAsStringAsync()).GetProperty("code").GetString());
     }
+
+    /// <summary>
+    /// 插件在服务端建立之后登记的一个只给 MCP 的操作
+    /// </summary>
+    private static OperationDescriptor<OrdersOperation, OrderRequest, OrderReply> DescribePlugin(string id)
+        => new(new OperationContract(id) { Expose = Expose.Mcp }, "xihan.test.plugin", OrdersJsonContext.Default.OrderRequest, OrdersJsonContext.Default.OrderReply);
+
+    /// <summary>
+    /// <c>tools/list</c> 的结果里有没有这个 tool
+    /// </summary>
+    private static bool Lists(JsonElement result, string name)
+        => result.GetProperty("tools").EnumerateArray().Any(tool => tool.GetProperty("name").GetString() == name);
+
+    [Fact]
+    public async Task Tools_FollowTheRegistry_AfterTheServerIsBuilt()
+    {
+        // ADR-0251：tools/list 与 tools/call 按处理这条消息时的登记表
+        var (app, client) = await StartAsync();
+        await using var host = app;
+        var registry = app.Services.GetRequiredService<OperationRegistry>();
+        Assert.False(Lists(await ResultOf(client, Rpc("tools/list")), "widgets_get"));
+
+        Assert.True(registry.AddRange("xihan.test.plugin", [DescribePlugin("widgets.get")], []).IsSuccess);
+        Assert.True(Lists(await ResultOf(client, Rpc("tools/list")), "widgets_get"));
+        var called = await ResultOf(client, Rpc("tools/call", """{"name":"widgets_get","arguments":{"id":"7"}}"""));
+        Assert.False(called.TryGetProperty("isError", out _));
+        Assert.Equal("widgets.get", called.GetProperty("structuredContent").GetProperty("operation").GetString());
+
+        // 撤回之后不再是 tool；服务端不推送变化，listChanged 仍为 false
+        Assert.Equal(1, registry.RemoveOwnedBy("xihan.test.plugin"));
+        Assert.False(Lists(await ResultOf(client, Rpc("tools/list")), "widgets_get"));
+        var (status, text) = await PostAsync(client, Rpc("tools/call", """{"name":"widgets_get","arguments":{"id":"7"}}"""));
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal(McpErrors.UnknownTool, ErrorCodeOf(text));
+        var initialized = await ResultOf(client, Rpc("initialize", """{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"1"}}"""));
+        Assert.False(initialized.GetProperty("capabilities").GetProperty("tools").GetProperty("listChanged").GetBoolean());
+    }
+
+    [Fact]
+    public async Task ToolNameConflicts_AfterTheServerIsBuilt_RejectTheWholeGroup()
+    {
+        // 用覆盖造出冲突：与已有的 orders_get 同名、组内两个同名；覆盖的名字在读配置时就核对，不合法的只能是推导出的（超过 64 个字符）
+        var (app, _) = await StartAsync(
+            ("XiHan:Protocols:Mcp:Tools:widgets.get", "orders_get"),
+            ("XiHan:Protocols:Mcp:Tools:widgets.create", "widgets_any"),
+            ("XiHan:Protocols:Mcp:Tools:widgets.update", "widgets_any"));
+        await using var host = app;
+        var registry = app.Services.GetRequiredService<OperationRegistry>();
+
+        var withExisting = registry.AddRange("xihan.test.plugin", [DescribePlugin("widgets.get"), DescribePlugin("widgets.delete")], []);
+        Assert.Equal(McpErrors.DuplicateToolName, withExisting.Error?.Code);
+        Assert.Equal(McpMessages.ToolNameDuplicate, withExisting.Error?.MessageKey);
+        Assert.False(registry.Find("widgets.delete").HasValue);
+
+        var inGroup = registry.AddRange("xihan.test.plugin", [DescribePlugin("widgets.create"), DescribePlugin("widgets.update")], []);
+        Assert.Equal(McpErrors.DuplicateToolName, inGroup.Error?.Code);
+
+        var invalid = registry.AddRange("xihan.test.plugin", [DescribePlugin(new string('w', 61) + ".get")], []);
+        Assert.Equal(McpErrors.InvalidToolName, invalid.Error?.Code);
+        Assert.Equal(McpMessages.ToolNameInvalid, invalid.Error?.MessageKey);
+
+        // 被拒的都没有进登记表，不冲突的照常登记
+        Assert.True(registry.AddRange("xihan.test.plugin", [DescribePlugin("widgets.delete")], []).IsSuccess);
+    }
 }

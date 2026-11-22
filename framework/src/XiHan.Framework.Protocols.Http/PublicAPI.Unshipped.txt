@@ -17,6 +17,9 @@ XiHan.Framework.Protocols.Http.HttpProtocolOptions.RoutePrefix.get -> string!
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.RoutePrefix.init -> void
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.Routes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Protocols.Http.Routing.HttpRoute!>!
 XiHan.Framework.Protocols.Http.HttpProtocolOptions.Routes.init -> void
+XiHan.Framework.Protocols.Http.OpenApi.IOpenApiGroupSource
+XiHan.Framework.Protocols.Http.OpenApi.IOpenApiGroupSource.GetChangeToken() -> Microsoft.Extensions.Primitives.IChangeToken!
+XiHan.Framework.Protocols.Http.OpenApi.IOpenApiGroupSource.Groups.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Protocols.Http.OpenApi.OpenApiGroup!>!
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentBuilder
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink
 XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink.<Clone>$() -> XiHan.Framework.Protocols.Http.OpenApi.OpenApiDocumentLink!
@@ -112,6 +115,7 @@ const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiSuccess = "protocols.ht
 const XiHan.Framework.Protocols.Http.HttpMessages.OpenApiUngrouped = "protocols.http.openapi_ungrouped" -> string!
 const XiHan.Framework.Protocols.Http.HttpMessages.RequestBodyNotJson = "protocols.http.request_body_not_json" -> string!
 const XiHan.Framework.Protocols.Http.HttpMessages.RequestBodyTooLarge = "protocols.http.request_body_too_large" -> string!
+const XiHan.Framework.Protocols.Http.HttpMessages.RouteDuplicate = "protocols.http.route_duplicate" -> string!
 const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Http = "protocols.http" -> string!
 const XiHan.Framework.Protocols.Http.HttpProtocolCapabilities.Version = 1 -> int
 const XiHan.Framework.Protocols.Http.HttpProtocolOptions.ConfigurationSection = "XiHan:Protocols:Http" -> string!

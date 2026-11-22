@@ -79,6 +79,22 @@ public static class McpMessages
     public const string ToolUnknown = "protocols.mcp.tool_unknown";
 
     /// <summary>
+    /// 推导出的 tool 名不合法
+    /// </summary>
+    /// <remarks>
+    /// 服务端建立之后登记的一组被拒时的文案（ADR-0251）。参数：<c>name</c>（tool 名）、<c>id</c>（操作 ID）
+    /// </remarks>
+    public const string ToolNameInvalid = "protocols.mcp.tool_name_invalid";
+
+    /// <summary>
+    /// 两个操作的 tool 名相同
+    /// </summary>
+    /// <remarks>
+    /// 服务端建立之后登记的一组被拒时的文案（ADR-0251）。参数：<c>name</c>（tool 名）、<c>existing</c>（已占用这个名字的操作 ID）、<c>id</c>（新增的操作 ID）
+    /// </remarks>
+    public const string ToolNameDuplicate = "protocols.mcp.tool_name_duplicate";
+
+    /// <summary>
     /// tool 的参数不是 JSON 对象
     /// </summary>
     /// <remarks>

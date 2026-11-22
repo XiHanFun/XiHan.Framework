@@ -188,8 +188,8 @@ static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken can
 }
 ```
 
-- 运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。
-- `UnloadAsync` 先按归属（清单 ID）一次撤回代理操作与权限码，再停止插件：之后按 ID 调用这些操作返回 `KERNEL_NOTFOUND_001`，已在执行的调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再 `LoadAsync`，不用重启宿主。不随卸载撤回的是配置阶段接进容器的订阅与消息目录，以及协议适配器启动时发布的路由（再加载后同一操作 ID 照常可用）。
+- HTTP 路由、OpenAPI 文档与 MCP tool 跟随操作登记表（ADR-0251）：运行期加载的代理操作登记之后立即有路由、进文档、是 tool。推导出的路由或 tool 名与已有的冲突时，整个插件登记失败（`PROTOCOLS_CONFLICT_002`、`PROTOCOLS_CONFLICT_001` / `PROTOCOLS_VALIDATION_004`），已有的路由与 tool 不受影响。gRPC 方法与 AI 工具目录只在启动时建成，运行期加载的代理操作不在其中。
+- `UnloadAsync` 先按归属（清单 ID）一次撤回代理操作与权限码，再停止插件。撤回之后路由、文档里的路径与 tool 随之消失，按地址的请求得到宿主对未匹配地址的答复（通常是 404）；按 ID 经调用器调用返回 `KERNEL_NOTFOUND_001`。已在执行的调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再 `LoadAsync`，不用重启宿主。不随卸载撤回的是配置阶段接进容器的订阅与消息目录。
 - 同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。进程外插件在 `LoadAsync` 里握手或启动失败时，错误返回给调用方，插件保持 `Failed` 并在后台按重启策略重试，不想再试就 `UnloadAsync`。
 
 ## 进程内宿主

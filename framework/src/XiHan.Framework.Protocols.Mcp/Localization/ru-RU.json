@@ -8,5 +8,7 @@
   "protocols.mcp.version_unsupported": "Версия протокола MCP '{version}' не поддерживается; этот сервер поддерживает {supported}.",
   "protocols.mcp.origin_denied": "Запросы из источника '{origin}' не разрешены; добавьте его в XiHan:Protocols:Mcp:AllowedOrigins.",
   "protocols.mcp.content_type_invalid": "Конечная точка MCP принимает только application/json, а не '{contentType}'.",
-  "protocols.mcp.request_body_too_large": "Тело запроса превышает {max} байт."
+  "protocols.mcp.request_body_too_large": "Тело запроса превышает {max} байт.",
+  "protocols.mcp.tool_name_invalid": "Имя инструмента '{name}', полученное для операции '{id}', недопустимо.",
+  "protocols.mcp.tool_name_duplicate": "Имя инструмента '{name}' используется и операцией '{existing}', и операцией '{id}'."
 }

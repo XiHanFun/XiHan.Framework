@@ -8,5 +8,7 @@
   "protocols.mcp.version_unsupported": "MCP 프로토콜 버전 '{version}'은(는) 지원되지 않습니다. 이 서버는 {supported}을(를) 지원합니다.",
   "protocols.mcp.origin_denied": "원본 '{origin}'의 요청은 허용되지 않습니다. XiHan:Protocols:Mcp:AllowedOrigins에 추가하십시오.",
   "protocols.mcp.content_type_invalid": "MCP 엔드포인트는 application/json만 받으며 '{contentType}'은(는) 받지 않습니다.",
-  "protocols.mcp.request_body_too_large": "요청 본문이 {max}바이트를 초과합니다."
+  "protocols.mcp.request_body_too_large": "요청 본문이 {max}바이트를 초과합니다.",
+  "protocols.mcp.tool_name_invalid": "작업 '{id}'에서 도출된 tool 이름 '{name}'이(가) 올바르지 않습니다.",
+  "protocols.mcp.tool_name_duplicate": "tool 이름 '{name}'을(를) 작업 '{existing}'과(와) '{id}'가 함께 사용합니다."
 }

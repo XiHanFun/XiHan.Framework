@@ -7,5 +7,6 @@
   "protocols.http.openapi_success": "Succès",
   "protocols.http.openapi_ungrouped": "Autres",
   "protocols.http.request_body_not_json": "Le corps de la requête de l'opération '{id}' doit être du JSON (Content-Type application/json), reçu '{type}'.",
-  "protocols.http.request_body_too_large": "Le corps de la requête de l'opération '{id}' dépasse {max} octets."
+  "protocols.http.request_body_too_large": "Le corps de la requête de l'opération '{id}' dépasse {max} octets.",
+  "protocols.http.route_duplicate": "Les opérations '{existing}' et '{id}' produisent la même route HTTP '{route}'."
 }

@@ -8,5 +8,7 @@
   "protocols.mcp.version_unsupported": "不支援 MCP 協定版本 '{version}'；本伺服端支援 {supported}。",
   "protocols.mcp.origin_denied": "不允許來自來源 '{origin}' 的請求；請將它加入 XiHan:Protocols:Mcp:AllowedOrigins。",
   "protocols.mcp.content_type_invalid": "MCP 端點只接受 application/json，不接受 '{contentType}'。",
-  "protocols.mcp.request_body_too_large": "請求本文超過 {max} 位元組。"
+  "protocols.mcp.request_body_too_large": "請求本文超過 {max} 位元組。",
+  "protocols.mcp.tool_name_invalid": "為操作 '{id}' 推導出的 tool 名 '{name}' 不合法。",
+  "protocols.mcp.tool_name_duplicate": "tool 名 '{name}' 同時被操作 '{existing}' 與 '{id}' 使用。"
 }

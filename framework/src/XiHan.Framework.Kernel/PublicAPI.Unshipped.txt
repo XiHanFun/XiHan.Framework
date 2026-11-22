@@ -285,8 +285,10 @@ XiHan.Framework.Kernel.Operations.OperationRegistry.AddRange(string! ownerId, Sy
 XiHan.Framework.Kernel.Operations.OperationRegistry.All() -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
 XiHan.Framework.Kernel.Operations.OperationRegistry.Count.get -> int
 XiHan.Framework.Kernel.Operations.OperationRegistry.Enforce(System.Func<XiHan.Framework.Kernel.Operations.OperationDescriptor!, XiHan.Framework.Primitives.Error?>! check) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
+XiHan.Framework.Kernel.Operations.OperationRegistry.EnforceAdditions(System.Func<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!, System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!, XiHan.Framework.Primitives.Error?>! check) -> XiHan.Framework.Primitives.Error?
 XiHan.Framework.Kernel.Operations.OperationRegistry.ExposedTo(XiHan.Framework.Kernel.Operations.Expose protocol) -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Kernel.Operations.OperationDescriptor!>!
 XiHan.Framework.Kernel.Operations.OperationRegistry.Find(string! id) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Kernel.Operations.OperationDescriptor!>
+XiHan.Framework.Kernel.Operations.OperationRegistry.GetChangeToken() -> Microsoft.Extensions.Primitives.IChangeToken!
 XiHan.Framework.Kernel.Operations.OperationRegistry.OperationRegistry(XiHan.Framework.Kernel.Security.PermissionRegistry! permissions) -> void
 XiHan.Framework.Kernel.Operations.OperationRegistry.OperationRegistry(XiHan.Framework.Kernel.Security.PermissionRegistry! permissions, int capacity) -> void
 XiHan.Framework.Kernel.Operations.OperationRegistry.RemoveOwnedBy(string! ownerId) -> int

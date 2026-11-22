@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Primitives;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
 
@@ -12,6 +13,7 @@ namespace XiHan.Framework.Kernel.Operations;
 /// </summary>
 /// <remarks>
 /// 操作 ID 唯一，容量有界。特性在配置阶段经 <c>FeatureContext.AddOperation</c> 登记，协议适配器按它发布端点。登记表在构造时绑定它核对的 <see cref="PermissionRegistry"/>：操作引用的权限码必须已登记，装配完成时由 <c>AppBuilder.Build</c> 一次核对（未登记即启动失败），此后登记的操作（插件握手之后）由 <see cref="AddRange"/> 在登记时核对。插件宿主卸载插件时经 <see cref="RemoveOwnedBy"/> 按归属撤回它登记的操作与权限码，之后可以再登记（ADR-0085）
+/// 内容每变一次，<see cref="GetChangeToken"/> 给出的令牌触发一次，协议适配器据此让发布的端点、文档与 tool 表跟随登记表（ADR-0251）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class OperationRegistry
@@ -45,12 +47,28 @@ public sealed class OperationRegistry
     private readonly List<Func<OperationDescriptor, Error?>> _checks = [];
 
     /// <summary>
+    /// 每次登记的整组都要经过的核对
+    /// </summary>
+    /// <remarks>
+    /// 参数依次是当时已登记的与这一组新增的；挂上之前已登记的在挂上时核对（<see cref="EnforceAdditions"/>）。只在 <see cref="_gate"/> 内读写
+    /// </remarks>
+    private readonly List<Func<IReadOnlyList<OperationDescriptor>, IReadOnlyList<OperationDescriptor>, Error?>> _additionChecks = [];
+
+    /// <summary>
     /// 登记的互斥锁
     /// </summary>
     /// <remarks>
-    /// 只串行化写入（整组校验与插入、挂核对）；读取走并发字典，不取锁
+    /// 只串行化写入（整组校验与插入、挂核对、换变更令牌）；读取走并发字典，不取锁
     /// </remarks>
     private readonly Lock _gate = new();
+
+    /// <summary>
+    /// 当前这一代的变更令牌
+    /// </summary>
+    /// <remarks>
+    /// 内容变了就在 <see cref="_gate"/> 内换上新的，旧的在锁外触发：订阅者在回调里重新取令牌时拿到的已是新的，回调里再登记也不会死锁
+    /// </remarks>
+    private RegistryChangeToken _changes = new();
 
     /// <summary>
     /// 创建登记表
@@ -98,7 +116,8 @@ public sealed class OperationRegistry
     /// 一次登记一个归属的一组操作连同它定义的权限码，全部登记或一个都不登记
     /// </summary>
     /// <remarks>
-    /// 插件握手声明的操作与清单声明的权限码经它登记（ADR-0080），归属是插件的清单 ID，卸载时经 <see cref="RemoveOwnedBy"/> 一起撤回（ADR-0085）。权限码先进权限登记表，同组的操作可以引用它们；任一项不过——操作与已登记的或同一批里的重复（<see cref="KernelErrors.DuplicateOperation"/>）、整批超出容量（<see cref="KernelErrors.OperationRegistryFull"/>）、权限码与已登记的重复或超出容量（<see cref="KernelErrors.DuplicatePermission"/> / <see cref="KernelErrors.PermissionRegistryFull"/>）、装配完成之后引用了未登记的权限码（<see cref="KernelErrors.UnregisteredPermission"/>）、经 <see cref="Enforce"/> 挂上的核对不通过（返回核对给出的错误）——都返回第一项的失败，已写进的权限码撤回，两个登记表都不变，不会留下被拒插件的半组登记。都为空返回成功；集合里有 <see langword="null"/>、或操作的 <see cref="OperationDescriptor.OwnerId"/> 不是 <paramref name="ownerId"/>，抛出 <see cref="ArgumentException"/>
+    /// 插件握手声明的操作与清单声明的权限码经它登记（ADR-0080），归属是插件的清单 ID，卸载时经 <see cref="RemoveOwnedBy"/> 一起撤回（ADR-0085）。权限码先进权限登记表，同组的操作可以引用它们；任一项不过——操作与已登记的或同一批里的重复（<see cref="KernelErrors.DuplicateOperation"/>）、整批超出容量（<see cref="KernelErrors.OperationRegistryFull"/>）、权限码与已登记的重复或超出容量（<see cref="KernelErrors.DuplicatePermission"/> / <see cref="KernelErrors.PermissionRegistryFull"/>）、装配完成之后引用了未登记的权限码（<see cref="KernelErrors.UnregisteredPermission"/>）、经 <see cref="Enforce"/> 或 <see cref="EnforceAdditions"/> 挂上的核对不通过（返回核对给出的错误）——都返回第一项的失败，已写进的权限码撤回，两个登记表都不变，不会留下被拒插件的半组登记。都为空返回成功；集合里有 <see langword="null"/>、或操作的 <see cref="OperationDescriptor.OwnerId"/> 不是 <paramref name="ownerId"/>，抛出 <see cref="ArgumentException"/>
+    /// 写入了操作或权限码时，在锁外触发 <see cref="GetChangeToken"/> 的令牌，订阅者的回调在返回之前执行完；回调抛出的异常在登记完成之后原样抛给调用方
     /// </remarks>
     /// <param name="ownerId">归属：特性或插件的清单 ID；每个操作的 <see cref="OperationDescriptor.OwnerId"/> 都必须是它，权限码按它记下归属</param>
     /// <param name="descriptors">操作</param>
@@ -121,6 +140,7 @@ public sealed class OperationRegistry
 
         // 校验与写入在同一个锁里：整组要么全进、要么不进，并发登记看不到半组
         // 登记只发生在配置阶段与插件加载时，读取（Find / All）不取锁
+        RegistryChangeToken? changed;
         lock (_gate)
         {
             var batch = new Dictionary<string, OperationDescriptor>(StringComparer.Ordinal);
@@ -159,13 +179,31 @@ public sealed class OperationRegistry
                 }
             }
 
+            // 整组的核对在逐项之后：这一组还没写入，已登记的取当前内容，组内两项之间的冲突也由它看出
+            if (batch.Count > 0 && _additionChecks.Count > 0)
+            {
+                var existing = All();
+                var additions = batch.Values.OrderBy(static d => d.Id, StringComparer.Ordinal).ToList();
+                foreach (var check in _additionChecks)
+                {
+                    if (check(existing, additions) is { } error)
+                    {
+                        _permissions.RemoveRange(permissions);
+                        return error;
+                    }
+                }
+            }
+
             foreach (var (id, descriptor) in batch)
             {
                 _operations[id] = descriptor;
             }
 
-            return Result.Success();
+            changed = batch.Count > 0 || permissions.Count > 0 ? SwapChanges() : null;
         }
+
+        Notify(changed);
+        return Result.Success();
     }
 
     /// <summary>
@@ -173,6 +211,7 @@ public sealed class OperationRegistry
     /// </summary>
     /// <remarks>
     /// 插件宿主卸载插件时调用（ADR-0085），之后同一归属可以再经 <see cref="AddRange"/> 登记（换版本不用重启宿主）。与登记一样在本表的锁里一次完成：先撤回操作、再撤回权限码（<see cref="PermissionRegistry.RemoveOwnedBy"/>），与并发的登记互斥；读取不取锁，并发的调用按 ID 逐个查找，看到的每个操作要么还登记着、要么已撤回。撤回不经过挂上的核对，也不连带别的归属：别的归属的操作引用了被撤回的权限码时照旧登记着，授权判定时按策略不存在拒绝。撤回之后按 ID 调用这些操作得到 <see cref="KernelErrors.UnknownOperation"/>。没有登记过的归属什么都不做
+    /// 撤回了操作或权限码时，在锁外触发 <see cref="GetChangeToken"/> 的令牌（ADR-0251）
     /// </remarks>
     /// <param name="ownerId">归属：特性或插件的清单 ID</param>
     /// <returns>撤回的操作数</returns>
@@ -181,6 +220,8 @@ public sealed class OperationRegistry
         ArgumentException.ThrowIfNullOrWhiteSpace(ownerId);
         // 与 AddRange 同一个锁：撤回与登记互斥，同一归属的再登记一定发生在撤回完成之后或之前，不会交错
         // 锁的次序与登记相同（先本表、再权限登记表），不会死锁
+        int removed;
+        RegistryChangeToken? changed;
         lock (_gate)
         {
             var owned = _operations.Values.Where(d => string.Equals(d.OwnerId, ownerId, StringComparison.Ordinal)).Select(static d => d.Id).ToList();
@@ -190,8 +231,26 @@ public sealed class OperationRegistry
                 _operations.TryRemove(id, out _);
             }
 
-            _permissions.RemoveOwnedBy(ownerId);
-            return owned.Count;
+            var permissions = _permissions.RemoveOwnedBy(ownerId);
+            removed = owned.Count;
+            changed = removed > 0 || permissions > 0 ? SwapChanges() : null;
+        }
+
+        Notify(changed);
+        return removed;
+    }
+
+    /// <summary>
+    /// 登记表内容变化的令牌
+    /// </summary>
+    /// <remarks>
+    /// 此后 <see cref="AddRange"/> 写入了操作或权限码、或 <see cref="RemoveOwnedBy"/> 撤回了操作或权限码时触发一次；登记失败、空组与没有登记过的归属不触发。触发之后再取得到的是新令牌。令牌在登记表的锁外触发，回调里可以读登记表，也可以再登记。协议适配器据此重建发布的端点、文档与 tool 表（ADR-0251）
+    /// </remarks>
+    public IChangeToken GetChangeToken()
+    {
+        lock (_gate)
+        {
+            return _changes;
         }
     }
 
@@ -265,6 +324,47 @@ public sealed class OperationRegistry
             return failing;
         }
     }
+
+    /// <summary>
+    /// 核对已登记的全部操作，并让此后每次登记的整组与当时已登记的一起经过同一核对
+    /// </summary>
+    /// <remarks>
+    /// 供要把新增的一组与已登记的放在一起比较的约束使用（ADR-0251）：协议适配器推导出的路由、tool 名不能重复，同一组里的两项之间也不能，逐项的 <see cref="Enforce"/> 看不到组里的其他项。挂上时以（空、已登记的全部）调用一次，返回它给出的错误，由调用方决定怎样失败（通常是启动失败）；此后 <see cref="AddRange"/> 在写入之前以（当时已登记的、这一组）调用，不通过即整组不登记、已写进的权限码撤回，返回核对给出的错误。两个列表都按 ID 排序。核对在登记表的锁里调用，里面不能登记或撤回
+    /// </remarks>
+    /// <param name="check">核对：参数依次是已登记的与新增的操作，通过返回 <see langword="null"/>，否则返回错误</param>
+    /// <returns>挂上时已登记的操作不通过的错误；都通过为 <see langword="null"/></returns>
+    public Error? EnforceAdditions(Func<IReadOnlyList<OperationDescriptor>, IReadOnlyList<OperationDescriptor>, Error?> check)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        // 核对与挂上在同一个锁里：不会有一组在核对之后、挂上之前登记而漏过
+        lock (_gate)
+        {
+            var failure = check([], All());
+            _additionChecks.Add(check);
+            return failure;
+        }
+    }
+
+    /// <summary>
+    /// 换上新一代的变更令牌
+    /// </summary>
+    /// <remarks>
+    /// 只在 <see cref="_gate"/> 内调用；返回的旧一代由调用方在锁外经 <see cref="Notify"/> 触发
+    /// </remarks>
+    private RegistryChangeToken SwapChanges()
+    {
+        var previous = _changes;
+        _changes = new RegistryChangeToken();
+        return previous;
+    }
+
+    /// <summary>
+    /// 触发旧一代的变更令牌
+    /// </summary>
+    /// <remarks>
+    /// 在锁外调用：订阅者的回调同步执行，可能回头读登记表或再登记
+    /// </remarks>
+    private static void Notify(RegistryChangeToken? previous) => previous?.Fire();
 
     /// <summary>
     /// 操作要求的权限码未登记时的错误

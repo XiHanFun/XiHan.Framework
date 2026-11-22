@@ -7,5 +7,6 @@
   "protocols.http.openapi_success": "Успех",
   "protocols.http.openapi_ungrouped": "Прочее",
   "protocols.http.request_body_not_json": "Тело запроса операции '{id}' должно быть JSON (Content-Type application/json), получено '{type}'.",
-  "protocols.http.request_body_too_large": "Тело запроса операции '{id}' превышает {max} байт."
+  "protocols.http.request_body_too_large": "Тело запроса операции '{id}' превышает {max} байт.",
+  "protocols.http.route_duplicate": "Операции '{existing}' и '{id}' дают один и тот же HTTP-маршрут '{route}'."
 }

@@ -26,48 +26,36 @@ public static class OperationEndpointRouteBuilderExtensions
     /// 映射全部暴露给 HTTP 且非 <see cref="Stability.Internal"/> 的操作
     /// </summary>
     /// <remarks>
-    /// 操作端点映射在一个空前缀的路由组里，路由模板不变；加在返回值上的约定（授权、限流、CORS、标签、过滤器）作用于每个操作端点，与其他 <c>MapXiHan*</c> 一样（ADR-0144）。授权约定与各操作契约的权限叠加判定，不顶替它（ADR-0174）
+    /// 端点随登记表变化（ADR-0251）：此后登记的操作（插件运行期加载）立即有路由，撤回的随即没有，请求按宿主对未匹配地址的处理答复；已经在执行的请求照常完成。加在返回值上的约定（授权、限流、CORS、标签、过滤器）作用于每个操作端点，此后出现的也一样，与其他 <c>MapXiHan*</c> 一样（ADR-0144）。授权约定与各操作契约的权限叠加判定，不顶替它（ADR-0174）
+    /// 映射时同时挂上路由的整组核对：此后登记的一组与已登记的、组内各项之间推导出同一条路由，整组不登记，登记返回 <see cref="HttpErrors.DuplicateRoute"/>
     /// </remarks>
     /// <returns>这组操作端点的约定构建器</returns>
-    /// <exception cref="FrameworkException">两个操作推导出同一条路由（<see cref="HttpErrors.DuplicateRoute"/>）</exception>
+    /// <exception cref="FrameworkException">映射时已登记的两个操作推导出同一条路由（<see cref="HttpErrors.DuplicateRoute"/>）</exception>
     public static IEndpointConventionBuilder MapXiHanOperations(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         var registry = endpoints.ServiceProvider.GetRequiredService<OperationRegistry>();
         var options = endpoints.ServiceProvider.GetService<HttpProtocolOptions>() ?? new HttpProtocolOptions();
-        // 空前缀的组只用来承载约定：应用对返回值加的约定在端点构建时才应用，所以映射之后再加也作用于每个操作端点
-        var group = endpoints.MapGroup(string.Empty);
-        // 同一方法 + 模板只能有一个操作：无 id 的 get 与 list 都是 GET /{resource}，这种冲突在启动时报出来而不是留给路由匹配时的 500
-        var mapped = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var descriptor in registry.ExposedTo(Expose.Http))
+        // 同一方法 + 模板只能有一个操作：无 id 的 get 与 list 都是 GET /{resource}。已登记的在映射时报出来，此后登记的在登记时整组被拒，都不留给路由匹配时的 500
+        if (registry.EnforceAdditions((existing, added) => OperationEndpointDataSource.RouteConflictOf(options, existing, added)) is { } conflict)
         {
-            // 内部稳定性的操作只供进程内调用，不对外发布
-            if (descriptor.Contract.Stability == Stability.Internal)
-            {
-                continue;
-            }
-
-            var route = options.RouteFor(descriptor);
-            var key = route.ToString();
-            if (!mapped.TryAdd(key, descriptor.Id))
-            {
-                throw new FrameworkException(HttpErrors.DuplicateRoute, $"Operations '{mapped[key]}' and '{descriptor.Id}' derive the same HTTP route '{key}'. Override one of them via 'XiHan:Protocols:Http:Routes'.");
-            }
-
-            // 绑定委托与描述一起挂在元数据上：UseXiHan() 把它包成载荷来源，Validate 阶段（Authorize 之后）才读请求体（ADR-0176）
-            OperationPayloadBinder binder = (httpContext, cancellationToken) => OperationRequestBinder.BindAsync(httpContext, descriptor, cancellationToken);
-            // 写出方式也挂在元数据上：端点执行成功时用它，Idempotency 阶段回放（端点没有执行）时 UseXiHan() 用它写出同样的状态码与正文
-            OperationResponseWriter writer = WriteResponseAsync;
-            group
-                .MapMethods(route.Template, [route.Method], httpContext => HandleAsync(httpContext, descriptor))
-                .WithMetadata(descriptor)
-                .WithMetadata(binder)
-                .WithMetadata(writer)
-                .WithName(descriptor.Id);
+            throw new FrameworkException(HttpErrors.DuplicateRoute, $"Operations '{conflict.Details?["existing"]}' and '{conflict.Details?["id"]}' derive the same HTTP route '{conflict.Details?["route"]}'. Override one of them via 'XiHan:Protocols:Http:Routes'.");
         }
 
-        return group;
+        // 写出方式挂在元数据上：端点执行成功时用它，Idempotency 阶段回放（端点没有执行）时 UseXiHan() 用它写出同样的状态码与正文
+        var source = new OperationEndpointDataSource(registry, options, endpoints.ServiceProvider, HandleAsync, BinderOf, WriteResponseAsync);
+        endpoints.DataSources.Add(source);
+        return source.Conventions;
     }
+
+    /// <summary>
+    /// 一个操作的绑定委托
+    /// </summary>
+    /// <remarks>
+    /// 挂在端点元数据上：<c>UseXiHan()</c> 把它包成载荷来源，Validate 阶段（Authorize 之后）才读请求体（ADR-0176）
+    /// </remarks>
+    private static OperationPayloadBinder BinderOf(OperationDescriptor descriptor)
+        => (httpContext, cancellationToken) => OperationRequestBinder.BindAsync(httpContext, descriptor, cancellationToken);
 
     /// <summary>
     /// 端点处理

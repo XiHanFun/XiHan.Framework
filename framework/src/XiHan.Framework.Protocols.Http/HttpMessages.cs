@@ -81,6 +81,14 @@ public static class HttpMessages
     public const string RequestBodyNotJson = "protocols.http.request_body_not_json";
 
     /// <summary>
+    /// 两个操作推导出同一条路由
+    /// </summary>
+    /// <remarks>
+    /// 映射之后登记的一组被拒时的文案（ADR-0251）。参数：<c>existing</c>（已占用这条路由的操作 ID）、<c>id</c>（新增的操作 ID）、<c>route</c>（方法与模板）
+    /// </remarks>
+    public const string RouteDuplicate = "protocols.http.route_duplicate";
+
+    /// <summary>
     /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(HttpMessages));

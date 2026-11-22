@@ -47,8 +47,8 @@ app.MapXiHanOpenApi();   // /openapi.json
 
 * `HttpProtocolFeature`：特性入口
 * `HttpProtocolOptions`：`RoutePrefix`、`Routes`
-* `OperationEndpointRouteBuilderExtensions`：`MapXiHanOperations`
-* `OpenApiEndpointRouteBuilderExtensions`、`OpenApiOptions`：`MapXiHanOpenApi` 与文档标题、版本、分组
+* `OperationEndpointRouteBuilderExtensions`：`MapXiHanOperations`，端点跟随操作登记表，运行期登记的操作立即有路由
+* `OpenApiEndpointRouteBuilderExtensions`、`OpenApiOptions`：`MapXiHanOpenApi` 与文档标题、版本、分组；`IOpenApiGroupSource` 给运行期的分组
 
 ## 更多文档
 

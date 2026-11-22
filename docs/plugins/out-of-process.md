@@ -265,7 +265,7 @@ builder.AddXiHan(xihan => xihan
 
 ### 插件的操作能不能像本地操作一样出现在 OpenAPI 与 MCP 里
 
-能。配置阶段发现的插件，其操作在协议适配器发布路由与文档时已经在登记表里（[规范化接口文档](/web/openapi)、[MCP](/protocols/mcp)）。只有运行期 `LoadAsync` 的插件例外：路由已经发布完，它的操作只对 `IOperationInvoker` 可见。
+能。HTTP 路由、OpenAPI 文档与 MCP tool 跟随操作登记表（ADR-0251），配置阶段发现的与运行期 `LoadAsync` 的插件一样：登记之后就有路由、进文档、是 tool，卸载之后随之消失（[规范化接口文档](/web/openapi)、[MCP](/protocols/mcp)）。要给插件单独一份分组文档，应用登记一个 `IOpenApiGroupSource`，按插件的清单 ID 给出分组。gRPC 方法与 AI 工具目录只在启动时建成，运行期加载的插件不在其中。
 
 ### 能用 gRPC 流式操作吗
 

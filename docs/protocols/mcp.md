@@ -173,6 +173,8 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 
 `initialize` 总是答复本服务端的协议版本与 `capabilities.tools.listChanged = false`，由客户端决定是否继续；`ping` 答复 `{}`。
 
+tool 表跟随操作登记表（ADR-0251）：`tools/list` 与 `tools/call` 按处理这条消息时的登记表，插件运行期加载的操作随即是 tool，卸载之后随即不是（`tools/call` 得 `PROTOCOLS_NOTFOUND_002`）。服务端建立之后登记的操作 tool 名不合法、与已有的或同一组里的重名，整组不登记，登记返回 `PROTOCOLS_VALIDATION_004` / `PROTOCOLS_CONFLICT_001`。
+
 ## 常见问题
 
 ### tool 列表里没有我的操作
@@ -189,7 +191,7 @@ MCP 客户端按 `destructiveHint` 决定是否确认。只有 `get`、`list` �
 
 ### 能用 SSE 或长连接吗
 
-不能。这个实现只做 Streamable HTTP 的请求 / 响应部分：一条 `POST` 一个答复，不开 SSE 流、不建会话。服务端到客户端的通知与 `listChanged` 都不支持，tool 列表只在重启后变化。
+不能。这个实现只做 Streamable HTTP 的请求 / 响应部分：一条 `POST` 一个答复，不开 SSE 流、不建会话。服务端到客户端的通知与 `listChanged` 都不支持：tool 列表随登记表变化（插件加载与卸载），客户端重新 `tools/list` 才看得到。
 
 ### 大模型会不会拿到比用户更多的权限
 

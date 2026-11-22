@@ -7,5 +7,6 @@
   "protocols.http.openapi_success": "성공",
   "protocols.http.openapi_ungrouped": "기타",
   "protocols.http.request_body_not_json": "작업 '{id}'의 요청 본문은 JSON(Content-Type application/json)이어야 하지만 '{type}'을(를) 받았습니다.",
-  "protocols.http.request_body_too_large": "작업 '{id}'의 요청 본문이 {max}바이트를 초과합니다."
+  "protocols.http.request_body_too_large": "작업 '{id}'의 요청 본문이 {max}바이트를 초과합니다.",
+  "protocols.http.route_duplicate": "작업 '{existing}'과(와) '{id}'에서 같은 HTTP 경로 '{route}'가 도출됩니다."
 }

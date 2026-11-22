@@ -149,7 +149,8 @@ public sealed record OpenApiDocumentSource
     /// 从容器组装文档输入
     /// </summary>
     /// <remarks>
-    /// 操作登记表（必须已登记）、HTTP 选项（没有则缺省）、权限码注册表、已装配认证处理器的方案名；标题 / 版本 / <c>servers</c> / 分组取 <paramref name="options"/>（标题缺省取宿主应用名、版本缺省取框架版本）
+    /// 操作登记表（必须已登记）、HTTP 选项（没有则缺省）、权限码注册表、已装配认证处理器的方案名；标题 / 版本 / <c>servers</c> 取 <paramref name="options"/>（标题缺省取宿主应用名、版本缺省取框架版本）
+    /// 分组是 <paramref name="options"/> 的分组接上容器里各个 <see cref="IOpenApiGroupSource"/> 此刻的分组（ADR-0251），合在一起不合规则时抛出 <see cref="ArgumentException"/>
     /// 装配了本地化时按 <paramref name="locale"/>（为 <see langword="null"/> 取本地化的默认区域）从消息目录取文案，没有装配则不带目录文案
     /// </remarks>
     /// <param name="services">应用容器（装配完成后）</param>
@@ -173,10 +174,23 @@ public sealed record OpenApiDocumentSource
             Servers = options.Servers,
             AuthenticationSchemes = services.GetServices<IAuthenticationHandler>().Select(static h => h.Scheme).ToList(),
             Endpoints = endpoints.ToList(),
-            Groups = options.Groups,
+            Groups = GroupsOf(services, options),
             Group = group,
             Localize = localizer is null ? null : LocalizerOf(localizer, locale ?? localizer.Options.DefaultLocale),
         };
+    }
+
+    /// <summary>
+    /// 此刻的全部分组
+    /// </summary>
+    /// <remarks>
+    /// 选项的分组在前，容器里各个 <see cref="IOpenApiGroupSource"/> 的按登记顺序在后，合在一起按 <see cref="OpenApiOptions.Groups"/> 的规则核对
+    /// </remarks>
+    /// <exception cref="ArgumentException">合在一起组名重复或保留、一个归属属于多个组</exception>
+    internal static IReadOnlyList<OpenApiGroup> GroupsOf(IServiceProvider services, OpenApiOptions options)
+    {
+        var sources = services.GetServices<IOpenApiGroupSource>().ToList();
+        return sources.Count == 0 ? options.Groups : OpenApiOptions.Validated(options.Groups.Concat(sources.SelectMany(static source => source.Groups)), nameof(IOpenApiGroupSource));
     }
 
     /// <summary>

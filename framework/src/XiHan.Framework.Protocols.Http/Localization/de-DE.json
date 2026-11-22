@@ -7,5 +7,6 @@
   "protocols.http.openapi_success": "Erfolg",
   "protocols.http.openapi_ungrouped": "Sonstiges",
   "protocols.http.request_body_not_json": "Der Anfragetext der Operation '{id}' muss JSON sein (Content-Type application/json), erhalten wurde '{type}'.",
-  "protocols.http.request_body_too_large": "Der Anfragetext der Operation '{id}' überschreitet {max} Bytes."
+  "protocols.http.request_body_too_large": "Der Anfragetext der Operation '{id}' überschreitet {max} Bytes.",
+  "protocols.http.route_duplicate": "Die Operationen '{existing}' und '{id}' ergeben dieselbe HTTP-Route '{route}'."
 }

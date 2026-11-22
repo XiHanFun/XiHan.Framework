@@ -8,5 +8,7 @@
   "protocols.mcp.version_unsupported": "La version du protocole MCP '{version}' n'est pas prise en charge ; ce serveur prend en charge {supported}.",
   "protocols.mcp.origin_denied": "Les requêtes de l'origine '{origin}' ne sont pas autorisées ; ajoutez-la à XiHan:Protocols:Mcp:AllowedOrigins.",
   "protocols.mcp.content_type_invalid": "Le point de terminaison MCP n'accepte que application/json, pas '{contentType}'.",
-  "protocols.mcp.request_body_too_large": "Le corps de la requête dépasse {max} octets."
+  "protocols.mcp.request_body_too_large": "Le corps de la requête dépasse {max} octets.",
+  "protocols.mcp.tool_name_invalid": "Le nom d'outil '{name}' dérivé pour l'opération '{id}' n'est pas valide.",
+  "protocols.mcp.tool_name_duplicate": "Le nom d'outil '{name}' est utilisé à la fois par l'opération '{existing}' et par '{id}'."
 }

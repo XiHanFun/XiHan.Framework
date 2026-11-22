@@ -8,5 +8,7 @@
   "protocols.mcp.version_unsupported": "MCP プロトコルバージョン '{version}' はサポートされていません。このサーバーは {supported} をサポートします。",
   "protocols.mcp.origin_denied": "オリジン '{origin}' からのリクエストは許可されていません。XiHan:Protocols:Mcp:AllowedOrigins に追加してください。",
   "protocols.mcp.content_type_invalid": "MCP エンドポイントは application/json のみを受け付けます。'{contentType}' は受け付けません。",
-  "protocols.mcp.request_body_too_large": "リクエスト本文が {max} バイトを超えています。"
+  "protocols.mcp.request_body_too_large": "リクエスト本文が {max} バイトを超えています。",
+  "protocols.mcp.tool_name_invalid": "操作 '{id}' から導出された tool 名 '{name}' は不正です。",
+  "protocols.mcp.tool_name_duplicate": "tool 名 '{name}' は操作 '{existing}' と '{id}' の両方で使われています。"
 }
