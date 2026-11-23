@@ -186,6 +186,14 @@ public static class PluginMessages
     public const string ModuleInvalid = "plugins.module.invalid";
 
     /// <summary>
+    /// 清单描述的不是 Wasm 插件
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>、<c>kind</c>、<c>isolation</c>
+    /// </remarks>
+    public const string NotWasm = "plugins.module.not_wasm";
+
+    /// <summary>
     /// Wasm 实例陷阱
     /// </summary>
     /// <remarks>

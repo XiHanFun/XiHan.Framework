@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Wasmtime;
 using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
@@ -506,6 +507,24 @@ public sealed class WasmPluginHostTests
         Assert.Equal(PluginErrors.InvalidSource, loaded.Error?.Code);
         Assert.Contains("contributes.permissions", loaded.Error?.ToString(), StringComparison.Ordinal);
         Assert.False(host.Services.GetRequiredService<OperationRegistry>().Find(WatPlugin.Operation).HasValue);
+    }
+
+    [Fact]
+    public async Task LoadAsync_AtRuntime_RejectsAManifestOfAnotherIsolation_SayingItIsNotAWasmPlugin()
+    {
+        // 清单合法，但描述的是进程外插件：Wasm 宿主拒收，文案说的是「不是 Wasm 插件」，原先复用了进程外宿主的键
+        using var foreign = WatPlugin.Declaring(["wat.audit"], null);
+        var path = Path.Combine(foreign.Directory, ManifestReader.FileName);
+        File.WriteAllText(path, File.ReadAllText(path).Replace("\"isolation\":\"wasm\"", "\"isolation\":\"out-of-process\"", StringComparison.Ordinal));
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+
+        var loaded = await plugins.LoadAsync(new PluginSource(foreign.Directory, new PermissionGrant([])), CancellationToken.None);
+
+        Assert.Equal(PluginErrors.InvalidSource, loaded.Error?.Code);
+        Assert.Equal(PluginMessages.NotWasm, loaded.Error?.MessageKey);
+        Assert.Equal("OutOfProcess", loaded.Error?.Details?["isolation"]);
+        Assert.Empty(plugins.Plugins);
     }
 
     [Fact]

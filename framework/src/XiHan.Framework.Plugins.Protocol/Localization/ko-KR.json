@@ -8,6 +8,7 @@
   "plugins.handshake.mismatch": "플러그인 '{id}'의 핸드셰이크 응답이 매니페스트와 일치하지 않습니다: {reason}",
   "plugins.host.unavailable": "플러그인 '{id}'이(가) 호스트에 연결할 수 없습니다: {reason}",
   "plugins.module.invalid": "플러그인 '{id}'의 Wasm 모듈이 잘못되었습니다: {reason}",
+  "plugins.module.not_wasm": "매니페스트 '{id}'은(는) Wasm 플러그인을 설명하지 않습니다 (kind={kind}, isolation={isolation}).",
   "plugins.module.trapped": "플러그인 '{id}'에서 트랩이 발생했습니다: {trap}",
   "plugins.process.already_loaded": "플러그인 '{id}'이(가) 이미 로드되었습니다.",
   "plugins.process.crashed": "플러그인 '{id}'이(가) 종료 코드 {exitCode}(으)로 예기치 않게 종료되었습니다.",

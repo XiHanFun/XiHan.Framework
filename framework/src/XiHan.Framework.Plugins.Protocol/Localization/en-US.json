@@ -8,6 +8,7 @@
   "plugins.handshake.mismatch": "The handshake of plugin '{id}' does not match its manifest: {reason}",
   "plugins.host.unavailable": "Plugin '{id}' cannot reach the host: {reason}",
   "plugins.module.invalid": "The Wasm module of plugin '{id}' is invalid: {reason}",
+  "plugins.module.not_wasm": "Manifest '{id}' does not describe a Wasm plugin (kind={kind}, isolation={isolation}).",
   "plugins.module.trapped": "Plugin '{id}' trapped: {trap}",
   "plugins.process.already_loaded": "Plugin '{id}' is already loaded.",
   "plugins.process.crashed": "Plugin '{id}' exited unexpectedly with code {exitCode}.",

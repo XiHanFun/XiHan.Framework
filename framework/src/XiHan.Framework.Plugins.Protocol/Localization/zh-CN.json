@@ -8,6 +8,7 @@
   "plugins.handshake.mismatch": "插件 '{id}' 的握手响应与清单不一致：{reason}",
   "plugins.host.unavailable": "插件 '{id}' 连不上宿主：{reason}",
   "plugins.module.invalid": "插件 '{id}' 的 Wasm 模块不合法：{reason}",
+  "plugins.module.not_wasm": "清单 '{id}' 描述的不是 Wasm 插件（kind={kind}，isolation={isolation}）。",
   "plugins.module.trapped": "插件 '{id}' 触发陷阱：{trap}",
   "plugins.process.already_loaded": "插件 '{id}' 已加载。",
   "plugins.process.crashed": "插件 '{id}' 异常退出，退出码 {exitCode}。",

@@ -8,6 +8,7 @@
   "plugins.handshake.mismatch": "La poignée de main du plugin '{id}' ne correspond pas à son manifeste : {reason}",
   "plugins.host.unavailable": "Le plugin '{id}' ne peut pas joindre l'hôte : {reason}",
   "plugins.module.invalid": "Le module Wasm du plugin '{id}' est invalide : {reason}",
+  "plugins.module.not_wasm": "Le manifeste '{id}' ne décrit pas un plugin Wasm (kind={kind}, isolation={isolation}).",
   "plugins.module.trapped": "Le plugin '{id}' a déclenché un piège : {trap}",
   "plugins.process.already_loaded": "Le plugin '{id}' est déjà chargé.",
   "plugins.process.crashed": "Le plugin '{id}' s'est terminé de façon inattendue avec le code {exitCode}.",

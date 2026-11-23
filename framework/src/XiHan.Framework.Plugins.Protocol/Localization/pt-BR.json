@@ -8,6 +8,7 @@
   "plugins.handshake.mismatch": "O handshake do plugin '{id}' não corresponde ao seu manifesto: {reason}",
   "plugins.host.unavailable": "O plugin '{id}' não consegue alcançar o host: {reason}",
   "plugins.module.invalid": "O módulo Wasm do plugin '{id}' é inválido: {reason}",
+  "plugins.module.not_wasm": "O manifesto '{id}' não descreve um plugin Wasm (kind={kind}, isolation={isolation}).",
   "plugins.module.trapped": "O plugin '{id}' disparou uma armadilha: {trap}",
   "plugins.process.already_loaded": "O plugin '{id}' já está carregado.",
   "plugins.process.crashed": "O plugin '{id}' terminou inesperadamente com o código {exitCode}.",

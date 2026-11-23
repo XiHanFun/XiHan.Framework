@@ -8,6 +8,7 @@
   "plugins.handshake.mismatch": "Ответ рукопожатия плагина '{id}' не соответствует его манифесту: {reason}",
   "plugins.host.unavailable": "Плагин '{id}' не может связаться с хостом: {reason}",
   "plugins.module.invalid": "Модуль Wasm плагина '{id}' недопустим: {reason}",
+  "plugins.module.not_wasm": "Манифест '{id}' не описывает плагин Wasm (kind={kind}, isolation={isolation}).",
   "plugins.module.trapped": "Плагин '{id}' вызвал ловушку: {trap}",
   "plugins.process.already_loaded": "Плагин '{id}' уже загружен.",
   "plugins.process.crashed": "Плагин '{id}' неожиданно завершился с кодом {exitCode}.",

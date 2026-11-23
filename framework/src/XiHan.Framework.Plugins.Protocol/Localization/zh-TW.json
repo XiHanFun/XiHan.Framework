@@ -8,6 +8,7 @@
   "plugins.handshake.mismatch": "外掛 '{id}' 的交握回應與清單不一致：{reason}",
   "plugins.host.unavailable": "外掛 '{id}' 連不上主機：{reason}",
   "plugins.module.invalid": "外掛 '{id}' 的 Wasm 模組不合法：{reason}",
+  "plugins.module.not_wasm": "清單 '{id}' 描述的不是 Wasm 外掛（kind={kind}，isolation={isolation}）。",
   "plugins.module.trapped": "外掛 '{id}' 觸發陷阱：{trap}",
   "plugins.process.already_loaded": "外掛 '{id}' 已載入。",
   "plugins.process.crashed": "外掛 '{id}' 異常結束，結束碼 {exitCode}。",

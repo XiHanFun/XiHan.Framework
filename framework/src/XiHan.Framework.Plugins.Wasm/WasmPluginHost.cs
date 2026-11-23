@@ -719,7 +719,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private static Result CheckKind(Manifest manifest)
         => manifest.Kind == ManifestKind.Plugin && manifest.Isolation == PluginIsolation.Wasm
             ? Result.Success()
-            : new Error(PluginErrors.InvalidSource, PluginMessages.NotOutOfProcess, MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
+            : new Error(PluginErrors.InvalidSource, PluginMessages.NotWasm,MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
 
     /// <summary>
     /// 记录发现阶段失败的插件（宿主继续运行）

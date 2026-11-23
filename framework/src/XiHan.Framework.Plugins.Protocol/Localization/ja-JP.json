@@ -8,6 +8,7 @@
   "plugins.handshake.mismatch": "プラグイン '{id}' のハンドシェイク応答がマニフェストと一致しません: {reason}",
   "plugins.host.unavailable": "プラグイン '{id}' はホストに接続できません: {reason}",
   "plugins.module.invalid": "プラグイン '{id}' の Wasm モジュールが無効です: {reason}",
+  "plugins.module.not_wasm": "マニフェスト '{id}' は Wasm プラグインを記述していません (kind={kind}, isolation={isolation})。",
   "plugins.module.trapped": "プラグイン '{id}' がトラップしました: {trap}",
   "plugins.process.already_loaded": "プラグイン '{id}' は既に読み込まれています。",
   "plugins.process.crashed": "プラグイン '{id}' が終了コード {exitCode} で予期せず終了しました。",
