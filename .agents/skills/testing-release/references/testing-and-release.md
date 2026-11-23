@@ -15,6 +15,21 @@ dotnet test --solution framework/XiHan.Framework.slnx --configuration Release --
 - CI 工作流是覆盖率产物位置、阈值和程序集数量的事实源；不得降低门槛掩盖缺陷。
 - 系统明确报告资源不足时，可临时加 `/m:4 /nr:false` 降低 MSBuild 并发，并在结果中说明。
 
+## CI 的测试分片
+
+CI 的作业并行，总时长取最慢的一个：`build`（带全部分析器的构建、打包、SBOM）、`test-core` / `test-integration` / `test-database` / `test-oracle`（测试分片）、`aot`（AOT 冒烟与依赖漏洞清单）、`benchmarks`（性能门禁）。
+
+- 分片表是 `framework/test/shards.json`：只列要外部服务或工具链的测试项目，每片写明作业设置的门控环境变量（`variables`）与安装的工具链（`tools`）；没列的测试项目归 `core`，不带服务。
+- 各测试作业经 `.github/actions/test-shard` 只构建自己那一片（`-p:RunAnalyzers=false`，分析器门禁在 `build` 作业）再测试。
+- 新测试项目不用登记，自动进 `core`。用了 `XIHAN_TEST_*` 门控变量或要 Go 的测试项目必须列进提供它的分片，否则用例在 CI 上静默跳过；架构测试 `TestShardTests` 把这种情况变成失败。新增服务时同时改分片表的 `variables` 与 `ci.yml` 里那个作业的 `services`、`env`。
+- 本机跑一片：
+
+```bash
+pwsh -File framework/scripts/New-TestShard.ps1 -Shard database   # 输出 framework/artifacts/shards/database.slnf
+dotnet build framework/artifacts/shards/database.slnf -c Release
+dotnet test --solution framework/artifacts/shards/database.slnf --configuration Release --no-build
+```
+
 ## 测试质量
 
 - 单元测试覆盖纯逻辑、边界和失败语义。

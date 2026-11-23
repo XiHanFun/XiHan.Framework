@@ -1,0 +1,62 @@
+name: 测试分片
+description: 构建并运行 framework/test/shards.json 的一个测试分片；服务容器与门控环境变量由调用它的作业提供
+
+inputs:
+  shard:
+    description: 分片名：core，或 framework/test/shards.json 里的名字
+    required: true
+  go:
+    description: 这一片要不要 Go 工具链（分片表的 tools 含 go 时为 true）
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: 安装 .NET SDK
+      uses: actions/setup-dotnet@v6
+      with:
+        global-json-file: global.json
+
+    - name: 安装 Go
+      # Plugins.OutOfProcess.Tests 与 Caching.Remote.Tests 在运行时构建 samples 里的 Go 插件；没有 go 会跳过
+      if: inputs.go == 'true'
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: framework/samples/EchoGoPlugin/go.mod
+        cache-dependency-path: framework/samples/EchoGoPlugin/go.sum
+
+    - name: 生成分片的解决方案筛选器
+      id: shard
+      shell: pwsh
+      env:
+        SHARD: ${{ inputs.shard }}
+      run: |
+        $filter = & framework/scripts/New-TestShard.ps1 -Shard $env:SHARD
+        "filter=$filter" >> $env:GITHUB_OUTPUT
+
+    - name: 还原
+      shell: bash
+      run: dotnet restore "${{ steps.shard.outputs.filter }}"
+
+    - name: 构建
+      # 只构建这一片的测试项目和它们引用的包。分析器不在这里跑：代码风格、PublicAPI 与 AOT 分析器是「构建、打包与门禁」作业的事，
+      # 这里只要程序集；编译器警告照旧按错误处理，源生成器不受 RunAnalyzers 影响
+      shell: bash
+      run: dotnet build "${{ steps.shard.outputs.filter }}" --configuration Release --no-restore -p:RunAnalyzers=false
+
+    - name: 测试（MTP 模式，采集覆盖率）
+      shell: bash
+      run: >
+        dotnet test --solution "${{ steps.shard.outputs.filter }}"
+        --configuration Release
+        --no-build
+        -p:TestingPlatformCommandLineArguments="--coverage --coverage-output-format cobertura"
+
+    - name: 上传测试结果
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: test-results-${{ inputs.shard }}
+        path: framework/test/**/TestResults/
+        if-no-files-found: ignore

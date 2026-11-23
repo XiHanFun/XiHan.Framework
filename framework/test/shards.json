@@ -1,0 +1,38 @@
+{
+  "$comment": "CI 的测试分片（.github/workflows/ci.yml 的各测试作业）。这里只列要外部服务或工具链的测试项目；没列进任何分片的测试项目归 core，不带服务。variables 是这一片的作业设置的门控环境变量，tools 是它安装的工具链：测试项目用到其中哪个，就必须在提供它的分片里，否则用例在 CI 上静默跳过（架构测试 TestShardTests 核对）。筛选器由 framework/scripts/New-TestShard.ps1 生成",
+  "shards": [
+    {
+      "name": "integration",
+      "variables": ["XIHAN_TEST_REDIS", "XIHAN_TEST_RABBITMQ", "XIHAN_TEST_QDRANT"],
+      "tools": ["go"],
+      "projects": [
+        "XiHan.Framework.AI.VectorData.Tests",
+        "XiHan.Framework.Caching.Redis.Tests",
+        "XiHan.Framework.Caching.Remote.Tests",
+        "XiHan.Framework.Localization.Database.Tests",
+        "XiHan.Framework.Messaging.RabbitMQ.Tests",
+        "XiHan.Framework.Messaging.Redis.Tests",
+        "XiHan.Framework.MultiTenancy.Database.Tests",
+        "XiHan.Framework.Plugins.OutOfProcess.Tests",
+        "XiHan.Framework.Security.Database.Tests"
+      ]
+    },
+    {
+      "name": "database",
+      "variables": ["XIHAN_TEST_POSTGRES", "XIHAN_TEST_SQLSERVER", "XIHAN_TEST_MYSQL"],
+      "tools": [],
+      "projects": [
+        "XiHan.Framework.Persistence.SqlSugar.Tests",
+        "XiHan.Framework.Workflow.Database.Tests"
+      ]
+    },
+    {
+      "name": "oracle",
+      "variables": ["XIHAN_TEST_ORACLE"],
+      "tools": [],
+      "projects": [
+        "XiHan.Framework.Persistence.SqlSugar.Tests"
+      ]
+    }
+  ]
+}
