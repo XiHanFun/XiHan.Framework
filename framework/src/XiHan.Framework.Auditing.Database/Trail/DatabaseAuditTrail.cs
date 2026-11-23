@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Threading.Channels;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Auditing.Abstractions;
 using XiHan.Framework.Auditing.Abstractions.Trail;
@@ -10,6 +11,8 @@ using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Queries;
+using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Auditing.Database.Trail;
@@ -18,7 +21,10 @@ namespace XiHan.Framework.Auditing.Database.Trail;
 /// 数据库审计（单例）
 /// </summary>
 /// <remarks>
-/// 写入只是进有界队列，不阻塞调用路径，满了丢弃并计数；后台循环攒够一批或到刷写间隔就把队列里的事件一次批量落库，失败只记日志、丢弃该批并计数，不重试；查询经仓储按写入序号升序分页，续页令牌是上一页最后一条的序号。读写都在自己的作用域与工作单元里执行（<see cref="AuditStoreScope"/>），不加入调用方的事务
+/// 写入只是进有界队列，不阻塞调用路径，满了丢弃并计数；后台循环攒够一批或到刷写间隔就把队列里的事件一次批量落库，失败只记日志、丢弃该批并计数，不重试；查询经仓储按写入序号升序分页，续页令牌是上一页最后一条的序号。读写都在根提供者的新作用域里各开一个工作单元（<see cref="UnitOfWorkScope"/>，ADR-0259），不加入调用方的事务
+/// <para>
+/// 不经 <c>App.InvokeAsync</c> 再走一遍管道：写入由 Observe 阶段的中间件或后台线程发起、查询可能来自 Authorize 阶段之前，再过 Tenant / Authorize 阶段会在要求租户时失败，而且启动与停止期间应用不在服务状态也要能落库。审计记录是平台级数据：实体不实现 <c>IMultiTenant</c>，工作单元不带租户
+/// </para>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDisposable
@@ -27,6 +33,11 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     /// 丢弃警告的节流窗口：窗口内只记一条，附上累计丢弃数
     /// </summary>
     private static readonly TimeSpan _dropWarningInterval = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// 查询用的只读、无租户的工作单元选项
+    /// </summary>
+    private static readonly UnitOfWorkOptions _readOnly = new() { IsReadOnly = true };
 
     /// <summary>
     /// 选项
@@ -49,9 +60,12 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 读写记录的作用域
+    /// 根服务提供者
     /// </summary>
-    private readonly AuditStoreScope _store;
+    /// <remarks>
+    /// 每次读写开新作用域
+    /// </remarks>
+    private readonly IServiceProvider _services;
 
     /// <summary>
     /// 等待落库的事件
@@ -112,7 +126,7 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
         _ids = ids ?? throw new ArgumentNullException(nameof(ids));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _logger = loggerFactory.CreateLogger<DatabaseAuditTrail>();
-        _store = new AuditStoreScope(services);
+        _services = services ?? throw new ArgumentNullException(nameof(services));
         // Wait 模式下 TryWrite 不阻塞、满了返回 false，丢弃才能被计数；DropWrite 模式的 TryWrite 总返回 true，丢了也不知道
         _queue = Channel.CreateBounded<AuditEvent>(new BoundedChannelOptions(options.QueueCapacity) { FullMode = BoundedChannelFullMode.Wait });
     }
@@ -180,27 +194,35 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
         // 改为满页之后再从最后一条之后取一条看还有没有
         var probe = query.PageSize < EntityQuery.DefaultMaxTake;
         var entityQuery = Filter(query, after).OrderBy(static r => r.Sequence).Page(0, probe ? query.PageSize + 1 : query.PageSize);
-        IReadOnlyList<AuditRecord> rows;
-        try
-        {
-            rows = await _store.RunAsync(readOnly: true, async (repository, ct) =>
+        var read = await UnitOfWorkScope.RunAsync<IReadOnlyList<AuditRecord>>(
+            _services,
+            _readOnly,
+            async (services, ct) =>
             {
+                var repository = services.GetRequiredService<IRepository<AuditRecord, Guid>>();
                 var page = await repository.ListAsync(entityQuery, ct).ConfigureAwait(false);
                 if (probe || page.Count < query.PageSize)
                 {
-                    return page;
+                    return Result.Success(page);
                 }
 
                 var next = await repository.ListAsync(Filter(query, page[^1].Sequence).OrderBy(static r => r.Sequence).Page(0, 1), ct).ConfigureAwait(false);
-                return next.Count == 0 ? page : [.. page, next[0]];
-            }, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+                IReadOnlyList<AuditRecord> extended = next.Count == 0 ? page : [.. page, next[0]];
+                return Result.Success(extended);
+            },
+            QueryFailed,
+            _logger,
+            cancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var rows))
         {
-            // 查询接口把这个错误返回给调用方，存储的异常消息可能带数据库信息：reason 只写类型，完整异常只进日志
-            LogQueryFailed(_logger, exception);
-            var type = exception.GetType();
-            return Error.Unavailable(AuditingErrors.TrailUnavailable, AuditingMessages.TrailUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
+            // 抛出的异常已经映射成存储不可用；剩下的只有提交返回的失败，以它的错误码为原因、原错误为内部错误
+            if (string.Equals(read.Error!.Code, AuditingErrors.TrailUnavailable, StringComparison.Ordinal))
+            {
+                return read.Error;
+            }
+
+            LogQueryCommitFailed(_logger, read.Error.Code);
+            return new Error(AuditingErrors.TrailUnavailable, AuditingMessages.TrailUnavailable, MessageArguments.Of(("reason", read.Error.Code)), read.Error);
         }
 
         var more = rows.Count > query.PageSize;
@@ -386,7 +408,14 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
         IReadOnlyList<Result> results;
         try
         {
-            results = await _store.RunAsync(readOnly: false, (repository, ct) => repository.AddRangeAsync(records, ct), cancellationToken).ConfigureAwait(false);
+            var written = await UnitOfWorkScope.RunAsync(
+                _services,
+                UnitOfWorkOptions.Default,
+                async (services, ct) => Result.Success(await services.GetRequiredService<IRepository<AuditRecord, Guid>>().AddRangeAsync(records, ct).ConfigureAwait(false)),
+                _logger,
+                cancellationToken).ConfigureAwait(false);
+            // 提交返回的失败与抛出的异常一样是整批没落库：转成携带持久化错误码的异常，走下面同一条路
+            results = written.ValueOrThrow();
         }
         catch (Exception exception)
         {
@@ -419,6 +448,19 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
         }
 
         Interlocked.Add(ref _persisted, batch.Count - rejected);
+    }
+
+    /// <summary>
+    /// 把查询时抛出的异常归为审计存储不可用
+    /// </summary>
+    /// <remarks>
+    /// 查询接口把这个错误返回给调用方，存储的异常消息可能带数据库信息：<c>reason</c> 只写类型全名，完整异常只进日志
+    /// </remarks>
+    private Error QueryFailed(Exception exception)
+    {
+        LogQueryFailed(_logger, exception);
+        var type = exception.GetType();
+        return Error.Unavailable(AuditingErrors.TrailUnavailable, AuditingMessages.TrailUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
     }
 
     /// <summary>
@@ -475,4 +517,10 @@ public sealed partial class DatabaseAuditTrail : IAuditSink, IAuditTrail, IDispo
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Querying the audit trail failed.")]
     private static partial void LogQueryFailed(ILogger logger, Exception exception);
+
+    /// <summary>
+    /// 查询的只读工作单元提交失败
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Committing the read-only unit of work of an audit query failed with '{ErrorCode}'.")]
+    private static partial void LogQueryCommitFailed(ILogger logger, string errorCode);
 }
