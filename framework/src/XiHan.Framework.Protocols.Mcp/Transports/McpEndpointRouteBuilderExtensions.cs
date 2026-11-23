@@ -76,7 +76,8 @@ public static class McpEndpointRouteBuilderExtensions
             return;
         }
 
-        if (await ReadBodyAsync(httpContext.Request, options.MaxRequestBodyBytes, context.CancellationToken).ConfigureAwait(false) is not { } body)
+        var read = await HttpInvocation.ReadBodyAsync(httpContext, options.MaxRequestBodyBytes, context.CancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var body))
         {
             await WriteAsync(httpContext, StatusCodes.Status413PayloadTooLarge, McpServer.TransportErrorReply(McpErrors.BodyTooLarge, McpMessages.BodyTooLarge.L(("max", options.MaxRequestBodyBytes))), context.CancellationToken).ConfigureAwait(false);
             return;
@@ -110,36 +111,6 @@ public static class McpEndpointRouteBuilderExtensions
         var separator = contentType.IndexOf(';', StringComparison.Ordinal);
         var mediaType = (separator < 0 ? contentType : contentType[..separator]).Trim();
         return mediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// 读请求体，最多 <paramref name="max"/> 字节
-    /// </summary>
-    /// <remarks>
-    /// 超过时为 <see langword="null"/>。<c>Content-Length</c> 已经超过的不读；没有声明长度的边读边计数，读到上限多一个字节即停
-    /// </remarks>
-    private static async ValueTask<byte[]?> ReadBodyAsync(HttpRequest request, long max, CancellationToken cancellationToken)
-    {
-        if (request.ContentLength > max)
-        {
-            return null;
-        }
-
-        using var memory = new MemoryStream();
-        var buffer = new byte[16 * 1024];
-        int read;
-        while ((read = await request.Body.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
-        {
-            // 计数在写进内存之前：超过上限的那一段不留
-            if (memory.Length + read > max)
-            {
-                return null;
-            }
-
-            memory.Write(buffer, 0, read);
-        }
-
-        return memory.ToArray();
     }
 
     /// <summary>

@@ -6,8 +6,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
@@ -245,38 +245,14 @@ public static class OperationRequestBinder
             return NotJson(descriptor, contentType);
         }
 
-        if (request.ContentLength > maxBody)
+        // 限长读取与 MCP、CloudEvents 入口共用：声明的长度超限不读，没有声明的边读边计数
+        var read = await HttpInvocation.ReadBodyAsync(httpContext, maxBody, cancellationToken).ConfigureAwait(false);
+        if (!read.TryGetValue(out var bytes))
         {
             return TooLarge(descriptor, maxBody);
         }
 
-        // 没有长度声明（分块、HTTP/2）时也不能读超：让服务器在读到上限时就中止，自己再按读到的字节数判一次
-        if (httpContext.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit && (limit.MaxRequestBodySize is null || limit.MaxRequestBodySize > maxBody))
-        {
-            limit.MaxRequestBodySize = maxBody;
-        }
-
-        using var memory = new MemoryStream();
-        var chunk = new byte[16 * 1024];
-        try
-        {
-            int read;
-            while ((read = await request.Body.ReadAsync(chunk, cancellationToken).ConfigureAwait(false)) > 0)
-            {
-                if (memory.Length + read > maxBody)
-                {
-                    return TooLarge(descriptor, maxBody);
-                }
-
-                memory.Write(chunk, 0, read);
-            }
-        }
-        catch (BadHttpRequestException exception) when (exception.StatusCode == StatusCodes.Status413PayloadTooLarge)
-        {
-            return TooLarge(descriptor, maxBody);
-        }
-
-        if (memory.Length == 0)
+        if (bytes.Length == 0)
         {
             return Maybe.None<JsonDocument>();
         }
@@ -287,10 +263,9 @@ public static class OperationRequestBinder
             return NotJson(descriptor, string.Empty);
         }
 
-        memory.Position = 0;
         try
         {
-            return Maybe.Some(await JsonDocument.ParseAsync(memory, cancellationToken: cancellationToken).ConfigureAwait(false));
+            return Maybe.Some(JsonDocument.Parse(bytes));
         }
         catch (JsonException)
         {

@@ -74,7 +74,7 @@ app.Run();
 | --- | --- |
 | `WebApplicationBuilderExtensions` | `AddXiHan(configure)`：装载挂载的配置目录，再交给内核装配应用 |
 | `ApplicationBuilderExtensions` | `UseXiHan()`：请求桥接进内核管道；`MapXiHanHealth(prefix)`：`{prefix}/startup`、`/ready`、`/live`，只给状态；`MapXiHanHealthDetails(pattern)`：各特性与健康条目的详情，经管道、能加访问要求（ADR-0209） |
-| `Endpoints.HttpInvocation` | `FindXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
+| `Endpoints.HttpInvocation` | `FindXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；`ReadBodyAsync(httpContext, maxBytes, cancellationToken)` 限长读请求体（超过时无值，服务器报的 413 同样算超过），协议适配器共用；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
 | `Endpoints.EndpointConventionBuilderExtensions` | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)`；引用的权限码与策略在宿主建请求管道时核对，不存在即启动失败 |
 | `Endpoints.PipelineBypassMetadata` | 端点元数据：带它的端点不经内核管道；`BypassXiHanPipeline(builder)` 标注 |
 | `Endpoints.OperationPayloadBinder` | 协议适配器挂在端点上的载荷绑定委托，`UseXiHan()` 在进管道前调用 |

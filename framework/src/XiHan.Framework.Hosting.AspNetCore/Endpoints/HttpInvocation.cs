@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -230,6 +231,56 @@ public static partial class HttpInvocation
     {
         ArgumentNullException.ThrowIfNull(httpContext);
         return httpContext.Items.TryGetValue(ContextItemKey, out var value) && value is InvocationContext context ? Maybe.Some(context) : default;
+    }
+
+    /// <summary>
+    /// 读请求体，最多 <paramref name="maxBytes"/> 字节
+    /// </summary>
+    /// <remarks>
+    /// 超过时没有值，读到的内容不留。<c>Content-Length</c> 已经超过的不读；没有声明长度（分块、HTTP/2）的边读边计数，读到上限多一个字节即停。读之前把服务器对这次请求的请求体上限压到 <paramref name="maxBytes"/>（只调低、不调高）；服务器自己的上限更小、读到一半报 413 时同样按超过处理，协议适配器因此总能用自己的错误格式答复
+    /// </remarks>
+    /// <param name="httpContext">当前请求</param>
+    /// <param name="maxBytes">上限，不为负</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    public static async ValueTask<Maybe<byte[]>> ReadBodyAsync(HttpContext httpContext, long maxBytes, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(httpContext);
+        ArgumentOutOfRangeException.ThrowIfNegative(maxBytes);
+        var request = httpContext.Request;
+        if (request.ContentLength > maxBytes)
+        {
+            return Maybe.None<byte[]>();
+        }
+
+        // 没有长度声明时也不能读超：让服务器在读到上限时就中止，自己再按读到的字节数判一次
+        if (httpContext.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit && (limit.MaxRequestBodySize is null || limit.MaxRequestBodySize > maxBytes))
+        {
+            limit.MaxRequestBodySize = maxBytes;
+        }
+
+        using var memory = new MemoryStream();
+        var chunk = new byte[16 * 1024];
+        try
+        {
+            int read;
+            while ((read = await request.Body.ReadAsync(chunk, cancellationToken).ConfigureAwait(false)) > 0)
+            {
+                // 计数在写进内存之前：超过上限的那一段不留
+                if (memory.Length + read > maxBytes)
+                {
+                    return Maybe.None<byte[]>();
+                }
+
+                memory.Write(chunk, 0, read);
+            }
+        }
+        catch (BadHttpRequestException exception) when (exception.StatusCode == StatusCodes.Status413PayloadTooLarge)
+        {
+            // 服务器的上限比 maxBytes 小：同样是超过
+            return Maybe.None<byte[]>();
+        }
+
+        return memory.ToArray();
     }
 
     /// <summary>

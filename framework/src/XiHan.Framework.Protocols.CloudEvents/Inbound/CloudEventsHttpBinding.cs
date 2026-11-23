@@ -7,6 +7,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
@@ -86,7 +87,7 @@ public static class CloudEventsHttpBinding
             return Error.Validation(CloudEventsErrors.UnsupportedContentType, CloudEventsMessages.ContentTypeUnsupported, MessageArguments.Of(("contentType", request.ContentType ?? string.Empty)));
         }
 
-        var read = await ReadBodyAsync(request, options.MaxRequestBodyBytes, cancellationToken).ConfigureAwait(false);
+        var read = await HttpInvocation.ReadBodyAsync(request.HttpContext, options.MaxRequestBodyBytes, cancellationToken).ConfigureAwait(false);
         if (!read.TryGetValue(out var body))
         {
             return Error.Validation(CloudEventsErrors.BodyTooLarge, CloudEventsMessages.BodyTooLarge, MessageArguments.Of(("max", options.MaxRequestBodyBytes)));
@@ -102,36 +103,6 @@ public static class CloudEventsHttpBinding
             default:
                 return ReadBinary(request, body);
         }
-    }
-
-    /// <summary>
-    /// 读请求体，最多 <paramref name="max"/> 字节
-    /// </summary>
-    /// <remarks>
-    /// 超过时没有值。<c>Content-Length</c> 已经超过的不读；没有声明长度的边读边计数，读到上限多一个字节即停
-    /// </remarks>
-    private static async ValueTask<Maybe<byte[]>> ReadBodyAsync(HttpRequest request, long max, CancellationToken cancellationToken)
-    {
-        if (request.ContentLength > max)
-        {
-            return default(Maybe<byte[]>);
-        }
-
-        using var memory = new MemoryStream();
-        var buffer = new byte[16 * 1024];
-        int read;
-        while ((read = await request.Body.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
-        {
-            // 计数在写进内存之前：超过上限的那一段不留
-            if (memory.Length + read > max)
-            {
-                return default(Maybe<byte[]>);
-            }
-
-            memory.Write(buffer, 0, read);
-        }
-
-        return memory.ToArray();
     }
 
     /// <summary>
