@@ -6,7 +6,6 @@ using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
@@ -16,6 +15,7 @@ using XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 using XiHan.Framework.Plugins.OutOfProcess.Runtime;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
+using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -44,7 +44,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// <summary>
     /// 回调时宿主所用主体的认证方案
     /// </summary>
-    public const string PluginScheme = "Plugin";
+    public const string PluginScheme = PluginIdentity.Scheme;
 
     /// <summary>
     /// 健康条目名前缀
@@ -216,7 +216,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     public async Task<Result<PluginStatus>> LoadAsync(PluginSource source, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var manifest = ReadManifest(source.Directory);
+        var manifest = PluginManifests.Read(source.Directory, PluginIsolation.OutOfProcess);
         if (!manifest.TryGetValue(out var read))
         {
             return manifest.Error!;
@@ -412,7 +412,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     private async Task<Result<PluginRuntime>> DiscoverAsync(string directory, CancellationToken cancellationToken)
     {
         var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
-        var file = ReadManifestFile(full);
+        var file = PluginManifests.ReadFile(full);
         if (!file.TryGetValue(out var read))
         {
             // 没有清单 ID：只能按目录名上报
@@ -421,7 +421,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         }
 
         var source = new PluginSource(full, _options.GrantsFor(read.Id));
-        var kind = CheckKind(read);
+        var kind = PluginManifests.CheckKind(read, PluginIsolation.OutOfProcess);
         if (kind.IsFailure)
         {
             return await RejectAsync(source, read, kind.Error!, cancellationToken).ConfigureAwait(false);
@@ -515,22 +515,15 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             return new Error(PluginErrors.InvalidSource, PluginMessages.PipelineUnsupported, MessageArguments.Of(("id", manifest.Id), ("middleware", string.Join(", ", manifest.Contributes.Pipeline.Select(static p => p.Middleware)))));
         }
 
-        // 清单声明的权限，以及它要读的宿主配置节与绑定，都要运营方授予：配置节里有密钥，插件不能自己点名（ADR-0177）
-        var missing = source.Permissions.Missing(manifest).Concat(source.Permissions.MissingConfigurationGrants(manifest)).ToList();
-        if (missing.Count > 0)
+        // 进程外插件的权限只看宿主授予；授予与入口的核对两个宿主相同
+        var checkedEntry = PluginPreflight.Check(source, manifest, source.Permissions.IsGranted);
+        if (!checkedEntry.TryGetValue(out var entry))
         {
-            return Error.Denied(PluginErrors.PermissionDenied, PluginMessages.PermissionsNotGranted, MessageArguments.Of(("id", manifest.Id), ("permissions", string.Join(", ", missing))));
+            return checkedEntry.Error;
         }
 
-        if (string.IsNullOrWhiteSpace(manifest.Entry))
-        {
-            return new Error(PluginErrors.InvalidSource, PluginMessages.EntryRequired, MessageArguments.Of(("id", manifest.Id)));
-        }
-
-        executable = ResolveExecutable(source.Directory, manifest.Entry);
-        return executable is null
-            ? Error.NotFound(PluginErrors.NotFound, PluginMessages.ExecutableMissing, MessageArguments.Of(("path", Path.Combine(source.Directory, manifest.Entry))))
-            : null;
+        executable = ResolveExecutable(source.Directory, entry);
+        return executable is null ? PluginPreflight.EntryMissing(Path.Combine(source.Directory, entry)) : null;
     }
 
     /// <summary>
@@ -617,40 +610,6 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             _order.Remove(runtime);
         }
     }
-
-    /// <summary>
-    /// 读目录里的清单并确认是进程外插件
-    /// </summary>
-    private static Result<Manifest> ReadManifest(string directory)
-    {
-        var read = ReadManifestFile(directory);
-        if (!read.TryGetValue(out var manifest))
-        {
-            return read.Error!;
-        }
-
-        var kind = CheckKind(manifest);
-        return kind.IsSuccess ? manifest : kind.Error!;
-    }
-
-    /// <summary>
-    /// 读目录里的清单文件
-    /// </summary>
-    private static Result<Manifest> ReadManifestFile(string directory)
-    {
-        var read = ManifestReader.ReadFile(Path.Combine(directory, ManifestReader.FileName));
-        return read.TryGetValue(out var manifest)
-            ? manifest
-            : new Error(PluginErrors.InvalidSource, PluginMessages.ManifestInvalid, MessageArguments.Of(("directory", directory), ("reason", read.Error!.Message)), read.Error);
-    }
-
-    /// <summary>
-    /// 清单是否描述一个进程外插件
-    /// </summary>
-    private static Result CheckKind(Manifest manifest)
-        => manifest.Kind == ManifestKind.Plugin && manifest.Isolation == PluginIsolation.OutOfProcess
-            ? Result.Success()
-            : new Error(PluginErrors.InvalidSource, PluginMessages.NotOutOfProcess, MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
 
     /// <summary>
     /// 入口相对插件目录

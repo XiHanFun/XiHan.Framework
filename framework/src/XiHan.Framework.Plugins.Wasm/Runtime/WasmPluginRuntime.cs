@@ -6,12 +6,12 @@ using Google.Protobuf;
 using Microsoft.Extensions.Logging;
 using Wasmtime;
 using XiHan.Framework.Kernel;
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
+using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Plugins.Protocol.V1;
@@ -20,8 +20,6 @@ using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using Error = XiHan.Framework.Primitives.Error;
 using LifecycleState = XiHan.Framework.Primitives.LifecycleState;
-using ProtoBinding = XiHan.Framework.Plugins.Protocol.V1.Binding;
-using ProtoLifecycleState = XiHan.Framework.Plugins.Protocol.V1.LifecycleState;
 
 namespace XiHan.Framework.Plugins.Wasm.Runtime;
 
@@ -1061,27 +1059,17 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             return false;
         }
 
-        var error = health.Error is { } reported ? PluginErrorMapper.FromProto(reported, Manifest.Id) : null;
-        var unhealthyItems = health.Items.Any(static item => item.Status is HealthStatus.Degraded or HealthStatus.Unhealthy);
-        switch (health.State)
+        var (state, error) = PluginHealth.Read(health, Manifest.Id);
+        if (state == LifecycleState.Failed)
         {
-            case ProtoLifecycleState.Failed:
-                Background(() => HandleCrashAsync(instance, error ?? Error.Unexpected(PluginErrors.Crashed, PluginMessages.ModuleTrapped, details: MessageArguments.Of(("id", Manifest.Id), ("trap", "the plugin reported Failed")))));
-                return false;
-            case ProtoLifecycleState.Degraded:
-                SetState(LifecycleState.Degraded, error);
-                break;
-            case ProtoLifecycleState.Ready:
-                SetState(unhealthyItems ? LifecycleState.Degraded : LifecycleState.Ready, unhealthyItems ? error : null);
-                break;
-            case ProtoLifecycleState.Started:
-                SetState(LifecycleState.Started, null);
-                break;
-            case ProtoLifecycleState.Draining:
-                SetState(LifecycleState.Draining, null);
-                break;
-            default:
-                break;
+            // 自报 Failed 的实例不再可信：按崩溃丢弃并退避重建，没带错误时记成一次陷阱
+            Background(() => HandleCrashAsync(instance, error ?? Error.Unexpected(PluginErrors.Crashed, PluginMessages.ModuleTrapped, details: MessageArguments.Of(("id", Manifest.Id), ("trap", "the plugin reported Failed")))));
+            return false;
+        }
+
+        if (state is { } reported)
+        {
+            SetState(reported, error);
         }
 
         return true;
@@ -1107,29 +1095,10 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// 组装 <c>Configure</c> 请求
     /// </summary>
     /// <remarks>
-    /// 配置节 JSON、已授予权限（含已映射的文件系统权限）、已解析绑定与工作目录
+    /// 配置节 JSON、已授予权限（含已映射的文件系统权限）、清单声明的绑定与工作目录。工作目录在实例化时已经准备好，这里只给出路径
     /// </remarks>
     private ConfigureRequest BuildConfigure()
-    {
-        var workDirectory = Path.Combine(_host.WorkRoot, Manifest.Id);
-        var request = new ConfigureRequest
-        {
-            Configuration = Manifest.Contributes.Config is { } config ? PluginJson.SerializeSection(_host.Configuration.GetSection(config.Section)) : "{}",
-            WorkDirectory = workDirectory,
-        };
-        request.GrantedPermissions.AddRange(Manifest.Permissions);
-        foreach (var binding in Manifest.Bindings)
-        {
-            var section = _host.Configuration.GetSection($"{BindingResolver.ConfigurationSection}:{binding.Name}");
-            var value = section["value"] ?? section.Value;
-            if (value is not null)
-            {
-                request.Bindings.Add(new ProtoBinding { Name = binding.Name, Type = section["type"] ?? binding.Type, Value = value });
-            }
-        }
-
-        return request;
-    }
+        => PluginConfigureRequests.Build(Manifest, _host.Configuration, Path.Combine(_host.WorkRoot, Manifest.Id));
 
     /// <summary>
     /// WASI 配置：协议约定的环境变量、按权限预开放目录

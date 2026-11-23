@@ -7,7 +7,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Wasmtime;
-using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
@@ -15,6 +14,7 @@ using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.Protocol;
+using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Plugins.Wasm.Instances;
 using XiHan.Framework.Plugins.Wasm.Runtime;
@@ -245,7 +245,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     public async Task<Result<PluginStatus>> LoadAsync(PluginSource source, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(source);
-        var manifest = ReadManifest(source.Directory);
+        var manifest = PluginManifests.Read(source.Directory, PluginIsolation.Wasm);
         if (!manifest.TryGetValue(out var read))
         {
             return manifest.Error!;
@@ -449,7 +449,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private async Task<Result<WasmPluginRuntime>> DiscoverAsync(string directory, CancellationToken cancellationToken)
     {
         var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
-        var file = ReadManifestFile(full);
+        var file = PluginManifests.ReadFile(full);
         if (!file.TryGetValue(out var read))
         {
             // 没有清单 ID：只能按目录名上报
@@ -459,7 +459,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
 
         var source = new PluginSource(full, _options.GrantsFor(read.Id));
         var mounts = _options.MountsFor(read.Id);
-        var kind = CheckKind(read);
+        var kind = PluginManifests.CheckKind(read, PluginIsolation.Wasm);
         if (kind.IsFailure)
         {
             return await RejectAsync(source, read, mounts, kind.Error!, cancellationToken).ConfigureAwait(false);
@@ -513,20 +513,15 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private static Error? Preflight(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, out string? modulePath)
     {
         modulePath = null;
-        // 清单声明的权限，以及它要读的宿主配置节与绑定，都要运营方授予：配置节里有密钥，插件不能自己点名（ADR-0177）
-        var missing = manifest.Permissions.Where(permission => !IsGranted(permission, source.Permissions, mounts)).Concat(source.Permissions.MissingConfigurationGrants(manifest)).ToList();
-        if (missing.Count > 0)
+        // Wasm 插件的权限按种类判定（capability 看授予、fs 看映射）；授予与入口的核对两个宿主相同
+        var checkedEntry = PluginPreflight.Check(source, manifest, permission => IsGranted(permission, source.Permissions, mounts));
+        if (!checkedEntry.TryGetValue(out var entry))
         {
-            return Error.Denied(PluginErrors.PermissionDenied, PluginMessages.PermissionsNotGranted, MessageArguments.Of(("id", manifest.Id), ("permissions", string.Join(", ", missing))));
+            return checkedEntry.Error;
         }
 
-        if (string.IsNullOrWhiteSpace(manifest.Entry))
-        {
-            return new Error(PluginErrors.InvalidSource, PluginMessages.EntryRequired, MessageArguments.Of(("id", manifest.Id)));
-        }
-
-        modulePath = Path.GetFullPath(Path.Combine(source.Directory, manifest.Entry));
-        return File.Exists(modulePath) ? null : Error.NotFound(PluginErrors.NotFound, PluginMessages.ExecutableMissing, MessageArguments.Of(("path", modulePath)));
+        modulePath = Path.GetFullPath(Path.Combine(source.Directory, entry));
+        return File.Exists(modulePath) ? null : PluginPreflight.EntryMissing(modulePath);
     }
 
     /// <summary>
@@ -686,40 +681,6 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             _order.Remove(runtime);
         }
     }
-
-    /// <summary>
-    /// 读目录里的清单并确认是 Wasm 插件
-    /// </summary>
-    private static Result<Manifest> ReadManifest(string directory)
-    {
-        var read = ReadManifestFile(directory);
-        if (!read.TryGetValue(out var manifest))
-        {
-            return read.Error!;
-        }
-
-        var kind = CheckKind(manifest);
-        return kind.IsSuccess ? manifest : kind.Error!;
-    }
-
-    /// <summary>
-    /// 读目录里的清单文件
-    /// </summary>
-    private static Result<Manifest> ReadManifestFile(string directory)
-    {
-        var read = ManifestReader.ReadFile(Path.Combine(directory, ManifestReader.FileName));
-        return read.TryGetValue(out var manifest)
-            ? manifest
-            : new Error(PluginErrors.InvalidSource, PluginMessages.ManifestInvalid, MessageArguments.Of(("directory", directory), ("reason", read.Error!.Message)), read.Error);
-    }
-
-    /// <summary>
-    /// 清单是否描述一个 Wasm 插件
-    /// </summary>
-    private static Result CheckKind(Manifest manifest)
-        => manifest.Kind == ManifestKind.Plugin && manifest.Isolation == PluginIsolation.Wasm
-            ? Result.Success()
-            : new Error(PluginErrors.InvalidSource, PluginMessages.NotWasm,MessageArguments.Of(("id", manifest.Id), ("kind", manifest.Kind.ToString()), ("isolation", manifest.Isolation?.ToString())));
 
     /// <summary>
     /// 记录发现阶段失败的插件（宿主继续运行）

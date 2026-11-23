@@ -8,10 +8,10 @@ using Wasmtime;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
+using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Plugins.Wasm.Instances;
@@ -56,7 +56,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// <summary>
     /// 回调时宿主所用主体的认证方案
     /// </summary>
-    public const string PluginScheme = "Plugin";
+    public const string PluginScheme = PluginIdentity.Scheme;
 
     /// <summary>
     /// 回调嵌套深度上限
@@ -240,9 +240,8 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
         {
             // 标记回调流：管道里再次进入本插件的调用据此识别再入，并在本线程等待期间被泵出
             using var flow = Pump.EnterCallback();
-            var context = PluginMetadata.CreateContext(scope.ServiceProvider, request.Metadata, manifest.Id, linked.Token, deadline);
             // 宿主以插件身份执行：主体 ID 为清单 ID、方案 Plugin、无声明
-            context.SetSecurity(new SecurityContext(new Principal(manifest.Id, PluginScheme), null));
+            var context = PluginIdentity.CreateContext(scope.ServiceProvider, request.Metadata, manifest.Id, deadline, linked.Token);
             pending = scope.ServiceProvider.GetRequiredService<IOperationInvoker>().InvokeAsync(context, new OperationRequest(request.Operation, request.Payload.Memory)).AsTask();
             var result = Pump.Wait(pending, linked.Token);
             // 外层调用的令牌也带着它的截止时间：截止时间已到时新调用报出的取消按超时交给插件，与不再等待那条路径同一判断
@@ -341,11 +340,7 @@ internal sealed partial class WasmHostFunctions(Manifest manifest, PermissionGra
     /// 与 <c>invoke</c> 同一取法：按元数据还原，主体覆盖为插件的清单 ID、方案 Plugin
     /// </remarks>
     private InvocationContext PublishContext(IServiceProvider scopedServices, InvocationMetadata? metadata, DateTimeOffset deadline, CancellationToken cancellationToken)
-    {
-        var context = PluginMetadata.CreateContext(scopedServices, metadata, manifest.Id, cancellationToken, deadline);
-        context.SetSecurity(new SecurityContext(new Principal(manifest.Id, PluginScheme), null));
-        return context;
-    }
+        => PluginIdentity.CreateContext(scopedServices, metadata, manifest.Id, deadline, cancellationToken);
 
     /// <summary>
     /// 是不是宿主随当前调用交给插件的租户

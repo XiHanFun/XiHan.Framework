@@ -5,12 +5,12 @@ using System.Globalization;
 using Google.Protobuf;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.OutOfProcess.Processes;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
+using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Plugins.Protocol.V1;
@@ -18,8 +18,6 @@ using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 using Error = XiHan.Framework.Primitives.Error;
 using LifecycleState = XiHan.Framework.Primitives.LifecycleState;
-using ProtoBinding = XiHan.Framework.Plugins.Protocol.V1.Binding;
-using ProtoLifecycleState = XiHan.Framework.Plugins.Protocol.V1.LifecycleState;
 using Status = XiHan.Framework.Plugins.Protocol.V1.Status;
 
 namespace XiHan.Framework.Plugins.OutOfProcess.Runtime;
@@ -935,60 +933,31 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             return false;
         }
 
-        var error = health.Error is { } reported ? PluginErrorMapper.FromProto(reported, Manifest.Id) : null;
-        var unhealthyItems = health.Items.Any(static item => item.Status is HealthStatus.Degraded or HealthStatus.Unhealthy);
-        switch (health.State)
+        var (state, error) = PluginHealth.Read(health, Manifest.Id);
+        if (state == LifecycleState.Failed)
         {
-            case ProtoLifecycleState.Failed:
-                SetState(LifecycleState.Failed, error);
-                _ = process.KillAsync();
-                return false;
-            case ProtoLifecycleState.Degraded:
-                SetState(LifecycleState.Degraded, error);
-                break;
-            case ProtoLifecycleState.Ready:
-                SetState(unhealthyItems ? LifecycleState.Degraded : LifecycleState.Ready, unhealthyItems ? error : null);
-                break;
-            case ProtoLifecycleState.Started:
-                SetState(LifecycleState.Started, null);
-                break;
-            case ProtoLifecycleState.Draining:
-                SetState(LifecycleState.Draining, null);
-                break;
-            default:
-                // 其余状态由宿主裁决，插件自报无效
-                break;
+            // 自报 Failed 的进程不再可信：记下状态并终止它，退出监视看到的是一次崩溃
+            SetState(LifecycleState.Failed, error);
+            _ = process.KillAsync();
+            return false;
+        }
+
+        if (state is { } reported)
+        {
+            SetState(reported, error);
         }
 
         return true;
     }
 
     /// <summary>
-    /// 组装 <c>Configure</c> 请求：配置节 JSON、已授予权限、已解析绑定与工作目录
+    /// 组装 <c>Configure</c> 请求：配置节 JSON、已授予权限、清单声明的绑定与工作目录
     /// </summary>
+    /// <remarks>
+    /// 缺省的工作目录根要先核对是私有的，子目录只给本用户（ADR-0207）
+    /// </remarks>
     private ConfigureRequest BuildConfigure()
-    {
-        // 缺省的根要先核对是私有的，子目录只给本用户（ADR-0207）
-        var workDirectory = PluginWorkDirectories.Prepare(_host.WorkRoot, Manifest.Id, _host.Options.WorkDirectory is null);
-        var request = new ConfigureRequest
-        {
-            Configuration = Manifest.Contributes.Config is { } config ? PluginJson.SerializeSection(_host.Configuration.GetSection(config.Section)) : "{}",
-            WorkDirectory = workDirectory,
-        };
-        request.GrantedPermissions.AddRange(Manifest.Permissions);
-        foreach (var binding in Manifest.Bindings)
-        {
-            // 与内核的绑定解析同源：XiHan:Bindings:<name> 的 value / type 子键，或节本身的标量值
-            var section = _host.Configuration.GetSection($"{BindingResolver.ConfigurationSection}:{binding.Name}");
-            var value = section["value"] ?? section.Value;
-            if (value is not null)
-            {
-                request.Bindings.Add(new ProtoBinding { Name = binding.Name, Type = section["type"] ?? binding.Type, Value = value });
-            }
-        }
-
-        return request;
-    }
+        => PluginConfigureRequests.Build(Manifest, _host.Configuration, PluginWorkDirectories.Prepare(_host.WorkRoot, Manifest.Id, _host.Options.WorkDirectory is null));
 
     /// <summary>
     /// 进入某状态

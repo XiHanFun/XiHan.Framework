@@ -7,7 +7,6 @@ using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions;
-using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Proxies;
@@ -73,24 +72,8 @@ public sealed class WasmPluginsFeature : IHostedFeature
                 continue;
             }
 
-            // 清单声明的权限码连同代理操作一次登记（ADR-0080）：声明的码与已登记的重复、操作与应用自己的重名都是配置错误，启动失败；
-            // 引用了未登记的权限码同样是配置错误，在装配完成时一并核对、启动失败（插件声明的码此时已在登记表里）
-            PluginContributions.Register(context.Operations, null, runtime.Manifest, runtime.Handshake, runtime).ThrowIfFailure();
-
-            // 以清单 ID 为归属：卸载时随之撤回，再加载时按新版本的目录重新登记（ADR-0252）
-            foreach (var catalog in runtime.Handshake.Catalogs)
-            {
-                context.Services.AddMessageCatalog(runtime.Manifest.Id, catalog);
-            }
-
-            // 每个（主题，方式）登记一次转交处理器，实际投给哪个插件由宿主按握手声明决定
-            foreach (var subscription in runtime.Handshake.Subscriptions)
-            {
-                if (subscribed.Add(new MessageSubscription(subscription.Topic, subscription.Mode)))
-                {
-                    context.Services.AddMessageHandler<WasmPluginEventHandler>(subscription.Topic, subscription.Mode);
-                }
-            }
+            // 代理操作与权限码进登记表、目录按归属注册、订阅接进容器；登记不进去是配置错误，启动失败
+            PluginContributions.Configure<WasmPluginEventHandler>(context, subscribed, runtime.Manifest, runtime.Handshake, runtime);
 
             // 配置阶段直接登记：约束目标可以是之后才发现的插件的中间件，在构建管道时解析
             WasmPluginHost.AddMiddleware(context.Pipeline, runtime);

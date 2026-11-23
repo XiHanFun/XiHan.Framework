@@ -1,9 +1,14 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Diagnostics.CodeAnalysis;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
+using XiHan.Framework.Messaging.Abstractions;
+using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -18,6 +23,47 @@ namespace XiHan.Framework.Plugins.Protocol.Proxies;
 /// </remarks>
 internal static class PluginContributions
 {
+    /// <summary>
+    /// 配置阶段把一个握手成功的插件接进特性上下文
+    /// </summary>
+    /// <remarks>
+    /// 两个宿主特性按目录发现插件时共用（ADR-0260）：代理操作与权限码进操作登记表，消息目录以清单 ID 为归属注册进容器，订阅接进容器。登记不进去即抛出、应用启动失败。Wasm 插件贡献的中间件是载体的事，由 Wasm 特性另行登记
+    /// </remarks>
+    /// <typeparam name="THandler">宿主把订阅主题的消息转交给插件的处理器</typeparam>
+    /// <param name="context">特性上下文</param>
+    /// <param name="subscribed">这个特性已经接进容器的订阅：每个（主题，方式）只登记一次处理器</param>
+    /// <param name="manifest">插件清单</param>
+    /// <param name="handshake">成功的握手</param>
+    /// <param name="invoker">代理操作执行时转交的插件运行时</param>
+    /// <exception cref="FrameworkException">声明的权限码与已登记的重复，或操作与已有的重名</exception>
+    public static void Configure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(FeatureContext context, HashSet<MessageSubscription> subscribed, Manifest manifest, HandshakeInfo handshake, IPluginInvoker invoker)
+        where THandler : class, IMessageHandler
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(subscribed);
+        ArgumentNullException.ThrowIfNull(manifest);
+        ArgumentNullException.ThrowIfNull(handshake);
+
+        // 清单声明的权限码连同代理操作一次登记（ADR-0080）：声明的码与已登记的重复、操作与应用自己的重名都是配置错误，启动失败；
+        // 引用了未登记的权限码同样是配置错误，在装配完成时一并核对、启动失败（插件声明的码此时已在登记表里）
+        Register(context.Operations, null, manifest, handshake, invoker).ThrowIfFailure();
+
+        // 以清单 ID 为归属：卸载时随之撤回，再加载时按新版本的目录重新登记（ADR-0252）
+        foreach (var catalog in handshake.Catalogs)
+        {
+            context.Services.AddMessageCatalog(manifest.Id, catalog);
+        }
+
+        // 每个（主题，方式）登记一次转交处理器，实际投给哪个插件由宿主按握手声明决定
+        foreach (var subscription in handshake.Subscriptions)
+        {
+            if (subscribed.Add(new MessageSubscription(subscription.Topic, subscription.Mode)))
+            {
+                context.Services.AddMessageHandler<THandler>(subscription.Topic, subscription.Mode);
+            }
+        }
+    }
+
     /// <summary>
     /// 登记插件的消息目录、权限码与代理操作
     /// </summary>

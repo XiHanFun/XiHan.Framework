@@ -5,11 +5,11 @@ using Google.Protobuf;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Operations;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.Plugins.OutOfProcess.Runtime;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
+using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
@@ -93,11 +93,7 @@ internal sealed class HostCallbackService(HostServices host) : Host.HostBase
     /// 宿主以插件身份执行：主体 ID 为清单 ID、方案 Plugin、无声明，元数据里的 <c>xihan.principal</c> 被覆盖；租户由 Tenant 阶段按 Baggage 解析（调用方已限定为在途调用的租户）。截止时间取元数据与 gRPC 调用自身截止时间中较早的（<c>invocation.md</c> §2）
     /// </remarks>
     private static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, PluginRuntime runtime, ServerCallContext call)
-    {
-        var invocation = PluginMetadata.CreateContext(scopedServices, metadata, runtime.Manifest.Id, call.CancellationToken, PluginDeadlines.FromCall(call.Deadline));
-        invocation.SetSecurity(new SecurityContext(new Principal(runtime.Manifest.Id, OutOfProcessPluginHost.PluginScheme), null));
-        return invocation;
-    }
+        => PluginIdentity.CreateContext(scopedServices, metadata, runtime.Manifest.Id, PluginDeadlines.FromCall(call.Deadline), call.CancellationToken);
 
     /// <summary>
     /// 拦截器放进调用状态的运行时
