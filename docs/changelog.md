@@ -2,6 +2,36 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
+## v5.0.0-rc.7（2026-11-23）
+
+::: warning 候选版须知
+- 这是候选版，安装要带 `--prerelease`
+- 运行期加载的插件从这一版起对外可用：有 HTTP 路由、进接口文档、是 MCP tool，失败文案与权限码显示名随插件登记与撤回
+- 插件卸载之后它的地址按未匹配地址处理（通常是 404），不再答复 `KERNEL_NOTFOUND_001`；按错误码判断插件已卸载的客户端要改看状态码
+:::
+
+### 版本与兼容
+
+- **调整** 框架钉在规范 `v1.0.0-rc.3` 上
+
+### 内核与原语
+
+- **新增** `OperationRegistry.GetChangeToken()`：登记表的内容每变一次触发一次；`EnforceAdditions(check)` 把新增的一组与已登记的放在一起核对，不通过整组不登记（ADR-0251）
+
+### 宿主、协议与插件
+
+- **调整** `MapXiHanOperations()` 的端点随操作登记表增减：运行期登记的操作立即有路由，撤回即没有路由；此后登记的操作推导出已有的路由时整组被拒，返回 `PROTOCOLS_CONFLICT_002`（ADR-0251）
+- **调整** OpenAPI 文档在登记表或分组来源变了之后重新生成；分组文档改为一条带参数的路由 `<地址>/{group}.json`，按请求时的分组答复，不是当时的组名答复 404（ADR-0251）
+- **新增** `IOpenApiGroupSource` 提供运行期才有的分组，与 `OpenApiOptions.Groups` 合在一起按原来的规则核对（ADR-0251）
+- **调整** MCP 的 tool 表随登记表重建，`tools/list` 与 `tools/call` 用处理这条消息时的那一份；此后登记的 tool 名不合法或重复整组被拒，`listChanged` 仍为 `false`。gRPC 方法与 AI 工具目录仍只在启动时建成（ADR-0251）
+- **调整** 进程外与 Wasm 插件的消息目录以清单 ID 为归属，与权限码、代理操作一次登记、全进或全不进；运行期加载与首次握手失败后重试成功的插件也有目录，卸载随之撤回，再加载按新版本的目录登记。目录与宿主已有的同名目录冲突时整个插件登记失败，返回 `LOCALIZATION_CONFLICT_001`（ADR-0252）
+
+### 本地化
+
+- **新增** `MessageCatalogRegistry` 按归属登记与撤回消息目录，`AddMessageCatalog(owner, catalog)` 在配置阶段按归属注册；按归属登记的目录排在注册的目录之后，同名目录只核对冲突、不合并成一份（ADR-0252）
+- **调整** `InMemoryMessageLocalizer` 与 `DatabaseMessageLocalizer` 从登记表读目录，每次查找取一份快照；两者各加一个接收登记表的构造函数，在容器里按类型自行登记本地化器的应用要改用工厂（ADR-0252）
+- **调整** 容器里的 `MessageCatalog` 不再含插件的目录，要看插件的目录读 `MessageCatalogRegistry.Catalogs`（ADR-0252）
+
 ## v5.0.0-rc.6（2026-11-21）
 
 ::: warning 候选版须知
