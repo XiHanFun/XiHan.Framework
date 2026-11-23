@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Primitives;
 
@@ -81,29 +81,19 @@ public sealed record EntityFrameworkCorePersistenceOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new EntityFrameworkCorePersistenceOptions();
-        var raw = configuration[$"{ConfigurationSection}:EnsureCreated"];
-        if (raw is not null)
+        if (ConfigurationValues.ReadBoolean(configuration, $"{ConfigurationSection}:EnsureCreated") is { } ensureCreated)
         {
-            options = bool.TryParse(raw, out var ensureCreated)
-                ? options with { EnsureCreated = ensureCreated }
-                : throw new ArgumentException($"'{ConfigurationSection}:EnsureCreated' must be 'true' or 'false', but was '{raw}'.");
+            options = options with { EnsureCreated = ensureCreated };
         }
 
-        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
-        if (probe is not null)
+        if (ConfigurationValues.ReadSeconds(configuration, $"{ConfigurationSection}:HealthProbeIntervalSeconds") is { } probe)
         {
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"'{ConfigurationSection}:HealthProbeIntervalSeconds' must be a positive number, but was '{probe}'.");
+            options = options with { HealthProbeInterval = probe };
         }
 
-        var capacity = configuration[$"{ConfigurationSection}:VerifiedShardCapacity"];
-        if (capacity is not null)
+        if (ConfigurationValues.ReadInt32(configuration, $"{ConfigurationSection}:VerifiedShardCapacity", 1) is { } capacity)
         {
-            // NumberStyles.None 只接受纯数字：带符号、空白或千分位的值一律视为非法，而不是宽松解析
-            options = int.TryParse(capacity, NumberStyles.None, CultureInfo.InvariantCulture, out var verified) && verified >= 1
-                ? options with { VerifiedShardCapacity = verified }
-                : throw new ArgumentException($"'{ConfigurationSection}:VerifiedShardCapacity' must be a positive integer, but was '{capacity}'.");
+            options = options with { VerifiedShardCapacity = capacity };
         }
 
         var named = configuration.GetSection($"{ConfigurationSection}:Connections").GetChildren().ToList();

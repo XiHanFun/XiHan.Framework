@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.Abstractions.Identifiers;
@@ -94,13 +95,9 @@ public sealed record SnowflakeOptions
                 : throw new ArgumentException($"'{ConfigurationSection}:Epoch' must be an ISO 8601 date-time, but was '{epoch}'.");
         }
 
-        var workerId = section["WorkerId"];
-        if (workerId is not null)
+        if (ConfigurationValues.ReadInt32(section, "WorkerId", 0, SnowflakeId.MaxWorkerId) is { } workerId)
         {
-            // NumberStyles.None 只接受纯数字：带符号、空白或千分位的值一律视为非法
-            options = int.TryParse(workerId, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value <= SnowflakeId.MaxWorkerId
-                ? options with { WorkerId = value }
-                : throw new ArgumentException($"'{ConfigurationSection}:WorkerId' must be an integer between 0 and {SnowflakeId.MaxWorkerId}, but was '{workerId}'.");
+            options = options with { WorkerId = workerId };
         }
 
         var tolerance = section["ClockDriftToleranceMilliseconds"];
@@ -111,12 +108,10 @@ public sealed record SnowflakeOptions
                 : throw new ArgumentException($"'{ConfigurationSection}:ClockDriftToleranceMilliseconds' must be a non-negative integer, but was '{tolerance}'.");
         }
 
-        var timeToLive = section["LeaseTimeToLiveSeconds"];
-        if (timeToLive is not null)
+        // 这个键是整秒数：按正整数读，不收小数
+        if (ConfigurationValues.ReadInt32(section, "LeaseTimeToLiveSeconds", 1) is { } timeToLive)
         {
-            options = int.TryParse(timeToLive, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-                ? options with { LeaseTimeToLive = TimeSpan.FromSeconds(value) }
-                : throw new ArgumentException($"'{ConfigurationSection}:LeaseTimeToLiveSeconds' must be a positive integer, but was '{timeToLive}'.");
+            options = options with { LeaseTimeToLive = TimeSpan.FromSeconds(timeToLive) };
         }
 
         return options;

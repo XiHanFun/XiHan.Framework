@@ -291,6 +291,7 @@ public sealed class SqlSugarReplicaHealthTests : IDisposable
     [InlineData("DefaultHitRate", "0")]
     [InlineData("HealthCheck", "yes")]
     [InlineData("HealthCheckIntervalSeconds", "0")]
+    [InlineData("HealthCheckIntervalSeconds", "Infinity")]
     [InlineData("FailureCooldownSeconds", "-1")]
     public void Options_InvalidValues_NameTheKey(string key, string value)
     {

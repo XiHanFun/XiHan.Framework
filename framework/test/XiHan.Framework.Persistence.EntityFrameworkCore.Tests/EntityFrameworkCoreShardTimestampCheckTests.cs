@@ -185,7 +185,6 @@ public sealed class EntityFrameworkCoreShardTimestampCheckTests : IDisposable
     [InlineData("0")]
     [InlineData("-1")]
     [InlineData("1e3")]
-    [InlineData(" 8")]
     [InlineData("many")]
     public async Task VerifiedShardCapacity_InvalidValues_FailTheStartup(string value)
     {

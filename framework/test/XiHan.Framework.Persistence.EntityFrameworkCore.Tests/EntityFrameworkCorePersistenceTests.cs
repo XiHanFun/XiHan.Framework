@@ -46,6 +46,8 @@ public sealed class EntityFrameworkCorePersistenceTests : IDisposable
         Assert.False(EntityFrameworkCorePersistenceOptions.FromConfiguration(Configuration()).EnsureCreated);
         Assert.True(EntityFrameworkCorePersistenceOptions.FromConfiguration(Configuration(("XiHan:Persistence:EntityFrameworkCore:EnsureCreated", "true"))).EnsureCreated);
         Assert.Throws<ArgumentException>(static () => EntityFrameworkCorePersistenceOptions.FromConfiguration(Configuration(("XiHan:Persistence:EntityFrameworkCore:EnsureCreated", "yes"))));
+        // 整数接受两侧的空白，与其余选项类一致（ADR-0255）
+        Assert.Equal(8, EntityFrameworkCorePersistenceOptions.FromConfiguration(Configuration(("XiHan:Persistence:EntityFrameworkCore:VerifiedShardCapacity", " 8"))).VerifiedShardCapacity);
     }
 
     [Fact]

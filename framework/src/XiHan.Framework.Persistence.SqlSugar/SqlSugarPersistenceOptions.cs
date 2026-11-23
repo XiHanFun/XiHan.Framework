@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions.DataSources;
 using XiHan.Framework.Primitives;
 
@@ -114,29 +114,20 @@ public sealed record SqlSugarPersistenceOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new SqlSugarPersistenceOptions();
-        var raw = configuration[$"{ConfigurationSection}:InitTables"];
-        if (raw is not null)
+        if (ConfigurationValues.ReadBoolean(configuration, $"{ConfigurationSection}:InitTables") is { } initTables)
         {
-            options = bool.TryParse(raw, out var initTables)
-                ? options with { InitTables = initTables }
-                : throw new ArgumentException($"'{ConfigurationSection}:InitTables' must be 'true' or 'false', but was '{raw}'.");
+            options = options with { InitTables = initTables };
         }
 
-        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
-        if (probe is not null)
+        if (ConfigurationValues.ReadSeconds(configuration, $"{ConfigurationSection}:HealthProbeIntervalSeconds") is { } probe)
         {
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"'{ConfigurationSection}:HealthProbeIntervalSeconds' must be a positive number, but was '{probe}'.");
+            options = options with { HealthProbeInterval = probe };
         }
 
-        // 0 不是「不覆盖」：ADO.NET 的 0 是无限等待，写错了也不能悄悄按没配处理
-        var commandTimeout = configuration[$"{ConfigurationSection}:CommandTimeoutSeconds"];
-        if (commandTimeout is not null)
+        // 0 不是「不覆盖」：ADO.NET 的 0 是无限等待，写错了也不能悄悄按没配处理；这个键是整秒数，按正整数读
+        if (ConfigurationValues.ReadInt32(configuration, $"{ConfigurationSection}:CommandTimeoutSeconds", 1) is { } commandTimeout)
         {
-            options = int.TryParse(commandTimeout, NumberStyles.Integer, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { CommandTimeout = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"'{ConfigurationSection}:CommandTimeoutSeconds' must be a positive integer, but was '{commandTimeout}'.");
+            options = options with { CommandTimeout = TimeSpan.FromSeconds(commandTimeout) };
         }
 
         var named = configuration.GetSection($"{ConfigurationSection}:Connections").GetChildren().ToList();
@@ -161,33 +152,25 @@ public sealed record SqlSugarPersistenceOptions
     private static SqlSugarReplicaOptions ReadReplicas(IConfiguration configuration)
     {
         var replicas = new SqlSugarReplicaOptions();
-        var section = $"{ConfigurationSection}:Replicas";
-        if (configuration[$"{section}:DefaultHitRate"] is { } hitRate)
+        var section = configuration.GetSection($"{ConfigurationSection}:Replicas");
+        if (ConfigurationValues.ReadInt32(section, "DefaultHitRate", 1) is { } hitRate)
         {
-            replicas = int.TryParse(hitRate, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value > 0
-                ? replicas with { DefaultHitRate = value }
-                : throw new ArgumentException($"'{section}:DefaultHitRate' must be a positive integer, but was '{hitRate}'.");
+            replicas = replicas with { DefaultHitRate = hitRate };
         }
 
-        if (configuration[$"{section}:HealthCheck"] is { } healthCheck)
+        if (ConfigurationValues.ReadBoolean(section, "HealthCheck") is { } healthCheck)
         {
-            replicas = bool.TryParse(healthCheck, out var value)
-                ? replicas with { HealthCheck = value }
-                : throw new ArgumentException($"'{section}:HealthCheck' must be 'true' or 'false', but was '{healthCheck}'.");
+            replicas = replicas with { HealthCheck = healthCheck };
         }
 
-        if (configuration[$"{section}:HealthCheckIntervalSeconds"] is { } interval)
+        if (ConfigurationValues.ReadSeconds(section, "HealthCheckIntervalSeconds") is { } interval)
         {
-            replicas = double.TryParse(interval, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? replicas with { HealthCheckInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"'{section}:HealthCheckIntervalSeconds' must be a positive number, but was '{interval}'.");
+            replicas = replicas with { HealthCheckInterval = interval };
         }
 
-        if (configuration[$"{section}:FailureCooldownSeconds"] is { } cooldown)
+        if (ConfigurationValues.ReadSeconds(section, "FailureCooldownSeconds", allowZero: true) is { } cooldown)
         {
-            replicas = double.TryParse(cooldown, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
-                ? replicas with { FailureCooldown = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"'{section}:FailureCooldownSeconds' must not be negative, but was '{cooldown}'.");
+            replicas = replicas with { FailureCooldown = cooldown };
         }
 
         return replicas;

@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Persistence.Abstractions.DataSources;
@@ -57,21 +57,16 @@ public sealed record DataSourceOptions
     public static DataSourceOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        var section = configuration.GetSection(ConfigurationSection);
         var options = new DataSourceOptions();
-        var count = configuration[$"{ConfigurationSection}:MaxCount"];
-        if (count is not null)
+        if (ConfigurationValues.ReadInt32(section, "MaxCount", 1, MaxCountLimit) is { } count)
         {
-            options = int.TryParse(count, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value is >= 1 and <= MaxCountLimit
-                ? options with { MaxCount = value }
-                : throw new ArgumentException($"'{ConfigurationSection}:MaxCount' must be an integer between 1 and {MaxCountLimit}, but was '{count}'.");
+            options = options with { MaxCount = count };
         }
 
-        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
-        if (probe is not null)
+        if (ConfigurationValues.ReadSeconds(section, "HealthProbeIntervalSeconds") is { } probe)
         {
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0 && !double.IsInfinity(seconds)
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"'{ConfigurationSection}:HealthProbeIntervalSeconds' must be a positive number, but was '{probe}'.");
+            options = options with { HealthProbeInterval = probe };
         }
 
         return options;
