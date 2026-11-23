@@ -70,7 +70,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Listing.BlobQuery` / `BlobPage` | 列举条件（`Prefix`、`PageSize` 1–1000 缺省 1000、`ContinuationToken`）与一页结果；`Validate()` 核对页大小，Provider 在列举开头调用，越界返回 `OBJECTSTORAGE_VALIDATION_005` |
 | `Multipart.IBlobMultipartStore` | `StartAsync`、`UploadPartAsync`、`ListPartsAsync`、`CompleteAsync`、`AbortAsync` |
 | `Multipart.BlobMultipartUpload` | 一次分片上传：容器、键、上传标识、是否覆盖；可持久化后续传 |
-| `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB |
+| `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB；`ValidatePartNumber` 与 `ValidateParts`（完成清单非空、编号严格升序）供 Provider 在访问存储前校验 |
 | `Signing.IBlobUrlSigner` | `SignAsync(container, key, request)` → `BlobSignedUrl` |
 | `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法，保存的文件名最长 `MaxDownloadFileNameLength`（255）、不含控制字符 |
 | `Signing.BlobSignedUrl` | 地址、方法、失效时刻与客户端必须发送的请求头 |

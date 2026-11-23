@@ -6,6 +6,7 @@ using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
+using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
 
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 
@@ -84,6 +85,20 @@ public sealed class FileSystemMultipartLimitTests : IDisposable
         (await store.CompleteAsync(upload, [part], CancellationToken.None)).ValueOrThrow();
 
         Assert.Equal(300 * 1024, store.UsedBytes);
+    }
+
+    [Fact]
+    public async Task Completion_ChecksThePartListItself_BeforeLookingForTheUpload()
+    {
+        // 清单本身不合法时不必看上传在不在：S3 在本地就能判定，文件系统给同一个错误
+        var store = Store();
+        var missing = new BlobMultipartUpload(_container, new BlobKey("never-started"), "no-such-upload") { Overwrite = true };
+
+        Assert.Equal(ObjectStorageErrors.PartsInvalid, (await store.CompleteAsync(missing, [], CancellationToken.None)).Error?.Code);
+        Assert.Equal(ObjectStorageErrors.PartsInvalid, (await store.CompleteAsync(missing, [new BlobPart(2, "a", 1), new BlobPart(1, "b", 1)], CancellationToken.None)).Error?.Code);
+        await Assert.ThrowsAsync<ArgumentException>(async () => await store.CompleteAsync(missing, [null!], CancellationToken.None));
+        // 清单合法才轮到上传不存在
+        Assert.Equal(ObjectStorageErrors.UploadNotFound, (await store.CompleteAsync(missing, [new BlobPart(1, "a", 1)], CancellationToken.None)).Error?.Code);
     }
 
     [Fact]

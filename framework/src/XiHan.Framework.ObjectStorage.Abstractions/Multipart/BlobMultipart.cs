@@ -29,4 +29,35 @@ public static class BlobMultipart
     /// </remarks>
     public static int ValidatePartNumber(int partNumber)
         => partNumber is >= 1 and <= MaxPartNumber ? partNumber : throw new ArgumentOutOfRangeException(nameof(partNumber), partNumber, $"The part number must be between 1 and {MaxPartNumber}.");
+
+    /// <summary>
+    /// 校验完成时的分片清单本身：非空、编号严格升序
+    /// </summary>
+    /// <remarks>
+    /// 只看清单，不碰存储：各 Provider 在访问存储之前先调用它，同一份清单在哪个存储上都给出同一个错误。为空或乱序返回 <see cref="ObjectStorageErrors.PartsInvalid"/>；清单里有 <see langword="null"/> 是编程错误，抛出。分片是否上传、ETag 是否相符、非末片是否过小要看存储，由 Provider 接着判定
+    /// </remarks>
+    /// <param name="parts">完成清单</param>
+    /// <exception cref="ArgumentException">清单里有 <see langword="null"/></exception>
+    public static Result ValidateParts(IReadOnlyList<BlobPart> parts)
+    {
+        ArgumentNullException.ThrowIfNull(parts);
+        if (parts.Count == 0)
+        {
+            return Error.Validation(ObjectStorageErrors.PartsInvalid, ObjectStorageMessages.PartsEmpty);
+        }
+
+        var previous = 0;
+        for (var index = 0; index < parts.Count; index++)
+        {
+            var part = parts[index] ?? throw new ArgumentException("The part list must not contain null.", nameof(parts));
+            if (index > 0 && part.PartNumber <= previous)
+            {
+                return Error.Validation(ObjectStorageErrors.PartsInvalid, ObjectStorageMessages.PartsUnordered, MessageArguments.Of(("part", part.PartNumber)));
+            }
+
+            previous = part.PartNumber;
+        }
+
+        return Result.Success();
+    }
 }

@@ -233,15 +233,15 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
     public async ValueTask<Result<BlobMetadata>> CompleteAsync(BlobMultipartUpload upload, IReadOnlyList<BlobPart> parts, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(upload);
-        ArgumentNullException.ThrowIfNull(parts);
+        // 清单本身先查，再看上传在不在：与 S3 实现同一个函数、同一个先后，同一份清单在哪个存储上都是同一个错误
+        if (BlobMultipart.ValidateParts(parts) is { IsFailure: true } invalid)
+        {
+            return invalid.Error!;
+        }
+
         if (!TryOpen(upload, out var directory, out var manifest))
         {
             return UploadNotFound(upload);
-        }
-
-        if (parts.Count == 0)
-        {
-            return Error.Validation(ObjectStorageErrors.PartsInvalid, ObjectStorageMessages.PartsEmpty);
         }
 
         string? temporary = null;
@@ -253,12 +253,7 @@ internal sealed class FileSystemMultipartUploads(FileSystemBlobStore store, File
             long total = 0;
             for (var index = 0; index < parts.Count; index++)
             {
-                var part = parts[index] ?? throw new ArgumentException("The part list must not contain null.", nameof(parts));
-                if (index > 0 && part.PartNumber <= parts[index - 1].PartNumber)
-                {
-                    return Error.Validation(ObjectStorageErrors.PartsInvalid, ObjectStorageMessages.PartsUnordered, MessageArguments.Of(("part", part.PartNumber)));
-                }
-
+                var part = parts[index];
                 if (!uploaded.TryGetValue(part.PartNumber, out var found) || !string.Equals(found.Part.ETag, part.ETag, StringComparison.OrdinalIgnoreCase))
                 {
                     return Error.Validation(ObjectStorageErrors.PartsInvalid, ObjectStorageMessages.PartUnknown, MessageArguments.Of(("part", part.PartNumber)));

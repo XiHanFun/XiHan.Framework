@@ -57,6 +57,20 @@ public sealed class S3ConditionalWriteTests
     }
 
     [Fact]
+    public async Task Completion_ChecksThePartListLocally_WithTheSharedRules_BeforeAnyRequest()
+    {
+        var fake = FakeS3Client.Create(Bucket);
+        var store = new S3BlobStore(fake.AsClient(), Options(), TimeProvider.System, NullLoggerFactory.Instance);
+        var upload = new BlobMultipartUpload(new ContainerName(Bucket), new BlobKey("b.bin"), "upload") { Overwrite = true };
+
+        Assert.Equal(ObjectStorageMessages.PartsEmpty, (await store.CompleteAsync(upload, [], CancellationToken.None)).Error?.MessageKey);
+        Assert.Equal(ObjectStorageMessages.PartsUnordered, (await store.CompleteAsync(upload, [new BlobPart(2, "a", 1), new BlobPart(1, "b", 1)], CancellationToken.None)).Error?.MessageKey);
+        // 清单里有 null 是编程错误：与文件系统实现一样抛 ArgumentException，原先在这里是 NullReferenceException
+        await Assert.ThrowsAsync<ArgumentException>(async () => await store.CompleteAsync(upload, [new BlobPart(1, "a", 1), null!], CancellationToken.None));
+        Assert.Empty(fake.Requests);
+    }
+
+    [Fact]
     public async Task Probe_PassesOnAServiceThatHonoursConditions_AndKeepsOnlyTheProbeKey()
     {
         var fake = FakeS3Client.Create(Bucket);

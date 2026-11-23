@@ -551,19 +551,10 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
     public async ValueTask<Result<BlobMetadata>> CompleteAsync(BlobMultipartUpload upload, IReadOnlyList<BlobPart> parts, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(upload);
-        ArgumentNullException.ThrowIfNull(parts);
-        if (parts.Count == 0)
+        // 清单本身先在本地查，与文件系统实现同一个函数、同一个错误；分片是否上传、ETag 与最小分片由服务端判定
+        if (BlobMultipart.ValidateParts(parts) is { IsFailure: true } invalid)
         {
-            return Error.Validation(ObjectStorageErrors.PartsInvalid, ObjectStorageMessages.PartsEmpty);
-        }
-
-        // 顺序在本地先查，与文件系统实现给出同一个错误；分片是否上传、ETag 与最小分片由服务端判定
-        for (var index = 1; index < parts.Count; index++)
-        {
-            if (parts[index].PartNumber <= parts[index - 1].PartNumber)
-            {
-                return Error.Validation(ObjectStorageErrors.PartsInvalid, ObjectStorageMessages.PartsUnordered, MessageArguments.Of(("part", parts[index].PartNumber)));
-            }
+            return invalid.Error!;
         }
 
         if (!upload.Overwrite && await _conditionalWrites.RefuseAsync(upload.Container, upload.Key, cancellationToken).ConfigureAwait(false) is { } refused)
