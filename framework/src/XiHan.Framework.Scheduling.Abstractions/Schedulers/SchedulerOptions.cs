@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 
@@ -146,8 +147,10 @@ public sealed record SchedulerOptions
     public static SchedulerOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        // 这里的秒数只核对非负、整数只核对是整数，与改用统一读取之前相同：各键自己的下界（是否允许 0、至少为 1）由属性核对
+        var section = configuration.GetSection(ConfigurationSection);
         var options = new SchedulerOptions();
-        if (Seconds(configuration, "PollIntervalSeconds") is { } poll)
+        if (ConfigurationValues.ReadSeconds(section, "PollIntervalSeconds", allowZero: true) is { } poll)
         {
             options = options with { PollInterval = poll };
         }
@@ -157,17 +160,17 @@ public sealed record SchedulerOptions
             options = options with { NodeId = node };
         }
 
-        if (Integer(configuration, "MaxConcurrentRuns") is { } runs)
+        if (ConfigurationValues.ReadInt32(section, "MaxConcurrentRuns", int.MinValue) is { } runs)
         {
             options = options with { MaxConcurrentRuns = runs };
         }
 
-        if (Integer(configuration, "AcquireBatchSize") is { } batch)
+        if (ConfigurationValues.ReadInt32(section, "AcquireBatchSize", int.MinValue) is { } batch)
         {
             options = options with { AcquireBatchSize = batch };
         }
 
-        if (Seconds(configuration, "MisfireThresholdSeconds") is { } misfire)
+        if (ConfigurationValues.ReadSeconds(section, "MisfireThresholdSeconds", allowZero: true) is { } misfire)
         {
             options = options with { MisfireThreshold = misfire };
         }
@@ -177,17 +180,17 @@ public sealed record SchedulerOptions
             options = options with { LeaseResource = new JobName(resource) };
         }
 
-        if (Seconds(configuration, "LeaseTimeToLiveSeconds") is { } ttl)
+        if (ConfigurationValues.ReadSeconds(section, "LeaseTimeToLiveSeconds", allowZero: true) is { } ttl)
         {
             options = options with { LeaseTimeToLive = ttl };
         }
 
-        if (Seconds(configuration, "NodeTimeoutSeconds") is { } timeout)
+        if (ConfigurationValues.ReadSeconds(section, "NodeTimeoutSeconds", allowZero: true) is { } timeout)
         {
             options = options with { NodeTimeout = timeout };
         }
 
-        if (Seconds(configuration, "HousekeepingIntervalSeconds") is { } housekeeping)
+        if (ConfigurationValues.ReadSeconds(section, "HousekeepingIntervalSeconds", allowZero: true) is { } housekeeping)
         {
             options = options with { HousekeepingInterval = housekeeping };
         }
@@ -200,43 +203,5 @@ public sealed record SchedulerOptions
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读秒数配置
-    /// </summary>
-    /// <remarks>
-    /// 不合法抛出
-    /// </remarks>
-    private static TimeSpan? Seconds(IConfiguration configuration, string key)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{key}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
-            ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"{ConfigurationSection}:{key} must be a non-negative number, but was '{raw}'.");
-    }
-
-    /// <summary>
-    /// 读整数配置
-    /// </summary>
-    /// <remarks>
-    /// 不合法抛出
-    /// </remarks>
-    private static int? Integer(IConfiguration configuration, string key)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{key}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
-            ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{key} must be an integer, but was '{raw}'.");
     }
 }

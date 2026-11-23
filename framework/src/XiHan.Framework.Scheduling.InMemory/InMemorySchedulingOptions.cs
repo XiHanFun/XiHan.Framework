@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Scheduling.InMemory;
@@ -40,12 +40,9 @@ public sealed record InMemorySchedulingOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new InMemorySchedulingOptions();
-        var raw = configuration[$"{ConfigurationSection}:MaxRuns"];
-        if (raw is not null)
+        if (ConfigurationValues.ReadInt32(configuration.GetSection(ConfigurationSection), "MaxRuns", 1) is { } max)
         {
-            options = int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var max) && max >= 1
-                ? options with { MaxRuns = max }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxRuns must be a positive integer, but was '{raw}'.");
+            options = options with { MaxRuns = max };
         }
 
         return options;

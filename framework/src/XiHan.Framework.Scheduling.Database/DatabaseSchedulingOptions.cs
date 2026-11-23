@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Scheduling.Database;
@@ -40,12 +40,9 @@ public sealed record DatabaseSchedulingOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new DatabaseSchedulingOptions();
-        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
-        if (probe is not null)
+        if (ConfigurationValues.ReadSeconds(configuration.GetSection(ConfigurationSection), "HealthProbeIntervalSeconds") is { } probe)
         {
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
+            options = options with { HealthProbeInterval = probe };
         }
 
         return options;
