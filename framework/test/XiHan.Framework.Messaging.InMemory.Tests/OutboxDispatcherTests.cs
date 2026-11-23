@@ -12,6 +12,7 @@ using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
+using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Persistence.InMemory;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -165,6 +166,45 @@ public sealed class OutboxDispatcherTests
         var entries = logs.Entries.Where(static e => e.Category == typeof(OutboxDispatcher).FullName).ToList();
         Assert.Equal(3, entries.Count(static e => e.Level == LogLevel.Warning && e.Message.Contains("threw", StringComparison.Ordinal)));
         Assert.Single(entries, static e => e.Level == LogLevel.Error && e.Message.Contains("dead-lettered", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task StorageFailure_WhoseRollbackAndDisposeAlsoThrow_SurfacesTheOriginalException()
+    {
+        // 数据库断开：读发件箱抛出，回滚再抛，释放作用域时 Provider 还会再回滚一次、再抛一次
+        var failure = new TimeoutException("The outbox table cannot be read.");
+        var unitOfWork = new ScriptedUnitOfWork { RollbackFailure = new InvalidOperationException("The connection is closed."), DisposeFailure = new InvalidOperationException("The connection is closed.") };
+        await using var services = new ServiceCollection()
+            .AddScoped<IUnitOfWork>(_ => unitOfWork)
+            .AddScoped<IRepository<OutboxMessage, Guid>>(_ => new ScriptedRepository<OutboxMessage, Guid> { Failure = failure })
+            .BuildServiceProvider();
+        using var logs = new LogCapture();
+        var dispatcher = new OutboxDispatcher(services, new ScriptedBroker(), new OutboxOptions(), new FakeTimeProvider(_start), logs);
+
+        // 修复前抛出的是回滚的 InvalidOperationException，日志里看不到是哪一步先坏的
+        var thrown = await Assert.ThrowsAsync<TimeoutException>(() => dispatcher.RunOnceAsync(CancellationToken.None));
+
+        Assert.Same(failure, thrown);
+        Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
+        // 回滚与释放的失败各记一条警告，记在投递循环自己的类别下
+        Assert.Equal(2, logs.Entries.Count(static e => e.Category == typeof(OutboxDispatcher).FullName && e.Level == LogLevel.Warning));
+    }
+
+    [Fact]
+    public async Task FailedCommit_IsThrownAsAStorageFailure_WithItsErrorCode()
+    {
+        var conflict = Error.Literal("PERSISTENCE_CONFLICT_001", "Concurrency conflict.");
+        var unitOfWork = new ScriptedUnitOfWork { CommitResult = conflict };
+        await using var services = new ServiceCollection()
+            .AddScoped<IUnitOfWork>(_ => unitOfWork)
+            .AddScoped<IRepository<OutboxMessage, Guid>>(_ => new ScriptedRepository<OutboxMessage, Guid>())
+            .BuildServiceProvider();
+        var dispatcher = new OutboxDispatcher(services, new ScriptedBroker(), new OutboxOptions(), new FakeTimeProvider(_start), NullLoggerFactory.Instance);
+
+        var thrown = await Assert.ThrowsAsync<FrameworkException>(() => dispatcher.RunOnceAsync(CancellationToken.None));
+
+        Assert.Equal("PERSISTENCE_CONFLICT_001", thrown.Code);
+        Assert.Equal(["begin", "commit", "dispose"], unitOfWork.Calls);
     }
 
     [Fact]

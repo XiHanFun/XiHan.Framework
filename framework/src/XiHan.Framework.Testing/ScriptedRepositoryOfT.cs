@@ -6,7 +6,7 @@ using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Security.Database.Tests.Fixtures;
+namespace XiHan.Framework.Testing;
 
 /// <summary>
 /// 按脚本返回或抛出的仓储替身
@@ -14,7 +14,10 @@ namespace XiHan.Framework.Security.Database.Tests.Fixtures;
 /// <remarks>
 /// 每个操作先看取消令牌；预设了 <see cref="Failure"/> 时都抛出它，模拟驱动在读写时失败；否则查找返回 <see cref="Found"/>，写入返回 <see cref="WriteResult"/>
 /// </remarks>
-internal sealed class ScriptedRepository<TEntity, TKey> : IRepository<TEntity, TKey>
+/// <typeparam name="TEntity">实体类型</typeparam>
+/// <typeparam name="TKey">标识类型</typeparam>
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed class ScriptedRepository<TEntity, TKey> : IRepository<TEntity, TKey>
     where TEntity : class, IEntity<TKey>
     where TKey : notnull, IEquatable<TKey>
 {

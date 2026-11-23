@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Persistence.Abstractions.Tests;
 
@@ -413,6 +414,81 @@ public sealed class UnitOfWorkScopeTests : IDisposable
     }
 
     [Fact]
+    public async Task Prepare_RunsOnTheNewScope_BeforeTheUnitOfWorkIsResolved()
+    {
+        var unitOfWork = new ScriptedUnitOfWork();
+        var order = new List<string>();
+        await using var root = new ServiceCollection()
+            .AddScoped<IUnitOfWork>(_ =>
+            {
+                order.Add("resolve");
+                return unitOfWork;
+            })
+            .BuildServiceProvider();
+        IServiceProvider? prepared = null;
+        IServiceProvider? seen = null;
+
+        var result = await UnitOfWorkScope.RunAsync(
+            root,
+            services =>
+            {
+                order.Add("prepare");
+                prepared = services;
+            },
+            UnitOfWorkOptions.Default,
+            (services, _) =>
+            {
+                order.Add("body");
+                seen = services;
+                return ValueTask.FromResult(Result.Success(7));
+            },
+            Logger(),
+            CancellationToken.None);
+
+        Assert.Equal(7, result.ValueOrThrow());
+        Assert.Equal(["prepare", "resolve", "body"], order);
+        // 准备与动作拿到的是同一个新作用域
+        Assert.NotSame(root, prepared);
+        Assert.Same(prepared, seen);
+        Assert.Equal(["begin", "commit", "dispose"], unitOfWork.Calls);
+    }
+
+    [Fact]
+    public async Task ThrowingPrepare_IsAnAssemblyError_AndTheUnitOfWorkIsNeverResolved()
+    {
+        var resolved = false;
+        await using var root = new ServiceCollection()
+            .AddScoped<IUnitOfWork>(_ =>
+            {
+                resolved = true;
+                return new ScriptedUnitOfWork();
+            })
+            .BuildServiceProvider();
+        var failure = new InvalidOperationException("The scope is already bound to a shard.");
+
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(async () => await UnitOfWorkScope.RunAsync(root, _ => throw failure, UnitOfWorkOptions.Default, static (_, _) => ValueTask.FromResult(Result.Success(1)), Logger(), CancellationToken.None));
+
+        Assert.Same(failure, thrown);
+        Assert.False(resolved);
+        Assert.Empty(_logs.Entries);
+    }
+
+    [Fact]
+    public async Task PreparedRun_FollowsTheSameClosingRules()
+    {
+        // 回滚与释放都抛出：带准备的重载走的是同一份收尾，抛出的仍是原异常
+        var unitOfWork = new ScriptedUnitOfWork { RollbackFailure = new InvalidOperationException("The connection is closed."), DisposeFailure = new InvalidOperationException("The connection is closed.") };
+        await using var root = Root(unitOfWork);
+        var failure = new TimeoutException(Secret);
+
+        var thrown = await Assert.ThrowsAsync<TimeoutException>(async () => await UnitOfWorkScope.RunAsync<int>(root, static _ => { }, UnitOfWorkOptions.Default, (_, _) => throw failure, Logger(), CancellationToken.None));
+
+        Assert.Same(failure, thrown);
+        Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
+        Assert.Equal(2, _logs.Entries.Count(static e => e.Level == LogLevel.Warning));
+    }
+
+    [Fact]
     public async Task OverloadsWithoutAValue_FollowTheSameRules()
     {
         var committed = new ScriptedUnitOfWork();
@@ -462,6 +538,8 @@ public sealed class UnitOfWorkScopeTests : IDisposable
         await RejectsAsync("body", async () => await UnitOfWorkScope.RunAsync<int>(root, UnitOfWorkOptions.Default, null!, logger, CancellationToken.None));
         await RejectsAsync("logger", async () => await UnitOfWorkScope.RunAsync(root, UnitOfWorkOptions.Default, body, null!, CancellationToken.None));
         await RejectsAsync("fault", async () => await UnitOfWorkScope.RunAsync(root, UnitOfWorkOptions.Default, body, null!, logger, CancellationToken.None));
+        await RejectsAsync("prepare", async () => await UnitOfWorkScope.RunAsync(root, (Action<IServiceProvider>)null!, UnitOfWorkOptions.Default, body, logger, CancellationToken.None));
+        await RejectsAsync("body", async () => await UnitOfWorkScope.RunAsync<int>(root, static _ => { }, UnitOfWorkOptions.Default, null!, logger, CancellationToken.None));
         await RejectsAsync("root", async () => await UnitOfWorkScope.RunAsync(null!, UnitOfWorkOptions.Default, plain, logger, CancellationToken.None));
         await RejectsAsync("fault", async () => await UnitOfWorkScope.RunAsync(root, UnitOfWorkOptions.Default, plain, null!, logger, CancellationToken.None));
         await RejectsAsync("logger", async () => await UnitOfWorkScope.RunAsync(root, UnitOfWorkOptions.Default, plain, fault, null!, CancellationToken.None));

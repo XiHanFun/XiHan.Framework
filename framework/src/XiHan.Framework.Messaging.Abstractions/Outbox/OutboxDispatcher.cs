@@ -111,44 +111,39 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     /// 在一个库上投递一轮
     /// </summary>
     /// <remarks>
-    /// <paramref name="shard"/> 为空是默认库；否则在新作用域里先绑定这个分片、再取工作单元与仓储，工作单元的租户是分片的租户
+    /// <paramref name="shard"/> 为空是默认库；否则在新作用域里先绑定这个分片、再取工作单元与仓储，工作单元的租户是分片的租户。开作用域、提交与回滚走 <see cref="UnitOfWorkScope"/>：回滚与释放作用域自身的失败只记日志，抛出的仍是让这一轮回滚的那个异常（ADR-0259）
     /// </remarks>
     private async Task<int> RunOnDatabaseAsync(TenantShard? shard, CancellationToken cancellationToken)
     {
-        await using var scope = _services.CreateAsyncScope();
-        if (shard is not null)
-        {
-            // 先绑定再取工作单元：持久化客户端在首次取用时按绑定建连接，建出之后不能再绑定
-            scope.ServiceProvider.GetRequiredService<TenantShardScope>().Bind(shard);
-        }
-
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var outbox = scope.ServiceProvider.GetRequiredService<IRepository<OutboxMessage, Guid>>();
         // 一轮一个工作单元，只覆盖发件箱行的状态写回与保留期清理：代理不在事务里，发出去的收不回来
         // 所以代理抛出不回滚（DispatchAsync 把它记成这些消息的失败，照常提交）；只有取消与存储失败整轮回滚
-        await unitOfWork.BeginAsync(shard is null ? UnitOfWorkOptions.Default : UnitOfWorkOptions.Default with { TenantId = shard.TenantId }, cancellationToken).ConfigureAwait(false);
-
-        try
-        {
-            var now = _timeProvider.GetUtcNow();
-            // 只取到期的：退避中的与死信的不占批次，永久失败的消息不会挡住后面的消息
-            var due = new Specification<OutboxMessage>(m => m.DispatchedAt == null && m.DeadLetteredAt == null && (m.NextAttemptAt == null || m.NextAttemptAt <= now));
-            var pending = await outbox.ListAsync(EntityQuery.All<OutboxMessage>().Where(due).OrderBy(static m => m.CreatedAt).Page(0, _options.BatchSize), cancellationToken).ConfigureAwait(false);
-            var dispatched = pending.Count == 0 ? 0 : await DispatchAsync(pending, outbox, now, cancellationToken).ConfigureAwait(false);
-            await PurgeAsync(outbox, now, cancellationToken).ConfigureAwait(false);
-            (await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false)).ThrowIfFailure();
-            return dispatched;
-        }
-        catch
-        {
-            // 只在工作单元仍活动时回滚；用 None 令牌保证取消引发的异常也能完成回滚
-            if (unitOfWork.State == UnitOfWorkState.Active)
+        var result = await UnitOfWorkScope.RunAsync(
+            _services,
+            scope =>
             {
-                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-            }
+                if (shard is not null)
+                {
+                    // 先绑定再取工作单元：持久化客户端在首次取用时按绑定建连接，建出之后不能再绑定
+                    scope.GetRequiredService<TenantShardScope>().Bind(shard);
+                }
+            },
+            shard is null ? UnitOfWorkOptions.Default : UnitOfWorkOptions.Default with { TenantId = shard.TenantId },
+            async (scope, ct) =>
+            {
+                var outbox = scope.GetRequiredService<IRepository<OutboxMessage, Guid>>();
+                var now = _timeProvider.GetUtcNow();
+                // 只取到期的：退避中的与死信的不占批次，永久失败的消息不会挡住后面的消息
+                var due = new Specification<OutboxMessage>(m => m.DispatchedAt == null && m.DeadLetteredAt == null && (m.NextAttemptAt == null || m.NextAttemptAt <= now));
+                var pending = await outbox.ListAsync(EntityQuery.All<OutboxMessage>().Where(due).OrderBy(static m => m.CreatedAt).Page(0, _options.BatchSize), ct).ConfigureAwait(false);
+                var dispatched = pending.Count == 0 ? 0 : await DispatchAsync(pending, outbox, now, ct).ConfigureAwait(false);
+                await PurgeAsync(outbox, now, ct).ConfigureAwait(false);
+                return Result.Success(dispatched);
+            },
+            _logger,
+            cancellationToken).ConfigureAwait(false);
 
-            throw;
-        }
+        // 提交返回的失败按存储失败抛出：这一轮已经回滚，RunOnceAsync 记下它、照常轮其余的库
+        return result.ValueOrThrow();
     }
 
     /// <summary>

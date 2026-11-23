@@ -13,6 +13,7 @@ using XiHan.Framework.Scheduling.Abstractions;
 using XiHan.Framework.Scheduling.Database.Entities;
 using XiHan.Framework.Scheduling.Database.Leadership;
 using XiHan.Framework.Scheduling.Database.Storage;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Database.Tests;
 

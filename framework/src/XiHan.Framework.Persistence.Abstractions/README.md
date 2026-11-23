@@ -64,7 +64,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 * `IRepository<TEntity, TKey>`：查找、查询、计数、新增、更新、删除及批量版本
 * `EntityQuery<T>`：过滤、排序、分页
 * `IUnitOfWork`：事务边界与当前租户
-* `UnitOfWorkScope`：管道之外（单例存储、后台循环、健康探针）在新作用域里开工作单元执行，成功提交、失败或抛出回滚
+* `UnitOfWorkScope`：管道之外（单例存储、后台循环、健康探针）在新作用域里开工作单元执行，成功提交、失败或抛出回滚；取工作单元之前要绑定租户分片时用带 `prepare` 的重载
 * `EntityIndexAttribute`：声明索引
 * `IIdGenerator<TKey>`、`SnowflakeIdFeature`：标识生成与雪花标识
 

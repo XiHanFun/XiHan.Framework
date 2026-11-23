@@ -7,6 +7,7 @@ using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Database.Entities;
 using XiHan.Framework.Workflow.Database.Locking;

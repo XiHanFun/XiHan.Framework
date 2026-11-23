@@ -11,6 +11,7 @@
 * 不依赖宿主就能构造调用上下文
 * 内存里的通行密钥认证器，按 WebAuthn 格式生成可篡改的响应
 * `FaultyCache`：可以随时切换成「缓存后端不可达」的 `ICache` 包装，测组件在缓存故障时的行为
+* `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`：按脚本在开始、读写、提交、回滚、释放上失败的替身，测自己开工作单元的代码在数据库故障时怎样收尾
 
 ## 如何使用
 
@@ -49,6 +50,18 @@ cache.Failing = true;
 
 几个宿主登记同一个实例时共用一份缓存，可以模拟多实例共用的缓存后端。
 
+管道外自己开工作单元的代码（单例存储、后台循环）用两个替身测收尾：数据库断开时读取抛出、回滚再抛，结果不该被回滚的异常盖掉。
+
+```csharp
+var unitOfWork = new ScriptedUnitOfWork { RollbackFailure = new InvalidOperationException("The connection is closed.") };
+await using var services = new ServiceCollection()
+    .AddScoped<IUnitOfWork>(_ => unitOfWork)
+    .AddScoped<IRepository<Order, Guid>>(_ => new ScriptedRepository<Order, Guid> { Failure = new TimeoutException() })
+    .BuildServiceProvider();
+
+// 跑被测代码之后：unitOfWork.Calls 是 ["begin", "rollback", "dispose"]
+```
+
 ## 主要类型
 
 此库提供的主要类型：
@@ -59,6 +72,8 @@ cache.Failing = true;
 * `TestInvocationContext`：不依赖宿主的调用上下文
 * `WebAuthnTestAuthenticator`：测试用的通行密钥认证器，生成注册与认证响应
 * `FaultyCache`：可切换成缓存后端不可达的 `ICache` 包装
+* `ScriptedUnitOfWork`：按脚本失败并记录调用顺序的工作单元替身
+* `ScriptedRepository<TEntity, TKey>`：按脚本返回或抛出的仓储替身
 
 ## 更多文档
 

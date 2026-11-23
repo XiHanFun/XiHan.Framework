@@ -4,15 +4,16 @@
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 
-namespace XiHan.Framework.Workflow.Database.Tests;
+namespace XiHan.Framework.Testing;
 
 /// <summary>
 /// 按脚本失败并记录调用顺序的工作单元替身
 /// </summary>
 /// <remarks>
-/// 开始、提交、回滚与释放各自可以预设抛出的异常，提交还可以预设返回的结果；用于验证管道外的外壳在每一种失败下的收尾
+/// 开始、提交、回滚与释放各自可以预设抛出的异常，提交还可以预设返回的结果；用于验证自己开工作单元的代码（管道外的单例存储、后台循环）在每一种失败下的收尾。登记成作用域服务，释放作用域时一并释放；不写入、不派发领域事件
 /// </remarks>
-internal sealed class ScriptedUnitOfWork : IUnitOfWork, IAsyncDisposable
+[ApiLevel(Stability.Preview, "5.0")]
+public sealed class ScriptedUnitOfWork : IUnitOfWork, IAsyncDisposable
 {
     /// <summary>
     /// 按发生顺序记录的调用名：begin、commit、rollback、dispose

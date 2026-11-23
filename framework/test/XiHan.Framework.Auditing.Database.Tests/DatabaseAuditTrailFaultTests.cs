@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Auditing.Abstractions;
 using XiHan.Framework.Auditing.Abstractions.Trail;
-using XiHan.Framework.Auditing.Database.Tests.Fixtures;
 using XiHan.Framework.Auditing.Database.Trail;
 using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Persistence.Abstractions;
@@ -13,6 +12,7 @@ using XiHan.Framework.Persistence.Abstractions.Identifiers;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Auditing.Database.Tests;
 

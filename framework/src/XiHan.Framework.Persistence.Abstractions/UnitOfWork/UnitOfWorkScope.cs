@@ -43,7 +43,30 @@ public static partial class UnitOfWorkScope
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(logger);
-        return RunCoreAsync(root, options, body, null, logger, cancellationToken);
+        return RunCoreAsync(root, null, options, body, null, logger, cancellationToken);
+    }
+
+    /// <summary>
+    /// 先对新作用域做准备、再在它的工作单元里执行并取回值，异常回滚后原样抛出
+    /// </summary>
+    /// <remarks>
+    /// 持久化客户端在作用域里首次取用时建出，此后不能再改它连哪个库：绑定租户分片（<c>TenantShardScope.Bind</c>）这类准备只能在取工作单元之前做。<paramref name="prepare"/> 抛出与容器里没有工作单元一样是装配错误：工作单元还没取，没有可回滚的，原样抛出，作用域照常释放
+    /// </remarks>
+    /// <param name="root">服务提供者，每次调用在它上面开新作用域</param>
+    /// <param name="prepare">在新作用域上、取工作单元之前执行的准备，参数是新作用域的服务提供者</param>
+    /// <param name="options">开始工作单元的选项</param>
+    /// <param name="body">在活动的工作单元里执行的动作，参数是新作用域的服务提供者</param>
+    /// <param name="logger">记录回滚与释放作用域失败的日志</param>
+    /// <param name="cancellationToken">取消令牌，传给开始、动作与提交</param>
+    /// <returns>动作的结果，或提交返回的失败</returns>
+    public static ValueTask<Result<T>> RunAsync<T>(IServiceProvider root, Action<IServiceProvider> prepare, UnitOfWorkOptions options, Func<IServiceProvider, CancellationToken, ValueTask<Result<T>>> body, ILogger logger, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(prepare);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(body);
+        ArgumentNullException.ThrowIfNull(logger);
+        return RunCoreAsync(root, prepare, options, body, null, logger, cancellationToken);
     }
 
     /// <summary>
@@ -81,7 +104,7 @@ public static partial class UnitOfWorkScope
         ArgumentNullException.ThrowIfNull(body);
         ArgumentNullException.ThrowIfNull(fault);
         ArgumentNullException.ThrowIfNull(logger);
-        return RunCoreAsync(root, options, body, fault, logger, cancellationToken);
+        return RunCoreAsync(root, null, options, body, fault, logger, cancellationToken);
     }
 
     /// <summary>
@@ -114,6 +137,7 @@ public static partial class UnitOfWorkScope
     {
         var result = await RunCoreAsync(
             root,
+            null,
             options,
             async (services, ct) =>
             {
@@ -130,15 +154,18 @@ public static partial class UnitOfWorkScope
     /// 开作用域、执行、释放作用域
     /// </summary>
     /// <remarks>
-    /// <paramref name="fault"/> 为 <see langword="null"/> 时异常原样抛出
+    /// <paramref name="prepare"/> 为 <see langword="null"/> 时不做准备；<paramref name="fault"/> 为 <see langword="null"/> 时异常原样抛出
     /// </remarks>
-    private static async ValueTask<Result<T>> RunCoreAsync<T>(IServiceProvider root, UnitOfWorkOptions options, Func<IServiceProvider, CancellationToken, ValueTask<Result<T>>> body, Func<Exception, Error>? fault, ILogger logger, CancellationToken cancellationToken)
+    private static async ValueTask<Result<T>> RunCoreAsync<T>(IServiceProvider root, Action<IServiceProvider>? prepare, UnitOfWorkOptions options, Func<IServiceProvider, CancellationToken, ValueTask<Result<T>>> body, Func<Exception, Error>? fault, ILogger logger, CancellationToken cancellationToken)
     {
         var scope = root.CreateAsyncScope();
         Result<T> result;
         try
         {
-            // 解析放在守卫之外：容器里没有工作单元是装配错误，不归为存储故障，不交给 fault
+            // 准备在取工作单元之前：持久化客户端首次取用时按作用域此刻的绑定建出，之后改不了
+            prepare?.Invoke(scope.ServiceProvider);
+
+            // 准备与解析都在守卫之外：准备抛出、容器里没有工作单元是装配错误，不归为存储故障，不交给 fault
             var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
             result = await RunInScopeAsync(scope.ServiceProvider, unitOfWork, options, body, fault, logger, cancellationToken).ConfigureAwait(false);
         }
