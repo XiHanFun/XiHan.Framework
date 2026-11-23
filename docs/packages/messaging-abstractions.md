@@ -28,7 +28,7 @@
 
 - 特性发布或订阅消息：引用本包，在清单里声明 `messaging.queue@1`；运行时用 [Messaging.InMemory](./messaging-inmemory)（随 `Profiles.Standard` 装配）、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka) 或 [Messaging.Redis](./messaging-redis)。
 - 需要事件与业务数据同事务：再装配本包的 `OutboxFeature`。
-- 写新的代理 Provider：实现 `IMessageBroker`，复用 `MessagingRegistration` 与 `MessagingRuntime`，并通过 [Messaging.Conformance](./conformance) 的 `MessageBrokerConformance`（流 Provider 还有 `MessageStreamConformance`）。
+- 写新的代理 Provider：实现 `IMessageBroker`，复用 `MessagingRegistration` 与 `MessagingRuntime`，收到消息后用 `MessageDeliveryAttempt.RunAsync` 投递一次、按结论的 `Disposition` 做自己的确认、重投与死信，并通过 [Messaging.Conformance](./conformance) 的 `MessageBrokerConformance`（流 Provider 还有 `MessageStreamConformance`）。
 
 ## 安装与启用
 
@@ -82,6 +82,8 @@ builder.AddXiHan(xihan => xihan
 | `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约；一次投递的主题、信封、尝试号与订阅方式（`Mode`）；代理调用的派发委托 |
 | `MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按（主题，方式）分组的订阅表（`All`、`Topics`、`HandlersFor(topic, mode)`、`Add(topic, handlerType, mode)`）；一个订阅；订阅方式 `Competing` / `Broadcast` |
 | `MessageDispatcher` | 把投递变成一次内核调用，`FindDelivery(context)` 取当前投递 |
+| `MessageDeliveryAttempt` | 代理一侧的一次投递尝试：`RunAsync(dispatch, delivery, options, app, logger, ct)` 等应用进入服务状态、派发一次并给出结论；`Exhausted(delivery, error, logger)` 给出用完尝试次数的结论（竞争进死信、广播丢弃）并记日志 |
+| `MessageDeliveryOutcome`、`DeliveryDisposition` | 结论与了结方式：`Complete`（确认）、`Retry`（以下一次尝试号重投）、`DeadLetter`（竞争订阅用完次数）、`Discard`（广播订阅用完次数）、`Abandon`（被停止打断，不了结、不算失败，也是 `default`） |
 | `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
 | `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](/messaging/pubsub)）；Provider 共用的装配；启停消费 |
 | `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避与保留期，`RetryDelayAfter(attempts)`） |
@@ -116,6 +118,7 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 ## 行为与限制
 
 - 处理器返回失败或抛出异常都算投递失败；同一主题、同一方式的多个处理器按订阅顺序执行，第一个失败即为结果；同一处理器类型以同一方式重复订阅同一主题只记一次。没有处理器的订阅直接成功。竞争订阅失败到上限进死信，广播订阅丢弃。
+- 被代理的停止信号打断的投递不算一次失败（ADR-0261）：不计尝试、不重试、不进死信，原消息留给代理重新投递；取消只认停止信号，处理器自己的超时照常是一次失败。原位重试的代理（Kafka、Redis）每次尝试前都等应用进入服务状态，排空期间不接着重试。派发抛出的异常记为 `MESSAGING_UNEXPECTED_001`，`reason` 是异常类型全名（框架异常是它的错误码），完整异常记一条 Warning。
 - 派发不写幂等键，重试必须重新执行处理器；去重由处理器按 `Id` + `Source` 自理。
 - 派发器按 `EnvelopeExtensions.BaggageMappings` 把 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 放进 Baggage，`traceparent` 成为追踪 ID、父跨度与采样标志（上游「不采样」原样保留）；幂等键不进入消息。
 - `DirectPublisher` 与 `OutboxPublisher` 在调用内发布时从当前调用补齐缺失的扩展：`traceparent` 取当前追踪与采样标志（与调用同一 trace 的当前 Activity 优先），租户与主体先看安全上下文再看 Baggage，关联与区域取 Baggage；信封已有的扩展不变，不在调用内时不补。

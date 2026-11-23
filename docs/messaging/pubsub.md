@@ -217,6 +217,8 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 
 处理器返回失败或抛出异常都算投递失败。代理重试到 `XiHan:Messaging:MaxAttempts`（缺省 3，含首次），竞争订阅仍失败就进死信，广播订阅丢弃并记日志；重试之间不等待。内存代理把失败的消息以下一次尝试号重新入队到队尾，死信进该主题的有界列表 `DeadLetters(topic)`；RabbitMQ、Kafka 与 Redis 的重试与死信队列、死信主题、死信流见[队列与流](/messaging/streams)。
 
+应用停止时被取消的处理器不算一次失败：这条消息不计尝试、不进死信，留给代理在下次启动或由别的实例重新投递。
+
 ::: warning 处理器必须能承受重复投递
 投递是至少一次：重试、重放、代理重投与发件箱的崩溃恢复都会让同一条消息再到达处理器。派发不经过幂等键，去重由处理器自理：按信封的 `Id` + `Source` 记录已处理的消息，或把处理逻辑写成天然幂等的（按主键 upsert、状态机转移）。
 :::
