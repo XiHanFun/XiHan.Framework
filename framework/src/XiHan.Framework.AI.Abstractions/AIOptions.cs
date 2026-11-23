@@ -1,12 +1,12 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.AI.Abstractions.Guardrails;
 using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.AI.Abstractions.Prompts;
 using XiHan.Framework.AI.Abstractions.Providers;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.Abstractions;
@@ -147,12 +147,12 @@ public sealed record AIOptions
             ApiKey = section["ApiKey"],
             ChatModel = section["ChatModel"],
             EmbeddingModel = section["EmbeddingModel"],
-            EmbeddingDimensions = ReadInt(section, "EmbeddingDimensions", minimum: 1),
+            EmbeddingDimensions = ConfigurationValues.ReadInt32(section, "EmbeddingDimensions", 1),
             Properties = properties,
         };
-        if (ReadPositiveNumber(section, "TimeoutSeconds") is { } seconds)
+        if (ConfigurationValues.ReadSeconds(section, "TimeoutSeconds") is { } timeout)
         {
-            options = options with { Timeout = TimeSpan.FromSeconds(seconds) };
+            options = options with { Timeout = timeout };
         }
 
         return options;
@@ -163,10 +163,10 @@ public sealed record AIOptions
     /// </summary>
     private static AIGuardrailOptions ReadGuardrails(IConfigurationSection section) => new()
     {
-        Enabled = ReadBool(section, "Enabled") ?? false,
+        Enabled = ConfigurationValues.ReadBoolean(section, "Enabled") ?? false,
         BlockedKeywords = ReadList(section.GetSection("BlockedKeywords")),
         InjectionPatterns = ReadList(section.GetSection("InjectionPatterns")),
-        UseBuiltInInjectionHeuristics = ReadBool(section, "UseBuiltInInjectionHeuristics") ?? true,
+        UseBuiltInInjectionHeuristics = ConfigurationValues.ReadBoolean(section, "UseBuiltInInjectionHeuristics") ?? true,
     };
 
     /// <summary>
@@ -180,82 +180,28 @@ public sealed record AIOptions
             options = options with { Collection = collection };
         }
 
-        if (ReadInt(section, "Dimensions", minimum: 1) is { } dimensions)
+        if (ConfigurationValues.ReadInt32(section, "Dimensions", 1) is { } dimensions)
         {
             options = options with { Dimensions = dimensions };
         }
 
-        if (ReadInt(section, "ChunkSize", minimum: 1) is { } size)
+        if (ConfigurationValues.ReadInt32(section, "ChunkSize", 1) is { } size)
         {
             options = options with { ChunkSize = size };
         }
 
-        if (ReadInt(section, "ChunkOverlap", minimum: 0) is { } overlap)
+        if (ConfigurationValues.ReadInt32(section, "ChunkOverlap", 0) is { } overlap)
         {
             options = options with { ChunkOverlap = overlap };
         }
 
-        if (ReadInt(section, "Top", minimum: 1) is { } top)
+        // 上界与属性一致：留给属性去拒绝的话，消息里没有配置键
+        if (ConfigurationValues.ReadInt32(section, "Top", 1, KnowledgeSearch.MaxTop) is { } top)
         {
             options = options with { Top = top };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取整数键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是整数或小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static int? ReadInt(IConfigurationSection section, string key, int minimum)
-    {
-        var raw = section[key];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= minimum
-            ? value
-            : throw new ArgumentException($"'{section.Path}:{key}' must be an integer of at least {minimum}, but the value is '{raw}'.", nameof(section));
-    }
-
-    /// <summary>
-    /// 读取正数键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是有限的正数抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static double? ReadPositiveNumber(IConfigurationSection section, string key)
-    {
-        var raw = section[key];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && double.IsFinite(value) && value > 0
-            ? value
-            : throw new ArgumentException($"'{section.Path}:{key}' must be a positive number, but the value is '{raw}'.", nameof(section));
-    }
-
-    /// <summary>
-    /// 读取布尔键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是 <c>true</c> / <c>false</c> 抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static bool? ReadBool(IConfigurationSection section, string key)
-    {
-        var raw = section[key];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return bool.TryParse(raw, out var value) ? value : throw new ArgumentException($"'{section.Path}:{key}' must be 'true' or 'false', but the value is '{raw}'.", nameof(section));
     }
 
     /// <summary>

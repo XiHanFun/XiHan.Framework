@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.AI.VectorData;
@@ -37,21 +37,14 @@ public sealed record VectorDataKnowledgeOptions
     /// 从配置读取：<c>HealthProbeIntervalSeconds</c>
     /// </summary>
     /// <remarks>
-    /// 值不是有限的正数时抛出 <see cref="ArgumentException"/>（启动失败），不按缺省处理
+    /// 值不是有限的正数或超出 <see cref="TimeSpan"/> 的范围时抛出 <see cref="ArgumentException"/>（启动失败），不按缺省处理
     /// </remarks>
     public static VectorDataKnowledgeOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new VectorDataKnowledgeOptions();
-        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
-        if (probe is not null)
-        {
-            // 无穷大也拒绝：TimeSpan 装不下，写错了就该在启动时说清楚
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && double.IsFinite(seconds) && seconds > 0
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"'{ConfigurationSection}:HealthProbeIntervalSeconds' must be a finite positive number, but was '{probe}'.", nameof(configuration));
-        }
-
-        return options;
+        return ConfigurationValues.ReadSeconds(configuration.GetSection(ConfigurationSection), "HealthProbeIntervalSeconds") is { } interval
+            ? options with { HealthProbeInterval = interval }
+            : options;
     }
 }

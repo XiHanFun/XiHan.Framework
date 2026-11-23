@@ -90,12 +90,17 @@ public sealed class AIOptionsTests
     [InlineData("XiHan:AI:Providers:cloud:EmbeddingDimensions", "0", "XiHan:AI:Providers:cloud:EmbeddingDimensions")]
     [InlineData("XiHan:AI:Providers:cloud:TimeoutSeconds", "5m", "XiHan:AI:Providers:cloud:TimeoutSeconds")]
     [InlineData("XiHan:AI:Providers:cloud:TimeoutSeconds", "-1", "XiHan:AI:Providers:cloud:TimeoutSeconds")]
+    // 有限但装不进 TimeSpan 的秒数：带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+    [InlineData("XiHan:AI:Providers:cloud:TimeoutSeconds", "1e300", "XiHan:AI:Providers:cloud:TimeoutSeconds")]
+    [InlineData("XiHan:AI:Providers:cloud:TimeoutSeconds", "Infinity", "XiHan:AI:Providers:cloud:TimeoutSeconds")]
     [InlineData("XiHan:AI:Guardrails:Enabled", "yes", "XiHan:AI:Guardrails:Enabled")]
     [InlineData("XiHan:AI:Guardrails:UseBuiltInInjectionHeuristics", "off", "XiHan:AI:Guardrails:UseBuiltInInjectionHeuristics")]
     [InlineData("XiHan:AI:Knowledge:Dimensions", "1,536", "XiHan:AI:Knowledge:Dimensions")]
     [InlineData("XiHan:AI:Knowledge:ChunkSize", "0", "XiHan:AI:Knowledge:ChunkSize")]
     [InlineData("XiHan:AI:Knowledge:ChunkOverlap", "-5", "XiHan:AI:Knowledge:ChunkOverlap")]
     [InlineData("XiHan:AI:Knowledge:Top", "three", "XiHan:AI:Knowledge:Top")]
+    // 超过 KnowledgeSearch.MaxTop：在读配置处拒绝并带上配置键，原先落到属性里才被拒绝
+    [InlineData("XiHan:AI:Knowledge:Top", "1001", "XiHan:AI:Knowledge:Top")]
     [InlineData("XiHan:AI:Prompts:rag:Description", "no template", "XiHan:AI:Prompts:rag:Template")]
     public void InvalidValues_Throw_InsteadOfFallingBackToDefaults(string key, string value, string reported)
     {
