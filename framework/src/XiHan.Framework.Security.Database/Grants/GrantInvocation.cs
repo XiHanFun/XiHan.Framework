@@ -14,7 +14,7 @@ namespace XiHan.Framework.Security.Database.Grants;
 /// 单例授予存储读数据库的方式
 /// </summary>
 /// <remarks>
-/// 在根提供者的新作用域里直接开一个只读工作单元，取仓储读完即提交。不经 <c>App.InvokeAsync</c> 再走一遍管道：授予是在 Authorize 阶段被查询的，嵌套调用会再次经过 Tenant / Authorize 阶段（要求租户时没有租户就失败），而且要求应用处于服务状态。授予是平台级数据，实体不实现 <c>IMultiTenant</c>，工作单元不带租户。数据库故障（开启、读取、提交失败，含连接与超时）返回 <see cref="SecurityErrors.StoreUnavailable"/> 并记警告日志；调用方取消照常抛出 <see cref="OperationCanceledException"/>；容器里缺工作单元或仓储是装配错误，照常抛出
+/// 在根提供者的新作用域里直接开一个只读工作单元，取仓储读完即提交（<see cref="UnitOfWorkScope"/>，ADR-0259）。不经 <c>App.InvokeAsync</c> 再走一遍管道：授予是在 Authorize 阶段被查询的，嵌套调用会再次经过 Tenant / Authorize 阶段（要求租户时没有租户就失败），而且要求应用处于服务状态。授予是平台级数据，实体不实现 <c>IMultiTenant</c>，工作单元不带租户。数据库故障（开启、读取、提交失败，含连接与超时）返回 <see cref="SecurityErrors.StoreUnavailable"/> 并记警告日志；调用方取消照常抛出 <see cref="OperationCanceledException"/>；容器里缺工作单元是装配错误，照常抛出
 /// </remarks>
 internal sealed partial class GrantInvocation
 {
@@ -59,37 +59,35 @@ internal sealed partial class GrantInvocation
     /// </remarks>
     public async Task<Result<T>> ReadAsync<T>(Func<IRepository<PermissionGrantRecord, Guid>, CancellationToken, Task<T>> read, CancellationToken cancellationToken)
     {
-        await using var scope = _services.CreateAsyncScope();
-        // 解析放在 try 之外：容器里没有工作单元或仓储是装配错误，不归为存储不可达
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var repository = scope.ServiceProvider.GetRequiredService<IRepository<PermissionGrantRecord, Guid>>();
-        try
-        {
-            await unitOfWork.BeginAsync(_readOnly, cancellationToken).ConfigureAwait(false);
-            var result = await read(repository, cancellationToken).ConfigureAwait(false);
-            var committed = await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-            if (committed.IsFailure)
-            {
-                LogCommitFailed(_logger, committed.Error!.Code);
-                return Unavailable(committed.Error);
-            }
+        ArgumentNullException.ThrowIfNull(read);
+        var result = await UnitOfWorkScope.RunAsync<T>(
+            _services,
+            _readOnly,
+            async (services, ct) => Result.Success(await read(services.GetRequiredService<IRepository<PermissionGrantRecord, Guid>>(), ct).ConfigureAwait(false)),
+            Unavailable,
+            _logger,
+            cancellationToken).ConfigureAwait(false);
 
-            return Result.Success(result);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        // 读取不返回失败、抛出的已经映射成存储不可达：外壳原样交还的其余失败只有提交返回的那一种
+        if (result.IsFailure && !string.Equals(result.Error!.Code, SecurityErrors.StoreUnavailable, StringComparison.Ordinal))
         {
-            // 调用方取消不是存储故障：回滚后照常抛出，按异步约定结束
-            await RollbackAsync(unitOfWork).ConfigureAwait(false);
-            throw;
+            LogCommitFailed(_logger, result.Error.Code);
+            return Unavailable(result.Error);
         }
-        catch (Exception exception)
-        {
-            // 连接、超时（含驱动以取消异常报告的命令超时）、事务失败都归为存储不可达：
-            // 授予读不到不能当成没有授予，Authorize 阶段据此以 503 结束调用而不是 403
-            LogReadFailed(_logger, exception);
-            await RollbackAsync(unitOfWork).ConfigureAwait(false);
-            return Unavailable(exception is FrameworkException framework ? framework.ToError() : null);
-        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 把读取时抛出的异常归为存储不可达
+    /// </summary>
+    /// <remarks>
+    /// 连接、超时（含驱动以取消异常报告的命令超时）、事务失败都算：授予读不到不能当成没有授予，Authorize 阶段据此以 503 结束调用而不是 403。完整异常只进日志；框架自己的异常带错误码，留作内部错误
+    /// </remarks>
+    private Error Unavailable(Exception exception)
+    {
+        LogReadFailed(_logger, exception);
+        return Unavailable(exception is FrameworkException framework ? framework.ToError() : null);
     }
 
     /// <summary>
@@ -99,30 +97,7 @@ internal sealed partial class GrantInvocation
     /// <paramref name="cause"/> 作为内部错误保留，不进响应
     /// </remarks>
     private static Error Unavailable(Error? cause)
-        => new Error(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable, null, cause);
-
-    /// <summary>
-    /// 工作单元仍活动时回滚
-    /// </summary>
-    /// <remarks>
-    /// 用 None 令牌保证取消引发的异常也能完成回滚；回滚本身失败（数据库已断开时常见）只记日志，不覆盖已经确定的结果
-    /// </remarks>
-    private async Task RollbackAsync(IUnitOfWork unitOfWork)
-    {
-        if (unitOfWork.State != UnitOfWorkState.Active)
-        {
-            return;
-        }
-
-        try
-        {
-            await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            LogRollbackFailed(_logger, exception);
-        }
-    }
+        => new(SecurityErrors.StoreUnavailable, SecurityMessages.GrantStoreUnavailable, null, cause);
 
     /// <summary>
     /// 读授予时数据库抛出异常
@@ -135,10 +110,4 @@ internal sealed partial class GrantInvocation
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Committing the read-only unit of work for permission grants failed with '{Code}'; the authorization check ends as unavailable.")]
     private static partial void LogCommitFailed(ILogger logger, string code);
-
-    /// <summary>
-    /// 回滚失败
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Rolling back the read-only unit of work for permission grants failed.")]
-    private static partial void LogRollbackFailed(ILogger logger, Exception exception);
 }
