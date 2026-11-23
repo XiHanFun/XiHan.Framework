@@ -19,7 +19,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 /// 派发返回成功即 <see cref="DeliveryDisposition.Complete"/>。返回失败与抛出异常都算一次失败的尝试：抛出的异常转成 <see cref="MessagingErrors.HandlerFailed"/>，<c>reason</c> 只写异常类型的全名（<see cref="FrameworkException"/> 写它的错误码，原错误作内部错误），完整异常经 <c>logger</c> 记警告。失败之后尝试号小于 <see cref="MessagingOptions.MaxAttempts"/> 即 <see cref="DeliveryDisposition.Retry"/>，否则按 <see cref="Exhausted"/> 了结
 /// </para>
 /// <para>
-/// 取消只认令牌：令牌已请求取消时抛出的 <see cref="OperationCanceledException"/>，以及令牌已请求取消时返回的失败或抛出的其他异常（管道把取消写成失败结果返回，不抛异常），都是 <see cref="DeliveryDisposition.Abandon"/>，不算一次尝试。令牌没有取消时的 <see cref="OperationCanceledException"/>（处理器自己的超时）是一次失败
+/// 取消只认令牌：令牌已请求取消时抛出的 <see cref="OperationCanceledException"/>，以及令牌已请求取消时返回的失败或抛出的其他异常（管道把取消写成失败结果返回，不抛异常），都是 <see cref="DeliveryDisposition.Abandon"/>，不算一次失败。令牌没有取消时的 <see cref="OperationCanceledException"/>（处理器自己的超时）是一次失败
 /// </para>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -100,7 +100,7 @@ public static partial class MessageDeliveryAttempt
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // 等待或处理器被停止打断：不算一次尝试，default 即 Abandon
+            // 等待或处理器被停止打断：不算一次失败，default 即 Abandon
             return default;
         }
         catch (Exception exception)
@@ -116,7 +116,7 @@ public static partial class MessageDeliveryAttempt
             return new MessageDeliveryOutcome(DeliveryDisposition.Complete, null);
         }
 
-        // 停止期间的失败多半是取消造成的：管道把处理器的取消写成失败结果返回，不抛异常。照样不算一次尝试，
+        // 停止期间的失败多半是取消造成的：管道把处理器的取消写成失败结果返回，不抛异常。照样不算一次失败，
         // 否则停机会把正在处理的消息记成失败，赶上最后一次尝试还会把它送进死信
         if (cancellationToken.IsCancellationRequested)
         {

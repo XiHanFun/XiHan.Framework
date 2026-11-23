@@ -321,58 +321,52 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// <summary>
     /// 单主题消费循环：顺序取出投递交给派发器，失败重新入队或死信，直到取消
     /// </summary>
+    /// <remarks>
+    /// 等服务状态、派发与归类在 <see cref="MessageDeliveryAttempt"/>，这里只把结论翻译成队列上的动作（ADR-0261）
+    /// </remarks>
     private async Task ConsumeAsync(TopicQueue queue, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
         await foreach (var delivery in queue.Channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
-            // 宿主未进入服务状态前不投递，避免处理器在特性尚未就绪时执行
-            while (!_app.State.IsServing())
+            var outcome = await MessageDeliveryAttempt.RunAsync(dispatch, delivery, _messaging, _app, _logger, cancellationToken).ConfigureAwait(false);
+            if (outcome.Disposition == DeliveryDisposition.Abandon)
             {
-                await Task.Delay(10, cancellationToken).ConfigureAwait(false);
-            }
-
-            Result result;
-            try
-            {
-                result = await dispatch(delivery, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                // 停止时把未完成的投递放回队列，不计为失败
+                // 停止打断了这次投递（还在等服务状态，或处理器被取消）：按原尝试号放回队列，不计为失败
+                // 只有停止信号会带来这个结论，循环到此结束
                 queue.Channel.Writer.TryWrite(delivery);
-                throw;
-            }
-            catch (Exception exception)
-            {
-                result = Error.Unexpected(MessagingErrors.HandlerFailed, MessagingMessages.HandlerFailed, details: MessageArguments.Of(("reason", exception.Message)));
+                return;
             }
 
-            if (result.IsSuccess)
+            if (outcome.Disposition == DeliveryDisposition.Complete)
             {
                 Interlocked.Increment(ref queue.Delivered);
                 continue;
             }
 
-            // 未达上限则以下一次尝试号重新入队（队尾），只给这一种订阅方式；入队失败（队列已满）同样到此为止
-            if (delivery.Attempt < _messaging.MaxAttempts && queue.Channel.Writer.TryWrite(new MessageDelivery
+            // 未达上限则以下一次尝试号重新入队（队尾），只给这一种订阅方式
+            if (outcome.Disposition == DeliveryDisposition.Retry)
             {
-                Topic = delivery.Topic,
-                Envelope = delivery.Envelope,
-                Attempt = delivery.Attempt + 1,
-                Mode = delivery.Mode,
-            }))
+                if (queue.Channel.Writer.TryWrite(new MessageDelivery
+                {
+                    Topic = delivery.Topic,
+                    Envelope = delivery.Envelope,
+                    Attempt = delivery.Attempt + 1,
+                    Mode = delivery.Mode,
+                }))
+                {
+                    continue;
+                }
+
+                // 入队失败（队列已满）同样到此为止：按用完尝试次数了结
+                outcome = MessageDeliveryAttempt.Exhausted(delivery, outcome.Error, _logger);
+            }
+
+            // 广播投递到上限丢弃，不进死信；只有竞争投递进死信列表
+            if (outcome.Disposition != DeliveryDisposition.DeadLetter)
             {
                 continue;
             }
 
-            // 广播投递不进死信：死信是竞争订阅的留存，广播是尽力而为
-            if (delivery.Mode == SubscriptionMode.Broadcast)
-            {
-                LogBroadcastDropped(_logger, delivery.Envelope.Id, delivery.Topic, delivery.Attempt, result.Error?.Code ?? "?");
-                continue;
-            }
-
-            LogDeadLettered(_logger, delivery.Envelope.Id, delivery.Topic, delivery.Attempt, result.Error?.Code ?? "?");
             queue.DeadLetters.Enqueue(delivery);
             while (queue.DeadLetters.Count > _options.MaxQueuedMessages && queue.DeadLetters.TryDequeue(out _))
             {
@@ -389,18 +383,6 @@ public sealed partial class InMemoryMessageBroker(InMemoryMessagingOptions optio
     /// </remarks>
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped {Count} message(s) published to topic '{Topic}' because nothing subscribes to it.")]
     private static partial void LogDropped(ILogger logger, int count, string topic);
-
-    /// <summary>
-    /// 记录一条广播投递重试到上限后被丢弃
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast message {MessageId} on topic {Topic} was dropped after attempt {Attempt} failed: {ErrorCode}")]
-    private static partial void LogBroadcastDropped(ILogger logger, string messageId, string topic, int attempt, string errorCode);
-
-    /// <summary>
-    /// 记录一条消息重试到上限后进入死信
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Message {MessageId} on topic {Topic} was dead-lettered after attempt {Attempt} failed: {ErrorCode}")]
-    private static partial void LogDeadLettered(ILogger logger, string messageId, string topic, int attempt, string errorCode);
 
     /// <summary>
     /// 一个主题的状态：有界通道、投递方式、死信列表与投递计数

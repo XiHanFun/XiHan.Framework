@@ -373,36 +373,43 @@ public sealed class MessageDeliveryAttemptTests
         };
         await using var host = await TestHost.StartAsync(b => b.UseFeature(probe));
         var draining = host.App.StopAsync(CancellationToken.None);
-        await stopEntered.Task.WaitAsync(_patience);
-        Assert.Equal(LifecycleState.Draining, host.App.State);
-        var dispatched = 0;
-        var logger = new RecordingLogger();
-        using var stopping = new CancellationTokenSource();
+        try
+        {
+            await stopEntered.Task.WaitAsync(_patience);
+            Assert.Equal(LifecycleState.Draining, host.App.State);
+            var dispatched = 0;
+            var logger = new RecordingLogger();
+            using var stopping = new CancellationTokenSource();
 
-        // 最后一次尝试：排空中不派发，尝试次数不会被空转掉
-        var pending = MessageDeliveryAttempt.RunAsync(
-            (_, _) =>
-            {
-                Interlocked.Increment(ref dispatched);
-                return ValueTask.FromResult(Result.Success());
-            },
-            Delivery(3),
-            _options,
-            host.App,
-            logger,
-            stopping.Token).AsTask();
-        await Task.Delay(100);
-        Assert.False(pending.IsCompleted);
-        Assert.Equal(0, Volatile.Read(ref dispatched));
+            // 最后一次尝试：排空中不派发，尝试次数不会被空转掉
+            var pending = MessageDeliveryAttempt.RunAsync(
+                (_, _) =>
+                {
+                    Interlocked.Increment(ref dispatched);
+                    return ValueTask.FromResult(Result.Success());
+                },
+                Delivery(3),
+                _options,
+                host.App,
+                logger,
+                stopping.Token).AsTask();
+            await Task.Delay(100);
+            Assert.False(pending.IsCompleted);
+            Assert.Equal(0, Volatile.Read(ref dispatched));
 
-        await stopping.CancelAsync();
-        var outcome = await pending.WaitAsync(_patience);
+            await stopping.CancelAsync();
+            var outcome = await pending.WaitAsync(_patience);
 
-        Assert.Equal(DeliveryDisposition.Abandon, outcome.Disposition);
-        Assert.Equal(0, dispatched);
-        Assert.Empty(logger.Entries);
-        stopGate.SetResult();
-        await draining.WaitAsync(_patience);
+            Assert.Equal(DeliveryDisposition.Abandon, outcome.Disposition);
+            Assert.Equal(0, dispatched);
+            Assert.Empty(logger.Entries);
+        }
+        finally
+        {
+            // 断言失败也要放开闸门，否则宿主停不下来
+            stopGate.TrySetResult();
+            await draining.WaitAsync(_patience);
+        }
     }
 
     [Theory]

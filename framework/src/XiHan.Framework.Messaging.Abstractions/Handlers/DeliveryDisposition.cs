@@ -15,10 +15,10 @@ namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 public enum DeliveryDisposition
 {
     /// <summary>
-    /// 不了结，这次不算一次尝试
+    /// 不了结，这次不算一次失败
     /// </summary>
     /// <remarks>
-    /// 投递被停止打断：不确认、不重投、不进死信，原消息留给代理按原尝试号重新投递
+    /// 投递被停止打断：不确认、不重投、不进死信，原消息留给代理重新投递。再投递时的尝试号由代理决定：内存代理与 RabbitMQ 仍是原来的，Kafka 重启后从 1 起，Redis 的回收让投递次数加一
     /// </remarks>
     Abandon = 0,
 
