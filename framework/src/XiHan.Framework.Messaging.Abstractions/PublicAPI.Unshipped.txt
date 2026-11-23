@@ -25,6 +25,12 @@ XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Type.get -> str
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Type.init -> void
 XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.WithExtension(string! name, string! value) -> XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope!
 XiHan.Framework.Messaging.Abstractions.Envelopes.TopicName
+XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
+XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition.Abandon = 0 -> XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
+XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition.Complete = 1 -> XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
+XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition.DeadLetter = 3 -> XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
+XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition.Discard = 4 -> XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
+XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition.Retry = 2 -> XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
 XiHan.Framework.Messaging.Abstractions.Handlers.IMessageHandler
 XiHan.Framework.Messaging.Abstractions.Handlers.IMessageHandler.HandleAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery
@@ -39,6 +45,12 @@ XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Mode.get -> XiHa
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Mode.init -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Topic.get -> string!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Topic.init -> void
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryAttempt
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.Disposition.get -> XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.Equals(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome other) -> bool
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.Error.get -> XiHan.Framework.Primitives.Error?
+XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.MessageDeliveryOutcome() -> void
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher.DispatchAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
@@ -192,6 +204,7 @@ override XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.ToStri
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Equals(object? obj) -> bool
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.GetHashCode() -> int
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.ToString() -> string!
+override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.GetHashCode() -> int
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.Equals(object? obj) -> bool
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.GetHashCode() -> int
 override XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.ToString() -> string!
@@ -211,6 +224,10 @@ static XiHan.Framework.Messaging.Abstractions.Envelopes.TopicName.IsValid(string
 static XiHan.Framework.Messaging.Abstractions.Envelopes.TopicName.Validate(string! topic) -> string!
 static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.operator !=(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.operator ==(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery? right) -> bool
+static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryAttempt.Exhausted(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, XiHan.Framework.Primitives.Error? error, Microsoft.Extensions.Logging.ILogger! logger) -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome
+static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryAttempt.RunAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch! dispatch, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, XiHan.Framework.Messaging.Abstractions.MessagingOptions! options, XiHan.Framework.Kernel.Hosting.App! app, Microsoft.Extensions.Logging.ILogger! logger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome>
+static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.operator !=(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome right) -> bool
+static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.operator ==(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome right) -> bool
 static XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatcher.FindDelivery(XiHan.Framework.Primitives.InvocationContext! context) -> XiHan.Framework.Primitives.Maybe<XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery!>
 static XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.operator !=(XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription.operator ==(XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? left, XiHan.Framework.Messaging.Abstractions.Handlers.MessageSubscription? right) -> bool
@@ -228,3 +245,5 @@ static XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.FromConfigura
 static XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.operator !=(XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? left, XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? right) -> bool
 static XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.operator ==(XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? left, XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? right) -> bool
 virtual XiHan.Framework.Messaging.Abstractions.Handlers.MessageDispatch.Invoke(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+~override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.Equals(object obj) -> bool
+~override XiHan.Framework.Messaging.Abstractions.Handlers.MessageDeliveryOutcome.ToString() -> string
