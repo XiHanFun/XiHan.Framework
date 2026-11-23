@@ -163,7 +163,7 @@ app.Run();
 1. 启用特性：`UseFeature<OutOfProcessPluginsFeature>()` 或 `UseFeature<WasmPluginsFeature>()`。
 2. 在 `XiHan:Plugins:OutOfProcess:Directories` 或 `XiHan:Plugins:Wasm:Directories` 列出插件目录（一个目录一个插件，相对路径相对当前目录），在 `Grants` 里授予权限。
 3. 特性在配置阶段同步完成发现：读清单、核对权限、启动进程或实例化模块、握手，然后核对握手声明与清单。
-4. 握手声明的操作登记为代理操作，清单声明的权限码与它们一次登记，消息目录接进本地化器，订阅登记事件处理器；Wasm 插件的中间件按 `清单 ID:中间件名` 插进对应阶段。
+4. 握手声明的操作登记为代理操作，清单声明的权限码与它们一次登记，消息目录以清单 ID 为归属注册进本地化器，订阅登记事件处理器；Wasm 插件的中间件按 `清单 ID:中间件名` 插进对应阶段。
 5. 启动阶段启动 `onStartup` 的插件（`Configure` → `Start` → 健康监视）。懒激活的插件在握手后停下，首次调用或投递时再启动。
 
 发现阶段的失败分三种结果：
@@ -172,7 +172,7 @@ app.Run();
 | --- | --- |
 | 清单不合法（含进程外插件写了 `contributes.pipeline`）、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（`PLUGINS_VALIDATION_001` / `PLUGINS_DENIED_001` / `PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主记错误日志；清单读不出来时健康条目为 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
 | 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，应用进入 `Degraded`。进程外插件按重启策略重试（1 秒起翻倍，计入 `RestartLimit`），重试成功后代理操作按运行期加载补登记；Wasm 插件的这类失败不重试 |
-| 声明的权限码与已登记的重复、声明的操作与应用已有操作重名，或操作的 `permission` / `policy` 不存在 | 配置错误，应用启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005` / `SECURITY_VALIDATION_004`）；装配完成之后才登记的插件整体登记失败 |
+| 消息目录与同名目录的模板冲突、声明的权限码与已登记的重复、声明的操作与应用已有操作重名，或操作的 `permission` / `policy` 不存在 | 配置错误，应用启动失败（`LOCALIZATION_CONFLICT_001` / `KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005` / `SECURITY_VALIDATION_004`）；装配完成之后才登记的插件整体登记失败 |
 
 ### 运行期加载与卸载
 
@@ -190,8 +190,9 @@ static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken can
 }
 ```
 
-- 运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。
-- `UnloadAsync` 先按归属（清单 ID）一次撤回代理操作与权限码，再停止插件：之后按 ID 调用这些操作返回 `KERNEL_NOTFOUND_001`，已在执行的调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再 `LoadAsync`，不用重启宿主。不随卸载撤回的是配置阶段接进容器的订阅与消息目录，以及协议适配器启动时发布的路由（再加载后同一操作 ID 照常可用）。
+- 运行期加载的插件同样有消息目录：目录以清单 ID 为归属，先于代理操作登记，失败文案、权限码显示名与接口文档的标题随之可以解析（ADR-0252）。
+- HTTP 路由、OpenAPI 文档与 MCP tool 跟随操作登记表（ADR-0251）：运行期加载的代理操作登记之后立即有路由、进文档、是 tool。推导出的路由或 tool 名与已有的冲突时，整个插件登记失败（`PROTOCOLS_CONFLICT_002`、`PROTOCOLS_CONFLICT_001` / `PROTOCOLS_VALIDATION_004`），已有的路由与 tool 不受影响。gRPC 方法与 AI 工具目录只在启动时建成，运行期加载的代理操作不在其中。
+- `UnloadAsync` 先按归属（清单 ID）一次撤回代理操作与权限码，再撤回消息目录，最后停止插件。撤回之后路由、文档里的路径与 tool 随之消失，按地址的请求得到宿主对未匹配地址的答复（通常是 404）；按 ID 经调用器调用返回 `KERNEL_NOTFOUND_001`。已在执行的调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再 `LoadAsync`，不用重启宿主，新版本的目录随之重新登记。不随卸载撤回的是配置阶段接进容器的订阅。
 - 同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。进程外插件在 `LoadAsync` 里握手或启动失败时，错误返回给调用方，插件保持 `Failed` 并在后台按重启策略重试，不想再试就 `UnloadAsync`。
 
 ## 进程内宿主

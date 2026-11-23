@@ -14,7 +14,7 @@
 
 ## 文档从哪里来
 
-`MapXiHanOpenApi(options, pattern)` 发布 OpenAPI 3.1 文档，`pattern` 缺省 `/openapi.json`。文档在第一次请求时生成并缓存，这时全部特性已装配、登记表与端点表都已定型。文档端点带 `PipelineBypassMetadata`，不经内核管道、不鉴权；需要限制访问时由宿主自己处理（见常见问题）。
+`MapXiHanOpenApi(options, pattern)` 发布 OpenAPI 3.1 文档，`pattern` 缺省 `/openapi.json`。文档在请求时生成并缓存，这时全部特性已装配、端点都已映射；操作登记表或分组来源变了（插件运行期加载与卸载），缓存随即丢掉，下一次请求重新生成（ADR-0251）。文档端点带 `PipelineBypassMetadata`，不经内核管道、不鉴权；需要限制访问时由宿主自己处理（见常见问题）。
 
 | 文档内容 | 来源 |
 | --- | --- |
@@ -183,9 +183,13 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 | 操作入组 | 按归属特性的清单 ID；一个特性只能属于一个组 |
 | 普通端点入组 | 按标签；组的标签是组内操作的资源段加额外标签 |
 | 全量文档 | 带 `x-tagGroups`，按排序再按名字列出各组，一个标签只归排序靠前的那一组，没进任何组的标签归入最后的「其他」组 |
-| 分组文档地址 | `pattern` 去掉 `.json` 后接 `/<组名>.json`，只含本组的操作、端点、组件与引用到的权限码 |
+| 分组文档地址 | `pattern` 去掉 `.json` 后接 `/<组名>.json`，只含本组的操作、端点、组件与引用到的权限码；按请求时的分组答复，不是当时的组名为 404 |
 
-`GetXiHanOpenApiDocuments(options, pattern)` 列出全部文档的名字、缺省区域的标题与地址，全量文档排在最前，参数要与 `MapXiHanOpenApi` 一致。
+`GetXiHanOpenApiDocuments(options, pattern)` 列出调用时全部文档的名字、缺省区域的标题与地址，全量文档排在最前，参数要与 `MapXiHanOpenApi` 一致。
+
+### 运行期的分组
+
+插件这类归属运行期才有，写不进 `OpenApiOptions.Groups`。应用在容器里登记一个 `IOpenApiGroupSource`：`Groups` 给出当前的分组，`GetChangeToken()` 在分组变了时触发（ADR-0251）。生成文档时，选项里的分组在前，各来源的按登记顺序在后，合在一起按上表的规则核对，不合规则即生成失败（`ArgumentException`）。令牌触发后文档缓存丢掉，分组文档的地址立即按新的分组答复；`GetXiHanOpenApiDocuments` 只列调用时的分组，已经登记到文档界面的列表不会补上之后新增的，全量文档里照样有它们。
 
 ## 普通端点
 
@@ -274,7 +278,7 @@ await File.WriteAllBytesAsync("openapi.zh-CN.json", document);
 
 ### 改了消息目录或权限定义，文档没变
 
-文档在第一次请求时生成并缓存，按区域分别缓存，进程不重启不会重新生成。开发时重启应用即可；配置目录热更新改变的是选项，不会让文档缓存失效。
+文档按组与区域分别缓存，只在操作登记表或分组来源变了时重新生成（ADR-0251）。消息目录与配置目录的热更新不在其中，不会让文档缓存失效；开发时重启应用即可。插件不受影响：宿主先登记插件的消息目录、再登记它的代理操作（ADR-0252），操作登记表一变文档就重新生成，生成时目录已经在了。
 
 ### 怎样让某个操作不出现在文档里
 

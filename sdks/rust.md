@@ -9,18 +9,18 @@ Rust SDK 是 [XiHan Spec](https://github.com/XiHanFun/framework-spec) 的 Rust �
 ## 安装
 
 ```bash
-cargo add xihan-framework
+cargo add xihan-framework@<版本>
 ```
 
 写插件时打开 feature `plugin`：
 
 ```bash
-cargo add xihan-framework --features plugin
+cargo add xihan-framework@<版本> --features plugin
 ```
 
 `plugin` 模块是可选的：它带来 tonic、prost 与 tokio，不打开这个 feature 时这些依赖都不进来，其余模块也不依赖任何异步运行时。最低 Rust 版本见仓库 `Cargo.toml` 的 `rust-version`（edition 2024 的要求）。
 
-还没有发布到 crates.io，那里的版本只是名字占位。
+目前只有预发布版，要写明版本号：`<版本>` 换成 [Releases](https://github.com/XiHanFun/framework-sdk-rust/releases) 里的版本（不带 `v`）；不写版本会装到 crates.io 上占名用的旧版本。
 
 ## 模块
 
@@ -103,7 +103,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 宿主一侧怎样声明、启动与降级插件见[进程外插件](/plugins/out-of-process)；这一节是插件一侧用 Rust 的写法。
 
 ```bash
-cargo add xihan-framework --features plugin
+cargo add xihan-framework@<版本> --features plugin
 cargo add tokio --features macros,rt
 cargo add serde --features derive
 ```
@@ -255,7 +255,7 @@ JSON 文本的共同读取检查是自带的逐字节读取器（`primitives::js
 - 缺口：无。
 - 钉的规范版本：仓库 `spec/` 子模块指向的规范标签，规范的版本规则见[规范与多语言](/appendix/spec)。
 
-原语、清单、调用上下文、管道、操作与进程外插件运行时可用，通过规范仓库 `conformance/vectors/` 下 primitives（含 `json-text.json`）、manifest、pipeline、operations 与 plugin（握手行、回调端点列表、版本协商、截止时间、消息键、回调失败的映射、读入 Error）的全部向量；示例 echo 通过黑盒运行器 `xihan-conformance plugin` 的全部用例。在有钉在规范标签上的发布版之前，成熟度是 Experimental。
+原语、清单、调用上下文、管道、操作与进程外插件运行时可用，通过规范仓库 `conformance/vectors/` 下 primitives（含 `json-text.json`）、manifest、pipeline、operations 与 plugin（握手行、回调端点列表、版本协商、截止时间、消息键、回调失败的映射、读入 Error）的全部向量；示例 echo 通过黑盒运行器 `xihan-conformance plugin` 的全部用例。成熟度是 Experimental：已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 
 怎样验证：测试直接读取 `spec/conformance/vectors/`；[`tests/conformance_vectors.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/conformance_vectors.rs) 按档表核对认领的档要求的每个向量要么被回放、要么列为缺口，规范在认领的档里新增向量时它失败；[`tests/plugin_conformance.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/plugin_conformance.rs) 构建示例 echo，用黑盒运行器跑全部用例。CI 在 ubuntu 与 windows 上跑这些测试，另以最低 Rust 版本构建库。
 
@@ -267,4 +267,4 @@ JSON 文本的共同读取检查是自带的逐字节读取器（`primitives::js
 
 ## 破坏性改动与迁移
 
-暂无条目：crate 还没有发布过正式版本，crates.io 上只有名字占位的版本。发布之后，每个版本的破坏性改动与迁移方式记在这里。
+暂无条目。每个版本的破坏性改动与迁移方式记在这里。

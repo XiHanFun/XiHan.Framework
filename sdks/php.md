@@ -7,10 +7,10 @@ PHP SDK 是 [XiHan Spec](https://github.com/XiHanFun/framework-spec) 的 PHP 实
 ## 安装
 
 ```bash
-composer require xihanfun/xihan-framework
+composer require xihanfun/xihan-framework:<版本>
 ```
 
-要求 PHP 8.3+，运行时只依赖 PHP 核心与 `ext-json`。插件运行时另需可选依赖（`composer.json` 的 `suggest` 列出了它们，见[写一个插件](#写一个插件)）。
+要求 PHP 8.3+，运行时只依赖 PHP 核心与 `ext-json`。插件运行时另需可选依赖（`composer.json` 的 `suggest` 列出了它们，见[写一个插件](#写一个插件)）。目前只有预发布版，Composer 默认只装稳定版，要写明版本号：`<版本>` 换成 [Releases](https://github.com/XiHanFun/framework-sdk-php/releases) 里的版本（不带 `v`）。
 
 ## 模块
 
@@ -225,7 +225,7 @@ exit(Runtime::serve(new Options(
 - 认领的档：`core` 与 `plugin`（规范仓库的 [conformance/profiles.json](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)）。
 - 缺口：无；认领的档的向量全部回放，`plugin` 运行器子命令通过。
 - 规范版本：仓库的 `spec/` 子模块钉的提交；发预发布或正式版时它必须正好在规范标签上。
-- 成熟度：在有钉在规范标签上的发布版之前是 Experimental。目前还没有发布版。
+- 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 范围：原语、清单、调用上下文、管道、操作与进程外插件运行时 `plugin`（`xihan.plugin.v1`）可用；`caching.distributed@1` 等远程 Provider 的操作集还没有提供。
 
 怎样验证：
@@ -237,7 +237,7 @@ exit(Runtime::serve(new Options(
 
 ## 破坏性改动与迁移
 
-还没有发布版；在首个发布版之前公开 API 仍可能变化。开发期间已有的破坏性改动：
+目前只有预发布版，正式版之前公开 API 仍可能变化。首个发布版之前、开发期间已有的破坏性改动：
 
 - **流式操作的 API 撤掉**（ADR-0237）：`XiHan\Framework\Plugin\StreamingOperation` 与 `OperationStream` 已删除，`InvokeStream` 只读第一帧，是 `start` 时以 `Unimplemented` 结束（见[进程外插件](#进程外插件)的「流式」）。迁移：插件只提供一元操作，清单不声明流式操作，等 RFC-0011 定义流式契约。
 - **`Error` 的文案不能只有空白**（RFC-0001「空白字符」，ADR-0245）：读线上编码时 `message` 为空或只有空白都拒绝（上一版只拒绝空串），`Error::literal()` 与 `withText()` 给出只有空白的文案抛 `InvalidArgumentException`；读宿主写来的 proto `Error` 时，只有空白的 `text` 与空串一样取 `code`。迁移：自由文本错误给出含非空白字符的文案。

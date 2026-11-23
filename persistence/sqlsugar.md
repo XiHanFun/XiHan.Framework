@@ -84,9 +84,10 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 
 - 名为 `Id` 的属性是主键，缺省不自增；`ConcurrencyStamp` 长度 32；`[StringLength(n)]` 映射为长度 n，`[LongText]` 映射为长文本类型，实体自己的 `[SugarColumn]` 已给长度或类型时不动。
 - `DateTimeOffset` 经转换器按 UTC 时刻往返；可空类型的列可空；没有公开 setter 的属性与集合属性不映射。
-- `[EntityIndex]` 经表服务回调转成 `SugarIndexAttribute`；软删除实体的唯一索引由 `InitTables` 建表后补建成部分唯一索引。
+- `[EntityIndex]` 经表服务回调转成 `SugarIndexAttribute`；软删除实体的唯一索引由 `InitTables` 建表后补建成部分唯一索引（MySQL 与 Oracle 上是函数索引，ADR-0249）。
 - 字符串的 `Contains` / `StartsWith` / `EndsWith` 以同名外部函数接管翻译，按字面匹配，直接用施加了约定的客户端写的查询也一样；要通配用 `SqlFunc.Like`。
 - PostgreSQL 连接串的启动参数追加 `standard_conforming_strings=on`，见下文。
+- 实体映射按数据库类型分开缓存：`ConfigId` 相同、库类型不同的连接（如不同库类型的租户分片都是 `shard`）各用各的列定义（ADR-0248）。
 
 软删除与租户过滤以表达式显式施加在每个查询上，不用 SqlSugar 的全局过滤器。列与索引的完整约定见[建表约定与索引](/persistence/schema)。
 

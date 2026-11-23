@@ -114,7 +114,7 @@ go install github.com/xihanfun/framework-spec/conformance/cmd/xihan-conformance@
 | [Python](/sdks/python) | `xihan-framework` | [framework-sdk-python](https://github.com/XiHanFun/framework-sdk-python) | `core`、`plugin` | Experimental |
 | [PHP](/sdks/php) | `xihanfun/xihan-framework` | [framework-sdk-php](https://github.com/XiHanFun/framework-sdk-php) | `core`、`plugin` | Experimental |
 
-七个实现在认领的档里都没有缺口。六个 SDK 都提供原语、清单、调用上下文、管道、操作契约与进程外插件运行时，Go 还用于远程 Provider；它们还是 Experimental，因为还没有钉在规范标签上的发布版。
+七个实现在认领的档里都没有缺口。六个 SDK 都提供原语、清单、调用上下文、管道、操作契约与进程外插件运行时，Go 还用于远程 Provider；它们都已有钉在规范 rc 标签上的预发布版，还是 Experimental：Stable 要求钉在规范正式版标签上的发布版。
 
 成熟度按认领的档判定（RFC-0024）：
 

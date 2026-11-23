@@ -13,7 +13,7 @@ pnpm add xihan-framework
 pnpm add @grpc/grpc-js @bufbuild/protobuf   # 只在写插件时需要
 ```
 
-还没有发布到 npm，发布前在本仓库里使用。
+目前只有预发布版，正式版之前公开 API 还可能调整；版本列表见 [Releases](https://github.com/XiHanFun/framework-sdk-typescript/releases)。
 
 ## 模块
 
@@ -204,7 +204,7 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --config '{"greeting"
 | 认领的档 | `core` 与 `plugin` |
 | 缺口 | 无 |
 | 钉的规范版本 | 仓库 `spec/` 子模块指向的提交；发预发布或正式版时子模块必须正好在规范标签上 |
-| 成熟度 | Experimental：在有钉在规范标签上的发布版之前都是 |
+| 成熟度 | Experimental：已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版 |
 
 原语、清单、调用上下文、管道与操作五个模块可用；进程外插件运行时 `plugin`（`xihan.plugin.v1`，基于 `@grpc/grpc-js`）可用，示例插件 echo 通过规范仓库黑盒运行器 `xihan-conformance plugin` 的全部用例（Windows 与 Linux）。
 
@@ -218,4 +218,4 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --config '{"greeting"
 
 ## 破坏性改动与迁移
 
-本 SDK 还没有发布到 npm，目前没有需要迁移的破坏性改动。之后公开 API 或可观察行为有破坏性改动时，在这一节逐条写明旧行为、新行为与调用方怎么改。
+目前没有需要迁移的破坏性改动。之后公开 API 或可观察行为有破坏性改动时，在这一节逐条写明旧行为、新行为与调用方怎么改。

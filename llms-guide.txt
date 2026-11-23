@@ -1083,7 +1083,7 @@ go install github.com/xihanfun/framework-spec/conformance/cmd/xihan-conformance@
 | [Python](/sdks/python) | `xihan-framework` | [framework-sdk-python](https://github.com/XiHanFun/framework-sdk-python) | `core`、`plugin` | Experimental |
 | [PHP](/sdks/php) | `xihanfun/xihan-framework` | [framework-sdk-php](https://github.com/XiHanFun/framework-sdk-php) | `core`、`plugin` | Experimental |
 
-七个实现在认领的档里都没有缺口。六个 SDK 都提供原语、清单、调用上下文、管道、操作契约与进程外插件运行时，Go 还用于远程 Provider；它们还是 Experimental，因为还没有钉在规范标签上的发布版。
+七个实现在认领的档里都没有缺口。六个 SDK 都提供原语、清单、调用上下文、管道、操作契约与进程外插件运行时，Go 还用于远程 Provider；它们都已有钉在规范 rc 标签上的预发布版，还是 Experimental：Stable 要求钉在规范正式版标签上的发布版。
 
 成熟度按认领的档判定（RFC-0024）：
 
@@ -5765,7 +5765,7 @@ public sealed record WhoAmI(string? Principal, bool IsAuthenticated, string? Ten
 
 ## 文档从哪里来
 
-`MapXiHanOpenApi(options, pattern)` 发布 OpenAPI 3.1 文档，`pattern` 缺省 `/openapi.json`。文档在第一次请求时生成并缓存，这时全部特性已装配、登记表与端点表都已定型。文档端点带 `PipelineBypassMetadata`，不经内核管道、不鉴权；需要限制访问时由宿主自己处理（见常见问题）。
+`MapXiHanOpenApi(options, pattern)` 发布 OpenAPI 3.1 文档，`pattern` 缺省 `/openapi.json`。文档在请求时生成并缓存，这时全部特性已装配、端点都已映射；操作登记表或分组来源变了（插件运行期加载与卸载），缓存随即丢掉，下一次请求重新生成（ADR-0251）。文档端点带 `PipelineBypassMetadata`，不经内核管道、不鉴权；需要限制访问时由宿主自己处理（见常见问题）。
 
 | 文档内容 | 来源 |
 | --- | --- |
@@ -5934,9 +5934,13 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 | 操作入组 | 按归属特性的清单 ID；一个特性只能属于一个组 |
 | 普通端点入组 | 按标签；组的标签是组内操作的资源段加额外标签 |
 | 全量文档 | 带 `x-tagGroups`，按排序再按名字列出各组，一个标签只归排序靠前的那一组，没进任何组的标签归入最后的「其他」组 |
-| 分组文档地址 | `pattern` 去掉 `.json` 后接 `/<组名>.json`，只含本组的操作、端点、组件与引用到的权限码 |
+| 分组文档地址 | `pattern` 去掉 `.json` 后接 `/<组名>.json`，只含本组的操作、端点、组件与引用到的权限码；按请求时的分组答复，不是当时的组名为 404 |
 
-`GetXiHanOpenApiDocuments(options, pattern)` 列出全部文档的名字、缺省区域的标题与地址，全量文档排在最前，参数要与 `MapXiHanOpenApi` 一致。
+`GetXiHanOpenApiDocuments(options, pattern)` 列出调用时全部文档的名字、缺省区域的标题与地址，全量文档排在最前，参数要与 `MapXiHanOpenApi` 一致。
+
+### 运行期的分组
+
+插件这类归属运行期才有，写不进 `OpenApiOptions.Groups`。应用在容器里登记一个 `IOpenApiGroupSource`：`Groups` 给出当前的分组，`GetChangeToken()` 在分组变了时触发（ADR-0251）。生成文档时，选项里的分组在前，各来源的按登记顺序在后，合在一起按上表的规则核对，不合规则即生成失败（`ArgumentException`）。令牌触发后文档缓存丢掉，分组文档的地址立即按新的分组答复；`GetXiHanOpenApiDocuments` 只列调用时的分组，已经登记到文档界面的列表不会补上之后新增的，全量文档里照样有它们。
 
 ## 普通端点
 
@@ -6025,7 +6029,7 @@ await File.WriteAllBytesAsync("openapi.zh-CN.json", document);
 
 ### 改了消息目录或权限定义，文档没变
 
-文档在第一次请求时生成并缓存，按区域分别缓存，进程不重启不会重新生成。开发时重启应用即可；配置目录热更新改变的是选项，不会让文档缓存失效。
+文档按组与区域分别缓存，只在操作登记表或分组来源变了时重新生成（ADR-0251）。消息目录与配置目录的热更新不在其中，不会让文档缓存失效；开发时重启应用即可。插件不受影响：宿主先登记插件的消息目录、再登记它的代理操作（ADR-0252），操作登记表一变文档就重新生成，生成时目录已经在了。
 
 ### 怎样让某个操作不出现在文档里
 
@@ -8608,9 +8612,9 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | 列 | 按声明顺序、全部升序；列必须是实体的公开属性；一个实体可以声明多个索引 |
 | 唯一 | `IsUnique = true` 是唯一索引，业务上唯一的键（租户 + 名字之类）这样声明 |
 | 多租户 | 实体实现 `IMultiTenant` 时，唯一索引的列必须含 `TenantId`：同一业务键在每个租户各有一行，撞键只发生在同一租户里，写入失败不会告诉调用方别的租户用过这个键。确实要跨租户唯一的（全局唯一的登录名之类）写 `AcrossTenants = true`，接受这一点；不含 `TenantId` 又没写，启动时抛 `InvalidOperationException`（ADR-0198） |
-| 名字 | 由规则推出，不手写：`IX_`（唯一 `UX_`）+ 表名 + 每列一段缩写，缩写用下划线连接；属性名每个词取前两个字符（`TenantId → TeId`、`NextFireAt → NeFiAt`）；表名里字母、数字、下划线以外的字符换成下划线；全名不超过 63 个字符，超过即报错、不截断 |
+| 名字 | 缺省由规则推出：`IX_`（唯一 `UX_`）+ 表名 + 每列一段缩写，缩写用下划线连接；属性名每个词取前两个字符（`TenantId → TeId`、`NextFireAt → NeFiAt`）；表名里字母、数字、下划线以外的字符换成下划线。也可以用 `Name` 显式给出，原样使用（PostgreSQL 上折成小写）：字母开头，只含 ASCII 字母、数字与下划线（ADR-0249）。全名不超过 63 个字符，超过即报错、不截断 |
 | 建出 | EF Core 由 `ApplyPersistenceConventions(Database)` 映射为 `HasIndex(列).IsUnique(…).HasDatabaseName(名字)`；SqlSugar 经表服务回调转成 `SugarIndexAttribute`，`InitTables` 按名字查不到才建，已有的不改不删。两个 Provider 建出同名的索引 |
-| 声明错误 | 没有列、列名重复、不是公开属性、名字超长、同名或同列：建模 / 建表时抛出 `InvalidOperationException`，启动失败 |
+| 声明错误 | 没有列、列名重复、不是公开属性、显式的名字不合法、名字超长、同名或同列：建模 / 建表时抛出 `InvalidOperationException`，启动失败。SqlSugar 的 `InitTables` 还核对一起建表的实体之间不重名（显式的名字可能撞上，PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，按名字查到已有的会跳过） |
 | 内存实现 | 不建索引、不校验唯一性 |
 
 `EntityIndexes.Resolve(type, table)` 是两个 Provider 共用的解析入口，返回每个索引的名字、列、`IsUnique` 与 `ExcludesDeleted`；应用自己的建表工具也可以用它。
@@ -8623,7 +8627,8 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | --- | --- | --- |
 | PostgreSQL、SQLite | 支持 | EF Core 加 `HasFilter`；SqlSugar 的 `InitTables` 建表后补建 `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE IsDeleted = false / 0` |
 | SQL Server | 支持 | EF Core 加 `HasFilter`；SqlSugar 建筛选索引 `WHERE [IsDeleted] = 0`（键含可空列另加 `IS NOT NULL`） |
-| MySQL 系、Oracle 系，以及没有验证过的 PostgreSQL 衍生库（人大金仓、openGauss 等） | 不支持 | 有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引 |
+| MySQL（8.0.13 起）、Oracle | SqlSugar 支持，EF Core 不支持 | SqlSugar 建函数索引，每列一个 `CASE WHEN IsDeleted = 0 THEN 列 END`（键含可空列时条件另加 `IS NOT NULL`）：已删除的行整键为空、不参与唯一（ADR-0249）；EF Core 写不出函数索引，建模即失败 |
+| MySQL 与 Oracle 的兼容库（TiDB、OceanBase、达梦等）、MariaDB，以及没有验证过的 PostgreSQL 衍生库（人大金仓、openGauss 等） | 不支持 | 有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引；MariaDB 的 `DbType` 也是 MySQL，没有函数索引，建索引的语句失败、`InitTables` 报错 |
 
 在不支持的数据库上要唯一约束，就把 `IsDeleted` 显式写进列（普通唯一索引，同一业务键最多一行已删除），或不声明唯一。SqlSugar 的部分唯一索引不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表之后补建，应用自己给租户库建表时也要经它；库里已有同名的带 `IsDeleted` 列的唯一索引时 `IF NOT EXISTS` 会跳过，要先手动删掉那个索引。
 
@@ -8661,11 +8666,11 @@ EF Core 的迁移会把 `ApplyPersistenceConventions` 加进模型的索引、�
 
 ### 索引名能不能自己指定
 
-不能。名字由规则推出，保证两个 Provider 一致、迁移脚本与排障时按同一名字查。超过 63 个字符会报错，这时缩短属性名或减少列数。
+能，写 `[EntityIndex(…, Name = "ux_order_tenant_id_code")]`（ADR-0249）。不写时由规则推出。显式的名字给已经按自己的规则建好了索引的库用：换成 `[EntityIndex]` 后名字不变，库里的索引原样沿用，不用改名。两个 Provider 用同一个名字；名字只收字母开头、ASCII 字母数字与下划线，不超过 63 个字符。PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，两个实体给了同一个名字时 SqlSugar 的 `InitTables` 在建表之前报错。
 
-### 软删除实体的唯一索引在 MySQL 上启动失败
+### 软删除实体的唯一索引在 MySQL 上怎么建
 
-MySQL 没有部分唯一索引，框架不退化成普通唯一索引（那会让同一业务键删除后无法重建）。两条路：把 `IsDeleted` 显式写进 `[EntityIndex]` 的列，接受「同一业务键最多一行已删除」；或不声明唯一，在操作里先查再写。
+MySQL 没有带条件的索引。SqlSugar 在 MySQL 8.0.13 起用函数索引代替（ADR-0249）：每列包成 `CASE WHEN IsDeleted = 0 THEN 列 END`，已删除的行整键为空，MySQL 的唯一索引不约束含 NULL 的键，所以已删除的行不参与唯一。更早的 MySQL 与 MariaDB 没有函数索引，建索引的语句失败；EF Core 写不出函数索引，在 MySQL 上建模即失败。这些情况下两条路：把 `IsDeleted` 显式写进 `[EntityIndex]` 的列，接受「同一业务键最多一行已删除」；或不声明唯一，在操作里先查再写。
 
 ### 字符串没写 `[StringLength]` 会怎样
 
@@ -8773,9 +8778,10 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 
 - 名为 `Id` 的属性是主键，缺省不自增；`ConcurrencyStamp` 长度 32；`[StringLength(n)]` 映射为长度 n，`[LongText]` 映射为长文本类型，实体自己的 `[SugarColumn]` 已给长度或类型时不动。
 - `DateTimeOffset` 经转换器按 UTC 时刻往返；可空类型的列可空；没有公开 setter 的属性与集合属性不映射。
-- `[EntityIndex]` 经表服务回调转成 `SugarIndexAttribute`；软删除实体的唯一索引由 `InitTables` 建表后补建成部分唯一索引。
+- `[EntityIndex]` 经表服务回调转成 `SugarIndexAttribute`；软删除实体的唯一索引由 `InitTables` 建表后补建成部分唯一索引（MySQL 与 Oracle 上是函数索引，ADR-0249）。
 - 字符串的 `Contains` / `StartsWith` / `EndsWith` 以同名外部函数接管翻译，按字面匹配，直接用施加了约定的客户端写的查询也一样；要通配用 `SqlFunc.Like`。
 - PostgreSQL 连接串的启动参数追加 `standard_conforming_strings=on`，见下文。
+- 实体映射按数据库类型分开缓存：`ConfigId` 相同、库类型不同的连接（如不同库类型的租户分片都是 `shard`）各用各的列定义（ADR-0248）。
 
 软删除与租户过滤以表达式显式施加在每个查询上，不用 SqlSugar 的全局过滤器。列与索引的完整约定见[建表约定与索引](/persistence/schema)。
 
@@ -13888,6 +13894,8 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 
 `initialize` 总是答复本服务端的协议版本与 `capabilities.tools.listChanged = false`，由客户端决定是否继续；`ping` 答复 `{}`。
 
+tool 表跟随操作登记表（ADR-0251）：`tools/list` 与 `tools/call` 按处理这条消息时的登记表，插件运行期加载的操作随即是 tool，卸载之后随即不是（`tools/call` 得 `PROTOCOLS_NOTFOUND_002`）。服务端建立之后登记的操作 tool 名不合法、与已有的或同一组里的重名，整组不登记，登记返回 `PROTOCOLS_VALIDATION_004` / `PROTOCOLS_CONFLICT_001`。
+
 ## 常见问题
 
 ### tool 列表里没有我的操作
@@ -13904,7 +13912,7 @@ MCP 客户端按 `destructiveHint` 决定是否确认。只有 `get`、`list` �
 
 ### 能用 SSE 或长连接吗
 
-不能。这个实现只做 Streamable HTTP 的请求 / 响应部分：一条 `POST` 一个答复，不开 SSE 流、不建会话。服务端到客户端的通知与 `listChanged` 都不支持，tool 列表只在重启后变化。
+不能。这个实现只做 Streamable HTTP 的请求 / 响应部分：一条 `POST` 一个答复，不开 SSE 流、不建会话。服务端到客户端的通知与 `listChanged` 都不支持：tool 列表随登记表变化（插件加载与卸载），客户端重新 `tools/list` 才看得到。
 
 ### 大模型会不会拿到比用户更多的权限
 
@@ -16672,7 +16680,7 @@ curl -si -H "Accept-Language: zh-CN" http://localhost:5000/missing
 
 ### 注册目录的规则
 
-`AddMessageCatalog` 的第一个参数是目录名，第二个参数是目录所在程序集里的任意类型。同名目录合并为一份：内容相同时什么都不变（多个 Provider 可能都带同一个抽象包的目录），互为补充时区域与键取并集（插件握手带来的目录与宿主包里同名目录的其他语言），同一键同一区域的模板不同时 `AddMessageCatalog` 抛出 `LOCALIZATION_CONFLICT_001`，应用启动失败。应用与插件的目录名不要与框架的重名。目录不合法（JSON 错误、键或区域名不合法、程序集里没有任何语言文件）时抛出 `LOCALIZATION_VALIDATION_002`，应用启动失败。
+`AddMessageCatalog` 的第一个参数是目录名，第二个参数是目录所在程序集里的任意类型。同名目录合并为一份：内容相同时什么都不变（多个 Provider 可能都带同一个抽象包的目录），互为补充时区域与键取并集（插件握手带来的目录与宿主包里同名目录的其他语言），同一键同一区域的模板不同时 `AddMessageCatalog` 抛出 `LOCALIZATION_CONFLICT_001`，应用启动失败。插件的目录以插件的清单 ID 为归属登记（`AddMessageCatalog(owner, catalog)` 与 `MessageCatalogRegistry.Add`），不与同名目录合并成一份、照同样的规则核对冲突，加载时登记、卸载时撤回（ADR-0252）；本地化器从 `MessageCatalogRegistry` 读目录，按归属登记的排在后面，不覆盖已有的键。应用与插件的目录名不要与框架的重名。目录不合法（JSON 错误、键或区域名不合法、程序集里没有任何语言文件）时抛出 `LOCALIZATION_VALIDATION_002`，应用启动失败。
 
 | 目录 | 注册方 |
 | --- | --- |
@@ -18420,7 +18428,7 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 | 调用操作 | `Host.Invoke` | `capability:kernel.pipeline` | 以新的调用经宿主完整管道执行操作，未登记的操作为 `KERNEL_NOTFOUND_001` |
 | 发布消息 | `Host.Publish` | `capability:messaging.queue` | 以元数据建调用上下文（主体同样是插件），在这个上下文里按主题分组批量经宿主消息发布器发布：信封缺的租户、主体、关联 ID、区域与追踪由发布器从上下文补齐，与进程内的发布一致；逐项返回结果，逐项依次核对发布器（没有时 `PLUGINS_UNAVAILABLE_001`）、主题、信封的 `xihantenant` 与转换 |
 
-回调必须恰好带一个 `xihan-plugin-session` 元数据值，令牌缺失、不匹配或带了两个值为 gRPC `Unauthenticated`（`PLUGINS_DENIED_002`）；令牌只对本次进程有效，宿主的各个回调端点认同一套令牌。回调的截止时间取元数据 `deadline`（按规范的文法严格读，读不出当作没有）与 gRPC 调用自身截止时间中较早的一个。反方向同样：宿主调用插件的每一次 RPC（含 `Handshake`）都带这个令牌，插件必须按常数时间比较校验，缺失或不匹配以 `Unauthenticated` 拒绝，本机别的进程连上插件端点也冒充不了宿主（ADR-0202；.NET 写法见 `samples/EchoPlugin/SessionGuard.cs`，Go SDK 的校验随它的下一个版本提供）。两端的 Unix 域套接字都放在新建的私有目录里（`0700`，名字随机，已存在即不用），套接字文件 `0600`；宿主的命名管道只允许当前用户并拒绝远程客户端；插件的命名管道应同样如此，运行时给不了访问控制表或拒绝远程客户端的标志时（Node 的 libuv 两样都给不了，不用 unsafe 的 Rust 只能拒绝远程客户端）用系统缺省的安全描述符，其他用户只能以只读打开、发不出请求，需要只接受本机连接的改用回环 TCP；TCP 只绑定回环地址，那里的隔离只靠令牌。权限未声明或未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002`。回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`），元数据里的 `xihan.principal` 被忽略，其余已登记的 Baggage 照常采用。回调与发布只能带宿主交给插件的租户：宿主调用插件时元数据里的 `xihan.tenant` 是这次调用的租户（Tenant 阶段裁定过时取裁定结果），回调元数据的 `xihan.tenant` 与发布信封的 `xihantenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则为 `PLUGINS_DENIED_002`（`Host.Publish` 的元数据越界时整批不发布，每一项都是这个错误）；不带租户的回调是无租户调用（ADR-0195）。插件并发处理多个租户的调用时，回调可以带其中任何一个；原样转发收到的元数据即可。Authorize 阶段按目标操作的契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予相应权限码。
+回调必须恰好带一个 `xihan-plugin-session` 元数据值，令牌缺失、不匹配或带了两个值为 gRPC `Unauthenticated`（`PLUGINS_DENIED_002`）；令牌只对本次进程有效，宿主的各个回调端点认同一套令牌。回调的截止时间取元数据 `deadline`（按规范的文法严格读，读不出当作没有）与 gRPC 调用自身截止时间中较早的一个。反方向同样：宿主调用插件的每一次 RPC（含 `Handshake`）都带这个令牌，插件必须按常数时间比较校验，缺失或不匹配以 `Unauthenticated` 拒绝，本机别的进程连上插件端点也冒充不了宿主（ADR-0202；.NET 写法见 `samples/EchoPlugin/SessionGuard.cs`，六个语言 SDK 的插件运行时都已内置这项校验）。两端的 Unix 域套接字都放在新建的私有目录里（`0700`，名字随机，已存在即不用），套接字文件 `0600`；宿主的命名管道只允许当前用户并拒绝远程客户端；插件的命名管道应同样如此，运行时给不了访问控制表或拒绝远程客户端的标志时（Node 的 libuv 两样都给不了，不用 unsafe 的 Rust 只能拒绝远程客户端）用系统缺省的安全描述符，其他用户只能以只读打开、发不出请求，需要只接受本机连接的改用回环 TCP；TCP 只绑定回环地址，那里的隔离只靠令牌。权限未声明或未授予为 gRPC `PermissionDenied`，尾部元数据 `xihan-error-code: PLUGINS_DENIED_002`。回调以插件身份执行（主体 ID 是清单 ID、认证方案 `Plugin`），元数据里的 `xihan.principal` 被忽略，其余已登记的 Baggage 照常采用。回调与发布只能带宿主交给插件的租户：宿主调用插件时元数据里的 `xihan.tenant` 是这次调用的租户（Tenant 阶段裁定过时取裁定结果），回调元数据的 `xihan.tenant` 与发布信封的 `xihantenant` 必须是宿主此刻交给该插件处理的某个调用的租户，否则为 `PLUGINS_DENIED_002`（`Host.Publish` 的元数据越界时整批不发布，每一项都是这个错误）；不带租户的回调是无租户调用（ADR-0195）。插件并发处理多个租户的调用时，回调可以带其中任何一个；原样转发收到的元数据即可。Authorize 阶段按目标操作的契约判定，所以插件主体还要在[授权与权限](/security/authorization)里被授予相应权限码。
 
 ## 失败降级
 
@@ -18488,7 +18496,7 @@ builder.AddXiHan(xihan => xihan
 
 ### 插件的操作能不能像本地操作一样出现在 OpenAPI 与 MCP 里
 
-能。配置阶段发现的插件，其操作在协议适配器发布路由与文档时已经在登记表里（[规范化接口文档](/web/openapi)、[MCP](/protocols/mcp)）。只有运行期 `LoadAsync` 的插件例外：路由已经发布完，它的操作只对 `IOperationInvoker` 可见。
+能。HTTP 路由、OpenAPI 文档与 MCP tool 跟随操作登记表（ADR-0251），配置阶段发现的与运行期 `LoadAsync` 的插件一样：登记之后就有路由、进文档、是 tool，卸载之后随之消失（[规范化接口文档](/web/openapi)、[MCP](/protocols/mcp)）。要给插件单独一份分组文档，应用登记一个 `IOpenApiGroupSource`，按插件的清单 ID 给出分组。gRPC 方法与 AI 工具目录只在启动时建成，运行期加载的插件不在其中。
 
 ### 能用 gRPC 流式操作吗
 
@@ -18668,7 +18676,7 @@ app.Run();
 1. 启用特性：`UseFeature<OutOfProcessPluginsFeature>()` 或 `UseFeature<WasmPluginsFeature>()`。
 2. 在 `XiHan:Plugins:OutOfProcess:Directories` 或 `XiHan:Plugins:Wasm:Directories` 列出插件目录（一个目录一个插件，相对路径相对当前目录），在 `Grants` 里授予权限。
 3. 特性在配置阶段同步完成发现：读清单、核对权限、启动进程或实例化模块、握手，然后核对握手声明与清单。
-4. 握手声明的操作登记为代理操作，清单声明的权限码与它们一次登记，消息目录接进本地化器，订阅登记事件处理器；Wasm 插件的中间件按 `清单 ID:中间件名` 插进对应阶段。
+4. 握手声明的操作登记为代理操作，清单声明的权限码与它们一次登记，消息目录以清单 ID 为归属注册进本地化器，订阅登记事件处理器；Wasm 插件的中间件按 `清单 ID:中间件名` 插进对应阶段。
 5. 启动阶段启动 `onStartup` 的插件（`Configure` → `Start` → 健康监视）。懒激活的插件在握手后停下，首次调用或投递时再启动。
 
 发现阶段的失败分三种结果：
@@ -18677,7 +18685,7 @@ app.Run();
 | --- | --- |
 | 清单不合法（含进程外插件写了 `contributes.pipeline`）、权限未授予、入口文件不存在 | 不启动插件代码，插件以 `Failed` 登记（`PLUGINS_VALIDATION_001` / `PLUGINS_DENIED_001` / `PLUGINS_NOTFOUND_001`）：进入 `IPluginHost.Plugins`、健康条目 `plugins.<清单 ID>` 报 `Failed`，应用进入 `Degraded`，宿主记错误日志；清单读不出来时健康条目为 `plugins.<目录名>`。属配置错误，不重试，可 `UnloadAsync` 后改正再 `LoadAsync` |
 | 握手超时、握手行不合法、声明与清单不一致、模块不合法 | 插件以 `Failed` 留在宿主里，应用进入 `Degraded`。进程外插件按重启策略重试（1 秒起翻倍，计入 `RestartLimit`），重试成功后代理操作按运行期加载补登记；Wasm 插件的这类失败不重试 |
-| 声明的权限码与已登记的重复、声明的操作与应用已有操作重名，或操作的 `permission` / `policy` 不存在 | 配置错误，应用启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005` / `SECURITY_VALIDATION_004`）；装配完成之后才登记的插件整体登记失败 |
+| 消息目录与同名目录的模板冲突、声明的权限码与已登记的重复、声明的操作与应用已有操作重名，或操作的 `permission` / `policy` 不存在 | 配置错误，应用启动失败（`LOCALIZATION_CONFLICT_001` / `KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005` / `SECURITY_VALIDATION_004`）；装配完成之后才登记的插件整体登记失败 |
 
 ### 运行期加载与卸载
 
@@ -18695,8 +18703,9 @@ static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken can
 }
 ```
 
-- 运行期加载的代理操作只对 `IOperationInvoker` 可见：协议适配器的路由在启动时已经发布，不会为它新增 HTTP 路由或 MCP tool。
-- `UnloadAsync` 先按归属（清单 ID）一次撤回代理操作与权限码，再停止插件：之后按 ID 调用这些操作返回 `KERNEL_NOTFOUND_001`，已在执行的调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再 `LoadAsync`，不用重启宿主。不随卸载撤回的是配置阶段接进容器的订阅与消息目录，以及协议适配器启动时发布的路由（再加载后同一操作 ID 照常可用）。
+- 运行期加载的插件同样有消息目录：目录以清单 ID 为归属，先于代理操作登记，失败文案、权限码显示名与接口文档的标题随之可以解析（ADR-0252）。
+- HTTP 路由、OpenAPI 文档与 MCP tool 跟随操作登记表（ADR-0251）：运行期加载的代理操作登记之后立即有路由、进文档、是 tool。推导出的路由或 tool 名与已有的冲突时，整个插件登记失败（`PROTOCOLS_CONFLICT_002`、`PROTOCOLS_CONFLICT_001` / `PROTOCOLS_VALIDATION_004`），已有的路由与 tool 不受影响。gRPC 方法与 AI 工具目录只在启动时建成，运行期加载的代理操作不在其中。
+- `UnloadAsync` 先按归属（清单 ID）一次撤回代理操作与权限码，再撤回消息目录，最后停止插件。撤回之后路由、文档里的路径与 tool 随之消失，按地址的请求得到宿主对未匹配地址的答复（通常是 404）；按 ID 经调用器调用返回 `KERNEL_NOTFOUND_001`。已在执行的调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再 `LoadAsync`，不用重启宿主，新版本的目录随之重新登记。不随卸载撤回的是配置阶段接进容器的订阅。
 - 同一清单 ID 重复加载为 `PLUGINS_CONFLICT_001`，卸载未加载的插件为 `PLUGINS_NOTFOUND_001`。进程外插件在 `LoadAsync` 里握手或启动失败时，错误返回给调用方，插件保持 `Failed` 并在后台按重启策略重试，不想再试就 `UnloadAsync`。
 
 ## 进程内宿主
@@ -19261,7 +19270,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 - 认领的档：`core`、`plugin` 与 `provider:caching.distributed@1`；档的定义见规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)。
 - 缺口：无。
 - 钉的规范版本：见 SDK 仓库的 `spec/` 子模块与 `go.mod` 里的一致性模块 `github.com/xihanfun/framework-spec/conformance`，两者是同一个规范提交。
-- 成熟度：在有钉在规范标签上的发布版之前是 Experimental。
+- 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 范围：流式操作在流式契约的 RFC 之前不提供（`InvokeStream` 读第一帧后以 `InvalidArgument` 或 `Unimplemented` 结束）；Wasm 载体不在本 SDK 范围。
 
 怎样验证：
@@ -19323,7 +19332,7 @@ Go 自己的文本（日期、`Duration`、结构体）不跨语言：插件的�
 
 ## 安装
 
-需要 JDK 21+。Maven 坐标 `com.xihanfun:xihan-framework`（Maven Central 命名空间 `com.xihanfun` 已验证，尚未发布）：
+需要 JDK 21+。Maven 坐标 `com.xihanfun:xihan-framework`，发布在 Maven Central；目前只有预发布版，`${xihan-framework.version}` 换成 [Releases](https://github.com/XiHanFun/framework-sdk-java/releases) 里的版本（不带 `v`）：
 
 ```xml
 <dependency>
@@ -19536,7 +19545,7 @@ Java 的写法与规范的对应：
 - 认领的档：`core` 与 `plugin`（规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)）。
 - 缺口：无；认领的档的向量全部回放，`plugin` 运行器子命令通过。
 - 规范版本：钉在仓库 `spec/` 子模块指向的 framework-spec 提交；发版时子模块必须正好在规范标签上。
-- 成熟度：在有钉在规范标签上的发布版之前是 Experimental。
+- 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 已有的：原语、清单、调用上下文、管道、操作与进程外插件运行时（`plugin`，`xihan.plugin.v1`，grpc-java）可用，示例插件 `examples/echo` 通过规范仓库黑盒运行器的全部用例（Linux 上经 Unix 域套接字，Windows 上经回环 TCP 与 `.cmd` 启动脚本）；远程 Provider 的操作集（如 `caching.distributed@1`）尚未提供。
 
 怎样验证：
@@ -19569,10 +19578,10 @@ PHP SDK 是 [XiHan Spec](https://github.com/XiHanFun/framework-spec) 的 PHP 实
 ## 安装
 
 ```bash
-composer require xihanfun/xihan-framework
+composer require xihanfun/xihan-framework:<版本>
 ```
 
-要求 PHP 8.3+，运行时只依赖 PHP 核心与 `ext-json`。插件运行时另需可选依赖（`composer.json` 的 `suggest` 列出了它们，见[写一个插件](#写一个插件)）。
+要求 PHP 8.3+，运行时只依赖 PHP 核心与 `ext-json`。插件运行时另需可选依赖（`composer.json` 的 `suggest` 列出了它们，见[写一个插件](#写一个插件)）。目前只有预发布版，Composer 默认只装稳定版，要写明版本号：`<版本>` 换成 [Releases](https://github.com/XiHanFun/framework-sdk-php/releases) 里的版本（不带 `v`）。
 
 ## 模块
 
@@ -19787,7 +19796,7 @@ exit(Runtime::serve(new Options(
 - 认领的档：`core` 与 `plugin`（规范仓库的 [conformance/profiles.json](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)）。
 - 缺口：无；认领的档的向量全部回放，`plugin` 运行器子命令通过。
 - 规范版本：仓库的 `spec/` 子模块钉的提交；发预发布或正式版时它必须正好在规范标签上。
-- 成熟度：在有钉在规范标签上的发布版之前是 Experimental。目前还没有发布版。
+- 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 范围：原语、清单、调用上下文、管道、操作与进程外插件运行时 `plugin`（`xihan.plugin.v1`）可用；`caching.distributed@1` 等远程 Provider 的操作集还没有提供。
 
 怎样验证：
@@ -19799,7 +19808,7 @@ exit(Runtime::serve(new Options(
 
 ## 破坏性改动与迁移
 
-还没有发布版；在首个发布版之前公开 API 仍可能变化。开发期间已有的破坏性改动：
+目前只有预发布版，正式版之前公开 API 仍可能变化。首个发布版之前、开发期间已有的破坏性改动：
 
 - **流式操作的 API 撤掉**（ADR-0237）：`XiHan\Framework\Plugin\StreamingOperation` 与 `OperationStream` 已删除，`InvokeStream` 只读第一帧，是 `start` 时以 `Unimplemented` 结束（见[进程外插件](#进程外插件)的「流式」）。迁移：插件只提供一元操作，清单不声明流式操作，等 RFC-0011 定义流式契约。
 - **`Error` 的文案不能只有空白**（RFC-0001「空白字符」，ADR-0245）：读线上编码时 `message` 为空或只有空白都拒绝（上一版只拒绝空串），`Error::literal()` 与 `withText()` 给出只有空白的文案抛 `InvalidArgumentException`；读宿主写来的 proto `Error` 时，只有空白的 `text` 与空串一样取 `code`。迁移：自由文本错误给出含非空白字符的文案。
@@ -19815,12 +19824,12 @@ exit(Runtime::serve(new Options(
 ## 安装
 
 ```bash
-pip install xihan-framework
+pip install "xihan-framework==<版本>"
 ```
 
 导入名是 `xihan_framework`。核心五块运行时零依赖；写进程外插件要装 extra `plugin`（见[写一个插件](#写一个插件)）。
 
-PyPI 上目前只有占名用的版本，首个版本尚未发布，现在从源码安装：克隆仓库，在仓库根建好虚拟环境后执行 `python -m pip install -e ".[plugin]"`（Windows 上建虚拟环境用 `py -3.13 -m venv .venv`）。
+目前只有预发布版，要写明版本号：`<版本>` 换成 PyPI 上的版本，按 PEP 440 写（标签的 `-rc.N` 写作 `rcN`），版本列表见 [Releases](https://github.com/XiHanFun/framework-sdk-python/releases)；不写版本会装到 PyPI 上占名用的旧版本。
 
 ## 模块
 
@@ -19831,7 +19840,7 @@ PyPI 上目前只有占名用的版本，首个版本尚未发布，现在从源
 | `invocation` | 不可变的 `Context`：截止时间、可跨线程触发的 `Cancellation`、W3C 追踪（`traceparent` 只认版本 `00` 与小写十六进制、不合法的当作没给，采样只看标志的最低位，写出只带采样位 `00` / `01`，没有上游时写 `01`）、已登记的 Baggage（已登记键的值非空、按 UTF-16 码元计最多 256、不含控制字符，由一组 Baggage 构造上下文时丢弃不合的成员，`with_baggage` 给出不合的值则抛 `ValueError`，幂等键两种情形都例外）、类型化键的对象袋；`Context.run(call)` 进入时截止时间已过即返回 `KERNEL_TIMEOUT_001` + `kernel.invocation.deadline_before_start`（不核对取消），之后把一个派生的上下文交给 `call`，它的信号在调用方取消或到达截止时间时触发；取消与截止时间只经信号通知，不取消 `call` 的任务，`call` 抛出 `CancelledError` 或写下取消结果时翻译为 `KERNEL_TIMEOUT_001` / `KERNEL_CANCELLED_001`，照常返回的结果原样交回 | RFC-0003 |
 | `pipeline` | 固定阶段的 `Builder`：`use` / `use_at` / `use_named_instance`、`before` / `after`（按类型名或实例名）、阶段可写成清单里的名字、`extend` 接上另一个构建器；命名实例只按实例名引用、默认实例按类型名引用；重复登记、未知阶段与约束主体未登记或有歧义在登记时报，约束目标的问题与成环在排序时报（逐个阶段处理），消息是各语言逐字相同的英文原文，命名实例写成 `类型名[名字]`，成环时列出全部卡住的中间件；`describe` / `dump`、`build`；排序规则与错误码 `KERNEL_PIPELINE_00x` | RFC-0004 |
 | `operation` | `Contract`、`Schema`、异步处理器、容量 10000 的 `Registry`、经完整管道执行的 `Invoker`（XGI：JSON 请求与响应，带三个内置步骤）与类型化入口 `invoke_typed` | RFC-0011 |
-| `plugin` | 进程外插件运行时（协议 `xihan.plugin.v1`）：`Plugin` 在监听之前核对清单与声明，读宿主下发的环境变量，在本机端点上以 `grpc.aio` 提供 `Plugin` 服务并写握手行；每个 RPC 先按常数时间核对会话令牌；按 lifecycle.md §7 处理调用次序、配置（含类型化读取）、就绪、健康、停止，以及 stdin 关闭或 SIGTERM 的收尾（最多 3 秒）；调用经 SDK 的 `Invoker` 与完整管道执行，事件按（主题，订阅方式，类型）依次交给处理器；宿主回调客户端 `Host`（`invoke` 与批量的 `publish`，端点取 `XIHAN_PLUGIN_HOST_ADDRESS` 里第一个 grpcio 能连的项，发出前在本地核对权限与租户）；stderr 上的 JSON 日志；运行时的消息目录（10 种区域，供本地渲染，不随握手发送）。协议代码在 `plugin.v1`，由 `spec/plugin/plugin.proto` 生成。依赖 grpcio 与 protobuf，装 extra：`pip install "xihan-framework[plugin]"` | RFC-0017、`spec/plugin/` |
+| `plugin` | 进程外插件运行时（协议 `xihan.plugin.v1`）：`Plugin` 在监听之前核对清单与声明，读宿主下发的环境变量，在本机端点上以 `grpc.aio` 提供 `Plugin` 服务并写握手行；每个 RPC 先按常数时间核对会话令牌；按 lifecycle.md §7 处理调用次序、配置（含类型化读取）、就绪、健康、停止，以及 stdin 关闭或 SIGTERM 的收尾（最多 3 秒）；调用经 SDK 的 `Invoker` 与完整管道执行，事件按（主题，订阅方式，类型）依次交给处理器；宿主回调客户端 `Host`（`invoke` 与批量的 `publish`，端点取 `XIHAN_PLUGIN_HOST_ADDRESS` 里第一个 grpcio 能连的项，发出前在本地核对权限与租户）；stderr 上的 JSON 日志；运行时的消息目录（10 种区域，供本地渲染，不随握手发送）。协议代码在 `plugin.v1`，由 `spec/plugin/plugin.proto` 生成。依赖 grpcio 与 protobuf，装 extra：`pip install "xihan-framework[plugin]==<版本>"` | RFC-0017、`spec/plugin/` |
 
 ## 快速开始
 
@@ -19899,7 +19908,7 @@ asyncio.run(main())
 这一节是插件一侧的写法；宿主怎样发现、启动与降级插件，见[进程外插件](/plugins/out-of-process)。
 
 ```bash
-pip install "xihan-framework[plugin]"
+pip install "xihan-framework[plugin]==<版本>"
 ```
 
 grpcio 与 protobuf 只在 extra `plugin` 里，核心五块不依赖它们；没有装就导入 `xihan_framework.plugin` 时，错误里给出这条安装命令。
@@ -20018,12 +20027,12 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --exclude echoes.cras
 - 钉的规范版本：SDK 仓库 `spec/` 子模块指向的提交。
 - 认领的档（RFC-0024）：`core` 与 `plugin`。
 - 缺口：无。
-- 成熟度：在有钉在规范标签上的发布版之前是 Experimental。
+- 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 怎样验证：单元测试直接读取 `spec/conformance/vectors/` 下的向量回放；SDK 仓库的 `tests/test_vectors.py` 按档表 `spec/conformance/profiles.json` 核对认领的档要求的每个向量要么有测试回放、要么列为缺口并写明理由；示例插件 echo 由规范的黑盒运行器跑全部用例。CI 在 Linux 与 Windows 上都跑这些测试。
 
 ## 破坏性改动与迁移
 
-首个版本尚未发布，还没有登记的破坏性改动。
+还没有登记的破坏性改动。
 
 ---
 
@@ -20038,18 +20047,18 @@ Rust SDK 是 [XiHan Spec](https://github.com/XiHanFun/framework-spec) 的 Rust �
 ## 安装
 
 ```bash
-cargo add xihan-framework
+cargo add xihan-framework@<版本>
 ```
 
 写插件时打开 feature `plugin`：
 
 ```bash
-cargo add xihan-framework --features plugin
+cargo add xihan-framework@<版本> --features plugin
 ```
 
 `plugin` 模块是可选的：它带来 tonic、prost 与 tokio，不打开这个 feature 时这些依赖都不进来，其余模块也不依赖任何异步运行时。最低 Rust 版本见仓库 `Cargo.toml` 的 `rust-version`（edition 2024 的要求）。
 
-还没有发布到 crates.io，那里的版本只是名字占位。
+目前只有预发布版，要写明版本号：`<版本>` 换成 [Releases](https://github.com/XiHanFun/framework-sdk-rust/releases) 里的版本（不带 `v`）；不写版本会装到 crates.io 上占名用的旧版本。
 
 ## 模块
 
@@ -20132,7 +20141,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 宿主一侧怎样声明、启动与降级插件见[进程外插件](/plugins/out-of-process)；这一节是插件一侧用 Rust 的写法。
 
 ```bash
-cargo add xihan-framework --features plugin
+cargo add xihan-framework@<版本> --features plugin
 cargo add tokio --features macros,rt
 cargo add serde --features derive
 ```
@@ -20284,7 +20293,7 @@ JSON 文本的共同读取检查是自带的逐字节读取器（`primitives::js
 - 缺口：无。
 - 钉的规范版本：仓库 `spec/` 子模块指向的规范标签，规范的版本规则见[规范与多语言](/appendix/spec)。
 
-原语、清单、调用上下文、管道、操作与进程外插件运行时可用，通过规范仓库 `conformance/vectors/` 下 primitives（含 `json-text.json`）、manifest、pipeline、operations 与 plugin（握手行、回调端点列表、版本协商、截止时间、消息键、回调失败的映射、读入 Error）的全部向量；示例 echo 通过黑盒运行器 `xihan-conformance plugin` 的全部用例。在有钉在规范标签上的发布版之前，成熟度是 Experimental。
+原语、清单、调用上下文、管道、操作与进程外插件运行时可用，通过规范仓库 `conformance/vectors/` 下 primitives（含 `json-text.json`）、manifest、pipeline、operations 与 plugin（握手行、回调端点列表、版本协商、截止时间、消息键、回调失败的映射、读入 Error）的全部向量；示例 echo 通过黑盒运行器 `xihan-conformance plugin` 的全部用例。成熟度是 Experimental：已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 
 怎样验证：测试直接读取 `spec/conformance/vectors/`；[`tests/conformance_vectors.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/conformance_vectors.rs) 按档表核对认领的档要求的每个向量要么被回放、要么列为缺口，规范在认领的档里新增向量时它失败；[`tests/plugin_conformance.rs`](https://github.com/XiHanFun/framework-sdk-rust/blob/main/tests/plugin_conformance.rs) 构建示例 echo，用黑盒运行器跑全部用例。CI 在 ubuntu 与 windows 上跑这些测试，另以最低 Rust 版本构建库。
 
@@ -20296,7 +20305,7 @@ JSON 文本的共同读取检查是自带的逐字节读取器（`primitives::js
 
 ## 破坏性改动与迁移
 
-暂无条目：crate 还没有发布过正式版本，crates.io 上只有名字占位的版本。发布之后，每个版本的破坏性改动与迁移方式记在这里。
+暂无条目。每个版本的破坏性改动与迁移方式记在这里。
 
 ---
 
@@ -20315,7 +20324,7 @@ pnpm add xihan-framework
 pnpm add @grpc/grpc-js @bufbuild/protobuf   # 只在写插件时需要
 ```
 
-还没有发布到 npm，发布前在本仓库里使用。
+目前只有预发布版，正式版之前公开 API 还可能调整；版本列表见 [Releases](https://github.com/XiHanFun/framework-sdk-typescript/releases)。
 
 ## 模块
 
@@ -20506,7 +20515,7 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --config '{"greeting"
 | 认领的档 | `core` 与 `plugin` |
 | 缺口 | 无 |
 | 钉的规范版本 | 仓库 `spec/` 子模块指向的提交；发预发布或正式版时子模块必须正好在规范标签上 |
-| 成熟度 | Experimental：在有钉在规范标签上的发布版之前都是 |
+| 成熟度 | Experimental：已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版 |
 
 原语、清单、调用上下文、管道与操作五个模块可用；进程外插件运行时 `plugin`（`xihan.plugin.v1`，基于 `@grpc/grpc-js`）可用，示例插件 echo 通过规范仓库黑盒运行器 `xihan-conformance plugin` 的全部用例（Windows 与 Linux）。
 
@@ -20520,7 +20529,7 @@ go run ./cmd/xihan-conformance plugin --dir <插件目录> --config '{"greeting"
 
 ## 破坏性改动与迁移
 
-本 SDK 还没有发布到 npm，目前没有需要迁移的破坏性改动。之后公开 API 或可观察行为有破坏性改动时，在这一节逐条写明旧行为、新行为与调用方怎么改。
+目前没有需要迁移的破坏性改动。之后公开 API 或可观察行为有破坏性改动时，在这一节逐条写明旧行为、新行为与调用方怎么改。
 
 ---
 

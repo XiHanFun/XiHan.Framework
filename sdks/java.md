@@ -6,7 +6,7 @@
 
 ## 安装
 
-需要 JDK 21+。Maven 坐标 `com.xihanfun:xihan-framework`（Maven Central 命名空间 `com.xihanfun` 已验证，尚未发布）：
+需要 JDK 21+。Maven 坐标 `com.xihanfun:xihan-framework`，发布在 Maven Central；目前只有预发布版，`${xihan-framework.version}` 换成 [Releases](https://github.com/XiHanFun/framework-sdk-java/releases) 里的版本（不带 `v`）：
 
 ```xml
 <dependency>
@@ -219,7 +219,7 @@ Java 的写法与规范的对应：
 - 认领的档：`core` 与 `plugin`（规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)）。
 - 缺口：无；认领的档的向量全部回放，`plugin` 运行器子命令通过。
 - 规范版本：钉在仓库 `spec/` 子模块指向的 framework-spec 提交；发版时子模块必须正好在规范标签上。
-- 成熟度：在有钉在规范标签上的发布版之前是 Experimental。
+- 成熟度：Experimental。已有钉在规范 rc 标签上的预发布版，到 Stable 还要钉在规范正式版标签上的发布版。
 - 已有的：原语、清单、调用上下文、管道、操作与进程外插件运行时（`plugin`，`xihan.plugin.v1`，grpc-java）可用，示例插件 `examples/echo` 通过规范仓库黑盒运行器的全部用例（Linux 上经 Unix 域套接字，Windows 上经回环 TCP 与 `.cmd` 启动脚本）；远程 Provider 的操作集（如 `caching.distributed@1`）尚未提供。
 
 怎样验证：
