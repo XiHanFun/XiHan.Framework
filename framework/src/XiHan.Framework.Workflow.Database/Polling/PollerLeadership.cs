@@ -56,11 +56,11 @@ internal sealed partial class PollerLeadership
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(loggerFactory);
-        _leases = new LeaseTable(services, clock, options.LockConnection);
+        _logger = loggerFactory.CreateLogger<PollerLeadership>();
+        _leases = new LeaseTable(services, clock, options.LockConnection, _logger);
         _holder = $"{options.HolderId}:{Guid.NewGuid():N}";
         _lease = options.LockLease;
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _logger = loggerFactory.CreateLogger<PollerLeadership>();
     }
 
     /// <summary>

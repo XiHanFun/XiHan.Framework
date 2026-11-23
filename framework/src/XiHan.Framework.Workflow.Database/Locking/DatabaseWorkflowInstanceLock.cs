@@ -67,12 +67,12 @@ internal sealed partial class DatabaseWorkflowInstanceLock : IWorkflowInstanceLo
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(databaseOptions);
         ArgumentNullException.ThrowIfNull(loggerFactory);
-        _leases = new LeaseTable(services, clock, databaseOptions.LockConnection);
+        _logger = loggerFactory.CreateLogger<DatabaseWorkflowInstanceLock>();
+        _leases = new LeaseTable(services, clock, databaseOptions.LockConnection, _logger);
         _timeout = options.LockTimeout;
         _lease = databaseOptions.LockLease;
         _holderId = databaseOptions.HolderId;
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
-        _logger = loggerFactory.CreateLogger<DatabaseWorkflowInstanceLock>();
     }
 
     /// <inheritdoc />

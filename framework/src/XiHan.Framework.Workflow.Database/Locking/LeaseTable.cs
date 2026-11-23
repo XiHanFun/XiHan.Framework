@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Persistence.Abstractions;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -15,9 +16,9 @@ namespace XiHan.Framework.Workflow.Database.Locking;
 /// 租约行的三个原子步骤
 /// </summary>
 /// <remarks>
-/// 每一步都在根提供者的新作用域里开自己的可写工作单元、返回即提交，别的节点立刻看得见——与调用方的事务无关：引擎在调用方事务里取锁时，锁行仍走独立的连接与事务，既不等调用方事务里的行锁，也不随它回滚。不经 <c>App.InvokeAsync</c>：锁是平台数据，不受调用租户、管道各阶段与应用是否在服务状态的影响；新作用域里没有调用，也就没有分片，租约表在默认连接（平台库），或 <see cref="DatabaseWorkflowOptions.LockConnection"/> 指定的命名连接——那时工作单元绑定这个连接，事务只开在租约库上，SQLite 上不去等调用方事务占着的业务库写锁。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回 <see cref="PersistenceErrors.Concurrency"/>
+/// 每一步都在根提供者的新作用域里开自己的可写工作单元、返回即提交（<see cref="UnitOfWorkScope"/>，ADR-0259），别的节点立刻看得见——与调用方的事务无关：引擎在调用方事务里取锁时，锁行仍走独立的连接与事务，既不等调用方事务里的行锁，也不随它回滚。不经 <c>App.InvokeAsync</c>：锁是平台数据，不受调用租户、管道各阶段与应用是否在服务状态的影响；新作用域里没有调用，也就没有分片，租约表在默认连接（平台库），或 <see cref="DatabaseWorkflowOptions.LockConnection"/> 指定的命名连接——那时工作单元绑定这个连接，事务只开在租约库上，SQLite 上不去等调用方事务占着的业务库写锁。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回 <see cref="PersistenceErrors.Concurrency"/>
 /// </remarks>
-internal sealed class LeaseTable
+internal sealed partial class LeaseTable
 {
     /// <summary>
     /// 根服务提供者：每一步开新作用域
@@ -35,15 +36,25 @@ internal sealed class LeaseTable
     private readonly UnitOfWorkOptions _unitOfWork;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    /// <remarks>
+    /// 记录租约表抛出的异常：错误本身不带异常的文本
+    /// </remarks>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
     /// <param name="services">根服务提供者</param>
     /// <param name="clock">时钟</param>
     /// <param name="lockConnection">租约表的命名连接；<see langword="null"/> 为缺省落点</param>
-    public LeaseTable(IServiceProvider services, TimeProvider clock, string? lockConnection)
+    /// <param name="logger">日志，记在使用租约表的组件的类别下</param>
+    public LeaseTable(IServiceProvider services, TimeProvider clock, string? lockConnection, ILogger logger)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _unitOfWork = new UnitOfWorkOptions { Connection = lockConnection };
     }
 
@@ -54,13 +65,13 @@ internal sealed class LeaseTable
     /// 行不存在就插入；存在且已过期就接管；否则 <see cref="LeaseAttempt.Held"/>。持久化冲突归为 <see cref="LeaseAttempt.Contended"/>，其余失败原样返回
     /// </remarks>
     public ValueTask<Result<LeaseAttempt>> TryAcquireAsync(string id, string holder, TimeSpan lease, CancellationToken cancellationToken)
-        => RunAsync<LeaseAttempt>(async repository =>
+        => RunAsync<LeaseAttempt>(async (repository, ct) =>
         {
             var now = _clock.GetUtcNow();
-            var found = await repository.FindAsync(id, cancellationToken).ConfigureAwait(false);
+            var found = await repository.FindAsync(id, ct).ConfigureAwait(false);
             if (!found.TryGetValue(out var row))
             {
-                var added = await repository.AddAsync(new WorkflowLockRecord { Id = id, Holder = holder, ExpiresAt = now + lease }, cancellationToken).ConfigureAwait(false);
+                var added = await repository.AddAsync(new WorkflowLockRecord { Id = id, Holder = holder, ExpiresAt = now + lease }, ct).ConfigureAwait(false);
                 if (added.IsSuccess)
                 {
                     return LeaseAttempt.Acquired;
@@ -77,7 +88,7 @@ internal sealed class LeaseTable
 
             row.Holder = holder;
             row.ExpiresAt = now + lease;
-            var updated = await repository.UpdateAsync(row, cancellationToken).ConfigureAwait(false);
+            var updated = await repository.UpdateAsync(row, ct).ConfigureAwait(false);
             if (updated.IsSuccess)
             {
                 return LeaseAttempt.Acquired;
@@ -93,16 +104,16 @@ internal sealed class LeaseTable
     /// 行仍由 <paramref name="holder"/> 持有时把到期时间推到现在加租约并返回 <see langword="true"/>；行没了或持有者变了返回 <see langword="false"/>
     /// </remarks>
     public ValueTask<Result<bool>> RenewAsync(string id, string holder, TimeSpan lease, CancellationToken cancellationToken)
-        => RunAsync<bool>(async repository =>
+        => RunAsync<bool>(async (repository, ct) =>
         {
-            var found = await repository.FindAsync(id, cancellationToken).ConfigureAwait(false);
+            var found = await repository.FindAsync(id, ct).ConfigureAwait(false);
             if (!found.TryGetValue(out var row) || !string.Equals(row.Holder, holder, StringComparison.Ordinal))
             {
                 return false;
             }
 
             row.ExpiresAt = _clock.GetUtcNow() + lease;
-            var updated = await repository.UpdateAsync(row, cancellationToken).ConfigureAwait(false);
+            var updated = await repository.UpdateAsync(row, ct).ConfigureAwait(false);
             if (updated.IsSuccess)
             {
                 return true;
@@ -119,15 +130,15 @@ internal sealed class LeaseTable
     /// </remarks>
     public async ValueTask<Result> ReleaseAsync(string id, string holder, CancellationToken cancellationToken)
     {
-        var released = await RunAsync<bool>(async repository =>
+        var released = await RunAsync<bool>(async (repository, ct) =>
         {
-            var found = await repository.FindAsync(id, cancellationToken).ConfigureAwait(false);
+            var found = await repository.FindAsync(id, ct).ConfigureAwait(false);
             if (!found.TryGetValue(out var row) || !string.Equals(row.Holder, holder, StringComparison.Ordinal))
             {
                 return true;
             }
 
-            var removed = await repository.RemoveAsync(row, cancellationToken).ConfigureAwait(false);
+            var removed = await repository.RemoveAsync(row, ct).ConfigureAwait(false);
             return removed.IsSuccess || IsRace(removed.Error!) ? true : removed.Error!;
         }, cancellationToken).ConfigureAwait(false);
         return released.ToResult();
@@ -137,45 +148,27 @@ internal sealed class LeaseTable
     /// 在新作用域的可写工作单元里执行一步：成功即提交，失败或异常即回滚
     /// </summary>
     /// <remarks>
-    /// 异常（连接中断、跨节点同时插入在驱动里抛出的唯一约束冲突）归为存储不可达，由实例锁当作可重试的失败直到等锁超时
+    /// 步骤返回的失败与提交返回的失败（写入阶段的标识重复、并发戳冲突）如实返回，由调用方按竞争处理。异常（连接中断、跨节点同时插入在驱动里抛出的唯一约束冲突）归为存储不可达，由实例锁当作可重试的失败直到等锁超时；调用方取消回滚后照常抛出
     /// </remarks>
-    private async ValueTask<Result<T>> RunAsync<T>(Func<IRepository<WorkflowLockRecord, string>, ValueTask<Result<T>>> step, CancellationToken cancellationToken)
+    private ValueTask<Result<T>> RunAsync<T>(Func<IRepository<WorkflowLockRecord, string>, CancellationToken, ValueTask<Result<T>>> step, CancellationToken cancellationToken)
+        => UnitOfWorkScope.RunAsync(
+            _services,
+            _unitOfWork,
+            (services, ct) => step(services.GetRequiredService<IRepository<WorkflowLockRecord, string>>(), ct),
+            Unavailable,
+            _logger,
+            cancellationToken);
+
+    /// <summary>
+    /// 把租约步骤抛出的异常归为存储不可达
+    /// </summary>
+    /// <remarks>
+    /// 完整异常只进日志
+    /// </remarks>
+    private Error Unavailable(Exception exception)
     {
-        await using var scope = _services.CreateAsyncScope();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        try
-        {
-            await unitOfWork.BeginAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
-            var result = await step(scope.ServiceProvider.GetRequiredService<IRepository<WorkflowLockRecord, string>>()).ConfigureAwait(false);
-            if (result.IsFailure)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-                return result;
-            }
-
-            // 提交失败（写入阶段的标识重复、并发戳冲突）如实返回，由调用方按竞争处理
-            var committed = await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-            return committed.IsSuccess ? result : Result.Failure<T>(committed.Error!);
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            // 回滚用 None 令牌保证一定执行；工作单元没开起来时不回滚
-            if (unitOfWork.State == UnitOfWorkState.Active)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-            }
-
-            return StorePartition.Unavailable(exception.Message);
-        }
-        catch
-        {
-            if (unitOfWork.State == UnitOfWorkState.Active)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-            }
-
-            throw;
-        }
+        LogStepThrew(_logger, exception);
+        return StorePartition.Unavailable(exception);
     }
 
     /// <summary>
@@ -183,4 +176,10 @@ internal sealed class LeaseTable
     /// </summary>
     private static bool IsRace(Error error)
         => error.Code is PersistenceErrors.Concurrency or PersistenceErrors.NotFound;
+
+    /// <summary>
+    /// 租约步骤里租约表抛出异常
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A workflow lease step threw; the store is reported as unavailable.")]
+    private static partial void LogStepThrew(ILogger logger, Exception exception);
 }

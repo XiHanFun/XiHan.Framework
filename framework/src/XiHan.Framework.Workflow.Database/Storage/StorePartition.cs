@@ -67,8 +67,20 @@ internal static class StorePartition
     }
 
     /// <summary>
-    /// 以文本原因构造存储不可达
+    /// 把抛出的异常归为存储不可达
     /// </summary>
-    public static Error Unavailable(string reason)
-        => new(WorkflowErrors.StoreUnavailable, WorkflowMessages.StoreUnavailable, MessageArguments.Of(("reason", reason)));
+    /// <remarks>
+    /// 框架自己的异常带错误码：以它为原因、它转成的错误为内部错误。其余异常的消息是驱动写的，可能带连接串与主机名：原因只写类型全名，完整异常由调用方记进日志（ADR-0259）
+    /// </remarks>
+    public static Error Unavailable(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        if (exception is FrameworkException framework)
+        {
+            return new Error(WorkflowErrors.StoreUnavailable, WorkflowMessages.StoreUnavailable, MessageArguments.Of(("reason", framework.Code)), framework.ToError());
+        }
+
+        var type = exception.GetType();
+        return new Error(WorkflowErrors.StoreUnavailable, WorkflowMessages.StoreUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
+    }
 }

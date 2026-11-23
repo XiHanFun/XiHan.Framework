@@ -100,7 +100,7 @@ public sealed class DatabaseWorkflowFeature : IHostedFeature
         context.Services.AddScoped<DatabaseWorkflowTransaction>();
         context.Services.AddSingleton<DatabaseWorkflowInstanceLock>();
         // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集；无论能力是否被选中，租约表都是本包的存储
-        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, new PollerLeaseProbe(sp, options).ProbeAsync, options.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
+        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, new PollerLeaseProbe(sp, options, sp.GetRequiredService<ILoggerFactory>().CreateLogger<PollerLeaseProbe>()).ProbeAsync, options.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
         context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName));
         if (!context.Node.IsSelectedFor(WorkflowCapabilities.Execution))
         {
