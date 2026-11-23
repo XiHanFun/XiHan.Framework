@@ -12,12 +12,12 @@
 | --- | --- |
 | `IDomainEvent` | 领域事件接口，只有 `OccurredAt`；事件通常是 `record` |
 | `DomainEventBuffer` / `IHasDomainEvents` | 聚合用缓冲收集事件并经 `DomainEvents` 暴露、`ClearDomainEvents()` 清空；缓冲有容量上限（缺省 256） |
-| `AddDomainEvent<TEvent>(topic, type, info, subject)` | 登记一种事件的主题、CloudEvents `type`、源生成的 `JsonTypeInfo<TEvent>` 与可选的 `subject` 选择器；首次调用时注册 `IDomainEventDispatcher` |
+| `AddDomainEvent<TEvent>(topic, type, info, subject)` | 登记一种事件的主题、CloudEvents `type`、源生成的 `JsonTypeInfo<TEvent>`（事件序列化成信封的 `Data` 时不走反射、兼容 Native AOT，事件类型要写进 `[JsonSerializable]` 上下文，见[JSON 序列化与 Native AOT](/common/serialization)）与可选的 `subject` 选择器；首次调用时注册 `IDomainEventDispatcher` |
 | `IDomainEventDispatcher` | 持久化定义的派发契约，由消息子系统实现，首次 `AddDomainEvent<TEvent>` 时注册 |
 | Transaction 阶段 | 处理器成功后、提交前，`UnitOfWorkMiddleware` 把工作单元登记的、带未派发事件的聚合交给派发器 |
 | `OutboxFeature` | 事务性发件箱：`IMessagePublisher` 换成 `OutboxPublisher`，后台 `OutboxDispatcher` 轮询 `OutboxMessage` 表投递 |
 
-事件的流转：仓储在新增、更新、删除成功后把实现 `IHasDomainEvents` 的实体登记到 `IUnitOfWork.DomainEvents`；处理器成功后、提交前，中间件取出带有未派发事件的聚合（`DomainEventTracker.Pending()`），连同工作单元的租户交给 `IDomainEventDispatcher.DispatchAsync`；派发器把事件映射成信封，同一主题一次 `PublishManyAsync`，全部成功后清空各聚合的缓冲，再进入提交。
+事件的流转：仓储写入成功后把聚合登记到工作单元，处理器成功后、提交前由 Transaction 阶段的中间件连同工作单元的租户交给派发器（这一段在[工作单元与事务](/persistence/unit-of-work)里讲）；派发器把事件映射成信封，同一主题一次 `PublishManyAsync`，全部成功后清空各聚合的缓冲，再进入提交。
 
 ## 最小示例
 
@@ -124,13 +124,10 @@ public sealed class CreateOrder(IRepository<Order, Guid> orders, IIdGenerator<Gu
 }
 ```
 
-```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Messaging.Abstractions.Outbox;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
+`Program.cs` 接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的那份上，`AddXiHan` 里把 `GreetingsFeature` 换成发件箱与 `OrdersFeature`：
 
-var builder = WebApplication.CreateBuilder(args);
+```csharp
+using XiHan.Framework.Messaging.Abstractions.Outbox;
 
 // 发件箱不在任何组合包里，按需装配；它需要 messaging.queue 与 persistence.relational
 builder.AddXiHan(xihan => xihan
@@ -138,11 +135,6 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<HttpProtocolFeature>()
     .UseFeature<OutboxFeature>()
     .UseFeature<OrdersFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanOperations();
-app.Run();
 ```
 
 ```json
@@ -205,74 +197,21 @@ app.Run();
 
 退避中与死信的消息不占批次，几条永久失败的消息不会挡住后面的消息。重试逐条发布：代理整批抛出时分不出是哪一条，单独重试后让整批失败的那条只拖累它自己，同批的别的消息随即发出。代理不可达时一轮只有一次调用抛出，积压的消息累计尝试比逐条失败慢；要更长的停机容忍度，调大 `MaxAttempts` 或 `MaxRetryDelaySeconds`（如 15 次、3600 秒约 5.4 小时）。缺省参数下一条消息要连续失败约 20 分钟才进死信，代理短暂拒收不会把消息成批送进死信。
 
-投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。死信行不自动删除，由应用按 `DeadLetteredAt` 清理或重投。
+投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。死信行不自动删除，由应用按 `DeadLetteredAt` 清理或重投。处理器侧的死信（代理的死信队列、主题或流）由代理管理，见[队列与流](/messaging/streams)。
 
 ## 发件箱表
 
 `OutboxMessage` 是普通实体：`Topic` 长 128，`Payload` 是字节，`LastError` 为长文本，`NextAttemptAt` 与 `DeadLetteredAt` 可空（加在已有数据的表上时旧行为空，视为到期、未进死信）。实体上的 `[EntityIndex(DispatchedAt, DeadLetteredAt, CreatedAt)]` 声明了同时服务取到期消息与保留期清理的索引。用 EF Core 时 `OutboxMessage` 要像其他实体一样进应用 `DbContext` 的模型（`modelBuilder.Entity<OutboxMessage>()`），之后调用 `ApplyPersistenceConventions(Database)` 即得到索引，见 [EF Core Provider](/persistence/entity-framework-core) 与[建表约定与索引](/persistence/schema)。
 
+租户分库时，发件箱行与业务写入同一个事务，落在哪个库由持久化 Provider 决定：EF Core Provider 在带分片的调用里整个 `DbContext` 连到租户库，发件箱行也在租户库；SqlSugar Provider 把发件箱这类平台表留在默认库。投递循环每轮先投递默认库，再逐个投递分片库（按连接去重，每个库各自一个工作单元），分片库的清单从租户目录读出、每 `ShardRefreshIntervalSeconds` 重读一次；用 SqlSugar 时可以把 `IncludeShards` 设为 `false` 省去多余的查询。EF Core 下带分片的调用要发消息，租户库就要建发件箱表；没有建的库每轮投递失败、记日志，不影响别的库。
+
 ## 管道外派发
 
-领域事件只由 Transaction 阶段的中间件派发。单例服务、后台循环这些不经管道的代码写入带事件的聚合时，要在提交前自己派发，否则事件留在聚合的缓冲里不会发出：
-
-```csharp
-var pending = unitOfWork.DomainEvents.Pending();
-if (pending.Count > 0)
-{
-    // 派发器由 AddDomainEvent 注册；派发成功会清空各聚合的缓冲
-    var dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
-    (await dispatcher.DispatchAsync(pending, unitOfWork.Options.TenantId, cancellationToken)).ThrowIfFailure();
-}
-
-(await unitOfWork.CommitAsync(cancellationToken)).ThrowIfFailure();
-```
-
-在管道外开工作单元的完整写法见[工作单元与事务](/persistence/unit-of-work)。
+领域事件只由 Transaction 阶段的中间件派发。单例服务、后台循环这些不经管道的代码写入带事件的聚合时，要在提交前自己取出 `unitOfWork.DomainEvents.Pending()` 交给 `IDomainEventDispatcher.DispatchAsync`，否则事件留在聚合的缓冲里不会发出。代码与在管道外开工作单元（`UnitOfWorkScope`）的写法见[工作单元与事务](/persistence/unit-of-work#在管道外开工作单元)。
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Messaging:Outbox:PollIntervalSeconds` | 正数 | 1 | 投递循环的轮询间隔 |
-| `XiHan:Messaging:Outbox:BatchSize` | 1 到 1000 的整数 | 100 | 每轮最多投递条数，也是每轮最多删除的已投递行数；不能超过查询的取出上限 `EntityQuery.DefaultMaxTake` |
-| `XiHan:Messaging:Outbox:MaxAttempts` | 正整数 | 10 | 一条消息最多尝试投递的次数（含首次），用尽进死信 |
-| `XiHan:Messaging:Outbox:RetryDelaySeconds` | 正数 | 5 | 第一次失败后的重试间隔，之后每失败一次翻倍 |
-| `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限 |
-| `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
-| `XiHan:Messaging:Outbox:IncludeShards` | 布尔 | `true` | 装配了租户分片时也投递各分片库里的发件箱行；SqlSugar 把发件箱行留在默认库，可设为 `false` 省去多余的查询 |
-| `XiHan:Messaging:Outbox:ShardRefreshIntervalSeconds` | 正数 | 60 | 分片库清单多久从租户目录重读一次，新建的分片库最迟在这之后纳入投递 |
-
-非法值在装配时抛 `ArgumentException`。
-
-## 常见问题
-
-### 事件到底在什么时候发出
-
-没有发件箱时，在处理器成功之后、提交之前直接发给代理；有发件箱时，提交时随业务数据落进发件箱表，最多 `PollIntervalSeconds` 之后由投递循环发给代理。两种情况下处理器返回失败都不会发出任何事件。
-
-### 提交失败了事件会发出去吗
-
-有发件箱时不会，发件箱行与业务写入同一个事务一起回滚。没有发件箱时可能会：事件在提交前已经发给代理，随后提交失败也收不回。这就是生产环境装配发件箱的理由。
-
-### 处理器里能不能再发消息
-
-能。处理器经完整管道执行，Transaction 阶段开着工作单元，处理器里注入 `IMessagePublisher` 发布、或写入带事件的聚合，都随这次调用的工作单元一起提交；装配了发件箱时同样先写进发件箱。
-
-### 死信怎样重新投递
-
-发件箱的死信留在表里（`DeadLetteredAt` 不为空）。修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮投递循环就会重发；按 `DeadLetteredAt` 定期清理不再需要的行。处理器侧的死信（代理的 `.dlq` 队列或主题）由代理管理，见[队列与流](/messaging/streams)。
-
-### 为什么 AddDomainEvent 要传源生成的 JsonTypeInfo
-
-事件要序列化成信封的 `Data`。传 `JsonTypeInfo<TEvent>` 既让序列化不走反射、兼容 Native AOT，也让登记时就确定每种事件的编码方式。把事件类型加进 `[JsonSerializable]` 上下文即可，见[JSON 序列化与 Native AOT](/common/serialization)。
-
-### 租户分库时发件箱里的消息怎样发出
-
-发件箱行与业务写入同一个事务，落在哪个库由持久化 Provider 决定：EF Core Provider 在带分片的调用里整个 `DbContext` 连到租户库，发件箱行也在租户库；SqlSugar Provider 把发件箱这类平台表留在默认库。投递循环每轮先投递默认库，再逐个投递分片库（按连接去重，每个库各自一个工作单元），分片库的清单从租户目录读出、每 `ShardRefreshIntervalSeconds` 重读一次。EF Core 下带分片的调用要发消息，租户库就要建发件箱表；没有建的库每轮投递失败、记日志，不影响别的库。
-
-### 发件箱能用在非关系型存储上吗
-
-不能。`OutboxFeature` 的清单要求 `persistence.relational@1`，发件箱行经关系型仓储与工作单元读写，依赖同一事务提交。只有文档型存储时不装发件箱，事件在提交前直接发给代理。
+示例只设了 `XiHan:Messaging:Outbox:PollIntervalSeconds`（投递循环的轮询间隔，缺省 1）与 `BatchSize`（每轮最多投递条数，缺省 100）。尝试上限、退避间隔、已投递行的保留期与分片库的其余六个键，连同类型与取值范围，见 [Messaging.Abstractions](/packages/messaging-abstractions#配置)。
 
 ## 相关包与下一步
 

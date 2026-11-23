@@ -49,10 +49,10 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `Epoch` | ISO 8601 日期时间 | `2026-01-01T00:00:00Z` | 时间戳起点，没有时区按 UTC；数据写入后不得再改 |
-| `WorkerId` | 整数 0–1023 | 无 | 固定机器位；不配置则经 `IDistributedLock` 租约分配 |
-| `ClockDriftToleranceMilliseconds` | 非负整数 | `100` | 时钟回拨不超过它时等待追平 |
-| `LeaseTimeToLiveSeconds` | 正整数 | `30` | 机器位租约存活时间，每三分之一续约一次 |
+| `Epoch` | ISO 8601 日期时间 | `2026-01-01T00:00:00Z` | 时间戳起点，没有时区按 UTC；同一套数据一经写入不得再改，否则已有标识解析出的时间会错位 |
+| `WorkerId` | 整数 0–1023 | 无 | 指定即固定机器位，运维保证集群内不重复；不指定则启动时经 `IDistributedLock` 租约分配 |
+| `ClockDriftToleranceMilliseconds` | 非负整数 | `100` | 时钟回拨不超过它时等待时钟追平，超过时拒绝生成 |
+| `LeaseTimeToLiveSeconds` | 正整数 | `30` | 租约分配时每个机器位租约的存活时间，每三分之一续约一次 |
 
 ```json
 {
@@ -67,12 +67,16 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 }
 ```
 
+非法值（`WorkerId` 越界或带符号、`Epoch` 不是日期时间）在配置阶段抛出 `ArgumentException`，启动失败。epoch 晚于当前时钟也是配置错误：特性在启动时构造生成器，构造即抛出 `ArgumentException`，不会等到第一次生成。
+
 运行时数据源的注册表读取 `XiHan:Persistence:DataSources`（`DataSourceOptions.ConfigurationSection`）：
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `MaxCount` | 整数 1–1024 | `64` | 登记数上限，满了再登记新名字返回 `PERSISTENCE_UNAVAILABLE_007` |
-| `HealthProbeIntervalSeconds` | 正数 | `15` | 每个数据源健康项的重探间隔，也是单次探测的超时 |
+| `MaxCount` | 整数 1–1024 | `64` | 登记数上限，满了再登记新名字返回 `PERSISTENCE_UNAVAILABLE_007`，不淘汰已有的；替换同名的不占名额 |
+| `HealthProbeIntervalSeconds` | 正数 | `15` | 每个数据源健康项的重探间隔，也是单次探测与测试连接（`TestAsync`）的超时 |
+
+非法值同样在配置阶段抛出 `ArgumentException`，不回退到缺省值。连接绑定 `XiHan:Bindings:db` 与各 Provider 自己的键见 [Persistence.InMemory](./persistence-inmemory#配置)、[Persistence.EntityFrameworkCore](./persistence-entityframeworkcore#配置)、[Persistence.SqlSugar](./persistence-sqlsugar#配置)。
 
 ## 主要类型
 
@@ -85,6 +89,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 | `Ordering<T>`、`TimeRange` | `…Abstractions.Queries` | 一项排序；时间范围提示（两端都含，`From` 不能晚于 `To`） |
 | `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、是否已开数据库事务（`HasTransaction`）、开启时的选项（`Options`）；选项是初始化器记录（`TenantId`、`IsReadOnly`、`ReadsPrimary`：只读但读主库；`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
 | `UnitOfWorkMiddleware` | `…Abstractions.UnitOfWork` | Transaction 阶段的中间件，由 Provider 登记 |
+| `UnitOfWorkScope` | `…Abstractions.UnitOfWork` | 管道之外在新作用域里开工作单元：`RunAsync` 成功提交、失败或抛出回滚；带 `fault` 的重载把异常映射成调用方的错误，带 `prepare` 的重载在取工作单元之前对作用域做准备（绑定租户分片） |
 | `DomainEventTracker`、`IDomainEventDispatcher` | `…Abstractions.UnitOfWork` | 写过的聚合登记表；领域事件派发端口（Messaging 实现） |
 | `PersistenceConventions` | `…Abstractions` | `ApplyOnAdd`、`ApplyOnUpdate`（带存储行的重载让更新沿用存储的创建时间、租户与删除标记）、`TrySoftDelete`、`IsVisibleTo`、`IsDeleted`、`NewStamp` |
 | `LongTextAttribute` | `…Abstractions` | 标记长文本列（`[LongText]`） |
@@ -146,73 +151,66 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 }
 ```
 
-`ImportAsync` 接受部分成功：通过校验的订单随调用提交。要全有或全无，把失败项作为操作结果返回，见[持久化](/persistence/repositories)；管道外的工作单元写法见[工作单元与事务](/persistence/unit-of-work)。
+`ImportAsync` 接受部分成功：通过校验的订单随调用提交。要全有或全无，把失败项作为操作结果返回，见[持久化](/persistence/repositories)；管道外的工作单元写法见[工作单元与事务](/persistence/unit-of-work#在管道外开工作单元)。
 
 ## 行为与限制
 
 - 仓储只在活动的工作单元里工作；在 Transaction 阶段之外直接使用抛出携带 `PERSISTENCE_UNAVAILABLE_001` 的 `FrameworkException`。
-- 查询缺省 `Skip` 0、`Take` 1000，`Take` 的上限也是 1000（`EntityQuery.DefaultMaxTake`）；`take` 超过上限抛出携带 `PERSISTENCE_VALIDATION_005` 的 `FrameworkException`，在调用里由 Transaction 阶段回滚并转为同码的校验结果（HTTP 400，参数 `take`、`max`），Transaction 之外仍是异常；`skip` 小于 0、`take` 小于 1 是编程错误，抛出 `ArgumentOutOfRangeException`；都不静默截断，要更多行就分页。`Within` 只是分表扫描范围的提示，不过滤行。
+- 查询缺省 `Skip` 0、`Take` 1000，`Take` 的上限也是 1000（`EntityQuery.DefaultMaxTake`），越界不静默截断，要更多行就分页：`take` 超过上限是 `PERSISTENCE_VALIDATION_005`（调用里由 Transaction 阶段回滚并转为校验结果，参数 `take`、`max`；Transaction 之外仍是异常），负的 `skip` 与小于 1 的 `take` 是编程错误、抛出 `ArgumentOutOfRangeException`。`Within` 只是分表扫描范围的提示，不过滤行。
 - 批量方法的结果与入参等长、顺序一一对应；空集合不访问后端但仍要求活动的工作单元；批内重复项按入参顺序逐项施加语义。
 - 工作单元状态机 `NotStarted → Active → Committed | RolledBack`，违反顺序抛出携带 `PERSISTENCE_VALIDATION_002` 的 `FrameworkException`；同一服务作用域里再经管道的嵌套调用由 `UnitOfWorkMiddleware` 以同码的结果结束（消息键 `persistence.unit_of_work.nested`），处理器不执行。
 - `UnitOfWorkMiddleware` 为只读操作（`OperationContract.IsReadOnly`：`get` / `list` 或 `ReadOnly = true`）开只读工作单元：不开数据库事务，仓储写入返回 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500）并把工作单元记为失败，Provider 直接写入入口 `EnsureTransactionAsync` 抛出的同码异常在 Transaction 阶段转为结果（ADR-0073、ADR-0081）。
 - 不带操作描述的调用（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器）开可写工作单元；只读工作单元拒绝写入的错误消息键是 `persistence.unit_of_work.read_only`，处理器忽略这次失败而返回成功时，提交返回同一错误，调用以它结束；空集合的批量写入不算写入。
 - 嵌套调用（在调用里经管道再调操作）新建服务作用域（`CreateAsyncScope()` + `App.CreateContext`），内层按自己的契约开自己的工作单元：只读不传播，只读操作里调用的写操作在自己的事务里提交。管道外自己开的工作单元由 `UnitOfWorkOptions { TenantId, IsReadOnly, Connection, ReadsPrimary }` 决定，`ReadsPrimary` 让只读工作单元读主库，其余仍是只读的语义，没有从库的 Provider 上没有作用（ADR-0122）。
-- 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109）：可写工作单元里仓储的单条写入或非空批量写入一经调用即为真（不论结果），`EnsureTransactionAsync` 同样；提交（成功或返回失败）与回滚后为假，只读工作单元恒为假；多连接一个值，绑定命名连接的工作单元只报告那个连接；内存实现第一次写入调用起同样为真。调用里要立即对外产生、不随回滚撤回的副作用之前据此判断，见[工作单元与事务](/persistence/unit-of-work)。
-- `HasTransaction` 的边界：查找、查询、计数与空批量不开事务；不同服务作用域的工作单元各报各的；不经仓储、也不经 `EnsureTransactionAsync` 直接对客户端执行的写入不在事务里，也不让它变真。
-- 提交前派发领域事件；有事件却没有 `IDomainEventDispatcher` 时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
-- 领域事件在处理器成功后、提交前由中间件把带有未派发事件的聚合交给 `IDomainEventDispatcher`（Messaging 子系统实现，用发件箱时与业务写入同事务），成功即清空缓冲、失败即回滚。
+- 数据库事务延迟到第一次写入才开，`IUnitOfWork.HasTransaction` 报告此刻开没开（ADR-0109），不同服务作用域的工作单元各报各的。何时为真、何时为假，以及调用里据此安排不随回滚撤回的副作用，见[工作单元与事务](/persistence/unit-of-work#是否已开数据库事务)。
+- 管道之外（单例存储、后台循环、健康探针）用 `UnitOfWorkScope.RunAsync` 开工作单元（ADR-0259）：回滚与释放作用域自身的失败只记警告、不盖掉已确定的结果或异常，取消只认令牌已取消的取消异常，收尾规则的全表见[在管道外开工作单元](/persistence/unit-of-work#在管道外开工作单元)；它不派发领域事件，容器里没有 `IUnitOfWork` 时原样抛出。
+- 领域事件在处理器成功后、提交前由中间件把带有未派发事件的聚合交给 `IDomainEventDispatcher`（Messaging 子系统实现，用发件箱时与业务写入同事务），成功即清空缓冲、失败即回滚；有事件却没有派发器时调用以 `PERSISTENCE_VALIDATION_003` 结束，不静默丢弃。
 - 协议字段只由 Provider 写入：更新沿用存储里的创建时间、租户与删除标记，调用方实例上的这些值不生效（`PersistenceConventions.ApplyOnUpdate(entity, stored, now)`）。
 - `PersistenceConventions.NewStamp()` 生成 32 位十六进制并发戳（`Guid` 的 `N` 格式）。
-- 索引声明（ADR-0072）：名字缺省是 `IX_` / `UX_` + 表名 + 每列缩写（属性名每个词的前两个字符），也可以用 `Name` 显式给出（ADR-0249，字母开头、只含 ASCII 字母数字与下划线），都不超过 63 个字符、超过不截断而报错；软删除实体的唯一索引是只约束未删除行的部分唯一索引（ADR-0081，PostgreSQL、SQLite、SQL Server 带条件，SqlSugar 在 MySQL 8.0.13 起与 Oracle 上建成函数索引，其余数据库启动失败；列里显式写 `IsDeleted` 则是普通唯一索引）；声明错误（没有列、列名重复、不是公开属性、显式的名字不合法、名字超长、同名或同列）在建模 / 建表时抛 `InvalidOperationException`。关系型 Provider 写入撞上唯一索引返回 `PERSISTENCE_CONFLICT_003`，内存实现不建索引、不校验。
-- 索引声明的补充：框架自己的表（发件箱、审计、授予、翻译、调度、工作流）也用 `[EntityIndex]` 声明，不直接标 SqlSugar 的 `[SugarIndex]` 或 EF Core 的 `[Index]`，实体只依赖本包；索引全部升序，一个实体上可以声明多个、多列、可唯一。缩写例：`TenantId → TeId`、`NextFireAt → NeFiAt`，缩写用下划线连接，表名里字母、数字、下划线以外的字符换成下划线。
-- 部分唯一索引的列就是声明的列，条件是 `IsDeleted = false`：同一业务键删除、重建、再删除任意多次都不冲突，未删除的行之间唯一；不支持的数据库不退化成普通唯一索引，启动失败的错误码是 `PERSISTENCE_UNAVAILABLE_008`，要唯一约束就把 `IsDeleted` 显式写进列（同一业务键最多一行已删除），或不声明唯一。
-- 唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行（SQL Server 把 NULL 当相等；EF Core 在 SQL Server 上给这种唯一索引自动加 `IS NOT NULL` 过滤）；要让「全局」这类空值参与唯一性，存成非空的哨兵值（如授予表的空字符串租户）。
-- 唯一键冲突的核对与报告：关系型 Provider 在写入失败后核对（同一批里两项同键、库里另一行同键；更新把键改成已有的值同样算；部分唯一索引只比较未删除的行），返回 `PERSISTENCE_CONFLICT_003`（消息键 `persistence.entity.unique_key_conflict`，参数 `entity`、`index`），这次写入的项统一报告，工作单元随后只能回滚、调用以同一错误结束（与写入阶段才发现的标识重复相同）。核对不到的（大小写不敏感排序规则下只差大小写、SqlSugar 上与本工作单元先前未提交的行冲突、键含空值）异常原样抛出。
-- 雪花生成器单实例每毫秒最多 4096 个标识；时钟回拨超过阈值抛 `PERSISTENCE_UNAVAILABLE_004`，没有机器位抛 `PERSISTENCE_UNAVAILABLE_005`，在调用里由特性的中间件转为同码的 UNAVAILABLE 结果（HTTP 503）；租约状态以健康项 `persistence.snowflake.worker` 上报。
-- 雪花位布局：符号位 0、41 位自 epoch 起的毫秒（约 69.7 年）、10 位机器位、12 位序列，用尽等下一毫秒，线程安全；时钟早于 epoch 是配置错误，启动即失败。`generator.Parse(id)` 或 `SnowflakeId.Parse(id, epoch)` 还原生成时刻、机器位与序列，排障用。
-- 机器位租约：没有配置 `WorkerId` 时启动期从 0 起逐个尝试锁 `persistence:snowflake:worker:<n>`，取第一个空位；每三分之一存活时间经 `LockHandle.TryExtendAsync` 原子续约，锁条目一直在、别的实例拿不到这个机器位，续约失败（存储侧已到期或被他人持有）或锁存储不可达都按丢失处理并重新分配；本地按获取时刻加存活时间判定有效，到期未续上即没有机器位。容器里没有 `IDistributedLock`、或 1024 个机器位都被占用时启动失败，不做随机机器位。健康项 `persistence.snowflake.worker`：持有为 Ready，没有为 Degraded（`PERSISTENCE_UNAVAILABLE_005`）。
-- 启停顺序：清单声明可选依赖 `caching.distributed@1`，装配了缓存 Provider 时它先于雪花特性启动、后于雪花特性停止，租约在锁存储可用时取得与释放，与 `UseFeature` 的先后无关；固定机器位又没有任何 `caching.distributed` Provider 时按可选依赖缺失处理，特性是 Degraded，生成不受影响。
-- 雪花失败的转换：`NewId()` 返回 `long`，失败只能抛出 `FrameworkException`；回拨超过阈值在时钟追上后自动恢复。转换成结果的中间件由本特性登记在 Resilience 阶段末尾，在幂等与工作单元之外，工作单元已回滚、幂等标记已清除；消息键 `persistence.snowflake.clock_moved_backwards` / `persistence.snowflake.worker_unavailable`，HTTP 映射为可重试的 503、gRPC 为 `Unavailable`。管道之外直接调用生成器仍是异常（ADR-0063）。
-- 雪花标识在 JSON 里保持 number（后端标准类型，不加字符串转换器）。超过 2^53（约 9.007 × 10^15）的整数在 JavaScript 的 `number` 里会丢精度，而雪花标识从 epoch 之后约 25 天起就全部超过 2^53：前端必须用能保留大整数的方式解析（`JSON.parse` 的 BigInt reviver、按字符串读取原文），以字符串或 `BigInt` 保存与回传，不能 `Number()` 换算。
-- 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。SqlSugar 两样都支持；EF Core 只支持绑定连接的工作单元（ADR-0087），普通工作单元里取用命名连接上的实体抛 `PERSISTENCE_UNAVAILABLE_008`（已定，ADR-0091）；内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 命名连接](/persistence/connections)。
-- 命名连接的细节：SQLite 只有一个写者，业务事务写过之后同一个库文件上的另一个事务要等它结束，所以工作流的租约行要放在另一个库文件。`AddRepository<TEntity, TKey>(connection)` 里 `null` 是 Provider 的缺省落点，非空不能是空白；同一实体登记到两个连接（含一次为空、一次非空）抛 `ArgumentException`；`RepositoryRegistrations.ConnectionOf(type)` 与 `RegisteredEntity.Connection` 取登记的连接。普通工作单元里这样的实体照常参与整体事务，只是落在那个连接上，建表也建在那里。`UnitOfWorkOptions { Connection = name }` 的连接名空白抛 `ArgumentException`，实体不落在它上面时 `PERSISTENCE_VALIDATION_004`，事务只开在它上面，不牵动作用域里的其他连接（包括默认连接）。SqlSugar 的命名连接是客户端里同名 `ConfigId` 的连接（特性创建客户端时在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明）；EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明，一个 `DbContext` 一个连接，绑定连接的工作单元把本作用域的 `DbContext` 建在那个连接上。
-- 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 运行时数据源](/persistence/connections)。
-- 运行时数据源的约定：Provider 经 `AddDataSourceProvider<T>(configuration)` 登记 `IDataSourceProvider`（目前是 SqlSugar）；名字 `^[a-z0-9][a-z0-9-]{0,63}$`，`default` 保留给缺省连接；数据库类型不区分大小写，认得哪些由 Provider 决定；`DataSourceDefinition.Describes` 比名字、类型（不区分大小写）与连接串（区分大小写）。注册表是进程内的，多实例时别的实例在下一次以新定义 `GetOrAddAsync` 时替换，所以每次使用都以记录里当前的定义 `GetOrAddAsync`，不要只按名字 `GetAsync`；约定连接 `default` / `shard` 与租户分片照旧。
-- 运行时数据源的健康与失败：健康项数据 `databaseType`、`provider`，在后台按 `HealthProbeIntervalSeconds` 探连通性（关系型 Provider 走一次数据库往返，ADR-0123）；尚未探过 Started，成功 Ready，失败或超时 Degraded（`PERSISTENCE_UNAVAILABLE_006`），不影响 readiness。连不上 `PERSISTENCE_UNAVAILABLE_006`（参数 `name`、`reason`）；数据库类型不认识或连接串格式错 `PERSISTENCE_VALIDATION_006`，同名的已登记实例不受影响；`GetAsync` 没有登记 `PERSISTENCE_NOTFOUND_002`；替换同名的不占名额。
+- 索引声明（ADR-0072）：实体用 `[EntityIndex]` 声明索引，框架自己的表（发件箱、审计、授予、翻译、调度、工作流）也一样，不直接标 SqlSugar 的 `[SugarIndex]` 或 EF Core 的 `[Index]`，实体只依赖本包；内存实现不建索引、不校验。名字规则（ADR-0249）、声明错误、软删除实体的部分唯一索引（ADR-0081）在各数据库上的建法与可空列的唯一性，见[建表约定与索引](/persistence/schema#索引)。
+- 唯一键冲突：关系型 Provider 在写入失败后核对，返回 `PERSISTENCE_CONFLICT_003`（消息键 `persistence.entity.unique_key_conflict`，参数 `entity`、`index`），这次写入的项统一报告，工作单元随后只能回滚、调用以同一错误结束（与写入阶段才发现的标识重复相同）。核对的范围与核对不到的情形见[建表约定与索引](/persistence/schema#唯一键冲突)。
+- 雪花标识：单实例每毫秒最多 4096 个标识；`NewId()` 返回 `long`，失败只能抛出 `FrameworkException`，调用里由特性登记在 Resilience 阶段末尾的中间件转为同码的 UNAVAILABLE 结果（ADR-0063）；租约状态以健康项 `persistence.snowflake.worker` 上报。位布局、机器位租约、启停顺序、时钟回拨与前端精度见[标识生成](/persistence/identifiers)。
+- 命名连接（ADR-0084）：实体可以登记到一个命名连接，工作单元可以绑定一个连接（只在它上面读写、开事务），给管道外与业务事务互不等待的平台数据用（SQLite 上的工作流租约）。SqlSugar 两样都支持；EF Core 只支持绑定连接的工作单元（ADR-0087），普通工作单元里取用命名连接上的实体抛 `PERSISTENCE_UNAVAILABLE_008`（已定，ADR-0091）；内存实现在装配时或 `BeginAsync` 抛 `PERSISTENCE_UNAVAILABLE_008`。登记与绑定的规则、各 Provider 的声明位置见[连接与运行时数据源 · 命名连接](/persistence/connections#命名连接)。
+- 运行时数据源（ADR-0078）：与应用自己的连接互不相干（不进作用域客户端、不参与实体落点、不进工作单元）；失效靠 `RemoveAsync` 与每次以记录里当前的定义 `GetOrAddAsync`，不用配置变化令牌；登记数有上限、满了不淘汰；每个数据源一条健康项 `persistence.datasource.<name>`；连接串不进日志、错误与健康详情。EF Core 与内存实现不支持，取用返回 `PERSISTENCE_UNAVAILABLE_008`。用法、健康状态与各项规则见[连接与运行时数据源 · 运行时数据源](/persistence/connections#运行时数据源)。
+- 运行时数据源的约定：Provider 经 `AddDataSourceProvider<T>(configuration)` 登记 `IDataSourceProvider`（目前是 SqlSugar）；`DataSourceDefinition.Describes` 比名字、类型（不区分大小写）与连接串（区分大小写）；约定连接 `default` / `shard` 与租户分片照旧。健康项数据是 `databaseType`、`provider`，关系型 Provider 的探测走一次数据库往返（ADR-0123）。
 - 运行时数据源的机密：`reason` 取驱动异常的消息链，经 `ConnectionStrings.Redact` / `Describe` 把整串连接串与口令类键（键名含 `password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机名、端口、库名、用户名不算机密，驱动消息里有就保留（脱敏范围已定，ADR-0084；选项打印遮蔽登录用户名不扩到这里，ADR-0093）。日志只记名字与数据库类型。
-- 库结构读取与实体目录（ADR-0078）：读结构一次最多 100 张表、列表 `Take` 最多 1000；分表按已登记实体的模板折叠；实体目录按登记顺序、重复登记只一条。EF Core 与内存实现读结构返回 `PERSISTENCE_UNAVAILABLE_008`。用法见[持久化 · 库结构读取与实体目录](/persistence/connections)。
-- 读结构的细节：列表按名字排序，`Keyword` 在名字与注释里包含匹配，返回过滤后的总数；分页越界不在构造 `TableListQuery` 时抛出，读结构的 Provider 先经 `Validate()` 核对（都是 400 的结果，不连库、不登记数据源，ADR-0084）。批量读超过 100 张整批 `PERSISTENCE_VALIDATION_005`，逐项结果与入参一一对应，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`（原因已脱敏）；空集合不连库；`GetTableAsync` 是单项特例。读运行时数据源的结构先按定义登记再读，`dataSource` 传 `null` 读应用的缺省连接。
-- 列的内容：类型名（不含长度与精度）、序号、主键（一律不可空）、自增、可空、长度（只给字符与二进制类型的声明长度；没有上限的与其余类型为 null）、精度与小数位（`decimal` / `numeric` / `number` / `money` 族）、注释、缺省值原文；数据库没有的项为 null。已登记的分表实体（SqlSugar `[SplitTable]`）按表名模板把物理表折叠成一张逻辑表（`Order_{year}{month}{day}` → `Order`），`PhysicalTables` 新到旧，列取最新的物理表。实体目录里表名与列名是映射声明的写法，分表是逻辑名；`Protocols` 标出聚合根、创建 / 修改时间、并发戳、软删除、多租户。
+- 库结构读取与实体目录（ADR-0078）：读结构一次最多 100 张表、列表 `Take` 最多 1000；分表按已登记实体的模板折叠；实体目录按登记顺序、重复登记只一条。EF Core 与内存实现读结构返回 `PERSISTENCE_UNAVAILABLE_008`。
+- 读结构的细节：分页越界不在构造 `TableListQuery` 时抛出，读结构的 Provider 先经 `Validate()` 核对（都是 400 的结果，不连库、不登记数据源，ADR-0084）。列表的排序与匹配、批量读的逐项结果、列的内容与分表的折叠见[连接与运行时数据源 · 库结构读取与实体目录](/persistence/connections#库结构读取与实体目录)。
 
-错误码：
+## 错误码
 
-| 错误码 | 常量 | 含义 |
-| --- | --- | --- |
-| `PERSISTENCE_NOTFOUND_001` | `PersistenceErrors.NotFound` | 实体不存在（含已软删除、不属于当前租户） |
-| `PERSISTENCE_CONFLICT_001` | `PersistenceErrors.Concurrency` | 乐观并发冲突 |
-| `PERSISTENCE_CONFLICT_002` | `PersistenceErrors.Duplicate` | 标识重复 |
-| `PERSISTENCE_UNEXPECTED_001` | `PersistenceErrors.ReadOnly` | 只读工作单元拒绝写入（只读操作里的写入，是操作实现的缺陷；HTTP 500） |
-| `PERSISTENCE_CONFLICT_003` | `PersistenceErrors.UniqueKeyConflict` | 唯一键重复：写入撞上实体声明的唯一索引（关系型 Provider；之后工作单元只能回滚） |
-| `PERSISTENCE_VALIDATION_001` | `PersistenceErrors.TenantRequired` | 多租户实体缺少当前租户 |
-| `PERSISTENCE_VALIDATION_002` | `PersistenceErrors.InvalidUnitOfWorkState` | 工作单元状态不允许该操作（抛异常）；同一作用域里再经管道的嵌套调用（结果） |
-| `PERSISTENCE_VALIDATION_003` | `PersistenceErrors.EventsUndispatched` | 有未派发的领域事件但没有派发器 |
-| `PERSISTENCE_VALIDATION_004` | `PersistenceErrors.UnknownConnection` | 实体落点不成立（SqlSugar `[Tenant]` 或登记的命名连接不存在、两者不一致；绑定的连接不存在或实体不落在它上面；装配错误，抛异常） |
-| `PERSISTENCE_VALIDATION_005` | `PersistenceErrors.TakeExceeded` | 查询的取出条数超过上限（仓储查询构造时抛异常、调用里转为校验结果；表列表与读结构由读取器以结果返回；HTTP 400） |
-| `PERSISTENCE_UNAVAILABLE_001` | `PersistenceErrors.NoActiveUnitOfWork` | 没有活动的工作单元（抛异常） |
-| `PERSISTENCE_UNAVAILABLE_002` | `PersistenceErrors.CapacityExceeded` | 存储容量已满（内存实现） |
-| `PERSISTENCE_UNAVAILABLE_003` | `PersistenceErrors.StoreUnavailable` | 存储不可达 |
-| `PERSISTENCE_VALIDATION_006` | `PersistenceErrors.DataSourceInvalid` | 运行时数据源的数据库类型不认识、连接串格式错 |
-| `PERSISTENCE_VALIDATION_007` | `PersistenceErrors.ListPageInvalid` | 库结构表列表的分页越界：`Skip` 为负或 `Take` 小于 1（读取器以结果返回，HTTP 400） |
-| `PERSISTENCE_VALIDATION_008` | `PersistenceErrors.StorageFormatMismatch` | 库里已有数据的存储形式与模型不符：EF Core + SQLite 上 UTC ticks 时间列还是旧的文本形式（特性启动时抛异常、启动失败；ADR-0094；租户分片库在首次绑定时核对，工作单元开始时抛异常，ADR-0097） |
-| `PERSISTENCE_NOTFOUND_002` | `PersistenceErrors.DataSourceNotFound` | 运行时数据源没有在本进程登记 |
-| `PERSISTENCE_NOTFOUND_003` | `PersistenceErrors.TableNotFound` | 要读结构的表不在库里（逐项结果） |
-| `PERSISTENCE_UNAVAILABLE_006` | `PersistenceErrors.DataSourceUnavailable` | 运行时数据源连不上（参数 `name`、`reason`，已脱敏） |
-| `PERSISTENCE_UNAVAILABLE_007` | `PersistenceErrors.DataSourceCapacityExceeded` | 运行时数据源登记已满 |
-| `PERSISTENCE_UNAVAILABLE_008` | `PersistenceErrors.NotSupported` | 当前的持久化 Provider 不支持该能力 |
-| `PERSISTENCE_UNAVAILABLE_004` | `PersistenceErrors.ClockMovedBackwards` | 雪花生成器时钟回拨超过阈值（抛异常；调用里转为结果，HTTP 503） |
-| `PERSISTENCE_UNAVAILABLE_005` | `PersistenceErrors.WorkerIdUnavailable` | 雪花生成器没有可用的机器位（抛异常；调用里转为结果，HTTP 503；健康项上报） |
+常量在 `PersistenceErrors`（表里省去类名）。「形式」一列是失败怎样到达调用方：`Result` 指仓储、注册表或读取器的返回值，调用结果与提交结果由 Transaction 阶段给出，「抛异常」是携带该码的 `FrameworkException`。
 
-错误文案的消息键在 `PersistenceMessages`（目录名 `persistence`），10 种区域的译文嵌入在本包，Provider 装配时注册目录。
+| 错误码 | 常量 | 何时出现 | 形式 |
+| --- | --- | --- | --- |
+| `PERSISTENCE_NOTFOUND_001` | `NotFound` | 更新或删除的实体不存在（含已软删除、不属于当前租户） | `Result` |
+| `PERSISTENCE_NOTFOUND_002` | `DataSourceNotFound` | 运行时数据源没有在本进程登记（`GetAsync` 的名字没有登记过或已移除） | `Result` |
+| `PERSISTENCE_NOTFOUND_003` | `TableNotFound` | 要读结构的表不在库里 | 逐项 `Result` |
+| `PERSISTENCE_CONFLICT_001` | `Concurrency` | 乐观并发冲突：并发戳不匹配；内存实现提交时发现行已被别人改过或删掉 | `Result`；后者是提交结果 |
+| `PERSISTENCE_CONFLICT_002` | `Duplicate` | 新增的标识已存在，含并发新增同一标识 | `Result`；内存实现的并发新增是提交结果 |
+| `PERSISTENCE_CONFLICT_003` | `UniqueKeyConflict` | 唯一键重复：写入撞上实体声明的唯一索引（关系型 Provider） | `Result`，工作单元随后只能回滚 |
+| `PERSISTENCE_VALIDATION_001` | `TenantRequired` | 多租户实体在没有当前租户的调用里新增 | `Result` |
+| `PERSISTENCE_VALIDATION_002` | `InvalidUnitOfWorkState` | 工作单元状态不允许该操作（重复开始、未开始就提交）；同一服务作用域里再经管道的嵌套调用 | 状态错误抛异常；嵌套调用是调用结果 |
+| `PERSISTENCE_VALIDATION_003` | `EventsUndispatched` | 聚合有未派发的领域事件，但没有注册派发器 | 调用结果 |
+| `PERSISTENCE_VALIDATION_004` | `UnknownConnection` | 实体落点不成立（装配错误）：SqlSugar `[Tenant]` 或登记的命名连接不存在、两者不一致；绑定的连接不存在，或绑定连接的工作单元里操作的实体不落在它上面 | 启动失败；运行时抛异常 |
+| `PERSISTENCE_VALIDATION_005` | `TakeExceeded` | 查询或表列表的 `Take` 超过 1000；一次读结构超过 100 张表 | 仓储查询在构造时抛异常，调用里转为校验结果（HTTP 400）；表列表与读结构由读取器以 `Result` 返回（HTTP 400） |
+| `PERSISTENCE_VALIDATION_006` | `DataSourceInvalid` | 运行时数据源的数据库类型 Provider 不认识、连接串格式错；同名的已登记实例不受影响 | `Result`（HTTP 400） |
+| `PERSISTENCE_VALIDATION_007` | `ListPageInvalid` | 库结构表列表的分页越界：`Skip` 为负或 `Take` 小于 1 | 读取器的 `Result`（HTTP 400） |
+| `PERSISTENCE_VALIDATION_008` | `StorageFormatMismatch` | 库里已有数据的存储形式与模型不符：EF Core + SQLite 上 UTC ticks 时间列在库里还是旧的文本形式（ADR-0094） | 特性启动时抛异常、启动失败；租户分片库在首次绑定时核对（ADR-0097），工作单元开始时抛异常，那次调用是 `KERNEL_UNEXPECTED_001` |
+| `PERSISTENCE_VALIDATION_009` | `ReplicaMisplaced` | 主库不同的连接共用同一个从库（装配错误） | 固定连接启动失败；分片连接在作用域取客户端时抛异常，那次调用失败 |
+| `PERSISTENCE_VALIDATION_010` | `ShardTenantMismatch` | 工作单元的租户与客户端绑定的分片的租户不一致（含不带租户，ADR-0223） | 开始工作单元时抛异常，工作单元保持未开始 |
+| `PERSISTENCE_UNAVAILABLE_001` | `NoActiveUnitOfWork` | 没有活动的工作单元：仓储在 Transaction 阶段之外使用 | 抛异常 |
+| `PERSISTENCE_UNAVAILABLE_002` | `CapacityExceeded` | 存储容量已满：内存实现的表已满 | 提交结果、健康项 |
+| `PERSISTENCE_UNAVAILABLE_003` | `StoreUnavailable` | 存储不可达（EF Core 健康项） | 健康项 |
+| `PERSISTENCE_UNAVAILABLE_004` | `ClockMovedBackwards` | 雪花生成器时钟回拨超过阈值 | 抛异常；调用里转为结果（HTTP 503） |
+| `PERSISTENCE_UNAVAILABLE_005` | `WorkerIdUnavailable` | 雪花生成器没有可用的机器位 | 抛异常；调用里转为结果（HTTP 503）；健康项 |
+| `PERSISTENCE_UNAVAILABLE_006` | `DataSourceUnavailable` | 数据源连不上或读取失败：运行时数据源的测试连接与健康探测，缺省连接与运行时数据源的库结构读取（参数 `name`、`reason`，已脱敏） | `Result`、健康项 |
+| `PERSISTENCE_UNAVAILABLE_007` | `DataSourceCapacityExceeded` | 运行时数据源登记已满 | `Result` |
+| `PERSISTENCE_UNAVAILABLE_008` | `NotSupported` | 当前 Provider 不支持该能力：EF Core 与内存实现的运行时数据源与库结构读取；内存实现的命名连接；EF Core 普通工作单元里取用命名连接上的实体；软删除实体的部分唯一索引遇上不支持的数据库 | `Result`；命名连接相关的抛异常；部分唯一索引是启动失败 |
+| `PERSISTENCE_UNAVAILABLE_009` | `ReplicaUnavailable` | 从库不可读：读落到别的从库或主库上，调用不受影响 | 只出现在健康项里 |
+| `PERSISTENCE_UNEXPECTED_001` | `ReadOnly` | 只读工作单元里新增、更新、删除：操作实现的缺陷（HTTP 500） | 仓储写入返回 `Result` 且提交返回同一错误；`EnsureTransactionAsync` 抛出的同码异常在调用里转为结果 |
+
+错误文案的消息键在 `PersistenceMessages`（目录名 `persistence`），10 种区域的译文嵌入在本包，Provider 装配时注册目录。错误怎样经协议适配器变成 HTTP 状态与 Problem Details，见[结果与错误处理](/web/errors)。
 
 ## 相关
 

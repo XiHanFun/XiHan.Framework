@@ -73,7 +73,7 @@
 
 ### 在后台任务里使用仓储报 PERSISTENCE_UNAVAILABLE_001
 
-仓储只能在活动的工作单元内使用。操作调用由 Transaction 阶段自动开启工作单元；管道之外（后台循环、`IHostedFeature.StartAsync`、单例服务）要自己创建作用域并开启工作单元，写法见[工作单元与事务](/persistence/unit-of-work)。
+仓储只能在活动的工作单元内使用。操作调用由 Transaction 阶段自动开启工作单元；管道之外（后台循环、`IHostedFeature.StartAsync`、单例服务）用 `UnitOfWorkScope.RunAsync` 在新作用域里开工作单元，写法见[工作单元与事务](/persistence/unit-of-work#在管道外开工作单元)。
 
 ### 重启后内存里的数据都没了
 

@@ -29,6 +29,17 @@
 
 - **调整** `ISecretStore.GetAsync(names)` 返回同序、等长的 `Result<SecretValue>` 列表，删除 `SecretLookup`（ADR-0257）
 
+### 持久化与消息
+
+- **新增** `UnitOfWorkScope.RunAsync`：管道之外（单例存储、后台循环、健康探针）在新作用域里开工作单元，成功提交、失败或抛出回滚；带 `fault` 的重载把异常映射成自己的错误，带 `prepare` 的重载在取工作单元之前绑定租户分片（ADR-0259）
+- **修复** 数据库断开时回滚与释放作用域再抛出的异常不再盖掉原结果：租户目录、授予、审计、调度与工作流的租约读写、发件箱投递循环（ADR-0259）
+- **调整** 调度与工作流「存储不可达」错误的 `reason` 不再带数据库驱动的异常消息，只写异常类型全名或框架错误码，完整异常记日志（ADR-0259）
+- **调整** 驱动把命令超时报告成取消时，审计查询、调度租约释放与工作流租约返回各自的存储不可达错误，以前抛出 `OperationCanceledException`（ADR-0259）
+
+### 测试
+
+- **新增** `XiHan.Framework.Testing` 的 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`：按脚本失败的工作单元与仓储替身，测管道外的代码在数据库故障时的收尾（ADR-0259）
+
 ### 对象存储
 
 - **新增** `BlobMultipart.ValidateParts`：完成清单非空、编号严格升序的校验，自写分片上传的 Provider 在访问存储前调用（ADR-0254）

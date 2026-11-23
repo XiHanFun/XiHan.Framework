@@ -4,7 +4,7 @@
 
 ## 为什么需要
 
-行级隔离（每张表一列 `TenantId`）对大多数租户够用，但大客户往往要求数据物理分开：独立备份、独立容量、独立合规审计，甚至放在客户自己的数据库实例里。如果让业务代码自己按租户挑连接，每个仓储、每个作业都要重复这段逻辑，漏掉一处就会把租户数据写进平台库。框架把「这个租户用哪条连接」做成能力 `multitenancy.sharding@1`：Tenant 阶段解析一次分片写进调用上下文，持久化 Provider 创建客户端时读它；解析失败就让调用失败，不降级为共库。框架只做库级隔离，行级隔离就是上一页的租户过滤，Schema 级隔离由应用经透传属性自行处理。
+行级隔离（每张表一列 `TenantId`）对大多数租户够用，但大客户往往要求数据物理分开：独立备份、独立容量、独立合规审计，甚至放在客户自己的数据库实例里。如果让业务代码自己按租户挑连接，每个仓储、每个作业都要重复这段逻辑，漏掉一处就会把租户数据写进平台库。框架把「这个租户用哪条连接」做成能力 `multitenancy.sharding@1`：Tenant 阶段解析一次分片写进调用上下文，持久化 Provider 创建客户端时读它；解析失败就让调用失败，不降级为共库。框架只做库级隔离，行级隔离就是上一页的租户过滤；Schema 级隔离由应用自行处理：把 Schema 名写进 `Shard.<key>` 属性透传，在持久化 Provider 的配置回调里按 `TenantShard.Properties` 处理。
 
 ## 分片契约
 
@@ -49,17 +49,13 @@
 }
 ```
 
-装配一个关系型持久化 Provider，下面用 `Persistence.SqlSugar`，默认连接来自绑定 `db`：
+装配一个关系型持久化 Provider，下面用 `Persistence.SqlSugar`，默认连接来自绑定 `db`。接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，`AddXiHan` 多一个特性，`app.UseXiHan()` 之后多一个端点：
 
 ```csharp
 using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // Standard 组合包已含内存多租户；SqlSugar 顶替其中的内存持久化，并以可选依赖接上分片能力
 builder.AddXiHan(xihan => xihan
@@ -70,27 +66,20 @@ builder.AddXiHan(xihan => xihan
         config.ConnectionString = binding.ValueOrThrow().Value;
     })));
 
-var app = builder.Build();
-app.UseXiHan();
-
 // 分片在 Tenant 阶段解析一次，写进调用上下文；共库租户与无租户的调用没有分片
 app.MapGet("/shard", (HttpContext http) =>
     http.FindXiHanContext().ValueOrThrow().FindTenantShard().TryGetValue(out var shard)
         ? $"{shard.TenantId} -> {shard.Provider ?? "default provider"}"
         : "shared");
-
-app.Run();
 ```
 
 用租户为 `acme` 的主体调用 `/shard`，响应 `acme -> postgresql`；租户为 `beta` 的主体响应 `shared`。此后在 `acme` 的调用里，实现 `IMultiTenant` 的实体经仓储读写都落到 `Database=acme`，不实现它的平台表仍落 `Database=app`。
 
 ## 解析与缓存
 
-分片在 Tenant 阶段解析一次，写进调用上下文；解析失败即调用失败（`MULTITENANCY_UNAVAILABLE_002`），不降级为共库，因为降级会把租户数据写进平台库。无租户的调用没有分片。
+分片在 Tenant 阶段解析一次，写进调用上下文；解析失败即调用失败（`MULTITENANCY_UNAVAILABLE_002`，HTTP 503），不降级为共库，因为降级会把租户数据写进平台库。分片解析成功而租户库连不上时，工作单元开不起来，调用同样失败。无租户的调用没有分片。
 
 `TenantStoreShardResolver` 自己不缓存：每次解析读租户存储，再从属性推出分片，开销是一次字典遍历。缓存与失效只在租户存储一处：内存目录本来就在内存里，数据库目录经 `ICache` 缓存、写入时失效所有共用缓存的实例（ADR-0229）。所以租户迁库、改连接串、删除经租户管理 `ITenantAdministration` 写入后，下一次解析就用上新结果；多实例部署装了 `Caching.Redis` 与 `Caching.Hybrid` 时，所有实例一起生效，见[数据库租户目录](/multi-tenancy/database)。它的 `Invalidate` 与 `InvalidateAll` 什么也不做，只校验入参。
-
-以前的缺省解析器在租户存储之上又缓存一层，配置键 `XiHan:MultiTenancy:ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已随之删除，配置里留着也被忽略。直接构造 `TenantStoreShardResolver` 的代码改为传 `(ITenantStore, ILoggerFactory)`。
 
 想自己决定分片规则（按租户哈希选库、从独立的分片表读连接）时，实现 `ITenantShardResolver` 并在特性里登记为单例；中间件与持久化 Provider 只认契约。自己的解析器可以缓存，`TenantRecordStore` 写入后会调用它的 `Invalidate`，但这只作用于本实例；多实例要一致就把缓存放进 `ICache`（参考[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)）。自带分片 Provider 的应用同样要登记 `TenantShardScope`。
 
@@ -100,7 +89,7 @@ app.Run();
 
 | Provider | 带分片的调用 |
 | --- | --- |
-| `Persistence.SqlSugar` | 客户端同时持有默认连接与分片连接，工作单元在两个连接上开事务、依次提交或回滚（不是两阶段提交），见 [SqlSugar Provider](/persistence/sqlsugar) |
+| `Persistence.SqlSugar` | 客户端同时持有默认连接与分片连接，工作单元在两个连接上开事务、依次提交或回滚（不是两阶段提交），跨库一致性由应用的补偿或发件箱保证，见 [SqlSugar Provider](/persistence/sqlsugar) |
 | `Persistence.EntityFrameworkCore` | 一个 `DbContext` 一个连接，整个上下文切到分片连接；平台表要另起 `DbContext`，由应用处理，见 [EF Core Provider](/persistence/entity-framework-core) |
 
 `TenantShard.Provider` 为空时沿用默认连接的数据库种类；有值时 Provider 据此选驱动，所以同一应用可以让默认库是 SQL Server、某个租户库是 PostgreSQL。
@@ -111,7 +100,7 @@ app.Run();
 
 ## 管道外绑定分片
 
-后台写入、调度作业、租户库初始化这类代码自己建服务作用域，不经 `App.InvokeAsync`，作用域里没有调用上下文，也就没有分片。作用域服务 `TenantShardScope` 给这类作用域显式绑定分片：
+后台写入、调度作业、租户库初始化这类代码不经 `App.InvokeAsync`，它们的服务作用域里没有调用上下文，也就没有分片。作用域服务 `TenantShardScope` 给这类作用域显式绑定分片：
 
 | 成员 | 说明 |
 | --- | --- |
@@ -120,10 +109,11 @@ app.Run();
 | `Shard` | 已绑定的分片，没有绑定为无值 |
 | `IsConnected` | 作用域的持久化客户端是否已经取过连接 |
 
-绑定必须发生在作用域内首次创建持久化客户端之前。客户端建好之后再绑定，或改绑到另一个分片，抛出 `InvalidOperationException`；同一个分片重复绑定没有副作用。显式绑定优先于调用上下文里的分片。
+绑定必须发生在作用域内首次创建持久化客户端之前。客户端建好之后再绑定，或改绑到另一个分片，抛出 `InvalidOperationException`；同一个分片重复绑定没有副作用。显式绑定优先于调用上下文里的分片。下面用 `UnitOfWorkScope.RunAsync` 带 `prepare` 的重载，它保证绑定发生在取工作单元之前：
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
@@ -131,44 +121,22 @@ using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 
 // Invoice 见上一页，仓储已经登记
-public sealed class InvoiceCounter(IServiceScopeFactory scopes)
+public sealed class InvoiceCounter(IServiceProvider services, ILogger<InvoiceCounter> logger)
 {
     public async Task<Result<long>> CountAsync(string tenantId, CancellationToken cancellationToken)
-    {
-        await using var scope = scopes.CreateAsyncScope();
-        var services = scope.ServiceProvider;
-
-        // 先绑定再解析任何持久化服务：客户端在作用域里只建一次，建好后改不了连接
-        var bound = await services.GetRequiredService<TenantShardScope>().BindTenantAsync(tenantId, cancellationToken);
-        if (bound.IsFailure)
-        {
-            return bound.Error!;
-        }
-
-        // 没有 Transaction 阶段代劳，工作单元自己开；租户由调用方给出，与绑定的租户一致
-        var unitOfWork = services.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = tenantId, IsReadOnly = true }, cancellationToken);
-        try
-        {
-            var invoices = services.GetRequiredService<IRepository<Invoice, Guid>>();
-            var count = await invoices.CountAsync(EntityQuery.All<Invoice>(), cancellationToken);
-            var committed = await unitOfWork.CommitAsync(cancellationToken);
-            return committed.IsFailure ? committed.Error! : count;
-        }
-        catch
-        {
-            if (unitOfWork.State == UnitOfWorkState.Active)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None);
-            }
-
-            throw;
-        }
-    }
+        => await UnitOfWorkScope.RunAsync<long>(
+            services,
+            // 先绑定再取工作单元：客户端在作用域里只建一次，建好后改不了连接；解析失败时不开工作单元，失败原样返回
+            async (scope, ct) => (await scope.GetRequiredService<TenantShardScope>().BindTenantAsync(tenantId, ct)).ToResult(),
+            // 没有 Transaction 阶段代劳，租户由调用方给出，与绑定的租户一致
+            new UnitOfWorkOptions { TenantId = tenantId, IsReadOnly = true },
+            async (scope, ct) => await scope.GetRequiredService<IRepository<Invoice, Guid>>().CountAsync(EntityQuery.All<Invoice>(), ct),
+            logger,
+            cancellationToken);
 }
 ```
 
-工作单元的租户不会从绑定推导出来，两者都由调用方给出，必须一致：客户端建在分片上时，开始工作单元即核对，不一致（含不带租户）抛出 `PERSISTENCE_VALIDATION_010`，工作单元保持未开始（ADR-0223）；管道外开工作单元、派发领域事件的完整写法见[工作单元与事务](/persistence/unit-of-work)。两个多租户 Provider 都登记 `TenantShardScope`，与是否选中分片能力无关。
+工作单元的租户不会从绑定推导出来，两者都由调用方给出，必须一致：客户端建在分片上时，开始工作单元即核对，不一致（含不带租户）抛出 `PERSISTENCE_VALIDATION_010`，工作单元保持未开始（ADR-0223）；管道外开工作单元的收尾规则与派发领域事件的写法见[工作单元与事务](/persistence/unit-of-work#在管道外开工作单元)。两个多租户 Provider 都登记 `TenantShardScope`，与是否选中分片能力无关。
 
 ## 常见问题
 
@@ -176,25 +144,13 @@ public sealed class InvoiceCounter(IServiceScopeFactory scopes)
 
 先确认装配的持久化 Provider 是 `Persistence.SqlSugar` 或 `Persistence.EntityFrameworkCore`：`Persistence.InMemory` 不接分片能力。再确认实体实现了 `IMultiTenant`：分片只作用于多租户实体，平台表始终走默认连接。最后看 `/shard` 这样的端点能不能读到分片；读不到说明调用里没有租户；用数据库目录时，也可能是连接串绕过租户管理直接改表写入、目录缓存还是旧值，调用 `DatabaseTenantStore.InvalidateAsync([tenantId], ct)` 或等存活时间。
 
-### 租户库连不上时调用会降级到共库吗
-
-不会。分片解析失败（租户存储不可达）返回 `MULTITENANCY_UNAVAILABLE_002`，调用以 503 结束；分片解析成功但租户库连不上，工作单元开不起来，调用同样失败。降级会把租户数据写进平台库，所以框架不做。
-
 ### 怎样给新租户建表
 
-租户库的表结构由应用管理。在建租户的流程里用 `TenantShardScope.BindTenantAsync` 绑到新库，再用 Provider 自己的建表能力（SqlSugar 的 `CodeFirst`、EF Core 的迁移）执行；或者在数据库运维流程里完成，再把连接串写进租户属性。不要依赖框架的 `InitTables` / `EnsureCreated`，它们只作用于默认连接。
-
-### 能按租户切换 Schema 而不是整库吗
-
-框架只做库级分片。Schema 级隔离把 Schema 名写进 `Shard.<key>` 属性透传给持久化 Provider，由应用在 Provider 的配置回调里按 `TenantShard.Properties` 处理。
+在建租户的流程里用 `TenantShardScope.BindTenantAsync` 绑到新库，再用 Provider 自己的建表能力（SqlSugar 的 `CodeFirst`、EF Core 的迁移）执行；或者在数据库运维流程里完成，再把连接串写进租户属性。
 
 ### 带分片的调用发的消息怎样投递
 
 经发件箱发布时，发件箱行随调用的事务写入，EF Core Provider 写进分片库，SqlSugar Provider 写进默认库。发件箱投递循环每轮先投递默认库，再逐个投递分片库，所以两种 Provider 下消息都会发出；EF Core 下分片库要建发件箱表。见[领域事件与发件箱](/messaging/domain-events)。
-
-### 同一调用里能同时读平台表和租户表吗
-
-能。SqlSugar Provider 的客户端同时持有默认连接与分片连接，按实体是否实现 `IMultiTenant` 落点；两个连接上的事务依次提交，不是两阶段提交，跨库一致性由应用的补偿或发件箱保证。EF Core Provider 一个 `DbContext` 一个连接，平台表要另起 `DbContext`。
 
 ## 相关包与下一步
 

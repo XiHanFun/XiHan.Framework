@@ -9,9 +9,9 @@
 | 能力 | — |
 | 特性入口 | —（`StubFeature` 是测试用的特性桩） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Security.WebAuthn`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection`、`System.Formats.Cbor` |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Security.WebAuthn`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection`、`System.Formats.Cbor` |
 | AOT | 兼容 |
-| 稳定性 | Stable；`FaultyCache` 为 Preview |
+| 稳定性 | Stable；`FaultyCache`、`ScriptedUnitOfWork`、`ScriptedRepository<TEntity, TKey>` 为 Preview |
 
 ## 概述
 
@@ -25,6 +25,7 @@
 - 测 HTTP 路由、模型绑定与 Problem Details：用 ASP.NET Core 的 `WebApplicationFactory` 测真实宿主，本包不覆盖协议层。
 - 写 Provider：先继承对应的一致性套件（[Conformance](./conformance)），再用本包补 Provider 特有行为的测试。
 - 测组件在缓存后端故障时的行为（读取是否绕过缓存、写入是否拒绝）：用 `FaultyCache` 包住一个 `ICache`。
+- 测自己开工作单元的代码（[管道外的单例存储、后台循环](/persistence/unit-of-work#在管道外开工作单元)）在数据库故障时怎样收尾：用 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`。
 
 ## 安装与启用
 
@@ -45,6 +46,8 @@ dotnet add package XiHan.Framework.Testing --prerelease
 | `WebAuthnTestAuthenticator` | 测试用的通行密钥认证器：构造时选算法（ES256、PS256、RS256），`Register` / `Authenticate` 按 WebAuthn 的格式生成响应，`SignCount` 原样写进认证器数据；`CredentialId`、`PublicKey` 与注册核对得到的相同 |
 | `WebAuthnTestCeremony` | 一次仪式的输入（挑战、来源、RP ID）与篡改项（仪式类型、跨源、UP / UV / BE / BS 标志、证明格式、改坏签名、用户句柄）；缺省值产生合法的响应 |
 | `FaultyCache` | 包住一个 `ICache`（构造参数 `inner`）：`Failing` 为真时每个操作都抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，与 Redis 断线时一样；为假时原样转给内层缓存，`Store` 是内层的存储 |
+| `ScriptedUnitOfWork` | 按脚本失败的 `IUnitOfWork`：`BeginFailure`、`CommitFailure`、`RollbackFailure`、`DisposeFailure` 预设各步抛出的异常，`CommitResult` 预设提交返回的结果，`StaysActiveAfterFailedCommit` 模拟提交失败后没有自行回滚的实现；`Calls` 按顺序记下 `begin`、`commit`、`rollback`、`dispose`，`Tokens` 记下各步收到的取消令牌 |
+| `ScriptedRepository<TEntity, TKey>` | 按脚本返回或抛出的 `IRepository<TEntity, TKey>`：`Failure` 让每个操作都抛出它，`Found` 是查找与查询返回的那一行（为空即查不到），`WriteResult` 是每条写入返回的结果 |
 
 ## 使用示例
 
@@ -150,6 +153,21 @@ public sealed class PriceCacheOutageTests
 
 测宿主里的组件时，在装配特性之前把它登记为 `ICache` 单例（`TestHost.StartAsync(..., services: s => s.AddSingleton<ICache>(cache))`）。几个宿主登记同一个 `FaultyCache`（或同一个 `ICache`）实例时，它们共用一份缓存，可以模拟多实例共用的缓存后端：一个宿主写入，另一个宿主应当立即看到变化。
 
+两个替身验证管道外的代码在数据库断开时的收尾：读取抛出、回滚再抛，被测代码交还的应当是原来的失败。
+
+```csharp
+var unitOfWork = new ScriptedUnitOfWork { RollbackFailure = new InvalidOperationException("The connection is closed.") };
+await using var services = new ServiceCollection()
+    .AddScoped<IUnitOfWork>(_ => unitOfWork)
+    .AddScoped<IRepository<Order, Guid>>(_ => new ScriptedRepository<Order, Guid> { Failure = new TimeoutException() })
+    .BuildServiceProvider();
+
+// OrderPurger 见「在管道外开工作单元」：读取抛出的 TimeoutException 原样抛出，没有被回滚的异常盖掉
+var purger = new OrderPurger(services, TimeProvider.System, NullLogger<OrderPurger>.Instance);
+await Assert.ThrowsAsync<TimeoutException>(() => purger.PurgeAsync("acme", CancellationToken.None));
+Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
+```
+
 ## 行为与限制
 
 - 每次 `InvokeAsync` / `InvokeOperation*Async` 一个独立的服务作用域；释放后再调用抛 `ObjectDisposedException`。
@@ -157,6 +175,7 @@ public sealed class PriceCacheOutageTests
 - 配置只有传入的内存键值对，不读 `appsettings.json` 与环境变量；需要时在 `configuration` 参数里给出。
 - 调用不经过 Ingress 的协议绑定：`Accept-Language` 协商、HTTP 认证头之类由宿主适配器做的事不发生，Baggage 以 `baggage` 参数直接给出。
 - `FaultyCache` 只模拟 `ICache` 层面的故障：`Store` 原样返回内层存储，直接经 `ICacheStore` 或 `ISharedCache` 的读写不受 `Failing` 影响。`Failing` 可以在任何线程随时切换。
+- `ScriptedUnitOfWork` 不写入、不派发领域事件，`HasTransaction` 恒为假；抛出的步骤让状态停在原处（开始抛出仍是未开始，提交与回滚抛出仍是活动），与关系型 Provider 一致。登记成作用域服务时随作用域释放。`ScriptedRepository<TEntity, TKey>` 每个操作先看取消令牌，再看 `Failure`，不核对工作单元是否活动。
 
 ## 相关
 

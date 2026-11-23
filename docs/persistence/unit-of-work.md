@@ -37,7 +37,7 @@
 6. 有聚合带着未派发的领域事件：没有派发器时以 `PERSISTENCE_VALIDATION_003` 结束并回滚；派发失败时回滚，调用以该失败结束；派发成功清空登记。
 7. 提交；提交失败时用它覆盖调用结果，调用方看到真实的持久化错误。
 
-所以操作代码不调用提交，只决定成败：返回 `Result` 失败或抛出异常，本次调用的全部写入都回滚，包括批量方法里已通过校验的项。
+所以操作代码不调用提交，只决定成败：返回 `Result` 失败或抛出异常，本次调用的全部写入都回滚，包括批量方法里已通过校验的项。在操作里手动 `CommitAsync` 会让中间件的提交撞上 `PERSISTENCE_VALIDATION_002`。
 
 ### 是否已开数据库事务
 
@@ -117,79 +117,99 @@ public sealed class AdjustAmount(IRepository<Order, Guid> orders) : IOperation<A
 
 ## 在管道外开工作单元
 
-单例服务、`IHostedFeature` 的启动与停止、后台循环、定时清理这些代码不经管道，没有 Transaction 阶段替它们开工作单元。框架自己的发件箱投递循环与审计落库就是这样做的：每次操作建一个服务作用域，在里面开一个工作单元。
+单例服务、`IHostedFeature` 的启动与停止、后台循环、定时清理这些代码不经管道，没有 Transaction 阶段替它们开工作单元。用 `UnitOfWorkScope.RunAsync`：它在根服务提供者的新作用域里取工作单元、按选项开始、执行动作，再按结果收尾。框架自己的发件箱投递循环、审计落库、租约读写都走它。
 
-1. 从根服务提供者 `CreateAsyncScope()`，一个作用域只承载一个工作单元；按租户分库时先用 `TenantShardScope.BindTenantAsync(tenantId, ct)` 绑定分片。
-2. 取 `IUnitOfWork`，`BeginAsync(UnitOfWorkOptions.Default, ct)`；读写租户数据时传 `new UnitOfWorkOptions { TenantId = tenantId }`。
-3. 取仓储读写，`CommitAsync` 并检查返回的 `Result`。
-4. 提交前任何一步抛出异常时，若工作单元仍是 `Active`，用 `CancellationToken.None` 回滚。
+| 情况 | 收尾 |
+| --- | --- |
+| 动作返回成功 | 提交；提交返回的失败原样返回 |
+| 动作返回失败 | 回滚，失败原样返回 |
+| 开始、动作或提交抛出 | 回滚后原样抛出；带 `fault` 的重载把异常交给它映射成你自己的错误，作为失败结果返回 |
+| 调用方取消 | 只认「取消异常且你传入的令牌已取消」：回滚后抛出，不经 `fault`。令牌没取消的取消异常（驱动把命令超时报成取消）按上一行处理 |
+| 回滚、释放作用域自身失败 | 只记警告（记在你传入的 `ILogger` 上），不盖掉已经确定的结果或异常 |
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
+using XiHan.Framework.Primitives;
 
 namespace SimpleApp.Orders;
 
-// 单例：每次清理自己建作用域与工作单元，不经管道
-public sealed class OrderPurger(IServiceProvider services, TimeProvider clock)
+// 单例：每次清理在新作用域的工作单元里执行，不经管道
+public sealed class OrderPurger(IServiceProvider services, TimeProvider clock, ILogger<OrderPurger> logger)
 {
-    public async Task<int> PurgeAsync(string tenantId, CancellationToken cancellationToken)
-    {
-        await using var scope = services.CreateAsyncScope();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        // 订单是多租户实体：工作单元不带租户就既看不到也写不了
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions { TenantId = tenantId }, cancellationToken);
-        try
-        {
-            var orders = scope.ServiceProvider.GetRequiredService<IRepository<Order, Guid>>();
-            var cutoff = clock.GetUtcNow().AddDays(-30);
-            var stale = await orders.ListAsync(EntityQuery.All<Order>().Where(Specification.Of<Order>(o => o.CreatedAt < cutoff)), cancellationToken);
-            foreach (var result in await orders.RemoveRangeAsync(stale, cancellationToken))
+    public async Task<Result<int>> PurgeAsync(string tenantId, CancellationToken cancellationToken)
+        => await UnitOfWorkScope.RunAsync<int>(
+            services,
+            // 订单是多租户实体：工作单元不带租户就既看不到也写不了
+            new UnitOfWorkOptions { TenantId = tenantId },
+            async (scope, ct) =>
             {
-                result.ThrowIfFailure();
-            }
+                var orders = scope.GetRequiredService<IRepository<Order, Guid>>();
+                var cutoff = clock.GetUtcNow().AddDays(-30);
+                var stale = await orders.ListAsync(EntityQuery.All<Order>().Where(Specification.Of<Order>(o => o.CreatedAt < cutoff)), ct);
+                foreach (var removed in await orders.RemoveRangeAsync(stale, ct))
+                {
+                    if (removed.IsFailure)
+                    {
+                        // 返回失败即整次回滚，一条也不删
+                        return removed.Error!;
+                    }
+                }
 
-            (await unitOfWork.CommitAsync(cancellationToken)).ThrowIfFailure();
-            return stale.Count;
-        }
-        catch
-        {
-            // 取消也可能是异常的原因，回滚用 None 保证一定执行
-            if (unitOfWork.State == UnitOfWorkState.Active)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None);
-            }
-
-            throw;
-        }
-    }
+                return stale.Count;
+            },
+            logger,
+            cancellationToken);
 }
 ```
 
-登记为单例：`builder.Services.AddSingleton<OrderPurger>();`。`Result.ThrowIfFailure()` 把失败转成携带同一错误码的 `FrameworkException`，进入 `catch` 回滚。
+登记为单例：`builder.Services.AddSingleton<OrderPurger>();`。动作收到的 `scope` 是新作用域的服务提供者，仓储从它取；一次 `RunAsync` 一个作用域、一个工作单元。
 
-按租户分库时，绑定必须在作用域里第一次创建持久化客户端之前完成；绑定只选连接，工作单元的 `TenantId` 仍由 `UnitOfWorkOptions` 给出，两者应一致。见[租户分片与分库](/multi-tenancy/sharding)。
-
-::: warning 管道外的写入不自动派发领域事件
-领域事件只由 Transaction 阶段的中间件派发。管道外写入带事件的聚合时，调用方在提交前自己派发，否则事件留在聚合的缓冲里，不会发出。
-:::
-
-管道外需要派发时，按中间件的做法在提交前调用派发器：
+存储不可达时不想让异常冒到调用方，用带 `fault` 的重载把它映射成自己的错误。异常的消息是驱动写的，可能带连接串与主机名，不要放进错误，完整异常记日志：
 
 ```csharp
+var count = await UnitOfWorkScope.RunAsync<long>(
+    services,
+    new UnitOfWorkOptions { IsReadOnly = true },
+    async (scope, ct) => await scope.GetRequiredService<IRepository<Order, Guid>>().CountAsync(EntityQuery.All<Order>(), ct),
+    exception =>
+    {
+        logger.LogWarning(exception, "The order store cannot be reached.");
+        return Error.Unavailable(OrdersErrors.StoreUnavailable, OrdersMessages.StoreUnavailable);
+    },
+    logger,
+    cancellationToken);
+```
+
+按租户分库时，绑定分片必须在作用域里第一次创建持久化客户端之前完成，用带 `prepare` 的重载：`prepare` 在取工作单元之前执行，它返回失败时不开工作单元、失败原样返回。绑定只选连接，工作单元的 `TenantId` 仍由 `UnitOfWorkOptions` 给出，两者应一致。写法见[租户分片与分库](/multi-tenancy/sharding#管道外绑定分片)。
+
+::: warning 管道外的写入不自动派发领域事件
+领域事件只由 Transaction 阶段的中间件派发。管道外写入带事件的聚合时，调用方在动作返回之前自己派发，否则事件留在聚合的缓冲里，不会发出。
+:::
+
+管道外需要派发时，按中间件的做法在动作的最后、提交之前调用派发器：
+
+```csharp
+// 动作里，写入之后
+var unitOfWork = scope.GetRequiredService<IUnitOfWork>();
 var pending = unitOfWork.DomainEvents.Pending();
 if (pending.Count > 0)
 {
     // 派发器由 AddDomainEvent 注册；派发成功会清空各聚合的缓冲
-    var dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
-    (await dispatcher.DispatchAsync(pending, unitOfWork.Options.TenantId, cancellationToken)).ThrowIfFailure();
+    var dispatched = await scope.GetRequiredService<IDomainEventDispatcher>().DispatchAsync(pending, unitOfWork.Options.TenantId, ct);
+    if (dispatched.IsFailure)
+    {
+        // 派发失败即回滚这次写入
+        return dispatched.Error!;
+    }
 }
-
-(await unitOfWork.CommitAsync(cancellationToken)).ThrowIfFailure();
 ```
+
+要自己控制工作单元的每一步（比如同一个作用域里先后开多个命名连接的工作单元）时仍可直接用 `IUnitOfWork`：`BeginAsync`、`CommitAsync`，任何一步抛出且工作单元仍是 `Active` 时用 `CancellationToken.None` 回滚；回滚与释放作用域自身的失败要自己拦住，否则会盖掉原来的异常。
 
 ## 只读操作与只读工作单元
 
@@ -202,11 +222,7 @@ if (pending.Count > 0)
 
 `PERSISTENCE_UNEXPECTED_001` 是操作实现的缺陷，不是调用方能改正的输入：HTTP 500、gRPC `Internal`。修正的办法是让操作不再写入，或者它本来就要写，就换一个非只读的动词，或把写入放进新服务作用域里的另一次调用。
 
-框架读取租户目录与权限授予、审计查询、探测租约时自己开只读工作单元；后台的统计、报表这类只读路径也建议用它，配了从库又要读主库时设 `ReadsPrimary`：
-
-```csharp
-await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true, ReadsPrimary = true }, cancellationToken);
-```
+框架读取租户目录与权限授予、审计查询、探测租约时自己开只读工作单元；后台的统计、报表这类只读路径也建议用它，配了从库又要读主库时设 `ReadsPrimary`：`UnitOfWorkScope.RunAsync(services, new UnitOfWorkOptions { IsReadOnly = true, ReadsPrimary = true }, …)`。
 
 ## 嵌套调用
 
@@ -223,26 +239,9 @@ var recorded = await scope.ServiceProvider.GetRequiredService<IOperationInvoker>
 
 只读不向内、也不向外传播：只读操作里调用的写操作在自己的可写工作单元里提交，外层随后失败也不会把它回滚；要与外层同进退的写入不应拆成嵌套调用。用同一个服务作用域再经管道（传入外层的 `context`）时，内层以 `PERSISTENCE_VALIDATION_002` 结束，处理器不执行，外层不受影响。AI 工具与 MCP 的每次 `tools/call` 都按这个方式执行。
 
-## 错误码
-
-本页涉及的错误码：`PERSISTENCE_VALIDATION_002`（状态不允许，抛 `FrameworkException`；嵌套调用是调用结果）、`PERSISTENCE_UNEXPECTED_001`（只读工作单元拒绝写入，HTTP 500）、`PERSISTENCE_VALIDATION_003`（有事件没有派发器）、`PERSISTENCE_UNAVAILABLE_001`（没有活动工作单元，抛 `FrameworkException`），以及提交结果里的 `PERSISTENCE_CONFLICT_001` / `002` 与 `PERSISTENCE_UNAVAILABLE_002`。完整表见[持久化与 Provider](/persistence/overview)。
-
-## 常见问题
-
-### 我需要在操作里手动调 `CommitAsync` 吗
-
-不需要，也不应该。Transaction 阶段在处理器成功返回后提交、失败或异常时回滚，操作里只返回 `Result`。手动提交会让中间件的提交撞上 `PERSISTENCE_VALIDATION_002`。
-
-### 为什么我的 `GET` 操作写入时得到 500
-
-`get` / `list` 动词的操作开只读工作单元，写入被拒绝并以 `PERSISTENCE_UNEXPECTED_001` 结束。这是操作实现的缺陷：要写就换一个非只读的动词，或把写入放进新服务作用域里的另一次调用。
-
-### 领域事件在没有装配发件箱时安全吗
-
-不完全安全：事件在提交前直接发布到代理，发布成功而随后提交失败时事件已经发出。要「事件只随成功的写入发出」就装配 `OutboxFeature`，事件与业务写入同事务。
-
 ## 相关包与下一步
 
 - 相关包：[Persistence.Abstractions](/packages/persistence-abstractions)、[Persistence.InMemory](/packages/persistence-inmemory)、[Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore)、[Persistence.SqlSugar](/packages/persistence-sqlsugar)、[Messaging.Abstractions](/packages/messaging-abstractions)、[MultiTenancy.Abstractions](/packages/multitenancy-abstractions)
+- 错误码：[Persistence.Abstractions 的错误码表](/packages/persistence-abstractions#错误码)
 - 规范：RFC-0005《领域协议与持久化》
 - 下一页：[EF Core Provider](/persistence/entity-framework-core)，讲怎样让应用自己的 `DbContext` 接入仓储与工作单元
