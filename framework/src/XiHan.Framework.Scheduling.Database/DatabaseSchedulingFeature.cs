@@ -106,7 +106,7 @@ public sealed class DatabaseSchedulingFeature : IHostedFeature
         }
 
         // 健康项按名字作键登记：几个 Provider 的探针各自独立，内核经 IHealthContributor 统一采集；探针读引擎竞争的那一行租约
-        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, new LeaseProbe(sp, options.LeaseResource.Value).ProbeAsync, databaseOptions.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
+        context.Services.AddKeyedSingleton(HealthName, (sp, _) => new PeriodicHealthContributor(HealthName, new LeaseProbe(sp, options.LeaseResource.Value, sp.GetRequiredService<ILoggerFactory>().CreateLogger<LeaseProbe>()).ProbeAsync, databaseOptions.HealthProbeInterval, sp.GetRequiredService<TimeProvider>(), sp.GetRequiredService<ILoggerFactory>()));
         context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredKeyedService<PeriodicHealthContributor>(HealthName));
     }
 

@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
@@ -13,10 +14,15 @@ namespace XiHan.Framework.Scheduling.Database.Leadership;
 /// 健康项 <c>scheduling.database.leader</c> 的探针
 /// </summary>
 /// <remarks>
-/// 租约表可达——读一次本节点竞争的租约行。不经 <c>App.InvokeAsync</c>（启动期应用还不在服务状态会被挡住，探针也不需要 Tenant / Authorize 阶段），而是在根提供者的新作用域里开一个只读工作单元读行（仓储只能在活动的工作单元内使用），读完回滚结束
+/// 租约表可达——读一次本节点竞争的租约行。不经 <c>App.InvokeAsync</c>（启动期应用还不在服务状态会被挡住，探针也不需要 Tenant / Authorize 阶段），而是在根提供者的新作用域里开一个只读工作单元读行（仓储只能在活动的工作单元内使用；<see cref="UnitOfWorkScope"/>，ADR-0259）
 /// </remarks>
 internal sealed class LeaseProbe
 {
+    /// <summary>
+    /// 只读、无租户的工作单元选项
+    /// </summary>
+    private static readonly UnitOfWorkOptions _readOnly = new() { IsReadOnly = true };
+
     /// <summary>
     /// 根服务提供者
     /// </summary>
@@ -31,12 +37,21 @@ internal sealed class LeaseProbe
     private readonly string _resource;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    /// <remarks>
+    /// 只记收尾（回滚、释放作用域）的失败；探到的异常由探针宿主记
+    /// </remarks>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public LeaseProbe(IServiceProvider services, string resource)
+    public LeaseProbe(IServiceProvider services, string resource, ILogger logger)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _resource = resource ?? throw new ArgumentNullException(nameof(resource));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -45,23 +60,15 @@ internal sealed class LeaseProbe
     /// <remarks>
     /// 读到或没读到都算可达，仓储与工作单元抛出的异常原样传播，由探针宿主记成 Degraded
     /// </remarks>
-    public async ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
-    {
-        await using var scope = _services.CreateAsyncScope();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        await unitOfWork.BeginAsync(new UnitOfWorkOptions { IsReadOnly = true }, cancellationToken).ConfigureAwait(false);
-        try
-        {
-            _ = await scope.ServiceProvider.GetRequiredService<IRepository<SchedulerLeaseEntity, string>>().FindAsync(_resource, cancellationToken).ConfigureAwait(false);
-            return Result.Success();
-        }
-        finally
-        {
-            // 只读探针不提交：工作单元仍活动就回滚结束，用 None 令牌保证取消时也能收尾
-            if (unitOfWork.State == UnitOfWorkState.Active)
+    public ValueTask<Result> ProbeAsync(CancellationToken cancellationToken)
+        => UnitOfWorkScope.RunAsync(
+            _services,
+            _readOnly,
+            async (services, ct) =>
             {
-                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-            }
-        }
-    }
+                _ = await services.GetRequiredService<IRepository<SchedulerLeaseEntity, string>>().FindAsync(_resource, ct).ConfigureAwait(false);
+                return Result.Success();
+            },
+            _logger,
+            cancellationToken);
 }

@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Scheduling.Abstractions;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions.Leadership;
@@ -34,7 +35,7 @@ public sealed class LeaseRowsTests : IAsyncLifetime
     public async Task HeldWrongTokenOrMissingRow_AreEmptySuccesses()
     {
         var host = await _database.StartHostAsync();
-        var rows = new LeaseRows(host.Services, host.App, TimeProvider.System);
+        var rows = new LeaseRows(host.Services, host.App, TimeProvider.System, NullLogger.Instance);
         var ttl = TimeSpan.FromMinutes(1);
 
         Assert.True((await rows.TryAcquireAsync("lease.rows", "node-a", "token-a", ttl, CancellationToken.None)).ValueOrThrow().HasValue);
@@ -62,7 +63,7 @@ public sealed class LeaseRowsTests : IAsyncLifetime
         var lease = (await election.TryAcquireAsync(resource, TimeSpan.FromMinutes(1), CancellationToken.None)).ValueOrThrow();
 
         // 别的节点接管：行换了持有者与令牌
-        (await new StoreInvocation(host.Services, host.App).RunAsync(async ctx =>
+        (await new StoreInvocation(host.Services, host.App, NullLogger.Instance).RunAsync(async ctx =>
         {
             var repository = StoreInvocation.Repository<SchedulerLeaseEntity>(ctx);
             var row = (await repository.FindAsync(resource.Value, ctx.CancellationToken)).ValueOrThrow();

@@ -2,7 +2,9 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Domain.Entities;
+using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
@@ -15,9 +17,9 @@ namespace XiHan.Framework.Scheduling.Database.Storage;
 /// 存储与租约共用的执行方式
 /// </summary>
 /// <remarks>
-/// 每个操作在根提供者的新作用域里经 <see cref="App.InvokeAsync"/> 走完整管道，仓储只能在 Transaction 阶段内使用，动作返回时工作单元提交。动作返回失败时把失败写成调用结果让工作单元回滚；管道自身的失败原样返回；应用不在服务状态时返回 <see cref="SchedulingErrors.StoreUnavailable"/>
+/// 每个操作在根提供者的新作用域里经 <see cref="App.InvokeAsync"/> 走完整管道，仓储只能在 Transaction 阶段内使用，动作返回时工作单元提交。动作返回失败时把失败写成调用结果让工作单元回滚；管道自身的失败原样返回；应用不在服务状态时返回 <see cref="SchedulingErrors.StoreUnavailable"/>。管道之外抛出的异常同样归为存储不可达：原因只写异常类型全名（框架异常写它的错误码），完整异常进日志（ADR-0259）
 /// </remarks>
-internal sealed class StoreInvocation
+internal sealed partial class StoreInvocation
 {
     /// <summary>
     /// 调度子系统错误码的前缀
@@ -44,12 +46,21 @@ internal sealed class StoreInvocation
     private readonly App _app;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    /// <remarks>
+    /// 记录管道之外抛出的异常：错误本身不带异常的文本
+    /// </remarks>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public StoreInvocation(IServiceProvider services, App app)
+    public StoreInvocation(IServiceProvider services, App app, ILogger logger)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
         _app = app ?? throw new ArgumentNullException(nameof(app));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -76,8 +87,14 @@ internal sealed class StoreInvocation
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            // 应用不在服务状态时 InvokeAsync 直接抛出；其余异常在管道内已被转成 Unexpected 结果，这里只剩调用管道前后的意外
-            return Unavailable(exception.Message);
+            // 应用不在服务状态时 InvokeAsync 直接抛出：那是预期的状态，不是故障，不记日志
+            // 其余异常在管道内已被转成 Unexpected 结果，这里只剩调用管道前后的意外，完整异常进日志
+            if (exception is not FrameworkException { Code: KernelErrors.InvalidAppState })
+            {
+                LogInvocationFailed(_logger, exception);
+            }
+
+            return Unavailable(exception);
         }
 
         // 取消不以失败结果掩盖：调用方按异步约定收到 OperationCanceledException
@@ -124,10 +141,22 @@ internal sealed class StoreInvocation
     }
 
     /// <summary>
-    /// 以文本原因构造存储不可达
+    /// 把抛出的异常归为存储不可达
     /// </summary>
-    public static Error Unavailable(string reason)
-        => new(SchedulingErrors.StoreUnavailable, SchedulingMessages.StoreUnavailable, MessageArguments.Of(("reason", reason)));
+    /// <remarks>
+    /// 框架自己的异常带错误码：以它为原因、它转成的错误为内部错误。其余异常的消息是驱动写的，可能带连接串与主机名：原因只写类型全名，完整异常由调用方记进日志
+    /// </remarks>
+    public static Error Unavailable(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        if (exception is FrameworkException framework)
+        {
+            return new Error(SchedulingErrors.StoreUnavailable, SchedulingMessages.StoreUnavailable, MessageArguments.Of(("reason", framework.Code)), framework.ToError());
+        }
+
+        var type = exception.GetType();
+        return new Error(SchedulingErrors.StoreUnavailable, SchedulingMessages.StoreUnavailable, MessageArguments.Of(("reason", type.FullName ?? type.Name)));
+    }
 
     /// <summary>
     /// 失败归为存储不可达，成功原样返回
@@ -138,4 +167,10 @@ internal sealed class StoreInvocation
     /// 失败归为存储不可达，成功原样返回
     /// </summary>
     public static Result OrUnavailable(Result result) => result.IsSuccess ? result : Unavailable(result.Error!);
+
+    /// <summary>
+    /// 管道之外抛出异常
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A scheduling store operation threw outside the pipeline; the store is reported as unavailable.")]
+    private static partial void LogInvocationFailed(ILogger logger, Exception exception);
 }

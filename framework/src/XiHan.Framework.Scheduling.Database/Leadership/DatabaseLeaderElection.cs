@@ -48,10 +48,10 @@ public sealed partial class DatabaseLeaderElection : ILeaderElection
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(loggerFactory);
-        _rows = new LeaseRows(services, app, clock);
+        _logger = loggerFactory.CreateLogger<DatabaseLeaderElection>();
+        _rows = new LeaseRows(services, app, clock, _logger);
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _holder = options.NodeId;
-        _logger = loggerFactory.CreateLogger<DatabaseLeaderElection>();
     }
 
     /// <summary>

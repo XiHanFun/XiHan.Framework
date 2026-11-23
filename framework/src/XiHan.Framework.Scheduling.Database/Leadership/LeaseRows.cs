@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
@@ -17,7 +18,7 @@ namespace XiHan.Framework.Scheduling.Database.Leadership;
 /// <remarks>
 /// 获取、续约、释放，每一步都在自己的工作单元里提交（返回即提交，别的节点立刻看得见）。获取与续约是独立的管道调用，只在应用处于服务状态时进行（引擎不在服务状态的周期不拿不续）；释放不经管道，排空与停止时也能删行（ADR-0091）。跨进程的原子性来自主键唯一约束（插入）与并发戳（接管、续约）：仓储更新先加行锁读当前行再比对戳，戳不同返回冲突
 /// </remarks>
-internal sealed class LeaseRows
+internal sealed partial class LeaseRows
 {
     /// <summary>
     /// 管道执行（获取与续约）
@@ -35,13 +36,22 @@ internal sealed class LeaseRows
     private readonly TimeProvider _clock;
 
     /// <summary>
+    /// 日志
+    /// </summary>
+    /// <remarks>
+    /// 记录租约表抛出的异常：错误本身不带异常的文本
+    /// </remarks>
+    private readonly ILogger _logger;
+
+    /// <summary>
     /// 创建
     /// </summary>
-    public LeaseRows(IServiceProvider services, App app, TimeProvider clock)
+    public LeaseRows(IServiceProvider services, App app, TimeProvider clock, ILogger logger)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
-        _invocation = new StoreInvocation(services, app);
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _invocation = new StoreInvocation(services, app, logger);
     }
 
     /// <summary>
@@ -101,46 +111,44 @@ internal sealed class LeaseRows
     /// 释放
     /// </summary>
     /// <remarks>
-    /// 只删带着 <paramref name="token"/> 的行；行没了、令牌变了或撞上别的节点都视为已释放。不经管道：在根提供者的新作用域里开可写工作单元、删完即提交；异常归为存储不可达
+    /// 只删带着 <paramref name="token"/> 的行；行没了、令牌变了或撞上别的节点都视为已释放。不经管道：在根提供者的新作用域里开可写工作单元、删完即提交（<see cref="UnitOfWorkScope"/>，ADR-0259）；租约表抛出的异常归为存储不可达，调用方取消回滚后照常抛出
     /// </remarks>
     public async ValueTask<Result> ReleaseAsync(string resource, string token, CancellationToken cancellationToken)
     {
         // 释放发生在应用不在服务状态的时候（排空中的周期、调度器停止），管道这时拒绝一切调用：经管道就删不掉行，
         // 另一个节点要等租约到期才能接手。租约行是平台数据，不需要 Tenant / Authorize 阶段，所以与健康探针一样直接开工作单元
-        await using var scope = _services.CreateAsyncScope();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        try
-        {
-            await unitOfWork.BeginAsync(UnitOfWorkOptions.Default, cancellationToken).ConfigureAwait(false);
-            var repository = scope.ServiceProvider.GetRequiredService<IRepository<SchedulerLeaseEntity, string>>();
-            var found = await repository.FindAsync(resource, cancellationToken).ConfigureAwait(false);
-            if (!found.TryGetValue(out var row) || !string.Equals(row.Token, token, StringComparison.Ordinal))
+        var released = await UnitOfWorkScope.RunAsync(
+            _services,
+            UnitOfWorkOptions.Default,
+            async (services, ct) =>
             {
-                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-                return Result.Success();
-            }
+                var repository = services.GetRequiredService<IRepository<SchedulerLeaseEntity, string>>();
+                var found = await repository.FindAsync(resource, ct).ConfigureAwait(false);
+                if (!found.TryGetValue(out var row) || !string.Equals(row.Token, token, StringComparison.Ordinal))
+                {
+                    return Result.Success();
+                }
 
-            var removed = await repository.RemoveAsync(row, cancellationToken).ConfigureAwait(false);
-            if (removed.IsFailure)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-                return RecordQueries.IsRace(removed.Error!) ? Result.Success() : removed;
-            }
+                return await repository.RemoveAsync(row, ct).ConfigureAwait(false);
+            },
+            Unavailable,
+            _logger,
+            cancellationToken).ConfigureAwait(false);
 
-            // 提交时撞上别的节点（行已被接管或删除）同样视为已释放
-            var committed = await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-            return committed.IsSuccess || RecordQueries.IsRace(committed.Error!) ? Result.Success() : committed;
-        }
-        catch (Exception exception) when (exception is not OperationCanceledException)
-        {
-            // 回滚用 None 令牌保证一定执行；工作单元没开起来时不回滚
-            if (unitOfWork.State == UnitOfWorkState.Active)
-            {
-                await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-            }
+        // 删行或提交时撞上别的节点（行已被接管或删除）同样视为已释放
+        return released.IsSuccess || RecordQueries.IsRace(released.Error!) ? Result.Success() : released;
+    }
 
-            return StoreInvocation.Unavailable(exception.Message);
-        }
+    /// <summary>
+    /// 把释放时抛出的异常归为存储不可达
+    /// </summary>
+    /// <remarks>
+    /// 完整异常只进日志
+    /// </remarks>
+    private Error Unavailable(Exception exception)
+    {
+        LogReleaseThrew(_logger, exception);
+        return StoreInvocation.Unavailable(exception);
     }
 
     /// <summary>
@@ -161,4 +169,10 @@ internal sealed class LeaseRows
     /// 是成功的无值，不是失败：原语的成功结果不能携带 <see langword="null"/>
     /// </remarks>
     private static Result<Maybe<DateTimeOffset>> Taken() => Result.Success(Maybe.None<DateTimeOffset>());
+
+    /// <summary>
+    /// 释放租约行时租约表抛出异常
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Releasing a leader lease row threw; the store is reported as unavailable and the row expires on its own.")]
+    private static partial void LogReleaseThrew(ILogger logger, Exception exception);
 }

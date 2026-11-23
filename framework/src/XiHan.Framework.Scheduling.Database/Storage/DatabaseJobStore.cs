@@ -1,6 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions.Queries;
@@ -67,7 +70,10 @@ public sealed class DatabaseJobStore : IJobStore
     /// </summary>
     public DatabaseJobStore(IServiceProvider services, App app, TimeProvider clock)
     {
-        _invocation = new StoreInvocation(services, app);
+        ArgumentNullException.ThrowIfNull(services);
+        // 日志工厂从容器里取，公开构造函数的签名不变；手工构造时容器里没有它就不记这条日志
+        var loggers = services.GetService<ILoggerFactory>() ?? NullLoggerFactory.Instance;
+        _invocation = new StoreInvocation(services, app, loggers.CreateLogger<DatabaseJobStore>());
         _sequence = new WriteSequence(clock);
     }
 
