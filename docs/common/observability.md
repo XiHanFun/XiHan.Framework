@@ -38,7 +38,7 @@
 
 上例把框架日志调到 Warning，同时保留审计事件的 Information 日志。
 
-框架不包装 Serilog 或其他日志库：应用照常注入 `ILogger<T>`，需要第三方日志库时按该库的文档接到 `Microsoft.Extensions.Logging`。装配 `Observability.OpenTelemetry` 且 `Logging` 开启时，日志经 OpenTelemetry 的日志提供者与追踪、指标一起导出。
+框架不包装 Serilog 或其他日志库：应用照常注入 `ILogger<T>`，需要第三方日志库时按该库的文档接到 `Microsoft.Extensions.Logging`，框架日志照常进去。装配 `Observability.OpenTelemetry` 且 `Logging` 开启时，日志经 OpenTelemetry 的日志提供者与追踪、指标一起导出。
 
 应用自己的日志也建议用 `[LoggerMessage]`：模板在编译期解析，不装箱，Native AOT 下可用。
 
@@ -51,18 +51,10 @@ dotnet add package XiHan.Framework.Observability.OpenTelemetry --prerelease
 ```
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Observability.OpenTelemetry;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
+// 接在第一个应用的 Program.cs 上，只多一行 UseFeature
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
-    .UseFeature<OpenTelemetryObservabilityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
+    .UseFeature<OpenTelemetryObservabilityFeature>());   // using XiHan.Framework.Observability.OpenTelemetry;
 ```
 
 ```json
@@ -101,12 +93,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 dotnet run
 
 ### 订阅的源与仪表
 
-| 类别 | 缺省订阅 | 追加 |
-| --- | --- | --- |
-| Activity 源 | `XiHan.Framework`、`Microsoft.AspNetCore`、`System.Net.Http` | `Sources`，逗号分隔 |
-| Meter | `XiHan.Framework`、`Microsoft.AspNetCore.Hosting`、`Microsoft.AspNetCore.Server.Kestrel`、`System.Net.Http`、`System.Runtime` | `Meters`，逗号分隔 |
-
-ASP.NET Core 与 `HttpClient` 不装检测包，按名字订阅它们原生发出的 Activity 与 Meter。资源属性 `service.name` 缺省取入口程序集名（取不到时为 `xihan`），`service.version` 取入口程序集版本，`service.instance.id` 取机器名。
+缺省订阅框架自己的 `XiHan.Framework`，以及 ASP.NET Core、`HttpClient` 与运行时的 Activity 源和 Meter（名单见 [Observability.OpenTelemetry](/packages/observability-opentelemetry#主要类型)）；应用自己的名字用 `Sources` 与 `Meters` 追加，逗号分隔。ASP.NET Core 与 `HttpClient` 不装检测包，按名字订阅它们原生发出的 Activity 与 Meter。资源属性 `service.name` 缺省取入口程序集名（取不到时为 `xihan`），`service.version` 取入口程序集版本，`service.instance.id` 取机器名。
 
 ### 采样
 
@@ -166,25 +153,15 @@ public sealed partial class OrderExporter(ILogger<OrderExporter> logger)
 
 `Observability.Host` 提供 `observability.host@1`（`role: default`，规范 RFC-0023《可观测性：导出与运行信息》）：单例 `IHostMonitor` 读进程与所在主机的 CPU、内存、磁盘、网卡、GPU、主板与运行时长，供管理界面的服务监控使用。契约在 `Observability.Abstractions`，只依赖原语层。
 
-| 方法 | 返回 |
-| --- | --- |
-| `ReadRuntimeAsync(ct)` | `RuntimeInfo`：操作系统、.NET 与 RID、机器名与用户名、进程 ID / 名称 / 启动时刻 / 运行时长、系统启动时刻 / 运行时长、工作集、私有字节、托管堆、线程数、句柄数、三代 GC 次数、进程 CPU 使用率（用户名是运行进程的系统账户，不是登录凭据） |
-| `ReadProcessorAsync(ct)` | `ProcessorInfo`：型号、厂商、架构、物理与逻辑核心、标称频率（MHz）、最后一级缓存、系统 CPU 使用率 |
-| `ReadMemoryAsync(ct)` | `MemoryInfo`：总量、可用、空闲、缓存，以及已用与使用率 |
-| `ReadDisksAsync(ct)` | `DiskInfo` 列表：挂载点或盘符、设备、卷标、文件系统、类型、总量、空闲、当前用户可用，以及已用与使用率 |
-| `ReadNetworkInterfacesAsync(ct)` | `NetworkInterfaceInfo` 列表：ID、名称、描述、类型、状态、速率、物理地址、IPv4 / IPv6 地址、网关、DNS、累计收发字节与包数、收发速率 |
-| `ReadGpusAsync(ct)` | `GpuInfo` 列表：名称、厂商、PCI 厂商与设备 ID、驱动与版本、显存、温度 |
-| `ReadBoardAsync(ct)` | `BoardInfo`：主板、整机与 BIOS 的厂商、型号、版本、序列号与日期 |
+`IHostMonitor` 有七个读取方法：`ReadRuntimeAsync`（进程与运行时）、`ReadProcessorAsync`、`ReadMemoryAsync`、`ReadDisksAsync`、`ReadNetworkInterfacesAsync`、`ReadGpusAsync` 与 `ReadBoardAsync`，各返回一份不可变记录，字段见 [Observability.Abstractions](/packages/observability-abstractions#主要类型)。读取的约定：
 
-读取的约定：
-
-- 不启动外部命令：只读 BCL、`/proc` 与 `/sys`、`pci.ids`、注册表与 kernel32 的 `GetSystemTimes`、`GetLogicalProcessorInformation`、`K32GetPerformanceInfo`，不用 WMI、PowerShell、`dmidecode`、`lspci`、`nvidia-smi`。读取不会挂起，也没有命令注入面。
+- 不启动外部命令：只读 BCL、`/proc` 与 `/sys`、注册表与 kernel32，不用 WMI、PowerShell、`dmidecode`、`lspci`、`nvidia-smi`。读取不会挂起，也没有命令注入面。
 - 读不到的项为 `null`，列表读不到为空列表，不以 0 或空串顶替，界面据此区分「没有」与「为零」。单项失败只让该项为空，读取不抛出。
 - CPU 型号与核心、GPU、主板首次读取后缓存；内存、磁盘、网卡与运行时每次当场读。
 - 使用率与速率是两次采样之差，由后台采样器负责：启动时同步采一次，之后每 `SampleIntervalSeconds`（缺省 5，取值 (0, 3600]）采一次；读取只返回最近算出的值，不睡眠、不等待，启动后第一个间隔内为 `null`。一次采样失败记一条警告，保留上一次的值。
 - 不暴露命令行参数、环境变量与当前目录。
 
-Linux 与 Windows 读全部项；macOS 等其他平台只有 BCL 读得到的部分，CPU 型号与使用率、内存、主板的各项为 `null`，GPU 是空列表。容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额。读不到的项（NVIDIA 显存与温度、GPU 使用率、Windows 主板序列号等）列在 RFC-0023。
+Linux 与 Windows 读全部项；macOS 等其他平台只有 BCL 读得到的部分，CPU 型号与使用率、内存、主板的各项为 `null`，GPU 是空列表。容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额；限额用 .NET 自带的 `GC.GetGCMemoryInfo().TotalAvailableMemoryBytes` 与 `Environment.ProcessorCount`（它们已按 cgroup 调整）。各平台的读取来源与读不到的项见 [Observability.Host](/packages/observability-host#行为与限制)。
 
 把运行信息暴露给服务监控页：
 
@@ -193,30 +170,22 @@ dotnet add package XiHan.Framework.Observability.Host --prerelease
 ```
 
 ```csharp
-using MyApp.Diagnostics;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Observability.Abstractions;
 using XiHan.Framework.Observability.Host;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
+// builder.Build() 之前：装配特性，并把下面的序列化上下文插进 HTTP JSON 选项
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, MonitorJsonContext.Default));
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<HostObservabilityFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
-
-// 读取只返回后台采样的最近值，不阻塞请求线程；机器信息只给认证过的调用方
+// app.UseXiHan() 之后。读取只返回后台采样的最近值，不阻塞请求线程；机器信息只给认证过的调用方
 var monitor = app.MapGroup("/monitor").RequireXiHanAuthentication();
 monitor.MapGet("/runtime", (IHostMonitor host, CancellationToken ct) => host.ReadRuntimeAsync(ct));
 monitor.MapGet("/cpu", (IHostMonitor host, CancellationToken ct) => host.ReadProcessorAsync(ct));
 monitor.MapGet("/memory", (IHostMonitor host, CancellationToken ct) => host.ReadMemoryAsync(ct));
 monitor.MapGet("/disks", (IHostMonitor host, CancellationToken ct) => host.ReadDisksAsync(ct));
-
-app.Run();
 ```
 
 ```csharp
@@ -238,23 +207,7 @@ internal sealed partial class MonitorJsonContext : JsonSerializerContext;
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Observability:OpenTelemetry:ServiceName` | string | 入口程序集名 | 资源属性 `service.name` |
-| `XiHan:Observability:OpenTelemetry:ServiceVersion` | string | 入口程序集版本 | 资源属性 `service.version` |
-| `XiHan:Observability:OpenTelemetry:Tracing` | bool | `true` | 是否接入追踪 |
-| `XiHan:Observability:OpenTelemetry:Metrics` | bool | `true` | 是否接入指标 |
-| `XiHan:Observability:OpenTelemetry:Logging` | bool | `true` | 是否把日志经 OpenTelemetry 导出 |
-| `XiHan:Observability:OpenTelemetry:SamplingRatio` | 0 到 1 | 1 | 根 Span 的采样比例 |
-| `XiHan:Observability:OpenTelemetry:Otlp:Enabled` | bool | 自动 | 强制开关 OTLP 导出器 |
-| `XiHan:Observability:OpenTelemetry:Otlp:Endpoint` | 绝对 URI | — | OTLP 端点 |
-| `XiHan:Observability:OpenTelemetry:Otlp:Protocol` | `Grpc` / `HttpProtobuf` | `Grpc` | OTLP 协议，只能与 `Otlp:Endpoint` 一起写 |
-| `XiHan:Observability:OpenTelemetry:Console` | bool | `false` | 同时写控制台导出器 |
-| `XiHan:Observability:OpenTelemetry:Sources` | 逗号分隔 | — | 追加订阅的 Activity 源 |
-| `XiHan:Observability:OpenTelemetry:Meters` | 逗号分隔 | — | 追加订阅的 Meter |
-| `XiHan:Observability:Host:SampleIntervalSeconds` | 数值，(0, 3600] | 5 | 运行信息的采样间隔（秒） |
-
-取值不合法时（比例越界、端点不是绝对 URI、布尔不是 `true` / `false`、采样间隔越界）装配阶段抛出 `ArgumentException`，应用启动失败。
+追踪、指标、日志的开关与导出器的键都在 `XiHan:Observability:OpenTelemetry` 下，见 [Observability.OpenTelemetry](/packages/observability-opentelemetry#配置)；运行信息只有采样间隔 `XiHan:Observability:Host:SampleIntervalSeconds`，见 [Observability.Host](/packages/observability-host#配置)。取值不合法时（比例越界、端点不是绝对 URI、布尔不是 `true` / `false`、采样间隔越界）装配阶段抛出 `ArgumentException`，应用启动失败。
 
 ## 与其他能力的关系
 
@@ -262,28 +215,6 @@ internal sealed partial class MonitorJsonContext : JsonSerializerContext;
 - 审计：日志、追踪与指标面向运维；谁在什么时候做了什么，是业务记录，见[审计](/common/auditing)。两者共享同一个 trace-id，可以从审计事件跳到链路。
 - 执行管道：Observe 是管道的第二个阶段，见[执行管道](/startup/pipeline)。
 - 弹性：取消与超时的区分由 Resilience 阶段完成，见[弹性与限流](/common/resilience)。
-
-## 常见问题
-
-### 可以用 Serilog 吗
-
-可以。框架只依赖 `Microsoft.Extensions.Logging`，按 Serilog 的文档把它接成日志提供者即可，框架日志照常进去；装配 OpenTelemetry 且开着 `Logging` 时，日志同时经 OpenTelemetry 导出，两者并存。
-
-### 本地开发没有收集器，日志里会不会一直报连接失败
-
-不会。没写 `Otlp:Enabled`、没配 `Otlp:Endpoint`、也没有 `OTEL_EXPORTER_OTLP_ENDPOINT` 环境变量时不装配 OTLP 导出器，不会向空端口重试。想看信号就把 `Console` 设为 `true`。
-
-### 我的业务 Span 和指标为什么没有导出
-
-名字没有加进 `Sources` / `Meters`。OpenTelemetry 只订阅配置里列出的 `ActivitySource` 与 `Meter`，缺省只有框架、ASP.NET Core、`HttpClient` 与运行时的；把 `OrderDiagnostics.Name` 加进去即可。
-
-### 采样比例设成 0.2，为什么有的链路全被采了
-
-`ParentBasedSampler` 沿用父级的决定：上游带 `traceparent` 且标为采样时，本服务不再按比例抽，整条链路一致。比例只作用于本服务作为根的链路。
-
-### 怎样拿到容器的 CPU 与内存限额
-
-`IHostMonitor` 读的是宿主机的数值，不是 cgroup 限额。限额用 .NET 自带的 `GC.GetGCMemoryInfo().TotalAvailableMemoryBytes` 与 `Environment.ProcessorCount`（它们已按 cgroup 调整）。
 
 ## 相关包与下一步
 

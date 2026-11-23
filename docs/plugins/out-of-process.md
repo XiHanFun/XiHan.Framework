@@ -236,20 +236,7 @@ builder.AddXiHan(xihan => xihan
 
 ## 配置节
 
-配置节 `XiHan:Plugins:OutOfProcess`（`OutOfProcessPluginOptions.ConfigurationSection`）：
-
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `Directories` | 字符串数组 | 空 | 启动时装载的插件目录，一个目录一个插件；相对路径相对当前目录 |
-| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予该插件的权限；清单声明的权限必须全部授予才能加载。清单要读的宿主配置节与绑定也在这里授予：`config:<配置节>`、`binding:<绑定名>`，没有授予即拒绝加载 |
-| `HandshakeTimeoutSeconds` | 正数 | 10 | 读到握手行并完成 `Handshake` 的时限 |
-| `StartTimeoutSeconds` | 正数 | 30 | `Configure` 与 `Start` 各自的时限 |
-| `StopGraceSeconds` | 正数 | 取 `XiHan:Kernel:StopTimeoutSeconds` | 停止宽限 |
-| `HealthIntervalSeconds` | 正数 | 10 | 健康推送断开后的轮询间隔 |
-| `HealthFailures` | 正整数 | 3 | 连续多少次健康轮询失败视为进程失效 |
-| `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重启多少次 |
-| `RestartWindowSeconds` | 正数 | 600 | 统计重启次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-<用户名>` | 插件工作目录的根，每个插件一个子目录 |
+配置节 `XiHan:Plugins:OutOfProcess`（`OutOfProcessPluginOptions.ConfigurationSection`）里最常用的是两项：`Directories` 列出启动时装载的插件目录（一个目录一个插件，相对路径相对当前目录），`Grants:<清单 ID>` 授予该插件的权限，清单声明的权限必须全部授予才能加载，清单要读的宿主配置节与绑定也在这里授予（`config:<配置节>`、`binding:<绑定名>`）。握手与启停时限、健康轮询、重启上限与工作目录等其余键见[包参考](/packages/plugins-outofprocess#配置)。
 
 取值不合类型与范围时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定，宿主在 `Configure` 时把它序列化为 JSON 对象下发。
 
@@ -259,17 +246,9 @@ builder.AddXiHan(xihan => xihan
 
 宿主要在 `HandshakeTimeoutSeconds` 内读到 stdout 的握手行并完成 `Handshake`。stdout 与 stderr 的一行最多 16384 个字符，超过的部分被丢弃，握手行超过即握手失败（ADR-0185）。常见原因：日志写到了 stdout（只能走 stderr）、`tcp` 地址不是回环地址、握手发回的清单与目录里的文件不一致。`xihan-conformance plugin --dir <目录>` 的 `handshake` 用例能直接定位。
 
-### 插件崩溃后多久恢复，一直崩会怎样
-
-从 1 秒起翻倍退避重启，上限 60 秒；`RestartWindowSeconds` 内超过 `RestartLimit` 次就保持 `Failed`，调用方一直得到 `PLUGINS_UNAVAILABLE_001`，直到 `UnloadAsync` 再 `LoadAsync`。
-
 ### 插件的操作能不能像本地操作一样出现在 OpenAPI 与 MCP 里
 
 能。HTTP 路由、OpenAPI 文档与 MCP tool 跟随操作登记表（ADR-0251），配置阶段发现的与运行期 `LoadAsync` 的插件一样：登记之后就有路由、进文档、是 tool，卸载之后随之消失（[规范化接口文档](/web/openapi)、[MCP](/protocols/mcp)）。要给插件单独一份分组文档，应用登记一个 `IOpenApiGroupSource`，按插件的清单 ID 给出分组。gRPC 方法与 AI 工具目录只在启动时建成，运行期加载的插件不在其中。
-
-### 能用 gRPC 流式操作吗
-
-协议定义了 `InvokeStream`，但 .NET 宿主暂不发布流式操作，Go SDK 也不提供。需要流式结果时拆成多次一元调用或经消息投递。
 
 ## 相关包与下一步
 

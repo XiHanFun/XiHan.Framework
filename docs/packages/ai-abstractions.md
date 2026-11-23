@@ -42,27 +42,34 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 
 `XiHan:AI` 下的键（装配时读一次，不热更新，改了要重启应用）：
 
-| 键 | 缺省 | 说明 |
-| --- | --- | --- |
-| `DefaultProvider` | 只有一个 Provider 时取它 | 框架自带目录的默认聊天 Provider |
-| `DefaultEmbeddingProvider` | 同 `DefaultProvider` | 框架自带目录的默认嵌入 Provider |
-| `Providers:<name>:Kind` | 必填 | 种类，转小写后与工厂的 `Kind` 匹配 |
-| `Providers:<name>:Endpoint` | 空 | 绝对的 http(s) 地址；空表示 Provider 的官方端点 |
-| `Providers:<name>:ApiKey` | 空 | 空时由 Provider 决定 |
-| `Providers:<name>:ChatModel`、`EmbeddingModel` | — | 解析对应客户端时必填 |
-| `Providers:<name>:EmbeddingDimensions` | 模型缺省 | 至少 1 |
-| `Providers:<name>:TimeoutSeconds` | 100 | Provider 调用的时限，正数；`IAIChat` 与知识库流水线按它落成超时令牌 |
-| `Providers:<name>:Properties:<key>` | — | 透传给工厂的字符串 |
-| `Tools:<操作 ID>` | 按约定推导 | 覆盖操作工具名 |
-| `Prompts:<name>:Template`、`Description` | — | 配置里的提示词 |
-| `Guardrails:Enabled` | `false` | 登记内置护栏 |
-| `Guardrails:BlockedKeywords`、`InjectionPatterns` | 空 | 数组 |
-| `Guardrails:UseBuiltInInjectionHeuristics` | `true` | 内置中英文提示注入模式 |
-| `Knowledge:Collection` | `knowledge` | 默认集合；带租户的调用用 `<Collection>.<租户 ID>`，请求显式指明的集合原样使用（ADR-0210） |
-| `Knowledge:Dimensions` | 1536 | 嵌入维度 |
-| `Knowledge:ChunkSize`、`ChunkOverlap` | 1000、100 | 切块（字符） |
-| `Knowledge:Top` | 5 | 默认检索条数 |
-| `Knowledge:EmbeddingProvider`、`PromptName` | 空 | 知识库的嵌入 Provider（空时用目录的默认嵌入 Provider）与增强模板（模板启动时校验，找不到或渲染不了即启动失败） |
+| 键 | 类型 | 缺省 | 说明 |
+| --- | --- | --- | --- |
+| `DefaultProvider` | string | 只有一个 Provider 时取它 | 框架自带目录的默认聊天 Provider；应用替换了目录时不起作用 |
+| `DefaultEmbeddingProvider` | string | 同 `DefaultProvider` | 框架自带目录的默认嵌入 Provider |
+| `Providers:<name>:Kind` | string | 必填 | 种类，转小写后与工厂的 `Kind` 匹配 |
+| `Providers:<name>:Endpoint` | 绝对的 http(s) 地址 | 空 | 模型端点；不写或写空串表示 Provider 的官方端点 |
+| `Providers:<name>:ApiKey` | string | 空 | API 密钥；空时由 Provider 决定 |
+| `Providers:<name>:ChatModel` | string | — | 聊天模型，解析聊天客户端时必填 |
+| `Providers:<name>:EmbeddingModel` | string | — | 嵌入模型，解析嵌入生成器时必填 |
+| `Providers:<name>:EmbeddingDimensions` | int，至少 1 | 模型缺省维度 | 请求的嵌入维度 |
+| `Providers:<name>:TimeoutSeconds` | 数值，大于 0 | 100 | Provider 调用的时限；`IAIChat` 与知识库流水线按它落成超时令牌，范围与归因见[超时与取消](/ai/chat#超时与取消) |
+| `Providers:<name>:Properties:<key>` | string | — | 原样透传给工厂 |
+| `Tools:<操作 ID>` | string | 按约定推导 | 覆盖操作工具名 |
+| `Prompts:<name>:Template` | string | — | 提示词模板；也可以把模板直接写成 `Prompts:<name>` 的值 |
+| `Prompts:<name>:Description` | string | — | 提示词说明 |
+| `Guardrails:Enabled` | bool | `false` | 是否登记内置护栏 `KeywordBlocklistGuardrail` |
+| `Guardrails:BlockedKeywords` | 数组 | 空 | 禁用关键词，不区分大小写的子串匹配 |
+| `Guardrails:InjectionPatterns` | 数组 | 空 | 追加的提示注入正则，不区分大小写，单次匹配超时 250 毫秒 |
+| `Guardrails:UseBuiltInInjectionHeuristics` | bool | `true` | 是否启用内置的中英文提示注入模式（如「ignore previous instructions」「忽略以上指令」） |
+| `Knowledge:Collection` | string | `knowledge` | 默认集合；带租户的调用用 `<Collection>.<租户 ID>`，各租户互不可见，请求显式指明的集合原样使用（ADR-0210） |
+| `Knowledge:Dimensions` | int，至少 1 | 1536 | 嵌入维度 |
+| `Knowledge:ChunkSize` | int，至少 1 | 1000 | 切块大小（字符） |
+| `Knowledge:ChunkOverlap` | int，不小于 0 | 100 | 相邻块的重叠（字符） |
+| `Knowledge:Top` | int，1 到 1000 | 5 | 默认检索条数 |
+| `Knowledge:EmbeddingProvider` | string | 目录的默认嵌入 Provider | 知识库用的嵌入 Provider；请求写了 Provider 时以请求为准 |
+| `Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名；启动时校验存在且只用 `{context}`、`{question}`，找不到或渲染不了即启动失败 |
+
+`VectorData:HealthProbeIntervalSeconds` 是 [AI.VectorData](./ai-vectordata#配置) 自己的键。
 
 ```json
 {
@@ -78,7 +85,7 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 }
 ```
 
-值不合法时 `AIOptions.FromConfiguration` 抛出 `ArgumentException`，消息带出配置键与原值，应用启动失败：Provider 缺 `Kind`、`Endpoint` 不是绝对的 http(s) 地址、数值项不是要求的整数或正数、布尔项不是 `true` / `false`、提示词缺 `Template`。
+值不合法时 `AIOptions.FromConfiguration` 抛出 `ArgumentException`，消息带出完整的配置键与原值，应用启动失败：Provider 缺 `Kind`、`Endpoint` 不是绝对的 http(s) 地址（例如漏了 `http://`；写错的端点不会退回官方端点、把 `ApiKey` 发出去）、数值项不是要求的整数或正数、布尔项不是 `true` / `false`、提示词缺 `Template`。
 
 ## 主要类型
 
@@ -103,40 +110,19 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 
 ## 使用示例
 
-登记一个提示词模板，同名时覆盖配置里的：
+登记一个提示词模板，同名时覆盖配置里的。写在应用特性的 `Configure` 里，特性与清单的写法见[第一个应用](/getting-started/first-app)：
 
 ```csharp
 using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.AI.Abstractions.Prompts;
-using XiHan.Framework.Kernel;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Primitives;
-using XiHan.Framework.Primitives.Manifests;
 
-namespace MyApp.Assistants;
-
-public sealed class PromptsFeature : IFeature
+public void Configure(FeatureContext context)
 {
-    public Manifest Manifest { get; } = new()
-    {
-        Id = "xihan.myapp.prompts",
-        Package = "MyApp",
-        Version = "1.0.0",
-        Primitives = 1,
-        Stability = Stability.Experimental,
-        Kind = ManifestKind.Capability,
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Entry = typeof(PromptsFeature).FullName,
-    };
-
-    public void Configure(FeatureContext context)
-    {
-        // 与配置里同名的模板以这里为准；{{ 与 }} 输出字面的花括号
-        context.Services.AddAIPrompt(new AIPromptTemplate(
-            "order-summary",
-            "Summarize order {orderId} for {audience}. Reply as JSON like {{\"summary\": \"<text>\"}}.",
-            "Order summary for a given audience"));
-    }
+    // 与配置里同名的模板以这里为准；{{ 与 }} 输出字面的花括号
+    context.Services.AddAIPrompt(new AIPromptTemplate(
+        "order-summary",
+        "Summarize order {orderId} for {audience}. Reply as JSON like {{\"summary\": \"<text>\"}}.",
+        "Order summary for a given audience"));
 }
 ```
 
@@ -177,20 +163,24 @@ public sealed class EmbeddingService(IAIProviderCatalog catalog)
 - 操作工具在新作用域、新调用上下文里经完整管道执行，trace-id、截止时间、Baggage 与安全上下文（主体与租户）复制自调用方，以调用方身份按契约授权；凭据不复制、不重新认证；失败以 `{"error","message"}` JSON 交给模型。
 - 同一文档重新摄入先写新块、写入成功后再删多余的旧块：嵌入、维度校验或写入失败时旧文档照常可检索，存储没有事务，写入中途失败可能留下新旧混合的块，重试摄入即恢复一致；嵌入维度必须等于 `Knowledge:Dimensions`。
 - 没有 `IKnowledgeStore` 时流水线返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
-- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长（已定，ADR-0097：不设整条流的总时限，总时长由调用方的取消令牌或截止时间限制）。超时令牌已触发即超时（`AI_TIMEOUT_001`，流里抛出 `TimeoutException`），不论调用方是否也取消、Provider 是抛出还是接住取消正常返回；只有调用方取消时抛出 `OperationCanceledException`。见 [AI 指南的超时与取消](/ai/chat)。
+- `IAIChat` 与知识库流水线把 Provider 的 `TimeoutSeconds` 按容器的 `TimeProvider` 落成超时令牌、与调用方令牌链接后交给 Provider：完整应答覆盖 Provider 的整次调用（含函数调用循环），嵌入是每次批调用，流式是等每个更新的时长（已定，ADR-0097：不设整条流的总时限）。超时令牌已触发即 `AI_TIMEOUT_001`（流里抛出 `TimeoutException`），只有调用方取消时抛出 `OperationCanceledException`；归因的细则见[超时与取消](/ai/chat#超时与取消)。
 
-| 错误码 | 何时出现 |
-| --- | --- |
-| `AI_VALIDATION_001` | Provider 缺必填项、提示词缺参数、文档 ID 或问题为空、工具名不合法或重名、工具参数序列化不了（以 JSON 错误交给模型） |
-| `AI_VALIDATION_002` | 嵌入维度与知识库配置不一致 |
-| `AI_NOTFOUND_001` | Provider 未配置，或种类没有登记工厂；没写名字而目录没有默认 |
-| `AI_NOTFOUND_002` | 提示词模板不存在 |
-| `AI_NOTFOUND_003` | 工具不存在 |
-| `AI_DENIED_001` | 被护栏拦截 |
-| `AI_TIMEOUT_001` | 模型调用超时：Provider 的超时令牌已触发（调用方同时取消也一样），或 Provider 报告了自己的超时 |
-| `AI_UNAVAILABLE_001` | 模型端点不可达或返回错误 |
-| `AI_UNAVAILABLE_002` | 没有知识库 Provider，或存储不可达 |
-| `AI_UNEXPECTED_001` | 护栏抛出异常或返回失败 |
+## 错误码
+
+常量在 `AIErrors`。消息目录是 `ai`，键为 `ai.*`，内置 10 种区域的译文。
+
+| 错误码 | 常量 | 何时出现 |
+| --- | --- | --- |
+| `AI_VALIDATION_001` | `RequestInvalid` | 请求不合法：Provider 缺 `ChatModel` / `EmbeddingModel`、提示词缺参数、摄入的文档 ID 为空、检索的问题为空、按租户派生的默认集合名超过 64 个字符、工具参数序列化不了（以 JSON 错误交给模型）；工具名不合法或重名、知识库提示词用了 `{context}`、`{question}` 以外的占位符（启动失败） |
+| `AI_VALIDATION_002` | `DimensionsMismatch` | 嵌入维度与 `Knowledge:Dimensions` 不一致 |
+| `AI_NOTFOUND_001` | `ProviderNotFound` | Provider 未配置，或它的种类没有登记工厂；没写 Provider 名而目录没有默认 |
+| `AI_NOTFOUND_002` | `PromptNotFound` | 提示词模板不存在 |
+| `AI_NOTFOUND_003` | `ToolNotFound` | 请求里的工具名不在目录里 |
+| `AI_DENIED_001` | `GuardrailBlocked` | 被护栏拦截，细节带 `guardrail` 与 `reason` |
+| `AI_TIMEOUT_001` | `ModelTimeout` | 模型调用超时：Provider 的超时令牌已触发（`TimeoutSeconds` 到了，调用方同时取消也一样），或 Provider 报告了自己的超时 |
+| `AI_UNAVAILABLE_001` | `ModelUnavailable` | 模型端点不可达或返回错误 |
+| `AI_UNAVAILABLE_002` | `KnowledgeUnavailable` | 没有知识库 Provider，或向量存储不可达 |
+| `AI_UNEXPECTED_001` | `Unexpected` | 护栏抛出异常或返回失败 |
 
 ## 相关
 

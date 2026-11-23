@@ -41,14 +41,10 @@
 dotnet add package XiHan.Framework.Messaging.RabbitMQ --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，`AddXiHan` 里多一行：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Messaging.RabbitMQ;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
@@ -64,9 +60,8 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Messaging:RabbitMQ:Exchange` | 字符串 | `xihan` | 发布用的 direct 交换机，不能为空、不能以 `amq.` 开头；发布方与订阅方要一致 |
 | `XiHan:Messaging:RabbitMQ:PrefetchCount` | 1–65535 | 16 | 每个消费者的预取数 |
 | `XiHan:Messaging:RabbitMQ:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
-| `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
-| `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信队列后缀 |
-| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 广播队列名里的实例标识；必须每个同时在线的实例唯一，重复时后启动的实例启动失败 |
+
+各 Provider 共用的 `XiHan:Messaging:MaxAttempts`、`DeadLetterSuffix` 与 `InstanceId` 见 [Messaging.Abstractions](./messaging-abstractions#配置)。在本包里，`DeadLetterSuffix` 是死信队列名的后缀，`InstanceId` 在广播队列名里，两个同时在线的实例重复时后启动的那个启动失败。
 
 ```json
 {

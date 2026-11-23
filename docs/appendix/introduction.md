@@ -34,31 +34,7 @@
 
 ## 框架包
 
-框架由一组可以独立引用的 NuGet 包组成，全部共享一条版本线。包名由术语表与文法推出：`XiHan.Framework.<领域>[.<角色>]`。多数应用只需要记住三个组合包，再按需加协议适配器与 Provider：
-
-| 包 | 说明 |
-| --- | --- |
-| `XiHan.Framework.Profiles.Minimal` | 原语层、内核、ASP.NET Core 宿主、内存本地化 |
-| `XiHan.Framework.Profiles.Standard` | Minimal 加领域模型，以及持久化、缓存、多租户、安全、消息五个子系统的抽象与内存默认实现 |
-| `XiHan.Framework.Profiles.Full` | Standard 加对象存储、调度、审计、工作流的默认实现，AI 工具目录，OpenTelemetry 导出与运行信息，HTTP、gRPC、MCP、CloudEvents 四种协议适配器 |
-
-常用的单包：
-
-| 类别 | 包 |
-| --- | --- |
-| 原语与内核 | `Primitives`、`Kernel`、`Kernel.Generators`（源生成器）、`Kernel.Analyzers`（分析器） |
-| 协议 | `Protocols.Http`、`Protocols.Grpc`、`Protocols.Mcp`、`Protocols.CloudEvents` |
-| 宿主 | `Hosting.AspNetCore`、`Hosting.CommandLine` |
-| 持久化 | `Persistence.Abstractions`、`Persistence.InMemory`、`Persistence.EntityFrameworkCore`、`Persistence.SqlSugar`、`Persistence.Generators` |
-| 缓存 | `Caching.Abstractions`、`Caching.InMemory`、`Caching.Redis`、`Caching.Hybrid`、`Caching.Remote` |
-| 消息 | `Messaging.Abstractions`、`Messaging.InMemory`、`Messaging.RabbitMQ`、`Messaging.Kafka`、`Messaging.Redis` |
-| 安全 | `Security.Abstractions`、`Security.InMemory`、`Security.Database`、`Security.Jwt`、`Security.OpenIdConnect`、`Security.Ip2Region` |
-| 多租户 | `MultiTenancy.Abstractions`、`MultiTenancy.InMemory`、`MultiTenancy.Database` |
-| 其他子系统 | `ObjectStorage.*`、`Scheduling.*`、`Workflow.*`、`Auditing.*`、`Localization.*`、`Configuration.*`、`Observability.*`、`AI.*` |
-| 插件 | `Plugins.Protocol`、`Plugins.InProcess`、`Plugins.OutOfProcess`、`Plugins.Wasm` |
-| 工具链 | `Cli`（`xihan` 工具）、`Testing`、各 `<领域>.Conformance` |
-
-完整清单与每个包的能力、配置节、主要类型见[包参考](/packages/)。
+框架由一组可以独立引用的 NuGet 包组成，全部共享一条版本线。包名由术语表与文法推出：`XiHan.Framework.<领域>[.<角色>]`。多数应用只需要记住三个组合包（`Profiles.Minimal`、`Profiles.Standard`、`Profiles.Full`），再按需加协议适配器与 Provider：三个组合包各含什么、怎样选包见[组合包与选包](/getting-started/profiles)，全部包按领域列在[包参考](/packages/)。
 
 ## 框架特点
 

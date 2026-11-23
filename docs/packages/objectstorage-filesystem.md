@@ -66,7 +66,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
 
 非 root 运行的容器镜像里应用目录可能不可写，KubernetesApp 示例在生产配置里把 `RootPath` 设到 `/tmp/xihan-blobs`；要持久保存的数据挂卷并把 `RootPath` 指过去。
 
-命名实例（Provider 名 `filesystem`）的设置用同样的四个键，`RootPath` 必填：
+命名实例（Provider 名 `filesystem`）的设置用同样的键，`RootPath` 必填：
 
 ```json
 { "XiHan": { "ObjectStorage": { "Stores": { "archive": { "Provider": "filesystem", "RootPath": "/var/lib/app/archive" } } } } }
@@ -106,18 +106,14 @@ Console.WriteLine($"{put.ValueOrThrow().ETag}, used {store.UsedBytes} bytes");
 - 分片上传：每次上传一个目录，`manifest.json` 记键与写入选项，分片文件名带编号与内容的 SHA-256，同一编号重传先落新文件再删旧的；完成时按清单拼接成同目录临时文件再原子替换，计入配额后删掉上传目录。暂存的分片计入总配额，未完成的上传最多 `MaxMultipartUploads` 个，过期的上传拒绝再传分片与完成（ADR-0184）。上传标识只认本实现发出的 32 位小写十六进制。
 - 健康项 `objectstorage.filesystem.capacity` 由存储同步计算：已用量达到 `MaxTotalBytes` 即 Degraded（`OBJECTSTORAGE_UNAVAILABLE_002`），否则 Ready。命名实例的探测用同一口径。
 - 命名实例建出时即建目录并扫描用量，预签名用宿主签名器的 `ForStore(name)`。本包被别的存储顶替时仍登记 `filesystem` Provider，命名实例照常可用。
-- 与 S3 混装、以本包为缺省实例时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可，S3 只登记命名实例；要缺省的分片上传再把 `objectstorage.multipart` 指定给本包，要缺省的预签名装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。有特性依赖分片上传或预签名却没指定时，那项能力解析到 S3 且是被要求的，`OBJECTSTORAGE_VALIDATION_004` 启动失败（见[对象存储](/object-storage/advanced)）。
+- 与 S3 混装、以本包为缺省实例时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可，S3 只登记命名实例；缺省的分片上传与预签名怎样指定、指定不一致时的 `OBJECTSTORAGE_VALIDATION_004` 见[命名存储实例](/object-storage/advanced#命名存储实例)。
 - 通过 `ObjectStorage.Conformance` 的 `BlobStoreConformance` 与 `BlobStoreProviderConformance`。
 
-| 错误码 | 含义 |
-| --- | --- |
-| `OBJECTSTORAGE_NOTFOUND_001` | 对象不存在 |
-| `OBJECTSTORAGE_NOTFOUND_002` | 分片上传不存在或已结束 |
-| `OBJECTSTORAGE_VALIDATION_001` | 读取范围的起点不在对象内 |
-| `OBJECTSTORAGE_VALIDATION_002` | 分片清单不合法 |
-| `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115）：IO 异常的消息常带服务器上的完整路径 |
-| `OBJECTSTORAGE_UNAVAILABLE_002` | 配额或单对象大小超限 |
+错误码的含义见 [ObjectStorage.Abstractions](/packages/objectstorage-abstractions#错误码)，本包特有的触发条件：
+
+- `OBJECTSTORAGE_UNAVAILABLE_001`：磁盘 IO 失败。`reason` 只写异常类型的全名，完整异常进日志（ADR-0115），因为 IO 异常的消息常带服务器上的完整路径。
+- `OBJECTSTORAGE_UNAVAILABLE_002`：超过 `MaxBlobBytes` 或 `MaxTotalBytes`；未完成的分片上传数达到 `MaxMultipartUploads` 时，发起新上传也返回它。
+- `OBJECTSTORAGE_NOTFOUND_002`：过期的分片上传当作不存在，再传分片与完成都返回它。
 
 ## 相关
 

@@ -40,7 +40,7 @@ await fetch("/api/passkeys:login", { method: "POST", headers: { "Content-Type": 
 | `SECURITY_DENIED_005` | 核对不通过 | `challenge`：挑战过期后重放或串了会话；`origin`：来源没配进 `Origins`；`rp_id`：域名与 RP ID 不配套；`user_verified`：认证器没做本机验证；`signature`：响应被篡改 |
 | `SECURITY_DENIED_006` | 签名计数没有增加 | 认证器可能被复制：提醒本人，必要时停用这把凭据 |
 
-对外给用户的提示不必区分这些原因；日志里记下 `reason` 便于排查。
+对外给用户的提示不必区分这些原因；日志里记下 `reason` 便于排查。这些码成为调用结果时的 HTTP 状态见 [Security.Abstractions](/packages/security-abstractions#错误码)。
 
 ## 测试
 

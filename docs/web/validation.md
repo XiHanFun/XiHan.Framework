@@ -6,7 +6,7 @@
 
 进入业务代码的请求必须是合法的：必填字段都在、数字在范围内、字符串不超长。如果每个操作自己写一遍 `if` 检查，规则会散落各处，HTTP、gRPC、MCP、命令行四种入口还得各自保证一致；如果在运行期用反射读注解，Native AOT 下又跑不起来。
 
-框架把校验放进内核管道的 Validate 阶段，对所有协议入口统一执行：请求类型上的 DataAnnotations 由源生成器在编译期折进 JSON Schema，运行期按 Schema 校验载荷，零反射；Schema 表达不了的规则写在请求类型的 `IValidatableObject.Validate` 里。两步任一失败，调用以 `VALIDATION` 种类的结果结束，不进入 Handle 阶段，HTTP 上是 400 且带字段级 `errors`。框架不在运行期反射读取 DataAnnotations，也不集成第三方校验库。
+框架把校验放进内核管道的 Validate 阶段，对所有协议入口统一执行：请求类型上的 DataAnnotations 由源生成器在编译期折进 JSON Schema，运行期按 Schema 校验载荷，零反射；Schema 表达不了的规则写在请求类型的 `IValidatableObject.Validate` 里。两步任一失败，调用以 `VALIDATION` 种类的结果结束，不进入 Handle 阶段，HTTP 上是 400 且带字段级 `errors`。框架不在运行期反射读取 DataAnnotations，也不集成 FluentValidation 这类第三方校验库：它们在运行期用反射或表达式树构建规则，Native AOT 下不可用。
 
 ## 两步校验
 
@@ -66,7 +66,7 @@ public static class ShopMessages
 { "shop.order.name_blank": "订单名称不能只有空白。" }
 ```
 
-操作本身不写任何检查，拿到的请求一定合法：
+操作本身不写任何检查，拿到的请求一定合法（这里不声明权限，匿名请求才能走到 Validate 阶段）：
 
 ```csharp
 // CreateOrder.cs
@@ -113,14 +113,7 @@ curl -i -X POST localhost:5000/orders -H "Content-Type: application/json" -H "Ac
 
 ## 用注解声明约束
 
-请求类型上的 DataAnnotations 由 `Kernel.Generators` 在编译期折进请求 Schema，位置记录的主构造参数上的注解同样生效：
-
-| 注解 | Schema |
-| --- | --- |
-| `[Required]` | 进 `required` 并去掉可空；字符串另加 `minLength: 1`（`AllowEmptyStrings = true` 除外） |
-| `[Range]` | `minimum` / `maximum`，开区间用 `exclusiveMinimum` / `exclusiveMaximum` |
-| `[StringLength]`、`[MinLength]`、`[MaxLength]`、`[Length]` | 字符串的 `minLength` / `maxLength`，集合的 `minItems` / `maxItems` |
-| `[RegularExpression]` | `pattern` |
+请求类型上的 DataAnnotations 由 `Kernel.Generators` 在编译期折进请求 Schema，位置记录的主构造参数上的注解同样生效。折进去的有四类：`[Required]`、`[Range]`、长度类（`[StringLength]`、`[MinLength]`、`[MaxLength]`、`[Length]`）与 `[RegularExpression]`，各自对应的 Schema 关键字见 [Kernel.Generators](/packages/kernel-generators#概述)。
 
 带 `required` 修饰符的属性，以及位置记录里不可空且没有默认值的构造参数，本身就进 `required`，不需要 `[Required]`；普通的不可空属性不进，要必填就加 `required` 修饰符或 `[Required]`。`[Required]` 的额外作用是让字符串至少有一个字符。`[EmailAddress]`、`[Url]` 等注解不折进 Schema，写成自校验。
 
@@ -148,14 +141,7 @@ Schema 表达不了的规则（字段之间的关系、业务上的黑名单、�
 
 宿主把 `errors` 翻译成调用方语言并按字段分组。字段键是去掉根 `$` 的点分路径（`lines[0].sku` 这类嵌套字段同样适用）；缺少必填属性的违规挂在缺失属性自己的路径上。
 
-| 错误码 | 情形 |
-| --- | --- |
-| `KERNEL_VALIDATION_001` | 载荷不是 JSON、为 `null` 或与请求类型不匹配 |
-| `KERNEL_VALIDATION_002` | 类型化调用的请求或响应类型与登记不符 |
-| `KERNEL_VALIDATION_003` | 载荷不满足请求 Schema |
-| `KERNEL_VALIDATION_004` | `IValidatableObject` 自校验失败 |
-
-gRPC 上这些失败是 `InvalidArgument`，命令行上退出码 2，MCP 上是 `isError` 结果，映射表见[结果与错误处理](/web/errors)。
+三步各自的错误码见上文「两步校验」；另有 `KERNEL_VALIDATION_002`，是类型化调用的请求或响应类型与登记不符，属于编程错误。内核错误码的全表见 [Kernel](/packages/kernel#行为与限制)。gRPC 上这些失败是 `InvalidArgument`，命令行上退出码 2，MCP 上是 `isError` 结果，映射表见[结果与错误处理](/web/errors)。
 
 ## 不经过校验的路径
 
@@ -175,10 +161,6 @@ builder.AddXiHan(xihan => xihan
 
 ## 常见问题
 
-### 为什么不用 FluentValidation 这类库
-
-它们在运行期用反射或表达式树构建规则，Native AOT 下不可用，而且只在一种入口生效。框架的两步校验对 HTTP、gRPC、MCP、命令行统一执行，注解进 Schema 还能同时生成 OpenAPI 与 MCP 的 `inputSchema`。复杂规则写在 `IValidatableObject.Validate` 里。
-
 ### 校验错误的文案能自定义吗
 
 Schema 违规的文案是内核的消息键（`kernel.validation.required`、`kernel.validation.minimum` 等），按调用方语言翻译，不按字段自定义。需要业务化的提示就把规则放进自校验，用自己的消息键。
@@ -186,10 +168,6 @@ Schema 违规的文案是内核的消息键（`kernel.validation.required`、`ke
 ### 嵌套对象与集合里的字段怎么报
 
 字段键是点分路径，如 `lines[0].sku`。嵌套对象进 `$defs`，它们属性上的注解同样折进对应的定义；自校验要自己递归调用子对象的 `Validate`。
-
-### 一次请求有多处错误，会全部报出来吗
-
-Schema 校验一次最多报告 32 条违规；自校验的每条 `ValidationResult` 都报。两步不混报：Schema 不通过时不执行自校验。
 
 ### 响应也会校验吗
 

@@ -21,25 +21,16 @@
 
 ## 最小示例
 
-Hybrid 顶替内存实现的 `caching.local`，L2 取 Redis 提供的 `caching.distributed`：
+接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，在[缓存读写](/caching/basics)装配的 Redis 之后再多一行：Hybrid 顶替内存实现的 `caching.local`，L2 取 Redis 提供的 `caching.distributed`。
 
 ```csharp
 using XiHan.Framework.Caching.Hybrid;
 using XiHan.Framework.Caching.Redis;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Hybrid 顶替内存实现的 caching.local，L2 取 Redis 提供的 caching.distributed
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<RedisCachingFeature>()
     .UseFeature<HybridCachingFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ```json
@@ -69,9 +60,9 @@ app.Run();
 
 L2 的存储没有变更通知时（远程 Provider、内存实现），绕过本实例 `HybridObjectCache` 的写入（别的实例的写入，本实例直接经 `ISharedCache` 或管理界面的写入）不会失效 L1，读到旧值的时间最长为 `LocalTimeToLive`。需要强一致的键直接用 `ISharedCache`，不经 L1。
 
-通知和读取会赛跑：L1 未命中时去读 L2，读的途中另一个实例写了这个键，变更通知先到（L1 里本来没有，删了个空），读回的旧值后到。为此 L1 按键的散列分 64 个条带记失效轮次：删除一个键让它所在条带的轮次加一，按前缀删除让全部条带加一，回填前轮次变了就不回填。条带数固定，内存有界；代价是与本键同条带的无关失效也会挡掉一次回填，只多读一次 L2。
+通知和读取会赛跑：L1 未命中时去读 L2，读的途中另一个实例写了这个键，变更通知先到（L1 里本来没有，删了个空），读回的旧值后到。读写规则里「读的途中失效过就不回填」挡的就是这种情况；失效轮次按键的散列分条带记录，细节见 [Caching.Hybrid](/packages/caching-hybrid)。
 
-框架自己的授予缓存、租户目录缓存与翻译版本戳都走 `ICache`（[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），多实例部署装上 Redis 与两级缓存后，它们的命中都在 L1、判定与租户解析不出进程，一个实例写入后其他实例经变更通知立即失效。
+框架自己的授予缓存、租户目录缓存与翻译版本戳都走 `ICache`（[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），多实例部署装上 Redis 与两级缓存后，它们的命中都在 L1、判定与租户解析不出进程，一个实例写入后其他实例经变更通知立即失效。只装 Redis 时 `ICache` 仍是每个实例各自的内存实现，授予撤销、租户停用与新翻译在其他实例上要等存活时间（授予与租户目录缺省 30 秒，翻译等周期刷新，缺省 5 分钟）。
 
 ## 键管理
 
@@ -127,27 +118,13 @@ public sealed class CacheAdmin(ISharedCache cache)
 
 - `ListKeysAsync`：返回 `Result<CacheKeyPage>`。`Prefix` 与键同文法，空为全部（不合法不在构造时抛出，返回 `CACHING_VALIDATION_004`，参数 `prefix`、`max`）；`PageSize` 为 1 到 1000（`CacheKeyQuery.MaxPageSize`，缺省 `DefaultPageSize` 100），越界不在构造时抛出，存储先经 `CacheKeyQuery.Validate(CacheKeyQuery.Revision)` 核对、返回 `CACHING_VALIDATION_003`（HTTP 400，参数 `pageSize`、`max`），不访问后端；本页的键在 `Items`，没有更多时 `ContinuationToken` 为 `null`。已过期的键不列出。
 - `InspectAsync`：不存在或已过期为无值；读元数据不延长滑动过期，对象条目也不读出值。
-- `RemoveByPrefixAsync`：返回 `Result<long>`（删除数）；前缀为空或不合法返回 `CACHING_VALIDATION_004`（HTTP 400）、不访问后端，没有「清空全部」。
+- `RemoveByPrefixAsync`：返回 `Result<long>`（删除数）；前缀为空或不合法返回 `CACHING_VALIDATION_004`（HTTP 400）、不访问后端，没有「清空全部」。要整体失效就给应用的键统一加一个前缀（如 `catalog:`）、按它删除；Redis 上还可以换一个 `KeyPrefix` 让旧条目自然过期。
 
-内存实现按键的序数顺序分页，续页标记是上一页最后一个键。Redis 用单个端点的 `SCAN`：续页标记是游标，`PageSize` 只是提示值，同一个键可能出现在两页；前缀里的 glob 字符会被转义，按前缀匹配而不是按模式。读值、改值、删单个键仍走 `ICache` / `ICacheStore`。经 Redis 存储删除的键同样触发变更通知，各实例两级缓存的 L1 随之失效。
+内存实现按键的序数顺序分页，续页标记是上一页最后一个键。Redis 用单个端点的 `SCAN`：续页标记是游标，`PageSize` 只是提示值，同一个键可能出现在两页（管理界面自己去重）；前缀里的 glob 字符会被转义，按前缀匹配而不是按模式。读值、改值、删单个键仍走 `ICache` / `ICacheStore`。经 Redis 存储删除的键同样触发变更通知，各实例两级缓存的 L1 随之失效。
 
 ## 远程 Provider
 
-`Caching.Remote` 让任意语言写的进程外插件承担 `caching.distributed`（规范 RFC-0019《远程 Provider》）。插件实现固定的操作集 `cache-entries.get / set / try-add / remove / try-remove / try-refresh / get-many / set-many / remove-many`（常量在 `RemoteCacheOperations`），由 `Plugins.OutOfProcess` 按目录发现并登记代理操作；`Caching.Remote` 按操作 ID 直接执行这些代理操作（不经过管道，否则幂等中间件会递归），把它接成 `ISharedCache`、`IDistributedLock`、`IDistributedCache` 与幂等中间件。
-
-```csharp
-using XiHan.Framework.Caching.Remote;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Plugins.OutOfProcess;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()
-    .UseFeature<OutOfProcessPluginsFeature>()
-    .UseFeature<RemoteCachingFeature>());
-```
+`Caching.Remote` 让任意语言写的进程外插件承担 `caching.distributed`（规范 RFC-0019《远程 Provider》）。插件实现固定的操作集 `cache-entries.get / set / try-add / remove / try-remove / try-refresh / get-many / set-many / remove-many`（常量在 `RemoteCacheOperations`），由 `Plugins.OutOfProcess` 按目录发现并登记代理操作；`Caching.Remote` 按操作 ID 直接执行这些代理操作（不经过管道，否则幂等中间件会递归），把它接成 `ISharedCache`、`IDistributedLock`、`IDistributedCache` 与幂等中间件。装配时在 `AddXiHan` 里加插件宿主 `OutOfProcessPluginsFeature` 与本 Provider 的 `RemoteCachingFeature` 两个特性（写法见 [Caching.Remote](/packages/caching-remote)），再给出插件目录与超时：
 
 ```json
 {
@@ -158,48 +135,11 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
-每次操作带 `TimeoutMilliseconds`（默认 5000）的截止时间。插件返回的缓存域错误（`CACHING_VALIDATION_001` 键不合法、`CACHING_VALIDATION_002` 过期选项不合法）原样成为 `FrameworkException`；插件未加载、操作未登记、进程不可达、超时都映射为 `CACHING_UNAVAILABLE_001`。Go 实现见 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 的 `caching` 包，示例插件在 `framework/samples/CacheGoPlugin`，它读 `XiHan:Cache:DefaultTimeToLiveSeconds` 作默认存活时间（缺省 300）。远程 Provider 是 Experimental，没有键管理与变更通知；插件机制见[进程外插件](/plugins/out-of-process)。
+每次操作带 `TimeoutMilliseconds`（默认 5000）的截止时间。插件返回的缓存域错误（`CACHING_VALIDATION_001` 键不合法、`CACHING_VALIDATION_002` 过期选项不合法）原样成为 `FrameworkException`；插件未加载、操作未登记、进程不可达、超时都映射为 `CACHING_UNAVAILABLE_001`。Go 实现见 [framework-sdk-go](https://github.com/XiHanFun/framework-sdk-go) 的 `caching` 包，示例插件在 `framework/samples/CacheGoPlugin`，它读 `XiHan:Cache:DefaultTimeToLiveSeconds` 作默认存活时间（缺省 300）。远程 Provider 是 Experimental，没有键管理与变更通知，适合已有别的语言实现的缓存服务、或要验证进程外插件机制的场景；生产上多实例共享缓存优先用 `Caching.Redis`。插件机制见[进程外插件](/plugins/out-of-process)。
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Caching:Hybrid:LocalCapacity` | 整数 | 10000 | 两级缓存 L1 的条目上限 |
-| `XiHan:Caching:Hybrid:LocalTimeToLiveSeconds` | 数字 | 30 | L1 存活时间上限 |
-| `XiHan:Caching:Redis:PublishChanges` | 布尔 | `true` | Redis 写入与删除后是否向变更频道发布 |
-| `XiHan:Caching:Remote:TimeoutMilliseconds` | 正整数 | 5000 | 远程 Provider 每次操作的截止时间 |
-
-数值项不是正数、布尔项不是 `true` / `false` 时装配抛出 `ArgumentException`。
-
-## 常见问题
-
-### L1 最多会落后 L2 多久
-
-L2 带变更通知（Redis）且通知没有丢时，别的实例一写入本实例的 L1 就失效，落后只有网络传播的时间。通知丢失或 L2 没有变更通知时，上限是 `LocalTimeToLive`（缺省 30 秒）。对一致性要求高的键直接用 `ISharedCache`，不经 L1。
-
-### 单实例要不要装两级缓存
-
-不必要。单实例下 `ICache` 本来就是内存实现，没有网络往返可省。两级缓存的价值在于 L2 是 Redis 或远程存储、而读又很频繁的多实例部署。
-
-### 多实例部署只装 Redis 够吗
-
-装了 `Security.Database`、`MultiTenancy.Database` 或 `Localization.Database` 时不够。只装 Redis 时 `ICache` 仍是每个实例各自的内存实现，授予撤销、租户停用与新翻译在其他实例上要等存活时间（授予与租户目录缺省 30 秒，翻译等周期刷新，缺省 5 分钟）。再加 `HybridCachingFeature`，`ICache` 的失效才经 Redis 传到每个实例。
-
-### 装了 Hybrid 之后 ISharedCache 也走 L1 吗
-
-不走。`ISharedCache` 始终直接指向 L2，所以经它的写入与读取总是看到共享状态。只有 `ICache` 变成了 `HybridObjectCache`。
-
-### 怎样清空整个缓存
-
-没有「清空全部」的接口：`RemoveByPrefixAsync` 要求非空前缀。给应用的键统一加一个前缀（如 `catalog:`），需要整体失效时按这个前缀删除；Redis 上还可以换一个 `KeyPrefix` 让旧条目自然过期。
-
-### Redis 列键时同一个键出现了两次
-
-`SCAN` 的语义就是这样，`PageSize` 只是提示、游标分页不保证不重复。管理界面在客户端去重即可；内存实现按序数顺序分页，没有这个问题。
-
-### 远程 Provider 能当生产方案吗
-
-它是 Experimental，没有键管理与变更通知，错误只有不可用与校验两类。适合已有别的语言实现的缓存服务、或要验证进程外插件机制的场景；生产上多实例共享缓存优先用 `Caching.Redis`。
+本页用到四个键：`XiHan:Caching:Hybrid:LocalCapacity` 与 `LocalTimeToLiveSeconds`（[Caching.Hybrid](/packages/caching-hybrid#配置)）、`XiHan:Caching:Redis:PublishChanges`（[Caching.Redis](/packages/caching-redis#配置)）、`XiHan:Caching:Remote:TimeoutMilliseconds`（[Caching.Remote](/packages/caching-remote#配置)）。类型、缺省值与非法值的处理见各包页。
 
 ## 相关包与下一步
 

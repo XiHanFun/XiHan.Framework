@@ -31,7 +31,7 @@
 
 ## 按操作的限制
 
-内核的 `ResilienceMiddleware` 紧随 `DeadlineMiddleware`，只作用于带操作描述的调用；宿主自定义端点、消息派发与作业派发不受它约束。每个操作 ID 各持一份限制实例，判定顺序固定为熔断、限流、并发：
+内核的 `ResilienceMiddleware` 紧随 `DeadlineMiddleware`，只作用于带操作描述的调用；宿主自定义端点、消息派发与作业派发不受它约束（给端点限流用 ASP.NET Core 自己的 `AddRateLimiter`）。每个操作 ID 各持一份限制实例，判定顺序固定为熔断、限流、并发：
 
 | 限制 | 语义 | 拒绝码 |
 | --- | --- | --- |
@@ -91,17 +91,7 @@ done
 
 ## 配置
 
-配置节 `XiHan:Kernel:Resilience`：节本身的键是所有操作的默认策略，`Operations:<操作 ID>` 下的同名键覆盖该操作，缺省的键沿用默认策略。对应的类型是 `ResilienceOptions`（`Defaults` 与 `Operations`，`PolicyFor(operationId)` 取合并后的策略）与 `ResiliencePolicy`。
-
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `PermitLimit` | 正整数 | 不限流 | 每个窗口允许的调用数 |
-| `WindowSeconds` | 正数 | `1` | 限流窗口 |
-| `QueueLimit` | 非负整数 | `0` | 窗口用尽时排队等待的调用数 |
-| `ConcurrencyLimit` | 正整数 | 不限并发 | 同时执行的调用数上限 |
-| `ConcurrencyQueueLimit` | 非负整数 | `0` | 并发用尽时排队等待的调用数 |
-| `FailureThreshold` | 正整数 | 不熔断 | 连续失败多少次后打开熔断器 |
-| `BreakSeconds` | 正数 | `30` | 熔断打开的时长 |
+配置节 `XiHan:Kernel:Resilience`：节本身的键是所有操作的默认策略，`Operations:<操作 ID>` 下的同名键覆盖该操作，缺省的键沿用默认策略。对应的类型是 `ResilienceOptions`（`Defaults` 与 `Operations`，`PolicyFor(operationId)` 取合并后的策略）与 `ResiliencePolicy`。七个键（`PermitLimit`、`WindowSeconds`、`QueueLimit`、`ConcurrencyLimit`、`ConcurrencyQueueLimit`、`FailureThreshold`、`BreakSeconds`）的类型与缺省值见 [Kernel 包参考](/packages/kernel#配置)。
 
 一个限制都没配置的操作直接透传。非法值（非正数、`Operations` 下不合文法的操作 ID）在构建应用时抛出 `ArgumentException`。`XiHan:Kernel:UseBuiltInMiddleware=false` 时两个内置中间件都不登记，配置节不再读取。
 
@@ -174,21 +164,9 @@ HTTP 层面的连接数、请求体大小与反向代理限流仍用 ASP.NET Cor
 
 ## 常见问题
 
-### 怎样区分 504 与 408
-
-看谁先放弃。截止时间到了是 504 / `KERNEL_TIMEOUT_001`，不管调用方是否也取消了；调用方在截止时间之前自己断开或取消是 408 / `KERNEL_CANCELLED_001`。重试逻辑只需要关心 504：副作用可能已发生。
-
-### 为什么我的端点没有被限流
-
-`ResilienceMiddleware` 只作用于带操作描述的调用，即经 `[Operation]` 登记并由协议适配器或调用器发起的调用。`MapGet` 这类宿主自定义端点、消息处理器与作业不经它。给端点限流用 ASP.NET Core 自己的 `AddRateLimiter`。
-
 ### 限流是按实例还是按集群
 
 按进程实例：每个操作 ID 在每个实例里各持一份限制器。多副本部署时实际上限是单实例上限乘以副本数。需要集群级配额用网关或共享存储实现。
-
-### 熔断为什么没有打开
-
-只有 `UNAVAILABLE`、`TIMEOUT`、`UNEXPECTED` 与未处理异常计入失败，而且要连续达到 `FailureThreshold` 次。校验失败、找不到、无权限是调用方的问题，不触发熔断。
 
 ### 怎样给操作加重试
 

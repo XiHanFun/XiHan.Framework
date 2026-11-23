@@ -75,7 +75,7 @@ Segment    = [a-z][a-z0-9_]*
 
 - 区域只决定小数点与分组符：`{amount:N2}` 在 `de-DE` 得到 `1.234,50`，在 `fr-FR` 得到 `1 234,50`（分组符是窄不换行空格 U+202F）。内置的 10 种区域的符号由规范给出，不读操作系统的区域数据；其他区域按不变文化（`.` 与 `,`）。
 - 数组与对象写成紧凑的 JSON，对象的成员按名字排序：`[1,"a"]`、`{"a":1,"b":2}`。
-- 日期时间、枚举、`Guid` 等不是跨语言的值，写成不变文化下的文本。要按调用方语言显示日期，先把它格式化成字符串再作为参数传入。
+- 日期时间、枚举、`Guid` 等不是跨语言的值，写成不变文化下的文本。框架不改线程文化，要按调用方语言显示日期，用 `LocaleName.CultureOf(locale)` 取 `CultureInfo` 先把它格式化成字符串，再作为参数传入。
 
 框架自己的包由架构测试保证 10 个文件齐全、各区域的占位符与 `en-US` 一致、键常量与 `en-US.json` 一一对应、`Error` 的调用点只用常量。这些检查只扫描框架源码；应用的语言文件要自己保持同步，缺了某个区域的键时按回退链取到其他区域的文案。
 
@@ -126,38 +126,17 @@ public static class SampleMessages
 }
 ```
 
+`Program.cs` 沿用[第一个应用](/getting-started/first-app)的骨架（组合包已装配默认的内存本地化），只多一行注册目录：
+
 ```csharp
-using SimpleApp;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Hosting.AspNetCore.Endpoints;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
-using XiHan.Framework.Primitives;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Standard 组合已装配默认的内存本地化
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-// 应用自己的消息模板（SampleMessages）与译文（嵌入的 Localization/<区域>.json）
+// builder.Build() 之前：应用自己的消息模板（SampleMessages）与译文（嵌入的 Localization/<区域>.json）
 builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("samples", typeof(SampleMessages)));
-
-var app = builder.Build();
-
-app.UseXiHan();
-
-app.MapGet("/missing", (HttpContext http) =>
-{
-    // 把失败结果写进调用上下文，Egress 由宿主翻译为 RFC 9457 Problem Details
-    http.FindXiHanContext().ValueOrThrow().SetOutcome(Error.NotFound("SAMPLES_NOTFOUND_001", SampleMessages.ResourceMissing));
-    return Results.Empty;
-});
-
-app.Run();
 ```
+
+端点 `/missing` 用键构造 `Error.NotFound("SAMPLES_NOTFOUND_001", SampleMessages.ResourceMissing)` 写进调用上下文，由宿主在 Egress 翻译，写法见[端点里使用框架](/web/endpoints#返回错误)。
 
 ```bash
 curl -si -H "Accept-Language: zh-CN" http://localhost:5000/missing
@@ -284,10 +263,7 @@ Baggage 随调用传播：HTTP 的 `baggage` 头、CloudEvents 的扩展属性�
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Localization:DefaultLocale` | `string` | `en-US` | 协商不到时使用的区域，也是进程默认作用域的区域 |
-| `XiHan:Localization:Locales` | `string`（逗号分隔） | 内置 10 种 | 启用的区域，按优先级排列；同语言回退按这个顺序 |
+启用的区域与默认区域在配置节 `XiHan:Localization`，键表见 [Localization.Abstractions](/packages/localization-abstractions#配置)：
 
 ```json
 {
@@ -300,51 +276,21 @@ Baggage 随调用传播：HTTP 的 `baggage` 头、CloudEvents 的扩展属性�
 }
 ```
 
-默认区域必须在启用列表里，区域名必须合法，否则装配本地化特性时抛出 `ArgumentException`，应用启动失败。
+`Locales` 按优先级排列，同语言回退按这个顺序，缺省是内置的 10 种；`DefaultLocale` 缺省 `en-US`，必须在启用列表里。区域名不合法或默认区域不在列表里时，装配本地化特性抛出 `ArgumentException`，应用启动失败。
 
 ## 操作的标题与说明
 
-操作在各协议上的显示文案取自消息目录里的约定键，键名由操作 ID 推出（连字符换成下划线）：
-
-| 约定键 | 用在 |
-| --- | --- |
-| `<操作 ID>.title` | OpenAPI 操作的 `summary`、MCP tool 的 `title` |
-| `<操作 ID>.description` | OpenAPI 操作的 `description`、MCP tool 的 `description`、AI 工具的描述 |
-| `permissions.<权限码>.name` / `.description` | OpenAPI 里权限的显示名与说明 |
-| `openapi.tags.<资源段>.name` / `.description` | OpenAPI 顶层 `tags` 的显示名与说明 |
-| `openapi.groups.<组名>.name` / `.description` | OpenAPI 分组的显示名与说明 |
-
-说明里不写授权要求，适配器按契约里的权限统一呈现。SimpleApp 的 `orders.create.title`、`orders.create.description` 就是这类键，十种语言文件各有一份；没有的键对应的字段不输出。各协议的细节见[规范化接口文档](/web/openapi)与 [MCP](/protocols/mcp)。
+操作在各协议上的显示文案取自消息目录里的约定键，键名由操作 ID 推出（连字符换成下划线）：`<操作 ID>.title` 与 `<操作 ID>.description` 见[操作契约](/web/operations#标题与描述)，权限、OpenAPI 标签与分组的键（`permissions.*`、`openapi.*`）见[规范化接口文档](/web/openapi#文案、标签与字段说明)。说明里不写授权要求，适配器按契约里的权限统一呈现；没有的键对应的字段不输出。
 
 ## 数据库翻译 Provider
 
-`Localization.Database` 把翻译存进关系数据库，运营人员改了译文，应用不重新发布就生效。它是 `localization.resources@1` 的显式 Provider，装配后顶替默认的内存实现，依赖 `persistence.relational@1` 与 `caching.local@1`（翻译版本戳放在 `ICache` 里；Standard 组合包已带内存缓存，自己挑特性的宿主要加 `InMemoryCachingFeature`）：
-
-```csharp
-builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()
-    .UseFeature(new EntityFrameworkCorePersistenceFeature<AppDbContext>(static (binding, options) => options.UseNpgsql(binding.ValueOrThrow().Value)))
-    .UseFeature<DatabaseLocalizationFeature>());
-```
-
-```csharp
-// AppDbContext.OnModelCreating：同一个键与区域只能有一行，唯一索引由实体上的 [EntityIndex] 建出
-modelBuilder.Entity<MessageTranslation>();
-modelBuilder.ApplyPersistenceConventions(Database);
-```
+`Localization.Database` 把翻译存进关系数据库，运营人员改了译文，应用不重新发布就生效。它是 `localization.resources@1` 的显式 Provider，装配后顶替默认的内存实现，依赖 `persistence.relational@1` 与 `caching.local@1`（翻译版本戳放在 `ICache` 里；Standard 组合包已带内存缓存，自己挑特性的宿主要加 `InMemoryCachingFeature`）。装配只多一行 `UseFeature<DatabaseLocalizationFeature>()`，EF Core 的实体登记、配置键（`XiHan:Localization:Database:*`）与已有表 `Locale` 列的放宽见 [Localization.Database](/packages/localization-database)。
 
 查找规则：沿回退链的每个区域，先查数据库快照，再查嵌入的目录。数据库里没有的键或区域照常走嵌入目录与回退链。
 
-快照的加载：
+快照在宿主进入服务状态后首次加载（之前只有嵌入目录的文案），最多 `MaxTranslations` 条。之后有两条路重新加载：按 `ChangeCheckIntervalSeconds`（缺省 1 秒）核对 `ICache` 里的翻译版本戳，变了就重读；按 `RefreshIntervalSeconds` 周期刷新兜底，覆盖绕过写入方直接改表与版本戳丢失。加载失败时保留上一份快照，健康项 `localization.database.translations` 报 Degraded，应用仍在服务。
 
-1. 宿主进入服务状态后，`MessageTranslationLoader` 经完整管道首次加载：按 ID 分页读取（每页 1000 条），最多 `MaxTranslations` 条，超出的不加载并记警告；读完后整份替换快照。宿主就绪之前只有嵌入目录的文案。
-2. 之后按 `ChangeCheckIntervalSeconds`（缺省 1 秒）核对 `ICache` 里的翻译版本戳（键 `localization:translations:version`），变了就重新加载；`0` 关闭核对。
-3. 另按 `RefreshIntervalSeconds` 周期刷新兜底，覆盖绕过写入方直接改表与版本戳丢失；`0` 关闭周期刷新。
-4. 加载失败时保留上一份快照，失败记到 `LastError`，健康项 `localization.database.translations` 报 Degraded，应用仍在服务。
-
-查找是同步的，翻译仍在进程内快照里，`ICache` 只承载跨实例的信号。装了两级缓存（`Caching.Redis` + `Caching.Hybrid`）时核对版本戳是本机一级缓存命中，别的实例换了版本戳经 Redis 的变更通知让它失效；只装 Redis 时 `ICache` 仍是进程内的，别的实例只能等周期刷新。重新加载彼此串行，读版本戳遇到缓存后端故障时跳过这次核对。
-
-`MessageTranslation.Locale` 列最长 35 个字符，与区域名文法的上限一致。已有表的这一列更短时要手工放宽（SqlSugar 的 `InitTables` 不改已有列的长度），做法见 [Localization.Database](/packages/localization-database)。
+查找是同步的，翻译仍在进程内快照里，`ICache` 只承载跨实例的信号。装了两级缓存（`Caching.Redis` + `Caching.Hybrid`）时核对版本戳是本机一级缓存命中，别的实例换了版本戳经 Redis 的变更通知让它失效；只装 Redis 时 `ICache` 仍是进程内的，别的实例只能等周期刷新。
 
 写入用作用域服务 `MessageTranslationStore`，它经仓储读写，只能在调用的 Transaction 阶段内使用，所以放在操作里：
 
@@ -379,25 +325,9 @@ public sealed class SetTranslations(MessageTranslationStore store) : IOperation<
 
 操作的登记、请求类型的序列化上下文与权限定义见[操作契约](/web/operations)。`MessageTranslationEntry` 在构造时校验：键必须符合消息键文法，区域规范化大小写，模板不能为空白，不合法抛出 `ArgumentException`。`RemoveAsync` 按键与区域批量删除，不存在的项返回 `LOCALIZATION_NOTFOUND_001`；`ListAsync(locale, skip, take)` 按键排序分页列出。
 
-写入要等这次调用的事务提交后才落库，所以 `MessageTranslationStore` 在作用域释放时（调用已提交）才经 `MessageTranslationLoader.PublishChangeAsync` 换版本戳：本实例立即重新加载，其他实例在 `ChangeCheckIntervalSeconds` 内重新加载，不用再手动调用 `ReloadAsync`。换版本戳遇到缓存后端故障只记错误日志：写入已经提交，本实例照常重新加载，其他实例等周期刷新。绕过 `MessageTranslationStore` 直接改表后，调用 `PublishChangeAsync` 让所有实例重新加载；`ReloadAsync` 只重新加载本实例。
+写入要等这次调用的事务提交后才落库，所以 `MessageTranslationStore` 在作用域释放时（调用已提交）才换版本戳：本实例立即重新加载，其他实例在 `ChangeCheckIntervalSeconds` 内重新加载，不用再手动调用 `ReloadAsync`。绕过 `MessageTranslationStore` 直接改表后，调用 `MessageTranslationLoader.PublishChangeAsync` 让所有实例重新加载；`ReloadAsync` 只重新加载本实例。缓存后端故障时的行为见包参考的「行为与限制」。
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Localization:Database:ChangeCheckIntervalSeconds` | 非负数 | 1 | 核对翻译版本戳的间隔，`0` 不核对（其他实例只靠周期刷新看到写入） |
-| `XiHan:Localization:Database:RefreshIntervalSeconds` | 非负数 | 300 | 周期刷新的间隔，`0` 关闭周期刷新 |
-| `XiHan:Localization:Database:MaxTranslations` | 正整数 | 100000 | 快照的条数上限 |
-
-持久化 Provider 的装配见[持久化与 Provider](/persistence/overview)。
-
-## 错误码
-
-| 错误码 | 含义 |
-| --- | --- |
-| `LOCALIZATION_VALIDATION_002` | 消息目录不合法（JSON、键或区域名错误、程序集里没有语言文件），装载目录时抛出 |
-| `LOCALIZATION_CONFLICT_001` | 同名消息目录里同一键同一区域的模板不一致，`AddMessageCatalog` 抛出 |
-| `LOCALIZATION_NOTFOUND_001` | 数据库里没有这条翻译（`MessageTranslationStore.RemoveAsync` 的逐项结果） |
-
-区域名、消息键不合法属于编程错误，在构造处抛出 `ArgumentException`。
+本地化的错误码（目录不合法 `LOCALIZATION_VALIDATION_002`、目录冲突 `LOCALIZATION_CONFLICT_001`、翻译不存在 `LOCALIZATION_NOTFOUND_001`）汇总在 [Localization.Abstractions](/packages/localization-abstractions#行为与限制)；区域名、消息键不合法属于编程错误，在构造处抛出 `ArgumentException`。
 
 ## 常见问题
 
@@ -408,18 +338,6 @@ public sealed class SetTranslations(MessageTranslationStore store) : IOperation<
 ### 应用只需要中文，能不配 10 种语言吗
 
 可以。`XiHan:Localization:Locales` 设成 `zh-CN`、`DefaultLocale` 设成 `zh-CN`，应用只写 `zh-CN.json`（`en-US.json` 建议保留作基准）。框架自己的文案仍有 10 种，不影响；没启用的区域即使有文件也不用。
-
-### `key.L()` 返回的是 `kernel.feature.start_failed (id=…)` 这样的描述
-
-说明当前没有消息作用域，或目录里没有这个键。在调用链之外（启动代码、`Task.Run` 出去的后台线程）取文案时要用 `MessageScope.Use` 临时安装作用域；目录没有键时检查语言文件是否嵌入成功、`AddMessageCatalog` 是否注册、键是否拼错。描述里保留了键与参数，日志不会丢信息。
-
-### 数字与日期的格式为什么不随请求变
-
-框架不改线程文化，`string.Format`、`ToString()` 用的仍是进程文化。消息模板里的数字按命中区域换小数点与分组符（`{amount:N2}`），日期不随区域变化。要按调用方语言格式化日期，用 `LocaleName.CultureOf(locale)` 取 `CultureInfo` 显式格式化成字符串，再作为模板参数传入。
-
-### 响应头 `Content-Language` 与请求的 `Accept-Language` 不一样
-
-`Content-Language` 是文案实际命中的区域。请求 `zh-HK` 而启用列表里只有 `zh-CN`、`zh-TW` 时，按回退链命中 `zh-CN`，响应头就是 `zh-CN`。这是有意的：告诉客户端拿到的是哪种语言的文案。
 
 ## 相关包与下一步
 

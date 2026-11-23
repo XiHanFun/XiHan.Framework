@@ -59,7 +59,7 @@ orders.create    orders.get    orders.list    order-lines.delete    orders.cance
 
 `HandleAsync` 的约定：
 
-- 返回 `Result<TResponse>`，成功值不能为 `null`；可恢复的失败返回 `Error`，不抛异常，写法见[结果与错误处理](/web/errors)。
+- 返回 `Result<TResponse>`，成功值不能为 `null`；可恢复的失败返回 `Error`，不抛异常（抛出的异常会被翻译成 `KERNEL_UNEXPECTED_001`、HTTP 500，按缺陷记录），写法见[结果与错误处理](/web/errors)。
 - 取消令牌用 `context.CancellationToken`，它同时受调用方取消与截止时间约束。
 - 操作类按作用域注册，构造函数注入所需服务；每次调用一个新实例。
 
@@ -118,69 +118,22 @@ namespace Shop.Orders;
 internal sealed partial class OrdersJsonContext : JsonSerializerContext;
 ```
 
-特性在 `Configure` 里登记权限码与操作。清单按能力 ID 声明依赖，写法见[特性与清单](/startup/features)：
+特性 `OrdersFeature` 的清单依赖 `kernel.hosting`、`persistence.relational` 与 `security.authorization` 三个能力，并在 `Contributes.Permissions` 里声明 `orders.write`，写法见[特性与清单](/startup/features)；它的 `Configure` 登记权限码与操作：
 
 ```csharp
-using XiHan.Framework.Kernel;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Kernel.Security;
-using XiHan.Framework.Persistence.Abstractions;
-using XiHan.Framework.Primitives;
-using XiHan.Framework.Primitives.Manifests;
-using XiHan.Framework.Security.Abstractions;
-
-namespace Shop.Orders;
-
-public sealed class OrdersFeature : IFeature
+public void Configure(FeatureContext context)
 {
-    public Manifest Manifest { get; } = new()
-    {
-        Id = "xihan.shop.orders",
-        Package = "Shop",
-        Version = FrameworkInfo.Version,
-        Primitives = 1,
-        Stability = Stability.Preview,
-        Kind = ManifestKind.Capability,
-        Requires =
-        [
-            new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version),
-            new CapabilityRequirement(PersistenceCapabilities.Relational, PersistenceCapabilities.Version),
-            new CapabilityRequirement(SecurityCapabilities.Authorization, SecurityCapabilities.Version),
-        ],
-        Contributes = new Contributions { Permissions = ["orders.write"] },
-        Entry = typeof(OrdersFeature).FullName,
-    };
-
-    public void Configure(FeatureContext context)
-    {
-        // 权限码先登记，操作契约才能引用它；没登记的权限码让装配失败
-        context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
-        // 登记代码由 Kernel.Generators 从 [Operation] 生成，含请求 / 响应 JSON Schema
-        context.AddGeneratedOperations();
-    }
+    // 权限码先登记，操作契约才能引用它；没登记的权限码让装配失败
+    context.AddPermission(new PermissionDefinition("orders.write", "Place orders"));
+    // 登记代码由 Kernel.Generators 从 [Operation] 生成，含请求 / 响应 JSON Schema
+    context.AddGeneratedOperations();
 }
 ```
 
-最后在 `Program.cs` 里装配特性与 HTTP 适配器，把操作映射成端点：
+`Program.cs` 沿用[第一个应用](/getting-started/first-app)的写法：Standard 组合、`HttpProtocolFeature` 与 `OrdersFeature`，`app.MapXiHanOperations()` 把 `orders.create` 映射成 `POST /orders`；另加一行把序列化上下文插进 HTTP JSON 选项的解析链：
 
 ```csharp
-using Shop.Orders;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, OrdersJsonContext.Default));
-builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()
-    .UseFeature<HttpProtocolFeature>()
-    .UseFeature<OrdersFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanOperations();   // orders.create → POST /orders
-app.Run();
 ```
 
 Standard 组合带内存的 ApiKey 认证与授予，在 `appsettings.json` 里给一个主体与一条角色授予（配置的全貌见[认证](/security/authentication)与 [RBAC 授予与条件](/security/grants)）：
@@ -221,29 +174,11 @@ using XiHan.Framework.Kernel.Operations;
 
 ## 登记序列化类型与 Schema
 
-`Kernel.Generators` 从 `JsonSerializerContext` 取序列化元数据，并为每个操作生成请求与响应的 JSON Schema（draft 2020-12）。属性名按序列化上下文的命名策略；带 `required` 修饰符的属性，以及位置记录里不可空且没有默认值的构造参数进 `required`，普通的不可空属性不进；嵌套对象进 `$defs`；封闭泛型的定义名带实参名（`PageResultOfOrderResponse`）。请求类型上的 DataAnnotations 折进 Schema，由 Validate 阶段执行：
-
-| 注解 | Schema |
-| --- | --- |
-| `[Required]` | 进 `required` 并去掉可空；字符串另加 `minLength: 1`（`AllowEmptyStrings = true` 除外） |
-| `[Range]` | `minimum` / `maximum`，开区间用 `exclusiveMinimum` / `exclusiveMaximum` |
-| `[StringLength]`、`[MinLength]`、`[MaxLength]`、`[Length]` | 字符串的 `minLength` / `maxLength`，集合的 `minItems` / `maxItems` |
-| `[RegularExpression]` | `pattern` |
-
-其他注解（如 `[EmailAddress]`）不折进 Schema，需要时在请求类型上实现 `IValidatableObject`，见[数据校验](/web/validation)。项目开启 `GenerateDocumentationFile` 时，类型与属性的 XML `<summary>`（位置记录取主构造参数的 `<param>`）折进 Schema 的 `description`，OpenAPI 与 MCP 的字段说明由此而来。
+`Kernel.Generators` 从 `JsonSerializerContext` 取序列化元数据，并为每个操作生成请求与响应的 JSON Schema（draft 2020-12）。属性名按序列化上下文的命名策略；带 `required` 修饰符的属性，以及位置记录里不可空且没有默认值的构造参数进 `required`，普通的不可空属性不进；嵌套对象进 `$defs`；封闭泛型的定义名带实参名（`PageResultOfOrderResponse`）。请求类型上的 DataAnnotations（`[Required]`、`[Range]`、`[StringLength]` 等长度类注解与 `[RegularExpression]`）折进 Schema，由 Validate 阶段执行，注解到 Schema 关键字的对照表与其余生成规则见 [Kernel.Generators](/packages/kernel-generators#概述)。其他注解（如 `[EmailAddress]`）不折进 Schema，需要时在请求类型上实现 `IValidatableObject`，见[数据校验](/web/validation)。项目开启 `GenerateDocumentationFile` 时，类型与属性的 XML `<summary>`（位置记录取主构造参数的 `<param>`）折进 Schema 的 `description`，OpenAPI 与 MCP 的字段说明由此而来。
 
 ## 登记操作与生成器诊断
 
-特性在 `Configure` 里调用生成的 `AddGeneratedOperations()`，一次登记项目里全部操作；也可以按操作调用生成的 `Add<类名>()`。生成的代码在项目 `RootNamespace` 下的 `internal` 静态类 `GeneratedOperations` 里，只供本项目的特性调用。生成器的诊断：
-
-| 诊断 | 情形 |
-| --- | --- |
-| `XHG001` | 标注 `[Operation]` 的类没有实现 `IOperation<TRequest, TResponse>` |
-| `XHG002` | 请求或响应类型没有被任何 `JsonSerializerContext` 登记 |
-| `XHG003` | 操作 ID 不符合 `<resource>.<verb>` 文法 |
-| `XHG004` | 缺省关闭：操作依赖隐式的 `Expose.All` |
-| `XHG005` | `create` / `update` / `delete` 声明了 `ReadOnly = true` |
-| `XHG006` | 警告：字典的键类型 System.Text.Json 不支持，运行期序列化会抛出 |
+特性在 `Configure` 里调用生成的 `AddGeneratedOperations()`，一次登记项目里全部操作；也可以按操作调用生成的 `Add<类名>()`。生成的代码在项目 `RootNamespace` 下的 `internal` 静态类 `GeneratedOperations` 里，只供本项目的特性调用。契约写错时生成器在编译期报 `XHG001` 到 `XHG006`，最常见的是 `XHG002`（请求或响应类型没有被任何 `JsonSerializerContext` 登记）与 `XHG003`（操作 ID 不合文法），诊断表见 [Kernel.Generators](/packages/kernel-generators#行为与限制)。
 
 不用生成器时用 `context.AddOperation<TOperation, TRequest, TResponse>(contract, requestInfo, responseInfo)` 手写登记，契约（`OperationContract`）、序列化元数据与 Schema 自己给出。
 
@@ -258,7 +193,7 @@ using XiHan.Framework.Kernel.Operations;
 | `<操作 ID>.title` | 短语，如「下单」；MCP tool 的 `title`、OpenAPI 的 `summary` |
 | `<操作 ID>.description` | 行为与规则；MCP tool 的 `description`、OpenAPI 的 `description` |
 
-键里操作 ID 的 `-` 换成 `_`（`order_lines.list.description`）。描述不写授权要求，适配器按契约统一呈现。文案写在应用的 `Localization/<区域>.json` 里，登记方式见 [ASP.NET Core 宿主](/web/hosting)的「区域协商与本地化」，消息键的约定见[全球化和本地化](/common/localization)：
+键里操作 ID 的 `-` 换成 `_`（`order_lines.list.description`）。描述不写授权要求，适配器按契约统一呈现。文案写在应用的 `Localization/<区域>.json` 里，登记方式与消息键的约定见[全球化和本地化](/common/localization)：
 
 ```json
 {
@@ -308,7 +243,7 @@ public sealed class NightlyOrderSeeder(IServiceScopeFactory scopes)
 | `InvokeAsync<TRequest, TResponse>(context, id, request)` | 类型化调用，经完整管道；请求在 Validate 阶段按序列化元数据编码一次再校验 |
 | `ExecuteAsync(...)` 两种重载 | 调用方已在管道内（如宿主端点）时直接执行，不再经过管道、不校验 |
 
-这样构造的上下文没有凭据与租户：经过 Authenticate 阶段时是匿名调用，带 `Permission` 的操作会被拒绝。后台调用需要身份时，用 `context.SetCredential(new AuthenticationCredential(scheme, value))`（`Security.Abstractions`）放入凭据；需要租户时用带 `InvocationContextOptions` 的重载，在 `Baggage` 里给出 `xihan.tenant`（`BaggageKeys.Tenant`）：`App.CreateContext(services, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.Tenant] = tenantId } }, cancellationToken)`，由 Tenant 阶段对照租户存储核对。细节见[认证](/security/authentication)与[租户解析与隔离](/multi-tenancy/resolution)。
+这样构造的上下文没有凭据与租户：经过 Authenticate 阶段时是匿名调用，带 `Permission` 的操作会被拒绝。后台调用需要身份时，用 `context.SetCredential(new AuthenticationCredential(scheme, value))`（`Security.Abstractions`）放入凭据；需要租户时用带 `InvocationContextOptions` 的重载，在 `Baggage` 里给出 `xihan.tenant`（`BaggageKeys.Tenant`）：`App.CreateContext(services, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.Tenant] = tenantId } }, cancellationToken)`，由 Tenant 阶段对照租户存储核对。不要绕过管道直接 `new` 操作类，那样会丢掉校验与事务。细节见[认证](/security/authentication)与[租户解析与隔离](/multi-tenancy/resolution)。
 
 调用器自己的错误码：操作没有登记是 `KERNEL_NOTFOUND_001`（调用不进管道）；载荷不是 JSON、为 `null` 或类型不匹配是 `KERNEL_VALIDATION_001`（`reason` 是 JSON 路径，如 `$.quantity`）；类型化调用的请求或响应类型与登记不符是 `KERNEL_VALIDATION_002`；不满足请求 Schema 与自校验失败分别是 `KERNEL_VALIDATION_003` 与 `KERNEL_VALIDATION_004`。
 
@@ -318,17 +253,9 @@ public sealed class NightlyOrderSeeder(IServiceScopeFactory scopes)
 
 不能。一个操作就是一个类、一条操作 ID，HTTP 上对应一条路由。需要两个动作就写两个操作（`orders.create` 与 `orders.cancel`），它们各有自己的权限要求与 Schema。要换路由用配置覆盖，见 [HTTP 路由与载荷](/web/routing)。
 
-### `HandleAsync` 里能不能抛异常表示业务失败
-
-不要。可恢复的失败（找不到、冲突、校验不过、无权）返回 `Error`，宿主按错误码的 KIND 段映射状态码并写 Problem Details；抛出的异常由内核翻译成 `KERNEL_UNEXPECTED_001`、HTTP 500，并按缺陷记录。`Error` 的构造与错误码规则见[结果与错误处理](/web/errors)。
-
 ### 请求类型没有任何字段怎么写
 
 写一个空记录即可，如示例应用的 `public sealed record ListOrdersRequest;`。它仍要登记进 `JsonSerializerContext`，HTTP 上这个操作接受空载荷，`GET /orders` 不带任何参数就能调用。
-
-### 后台任务调用操作时总被 401 拒绝
-
-`App.CreateContext` 建出的上下文没有凭据，Authenticate 阶段按匿名处理，带 `Permission` 的操作就会被拒。给上下文放入服务账号的凭据（`SetCredential`），或者让后台任务只调用不要求权限的操作。不要绕过管道直接 `new` 操作类，那样会丢掉校验与事务。
 
 ## 相关包与下一步
 

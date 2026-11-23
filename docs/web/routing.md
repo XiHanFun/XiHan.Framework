@@ -31,22 +31,16 @@
 dotnet add package XiHan.Framework.Protocols.Http --prerelease
 ```
 
-```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
+这三步就是[第一个应用](/getting-started/first-app)的 `Program.cs`，这里把组合包换成 Standard，业务特性换成 `OrdersFeature`：
 
-var builder = WebApplication.CreateBuilder(args);
+```csharp
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<HttpProtocolFeature>()
     .UseFeature<OrdersFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// builder.Build() 与 app.UseXiHan() 之后
 app.MapXiHanOperations();   // orders.create → POST /orders，orders.list → GET /orders
-app.Run();
 ```
 
 `OrdersFeature` 是示例应用的订单能力包，登记了 `orders.create` 与 `orders.list` 两个操作（见[操作契约](/web/operations)）。`MapXiHanOperations()` 返回这组操作端点的约定构建器，要给全部操作端点统一加 ASP.NET Core 约定（CORS、限流、端点过滤器等）就写在返回值上，如 `app.MapXiHanOperations().RequireCors("web")`，路由模板不受影响。运行后：
@@ -116,7 +110,7 @@ curl -s localhost:5000/orders -H "Authorization: ApiKey dev-alice-key"
 }
 ```
 
-覆盖优先于推导，前缀在两者之后加上：上例的 `orders.export` 最终是 `POST /api/orders:export`，`orders.get` 是 `GET /api/orders/{id}`。模板用 ASP.NET Core 路由语法，`{name}` 参数绑定到请求对象的同名属性。前缀或路由文本不合法、操作 ID 不合法时，读取配置就抛出 `ArgumentException`，应用启动失败。配置节的绑定方式见[配置模型与选项](/configuration/options)。
+覆盖优先于推导，前缀在两者之后加上：上例的 `orders.export` 最终是 `POST /api/orders:export`，`orders.get` 是 `GET /api/orders/{id}`。模板用 ASP.NET Core 路由语法，`{name}` 参数绑定到请求对象的同名属性。前缀或路由文本不合法、操作 ID 不合法时，读取配置就抛出 `ArgumentException`，应用启动失败。这一节的其余键见[包参考](/packages/protocols-http#配置)，配置节的绑定方式见[配置模型与选项](/configuration/options)。
 
 ## 载荷绑定
 
@@ -155,33 +149,13 @@ curl -s -X POST "localhost:5000/orders/0f8fad5b-d9cb-469f-a165-70867728950e:canc
   -d '{"id":"00000000-0000-0000-0000-000000000000","reason":"late"}'
 ```
 
-交给操作的载荷是 `{"id":"0f8fad5b-d9cb-469f-a165-70867728950e","reason":"late"}`：请求体里的 `id` 被路由值覆盖。请求类型与响应类型要登记进源生成的序列化上下文；绑定按 JSON 约定匹配属性，上下文建议用 `PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase`、`PropertyNameCaseInsensitive = true` 与 `NumberHandling = JsonNumberHandling.AllowReadingFromString`，写法见 [ASP.NET Core 宿主](/web/hosting)的「Native AOT」。
+交给操作的载荷是 `{"id":"0f8fad5b-d9cb-469f-a165-70867728950e","reason":"late"}`：请求体里的 `id` 被路由值覆盖。请求类型与响应类型要登记进源生成的序列化上下文；绑定按 JSON 约定匹配属性，上下文建议用 `PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase`、`PropertyNameCaseInsensitive = true` 与 `NumberHandling = JsonNumberHandling.AllowReadingFromString`，写法见 [JSON 序列化与 Native AOT](/common/serialization#登记-jsonserializercontext)。
 
-绑定与校验都在 Validate 阶段，按下表的顺序进行：
-
-| 阶段 | 拒绝的情形 | 错误码 |
-| --- | --- | --- |
-| Validate（读请求体、绑定） | 请求体不是 JSON 或不是 JSON 对象 | `KERNEL_VALIDATION_001` |
-| Validate | 载荷不满足请求 Schema（类型、必填、范围、长度、模式等） | `KERNEL_VALIDATION_003` |
-| Validate | 通过 Schema 之后载荷解码失败；没有 Schema 时的类型不符、`null` | `KERNEL_VALIDATION_001` |
-| Validate | 请求对象自校验（`IValidatableObject`）失败 | `KERNEL_VALIDATION_004` |
-
-没有登记 Schema 的操作不做 Schema 校验，解码失败仍是 `KERNEL_VALIDATION_001`。字段级 `errors` 的形状见 [ASP.NET Core 宿主](/web/hosting)的「Problem Details」，校验规则见[数据校验](/web/validation)。
+绑定与校验都在 Validate 阶段：请求体不是 JSON 或不是 JSON 对象是 `KERNEL_VALIDATION_001`，之后的 Schema 校验（`KERNEL_VALIDATION_003`）、解码与自校验（`KERNEL_VALIDATION_004`）见[数据校验](/web/validation#两步校验)。没有登记 Schema 的操作不做 Schema 校验，解码失败仍是 `KERNEL_VALIDATION_001`。字段级 `errors` 的形状见 [ASP.NET Core 宿主](/web/hosting)的「Problem Details」，校验规则见[数据校验](/web/validation)。
 
 ## 状态码与错误映射
 
-成功时 `create` 返回 201，其余动词返回 200，正文是响应类型的 JSON，`Content-Type: application/json; charset=utf-8`。失败时写 RFC 9457 Problem Details，状态码由错误码的 KIND 段决定（`ProblemResponse.StatusCodeFor`）：
-
-| KIND | HTTP 状态码 |
-| --- | --- |
-| `VALIDATION` | 400 |
-| `NOTFOUND` | 404 |
-| `CONFLICT` | 409 |
-| `DENIED` | 403；`SECURITY_DENIED_001`（未认证）与 `SECURITY_DENIED_003`（凭据无效、过期或签名不符）为 401 |
-| `UNAVAILABLE` | 503 |
-| `TIMEOUT` | 504 |
-| `CANCELLED` | 408 |
-| 其他（含 `UNEXPECTED`） | 500 |
+成功时 `create` 返回 201，其余动词返回 200，正文是响应类型的 JSON，`Content-Type: application/json; charset=utf-8`。失败时写 RFC 9457 Problem Details，状态码由错误码的 KIND 段决定（`ProblemResponse.StatusCodeFor`），对照表见[结果与错误处理](/web/errors#错误码)。`DENIED` 是 403，只有 `SECURITY_DENIED_001`（未认证）与 `SECURITY_DENIED_003`（凭据无效、过期或签名不符）是 401。
 
 401 与 403 的分界按 RFC 6750：凭据无效是认证失败，客户端与网关据 401 刷新令牌或重新登录，据 403 判定越权。每个 401 都带 `WWW-Authenticate` 质询：
 
@@ -220,21 +194,9 @@ curl -s -X POST localhost:5000/orders -H "Authorization: ApiKey dev-bob-key" \
 
 两种办法。一是让请求只有标量字段并声明只读：`[Operation("orders.search", ReadOnly = true)]`，请求 `{ keyword, page, size }` 没有嵌套对象，推导结果是 `GET /orders:search`。二是用配置覆盖 `Routes:orders.search` 写成 `GET /orders/search`。注意 GET 不读请求体，所有字段都要能放进查询串。
 
-### 路由值和请求体里的 `id` 不一样时听谁的
-
-听路由值。URL 里的标识是权威，请求体里的同名字段被覆盖，查询串排在最后。这条规则让 `PUT /orders/{id}` 这类请求不会因为请求体里带了另一个 `id` 而改错对象。
-
-### 为什么我的查询参数绑定成了字符串数组
-
-查询串里同一个名字出现了多次，或者请求类型里对应属性是集合类型。集合属性总是写成数组，单个值也是一元数组；不是集合但没有类型化元数据（插件代理）或找不到同名属性时，多值也写成字符串数组。核对请求类型的属性名与序列化名是否一致。
-
 ### 怎样给全部接口加 `/api` 前缀，又保留探针与 OpenAPI 的路径
 
 `RoutePrefix` 只作用于 `MapXiHanOperations()` 映射的操作端点，`MapXiHanHealth()`、`MapXiHanOpenApi()` 与应用自己的最小 API 端点不受影响，所以把 `XiHan:Protocols:Http:RoutePrefix` 设成 `/api` 即可。要让 OpenAPI 文档也换路径，给 `MapXiHanOpenApi` 传 `pattern` 参数，见[规范化接口文档](/web/openapi)。
-
-### 能不能在 Problem Details 里多带几个字段
-
-可以，但只带标量。`Error.Details` 里的字符串、布尔、数值、`Guid` 与时间会原样进入 `details` 成员，集合与对象不输出；校验类错误的字段信息走 `errors` 成员。客户端判断错误类型只看 `code`，`details` 用来补充上下文（如 `retryAfter`、`id`），不要把它当成第二套响应体。
 
 ## 相关包与下一步
 

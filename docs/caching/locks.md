@@ -18,7 +18,7 @@
 | `LockHandle.ReleaseAsync(ct)` / `DisposeAsync()` | 按令牌比较删除；只释放一次（并发释放也只执行一次），重复释放返回 `false` |
 | 自己实现 `IDistributedLock` | 派生抽象类 `LockHandle`（受保护构造收资源与令牌），实现 `ReleaseCoreAsync`；基类保证释放只调用它一次 |
 
-锁不可重入。持有期间可以用 `LockHandle.TryExtendAsync(ttl)` 续约：仍持有时把到期时刻重设为现在加 `ttl` 并返回 `true`，锁在续约期间一直被持有；已到期、被他人持有或已释放时返回 `false`（ADR-0215）。到期后别人可以获取，原持有者再释放返回 `false`，不会误删别人的锁。`IDistributedLock` 由被选中提供 `caching.distributed` 的 Provider（内存、Redis、远程）登记在容器里，用的 `ICacheStore` 与 `ISharedCache.Store` 是同一个实例。
+锁不可重入：同一个实例第二次获取，在第一把释放或到期之前同样返回无值，需要嵌套时把句柄沿调用链传下去。持有期间可以用 `LockHandle.TryExtendAsync(ttl)` 续约：仍持有时把到期时刻重设为现在加 `ttl` 并返回 `true`，锁在续约期间一直被持有；已到期、被他人持有或已释放时返回 `false`（ADR-0215）。到期后别人可以获取，原持有者再释放返回 `false`，不会误删别人的锁。`IDistributedLock` 由被选中提供 `caching.distributed` 的 Provider（内存、Redis、远程）登记在容器里，用的 `ICacheStore` 与 `ISharedCache.Store` 是同一个实例。存储不可达时锁与幂等中间件都抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不会当作「没拿到锁」或「没有记录」。
 
 ## 幂等的概念
 
@@ -78,7 +78,7 @@ await using (handle)
 }
 ```
 
-存活时间要大于工作的最长耗时。需要续约或可重入的场景在 `ICacheStore` 的「不存在才写 + 比较删」之上自己实现。雪花 ID 的机器位租约就用这把锁，见[标识生成](/persistence/identifiers)。
+存活时间要大于工作的最长耗时。工作时长估不准时，按存活时间的几分之一定时调用 `TryExtendAsync` 续约；它返回 `false` 说明锁已经丢了，立即停下手里的工作。不要用「释放再获取」续约：释放的那一刻别人就能拿走。需要可重入的场景在 `ICacheStore` 的「不存在才写 + 比较删」之上自己实现。雪花 ID 的机器位租约就用这把锁，见[标识生成](/persistence/identifiers)。
 
 ## 幂等键的处理流程
 
@@ -118,19 +118,14 @@ curl -X POST http://localhost:5000/orders \
 
 回放不比对请求内容，同一个键配不同的请求体照样拿回首次的响应；键要按「一次业务意图一个键」生成。记录不能回放给本次调用时返回 `CACHING_CONFLICT_003`（HTTP 409）：
 
-- 同一个键被另一个操作用过，或在操作与非操作调用之间复用（消息键 `caching.idempotency.key_reused`，参数 `operation`、`recorded`）。
+- 同一个键被另一个操作用过，或在操作与非操作调用之间复用（消息键 `caching.idempotency.key_reused`，参数 `operation`、`recorded`）。幂等键在（租户、主体）作用域内要对操作唯一，可以把操作名或业务对象编号拼进键里，例如 `orders.create:<客户端请求号>`。
 - 记录里没有响应，或响应按当前的响应类型解码不了（`caching.idempotency.response_unavailable`），换一个键即可。
 
 响应随记录保存 `TimeToLive`，响应很大的操作带幂等键时要考虑共享缓存的容量。Idempotency 阶段在 Authenticate、Tenant、Authorize、Validate 之后，被这些阶段拒绝的调用不会写入记录；在 Transaction 之前，所以记录的是提交之后的最终结果。中间件里可以用 `IdempotencyMiddleware.WasReplayed(context)` 判断本次是否是回放。
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Caching:Idempotency:TimeToLiveSeconds` | 数字 | 86400 | 已完成调用结果的保留时间 |
-| `XiHan:Caching:Idempotency:InProgressTimeToLiveSeconds` | 数字 | 60 | 「处理中」标记的保留时间，也是处理器崩溃后同一个键被封锁的最长时间 |
-
-两个值都必须是正数，否则装配抛出 `ArgumentException`。锁没有自己的配置，存活时间由每次 `TryAcquireAsync` 的参数决定。
+幂等只有两个键：`XiHan:Caching:Idempotency:TimeToLiveSeconds`（已完成调用结果的保留时间）与 `InProgressTimeToLiveSeconds`（「处理中」标记的保留时间），缺省值与取值范围见 [Caching.Abstractions](/packages/caching-abstractions#配置)。锁没有自己的配置，存活时间由每次 `TryAcquireAsync` 的参数决定。
 
 ## IDistributedCache 适配
 
@@ -144,42 +139,9 @@ curl -X POST http://localhost:5000/orders \
 
 键必须满足 `CacheKey` 文法，否则抛 `ArgumentException`。`Refresh` 是一次读取（读取即续期滑动过期）；同步成员在适配器边界阻塞等待异步存储，调用方应优先用异步成员。
 
-## 错误码
-
-| 错误码 | 含义 |
-| --- | --- |
-| `CACHING_CONFLICT_001` | 分布式锁被占用，`AcquireAsync` 返回（`TryAcquireAsync` 只返回无值） |
-| `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
-| `CACHING_CONFLICT_003` | 幂等记录不能回放给本次调用：键被另一个调用用过，或记录里的响应无法还原 |
-| `CACHING_VALIDATION_001` | 幂等键拼出的存储键不合法，Idempotency 阶段以校验错误结束调用 |
-| `CACHING_UNAVAILABLE_001` | 存储不可达；锁与幂等中间件都以 `FrameworkException` 抛出，不会当作「没拿到锁」或「没有记录」 |
-
-错误怎样变成 HTTP 状态码与 Problem Details 见[结果与错误处理](/web/errors)。
-
-## 常见问题
-
-### 工作还没做完锁就到期了怎么办
-
-到期后别的实例可以拿到，原持有者释放时按令牌比较删除会返回 `false`，不会删掉别人的锁。需要长时间持有时，按存活时间的几分之一定时调用 `TryExtendAsync` 续约；它返回 `false` 说明锁已经丢了，立即停下手里的工作。不要用「释放再获取」续约：释放的那一刻别人就能拿走。
-
-### 同一个实例能重复获取同一把锁吗
-
-不能，锁不可重入。第二次 `TryAcquireAsync` 在第一把释放或到期之前返回无值。需要嵌套时把锁句柄沿调用链传下去，而不是再获取一次。
-
-### 幂等键在 gRPC 与消息上怎么传
-
-gRPC 用同名的 `baggage` 元数据，格式与 HTTP 头一致。消息不传幂等键：派发不写它，带上也会被忽略，因为同一请求发出的几条消息与同一条消息的重试会被当成同一次调用。消息的去重由处理器按信封的 `Id` + `Source` 自理。
-
-### 为什么业务失败也会被回放
-
-因为「同一个键」表示「同一次业务意图」，首次的结论就是这次意图的结论，重试拿回同一个错误才与首次一致。客户端修正了请求就应当换一个新键。只有处理器抛出异常（服务端缺陷或暂时故障）时标记才被清除、允许重试。
-
-### 同一个键用在了两个不同的操作上
-
-返回 `CACHING_CONFLICT_003`，消息键 `caching.idempotency.key_reused`。幂等键在（租户、主体）作用域内要对操作唯一，建议把操作名或业务对象编号拼进键里，例如 `orders.create:<客户端请求号>`。
-
 ## 相关包与下一步
 
 - 包参考：[Caching.Abstractions](/packages/caching-abstractions)、[Caching.InMemory](/packages/caching-inmemory)、[Caching.Redis](/packages/caching-redis)
+- 错误码：[Caching.Abstractions](/packages/caching-abstractions#错误码)；错误怎样变成 HTTP 状态码与 Problem Details 见[结果与错误处理](/web/errors)
 - Idempotency 阶段在管道里的位置与中间件的登记方式见[执行管道](/startup/pipeline)；Baggage 的传递见[调用上下文](/startup/invocation-context)
 - 下一步：[两级缓存与键管理](/caching/hybrid)，减少读路径的网络往返并给管理界面提供键列举

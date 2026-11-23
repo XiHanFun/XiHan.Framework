@@ -33,23 +33,15 @@
 dotnet add package XiHan.Framework.Security.Jwt --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。在 `AddXiHan` 里装配特性，`Program.cs` 的其余部分见[第一个应用](/getting-started/first-app)：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Security.Jwt;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // Security.InMemory 让出认证，只保留授权
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<JwtSecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置

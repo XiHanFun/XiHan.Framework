@@ -36,19 +36,14 @@ dotnet add package XiHan.Framework.Protocols.CloudEvents --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.CloudEvents;
 using XiHan.Framework.Protocols.CloudEvents.Inbound;
 
-var builder = WebApplication.CreateBuilder(args);
 // Standard 组合里的内存消息实现提供 messaging.queue@1
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<CloudEventsProtocolFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanCloudEvents();   // POST /events
-app.Run();
 ```
 
 ## 配置

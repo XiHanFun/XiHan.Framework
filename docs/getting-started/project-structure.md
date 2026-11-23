@@ -87,20 +87,9 @@ Shop.Orders/
 
 ## 宿主的 Program.cs
 
+骨架与[第一个应用](/getting-started/first-app)相同，多出来的是各能力包的序列化上下文与 Provider 的选择：
+
 ```csharp
-using Shop.Catalog;
-using Shop.Orders;
-using XiHan.Framework.Caching.Redis;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Persistence.EntityFrameworkCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.OpenApi;
-using XiHan.Framework.Protocols.Http.Routing;
-using XiHan.Framework.Security.Jwt;
-
-var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, OrdersJsonContext.Default);
@@ -117,16 +106,9 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<HttpProtocolFeature>()
     .UseFeature<OrdersFeature>()
     .UseFeature<CatalogFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanHealth();
-app.MapXiHanOperations();
-app.MapXiHanOpenApi();
-app.Run();
 ```
 
-Provider 的选择只出现在宿主里。换数据库、换缓存，改的是这个文件与配置，能力包不动。各 Provider 特性的类名以它的包页为准，见[包参考](/packages/)。
+`builder.Build()` 之后照旧是 `UseXiHan()`、`MapXiHanHealth()`、`MapXiHanOperations()`，需要接口文档时再加 `MapXiHanOpenApi()`。Provider 的选择只出现在宿主里。换数据库、换缓存，改的是这个文件与配置，能力包不动。各 Provider 特性的类名以它的包页为准，见[包参考](/packages/)。
 
 ## 配置文件
 

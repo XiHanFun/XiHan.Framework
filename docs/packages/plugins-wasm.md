@@ -37,17 +37,12 @@ dotnet add package XiHan.Framework.Plugins.Wasm --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Plugins.Wasm;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<WasmPluginsFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanHealth();
-app.Run();
 ```
 
 Windows 上宿主可执行项目要关闭 CET 兼容：

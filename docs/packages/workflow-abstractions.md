@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.Workflow.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记自定义活动与指派规则：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记自定义活动与指派规则接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上（`builder.Build()` 之前），只多下面两行与两个类：
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -39,7 +39,6 @@ using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Assignees;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddActivity<AuditActivity>(new ActivityType("Audit"));
 builder.Services.AddAssigneeProvider<RoleAssigneeProvider>();
 
@@ -75,7 +74,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `XiHan:Workflow:RetentionDays` | ≥ 0 | 0 | 已结束实例的保留天数，0 为不自动清理 |
 | `XiHan:Workflow:HousekeepingIntervalSeconds` | 正数 | 3600 | 自动清理周期 |
 | `XiHan:Workflow:HttpTimeoutSeconds` | 正数 | 30 | `Http` 活动的缺省超时 |
-| `XiHan:Workflow:MaxHttpTimeoutSeconds` | 正数 | 300 | 定义里 `Http` 活动 `TimeoutSeconds` 的上限 |
+| `XiHan:Workflow:MaxHttpTimeoutSeconds` | 正数 | 300 | 定义里 `Http` 活动 `TimeoutSeconds` 的上限，不限 `HttpTimeoutSeconds` |
 | `XiHan:Workflow:MaxForEachItems` | 整数 ≥ 1 | 1000 | `ForEach` 一次最多处理的项数，超过即节点故障 |
 | `XiHan:Workflow:MaxVariablesBytes` | 整数 ≥ 1 | 8388608 | 一个实例的变量序列化后的字节数上限 |
 
@@ -96,8 +95,8 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 | `WorkflowJson` | 定义、实例、节点实例、书签、事件数据的 JSON 往返与深拷贝 |
 | `IWorkflowDefinitionCatalog`、`WorkflowDefinitionCatalogExtensions` | 定义生命周期：创建、更新、发布、新版本、停用、归档、删除、查询、活动描述符 |
 | `WorkflowDefinitionQuery`、`WorkflowDefinitionSummary`、`WorkflowDefinitionPage` | 定义列表 `QueryAsync`：按关键字（名字、显示名、说明）、名字、分类、状态、创建时间区间过滤，按排序项 `Sorts`（`WorkflowDefinitionSort`：白名单字段加方向，有序、可多个、最多 6 项）排序（空时名字升序、版本降序），返回摘要的一页与总数；`Take` 缺省 100、最大 1000，分页或排序字段越界是 `WORKFLOW_VALIDATION_002`（ADR-0096、ADR-0102） |
-| `WorkflowDefinitionSort`、`WorkflowInstanceSort`、`WorkflowDefinitionSortField`、`WorkflowInstanceSortField`、`WorkflowSortKeys` | 列表排序的白名单与排序键：定义 `Name` / `Title` / `Version` / `Status` / `CreatedAt` / `PublishedAt`，实例 `CreatedAt` / `EndedAt` / `Status` / `DefinitionName` / `Title`；标题按前 256 个字符（见 [工作流指南的列表排序](/workflow/definitions)，ADR-0102） |
-| `WorkflowKeyword` | 列表查询关键字的折叠与匹配规则（见 [工作流指南的关键字](/workflow/definitions)） |
+| `WorkflowDefinitionSort`、`WorkflowInstanceSort`、`WorkflowDefinitionSortField`、`WorkflowInstanceSortField`、`WorkflowSortKeys` | 列表排序的白名单与排序键：定义 `Name` / `Title` / `Version` / `Status` / `CreatedAt` / `PublishedAt`，实例 `CreatedAt` / `EndedAt` / `Status` / `DefinitionName` / `Title`；标题按前 256 个字符（见 [工作流指南的列表排序](/workflow/definitions#列表排序)，ADR-0102） |
+| `WorkflowKeyword` | 列表查询关键字的折叠与匹配规则（见 [工作流指南的关键字](/workflow/definitions#关键字)） |
 | `IWorkflowEngine`、`WorkflowEngineExtensions`、`WorkflowStartRequest`、`WorkflowReusePolicy`、`WorkflowReservedNames` | 启动、恢复、信号、实例控制与调用方分区的实例查询（`FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`（实例全部等待点的摘要 `WorkflowBookmarkSummary`，不含载荷，ADR-0096）；`WorkflowInstanceQuery` 与 `WorkflowPurgeRequest` 的分页 / 条数越界不在构造时抛出，以 `WORKFLOW_VALIDATION_002` 返回）；单条写法是扩展方法；引擎保留的变量名（`lastError`、`signal`）、子流程回调输入键与结果标签在 `WorkflowReservedNames`，引擎、目录与任务服务的实现类型不公开（ADR-0135） |
 | `WorkflowJump`、`WorkflowMigration`、`WorkflowVariableUpdate`、`WorkflowPurgeRequest` | 跳转、迁移、改变量、清理的请求 |
 | `WorkflowInstance`、`WorkflowNodeInstance`、`WorkflowBookmark`、`BookmarkKinds`、`WorkflowInstanceStatus`、`WorkflowNodeInstanceStatus`、`WorkflowFault`、`WorkflowInstanceQuery` | 运行时模型与实例查询（`Take` 缺省 100、最大 1000；一组关联 ID `CorrelationIds` 最多 1000 个、空集合不匹配，只取顶层 `TopLevelOnly`，关键字 `Keyword` 匹配实例标题或关联 ID，排序项 `Sorts`（`WorkflowInstanceSort`，有序、可多个、最多 5 项）空时创建时间降序，ADR-0096、ADR-0099、ADR-0102） |
@@ -171,15 +170,19 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 - 表达式：最长 4000 个字符，嵌套最多 64 层（ADR-0120），`+` 拼出的字符串最长 4194304 个字符（ADR-0182）；`Evaluate` 与 `ActivityContext.EvaluateProperty` 的结果为 null（字面量、缺少的成员或键、值为 null 的变量、没有这个属性）是成功的无值，模板里渲染成空串。
 - `Http` 活动的地址由流程定义给出，不可信：缺省的 `WorkflowHttpClient` 过出站地址策略（ADR-0117），只能连公网地址，重定向的目标同样检查；目标被拒绝是节点故障，消息键 `workflow.http.address_denied`。
 - `Http` 活动的超时按引擎的 `TimeProvider` 计时、按令牌归因（ADR-0097）：活动的超时令牌已触发即节点故障 `WORKFLOW_UNEXPECTED_001`（消息键 `workflow.http.timed_out`），不论调用方是否也已取消、客户端是抛出还是交回了响应；只有调用方取消时抛出 `OperationCanceledException`（操作随调用回滚）；两个都没触发时客户端抛出的取消与 `TimeoutException` 也按超时。
-- 故障（ADR-0105、ADR-0106）：实例与节点实例的 `WorkflowFault` 存错误码、消息键、参数与内层原因，不存渲染好的文案；展示用 `Localize()`（按调用链里调用方的区域），返回给调用方用 `ToError()`；`Message` 按进程默认区域渲染，只供日志。引擎与内置活动的失败原因都是消息键，应用或第三方给的文本（异常消息、HTTP 原因短语、外部任务的错误、`Fault` 节点的消息）原样放在参数里。子流程回调输入 `childFault` 是子实例故障的 JSON，父节点的故障按子实例状态是 `workflow.child.faulted` / `canceled` / `terminated`，内层是子实例的故障。设计期诊断（校验的逐条问题、表达式诊断、`DeserializeDefinition` 的错误）、变量 `lastError`（故障的 JSON，表达式照旧读 `code`）、活动描述符与状态名同样是消息键，状态的展示名用 `WorkflowStatusMessages`。
+- 故障（ADR-0105、ADR-0106）：实例与节点实例的 `WorkflowFault` 存错误码、消息键、参数与内层原因，不存渲染好的文案；展示用 `Localize()`（按调用链里调用方的区域），返回给调用方用 `ToError()`；`Message` 按进程默认区域渲染，只供日志。引擎与内置活动的失败原因都是消息键，应用或第三方给的文本（异常消息、HTTP 原因短语、外部任务的错误、`Fault` 节点的消息）原样放在参数里。子流程回调输入 `childFault` 是子实例故障的 JSON，父节点的故障按子实例状态是 `workflow.child.faulted` / `canceled` / `terminated`，内层是子实例的故障。设计期诊断（校验的逐条问题、表达式诊断、`DeserializeDefinition` 的错误）、变量 `lastError`（故障的 JSON，表达式读 `code`）、活动描述符与状态名同样是消息键，状态的展示名用 `WorkflowStatusMessages`。
 - 轮询器每个周期覆盖平台与租户目录（`ITenantStore`，装配了多租户时）里启用的每个租户，逐个分区开调用；周期中途进入排空的，下一个失败的分区调用就让周期停下，剩下的分区不再调用、不告警（ADR-0087）。
 - 列表关键字去首尾空白，不变文化小写后按序数包含，任一字段匹配、不跨字段；`%`、`_`、`[`、反斜杠按字面、与全角字符不同（ADR-0096、ADR-0098、ADR-0099）。
 - 事件只在装配了消息能力时发布，发布失败只记日志。
 
+## 错误码
+
+`WorkflowErrors` 的全部错误码。消息模板在消息目录 `workflow` 里，十种区域都有译文。
+
 | 错误码 | 含义 |
 | --- | --- |
-| `WORKFLOW_VALIDATION_001` | 定义不合法 |
-| `WORKFLOW_VALIDATION_002` | 启动或操作的输入不合法（含待办 / 实例查询的分页与清理的条数越界，HTTP 400） |
+| `WORKFLOW_VALIDATION_001` | 定义不合法，`details.errors` 列出全部问题 |
+| `WORKFLOW_VALIDATION_002` | 启动或操作的输入不合法（HTTP 400）：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界、实例查询的分页、关联 ID 集合或清理的条数越界、定义查询的分页越界、定义与实例查询的排序项不合法 |
 | `WORKFLOW_VALIDATION_003` | 表达式语法不合法或求值失败 |
 | `WORKFLOW_NOTFOUND_001` | 定义不存在、没有已发布版本或在别的分区 |
 | `WORKFLOW_NOTFOUND_002` | 实例不存在或在别的分区 |
@@ -187,15 +190,17 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
 | `WORKFLOW_NOTFOUND_004` | 活动类型或指派规则类型未登记 |
 | `WORKFLOW_CONFLICT_001` | 实例状态不允许该操作 |
 | `WORKFLOW_CONFLICT_002` | 定义状态不允许该操作 |
-| `WORKFLOW_CONFLICT_003` | 书签不可恢复 |
-| `WORKFLOW_CONFLICT_004` | 指派人已在任务上或任务已被认领 |
-| `WORKFLOW_CONFLICT_005` | 同一关联 ID 下已有未结束的实例 |
+| `WORKFLOW_CONFLICT_003` | 书签不可恢复：实例不在运行中、键不匹配，或用户任务与外部任务的书签直接经引擎恢复（要经任务服务与外部任务服务） |
+| `WORKFLOW_CONFLICT_004` | 指派人已在任务上，或任务已被认领 |
+| `WORKFLOW_CONFLICT_005` | 同一关联 ID 下已有未结束的实例（`RejectActive`） |
 | `WORKFLOW_DENIED_001` | 操作者不是任务的指派人 |
-| `WORKFLOW_DENIED_002` | 工作者没有持有外部任务的锁 |
+| `WORKFLOW_DENIED_002` | 工作者没有持有外部任务的锁，或锁已过期 |
 | `WORKFLOW_TIMEOUT_001` | 等实例锁超时 |
-| `WORKFLOW_UNAVAILABLE_001` | 工作流存储不可达；或在调用之外被调用时应用不在服务状态 |
+| `WORKFLOW_UNAVAILABLE_001` | 工作流存储不可达；或引擎在调用之外被调用时应用不在服务状态 |
 | `WORKFLOW_UNAVAILABLE_002` | 工作流存储容量已满 |
-| `WORKFLOW_UNEXPECTED_001` | 活动抛出未处理异常或引擎内部故障 |
+| `WORKFLOW_UNEXPECTED_001` | 活动抛出未处理异常，或引擎内部故障（波次上限、死汇合） |
+
+只读调用里调用写入操作时返回的是持久化的错误码 `PERSISTENCE_UNEXPECTED_001`（操作实现的缺陷，HTTP 500），见 [Persistence.Abstractions](/packages/persistence-abstractions#错误码)。
 
 ## 相关
 

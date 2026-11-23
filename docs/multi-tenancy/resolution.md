@@ -73,24 +73,14 @@ var tenant = context.GetSecurity().Tenant;   // TenantContext?，没有租户时
 }
 ```
 
+Standard 组合包已含内存多租户与内存安全，不用再装配特性。接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，在 `app.UseXiHan()` 之后多一个端点：
+
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Security;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Standard 组合包已含内存多租户与内存安全
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-var app = builder.Build();
-app.UseXiHan();
 
 // 端点在管道的 Handle 阶段内执行，租户已由 Tenant 阶段写进安全上下文
 app.MapGet("/tenant", (HttpContext http) => http.FindXiHanContext().ValueOrThrow().GetSecurity().Tenant?.Id ?? "-");
-
-app.Run();
 ```
 
 运行后用 `alice` 的 ApiKey 调用，响应是 `acme`；匿名调用响应 `-`，因为匿名主体没有租户声明：
@@ -172,16 +162,7 @@ public sealed class SubdomainTenantResolver(IHttpContextAccessor http) : ITenant
 
 ## 配置
 
-`MultiTenancyOptions` 从配置节 `XiHan:MultiTenancy` 读取：
-
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `DefaultTenant` | `string` | 无 | 解析器都没有给出值时使用；同样经过文法与存储校验；空字符串表示清除 |
-| `RequireTenant` | `bool` | `false` | 为真时没有租户的调用返回 `MULTITENANCY_VALIDATION_002` |
-| `ValidateAgainstStore` | `bool` | `true` | 为真时租户必须在存储中存在且启用；为假时只校验文法 |
-| `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型，不能为空 |
-
-布尔值只接受 `true` / `false`，其他写法在启动时抛出 `ArgumentException`。以前的 `ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已删除（缺省分片解析器不再缓存，见[租户分片与分库](/multi-tenancy/sharding)），配置里留着也被忽略。
+上面用到的四个解析选项 `DefaultTenant`、`RequireTenant`、`ValidateAgainstStore`、`TenantClaim` 都在配置节 `XiHan:MultiTenancy`（`MultiTenancyOptions`），类型、缺省值与取值规则见 [MultiTenancy.Abstractions](/packages/multitenancy-abstractions#配置)。例如要求每次调用都带租户：
 
 ```json
 {
@@ -212,7 +193,7 @@ HTTP 调用方的租户只来自声明。以 SimpleApp 为例（`alice` 的记�
 | 匿名，请求头 `baggage: xihan.tenant=acme` | 无租户，这个键入站不收 |
 | 匿名，`RequireTenant` 为真 | `MULTITENANCY_VALIDATION_002` |
 
-主体没有租户声明时（匿名调用、平台级账号）就没有租户。平台账号要进入某个租户，由应用换发带租户声明的令牌，并在换发时核对成员关系。
+主体没有租户声明时（匿名调用、平台级账号）就没有租户。平台账号要进入某个租户，由应用的登录服务换发带目标租户声明的令牌，并在换发时核对成员关系或管理员身份；不要通过 `DefaultTenant` 或关闭 `ValidateAgainstStore` 绕过。
 
 ## 持久化层的租户过滤
 
@@ -234,38 +215,14 @@ public sealed class Invoice : IEntity<Guid>, IMultiTenant
 
 Transaction 阶段的 `UnitOfWorkMiddleware` 用安全上下文里的租户开工作单元（`UnitOfWorkOptions.TenantId`），持久化 Provider 据此施加规则：
 
-- 新增多租户实体时写入工作单元的租户；工作单元没有租户时返回 `PERSISTENCE_VALIDATION_001`。
+- 新增多租户实体时写入工作单元的租户；工作单元没有租户时返回 `PERSISTENCE_VALIDATION_001`（持久化的错误码见 [Persistence.Abstractions](/packages/persistence-abstractions#错误码)）。
 - 查询只返回 `TenantId` 等于当前租户的行；没有租户的调用看不到任何多租户实体。
 - 更新、删除不属于当前租户的实体，与实体不存在一样返回 `PERSISTENCE_NOTFOUND_001`。
 - 更新不能把实体改到别的租户：租户列由 Provider 写，调用方实例上的值不生效。
 
 租户目录（`TenantRecord`）、权限授予（`PermissionGrantRecord`）、审计记录这类平台数据不实现 `IMultiTenant`，不受当前租户过滤，租户在它们自己的列里。仓储与工作单元的完整用法见[仓储读写](/persistence/repositories)与[工作单元与事务](/persistence/unit-of-work)。
 
-## 错误码
-
-| 错误码 | 含义 | HTTP |
-| --- | --- | --- |
-| `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 | 400 |
-| `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 | 400 |
-| `MULTITENANCY_VALIDATION_004` | 已认证主体带多个值不同的租户声明 | 400 |
-| `MULTITENANCY_NOTFOUND_001` | 租户不存在 | 404 |
-| `MULTITENANCY_DENIED_001` | 租户已禁用 | 403 |
-| `MULTITENANCY_CONFLICT_001` | 管理接口新建的租户 ID 属于已删除的租户（墓碑） | 409 |
-| `MULTITENANCY_UNAVAILABLE_001` | 内存租户存储容量已满（`ITenantAdministration.UpsertAsync` 新增的那一项与健康项 `multitenancy.inmemory.capacity`） | 503 |
-| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达） | 503 |
-| `PERSISTENCE_VALIDATION_001` | 多租户实体在没有租户的调用中新增 | 400 |
-
-HTTP 状态码按错误码的种类段映射，与其他子系统一致，见[结果与错误处理](/web/errors)。
-
 ## 常见问题
-
-### 为什么请求头里带了 `baggage: xihan.tenant=acme` 却没有租户
-
-HTTP、gRPC、MCP 入站不收这个键。网络调用方的租户只来自认证：ApiKey 主体记录的 `Tenant`，或令牌里类型为 `TenantClaim` 的声明。要按主机名、请求头选租户，登记自己的 `ITenantResolver`，并自己核对调用方属于该租户。
-
-### 平台管理员怎样进入某个租户
-
-平台账号没有租户声明，解析不出租户。由应用的登录服务换发一张带目标租户声明的令牌（换发时核对成员关系或管理员身份），再用新令牌调用。不要通过 `DefaultTenant` 或关闭 `ValidateAgainstStore` 绕过。
 
 ### 禁用一个租户后它的调用会怎样
 
@@ -282,6 +239,7 @@ Tenant 阶段核对存储时发现 `IsEnabled` 为假，调用以 `MULTITENANCY_
 ## 相关包与下一步
 
 - 包参考：[MultiTenancy.Abstractions](/packages/multitenancy-abstractions)、[MultiTenancy.InMemory](/packages/multitenancy-inmemory)、[MultiTenancy.Database](/packages/multitenancy-database)
+- 错误码与 HTTP 状态：[MultiTenancy.Abstractions](/packages/multitenancy-abstractions#错误码)
 - 规范：RFC-0007《多租户》
 - 相关章节：[执行管道](/startup/pipeline)、[认证](/security/authentication)、[授权与权限](/security/authorization)、[仓储读写](/persistence/repositories)、[审计](/common/auditing)
 - 下一步：[租户分片与分库](/multi-tenancy/sharding)

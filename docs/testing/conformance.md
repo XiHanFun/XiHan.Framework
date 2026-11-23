@@ -8,25 +8,11 @@
 
 ## 套件一览
 
-每个套件包是一组 xUnit v3 抽象测试类，只引用 xUnit 的核心与断言包，不带运行器；测试项目要自己引用 `xunit.v3`。基类与要实现的工厂方法：
+每个套件包是一组 xUnit v3 抽象测试类，只引用 xUnit 的核心与断言包，不带运行器；测试项目要自己引用 `xunit.v3`。各子系统的套件加插件协议的 `Plugins.Conformance`，各自的基类、要实现的工厂方法、可覆写的成员与用例覆盖面按子系统列在 [Conformance 包参考](/packages/conformance)。入口有三种形状：
 
-| 套件包 | 基类 | 实现什么 |
-| --- | --- | --- |
-| `Caching.Conformance` | `CacheStoreConformance` | `CreateStore()` 返回 `ICacheStore`；可覆写 `ExpirationGrace` |
-| `Security.Conformance` | `PermissionGrantStoreConformance` / `PermissionGrantAdministrationConformance` | `CreateStoreAsync(grants)` 返回装好授予的 `IPermissionGrantStore`，访问外部存储的 Provider 覆写 `CreateUnavailableStoreAsync()`；授予管理实现 `StartAsync()` 与 `AdministerAsync(action)`，承诺多实例一致的覆写 `StartPeerAsync()`（可调 `PeerVisibilityTimeout`） |
-| `Messaging.Conformance` | `MessageBrokerConformance` / `MessageStreamConformance` / `OutboxConformance` | `CreateFeature()` 返回提供 `messaging.queue@1`（或流、持久化）的特性；可覆写 `Configuration`、`DeliveryTimeout`、`SupportsMultipleInstances` |
-| `Persistence.Conformance` | `RepositoryConformance` / `DataSourceConformance` / `SchemaConformance` / `IdGeneratorConformance<TKey>` | `CreateFeature()`；数据源与结构套件另实现 `CreateDefinition(name)` 等；标识生成器实现 `CreateGenerator(clock)` |
-| `MultiTenancy.Conformance` | `TenantStoreConformance` / `TenantShardResolverConformance` / `TenantAdministrationConformance` | `CreateStoreAsync(tenants)` / `CreateResolverAsync(tenants)`；租户管理实现 `StartAsync()` 与 `AdministerAsync(action)`，承诺多实例一致的覆写 `StartPeerAsync()`（可调 `PeerVisibilityTimeout`） |
-| `ObjectStorage.Conformance` | `BlobStoreConformance` / `BlobStoreProviderConformance` | `CreateStoreAsync()` 与 `PlantOutsideContractAsync(...)`；`CreateProvider()`、`ValidSettings()`、`OtherValidSettings()` |
-| `Localization.Conformance` | `MessageLocalizerConformance` | `CreateLocalizer(catalogs, options)` |
-| `Scheduling.Conformance` | `JobSchedulerConformance` / `JobStoreConformance` / `LeaderElectionConformance` | `StartAsync(configure, configuration)` 返回 `JobSchedulerHost`；`CreateAsync()`；`CreateElection(clock)` 与 `StartNodeAsync(clock, probe)` |
-| `Workflow.Conformance` | `WorkflowStoreConformance` / `WorkflowEngineConformance` / `WorkflowTaskConformance` | `StartAsync()` 或 `StartAsync(configure, configuration)` 返回套件的宿主句柄 |
-| `Auditing.Conformance` | `AuditTrailConformance` | `CreateFixtureAsync()` 返回 `AuditTrailFixture` |
-| `Configuration.Conformance` | `RemoteConfigurationClientConformance` / `SecretStoreConformance` | `CreateFixtureAsync()` 返回带被测客户端与写入入口的夹具 |
-| `AI.Conformance` | `KnowledgeStoreConformance` / `AIProviderConformance` | `StartAsync()` 返回套件的宿主句柄 |
-| `Plugins.Conformance` | `PluginProtocolConformance` / `WasmPluginConformance` | `PluginDirectory`：插件构建产物目录，见下文 |
-
-以特性为入口的套件（持久化、消息、调度、工作流）自己用 `TestHost` 装配并走完整管道，所以它们验证的是 Provider 在真实管道里的行为，不只是接口方法。各套件的用例覆盖面见 [Conformance](/packages/conformance)。
+- 直接给出被测对象：`CacheStoreConformance.CreateStore()`、`PermissionGrantStoreConformance.CreateStoreAsync(grants)`、`MessageLocalizerConformance.CreateLocalizer(catalogs, options)` 这类工厂方法，或 `CreateFixtureAsync()` 返回带被测对象与写入入口的夹具（审计、配置）。
+- 给出特性：持久化、消息的 `CreateFeature()`，调度、工作流、AI 的 `StartAsync(...)` 返回套件的宿主句柄。这类套件自己用 `TestHost` 装配并走完整管道，验证的是 Provider 在真实管道里的行为，不只是接口方法。
+- 给出插件的构建产物目录：`Plugins.Conformance` 的 `PluginDirectory`，见下文。
 
 ## 最小示例
 
@@ -158,14 +144,6 @@ xihan-conformance vectors
 ### 套件里有一条用例我的后端做不到，能跳过吗
 
 先看基类有没有对应的虚成员：多实例、不可达存储、命名连接、直接写入入口这类差异都有开关，不覆写时相关用例自动跳过。没有开关的用例代表契约语义，做不到说明实现与契约不一致，要改实现或在应用里不声明这个能力。
-
-### 套件要连真实服务，本机没有怎么办
-
-工厂方法里读 `XIHAN_TEST_*` 环境变量，没有就 `Assert.SkipWhen` 跳过；CI 用服务容器提供。本机要跑时用 Docker 起一个服务并设环境变量即可。
-
-### 插件套件和宿主测试有什么区别
-
-`Plugins.Conformance` 与 `xihan-conformance` 验证插件是否遵守协议（握手、生命周期、操作应答、事件确认、stdin 退出），不提供宿主回调。回调权限、会话令牌、崩溃重启、代理操作经管道这些是宿主行为，由宿主包自己的测试覆盖；写插件只需过前者。
 
 ### 我的应用不向框架仓库提交，架构门禁与我有关吗
 

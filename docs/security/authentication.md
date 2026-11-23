@@ -67,19 +67,11 @@
 
 节名是主体 ID；`ApiKey` 必填且至少 8 个字符；`Roles` 逗号分隔；`Claims:*` 下的键值作为附加声明。认证成功的主体按顺序带上：每个角色一条 `RoleClaim` 类型的声明、一条租户声明（有 `Tenant` 时，类型取 `XiHan:MultiTenancy:TenantClaim`，缺省 `tenant`）、附加声明。
 
+Standard 组合包已含 `Security.InMemory`（ApiKey 认证与内存授予），不用再装配特性。接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，在 `app.UseXiHan()` 之后多一个端点：
+
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Security;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// Standard 组合包已含 Security.InMemory：ApiKey 认证与内存授予
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-var app = builder.Build();
-app.UseXiHan();
 
 // 经 UseXiHan() 的端点在 Handle 阶段内执行，主体已由 Authenticate 阶段写进安全上下文
 app.MapGet("/whoami", (HttpContext http) =>
@@ -89,8 +81,6 @@ app.MapGet("/whoami", (HttpContext http) =>
         ? $"{security.Principal.Id} ({security.Principal.AuthenticationScheme}) @ {security.Tenant?.Id ?? "-"}"
         : "anonymous";
 });
-
-app.Run();
 ```
 
 ```bash
@@ -117,23 +107,7 @@ API Key 明文写在配置里，主体与授予都在进程内存中，重启即
 4. 认证成功：写入新的安全上下文，保留已有的租户。
 5. `RequireAuthentication` 为真且主体仍是匿名：返回 `SECURITY_DENIED_001`。
 
-`RequireAuthentication` 缺省为假：匿名调用放行，由各操作的授权要求决定是否需要登录。
-
-| 键（`XiHan:Security`） | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `RequireAuthentication` | `bool` | `false` | 为真时匿名调用在 Authenticate 阶段被拒绝 |
-| `RoleClaim` | `string` | `role` | 承载角色的声明类型；RBAC 检查器与 ASP.NET Core 方案 `XiHan` 都读它 |
-
-```json
-{
-  "XiHan": {
-    "Security": {
-      "RequireAuthentication": false,
-      "RoleClaim": "role"
-    }
-  }
-}
-```
+`RequireAuthentication` 缺省为假：匿名调用放行，由各操作的授权要求决定是否需要登录；既没写授权要求、又没打开它的操作对匿名开放，见[授权与权限](/security/authorization)。它与承载角色的声明类型 `RoleClaim`（缺省 `role`）都在配置节 `XiHan:Security`，见 [Security.Abstractions](/packages/security-abstractions#配置)。
 
 ## 选择认证 Provider
 
@@ -143,23 +117,15 @@ JWT 与 OpenID Connect Provider 只校验令牌，不签发令牌；令牌由应
 
 ### JWT
 
-`Security.Jwt` 校验应用自己签发、HS256 对称密钥签名的 `Bearer` 令牌：
+`Security.Jwt` 校验应用自己签发、HS256 对称密钥签名的 `Bearer` 令牌。同一份 `Program.cs`，`AddXiHan` 多一个特性：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Security.Jwt;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // 显式 Provider 顶替内存实现的认证部分；授权仍由 Security.InMemory 承担
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<JwtSecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ```json
@@ -177,15 +143,9 @@ app.Run();
 }
 ```
 
-| 键（`XiHan:Security:Jwt`） | 缺省 | 说明 |
-| --- | --- | --- |
-| `Secret` | 必填 | 对称密钥，UTF-8 编码后至少 32 字节（`JwtOptions.MinSecretBytes`） |
-| `Issuer` | 不校验 | 配置了才校验签发者 |
-| `Audience` | 不校验 | 配置了才校验受众 |
-| `ClockSkewSeconds` | `60` | 校验有效期时允许的时钟偏移，不能为负 |
-| `NameClaim` | `sub` | 作为主体 ID 的声明类型 |
+`Secret` 必填，UTF-8 编码后至少 32 字节；`Issuer` 与 `Audience` 配置了才校验；`ClockSkewSeconds` 是校验有效期时允许的时钟偏移。各键的类型与缺省值见 [Security.Jwt](/packages/security-jwt#配置)。
 
-签名、`exp` 与有效期始终强制校验。主体 ID 取 `NameClaim` 声明，令牌里没有这条声明同样返回 `SECURITY_DENIED_003`（消息键 `security.token.subject_missing`）；显示名取 `name` 声明；令牌的全部声明按原始类型名进入主体，所以角色声明的类型要与 `XiHan:Security:RoleClaim` 一致，租户声明的类型要与 `XiHan:MultiTenancy:TenantClaim` 一致。密钥放在用户机密、环境变量或远程配置里，不进仓库，见[远程配置与密钥](/configuration/remote)。
+签名、`exp` 与有效期始终强制校验。主体 ID 取 `NameClaim`（缺省 `sub`）声明，令牌里没有这条声明同样返回 `SECURITY_DENIED_003`（消息键 `security.token.subject_missing`）；显示名取 `name` 声明；令牌的全部声明按原始类型名进入主体，所以角色声明的类型要与 `XiHan:Security:RoleClaim` 一致，租户声明的类型要与 `XiHan:MultiTenancy:TenantClaim` 一致。密钥放在用户机密、环境变量或远程配置里，不进仓库，见[远程配置与密钥](/configuration/remote)。
 
 ### OpenID Connect
 
@@ -204,23 +164,9 @@ app.Run();
 }
 ```
 
-| 键（`XiHan:Security:OpenIdConnect`） | 缺省 | 说明 |
-| --- | --- | --- |
-| `Authority` | 必填 | 签发者地址，绝对 http / https URI |
-| `MetadataAddress` | `<Authority>/.well-known/openid-configuration` | 发现文档地址 |
-| `Issuer` | 发现文档的 `issuer` | 期望的签发者，始终校验 |
-| `Audience` | 必填 | 期望的受众（本 API 的标识或客户端 ID）；没有即启动失败 |
-| `ValidateAudience` | `true` | 是否校验受众；只有签发者只为本 API 签发令牌时才设 `false`，此时不需要 `Audience` |
-| `RequireHttpsMetadata` | `true` | 发现文档必须经 HTTPS 取得；只在本地开发时关闭 |
-| `ClockSkewSeconds` | `60` | 有效期校验的时钟偏移 |
-| `RefreshIntervalSeconds` | `43200`（12 小时） | 元数据自动刷新间隔 |
-| `MinimumRefreshIntervalSeconds` | `300`（5 分钟） | 两次按需刷新的最短间隔，也是刷新失败后沿用旧密钥的时长 |
-| `BackchannelTimeoutSeconds` | `30` | 取发现文档与 JWKS 的 HTTP 超时 |
-| `NameClaim` | `sub` | 作为主体 ID 的声明类型 |
+`Authority`（签发者地址）必填，`Audience`（期望的受众）在缺省校验受众时也必填，没有即启动失败；签发者始终校验。发现文档缺省必须经 HTTPS 取得，本地开发时用 `RequireHttpsMetadata: false` 关闭。发现文档地址、刷新间隔、超时等其余键见 [Security.OpenIdConnect](/packages/security-openidconnect#配置)。
 
-元数据按需取得：首次认证时取发现文档的 `issuer` 与 `jwks_uri`，再取 JWKS 的签名密钥并缓存，并发认证只发一次请求。令牌的 `kid` 不在 JWKS 里时（签发者轮换了密钥）按需刷新一次再校验，两次按需刷新至少间隔 `MinimumRefreshInterval`，伪造的 `kid` 不会让签发者被反复请求。
-
-刷新失败时沿用最后一份密钥；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`（HTTP 503），5 秒后再试。读不出的令牌直接返回 `SECURITY_DENIED_003`，不为它访问签发者。`RequireHttpsMetadata` 为真而发现文档地址不是 HTTPS 时，启动读取配置就抛出 `InvalidOperationException`。主体与声明的映射与 JWT Provider 相同。
+元数据按需取得并缓存：首次认证时取发现文档与 JWKS 的签名密钥；令牌的 `kid` 不在 JWKS 里时（签发者轮换了密钥）按需刷新一次再校验，刷新有最短间隔，伪造的 `kid` 不会让签发者被反复请求。刷新失败时沿用最后一份密钥；从未取到元数据时返回 `SECURITY_UNAVAILABLE_003`（HTTP 503）。读不出的令牌直接返回 `SECURITY_DENIED_003`，不为它访问签发者。主体与声明的映射与 JWT Provider 相同。
 
 ## 凭据无效与 401 质询
 
@@ -246,16 +192,6 @@ SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道，Authe
 
 装配写法、查询串令牌路径、会话过滤器与在 Hub 里经 `HttpInvocation.CreateContext` 发起内核调用的完整示例见[端点里使用框架](/web/endpoints)与[实时通信](/web/realtime)。
 
-## 错误码
-
-| 错误码 | 含义 | HTTP |
-| --- | --- | --- |
-| `SECURITY_DENIED_001` | 未认证：`RequireAuthentication` 为真时的匿名调用，或要求认证的策略遇到匿名主体 | 401 |
-| `SECURITY_DENIED_003` | 凭据无效、过期、签名不符，或令牌缺少主体声明 | 401 |
-| `SECURITY_VALIDATION_001` | 认证方案不受支持 | 400 |
-| `SECURITY_UNAVAILABLE_002` | 内存主体存储容量已满（`InMemoryPrincipalStore.Set` 与健康项 `security.inmemory.capacity`） | 503 |
-| `SECURITY_UNAVAILABLE_003` | OpenID Connect 签发者的发现文档或 JWKS 不可达，且没有缓存 | 503 |
-
 ## 常见问题
 
 ### 怎样签发 JWT
@@ -274,13 +210,10 @@ SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道，Authe
 
 `Security.InMemory` 装配后又装配 `Security.Jwt` 时，内存实现让出认证能力，只剩 Bearer。要同时支持两种方案，自己写一个提供 `security.authentication@1` 的特性，登记两个 `IAuthenticationHandler`（方案分别为 `ApiKey` 与 `Bearer`），中间件按方案名匹配。
 
-### 匿名调用为什么能执行操作
-
-`RequireAuthentication` 缺省为假，匿名调用在 Authenticate 阶段放行，是否需要登录由操作契约的 `Permission` / `Policy` 在 Authorize 阶段决定。既没写授权要求、又没打开 `RequireAuthentication` 的操作对匿名开放，见[授权与权限](/security/authorization)。
-
 ## 相关包与下一步
 
 - 包参考：[Security.Abstractions](/packages/security-abstractions)、[Security.InMemory](/packages/security-inmemory)、[Security.Jwt](/packages/security-jwt)、[Security.OpenIdConnect](/packages/security-openidconnect)、[Security.WebAuthn](/packages/security-webauthn)、[Hosting.AspNetCore](/packages/hosting-aspnetcore)
+- 错误码：[Security.Abstractions](/packages/security-abstractions#错误码)
 - 规范：RFC-0008《认证与授权》
 - 相关章节：[通行密钥](/security/webauthn)、[租户解析与隔离](/multi-tenancy/resolution)、[端点里使用框架](/web/endpoints)、[命令行宿主](/protocols/command-line)
 - 下一步：[授权与权限](/security/authorization)

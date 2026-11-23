@@ -32,23 +32,16 @@ AI 的 OpenAI 兼容 Provider：`Kind = openai` 的 Provider 都由本包按配�
 dotnet add package XiHan.Framework.AI.OpenAI --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，只多两个特性：
 
 ```csharp
 using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.AI.OpenAI;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<AIToolsFeature>()
     .UseFeature<OpenAIFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置
@@ -80,16 +73,11 @@ Provider 写在 `XiHan:AI:Providers:<name>` 下，`Kind` 为 `openai`（必填�
 }
 ```
 
-| 键 | 说明 |
-| --- | --- |
-| `Endpoint` | 绝对的 http(s) 地址；空表示官方端点，写错时启动失败 |
-| `ApiKey` | 空时用占位凭据 `no-key` |
-| `ChatModel` | 解析聊天客户端时必填，缺失返回 `AI_VALIDATION_001` |
-| `EmbeddingModel` | 解析嵌入生成器时必填，缺失返回 `AI_VALIDATION_001` |
-| `EmbeddingDimensions` | 请求的嵌入维度，空用模型缺省 |
-| `TimeoutSeconds` | `OpenAIClientOptions.NetworkTimeout`，缺省 100 |
+各键的类型与缺省（含 `DefaultProvider`、提示词、护栏、知识库）见 [AI.Abstractions](./ai-abstractions#配置)，本包对 Provider 几个键的处理：
 
-其余键（`DefaultProvider`、提示词、护栏、知识库）见 [AI.Abstractions](./ai-abstractions#配置)。
+- `ApiKey` 为空时用占位凭据 `no-key`。
+- `ChatModel`、`EmbeddingModel` 缺失时，解析对应的客户端返回 `AI_VALIDATION_001`。
+- `TimeoutSeconds` 同时作 `OpenAIClientOptions.NetworkTimeout`。
 
 ## 主要类型
 
@@ -106,8 +94,6 @@ Provider 写在 `XiHan:AI:Providers:<name>` 下，`Kind` 为 `openai`（必填�
 经代理或在测试里替换传输时，在 `Program.cs` 里给名为 `xihan.ai.openai` 的 `HttpClient` 配置处理器，本包从 `IHttpClientFactory` 取它发请求：
 
 ```csharp
-var builder = WebApplication.CreateBuilder(args);
-
 // 经公司代理访问模型端点；超时不在这里设，由 Provider 的 TimeoutSeconds 决定
 builder.Services.AddHttpClient("xihan.ai.openai")
     .ConfigurePrimaryHttpMessageHandler(static () => new SocketsHttpHandler { Proxy = new WebProxy("http://proxy.internal:8080") });

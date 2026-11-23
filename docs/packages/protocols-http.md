@@ -36,21 +36,15 @@ dotnet add package XiHan.Framework.Protocols.Http --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包，`UseFullProfile()` 会装配 `HttpProtocolFeature`。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.OpenApi;
-using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
+// using XiHan.Framework.Protocols.Http; .Routing; .OpenApi;
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<HttpProtocolFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanOperations();
 app.MapXiHanOpenApi();
-app.Run();
 ```
+
+完整的 `Program.cs` 见[第一个应用](/getting-started/first-app)。
 
 ## 配置
 
@@ -58,6 +52,7 @@ app.Run();
 | --- | --- | --- | --- |
 | `XiHan:Protocols:Http:RoutePrefix` | string | 空 | 全部操作路由的前缀，以 `/` 开头、不以 `/` 结尾 |
 | `XiHan:Protocols:Http:Routes:<操作 ID>` | string | — | `METHOD /template` 显式覆盖；方法限 `GET`、`POST`、`PUT`、`PATCH`、`DELETE` |
+| `XiHan:Protocols:Http:MaxRequestBodyBytes` | long，大于 0 | 4194304（4 MiB） | 操作端点请求体的上限，超过即 400 `PROTOCOLS_VALIDATION_011`；只管操作端点，应用自己映射的端点照 Kestrel 的限制 |
 
 ```json
 {
@@ -79,7 +74,7 @@ OpenAPI 的标题、版本、`servers` 与分组不走配置，由传给 `MapXiH
 | 类型 | 说明 |
 | --- | --- |
 | `HttpProtocolFeature` | 特性入口 |
-| `HttpProtocolOptions` | `RoutePrefix`、`Routes`；`RouteFor(descriptor)` 给出最终路由；`FromConfiguration` |
+| `HttpProtocolOptions` | `RoutePrefix`、`Routes`、`MaxRequestBodyBytes`；`RouteFor(descriptor)` 给出最终路由；`FromConfiguration` |
 | `Routing.OperationEndpointRouteBuilderExtensions` | `MapXiHanOperations()`，返回这组操作端点的约定构建器（`IEndpointConventionBuilder`），加在上面的约定作用于每个操作端点 |
 | `Routing.HttpRouteConvention` | 推导规则：`Derive`、`HasIdentifier`、`HasNestedFields`、`SuccessStatusCode`；常量 `IdentifierProperty` = `id` |
 | `Routing.HttpRoute` | 方法与模板；`Parse("POST /orders:export")` |
@@ -90,7 +85,7 @@ OpenAPI 的标题、版本、`servers` 与分组不走配置，由传给 `MapXiH
 | `OpenApi.OpenApiDocumentLink` | 一份文档的名字、标题与地址，给文档界面登记 |
 | `OpenApi.OpenApiEndpointConventionBuilderExtensions` | `WithXiHanOperationSchema(request, response)`：普通端点声明引用哪个操作的 Schema |
 | `OpenApi.OpenApiDocumentSource`、`OpenApi.OpenApiDocumentBuilder` | 不经宿主生成文档：`FromServices(...)` 组装输入，`Build(source)` 生成字节 |
-| `HttpErrors` | `PROTOCOLS_CONFLICT_002`、`PROTOCOLS_VALIDATION_010` |
+| `HttpErrors` | `PROTOCOLS_CONFLICT_002`、`PROTOCOLS_VALIDATION_010`、`PROTOCOLS_VALIDATION_011`、`PROTOCOLS_VALIDATION_012` |
 | `HttpMessages` | 生成器文案的消息键（`protocols.http.openapi_*`） |
 
 ## 使用示例
@@ -109,26 +104,7 @@ OpenAPI 的标题、版本、`servers` 与分组不走配置，由传给 `MapXiH
 }
 ```
 
-发布带分组的文档，并把全部文档地址交给文档界面：
-
-```csharp
-using XiHan.Framework.Protocols.Http.OpenApi;
-
-var openApi = new OpenApiOptions
-{
-    Title = "Orders API",
-    Version = "v1",
-    Groups = [new OpenApiGroup("orders", 1, ["xihan.samples.orders"])],
-};
-app.MapXiHanOpenApi(openApi);   // /openapi.json 与 /openapi/orders.json
-
-foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
-{
-    app.Logger.LogInformation("OpenAPI document {Name}: {Url}", link.Name, link.Url);
-}
-```
-
-路由推导与绑定的完整说明见 [HTTP 路由与载荷](/web/routing)，文案键与普通端点收录见[规范化接口文档](/web/openapi)。
+路由推导与绑定的完整说明见 [HTTP 路由与载荷](/web/routing)；文档选项、分组、文案键与普通端点收录的写法见[规范化接口文档](/web/openapi)。
 
 ## 行为与限制
 
@@ -136,21 +112,17 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 - 只有 `POST`、`PUT`、`PATCH` 读请求体，请求体必须是 JSON 对象；路由值优先于请求体，请求体优先于查询串。
 - OpenAPI 文档端点绕过内核管道、不鉴权；文档按 `(分组, 区域)` 各缓存一份，装配了本地化时按 `Accept-Language` 协商区域。
 - 普通端点的 JSON 类型只引用已登记操作的 Schema，不做第二套推导。
-- 路由推导的细节：请求声明了 `id` 属性时 `get` → `GET /{resource}/{id}`、`update` → `PUT /{resource}/{id}`、`delete` → `DELETE /{resource}/{id}`、其他动词 → `POST /{resource}/{id}:{verb}`；契约声明只读且请求没有嵌套对象的自定义动词改用 `GET`（Google AIP-136，ADR-0041）；没有 `id` 时去掉 `/{id}` 段，落在集合（或单例资源）上（`GET /{resource}`、`PUT /{resource}`、`DELETE /{resource}`、`POST /{resource}:{verb}`）；`get` / `list` / `delete` 的请求带嵌套对象时（GET / DELETE 不读请求体）改用 POST 自定义动词（`POST /{resource}:list`）。是否含 `id` 看请求的序列化元数据，没有类型化元数据的插件代理看请求 Schema 的 `properties`。
-- 绑定的细节：路由值与查询串按请求类型序列化元数据里的属性类型写成 JSON 布尔、整数、浮点、数值枚举或数组（集合属性的单值也写成数组），属性名取序列化名、不分大小写匹配；找不到属性或没有元数据（插件代理）时写字符串，多值写字符串数组。属性名按请求类型序列化上下文的命名策略匹配，建议 `PropertyNamingPolicy = CamelCase` 加 `PropertyNameCaseInsensitive = true`（示例里的 `SampleJsonContext`）。
-- 响应：幂等回放时端点不执行，由 `UseXiHan()` 用挂在端点元数据上的 `OperationResponseWriter` 写出首次的状态码与正文（ADR-0064）；失败写成 RFC 9457 Problem Details，`detail` 按 `Accept-Language` 本地化，VALIDATION 错误带字段级 `errors`（字段键 → 本地化消息数组），所有错误带标量 `details`，见 `Hosting.AspNetCore`。授权在 Authorize 阶段按契约的权限或策略判定（描述经端点元数据进入上下文）。
-- OpenAPI 生成：`MapXiHanOpenApi(options?, pattern = "/openapi.json")` 按需生成 OpenAPI 3.1 并缓存，操作登记表或分组来源（`IOpenApiGroupSource`）的变更令牌触发即丢掉缓存（ADR-0251）；`OpenApiOptions` 缺省标题取应用名、版本取框架版本、不写 `servers`。路径与方法同路由推导；路由参数与（无请求体方法的）查询参数、请求体、成功响应都来自 `OperationSchema`，`$defs` 提升到 `components/schemas`（字符串枚举定义也是一个组件，属性与查询参数以 `$ref` 引用）；失败响应统一引用 `ProblemDetails` 组件（标准成员加 `code`、`traceId`、`errors`：字段键 → 字符串数组、`details`：名字 → 标量）；没有 Schema 的操作只发布路径与 `operationId`。`OpenApiDocumentBuilder.Build(OpenApiDocumentSource)` 是不经宿主的生成入口（测试与工具用），`OpenApiDocumentSource.FromServices(services, options, endpoints, locale)` 从容器组装与 `MapXiHanOpenApi` 相同的输入（登记表、权限码注册表、认证方案、普通端点、按区域的摘要），导出工具据此得到与 `/openapi.json` 逐字节相同的文档（ADR-0034）。
-- OpenAPI 认证方案（ADR-0032）：容器里有 `Scheme == "Bearer"` 的 `IAuthenticationHandler`（`Security.Jwt`、`Security.OpenIdConnect`）时发布 `components.securitySchemes.bearer`（`http` / `bearer` / `JWT`）并挂全局 `security: [{ bearer: [] }]`，没有权限也没有策略要求的操作与端点标 `security: []`；权限码与策略名不进 scope，仍只走 `x-xihan-*`；ApiKey 等其他方案不发布。
-- OpenAPI 操作文案（ADR-0052）：`summary` 取消息目录里 `<操作 ID>.title`，`description` 取 `<操作 ID>.description`（`-` 换 `_`，与 MCP `tools/list` 同两个键），各自没有就不写；授权要求由生成器按区域附在 `description` 末尾一行（`HttpMessages`：需要权限 <码>（<显示名>）/ 需要策略 <名> / 需要登录），权限的显示名先取 `permissions.<权限码>.name`（`-` 换 `_`），没有再取权限定义的；`x-xihan-permissions` 的 `displayName` / `description` 同样先取 `permissions.<权限码>.name` / `.description`，文案里不要再手写。装配了本地化时按 `Accept-Language` 协商出的区域分别生成与缓存（`Content-Language` 标出区域，缺省 `en-US`），没有装配时只有一份文档、没有目录文案。
-- OpenAPI 标签、分组与字段说明（ADR-0052）：顶层 `tags` 的 `x-displayName` / `description` 取 `openapi.tags.<资源段>.name` / `.description`，`name` 仍是资源码；`OpenApiOptions.Groups` 声明 `OpenApiGroup(名字, 排序, 所属特性, 额外标签)`，全量文档带 `x-tagGroups`（一个标签只归排序靠前的一组），每组另发 `/openapi/<组名>.json`（标题取 `openapi.groups.<组名>.name`），`GetXiHanOpenApiDocuments()` 列出全部文档给 Scalar：`foreach (var link in app.GetXiHanOpenApiDocuments(options)) scalar.AddDocument(link.Name, link.Title, link.Url);`。Schema 里 `Kernel.Generators` 从 XML 注释折进的 `description` 进参数、请求体与成功响应（没有根说明时是按区域的「成功」）；某个区域可用 `openapi.schemas.<snake_case 的 Schema 名>.description` 与 `.properties.<snake_case 的属性名>` 覆盖。
-- OpenAPI 普通端点（ADR-0032）：`EndpointDataSource` 里没有 `OperationDescriptor`、有 HTTP 方法元数据、带 `IAcceptsMetadata` 或 `IProducesResponseTypeMetadata` 之一、没有 `ExcludeFromDescription()` 的路由端点进文档，Hub、探针、重定向、静态资源没有这两种元数据，自然不进。路由参数作 `path` 参数（`string`）；`WithName` 作 `operationId`，`WithSummary` / `WithDescription` / `WithTags` 照搬；`RequireXiHanPermission` / `RequireXiHanPolicy` / `RequireXiHanAuthentication` 出 `x-xihan-permission` / `x-xihan-policy`，权限码并入 `x-xihan-permissions`。`Accepts` / `Produces` 按内容类型写：JSON 只引用已登记操作的根 Schema（显式 `WithXiHanOperationSchema(request:, response:)`，或按 `Accepts<T>` / `Produces<T>` 的类型与操作的请求 / 响应类型自动匹配，取 ID 最小且有 Schema 的操作；被引用的根提升到 `components/schemas/<title>`，操作自己也改为 `$ref`），`multipart/form-data` 是含 `format: binary` 属性（`file` / `files`）的对象，表单是对象，`text/*` 与 `string` 是字符串，其余二进制是 `format: binary` 的字符串；失败响应同样引用 `ProblemDetails`。
-- OpenAPI 权限扩展（ADR-0031）：契约有 `Permission` 的操作带 `x-xihan-permission`（权限码），有 `Policy` 的带 `x-xihan-policy`（策略名），都没有则不带；不占用标准 `security` / `securitySchemes`（权限码不是 OAuth scope）。`components.x-xihan-permissions` 按权限码（序数排序）给出权限定义，收录范围是文档里已发布操作引用的权限码加上 `PermissionRegistry` 登记的全部定义：只在 gRPC / MCP 暴露的操作或端点级 `RequireXiHanPermission` 用到的权限也在其中，授权界面据此生成；被引用但未登记的只有 `code`，`description` 为 null 时省略。自己构造 `OpenApiDocumentSource(registry, options)` 交给 `OpenApiDocumentBuilder.Build(source)` 时，`Permissions` 为 null 只按引用写。形如：`{ "paths": { "/orders": { "post": { "operationId": "orders.create", "x-xihan-permission": "orders.write" } } }, "components": { "x-xihan-permissions": { "orders.write": { "code": "orders.write", "displayName": "Place orders" } } } }`。
+- 路由推导与载荷绑定的规则（实例级与集合级、嵌套对象改用 POST、只读的自定义动词走 GET、路由值与查询串按属性类型写成 JSON）见 [HTTP 路由与载荷](/web/routing)。是否含 `id`、是否有嵌套对象看请求的序列化元数据，没有类型化元数据的插件代理看请求 Schema 的 `properties`。
+- 响应：幂等回放时端点不执行，由 `UseXiHan()` 用挂在端点元数据上的 `OperationResponseWriter` 写出首次的状态码与正文（ADR-0064）；失败写成 RFC 9457 Problem Details，见 [ASP.NET Core 宿主](/web/hosting#problem-details)。授权在 Authorize 阶段按契约的权限或策略判定（描述经端点元数据进入上下文）。
+- OpenAPI：文档的输入、认证方案（ADR-0032）、权限扩展（ADR-0031）、按区域的文案与分组（ADR-0052）、普通端点的收录规则与不经宿主的导出入口（ADR-0034），都在[规范化接口文档](/web/openapi)里。
 
 | 情形 | 何时 | 错误码 |
 | --- | --- | --- |
 | 两个操作推导出同一条路由 | `MapXiHanOperations()` | `PROTOCOLS_CONFLICT_002` |
 | 普通端点与操作共用一条路由 | 第一次请求文档 | `PROTOCOLS_CONFLICT_002` |
 | 普通端点的 JSON 类型引用不到操作的 Schema | 第一次请求文档 | `PROTOCOLS_VALIDATION_010` |
+| 请求体超过 `MaxRequestBodyBytes` | 绑定 | `PROTOCOLS_VALIDATION_011`（400） |
+| 有请求体而 `Content-Type` 不是 JSON 类型 | 绑定 | `PROTOCOLS_VALIDATION_012`（400） |
 | 请求体不是 JSON 对象 | 绑定 | `KERNEL_VALIDATION_001`（400） |
 | 前缀、路由文本或操作 ID 不合法 | 读取配置 | `ArgumentException` |
 

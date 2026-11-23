@@ -42,13 +42,11 @@
 dotnet add package XiHan.Framework.Caching.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 已经装配本包；不用组合包时，在[第一个应用](/getting-started/first-app)的 `Program.cs` 里单独装配：
 
 ```csharp
 using XiHan.Framework.Caching.InMemory;
-using XiHan.Framework.Hosting.AspNetCore;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseFeature<InMemoryCachingFeature>());
 ```
 

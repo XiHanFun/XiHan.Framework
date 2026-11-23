@@ -68,8 +68,6 @@ builder.AddXiHan(x => x.UseFeature<InMemoryPersistenceFeature>());
 | `InMemoryPersistenceOptions` | 选项：`MaxEntitiesPerType`；`FromConfiguration(configuration)` |
 | `InMemoryStore` | 单例存储；`Clear()` 清空全部表，同时是健康项贡献者；表、工作单元与仓储实现不公开，经 `IRepository<TEntity, TKey>` 与 `IUnitOfWork` 使用 |
 
-应用代码只通过 `IRepository<TEntity, TKey>` 与 `IUnitOfWork` 使用它们；`InMemoryStore.Clear()` 可在测试之间重置数据。
-
 ## 使用示例
 
 测试里清空存储，保证用例之间互不影响：
@@ -102,16 +100,7 @@ host.Services.GetRequiredService<InMemoryStore>().Clear();
 - 实体目录（ADR-0078）：表名取实体类型名，列取有公开 setter 的非集合属性、列名即属性名；库结构读取不支持，返回 `PERSISTENCE_UNAVAILABLE_008`。
 - 运行时数据源（ADR-0078）不支持：内存实现没有数据库。注册表 `DataSourceRegistry` 照样登记，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。
 
-| 错误码 | 何时出现 |
-| --- | --- |
-| `PERSISTENCE_CONFLICT_002` | 新增的标识已在表或覆盖层里（含已软删除、其他租户）；提交时发现新增的标识已被别的工作单元提交 |
-| `PERSISTENCE_CONFLICT_001` | 更新的游离实例并发戳与当前值不同；提交时发现更新或删除的行已被别的工作单元删除或改过 |
-| `PERSISTENCE_NOTFOUND_001` | 更新或删除的实体不存在或不可见 |
-| `PERSISTENCE_VALIDATION_001` | 多租户实体没有当前租户 |
-| `PERSISTENCE_VALIDATION_002` | 工作单元状态不允许（抛异常） |
-| `PERSISTENCE_UNEXPECTED_001` | 只读工作单元里新增、更新、删除；提交时返回写入阶段被拒的同一错误 |
-| `PERSISTENCE_UNAVAILABLE_002` | 表已满（提交结果与健康项） |
-| `PERSISTENCE_UNAVAILABLE_008` | 运行时数据源与库结构读取：内存实现不支持 |
+上面各条是内存实现特有的触发条件：新增的重复判定看表与覆盖层（含已软删除、其他租户的行），其余失败（不存在、缺租户、工作单元状态）与其他 Provider 相同。全部错误码见 [Persistence.Abstractions](./persistence-abstractions#错误码)。
 
 ## 相关
 

@@ -84,22 +84,13 @@ public sealed class NotificationsFeature : IFeature
 }
 ```
 
+`Program.cs` 沿用[第一个应用](/getting-started/first-app)的写法，回调里只装配 Minimal 组合与这个特性：
+
 ```csharp
-using Shop.Notifications;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Minimal;
-
-var builder = WebApplication.CreateBuilder(args);
-
 // Minimal 组合没有消息子系统，messaging.queue@1 无人提供
 builder.AddXiHan(xihan => xihan
     .UseMinimalProfile()
     .UseFeature<NotificationsFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanHealth();
-app.Run();
 ```
 
 启动日志里这个节点的依赖去向：
@@ -138,13 +129,6 @@ xihan.shop.notifications 1.0.0
 因此加入一个 Provider 就会顶替同一能力的默认实现，不需要移除组合包里的 `UseFeature`：
 
 ```csharp
-using XiHan.Framework.Caching.Redis;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-
-var builder = WebApplication.CreateBuilder(args);
-
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()                // 含 Caching.InMemory（default），提供 caching.local 与 caching.distributed
     .UseFeature<RedisCachingFeature>()   // Provider：caching.distributed 改由 Redis 提供
@@ -229,10 +213,6 @@ dotnet run --project framework/samples/SimpleCli -- graph
 ```
 
 ## 常见问题
-
-### 我只想换掉一个子系统的实现，要动组合包吗
-
-不用。保留 `UseStandardProfile()`，再 `UseFeature<某个 Provider 特性>()` 即可：Provider 的 `Role` 是 `Provider`，默认实现的 `Role` 是 `Default`，前者自动胜出。这也是组合包能保持简单的原因。
 
 ### 两个 Provider 都想保留，分别服务不同用途怎么办
 

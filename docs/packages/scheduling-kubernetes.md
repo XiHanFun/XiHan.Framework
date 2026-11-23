@@ -48,15 +48,13 @@
 dotnet add package XiHan.Framework.Scheduling.Kubernetes --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包（`Program.cs` 的其余部分见[第一个应用](/getting-started/first-app)）：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Profiles.Full;
 using XiHan.Framework.Scheduling.Kubernetes;
 
-var builder = WebApplication.CreateBuilder(args);
-// API Server 的环境变量存在即运行在 Pod 里
+// API Server 的环境变量存在即运行在 Pod 里；本地运行退回 Full 组合自带的进程内选举
 var inCluster = Environment.GetEnvironmentVariable("KUBERNETES_SERVICE_HOST") is not null;
 builder.AddXiHan(xihan =>
 {

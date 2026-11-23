@@ -39,13 +39,11 @@
 dotnet add package XiHan.Framework.Messaging.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 已经装配本包；不用组合包时，在[第一个应用](/getting-started/first-app)的 `Program.cs` 里单独装配：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Messaging.InMemory;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseFeature<InMemoryMessagingFeature>());
 ```
 
@@ -54,13 +52,12 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryMessagingFeature>());
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 每个主题的通道容量，也是该主题死信列表的容量 |
-| `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
 
 ```json
 { "XiHan": { "Messaging": { "MaxAttempts": 5, "InMemory": { "MaxQueuedMessages": 50000 } } } }
 ```
 
-本包不使用 `DeadLetterSuffix`：死信留在内存列表里，不发布到死信主题。
+投递次数上限 `XiHan:Messaging:MaxAttempts` 是各 Provider 共用的键，见 [Messaging.Abstractions](./messaging-abstractions#配置)。本包不使用 `DeadLetterSuffix`：死信留在内存列表里，不发布到死信主题。
 
 ## 主要类型
 

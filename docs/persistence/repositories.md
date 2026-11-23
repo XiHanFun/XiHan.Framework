@@ -120,7 +120,7 @@ public sealed class RenameOrder(IRepository<Order, Guid> orders) : IOperation<Re
 
 ### 并发戳
 
-实现 `IHasConcurrencyStamp` 的实体在新增与更新时拿到新的 32 位十六进制戳。更新游离实例（没有先 `FindAsync`，直接 `new` 一个带 `Id` 的实例）时，仓储先比对实例上的戳与存储里的戳，不同即返回 `PERSISTENCE_CONFLICT_001`。典型用法是把戳随表单带到前端、提交时带回来：两个人同时编辑同一条记录，后提交的那个得到冲突，而不是悄悄覆盖先提交的改动。
+实现 `IHasConcurrencyStamp` 的实体在新增与更新时拿到新的 32 位十六进制戳。更新游离实例（没有先 `FindAsync`，直接 `new` 一个带 `Id` 的实例）时，仓储先比对实例上的戳与存储里的戳，不同即返回 `PERSISTENCE_CONFLICT_001`。典型用法是把戳随表单带到前端、提交时带回来：两个人同时编辑同一条记录，后提交的那个得到冲突，而不是悄悄覆盖先提交的改动。遇到冲突就把它返给调用方，让对方重新加载再提交，不要在循环里重试覆盖；读出后立即改再写回的实例戳是最新的，正常情况下不会冲突。
 
 ### 并发新增同一标识
 
@@ -185,27 +185,14 @@ public sealed class ArchiveOrders(IRepository<Order, Guid> orders) : IOperation<
 
 ## 软删除与租户过滤
 
-两项过滤都由仓储显式施加在每个查询上（EF Core 用 `EF.Property`，SqlSugar 用表达式），不用 ORM 的全局查询过滤器，`FindAsync`、`FindManyAsync` 与 `ListAsync` 的行为一致。
+两项过滤都由仓储显式施加在每个查询上（EF Core 用 `EF.Property`，SqlSugar 用表达式），不依赖 ORM 的全局查询过滤器，`FindAsync`、`FindManyAsync` 与 `ListAsync` 的行为一致。
 
 - 实现 `ISoftDeletable` 的实体：删除只打标；查询默认排除，`IncludeDeleted = true` 时包含。已软删除的实体不能经仓储恢复，需要恢复时用 Provider 的客户端。
-- 实现 `IMultiTenant` 的实体：当前租户是工作单元的 `TenantId`，管道里取自 Tenant 阶段写入的安全上下文。新增时写入当前租户；查询只返回同一租户的行；没有当前租户的调用看不到任何多租户实体，新增返回 `PERSISTENCE_VALIDATION_001`。
+- 实现 `IMultiTenant` 的实体：当前租户是工作单元的 `TenantId`，管道里取自 Tenant 阶段写入的安全上下文。新增时写入当前租户；查询只返回同一租户的行；没有当前租户的调用看不到任何多租户实体，新增返回 `PERSISTENCE_VALIDATION_001`。要跨租户看数据，用 Provider 的客户端直接查。
 - 新增时的重复判定不看可见性：已软删除或属于其他租户的同键行同样与新标识冲突。
 - 租户只在新增时写入：更新与删除沿用存储的租户，不能借更新把实体搬到别的租户。
 
-直接用 `DbContext` 或 `ISqlSugarClient` 查询时没有这两项过滤。`Persistence.Generators` 生成的 `<实体>Filters` 规约让你用同一条件补上，也能在内存里筛一批已取出的实体：
-
-```csharp
-using Microsoft.EntityFrameworkCore;
-using SimpleApp.Orders;
-
-// 内存里筛一批已经取出的订单
-var active = loaded.Where(OrderFilters.ActiveFor("acme").IsSatisfiedBy).ToList();
-
-// 直接查 DbContext 时没有仓储的过滤，用同一条规约补上
-var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria).CountAsync(cancellationToken);
-```
-
-`loaded` 是一组 `Order`，`db` 是应用的 `DbContext`。租户如何解析见[租户解析与隔离](/multi-tenancy/resolution)，按租户分库时连接怎么选见[租户分片与分库](/multi-tenancy/sharding)。
+直接用 `ISqlSugarClient` 查询时没有这两项过滤；EF Core 的 `DbContext` 在工作单元里只按租户过滤（见[直接使用 DbContext](/persistence/entity-framework-core#直接使用-dbcontext)），软删除条件同样要自己加。`Persistence.Generators` 生成的 `<实体>Filters` 规约让你用同一条件补上（`db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)`），也能在内存里筛一批已取出的实体，写法见 [Persistence.Generators 的使用示例](/packages/persistence-generators#使用示例)。租户如何解析见[租户解析与隔离](/multi-tenancy/resolution)，按租户分库时连接怎么选见[租户分片与分库](/multi-tenancy/sharding)。
 
 ## 规约里的字符串匹配
 
@@ -215,24 +202,13 @@ var count = await db.Set<Order>().Where(OrderFilters.ActiveFor("acme").Criteria)
 
 ## 常见问题
 
-### `FindAsync` 找不到，但库里明明有这行
-
-三种可能：这行已软删除（`IsDeleted = true`）；这行属于别的租户；当前调用没有租户而实体是多租户的。前两种对仓储来说都是「不存在」。要看已删除的行用 `IncludeDeleted = true` 的查询；要跨租户看数据用 Provider 的客户端直接查。
-
-### 为什么 `UpdateAsync` 返回 `PERSISTENCE_CONFLICT_001`
-
-传入的实例带着旧的并发戳，存储里的行在这之间被别人改过了。正确的处理是把冲突返给调用方让它重新加载再提交，不要在循环里重试覆盖。读出后立即改再写回的实例，戳是最新的，正常情况下不会冲突。
-
-### 批量方法里一项失败，其他项会写进去吗
-
-会，只要处理器返回成功。批量方法只报告逐项结果，不替你决定事务成败。要全有或全无就把第一个失败项作为操作结果返回；要接受部分成功就收集失败项返回给调用方。
-
 ### 为什么分页的 `take` 最多 1000
 
-这是对无界查询的保护：`EntityQuery.DefaultMaxTake` 是上限也是缺省值，超过它不是截断而是拒绝，防止一个漏写分页的查询拉回整张表。要更多行就分页；真正的全表导出用 Provider 的客户端流式读取。
+这是对无界查询的保护：超过上限不是截断而是拒绝，防止一个漏写分页的查询拉回整张表。真正的全表导出用 Provider 的客户端流式读取。
 
 ## 相关包与下一步
 
 - 相关包：[Persistence.Abstractions](/packages/persistence-abstractions)、[Persistence.InMemory](/packages/persistence-inmemory)、[Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore)、[Persistence.SqlSugar](/packages/persistence-sqlsugar)、[Persistence.Generators](/packages/persistence-generators)
+- 错误码：[Persistence.Abstractions 的错误码表](/packages/persistence-abstractions#错误码)
 - 规范：RFC-0005《领域协议与持久化》、`conventions/batch-first.md`《批量优先》
 - 下一页：[工作单元与事务](/persistence/unit-of-work)，讲事务怎样开启、提交与回滚，以及在管道外怎样自己开工作单元

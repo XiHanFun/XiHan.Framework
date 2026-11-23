@@ -24,7 +24,7 @@ XiHan.Framework 因此不另造配置模型：应用与框架都读同一个 `IC
 
 特性在装配时读取一次选项并登记为单例。也就是说 `AddXiHan` 返回之后再改 `XiHan:*` 下的键，要重启才对框架生效。命名存储实例是例外，它的定义在首次取用时才从 `XiHan:ObjectStorage:Stores:<name>` 读取，见[分片、预签名与命名实例](/object-storage/advanced)。
 
-`AddXiHan` 在调用时就求解能力图谱、解析资源绑定、装配全部特性，所以远程配置、密钥这类配置源必须在 `AddXiHan` 之前加入 `builder.Configuration`，否则框架的选项与绑定读不到它们。
+`AddXiHan` 在调用时就求解能力图谱、解析资源绑定、装配全部特性，所以远程配置、密钥这类配置源必须在 `AddXiHan` 之前加入 `builder.Configuration`，否则框架的选项与绑定读不到它们；后加入的配置源覆盖先加入的，完整顺序见[配置目录与热更新](/configuration/config-directory#配置源的优先级)。
 
 ## 配置节命名
 
@@ -41,8 +41,8 @@ XiHan.Framework 因此不另造配置模型：应用与框架都读同一个 `IC
 几条约定：
 
 - 时长类的键带单位后缀（`StopTimeoutSeconds`、`RefreshIntervalSeconds`、`MultipartExpiryHours`），在代码里对应 `TimeSpan` 属性。
-- 值不合法（负数、无法解析的枚举或布尔值）时 `FromConfiguration` 抛出 `ArgumentException`，应用在启动期失败，不会带着错误配置运行。
-- 应用自己的配置节用自己的名字，不放进 `XiHan` 下。下面的示例用 `Sample`。
+- 值不合法（负数、无法解析的枚举或布尔值）时 `FromConfiguration` 抛出 `ArgumentException`，消息里给出键名，应用在启动期失败，不会带着错误配置运行。
+- 应用自己的配置节用自己的名字，不放进 `XiHan` 下：`XiHan:<领域>` 保留给框架与 Provider 包，应用放进去会与将来新增的包冲突。下面的示例用 `Sample`。
 - 特性清单的 `Contributes.Config` 声明它读取的配置的最近公共节：只读自己子节的写子节（`Caching.Hybrid` 写 `XiHan:Caching:Hybrid`），同时读领域节下公共选项的写领域节（`Caching.Redis` 还读 `XiHan:Caching:Idempotency`，写 `XiHan:Caching`），见[特性与清单](/startup/features)与规范 RFC-0002。
 
 ## 最小示例
@@ -64,24 +64,13 @@ public sealed class BannerOptions
 再在 `Program.cs` 里绑定并使用：
 
 ```csharp
-// Program.cs
 using Microsoft.Extensions.Options;
-using Shop;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
+// 接在第一个应用的 Program.cs 上。builder.Build() 之前绑定：
 builder.Services.Configure<BannerOptions>(builder.Configuration.GetSection(BannerOptions.Section));
 
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-var app = builder.Build();
-app.UseXiHan();
-
-// 读 CurrentValue 而不是在启动时缓存，配置源重载后返回新值
+// app.UseXiHan() 之后：读 CurrentValue 而不是在启动时缓存，配置源重载后返回新值
 app.MapGet("/banner", (IOptionsMonitor<BannerOptions> banner) => banner.CurrentValue.Banner);
-
-app.Run();
 ```
 
 `appsettings.json`：
@@ -138,92 +127,68 @@ builder.Services.AddOptions<BannerOptions>()
 
 ## 配置节一览
 
-下表列出各包在代码里读取的配置节（`ConfigurationSection` 常量与 `FromConfiguration` 读取的键）。`XiHan:Providers:<能力 ID>` 指定某个能力由哪份清单提供，原理见[能力图谱与 Provider](/startup/capabilities)；`XiHan:Bindings` 见 [资源绑定](/configuration/bindings)。
+下表是配置节到包的索引：每个包在代码里读取哪个配置节（`ConfigurationSection` 常量）。键、类型与缺省值只写在对应包页的「配置」一节，这里不重复。
 
 | 配置节 | 所属包 | 用途 |
 | --- | --- | --- |
-| `XiHan:Providers` | [Kernel](/packages/kernel) | `<能力 ID>` → 清单 ID，指定能力的提供者 |
-| `XiHan:Bindings` | [Kernel](/packages/kernel) | 资源绑定 |
-| `XiHan:Kernel` | [Kernel](/packages/kernel) | `StartTimeoutSeconds`、`StopTimeoutSeconds`、`FailurePolicy`、`UseBuiltInMiddleware` |
-| `XiHan:Kernel:Banner` | [Kernel](/packages/kernel) | `Enabled`：宿主启动时是否打印启动 Banner，见[装配入口](/startup/bootstrap#启动-banner) |
-| `XiHan:Kernel:Resilience` | [Kernel](/packages/kernel) | Resilience 阶段的默认策略，`Operations:<操作 ID>` 按操作覆盖，见[弹性与限流](/common/resilience) |
-| `XiHan:Persistence:InMemory` | [Persistence.InMemory](/packages/persistence-inmemory) | `MaxEntitiesPerType` |
-| `XiHan:Persistence:EntityFrameworkCore` | [Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore) | `EnsureCreated`、`HealthProbeIntervalSeconds` |
-| `XiHan:Persistence:SqlSugar` | [Persistence.SqlSugar](/packages/persistence-sqlsugar) | `InitTables`、`CommandTimeoutSeconds`、`Replicas:*`（从库的权重与健康探测）、`HealthProbeIntervalSeconds` |
-| `XiHan:Persistence:Snowflake` | [Persistence.Abstractions](/packages/persistence-abstractions) | 雪花标识：`WorkerId`、`Epoch`、`LeaseTimeToLiveSeconds`、`ClockDriftToleranceMilliseconds` |
-| `XiHan:MultiTenancy` | [MultiTenancy.Abstractions](/packages/multitenancy-abstractions) | `DefaultTenant`、`RequireTenant`、`TenantClaim`、`ValidateAgainstStore` |
-| `XiHan:MultiTenancy:InMemory` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | `MaxTenants` |
-| `XiHan:MultiTenancy:Tenants` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | 从配置装载的租户（`DisplayName`、`IsEnabled`、`Properties`） |
-| `XiHan:MultiTenancy:Database` | [MultiTenancy.Database](/packages/multitenancy-database) | `CacheTimeToLiveSeconds`（目录缓存的兜底存活时间，容量由 `caching.local` 的 Provider 管） |
-| `XiHan:Security` | [Security.Abstractions](/packages/security-abstractions) | `RequireAuthentication`、`RoleClaim` |
-| `XiHan:Security:Outbound` | [Kernel](/packages/kernel) | [出站地址策略](/security/outbound)：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
-| `XiHan:Security:InMemory` | [Security.InMemory](/packages/security-inmemory) | 开发用主体与授予（`Principals`、`Grants`） |
-| `XiHan:Security:Database` | [Security.Database](/packages/security-database) | `CacheTimeToLiveSeconds`（授予缓存的兜底存活时间，容量由 `caching.local` 的 Provider 管） |
-| `XiHan:Security:Jwt` | [Security.Jwt](/packages/security-jwt) | `Issuer`、`Audience`、`Secret`、`ClockSkewSeconds`、`NameClaim` |
-| `XiHan:Security:OpenIdConnect` | [Security.OpenIdConnect](/packages/security-openidconnect) | `Authority`、`Audience`、元数据地址与刷新间隔 |
-| `XiHan:Security:Ip2Region` | [Security.Ip2Region](/packages/security-ip2region) | xdb 数据文件路径 `V4Database`、`V6Database` |
-| `XiHan:Caching:InMemory` | [Caching.InMemory](/packages/caching-inmemory) | `MaxEntries`、`DefaultTimeToLiveSeconds` |
-| `XiHan:Caching:Redis` | [Caching.Redis](/packages/caching-redis) | `Configuration`、`KeyPrefix`、`DefaultTimeToLiveSeconds`、`PublishChanges`、`HealthProbeIntervalSeconds` |
-| `XiHan:Caching:Hybrid` | [Caching.Hybrid](/packages/caching-hybrid) | `LocalCapacity`、`LocalTimeToLiveSeconds` |
-| `XiHan:Caching:Remote` | [Caching.Remote](/packages/caching-remote) | `TimeoutMilliseconds` |
-| `XiHan:Caching:Idempotency` | [Caching.Abstractions](/packages/caching-abstractions) | 幂等记录的 `TimeToLiveSeconds`、`InProgressTimeToLiveSeconds` |
-| `XiHan:Messaging` | [Messaging.Abstractions](/packages/messaging-abstractions) | `MaxAttempts`、`DeadLetterSuffix`、`InstanceId` |
-| `XiHan:Messaging:Outbox` | [Messaging.Abstractions](/packages/messaging-abstractions) | 发件箱的 `PollIntervalSeconds`、`BatchSize`、`MaxAttempts`、`RetryDelaySeconds`、`MaxRetryDelaySeconds`、`DispatchedRetentionSeconds`、`IncludeShards`、`ShardRefreshIntervalSeconds` |
-| `XiHan:Messaging:InMemory` | [Messaging.InMemory](/packages/messaging-inmemory) | `MaxQueuedMessages` |
-| `XiHan:Messaging:RabbitMQ` | [Messaging.RabbitMQ](/packages/messaging-rabbitmq) | `Configuration`、`QueuePrefix`、`PrefetchCount`、`HealthProbeIntervalSeconds` |
-| `XiHan:Messaging:Kafka` | [Messaging.Kafka](/packages/messaging-kafka) | `BootstrapServers`、`ConsumerGroup`、`TopicPrefix`、`HealthProbeIntervalSeconds`、`RedeliveryDelaySeconds`、`Properties:<key>` |
-| `XiHan:Messaging:Redis` | [Messaging.Redis](/packages/messaging-redis) | `Configuration`、`KeyPrefix`、`ConsumerGroup`、`BatchSize`、`PollIntervalSeconds`、`ClaimIdleTimeSeconds`、`MaxLength`、`HealthProbeIntervalSeconds` |
+| `XiHan:Providers` | [Kernel](/packages/kernel) | `<能力 ID>` → 清单 ID，指定能力的提供者，见[能力图谱与 Provider](/startup/capabilities) |
+| `XiHan:Bindings` | [Kernel](/packages/kernel) | [资源绑定](/configuration/bindings) |
+| `XiHan:Kernel` | [Kernel](/packages/kernel) | 特性启停超时、失败策略、内置中间件开关 |
+| `XiHan:Kernel:Banner` | [Kernel](/packages/kernel) | [启动 Banner](/startup/bootstrap#启动-banner) 的开关 |
+| `XiHan:Kernel:Resilience` | [Kernel](/packages/kernel) | Resilience 阶段的默认策略与按操作的覆盖，见[弹性与限流](/common/resilience) |
+| `XiHan:Persistence:InMemory` | [Persistence.InMemory](/packages/persistence-inmemory) | 内存持久化的容量 |
+| `XiHan:Persistence:EntityFrameworkCore` | [Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore) | 建表、命名连接与健康探测 |
+| `XiHan:Persistence:SqlSugar` | [Persistence.SqlSugar](/packages/persistence-sqlsugar) | 建表、命令超时、命名连接、从库与健康探测 |
+| `XiHan:Persistence:Snowflake` | [Persistence.Abstractions](/packages/persistence-abstractions) | 雪花标识的工作节点、纪元与租约 |
+| `XiHan:MultiTenancy` | [MultiTenancy.Abstractions](/packages/multitenancy-abstractions) | 租户解析：缺省租户、是否必需、声明名、是否对照存储 |
+| `XiHan:MultiTenancy:InMemory` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | 内存租户存储的容量 |
+| `XiHan:MultiTenancy:Tenants` | [MultiTenancy.InMemory](/packages/multitenancy-inmemory) | 从配置装载的租户 |
+| `XiHan:MultiTenancy:Database` | [MultiTenancy.Database](/packages/multitenancy-database) | 租户目录缓存的兜底存活时间 |
+| `XiHan:Security` | [Security.Abstractions](/packages/security-abstractions) | 是否要求认证、角色声明名 |
+| `XiHan:Security:Outbound` | [Kernel](/packages/kernel) | [出站地址策略](/security/outbound)的放行项 |
+| `XiHan:Security:InMemory` | [Security.InMemory](/packages/security-inmemory) | 开发用主体与授予 |
+| `XiHan:Security:Database` | [Security.Database](/packages/security-database) | 授予缓存的兜底存活时间 |
+| `XiHan:Security:Jwt` | [Security.Jwt](/packages/security-jwt) | JWT 的签发者、受众、密钥与时钟偏差 |
+| `XiHan:Security:OpenIdConnect` | [Security.OpenIdConnect](/packages/security-openidconnect) | 授权服务器、受众、元数据地址与刷新间隔 |
+| `XiHan:Security:Ip2Region` | [Security.Ip2Region](/packages/security-ip2region) | xdb 数据文件路径 |
+| `XiHan:Caching:InMemory` | [Caching.InMemory](/packages/caching-inmemory) | 内存缓存的容量与缺省存活时间 |
+| `XiHan:Caching:Redis` | [Caching.Redis](/packages/caching-redis) | 连接、键前缀、缺省存活时间、变更通知与健康探测 |
+| `XiHan:Caching:Hybrid` | [Caching.Hybrid](/packages/caching-hybrid) | 一级缓存的容量与存活时间 |
+| `XiHan:Caching:Remote` | [Caching.Remote](/packages/caching-remote) | 远程缓存的调用超时 |
+| `XiHan:Caching:Idempotency` | [Caching.Abstractions](/packages/caching-abstractions) | 幂等记录的存活时间 |
+| `XiHan:Messaging` | [Messaging.Abstractions](/packages/messaging-abstractions) | 投递次数上限、死信后缀、实例 ID |
+| `XiHan:Messaging:Outbox` | [Messaging.Abstractions](/packages/messaging-abstractions) | 发件箱的轮询、批大小、重试与保留 |
+| `XiHan:Messaging:InMemory` | [Messaging.InMemory](/packages/messaging-inmemory) | 内存队列的容量 |
+| `XiHan:Messaging:RabbitMQ` | [Messaging.RabbitMQ](/packages/messaging-rabbitmq) | 连接、队列前缀、预取数与健康探测 |
+| `XiHan:Messaging:Kafka` | [Messaging.Kafka](/packages/messaging-kafka) | 集群地址、消费组、主题前缀、重投延迟与客户端属性 |
+| `XiHan:Messaging:Redis` | [Messaging.Redis](/packages/messaging-redis) | 连接、键前缀、消费组、批大小、认领与流长度 |
 | `XiHan:Scheduling` | [Scheduling.Abstractions](/packages/scheduling-abstractions) | 调度引擎与领导选举：轮询、租约、并发、错过阈值、历史保留 |
-| `XiHan:Scheduling:InMemory` | [Scheduling.InMemory](/packages/scheduling-inmemory) | `MaxRuns` |
-| `XiHan:Scheduling:Database` | [Scheduling.Database](/packages/scheduling-database) | `HealthProbeIntervalSeconds` |
-| `XiHan:Scheduling:Kubernetes` | [Scheduling.Kubernetes](/packages/scheduling-kubernetes) | Lease 选举：`Lease`、`Namespace`、`Holder`、`ApiServer` |
+| `XiHan:Scheduling:InMemory` | [Scheduling.InMemory](/packages/scheduling-inmemory) | 运行记录的容量 |
+| `XiHan:Scheduling:Database` | [Scheduling.Database](/packages/scheduling-database) | 健康探测间隔 |
+| `XiHan:Scheduling:Kubernetes` | [Scheduling.Kubernetes](/packages/scheduling-kubernetes) | Lease 选举的名字、命名空间、持有者与 API 地址 |
 | `XiHan:Workflow` | [Workflow.Abstractions](/packages/workflow-abstractions) | 引擎：锁超时、子流程深度、表达式缓存、保留天数 |
 | `XiHan:Workflow:InMemory` | [Workflow.InMemory](/packages/workflow-inmemory) | 各存储容量、轮询周期与批大小 |
-| `XiHan:Workflow:Database` | [Workflow.Database](/packages/workflow-database) | 到期书签的轮询与批大小、租约时长、`HolderId` |
-| `XiHan:Localization` | [Localization.Abstractions](/packages/localization-abstractions) | `DefaultLocale`、`Locales` |
-| `XiHan:Localization:Database` | [Localization.Database](/packages/localization-database) | `RefreshIntervalSeconds`、`ChangeCheckIntervalSeconds`、`MaxTranslations` |
-| `XiHan:ObjectStorage:FileSystem` | [ObjectStorage.FileSystem](/packages/objectstorage-filesystem) | `RootPath`、`MaxTotalBytes`、`MaxBlobBytes`、`MultipartExpiryHours` |
-| `XiHan:ObjectStorage:S3` | [ObjectStorage.S3](/packages/objectstorage-s3) | `ServiceUrl`、`Region`、`AccessKey`、`SecretKey`、`ForcePathStyle` 等 |
+| `XiHan:Workflow:Database` | [Workflow.Database](/packages/workflow-database) | 到期书签的轮询与批大小、租约时长、持有者 |
+| `XiHan:Localization` | [Localization.Abstractions](/packages/localization-abstractions) | 默认区域与启用的区域 |
+| `XiHan:Localization:Database` | [Localization.Database](/packages/localization-database) | 翻译快照的刷新、版本核对与条数上限 |
+| `XiHan:ObjectStorage:FileSystem` | [ObjectStorage.FileSystem](/packages/objectstorage-filesystem) | 根目录、容量上限与分片过期 |
+| `XiHan:ObjectStorage:S3` | [ObjectStorage.S3](/packages/objectstorage-s3) | 服务地址、区域、凭据与寻址方式 |
 | `XiHan:ObjectStorage:Stores` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 命名存储实例：`<name>:Provider` 加该 Provider 的设置 |
 | `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 命名实例健康探测的间隔（单个键） |
-| `XiHan:ObjectStorage:SignedUrls` | [Hosting.AspNetCore](/packages/hosting-aspnetcore) | 宿主代收发预签名地址的 `BaseUrl`、`Secret` |
+| `XiHan:ObjectStorage:SignedUrls` | [Hosting.AspNetCore](/packages/hosting-aspnetcore) | 宿主代收发预签名地址的基址与签名密钥 |
 | `XiHan:Configuration:Nacos` | [Configuration.Nacos](/packages/configuration-nacos) | Nacos 服务地址、分组、命名空间、登录与超时 |
-| `XiHan:Auditing` | [Auditing.Abstractions](/packages/auditing-abstractions) | `Selection`、`IncludeSuccesses` |
-| `XiHan:Auditing:InMemory` | [Auditing.InMemory](/packages/auditing-inmemory) | `Capacity`、`LogEvents` |
-| `XiHan:Auditing:Database` | [Auditing.Database](/packages/auditing-database) | `QueueCapacity`、`BatchSize`、`FlushIntervalSeconds`、`LogEvents` |
-| `XiHan:Observability:Host` | [Observability.Host](/packages/observability-host) | `SampleIntervalSeconds` |
+| `XiHan:Auditing` | [Auditing.Abstractions](/packages/auditing-abstractions) | 记哪些调用：选择规则、是否记成功、排除列表 |
+| `XiHan:Auditing:InMemory` | [Auditing.InMemory](/packages/auditing-inmemory) | 内存审计的容量与日志开关 |
+| `XiHan:Auditing:Database` | [Auditing.Database](/packages/auditing-database) | 落库队列的容量、批大小与刷写周期 |
+| `XiHan:Observability:Host` | [Observability.Host](/packages/observability-host) | 运行信息的采样间隔 |
 | `XiHan:Observability:OpenTelemetry` | [Observability.OpenTelemetry](/packages/observability-opentelemetry) | 服务名、追踪、指标、日志、采样与 OTLP 导出 |
 | `XiHan:AI` | [AI.Abstractions](/packages/ai-abstractions) | Provider 表、工具名、护栏、知识库与提示词 |
-| `XiHan:Protocols:Http` | [Protocols.Http](/packages/protocols-http) | `RoutePrefix`，`Routes:<操作 ID>` 覆盖推导的路由 |
-| `XiHan:Protocols:Grpc` | [Protocols.Grpc](/packages/protocols-grpc) | `Package`，`Methods:<操作 ID>` 覆盖推导的方法名 |
-| `XiHan:Protocols:Mcp` | [Protocols.Mcp](/packages/protocols-mcp) | `ServerName`、`ServerVersion`、`Instructions`，`Tools:<操作 ID>` |
-| `XiHan:Protocols:CloudEvents` | [Protocols.CloudEvents](/packages/protocols-cloudevents) | `Inbound`、`Outbound`、`Topics:<事件类型>`、`Webhooks:<主题>` |
+| `XiHan:Protocols:Http` | [Protocols.Http](/packages/protocols-http) | 路由前缀、按操作的路由覆盖、请求体上限 |
+| `XiHan:Protocols:Grpc` | [Protocols.Grpc](/packages/protocols-grpc) | proto 包名与按操作的方法名覆盖 |
+| `XiHan:Protocols:Mcp` | [Protocols.Mcp](/packages/protocols-mcp) | 服务端名字、版本、说明与按操作的 tool 名覆盖 |
+| `XiHan:Protocols:CloudEvents` | [Protocols.CloudEvents](/packages/protocols-cloudevents) | 入站与出站开关、事件类型到主题、主题到 Webhook |
 | `XiHan:Plugins:OutOfProcess` | [Plugins.OutOfProcess](/packages/plugins-outofprocess) | 插件目录、授予、握手与启停超时、健康与重启限制 |
 | `XiHan:Plugins:Wasm` | [Plugins.Wasm](/packages/plugins-wasm) | 插件目录、授予、挂载、内存与栈上限、调用超时 |
-
-各键的类型与缺省值以对应包页为准。
-
-## 常见问题
-
-### 改了 appsettings.json 里的 XiHan:* 键，为什么运行中的应用没反应
-
-框架选项在 `AddXiHan` 装配时读取一次并登记为单例，改 `XiHan:*` 下的键要重启。只有读 `IConfiguration` 或 `IOptionsMonitor<T>` 的应用代码会随文件变化更新。
-
-### 应用的配置节能放在 XiHan 下吗
-
-不要。`XiHan:<领域>` 保留给框架与 Provider 包，领域词来自规范术语表；应用放进去会与将来新增的包冲突。用应用自己的名字做顶层节。
-
-### 配置值写错了会怎样
-
-框架选项的 `FromConfiguration` 对负数、无法解析的枚举与布尔值抛出 `ArgumentException`，启动失败并在消息里给出键名。应用选项用 `ValidateOnStart()` 得到同样的效果。
-
-### 怎样知道某个键的缺省值
-
-以对应包的参考页为准，各页的「配置」小节列出键、类型与缺省；上面的一览表只列键名与用途。
-
-### 远程配置里的键能覆盖 appsettings 吗
-
-能，前提是它在 `AddXiHan` 之前加进 `builder.Configuration`：后加入的配置源覆盖先加入的。完整顺序见 [配置目录与热更新](/configuration/config-directory)的「配置源的优先级」。
 
 ## 相关包与下一步
 

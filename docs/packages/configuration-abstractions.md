@@ -109,7 +109,7 @@ builder.Configuration
     }));
 ```
 
-`DirectorySecretStore` 的完整实现见[配置与选项](/configuration/options)。自己实现的密钥库用一致性套件验证，测试项目引用 `XiHan.Framework.Configuration.Conformance`：
+`DirectorySecretStore` 的完整实现见[远程配置与密钥](/configuration/remote#密钥)。自己实现的密钥库用一致性套件验证，测试项目引用 `XiHan.Framework.Configuration.Conformance`：
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions.Secrets;

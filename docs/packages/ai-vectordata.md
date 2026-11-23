@@ -42,17 +42,13 @@ AI 知识库的存储 Provider：把 `IKnowledgeStore` 映射到应用登记的 
 dotnet add package XiHan.Framework.AI.VectorData --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。还需要一个提供 `ai.embedding@1` 的 Provider（如 [AI.OpenAI](./ai-openai)）与一个向量库连接器。接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，只多下面几行：
 
 ```csharp
 using CommunityToolkit.VectorData.InMemory;
 using Microsoft.Extensions.VectorData;
 using XiHan.Framework.AI.OpenAI;
 using XiHan.Framework.AI.VectorData;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // 连接器由应用选择；这里用内存连接器（CommunityToolkit.VectorData.InMemory 包），只适合开发
 builder.Services.AddSingleton<VectorStore>(new InMemoryVectorStore());
@@ -60,27 +56,23 @@ builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<OpenAIFeature>()
     .UseFeature<VectorDataKnowledgeFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置
 
-知识库配置在装配时读一次、不热更新，改了要重启应用。
+知识库配置在装配时读一次、不热更新，改了要重启应用。本包自己的键只有一个：
 
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |
-| `XiHan:AI:Knowledge:Dimensions` | 1536 | 向量集合的维度，必须等于嵌入模型输出的维度 |
-| `XiHan:AI:Knowledge:Collection` | `knowledge` | 不指定集合时用的集合名；健康探针问的也是它 |
 | `XiHan:AI:VectorData:HealthProbeIntervalSeconds` | 15 | 健康项的重探间隔（秒），也是单次探测的超时；不是有限的正数时启动失败 |
+
+本包还读知识库的两个共用键：`XiHan:AI:Knowledge:Dimensions` 是向量集合的维度，必须等于嵌入模型输出的维度；`XiHan:AI:Knowledge:Collection` 是不指定集合时用的集合名，健康探针问的也是它。
 
 ```json
 { "XiHan": { "AI": { "Knowledge": { "Collection": "faq", "Dimensions": 768 } } } }
 ```
 
-切块、检索条数等其余键见 [AI.Abstractions](./ai-abstractions#配置)。
+这两个键的缺省与切块、检索条数等其余键见 [AI.Abstractions](./ai-abstractions#配置)。
 
 ## 主要类型
 
@@ -123,9 +115,9 @@ public sealed class HandbookSearch(IKnowledgeIngestor ingestor, IKnowledgeRetrie
 ## 行为与限制
 
 - 写入：先确保集合存在再批量 upsert；空列表直接成功。同一 ID 再次写入即替换：键由记录 ID 确定性推出（UTF-8 字节的 SHA-256 取前 16 字节，写上 RFC 9562 的版本 8 与变体位）。
-- 键是 `Guid`（ADR-0111）：Qdrant 这类连接器不接受字符串键。键形状变化之前建的集合要重建，换集合或删掉旧集合重新摄入。连接器不接受 `Guid` 键时，写入与搜索返回 `AI_UNAVAILABLE_002`。
+- 键是 `Guid`（ADR-0111）：Qdrant 这类连接器不接受字符串键。键不是 `Guid` 的已有集合要重建：换集合，或删掉旧集合重新摄入。连接器不接受 `Guid` 键时，写入与搜索返回 `AI_UNAVAILABLE_002`。
 - 删除与裁剪：集合不存在时直接成功；连接器不一定支持按条件删除，所以按条件分页取键（每页 500 个）再按键删除，直到取不满一页。删除的条件是 `DocumentId`，裁剪的条件是 `DocumentId` 加 `ChunkIndex >= 新块数`。
-- `DocumentId` 与 `ChunkIndex` 在集合定义里都是可过滤字段。要求过滤字段在建集合时声明的向量库（如 Azure AI Search）上，早于此定义建出的集合缺 `ChunkIndex` 的过滤能力，裁剪会以 `AI_UNAVAILABLE_002` 失败，换集合或删掉旧集合重新摄入。
+- `DocumentId` 与 `ChunkIndex` 在集合定义里都是可过滤字段。要求过滤字段在建集合时声明的向量库（如 Azure AI Search）上，已有集合没有把 `ChunkIndex` 声明为可过滤时，裁剪以 `AI_UNAVAILABLE_002` 失败，换集合或删掉旧集合重新摄入。
 - 搜索：集合不存在返回空列表；`DocumentIds` 过滤以常量比较的表达式下推；有元数据过滤时向量库取 `top × 4` 条，在进程内按键值相等过滤后按 `Score` 降序取前 `top` 条，命中稀疏时可能少于 `top` 条。连接器不给分数时按 0 处理。
 - 向量集合的维度在创建后不能改：换嵌入模型时换 `Collection`，或删掉旧集合重新摄入。
 - 不区分租户：要隔离时按集合或元数据区分。

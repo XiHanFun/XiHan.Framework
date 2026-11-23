@@ -45,13 +45,10 @@ dotnet add package XiHan.Framework.Profiles.Standard --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Messaging.Abstractions.Outbox;
 using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.Http;
 using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
@@ -59,11 +56,9 @@ builder.AddXiHan(xihan => xihan
     // 可选：事务性发件箱
     .UseFeature<OutboxFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanHealth();
 app.MapXiHanOperations();
-app.Run();
 ```
 
 `samples/SimpleApp` 是完整示例：Standard 组合加 HTTP、MCP、gRPC、CloudEvents 协议适配器与两个业务能力包，也是 Native AOT 冒烟示例。

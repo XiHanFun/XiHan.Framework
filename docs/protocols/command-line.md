@@ -162,20 +162,7 @@ dotnet run -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $
 2
 ```
 
-退出码按错误码的 KIND 段决定（`CommandLineExitCodes.For`）：
-
-| KIND / 情形 | 退出码 | 常量 |
-| --- | --- | --- |
-| 成功 | 0 | `Success` |
-| `VALIDATION` | 2 | `Validation` |
-| `NOTFOUND` | 3 | `NotFound` |
-| `DENIED` | 4 | `Denied` |
-| `CONFLICT` | 5 | `Conflict` |
-| `UNAVAILABLE` | 6 | `Unavailable` |
-| `TIMEOUT` | 7 | `Timeout` |
-| `CANCELLED`、Ctrl+C | 8 | `Cancelled` |
-| 其他（含 `UNEXPECTED`） | 1 | `Unexpected` |
-| 用法错误 | 64 | `Usage` |
+退出码按错误码的 KIND 段决定（`CommandLineExitCodes.For`），KIND 到退出码的对照表见[结果与错误处理](/web/errors#错误码)。`CommandLineExitCodes` 的常量与 KIND 同名（`Validation`、`NotFound`、`Denied`、`Conflict`、`Unavailable`、`Timeout`、`Cancelled`），另有 `Success`（0）、`Unexpected`（1，其他 KIND）与 `Usage`（64，用法错误）；Ctrl+C 按 `Cancelled` 返回 8。
 
 用法错误包括：没有命令、未知命令（`HOSTING_NOTFOUND_002`）、`invoke` 缺操作 ID、`--json` 不是 JSON 对象、`--data` 文件不存在、`--timeout` 或 `--authorization` 格式不对（都是 `HOSTING_VALIDATION_001`）。认证失败与缺少权限都是 `DENIED`，退出码 4，不区分 HTTP 上的 401 与 403。错误码与 KIND 的全貌见[结果与错误处理](/web/errors)。
 
@@ -240,18 +227,6 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run -- mcp --tenant acme --loc
 ### 同一个可执行文件能既当 Web 服务又当命令行吗
 
 可以，但两个宿主不同：Web 用 `WebApplication.CreateBuilder`，命令行用 `Host.CreateApplicationBuilder`。常见做法是按第一个参数分流，或者把业务能力包放进类库，两个入口项目各自装配。两边 `AddXiHan` 的特性列表相同，操作就同时在 HTTP 与命令行上可用。
-
-### 失败信息能不能也写到 stdout
-
-不能，这是有意的约定：stdout 只有响应 JSON，脚本才能把它直接管道给 `jq`。失败是一行 JSON 写到 stderr，退出码按 KIND 区分；脚本用 `2>` 单独捕获 stderr 或只看退出码。
-
-### 把 `--timeout` 设得很长，命令会一直等吗
-
-`--timeout` 是这次调用的截止时间，管道里的中间件与操作拿到的 `CancellationToken` 到点取消。Ctrl+C 不受它影响，随时取消当前命令并返回 8，宿主照常停止。
-
-### `operations` 里有操作，`invoke` 却说未暴露
-
-`invoke` 只接受 `Expose` 含 `CommandLine` 的操作。`operations` 的第三列就是暴露的协议，少了 `CommandLine` 就在 `[Operation]` 的 `Expose` 里加上；`Stability.Internal` 的操作在任何协议上都不暴露。
 
 ## 相关包与下一步
 

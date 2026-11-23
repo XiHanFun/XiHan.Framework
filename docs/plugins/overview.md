@@ -110,17 +110,13 @@
 
 ## 最小示例
 
-装配进程外与 Wasm 两个宿主，在配置里列出插件目录并授予权限：
+装配进程外与 Wasm 两个宿主，在配置里列出插件目录并授予权限（`Program.cs` 的骨架见[第一个应用](/getting-started/first-app)，下面只列多出来的行）：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Plugins.OutOfProcess;
 using XiHan.Framework.Plugins.Wasm;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.Http;
 using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
@@ -128,14 +124,11 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<OutOfProcessPluginsFeature>()
     .UseFeature<WasmPluginsFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanHealth();
 
 // 插件声明的操作已登记为代理操作，与本地操作一样按 expose 发布路由
 app.MapXiHanOperations();
-
-app.Run();
 ```
 
 ```json
@@ -195,24 +188,19 @@ static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken can
 
 ## 进程内宿主
 
-`Plugins.InProcess` 没有特性入口，应用注册它的消息目录后自己创建并持有宿主：
+`Plugins.InProcess` 没有特性入口，应用注册它的消息目录后，在 `builder.Build()` 之后自己创建并持有宿主：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Plugins.InProcess;
-using XiHan.Framework.Profiles.Minimal;
 
-var builder = WebApplication.CreateBuilder(args);
 // 本包没有特性入口，失败结果的文案由宿主应用注册消息目录
 builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("plugins", typeof(PluginMessages)));
 builder.AddXiHan(xihan => xihan.UseMinimalProfile());
 
-var app = builder.Build();
-app.UseXiHan();
-
+// app.UseXiHan() 之后
 // 插件目录：SamplePlugin.dll + xihan.manifest.json + 私有依赖；加载失败以结果返回，应用照常运行
 await using var plugins = new InProcessPluginHost(app.Configuration, app.Services.GetRequiredService<ILoggerFactory>());
 var source = new PluginSource(Path.Combine(AppContext.BaseDirectory, "plugins", "sample"), new PermissionGrant(["capability:kernel.diagnostics"]));

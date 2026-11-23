@@ -122,26 +122,21 @@ cargo build --release --target wasm32-wasip1
 cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 ```
 
-宿主一侧装配特性、指向目录并授予权限：
+宿主一侧装配特性、指向目录并授予权限（`Program.cs` 的骨架见[第一个应用](/getting-started/first-app)）：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Plugins.Wasm;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.Http;
 using XiHan.Framework.Protocols.Http.Routing;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<HttpProtocolFeature>()
     .UseFeature<WasmPluginsFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanHealth();
 app.MapXiHanOperations();
-app.Run();
 ```
 
 ```json
@@ -183,24 +178,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 
 ## 沙箱边界：内存、CPU 上限与崩溃重建
 
-每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。配置节 `XiHan:Plugins:Wasm`：
-
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `Directories` | 字符串数组 | 空 | 启动时装载的插件目录（含清单与模块文件） |
-| `Grants:<清单 ID>` | 字符串数组 | 空授予 | 授予的 `capability:` 权限，以及清单要读的宿主配置节与绑定：`config:<配置节>`、`binding:<绑定名>`，没有授予即拒绝加载 |
-| `Mounts:<清单 ID>:<客体路径>` | 字符串 | 空 | 客体路径映射到的宿主目录；清单的 `fs.read:` / `fs.write:` 只有映射了才算授予 |
-| `MemoryLimitBytes` | 正整数 | 67108864（64 MiB） | 线性内存上限 |
-| `MaxTableElements` | 正整数 | 100000 | 每个表的元素数上限，`table.grow` 超过即失败 |
-| `StackLimitBytes` | 正整数 | 1048576（1 MiB） | Wasm 栈上限 |
-| `EpochIntervalMilliseconds` | 正数 | 10 | epoch 递增间隔，即 CPU 截止的粒度 |
-| `CallTimeoutSeconds` | 正数 | 30 | 生命周期调用与没有截止时间的调用的时限 |
-| `MiddlewareTimeoutMilliseconds` | 正数 | 100 | 中间件钩子每次调用的时限 |
-| `HealthIntervalSeconds` | 正数 | 10 | 健康轮询间隔 |
-| `HealthFailures` | 正整数 | 3 | 连续多少次健康探测失败视为实例失效 |
-| `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重建多少次，之后保持 `Failed` |
-| `RestartWindowSeconds` | 正数 | 600 | 统计重建次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm-<用户名>` | 插件工作目录的根，每个插件一个子目录 |
+每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。配置节 `XiHan:Plugins:Wasm` 里，`Directories` 列出插件目录，`Grants:<清单 ID>` 授予 `capability:` 权限与清单要读的宿主配置节、绑定，`Mounts:<清单 ID>:<客体路径>` 把客体路径映射到宿主目录（清单的 `fs.read:` / `fs.write:` 只有映射了才算授予，没有映射时加载以 `PLUGINS_DENIED_001` 拒绝）；沙箱的上限是 `MemoryLimitBytes`（缺省 64 MiB）、`StackLimitBytes`（缺省 1 MiB）、`CallTimeoutSeconds`（缺省 30）与 `MiddlewareTimeoutMilliseconds`（缺省 100）。全部键、类型与缺省值见[包参考](/packages/plugins-wasm#配置)。
 
 取值不合类型与范围时，`WasmPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。CPU 按 epoch 中断强制截止：操作与事件用调用上下文的剩余时间（没有时取 `CallTimeout`），中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`。
 
@@ -239,22 +217,6 @@ wasmtime 处理陷阱时改写线程上下文，与 Windows 用户态影子栈�
 - 包不兼容 Native AOT（wasmtime 原生绑定与 protobuf 未声明 AOT 兼容）。
 
 ## 常见问题
-
-### 中间件能改请求体或响应体吗
-
-不能。中间件只收到元数据、操作 ID 与（after 阶段的）结果，能做的是补充或改写已登记的 Baggage、短路为失败。需要载荷的校验或改写写成操作，或在宿主侧用 .NET 中间件（[能力包与中间件](/extending/feature)）。
-
-### 中间件超时了会放行吗
-
-不会。钩子陷阱、超时或无响应时调用以 `PLUGINS_UNAVAILABLE_001` 失败，插件按崩溃重建。把中间件逻辑控制在 `MiddlewareTimeoutMilliseconds` 之内，重活放进操作。
-
-### 怎么给插件一个可读写的目录
-
-清单里声明 `fs.write:/data`，宿主配置 `Mounts:<清单 ID>:/data` 映射到宿主目录。没有映射视为未授予，加载以 `PLUGINS_DENIED_001` 拒绝。
-
-### 测试进程在 Windows 上直接退出，退出码 0xC0000409
-
-测试项目没有设 `<CETCompat>false</CETCompat>`。一致性套件会故意触发陷阱，影子栈强制时整个进程 fail-fast。宿主正常启动时会先以 `PLUGINS_UNAVAILABLE_003` 拒绝，但套件里的进程一样要设。
 
 ### 怎样验证插件符合 ABI
 

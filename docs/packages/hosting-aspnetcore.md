@@ -31,24 +31,13 @@ dotnet add package XiHan.Framework.Hosting.AspNetCore --prerelease
 
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
-```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-var app = builder.Build();
-app.UseXiHan();          // 放在路由之后、端点之前
-app.MapXiHanHealth();
-app.Run();
-```
+`builder.AddXiHan(...)` 装配，`app.UseXiHan()`（放在路由之后、端点之前）把请求接进内核管道，`app.MapXiHanHealth()` 映射探针；完整的 `Program.cs` 见[第一个应用](/getting-started/first-app)。
 
 ## 配置
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| 环境变量 `XIHAN_CONFIG_PATH` | 目录 | 无 | 挂载的配置目录：`appsettings.json` 最先，其余顶层 `*.json` 按文件名序数随后，紧接 `appsettings.{环境}.json` 插入（覆盖 appsettings，环境变量与命令行参数覆盖它），可重载 |
+| 环境变量 `XIHAN_CONFIG_PATH` | 目录 | 无 | 挂载的配置目录，可重载；文件的装载顺序与配置源的优先级见[配置目录与热更新](/configuration/config-directory) |
 | `XiHan:Security:RoleClaim` | string | `role` | 方案 `XiHan` 转出的 `ClaimsPrincipal` 的角色声明类型 |
 | `XiHan:ObjectStorage:SignedUrls:Secret` | string | 无，必填 | 预签名地址的 HMAC-SHA256 密钥，至少 32 字节 UTF-8，多实例须一致 |
 | `XiHan:ObjectStorage:SignedUrls:BaseUrl` | string | `/blobs` | 预签名地址的基址 |
@@ -126,7 +115,6 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)�
 - 在绕过管道的端点（SignalR Hub、Server-Sent Events）里发起内核调用用 `HttpInvocation.CreateContext(httpContext, services)`：`Authorization` 头经 `SetCredential` 带上，经管道时重新认证。
 - `Accept-Language` 在调用方没有显式 `xihan.locale` Baggage 时按权重协商进该 Baggage（装配了本地化时协商到启用的区域，否则取第一个合法值）；Problem Details 的 `Content-Language` 是实际命中的区域（可能是回退链上的区域），`code` 不变。
 - VALIDATION 种类的 Problem Details 带 `errors`（字段键 → 消息数组），所有错误按白名单带 `details`：`Error.Details` 里的字符串、布尔、数值、`Guid`、时间等标量，集合与对象不输出（ADR-0024）。
-- 挂载目录与用户机密的次序：配置源从低到高依次是 `appsettings.json`、`appsettings.{环境}.json`、`XIHAN_CONFIG_PATH` 挂载目录、用户机密（仅开发环境）、环境变量、命令行参数、应用自己添加的配置源；构建器没有 appsettings 文件源时挂载目录追加在末尾。`xihan pack` 生成的清单同时设 `DOTNET_USE_POLLING_FILE_WATCHER=1`（ConfigMap 以符号链接切换更新）。
 - Problem Details 由 `ProblemResponse.WriteTo` 手写、探针由源生成上下文序列化，不经反射。
 
 | 情形 | 状态码 | 错误码 |
@@ -139,7 +127,7 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)�
 | 预签名地址无效或已过期 | 403 | `OBJECTSTORAGE_DENIED_001` |
 | 直传请求的内容类型不合文法（签名没有限定内容类型时） | 400 | `OBJECTSTORAGE_VALIDATION_006` |
 
-状态码按错误码 KIND 的完整映射见 [HTTP 路由与载荷](/web/routing)。
+状态码按错误码 KIND 的完整映射见[结果与错误处理](/web/errors#错误码)，401 的质询规则见 [HTTP 路由与载荷](/web/routing#状态码与错误映射)。
 
 ## 相关
 

@@ -57,8 +57,6 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Localization:DefaultLocale` | `string` | `en-US` | 默认区域，同 [Localization.Abstractions](./localization-abstractions) |
-| `XiHan:Localization:Locales` | `string`（逗号分隔） | 内置 10 种 | 启用的区域 |
 | `XiHan:Localization:Database:ChangeCheckIntervalSeconds` | 非负数 | 1 | 核对翻译版本戳的间隔；`0` 不核对，其他实例只靠周期刷新看到写入 |
 | `XiHan:Localization:Database:RefreshIntervalSeconds` | 非负数 | 300 | 周期刷新的间隔，兜住绕过 `MessageTranslationStore` 直接改表与版本戳丢失；`0` 关闭周期刷新 |
 | `XiHan:Localization:Database:MaxTranslations` | 正整数 | 100000 | 快照的条数上限，超出的不加载并记警告 |
@@ -74,7 +72,7 @@ protected override void OnModelCreating(ModelBuilder modelBuilder)
 }
 ```
 
-值不合法时装配阶段抛出 `ArgumentException`。
+启用的区域与默认区域（`XiHan:Localization:DefaultLocale`、`Locales`）见 [Localization.Abstractions](./localization-abstractions#配置)。值不合法时装配阶段抛出 `ArgumentException`。
 
 ## 主要类型
 
@@ -132,7 +130,6 @@ catch (FrameworkException exception) when (exception.Code == CachingErrors.Store
 - 健康项 `localization.database.translations` 由加载器按最近一次加载的结果报告，不另起探测：还没加载过为 Started，成功为 Ready，最近一次失败为 Degraded（携带那次的错误），应用仍在服务。
 - 写入：`UpsertAsync` 先按 (键, 区域) 取回已有的行（键每 1000 个一批、结果分页读完），已有的更新、没有的新增，再用仓储的批量方法写入；同一批里重复的键与区域后者覆盖前者，各项结果指向同一行。同一键与区域再写一次是更新，不会写出第二行。表上的唯一索引 `UX_MessageTranslation_Ke_Lo`（`(Key, Locale)`）兜住并发：两个调用同时新增同一个键与区域，后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试按更新处理；内存持久化不建索引、不校验唯一性。已有重复行的库，补建唯一索引前先去重（每个键与区域留一行）。`RemoveAsync` 按顺序逐项删除，同一批里同一个键第二次出现时报告不存在。`ListAsync(locale, skip, take)` 按键排序分页，`locale` 为 `null` 时列全部，一页最多 1000 条。
 - 写入在调用的事务提交后才落库，所以 `MessageTranslationStore` 在作用域释放时（调用已提交）才换版本戳：本实例立即重新加载，其他实例在 `ChangeCheckInterval` 内重新加载。回滚之后换版本戳只多一次无害的重新加载。换版本戳遇到缓存后端故障只记错误日志、不让调用失败：写入已经提交，本实例照常重新加载，其他实例等周期刷新。在同一个操作里紧接着 `ReloadAsync` 读不到未提交的行。
-- 直接构造 `MessageTranslationStore` 或 `MessageTranslationLoader` 的代码按新签名传参：前者多了 `MessageTranslationLoader` 与 `ILoggerFactory`，后者多了 `ICache`；经容器构造的不受影响。
 - 校验：`MessageTranslationEntry` 要求键符合消息键文法、模板非空白，区域规范化大小写，不合法抛出 `ArgumentException`。`Locale` 列最长 35 个字符，与区域名文法的上限 `LocaleName.MaxLength` 一致，合法的区域名都能写入。
 - 已有表的 `Locale` 列：这一列声明为 35 个字符，更短的列在校验长度的数据库上写不进 17 到 35 个字符的合法区域名（如 `sr-Latn-RS-ekavsk`）。SqlSugar 的 `InitTables` 只建缺表、加缺列，不改已有列的长度，EF Core 的 `EnsureCreated` 也不改已有表，所以这样的表要手工放宽这一列，例如 PostgreSQL 上 `ALTER TABLE <翻译表> ALTER COLUMN <区域列> TYPE varchar(35);`（表名与列名以实际建表结果为准）；用 EF Core 迁移的应用生成一次迁移即可。SQLite 不校验长度，不用处理。
 - 通过 `Localization.Conformance` 的 `MessageLocalizerConformance`。

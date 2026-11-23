@@ -22,7 +22,7 @@
 - 流只由订阅方建立：订阅方启动时建消费组（带 `MKSTREAM`，从 `$` 开始）与自己的消费者，发布用 `NOMKSTREAM`。所以订阅方第一次启动之前发布的消息不投递；之后订阅方离线期间的消息留在流里。
 - 发布：`XADD ... NOMKSTREAM MAXLEN ~ <MaxLength>`，Redis 应答了条目 ID 才算成功。流不存在（没有订阅者）时消息丢弃、发布照常成功，记一条 Debug 日志，与内存代理、RabbitMQ 一致。批量发布在一个 `MULTI` / `EXEC` 事务里，一次往返，整批写入或整批不写入，主题内保持入参顺序。
 - 消费：竞争订阅都在消费组 `ConsumerGroup`（缺省 `xihan`）里，组内的实例分摊条目；广播订阅用本实例独占的组 `<ConsumerGroup>@<InstanceId>`。每个订阅（主题加方式）一个消费循环，`XREADGROUP` 每次最多取 `BatchSize` 条，单线程依次派发，成功即 `XACK`。没取到就等 `PollIntervalSeconds` 再取：StackExchange.Redis 的多路复用连接不支持阻塞读，消费是轮询。
-- 重试：处理失败在原位立即重试到 `MaxAttempts`，不重新入流。每次重试前先把条目 `XCLAIM` 给自己，消费组的待确认列表因此记下投递次数，尝试号就是它：实例崩溃后接手的实例接着计数。
+- 重试：处理失败在原位立即重试到 `MaxAttempts`，不重新入流（一条流上挂着全部组，重新写入会让每个组再收一遍）。每次重试前先把条目 `XCLAIM` 给自己，消费组的待确认列表因此记下投递次数，尝试号就是它：实例崩溃后接手的实例接着计数。
 - 死信：竞争订阅到上限时写进死信流（另带字段 `attempt` 与 `error`），写入得到应答后才确认原条目；广播订阅到上限时确认掉并记 Warning，不进死信。无法解码的条目不重试：竞争订阅原样进死信流，广播订阅丢弃。
 - 回收：每个消费循环每过 `min(ClaimIdleTimeSeconds, 10)` 秒维护一次，用 `XAUTOCLAIM` 认领组里空闲超过 `ClaimIdleTimeSeconds` 的条目，按投递次数接着投递，已超过 `MaxAttempts` 的直接进死信。这些条目来自崩溃或停止时没处理完的实例，以及死信写入、确认失败的投递。
 - 整理与清理：维护时还会做三件事，组与消费者的数量、流的长度都不会无界增长。
@@ -48,14 +48,10 @@
 dotnet add package XiHan.Framework.Messaging.Redis --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，`AddXiHan` 里多一行：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Messaging.Redis;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
@@ -76,9 +72,8 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Messaging:Redis:ClaimIdleTimeSeconds` | 至少 0.001 | 60 | 待确认条目空闲多久后可被回收，也是清理空闲消费者与遗留广播组的阈值 |
 | `XiHan:Messaging:Redis:MaxLength` | 正整数 | 100000 | 每条流（主题与死信）的近似长度上限 |
 | `XiHan:Messaging:Redis:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
-| `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
-| `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信流后缀 |
-| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 消费者名与广播组名里的实例标识；必须每个同时在线的实例唯一，重复时广播静默退化成竞争 |
+
+各 Provider 共用的 `XiHan:Messaging:MaxAttempts`、`DeadLetterSuffix` 与 `InstanceId` 见 [Messaging.Abstractions](./messaging-abstractions#配置)。在本包里，`DeadLetterSuffix` 是死信流键的后缀，`InstanceId` 在消费者名与广播组名里。
 
 ```json
 {

@@ -56,7 +56,7 @@ dotnet add package XiHan.Framework.Kernel.Generators --prerelease
    cd XiHan.Framework
    ```
 
-2. 初始化规范子模块。`Plugins.Protocol` 从 `framework/spec/plugin/plugin.proto` 生成代码，构建整个解决方案时需要它：
+2. 初始化规范子模块。`Plugins.Protocol` 从 `framework/spec/plugin/plugin.proto` 生成代码，构建整个解决方案时需要它，没有初始化会报 `plugin.proto` 不存在：
 
    ```bash
    git submodule update --init framework/spec
@@ -115,10 +115,6 @@ dotnet tool install --global XiHan.Framework.Cli --prerelease
 ### 还原时报找不到包
 
 预览包只在带 `--prerelease` 时可见。手写 `PackageReference` 时版本号要写完整的预览版本，不能只写大版本。
-
-### 用源码引用时报 `plugin.proto` 不存在
-
-没有初始化规范子模块。在仓库根执行 `git submodule update --init framework/spec`。只引用 `Profiles.Minimal` 与 `Protocols.Http` 的应用不会碰到这个问题，构建整个解决方案才需要。
 
 ### `dotnet test` 报不认识 `--solution`
 

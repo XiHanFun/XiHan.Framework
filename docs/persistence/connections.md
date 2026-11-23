@@ -58,14 +58,13 @@ EF Core 与 SqlSugar Provider 声明一个可选的连接绑定 `db`（类型 `c
 }
 ```
 
+接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上：加一行实体登记，`AddXiHan` 里用 Standard 组合并装配 SqlSugar Provider，原有的 `UseFeature` 照留：
+
 ```csharp
 using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.SqlSugar;
 using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // 应用自己的实体也可以登记到命名连接
 builder.Services.AddRepository<SyncCursor, string>(connection: "leases");
@@ -77,10 +76,6 @@ builder.AddXiHan(x => x
         config.DbType = DbType.Sqlite;
         config.ConnectionString = binding.ValueOrThrow().Value;
     })));
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 运行后每个作用域的客户端带两个连接：`default` 指向 `app.db`，`leases` 指向 `app.leases.db`。`SyncCursor` 的读写与建表落在 `leases`；业务调用不碰它，那个库文件就不被业务事务锁住。管道外要单独写 `leases` 时开绑定它的工作单元：
@@ -151,13 +146,7 @@ public sealed class CodeGenDataSources(DataSourceRegistry registry)
 | 机密 | 连接串不进日志、错误与健康详情：错误原因是驱动异常的消息链，整串连接串与口令类键（`password`、`pwd`、`secret`、`token`、`key`）的值换成 `***`；主机、端口、库名、用户名保留，排查要用 |
 | Provider | SqlSugar 支持：数据库类型是 SqlSugar `DbType` 的名字，客户端是每个数据源一个的 `SqlSugarScope`，不施加实体约定、不挂过滤器与 AOP、PostgreSQL 不自动转小写、Oracle 不自动转大写。EF Core 与内存实现不支持，取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008` |
 
-| 错误码 | 何时出现 |
-| --- | --- |
-| `PERSISTENCE_VALIDATION_006` | 数据库类型 Provider 不认识、连接串格式错；同名的已登记实例不受影响 |
-| `PERSISTENCE_NOTFOUND_002` | `GetAsync` 的名字没有在本进程登记 |
-| `PERSISTENCE_UNAVAILABLE_006` | 连不上或读取失败（测试连接、健康探测、库结构读取），参数 `name`、`reason`（已脱敏） |
-| `PERSISTENCE_UNAVAILABLE_007` | 登记已满 |
-| `PERSISTENCE_UNAVAILABLE_008` | 当前 Provider 不支持运行时数据源 |
+失败都以 `Result` 返回：定义不合法（数据库类型 Provider 不认识、连接串格式错）是 `PERSISTENCE_VALIDATION_006`，同名的已登记实例不受影响；`GetAsync` 的名字没有在本进程登记是 `PERSISTENCE_NOTFOUND_002`；连不上或读取失败是 `PERSISTENCE_UNAVAILABLE_006`（参数 `name`、`reason`，已脱敏）。全部错误码见 [Persistence.Abstractions](/packages/persistence-abstractions#错误码)。
 
 ## 库结构读取与实体目录
 
@@ -188,42 +177,24 @@ public sealed class CodeGenImporter(ISchemaReader schema, IEntityCatalog catalog
 | --- | --- |
 | 列表 | 按名字排序；`Keyword` 在名字与注释里不区分大小写地包含匹配；`Skip` / `Take` 分页（`Skip` ≥ 0，`Take` 1～1000），返回过滤后的总数；库里的表一次读出、在内存里分页。分页越界以结果返回（HTTP 400）：`Skip` 为负或 `Take` 小于 1 是 `PERSISTENCE_VALIDATION_007`，`Take` 超过 1000 是 `PERSISTENCE_VALIDATION_005`，不连库 |
 | 读结构 | 一次最多 `SchemaLimits.MaxTablesPerRead`（100）张，超过整批 `PERSISTENCE_VALIDATION_005`；逐项结果与入参一一对应，找不到的表该项 `PERSISTENCE_NOTFOUND_003`；连接或读取失败整批 `PERSISTENCE_UNAVAILABLE_006`；空集合不连库；`GetTableAsync` 是单项特例 |
-| 列 | 类型名（不含长度与精度）、序号、主键、自增、可空、长度（只给字符与二进制类型的声明长度，整数、日期、`text` / `nvarchar(max)` / `CLOB` 为 null）、精度与小数位（定点数族）、注释、缺省值（数据库报告的原文）；主键列一律不可空 |
-| 分表 | 已登记的分表实体按表名模板把 `Order_20261101` 这类物理表折叠成逻辑表 `Order`，`PhysicalTables` 新到旧，列取最新的物理表 |
-| 实体目录 | 每个登记的实体一条：表名（映射声明的写法，分表是逻辑名）、列映射、`Protocols`（聚合根、创建 / 修改时间、并发戳、软删除、多租户）、`[EntityIndex]` 推出的索引；PostgreSQL 的物理名可能是小写，对照时不区分大小写 |
+| 列 | 类型名（不含长度与精度）、序号、主键、自增、可空、长度（只给字符与二进制类型的声明长度，整数、日期、`text` / `nvarchar(max)` / `CLOB` 为 null）、精度与小数位（`decimal` / `numeric` / `number` / `money` 族）、注释、缺省值（数据库报告的原文）；主键列一律不可空，数据库没有的项为 null |
+| 分表 | 已登记的分表实体（SqlSugar `[SplitTable]`）按表名模板（`Order_{year}{month}{day}`）把 `Order_20261101` 这类物理表折叠成逻辑表 `Order`，`PhysicalTables` 新到旧，列取最新的物理表 |
+| 实体目录 | 每个登记的实体一条 `EntityMapping`，内容与各 Provider 的取法见[建表约定与索引](/persistence/schema#实体目录)；PostgreSQL 的物理名可能是小写，对照时不区分大小写 |
 | 缺省连接 | 另开一个不在事务里的连接读，PostgreSQL 系语句失败不会中止调用的事务 |
 | SQLite 的限制 | 没有表与列注释；`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；自增只认 `AUTOINCREMENT` |
 | 实测过的数据库 | SQLite、PostgreSQL、MySQL、SQL Server、Oracle（12c 及以上；读连接用户自己的表，不加引号的名字是大写）。PostgreSQL 衍生库没有验证 |
 | 不支持的数据库 | Oracle 11g 及更早：读列以 `PERSISTENCE_UNAVAILABLE_006` 失败（数据字典没有 `IDENTITY_COLUMN`）。达梦、OceanBase Oracle 模式等 Oracle 兼容库走 SqlSugar 原来的读列，读到的结构不作保证 |
-| Provider | SqlSugar 两者都支持。EF Core 的实体目录取 `DbContext` 模型、读结构不支持；内存实现的实体目录表名取类型名、读结构不支持；不支持的返回 `PERSISTENCE_UNAVAILABLE_008` |
+| Provider | SqlSugar 两者都支持。EF Core 与内存实现有实体目录、读结构不支持，返回 `PERSISTENCE_UNAVAILABLE_008` |
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Bindings:db` | 字符串 | — | 默认连接的绑定主值 |
-| `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` | 字符串 | — | EF Core 的命名连接 |
-| `XiHan:Persistence:SqlSugar:Connections:<name>` | 字符串 | — | SqlSugar 方式一的命名连接 |
-| `XiHan:Persistence:DataSources:MaxCount` | 1–1024 | `64` | 运行时数据源的登记数上限 |
-| `XiHan:Persistence:DataSources:HealthProbeIntervalSeconds` | 正数 | `15` | 运行时数据源健康项的重探间隔，也是单次探测与 `TestAsync` 的超时 |
+本页用到的键都写在各节里：默认连接的绑定 `XiHan:Bindings:db`，命名连接的 `XiHan:Persistence:<Provider>:Connections:<name>`，运行时数据源的 `XiHan:Persistence:DataSources:MaxCount` 与 `HealthProbeIntervalSeconds`。类型、取值范围与其余的键见 [Persistence.Abstractions](/packages/persistence-abstractions#配置)、[Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore#配置) 与 [Persistence.SqlSugar](/packages/persistence-sqlsugar#配置)。
 
 ## 常见问题
 
 ### 连接串放在哪里最合适
 
-放在绑定 `db` 里，生产环境用环境变量或密钥源覆盖 `XiHan:Bindings:db`，不写进仓库里的 `appsettings.json`。命名连接同理。运行时数据源的连接串在应用自己的记录里，口令加密保存、读出时解密再构造 `DataSourceDefinition`。
-
-### 命名连接与运行时数据源怎么选
-
-命名连接是部署期已知、结构由应用管理、要进工作单元的库（租约表、审计库）。运行时数据源是用户在界面上登记的外部库，数量不定、结构由对方管理、只读或只做直连查询，不进工作单元。
-
-### 为什么 EF Core 的命名连接实体不能在普通工作单元里用
-
-EF Core 一个 `DbContext` 一个连接，普通工作单元的 `DbContext` 建在默认连接上，命名连接上的实体不在它的模型连接里。框架不做多上下文顺序提交。要在业务事务里一起读写多个库用 SqlSugar。
-
-### 运行时数据源的连接串改了，怎样让旧连接失效
-
-每次使用都以记录里当前的定义调 `GetOrAddAsync`：定义变了就建新实例替换旧的并释放旧的，不用额外动作。记录停用或删除时调 `RemoveAsync(names)` 显式失效。多实例部署下别的实例改了记录，本实例在下一次 `GetOrAddAsync` 时替换，所以不要只按名字 `GetAsync`。
+放在绑定 `db` 里，生产环境用环境变量或密钥源覆盖 `XiHan:Bindings:db`，不写进仓库里的 `appsettings.json`；命名连接同理。
 
 ### 读到的库结构里缺省值格式不一致
 

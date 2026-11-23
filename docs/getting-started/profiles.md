@@ -66,7 +66,7 @@ Minimal 与 Standard 不含协议适配器，按对外暴露的方式加：
 
 ### 第三步：加 Provider
 
-默认实现是内存或文件系统，容量有界，进程重启数据就没了。上线前按外部设施加 Provider，每个都要 `UseFeature` 加入，默认实现自动让位：
+默认实现是内存或文件系统，容量有界，进程重启数据就没了。上线前按外部设施加 Provider：只引用包不会生效，每个都要在 `AddXiHan` 里 `UseFeature` 加入，默认实现自动让位：
 
 | 子系统 | 默认实现 | Provider |
 | --- | --- | --- |
@@ -138,17 +138,9 @@ dotnet add package XiHan.Framework.Persistence.Generators --prerelease
 
 ## 常见问题
 
-### 引用了 Provider 包，但运行时仍在用内存实现
-
-只引用包不会生效，还要在 `AddXiHan` 里 `UseFeature<...>()` 加入它的特性。加入后看启动日志里的能力图谱：被顶替的默认实现不再出现在该能力下。
-
 ### 两个 Provider 提供同一能力，启动报 KERNEL_CAPABILITY_004
 
 同一能力有两个以上显式 Provider，内核不替应用选择。在配置 `XiHan:Providers:<能力 ID>` 里写清单 ID，或在代码里 `UseProvider`，见[能力图谱与 Provider](/startup/capabilities)。
-
-### 不想用组合包，可以只引用单包吗
-
-可以。组合包只是 `UseFeature` 的简写，`Profiles.Minimal` 的内容等于 `Kernel`、`Hosting.AspNetCore` 与 `Localization.InMemory` 三个包。
 
 ### 哪些包不能 Native AOT
 

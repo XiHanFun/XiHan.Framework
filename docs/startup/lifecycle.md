@@ -64,9 +64,7 @@ Started → Degraded（启动完成时缺少可选依赖，不经 Ready）
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
 namespace Shop.Reports;
@@ -75,16 +73,8 @@ public sealed class ReportsFeature : IHostedFeature
 {
     private ReportWarmer? _warmer;
 
-    public Manifest Manifest { get; } = new()
-    {
-        Id = "xihan.shop.reports",
-        Version = "1.0.0",
-        Primitives = 1,
-        Stability = Stability.Preview,
-        Kind = ManifestKind.Capability,
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Entry = typeof(ReportsFeature).FullName,
-    };
+    // 清单与普通特性相同（Id 为 xihan.shop.reports，只依赖 kernel.hosting），字段见「特性与清单」
+    public Manifest Manifest { get; } = new() { /* ... */ };
 
     public void Configure(FeatureContext context) => context.Services.AddSingleton<ReportWarmer>();
 
@@ -112,14 +102,7 @@ public sealed class ReportWarmer
 
 ## 内核选项
 
-配置节 `XiHan:Kernel`（`KernelOptions`）：
-
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `StartTimeoutSeconds` | 正数 | `30` | 每个特性 `StartAsync` 的超时 |
-| `StopTimeoutSeconds` | 正数 | `30` | 每个特性 `StopAsync` 的超时；部署到 Kubernetes 时与 `terminationGracePeriodSeconds` 对齐 |
-| `FailurePolicy` | `TerminateStartup` / `IsolateFeature` | `TerminateStartup` | 特性启动失败时的处理 |
-| `UseBuiltInMiddleware` | 布尔 | `true` | 是否登记内核内置中间件（Observe、截止时间、Resilience、Validate） |
+启动与停止的超时和失败策略在配置节 `XiHan:Kernel`（`KernelOptions`），下面写出的是缺省值；完整的键表见 [Kernel 包参考](/packages/kernel#配置)。
 
 ```json
 {
@@ -133,7 +116,7 @@ public sealed class ReportWarmer
 }
 ```
 
-非法值（非正数、拼错的枚举名）在构建应用时抛出 `ArgumentException`。代码里用 `AppBuilder.UseOptions(new KernelOptions { ... })` 覆盖配置，属性名是 `StartTimeout`、`StopTimeout`（`TimeSpan`）、`FailurePolicy`、`UseBuiltInMiddleware`。运行期从容器取 `App.Options` 可读到生效的值。
+非法值（非正数、拼错的枚举名）在构建应用时抛出 `ArgumentException`。部署到 Kubernetes 时把 `StopTimeoutSeconds` 与 `terminationGracePeriodSeconds` 对齐。代码里用 `UseOptions` 覆盖配置的写法见[装配入口](/startup/bootstrap#用代码覆盖内核选项)；运行期从容器取 `App.Options` 可读到生效的值。
 
 ## 失败策略
 
@@ -218,29 +201,11 @@ public sealed class ExportQueueHealth(ExportQueue queue) : IHealthContributor
 | `/health/ready` | 应用处于 `Ready` 或 `Degraded` | readinessProbe |
 | `/health/live` | 应用不是 `Failed` | livenessProbe |
 
-通过返回 200、`status` 为 `pass`，否则 503、`status` 为 `fail`。探针只给 `status` 与 `state`；每个特性与每个健康条目的详情由经管道、能加访问要求的 `MapXiHanHealthDetails()`（`/health/details`）给出（ADR-0209）：
-
-```json
-{
-  "status": "pass",
-  "state": "Ready",
-  "features": [
-    { "id": "xihan.localization.inmemory", "state": "Ready" },
-    { "id": "xihan.protocols.http", "state": "Ready" }
-  ],
-  "contributions": []
-}
-```
-
-特性失败时该项多一个 `error` 字段给出错误码；健康条目带说明、检查时刻、耗时与数据时，以 `description`、`checkedAt`、`durationMs`、`data` 字段输出，没有的省略。前缀可改：`app.MapXiHanHealth("/internal/health")`。
+通过返回 200、`status` 为 `pass`，否则 503、`status` 为 `fail`。探针只给 `status` 与 `state`；每个特性与每个健康条目的详情由经管道、能加访问要求的 `MapXiHanHealthDetails()`（`/health/details`）给出（ADR-0209），响应体的字段与访问要求的写法见 [ASP.NET Core 宿主](/web/hosting#探针)。前缀可改：`app.MapXiHanHealth("/internal/health")`。
 
 不经 HTTP 时，从容器取 `App` 调用 `App.Health()` 得到同样的 `HealthSnapshot`（`Started`、`Ready`、`Live` 三个布尔加 `State`、`Features`、`Contributions`）；命令行宿主没有探针端点，由进程退出码表达结果。探针的 Kubernetes 配置与停机宽限见 [Kubernetes](/deployment/kubernetes)。
 
 ## 常见问题
-
-### 我的特性只注册服务，要不要实现 `IHostedFeature`
-
-不要。只实现 `IFeature` 的特性在启动阶段直接进入 `Ready`，没有超时也没有失败风险。只有确实需要在启动时做 I/O（连接、预热、订阅）或在停止时释放资源的特性才实现 `IHostedFeature`。
 
 ### `StartAsync` 里能用作用域服务吗
 

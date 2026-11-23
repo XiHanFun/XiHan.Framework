@@ -23,21 +23,18 @@
 
 ## 最小示例
 
-文件系统存储加宿主代收发，签出一个 30 分钟内有效的下载地址，前端拿地址直接下载，不带凭据：
+文件系统存储加宿主代收发，签出一个 30 分钟内有效的下载地址，前端拿地址直接下载，不带凭据。接在[上一页](/object-storage/basics)装配了文件系统存储的 `Program.cs` 上，多装一个 `HostedBlobUrlFeature`，在 `app.UseXiHan()` 之后映射端点：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Blobs;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Signing;
-using XiHan.Framework.ObjectStorage.FileSystem;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
+    .UseStandardProfile()
     .UseFeature<FileSystemObjectStorageFeature>()
     .UseFeature<HostedBlobUrlFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
 app.MapXiHanBlobs();   // GET / PUT <BaseUrl>/{container}/{**key}
 
 app.MapGet("/invoices/{id}/link", async (string id, IBlobUrlSigner signer, CancellationToken ct) =>
@@ -46,8 +43,6 @@ app.MapGet("/invoices/{id}/link", async (string id, IBlobUrlSigner signer, Cance
     // link.Url 交给前端；link.ExpiresAt 之后失效
     return new { Url = link.Url.ToString(), link.ExpiresAt };
 });
-
-app.Run();
 ```
 
 ```json
@@ -100,7 +95,7 @@ if (opened.TryGetValue(out var part))
 | 上传不存在或已结束 | `OBJECTSTORAGE_NOTFOUND_002` |
 | `Overwrite = false` 且对象已存在 | 发起与完成都返回 `OBJECTSTORAGE_CONFLICT_001` |
 
-文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片不计入配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传在启动扫描时清掉；S3 直接映射原生 multipart。
+文件系统把分片暂存在容器下的 `uploads/<上传标识>/`，暂存的分片计入总配额，超过 `MultipartExpiryHours`（缺省 168 小时）仍未完成的上传即过期，拒绝再传分片与完成并被清掉，细则见 [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)；S3 直接映射原生 multipart，未完成的上传按桶的生命周期规则清理。
 
 ## 预签名地址
 
@@ -112,7 +107,7 @@ if (opened.TryGetValue(out var part))
 | `BlobUrlRequest.ForUpload(expiresIn, contentType)` | `PUT` | 上传整个对象，可限定内容类型（须合 `BlobPutOptions.IsValidContentType`） |
 | `BlobUrlRequest.ForPart(upload, partNumber, expiresIn)` | `PUT` | 上传分片上传的某一片，响应头 `ETag` 就是这一片的 ETag |
 
-有效期缺省 30 分钟（`BlobUrlRequest.DefaultExpiresIn`），范围 1 秒到 7 天，超出时构造请求抛出 `ArgumentOutOfRangeException`。限定的内容类型不合文法、文件名含控制字符或超过 255 个字符时抛出 `ArgumentException`：签名的规范串以换行分隔各限定项，值里不能带换行（ADR-0219）。签出的 `BlobSignedUrl` 带地址、方法、失效时刻与 `Headers`：客户端必须原样发送这些请求头（例如限定的 `Content-Type`），否则验签不过。签名在本地计算，不检查对象是否存在。
+有效期缺省 30 分钟（`BlobUrlRequest.DefaultExpiresIn`），范围 1 秒到 7 天，超出时构造请求抛出 `ArgumentOutOfRangeException`。限定的内容类型不合文法、文件名含控制字符或超过 255 个字符时抛出 `ArgumentException`：签名的规范串以换行分隔各限定项，值里不能带换行（ADR-0219）。签出的 `BlobSignedUrl` 带地址、方法、失效时刻与 `Headers`：客户端必须原样发送这些请求头（例如限定的 `Content-Type`），否则验签不过。签名在本地计算，不检查对象是否存在。有效期按业务取最短可用值（下载几分钟、上传按文件大小估）；地址泄露时，宿主代收发轮换 `Secret` 即让全部已签地址失效，S3 的地址随凭据轮换失效。
 
 S3 由存储自己签名（签名 V4），客户端直连存储。文件系统没有原生签名，由宿主代收发：装配 `HostedBlobUrlFeature` 并映射端点（见最小示例），签名是对方法、容器、键、过期时刻与各限定项的 HMAC-SHA256，无状态，持有同一密钥的多个实例互认。
 
@@ -249,28 +244,6 @@ S3 命名实例的定义可能来自应用的库，端点可能是租户填的�
 
 存储包被要求提供分片上传或预签名、却没被选为对象存储时，装配抛出 `OBJECTSTORAGE_VALIDATION_004`，应用启动失败，消息列出被要求的能力与要改的键。选择规则见[能力图谱与 Provider](/startup/capabilities)。
 :::
-
-## 常见问题
-
-### 分片要多大，可以不按顺序传吗
-
-除最后一片外每片至少 5 MiB，编号 1 到 10000，可乱序、可重传，后一次覆盖前一次。完成时清单必须按编号严格升序、ETag 与已上传一致，否则 `OBJECTSTORAGE_VALIDATION_002`，上传保留，修正清单再完成。
-
-### 浏览器刷新了，分片上传怎么续
-
-把 `BlobMultipartUpload` 的容器、键、上传标识存进业务表；续传时用同样的值重建，`ListPartsAsync` 列出已上传的片，跳过它们继续传。未完成的上传在文件系统上保留 `MultipartExpiryHours`，S3 上按桶的生命周期规则。
-
-### 预签名地址泄露了怎么办
-
-地址在 `ExpiresAt` 之后自动失效，有效期最长 7 天，按业务取最短可用值（下载几分钟、上传按文件大小估）。宿主代收发时轮换 `Secret` 即让全部已签地址失效；S3 的地址随凭据轮换失效。
-
-### 用 S3 还要不要 `HostedBlobUrlFeature`
-
-不要。S3 自己签名、客户端直连存储；两者都提供 `objectstorage.presign@1`，同时装配要显式指定一个，否则启动失败。
-
-### 每个租户一个桶，怎样切换
-
-用命名实例：租户的端点与密钥存在应用的库里，取用时构造 `BlobStoreDefinition` 调 `GetOrAddAsync`，同名同定义复用、定义变了自动换新。注意租户填的端点经出站地址策略，内网 MinIO 要先放行。
 
 ## 相关包与下一步
 

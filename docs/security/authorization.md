@@ -30,7 +30,7 @@
 
 ## 定义与登记权限
 
-权限是 `PermissionDefinition`：权限码、显示名、可选说明。权限码小写、点分、至少两段，每段以小写字母开头，可含数字与连字符，如 `orders.read`。特性在 `Configure` 里用 `FeatureContext.AddPermission` 登记到内核的 `PermissionRegistry`；权限码重复（`KERNEL_SECURITY_001`）或登记表已满（容量 10000，`KERNEL_SECURITY_002`）在装配时抛出。
+权限是 `PermissionDefinition`：权限码、显示名、可选说明。权限码小写、点分、至少两段，每段以小写字母开头，可含数字与连字符，如 `orders.read`。特性在 `Configure` 里用 `FeatureContext.AddPermission` 登记到内核的 `PermissionRegistry`；权限码重复（`KERNEL_SECURITY_001`）或登记表已满（容量 10000，`KERNEL_SECURITY_002`）在装配时抛出，内核的错误码见 [Kernel](/packages/kernel)。
 
 特性清单的 `Contributes.Permissions` 是声明，`AddPermission` 是登记，内核不核对两者是否一致，应用自己保持同步。插件不同：进程外与 Wasm 宿主按插件清单的 `contributes.permissions` 替插件登记，只登记清单声明了的，与已登记的码重复即冲突，见[隔离级别与清单](/plugins/overview)。
 
@@ -99,24 +99,16 @@ SimpleApp 的 `CreateOrder` 在契约上写了 `Permission = "orders.write"`，`
 public sealed class ListOrders(IRepository<Order, Guid> orders) : IOperation<ListOrdersRequest, OrderList> { /* 见操作契约一章 */ }
 ```
 
-普通端点上的写法：
+普通端点上的写法，接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上：`AddXiHan` 装配 `OrdersFeature`，`app.UseXiHan()` 之后映射端点：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<OrdersFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
 
 app.MapGet("/profile", () => "ok").RequireXiHanAuthentication();
 app.MapGet("/orders/summary", () => "ok").RequireXiHanPermission("orders.read");
 app.MapGet("/orders/export", () => "ok").RequireXiHanPolicy(TenantMemberPolicy.PolicyName);
-
-app.Run();
 ```
 
 `TenantMemberPolicy` 见下文「自定义策略」。授予来自 SimpleApp 的配置（角色 `editor` 持有 `orders.read,orders.write`，`viewer` 只有 `orders.read`，见 [RBAC 授予与条件](/security/grants)），运行后的结果：
@@ -148,10 +140,10 @@ curl -i -X POST -H "Authorization: ApiKey dev-bob-key" -H "Content-Type: applica
 
 | 引用 | 什么时候核对 | 失败 |
 | --- | --- | --- |
-| 操作契约的 `Permission` | 装配完成时（`AppBuilder.Build`），之后登记的操作（插件握手之后）在登记时 | `KERNEL_VALIDATION_005`：一次列出全部未登记的权限码，应用启动失败 |
+| 操作契约的 `Permission` | 装配完成时（`AppBuilder.Build`），之后登记的操作（插件握手之后）在登记时 | `KERNEL_VALIDATION_005`：一次列出全部未登记的权限码，应用启动失败；之后登记的操作在登记时返回，插件登记失败 |
 | 操作契约的 `Policy` | 授权能力（`Security.InMemory` / `Security.Database`）登记的启动核对：容器建好之后、任何特性启动之前，经 `PolicyCatalog.EnforceOn` 一次核对已登记的全部操作；之后登记的操作在登记时逐个核对 | `SECURITY_VALIDATION_004`：宿主启动失败，不论失败策略（`IsolateFeature` 也一样）；插件整体登记失败 |
 | 端点上的 `RequireXiHanPermission` / `RequireXiHanPolicy` / `RequireXiHanAuthentication` | `UseXiHan()` 在宿主建请求管道时（路由已全部映射） | `SECURITY_VALIDATION_004`：宿主启动失败（`app.StartAsync` / `app.Run` 抛出） |
-| 有要求却没有判定者：契约声明了权限码或策略而 Authorize 阶段没有中间件，或端点挂了要求而没有装配授权能力 | 装配完成时；宿主建请求管道时；之后登记的操作在登记时 | `KERNEL_VALIDATION_006`：启动失败，插件登记失败（ADR-0217；以前要求静默失效） |
+| 有要求却没有判定者：契约声明了权限码或策略而 Authorize 阶段没有中间件，或端点挂了要求而没有装配授权能力 | 装配完成时；宿主建请求管道时；之后登记的操作在登记时 | `KERNEL_VALIDATION_006`：启动失败，插件登记失败（ADR-0217） |
 
 - 异常一次列出全部违规项，如 `'orders.approve' of 'xihan.app.orders' requires policy 'approvers'`。
 - 权限码在装配完成时核对，所以可以由别的特性登记；策略名在容器建好之后才知道（`IPolicy` 是容器里的服务），所以在启动核对里核对。
@@ -224,39 +216,13 @@ public static class OrderRequirements
 }
 ```
 
-内置的 `PermissionPolicy` 只看权限码、不看资源；按资源判定要写自定义策略。操作契约推导出的要求不带资源。
-
-## 错误码
-
-| 错误码 | 含义 | HTTP |
-| --- | --- | --- |
-| `SECURITY_DENIED_001` | 未认证：权限策略或 `authenticated` 策略遇到匿名主体 | 401 |
-| `SECURITY_DENIED_002` | 策略拒绝（策略返回未初始化的结果，或自定义策略以它为原因） | 403 |
-| `SECURITY_DENIED_004` | 缺少权限，含被 `IPermissionFilter` 收窄 | 403 |
-| `SECURITY_NOTFOUND_001` | 调用时才看到的要求引用的策略不存在，或其中 `permission:<code>` 的权限码未登记 | 404 |
-| `SECURITY_VALIDATION_004` | 操作契约的 `Policy`、端点上的要求引用了不存在的策略或未登记的权限码：启动时抛出、启动失败；授权能力启动之后登记的操作在登记时返回，插件登记失败 | — |
-| `SECURITY_UNAVAILABLE_001` | 授予存储、授予来源或收窄过滤器读不到数据，不当作不持有 | 503 |
-| `KERNEL_SECURITY_001` / `KERNEL_SECURITY_002` | 权限码重复 / 权限登记表已满，装配时抛出 | — |
-| `KERNEL_VALIDATION_005` | 操作契约引用了未登记的权限码：装配完成时抛出、启动失败；插件握手之后登记的操作在登记时返回，插件登记失败 | — |
-| `KERNEL_VALIDATION_006` | 要求授权而没有判定者：契约声明了权限码或策略而 Authorize 阶段没有中间件，或端点挂了要求而没有装配授权能力：启动时抛出；之后登记的操作登记失败 | — |
+内置的 `PermissionPolicy` 只看权限码、不看资源；按资源判定（如只能改自己的订单）要写自定义策略读 `request.Resource` 与 `request.Security.Principal`，或者在处理器里按仓储查到的所有者判断后返回 `Error.Denied`。操作契约推导出的要求不带资源，所以资源级判定通常在处理器或显式要求里做。
 
 ## 常见问题
 
-### 启动时报 `KERNEL_VALIDATION_005`，说权限码没登记
-
-某个操作契约的 `Permission` 写了一个没有经 `AddPermission` 登记的码。异常一次列出全部，按清单逐个在对应特性的 `Configure` 里补登记，或改正拼写。权限码可以由别的特性登记，但要保证那个特性确实被装配了。
-
 ### 启动时报 `KERNEL_VALIDATION_006`，说没有中间件判定授权
 
-操作契约声明了 `Permission` 或 `Policy`、或端点挂了 `RequireXiHan*`，而应用没有装配授权能力（`security.authorization@1`）。要求没人判定就等于没有，框架宁可启动失败。装配一个授权 Provider（`Security.InMemory` 或 `Security.Database`）；确实不需要授权的应用，去掉这些要求。测试里只想要契约上的权限、不想验授权时，在 Authorize 阶段挂一个放行的测试替身中间件。
-
-### 403 和 401 怎么区分
-
-`SECURITY_DENIED_001`（匿名）与 `SECURITY_DENIED_003`（凭据无效）是 401，客户端应该登录或刷新凭据；`SECURITY_DENIED_002` / `SECURITY_DENIED_004` 是 403，已登录但无权，再试也没用。权限策略对匿名主体先返回 `SECURITY_DENIED_001`，所以前端不用自己判断「是没登录还是没权限」。
-
-### 怎样按资源（只能改自己的订单）判定
-
-内置权限策略只看权限码。把资源名经 `RequireXiHanPermission(code, resource)` 或 `AuthorizationRequirement` 放进请求，写一个自定义 `IPolicy` 读 `request.Resource` 与 `request.Security.Principal` 判定；或者在处理器里按仓储查到的所有者判断后返回 `Error.Denied`。操作契约推导的要求不带资源，所以资源级判定通常在处理器或显式要求里做。授予存储读不到时为什么是 503 而不是 403，见 [RBAC 授予与条件](/security/grants)。
+装配一个授权 Provider（`Security.InMemory` 或 `Security.Database`）；确实不需要授权的应用，去掉契约与端点上的这些要求。测试里只想要契约上的权限、不想验授权时，在 Authorize 阶段挂一个放行的测试替身中间件。
 
 ### OpenAPI 文档里能看到授权要求吗
 
@@ -265,6 +231,7 @@ public static class OrderRequirements
 ## 相关包与下一步
 
 - 包参考：[Security.Abstractions](/packages/security-abstractions)、[Security.InMemory](/packages/security-inmemory)、[Security.Database](/packages/security-database)
+- 错误码：[Security.Abstractions](/packages/security-abstractions#错误码)，`KERNEL_*` 见 [Kernel](/packages/kernel)
 - 规范：RFC-0008《认证与授权》、RFC-0010《消息与本地化》
 - 相关章节：[操作契约](/web/operations)、[端点里使用框架](/web/endpoints)、[规范化接口文档](/web/openapi)、[审计](/common/auditing)
 - 下一步：[RBAC 授予与条件](/security/grants)

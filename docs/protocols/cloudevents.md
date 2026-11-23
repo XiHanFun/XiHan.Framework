@@ -75,29 +75,20 @@ context.AddPermission(new PermissionDefinition("events.deliver", "Deliver events
 }
 ```
 
+`Program.cs` 沿用[第一个应用](/getting-started/first-app)的骨架，装配特性并映射入站端点：
+
 ```csharp
-using SimpleApp.Orders;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.CloudEvents;
 using XiHan.Framework.Protocols.CloudEvents.Inbound;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<CloudEventsProtocolFeature>()
     .UseFeature<OrdersFeature>());
 
-var app = builder.Build();
-
-app.UseXiHan();
-// POST /events：框架不给这个端点加任何要求，权限由宿主自己加
+// app.UseXiHan() 之后。POST /events：框架不给这个端点加任何要求，权限由宿主自己加
 app.MapXiHanCloudEvents().RequireXiHanPermission(OrdersFeature.DeliverEventsPermission);
-
-app.Run();
 ```
 
 运行后以 binary 模式推一个事件。SimpleApp 里只有服务账号 `relay`（`dev-relay-key`）持有 `events.deliver`：
@@ -128,15 +119,7 @@ app.MapXiHanCloudEvents().RequireXiHanPermission("events.deliver");
 
 batch 先把每个事件的类型解析成主题，任一事件没有映射时整批 400、一个都不处理；派发模式逐个处理，第一个失败即停止并作为响应；发布模式按主题分组各一次 `PublishManyAsync`，第一个失败的结果作为响应。已处理的事件不回滚，发送方重试整批时，处理器按 `id` + `source` 去重，这是 CloudEvents 规范定义的事件唯一标识。
 
-| 情形 | 状态码 | 错误码 |
-| --- | --- | --- |
-| 不是 CloudEvent（内容类型既不是 structured / batch，也没有 `ce-specversion`） | 400 | `PROTOCOLS_VALIDATION_008` |
-| 信封不合法（规范版本、必填属性、时间、扩展名） | 400 | `MESSAGING_VALIDATION_002` |
-| 事件类型没有映射，类型本身也不是合法主题 | 400 | `PROTOCOLS_VALIDATION_009` |
-| 请求体超过 `MaxRequestBodyBytes`（缺省 1 MiB） | 400 | `PROTOCOLS_VALIDATION_013` |
-| batch 的事件数超过 `MaxBatchSize`（缺省 100） | 400 | `PROTOCOLS_VALIDATION_014` |
-| 派发模式下主题没有处理器 | 404 | `PROTOCOLS_NOTFOUND_003` |
-| 处理器或发布失败 | 按错误 KIND | 处理器或代理返回的错误码 |
+入站的失败都写成 Problem Details。请求本身不合格是 400：不是 CloudEvent（`PROTOCOLS_VALIDATION_008`）、信封不合法（`MESSAGING_VALIDATION_002`）、事件类型没有映射且类型本身也不是合法主题（`PROTOCOLS_VALIDATION_009`）、请求体超过 `MaxRequestBodyBytes`（缺省 1 MiB，`PROTOCOLS_VALIDATION_013`）、batch 的事件数超过 `MaxBatchSize`（缺省 100，`PROTOCOLS_VALIDATION_014`）。派发模式下主题没有处理器是 404（`PROTOCOLS_NOTFOUND_003`）；处理器或发布失败按它返回的错误码与 KIND 映射。错误码表与全部配置键见[包参考](/packages/protocols-cloudevents#配置)。
 
 ## 出站 Webhook
 
@@ -180,12 +163,7 @@ builder.Services.AddHttpClient(CloudEventsWebhookPublisher.HttpClientName, clien
 
 信封按原样发出，不从当前调用补齐扩展：`xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 都不由框架加上。接收方是第三方，租户、主体、关联是本系统的内部标识，推出去会暴露内部结构与身份，并让第三方依赖本该可变的内部 ID；追踪链要不要跨出组织边界也由调用方决定。要带给接收方的扩展显式写进信封。HTTP 层同理：启用追踪时 .NET 的 `HttpClient` 本会按当前 Activity 在请求头里写 W3C 的 `traceparent`、`tracestate` 与 `baggage`，Webhook 的命名客户端 `xihan.protocols.cloudevents` 缺省不写；确实要把追踪链接到接收方，设 `XiHan:Protocols:CloudEvents:PropagateTraceContext` 为 `true`，它只作用于这个客户端，出站请求的客户端跨度照常记录。
 
-| 情形 | 错误码 |
-| --- | --- |
-| 主题没有配置 Webhook | `PROTOCOLS_NOTFOUND_004` |
-| Webhook 返回非 2xx（`details.status` 是状态码；只看状态码，响应体不读） | `PROTOCOLS_UNAVAILABLE_001` |
-| 连接失败 | `PROTOCOLS_UNAVAILABLE_002`，`reason` 只写异常类型的全名，完整异常进日志 |
-| 地址被[出站地址策略](/security/outbound)拒绝 | `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名，不发起连接 |
+失败时：主题没有配置 Webhook 是 `PROTOCOLS_NOTFOUND_004`；Webhook 返回非 2xx 是 `PROTOCOLS_UNAVAILABLE_001`（`details.status` 是状态码；只看状态码，响应体不读）；连接失败与地址被[出站地址策略](/security/outbound)拒绝都是 `PROTOCOLS_UNAVAILABLE_002`，`reason` 只写异常类型的全名（被策略拒绝时是 `OutboundAddressDeniedException`，不发起连接），完整异常进日志。
 
 Webhook 的接收方是第三方，它的 3xx 能把请求引到内网，所以这个命名客户端的连接与重定向都过出站地址策略。接收方在内网时，把它写进 `XiHan:Security:Outbound:AllowedHosts`。发布者自己不重试，重试由调用方决定：像上例那样放在消息处理器里，或经发件箱投递，得到至少一次语义。
 
@@ -207,22 +185,6 @@ CloudEvents 适配器不新造概念，它只是消息子系统在 HTTP 上的�
 ### 发送方不按 CloudEvents 格式推，只给一个普通 JSON
 
 端点只认 CloudEvents。两条路：让发送方在请求头里补 `ce-specversion`、`ce-id`、`ce-source`、`ce-type` 四个头，就是合法的 binary 模式，请求体不用改；做不到就自己写一个最小端点把它包成 `MessageEnvelope` 后发布，写法见[端点里使用框架](/web/endpoints)。
-
-### 同一个事件收到两次怎么办
-
-HTTP 投递是至少一次，重试必然带来重复。处理器按 `id` + `source` 去重（这是规范定义的事件唯一标识），或者把处理写成幂等的。batch 重试时已处理的事件不回滚，所以去重要落在处理器而不是端点。
-
-### 入站事件的租户为什么不按凭据核对
-
-事件来自别的系统，它的租户是事件的属性而不是调用者的属性，中继服务一次可能替多个租户投递。框架因此把判断权交给宿主：端点只开给平台服务账号，服务账号的持有者对事件里的租户负责。不要把投递权限授给租户内的角色。
-
-### 为什么 Webhook 不带 `traceparent`
-
-接收方是第三方，追踪链是否跨出组织由你决定，缺省不带。需要时设 `PropagateTraceContext` 为 `true`；信封里的 `traceparent` 扩展则要显式写进信封。
-
-### Webhook 失败后谁来重试
-
-发布者不重试。放在消息处理器里时由消息子系统按重试策略重投，用尽后进死信；经发件箱投递时由发件箱重试。两种都得到至少一次语义，接收方要能去重。
 
 ## 相关包与下一步
 

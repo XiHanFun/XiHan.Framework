@@ -54,7 +54,7 @@ dotnet test --solution MyApp.slnx --configuration Release -p:TestingPlatformComm
 
 ## 测试宿主
 
-`TestHost.StartAsync(configure, configuration, services)` 在内存里装配并启动一个应用：自建服务集合（`ValidateScopes = true`，在根容器解析 Scoped 服务直接报错）与内存配置，调用 `AppBuilder` 上的 `UseFeature` 后启动全部特性；没有 HTTP，也不经过任何协议适配器。启动失败时先释放容器再抛出，`DisposeAsync` 按与启动相反的顺序停止特性，重复释放是空操作。
+`TestHost.StartAsync(configure, configuration, services)` 在内存里装配并启动一个应用：自建服务集合（`ValidateScopes = true`，在根容器解析 Scoped 服务直接报错；仓储、工作单元这类 Scoped 服务要在调用里从 `context.Services` 解析，或在测试里显式 `CreateScope()`）与内存配置，调用 `AppBuilder` 上的 `UseFeature` 后启动全部特性；没有 HTTP，也不经过任何协议适配器。启动失败时先释放容器再抛出，`DisposeAsync` 按与启动相反的顺序停止特性，重复释放是空操作。
 
 | 成员 | 用途 |
 | --- | --- |
@@ -101,36 +101,7 @@ public sealed class HostSmokeTests
 
 ## 测一个中间件
 
-中间件在 `InvokeAsync` 里决定是否调用下一步；短路时把失败结果写进上下文，不进入下游。下面的中间件要求调用方带关联 ID：
-
-```csharp
-using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Primitives;
-
-namespace Contoso.Correlation;
-
-public static class CorrelationMessages
-{
-    public const string Missing = "contoso.correlation.missing";
-}
-
-public sealed class RequireCorrelationMiddleware : IPipelineMiddleware
-{
-    public const string ErrorCode = "CONTOSO_VALIDATION_001";
-
-    public ValueTask InvokeAsync(InvocationContext context, PipelineStep nextStep)
-    {
-        if (!context.TryGetBaggage(BaggageKeys.Correlation, out _))
-        {
-            // 短路：写入失败结果，不调用下游
-            context.SetOutcome(Error.Validation(ErrorCode, CorrelationMessages.Missing));
-            return ValueTask.CompletedTask;
-        }
-
-        return nextStep(context);
-    }
-}
-```
+中间件在 `InvokeAsync` 里决定是否调用下一步；短路时把失败结果写进上下文，不进入下游。被测的是[能力包与中间件](/extending/feature#写一个管道中间件)里写的 `RequireCorrelationMiddleware`：调用方没带关联 ID（Baggage `xihan.correlation`）时以 `RequireCorrelationMiddleware.ErrorCode`（`CONTOSO_VALIDATION_001`）短路。
 
 用特性桩把它挂进 Validate 阶段，再分别以缺少和带有 Baggage 的调用验证：
 
@@ -261,10 +232,6 @@ File.Delete(path);
 ### 用例之间互相影响
 
 每个用例起自己的 `TestHost`，用完 `await using` 释放；不要在类级别共享宿主。同一进程里的静态状态（如内存 Provider 的静态字典）才会串，框架的默认实现都是容器内实例，不会。
-
-### 在根容器解析 Scoped 服务报错
-
-`TestHost` 开了 `ValidateScopes`，这是在模拟真实宿主一调用一作用域的语义。Scoped 服务（仓储、工作单元）要在调用里从 `context.Services` 解析，或在测试里显式 `CreateScope()`。
 
 ### 怎样给操作传截止时间或租户
 

@@ -37,18 +37,13 @@ dotnet add package XiHan.Framework.Protocols.Mcp --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.Mcp;
 using XiHan.Framework.Protocols.Mcp.Transports;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<McpProtocolFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanMcp();      // POST /mcp
-app.Run();
 ```
 
 命令行宿主里装配 `McpProtocolFeature` 并调用 `AddXiHanCommandLine()` 后，`mcp` 命令即可用，见[命令行宿主](/protocols/command-line)。

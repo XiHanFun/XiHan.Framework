@@ -81,17 +81,13 @@
 dotnet add package XiHan.Framework.Security.Database --prerelease
 ```
 
-本包必须和一个持久化 Provider 一起装配：
+本包必须和一个持久化 Provider 一起装配。接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，`AddXiHan` 多三个特性：
 
 ```csharp
 using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Security.Database;
 using XiHan.Framework.Security.Jwt;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // JWT 认证 + 数据库授予；Standard 组合包里的内存持久化与内存安全都被顶替
 builder.AddXiHan(xihan => xihan
@@ -103,23 +99,14 @@ builder.AddXiHan(xihan => xihan
     }))
     .UseFeature<JwtSecurityFeature>()
     .UseFeature<DatabaseSecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
-`Persistence.EntityFrameworkCore` 的应用在自己的 `DbContext` 里 `modelBuilder.Entity<PermissionGrantRecord>()` 登记实体并 `ApplyPersistenceConventions(Database)`，四列的联合唯一索引由实体上的 `[EntityIndex]` 建出，见 [Security.Database](/packages/security-database)。
+`Persistence.EntityFrameworkCore` 的应用还要在自己的 `DbContext` 里登记 `PermissionGrantRecord`，写法见 [Security.Database](/packages/security-database)；缓存存活时间 `XiHan:Security:Database:CacheTimeToLiveSeconds`（缺省 30 秒，只是兜底）与缓存容量见它的[配置](/packages/security-database#配置)。
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Security:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间，必须为正，`0` 与负数让装配失败。授予与撤销经失效立即生效，存活时间只是兜底 |
-
-缓存容量由提供 `caching.local` 的 Provider 管（`XiHan:Caching:InMemory:MaxEntries` 或 `XiHan:Caching:Hybrid:LocalCapacity`）；以前的 `XiHan:Security:Database:CacheSize` 已删除，配置里留着也被忽略。
-
-读写分成两个类型，与数据库租户目录同一套做法：`DatabasePermissionGrantStore` 是单例 `IPermissionGrantStore`，Authorize 阶段经检查器查它，它在根提供者的新作用域里直接开只读工作单元读仓储（配了从库也读主库），结果经 `ICache` 缓存（区 `security:grants`）；`PermissionGrantRecordStore` 是作用域服务，管理操作在 Transaction 阶段内用调用方的工作单元批量授予、撤销，逐项返回结果，写入后失效涉及主体的缓存：
+读写分成两个类型，与数据库租户目录同一套做法：`DatabasePermissionGrantStore` 是单例 `IPermissionGrantStore`，Authorize 阶段经检查器查它，结果经 `ICache` 缓存（区 `security:grants`）；`PermissionGrantRecordStore` 是作用域服务，管理操作在 Transaction 阶段内用调用方的工作单元批量授予、撤销，逐项返回结果，写入后失效涉及主体的缓存：
 
 ```csharp
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Permissions;
 
 // 作用域服务，在操作的处理器里使用
@@ -139,16 +126,14 @@ public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 }
 ```
 
-`ListAsync(PermissionGrantQuery)` 分页列出授予，返回 `PermissionGrantPage`（`Items` 与总数 `Total`）：按 `Subject` 过滤主体，按 `Tenant` 过滤范围（`GrantTenantFilter.Any` 缺省不过滤、`Platform` 只要平台授予、`Of(tenantId)` 只要该范围，`Of("*")` 是每个租户的授予），`Skip` / `Take`（最多 1000）越界返回 `SECURITY_VALIDATION_005`。行为要点：
+要点如下，分页列出授予的 `ListAsync`、落库形式、缓存后端故障与表结构等细则见 [Security.Database](/packages/security-database#行为与限制)：
 
-- 授予是平台级数据：`PermissionGrantRecord` 不实现 `IMultiTenant`，不受当前调用租户过滤。平台授予以空字符串（`PermissionGrantRecord.PlatformTenantId`）落库、每个租户的授予以 `*` 落库，契约边界仍以 `PermissionGrant.TenantId == null` 表示平台；空白租户是编程错误，在访问数据库前抛出 `ArgumentException`。
-- 授予已存在的返回成功且不重复写；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`、调用回滚，重试即成功。撤销不存在的授予返回 `SECURITY_NOTFOUND_002`。
-- 缓存按主体失效（范围是主体、条目是租户，[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），失效作用于所有共用这个缓存的实例。写入在事务提交后才对其他调用可见，所以写入时与调用结束（提交之后）各失效一次，提交之前读回的旧值不会被当作命中，授予与撤销在提交之后立即生效（ADR-0194、ADR-0229）。
-- 多实例部署要装 `Caching.Redis` 与 `Caching.Hybrid`：判定命中在本机一级缓存、不出进程，一个实例写入后其他实例经 Redis 的变更通知立即失效。只装 Redis 时 `ICache` 仍是进程内的，其他实例的缓存只能靠存活时间收敛。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`。
-- 数据库故障返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束，不会落到 403；失败不进缓存，恢复后下一次判定立即重新查库。
-- 缓存后端（如 Redis）故障时判定直接查库、不写缓存，结果仍然正确，警告日志每 10 秒最多一条。授予、撤销时的失效遇到缓存故障，写入调用失败（`KERNEL_UNEXPECTED_001`，HTTP 500，原因 `CACHING_UNAVAILABLE_001`）、事务回滚：撤销传不到其他实例时不报成功。提交之后的那次失效失败只记错误日志，已提交的写入在存活时间内对所有实例生效。
+- 授予是平台级数据：`PermissionGrantRecord` 不实现 `IMultiTenant`，不受当前调用租户过滤。
+- 授予已存在的返回成功且不重复写；两个调用同时授予同一项时后插入的那一批返回 `PERSISTENCE_CONFLICT_003`（HTTP 409，见 [Persistence.Abstractions](/packages/persistence-abstractions#错误码)）、调用回滚，重试即成功。撤销不存在的授予返回 `SECURITY_NOTFOUND_002`。
+- 缓存按主体失效（范围是主体、条目是租户，[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），作用于所有共用这个缓存的实例；写入时与调用结束（提交之后）各失效一次，授予与撤销在提交之后立即生效（ADR-0194、ADR-0229）。
+- 多实例部署要装 `Caching.Redis` 与 `Caching.Hybrid`：一个实例写入后其他实例经 Redis 的变更通知立即失效。只装 Redis 时 `ICache` 仍是进程内的，其他实例的缓存只能靠存活时间收敛。
+- 数据库故障返回 `SECURITY_UNAVAILABLE_001`，调用以 503 结束，不会落到 403。
 - 绕过 `PermissionGrantRecordStore` 直接改表后，调用 `await DatabasePermissionGrantStore.InvalidateAsync(subjects, ct)`（清全部用 `InvalidateAllAsync(ct)`），或等存活时间到期。
-- 表结构由应用管理，`InitTables` 只用于开发与测试；唯一索引 `(SubjectKind, SubjectId, Permission, TenantId)` 由 `[EntityIndex]` 建出。被选为授权能力时同样登记启动核对 `PolicyCatalog.EnforceOn`。
 
 ## 收窄：IPermissionFilter
 
@@ -248,7 +233,7 @@ public static class OfficeHoursCondition
 }
 ```
 
-编译与求值各一步：`compiler.Compile(conditions, new ConditionCompileOptions { TimeZone = TimeZoneInfo.Local })` 返回 `CompiledConditionSet`，`Errors` 非空就在保存前拒绝（每条错误带 `SECURITY_VALIDATION_002` 与说明原因的消息键）；`await evaluator.EvaluateAsync(compiled, source, explain: false, cancellationToken)` 返回 `ConditionEvaluationResult`，看 `IsMatched`。`DictionaryConditionAttributeSource` 用于试算与测试；运行时应用实现 `IConditionAttributeSource`，按规范名返回 `ConditionAttributeValue.Of(value)`、`ConditionAttributeValue.Missing`（取不到）或 `ConditionAttributeValue.Deferred`（暂不可得），`MemoizingConditionAttributeSource` 让同一次求值里每个属性只取一次。求值只向来源取被引用的属性（`CompiledConditionSet.ReferencedAttributes`）。
+编译与求值各一步：`compiler.Compile(conditions, new ConditionCompileOptions { TimeZone = TimeZoneInfo.Local })` 返回 `CompiledConditionSet`，`Errors` 非空就在保存前拒绝（每条错误带 `SECURITY_VALIDATION_002` 与说明原因的消息键，翻译后展示给用户，见[全球化和本地化](/common/localization)）；`await evaluator.EvaluateAsync(compiled, source, explain: false, cancellationToken)` 返回 `ConditionEvaluationResult`，看 `IsMatched`。`DictionaryConditionAttributeSource` 用于试算与测试；运行时应用实现 `IConditionAttributeSource`，按规范名返回 `ConditionAttributeValue.Of(value)`、`ConditionAttributeValue.Missing`（取不到）或 `ConditionAttributeValue.Deferred`（暂不可得），`MemoizingConditionAttributeSource` 让同一次求值里每个属性只取一次。求值只向来源取被引用的属性（`CompiledConditionSet.ReferencedAttributes`）。
 
 | 结果 | 子句 | 组 | 条件集 |
 | --- | --- | --- | --- |
@@ -257,39 +242,18 @@ public static class OfficeHoursCondition
 | `Indeterminate` 无法判定 | 属性取不到（`SECURITY_NOTFOUND_003`）或值不是登记的种类（`SECURITY_VALIDATION_003`）；按不命中计，取反不翻转 | — | — |
 | `Pending` 待定 | 属性暂不可得（`SECURITY_UNAVAILABLE_004`） | 没有不命中、有待定 | 没有组命中、有组待定 |
 
-`IsNull` / `IsNotNull` 把取不到、空列表、全是空白的字符串当空，可以取反。多值属性按任一元素判定。编译出错的子句保留在编译结果里、求值恒为无法判定，库里的脏数据不会让整个条件集失效。`explain: true` 时逐组逐子句给出结果与原因，用于编辑界面的试算。
-
-## 错误码
-
-| 错误码 | 含义 | HTTP |
-| --- | --- | --- |
-| `SECURITY_DENIED_004` | 缺少权限，含被 `IPermissionFilter` 收窄 | 403 |
-| `SECURITY_NOTFOUND_002` | 要撤销的授予不存在（`IPermissionGrantAdministration.RevokeAsync` 的逐项结果，内存与数据库实现相同） | — |
-| `SECURITY_UNAVAILABLE_001` | 授予存储、授予来源或收窄过滤器读不到数据，不当作不持有 | 503 |
-| `SECURITY_UNAVAILABLE_002` | 内存授予存储容量已满 | — |
-| `SECURITY_VALIDATION_002` / `SECURITY_VALIDATION_003` | 条件无效（属性未登记、运算符与值种类不搭配、值解析不了）/ 属性值不是登记的种类 | — |
-| `SECURITY_NOTFOUND_003` / `SECURITY_UNAVAILABLE_004` | 取不到条件属性的值 / 属性暂不可得 | — |
-| `PERSISTENCE_CONFLICT_003` | 两个调用同时写入同一条数据库授予，后者回滚，重试即成功 | 409 |
-
-条件相关的四个错误码出现在编译结果与说明里，不直接成为调用结果。
+`IsNull` / `IsNotNull` 把取不到、空列表、全是空白的字符串当空，可以取反。多值属性按任一元素判定。编译出错的子句保留在编译结果里、求值恒为无法判定，库里的脏数据不会让整个条件集失效。`explain: true` 时逐组逐子句给出结果与原因，用于编辑界面的试算。上面四个条件相关的错误码只出现在编译结果与求值说明里，不直接成为调用结果。
 
 ## 常见问题
-
-### 配置里能写租户专属的授予吗
-
-不能。`XiHan:Security:InMemory:Grants` 里是平台授予，`AnyTenantGrants` 里是每个租户的授予；租户专属授予在两个实现里都经 `IPermissionGrantAdministration.GrantAsync` 带 `tenantId` 写入。用户授予、角色授予、来源任一命中即命中，没有「冲突」；要拿走权限用 `IPermissionFilter`。
 
 ### 条件引擎怎样接进授权
 
 框架没有把它接进 Authorize 阶段，因为属性来源（当前 IP、时间、资源属性）由应用定义。常见做法是写一个自定义 `IPolicy` 或 `IPermissionFilter`：从调用来源取 IP（见 [IP 归属地](/security/ip-region)）、从主体取角色、从时钟取时间，组成 `IConditionAttributeSource`，用 `IConditionEvaluator` 求值，`Matched` 放行、其他拒绝；`Pending` 要么当拒绝，要么补齐属性后再求值一次。
 
-### 条件保存时怎样提示用户写错了
-
-先 `IConditionCompiler.Compile`，`Errors` 非空就拒绝保存，每条错误带 `SECURITY_VALIDATION_002` 与具体原因的消息键，翻译后展示，见[全球化和本地化](/common/localization)。
-
 ## 相关包与下一步
 
 - 包参考：[Security.Abstractions](/packages/security-abstractions)、[Security.InMemory](/packages/security-inmemory)、[Security.Database](/packages/security-database)、[Persistence.SqlSugar](/packages/persistence-sqlsugar)、[Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore)
+- 错误码：[Security.Abstractions](/packages/security-abstractions#错误码)
 - 规范：RFC-0008《认证与授权》
 - 相关章节：[授权与权限](/security/authorization)、[数据库租户目录](/multi-tenancy/database)、[仓储读写](/persistence/repositories)
 - 下一步：[IP 归属地](/security/ip-region)

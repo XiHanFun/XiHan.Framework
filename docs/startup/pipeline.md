@@ -48,7 +48,7 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 4. 处理器在所有中间件之内执行，结果写进上下文。
 5. 管道返回后，宿主读取 `context.FindOutcome()`，把 `Result` 与 `Error` 翻译回协议：HTTP 为 RFC 9457 Problem Details，gRPC 为状态码与 `xihan-error-code` 尾部元数据，命令行为退出码与 stderr。
 
-`ObserveMiddleware` 为每次调用开启名为 `xihan.invoke` 的 Activity，记录 `xihan.invocations` 计数与 `xihan.invocation.duration` 耗时（毫秒），并把未处理异常转成 `KERNEL_UNEXPECTED_001` 结果；取消不在这里吞掉，由 `DeadlineMiddleware` 区分超时（`KERNEL_TIMEOUT_001`）与外部取消（`KERNEL_CANCELLED_001`）。采样规则见[日志与可观测性](/common/observability)。
+`ObserveMiddleware` 为每次调用开启名为 `xihan.invoke` 的 Activity，记录 `xihan.invocations` 计数与 `xihan.invocation.duration` 耗时（毫秒），并把未处理异常转成 `KERNEL_UNEXPECTED_001` 结果（HTTP 为 500，异常记进日志并带 trace-id）；取消不在这里吞掉，由 `DeadlineMiddleware` 区分超时（`KERNEL_TIMEOUT_001`）与外部取消（`KERNEL_CANCELLED_001`）。采样规则见[日志与可观测性](/common/observability)。
 
 ## 最小示例
 
@@ -203,17 +203,9 @@ ASP.NET Core 宿主里，`app.UseXiHan()` 之后映射的最小 API 端点在 Ha
 
 挂到 `Validate` 或 `Idempotency` 阶段，用 `Placement` 决定在阶段内的开头或末尾。阶段之间的顺序是固定的，所以挂在 `Authorize` 之后的任何阶段都保证能读到已判定的主体与租户。
 
-### 中间件抛了异常会怎样
-
-`ObserveMiddleware` 把未处理异常转成 `KERNEL_UNEXPECTED_001`，调用方得到 500（HTTP）或退出码 1（命令行），异常本身记进日志并带 trace-id。但这是兜底：可恢复的失败应当用 `Error` 写进上下文，让调用方拿到有意义的错误码。
-
 ### 能不能只对某些操作生效
 
 管道对每次调用都执行，中间件自己决定是否放行：读 `context` 里的操作描述或 `FindOrigin()` 判断来源与目标，不相关的调用直接 `await nextStep(context)`。框架不提供按操作挂中间件的注册方式，这样做保证顺序只由阶段决定。
-
-### 为什么我的中间件排在别人之前，却读不到对方写的值
-
-归属字典序不是依赖。用 `After<我的, 对方的>()` 声明次序，或者把它挂到更靠后的阶段。约束只能在同一阶段内生效，跨阶段的次序本来就由阶段保证。
 
 ### 怎样在测试里验证中间件的短路行为
 

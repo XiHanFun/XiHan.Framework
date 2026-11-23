@@ -34,18 +34,12 @@
 dotnet add package XiHan.Framework.MultiTenancy.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时在 `AddXiHan` 里 `UseFeature`，`Program.cs` 的其余部分见[第一个应用](/getting-started/first-app)：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.MultiTenancy.InMemory;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseFeature<InMemoryMultiTenancyFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置
@@ -81,15 +75,7 @@ app.Run();
 }
 ```
 
-分片能力被选中时，`TenantStoreShardResolver` 从租户属性推出分片：
-
-| 属性键 | 含义 |
-| --- | --- |
-| `ConnectionString` | 有值即该租户分库 |
-| `DatabaseProvider` | 数据库提供者名，可选，转成小写 |
-| `Shard.<key>` | 去掉前缀后作为 `<key>` 透传给持久化 Provider |
-
-上例里 `acme` 分库，`beta` 与 `globex` 共库。
+分片能力被选中时，`TenantStoreShardResolver` 从租户属性 `ConnectionString`、`DatabaseProvider` 与 `Shard.<key>` 推出分片，各键的含义见[租户分片与分库](/multi-tenancy/sharding)。上例里 `acme` 分库，`beta` 与 `globex` 共库。
 
 ## 主要类型
 
@@ -134,7 +120,6 @@ public sealed class TenantMoves(ITenantAdministration tenants)
 - 健康项 `multitenancy.inmemory.capacity`：租户数达到上限即 Degraded（原因 `MULTITENANCY_UNAVAILABLE_001`），否则 Ready。
 - ID 区分大小写；`ListAsync` 按 ID 序数排序返回全部租户。
 - 数据只在进程内存里：多实例部署时各实例各有一份，运行时的增删不会同步到其他实例，重启后恢复为配置内容。
-- 缺省分片解析器不缓存，以前的 `XiHan:MultiTenancy:ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已删除，配置里留着也被忽略。
 
 ## 相关
 

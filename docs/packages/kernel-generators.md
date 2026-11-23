@@ -84,12 +84,8 @@ dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```csharp
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using XiHan.Framework.Kernel;
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
-using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Primitives.Manifests;
 
 [assembly: OperationDefaults(Expose = Expose.Http)]
 
@@ -121,27 +117,17 @@ public sealed class CreateNote : IOperation<CreateNoteRequest, NoteResponse>
         return ValueTask.FromResult(result);
     }
 }
+```
 
-public sealed class NotesFeature : IFeature
+特性的 `Configure` 里先登记权限码，再调用生成的登记代码（清单的写法见[能力包与清单](/startup/features)）：
+
+```csharp
+public void Configure(FeatureContext context)
 {
-    public Manifest Manifest { get; } = new()
-    {
-        Id = "xihan.contoso.notes",
-        Version = "1.0.0",
-        Primitives = 1,
-        Stability = Stability.Preview,
-        Kind = ManifestKind.Capability,
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Contributes = new Contributions { Permissions = ["notes.write"] },
-    };
-
-    public void Configure(FeatureContext context)
-    {
-        // 权限码先登记，契约里才能引用
-        context.AddPermission(new PermissionDefinition("notes.write", "Write notes"));
-        // 生成的登记代码：契约、序列化元数据与 JSON Schema
-        context.AddGeneratedOperations();
-    }
+    // 权限码先登记，契约里才能引用
+    context.AddPermission(new PermissionDefinition("notes.write", "Write notes"));
+    // 生成的登记代码：契约、序列化元数据与 JSON Schema
+    context.AddGeneratedOperations();
 }
 ```
 

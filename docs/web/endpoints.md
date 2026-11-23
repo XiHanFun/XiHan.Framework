@@ -27,24 +27,13 @@
 
 ## 最小示例
 
-下面三个端点来自示例应用的 `Program.cs`，接 [ASP.NET Core 宿主](/web/hosting)里的装配代码：
+下面三个端点来自示例应用的 `Program.cs`，写在 `app.UseXiHan()` 之后；装配部分与[第一个应用](/getting-started/first-app)相同（Standard 组合加 `OrdersFeature`），另把 `SampleJsonContext.Default` 插进 HTTP JSON 选项的解析链：
 
 ```csharp
-using SimpleApp;
-using SimpleApp.Orders;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Primitives;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, SampleJsonContext.Default));
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<OrdersFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
 
 // 读安全上下文：Authenticate 与 Tenant 阶段已经写好主体与租户
 app.MapGet("/whoami", (HttpContext http) =>
@@ -64,8 +53,6 @@ app.MapGet("/missing", (HttpContext http) =>
 app.MapGet("/orders/stats", (OrderEventCounter counter) => new OrderStatistics(counter.Handled))
     .RequireXiHanAuthentication()
     .ExcludeFromDescription();
-
-app.Run();
 ```
 
 `OrdersFeature`、`OrderEventCounter`、`OrderStatistics`、`SampleJsonContext` 与 `WhoAmI`（记录：`Principal`、`IsAuthenticated`、`Tenant`）都来自示例应用（见[示例说明](/appendix/samples)）；`SampleMessages.ResourceMissing` 是消息键常量 `samples.resource.missing`，各语言文案在 `Localization/<区域>.json` 里。`WhoAmI` 与 `OrderStatistics` 登记进源生成的序列化上下文。运行后：
@@ -108,7 +95,7 @@ app.MapGet("/reports/{id}", (string id, HttpContext http) =>
 几条规则：
 
 - `SetOutcome` 接受 `Result`，`Error` 隐式转换成失败结果；调用后端点返回 `Results.Empty` 即可，宿主在响应还没开始写出时写 Problem Details。端点已经写出正文后再 `SetOutcome`，宿主保留端点的内容，只有结果记入日志与审计。
-- 状态码由错误码的 KIND 段映射（`NOTFOUND` 是 404），对照表见 [HTTP 路由与载荷](/web/routing)；`detail` 按调用方区域翻译，`details` 带标量参数。
+- 状态码由错误码的 KIND 段映射（`NOTFOUND` 是 404），对照表见[结果与错误处理](/web/errors#错误码)；`detail` 按调用方区域翻译，`details` 带标量参数。
 - `Error` 只携带消息键与参数，不带文案；键与各语言文件的约定见[结果与错误处理](/web/errors)与[全球化和本地化](/common/localization)。
 - 操作契约不需要这样做：`HandleAsync` 返回的 `Result` 就是调用结果。
 
@@ -125,11 +112,7 @@ app.MapGet("/reports/{id}", (string id, HttpContext http) =>
 | `RequireXiHanPolicy(policyName, resource)` | 命名策略允许；`resource` 可选 |
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore.Endpoints;
-
-app.MapGet("/orders/stats", (OrderEventCounter counter) => new OrderStatistics(counter.Handled))
-    .RequireXiHanAuthentication();
-
+// 已认证的写法见最小示例里的 /orders/stats；这里要求权限码
 app.MapGet("/orders/export", () => Results.Text("id,name"))
     .RequireXiHanPermission("orders.read");
 ```
@@ -154,42 +137,16 @@ SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道：不�
 2. `UseAuthentication()`、`UseAuthorization()` 放在 `UseXiHan()` 之前。
 3. 映射端点时用 `PipelineBypassMetadata.BypassXiHanPipeline(...)` 标注绕过，`RequireAuthorization` 的策略指定方案 `XiHan`。
 
-```csharp
-using Microsoft.AspNetCore.Authorization;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Hosting.AspNetCore.Authentication;
-using XiHan.Framework.Hosting.AspNetCore.Endpoints;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-builder.Services.AddSignalR();
-// 查询串 access_token 只在 /hubs 下接受：查询串会进访问日志与代理日志
-builder.Services.AddAuthentication().AddXiHan(options => options.QueryTokenPaths.Add("/hubs"));
-builder.Services.AddAuthorization();
-
-var app = builder.Build();
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseXiHan();
-
-var xihanScheme = new AuthorizeAttribute { AuthenticationSchemes = InvocationAuthenticationDefaults.AuthenticationScheme };
-PipelineBypassMetadata.BypassXiHanPipeline(app.MapHub<NotificationHub>("/hubs/notifications")).RequireAuthorization(xihanScheme);
-
-app.Run();
-```
-
-方案 `XiHan` 的规则：
+三步连起来的 SignalR Hub 示例见[实时通信](/web/realtime#最小示例)。方案 `XiHan` 的规则：
 
 | 项 | 行为 |
 | --- | --- |
 | 生效范围 | 只认带 `PipelineBypassMetadata` 的端点；普通请求由内核管道认证，方案对它们返回未认证，不重复认证 |
-| 凭据 | 先取 `Authorization` 头；没有时，请求路径（相对 PathBase）按路径段、不区分大小写落在 `QueryTokenPaths` 的某个前缀下，且 `access_token` 只有一个非空值，才作为 `Bearer` 凭据；其他路径的查询串令牌一律忽略 |
+| 凭据 | 先取 `Authorization` 头；没有时，请求路径（相对 PathBase）按路径段、不区分大小写落在 `QueryTokenPaths` 的某个前缀下（`/hubs` 匹配 `/hubs/notifications`，不匹配 `/hubsx`），且 `access_token` 只有一个非空值，才作为 `Bearer` 凭据；其他路径的查询串令牌一律忽略 |
 | 路径前缀 | 不能为空也不能是 `/`，方案初始化时校验，违反时抛出 `ArgumentException` |
-| 认证 | 交给方案名匹配的内核认证处理器；没有凭据是未认证，方案不支持、凭据无效都是 401，质询与管道一致 |
+| 认证 | 交给方案名匹配的内核认证处理器；没有凭据是未认证，方案不支持、凭据无效都是 401，质询与管道一致（Bearer 带 `error="invalid_token"`） |
 | 会话门禁 | 认证成功后按登记顺序调用应用的 `IInvocationAuthenticationFilter`，任一返回失败即 401 |
-| 主体 | 转成认证类型为 `XiHan` 的 `ClaimsPrincipal`：声明保留原始类型名，另加 `ClaimTypes.NameIdentifier` 承载主体 ID 并作名称声明，角色声明类型取 `XiHan:Security:RoleClaim`（缺省 `role`） |
+| 主体 | 转成认证类型为 `XiHan` 的 `ClaimsPrincipal`：声明保留原始类型名，另加 `ClaimTypes.NameIdentifier` 承载主体 ID 并作名称声明（SignalR 的 `UserIdentifier` 随之可用），角色声明类型取 `XiHan:Security:RoleClaim`（缺省 `role`） |
 | 登记 | `AddXiHan` 可以多次调用，方案只登记一次、各次的配置依次生效；不设为缺省方案 |
 
 绕过管道的端点里 `FindXiHanContext()` 为无值。要在里面发起内核调用（如 Hub 方法调用操作），用 `HttpInvocation.CreateContext(httpContext, services)` 以请求建调用上下文，凭据按同一规则带上，调用经 `IOperationInvoker` 走完整管道时照常重新认证与授权。Hub 的完整写法、会话门禁与跨实例推送见[实时通信](/web/realtime)。
@@ -199,18 +156,6 @@ app.Run();
 ### 这个入口该写成操作还是普通端点
 
 输入输出是 JSON 对象、要暴露给多种协议或进 OpenAPI 文档、需要按 Schema 校验的，写成操作（[操作契约](/web/operations)）。返回文件、文本、重定向，或者形态只在 HTTP 上有意义的（下载、SSE、Hub），写普通端点。普通端点拿不到 Validate 阶段的 Schema 校验与 Transaction 阶段按契约的只读判断，其余阶段一样。
-
-### `FindXiHanContext().ValueOrThrow()` 抛了异常
-
-说明请求没有经过 `UseXiHan()`：要么端点映射在 `UseXiHan()` 之前，要么端点带了 `PipelineBypassMetadata`，要么根本没调用 `UseXiHan()`。核对中间件顺序；绕过管道的端点要用 `HttpInvocation.CreateContext(httpContext, services)` 自己建上下文。
-
-### 加了 `RequireXiHanPermission` 之后应用启动失败
-
-权限码没有被任何特性用 `AddPermission` 登记，或者 `RequireXiHanPolicy` 引用的策略不存在。宿主在建请求管道时核对全部端点的要求，一次列出全部不合格项（`SECURITY_VALIDATION_004`）。在拥有这个权限的特性里登记权限码，或者改用已登记的码。
-
-### 端点返回了 JSON，为什么 `/openapi.json` 整个 500 了
-
-文档对 JSON 类型只引用已登记操作的 Schema，端点返回的类型不是任何操作的请求或响应类型时报 `PROTOCOLS_VALIDATION_010`。给端点加 `ExcludeFromDescription()`，或者用 `WithXiHanOperationSchema` 声明它与哪个操作同形，或者把它改写成操作。
 
 ### `UseAuthentication()` 为什么要放在 `UseXiHan()` 之前
 

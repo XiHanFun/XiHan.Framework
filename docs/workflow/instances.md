@@ -10,11 +10,11 @@
 
 | 概念 | 说明 |
 | --- | --- |
-| 实例状态 `WorkflowInstanceStatus` | `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted`、`Terminated`；故障信息在 `Fault`、`FaultNodeId`、`FaultNodeInstanceId`，`End` 节点给出的结果在 `Outcome` |
-| 书签 `WorkflowBookmark` | 等待中的节点挂起的凭据，种类见下文「等待与恢复」；用户任务的任务 ID 就是书签 ID |
+| 实例状态 `WorkflowInstanceStatus` | `Running`、`Suspended`、`Completed`、`Canceled`、`Faulted`、`Terminated`；故障信息在 `Fault`、`FaultNodeId`、`FaultNodeInstanceId`（`Fault` 存错误码、消息键与参数而不是文案，展示见[故障原因的展示](/workflow/activities#故障原因的展示)），`End` 节点给出的结果在 `Outcome` |
+| 书签 `WorkflowBookmark` | 等待中的节点挂起的凭据，种类见下文「等待与恢复」 |
 | 用户任务 `UserTask` | 待办视图：`Id`、`InstanceId`、`NodeId`、`AssigneeId`、`ClaimedBy`、`Title`、`InstanceTitle`、`FormKey`、`FormData`、`Priority`、`DueAt`、`CorrelationId`、`StarterId`、`CreatedAt` |
 | 外部任务 `ExternalTask` | 交给外部工作者的工作：`Id`、`Topic`、`Payload`、`Variables`、`Attempt`、`LockedUntil` |
-| 分区 | 启动、查询、任务、信号都只在调用方的分区（当前租户，或平台）里进行，见[分区](/workflow/definitions#分区) |
+| 分区 | 启动、查询、任务、信号、控制与清理都只在调用方的分区（当前租户，或平台）里进行；别的分区的定义、实例与书签按不存在处理（按 ID 查找为无值，操作返回 `WORKFLOW_NOTFOUND_001` / `_002` / `_003`），见[分区](/workflow/definitions#分区) |
 
 ## 最小示例
 
@@ -71,7 +71,7 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 
 | 字段 | 说明 |
 | --- | --- |
-| `Name` + `Version` / `DefinitionId` | 找定义；`Version` 为空取最新已发布版本，只在调用方的分区里找。定义不存在、不是 `Published` 或在别的分区 → `WORKFLOW_NOTFOUND_001` |
+| `Name` + `Version` / `DefinitionId` | 找定义；`Version` 为空取最新已发布版本。定义不存在或不是 `Published` → `WORKFLOW_NOTFOUND_001` |
 | `Variables` | 初始变量；声明了的变量缺省时补默认值，缺必填 → `WORKFLOW_VALIDATION_002` |
 | `StarterId` | 发起人，`Starter` 指派规则与 `ExcludeStarter` 用它 |
 | `CorrelationId` | 业务关联 ID，信号按它匹配，重用策略按它查重 |
@@ -81,14 +81,14 @@ public sealed class Inbox(IWorkflowTaskService tasks)
 
 实例 ID 由引擎生成。子流程的父实例、父节点实例与深度只由引擎在启动子实例时设置，不在启动请求里；要幂等启动，用 `CorrelationId` 与 `ReusePolicy`。
 
-实例属于调用方的分区。返回的是第一个波次结束后的实例：流程一路走到 `End` 时状态已是 `Completed`，停在用户任务上时是 `Running`。定义有实例级超时时，启动时就排好 `InstanceTimeout` 书签，到期按 `TimeoutAction` 让实例故障或终止。
+返回的是第一个波次结束后的实例：流程一路走到 `End` 时状态已是 `Completed`，停在用户任务上时是 `Running`。定义有实例级超时时，启动时就排好 `InstanceTimeout` 书签，到期按 `TimeoutAction` 让实例故障或终止。
 
 ### 信号启动与定时启动
 
 `Start` 节点的两个属性让定义自己启动：
 
 - `SignalName`：`SignalAsync(name, payload, correlationId)` 在恢复匹配的信号书签之后，为每个 `Start.SignalName` 等于该名字的已发布定义（调用方分区的）启动一个实例，载荷写进变量 `signal`，关联 ID 是信号的关联 ID。
-- `Cron`（可带 `TimeZone`）：发布时建一个定义级 `DefinitionTimer` 书签，到期由轮询启动一个实例并推算下一次；停用、归档、删除定义时删除书签。文法与调度相同，见[作业与计划](/scheduling/jobs)。
+- `Cron`（可带 `TimeZone`）：发布时建一个定义级 `DefinitionTimer` 书签，到期由轮询启动一个实例并推算下一次；停用、归档、删除定义时删除书签。文法与调度相同，见[作业与计划](/scheduling/jobs)；只复用 cron 文法，到期由工作流自己的轮询器推进，不占用调度器的作业。
 
 ```csharp
 using XiHan.Framework.Workflow.Abstractions.Activities;
@@ -126,7 +126,7 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 | 属性 | 缺省 | 说明 |
 | --- | --- | --- |
 | `CompletionPolicy` | `Any` | `Any` 任一人通过即通过；`All` 会签；`Sequential` 依次逐个审批 |
-| `ApprovalThreshold` | 全部 | `All` 下的通过阈值：人数（如 `2`）或百分比（如 `"60%"`，按指派人数向上取整）；剩余人数不可能达到时以 `rejected` 完成 |
+| `ApprovalThreshold` | 全部 | `All` 下的通过阈值：人数（如 `2`）或百分比（如 `"60%"`，按指派人数向上取整，3 人即 2 人）；剩余人数不可能达到时以 `rejected` 完成 |
 | `ExcludeStarter` | `false` | 从指派人里去掉发起人 |
 | `EmptyAssigneeStrategy` | `Fault` | 没有指派人时：`Fault` 节点故障，`AutoApprove`、`AutoReject`，`Fallback` 改用 `FallbackAssigneeRules` |
 | `Title`、`FormKey` | 节点显示名、空 | 模板，写进任务视图 |
@@ -136,13 +136,13 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 | `CcUserIds` / `CcRules` | 空 | 抄送人，写进任务事件 |
 | `AllowedOutcomes` | `approved`、`rejected` | 允许的完成结果 |
 
-节点的 `Timeout` 另插一个超时书签，到期以 `outcome = "timeout"` 完成节点。`Sequential` 一次只有当前指派人的一个任务。`All` 下每个人完成时合并其变量并保留其余人的任务，通过人数达到阈值才以 `approved` 完成节点；`rejected` 只记入拒绝名单，剩余人数已不可能达到阈值时才以 `rejected` 完成。`approved`、`rejected` 之外的自定义结果，以及 `Any`、`Sequential` 下的非 `approved` 结果，立即以该结果完成节点。
+节点的 `Timeout` 另插一个超时书签，到期以 `outcome = "timeout"` 完成节点。`Sequential` 一次只有当前指派人的一个任务。`All` 下每个人完成时合并其变量并保留其余人的任务，通过人数达到阈值才以 `approved` 完成节点、撤下其余人的任务；`rejected` 只记入拒绝名单，剩余人数已不可能达到阈值时才以 `rejected` 完成。`approved`、`rejected` 之外的自定义结果，以及 `Any`、`Sequential` 下的非 `approved` 结果，立即以该结果完成节点。
 
 `IWorkflowTaskService` 的操作，入参都是记录（`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`），批量方法接集合、单条写法是重载：
 
 | 方法 | 作用 | 主要错误 |
 | --- | --- | --- |
-| `QueryAsync(UserTaskQuery)` | 读待办的唯一入口：某人的待办给 `AssigneeId`，某实例的给 `InstanceId`，两者必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按排序项 `Sorts`（`UserTaskSort`，字段目前只有创建时间 `CreatedAt`，缺省升序，项数上限 `MaxSorts`；与定义、实例查询同一写法，2026-11-11 修订，ADR-0162）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Take` 不在 1 到 1000） |
+| `QueryAsync(UserTaskQuery)` | 读待办的唯一入口：某人的待办给 `AssigneeId`，某实例的给 `InstanceId`，两者必填其一，可按定义名、节点、创建时间与关键字 `Keyword` 过滤，按排序项 `Sorts`（`UserTaskSort`，字段目前只有创建时间 `CreatedAt`，缺省升序，项数上限 `MaxSorts`；与定义、实例查询同一写法）分页；返回 `UserTaskPage`（`Items` 这一页、`Total` 总数） | `WORKFLOW_VALIDATION_002`（缺条件；`Skip` 为负或 `Take` 不在 1 到 1000） |
 | `CompleteAsync(completions)` | 完成任务，可带结果、意见与变量 | `WORKFLOW_DENIED_001`（不是指派人）、`WORKFLOW_VALIDATION_002`（结果不允许）、`WORKFLOW_NOTFOUND_003` |
 | `TransferAsync(transfers)` | 转办给另一个人 | `WORKFLOW_CONFLICT_004`（目标已是指派人） |
 | `AddAssigneesAsync(additions)` | 加签：`Any` / `All` 立即加任务，`Sequential` 排到队尾 | `WORKFLOW_CONFLICT_004` |
@@ -150,7 +150,7 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 | `ReturnAsync(returns)` | 退回：目标缺省为本节点之前最近完成的用户任务节点，没有则退回 `Start` 之后的首个节点；以跳转实现 | `WORKFLOW_VALIDATION_002` |
 | `UrgeAsync(urges)` | 催办：发布 `workflow.task.urged`，不改状态 | — |
 
-任务标题是节点 `Title` 模板渲染的结果（缺省节点名），实例标题是启动时给的显示名、没给取定义的显示名、再没有取定义名。查询只返回当前分区、实例处于运行中的任务：实例挂起或故障时它的任务退出结果，恢复后回来。过滤、排序与分页都由存储执行，`Total` 是同条件的总数；`Take` 缺省 100、最大 1000（`UserTaskQuery.MaxTake`），越界在查询时返回校验错误，HTTP 是 400。关键字规则见[关键字](/workflow/definitions#关键字)。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
+任务标题是节点 `Title` 模板渲染的结果（缺省节点名），实例标题是启动时给的显示名、没给取定义的显示名、再没有取定义名。查询只返回实例处于运行中的任务：实例挂起或故障时它的任务退出结果（书签仍在，`BookmarksAsync(instanceId)` 看得到），恢复或重试后回来；实例被取消、终止或跳转时任务才真正消失。过滤、排序与分页都由存储执行，`Total` 是同条件的总数；`Take` 缺省 100、最大 1000（`UserTaskQuery.MaxTake`），越界是上表的 `WORKFLOW_VALIDATION_002`（HTTP 400）。关键字规则见[关键字](/workflow/definitions#关键字)。节点实例的 `State` 记录 `assignees`、`approved`、`rejected`、`claimedBy` 与 `history`（每条含 `actorId`、`outcome`、`comment`、`at`），审批记录从这里读。
 
 在最小示例的 `Inbox` 上补搜索、转办与退回：
 
@@ -260,7 +260,7 @@ public sealed class ShippingWorker(IWorkflowExternalTaskService external)
 
 ## 查询实例
 
-实例与节点实例的查询用引擎的 `FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`。它们只查调用方的分区；按 ID 找别的分区的实例为无值或 `WORKFLOW_NOTFOUND_002`。
+实例与节点实例的查询用引擎的 `FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`。
 
 ```csharp
 using XiHan.Framework.Workflow.Abstractions;
@@ -300,8 +300,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
 | --- | --- |
 | `CorrelationIds` | 一组关联 ID，实例的关联 ID 是其中之一即匹配；重复的只算一个。`null` 不过滤，**空集合不匹配任何实例**（列表为空、计数为 0，不进存储）。最多 1000 个（`WorkflowInstanceQuery.MaxCorrelationIds`），不能有空白的 ID，否则列表与计数都返回 `WORKFLOW_VALIDATION_002`（消息键 `workflow.instance.query_correlations_invalid`） |
 | `TopLevelOnly` | 只取顶层实例（`ParentInstanceId` 为空）。子流程继承父实例的发起人与关联 ID，「我发起的」与按单据查进度都要加它 |
-| `Keyword` | 不区分大小写地包含在实例标题或关联 ID 里即匹配 |
-| `Sorts` | 字段 `CreatedAt`、`EndedAt`、`Status`、`DefinitionName`、`Title` 加方向，有序、最多 5 项、每个字段一次；空或没给时创建时间降序 |
+| `Keyword` | 匹配实例标题或关联 ID，规则见[关键字](/workflow/definitions#关键字) |
 
 ```csharp
 // 审批中心「我发起的」：只取顶层，带标题搜索
@@ -359,33 +358,13 @@ await engine.MigrateAsync(new WorkflowMigration(instanceId, newVersion.Id), canc
 
 批量方法（这里的控制、任务与外部任务服务的操作）返回与入参等长、同序的逐项结果，空集合直接返回空结果、不开事务。自己开调用时整批一个事务：某一项失败不回滚其余项，失败的项没有写入；提交失败时每一项都报告提交的错误；在调用方的工作单元里时并入调用方的事务。取消在任何时刻都整批回滚并抛出 `OperationCanceledException`，不留下半批。
 
-调用只操作得了自己分区的实例：别的分区的实例按不存在处理，返回 `WORKFLOW_NOTFOUND_002`，`PurgeAsync` 只清自己的分区；按书签 ID 的 `ResumeAsync` 遇到别的分区的书签返回 `WORKFLOW_NOTFOUND_003`。状态不允许时返回 `WORKFLOW_CONFLICT_001`；已经结束的实例上取消与终止幂等返回。跳转目标不存在、迁移目标不兼容返回 `WORKFLOW_VALIDATION_002`；死汇合、波次上限这类引擎级故障没有故障节点，不能重试。所有控制操作都是批量、逐项结果，单条写法在 `WorkflowEngineExtensions` 里。`XiHan:Workflow:RetentionDays` 大于 0 时，轮询器每 `HousekeepingIntervalSeconds` 逐个分区自动清理一次。
+状态不允许时返回 `WORKFLOW_CONFLICT_001`；已经结束的实例上取消与终止幂等返回。跳转目标不存在、迁移目标不兼容返回 `WORKFLOW_VALIDATION_002`；死汇合、波次上限这类引擎级故障没有故障节点，不能重试。控制操作的单条写法在 `WorkflowEngineExtensions` 里。`XiHan:Workflow:RetentionDays` 大于 0 时，轮询器每 `HousekeepingIntervalSeconds` 逐个分区自动清理一次。
 
 ## 常见问题
-
-### 用户点了两次提交，怎样只建一个实例
-
-给启动请求带业务单号 `CorrelationId` 并设 `ReusePolicy = RejectActive`（拒绝）或 `ReturnActive`（返回已有实例）。查重与写入在同一把实例锁里，并发的同键启动只建一个。
-
-### 待办里看不到任务了，任务丢了吗
-
-查询只返回实例处于 `Running` 的任务。实例被挂起或故障时任务暂时退出结果，恢复或重试后回来；用 `BookmarksAsync(instanceId)` 能看到书签仍在。实例被取消、终止或跳转时任务才真正消失。
-
-### 会签 60% 怎么算，剩下的人还要审吗
-
-`ApprovalThreshold` 为百分比时按指派人数向上取整：3 人 60% 是 2 人。达到阈值节点立即完成，其余人的任务撤下；有人拒绝时只记入拒绝名单，其余人继续审，剩余人数已不可能达到阈值时才以 `rejected` 完成；`approved`、`rejected` 之外的自定义结果立即以该结果完成。
 
 ### 审批人离职了，流程卡住怎么办
 
 管理员用 `TransferAsync` 转办给别人，或 `AddAssigneesAsync` 加签；没人能操作时用 `JumpAsync` 跳到别的节点。这些操作都记在节点实例的 `history` 里。要从源头避免，指派规则写成按部门或角色解析的 `IAssigneeProvider`，不写死人。
-
-### 外部工作者领了任务却崩了
-
-锁到期后轮询自动解锁，别的工作者可以重新领取；活着但处理得慢就用 `ExtendLockAsync` 续锁。工作者报 `FailAsync` 带 `RetryAfter` 时任务推迟再领、`Attempt` 加一，不带时节点故障、按节点的重试策略处理。
-
-### 怎样把实例的故障原因展示给用户
-
-`instance.Fault` 存的是错误码、消息键与参数，不是文案：在调用里用 `instance.Fault?.Localize()` 按调用方区域渲染，要作为错误返回用 `ToError()`，详见[故障原因的展示](/workflow/activities#故障原因的展示)。
 
 ## 相关包与下一步
 

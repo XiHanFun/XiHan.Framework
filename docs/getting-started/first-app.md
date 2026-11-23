@@ -187,50 +187,22 @@ Content-Language: zh-CN
 
 ## 换成 Standard 组合
 
-把 `Profiles.Minimal` 换成 `Profiles.Standard`，`UseMinimalProfile()` 换成 `UseStandardProfile()`，应用多了持久化、缓存、多租户、安全与消息五个子系统的内存默认实现：
+把包引用 `Profiles.Minimal` 换成 `Profiles.Standard`，`Program.cs` 只改两行，其余不动：
 
 ```csharp
-using HelloXiHan;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
+using XiHan.Framework.Profiles.Standard;   // 替换 using XiHan.Framework.Profiles.Minimal;
 
 builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()
+    .UseStandardProfile()                  // 替换 UseMinimalProfile()
     .UseFeature<HttpProtocolFeature>()
     .UseFeature<GreetingsFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanHealth();
-app.MapXiHanOperations();
-app.Run();
 ```
 
-管道里出现了各子系统贡献的中间件，顺序由阶段决定，与 `UseFeature` 的书写顺序无关：
-
-```text
-observe      XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware
-resilience   XiHan.Framework.Kernel.Pipeline.DeadlineMiddleware
-resilience   XiHan.Framework.Kernel.Resilience.ResilienceMiddleware
-authenticate XiHan.Framework.Security.Abstractions.Authentication.AuthenticationMiddleware
-tenant       XiHan.Framework.MultiTenancy.Abstractions.Resolution.TenantResolutionMiddleware
-authorize    XiHan.Framework.Security.Abstractions.Authorization.AuthorizationMiddleware
-validate     XiHan.Framework.Kernel.Validation.ValidationMiddleware
-idempotency  XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyMiddleware
-transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware
-```
+应用多了持久化、缓存、多租户、安全与消息五个子系统的内存默认实现，启动日志的管道里出现它们贡献的中间件（`authenticate`、`tenant`、`authorize`、`idempotency`、`transaction` 五个阶段）。顺序由阶段决定，与 `UseFeature` 的书写顺序无关，完整的九行见[执行管道](/startup/pipeline#十一个阶段)。
 
 `Greet` 没有声明 `Permission`，Authorize 阶段直接放行，调用结果与前面相同。给操作加上 `Permission = "greetings.write"` 后，还要在特性里登记这个权限码，并在 `XiHan:Security:InMemory` 下配置主体与授予，做法见[授权与权限](/security/authorization)。
 
 ## 常见问题
-
-### 编译报 XHG002
-
-操作的请求或响应类型没有登记到 `JsonSerializerContext`。回到第三步，确认两个 `[JsonSerializable]` 都在。
 
 ### 启动后访问 `/greetings` 返回 404
 

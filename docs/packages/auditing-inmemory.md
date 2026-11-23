@@ -33,17 +33,10 @@ dotnet add package XiHan.Framework.Auditing.InMemory --prerelease
 
 ```csharp
 using XiHan.Framework.Auditing.InMemory;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<InMemoryAuditingFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置

@@ -1,6 +1,6 @@
 # 集群与管理
 
-这一页接着[作业与计划](/scheduling/jobs)讲两件事：一是运行时管理，用 `IJobScheduler` 登记、暂停、恢复、触发、取消作业，查运行历史，恢复改过的代码作业；二是多实例部署，引擎怎样轮询与抢占、`IJobStore` 共享与否的差别、三种领导选举、调度事件、配置与错误码。读完你能给管理界面提供完整的作业操作，并把调度部署到多个实例上而不重复运行。
+这一页接着[作业与计划](/scheduling/jobs)讲两件事：一是运行时管理，用 `IJobScheduler` 登记、暂停、恢复、触发、取消作业，查运行历史，恢复改过的代码作业；二是多实例部署，引擎怎样轮询与抢占、`IJobStore` 共享与否的差别、三种领导选举、调度事件与常用配置。读完你能给管理界面提供完整的作业操作，并把调度部署到多个实例上而不重复运行。
 
 ## 为什么需要
 
@@ -115,7 +115,7 @@ public sealed class TenantSyncPlanner(IJobScheduler scheduler)
 | `Complete` | 没有下一次（一次性已运行、次数用尽、超过 `EndAt`） |
 | `Error` | 无法运行（作业类型未登记），原因在 `Error` 字段 |
 
-停止时引擎先停轮询，再等待进行中的运行结束；宿主的停止令牌触发时取消这些运行，最后释放领导租约。启动之前与开始停止之后，本实例的 `TriggerAsync` 返回 `SCHEDULING_UNAVAILABLE_001`（HTTP 503）、不起新的运行；`EnqueueAsync` 只写存储，不受影响。
+停止时引擎先停轮询，再等待进行中的运行结束；宿主的停止令牌触发时取消这些运行，最后释放领导租约。实例被强杀、没来得及释放时，别的实例要等 `LeaseTimeToLive`（缺省 30 秒）过期才接手。启动之前与开始停止之后没有轮询照看运行，本实例的 `TriggerAsync` 返回 `SCHEDULING_UNAVAILABLE_001`（HTTP 503）、不起新的运行；`EnqueueAsync` 只写存储，不受影响，排空期间要排队运行的用它。
 
 数据库 Provider 经 `persistence.relational@1` 的仓储读写，每个存储操作是一次独立的管道调用与事务，不加入调用方的工作单元；需要建五张表（作业、触发器、运行、节点、租约），每个节点的 `XiHan:Scheduling:NodeId` 必须唯一，见 [Scheduling.Database](/packages/scheduling-database)。
 
@@ -153,25 +153,7 @@ public sealed class IndexRebuilder(ILeaderElection election)
 }
 ```
 
-在 Kubernetes 上，示例应用 KubernetesApp 在 Pod 内装配 `KubernetesSchedulingFeature`，在本地退回 Full 组合自带的进程内选举；`JobSchedulerEngine.IsLeader` 与 `NodeId` 能放进端点展示当前谁是领导者：
-
-```csharp
-using XiHan.Framework.Profiles.Full;
-using XiHan.Framework.Scheduling.Kubernetes;
-
-// 在 Pod 里（API Server 的环境变量存在）用 Lease 做领导选举；本地运行退回进程内选举
-var inCluster = Environment.GetEnvironmentVariable("KUBERNETES_SERVICE_HOST") is not null;
-builder.AddXiHan(xihan =>
-{
-    xihan.UseFullProfile();
-    if (inCluster)
-    {
-        xihan.UseFeature<KubernetesSchedulingFeature>();
-    }
-});
-```
-
-Lease 名缺省是 `xihan-scheduler`，用 `XiHan:Scheduling:Kubernetes:Lease` 修改；Pod 的 ServiceAccount 需要对 `coordination.k8s.io` 下的 `leases` 有 `get`、`update`、`patch`、`create` 权限，`xihan pack` 能按应用清单生成这份 Role，见 [Kubernetes](/deployment/kubernetes)。
+在 Kubernetes 上，示例应用 KubernetesApp 只在 Pod 内（API Server 的环境变量存在时）装配 `KubernetesSchedulingFeature`，在本地退回 Full 组合自带的进程内选举；装配写法、Lease 名与 ServiceAccount 需要的 `leases` 权限见 [Scheduling.Kubernetes](/packages/scheduling-kubernetes)，`xihan pack` 能按应用清单生成这份 Role，见 [Kubernetes](/deployment/kubernetes)。`JobSchedulerEngine.IsLeader` 与 `NodeId` 能放进端点展示当前谁是领导者。
 
 ## 事件
 
@@ -189,68 +171,22 @@ Lease 名缺省是 `xihan-scheduler`，用 `XiHan:Scheduling:Kubernetes:Lease` �
 
 ## 配置
 
-引擎选项在 `XiHan:Scheduling`（`SchedulerOptions`），两个 Provider 读同一节；值不合法时启动抛 `ArgumentException`。
+引擎选项在 `XiHan:Scheduling`（`SchedulerOptions`），两个 Provider 读同一节；值不合法时启动抛 `ArgumentException`。多实例部署最常调的几个：
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `PollIntervalSeconds` | 正数 | 1 | 轮询周期 |
-| `NodeId` | 字符串 | `机器名:进程 ID:8 位随机` | 节点身份：心跳、抢占、租约持有者都用它；多节点时每个节点唯一 |
-| `MaxConcurrentRuns` | ≥ 1 | 32 | 本节点同时运行的上限 |
-| `AcquireBatchSize` | ≥ 1 | 16 | 一个周期最多抢占的触发器数 |
-| `MisfireThresholdSeconds` | ≥ 0 | 60 | 落后超过它算 misfire |
-| `LeaseResource` | 作业名文法 | `scheduling.jobs` | 领导租约的资源名 |
-| `LeaseTimeToLiveSeconds` | 正数 | 30 | 领导租约的存活时间 |
-| `NodeTimeoutSeconds` | 正数 | 90 | 心跳超过它即失联 |
-| `HousekeepingIntervalSeconds` | 正数 | 60 | 领导者维护周期 |
-| `HistoryRetentionDays` | ≥ 0 | 7 | 运行历史保留天数，0 为不删 |
+| 键 | 缺省 | 说明 |
+| --- | --- | --- |
+| `NodeId` | `机器名:进程 ID:8 位随机` | 节点身份：心跳、抢占、租约持有者都用它；多节点时每个节点唯一 |
+| `MaxConcurrentRuns` | 32 | 本节点同时运行的上限 |
+| `LeaseTimeToLiveSeconds` | 30 | 领导租约的存活时间 |
+| `NodeTimeoutSeconds` | 90 | 心跳超过它即失联 |
+| `HistoryRetentionDays` | 7 | 运行历史保留天数，0 为不删 |
 
-各 Provider 自己的键（`XiHan:Scheduling:InMemory:MaxRuns`、`XiHan:Scheduling:Database:HealthProbeIntervalSeconds`、`XiHan:Scheduling:Kubernetes:*`）见对应包页。
-
-## 错误码
-
-| 错误码 | 含义 |
-| --- | --- |
-| `SCHEDULING_NOTFOUND_001` | 作业未登记 |
-| `SCHEDULING_NOTFOUND_002` | 作业类型未登记 |
-| `SCHEDULING_NOTFOUND_003` | 触发器不存在 |
-| `SCHEDULING_NOTFOUND_004` | 运行不存在或已结束 |
-| `SCHEDULING_NOTFOUND_005` | 作业没有代码定义，不能恢复 |
-| `SCHEDULING_VALIDATION_001` | 作业定义不合法：触发器名重复、日历未登记 |
-| `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界（HTTP 400） |
-| `SCHEDULING_VALIDATION_003` | 作业状态列表的分页越界或续页令牌无效（HTTP 400） |
-| `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
-| `SCHEDULING_CONFLICT_002` | 领导租约被其他持有者占用 |
-| `SCHEDULING_CONFLICT_003` | 运行被取消 |
-| `SCHEDULING_UNAVAILABLE_001` | 本实例的调度器尚未启动或已开始停止，`TriggerAsync` 不起新的运行 |
-| `SCHEDULING_UNAVAILABLE_002` | 领导选举的存储（数据库、API Server）不可达或超时 |
-| `SCHEDULING_UNAVAILABLE_003` | 作业存储不可达 |
-| `SCHEDULING_UNAVAILABLE_004` | 作业存储容量已满（内存实现的运行历史全部在运行中） |
-| `SCHEDULING_TIMEOUT_001` | 运行超过作业的执行时限 |
-| `SCHEDULING_UNEXPECTED_001` | 作业抛出未处理异常 |
-
-错误文案在消息目录 `scheduling` 里，十种区域都有译文，见[全球化和本地化](/common/localization)。
-
-## 常见问题
-
-### 三个副本各跑了一遍夜间作业
-
-只装配了 `Scheduling.InMemory`：每个副本有自己的存储和进程内租约，都当自己是领导者。在 Kubernetes 上加 `KubernetesSchedulingFeature`；需要运行时登记的作业在副本间可见、节点宕机后恢复运行，换 `DatabaseSchedulingFeature`。
-
-### 领导者 Pod 滚动更新时会不会停一阵
-
-不会等租约到期。排空中的实例在每个周期释放租约，另一个在服务的实例下一个周期就接手。只有实例被强杀、没来得及释放时，才要等 `LeaseTimeToLive`（缺省 30 秒）过期。
-
-### `TriggerAsync` 返回 `SCHEDULING_UNAVAILABLE_001`
-
-本实例的引擎还没启动或已经开始停止，这两段时间没有轮询照看运行，所以不起新的。排空期间要排队运行的用 `EnqueueAsync`，它只写存储，由别的节点运行。
-
-### 运行时改了作业计划，重新发布后被覆盖了
-
-代码定义变了。只有代码定义的指纹与存储里 `Overridden` 记录保存的指纹相同，运行时修改才保留；代码一改就以代码为准并记警告。要让修改长期有效，把它写回代码；临时调整用 `PauseAsync`，暂停状态一律保留。
+完整配置（轮询周期、抢占批量、misfire 阈值、租约资源名、维护周期与各键的取值范围）见 [Scheduling.Abstractions](/packages/scheduling-abstractions#配置)；各 Provider 自己的键（`XiHan:Scheduling:InMemory:MaxRuns`、`XiHan:Scheduling:Database:HealthProbeIntervalSeconds`、`XiHan:Scheduling:Kubernetes:*`）见对应包页。
 
 ## 相关包与下一步
 
 - 包参考：[Scheduling.Abstractions](/packages/scheduling-abstractions)、[Scheduling.InMemory](/packages/scheduling-inmemory)、[Scheduling.Database](/packages/scheduling-database)、[Scheduling.Kubernetes](/packages/scheduling-kubernetes)
+- 错误码：[Scheduling.Abstractions 的错误码表](/packages/scheduling-abstractions#错误码)
 - 事件的订阅：[发布与订阅](/messaging/pubsub)；部署到 Kubernetes：[Kubernetes](/deployment/kubernetes)
 - Provider 必过的套件：[一致性套件与门禁](/testing/conformance)
 - 规范：RFC-0013《调度与领导选举》

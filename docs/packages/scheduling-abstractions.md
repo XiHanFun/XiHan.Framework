@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Scheduling.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记作业接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上（`builder.Build()` 之前），只多下面两行与作业类：
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -41,7 +41,6 @@ using XiHan.Framework.Scheduling.Abstractions;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
-var builder = WebApplication.CreateBuilder(args);
 // 代码作业：同时登记类型
 builder.Services.AddJob<CleanupJob>(new JobName("cleanup.nightly"), JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
 // 只登记类型：供运行时 ScheduleAsync 新建的作业引用
@@ -67,7 +66,7 @@ public sealed class ArchiveJob : IJob
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `XiHan:Scheduling:PollIntervalSeconds` | 正数 | 1 | 轮询周期 |
-| `XiHan:Scheduling:NodeId` | 字符串 | `机器名:进程 ID:8 位随机` | 节点身份，进程内固定 |
+| `XiHan:Scheduling:NodeId` | 字符串 | `机器名:进程 ID:8 位随机` | 节点身份（心跳与抢占者用它，数据库实现的租约持有者也是它），进程内固定；多节点部署时每个节点唯一 |
 | `XiHan:Scheduling:MaxConcurrentRuns` | ≥ 1 | 32 | 本节点同时运行的上限 |
 | `XiHan:Scheduling:AcquireBatchSize` | ≥ 1 | 16 | 一个周期最多抢占的触发器数；每周期名额 = `min(AcquireBatchSize, MaxConcurrentRuns − 本节点运行中数量)` |
 | `XiHan:Scheduling:MisfireThresholdSeconds` | ≥ 0 | 60 | misfire 阈值 |
@@ -124,7 +123,7 @@ public sealed class ArchiveJob : IJob
 
 ## 使用示例
 
-带两个触发器、数据与重试的作业：
+带两个触发器、数据与重试的作业（登记的两句同样写在 `Program.cs` 里）：
 
 ```csharp
 using System.Text.Json.Nodes;
@@ -134,7 +133,6 @@ using XiHan.Framework.Scheduling.Abstractions.Calendars;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddJobCalendar("weekends", new WeeklyCalendar());
 builder.Services.AddJob<ExportJob>(new JobDefinition("exports.daily", typeof(ExportJob))
 {
@@ -192,8 +190,11 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 - 重试：被取消与失联的运行不重试；重试是新的一次运行，`JobRun.Trigger` 为 `Retry`、`Attempt` 加一、`RetryOf` 指向首次运行。集群唯一的作业把重试写成存储里的一次性触发器，`RunOnEveryInstance` 的作业在本实例进程内等待后重试。
 - cron 是 Quartz 风格的文法（5 / 6 / 7 段、`?`、`L`、`W`、`#`、名字、时区与夏令时），但不是 Quartz 的超集：星期数字按 Unix 约定（0 / 7 = 周日、1 = 周一，Quartz 是 1 = 周日、7 = 周六）；周段单独的 `L`（Quartz 里是周六）与反向范围（如 `FRI-MON`、`22-2`，Quartz 跨界回绕）不支持、解析报错；多了 5 段写法，日与周同时限定时取并集。
 - 代码登记的作业被运行时 `ScheduleAsync` 改过后来源是 `Overridden`：启动同步时代码定义没变（指纹 `CodeFingerprint` 相同）就保留运行时的修改，代码改了以代码为准并记警告；`RestoreAsync` 随时恢复为代码定义（ADR-0053）。
-- 每次运行在新作用域、新调用上下文里经完整内核管道执行，`JobDispatcher` 把关联 ID 设为运行 ID。
 - 事件只在装配了消息能力时发布，发布失败只记日志。
+
+## 错误码
+
+`SchedulingErrors` 的全部错误码。文案在消息目录 `scheduling` 里，十种区域都有译文，见[全球化和本地化](/common/localization)。
 
 | 错误码 | 含义 |
 | --- | --- |
@@ -206,13 +207,13 @@ public sealed class ExportRunner(IJobScheduler scheduler)
 | `SCHEDULING_VALIDATION_002` | 运行历史查询的分页越界（`SchedulingErrors.RunQueryInvalid`，HTTP 400） |
 | `SCHEDULING_VALIDATION_003` | 作业状态列表的查询不合法：每页条数越界或续页令牌不是调度器给出的（HTTP 400） |
 | `SCHEDULING_CONFLICT_001` | 作业正在运行且不允许并发 |
-| `SCHEDULING_CONFLICT_002` | 领导租约被占用 |
+| `SCHEDULING_CONFLICT_002` | 领导租约被其他持有者占用 |
 | `SCHEDULING_CONFLICT_003` | 运行被取消 |
-| `SCHEDULING_UNAVAILABLE_001` | 调度器未运行：本实例的调度器尚未启动或已开始停止，`TriggerAsync` 不起新的运行 |
-| `SCHEDULING_UNAVAILABLE_002` | 领导选举的存储不可达 |
+| `SCHEDULING_UNAVAILABLE_001` | 调度器未运行：本实例的调度器尚未启动或已开始停止，`TriggerAsync` 不起新的运行（HTTP 503） |
+| `SCHEDULING_UNAVAILABLE_002` | 领导选举的存储（数据库、API Server）不可达或超时 |
 | `SCHEDULING_UNAVAILABLE_003` | 作业存储不可达 |
-| `SCHEDULING_UNAVAILABLE_004` | 作业存储容量已满 |
-| `SCHEDULING_TIMEOUT_001` | 运行超过执行时限 |
+| `SCHEDULING_UNAVAILABLE_004` | 作业存储容量已满（内存实现的运行历史全部在运行中） |
+| `SCHEDULING_TIMEOUT_001` | 运行超过作业的执行时限 |
 | `SCHEDULING_UNEXPECTED_001` | 作业抛出未处理异常 |
 
 ## 相关

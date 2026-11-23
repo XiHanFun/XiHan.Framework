@@ -48,16 +48,15 @@ dotnet add package XiHan.Framework.Scheduling.Database --prerelease
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Scheduling.InMemory`：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。装配一个持久化 Provider 和本包，接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，特性链上只多这两项；装配后顶替默认的 `Scheduling.InMemory`：
 
 ```csharp
 using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Persistence.SqlSugar;
 using XiHan.Framework.Scheduling.Database;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
+    .UseMinimalProfile()
     .UseFeature(new SqlSugarPersistenceFeature(static (binding, config) =>
     {
         config.DbType = DbType.PostgreSQL;
@@ -89,14 +88,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 配置
 
-本包读两节。引擎选项在 `XiHan:Scheduling`（完整列表见 [Scheduling.Abstractions](./scheduling-abstractions#配置)）；本包自己的只有健康探针间隔：
+本包读两节。引擎选项（节点身份、租约存活时间、失联判定、维护周期等）在 `XiHan:Scheduling`，见 [Scheduling.Abstractions](./scheduling-abstractions#配置)；本包自己的只有健康探针间隔：
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `XiHan:Scheduling:NodeId` | 字符串 | `机器名:进程 ID:8 位随机` | 节点身份，每个节点唯一 |
-| `XiHan:Scheduling:LeaseTimeToLiveSeconds` | 正数 | 30 | 领导租约存活时间 |
-| `XiHan:Scheduling:NodeTimeoutSeconds` | 正数 | 90 | 心跳超过它即失联 |
-| `XiHan:Scheduling:HousekeepingIntervalSeconds` | 正数 | 60 | 领导者维护周期 |
 | `XiHan:Scheduling:Database:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项重探间隔，也是单次探测的超时 |
 
 ```json
@@ -147,9 +142,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 行为与限制
 
-- 每个存储操作一个事务：读是快照，写在动作返回时提交，动作内任一非竞争失败整体回滚。管道失败（应用不在服务状态、仓储异常、提交失败）→ `SCHEDULING_UNAVAILABLE_003`，原错误在 `Inner`；调度语义的错误（作业不存在、运行不存在）原样返回。
+- 每个存储操作一个事务：读是快照，写在动作返回时提交，动作内任一非竞争失败整体回滚。管道失败（应用不在服务状态、仓储异常、提交失败）→ `SCHEDULING_UNAVAILABLE_003`，`reason` 是原错误码或异常消息，原错误在 `Inner`；调度语义的错误（作业不存在、运行不存在）原样返回。
 - 租约存储不可达 → `SCHEDULING_UNAVAILABLE_002`，不改变持有状态；持有与否按本地时钟与本地记录的到期时刻判断。
-- 管道失败 `SCHEDULING_UNAVAILABLE_003` 的 `reason` 是原错误码或异常消息。
 - 租约：不可重入；续约比对本次获取的令牌后推后到期时刻，令牌不符（已释放、已被接管）即失效并返回 `SCHEDULING_CONFLICT_002`；释放只删自己的行，幂等。
 - 失联恢复：失联节点运行中的记录结束时刻记为恢复当时；它抢占的触发器改回等待时清掉抢占者，没有下一次时刻的补为当时；作业已无占用的阻塞触发器改回等待；要求恢复的作业由引擎以恢复触发器重新入队。心跳超过 `NodeTimeout` 即失联，本节点自己不算。
 - 阻塞与完成都带并发戳改写作业行之后才继续，两边谁后提交谁看到对方（ADR-0062）；独占开始中「结束了但没清掉的占用」视为空闲。

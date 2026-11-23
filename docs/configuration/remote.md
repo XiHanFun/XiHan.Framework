@@ -22,7 +22,7 @@
 | `AddXiHanRemoteConfiguration(client 或 clientFactory, RemoteConfigurationOptions)` | 命名空间、前缀、轮询周期 | 把远程文档挂到配置树 |
 | `AddXiHanSecrets(store, SecretsConfigurationOptions)` | 配置键到密钥名的映射、重读周期 | 把密钥值写到指定配置键 |
 
-两者都要在 `AddXiHan` 之前调用：框架在 `AddXiHan` 里读取选项与绑定。
+两者都要在 `AddXiHan` 之前调用：框架在 `AddXiHan` 里读取选项与绑定，配置源在它之后加入时，只有应用自己的 `IOptionsMonitor<T>` 能读到远端的值。
 
 ## 最小示例
 
@@ -32,15 +32,12 @@
 dotnet add package XiHan.Framework.Configuration.Nacos --prerelease
 ```
 
+`Program.cs` 沿用[第一个应用](/getting-started/first-app)的骨架，多出来的是配置源、选项绑定与一个端点：
+
 ```csharp
-// Program.cs
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Configuration.Abstractions.Remote;
 using XiHan.Framework.Configuration.Nacos;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // 必须在 AddXiHan 之前：框架在 AddXiHan 里读取选项与绑定
 builder.Configuration.AddXiHanNacos(
@@ -54,12 +51,8 @@ builder.Configuration.AddXiHanNacos(
     });
 builder.Services.Configure<OrderLimits>(builder.Configuration.GetSection("Orders"));
 
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapGet("/limits", (IOptionsMonitor<OrderLimits> limits) => limits.CurrentValue.MaxItems);
-app.Run();
 
 public sealed class OrderLimits
 {
@@ -94,15 +87,7 @@ public sealed class OrderLimits
 3. 不论首次加载成败，之后都按 `PollInterval`（缺省 30 秒，`null` 关闭轮询）带已知版本轮询；首次失败时已知版本为空，第一次成功的轮询装入整份文档。拿到新版本就整体替换这个源的数据并触发重载令牌，`IOptionsMonitor<T>` 随之更新。
 4. 轮询失败只回调 `OnError`，保留最后一份成功的数据。
 
-| 选项 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `Namespace` | `string` | 构造参数 | 远程命名空间，Nacos 里是 `dataId` |
-| `Prefix` | `string?` | `null` | 挂载的配置节，为空时挂在根 |
-| `PollInterval` | `TimeSpan?` | 30 秒 | 轮询周期，`null` 关闭，必须为正 |
-| `Clock` | `TimeProvider` | 系统时钟 | 轮询计时用的时钟；测试换成可推进的时钟，轮询由用例触发 |
-| `LoadTimeout` | `TimeSpan` | 10 秒 | 首次加载的超时，必须为正 |
-| `Optional` | `bool` | `false` | 首次加载失败时是否继续启动（该源为空，照常轮询） |
-| `OnError` | `Action<Error>?` | `null` | 加载或轮询失败时的回调；它抛出的异常被丢弃，不改变结果也不终止轮询 |
+`RemoteConfigurationOptions` 的全部属性（`Namespace`、`Prefix`、`PollInterval`、`Clock`、`LoadTimeout`、`Optional`、`OnError`）见 [Configuration.Abstractions](/packages/configuration-abstractions#配置)；`Namespace` 在 Nacos 里是 `dataId`。
 
 客户端的归属看用哪个重载：`AddXiHanRemoteConfiguration(client, options)` 传入的客户端由调用方持有，配置根释放时不释放它；`AddXiHanRemoteConfiguration(clientFactory, options)` 每次构建 Provider 按工厂新建一个客户端，配置根释放时随之释放（实现 `IDisposable` 时）。配置构建期自建、没有别人持有的客户端用工厂重载。
 
@@ -129,16 +114,9 @@ public sealed class OrderLimits
 
 `AddXiHanSecrets(store, options)` 把密钥映射到配置键：`Mappings` 是配置键到密钥名的字典，构建配置时一次批量读取。失败分两类：逐项失败（不存在、无权限等）每项回调一次 `OnError`；整体失败（超过 `LoadTimeout`、密钥库抛出异常、返回的条数与请求不一致）回调一次 `CONFIGURATION_UNAVAILABLE_002`。首次读取有失败时，`Optional` 为 `false`（缺省）随后抛出 `FrameworkException`（逐项失败列出失败的配置键，密钥库抛出的异常是它的内部异常），为 `true` 时跳过失败的项，整体失败时该源为空。`RefreshInterval` 非空时周期性重读：逐项失败的项保留旧值，整体失败保留全部旧值并回调。
 
-| 选项 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `Mappings` | `IReadOnlyDictionary<string, SecretName>` | 构造参数 | 配置键 → 密钥名，至少一项；构造时复制成只读副本，键不区分大小写地不重复 |
-| `LoadTimeout` | `TimeSpan` | 10 秒 | 首次读取的超时 |
-| `RefreshInterval` | `TimeSpan?` | `null` | 周期重读的间隔，`null` 不重读 |
-| `Clock` | `TimeProvider` | 系统时钟 | 重读计时用的时钟 |
-| `Optional` | `bool` | `false` | 首次读取缺失或失败的项是否跳过 |
-| `OnError` | `Action<Error>?` | `null` | 每个失败的项回调一次，整体失败回调一次；它抛出的异常被丢弃 |
+`SecretsConfigurationOptions` 的属性表同样在 [Configuration.Abstractions](/packages/configuration-abstractions#配置)；`Mappings` 至少一项，构造时复制成只读副本，键不区分大小写地不重复。
 
-框架没有提供密钥库 Provider（Vault、Key Vault 等），应用按自己的密钥来源实现 `ISecretStore`，并让测试项目继承 `Configuration.Conformance` 的 `SecretStoreConformance` 验证语义。下面的实现从一个目录读文件，每个密钥一个文件，适合容器平台把 Secret 挂成文件的场景：
+框架没有提供密钥库 Provider（Vault、Key Vault 等）：密钥库的接入方式与认证机制因平台而异，框架只定义契约与一致性套件。应用按自己的密钥来源实现 `ISecretStore`，并让测试项目继承 `Configuration.Conformance` 的 `SecretStoreConformance` 验证语义。下面的实现从一个目录读文件，每个密钥一个文件，适合容器平台把 Secret 挂成文件的场景：
 
 ```csharp
 using XiHan.Framework.Configuration.Abstractions;
@@ -194,16 +172,7 @@ builder.Configuration.AddXiHanSecrets(
 
 ## 失败语义与错误码
 
-| 错误码 | 含义 | 出现在 |
-| --- | --- | --- |
-| `CONFIGURATION_NOTFOUND_001` | 远程配置的命名空间不存在 | `IRemoteConfigurationClient.FetchAsync` |
-| `CONFIGURATION_NOTFOUND_002` | 密钥不存在 | `ISecretStore.GetAsync` 的逐项结果 |
-| `CONFIGURATION_UNAVAILABLE_001` | 远程配置不可达或超时（首次加载超时、客户端抛出异常也归此类） | `FetchAsync`、首次加载 |
-| `CONFIGURATION_UNAVAILABLE_002` | 密钥库不可达或超时（密钥库抛出异常、返回条数与请求不一致也归此类） | `GetAsync`、首次读取 |
-| `CONFIGURATION_DENIED_001` | 没有读取该密钥的权限 | `GetAsync` 的逐项结果 |
-| `CONFIGURATION_VALIDATION_001` | 远程文档不是声明的格式 | `FetchAsync` |
-
-这些码的常量在 `ConfigurationErrors`，对应的消息键在 `ConfigurationMessages`。首次加载失败且不可选时，`FrameworkException` 的错误码就是上表里对应的码；轮询与重读的失败只经 `OnError` 报告。选项值不合法、密钥名或命名空间为空属于编程错误，构造时抛出 `ArgumentException`。
+两个契约的失败都是带错误码的 `Result`：远程配置有命名空间不存在（`CONFIGURATION_NOTFOUND_001`）、不可达或超时（`CONFIGURATION_UNAVAILABLE_001`）与文档格式不对（`CONFIGURATION_VALIDATION_001`），密钥有不存在（`CONFIGURATION_NOTFOUND_002`）、无权限（`CONFIGURATION_DENIED_001`）与密钥库不可达（`CONFIGURATION_UNAVAILABLE_002`）。错误码表见 [Configuration.Abstractions](/packages/configuration-abstractions#行为与限制)，常量在 `ConfigurationErrors`，对应的消息键在 `ConfigurationMessages`。首次加载失败且不可选时，`FrameworkException` 的错误码就是上表里对应的码；轮询与重读的失败只经 `OnError` 报告。选项值不合法、密钥名或命名空间为空属于编程错误，构造时抛出 `ArgumentException`。
 
 ## 选项打印时遮蔽凭据
 
@@ -230,22 +199,6 @@ builder.Configuration.AddXiHanSecrets(
 :::
 
 ## 常见问题
-
-### 为什么远程配置要写在 AddXiHan 之前
-
-`AddXiHan` 在调用时就读取各包的选项与绑定。配置源在它之后加入，框架看不到远端的值，只有应用自己的 `IOptionsMonitor<T>` 能读到。
-
-### 配置中心挂了，应用还能启动吗
-
-缺省不能：首次加载失败抛出 `FrameworkException`。把 `Optional` 设为 `true` 则该源为空、照常启动并继续轮询，第一次成功的轮询装入整份文档。是否可选取决于缺了这份配置应用还能不能正确工作。
-
-### 轮询期间配置中心不可达，会丢配置吗
-
-不会。轮询失败只回调 `OnError`，最后一份成功的数据保留；恢复后下一次轮询拿到新版本再整体替换。
-
-### 框架为什么不提供 Vault 或 Key Vault 的 Provider
-
-密钥库的接入方式与认证机制因平台而异，框架只定义 `ISecretStore` 契约与一致性套件。实现一个只有一个方法，通过 `SecretStoreConformance` 就能保证与框架的失败语义一致。
 
 ### 密钥能不经配置直接在代码里取吗
 

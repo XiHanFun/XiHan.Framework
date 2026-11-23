@@ -60,16 +60,7 @@ public sealed class NotificationHub : Hub;
 
 ## 方案 `XiHan` 的规则
 
-| 项 | 行为 |
-| --- | --- |
-| 生效范围 | 只认带 `PipelineBypassMetadata` 的端点；普通请求由内核管道认证，方案对它们返回未认证，不重复认证 |
-| 凭据 | 先取 `Authorization` 头；没有时，请求路径（相对 PathBase）按路径段、不区分大小写落在 `QueryTokenPaths` 的某个前缀下，且 `access_token` 只有一个非空值，才作为 `Bearer` 凭据；其他路径的查询串令牌一律忽略 |
-| 路径前缀 | 不能为空也不能是 `/`，方案初始化时校验，违反时抛出 `ArgumentException` |
-| 认证 | 交给方案名匹配的内核认证处理器；方案不支持、凭据无效都是 401，质询与管道一致（Bearer 带 `error="invalid_token"`） |
-| 主体 | 转成认证类型为 `XiHan` 的 `ClaimsPrincipal`：声明保留原始类型名，另加 `ClaimTypes.NameIdentifier` 承载主体 ID 并作名称声明（SignalR 的 `UserIdentifier` 随之可用），角色声明类型取 `XiHan:Security:RoleClaim`（缺省 `role`） |
-| 登记 | `AddXiHan` 可以多次调用，方案只登记一次、各次的配置依次生效；不设为缺省方案 |
-
-查询串令牌只给带不了请求头的客户端用：查询串会进入访问日志与代理日志，所以要把 `QueryTokenPaths` 限定到 Hub 的前缀，而不是整个站点。
+方案的生效范围、取凭据的顺序、路径前缀的校验、主体的转换与登记方式，见[端点里使用框架](/web/endpoints#绕过管道的端点)的规则表，Hub 与 Server-Sent Events 端点同样适用。查询串令牌只给带不了请求头的客户端用：查询串会进入访问日志与代理日志，所以要把 `QueryTokenPaths` 限定到 Hub 的前缀，而不是整个站点。
 
 ## 会话门禁
 
@@ -194,10 +185,6 @@ builder.Services.AddMessageHandler<SessionsRevokedHandler>("sessions.revoked", S
 ### 框架有没有 Hub 基类或者「给某个用户推消息」的服务
 
 没有。SignalR 自带的 `IHubContext<THub>`、`Clients.User(userId)`、`Clients.Group(name)` 已经够用，`UserIdentifier` 就是内核主体的 ID。连接与用户、租户的对应关系由应用自己在 `OnConnectedAsync` 里登记（例如按租户加入分组），框架不替应用维护这张表。
-
-### 为什么浏览器连 Hub 时 401，而 curl 带 `Authorization` 头却正常
-
-浏览器的 WebSocket 与 EventSource 带不了自定义请求头，令牌只能放在查询串 `access_token` 里，而方案 `XiHan` 只在 `QueryTokenPaths` 登记的前缀下接受查询串令牌，并且一律按 `Bearer` 方案交给内核处理器。依次核对：Hub 的路径是否落在登记的前缀下（按路径段匹配，`/hubs` 匹配 `/hubs/notifications`，不匹配 `/hubsx`）；`access_token` 是否只出现一次；是否装配了以 `Bearer` 工作的认证 Provider（只有内存 ApiKey 处理器时，查询串令牌的方案不受支持，得到 401）。
 
 ### 令牌过期了，已建立的连接会断吗
 

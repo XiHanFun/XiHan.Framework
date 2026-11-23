@@ -49,20 +49,13 @@ dotnet add package XiHan.Framework.Protocols.Mcp --prerelease
 }
 ```
 
+`Program.cs` 沿用[第一个应用](/getting-started/first-app)的骨架，装配 `McpProtocolFeature`、注册消息目录，再多映射一个端点：
+
 ```csharp
-using SimpleApp;
-using SimpleApp.Orders;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
 using XiHan.Framework.Protocols.Mcp;
 using XiHan.Framework.Protocols.Mcp.Transports;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
@@ -73,13 +66,8 @@ builder.AddXiHan(xihan => xihan
 // 应用自己的消息目录：tool 的 title 与 description 从这里取
 builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("samples", typeof(SampleMessages)));
 
-var app = builder.Build();
-
-app.UseXiHan();
-app.MapXiHanOperations();
+// app.UseXiHan() 之后
 app.MapXiHanMcp();   // POST /mcp：initialize、ping、tools/list、tools/call
-
-app.Run();
 ```
 
 运行后先列 tool，再以 `bob` 的凭据下单：
@@ -122,18 +110,7 @@ curl -s -X POST localhost:5000/mcp -H "Content-Type: application/json" -H "Autho
 
 `/mcp` 本身是经过 `UseXiHan()` 的普通端点：请求凭据在外层认证，凭据无效时整个请求以 401 Problem Details 拒绝、带 `WWW-Authenticate` 质询，不进入 JSON-RPC；应用未就绪时 503。没有凭据的请求照常进入，按契约的授权在每个 `tools/call` 的管道里判定，所以匿名客户端能 `tools/list`，调需要权限的 tool 时得到 `isError`。
 
-| 情形 | `error.code` | `error.data.code` | HTTP |
-| --- | --- | --- | --- |
-| 请求体不是 JSON | -32700 | `PROTOCOLS_VALIDATION_001` | 400 |
-| 不是 JSON-RPC 2.0 请求（非对象、`jsonrpc` 不是 `2.0`、缺 `method`、`id` 为 `null`、`params` 不是对象） | -32600 | `PROTOCOLS_VALIDATION_001` | 400 |
-| `MCP-Protocol-Version` 不受支持 | -32600 | `PROTOCOLS_VALIDATION_002` | 400 |
-| `Origin` 不在 `AllowedOrigins` 里 | -32600 | `PROTOCOLS_DENIED_001` | 403 |
-| `Content-Type` 不是 `application/json` | -32600 | `PROTOCOLS_VALIDATION_015` | 415 |
-| 请求体超过 `MaxRequestBodyBytes` | -32600 | `PROTOCOLS_VALIDATION_016` | 413 |
-| 方法不受支持 | -32601 | `PROTOCOLS_NOTFOUND_001` | 200 |
-| `tools/call` 缺 `name` | -32602 | `PROTOCOLS_VALIDATION_001` | 200 |
-| tool 未登记 | -32602 | `PROTOCOLS_NOTFOUND_002` | 200 |
-| `arguments` 不是对象 | -32602 | `PROTOCOLS_VALIDATION_003` | 200 |
+JSON-RPC 错误的 `error.data.code` 是框架错误码。解析与入口校验的失败带 HTTP 错误状态：请求体不是 JSON（-32700）、不是 JSON-RPC 2.0 请求、协议版本不受支持是 400，`Origin` 不被允许是 403，`Content-Type` 不对是 415，请求体过大是 413（后五种都是 -32600）。进入 JSON-RPC 之后的失败是 HTTP 200 加错误对象：方法不受支持是 -32601，`tools/call` 缺 `name`、tool 未登记、`arguments` 不是对象是 -32602。逐项的错误码见[包参考](/packages/protocols-mcp#行为与限制)。
 
 ## stdio 传输
 
@@ -160,16 +137,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 
 ## 选项
 
-配置节 `XiHan:Protocols:Mcp`（`McpProtocolOptions`）：
-
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `ServerName` | string | 宿主的应用名 | `initialize` 答复的 `serverInfo.name` |
-| `ServerVersion` | string | 应用的版本 | `serverInfo.version`；缺省取入口程序集的信息版本（去掉构建元数据），不写框架版本（ADR-0209） |
-| `Instructions` | string | 空 | `initialize` 答复的 `instructions`，给大模型的使用说明，空时不写 |
-| `Tools:<操作 ID>` | string | — | 显式 tool 名 |
-| `AllowedOrigins:<序号>` | string | 空 | HTTP 入口允许的浏览器源，`scheme://host[:port]`（http 或 https，没有路径）；不是源的值启动失败 |
-| `MaxRequestBodyBytes` | 正整数 | 4194304（4 MiB） | HTTP 入口的请求体上限 |
+配置节 `XiHan:Protocols:Mcp`（`McpProtocolOptions`）有服务端的名字、版本与说明（`ServerName`、`ServerVersion`、`Instructions`，后者是给大模型的使用说明，空时不写）、按操作的 tool 名（`Tools:<操作 ID>`）、HTTP 入口允许的浏览器源（`AllowedOrigins`）与请求体上限（`MaxRequestBodyBytes`），类型与缺省值见[包参考](/packages/protocols-mcp#配置)。
 
 `initialize` 总是答复本服务端的协议版本与 `capabilities.tools.listChanged = false`，由客户端决定是否继续；`ping` 答复 `{}`。
 
@@ -192,10 +160,6 @@ MCP 客户端按 `destructiveHint` 决定是否确认。只有 `get`、`list` �
 ### 能用 SSE 或长连接吗
 
 不能。这个实现只做 Streamable HTTP 的请求 / 响应部分：一条 `POST` 一个答复，不开 SSE 流、不建会话。服务端到客户端的通知与 `listChanged` 都不支持：tool 列表随登记表变化（插件加载与卸载），客户端重新 `tools/list` 才看得到。
-
-### 大模型会不会拿到比用户更多的权限
-
-不会。每个 `tools/call` 带着这次 HTTP 请求（或 stdio 会话）的凭据经完整管道，Authorize 阶段按契约里的 `Permission` / `Policy` 判定，和 HTTP 上调同一个操作完全一样。凭据没有的权限，tool 也没有。
 
 ## 相关包与下一步
 

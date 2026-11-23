@@ -19,7 +19,7 @@
 | `DateTimeOffset` | EF Core 缺省；SQLite 上 `ApplyPersistenceConventions(Database)` 存成 UTC ticks 整数（比较与排序可用，应用已配转换的不动）；库里还是旧的文本形式时启动失败（`PERSISTENCE_VALIDATION_008`） | 经转换器按 UTC 时刻往返 |
 | 可空类型（`int?`、`string?`） | EF Core 缺省 | 列可空 |
 | 没有公开 setter 的属性、集合属性 | 按 EF Core 约定 | 不映射（字符串、字节数组除外） |
-| 加非可空列的缺省值 | 迁移里写 `defaultValue` | PostgreSQL 上非可空的数值、枚举、布尔与 `Guid` 列由约定配 CLR 缺省值，`InitTables` 才能给已有行的表加这类列；SQLite 加成可空列；其他数据库与字符串、日期时间列新列要声明成可空 |
+| 加非可空列的缺省值 | 迁移里写 `defaultValue` | PostgreSQL 上非可空的数值、枚举、布尔与 `Guid` 列由约定配 CLR 缺省值，`InitTables` 才能给已有行的表加这类列；SQLite 加成可空列；其他数据库与字符串、日期时间列新列要声明成可空，或走迁移脚本带 `DEFAULT` 子句 |
 
 字符串列的长度用 DataAnnotations 的 `[StringLength(n)]` 声明，不限长度的文本列用 `Persistence.Abstractions` 的 `[LongText]`。SqlSugar 约定也认 DataAnnotations 的 `[MaxLength(n)]` 与无参 `[MaxLength]`，但它们的构造函数带 `RequiresUnreferencedCode`，Native AOT 项目的分析器拒绝，这类项目只用 `[StringLength(n)]` 与 `[LongText]`。框架自己的数据库记录全部显式声明字符串长度，架构测试检查这一点，应用实体建议同样声明。
 
@@ -87,15 +87,15 @@ public sealed class OrderNote : IEntity<Guid>, IMultiTenant, IHasCreationTime, I
 | PostgreSQL、SQLite | 支持 | EF Core 加 `HasFilter`；SqlSugar 的 `InitTables` 建表后补建 `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE IsDeleted = false / 0` |
 | SQL Server | 支持 | EF Core 加 `HasFilter`；SqlSugar 建筛选索引 `WHERE [IsDeleted] = 0`（键含可空列另加 `IS NOT NULL`） |
 | MySQL（8.0.13 起）、Oracle | SqlSugar 支持，EF Core 不支持 | SqlSugar 建函数索引，每列一个 `CASE WHEN IsDeleted = 0 THEN 列 END`（键含可空列时条件另加 `IS NOT NULL`）：已删除的行整键为空、不参与唯一（ADR-0249）；EF Core 写不出函数索引，建模即失败 |
-| MySQL 与 Oracle 的兼容库（TiDB、OceanBase、达梦等）、MariaDB，以及没有验证过的 PostgreSQL 衍生库（人大金仓、openGauss 等） | 不支持 | 有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引；MariaDB 的 `DbType` 也是 MySQL，没有函数索引，建索引的语句失败、`InitTables` 报错 |
+| MySQL 与 Oracle 的兼容库（TiDB、OceanBase、达梦等）、MariaDB，以及没有验证过的 PostgreSQL 衍生库（人大金仓、openGauss 等） | 不支持 | 有这样的声明即启动失败（`PERSISTENCE_UNAVAILABLE_008`），不退化成普通唯一索引；MariaDB 与 8.0.13 之前的 MySQL 没有函数索引（`DbType` 同样是 MySQL），建索引的语句失败、`InitTables` 报错 |
 
-在不支持的数据库上要唯一约束，就把 `IsDeleted` 显式写进列（普通唯一索引，同一业务键最多一行已删除），或不声明唯一。SqlSugar 的部分唯一索引不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表之后补建，应用自己给租户库建表时也要经它；库里已有同名的带 `IsDeleted` 列的唯一索引时 `IF NOT EXISTS` 会跳过，要先手动删掉那个索引。
+在不支持的数据库上要唯一约束，就把 `IsDeleted` 显式写进列（普通唯一索引，同一业务键最多一行已删除），或不声明唯一、在操作里先查再写。SqlSugar 的部分唯一索引不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表之后补建，应用自己给租户库建表时也要经它；库里已有同名的带 `IsDeleted` 列的唯一索引时 `IF NOT EXISTS` 会跳过，要先手动删掉那个索引。
 
 ### 唯一键冲突
 
 写入撞上唯一索引（并发写入同一业务键、同一批两项同键、把键改成已有的值）返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），这次写入的项统一报告，调用随后回滚；重试时先查到已有的行，按更新处理。关系型 Provider 在写入失败后核对：这次写入里两项同键，或已提交的另一行同键；软删除实体的部分唯一索引只比较未删除的行。核对不到的（大小写不敏感排序规则下只差大小写、SqlSugar 上与本工作单元先前未提交的行冲突、键含空值）异常原样抛出。
 
-唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行（SQL Server 把 NULL 当相等，EF Core 在 SQL Server 上给这种唯一索引自动加 `IS NOT NULL` 过滤）。要让「全局」这类空值参与唯一性，存成非空的哨兵值（如空字符串）。
+唯一索引里有可空列时，PostgreSQL、SQLite、MySQL 不约束含 NULL 的行（SQL Server 把 NULL 当相等，EF Core 在 SQL Server 上给这种唯一索引自动加 `IS NOT NULL` 过滤）。要让「全局」这类空值参与唯一性，存成非空的哨兵值（如授予表的空字符串租户）。
 
 ### 分表实体
 
@@ -119,25 +119,9 @@ EF Core 的迁移会把 `ApplyPersistenceConventions` 加进模型的索引、�
 
 ## 常见问题
 
-### 为什么不用 EF Core 的 `[Index]` 或 SqlSugar 的 `[SugarIndex]`
+### 什么时候显式给索引名
 
-它们把实体绑到某个 ORM，换 Provider 时索引名与建法都变。`[EntityIndex]` 由两个 Provider 翻译成各自的映射、建出同名索引。只有 SqlSugar 分表实体是例外，必须用 `[SugarIndex]`。
-
-### 索引名能不能自己指定
-
-能，写 `[EntityIndex(…, Name = "ux_order_tenant_id_code")]`（ADR-0249）。不写时由规则推出。显式的名字给已经按自己的规则建好了索引的库用：换成 `[EntityIndex]` 后名字不变，库里的索引原样沿用，不用改名。两个 Provider 用同一个名字；名字只收字母开头、ASCII 字母数字与下划线，不超过 63 个字符。PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，两个实体给了同一个名字时 SqlSugar 的 `InitTables` 在建表之前报错。
-
-### 软删除实体的唯一索引在 MySQL 上怎么建
-
-MySQL 没有带条件的索引。SqlSugar 在 MySQL 8.0.13 起用函数索引代替（ADR-0249）：每列包成 `CASE WHEN IsDeleted = 0 THEN 列 END`，已删除的行整键为空，MySQL 的唯一索引不约束含 NULL 的键，所以已删除的行不参与唯一。更早的 MySQL 与 MariaDB 没有函数索引，建索引的语句失败；EF Core 写不出函数索引，在 MySQL 上建模即失败。这些情况下两条路：把 `IsDeleted` 显式写进 `[EntityIndex]` 的列，接受「同一业务键最多一行已删除」；或不声明唯一，在操作里先查再写。
-
-### 字符串没写 `[StringLength]` 会怎样
-
-EF Core 建成长文本，没有问题；SqlSugar 沿用缺省（PostgreSQL 是 `varchar(255)`），超长写入整批失败。建议所有字符串列都显式声明长度，没有上限的标 `[LongText]`。
-
-### 已有的表加了一个非可空列，`InitTables` 报错
-
-PostgreSQL 上数值、枚举、布尔与 `Guid` 列由约定回填 CLR 缺省值，能加；非可空的字符串与日期时间列，以及其他数据库上的非可空列，没有缺省值填不进已有行。把新列声明成可空，或走迁移脚本带 `DEFAULT` 子句。
+库里已经按自己的规则建好了索引时，写 `[EntityIndex(…, Name = "ux_order_tenant_id_code")]`：换成 `[EntityIndex]` 后名字不变，库里的索引原样沿用，不用改名。名字的限制与重名的处理见上面「索引」一节的表。
 
 ### 值对象与 JSON 列怎样建
 

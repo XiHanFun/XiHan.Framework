@@ -36,7 +36,7 @@ Baggage 是 W3C 格式的键值对，但框架只传播已登记的键，未登�
 | `BaggageKeys.IdempotencyKey` | `xihan.idempotency-key` | 幂等键，Idempotency 阶段据此去重 | HTTP `baggage` 头；消息派发不写它 |
 | `BaggageKeys.Locale` | `xihan.locale` | 调用方区域，失败文案与 `key.L()` 据此翻译 | HTTP `baggage` 头或 `Accept-Language`、命令行 `--locale`、消息扩展 `xihanlocale` |
 
-`BaggageKeys.Registered` 列出全部已登记的键，`IsRegistered(key)` 与 `IsWellFormed(key)` 供自定义载体校验。已登记键的值在建调用上下文时核对：为空、超过 `BaggageKeys.MaxValueLength`（256 个字符）或含控制字符（换行、制表符）的丢弃，与 W3C Baggage 忽略不合法的成员一致；这些值会写进日志作用域、审计与消息信封，换行能伪造日志行（ADR-0204）。幂等键例外，不合法时由 Idempotency 阶段以校验错误拒绝，不会被悄悄丢掉。HTTP 入站显式给的 `xihan.locale` 不合 BCP 47 文法时当作没给，`Accept-Language` 照常协商。HTTP 入站不接受 `xihan.tenant` 与 `xihan.principal`，是因为任何客户端都能写请求头，租户与主体必须由凭据推出；消息派发接受它们，是因为消息的发送方是经过授权的服务，审计把 `xihan.principal` 记为发起者。
+`BaggageKeys.Registered` 列出全部已登记的键，`IsRegistered(key)` 与 `IsWellFormed(key)` 供自定义载体校验。已登记键的值在建调用上下文时核对：为空、超过 `BaggageKeys.MaxValueLength`（256 个字符）或含控制字符（换行、制表符）的丢弃，与 W3C Baggage 忽略不合法的成员一致；这些值会写进日志作用域、审计与消息信封，换行能伪造日志行（ADR-0204）。幂等键例外，不合法时由 Idempotency 阶段以校验错误拒绝，不会被悄悄丢掉。HTTP 入站显式给的 `xihan.locale` 不合 BCP 47 文法时当作没给，`Accept-Language` 照常协商。HTTP 入站不接受 `xihan.tenant` 与 `xihan.principal`，是因为任何客户端都能写请求头，租户与主体必须由凭据与 Tenant 阶段的解析规则推出（见[租户解析与隔离](/multi-tenancy/resolution)）；消息派发接受它们，是因为消息的发送方是经过授权的服务，审计把 `xihan.principal` 记为发起者。
 
 ## 内核附加的信息
 
@@ -183,7 +183,7 @@ public sealed class NightlyReconciler(App app, IServiceScopeFactory scopes)
 | `InvocationOrigin` 成员 | 含义 |
 | --- | --- |
 | `Protocol` | `InvocationProtocols` 的常量：`Http`（`http`）、`Grpc`（`grpc`）、`Mcp`（`mcp`）、`CommandLine`（`cli`）、`Messaging`（`messaging`）、`Job`（`job`）、`Workflow`（`workflow`） |
-| `Target` | HTTP 为方法与路径（不含查询串），gRPC 为方法全名，MCP 为工具名，命令行为操作 ID，消息为主题，作业为作业名，工作流为操作名 |
+| `Target` | HTTP 为方法与路径（不含查询串），gRPC 为方法全名，MCP 为工具名，命令行为操作 ID，消息为主题，作业为作业名，工作流为操作名（如 `workflow.start`） |
 | `RemoteAddress` | 客户端 IP，不含端口；经反向代理时取 `UseForwardedHeaders()` 改写后的值，没有网络对端时为空 |
 | `UserAgent`、`Referer` | 对应的请求头，没有时为空 |
 | `Route`、`EndpointName` | 匹配到的端点的路由模板与 `WithName` 名字，没有匹配到端点或协议没有端点时为空 |
@@ -214,11 +214,11 @@ public sealed class AuditOriginMiddleware : IPipelineMiddleware
 }
 ```
 
-`AddAuditDetail` 来自审计抽象包，见[审计](/common/auditing)。
+在特性里以 `context.AddMiddleware<AuditOriginMiddleware>(PipelineStage.Ingress, Placement.Beginning)` 登记（Ingress 在 Observe 之外，被认证或授权拒绝的调用也带上来源）。`AddAuditDetail` 来自审计抽象包，见[审计](/common/auditing#记录调用来源)。
 
 ## 调用链深处取上下文
 
-操作与中间件从参数拿上下文；端点里用 `httpContext.FindXiHanContext()`（返回 `Maybe<InvocationContext>`，请求没有经过 `UseXiHan()` 时无值）。调用链深处拿不到任何参数的服务注入作用域服务 `IInvocationAccessor`，它的 `Current` 是 `Maybe<InvocationContext>`：
+操作与中间件从参数拿上下文；端点里用 `httpContext.FindXiHanContext()`（返回 `Maybe<InvocationContext>`，请求没有经过 `UseXiHan()` 时无值）。调用链深处拿不到任何参数的服务（领域服务、仓储装饰器、当前用户的包装）注入作用域服务 `IInvocationAccessor`，它的 `Current` 是 `Maybe<InvocationContext>`；注入它的服务自己也要注册为作用域服务（`AddScoped`）：
 
 ```csharp
 using XiHan.Framework.Kernel.Pipeline;
@@ -231,10 +231,14 @@ public sealed class CurrentShopper(IInvocationAccessor accessor)
     public string? Id => accessor.Current.TryGetValue(out var context)
         ? context.GetSecurity().Principal.Id
         : null;
+
+    public string? TenantId => accessor.Current.TryGetValue(out var context)
+        ? context.GetSecurity().Tenant?.Id
+        : null;
 }
 ```
 
-内核在调用进入管道前设置 `Current`，离开时恢复上一层；同一作用域内的嵌套调用各自看到自己的上下文。不在调用内（后台任务、作用域刚创建、调用已结束）时为无值，调用方要处理这种情况而不是 `ValueOrThrow()`。
+内核在调用进入管道前设置 `Current`，离开时恢复上一层；同一作用域内的嵌套调用各自看到自己的上下文。不在调用内（后台任务、作用域刚创建、调用已结束）时为无值，调用方要处理这种情况而不是 `ValueOrThrow()`。访问器不是传播载体：跨进程传递租户、主体等信息由 Baggage 负责。
 
 ## Baggage 的传播载体
 
@@ -249,10 +253,6 @@ public sealed class CurrentShopper(IInvocationAccessor accessor)
 
 ## 常见问题
 
-### 为什么我在 HTTP 请求头里放了 `xihan.tenant`，操作里读不到
-
-HTTP 入站只接受 `xihan.correlation`、`xihan.idempotency-key`、`xihan.locale` 三个键，其余 `xihan.` 键丢弃。租户来自认证后的主体与 Tenant 阶段的解析规则（请求头、域名、路径等由多租户子系统决定），见[租户解析与隔离](/multi-tenancy/resolution)。
-
 ### `Deadline` 与 `CancellationToken` 是什么关系
 
 `Deadline` 是绝对时刻，`DeadlineMiddleware` 在 Resilience 阶段据此派生一个在截止时刻触发的令牌并并入 `CancellationToken`。处理器只需要传递 `CancellationToken`；要知道「还剩多久」才读 `Deadline` 或 `RemainingTime(now)`。超时得到 `KERNEL_TIMEOUT_001`，外部取消得到 `KERNEL_CANCELLED_001`。
@@ -263,11 +263,7 @@ HTTP 入站只接受 `xihan.correlation`、`xihan.idempotency-key`、`xihan.loca
 
 ### `SetOutcome` 写了两次会怎样
 
-后写的覆盖先写的，所以规则是「谁短路谁写，处理器之后不要改写别的阶段写的结果」。只想在没有结果时补一个时用 `SetOutcomeIfMissing`。
-
-### 处理器既没有 `SetOutcome` 也没有抛异常，调用结果是什么
-
-成功。`App.InvokeAsync` 把无值的结果当作 `Result.Success()`，操作契约的处理器由内核把返回的 `Result<TResponse>` 写进去，不需要手动调用。
+后写的覆盖先写的，所以规则是「谁短路谁写，处理器之后不要改写别的阶段写的结果」。只想在没有结果时补一个时用 `SetOutcomeIfMissing`。操作契约的处理器由内核把返回的 `Result<TResponse>` 写进去，不需要手动调用。
 
 ## 相关包与下一步
 

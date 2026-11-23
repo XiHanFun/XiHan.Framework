@@ -20,30 +20,23 @@
 
 ## 最小示例
 
-方式一，特性按回调创建客户端，连接串来自绑定 `db`：
+接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，只多两处：登记实体，在 `AddXiHan` 的链上加一个 `UseFeature`（其余特性照旧）。方式一，特性按回调创建客户端，连接串来自绑定 `db`：
 
 ```csharp
 using SimpleApp.Orders;
 using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
 using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRepository<Order, Guid>();
 builder.AddXiHan(x => x
     .UseStandardProfile()
+    // 显式 Provider 顶替 Standard 里的内存默认实现
     .UseFeature(new SqlSugarPersistenceFeature(static (binding, config) =>
     {
         config.DbType = DbType.PostgreSQL;
         config.ConnectionString = binding.ValueOrThrow().Value;
     })));
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ```json
@@ -74,7 +67,7 @@ builder.Services.AddScoped<ISqlSugarClient>(_ => new SqlSugarClient(
 builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceFeature()));
 ```
 
-两种方式下仓储、工作单元与查询语义相同。方式二要自己保证每个作用域用一份配置副本（`SqlSugarScope` 自己会复制），`CommandTimeoutSeconds` 与 `Connections` 配置节对它不起作用，框架也不探测它的从库。
+两种方式下仓储、工作单元与查询语义相同。方式二要自己保证每个作用域用一份配置副本（`SqlSugarScope` 自己会复制），配置里的 `Connections` 节与 `CommandTimeoutSeconds` 对它不适用（写了 `Connections`，或把超时配成缺省以外的值，装配即失败），框架也不探测它的从库。
 
 ## 协议约定
 
@@ -87,11 +80,11 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 - PostgreSQL 连接串的启动参数追加 `standard_conforming_strings=on`，见下文。
 - 实体映射按数据库类型分开缓存：`ConfigId` 相同、库类型不同的连接（如不同库类型的租户分片都是 `shard`）各用各的列定义（ADR-0248）。
 
-软删除与租户过滤以表达式显式施加在每个查询上，不用 SqlSugar 的全局过滤器。列与索引的完整约定见[建表约定与索引](/persistence/schema)。
+软删除与租户过滤以表达式显式施加在每个查询上，不用 SqlSugar 的全局过滤器。列与索引的通用规则见[建表约定与索引](/persistence/schema)，逐项约定与各数据库上的差异见 [Persistence.SqlSugar](/packages/persistence-sqlsugar#行为与限制)。
 
 ## 建表：InitTables
 
-`XiHan:Persistence:SqlSugar:InitTables` 为 `true` 时，启动按已登记的实体建缺表、加缺列，经 `SqlSugarConventions.InitTables`，软删除实体的部分唯一索引随之建出。按落点分组：租户实体在默认连接建表（启动时没有分片），带 `[Tenant]` 或登记到命名连接的实体在各自的连接上建表；分表实体走 `CodeFirst.SplitTables()`。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本；索引按名字查不到才建，表里已有重复数据时唯一索引建不出来、启动失败。应用自己建表（租户独立库、迁移工具）也要调 `SqlSugarConventions.InitTables(client, entityTypes)`，直接调 `CodeFirst.InitTables` 建不出部分唯一索引。
+`XiHan:Persistence:SqlSugar:InitTables` 为 `true` 时，启动按已登记的实体建缺表、加缺列，每种实体建在它落的连接上（启动时没有分片，租户实体建在默认连接），软删除实体的部分唯一索引随之建出。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。应用自己建表（租户独立库、迁移工具）要调 `SqlSugarConventions.InitTables(client, entityTypes)`，直接调 `CodeFirst.InitTables` 建不出部分唯一索引。给已有行的表加非可空列、索引重名、表里已有重复数据与不支持部分唯一索引的数据库这些边界见 [Persistence.SqlSugar](/packages/persistence-sqlsugar#建表与索引)。
 
 ## 多库落点
 
@@ -104,7 +97,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 
 装配了 `multitenancy.sharding@1` 时，带分片的调用把分片绑定交给同一个回调，再建一个 `ConfigId = shard` 的连接：租户实体落分片库，租户目录、授予、发件箱这类平台表仍落默认库，同一调用里一起提交或回滚。发件箱投递循环的分片轮次因此查到的仍是默认库，可以把 `XiHan:Messaging:Outbox:IncludeShards` 设为 `false` 省去多余的查询。方式二由应用自己提供名为 `shard` 的连接。见[租户分片与分库](/multi-tenancy/sharding)。
 
-把审计类实体固定到 `audit` 库（配合上面方式二的客户端），实体类上标 SqlSugar 的 `[Tenant("audit")]` 即可，其余照常实现协议接口。替换规则时，在装配特性之前注册自己的实现：`builder.Services.AddSingleton<IEntityConnectionSelector, MySelector>()`。同一工作单元里对同一实体类型的选择结果必须稳定。工作单元在第一次写入时经 `AsTenant()` 在客户端的全部连接上开事务，提交逐连接提交，回滚逐连接回滚。
+把审计类实体固定到 `audit` 库（配合上面方式二的客户端），实体类上标 SqlSugar 的 `[Tenant("audit")]` 即可，其余照常实现协议接口。替换规则时，在装配特性之前注册自己的实现：`builder.Services.AddSingleton<IEntityConnectionSelector, MySelector>()`。同一工作单元里对同一实体类型的选择结果必须稳定。一次调用触及的连接都在同一个工作单元里：第一次写入时开事务，此后首次取用的连接再补开，提交逐连接提交，回滚逐连接回滚。
 
 ::: warning 跨库提交是顺序提交，不是两阶段提交
 一次调用写了多个连接时，提交逐连接进行；后一个连接提交失败时，前一个已经提交。需要严格原子性的写入放在同一个库。
@@ -112,7 +105,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 
 ### 命名连接
 
-方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明命名连接，回调对每个命名连接各调用一次，`config.ConfigId` 是连接名；方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端。每个作用域的客户端都带上命名连接，工作单元首次写入时只在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开：业务调用不碰命名连接，那个库就不被业务事务锁住。普通工作单元里，登记到命名连接的实体照常参与整体事务（与 EF Core 不同）；绑定连接的工作单元（`UnitOfWorkOptions { Connection = name }`）只用这一个连接，操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`。配置与代码示例见[连接与运行时数据源](/persistence/connections)。
+要与业务事务互不等待的平台数据（如 SQLite 上的工作流租约表）放到命名连接：方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明，回调对每个命名连接各调用一次，`config.ConfigId` 是连接名；方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端。普通工作单元里，登记到命名连接的实体照常参与整体事务（与 EF Core 不同）；业务调用不碰命名连接时，那个库不被业务事务锁住。事务怎样开、绑定连接的工作单元有什么限制见 [Persistence.SqlSugar](/packages/persistence-sqlsugar#命名连接)，配置与代码示例见[连接与运行时数据源](/persistence/connections)。
 
 ## 分表
 
@@ -165,7 +158,7 @@ new SqlSugarPersistenceFeature((binding, config) =>
 
 `HitRate` 是字段，配置绑定绑不上，从配置读时自己赋值；不大于 0 的权重按 `Replicas:DefaultHitRate`（缺省 10）归一化。
 
-只读工作单元（动词 `get`、`list`，或 `UnitOfWorkOptions { IsReadOnly = true }`）的读走从库，设了 `ReadsPrimary` 的读主库；其余工作单元的读写都走主库，第一次写入之前的读也一样。工作单元之外直接用客户端时，事务内与写入走主库，事务外的读走从库。分片连接默认没有从库。跨调用读己之写不保证：写完马上发起的只读调用可能读到落后的从库，框架读授予和租户目录时因此读主库。
+只读工作单元（动词 `get`、`list`，或 `UnitOfWorkOptions { IsReadOnly = true }`）的读走从库，设了 `ReadsPrimary` 的读主库；其余工作单元的读写都走主库，第一次写入之前的读也一样。工作单元之外直接用客户端时，事务内与写入走主库，事务外的读走从库。分片连接默认没有从库。跨调用读己之写不保证：写完马上发起的只读调用可能读到落后的从库，框架读授予和租户目录时因此读主库；应用里要立即读到刚写数据的只读路径同样设 `ReadsPrimary = true`，或把读写放进同一个可写调用。
 
 周期探测把不可读的从库摘除，全部不可读时读回到主库，恢复之后过了冷却窗口才放回读流量；健康项 `persistence.sqlsugar.replicas` 有从库不可读时是 Degraded（`PERSISTENCE_UNAVAILABLE_009`），应用仍然就绪，只探连通、不看复制延迟。主库不同的连接共用同一个从库是装配错误（`PERSISTENCE_VALIDATION_009`）：回调不看 `ConfigId` 时，租户的读会读到平台库。
 
@@ -196,11 +189,11 @@ var feature = new SqlSugarPersistenceFeature(static (binding, config) =>
 };
 ```
 
-`ChangeBuffer` 是应用自己的作用域服务；`feature` 照常 `UseFeature`。缺省一个实体都不开；开启的实体必须有公开的无参构造函数。回调在写入执行后同步触发、不等提交，事务回滚由应用按调用缓冲后再落库。分表实体同样支持，但回调里不要保存 `DiffLogModel` 的引用（分表插入的各组之间复用同一个）。审计子系统本身见[审计](/common/auditing)。
+`ChangeBuffer` 是应用自己的作用域服务（`builder.Services.AddScoped<ChangeBuffer>()`）；`feature` 照常 `UseFeature`。缺省一个实体都不开；开启的实体必须有公开的无参构造函数。回调在写入执行后同步触发、不等提交，事务回滚由应用按调用缓冲后再落库。分表实体同样支持，但回调里不要保存 `DiffLogModel` 的引用（分表插入的各组之间复用同一个）。审计子系统本身见[审计](/common/auditing)。
 
 ## 命令超时
 
-`XiHan:Persistence:SqlSugar:CommandTimeoutSeconds`（缺省 300）设在特性建的客户端的每个连接上；不是正整数即启动失败，0 不接受（ADO.NET 的 0 是无限等待）。方式二要在自己的客户端上设 `Ado.CommandTimeOut`，配了这个键启动失败。个别长任务在调用点用 `Ado.CommandTimeOut` 临时调大。
+`XiHan:Persistence:SqlSugar:CommandTimeoutSeconds`（缺省 300）设在特性建的客户端的每个连接上；不是正整数即启动失败，0 不接受（ADO.NET 的 0 是无限等待）。方式二要在自己的客户端上设 `Ado.CommandTimeOut`，这个键配成缺省以外的值启动失败。个别长任务在调用点用 `Ado.CommandTimeOut` 临时调大。
 
 ## 可空值类型判空
 
@@ -210,7 +203,7 @@ var feature = new SqlSugarPersistenceFeature(static (binding, config) =>
 
 ### standard_conforming_strings
 
-SqlSugar 在多行插入、批量更新、按实体删除、`In`、集合 `Contains` 里内联的字符串字面量只在 `standard_conforming_strings = on` 时正确；库或角色设成 off 时含反斜杠的值会让语句报错或被静默改掉。`SqlSugarConventions.Apply` 在连接串（含从库）的启动参数 `Options` 追加 `-c standard_conforming_strings=on`，服务器在建连时施加它，优先于库与角色的缺省值；连接串已显式写成别的值时 `Apply` 抛 `ArgumentException`。经这个配置的全部连接（含应用的原生 SQL）都是 on，原生 SQL 里要转义用 `E'…'`。PgBouncer 要能透传启动参数的版本；运行时数据源不加这个参数。
+SqlSugar 在多行插入、批量更新、按实体删除、`In`、集合 `Contains` 里内联的字符串字面量只在 `standard_conforming_strings = on` 时正确；库或角色设成 off 时含反斜杠的值会让语句报错或被静默改掉，按主键的更新、删除与查找静默漏行。`SqlSugarConventions.Apply` 在连接串（含从库）的启动参数 `Options` 追加 `-c standard_conforming_strings=on`，服务器在建连时施加它，优先于库与角色的缺省值；连接串已显式写成别的值时 `Apply` 抛 `ArgumentException`。经这个配置的全部连接（含应用的原生 SQL）都是 on，原生 SQL 里要转义用 `E'…'`。PgBouncer 要能透传启动参数的版本；运行时数据源不加这个参数。
 
 ### 时间戳的 Kind
 
@@ -218,21 +211,20 @@ SqlSugar 的 PostgreSQL 提供器自己打开 Npgsql 的 legacy 时间戳模式�
 
 ## MySQL 的已知限制
 
-MySQL 上 SqlSugar 对两个及以上值的 `In(…)` 与按实体删除把字符串内联成只转义单引号的字面量，缺省 sql_mode 下含反斜杠的字符串主键会静默漏行（开了 `NO_BACKSLASH_ESCAPES` 时集合 `Contains` 反过来漏行）。仓储里受影响的是 `FindManyAsync`、批量方法的标识预查与加锁取回、物理删除；Guid 与整数主键不受影响。应用的字符串主键首选不含反斜杠（写入前按 `^[A-Za-z0-9][A-Za-z0-9._-]*$` 这类规则校验），做不到时改用参数化写法（逐个 `==` 比较、`FindAsync`）。这是 SqlSugar 上游缺陷，待上游修复。
+MySQL 上 SqlSugar 对两个及以上值的 `In(…)` 与按实体删除把字符串内联成只转义单引号的字面量，缺省 sql_mode 下含反斜杠的字符串主键会静默漏行（开了 `NO_BACKSLASH_ESCAPES` 时集合 `Contains` 反过来漏行）。仓储里受影响的是 `FindManyAsync`、批量方法的标识预查与加锁取回、物理删除；Guid 与整数主键不受影响。应用的字符串主键首选不含反斜杠（写入前按 `^[A-Za-z0-9][A-Za-z0-9._-]*$` 这类规则校验），做不到时改用参数化写法（逐个 `==` 比较、`FindAsync`）。这是 SqlSugar 上游缺陷，待上游修复；受影响的全部写法与参数化的代码见 [Persistence.SqlSugar](/packages/persistence-sqlsugar#mysql-上的已知限制)。
 
 ## 配置
 
+本页示例用到的键：
+
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
+| `XiHan:Bindings:db` | 字符串 | — | 方式一的连接绑定主值 |
 | `XiHan:Persistence:SqlSugar:InitTables` | 布尔 | `false` | 启动时建缺表、加缺列；只宜在开发与测试开启 |
-| `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Persistence:SqlSugar:Connections:<name>` | 字符串 | — | 方式一的命名连接；方式二写了这一节装配即失败 |
 | `XiHan:Persistence:SqlSugar:CommandTimeoutSeconds` | 正整数 | `300` | 命令超时（秒） |
-| `XiHan:Persistence:SqlSugar:Replicas:DefaultHitRate` | 正整数 | `10` | 权重不大于 0 的从库归一化成的权重 |
-| `XiHan:Persistence:SqlSugar:Replicas:HealthCheck`、`HealthCheckIntervalSeconds`、`FailureCooldownSeconds` | 布尔、正数、非负数 | `true`、`30`、`120` | 是否周期探测从库、探测间隔、最后一次失败后恢复读流量前的冷却窗口 |
-| `XiHan:Bindings:db` | 字符串 | — | 方式一的连接绑定主值 |
 
-健康项 `persistence.sqlsugar.database` 对默认连接走一次数据库往返，连不上或超时为 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
+从库的权重与探测、健康项的重探间隔等完整配置见 [Persistence.SqlSugar](/packages/persistence-sqlsugar#配置)，健康项 `persistence.sqlsugar.database` 的探测方式见同页的[行为与限制](/packages/persistence-sqlsugar#行为与限制)。
 
 ## 常见问题
 
@@ -242,11 +234,7 @@ MySQL 上 SqlSugar 对两个及以上值的 `In(…)` 与按实体删除把字�
 
 ### 更新与删除为什么要先读一遍
 
-仓储在事务内加行锁取回当前行（`TranLock`），比对并发戳后把调用方的实例整行写入，其中创建时间、租户与删除标记先换成当前行的值，保证读取与写入之间别人改不了这一行、协议字段不被覆盖。SQLite 不支持行锁，由数据库级写锁保证；分表实体不加行锁。
-
-### 从库有延迟，刚写的数据读不到
-
-只读调用走从库，跨调用的读己之写不保证。需要立即读到刚写数据的只读路径，开工作单元时设 `ReadsPrimary = true`；或者把读写放进同一个可写调用。
+仓储在事务内加行锁取回当前行、比对并发戳后把调用方的实例整行写入，保证读取与写入之间别人改不了这一行，创建时间、租户与删除标记不被调用方的值覆盖。哪些情况不加行锁、冲突时返回什么见 [Persistence.SqlSugar](/packages/persistence-sqlsugar#行为与限制)。
 
 ## 相关包与下一步
 

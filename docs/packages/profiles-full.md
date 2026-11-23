@@ -49,7 +49,6 @@ dotnet add package XiHan.Framework.Profiles.Full --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Profiles.Full;
 using XiHan.Framework.Protocols.CloudEvents.Inbound;
 using XiHan.Framework.Protocols.Grpc.Services;
@@ -57,11 +56,9 @@ using XiHan.Framework.Protocols.Http.OpenApi;
 using XiHan.Framework.Protocols.Http.Routing;
 using XiHan.Framework.Protocols.Mcp.Transports;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseFullProfile());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanHealth();
 app.MapXiHanOperations();   // HTTP
 app.MapXiHanOpenApi();      // /openapi.json
@@ -69,7 +66,6 @@ app.MapXiHanGrpc();         // gRPC，需要 Kestrel 的 HTTP/2 端点
 app.MapXiHanProto();        // /operations.proto
 app.MapXiHanMcp();          // /mcp
 app.MapXiHanCloudEvents();  // /events
-app.Run();
 ```
 
 `samples/KubernetesApp` 用 Full 组合演示探针、停机宽限、ConfigMap 热更新与 Lease 领导选举，见[部署与打包](/deployment/pack)。

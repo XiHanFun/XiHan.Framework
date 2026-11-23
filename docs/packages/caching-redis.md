@@ -43,14 +43,10 @@
 dotnet add package XiHan.Framework.Caching.Redis --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，`AddXiHan` 里多一行：
 
 ```csharp
 using XiHan.Framework.Caching.Redis;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // 内存实现继续提供 caching.local，Redis 顶替 caching.distributed
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<RedisCachingFeature>());
@@ -80,7 +76,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<RedisCachingFeat
 }
 ```
 
-值的序列化器按「已登记的 `ICacheSerializer` → 已登记的 `JsonSerializerOptions`（须带 `TypeInfoResolver`）→ 反射版 `JsonCacheSerializer`」的顺序选，在 `AddXiHan` 装配时决定，所以要在 `AddXiHan` 之前登记，见[序列化器](/caching/basics)。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
+值的序列化器按「已登记的 `ICacheSerializer` → 已登记的 `JsonSerializerOptions`（须带 `TypeInfoResolver`）→ 反射版 `JsonCacheSerializer`」的顺序选，在 `AddXiHan` 装配时决定，所以要在 `AddXiHan` 之前登记，见[序列化器](/caching/basics#序列化器)。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。非法值（数值不是正数、布尔不是 `true` / `false`）在装配时抛 `ArgumentException`。
 
 ## 主要类型
 

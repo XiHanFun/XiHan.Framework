@@ -1,6 +1,6 @@
 # 活动与扩展
 
-这一页讲工作流的「零件」与扩展点：19 个内置活动与它们的属性、条件与模板共用的表达式语言、节点失败后的重试 / 继续 / 补偿、故障原因与设计期诊断的本地化展示、怎样写自己的活动、引擎发出的事件、Provider 要实现的存储与实例锁契约、配置与错误码。读完后，我们能把短信、ERP 回写这类业务动作做成节点放进流程里，并知道出了问题去哪里看。前置知识是[定义与发布](/workflow/definitions)与[实例与用户任务](/workflow/instances)；自定义活动要用到[结果与错误处理](/web/errors)与[全球化和本地化](/common/localization)。
+这一页讲工作流的「零件」与扩展点：19 个内置活动与它们的属性、条件与模板共用的表达式语言、节点失败后的重试 / 继续 / 补偿、故障原因与设计期诊断的本地化展示、怎样写自己的活动、引擎发出的事件、Provider 要实现的存储与实例锁契约、两种实现的对比与常用配置。读完后，我们能把短信、ERP 回写这类业务动作做成节点放进流程里，并知道出了问题去哪里看。前置知识是[定义与发布](/workflow/definitions)与[实例与用户任务](/workflow/instances)；自定义活动要用到[结果与错误处理](/web/errors)与[全球化和本地化](/common/localization)。
 
 ## 为什么需要
 
@@ -19,7 +19,7 @@
 | `Decision` | Exclusive | — |
 | `Parallel` | All | — |
 | `Join` | AllMatched | `Mode`：`WaitAll`（缺省，入边全部到达才执行）/ `WaitAny`（首个到达执行） |
-| `Delay` | AllMatched | `Duration`（秒或表达式）、`Until`（时刻表达式）、`Cron` + `TimeZone` |
+| `Delay` | AllMatched | `Duration`（秒或表达式）、`Until`（时刻表达式）、`Cron` + `TimeZone`（文法与调度相同，见[作业与计划](/scheduling/jobs)） |
 | `UserTask` | AllMatched | 见[处理用户任务](/workflow/instances#处理用户任务) |
 | `PublishEvent` | AllMatched | `EventName`、`Payload`：发布 `workflow.custom` 消息 |
 | `WaitSignal` | AllMatched | `SignalName`、`AcceptAnyCorrelation` |
@@ -32,7 +32,7 @@
 | `Http` | AllMatched | `Url`、`Method`、`Headers`、`Body`、`ContentType`、`TimeoutSeconds`、`ResultVariable`（缺省 `http`）、`FailOnErrorStatus`（缺省 `true`）；输出 `{ status, headers, body }`，JSON 响应解析为对象 |
 | `ExternalTask` | AllMatched | `Topic`、`Payload`；锁的时长由领取方在 `FetchAsync` 里给出 |
 
-框架不提供 `Script` 活动：表达式语言与 `SetVariable` 覆盖了常见场景，脚本引擎属于第三方依赖。
+框架不提供 `Script` 活动：表达式语言与 `SetVariable` 覆盖了条件、拼接与简单计算，再复杂的逻辑写成自定义活动（有类型、能测试、能注入服务），脚本引擎属于第三方依赖。
 
 ### Http 活动
 
@@ -55,7 +55,7 @@
 
 ### 子流程
 
-子流程的子实例在父实例的分区里，继承关联 ID 与发起人，深度加一，超过 `MaxSubWorkflowDepth`（缺省 16）时返回 `WORKFLOW_VALIDATION_002`；子实例结束时以 `childInstanceId`、`childStatus`、`childVariables`、`childFault`（子实例 `Fault` 的 JSON，没有故障为空）回调父实例。子实例没有正常完成而父节点因此失败时，父节点的故障按子实例的状态各一个消息键：故障 `workflow.child.faulted`、取消 `workflow.child.canceled`、终止 `workflow.child.terminated`，其他状态是通用的 `workflow.child.failed`（参数都是 `id`、`status`），子实例的故障是它的内层原因。
+子流程的子实例在父实例的分区里，继承关联 ID 与发起人，深度加一，超过 `MaxSubWorkflowDepth`（缺省 16）时返回 `WORKFLOW_VALIDATION_002`；子实例结束时以 `childInstanceId`、`childStatus`、`childVariables`、`childFault`（子实例 `Fault` 的 JSON，没有故障为空）回调父实例。子实例没有正常完成而父节点因此失败时，父节点的故障按子实例的状态各一个消息键：故障 `workflow.child.faulted`、取消 `workflow.child.canceled`、终止 `workflow.child.terminated`，其他状态是通用的 `workflow.child.failed`（参数都是 `id`、`status`，`status` 是枚举名），子实例的故障是它的内层原因。
 
 ## 表达式
 
@@ -170,7 +170,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 | 把故障作为错误返回给调用方 | `instance.Fault.ToError()`：带键、参数与内层的错误，宿主在 Egress 按调用方的区域翻译 |
 | 在调用之外按收件人的区域渲染（通知、邮件） | `using (MessageScope.Use(null, recipientLocale)) { text = fault.Localize(); }` |
 
-引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。活动抛出时 `reason` 只写异常类型的全名，完整异常进日志；要让调用方看到说明，活动返回失败，不靠抛异常。应用或第三方给的文本（HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息）原样放在参数里，外层的键照常本地化。表达式在运行期出错（未知变量、除以零、类型不符等）时，故障的消息键就是表达式诊断的键（`workflow.expression.*`，参数带表达式本身）。子流程没有正常完成时，父节点的故障按子实例的状态各一个键（`workflow.child.faulted`、`canceled`、`terminated`），参数 `status` 是枚举名。没有消息键的故障，`Localize()` 返回 `Message` 原文。
+引擎与内置活动的失败原因都是消息键：节点超时 `workflow.node.timed_out`、活动属性不合法按种类各有键（`workflow.activity.property_*`）、指派规则、表达式的结果不是布尔、HTTP 超时、`Fault` 节点 `workflow.activity.fault_raised`、没有开始节点等。活动抛出时 `reason` 只写异常类型的全名，完整异常进日志；要让调用方看到说明，活动返回失败，不靠抛异常。应用或第三方给的文本（HTTP 的原因短语、外部任务工作者报的错误、`Fault` 节点作者写的消息）原样放在参数里，外层的键照常本地化。表达式在运行期出错（未知变量、除以零、类型不符等）时，故障的消息键就是表达式诊断的键（`workflow.expression.*`，参数带表达式本身）。子流程没有正常完成时父节点的键见上文「子流程」。没有消息键的故障，`Localize()` 返回 `Message` 原文。
 
 ### 设计期诊断
 
@@ -222,23 +222,13 @@ Provider 实现五个契约：`IWorkflowDefinitionStore`、`IWorkflowInstanceSto
 
 ## 配置
 
-引擎选项在 `XiHan:Workflow`（`WorkflowOptions`），内存与数据库实现读同一节：
+引擎选项在 `XiHan:Workflow`（`WorkflowOptions`），内存与数据库实现读同一节；本页各节提到的上限（波次、子流程深度、`ForEach` 项数、变量字节数、表达式缓存、`Http` 超时）都是这一节的键。上线时最常调的三个：
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `MaxNodeExecutionsPerBurst` | 整数 | 1000 | 一个波次最多执行的节点数 |
-| `MaxSubWorkflowDepth` | 整数 | 16 | 子流程嵌套深度上限 |
-| `LockTimeoutSeconds` | 秒 | 10 | 等实例锁的上限 |
-| `NotResumableBackoffSeconds` | 秒 | 300 | 不可恢复的到期书签后推多久 |
-| `ExpressionCacheSize` | 整数 | 10000 | 表达式缓存条目上限 |
-| `RetentionDays` | 天 | 0 | 已结束实例的保留期，0 为不自动清理 |
-| `HousekeepingIntervalSeconds` | 秒 | 3600 | 自动清理的周期 |
-| `HttpTimeoutSeconds` | 秒 | 30 | `Http` 活动的缺省超时 |
-| `MaxHttpTimeoutSeconds` | 秒 | 300 | 定义里 `TimeoutSeconds` 的上限，不限 `HttpTimeoutSeconds` |
-| `MaxForEachItems` | 整数 | 1000 | `ForEach` 一次最多处理的项数 |
-| `MaxVariablesBytes` | 字节 | 8388608 | 一个实例的变量序列化后的大小上限 |
-
-Provider 自己的键在各自的子节：内存实现 `XiHan:Workflow:InMemory`（`MaxDefinitions`、`MaxInstances`、`MaxNodeInstances`、`MaxBookmarks`、`PollIntervalSeconds`、`BatchSize`），数据库实现 `XiHan:Workflow:Database`（`PollIntervalSeconds`、`BatchSize`、`LockLeaseSeconds`、`HolderId`、`LockConnection`、`HealthProbeIntervalSeconds`），缺省值见 [Workflow.InMemory](/packages/workflow-inmemory#配置) 与 [Workflow.Database](/packages/workflow-database#配置)。
+| 键 | 缺省 | 说明 |
+| --- | --- | --- |
+| `LockTimeoutSeconds` | 10 | 等实例锁的上限（秒） |
+| `RetentionDays` | 0 | 已结束实例的保留期（天），0 为不自动清理 |
+| `HousekeepingIntervalSeconds` | 3600 | 自动清理的周期（秒） |
 
 ```json
 {
@@ -252,58 +242,9 @@ Provider 自己的键在各自的子节：内存实现 `XiHan:Workflow:InMemory`
 }
 ```
 
-配置值写错即启动失败，不按缺省处理：解析不了的值（如把数字写成文字、写成 `NaN`）抛 `ArgumentException`，能解析但超出取值范围的值（如 `LockTimeoutSeconds` 为 0）抛 `ArgumentOutOfRangeException`，消息都带出完整的配置键与原值。
-
-## 错误码
-
-| 错误码 | 含义 |
-| --- | --- |
-| `WORKFLOW_VALIDATION_001` | 定义不合法，`details.errors` 列出全部问题 |
-| `WORKFLOW_VALIDATION_002` | 输入不合法：缺必填变量、子流程深度超限、任务结果不允许、跳转目标不存在、迁移目标不兼容、任务查询缺条件或分页越界、实例查询的分页、关联 ID 集合或清理的条数越界、定义查询的分页越界、定义与实例查询的排序项不合法 |
-| `WORKFLOW_VALIDATION_003` | 表达式语法不合法或求值失败 |
-| `WORKFLOW_NOTFOUND_001` | 定义不存在、没有已发布版本或在别的分区 |
-| `WORKFLOW_NOTFOUND_002` | 实例不存在或在别的分区 |
-| `WORKFLOW_NOTFOUND_003` | 书签（用户任务、外部任务）不存在或在别的分区 |
-| `WORKFLOW_NOTFOUND_004` | 活动类型或指派规则类型未登记 |
-| `WORKFLOW_CONFLICT_001` | 实例状态不允许该操作 |
-| `WORKFLOW_CONFLICT_002` | 定义状态不允许该操作 |
-| `WORKFLOW_CONFLICT_003` | 书签不可恢复：实例不在运行中、键不匹配，或用户任务与外部任务的书签直接经引擎恢复（要经任务服务与外部任务服务） |
-| `WORKFLOW_CONFLICT_004` | 指派人已在任务上，或任务已被认领 |
-| `WORKFLOW_CONFLICT_005` | 同一关联 ID 下已有未结束的实例（`RejectActive`） |
-| `WORKFLOW_DENIED_001` | 操作者不是任务的指派人 |
-| `WORKFLOW_DENIED_002` | 工作者没有持有外部任务的锁，或锁已过期 |
-| `WORKFLOW_TIMEOUT_001` | 等实例锁超时 |
-| `WORKFLOW_UNAVAILABLE_001` | 工作流存储不可达；或引擎在调用之外被调用时应用不在服务状态 |
-| `WORKFLOW_UNAVAILABLE_002` | 工作流存储容量已满 |
-| `WORKFLOW_UNEXPECTED_001` | 活动抛出未处理异常，或引擎内部故障（波次上限、死汇合） |
-| `PERSISTENCE_UNEXPECTED_001` | 只读调用里调用了写入操作（持久化的错误码，操作实现的缺陷，HTTP 500） |
-
-消息模板在消息目录 `workflow` 里，十种区域都有译文。
-
-## 与其他能力的关系
-
-- `Delay` 的 `Cron` 与 `Start` 的定时启动复用调度子系统的 `CronExpression`，文法见[作业与计划](/scheduling/jobs)；工作流自己的到期书签由轮询器推进，不占用调度器的作业。
-- 引擎在调用里加入调用方的事务，在调用之外自己经完整管道开调用，租户、授权、审计与追踪的行为与[执行管道](/startup/pipeline)一致；分区与分库见[租户分片与分库](/multi-tenancy/sharding)。
-- 数据库实现经 `persistence.relational@1` 的仓储读写，见[持久化与 Provider](/persistence/overview)。
-- `Http` 活动的目标地址受[出站地址策略](/security/outbound)约束。
+完整配置（全部键、取值范围与写错时的启动失败）见 [Workflow.Abstractions](/packages/workflow-abstractions#配置)；Provider 自己的键在各自的子节 `XiHan:Workflow:InMemory`（容量、轮询周期与批量）与 `XiHan:Workflow:Database`（轮询、租约、持有者、租约表连接、健康探针），见 [Workflow.InMemory](/packages/workflow-inmemory#配置) 与 [Workflow.Database](/packages/workflow-database#配置)。
 
 ## 常见问题
-
-### 为什么没有脚本活动
-
-表达式语言加 `SetVariable` 覆盖了条件、拼接与简单计算；再复杂的逻辑写成自定义活动，有类型、能测试、能注入服务。脚本引擎是第三方依赖，框架不内置。
-
-### 活动里抛异常和返回失败有什么区别
-
-两者都让节点失败并走重试 / 继续 / 故障的处理，但抛异常被翻译成 `WORKFLOW_UNEXPECTED_001`，`reason` 只有异常类型名，调用方看不到说明；返回带消息键的失败 `Result`，故障能按调用方区域本地化展示。可预期的失败一律返回 `Result`。
-
-### 节点重试了几次还失败，实例故障了，还能救吗
-
-能。`RetryAsync` 清掉故障从故障节点再执行一次；问题出在流程设计上时用 `JumpAsync` 跳到别的节点；要回滚已做的事，定义上开 `WithCompensateOnFault`，或在流程里放 `Compensate` 节点。
-
-### Http 活动连不上内网服务
-
-缺省的客户端经出站地址策略，只放行公网地址。把内网主机写进 `XiHan:Security:Outbound:AllowedHosts`，或者注册自己的 `WorkflowHttpClient`。被拒绝时节点故障的消息键是 `workflow.http.address_denied`。
 
 ### 实例多了内存实现会不会撑爆
 
@@ -313,5 +254,6 @@ Provider 自己的键在各自的子节：内存实现 `XiHan:Workflow:InMemory`
 
 - [Workflow.Abstractions](/packages/workflow-abstractions)：活动契约、表达式、事件与存储契约
 - [Workflow.InMemory](/packages/workflow-inmemory)、[Workflow.Database](/packages/workflow-database)：两种实现的配置与行为
+- 错误码：[Workflow.Abstractions 的错误码表](/packages/workflow-abstractions#错误码)
 - 相关章节：[CloudEvents](/protocols/cloudevents)（事件信封）、[一致性套件与门禁](/testing/conformance)
 - 下一步：[对象存储：读写与列举](/object-storage/basics)

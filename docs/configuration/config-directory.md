@@ -45,32 +45,21 @@
 
 我们在本机模拟一次挂载：建一个目录放配置文件，用环境变量指向它，运行应用后改文件看结果。`BannerOptions` 沿用[配置模型与选项](/configuration/options)的写法。
 
-```csharp
-// Program.cs
-using Microsoft.Extensions.Options;
-using Shop;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Profiles.Standard;
+`Program.cs` 在[第一个应用](/getting-started/first-app)的骨架上加一行选项绑定与一个端点，`AddXiHan` 的调用不用改，装载目录是它自己做的：
 
-var builder = WebApplication.CreateBuilder(args);
+```csharp
+using Microsoft.Extensions.Options;
+using XiHan.Framework.Kernel.Hosting;
+
+// builder.Build() 之前
 builder.Services.Configure<BannerOptions>(builder.Configuration.GetSection(BannerOptions.Section));
 
-// AddXiHan 先装载 XIHAN_CONFIG_PATH 目录里的 JSON 文件并监听变化，再装配内核
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanHealth();
-
-// 读 CurrentValue 而不是在启动时缓存，挂载文件更新后返回新值
+// app.UseXiHan() 之后：读 CurrentValue 而不是在启动时缓存，挂载文件更新后返回新值
 app.MapGet("/config", (IOptionsMonitor<BannerOptions> banner, IConfiguration configuration) =>
     new ConfigView(
         banner.CurrentValue.Banner,
         configuration["XiHan:Kernel:StopTimeoutSeconds"],
         Environment.GetEnvironmentVariable(ConfigurationDirectory.Variable)));
-
-app.Run();
 
 public sealed record ConfigView(string Banner, string? StopTimeout, string? ConfigPath);
 ```
@@ -115,40 +104,10 @@ kubelet 同步 ConfigMap 有延迟，`kubectl edit configmap` 之后通常要一
 
 - 框架包的选项在装配时已经读完，改挂载文件里的 `XiHan:*` 键不会改变正在运行的特性，要滚动重启才生效。
 - `IOptions<T>` 只绑定一次；需要跟随变化就注入 `IOptionsMonitor<T>`，读 `CurrentValue` 或用 `OnChange` 注册回调。
-- 运行中新增的文件要重启才装载；已有文件改内容才会触发重载。
+- 运行中新增的文件要重启才装载；已有文件改内容才会触发重载。容器里还要开轮询式文件监视，见上一节。
 - 环境变量与命令行参数的优先级高于挂载文件，被它们覆盖的键改了文件也不会变。
 
-## Native AOT 下的绑定与重载
-
-`Configure<T>(IConfiguration)` 默认按反射绑定，AOT 下不可用。在项目文件里打开配置绑定源生成器，绑定代码在编译期生成，重载照常：
-
-```xml
-<PropertyGroup>
-  <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-</PropertyGroup>
-```
-
-## 常见问题
-
-### 改了文件但 IOptionsMonitor 没变
-
-按顺序排查：注入的是 `IOptionsMonitor<T>` 而不是 `IOptions<T>`；文件在目录顶层且扩展名是 `.json`；同一个键没有被环境变量或命令行参数覆盖；容器里设置了 `DOTNET_USE_POLLING_FILE_WATCHER=1`；文件不是启动后才新增的。
-
-### 能把 XiHan:* 的键放进挂载文件吗
-
-能，它们在启动时与 appsettings 一样被读取，适合按环境调整 `XiHan:Kernel:StopTimeoutSeconds`、`XiHan:Caching:Redis:KeyPrefix` 这类值。但改动要重启才对框架生效。
-
-### 目录里能放子目录或 YAML 吗
-
-不能。只认目录顶层的 `*.json`，子目录与其他扩展名都跳过。要分多份文件就都放在顶层，按文件名排序决定覆盖顺序。
-
-### 开发机上怎样关掉
-
-不设置 `XIHAN_CONFIG_PATH` 即可，目录不存在或变量为空时什么都不加。
-
-### 命令行宿主也支持吗
-
-支持。`Hosting.CommandLine` 的 `AddXiHan` 用同一套规则装载目录，见[命令行宿主](/protocols/command-line)。
+Native AOT 下 `Configure<T>(IConfiguration)` 要打开配置绑定源生成器，重载照常，见[配置模型与选项](/configuration/options#native-aot-下的绑定)。
 
 ## 相关包与下一步
 

@@ -14,7 +14,7 @@
 | 插件 | `kind: plugin` 的独立制品：进程内程序集、Wasm 模块或任意语言的子进程 | 运行期按目录发现、宿主授予权限、隔离运行（[隔离级别与清单](/plugins/overview)） | 第三方代码、不可信代码、跨语言实现、远程 Provider |
 | 协议 | 协议适配器 `Protocols.*`：把操作登记表里的契约发布到一种线协议上 | 作为能力包装配，在宿主上映射端点 | 需要 HTTP、gRPC、MCP、CloudEvents 之外的线协议 |
 
-能力包是主轴：Provider 与业务代码都是特性，差别只在清单。插件不进入能力图谱，靠握手声明的操作、订阅与（Wasm 的）中间件接进宿主。协议适配器读 `OperationRegistry` 里的 `OperationDescriptor`（契约与 JSON Schema），按 `expose` 过滤，把请求解码为 `OperationRequest`，经 `IOperationInvoker.InvokeAsync` 走完整管道，再把 `OperationResponse` 编码回线协议；`Expose` 的协议标志是固定枚举（`Http`、`Grpc`、`Mcp`、`CommandLine`、`Ai`），没有为第三方协议预留标志位，第三方协议适配器自己决定发布范围。
+能力包是主轴：Provider 与业务代码都是特性，差别只在清单。插件不进入能力图谱，靠握手声明的操作、订阅与（Wasm 的）中间件接进宿主。协议适配器读 `OperationRegistry` 里的 `OperationDescriptor`（契约与 JSON Schema），按 `expose` 过滤，把请求解码为 `OperationRequest`，经 `IOperationInvoker.InvokeAsync` 走完整管道，再把 `OperationResponse` 编码回线协议；`Expose` 的协议标志是固定枚举（`Http`、`Grpc`、`Mcp`、`CommandLine`、`Ai`），没有为第三方协议预留标志位，第三方协议适配器自己决定发布范围；现成的四种协议见 [gRPC](/protocols/grpc)、[MCP](/protocols/mcp)、[CloudEvents](/protocols/cloudevents) 与[命令行宿主](/protocols/command-line)。
 
 ## 最小示例：写一个应用能力包
 
@@ -142,7 +142,7 @@ public sealed class RequireCorrelationMiddleware : IPipelineMiddleware
 3. 在清单 `Contributes.Pipeline` 里声明 `new PipelineContribution(typeof(T).FullName!, stage)`，与第 2 步的阶段一致；`xihan pipeline` 据此展示。
 4. 用测试宿主分别验证放行与短路（[单元与集成测试](/testing/basics)）。
 
-`Error.Validation(code, messageKey, details)` 只携带键与参数，宿主在 Egress 按调用方区域翻译；应用的 `CorrelationMessages.Missing` 要在应用自己的消息目录里有译文（[全球化和本地化](/common/localization)）。阶段的选择按职责：补充 Baggage 或观测放 Observe，与身份有关的放 Authenticate 之后，与请求形状有关的放 Validate；不要把业务逻辑写进中间件，它看得到上下文与结果，但不该解析载荷，需要载荷的逻辑写成操作。Wasm 插件也能贡献中间件，语义是 before / after 两次钩子、看不到载荷、失败即关闭（[Wasm 插件](/plugins/wasm)）。
+`Error.Validation(code, messageKey, details)` 只携带键与参数，宿主在 Egress 按调用方区域翻译；应用的 `CorrelationMessages.Missing` 要在应用自己的消息目录里有译文（[全球化和本地化](/common/localization)）。阶段的选择按职责：补充 Baggage 或观测放 Observe，与身份有关的放 Authenticate 之后，与请求形状有关的放 Validate；不要把业务逻辑写进中间件，它看得到上下文与结果，但不该解析载荷，需要按请求内容判断的逻辑写成操作或请求类型的自校验（[数据校验](/web/validation)）。Wasm 插件也能贡献中间件，语义是 before / after 两次钩子、看不到载荷、失败即关闭（[Wasm 插件](/plugins/wasm)）。
 
 ## 命名规则
 
@@ -182,18 +182,6 @@ Role      = "Abstractions" | "Conformance" | "Generators" | Mechanism | Technolo
 ### 一个应用要拆几个能力包
 
 按业务边界拆，每个包一份清单、各自声明依赖；共享的实体与契约放在它们都依赖的包里。拆得太细没有收益，一个包也完全可以，`samples/SimpleApp` 的订单就是一个能力包。
-
-### 中间件能拿到请求体吗
-
-能力包里的 .NET 中间件在 Handle 之前运行，`InvocationContext` 里有元数据、Baggage 与操作 ID，载荷在 Handle 阶段才解码成请求类型。需要按请求内容判断的逻辑写在操作里或请求类型的自校验里（[数据校验](/web/validation)），不要在中间件里解析 JSON。
-
-### 中间件的次序约束指向的目标不存在
-
-`Before` / `After` 的目标必须在同一阶段且只登记一次，否则构建管道时报 `KERNEL_PIPELINE_003`。用 `xihan pipeline` 看实际的阶段与名字，宿主中间件按类型全名引用，插件中间件按 `<清单 ID>:<名字>` 引用。
-
-### 自定义协议怎么接
-
-写一个作为能力包装配的 `Protocols.*` 适配器：从 `OperationRegistry` 读契约与 Schema，把请求解码为 `OperationRequest`，经 `IOperationInvoker` 调用，再编码响应。`Expose` 没有为第三方协议预留标志位，发布范围由适配器自己的配置决定；现成的四种协议见 [gRPC](/protocols/grpc)、[MCP](/protocols/mcp)、[CloudEvents](/protocols/cloudevents) 与[命令行宿主](/protocols/command-line)。
 
 ## 相关包与下一步
 

@@ -62,17 +62,24 @@ await builder.Build().RunAsync();
 
 | 键 | 缺省 | 说明 |
 | --- | --- | --- |
-| `XiHan:Kernel:StartTimeoutSeconds` | `30` | 每个特性启动的超时 |
-| `XiHan:Kernel:StopTimeoutSeconds` | `30` | 每个特性停止的超时 |
-| `XiHan:Kernel:FailurePolicy` | `TerminateStartup` | 特性启动失败时终止启动，或 `IsolateFeature` 只隔离该特性 |
+| `XiHan:Kernel:StartTimeoutSeconds` | `30` | 每个特性 `StartAsync` 的超时，正数 |
+| `XiHan:Kernel:StopTimeoutSeconds` | `30` | 每个特性 `StopAsync` 的超时，正数；部署到 Kubernetes 时与 `terminationGracePeriodSeconds` 对齐 |
+| `XiHan:Kernel:FailurePolicy` | `TerminateStartup` | 特性启动失败时终止启动，或 `IsolateFeature` 只隔离该特性，取舍见[生命周期与健康](/startup/lifecycle#失败策略) |
 | `XiHan:Kernel:UseBuiltInMiddleware` | `true` | 是否登记 Observe、截止时间、Resilience、Validate 四个内置中间件 |
 | `XiHan:Kernel:Banner:Enabled` | `true` | 宿主启动时是否打印[启动 Banner](/startup/bootstrap#启动-banner)；命令行宿主缺省 `false` |
-| `XiHan:Kernel:Resilience:*` | 不限制 | 按操作的熔断、限流与并发上限，见[弹性与限流](/common/resilience) |
+| `XiHan:Kernel:Resilience:PermitLimit` | 不限流 | 每个限流窗口允许的调用数，正整数 |
+| `XiHan:Kernel:Resilience:WindowSeconds` | `1` | 限流窗口，正数 |
+| `XiHan:Kernel:Resilience:QueueLimit` | `0` | 窗口用尽时排队等待的调用数，非负整数 |
+| `XiHan:Kernel:Resilience:ConcurrencyLimit` | 不限并发 | 同时执行的调用数上限，正整数 |
+| `XiHan:Kernel:Resilience:ConcurrencyQueueLimit` | `0` | 并发用尽时排队等待的调用数，非负整数 |
+| `XiHan:Kernel:Resilience:FailureThreshold` | 不熔断 | 连续失败多少次后打开熔断器，正整数 |
+| `XiHan:Kernel:Resilience:BreakSeconds` | `30` | 熔断打开的时长，正数 |
+| `XiHan:Kernel:Resilience:Operations:<操作 ID>:*` | 沿用上面的默认策略 | 按操作覆盖同名的七个键，语义见[弹性与限流](/common/resilience) |
 | `XiHan:Security:Outbound:*` | 只能连公网地址 | [出站地址策略](/security/outbound)的放行项：`AllowLoopback`、`AllowPrivateNetwork`、`AllowedNetworks`、`AllowedHosts` |
 | `XiHan:Providers:<能力 ID>` | — | 指定某能力的提供者清单 ID |
 | `XiHan:Bindings:<名字>` | — | 资源绑定；另读环境变量 `SERVICE_BINDING_ROOT` 指向的 Service Binding 目录 |
 
-`XIHAN_CONFIG_PATH`（`ConfigurationDirectory.Variable`）指向的目录里的 JSON 文件由 `Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 装载为可重载的配置源，插在 `ConfigurationDirectory.IsApplicationSettings` 认出的最后一个 appsettings 文件源之后。
+`XIHAN_CONFIG_PATH`（`ConfigurationDirectory.Variable`）指向的目录里的 JSON 文件由 `Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 装载为可重载的配置源，插在 `ConfigurationDirectory.IsApplicationSettings` 认出的最后一个 appsettings 文件源之后，规则见[配置目录与热更新](/configuration/config-directory)。
 
 ## 主要类型
 
@@ -104,20 +111,13 @@ await builder.Build().RunAsync();
 读取能力图谱与健康状态：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseStandardProfile());
 
-var app = builder.Build();
-app.UseXiHan();
-
+// app.UseXiHan() 之后
 app.MapGet("/diagnostics/graph", (App xihan) => xihan.DescribeGraph());
 app.MapGet("/diagnostics/state", (App xihan) => xihan.Health().State.ToString());
-
-app.Run();
 ```
 
 对外暴露这类端点时要加认证约束（`RequireXiHanAuthentication`），见 [ASP.NET Core 宿主](/web/hosting)。
@@ -136,8 +136,7 @@ app.Run();
 
 管道、校验与弹性的补充约定：
 
-- 管道中间件的登记：按类型 `UseAt`、按实例 `UseInstance`、同类型多实例按名 `UseNamedInstance`；命名实例的次序约束用按名字的 `Before(名字, 目标)` / `After(名字, 目标)`。应用构建之后只能经 `UseOwned(归属, 回调)` 成组登记、经 `RemoveOwnedBy(归属)` 按归属撤回，两者都立即核对、全进或全不进；管道按版本构建，在途调用按进入时的管道走完。
-- 阶段内的基准次序按 `Placement`、归属清单 ID 字典序、注册序号，只保证可复现、不表达依赖：要用到别的包中间件产出的（认证后的主体、解析后的租户），必须显式 `Before` / `After` 约束，例如应用的会话门禁声明 `After<SessionGateMiddleware, AuthenticationMiddleware>()`。
+- 管道中间件的登记方法、阶段内的排序规则与应用构建之后的成组改动（`UseOwned` / `RemoveOwnedBy`）见[执行管道](/startup/pipeline#排序规则)。
 - `DeadlineMiddleware` 只看令牌归因：截止令牌已触发一律报 `KERNEL_TIMEOUT_001`，调用方同时取消也一样，下游抛出的取消与写下的 `KERNEL_CANCELLED_001` 结果同一规则；不另看时钟，截止令牌还没触发时调用方的取消仍报取消。
 - `InvocationOrigin` / `InvocationProtocols` 经 `FindOrigin()` / `SetOrigin()` 读写调用来源（协议、请求目标、远端地址、User-Agent、来源页、端点的路由模板与名字），由协议适配器建上下文时写入，内部调用没有。
 - `IOperationResponseFilter`：成功响应写进上下文前按登记顺序过滤，四个调用入口与各协议编码都拿过滤后的结果。

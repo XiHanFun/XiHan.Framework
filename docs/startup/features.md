@@ -30,7 +30,7 @@
 
 | 字段 | 必填 | 类型 | 含义 |
 | --- | --- | --- | --- |
-| `Id` | 是 | `string` | 清单 ID，`xihan.<领域>.<名称>`，应用内唯一，重复报 `KERNEL_CAPABILITY_005` |
+| `Id` | 是 | `string` | 清单 ID，`xihan.<领域>.<名称>`，全小写，应用内唯一，重复报 `KERNEL_CAPABILITY_005`；应用的业务包用自己的领域词（`xihan.shop.orders`），框架包按子系统与机制命名（`xihan.caching.redis`） |
 | `Package` | 否 | `string?` | 所属包 ID |
 | `Version` | 是 | `string` | 特性版本，SemVer |
 | `Primitives` | 是 | `int` | 依赖的原语层大版本，当前为 `1` |
@@ -258,14 +258,6 @@ context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 ### 特性一定要有无参构造函数吗
 
 `UseFeature<T>()` 需要，因为内核要自己创建实例。需要构造参数（比如按环境传选项）时，自己创建后用 `UseFeature(instance)` 加入。注意特性实例在容器建好之前就存在，构造函数里不能依赖容器服务；运行期依赖在 `IHostedFeature.StartAsync` 的 `IServiceProvider` 里取。
-
-### 清单 ID 怎么取
-
-文法是 `xihan.<领域>.<名称>`，全小写。应用的业务包用自己的领域词，如 `xihan.shop.orders`；框架包按子系统与机制命名，如 `xihan.caching.redis`。ID 在一个应用里唯一，也是日志、图谱与管道归属里识别这个特性的名字。
-
-### `Contributes` 不写会怎样
-
-装配不受影响，`Configure` 里登记的东西照常生效。少的是可见性：读清单的人与工具看不出这个包贡献了哪些权限与操作，插件宿主与架构测试也无法核对。建议声明，保持与 `Configure` 一致。
 
 ### 一个包可以有多个特性吗
 

@@ -42,7 +42,7 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
 | `RequireAuthentication` | `bool` | `false` | 为真时匿名调用在 Authenticate 阶段被拒绝（`SECURITY_DENIED_001`） |
-| `RoleClaim` | `string` | `role` | 承载角色的声明类型，不能为空 |
+| `RoleClaim` | `string` | `role` | 承载角色的声明类型，不能为空；RBAC 检查器与 ASP.NET Core 方案 `XiHan` 都读它 |
 
 ```json
 {
@@ -140,7 +140,7 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 
 在特性里加到 Authorize 之前的阶段：`context.AddMiddleware<AuthenticatedByDefaultMiddleware>(PipelineStage.Tenant)`。
 
-收窄过滤器、授予来源、自定义策略与条件引擎的示例见[授权](/security/authorization)。
+自定义策略的示例见[授权与权限](/security/authorization)，收窄过滤器、授予来源与条件引擎的示例见 [RBAC 授予与条件](/security/grants)。
 
 ## 行为与限制
 
@@ -155,23 +155,37 @@ public sealed class AuthenticatedByDefaultMiddleware : IPipelineMiddleware
 - `IIpRegionResolver.Resolve(IPAddress)` 对回环、私有网段与查不到返回无值；不装 Provider 时容器里没有本服务，调用方把归属地当作取不到。
 - 条件引擎的登记表在首次解析时建好，重名与别名冲突即抛出；`MemoizingConditionAttributeSource` 按单次调用使用，不是线程安全的。
 
-| 错误码 | 含义 |
-| --- | --- |
-| `SECURITY_DENIED_001` | 未认证 |
-| `SECURITY_DENIED_002` | 策略拒绝 |
-| `SECURITY_DENIED_003` | 凭据无效、过期或签名不符 |
-| `SECURITY_DENIED_004` | 缺少权限 |
-| `SECURITY_VALIDATION_001` | 不支持的认证方案 |
-| `SECURITY_VALIDATION_002` | 条件无效（属性未登记、运算符与值种类不搭配、条件值解析不了） |
-| `SECURITY_VALIDATION_003` | 条件属性的值不是登记的值种类 |
-| `SECURITY_VALIDATION_004` | 按名引用的策略不存在：操作契约的 `Policy`（授权能力的启动核对里，不论失败策略；之后登记的在登记时）、端点元数据（`UseXiHan()` 建请求管道时）引用了未注册的策略或未登记的权限码；启动失败 |
-| `SECURITY_NOTFOUND_001` | 调用时才看到的要求（显式写入的、启动之后加进来的端点）引用的策略不存在，或其中 `permission:<code>` 的权限码未登记 |
-| `SECURITY_NOTFOUND_002` | 要撤销的授予不存在 |
-| `SECURITY_NOTFOUND_003` | 取不到条件属性的值 |
-| `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达：授予存储、授予来源或收窄过滤器读不到数据（HTTP 503，不当作不持有） |
-| `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满 |
-| `SECURITY_UNAVAILABLE_003` | 签发者的发现文档或 JWKS 不可达且没有缓存 |
-| `SECURITY_UNAVAILABLE_004` | 条件属性暂不可得 |
+## 错误码
+
+常量在 `SecurityErrors`：
+
+| 错误码 | 含义 | HTTP |
+| --- | --- | --- |
+| `SECURITY_DENIED_001` | 未认证：`RequireAuthentication` 为真时的匿名调用，或权限策略、`authenticated` 策略遇到匿名主体 | 401 |
+| `SECURITY_DENIED_002` | 策略拒绝：策略返回未初始化的结果，或自定义策略以它为原因 | 403 |
+| `SECURITY_DENIED_003` | 凭据无效、过期或签名不符，或令牌缺少主体声明 | 401 |
+| `SECURITY_DENIED_004` | 缺少权限，含被 `IPermissionFilter` 收窄 | 403 |
+| `SECURITY_DENIED_005` | WebAuthn 响应核对不通过（挑战、来源、RP ID、用户在场或验证、凭据、用户句柄或签名不符），参数 `reason` | 403 |
+| `SECURITY_DENIED_006` | WebAuthn 签名计数没有增加，认证器可能被复制；参数 `stored`、`received` | 403 |
+| `SECURITY_VALIDATION_001` | 不支持的认证方案 | 400 |
+| `SECURITY_VALIDATION_002` | 条件无效（属性未登记、运算符与值种类不搭配、条件值解析不了） | — |
+| `SECURITY_VALIDATION_003` | 条件属性的值不是登记的值种类 | — |
+| `SECURITY_VALIDATION_004` | 按名引用的策略不存在：操作契约的 `Policy`（授权能力的启动核对里，不论失败策略；之后登记的在登记时返回，插件登记失败）、端点元数据（`UseXiHan()` 建请求管道时）引用了未注册的策略或未登记的权限码；启动失败 | — |
+| `SECURITY_VALIDATION_005` | 授予列表的分页越界：`PermissionGrantQuery.Skip` 为负或 `Take` 不在 1 到 1000 之间 | 400 |
+| `SECURITY_VALIDATION_006` | WebAuthn 响应解析不了（base64url、JSON、CBOR、认证器数据或字段缺失、类型不对），参数 `reason` | 400 |
+| `SECURITY_VALIDATION_007` | WebAuthn 公钥的算法不支持（只认 ES256、PS256、RS256），参数 `algorithm` | 400 |
+| `SECURITY_VALIDATION_008` | 授权要求挂在不会判定它的端点上：绕过内核管道的端点带了 `RequireXiHan*`，`UseXiHan()` 建请求管道时发现即启动失败（ADR-0175） | — |
+| `SECURITY_NOTFOUND_001` | 调用时才看到的要求（显式写入的、启动之后加进来的端点）引用的策略不存在，或其中 `permission:<code>` 的权限码未登记 | 404 |
+| `SECURITY_NOTFOUND_002` | 要撤销的授予不存在：`IPermissionGrantAdministration.RevokeAsync` 的逐项结果，内存与数据库实现相同 | 404 |
+| `SECURITY_NOTFOUND_003` | 取不到条件属性的值 | — |
+| `SECURITY_UNAVAILABLE_001` | 身份或授予存储不可达：授予存储、授予来源或收窄过滤器读不到数据，不当作不持有 | 503 |
+| `SECURITY_UNAVAILABLE_002` | 身份或授予存储容量已满：内存主体存储（`InMemoryPrincipalStore.Set`）、内存授予存储（`GrantAsync` 的逐项结果）与健康项 `security.inmemory.capacity` | 503 |
+| `SECURITY_UNAVAILABLE_003` | OpenID Connect 签发者的发现文档或 JWKS 不可达且没有缓存 | 503 |
+| `SECURITY_UNAVAILABLE_004` | 条件属性暂不可得 | — |
+
+HTTP 一列是该码成为调用结果时的状态，按错误码的种类段映射（`SECURITY_DENIED_001` 与 `SECURITY_DENIED_003` 是认证失败，为 401），见[结果与错误处理](/web/errors)；逐项结果里的码只在处理器把它作为操作结果返回时才对应这个状态。「—」是启动时抛出的码，以及四个条件相关的码：它们只出现在条件的编译结果与求值说明里，不直接成为调用结果。WebAuthn 四个码的常见原因见[通行密钥](/security/webauthn)。
+
+授权还会遇到内核的码：`KERNEL_SECURITY_001` / `KERNEL_SECURITY_002`（权限码重复 / 权限登记表已满，装配时抛出）、`KERNEL_VALIDATION_005`（操作契约引用了未登记的权限码）与 `KERNEL_VALIDATION_006`（有授权要求却没有判定者），见 [Kernel](/packages/kernel)；数据库授予并发写入的 `PERSISTENCE_CONFLICT_003` 见 [Persistence.Abstractions](/packages/persistence-abstractions#错误码)。
 
 消息键（`security.*`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `SecurityMessages.Catalog`。
 

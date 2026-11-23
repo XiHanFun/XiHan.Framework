@@ -33,23 +33,15 @@
 dotnet add package XiHan.Framework.Security.OpenIdConnect --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。在 `AddXiHan` 里装配特性，`Program.cs` 的其余部分见[第一个应用](/getting-started/first-app)：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Security.OpenIdConnect;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // Security.InMemory 让出认证，只保留授权
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<OpenIdConnectSecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置
@@ -100,11 +92,7 @@ app.Run();
 ```csharp
 using System.Net;
 using Microsoft.Extensions.Logging;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Security.OpenIdConnect;
-
-var builder = WebApplication.CreateBuilder(args);
 
 var options = OpenIdConnectOptions.FromConfiguration(builder.Configuration);
 var http = new HttpClient(new SocketsHttpHandler { Proxy = new WebProxy("http://proxy.local:8080") }) { Timeout = options.BackchannelTimeout };
@@ -112,10 +100,6 @@ var http = new HttpClient(new SocketsHttpHandler { Proxy = new WebProxy("http://
 // 先登记：特性里的 TryAddSingleton 看到已有实例就让位
 builder.Services.AddSingleton(sp => new OpenIdConnectMetadataCache(options, http, TimeProvider.System, sp.GetRequiredService<ILoggerFactory>()));
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<OpenIdConnectSecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 令牌的声明按原始类型名进入主体：角色声明的类型要与 `XiHan:Security:RoleClaim` 一致，租户声明的类型要与 `XiHan:MultiTenancy:TenantClaim` 一致；签发者把角色放在其他类型的声明里时，调整 `RoleClaim` 或在签发者侧加声明映射。

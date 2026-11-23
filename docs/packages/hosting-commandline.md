@@ -78,18 +78,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 - `--authorization` 与 `XIHAN_AUTHORIZATION` 只作用于 `invoke`；`mcp` 命令的调用以匿名主体执行。
 - 命令名重复时 `CommandLineRunner` 构造失败（`ArgumentException`）。
 
-| KIND / 情形 | 退出码 |
-| --- | --- |
-| 成功 | 0 |
-| `VALIDATION` | 2 |
-| `NOTFOUND`（含 `HOSTING_NOTFOUND_001` 操作未暴露） | 3 |
-| `DENIED` | 4 |
-| `CONFLICT` | 5 |
-| `UNAVAILABLE` | 6 |
-| `TIMEOUT` | 7 |
-| `CANCELLED`、Ctrl+C | 8 |
-| 其他 | 1 |
-| 用法错误（`HOSTING_VALIDATION_001`、`HOSTING_NOTFOUND_002`） | 64 |
+退出码：成功为 0，失败按错误码的 KIND 段取 1 到 8，对照表见[结果与错误处理](/web/errors#错误码)。`HOSTING_NOTFOUND_001`（操作未暴露给命令行）按 `NOTFOUND` 为 3，Ctrl+C 按 `CANCELLED` 为 8，用法错误（`HOSTING_VALIDATION_001`、`HOSTING_NOTFOUND_002`）为 64。
 
 ## 相关
 

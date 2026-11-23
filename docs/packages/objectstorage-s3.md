@@ -37,7 +37,7 @@ dotnet add package XiHan.Framework.ObjectStorage.S3 --prerelease
 builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeature>());
 ```
 
-本包是缺省存储时不要再装 `HostedBlobUrlFeature`：两者都提供 `objectstorage.presign@1`，S3 自己能签名。缺省存储另选了文件系统、本包只为命名实例而装时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可：本包的分片上传与预签名只是兜底选出（没人依赖、没人指定），本包按被顶替处理，只登记 `s3` 命名实例 Provider，不读配置节与绑定、不建客户端、不探测，也不必装 `HostedBlobUrlFeature`。有特性依赖分片上传或预签名、或配置把它们指定给本包时，它们是被要求的，与缺省对象存储不一致即 `OBJECTSTORAGE_VALIDATION_004` 启动失败（缺省的三个契约必须同一存储）；要缺省的预签名就装 `HostedBlobUrlFeature` 并把 `objectstorage.presign` 指定给 `xihan.hosting.blob-urls`。
+本包是缺省存储时不要再装 `HostedBlobUrlFeature`：两者都提供 `objectstorage.presign@1`，S3 自己能签名。缺省存储另选了文件系统、本包只为命名实例而装时，指定 `objectstorage.blob` = `xihan.objectstorage.filesystem` 即可：本包按被顶替处理，只登记 `s3` 命名实例 Provider，不读配置节与绑定、不建客户端、不探测。缺省的分片上传与预签名怎样指定、指定不一致时的 `OBJECTSTORAGE_VALIDATION_004` 见[命名存储实例](/object-storage/advanced#命名存储实例)。
 
 ## 配置
 
@@ -92,7 +92,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 - 缺省实例在启动时探一次（与健康项的首次探测并行，S3 连不上时启动只等一个超时）；命名实例在建出时探一次，每个实例各探各的。
 - 在 `HealthBucket` 里对探测键 `.xihan/probe/conditional-write` 带 `If-None-Match: *` 写两次，第二次必须被拒（412）；提供分片上传时再以同一个键带条件完成一次分片上传，也必须被拒，被拒的上传随即放弃。
-- 探测键是空对象，写入后不删除：任何一次 412 都证明服务认条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动、后台重试都得到同一结论。凭据只需要对这个键的 `s3:PutObject` 与 `s3:AbortMultipartUpload`，不需要删除或列举。探测键在保留前缀 `.xihan` 下，不在键文法之内，业务列举跳过它（ADR-0090）；它从 ADR-0089 起就是这个名字，桶里已有的探测键无需迁移，也不必删除。
+- 探测键是空对象，写入后不删除：任何一次 412 都证明服务认条件写入，键已存在时第一次写入就被拒，所以多个实例同时启动、反复启动、后台重试都得到同一结论。凭据只需要对这个键的 `s3:PutObject` 与 `s3:AbortMultipartUpload`，不需要删除或列举。探测键在保留前缀 `.xihan` 下，不在键文法之内，业务列举跳过它（ADR-0090）。
 - 单次探测以 `HealthProbeIntervalSeconds` 为超时；`EnsureBuckets` 开启时探测桶不存在就先建桶。
 
 启动或建实例时，探明不认、被拒绝、探测桶不存在都是配置问题，要早暴露，启动失败；只有连不上是"尚未确认"，照常启动、后台重试（ADR-0093）：
@@ -170,7 +170,7 @@ var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2
 
 ## 行为与限制
 
-- 不覆盖写入：`Overwrite = false` 时先 HEAD，再带 `If-None-Match: *` 写入，由服务端保证原子，已存在返回 `OBJECTSTORAGE_CONFLICT_001`；服务认条件写入要先由探测确认（上文「条件写入探测」），探明之前返回 `OBJECTSTORAGE_UNAVAILABLE_004`，不认的服务（实测 Garage、Zenko CloudServer）启动时探明即启动失败、之后探明的不覆盖写入一律 `OBJECTSTORAGE_UNAVAILABLE_003`，不会带着可能静默覆盖的不覆盖写入运行。
+- 不覆盖写入：`Overwrite = false` 时先 HEAD，再带 `If-None-Match: *` 写入，由服务端保证原子，已存在返回 `OBJECTSTORAGE_CONFLICT_001`；服务认条件写入要先由探测确认，探明之前与探明不认时的结果见上文「条件写入探测」，不会带着可能静默覆盖的不覆盖写入运行。
 - 不可定位的内容流先落临时文件（关闭即删）取得长度，不整体装进内存。
 - 读取：`GetAsync` 的内容流释放时连同响应一起释放；`HeadAsync` 返回长度、内容类型、ETag、修改时间与去掉 `x-amz-meta-` 前缀的自定义元数据。
 - 批量删除：S3 的删除不报告对象是否存在过，先逐键 HEAD 定存在性（同一批里重复的键只有第一次算存在），再把存在的键按每批 1000 个 `DeleteObjects`；删除失败只影响本次负责删除的项。
@@ -183,17 +183,11 @@ var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2
 - 命名实例建出时探测条件写入（探明不认、被拒绝、探测桶不存在都不建；只有连不上的照常建出、后台重试；`ConditionalWrites` 关闭时不探测、建实例不发请求），被替换、移除或应用停止时停止重试、释放各自的客户端；实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；健康探测对实例的 `HealthBucket` 做 HEAD（没配时列桶），连通之后再看条件写入，尚未确认或不认时 Degraded。
 - 通过 `ObjectStorage.Conformance` 全部用例（对 RustFS 1.0.4 验证，也对 MinIO 验证过；其余兼容服务的实测差异见 ADR-0086）。测试项目在设置 `XIHAN_TEST_S3`（如 `http://localhost:9000`）时对真实服务运行，`XIHAN_TEST_S3_ACCESS_KEY` / `XIHAN_TEST_S3_SECRET_KEY` 缺省为 `rustfsadmin`（RustFS 镜像不设密钥时的根凭据）；未设置时跳过。`XIHAN_TEST_S3_UNCONDITIONAL` 指向不认条件写入的兼容服务（如 Zenko CloudServer）时，另核对启动与命名实例的建出都以 `OBJECTSTORAGE_UNAVAILABLE_003` 失败（2026-11-02 在 Zenko CloudServer 8.2.7 上补跑通过，ADR-0093）；对 RustFS 另核对密钥错、探测桶不存在让启动与命名实例的建出失败。
 
-| 错误码 | 含义 |
-| --- | --- |
-| `OBJECTSTORAGE_NOTFOUND_001` | 键或桶不存在（含条件写入探测的桶：启动或建实例时即失败，启动之后才发现时健康项 Failed） |
-| `OBJECTSTORAGE_NOTFOUND_002` | 分片上传不存在（`NoSuchUpload`） |
-| `OBJECTSTORAGE_VALIDATION_001` | 读取范围的起点越界 |
-| `OBJECTSTORAGE_VALIDATION_002` | 服务端拒绝分片清单 |
-| `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | 其余服务端错误、网络错误与 SDK 超时（含探测连不上或超时：唯一照常启动、后台重试的原因） |
-| `OBJECTSTORAGE_UNAVAILABLE_003` | 服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或 `ConditionalWrites = false` 时的不覆盖写入 |
-| `OBJECTSTORAGE_UNAVAILABLE_004` | 条件写入尚未确认时的不覆盖写入（`reason` 是最近一次探测失败的错误码），探测通过后自动恢复 |
-| `OBJECTSTORAGE_DENIED_002` | 条件写入探测被拒绝（403：启动或建实例时即失败，启动之后才被拒时健康项 Failed） |
+错误码的含义见 [ObjectStorage.Abstractions](/packages/objectstorage-abstractions#错误码)，本包特有的映射：
+
+- `OBJECTSTORAGE_NOTFOUND_001`：键不存在；桶不存在时读取也是它，条件写入探测的桶不存在同样报它。
+- `OBJECTSTORAGE_UNAVAILABLE_001`：其余服务端错误、网络错误与 SDK 超时；探测连不上或超时也是它，是唯一照常启动、后台重试的原因。
+- `OBJECTSTORAGE_UNAVAILABLE_003`、`OBJECTSTORAGE_UNAVAILABLE_004`、`OBJECTSTORAGE_DENIED_002`：只出自条件写入，何时返回见上文「条件写入探测」。
 
 ## 相关
 

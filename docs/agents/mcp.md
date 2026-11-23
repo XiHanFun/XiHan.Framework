@@ -48,42 +48,21 @@ MCP（Model Context Protocol）是 AI 工具调用外部工具的开放协议。
 | Streamable HTTP | Web 应用加入 `McpProtocolFeature`，`app.MapXiHanMcp()`，端点 `POST /mcp` | 请求头 `Authorization` 由 `UseXiHan()` 在外层认证 | 需要身份与权限的操作；连接已在运行的开发服务器 |
 | stdio | 命令行宿主加入 `McpProtocolFeature` 后运行 `mcp` 命令，AI 工具以子进程方式启动 | 环境变量 `XIHAN_AUTHORIZATION` 或启动参数 `--authorization`，每个 `tools/call` 在管道里认证；不给就是匿名 | 本机以子进程启动的工具类应用 |
 
-HTTP 传输的 Web 应用：
+HTTP 传输的 Web 应用，在[第一个应用](/getting-started/first-app)的 `Program.cs` 上多装配一个特性、多映射一个端点：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.Mcp;
 using XiHan.Framework.Protocols.Mcp.Transports;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<McpProtocolFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanMcp();   // POST /mcp
-app.Run();
 ```
 
-stdio 传输的命令行应用（仓库示例 `framework/samples/SimpleCli`）：
-
-```csharp
-using Microsoft.Extensions.Hosting;
-using XiHan.Framework.Hosting.CommandLine;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Profiles.Minimal;
-using XiHan.Framework.Protocols.Mcp;
-
-var builder = Host.CreateApplicationBuilder(args);
-builder.AddXiHan(xihan => xihan
-    .UseMinimalProfile()
-    .UseFeature<McpProtocolFeature>());
-builder.Services.AddXiHanCommandLine();
-
-return await builder.Build().RunXiHanCommandLineAsync(args);
-```
+stdio 传输的命令行应用（仓库示例 `framework/samples/SimpleCli`）：在通用宿主上装配 `McpProtocolFeature` 并调用 `AddXiHanCommandLine()`，以 `RunXiHanCommandLineAsync(args)` 运行，完整的 `Program.cs` 见[命令行宿主](/protocols/command-line#最小示例)。
 
 验证 stdio 服务端：
 

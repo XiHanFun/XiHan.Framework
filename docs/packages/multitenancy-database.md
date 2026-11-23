@@ -35,45 +35,7 @@
 dotnet add package XiHan.Framework.MultiTenancy.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配，下面用 `Persistence.SqlSugar`，它按约定映射 `TenantRecord`，不需要登记：
-
-```csharp
-using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.MultiTenancy.Database;
-using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// 显式 Provider 顶替 Standard 组合包里的内存持久化与内存多租户
-builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()
-    .UseFeature(new SqlSugarPersistenceFeature(static (binding, config) =>
-    {
-        config.DbType = DbType.PostgreSQL;
-        config.ConnectionString = binding.ValueOrThrow().Value;
-    }))
-    .UseFeature<DatabaseMultiTenancyFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
-```
-
-`Persistence.EntityFrameworkCore` 的应用在自己的 `DbContext` 里登记实体，属性列用长文本类型：
-
-```csharp
-using Microsoft.EntityFrameworkCore;
-using XiHan.Framework.MultiTenancy.Database.Tenants;
-
-public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
-{
-    // PropertiesJson 是整份租户属性的 JSON 对象
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-        => modelBuilder.Entity<TenantRecord>(static t => t.Property(static x => x.PropertiesJson).HasColumnType("text"));
-}
-```
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配：在 `AddXiHan` 里 `UseFeature<DatabaseMultiTenancyFeature>()`（命名空间 `XiHan.Framework.MultiTenancy.Database`），顶替 Standard 组合包里的内存多租户。`Persistence.SqlSugar` 按约定映射 `TenantRecord`，不需要登记；`Persistence.EntityFrameworkCore` 的应用在自己的 `DbContext` 里登记实体。两种写法的装配代码与配置示例见[数据库租户目录](/multi-tenancy/database)。
 
 ## 配置
 
@@ -81,21 +43,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | --- | --- | --- | --- |
 | `XiHan:MultiTenancy:Database:CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间，必须为正，`0` 与负数让装配失败；写入经失效立即生效，存活时间只是兜底 |
 
-缓存容量由提供 `caching.local` 的 Provider 管（`XiHan:Caching:InMemory:MaxEntries` 或 `XiHan:Caching:Hybrid:LocalCapacity`）；以前的 `XiHan:MultiTenancy:Database:CacheSize` 已删除，配置里留着也被忽略。
+缓存容量由提供 `caching.local` 的 Provider 管（`XiHan:Caching:InMemory:MaxEntries` 或 `XiHan:Caching:Hybrid:LocalCapacity`）。
 
 解析选项 `DefaultTenant`、`RequireTenant`、`ValidateAgainstStore`、`TenantClaim` 见 [MultiTenancy.Abstractions](./multitenancy-abstractions#配置)。持久化 Provider 的连接来自绑定，SqlSugar 的绑定名是 `db`。
-
-```json
-{
-  "XiHan": {
-    "Bindings": { "db": "Host=localhost;Database=app" },
-    "MultiTenancy": {
-      "RequireTenant": false,
-      "Database": { "CacheTimeToLiveSeconds": 30 }
-    }
-  }
-}
-```
 
 ## 主要类型
 
@@ -103,52 +53,23 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 | --- | --- |
 | `DatabaseMultiTenancyFeature` | 特性入口：登记 `TenantRecord` 的仓储、目录、解析器与 Tenant 阶段中间件，经 `CacheSerializerRegistration.AddTypeInfo` 登记目录缓存的序列化类型，启动时核对持久化 Provider |
 | `DatabaseMultiTenancyOptions` | `CacheTimeToLive`（`TimeSpan`，必须为正，缺省 30 秒） |
-| `Tenants.TenantRecord` | 存储行：`Id`（主键，租户 ID）、`DisplayName`、`IsEnabled`、`PropertiesJson`、`CreatedAt`、`ModifiedAt`、`ConcurrencyStamp`；平台级数据，不实现 `IMultiTenant`、不软删除 |
+| `Tenants.TenantRecord` | 存储行：`Id`（主键，租户 ID）、`DisplayName`、`IsEnabled`、`PropertiesJson`、`CreatedAt`、`ModifiedAt`、`ConcurrencyStamp`、`IsDeleted`、`DeletedAt`；平台级数据，不实现 `IMultiTenant`；软删除，删除的行是墓碑（ADR-0225），各列与墓碑的含义见[数据库租户目录](/multi-tenancy/database) |
 | `Tenants.DatabaseTenantStore` | 单例 `ITenantStore`，构造参数 `(IServiceProvider, DatabaseMultiTenancyOptions, ICache, ILoggerFactory)`：`FindAsync`（缓存）、`ListAsync`（按 ID 一页一页读，偏移作续页令牌，不走缓存）、`InvalidateAsync(tenantIds, ct)`、`InvalidateAllAsync(ct)`（作用于所有共用缓存的实例，缓存后端故障时抛出）；常量 `CacheRegion` = `multitenancy:tenants` |
-| `Tenants.TenantRecordStore` | 作用域服务，实现 `ITenantAdministration` 与 `IAsyncDisposable`：`UpsertAsync`、`RemoveAsync` 批量逐项结果，作用域释放时再失效一次；构造参数多了 `ILoggerFactory`；列出租户用 `ITenantStore.ListAsync` |
+| `Tenants.TenantRecordStore` | 作用域服务，实现 `ITenantAdministration` 与 `IAsyncDisposable`：`UpsertAsync`、`RemoveAsync` 批量逐项结果，作用域释放时再失效一次；构造参数 `(IRepository<TenantRecord, string>, DatabaseTenantStore, ILoggerFactory, ITenantShardResolver?)`；列出租户用 `ITenantStore.ListAsync` |
 
 ## 使用示例
 
-管理操作在处理器里经租户管理 `ITenantAdministration`（作用域服务，就是 `TenantRecordStore`）写入；Transaction 阶段已经开了工作单元，写入随调用一起提交。列出租户用 `ITenantStore.ListAsync(TenantQuery)`：
-
-```csharp
-using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
-using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
-using XiHan.Framework.Primitives;
-
-// 作用域服务，在操作的处理器里使用
-public sealed class TenantOnboarding(ITenantAdministration tenants)
-{
-    public async ValueTask<Result> CreateAsync(string tenantId, string displayName, string? connectionString, CancellationToken cancellationToken)
-    {
-        var properties = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (connectionString is not null)
-        {
-            // 有连接串即分库；写入后目录缓存随即失效，分片解析器下一次解析就用上新连接
-            properties[TenantShardKeys.ConnectionString] = connectionString;
-        }
-
-        var results = await tenants.UpsertAsync([new TenantInfo { Id = tenantId, DisplayName = displayName, Properties = properties }], cancellationToken);
-        return results[0];
-    }
-
-    public async ValueTask<IReadOnlyList<Result>> DisableAsync(IReadOnlyList<TenantInfo> current, CancellationToken cancellationToken)
-        => await tenants.UpsertAsync([.. current.Select(static t => t with { IsEnabled = false })], cancellationToken);
-}
-```
-
-`UpsertAsync` 是整份覆盖：只想改启用标记时，先读出当前的 `TenantInfo` 再整体写回，否则显示名与属性会被清空。
+管理操作在处理器里经租户管理 `ITenantAdministration`（作用域服务，就是 `TenantRecordStore`）写入，随调用的工作单元一起提交；创建、停用与删除租户的示例见[数据库租户目录](/multi-tenancy/database)。
 
 ## 行为与限制
 
-- 写入：`UpsertAsync` 一次查询取回已有行，已有的更新、没有的新增，各用一次批量方法写入；同一批里同一租户后者整份覆盖前者，同一行只写一次，各项结果相同。`RemoveAsync` 对不存在的 ID 与同一批里重复出现的 ID 逐项返回 `MULTITENANCY_NOTFOUND_001`；不合法的租户 ID 是编程错误，整批在访问数据库前抛出 `ArgumentException`。空集合直接返回空结果。
+- 写入：`UpsertAsync` 一次查询取回已有行，已有的更新、没有的新增，各用一次批量方法写入；它是整份覆盖，只想改启用标记时先读出当前的 `TenantInfo` 再整体写回，否则显示名与属性会被清空；同一批里同一租户后者整份覆盖前者，同一行只写一次，各项结果相同。`RemoveAsync` 一次批量删除（软删除，行留作墓碑，之后用这个 ID 新建返回 `MULTITENANCY_CONFLICT_001`），对不存在的 ID 与同一批里重复出现的 ID 逐项返回 `MULTITENANCY_NOTFOUND_001`；不合法的租户 ID 是编程错误，整批在访问数据库前抛出 `ArgumentException`。空集合直接返回空结果。
 - 可见性：写入在调用方事务提交后才对其他调用可见。`TenantRecordStore` 在写入时与作用域释放时各失效一次缓存（按租户换代数），失效之前开始的读取写回的旧条目不会被当作命中，新增、停用、改连接串、删除在提交之后立即生效（ADR-0194、ADR-0229）。失效作用于所有共用缓存的实例：多实例部署装 `Caching.Redis` 与 `Caching.Hybrid` 后所有实例一起生效；只装 Redis 时 `ICache` 仍是进程内的，其他实例靠存活时间收敛。绕过 `TenantRecordStore` 直接改表时，自行 `await DatabaseTenantStore.InvalidateAsync(tenantIds, ct)`，或等存活时间到期。
 - 故障：连接失败、提交失败这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成租户不存在，也不进缓存；Tenant 阶段据此以 503 结束调用，分片解析器把它包进 `MULTITENANCY_UNAVAILABLE_002`。
-- 缓存后端故障：`FindAsync` 直接查库、不写缓存，结果仍然正确。写入时的失效遇到故障就抛出（`CACHING_UNAVAILABLE_001`），调用失败（内核转成 `KERNEL_UNEXPECTED_001`）、事务回滚：停用、迁库传不到其他实例时不报成功。作用域释放时的失效遇到故障只记错误日志，已提交的写入在存活时间内对所有实例生效。`TenantRecordStore` 的同步释放会阻塞到失效写完，宿主应异步释放作用域。
-- 跨进程缓存里的值类型（`GenerationCacheEntry<TenantCacheValue>`、`string`）由本包经 `AddTypeInfo` 登记；应用自己登记 `ICacheSerializer` 时要并进 `CacheTypeInfoSource`，见[缓存读写 · 序列化器](/caching/basics#序列化器)。
-- 直接构造 `DatabaseTenantStore`、`TenantRecordStore` 的代码按新签名传参，原来的 `Invalidate` / `InvalidateAll` 改为 `await InvalidateAsync(…, ct)` / `InvalidateAllAsync(ct)`，`CachedCount` 已删除；经容器构造的不受影响。
+- 缓存后端故障：`FindAsync` 直接查库、不写缓存，结果仍然正确，警告日志每 10 秒最多一条。写入时的失效遇到故障就抛出（`CACHING_UNAVAILABLE_001`），调用失败（内核转成 `KERNEL_UNEXPECTED_001`，HTTP 500）、事务回滚：停用、迁库传不到其他实例时不报成功。作用域释放时的失效遇到故障只记错误日志，已提交的写入在存活时间内对所有实例生效。`TenantRecordStore` 的同步释放会阻塞到失效写完，宿主应异步释放作用域。
+- 跨进程缓存里的值类型（`GenerationCacheEntry<TenantCacheValue>`、`string`）由本包经 `AddTypeInfo` 登记；应用自己登记 `ICacheSerializer` 时要并进 `CacheTypeInfoSource`，见[缓存读写 · 序列化器](/caching/basics#序列化器)。共用一个 Redis 的多个应用要用不同的 `XiHan:Caching:Redis:KeyPrefix`，否则区名 `multitenancy:tenants` 下的键会互相覆盖。
 - 不合法的租户 ID 在 `FindAsync` 里直接返回无值，不查库，也不占缓存。
-- 枚举分页：`ListAsync` 按 ID 排序、以偏移为续页令牌一页一页读，每页至多 1000 条，不再有截断。
+- 枚举分页：`ListAsync` 按 ID 排序、以偏移为续页令牌一页一页读，每页至多 1000 条，读到令牌为空为止，不截断。
 - 表结构由应用管理，`InitTables` / `EnsureCreated` 只用于开发与测试。`PropertiesJson` 用长文本类型（`text` / `nvarchar(max)` / `longtext`）；租户 ID 列长度 128，显示名列长度 256。分片库的表结构同样由应用管理。
 - 测试里可以与 `Persistence.InMemory` 一起装配；本包通过 `MultiTenancy.Conformance` 的 `TenantStoreConformance`、`TenantShardResolverConformance` 与 `TenantAdministrationConformance`（含另一个实例的用例，两个宿主共用一个 SQLite 文件与一个 `ICache`），并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。缓存故障用 [Testing](./testing) 的 `FaultyCache` 复现。
 

@@ -35,18 +35,12 @@
 dotnet add package XiHan.Framework.Security.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。单独装配时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。单独装配时在 `AddXiHan` 里 `UseFeature`，`Program.cs` 的其余部分见[第一个应用](/getting-started/first-app)：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Security.InMemory;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseFeature<InMemorySecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置

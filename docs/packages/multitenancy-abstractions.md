@@ -42,9 +42,9 @@ dotnet add package XiHan.Framework.MultiTenancy.Abstractions --prerelease
 | `DefaultTenant` | `string` | 无 | 解析器都没给出值时使用，同样经过文法与存储校验；空字符串表示清除 |
 | `RequireTenant` | `bool` | `false` | 没有租户的调用返回 `MULTITENANCY_VALIDATION_002` |
 | `ValidateAgainstStore` | `bool` | `true` | 租户必须在存储中存在且启用；关闭后只校验文法 |
-| `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型 |
+| `TenantClaim` | `string` | `tenant` | `ClaimTenantResolver` 读取的声明类型，不能为空 |
 
-以前的 `ShardCacheSize` 与 `ShardCacheTimeToLiveSeconds` 已删除（`TenantStoreShardResolver` 不再缓存），配置里留着也被忽略。
+布尔值只接受 `true` / `false`，其他写法在启动时抛出 `ArgumentException`。
 
 ```json
 {
@@ -140,20 +140,26 @@ public static class ShardInfo
 - 分库的表结构由应用管理；租户属性 `ConnectionString` 有值即分库，`Shard.<key>` 透传。
 - `TenantShardScope` 必须在作用域首次创建持久化客户端之前绑定；之后再绑定或改绑另一分片抛出 `InvalidOperationException`，同一分片重复绑定无副作用。`BindTenantAsync` 不看租户是否启用、不受应用状态影响；没有分片解析器时成功且不绑定。
 
-| 错误码 | 含义 |
-| --- | --- |
-| `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 |
-| `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 |
-| `MULTITENANCY_NOTFOUND_001` | 租户不存在 |
-| `MULTITENANCY_DENIED_001` | 租户已禁用 |
-| `MULTITENANCY_CONFLICT_001` | 租户 ID 属于已删除的租户，不能再新建（ADR-0225） |
-| `MULTITENANCY_UNAVAILABLE_001` | 租户存储容量已满（内存实现） |
-| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 是存储的错误码，存储的错误作为内部错误保留（ADR-0115） |
-| `MULTITENANCY_UNAVAILABLE_003` | 租户存储不可达（连接、超时、事务失败），不当作租户不存在 |
-| `MULTITENANCY_VALIDATION_003` | 租户列表查询不合法：每页条数越界或续页令牌无效 |
-| `MULTITENANCY_VALIDATION_004` | 已认证主体带多个值不同的租户声明（ADR-0218） |
+## 错误码
 
-六个消息键（`multitenancy.tenant.*`、`multitenancy.store.capacity_exceeded`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
+常量在 `MultiTenancyErrors`：
+
+| 错误码 | 含义 | HTTP |
+| --- | --- | --- |
+| `MULTITENANCY_VALIDATION_001` | 租户 ID 不合法 | 400 |
+| `MULTITENANCY_VALIDATION_002` | 调用必须带租户但没有解析到 | 400 |
+| `MULTITENANCY_VALIDATION_003` | 租户列表查询不合法：每页条数越界或续页令牌无效 | 400 |
+| `MULTITENANCY_VALIDATION_004` | 已认证主体带多个值不同的租户声明（ADR-0218） | 400 |
+| `MULTITENANCY_NOTFOUND_001` | 租户不存在；`ITenantAdministration.RemoveAsync` 删除不存在的租户也逐项返回它 | 404 |
+| `MULTITENANCY_DENIED_001` | 租户已禁用 | 403 |
+| `MULTITENANCY_CONFLICT_001` | 租户管理新建的租户 ID 属于已删除的租户（墓碑），不能再新建（ADR-0225） | 409 |
+| `MULTITENANCY_UNAVAILABLE_001` | 内存租户存储容量已满：`ITenantAdministration.UpsertAsync` 新增的那一项与健康项 `multitenancy.inmemory.capacity` | 503 |
+| `MULTITENANCY_UNAVAILABLE_002` | 租户分片无法解析（租户存储不可达），`reason` 是存储的错误码，存储的错误作为内部错误保留（ADR-0115） | 503 |
+| `MULTITENANCY_UNAVAILABLE_003` | 租户存储不可达（连接、超时、事务失败），不当作租户不存在 | 503 |
+
+HTTP 一列是该码成为调用结果时的状态，按错误码的种类段映射，与其他子系统一致，见[结果与错误处理](/web/errors)。多租户实体在没有租户的调用里新增时返回的 `PERSISTENCE_VALIDATION_001` 属于持久化，见 [Persistence.Abstractions](/packages/persistence-abstractions#错误码)。
+
+消息键（`multitenancy.tenant.*`、`multitenancy.store.*`、`multitenancy.shard.unavailable`）在本包的 `Localization/<区域>.json` 里有 10 种区域的文案，Provider 装配时注册 `MultiTenancyMessages.Catalog`。
 
 ## 相关
 

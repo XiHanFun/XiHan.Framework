@@ -26,7 +26,7 @@
 | `UseFeature<TFeature>()` | 加入一个特性，要求公开的无参构造函数。组合包的 `UseMinimalProfile()`、`UseStandardProfile()`、`UseFullProfile()` 就是预先写好的一串 `UseFeature`，见[组合包与选包](/getting-started/profiles) |
 | `UseFeature(IFeature feature)` | 加入已创建的实例，特性需要构造参数时用 |
 | `UseProvider(capabilityId, manifestId)` | 指定某个能力由哪份清单提供，优先于配置 `XiHan:Providers`，见[能力图谱与 Provider](/startup/capabilities) |
-| `UseOptions(KernelOptions options)` | 用代码覆盖配置节 `XiHan:Kernel`，见下文「内核选项概览」 |
+| `UseOptions(KernelOptions options)` | 用代码覆盖配置节 `XiHan:Kernel`，见下文「用代码覆盖内核选项」 |
 | `ConfigurePipeline(Action<PipelineBuilder>)` 与 `Pipeline` | 不经特性直接登记中间件或次序约束，归属为 `app`，见[执行管道](/startup/pipeline) |
 | `UseServiceBindingRoot(directory)` | 改用别的目录读取 Service Binding，见[资源绑定](/configuration/bindings) |
 | `Services`、`Configuration` | 宿主的服务集合与配置，与 `builder.Services`、`builder.Configuration` 是同一个对象 |
@@ -36,42 +36,11 @@
 
 ## 最小示例
 
-ASP.NET Core 宿主上的完整 `Program.cs`。`GreetingsFeature` 是[第一个应用](/getting-started/first-app)里写的特性，这里不重复：
+ASP.NET Core 宿主上的 `Program.cs` 就是[第一个应用](/getting-started/first-app)第五步的那一份：回调里只声明组合包、协议适配器与业务特性，`builder.Build()` 之后依次调用 `app.UseXiHan()`（之后映射的端点都在内核管道的 Handle 阶段内执行）、`app.MapXiHanHealth()`（探针，不经内核管道）与 `app.MapXiHanOperations()`（按操作登记表映射路由）。
+
+同一组特性放到通用宿主上，回调不变，只是构建器与运行方式不同（这是 `samples/SimpleCli` 的写法，去掉了消息目录登记；`GreetingsFeature` 是第一个应用里写的特性）：
 
 ```csharp
-using HelloXiHan;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// 回调里只声明：组合包、协议适配器、业务特性。回调返回时内核求解图谱并调用各特性的 Configure
-builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()
-    .UseFeature<HttpProtocolFeature>()
-    .UseFeature<GreetingsFeature>());
-
-var app = builder.Build();
-
-app.UseXiHan();            // 之后映射的端点都在内核管道的 Handle 阶段内执行
-app.MapXiHanHealth();      // /health/startup、/health/ready、/health/live，不经内核管道
-app.MapXiHanOperations();  // 按操作登记表映射路由
-
-app.Run();
-```
-
-同一组特性放到通用宿主上，只是构建器与运行方式不同（这是 `samples/SimpleCli` 的写法，去掉了消息目录登记）：
-
-```csharp
-using Microsoft.Extensions.Hosting;
-using SimpleCli;
-using XiHan.Framework.Hosting.CommandLine;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Profiles.Minimal;
-using XiHan.Framework.Protocols.Mcp;
-
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.AddXiHan(xihan => xihan
@@ -85,35 +54,9 @@ builder.Services.AddXiHanCommandLine();
 return await builder.Build().RunXiHanCommandLineAsync(args);
 ```
 
-运行 Web 版本（`dotnet run --urls http://localhost:5000`），启动日志先打印能力图谱，再打印管道：
+带 `using` 的完整文件与命令的用法见[命令行宿主](/protocols/command-line#最小示例)。
 
-```text
-Capability graph:
-xihan.kernel.core <版本>
-  provides kernel.hosting@1
-  ...
-xihan.persistence.inmemory <版本> (default)
-  provides persistence.relational@1
-  requires kernel.hosting@1 -> xihan.kernel.core
-xihan.protocols.http <版本>
-  provides protocols.http@1
-  requires kernel.hosting@1 -> xihan.kernel.core
-xihan.hello.greetings 1.0.0
-  requires kernel.hosting@1 -> xihan.kernel.core
-
-Pipeline:
-observe      XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware
-resilience   XiHan.Framework.Kernel.Pipeline.DeadlineMiddleware
-resilience   XiHan.Framework.Kernel.Resilience.ResilienceMiddleware
-authenticate XiHan.Framework.Security.Abstractions.Authentication.AuthenticationMiddleware
-tenant       XiHan.Framework.MultiTenancy.Abstractions.Resolution.TenantResolutionMiddleware
-authorize    XiHan.Framework.Security.Abstractions.Authorization.AuthorizationMiddleware
-validate     XiHan.Framework.Kernel.Validation.ValidationMiddleware
-idempotency  XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyMiddleware
-transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware
-```
-
-`curl -s localhost:5000/health/ready` 返回 `"status": "pass"` 与 `"state": "Ready"`，说明装配与启动都完成了；每个特性的状态由健康详情端点 `/health/details`（`MapXiHanHealthDetails()`）给出。
+运行 Web 版本（`dotnet run --urls http://localhost:5000`），启动日志先打印 `Capability graph:`（能力图谱），再打印 `Pipeline:`（管道）；样例见[第一个应用](/getting-started/first-app)第六步与[执行管道](/startup/pipeline#十一个阶段)，各行的读法见下文「启动日志怎么读」。`curl -s localhost:5000/health/ready` 返回 `"status": "pass"` 与 `"state": "Ready"`，说明装配与启动都完成了；每个特性的状态由健康详情端点 `/health/details`（`MapXiHanHealthDetails()`）给出。
 
 ## 装配发生在什么时候
 
@@ -126,7 +69,7 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 5. 请求、命令、消息或作业进入，经 `App.InvokeAsync` 走完管道，见[执行管道](/startup/pipeline)。
 6. 停止：按逆拓扑顺序停止特性。
 
-所以：服务注册写在特性的 `Configure` 里或 `builder.Services` 上都可以，但 `UseFeature` 必须在回调里完成：回调返回时 `AppBuilder` 已经构建，之后再调用 `UseFeature`、`UseProvider` 这类方法抛出 `KERNEL_HOSTING_004`。
+所以：服务注册写在特性的 `Configure` 里或 `builder.Services` 上都可以，但 `UseFeature` 必须在回调里完成：回调返回时 `AppBuilder` 已经构建，之后再调用 `UseFeature`、`UseProvider` 这类方法抛出 `KERNEL_HOSTING_004`。需要按环境选特性时，在回调里按配置或环境变量分支，`AppBuilder.Configuration` 就是宿主配置。
 
 ## App 对象
 
@@ -163,7 +106,7 @@ app.MapGet("/diagnostics/pipeline", () => Results.Text(kernel.DescribePipeline()
 
 ## 启动 Banner
 
-宿主启动时，内核在任何特性启动之前向标准输出打印一段 Banner，版式与 4.x 相同：
+宿主启动时，内核在任何特性启动之前向标准输出打印一段 Banner：
 
 ```text
 
@@ -229,20 +172,11 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile());
 | `requires kernel.hosting@1 -> xihan.kernel.core` | 依赖的去向：箭头右边是被选中的提供者 |
 | `requires messaging.queue@1? -> (missing, optional)` | 版本后的 `?` 表示可选依赖；缺失时声明它的特性进入 `Degraded` |
 
-管道一行一个中间件：阶段名与类型全名，顺序就是执行顺序。没有装配某个子系统时对应阶段就是空的，Minimal 组合只有 `observe`、`resilience`、`validate` 三个阶段有中间件。标记的含义与排序规则分别见[能力图谱与 Provider](/startup/capabilities)和[执行管道](/startup/pipeline)。
+管道一行一个中间件：阶段名与类型全名，顺序就是执行顺序。标记的来由与排序规则分别见[能力图谱与 Provider](/startup/capabilities)和[执行管道](/startup/pipeline)。
 
-## 内核选项概览
+## 用代码覆盖内核选项
 
-内核自己的选项在配置节 `XiHan:Kernel`（`KernelOptions.ConfigurationSection`），四个键：
-
-| 键 | 缺省 | 说明 |
-| --- | --- | --- |
-| `StartTimeoutSeconds` | `30` | 每个特性 `StartAsync` 的超时 |
-| `StopTimeoutSeconds` | `30` | 每个特性 `StopAsync` 的超时 |
-| `FailurePolicy` | `TerminateStartup` | 特性启动失败时终止启动，或改为 `IsolateFeature` 隔离该特性 |
-| `UseBuiltInMiddleware` | `true` | 是否登记内核内置中间件（Observe、截止时间、Resilience、Validate） |
-
-代码里用 `UseOptions` 覆盖，属性是 `TimeSpan` 与枚举：
+内核自己的选项在配置节 `XiHan:Kernel`，键表见 [Kernel 包参考](/packages/kernel#配置)，超时与失败策略的取舍见[生命周期与健康](/startup/lifecycle)。代码里用 `UseOptions` 覆盖配置，属性是 `TimeSpan` 与枚举：
 
 ```csharp
 using XiHan.Framework.Kernel.Hosting;
@@ -256,13 +190,9 @@ builder.AddXiHan(xihan => xihan
     }));
 ```
 
-每个键的语义、非法值的处理与失败策略的取舍放在[生命周期与健康](/startup/lifecycle)；其余配置节的写法见[配置模型与选项](/configuration/options)。
+其余配置节的写法见[配置模型与选项](/configuration/options)。
 
 ## 常见问题
-
-### `UseFeature` 的书写顺序重要吗
-
-不重要。被依赖的特性总是先 `Configure`、先启动，顺序由清单的 `Requires` 推出；书写顺序只在同一层次内决定次序。中间件属于哪个阶段也只取决于登记时给的阶段。
 
 ### 组合包已经包含的特性，我再 `UseFeature` 一次会怎样
 
@@ -275,10 +205,6 @@ builder.AddXiHan(xihan => xihan
 ### 没有 Web 也没有命令行，Worker 服务怎么发起调用
 
 在 `HostApplicationBuilder` 上 `AddXiHan` 即可。进入管道的方式有三种：装配消息能力，让消息派发器为每条消息建调用；装配调度能力，让作业派发器为每次运行建调用；或者在自己的后台服务里创建服务作用域，用 `App.CreateContext` 建上下文并调用 `App.InvokeAsync`，写法见[调用上下文](/startup/invocation-context)。
-
-### 能在 `AddXiHan` 回调之外再加特性吗
-
-不能。回调返回时 `Build()` 已经执行，图谱已经定型。需要按环境选特性时，在回调里按配置或环境变量分支即可，`AppBuilder.Configuration` 就是宿主配置。
 
 ### 装配失败时怎么定位
 

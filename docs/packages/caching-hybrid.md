@@ -31,12 +31,10 @@ L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive
 
 回填与失效的竞争（ADR-0229）：L1 按键的散列分 64 个条带记失效轮次，删除一个键让它所在条带的轮次加一，按前缀删除让全部条带加一。读 L2 之前记下轮次，回填前核对，读的途中有过失效就不回填：否则别的实例写入的通知先到、读回的旧值后到，旧值会在 L1 里留到 `LocalTimeToLive`。条带数固定，内存有界；同条带的无关失效也会挡掉一次回填，只多读一次 L2。
 
-框架的授予缓存（`Security.Database`）、租户目录缓存（`MultiTenancy.Database`）与翻译版本戳（`Localization.Database`）都走 `ICache`，多实例部署装本包与 `Caching.Redis` 后，它们的命中在 L1、写入后经变更通知在所有实例上立即失效。
-
 ## 何时使用
 
 - 多实例部署，热点数据读多写少，可以接受最长 `LocalTimeToLive` 的旧值窗口（L2 是 Redis 时通常只在通知丢失时出现）。
-- 多实例部署装了 `Security.Database`、`MultiTenancy.Database` 或 `Localization.Database`：只装 Redis 时 `ICache` 仍是进程内的，授予撤销、租户停用与新翻译要等存活时间才传到其他实例。
+- 多实例部署装了 `Security.Database`、`MultiTenancy.Database` 或 `Localization.Database`：它们的授予缓存、租户目录缓存与翻译版本戳都走 `ICache`，只装 Redis 时 `ICache` 仍是进程内的，授予撤销、租户停用与新翻译要等存活时间才传到其他实例；装上本包后命中在 L1，写入经变更通知在所有实例上立即失效。
 - 需要强一致的键直接用 `ISharedCache`，不经 L1。
 - 不需要 L1：不装配本包，`ICache` 由 [Caching.InMemory](./caching-inmemory) 提供。
 
@@ -46,15 +44,11 @@ L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive
 dotnet add package XiHan.Framework.Caching.Hybrid --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包需要一个 `caching.distributed` 的提供者作 L2：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包需要一个 `caching.distributed` 的提供者作 L2，接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上：
 
 ```csharp
 using XiHan.Framework.Caching.Hybrid;
 using XiHan.Framework.Caching.Redis;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // Hybrid 顶替内存实现的 caching.local；L2 是 Redis
 builder.AddXiHan(xihan => xihan

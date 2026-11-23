@@ -17,14 +17,11 @@
 
 客户端有两种来源。方式一由特性按配置回调创建作用域内的 `SqlSugarClient`，自动施加 `SqlSugarConventions`；方式二由应用自己注册 `ISqlSugarClient`（`SqlSugarScope`、多库等），应用在创建客户端前对每个 `ConnectionConfig` 调用 `SqlSugarConventions.Apply`。两种方式下仓储、工作单元与查询语义相同。
 
-SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元在第一次写入时经 `AsTenant()` 在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开，只读调用不开事务；提交逐连接提交，回滚逐连接回滚。开没开由 `HasTransaction` 报告（ADR-0109）：第一次 `EnsureTransactionAsync`（仓储每次写入前都经它）开事务即为真，多连接时一个值，提交、回滚或作用域释放时复位；绑定命名连接的工作单元只报告那个连接。更新与删除先在事务内加行锁取回当前行（`TranLock`），比对并发戳后把调用方的实例整行写入，其中创建时间、租户与删除标记先换成当前行的值；读取与写入之间别人改不了这一行（SQLite 与分表实体不加行锁，见下文）。批量方法用一次主键 `IN` 查询取回目标行，逐项校验后一次多行插入、更新或删除。
+SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元在第一次写入时经 `AsTenant()` 在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开，只读调用不开事务；提交逐连接提交，回滚逐连接回滚。开没开由 `HasTransaction` 报告（ADR-0109）：第一次 `EnsureTransactionAsync`（仓储每次写入前都经它）开事务即为真，多连接时一个值，提交、回滚或作用域释放时复位；绑定命名连接的工作单元只报告那个连接。更新与删除先在事务内加行锁取回当前行，比对并发戳后把调用方的实例整行写入；批量方法用一次主键 `IN` 查询取回目标行，逐项校验后一次多行插入、更新或删除。
 
-软删除与租户过滤以表达式显式施加在每个查询上，不用 SqlSugar 的全局过滤器，不会与应用自己的过滤器互相覆盖。规约在交给 SqlSugar 前先改写（ADR-0035 与其修订）：
+软删除与租户过滤以表达式显式施加在每个查询上，不用 SqlSugar 的全局过滤器，不会与应用自己的过滤器互相覆盖。规约在交给 SqlSugar 前先改写（ADR-0035 与其修订）：可空值类型与 `null` 的比较换成 `SqlFunc.EqualsNull` / `HasValue`（字面量 null、求值为 null 的变量或静态成员、左右互换都算，与非 null 值的比较不动），逻辑非下推到叶子，结果在 SQL 三值逻辑下不变；改写的原因与直接用客户端时的写法见 [SqlSugar Provider](/persistence/sqlsugar#可空值类型判空)。
 
-- 可空值类型与 `null` 的 `==` 改写成 `SqlFunc.EqualsNull(x, null)`，`!=` 改写成 `HasValue`，避免译成 `= NULL` 后静默返回错误的结果。
-- 逻辑非下推到叶子（双重否定消去、`!(p && q)` 按德摩根律展开、`!(a < b)` 换成 `a >= b`、`!x.HasValue` 换成判空）。SqlSugar 在 `A && (!x.HasValue || B)`、`A && B && (x == null || …)` 这类位置会漏写 `OR` / `AND`，生成语法错误的 SQL，改写后照常翻译，结果在 SQL 三值逻辑下不变。
-
-字符串的 `Contains`、`StartsWith`、`EndsWith` 按字面匹配（ADR-0098）。SqlSugar 原来把它们译成不转义的 `LIKE`：`t_2` 命中 `budgetx2026`，`0%` 命中 `500 off`，SQL Server 上 `[a]` 是字符类，PostgreSQL 与 MySQL 上反斜杠被当成转义符。`SqlSugarConventions.Apply` 以同名的外部函数（`SqlFuncServices`）接管这三个方法的翻译，所以不只是仓储的规约，直接用施加了约定的客户端写的查询、删除条件、投影与子查询也一样；集合的 `Contains`（`IN`）不受影响。见下文「行为与限制」的「字符串匹配」一行。
+字符串的 `Contains`、`StartsWith`、`EndsWith` 按字面匹配（ADR-0098）：`SqlSugarConventions.Apply` 以同名的外部函数接管这三个方法的翻译，所以不只是仓储的规约，直接用施加了约定的客户端写的查询、删除条件、投影与子查询也一样；集合的 `Contains`（`IN`）不受影响。各数据库上的差异见下文「协议约定」的「字符串匹配」一行。
 
 ## 何时使用
 
@@ -45,44 +42,10 @@ dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 
 本包还显式依赖 `Microsoft.Data.Sqlite`（ADR-0097）。`SqlSugarCore` 声明的下限版本带着连接池激活的竞态（dotnet/efcore#39008），NuGet 按下限解析就会用到它：SQLite 上并发打开连接时两个连接可能共用同一个原生连接，报 "cannot start a transaction within a transaction"，清池时正在打开的连接被释放、报 `ObjectDisposedException`。有了这条依赖，引用本包的应用解析到修复后的版本，不用自己钉版本；项目里直接引用了更低版本的，NuGet 报降级 `NU1605`，删掉那条引用或抬到本包要求的版本。
 
-方式一，特性按回调创建客户端，连接串来自绑定 `db`：
+装配有两种方式，代码见 [SqlSugar Provider](/persistence/sqlsugar#最小示例)：
 
-```csharp
-using SimpleApp.Orders;
-using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Persistence.Abstractions.Repositories;
-using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddRepository<Order, Guid>();
-builder.AddXiHan(x => x
-    .UseStandardProfile()
-    .UseFeature(new SqlSugarPersistenceFeature(static (binding, config) =>
-    {
-        config.DbType = DbType.PostgreSQL;
-        config.ConnectionString = binding.ValueOrThrow().Value;
-    })));
-```
-
-回调设置数据库类型与连接串，之后特性施加协议约定；默认连接的 `ConfigId` 由特性定为 `default`，回调里改了也以特性为准。
-
-方式二，应用自己注册带多个连接的客户端（替换上例 `Program.cs` 里的装配）：
-
-```csharp
-using SqlSugar;
-using XiHan.Framework.Persistence.SqlSugar;
-
-builder.Services.AddScoped<ISqlSugarClient>(_ => new SqlSugarClient(
-[
-    // 每个连接都要先施加约定；默认连接用 SqlSugarConnections.Default 命名
-    SqlSugarConventions.Apply(new ConnectionConfig { ConfigId = SqlSugarConnections.Default, DbType = DbType.PostgreSQL, ConnectionString = "Host=localhost;Database=app;Username=app", IsAutoCloseConnection = true }),
-    SqlSugarConventions.Apply(new ConnectionConfig { ConfigId = "audit", DbType = DbType.PostgreSQL, ConnectionString = "Host=localhost;Database=audit;Username=app", IsAutoCloseConnection = true }),
-]));
-builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceFeature()));
-```
+- 方式一：`new SqlSugarPersistenceFeature((binding, config) => …)`，特性按回调创建客户端。回调设置数据库类型与连接串，之后特性施加协议约定；默认连接的 `ConfigId` 由特性定为 `default`，回调里改了也以特性为准。
+- 方式二：应用自己注册 `ISqlSugarClient`，每个 `ConnectionConfig` 先经 `SqlSugarConventions.Apply`、默认连接用 `SqlSugarConnections.Default` 命名，再以无参构造的 `SqlSugarPersistenceFeature` 装配。
 
 ## 配置
 
@@ -90,30 +53,15 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | --- | --- | --- | --- |
 | `XiHan:Persistence:SqlSugar:InitTables` | 布尔 | `false` | 启动时按已登记的实体建缺表、加缺列；只宜在开发与测试开启 |
 | `XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds` | 正数 | `15` | 健康项的重探间隔，也是单次探测的超时 |
-| `XiHan:Bindings:db` | 字符串 | — | 方式一的连接绑定主值 |
+| `XiHan:Bindings:db` | 字符串 | — | 方式一的连接绑定主值；绑定可选，缺失时回调自行决定连接 |
 | `XiHan:Persistence:SqlSugar:Connections:<name>` | 字符串 | — | 方式一的命名连接，值是连接串（见下文「命名连接」）；方式二写了这一节装配即失败 |
-| `XiHan:Persistence:SqlSugar:CommandTimeoutSeconds` | 正整数 | `300` | 命令超时（秒），设在特性建的客户端的每个连接上；不是正整数即启动失败；应用自己注册客户端时这个键不起作用，配了与缺省不同的值也启动失败。个别长任务在调用点用 `Ado.CommandTimeOut` 临时调大 |
+| `XiHan:Persistence:SqlSugar:CommandTimeoutSeconds` | 正整数 | `300` | 命令超时（秒），设在特性建的客户端的每个连接上；不是正整数即启动失败，0 不接受（ADO.NET 的 0 是无限等待）。方式二时这个键不起作用，配了与缺省不同的值也启动失败，要在自己的客户端上设 `Ado.CommandTimeOut`。个别长任务在调用点用 `Ado.CommandTimeOut` 临时调大 |
 | `XiHan:Persistence:SqlSugar:Replicas:DefaultHitRate` | 正整数 | `10` | 权重不大于 0 的从库归一化成的权重 |
 | `XiHan:Persistence:SqlSugar:Replicas:HealthCheck` | 布尔 | `true` | 是否周期探测从库；配了从库才有探测 |
 | `XiHan:Persistence:SqlSugar:Replicas:HealthCheckIntervalSeconds` | 正数 | `30` | 从库的探测间隔 |
 | `XiHan:Persistence:SqlSugar:Replicas:FailureCooldownSeconds` | 非负数 | `120` | 从库最后一次失败之后，过了这段时间并且探通才恢复读流量 |
 
-```json
-{
-  "XiHan": {
-    "Bindings": {
-      "db": "Host=localhost;Database=app;Username=app"
-    },
-    "Persistence": {
-      "SqlSugar": {
-        "InitTables": true
-      }
-    }
-  }
-}
-```
-
-差异日志开关 `DiffLog` 不从配置读取，在特性上设置，见下文。
+差异日志开关 `DiffLog` 不从配置读取，在特性上设置。运行时数据源的 `XiHan:Persistence:DataSources:*` 见 [Persistence.Abstractions](./persistence-abstractions#配置)；配置 JSON 的例子见 [SqlSugar Provider](/persistence/sqlsugar#最小示例)。
 
 ## 主要类型
 
@@ -124,25 +72,25 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature(new SqlSugarPersistenceF
 | `SqlSugarReplicaOptions` | 从库的权重与健康探测选项（`SqlSugarPersistenceOptions.Replicas`） |
 | `SqlSugarConventions` | `Apply(config)` 在连接配置上登记协议约定（保留配置里已有的实体服务与表服务回调，先执行它们）；`Configure(property, column)` 对单个属性施加约定；`ConfigureIndexes(type, entityInfo)` 把实体上的 `[EntityIndex]` 登记为 SqlSugar 索引（软删除实体的部分唯一索引除外）；`InitTables(client, entityTypes)` 按约定建表并补建软删除实体的部分唯一索引，应用自己建表（租户独立库）用它 |
 | `SqlSugarConnections` | 连接的 `ConfigId` 约定：`Default`（`default`）、`Shard`（`shard`） |
-| `IEntityConnectionSelector`、`SqlSugarConnectionSelector` | 实体落在哪个连接；默认规则见下文 |
+| `IEntityConnectionSelector`、`SqlSugarConnectionSelector` | 实体落在哪个连接；默认实现构造时收 `RepositoryRegistrations`，规则见 [SqlSugar Provider](/persistence/sqlsugar#多库落点) |
 | `SqlSugarUnitOfWork` | 事务型工作单元；`Client` 是根连接，`ConnectionFor(Type)` 返回某种实体所用的连接；以 `UnitOfWorkOptions.Connection` 开启时只用那个命名连接 |
 | `SqlSugarDiffLogData` | 差异日志的业务数据：`EntityType` 与仓储所在作用域的 `Services` |
 | `SqlSugarDataSource`、`SqlSugarDataSourceExtensions` | 运行时数据源：`Client` 是每个数据源一个的 `SqlSugarScope`；`source.GetSqlSugarClient()` 从中立的 `IDataSource` 取它 |
 
 ## 使用示例
 
-### 多库落点
+示例在教程页 [SqlSugar Provider](/persistence/sqlsugar)，按场景找：
 
-客户端可以带多个连接，每种实体落在哪个连接由 `IEntityConnectionSelector` 决定。默认实现 `SqlSugarConnectionSelector` 的规则按顺序：
+| 场景 | 示例 |
+| --- | --- |
+| 两种创建客户端的方式、配置 JSON | [最小示例](/persistence/sqlsugar#最小示例) |
+| 实体落在哪个连接、替换落点规则 | [多库落点](/persistence/sqlsugar#多库落点) |
+| 按时间分表的实体 | [分表](/persistence/sqlsugar#分表) |
+| 从库与只读工作单元 | [读写分离](/persistence/sqlsugar#读写分离) |
+| 取写入前后值的回调 | [差异日志](/persistence/sqlsugar#差异日志) |
+| 命名连接的配置、绑定连接的工作单元 | [连接与运行时数据源](/persistence/connections) |
 
-1. 实体带 SqlSugar 的 `[Tenant(configId)]`：落到该 `ConfigId` 的连接；客户端里没有这个连接是装配错误，抛出携带 `PERSISTENCE_VALIDATION_004` 的 `FrameworkException`，不回退到默认连接。用缺省落点规则时，带 `[Tenant]` 的已登记实体在启动时就校验，连接不存在即中断启动；`shard` 只在带分片的调用里存在，不在启动时校验。
-2. 实体以 `AddRepository<TEntity, TKey>(connection)` 登记到命名连接：落到同名 `ConfigId` 的连接，校验同上；与 `[Tenant]` 指向不同的连接同样是 `PERSISTENCE_VALIDATION_004`（见下文「命名连接」）。
-3. 实体实现 `IMultiTenant`，且客户端里有 `shard` 连接：落到分片连接。
-4. 其余：根（默认）连接。
-
-方式一在装配了 `multitenancy.sharding@1` 时，带分片的调用把分片绑定（主值是租户连接串，属性含 `tenant`、`provider` 与透传属性）交给同一个回调，再建一个 `ConfigId = shard` 的连接，与默认连接组成一个客户端：租户实体落分片库，租户目录、授予、发件箱这类不带租户的平台表仍落默认库，同一调用里一起提交或回滚。方式二由应用自己组装连接集合，提供名为 `shard` 的连接即可让第 3 条规则生效。
-
-把审计类实体固定到 `audit` 库（配合上面方式二的客户端）：
+教程里没有的两段代码补在这里。把审计类实体固定到 `audit` 库（客户端里要有 `ConfigId` 为 `audit` 的连接）：
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -163,80 +111,7 @@ public sealed class AccessLog : IEntity<Guid>, IHasCreationTime
 }
 ```
 
-替换规则时，在装配特性之前注册自己的实现：`builder.Services.AddSingleton<IEntityConnectionSelector, MySelector>()`。同一工作单元里对同一实体类型的选择结果必须稳定。
-
-### 命名连接
-
-一部分平台数据要放在另一个库里、并在业务事务进行中另行提交时（RFC-0005「命名连接」，ADR-0084），用两样东西：实体登记到命名连接，管道外的写入开绑定那个连接的工作单元。典型场景是 SQLite 上的工作流租约表——SQLite 只有一个写者，业务事务写过之后，同一个库文件上的另一个事务要等它结束（见 [Workflow.Database](./workflow-database#sqlite-上的租约表)）。
-
-方式一在配置里声明命名连接，回调对每个命名连接各调用一次：绑定的主值换成该连接串、属性沿用 `db` 绑定（`provider` 等），`config.ConfigId` 是连接名，回调据此区分：
-
-```json
-{
-  "XiHan": {
-    "Bindings": { "db": "Data Source=app.db" },
-    "Persistence": {
-      "SqlSugar": {
-        "Connections": { "leases": "Data Source=app.leases.db" }
-      }
-    },
-    "Workflow": { "Database": { "LockConnection": "leases" } }
-  }
-}
-```
-
-```csharp
-// 应用自己的实体也可以登记到命名连接；框架的工作流租约表由 LockConnection 登记
-builder.Services.AddRepository<SyncCursor, string>(connection: "leases");
-
-// 管道外与业务事务互不等待的写入：工作单元绑定这个连接，事务只开在它上面
-await using var scope = services.CreateAsyncScope();
-var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-await unitOfWork.BeginAsync(new UnitOfWorkOptions { Connection = "leases" }, ct);
-// …经 IRepository<SyncCursor, string> 读写，然后 CommitAsync
-```
-
-- 名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`；值不能空白。不合法时装配即抛 `ArgumentException`（消息只带名字，不带连接串）。
-- 每个作用域的客户端都带上命名连接，排在默认连接之后，根连接仍是默认连接。工作单元首次写入时只在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开：业务调用不碰命名连接，那个库就不被业务事务锁住。
-- 普通工作单元里，登记到命名连接的实体照常参与整体事务（同一调用触及的连接顺序提交）；`InitTables` 把它建在那个连接上。
-- 绑定连接的工作单元（`UnitOfWorkOptions { Connection = name }`）只用这一个连接：操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接不在客户端里，`BeginAsync` 抛出同码异常。
-- 方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端，配置里的 `Connections` 节对它不适用，写了即装配失败。
-
-::: warning 跨库提交是顺序提交，不是两阶段提交
-一次调用写了多个连接时，提交逐连接进行；后一个连接提交失败时，前一个已经提交。需要严格原子性的写入放在同一个库。
-:::
-
-### 分表
-
-带 SqlSugar `[SplitTable]` 的实体自动走分表入口：表名含 `{year}{month}{day}` 占位符，`[SplitField]` 是按 UTC 写入的 `DateTime` 列（SqlSugar 按 `DateTime` 推表名，不能用 `DateTimeOffset`）。
-
-```csharp
-using System.ComponentModel.DataAnnotations;
-using SqlSugar;
-using XiHan.Framework.Domain.Entities;
-
-namespace SimpleApp.Auditing;
-
-[SugarTable("login_logs_{year}{month}{day}")]
-[SplitTable(SplitType.Month)]
-public sealed class LoginLog : IEntity<Guid>, IHasCreationTime, IHasConcurrencyStamp
-{
-    public Guid Id { get; init; }
-
-    // 决定落在哪张分表；写入后不要再改，更新与删除按它定位表
-    [SplitField]
-    public DateTime LoggedAt { get; set; }
-
-    [StringLength(256)]
-    public string UserName { get; set; } = string.Empty;
-
-    public DateTimeOffset CreatedAt { get; set; }
-
-    public string ConcurrencyStamp { get; set; } = string.Empty;
-}
-```
-
-查询用 `Within` 限定扫描的表，没有提示时扫全部分表：
+分表实体的查询用 `Within` 限定扫描的表，没有提示时扫全部分表（`LoginLog` 是教程里的分表实体，`loginLogs` 是注入的 `IRepository<LoginLog, Guid>`）：
 
 ```csharp
 var october = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero);
@@ -245,61 +120,21 @@ var query = EntityQuery.All<LoginLog>().Within(october, october.AddMonths(1).Add
 var logs = await loginLogs.ListAsync(query, cancellationToken);
 ```
 
-`loginLogs` 是注入的 `IRepository<LoginLog, Guid>`。写入按 `[SplitField]` 的值落表，缺少的分表由 SqlSugar 建出；`InitTables` 对分表实体走 `CodeFirst.SplitTables()`。分表查询是多表 `UNION ALL`，不能加行锁，分表实体的更新与删除靠并发戳防并发。
+## 命名连接
 
-### 差异日志
+一部分平台数据要放在另一个库里、并在业务事务进行中另行提交时（RFC-0005「命名连接」，ADR-0084），用两样东西：实体登记到命名连接（`AddRepository<TEntity, TKey>(connection)`），管道外的写入开绑定那个连接的工作单元（`UnitOfWorkOptions { Connection = name }`）。典型场景是 SQLite 上的工作流租约表——SQLite 只有一个写者，业务事务写过之后，同一个库文件上的另一个事务要等它结束（见 [Workflow.Database](./workflow-database#sqlite-上的租约表)）。配置与代码示例见[连接与运行时数据源](/persistence/connections)。
 
-`DiffLog` 选出的实体，仓储的插入、更新（含软删除）、物理删除与批量方法都带 SqlSugar 的 `EnableDiffLogEvent`，应用在连接配置的 `AopEvents.OnDiffLogEvent` 上收到操作类型、表、主键与前后值，`BusinessData` 是 `SqlSugarDiffLogData`：
-
-```csharp
-using Microsoft.Extensions.DependencyInjection;
-using SimpleApp.Orders;
-using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
-var feature = new SqlSugarPersistenceFeature(static (binding, config) =>
-{
-    config.DbType = DbType.PostgreSQL;
-    config.ConnectionString = binding.ValueOrThrow().Value;
-    config.AopEvents = new AopEvents
-    {
-        OnDiffLogEvent = static diff =>
-        {
-            if (diff.BusinessData is SqlSugarDiffLogData data)
-            {
-                // 回调在写入后同步触发、不等提交：只复制需要的值进本调用的缓冲，提交成功后再落库
-                data.Services.GetRequiredService<ChangeBuffer>().Add($"{data.EntityType.Name}:{diff.DiffType}");
-            }
-        },
-    };
-})
-{
-    // 只给需要前后值的实体开：每次写入多一次按主键的读取
-    DiffLog = static type => type == typeof(Order),
-};
-
-builder.Services.AddScoped<ChangeBuffer>();
-builder.AddXiHan(x => x.UseStandardProfile().UseFeature(feature));
-
-public sealed class ChangeBuffer
-{
-    private readonly List<string> _entries = [];
-
-    public IReadOnlyList<string> Entries => _entries;
-
-    public void Add(string entry) => _entries.Add(entry);
-}
-```
-
-缺省一个实体都不开。开启的实体走 SqlSugar 的泛型构建器，必须有公开的无参构造函数。分表实体同样支持：分表删除由框架按 `[SplitField]` 分组到表逐表删除，因为 SqlSugar 自己的分表删除会丢掉差异日志开关。SqlSugar 在分表插入的各组之间复用同一个 `DiffLogModel`，回调里不要保存它的引用。
+- 方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明，值是连接串；回调对每个命名连接各调用一次：绑定的主值换成该连接串、属性沿用 `db` 绑定（`provider` 等），`config.ConfigId` 是连接名，回调据此区分。方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端，配置里的 `Connections` 节对它不适用，写了即装配失败。
+- 名字合 `^[a-z0-9][a-z0-9-]{0,63}$`，不能是 `default` 或 `shard`；值不能空白。不合法时装配即抛 `ArgumentException`（消息只带名字，不带连接串）。
+- 每个作用域的客户端都带上命名连接，排在默认连接之后，根连接仍是默认连接。工作单元首次写入时只在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开：业务调用不碰命名连接，那个库就不被业务事务锁住。
+- 普通工作单元里，登记到命名连接的实体照常参与整体事务（同一调用触及的连接顺序提交）；`InitTables` 把它建在那个连接上。
+- 绑定连接的工作单元只用这一个连接：操作落在别处的实体抛 `PERSISTENCE_VALIDATION_004`；连接不在客户端里，`BeginAsync` 抛出同码异常。
 
 ## 行为与限制
 
-协议约定（`SqlSugarConventions`）：
+### 协议约定
+
+`SqlSugarConventions.Apply` 在连接配置上登记的约定；列与索引的通用规则见[建表约定与索引](/persistence/schema)。
 
 | 约定 | 内容 |
 | --- | --- |
@@ -307,62 +142,69 @@ public sealed class ChangeBuffer
 | 并发戳 | `ConcurrencyStamp` 长度 32 |
 | 字符串长度 | `[StringLength(n)]` 或 `[MaxLength(n)]` → 长度 n；`[LongText]` 或无参 `[MaxLength]` → 长文本类型；实体自己的 `[SugarColumn]` 已给长度或类型时不动；没有注解的沿用 SqlSugar 缺省（PostgreSQL 为 `varchar(255)`） |
 | `DateTimeOffset` | 经转换器按 UTC 时刻往返；读取按驱动交出的 `DateTime.Kind` 还原（ADR-0037） |
-| 日期时间精度 | `DateTimeOffset` 与 `DateTime` 在 MySQL 上建成 `datetime(6)`、在 Oracle 上建成 `timestamp(6)`，SQL Server 的 `DateTime` 建成 `datetime2(6)`，都到微秒；SQL Server 上写入参数按 `datetime2` 传；实体自己给了列类型的不动，已经建成的列不改（ADR-0231） |
-| SQL Server 与 Oracle 字符串 | 有长度的字符串列建成 SQL Server `nvarchar(n)`、Oracle `nvarchar2(n)`，存 Unicode、按字符计长；Oracle 最长 2000，更长的用 `[LongText]`；SqlSugar 缺省的 `varchar(n)` 在 SQL Server 上存不了汉字、在 Oracle 上按字节计长（ADR-0232） |
-| SQL Server 隔离 | 库要打开 `READ_COMMITTED_SNAPSHOT`（`ALTER DATABASE [库名] SET READ_COMMITTED_SNAPSHOT ON`）：缺省的读已提交是加锁读，别的工作单元读未提交的行要等写入方结束（ADR-0234） |
+| 日期时间精度 | `DateTimeOffset` 与 `DateTime` 在 MySQL 上建成 `datetime(6)`、在 Oracle 上建成 `timestamp(6)`，SQL Server 的 `DateTime` 建成 `datetime2(6)`，都到微秒；实体自己给了列类型的不动，已经建成的列不改（ADR-0231） |
+| SQL Server 与 Oracle 字符串 | 有长度的字符串列建成 SQL Server `nvarchar(n)`、Oracle `nvarchar2(n)`，存 Unicode、按字符计长；Oracle 最长 2000，更长的用 `[LongText]`（ADR-0232） |
 | 可空 | 可空值类型与可空引用类型的列可空 |
 | 忽略 | 没有公开 setter 的属性与集合属性（字符串、字节数组除外）不映射 |
 | PostgreSQL 缺省值 | 非可空的数值、枚举、布尔与 `Guid` 列配 CLR 缺省值（`0`、`false`、全零 Guid），`InitTables` 才能给已有行的表加这类列（ADR-0040） |
-| 索引 | 实体上的 `[EntityIndex]` 经表服务回调（`EntityNameService`）转成 `SugarIndexAttribute`，名字按映射出的表名推出（ADR-0072）；`InitTables` 按名字查不到才建，已有的不改不删；分表实体声明它抛 `NotSupportedException` |
-| 部分唯一索引 | 软删除实体的唯一索引只约束未删除的行（ADR-0081）：不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表后补建——PostgreSQL / SQLite `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE IsDeleted = false / 0`，SQL Server 筛选索引（键含可空列另加 `IS NOT NULL`），MySQL（8.0.13 起）与 Oracle 是每列 `CASE WHEN` 的函数索引（ADR-0249）；其余（MySQL 与 Oracle 的兼容库、达梦、源自 PostgreSQL 而未验证的国产库等）上启动即失败（`PERSISTENCE_UNAVAILABLE_008`），列里显式写 `IsDeleted` 的普通唯一索引不受限制 |
-| 字符串匹配 | `string.Contains` / `StartsWith` / `EndsWith` 在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成 `LIKE … ESCAPE '!'`（ADR-0098）：关键字是值时参数值先转义再拼通配符，SQL 里只有参数名；是列或表达式时在 SQL 里用 `REPLACE` 转义。转义 `%`、`_`、`!`，SQL Server 另转义 `[`。转义符不用反斜杠，结果与 MySQL 的 `NO_BACKSLASH_ESCAPES`、PostgreSQL 的 `standard_conforming_strings` 无关（MySQL 开了 `NO_BACKSLASH_ESCAPES` 时连接串要写 `NoBackslashEscapes=true`，这是 MySqlConnector 对所有参数的要求）。大小写照各库：SQLite 只对 ASCII 字母不区分，PostgreSQL 与 Oracle 区分，MySQL 与 SQL Server 按排序规则；`MoreSettings.EnableILike` 照原样用 `ilike`。要通配用 `SqlFunc.Like`。其余数据库（TiDB、OceanBase、openGauss、人大金仓、达梦等兼容库）没有在真实库上验证，维持 SqlSugar 原来的翻译、按通配匹配，验证之后再加进名单；运行时数据源不施加约定，同样按通配匹配（这两条已定，ADR-0101）；应用在 `Apply` 之前自己登记了同名外部函数的以应用的为准 |
-| PostgreSQL 会话 | 连接串（含从库）的启动参数 `Options` 追加 `-c standard_conforming_strings=on`（ADR-0100）：SqlSugar 在多行插入、批量更新、按实体删除、`In`、集合 `Contains` 里内联的字符串字面量只在 on 时正确，库或角色设成 off 时含反斜杠的值会让语句报错或被静默改掉、按主键的更新删除查找静默漏行。服务器在建连时施加它，优先于库与角色的缺省值；连接串已显式写成 on 以外的值时 `Apply` 抛 `ArgumentException`。经这个配置的全部连接（含应用的原生 SQL）都是 on；会话里自己 `SET … = off` 的不支持；PgBouncer 要 1.20 及以上；PostgreSQL 系其他 `DbType` 与运行时数据源不加 |
+| 索引 | 实体上的 `[EntityIndex]` 转成 `SugarIndexAttribute`，名字按映射出的表名推出（ADR-0072；配置里已有的表服务回调先执行，表名以它们改过的为准）；实体自己的 `[SugarIndex]` 与之同名时以实体的为准；分表实体声明它抛 `NotSupportedException`，改用 `[SugarIndex]` 与 `{split_table}` 占位符 |
+| 部分唯一索引 | 软删除实体的唯一索引只约束未删除的行（ADR-0081）：不交给 SqlSugar（它写不出条件），由 `SqlSugarConventions.InitTables` 建表后补建——PostgreSQL、SQLite 与 SQL Server 是带条件的索引，MySQL（8.0.13 起）与 Oracle 是函数索引（ADR-0249）；其余数据库上启动即失败（`PERSISTENCE_UNAVAILABLE_008`，名单见下文「建表与索引」），列里显式写 `IsDeleted` 的普通唯一索引不受限制 |
+| 字符串匹配 | `string.Contains` / `StartsWith` / `EndsWith` 在 SQLite、PostgreSQL、MySQL、SQL Server、Oracle 上译成 `LIKE … ESCAPE '!'`（ADR-0098），`%`、`_`（SQL Server 上还有 `[`）按字面；SqlSugar 自己的翻译是不转义的 `LIKE`，`t_2` 会命中 `budgetx2026`。转义符不用反斜杠，结果与 MySQL 的 `NO_BACKSLASH_ESCAPES`、PostgreSQL 的 `standard_conforming_strings` 无关（MySQL 开了 `NO_BACKSLASH_ESCAPES` 时连接串要写 `NoBackslashEscapes=true`，这是 MySqlConnector 对所有参数的要求）。大小写照各库：SQLite 只对 ASCII 字母不区分，PostgreSQL 与 Oracle 区分，MySQL 与 SQL Server 按排序规则；`MoreSettings.EnableILike` 仍用 `ilike`；带 `StringComparison` 的重载忽略比较方式。要通配用 `SqlFunc.Like`。其余数据库（TiDB、OceanBase、openGauss、人大金仓、达梦等兼容库，没有在真实库上验证）沿用 SqlSugar 自己的翻译、按通配匹配，运行时数据源不施加约定，同样按通配匹配（ADR-0101）；应用在 `Apply` 之前自己登记了同名外部函数的以应用的为准，之后整体替换 `SqlFuncServices` 列表会丢掉这三个翻译 |
+| PostgreSQL 会话 | 连接串（含从库）的启动参数 `Options` 追加 `-c standard_conforming_strings=on`（ADR-0100），服务器在建连时施加它，优先于库与角色的缺省值；原因与对原生 SQL 的影响见 [SqlSugar Provider](/persistence/sqlsugar#postgresql-注意事项)。连接串已显式写成 on 以外的值时 `Apply` 抛 `ArgumentException`，方式二要在 `Apply` 之前设好数据库类型与连接串；会话里自己 `SET … = off` 的不支持；PgBouncer 要 1.20 及以上（按其文档，没有实测）；PostgreSQL 系其他 `DbType` 与运行时数据源不加 |
 | 作用范围 | 只管实体：声明在 `System.*` 类型上的属性原样交还 |
-| 映射缓存 | SqlSugar 按实体类型与 `ConfigId` 缓存实体映射、进程内共用，上面的列约定却随数据库类型而变：`Apply` 把配置的反射信息缓存（`ReflectionInoCacheService`，应用设过的也一样）包一层，键带上数据库类型，`ConfigId` 相同、库类型不同的连接（如不同库类型的租户分片都是 `shard`）各建各的映射，同类型的照旧共用一份（ADR-0248） |
+| 映射缓存 | 实体映射按数据库类型分开缓存（ADR-0248）：`Apply` 把配置的反射信息缓存包一层（应用设过的也一样），键带上数据库类型，`ConfigId` 相同、库类型不同的连接（如不同库类型的租户分片都是 `shard`）各建各的映射，同类型的共用一份 |
 
-- `InitTables` 建缺表、加缺列，按落点分组：启动时没有调用也就没有分片，租户实体在默认连接建表；带 `[Tenant]` 或登记到命名连接的实体在各自的连接上建表。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。给已有行的表加非可空列：PostgreSQL 上数值 / 枚举 / 布尔 / Guid 列由约定回填缺省值，代价是此后每次 `InitTables` 都对这些列重发一次 `SET DEFAULT`；SQLite 由 SqlSugar 加成可空列；非可空字符串、日期时间列与其他数据库不受支持，新列声明成可空，或重建开发库、走迁移脚本。
-- 默认的 `SqlSugarConnectionSelector` 构造时收 `RepositoryRegistrations`。绑定连接的工作单元在 `GetConnection(name)` 上直接 `Ado.BeginTran` / `CommitTran` / `RollbackTran`，不经 `AsTenant()`。绑定 `db`（`connection:relational`）可选，缺失时回调自行决定连接；分片库的表结构由应用管理。
-- 索引的转换：`[EntityIndex]` 经 `ConfigureExternalServices.EntityNameService` 转成 `SugarIndexAttribute`，已有回调先执行，表名以它们改过的为准；名字与列由 `EntityIndexes.Resolve(type, 表名)` 推出、全部升序。`InitTables` 建表后按名字查不到才 `CREATE [UNIQUE] INDEX`，已有的不改不删，再次建表不重复建（PostgreSQL 把不加引号的名字折成小写，SqlSugar 按不区分大小写查，同样幂等）。表里已有重复数据时唯一索引建不出来，`InitTables` 失败、启动失败。实体自己的 `[SugarIndex]` 与之同名时以实体的为准。分表实体声明 `[EntityIndex]` 抛 `NotSupportedException`：SqlSugar 按分表改写索引名时就地改动缓存的特性，名字随建表次数变化；分表实体直接用 `[SugarIndex]` 与 `{split_table}` 占位符。应用自己组合回调时用 `SqlSugarConventions.ConfigureIndexes(type, entityInfo)`。
-- 部分唯一索引的细节：PostgreSQL、SQLite 的 SQL 是 `CREATE UNIQUE INDEX IF NOT EXISTS … WHERE "IsDeleted" = false / 0`（PostgreSQL 上名字同样是小写），SQL Server 先查 `sys.indexes` 再建筛选索引 `WHERE [IsDeleted] = 0`；MySQL 先按表与名字查 `information_schema.statistics`、Oracle 先按大写的名字查 `user_indexes`，再建函数索引 `CREATE UNIQUE INDEX … ((CASE WHEN IsDeleted = 0 [AND 可空列 IS NOT NULL] THEN 列 END), …)`（ADR-0249）：已删除的行整键为空，MySQL 不约束含 NULL 的键、Oracle 不收全为 NULL 的键；Oracle 的组合键有一列不为空就比较，所以可空的键列写进条件，结果与 PostgreSQL 不约束含 NULL 的键一致；Oracle 上名字不加引号、存成大写。MySQL 的函数索引要 8.0.13 起，更早的版本与 MariaDB 上语句失败、`InitTables` 报错。已有同名的不改不删。一起建表的实体之间索引同名（不区分大小写，多半是显式的名字撞了）时，`InitTables` 在建任何表之前抛 `InvalidOperationException`：PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，按名字查到已有的就跳过，后建的那张表会静默少一个索引。特性开着 `InitTables` 时经它建表；应用自己建表（租户独立库、迁移工具）也要调 `SqlSugarConventions.InitTables`，直接调 `CodeFirst.InitTables` 建不出部分唯一索引。不支持的数据库包括 MySQL 的兼容库（TiDB、OceanBase、Doris、GoldenDB、TDSQL，以及 `DbType.MySqlConnector`）、Oracle 的兼容库（达梦、OceanBase Oracle 模式）、ClickHouse、QuestDB、TDengine、DuckDB、Access、DB2、HANA，以及源自 PostgreSQL 的人大金仓、openGauss、GaussDB、瀚高、Vastbase、PolarDB（没有验证过，在真实库上验证后才加进名单，已定，ADR-0084）。已登记的软删除实体声明了唯一索引（列里没有 `IsDeleted`）而它落的连接是这些数据库时，启动即失败，一次列出全部实体，不论是否开着 `InitTables`；`InitTables(client, …)` 在建任何表之前同样抛出。库里已有同名的带 `IsDeleted` 列的唯一索引时，`IF NOT EXISTS` 会跳过，要先手动删掉那个索引。
-- 唯一键重复的核对范围还包括实体自己的唯一 `[SugarIndex]`；分表实体不核对。
-- 差异日志的回调在写入执行后同步触发、不等提交，调用方的 AsyncLocal 可读，当前调用经 `Services` 里的 `IInvocationAccessor` 取；事务回滚由应用按调用缓冲后再落库，缓冲时在回调里复制值。分表写入路径不加行锁，靠并发戳；分表字段写入后不要再改。
-- `InitTables` 加列的补充：SQLite 不配 CLR 缺省值（SqlSugar 本来就加可空列、旧行读回 CLR 缺省值；配了反而走重建列流程、布尔列读回失败）。约定只管实体，声明在 BCL 类型（`System.*`）上的属性原样交还：SqlSugar 对承载字典更新的 `Dictionary<string, object>` 也调用实体服务，否则其 `Count` 被标成忽略列，字典更新里名为 `count` 的列被丢掉。
-- 命令超时 `CommandTimeoutSeconds`：0 不接受（ADO.NET 的 0 是无限等待）；应用自己注册客户端时配了与缺省不同的值也启动失败，要在自己的客户端上设 `Ado.CommandTimeOut`。
-- 读写分离的补充：配了从库的连接每个作用域一份配置副本，因为 SqlSugar 读从库时会改配置上的连接串，共用时别的作用域的写入会落到从库上；提交之后同一作用域的读也在主库上；回调只给从库所属的连接（看 `ConfigId`）。
-- 读结构的实现：读表 `DbMaintenance.GetTableInfoList`、读列 `GetColumnInfosByTableName`；分表模板里 `{year}` 四位，`{month}`、`{day}` 两位，不区分大小写；驱动异常翻译为 `PERSISTENCE_UNAVAILABLE_006`（消息键 `persistence.schema.read_failed`），其余异常原样抛出；实体目录不连库。缺省值原文在 MySQL 是 `x`、SQL Server `('x')`、Oracle `'x'`，SQL Server 报告的 `int` 10 / `float` 53 不算长度。实测用 `XIHAN_TEST_MYSQL`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_ORACLE` 门控。Oracle 读列查 `USER_TAB_COLUMNS`、`USER_COL_COMMENTS`、`USER_CONSTRAINTS` / `USER_CONS_COLUMNS`（`OracleColumns`），字符类型按字符数。
-- PostgreSQL 会话的补充（ADR-0100）：SqlSugar 内联字面量在 off 时的后果是含 `\'` 的值报 42601，`a\b`、`line\n` 被静默写成退格与换行、主键随之变成别的值，批量更新、删除与 `In` 静默漏行。启动参数由服务器在建连时施加，连接池复用时的重置也回到它。连接串经 `DbConnectionStringBuilder` 重新序列化（键变成小写、含分号的值加引号），Npgsql 解析结果相同；方式二要在 `Apply` 之前设好数据库类型与连接串。原来设成 off 的库上，原生 SQL 普通字面量里的反斜杠不再是转义符（要转义用 `E'…'`）。PgBouncer 按其文档 1.20 起接受启动参数 `options`，没有实测，更早的版本拒绝。参数化的路径（单行插入与更新、`UseParameter()`、`Fastest` 的 `COPY`、规约里的比较与字符串匹配）本来就不受影响。
-- MySQL 已知限制的实测：`mysql:9.7` 缺省模式下 `In` 与三种按主键删除 4 个值只命中 2 个、集合 `Contains` 4 个都对；`NO_BACKSLASH_ESCAPES` 下反过来。
-- 规约改写的补充：可空值类型与 null 的比较改写覆盖字面量 null、闭包里求值为 null 的变量或静态成员、左右互换，与非 null 值的比较不动；`!(a == b)` 换成 `a != b`，下推后的形式在 SQL 三值逻辑下等价。一致性套件 `List_NullableValueTypeComparedWithNull_FiltersByPresence` 与 `List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten` 覆盖 SQLite，PostgreSQL 由同一套件按配置跑。
-- 字符串匹配的补充：SqlSugar 解析方法调用时先按名字查外部函数，所以接管对所有路径生效；实参是列或表达式时的拼接写法与原来相同（PostgreSQL / MySQL `concat`，SQL Server `+`，SQLite / Oracle `||`），实参为 NULL 的结果不变；Oracle 的转义符后面只能跟 `%`、`_` 或它自己（ORA-01424），其余库不转义 `[`；带 `StringComparison` 的重载照 SqlSugar 原样忽略比较方式；SQLite 上 SqlSugar 原有的启发式（值里有 `%` 或 `_` 时加 `escape ''`）不再生效，`%` 按字面是两个字符；应用之后整体替换 `SqlFuncServices` 列表会丢掉这三个翻译。一致性套件 `List_StringContainsStartsWithEndsWith_MatchWildcardCharactersLiterally` 覆盖 SQLite 与 PostgreSQL；本包测试在 SQLite（不设门控）与 PostgreSQL、MySQL、SQL Server、Oracle（`XIHAN_TEST_*` 门控）上跑经仓储与经客户端的同一组用例。
-- 实测过的数据库：字符串按字面匹配在 SQLite、PostgreSQL 17、MySQL 9.7、SQL Server 2022、Oracle Free 23 上验证；索引在 SQLite 与 PostgreSQL 上验证建出、再次建表不重复、唯一索引拒绝重复；PostgreSQL 库与整个服务器设成 `standard_conforming_strings = off` 时批量写入、按主键的查找与删除照样保留反斜杠、单引号与换行；本包通过 `Persistence.Conformance` 套件（SQLite）。
-- 行锁：更新与删除的读取带 `TranLock`（`FOR UPDATE` / `UPDLOCK`）；SQLite 不支持行锁，由它的数据库级写锁保证；分表实体不加行锁。
+### 建表与索引
+
+- `InitTables` 建缺表、加缺列，按落点分组：启动时没有调用也就没有分片，租户实体在默认连接建表（分片库的表结构由应用管理）；带 `[Tenant]` 或登记到命名连接的实体在各自的连接上建表；分表实体走 `CodeFirst.SplitTables()`。删列、改名、改类型不在范围内，生产库的结构演进走迁移脚本。
+- 给已有行的表加非可空列：PostgreSQL 上数值、枚举、布尔与 `Guid` 列由约定回填缺省值，代价是此后每次 `InitTables` 都对这些列重发一次 `SET DEFAULT`；SQLite 由 SqlSugar 加成可空列，旧行读回 CLR 缺省值；非可空字符串、日期时间列与其他数据库不受支持，新列声明成可空，或重建开发库、走迁移脚本。
+- 索引：`InitTables` 建表后按名字查不到才建，已有的不改不删，再次建表不重复建。表里已有重复数据时唯一索引建不出来，`InitTables` 失败、启动失败，先去重。一起建表的实体之间索引同名（不区分大小写，多半是显式的名字撞了）时，`InitTables` 在建任何表之前抛 `InvalidOperationException`：PostgreSQL、SQLite 与 Oracle 的索引名按架构唯一，按名字查到已有的就跳过，后建的那张表会静默少一个索引。
+- 部分唯一索引：特性开着 `InitTables` 时经 `SqlSugarConventions.InitTables` 补建；应用自己建表（租户独立库、迁移工具）也要调它，直接调 `CodeFirst.InitTables` 建不出。键含可空列时，含 NULL 的键不受约束，各数据库一致。已有同名的不改不删：库里已有同名的带 `IsDeleted` 列的唯一索引时会被跳过，要先手动删掉那个索引。MySQL 的函数索引要 8.0.13 起，更早的版本与 MariaDB 上语句失败、`InitTables` 报错。
+- 不支持部分唯一索引的数据库：MySQL 的兼容库（TiDB、OceanBase、Doris、GoldenDB、TDSQL，以及 `DbType.MySqlConnector`）、Oracle 的兼容库（达梦、OceanBase Oracle 模式）、ClickHouse、QuestDB、TDengine、DuckDB、Access、DB2、HANA，以及源自 PostgreSQL 而没有验证过的人大金仓、openGauss、GaussDB、瀚高、Vastbase、PolarDB（ADR-0084）。已登记的软删除实体声明了唯一索引（列里没有 `IsDeleted`）而它落的连接是这些数据库时，启动即失败，一次列出全部实体，不论是否开着 `InitTables`；`InitTables(client, …)` 在建任何表之前同样抛出。
+
+### 实体落点、读写分离与差异日志
+
+- 实体落点（规则见 [SqlSugar Provider](/persistence/sqlsugar#多库落点)）：落点不成立时抛出的是携带 `PERSISTENCE_VALIDATION_004` 的 `FrameworkException`。用缺省落点规则时，带 `[Tenant]` 或登记到命名连接的已登记实体在启动时就校验，不成立即中断启动；`shard` 只在带分片的调用里存在，不在启动时校验。带分片的调用交给回调的分片绑定，主值是租户连接串，属性含 `tenant`、`provider` 与透传属性。
+- 读写分离（ADR-0118、ADR-0122，读写怎样路由与从库怎样配置见 [SqlSugar Provider](/persistence/sqlsugar#读写分离)）：提交之后同一作用域的读也在主库上。配了从库的连接每个作用域一份配置副本：SqlSugar 读从库时会改配置上的连接串，共用时别的作用域的写入会落到从库上。默认连接与命名连接的从库周期探测，健康项是 `SqlSugarPersistenceFeature.ReplicaHealthName`（`persistence.sqlsugar.replicas`）；分片连接的从库由回调按分片绑定给出，不探测。没配从库时没有任何额外开销。
+- 差异日志（开启方式与注意事项见 [SqlSugar Provider](/persistence/sqlsugar#差异日志)）：开启的实体走 SqlSugar 的泛型构建器。回调里调用方的 AsyncLocal 可读，当前调用经 `SqlSugarDiffLogData.Services` 里的 `IInvocationAccessor` 取；缓冲时在回调里复制值。
+
+### 写入与事务
+
+- 行锁：更新与删除的读取带 `TranLock`（`FOR UPDATE` / `UPDLOCK`），读取与写入之间别人改不了这一行；SQLite 不支持行锁，由它的数据库级写锁保证；分表实体不加行锁（分表查询是多表 `UNION ALL`），靠并发戳，分表字段写入后不要再改。
 - 游离实例更新：并发戳与当前行不同返回 `PERSISTENCE_CONFLICT_001`；通过后把调用方的实例整行写入，创建时间、租户与删除标记取当前行的值，调用方实例上的这几个值不生效，写入后调用方实例拿到它们。按主键更新影响 0 行（行在加锁前已被删除）也返回 `PERSISTENCE_CONFLICT_001`。
-- 并发新增同一标识：检查之后别的事务提交了同一标识，PostgreSQL 在插入时等对方提交后报主键冲突。PostgreSQL 系语句失败后整个事务进入中止状态，仓储另开一个不在事务里的连接（`CopyNew`，同一份连接配置）核对这些标识：确已存在就返回 `PERSISTENCE_CONFLICT_002`，批量时这次写入的项统一报告；否则异常原样抛出。之后工作单元只能回滚：处理器忽略失败返回成功时，提交回滚并返回同一错误，不会对一个已中止的事务执行 `COMMIT`（PostgreSQL 会静默回滚，调用方看到的成功是假的）。
-- 唯一键重复：新增、更新、软删除的写入失败又不是标识重复时，同样另开连接核对实体的唯一索引（这次写入里两项同键，或已提交的另一行同键；软删除实体的部分唯一索引只比较未删除的行），撞上返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），这次写入的项统一报告，工作单元随后只能回滚；核对不到的（与本工作单元先前未提交的行冲突、大小写不敏感排序规则下只差大小写、键含空值）异常原样抛出。表里已有重复数据时 `InitTables` 建不出唯一索引、启动失败，先去重。
+- 并发新增同一标识：检查之后别的事务提交了同一标识，插入撞上主键约束。PostgreSQL 系语句失败后整个事务进入中止状态，所以仓储另开一个不在事务里的连接核对这些标识：确已存在就返回 `PERSISTENCE_CONFLICT_002`，批量时这次写入的项统一报告；否则异常原样抛出。之后工作单元只能回滚：处理器忽略失败返回成功时，提交回滚并返回同一错误，不会对一个已中止的事务执行 `COMMIT`。
+- 唯一键重复：新增、更新、软删除的写入失败又不是标识重复时，同样另开连接核对实体的唯一索引（这次写入里两项同键，或已提交的另一行同键；软删除实体的部分唯一索引只比较未删除的行；实体自己的唯一 `[SugarIndex]` 也核对，分表实体不核对），撞上返回 `PERSISTENCE_CONFLICT_003`（参数 `index` 是索引名），这次写入的项统一报告，工作单元随后只能回滚；核对不到的（与本工作单元先前未提交的行冲突、大小写不敏感排序规则下只差大小写、键含空值）异常原样抛出。
 - 软删除：在取回的当前行上打标并整行写回，调用方实例随后拿到删除标记，以及当前行的修改时间与并发戳。
-- 实体类型没有 `new()` 约束，写入经 `InsertableByObject` / `UpdateableByObject` / `DeleteableByObject`，语义与泛型构建器相同。
-- 不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
-- 只读工作单元（只读操作或 `UnitOfWorkOptions { IsReadOnly = true }`）不开事务：仓储写入返回 `PERSISTENCE_UNEXPECTED_001` 并把工作单元记为失败，处理器忽略这次失败时提交仍返回它；直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前调用的 `EnsureTransactionAsync` 抛出携带它的 `FrameworkException`（Transaction 阶段转为同码结果）。不经 `EnsureTransactionAsync` 直接执行的写入不受守卫，也不在事务里。
+- 实体类型没有 `new()` 约束（开了差异日志的实体除外）。不提供按查询条件的批量更新 / 删除（`Updateable().SetColumns().Where()`）：它绕过审计、并发戳与软删除协议；需要时应用直接用客户端。
+- 只读工作单元不开事务、拒绝写入（`PERSISTENCE_UNEXPECTED_001`，仓储写入的通用规则见 [Persistence.Abstractions](./persistence-abstractions)）。直接用客户端写入（`Insertable` / `Updateable` / `Deleteable`）之前先调 `EnsureTransactionAsync`，它在只读工作单元里抛出携带这个码的 `FrameworkException`（Transaction 阶段转为同码结果）；不经它直接执行的写入不受守卫，也不在事务里。
 - 作用域结束时事务仍未提交（中间件之外直接使用），释放即回滚。
-- 读写分离（ADR-0118）：回调在 `SlaveConnectionConfigs` 上给出从库，用法见[持久化](/persistence/sqlsugar)。配了从库的连接每个作用域一份配置副本；只读工作单元读从库，设了 `UnitOfWorkOptions.ReadsPrimary` 的除外（ADR-0122），其余工作单元读写都走主库。默认连接与命名连接的从库周期探测（走一次数据库往返，只探连通），不可读的摘除，全部不可读时读回到主库，见健康项 `SqlSugarPersistenceFeature.ReplicaHealthName`（`persistence.sqlsugar.replicas`）。分片连接的从库由回调按分片绑定给出，不探测。主库不同的连接共用从库是 `PERSISTENCE_VALIDATION_009`。没配从库时没有任何额外开销。
-- 运行时数据源（ADR-0078）：特性登记 SqlSugar 的数据源 Provider，数据库类型是 `DbType` 的名字（不区分大小写，`Custom` 与数字不认）。登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`；客户端是每个数据源一个的 `SqlSugarScope`（`IsAutoCloseConnection`），不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写；测试连接与健康探测另建客户端、打开原生 `DbConnection` 再关闭。运行时数据源不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。
-- 库结构读取与实体目录（ADR-0078）：读表与读列经 `DbMaintenance`（同步 API）；缺省连接 `CopyNew` 另开不在事务里的连接，运行时数据源按定义登记后另建客户端；分表按已登记实体的模板折叠；驱动与 SqlSugar 的异常翻译为 `PERSISTENCE_UNAVAILABLE_006`。实体目录取 `EntityMaintenance.GetEntityInfo`。SQLite 没有注释，`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；PostgreSQL 的注释、identity、serial 缺省值与加引号的大小写混合表名都能读到。MySQL、SQL Server、Oracle 在真实库上实测过（ADR-0084）：注释、自增、主键、缺省值原文、大小写混合的表名、分表折叠与分页总数都对；长度只给字符与二进制类型（`tinyint(1)`、`datetime(6)`、SQL Server `int` 的 10 这类显示宽度或精度不算长度）。Oracle 的读列不走 SqlSugar（它给 CLR 类型名、读不到 identity、缺省值错位、大小写混合的表名查不到），改查连接用户自己的数据字典，要 Oracle 12c 及以上；运行时数据源在 Oracle 上不自动转大写。不支持（已定，ADR-0087）：Oracle 11g 及更早的版本读列以 `PERSISTENCE_UNAVAILABLE_006` 失败（数据字典没有 `IDENTITY_COLUMN`），不做 11g 的分支；达梦、OceanBase Oracle 模式等 Oracle 兼容库走 SqlSugar 原来的读列（类型名可能是 CLR 类型名，identity、缺省值、大小写混合的表名可能读不对），没有验证，读到的结构不作保证。
-- MySQL 上的已知限制（SqlSugar 上游缺陷，已报上游 [DotNetNext/SqlSugar#1460](https://github.com/DotNetNext/SqlSugar/issues/1460)，待上游修复；ADR-0100 修订）：两个及以上值的 `In(…)`、按实体删除（单个实体也是）与 `Deleteable<T>().In(…)` 把字符串内联成只转义单引号的字面量，集合 `Contains` 则把反斜杠写成两个。MySQL 缺省 sql_mode 下前一组对含反斜杠的值静默漏行（值里有 `\'` 时报语法错误），开了 `NO_BACKSLASH_ESCAPES` 时后一组静默漏行；逐个 `==`、只有一个值的 `In`、单行写入与多行插入用参数，两种模式都对。仓储里受影响的是 `FindManyAsync`（两个及以上标识）、`AddRangeAsync` 的标识预查、`UpdateRangeAsync` / `RemoveRangeAsync` 的加锁取回、物理删除的 `RemoveAsync` / `RemoveRangeAsync`（缺省模式），以及规约里的集合 `Contains`（`NO_BACKSLASH_ESCAPES`）。框架自己的字符串主键（租户、调度、工作流定义）是不含反斜杠与引号的受限标识符，Guid 与整数主键也不受影响；框架不在仓储里绕开。应用的字符串主键首选不含反斜杠（写入前按 `^[A-Za-z0-9][A-Za-z0-9._-]*$` 这类规则校验）；做不到时改用参数化的写法：
+- 跨库提交是顺序提交，不是两阶段提交：一次调用写了多个连接时，后一个连接提交失败，前一个已经提交；需要严格原子性的写入放在同一个库。
+- SQL Server 的库要打开 `READ_COMMITTED_SNAPSHOT`（`ALTER DATABASE [库名] SET READ_COMMITTED_SNAPSHOT ON`）：缺省的读已提交是加锁读，别的工作单元读未提交的行要等写入方结束（ADR-0234）。
 
-  ```csharp
-  // db：本作用域的 ISqlSugarClient；documents：IRepository<Doc, string>；unitOfWork：本作用域的 SqlSugarUnitOfWork
-  // 多个标识的查找：缺省 sql_mode 下用集合 Contains（SqlSugar 对 MySQL 把反斜杠写成两个），不用 In / FindManyAsync
-  var docs = await db.Queryable<Doc>().Where(d => ids.Contains(d.Id)).ToListAsync();
-  var viaRepository = await documents.ListAsync(EntityQuery.All<Doc>().Where(new Specification<Doc>(d => ids.Contains(d.Id))), ct);
-  // 开了 NO_BACKSLASH_ESCAPES 的反过来：用 db.Queryable<Doc>().In(ids)，不用集合 Contains
+### 健康项、运行时数据源与库结构读取
 
-  // 两种模式都对的写法：逐个按 == 比较（参数）
-  var one = await documents.FindAsync(id, ct);
-  await unitOfWork.EnsureTransactionAsync(ct); // 在调用的工作单元里直接用客户端写入之前
-  await db.Deleteable<Doc>().Where(d => d.Id == id).ExecuteCommandAsync(); // 代替 RemoveAsync 的物理删除与 Deleteable(entity)
-  ```
+- 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测对默认连接走一次数据库往返（打开连接并执行一条语句，ADR-0123；`MongoDb`、`Custom`、`Odbc` 没有通用的语句，只打开连接），不开工作单元、不经管道，单次上限是这个间隔，驱动不理取消令牌时也不等它。连不上或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 写异常类型，完整异常进日志），应用仍在服务。
+- 运行时数据源（ADR-0078，用法见[连接与运行时数据源](/persistence/connections)）：数据库类型是 SqlSugar `DbType` 的名字（不区分大小写，`Custom` 与数字不认）；登记时由驱动解析连接串，格式错即 `PERSISTENCE_VALIDATION_006`。客户端是每个数据源一个的 `SqlSugarScope`，不施加协议约定、不挂过滤器与 AOP、不进工作单元，PostgreSQL 上不自动转小写、Oracle 上不自动转大写；不加进作用域客户端，`default` / `shard` 与实体落点不受影响。清单的配置节因此写 `XiHan:Persistence`（读 `XiHan:Persistence:SqlSugar` 与 `XiHan:Persistence:DataSources`）。
+- 库结构读取与实体目录（ADR-0078，规则见[连接与运行时数据源](/persistence/connections)）：缺省连接另开不在事务里的连接读，运行时数据源按定义登记后另建客户端；分表按已登记实体的模板折叠（模板里 `{year}` 四位，`{month}`、`{day}` 两位，不区分大小写）；驱动与 SqlSugar 的异常翻译为 `PERSISTENCE_UNAVAILABLE_006`，其余异常原样抛出。在 SQLite、PostgreSQL、MySQL、SQL Server 与 Oracle 上验证过（ADR-0084）：SQLite 没有注释，`INTEGER PRIMARY KEY` 报告可空（按主键改为不可空）；缺省值是数据库报告的原文（MySQL `x`、SQL Server `('x')`、Oracle `'x'`）；Oracle 读的是连接用户自己的数据字典，要 12c 及以上，11g 及更早的版本读列以 `PERSISTENCE_UNAVAILABLE_006` 失败。达梦、OceanBase Oracle 模式等 Oracle 兼容库走 SqlSugar 自己的读列（类型名可能是 CLR 类型名，identity、缺省值、大小写混合的表名可能读不对），没有验证，读到的结构不作保证（ADR-0087）。
 
-- 健康项 `persistence.sqlsugar.database`：启动时同步探一次，之后按间隔在后台重探并缓存结果；探测对默认连接走一次数据库往返（打开连接并执行一条语句，ADR-0123），不开工作单元、不经管道，单次上限是这个间隔，驱动不理取消令牌时也不等它。连不上或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 写异常类型，完整异常进日志），应用仍在服务。语句按数据库类型选，`MongoDb`、`Custom`、`Odbc` 没有通用的语句，只打开连接。
+### MySQL 上的已知限制
+
+SqlSugar 上游缺陷（已报 [DotNetNext/SqlSugar#1460](https://github.com/DotNetNext/SqlSugar/issues/1460)，待上游修复；ADR-0100 修订）：两个及以上值的 `In(…)`、按实体删除（单个实体也是）与 `Deleteable<T>().In(…)` 把字符串内联成只转义单引号的字面量，集合 `Contains` 则把反斜杠写成两个。MySQL 缺省 sql_mode 下前一组对含反斜杠的值静默漏行（值里有 `\'` 时报语法错误），开了 `NO_BACKSLASH_ESCAPES` 时后一组静默漏行；逐个 `==`、只有一个值的 `In`、单行写入与多行插入用参数，两种模式都对。
+
+仓储里受影响的是 `FindManyAsync`（两个及以上标识）、`AddRangeAsync` 的标识预查、`UpdateRangeAsync` / `RemoveRangeAsync` 的加锁取回、物理删除的 `RemoveAsync` / `RemoveRangeAsync`（缺省模式），以及规约里的集合 `Contains`（`NO_BACKSLASH_ESCAPES`）。框架自己的字符串主键（租户、调度、工作流定义）是不含反斜杠与引号的受限标识符，Guid 与整数主键也不受影响；框架不在仓储里绕开。应用的字符串主键首选不含反斜杠（写入前按 `^[A-Za-z0-9][A-Za-z0-9._-]*$` 这类规则校验）；做不到时改用参数化的写法：
+
+```csharp
+// db：本作用域的 ISqlSugarClient；documents：IRepository<Doc, string>；unitOfWork：本作用域的 SqlSugarUnitOfWork
+// 多个标识的查找：缺省 sql_mode 下用集合 Contains（SqlSugar 对 MySQL 把反斜杠写成两个），不用 In / FindManyAsync
+var docs = await db.Queryable<Doc>().Where(d => ids.Contains(d.Id)).ToListAsync();
+var viaRepository = await documents.ListAsync(EntityQuery.All<Doc>().Where(new Specification<Doc>(d => ids.Contains(d.Id))), ct);
+// 开了 NO_BACKSLASH_ESCAPES 的反过来：用 db.Queryable<Doc>().In(ids)，不用集合 Contains
+
+// 两种模式都对的写法：逐个按 == 比较（参数）
+var one = await documents.FindAsync(id, ct);
+await unitOfWork.EnsureTransactionAsync(ct); // 在调用的工作单元里直接用客户端写入之前
+await db.Deleteable<Doc>().Where(d => d.Id == id).ExecuteCommandAsync(); // 代替 RemoveAsync 的物理删除与 Deleteable(entity)
+```
 
 ## 相关
 

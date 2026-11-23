@@ -54,7 +54,7 @@ public sealed record Money(decimal Amount, string Currency) : IValueObject
 }
 ```
 
-持久化约定不识别 `IValueObject`，也不自动展开值对象。值对象作为实体属性落库时，按所用 Provider 的方式配置映射（EF Core 在应用自己的 `DbContext.OnModelCreating` 里配置）；只在领域逻辑里使用、不落库的值对象不受影响。
+持久化约定不识别 `IValueObject`，也不自动展开值对象。值对象作为实体属性落库时，按所用 Provider 的方式配置映射：EF Core 在应用自己的 `DbContext.OnModelCreating` 里用 `OwnsOne` 或复杂类型配置；SqlSugar 把值对象拆成实体上的多个标量属性，或序列化成一个 `[LongText]` 列。只在领域逻辑里使用、不落库的值对象不需要任何配置。
 
 ## 领域事件缓冲
 
@@ -76,7 +76,7 @@ public sealed record Money(decimal Amount, string Currency) : IValueObject
 3. 处理器成功返回后、提交之前，Transaction 阶段把带有未派发事件的聚合交给 `IDomainEventDispatcher`。
 4. 派发成功即清空各聚合的缓冲并提交；派发失败则回滚，调用以该失败结束。
 
-没有经仓储写入的聚合不会被登记，它的事件也不会派发。聚合记了事件、容器里却没有 `IDomainEventDispatcher` 时，调用以 `PERSISTENCE_VALIDATION_003` 结束：派发器由 Messaging 子系统的 `AddDomainEvent<TEvent>(...)` 注册，只在进程内用缓冲的应用应在提交前自己清空。派发时机与发件箱见[工作单元与事务](/persistence/unit-of-work)，事件到消息的映射见[领域事件与发件箱](/messaging/domain-events)。
+没有经仓储写入的聚合不会被登记，它的事件也不会派发；管道之外的写入没有 Transaction 阶段，要在提交前自己派发。聚合记了事件、容器里却没有 `IDomainEventDispatcher` 时，调用以 `PERSISTENCE_VALIDATION_003` 结束：派发器由 Messaging 子系统的 `AddDomainEvent<TEvent>(...)` 注册，只在进程内用缓冲的应用应在提交前自己清空。派发时机与发件箱见[工作单元与事务](/persistence/unit-of-work)，事件到消息的映射见[领域事件与发件箱](/messaging/domain-events)。
 
 ## 最小示例
 
@@ -117,26 +117,9 @@ public sealed class Order : IAggregateRoot<Guid>, IMultiTenant, IHasCreationTime
 public sealed record OrderPlaced(Guid OrderId, DateTimeOffset OccurredAt) : IDomainEvent;
 ```
 
-实体写好以后，在 `Program.cs` 里登记它，并装配带内存持久化的标准组合：
+实体写好以后登记它（`builder.Services.AddRepository<Order, Guid>()`），并装配带内存持久化的标准组合；登记写在哪、怎样接上一个下单操作，见下一页的[最小示例](/persistence/overview#最小示例)。
 
-```csharp
-using SimpleApp.Orders;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Persistence.Abstractions.Repositories;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// 由当前装配的持久化 Provider 注册 IRepository<Order, Guid>
-builder.Services.AddRepository<Order, Guid>();
-builder.AddXiHan(x => x.UseStandardProfile());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
-```
-
-运行后，任何注入 `IRepository<Order, Guid>` 的操作都能读写订单：新增时 `TenantId` 被写成当前租户、`CreatedAt` 被写成当前 UTC 时间；删除只把 `IsDeleted` 置为 `true` 并写入 `DeletedAt`；查询自动排除已删除与其他租户的订单。订单上记录的 `OrderPlaced` 在提交前派发（要装配一个派发器，见[领域事件与发件箱](/messaging/domain-events)）。
+登记并运行后，任何注入 `IRepository<Order, Guid>` 的操作都能读写订单：新增时 `TenantId` 被写成当前租户、`CreatedAt` 被写成当前 UTC 时间；删除只把 `IsDeleted` 置为 `true` 并写入 `DeletedAt`；查询自动排除已删除与其他租户的订单。订单上记录的 `OrderPlaced` 在提交前派发（要装配一个派发器，见[领域事件与发件箱](/messaging/domain-events)）。
 
 ## 规约
 
@@ -188,13 +171,9 @@ var others = EntityQuery.All<Order>().Where(vip.Not());
 
 ## 常见问题
 
-### 框架有没有实体基类或审计基类
+### 项目里习惯写 `AuditedEntity<TKey>` 这类基类怎么办
 
-没有，也不会提供。实体按需实现协议接口，持久化 Provider 按接口维护字段。如果项目里习惯写 `AuditedEntity<TKey>` 这类基类，可以在应用层自己定义一个实现了若干协议接口的抽象类，框架不关心实体是否继承了它，只看实现了哪些接口。
-
-### 协议字段我自己赋值会怎样
-
-不会生效，也不会报错。新增时 `TenantId`、`CreatedAt`、`ConcurrencyStamp` 被 Provider 重写；更新时创建时间、租户、删除标记沿用存储里当前行的值。这保证更新不能把实体搬到别的租户，也改不了创建时间。
+在应用层自己定义一个实现了若干协议接口的抽象类即可。框架不关心实体是否继承了它，只看实现了哪些接口。
 
 ### 实体可以用 `record` 吗
 
@@ -203,14 +182,6 @@ var others = EntityQuery.All<Order>().Where(vip.Not());
 ### `IHasConcurrencyStamp` 一定要实现吗
 
 不是。没有并发戳的实体更新时不做乐观并发比对，后写覆盖先写。需要「读出后改、写回时发现别人已改过」这种保护的实体才实现它，并在 UI 上把 `ConcurrencyStamp` 一起带回来。
-
-### 领域事件记录了却没有发出去
-
-检查三点：聚合是否经仓储写入过（没有写入就不会登记到工作单元）；是否装配了 `IDomainEventDispatcher`（没有时调用会以 `PERSISTENCE_VALIDATION_003` 失败，不会静默吞掉）；写入是否在管道之外（管道外要自己在提交前派发，见[工作单元与事务](/persistence/unit-of-work)）。
-
-### 值对象怎样落库
-
-框架不自动展开值对象。EF Core 用 `OwnsOne` / 复杂类型在 `OnModelCreating` 里配置；SqlSugar 把值对象拆成实体上的多个标量属性，或序列化成一个 `[LongText]` 列。只在领域逻辑里用的值对象不需要任何配置。
 
 ## 相关包与下一步
 

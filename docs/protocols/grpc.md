@@ -24,21 +24,11 @@ gRPC 与 MCP 暴露的都是操作契约，它们与 HTTP 适配器读同一个�
 
 ## 服务名、方法名与配置
 
-服务名是操作 ID 资源段的 PascalCase（连字符分段，`order-lines` → `OrderLines`），方法名是动词的 PascalCase：`orders.create` 就是 `Orders/Create`。想换名字或加包名，写在配置节 `XiHan:Protocols:Grpc`（`GrpcProtocolOptions`）：
+服务名是操作 ID 资源段的 PascalCase（连字符分段，`order-lines` → `OrderLines`），方法名是动词的 PascalCase：`orders.create` 就是 `Orders/Create`。想换名字或加包名，写在配置节 `XiHan:Protocols:Grpc`（`GrpcProtocolOptions`）。
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `Package` | string | 空 | protobuf 包名，小写标识符以点分隔（如 `acme.orders`）；写进 `.proto` 的 `package`，也是方法路径的前缀 `/{package}.{Service}/{Method}` |
-| `Methods:<操作 ID>` | string | — | `Service/Method`，显式覆盖推导出的名字 |
+配置节只有两个键：`Package` 是 protobuf 包名（小写标识符以点分隔，如 `acme.orders`），写进 `.proto` 的 `package`，也是方法路径的前缀 `/{package}.{Service}/{Method}`；`Methods:<操作 ID>` 写 `Service/Method`，显式覆盖推导出的名字。键表见[包参考](/packages/protocols-grpc#配置)。
 
-服务名与方法名必须匹配 `^[A-Za-z_][A-Za-z0-9_]*$`。以下情形在映射时失败，应用启动不起来，这是有意的：契约问题要在部署前暴露，而不是在第一个客户端调用时。
-
-| 情形 | 错误码 |
-| --- | --- |
-| 推导或配置的服务 / 方法名不合法 | `PROTOCOLS_VALIDATION_007` |
-| 两个操作得到同一个服务 / 方法名 | `PROTOCOLS_CONFLICT_004` |
-| 暴露给 gRPC 的操作没有 Schema，或 Schema 映射不成 protobuf（嵌套数组、映射里的映射） | `PROTOCOLS_VALIDATION_006` |
-| 同名消息在不同操作里形状不同 | `PROTOCOLS_CONFLICT_003` |
+服务名与方法名必须匹配 `^[A-Za-z_][A-Za-z0-9_]*$`。下面四种情形在映射时失败，应用启动不起来，这是有意的：契约问题要在部署前暴露，而不是在第一个客户端调用时。名字不合法是 `PROTOCOLS_VALIDATION_007`，两个操作得到同一个服务 / 方法名是 `PROTOCOLS_CONFLICT_004`，暴露给 gRPC 的操作没有 Schema 或 Schema 映射不成 protobuf（嵌套数组、映射里的映射）是 `PROTOCOLS_VALIDATION_006`，同名消息在不同操作里形状不同是 `PROTOCOLS_CONFLICT_003`。
 
 ## 最小示例
 
@@ -86,17 +76,11 @@ public sealed class CreateOrder(IRepository<Order, Guid> orders, IIdGenerator<Gu
 }
 ```
 
+`Program.cs` 在 HTTP 宿主的基础上（骨架见[第一个应用](/getting-started/first-app)）多装配一个特性、多映射两组端点：
+
 ```csharp
-using SimpleApp.Orders;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.Grpc;
 using XiHan.Framework.Protocols.Grpc.Services;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
@@ -104,14 +88,10 @@ builder.AddXiHan(xihan => xihan
     .UseFeature<GrpcProtocolFeature>()
     .UseFeature<OrdersFeature>());
 
-var app = builder.Build();
-
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanOperations();   // HTTP：POST /orders、GET /orders
 app.MapXiHanGrpc();         // gRPC：Orders/Create、Orders/List
 app.MapXiHanProto();        // GET /operations.proto
-
-app.Run();
 ```
 
 运行后，客户端先取 `.proto`，再用 grpcurl 调用。凭据放在 `authorization` 元数据里，与 HTTP 的 `Authorization` 头同一种写法：
@@ -189,29 +169,11 @@ gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用：
 
 ## 状态、错误映射与尾部元数据
 
-操作返回的失败按错误 KIND 映射为 gRPC 状态：
-
-| 错误 KIND | gRPC 状态 |
-| --- | --- |
-| `VALIDATION` | `InvalidArgument` |
-| `NOTFOUND` | `NotFound` |
-| `CONFLICT` | `Aborted` |
-| `DENIED` | `PermissionDenied`；`SECURITY_DENIED_001` 与 `SECURITY_DENIED_003`（没有凭据、凭据无效）为 `Unauthenticated` |
-| `UNAVAILABLE` | `Unavailable` |
-| `TIMEOUT` | `DeadlineExceeded` |
-| `CANCELLED` | `Cancelled` |
-| 其他 | `Internal` |
+操作返回的失败按错误 KIND 映射为 gRPC 状态（`NOTFOUND` 是 `NotFound`，`DENIED` 是 `PermissionDenied`，没有凭据或凭据无效是 `Unauthenticated`），完整对照表见[结果与错误处理](/web/errors#错误码)。
 
 `grpc-message` 是按 `accept-language` 翻译的文案；尾部元数据 `xihan-error-code` 是框架错误码，`xihan-trace-id` 是 trace-id，成功时也有。客户端排障时拿着 `xihan-trace-id` 去日志里查，拿着 `xihan-error-code` 对照[结果与错误处理](/web/errors)。
 
-适配器自己的失败：
-
-| 情形 | 状态 | 错误码 |
-| --- | --- | --- |
-| 请求不是合法 protobuf 或与 Schema 不符，或嵌套消息超过 64 层 | `InvalidArgument` | `PROTOCOLS_VALIDATION_005` |
-| 响应编码不成 protobuf | `Internal` | `PROTOCOLS_UNEXPECTED_001` |
-| 未登记的方法 | `Unimplemented` | gRPC 服务端默认 |
-| 应用未就绪（启动中或正在停止） | `Unavailable` | `KERNEL_UNAVAILABLE_001`，不进管道，同样带两个尾部元数据 |
+适配器自己的失败分两类：请求不是合法 protobuf、与 Schema 不符或嵌套消息超过 64 层是 `InvalidArgument`（`PROTOCOLS_VALIDATION_005`），响应编码不成 protobuf 是 `Internal`（`PROTOCOLS_UNEXPECTED_001`）；未登记的方法由 gRPC 服务端答 `Unimplemented`；应用未就绪（启动中或正在停止）时以 `Unavailable` 拒绝、不进管道（`KERNEL_UNAVAILABLE_001`，同样带两个尾部元数据）。错误码表见[包参考](/packages/protocols-grpc#行为与限制)。
 
 ## 常见问题
 
@@ -226,10 +188,6 @@ gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用：
 ### 客户端能用 gRPC 反射发现服务吗
 
 反射服务未提供。客户端用 `GET /operations.proto` 取 `.proto`，这份文件与服务端运行时推出的线格式一致。grpcurl 用 `-proto` 参数即可，不用 `-use-reflection`。
-
-### `decimal` 与无格式的整数为什么变成了 `string`
-
-protobuf 没有十进制小数类型，`int64` 之外的整数范围也无法表达，所以这两类按十进制文本传输，客户端按文本解析，精度不丢。要在线上拿到数值类型，在契约里用 `int`、`long`、`float` 或 `double`。
 
 ### 启动时报 `PROTOCOLS_VALIDATION_006` 怎么办
 

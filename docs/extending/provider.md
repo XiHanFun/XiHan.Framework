@@ -183,7 +183,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 | `Contributes.Config` | `XiHan:<领域>` 或其子节 | 写特性在本领域里读取的配置的最近公共节：只读自己子节写子节（如 `XiHan:Caching:Hybrid`），同时读领域公共选项写领域节（本例还读 `SecurityOptions`，所以写 `XiHan:Security`） |
 | `Contributes.Health` | 条目名 `<领域>.<机制>.<对象>` | 声明的条目必须由同一个包以 `IHealthContributor` 实现，反之亦然 |
 
-`context.Node.IsSelectedFor(...)` 是关键：同一能力的多个实现都可能被引用，只有被选中的那个注册服务与中间件。有与能力选择无关的服务要登记（如命名实例的 Provider）时实现 `IShadowAwareFeature`，被顶替时内核改调 `ConfigureShadowed`。
+`context.Node.IsSelectedFor(...)` 是关键：同一能力的多个实现都可能被引用，只有被选中的那个注册服务与中间件；一个包提供多个能力时，每个能力各自判断。包名、清单 ID、错误码与健康项的命名规则见[能力包与中间件](/extending/feature#命名规则)。有与能力选择无关的服务要登记（如命名实例的 Provider）时实现 `IShadowAwareFeature`，被顶替时内核改调 `ConfigureShadowed`。
 
 ## 消息目录、健康与 AOT
 
@@ -261,20 +261,11 @@ public sealed class FileSecurityFeatureTests
 
 ## 让应用使用
 
+应用的 `Program.cs`（骨架见[第一个应用](/getting-started/first-app)）只多一行 `UseFeature`：
+
 ```csharp
-using Contoso.Security.Files;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
 // 认证仍由 Standard 的内存默认实现提供，授权由文件 Provider 顶替
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<FileSecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanHealth();
-app.Run();
 ```
 
 ```json
@@ -298,18 +289,6 @@ app.Run();
 ### Provider 装配了，解析出来的还是内存实现
 
 三个检查点：清单 `Provides` 的能力 ID 与版本是否与抽象包的常量一致（`SecurityCapabilities.Authorization`、`SecurityCapabilities.Version`）；`Configure` 里是否在 `IsSelectedFor` 为真时用 `TryAddSingleton` 登记，而默认实现又先登记了（Provider 的特性配置顺序由能力图谱决定，被顶替的默认实现不会登记）；有没有在 `XiHan:Providers:<能力 ID>` 里把别的实现钉死。
-
-### 同一领域的多个能力要不要放一个包
-
-只提供真正实现了的能力：`Security.Database` 只提供授权不提供认证，认证仍由默认实现负责。一个包提供多个能力时，每个能力各自判断 `IsSelectedFor`。
-
-### 配置应该抛异常还是返回 Result
-
-配置缺失、格式错误是编程错误，启动时抛 `FrameworkException` 让应用立刻失败；运行期的外部资源故障是可恢复失败，返回带领域错误码的 `Result`，由健康条目报 Degraded。
-
-### 包名和清单 ID 怎么取
-
-包按机制或技术命名（`Security.Files`、`Caching.Redis`），`Default` 不进包名；清单 ID `xihan.<领域>.<名字>`；错误码 `<领域大写>_<KIND>_<序号>`；健康项 `<领域>.<机制>.<对象>`。完整规则见[能力包与中间件](/extending/feature)。
 
 ## 相关包与下一步
 

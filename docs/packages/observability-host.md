@@ -40,18 +40,9 @@ dotnet add package XiHan.Framework.Observability.Host --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Observability.Host;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<HostObservabilityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置

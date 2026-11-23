@@ -40,7 +40,6 @@ using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Plugins.InProcess;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("plugins", typeof(PluginMessages)));
 ```
 

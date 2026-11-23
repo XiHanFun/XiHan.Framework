@@ -49,7 +49,7 @@
 
 类型化缓存 `ICache`（`ISharedCache` 是它的跨进程版本）在存储之上提供 `GetAsync<T>`、`SetAsync<T>`、`RemoveAsync`、`GetOrCreateAsync<T>` 与批量方法。两类实现的存法不同：
 
-- 进程内实现 `InMemoryObjectCache` 直接存对象引用，不序列化。取回的对象与写入的是同一个实例，调用方不得修改它。
+- 进程内实现 `InMemoryObjectCache` 直接存对象引用，不序列化。取回的对象与写入的是同一个实例，调用方不得修改它：改了等于改了缓存里的值，其他调用方会读到。要修改就先复制，或把缓存值设计成不可变的 `record`。
 - 跨进程实现 `SerializingCache` 把 `ICacheStore` 与 `ICacheSerializer` 组合起来，写入时序列化，读取时反序列化。
 
 `ICache.Store` 暴露底层字节存储，锁与幂等用它的原子原语。存储不可达时所有方法抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不会当成未命中返回。
@@ -61,24 +61,16 @@
 内存实现随 `UseStandardProfile()` 装配，不需要额外步骤。换成 Redis 分三步：
 
 1. 引用 `XiHan.Framework.Caching.Redis`：`dotnet add package XiHan.Framework.Caching.Redis --prerelease`。
-2. 在 `AddXiHan` 里 `UseFeature<RedisCachingFeature>()`。
+2. 在 `AddXiHan` 里 `UseFeature<RedisCachingFeature>()`：接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，只多一行与它的 `using`。
 3. 在配置里给出连接字符串。
 
 ```csharp
 using XiHan.Framework.Caching.Redis;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // Standard 里的内存实现继续提供 caching.local；Redis 顶替 caching.distributed
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<RedisCachingFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ```json
@@ -94,7 +86,7 @@ app.Run();
 }
 ```
 
-连接取宿主注入的 `cache` 绑定，没有绑定时取 `XiHan:Caching:Redis:Configuration`（两者都给时绑定优先，绑定的来源见[资源绑定](/configuration/bindings)）；两者都没有时装配直接失败；启动时连不上 Redis 同样让启动失败（`CACHING_UNAVAILABLE_001`），不降级为内存缓存。
+连接取宿主注入的 `cache` 绑定，没有绑定时取 `XiHan:Caching:Redis:Configuration`（两者都给时绑定优先，绑定的来源见[资源绑定](/configuration/bindings)）；两者都没有时装配直接失败；启动时连不上 Redis 同样让启动失败（`CACHING_UNAVAILABLE_001`），不降级为内存缓存。`KeyPrefix` 是 Redis 键的前缀，缺省 `xihan:`。
 
 ## 最小示例
 
@@ -273,28 +265,15 @@ public sealed class TenantPriceCache(ICache cache, IPriceSource source, ILogger<
 2. 已登记的 `JsonSerializerOptions`：用它构造 `JsonCacheSerializer`。
 3. 两者都没有：退回 `JsonCacheSerializer.CreateReflectionBased()`（Web 默认的 camelCase、按反射解析类型）。
 
-`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`（源生成上下文），没有时构造即抛 `ArgumentException`；类型信息经 `JsonSerializerOptions.GetTypeInfo` 取得，上下文里没有登记的类型抛 `NotSupportedException`，不悄悄退回反射。缓存的每种类型都要写进上下文：
+`JsonCacheSerializer` 要求选项带 `TypeInfoResolver`（源生成上下文），没有时构造即抛 `ArgumentException`；类型信息经 `JsonSerializerOptions.GetTypeInfo` 取得，上下文里没有登记的类型抛 `NotSupportedException`，不悄悄退回反射。缓存的每种类型都要写进上下文。在[启用](#启用)的 `Program.cs` 上只多一行登记与一个上下文类（`ProductView` 是最小示例里的记录）：
 
 ```csharp
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using XiHan.Framework.Caching.Abstractions.Serialization;
-using XiHan.Framework.Caching.Redis;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // 必须在 AddXiHan 之前登记：Provider 装配时按已有登记选序列化器
 builder.Services.AddSingleton<ICacheSerializer>(new JsonCacheSerializer(new JsonSerializerOptions { TypeInfoResolver = CacheJsonContext.Default }));
-
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<RedisCachingFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
-
-public sealed record ProductView(Guid Id, string Name, int Price);
 
 [JsonSerializable(typeof(ProductView))]
 internal sealed partial class CacheJsonContext : JsonSerializerContext;
@@ -324,17 +303,7 @@ builder.Services.AddSingleton<ICacheSerializer>(static sp => new JsonCacheSerial
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Caching:InMemory:MaxEntries` | 整数 | 10000 | 内存实现每张表（字节存储、对象缓存各一张）的条目上限，满时淘汰最久未访问的条目 |
-| `XiHan:Caching:InMemory:DefaultTimeToLiveSeconds` | 数字 | 300 | 内存实现未指定过期时的存活时间 |
-| `XiHan:Caching:Redis:Configuration` | 字符串 | — | StackExchange.Redis 连接字符串；有 `cache` 绑定时被绑定的主值覆盖，绑定的属性 `username` / `password` 覆盖其中的 `user` / `password` |
-| `XiHan:Caching:Redis:KeyPrefix` | 字符串 | `xihan:` | Redis 键前缀，也决定变更频道 `<KeyPrefix>__changes` |
-| `XiHan:Caching:Redis:DefaultTimeToLiveSeconds` | 数字 | 300 | Redis 未指定过期时的存活时间 |
-| `XiHan:Caching:Redis:PublishChanges` | 布尔 | `true` | 写入与删除后是否向变更频道发布，供[两级缓存](/caching/hybrid)失效 L1 |
-| `XiHan:Caching:Redis:HealthProbeIntervalSeconds` | 数字 | 15 | 健康项 `caching.redis.connection` 的重探间隔 |
-
-数值项不是正数、布尔项不是 `true` / `false` 时装配抛出 `ArgumentException`。两级缓存、远程 Provider 与幂等的配置键见对应页面。
+本页用到的键都在上文：连接 `XiHan:Caching:Redis:Configuration` 与键前缀 `KeyPrefix`（[启用](#启用)）、两个 Provider 各自的 `DefaultTimeToLiveSeconds`（[过期](#过期)）。全部的键、类型、缺省值与非法值的处理见 [Caching.InMemory](/packages/caching-inmemory#配置) 与 [Caching.Redis](/packages/caching-redis#配置)；两级缓存、远程 Provider 与幂等的键见[两级缓存与键管理](/caching/hybrid)与[分布式锁与幂等](/caching/locks)。
 
 ## 健康项与错误码
 
@@ -343,33 +312,7 @@ builder.Services.AddSingleton<ICacheSerializer>(static sp => new JsonCacheSerial
 | `caching.inmemory.capacity` | `Caching.InMemory` | 两张表任一条目数达到 `MaxEntries`（`CACHING_UNAVAILABLE_002`）；缓存仍可用，但每次写入都在淘汰 |
 | `caching.redis.connection` | `Caching.Redis` | 后台 PING 失败或超时（`KERNEL_UNAVAILABLE_005`） |
 
-| 错误码 | 含义与出现位置 |
-| --- | --- |
-| `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败，以 `FrameworkException` 抛出 |
-| `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限，只作为健康项的原因，不拒绝写入 |
-| `CACHING_VALIDATION_001` / `002` | 幂等键拼出的存储键不合法；远程插件报告键或过期选项不合法，见[分布式锁与幂等](/caching/locks)与[两级缓存与键管理](/caching/hybrid) |
-| `CACHING_VALIDATION_003` | 键列表的每页上限不在 1～1000，见[两级缓存与键管理](/caching/hybrid) |
-| `CACHING_CONFLICT_001` / `002` / `003` | 锁被占用、幂等调用处理中、幂等记录不能回放，见[分布式锁与幂等](/caching/locks) |
-
-非法的 `CacheKey`、同时设置两种过期、非正的存活时间都是编程错误，抛 `ArgumentException`，不转成 `Result`。健康项怎样汇总到就绪探针见[生命周期与健康](/startup/lifecycle)。
-
-## 常见问题
-
-### 缓存会按租户自动隔离吗
-
-不会。`ICache` / `ISharedCache` 的键就是你给的字符串，多租户应用要自己把租户 ID 拼进键里，例如 `$"{tenantId}:product:{id:N}"`。只有幂等中间件例外，它的存储键自带租户与主体段。
-
-### 从内存缓存取回的对象能直接修改吗
-
-不能。进程内实现存的是对象引用，改了它等于改了缓存里的值，其他调用方会读到被改过的状态。要修改就先复制，或把缓存值设计成不可变的 `record`。
-
-### 为什么换成 Redis 后抛出 NotSupportedException
-
-跨进程缓存要序列化值，`JsonCacheSerializer` 只认源生成上下文里登记的类型。在内存缓存下跑得好好的代码换 Redis 后第一次写入某个类型时就会暴露。把类型加进 `[JsonSerializable]` 上下文，或在 `AddXiHan` 之前登记自己的 `ICacheSerializer`。
-
-### 两个调用同时未命中，工厂会跑两次吗
-
-会。`GetOrCreateAsync` 不合并并发，各自执行工厂、后写入的覆盖先写入的，对幂等的读操作通常无害。工厂很贵又必须只算一次时，用 `IDistributedLock` 把它串行化，见[分布式锁与幂等](/caching/locks)。
+健康项怎样汇总到就绪探针见[生命周期与健康](/startup/lifecycle)。读写时存储不可达或操作失败，以携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException` 抛出；`CACHING_UNAVAILABLE_002` 只作为上面健康项的原因，不拒绝写入。缓存子系统的全部错误码见 [Caching.Abstractions](/packages/caching-abstractions#错误码)。
 
 ## 相关包与下一步
 

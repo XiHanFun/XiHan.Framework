@@ -41,24 +41,12 @@
 1. 引用 `XiHan.Framework.Protocols.Http`（`Profiles.Full` 已包含），`UseFeature<HttpProtocolFeature>()`。
 2. 在 `app.UseXiHan()` 与 `app.MapXiHanOperations()` 之后调用 `app.MapXiHanOpenApi()`。
 
+`Program.cs` 接 [HTTP 路由与载荷](/web/routing#最小示例)的那一份，只多一行：
+
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
 using XiHan.Framework.Protocols.Http.OpenApi;
-using XiHan.Framework.Protocols.Http.Routing;
 
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan
-    .UseStandardProfile()
-    .UseFeature<HttpProtocolFeature>()
-    .UseFeature<OrdersFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanOperations();
 app.MapXiHanOpenApi();      // GET /openapi.json
-app.Run();
 ```
 
 ```bash
@@ -139,7 +127,7 @@ app.MapXiHanOpenApi(openApi);
 
 字段说明的源语言文案是 DTO 的 XML 文档注释：`Kernel.Generators` 把类型与属性的 `<summary>`（位置记录取主构造参数的 `<param>`）折进 Schema 的 `description`，参数、请求体与成功响应据此写说明，成功响应没有根说明时写按区域的「成功」。项目要开启 `GenerateDocumentationFile`。某个区域要换文案时才写 `openapi.schemas.*` 覆盖，Schema 名与属性名都转成 snake_case（`ConstraintRuleDto` → `constraint_rule_dto`，`ruleType` → `rule_type`）。
 
-应用的文案放在 `Localization/<区域>.json`，登记方式见 [ASP.NET Core 宿主](/web/hosting)的「区域协商与本地化」：
+应用的文案放在 `Localization/<区域>.json`，登记方式见[全球化和本地化](/common/localization#最小示例)：
 
 ```json
 {
@@ -193,7 +181,7 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 
 宿主里不是操作的最小 API 端点也能进文档。收录条件：有 HTTP 方法元数据，带 `Accepts` 或 `Produces` 描述元数据之一，没有 `ExcludeFromDescription()`。SignalR Hub、探针、重定向、静态资源没有描述元数据，不会进文档。路由参数写成 `string` 类型的路径参数；`WithName` 作 `operationId`，`WithSummary`、`WithDescription`、`WithTags` 照搬；`RequireXiHan*` 的要求写成 `x-xihan-permission` / `x-xihan-policy`。
 
-请求体与响应按内容类型写：`multipart/form-data` 是含 `format: binary` 属性（`file`，多文件为 `files`）的对象，表单是对象，`text/*` 与 `string` 是字符串，其余二进制是 `format: binary` 的字符串。JSON 类型不做第二套 Schema 推导，只引用已登记操作的根 Schema：用 `WithXiHanOperationSchema(request:, response:)` 显式声明同哪个操作的请求或响应，没有声明时按 `Accepts<T>` / `Produces<T>` 的类型与操作的请求、响应类型自动匹配。
+请求体与响应按内容类型写：`multipart/form-data` 是含 `format: binary` 属性（`file`，多文件为 `files`）的对象，表单是对象，`text/*` 与 `string` 是字符串，其余二进制是 `format: binary` 的字符串。JSON 类型不做第二套 Schema 推导，只引用已登记操作的根 Schema：用 `WithXiHanOperationSchema(request:, response:)` 显式声明同哪个操作的请求或响应，没有声明时按 `Accepts<T>` / `Produces<T>` 的类型与操作的请求、响应类型自动匹配（取 ID 最小且有 Schema 的操作）。被引用的根 Schema 提升成组件，操作自己也改为引用它。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
@@ -266,7 +254,7 @@ await File.WriteAllBytesAsync("openapi.zh-CN.json", document);
 | `locale` | 文案的区域；为 `null` 时取本地化的默认区域 |
 | `group` | 分组名；为 `null` 时是全量文档，不存在的组名抛出 `ArgumentException` |
 
-把导出的文件提交进仓库并在 CI 里与新生成的文件比对，契约变更就会出现在代码评审的差异里。只想看登记表时自己构造来源：`OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options))`（`Permissions`、`Title`、`Version` 用初始化器给，标题与版本缺省是框架名与框架版本），不含普通端点、认证方案与文案，适合单元测试里核对路由推导。测试里启动应用的写法见[单元与集成测试](/testing/basics)。
+把导出的文件提交进仓库并在 CI 里与新生成的文件比对，契约变更就会出现在代码评审的差异里。只想看登记表时自己构造来源：`OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options))`（`Permissions`、`Title`、`Version` 用初始化器给，标题与版本缺省是框架名与框架版本，`Permissions` 不给时权限定义只按引用写），不含普通端点、认证方案与文案，适合单元测试里核对路由推导。测试里启动应用的写法见[单元与集成测试](/testing/basics)。
 
 ## 常见问题
 
@@ -285,10 +273,6 @@ await File.WriteAllBytesAsync("openapi.zh-CN.json", document);
 ### 为什么请求体的属性名是 camelCase，而我的 C# 属性是 PascalCase
 
 Schema 的属性名按序列化上下文的命名策略生成，示例用的是 `JsonKnownNamingPolicy.CamelCase`。文档与实际绑定用的是同一份序列化元数据，所以客户端按文档发请求一定能被绑定；要换命名风格，改 `JsonSourceGenerationOptions`，文档随之变化。
-
-### gRPC 客户端和 MCP 客户端看到的字段会和 OpenAPI 不一致吗
-
-不会。三者读同一份由 `Kernel.Generators` 生成的 Schema：OpenAPI 把它提升成组件，gRPC 由它推出 protobuf 消息（字段名转 lower_snake_case，`json_name` 保持属性名），MCP 原样作为 `inputSchema` / `outputSchema`。改一个 DTO，三处同时变，见 [gRPC](/protocols/grpc)与 [MCP](/protocols/mcp)。
 
 ## 相关包与下一步
 

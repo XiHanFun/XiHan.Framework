@@ -66,24 +66,15 @@
 XiHan__Security__Outbound__AllowLoopback=true
 ```
 
-应用向用户给的地址发请求时，用同一个策略。它是宿主登记的单例，用 `Apply` 接到 `SocketsHttpHandler` 上：
+应用向用户给的地址发请求时，用同一个策略。它是宿主登记的单例，用 `Apply` 接到 `SocketsHttpHandler` 上。接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，`builder.Build()` 之前多登记一个命名客户端：
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Kernel.Security;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
 
 // 命名客户端：地址来自用户配置的 Webhook，连接时按解析出的 IP 判断
 builder.Services.AddHttpClient("bot-webhook")
     .UseSocketsHttpHandler(static (handler, services) => services.GetRequiredService<OutboundAddressPolicy>().Apply(handler));
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 被拒绝时 `HttpClient` 抛 `HttpRequestException`，`InnerException` 是 `OutboundAddressDeniedException`：
@@ -233,25 +224,9 @@ public sealed class TenantSmtp(OutboundAddressPolicy addresses)
 
 ## 常见问题
 
-### 开发环境连 localhost 的 Webhook 报地址不允许
-
-缺省拒绝回环。在 `appsettings.Development.json` 里 `AllowLoopback: true`，或设环境变量 `XiHan__Security__Outbound__AllowLoopback=true`；容器里的服务按服务名加进 `AllowedHosts`。不要把这些放进生产配置。
-
 ### 连公网域名也报地址不允许
 
-看日志里 `OutboundAddressPolicy` 的 Warning 带的解析地址。落在 `198.18.0.0/15` 是代理软件的 fake-ip 模式，开发机上放行这段；落在私网段说明这个域名在内网 DNS 里解析成了内网地址，按需要用 `AllowedHosts` 放行这个名字，或 `AllowedNetworks` 放行精确的网段。
-
-### 为什么不直接把地址校验放在 URL 上
-
-URL 里的主机名可以解析到任何地址，解析结果还可能在校验之后变化，重定向也能换目标。策略在连接回调里按解析出的实际 IP 判断，连接用的就是检查过的地址，这三条路都挡住。`IsAllowed` 只用于保存时提前提示。
-
-### 数据库、Redis 的连接串也受这个策略限制吗
-
-不受。它们的驱动自己建连接，不经过 `SocketsHttpHandler` 或 `ConnectAsync`；这些地址由运维配置，不是用户输入。要约束用户填的非 HTTP 地址（SMTP 等），用 `ConnectAsync` 拿套接字再交给协议库。
-
-### 错误里为什么没有解析出的 IP
-
-解析出的地址是内网信息，不应该返回给填地址的用户。错误与 `OutboundAddressDeniedException` 只带请求里写的主机名与端口，解析出的地址在日志里。
+看日志里 `OutboundAddressPolicy` 的 Warning 带的解析地址。落在 `198.18.0.0/15` 是代理软件的 fake-ip 模式，按「本地开发放行」在开发机上放行这段；落在私网段说明这个域名在内网 DNS 里解析成了内网地址，按需要用 `AllowedHosts` 放行这个名字，或 `AllowedNetworks` 放行精确的网段。
 
 ## 相关包与下一步
 

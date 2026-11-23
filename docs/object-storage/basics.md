@@ -1,6 +1,6 @@
 # 读写与列举
 
-这一页讲对象存储的基本用法：容器与键的文法、怎样启用文件系统或 S3 实现、怎样写入、读取、删除和按前缀分页列举对象，两个实现的差异与错误码。读完后，我们能在应用里把上传的文件存成对象并按键取回。前置知识是[特性与清单](/startup/features)、[端点里使用框架](/web/endpoints)与[结果与错误处理](/web/errors)。
+这一页讲对象存储的基本用法：容器与键的文法、怎样启用文件系统或 S3 实现、怎样写入、读取、删除和按前缀分页列举对象，以及两个实现的差异。读完后，我们能在应用里把上传的文件存成对象并按键取回。前置知识是[特性与清单](/startup/features)、[端点里使用框架](/web/endpoints)与[结果与错误处理](/web/errors)。
 
 ## 为什么需要
 
@@ -24,18 +24,15 @@
 
 ## 启用
 
-`Profiles.Full` 已装配文件系统存储；其他情况显式加入：
+`Profiles.Full` 已装配文件系统存储；其他情况显式加入，接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，只多一个 `using` 与一行 `UseFeature`：
 
 ```bash
 dotnet add package XiHan.Framework.ObjectStorage.FileSystem --prerelease
 ```
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.ObjectStorage.FileSystem;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<FileSystemObjectStorageFeature>());
@@ -81,27 +78,20 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | 自定义元数据 | 名 `^[a-z0-9][a-z0-9-]{0,63}$`；值不含控制字符（含换行）；名与值合计不超过 2048 个 UTF-8 字节（`BlobPutOptions.MaxMetadataBytes`，与 S3 一致） | `uploaded-by` |
 | 内容类型 | 媒体类型 `type/subtype`，可带 `;` 起头的参数（可打印 ASCII），1 到 255 个字符；`BlobPutOptions.IsValidContentType` 判定 | `text/plain; charset=utf-8` |
 
-`ContainerName` 与 `BlobKey` 用构造或显式转换从 `string` 创建，不合法时抛出 `ArgumentException`，不会进入 Provider（内容类型与自定义元数据不合法时 `BlobPutOptions` 同样抛出）；`default` 值不是合法标识，读 `Value` 抛 `InvalidOperationException`。来自用户输入的键先用 `BlobKey.IsValid` 判断。
+`ContainerName` 与 `BlobKey` 用构造或显式转换从 `string` 创建，不合法时抛出 `ArgumentException`，不会进入 Provider（内容类型与自定义元数据不合法时 `BlobPutOptions` 同样抛出）；`default` 值不是合法标识，读 `Value` 抛 `InvalidOperationException`。来自用户输入的键先用 `BlobKey.IsValid` 判断；用户给的文件名更稳的做法是不当键用，自己生成键（日期加 ID），把原文件名放进自定义元数据或业务表。
 
 首段是 `.xihan` 的键（`BlobKey.ReservedSegment`，`.xihan` 本身与 `.xihan/…`，区分大小写）保留给框架自己的对象，例如 S3 的条件写入探测键 `.xihan/probe/conditional-write`：业务写不进、读不到、删不掉，各存储列举时跳过存储里已有的这类对象，所以它们不会混进业务列举。以 `.xihan` 开头的查询前缀不报错，列举结果总是空的。
 
 ## 最小示例
 
-两个端点：`PUT /files/{name}` 把请求体存成对象，`GET /files/{**key}` 把对象流回客户端。失败结果交给宿主写成 Problem Details：
+两个端点：`PUT /files/{name}` 把请求体存成对象，`GET /files/{**key}` 把对象流回客户端，失败结果交给宿主写成 Problem Details。按上一节装配 `FileSystemObjectStorageFeature` 后，把它们写在 `app.UseXiHan()` 之后：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
-using XiHan.Framework.ObjectStorage.FileSystem;
 using XiHan.Framework.Primitives;
-
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan.UseFeature<FileSystemObjectStorageFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
 
 app.MapPut("/files/{name}", async (string name, HttpContext http, IBlobStore store, CancellationToken ct) =>
 {
@@ -147,8 +137,6 @@ app.MapGet("/files/{**key}", async (string key, HttpContext http, IBlobStore sto
     http.Response.RegisterForDisposeAsync(blob);
     return Results.Stream(blob.Content, blob.Metadata.ContentType);
 });
-
-app.Run();
 ```
 
 运行后：`PUT /files/a.txt` 带正文返回 `{ "eTag": "…", "length": N }`，磁盘上出现 `<RootPath>/uploads/data/inbox/a.txt` 与 `meta/inbox/a.txt.json`；再 `PUT` 一次同名文件得到 409 的 Problem Details，`code` 是 `OBJECTSTORAGE_CONFLICT_001`；`GET /files/inbox/a.txt` 以原内容类型流回正文，不存在的键得到 404（`OBJECTSTORAGE_NOTFOUND_001`）。
@@ -236,56 +224,11 @@ S3 的列举条目只有键、长度、`ETag` 与修改时间，内容类型为�
 
 文件系统存储单进程正确：启动时扫描目录得到已用量，之后在进程内计量，多个进程共享同一目录时配额只是近似。
 
-S3 的不覆盖写入靠服务端的条件写入：不认条件写入的兼容服务、被拒的凭据、不存在的探测桶在启动时即启动失败（配置问题要早暴露）；只有启动时连不上照常启动，探明之前不覆盖写入返回 `OBJECTSTORAGE_UNAVAILABLE_004`；之后才探明不认的不覆盖写入一律 `OBJECTSTORAGE_UNAVAILABLE_003`。阿里云 OSS、腾讯云 COS、Cloudflare R2 也只用这一个包，不为各家的私有禁止覆盖头做适配：它们是否认标准的 `If-None-Match: *` 要在接入前实测（缺省的条件写入探测即实测，或照 [ObjectStorage.S3](/packages/objectstorage-s3#云厂商的兼容服务) 用 curl 发两次条件写入），不认就关 `ConditionalWrites`——关掉后这个存储上 `Overwrite = false` 的写入一律 `OBJECTSTORAGE_UNAVAILABLE_003`，「只在不存在时写入」的业务要改用不冲突的键或覆盖写入。
-
-## 错误码
-
-| 错误码 | 含义 |
-| --- | --- |
-| `OBJECTSTORAGE_NOTFOUND_001` | 对象不存在 |
-| `OBJECTSTORAGE_NOTFOUND_002` | 分片上传不存在或已结束 |
-| `OBJECTSTORAGE_NOTFOUND_003` | 命名存储实例不存在 |
-| `OBJECTSTORAGE_VALIDATION_001` | 读取范围的起点不在对象内 |
-| `OBJECTSTORAGE_VALIDATION_002` | 完成分片上传时的分片清单不合法 |
-| `OBJECTSTORAGE_VALIDATION_003` | 命名存储实例的定义不合法（Provider 未登记或设置不合法） |
-| `OBJECTSTORAGE_VALIDATION_004` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
-| `OBJECTSTORAGE_VALIDATION_005` | 列举的页大小不在 1 到 1000 之间（HTTP 400） |
-| `OBJECTSTORAGE_VALIDATION_006` | 宿主直传端点：签名没有限定内容类型，请求的 `Content-Type` 不合内容类型文法（HTTP 400，不写入） |
-| `OBJECTSTORAGE_DENIED_001` | 预签名地址无效或已过期 |
-| `OBJECTSTORAGE_DENIED_002` | 条件写入探测被存储拒绝（S3：凭据无效、只读或无权写探测键；启动或建实例时即失败，启动之后才被拒时健康项 Failed、后台照常重试） |
-| `OBJECTSTORAGE_CONFLICT_001` | 对象已存在且不允许覆盖 |
-| `OBJECTSTORAGE_UNAVAILABLE_001` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志 |
-| `OBJECTSTORAGE_UNAVAILABLE_002` | 配额或单对象大小超限 |
-| `OBJECTSTORAGE_UNAVAILABLE_003` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入，或存储关闭了条件写入（`ConditionalWrites = false`） |
-| `OBJECTSTORAGE_UNAVAILABLE_004` | 不覆盖写入暂不可用：S3 兼容服务是否认条件写入尚未确认（HTTP 503，探测通过后自动恢复） |
-
-HTTP 宿主按错误码的类别段映射状态码，见[结果与错误处理](/web/errors)。标识不合法属于编程错误，构造时抛出 `ArgumentException`。
-
-## 常见问题
-
-### 开发环境没有 S3 怎么办
-
-默认实现就是文件系统，不需要任何外部服务；`Profiles.Full` 已装配。要和生产一样走 S3 协议时本地跑一个 MinIO，`ServiceUrl` 指向它、`ForcePathStyle` 为 `true`。
-
-### 文件名是用户给的，能直接当键吗
-
-先 `BlobKey.IsValid` 判断，不合法的直接拒绝；更稳的做法是自己生成键（日期加 ID），把原文件名放进自定义元数据或业务表。键不能含 `\`、空白与控制字符，也不能以 `.xihan` 开头。
-
-### 怎样「只在不存在时写入」
-
-`BlobPutOptions.Overwrite = false`，已存在返回 `OBJECTSTORAGE_CONFLICT_001`。两个实现都保证并发下只有一个成功；S3 兼容服务要认条件写入，不认的服务上这个选项一律失败，改用不冲突的键。
-
-### 读取大文件会不会占满内存
-
-`GetAsync` 返回的是流，边读边写响应即可，不要用 `ReadAllBytesAsync`；记得释放 `BlobContent`。只需一段时传 `BlobRange`，见下一页。
-
-### 删除不存在的对象算失败吗
-
-不算。`DeleteAsync` 的逐项结果 `Outcome` 为 `false` 表示本来就不存在，只有 IO 或服务错误才带错误；重复删除是幂等的。
+S3 的不覆盖写入靠服务端的条件写入（`If-None-Match: *`），服务是否认它由启动时的探测确认：探明不认、凭据被拒或探测桶不存在即启动失败，只有连不上照常启动，细则见[条件写入探测](/packages/objectstorage-s3#条件写入探测)。阿里云 OSS、腾讯云 COS、Cloudflare R2 也只用这一个包，是否认条件写入要在接入前实测，不认就关 `ConditionalWrites`：关掉后这个存储上 `Overwrite = false` 的写入一律 `OBJECTSTORAGE_UNAVAILABLE_003`，「只在不存在时写入」的业务要改用不冲突的键或覆盖写入，见[云厂商的兼容服务](/packages/objectstorage-s3#云厂商的兼容服务)。
 
 ## 相关包与下一步
 
-- [ObjectStorage.Abstractions](/packages/objectstorage-abstractions)：契约、标识与错误码
+- [ObjectStorage.Abstractions](/packages/objectstorage-abstractions)：契约、标识与[错误码](/packages/objectstorage-abstractions#错误码)
 - [ObjectStorage.FileSystem](/packages/objectstorage-filesystem)：默认实现、布局与配额
 - [ObjectStorage.S3](/packages/objectstorage-s3)：S3 与兼容服务、条件写入探测
 - 下一步：[分片、预签名与命名实例](/object-storage/advanced)

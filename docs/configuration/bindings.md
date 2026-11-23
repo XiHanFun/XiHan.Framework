@@ -96,19 +96,13 @@ public sealed class BillingFeature : IFeature
 public sealed record LedgerConnection(string ConnectionString);
 ```
 
-```csharp
-// Program.cs
-using Billing;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
+`Program.cs` 沿用[第一个应用](/getting-started/first-app)的骨架，装配这个特性并加一个端点：
 
-var builder = WebApplication.CreateBuilder(args);
+```csharp
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<BillingFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapGet("/ledger", (LedgerConnection ledger) => ledger.ConnectionString.Length);
-app.Run();
 ```
 
 先不给任何绑定直接 `dotnet run`：`AddXiHan` 抛出错误码为 `KERNEL_HOSTING_001` 的 `FrameworkException`，消息指出缺少绑定 `ledger`，进程退出。再把上一节的 `XiHan:Bindings:ledger` 写进 `appsettings.json`，或设置环境变量 `XiHan__Bindings__ledger__value=...` 与 `XiHan__Bindings__ledger__type=connection:relational`，应用正常启动，`curl localhost:5000/ledger` 返回连接字符串的长度。换成 Kubernetes 时把同样的内容做成 Secret 挂到 `SERVICE_BINDING_ROOT`，代码不变。
@@ -146,18 +140,6 @@ app.Run();
 表里六种绑定类型 `xihan pack` 都认识：应用清单 `xihan.app.json` 按上表的绑定名声明后，Compose 与 Aspire 产物会起对应的依赖服务并把主值注入 `XiHan__Bindings__<绑定名>__value`（`blob` 的依赖服务是 S3 兼容的 RustFS，另注入 `accessKey`、`secretKey` 两个属性，其余服务的凭据在主值里或没开认证）；Kustomize 产物不在集群里起依赖服务，只按 Service Binding 规范挂 Secret，示例 Secret 以注释列出各类型可单独给出的凭据键。生成规则见[应用清单与 xihan pack](/deployment/pack)。
 
 ## 常见问题
-
-### 绑定与配置节有什么区别，什么时候用哪个
-
-配置节放行为参数（超时、前缀、容量），绑定放「连到哪、用什么凭据」。绑定由部署环境注入，Provider 用它覆盖配置节里的连接与凭据键，其余键照读配置节。本地开发没有 Service Binding 目录时，用 `XiHan:Bindings` 配置节写同样的内容。
-
-### 必需绑定在生产里一定要用 Service Binding 目录吗
-
-不一定。目录与配置节两种来源等价，Kustomize 产物用目录，Compose 与 Aspire 用环境变量注入配置节；只要 `BindingResolver` 能解析到，特性拿到的 `BindingValue` 相同。
-
-### 同一个绑定在目录与配置节里都有，取哪个
-
-配置节整体覆盖目录来源，连属性也一起换掉，不逐项合并。
 
 ### 绑定的主值会出现在日志里吗
 

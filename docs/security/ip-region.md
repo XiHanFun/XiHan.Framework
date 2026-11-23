@@ -21,7 +21,7 @@
 | --- | --- | --- |
 | `XiHan.Framework.Security.Ip2Region` | `provider` | ip2region 离线库 Provider，IPv4 与 IPv6 各一个 xdb 文件，首次用到某个地址族时整库读进内存，之后每次查询约百纳秒 |
 
-框架包不带数据文件，xdb 由宿主提供（下载或生成方式见 ip2region 项目）。IPv4 库约 11 MB、IPv6 库约 37 MB。
+框架包不带数据文件，xdb 由宿主提供，来源与大小见 [Security.Ip2Region](/packages/security-ip2region)。
 
 ## 最小示例
 
@@ -37,20 +37,16 @@ xdb 文件随应用发布，例如在项目文件里复制到输出目录：
 </ItemGroup>
 ```
 
+接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，`AddXiHan` 多一个特性，`app.UseXiHan()` 之后多一个端点：
+
 ```csharp
 using System.Net;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Security.Abstractions.Network;
 using XiHan.Framework.Security.Ip2Region;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<Ip2RegionSecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
 
 // 调用来源的远端地址由 UseXiHan() 写进调用上下文；回环与内网地址解析为无值
 app.MapGet("/where", (HttpContext http, IIpRegionResolver regions) =>
@@ -62,35 +58,15 @@ app.MapGet("/where", (HttpContext http, IIpRegionResolver regions) =>
             ? region.Location
             : "unknown";
 });
-
-app.Run();
 ```
 
 本机访问 `/where` 响应 `unknown`，因为回环地址不查；经反向代理部署并在 `UseXiHan()` 之前 `UseForwardedHeaders()` 后，远端地址是真实客户端地址，响应形如 `中国 广东省 深圳市 电信`。
 
 ## 配置
 
-配置节 `XiHan:Security:Ip2Region`：
+上例没写配置，用的是缺省路径：`XiHan:Security:Ip2Region` 的 `V4Database` 与 `V6Database` 缺省是 `IpDatabases/ip2region_v4.xdb` 与 `IpDatabases/ip2region_v6.xdb`，相对路径按 `AppContext.BaseDirectory` 解析，见 [Security.Ip2Region](/packages/security-ip2region#配置)。
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `V4Database` | `string` | `IpDatabases/ip2region_v4.xdb` | IPv4 的 xdb 文件；相对路径按 `AppContext.BaseDirectory` 解析 |
-| `V6Database` | `string` | `IpDatabases/ip2region_v6.xdb` | IPv6 的 xdb 文件；相对路径同上 |
-
-```json
-{
-  "XiHan": {
-    "Security": {
-      "Ip2Region": {
-        "V4Database": "IpDatabases/ip2region_v4.xdb",
-        "V6Database": "IpDatabases/ip2region_v6.xdb"
-      }
-    }
-  }
-}
-```
-
-路径不能为空；文件在首次解析该地址族时才加载，配置错了不会让启动失败，只会让该族一律无值并记一条警告。
+文件在首次解析该地址族时才加载，配置错了不会让启动失败，只会让该族一律无值并记一条警告。所以启动没报错而所有地址都是无值时，先看日志里 `Ip2Region` 相关的警告，再核对路径与项目文件里的 `CopyToOutputDirectory`。
 
 ## 在操作里用调用来源解析
 
@@ -143,13 +119,7 @@ public sealed class RecordLogin(CallerLocation location, ILoginLog log) : IOpera
 
 ## 行为与限制
 
-- 不查的地址：回环；IPv4 的 `10/8`、`172.16/12`、`192.168/16`；IPv6 的链路本地、站点本地与组播。它们直接返回无值，不访问库。
-- IPv4 映射的 IPv6 地址按 IPv4 查。
-- 某个地址族的文件不存在或加载失败时记一条警告，之后该族一律无值，应用照常运行；不会在启动时失败。
-- 记录格式兼容两版：新版「国家|省份|城市|运营商|国家代码」，旧版「国家|区域|省份|城市|运营商」。`0` 与空段为未知；保留地址与各段全未知返回无值。
-- 单次查询失败（库损坏、地址超出库的范围）按无值处理，只记调试日志，地址不进日志；`Resolve` 不抛出。
-- `Ip2RegionResolver` 是单例且 `IDisposable`，应用停止时释放已加载的查询器；加载后的查询线程安全。
-- 公开面不暴露第三方类型，换实现不影响调用方。
+回环与私网地址不查，直接返回无值；库文件缺失、加载失败或单次查询失败也只是无值，`Resolve` 不抛出，应用照常运行。不查的地址范围、记录格式的兼容、库的加载与释放等细则见 [Security.Ip2Region](/packages/security-ip2region#行为与限制)。
 
 ## 与条件引擎配合
 
@@ -185,10 +155,6 @@ public static class GeoAttributes
 ### 部署在反向代理后面，拿到的 IP 是代理的
 
 `RemoteAddress` 取连接的对端地址。在 `UseXiHan()` 之前调用 `UseForwardedHeaders()` 并配置可信代理，远端地址就是 `X-Forwarded-For` 里的客户端地址，见 [ASP.NET Core 宿主](/web/hosting)。不要自己从请求头读 `X-Forwarded-For`，未经可信代理过滤的值可以被客户端伪造。
-
-### 启动时没报错，但所有地址都是无值
-
-多半是 xdb 文件路径不对或文件没随应用发布：文件在首次解析时才加载，缺失只记一条警告。检查日志里 `Ip2Region` 相关的警告，核对 `V4Database` / `V6Database` 相对 `AppContext.BaseDirectory` 的路径，以及项目文件里的 `CopyToOutputDirectory`。
 
 ### 数据库怎样更新
 

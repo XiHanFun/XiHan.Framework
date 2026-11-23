@@ -22,44 +22,9 @@
 
 ## 配置热更新
 
-`config.files` 把列出的文件做成 ConfigMap（`<name>-config`）只读挂到 `mountPath`，并设两个环境变量：
+`config.files` 把列出的文件做成 ConfigMap（`<name>-config`）只读挂到 `mountPath`（缺省 `/etc/xihan`），并在 Deployment 里设两个环境变量：`XIHAN_CONFIG_PATH` 指向挂载点，宿主的 `AddXiHan` 把目录里的 JSON 文件作为可重载的配置源；`DOTNET_USE_POLLING_FILE_WATCHER=1` 打开轮询式文件监视，因为 ConfigMap 以切换符号链接的方式更新。文件的装载顺序、与环境变量的优先级、读 `IOptionsMonitor<T>` 的示例与热更新的边界见[配置目录与热更新](/configuration/config-directory)。
 
-| 环境变量 | 值 | 作用 |
-| --- | --- | --- |
-| `XIHAN_CONFIG_PATH` | `mountPath`（缺省 `/etc/xihan`） | 宿主的 `AddXiHan` 把这个目录里的 JSON 文件作为 `reloadOnChange` 配置源，插在 `appsettings.{环境}.json` 之后 |
-| `DOTNET_USE_POLLING_FILE_WATCHER` | `1` | ConfigMap 以切换符号链接的方式更新，文件监视必须轮询 |
-
-`Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 在装配内核之前处理这个目录：只取顶层 `*.json`，跳过以 `.` 开头的条目（ConfigMap 的 `..data` 之类），`appsettings.json` 最先装载，其余按文件名序数排序随后覆盖。这些源紧接 `appsettings.{环境}.json` 插入：覆盖两份 appsettings，环境变量与命令行参数又覆盖它们，所以 Deployment 以环境变量写的 `XiHan__Kernel__StopTimeoutSeconds` 不会被 ConfigMap 里的同名键改掉（完整顺序见[配置目录与热更新](/configuration/config-directory)）。文件变化后 `IOptionsMonitor<T>` 随之更新，应用不需要重启：
-
-```csharp
-using Microsoft.Extensions.Options;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.Configure<BannerOptions>(builder.Configuration.GetSection(BannerOptions.Section));
-
-// AddXiHan 先装载 XIHAN_CONFIG_PATH 目录里的 JSON 文件并监听变化
-builder.AddXiHan(xihan => xihan.UseStandardProfile());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanHealth();
-
-// 读 CurrentValue 而不是在启动时缓存，ConfigMap 更新后返回新值
-app.MapGet("/banner", (IOptionsMonitor<BannerOptions> banner) => banner.CurrentValue.Banner);
-
-app.Run();
-
-public sealed class BannerOptions
-{
-    public const string Section = "Sample";
-
-    public string Banner { get; set; } = "Hello from XiHan";
-}
-```
-
-kubelet 同步 ConfigMap 有延迟，示例里改完约一分钟内生效。要在 Native AOT 下照常绑定与重载，项目设 `<EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>`。
+挂载文件的优先级低于环境变量，所以 Deployment 以环境变量写的 `XiHan__Kernel__StopTimeoutSeconds` 不会被 ConfigMap 里的同名键改掉。kubelet 同步 ConfigMap 有延迟，示例里改完约一分钟内生效。
 
 ## Lease 领导选举
 
@@ -78,16 +43,11 @@ kubelet 同步 ConfigMap 有延迟，示例里改完约一分钟内生效。要�
 `samples/KubernetesApp` 用 Full 组合演示上述四项，它的 `deploy/` 是 `xihan pack` 生成并提交的产物。它按 `KUBERNETES_SERVICE_HOST` 是否存在决定是否装配 Lease 选举，本地运行退回 Full 组合自带的进程内选举：
 
 ```csharp
-using KubernetesApp.Heartbeat;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Full;
-using XiHan.Framework.Protocols.Http.Routing;
 using XiHan.Framework.Scheduling.Abstractions.Leadership;
 using XiHan.Framework.Scheduling.Abstractions.Schedulers;
 using XiHan.Framework.Scheduling.Kubernetes;
 
-var builder = WebApplication.CreateBuilder(args);
-
+// Program.cs 的骨架与第一个应用相同，下面只列与部署有关的部分
 // API Server 的环境变量只在 Pod 里存在
 var inCluster = Environment.GetEnvironmentVariable("KUBERNETES_SERVICE_HOST") is not null;
 
@@ -100,16 +60,11 @@ builder.AddXiHan(xihan =>
     }
 });
 
-var app = builder.Build();
-app.UseXiHan();
 app.MapXiHanHealth();        // /health/startup、/health/ready、/health/live：Deployment 的三个探针
-app.MapXiHanOperations();
 
 // 只有持有 Lease 的 Pod 按计划运行心跳作业；响应类型是记录而不是匿名类型，AOT 下才能经源生成序列化
 app.MapGet("/leader", (JobSchedulerEngine scheduler, ILeaderElection election) =>
     new LeaderView(election.GetType().Name, scheduler.IsLeader));
-
-app.Run();
 
 public sealed record LeaderView(string Election, bool IsLeader);
 ```
@@ -169,14 +124,6 @@ curl -s localhost:5100/leader      # election 为 InMemoryLeaderElection，isLea
 - 只读根文件系统：生成的容器只有 `/tmp` 可写，默认实现里写文件的 Provider（如 `ObjectStorage.FileSystem`）要把根目录指到 `/tmp` 之下或改用持久卷；示例的 ConfigMap 就把 `XiHan:ObjectStorage:FileSystem:RootPath` 设为 `/tmp/xihan-blobs`。
 
 ## 常见问题
-
-### 滚动更新时还是有请求失败
-
-先看 readiness 是否真的在内核进入服务状态后才返回 200（`MapXiHanHealth` 已保证），再看 `terminationGracePeriodSeconds` 是否大于内核的 `StopTimeoutSeconds`。用 `xihan pack` 生成的 Deployment 两者自动对齐，手写的常常只设了其中一个。
-
-### ConfigMap 改了，应用没变
-
-三个常见原因：Pod 里没有 `DOTNET_USE_POLLING_FILE_WATCHER=1`（符号链接切换不触发 inotify）；代码在启动时读了一次 `IOptions<T>` 并缓存，而不是读 `IOptionsMonitor<T>.CurrentValue`；改的键在环境变量里也有同名值，环境变量优先。另外 kubelet 同步周期约一分钟，不是立刻生效。
 
 ### 两个 Pod 都在跑同一个定时作业
 

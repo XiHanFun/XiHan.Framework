@@ -54,8 +54,8 @@ dotnet add package XiHan.Framework.Localization.Abstractions --prerelease
 
 | 键 | 类型 | 缺省 | 说明 |
 | --- | --- | --- | --- |
-| `DefaultLocale` | `string` | `en-US` | 协商不到时的区域；进程默认作用域用它 |
-| `Locales` | `string`（逗号分隔） | 内置 10 种 | 启用的区域，按优先级排列；去重并规范化 |
+| `XiHan:Localization:DefaultLocale` | `string` | `en-US` | 协商不到时的区域；进程默认作用域用它 |
+| `XiHan:Localization:Locales` | `string`（逗号分隔） | 内置 10 种 | 启用的区域，按优先级排列，同语言回退按这个顺序；去重并规范化 |
 
 ```json
 { "XiHan": { "Localization": { "DefaultLocale": "zh-CN", "Locales": "zh-CN,zh-TW,en-US" } } }

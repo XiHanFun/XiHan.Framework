@@ -44,47 +44,29 @@
 
 ### 分区
 
-工作流的数据分成平台分区与每个租户一个分区。一次调用只读写自己的分区：分区是当前调用的租户，没有租户的调用（平台）是平台分区。平台与租户互不可见：租户看不到平台和别的租户的定义、实例与任务，平台也看不到任何租户的。看不到的一律按不存在处理（定义 `WORKFLOW_NOTFOUND_001`、实例 `_002`、书签 `_003`）。平台要管理某个租户的流程，以那个租户的身份发起调用。用 `Workflow.Database` 时租户的记录随租户分库，见[租户分片与分库](/multi-tenancy/sharding)。
+工作流的数据分成平台分区与每个租户一个分区。一次调用只读写自己的分区：分区是当前调用的租户，没有租户的调用（平台）是平台分区。平台与租户互不可见：租户看不到平台和别的租户的定义、实例与任务，平台也看不到任何租户的。看不到的一律按不存在处理（定义 `WORKFLOW_NOTFOUND_001`、实例 `_002`、书签 `_003`），不暴露别的分区有没有这条记录。平台要管理某个租户的流程，以那个租户的身份发起调用。用 `Workflow.Database` 时租户的记录随租户分库，见[租户分片与分库](/multi-tenancy/sharding)。
+
+每个分区是一个名字空间：定义的 `TenantId` 是分区的租户（平台为空），同名定义在不同分区里各自从版本 1 编号，互不占号；按名字解析（启动、`FindPublishedAsync`、子流程与 `ForEach`）只在自己的分区里找。没有全局定义：各租户共用的流程模板要在每个租户里各建一份，由应用的租户初始化（种子）负责。
 
 ## 启用
 
-| 实现 | 存储 | 实例锁 | 适用 |
-| --- | --- | --- | --- |
-| [Workflow.InMemory](/packages/workflow-inmemory)（默认实现，`Profiles.Full` 已包含） | 有界内存表 | 进程内信号量 | 单实例、开发、测试；重启后实例丢失 |
-| [Workflow.Database](/packages/workflow-database) | 应用的关系库（`persistence.relational@1`） | 数据库租约行 | 多实例、需要持久化 |
+两个实现二选一：默认的 [Workflow.InMemory](/packages/workflow-inmemory)（`Profiles.Full` 已包含）适合单实例、开发与测试，重启后实例丢失；[Workflow.Database](/packages/workflow-database) 把状态放在应用的关系库里（`persistence.relational@1`），适合多实例与需要持久化的部署。存储、事务、实例锁与轮询的逐项对比见[存储与实例锁](/workflow/activities#存储与实例锁)。
 
 ```bash
 dotnet add package XiHan.Framework.Workflow.InMemory --prerelease
 ```
 
+接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，特性链上只多一行 `UseFeature`：
+
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Workflow.InMemory;
 
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan.UseFeature<InMemoryWorkflowFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
-```
-
-换成数据库实现时装配一个持久化 Provider 和 `DatabaseWorkflowFeature`，连接串来自绑定 `db`（见[资源绑定](/configuration/bindings)）；装配后顶替内存实现，业务代码注入的四个服务不变：
-
-```csharp
-using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Workflow.Database;
-
 builder.AddXiHan(xihan => xihan
-    .UseFeature(new SqlSugarPersistenceFeature(static (binding, config) =>
-    {
-        config.DbType = DbType.PostgreSQL;
-        config.ConnectionString = binding.ValueOrThrow().Value;
-    }))
-    .UseFeature<DatabaseWorkflowFeature>());
+    .UseMinimalProfile()
+    .UseFeature<InMemoryWorkflowFeature>());   // 只多这一行
 ```
+
+换成数据库实现时装配一个持久化 Provider 和 `DatabaseWorkflowFeature`，连接串来自绑定 `db`（见[资源绑定](/configuration/bindings)），写法见 [Workflow.Database](/packages/workflow-database)；装配后顶替内存实现，业务代码注入的四个服务不变。
 
 特性启动时起到期书签的轮询（缺省每秒一次），定时、超时、重试、提醒、定时启动都靠它推进。每个周期先看应用是否在服务状态：启动中与排空中管道不接受调用，这时的周期什么也不做、不记告警，进入服务状态后照常轮询与清理。数据库实现的轮询领导权也只在服务状态拿与续：排空中的节点在下一个周期就释放，另一个在服务的实例随即接手。
 
@@ -153,7 +135,7 @@ public sealed class LeaveSetup(IWorkflowDefinitionCatalog catalog)
 }
 ```
 
-在上面「启用」的 `Program.cs` 里登记 `builder.Services.AddScoped<LeaveSetup>()`，在一次调用里（例如一个操作或启动种子）调用 `PublishAsync`。运行后：`CreateAsync` 返回版本 1 的 `Draft`，`PublishAsync` 返回同一条记录、状态变为 `Published`，`FindPublishedAsync("hr.leave")` 能找到它；再调一次 `CreateAsync` 得到版本 2 的草稿，旧版本不受影响。下一页用 `IWorkflowEngine.StartAsync` 按名字 `hr.leave` 启动它。
+在 `Program.cs` 里（`builder.Build()` 之前）登记 `builder.Services.AddScoped<LeaveSetup>()`，在一次调用里（例如一个操作或启动种子）调用 `PublishAsync`。运行后：`CreateAsync` 返回版本 1 的 `Draft`，`PublishAsync` 返回同一条记录、状态变为 `Published`，`FindPublishedAsync("hr.leave")` 能找到它；再调一次 `CreateAsync` 得到版本 2 的草稿，旧版本不受影响。下一页用 `IWorkflowEngine.StartAsync` 按名字 `hr.leave` 启动它。
 
 ## 用构造器定义
 
@@ -247,7 +229,7 @@ var definition = parsed.ValueOrThrow();
 | `All` | 取全部出边 | `Parallel` |
 | `None` | 不流出 | `End`、`Terminate`、`Fault` |
 
-`AllMatched` 与 `Exclusive` 一条也选不到时实例故障。默认出边只作兜底，有条件成立时不走它。条件引用了未知变量是表达式错误，实例故障，不会悄悄当成假。
+`AllMatched` 与 `Exclusive` 一条也选不到时实例故障，决策节点都加一条 `AddDefaultTransition` 作兜底。默认出边只作兜底，有条件成立时不走它。条件引用了未知变量是表达式错误，实例故障，不会悄悄当成假；可选变量在 `AddVariable` 里给默认值。
 
 ## 校验
 
@@ -266,7 +248,7 @@ var definition = parsed.ValueOrThrow();
 | `DisableAsync(ids)` | `Published` | 停用，删除定时启动书签 |
 | `ArchiveAsync(ids)` | 任意 | 归档，删除定时启动书签 |
 | `DeleteAsync(ids)` | `Draft` | 删除草稿 |
-| `FindAsync(id)` / `FindPublishedAsync(name, version)` | — | 查询；`version` 为空取最新已发布版本，只在当前分区里找 |
+| `FindAsync(id)` / `FindPublishedAsync(name, version)` | — | 查询；`version` 为空取最新已发布版本 |
 | `QueryAsync(WorkflowDefinitionQuery)` | — | 定义列表：摘要的一页与总数（`WorkflowDefinitionPage`） |
 | `ActivityTypes()` | — | 已登记活动的描述符（类型、显示名、分类、输入属性），供设计器列出可用节点；显示名、分类显示名、说明与输入说明按调用方的区域渲染 |
 
@@ -336,33 +318,11 @@ var page = (await catalog.QueryAsync(new WorkflowDefinitionQuery
 
 关联 ID 是按包含匹配的，搜索框里输单据号的一段就能找到；要按一组单据号精确查进度，用实例查询的 `CorrelationIds`。
 
-## 定义的租户
-
-定义属于一个分区（`TenantId` 是分区的租户，平台为空）。每个分区是一个名字空间：同名定义在不同分区里各自从版本 1 编号，互不占号。调用只看得到、改得动自己分区的定义，按名字解析（启动、`FindPublishedAsync`、子流程与 `ForEach`）也只在自己的分区里找。看不到的定义一律按不存在处理，返回 `WORKFLOW_NOTFOUND_001`，不暴露别的分区有没有这个定义。
-
-没有全局定义：平台建的定义对租户不可见。各租户共用的流程模板要在每个租户里各建一份，由应用的租户初始化（种子）负责。
-
 ## 常见问题
 
 ### 构造器与 JSON 该用哪个
 
 代码里固定的流程用构造器，编译期就能发现属性名写错；设计器产出、要存库、要让运营改的流程用 JSON。两者生成的是同一个 `WorkflowDefinition`，`WorkflowJson.Serialize` 可以把构造器的结果导出给设计器当模板。
-
-### 发布失败只报 `WORKFLOW_VALIDATION_001`，怎么知道哪里错了
-
-错误的 `details.errors` 是逐条的违规列表，每条带定义 JSON 里的路径（如 `$.nodes[2].properties.Cron`）、消息键与参数；经 HTTP 时宿主写成 Problem Details 的字段级 `errors`，设计器按路径里的下标定位节点或转移。进程内用 `validator.Diagnose(definition)` 拿同一组问题，详见[设计期诊断](/workflow/activities#设计期诊断)。
-
-### 改了已发布的流程，正在跑的实例怎么办
-
-`UpdateAsync` 只能改草稿。要改已发布的流程，用 `NewVersionAsync(name)` 复制出新草稿、改好后发布；旧版本状态不变，正在跑的实例留在旧版本上，新启动的取最新已发布版本。要让旧实例也走新版本，对它们调 `MigrateAsync`；要让旧版本不再被新实例使用，调 `DisableAsync`。
-
-### 为什么平台建的定义租户看不到
-
-分区是硬隔离：没有全局定义，平台与租户互不可见。各租户共用的模板由应用在租户初始化时各建一份；平台要管理某租户的流程时，以那个租户的身份发起调用。
-
-### 决策节点一条出边都没选到，实例为什么故障了
-
-`Decision` 的出边是 `Exclusive`：没有条件成立又没有默认出边时实例故障，不会悄悄停下。给每个决策节点加一条 `AddDefaultTransition` 作兜底；条件引用了启动时没给的变量同样是故障，可选变量在 `AddVariable` 里给默认值。
 
 ## 相关包与下一步
 

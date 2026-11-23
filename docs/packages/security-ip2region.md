@@ -32,28 +32,15 @@ IP 归属地的 ip2region 离线库 Provider：按宿主提供的 IPv4 / IPv6 xd
 dotnet add package XiHan.Framework.Security.Ip2Region --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。在 `AddXiHan` 里装配特性，`Program.cs` 的其余部分见[第一个应用](/getting-started/first-app)：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Security.Ip2Region;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<Ip2RegionSecurityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
-xdb 文件随应用发布，例如在项目文件里复制到输出目录：
-
-```xml
-<ItemGroup>
-  <None Include="IpDatabases/*.xdb" CopyToOutputDirectory="PreserveNewest" />
-</ItemGroup>
-```
+xdb 文件要随应用发布到输出目录，项目文件的写法与带端点的完整示例见 [IP 归属地](/security/ip-region)。
 
 ## 配置
 
@@ -85,7 +72,7 @@ xdb 文件随应用发布，例如在项目文件里复制到输出目录：
 | `Ip2RegionOptions` | `V4Database`、`V6Database`；`FromConfiguration` 读取上表 |
 | `Ip2RegionResolver` | `IIpRegionResolver` 的实现，`IDisposable`，释放已加载的查询器 |
 
-结果类型 `IpRegion`（`Country`、`Province`、`City`、`Isp`、`CountryCode`，展示文本 `Location`）在 [Security.Abstractions](./security-abstractions) 的 `Network` 命名空间。
+结果类型 `IpRegion`（`Country`、`Province`、`City`、`Isp`、`CountryCode`，展示文本 `Location`）在 [Security.Abstractions](./security-abstractions) 的 `Network` 命名空间，`Location` 的拼法见 [IP 归属地](/security/ip-region)。
 
 ## 使用示例
 
@@ -115,10 +102,10 @@ public sealed class LoginLocation(IServiceProvider services)
 ## 行为与限制
 
 - IPv4 映射的 IPv6 地址按 IPv4 查。
-- 不查的地址：回环；IPv4 的 10/8、172.16/12、192.168/16；IPv6 的链路本地、站点本地与组播。它们直接返回无值。
+- 不查的地址：回环；IPv4 的 10/8、172.16/12、192.168/16；IPv6 的链路本地、站点本地与组播。它们直接返回无值，不访问库。
 - 记录格式兼容两版：新版"国家|省份|城市|运营商|国家代码"，旧版"国家|区域|省份|城市|运营商"。`0` 与空段为未知；保留地址（`Reserved`）与各段全未知返回无值。
 - 单次查询失败（库损坏、地址超出库的范围）按无值处理，只记调试日志，地址不进日志；`Resolve` 不抛出。
-- `Location` 把国家、省份、城市、运营商去掉缺失与重复（不区分大小写）后以空格连接，例如 `中国 广东省 深圳市 电信`。
+- `Ip2RegionResolver` 是单例，应用停止时释放已加载的查询器；加载后的查询线程安全。
 
 ## 相关
 

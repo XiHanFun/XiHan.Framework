@@ -160,12 +160,12 @@ public sealed class FaqKnowledge(IKnowledgeIngestor ingestor, IKnowledgeRetrieve
 `FaqKnowledge` 以 `builder.Services.AddScoped<FaqKnowledge>()` 登记（`IAIChat` 是作用域服务）。流水线的规则：
 
 - 记录 ID 是 `<documentId>#<chunkIndex>`。同一文档重新摄入先写后删：新块全部嵌入、校验维度并写入成功后，才删掉旧版本多出来的块（块序号不小于新块数的），同 ID 的块由写入覆盖。嵌入、维度校验或写入失败时不删任何旧块，旧文档照常可检索；写入中途失败最多留下新旧混合的块，按返回的错误重试摄入即恢复一致。删多余旧块这一步失败时返回该错误，新块已经在库里。新文本切不出块时整篇删除，返回 0。
-- 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度，并换一个集合。
+- 每个嵌入向量的长度必须等于 `XiHan:AI:Knowledge:Dimensions`，不一致返回 `AI_VALIDATION_002`。换嵌入模型时一并改维度、换一个集合，并重新摄入全部文档。
 - 摄入与检索的嵌入 Provider 依次取请求的 `Provider`、`XiHan:AI:Knowledge:EmbeddingProvider`、目录的 `DefaultEmbeddingProvider`，都没有时返回 `AI_NOTFOUND_001`（`ai.provider.embedding_default_missing`）。
 - 检索的 `Top` 缺省取 `XiHan:AI:Knowledge:Top`，最多 1000；`Filter`（`RetrievalFilter`）的 `DocumentIds`（最多 1000 个）与 `Metadata`（键值相等）取交集，超过上限在构造时抛出 `ArgumentOutOfRangeException`（ADR-0190）；`MinScore` 与过滤一起交给存储施加，原生支持得分阈值的后端在服务端过滤。
 - `Augment` 在检索结果为空时原样返回问题。配置了 `XiHan:AI:Knowledge:PromptName` 就用它指向的模板（占位符 `{context}`、`{question}`，配置里的或 `AddAIPrompt` 登记的都行），没配置时用内置英文模板。模板在启动时校验：`AIToolsFeature`、`VectorDataKnowledgeFeature` 与 `OpenAIFeature` 启动时都解析增强器（只装其中任何一个也一样），模板不存在（`AI_NOTFOUND_002`）或引用了这两个以外的占位符、用代表性参数试渲染失败（`AI_VALIDATION_001`）即启动失败，不会悄悄换成内置模板。
 - `{context}` 里每个片段一段：先是 `[序号] Source: 来源` 一行，再是片段文本。来源依次取块元数据的 `KnowledgeMetadataKeys.Title`（`title`）、`KnowledgeMetadataKeys.Source`（`source`），都没有时取文档 ID。文档 ID 多半是 Guid，模型拿它说不清依据，所以摄入时最好带上标题。
-- 没有装配 `ai.knowledge` Provider 时，摄入、删除与检索都返回 `AI_UNAVAILABLE_002`。
+- 没有装配 `ai.knowledge` Provider 时，摄入、删除与检索都返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
 
 ## AI.VectorData
 
@@ -190,28 +190,19 @@ builder.AddXiHan(xihan => xihan
 { "XiHan": { "AI": { "Knowledge": { "Collection": "faq", "Dimensions": 768 } } } }
 ```
 
-集合定义、距离函数与过滤的下推方式见 [AI.VectorData](/packages/ai-vectordata)。它自带健康项 `ai.vectordata.store`，应用不必另写向量库的健康检查：
-
-- 启动时同步探一次，之后每隔 `XiHan:AI:VectorData:HealthProbeIntervalSeconds`（缺省 15 秒，也是单次探测的超时）在后台重探。
-- 探针只问默认集合（`XiHan:AI:Knowledge:Collection`）在不在，存在与否都算连得上；不列集合、不建集合、不读写记录。
-- 向量库应答即 Ready。连接器抛出时 Degraded，错误码 `AI_UNAVAILABLE_002`，与检索在这时返回的码相同；探测超时也是 Degraded，错误码 `KERNEL_UNAVAILABLE_005`。
-- 条目 Degraded 时应用照常启动、照常服务，`/health/ready` 仍通过，恢复后条目回到 Ready。条目不带数据与说明，不写端点或连接信息。汇总见[生命周期与健康](/startup/lifecycle)。
+集合定义、距离函数与过滤的下推方式见 [AI.VectorData](/packages/ai-vectordata)。它自带健康项 `ai.vectordata.store`，应用不必另写向量库的健康检查：启动时探一次、之后在后台定时重探，只问默认集合在不在；向量库不应答或探测超时时条目 Degraded，应用照常启动、照常服务，`/health/ready` 仍通过，恢复后条目回到 Ready。探测的细则与错误码见包页，健康项的汇总见[生命周期与健康](/startup/lifecycle)。
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:AI:Tools:<操作 ID>` | string | 按约定推导 | 覆盖操作工具名 |
-| `XiHan:AI:Knowledge:Collection` | string | `knowledge` | 默认集合；带租户的调用用 `<Collection>.<租户 ID>`，各租户互不可见（ADR-0210） |
-| `XiHan:AI:Knowledge:Dimensions` | int，至少 1 | 1536 | 嵌入维度 |
-| `XiHan:AI:Knowledge:ChunkSize` | int，至少 1 | 1000 | 切块大小（字符） |
-| `XiHan:AI:Knowledge:ChunkOverlap` | int，不小于 0 | 100 | 相邻块的重叠（字符） |
-| `XiHan:AI:Knowledge:Top` | int，至少 1 | 5 | 默认检索条数 |
-| `XiHan:AI:Knowledge:EmbeddingProvider` | string | 目录的默认嵌入 Provider | 知识库用的嵌入 Provider；请求写了 Provider 时以请求为准 |
-| `XiHan:AI:Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名；启动时校验存在且只用 `{context}`、`{question}` |
-| `XiHan:AI:VectorData:HealthProbeIntervalSeconds` | 有限的数值，大于 0 | 15 | `AI.VectorData` 健康项的重探间隔，也是单次探测的超时 |
+本页用到的键：
 
-Provider、提示词与护栏的键见[模型与对话](/ai/chat#配置)。与那里相同，这些键在装配时读一次、不热更新，取值不合法时抛出 `ArgumentException`、启动失败。
+| 键 | 缺省 | 说明 |
+| --- | --- | --- |
+| `XiHan:AI:Tools:<操作 ID>` | 按约定推导 | 覆盖操作工具名 |
+| `XiHan:AI:Knowledge:Collection` | `knowledge` | 默认集合；带租户的调用用 `<Collection>.<租户 ID>`，各租户互不可见（ADR-0210） |
+| `XiHan:AI:Knowledge:Dimensions` | 1536 | 嵌入维度，必须等于嵌入模型输出的维度 |
+
+完整配置（切块、检索条数、知识库的嵌入 Provider 与增强模板，以及 Provider、提示词与护栏的键）见 [AI.Abstractions](/packages/ai-abstractions#配置)，健康探测的间隔见 [AI.VectorData](/packages/ai-vectordata#配置)。这些键在装配时读一次、不热更新，取值不合法时抛出 `ArgumentException`、启动失败。
 
 ## 与 MCP 的关系
 
@@ -224,31 +215,9 @@ Provider、提示词与护栏的键见[模型与对话](/ai/chat#配置)。与�
 - 测试：`AI.Conformance` 提供 `KnowledgeStoreConformance`、`AIProviderConformance` 与确定性的 `HashingEmbeddingGenerator`，测试不依赖外部模型，见[一致性套件与门禁](/testing/conformance)。自写目录的应用继承 `AIProviderConformance`，实现 `StartAsync`（被测 Provider 是默认）与 `StartWithoutDefaultAsync`（没有默认），能把聊天与嵌入的默认分开时再覆写 `StartWithSeparateDefaultsAsync`。
 - 框架不提供 Agent 工厂，等 `Microsoft.Agents.AI` 稳定后另立规范。
 
-## 常见问题
-
-### 怎样控制模型能调哪些工具
-
-两层：操作上没有 `Expose.Ai` 就不进目录；请求的 `Tools` 只列这次要带的名字，没列的模型看不到。再往下是授权：工具以调用方身份执行，没有权限的操作返回 `SECURITY_DENIED_004` 给模型。
-
-### 工具名为什么是 `orders_list` 而不是 `orders.list`
-
-模型工具名只允许字母、数字、`_` 与 `-`，所以 `.` 换成 `_`；太长时截断加哈希。要自己定名字用 `XiHan:AI:Tools:orders.list`，重名或不合法在启动时就失败。
-
-### 换了嵌入模型，旧的知识库还能用吗
-
-不能直接用：向量维度变了，摄入会报 `AI_VALIDATION_002`，检索结果也没有意义。改 `Dimensions`、换一个 `Collection`，重新摄入全部文档。
-
-### 摄入中途失败，知识库会不会一半新一半旧
-
-最多在同一文档内留下新旧混合的块；旧块不会被提前删掉，所以旧文档照常可检索。按返回的错误重试摄入即恢复一致。
-
-### 没有向量库能不能先跑起来
-
-能。开发时用 `Microsoft.Extensions.VectorData` 的内存连接器登记 `VectorStore`；完全不装知识库 Provider 时，摄入与检索返回 `AI_UNAVAILABLE_002`，聊天与工具不受影响。
-
 ## 相关包与下一步
 
-- [AI.Abstractions](/packages/ai-abstractions)：工具目录、知识库流水线与契约
+- [AI.Abstractions](/packages/ai-abstractions)：工具目录、知识库流水线、契约与[错误码](/packages/ai-abstractions#错误码)
 - [AI.OpenAI](/packages/ai-openai)：带函数调用循环的聊天客户端与嵌入生成器
 - [AI.VectorData](/packages/ai-vectordata)：`IKnowledgeStore` 的向量库适配与健康项
 - [Protocols.Mcp](/packages/protocols-mcp)：把操作暴露成 MCP tool

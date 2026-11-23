@@ -42,14 +42,14 @@
 dotnet add package XiHan.Framework.Scheduling.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已经装配本包；不用组合包时单独装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已经装配本包；用别的组合或自己组合时显式装配，接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上只多一行 `UseFeature`：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Scheduling.InMemory;
 
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
+builder.AddXiHan(xihan => xihan
+    .UseMinimalProfile()
+    .UseFeature<InMemorySchedulingFeature>());   // 只多这一行
 ```
 
 ## 配置
@@ -85,21 +85,15 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
 
 ## 使用示例
 
+装配本包之后，在 `Program.cs` 里（`builder.Build()` 之前）登记一个每 10 秒运行的作业：
+
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
-using XiHan.Framework.Scheduling.InMemory;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddJob<HeartbeatJob>(new JobName("heartbeat"), JobSchedule.Every(TimeSpan.FromSeconds(10)));
-builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 
 public sealed class HeartbeatJob(ILogger<HeartbeatJob> logger) : IJob
 {

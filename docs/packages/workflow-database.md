@@ -43,16 +43,15 @@ dotnet add package XiHan.Framework.Workflow.Database --prerelease
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Workflow.InMemory`：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。装配一个持久化 Provider 和本包，接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，特性链上只多这两项（连接串来自绑定 `db`）；装配后顶替默认的 `Workflow.InMemory`：
 
 ```csharp
 using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Persistence.SqlSugar;
 using XiHan.Framework.Workflow.Database;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
+    .UseMinimalProfile()
     .UseFeature(new SqlSugarPersistenceFeature(static (binding, config) =>
     {
         config.DbType = DbType.PostgreSQL;
@@ -131,18 +130,17 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 行为与限制
 
-- 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。写入的记录必须属于存储方法的分区。删实例级联删节点实例。
-- 实例列表的每个过滤项都是 SQL 条件，按排序项 `Sorts` 依次（空时创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102、ADR-0104，排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）；`SearchText` 可空只为给已有行的表加列，已有的行要回填 `WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列），没回填的行不被关键字匹配。
-- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](/workflow/definitions)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。`Category` 与 `SearchText` 可空只为给已有行的表加列，已有的行要从 `Document` 回填（`Category` 取 `category`，`SearchText` = `WorkflowKeyword.Join(name, displayName, description)`），没回填的行不被分类与关键字匹配。
-- 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（ADR-0096、ADR-0099），已有的书签行要回填这两列。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
+- 保存是「新增或整体替换」：按 ID 批量取回已有行（每 1000 个一批），有的整行更新、没有的新增，同一批里同一 ID 后者覆盖前者；保存在调用方的事务里，失败随调用一起回滚。删实例级联删节点实例。
+- 实例列表的每个过滤项都是 SQL 条件，按排序项 `Sorts` 依次（空时创建时间降序）再接创建时间降序、写入序号降序、ID 降序在 SQL 里排序后分页（ADR-0102、ADR-0104，排序项里有创建时间时它不再作次序键，写入序号与 ID 随它的方向）；`CountAsync` 是 SQL 计数。关联 ID 集合是 `IN`（空集合不匹配），只取顶层是 `ParentInstanceId IS NULL`，关键字对 `SearchText` 做包含判断——实例标题或关联 ID 包含即匹配（ADR-0096、ADR-0099）。
+- 定义列表（`ListSummariesAsync` / `CountAsync`）是 SQL（ADR-0096）：关键字对 `SearchText` 做包含判断，两边都已小写折叠（见 [关键字](/workflow/definitions#关键字)），按字面由持久化的 `Contains` 保证（ADR-0098）；分类、名字、状态等值，创建时间区间按列比较；按排序项 `Sorts` 依次（空时名字升序）再接名字升序、版本降序、ID 升序在 SQL 里排序（ADR-0102、ADR-0104；次序键跳过排序项里已有的列、重复的排序项只取第一次，SQL Server 不许同一列在 `ORDER BY` 里出现两次）；摘要从读回的 `Document` 取。
+- 待办查询（`ListUserTasksAsync` / `CountUserTasksAsync`）同样是 SQL：书签行带所属实例的定义名、状态与实例一侧的关键字查询列，写书签时从实例行算出，实例新增或这几列变化时同步到它的书签行（同一事务），只取状态为 `Running` 的；关键字对任务标题列 `SearchTitle` 与实例一侧的 `SearchInstanceText`（实例行的 `SearchText` 再拼上折叠后的定义名）各自做包含判断、取或——任务标题、实例标题、定义名、关联 ID 任一包含即匹配（ADR-0096、ADR-0099）。到期书签按到期时间升序，其余书签与节点实例按时间升序、同刻按写入序号。
+- 上面三种查询用到的列（`Category`、`SearchText`、`SearchTitle`、`SearchInstanceText`）可空只为给已有行的表加列，已有的行要回填，没回填的行不被分类与关键字匹配，回填规则见下文「排序与查询列」。
 - 读出来的模型来自 JSON 反序列化，天然是快照；按 ID 批量查找每 1000 个一批，列表与级联查询按全序排序分页读完。删除对不存在的 ID 忽略，`DeleteByInstanceAsync` 删该实例全部书签；写入的记录的 `TenantId` 不等于分区时抛 `ArgumentException`。
 - 可空时间列的条件不写 `!= null`：SQL 的 `NULL <= 值` 本就不成立，而 SqlSugar 会把它翻译成 `<> @参数(NULL)`。
 - 仓储失败 → `WORKFLOW_UNAVAILABLE_001`，`reason` 是原错误码，原错误在 `Inner`；只读工作单元的拒绝 `PERSISTENCE_UNEXPECTED_001` 原样返回。
-- 续约失败只记日志。锁与租约的每一步都是独立事务，别的节点立刻看得见。
-- 锁行不存在就插入（别人先插入则重试），存在且过期就带并发戳接管（戳冲突则重试）。
-- 索引的用途：`IX_WorkflowInstanceRecord_PaInId` 级联子实例，`IX_WorkflowInstanceRecord_CoId` 按关联 ID 启动时查重，`IX_WorkflowInstanceRecord_TeId_EnAt` 保留期清理，`IX_WorkflowInstanceRecord_TeId_CrAt` 列表倒序分页，`IX_WorkflowBookmarkRecord_Ki_Ke` 按信号、受理人、子流程节点查书签，`IX_WorkflowBookmarkRecord_TeId_DuAt` 到期书签的轮询；名字与版本的唯一索引服务按名字查找、取最大版本与最新发布版本。
+- 锁与租约：插入时别人先插入、接管时并发戳冲突都重试；续约失败只记日志。
 - 租约行与业务写入不在同一个事务里：SQLite 上要把租约表放到另一个库文件，见下文「SQLite 上的租约表」；PostgreSQL 等行锁数据库不需要。
-- 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列不为空）、`UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——每一行都受约束；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`）、`IX_WorkflowInstanceRecord_TeId_EnAt`（`(TenantId, EndedAt)`）、`IX_WorkflowInstanceRecord_TeId_CrAt`（`(TenantId, CreatedAt)`）、`IX_WorkflowInstanceRecord_TeId_StId_CrAt`（`(TenantId, StarterId, CreatedAt)`，「我发起的」按发起人倒序分页，ADR-0096）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（`(TenantId, DueAt)`）；平台表有同样的索引，时间列不带租户前缀；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合由应用按查询习惯自己加。
+- 表结构由应用管理，`InitTables` 只用于开发与测试。`Document` 列用长文本类型（`text` / `nvarchar(max)` / `longtext`）。索引由实体上的 `[EntityIndex]` 声明，SqlSugar 的 `InitTables` 与 EF Core 的 `ApplyPersistenceConventions(Database)` 都按它建（ADR-0072）：`UX_WorkflowDefinitionRecord_Na_TeId_Ve`（`(Name, TenantId, Version)` 唯一，租户列不为空）、`UX_PlatformWorkflowDefinitionRecord_Na_Ve`（`(Name, Version)` 唯一）——每一行都受约束，服务按名字查找、取最大版本与最新发布版本；`IX_WorkflowInstanceRecord_PaInId`（`ParentInstanceId`，级联子实例）、`IX_WorkflowInstanceRecord_CoId`（`CorrelationId`，按关联 ID 启动时查重）、`IX_WorkflowInstanceRecord_TeId_EnAt`（`(TenantId, EndedAt)`，保留期清理）、`IX_WorkflowInstanceRecord_TeId_CrAt`（`(TenantId, CreatedAt)`，列表倒序分页）、`IX_WorkflowInstanceRecord_TeId_StId_CrAt`（`(TenantId, StarterId, CreatedAt)`，「我发起的」按发起人倒序分页，ADR-0096）、`IX_WorkflowNodeInstanceRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_InId`（`InstanceId`）、`IX_WorkflowBookmarkRecord_Ki_Ke`（`(Kind, Key)`，按信号、受理人、子流程节点查书签）、`IX_WorkflowBookmarkRecord_TeId_DuAt`（`(TenantId, DueAt)`，到期书签的轮询）；平台表有同样的索引，时间列不带租户前缀；租约表只按主键读写。有独立库的租户，四张租户表要建在它自己的库里（`InitTables` 只作用于默认连接）。实例列表的其他过滤组合由应用按查询习惯自己加。
 - 健康项 `workflow.database.poller`：启动时同步读一次 `workflow.poller` 的租约行，之后按 `HealthProbeIntervalSeconds` 在后台重探（独立作用域、只读工作单元、读后回滚、不经管道）；租约表不可达时条目为 Degraded（`KERNEL_UNAVAILABLE_005`），应用仍在服务。
 - 对 SQLite（`Persistence.SqlSugar`）通过 `Workflow.Conformance` 的存储与引擎全部用例；对 SQLite（`Persistence.EntityFrameworkCore`，租约表在命名连接的另一个库文件）通过引擎与任务全部用例；SQLite（`Persistence.SqlSugar`）加内存消息与发件箱的宿主也通过引擎与任务全部用例（ADR-0096 第六节）；PostgreSQL（`Persistence.SqlSugar`，门控 `XIHAN_TEST_POSTGRES`）通过存储、引擎与任务全部用例。
 
@@ -162,7 +160,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 }
 ```
 
-- `LockConnection` 指向持久化的命名连接（[SqlSugar 的命名连接](./persistence-sqlsugar#命名连接)、[EF Core 的命名连接](./persistence-entityframeworkcore#行为与限制)，RFC-0005）：特性把 `WorkflowLockRecord` 登记到这个连接（`InitTables` / `EnsureCreated` 把租约表建在那里），租约的每一步与健康探针开绑定这个连接的工作单元，事务只开在租约库上；业务调用不碰租约库，业务事务也就不锁它。
+- `LockConnection` 指向持久化的命名连接（[SqlSugar 的命名连接](./persistence-sqlsugar#命名连接)、[EF Core 的命名连接](./persistence-entityframeworkcore#命名连接)，RFC-0005）：特性把 `WorkflowLockRecord` 登记到这个连接（`InitTables` / `EnsureCreated` 把租约表建在那里），租约的每一步与健康探针开绑定这个连接的工作单元，事务只开在租约库上；业务调用不碰租约库，业务事务也就不锁它。
 - SqlSugar 方式一在 `XiHan:Persistence:SqlSugar:Connections:<name>` 声明连接，回调按 `config.ConfigId` 区分；方式二由应用把同名 `ConfigId` 的连接加进自己注册的客户端。连接不在客户端里时启动即失败（`PERSISTENCE_VALIDATION_004`）。
 - EF Core 在 `XiHan:Persistence:EntityFrameworkCore:Connections:<name>` 声明这个连接（ADR-0087）：租约的每一步与健康探针本来就在自己的作用域里开绑定连接的工作单元，作用域里的 `DbContext` 按租约库的连接串建出；连接没有声明时装配即失败（`PERSISTENCE_VALIDATION_004`）。`DbContext` 里照常登记租约表 `WorkflowLockRecord`。
 - 内存持久化不支持命名连接，配了 `LockConnection` 即装配失败（`PERSISTENCE_UNAVAILABLE_008`）。
@@ -197,7 +195,7 @@ UPDATE WorkflowInstanceRecord SET StatusOrder = CASE Status WHEN 'Running' THEN 
 关键字查询列（ADR-0096、ADR-0099、ADR-0101）：
 
 - 定义行与实例行的 `SearchText`、书签行的 `SearchTitle` 与 `SearchInstanceText` 都是折叠后的值，折叠只做不变文化小写，`%`、`_`、`[`、反斜杠原样保留（ADR-0099 第四节）。
-- 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 .NET 的 `ToLowerInvariant` 加字符替换，SQL 的 `lower()` 在 SQLite 上只管 ASCII，用应用代码回填。没回填的行不被关键字匹配。
+- 回填：定义行 `SearchText = WorkflowKeyword.Join(name, displayName, description)`，`Category` 取 `Document` 的 `category`；实例行 `SearchText = WorkflowKeyword.Join(title, correlationId)`（`title` 取 `Document` 的 `displayName`，为空取 `definitionName`；`correlationId` 取同名列）；书签行 `SearchTitle = WorkflowKeyword.Fold(Document.payload.title)`（没有标题为空），`SearchInstanceText` = 所属实例行回填后的 `SearchText` + U+001F + `WorkflowKeyword.Fold(definitionName)`。折叠用 .NET 的 `ToLowerInvariant` 加字符替换，SQL 的 `lower()` 在 SQLite 上只管 ASCII，用应用代码回填。没回填的行不被关键字匹配。
 
 ## 相关
 

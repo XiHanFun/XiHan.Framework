@@ -73,7 +73,7 @@ HTTP 的映射在 `Hosting.AspNetCore` 的 `ProblemResponse.StatusCodeFor`，命
 
 ## Error
 
-`Error` 不可变，由工厂方法创建，工厂方法校验错误码的 KIND 段与方法名一致：
+`Error` 不可变，由工厂方法创建，工厂方法校验错误码的 KIND 段与方法名一致（`Error.NotFound("SHOP_CONFLICT_001", ...)` 在构造时抛出 `ArgumentException`）：
 
 | 工厂方法 | KIND |
 | --- | --- |
@@ -138,15 +138,7 @@ public static class OrderMessages
 { "shop.order.not_found": "订单 '{id}' 不存在。" }
 ```
 
-项目文件把它们嵌入为资源：
-
-```xml
-<ItemGroup>
-  <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
-</ItemGroup>
-```
-
-操作用仓储的 `FindAsync` 取 `Maybe<Order>`，无值时转成失败：
+它们在项目文件里嵌入为资源，写法见[全球化和本地化](/common/localization)。操作用仓储的 `FindAsync` 取 `Maybe<Order>`，无值时转成失败：
 
 ```csharp
 // GetOrder.cs
@@ -177,27 +169,14 @@ public sealed record GetOrderRequest(Guid Id);
 public sealed record OrderResponse(Guid Id, string Name, int Amount);
 ```
 
-`Order` 是实现了实体协议的聚合根，写法见[领域模型](/persistence/domain)；请求与响应要登记到 `JsonSerializerContext`，特性里调用生成的 `AddGeneratedOperations()`，见[操作契约](/web/operations)。`Program.cs` 装配 HTTP 协议并注册应用的消息目录：
+`Order` 是实现了实体协议的聚合根，写法见[领域模型](/persistence/domain)；请求与响应要登记到 `JsonSerializerContext`，特性里调用生成的 `AddGeneratedOperations()`，见[操作契约](/web/operations)。`Program.cs` 沿用[第一个应用](/getting-started/first-app)的写法（Standard 组合、`HttpProtocolFeature` 与 `OrdersFeature`），只多一行注册应用的消息目录：
 
 ```csharp
-using Shop.Orders;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
 
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<HttpProtocolFeature>().UseFeature<OrdersFeature>());
-
-// 应用自己的消息目录：Problem Details 的 detail 按 Accept-Language 翻译，默认英文
+// builder.Build() 之前。应用自己的消息目录：Problem Details 的 detail 按 Accept-Language 翻译，默认英文
 builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("shop", typeof(OrderMessages)));
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanOperations();
-app.Run();
 ```
 
 运行后请求一个不存在的订单：
@@ -225,19 +204,7 @@ curl -i -H "Accept-Language: zh-CN" localhost:5000/orders/0f8fad5b-d9cb-469f-a16
 
 ## 翻译成协议
 
-宿主读取管道结束后的结果，按 KIND 映射协议状态。HTTP 的 Problem Details 字段：
-
-| 字段 | 内容 |
-| --- | --- |
-| `type` | `urn:xihan:error:<错误码>` |
-| `title` | 错误码的 KIND |
-| `status` | HTTP 状态码 |
-| `detail` | 按调用方区域翻译的文案；响应头 `Content-Language` 给出命中的区域 |
-| `instance` | 请求路径 |
-| `code` | 错误码 |
-| `traceId` | 本次调用的 W3C trace-id |
-| `errors` | 只在校验错误时出现：字段名到文案列表，见[数据校验](/web/validation) |
-| `details` | `Error.Details` 里的标量项 |
+宿主读取管道结束后的结果，按 KIND 映射协议状态。HTTP 写成 RFC 9457 Problem Details，成员表见 [ASP.NET Core 宿主](/web/hosting#problem-details)：`code` 是错误码，`detail` 是按调用方区域翻译的文案，校验错误另带字段级的 `errors`（见[数据校验](/web/validation)），`Error.Details` 里的标量进 `details`。
 
 gRPC 以状态码加 `xihan-error-code` 尾部元数据表达，`grpc-message` 是翻译后的文案，见 [gRPC](/protocols/grpc)；MCP 以 `isError` 结果表达，见 [MCP](/protocols/mcp)；命令行以按 KIND 的退出码加 stderr 上的一行 JSON（`code`、`detail`、`traceId`）表达，见[命令行宿主](/protocols/command-line)。
 
@@ -245,33 +212,7 @@ gRPC 以状态码加 `xihan-error-code` 尾部元数据表达，`grpc-message` �
 
 ## 在端点里返回错误
 
-最小 API 端点在 Handle 阶段内执行，把失败写进调用上下文，由宿主统一翻译：
-
-```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Hosting.AspNetCore.Endpoints;
-using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Primitives;
-using XiHan.Framework.Profiles.Minimal;
-
-var builder = WebApplication.CreateBuilder(args);
-builder.AddXiHan(xihan => xihan.UseMinimalProfile());
-
-var app = builder.Build();
-app.UseXiHan();
-
-app.MapGet("/reports/{id}", (string id, HttpContext http) =>
-{
-    // 结果写进上下文，Egress 由宿主翻译为 Problem Details
-    http.FindXiHanContext().ValueOrThrow().SetOutcome(
-        Error.NotFound("SHOP_NOTFOUND_002", "shop.report.not_found", MessageArguments.Of(("id", id))));
-    return Results.Empty;
-});
-
-app.Run();
-```
-
-操作契约不需要这样做：`HandleAsync` 返回的 `Result` 就是调用结果。端点里使用框架的其他方式见[端点里使用框架](/web/endpoints)。
+最小 API 端点在 Handle 阶段内执行，把失败写进调用上下文（`http.FindXiHanContext().ValueOrThrow().SetOutcome(error)`），由宿主统一翻译，写法与规则见[端点里使用框架](/web/endpoints#返回错误)。操作契约不需要这样做：`HandleAsync` 返回的 `Result` 就是调用结果。
 
 ## 异常的处理
 
@@ -280,18 +221,6 @@ app.Run();
 启动期的异常不转换：`AddXiHan` 与特性 `Configure` 里抛出的 `FrameworkException` / `ArgumentException` 直接让进程退出，消息里带错误码或键名，便于在部署日志里定位。雪花标识生成器是一个例外：它的 `PERSISTENCE_UNAVAILABLE_004` / `005` 以异常抛出，`SnowflakeIdFeature` 在 Resilience 阶段把它们转成同码的 `UNAVAILABLE` 结果，调用方收到 503，见[标识生成](/persistence/identifiers)。
 
 ## 常见问题
-
-### 什么时候该抛异常，什么时候该返回 Result
-
-问自己「调用方能不能对这个失败做点什么」。能（重试、提示用户、换一条路径）就返回 `Result`；不能（代码或配置写错了）就抛异常让它尽早暴露。框架的端口全部返回 `Result`，启动期的装配错误全部抛异常。
-
-### 自己的错误码怎么起名
-
-域用应用自己的大写标识（`SHOP`），KIND 从八个标准种类里选，序号三位、域内唯一、发布后不复用。工厂方法会校验 KIND 与方法名一致：`Error.NotFound("SHOP_CONFLICT_001", ...)` 在构造时抛出 `ArgumentException`。
-
-### 为什么不能直接写一句中文当错误消息
-
-文案一旦写进代码，就只能是一种语言，而且散落在各处无法统一维护。消息键让同一个错误按调用方的 `Accept-Language` 出不同语言的文案，键与文案的对应由语言文件管理。调试时看 `Error.Message`，它按进程默认区域渲染。
 
 ### Error.Details 里能放什么
 

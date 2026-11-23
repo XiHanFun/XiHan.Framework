@@ -38,18 +38,9 @@ dotnet add package XiHan.Framework.Observability.OpenTelemetry --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Observability.OpenTelemetry;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature<OpenTelemetryObservabilityFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ## 配置
@@ -149,7 +140,7 @@ public sealed class TracingTests
 
 - 能力没被选中时（另有显式 Provider 提供 `observability.export@1`）只登记选项，不注册任何提供者。
 - `Tracing`、`Metrics`、`Logging` 为假时对应的提供者不注册，`TracerProvider` 等服务不存在。
-- `xihan.invoke` 的父级与采样按 RFC-0003 规则 7：当前 Activity（ASP.NET Core 的请求 Span、外层调用）与调用上下文同一 trace 时是它的子 Span；否则调用上下文带着上游 `traceparent` 的标志时以上游为远端父级，上游「不采样」就不采样；没有上游时是链路的根 Span，trace-id 用调用上下文的（与 Problem Details、审计、日志一致），按 `SamplingRatio` 采样（ADR-0065）。
+- `xihan.invoke` 的父级与采样按 RFC-0003 规则 7：同一 trace 的当前 Activity 是父级，否则以上游 `traceparent` 为远端父级（上游「不采样」就不采样），没有上游时是按 `SamplingRatio` 采样的根 Span；HTTP 与消息两种载体的细节见[日志与可观测性](/common/observability#采样)。
 - 只靠环境变量启用 OTLP 时，端点与协议都按 OpenTelemetry 的标准环境变量（`OTEL_EXPORTER_OTLP_ENDPOINT`、`OTEL_EXPORTER_OTLP_PROTOCOL`）与默认端口决定；配置里只写 `Otlp:Protocol` 不写 `Otlp:Endpoint` 时装配失败，不静默忽略。
 - 本包没有健康条目；导出失败由 OpenTelemetry SDK 自身处理，不影响调用。
 

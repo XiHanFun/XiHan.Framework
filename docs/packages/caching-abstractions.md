@@ -110,17 +110,23 @@ public sealed class OneShotGate(ICacheStore store)
 - `ICacheChangeFeed` 的处理器在写入的调用里同步执行，不应阻塞或抛出；本实例的订阅者同步收到通知，其他实例经后端转发、不回送给发出者；跨实例通知尽力而为，可能丢失。
 - `GenerationCache<T>`：区名是合法的缓存键文本、不超过 128 个字符，存活时间必须为正。区与每个范围各有一个随机代数，存在同一个 `ICache` 里，存活时间是条目的 10 倍；读取在查源之前取代数，写回的条目带着读取开始时的代数，两个代数都还是当前值才算命中，所以失效之前开始的读取写回的旧值不会被当作命中。结果与入参顺序一一对应，重复位置只查一次，空集合不触缓存；查源失败原样返回、不写缓存。键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`，段写成 `<长度>.<文本>`，含空白、控制字符或超过 128 个字符的换成 `#<SHA-256>`。缓存后端故障时读取直接查源、不写回，每个区每 10 秒最多一条警告；失效把 `CACHING_UNAVAILABLE_001` 抛给调用方。用法见[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)。
 
+## 错误码
+
+常量在 `CachingErrors`：
+
 | 错误码 | 含义 |
 | --- | --- |
-| `CACHING_VALIDATION_001` | 缓存键或幂等键不合法 |
+| `CACHING_VALIDATION_001` | 缓存键或幂等键不合法：幂等键拼出的存储键不满足 `CacheKey` 文法时 Idempotency 阶段以它结束调用；远程插件报告键不合法时适配器原样传出 |
 | `CACHING_VALIDATION_002` | 条目选项不合法（远程插件按操作集校验时返回，适配器原样传出；.NET 侧在调用插件之前抛 `ArgumentException`） |
 | `CACHING_VALIDATION_003` | 键列表的每页条数越界（`CacheKeyQuery.PageSize` 不在 1～1000，参数 `pageSize`、`max`；HTTP 400） |
 | `CACHING_VALIDATION_004` | 键前缀不合法：列键时不合键的文法，或按前缀删除时为空或不合文法（参数 `prefix`、`max`；HTTP 400） |
-| `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败 |
-| `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限（健康项 Degraded 的原因） |
+| `CACHING_UNAVAILABLE_001` | 存储不可达或操作失败，以 `FrameworkException` 抛出；锁与幂等中间件同样抛出，不当作「没拿到锁」或「没有记录」 |
+| `CACHING_UNAVAILABLE_002` | 内存缓存已达容量上限：只作为健康项 Degraded 的原因，不拒绝写入 |
 | `CACHING_CONFLICT_001` | 分布式锁被占用（`AcquireAsync` 返回；`TryAcquireAsync` 只返回无值） |
 | `CACHING_CONFLICT_002` | 同一幂等键的调用仍在处理中 |
 | `CACHING_CONFLICT_003` | 幂等记录不能回放给本次调用：键被另一个调用用过，或记录里的响应无法还原 |
+
+非法的 `CacheKey`、同时设置两种过期、非正的存活时间都是编程错误，抛 `ArgumentException`，不转成 `Result`。错误怎样变成 HTTP 状态码与 Problem Details 见[结果与错误处理](/web/errors)。
 
 ## 相关
 

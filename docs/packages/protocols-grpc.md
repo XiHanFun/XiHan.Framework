@@ -32,19 +32,14 @@ dotnet add package XiHan.Framework.Protocols.Grpc --prerelease
 当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
 using XiHan.Framework.Protocols.Grpc;
 using XiHan.Framework.Protocols.Grpc.Services;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<GrpcProtocolFeature>());
 
-var app = builder.Build();
-app.UseXiHan();
+// app.UseXiHan() 之后
 app.MapXiHanGrpc();    // /{package}.{Service}/{Method}
 app.MapXiHanProto();   // GET /operations.proto
-app.Run();
 ```
 
 不用 TLS 时给 gRPC 单开一个 HTTP/2 端点（h2c）：
@@ -118,16 +113,7 @@ JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 C
 - 字符串枚举映射为 `string`，不建 proto `enum`；`integer` 无格式与 `decimal` 映射为十进制文本。
 - 应用未就绪（启动中或正在停止）时以 `Unavailable` 拒绝、不进管道：尾部元数据带 `xihan-error-code: KERNEL_UNAVAILABLE_001` 与 `xihan-trace-id`，`grpc-message` 按 `accept-language` 翻译。
 
-| KIND | gRPC 状态 |
-| --- | --- |
-| `VALIDATION` | `InvalidArgument` |
-| `NOTFOUND` | `NotFound` |
-| `CONFLICT` | `Aborted` |
-| `DENIED` | `PermissionDenied`；`SECURITY_DENIED_001`、`SECURITY_DENIED_003` 为 `Unauthenticated` |
-| `UNAVAILABLE` | `Unavailable` |
-| `TIMEOUT` | `DeadlineExceeded` |
-| `CANCELLED` | `Cancelled` |
-| 其他 | `Internal` |
+操作返回的失败按错误 KIND 映射为 gRPC 状态，对照表见[结果与错误处理](/web/errors#错误码)；`SECURITY_DENIED_001`、`SECURITY_DENIED_003` 为 `Unauthenticated`，其余 `DENIED` 为 `PermissionDenied`。
 
 | 错误码 | 情形 |
 | --- | --- |

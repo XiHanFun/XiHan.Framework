@@ -38,36 +38,20 @@
 
 一个定价能力包：单例的价目表、作用域的折扣计算器，以及一个在构造函数里注入计算器的操作。
 
+特性 `PricingFeature` 的清单只依赖 `kernel.hosting`，与[特性与清单](/startup/features)的示例相同，这里只看它的 `Configure`：
+
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
-using XiHan.Framework.Kernel;
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Primitives;
-using XiHan.Framework.Primitives.Manifests;
-
-namespace Shop.Pricing;
-
-public sealed class PricingFeature : IFeature
+public void Configure(FeatureContext context)
 {
-    public Manifest Manifest { get; } = new()
-    {
-        Id = "xihan.shop.pricing",
-        Version = "1.0.0",
-        Primitives = 1,
-        Stability = Stability.Preview,
-        Kind = ManifestKind.Capability,
-        Requires = [new CapabilityRequirement(KernelCapabilities.Hosting, KernelCapabilities.Version)],
-        Entry = typeof(PricingFeature).FullName,
-    };
-
-    public void Configure(FeatureContext context)
-    {
-        // 价目表全局一份；折扣计算器每次调用一份，可以安全地依赖其他作用域服务
-        context.Services.AddSingleton<PriceList>();
-        context.Services.AddScoped<DiscountCalculator>();
-        context.AddGeneratedOperations();
-    }
+    // 价目表全局一份；折扣计算器每次调用一份，可以安全地依赖其他作用域服务
+    context.Services.AddSingleton<PriceList>();
+    context.Services.AddScoped<DiscountCalculator>();
+    context.AddGeneratedOperations();
 }
+```
+
+```csharp
+namespace Shop.Pricing;
 
 public sealed class PriceList
 {
@@ -141,7 +125,7 @@ public sealed class PriceAuditMiddleware(TimeProvider clock) : IPipelineMiddlewa
 }
 ```
 
-应用自己用 `AppBuilder.ConfigurePipeline` 或 `AppBuilder.Pipeline.UseAt<T>` 登记中间件时，内核会在构建应用时以单例补登记中间件类型；应用已经注册过（比如按作用域注册）就沿用它的注册。用 `FeatureContext.AddMiddleware<T>` 则由内核一并注册。中间件的写法与阶段见[执行管道](/startup/pipeline)。
+中间件类型由内核以单例补登记，应用已经注册过（比如按作用域注册）就沿用它的注册。登记方式、写法与阶段见[执行管道](/startup/pipeline#登记中间件)。
 
 ## 调用作用域
 
@@ -169,28 +153,7 @@ public sealed class PriceListRefresher(IServiceScopeFactory scopes)
 
 ## 取得当前调用的上下文
 
-操作与中间件通过参数拿到 `InvocationContext`。调用链深处不方便传参的服务（领域服务、仓储装饰器、当前用户的包装）注入作用域服务 `IInvocationAccessor`：
-
-```csharp
-using XiHan.Framework.Kernel.Pipeline;
-using XiHan.Framework.Kernel.Security;
-
-namespace Shop.Pricing;
-
-public sealed class CurrentShopper(IInvocationAccessor accessor)
-{
-    // 不在调用内（后台任务、作用域刚创建、调用已结束）时为无值
-    public string? Id => accessor.Current.TryGetValue(out var context)
-        ? context.GetSecurity().Principal.Id
-        : null;
-
-    public string? TenantId => accessor.Current.TryGetValue(out var context)
-        ? context.GetSecurity().Tenant?.Id
-        : null;
-}
-```
-
-内核在调用进入管道前设置 `Current`，离开时恢复上一层；同一作用域内的嵌套调用各自看到自己的上下文。`CurrentShopper` 要注册为作用域服务（`AddScoped`）。访问器不是传播载体：跨进程传递租户、主体等信息由调用上下文的 Baggage 负责，见[调用上下文](/startup/invocation-context)。
+操作与中间件通过参数拿到 `InvocationContext`。调用链深处不方便传参的服务注入作用域服务 `IInvocationAccessor`，自己也注册为作用域服务（`AddScoped`）；写法与不在调用内时的无值处理见[调用上下文](/startup/invocation-context#调用链深处取上下文)。
 
 ## 时间与测试替身
 

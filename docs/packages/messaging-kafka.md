@@ -40,14 +40,10 @@
 dotnet add package XiHan.Framework.Messaging.Kafka --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，`AddXiHan` 里多一行：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Messaging.Kafka;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // Kafka 顶替内存代理提供 messaging.queue，并提供 messaging.stream
 builder.AddXiHan(xihan => xihan
@@ -65,9 +61,8 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Messaging:Kafka:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项的重探间隔，也是单次探测的超时 |
 | `XiHan:Messaging:Kafka:RedeliveryDelaySeconds` | 正数 | 5 | 投递没有完成（死信发布失败等）时重新投递前的等待 |
 | `XiHan:Messaging:Kafka:Properties:<key>` | 字符串 | — | 原样透传给 librdkafka（生产者与消费者共用），如 `security.protocol`、`sasl.mechanism`、`sasl.username`、`ssl.ca.location` |
-| `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 最多投递次数（含首次） |
-| `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题后缀 |
-| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 广播消费组名里的实例标识；必须每个同时在线的实例唯一，重复时广播退化成竞争 |
+
+各 Provider 共用的 `XiHan:Messaging:MaxAttempts`、`DeadLetterSuffix` 与 `InstanceId` 见 [Messaging.Abstractions](./messaging-abstractions#配置)。在本包里，`DeadLetterSuffix` 是死信主题名的后缀，`InstanceId` 在广播消费组名里，两个同时在线的实例重复时广播退化成竞争。
 
 ```json
 {
@@ -154,7 +149,7 @@ public sealed class LedgerStream(IMessagePublisher publisher, IMessageReplayer r
 - 重放：`ReplayAsync(topic, since)` 只投给竞争订阅，用一个新的独立消费组（`<ConsumerGroup>.replay.<随机后缀>`），从各分区该时刻的位点读到调用时的高水位，经同样的派发、重试与死信规则再投递一遍；不提交位点、不影响正常消费；重放期间新到的消息由正常消费投递。主题不存在或该时刻之后没有消息时成功返回；代理还没启动、集群报错或死信发布没有得到确认时返回 `MESSAGING_UNAVAILABLE_001`。
 - 原位重试会阻塞所在分区：一条消息重试期间，同分区后面的消息等待；重试之间不等待。
 - 重放与重试都是有意的重复投递，处理器按 `Id` + `Source` 去重。
-- 主题不存在（ADR-0079、ADR-0085）：集群开着自动建主题时由 broker 建出，没人订阅的主题里的消息只留到保留期；关了自动建主题时发布约 30 秒后失败、订阅一直等、死信发布回退重投，要预建主题，清单见[主题](#主题)。
+- 主题不存在时的表现与要预建的主题清单见[主题](#主题)。
 - 测试：重投路径（`KafkaRedeliveryTests`）与广播（`KafkaBroadcastTests`）用打桩的生产者与消费者覆盖，不需要 Kafka。
 - 测试：一致性套件（含 `MessageStreamConformance` 的同键有序与按时刻重放）需要真实 Kafka，设置环境变量 `XIHAN_TEST_KAFKA`（如 `localhost:9092`）后运行，未设置时跳过；本地可以用单节点 KRaft 容器：
 

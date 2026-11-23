@@ -33,23 +33,7 @@ Egress：Result 与 Error 翻译回协议（HTTP 为 RFC 9457 Problem Details，
 
 ## 执行管道
 
-每次调用都经过一条固定十一个阶段的管道：
-
-| 阶段 | 职责 | 谁提供中间件 |
-| --- | --- | --- |
-| Ingress | 协议消息归一化、构造调用上下文 | 协议适配器在进入管道前完成，本阶段没有中间件 |
-| Observe | Trace、日志、指标、审计 | 内核、审计子系统 |
-| Resilience | 截止时间、限流、并发上限、熔断 | 内核 |
-| Authenticate | 主体解析 | 安全子系统 |
-| Tenant | 租户解析与分片 | 多租户子系统 |
-| Authorize | 权限与策略判定 | 安全子系统 |
-| Validate | 契约校验 | 内核，由操作 Schema 驱动 |
-| Idempotency | 幂等键去重 | 缓存子系统 |
-| Transaction | 工作单元 | 持久化子系统 |
-| Handle | 调用操作 | 内核 |
-| Egress | 结果与错误翻译 | 协议适配器 |
-
-特性按阶段插入中间件，不需要知道其他中间件。排序规则是「阶段、阶段内的 Before 与 After 约束、归属清单 ID」，结果确定且可打印。管道不绑定 HTTP：Web、命令行、消息消费、作业与插件回调走同一条管道。详见[执行管道](/startup/pipeline)。
+每次调用都经过上图那条固定十一个阶段的管道，阶段的名字与顺序由规范规定，不能增删。特性按阶段插入中间件，不需要知道其他中间件；同一阶段内的次序按 `Placement`、归属清单 ID 与 `Before` / `After` 约束排定，结果确定且可打印。管道不绑定 HTTP：Web、命令行、消息消费、作业与插件回调走同一条管道。各阶段的职责与提供中间件的包见[执行管道](/startup/pipeline#十一个阶段)。
 
 ## 调用上下文
 
@@ -109,20 +93,7 @@ Ring 0  原语层          Primitives
 
 ## 命名约定
 
-命名由术语表推出，架构测试校验：
-
-| 对象 | 规则 | 示例 |
-| --- | --- | --- |
-| 包 ID | `XiHan.Framework.<领域>[.<角色>]` | `XiHan.Framework.Caching.Redis` |
-| 命名空间 | 等于包 ID，子命名空间最多一层 | `XiHan.Framework.Caching.Abstractions.Locking` |
-| 能力 ID | `<领域小写>.<能力>`，引用时带接口版本 | `caching.distributed@1` |
-| 清单 ID | `xihan.<领域>.<名称>` | `xihan.caching.redis` |
-| 配置节 | `XiHan:<领域>` | `XiHan:Caching` |
-| 错误码 | `<领域大写>_<KIND>_<三位序号>` | `PERSISTENCE_CONFLICT_001` |
-| 操作 ID | `<资源复数>.<动词>` | `orders.create` |
-| 消息键 | `<领域>.<资源>.<键>` | `security.token.subject_missing` |
-
-类型名不带 `XiHan` 前缀；`Default`、`Core`、`Common`、`Manager`、`Helper` 等词不进包名与领域名。
+命名由术语表推出，架构测试校验：包 ID 是 `XiHan.Framework.<领域>[.<角色>]`（`XiHan.Framework.Caching.Redis`），命名空间等于包 ID，配置节是 `XiHan:<领域>`，消息键是 `<领域>.<资源>.<键>`；能力 ID、清单 ID、操作 ID 与错误码的形式已在上文各节给出。类型名不带 `XiHan` 前缀；`Default`、`Core`、`Common`、`Manager`、`Helper` 等词不进包名与领域名。每类名字的完整文法与示例见[能力包与中间件](/extending/feature#命名规则)。
 
 ## 稳定性分级
 

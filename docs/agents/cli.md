@@ -10,17 +10,7 @@
 
 ## 应用自带的命令
 
-应用接入命令行宿主（`Hosting.CommandLine`）后，以下命令直接可用：
-
-| 命令 | 输出 |
-| --- | --- |
-| `help` | 用法与命令列表 |
-| `graph` | 已解析的能力图谱：每个特性提供与依赖的能力、选中的提供者 |
-| `pipeline` | 管道的最终顺序：一行一个中间件，阶段名与类型全名 |
-| `operations` | 登记的操作：操作 ID、稳定性、暴露的协议、授权要求 |
-| `invoke <操作 ID> --json '<载荷>'` | 经完整管道调用一个操作 |
-| `<resource> <verb> --字段 值` | `invoke` 的简写 |
-| `mcp` | 加入 `McpProtocolFeature` 后可用：以 stdio 提供 MCP 服务端 |
+应用接入命令行宿主（`Hosting.CommandLine`）后，`help`、`graph`（能力图谱）、`pipeline`（管道的最终顺序）、`operations`（操作登记表）、`invoke <操作 ID>` 与它的简写 `<resource> <verb> --字段 值` 直接可用，加入 `McpProtocolFeature` 后还有 `mcp`；各命令的输出与选项见[命令行宿主](/protocols/command-line#内置命令)。
 
 ```bash
 dotnet run --project framework/samples/SimpleCli -- operations
@@ -56,15 +46,7 @@ xihan pack --manifest src/Shop/xihan.app.json --output deploy/shop --only docker
 
 ## 退出码
 
-| 退出码 | 含义 |
-| --- | --- |
-| `0` | 成功 |
-| `2` | 校验失败（VALIDATION），如载荷不满足契约、应用清单不合法 |
-| `3` | 不存在（NOTFOUND），如操作未登记、`xihan.app.json` 不存在 |
-| `64` | 用法错误 |
-| 其他 | 按错误 KIND 映射，完整对照见[命令行宿主](/protocols/command-line) |
-
-转发的命令原样返回应用进程的退出码。
+成功是 `0`，用法错误是 `64`，其余按错误码的 KIND 段映射（如校验失败 `2`、不存在 `3`），对照表见[结果与错误处理](/web/errors#错误码)，`xihan` 自己各命令的错误码见 [Cli 包](/packages/cli#行为与限制)。转发的命令原样返回应用进程的退出码。
 
 ## 相关
 

@@ -15,15 +15,13 @@
 
 ## 用法
 
-1. 新建测试项目，引用被测实现、对应的 Conformance 包与 `xunit.v3`，测试项目的其余配置见[测试与一致性套件](/testing/basics)。
-2. 写一个 `public sealed class` 继承套件基类，实现抽象的工厂方法；需要时覆写虚成员（时限、配置、容器）。
-3. `dotnet test --project <测试项目>` 运行，套件的每个 `[Fact]` 都作为这个类的用例出现。
+测试项目的建法、继承基类的示例、依赖真实服务时的跳过约定，以及插件协议的两份黑盒套件，见[一致性套件与门禁](/testing/conformance)；本页只列各套件的基类、要实现的成员与用例覆盖面。安装以缓存套件为例：
 
 ```bash
 dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。依赖真实服务的实现（Redis、RabbitMQ、Kafka、PostgreSQL、SQL Server、MySQL、Oracle、S3、Nacos）在框架仓库里以 `XIHAN_TEST_*` 环境变量提供连接，没设置时用 `Assert.SkipWhen` 跳过；自己的 Provider 可以照这个做法。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 | 套件包 | 基类 | 用例数 |
 | --- | --- | --- |
@@ -62,17 +60,6 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 覆盖：读写与未命中、覆盖、键区分大小写、删除并报告是否存在、批量读写保持顺序与后写覆盖、批量的逐项过期与滑动延长、批量删除逐项结果、空批量、不存在才写只有一个赢家（含并发）、比较删、比较后重设到期（值不同、不存在、已到期都不重设）、绝对过期、滑动过期在读取时延长、大值、基于存储的分布式锁的互斥 / 释放 / 到期与续约（释放后、到期被他人取得后续不回来），以及存储实现 `ICacheStoreInspector` 时的按前缀分页列键、读元数据与按前缀删除、每页上限越界（0、1001）返回 `CACHING_VALIDATION_003` 而边界值（1、1000）照常（不实现即跳过）。过期用例用真实时间等待，`ExpirationGrace`（缺省 300 毫秒）可按 Provider 调整；`SupportsRefresh`（缺省 `true`）只在接入尚未跟上契约的外部实现时临时关掉；`Key()`、`Bytes(text)`、`Text(value)` 是供派生类补充用例的辅助方法。
 
-```csharp
-using XiHan.Framework.Caching.Abstractions.Stores;
-using XiHan.Framework.Caching.Conformance;
-using XiHan.Framework.Caching.InMemory;
-
-public sealed class InMemoryCacheStoreConformanceTests : CacheStoreConformance
-{
-    protected override ICacheStore CreateStore() => new InMemoryCacheStore(new InMemoryCachingOptions(), TimeProvider.System);
-}
-```
-
 `Caching.InMemory`、`Caching.Redis` 与 `Caching.Remote`（适配器 + Go 插件 `samples/CacheGoPlugin`）通过本套件。
 
 ## Configuration
@@ -101,17 +88,6 @@ public sealed class InMemoryCacheStoreConformanceTests : CacheStoreConformance
 | `OutboxConformance` | Preview | `CreateFeature()` 返回持久化特性（发件箱的存储经仓储）；可覆写 `Configuration` | 代理对某条消息一直抛出时按尝试上限与退避进死信，同批与排在后面的照常发出；返回失败与抛出逐轮状态相同；调用方取消回滚本轮、不计尝试；不是调用方取消的 `OperationCanceledException` 计为失败（ADR-0108）。套件登记发件箱仓储与可推进的时钟，逐轮驱动 `OutboxDispatcher`，不起后台循环 |
 
 用例以 `TestHost` 走完整管道，主题常量 `OrdersTopic`、`ShipmentsTopic`、`UnsubscribedTopic`、`NoticesTopic`，`StartWithSubscriptionsAsync` 按给定订阅启动宿主，`WarmUpBroadcastAsync` 等每个实例的广播订阅都接上，`DeliveryLog` / `RecordingHandler` / `ReceivedMessage` 是套件登记的记录器。提供流能力的 Provider 只继承 `MessageStreamConformance`，不必再继承队列套件。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。内存持久化、SqlSugar 的 SQLite 与 PostgreSQL、EF Core 的 SQLite 通过发件箱套件（EF Core 的上下文要把 `OutboxMessage` 放进模型）。
-
-```csharp
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Messaging.Conformance;
-using XiHan.Framework.Messaging.InMemory;
-
-public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConformance
-{
-    protected override IFeature CreateFeature() => new InMemoryMessagingFeature();
-}
-```
 
 ## MultiTenancy
 
@@ -156,18 +132,6 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
 `IdGeneratorConformance<TKey>` 是标识生成器自己的套件：应用自定义的 `IIdGenerator<TKey>` 也应继承它。
 
-
-```csharp
-using XiHan.Framework.Kernel.Hosting;
-using XiHan.Framework.Persistence.Conformance;
-using XiHan.Framework.Persistence.InMemory;
-
-public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
-{
-    protected override IFeature CreateFeature() => new InMemoryPersistenceFeature();
-}
-```
-
 `Persistence.InMemory`、`Persistence.EntityFrameworkCore`（SQLite）、`Persistence.SqlSugar`（SQLite，设置了 `XIHAN_TEST_POSTGRES` 时另跑 PostgreSQL）通过仓储套件（内存实现没有直接写入入口、不支持命名连接，那两例跳过；SqlSugar 与 EF Core 在 SQLite 上把命名连接放在另一个库文件，SqlSugar 在 PostgreSQL 上指向同一个临时库）；`Persistence.SqlSugar` 的库结构套件另在 PostgreSQL、MySQL、SQL Server、Oracle 上跑（`XIHAN_TEST_POSTGRES`、`XIHAN_TEST_MYSQL`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_ORACLE`）；`GuidV7IdGenerator`（`Guid`）与 `SnowflakeIdGenerator`（`long`）通过标识生成器套件。
 
 ## Plugins
@@ -184,21 +148,6 @@ public sealed class InMemoryRepositoryConformanceTests : RepositoryConformance
 
 
 Wasm 用例（在进程内实例化模块）：模块是 reactor、导出与导入表符合 ABI v1、`xihan_abi_version` 返回 1；握手协商出版本 1、清单一致、声明在范围内、没有流式操作，声明了订阅 / 中间件就导出了对应函数；`xihan_configure` / `xihan_start` 成功、`xihan_health` 报可服务状态、`xihan_stop` 成功；未声明的操作以 `KERNEL_NOTFOUND_001` 的失败状态应答；每个声明的操作都返回带 `status` 的应答；订阅投递得到确认；每个贡献的中间件在 before 阶段返回合法动作（短路时带失败结果），在 after 阶段也应答；`TrapOperation` 陷阱之后，从同一个模块重建的实例重走握手、声明与首次相同，配置、启动后报可服务状态并照常应答。
-
-```csharp
-using XiHan.Framework.Plugins.Conformance;
-
-public sealed class EchoWasmPluginConformanceTests : WasmPluginConformance
-{
-    protected override string PluginDirectory => Path.Combine(AppContext.BaseDirectory, "plugins", "echo-wasm");
-
-    // 故意陷阱与忙等的操作不调用
-    protected override IReadOnlySet<string> ExcludedOperations => new HashSet<string>(StringComparer.Ordinal) { "echoes.trap", "echoes.spin" };
-
-    // 陷阱后重建用例用它触发陷阱
-    protected override string? TrapOperation => "echoes.trap";
-}
-```
 
 两套用例都不提供宿主回调服务：Wasm 套件提供的宿主导入只有 `xihan.log`，`xihan.invoke` / `xihan.publish` 返回不可用状态；回调的令牌与权限、崩溃重启由宿主实现的测试覆盖。跑 Wasm 套件的测试项目在 Windows 上要设 `<CETCompat>false</CETCompat>`，否则套件先以 `PLUGINS_UNAVAILABLE_003` 拒绝。.NET 之外的插件也可以用规范仓库的 Go 运行器 `xihan-conformance`，用例相同（[测试与一致性套件](/testing/conformance)）。`samples/EchoPlugin`、`samples/EchoGoPlugin` 通过进程外用例，`samples/EchoWasmPlugin` 通过 Wasm 用例。
 

@@ -29,27 +29,18 @@
 
 `TenantRecord` 是平台级数据：不实现 `IMultiTenant`，不受当前租户过滤。删除是软删除，行留作墓碑：读不到这个租户，也不能再用这个 ID 新建（`MULTITENANCY_CONFLICT_001`）——租户的数据按 ID 归属、不随删除清理，复用 ID 的新租户会接手它们。确实要释放一个 ID，先清理它的数据，再由运维直接删掉那一行。已有的表要加上这两列（SqlSugar 的 `InitTables` 会补列，EF Core 用迁移）。
 
-| 其他类型 | 说明 |
-| --- | --- |
-| `DatabaseMultiTenancyFeature` | 特性入口（清单 `xihan.multitenancy.database`，`role: provider`）：依赖 `caching.local@1`，登记 `TenantRecord` 的仓储、目录、解析器与 Tenant 阶段中间件，启动时核对持久化 Provider |
-| `DatabaseMultiTenancyOptions` | `CacheTimeToLive`（`TimeSpan`，必须为正，缺省 30 秒） |
-
 ## 最小示例
 
 ```bash
 dotnet add package XiHan.Framework.MultiTenancy.Database --prerelease
 ```
 
-本包必须和一个持久化 Provider 一起装配。下面用 `Persistence.SqlSugar`，它按约定映射 `TenantRecord`，不需要登记：
+本包必须和一个持久化 Provider 一起装配。下面用 `Persistence.SqlSugar`，它按约定映射 `TenantRecord`，不需要登记。接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，`AddXiHan` 多两个特性：
 
 ```csharp
 using SqlSugar;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.MultiTenancy.Database;
 using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // 显式 Provider 顶替 Standard 组合包里的内存持久化与内存多租户
 builder.AddXiHan(xihan => xihan
@@ -60,10 +51,6 @@ builder.AddXiHan(xihan => xihan
         config.ConnectionString = binding.ValueOrThrow().Value;
     }))
     .UseFeature<DatabaseMultiTenancyFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 ```json
@@ -78,7 +65,7 @@ app.Run();
 }
 ```
 
-启动后 Tenant 阶段改为查数据库：主体带租户声明 `acme` 时，`TenantRecord` 表里要有 `Id = acme` 且 `IsEnabled` 为真的行，否则调用以 `MULTITENANCY_NOTFOUND_001` 或 `MULTITENANCY_DENIED_001` 结束。配置里的 `XiHan:MultiTenancy:Tenants` 不再被读取。
+启动后 Tenant 阶段改为查数据库：主体带租户声明 `acme` 时，`TenantRecord` 表里要有 `Id = acme` 且 `IsEnabled` 为真的行，否则调用以 `MULTITENANCY_NOTFOUND_001` 或 `MULTITENANCY_DENIED_001` 结束。本包是 `multitenancy.context@1` 的唯一 Provider，配置里的 `XiHan:MultiTenancy:Tenants` 不被读取；要沿用的租户先用 `UpsertAsync` 导入表里。
 
 `Persistence.EntityFrameworkCore` 的应用在自己的 `DbContext` 里登记实体，属性列用长文本类型：
 
@@ -96,13 +83,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
 ## 配置
 
-目录缓存的配置在 `XiHan:MultiTenancy:Database`：
-
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `CacheTimeToLiveSeconds` | `double` | 30 | 每条缓存的存活时间，必须为正，`0` 与负数让装配失败。写入经失效立即生效，存活时间只是兜底 |
-
-缓存的容量由提供 `caching.local` 的 Provider 管：内存实现是 `XiHan:Caching:InMemory:MaxEntries`，两级缓存是 `XiHan:Caching:Hybrid:LocalCapacity`。以前的 `CacheSize` 已删除，配置里留着也被忽略。
+目录缓存只有一个键 `XiHan:MultiTenancy:Database:CacheTimeToLiveSeconds`（上例的 30 秒就是缺省值）：写入经失效立即生效，存活时间只是兜底。缓存的容量由提供 `caching.local` 的 Provider 管，取值范围与对应的键见 [MultiTenancy.Database](/packages/multitenancy-database#配置)。
 
 解析选项 `DefaultTenant`、`RequireTenant`、`ValidateAgainstStore`、`TenantClaim` 仍在 `XiHan:MultiTenancy`，见[租户解析与隔离](/multi-tenancy/resolution)。持久化 Provider 的连接来自绑定，SqlSugar 的绑定名是 `db`，见[资源绑定](/configuration/bindings)。
 
@@ -141,73 +122,35 @@ public sealed class TenantOnboarding(ITenantAdministration tenants)
 }
 ```
 
-三个批量方法的语义：
-
-| 方法 | 行为 |
-| --- | --- |
-| `UpsertAsync(tenants)` | 一次查询取回已有行，已有的更新、没有的新增，各用一次批量方法写入；同一批里同一租户后者整份覆盖前者，同一行只写一次，各项结果相同。整份覆盖：只想改启用标记时，先读出当前的 `TenantInfo` 再整体写回 |
-| `RemoveAsync(tenantIds)` | 一次批量删除；不存在的 ID 与同一批里重复出现的 ID 逐项返回 `MULTITENANCY_NOTFOUND_001` |
-
-不合法的租户 ID 是编程错误，整批在访问数据库前抛出 `ArgumentException`；空集合直接返回空结果。这些方法由管理操作调用，操作契约要写上权限码（如 `tenants.manage`），由[授权与权限](/security/authorization)挡住无权的调用方。
+`UpsertAsync` 是整份覆盖，`RemoveAsync` 对不存在的 ID 逐项返回 `MULTITENANCY_NOTFOUND_001`；同一批里的重复项、空集合与不合法 ID 的处理见 [MultiTenancy.Database](/packages/multitenancy-database#行为与限制)。这些方法由管理操作调用，操作契约要写上权限码（如 `tenants.manage`），由[授权与权限](/security/authorization)挡住无权的调用方。
 
 ## 缓存与失效
 
-- `DatabaseTenantStore.FindAsync` 的结果经 `ICache` 按租户缓存（区 `multitenancy:tenants`），「不存在」也缓存；条目按 `CacheTimeToLive` 过期，容量与淘汰由 `caching.local` 的 Provider 决定。不合法的租户 ID 直接返回无值，不查库，也不占缓存。
-- 失效按租户换代数（[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），作用于所有共用这个缓存的实例。`TenantRecordStore` 在写入时与调用结束（提交之后）各失效一次，失效之前开始的读取写回的旧条目不会被当作命中：新增、停用、改连接串、删除在提交之后立即生效（ADR-0194、ADR-0229）。
+- `DatabaseTenantStore.FindAsync` 的结果经 `ICache` 按租户缓存（区 `multitenancy:tenants`），「不存在」也缓存，条目按 `CacheTimeToLive` 过期。
+- 失效按租户换代数（[按范围失效的缓存区](/caching/basics#按范围失效的缓存区)），作用于所有共用这个缓存的实例。`TenantRecordStore` 在写入时与调用结束（提交之后）各失效一次：新增、停用、改连接串、删除在提交之后立即生效（ADR-0194、ADR-0229）。
 - 多实例部署要装 `Caching.Redis` 与 `Caching.Hybrid`，这时命中在本机一级缓存，一个实例写入后别的实例经 Redis 的变更通知立即失效。只装 Redis 时 `ICache` 仍是进程内的，别的实例只能等存活时间。
-- 写入时的失效遇到缓存后端故障，写入调用失败（`KERNEL_UNEXPECTED_001`，HTTP 500，原因 `CACHING_UNAVAILABLE_001`），事务回滚：停用、迁库传不到别的实例时不报成功。提交之后的那次失效失败只记错误日志，靠存活时间收敛。
-- 缓存后端故障时 `FindAsync` 直接查库、不写缓存，结果仍然正确，警告日志每 10 秒最多一条。
 - 绕过 `TenantRecordStore` 直接改表时，自行 `await DatabaseTenantStore.InvalidateAsync([tenantId], ct)`（清全部用 `InvalidateAllAsync(ct)`），或等存活时间到期。
-- `ListAsync` 不走缓存，按 ID 排序、以偏移为续页令牌一页一页读，调用方读到令牌为空为止，不再有截断。
+
+数据库或缓存后端故障时的行为、`ListAsync` 的分页、表结构与测试方面的细则见 [MultiTenancy.Database](/packages/multitenancy-database#行为与限制)。
 
 ## 启动期核对持久化 Provider
 
-本包的清单声明 `caching.local@1`（Standard / Full 组合包已带内存缓存，自己挑特性的宿主要加 `InMemoryCachingFeature`），但不声明 `persistence.relational@1`：持久化 Provider 以可选依赖引用 `multitenancy.sharding@1` 来按分片选连接，内核把满足了的可选依赖也当作排序边，再声明持久化就成环。实际依赖改在 `StartAsync` 核对，能力图谱里没有持久化 Provider 时以 `KERNEL_CAPABILITY_001` 中断启动，不会带着一个查不了库的目录运行。
-
-特性只为被选中的能力注册服务：另有显式 Provider 提供租户上下文时，本包不注册存储、解析器与中间件；另有分片 Provider 时不注册 `TenantStoreShardResolver`。`TenantShardScope` 总会注册。
-
-## 行为与限制
-
-- 故障：连接失败、提交失败这类基础设施故障返回 `MULTITENANCY_UNAVAILABLE_003`，不伪装成租户不存在，也不进缓存；Tenant 阶段据此以 503 结束调用，分片解析器把它包进 `MULTITENANCY_UNAVAILABLE_002`。
-- 表结构由应用管理，`InitTables` / `EnsureCreated` 只用于开发与测试。`PropertiesJson` 用长文本类型（`text` / `nvarchar(max)` / `longtext`）。分片库的表结构同样由应用管理。
-- 测试里可以与 `Persistence.InMemory` 一起装配；本包通过 `MultiTenancy.Conformance` 的 `TenantStoreConformance`、`TenantShardResolverConformance` 与 `TenantAdministrationConformance`（含另一个实例的用例：两个宿主共用一个 SQLite 文件与一个 `ICache`），并在 SQLite（`Persistence.SqlSugar`）上验证了实体映射。缓存故障的行为可以用 `XiHan.Framework.Testing` 的 `FaultyCache` 复现，见[测试支持](/packages/testing)。
-
-| 错误码 | 含义 | HTTP |
-| --- | --- | --- |
-| `MULTITENANCY_NOTFOUND_001` | 租户不存在；`RemoveAsync` 删除不存在的租户也逐项返回它 | 404 |
-| `MULTITENANCY_DENIED_001` | 租户已禁用 | 403 |
-| `MULTITENANCY_UNAVAILABLE_002` | 分片解析时租户存储不可达 | 503 |
-| `KERNEL_CAPABILITY_001` | 装配了 `MultiTenancy.Database` 却没有持久化 Provider，启动中断 | — |
+本包靠持久化 Provider 读写 `TenantRecord`，清单里却不声明 `persistence.relational@1`：声明了会与持久化 Provider 对分片能力的可选依赖成环。实际依赖改在启动时核对，能力图谱里没有持久化 Provider 时以 `KERNEL_CAPABILITY_001`（见 [Kernel](/packages/kernel)）中断启动，不会带着一个查不了库的目录运行。清单声明的 `caching.local@1` 由 Standard / Full 组合包自带的内存缓存满足，自己挑特性的宿主要加 `InMemoryCachingFeature`。
 
 ## 常见问题
 
 ### 刚创建的租户马上调用为什么还是 404
 
-写入要等调用方的事务提交后才可见：创建的调用还没返回、首次调用就到了时，读到的是提交之前的表，确实不存在。`TenantRecordStore` 在提交之后（作用域释放时）再失效一次，所以创建的调用返回之后，本实例与共用两级缓存的其他实例都能立即查到。仍然 404 时检查多实例部署是否装了 `Caching.Redis` 与 `Caching.Hybrid`：只装 Redis 时 `ICache` 是进程内的，其他实例的「不存在」缓存要等 `CacheTimeToLiveSeconds` 到期；另外看日志里有没有提交之后失效失败的错误，那时也只能等存活时间。
-
-### 多实例部署要做什么才能让停用立即生效
-
-装 `Caching.Redis` 与 `Caching.Hybrid`，让 `ICache` 成为两级缓存。目录缓存的代数存在共享缓存里，一个实例写入后换代数，Redis 的变更通知让其他实例的一级缓存丢掉旧代数，它们的下一次解析就回到数据库。共用一个 Redis 的多个应用要用不同的 `XiHan:Caching:Redis:KeyPrefix`，否则区名 `multitenancy:tenants` 下的键会互相覆盖。
+写入要等创建的调用提交后才可见，调用返回之前到达的请求读到的是提交之前的表。调用返回之后仍然 404 时，检查多实例部署是否装了 `Caching.Redis` 与 `Caching.Hybrid`，再看日志里有没有提交之后失效失败的错误：这两种情况下其他实例的「不存在」缓存都要等 `CacheTimeToLiveSeconds` 到期。
 
 ### 能用 `TenantRecordStore` 在后台任务里批量导入租户吗
 
 能，但后台任务没有 Transaction 阶段代劳，要自己建作用域、开工作单元、提交，写法见[工作单元与事务](/persistence/unit-of-work)。`TenantRecordStore` 是作用域服务，与工作单元在同一作用域内解析。
 
-### 为什么 `UpsertAsync` 把我的属性清空了
-
-它是整份覆盖，不是局部更新。改一个字段时先经 `ITenantStore.FindAsync` 或 `ITenantStore.ListAsync` 读出当前 `TenantInfo`，用 `with` 改字段后整体写回。
-
-### 配了读写分离，目录会读到从库的旧数据吗
-
-不会。`DatabaseTenantStore` 读目录时固定走主库，租户刚创建就能被核对到，不受从库复制延迟影响。
-
-### 能同时保留配置里的租户和数据库里的租户吗
-
-不能。装配 `DatabaseMultiTenancyFeature` 后它是 `multitenancy.context@1` 的唯一 Provider，`XiHan:MultiTenancy:Tenants` 不再读取。要迁移时先把配置里的租户用 `UpsertAsync` 导入表里。
-
 ## 相关包与下一步
 
 - 包参考：[MultiTenancy.Database](/packages/multitenancy-database)、[MultiTenancy.Abstractions](/packages/multitenancy-abstractions)、[MultiTenancy.InMemory](/packages/multitenancy-inmemory)、[Persistence.SqlSugar](/packages/persistence-sqlsugar)、[Persistence.EntityFrameworkCore](/packages/persistence-entityframeworkcore)
+- 错误码：[MultiTenancy.Abstractions](/packages/multitenancy-abstractions#错误码)
 - 规范：RFC-0007《多租户》
 - 相关章节：[租户分片与分库](/multi-tenancy/sharding)、[仓储读写](/persistence/repositories)、[生命周期与健康](/startup/lifecycle)
 - 下一步：[认证](/security/authentication)

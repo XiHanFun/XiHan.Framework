@@ -36,14 +36,10 @@
 dotnet add package XiHan.Framework.Messaging.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。订阅写在特性的 `Configure` 里，或直接写在 `builder.Services` 上；发件箱按需装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。订阅写在特性的 `Configure` 里，或直接写在 `builder.Services` 上；发件箱按需装配，接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上：
 
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Messaging.Abstractions.Outbox;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
@@ -130,15 +126,21 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 - 领域事件：未登记的事件类型让调用以 `MESSAGING_VALIDATION_003` 结束；重复登记或超过 10000 种时 `AddDomainEvent` 抛 `FrameworkException`（`MESSAGING_VALIDATION_004`）；同一主题的事件一次批量发布，任一失败即回滚。
 - 发件箱：投递至少一次；按创建时间每轮取 `BatchSize` 条到期的消息；首次投递按主题批量发布，重试逐条单独发布；失败（代理返回失败，或代理抛出，调用方取消除外）按指数退避重试，尝试达到 `MaxAttempts` 或载荷无法解码记 `DeadLetteredAt` 进死信、不再投递，退避中与死信的消息不占批次；一次发布抛出时这次调用的每条计一次尝试、本轮停止发布，余下的留到下一轮（ADR-0108）；宿主停止的一轮回滚、不计尝试；投递成功的行保留 `DispatchedRetention`（缺省 1 天）后删除，死信行不自动删除（ADR-0064）。`OutboxMessage` 需要在关系型 Provider 的模型里有表（`Topic` 长 128、`LastError` 长文本、`NextAttemptAt` 与 `DeadLetteredAt` 可空）；实体上的 `[EntityIndex]` 声明索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`，取到期消息与保留期清理共用，ADR-0072）。
 
+## 错误码
+
+常量在 `MessagingErrors`：
+
 | 错误码 | 含义 |
 | --- | --- |
-| `MESSAGING_VALIDATION_001` | 主题不合法 |
+| `MESSAGING_VALIDATION_001` | 主题不合法，发布者逐项返回 |
 | `MESSAGING_VALIDATION_002` | 信封不合法或无法解码 |
-| `MESSAGING_VALIDATION_003` | 领域事件类型未登记 |
-| `MESSAGING_VALIDATION_004` | 领域事件类型重复登记或登记表已满（以异常抛出） |
-| `MESSAGING_UNAVAILABLE_001` | 代理不可达或操作失败 |
-| `MESSAGING_UNAVAILABLE_002` | 队列已满 |
-| `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常（代理侧记录） |
+| `MESSAGING_VALIDATION_003` | 领域事件类型没有用 `AddDomainEvent` 登记，调用以它结束并回滚 |
+| `MESSAGING_VALIDATION_004` | 领域事件类型重复登记或登记表已满（装配时以 `FrameworkException` 抛出） |
+| `MESSAGING_UNAVAILABLE_001` | 代理不可达或操作失败；发布时以 `FrameworkException` 抛出，重放时作为失败结果返回 |
+| `MESSAGING_UNAVAILABLE_002` | 队列已满：内存代理的主题通道排满时发布返回（批量整批返回，不写入半批） |
+| `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常，代理记为一次失败的投递 |
+
+错误怎样变成 HTTP 状态码与 Problem Details 见[结果与错误处理](/web/errors)。
 
 ## 相关
 

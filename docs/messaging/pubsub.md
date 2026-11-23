@@ -21,12 +21,10 @@
 
 Redis Provider 不会因为装了 `Caching.Redis` 或连得上 Redis 就自动启用：它和另两个一样要显式 `UseFeature`，连不上时启动失败，不退回内存代理。两个显式 Provider 同时提供 `messaging.queue` 时能力求解报 `KERNEL_CAPABILITY_004`，用 `XiHan:Providers:messaging.queue` 写清单 ID（`xihan.messaging.rabbitmq`、`xihan.messaging.kafka`、`xihan.messaging.redis`）指定一个，规则见[能力图谱与 Provider](/startup/capabilities)。
 
-```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Messaging.RabbitMQ;
-using XiHan.Framework.Profiles.Standard;
+以 RabbitMQ 为例，接在[第一个应用](/getting-started/first-app)换成 Standard 组合后的 `Program.cs` 上，`AddXiHan` 里只多一行：
 
-var builder = WebApplication.CreateBuilder(args);
+```csharp
+using XiHan.Framework.Messaging.RabbitMQ;
 
 // RabbitMQ 顶替内存代理；订阅与发布的代码不变
 builder.AddXiHan(xihan => xihan
@@ -220,51 +218,18 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 处理器返回失败或抛出异常都算投递失败。代理重试到 `XiHan:Messaging:MaxAttempts`（缺省 3，含首次），竞争订阅仍失败就进死信，广播订阅丢弃并记日志；重试之间不等待。内存代理把失败的消息以下一次尝试号重新入队到队尾，死信进该主题的有界列表 `DeadLetters(topic)`；RabbitMQ、Kafka 与 Redis 的重试与死信队列、死信主题、死信流见[队列与流](/messaging/streams)。
 
 ::: warning 处理器必须能承受重复投递
-投递是至少一次：重试、重放、代理重投与发件箱的崩溃恢复都会让同一条消息再到达处理器。派发不经过幂等键，去重由处理器按信封的 `Id` + `Source` 自理。
+投递是至少一次：重试、重放、代理重投与发件箱的崩溃恢复都会让同一条消息再到达处理器。派发不经过幂等键，去重由处理器自理：按信封的 `Id` + `Source` 记录已处理的消息，或把处理逻辑写成天然幂等的（按主键 upsert、状态机转移）。
 :::
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Messaging:MaxAttempts` | 正整数 | 3 | 一条消息最多投递次数（含首次） |
-| `XiHan:Messaging:DeadLetterSuffix` | 字符串 | `.dlq` | 死信主题 / 队列后缀 |
-| `XiHan:Messaging:InstanceId` | 字符串 | 不写，每次启动生成 | 本实例在代理上的标识，广播订阅用；见[队列与流](/messaging/streams) |
-| `XiHan:Messaging:InMemory:MaxQueuedMessages` | 正整数 | 10000 | 内存代理每个主题（及其死信列表）的条目上限 |
-
-非法值在装配时抛 `ArgumentException`。发件箱的 `XiHan:Messaging:Outbox:*` 见[领域事件与发件箱](/messaging/domain-events)，RabbitMQ、Kafka 与 Redis 的配置节见[队列与流](/messaging/streams)。
+公共的三个键 `XiHan:Messaging:MaxAttempts`、`DeadLetterSuffix` 与 `InstanceId` 见 [Messaging.Abstractions](/packages/messaging-abstractions#配置)，内存代理的 `XiHan:Messaging:InMemory:MaxQueuedMessages`（每个主题及其死信列表的条目上限）见 [Messaging.InMemory](/packages/messaging-inmemory#配置)。发件箱的 `XiHan:Messaging:Outbox:*` 见[领域事件与发件箱](/messaging/domain-events)，RabbitMQ、Kafka 与 Redis 的配置节见[队列与流](/messaging/streams)。
 
 ## 健康项与错误码
 
 内存代理的健康项 `messaging.inmemory.capacity` 在任一主题的队列排满时转为 Degraded（`MESSAGING_UNAVAILABLE_002`）；RabbitMQ、Kafka 与 Redis 的连接健康项见[队列与流](/messaging/streams)。
 
-| 错误码 | 含义 |
-| --- | --- |
-| `MESSAGING_VALIDATION_001` | 主题不合法，发布者逐项返回 |
-| `MESSAGING_VALIDATION_002` | 信封不合法或无法解码 |
-| `MESSAGING_VALIDATION_003` | 领域事件类型没有用 `AddDomainEvent` 登记 |
-| `MESSAGING_VALIDATION_004` | 领域事件类型重复登记或登记表已满（装配时抛出） |
-| `MESSAGING_UNAVAILABLE_001` | 代理不可达或操作失败；发布时以 `FrameworkException` 抛出，重放时作为失败结果返回 |
-| `MESSAGING_UNAVAILABLE_002` | 内存代理的主题队列已满 |
-| `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常，代理记为一次失败的投递 |
-
-## 常见问题
-
-### 发布到没人订阅的主题会报错吗
-
-不会，发布成功。内存代理、RabbitMQ 与 Redis 丢弃消息并记 Debug 日志，Kafka 把消息留在主题里直到保留期结束。框架自己的调度、工作流事件就是这样发出的，应用订阅与否都行。
-
-### 没装 RabbitMQ 时框架会自动用 Redis 当消息代理吗
-
-不会。Provider 由能力图谱按装配的特性选出，不按「连得上什么」挑选，也不自动降级：只装了 `Caching.Redis` 时消息仍走内存代理，只在本进程内流转。要用 Redis 跨进程收发消息就显式 `UseFeature<RedisMessagingFeature>()` 并配置 `XiHan:Messaging:Redis:Configuration`。它和缓存各自建连接、各读各的配置节与绑定，可以指向同一台 Redis；缓存 Redis 常用的 `allkeys-lru` 淘汰策略会删掉流，消息用的 Redis 要配 `noeviction` 或 `volatile-*`，见 [Messaging.Redis](/packages/messaging-redis)。
-
-### 处理器一定要幂等吗
-
-要。至少一次投递意味着重试、重放、代理重投都会让同一条消息再到达，而消息派发不经过幂等键。按信封的 `Id` + `Source` 记录已处理的消息，或把处理逻辑写成天然幂等的（按主键 upsert、状态机转移）。
-
-### 为什么消息不带幂等键
-
-一个请求可能发出多条消息，一条消息又可能被重试多次，如果幂等键跟着消息走，这些调用都会被当成同一次调用而被去重或回放。所以派发不写幂等键，去重交给处理器。
+处理器抛出的未处理异常由代理记为一次失败的投递（`MESSAGING_UNEXPECTED_001`），无法解码的信封是 `MESSAGING_VALIDATION_002`；消息子系统的全部错误码见 [Messaging.Abstractions](/packages/messaging-abstractions#错误码)。
 
 ## 相关包与下一步
 

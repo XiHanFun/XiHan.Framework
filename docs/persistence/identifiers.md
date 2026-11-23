@@ -19,34 +19,15 @@ Provider 与 `SnowflakeIdFeature` 都用 `TryAddSingleton` 注册生成器，应
 
 ## 最小示例
 
-SimpleApp 的下单操作注入 `IIdGenerator<Guid>`，在创建实体时分配标识：
+SimpleApp 的下单操作 `CreateOrder` 注入 `IIdGenerator<Guid>`，在创建实体时分配标识。完整的操作类见[持久化与 Provider 的最小示例](/persistence/overview#最小示例)，与标识有关的只有这两行（`ids` 是构造函数注入的 `IIdGenerator<Guid>`）：
 
 ```csharp
-using XiHan.Framework.Kernel.Operations;
-using XiHan.Framework.Persistence.Abstractions.Identifiers;
-using XiHan.Framework.Persistence.Abstractions.Repositories;
-using XiHan.Framework.Primitives;
-
-namespace SimpleApp.Orders;
-
-[Operation(Id, Expose = Expose.Http | Expose.Grpc | Expose.Mcp, Permission = "orders.write")]
-public sealed class CreateOrder(IRepository<Order, Guid> orders, IIdGenerator<Guid> ids, TimeProvider clock) : IOperation<PlaceOrderRequest, OrderResponse>
-{
-    public const string Id = "orders.create";
-
-    public async ValueTask<Result<OrderResponse>> HandleAsync(PlaceOrderRequest request, InvocationContext context)
-    {
-        // 标识在应用侧生成，领域事件里就能带上它
-        var order = new Order { Id = ids.NewId(), Name = request.Name, Amount = request.Amount };
-        order.Place(clock.GetUtcNow());
-
-        var added = await orders.AddAsync(order, context.CancellationToken);
-        return added.IsFailure ? added.Error! : new OrderResponse(order.Id, order.Name, order.Amount, order.CreatedAt);
-    }
-}
+// 标识在应用侧生成，领域事件里就能带上它
+var order = new Order { Id = ids.NewId(), Name = request.Name, Amount = request.Amount };
+order.Place(clock.GetUtcNow());
 ```
 
-`PlaceOrderRequest`、`OrderResponse` 与 `Order` 都来自 SimpleApp。不用额外装配：任何持久化 Provider 都已注册 `IIdGenerator<Guid>`。运行后每次下单的响应里 `Id` 是一个按时间递增的 UUID，领域事件 `OrderPlaced` 在写入前就带着它。
+不用额外装配：任何持久化 Provider 都已注册 `IIdGenerator<Guid>`。运行后每次下单的响应里 `Id` 是一个按时间递增的 UUID，领域事件 `OrderPlaced` 在写入前就带着它。
 
 ## 选 Guid 还是 long
 
@@ -69,13 +50,11 @@ Profile 不装配雪花标识，应用显式选用：
 2. `UseFeature<SnowflakeIdFeature>()`。它的清单声明可选依赖 `caching.distributed@1`：装配了缓存 Provider 时，能力图谱把它排在雪花特性之前，先启动、后停止，租约在锁存储可用时取得、停止时先释放，与两者 `UseFeature` 的先后无关。
 3. 在需要的地方注入 `IIdGenerator<long>`（或具体类型 `SnowflakeIdGenerator`）。
 
+接在[第一个应用](/getting-started/first-app)换成 Standard 组合之后的 `Program.cs` 上，`AddXiHan` 里只多两个特性（原有的 `UseFeature` 照留）：
+
 ```csharp
 using XiHan.Framework.Caching.Redis;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Persistence.Abstractions.Identifiers;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 builder.AddXiHan(x => x
     .UseStandardProfile()
@@ -146,16 +125,7 @@ EF Core 的 `DbContext` 里为它配置 `modelBuilder.Entity<Invoice>(static e =
 
 ## 配置
 
-配置节 `XiHan:Persistence:Snowflake`（常量 `SnowflakeOptions.ConfigurationSection`），逐键读取：
-
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `Epoch` | ISO 8601 日期时间 | `2026-01-01T00:00:00Z` | 时间戳起点，没有时区按 UTC；同一套数据一经写入不得再改，否则已有标识解析出的时间会错位 |
-| `WorkerId` | 0–1023 的整数 | 无 | 指定即固定机器位，运维保证集群内不重复；不指定则启动时经分布式锁租约分配 |
-| `ClockDriftToleranceMilliseconds` | 非负整数 | `100` | 时钟回拨不超过它时等待时钟追平，超过时拒绝生成 |
-| `LeaseTimeToLiveSeconds` | 正整数 | `30` | 租约分配时每个机器位租约的存活时间，每三分之一续约一次 |
-
-非法值（`WorkerId` 越界或带符号、`Epoch` 不是日期时间）在配置阶段抛出 `ArgumentException`，启动失败。epoch 晚于当前时钟也是配置错误：特性在启动时构造生成器，构造即抛出 `ArgumentException`，不会等到第一次生成。
+配置节 `XiHan:Persistence:Snowflake` 有四个键：`Epoch`（时间戳起点，同一套数据一经写入不得再改）、`WorkerId`（固定机器位）、`ClockDriftToleranceMilliseconds`（时钟回拨的容忍阈值）与 `LeaseTimeToLiveSeconds`（机器位租约的存活时间）。类型、缺省值与非法值的处理见 [Persistence.Abstractions](/packages/persistence-abstractions#配置)。
 
 ## 机器位分配
 
@@ -182,7 +152,7 @@ EF Core 的 `DbContext` 里为它配置 `modelBuilder.Entity<Invoice>(static e =
 
 ## 失败与错误码
 
-`NewId()` 返回 `long`，没有 `Result` 可走，失败以携带错误码的 `FrameworkException` 抛出。
+`NewId()` 返回 `long`，没有 `Result` 可走，失败以携带错误码的 `FrameworkException` 抛出：时钟回拨超过阈值是 `PERSISTENCE_UNAVAILABLE_004`，没有机器位是 `PERSISTENCE_UNAVAILABLE_005`（两个码的定义见[错误码表](/packages/persistence-abstractions#错误码)）。
 
 调用里抛出时，`SnowflakeIdFeature` 登记在 Resilience 阶段末尾的中间件把这两个错误码转成同码的 UNAVAILABLE 结果，消息键分别是 `persistence.snowflake.clock_moved_backwards` 与 `persistence.snowflake.worker_unavailable`。HTTP 上是 503，gRPC 是 `Unavailable`，调用方可以重试。
 
@@ -191,10 +161,7 @@ EF Core 的 `DbContext` 里为它配置 `modelBuilder.Entity<Invoice>(static e =
 - 别的异常不受影响，仍由 Observe 阶段转成 `KERNEL_UNEXPECTED_001`。
 - 管道之外（后台任务直接调用生成器）仍是异常，调用方自己处理。
 
-| 错误码 | 何时出现 | 怎样恢复 |
-| --- | --- | --- |
-| `PERSISTENCE_UNAVAILABLE_004` | 时钟回拨超过容忍阈值（调用里是 503） | 时钟追上上一个时间戳后自动恢复 |
-| `PERSISTENCE_UNAVAILABLE_005` | 没有机器位：未配置 `WorkerId` 且没有分布式锁、1024 个机器位都被占用（启动时）；租约尚未取得或已丢失（生成时，调用里是 503） | 启动时的情况修正装配后重启；租约丢失由续约循环重新分配 |
+恢复方式：时钟回拨在时钟追上上一个时间戳后自动恢复；启动时没有机器位（未配置 `WorkerId` 且没有分布式锁，或 1024 个机器位都被占用）要修正装配后重启；生成时租约尚未取得或已丢失，由续约循环重新分配。
 
 ## 解析标识
 
@@ -243,25 +210,13 @@ public sealed class SnowflakeConformanceTests : IdGeneratorConformance<long>
 
 ## 常见问题
 
-### 为什么不用数据库自增
+### 确实要用数据库自增的表怎么办
 
-新增前拿不到标识，领域事件与批量写入都要等数据库往返；分库分表后自增不再全局唯一；三个 Provider 对自增的处理也不一样。应用侧生成让业务代码在任何 Provider 上相同。确实要自增的表，SqlSugar 上在实体标 `[SugarColumn(IsIdentity = true)]`，EF Core 上保持整数主键的缺省约定，并且不要在新增前读 `Id`。
+SqlSugar 上在实体标 `[SugarColumn(IsIdentity = true)]`，EF Core 上保持整数主键的缺省约定，并且不要在新增前读 `Id`。
 
 ### 单实例部署可以不配 `WorkerId` 吗
 
-可以，Standard 组合里的进程内锁会分配机器位 0。但一旦扩成多实例，每个实例都租到 0，标识会重复。建议从一开始就固定 `WorkerId` 或装配跨进程的缓存 Provider，避免扩容时遗漏。
-
-### 时钟回拨时调用会怎样
-
-回拨不超过 100 毫秒时生成器在锁内等待时钟追平，调用只是慢一点；超过时调用以 503（`PERSISTENCE_UNAVAILABLE_004`）结束，工作单元已回滚，调用方重试即可。不会发出可能重复的标识。
-
-### 能不能改 epoch 让可用年限更长
-
-缺省 epoch 已经可用到 2095 年前后。更重要的是：同一套数据一经写入就不得再改 epoch，否则已有标识解析出的时间会错位，`Parse` 的结果也不再可信。
-
-### 前端把雪花标识当数字用，查不到数据
-
-JavaScript 的 `number` 在 2^53 之后丢精度，标识回传时已经不是原值。按上文「前端精度」处理：解析时用 BigInt reviver 或按字符串读原文，以字符串保存与回传。
+可以，Standard 组合里的进程内锁会分配机器位 0。但扩成多实例时每个实例都租到 0，所以建议从一开始就固定 `WorkerId` 或装配跨进程的缓存 Provider，避免扩容时遗漏。
 
 ## 相关包与下一步
 

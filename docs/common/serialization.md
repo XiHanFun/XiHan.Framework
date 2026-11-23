@@ -46,29 +46,14 @@ public sealed record Greeting(string Message);
 internal sealed partial class ShopJsonContext : JsonSerializerContext;
 ```
 
-`Program.cs` 把上下文插到 HTTP JSON 解析链最前面，其余与普通应用一样：
+`Program.cs` 与[第一个应用](/getting-started/first-app)一样（Standard 组合、`HttpProtocolFeature` 与 `OrdersFeature`），多出来的只有两处：把上下文插到 HTTP JSON 解析链最前面，以及一个返回自定义类型的端点：
 
 ```csharp
-// Program.cs
-using Shop;
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-using XiHan.Framework.Protocols.Http;
-using XiHan.Framework.Protocols.Http.Routing;
-
-var builder = WebApplication.CreateBuilder(args);
-
-// 源生成的序列化上下文放在解析链最前面，端点返回的类型不走反射序列化
+// builder.Build() 之前：源生成的序列化上下文放在解析链最前面，端点返回的类型不走反射序列化
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, ShopJsonContext.Default));
 
-builder.AddXiHan(xihan => xihan.UseStandardProfile().UseFeature<HttpProtocolFeature>().UseFeature<OrdersFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.MapXiHanHealth();
-app.MapXiHanOperations();
+// app.UseXiHan() 之后
 app.MapGet("/greet", (string? name) => new Greeting($"Hello, {name ?? "XiHan"}!"));
-app.Run();
 ```
 
 项目文件声明 AOT 发布并打开最小 API 的请求委托生成器：
@@ -95,7 +80,7 @@ dotnet publish -c Release -o ./publish
 
 示例选项的含义：属性名用 camelCase；读取不区分大小写；允许从字符串读数字，因为 HTTP 适配器把路由值与查询串（都是字符串）合并进请求对象。
 
-- `Kernel.Generators` 从当前项目的 `JsonSerializerContext` 取序列化元数据，并为每个操作生成请求与响应的 JSON Schema。引用的其他程序集里的上下文不参与解析：契约类型放在哪个项目，就在那个项目里登记。
+- `Kernel.Generators` 从当前项目的 `JsonSerializerContext` 取序列化元数据，并为每个操作生成请求与响应的 JSON Schema。引用的其他程序集里的上下文不参与解析：操作声明在哪个项目，上下文就放在那个项目里，`[JsonSerializable]` 可以引用其他程序集的类型。
 - 嵌套在请求或响应里的类型（集合元素、子对象）不必单独 `[JsonSerializable]`，生成器会随根类型一起生成元数据。
 - 多个上下文可以共存，用 `TypeInfoResolverChain` 按顺序组合；同一类型登记在两个上下文里时按链上的顺序取第一个。
 
@@ -165,7 +150,7 @@ Database 包本身兼容，但它们经仓储访问数据库，实际能否 AOT 
 4. 共享缓存与领域事件按上文登记序列化器与 `JsonTypeInfo`。
 5. `dotnet publish -c Release -o ./publish`。
 
-发布时出现的裁剪或 AOT 警告都要处理，不要用 `NoWarn` 压掉；它们通常指向某个未登记的序列化类型或引用了不兼容 AOT 的包。
+发布时出现的裁剪或 AOT 警告（IL2026、IL3050 等）都要处理，不要用 `NoWarn` 压掉；它们通常指向某个走了反射序列化的类型（端点返回值没进解析链、缓存值没登记）或引用了不兼容 AOT 的包。
 
 ## 常见问题
 
@@ -176,14 +161,6 @@ Database 包本身兼容，但它们经仓储访问数据库，实际能否 AOT 
 ### 为什么框架不提供对象映射
 
 映射库多数在运行期用反射或表达式树，与零反射冲突。实体与响应之间的转换写成显式的构造或静态方法，例如 `new OrderResponse(order.Id, order.Name, order.Amount)`；需要大量映射时选用编译期生成代码的映射库，保持零反射。
-
-### 发布时报 IL2026 或 IL3050 怎么办
-
-看警告指向的调用：多半是某个类型走了反射序列化（端点返回值没进解析链、缓存值没登记）或引用了不兼容 AOT 的包。登记类型或换 Provider，不要 `NoWarn`。
-
-### 请求类型在另一个类库里，怎么登记
-
-`Kernel.Generators` 只解析当前项目里的 `JsonSerializerContext`。把上下文放在声明操作的项目里，`[JsonSerializable]` 可以引用其他程序集的类型。
 
 ### 怎样确认应用真的没有反射
 

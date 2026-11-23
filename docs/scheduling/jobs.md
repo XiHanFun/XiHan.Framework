@@ -36,25 +36,21 @@
 dotnet add package XiHan.Framework.Scheduling.InMemory --prerelease
 ```
 
+接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上，只多两处：`builder.Build()` 之前登记作业，特性链上多一行 `UseFeature`。
+
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Scheduling.Abstractions;
 using XiHan.Framework.Scheduling.Abstractions.Jobs;
 using XiHan.Framework.Scheduling.Abstractions.Schedules;
 using XiHan.Framework.Scheduling.InMemory;
 
-var builder = WebApplication.CreateBuilder(args);
-
 // 最简写法：一个 cron 触发器，名为 default
 builder.Services.AddJob<CleanupJob>(new JobName("cleanup.nightly"), JobSchedule.FromCron("0 3 * * *", "Asia/Shanghai"));
 
-builder.AddXiHan(xihan => xihan.UseFeature<InMemorySchedulingFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
+builder.AddXiHan(xihan => xihan
+    .UseMinimalProfile()
+    .UseFeature<InMemorySchedulingFeature>());   // 只多这一行
 
 public sealed class CleanupJob : IJob
 {

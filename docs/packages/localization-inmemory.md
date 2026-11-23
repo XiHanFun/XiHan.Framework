@@ -41,12 +41,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemoryLocalizationFeature>());
 
 ## 配置
 
-| 键 | 类型 | 缺省 | 说明 |
-| --- | --- | --- | --- |
-| `XiHan:Localization:DefaultLocale` | `string` | `en-US` | 默认区域 |
-| `XiHan:Localization:Locales` | `string`（逗号分隔） | 内置 10 种 | 启用的区域，按优先级排列 |
-
-默认区域不在启用列表里或区域名不合法时，装配时抛出 `ArgumentException`。
+本包没有自己的配置键，只读 `XiHan:Localization:DefaultLocale` 与 `Locales`，见 [Localization.Abstractions](./localization-abstractions#配置)。默认区域不在启用列表里或区域名不合法时，装配时抛出 `ArgumentException`。
 
 ## 主要类型
 

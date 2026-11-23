@@ -145,24 +145,30 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 - 预签名：有效期 1 秒到 7 天，签名在本地计算，不检查对象是否存在。
 - 命名实例：同名同定义复用；定义变了替换并释放旧实例，替换时仍在旧实例上的调用可能失败；Provider 未登记或设置不合法、后端建不出来、建实例时的探测发现实例不能用（如 S3 探明服务不认条件写入；Provider 抛出携带错误码的 `FrameworkException`，注册表原样返回该错误码）时，已有的同名实例不受影响。每个实例一条健康项 `objectstorage.store.<name>`，还没探过为 Started，探测失败为 Degraded。
 
+## 错误码
+
+常量在 `ObjectStorageErrors`，各存储共用；[ObjectStorage.FileSystem](./objectstorage-filesystem) 与 [ObjectStorage.S3](./objectstorage-s3) 的包页只写各自特有的触发条件。
+
 | 错误码 | 常量 | 含义 |
 | --- | --- | --- |
 | `OBJECTSTORAGE_NOTFOUND_001` | `BlobNotFound` | 对象不存在 |
 | `OBJECTSTORAGE_NOTFOUND_002` | `UploadNotFound` | 分片上传不存在或已结束 |
-| `OBJECTSTORAGE_NOTFOUND_003` | `StoreNotFound` | 命名存储实例不存在 |
+| `OBJECTSTORAGE_NOTFOUND_003` | `StoreNotFound` | 命名存储实例不存在（没有运行时登记，配置里也没有定义） |
 | `OBJECTSTORAGE_VALIDATION_001` | `RangeNotSatisfiable` | 读取范围的起点不在对象内 |
-| `OBJECTSTORAGE_VALIDATION_002` | `PartsInvalid` | 分片清单不合法 |
-| `OBJECTSTORAGE_VALIDATION_003` | `StoreDefinitionInvalid` | 命名实例的定义不合法 |
+| `OBJECTSTORAGE_VALIDATION_002` | `PartsInvalid` | 完成分片上传时的分片清单不合法（为空、乱序、含未上传的片、ETag 不符或非末片过小） |
+| `OBJECTSTORAGE_VALIDATION_003` | `StoreDefinitionInvalid` | 命名存储实例的定义不合法（Provider 未登记或设置不合法） |
 | `OBJECTSTORAGE_VALIDATION_004` | `StoreSelectionInvalid` | 缺省存储的能力选择不一致：被要求的分片上传或预签名与对象存储不在同一存储（装配时抛出，启动失败） |
-| `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小越界（HTTP 400，不在构造时抛出） |
-| `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：请求的内容类型不合文法（HTTP 400，不写入） |
+| `OBJECTSTORAGE_VALIDATION_005` | `PageSizeInvalid` | 列举的页大小不在 1 到 1000 之间（HTTP 400；不在构造时抛出，列举时以结果返回，不访问存储） |
+| `OBJECTSTORAGE_VALIDATION_006` | `ContentTypeInvalid` | 宿主直传端点：签名没有限定内容类型，请求的 `Content-Type` 不合内容类型文法（HTTP 400，不写入） |
 | `OBJECTSTORAGE_DENIED_001` | `SignatureInvalid` | 预签名地址无效或已过期 |
-| `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |
+| `OBJECTSTORAGE_DENIED_002` | `ProbeDenied` | 条件写入探测被存储拒绝（403；S3：凭据无效、只读或无权写探测键）：启动或建实例时即失败；启动时连不上、之后才被拒的，健康项 Failed、后台照常重试 |
 | `OBJECTSTORAGE_CONFLICT_001` | `BlobExists` | 对象已存在且不允许覆盖 |
 | `OBJECTSTORAGE_UNAVAILABLE_001` | `StoreUnavailable` | 对象存储不可达或 IO 失败，`reason` 只写异常类型的全名，完整异常进日志（ADR-0115） |
 | `OBJECTSTORAGE_UNAVAILABLE_002` | `QuotaExceeded` | 配额或单对象大小超限 |
-| `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或关闭了条件写入 |
+| `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或存储关闭了条件写入（`ConditionalWrites = false`） |
 | `OBJECTSTORAGE_UNAVAILABLE_004` | `ConditionalWriteUnconfirmed` | 不覆盖写入暂不可用：存储是否认条件写入尚未确认（启动时连不上，或之后的探测被拒绝、缺桶；HTTP 503，探测通过后自动恢复） |
+
+HTTP 宿主按错误码的类别段映射状态码，见[结果与错误处理](/web/errors)。标识不合法属于编程错误，构造时抛出 `ArgumentException`，不占错误码。
 
 ## 相关
 

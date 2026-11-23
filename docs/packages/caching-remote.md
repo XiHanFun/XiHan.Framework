@@ -49,15 +49,11 @@
 dotnet add package XiHan.Framework.Caching.Remote --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现。接在[第一个应用](/getting-started/first-app)的 `Program.cs` 上：
 
 ```csharp
 using XiHan.Framework.Caching.Remote;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Plugins.OutOfProcess;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
 
 // 插件宿主发现并登记 cache-entries.* 代理操作；Remote 顶替内存实现的 caching.distributed
 builder.AddXiHan(xihan => xihan
@@ -72,16 +68,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- | --- | --- |
 | `XiHan:Caching:Remote:TimeoutMilliseconds` | 正整数 | 5000 | 每次操作的截止时间，超时按存储不可用处理；不是正整数时装配抛 `ArgumentException` |
 
-```json
-{
-  "XiHan": {
-    "Plugins": { "OutOfProcess": { "Directories": ["plugins/cache-go"] } },
-    "Caching": { "Remote": { "TimeoutMilliseconds": 5000 } }
-  }
-}
-```
-
-插件自己的配置由插件读取，例如 `framework/samples/CacheGoPlugin` 读 `XiHan:Cache:DefaultTimeToLiveSeconds`（默认 300）与 `XiHan:Cache:MaxEntries`（默认 100000）。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
+插件目录由 [Plugins.OutOfProcess](./plugins-outofprocess) 的 `XiHan:Plugins:OutOfProcess:Directories` 给出，两者写在一起的示例见[远程 Provider](/caching/hybrid#远程-provider)。插件自己的配置由插件读取，例如 `framework/samples/CacheGoPlugin` 读 `XiHan:Cache:DefaultTimeToLiveSeconds`（默认 300）与 `XiHan:Cache:MaxEntries`（默认 100000）。幂等选项见 [Caching.Abstractions](./caching-abstractions#配置)。
 
 ## 主要类型
 
@@ -129,12 +116,14 @@ xihan-conformance plugin --dir bin --sample 'cache-entries.set={"key":"k","value
 - 原子性由插件在自己的串行化范围内保证；多个宿主共用一个后端时的一致性由插件的后端保证。
 - 适配器 + 插件的组合必须通过 `CacheStoreConformance` 全部用例；`Caching.Remote.Tests` 用本机 `go` 构建 `CacheGoPlugin` 跑完整套件，没有 `go` 时跳过。
 
-| 插件错误码 | 消息键 | 情况 |
+插件侧报告的失败用 `RemoteCachingMessages` 的四个消息键，错误码的含义见 [Caching.Abstractions](./caching-abstractions#错误码)：
+
+| 消息键 | 错误码 | 触发条件 |
 | --- | --- | --- |
-| `CACHING_VALIDATION_001` | `caching.remote.key_invalid` | 键不合法 |
-| `CACHING_VALIDATION_002` | `caching.remote.options_invalid` | `ttlMs` / `slidingMs` 不是正整数或同时给出 |
-| `CACHING_UNAVAILABLE_001` | `caching.remote.store_unavailable` | 后端不可用或失败 |
-| `CACHING_UNAVAILABLE_001` | `caching.remote.capacity_reached` | 插件的存储已满（`CacheGoPlugin` 满了先清过期条目，仍满才返回） |
+| `caching.remote.key_invalid` | `CACHING_VALIDATION_001` | 插件判定键不合法 |
+| `caching.remote.options_invalid` | `CACHING_VALIDATION_002` | `ttlMs` / `slidingMs` 不是正整数或同时给出 |
+| `caching.remote.store_unavailable` | `CACHING_UNAVAILABLE_001` | 插件的后端不可用或失败 |
+| `caching.remote.capacity_reached` | `CACHING_UNAVAILABLE_001` | 插件的存储已满（`CacheGoPlugin` 满了先清过期条目，仍满才返回） |
 
 ## 相关
 

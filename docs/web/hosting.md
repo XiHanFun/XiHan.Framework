@@ -41,12 +41,9 @@ ASP.NET Core 自己就能承载 Web 应用，但它不知道什么是调用上�
 dotnet add package XiHan.Framework.Profiles.Standard --prerelease
 ```
 
+宿主自己的部分只有下面几行，完整的 `Program.cs` 见[第一个应用](/getting-started/first-app)：
+
 ```csharp
-using XiHan.Framework.Hosting.AspNetCore;
-using XiHan.Framework.Profiles.Standard;
-
-var builder = WebApplication.CreateBuilder(args);
-
 // Standard 组合：内核、宿主与五个子系统的内存默认实现
 builder.AddXiHan(xihan => xihan.UseStandardProfile());
 
@@ -56,8 +53,6 @@ app.UseXiHan();          // 之后映射的端点都在内核管道的 Handle �
 app.MapXiHanHealth();    // /health/startup、/health/ready、/health/live，不经内核管道
 
 app.MapGet("/", () => "ok");
-
-app.Run();
 ```
 
 下面的命令假设应用监听 `http://localhost:5000`（`dotnet run -- --urls http://localhost:5000`，或者在 `appsettings.json` 的 `Kestrel:Endpoints` 里配置）：
@@ -71,7 +66,7 @@ curl -s localhost:5000/health/ready
 
 ## 装配时发生了什么
 
-`WebApplicationBuilder` 上的 `AddXiHan` 先装载环境变量 `XIHAN_CONFIG_PATH` 指向的目录（Kubernetes 里是 ConfigMap 的挂载点）：`appsettings.json` 最先，其余顶层 `*.json` 按文件名序数随后，紧接 `appsettings.{环境}.json` 插入，并以 `reloadOnChange` 装载，`IOptionsMonitor` 随文件变化。然后交给内核的 `AddXiHan`，应用与宿主共用服务集合和配置。配置源的顺序见[配置目录与热更新](/configuration/config-directory)，挂载目录的部署方式见 [Kubernetes](/deployment/kubernetes)。
+`WebApplicationBuilder` 上的 `AddXiHan` 先把环境变量 `XIHAN_CONFIG_PATH` 指向的目录（Kubernetes 里是 ConfigMap 的挂载点）装载为可重载的配置源，然后交给内核的 `AddXiHan`，应用与宿主共用服务集合和配置。文件的装载顺序与配置源的优先级见[配置目录与热更新](/configuration/config-directory)，挂载目录的部署方式见 [Kubernetes](/deployment/kubernetes)。
 
 和其他 ASP.NET Core 中间件一起用时有两条顺序约定：
 
@@ -98,13 +93,7 @@ curl -s localhost:5000/health/ready
 
 ## 探针
 
-`MapXiHanHealth(prefix)` 映射三个探针端点，`prefix` 缺省为 `/health`。探针直接读应用状态机，带 `PipelineBypassMetadata`，应用未就绪时也能访问；通过时返回 200、`status` 为 `pass`，否则 503、`status` 为 `fail`。
-
-| 端点 | 通过条件 |
-| --- | --- |
-| `/health/startup` | 全部特性已启动 |
-| `/health/ready` | 应用处于服务状态（`Ready` 或 `Degraded`） |
-| `/health/live` | 应用状态不是 `Failed` |
+`MapXiHanHealth(prefix)` 映射三个探针端点，`prefix` 缺省为 `/health`。探针直接读应用状态机，带 `PipelineBypassMetadata`，应用未就绪时也能访问；通过时返回 200、`status` 为 `pass`，否则 503、`status` 为 `fail`；`/health/startup`、`/health/ready`、`/health/live` 各自的通过条件与对应的 Kubernetes 探针见[生命周期与健康](/startup/lifecycle#探针端点)。
 
 探针谁都能访问，只给状态（ADR-0209）：
 
@@ -145,7 +134,7 @@ app.MapXiHanHealthDetails().RequireXiHanPermission("health.read");
 | --- | --- |
 | `type` | `urn:xihan:error:<错误码>` |
 | `title` | 错误码的 KIND 段，如 `NOTFOUND` |
-| `status` | HTTP 状态码，按 KIND 映射，对照表见 [HTTP 路由与载荷](/web/routing) |
+| `status` | HTTP 状态码，按 KIND 映射，对照表见[结果与错误处理](/web/errors#错误码) |
 | `detail` | 按调用方区域翻译的文案；没有装配本地化时是 `Error.Message` |
 | `instance` | 请求路径 |
 | `code` | 错误码，客户端只依赖它 |
@@ -177,95 +166,19 @@ curl -s localhost:5000/missing -H "Accept-Language: zh-CN"
 
 401 响应另带 `WWW-Authenticate` 质询，规则见 [HTTP 路由与载荷](/web/routing)。
 
-`ProblemResponse` 公开了这套规则：`FromError` 构造响应体，`StatusCodeFor` 给出状态码，`WriteTo` 写出 JSON。绕过管道的端点要自己写错误、或访问日志要记状态码时用它们，结果与宿主写出的一致。`Result` 与 `Error` 本身的用法见[结果与错误处理](/web/errors)。
+`ProblemResponse` 公开了这套规则：`FromError` 构造响应体，`StatusCodeFor` 给出状态码，`WriteTo` 写出 JSON。绕过管道的端点要自己写错误、或访问日志要记状态码时用它们，结果与宿主写出的一致。`Result` 与 `Error` 本身的用法见[结果与错误处理](/web/errors)；宿主自己写出的状态与错误码一览见 [Hosting.AspNetCore](/packages/hosting-aspnetcore#行为与限制)。
 
 ## 区域协商与本地化
 
-`Accept-Language` 的候选按权重降序排列（同权重保持原顺序），跳过 `*`、权重为 0 与格式不合法的项。调用方在 Baggage 里显式给了 `xihan.locale` 时以它为准，不看 `Accept-Language`。
-
-装配了 `localization.resources@1`（`Profiles.Minimal` 起已包含 `Localization.InMemory`）时，候选与启用的区域协商：先找精确命中，再找同语言的第一个启用区域，都没有时取默认区域 `en-US`。没有装配本地化时取第一个合法候选，规范化后写进 Baggage，下游服务仍能拿到调用方语言。
+调用方在 Baggage 里显式给了 `xihan.locale` 时以它为准；否则宿主把 `Accept-Language` 的候选与启用的区域协商，结果写进 Baggage，下游服务也能拿到调用方语言。候选的排序、两轮协商与没有装配本地化时的取法见[全球化和本地化](/common/localization#区域协商)。
 
 Problem Details 的 `detail` 用消息目录翻译成协商出的区域，`Content-Language` 标出文案实际命中的区域：目录里没有这种语言时沿回退链取到默认区域，`Content-Language` 就是 `en-US`。`code` 不随区域变化。端点里直接调用 `key.L()` 也得到当前请求语言的文案。
 
-应用自己的文案按消息键放进每种语言一个文件的消息目录，登记方式与框架包相同：
-
-```csharp
-using XiHan.Framework.Localization.Abstractions;
-using XiHan.Framework.Localization.Abstractions.Messages;
-
-builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("samples", typeof(SampleMessages)));
-```
-
-```xml
-<ItemGroup>
-  <EmbeddedResource Include="Localization/*.json" LogicalName="Localization/%(Filename)%(Extension)" />
-</ItemGroup>
-```
-
-`SampleMessages` 是放消息键常量的静态类，`Localization/zh-CN.json` 这类文件里是键到模板的映射。消息键、区域配置与回退链见[全球化和本地化](/common/localization)。
+应用自己的文案按消息键放进每种语言一个文件的消息目录，用 `AddMessageCatalog` 登记，方式与框架包相同；消息键、语言文件、区域配置与回退链见[全球化和本地化](/common/localization)。
 
 ## Native AOT
 
-`Hosting.AspNetCore` 的响应体都不经反射序列化：探针用源生成的序列化上下文，Problem Details 由 `ProblemResponse.WriteTo` 手写。应用要 Native AOT 发布时，自己的端点也照这两点做：
-
-1. 在项目里打开最小 API 的请求委托生成器，端点委托在编译期生成，不走反射绑定。
-2. 端点用到的请求与响应类型登记进源生成的 `JsonSerializerContext`，插到 HTTP JSON 选项解析链的最前面。
-
-```xml
-<PropertyGroup>
-  <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
-  <PublishAot>true</PublishAot>
-</PropertyGroup>
-```
-
-```csharp
-using System.Text.Json.Serialization;
-
-// 放在 builder.Build() 之前
-builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonContext.Default));
-
-// camelCase 与不区分大小写：HTTP 适配器把路由值、查询串与请求体合并成 JSON 对象，按 JSON 约定匹配属性
-// 允许从字符串读数字：路由值与查询串都是字符串
-[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, PropertyNameCaseInsensitive = true, NumberHandling = JsonNumberHandling.AllowReadingFromString)]
-[JsonSerializable(typeof(WhoAmI))]
-internal sealed partial class AppJsonContext : JsonSerializerContext;
-
-public sealed record WhoAmI(string? Principal, bool IsAuthenticated, string? Tenant);
-```
-
-操作契约的请求与响应类型也登记在同一个上下文里，操作的 JSON Schema 由 `Kernel.Generators` 在编译期生成。示例应用就是这样以 Native AOT 发布的，它同时装配了 HTTP、gRPC、MCP 与 CloudEvents 四个协议适配器。序列化与裁剪的完整要求见 [JSON 序列化与 Native AOT](/common/serialization)。
-
-## 行为与错误码
-
-| 情形 | 状态码 | 错误码 |
-| --- | --- | --- |
-| 应用未就绪或正在停止 | 503 | `KERNEL_UNAVAILABLE_001` |
-| 进入管道时截止时间已过 | 504 | `KERNEL_TIMEOUT_001` |
-| 端点抛出未处理异常 | 500 | `KERNEL_UNEXPECTED_001` |
-| 操作端点的请求体不是 JSON 对象 | 400 | `KERNEL_VALIDATION_001` |
-| 操作端点的请求体超过上限 / 不是 JSON 类型 | 400 | `PROTOCOLS_VALIDATION_011` / `PROTOCOLS_VALIDATION_012` |
-| 未认证 / 凭据无效、过期或签名不符 | 401 | `SECURITY_DENIED_001` / `SECURITY_DENIED_003` |
-| 策略拒绝 / 缺少权限 | 403 | `SECURITY_DENIED_002` / `SECURITY_DENIED_004` |
-| 授予存储、授予来源或收窄过滤器读不到数据（授权无法判定） | 503 | `SECURITY_UNAVAILABLE_001` |
-| 调用时才看到的要求引用的策略不存在（端点与契约上的引用在启动时核对） | 404 | `SECURITY_NOTFOUND_001` |
-
-## 常见问题
-
-### `UseXiHan()` 到底放在哪里
-
-放在路由之后、端点映射之前。`WebApplication` 会自动在管道开头加路由，所以 `builder.Build()` 之后第一行写 `app.UseXiHan()` 就是对的。需要放在它前面的只有两类中间件：`UseForwardedHeaders()`（代理场景下取真实客户端地址），以及给绕过管道的端点服务的 `UseAuthentication()` / `UseAuthorization()`。
-
-### 我已有的最小 API 端点要改写吗
-
-不用。`UseXiHan()` 之后映射的端点照常工作，只是多了一层：它们在内核管道的 Handle 阶段内执行，请求先经过认证、租户、授权与事务阶段，失败结果由宿主统一写成 Problem Details。要在端点里读主体、租户或返回框架错误时，再按[端点里使用框架](/web/endpoints)的写法取调用上下文。
-
-### 应用还在启动时就有请求进来会怎样
-
-探针照常响应（`/health/startup` 与 `/health/ready` 返回 503、`status` 为 `fail`），其他请求直接得到 503 `KERNEL_UNAVAILABLE_001`，不进管道。应用正在停止时同样如此。Kubernetes 用 startup 与 readiness 探针配合，流量不会在这段时间进来，见 [Kubernetes](/deployment/kubernetes)。
-
-### 为什么 Problem Details 的 `detail` 是英文
-
-两种可能。一是没有装配本地化（`localization.resources@1`），`detail` 直接是 `Error.Message`。二是消息目录里没有请求语言的译文，沿回退链取到了默认区域 `en-US`，这时响应头 `Content-Language` 是 `en-US`。客户端判断错误类型只看 `code`，不要依赖 `detail` 的文字。
+`Hosting.AspNetCore` 的响应体都不经反射序列化：探针用源生成的序列化上下文，Problem Details 由 `ProblemResponse.WriteTo` 手写。应用要 Native AOT 发布时，自己的端点也照这两点做：在项目里打开最小 API 的请求委托生成器（`EnableRequestDelegateGenerator`），端点委托在编译期生成；端点用到的请求与响应类型登记进源生成的 `JsonSerializerContext`，插到 HTTP JSON 选项解析链的最前面。操作契约的请求与响应类型也登记在同一个上下文里。项目文件、上下文的写法与发布步骤见 [JSON 序列化与 Native AOT](/common/serialization)。
 
 ## 相关包与下一步
 

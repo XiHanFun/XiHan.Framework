@@ -41,11 +41,8 @@ dotnet add package XiHan.Framework.Auditing.Database --prerelease
 ```csharp
 using SqlSugar;
 using XiHan.Framework.Auditing.Database;
-using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Persistence.SqlSugar;
-using XiHan.Framework.Profiles.Standard;
 
-var builder = WebApplication.CreateBuilder(args);
 builder.AddXiHan(xihan => xihan
     .UseStandardProfile()
     .UseFeature(new SqlSugarPersistenceFeature(static (binding, config) =>
@@ -54,10 +51,6 @@ builder.AddXiHan(xihan => xihan
         config.ConnectionString = binding.ValueOrThrow().Value;
     }))
     .UseFeature<DatabaseAuditingFeature>());
-
-var app = builder.Build();
-app.UseXiHan();
-app.Run();
 ```
 
 特性登记 `AuditRecord` 的仓储。用 EF Core 时在应用自己的 `DbContext` 里登记实体，列长按记录上的 `[StringLength]` 映射，三个长文本列显式给类型：

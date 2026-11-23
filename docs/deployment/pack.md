@@ -212,10 +212,6 @@ dotnet publish framework/samples/SimpleApp/SimpleApp.csproj --configuration Rele
 
 不要。重新执行 `xihan pack`，产物整份覆盖。需要环境差异（副本数、镜像标签、额外的 env）时用 Kustomize 的 overlay 叠在生成的 base 上，或用 Compose 的 override 文件，生成的文件保持原样。仓库示例的 `deploy/` 由测试保证与清单不漂移。
 
-### 为什么 Kustomize 里没有数据库和 Redis
-
-生成器给不出通用的正确答案：副本数、存储类、备份与升级策略都因环境而异。Kustomize 只出 Secret 样板 `bindings.example.yaml`，依赖服务由部署方用 Helm Chart、Operator 或托管服务提供。单节点的本地联调形态用 Compose 或 Aspire。
-
 ### 应用在 Compose 里读得到连接串，在集群里读不到
 
 检查三件事：绑定名是否与 Provider 读取的名字一致（`db`、`cache`、`queue`、`objectstorage`、`stream`、`nacos`）；Secret 是否按 `bindings.example.yaml` 创建且名字与清单 `bindings.<name>.secret` 一致；Pod 里是否有 `SERVICE_BINDING_ROOT=/bindings` 与对应的挂载。
