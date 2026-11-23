@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Security.WebAuthn;
@@ -97,7 +97,7 @@ public sealed record WebAuthnOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>RelyingPartyId</c> 与 <c>Origins</c>（数组）必填；<c>UserVerification</c>、<c>ResidentKey</c> 取枚举名，<c>TimeoutSeconds</c> 与 <c>ChallengeSize</c> 是整数
+    /// <c>RelyingPartyId</c> 与 <c>Origins</c>（数组）必填；<c>UserVerification</c>、<c>ResidentKey</c> 取枚举名（不收数字），<c>TimeoutSeconds</c> 是正整数，<c>ChallengeSize</c> 是 16 到 64 的整数
     /// </remarks>
     /// <exception cref="ArgumentException">缺少必填项，或某个值不合法</exception>
     public static WebAuthnOptions FromConfiguration(IConfiguration configuration)
@@ -112,24 +112,25 @@ public sealed record WebAuthnOptions
             Origins = origins.Count > 0 ? origins : throw new ArgumentException($"{ConfigurationSection}:Origins must list at least one origin."),
         };
 
-        if (section["UserVerification"] is { } userVerification)
+        if (ConfigurationValues.ReadEnum<WebAuthnRequirement>(section, "UserVerification") is { } userVerification)
         {
-            options = options with { UserVerification = ParseRequirement(userVerification, "UserVerification") };
+            options = options with { UserVerification = userVerification };
         }
 
-        if (section["ResidentKey"] is { } residentKey)
+        if (ConfigurationValues.ReadEnum<WebAuthnRequirement>(section, "ResidentKey") is { } residentKey)
         {
-            options = options with { ResidentKey = ParseRequirement(residentKey, "ResidentKey") };
+            options = options with { ResidentKey = residentKey };
         }
 
-        if (section["TimeoutSeconds"] is { } timeout)
+        // 超时按整数秒写；两个整数的范围与属性一致，越界在读配置处带着配置键拒绝，不留给属性
+        if (ConfigurationValues.ReadInt32(section, "TimeoutSeconds", 1) is { } timeout)
         {
-            options = options with { Timeout = TimeSpan.FromSeconds(ParseInteger(timeout, "TimeoutSeconds")) };
+            options = options with { Timeout = TimeSpan.FromSeconds(timeout) };
         }
 
-        if (section["ChallengeSize"] is { } challengeSize)
+        if (ConfigurationValues.ReadInt32(section, "ChallengeSize", 16, 64) is { } challengeSize)
         {
-            options = options with { ChallengeSize = ParseInteger(challengeSize, "ChallengeSize") };
+            options = options with { ChallengeSize = challengeSize };
         }
 
         // 启动时就暴露来源与 RP ID 不配套，而不是等到浏览器拒绝
@@ -194,20 +195,4 @@ public sealed record WebAuthnOptions
 
         return origins;
     }
-
-    /// <summary>
-    /// 解析要求程度
-    /// </summary>
-    private static WebAuthnRequirement ParseRequirement(string value, string key)
-        => Enum.TryParse<WebAuthnRequirement>(value, ignoreCase: true, out var requirement) && Enum.IsDefined(requirement) && !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _)
-            ? requirement
-            : throw new ArgumentException($"{ConfigurationSection}:{key} must be Required, Preferred or Discouraged, but was '{value}'.");
-
-    /// <summary>
-    /// 解析整数
-    /// </summary>
-    private static int ParseInteger(string value, string key)
-        => int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var number)
-            ? number
-            : throw new ArgumentException($"{ConfigurationSection}:{key} must be an integer, but was '{value}'.");
 }

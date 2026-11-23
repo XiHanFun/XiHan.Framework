@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Permissions;
 
@@ -94,12 +94,12 @@ public sealed record InMemorySecurityOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new InMemorySecurityOptions();
-        if (ReadPositive(configuration, "MaxPrincipals") is { } maxPrincipals)
+        if (ConfigurationValues.ReadInt32(configuration, $"{ConfigurationSection}:MaxPrincipals", 1) is { } maxPrincipals)
         {
             options = options with { MaxPrincipals = maxPrincipals };
         }
 
-        if (ReadPositive(configuration, "MaxGrants") is { } maxGrants)
+        if (ConfigurationValues.ReadInt32(configuration, $"{ConfigurationSection}:MaxGrants", 1) is { } maxGrants)
         {
             options = options with { MaxGrants = maxGrants };
         }
@@ -143,25 +143,6 @@ public sealed record InMemorySecurityOptions
         }
 
         return options with { Principals = principals, Grants = grants };
-    }
-
-    /// <summary>
-    /// 读取配置节下的正整数
-    /// </summary>
-    /// <remarks>
-    /// 缺失返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static int? ReadPositive(IConfiguration configuration, string name)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{name}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-            ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive integer, but was '{raw}'.");
     }
 
     /// <summary>

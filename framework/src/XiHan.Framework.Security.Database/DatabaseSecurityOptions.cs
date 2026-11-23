@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Security.Database;
@@ -40,13 +40,8 @@ public sealed record DatabaseSecurityOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new DatabaseSecurityOptions();
-        if (configuration[$"{ConfigurationSection}:CacheTimeToLiveSeconds"] is { } ttl)
-        {
-            options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { CacheTimeToLive = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:CacheTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
-        }
-
-        return options;
+        return ConfigurationValues.ReadSeconds(configuration, $"{ConfigurationSection}:CacheTimeToLiveSeconds") is { } ttl
+            ? options with { CacheTimeToLive = ttl }
+            : options;
     }
 }

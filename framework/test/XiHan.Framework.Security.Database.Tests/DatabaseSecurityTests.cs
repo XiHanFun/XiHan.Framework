@@ -252,6 +252,8 @@ public sealed class DatabaseSecurityTests
         Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "0"))));
         Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "-1"))));
         Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "soon"))));
+        // 装不进 TimeSpan 的秒数带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+        Assert.Contains("'XiHan:Security:Database:CacheTimeToLiveSeconds' must be ", Assert.Throws<ArgumentException>(static () => DatabaseSecurityOptions.FromConfiguration(Configuration(("CacheTimeToLiveSeconds", "Infinity")))).Message, StringComparison.Ordinal);
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseSecurityOptions { CacheTimeToLive = TimeSpan.Zero });
     }
 

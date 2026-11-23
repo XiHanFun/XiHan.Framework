@@ -120,6 +120,9 @@ public sealed class JwtAuthenticationTests
         Assert.Throws<ArgumentException>(() => JwtOptions.FromConfiguration(Build()));
         Assert.Throws<ArgumentException>(() => JwtOptions.FromConfiguration(Build(("XiHan:Security:Jwt:Secret", "short"))));
         Assert.Throws<ArgumentException>(() => JwtOptions.FromConfiguration(Build(("XiHan:Security:Jwt:Secret", Secret), ("XiHan:Security:Jwt:ClockSkewSeconds", "-1"))));
+        // 时钟偏移允许 0；装不进 TimeSpan 的秒数带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+        Assert.Equal(TimeSpan.Zero, JwtOptions.FromConfiguration(Build(("XiHan:Security:Jwt:Secret", Secret), ("XiHan:Security:Jwt:ClockSkewSeconds", "0"))).ClockSkew);
+        Assert.Contains("'XiHan:Security:Jwt:ClockSkewSeconds' must be ", Assert.Throws<ArgumentException>(() => JwtOptions.FromConfiguration(Build(("XiHan:Security:Jwt:Secret", Secret), ("XiHan:Security:Jwt:ClockSkewSeconds", "Infinity")))).Message, StringComparison.Ordinal);
     }
 
     [Fact]

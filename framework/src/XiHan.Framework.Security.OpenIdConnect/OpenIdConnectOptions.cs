@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Security.OpenIdConnect;
@@ -169,7 +169,7 @@ public sealed record OpenIdConnectOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// <c>Authority</c> 必填，各时长以秒为单位（<c>ClockSkewSeconds</c>、<c>RefreshIntervalSeconds</c>、<c>MinimumRefreshIntervalSeconds</c>、<c>BackchannelTimeoutSeconds</c>）
+    /// <c>Authority</c> 必填，各时长以秒为单位（<c>ClockSkewSeconds</c>、<c>RefreshIntervalSeconds</c>、<c>MinimumRefreshIntervalSeconds</c>、<c>BackchannelTimeoutSeconds</c>）：<c>ClockSkewSeconds</c> 可以是 0，其余必须为正。时长与两个布尔键不合规时以带配置键的 <see cref="ArgumentException"/> 拒绝
     /// </remarks>
     public static OpenIdConnectOptions FromConfiguration(IConfiguration configuration)
     {
@@ -182,36 +182,34 @@ public sealed record OpenIdConnectOptions
             Audience = configuration[$"{ConfigurationSection}:Audience"],
         };
 
-        if (configuration[$"{ConfigurationSection}:ValidateAudience"] is { } validateAudience)
+        var section = configuration.GetSection(ConfigurationSection);
+        if (ConfigurationValues.ReadBoolean(section, "ValidateAudience") is { } validateAudience)
         {
-            options = bool.TryParse(validateAudience, out var value)
-                ? options with { ValidateAudience = value }
-                : throw new ArgumentException($"{ConfigurationSection}:ValidateAudience must be true or false, but was '{validateAudience}'.");
+            options = options with { ValidateAudience = validateAudience };
         }
 
-        if (configuration[$"{ConfigurationSection}:RequireHttpsMetadata"] is { } requireHttps)
+        if (ConfigurationValues.ReadBoolean(section, "RequireHttpsMetadata") is { } requireHttps)
         {
-            options = bool.TryParse(requireHttps, out var value)
-                ? options with { RequireHttpsMetadata = value }
-                : throw new ArgumentException($"{ConfigurationSection}:RequireHttpsMetadata must be true or false, but was '{requireHttps}'.");
+            options = options with { RequireHttpsMetadata = requireHttps };
         }
 
-        if (Seconds(configuration, "ClockSkewSeconds") is { } clockSkew)
+        // 只有时钟偏移允许 0；其余三个时长与属性一致必须为正，0 在读配置处带着配置键拒绝，不留给属性
+        if (ConfigurationValues.ReadSeconds(section, "ClockSkewSeconds", allowZero: true) is { } clockSkew)
         {
             options = options with { ClockSkew = clockSkew };
         }
 
-        if (Seconds(configuration, "RefreshIntervalSeconds") is { } refresh)
+        if (ConfigurationValues.ReadSeconds(section, "RefreshIntervalSeconds") is { } refresh)
         {
             options = options with { RefreshInterval = refresh };
         }
 
-        if (Seconds(configuration, "MinimumRefreshIntervalSeconds") is { } minimum)
+        if (ConfigurationValues.ReadSeconds(section, "MinimumRefreshIntervalSeconds") is { } minimum)
         {
             options = options with { MinimumRefreshInterval = minimum };
         }
 
-        if (Seconds(configuration, "BackchannelTimeoutSeconds") is { } timeout)
+        if (ConfigurationValues.ReadSeconds(section, "BackchannelTimeoutSeconds") is { } timeout)
         {
             options = options with { BackchannelTimeout = timeout };
         }
@@ -225,25 +223,6 @@ public sealed record OpenIdConnectOptions
         _ = options.ResolveMetadataAddress();
         options.EnsureAudience();
         return options;
-    }
-
-    /// <summary>
-    /// 读取以秒为单位的时长
-    /// </summary>
-    /// <remarks>
-    /// 未配置为空，不是非负数则抛出
-    /// </remarks>
-    private static TimeSpan? Seconds(IConfiguration configuration, string name)
-    {
-        var text = configuration[$"{ConfigurationSection}:{name}"];
-        if (text is null)
-        {
-            return null;
-        }
-
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
-            ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a non-negative number, but was '{text}'.");
     }
 
     /// <summary>

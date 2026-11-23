@@ -72,6 +72,9 @@ public sealed class InMemorySecurityTests
 
         Assert.Throws<ArgumentException>(static () => InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Security:InMemory:Principals:eve:DisplayName", "Eve")]).Build()));
         Assert.Throws<ArgumentException>(static () => InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Security:InMemory:Principals:eve:ApiKey", "short")]).Build()));
+        // 两个上限是正整数：0 带着配置键拒绝；两侧空白与正号照收（ADR-0255）
+        Assert.Contains("'XiHan:Security:InMemory:MaxGrants' must be ", Assert.Throws<ArgumentException>(static () => InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Security:InMemory:MaxGrants", "0")]).Build())).Message, StringComparison.Ordinal);
+        Assert.Equal(5, InMemorySecurityOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Security:InMemory:MaxPrincipals", " +5 ")]).Build()).MaxPrincipals);
     }
 
     [Fact]

@@ -68,8 +68,11 @@ public sealed class WebAuthnOptionsTests
         Assert.Throws<ArgumentException>(() => WebAuthnOptions.FromConfiguration(Configuration(("Origins:0", "https://example.com"))));
         Assert.Throws<ArgumentException>(() => WebAuthnOptions.FromConfiguration(Configuration(("RelyingPartyId", "example.com"))));
         Assert.Throws<ArgumentException>(() => WebAuthnOptions.FromConfiguration(Configuration(("RelyingPartyId", "example.com"), ("Origins:0", "https://example.com"), ("UserVerification", "1"))));
-        Assert.Throws<ArgumentOutOfRangeException>(() => WebAuthnOptions.FromConfiguration(Configuration(("RelyingPartyId", "example.com"), ("Origins:0", "https://example.com"), ("ChallengeSize", "8"))));
-        Assert.Throws<ArgumentOutOfRangeException>(() => WebAuthnOptions.FromConfiguration(Configuration(("RelyingPartyId", "example.com"), ("Origins:0", "https://example.com"), ("TimeoutSeconds", "0"))));
+        // 越界在读配置处带着配置键拒绝：原先落到属性里，是不带配置键的 ArgumentOutOfRangeException（ADR-0255）
+        Assert.Contains("'XiHan:Security:WebAuthn:ChallengeSize' must be ", Assert.Throws<ArgumentException>(() => WebAuthnOptions.FromConfiguration(Configuration(("RelyingPartyId", "example.com"), ("Origins:0", "https://example.com"), ("ChallengeSize", "8")))).Message, StringComparison.Ordinal);
+        Assert.Contains("'XiHan:Security:WebAuthn:TimeoutSeconds' must be ", Assert.Throws<ArgumentException>(() => WebAuthnOptions.FromConfiguration(Configuration(("RelyingPartyId", "example.com"), ("Origins:0", "https://example.com"), ("TimeoutSeconds", "0")))).Message, StringComparison.Ordinal);
+        // 超时仍按整数秒写：小数不收
+        Assert.Throws<ArgumentException>(() => WebAuthnOptions.FromConfiguration(Configuration(("RelyingPartyId", "example.com"), ("Origins:0", "https://example.com"), ("TimeoutSeconds", "1.5"))));
         // 直接构造时也核对来源与 RP ID 配套
         Assert.Throws<ArgumentException>(() => new WebAuthnCeremonies(new WebAuthnOptions { RelyingPartyId = "example.com", Origins = ["https://example.org"] }));
     }

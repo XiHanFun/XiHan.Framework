@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Security.Abstractions;
@@ -47,12 +48,9 @@ public sealed record SecurityOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new SecurityOptions();
-        var require = configuration[$"{ConfigurationSection}:RequireAuthentication"];
-        if (require is not null)
+        if (ConfigurationValues.ReadBoolean(configuration, $"{ConfigurationSection}:RequireAuthentication") is { } require)
         {
-            options = bool.TryParse(require, out var value)
-                ? options with { RequireAuthentication = value }
-                : throw new ArgumentException($"{ConfigurationSection}:RequireAuthentication must be 'true' or 'false', but was '{require}'.");
+            options = options with { RequireAuthentication = require };
         }
 
         if (configuration[$"{ConfigurationSection}:RoleClaim"] is { } roleClaim)

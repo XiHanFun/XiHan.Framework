@@ -1,9 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Security.Jwt;
@@ -91,12 +91,9 @@ public sealed record JwtOptions
             Audience = configuration[$"{ConfigurationSection}:Audience"],
         };
 
-        var skew = configuration[$"{ConfigurationSection}:ClockSkewSeconds"];
-        if (skew is not null)
+        if (ConfigurationValues.ReadSeconds(configuration, $"{ConfigurationSection}:ClockSkewSeconds", allowZero: true) is { } skew)
         {
-            options = double.TryParse(skew, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
-                ? options with { ClockSkew = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:ClockSkewSeconds must be a non-negative number, but was '{skew}'.");
+            options = options with { ClockSkew = skew };
         }
 
         if (configuration[$"{ConfigurationSection}:NameClaim"] is { } nameClaim)

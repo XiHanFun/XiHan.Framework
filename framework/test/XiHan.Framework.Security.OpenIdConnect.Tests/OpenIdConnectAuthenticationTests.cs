@@ -271,7 +271,11 @@ public sealed class OpenIdConnectAuthenticationTests
         Assert.Throws<InvalidOperationException>(() => OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "http://login.test"))));
         Assert.Throws<ArgumentException>(() => OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "https://login.test"), (Prefix + "RequireHttpsMetadata", "maybe"))));
         Assert.Throws<ArgumentException>(() => OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "https://login.test"), (Prefix + "ClockSkewSeconds", "-1"))));
-        Assert.Throws<ArgumentOutOfRangeException>(() => OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "https://login.test"), (Prefix + "RefreshIntervalSeconds", "0"))));
+        // 0 在读配置处带着配置键拒绝：原先落到属性里，是不带配置键的 ArgumentOutOfRangeException（ADR-0255）
+        Assert.Contains($"'{Prefix}RefreshIntervalSeconds' must be ", Assert.Throws<ArgumentException>(() => OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "https://login.test"), (Prefix + "RefreshIntervalSeconds", "0")))).Message, StringComparison.Ordinal);
+        // 时钟偏移仍允许 0；装不进 TimeSpan 的秒数带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+        Assert.Equal(TimeSpan.Zero, OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "https://login.test"), (Prefix + "Audience", "api"), (Prefix + "ClockSkewSeconds", "0"))).ClockSkew);
+        Assert.Contains($"'{Prefix}BackchannelTimeoutSeconds' must be ", Assert.Throws<ArgumentException>(() => OpenIdConnectOptions.FromConfiguration(Build((Prefix + "Authority", "https://login.test"), (Prefix + "BackchannelTimeoutSeconds", "Infinity")))).Message, StringComparison.Ordinal);
     }
 
     [Fact]
