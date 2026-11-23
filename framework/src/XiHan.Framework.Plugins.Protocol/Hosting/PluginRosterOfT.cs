@@ -18,7 +18,7 @@ namespace XiHan.Framework.Plugins.Protocol.Hosting;
 /// </summary>
 /// <remarks>
 /// 进程外与 Wasm 宿主各持有一个（ADR-0260）。运行时进出名册、它们的目录、权限码与代理操作的登记与撤回、事件投递与健康条目都在这里；启动、停止与释放运行时是载体的事，留在宿主里。
-/// 锁次序（ADR-0085、ADR-0088）：加载卸载锁 → 登记锁 → 登记表、管道与目录登记表各自的锁，只按这个方向取。运行期加载的登记与后台重试的补登记只取登记锁
+/// 锁次序（ADR-0085、ADR-0088）：加载卸载锁 → 登记锁 → 登记表、管道与目录登记表各自的锁，只按这个方向取。运行期加载的登记与后台重试的补登记只取登记锁。登记顺序另有一把只包住换数组那一步的锁，在最里层；读登记顺序（事件投递、健康条目、停止时的遍历）不取任何锁
 /// </remarks>
 /// <typeparam name="TRuntime">载体的运行时</typeparam>
 internal sealed class PluginRoster<TRuntime> : IDisposable
@@ -30,9 +30,20 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
     private readonly ConcurrentDictionary<string, TRuntime> _plugins = new(StringComparer.Ordinal);
 
     /// <summary>
+    /// 改登记顺序时取的锁
+    /// </summary>
+    /// <remarks>
+    /// 只包住「读出旧数组、换成新数组」这一步，里面不再取别的锁；加载、卸载与登记失败后的移除三条路径都经它
+    /// </remarks>
+    private readonly Lock _orderLock = new();
+
+    /// <summary>
     /// 登记顺序（停止按相反顺序）
     /// </summary>
-    private readonly List<TRuntime> _order = [];
+    /// <remarks>
+    /// 写时复制：增删在 <see cref="_orderLock"/> 里换成一个新数组，读者不取锁，拿到的数组不会再变。事件投递要在枚举途中等插件处理，健康条目随时被探针读，而加载与卸载同时在改它：以前是一个不加锁枚举的 <see cref="List{T}"/>，枚举途中被改即抛出
+    /// </remarks>
+    private TRuntime[] _order = [];
 
     /// <summary>
     /// 清单读不出来的插件目录与原因
@@ -79,7 +90,10 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
     /// <summary>
     /// 全部运行时，按登记顺序
     /// </summary>
-    public IReadOnlyList<TRuntime> Runtimes => _order.ToList();
+    /// <remarks>
+    /// 取用那一刻的快照，之后的加载与卸载不影响它
+    /// </remarks>
+    public IReadOnlyList<TRuntime> Runtimes => Volatile.Read(ref _order);
 
     /// <summary>
     /// 清单读不出来的插件目录与原因
@@ -134,7 +148,7 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
 
             var runtime = create();
             _plugins[manifestId] = runtime;
-            _order.Add(runtime);
+            Append(runtime);
             return runtime;
         }
         finally
@@ -213,8 +227,8 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
                     return refused.Error!;
                 }
 
-                _plugins.TryRemove(manifestId, out _);
-                _order.Remove(runtime);
+                _plugins.TryRemove(new KeyValuePair<string, TRuntime>(manifestId, runtime));
+                Detach(runtime);
                 if (_registry is { } registry)
                 {
                     PluginContributions.Withdraw(registry, _catalogs, manifestId);
@@ -233,31 +247,35 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
     /// 把运行时从名册里移除
     /// </summary>
     /// <remarks>
-    /// 运行期加载登记不进去时用：它什么都没登记，不用撤回
+    /// 运行期加载登记不进去时用：它什么都没登记，不用撤回。不取加载卸载锁，只移除这一个运行时：同一清单 ID 这时可能已经被卸载并换成了新的运行时，按 ID 移除会把新的拿掉
     /// </remarks>
     public void Remove(TRuntime runtime)
     {
         ArgumentNullException.ThrowIfNull(runtime);
-        _plugins.TryRemove(runtime.Manifest.Id, out _);
-        lock (_order)
-        {
-            _order.Remove(runtime);
-        }
+        _plugins.TryRemove(new KeyValuePair<string, TRuntime>(runtime.Manifest.Id, runtime));
+        Detach(runtime);
     }
 
     /// <summary>
     /// 把一条消息投递给订阅了该主题与类型的插件
     /// </summary>
     /// <remarks>
-    /// 按登记顺序逐个投递，第一个失败即为结果
+    /// 按开始投递那一刻的登记顺序逐个投递，第一个失败即为结果。投递途中加载进来的插件收不到这一条，途中被卸载的不再投
     /// </remarks>
     public async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(delivery);
 
-        // 只投给以投递的方式订阅了该主题的插件：同一主题的竞争投递与广播投递各找各的插件
-        foreach (var runtime in _order.Where(r => IsSubscribed(r, delivery)))
+        // 枚举的是快照：每投一个都要等插件处理完，这期间加载与卸载照常改登记顺序
+        foreach (var runtime in Volatile.Read(ref _order))
         {
+            // 只投给以投递的方式订阅了该主题的插件：同一主题的竞争投递与广播投递各找各的插件
+            // 轮到它时已经被卸载的跳过：它正在停止，投过去只会得到不可用、让整条消息重投
+            if (!IsSubscribed(runtime, delivery) || !IsCurrent(runtime))
+            {
+                continue;
+            }
+
             var delivered = await runtime.DeliverAsync(delivery, context).ConfigureAwait(false);
             if (delivered.IsFailure)
             {
@@ -271,8 +289,11 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
     /// <summary>
     /// 每个插件一条健康条目，清单读不出来的目录按目录名各一条
     /// </summary>
+    /// <remarks>
+    /// 插件的条目取自调用那一刻的登记顺序快照
+    /// </remarks>
     public IReadOnlyList<ContributorStatus> Check()
-        => _order.Select(static r => new ContributorStatus(PluginHealth.EntryPrefix + r.Manifest.Id, r.State) { Error = r.Error })
+        => Volatile.Read(ref _order).Select(static r => new ContributorStatus(PluginHealth.EntryPrefix + r.Manifest.Id, r.State) { Error = r.Error })
             .Concat(_unreadable.Select(static u => new ContributorStatus(PluginHealth.EntryPrefix + Path.GetFileName(u.Directory), LifecycleState.Failed)
             {
                 Error = u.Error,
@@ -292,4 +313,36 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
     /// </summary>
     private static bool IsSubscribed(TRuntime runtime, MessageDelivery delivery)
         => runtime.Handshake?.Subscriptions.Any(s => s.Matches(delivery.Topic, delivery.Envelope.Type, delivery.Mode)) == true;
+
+    /// <summary>
+    /// 运行时是否仍是名册里它那个清单 ID 的当前运行时
+    /// </summary>
+    private bool IsCurrent(TRuntime runtime)
+        => _plugins.TryGetValue(runtime.Manifest.Id, out var current) && ReferenceEquals(current, runtime);
+
+    /// <summary>
+    /// 把运行时接到登记顺序末尾
+    /// </summary>
+    private void Append(TRuntime runtime)
+    {
+        // 读出、复制、换上要在同一段锁里：两个写者各自基于旧数组换上新数组，会丢掉其中一个的改动
+        lock (_orderLock)
+        {
+            Volatile.Write(ref _order, [.. _order, runtime]);
+        }
+    }
+
+    /// <summary>
+    /// 把运行时从登记顺序里拿掉
+    /// </summary>
+    /// <remarks>
+    /// 不在其中时什么都不做
+    /// </remarks>
+    private void Detach(TRuntime runtime)
+    {
+        lock (_orderLock)
+        {
+            Volatile.Write(ref _order, Array.FindAll(_order, other => !ReferenceEquals(other, runtime)));
+        }
+    }
 }

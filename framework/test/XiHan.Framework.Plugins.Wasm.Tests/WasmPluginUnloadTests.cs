@@ -186,6 +186,39 @@ public sealed class WasmPluginUnloadTests
         Assert.True((await EchoWasmPluginHost.InvokeAsync(host, "echoes.create", """{"text":"x"}""")).Outcome.IsSuccess);
     }
 
+    [Fact]
+    public async Task Health_StaysReadableWhileAPluginIsLoadedAndUnloadedAtRuntime()
+    {
+        using var declaring = WatPlugin.Declaring([], null);
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<WasmPluginsFeature>());
+        var plugins = EchoWasmPluginHost.PluginHost(host);
+        var source = new PluginSource(declaring.Directory, new PermissionGrant([]));
+        using var churning = new CancellationTokenSource();
+
+        // 探针不停地读健康条目，同时插件在运行期加载又卸载
+        var probing = Task.Run(() =>
+        {
+            var rounds = 0;
+            while (!churning.IsCancellationRequested)
+            {
+                Assert.All(plugins.Check(), static status => Assert.StartsWith(WasmPluginHost.HealthPrefix, status.Name, StringComparison.Ordinal));
+                rounds++;
+            }
+
+            return rounds;
+        });
+
+        for (var round = 0; round < 40; round++)
+        {
+            Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
+            Assert.True((await plugins.UnloadAsync(WatPlugin.PluginId, CancellationToken.None)).IsSuccess);
+        }
+
+        await churning.CancelAsync();
+        // 修之前健康条目枚举的是加载卸载正在改的列表，探针会以 InvalidOperationException（Collection was modified）结束（ADR-0260）
+        Assert.True(await probing.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None) > 0);
+    }
+
     /// <summary>
     /// 运行期加载示例插件的来源（授予回调权限）
     /// </summary>

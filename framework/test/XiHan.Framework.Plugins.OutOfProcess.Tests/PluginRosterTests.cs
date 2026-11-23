@@ -179,6 +179,113 @@ public sealed class PluginRosterTests
         Assert.Equal(("plugins.broken-plugin", LifecycleState.Failed, unreadable), (statuses[1].Name, statuses[1].State, statuses[1].Error));
     }
 
+    [Fact]
+    public async Task Deliver_WhilePluginsAreLoadedAndUnloadedMidDelivery_FinishesWithoutThrowing()
+    {
+        using var roster = new PluginRoster<StubPluginRuntime>();
+        var alpha = await AddAsync(roster, new StubPluginRuntime("xihan.test.alpha", "alphas.run", Topic));
+        var leaving = await AddAsync(roster, new StubPluginRuntime("xihan.test.leaving", "leavings.run", Topic));
+        var omega = await AddAsync(roster, new StubPluginRuntime("xihan.test.omega", "omegas.run", Topic));
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource<Result>(TaskCreationOptions.RunContinuationsAsynchronously);
+        alpha.OnDeliver = () =>
+        {
+            entered.TrySetResult();
+            return release.Task;
+        };
+
+        // 投递停在第一个插件里：这期间卸载一个排在后面的订阅者，再加载一个新的订阅者
+        var delivering = roster.DeliverAsync(Delivery(), Context()).AsTask();
+        await entered.Task.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None);
+        Assert.True((await roster.WithdrawAsync("xihan.test.leaving", null, CancellationToken.None)).IsSuccess);
+        var late = await AddAsync(roster, new StubPluginRuntime("xihan.test.late", "lates.run", Topic));
+        release.SetResult(Result.Success());
+
+        // 修之前投递沿着正在被增删的列表往下走，这里抛出 InvalidOperationException（Collection was modified）
+        var delivered = await delivering.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None);
+
+        Assert.True(delivered.IsSuccess);
+        // 已经移出名册的不再投（它正在停止，投过去只会得到不可用），开始投递之后才进来的也不投：这条消息按开始投递那一刻的名册走完
+        Assert.Equal((1, 0, 1, 0), (alpha.Deliveries, leaving.Deliveries, omega.Deliveries, late.Deliveries));
+    }
+
+    [Fact]
+    public async Task CheckAndDeliver_WhileRuntimesComeAndGo_NeverThrow_AndAlwaysSeeTheStableOnes()
+    {
+        using var roster = new PluginRoster<StubPluginRuntime>();
+        var stable = new List<StubPluginRuntime>();
+        for (var index = 0; index < 8; index++)
+        {
+            stable.Add(await AddAsync(roster, new StubPluginRuntime($"xihan.test.stable{index}", $"stables{index}.run", Topic)));
+        }
+
+        using var churning = new CancellationTokenSource();
+        var delivery = Delivery();
+        var context = Context();
+
+        // 两个读者不停地取健康条目与投递，直到增删结束
+        var checking = Task.Run(() =>
+        {
+            var rounds = 0;
+            while (!churning.IsCancellationRequested)
+            {
+                var names = roster.Check().Select(static s => s.Name).ToHashSet(StringComparer.Ordinal);
+                Assert.All(stable, runtime => Assert.Contains(PluginHealth.EntryPrefix + runtime.Manifest.Id, names));
+                rounds++;
+            }
+
+            return rounds;
+        });
+        var delivering = Task.Run(async () =>
+        {
+            var rounds = 0;
+            while (!churning.IsCancellationRequested)
+            {
+                Assert.True((await roster.DeliverAsync(delivery, context)).IsSuccess);
+                rounds++;
+            }
+
+            return rounds;
+        });
+
+        // 写者：加载、卸载，以及运行期加载登记失败时的直接移除，三条路径都改登记顺序
+        for (var round = 0; round < 3000; round++)
+        {
+            var transient = await AddAsync(roster, new StubPluginRuntime("xihan.test.transient", "transients.run", Topic));
+            if (round % 2 == 0)
+            {
+                Assert.True((await roster.WithdrawAsync("xihan.test.transient", null, CancellationToken.None)).IsSuccess);
+            }
+            else
+            {
+                roster.Remove(transient);
+            }
+        }
+
+        await churning.CancelAsync();
+        // 修之前读者枚举的是正在被改的 List：这里以 InvalidOperationException 结束
+        Assert.True(await checking.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None) > 0);
+        Assert.True(await delivering.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None) > 0);
+        Assert.Equal(stable, roster.Runtimes);
+        Assert.All(stable, static runtime => Assert.True(runtime.Deliveries > 0));
+    }
+
+    [Fact]
+    public async Task Remove_OfARuntimeThatWasAlreadyReplaced_LeavesTheCurrentOne()
+    {
+        using var roster = new PluginRoster<StubPluginRuntime>();
+        var stale = await AddAsync(roster, new StubPluginRuntime("xihan.test.alpha", "alphas.run"));
+        Assert.True((await roster.WithdrawAsync("xihan.test.alpha", null, CancellationToken.None)).IsSuccess);
+        var current = await AddAsync(roster, new StubPluginRuntime("xihan.test.alpha", "alphas.run"));
+
+        // 运行期加载登记失败的收尾，晚于同一插件的卸载与再加载才到：修之前按清单 ID 移除，会把新的运行时从表里拿掉、却留在登记顺序里
+        roster.Remove(stale);
+
+        Assert.True(roster.TryFind("xihan.test.alpha", out var found));
+        Assert.Same(current, found);
+        Assert.Same(current, Assert.Single(roster.Runtimes));
+    }
+
     /// <summary>
     /// 把一个假运行时放进名册
     /// </summary>
