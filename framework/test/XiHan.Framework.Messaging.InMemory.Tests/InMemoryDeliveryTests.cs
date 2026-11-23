@@ -16,8 +16,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
 /// <summary>
-/// 内存代理怎么了结一次投递：停止打断的放回队列、排空中不派发、重投入不了队就到此为止（RFC-0009「投递」第 3、5 条，ADR-0261）
+/// 内存代理怎么了结一次投递
 /// </summary>
+/// <remarks>
+/// 停止打断的投递按原尝试号放回队列，应用排空中不派发，重投入不了队就到此为止，派发抛出的异常记日志（RFC-0009「投递」第 3、5 条，ADR-0261）
+/// </remarks>
 public sealed class InMemoryDeliveryTests
 {
     /// <summary>

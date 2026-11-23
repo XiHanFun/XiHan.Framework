@@ -16,10 +16,10 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Messaging.Kafka.Tests;
 
 /// <summary>
-/// 停止与排空期间的投递不被记成失败（RFC-0009「流」第 2 条、「投递」第 5 条，ADR-0261）
+/// 停止与排空期间的投递不被记成失败
 /// </summary>
 /// <remarks>
-/// 打桩的生产者与消费者：处理器被停止取消后经管道返回失败结果时不原位重试、不发布死信、不提交位点；应用排空期间不接着原位重试。不需要 Kafka
+/// 打桩的生产者与消费者：处理器被停止取消后经管道返回失败结果时不原位重试、不发布死信、不提交位点；应用排空期间不接着原位重试（RFC-0009「流」第 2 条、「投递」第 5 条，ADR-0261）。不需要 Kafka
 /// </remarks>
 public sealed class KafkaDeliveryTests
 {

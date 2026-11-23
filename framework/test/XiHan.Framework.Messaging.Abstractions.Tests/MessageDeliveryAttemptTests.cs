@@ -14,8 +14,11 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
 /// <summary>
-/// 代理一侧的一次投递尝试：归类、失败后的去向、取消、服务状态与日志（RFC-0009「投递」第 3、5 条，ADR-0261）
+/// 代理一侧一次投递尝试的归类、去向、取消与日志
 /// </summary>
+/// <remarks>
+/// 成功、返回失败、抛出、被停止取消各归成什么了结方式，失败后按尝试号与订阅方式的去向，应用不在服务状态时的等待，以及三条日志（RFC-0009「投递」第 3、5 条，ADR-0261）
+/// </remarks>
 public sealed class MessageDeliveryAttemptTests
 {
     /// <summary>
