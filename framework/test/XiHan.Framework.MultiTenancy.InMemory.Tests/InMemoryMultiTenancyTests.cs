@@ -46,7 +46,8 @@ public sealed class InMemoryMultiTenancyTests
         Assert.False(options.Tenants.Single(static t => t.Id == "beta").IsEnabled);
 
         Assert.Equal(1_000, InMemoryMultiTenancyOptions.FromConfiguration(Build()).MaxTenants);
-        Assert.Throws<ArgumentException>(() => InMemoryMultiTenancyOptions.FromConfiguration(Build(("XiHan:MultiTenancy:Tenants:acme:IsEnabled", "maybe"))));
+        // 消息里是完整的配置键，连同租户那一级
+        Assert.Contains("'XiHan:MultiTenancy:Tenants:acme:IsEnabled' must be ", Assert.Throws<ArgumentException>(() => InMemoryMultiTenancyOptions.FromConfiguration(Build(("XiHan:MultiTenancy:Tenants:acme:IsEnabled", "maybe")))).Message, StringComparison.Ordinal);
         Assert.Throws<ArgumentException>(() => InMemoryMultiTenancyOptions.FromConfiguration(Build(("XiHan:MultiTenancy:Tenants:bad id:DisplayName", "x"))));
         Assert.Throws<ArgumentException>(() => InMemoryMultiTenancyOptions.FromConfiguration(Build(("XiHan:MultiTenancy:InMemory:MaxTenants", "0"))));
     }

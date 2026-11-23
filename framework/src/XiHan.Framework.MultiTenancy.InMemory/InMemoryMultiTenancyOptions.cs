@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 
@@ -58,22 +58,16 @@ public sealed record InMemoryMultiTenancyOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new InMemoryMultiTenancyOptions();
-        var max = configuration[$"{ConfigurationSection}:MaxTenants"];
-        if (max is not null)
+        if (ConfigurationValues.ReadInt32(configuration, $"{ConfigurationSection}:MaxTenants", 1) is { } max)
         {
-            options = int.TryParse(max, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-                ? options with { MaxTenants = value }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxTenants must be a positive integer, but was '{max}'.");
+            options = options with { MaxTenants = max };
         }
 
         // 每个子节的节名就是租户 ID，文法由 TenantInfo 构造时校验；缺省 IsEnabled 视为启用
         var tenants = new List<TenantInfo>();
         foreach (var section in configuration.GetSection(TenantsSection).GetChildren())
         {
-            var enabledRaw = section["IsEnabled"];
-            var enabled = enabledRaw is null
-                ? true
-                : bool.TryParse(enabledRaw, out var parsed) ? parsed : throw new ArgumentException($"{TenantsSection}:{section.Key}:IsEnabled must be 'true' or 'false', but was '{enabledRaw}'.");
+            var enabled = ConfigurationValues.ReadBoolean(section, "IsEnabled") ?? true;
             var properties = section.GetSection("Properties").GetChildren()
                 .Where(static p => p.Value is not null)
                 .ToDictionary(static p => p.Key, static p => p.Value!, StringComparer.Ordinal);

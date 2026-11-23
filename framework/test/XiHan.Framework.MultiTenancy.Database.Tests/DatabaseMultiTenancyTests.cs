@@ -272,5 +272,8 @@ public sealed class DatabaseMultiTenancyTests
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseMultiTenancyOptions { CacheTimeToLive = TimeSpan.Zero });
         Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheTimeToLiveSeconds", "0"))));
         Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheTimeToLiveSeconds", "-1"))));
+        // 装不进 TimeSpan 的秒数带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+        var overflow = Assert.Throws<ArgumentException>(static () => DatabaseMultiTenancyOptions.FromConfiguration(Build(("CacheTimeToLiveSeconds", "Infinity"))));
+        Assert.Contains("XiHan:MultiTenancy:Database:CacheTimeToLiveSeconds", overflow.Message, StringComparison.Ordinal);
     }
 }

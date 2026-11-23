@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.MultiTenancy.Database.Tenants;
 using XiHan.Framework.Primitives;
 
@@ -41,14 +41,9 @@ public sealed record DatabaseMultiTenancyOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new DatabaseMultiTenancyOptions();
-        if (configuration[$"{ConfigurationSection}:CacheTimeToLiveSeconds"] is { } ttl)
-        {
-            // 0、负数与非数字都是配置错误：缓存条目必须会过期，失效丢失时才有上限
-            options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { CacheTimeToLive = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:CacheTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
-        }
-
-        return options;
+        // 0、负数与非数字都是配置错误：缓存条目必须会过期，失效丢失时才有上限
+        return ConfigurationValues.ReadSeconds(configuration, $"{ConfigurationSection}:CacheTimeToLiveSeconds") is { } ttl
+            ? options with { CacheTimeToLive = ttl }
+            : options;
     }
 }

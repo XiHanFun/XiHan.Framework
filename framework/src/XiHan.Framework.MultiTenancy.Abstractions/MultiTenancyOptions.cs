@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Primitives;
 
@@ -77,12 +78,12 @@ public sealed record MultiTenancyOptions
             options = options with { DefaultTenant = defaultTenant.Length == 0 ? null : defaultTenant };
         }
 
-        if (ReadBool(configuration, "RequireTenant") is { } require)
+        if (ConfigurationValues.ReadBoolean(configuration, $"{ConfigurationSection}:RequireTenant") is { } require)
         {
             options = options with { RequireTenant = require };
         }
 
-        if (ReadBool(configuration, "ValidateAgainstStore") is { } validate)
+        if (ConfigurationValues.ReadBoolean(configuration, $"{ConfigurationSection}:ValidateAgainstStore") is { } validate)
         {
             options = options with { ValidateAgainstStore = validate };
         }
@@ -93,24 +94,5 @@ public sealed record MultiTenancyOptions
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取配置节下的布尔值
-    /// </summary>
-    /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是 true/false 抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static bool? ReadBool(IConfiguration configuration, string name)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{name}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return bool.TryParse(raw, out var value)
-            ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be 'true' or 'false', but was '{raw}'.");
     }
 }
