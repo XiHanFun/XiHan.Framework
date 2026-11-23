@@ -57,7 +57,10 @@ public sealed class OperationGenerator : IIncrementalGenerator
     /// <summary>
     /// 操作 ID 文法，与原语层 <c>OperationId</c> 一致
     /// </summary>
-    private static readonly Regex _operationId = new("^[a-z][a-z0-9]*(-[a-z0-9]+)*\\.[a-z][a-z0-9]*(-[a-z0-9]+)*$", RegexOptions.Compiled);
+    /// <remarks>
+    /// 结尾用 <c>\z</c> 而不是 <c>$</c>：<c>$</c> 会放过结尾的一个换行，生成器放行、运行期的 <c>OperationId</c> 才拒绝
+    /// </remarks>
+    private static readonly Regex _operationId = new("^[a-z][a-z0-9]*(-[a-z0-9]+)*\\.[a-z][a-z0-9]*(-[a-z0-9]+)*\\z", RegexOptions.Compiled);
 
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)

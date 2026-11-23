@@ -381,6 +381,23 @@ public sealed class OperationGeneratorTests
     }
 
     [Fact]
+    public void Reports_AnIdThatEndsWithALineBreak_AsInvalid_LikeTheRuntimeDoes()
+    {
+        // 运行期的 OperationId 按整串匹配；生成器原先用 $ 收尾，会放过结尾的换行，编译通过、启动时才失败
+        var (_, generator, generated) = Run("""
+            using System.Text.Json.Serialization;
+            using XiHan.Framework.Kernel.Operations;
+            namespace Demo.App;
+            public sealed record Ping;
+            [Operation("pings.create\n")] public sealed class TrailingLineBreak : IOperation<Ping, Ping> { public System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<Ping>> HandleAsync(Ping request, XiHan.Framework.Primitives.InvocationContext context) => throw null!; }
+            [JsonSerializable(typeof(Ping))] public sealed partial class DemoJsonContext : JsonSerializerContext { }
+            """);
+
+        Assert.Equal(["XHG003"], generator.Select(static d => d.Id));
+        Assert.Empty(generated);
+    }
+
+    [Fact]
     public void Descriptions_ComeFromXmlDocumentation()
     {
         const string documented = """
