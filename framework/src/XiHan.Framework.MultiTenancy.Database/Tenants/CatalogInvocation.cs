@@ -14,7 +14,7 @@ namespace XiHan.Framework.MultiTenancy.Database.Tenants;
 /// 单例目录读数据库的方式
 /// </summary>
 /// <remarks>
-/// 在根提供者的新作用域里直接开只读工作单元取仓储，读完提交；数据库故障回滚后以 <see cref="MultiTenancyErrors.StoreUnavailable"/> 返回。不经 <c>App.InvokeAsync</c> 再走一遍管道：目录是 Tenant 阶段自己要查的东西，嵌套调用会再过一遍 Tenant / Authorize 阶段（<c>RequireTenant</c> 为真时嵌套调用没有租户就失败，目录读自己成了自指），而且要求应用处于服务状态，启动期读不了。租户是平台级数据，<see cref="TenantRecord"/> 不实现 <c>IMultiTenant</c>，工作单元不带租户
+/// 在根提供者的新作用域里直接开只读工作单元取仓储，读完提交（<see cref="UnitOfWorkScope"/>，ADR-0259）；数据库故障回滚后以 <see cref="MultiTenancyErrors.StoreUnavailable"/> 返回。不经 <c>App.InvokeAsync</c> 再走一遍管道：目录是 Tenant 阶段自己要查的东西，嵌套调用会再过一遍 Tenant / Authorize 阶段（<c>RequireTenant</c> 为真时嵌套调用没有租户就失败，目录读自己成了自指），而且要求应用处于服务状态，启动期读不了。租户是平台级数据，<see cref="TenantRecord"/> 不实现 <c>IMultiTenant</c>，工作单元不带租户
 /// </remarks>
 internal sealed partial class CatalogInvocation
 {
@@ -55,43 +55,39 @@ internal sealed partial class CatalogInvocation
     /// 在新作用域的只读工作单元里用仓储读取并返回结果
     /// </summary>
     /// <remarks>
-    /// 数据库故障（连接、超时、提交失败）返回 <see cref="MultiTenancyErrors.StoreUnavailable"/>，调用方取消照常抛出
+    /// 数据库故障（连接、超时、提交失败）返回 <see cref="MultiTenancyErrors.StoreUnavailable"/>，调用方取消照常抛出；容器里没有工作单元是装配错误，照常抛出
     /// </remarks>
     public async ValueTask<Result<T>> ReadAsync<T>(Func<IRepository<TenantRecord, string>, CancellationToken, ValueTask<T>> read, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(read);
-        await using var scope = _services.CreateAsyncScope();
-        // 解析放在 try 之外：容器里没有工作单元或仓储是装配错误，不归为存储不可达
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var repository = scope.ServiceProvider.GetRequiredService<IRepository<TenantRecord, string>>();
-        try
-        {
-            // 仓储只在活动的工作单元内工作，读也要先开：这里不在任何调用里，没有 Transaction 阶段替我们开
-            await unitOfWork.BeginAsync(_readOnly, cancellationToken).ConfigureAwait(false);
-            var value = await read(repository, cancellationToken).ConfigureAwait(false);
-            var committed = await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-            if (committed.IsFailure)
-            {
-                LogCommitFailed(_logger, committed.Error!.Code);
-                return Unavailable(committed.Error);
-            }
+        var result = await UnitOfWorkScope.RunAsync<T>(
+            _services,
+            _readOnly,
+            async (services, ct) => Result.Success(await read(services.GetRequiredService<IRepository<TenantRecord, string>>(), ct).ConfigureAwait(false)),
+            Unavailable,
+            _logger,
+            cancellationToken).ConfigureAwait(false);
 
-            return Result.Success(value);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        // 读取不返回失败、抛出的已经映射成存储不可达：外壳原样交还的其余失败只有提交返回的那一种
+        if (result.IsFailure && !string.Equals(result.Error!.Code, MultiTenancyErrors.StoreUnavailable, StringComparison.Ordinal))
         {
-            // 调用方取消不是存储故障：回滚后照常抛出，按异步约定结束
-            await RollbackAsync(unitOfWork).ConfigureAwait(false);
-            throw;
+            LogCommitFailed(_logger, result.Error.Code);
+            return Unavailable(result.Error);
         }
-        catch (Exception exception)
-        {
-            // 连接、超时（含驱动以取消异常报告的命令超时）、事务失败都归为存储不可达：
-            // 租户读不到不能当成不存在，调用据此以 503 结束而不是 404
-            LogReadFailed(_logger, exception);
-            await RollbackAsync(unitOfWork).ConfigureAwait(false);
-            return Unavailable(exception is FrameworkException framework ? framework.ToError() : null);
-        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 把读取时抛出的异常归为存储不可达
+    /// </summary>
+    /// <remarks>
+    /// 连接、超时（含驱动以取消异常报告的命令超时）、事务失败都算：租户读不到不能当成不存在，调用据此以 503 结束而不是 404。完整异常只进日志；框架自己的异常带错误码，留作内部错误
+    /// </remarks>
+    private Error Unavailable(Exception exception)
+    {
+        LogReadFailed(_logger, exception);
+        return Unavailable(exception is FrameworkException framework ? framework.ToError() : null);
     }
 
     /// <summary>
@@ -104,29 +100,6 @@ internal sealed partial class CatalogInvocation
         => new(MultiTenancyErrors.StoreUnavailable, MultiTenancyMessages.StoreUnavailable, null, cause);
 
     /// <summary>
-    /// 工作单元仍活动时回滚
-    /// </summary>
-    /// <remarks>
-    /// 用 None 令牌保证取消引发的异常也能完成回滚；回滚本身失败（数据库已断开时常见）只记日志，不覆盖已经确定的结果
-    /// </remarks>
-    private async ValueTask RollbackAsync(IUnitOfWork unitOfWork)
-    {
-        if (unitOfWork.State != UnitOfWorkState.Active)
-        {
-            return;
-        }
-
-        try
-        {
-            await unitOfWork.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            LogRollbackFailed(_logger, exception);
-        }
-    }
-
-    /// <summary>
     /// 读租户目录失败
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Reading the tenant catalog failed; the tenant store is reported as unavailable.")]
@@ -137,10 +110,4 @@ internal sealed partial class CatalogInvocation
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Committing the read-only unit of work of the tenant catalog failed with '{ErrorCode}'.")]
     private static partial void LogCommitFailed(ILogger logger, string errorCode);
-
-    /// <summary>
-    /// 回滚失败
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Rolling back the unit of work of the tenant catalog failed.")]
-    private static partial void LogRollbackFailed(ILogger logger, Exception exception);
 }
