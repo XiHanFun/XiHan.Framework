@@ -312,9 +312,12 @@ public sealed class SqlSugarReplicaHealthTests : IDisposable
     /// <summary>
     /// 启动配了这些从库的宿主，日志写到 <paramref name="logs"/>
     /// </summary>
+    /// <remarks>
+    /// 主库的连通性探针也调到一小时：缺省 15 秒，用例把假时钟推进一两分钟就会在后台探主库，宿主停止时那次探测留在线程池上（ADR-0123），还开着主库文件，Windows 上随后删文件就失败
+    /// </remarks>
     private Task<TestHost> StartAsync(TimeProvider clock, LogCapture? logs, params string[] replicas) => TestHost.StartAsync(
         builder => builder.UseFeature(ReplicatedSqlite.CreateFeature(replicas.Select(static replica => (replica, 10)))),
-        [.. _site.Configuration, new("XiHan:Persistence:SqlSugar:Replicas:HealthCheckIntervalSeconds", Interval)],
+        [.. _site.Configuration, new("XiHan:Persistence:SqlSugar:Replicas:HealthCheckIntervalSeconds", Interval), new("XiHan:Persistence:SqlSugar:HealthProbeIntervalSeconds", Interval)],
         services =>
         {
             services.AddSingleton(clock);
