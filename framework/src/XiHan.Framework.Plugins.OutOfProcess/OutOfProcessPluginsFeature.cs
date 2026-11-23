@@ -21,7 +21,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess;
 /// 进程外插件宿主特性
 /// </summary>
 /// <remarks>
-/// 配置阶段按 <c>XiHan:Plugins:OutOfProcess:Directories</c> 发现插件（启动进程并握手），把声明的操作登记为代理操作、消息目录与事件订阅接进容器；启动阶段启动回调服务器与 <c>onStartup</c> 的插件；停止阶段停止全部插件
+/// 配置阶段按 <c>XiHan:Plugins:OutOfProcess:Directories</c> 发现插件（启动进程并握手），把声明的操作登记为代理操作、消息目录以清单 ID 为归属注册进容器、事件订阅接进容器；启动阶段启动回调服务器与 <c>onStartup</c> 的插件；停止阶段停止全部插件
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class OutOfProcessPluginsFeature : IHostedFeature
@@ -75,11 +75,12 @@ public sealed class OutOfProcessPluginsFeature : IHostedFeature
 
             // 清单声明的权限码连同代理操作一次登记（ADR-0080）：声明的码与已登记的重复、操作与应用自己的重名都是配置错误，启动失败；
             // 引用了未登记的权限码同样是配置错误，在装配完成时一并核对、启动失败（插件声明的码此时已在登记表里）
-            PluginContributions.Register(context.Operations, runtime.Manifest, runtime.Handshake, runtime).ThrowIfFailure();
+            PluginContributions.Register(context.Operations, null, runtime.Manifest, runtime.Handshake, runtime).ThrowIfFailure();
 
+            // 以清单 ID 为归属：卸载时随之撤回，再加载时按新版本的目录重新登记（ADR-0252）
             foreach (var catalog in runtime.Handshake.Catalogs)
             {
-                context.Services.AddMessageCatalog(catalog);
+                context.Services.AddMessageCatalog(runtime.Manifest.Id, catalog);
             }
 
             // 每个（主题，方式）登记一次转交处理器，实际投给哪个插件由宿主按握手声明决定

@@ -11,6 +11,7 @@ using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Kernel.Security;
+using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Localization.InMemory;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
@@ -494,6 +495,70 @@ public sealed class OutOfProcessPluginHostTests
         var again = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":"again"}""");
         Assert.True(again.Outcome.IsSuccess, again.Outcome.ToString());
         Assert.Equal("again", EchoPluginHost.Payload(again).GetProperty("text").GetString());
+    }
+
+    [Fact]
+    public async Task RuntimeLoad_RegistersTheHandshakeCatalog_AndUnloadWithdrawsIt()
+    {
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>().UseFeature<OutOfProcessPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+        var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
+        var source = new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"]));
+        Assert.False(localizer.Find("echo.text.empty", "zh-CN").HasValue);
+
+        // 运行期加载的插件同样有目录：它的失败按调用方语言翻译（ADR-0252）
+        Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
+        var failed = await EchoPluginHost.InvokeAsync(host, "echoes.create", """{"text":""}""");
+        Assert.Equal("echo.text.empty", failed.Outcome.Error?.MessageKey);
+        Assert.Equal("文本不能为空。", localizer.Localize(failed.Outcome.Error!, "zh-CN"));
+
+        // 卸载随之撤回：键解析不到，退回描述
+        Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
+        Assert.False(localizer.Find("echo.text.empty", "zh-CN").HasValue);
+        Assert.Equal("echo.text.empty", localizer.Localize("echo.text.empty", "zh-CN", null));
+
+        // 再加载重新登记，不撞上上一次的目录
+        Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
+        Assert.Equal("The text must not be empty.", localizer.Localize("echo.text.empty", "en-US", null));
+    }
+
+    [Fact]
+    public async Task RuntimeLoad_WithAConflictingCatalog_IsRejected_AndLeavesNothingBehind()
+    {
+        // 宿主已有同名目录，同一键同一区域的模板与插件的不同
+        var host = new MessageCatalog("echo", new Dictionary<string, IReadOnlyDictionary<string, string>>
+        {
+            ["en-US"] = new Dictionary<string, string> { ["echo.text.empty"] = "Text is required." },
+        });
+        await using var app = await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>().UseFeature<OutOfProcessPluginsFeature>(), services: s => s.AddMessageCatalog(host));
+        var plugins = app.Services.GetRequiredService<IPluginHost>();
+
+        var loaded = await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None);
+
+        // 整组被拒：目录、权限码与代理操作都不留下，插件不在宿主里，宿主的目录不变
+        Assert.Equal(LocalizationErrors.DuplicateCatalog, loaded.Error?.Code);
+        Assert.Contains("'echo.text.empty'", loaded.Error?.Message, StringComparison.Ordinal);
+        Assert.Empty(plugins.Plugins);
+        Assert.DoesNotContain(app.Services.GetRequiredService<OperationRegistry>().All(), static d => d.OwnerId == EchoPluginHost.PluginId);
+        Assert.Equal([host], app.Services.GetRequiredService<MessageCatalogRegistry>().Catalogs.Where(static c => c.Name == "echo"));
+        Assert.Equal("Text is required.", app.Services.GetRequiredService<IMessageLocalizer>().Localize("echo.text.empty", "en-US", null));
+    }
+
+    [Fact]
+    public async Task DiscoveredPlugin_Catalog_LeavesWithTheUnload_AndComesBackWithTheReload()
+    {
+        await using var host = await EchoPluginHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>());
+        var plugins = EchoPluginHost.PluginHost(host);
+        var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
+        Assert.Equal("文本不能为空。", localizer.Localize("echo.text.empty", "zh-CN", null));
+
+        // 配置阶段发现的插件的目录同样以清单 ID 为归属：卸载即撤回
+        Assert.True((await plugins.UnloadAsync(EchoPluginHost.PluginId, CancellationToken.None)).IsSuccess);
+        Assert.False(localizer.Find("echo.text.empty", "zh-CN").HasValue);
+
+        // 再加载按这次握手的目录重新登记
+        Assert.True((await plugins.LoadAsync(new PluginSource(EchoPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"])), CancellationToken.None)).IsSuccess);
+        Assert.Equal("文本不能为空。", localizer.Localize("echo.text.empty", "zh-CN", null));
     }
 
     [Fact]

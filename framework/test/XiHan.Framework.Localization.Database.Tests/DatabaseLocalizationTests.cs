@@ -104,6 +104,34 @@ public sealed class DatabaseLocalizationTests
     }
 
     [Fact]
+    public async Task OwnedCatalogs_TakeEffectAtOnce_AndTranslationsStillWin()
+    {
+        await using var host = await StartAsync(new KeyValuePair<string, string?>("XiHan:Localization:Database:RefreshIntervalSeconds", "0"));
+        var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
+        var catalogs = host.Services.GetRequiredService<MessageCatalogRegistry>();
+        var shipments = new MessageCatalog("shipments", new Dictionary<string, IReadOnlyDictionary<string, string>>
+        {
+            ["en-US"] = new Dictionary<string, string> { ["shipments.shipment.late"] = "Shipment '{id}' is late." },
+        });
+
+        // 数据库 Provider 同样读容器的登记表：运行期按归属登记的目录立即可见，撤回即不见
+        catalogs.Add("acme.shipments", [shipments]);
+        Assert.Equal("Shipment '3' is late.", localizer.Localize("shipments.shipment.late", "en-US", MessageArguments.Of(("id", 3))));
+
+        var written = await host.InvokeAsync(async context =>
+        {
+            var results = await context.Services.GetRequiredService<MessageTranslationStore>().UpsertAsync([new MessageTranslationEntry("shipments.shipment.late", "en-US", "Shipment '{id}' is delayed.")], context.CancellationToken);
+            Assert.True(results[0].IsSuccess);
+        });
+        Assert.True(written.IsSuccess);
+        await WaitUntilAsync(() => localizer.Localize("shipments.shipment.late", "en-US", MessageArguments.Of(("id", 3))) == "Shipment '3' is delayed.");
+
+        catalogs.RemoveOwnedBy("acme.shipments");
+        // 库里的翻译不随目录撤回：没有目录的键仍由翻译给出
+        Assert.Equal("Shipment '3' is delayed.", localizer.Localize("shipments.shipment.late", "en-US", MessageArguments.Of(("id", 3))));
+    }
+
+    [Fact]
     public async Task BackgroundRefresh_PicksUpChanges_AndHonoursTheLimit()
     {
         await using var host = await StartAsync(

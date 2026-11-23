@@ -10,6 +10,7 @@ using XiHan.Framework.Kernel.Capabilities;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Plugins;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Plugins.OutOfProcess.Callbacks;
 using XiHan.Framework.Plugins.OutOfProcess.Runtime;
@@ -118,6 +119,14 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     private OperationRegistry? _registry;
 
     /// <summary>
+    /// 插件消息目录登记到的登记表
+    /// </summary>
+    /// <remarks>
+    /// 附着到容器时取得；配置阶段发现的插件的目录由特性按归属注册进容器，卸载时同样从这里撤回
+    /// </remarks>
+    private MessageCatalogRegistry? _catalogs;
+
+    /// <summary>
     /// 回调服务器
     /// </summary>
     /// <remarks>
@@ -219,7 +228,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             return discovered.Error!;
         }
 
-        // 运行期加载的代理操作只对内核调用器可见：协议适配器在启动时已经发布过路由
+        // 目录、权限码与代理操作一次登记：HTTP 路由、接口文档与 MCP tool 跟随操作登记表随之出现（ADR-0251、ADR-0252）
         var registered = Register(runtime);
         if (registered.IsFailure)
         {
@@ -241,7 +250,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
 
     /// <inheritdoc />
     /// <remarks>
-    /// 先按归属（清单 ID）撤回插件登记的代理操作与权限码，再停止进程（<c>plugin/invocation.md</c> §1，ADR-0085）：撤回之后按 ID 调用这些操作返回 <c>KERNEL_NOTFOUND_001</c>，已经在执行的调用照常完成或在进程停止后以 <c>PLUGINS_UNAVAILABLE_001</c> 结束；卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。订阅与消息目录在配置阶段接进容器，不随卸载撤回
+    /// 先按归属（清单 ID）撤回插件登记的代理操作、权限码与消息目录，再停止进程（<c>plugin/invocation.md</c> §1，ADR-0085、ADR-0252）：撤回之后按 ID 调用这些操作返回 <c>KERNEL_NOTFOUND_001</c>，已经在执行的调用照常完成或在进程停止后以 <c>PLUGINS_UNAVAILABLE_001</c> 结束；卸载完成后可以直接 <see cref="LoadAsync"/> 同一个插件。订阅在配置阶段接进容器，不随卸载撤回
     /// </remarks>
     public async Task<Result> UnloadAsync(string manifestId, CancellationToken cancellationToken)
     {
@@ -274,12 +283,13 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// 附着到已构建的宿主容器
     /// </summary>
     /// <remarks>
-    /// 换用宿主日志与时钟、启动回调服务器、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件。握手失败与启动失败的插件按重启策略在后台重试（<c>lifecycle.md</c> §6），发现时被拒的不重试
+    /// 换用宿主日志与时钟、取得目录登记表、启动回调服务器、记录发现阶段失败的插件、启动 <c>onStartup</c> 的插件。握手失败与启动失败的插件按重启策略在后台重试（<c>lifecycle.md</c> §6），发现时被拒的不重试。目录登记表在这里才建立，配置阶段注册的插件目录与同名目录冲突时这里抛出，宿主启动失败
     /// </remarks>
     internal async Task AttachAsync(IServiceProvider services, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(services);
         _context.Clock = services.GetService<TimeProvider>() ?? _context.Clock;
+        _catalogs = services.GetRequiredService<MessageCatalogRegistry>();
         _loggerFactory = services.GetRequiredService<ILoggerFactory>();
         _logger = _loggerFactory.CreateLogger<OutOfProcessPluginHost>();
         foreach (var runtime in _order)
@@ -475,14 +485,14 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// 重试中才握手成功的插件：把代理操作登记进操作登记表
     /// </summary>
     /// <remarks>
-    /// 与运行期加载一致，代理操作只对内核调用器可见（协议适配器的路由在启动时已经发布）；订阅与消息目录要在配置阶段接进容器，宿主重启后才生效，这里记警告
+    /// 与运行期加载一致，目录、权限码与代理操作一次登记；订阅要在配置阶段接进容器，宿主重启后才生效，这里记警告
     /// </remarks>
     private Result RegisterLate(PluginRuntime runtime)
     {
         var registered = Register(runtime);
-        if (registered.IsSuccess && runtime.Handshake is { } handshake && (handshake.Subscriptions.Count > 0 || handshake.Catalogs.Count > 0))
+        if (registered.IsSuccess && runtime.Handshake is { Subscriptions.Count: > 0 } handshake)
         {
-            LogLateDeclarations(_logger, runtime.Manifest.Id, handshake.Subscriptions.Count, handshake.Catalogs.Count);
+            LogLateSubscriptions(_logger, runtime.Manifest.Id, handshake.Subscriptions.Count);
         }
 
         return registered;
@@ -553,10 +563,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     }
 
     /// <summary>
-    /// 把运行时清单声明的权限码与握手声明的操作登记进宿主
+    /// 把握手声明的目录与操作、清单声明的权限码登记进宿主
     /// </summary>
     /// <remarks>
-    /// 一组一次登记、全进或全不进：声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的权限码与代理操作。运行时已不是宿主里的当前运行时（卸载之后才握手成功的重试、卸载与运行期加载交错）时不登记，返回未加载
+    /// 一组一次登记、全进或全不进：目录与同名目录冲突、声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的目录、权限码与代理操作。运行时已不是宿主里的当前运行时（卸载之后才握手成功的重试、卸载与运行期加载交错）时不登记，返回未加载
     /// </remarks>
     private Result Register(PluginRuntime runtime)
     {
@@ -573,12 +583,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
                 return Error.NotFound(PluginErrors.NotFound, PluginMessages.NotLoaded, MessageArguments.Of(("id", runtime.Manifest.Id)));
             }
 
-            return PluginContributions.Register(_registry, runtime.Manifest, runtime.Handshake, runtime);
+            return PluginContributions.Register(_registry, _catalogs, runtime.Manifest, runtime.Handshake, runtime);
         }
     }
 
     /// <summary>
-    /// 撤回运行时登记的权限码与代理操作
+    /// 撤回运行时登记的代理操作、权限码与目录
     /// </summary>
     /// <remarks>
     /// 卸载时在 <see cref="_gate"/> 内、运行时移出宿主之后调用；没有登记过时什么都不做
@@ -592,7 +602,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
 
         lock (_registration)
         {
-            PluginContributions.Withdraw(_registry, runtime.Manifest.Id);
+            PluginContributions.Withdraw(_registry, _catalogs, runtime.Manifest.Id);
         }
     }
 
@@ -677,10 +687,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     private static partial void LogDiscoveryFailed(ILogger logger, string plugin, string code, string message);
 
     /// <summary>
-    /// 记录重试中才握手成功的插件声明了无法补登记的订阅或消息目录
+    /// 记录重试中才握手成功的插件声明了无法补登记的订阅
     /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin {PluginId} completed its first handshake only after startup; its {Subscriptions} subscriptions and {Catalogs} message catalogs take effect after the host restarts.")]
-    private static partial void LogLateDeclarations(ILogger logger, string pluginId, int subscriptions, int catalogs);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Plugin {PluginId} completed its first handshake only after startup; its {Subscriptions} subscriptions take effect after the host restarts.")]
+    private static partial void LogLateSubscriptions(ILogger logger, string pluginId, int subscriptions);
 
     /// <summary>
     /// 记录插件启动失败（宿主继续运行）

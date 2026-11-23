@@ -47,8 +47,9 @@ var text = OrdersMessages.NotFound.L(("id", id));   // 调用链里是调用方�
 * `SupportedLocales`、`LocaleName`：内置区域与区域名规范化
 * `LocalizationOptions`：默认区域、启用列表、区域协商
 * `MessageCatalog`：消息键、区域、模板的只读目录
+* `MessageCatalogRegistry`：本地化器读取的全部目录，可以按归属登记与撤回
 * `IMessageLocalizer`、`LocalizedText`：按显式区域解析
-* `AddMessageCatalog`：注册目录
+* `AddMessageCatalog`：注册目录，或按归属注册
 
 ## 更多文档
 

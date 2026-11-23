@@ -63,6 +63,25 @@ public sealed class InMemoryLocalizationFeatureTests
     }
 
     [Fact]
+    public async Task OwnedCatalogs_TakeEffectAtOnce_AndLeaveWithTheirOwner()
+    {
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>(), [new("XiHan:Localization:DefaultLocale", "zh-CN")]);
+        var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
+        var catalogs = host.Services.GetRequiredService<MessageCatalogRegistry>();
+        Assert.False(localizer.Find("orders.order.not_found", "zh-CN").HasValue);
+
+        // 运行期按归属登记：本地化器与进程默认作用域立即看到，不用重建容器
+        catalogs.Add("acme.orders", [_orders]);
+        Assert.Equal("订单 '7' 不存在。", localizer.Localize("orders.order.not_found", "zh-CN", MessageArguments.Of(("id", 7))));
+        Assert.Equal("订单 '7' 不存在。", "orders.order.not_found".L(("id", 7)));
+
+        // 撤回之后解析不到，退回键与参数的描述
+        Assert.Equal(1, catalogs.RemoveOwnedBy("acme.orders"));
+        Assert.False(localizer.Find("orders.order.not_found", "zh-CN").HasValue);
+        Assert.Equal("orders.order.not_found (id=7)", "orders.order.not_found".L(("id", 7)));
+    }
+
+    [Fact]
     public async Task InvocationScope_UsesTheNegotiatedLocale_SameAsContextLocalizeAndProblemDetails()
     {
         // 启用列表只有 en-US 与 zh-CN；ja-JP 有语言文件但没启用

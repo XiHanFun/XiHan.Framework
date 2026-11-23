@@ -20,12 +20,12 @@ namespace XiHan.Framework.Localization.Database;
 public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolver
 {
     /// <summary>
-    /// 已注册的目录，按注册顺序
+    /// 目录登记表
     /// </summary>
     /// <remarks>
-    /// 同一键先注册的目录优先
+    /// 同一键先找到的目录优先
     /// </remarks>
-    private readonly IReadOnlyList<MessageCatalog> _catalogs;
+    private readonly MessageCatalogRegistry _catalogs;
 
     /// <summary>
     /// 当前快照
@@ -36,12 +36,26 @@ public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolv
     private volatile TranslationOverlay _overlay = TranslationOverlay.Empty;
 
     /// <summary>
-    /// 创建
+    /// 用一组固定的目录创建
     /// </summary>
+    /// <param name="catalogs">已注册的目录，按注册顺序</param>
+    /// <param name="options">选项</param>
     public DatabaseMessageLocalizer(IEnumerable<MessageCatalog> catalogs, LocalizationOptions options)
+        : this(new MessageCatalogRegistry(catalogs), options)
     {
-        ArgumentNullException.ThrowIfNull(catalogs);
-        _catalogs = catalogs.ToList();
+    }
+
+    /// <summary>
+    /// 用目录登记表创建
+    /// </summary>
+    /// <remarks>
+    /// 容器里由 <see cref="DatabaseLocalizationFeature"/> 按容器的登记表创建：运行期按归属登记与撤回的目录立即生效
+    /// </remarks>
+    /// <param name="catalogs">目录登记表</param>
+    /// <param name="options">选项</param>
+    public DatabaseMessageLocalizer(MessageCatalogRegistry catalogs, LocalizationOptions options)
+    {
+        _catalogs = catalogs ?? throw new ArgumentNullException(nameof(catalogs));
         Options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -100,7 +114,9 @@ public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolv
     /// </summary>
     private bool TryFind(string key, string locale, out string template, out string resolvedLocale)
     {
+        // 翻译与目录各取一份快照：并发的重新加载、登记与撤回不会让同一次查找前后看到不同的内容
         var overlay = _overlay;
+        var catalogs = _catalogs.Catalogs;
         foreach (var candidate in Options.FallbackChain(locale))
         {
             if (overlay.TryGet(key, candidate, out template))
@@ -109,9 +125,9 @@ public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolv
                 return true;
             }
 
-            foreach (var catalog in _catalogs)
+            for (var index = 0; index < catalogs.Count; index++)
             {
-                if (catalog.Find(key, candidate).TryGetValue(out var found))
+                if (catalogs[index].Find(key, candidate).TryGetValue(out var found))
                 {
                     template = found;
                     resolvedLocale = candidate;

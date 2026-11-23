@@ -13,28 +13,40 @@ namespace XiHan.Framework.Localization.InMemory;
 /// 汇集全部已注册目录的本地化器，同时是安装到 <see cref="MessageScope"/> 的解析器
 /// </summary>
 /// <remarks>
-/// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>；同一键先注册的目录优先。占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）
+/// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>；同一键先注册的目录优先。占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）。每次查找读 <see cref="MessageCatalogRegistry"/> 的当前快照，运行期按归属登记与撤回的目录立即生效
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemoryMessageLocalizer : IMessageLocalizer, IMessageResolver
 {
     /// <summary>
-    /// 已注册的目录，按注册顺序
+    /// 目录登记表
     /// </summary>
     /// <remarks>
-    /// 同一键先注册的目录优先
+    /// 同一键先找到的目录优先
     /// </remarks>
-    private readonly IReadOnlyList<MessageCatalog> _catalogs;
+    private readonly MessageCatalogRegistry _catalogs;
 
     /// <summary>
-    /// 创建本地化器
+    /// 用一组固定的目录创建本地化器
     /// </summary>
     /// <param name="catalogs">已注册的目录，按注册顺序</param>
     /// <param name="options">选项</param>
     public InMemoryMessageLocalizer(IEnumerable<MessageCatalog> catalogs, LocalizationOptions options)
+        : this(new MessageCatalogRegistry(catalogs), options)
     {
-        ArgumentNullException.ThrowIfNull(catalogs);
-        _catalogs = catalogs.ToList();
+    }
+
+    /// <summary>
+    /// 用目录登记表创建本地化器
+    /// </summary>
+    /// <remarks>
+    /// 容器里由 <see cref="InMemoryLocalizationFeature"/> 按容器的登记表创建
+    /// </remarks>
+    /// <param name="catalogs">目录登记表</param>
+    /// <param name="options">选项</param>
+    public InMemoryMessageLocalizer(MessageCatalogRegistry catalogs, LocalizationOptions options)
+    {
+        _catalogs = catalogs ?? throw new ArgumentNullException(nameof(catalogs));
         Options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
@@ -83,11 +95,13 @@ public sealed class InMemoryMessageLocalizer : IMessageLocalizer, IMessageResolv
     /// </summary>
     private bool TryFind(string key, string locale, out string template, out string resolvedLocale)
     {
+        // 一次查找只用一份快照：并发的登记与撤回不会让同一次查找前后看到不同的目录
+        var catalogs = _catalogs.Catalogs;
         foreach (var candidate in Options.FallbackChain(locale))
         {
-            foreach (var catalog in _catalogs)
+            for (var index = 0; index < catalogs.Count; index++)
             {
-                if (catalog.Find(key, candidate).TryGetValue(out var found))
+                if (catalogs[index].Find(key, candidate).TryGetValue(out var found))
                 {
                     template = found;
                     resolvedLocale = candidate;

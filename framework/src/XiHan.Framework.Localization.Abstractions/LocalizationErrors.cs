@@ -23,7 +23,7 @@ public static class LocalizationErrors
     /// 同名消息目录里同一键同一区域的模板不一致
     /// </summary>
     /// <remarks>
-    /// 由 <see cref="LocalizationServiceCollectionExtensions.AddMessageCatalog"/> 在注册时抛出，应用启动失败。同名目录的其余情形（内容相同、互为补充）合并为一份
+    /// 由 <see cref="LocalizationServiceCollectionExtensions.AddMessageCatalog(Microsoft.Extensions.DependencyInjection.IServiceCollection, Messages.MessageCatalog)"/> 在注册时抛出，应用启动失败。同名目录的其余情形（内容相同、互为补充）合并为一份。按归属登记（<see cref="Messages.MessageCatalogRegistry.Add"/>）时冲突同样抛出，整组不登记
     /// </remarks>
     public const string DuplicateCatalog = "LOCALIZATION_CONFLICT_001";
 

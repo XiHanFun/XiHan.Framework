@@ -165,7 +165,7 @@ curl -si -H "Accept-Language: zh-CN" http://localhost:5000/missing
 
 ### 注册目录的规则
 
-`AddMessageCatalog` 的第一个参数是目录名，第二个参数是目录所在程序集里的任意类型。同名目录合并为一份：内容相同时什么都不变（多个 Provider 可能都带同一个抽象包的目录），互为补充时区域与键取并集（插件握手带来的目录与宿主包里同名目录的其他语言），同一键同一区域的模板不同时 `AddMessageCatalog` 抛出 `LOCALIZATION_CONFLICT_001`，应用启动失败。应用与插件的目录名不要与框架的重名。目录不合法（JSON 错误、键或区域名不合法、程序集里没有任何语言文件）时抛出 `LOCALIZATION_VALIDATION_002`，应用启动失败。
+`AddMessageCatalog` 的第一个参数是目录名，第二个参数是目录所在程序集里的任意类型。同名目录合并为一份：内容相同时什么都不变（多个 Provider 可能都带同一个抽象包的目录），互为补充时区域与键取并集（插件握手带来的目录与宿主包里同名目录的其他语言），同一键同一区域的模板不同时 `AddMessageCatalog` 抛出 `LOCALIZATION_CONFLICT_001`，应用启动失败。插件的目录以插件的清单 ID 为归属登记（`AddMessageCatalog(owner, catalog)` 与 `MessageCatalogRegistry.Add`），不与同名目录合并成一份、照同样的规则核对冲突，加载时登记、卸载时撤回（ADR-0252）；本地化器从 `MessageCatalogRegistry` 读目录，按归属登记的排在后面，不覆盖已有的键。应用与插件的目录名不要与框架的重名。目录不合法（JSON 错误、键或区域名不合法、程序集里没有任何语言文件）时抛出 `LOCALIZATION_VALIDATION_002`，应用启动失败。
 
 | 目录 | 注册方 |
 | --- | --- |

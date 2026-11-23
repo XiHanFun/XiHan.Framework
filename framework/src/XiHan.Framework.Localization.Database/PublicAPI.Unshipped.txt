@@ -17,6 +17,7 @@ XiHan.Framework.Localization.Database.DatabaseLocalizationOptions.RefreshInterva
 XiHan.Framework.Localization.Database.DatabaseLocalizationOptions.RefreshInterval.init -> void
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.DatabaseMessageLocalizer(System.Collections.Generic.IEnumerable<XiHan.Framework.Localization.Abstractions.Messages.MessageCatalog!>! catalogs, XiHan.Framework.Localization.Abstractions.LocalizationOptions! options) -> void
+XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.DatabaseMessageLocalizer(XiHan.Framework.Localization.Abstractions.Messages.MessageCatalogRegistry! catalogs, XiHan.Framework.Localization.Abstractions.LocalizationOptions! options) -> void
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Find(string! key, string! locale) -> XiHan.Framework.Primitives.Maybe<string!>
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Negotiate(string? locale) -> string?
 XiHan.Framework.Localization.Database.DatabaseMessageLocalizer.Options.get -> XiHan.Framework.Localization.Abstractions.LocalizationOptions!

@@ -15,7 +15,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 ## 概述
 
-特性在配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`，校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予），编译 `entry` 指向的模块（`.wasm`，参考实现也接受 `.wat` 文本），校验导出与导入表（ABI v1，`spec/plugin/wasm.md`），实例化并调用 `xihan_handshake`，核对清单。声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码连同它们一次登记进 `PermissionRegistry`（ADR-0080），消息目录接进本地化器，订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（不允许 `handle` 阶段）。启动阶段对 `onStartup` 的插件依次调用 `xihan_configure`、`xihan_start` 并开始健康轮询；懒激活的插件在握手后丢弃实例，首次调用时再实例化。
+特性在配置阶段按 `Directories` 发现插件：读 `xihan.manifest.json`，校验权限（`capability:` 看 `Grants`，`fs.read:` / `fs.write:` 看 `Mounts`，`net.outbound:` 永不授予），编译 `entry` 指向的模块（`.wasm`，参考实现也接受 `.wat` 文本），校验导出与导入表（ABI v1，`spec/plugin/wasm.md`），实例化并调用 `xihan_handshake`，核对清单。声明的操作登记为代理操作，清单 `contributes.permissions` 声明的权限码连同它们一次登记进 `PermissionRegistry`（ADR-0080），消息目录以清单 ID 为归属注册进本地化器（卸载时撤回，ADR-0252），订阅登记事件处理器，清单 `contributes.pipeline` 的每一项按 `清单 ID:中间件名` 插进对应阶段（不允许 `handle` 阶段）。启动阶段对 `onStartup` 的插件依次调用 `xihan_configure`、`xihan_start` 并开始健康轮询；懒激活的插件在握手后丢弃实例，首次调用时再实例化。
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写入即丢弃（ADR-0186），日志走导入 `xihan.log`。
 
@@ -171,8 +171,8 @@ cp target/wasm32-wasip1/release/echo_wasm_plugin.wasm plugin/echo.wasm
 | 回调嵌套超过 8 层、客体内存分配失败 | `PLUGINS_UNAVAILABLE_002` |
 | 中间件陷阱、超时或无响应 | 调用以 `PLUGINS_UNAVAILABLE_001` 失败（失败即关闭），插件按崩溃重建 |
 | 中间件 before 短路却没给失败结果 | 按 `KERNEL_VALIDATION_001` 处理 |
-| 运行期 `LoadAsync` 含 `contributes.pipeline` 的插件 | 中间件与代理操作、声明的权限码一次登记、全进或全不进（ADR-0088）；次序约束在加载时核对，目标未登记、有歧义、跨阶段（`KERNEL_PIPELINE_003`）或成环（`KERNEL_PIPELINE_001`）时返回该错误，插件不登记、管道不变 |
-| `UnloadAsync` | 先按归属撤回插件贡献的中间件、代理操作与声明的权限码，再停止实例、等在途调用离开后释放（ADR-0085、ADR-0088）：之后开始的调用不再经过它的中间件、调用它的操作返回 `KERNEL_NOTFOUND_001`；在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再加载，中间件回到原来的位置，不用重启宿主 |
+| 运行期 `LoadAsync` 含 `contributes.pipeline` 的插件 | 中间件与消息目录、代理操作、声明的权限码一次登记、全进或全不进（ADR-0088、ADR-0252）；次序约束在加载时核对，目标未登记、有歧义、跨阶段（`KERNEL_PIPELINE_003`）或成环（`KERNEL_PIPELINE_001`）时返回该错误，插件不登记、管道不变 |
+| `UnloadAsync` | 先按归属撤回插件贡献的中间件、代理操作、声明的权限码与消息目录，再停止实例、等在途调用离开后释放（ADR-0085、ADR-0088、ADR-0252）：之后开始的调用不再经过它的中间件、调用它的操作返回 `KERNEL_NOTFOUND_001`；在途调用照常完成或以 `PLUGINS_UNAVAILABLE_001` 结束；同一插件可以直接再加载，中间件回到原来的位置，不用重启宿主 |
 | 卸载的插件的中间件被别的中间件以次序约束引用 | 卸载被拒（`KERNEL_PIPELINE_003`），什么都不撤，插件照常服务；先撤回引用方 |
 | 清单声明的权限码与已登记的重复（宿主特性定义的或另一个插件声明的）、声明的操作与已有操作重名，或 `permission` 既不是宿主已登记的、也不在本插件清单里，或 `policy` 不存在 | 配置阶段发现的启动失败（`KERNEL_SECURITY_001` / `KERNEL_OPERATION_001` / `KERNEL_VALIDATION_005`；`policy` 不存在在授权能力启动时报 `SECURITY_VALIDATION_004`）；运行期 `LoadAsync` 返回失败，一个权限码与代理操作都不留下 |
 | 清单 `contributes.permissions` 不合权限码文法或有重复 | 清单读不出，按发现时被拒（`PLUGINS_VALIDATION_001`） |

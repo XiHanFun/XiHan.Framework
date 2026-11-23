@@ -280,6 +280,34 @@ public sealed class MessageCatalog
     }
 
     /// <summary>
+    /// 找出与另一份目录在同一键同一区域上不同的第一个模板
+    /// </summary>
+    /// <remarks>
+    /// 只比较两份都有的键与区域，不看目录名；没有冲突时无值
+    /// </remarks>
+    internal (string Key, string Locale)? FindConflict(MessageCatalog other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        foreach (var (key, templates) in other._byKey)
+        {
+            if (!_byKey.TryGetValue(key, out var existing))
+            {
+                continue;
+            }
+
+            foreach (var (locale, template) in templates)
+            {
+                if (existing.TryGetValue(locale, out var current) && !string.Equals(current, template, StringComparison.Ordinal))
+                {
+                    return (key, locale);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// 构造"目录不合法"异常
     /// </summary>
     private static FrameworkException Invalid(string name, string reason)

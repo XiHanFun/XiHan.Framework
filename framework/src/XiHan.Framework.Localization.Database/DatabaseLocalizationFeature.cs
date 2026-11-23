@@ -75,7 +75,7 @@ public sealed class DatabaseLocalizationFeature : IHostedFeature
         // 翻译版本戳交给跨进程缓存的序列化器，应用的序列化上下文不必登记它
         CacheSerializerRegistration.AddTypeInfo(context.Services, TranslationCacheJsonContext.Default);
         context.Services.TryAddScoped<MessageTranslationStore>();
-        context.Services.AddSingleton<DatabaseMessageLocalizer>();
+        context.Services.AddSingleton(static sp => new DatabaseMessageLocalizer(sp.GetRequiredService<MessageCatalogRegistry>(), sp.GetRequiredService<LocalizationOptions>()));
         context.Services.AddSingleton<MessageTranslationLoader>();
         // 加载器自己就是健康项的贡献者：它最清楚最近一次加载成功与否，不另起探测循环
         context.Services.AddSingleton<IHealthContributor>(static sp => sp.GetRequiredService<MessageTranslationLoader>());

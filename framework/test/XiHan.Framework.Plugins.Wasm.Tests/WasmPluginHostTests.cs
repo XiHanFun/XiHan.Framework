@@ -140,6 +140,26 @@ public sealed class WasmPluginHostTests
     }
 
     [Fact]
+    public async Task LoadAsync_AtRuntime_RegistersTheHandshakeCatalog_AndUnloadWithdrawsIt()
+    {
+        await using var host = await TestHost.StartAsync(static b => b.UseFeature<InMemoryLocalizationFeature>().UseFeature<WasmPluginsFeature>());
+        var plugins = host.Services.GetRequiredService<IPluginHost>();
+        var localizer = host.Services.GetRequiredService<IMessageLocalizer>();
+        var source = new PluginSource(EchoWasmPluginHost.Directory, new PermissionGrant(["capability:kernel.pipeline", "config:XiHan:Echo"]));
+
+        // 运行期加载的插件同样有目录（ADR-0252）
+        Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
+        var response = await EchoWasmPluginHost.InvokeAsync(host, "echoes.create", """{"text":""}""");
+        Assert.Equal("文本不能为空。", localizer.Localize(response.Outcome.Error!, "zh-CN"));
+
+        // 卸载随之撤回，再加载重新登记
+        Assert.True((await plugins.UnloadAsync(EchoWasmPluginHost.PluginId, CancellationToken.None)).IsSuccess);
+        Assert.False(localizer.Find("echowasm.text.empty", "zh-CN").HasValue);
+        Assert.True((await plugins.LoadAsync(source, CancellationToken.None)).IsSuccess);
+        Assert.Equal("文本不能为空。", localizer.Localize("echowasm.text.empty", "zh-CN", null));
+    }
+
+    [Fact]
     public async Task Callback_RunsWithPluginIdentity()
     {
         await using var host = await EchoWasmPluginHost.StartAsync(static b => b.UseFeature(new StubFeature(TestManifests.Create("xihan.app.pings"))

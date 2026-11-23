@@ -45,8 +45,8 @@ public sealed class InMemoryLocalizationFeature : IHostedFeature
         // 原语层与内核不能读嵌入资源，它们的语言文件由本特性代为装载；各子系统目录由其 Provider 注册，应用目录由应用注册
         context.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("primitives", typeof(Error)));
         context.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("kernel", typeof(App)));
-        // 同一个实例同时作为本地化器（显式区域）与解析器（环境作用域）
-        context.Services.TryAddSingleton<InMemoryMessageLocalizer>();
+        // 同一个实例同时作为本地化器（显式区域）与解析器（环境作用域）；目录从容器的登记表读，运行期按归属登记的目录随之可见
+        context.Services.TryAddSingleton(static sp => new InMemoryMessageLocalizer(sp.GetRequiredService<MessageCatalogRegistry>(), sp.GetRequiredService<LocalizationOptions>()));
         context.Services.TryAddSingleton<IMessageLocalizer>(static sp => sp.GetRequiredService<InMemoryMessageLocalizer>());
         context.Services.TryAddSingleton<IMessageResolver>(static sp => sp.GetRequiredService<InMemoryMessageLocalizer>());
     }
