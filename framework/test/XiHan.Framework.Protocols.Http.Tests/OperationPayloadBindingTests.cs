@@ -89,6 +89,21 @@ public sealed class OperationPayloadBindingTests
         Assert.Equal(HttpStatusCode.Created, small.StatusCode);
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("1.5")]
+    [InlineData("many")]
+    public void MaxRequestBodyBytes_ThatIsNotAPositiveInteger_FailsNamingTheConfigurationKey(string value)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Protocols:Http:MaxRequestBodyBytes", value)]).Build();
+
+        var thrown = Assert.Throws<ArgumentException>(() => HttpProtocolOptions.FromConfiguration(configuration));
+
+        Assert.Contains("XiHan:Protocols:Http:MaxRequestBodyBytes", thrown.Message, StringComparison.Ordinal);
+        Assert.Contains($"'{value}'", thrown.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task NonJsonContentType_IsRejected()
     {

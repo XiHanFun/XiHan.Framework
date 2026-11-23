@@ -101,7 +101,8 @@ public sealed record HttpProtocolOptions
         }
 
         var maxBody = DefaultMaxRequestBodyBytes;
-        if (section["MaxRequestBodyBytes"] is { } maxText && !long.TryParse(maxText, NumberStyles.None, CultureInfo.InvariantCulture, out maxBody))
+        // 0 也在这里拒绝：留给属性去拒绝的话，消息里没有配置键，看不出错在哪一项
+        if (section["MaxRequestBodyBytes"] is { } maxText && (!long.TryParse(maxText, NumberStyles.None, CultureInfo.InvariantCulture, out maxBody) || maxBody < 1))
         {
             throw new ArgumentException($"{ConfigurationSection}:MaxRequestBodyBytes must be a positive integer, got '{maxText}'.");
         }
