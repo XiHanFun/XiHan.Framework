@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Caching.Abstractions.Idempotency;
@@ -51,37 +51,18 @@ public sealed record IdempotencyOptions
     public static IdempotencyOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        var section = configuration.GetSection(ConfigurationSection);
         var options = new IdempotencyOptions();
-        if (ReadSeconds(configuration, "TimeToLiveSeconds") is { } timeToLive)
+        if (ConfigurationValues.ReadSeconds(section, "TimeToLiveSeconds") is { } timeToLive)
         {
             options = options with { TimeToLive = timeToLive };
         }
 
-        if (ReadSeconds(configuration, "InProgressTimeToLiveSeconds") is { } inProgress)
+        if (ConfigurationValues.ReadSeconds(section, "InProgressTimeToLiveSeconds") is { } inProgress)
         {
             options = options with { InProgressTimeToLive = inProgress };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取配置节下的秒数
-    /// </summary>
-    /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是正数抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static TimeSpan? ReadSeconds(IConfiguration configuration, string name)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{name}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        // 用不变区域性解析，避免小数点随宿主区域设置变化
-        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-            ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive number, but was '{raw}'.");
     }
 }

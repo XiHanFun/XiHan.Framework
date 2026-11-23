@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
@@ -114,27 +113,20 @@ public sealed record RedisCachingOptions
             options = options with { KeyPrefix = prefix };
         }
 
-        if (configuration[$"{ConfigurationSection}:PublishChanges"] is { } publish)
+        var section = configuration.GetSection(ConfigurationSection);
+        if (ConfigurationValues.ReadBoolean(section, "PublishChanges") is { } publish)
         {
-            options = bool.TryParse(publish, out var enabled)
-                ? options with { PublishChanges = enabled }
-                : throw new ArgumentException($"{ConfigurationSection}:PublishChanges must be 'true' or 'false', but was '{publish}'.");
+            options = options with { PublishChanges = publish };
         }
 
-        var ttl = configuration[$"{ConfigurationSection}:DefaultTimeToLiveSeconds"];
-        if (ttl is not null)
+        if (ConfigurationValues.ReadSeconds(section, "DefaultTimeToLiveSeconds") is { } timeToLive)
         {
-            options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { DefaultTimeToLive = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:DefaultTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
+            options = options with { DefaultTimeToLive = timeToLive };
         }
 
-        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
-        if (probe is not null)
+        if (ConfigurationValues.ReadSeconds(section, "HealthProbeIntervalSeconds") is { } probe)
         {
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
+            options = options with { HealthProbeInterval = probe };
         }
 
         return options;

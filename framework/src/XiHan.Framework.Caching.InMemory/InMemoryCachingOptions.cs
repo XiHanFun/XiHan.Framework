@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Caching.InMemory;
@@ -51,21 +51,16 @@ public sealed record InMemoryCachingOptions
     public static InMemoryCachingOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        var section = configuration.GetSection(ConfigurationSection);
         var options = new InMemoryCachingOptions();
-        var maxEntries = configuration[$"{ConfigurationSection}:MaxEntries"];
-        if (maxEntries is not null)
+        if (ConfigurationValues.ReadInt32(section, "MaxEntries", 1) is { } maxEntries)
         {
-            options = int.TryParse(maxEntries, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-                ? options with { MaxEntries = value }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxEntries must be a positive integer, but was '{maxEntries}'.");
+            options = options with { MaxEntries = maxEntries };
         }
 
-        var ttl = configuration[$"{ConfigurationSection}:DefaultTimeToLiveSeconds"];
-        if (ttl is not null)
+        if (ConfigurationValues.ReadSeconds(section, "DefaultTimeToLiveSeconds") is { } timeToLive)
         {
-            options = double.TryParse(ttl, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { DefaultTimeToLive = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:DefaultTimeToLiveSeconds must be a positive number, but was '{ttl}'.");
+            options = options with { DefaultTimeToLive = timeToLive };
         }
 
         return options;

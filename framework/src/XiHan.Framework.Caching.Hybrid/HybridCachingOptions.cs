@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Caching.Hybrid;
@@ -48,21 +48,16 @@ public sealed record HybridCachingOptions
     public static HybridCachingOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        var section = configuration.GetSection(ConfigurationSection);
         var options = new HybridCachingOptions();
-        var capacity = configuration[$"{ConfigurationSection}:LocalCapacity"];
-        if (capacity is not null)
+        if (ConfigurationValues.ReadInt32(section, "LocalCapacity", 1) is { } capacity)
         {
-            options = int.TryParse(capacity, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-                ? options with { LocalCapacity = value }
-                : throw new ArgumentException($"{ConfigurationSection}:LocalCapacity must be a positive integer, but was '{capacity}'.");
+            options = options with { LocalCapacity = capacity };
         }
 
-        var seconds = configuration[$"{ConfigurationSection}:LocalTimeToLiveSeconds"];
-        if (seconds is not null)
+        if (ConfigurationValues.ReadSeconds(section, "LocalTimeToLiveSeconds") is { } timeToLive)
         {
-            options = double.TryParse(seconds, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value > 0
-                ? options with { LocalTimeToLive = TimeSpan.FromSeconds(value) }
-                : throw new ArgumentException($"{ConfigurationSection}:LocalTimeToLiveSeconds must be a positive number, but was '{seconds}'.");
+            options = options with { LocalTimeToLive = timeToLive };
         }
 
         return options;
