@@ -62,7 +62,9 @@ public sealed class HostObservabilityFeatureTests
         Assert.Equal(TimeSpan.FromSeconds(5), HostObservabilityOptions.FromConfiguration(Build()).SampleInterval);
         Assert.Equal(TimeSpan.FromSeconds(2.5), HostObservabilityOptions.FromConfiguration(Build(("XiHan:Observability:Host:SampleIntervalSeconds", "2.5"))).SampleInterval);
         Assert.Throws<ArgumentException>(static () => HostObservabilityOptions.FromConfiguration(Build(("XiHan:Observability:Host:SampleIntervalSeconds", "0"))));
-        Assert.Throws<ArgumentException>(static () => HostObservabilityOptions.FromConfiguration(Build(("XiHan:Observability:Host:SampleIntervalSeconds", "3601"))));
+        // 超过上界与装不进 TimeSpan 的秒数都带着配置键拒绝
+        Assert.Contains("'XiHan:Observability:Host:SampleIntervalSeconds' must be ", Assert.Throws<ArgumentException>(static () => HostObservabilityOptions.FromConfiguration(Build(("XiHan:Observability:Host:SampleIntervalSeconds", "3601")))).Message, StringComparison.Ordinal);
+        Assert.Contains("'XiHan:Observability:Host:SampleIntervalSeconds' must be ", Assert.Throws<ArgumentException>(static () => HostObservabilityOptions.FromConfiguration(Build(("XiHan:Observability:Host:SampleIntervalSeconds", "Infinity")))).Message, StringComparison.Ordinal);
         Assert.Throws<ArgumentException>(static () => HostObservabilityOptions.FromConfiguration(Build(("XiHan:Observability:Host:SampleIntervalSeconds", "soon"))));
         Assert.Throws<ArgumentOutOfRangeException>(static () => new HostObservabilityOptions { SampleInterval = TimeSpan.Zero });
     }

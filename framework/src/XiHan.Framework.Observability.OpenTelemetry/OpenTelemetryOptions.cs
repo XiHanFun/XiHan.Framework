@@ -4,6 +4,7 @@
 using System.Globalization;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Observability.OpenTelemetry;
@@ -149,10 +150,10 @@ public sealed record OpenTelemetryOptions
 
         options = options with
         {
-            Tracing = Flag(section, "Tracing", options.Tracing),
-            Metrics = Flag(section, "Metrics", options.Metrics),
-            Logging = Flag(section, "Logging", options.Logging),
-            Console = Flag(section, "Console", options.Console),
+            Tracing = ConfigurationValues.ReadBoolean(section, "Tracing") ?? options.Tracing,
+            Metrics = ConfigurationValues.ReadBoolean(section, "Metrics") ?? options.Metrics,
+            Logging = ConfigurationValues.ReadBoolean(section, "Logging") ?? options.Logging,
+            Console = ConfigurationValues.ReadBoolean(section, "Console") ?? options.Console,
         };
         if (section["SamplingRatio"] is { } ratio)
         {
@@ -161,11 +162,9 @@ public sealed record OpenTelemetryOptions
                 : throw new ArgumentException($"{ConfigurationSection}:SamplingRatio must be a number between 0 and 1, but was '{ratio}'.");
         }
 
-        if (section["Otlp:Enabled"] is { } enabled)
+        if (ConfigurationValues.ReadBoolean(section, "Otlp:Enabled") is { } enabled)
         {
-            options = bool.TryParse(enabled, out var parsed)
-                ? options with { Otlp = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:Otlp:Enabled must be 'true' or 'false', but was '{enabled}'.");
+            options = options with { Otlp = enabled };
         }
 
         if (section["Otlp:Endpoint"] is { } endpoint && !string.IsNullOrWhiteSpace(endpoint))
@@ -175,11 +174,9 @@ public sealed record OpenTelemetryOptions
                 : throw new ArgumentException($"{ConfigurationSection}:Otlp:Endpoint must be an absolute URI, but was '{endpoint}'.");
         }
 
-        if (section["Otlp:Protocol"] is { } protocol)
+        if (ConfigurationValues.ReadEnum<OtlpProtocol>(section, "Otlp:Protocol") is { } protocol)
         {
-            options = Enum.TryParse<OtlpProtocol>(protocol, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed)
-                ? options with { OtlpProtocol = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:Otlp:Protocol must be 'Grpc' or 'HttpProtobuf', but was '{protocol}'.");
+            options = options with { OtlpProtocol = protocol };
 
             // 没有端点时导出器只看标准环境变量，配置里的协议不会生效：在装配时报出来，不静默忽略（RFC-0023）
             if (options.OtlpEndpoint is null)
@@ -189,23 +186,6 @@ public sealed record OpenTelemetryOptions
         }
 
         return options with { Sources = List(section, "Sources"), Meters = List(section, "Meters") };
-    }
-
-    /// <summary>
-    /// 读布尔开关
-    /// </summary>
-    /// <remarks>
-    /// 缺失用默认值
-    /// </remarks>
-    private static bool Flag(IConfiguration section, string key, bool fallback)
-    {
-        var text = section[key];
-        if (text is null)
-        {
-            return fallback;
-        }
-
-        return bool.TryParse(text, out var parsed) ? parsed : throw new ArgumentException($"{ConfigurationSection}:{key} must be 'true' or 'false', but was '{text}'.");
     }
 
     /// <summary>

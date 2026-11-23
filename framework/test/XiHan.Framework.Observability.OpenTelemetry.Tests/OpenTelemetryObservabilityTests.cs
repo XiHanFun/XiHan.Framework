@@ -145,6 +145,9 @@ public sealed class OpenTelemetryObservabilityTests
         Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("SamplingRatio", "2"))));
         Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Endpoint", "not a uri"))));
         Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Endpoint", "http://c:4317"), ("Otlp:Protocol", "udp"))));
+        // 枚举不收数字写法；消息里是完整的配置键（ADR-0255）
+        Assert.Contains("'XiHan:Observability:OpenTelemetry:Otlp:Protocol' must be ", Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Endpoint", "http://c:4317"), ("Otlp:Protocol", "1")))).Message, StringComparison.Ordinal);
+        Assert.Contains("'XiHan:Observability:OpenTelemetry:Otlp:Enabled' must be ", Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Otlp:Enabled", "on")))).Message, StringComparison.Ordinal);
         Assert.Throws<ArgumentException>(static () => OpenTelemetryOptions.FromConfiguration(Configuration(("Tracing", "maybe"))));
         Assert.Throws<ArgumentOutOfRangeException>(static () => new OpenTelemetryOptions { SamplingRatio = -0.1 });
         Assert.Throws<ArgumentException>(static () => new OpenTelemetryOptions { ServiceName = " " });

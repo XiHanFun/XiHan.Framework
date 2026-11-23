@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Observability.Host;
@@ -45,12 +45,13 @@ public sealed record HostObservabilityOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new HostObservabilityOptions();
-        var seconds = configuration[$"{ConfigurationSection}:SampleIntervalSeconds"];
-        if (seconds is not null)
+        var section = configuration.GetSection(ConfigurationSection);
+        if (ConfigurationValues.ReadSeconds(section, "SampleIntervalSeconds") is { } interval)
         {
-            options = double.TryParse(seconds, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value > 0 && value <= MaxSampleInterval.TotalSeconds
-                ? options with { SampleInterval = TimeSpan.FromSeconds(value) }
-                : throw new ArgumentException($"{ConfigurationSection}:SampleIntervalSeconds must be a number in (0, 3600], but was '{seconds}'.");
+            // 上界统一读取表达不了，留在这里判：留给属性去拒绝的话，消息里没有配置键
+            options = interval <= MaxSampleInterval
+                ? options with { SampleInterval = interval }
+                : throw new ArgumentException($"'{ConfigurationSection}:SampleIntervalSeconds' must be a number of seconds in (0, 3600], but was '{section["SampleIntervalSeconds"]}'.");
         }
 
         return options;
