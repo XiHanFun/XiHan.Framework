@@ -200,6 +200,13 @@ public sealed class InMemorySchedulingTests
         Assert.Equal((TimeSpan.FromMilliseconds(500), new JobName("jobs.primary"), TimeSpan.FromSeconds(15), "node-1", 4, TimeSpan.FromSeconds(5), TimeSpan.Zero), (options.PollInterval, options.LeaseResource, options.LeaseTimeToLive, options.NodeId, options.MaxConcurrentRuns, options.MisfireThreshold, options.HistoryRetention));
         Assert.Equal(7, InMemorySchedulingOptions.FromConfiguration(configuration).MaxRuns);
         Assert.Throws<ArgumentException>(static () => SchedulerOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Scheduling:PollIntervalSeconds"] = "soon" }).Build()));
+        // 越界在读取处就带着配置键报出，不落到属性里
+        foreach (var (key, value) in new[] { ("PollIntervalSeconds", "0"), ("LeaseTimeToLiveSeconds", "0"), ("NodeTimeoutSeconds", "-1"), ("HousekeepingIntervalSeconds", "Infinity"), ("MaxConcurrentRuns", "0"), ("AcquireBatchSize", "-3"), ("MisfireThresholdSeconds", "-1") })
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => SchedulerOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"XiHan:Scheduling:{key}"] = value }).Build()));
+            Assert.StartsWith($"'XiHan:Scheduling:{key}' must be ", thrown.Message, StringComparison.Ordinal);
+        }
+
         Assert.Throws<ArgumentException>(static () => InMemorySchedulingOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Scheduling:InMemory:MaxRuns"] = "-1" }).Build()));
     }
 

@@ -150,7 +150,7 @@ public sealed record SchedulerOptions
         // 这里的秒数只核对非负、整数只核对是整数，与改用统一读取之前相同：各键自己的下界（是否允许 0、至少为 1）由属性核对
         var section = configuration.GetSection(ConfigurationSection);
         var options = new SchedulerOptions();
-        if (ConfigurationValues.ReadSeconds(section, "PollIntervalSeconds", allowZero: true) is { } poll)
+        if (ConfigurationValues.ReadSeconds(section, "PollIntervalSeconds") is { } poll)
         {
             options = options with { PollInterval = poll };
         }
@@ -160,12 +160,12 @@ public sealed record SchedulerOptions
             options = options with { NodeId = node };
         }
 
-        if (ConfigurationValues.ReadInt32(section, "MaxConcurrentRuns", int.MinValue) is { } runs)
+        if (ConfigurationValues.ReadInt32(section, "MaxConcurrentRuns", 1) is { } runs)
         {
             options = options with { MaxConcurrentRuns = runs };
         }
 
-        if (ConfigurationValues.ReadInt32(section, "AcquireBatchSize", int.MinValue) is { } batch)
+        if (ConfigurationValues.ReadInt32(section, "AcquireBatchSize", 1) is { } batch)
         {
             options = options with { AcquireBatchSize = batch };
         }
@@ -180,17 +180,17 @@ public sealed record SchedulerOptions
             options = options with { LeaseResource = new JobName(resource) };
         }
 
-        if (ConfigurationValues.ReadSeconds(section, "LeaseTimeToLiveSeconds", allowZero: true) is { } ttl)
+        if (ConfigurationValues.ReadSeconds(section, "LeaseTimeToLiveSeconds") is { } ttl)
         {
             options = options with { LeaseTimeToLive = ttl };
         }
 
-        if (ConfigurationValues.ReadSeconds(section, "NodeTimeoutSeconds", allowZero: true) is { } timeout)
+        if (ConfigurationValues.ReadSeconds(section, "NodeTimeoutSeconds") is { } timeout)
         {
             options = options with { NodeTimeout = timeout };
         }
 
-        if (ConfigurationValues.ReadSeconds(section, "HousekeepingIntervalSeconds", allowZero: true) is { } housekeeping)
+        if (ConfigurationValues.ReadSeconds(section, "HousekeepingIntervalSeconds") is { } housekeeping)
         {
             options = options with { HousekeepingInterval = housekeeping };
         }
