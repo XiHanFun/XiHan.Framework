@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Localization.Database.Translations;
 using XiHan.Framework.Primitives;
 
@@ -65,25 +65,21 @@ public sealed record DatabaseLocalizationOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new DatabaseLocalizationOptions();
-        if (configuration[$"{ConfigurationSection}:RefreshIntervalSeconds"] is { } refresh)
+        var section = configuration.GetSection(ConfigurationSection);
+        // 两个间隔允许 0：0 表示关闭，对应属性的 null
+        if (ConfigurationValues.ReadSeconds(section, "RefreshIntervalSeconds", allowZero: true) is { } refresh)
         {
-            options = double.TryParse(refresh, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
-                ? options with { RefreshInterval = seconds == 0 ? null : TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:RefreshIntervalSeconds must be a non-negative number, but was '{refresh}'.");
+            options = options with { RefreshInterval = refresh == TimeSpan.Zero ? null : refresh };
         }
 
-        if (configuration[$"{ConfigurationSection}:ChangeCheckIntervalSeconds"] is { } check)
+        if (ConfigurationValues.ReadSeconds(section, "ChangeCheckIntervalSeconds", allowZero: true) is { } check)
         {
-            options = double.TryParse(check, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds >= 0
-                ? options with { ChangeCheckInterval = seconds == 0 ? null : TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:ChangeCheckIntervalSeconds must be a non-negative number, but was '{check}'.");
+            options = options with { ChangeCheckInterval = check == TimeSpan.Zero ? null : check };
         }
 
-        if (configuration[$"{ConfigurationSection}:MaxTranslations"] is { } max)
+        if (ConfigurationValues.ReadInt32(section, "MaxTranslations", 1) is { } max)
         {
-            options = int.TryParse(max, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) && parsed > 0
-                ? options with { MaxTranslations = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxTranslations must be a positive integer, but was '{max}'.");
+            options = options with { MaxTranslations = max };
         }
 
         return options;

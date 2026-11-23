@@ -203,6 +203,9 @@ public sealed class DatabaseLocalizationTests
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseLocalizationOptions { ChangeCheckInterval = TimeSpan.Zero });
         Assert.Throws<ArgumentOutOfRangeException>(static () => new DatabaseLocalizationOptions { MaxTranslations = 0 });
         Assert.Throws<ArgumentException>(static () => DatabaseLocalizationOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Localization:Database:RefreshIntervalSeconds"] = "-1" }).Build()));
+        // 装不进 TimeSpan 的秒数带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+        var overflow = Assert.Throws<ArgumentException>(static () => DatabaseLocalizationOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Localization:Database:RefreshIntervalSeconds"] = "Infinity" }).Build()));
+        Assert.Contains("XiHan:Localization:Database:RefreshIntervalSeconds", overflow.Message, StringComparison.Ordinal);
     }
 
     /// <summary>
