@@ -331,5 +331,14 @@ public sealed class CloudEventsProtocolTests
         Assert.False(new CloudEventsProtocolOptions().TopicFor("orders.shipped").HasValue);
         Assert.Equal("https://hooks.test/orders", options.Webhooks["orders"].ToString());
         Assert.Throws<ArgumentException>(static () => CloudEventsProtocolOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Protocols:CloudEvents:Inbound"] = "sometimes" }).Build()));
+        // 数字枚举、空串、越界的上限都带着完整的配置键拒绝（ADR-0255）：空串原先当作没写，数字原先按枚举的数值收下
+        foreach (var (key, value) in new[] { ("Inbound", "1"), ("Outbound", ""), ("AcceptUnmappedTypes", " "), ("MaxRequestBodyBytes", "0"), ("MaxBatchSize", "2147483648"), ("MaxBatchSize", "") })
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => CloudEventsProtocolOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"XiHan:Protocols:CloudEvents:{key}"] = value }).Build()));
+            Assert.Contains($"'XiHan:Protocols:CloudEvents:{key}' must be ", thrown.Message, StringComparison.Ordinal);
+        }
+
+        // 整数接受两侧空白与正号
+        Assert.Equal(7, CloudEventsProtocolOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["XiHan:Protocols:CloudEvents:MaxBatchSize"] = " +7 " }).Build()).MaxBatchSize);
     }
 }

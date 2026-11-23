@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Mcp.Tools;
@@ -189,26 +189,8 @@ public sealed record McpProtocolOptions
             Instructions = section["Instructions"],
             Tools = tools,
             AllowedOrigins = section.GetSection("AllowedOrigins").GetChildren().Select(static child => child.Value ?? string.Empty).ToList(),
-            MaxRequestBodyBytes = ReadMaxBody(section["MaxRequestBodyBytes"]),
+            MaxRequestBodyBytes = ConfigurationValues.ReadInt64(section, "MaxRequestBodyBytes", 1) ?? DefaultMaxRequestBodyBytes,
         };
-    }
-
-    /// <summary>
-    /// 读请求体上限
-    /// </summary>
-    /// <remarks>
-    /// 缺失取缺省值，不是正整数抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static long ReadMaxBody(string? text)
-    {
-        if (text is null)
-        {
-            return DefaultMaxRequestBodyBytes;
-        }
-
-        return long.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var max) && max >= 1
-            ? max
-            : throw new ArgumentException($"{ConfigurationSection}:MaxRequestBodyBytes must be a positive integer, got '{text}'.");
     }
 
     /// <summary>

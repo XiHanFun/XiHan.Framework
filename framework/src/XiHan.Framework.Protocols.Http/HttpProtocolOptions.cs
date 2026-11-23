@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.Http.Routing;
 
@@ -100,18 +100,12 @@ public sealed record HttpProtocolOptions
             }
         }
 
-        var maxBody = DefaultMaxRequestBodyBytes;
-        // 0 也在这里拒绝：留给属性去拒绝的话，消息里没有配置键，看不出错在哪一项
-        if (section["MaxRequestBodyBytes"] is { } maxText && (!long.TryParse(maxText, NumberStyles.None, CultureInfo.InvariantCulture, out maxBody) || maxBody < 1))
-        {
-            throw new ArgumentException($"{ConfigurationSection}:MaxRequestBodyBytes must be a positive integer, got '{maxText}'.");
-        }
-
         return new HttpProtocolOptions
         {
             RoutePrefix = section["RoutePrefix"] ?? string.Empty,
             Routes = routes,
-            MaxRequestBodyBytes = maxBody,
+            // 0 也在读配置处拒绝：留给属性去拒绝的话，消息里没有配置键，看不出错在哪一项
+            MaxRequestBodyBytes = ConfigurationValues.ReadInt64(section, "MaxRequestBodyBytes", 1) ?? DefaultMaxRequestBodyBytes,
         };
     }
 

@@ -205,6 +205,21 @@ public sealed class McpProtocolTests
         Assert.Throws<ArgumentException>(() => McpProtocolOptions.FromConfiguration(configuration));
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("1.5")]
+    [InlineData("many")]
+    [InlineData("")]
+    public void MaxRequestBodyBytes_ThatIsNotAPositiveInteger_FailsNamingTheConfigurationKey(string value)
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection([new("XiHan:Protocols:Mcp:MaxRequestBodyBytes", value)]).Build();
+
+        var thrown = Assert.Throws<ArgumentException>(() => McpProtocolOptions.FromConfiguration(configuration));
+
+        Assert.Equal($"'XiHan:Protocols:Mcp:MaxRequestBodyBytes' must be a positive integer, but was '{value}'.", thrown.Message);
+    }
+
     /// <summary>
     /// 以给定内容发到 /mcp，返回状态码与正文
     /// </summary>

@@ -134,5 +134,7 @@ public sealed class WebhookTraceContextTests
         Assert.True(Read("true").PropagateTraceContext);
         Assert.False(Read("False").PropagateTraceContext);
         Assert.Throws<ArgumentException>(static () => Read("yes"));
+        // 空串不是「没写」：原先悄悄当成 false，现在与别的键一样带着配置键拒绝（ADR-0255）
+        Assert.Contains("'XiHan:Protocols:CloudEvents:PropagateTraceContext' must be ", Assert.Throws<ArgumentException>(static () => Read(string.Empty)).Message, StringComparison.Ordinal);
     }
 }

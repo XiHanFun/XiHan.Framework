@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Protocols.CloudEvents.Inbound;
@@ -137,7 +138,7 @@ public sealed record CloudEventsProtocolOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 枚举值、布尔值或上限不合法时抛出 <see cref="ArgumentException"/>
+    /// 枚举值、布尔值或上限写了值（含空串）而不合法时抛出 <see cref="ArgumentException"/>，消息带完整的配置键；枚举按成员名写，不收数字
     /// </remarks>
     public static CloudEventsProtocolOptions FromConfiguration(IConfiguration configuration)
     {
@@ -163,12 +164,13 @@ public sealed record CloudEventsProtocolOptions
 
         return new CloudEventsProtocolOptions
         {
-            Inbound = ParseEnum<CloudEventsInboundMode>(section["Inbound"], "Inbound"),
-            MaxRequestBodyBytes = ParsePositive(section["MaxRequestBodyBytes"], "MaxRequestBodyBytes", 1024 * 1024, long.MaxValue),
-            MaxBatchSize = (int)ParsePositive(section["MaxBatchSize"], "MaxBatchSize", 100, int.MaxValue),
-            Outbound = ParseEnum<CloudEventsContentMode>(section["Outbound"], "Outbound"),
-            PropagateTraceContext = ParseBoolean(section["PropagateTraceContext"], "PropagateTraceContext"),
-            AcceptUnmappedTypes = ParseBoolean(section["AcceptUnmappedTypes"], "AcceptUnmappedTypes"),
+            // 写了值（含空串）就必须合法，缺失才回落到缺省值（ADR-0255）
+            Inbound = ConfigurationValues.ReadEnum<CloudEventsInboundMode>(section, "Inbound") ?? CloudEventsInboundMode.Dispatch,
+            MaxRequestBodyBytes = ConfigurationValues.ReadInt64(section, "MaxRequestBodyBytes", 1) ?? 1024 * 1024,
+            MaxBatchSize = ConfigurationValues.ReadInt32(section, "MaxBatchSize", 1) ?? 100,
+            Outbound = ConfigurationValues.ReadEnum<CloudEventsContentMode>(section, "Outbound") ?? CloudEventsContentMode.Binary,
+            PropagateTraceContext = ConfigurationValues.ReadBoolean(section, "PropagateTraceContext") ?? false,
+            AcceptUnmappedTypes = ConfigurationValues.ReadBoolean(section, "AcceptUnmappedTypes") ?? false,
             Topics = topics,
             Webhooks = webhooks,
         };
@@ -189,60 +191,5 @@ public sealed record CloudEventsProtocolOptions
         }
 
         return AcceptUnmappedTypes && TopicName.IsValid(type) ? type : default(Maybe<string>);
-    }
-
-    /// <summary>
-    /// 读正整数配置值
-    /// </summary>
-    /// <remarks>
-    /// 缺失用 <paramref name="fallback"/>，不是 1 到 <paramref name="maximum"/> 之间的整数时抛出
-    /// </remarks>
-    private static long ParsePositive(string? text, string key, long fallback, long maximum)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return fallback;
-        }
-
-        return long.TryParse(text, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var value) && value >= 1 && value <= maximum
-            ? value
-            : throw new ArgumentException($"'{ConfigurationSection}:{key}' must be a positive integer, but the value is '{text}'.", key);
-    }
-
-    /// <summary>
-    /// 读布尔配置值
-    /// </summary>
-    /// <remarks>
-    /// 缺失为 <see langword="false"/>，不是 <c>true</c> / <c>false</c>（不区分大小写）时抛出
-    /// </remarks>
-    private static bool ParseBoolean(string? text, string key)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return false;
-        }
-
-        return bool.TryParse(text, out var value)
-            ? value
-            : throw new ArgumentException($"'{ConfigurationSection}:{key}' must be 'true' or 'false', but the value is '{text}'.", key);
-    }
-
-    /// <summary>
-    /// 读枚举配置值
-    /// </summary>
-    /// <remarks>
-    /// 缺失用默认值，不合法抛出
-    /// </remarks>
-    private static TEnum ParseEnum<TEnum>(string? text, string key)
-        where TEnum : struct, Enum
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return default;
-        }
-
-        return Enum.TryParse<TEnum>(text, ignoreCase: true, out var value) && Enum.IsDefined(value)
-            ? value
-            : throw new ArgumentException($"'{ConfigurationSection}:{key}' value '{text}' is not one of {string.Join(", ", Enum.GetNames<TEnum>())}.", key);
     }
 }
