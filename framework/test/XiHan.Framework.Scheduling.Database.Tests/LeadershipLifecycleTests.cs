@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Scheduling.Abstractions.Leadership;
 using XiHan.Framework.Scheduling.Abstractions.Schedulers;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Scheduling.Database.Tests;
 

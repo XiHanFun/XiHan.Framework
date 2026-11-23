@@ -349,7 +349,7 @@ public sealed class S3ConditionalWriteRetryTests
     /// <summary>
     /// 条件写入状态的日志，按写入顺序
     /// </summary>
-    private static List<(LogLevel Level, string Category, string Message)> GateLogs(LogCapture logs)
+    private static List<LogCaptureEntry> GateLogs(LogCapture logs)
         => [.. logs.Entries.Where(static e => e.Category == typeof(S3ConditionalWriteGate).FullName)];
 
     /// <summary>

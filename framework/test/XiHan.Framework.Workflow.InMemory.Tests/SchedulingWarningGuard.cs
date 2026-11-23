@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Workflow.InMemory.Tests;
 
@@ -21,7 +22,7 @@ internal sealed class SchedulingWarningGuard(IAsyncDisposable host, LogCapture l
     /// <summary>
     /// 是不是调度类别的告警或错误
     /// </summary>
-    public static bool IsSchedulingWarning((LogLevel Level, string Category, string Message) entry)
+    public static bool IsSchedulingWarning(LogCaptureEntry entry)
         => entry.Level >= LogLevel.Warning && entry.Category.StartsWith(SchedulingCategory, StringComparison.Ordinal);
 
     /// <inheritdoc />

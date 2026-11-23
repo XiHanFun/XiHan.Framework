@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.MultiTenancy.InMemory;
+using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Database.Polling;
 
 namespace XiHan.Framework.Workflow.Database.Tests;

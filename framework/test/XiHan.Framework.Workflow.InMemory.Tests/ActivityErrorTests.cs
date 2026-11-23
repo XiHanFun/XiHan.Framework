@@ -35,7 +35,7 @@ public sealed class ActivityErrorTests
         Assert.Equal(WorkflowErrors.ActivityFailed, fault.Code);
         Assert.Equal(typeof(InvalidOperationException).FullName, fault.Arguments?["reason"]);
         Assert.DoesNotContain(Secret, fault.Message, StringComparison.Ordinal);
-        Assert.IsType<InvalidOperationException>(Assert.Single(logs.Exceptions, static entry => entry.Exception.Message.Contains(Secret, StringComparison.Ordinal)).Exception);
+        Assert.IsType<InvalidOperationException>(Assert.Single(logs.Entries, static entry => entry.Exception?.Message.Contains(Secret, StringComparison.Ordinal) == true).Exception);
     }
 
     [Fact]
@@ -47,7 +47,8 @@ public sealed class ActivityErrorTests
         Assert.Equal(WorkflowErrors.ActivityFailed, fault.Code);
         Assert.Equal(typeof(HttpRequestException).FullName, fault.Arguments?["reason"]);
         Assert.DoesNotContain(Secret, fault.Message, StringComparison.Ordinal);
-        var logged = Assert.Single(logs.Exceptions, static entry => entry.Category == typeof(HttpActivity).FullName);
+        var logged = Assert.Single(logs.Entries, static entry => entry.Exception is not null && entry.Category == typeof(HttpActivity).FullName);
+        Assert.NotNull(logged.Exception);
         Assert.Contains(Secret, logged.Exception.Message, StringComparison.Ordinal);
     }
 

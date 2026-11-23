@@ -45,6 +45,7 @@
 ### 测试
 
 - **新增** `XiHan.Framework.Testing` 的 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`：按脚本失败的工作单元与仓储替身，测管道外的代码在数据库故障时的收尾（ADR-0259）
+- **新增** `XiHan.Framework.Testing` 的 `LogCapture`：把日志收进内存的日志工厂，按级别、类别、消息与异常断言组件写了哪条日志（ADR-0262）
 
 ### 对象存储
 

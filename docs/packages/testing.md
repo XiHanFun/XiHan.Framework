@@ -11,7 +11,7 @@
 | 配置节 | — |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Persistence.Abstractions`、`XiHan.Framework.Security.WebAuthn`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection`、`System.Formats.Cbor` |
 | AOT | 兼容 |
-| 稳定性 | Stable；`FaultyCache`、`ScriptedUnitOfWork`、`ScriptedRepository<TEntity, TKey>` 为 Preview |
+| 稳定性 | Stable；`FaultyCache`、`ScriptedUnitOfWork`、`ScriptedRepository<TEntity, TKey>`、`LogCapture`、`LogCaptureEntry` 为 Preview |
 
 ## 概述
 
@@ -26,6 +26,7 @@
 - 写 Provider：先继承对应的一致性套件（[Conformance](./conformance)），再用本包补 Provider 特有行为的测试。
 - 测组件在缓存后端故障时的行为（读取是否绕过缓存、写入是否拒绝）：用 `FaultyCache` 包住一个 `ICache`。
 - 测自己开工作单元的代码（[管道外的单例存储、后台循环](/persistence/unit-of-work#在管道外开工作单元)）在数据库故障时怎样收尾：用 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`。
+- 断言组件写了哪条日志（告警有没有记、异常有没有随日志带出、敏感文本有没有进消息）：用 `LogCapture`。
 
 ## 安装与启用
 
@@ -48,6 +49,8 @@ dotnet add package XiHan.Framework.Testing --prerelease
 | `FaultyCache` | 包住一个 `ICache`（构造参数 `inner`）：`Failing` 为真时每个操作都抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，与 Redis 断线时一样；为假时原样转给内层缓存，`Store` 是内层的存储 |
 | `ScriptedUnitOfWork` | 按脚本失败的 `IUnitOfWork`：`BeginFailure`、`CommitFailure`、`RollbackFailure`、`DisposeFailure` 预设各步抛出的异常，`CommitResult` 预设提交返回的结果，`StaysActiveAfterFailedCommit` 模拟提交失败后没有自行回滚的实现；`Calls` 按顺序记下 `begin`、`commit`、`rollback`、`dispose`，`Tokens` 记下各步收到的取消令牌 |
 | `ScriptedRepository<TEntity, TKey>` | 按脚本返回或抛出的 `IRepository<TEntity, TKey>`：`Failure` 让每个操作都抛出它，`Found` 是查找与查询返回的那一行（为空即查不到），`WriteResult` 是每条写入返回的结果 |
+| `LogCapture` | 把日志收进内存的日志工厂，同时是 `ILoggerFactory` 与 `ILoggerProvider`：`Entries` 是按写入顺序的快照，`Capacity` 是条数上限（缺省 `DefaultCapacity` = 10000，构造时可给） |
+| `LogCaptureEntry` | 一条日志：`Level`、`Category`、`Message`（格式化后的文本）、`Exception`（没有带异常时为空） |
 
 ## 使用示例
 
@@ -168,6 +171,19 @@ await Assert.ThrowsAsync<TimeoutException>(() => purger.PurgeAsync("acme", Cance
 Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
 ```
 
+`LogCapture` 断言日志。登记为 `ILoggerFactory` 单例时宿主里的组件都写到这里；只测一个对象时直接从它取日志器：
+
+```csharp
+using var logs = new LogCapture();
+await using var host = await TestHost.StartAsync(b => b.UseFeature(feature), services: s => s.AddSingleton<ILoggerFactory>(logs));
+
+// 跑被测的调用之后：告警记在组件自己的类别下，异常随日志带出
+var warning = Assert.Single(logs.Entries, e => e.Level == LogLevel.Warning && e.Category == typeof(OrderPurger).FullName);
+Assert.IsType<TimeoutException>(warning.Exception);
+```
+
+要经日志构建器接入时（`LoggerFactory.Create(b => b.AddProvider(logs))`、`builder.Logging.AddProvider(logs)`）它也是 `ILoggerProvider`；构建器设的最低级别照常过滤。
+
 ## 行为与限制
 
 - 每次 `InvokeAsync` / `InvokeOperation*Async` 一个独立的服务作用域；释放后再调用抛 `ObjectDisposedException`。
@@ -176,6 +192,7 @@ Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
 - 调用不经过 Ingress 的协议绑定：`Accept-Language` 协商、HTTP 认证头之类由宿主适配器做的事不发生，Baggage 以 `baggage` 参数直接给出。
 - `FaultyCache` 只模拟 `ICache` 层面的故障：`Store` 原样返回内层存储，直接经 `ICacheStore` 或 `ISharedCache` 的读写不受 `Failing` 影响。`Failing` 可以在任何线程随时切换。
 - `ScriptedUnitOfWork` 不写入、不派发领域事件，`HasTransaction` 恒为假；抛出的步骤让状态停在原处（开始抛出仍是未开始，提交与回滚抛出仍是活动），与关系型 Provider 一致。登记成作用域服务时随作用域释放。`ScriptedRepository<TEntity, TKey>` 每个操作先看取消令牌，再看 `Failure`，不核对工作单元是否活动。
+- `LogCapture` 全部级别都启用，不支持作用域（`BeginScope` 返回空）；最多留 `Capacity` 条，满了丢掉最早的。`Entries` 每次读取是一份新副本，可以多线程同时写入与读取。`AddProvider` 抛出 `NotSupportedException`（日志只收在这里，不转发）；释放之后写入的日志照样记下。
 
 ## 相关
 

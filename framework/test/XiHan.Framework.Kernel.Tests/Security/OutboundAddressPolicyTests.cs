@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.Kernel.Tests.Fixtures;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Kernel.Tests.Security;
 

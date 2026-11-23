@@ -53,7 +53,7 @@ public sealed class S3ConditionalWriteTests
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, failed.Error?.Code);
         Assert.Equal(typeof(HttpRequestException).FullName, failed.Error?.Details?["reason"]);
         Assert.DoesNotContain(secret, failed.Error?.Message ?? string.Empty, StringComparison.Ordinal);
-        Assert.IsType<HttpRequestException>(Assert.Single(logs.Exceptions, static entry => entry.Category == typeof(S3BlobStore).FullName).Exception);
+        Assert.IsType<HttpRequestException>(Assert.Single(logs.Entries, static entry => entry.Exception is not null && entry.Category == typeof(S3BlobStore).FullName).Exception);
     }
 
     [Fact]

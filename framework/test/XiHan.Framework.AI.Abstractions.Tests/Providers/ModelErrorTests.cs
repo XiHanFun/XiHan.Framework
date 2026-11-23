@@ -103,6 +103,6 @@ public sealed class ModelErrorTests
     /// <summary>
     /// 某个类别下带异常的日志
     /// </summary>
-    private static List<(LogLevel Level, string Category, string Message, Exception? Exception)> ModelEntries(LogCapture logs, Type category)
+    private static List<LogCaptureEntry> ModelEntries(LogCapture logs, Type category)
         => logs.Entries.Where(entry => entry.Category == category.FullName && entry.Exception is not null).ToList();
 }

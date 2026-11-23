@@ -10,7 +10,6 @@ using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Database.Grants;
-using XiHan.Framework.Security.Database.Tests.Fixtures;
 using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Security.Database.Tests;

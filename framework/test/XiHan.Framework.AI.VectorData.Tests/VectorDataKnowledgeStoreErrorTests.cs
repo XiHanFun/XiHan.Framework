@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.AI.Abstractions;
 using XiHan.Framework.AI.Abstractions.Knowledge;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.AI.VectorData.Tests;
 

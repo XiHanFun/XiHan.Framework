@@ -19,6 +19,7 @@ using XiHan.Framework.Primitives;
 using XiHan.Framework.Profiles.Minimal;
 using XiHan.Framework.Protocols.CloudEvents.Inbound;
 using XiHan.Framework.Protocols.CloudEvents.Outbound;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 

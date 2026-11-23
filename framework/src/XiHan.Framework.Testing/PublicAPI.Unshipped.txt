@@ -11,6 +11,26 @@ XiHan.Framework.Testing.FaultyCache.RemoveManyAsync(System.Collections.Generic.I
 XiHan.Framework.Testing.FaultyCache.SetAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, T value, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Testing.FaultyCache.SetManyAsync<T>(System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<XiHan.Framework.Caching.Abstractions.Stores.CacheKey, T>>! entries, XiHan.Framework.Caching.Abstractions.Stores.CacheEntryOptions! options, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Testing.FaultyCache.Store.get -> XiHan.Framework.Caching.Abstractions.Stores.ICacheStore!
+XiHan.Framework.Testing.LogCapture
+XiHan.Framework.Testing.LogCapture.AddProvider(Microsoft.Extensions.Logging.ILoggerProvider! provider) -> void
+XiHan.Framework.Testing.LogCapture.Capacity.get -> int
+XiHan.Framework.Testing.LogCapture.CreateLogger(string! categoryName) -> Microsoft.Extensions.Logging.ILogger!
+XiHan.Framework.Testing.LogCapture.Dispose() -> void
+XiHan.Framework.Testing.LogCapture.Entries.get -> System.Collections.Generic.IReadOnlyList<XiHan.Framework.Testing.LogCaptureEntry!>!
+XiHan.Framework.Testing.LogCapture.LogCapture() -> void
+XiHan.Framework.Testing.LogCapture.LogCapture(int capacity) -> void
+XiHan.Framework.Testing.LogCaptureEntry
+XiHan.Framework.Testing.LogCaptureEntry.<Clone>$() -> XiHan.Framework.Testing.LogCaptureEntry!
+XiHan.Framework.Testing.LogCaptureEntry.Category.get -> string!
+XiHan.Framework.Testing.LogCaptureEntry.Category.init -> void
+XiHan.Framework.Testing.LogCaptureEntry.Equals(XiHan.Framework.Testing.LogCaptureEntry? other) -> bool
+XiHan.Framework.Testing.LogCaptureEntry.Exception.get -> System.Exception?
+XiHan.Framework.Testing.LogCaptureEntry.Exception.init -> void
+XiHan.Framework.Testing.LogCaptureEntry.Level.get -> Microsoft.Extensions.Logging.LogLevel
+XiHan.Framework.Testing.LogCaptureEntry.Level.init -> void
+XiHan.Framework.Testing.LogCaptureEntry.LogCaptureEntry() -> void
+XiHan.Framework.Testing.LogCaptureEntry.Message.get -> string!
+XiHan.Framework.Testing.LogCaptureEntry.Message.init -> void
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.AddAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<XiHan.Framework.Primitives.Result>!
 XiHan.Framework.Testing.ScriptedRepository<TEntity, TKey>.AddRangeAsync(System.Collections.Generic.IReadOnlyList<TEntity!>! entities, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>!
@@ -115,9 +135,15 @@ XiHan.Framework.Testing.WebAuthnTestCeremony.UserPresent.init -> void
 XiHan.Framework.Testing.WebAuthnTestCeremony.UserVerified.get -> bool
 XiHan.Framework.Testing.WebAuthnTestCeremony.UserVerified.init -> void
 XiHan.Framework.Testing.WebAuthnTestCeremony.WebAuthnTestCeremony() -> void
+const XiHan.Framework.Testing.LogCapture.DefaultCapacity = 10000 -> int
+override XiHan.Framework.Testing.LogCaptureEntry.Equals(object? obj) -> bool
+override XiHan.Framework.Testing.LogCaptureEntry.GetHashCode() -> int
+override XiHan.Framework.Testing.LogCaptureEntry.ToString() -> string!
 override XiHan.Framework.Testing.WebAuthnTestCeremony.Equals(object? obj) -> bool
 override XiHan.Framework.Testing.WebAuthnTestCeremony.GetHashCode() -> int
 override XiHan.Framework.Testing.WebAuthnTestCeremony.ToString() -> string!
+static XiHan.Framework.Testing.LogCaptureEntry.operator !=(XiHan.Framework.Testing.LogCaptureEntry? left, XiHan.Framework.Testing.LogCaptureEntry? right) -> bool
+static XiHan.Framework.Testing.LogCaptureEntry.operator ==(XiHan.Framework.Testing.LogCaptureEntry? left, XiHan.Framework.Testing.LogCaptureEntry? right) -> bool
 static XiHan.Framework.Testing.TestHost.StartAsync(System.Action<XiHan.Framework.Kernel.Hosting.AppBuilder!>! configure, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>? configuration = null, System.Action<Microsoft.Extensions.DependencyInjection.IServiceCollection!>? services = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<XiHan.Framework.Testing.TestHost!>!
 static XiHan.Framework.Testing.TestInvocationContext.Create(System.IServiceProvider? services = null, System.DateTimeOffset? deadline = null, System.Collections.Generic.IReadOnlyDictionary<string!, string!>? baggage = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Testing.TestManifests.Create(string! id, System.Collections.Generic.IEnumerable<string!>? provides = null, System.Collections.Generic.IEnumerable<string!>? requires = null, XiHan.Framework.Primitives.Manifests.ManifestRole role = XiHan.Framework.Primitives.Manifests.ManifestRole.Provider, XiHan.Framework.Primitives.Manifests.ManifestKind kind = XiHan.Framework.Primitives.Manifests.ManifestKind.Capability, System.Collections.Generic.IEnumerable<XiHan.Framework.Primitives.Manifests.Binding!>? bindings = null) -> XiHan.Framework.Primitives.Manifests.Manifest!

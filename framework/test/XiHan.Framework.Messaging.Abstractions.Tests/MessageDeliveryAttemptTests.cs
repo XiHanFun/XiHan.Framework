@@ -71,7 +71,8 @@ public sealed class MessageDeliveryAttemptTests
     public async Task Success_IsComplete_WithoutErrorOrLog()
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
         MessageDelivery? seen = null;
         var delivery = Delivery(1);
 
@@ -91,7 +92,7 @@ public sealed class MessageDeliveryAttemptTests
         Assert.Same(delivery, seen);
         Assert.Equal(DeliveryDisposition.Complete, outcome.Disposition);
         Assert.Null(outcome.Error);
-        Assert.Empty(logger.Entries);
+        Assert.Empty(logs.Entries);
     }
 
     [Theory]
@@ -102,14 +103,15 @@ public sealed class MessageDeliveryAttemptTests
     public async Task Failure_BelowMaxAttempts_IsRetry_WithTheHandlersError(int attempt, SubscriptionMode mode)
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
 
         var outcome = await MessageDeliveryAttempt.RunAsync(Returning(_rejected), Delivery(attempt, mode), _options, host.App, logger, CancellationToken.None);
 
         // 还有尝试次数：两种订阅方式都重投，带着处理器的错误；重投不记日志
         Assert.Equal(DeliveryDisposition.Retry, outcome.Disposition);
         Assert.Same(_rejected, outcome.Error);
-        Assert.Empty(logger.Entries);
+        Assert.Empty(logs.Entries);
     }
 
     [Theory]
@@ -118,7 +120,8 @@ public sealed class MessageDeliveryAttemptTests
     public async Task Failure_AtOrPastTheLastAttempt_IsDeadLetterForCompeting_AndLogsIt(int attempt)
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
 
         var outcome = await MessageDeliveryAttempt.RunAsync(Returning(_rejected), Delivery(attempt), _options, host.App, logger, CancellationToken.None);
 
@@ -127,14 +130,15 @@ public sealed class MessageDeliveryAttemptTests
         Assert.Same(_rejected, outcome.Error);
         Assert.Equal(
             [(LogLevel.Warning, $"Message {MessageId} on topic {Topic} was dead-lettered after attempt {attempt} failed: ORDERS_VALIDATION_001")],
-            logger.Entries.Select(static e => (e.Level, e.Message)));
+            logs.Entries.Select(static e => (e.Level, e.Message)));
     }
 
     [Fact]
     public async Task Failure_AtTheLastAttempt_IsDiscardForBroadcast_AndLogsIt()
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
 
         var outcome = await MessageDeliveryAttempt.RunAsync(Returning(_rejected), Delivery(3, SubscriptionMode.Broadcast), _options, host.App, logger, CancellationToken.None);
 
@@ -143,7 +147,7 @@ public sealed class MessageDeliveryAttemptTests
         Assert.Same(_rejected, outcome.Error);
         Assert.Equal(
             [(LogLevel.Warning, $"Broadcast message {MessageId} on topic {Topic} was dropped after attempt 3 failed: ORDERS_VALIDATION_001")],
-            logger.Entries.Select(static e => (e.Level, e.Message)));
+            logs.Entries.Select(static e => (e.Level, e.Message)));
     }
 
     [Fact]
@@ -173,7 +177,8 @@ public sealed class MessageDeliveryAttemptTests
     public async Task Throwing_IsAFailedAttempt_WithTheExceptionTypeAsReason_AndLogsTheException()
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
         var thrown = new InvalidOperationException("Server=db-01;Password=secret");
 
         var outcome = await MessageDeliveryAttempt.RunAsync(Throwing(thrown), Delivery(2), _options, host.App, logger, CancellationToken.None);
@@ -188,7 +193,7 @@ public sealed class MessageDeliveryAttemptTests
         Assert.DoesNotContain("secret", error.Message, StringComparison.Ordinal);
 
         // 完整异常进日志：不记下来就没人看得到它
-        var entry = Assert.Single(logger.Entries);
+        var entry = Assert.Single(logs.Entries);
         Assert.Equal((LogLevel.Warning, $"Dispatching message {MessageId} on topic {Topic} threw on attempt 2."), (entry.Level, entry.Message));
         Assert.Same(thrown, entry.Exception);
     }
@@ -215,24 +220,26 @@ public sealed class MessageDeliveryAttemptTests
     public async Task Throwing_AtTheLastAttempt_IsExhausted_WithTheHandlerFailedCode(SubscriptionMode mode, DeliveryDisposition expected, string phrase)
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
 
         var outcome = await MessageDeliveryAttempt.RunAsync(Throwing(new InvalidOperationException("Boom.")), Delivery(3, mode), _options, host.App, logger, CancellationToken.None);
 
         Assert.Equal(expected, outcome.Disposition);
         Assert.Equal(MessagingErrors.HandlerFailed, outcome.Error?.Code);
         // 先记抛出，再记了结：了结的那条带错误码
-        Assert.Equal(2, logger.Entries.Count);
-        Assert.Contains("threw on attempt 3", logger.Entries[0].Message, StringComparison.Ordinal);
-        Assert.Contains(phrase, logger.Entries[1].Message, StringComparison.Ordinal);
-        Assert.EndsWith(": " + MessagingErrors.HandlerFailed, logger.Entries[1].Message, StringComparison.Ordinal);
+        Assert.Equal(2, logs.Entries.Count);
+        Assert.Contains("threw on attempt 3", logs.Entries[0].Message, StringComparison.Ordinal);
+        Assert.Contains(phrase, logs.Entries[1].Message, StringComparison.Ordinal);
+        Assert.EndsWith(": " + MessagingErrors.HandlerFailed, logs.Entries[1].Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task CancellationException_WhenTheTokenIsCancelled_IsAbandon_AndNotLogged()
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
         using var stopping = new CancellationTokenSource();
 
         var outcome = await MessageDeliveryAttempt.RunAsync(
@@ -251,14 +258,15 @@ public sealed class MessageDeliveryAttemptTests
         // 停止打断了处理器：不算一次尝试，最后一次尝试上也不进死信
         Assert.Equal(DeliveryDisposition.Abandon, outcome.Disposition);
         Assert.Null(outcome.Error);
-        Assert.Empty(logger.Entries);
+        Assert.Empty(logs.Entries);
     }
 
     [Fact]
     public async Task CancellationException_WhenTheTokenIsNotCancelled_IsAFailedAttempt()
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
 
         var outcome = await MessageDeliveryAttempt.RunAsync(Throwing(new TaskCanceledException("The HTTP client timed out.")), Delivery(1), _options, host.App, logger, CancellationToken.None);
 
@@ -266,7 +274,7 @@ public sealed class MessageDeliveryAttemptTests
         Assert.Equal(DeliveryDisposition.Retry, outcome.Disposition);
         Assert.Equal(MessagingErrors.HandlerFailed, outcome.Error?.Code);
         Assert.Equal("System.Threading.Tasks.TaskCanceledException", outcome.Error?.Details?["reason"]);
-        Assert.Single(logger.Entries);
+        Assert.Single(logs.Entries);
     }
 
     [Theory]
@@ -277,7 +285,8 @@ public sealed class MessageDeliveryAttemptTests
     public async Task Failure_WhileTheTokenIsCancelled_IsAbandon_EvenAtTheLastAttempt(SubscriptionMode mode, bool throws)
     {
         await using var host = await TestHost.StartAsync(static _ => { });
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
         using var stopping = new CancellationTokenSource();
 
         var outcome = await MessageDeliveryAttempt.RunAsync(
@@ -296,7 +305,7 @@ public sealed class MessageDeliveryAttemptTests
         // 停止期间的失败不算一次尝试：不重投、不进死信、不丢弃，也不记进死信或丢弃的日志
         Assert.Equal(DeliveryDisposition.Abandon, outcome.Disposition);
         Assert.Null(outcome.Error);
-        Assert.DoesNotContain(logger.Entries, static e => e.Message.Contains("dead-lettered", StringComparison.Ordinal) || e.Message.Contains("dropped", StringComparison.Ordinal));
+        Assert.DoesNotContain(logs.Entries, static e => e.Message.Contains("dead-lettered", StringComparison.Ordinal) || e.Message.Contains("dropped", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -381,7 +390,8 @@ public sealed class MessageDeliveryAttemptTests
             await stopEntered.Task.WaitAsync(_patience);
             Assert.Equal(LifecycleState.Draining, host.App.State);
             var dispatched = 0;
-            var logger = new RecordingLogger();
+            using var logs = new LogCapture();
+            var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
             using var stopping = new CancellationTokenSource();
 
             // 最后一次尝试：排空中不派发，尝试次数不会被空转掉
@@ -405,7 +415,7 @@ public sealed class MessageDeliveryAttemptTests
 
             Assert.Equal(DeliveryDisposition.Abandon, outcome.Disposition);
             Assert.Equal(0, dispatched);
-            Assert.Empty(logger.Entries);
+            Assert.Empty(logs.Entries);
         }
         finally
         {
@@ -420,27 +430,29 @@ public sealed class MessageDeliveryAttemptTests
     [InlineData(SubscriptionMode.Broadcast, DeliveryDisposition.Discard, "Broadcast message order-1 on topic orders was dropped after attempt 4 failed: ?")]
     public void Exhausted_WithoutAnError_SettlesByMode_AndLogsAQuestionMark(SubscriptionMode mode, DeliveryDisposition expected, string message)
     {
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
 
         // 没有派发就判定用完（回收来的投递已经投过上限次数）：没有错误可带
         var outcome = MessageDeliveryAttempt.Exhausted(Delivery(4, mode), null, logger);
 
         Assert.Equal(expected, outcome.Disposition);
         Assert.Null(outcome.Error);
-        Assert.Equal([(LogLevel.Warning, message)], logger.Entries.Select(static e => (e.Level, e.Message)));
+        Assert.Equal([(LogLevel.Warning, message)], logs.Entries.Select(static e => (e.Level, e.Message)));
     }
 
     [Fact]
     public void Exhausted_WithAnError_CarriesIt()
     {
-        var logger = new RecordingLogger();
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
 
         // 还没到上限但没法再重投（内存代理的队列已满）：带着这次失败的错误了结
         var outcome = MessageDeliveryAttempt.Exhausted(Delivery(1), _rejected, logger);
 
         Assert.Equal(DeliveryDisposition.DeadLetter, outcome.Disposition);
         Assert.Same(_rejected, outcome.Error);
-        Assert.EndsWith("after attempt 1 failed: ORDERS_VALIDATION_001", Assert.Single(logger.Entries).Message, StringComparison.Ordinal);
+        Assert.EndsWith("after attempt 1 failed: ORDERS_VALIDATION_001", Assert.Single(logs.Entries).Message, StringComparison.Ordinal);
     }
 
     [Fact]

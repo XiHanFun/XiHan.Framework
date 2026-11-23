@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.ObjectStorage.FileSystem.Tests;
 

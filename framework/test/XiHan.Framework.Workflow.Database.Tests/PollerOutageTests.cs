@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Database.Polling;
 
@@ -105,7 +106,7 @@ public sealed class PollerOutageTests
     /// <summary>
     /// 领导权以存储不可达失败的告警
     /// </summary>
-    private static bool IsLeadershipWarning((LogLevel Level, string Category, string Message) entry)
+    private static bool IsLeadershipWarning(LogCaptureEntry entry)
         => entry.Level == LogLevel.Warning
             && entry.Category == typeof(PollerLeadership).FullName
             && entry.Message.Contains(WorkflowErrors.StoreUnavailable, StringComparison.Ordinal);
@@ -113,6 +114,6 @@ public sealed class PollerOutageTests
     /// <summary>
     /// 工作流的任何告警或错误
     /// </summary>
-    private static bool IsWorkflowWarning((LogLevel Level, string Category, string Message) entry)
+    private static bool IsWorkflowWarning(LogCaptureEntry entry)
         => entry.Level >= LogLevel.Warning && entry.Category.StartsWith("XiHan.Framework.Workflow", StringComparison.Ordinal);
 }

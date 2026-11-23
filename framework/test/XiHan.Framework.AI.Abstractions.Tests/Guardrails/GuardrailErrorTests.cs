@@ -85,7 +85,7 @@ public sealed class GuardrailErrorTests
     /// <summary>
     /// 聊天组件这个类别下带异常的日志
     /// </summary>
-    private static List<(LogLevel Level, string Category, string Message, Exception? Exception)> Entries(LogCapture logs)
+    private static List<LogCaptureEntry> Entries(LogCapture logs)
         => logs.Entries.Where(static entry => entry.Category == typeof(AIChat).FullName && entry.Exception is not null).ToList();
 
     /// <summary>

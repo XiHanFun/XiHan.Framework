@@ -12,6 +12,7 @@
 * 内存里的通行密钥认证器，按 WebAuthn 格式生成可篡改的响应
 * `FaultyCache`：可以随时切换成「缓存后端不可达」的 `ICache` 包装，测组件在缓存故障时的行为
 * `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`：按脚本在开始、读写、提交、回滚、释放上失败的替身，测自己开工作单元的代码在数据库故障时怎样收尾
+* `LogCapture`：把日志收进内存的日志工厂，按级别、类别、消息与异常断言组件写了哪条日志
 
 ## 如何使用
 
@@ -62,6 +63,17 @@ await using var services = new ServiceCollection()
 // 跑被测代码之后：unitOfWork.Calls 是 ["begin", "rollback", "dispose"]
 ```
 
+断言组件写了哪条日志：把 `LogCapture` 登记为 `ILoggerFactory`，或直接从它取日志器交给被测对象。
+
+```csharp
+using var logs = new LogCapture();
+var purger = new OrderPurger(services, TimeProvider.System, logs.CreateLogger<OrderPurger>());
+
+await purger.PurgeAsync("acme", CancellationToken.None);
+
+Assert.Contains(logs.Entries, e => e.Level == LogLevel.Warning && e.Exception is TimeoutException);
+```
+
 ## 主要类型
 
 此库提供的主要类型：
@@ -74,6 +86,7 @@ await using var services = new ServiceCollection()
 * `FaultyCache`：可切换成缓存后端不可达的 `ICache` 包装
 * `ScriptedUnitOfWork`：按脚本失败并记录调用顺序的工作单元替身
 * `ScriptedRepository<TEntity, TKey>`：按脚本返回或抛出的仓储替身
+* `LogCapture`、`LogCaptureEntry`：收日志的工厂与一条日志（级别、类别、消息、异常）
 
 ## 更多文档
 

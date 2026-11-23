@@ -51,7 +51,7 @@ public sealed class LeaseFaultTests : IAsyncLifetime
     /// <summary>
     /// 被测对象写入的日志
     /// </summary>
-    private readonly RecordingLogger _log = new();
+    private readonly LogCapture _logs = new();
 
     /// <inheritdoc />
     public ValueTask InitializeAsync() => ValueTask.CompletedTask;
@@ -86,7 +86,7 @@ public sealed class LeaseFaultTests : IAsyncLifetime
 
         Assert.Same(full, released.Error);
         Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
-        Assert.Contains(_log.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, rollback));
+        Assert.Contains(_logs.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, rollback));
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public sealed class LeaseFaultTests : IAsyncLifetime
         Assert.DoesNotContain(Secret, Flatten(released.Error), StringComparison.Ordinal);
         Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
         // 完整异常只进日志
-        Assert.Contains(_log.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, failure));
+        Assert.Contains(_logs.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, failure));
     }
 
     [Fact]
@@ -236,7 +236,7 @@ public sealed class LeaseFaultTests : IAsyncLifetime
         Assert.Equal(SchedulingErrors.StoreUnavailable, result.Error?.Code);
         Assert.Equal(typeof(ObjectDisposedException).FullName, result.Error!.Details!["reason"]);
         Assert.DoesNotContain("disposed object", Flatten(result.Error), StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(_log.Entries, static entry => entry.Level == LogLevel.Warning && entry.Exception is ObjectDisposedException);
+        Assert.Contains(_logs.Entries, static entry => entry.Level == LogLevel.Warning && entry.Exception is ObjectDisposedException);
     }
 
     [Fact]
@@ -251,23 +251,23 @@ public sealed class LeaseFaultTests : IAsyncLifetime
         Assert.Equal(KernelErrors.InvalidAppState, result.Error!.Details!["reason"]);
         Assert.Equal(KernelErrors.InvalidAppState, result.Error.Inner?.Code);
         // 应用不在服务状态是预期的状态，不是故障：不记日志
-        Assert.Empty(_log.Entries);
+        Assert.Empty(_logs.Entries);
     }
 
     /// <summary>
     /// 建在替身容器上的租约行操作
     /// </summary>
-    private LeaseRows Rows(IServiceProvider root, App app) => new(root, app, TimeProvider.System, _log);
+    private LeaseRows Rows(IServiceProvider root, App app) => new(root, app, TimeProvider.System, _logs.CreateLogger(nameof(LeaseFaultTests)));
 
     /// <summary>
     /// 建在替身容器上的探针
     /// </summary>
-    private LeaseProbe Probe(IServiceProvider root) => new(root, Resource, _log);
+    private LeaseProbe Probe(IServiceProvider root) => new(root, Resource, _logs.CreateLogger(nameof(LeaseFaultTests)));
 
     /// <summary>
     /// 建在给定容器上的管道执行
     /// </summary>
-    private StoreInvocation Invocation(IServiceProvider root, App app) => new(root, app, _log);
+    private StoreInvocation Invocation(IServiceProvider root, App app) => new(root, app, _logs.CreateLogger(nameof(LeaseFaultTests)));
 
     /// <summary>
     /// 本节点持有的租约行
@@ -297,27 +297,5 @@ public sealed class LeaseFaultTests : IAsyncLifetime
         }
 
         return string.Join('\n', parts);
-    }
-
-    /// <summary>
-    /// 把日志连同异常记在内存里
-    /// </summary>
-    private sealed class RecordingLogger : ILogger
-    {
-        /// <summary>
-        /// 收到的日志（级别、格式化后的消息、异常），按写入顺序
-        /// </summary>
-        public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
-
-        /// <inheritdoc />
-        public IDisposable? BeginScope<TState>(TState state)
-            where TState : notnull => null;
-
-        /// <inheritdoc />
-        public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
-
-        /// <inheritdoc />
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-            => Entries.Add((logLevel, formatter(state, exception), exception));
     }
 }

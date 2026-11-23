@@ -21,7 +21,7 @@ namespace XiHan.Framework.Workflow.Database.Tests;
 /// <remarks>
 /// 回滚与释放作用域再失败也不盖掉已经确定的结果或原异常；存储不可达的原因只写异常类型全名（框架异常写它的错误码），异常消息不进错误；调用方取消回滚后抛出，驱动以取消异常报告的超时是存储不可达（ADR-0259）
 /// </remarks>
-public sealed class LeaseTableFaultTests
+public sealed class LeaseTableFaultTests : IDisposable
 {
     /// <summary>
     /// 底层异常里不该外泄的文本
@@ -46,7 +46,7 @@ public sealed class LeaseTableFaultTests
     /// <summary>
     /// 被测对象写入的日志
     /// </summary>
-    private readonly RecordingLogger _log = new();
+    private readonly LogCapture _logs = new();
 
     [Fact]
     public async Task Steps_RunInAWritableUnitOfWorkBoundToTheLockConnection()
@@ -59,7 +59,7 @@ public sealed class LeaseTableFaultTests
         Assert.Equal(LeaseAttempt.Acquired, attempt.ValueOrThrow());
         Assert.Equal(new UnitOfWorkOptions { Connection = "leases" }, unitOfWork.Options);
         Assert.Equal(["begin", "commit", "dispose"], unitOfWork.Calls);
-        Assert.Empty(_log.Entries);
+        Assert.Empty(_logs.Entries);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class LeaseTableFaultTests
         // 步骤自己的失败原样返回，由实例锁归类；回滚的异常只进日志
         Assert.Same(full, attempt.Error);
         Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
-        Assert.Contains(_log.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, rollback));
+        Assert.Contains(_logs.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, rollback));
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class LeaseTableFaultTests
         Assert.DoesNotContain(Secret, Flatten(attempt.Error), StringComparison.Ordinal);
         Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
         // 完整异常只进日志
-        Assert.Contains(_log.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, failure));
+        Assert.Contains(_logs.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, failure));
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public sealed class LeaseTableFaultTests
         var released = await Table(root).ReleaseAsync(Id, Holder, CancellationToken.None);
 
         Assert.True(released.IsSuccess, released.Error?.Code);
-        Assert.Contains(_log.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, dispose));
+        Assert.Contains(_logs.Entries, entry => entry.Level == LogLevel.Warning && ReferenceEquals(entry.Exception, dispose));
     }
 
     [Fact]
@@ -229,15 +229,18 @@ public sealed class LeaseTableFaultTests
         Assert.Equal(CancellationToken.None, unitOfWork.Tokens[^1]);
     }
 
+    /// <inheritdoc />
+    public void Dispose() => _logs.Dispose();
+
     /// <summary>
     /// 建在替身容器上的租约行操作
     /// </summary>
-    private LeaseTable Table(IServiceProvider root, string? lockConnection = null) => new(root, TimeProvider.System, lockConnection, _log);
+    private LeaseTable Table(IServiceProvider root, string? lockConnection = null) => new(root, TimeProvider.System, lockConnection, _logs.CreateLogger(nameof(LeaseTableFaultTests)));
 
     /// <summary>
     /// 建在替身容器上的探针
     /// </summary>
-    private PollerLeaseProbe Probe(IServiceProvider root, string? lockConnection) => new(root, new DatabaseWorkflowOptions { LockConnection = lockConnection }, _log);
+    private PollerLeaseProbe Probe(IServiceProvider root, string? lockConnection) => new(root, new DatabaseWorkflowOptions { LockConnection = lockConnection }, _logs.CreateLogger(nameof(LeaseTableFaultTests)));
 
     /// <summary>
     /// 本次获取持有的租约行
@@ -267,27 +270,5 @@ public sealed class LeaseTableFaultTests
         }
 
         return string.Join('\n', parts);
-    }
-
-    /// <summary>
-    /// 把日志连同异常记在内存里
-    /// </summary>
-    private sealed class RecordingLogger : ILogger
-    {
-        /// <summary>
-        /// 收到的日志（级别、格式化后的消息、异常），按写入顺序
-        /// </summary>
-        public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
-
-        /// <inheritdoc />
-        public IDisposable? BeginScope<TState>(TState state)
-            where TState : notnull => null;
-
-        /// <inheritdoc />
-        public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
-
-        /// <inheritdoc />
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-            => Entries.Add((logLevel, formatter(state, exception), exception));
     }
 }
