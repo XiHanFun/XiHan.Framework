@@ -555,17 +555,20 @@ public sealed class WasmPluginHostTests
     }
 
     [Theory]
-    [InlineData("MemoryLimitBytes", "0", "a positive integer")]
-    [InlineData("MemoryLimitBytes", "1.5", "a positive integer")]
-    [InlineData("StackLimitBytes", "3000000000", "a positive integer not greater than 2147483647")]
-    [InlineData("EpochIntervalMilliseconds", "0", "a positive number")]
-    [InlineData("CallTimeoutSeconds", "0", "a positive number")]
-    [InlineData("MiddlewareTimeoutMilliseconds", "0", "a positive number")]
-    [InlineData("HealthIntervalSeconds", "0", "a positive number")]
-    [InlineData("RestartWindowSeconds", "0", "a positive number")]
-    [InlineData("HealthFailures", "0", "a positive integer")]
-    [InlineData("HealthFailures", "2.5", "a positive integer")]
-    [InlineData("RestartLimit", "-1", "a non-negative integer")]
+    [InlineData("MemoryLimitBytes", "0", "'XiHan:Plugins:Wasm:MemoryLimitBytes' must be a positive integer, but was '0'.")]
+    [InlineData("MemoryLimitBytes", "1.5", "'XiHan:Plugins:Wasm:MemoryLimitBytes' must be a positive integer, but was '1.5'.")]
+    [InlineData("StackLimitBytes", "3000000000", "'XiHan:Plugins:Wasm:StackLimitBytes' must be a positive integer, but was '3000000000'.")]
+    [InlineData("CallTimeoutSeconds", "0", "'XiHan:Plugins:Wasm:CallTimeoutSeconds' must be a positive number of seconds, but was '0'.")]
+    // 有限但装不进 TimeSpan 的秒数：带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+    [InlineData("CallTimeoutSeconds", "1e300", "'XiHan:Plugins:Wasm:CallTimeoutSeconds' must be a positive number of seconds, but was '1e300'.")]
+    [InlineData("HealthIntervalSeconds", "0", "'XiHan:Plugins:Wasm:HealthIntervalSeconds' must be a positive number of seconds, but was '0'.")]
+    [InlineData("RestartWindowSeconds", "0", "'XiHan:Plugins:Wasm:RestartWindowSeconds' must be a positive number of seconds, but was '0'.")]
+    [InlineData("HealthFailures", "0", "'XiHan:Plugins:Wasm:HealthFailures' must be a positive integer, but was '0'.")]
+    [InlineData("HealthFailures", "2.5", "'XiHan:Plugins:Wasm:HealthFailures' must be a positive integer, but was '2.5'.")]
+    [InlineData("RestartLimit", "-1", "'XiHan:Plugins:Wasm:RestartLimit' must be a non-negative integer, but was '-1'.")]
+    // 毫秒的两个键不在统一读取之内（ADR-0255 只有秒数），仍由选项类自己解析，消息是原来的写法
+    [InlineData("EpochIntervalMilliseconds", "0", "XiHan:Plugins:Wasm:EpochIntervalMilliseconds must be a positive number, but was '0'.")]
+    [InlineData("MiddlewareTimeoutMilliseconds", "0", "XiHan:Plugins:Wasm:MiddlewareTimeoutMilliseconds must be a positive number, but was '0'.")]
     public void Options_FromConfiguration_RejectWhatThePropertiesReject_WithTheConfigurationKey(string key, string value, string expected)
     {
         // 配置与属性的取值范围一致：0 等不合规的值以带配置键的 ArgumentException 拒绝，不再漏到属性赋值时抛出不带键的 ArgumentOutOfRangeException
@@ -573,6 +576,6 @@ public sealed class WasmPluginHostTests
 
         var exception = Assert.Throws<ArgumentException>(() => WasmPluginOptions.FromConfiguration(configuration));
 
-        Assert.Contains($"{WasmPluginOptions.ConfigurationSection}:{key} must be {expected}", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(expected, exception.Message);
     }
 }

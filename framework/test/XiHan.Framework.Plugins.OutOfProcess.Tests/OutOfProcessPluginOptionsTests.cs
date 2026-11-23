@@ -27,12 +27,14 @@ public sealed class OutOfProcessPluginOptionsTests
     [InlineData("HealthFailures", "0", "a positive integer")]
     [InlineData("HealthFailures", "1.5", "a positive integer")]
     [InlineData("RestartLimit", "-1", "a non-negative integer")]
-    [InlineData("StartTimeoutSeconds", "0", "a positive number")]
+    [InlineData("StartTimeoutSeconds", "0", "a positive number of seconds")]
+    // 装不进 TimeSpan 的秒数：带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+    [InlineData("StartTimeoutSeconds", "1e400", "a positive number of seconds")]
     public void FromConfiguration_RejectsOutOfRangeValues_WithTheConfigurationKey(string key, string value, string expected)
     {
         var exception = Assert.Throws<ArgumentException>(() => OutOfProcessPluginOptions.FromConfiguration(Configuration((key, value))));
 
-        Assert.Contains($"{OutOfProcessPluginOptions.ConfigurationSection}:{key} must be {expected}", exception.Message, StringComparison.Ordinal);
+        Assert.Equal($"'{OutOfProcessPluginOptions.ConfigurationSection}:{key}' must be {expected}, but was '{value}'.", exception.Message);
     }
 
     /// <summary>

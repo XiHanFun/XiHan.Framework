@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Primitives;
@@ -150,7 +150,7 @@ public sealed record OutOfProcessPluginOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 各时长以秒为单位（<c>HandshakeTimeoutSeconds</c>、<c>StartTimeoutSeconds</c>、<c>StopGraceSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>）
+    /// 各时长以秒为单位（<c>HandshakeTimeoutSeconds</c>、<c>StartTimeoutSeconds</c>、<c>StopGraceSeconds</c>、<c>HealthIntervalSeconds</c>、<c>RestartWindowSeconds</c>），是正数；<c>HealthFailures</c> 是正整数，<c>RestartLimit</c> 是非负整数。不合规的值以带配置键的 <see cref="ArgumentException"/> 拒绝
     /// </remarks>
     public static OutOfProcessPluginOptions FromConfiguration(IConfiguration configuration)
     {
@@ -166,79 +166,41 @@ public sealed record OutOfProcessPluginOptions
             WorkDirectory = section["WorkDirectory"],
         };
 
-        if (Seconds(section, "HandshakeTimeoutSeconds") is { } handshake)
+        if (ConfigurationValues.ReadSeconds(section,"HandshakeTimeoutSeconds") is { } handshake)
         {
             options = options with { HandshakeTimeout = handshake };
         }
 
-        if (Seconds(section, "StartTimeoutSeconds") is { } start)
+        if (ConfigurationValues.ReadSeconds(section,"StartTimeoutSeconds") is { } start)
         {
             options = options with { StartTimeout = start };
         }
 
-        if (Seconds(section, "StopGraceSeconds") is { } grace)
+        if (ConfigurationValues.ReadSeconds(section,"StopGraceSeconds") is { } grace)
         {
             options = options with { StopGrace = grace };
         }
 
-        if (Seconds(section, "HealthIntervalSeconds") is { } health)
+        if (ConfigurationValues.ReadSeconds(section,"HealthIntervalSeconds") is { } health)
         {
             options = options with { HealthInterval = health };
         }
 
-        if (Seconds(section, "RestartWindowSeconds") is { } window)
+        if (ConfigurationValues.ReadSeconds(section,"RestartWindowSeconds") is { } window)
         {
             options = options with { RestartWindow = window };
         }
 
-        if (Integer(section, "HealthFailures", minimum: 1) is { } failures)
+        if (ConfigurationValues.ReadInt32(section, "HealthFailures", 1) is { } failures)
         {
             options = options with { HealthFailures = failures };
         }
 
-        if (Integer(section, "RestartLimit", minimum: 0) is { } limit)
+        if (ConfigurationValues.ReadInt32(section, "RestartLimit", 0) is { } limit)
         {
             options = options with { RestartLimit = limit };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取以秒为单位的时长
-    /// </summary>
-    /// <remarks>
-    /// 未配置为空，不是正数则抛出
-    /// </remarks>
-    private static TimeSpan? Seconds(IConfiguration section, string name)
-    {
-        var text = section[name];
-        if (text is null)
-        {
-            return null;
-        }
-
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-            ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive number, but was '{text}'.");
-    }
-
-    /// <summary>
-    /// 读取整数
-    /// </summary>
-    /// <remarks>
-    /// 未配置为空，不是整数或小于 <paramref name="minimum"/> 则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致
-    /// </remarks>
-    private static int? Integer(IConfiguration section, string name, int minimum)
-    {
-        var text = section[name];
-        if (text is null)
-        {
-            return null;
-        }
-
-        return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= minimum
-            ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be {(minimum == 0 ? "a non-negative integer" : "a positive integer")}, but was '{text}'.");
     }
 }

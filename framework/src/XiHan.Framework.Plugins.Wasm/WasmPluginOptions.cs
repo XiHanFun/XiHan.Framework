@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Primitives;
@@ -223,19 +224,19 @@ public sealed record WasmPluginOptions
             WorkDirectory = section["WorkDirectory"],
         };
 
-        if (Integer(section, "MemoryLimitBytes", minimum: 1) is { } memory)
+        if (ConfigurationValues.ReadInt64(section, "MemoryLimitBytes", 1) is { } memory)
         {
             options = options with { MemoryLimitBytes = memory };
         }
 
-        if (Integer(section, "StackLimitBytes", minimum: 1, maximum: int.MaxValue) is { } stack)
+        if (ConfigurationValues.ReadInt32(section, "StackLimitBytes", 1) is { } stack)
         {
-            options = options with { StackLimitBytes = (int)stack };
+            options = options with { StackLimitBytes = stack };
         }
 
-        if (Integer(section, "MaxTableElements", minimum: 1, maximum: int.MaxValue) is { } table)
+        if (ConfigurationValues.ReadInt32(section, "MaxTableElements", 1) is { } table)
         {
-            options = options with { MaxTableElements = (int)table };
+            options = options with { MaxTableElements = table };
         }
 
         if (Positive(section, "EpochIntervalMilliseconds") is { } epoch)
@@ -243,9 +244,9 @@ public sealed record WasmPluginOptions
             options = options with { EpochInterval = TimeSpan.FromMilliseconds(epoch) };
         }
 
-        if (Positive(section, "CallTimeoutSeconds") is { } call)
+        if (ConfigurationValues.ReadSeconds(section, "CallTimeoutSeconds") is { } call)
         {
-            options = options with { CallTimeout = TimeSpan.FromSeconds(call) };
+            options = options with { CallTimeout = call };
         }
 
         if (Positive(section, "MiddlewareTimeoutMilliseconds") is { } middleware)
@@ -253,34 +254,34 @@ public sealed record WasmPluginOptions
             options = options with { MiddlewareTimeout = TimeSpan.FromMilliseconds(middleware) };
         }
 
-        if (Positive(section, "HealthIntervalSeconds") is { } health)
+        if (ConfigurationValues.ReadSeconds(section, "HealthIntervalSeconds") is { } health)
         {
-            options = options with { HealthInterval = TimeSpan.FromSeconds(health) };
+            options = options with { HealthInterval = health };
         }
 
-        if (Positive(section, "RestartWindowSeconds") is { } window)
+        if (ConfigurationValues.ReadSeconds(section, "RestartWindowSeconds") is { } window)
         {
-            options = options with { RestartWindow = TimeSpan.FromSeconds(window) };
+            options = options with { RestartWindow = window };
         }
 
-        if (Integer(section, "HealthFailures", minimum: 1, maximum: int.MaxValue) is { } failures)
+        if (ConfigurationValues.ReadInt32(section, "HealthFailures", 1) is { } failures)
         {
-            options = options with { HealthFailures = (int)failures };
+            options = options with { HealthFailures = failures };
         }
 
-        if (Integer(section, "RestartLimit", minimum: 0, maximum: int.MaxValue) is { } limit)
+        if (ConfigurationValues.ReadInt32(section, "RestartLimit", 0) is { } limit)
         {
-            options = options with { RestartLimit = (int)limit };
+            options = options with { RestartLimit = limit };
         }
 
         return options;
     }
 
     /// <summary>
-    /// 读取一个正数（时长）
+    /// 读取一个正数（毫秒时长）
     /// </summary>
     /// <remarks>
-    /// 未配置为空，不是正数则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致
+    /// 未配置为空，不是正数则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致。秒数的键走 <see cref="ConfigurationValues"/>，它没有毫秒的读法
     /// </remarks>
     private static double? Positive(IConfiguration section, string name)
     {
@@ -293,28 +294,5 @@ public sealed record WasmPluginOptions
         return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value > 0 && double.IsFinite(value)
             ? value
             : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive number, but was '{text}'.");
-    }
-
-    /// <summary>
-    /// 读取一个整数
-    /// </summary>
-    /// <remarks>
-    /// 未配置为空，不是整数或不在 [<paramref name="minimum"/>, <paramref name="maximum"/>] 内则以带配置键的 <see cref="ArgumentException"/> 拒绝，范围与属性的校验一致
-    /// </remarks>
-    private static long? Integer(IConfiguration section, string name, long minimum, long maximum = long.MaxValue)
-    {
-        var text = section[name];
-        if (text is null)
-        {
-            return null;
-        }
-
-        if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= minimum && value <= maximum)
-        {
-            return value;
-        }
-
-        var range = minimum == 0 ? "a non-negative integer" : "a positive integer";
-        throw new ArgumentException($"{ConfigurationSection}:{name} must be {range}{(maximum < long.MaxValue ? $" not greater than {maximum}" : string.Empty)}, but was '{text}'.");
     }
 }
