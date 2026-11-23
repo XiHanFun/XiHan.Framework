@@ -39,6 +39,18 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 }
 ```
 
+后台循环、单例存储与健康探针不在调用里，没有 Transaction 阶段替它们开工作单元，用 `UnitOfWorkScope` 在新作用域里开：返回成功即提交，返回失败或抛出即回滚。
+
+```csharp
+var count = await UnitOfWorkScope.RunAsync(
+    services,
+    new UnitOfWorkOptions { IsReadOnly = true },
+    async (scoped, ct) => Result.Success(
+        await scoped.GetRequiredService<IRepository<Order, Guid>>().CountAsync(EntityQuery.All<Order>(), ct)),
+    logger,
+    cancellationToken);
+```
+
 需要 `long` 标识时显式装配雪花特性；多实例部署要给每个实例配置互不相同的 `XiHan:Persistence:Snowflake:WorkerId`，或装配跨进程的分布式缓存：
 
 ```csharp
@@ -52,6 +64,7 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 * `IRepository<TEntity, TKey>`：查找、查询、计数、新增、更新、删除及批量版本
 * `EntityQuery<T>`：过滤、排序、分页
 * `IUnitOfWork`：事务边界与当前租户
+* `UnitOfWorkScope`：管道之外（单例存储、后台循环、健康探针）在新作用域里开工作单元执行，成功提交、失败或抛出回滚
 * `EntityIndexAttribute`：声明索引
 * `IIdGenerator<TKey>`、`SnowflakeIdFeature`：标识生成与雪花标识
 
