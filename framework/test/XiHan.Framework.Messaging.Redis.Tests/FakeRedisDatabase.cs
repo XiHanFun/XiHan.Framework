@@ -1,0 +1,98 @@
+// Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
+// See the LICENSE file in the project root for full license text.
+
+using System.Reflection;
+using StackExchange.Redis;
+
+namespace XiHan.Framework.Messaging.Redis.Tests;
+
+/// <summary>
+/// 打桩的 <see cref="IDatabase"/>：一条流上预置的新条目，记录确认、认领与写入
+/// </summary>
+/// <remarks>
+/// 以 <see cref="DispatchProxy"/> 生成，只实现消费循环用到的成员：<c>StreamReadGroupAsync</c> 把预置的条目一次交出、之后为空；<c>StreamAcknowledgeAsync</c>、<c>StreamClaimAsync</c> 与 <c>StreamAddAsync</c> 记下调用；维护脚本返回空数组，<c>StreamAutoClaimAsync</c> 没有可回收的条目。其余成员抛 <see cref="NotSupportedException"/>。不模拟待确认列表与投递次数，回收的行为只在真实 Redis 上验证
+/// </remarks>
+public class FakeRedisDatabase : DispatchProxy
+{
+    /// <summary>
+    /// 保护记录的锁
+    /// </summary>
+    private readonly Lock _gate = new();
+
+    /// <summary>
+    /// 还没被读走的新条目
+    /// </summary>
+    private readonly List<StreamEntry> _entries = [];
+
+    /// <summary>
+    /// 确认过的条目 ID，按顺序
+    /// </summary>
+    public List<string> Acknowledged { get; } = [];
+
+    /// <summary>
+    /// 认领（原位重试前）过的条目 ID，按顺序
+    /// </summary>
+    public List<string> Claimed { get; } = [];
+
+    /// <summary>
+    /// 写入过的条目：流键与字段，按顺序
+    /// </summary>
+    public List<(string Key, Dictionary<string, string> Fields)> Added { get; } = [];
+
+    /// <summary>
+    /// 创建一个预置了新条目的打桩数据库
+    /// </summary>
+    public static (IDatabase Database, FakeRedisDatabase Fake) Create(params StreamEntry[] entries)
+    {
+        var database = DispatchProxy.Create<IDatabase, FakeRedisDatabase>();
+        var fake = (FakeRedisDatabase)(object)database;
+        fake._entries.AddRange(entries);
+        return (database, fake);
+    }
+
+    /// <summary>
+    /// 在锁内读一份记录的快照
+    /// </summary>
+    public T Read<T>(Func<FakeRedisDatabase, T> read)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        lock (_gate)
+        {
+            return read(this);
+        }
+    }
+
+    /// <inheritdoc />
+    protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+    {
+        ArgumentNullException.ThrowIfNull(targetMethod);
+        args ??= [];
+        lock (_gate)
+        {
+            switch (targetMethod.Name)
+            {
+                case "ScriptEvaluateAsync":
+                    // 维护脚本：没有清理或整理任何东西
+                    return Task.FromResult(RedisResult.Create(Array.Empty<RedisValue>()));
+                case "StreamAutoClaimAsync":
+                    return Task.FromResult(StreamAutoClaimResult.Null);
+                case "StreamReadGroupAsync":
+                    StreamEntry[] batch = [.. _entries];
+                    _entries.Clear();
+                    return Task.FromResult(batch);
+                case "StreamAcknowledgeAsync" when args[2] is RedisValue id:
+                    Acknowledged.Add(id.ToString());
+                    return Task.FromResult(1L);
+                case "StreamClaimAsync" when args[4] is RedisValue[] ids:
+                    Claimed.AddRange(ids.Select(static id => id.ToString()));
+                    // 条目仍在待确认列表里：认领成功，交回同样个数的条目
+                    return Task.FromResult(ids.Select(static id => new StreamEntry(id, [])).ToArray());
+                case "StreamAddAsync" when args[0] is RedisKey key && args[1] is NameValueEntry[] fields:
+                    Added.Add((key.ToString(), fields.ToDictionary(static f => f.Name.ToString(), static f => f.Value.ToString(), StringComparer.Ordinal)));
+                    return Task.FromResult<RedisValue>("1-0");
+                default:
+                    throw new NotSupportedException($"The fake database does not support {targetMethod.Name}.");
+            }
+        }
+    }
+}
