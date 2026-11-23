@@ -9,7 +9,6 @@ using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
-using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Redis;
 
@@ -368,7 +367,7 @@ internal sealed partial class RedisStreamConsumer
     /// 投递一个条目
     /// </summary>
     /// <remarks>
-    /// 解码失败：竞争订阅原样进死信流，广播订阅确认掉。尝试号已超过上限（回收来的）：不再派发，按到上限处理。否则派发，成功即确认；失败在原位重试，每次重试前把条目认领给自己让投递次数加一，到上限竞争订阅进死信流、广播订阅确认掉。停止时不确认，留给回收
+    /// 解码失败：竞争订阅原样进死信流，广播订阅确认掉。尝试号已超过上限（回收来的）：不再派发，按到上限处理。否则派发（每次尝试之前都等应用进入服务状态），成功即确认；失败在原位重试，每次重试前把条目认领给自己让投递次数加一，到上限竞争订阅进死信流、广播订阅确认掉。停止时不确认，留给回收
     /// </remarks>
     private async Task DeliverAsync(StreamEntry entry, int attempt, MessageDispatch dispatch, CancellationToken stopping)
     {
@@ -389,58 +388,46 @@ internal sealed partial class RedisStreamConsumer
             return;
         }
 
-        // 宿主未进入服务状态前不投递，避免处理器在特性尚未就绪时执行
-        while (!_app.State.IsServing())
-        {
-            await Task.Delay(10, stopping).ConfigureAwait(false);
-        }
-
         if (attempt > _messaging.MaxAttempts)
         {
-            // 回收来的条目已投递过上限次数（之前的实例崩溃、或死信写入失败）：不再执行处理器
-            await ExhaustedAsync(entry.Id, body, envelope.Id, attempt, errorCode: null).ConfigureAwait(false);
+            // 回收来的条目已投递过上限次数（之前的实例崩溃、或死信写入失败）：不再执行处理器，最后一次的错误无从得知
+            var exhausted = MessageDeliveryAttempt.Exhausted(new MessageDelivery { Topic = topic, Envelope = envelope, Attempt = attempt, Mode = Subscription.Mode }, null, _logger);
+            await ExhaustedAsync(entry.Id, body, attempt, exhausted).ConfigureAwait(false);
             return;
         }
 
+        // 等服务状态、派发与归类在 MessageDeliveryAttempt，这里只把结论翻译成流上的动作（ADR-0261）
         for (; ; attempt++)
         {
-            Result result;
-            try
-            {
-                result = await dispatch(new MessageDelivery
+            var outcome = await MessageDeliveryAttempt.RunAsync(
+                dispatch,
+                new MessageDelivery
                 {
                     Topic = topic,
                     Envelope = envelope,
                     Attempt = attempt,
                     Mode = Subscription.Mode,
-                }, stopping).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (stopping.IsCancellationRequested)
+                },
+                _messaging,
+                _app,
+                _logger,
+                stopping).ConfigureAwait(false);
+            if (outcome.Disposition == DeliveryDisposition.Abandon)
             {
-                // 停止：不确认，条目留在待确认列表里，由别的实例回收后重新投递
+                // 停止打断了这次投递，或失败发生在停止期间（多半是取消造成的，管道把取消变成失败结果返回）：
+                // 不确认、不在这里重试也不进死信，条目留在待确认列表里，由别的实例回收后按投递次数接着投递
                 return;
             }
-            catch (Exception exception)
-            {
-                result = Error.Unexpected(MessagingErrors.HandlerFailed, MessagingMessages.HandlerFailed, details: MessageArguments.Of(("reason", exception.Message)));
-            }
 
-            if (result.IsSuccess)
+            if (outcome.Disposition == DeliveryDisposition.Complete)
             {
                 await AcknowledgeAsync(entry.Id).ConfigureAwait(false);
                 return;
             }
 
-            if (stopping.IsCancellationRequested)
+            if (outcome.Disposition != DeliveryDisposition.Retry)
             {
-                // 停止期间的失败多半是取消造成的（管道把取消变成失败结果返回）：不在这里重试也不进死信，
-                // 条目留在待确认列表里，由别的实例回收后按投递次数接着投递
-                return;
-            }
-
-            if (attempt >= _messaging.MaxAttempts)
-            {
-                await ExhaustedAsync(entry.Id, body, envelope.Id, attempt, result.Error?.Code).ConfigureAwait(false);
+                await ExhaustedAsync(entry.Id, body, attempt, outcome).ConfigureAwait(false);
                 return;
             }
 
@@ -482,23 +469,21 @@ internal sealed partial class RedisStreamConsumer
     }
 
     /// <summary>
-    /// 一条投递用完了尝试次数
+    /// 了结一条用完了尝试次数的投递
     /// </summary>
     /// <remarks>
-    /// 广播订阅确认掉并记 Warning，不进死信；竞争订阅进死信流
+    /// 广播订阅（<see cref="DeliveryDisposition.Discard"/>）确认掉，不进死信；竞争订阅（<see cref="DeliveryDisposition.DeadLetter"/>）进死信流，带上最后一次失败的错误码（不知道时不带）。Warning 日志由 <see cref="MessageDeliveryAttempt"/> 记过
     /// </remarks>
-    private async Task ExhaustedAsync(RedisValue id, RedisValue body, string messageId, int attempt, string? errorCode)
+    private async Task ExhaustedAsync(RedisValue id, RedisValue body, int attempt, MessageDeliveryOutcome outcome)
     {
-        if (IsBroadcast)
+        if (outcome.Disposition != DeliveryDisposition.DeadLetter)
         {
             // 广播是尽力而为、没有死信：每个实例各自的一份失败没有可以重放的共享位置
-            LogBroadcastDropped(_logger, messageId, Subscription.Topic, attempt, errorCode ?? "?");
             await AcknowledgeAsync(id).ConfigureAwait(false);
             return;
         }
 
-        LogDeadLettered(_logger, messageId, Subscription.Topic, attempt, errorCode ?? "?");
-        await DeadLetterAsync(id, body, attempt, errorCode).ConfigureAwait(false);
+        await DeadLetterAsync(id, body, attempt, outcome.Error?.Code).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -550,18 +535,6 @@ internal sealed partial class RedisStreamConsumer
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "{Count} pending entries on topic {Topic} (group {Group}) were trimmed before they were acknowledged; the consumers fell behind by more than MaxLength and these messages are lost.")]
     private static partial void LogTrimmedBeforeAcknowledged(ILogger logger, int count, string topic, string group);
-
-    /// <summary>
-    /// 记录一条消息重试到上限后进入死信流
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Message {MessageId} on topic {Topic} was dead-lettered after attempt {Attempt} failed: {ErrorCode}")]
-    private static partial void LogDeadLettered(ILogger logger, string messageId, string topic, int attempt, string errorCode);
-
-    /// <summary>
-    /// 记录一条广播投递重试到上限后被丢弃
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast message {MessageId} on topic {Topic} was dropped after attempt {Attempt} failed: {ErrorCode}")]
-    private static partial void LogBroadcastDropped(ILogger logger, string messageId, string topic, int attempt, string errorCode);
 
     /// <summary>
     /// 记录一条无法解码的消息被转入死信流
