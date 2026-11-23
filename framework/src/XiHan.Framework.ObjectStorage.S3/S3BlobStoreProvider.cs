@@ -4,6 +4,7 @@
 using Amazon.S3;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Security;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Stores;
@@ -184,12 +185,7 @@ public sealed class S3BlobStoreProvider : IBlobStoreProvider
     private static bool AmbientCredentialsFrom(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
-        return configuration[AmbientCredentialsKey] switch
-        {
-            null => false,
-            var text when bool.TryParse(text, out var value) => value,
-            var text => throw new ArgumentException($"{AmbientCredentialsKey} must be 'true' or 'false', but was '{text}'."),
-        };
+        return ConfigurationValues.ReadBoolean(configuration, AmbientCredentialsKey) ?? false;
     }
 
     /// <summary>

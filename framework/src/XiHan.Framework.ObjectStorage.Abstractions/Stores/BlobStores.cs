@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel.Hosting;
@@ -131,12 +130,8 @@ public sealed partial class BlobStores : IHealthContributor, IAsyncDisposable
 
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _configuration = configuration;
-        var interval = configuration?["XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds"];
-        _probeInterval = interval is null
-            ? TimeSpan.FromSeconds(15)
-            : double.TryParse(interval, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0 && !double.IsInfinity(seconds)
-                ? TimeSpan.FromSeconds(seconds)
-                : throw new ArgumentException($"XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds must be a positive number, but was '{interval}'.");
+        _probeInterval = (configuration is null ? null : ConfigurationValues.ReadSeconds(configuration, "XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds"))
+            ?? TimeSpan.FromSeconds(15);
     }
 
     /// <summary>

@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
@@ -130,11 +129,9 @@ public sealed record S3ObjectStorageOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = Parse(name => configuration[$"{ConfigurationSection}:{name}"], ConfigurationSection + ":");
-        if (configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"] is { } probe)
+        if (ConfigurationValues.ReadSeconds(configuration.GetSection(ConfigurationSection), "HealthProbeIntervalSeconds") is { } probe)
         {
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
+            options = options with { HealthProbeInterval = probe };
         }
 
         // 绑定来自部署环境（Service Binding），给出的地址与凭据逐项覆盖应用配置；空白的主值与属性不算给出，照读配置节
