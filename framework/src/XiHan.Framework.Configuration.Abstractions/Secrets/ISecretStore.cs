@@ -15,10 +15,10 @@ namespace XiHan.Framework.Configuration.Abstractions.Secrets;
 public interface ISecretStore
 {
     /// <summary>
-    /// 批量读取，逐项返回且顺序与 <paramref name="names"/> 一致，重复项各自作答，空集合返回空
+    /// 批量读取，逐项结果与 <paramref name="names"/> 同序、等长，重复项各自作答，空集合返回空
     /// </summary>
     /// <remarks>
     /// 不存在 → <see cref="ConfigurationErrors.SecretNotFound"/>；无权限 → <see cref="ConfigurationErrors.SecretDenied"/>；不可达 → <see cref="ConfigurationErrors.SecretsUnavailable"/>
     /// </remarks>
-    ValueTask<IReadOnlyList<SecretLookup>> GetAsync(IReadOnlyList<SecretName> names, CancellationToken cancellationToken);
+    ValueTask<IReadOnlyList<Result<SecretValue>>> GetAsync(IReadOnlyList<SecretName> names, CancellationToken cancellationToken);
 }

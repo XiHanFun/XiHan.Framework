@@ -220,7 +220,7 @@ public sealed class SecretsConfigurationSourceTests
         Assert.Throws<ArgumentNullException>(static () => new SecretsConfigurationOptions(new Dictionary<string, SecretName> { ["A"] = new SecretName("a") }) { Clock = null! });
         Assert.Equal(SecretValue.Redacted, new SecretValue("x", "1").ToString());
         Assert.Equal("1", new SecretValue("x", "1").Version);
-        Assert.DoesNotContain("x", new SecretLookup(new SecretName("a"), new SecretValue("x")).ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("hunter2", Result.Success(new SecretValue("hunter2")).ToString(), StringComparison.Ordinal);
     }
 
     /// <summary>

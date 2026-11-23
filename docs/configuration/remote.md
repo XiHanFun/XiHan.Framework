@@ -13,7 +13,7 @@
 | 能力 ID | 契约 | 作用 |
 | --- | --- | --- |
 | `configuration.remote@1` | `IRemoteConfigurationClient.FetchAsync(namespace, knownVersion, ct)` | 按命名空间取整份带版本的文档 `ConfigurationDocument`，键已展平成 `A:B:C`；`knownVersion` 非空且远端没有变化时返回无值，实现可以长轮询 |
-| `configuration.secrets@1` | `ISecretStore.GetAsync(names, ct)` | 按名字批量读取密钥，只读；逐项返回 `SecretLookup(Name, Result<SecretValue>)`，顺序与入参一致 |
+| `configuration.secrets@1` | `ISecretStore.GetAsync(names, ct)` | 按名字批量读取密钥，只读；返回逐项结果 `Result<SecretValue>` 的列表，与入参同序、等长 |
 
 两个契约的返回值都是 `Result`：命名空间不存在、密钥没有权限这些可恢复的失败以错误码返回，不抛异常。配置源对应两个扩展方法：
 
@@ -121,7 +121,7 @@ public sealed class OrderLimits
 
 `ISecretStore.GetAsync(names, ct)` 的约定：
 
-- 批量读取，逐项返回 `SecretLookup(Name, Result<SecretValue>)`，顺序与入参一致，重复项各自作答，空集合返回空。
+- 批量读取，返回逐项结果 `Result<SecretValue>` 的列表，与入参同序、等长（第 i 项是 `names[i]` 的结果），重复项各自作答，空集合返回空。
 - 只读。写入与轮换属于运维工具，不在应用契约里。
 - 密钥名 `SecretName` 的文法是 `^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..` 与 `//`，不以 `/` 结尾，大小写敏感；不合法在构造时抛出 `ArgumentException`。从 `string` 创建用构造或显式转换。
 - `SecretValue.ToString()` 固定返回 `***`（常量 `SecretValue.Redacted`），值不会经字符串插值进入日志或异常消息；读值用 `Value`，可选的 `Version` 记录密钥版本。
@@ -149,9 +149,9 @@ namespace Shop.Secrets;
 
 public sealed class DirectorySecretStore(string root) : ISecretStore
 {
-    public async ValueTask<IReadOnlyList<SecretLookup>> GetAsync(IReadOnlyList<SecretName> names, CancellationToken cancellationToken)
+    public async ValueTask<IReadOnlyList<Result<SecretValue>>> GetAsync(IReadOnlyList<SecretName> names, CancellationToken cancellationToken)
     {
-        var results = new List<SecretLookup>(names.Count);
+        var results = new List<Result<SecretValue>>(names.Count);
         foreach (var name in names)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -169,7 +169,7 @@ public sealed class DirectorySecretStore(string root) : ISecretStore
                 result = Error.Unavailable(ConfigurationErrors.SecretsUnavailable, ConfigurationMessages.SecretsUnavailable, MessageArguments.Of(("reason", exception.Message)));
             }
 
-            results.Add(new SecretLookup(name, result));
+            results.Add(result);
         }
 
         return results;

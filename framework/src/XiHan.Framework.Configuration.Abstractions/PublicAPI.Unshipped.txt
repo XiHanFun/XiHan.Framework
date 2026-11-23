@@ -32,16 +32,7 @@ XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationSource.Clie
 XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationSource.Options.get -> XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions!
 XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationSource.RemoteConfigurationSource(XiHan.Framework.Configuration.Abstractions.Remote.IRemoteConfigurationClient! client, XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions! options) -> void
 XiHan.Framework.Configuration.Abstractions.Secrets.ISecretStore
-XiHan.Framework.Configuration.Abstractions.Secrets.ISecretStore.GetAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Configuration.Abstractions.Secrets.SecretName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup!>!>
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.<Clone>$() -> XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup!
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.Deconstruct(out XiHan.Framework.Configuration.Abstractions.Secrets.SecretName Name, out XiHan.Framework.Primitives.Result<XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue!> Result) -> void
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.Equals(XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup? other) -> bool
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.Name.get -> XiHan.Framework.Configuration.Abstractions.Secrets.SecretName
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.Name.init -> void
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.Result.get -> XiHan.Framework.Primitives.Result<XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue!>
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.Result.init -> void
-XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.SecretLookup(XiHan.Framework.Configuration.Abstractions.Secrets.SecretName Name, XiHan.Framework.Primitives.Result<XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue!> Result) -> void
+XiHan.Framework.Configuration.Abstractions.Secrets.ISecretStore.GetAsync(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Configuration.Abstractions.Secrets.SecretName>! names, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result<XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue!>>!>
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretName
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.Equals(XiHan.Framework.Configuration.Abstractions.Secrets.SecretName other) -> bool
 XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.SecretName() -> void
@@ -96,9 +87,6 @@ override XiHan.Framework.Configuration.Abstractions.Remote.ConfigurationDocument
 override XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.GetHashCode() -> int
 override XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.ToString() -> string!
-override XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.Equals(object? obj) -> bool
-override XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.GetHashCode() -> int
-override XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.ToString() -> string!
 override XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.GetHashCode() -> int
 override XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.ToString() -> string!
 override XiHan.Framework.Configuration.Abstractions.Secrets.SecretValue.ToString() -> string!
@@ -111,8 +99,6 @@ static XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationBuil
 static XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationBuilderExtensions.AddXiHanRemoteConfiguration(this Microsoft.Extensions.Configuration.IConfigurationBuilder! builder, XiHan.Framework.Configuration.Abstractions.Remote.IRemoteConfigurationClient! client, XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions! options) -> Microsoft.Extensions.Configuration.IConfigurationBuilder!
 static XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.operator !=(XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions? left, XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions? right) -> bool
 static XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions.operator ==(XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions? left, XiHan.Framework.Configuration.Abstractions.Remote.RemoteConfigurationOptions? right) -> bool
-static XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.operator !=(XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup? left, XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup? right) -> bool
-static XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup.operator ==(XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup? left, XiHan.Framework.Configuration.Abstractions.Secrets.SecretLookup? right) -> bool
 static XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.IsValid(string? value) -> bool
 static XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.Validate(string! value) -> string!
 static XiHan.Framework.Configuration.Abstractions.Secrets.SecretName.explicit operator XiHan.Framework.Configuration.Abstractions.Secrets.SecretName(string! value) -> XiHan.Framework.Configuration.Abstractions.Secrets.SecretName

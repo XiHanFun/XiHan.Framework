@@ -65,7 +65,7 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
     {
         // IConfigurationProvider.Load 是同步契约：在线程池上执行批量读取并等待，受 LoadTimeout 约束
         using var timeout = new CancellationTokenSource(_options.LoadTimeout);
-        IReadOnlyList<SecretLookup>? lookups = null;
+        IReadOnlyList<Result<SecretValue>>? lookups = null;
         Exception? thrown = null;
         string? reason;
         try
@@ -125,20 +125,20 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
     /// <remarks>
     /// 调用方已核对条数。首次时失败项按 <see cref="SecretsConfigurationOptions.Optional"/> 决定跳过或抛出；重读时失败项保留旧值
     /// </remarks>
-    private void Apply(IReadOnlyList<SecretLookup> lookups, bool initial)
+    private void Apply(IReadOnlyList<Result<SecretValue>> lookups, bool initial)
     {
         var data = initial ? new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) : Snapshot();
         List<string>? failed = null;
         string? firstCode = null;
         for (var i = 0; i < _keys.Length; i++)
         {
-            if (lookups[i].Result.TryGetValue(out var secret))
+            if (lookups[i].TryGetValue(out var secret))
             {
                 data[_keys[i]] = secret.Value;
                 continue;
             }
 
-            var error = lookups[i].Result.Error!;
+            var error = lookups[i].Error!;
             Report(error);
             if (initial && !_options.Optional)
             {
@@ -197,7 +197,7 @@ internal sealed class SecretsConfigurationProvider : KeyValueConfigurationProvid
         {
             while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
             {
-                IReadOnlyList<SecretLookup> lookups;
+                IReadOnlyList<Result<SecretValue>> lookups;
                 try
                 {
                     lookups = await _store.GetAsync(_names, cancellationToken).ConfigureAwait(false);

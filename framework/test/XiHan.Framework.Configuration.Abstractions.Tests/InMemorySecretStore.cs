@@ -68,7 +68,7 @@ internal sealed class InMemorySecretStore : ISecretStore
     }
 
     /// <inheritdoc />
-    public ValueTask<IReadOnlyList<SecretLookup>> GetAsync(IReadOnlyList<SecretName> names, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Result<SecretValue>>> GetAsync(IReadOnlyList<SecretName> names, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
@@ -80,10 +80,10 @@ internal sealed class InMemorySecretStore : ISecretStore
 
             if (Hang)
             {
-                return new ValueTask<IReadOnlyList<SecretLookup>>(HangAsync(cancellationToken));
+                return new ValueTask<IReadOnlyList<Result<SecretValue>>>(HangAsync(cancellationToken));
             }
 
-            var lookups = new List<SecretLookup>(names.Count);
+            var lookups = new List<Result<SecretValue>>(names.Count);
             foreach (var name in names)
             {
                 Result<SecretValue> result = Denied.Contains(name.Value)
@@ -91,7 +91,7 @@ internal sealed class InMemorySecretStore : ISecretStore
                     : _secrets.TryGetValue(name.Value, out var secret)
                         ? Result.Success(secret)
                         : Error.NotFound(ConfigurationErrors.SecretNotFound, ConfigurationMessages.SecretNotFound, MessageArguments.Of(("name", name.Value)));
-                lookups.Add(new SecretLookup(name, result));
+                lookups.Add(result);
             }
 
             if (Short && lookups.Count > 0)
@@ -99,14 +99,14 @@ internal sealed class InMemorySecretStore : ISecretStore
                 lookups.RemoveAt(lookups.Count - 1);
             }
 
-            return ValueTask.FromResult<IReadOnlyList<SecretLookup>>(lookups);
+            return ValueTask.FromResult<IReadOnlyList<Result<SecretValue>>>(lookups);
         }
     }
 
     /// <summary>
     /// 挂起到取消
     /// </summary>
-    private static async Task<IReadOnlyList<SecretLookup>> HangAsync(CancellationToken cancellationToken)
+    private static async Task<IReadOnlyList<Result<SecretValue>>> HangAsync(CancellationToken cancellationToken)
     {
         await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken).ConfigureAwait(false);
         return [];

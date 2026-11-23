@@ -78,10 +78,9 @@ builder.Services.AddMessageCatalog(ConfigurationMessages.Catalog);
 | `Remote.RemoteConfigurationOptions` | 远程配置源的选项 |
 | `Remote.RemoteConfigurationBuilderExtensions` | `AddXiHanRemoteConfiguration(client, options)`：客户端由调用方持有，配置根释放时不释放它；`AddXiHanRemoteConfiguration(clientFactory, options)`：每次构建 Provider 按工厂新建一个客户端，随 Provider 释放 |
 | `Remote.RemoteConfigurationSource` | 传入现成客户端时对应的 `IConfigurationSource` |
-| `Secrets.ISecretStore` | `GetAsync(names, cancellationToken)` 批量逐项返回 `SecretLookup`，顺序与入参一致 |
+| `Secrets.ISecretStore` | `GetAsync(names, cancellationToken)` 批量返回逐项结果 `Result<SecretValue>` 的列表，与入参同序、等长；单条用扩展方法 `GetAsync(name, cancellationToken)` |
 | `Secrets.SecretName` | 密钥名，`^[A-Za-z0-9][A-Za-z0-9._/-]{0,255}$`，不含 `..`、`//`，不以 `/` 结尾，大小写敏感；从 `string` 显式转换 |
 | `Secrets.SecretValue` | 值与可选版本；`ToString()` 返回 `Redacted`（`***`） |
-| `Secrets.SecretLookup` | 一项结果：`Name` 与 `Result<SecretValue>` |
 | `Secrets.SecretStoreExtensions` | 单条读取 `GetAsync(store, name, cancellationToken)`，转调批量方法 |
 | `Secrets.SecretsConfigurationOptions` / `SecretsConfigurationBuilderExtensions` / `SecretsConfigurationSource` | 密钥配置源的选项、`AddXiHanSecrets(store, options)` 与配置源 |
 | `ConfigurationCapabilities` | 能力 ID 常量 `Remote`、`Secrets` 与接口版本 `Version` |

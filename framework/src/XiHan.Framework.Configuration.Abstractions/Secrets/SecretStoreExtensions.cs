@@ -18,6 +18,6 @@ public static class SecretStoreExtensions
     {
         ArgumentNullException.ThrowIfNull(store);
         var lookups = await store.GetAsync([name], cancellationToken).ConfigureAwait(false);
-        return lookups[0].Result;
+        return lookups[0];
     }
 }

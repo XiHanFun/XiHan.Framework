@@ -40,12 +40,13 @@ public abstract class SecretStoreConformance
         var missing = new SecretName(prefix + "/missing");
         await fixture.PutAsync(present, "s3cr3t", CancellationToken.None).ConfigureAwait(false);
 
+        // 逐项结果与入参同序、等长：键在入参里，按下标对应
         var lookups = await fixture.Store.GetAsync([present, missing, present], CancellationToken.None).ConfigureAwait(false);
-        Assert.Equal([present, missing, present], lookups.Select(static l => l.Name));
-        Assert.Equal("s3cr3t", lookups[0].Result.ValueOrThrow().Value);
-        Assert.Equal(ConfigurationErrors.SecretNotFound, lookups[1].Result.Error?.Code);
-        Assert.Equal("s3cr3t", lookups[2].Result.ValueOrThrow().Value);
-        Assert.Equal(SecretValue.Redacted, lookups[0].Result.ValueOrThrow().ToString());
+        Assert.Equal(3, lookups.Count);
+        Assert.Equal("s3cr3t", lookups[0].ValueOrThrow().Value);
+        Assert.Equal(ConfigurationErrors.SecretNotFound, lookups[1].Error?.Code);
+        Assert.Equal("s3cr3t", lookups[2].ValueOrThrow().Value);
+        Assert.Equal(SecretValue.Redacted, lookups[0].ValueOrThrow().ToString());
         Assert.Empty(await fixture.Store.GetAsync([], CancellationToken.None).ConfigureAwait(false));
     }
 
