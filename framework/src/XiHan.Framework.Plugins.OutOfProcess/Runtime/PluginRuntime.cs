@@ -28,13 +28,8 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Runtime;
 /// <remarks>
 /// 进程的启动、握手、配置、启动、健康监视、崩溃重启与停止（<c>spec/plugin/lifecycle.md</c>），以及经它的调用与事件投递
 /// </remarks>
-internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
+internal sealed partial class PluginRuntime : IPluginInvoker, IPluginCarrier, IDisposable
 {
-    /// <summary>
-    /// 重启退避上限
-    /// </summary>
-    private static readonly TimeSpan _maxBackoff = TimeSpan.FromSeconds(60);
-
     /// <summary>
     /// 宿主环境
     /// </summary>
@@ -44,16 +39,6 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// 串行化启动、停止与重启的互斥量
     /// </summary>
     private readonly SemaphoreSlim _gate = new(1, 1);
-
-    /// <summary>
-    /// 保护状态字段的锁
-    /// </summary>
-    private readonly Lock _stateLock = new();
-
-    /// <summary>
-    /// 时间窗内的重启时刻
-    /// </summary>
-    private readonly Queue<DateTimeOffset> _restartTimes = new();
 
     /// <summary>
     /// 显式停止后取消：终止退避中的重启
@@ -69,14 +54,12 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     private readonly PluginTenantCalls _tenants = new();
 
     /// <summary>
-    /// 当前状态
+    /// 状态、错误与退避重启
     /// </summary>
-    private LifecycleState _state = LifecycleState.Declared;
-
-    /// <summary>
-    /// 当前错误
-    /// </summary>
-    private Error? _error;
+    /// <remarks>
+    /// 与 Wasm 运行时共用的组件（ADR-0260）；「重新起来」做什么由本类经 <see cref="IPluginCarrier"/> 给出
+    /// </remarks>
+    private readonly PluginLifecycle _lifecycle;
 
     /// <summary>
     /// 当前进程
@@ -103,11 +86,6 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     private HandshakeInfo? _handshake;
 
     /// <summary>
-    /// 累计自动重启次数
-    /// </summary>
-    private int _restarts;
-
-    /// <summary>
     /// 实例序号，拼进实例 ID
     /// </summary>
     private int _instance;
@@ -123,14 +101,6 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// 崩溃后有重启在退避中
-    /// </summary>
-    /// <remarks>
-    /// 期间的调用直接按不可用失败，不绕过退避
-    /// </remarks>
-    private volatile bool _restartPending;
-
-    /// <summary>
     /// 创建运行时
     /// </summary>
     public PluginRuntime(Manifest manifest, string directory, string executable, PermissionGrant permissions, PluginHostContext host, ILogger logger)
@@ -141,6 +111,8 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         Permissions = permissions;
         _host = host;
         Logger = logger;
+        // 时钟每次现取：宿主附着到容器后会换成容器里的时钟
+        _lifecycle = new PluginLifecycle(manifest, this, host.Options.RestartLimit, host.Options.RestartWindow, () => _host.Clock, _lifetime.Token);
     }
 
     /// <summary>
@@ -203,44 +175,17 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// <summary>
     /// 当前状态
     /// </summary>
-    public LifecycleState State
-    {
-        get
-        {
-            lock (_stateLock)
-            {
-                return _state;
-            }
-        }
-    }
+    public LifecycleState State => _lifecycle.State;
 
     /// <summary>
     /// 当前错误
     /// </summary>
-    public Error? Error
-    {
-        get
-        {
-            lock (_stateLock)
-            {
-                return _error;
-            }
-        }
-    }
+    public Error? Error => _lifecycle.Error;
 
     /// <summary>
     /// 对外的状态快照
     /// </summary>
-    public PluginStatus Status
-    {
-        get
-        {
-            lock (_stateLock)
-            {
-                return new PluginStatus(Manifest, _state, _error);
-            }
-        }
-    }
+    public PluginStatus Status => _lifecycle.Status;
 
     /// <summary>
     /// 进程在运行且处于可服务状态
@@ -256,7 +201,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             Status = Status,
             ProcessId = _process is { HasExited: false } process ? process.ProcessId : null,
             ProtocolVersion = _handshake?.ProtocolVersion,
-            Restarts = _restarts,
+            Restarts = _lifecycle.Restarts,
             Lazy = IsLazy,
         };
 
@@ -274,7 +219,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         ArgumentNullException.ThrowIfNull(error);
         IsRejected = true;
         _stopping = true;
-        Fail(error);
+        _lifecycle.Fail(error);
     }
 
     /// <summary>
@@ -283,16 +228,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// <remarks>
     /// 握手、<c>Configure</c>、<c>Start</c> 失败与崩溃一样按退避重试并计入次数上限（<c>lifecycle.md</c> §6、<c>handshake.md</c> §5）；首次握手还没成功过的重新探测启动。发现时被拒或已显式停止的什么都不做
     /// </remarks>
-    public void ScheduleRestart()
-    {
-        if (_stopping || IsRejected || _restartPending)
-        {
-            return;
-        }
-
-        _restartPending = true;
-        _ = RestartAsync();
-    }
+    public void ScheduleRestart() => _lifecycle.ScheduleRestart();
 
     /// <summary>
     /// 探测启动
@@ -467,9 +403,9 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             return _process!;
         }
 
-        if (_stopping || _restartPending)
+        if (_stopping || _lifecycle.IsRestartPending)
         {
-            return Unavailable();
+            return _lifecycle.Unavailable();
         }
 
         var running = await EnsureRunningAsync(cancellationToken).ConfigureAwait(false);
@@ -478,7 +414,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             return running.Error!;
         }
 
-        return IsServing ? _process! : Unavailable();
+        return IsServing ? _process! : _lifecycle.Unavailable();
     }
 
     /// <summary>
@@ -491,7 +427,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         {
             if (_stopping)
             {
-                return Unavailable();
+                return _lifecycle.Unavailable();
             }
 
             if (IsServing)
@@ -520,7 +456,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
                 return configured;
             }
 
-            SetState(LifecycleState.Configured, null);
+            _lifecycle.Enter(LifecycleState.Configured, null);
             var started = await StepAsync(process, "start", () => process.Client.StartAsync(new StartRequest(), deadline: DateTime.UtcNow + _host.Options.StartTimeout, cancellationToken: cancellationToken).ResponseAsync, static r => r.Status, cancellationToken).ConfigureAwait(false);
             if (started.IsFailure)
             {
@@ -528,7 +464,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             }
 
             // 插件可在健康推送里再报 Started / Degraded；Start 返回即视为 Ready
-            SetState(LifecycleState.Ready, null);
+            _lifecycle.Enter(LifecycleState.Ready, null);
             LogStarted(Logger, Manifest.Id, process.ProcessId, _handshake?.Sdk ?? string.Empty);
             StartMonitoring(process);
             return Result.Success();
@@ -554,7 +490,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         if (!launched.TryGetValue(out var process))
         {
             _host.Sessions.Revoke(token);
-            Fail(launched.Error!);
+            _lifecycle.Fail(launched.Error!);
             return launched.Error!;
         }
 
@@ -579,7 +515,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             var error = exception.StatusCode == StatusCode.DeadlineExceeded
                 ? Timeout("handshake")
                 : new Error(PluginErrors.InvalidHandshake, PluginMessages.HandshakeInvalid, MessageArguments.Of(("id", Manifest.Id), ("reason", $"{exception.StatusCode}: {exception.Status.Detail}")));
-            Fail(error);
+            _lifecycle.Fail(error);
             return error;
         }
 
@@ -587,7 +523,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         if (!validated.TryGetValue(out var info))
         {
             await DiscardAsync(process).ConfigureAwait(false);
-            Fail(validated.Error!);
+            _lifecycle.Fail(validated.Error!);
             return validated.Error!;
         }
 
@@ -596,13 +532,13 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             // 重启后的声明必须与首次相同：代理操作与订阅已经按首次登记
             await DiscardAsync(process).ConfigureAwait(false);
             var error = new Error(PluginErrors.HandshakeMismatch, PluginMessages.HandshakeMismatch, MessageArguments.Of(("id", Manifest.Id), ("reason", "the declarations changed since the plugin was first loaded")));
-            Fail(error);
+            _lifecycle.Fail(error);
             return error;
         }
 
         _handshake ??= info;
         _process = process;
-        SetState(LifecycleState.Resolved, null);
+        _lifecycle.Enter(LifecycleState.Resolved, null);
         LogHandshake(Logger, Manifest.Id, info.ProtocolVersion, info.Operations.Count, info.Subscriptions.Count);
         return info;
     }
@@ -633,7 +569,7 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         }
 
         await DiscardAsync(process).ConfigureAwait(false);
-        Fail(error);
+        _lifecycle.Fail(error);
         return error;
     }
 
@@ -656,13 +592,13 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         _process = null;
         if (process is null)
         {
-            SetState(finalState, null);
+            _lifecycle.Enter(finalState, null);
             return;
         }
 
         if (!process.HasExited)
         {
-            SetState(LifecycleState.Draining, null);
+            _lifecycle.Enter(LifecycleState.Draining, null);
             var grace = _host.StopGrace;
             try
             {
@@ -680,13 +616,13 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
                 var exited = await process.TerminateAsync().ConfigureAwait(false);
                 LogTerminated(Logger, Manifest.Id, exited ? "exited after the termination signal" : "was killed");
                 await DiscardAsync(process).ConfigureAwait(false);
-                Fail(Timeout("stop"));
+                _lifecycle.Fail(Timeout("stop"));
                 return;
             }
         }
 
         await DiscardAsync(process).ConfigureAwait(false);
-        SetState(finalState, null);
+        _lifecycle.Enter(finalState, null);
     }
 
     /// <summary>
@@ -734,99 +670,38 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
             }
 
             await DiscardAsync(process).ConfigureAwait(false);
-            Fail(Error.Unexpected(PluginErrors.Crashed, PluginMessages.ProcessCrashed, details: MessageArguments.Of(("id", Manifest.Id), ("exitCode", exitCode))));
+            _lifecycle.Fail(Error.Unexpected(PluginErrors.Crashed, PluginMessages.ProcessCrashed, details: MessageArguments.Of(("id", Manifest.Id), ("exitCode", exitCode))));
             LogCrashed(Logger, Manifest.Id, exitCode);
-            _restartPending = true;
+            _lifecycle.MarkRestartPending();
         }
         finally
         {
             _gate.Release();
         }
 
-        await RestartAsync().ConfigureAwait(false);
+        await _lifecycle.RestartAsync().ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// 退避重启
-    /// </summary>
-    /// <remarks>
-    /// 1 秒起翻倍、上限 60 秒；时间窗内超过 <see cref="OutOfProcessPluginOptions.RestartLimit"/> 次后保持 Failed
-    /// </remarks>
-    private async Task RestartAsync()
-    {
-        var token = _lifetime.Token;
-        while (!token.IsCancellationRequested)
-        {
-            int attempt;
-            lock (_stateLock)
-            {
-                var now = _host.Clock.GetUtcNow();
-                while (_restartTimes.TryPeek(out var oldest) && now - oldest > _host.Options.RestartWindow)
-                {
-                    _restartTimes.Dequeue();
-                }
+    /// <inheritdoc />
+    bool IPluginCarrier.IsStopped => _stopping;
 
-                attempt = _restartTimes.Count;
-            }
+    /// <inheritdoc />
+    void IPluginCarrier.OnStateEntered(LifecycleState state) => LogState(Logger, Manifest.Id, state);
 
-            if (attempt >= _host.Options.RestartLimit)
-            {
-                _restartPending = false;
-                LogRestartLimit(Logger, Manifest.Id, _host.Options.RestartLimit, _host.Options.RestartWindow);
-                return;
-            }
+    /// <inheritdoc />
+    void IPluginCarrier.OnRestartScheduled(TimeSpan delay, int attempt) => LogRestartScheduled(Logger, Manifest.Id, delay, attempt);
 
-            var delay = TimeSpan.FromSeconds(Math.Min(_maxBackoff.TotalSeconds, Math.Pow(2, attempt)));
-            LogRestartScheduled(Logger, Manifest.Id, delay, attempt + 1);
-            try
-            {
-                await Task.Delay(delay, _host.Clock, token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
+    /// <inheritdoc />
+    void IPluginCarrier.OnRestarted(int restarts) => LogRestarted(Logger, Manifest.Id, restarts);
 
-            lock (_stateLock)
-            {
-                _restartTimes.Enqueue(_host.Clock.GetUtcNow());
-                _restarts++;
-            }
+    /// <inheritdoc />
+    void IPluginCarrier.OnRestartLimitReached(int limit, TimeSpan window) => LogRestartLimit(Logger, Manifest.Id, limit, window);
 
-            _restartPending = false;
-            Result restarted;
-            try
-            {
-                restarted = await RecoverAsync(token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-
-            if (restarted.IsSuccess)
-            {
-                LogRestarted(Logger, Manifest.Id, _restarts);
-                return;
-            }
-
-            if (_stopping)
-            {
-                // 期间被显式停止，或声明登记不进去而按发现时被拒处理：不再重试
-                return;
-            }
-
-            _restartPending = true;
-        }
-    }
-
-    /// <summary>
-    /// 一次重试
-    /// </summary>
+    /// <inheritdoc />
     /// <remarks>
     /// 首次握手还没成功过的先重新探测启动、交宿主登记声明；之后（非懒激活）配置并启动
     /// </remarks>
-    private async Task<Result> RecoverAsync(CancellationToken cancellationToken)
+    async Task<Result> IPluginCarrier.RecoverAsync(CancellationToken cancellationToken)
     {
         if (_handshake is null)
         {
@@ -937,14 +812,14 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
         if (state == LifecycleState.Failed)
         {
             // 自报 Failed 的进程不再可信：记下状态并终止它，退出监视看到的是一次崩溃
-            SetState(LifecycleState.Failed, error);
+            _lifecycle.Enter(LifecycleState.Failed, error);
             _ = process.KillAsync();
             return false;
         }
 
         if (state is { } reported)
         {
-            SetState(reported, error);
+            _lifecycle.Enter(reported, error);
         }
 
         return true;
@@ -958,31 +833,6 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IDisposable
     /// </remarks>
     private ConfigureRequest BuildConfigure()
         => PluginConfigureRequests.Build(Manifest, _host.Configuration, PluginWorkDirectories.Prepare(_host.WorkRoot, Manifest.Id, _host.Options.WorkDirectory is null));
-
-    /// <summary>
-    /// 进入某状态
-    /// </summary>
-    private void SetState(LifecycleState state, Error? error)
-    {
-        lock (_stateLock)
-        {
-            _state = state;
-            _error = error;
-        }
-
-        LogState(Logger, Manifest.Id, state);
-    }
-
-    /// <summary>
-    /// 进入 Failed
-    /// </summary>
-    private void Fail(Error error) => SetState(LifecycleState.Failed, error);
-
-    /// <summary>
-    /// 插件不可用的失败
-    /// </summary>
-    private Error Unavailable()
-        => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", Manifest.Id), ("state", State.ToString())));
 
     /// <summary>
     /// 某阶段超时

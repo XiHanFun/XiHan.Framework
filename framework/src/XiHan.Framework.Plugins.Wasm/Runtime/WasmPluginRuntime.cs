@@ -29,13 +29,8 @@ namespace XiHan.Framework.Plugins.Wasm.Runtime;
 /// <remarks>
 /// 模块编译、实例化与握手、配置与启动、串行调用、健康轮询、陷阱后的退避重建与停止（<c>spec/plugin/wasm.md</c> §5），以及经它的操作调用、事件投递与中间件钩子
 /// </remarks>
-internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
+internal sealed partial class WasmPluginRuntime : IPluginInvoker, IPluginCarrier, IDisposable
 {
-    /// <summary>
-    /// 重建退避上限
-    /// </summary>
-    private static readonly TimeSpan _maxBackoff = TimeSpan.FromSeconds(60);
-
     /// <summary>
     /// 宿主环境
     /// </summary>
@@ -50,16 +45,6 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// 串行化对实例的调用：线性内存不是线程安全的
     /// </summary>
     private readonly SemaphoreSlim _calls = new(1, 1);
-
-    /// <summary>
-    /// 保护状态字段的锁
-    /// </summary>
-    private readonly Lock _stateLock = new();
-
-    /// <summary>
-    /// 时间窗内的重建时刻
-    /// </summary>
-    private readonly Queue<DateTimeOffset> _restartTimes = new();
 
     /// <summary>
     /// 显式停止后取消：终止退避中的重建与健康轮询
@@ -109,19 +94,12 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     private HandshakeInfo? _handshake;
 
     /// <summary>
-    /// 当前状态
+    /// 状态、错误与退避重建
     /// </summary>
-    private LifecycleState _state = LifecycleState.Declared;
-
-    /// <summary>
-    /// 当前错误
-    /// </summary>
-    private Error? _error;
-
-    /// <summary>
-    /// 累计自动重建次数
-    /// </summary>
-    private int _restarts;
+    /// <remarks>
+    /// 与进程外运行时共用的组件（ADR-0260）；「重新起来」做什么由本类经 <see cref="IPluginCarrier"/> 给出
+    /// </remarks>
+    private readonly PluginLifecycle _lifecycle;
 
     /// <summary>
     /// 实例序号，拼进实例 ID
@@ -132,14 +110,6 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// 已显式停止，不再启动也不再重建
     /// </summary>
     private volatile bool _stopping;
-
-    /// <summary>
-    /// 崩溃后有重建在退避中
-    /// </summary>
-    /// <remarks>
-    /// 期间的调用直接按不可用失败
-    /// </remarks>
-    private volatile bool _restartPending;
 
     /// <summary>
     /// 已释放
@@ -174,6 +144,8 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         // 日志器经属性取：发现阶段的运行时在附着到宿主容器后才换成宿主日志，客体日志要跟着换
         _functions = new WasmHostFunctions(manifest, permissions, host, () => Logger);
         _shims = new WasiClockShims(_functions, host);
+        // 时钟每次现取：宿主附着到容器后会换成容器里的时钟
+        _lifecycle = new PluginLifecycle(manifest, this, host.Options.RestartLimit, host.Options.RestartWindow, () => _host.Clock, _lifetime.Token);
     }
 
     /// <summary>
@@ -230,44 +202,17 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     /// <summary>
     /// 当前状态
     /// </summary>
-    public LifecycleState State
-    {
-        get
-        {
-            lock (_stateLock)
-            {
-                return _state;
-            }
-        }
-    }
+    public LifecycleState State => _lifecycle.State;
 
     /// <summary>
     /// 当前错误
     /// </summary>
-    public Error? Error
-    {
-        get
-        {
-            lock (_stateLock)
-            {
-                return _error;
-            }
-        }
-    }
+    public Error? Error => _lifecycle.Error;
 
     /// <summary>
     /// 对外的状态快照
     /// </summary>
-    public PluginStatus Status
-    {
-        get
-        {
-            lock (_stateLock)
-            {
-                return new PluginStatus(Manifest, _state, _error);
-            }
-        }
-    }
+    public PluginStatus Status => _lifecycle.Status;
 
     /// <summary>
     /// 实例存在且处于可服务状态
@@ -282,7 +227,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         Status = Status,
         AbiVersion = _instance?.AbiVersion,
         ProtocolVersion = _handshake?.ProtocolVersion,
-        Restarts = _restarts,
+        Restarts = _lifecycle.Restarts,
         Lazy = IsLazy,
     };
 
@@ -300,7 +245,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         ArgumentNullException.ThrowIfNull(error);
         IsRejected = true;
         _stopping = true;
-        Fail(error);
+        _lifecycle.Fail(error);
     }
 
     /// <summary>
@@ -324,7 +269,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             {
                 // 懒激活只为取得声明：实例化在毫秒级，首次调用时再建
                 await DropInstanceAsync().ConfigureAwait(false);
-                SetState(LifecycleState.Resolved, null);
+                _lifecycle.Enter(LifecycleState.Resolved, null);
             }
 
             return info;
@@ -361,7 +306,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         {
             if (_instance is { } instance && State is LifecycleState.Configured or LifecycleState.Started or LifecycleState.Ready or LifecycleState.Degraded)
             {
-                SetState(LifecycleState.Draining, null);
+                _lifecycle.Enter(LifecycleState.Draining, null);
                 var stopped = await CallAsync<StopResponse>(instance, "xihan_stop", new StopRequest { GraceSeconds = (uint)Math.Ceiling(_host.Options.CallTimeout.TotalSeconds), Reason = reason }, _host.Options.CallTimeout, null, null, cancellationToken).ConfigureAwait(false);
                 if (stopped.IsFailure)
                 {
@@ -370,7 +315,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             }
 
             await DropInstanceAsync().ConfigureAwait(false);
-            SetState(LifecycleState.Stopped, null);
+            _lifecycle.Enter(LifecycleState.Stopped, null);
         }
         finally
         {
@@ -383,7 +328,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     {
         if (!TryEnter())
         {
-            return Unavailable();
+            return _lifecycle.Unavailable();
         }
 
         try
@@ -420,7 +365,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     {
         if (!TryEnter())
         {
-            return Unavailable();
+            return _lifecycle.Unavailable();
         }
 
         try
@@ -450,7 +395,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
     {
         if (!TryEnter())
         {
-            return Unavailable();
+            return _lifecycle.Unavailable();
         }
 
         try
@@ -568,9 +513,9 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             return serving;
         }
 
-        if (_stopping || _restartPending)
+        if (_stopping || _lifecycle.IsRestartPending)
         {
-            return Unavailable();
+            return _lifecycle.Unavailable();
         }
 
         var running = await EnsureRunningAsync(cancellationToken).ConfigureAwait(false);
@@ -579,7 +524,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             return running.Error!;
         }
 
-        return Serving() is { } started ? started : Unavailable();
+        return Serving() is { } started ? started : _lifecycle.Unavailable();
     }
 
     /// <summary>
@@ -603,9 +548,9 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         try
         {
             // 拿到锁后再判一次：崩溃处理可能刚在锁内把实例丢掉并排了退避重建，等锁的调用不能抢在退避前重建
-            if (_stopping || _restartPending)
+            if (_stopping || _lifecycle.IsRestartPending)
             {
-                return Unavailable();
+                return _lifecycle.Unavailable();
             }
 
             if (IsServing)
@@ -629,14 +574,14 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
                 return configured;
             }
 
-            SetState(LifecycleState.Configured, null);
+            _lifecycle.Enter(LifecycleState.Configured, null);
             var started = await StepAsync<StartResponse>(instance, "xihan_start", new StartRequest(), static r => r.Status, "start", cancellationToken).ConfigureAwait(false);
             if (started.IsFailure)
             {
                 return started;
             }
 
-            SetState(LifecycleState.Ready, null);
+            _lifecycle.Enter(LifecycleState.Ready, null);
             LogStarted(Logger, Manifest.Id, instance.AbiVersion, _handshake?.Sdk ?? string.Empty);
             StartMonitoring(instance);
             return Result.Success();
@@ -660,7 +605,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             var loaded = WasmModule.Load(_host.Engine, ModulePath, Manifest.Id);
             if (!loaded.TryGetValue(out var module))
             {
-                Fail(loaded.Error!);
+                _lifecycle.Fail(loaded.Error!);
                 return loaded.Error!;
             }
 
@@ -668,7 +613,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             if (consistency.IsFailure)
             {
                 module.Dispose();
-                Fail(consistency.Error!);
+                _lifecycle.Fail(consistency.Error!);
                 return consistency.Error!;
             }
 
@@ -685,7 +630,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         catch (Exception exception) when (exception is WasmtimeException or InvalidOperationException)
         {
             var error = Error.Unexpected(PluginErrors.Crashed, PluginMessages.ModuleTrapped, details: MessageArguments.Of(("id", Manifest.Id), ("trap", exception.Message)));
-            Fail(error);
+            _lifecycle.Fail(error);
             return error;
         }
 
@@ -693,7 +638,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         {
             instance.Dispose();
             var error = new Error(PluginErrors.InvalidModule, PluginMessages.ModuleInvalid, MessageArguments.Of(("id", Manifest.Id), ("reason", $"ABI version {instance.AbiVersion} is not supported")));
-            Fail(error);
+            _lifecycle.Fail(error);
             return error;
         }
 
@@ -702,7 +647,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         if (!handshake.TryGetValue(out var response))
         {
             await DropInstanceAsync().ConfigureAwait(false);
-            Fail(handshake.Error!);
+            _lifecycle.Fail(handshake.Error!);
             return handshake.Error!;
         }
 
@@ -715,7 +660,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         if (!validated.TryGetValue(out info))
         {
             await DropInstanceAsync().ConfigureAwait(false);
-            Fail(validated.Error!);
+            _lifecycle.Fail(validated.Error!);
             return validated.Error!;
         }
 
@@ -723,7 +668,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         {
             await DropInstanceAsync().ConfigureAwait(false);
             var error = new Error(PluginErrors.HandshakeMismatch, PluginMessages.HandshakeMismatch, MessageArguments.Of(("id", Manifest.Id), ("reason", "the declarations changed since the plugin was first loaded")));
-            Fail(error);
+            _lifecycle.Fail(error);
             return error;
         }
 
@@ -731,12 +676,12 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         {
             await DropInstanceAsync().ConfigureAwait(false);
             var error = new Error(PluginErrors.InvalidModule, PluginMessages.ModuleInvalid, MessageArguments.Of(("id", Manifest.Id), ("reason", "the module declares subscriptions but does not export 'xihan_handle_event'")));
-            Fail(error);
+            _lifecycle.Fail(error);
             return error;
         }
 
         _handshake ??= info;
-        SetState(LifecycleState.Resolved, null);
+        _lifecycle.Enter(LifecycleState.Resolved, null);
         LogHandshake(Logger, Manifest.Id, info.ProtocolVersion, info.Operations.Count, info.Subscriptions.Count);
         return info;
     }
@@ -789,7 +734,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         }
 
         await DropInstanceAsync().ConfigureAwait(false);
-        Fail(error);
+        _lifecycle.Fail(error);
         return error;
     }
 
@@ -814,7 +759,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         var reentrant = _functions.Pump.IsReentrant;
         if (reentrant && !ReferenceEquals(_instance, instance))
         {
-            return Unavailable();
+            return _lifecycle.Unavailable();
         }
 
         // 插件自己的回调引发的再入（回调 → 宿主管道 → 本插件的中间件、操作或订阅）：调用锁由外层调用持有，
@@ -826,7 +771,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             {
                 if (!ReferenceEquals(_instance, instance))
                 {
-                    return Unavailable();
+                    return _lifecycle.Unavailable();
                 }
 
                 // Wasm 执行是同步的 CPU 工作：放到线程池，不占用调用方的异步链
@@ -901,9 +846,9 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             }
 
             // 先排退避重建再丢实例：同一次调用的 after 阶段等中间件会紧跟着取实例，不能让它抢先重建
-            _restartPending = true;
+            _lifecycle.MarkRestartPending();
             await DropInstanceAsync().ConfigureAwait(false);
-            Fail(error);
+            _lifecycle.Fail(error);
             LogCrashed(Logger, Manifest.Id, error.Message);
         }
         finally
@@ -911,76 +856,29 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
             _gate.Release();
         }
 
-        await RestartAsync().ConfigureAwait(false);
+        await _lifecycle.RestartAsync().ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// 退避重建
-    /// </summary>
+    /// <inheritdoc />
+    bool IPluginCarrier.IsStopped => _stopping;
+
+    /// <inheritdoc />
     /// <remarks>
-    /// 1 秒起翻倍、上限 60 秒；时间窗内超过 <see cref="WasmPluginOptions.RestartLimit"/> 次后保持 Failed
+    /// 重建实例并重走握手、配置、启动（<c>spec/plugin/wasm.md</c> §5）
     /// </remarks>
-    private async Task RestartAsync()
-    {
-        var token = _lifetime.Token;
-        while (!token.IsCancellationRequested)
-        {
-            int attempt;
-            lock (_stateLock)
-            {
-                var now = _host.Clock.GetUtcNow();
-                while (_restartTimes.TryPeek(out var oldest) && now - oldest > _host.Options.RestartWindow)
-                {
-                    _restartTimes.Dequeue();
-                }
+    Task<Result> IPluginCarrier.RecoverAsync(CancellationToken cancellationToken) => EnsureRunningAsync(cancellationToken);
 
-                attempt = _restartTimes.Count;
-            }
+    /// <inheritdoc />
+    void IPluginCarrier.OnStateEntered(LifecycleState state) => LogState(Logger, Manifest.Id, state);
 
-            if (attempt >= _host.Options.RestartLimit)
-            {
-                _restartPending = false;
-                LogRestartLimit(Logger, Manifest.Id, _host.Options.RestartLimit, _host.Options.RestartWindow);
-                return;
-            }
+    /// <inheritdoc />
+    void IPluginCarrier.OnRestartScheduled(TimeSpan delay, int attempt) => LogRestartScheduled(Logger, Manifest.Id, delay, attempt);
 
-            var delay = TimeSpan.FromSeconds(Math.Min(_maxBackoff.TotalSeconds, Math.Pow(2, attempt)));
-            LogRestartScheduled(Logger, Manifest.Id, delay, attempt + 1);
-            try
-            {
-                await Task.Delay(delay, _host.Clock, token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
+    /// <inheritdoc />
+    void IPluginCarrier.OnRestarted(int restarts) => LogRestarted(Logger, Manifest.Id, restarts);
 
-            lock (_stateLock)
-            {
-                _restartTimes.Enqueue(_host.Clock.GetUtcNow());
-                _restarts++;
-            }
-
-            _restartPending = false;
-            Result restarted;
-            try
-            {
-                restarted = await EnsureRunningAsync(token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
-
-            if (restarted.IsSuccess)
-            {
-                LogRestarted(Logger, Manifest.Id, _restarts);
-                return;
-            }
-
-            _restartPending = true;
-        }
-    }
+    /// <inheritdoc />
+    void IPluginCarrier.OnRestartLimitReached(int limit, TimeSpan window) => LogRestartLimit(Logger, Manifest.Id, limit, window);
 
     /// <summary>
     /// 开始健康轮询
@@ -1069,7 +967,7 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
 
         if (state is { } reported)
         {
-            SetState(reported, error);
+            _lifecycle.Enter(reported, error);
         }
 
         return true;
@@ -1170,31 +1068,6 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IDisposable
         _instance = null;
         instance?.Dispose();
     }
-
-    /// <summary>
-    /// 进入某状态
-    /// </summary>
-    private void SetState(LifecycleState state, Error? error)
-    {
-        lock (_stateLock)
-        {
-            _state = state;
-            _error = error;
-        }
-
-        LogState(Logger, Manifest.Id, state);
-    }
-
-    /// <summary>
-    /// 进入 Failed
-    /// </summary>
-    private void Fail(Error error) => SetState(LifecycleState.Failed, error);
-
-    /// <summary>
-    /// 插件不可用的失败
-    /// </summary>
-    private Error Unavailable()
-        => Error.Unavailable(PluginErrors.Unavailable, PluginMessages.ProcessUnavailable, MessageArguments.Of(("id", Manifest.Id), ("state", State.ToString())));
 
     /// <summary>
     /// 记录握手完成
