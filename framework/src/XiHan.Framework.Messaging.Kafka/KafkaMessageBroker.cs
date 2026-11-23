@@ -546,7 +546,7 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// 投递一条消息
     /// </summary>
     /// <remarks>
-    /// 解码失败进死信；否则在原位重试到上限，仍失败进死信。广播订阅没有死信：两种情况都丢弃并记日志
+    /// 解码失败进死信；否则在原位重试到上限，仍失败进死信。广播订阅没有死信：两种情况都丢弃并记日志。每次尝试之前都等应用进入服务状态；被停止打断的投递以 <see cref="OperationCanceledException"/> 抛出，不重试、不进死信、不提交位点
     /// </remarks>
     private async Task DeliverAsync(MessageSubscription subscription, ConsumeResult<string?, byte[]> consumed, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
@@ -566,52 +566,35 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
             return;
         }
 
-        // 宿主未进入服务状态前不投递，避免处理器在特性尚未就绪时执行
-        while (!_app.State.IsServing())
-        {
-            await Task.Delay(10, cancellationToken).ConfigureAwait(false);
-        }
-
-        // 原位重试：不重新入队，分区内顺序不变
+        // 原位重试：不重新入队，分区内顺序不变。等服务状态、派发与归类在 MessageDeliveryAttempt，这里只把结论翻译成位点与死信上的动作（ADR-0261）
         for (var attempt = 1; ; attempt++)
         {
-            Result result;
-            try
-            {
-                result = await dispatch(new MessageDelivery
+            var outcome = await MessageDeliveryAttempt.RunAsync(
+                dispatch,
+                new MessageDelivery
                 {
                     Topic = topic,
                     Envelope = envelope,
                     Attempt = attempt,
                     Mode = subscription.Mode,
-                }, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                },
+                _messaging,
+                _app,
+                _logger,
+                cancellationToken).ConfigureAwait(false);
+            switch (outcome.Disposition)
             {
-                throw;
-            }
-            catch (Exception exception)
-            {
-                result = Error.Unexpected(MessagingErrors.HandlerFailed, MessagingMessages.HandlerFailed, details: MessageArguments.Of(("reason", exception.Message)));
-            }
-
-            if (result.IsSuccess)
-            {
-                return;
-            }
-
-            if (attempt >= _messaging.MaxAttempts && broadcast)
-            {
-                // 广播是尽力而为、没有死信：每个实例各自的一份失败没有可以重放的共享位置
-                LogBroadcastDropped(_logger, envelope.Id, topic, attempt, result.Error?.Code ?? "?");
-                return;
-            }
-
-            if (attempt >= _messaging.MaxAttempts)
-            {
-                LogDeadLettered(_logger, envelope.Id, topic, attempt, result.Error?.Code ?? "?");
-                await ProduceAsync(TopicOf(topic) + _messaging.DeadLetterSuffix, ToMessage(envelope, consumed.Message.Value, attempt), cancellationToken).ConfigureAwait(false);
-                return;
+                case DeliveryDisposition.Abandon:
+                    // 停止打断了这次投递：以取消抛出，消费循环不提交、退出，重启后重新投递；重放则把取消交还调用方
+                    throw new OperationCanceledException(cancellationToken);
+                case DeliveryDisposition.Retry:
+                    continue;
+                case DeliveryDisposition.DeadLetter:
+                    await ProduceAsync(TopicOf(topic) + _messaging.DeadLetterSuffix, ToMessage(envelope, consumed.Message.Value, attempt), cancellationToken).ConfigureAwait(false);
+                    return;
+                default:
+                    // 处理成功，或广播投递到上限已丢弃（没有死信）：投递完成
+                    return;
             }
         }
     }
@@ -709,17 +692,8 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     private static FrameworkException Unavailable(string what, Exception exception)
         => new(MessagingErrors.BrokerUnavailable, $"{what}.", exception);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Message {MessageId} on topic {Topic} was dead-lettered after attempt {Attempt} failed: {ErrorCode}")]
-    private static partial void LogDeadLettered(ILogger logger, string messageId, string topic, int attempt, string errorCode);
-
     [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} received an undecodable message; it was moved to the dead-letter topic: {Reason}")]
     private static partial void LogUndecodable(ILogger logger, string topic, string reason);
-
-    /// <summary>
-    /// 记录一条广播投递重试到上限后被丢弃
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast message {MessageId} on topic {Topic} was dropped after attempt {Attempt} failed: {ErrorCode}")]
-    private static partial void LogBroadcastDropped(ILogger logger, string messageId, string topic, int attempt, string errorCode);
 
     /// <summary>
     /// 记录一条无法解码的广播消息被丢弃
