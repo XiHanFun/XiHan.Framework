@@ -1349,6 +1349,7 @@
       "references": [
         "XiHan.Framework.Kernel",
         "XiHan.Framework.Caching.Abstractions",
+        "XiHan.Framework.Persistence.Abstractions",
         "XiHan.Framework.Security.WebAuthn"
       ],
       "dependencies": [
