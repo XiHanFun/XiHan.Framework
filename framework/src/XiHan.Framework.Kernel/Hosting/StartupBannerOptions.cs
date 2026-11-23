@@ -56,15 +56,9 @@ public sealed record StartupBannerOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         defaults ??= new StartupBannerOptions();
-        var raw = configuration.GetSection(ConfigurationSection)["Enabled"];
-        if (raw is null)
-        {
-            return defaults;
-        }
-
         // 显式解析而不是 Bind：保持零反射与 AOT 友好，写错的值在启动时就失败，不静默当成关闭
-        return bool.TryParse(raw, out var enabled)
+        return ConfigurationValues.ReadBoolean(configuration.GetSection(ConfigurationSection), "Enabled") is { } enabled
             ? defaults with { Enabled = enabled }
-            : throw new ArgumentException($"'{ConfigurationSection}:Enabled' must be 'true' or 'false', but the value is '{raw}'.");
+            : defaults;
     }
 }

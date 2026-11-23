@@ -3,6 +3,7 @@
 
 using System.Net;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Security;
@@ -65,25 +66,12 @@ public sealed record OutboundAddressOptions
         var section = configuration.GetSection(ConfigurationSection);
         return new OutboundAddressOptions
         {
-            AllowLoopback = ReadSwitch(section, nameof(AllowLoopback)),
-            AllowPrivateNetwork = ReadSwitch(section, nameof(AllowPrivateNetwork)),
+            // 写了值就必须是 true / false：这两个开关放开的是内网地址，空串不能悄悄当成 false
+            AllowLoopback = ConfigurationValues.ReadBoolean(section, nameof(AllowLoopback)) ?? false,
+            AllowPrivateNetwork = ConfigurationValues.ReadBoolean(section, nameof(AllowPrivateNetwork)) ?? false,
             AllowedNetworks = [.. section.GetSection(nameof(AllowedNetworks)).GetChildren().Select(ParseNetwork)],
             AllowedHosts = [.. section.GetSection(nameof(AllowedHosts)).GetChildren().Select(ParseHost)],
         };
-    }
-
-    /// <summary>
-    /// 读一个开关
-    /// </summary>
-    private static bool ReadSwitch(IConfigurationSection section, string key)
-    {
-        var raw = section[key];
-        if (string.IsNullOrEmpty(raw))
-        {
-            return false;
-        }
-
-        return bool.TryParse(raw, out var value) ? value : throw new ArgumentException($"'{section.Path}:{key}' must be 'true' or 'false', but was '{raw}'.");
     }
 
     /// <summary>

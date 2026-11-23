@@ -85,6 +85,7 @@ XiHan.Framework.Kernel.Hosting.BindingValue.Type.init -> void
 XiHan.Framework.Kernel.Hosting.BindingValue.Value.get -> string?
 XiHan.Framework.Kernel.Hosting.BindingValue.Value.init -> void
 XiHan.Framework.Kernel.Hosting.ConfigurationDirectory
+XiHan.Framework.Kernel.Hosting.ConfigurationValues
 XiHan.Framework.Kernel.Hosting.ContributorStatus
 XiHan.Framework.Kernel.Hosting.ContributorStatus.<Clone>$() -> XiHan.Framework.Kernel.Hosting.ContributorStatus!
 XiHan.Framework.Kernel.Hosting.ContributorStatus.CheckedAt.get -> System.DateTimeOffset?
@@ -806,6 +807,14 @@ static XiHan.Framework.Kernel.Hosting.BindingValue.operator !=(XiHan.Framework.K
 static XiHan.Framework.Kernel.Hosting.BindingValue.operator ==(XiHan.Framework.Kernel.Hosting.BindingValue? left, XiHan.Framework.Kernel.Hosting.BindingValue? right) -> bool
 static XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.IsApplicationSettings(string! path, string! environmentName) -> bool
 static XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.Resolve(string? directory = null) -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Kernel.Hosting.ConfigurationValues.ReadBoolean(Microsoft.Extensions.Configuration.IConfiguration! configuration, string! key) -> bool?
+static XiHan.Framework.Kernel.Hosting.ConfigurationValues.ReadEnum<TEnum>(Microsoft.Extensions.Configuration.IConfiguration! configuration, string! key) -> TEnum?
+static XiHan.Framework.Kernel.Hosting.ConfigurationValues.ReadInt32(Microsoft.Extensions.Configuration.IConfiguration! configuration, string! key, int minimum) -> int?
+static XiHan.Framework.Kernel.Hosting.ConfigurationValues.ReadInt32(Microsoft.Extensions.Configuration.IConfiguration! configuration, string! key, int minimum, int maximum) -> int?
+static XiHan.Framework.Kernel.Hosting.ConfigurationValues.ReadInt64(Microsoft.Extensions.Configuration.IConfiguration! configuration, string! key, long minimum) -> long?
+static XiHan.Framework.Kernel.Hosting.ConfigurationValues.ReadInt64(Microsoft.Extensions.Configuration.IConfiguration! configuration, string! key, long minimum, long maximum) -> long?
+static XiHan.Framework.Kernel.Hosting.ConfigurationValues.ReadSeconds(Microsoft.Extensions.Configuration.IConfiguration! configuration, string! key) -> System.TimeSpan?
+static XiHan.Framework.Kernel.Hosting.ConfigurationValues.ReadSeconds(Microsoft.Extensions.Configuration.IConfiguration! configuration, string! key, bool allowZero) -> System.TimeSpan?
 static XiHan.Framework.Kernel.Hosting.ContributorStatus.operator !=(XiHan.Framework.Kernel.Hosting.ContributorStatus? left, XiHan.Framework.Kernel.Hosting.ContributorStatus? right) -> bool
 static XiHan.Framework.Kernel.Hosting.ContributorStatus.operator ==(XiHan.Framework.Kernel.Hosting.ContributorStatus? left, XiHan.Framework.Kernel.Hosting.ContributorStatus? right) -> bool
 static XiHan.Framework.Kernel.Hosting.FeatureStatus.operator !=(XiHan.Framework.Kernel.Hosting.FeatureStatus? left, XiHan.Framework.Kernel.Hosting.FeatureStatus? right) -> bool

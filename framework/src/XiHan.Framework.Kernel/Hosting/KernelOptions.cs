@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Primitives;
 
@@ -56,67 +55,10 @@ public sealed record KernelOptions
         // 每个键单独读取并显式解析，缺省回落到默认实例的值；不用 Bind 以保持零反射与 AOT 友好
         return options with
         {
-            StartTimeout = ReadSeconds(section, "StartTimeoutSeconds") ?? options.StartTimeout,
-            StopTimeout = ReadSeconds(section, "StopTimeoutSeconds") ?? options.StopTimeout,
-            FailurePolicy = ReadEnum<FailurePolicy>(section, "FailurePolicy") ?? options.FailurePolicy,
-            UseBuiltInMiddleware = ReadBool(section, "UseBuiltInMiddleware") ?? options.UseBuiltInMiddleware,
+            StartTimeout = ConfigurationValues.ReadSeconds(section, "StartTimeoutSeconds") ?? options.StartTimeout,
+            StopTimeout = ConfigurationValues.ReadSeconds(section, "StopTimeoutSeconds") ?? options.StopTimeout,
+            FailurePolicy = ConfigurationValues.ReadEnum<FailurePolicy>(section, "FailurePolicy") ?? options.FailurePolicy,
+            UseBuiltInMiddleware = ConfigurationValues.ReadBoolean(section, "UseBuiltInMiddleware") ?? options.UseBuiltInMiddleware,
         };
-    }
-
-    /// <summary>
-    /// 读取以秒计的时长键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，非正数或非数字抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static TimeSpan? ReadSeconds(IConfiguration section, string key)
-    {
-        var raw = section[key];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-            ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"'{ConfigurationSection}:{key}' must be a positive number, but the value is '{raw}'.");
-    }
-
-    /// <summary>
-    /// 读取布尔键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，无法解析抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static bool? ReadBool(IConfiguration section, string key)
-    {
-        var raw = section[key];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return bool.TryParse(raw, out var value) ? value : throw new ArgumentException($"'{ConfigurationSection}:{key}' must be 'true' or 'false', but the value is '{raw}'.");
-    }
-
-    /// <summary>
-    /// 读取枚举键，不区分大小写
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，未定义的值抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    /// <typeparam name="TEnum">枚举类型</typeparam>
-    private static TEnum? ReadEnum<TEnum>(IConfiguration section, string key)
-        where TEnum : struct, Enum
-    {
-        var raw = section[key];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return Enum.TryParse<TEnum>(raw, ignoreCase: true, out var value) && Enum.IsDefined(value)
-            ? value
-            : throw new ArgumentException($"The value '{raw}' of '{ConfigurationSection}:{key}' is not a valid '{typeof(TEnum).Name}' value.");
     }
 }

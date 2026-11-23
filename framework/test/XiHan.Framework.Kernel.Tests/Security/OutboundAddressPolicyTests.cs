@@ -341,6 +341,8 @@ public sealed class OutboundAddressPolicyTests
     [Theory]
     [InlineData("XiHan:Security:Outbound:AllowLoopback", "yes")]
     [InlineData("XiHan:Security:Outbound:AllowPrivateNetwork", "1")]
+    // 空串不是「没写」：原先悄悄当成 false，现在与别的键一样拒绝
+    [InlineData("XiHan:Security:Outbound:AllowLoopback", "")]
     [InlineData("XiHan:Security:Outbound:AllowedNetworks:0", "10.0.0.1")]
     [InlineData("XiHan:Security:Outbound:AllowedNetworks:0", "10.0.0.1/8")]
     [InlineData("XiHan:Security:Outbound:AllowedHosts:0", "http://minio:9000")]
