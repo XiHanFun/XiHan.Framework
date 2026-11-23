@@ -424,7 +424,7 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// 处理一条到达的消息
     /// </summary>
     /// <remarks>
-    /// 解码、等待宿主就绪、派发，失败重新发布到所消费队列的队尾，到了上限竞争订阅进死信队列、广播订阅丢弃；重新发布得到确认后才确认原消息
+    /// 解码、等待宿主就绪、派发，失败重新发布到所消费队列的队尾，到了上限竞争订阅进死信队列、广播订阅丢弃；重新发布得到确认后才确认原消息。被停止打断的投递不确认、不重新发布，连接关闭后由 RabbitMQ 重新投递
     /// </remarks>
     private async Task OnReceivedAsync(IChannel channel, MessageSubscription subscription, string queue, BasicDeliverEventArgs received, MessageDispatch dispatch, CancellationToken stopping)
     {
@@ -450,50 +450,26 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
             return;
         }
 
-        // 宿主未进入服务状态前不投递，避免处理器在特性尚未就绪时执行
-        while (!_app.State.IsServing())
-        {
-            await Task.Delay(10, stopping).ConfigureAwait(false);
-        }
-
+        // 等服务状态、派发与归类在 MessageDeliveryAttempt，这里只把结论翻译成通道上的动作（ADR-0261）
         var delivery = new MessageDelivery { Topic = topic, Envelope = envelope, Attempt = attempt, Mode = subscription.Mode };
-        Result result;
-        try
+        var outcome = await MessageDeliveryAttempt.RunAsync(dispatch, delivery, _messaging, _app, _logger, stopping).ConfigureAwait(false);
+        switch (outcome.Disposition)
         {
-            result = await dispatch(delivery, stopping).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (stopping.IsCancellationRequested)
-        {
-            // 不确认：连接关闭后由 RabbitMQ 重新投递
-            return;
-        }
-        catch (Exception exception)
-        {
-            result = Error.Unexpected(MessagingErrors.HandlerFailed, MessagingMessages.HandlerFailed, details: MessageArguments.Of(("reason", exception.Message)));
-        }
-
-        if (result.IsSuccess)
-        {
-            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, republish: null, stopping).ConfigureAwait(false);
-            return;
-        }
-
-        // 失败时先重新发布（所消费队列的队尾或死信）并等确认，再确认原消息：顺序保证不丢消息，代价是极端情况下可能重复投递；
-        // 重试只回到所消费的队列，同一路由键上的其他订阅（别的实例的广播队列）不再收一遍
-        if (attempt < _messaging.MaxAttempts)
-        {
-            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => PublishToQueueAsync(queue, CloudEventsFormat.Encode(envelope), attempt + 1, envelope.Id, stopping), stopping).ConfigureAwait(false);
-        }
-        else if (broadcast)
-        {
-            // 广播是尽力而为、没有死信：每个实例各自的一份失败没有可以重放的共享位置
-            LogBroadcastDropped(_logger, envelope.Id, topic, attempt, result.Error?.Code ?? "?");
-            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, republish: null, stopping).ConfigureAwait(false);
-        }
-        else
-        {
-            LogDeadLettered(_logger, envelope.Id, topic, attempt, result.Error?.Code ?? "?");
-            await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => DeadLetterAsync(queue, CloudEventsFormat.Encode(envelope), attempt, envelope.Id, stopping), stopping).ConfigureAwait(false);
+            case DeliveryDisposition.Abandon:
+                // 停止打断了这次投递：不确认，连接关闭后由 RabbitMQ 重新投递
+                return;
+            case DeliveryDisposition.Retry:
+                // 失败时先重新发布（所消费队列的队尾或死信）并等确认，再确认原消息：顺序保证不丢消息，代价是极端情况下可能重复投递；
+                // 重试只回到所消费的队列，同一路由键上的其他订阅（别的实例的广播队列）不再收一遍
+                await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => PublishToQueueAsync(queue, CloudEventsFormat.Encode(envelope), attempt + 1, envelope.Id, stopping), stopping).ConfigureAwait(false);
+                return;
+            case DeliveryDisposition.DeadLetter:
+                await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, () => DeadLetterAsync(queue, CloudEventsFormat.Encode(envelope), attempt, envelope.Id, stopping), stopping).ConfigureAwait(false);
+                return;
+            default:
+                // 处理成功，或广播投递到上限已丢弃（没有死信）：确认掉
+                await SettleAsync(channel, received.DeliveryTag, topic, envelope.Id, republish: null, stopping).ConfigureAwait(false);
+                return;
         }
     }
 
@@ -711,18 +687,6 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// </remarks>
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped {Count} message(s) published to topic '{Topic}' because no queue is bound to its routing key (nothing subscribes to it).")]
     private static partial void LogDropped(ILogger logger, int count, string topic);
-
-    /// <summary>
-    /// 记录一条消息重试到上限后进入死信队列
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Message {MessageId} on topic {Topic} was dead-lettered after attempt {Attempt} failed: {ErrorCode}")]
-    private static partial void LogDeadLettered(ILogger logger, string messageId, string topic, int attempt, string errorCode);
-
-    /// <summary>
-    /// 记录一条广播投递重试到上限后被丢弃
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast message {MessageId} on topic {Topic} was dropped after attempt {Attempt} failed: {ErrorCode}")]
-    private static partial void LogBroadcastDropped(ILogger logger, string messageId, string topic, int attempt, string errorCode);
 
     /// <summary>
     /// 记录一条无法解码的广播消息被丢弃
