@@ -13,7 +13,7 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// <remarks>
 /// <para>各包的选项类用它读时长、整数、布尔与枚举，不用 <c>Bind</c>（零反射、AOT 友好），也不各写一份解析：同一种写法在哪个包里都得到同一个结论、同一种报错。</para>
 /// <para>键不存在才算缺失，返回 <see langword="null"/>，调用方回落到缺省值；写了值（含空串）就必须合法，不按缺省处理，不合法抛出 <see cref="ArgumentException"/>。</para>
-/// <para>数字按不变文化解析。整数接受前后空白与正负号，与 <c>Microsoft.Extensions.Configuration</c> 的绑定一致；时长是秒数，可带小数，必须是有限的数且装得进 <see cref="TimeSpan"/>。</para>
+/// <para>数字按不变文化解析。整数接受前后空白与正负号，与 <c>Microsoft.Extensions.Configuration</c> 的绑定一致；时长是秒数，可带小数，必须是有限的数且装得进 <see cref="TimeSpan"/>；不足 100 纳秒的正数表示不出来，同样不合法。</para>
 /// <para>消息是 <c>'&lt;配置键&gt;' must be …, but was '&lt;原值&gt;'.</c>，配置键是完整路径：传进来的是配置节时取它的路径加上键。配置错误给运维看，不本地化；这些键都不是机密，原值照写。</para>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
@@ -44,12 +44,20 @@ public static class ConfigurationValues
         }
 
         // 上界也在这里判：TimeSpan.FromSeconds 对装不下的数抛 OverflowException，消息里没有配置键
-        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
+        if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds)
             && double.IsFinite(seconds)
-            && (allowZero ? seconds >= 0 : seconds > 0)
-            && seconds <= TimeSpan.MaxValue.TotalSeconds
-            ? TimeSpan.FromSeconds(seconds)
-            : throw Invalid(configuration, key, allowZero ? "a non-negative number of seconds" : "a positive number of seconds", raw);
+            && seconds >= 0
+            && seconds <= TimeSpan.MaxValue.TotalSeconds)
+        {
+            var value = TimeSpan.FromSeconds(seconds);
+            // 不足 1 个计时周期（100 纳秒）的正数会被舍成零：它既不是 0，也不是表示得出来的正时长，不能悄悄当成 0（常是「关闭」）
+            if (seconds == 0 ? allowZero : value > TimeSpan.Zero)
+            {
+                return value;
+            }
+        }
+
+        throw Invalid(configuration, key, allowZero ? "a non-negative number of seconds" : "a positive number of seconds", raw);
     }
 
     /// <summary>
@@ -150,7 +158,7 @@ public static class ConfigurationValues
     /// <param name="key">键</param>
     /// <param name="minimum">下界（含）</param>
     /// <param name="maximum">上界（含）</param>
-    /// <param name="unbounded">这个宽度的最大值：上界等于它时消息里不写上界</param>
+    /// <param name="unbounded">这个宽度的最大值：上界等于它时消息里不写上界，除非值正是超出了它</param>
     private static long? ReadInt64(IConfiguration configuration, string key, long minimum, long maximum, long unbounded)
     {
         if (minimum > maximum)
@@ -163,12 +171,14 @@ public static class ConfigurationValues
             return null;
         }
 
-        if (long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= minimum && value <= maximum)
+        var parsed = long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value);
+        if (parsed && value >= minimum && value <= maximum)
         {
             return value;
         }
 
-        var expected = maximum < unbounded
+        // 没给上界、值却超出了这个宽度：也把上界写出来，只说「正整数」看不出错在太大
+        var expected = maximum < unbounded || (parsed && value > maximum)
             ? $"an integer between {minimum.ToString(CultureInfo.InvariantCulture)} and {maximum.ToString(CultureInfo.InvariantCulture)}"
             : minimum switch
             {

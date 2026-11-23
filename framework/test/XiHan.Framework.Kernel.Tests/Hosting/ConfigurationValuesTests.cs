@@ -49,9 +49,10 @@ public sealed class ConfigurationValuesTests
     [InlineData("1e400")]
     [InlineData("1e300")]
     [InlineData("1,5")]
+    [InlineData("1e-9")]
     public void Seconds_RejectEverythingElse_NamingTheFullKey(string raw)
     {
-        // 1e300 是有限的数，但装不进 TimeSpan：原先在 TimeSpan.FromSeconds 抛 OverflowException
+        // 1e300 是有限的数，但装不进 TimeSpan：原先在 TimeSpan.FromSeconds 抛 OverflowException；1e-9 不足 100 纳秒，会被舍成零
         var thrown = Assert.Throws<ArgumentException>(() => ConfigurationValues.ReadSeconds(SectionWith("TimeoutSeconds", raw), "TimeoutSeconds"));
 
         Assert.Equal($"'XiHan:Demo:TimeoutSeconds' must be a positive number of seconds, but was '{raw}'.", thrown.Message);
@@ -62,8 +63,12 @@ public sealed class ConfigurationValuesTests
     {
         Assert.Equal(TimeSpan.Zero, ConfigurationValues.ReadSeconds(SectionWith("CooldownSeconds", "0"), "CooldownSeconds", allowZero: true));
 
-        var thrown = Assert.Throws<ArgumentException>(() => ConfigurationValues.ReadSeconds(SectionWith("CooldownSeconds", "-0.1"), "CooldownSeconds", allowZero: true));
-        Assert.Equal("'XiHan:Demo:CooldownSeconds' must be a non-negative number of seconds, but was '-0.1'.", thrown.Message);
+        // 允许 0 的键上，不足 100 纳秒的正数也不收：它不是 0，不能悄悄当成「关闭」
+        foreach (var raw in new[] { "-0.1", "1e-9" })
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => ConfigurationValues.ReadSeconds(SectionWith("CooldownSeconds", raw), "CooldownSeconds", allowZero: true));
+            Assert.Equal($"'XiHan:Demo:CooldownSeconds' must be a non-negative number of seconds, but was '{raw}'.", thrown.Message);
+        }
     }
 
     [Theory]
@@ -84,7 +89,7 @@ public sealed class ConfigurationValuesTests
     [InlineData("1.5", 1, 10, "an integer between 1 and 10")]
     [InlineData("many", 0, int.MaxValue, "a non-negative integer")]
     [InlineData("", 0, int.MaxValue, "a non-negative integer")]
-    [InlineData("2147483648", 0, int.MaxValue, "a non-negative integer")]
+    [InlineData("2147483648", 0, int.MaxValue, "an integer between 0 and 2147483647")]
     public void Int32_OutOfRangeOrMalformed_SaysWhatIsExpected(string raw, int minimum, int maximum, string expected)
     {
         var thrown = Assert.Throws<ArgumentException>(() => ConfigurationValues.ReadInt32(SectionWith("Count", raw), "Count", minimum, maximum));

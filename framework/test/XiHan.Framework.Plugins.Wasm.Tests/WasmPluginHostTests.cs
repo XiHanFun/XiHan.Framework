@@ -557,7 +557,7 @@ public sealed class WasmPluginHostTests
     [Theory]
     [InlineData("MemoryLimitBytes", "0", "'XiHan:Plugins:Wasm:MemoryLimitBytes' must be a positive integer, but was '0'.")]
     [InlineData("MemoryLimitBytes", "1.5", "'XiHan:Plugins:Wasm:MemoryLimitBytes' must be a positive integer, but was '1.5'.")]
-    [InlineData("StackLimitBytes", "3000000000", "'XiHan:Plugins:Wasm:StackLimitBytes' must be a positive integer, but was '3000000000'.")]
+    [InlineData("StackLimitBytes", "3000000000", "'XiHan:Plugins:Wasm:StackLimitBytes' must be an integer between 1 and 2147483647, but was '3000000000'.")]
     [InlineData("CallTimeoutSeconds", "0", "'XiHan:Plugins:Wasm:CallTimeoutSeconds' must be a positive number of seconds, but was '0'.")]
     // 有限但装不进 TimeSpan 的秒数：带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
     [InlineData("CallTimeoutSeconds", "1e300", "'XiHan:Plugins:Wasm:CallTimeoutSeconds' must be a positive number of seconds, but was '1e300'.")]
