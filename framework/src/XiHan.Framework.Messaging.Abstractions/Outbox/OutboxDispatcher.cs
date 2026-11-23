@@ -119,13 +119,15 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
         // 所以代理抛出不回滚（DispatchAsync 把它记成这些消息的失败，照常提交）；只有取消与存储失败整轮回滚
         var result = await UnitOfWorkScope.RunAsync(
             _services,
-            scope =>
+            (scope, _) =>
             {
                 if (shard is not null)
                 {
                     // 先绑定再取工作单元：持久化客户端在首次取用时按绑定建连接，建出之后不能再绑定
                     scope.GetRequiredService<TenantShardScope>().Bind(shard);
                 }
+
+                return ValueTask.FromResult(Result.Success());
             },
             shard is null ? UnitOfWorkOptions.Default : UnitOfWorkOptions.Default with { TenantId = shard.TenantId },
             async (scope, ct) =>

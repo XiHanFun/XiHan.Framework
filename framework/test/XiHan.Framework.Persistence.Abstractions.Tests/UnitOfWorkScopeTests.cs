@@ -427,13 +427,17 @@ public sealed class UnitOfWorkScopeTests : IDisposable
             .BuildServiceProvider();
         IServiceProvider? prepared = null;
         IServiceProvider? seen = null;
+        using var cancellation = new CancellationTokenSource();
 
         var result = await UnitOfWorkScope.RunAsync(
             root,
-            services =>
+            (services, ct) =>
             {
                 order.Add("prepare");
                 prepared = services;
+                // 准备收到的也是调用方的令牌
+                Assert.Equal(cancellation.Token, ct);
+                return ValueTask.FromResult(Result.Success());
             },
             UnitOfWorkOptions.Default,
             (services, _) =>
@@ -443,7 +447,7 @@ public sealed class UnitOfWorkScopeTests : IDisposable
                 return ValueTask.FromResult(Result.Success(7));
             },
             Logger(),
-            CancellationToken.None);
+            cancellation.Token);
 
         Assert.Equal(7, result.ValueOrThrow());
         Assert.Equal(["prepare", "resolve", "body"], order);
@@ -454,7 +458,39 @@ public sealed class UnitOfWorkScopeTests : IDisposable
     }
 
     [Fact]
-    public async Task ThrowingPrepare_IsAnAssemblyError_AndTheUnitOfWorkIsNeverResolved()
+    public async Task FailedPrepare_IsReturnedAsIs_AndTheUnitOfWorkIsNeverResolved()
+    {
+        var resolved = false;
+        var ran = false;
+        await using var root = new ServiceCollection()
+            .AddScoped<IUnitOfWork>(_ =>
+            {
+                resolved = true;
+                return new ScriptedUnitOfWork();
+            })
+            .BuildServiceProvider();
+
+        var result = await UnitOfWorkScope.RunAsync(
+            root,
+            static (_, _) => ValueTask.FromResult(Result.Failure(_rejected)),
+            UnitOfWorkOptions.Default,
+            (_, _) =>
+            {
+                ran = true;
+                return ValueTask.FromResult(Result.Success(1));
+            },
+            Logger(),
+            CancellationToken.None);
+
+        // 分片解析失败这类准备的失败：工作单元没取也没开，动作不执行
+        Assert.Same(_rejected, result.Error);
+        Assert.False(resolved);
+        Assert.False(ran);
+        Assert.Empty(_logs.Entries);
+    }
+
+    [Fact]
+    public async Task ThrowingPrepare_IsRethrown_AndTheUnitOfWorkIsNeverResolved()
     {
         var resolved = false;
         await using var root = new ServiceCollection()
@@ -466,7 +502,7 @@ public sealed class UnitOfWorkScopeTests : IDisposable
             .BuildServiceProvider();
         var failure = new InvalidOperationException("The scope is already bound to a shard.");
 
-        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(async () => await UnitOfWorkScope.RunAsync(root, _ => throw failure, UnitOfWorkOptions.Default, static (_, _) => ValueTask.FromResult(Result.Success(1)), Logger(), CancellationToken.None));
+        var thrown = await Assert.ThrowsAsync<InvalidOperationException>(async () => await UnitOfWorkScope.RunAsync(root, (_, _) => throw failure, UnitOfWorkOptions.Default, static (_, _) => ValueTask.FromResult(Result.Success(1)), Logger(), CancellationToken.None));
 
         Assert.Same(failure, thrown);
         Assert.False(resolved);
@@ -481,7 +517,7 @@ public sealed class UnitOfWorkScopeTests : IDisposable
         await using var root = Root(unitOfWork);
         var failure = new TimeoutException(Secret);
 
-        var thrown = await Assert.ThrowsAsync<TimeoutException>(async () => await UnitOfWorkScope.RunAsync<int>(root, static _ => { }, UnitOfWorkOptions.Default, (_, _) => throw failure, Logger(), CancellationToken.None));
+        var thrown = await Assert.ThrowsAsync<TimeoutException>(async () => await UnitOfWorkScope.RunAsync<int>(root, static (_, _) => ValueTask.FromResult(Result.Success()), UnitOfWorkOptions.Default, (_, _) => throw failure, Logger(), CancellationToken.None));
 
         Assert.Same(failure, thrown);
         Assert.Equal(["begin", "rollback", "dispose"], unitOfWork.Calls);
@@ -538,8 +574,8 @@ public sealed class UnitOfWorkScopeTests : IDisposable
         await RejectsAsync("body", async () => await UnitOfWorkScope.RunAsync<int>(root, UnitOfWorkOptions.Default, null!, logger, CancellationToken.None));
         await RejectsAsync("logger", async () => await UnitOfWorkScope.RunAsync(root, UnitOfWorkOptions.Default, body, null!, CancellationToken.None));
         await RejectsAsync("fault", async () => await UnitOfWorkScope.RunAsync(root, UnitOfWorkOptions.Default, body, null!, logger, CancellationToken.None));
-        await RejectsAsync("prepare", async () => await UnitOfWorkScope.RunAsync(root, (Action<IServiceProvider>)null!, UnitOfWorkOptions.Default, body, logger, CancellationToken.None));
-        await RejectsAsync("body", async () => await UnitOfWorkScope.RunAsync<int>(root, static _ => { }, UnitOfWorkOptions.Default, null!, logger, CancellationToken.None));
+        await RejectsAsync("prepare", async () => await UnitOfWorkScope.RunAsync(root, (Func<IServiceProvider, CancellationToken, ValueTask<Result>>)null!, UnitOfWorkOptions.Default, body, logger, CancellationToken.None));
+        await RejectsAsync("body", async () => await UnitOfWorkScope.RunAsync<int>(root, plain, UnitOfWorkOptions.Default, null!, logger, CancellationToken.None));
         await RejectsAsync("root", async () => await UnitOfWorkScope.RunAsync(null!, UnitOfWorkOptions.Default, plain, logger, CancellationToken.None));
         await RejectsAsync("fault", async () => await UnitOfWorkScope.RunAsync(root, UnitOfWorkOptions.Default, plain, null!, logger, CancellationToken.None));
         await RejectsAsync("logger", async () => await UnitOfWorkScope.RunAsync(root, UnitOfWorkOptions.Default, plain, fault, null!, CancellationToken.None));
