@@ -22,7 +22,7 @@ public sealed class DatabaseWorkflowHealthTests
 
         Assert.Equal(TimeSpan.FromSeconds(15), DatabaseWorkflowOptions.FromConfiguration(Build()).HealthProbeInterval);
         Assert.Equal(TimeSpan.FromSeconds(6), DatabaseWorkflowOptions.FromConfiguration(Build(("XiHan:Workflow:Database:HealthProbeIntervalSeconds", "6"))).HealthProbeInterval);
-        Assert.Throws<ArgumentOutOfRangeException>(() => DatabaseWorkflowOptions.FromConfiguration(Build(("XiHan:Workflow:Database:HealthProbeIntervalSeconds", "0"))));
+        Assert.Throws<ArgumentException>(() => DatabaseWorkflowOptions.FromConfiguration(Build(("XiHan:Workflow:Database:HealthProbeIntervalSeconds", "0"))));
     }
 
     [Fact]

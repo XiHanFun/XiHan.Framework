@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.InMemory;
@@ -99,81 +99,38 @@ public sealed record InMemoryWorkflowOptions
     public static InMemoryWorkflowOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        var section = configuration.GetSection(ConfigurationSection);
         var options = new InMemoryWorkflowOptions();
-        if (Integer(configuration, "MaxDefinitions", 1) is { } definitions)
+        if (ConfigurationValues.ReadInt32(section, "MaxDefinitions", 1) is { } definitions)
         {
             options = options with { MaxDefinitions = definitions };
         }
 
-        if (Integer(configuration, "MaxInstances", 1) is { } instances)
+        if (ConfigurationValues.ReadInt32(section, "MaxInstances", 1) is { } instances)
         {
             options = options with { MaxInstances = instances };
         }
 
-        if (Integer(configuration, "MaxNodeInstances", 1) is { } nodes)
+        if (ConfigurationValues.ReadInt32(section, "MaxNodeInstances", 1) is { } nodes)
         {
             options = options with { MaxNodeInstances = nodes };
         }
 
-        if (Integer(configuration, "MaxBookmarks", 1) is { } bookmarks)
+        if (ConfigurationValues.ReadInt32(section, "MaxBookmarks", 1) is { } bookmarks)
         {
             options = options with { MaxBookmarks = bookmarks };
         }
 
-        if (Seconds(configuration, "PollIntervalSeconds") is { } poll)
+        if (ConfigurationValues.ReadSeconds(section, "PollIntervalSeconds") is { } poll)
         {
             options = options with { PollInterval = poll };
         }
 
-        if (Integer(configuration, "BatchSize", 1) is { } batch)
+        if (ConfigurationValues.ReadInt32(section, "BatchSize", 1) is { } batch)
         {
             options = options with { BatchSize = batch };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取整数键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
-    /// </remarks>
-    private static int? Integer(IConfiguration configuration, string key, int minimum)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{key}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-        {
-            throw new ArgumentException($"{ConfigurationSection}:{key} must be an integer, but was '{raw}'.");
-        }
-
-        return value >= minimum ? value : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be at least {minimum}.");
-    }
-
-    /// <summary>
-    /// 读取以秒计的正时长键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
-    /// </remarks>
-    private static TimeSpan? Seconds(IConfiguration configuration, string key)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{key}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) || !double.IsFinite(seconds))
-        {
-            throw new ArgumentException($"{ConfigurationSection}:{key} must be a number of seconds, but was '{raw}'.");
-        }
-
-        return seconds > 0 ? TimeSpan.FromSeconds(seconds) : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be positive.");
     }
 }

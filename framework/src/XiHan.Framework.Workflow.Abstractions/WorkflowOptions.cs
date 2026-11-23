@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Workflow.Abstractions;
@@ -159,28 +160,29 @@ public sealed record WorkflowOptions
     public static WorkflowOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        var section = configuration.GetSection(ConfigurationSection);
         var options = new WorkflowOptions();
-        if (Integer(configuration, "MaxNodeExecutionsPerBurst", 1) is { } burst)
+        if (ConfigurationValues.ReadInt32(section, "MaxNodeExecutionsPerBurst", 1) is { } burst)
         {
             options = options with { MaxNodeExecutionsPerBurst = burst };
         }
 
-        if (Integer(configuration, "MaxSubWorkflowDepth", 0) is { } depth)
+        if (ConfigurationValues.ReadInt32(section, "MaxSubWorkflowDepth", 0) is { } depth)
         {
             options = options with { MaxSubWorkflowDepth = depth };
         }
 
-        if (Seconds(configuration, "LockTimeoutSeconds") is { } lockTimeout)
+        if (ConfigurationValues.ReadSeconds(section, "LockTimeoutSeconds") is { } lockTimeout)
         {
             options = options with { LockTimeout = lockTimeout };
         }
 
-        if (Seconds(configuration, "NotResumableBackoffSeconds") is { } backoff)
+        if (ConfigurationValues.ReadSeconds(section, "NotResumableBackoffSeconds") is { } backoff)
         {
             options = options with { NotResumableBackoff = backoff };
         }
 
-        if (Integer(configuration, "ExpressionCacheSize", 1) is { } cache)
+        if (ConfigurationValues.ReadInt32(section, "ExpressionCacheSize", 1) is { } cache)
         {
             options = options with { ExpressionCacheSize = cache };
         }
@@ -190,76 +192,32 @@ public sealed record WorkflowOptions
             options = options with { Retention = retention };
         }
 
-        if (Seconds(configuration, "HousekeepingIntervalSeconds") is { } housekeeping)
+        if (ConfigurationValues.ReadSeconds(section, "HousekeepingIntervalSeconds") is { } housekeeping)
         {
             options = options with { HousekeepingInterval = housekeeping };
         }
 
-        if (Seconds(configuration, "HttpTimeoutSeconds") is { } http)
+        if (ConfigurationValues.ReadSeconds(section, "HttpTimeoutSeconds") is { } http)
         {
             options = options with { HttpTimeout = http };
         }
 
-        if (Seconds(configuration, "MaxHttpTimeoutSeconds") is { } maxHttp)
+        if (ConfigurationValues.ReadSeconds(section, "MaxHttpTimeoutSeconds") is { } maxHttp)
         {
             options = options with { MaxHttpTimeout = maxHttp };
         }
 
-        if (Integer(configuration, "MaxForEachItems", 1) is { } items)
+        if (ConfigurationValues.ReadInt32(section, "MaxForEachItems", 1) is { } items)
         {
             options = options with { MaxForEachItems = items };
         }
 
-        if (Integer(configuration, "MaxVariablesBytes", 1) is { } variables)
+        if (ConfigurationValues.ReadInt32(section, "MaxVariablesBytes", 1) is { } variables)
         {
             options = options with { MaxVariablesBytes = variables };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取整数键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是整数抛出 <see cref="ArgumentException"/>，小于 <paramref name="minimum"/> 抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
-    /// </remarks>
-    private static int? Integer(IConfiguration configuration, string key, int minimum)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{key}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
-        {
-            throw new ArgumentException($"{ConfigurationSection}:{key} must be an integer, but was '{raw}'.");
-        }
-
-        return value >= minimum ? value : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be at least {minimum}.");
-    }
-
-    /// <summary>
-    /// 读取以秒计的正时长键
-    /// </summary>
-    /// <remarks>
-    /// 缺省返回 <see langword="null"/>，不是有限的数抛出 <see cref="ArgumentException"/>，不是正数抛出 <see cref="ArgumentOutOfRangeException"/>，消息都带配置键与原值
-    /// </remarks>
-    private static TimeSpan? Seconds(IConfiguration configuration, string key)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{key}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) || !double.IsFinite(seconds))
-        {
-            throw new ArgumentException($"{ConfigurationSection}:{key} must be a number of seconds, but was '{raw}'.");
-        }
-
-        return seconds > 0 ? TimeSpan.FromSeconds(seconds) : throw new ArgumentOutOfRangeException($"{ConfigurationSection}:{key}", raw, $"{ConfigurationSection}:{key} must be positive.");
     }
 
     /// <summary>

@@ -101,6 +101,7 @@ public sealed class InMemoryWorkflowTests
     [InlineData("XiHan:Workflow:InMemory:MaxNodeInstances", "1.5")]
     [InlineData("XiHan:Workflow:InMemory:MaxBookmarks", "-1")]
     [InlineData("XiHan:Workflow:InMemory:PollIntervalSeconds", "fast")]
+    [InlineData("XiHan:Workflow:InMemory:PollIntervalSeconds", "Infinity")]
     [InlineData("XiHan:Workflow:InMemory:BatchSize", "0")]
     public void Options_InvalidValues_Throw_InsteadOfFallingBackToDefaults(string key, string value)
     {
