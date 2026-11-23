@@ -56,6 +56,13 @@ public sealed class NacosConfigurationTests
         Assert.Throws<ArgumentException>(() => NacosOptions.FromConfiguration(Build(), default));
         Assert.Throws<ArgumentException>(static () => NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "nacos:8848"))));
         Assert.Throws<ArgumentException>(static () => NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "http://a:8848"), ("XiHan:Configuration:Nacos:Format", "yaml"))));
+        // 数字枚举、装不进 TimeSpan 的秒数与空串都带着配置键拒绝（ADR-0255）：空串原先当作没写
+        foreach (var (key, value) in new[] { ("Format", "1"), ("Format", ""), ("LongPollTimeoutSeconds", "Infinity"), ("RequestTimeoutSeconds", "0"), ("RequestTimeoutSeconds", " "), ("AllowInsecureHttp", "yes"), ("AllowInsecureHttp", "") })
+        {
+            var thrown = Assert.Throws<ArgumentException>(() => NacosOptions.FromConfiguration(Build(("XiHan:Configuration:Nacos:ServerAddresses", "http://a:8848"), ($"XiHan:Configuration:Nacos:{key}", value))));
+            Assert.Contains($"'XiHan:Configuration:Nacos:{key}' must be ", thrown.Message, StringComparison.Ordinal);
+        }
+
         Assert.Throws<ArgumentException>(static () => new NacosOptions { ServerAddresses = [] });
     }
 

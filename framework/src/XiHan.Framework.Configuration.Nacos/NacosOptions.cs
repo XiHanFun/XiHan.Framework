@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
@@ -129,7 +128,7 @@ public sealed record NacosOptions
     /// 从配置与绑定读取（RFC-0016「资源绑定与配置节」）
     /// </summary>
     /// <remarks>
-    /// 地址：绑定 <c>nacos</c> 的主值优先于 <c>ServerAddresses</c>；用户名与密码：绑定的属性 <c>username</c> / <c>password</c> 各自优先于 <c>UserName</c> / <c>Password</c>。空白的主值与属性不算给出
+    /// 地址：绑定 <c>nacos</c> 的主值优先于 <c>ServerAddresses</c>；用户名与密码：绑定的属性 <c>username</c> / <c>password</c> 各自优先于 <c>UserName</c> / <c>Password</c>。空白的主值与属性不算给出。<c>Format</c>、<c>LongPollTimeoutSeconds</c>、<c>RequestTimeoutSeconds</c> 与 <c>AllowInsecureHttp</c> 写了值（含空串）就必须合法，不合法抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static NacosOptions FromConfiguration(IConfiguration configuration, Maybe<BindingValue> binding = default)
     {
@@ -151,29 +150,26 @@ public sealed record NacosOptions
             options = options with { Group = group };
         }
 
-        if (Text(configuration, "Format") is { } format)
+        // 文本键空白当作没写；格式、超时与开关写了值（含空串）就必须合法，不按缺省处理（ADR-0255）
+        var section = configuration.GetSection(ConfigurationSection);
+        if (ConfigurationValues.ReadEnum<NacosConfigFormat>(section, "Format") is { } format)
         {
-            options = Enum.TryParse<NacosConfigFormat>(format, ignoreCase: true, out var parsed)
-                ? options with { Format = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:Format must be 'Json' or 'Properties', but was '{format}'.");
+            options = options with { Format = format };
         }
 
-        if (Text(configuration, "LongPollTimeoutSeconds") is { } longPoll)
+        if (ConfigurationValues.ReadSeconds(section, "LongPollTimeoutSeconds") is { } longPoll)
         {
-            options = options with { LongPollTimeout = Seconds(longPoll, "LongPollTimeoutSeconds") };
+            options = options with { LongPollTimeout = longPoll };
         }
 
-        if (Text(configuration, "RequestTimeoutSeconds") is { } request)
+        if (ConfigurationValues.ReadSeconds(section, "RequestTimeoutSeconds") is { } request)
         {
-            options = options with { RequestTimeout = Seconds(request, "RequestTimeoutSeconds") };
+            options = options with { RequestTimeout = request };
         }
 
-        if (Text(configuration, "AllowInsecureHttp") is { } insecure)
+        if (ConfigurationValues.ReadBoolean(section, "AllowInsecureHttp") is { } insecure)
         {
-            options = options with
-            {
-                AllowInsecureHttp = bool.TryParse(insecure, out var allowed) ? allowed : throw new ArgumentException($"{ConfigurationSection}:AllowInsecureHttp must be 'true' or 'false', but was '{insecure}'."),
-            };
+            options = options with { AllowInsecureHttp = insecure };
         }
 
         return options;
@@ -196,17 +192,6 @@ public sealed record NacosOptions
     /// </remarks>
     private static string? Text(IConfiguration configuration, string name)
         => configuration[$"{ConfigurationSection}:{name}"] is { } value && !string.IsNullOrWhiteSpace(value) ? value : null;
-
-    /// <summary>
-    /// 解析正数秒
-    /// </summary>
-    /// <remarks>
-    /// 不合法抛出
-    /// </remarks>
-    private static TimeSpan Seconds(string text, string name)
-        => double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && value > 0
-            ? TimeSpan.FromSeconds(value)
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive number, but was '{text}'.");
 
     /// <summary>
     /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替
