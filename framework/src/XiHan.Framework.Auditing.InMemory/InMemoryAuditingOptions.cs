@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Auditing.InMemory;
@@ -48,18 +48,14 @@ public sealed record InMemoryAuditingOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new InMemoryAuditingOptions();
-        if (configuration[$"{ConfigurationSection}:Capacity"] is { } capacity)
+        if (ConfigurationValues.ReadInt32(configuration, $"{ConfigurationSection}:Capacity", 1) is { } capacity)
         {
-            options = int.TryParse(capacity, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) && parsed > 0
-                ? options with { Capacity = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:Capacity must be a positive integer, but was '{capacity}'.");
+            options = options with { Capacity = capacity };
         }
 
-        if (configuration[$"{ConfigurationSection}:LogEvents"] is { } log)
+        if (ConfigurationValues.ReadBoolean(configuration, $"{ConfigurationSection}:LogEvents") is { } log)
         {
-            options = bool.TryParse(log, out var parsed)
-                ? options with { LogEvents = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:LogEvents must be 'true' or 'false', but was '{log}'.");
+            options = options with { LogEvents = log };
         }
 
         return options;

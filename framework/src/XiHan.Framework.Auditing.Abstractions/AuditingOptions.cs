@@ -3,6 +3,7 @@
 
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Auditing.Abstractions;
@@ -71,18 +72,14 @@ public sealed partial record AuditingOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new AuditingOptions();
-        if (configuration[$"{ConfigurationSection}:Selection"] is { } selection)
+        if (ConfigurationValues.ReadEnum<AuditSelection>(configuration, $"{ConfigurationSection}:Selection") is { } selection)
         {
-            options = Enum.TryParse<AuditSelection>(selection, ignoreCase: true, out var parsed) && Enum.IsDefined(parsed)
-                ? options with { Selection = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:Selection must be one of 'Protected', 'All' or 'None', but was '{selection}'.");
+            options = options with { Selection = selection };
         }
 
-        if (configuration[$"{ConfigurationSection}:IncludeSuccesses"] is { } include)
+        if (ConfigurationValues.ReadBoolean(configuration, $"{ConfigurationSection}:IncludeSuccesses") is { } include)
         {
-            options = bool.TryParse(include, out var parsed)
-                ? options with { IncludeSuccesses = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:IncludeSuccesses must be 'true' or 'false', but was '{include}'.");
+            options = options with { IncludeSuccesses = include };
         }
 
         var exclude = configuration.GetSection($"{ConfigurationSection}:Exclude");

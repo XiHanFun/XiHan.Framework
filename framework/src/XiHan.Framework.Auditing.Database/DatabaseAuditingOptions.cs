@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Auditing.Database;
@@ -72,48 +72,27 @@ public sealed record DatabaseAuditingOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new DatabaseAuditingOptions();
-        if (PositiveInteger(configuration, "QueueCapacity") is { } capacity)
+        var section = configuration.GetSection(ConfigurationSection);
+        if (ConfigurationValues.ReadInt32(section, "QueueCapacity", 1) is { } capacity)
         {
             options = options with { QueueCapacity = capacity };
         }
 
-        if (PositiveInteger(configuration, "BatchSize") is { } batch)
+        if (ConfigurationValues.ReadInt32(section, "BatchSize", 1) is { } batch)
         {
             options = options with { BatchSize = batch };
         }
 
-        if (configuration[$"{ConfigurationSection}:FlushIntervalSeconds"] is { } interval)
+        if (ConfigurationValues.ReadSeconds(section, "FlushIntervalSeconds") is { } interval)
         {
-            options = double.TryParse(interval, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { FlushInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:FlushIntervalSeconds must be a positive number, but was '{interval}'.");
+            options = options with { FlushInterval = interval };
         }
 
-        if (configuration[$"{ConfigurationSection}:LogEvents"] is { } log)
+        if (ConfigurationValues.ReadBoolean(section, "LogEvents") is { } log)
         {
-            options = bool.TryParse(log, out var parsed)
-                ? options with { LogEvents = parsed }
-                : throw new ArgumentException($"{ConfigurationSection}:LogEvents must be 'true' or 'false', but was '{log}'.");
+            options = options with { LogEvents = log };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取配置节下的一个正整数
-    /// </summary>
-    /// <remarks>
-    /// 没有配置返回 <see langword="null"/>，不是正整数抛出
-    /// </remarks>
-    private static int? PositiveInteger(IConfiguration configuration, string name)
-    {
-        if (configuration[$"{ConfigurationSection}:{name}"] is not { } raw)
-        {
-            return null;
-        }
-
-        return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) && parsed > 0
-            ? parsed
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive integer, but was '{raw}'.");
     }
 }

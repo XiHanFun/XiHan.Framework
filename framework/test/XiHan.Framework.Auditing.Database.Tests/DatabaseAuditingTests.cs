@@ -260,9 +260,11 @@ public sealed class DatabaseAuditingTests
         }).Build());
         Assert.Equal((7, 3, TimeSpan.FromMilliseconds(500), false), (options.QueueCapacity, options.BatchSize, options.FlushInterval, options.LogEvents));
 
-        foreach (var (key, value) in new[] { ("QueueCapacity", "-1"), ("BatchSize", "x"), ("FlushIntervalSeconds", "0"), ("LogEvents", "yes") })
+        // Infinity 装不进 TimeSpan：带着配置键拒绝，不是 TimeSpan.FromSeconds 的 OverflowException
+        foreach (var (key, value) in new[] { ("QueueCapacity", "-1"), ("BatchSize", "x"), ("FlushIntervalSeconds", "0"), ("FlushIntervalSeconds", "Infinity"), ("LogEvents", "yes") })
         {
-            Assert.Throws<ArgumentException>(() => DatabaseAuditingOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"XiHan:Auditing:Database:{key}"] = value }).Build()));
+            var thrown = Assert.Throws<ArgumentException>(() => DatabaseAuditingOptions.FromConfiguration(new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { [$"XiHan:Auditing:Database:{key}"] = value }).Build()));
+            Assert.Contains($"XiHan:Auditing:Database:{key}", thrown.Message, StringComparison.Ordinal);
         }
     }
 
