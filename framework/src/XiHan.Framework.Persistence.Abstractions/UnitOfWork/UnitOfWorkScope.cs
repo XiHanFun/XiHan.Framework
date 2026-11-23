@@ -16,7 +16,7 @@ namespace XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 /// 收尾规则：<c>body</c> 返回成功即提交，提交返回的失败原样返回；<c>body</c> 返回失败即回滚并原样返回；开始、<c>body</c> 或提交抛出即回滚。回滚只在工作单元仍活动时进行，一律用 <see cref="CancellationToken.None"/>。回滚与释放作用域自身的失败只经 <c>logger</c> 记警告，不改变已经确定的结果或异常
 /// </para>
 /// <para>
-/// 抛出的异常有两种交还方式。不带 <c>fault</c> 的重载回滚后原样抛出。带 <c>fault</c> 的重载回滚后把异常交给 <c>fault</c> 映射成调用方自己的错误并作为失败结果返回：外壳不认识各子系统的错误码，也不替调用方记这条日志——错误里只该写异常类型的全名，完整异常由调用方记进日志，异常消息可能带连接串与主机名
+/// 抛出的异常有两种交还方式。不带 <c>fault</c> 的重载回滚后原样抛出。带 <c>fault</c> 的重载回滚后把异常交给 <c>fault</c> 映射成调用方自己的错误并作为失败结果返回：外壳不认识各子系统的错误码，也不替调用方记这条日志——异常消息是驱动写的，可能带连接串与主机名：错误里只该写异常类型的全名（<see cref="FrameworkException"/> 可以写它的错误码），完整异常由调用方记进日志
 /// </para>
 /// <para>
 /// 取消只有一种：抛出的是 <see cref="OperationCanceledException"/> 且调用方的令牌已请求取消。这时回滚后原样抛出，不交给 <c>fault</c>。令牌没有取消时的 <see cref="OperationCanceledException"/>（驱动把命令超时报告成取消）与其他异常一样是故障
