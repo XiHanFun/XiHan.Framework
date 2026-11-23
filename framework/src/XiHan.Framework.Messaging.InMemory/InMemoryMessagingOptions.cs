@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.InMemory;
@@ -43,30 +43,11 @@ public sealed record InMemoryMessagingOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new InMemoryMessagingOptions();
-        if (ReadPositive(configuration, "MaxQueuedMessages") is { } queued)
+        if (ConfigurationValues.ReadInt32(configuration.GetSection(ConfigurationSection), "MaxQueuedMessages", 1) is { } queued)
         {
             options = options with { MaxQueuedMessages = queued };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取配置节下的正整数
-    /// </summary>
-    /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static int? ReadPositive(IConfiguration configuration, string name)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{name}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-            ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive integer, but was '{raw}'.");
     }
 }

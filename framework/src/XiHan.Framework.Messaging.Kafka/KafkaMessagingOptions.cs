@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
@@ -116,20 +115,15 @@ public sealed record KafkaMessagingOptions
             options = options with { TopicPrefix = prefix };
         }
 
-        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
-        if (probe is not null)
+        var section = configuration.GetSection(ConfigurationSection);
+        if (ConfigurationValues.ReadSeconds(section, "HealthProbeIntervalSeconds") is { } probe)
         {
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
+            options = options with { HealthProbeInterval = probe };
         }
 
-        var redelivery = configuration[$"{ConfigurationSection}:RedeliveryDelaySeconds"];
-        if (redelivery is not null)
+        if (ConfigurationValues.ReadSeconds(section, "RedeliveryDelaySeconds") is { } redelivery)
         {
-            options = double.TryParse(redelivery, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { RedeliveryDelay = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:RedeliveryDelaySeconds must be a positive number, but was '{redelivery}'.");
+            options = options with { RedeliveryDelay = redelivery };
         }
 
         var properties = new Dictionary<string, string>(StringComparer.Ordinal);

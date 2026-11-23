@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
@@ -127,20 +126,15 @@ public sealed record RabbitMQMessagingOptions
             options = options with { Exchange = exchange };
         }
 
-        var prefetch = configuration[$"{ConfigurationSection}:PrefetchCount"];
-        if (prefetch is not null)
+        var section = configuration.GetSection(ConfigurationSection);
+        if (ConfigurationValues.ReadInt32(section, "PrefetchCount", 1, ushort.MaxValue) is { } prefetch)
         {
-            options = ushort.TryParse(prefetch, NumberStyles.None, CultureInfo.InvariantCulture, out var count) && count >= 1
-                ? options with { PrefetchCount = count }
-                : throw new ArgumentException($"{ConfigurationSection}:PrefetchCount must be an integer between 1 and 65535, but was '{prefetch}'.");
+            options = options with { PrefetchCount = (ushort)prefetch };
         }
 
-        var probe = configuration[$"{ConfigurationSection}:HealthProbeIntervalSeconds"];
-        if (probe is not null)
+        if (ConfigurationValues.ReadSeconds(section, "HealthProbeIntervalSeconds") is { } probe)
         {
-            options = double.TryParse(probe, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0
-                ? options with { HealthProbeInterval = TimeSpan.FromSeconds(seconds) }
-                : throw new ArgumentException($"{ConfigurationSection}:HealthProbeIntervalSeconds must be a positive number, but was '{probe}'.");
+            options = options with { HealthProbeInterval = probe };
         }
 
         return options;

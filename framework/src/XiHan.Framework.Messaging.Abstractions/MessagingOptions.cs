@@ -1,9 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions;
@@ -67,12 +67,9 @@ public sealed partial record MessagingOptions
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var options = new MessagingOptions();
-        var attempts = configuration[$"{ConfigurationSection}:MaxAttempts"];
-        if (attempts is not null)
+        if (ConfigurationValues.ReadInt32(configuration.GetSection(ConfigurationSection), "MaxAttempts", 1) is { } attempts)
         {
-            options = int.TryParse(attempts, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-                ? options with { MaxAttempts = value }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxAttempts must be a positive integer, but was '{attempts}'.");
+            options = options with { MaxAttempts = attempts };
         }
 
         if (configuration[$"{ConfigurationSection}:DeadLetterSuffix"] is { } suffix)

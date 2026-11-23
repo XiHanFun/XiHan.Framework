@@ -63,6 +63,7 @@ public sealed class RedisMessagingOptionsTests
     [InlineData("XiHan:Messaging:Redis:BatchSize", "1001")]
     [InlineData("XiHan:Messaging:Redis:BatchSize", "ten")]
     [InlineData("XiHan:Messaging:Redis:PollIntervalSeconds", "0")]
+    [InlineData("XiHan:Messaging:Redis:PollIntervalSeconds", "Infinity")]
     [InlineData("XiHan:Messaging:Redis:ClaimIdleTimeSeconds", "-1")]
     [InlineData("XiHan:Messaging:Redis:ClaimIdleTimeSeconds", "0.0001")]
     [InlineData("XiHan:Messaging:Redis:MaxLength", "0")]

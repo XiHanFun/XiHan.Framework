@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
@@ -176,59 +175,35 @@ public sealed partial record RedisMessagingOptions
                 : throw new ArgumentException($"{ConfigurationSection}:ConsumerGroup must be 1 to 64 letters, digits, '.', '_' or '-', starting with a letter or digit, but was '{group}'.");
         }
 
-        var batch = configuration[$"{ConfigurationSection}:BatchSize"];
-        if (batch is not null)
+        var section = configuration.GetSection(ConfigurationSection);
+        if (ConfigurationValues.ReadInt32(section, "BatchSize", 1, MaxBatchSize) is { } batch)
         {
-            options = int.TryParse(batch, NumberStyles.None, CultureInfo.InvariantCulture, out var size) && size is >= 1 and <= MaxBatchSize
-                ? options with { BatchSize = size }
-                : throw new ArgumentException($"{ConfigurationSection}:BatchSize must be an integer between 1 and {MaxBatchSize}, but was '{batch}'.");
+            options = options with { BatchSize = batch };
         }
 
-        if (ReadSeconds(configuration, "PollIntervalSeconds") is { } poll)
+        if (ConfigurationValues.ReadSeconds(section, "PollIntervalSeconds") is { } poll)
         {
             options = options with { PollInterval = poll };
         }
 
-        if (ReadSeconds(configuration, "ClaimIdleTimeSeconds") is { } claim)
+        if (ConfigurationValues.ReadSeconds(section, "ClaimIdleTimeSeconds") is { } claim)
         {
             options = claim >= TimeSpan.FromMilliseconds(1)
                 ? options with { ClaimIdleTime = claim }
                 : throw new ArgumentException($"{ConfigurationSection}:ClaimIdleTimeSeconds must be at least 0.001.");
         }
 
-        var length = configuration[$"{ConfigurationSection}:MaxLength"];
-        if (length is not null)
+        if (ConfigurationValues.ReadInt64(section, "MaxLength", 1) is { } length)
         {
-            options = long.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture, out var maximum) && maximum >= 1
-                ? options with { MaxLength = maximum }
-                : throw new ArgumentException($"{ConfigurationSection}:MaxLength must be a positive integer, but was '{length}'.");
+            options = options with { MaxLength = length };
         }
 
-        if (ReadSeconds(configuration, "HealthProbeIntervalSeconds") is { } probe)
+        if (ConfigurationValues.ReadSeconds(section, "HealthProbeIntervalSeconds") is { } probe)
         {
             options = options with { HealthProbeInterval = probe };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读一个以秒为单位的正数键
-    /// </summary>
-    /// <remarks>
-    /// 没有这个键为 <see langword="null"/>；不是正数抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static TimeSpan? ReadSeconds(IConfiguration configuration, string key)
-    {
-        var text = configuration[$"{ConfigurationSection}:{key}"];
-        if (text is null)
-        {
-            return null;
-        }
-
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && seconds > 0 && seconds <= TimeSpan.MaxValue.TotalSeconds
-            ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"{ConfigurationSection}:{key} must be a positive number, but was '{text}'.");
     }
 
     /// <summary>

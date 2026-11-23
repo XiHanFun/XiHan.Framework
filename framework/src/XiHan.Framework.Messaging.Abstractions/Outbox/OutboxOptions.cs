@@ -1,8 +1,8 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Globalization;
 using Microsoft.Extensions.Configuration;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Primitives;
 
@@ -138,89 +138,49 @@ public sealed record OutboxOptions
     public static OutboxOptions FromConfiguration(IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        var section = configuration.GetSection(ConfigurationSection);
         var options = new OutboxOptions();
-        if (ReadSeconds(configuration, "PollIntervalSeconds", allowZero: false) is { } interval)
+        if (ConfigurationValues.ReadSeconds(section, "PollIntervalSeconds") is { } interval)
         {
             options = options with { PollInterval = interval };
         }
 
-        if (ReadPositive(configuration, "BatchSize") is { } batch)
+        // 这里只核对是正整数：上界 EntityQuery.DefaultMaxTake 由属性核对
+        if (ConfigurationValues.ReadInt32(section, "BatchSize", 1) is { } batch)
         {
             options = options with { BatchSize = batch };
         }
 
-        if (ReadPositive(configuration, "MaxAttempts") is { } attempts)
+        if (ConfigurationValues.ReadInt32(section, "MaxAttempts", 1) is { } attempts)
         {
             options = options with { MaxAttempts = attempts };
         }
 
-        if (ReadSeconds(configuration, "RetryDelaySeconds", allowZero: false) is { } retry)
+        if (ConfigurationValues.ReadSeconds(section, "RetryDelaySeconds") is { } retry)
         {
             options = options with { RetryDelay = retry };
         }
 
-        if (ReadSeconds(configuration, "MaxRetryDelaySeconds", allowZero: false) is { } maxRetry)
+        if (ConfigurationValues.ReadSeconds(section, "MaxRetryDelaySeconds") is { } maxRetry)
         {
             options = options with { MaxRetryDelay = maxRetry };
         }
 
-        if (ReadSeconds(configuration, "DispatchedRetentionSeconds", allowZero: true) is { } retention)
+        if (ConfigurationValues.ReadSeconds(section, "DispatchedRetentionSeconds", allowZero: true) is { } retention)
         {
             options = options with { DispatchedRetention = retention };
         }
 
-        if (configuration[$"{ConfigurationSection}:IncludeShards"] is { } include)
+        if (ConfigurationValues.ReadBoolean(section, "IncludeShards") is { } shards)
         {
-            options = options with
-            {
-                IncludeShards = bool.TryParse(include, out var shards) ? shards : throw new ArgumentException($"{ConfigurationSection}:IncludeShards must be 'true' or 'false', but was '{include}'."),
-            };
+            options = options with { IncludeShards = shards };
         }
 
-        if (ReadSeconds(configuration, "ShardRefreshIntervalSeconds", allowZero: false) is { } refresh)
+        if (ConfigurationValues.ReadSeconds(section, "ShardRefreshIntervalSeconds") is { } refresh)
         {
             options = options with { ShardRefreshInterval = refresh };
         }
 
         return options;
-    }
-
-    /// <summary>
-    /// 读取配置节下的秒数
-    /// </summary>
-    /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是正数（允许 0 时不是非负数）抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static TimeSpan? ReadSeconds(IConfiguration configuration, string name, bool allowZero)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{name}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        // 用不变区域性解析，避免小数点随宿主区域设置变化
-        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) && (seconds > 0 || (allowZero && seconds == 0))
-            ? TimeSpan.FromSeconds(seconds)
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a {(allowZero ? "non-negative" : "positive")} number, but was '{raw}'.");
-    }
-
-    /// <summary>
-    /// 读取配置节下的正整数
-    /// </summary>
-    /// <remarks>
-    /// 未配置返回 <see langword="null"/>，不是正整数抛出 <see cref="ArgumentException"/>
-    /// </remarks>
-    private static int? ReadPositive(IConfiguration configuration, string name)
-    {
-        var raw = configuration[$"{ConfigurationSection}:{name}"];
-        if (raw is null)
-        {
-            return null;
-        }
-
-        return int.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture, out var value) && value >= 1
-            ? value
-            : throw new ArgumentException($"{ConfigurationSection}:{name} must be a positive integer, but was '{raw}'.");
     }
 }
