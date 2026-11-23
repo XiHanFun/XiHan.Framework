@@ -2,6 +2,39 @@
 
 本页记录 XiHan Framework 各版本中使用者可感知的变更，每条标注 **新增 / 修复 / 优化 / 调整 / 移除** 类别；仓库自身的 CI、测试工程与构建脚本不列入。
 
+## 未发布
+
+::: warning 升级须知
+- `ISecretStore.GetAsync(names)` 返回与入参同序的 `Result<SecretValue>` 列表，`SecretLookup` 已删除：自写的密钥库改返回类型，读 `lookups[i].Result` 的地方改成 `lookups[i]`
+- `MapXiHanHealth()`、`MapXiHanBlobs()` 返回 `IEndpointConventionBuilder`：把别的 `Map*` 链在它们后面的写法拆成两条语句
+- 配置里写成空串的键不再当作没写，枚举键不再接受数字写法：启动时报 `ArgumentException` 并带完整配置键，按提示改配置
+:::
+
+### 内核与原语
+
+- **新增** `ConfigurationValues`：从配置逐键读秒数、整数、布尔与枚举，写了却不合法时抛带完整配置键的 `ArgumentException`；框架各包的选项类都改用它（ADR-0255）
+- **调整** 配置里的整数接受两侧空白与前导 `+`；秒数写成 `Infinity`、`NaN` 或超出 `TimeSpan` 范围时报带配置键的错误，以前是不带配置键的 `OverflowException`（ADR-0255）
+- **修复** 操作 ID 结尾带换行的操作在编译时报 XHG003，以前到启动才失败（ADR-0254）
+
+### 宿主、协议与插件
+
+- **调整** `MapXiHanHealth()` 与 `MapXiHanBlobs()` 返回约定构建器，可以给探针与对象端点加 `RequireHost`、限流豁免等端点约定（ADR-0256）
+- **新增** `HttpInvocation.ReadBodyAsync` 限长读取请求体，HTTP、MCP 与 CloudEvents 入口共用（ADR-0254）
+- **修复** MCP 与 CloudEvents 入口的请求体超过服务器自己的上限时答复各自的错误，以前是不带错误体的 413（ADR-0254）
+- **新增** `McpStdioTransport.OpenInput`：按 UTF-8 读标准输入；命令行工具的 `mcp` 命令不再按 BOM 改用别的编码（ADR-0254）
+- **修复** `XiHan:Protocols:Http:MaxRequestBodyBytes` 写成 `0` 时的报错带上配置键（ADR-0254）
+- **修复** Wasm 宿主拒收不是 Wasm 插件的清单时文案不再说「不是进程外插件」，消息键改为 `plugins.module.not_wasm`（ADR-0254）
+
+### 配置
+
+- **调整** `ISecretStore.GetAsync(names)` 返回同序、等长的 `Result<SecretValue>` 列表，删除 `SecretLookup`（ADR-0257）
+
+### 对象存储
+
+- **新增** `BlobMultipart.ValidateParts`：完成清单非空、编号严格升序的校验，自写分片上传的 Provider 在访问存储前调用（ADR-0254）
+- **修复** S3 存储的完成清单里有 `null` 时抛 `ArgumentException`，以前是 `NullReferenceException`（ADR-0254）
+- **调整** 文件系统存储先查完成清单、再看上传是否存在：上传不存在且清单为空或乱序时返回 `OBJECTSTORAGE_VALIDATION_002`，与 S3 一致（ADR-0254）
+
 ## v5.0.0-rc.7（2026-11-23）
 
 ::: warning 候选版须知
