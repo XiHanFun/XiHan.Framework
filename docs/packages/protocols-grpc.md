@@ -29,7 +29,7 @@ gRPC 协议适配器，提供 `protocols.grpc@1`：把 `Expose.Grpc` 的操作�
 dotnet add package XiHan.Framework.Protocols.Grpc --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

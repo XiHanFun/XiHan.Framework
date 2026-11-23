@@ -43,7 +43,7 @@
 dotnet add package XiHan.Framework.Kernel --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 在通用宿主上直接使用内核（没有 HTTP）：
 
@@ -85,12 +85,13 @@ await builder.Build().RunAsync();
 | `IShadowAwareFeature` | 能力全部被顶替时内核改调 `ConfigureShadowed`，只登记与能力选择无关的服务（命名存储实例的 Provider）；不注册契约、不贡献中间件、不启动 |
 | `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`（归属为本特性的清单 ID）、`AddOperation`、`AddStartupCheck`（启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归失败策略管，ADR-0085）、`GetBinding` / `FindBinding` |
 | `KernelOptions` / `FailurePolicy` | 内核选项与失败策略 |
+| `ConfigurationValues` | 从配置逐键读标量：`ReadSeconds`、`ReadInt32`、`ReadInt64`、`ReadBoolean`、`ReadEnum<TEnum>`。键不存在返回 `null`；写了值（含空串）就必须合法，否则抛 `ArgumentException`，消息是 `'<完整配置键>' must be …, but was '<原值>'.`。各包的选项类都用它，自己写选项类时也用它，不要各写一份解析 |
 | `StartupBannerOptions` | 启动 Banner：`Enabled`（读 `XiHan:Kernel:Banner:Enabled`）、`Output`（写入目标，缺省标准输出）、`ApplicationVersion`（宿主包从入口程序集填入）；`FromConfiguration(configuration, defaults)` 让宿主给出自己的缺省 |
 | `IHealthContributor` / `PeriodicHealthContributor` / `ContributorStatus` / `HealthSnapshot` | 健康条目与快照 |
 | `ResolvedGraph` / `ResolvedNode` | 已解析的能力图谱，节点带被选中的能力、可选依赖缺失与 shadowed 标记；`IsRequestedFor` 区分被要求的选中（有依赖或经 `XiHan:Providers` / `UseProvider` 指定）与兜底选出 |
 | `PipelineBuilder` / `IPipelineMiddleware` / `PipelineStep` / `Placement` | 管道 |
 | `IInvocationAccessor` | 作用域服务，取当前调用的上下文 |
-| `InvocationContextExtensions` | `FindOutcome` / `SetOutcome`、`FindOrigin` / `SetOrigin`、`Get` / `Set`（`ContextItemKey<T>`） |
+| `InvocationContextExtensions` | `FindOutcome` / `SetOutcome`、`FindOrigin` / `SetOrigin`、`Find` / `Set`（`ContextItemKey<T>`） |
 | `IOperationInvoker` / `OperationRegistry` / `OperationDescriptor` | 操作调用与登记；`OperationRegistry(permissions)` 绑定核对用的权限登记表，`AddRange(owner, operations, permissions)` 一个归属的一组操作连同它定义的权限码全进或全不进；`RemoveOwnedBy(owner)` 在锁里一次撤回该归属的全部操作与权限码（插件卸载时用，之后可以再登记，ADR-0085）；`Enforce(check)` 核对已登记的操作并挂上核对，此后每次登记都经过它（授权能力用它核对契约的策略名，ADR-0080）；`EnforceAdditions(check)` 挂整组的核对，`check(已登记的, 新增的)` 看得到同一组里的其他项（协议适配器用它挡住路由与 tool 名冲突）；`GetChangeToken()` 的令牌在内容每变一次时触发，协议适配器据此让端点、文档与 tool 表跟随登记表（ADR-0251） |
 | `SecurityContext` / `Principal` / `TenantContext` | 安全上下文，`context.GetSecurity()` 读取，未认证时为 `SecurityContext.Anonymous` |
 | `PermissionDefinition` / `PermissionRegistry` | 权限码登记，每个码记下归属（特性或插件的清单 ID）；`Add(owner, permission)` / `AddRange(owner, permissions)` 一批全进或全不进，`RemoveOwnedBy(owner)` 按归属撤回，写入与撤回在锁内（插件运行期加载与卸载也会登记、撤回） |
@@ -119,7 +120,7 @@ app.MapGet("/diagnostics/state", (App xihan) => xihan.Health().State.ToString())
 app.Run();
 ```
 
-对外暴露这类端点时要加认证约束（`RequireXiHanAuthentication`），见[宿主与 Web 应用](/web/hosting)。
+对外暴露这类端点时要加认证约束（`RequireXiHanAuthentication`），见 [ASP.NET Core 宿主](/web/hosting)。
 
 ## 行为与限制
 

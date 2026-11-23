@@ -128,7 +128,7 @@ public sealed class CatalogFeature : IFeature
 {
     public Manifest Manifest { get; } = new()
     {
-        Id = "acme.catalog",
+        Id = "xihan.acme.catalog",
         Package = "Acme.Catalog",
         Version = "1.0.0",
         Primitives = 1,
@@ -160,7 +160,7 @@ if (cached.TryGetValue(out var product))
 }
 ```
 
-内存实现在同一个键存的对象类型与 `T` 不符时当作未命中；序列化实现反序列化失败时抛出 `InvalidOperationException`。值不能是 `null`，`SetAsync<T>` 对 `null` 抛 `ArgumentNullException`。
+内存实现在同一个键存的对象类型与 `T` 不符时当作未命中；序列化实现在存的 JSON 与 `T` 对不上时抛出 `JsonException`，反序列化结果为 `null` 时抛出 `InvalidOperationException`。值不能是 `null`，`SetAsync<T>` 对 `null` 抛 `ArgumentNullException`。
 
 ## 过期
 

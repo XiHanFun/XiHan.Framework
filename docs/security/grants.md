@@ -264,7 +264,7 @@ public static class OfficeHoursCondition
 | 错误码 | 含义 | HTTP |
 | --- | --- | --- |
 | `SECURITY_DENIED_004` | 缺少权限，含被 `IPermissionFilter` 收窄 | 403 |
-| `SECURITY_NOTFOUND_002` | 要撤销的授予不存在（`Security.Database` 的逐项结果） | — |
+| `SECURITY_NOTFOUND_002` | 要撤销的授予不存在（`IPermissionGrantAdministration.RevokeAsync` 的逐项结果，内存与数据库实现相同） | — |
 | `SECURITY_UNAVAILABLE_001` | 授予存储、授予来源或收窄过滤器读不到数据，不当作不持有 | 503 |
 | `SECURITY_UNAVAILABLE_002` | 内存授予存储容量已满 | — |
 | `SECURITY_VALIDATION_002` / `SECURITY_VALIDATION_003` | 条件无效（属性未登记、运算符与值种类不搭配、值解析不了）/ 属性值不是登记的种类 | — |

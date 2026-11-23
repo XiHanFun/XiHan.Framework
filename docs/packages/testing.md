@@ -9,7 +9,7 @@
 | 能力 | — |
 | 特性入口 | —（`StubFeature` 是测试用的特性桩） |
 | 配置节 | — |
-| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Caching.Abstractions`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection` |
+| 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Caching.Abstractions`、`XiHan.Framework.Security.WebAuthn`；`Microsoft.Extensions.Configuration`、`Microsoft.Extensions.DependencyInjection`、`System.Formats.Cbor` |
 | AOT | 兼容 |
 | 稳定性 | Stable；`FaultyCache` 为 Preview |
 
@@ -32,7 +32,7 @@
 dotnet add package XiHan.Framework.Testing --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](/testing/basics)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。测试项目的其余配置（xUnit v3、Microsoft.Testing.Platform）见[测试与一致性套件](/testing/basics)。
 
 ## 主要类型
 

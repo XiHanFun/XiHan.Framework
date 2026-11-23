@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Persistence.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已包含本包与内存实现。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 已包含本包与内存实现。
 
 本包的契约不需要启用；雪花标识需要显式装配：
 

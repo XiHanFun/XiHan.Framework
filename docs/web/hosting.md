@@ -24,7 +24,7 @@ ASP.NET Core 自己就能承载 Web 应用，但它不知道什么是调用上�
 
 1. 匹配到的端点带 `PipelineBypassMetadata`（探针、OpenAPI 文档、`.proto`、gRPC 方法，以及应用自己标注的端点）时直接放行，不建调用上下文。
 2. 应用不在服务状态（`Ready` 或 `Degraded`）时直接回 503，错误码 `KERNEL_UNAVAILABLE_001`。
-3. 从请求头建调用上下文。端点元数据上的授权要求（`RequireXiHan*`）与操作描述（`MapXiHanOperations` 映射的端点）进入上下文；操作端点先把请求绑定成载荷，绑定失败直接写 Problem Details，不进管道。
+3. 从请求头建调用上下文。端点元数据上的授权要求（`RequireXiHan*`）与操作描述（`MapXiHanOperations` 映射的端点）进入上下文；操作端点的载荷不在这里读，只把绑定委托作为来源放进上下文，Validate 阶段（Authorize 之后）才读请求体并绑定，绑定失败与其他失败一样写成 Problem Details。
 4. 经内核管道 `Ingress → Observe → Resilience → Authenticate → Tenant → Authorize → Validate → Idempotency → Transaction → Handle → Egress` 执行，ASP.NET Core 剩下的中间件与端点委托就是 Handle 阶段。端点抛出的异常由内核翻译成 `KERNEL_UNEXPECTED_001`。
 5. 调用结果是失败、且响应还没有开始写出时，宿主写 Problem Details；端点已经写出正文时保留端点的内容。
 
@@ -115,8 +115,12 @@ curl -s localhost:5000/health/ready
 各特性与健康条目的详情由 `MapXiHanHealthDetails(pattern)`（缺省 `/health/details`）给出。它经内核管道，返回的约定构建器能加访问要求，详情会告诉访问者装配了哪些特性与 Provider，不要匿名开放：
 
 ```csharp
+// health.read 是应用自己的权限码，要先在某个特性的 Configure 里登记：
+// context.AddPermission(new PermissionDefinition("health.read", "Read health details"));
 app.MapXiHanHealthDetails().RequireXiHanPermission("health.read");
 ```
+
+端点引用的权限码没有登记时，宿主建请求管道时启动失败（`SECURITY_VALIDATION_004`）。
 
 下面的详情只截取了 `features` 里的一条：
 

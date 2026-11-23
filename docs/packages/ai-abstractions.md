@@ -36,7 +36,7 @@ AI 的抽象包：以 `Microsoft.Extensions.AI` 为线格式的 Provider 目录�
 dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已装配 `AIToolsFeature`；其他组合里 `UseFeature<AIToolsFeature>()`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已装配 `AIToolsFeature`；其他组合里 `UseFeature<AIToolsFeature>()`。
 
 ## 配置
 

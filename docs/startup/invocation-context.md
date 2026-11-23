@@ -48,7 +48,7 @@ Baggage 是 W3C 格式的键值对，但框架只传播已登记的键，未登�
 | `SetSecurity(security)`、`SetTenant(tenant)` | 同上 | 由 Authenticate 与 Tenant 阶段写入，之后的阶段不应再改 |
 | `SetOutcome(result)`、`SetOutcomeIfMissing(result)`、`FindOutcome()` | `XiHan.Framework.Kernel.Pipeline` | 本次调用的结果：中间件短路或处理器完成时写入，宿主在 Egress 读出翻译成协议；`FindOutcome()` 返回 `Maybe<Result>`，没写过时无值，`App.InvokeAsync` 把无值当成功 |
 | `FindOrigin()`、`SetOrigin(origin)` | 同上 | 调用来源 `InvocationOrigin`，见下文；`FindOrigin()` 返回 `Maybe<InvocationOrigin>` |
-| `Get<T>(key)`、`Set<T>(key, value)` | 同上 | 用 `ContextItemKey<T>` 在 `Items` 里存取类型化的值，`Get` 返回 `Maybe<T>` |
+| `Find<T>(key)`、`Set<T>(key, value)` | 同上 | 用 `ContextItemKey<T>` 在 `Items` 里存取类型化的值，`Find` 返回 `Maybe<T>` |
 
 ## 最小示例
 
@@ -122,7 +122,7 @@ curl -s -X POST localhost:5000/diagnostics:whoami \
 ```
 
 ```json
-{"traceId":"4bf92f3577b34da6a3ce929d0e0e4736","principal":"anonymous","isAuthenticated":false,"tenant":null,"correlation":"order-42","remainingMs":null,"elapsedMs":0.4}
+{"traceId":"4bf92f3577b34da6a3ce929d0e0e4736","principal":null,"isAuthenticated":false,"tenant":null,"correlation":"order-42","remainingMs":null,"elapsedMs":0.4}
 ```
 
 再加一个 `xihan-deadline: <RFC 3339 时刻>` 请求头，`remainingMs` 就是到该时刻的剩余毫秒数。同一份操作在命令行宿主上是 `app diagnostics whoami --correlation order-42 --timeout 30`，输出同样的字段，`remainingMs` 接近 30000，`traceId` 每次调用新生成。

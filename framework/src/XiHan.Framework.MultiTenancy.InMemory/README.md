@@ -6,7 +6,7 @@
 
 ## 主要特性
 
-* 租户来自 `XiHan:MultiTenancy:Tenants`，运行时可用 `InMemoryTenantStore.Set` / `Remove` 增删
+* 租户来自 `XiHan:MultiTenancy:Tenants`，运行时经 `ITenantAdministration`（`UpsertAsync` / `RemoveAsync`）增删
 * 先从主体声明、再从 Baggage 解析租户
 * 属性 `ConnectionString` 有值即分库
 

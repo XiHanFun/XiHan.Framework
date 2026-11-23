@@ -158,7 +158,7 @@ app.Run();
 }
 ```
 
-把 `plugin/echo.wasm` 与 `plugin/xihan.manifest.json` 放到 `plugins/echo-wasm`，启动应用：`POST /echoes` 带 `{"text":"hi"}` 得到带问候语与租户的回声；带 Baggage 租户 `blocked` 的任何调用在 Observe 阶段被中间件 `echo-guard` 短路为 `ECHOWASM_DENIED_001`；`/health/ready` 里出现 `plugins.xihan.samples.echowasm`。Windows 上的宿主项目还要先按下文关闭 CET 兼容。
+把 `plugin/echo.wasm` 与 `plugin/xihan.manifest.json` 放到 `plugins/echo-wasm`，启动应用：`POST /echoes` 带 `{"text":"hi"}` 得到带问候语与租户的回声；带 Baggage 租户 `blocked` 的任何调用在 Observe 阶段被中间件 `echo-guard` 短路为 `ECHOWASM_DENIED_001`；健康详情端点（`MapXiHanHealthDetails()` 映射的 `/health/details`）里出现 `plugins.xihan.samples.echowasm`。Windows 上的宿主项目还要先按下文关闭 CET 兼容。
 
 ## 贡献中间件
 
@@ -200,7 +200,7 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 | `HealthFailures` | 正整数 | 3 | 连续多少次健康探测失败视为实例失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重建多少次，之后保持 `Failed` |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重建次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm` | 插件工作目录的根，每个插件一个子目录 |
+| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-wasm-<用户名>` | 插件工作目录的根，每个插件一个子目录 |
 
 取值不合类型与范围时，`WasmPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。CPU 按 epoch 中断强制截止：操作与事件用调用上下文的剩余时间（没有时取 `CallTimeout`），中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`。
 

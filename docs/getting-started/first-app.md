@@ -183,7 +183,7 @@ Content-Language: zh-CN
  "details":{"id":"greetings.create","reason":"$.name: required property 'name' is missing"}}
 ```
 
-`/health/ready` 返回应用状态与每个特性的状态，可以直接作为就绪探针。
+`/health/ready` 返回 `status` 与应用状态 `state`，可以直接作为就绪探针；每个特性的状态由 `MapXiHanHealthDetails()` 映射的 `/health/details` 给出。
 
 ## 换成 Standard 组合
 

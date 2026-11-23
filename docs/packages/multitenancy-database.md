@@ -35,7 +35,7 @@
 dotnet add package XiHan.Framework.MultiTenancy.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配，下面用 `Persistence.SqlSugar`，它按约定映射 `TenantRecord`，不需要登记：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配，下面用 `Persistence.SqlSugar`，它按约定映射 `TenantRecord`，不需要登记：
 
 ```csharp
 using SqlSugar;

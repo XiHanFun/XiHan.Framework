@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.Workflow.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记自定义活动与指派规则：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。各 Provider 包与 `Profiles.Full` 都传递引用本包。登记自定义活动与指派规则：
 
 ```csharp
 using XiHan.Framework.Primitives;
@@ -125,6 +125,7 @@ public sealed class RoleAssigneeProvider : IAssigneeProvider
 ```csharp
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Activities;
 using XiHan.Framework.Workflow.Abstractions.Definitions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
@@ -145,7 +146,7 @@ public sealed class GreetingFlow(IWorkflowDefinitionCatalog catalog, IWorkflowEn
         var draft = (await catalog.CreateAsync(definition, cancellationToken)).ValueOrThrow();
         (await catalog.PublishAsync(draft.Id, cancellationToken)).ValueOrThrow();
 
-        var instance = (await engine.StartAsync(new WorkflowStartRequest { Name = "demo.greeting", Variables = new JsonObject { ["name"] = name } }, cancellationToken)).ValueOrThrow();
+        var instance = (await engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("demo.greeting"), Variables = new JsonObject { ["name"] = name } }, cancellationToken)).ValueOrThrow();
         // 没有等待节点，第一个波次就走到了 End
         return instance.Status == WorkflowInstanceStatus.Completed ? instance.Variables["greeting"]?.GetValue<string>() : null;
     }

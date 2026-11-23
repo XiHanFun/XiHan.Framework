@@ -29,14 +29,14 @@
 dotnet add package XiHan.Framework.Observability.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。两个实现包都依赖本包，`Profiles.Full` 已包含。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。两个实现包都依赖本包，`Profiles.Full` 已包含。
 
 ## 主要类型
 
 | 类型 | 说明 |
 | --- | --- |
 | `ObservabilityCapabilities` | `Export`（`observability.export`）、`Host`（`observability.host`）、`Version`（1） |
-| `IHostMonitor` | `ReadRuntime`、`ReadProcessor`、`ReadMemory`、`ReadDisks`、`ReadNetworkInterfaces`、`ReadGpus`、`ReadBoard` |
+| `IHostMonitor` | `ReadRuntimeAsync`、`ReadProcessorAsync`、`ReadMemoryAsync`、`ReadDisksAsync`、`ReadNetworkInterfacesAsync`、`ReadGpusAsync`、`ReadBoardAsync`，都接受 `CancellationToken`、返回 `ValueTask` |
 | `RuntimeInfo` | `OsDescription`、`OsPlatform`（`windows` / `linux` / `macos` / `freebsd` / `other`）、`OsVersion`、`OsArchitecture`、`Framework`、`RuntimeIdentifier`、`ProcessArchitecture`、`MachineName`、`UserName`、`Interactive`、`ProcessId`、`ProcessName`、`ProcessStartedAt`、`ProcessUptime`、`SystemStartedAt`、`SystemUptime`、`WorkingSetBytes`、`PrivateBytes`、`ManagedHeapBytes`、`ThreadCount`、`HandleCount`、`Gen0Collections` / `Gen1Collections` / `Gen2Collections`、`ProcessCpuUsagePercent` |
 | `ProcessorInfo` | `Name`、`Vendor`、`Architecture`、`PhysicalCores`、`LogicalCores`、`FrequencyMhz`、`CacheBytes`、`UsagePercent` |
 | `MemoryInfo` | `TotalBytes`、`AvailableBytes`、`FreeBytes`、`CachedBytes`、`UsedBytes`、`UsagePercent` |

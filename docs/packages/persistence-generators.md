@@ -37,7 +37,7 @@
 dotnet add package XiHan.Framework.Persistence.Generators --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。在仓库里以项目引用时写成：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。在仓库里以项目引用时写成：
 
 ```xml
 <ProjectReference Include="../../src/XiHan.Framework.Persistence.Generators/XiHan.Framework.Persistence.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

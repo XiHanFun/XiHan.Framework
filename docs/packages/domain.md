@@ -29,7 +29,7 @@
 dotnet add package XiHan.Framework.Domain --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性，不需要 `UseFeature`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包没有特性，不需要 `UseFeature`。
 
 ## 主要类型
 

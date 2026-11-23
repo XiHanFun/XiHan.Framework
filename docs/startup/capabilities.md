@@ -41,7 +41,7 @@
 
 ## 可选依赖与 Degraded
 
-`CapabilityRequirement` 的第三个参数 `optional` 为 `true` 时，这条依赖缺失不阻止启动：特性照常 `Configure` 与启动，但状态是 `Degraded` 而不是 `Ready`，图谱里这条依赖的去向打印为 `(missing, optional)`，健康端点的 `features` 里也能看到。特性在 `Configure` 里用 `context.Node.IsDegraded` 与 `context.Node.MissingOptional` 判断缺了什么，据此跳过相关注册。可选依赖适合「有则增强、无则照常」的关系，比如有消息能力就发事件，没有就只写库。
+`CapabilityRequirement` 的构造只有 `(id, version)`，可选依赖用初始化器写 `{ Optional = true }`。这条依赖缺失不阻止启动：特性照常 `Configure` 与启动，但状态是 `Degraded` 而不是 `Ready`，图谱里可选依赖的版本后带 `?`、缺失时去向打印为 `(missing, optional)`，健康详情端点的 `features` 里也能看到。特性在 `Configure` 里用 `context.Node.IsDegraded` 与 `context.Node.MissingOptional` 判断缺了什么，据此跳过相关注册。可选依赖适合「有则增强、无则照常」的关系，比如有消息能力就发事件，没有就只写库。
 
 ## 最小示例
 
@@ -107,7 +107,7 @@ app.Run();
 ```text
 xihan.shop.notifications 1.0.0
   requires kernel.hosting@1 -> xihan.kernel.core
-  requires messaging.queue@1 -> (missing, optional)
+  requires messaging.queue@1? -> (missing, optional)
 ```
 
 `curl -s localhost:5000/health/ready` 返回 200，应用仍在服务，但状态是 `Degraded`；健康详情端点（`MapXiHanHealthDetails()`）里看得到是哪个特性：

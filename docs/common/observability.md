@@ -184,7 +184,7 @@ public sealed partial class OrderExporter(ILogger<OrderExporter> logger)
 - 使用率与速率是两次采样之差，由后台采样器负责：启动时同步采一次，之后每 `SampleIntervalSeconds`（缺省 5，取值 (0, 3600]）采一次；读取只返回最近算出的值，不睡眠、不等待，启动后第一个间隔内为 `null`。一次采样失败记一条警告，保留上一次的值。
 - 不暴露命令行参数、环境变量与当前目录。
 
-Linux 与 Windows 读全部项；macOS 等其他平台只有 BCL 读得到的部分，CPU 型号与使用率、内存、GPU、主板为 `null`。容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额。读不到的项（NVIDIA 显存与温度、GPU 使用率、Windows 主板序列号等）列在 RFC-0023。
+Linux 与 Windows 读全部项；macOS 等其他平台只有 BCL 读得到的部分，CPU 型号与使用率、内存、主板的各项为 `null`，GPU 是空列表。容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额。读不到的项（NVIDIA 显存与温度、GPU 使用率、Windows 主板序列号等）列在 RFC-0023。
 
 把运行信息暴露给服务监控页：
 

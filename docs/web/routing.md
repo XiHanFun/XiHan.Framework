@@ -90,7 +90,7 @@ curl -s localhost:5000/orders -H "Authorization: ApiKey dev-alice-key"
 
 两个操作推导出同一条路由（方法与模板都相同，如没有 `id` 的 `things.get` 与 `things.list` 都是 `GET /things`）时，`MapXiHanOperations()` 抛出 `FrameworkException`，错误码 `PROTOCOLS_CONFLICT_002`，应用启动失败。用下一节的覆盖给其中一个换路由。
 
-推导规则以静态方法公开：`HttpRouteConvention.Derive(descriptor)` 给出某个操作的 `HttpRoute`（方法与模板），`HttpProtocolOptions.RouteFor(descriptor)` 在此之上套用覆盖与前缀。测试里核对路由时用它们，不必启动宿主。
+推导规则是公开的：静态方法 `HttpRouteConvention.Derive(descriptor)` 给出某个操作的 `HttpRoute`（方法与模板），`HttpProtocolOptions` 的实例方法 `RouteFor(descriptor)` 在此之上套用这份选项的覆盖与前缀。测试里核对路由时用它们，不必启动宿主。
 
 ## 覆盖与前缀
 
@@ -126,7 +126,7 @@ curl -s localhost:5000/orders -H "Authorization: ApiKey dev-alice-key"
 2. JSON 请求体：只有 `POST`、`PUT`、`PATCH` 读请求体，必须是 JSON 对象；空请求体按没有处理。有请求体时 `Content-Type` 必须是 `application/json` 或 `+json` 结尾的类型，否则 400 `PROTOCOLS_VALIDATION_012`；超过 `XiHan:Protocols:Http:MaxRequestBodyBytes`（缺省 4 MiB）是 400 `PROTOCOLS_VALIDATION_011`。
 3. 查询串。
 
-路由值与查询串都是字符串，绑定器按请求类型序列化元数据里的属性类型写成 JSON：布尔、整数、浮点与数值枚举写成字面量，集合属性写成数组（单个值也写成一元数组），其余写字符串；属性名不区分大小写匹配并改写成序列化名。找不到属性或没有类型化元数据（插件代理）时按字符串写，多值写成字符串数组。解析不了的值（如布尔属性收到 `maybe`）照样按字符串写，由反序列化报出 `KERNEL_VALIDATION_001`。
+路由值与查询串都是字符串，绑定器按请求类型序列化元数据里的属性类型写成 JSON：布尔、整数、浮点与数值枚举写成字面量，集合属性写成数组（单个值也写成一元数组），其余写字符串；属性名不区分大小写匹配并改写成序列化名。找不到属性或没有类型化元数据（插件代理）时按字符串写，多值写成字符串数组。解析不了的值（如布尔属性收到 `maybe`）照样按字符串写，由 Validate 阶段报出：Schema 校验在解码之前，登记了请求 Schema 时是 `KERNEL_VALIDATION_003`，没有 Schema 时由反序列化报 `KERNEL_VALIDATION_001`。
 
 ```csharp
 using XiHan.Framework.Kernel.Operations;
@@ -157,14 +157,14 @@ curl -s -X POST "localhost:5000/orders/0f8fad5b-d9cb-469f-a165-70867728950e:canc
 
 交给操作的载荷是 `{"id":"0f8fad5b-d9cb-469f-a165-70867728950e","reason":"late"}`：请求体里的 `id` 被路由值覆盖。请求类型与响应类型要登记进源生成的序列化上下文；绑定按 JSON 约定匹配属性，上下文建议用 `PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase`、`PropertyNameCaseInsensitive = true` 与 `NumberHandling = JsonNumberHandling.AllowReadingFromString`，写法见 [ASP.NET Core 宿主](/web/hosting)的「Native AOT」。
 
-绑定发生在进入管道之前，校验在管道里：
+绑定与校验都在 Validate 阶段，按下表的顺序进行：
 
 | 阶段 | 拒绝的情形 | 错误码 |
 | --- | --- | --- |
-| 绑定（进管道前） | 请求体不是 JSON 或不是 JSON 对象 | `KERNEL_VALIDATION_001` |
+| Validate（读请求体、绑定） | 请求体不是 JSON 或不是 JSON 对象 | `KERNEL_VALIDATION_001` |
 | Validate | 载荷不满足请求 Schema（类型、必填、范围、长度、模式等） | `KERNEL_VALIDATION_003` |
+| Validate | 通过 Schema 之后载荷解码失败；没有 Schema 时的类型不符、`null` | `KERNEL_VALIDATION_001` |
 | Validate | 请求对象自校验（`IValidatableObject`）失败 | `KERNEL_VALIDATION_004` |
-| Validate | 载荷解码失败（类型不符、`null`） | `KERNEL_VALIDATION_001` |
 
 没有登记 Schema 的操作不做 Schema 校验，解码失败仍是 `KERNEL_VALIDATION_001`。字段级 `errors` 的形状见 [ASP.NET Core 宿主](/web/hosting)的「Problem Details」，校验规则见[数据校验](/web/validation)。
 

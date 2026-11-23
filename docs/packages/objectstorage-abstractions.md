@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已引用本包与文件系统实现。本包没有特性，装配任一存储包后即可注入上述接口。
 
 ## 配置
 

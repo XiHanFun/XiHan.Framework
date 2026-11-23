@@ -34,7 +34,7 @@ MCP 协议版本 `2025-06-18`。`McpProtocolFeature` 登记选项、本包的消
 dotnet add package XiHan.Framework.Protocols.Mcp --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

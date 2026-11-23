@@ -56,7 +56,7 @@ Schema 的生成规则：
 dotnet add package XiHan.Framework.Kernel.Generators --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。在框架仓库里以项目引用的分析器形式使用（`samples/SimpleApp` 就这样引用）：
 
 ```xml
 <ProjectReference Include="../../src/XiHan.Framework.Kernel.Generators/XiHan.Framework.Kernel.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
@@ -165,6 +165,6 @@ public sealed class NotesFeature : IFeature
 
 ## 相关
 
-- [操作契约](/web/operations)、[HTTP 与 OpenAPI](/web/routing)、[序列化与 Native AOT](/common/serialization)
+- [操作契约](/web/operations)、[HTTP 路由与载荷](/web/routing)、[序列化与 Native AOT](/common/serialization)
 - [Kernel](./kernel)、[Kernel.Analyzers](./kernel-analyzers)、[Persistence.Generators](./persistence-generators)
 - 规范：RFC-0011《操作契约与 XGI》

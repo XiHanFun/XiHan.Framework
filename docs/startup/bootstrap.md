@@ -11,11 +11,11 @@
 | 宿主 | 构建器 | `AddXiHan` 所在包与命名空间 | 之后还要做什么 |
 | --- | --- | --- | --- |
 | ASP.NET Core | `WebApplicationBuilder` | `XiHan.Framework.Hosting.AspNetCore` | `app.UseXiHan()` 把 HTTP 请求接进内核管道；按需 `app.MapXiHanHealth()`、`app.MapXiHanOperations()` |
-| .NET 通用宿主（控制台、Worker、命令行） | `HostApplicationBuilder`，泛型重载接受任何 `IHostApplicationBuilder` | 内核包，命名空间 `XiHan.Framework.Kernel.Hosting` | 命令行宿主再调用 `builder.Services.AddXiHanCommandLine()`，并以 `RunXiHanCommandLineAsync(args)` 运行；Worker 场景由消息、作业或自己的后台服务发起调用 |
+| .NET 通用宿主（控制台、Worker、命令行） | `HostApplicationBuilder`；内核另有接受任何 `IHostApplicationBuilder` 的泛型重载 | `XiHan.Framework.Hosting.CommandLine`；泛型重载在内核包，命名空间 `XiHan.Framework.Kernel.Hosting` | 命令行宿主再调用 `builder.Services.AddXiHanCommandLine()`，并以 `RunXiHanCommandLineAsync(args)` 运行；Worker 场景由消息、作业或自己的后台服务发起调用 |
 
-两个重载的回调参数都是 `Action<AppBuilder>`，回调体完全相同，所以同一组特性可以不改一行地在 Web 与命令行两种宿主之间复用。
+这些重载的回调参数都是 `Action<AppBuilder>`，回调体完全相同，所以同一组特性可以不改一行地在 Web 与命令行两种宿主之间复用。
 
-两种宿主的 `AddXiHan` 都先做一件事：读环境变量 `XIHAN_CONFIG_PATH`，把它指向的目录里的 JSON 文件作为配置源插在 `appsettings.{环境}.json` 之后并监听变化（Kubernetes 里这就是 ConfigMap 的挂载点，见[配置目录与热更新](/configuration/config-directory)）；然后把宿主的 `Services` 与 `Configuration` 交给内核的 `AppBuilder`。XiHan 应用与宿主共用同一个服务集合和配置，随宿主启动与停止，没有第二个容器。
+`Hosting.AspNetCore` 与 `Hosting.CommandLine` 的 `AddXiHan` 都先做一件事：读环境变量 `XIHAN_CONFIG_PATH`，把它指向的目录里的 JSON 文件作为配置源插在 `appsettings.{环境}.json` 之后并监听变化（Kubernetes 里这就是 ConfigMap 的挂载点，见[配置目录与热更新](/configuration/config-directory)）；然后转调内核的泛型 `AddXiHan`，把宿主的 `Services` 与 `Configuration` 交给内核的 `AppBuilder`。只引用内核包、直接用泛型重载时不读这个目录。XiHan 应用与宿主共用同一个服务集合和配置，随宿主启动与停止，没有第二个容器。
 
 ## AppBuilder 能做什么
 
@@ -113,7 +113,7 @@ idempotency  XiHan.Framework.Caching.Abstractions.Idempotency.IdempotencyMiddlew
 transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddleware
 ```
 
-`curl -s localhost:5000/health/ready` 返回 `"state": "Ready"` 与每个特性的状态，说明装配与启动都完成了。
+`curl -s localhost:5000/health/ready` 返回 `"status": "pass"` 与 `"state": "Ready"`，说明装配与启动都完成了；每个特性的状态由健康详情端点 `/health/details`（`MapXiHanHealthDetails()`）给出。
 
 ## 装配发生在什么时候
 
@@ -122,11 +122,11 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 1. `AddXiHan` 回调：收集 `UseFeature`、`UseProvider`、`UseOptions` 与管道改动。此时什么都还没有注册。
 2. 回调返回，`AppBuilder.Build()` 执行：校验每份清单、求解能力图谱、拓扑排序、解析资源绑定，再按拓扑顺序调用各特性的 `Configure`，最后把 `App`、内置中间件、权限表、操作登记表与宿主服务注册进容器。求解失败在这里抛出 `FrameworkException`，进程不会带着错误的图谱继续，错误码见[能力图谱与 Provider](/startup/capabilities)。
 3. 宿主的 `builder.Build()` 构建容器。
-4. 宿主启动：先打印[启动 Banner](#启动-banner)，内核的宿主服务再执行启动核对，再按拓扑顺序启动特性（实现了 `IHostedFeature` 的调用 `StartAsync`），应用进入 `Ready` 或 `Degraded`，启动日志打印图谱与管道。细节见[生命周期与健康](/startup/lifecycle)。
+4. 宿主启动：先打印[启动 Banner](#启动-banner)，内核的宿主服务再把图谱与管道打进启动日志，执行启动核对，然后按拓扑顺序启动特性（实现了 `IHostedFeature` 的调用 `StartAsync`），应用进入 `Ready` 或 `Degraded`。细节见[生命周期与健康](/startup/lifecycle)。
 5. 请求、命令、消息或作业进入，经 `App.InvokeAsync` 走完管道，见[执行管道](/startup/pipeline)。
 6. 停止：按逆拓扑顺序停止特性。
 
-所以：服务注册写在特性的 `Configure` 里或 `builder.Services` 上都可以，但 `UseFeature` 必须在回调里完成，回调之外再加特性没有效果。
+所以：服务注册写在特性的 `Configure` 里或 `builder.Services` 上都可以，但 `UseFeature` 必须在回调里完成：回调返回时 `AppBuilder` 已经构建，之后再调用 `UseFeature`、`UseProvider` 这类方法抛出 `KERNEL_HOSTING_004`。
 
 ## App 对象
 
@@ -227,7 +227,7 @@ builder.AddXiHan(xihan => xihan.UseStandardProfile());
 | `(shadowed)` | 声明了能力却一个都没被选中，不装配、不启动 |
 | `provides caching.distributed@1 (not selected)` | 这项能力由别的节点提供，本节点只为其余被选中的能力注册服务 |
 | `requires kernel.hosting@1 -> xihan.kernel.core` | 依赖的去向：箭头右边是被选中的提供者 |
-| `requires messaging.queue@1 -> (missing, optional)` | 可选依赖缺失，声明它的特性进入 `Degraded` |
+| `requires messaging.queue@1? -> (missing, optional)` | 版本后的 `?` 表示可选依赖；缺失时声明它的特性进入 `Degraded` |
 
 管道一行一个中间件：阶段名与类型全名，顺序就是执行顺序。没有装配某个子系统时对应阶段就是空的，Minimal 组合只有 `observe`、`resilience`、`validate` 三个阶段有中间件。标记的含义与排序规则分别见[能力图谱与 Provider](/startup/capabilities)和[执行管道](/startup/pipeline)。
 

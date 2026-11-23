@@ -32,7 +32,7 @@
 dotnet add package XiHan.Framework.Persistence.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 已包含本包，`UseStandardProfile()` 即装配；单独使用时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 已包含本包，`UseStandardProfile()` 即装配；单独使用时：
 
 ```csharp
 using XiHan.Framework.Persistence.Abstractions.Repositories;

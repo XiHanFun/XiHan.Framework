@@ -52,7 +52,8 @@ var reply = await chat.CompleteAsync(new AIChatRequest
 ## 更多文档
 
 * [概念文档](https://framework.docs.xihanfun.com/packages/ai-abstractions)
-* [AI 指南](https://framework.docs.xihanfun.com/guide/ai)
+* [模型与对话](https://framework.docs.xihanfun.com/ai/chat)
+* [工具与知识库](https://framework.docs.xihanfun.com/ai/tools)
 
 ## 相关包
 

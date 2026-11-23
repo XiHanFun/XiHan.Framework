@@ -36,7 +36,7 @@
 dotnet add package XiHan.Framework.Auditing.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包要求 `persistence.relational@1`，与一个持久化 Provider 一起装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包要求 `persistence.relational@1`，与一个持久化 Provider 一起装配：
 
 ```csharp
 using SqlSugar;

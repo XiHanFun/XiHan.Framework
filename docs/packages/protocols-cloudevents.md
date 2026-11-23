@@ -33,7 +33,7 @@ CloudEvents 协议适配器，提供 `protocols.cloudevents@1`：消息子系统
 dotnet add package XiHan.Framework.Protocols.CloudEvents --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

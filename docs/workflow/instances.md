@@ -23,6 +23,7 @@
 ```csharp
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 
@@ -31,7 +32,7 @@ public sealed class LeaveApplications(IWorkflowEngine engine)
     public ValueTask<Result<WorkflowInstance>> ApplyAsync(string applicant, int days, IReadOnlyList<string> approvers, string requestNo, CancellationToken cancellationToken)
         => engine.StartAsync(new WorkflowStartRequest
         {
-            Name = "hr.leave",
+            Name = new WorkflowName("hr.leave"),
             Variables = new JsonObject
             {
                 ["applicant"] = applicant,
@@ -135,7 +136,7 @@ var nightly = WorkflowDefinitionBuilder.Create(new WorkflowName("finance.reconci
 | `CcUserIds` / `CcRules` | 空 | 抄送人，写进任务事件 |
 | `AllowedOutcomes` | `approved`、`rejected` | 允许的完成结果 |
 
-节点的 `Timeout` 另插一个超时书签，到期以 `outcome = "timeout"` 完成节点。`Sequential` 一次只有当前指派人的一个任务。`All` 下每个人完成时合并其变量并保留其余人的任务，达到阈值才完成节点；任一人给出非 `approved` 的结果立即以该结果完成节点。
+节点的 `Timeout` 另插一个超时书签，到期以 `outcome = "timeout"` 完成节点。`Sequential` 一次只有当前指派人的一个任务。`All` 下每个人完成时合并其变量并保留其余人的任务，通过人数达到阈值才以 `approved` 完成节点；`rejected` 只记入拒绝名单，剩余人数已不可能达到阈值时才以 `rejected` 完成。`approved`、`rejected` 之外的自定义结果，以及 `Any`、`Sequential` 下的非 `approved` 结果，立即以该结果完成节点。
 
 `IWorkflowTaskService` 的操作，入参都是记录（`UserTaskCompletion`、`UserTaskTransfer`、`UserTaskAddition`、`UserTaskClaim`、`UserTaskRelease`、`UserTaskReturn`、`UserTaskUrge`），批量方法接集合、单条写法是重载：
 
@@ -262,6 +263,7 @@ public sealed class ShippingWorker(IWorkflowExternalTaskService external)
 实例与节点实例的查询用引擎的 `FindInstanceAsync`、`ListInstancesAsync`、`CountInstancesAsync`、`NodeInstancesAsync`、`BookmarksAsync`。它们只查调用方的分区；按 ID 找别的分区的实例为无值或 `WORKFLOW_NOTFOUND_002`。
 
 ```csharp
+using XiHan.Framework.Workflow.Abstractions;
 using XiHan.Framework.Workflow.Abstractions.Engine;
 using XiHan.Framework.Workflow.Abstractions.Instances;
 
@@ -272,7 +274,7 @@ public sealed class LeaveReports(IWorkflowEngine engine)
         // 分区取自当前调用，查询里没有租户条件
         var query = new WorkflowInstanceQuery
         {
-            DefinitionName = "hr.leave",
+            DefinitionName = new WorkflowName("hr.leave"),
             Statuses = [WorkflowInstanceStatus.Running, WorkflowInstanceStatus.Suspended],
             Skip = page * 20,
             Take = 20,
@@ -322,7 +324,7 @@ var grouped = new WorkflowInstanceQuery
 // 一页单据的审批进度：一次查询，按关联 ID 分组
 var progress = (await engine.ListInstancesAsync(new WorkflowInstanceQuery
 {
-    DefinitionName = "permission-request",
+    DefinitionName = new WorkflowName("permission-request"),
     CorrelationIds = requests.Select(static r => r.Id.ToString()).ToList(),
     TopLevelOnly = true,
     Take = WorkflowInstanceQuery.MaxTake,
@@ -371,7 +373,7 @@ await engine.MigrateAsync(new WorkflowMigration(instanceId, newVersion.Id), canc
 
 ### 会签 60% 怎么算，剩下的人还要审吗
 
-`ApprovalThreshold` 为百分比时按指派人数向上取整：3 人 60% 是 2 人。达到阈值节点立即完成，其余人的任务撤下；任一人给出非 `approved` 的结果立即以该结果完成；剩余人数已不可能达到阈值时以 `rejected` 完成。
+`ApprovalThreshold` 为百分比时按指派人数向上取整：3 人 60% 是 2 人。达到阈值节点立即完成，其余人的任务撤下；有人拒绝时只记入拒绝名单，其余人继续审，剩余人数已不可能达到阈值时才以 `rejected` 完成；`approved`、`rejected` 之外的自定义结果立即以该结果完成。
 
 ### 审批人离职了，流程卡住怎么办
 

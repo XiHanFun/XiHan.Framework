@@ -17,7 +17,7 @@
 
 客户端有两种来源。方式一由特性按配置回调创建作用域内的 `SqlSugarClient`，自动施加 `SqlSugarConventions`；方式二由应用自己注册 `ISqlSugarClient`（`SqlSugarScope`、多库等），应用在创建客户端前对每个 `ConnectionConfig` 调用 `SqlSugarConventions.Apply`。两种方式下仓储、工作单元与查询语义相同。
 
-SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元在第一次写入时经 `AsTenant()` 在客户端的全部连接上开事务，只读调用不开事务；提交逐连接提交，回滚逐连接回滚。开没开由 `HasTransaction` 报告（ADR-0109）：第一次 `EnsureTransactionAsync`（仓储每次写入前都经它）开事务即为真，多连接时一个值，提交、回滚或作用域释放时复位；绑定命名连接的工作单元只报告那个连接。更新与删除先在事务内加行锁取回当前行（`TranLock`），比对并发戳后把调用方的实例整行写入，其中创建时间、租户与删除标记先换成当前行的值；读取与写入之间别人改不了这一行（SQLite 与分表实体不加行锁，见下文）。批量方法用一次主键 `IN` 查询取回目标行，逐项校验后一次多行插入、更新或删除。
+SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元在第一次写入时经 `AsTenant()` 在默认连接与已经取用过的连接上开事务，此后首次取用的连接再补开，只读调用不开事务；提交逐连接提交，回滚逐连接回滚。开没开由 `HasTransaction` 报告（ADR-0109）：第一次 `EnsureTransactionAsync`（仓储每次写入前都经它）开事务即为真，多连接时一个值，提交、回滚或作用域释放时复位；绑定命名连接的工作单元只报告那个连接。更新与删除先在事务内加行锁取回当前行（`TranLock`），比对并发戳后把调用方的实例整行写入，其中创建时间、租户与删除标记先换成当前行的值；读取与写入之间别人改不了这一行（SQLite 与分表实体不加行锁，见下文）。批量方法用一次主键 `IN` 查询取回目标行，逐项校验后一次多行插入、更新或删除。
 
 软删除与租户过滤以表达式显式施加在每个查询上，不用 SqlSugar 的全局过滤器，不会与应用自己的过滤器互相覆盖。规约在交给 SqlSugar 前先改写（ADR-0035 与其修订）：
 
@@ -41,7 +41,7 @@ SqlSugar 没有变更跟踪，仓储的每次写入立即执行。工作单元�
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包依赖 `SqlSugarCore`；应用改用 `SqlSugarCoreNoDrive` 加单个驱动时要整体替换，两者不能并存。
 
 本包还显式依赖 `Microsoft.Data.Sqlite`（ADR-0097）。`SqlSugarCore` 声明的下限版本带着连接池激活的竞态（dotnet/efcore#39008），NuGet 按下限解析就会用到它：SQLite 上并发打开连接时两个连接可能共用同一个原生连接，报 "cannot start a transaction within a transaction"，清池时正在打开的连接被释放、报 `ObjectDisposedException`。有了这条依赖，引用本包的应用解析到修复后的版本，不用自己钉版本；项目里直接引用了更低版本的，NuGet 报降级 `NU1605`，删掉那条引用或抬到本包要求的版本。
 
@@ -330,8 +330,7 @@ public sealed class ChangeBuffer
 - 命令超时 `CommandTimeoutSeconds`：0 不接受（ADO.NET 的 0 是无限等待）；应用自己注册客户端时配了与缺省不同的值也启动失败，要在自己的客户端上设 `Ado.CommandTimeOut`。
 - 读写分离的补充：配了从库的连接每个作用域一份配置副本，因为 SqlSugar 读从库时会改配置上的连接串，共用时别的作用域的写入会落到从库上；提交之后同一作用域的读也在主库上；回调只给从库所属的连接（看 `ConfigId`）。
 - 读结构的实现：读表 `DbMaintenance.GetTableInfoList`、读列 `GetColumnInfosByTableName`；分表模板里 `{year}` 四位，`{month}`、`{day}` 两位，不区分大小写；驱动异常翻译为 `PERSISTENCE_UNAVAILABLE_006`（消息键 `persistence.schema.read_failed`），其余异常原样抛出；实体目录不连库。缺省值原文在 MySQL 是 `x`、SQL Server `('x')`、Oracle `'x'`，SQL Server 报告的 `int` 10 / `float` 53 不算长度。实测用 `XIHAN_TEST_MYSQL`、`XIHAN_TEST_SQLSERVER`、`XIHAN_TEST_ORACLE` 门控。Oracle 读列查 `USER_TAB_COLUMNS`、`USER_COL_COMMENTS`、`USER_CONSTRAINTS` / `USER_CONS_COLUMNS`（`OracleColumns`），字符类型按字符数。
-- PostgreSQL 会话的补充（ADR-0100）：SqlSugar 内联字面量在 off 时的后果是含 `'` 的值报 42601，`a`、`line
-` 被静默写成退格与换行、主键随之变成别的值，批量更新、删除与 `In` 静默漏行。启动参数由服务器在建连时施加，连接池复用时的重置也回到它。连接串经 `DbConnectionStringBuilder` 重新序列化（键变成小写、含分号的值加引号），Npgsql 解析结果相同；方式二要在 `Apply` 之前设好数据库类型与连接串。原来设成 off 的库上，原生 SQL 普通字面量里的反斜杠不再是转义符（要转义用 `E'…'`）。PgBouncer 按其文档 1.20 起接受启动参数 `options`，没有实测，更早的版本拒绝。参数化的路径（单行插入与更新、`UseParameter()`、`Fastest` 的 `COPY`、规约里的比较与字符串匹配）本来就不受影响。
+- PostgreSQL 会话的补充（ADR-0100）：SqlSugar 内联字面量在 off 时的后果是含 `\'` 的值报 42601，`a\b`、`line\n` 被静默写成退格与换行、主键随之变成别的值，批量更新、删除与 `In` 静默漏行。启动参数由服务器在建连时施加，连接池复用时的重置也回到它。连接串经 `DbConnectionStringBuilder` 重新序列化（键变成小写、含分号的值加引号），Npgsql 解析结果相同；方式二要在 `Apply` 之前设好数据库类型与连接串。原来设成 off 的库上，原生 SQL 普通字面量里的反斜杠不再是转义符（要转义用 `E'…'`）。PgBouncer 按其文档 1.20 起接受启动参数 `options`，没有实测，更早的版本拒绝。参数化的路径（单行插入与更新、`UseParameter()`、`Fastest` 的 `COPY`、规约里的比较与字符串匹配）本来就不受影响。
 - MySQL 已知限制的实测：`mysql:9.7` 缺省模式下 `In` 与三种按主键删除 4 个值只命中 2 个、集合 `Contains` 4 个都对；`NO_BACKSLASH_ESCAPES` 下反过来。
 - 规约改写的补充：可空值类型与 null 的比较改写覆盖字面量 null、闭包里求值为 null 的变量或静态成员、左右互换，与非 null 值的比较不动；`!(a == b)` 换成 `a != b`，下推后的形式在 SQL 三值逻辑下等价。一致性套件 `List_NullableValueTypeComparedWithNull_FiltersByPresence` 与 `List_NullChecksAndNegationsNestedInAndOr_FilterAsWritten` 覆盖 SQLite，PostgreSQL 由同一套件按配置跑。
 - 字符串匹配的补充：SqlSugar 解析方法调用时先按名字查外部函数，所以接管对所有路径生效；实参是列或表达式时的拼接写法与原来相同（PostgreSQL / MySQL `concat`，SQL Server `+`，SQLite / Oracle `||`），实参为 NULL 的结果不变；Oracle 的转义符后面只能跟 `%`、`_` 或它自己（ORA-01424），其余库不转义 `[`；带 `StringComparison` 的重载照 SqlSugar 原样忽略比较方式；SQLite 上 SqlSugar 原有的启发式（值里有 `%` 或 `_` 时加 `escape ''`）不再生效，`%` 按字面是两个字符；应用之后整体替换 `SqlFuncServices` 列表会丢掉这三个翻译。一致性套件 `List_StringContainsStartsWithEndsWith_MatchWildcardCharactersLiterally` 覆盖 SQLite 与 PostgreSQL；本包测试在 SQLite（不设门控）与 PostgreSQL、MySQL、SQL Server、Oracle（`XIHAN_TEST_*` 门控）上跑经仓储与经客户端的同一组用例。

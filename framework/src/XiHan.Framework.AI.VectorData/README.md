@@ -48,7 +48,7 @@ builder.AddXiHan(xihan => xihan
 ## 更多文档
 
 * [概念文档](https://framework.docs.xihanfun.com/packages/ai-vectordata)
-* [AI 指南：知识库](https://framework.docs.xihanfun.com/guide/ai#知识库)
+* [工具与知识库：知识库](https://framework.docs.xihanfun.com/ai/tools#知识库)
 
 ## 相关包
 

@@ -12,7 +12,7 @@
 
 | 概念 | 类型 | 说明 |
 | --- | --- | --- |
-| 绑定声明 | `Binding(name, type, required = true)` | 写在清单的 `Bindings` 里；`type` 是资源类型，如 `connection:relational`、`cache:distributed` |
+| 绑定声明 | `Binding(name, type)` | 写在清单的 `Bindings` 里；`type` 是资源类型，如 `connection:relational`、`cache:distributed`；缺省必需，可选的用初始化器写 `Required = false` |
 | 绑定值 | `BindingValue(Name, Type, Value, Properties)` | 宿主解析出的结果：名字、类型、主值（连接字符串或地址）与其余属性；`Property(key)` 取单个属性 |
 | 解析器 | `BindingResolver.Resolve(configuration, serviceBindingRoot)` | 内核按固定顺序收集绑定 |
 | 取用 | `FeatureContext.GetBinding(name)` / `FindBinding(name)` | 在 `Configure` 里取；前者缺失时抛出，后者返回 `Maybe<BindingValue>` |
@@ -72,7 +72,7 @@ public sealed class BillingFeature : IFeature
 {
     public Manifest Manifest { get; } = new()
     {
-        Id = "shop.billing.ledger",
+        Id = "xihan.shop.billing",
         Package = "Billing",
         Version = "1.0.0",
         Primitives = 1,

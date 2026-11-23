@@ -122,7 +122,7 @@ curl -i -X POST localhost:5000/orders -H "Content-Type: application/json" -H "Ac
 | `[StringLength]`、`[MinLength]`、`[MaxLength]`、`[Length]` | 字符串的 `minLength` / `maxLength`，集合的 `minItems` / `maxItems` |
 | `[RegularExpression]` | `pattern` |
 
-不可空、没有默认值的属性本身就进 `required`，不需要 `[Required]`；`[Required]` 的额外作用是让字符串至少有一个字符。`[EmailAddress]`、`[Url]` 等注解不折进 Schema，写成自校验。
+带 `required` 修饰符的属性，以及位置记录里不可空且没有默认值的构造参数，本身就进 `required`，不需要 `[Required]`；普通的不可空属性不进，要必填就加 `required` 修饰符或 `[Required]`。`[Required]` 的额外作用是让字符串至少有一个字符。`[EmailAddress]`、`[Url]` 等注解不折进 Schema，写成自校验。
 
 Schema 校验支持的关键字：`type`（含可空）、`properties`、`required`、`additionalProperties`、`items`、`enum`、`const`、`anyOf` / `oneOf` / `allOf`、`$ref`、`minimum` / `maximum` 与开区间、`minLength` / `maxLength`、`pattern`、`minItems` / `maxItems`。`format` 等其他关键字不断言。一次最多报告 32 条违规，嵌套深度上限 64。
 

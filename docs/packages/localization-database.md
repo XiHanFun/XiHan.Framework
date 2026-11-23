@@ -34,7 +34,7 @@
 dotnet add package XiHan.Framework.Localization.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
 builder.AddXiHan(xihan => xihan
@@ -103,7 +103,7 @@ var written = await store.UpsertAsync(
 ], context.CancellationToken);
 
 var removed = await store.RemoveAsync([new MessageTranslationKey("orders.order.not_found", "ko-KR")], context.CancellationToken);
-// 数据库里没有这一行：removed[0].Outcome.Error?.Code == "LOCALIZATION_NOTFOUND_001"
+// 数据库里没有这一行：removed[0].Error?.Code == "LOCALIZATION_NOTFOUND_001"
 ```
 
 经 `MessageTranslationStore` 的写入不用再手动重新加载：调用提交之后，本实例立即重新加载，其他实例在 `ChangeCheckInterval` 内重新加载。运维脚本绕过它直接改了表时，让所有实例重新加载：

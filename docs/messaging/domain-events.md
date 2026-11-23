@@ -73,7 +73,7 @@ public sealed class OrdersFeature : IFeature
 
     public Manifest Manifest { get; } = new()
     {
-        Id = "acme.orders",
+        Id = "xihan.acme.orders",
         Package = "Acme.Orders",
         Version = "1.0.0",
         Primitives = 1,

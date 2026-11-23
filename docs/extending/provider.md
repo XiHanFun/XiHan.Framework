@@ -51,9 +51,10 @@ public sealed class FileGrantStore(IReadOnlyList<PermissionGrant> grants) : IPer
     {
         // 结果与 subjects 等长、顺序一致；按 PermissionGrant.VisibleScopes(tenantId) 取范围：平台授予只对不带租户的调用生效，每个租户的授予（*）与该租户的授予只对带租户的调用生效。
         // 文件在启动时已读进内存，这里不会失败。读外部存储的实现一次查完整批，故障时整批返回 SECURITY_UNAVAILABLE_001，不能返回空集合
+        var scopes = PermissionGrant.VisibleScopes(tenantId);
         IReadOnlyList<IReadOnlyCollection<string>> permissions = subjects
             .Select(subject => (IReadOnlyCollection<string>)grants
-                .Where(g => g.Subject == subject && (g.TenantId is null || (tenantId is not null && g.TenantId == tenantId)))
+                .Where(g => g.Subject == subject && scopes.Contains(g.TenantId))
                 .Select(static g => g.Permission)
                 .ToHashSet(StringComparer.Ordinal))
             .ToList();
@@ -178,7 +179,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 | `Kind` / `Role` | `Provider` / `Provider` | 让内核在能力求解时把它排在默认实现之前 |
 | `Provides` | 能力 ID 加接口版本 | 依赖按能力 ID 声明，不按包名；只提供真正实现了的能力，`Security.Database` 就只提供授权、不提供认证 |
 | `Requires` | 用到的能力 | 缺失报 `KERNEL_CAPABILITY_001`，循环报 `KERNEL_CAPABILITY_002`；可选依赖写 `new CapabilityRequirement(id, version) { Optional = true }` |
-| `Contributes.Pipeline` | 中间件类型全名与阶段 | 与 `AddMiddleware` 的阶段一致，`xihan graph` / `pipeline` 据此展示 |
+| `Contributes.Pipeline` | 中间件类型全名与阶段 | 与 `AddMiddleware` 的阶段一致，供读清单的工具核对；启动日志打印的管道取自实际登记，不读它 |
 | `Contributes.Config` | `XiHan:<领域>` 或其子节 | 写特性在本领域里读取的配置的最近公共节：只读自己子节写子节（如 `XiHan:Caching:Hybrid`），同时读领域公共选项写领域节（本例还读 `SecurityOptions`，所以写 `XiHan:Security`） |
 | `Contributes.Health` | 条目名 `<领域>.<机制>.<对象>` | 声明的条目必须由同一个包以 `IHealthContributor` 实现，反之亦然 |
 
@@ -187,7 +188,7 @@ public sealed class FileSecurityFeature : IHostedFeature
 ## 消息目录、健康与 AOT
 
 - 文案不写在代码里（规范 RFC-0010）：错误只携带消息键常量与参数。Provider 用的是子系统已有的错误码时，注册子系统的目录（如 `SecurityMessages.Catalog`）；有自己的错误码时，定义 `<领域>Messages` 常量类，在包里放 10 种区域的 `Localization/<区域>.json`（`en-US` 必须有），以 `LogicalName="Localization/%(Filename)%(Extension)"` 嵌入，用 `MessageCatalog.FromEmbeddedResources(name, typeof(...))` 建目录并 `AddMessageCatalog`。配置错误与编程错误（如上面缺少 `Path`）抛 `FrameworkException`，消息用英文、不本地化（[全球化和本地化](/common/localization)）。
-- 连接类 Provider（数据库、缓存、消息代理、对象存储）用 `PeriodicHealthContributor(name, probe, interval, clock, loggerFactory, description)`：启动时同步探一次，之后按间隔重探，探针失败或抛出记 `KERNEL_UNAVAILABLE_005` 并报 Degraded，恢复后报 Ready，应用只从 Ready 压成 Degraded 而不退出。容量类实现（内存存储、队列）同步上报，达到容量即 Degraded。间隔的配置键按惯例叫 `HealthProbeIntervalSeconds`，缺省 15（[生命周期与健康](/startup/lifecycle)）。
+- 连接类 Provider（数据库、缓存、消息代理、对象存储）用 `PeriodicHealthContributor(name, probe, interval, clock, loggerFactory, description)`：启动时同步探一次，之后按间隔重探，探针返回的失败结果原样作为条目的错误，抛出或超时记 `KERNEL_UNAVAILABLE_005`，两种情况都报 Degraded，恢复后报 Ready，应用只从 Ready 压成 Degraded 而不退出。容量类实现（内存存储、队列）同步上报，达到容量即 Degraded。间隔的配置键按惯例叫 `HealthProbeIntervalSeconds`，缺省 15（[生命周期与健康](/startup/lifecycle)）。
 - 外部资源的连接串经绑定取得：清单 `Bindings` 声明绑定名与类型，`Configure` 里用 `context.GetBinding(name)` / `FindBinding(name)` 读值，同一个 Provider 在 Compose 里读环境变量、在 Kubernetes 里读 Secret（[资源绑定](/configuration/bindings)）。
 - AOT：包缺省按 AOT 兼容写（`<IsAotCompatible>true</IsAotCompatible>`，序列化走源生成）。依赖的第三方库不兼容时设为 `false` 并在 README 写明；必须用反射的入口标 `RequiresDynamicCode` / `RequiresUnreferencedCode`，把警告交给调用方。
 - 资源有界：缓存、队列、注册表不能无界增长，容量、过期、清理与并发语义都要有测试；不加静默兜底与无限重试。
@@ -286,7 +287,7 @@ app.Run();
 }
 ```
 
-启动后 `xihan graph` 能看到 `security.authorization@1` 由 `xihan.security.files` 提供；`/health/ready` 里多出条目 `security.files.grants`，把 `grants.json` 改成不可读，下一次探测后条目变 Degraded，应用仍在服务。
+启动日志的能力图谱（`Capability graph:`）里能看到 `security.authorization@1` 由 `xihan.security.files` 提供。再映射 `app.MapXiHanHealthDetails()`，`/health/details` 的 `contributions` 里多出条目 `security.files.grants`（探针 `/health/ready` 只给 `status` 与 `state`）；把 `grants.json` 改成不可读，下一次探测后条目变 Degraded，应用仍在服务。
 
 ## 远程 Provider
 

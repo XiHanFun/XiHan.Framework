@@ -75,7 +75,7 @@
 | `Permissions` | `string` 列表 | 权限码 |
 | `Health` | `string` 列表 | 健康条目名 |
 
-命令行宿主的 `graph` 命令、插件宿主与架构测试读取它，内核不据此注册任何东西：中间件、权限、操作仍要在 `Configure` 里经 `FeatureContext` 登记，两边应保持一致。`Health` 例外地有强约束：声明的每个健康条目都必须由同一个包实现并登记为 `IHealthContributor`，框架包的架构测试核对两边一致；应用不受这条测试约束，但建议同样声明。
+插件宿主与架构测试读取它，内核不据此注册任何东西，`graph` 命令也不打印它（只打印能力图谱）：中间件、权限、操作仍要在 `Configure` 里经 `FeatureContext` 登记，两边应保持一致。`Health` 例外地有强约束：声明的每个健康条目都必须由同一个包实现并登记为 `IHealthContributor`，框架包的架构测试核对两边一致；应用不受这条测试约束，但建议同样声明。
 
 ## FeatureContext
 
@@ -220,7 +220,7 @@ app.Run();
 xihan.shop.orders 1.0.0
   requires kernel.hosting@1 -> xihan.kernel.core
   requires security.authorization@1 -> xihan.security.inmemory
-  requires messaging.queue@1 -> xihan.messaging.inmemory
+  requires messaging.queue@1? -> xihan.messaging.inmemory
 ```
 
 不带凭据调用 `POST /orders`，Authorize 阶段按契约的 `Permission` 判定，返回 401、错误码 `SECURITY_DENIED_001`；在 `XiHan:Security:InMemory` 下配置一个持有 `orders.write` 的主体后，带 `Authorization: ApiKey <值>` 再调用得到 201 与订单 JSON。配置写法见[授权与权限](/security/authorization)。
@@ -265,7 +265,7 @@ context.Services.AddMessageHandler<OrderPlacedHandler>(Topic);
 
 ### `Contributes` 不写会怎样
 
-装配不受影响，`Configure` 里登记的东西照常生效。少的是可见性：`graph` 命令看不到你的权限与操作，插件宿主与架构测试也无法核对。建议声明，保持与 `Configure` 一致。
+装配不受影响，`Configure` 里登记的东西照常生效。少的是可见性：读清单的人与工具看不出这个包贡献了哪些权限与操作，插件宿主与架构测试也无法核对。建议声明，保持与 `Configure` 一致。
 
 ### 一个包可以有多个特性吗
 

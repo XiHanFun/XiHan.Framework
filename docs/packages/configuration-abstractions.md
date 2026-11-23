@@ -34,7 +34,7 @@
 dotnet add package XiHan.Framework.Configuration.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 引用了本包。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 引用了本包。
 
 本包没有特性。配置源加在 `builder.Configuration` 上，并且要在 `AddXiHan` 之前，框架在 `AddXiHan` 里读取各包选项与绑定。应用自己实现的 Provider 要让错误按调用方语言翻译时，注册本包的消息目录：
 

@@ -266,13 +266,13 @@ await File.WriteAllBytesAsync("openapi.zh-CN.json", document);
 | `locale` | 文案的区域；为 `null` 时取本地化的默认区域 |
 | `group` | 分组名；为 `null` 时是全量文档，不存在的组名抛出 `ArgumentException` |
 
-把导出的文件提交进仓库并在 CI 里与新生成的文件比对，契约变更就会出现在代码评审的差异里。另一个重载 `OpenApiDocumentBuilder.Build(registry, options, permissions, title, version)` 只看登记表，不含普通端点、认证方案与文案，适合单元测试里核对路由推导。测试里启动应用的写法见[单元与集成测试](/testing/basics)。
+把导出的文件提交进仓库并在 CI 里与新生成的文件比对，契约变更就会出现在代码评审的差异里。只想看登记表时自己构造来源：`OpenApiDocumentBuilder.Build(new OpenApiDocumentSource(registry, options))`（`Permissions`、`Title`、`Version` 用初始化器给，标题与版本缺省是框架名与框架版本），不含普通端点、认证方案与文案，适合单元测试里核对路由推导。测试里启动应用的写法见[单元与集成测试](/testing/basics)。
 
 ## 常见问题
 
 ### 文档端点不鉴权，怎样限制访问
 
-文档端点带 `PipelineBypassMetadata`，与[端点里使用框架](/web/endpoints)里绕过管道的端点是同一类：`MapXiHanOpenApi()` 返回 `IEndpointConventionBuilder`，可以用 ASP.NET Core 自己的 `RequireAuthorization` 配合认证方案 `XiHan` 保护，或者在反向代理上只对内网放行。生产环境不需要对外公开文档时，也可以只在开发环境调用 `MapXiHanOpenApi()`。
+文档端点带 `PipelineBypassMetadata`，与[端点里使用框架](/web/endpoints)里绕过管道的端点是同一类：`MapXiHanOpenApi()` 返回的是全量文档端点的 `IEndpointConventionBuilder`，可以用 ASP.NET Core 自己的 `RequireAuthorization` 配合认证方案 `XiHan` 保护。这个返回值管不到分组文档：`/openapi/<组名>.json` 是另一条带组名参数的路由，声明了分组时它仍然敞开。要连分组文档一起限制，在反向代理上只对内网放行，或者只在开发环境调用 `MapXiHanOpenApi()`。
 
 ### 改了消息目录或权限定义，文档没变
 

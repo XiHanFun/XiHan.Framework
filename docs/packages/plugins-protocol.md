@@ -31,7 +31,7 @@
 dotnet add package XiHan.Framework.Plugins.Protocol --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口；两个插件宿主特性在 `Configure` 时自己登记消息目录 `PluginMessages.Catalog`（目录名 `plugins.protocol`，10 种区域各一个文件）。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包没有特性入口；两个插件宿主特性在 `Configure` 时自己登记消息目录 `PluginMessages.Catalog`（目录名 `plugins.protocol`，10 种区域各一个文件）。
 
 ## 主要类型
 

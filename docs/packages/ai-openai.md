@@ -32,7 +32,7 @@ AI 的 OpenAI 兼容 Provider：`Kind = openai` 的 Provider 都由本包按配�
 dotnet add package XiHan.Framework.AI.OpenAI --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.AI.Abstractions;

@@ -43,7 +43,7 @@
 dotnet add package XiHan.Framework.Caching.Redis --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Caching.Redis;

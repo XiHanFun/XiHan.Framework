@@ -37,7 +37,7 @@
 dotnet add package XiHan.Framework.Security.Database --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包必须和一个持久化 Provider 一起装配：
 
 ```csharp
 using SqlSugar;
@@ -117,6 +117,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 管理操作在处理器里经 `IPermissionGrantAdministration`（作用域服务，就是 `PermissionGrantRecordStore`）写入，Transaction 阶段已经开了工作单元：
 
 ```csharp
+using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions.Permissions;
 
 // 作用域服务，在操作的处理器里使用
@@ -134,8 +135,9 @@ public sealed class RoleAdministration(IPermissionGrantAdministration grants)
     public ValueTask<IReadOnlyList<Result>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
         => grants.RevokeAsync([new PermissionGrant(GrantSubject.ForRole("editor"), "orders.write", tenantId)], cancellationToken);
 
-    public Task<IReadOnlyList<PermissionGrantRecord>> ListAsync(string userId, CancellationToken cancellationToken)
-        => grants.ListAsync(GrantSubject.ForUser(userId), tenantId: null, skip: 0, take: 100, cancellationToken);
+    // 缺省不按租户过滤、第一页 100 条；返回 PermissionGrantPage（Items 与 Total）
+    public ValueTask<Result<PermissionGrantPage>> ListAsync(string userId, CancellationToken cancellationToken)
+        => grants.ListAsync(new PermissionGrantQuery { Subject = GrantSubject.ForUser(userId) }, cancellationToken);
 }
 ```
 
@@ -144,8 +146,8 @@ public sealed class RoleAdministration(IPermissionGrantAdministration grants)
 - 被选为授权能力时，特性在 `Configure` 里登记启动核对 `PolicyCatalog.EnforceOn`，核对操作契约按名引用的策略：内核在容器建好之后、任何特性启动之前执行它，不存在（含 `permission:<code>` 的权限码未登记）即抛出 `SECURITY_VALIDATION_004`、宿主启动失败，不论失败策略（`IsolateFeature` 也一样，不包成 `KERNEL_HOSTING_002`）；之后登记的操作（插件握手之后）在登记时核对（ADR-0080、ADR-0085）。特性本身不实现 `IHostedFeature`。
 - 授予：一次查询取回已有行（主体种类、主体 ID、权限码、租户各取集合做 `IN`，再在内存里精确匹配），已存在的返回成功且不重复写，同一批里重复的项同样成功，没有的用一次 `AddRangeAsync` 写入。空集合直接返回空结果。
 - 范围：平台授予的 `TenantId` 用 `null`，每个租户的授予用 `PermissionGrant.AnyTenant`（ADR-0197）；`GrantAsync` 与 `RevokeAsync` 遇到空白租户视为编程错误，在访问数据库前抛出 `ArgumentException`。
-- 撤销：一次 `RemoveRangeAsync`；不存在的授予与同一批里第二次出现的同一授予返回 `SECURITY_NOTFOUND_002`（消息键 `security.grant.not_found`，参数 `subject` / `permission` / `tenant`，全局时 `tenant` 为 `*`）。
-- 列表：按主体种类、主体 ID、权限码、租户排序；`subject` 为 `null` 不按主体过滤，`tenantId` 为 `null` 不按租户过滤，否则只列该租户专属的行；每页最多 1000 条。
+- 撤销：一次 `RemoveRangeAsync`；不存在的授予与同一批里第二次出现的同一授予返回 `SECURITY_NOTFOUND_002`（消息键 `security.grant.not_found`，参数 `subject` / `permission` / `tenant`，每个租户的授予 `tenant` 为 `*`；平台授予用消息键 `security.grant.platform_not_found`，不带 `tenant`）。
+- 列表：按主体种类、主体 ID、权限码、租户排序；`PermissionGrantQuery.Subject` 为 `null` 不按主体过滤；`Tenant` 缺省 `GrantTenantFilter.Any` 不按租户过滤，`Platform` 只列平台授予，`Of(tenantId)` 只列该范围的行；`Take` 缺省 100、最多 1000，`Skip` 为负或 `Take` 越界返回 `SECURITY_VALIDATION_005`。
 - 缓存：条目按 `CacheTimeToLive` 过期，容量与淘汰由 `caching.local` 的 Provider 决定。`PermissionGrantRecordStore` 写入后对涉及的主体调用一次 `InvalidateAsync`，作用域释放时（调用已提交或回滚）再调用一次；失效按主体换代数，主体在所有租户下的条目一起作废，失效之前开始的读取写回的旧条目不会被当作命中，授予与撤销在提交之后立即生效（ADR-0194、ADR-0229）。失效作用于所有共用缓存的实例：装了 `Caching.Redis` 与 `Caching.Hybrid` 时所有实例一起生效；只装 Redis 时 `ICache` 仍是进程内的，其他实例靠存活时间收敛。绕过 `PermissionGrantRecordStore` 直接改表时，自行 `await InvalidateAsync(subjects, ct)` 或等存活时间。
 - 故障：开启、读取、提交只读工作单元时的数据库故障（连接、命令超时、事务失败）返回 `SECURITY_UNAVAILABLE_001`（消息键 `security.grant_store.unavailable`，不带参数），检查器原样返回，调用以 503 结束——不会落到 403。底层原因只记警告日志，不进响应。失败不进缓存，数据库恢复后下一次判定立即重新查库。调用方取消照常抛出；容器里缺工作单元或仓储是装配错误，照常抛出（ADR-0071）。
 - 缓存后端故障：判定直接查库、不写缓存，结果仍然正确，警告每 10 秒最多一条。写入时的失效遇到故障就抛出（`CACHING_UNAVAILABLE_001`），调用失败（内核转成 `KERNEL_UNEXPECTED_001`）、事务回滚：撤销传不到其他实例时不报成功。作用域释放时的失效遇到故障只记错误日志，已提交的写入在存活时间内对所有实例生效。`PermissionGrantRecordStore` 的同步释放会阻塞到失效写完，宿主应异步释放作用域。

@@ -24,7 +24,7 @@
 - 存活时间按秒向上取整写进 Lease（Kubernetes 只有整数秒），本地判断是否持有仍用精确值。
 - API Server 不可达或超时（客户端超时 10 秒）→ `SCHEDULING_UNAVAILABLE_002`，引擎下个周期重试。
 
-调度器的默认资源 `scheduling.jobs` 映射到配置的 Lease 名；其他资源映射到 `<Lease>-<资源>`，点与下划线换成连字符，截到 63 个字符（`KubernetesSchedulingOptions.LeaseNameFor`）。
+调度器的默认资源 `scheduling.jobs` 映射到配置的 Lease 名；其他资源映射到 `<Lease>-<资源>`，点与下划线换成连字符，超过 63 个字符时截到 63 个并去掉末尾的连字符。
 
 命名空间、持有者与 API Server 按 Pod 内的约定解析：
 
@@ -48,7 +48,7 @@
 dotnet add package XiHan.Framework.Scheduling.Kubernetes --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。示例应用 `framework/samples/KubernetesApp` 只在 Pod 内装配本包：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;

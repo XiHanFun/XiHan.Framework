@@ -29,7 +29,7 @@
 dotnet add package XiHan.Framework.Auditing.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包；用其他组合时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包；用其他组合时：
 
 ```csharp
 using XiHan.Framework.Auditing.InMemory;

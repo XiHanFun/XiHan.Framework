@@ -165,7 +165,7 @@ go install github.com/xihanfun/framework-spec/conformance/cmd/xihan-conformance@
 xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 ```
 
-第四步，在宿主的 `XiHan:Plugins:OutOfProcess:Directories` 里指向 `bin`（宿主装配见[隔离级别与清单](/plugins/overview)）。启动后 `POST /echoes` 带 `{"text":"hi"}` 得到带租户的回声，`/health/ready` 里出现 `plugins.xihan.contoso.echo`。
+第四步，在宿主的 `XiHan:Plugins:OutOfProcess:Directories` 里指向 `bin`（宿主装配见[隔离级别与清单](/plugins/overview)）。启动后 `POST /echoes` 带 `{"text":"hi"}` 得到带租户的回声，健康详情端点（`MapXiHanHealthDetails()` 映射的 `/health/details`）里出现 `plugins.xihan.contoso.echo`。
 
 更完整的写法见 SDK 的 `examples/echo`（仓库里的 `samples/EchoGoPlugin` 就是它在 .NET 宿主里的端到端运行）：订阅、生命周期回调与健康项经 `plugin.Options` 的 `Subscriptions`、`Hooks`、`Catalogs` 接入；`Hooks.Configure` 里用 `configuration.Decode(&settings)` 读清单声明的配置节；操作里用 `plugin.HostOf(ctx)` 取回调客户端；业务失败返回 `primitives.Fail`，文案只带消息键。SDK 不提供流式操作，不覆盖 Wasm 载体。用 .NET 写进程外插件不引用任何 XiHan 包，只需 protobuf 与 gRPC 从 `plugin.proto` 生成桩，见 `samples/EchoPlugin`。
 
@@ -249,7 +249,7 @@ builder.AddXiHan(xihan => xihan
 | `HealthFailures` | 正整数 | 3 | 连续多少次健康轮询失败视为进程失效 |
 | `RestartLimit` | 非负整数 | 5 | `RestartWindowSeconds` 内最多自动重启多少次 |
 | `RestartWindowSeconds` | 正数 | 600 | 统计重启次数的时间窗 |
-| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins` | 插件工作目录的根，每个插件一个子目录 |
+| `WorkDirectory` | 字符串 | 临时目录下的 `xihan-plugins-<用户名>` | 插件工作目录的根，每个插件一个子目录 |
 
 取值不合类型与范围时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定，宿主在 `Configure` 时把它序列化为 JSON 对象下发。
 

@@ -49,7 +49,7 @@
 dotnet add package XiHan.Framework.Caching.Remote --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包只提供能力，不启动插件进程，插件由 [Plugins.OutOfProcess](./plugins-outofprocess) 按目录发现：
 
 ```csharp
 using XiHan.Framework.Caching.Remote;

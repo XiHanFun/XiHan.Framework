@@ -152,7 +152,7 @@ app.Run();
 }
 ```
 
-把 `samples/EchoPlugin` 的构建输出（可执行文件加 `xihan.manifest.json`）放到 `plugins/echo`，启动应用：`echoes.create` 按 HTTP 路由约定成为 `POST /echoes`，请求体 `{"text":"hi"}` 得到插件的回声；`/health/ready` 里多出健康条目 `plugins.xihan.samples.echo`；插件进程的 stderr 以同名来源进入宿主日志。两个特性分别提供 `plugins.out-of-process@1` 与 `plugins.wasm@1`。
+把 `samples/EchoPlugin` 的构建输出（可执行文件加 `xihan.manifest.json`）放到 `plugins/echo`，启动应用：`echoes.create` 按 HTTP 路由约定成为 `POST /echoes`，请求体 `{"text":"hi"}` 得到插件的回声；健康详情端点（`MapXiHanHealthDetails()` 映射的 `/health/details`）里多出健康条目 `plugins.xihan.samples.echo`；插件进程的 stderr 以同名来源进入宿主日志。两个特性分别提供 `plugins.out-of-process@1` 与 `plugins.wasm@1`。
 
 ## 发现与加载
 

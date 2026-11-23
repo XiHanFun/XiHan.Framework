@@ -28,10 +28,11 @@
 Declared → Resolved → Configured → Started → Ready ⇄ Degraded
                                       │        │        │
                                       └────────┴────────┴──→ Draining → Stopped
+Started → Degraded（启动完成时缺少可选依赖，不经 Ready）
 除 Stopped 与 Failed 外的任何状态 → Failed；Failed → Resolved（重新装配）
 ```
 
-`Ready` 与 `Degraded` 统称可服务（`IsServing()`），`Stopped` 与 `Failed` 是终态（`IsTerminal()`）。应用处于可服务状态时才接收调用，否则 `App.InvokeAsync` 拒绝，ASP.NET Core 宿主返回 503、错误码 `KERNEL_UNAVAILABLE_001`。
+`Ready` 与 `Degraded` 统称可服务（`IsServing()`）；终态只有 `Stopped`（`IsTerminal()`），`Failed` 还能回到 `Resolved`。应用处于可服务状态时才接收调用，否则 `App.InvokeAsync` 拒绝，ASP.NET Core 宿主返回 503、错误码 `KERNEL_UNAVAILABLE_001`。
 
 ## 应用状态怎样聚合
 
@@ -107,7 +108,7 @@ public sealed class ReportWarmer
 }
 ```
 
-把它加进任一宿主（`UseFeature<ReportsFeature>()`），运行后 `curl -s localhost:5000/health/ready` 的 `features` 里出现 `{ "id": "xihan.shop.reports", "state": "Ready" }`。让 `WarmUpAsync` 抛出异常再启动，缺省策略下进程退出并记录 `KERNEL_HOSTING_002`；让它 `await Task.Delay(Timeout.Infinite, cancellationToken)` 则在 `StartTimeoutSeconds` 后以同一错误码失败。
+把它加进任一宿主（`UseFeature<ReportsFeature>()`），运行后健康详情端点（`MapXiHanHealthDetails()` 映射的 `/health/details`，见下文「探针端点」）的 `features` 里出现 `{ "id": "xihan.shop.reports", "state": "Ready" }`；`/health/ready` 只给 `status` 与 `state`。让 `WarmUpAsync` 抛出异常再启动，缺省策略下进程退出并记录 `KERNEL_HOSTING_002`；让它 `await Task.Delay(Timeout.Infinite, cancellationToken)` 则在 `StartTimeoutSeconds` 后以同一错误码失败。
 
 ## 内核选项
 
@@ -175,7 +176,7 @@ public void Configure(FeatureContext context)
 | `CheckedAt`、`Duration` | 检查时刻与耗时 |
 | `Data` | 名字到标量（字符串、布尔、数值或空）的字典，如已用量与上限 |
 
-`Check()` 必须立即返回。连接类检查用内核的 `PeriodicHealthContributor`：构造时给名字、探针委托（返回 `ValueTask<Result>`）、间隔、`TimeProvider` 与 `ILoggerFactory`，它在后台按间隔执行探针、缓存最近一次结果，`Check()` 只读缓存；探针失败或抛异常记为 `KERNEL_UNAVAILABLE_005` 并报 `Degraded`，恢复后报 `Ready`。框架的 Provider 都按这个方式实现，探测间隔由各自配置节的 `HealthProbeIntervalSeconds` 决定（缺省 15 秒）。
+`Check()` 必须立即返回。连接类检查用内核的 `PeriodicHealthContributor`：构造时给名字、探针委托（返回 `ValueTask<Result>`）、间隔、`TimeProvider` 与 `ILoggerFactory`，它在后台按间隔执行探针、缓存最近一次结果，`Check()` 只读缓存；探针返回的失败结果原样作为条目的错误，抛出异常或超时记为 `KERNEL_UNAVAILABLE_005`，两种情况都报 `Degraded`，恢复后报 `Ready`。框架的 Provider 都按这个方式实现，探测间隔由各自配置节的 `HealthProbeIntervalSeconds` 决定（缺省 15 秒）。
 
 同步计算的条目直接实现接口：
 
@@ -205,7 +206,7 @@ public sealed class ExportQueueHealth(ExportQueue queue) : IHealthContributor
 }
 ```
 
-在特性的 `Configure` 里登记 `context.Services.AddSingleton<IHealthContributor, ExportQueueHealth>()`，并把条目名写进清单的 `Contributes.Health`。框架包的架构测试强制两边一致；应用不受此测试约束，但建议同样声明，`graph` 命令会把它列出来。
+在特性的 `Configure` 里登记 `context.Services.AddSingleton<IHealthContributor, ExportQueueHealth>()`，并把条目名写进清单的 `Contributes.Health`。框架包的架构测试强制两边一致；应用不受此测试约束，但建议同样声明。
 
 ## 探针端点
 

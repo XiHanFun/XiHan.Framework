@@ -139,7 +139,7 @@ public sealed class ShippingFeature : IFeature
 {
     public Manifest Manifest { get; } = new()
     {
-        Id = "acme.shipping",
+        Id = "xihan.acme.shipping",
         Package = "Acme.Shipping",
         Version = "1.0.0",
         Primitives = 1,

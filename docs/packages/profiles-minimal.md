@@ -29,7 +29,7 @@ Minimal 组合包（元包）：一个包引用带上原语层、内核、ASP.NE
 dotnet add package XiHan.Framework.Profiles.Minimal --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -58,5 +58,5 @@ app.Run();
 
 ## 相关
 
-- [能力包与清单](/startup/features)、[宿主与 Web 应用](/web/hosting)
+- [特性与清单](/startup/features)、[ASP.NET Core 宿主](/web/hosting)
 - [Profiles.Standard](./profiles-standard)、[Profiles.Full](./profiles-full)、[Localization.InMemory](./localization-inmemory)

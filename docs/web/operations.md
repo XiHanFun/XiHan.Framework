@@ -135,7 +135,7 @@ public sealed class OrdersFeature : IFeature
 {
     public Manifest Manifest { get; } = new()
     {
-        Id = "shop.orders",
+        Id = "xihan.shop.orders",
         Package = "Shop",
         Version = FrameworkInfo.Version,
         Primitives = 1,
@@ -221,7 +221,7 @@ using XiHan.Framework.Kernel.Operations;
 
 ## 登记序列化类型与 Schema
 
-`Kernel.Generators` 从 `JsonSerializerContext` 取序列化元数据，并为每个操作生成请求与响应的 JSON Schema（draft 2020-12）。属性名按序列化上下文的命名策略；不可空且没有默认值的属性进 `required`；嵌套对象进 `$defs`；封闭泛型的定义名带实参名（`PageResultOfOrderResponse`）。请求类型上的 DataAnnotations 折进 Schema，由 Validate 阶段执行：
+`Kernel.Generators` 从 `JsonSerializerContext` 取序列化元数据，并为每个操作生成请求与响应的 JSON Schema（draft 2020-12）。属性名按序列化上下文的命名策略；带 `required` 修饰符的属性，以及位置记录里不可空且没有默认值的构造参数进 `required`，普通的不可空属性不进；嵌套对象进 `$defs`；封闭泛型的定义名带实参名（`PageResultOfOrderResponse`）。请求类型上的 DataAnnotations 折进 Schema，由 Validate 阶段执行：
 
 | 注解 | Schema |
 | --- | --- |
@@ -271,7 +271,7 @@ using XiHan.Framework.Kernel.Operations;
 
 协议适配器把线上消息翻译成 `OperationRequest`（操作 ID 加 UTF-8 JSON 载荷）交给 `IOperationInvoker`，调用器把操作描述与载荷放进调用上下文，让调用走完整条管道：
 
-1. Authorize 阶段在端点没有显式授权要求时，按契约的 `Permission` / `Policy` 判定。
+1. Authorize 阶段按契约的 `Permission` / `Policy` 判定；端点或路由组上另加的授权要求与它叠加，全部满足才放行。
 2. Validate 阶段按请求 Schema 校验载荷、解码成请求对象、执行 `IValidatableObject`。
 3. Transaction 阶段开启工作单元。
 4. Handle 阶段执行 `HandleAsync`，编码响应。
@@ -308,7 +308,7 @@ public sealed class NightlyOrderSeeder(IServiceScopeFactory scopes)
 | `InvokeAsync<TRequest, TResponse>(context, id, request)` | 类型化调用，经完整管道；请求在 Validate 阶段按序列化元数据编码一次再校验 |
 | `ExecuteAsync(...)` 两种重载 | 调用方已在管道内（如宿主端点）时直接执行，不再经过管道、不校验 |
 
-这样构造的上下文没有凭据与租户：经过 Authenticate 阶段时是匿名调用，带 `Permission` 的操作会被拒绝。后台调用需要身份时，用 `context.SetCredential(new AuthenticationCredential(scheme, value))`（`Security.Abstractions`）放入凭据；需要租户时在 `App.CreateContext` 的 `baggage` 参数里给出 `xihan.tenant`（`BaggageKeys.Tenant`），由 Tenant 阶段对照租户存储核对。细节见[认证](/security/authentication)与[租户解析与隔离](/multi-tenancy/resolution)。
+这样构造的上下文没有凭据与租户：经过 Authenticate 阶段时是匿名调用，带 `Permission` 的操作会被拒绝。后台调用需要身份时，用 `context.SetCredential(new AuthenticationCredential(scheme, value))`（`Security.Abstractions`）放入凭据；需要租户时用带 `InvocationContextOptions` 的重载，在 `Baggage` 里给出 `xihan.tenant`（`BaggageKeys.Tenant`）：`App.CreateContext(services, new InvocationContextOptions { Baggage = new Dictionary<string, string> { [BaggageKeys.Tenant] = tenantId } }, cancellationToken)`，由 Tenant 阶段对照租户存储核对。细节见[认证](/security/authentication)与[租户解析与隔离](/multi-tenancy/resolution)。
 
 调用器自己的错误码：操作没有登记是 `KERNEL_NOTFOUND_001`（调用不进管道）；载荷不是 JSON、为 `null` 或类型不匹配是 `KERNEL_VALIDATION_001`（`reason` 是 JSON 路径，如 `$.quantity`）；类型化调用的请求或响应类型与登记不符是 `KERNEL_VALIDATION_002`；不满足请求 Schema 与自校验失败分别是 `KERNEL_VALIDATION_003` 与 `KERNEL_VALIDATION_004`。
 

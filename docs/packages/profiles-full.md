@@ -46,7 +46,7 @@ Full 组合包（元包）：Standard 加对象存储、调度、审计、工作
 dotnet add package XiHan.Framework.Profiles.Full --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -90,5 +90,5 @@ app.Run();
 
 ## 相关
 
-- [宿主与 Web 应用](/web/hosting)、[HTTP 与 OpenAPI](/web/routing)、[gRPC、MCP 与 CloudEvents](/protocols/grpc)、[部署与打包](/deployment/pack)
+- [ASP.NET Core 宿主](/web/hosting)、[HTTP 路由与载荷](/web/routing)、[gRPC](/protocols/grpc)、[MCP](/protocols/mcp)、[CloudEvents](/protocols/cloudevents)、[部署与打包](/deployment/pack)
 - [Profiles.Standard](./profiles-standard)、[Profiles.Minimal](./profiles-minimal)

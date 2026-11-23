@@ -51,11 +51,11 @@
 
 ### 两个操作启动时报 PROTOCOLS_CONFLICT_002
 
-两个操作推导出了同一条 HTTP 路由或同一个 gRPC 方法名，典型情况是请求都不含 `id` 的 `get` 与 `list`。按操作覆盖其中一条路由，见 [HTTP 与 OpenAPI](/web/routing)。
+两个操作推导出了同一条 HTTP 路由或同一个 gRPC 方法名，典型情况是请求都不含 `id` 的 `get` 与 `list`。按操作覆盖其中一条路由，见 [HTTP 路由与载荷](/web/routing)。
 
 ### 调用返回 503 与 KERNEL_UNAVAILABLE_001
 
-应用还没有就绪或正在停止。看 `/health/startup` 与 `/health/ready` 的响应，找出状态不是 `Ready` 的特性；启动失败的原因记录在启动日志里。
+应用还没有就绪或正在停止。看 `/health/startup` 与 `/health/ready` 响应里的 `state`（应用的聚合状态，探针不列各特性）；哪个特性没有就绪、启动失败的原因记录在启动日志里。
 
 ### 返回 503 与 KERNEL_UNAVAILABLE_002、003 或 004
 

@@ -33,7 +33,7 @@
 dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。本包没有特性入口，`Profiles.Standard` 与 `Profiles.Full` 已经引用它。
 
 ## 配置
 

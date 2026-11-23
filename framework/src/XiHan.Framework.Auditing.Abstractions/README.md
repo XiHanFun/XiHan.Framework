@@ -46,7 +46,7 @@ public ValueTask<Result<ExportResponse>> HandleAsync(ExportRequest request, Invo
 ## 更多文档
 
 * [概念文档](https://framework.docs.xihanfun.com/packages/auditing-abstractions)
-* [审计指南](https://framework.docs.xihanfun.com/guide/auditing)
+* [审计](https://framework.docs.xihanfun.com/common/auditing)
 
 ## 相关包
 

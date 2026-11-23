@@ -29,7 +29,7 @@ Egress：Result 与 Error 翻译回协议（HTTP 为 RFC 9457 Problem Details，
 
 依赖按能力声明，不按包名或类型。能力 ID 的形式是 `<领域>.<能力>`，引用时带接口版本，如 `persistence.relational@1`、`caching.distributed@1`。同一能力可以由多个 Provider 提供：`persistence.relational` 可以来自 `Persistence.InMemory`、`Persistence.EntityFrameworkCore` 或 `Persistence.SqlSugar`。
 
-内核在构建期收集全部清单，按版本范围求解，拓扑排序，生成已解析图。缺失依赖、循环、版本冲突、同一能力有多个候选都会带着双方信息报错；启动日志与 `graph` 命令打印同一份图。同一能力有多个 Provider 时，默认实现（清单 `role: default`）自动让位；两个以上显式 Provider 时，在配置里指定。详见[能力图谱与 Provider](/startup/capabilities)。
+内核在构建期收集全部清单，按能力 ID 与接口版本求解（版本必须相等，不做范围匹配），拓扑排序，生成已解析图。缺失依赖、循环、版本冲突、同一能力有多个候选都会带着双方信息报错；启动日志与 `graph` 命令打印同一份图。同一能力有多个 Provider 时，默认实现（清单 `role: default`）自动让位；两个以上显式 Provider 时，在配置里指定。详见[能力图谱与 Provider](/startup/capabilities)。
 
 ## 执行管道
 
@@ -37,7 +37,7 @@ Egress：Result 与 Error 翻译回协议（HTTP 为 RFC 9457 Problem Details，
 
 | 阶段 | 职责 | 谁提供中间件 |
 | --- | --- | --- |
-| Ingress | 协议消息归一化、大小限制 | 内核 |
+| Ingress | 协议消息归一化、构造调用上下文 | 协议适配器在进入管道前完成，本阶段没有中间件 |
 | Observe | Trace、日志、指标、审计 | 内核、审计子系统 |
 | Resilience | 截止时间、限流、并发上限、熔断 | 内核 |
 | Authenticate | 主体解析 | 安全子系统 |

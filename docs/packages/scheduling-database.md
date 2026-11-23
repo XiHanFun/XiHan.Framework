@@ -48,7 +48,7 @@ dotnet add package XiHan.Framework.Scheduling.Database --prerelease
 dotnet add package XiHan.Framework.Persistence.SqlSugar --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Scheduling.InMemory`：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。装配一个持久化 Provider 和本包；装配后顶替默认的 `Scheduling.InMemory`：
 
 ```csharp
 using SqlSugar;

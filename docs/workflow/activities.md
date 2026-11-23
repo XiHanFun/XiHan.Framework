@@ -55,7 +55,7 @@
 
 ### 子流程
 
-子流程的子实例在父实例的分区里，继承关联 ID 与发起人，深度加一，超过 `MaxSubWorkflowDepth`（缺省 16）时返回 `WORKFLOW_VALIDATION_002`；子实例结束时以 `childInstanceId`、`childStatus`、`childVariables`、`childFault`（子实例 `Fault` 的 JSON，没有故障为空）回调父实例。子实例没有正常完成而父节点因此失败时，父节点的故障是 `workflow.child.failed`（参数 `id`、`status`），子实例的故障是它的内层原因。
+子流程的子实例在父实例的分区里，继承关联 ID 与发起人，深度加一，超过 `MaxSubWorkflowDepth`（缺省 16）时返回 `WORKFLOW_VALIDATION_002`；子实例结束时以 `childInstanceId`、`childStatus`、`childVariables`、`childFault`（子实例 `Fault` 的 JSON，没有故障为空）回调父实例。子实例没有正常完成而父节点因此失败时，父节点的故障按子实例的状态各一个消息键：故障 `workflow.child.faulted`、取消 `workflow.child.canceled`、终止 `workflow.child.terminated`，其他状态是通用的 `workflow.child.failed`（参数都是 `id`、`status`），子实例的故障是它的内层原因。
 
 ## 表达式
 
@@ -153,7 +153,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 节点失败（活动返回失败的 `Result`，或抛出异常并被翻译为 `WORKFLOW_UNEXPECTED_001`）时按顺序处理：
 
 1. 有重试策略且未用尽：节点记为 `Faulted`，插入 `Retry` 书签，第 n 次尝试失败后等 `FirstDelay × BackoffFactor^(n−1)`，实例保持运行。`WorkflowRetryPolicy.MaxAttempts` 含首次（至少 1，1 为不重试），`FirstDelay` 缺省 10 秒，`BackoffFactor` 至少 1、缺省 2。
-2. `ContinueOnError`：节点记为 `Faulted`，变量 `lastError` 写入这次错误的故障结构（`code`、`message`、`messageKey`、`arguments`、`inner`），以 `outcome = "error"` 流出。表达式按 `lastError.code` 判断（`message` 是按进程默认区域渲染的文本，只适合判空）；展示用 `WorkflowJson.DeserializeFault(instance.Variables[WorkflowEngine.LastErrorVariable])?.Localize()`。
+2. `ContinueOnError`：节点记为 `Faulted`，变量 `lastError` 写入这次错误的故障结构（`code`、`message`、`messageKey`、`arguments`、`inner`），以 `outcome = "error"` 流出。表达式按 `lastError.code` 判断（`message` 是按进程默认区域渲染的文本，只适合判空）；展示用 `WorkflowJson.DeserializeFault(instance.Variables[WorkflowReservedNames.LastErrorVariable])?.Localize()`。
 3. 否则实例 `Faulted`，记录 `Fault`、`FaultNodeId`、`FaultNodeInstanceId`；`CompensateOnFault` 时执行补偿。之后可以 `RetryAsync` 从故障节点重来，或 `JumpAsync` 改走别的节点。
 
 补偿按完成顺序的逆序调用已完成节点的 `ICompensableActivity.CompensateAsync`，节点状态改为 `Compensated`。三个入口：`EnableCompensation` 的定义被取消时、`CompensateOnFault` 的定义故障时、流程走到 `Compensate` 节点时（BPMN 的补偿抛出事件）。

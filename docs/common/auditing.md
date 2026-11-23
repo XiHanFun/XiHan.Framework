@@ -90,7 +90,7 @@ public sealed class ExportOrders : IOperation<ExportOrdersRequest, ExportOrdersR
 
 | 扩展 | 规则 |
 | --- | --- |
-| `SetAuditAction(action)` | 动作不能为空白；声明后这次调用一定记录，非操作调用也一样 |
+| `SetAuditAction(action)` | 动作不能为空白；声明后这次调用不受 `Selection` 与 `Exclude` 影响，非操作调用也记录；`IncludeSuccesses = false` 时成功的调用仍然不记 |
 | `SetAuditResource(resource)` | 参数是 `ResourceName`，事件里存它的 `xrn:<partition>:<service>:<tenant>:<type>/<id>` 文本；租户段可以为空 |
 | `AddAuditDetail(key, value)` | 键不能为空白，同名覆盖；值是 `JsonNode?`，字符串、数值、布尔、日期与 `Guid` 都能直接传（隐式转换），`null` 记为 JSON null；追加时即固化，事件里读回的是 `JsonElement` |
 
@@ -367,11 +367,11 @@ builder.AddXiHan(xihan => xihan
 
 ### 为什么我的端点没有被记录
 
-审计只自动记录操作调用；经 `UseXiHan()` 的普通端点、消息处理器、作业没有操作描述，缺省不记。要记就在处理代码里调用 `context.SetAuditAction("…")`，声明了动作的调用一定记录。
+审计只自动记录操作调用；经 `UseXiHan()` 的普通端点、消息处理器、作业没有操作描述，缺省不记。要记就在处理代码里调用 `context.SetAuditAction("…")`，声明了动作的调用不看 `Selection` 与 `Exclude`；只有 `IncludeSuccesses = false` 时，成功的调用（含声明了动作的）一律不记。
 
 ### 审计表涨得太快
 
-三个开关按需组合：`Selection` 从 `Protected` 收窄到 `None`（只记显式动作）；`IncludeSuccesses = false` 只留失败；`Exclude` 排掉前端每次加载都调的只读查询。显式 `SetAuditAction` 的调用不受这三者影响。
+三个开关按需组合：`Selection` 从 `Protected` 收窄到 `None`（只记显式动作）；`IncludeSuccesses = false` 只留失败；`Exclude` 排掉前端每次加载都调的只读查询。显式 `SetAuditAction` 的调用不受 `Selection` 与 `Exclude` 影响，但 `IncludeSuccesses = false` 对它同样生效：成功的调用不记。
 
 ### 审计写入失败会不会影响业务
 

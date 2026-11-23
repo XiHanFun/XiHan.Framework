@@ -57,7 +57,7 @@ dotnet add package XiHan.Framework.AI.OpenAI --prerelease
 }
 ```
 
-`OpenAIFeature` 的装配与启动不访问网络，Provider 配置错误在第一次解析客户端或调用模型时才暴露；工具名与知识库引用的提示词则在启动时校验。`local` 指向本机 Ollama 的 OpenAI 兼容端点，`cloud` 不写 `Endpoint` 即官方端点。
+`OpenAIFeature` 的装配与启动不访问网络：配置值不合法（缺 `Kind`、`Endpoint` 不是绝对的 http(s) 地址等，见下文「配置」的提示）在装配时就让启动失败，工具名与知识库引用的提示词在启动时校验；缺 `ChatModel`、`Kind` 没有对应的工厂、端点不可达这类问题要到第一次解析客户端或调用模型时才暴露。`local` 指向本机 Ollama 的 OpenAI 兼容端点，`cloud` 不写 `Endpoint` 即官方端点。
 
 ## 最小示例
 
@@ -140,7 +140,7 @@ app.Run();
 `IAIChat` 是作用域服务，`CompleteAsync` 返回 `Result<ChatResponse>`，`StreamAsync` 返回 `Result<IAsyncEnumerable<ChatResponseUpdate>>`。一次请求按以下顺序准备：
 
 1. 提示词：`Prompt` 不为空时按 `PromptArguments` 渲染模板，结果作为首条 `System` 消息。
-2. 工具：`Tools` 列出的名字从工具目录绑定到当前调用；`Options.Tools` 会被绑定结果覆盖。
+2. 工具：`Tools` 不为空时，列出的名字从工具目录绑定到当前调用，绑定结果覆盖 `Options.Tools`；`Tools` 为空时 `Options.Tools` 原样传给模型。
 3. 护栏：`SkipGuardrails` 为假时按登记顺序以输入方向检查全部消息，任一拦截即返回。
 4. Provider：`Provider` 为空取目录的 `DefaultProvider`（没有即 `AI_NOTFOUND_001`），解析客户端。
 5. 调用模型；`CompleteAsync` 拿到响应后再以输出方向检查一次，被拦下就返回错误、不交出响应。
@@ -150,7 +150,7 @@ app.Run();
 | `Messages` | 必填，对话消息 |
 | `Provider` | Provider 名，空取目录的默认聊天 Provider |
 | `Prompt`、`PromptArguments` | 提示词模板名与参数 |
-| `Tools` | 要带上的工具名（目录里的名字），空表示不带工具，见[工具与知识库](/ai/tools) |
+| `Tools` | 要带上的工具名（目录里的名字）；空表示不从目录绑定，`Options.Tools` 里自己放的工具照常带上，见[工具与知识库](/ai/tools) |
 | `Options` | `ChatOptions`，温度、最大令牌数等原样传给模型 |
 | `SkipGuardrails` | 跳过护栏，缺省 `false` |
 

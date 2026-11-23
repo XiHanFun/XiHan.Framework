@@ -29,7 +29,7 @@ ASP.NET Core 宿主适配：把 HTTP 请求翻译成调用上下文并经内核�
 dotnet add package XiHan.Framework.Hosting.AspNetCore --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -73,11 +73,11 @@ app.Run();
 | 类型 | 说明 |
 | --- | --- |
 | `WebApplicationBuilderExtensions` | `AddXiHan(configure)`：装载挂载的配置目录，再交给内核装配应用 |
-| `ApplicationBuilderExtensions` | `UseXiHan()`：请求桥接进内核管道；`MapXiHanHealth(prefix)`：`{prefix}/startup`、`/ready`、`/live`，只给状态；`MapXiHanHealthDetails(pattern)`：各特性与健康条目的详情，经管道、能加访问要求（ADR-0209） |
+| `ApplicationBuilderExtensions` | `UseXiHan()`：请求桥接进内核管道；`MapXiHanHealth(prefix)`：`{prefix}/startup`、`/ready`、`/live`，只给状态，返回的约定构建器作用于这三个探针（如 `RequireHost`、限流豁免）；`MapXiHanHealthDetails(pattern)`：各特性与健康条目的详情，经管道、能加访问要求（ADR-0209） |
 | `Endpoints.HttpInvocation` | `FindXiHanContext()` 取当前调用上下文；`CreateContext(httpContext)` / `CreateContext(httpContext, services)` 按 HTTP 载体映射建上下文；`AcceptedLocales`、`ParseBaggage`、`FormatBaggage`；`ReadBodyAsync(httpContext, maxBytes, cancellationToken)` 限长读请求体（超过时无值，服务器报的 413 同样算超过），协议适配器共用；常量 `DeadlineHeader`、`GrpcTimeoutHeader` |
 | `Endpoints.EndpointConventionBuilderExtensions` | `RequireXiHanAuthentication()`、`RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)`；引用的权限码与策略在宿主建请求管道时核对，不存在即启动失败 |
 | `Endpoints.PipelineBypassMetadata` | 端点元数据：带它的端点不经内核管道；`BypassXiHanPipeline(builder)` 标注 |
-| `Endpoints.OperationPayloadBinder` | 协议适配器挂在端点上的载荷绑定委托，`UseXiHan()` 在进管道前调用 |
+| `Endpoints.OperationPayloadBinder` | 协议适配器挂在端点上的载荷绑定委托；`UseXiHan()` 只把它作为载荷来源放进上下文，Validate 阶段才调用（ADR-0176） |
 | `Endpoints.OperationResponseWriter` | 协议适配器挂在端点上的成功响应写出委托（状态码、内容类型与正文）；幂等回放时端点不执行，`UseXiHan()` 在管道成功结束、响应未开始而上下文里有响应对象时用它写出 |
 | `ProblemResponse` | Problem Details 响应体；`FromError`、`StatusCodeFor`、`IsAuthenticationFailure`、`FieldErrorsOf`、`ScalarDetailsOf`、`WriteTo` |
 | `Health.HealthResponse`、`Health.FeatureHealth` | 探针与健康详情的响应体；探针不写 `features` 与 `contributions` |
@@ -121,7 +121,7 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)�
 - `baggage` 只保留已登记的键，其中 `xihan.tenant` 与 `xihan.principal` 不收（ADR-0121），`HttpInvocation.FormatBaggage` 出站也只写已登记的键（RFC-0003 规则 3）；`traceparent` 的采样标志进 `TraceFlags`，缺失或不合法时并入 ASP.NET Core 当前的请求 Activity（同一 trace-id），也没有时生成新的 trace-id；`xihan-deadline` 解析失败视为没有截止时间。
 - 查询串令牌只在 `QueryTokenPaths` 登记的前缀下接受，前缀不能为空或 `/`；方案 `XiHan` 只认带 `PipelineBypassMetadata` 的端点。
 - 调用来源 `InvocationOrigin` 记 `http`、方法与路径（含 PathBase，不含查询串）、连接对端地址、`User-Agent` 与 `Referer`，以及匹配到的端点的路由模板（`Route`）与名字（`EndpointName`，即 `WithName`），普通端点据此在 Observe 阶段被识别（ADR-0048）。
-- 健康探针的响应体含各特性状态与 `IHealthContributor` 条目（如每个进程外插件）的状态；条目另带 `description`、`checkedAt`、`durationMs` 与 `data`，有才写（ADR-0054）。
+- 健康探针的响应体只有 `status` 与 `state`；各特性状态与 `IHealthContributor` 条目（如每个进程外插件）的状态由健康详情端点 `/health/details` 给出，条目另带 `description`、`checkedAt`、`durationMs` 与 `data`，有才写（ADR-0054、ADR-0209）。
 - 预签名端点 `GET <BaseUrl>/{container}/{**key}` 下载（单个 `Range` 区间回 206，不可满足回 416，可带保存文件名），`PUT` 上传整个对象或分片的一片（响应 `ETag`）；上传解除请求体大小上限，单对象上限由存储把关；端点经内核管道、不要求凭据。命名实例用 `HostedBlobUrlSigner.ForStore(name)` 签，地址带 `x-store=<name>`，实例名在签名里，实例不存在回 404（`OBJECTSTORAGE_NOTFOUND_003`，ADR-0050）。存储能自己签名（S3）时不要装本特性。
 - 在绕过管道的端点（SignalR Hub、Server-Sent Events）里发起内核调用用 `HttpInvocation.CreateContext(httpContext, services)`：`Authorization` 头经 `SetCredential` 带上，经管道时重新认证。
 - `Accept-Language` 在调用方没有显式 `xihan.locale` Baggage 时按权重协商进该 Baggage（装配了本地化时协商到启用的区域，否则取第一个合法值）；Problem Details 的 `Content-Language` 是实际命中的区域（可能是回退链上的区域），`code` 不变。
@@ -139,11 +139,11 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)�
 | 预签名地址无效或已过期 | 403 | `OBJECTSTORAGE_DENIED_001` |
 | 直传请求的内容类型不合文法（签名没有限定内容类型时） | 400 | `OBJECTSTORAGE_VALIDATION_006` |
 
-状态码按错误码 KIND 的完整映射见 [HTTP 与 OpenAPI](/web/routing)。
+状态码按错误码 KIND 的完整映射见 [HTTP 路由与载荷](/web/routing)。
 
 ## 相关
 
-- [宿主与 Web 应用](/web/hosting)、[实时通信](/web/realtime)、[对象存储](/object-storage/basics)
+- [ASP.NET Core 宿主](/web/hosting)、[实时通信](/web/realtime)、[对象存储](/object-storage/basics)
 - [Protocols.Http](./protocols-http)、[Protocols.Grpc](./protocols-grpc)、[Protocols.Mcp](./protocols-mcp)、[Protocols.CloudEvents](./protocols-cloudevents)
 - [Hosting.CommandLine](./hosting-commandline)、[Kernel](./kernel)
 - 规范：`spec/protocol/http.md`《HTTP 载体》、RFC-0003《调用上下文与传播》、RFC-0008《认证与授权》、RFC-0010《本地化》

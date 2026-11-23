@@ -97,7 +97,7 @@ public void Configure(FeatureContext context)
 }
 ```
 
-把这个特性加进任一宿主，启动日志的 `resilience` 阶段末尾多出一行 `XiHan.Framework...MaintenanceModeMiddleware` 所在的类型全名；任何请求都得到：
+把这个特性加进任一宿主，启动日志的 `resilience` 阶段末尾多出一行 `resilience   Shop.Maintenance.MaintenanceModeMiddleware`（阶段名加中间件的类型全名）；任何请求都得到：
 
 ```bash
 curl -i -X POST localhost:5000/orders -H "Content-Type: application/json" -d '{"name":"widget","amount":1}'
@@ -144,7 +144,7 @@ builder.AddXiHan(xihan => xihan
 | `UseOwned(owner, configure)` | 一次登记同一归属的一组中间件与它们的约束，全进或全不进、立即核对；应用构建之后改管道只能用它 |
 | `RemoveOwnedBy(owner)` | 按归属撤回登记的全部中间件，返回个数；会留下悬空约束时什么都不撤、报 `KERNEL_PIPELINE_003` |
 
-清单里的 `Contributes.Pipeline` 用 `PipelineContribution` 声明中间件归属的阶段，供 `graph` 命令与插件宿主读取；真正生效的仍是 `Configure` 里的登记，两者应保持一致。
+清单里的 `Contributes.Pipeline` 用 `PipelineContribution` 声明中间件归属的阶段，供插件宿主与读清单的工具读取；`graph` 与 `pipeline` 命令不读它，打印的是能力图谱与实际登记的管道。真正生效的仍是 `Configure` 里的登记，两者应保持一致。
 
 ## 排序规则
 

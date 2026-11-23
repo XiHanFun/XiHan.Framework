@@ -34,7 +34,7 @@
 dotnet add package XiHan.Framework.MultiTenancy.InMemory --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时：
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Standard` 与 `Profiles.Full` 已包含本包；单独装配时：
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -130,7 +130,7 @@ public sealed class TenantMoves(ITenantAdministration tenants)
 
 ## 行为与限制
 
-- 容量：新增超过 `MaxTenants` 时 `Set` 返回 `MULTITENANCY_UNAVAILABLE_001`；替换已有租户不占新容量。配置里的租户超过上限时，构造存储即抛出 `FrameworkException`。
+- 容量：新增超过 `MaxTenants` 时 `ITenantAdministration.UpsertAsync` 的那一项返回 `MULTITENANCY_UNAVAILABLE_001`；替换已有租户不占新容量。配置里的租户超过上限时，构造存储即抛出 `FrameworkException`。
 - 健康项 `multitenancy.inmemory.capacity`：租户数达到上限即 Degraded（原因 `MULTITENANCY_UNAVAILABLE_001`），否则 Ready。
 - ID 区分大小写；`ListAsync` 按 ID 序数排序返回全部租户。
 - 数据只在进程内存里：多实例部署时各实例各有一份，运行时的增删不会同步到其他实例，重启后恢复为配置内容。

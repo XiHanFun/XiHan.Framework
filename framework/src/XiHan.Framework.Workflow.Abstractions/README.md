@@ -36,7 +36,7 @@ var definition = WorkflowDefinitionBuilder.Create(new WorkflowName("demo.greetin
     .Build();
 var draft = (await catalog.CreateAsync(definition, ct)).ValueOrThrow();
 await catalog.PublishAsync(draft.Id, ct);
-var instance = await engine.StartAsync(new WorkflowStartRequest { Name = "demo.greeting", Variables = new JsonObject { ["name"] = "alice" } }, ct);
+var instance = await engine.StartAsync(new WorkflowStartRequest { Name = new WorkflowName("demo.greeting"), Variables = new JsonObject { ["name"] = "alice" } }, ct);
 ```
 
 ## 主要类型

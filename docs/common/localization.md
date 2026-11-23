@@ -129,7 +129,9 @@ public static class SampleMessages
 ```csharp
 using SimpleApp;
 using XiHan.Framework.Hosting.AspNetCore;
+using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
@@ -369,7 +371,7 @@ public sealed class SetTranslations(MessageTranslationStore store) : IOperation<
         // 一次批量写入；同一批里重复的键与区域后者覆盖前者，逐项给出结果
         var entries = request.Items.Select(static i => new MessageTranslationEntry(i.Key, i.Locale, i.Template)).ToList();
         var results = await store.UpsertAsync(entries, context.CancellationToken);
-        var written = results.Count(static r => r.Outcome.IsSuccess);
+        var written = results.Count(static r => r.IsSuccess);
         return new SetTranslationsResponse(written, results.Count - written);
     }
 }

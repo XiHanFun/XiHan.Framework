@@ -33,7 +33,7 @@ HTTP 协议适配器，提供 `protocols.http@1`：按操作 ID 推导路由（�
 dotnet add package XiHan.Framework.Protocols.Http --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。`Profiles.Full` 已包含本包，`UseFullProfile()` 会装配 `HttpProtocolFeature`。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。`Profiles.Full` 已包含本包，`UseFullProfile()` 会装配 `HttpProtocolFeature`。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
@@ -128,7 +128,7 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 }
 ```
 
-路由推导、绑定、文案键与普通端点收录的完整说明见 [HTTP 与 OpenAPI](/web/routing)。
+路由推导与绑定的完整说明见 [HTTP 路由与载荷](/web/routing)，文案键与普通端点收录见[规范化接口文档](/web/openapi)。
 
 ## 行为与限制
 
@@ -144,7 +144,7 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 - OpenAPI 操作文案（ADR-0052）：`summary` 取消息目录里 `<操作 ID>.title`，`description` 取 `<操作 ID>.description`（`-` 换 `_`，与 MCP `tools/list` 同两个键），各自没有就不写；授权要求由生成器按区域附在 `description` 末尾一行（`HttpMessages`：需要权限 <码>（<显示名>）/ 需要策略 <名> / 需要登录），权限的显示名先取 `permissions.<权限码>.name`（`-` 换 `_`），没有再取权限定义的；`x-xihan-permissions` 的 `displayName` / `description` 同样先取 `permissions.<权限码>.name` / `.description`，文案里不要再手写。装配了本地化时按 `Accept-Language` 协商出的区域分别生成与缓存（`Content-Language` 标出区域，缺省 `en-US`），没有装配时只有一份文档、没有目录文案。
 - OpenAPI 标签、分组与字段说明（ADR-0052）：顶层 `tags` 的 `x-displayName` / `description` 取 `openapi.tags.<资源段>.name` / `.description`，`name` 仍是资源码；`OpenApiOptions.Groups` 声明 `OpenApiGroup(名字, 排序, 所属特性, 额外标签)`，全量文档带 `x-tagGroups`（一个标签只归排序靠前的一组），每组另发 `/openapi/<组名>.json`（标题取 `openapi.groups.<组名>.name`），`GetXiHanOpenApiDocuments()` 列出全部文档给 Scalar：`foreach (var link in app.GetXiHanOpenApiDocuments(options)) scalar.AddDocument(link.Name, link.Title, link.Url);`。Schema 里 `Kernel.Generators` 从 XML 注释折进的 `description` 进参数、请求体与成功响应（没有根说明时是按区域的「成功」）；某个区域可用 `openapi.schemas.<snake_case 的 Schema 名>.description` 与 `.properties.<snake_case 的属性名>` 覆盖。
 - OpenAPI 普通端点（ADR-0032）：`EndpointDataSource` 里没有 `OperationDescriptor`、有 HTTP 方法元数据、带 `IAcceptsMetadata` 或 `IProducesResponseTypeMetadata` 之一、没有 `ExcludeFromDescription()` 的路由端点进文档，Hub、探针、重定向、静态资源没有这两种元数据，自然不进。路由参数作 `path` 参数（`string`）；`WithName` 作 `operationId`，`WithSummary` / `WithDescription` / `WithTags` 照搬；`RequireXiHanPermission` / `RequireXiHanPolicy` / `RequireXiHanAuthentication` 出 `x-xihan-permission` / `x-xihan-policy`，权限码并入 `x-xihan-permissions`。`Accepts` / `Produces` 按内容类型写：JSON 只引用已登记操作的根 Schema（显式 `WithXiHanOperationSchema(request:, response:)`，或按 `Accepts<T>` / `Produces<T>` 的类型与操作的请求 / 响应类型自动匹配，取 ID 最小且有 Schema 的操作；被引用的根提升到 `components/schemas/<title>`，操作自己也改为 `$ref`），`multipart/form-data` 是含 `format: binary` 属性（`file` / `files`）的对象，表单是对象，`text/*` 与 `string` 是字符串，其余二进制是 `format: binary` 的字符串；失败响应同样引用 `ProblemDetails`。
-- OpenAPI 权限扩展（ADR-0031）：契约有 `Permission` 的操作带 `x-xihan-permission`（权限码），有 `Policy` 的带 `x-xihan-policy`（策略名），都没有则不带；不占用标准 `security` / `securitySchemes`（权限码不是 OAuth scope）。`components.x-xihan-permissions` 按权限码（序数排序）给出权限定义，收录范围是文档里已发布操作引用的权限码加上 `PermissionRegistry` 登记的全部定义：只在 gRPC / MCP 暴露的操作或端点级 `RequireXiHanPermission` 用到的权限也在其中，授权界面据此生成；被引用但未登记的只有 `code`，`description` 为 null 时省略。`OpenApiDocumentBuilder.Build(registry, options, permissions, title, version)` 的 `permissions` 为 null 时只按引用写。形如：`{ "paths": { "/orders": { "post": { "operationId": "orders.create", "x-xihan-permission": "orders.write" } } }, "components": { "x-xihan-permissions": { "orders.write": { "code": "orders.write", "displayName": "Place orders" } } } }`。
+- OpenAPI 权限扩展（ADR-0031）：契约有 `Permission` 的操作带 `x-xihan-permission`（权限码），有 `Policy` 的带 `x-xihan-policy`（策略名），都没有则不带；不占用标准 `security` / `securitySchemes`（权限码不是 OAuth scope）。`components.x-xihan-permissions` 按权限码（序数排序）给出权限定义，收录范围是文档里已发布操作引用的权限码加上 `PermissionRegistry` 登记的全部定义：只在 gRPC / MCP 暴露的操作或端点级 `RequireXiHanPermission` 用到的权限也在其中，授权界面据此生成；被引用但未登记的只有 `code`，`description` 为 null 时省略。自己构造 `OpenApiDocumentSource(registry, options)` 交给 `OpenApiDocumentBuilder.Build(source)` 时，`Permissions` 为 null 只按引用写。形如：`{ "paths": { "/orders": { "post": { "operationId": "orders.create", "x-xihan-permission": "orders.write" } } }, "components": { "x-xihan-permissions": { "orders.write": { "code": "orders.write", "displayName": "Place orders" } } } }`。
 
 | 情形 | 何时 | 错误码 |
 | --- | --- | --- |
@@ -156,7 +156,7 @@ foreach (var link in app.GetXiHanOpenApiDocuments(openApi))
 
 ## 相关
 
-- [HTTP 与 OpenAPI](/web/routing)、[操作契约](/web/operations)、[宿主与 Web 应用](/web/hosting)
+- [HTTP 路由与载荷](/web/routing)、[操作契约](/web/operations)、[ASP.NET Core 宿主](/web/hosting)
 - [Hosting.AspNetCore](./hosting-aspnetcore)、[Kernel.Generators](./kernel-generators)
 - [Protocols.Grpc](./protocols-grpc)、[Protocols.Mcp](./protocols-mcp)、[Protocols.CloudEvents](./protocols-cloudevents)
 - 规范：`spec/protocol/http.md`《HTTP 载体》、`spec/conventions/operation-ids.md`《操作 ID》、RFC-0011《操作契约与 XGI》

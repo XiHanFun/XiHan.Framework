@@ -35,7 +35,7 @@ ASP.NET Core 与 `HttpClient` 不装检测包，按名字订阅它们原生发�
 dotnet add package XiHan.Framework.Observability.OpenTelemetry --prerelease
 ```
 
-当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[快速上手](/getting-started/installation)。
+当前是预览版，安装要带 `--prerelease`；从源码或本地包源引用见[环境与安装](/getting-started/installation)。
 
 ```csharp
 using XiHan.Framework.Hosting.AspNetCore;
