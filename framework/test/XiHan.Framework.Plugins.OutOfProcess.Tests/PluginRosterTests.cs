@@ -223,6 +223,10 @@ public sealed class PluginRosterTests
         var delivery = Delivery();
         var context = Context();
 
+        // 读者跑完第一轮各报一次：线程池忙的时候它们可能还没被调度，写者的三千轮就已经跑完了，那样增删与枚举根本没有交错
+        var checkingStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var deliveringStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
         // 两个读者不停地取健康条目与投递，直到增删结束
         var checking = Task.Run(() =>
         {
@@ -232,6 +236,7 @@ public sealed class PluginRosterTests
                 var names = roster.Check().Select(static s => s.Name).ToHashSet(StringComparer.Ordinal);
                 Assert.All(stable, runtime => Assert.Contains(PluginHealth.EntryPrefix + runtime.Manifest.Id, names));
                 rounds++;
+                checkingStarted.TrySetResult();
             }
 
             return rounds;
@@ -243,10 +248,15 @@ public sealed class PluginRosterTests
             {
                 Assert.True((await roster.DeliverAsync(delivery, context)).IsSuccess);
                 rounds++;
+                deliveringStarted.TrySetResult();
             }
 
             return rounds;
         });
+
+        // 等两个读者都跑起来再开始增删；读者在第一轮就失败时把它的异常带出来，而不是等到超时
+        var started = Task.WhenAll(checkingStarted.Task, deliveringStarted.Task);
+        await await Task.WhenAny(started, checking, delivering).WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None);
 
         // 写者：加载、卸载，以及运行期加载登记失败时的直接移除，三条路径都改登记顺序
         for (var round = 0; round < 3000; round++)
