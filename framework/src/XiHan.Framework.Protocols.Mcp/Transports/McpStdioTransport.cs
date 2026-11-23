@@ -19,6 +19,19 @@ namespace XiHan.Framework.Protocols.Mcp.Transports;
 public static class McpStdioTransport
 {
     /// <summary>
+    /// 按 UTF-8 解码标准输入的读取器
+    /// </summary>
+    /// <remarks>
+    /// MCP 的 stdio 消息是 UTF-8。<see cref="Console.In"/> 在 Windows 上按控制台输入代码页（936、437 等）解码重定向的标准输入，中文参数会成乱码，所以直接解码标准输入的字节：开头的 UTF-8 BOM 被跳过、不算内容，不按 BOM 改用别的编码
+    /// </remarks>
+    /// <param name="input">标准输入的字节流，读取器释放时一并关闭</param>
+    public static StreamReader OpenInput(Stream input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        return new StreamReader(input, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
+    }
+
+    /// <summary>
     /// 以空上下文运行到输入结束或取消
     /// </summary>
     /// <remarks>

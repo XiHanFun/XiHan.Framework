@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -70,8 +69,8 @@ internal sealed class McpCommand : ICommand
         await host.StartAsync(context.CancellationToken).ConfigureAwait(false);
         try
         {
-            // 标准输入按 UTF-8 读：Windows 上重定向的 Console.In 用 OEM 代码页解码，中文检索词会变成乱码
-            using var stdin = _input is null ? new StreamReader(Console.OpenStandardInput(), new UTF8Encoding(false)) : null;
+            // 标准输入按 UTF-8 读：Windows 上重定向的 Console.In 用 OEM 代码页解码，中文检索词会变成乱码；与应用的 mcp 命令用同一个读取器
+            using var stdin = _input is null ? McpStdioTransport.OpenInput(Console.OpenStandardInput()) : null;
             await McpStdioTransport.RunAsync(host.Services.GetRequiredService<McpServer>(), host.Services, _input ?? stdin!, context.Output, context.CancellationToken).ConfigureAwait(false);
         }
         finally

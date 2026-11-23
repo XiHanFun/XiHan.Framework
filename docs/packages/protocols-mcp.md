@@ -85,7 +85,7 @@ app.Run();
 | `McpProtocolFeature` | 特性入口 |
 | `McpProtocolOptions` | `ServerName`、`ServerVersion`、`Instructions`、`Tools`、`AllowedOrigins`、`MaxRequestBodyBytes`；`ToolNameFor(contract)`、`IsAllowedOrigin(origin)` |
 | `Transports.McpEndpointRouteBuilderExtensions` | `MapXiHanMcp(pattern)`，缺省 `/mcp` |
-| `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输；自己托管时按 UTF-8 构造 `input`（`new StreamReader(Console.OpenStandardInput(), Encoding.UTF8)`），不要直接用 `Console.In` |
+| `Transports.McpStdioTransport` | `RunAsync(server, services, input, output, cancellationToken)`：按行读写的 stdio 传输；`OpenInput(stream)`：按 UTF-8 解码标准输入的读取器（跳过 UTF-8 BOM，不按 BOM 改用别的编码）。自己托管时用 `McpStdioTransport.OpenInput(Console.OpenStandardInput())` 构造 `input`，不要直接用 `Console.In` |
 | `Server.McpServer` | JSON-RPC 服务端：`Tools`、`FindTool`，由特性构造、交给传输处理消息；常量 `ProtocolVersion` = `2025-06-18`、`ProtocolVersionHeader` = `MCP-Protocol-Version` |
 | `Tools.McpTool` | 一个 tool：名字、操作描述、输入 / 输出 Schema、提示 |
 | `Tools.McpToolAnnotations` | `For(contract)`：只读、破坏性、幂等提示 |

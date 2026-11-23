@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.CommandLine;
 using XiHan.Framework.Hosting.CommandLine.Commands;
@@ -60,10 +59,9 @@ internal sealed class McpStdioCommand : ICommand
             return await CommandLineFailure.WriteAsync(context.Error, probe.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
         }
 
-        // MCP 的 stdio 消息是 UTF-8：Console.In 在 Windows 上按控制台输入代码页（936、437 等）解码重定向的 stdin，中文参数会成乱码，
-        // 所以直接按 UTF-8 解码标准输入的字节（Encoding.UTF8 带前导码，开头的 UTF-8 BOM 被跳过、不算内容；不按 BOM 改用别的编码）
+        // 标准输入直接按 UTF-8 解码字节（McpStdioTransport.OpenInput），不经 Console.In 的控制台代码页
         // 答复不另换编码：服务端写出的 JSON 把非 ASCII 字符都转义成 \uXXXX，只含 ASCII，经宿主给的输出按任何兼容 ASCII 的代码页写出都是同样的字节
-        using var input = new StreamReader(_openInput(), Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
+        using var input = McpStdioTransport.OpenInput(_openInput());
         // 每条消息与每个 tools/call 都以同一组选项在自己的作用域里建上下文；来源由服务端改记 mcp 与 tool 名
         await McpStdioTransport.RunAsync(
             context.Services.GetRequiredService<McpServer>(),

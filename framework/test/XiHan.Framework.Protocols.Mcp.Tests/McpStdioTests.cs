@@ -54,6 +54,19 @@ public sealed class McpStdioTests
     }
 
     [Fact]
+    public void OpenInput_DecodesUtf8_SkipsItsByteOrderMark_AndNeverSwitchesEncodingOnAnotherMark()
+    {
+        using var marked = McpStdioTransport.OpenInput(new MemoryStream([0xEF, 0xBB, 0xBF, .. "{\"名\":1}"u8]));
+        Assert.Equal("{\"名\":1}", marked.ReadToEnd());
+
+        // UTF-16 的 BOM 不让读取器改用 UTF-16：后面的字节照旧按 UTF-8 解码。命令行工具的 mcp 命令原先用的读取器会改
+        using var foreign = McpStdioTransport.OpenInput(new MemoryStream([0xFF, 0xFE, .. "ok"u8]));
+        Assert.EndsWith("ok", foreign.ReadToEnd(), StringComparison.Ordinal);
+
+        Assert.Throws<ArgumentNullException>(static () => McpStdioTransport.OpenInput(null!));
+    }
+
+    [Fact]
     public async Task Transport_AnswersOneLinePerRequest_AndSkipsNotifications()
     {
         using var host = await StartAsync();
