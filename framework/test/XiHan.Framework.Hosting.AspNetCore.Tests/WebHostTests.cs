@@ -7,6 +7,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
@@ -93,6 +94,28 @@ public sealed class WebHostTests
         app.MapGet("/orders/{id}", static (string id) => id).WithName("orders.get");
         await app.StartAsync();
         return (app, app.GetTestClient(), captured);
+    }
+
+    [Fact]
+    public async Task ConventionsOnTheHealthBuilder_ApplyToTheThreeProbes_AndNothingElse()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.WebHost.UseTestServer();
+        builder.AddXiHan(static xihan => xihan.UseFeature(new StubFeature(TestManifests.Create("xihan.test.web"))));
+        await using var app = builder.Build();
+        app.UseXiHan();
+        var marker = new object();
+        // 约定在映射之后才加：端点构建时应用，仍要作用到三个探针
+        app.MapXiHanHealth().WithMetadata(marker);
+        app.MapXiHanHealthDetails();
+        app.MapGet("/ok", () => "ok");
+        await app.StartAsync();
+
+        var endpoints = ((IEndpointRouteBuilder)app).DataSources.SelectMany(static source => source.Endpoints).ToList();
+        var probes = endpoints.Where(endpoint => endpoint.Metadata.Contains(marker)).Select(static endpoint => ((RouteEndpoint)endpoint).RoutePattern.RawText).Order(StringComparer.Ordinal).ToList();
+        // 组的前缀为空：路由模板不变；详情端点与应用自己的端点不带这个约定
+        Assert.Equal(["/health/live", "/health/ready", "/health/startup"], probes);
+        Assert.Equal(HttpStatusCode.OK, (await app.GetTestClient().GetAsync("/health/ready")).StatusCode);
     }
 
     [Fact]

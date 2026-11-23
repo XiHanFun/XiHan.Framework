@@ -124,25 +124,27 @@ public static class ApplicationBuilderExtensions
     /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道
     /// <c>prefix</c> 取 <c>"/health"</c>
     /// </remarks>
-    public static IEndpointRouteBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints)
+    public static IEndpointConventionBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints)
         => MapXiHanHealth(endpoints, "/health");
 
     /// <summary>
     /// 映射探针端点
     /// </summary>
     /// <remarks>
-    /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道，所以只给状态，特性与贡献条目的详情由 <see cref="MapXiHanHealthDetails(IEndpointRouteBuilder)"/> 给出（ADR-0209）
+    /// <c>{prefix}/startup</c>、<c>{prefix}/ready</c>、<c>{prefix}/live</c>。通过返回 200，否则 503；探针不经过内核管道，所以只给状态，特性与贡献条目的详情由 <see cref="MapXiHanHealthDetails(IEndpointRouteBuilder)"/> 给出（ADR-0209）。返回的约定构建器作用于这三个探针（如 <c>RequireHost</c>、限流豁免），不影响别的端点
     /// </remarks>
-    public static IEndpointRouteBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints, string prefix)
+    public static IEndpointConventionBuilder MapXiHanHealth(this IEndpointRouteBuilder endpoints, string prefix)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         ArgumentNullException.ThrowIfNull(prefix);
         var xihan = endpoints.ServiceProvider.GetRequiredService<App>();
 
-        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/startup", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Started, detailed: false)));
-        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/ready", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Ready, detailed: false)));
-        PipelineBypassMetadata.BypassXiHanPipeline(endpoints.MapGet(prefix + "/live", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Live, detailed: false)));
-        return endpoints;
+        // 三个探针映射进一个空前缀的路由组并返回它：路由模板不变，加在返回值上的约定只作用于它们（与 MapXiHanOperations 同一做法，ADR-0144）
+        var group = endpoints.MapGroup(string.Empty);
+        PipelineBypassMetadata.BypassXiHanPipeline(group.MapGet(prefix + "/startup", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Started, detailed: false)));
+        PipelineBypassMetadata.BypassXiHanPipeline(group.MapGet(prefix + "/ready", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Ready, detailed: false)));
+        PipelineBypassMetadata.BypassXiHanPipeline(group.MapGet(prefix + "/live", httpContext => WriteHealthAsync(httpContext, xihan, static h => h.Live, detailed: false)));
+        return group;
     }
 
     /// <summary>

@@ -112,13 +112,13 @@ override XiHan.Framework.Hosting.AspNetCore.Health.HealthResponse.ToString() -> 
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.Equals(object? obj) -> bool
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.GetHashCode() -> int
 override XiHan.Framework.Hosting.AspNetCore.ProblemResponse.ToString() -> string!
-static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
-static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealth(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealthDetails(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.MapXiHanHealthDetails(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! pattern) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
 static XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions.UseXiHan(this Microsoft.AspNetCore.Builder.IApplicationBuilder! app) -> Microsoft.AspNetCore.Builder.IApplicationBuilder!
 static XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationBuilderExtensions.AddXiHan(this Microsoft.AspNetCore.Authentication.AuthenticationBuilder! builder, System.Action<XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationOptions!>? configure = null) -> Microsoft.AspNetCore.Authentication.AuthenticationBuilder!
-static XiHan.Framework.Hosting.AspNetCore.Blobs.BlobEndpointRouteBuilderExtensions.MapXiHanBlobs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Routing.IEndpointRouteBuilder!
+static XiHan.Framework.Hosting.AspNetCore.Blobs.BlobEndpointRouteBuilderExtensions.MapXiHanBlobs(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
 static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions!
 static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.operator !=(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? left, XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? right) -> bool
 static XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions.operator ==(XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? left, XiHan.Framework.Hosting.AspNetCore.Blobs.HostedBlobUrlOptions? right) -> bool

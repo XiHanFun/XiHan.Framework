@@ -42,18 +42,20 @@ public static class BlobEndpointRouteBuilderExtensions
     /// 映射端点
     /// </summary>
     /// <remarks>
-    /// 路由前缀取 <see cref="HostedBlobUrlOptions.BasePath"/>。要求已装配 <see cref="HostedBlobUrlFeature"/> 且 <c>UseXiHan()</c> 在路由之后
+    /// 路由前缀取 <see cref="HostedBlobUrlOptions.BasePath"/>。要求已装配 <see cref="HostedBlobUrlFeature"/> 且 <c>UseXiHan()</c> 在路由之后。返回的约定构建器作用于上传与下载两个端点，不影响别的端点
     /// </remarks>
-    public static IEndpointRouteBuilder MapXiHanBlobs(this IEndpointRouteBuilder endpoints)
+    public static IEndpointConventionBuilder MapXiHanBlobs(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
         var signer = endpoints.ServiceProvider.GetService<HostedBlobUrlSigner>()
             ?? throw new FrameworkException(KernelErrors.InvalidAppState, "MapXiHanBlobs() requires the hosted signed URL feature; add UseFeature<HostedBlobUrlFeature>() to the application.");
         var pattern = signer.Options.BasePath + "/{container}/{**key}";
+        // 两个端点映射进一个空前缀的路由组并返回它，与别的 MapXiHan* 一样能在返回值上加约定（ADR-0144）
+        var group = endpoints.MapGroup(string.Empty);
         // RequestDelegate 重载不经参数绑定的动态代码生成，AOT 安全；路由值自己取
-        endpoints.MapGet(pattern, http => DownloadAsync(http, signer, RouteValue(http, "container"), RouteValue(http, "key"))).WithName("xihan.objectstorage.blob.download");
-        endpoints.MapPut(pattern, http => UploadAsync(http, signer, RouteValue(http, "container"), RouteValue(http, "key"))).WithName("xihan.objectstorage.blob.upload");
-        return endpoints;
+        group.MapGet(pattern, http => DownloadAsync(http, signer, RouteValue(http, "container"), RouteValue(http, "key"))).WithName("xihan.objectstorage.blob.download");
+        group.MapPut(pattern, http => UploadAsync(http, signer, RouteValue(http, "container"), RouteValue(http, "key"))).WithName("xihan.objectstorage.blob.upload");
+        return group;
     }
 
     /// <summary>
