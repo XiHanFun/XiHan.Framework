@@ -12,7 +12,6 @@ using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
-using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
@@ -28,7 +27,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Runtime;
 /// <remarks>
 /// 进程的启动、握手、配置、启动、健康监视、崩溃重启与停止（<c>spec/plugin/lifecycle.md</c>），以及经它的调用与事件投递
 /// </remarks>
-internal sealed partial class PluginRuntime : IPluginInvoker, IPluginCarrier, IDisposable
+internal sealed partial class PluginRuntime : IPluginRuntime, IPluginCarrier, IDisposable
 {
     /// <summary>
     /// 宿主环境
@@ -204,12 +203,6 @@ internal sealed partial class PluginRuntime : IPluginInvoker, IPluginCarrier, ID
             Restarts = _lifecycle.Restarts,
             Lazy = IsLazy,
         };
-
-    /// <summary>
-    /// 是否以该方式订阅了该主题与类型
-    /// </summary>
-    public bool IsSubscribedTo(string topic, string messageType, SubscriptionMode mode)
-        => _handshake?.Subscriptions.Any(s => s.Matches(topic, messageType, mode)) == true;
 
     /// <summary>
     /// 以发现时被拒登记：进入 Failed，之后不启动也不重启

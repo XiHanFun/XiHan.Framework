@@ -13,7 +13,6 @@ using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
-using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Plugins.Protocol.V1;
 using XiHan.Framework.Plugins.Wasm.Instances;
 using XiHan.Framework.Primitives;
@@ -29,7 +28,7 @@ namespace XiHan.Framework.Plugins.Wasm.Runtime;
 /// <remarks>
 /// 模块编译、实例化与握手、配置与启动、串行调用、健康轮询、陷阱后的退避重建与停止（<c>spec/plugin/wasm.md</c> §5），以及经它的操作调用、事件投递与中间件钩子
 /// </remarks>
-internal sealed partial class WasmPluginRuntime : IPluginInvoker, IPluginCarrier, IDisposable
+internal sealed partial class WasmPluginRuntime : IPluginRuntime, IPluginCarrier, IDisposable
 {
     /// <summary>
     /// 宿主环境
@@ -230,12 +229,6 @@ internal sealed partial class WasmPluginRuntime : IPluginInvoker, IPluginCarrier
         Restarts = _lifecycle.Restarts,
         Lazy = IsLazy,
     };
-
-    /// <summary>
-    /// 是否以该方式订阅了该主题与类型
-    /// </summary>
-    public bool IsSubscribedTo(string topic, string messageType, SubscriptionMode mode)
-        => _handshake?.Subscriptions.Any(s => s.Matches(topic, messageType, mode)) == true;
 
     /// <summary>
     /// 以发现时被拒登记：进入 Failed，之后不启动也不重建

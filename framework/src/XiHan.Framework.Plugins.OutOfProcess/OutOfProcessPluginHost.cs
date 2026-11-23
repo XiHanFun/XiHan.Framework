@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +15,6 @@ using XiHan.Framework.Plugins.OutOfProcess.Runtime;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Hosting;
-using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Primitives.Manifests;
 
@@ -49,7 +47,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// <summary>
     /// 健康条目名前缀
     /// </summary>
-    public const string HealthPrefix = "plugins.";
+    public const string HealthPrefix = PluginHealth.EntryPrefix;
 
     /// <summary>
     /// 选项
@@ -62,35 +60,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     private readonly PluginSessions _sessions = new();
 
     /// <summary>
-    /// 已登记的运行时，按清单 ID
-    /// </summary>
-    private readonly ConcurrentDictionary<string, PluginRuntime> _plugins = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// 登记顺序（停止按相反顺序）
-    /// </summary>
-    private readonly List<PluginRuntime> _order = [];
-
-    /// <summary>
-    /// 清单读不出来的插件目录与原因
+    /// 插件名册
     /// </summary>
     /// <remarks>
-    /// 没有清单 ID，只作为健康条目 <c>plugins.&lt;目录名&gt;</c> 上报；只在配置阶段写入
+    /// 运行时进出宿主、目录、权限码与代理操作的登记与撤回、事件投递与健康条目都经它；加载卸载锁与登记锁在它里面（ADR-0085、ADR-0260）
     /// </remarks>
-    private readonly List<(string Directory, Error Error)> _unreadable = [];
-
-    /// <summary>
-    /// 串行化加载与卸载
-    /// </summary>
-    private readonly SemaphoreSlim _gate = new(1, 1);
-
-    /// <summary>
-    /// 串行化代理操作的登记与撤回
-    /// </summary>
-    /// <remarks>
-    /// 登记发生在运行期加载与后台重试里（不持有 <see cref="_gate"/>），撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，卸载之后才完成的握手不会留下指向已卸载插件的登记（ADR-0085）
-    /// </remarks>
-    private readonly Lock _registration = new();
+    private readonly PluginRoster<PluginRuntime> _roster = new();
 
     /// <summary>
     /// 插件共享的宿主环境
@@ -109,22 +84,6 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// 日志
     /// </summary>
     private ILogger _logger;
-
-    /// <summary>
-    /// 代理操作登记到的登记表
-    /// </summary>
-    /// <remarks>
-    /// 由特性在配置阶段提供
-    /// </remarks>
-    private OperationRegistry? _registry;
-
-    /// <summary>
-    /// 插件消息目录登记到的登记表
-    /// </summary>
-    /// <remarks>
-    /// 附着到容器时取得；配置阶段发现的插件的目录由特性按归属注册进容器，卸载时同样从这里撤回
-    /// </remarks>
-    private MessageCatalogRegistry? _catalogs;
 
     /// <summary>
     /// 回调服务器
@@ -179,7 +138,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     public IReadOnlyList<PluginEndpoint> HostEndpoints { get; }
 
     /// <inheritdoc />
-    public IReadOnlyList<PluginStatus> Plugins => _plugins.Values.Select(static r => r.Status).OrderBy(static s => s.Manifest.Id, StringComparer.Ordinal).ToList();
+    public IReadOnlyList<PluginStatus> Plugins => _roster.Statuses;
 
     /// <summary>
     /// 查找一个插件的诊断快照
@@ -190,18 +149,13 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     public Maybe<OutOfProcessPluginStatus> FindStatus(string manifestId)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
-        return _plugins.TryGetValue(manifestId, out var runtime) ? runtime.Describe() : Maybe.None<OutOfProcessPluginStatus>();
+        return _roster.TryFind(manifestId, out var runtime) ? runtime.Describe() : Maybe.None<OutOfProcessPluginStatus>();
     }
-
-    /// <summary>
-    /// 全部运行时（特性登记代理操作与订阅时使用）
-    /// </summary>
-    internal IReadOnlyList<PluginRuntime> Runtimes => _order.ToList();
 
     /// <summary>
     /// 指定代理操作的登记表
     /// </summary>
-    internal void UseRegistry(OperationRegistry registry) => _registry = registry;
+    internal void UseRegistry(OperationRegistry registry) => _roster.UseRegistry(registry);
 
     /// <summary>
     /// 同步发现一个插件目录（配置阶段使用）
@@ -229,11 +183,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         }
 
         // 目录、权限码与代理操作一次登记：HTTP 路由、接口文档与 MCP tool 跟随操作登记表随之出现（ADR-0251、ADR-0252）
-        var registered = Register(runtime);
+        var registered = _roster.Register(runtime, null);
         if (registered.IsFailure)
         {
             await runtime.StopAsync("unload", cancellationToken).ConfigureAwait(false);
-            Remove(runtime);
+            _roster.Remove(runtime);
             return registered.Error!;
         }
 
@@ -255,23 +209,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     public async Task<Result> UnloadAsync(string manifestId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        PluginRuntime? runtime;
-        try
+        // 先撤回再停止进程：新的调用立刻得到未登记，不再排进正在停止的进程
+        var withdrawn = await _roster.WithdrawAsync(manifestId, null, cancellationToken).ConfigureAwait(false);
+        if (!withdrawn.TryGetValue(out var runtime))
         {
-            if (!_plugins.TryRemove(manifestId, out runtime))
-            {
-                return Error.NotFound(PluginErrors.NotFound, PluginMessages.NotLoaded, MessageArguments.Of(("id", manifestId)));
-            }
-
-            _order.Remove(runtime);
-            // 撤回与移出在同一段 _gate 里：同一插件的再加载（DiscoverAsync 同样先取 _gate）一定看到撤回已经完成，
-            // 不会撞上自己上一版留下的登记。先撤回再停止进程：新的调用立刻得到未登记，不再排进正在停止的进程
-            Withdraw(runtime);
-        }
-        finally
-        {
-            _gate.Release();
+            return withdrawn.Error!;
         }
 
         await runtime.StopAsync("unload", cancellationToken).ConfigureAwait(false);
@@ -289,10 +231,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     {
         ArgumentNullException.ThrowIfNull(services);
         _context.Clock = services.GetService<TimeProvider>() ?? _context.Clock;
-        _catalogs = services.GetRequiredService<MessageCatalogRegistry>();
+        _roster.UseCatalogs(services.GetRequiredService<MessageCatalogRegistry>());
         _loggerFactory = services.GetRequiredService<ILoggerFactory>();
         _logger = _loggerFactory.CreateLogger<OutOfProcessPluginHost>();
-        foreach (var runtime in _order)
+        foreach (var runtime in _roster.Runtimes)
         {
             runtime.Logger = _loggerFactory.CreateLogger<PluginRuntime>();
         }
@@ -302,12 +244,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         LogServer(_logger, server);
 
         // 配置阶段还没有宿主日志：清单读不出来、发现时被拒与握手失败的插件在这里补记
-        foreach (var (directory, error) in _unreadable)
+        foreach (var (directory, error) in _roster.Unreadable)
         {
             LogDiscoveryFailed(_logger, directory, error.Code, error.Message);
         }
 
-        foreach (var runtime in _order.ToList())
+        foreach (var runtime in _roster.Runtimes)
         {
             if (runtime.Handshake is null)
             {
@@ -339,7 +281,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// </summary>
     internal async Task StopAllAsync(CancellationToken cancellationToken)
     {
-        foreach (var runtime in Enumerable.Reverse(_order.ToList()))
+        foreach (var runtime in Enumerable.Reverse(_roster.Runtimes))
         {
             await runtime.StopAsync("shutdown", cancellationToken).ConfigureAwait(false);
         }
@@ -357,29 +299,11 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// <remarks>
     /// 第一个失败即为结果
     /// </remarks>
-    internal async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
-    {
-        // 只投给以投递的方式订阅了该主题的插件：同一主题的竞争投递与广播投递各找各的插件
-        foreach (var runtime in _order.Where(r => r.IsSubscribedTo(delivery.Topic, delivery.Envelope.Type, delivery.Mode)))
-        {
-            var delivered = await runtime.DeliverAsync(delivery, context).ConfigureAwait(false);
-            if (delivered.IsFailure)
-            {
-                return delivered;
-            }
-        }
-
-        return Result.Success();
-    }
+    internal ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
+        => _roster.DeliverAsync(delivery, context);
 
     /// <inheritdoc />
-    public IReadOnlyList<ContributorStatus> Check()
-        => _order.Select(static r => new ContributorStatus(HealthPrefix + r.Manifest.Id, r.State) { Error = r.Error })
-            .Concat(_unreadable.Select(static u => new ContributorStatus(HealthPrefix + Path.GetFileName(u.Directory), LifecycleState.Failed)
-            {
-                Error = u.Error,
-            }))
-            .ToList();
+    public IReadOnlyList<ContributorStatus> Check() => _roster.Check();
 
     /// <summary>
     /// 已释放
@@ -398,12 +322,12 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
 
         _disposed = true;
         await StopAllAsync(CancellationToken.None).ConfigureAwait(false);
-        foreach (var runtime in _order.ToList())
+        foreach (var runtime in _roster.Runtimes)
         {
             runtime.Dispose();
         }
 
-        _gate.Dispose();
+        _roster.Dispose();
     }
 
     /// <summary>
@@ -416,7 +340,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
         if (!file.TryGetValue(out var read))
         {
             // 没有清单 ID：只能按目录名上报
-            _unreadable.Add((full, file.Error!));
+            _roster.AddUnreadable(full, file.Error!);
             return file.Error!;
         }
 
@@ -445,22 +369,10 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
             return atStartup ? await RejectAsync(source, manifest, rejected, cancellationToken).ConfigureAwait(false) : rejected;
         }
 
-        PluginRuntime runtime;
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
+        var added = await _roster.AddAsync(manifest.Id, () => new PluginRuntime(manifest, source.Directory, executable!, source.Permissions, _context, _loggerFactory.CreateLogger<PluginRuntime>()), cancellationToken).ConfigureAwait(false);
+        if (!added.TryGetValue(out var runtime))
         {
-            if (_plugins.ContainsKey(manifest.Id))
-            {
-                return Error.Conflict(PluginErrors.AlreadyLoaded, PluginMessages.AlreadyLoaded, MessageArguments.Of(("id", manifest.Id)));
-            }
-
-            runtime = new PluginRuntime(manifest, source.Directory, executable!, source.Permissions, _context, _loggerFactory.CreateLogger<PluginRuntime>());
-            _plugins[manifest.Id] = runtime;
-            _order.Add(runtime);
-        }
-        finally
-        {
-            _gate.Release();
+            return added.Error!;
         }
 
         var discovered = await runtime.DiscoverAsync(cancellationToken).ConfigureAwait(false);
@@ -489,7 +401,7 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// </remarks>
     private Result RegisterLate(PluginRuntime runtime)
     {
-        var registered = Register(runtime);
+        var registered = _roster.Register(runtime, null);
         if (registered.IsSuccess && runtime.Handshake is { Subscriptions.Count: > 0 } handshake)
         {
             LogLateSubscriptions(_logger, runtime.Manifest.Id, handshake.Subscriptions.Count);
@@ -534,81 +446,16 @@ public sealed partial class OutOfProcessPluginHost : IPluginHost, IHealthContrib
     /// </remarks>
     private async Task<Result<PluginRuntime>> RejectAsync(PluginSource source, Manifest manifest, Error error, CancellationToken cancellationToken)
     {
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            if (_plugins.ContainsKey(manifest.Id))
+        var added = await _roster.AddAsync(
+            manifest.Id,
+            () =>
             {
-                return Error.Conflict(PluginErrors.AlreadyLoaded, PluginMessages.AlreadyLoaded, MessageArguments.Of(("id", manifest.Id)));
-            }
-
-            var runtime = new PluginRuntime(manifest, source.Directory, string.Empty, source.Permissions, _context, _loggerFactory.CreateLogger<PluginRuntime>());
-            runtime.Reject(error);
-            _plugins[manifest.Id] = runtime;
-            _order.Add(runtime);
-        }
-        finally
-        {
-            _gate.Release();
-        }
-
-        return error;
-    }
-
-    /// <summary>
-    /// 把握手声明的目录与操作、清单声明的权限码登记进宿主
-    /// </summary>
-    /// <remarks>
-    /// 一组一次登记、全进或全不进：目录与同名目录冲突、声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，插件整体登记失败，不会留下半组指向被拒插件的目录、权限码与代理操作。运行时已不是宿主里的当前运行时（卸载之后才握手成功的重试、卸载与运行期加载交错）时不登记，返回未加载
-    /// </remarks>
-    private Result Register(PluginRuntime runtime)
-    {
-        if (_registry is null || runtime.Handshake is null)
-        {
-            return Result.Success();
-        }
-
-        // 核对与登记在同一把锁里，与卸载的撤回互斥：先被撤回再登记进来的旧运行时会让同一插件的再加载撞上重名
-        lock (_registration)
-        {
-            if (!_plugins.TryGetValue(runtime.Manifest.Id, out var current) || !ReferenceEquals(current, runtime))
-            {
-                return Error.NotFound(PluginErrors.NotFound, PluginMessages.NotLoaded, MessageArguments.Of(("id", runtime.Manifest.Id)));
-            }
-
-            return PluginContributions.Register(_registry, _catalogs, runtime.Manifest, runtime.Handshake, runtime);
-        }
-    }
-
-    /// <summary>
-    /// 撤回运行时登记的代理操作、权限码与目录
-    /// </summary>
-    /// <remarks>
-    /// 卸载时在 <see cref="_gate"/> 内、运行时移出宿主之后调用；没有登记过时什么都不做
-    /// </remarks>
-    private void Withdraw(PluginRuntime runtime)
-    {
-        if (_registry is null)
-        {
-            return;
-        }
-
-        lock (_registration)
-        {
-            PluginContributions.Withdraw(_registry, _catalogs, runtime.Manifest.Id);
-        }
-    }
-
-    /// <summary>
-    /// 从登记里移除
-    /// </summary>
-    private void Remove(PluginRuntime runtime)
-    {
-        _plugins.TryRemove(runtime.Manifest.Id, out _);
-        lock (_order)
-        {
-            _order.Remove(runtime);
-        }
+                var runtime = new PluginRuntime(manifest, source.Directory, string.Empty, source.Permissions, _context, _loggerFactory.CreateLogger<PluginRuntime>());
+                runtime.Reject(error);
+                return runtime;
+            },
+            cancellationToken).ConfigureAwait(false);
+        return added.IsSuccess ? error : added.Error!;
     }
 
     /// <summary>

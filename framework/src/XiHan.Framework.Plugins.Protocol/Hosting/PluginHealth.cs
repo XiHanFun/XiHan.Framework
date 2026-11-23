@@ -18,6 +18,11 @@ namespace XiHan.Framework.Plugins.Protocol.Hosting;
 internal static class PluginHealth
 {
     /// <summary>
+    /// 健康条目名前缀：每个插件是宿主的健康条目 <c>plugins.&lt;清单 ID&gt;</c>
+    /// </summary>
+    public const string EntryPrefix = "plugins.";
+
+    /// <summary>
     /// 一次健康应答要让插件进入的状态与随它记下的错误
     /// </summary>
     /// <remarks>

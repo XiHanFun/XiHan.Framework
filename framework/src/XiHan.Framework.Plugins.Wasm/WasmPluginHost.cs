@@ -1,7 +1,6 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
-using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,9 +12,7 @@ using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Plugins;
 using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
-using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Hosting;
-using XiHan.Framework.Plugins.Protocol.Proxies;
 using XiHan.Framework.Plugins.Wasm.Instances;
 using XiHan.Framework.Plugins.Wasm.Runtime;
 using XiHan.Framework.Primitives;
@@ -36,7 +33,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// <summary>
     /// 健康条目名前缀
     /// </summary>
-    public const string HealthPrefix = "plugins.";
+    public const string HealthPrefix = PluginHealth.EntryPrefix;
 
     /// <summary>
     /// 选项
@@ -44,35 +41,12 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     private readonly WasmPluginOptions _options;
 
     /// <summary>
-    /// 已登记的运行时，按清单 ID
-    /// </summary>
-    private readonly ConcurrentDictionary<string, WasmPluginRuntime> _plugins = new(StringComparer.Ordinal);
-
-    /// <summary>
-    /// 登记顺序（停止按相反顺序）
-    /// </summary>
-    private readonly List<WasmPluginRuntime> _order = [];
-
-    /// <summary>
-    /// 清单读不出来的插件目录与原因
+    /// 插件名册
     /// </summary>
     /// <remarks>
-    /// 没有清单 ID，只作为健康条目 <c>plugins.&lt;目录名&gt;</c> 上报；只在配置阶段写入
+    /// 运行时进出宿主、目录、权限码与代理操作的登记与撤回、事件投递与健康条目都经它；加载卸载锁与登记锁在它里面，中间件的登记与撤回作为追加项在登记锁内进行（ADR-0085、ADR-0088、ADR-0260）
     /// </remarks>
-    private readonly List<(string Directory, Error Error)> _unreadable = [];
-
-    /// <summary>
-    /// 串行化加载与卸载
-    /// </summary>
-    private readonly SemaphoreSlim _gate = new(1, 1);
-
-    /// <summary>
-    /// 串行化代理操作与中间件的登记与撤回
-    /// </summary>
-    /// <remarks>
-    /// 运行期加载的登记不持有 <see cref="_gate"/>，撤回发生在卸载时；两者互斥，登记前核对运行时仍是宿主里的当前运行时，与卸载交错的加载不会留下指向已卸载插件的登记或中间件（ADR-0085、ADR-0088）
-    /// </remarks>
-    private readonly Lock _registration = new();
+    private readonly PluginRoster<WasmPluginRuntime> _roster = new();
 
     /// <summary>
     /// 插件共享的宿主环境
@@ -109,22 +83,6 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// 日志
     /// </summary>
     private ILogger _logger;
-
-    /// <summary>
-    /// 代理操作登记到的登记表
-    /// </summary>
-    /// <remarks>
-    /// 由特性在配置阶段提供
-    /// </remarks>
-    private OperationRegistry? _registry;
-
-    /// <summary>
-    /// 插件消息目录登记到的登记表
-    /// </summary>
-    /// <remarks>
-    /// 附着到容器时取得；配置阶段发现的插件的目录由特性按归属注册进容器，卸载时同样从这里撤回
-    /// </remarks>
-    private MessageCatalogRegistry? _catalogs;
 
     /// <summary>
     /// 插件中间件登记到的管道
@@ -167,7 +125,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<PluginStatus> Plugins => _plugins.Values.Select(static r => r.Status).OrderBy(static s => s.Manifest.Id, StringComparer.Ordinal).ToList();
+    public IReadOnlyList<PluginStatus> Plugins => _roster.Statuses;
 
     /// <summary>
     /// 查找一个插件的诊断快照
@@ -178,18 +136,13 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     public Maybe<WasmPluginStatus> FindStatus(string manifestId)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
-        return _plugins.TryGetValue(manifestId, out var runtime) ? runtime.Describe() : Maybe.None<WasmPluginStatus>();
+        return _roster.TryFind(manifestId, out var runtime) ? runtime.Describe() : Maybe.None<WasmPluginStatus>();
     }
-
-    /// <summary>
-    /// 全部运行时（特性登记代理操作、订阅与中间件时使用）
-    /// </summary>
-    internal IReadOnlyList<WasmPluginRuntime> Runtimes => _order.ToList();
 
     /// <summary>
     /// 指定代理操作的登记表
     /// </summary>
-    internal void UseRegistry(OperationRegistry registry) => _registry = registry;
+    internal void UseRegistry(OperationRegistry registry) => _roster.UseRegistry(registry);
 
     /// <summary>
     /// 指定插件中间件的管道
@@ -257,11 +210,12 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             return discovered.Error!;
         }
 
-        var registered = Register(runtime);
+        // 操作先进、中间件后进，都在名册的登记锁里：中间件进不去时目录、操作与权限码一并撤回
+        var registered = _roster.Register(runtime, UseMiddleware);
         if (registered.IsFailure)
         {
             await runtime.StopAsync("unload", cancellationToken).ConfigureAwait(false);
-            Remove(runtime);
+            _roster.Remove(runtime);
             return registered.Error!;
         }
 
@@ -276,26 +230,12 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     public async Task<Result> UnloadAsync(string manifestId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(manifestId);
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        WasmPluginRuntime? runtime;
-        try
+        // 先撤回再停止实例，新的调用立刻不再经过它的中间件、得到操作未登记
+        // 中间件最先撤：别的中间件以次序约束引用了它时撤不了，这时名册什么都不改、运行时照常服务
+        var withdrawn = await _roster.WithdrawAsync(manifestId, RemoveMiddleware, cancellationToken).ConfigureAwait(false);
+        if (!withdrawn.TryGetValue(out var runtime))
         {
-            if (!_plugins.TryGetValue(manifestId, out runtime))
-            {
-                return Error.NotFound(PluginErrors.NotFound, PluginMessages.NotLoaded, MessageArguments.Of(("id", manifestId)));
-            }
-
-            // 撤回与移出在同一段 _gate 里：同一插件的再加载（DiscoverAsync 同样先取 _gate）一定看到撤回已经完成；
-            // 先撤回再停止实例，新的调用立刻不再经过它的中间件、得到操作未登记
-            var withdrawn = Withdraw(runtime);
-            if (withdrawn.IsFailure)
-            {
-                return withdrawn.Error!;
-            }
-        }
-        finally
-        {
-            _gate.Release();
+            return withdrawn.Error!;
         }
 
         await runtime.StopAsync("unload", cancellationToken).ConfigureAwait(false);
@@ -317,22 +257,22 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         // 在开放任何调用之前换钟：截止时间由 Resilience 阶段按容器的时钟落为定时取消，调用预算与回调计时必须用同一个时钟
         _context.Clock = services.GetService<TimeProvider>() ?? _context.Clock;
         // 目录登记表在这里才建立：配置阶段注册的插件目录与同名目录冲突时这里抛出，宿主启动失败
-        _catalogs = services.GetRequiredService<MessageCatalogRegistry>();
+        _roster.UseCatalogs(services.GetRequiredService<MessageCatalogRegistry>());
         _loggerFactory = services.GetRequiredService<ILoggerFactory>();
         _logger = _loggerFactory.CreateLogger<WasmPluginHost>();
-        foreach (var runtime in _order)
+        foreach (var runtime in _roster.Runtimes)
         {
             runtime.Logger = _loggerFactory.CreateLogger<WasmPluginRuntime>();
         }
 
         _context.Services = services;
         // 配置阶段还没有宿主日志：清单读不出来、发现时被拒与握手失败的插件在这里补记
-        foreach (var (directory, error) in _unreadable)
+        foreach (var (directory, error) in _roster.Unreadable)
         {
             LogDiscoveryFailed(_logger, directory, error.Code, error.Message);
         }
 
-        foreach (var runtime in _order.ToList())
+        foreach (var runtime in _roster.Runtimes)
         {
             if (runtime.Handshake is null)
             {
@@ -358,7 +298,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// </summary>
     internal async Task StopAllAsync(CancellationToken cancellationToken)
     {
-        foreach (var runtime in Enumerable.Reverse(_order.ToList()))
+        foreach (var runtime in Enumerable.Reverse(_roster.Runtimes))
         {
             await runtime.StopAsync("shutdown", cancellationToken).ConfigureAwait(false);
         }
@@ -370,29 +310,11 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// <remarks>
     /// 第一个失败即为结果
     /// </remarks>
-    internal async ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
-    {
-        // 只投给以投递的方式订阅了该主题的插件：同一主题的竞争投递与广播投递各找各的插件
-        foreach (var runtime in _order.Where(r => r.IsSubscribedTo(delivery.Topic, delivery.Envelope.Type, delivery.Mode)))
-        {
-            var delivered = await runtime.DeliverAsync(delivery, context).ConfigureAwait(false);
-            if (delivered.IsFailure)
-            {
-                return delivered;
-            }
-        }
-
-        return Result.Success();
-    }
+    internal ValueTask<Result> DeliverAsync(MessageDelivery delivery, InvocationContext context)
+        => _roster.DeliverAsync(delivery, context);
 
     /// <inheritdoc />
-    public IReadOnlyList<ContributorStatus> Check()
-        => _order.Select(static r => new ContributorStatus(HealthPrefix + r.Manifest.Id, r.State) { Error = r.Error })
-            .Concat(_unreadable.Select(static u => new ContributorStatus(HealthPrefix + Path.GetFileName(u.Directory), LifecycleState.Failed)
-            {
-                Error = u.Error,
-            }))
-            .ToList();
+    public IReadOnlyList<ContributorStatus> Check() => _roster.Check();
 
     /// <summary>
     /// 停止全部插件、停止 epoch 计时并释放引擎
@@ -406,7 +328,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
 
         _disposed = true;
         await StopAllAsync(CancellationToken.None).ConfigureAwait(false);
-        foreach (var runtime in _order.ToList())
+        foreach (var runtime in _roster.Runtimes)
         {
             await runtime.DrainAsync().ConfigureAwait(false);
             runtime.Dispose();
@@ -417,7 +339,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         await _ticking.ConfigureAwait(false);
         _ticker.Dispose();
         _context.Engine.Dispose();
-        _gate.Dispose();
+        _roster.Dispose();
     }
 
     /// <summary>
@@ -453,7 +375,7 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
         if (!file.TryGetValue(out var read))
         {
             // 没有清单 ID：只能按目录名上报
-            _unreadable.Add((full, file.Error!));
+            _roster.AddUnreadable(full, file.Error!);
             return file.Error!;
         }
 
@@ -482,22 +404,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
             return keepRejected ? await RejectAsync(source, manifest, mounts, rejected, cancellationToken).ConfigureAwait(false) : rejected;
         }
 
-        WasmPluginRuntime runtime;
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
+        var added = await _roster.AddAsync(manifest.Id, () => new WasmPluginRuntime(manifest, source.Directory, modulePath!, source.Permissions, mounts, _context, _loggerFactory.CreateLogger<WasmPluginRuntime>()), cancellationToken).ConfigureAwait(false);
+        if (!added.TryGetValue(out var runtime))
         {
-            if (_plugins.ContainsKey(manifest.Id))
-            {
-                return Error.Conflict(PluginErrors.AlreadyLoaded, PluginMessages.AlreadyLoaded, MessageArguments.Of(("id", manifest.Id)));
-            }
-
-            runtime = new WasmPluginRuntime(manifest, source.Directory, modulePath!, source.Permissions, mounts, _context, _loggerFactory.CreateLogger<WasmPluginRuntime>());
-            _plugins[manifest.Id] = runtime;
-            _order.Add(runtime);
-        }
-        finally
-        {
-            _gate.Release();
+            return added.Error!;
         }
 
         var discovered = await runtime.DiscoverAsync(cancellationToken).ConfigureAwait(false);
@@ -532,25 +442,16 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     /// </remarks>
     private async Task<Result<WasmPluginRuntime>> RejectAsync(PluginSource source, Manifest manifest, IReadOnlyDictionary<string, string> mounts, Error error, CancellationToken cancellationToken)
     {
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            if (_plugins.ContainsKey(manifest.Id))
+        var added = await _roster.AddAsync(
+            manifest.Id,
+            () =>
             {
-                return Error.Conflict(PluginErrors.AlreadyLoaded, PluginMessages.AlreadyLoaded, MessageArguments.Of(("id", manifest.Id)));
-            }
-
-            var runtime = new WasmPluginRuntime(manifest, source.Directory, string.Empty, source.Permissions, mounts, _context, _loggerFactory.CreateLogger<WasmPluginRuntime>());
-            runtime.Reject(error);
-            _plugins[manifest.Id] = runtime;
-            _order.Add(runtime);
-        }
-        finally
-        {
-            _gate.Release();
-        }
-
-        return error;
+                var runtime = new WasmPluginRuntime(manifest, source.Directory, string.Empty, source.Permissions, mounts, _context, _loggerFactory.CreateLogger<WasmPluginRuntime>());
+                runtime.Reject(error);
+                return runtime;
+            },
+            cancellationToken).ConfigureAwait(false);
+        return added.IsSuccess ? error : added.Error!;
     }
 
     /// <summary>
@@ -575,48 +476,10 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 把握手声明的目录与操作、清单声明的权限码与贡献的中间件登记进宿主
-    /// </summary>
-    /// <remarks>
-    /// 一组一次登记、全进或全不进：目录与同名目录冲突、声明的权限码与已登记的重复、任一项与已有操作重名或引用了未登记的权限码，或中间件的约束目标未登记、有歧义、跨阶段、成环，插件整体登记失败，不会留下半组指向被拒插件的目录、权限码、代理操作与中间件。运行时已不是宿主里的当前运行时（卸载与运行期加载交错）时不登记，返回未加载
-    /// </remarks>
-    private Result Register(WasmPluginRuntime runtime)
-    {
-        if (_registry is null || runtime.Handshake is null)
-        {
-            return Result.Success();
-        }
-
-        // 核对与登记在同一把锁里，与卸载的撤回互斥：先被撤回再登记进来的旧运行时会让同一插件的再加载撞上重名
-        lock (_registration)
-        {
-            if (!_plugins.TryGetValue(runtime.Manifest.Id, out var current) || !ReferenceEquals(current, runtime))
-            {
-                return Error.NotFound(PluginErrors.NotFound, PluginMessages.NotLoaded, MessageArguments.Of(("id", runtime.Manifest.Id)));
-            }
-
-            var registered = PluginContributions.Register(_registry, _catalogs, runtime.Manifest, runtime.Handshake, runtime);
-            if (registered.IsFailure)
-            {
-                return registered;
-            }
-
-            // 操作先进、中间件后进：中间件进不去时撤回目录、操作与权限码不会失败，回滚总能完成
-            var middleware = UseMiddleware(runtime);
-            if (middleware.IsFailure)
-            {
-                PluginContributions.Withdraw(_registry, _catalogs, runtime.Manifest.Id);
-            }
-
-            return middleware;
-        }
-    }
-
-    /// <summary>
     /// 把运行时清单贡献的中间件成组登记进管道
     /// </summary>
     /// <remarks>
-    /// 在 <see cref="_registration"/> 内调用。没有贡献中间件时什么都不做；登记被拒时管道不变，返回内核的错误（<c>KERNEL_PIPELINE_003</c> / <c>KERNEL_PIPELINE_001</c>）
+    /// 由名册在登记锁内、目录、权限码与代理操作登记成功之后调用。没有贡献中间件时什么都不做；登记被拒时管道不变，返回内核的错误（<c>KERNEL_PIPELINE_003</c> / <c>KERNEL_PIPELINE_001</c>），名册随即撤回刚登记的目录、操作与权限码
     /// </remarks>
     private Result UseMiddleware(WasmPluginRuntime runtime)
     {
@@ -638,47 +501,26 @@ public sealed partial class WasmPluginHost : IPluginHost, IHealthContributor, IA
     }
 
     /// <summary>
-    /// 把运行时移出宿主，并撤回它贡献的中间件、登记的权限码与代理操作
+    /// 把运行时贡献的中间件按归属撤出管道
     /// </summary>
     /// <remarks>
-    /// 卸载时在 <see cref="_gate"/> 内调用。先撤中间件：别的中间件以次序约束引用了它的中间件时撤不了（<c>KERNEL_PIPELINE_003</c>），这时什么都不改、运行时留在宿主里照常服务。撤回与移出在同一段 <see cref="_registration"/> 里，与运行期加载的登记互斥
+    /// 卸载时由名册在加载卸载锁与登记锁内、把运行时移出名册之前调用。别的中间件以次序约束引用了它的中间件时撤不了（<c>KERNEL_PIPELINE_003</c>），这时管道不变，名册什么都不改、运行时照常服务
     /// </remarks>
-    private Result Withdraw(WasmPluginRuntime runtime)
+    private Result RemoveMiddleware(WasmPluginRuntime runtime)
     {
-        lock (_registration)
+        if (_pipeline is null)
         {
-            if (_pipeline is not null)
-            {
-                try
-                {
-                    _pipeline.RemoveOwnedBy(runtime.Manifest.Id);
-                }
-                catch (FrameworkException exception)
-                {
-                    return exception.ToError();
-                }
-            }
-
-            _plugins.TryRemove(runtime.Manifest.Id, out _);
-            _order.Remove(runtime);
-            if (_registry is not null)
-            {
-                PluginContributions.Withdraw(_registry, _catalogs, runtime.Manifest.Id);
-            }
+            return Result.Success();
         }
 
-        return Result.Success();
-    }
-
-    /// <summary>
-    /// 从登记里移除
-    /// </summary>
-    private void Remove(WasmPluginRuntime runtime)
-    {
-        _plugins.TryRemove(runtime.Manifest.Id, out _);
-        lock (_order)
+        try
         {
-            _order.Remove(runtime);
+            _pipeline.RemoveOwnedBy(runtime.Manifest.Id);
+            return Result.Success();
+        }
+        catch (FrameworkException exception)
+        {
+            return exception.ToError();
         }
     }
 
