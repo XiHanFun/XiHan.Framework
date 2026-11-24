@@ -336,6 +336,45 @@ public sealed class GrpcProtocolTests
     }
 
     [Fact]
+    public async Task ProtoEndpoint_MarksOnlyTheDeprecatedOperation_AndItStillRuns()
+    {
+        var (app, channel, client) = await StartAsync(static xihan => xihan.UseFeature<DeprecatedFeature>());
+        await using var host = app;
+        using var scope = channel;
+
+        var proto = await client.GetStringAsync("/operations.proto");
+
+        // 弃用的操作：rpc 带 protobuf 标准的方法选项；其余的照旧以分号结束，一个选项都没有（ADR-0280）
+        Assert.Contains("  // orders.archive\n  rpc Archive (OrderRequest) returns (OrderReply) {\n    option deprecated = true;\n  }\n", proto, StringComparison.Ordinal);
+        Assert.Contains("  // orders.get\n  rpc Get (OrderRequest) returns (OrderReply);\n", proto, StringComparison.Ordinal);
+        Assert.Contains("  // orders.create\n  rpc Create (OrderRequest) returns (OrderReply);\n", proto, StringComparison.Ordinal);
+        Assert.Single(proto.Split('\n'), static line => line.Contains("deprecated", StringComparison.Ordinal));
+        Assert.Equal(1, proto.Split('\n').Count(static line => line.TrimEnd().EndsWith('{') && line.TrimStart().StartsWith("rpc ", StringComparison.Ordinal)));
+
+        // 只改描述：弃用的方法照常绑定、照常调用，成功时没有错误码的尾部元数据
+        using var call = Call(channel, "Orders", "Archive", ProtoBytes.Concat(ProtoBytes.StringField(1, "42"), ProtoBytes.VarintField(3, 2)));
+        var reply = Reply(await call.ResponseAsync);
+        Assert.Equal(DeprecatedFeature.OperationId, reply.GetProperty("operation").GetString());
+        Assert.Equal("42", reply.GetProperty("id").GetString());
+        Assert.Equal(StatusCode.OK, call.GetStatus().StatusCode);
+        Assert.DoesNotContain(call.GetTrailers(), static trailer => trailer.Key == "xihan-error-code");
+    }
+
+    [Fact]
+    public async Task ProtoEndpoint_WithoutDeprecatedOperations_HasNoMethodOptions()
+    {
+        var (app, channel, client) = await StartAsync();
+        await using var host = app;
+        using var scope = channel;
+
+        var proto = await client.GetStringAsync("/operations.proto");
+
+        // 没有弃用操作的应用：.proto 与以前逐字节相同，每个 rpc 都以分号结束
+        Assert.DoesNotContain("deprecated", proto, StringComparison.Ordinal);
+        Assert.All(proto.Split('\n').Where(static line => line.StartsWith("  rpc ", StringComparison.Ordinal)), static line => Assert.EndsWith(");", line, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task SchemalessOrDuplicateOperations_FailAtStartup()
     {
         var schemaless = await Assert.ThrowsAsync<FrameworkException>(static () => StartAsync(static xihan => xihan.UseFeature<SchemalessFeature>()));

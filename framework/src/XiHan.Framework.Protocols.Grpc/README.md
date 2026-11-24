@@ -8,7 +8,7 @@
 
 * 一份操作契约同时在 gRPC 上服务，经完整内核管道
 * 错误按 KIND 映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据
-* `GET /operations.proto` 发布 `.proto` 文件
+* `GET /operations.proto` 发布 `.proto` 文件；弃用的操作（`Stability.Deprecated`）的 `rpc` 带 `option deprecated = true;`，由它生成的客户端会给方法加弃用标记，调用照常
 
 ## 如何使用
 

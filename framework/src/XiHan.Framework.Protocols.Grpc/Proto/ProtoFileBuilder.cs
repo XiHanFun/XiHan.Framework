@@ -12,7 +12,7 @@ namespace XiHan.Framework.Protocols.Grpc.Proto;
 /// 从 gRPC 操作表生成 <c>.proto</c>（proto3）文本
 /// </summary>
 /// <remarks>
-/// 每个消息描述一个 <c>message</c>，每个资源一个 <c>service</c>，每个操作一个一元 <c>rpc</c>。字段名按 JSON 名转 lower_snake_case，proto 默认的 <c>json_name</c> 与 JSON 名不同时写 <c>[json_name = "…"]</c>。同名消息在不同操作里形状必须一致
+/// 每个消息描述一个 <c>message</c>，每个资源一个 <c>service</c>，每个操作一个一元 <c>rpc</c>；稳定性是 <see cref="Stability.Deprecated"/> 的操作的 <c>rpc</c> 带 <c>option deprecated = true;</c>（<c>spec/protocol/grpc.md</c>，ADR-0280）。字段名按 JSON 名转 lower_snake_case，proto 默认的 <c>json_name</c> 与 JSON 名不同时写 <c>[json_name = "…"]</c>。同名消息在不同操作里形状必须一致
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static class ProtoFileBuilder
@@ -49,7 +49,10 @@ public static class ProtoFileBuilder
             foreach (var operation in service.OrderBy(static o => o.Method.Method, StringComparer.Ordinal))
             {
                 builder.Append("  // ").Append(operation.Descriptor.Id).Append('\n');
-                builder.Append("  rpc ").Append(operation.Method.Method).Append(" (").Append(operation.Request.Name).Append(") returns (").Append(operation.Response.Name).Append(");\n");
+                builder.Append("  rpc ").Append(operation.Method.Method).Append(" (").Append(operation.Request.Name).Append(") returns (").Append(operation.Response.Name).Append(')');
+                // 弃用只在契约的稳定性上声明一次：这里翻译成 protobuf 标准的方法选项，由 .proto 生成的客户端据此给方法加弃用标记；
+                // 其余级别不写选项，没有弃用操作的应用输出逐字节不变（ADR-0280）
+                builder.Append(operation.Descriptor.Contract.Stability == Stability.Deprecated ? " {\n    option deprecated = true;\n  }\n" : ";\n");
             }
 
             builder.Append("}\n\n");
