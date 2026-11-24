@@ -138,6 +138,7 @@
   "workflow.expression.not_boolean": "식 '{expression}'의 결과가 부울 값이 아닙니다.",
   "workflow.expression.not_date": "식 '{expression}': '{value}'은(는) 날짜가 아닙니다.",
   "workflow.expression.not_number": "식 '{expression}': '{value}'은(는) 숫자가 아닙니다.",
+  "workflow.expression.number_out_of_range": "식 '{expression}': 연산자 '{operator}'의 피연산자 또는 결과가 숫자 범위를 벗어났습니다.",
   "workflow.expression.operands_not_boolean": "식 '{expression}': 연산자 '{operator}'에는 부울 피연산자가 필요합니다.",
   "workflow.expression.operands_not_numeric": "식 '{expression}': 연산자 '{operator}'에는 숫자 피연산자가 필요합니다.",
   "workflow.expression.operands_not_scalar": "식 '{expression}': 연산자 '{operator}'에는 스칼라 피연산자 두 개가 필요합니다.",

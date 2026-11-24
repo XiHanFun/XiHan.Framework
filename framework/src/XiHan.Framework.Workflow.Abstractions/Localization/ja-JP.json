@@ -138,6 +138,7 @@
   "workflow.expression.not_boolean": "式 '{expression}' の結果はブール値ではありません。",
   "workflow.expression.not_date": "式 '{expression}': '{value}' は日付ではありません。",
   "workflow.expression.not_number": "式 '{expression}': '{value}' は数値ではありません。",
+  "workflow.expression.number_out_of_range": "式 '{expression}': 演算子 '{operator}' のオペランドまたは結果が数値の範囲を超えています。",
   "workflow.expression.operands_not_boolean": "式 '{expression}': 演算子 '{operator}' にはブール値のオペランドが必要です。",
   "workflow.expression.operands_not_numeric": "式 '{expression}': 演算子 '{operator}' には数値のオペランドが必要です。",
   "workflow.expression.operands_not_scalar": "式 '{expression}': 演算子 '{operator}' には 2 つのスカラー オペランドが必要です。",

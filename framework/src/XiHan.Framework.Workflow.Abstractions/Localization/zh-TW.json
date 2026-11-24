@@ -138,6 +138,7 @@
   "workflow.expression.not_boolean": "運算式 '{expression}' 的結果不是布林值。",
   "workflow.expression.not_date": "運算式 '{expression}'：'{value}' 不是日期。",
   "workflow.expression.not_number": "運算式 '{expression}'：'{value}' 不是數字。",
+  "workflow.expression.number_out_of_range": "運算式 '{expression}'：運算子 '{operator}' 的運算元或結果超出數字範圍。",
   "workflow.expression.operands_not_boolean": "運算式 '{expression}'：運算子 '{operator}' 需要布林運算元。",
   "workflow.expression.operands_not_numeric": "運算式 '{expression}'：運算子 '{operator}' 需要數值運算元。",
   "workflow.expression.operands_not_scalar": "運算式 '{expression}'：運算子 '{operator}' 需要兩個純量運算元。",

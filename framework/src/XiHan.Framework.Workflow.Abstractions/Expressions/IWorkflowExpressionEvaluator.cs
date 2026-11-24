@@ -10,7 +10,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 表达式求值器
 /// </summary>
 /// <remarks>
-/// 条件、属性表达式与 <c>{{ 表达式 }}</c> 模板。语法或求值失败 → <see cref="WorkflowErrors.ExpressionInvalid"/>
+/// 条件、属性表达式与 <c>{{ 表达式 }}</c> 模板。语言的文法、每个运算符与函数的语义、数字与时间的文本、上限与错误都在 RFC-0021「表达式」里逐条写明（ADR-0287），自定义的实现照它求出相同的结果。语法或求值失败 → <see cref="WorkflowErrors.ExpressionInvalid"/>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public interface IWorkflowExpressionEvaluator
@@ -18,6 +18,9 @@ public interface IWorkflowExpressionEvaluator
     /// <summary>
     /// 校验语法
     /// </summary>
+    /// <remarks>
+    /// 只解析：语法、函数名与实参个数、长度与嵌套的上限。变量存不存在、操作数的类型在求值时才知道
+    /// </remarks>
     Result Validate(string expression);
 
     /// <summary>
@@ -37,7 +40,10 @@ public interface IWorkflowExpressionEvaluator
     Result<bool> EvaluateCondition(string expression, ExpressionScope scope);
 
     /// <summary>
-    /// 渲染模板：<c>{{ 表达式 }}</c> 占位替换为求值结果的文本（无值为空串，容器为 JSON）
+    /// 渲染模板：<c>{{ 表达式 }}</c> 占位换成求值结果的文本
     /// </summary>
+    /// <remarks>
+    /// 无值是空串，数字是不带多余零的规范文本，字符串原样，数组与对象是成员按名字排序的紧凑 JSON。结果总是字符串；写出的文本累计超过 4194304 个字符即失败（<see cref="WorkflowMessages.ExpressionStringTooLong"/>）
+    /// </remarks>
     Result<string> Render(string source, ExpressionScope scope);
 }

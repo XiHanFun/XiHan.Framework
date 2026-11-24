@@ -2,6 +2,8 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace XiHan.Framework.Workflow.Abstractions.Tests;
 
@@ -9,14 +11,26 @@ namespace XiHan.Framework.Workflow.Abstractions.Tests;
 /// 读取 spec/conformance/vectors/workflow 下的一致性向量
 /// </summary>
 /// <remarks>
-/// 向量是规范的一部分，测试只回放，不另存一份
+/// 向量是规范的一部分，测试只回放，不另存一份。对象模型要认得文件里的每个成员：文件里缺了模型要的成员、多出模型不认得的成员都读取失败，向量换了写法时不会漏掉字段还照样通过
 /// </remarks>
 internal static class ConformanceVectors
 {
     /// <summary>
-    /// 向量文件的反序列化选项：Web 默认（camelCase、不区分大小写）
+    /// 文件顶部给人看的说明，不属于对象模型
     /// </summary>
-    private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
+    private const string CommentMember = "$comment";
+
+    /// <summary>
+    /// 向量文件的反序列化选项
+    /// </summary>
+    /// <remarks>
+    /// Web 默认（camelCase、不区分大小写），外加成员必须与对象模型一一对应：构造参数都要在文件里，文件里的成员都要有去处
+    /// </remarks>
+    private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web)
+    {
+        RespectRequiredConstructorParameters = true,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+    };
 
     /// <summary>
     /// 工作流向量所在目录
@@ -31,8 +45,9 @@ internal static class ConformanceVectors
     public static T Load<T>(string fileName)
     {
         var path = Path.Combine(Directory, fileName);
-        using var stream = File.OpenRead(path);
-        return JsonSerializer.Deserialize<T>(stream, _options) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
+        var document = JsonNode.Parse(File.ReadAllText(path)) as JsonObject ?? throw new InvalidOperationException($"Vector file '{path}' is not a JSON object.");
+        document.Remove(CommentMember);
+        return document.Deserialize<T>(_options) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
     }
 
     /// <summary>

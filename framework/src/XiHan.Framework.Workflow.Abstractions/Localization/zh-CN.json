@@ -138,6 +138,7 @@
   "workflow.expression.not_boolean": "表达式 '{expression}' 的结果不是布尔值。",
   "workflow.expression.not_date": "表达式 '{expression}'：'{value}' 不是日期。",
   "workflow.expression.not_number": "表达式 '{expression}'：'{value}' 不是数字。",
+  "workflow.expression.number_out_of_range": "表达式 '{expression}'：运算符 '{operator}' 的操作数或结果超出数字范围。",
   "workflow.expression.operands_not_boolean": "表达式 '{expression}'：运算符 '{operator}' 需要布尔操作数。",
   "workflow.expression.operands_not_numeric": "表达式 '{expression}'：运算符 '{operator}' 需要数值操作数。",
   "workflow.expression.operands_not_scalar": "表达式 '{expression}'：运算符 '{operator}' 需要两个标量操作数。",

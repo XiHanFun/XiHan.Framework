@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Values;
@@ -13,13 +14,13 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 表达式小语言的编译器
 /// </summary>
 /// <remarks>
-/// 递归下降解析成闭包树。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；<c>==</c> 跨数字类型宽松、字符串序数比较；未知根变量是错误，缺少的成员或键是 null
-/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）；<c>+</c> 拼出的字符串不超过 <see cref="MaxStringLength"/>（ADR-0182）
+/// 递归下降解析成闭包树，文法与每个运算符、函数的语义照 RFC-0021「表达式」（ADR-0287）。优先级从低到高：<c>||</c>、<c>&amp;&amp;</c>、<c>== !=</c>、<c>&lt; &lt;= &gt; &gt;=</c>、<c>+ -</c>、<c>* / %</c>、一元 <c>! -</c>、后缀 <c>.x</c> / <c>[i]</c>、原子。数字为 decimal；<c>+</c> 任一侧是字符串即拼接；两边都是数字或数字文本时按数值比较，其余按文本的序数比较；未知根变量是错误，缺少的成员或键是 null。二元运算符与函数先从左到右求值全部操作数，再核对类型（<c>&amp;&amp;</c> 与 <c>||</c> 短路）
+/// 长度不超过 <see cref="MaxLength"/>，嵌套不超过 <see cref="MaxDepth"/>（ADR-0120）；<c>+</c> 拼出的字符串与模板渲染出的文本不超过 <see cref="MaxStringLength"/>（ADR-0182、ADR-0287）
 /// </remarks>
 internal sealed class ExpressionCompiler
 {
     /// <summary>
-    /// <c>+</c> 拼出的字符串的长度上限（字符）
+    /// <c>+</c> 拼出的字符串与模板渲染出的文本的长度上限（UTF-16 码元）
     /// </summary>
     /// <remarks>
     /// 与 <c>Http</c> 活动保留的正文同量级。<c>s + s</c> 每求值一次长度翻倍，几十步就超过 1 GB：在分配之前按两侧长度核对
@@ -27,7 +28,7 @@ internal sealed class ExpressionCompiler
     public const int MaxStringLength = 4 * 1024 * 1024;
 
     /// <summary>
-    /// 表达式的长度上限（字符，空白也算）
+    /// 表达式的长度上限（UTF-16 码元，空白也算）
     /// </summary>
     /// <remarks>
     /// 也压住了求值的深度：链（<c>a + b + c</c>、<c>a.b.c</c>）解析时是循环，求值时闭包一层套一层，这个长度下是两千层左右
@@ -38,6 +39,11 @@ internal sealed class ExpressionCompiler
     /// 嵌套层数上限：括号、函数实参、索引、一元运算符都算
     /// </summary>
     public const int MaxDepth = 64;
+
+    /// <summary>
+    /// 数字最多的小数位数，也是 <c>round</c> 的小数位数的上限
+    /// </summary>
+    private const int MaxScale = 28;
 
     /// <summary>
     /// 源文本
@@ -87,7 +93,7 @@ internal sealed class ExpressionCompiler
         compiler.SkipWhitespace();
         if (compiler._position < expression.Length)
         {
-            throw new ExpressionException(WorkflowMessages.ExpressionUnexpectedCharacter, MessageArguments.Of(("character", expression[compiler._position].ToString()), ("position", compiler._position + 1)));
+            throw new ExpressionException(WorkflowMessages.ExpressionUnexpectedCharacter, MessageArguments.Of(("character", compiler.CharacterAt(compiler._position)), ("position", compiler._position + 1)));
         }
 
         return compiled;
@@ -211,7 +217,7 @@ internal sealed class ExpressionCompiler
             {
                 var l = left;
                 var r = ParseMultiplicative();
-                left = scope => JsonValue.Create(Number(l(scope), "-") - Number(r(scope), "-"));
+                left = scope => Subtract(l(scope), r(scope));
             }
             else
             {
@@ -232,27 +238,19 @@ internal sealed class ExpressionCompiler
             {
                 var l = left;
                 var r = ParseUnary();
-                left = scope => JsonValue.Create(Number(l(scope), "*") * Number(r(scope), "*"));
+                left = scope => Multiply(l(scope), r(scope));
             }
             else if (TryConsume("/"))
             {
                 var l = left;
                 var r = ParseUnary();
-                left = scope =>
-                {
-                    var divisor = Number(r(scope), "/");
-                    return divisor == 0 ? throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero) : JsonValue.Create(Number(l(scope), "/") / divisor);
-                };
+                left = scope => Divide(l(scope), r(scope));
             }
             else if (TryConsume("%"))
             {
                 var l = left;
                 var r = ParseUnary();
-                left = scope =>
-                {
-                    var divisor = Number(r(scope), "%");
-                    return divisor == 0 ? throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero) : JsonValue.Create(Number(l(scope), "%") % divisor);
-                };
+                left = scope => Remainder(l(scope), r(scope));
             }
             else
             {
@@ -361,7 +359,7 @@ internal sealed class ExpressionCompiler
             return _ => JsonValue.Create(number);
         }
 
-        var identifier = ReadIdentifier() ?? throw new ExpressionException(WorkflowMessages.ExpressionUnexpectedCharacter, MessageArguments.Of(("character", c.ToString()), ("position", _position + 1)));
+        var identifier = ReadIdentifier() ?? throw new ExpressionException(WorkflowMessages.ExpressionUnexpectedCharacter, MessageArguments.Of(("character", CharacterAt(_position)), ("position", _position + 1)));
         switch (identifier)
         {
             case "true":
@@ -405,7 +403,7 @@ internal sealed class ExpressionCompiler
     /// 内置函数（名字不区分大小写）
     /// </summary>
     /// <remarks>
-    /// 参数个数在编译期校验
+    /// 参数个数在编译期校验。求值时先从左到右求值全部实参，再核对类型
     /// </remarks>
     private static CompiledExpression BindFunction(string name, List<CompiledExpression> args)
     {
@@ -428,8 +426,7 @@ internal sealed class ExpressionCompiler
                     null => JsonValue.Create(0),
                     JsonArray array => JsonValue.Create(array.Count),
                     JsonObject obj => JsonValue.Create(obj.Count),
-                    JsonValue value => JsonValue.Create(WorkflowValues.AsString(value).Length),
-                    _ => JsonValue.Create(0),
+                    var value => JsonValue.Create(Text(value).Length),
                 };
             case "contains":
                 Arity(name, args, 2, 2);
@@ -481,16 +478,39 @@ internal sealed class ExpressionCompiler
                 return scope => JsonValue.Create(Math.Abs(Number(args[0](scope), "abs")));
             case "min":
                 Arity(name, args, 2, 2);
-                return scope => JsonValue.Create(Math.Min(Number(args[0](scope), "min"), Number(args[1](scope), "min")));
+                return scope =>
+                {
+                    var first = args[0](scope);
+                    var second = args[1](scope);
+                    return JsonValue.Create(Math.Min(Number(first, "min"), Number(second, "min")));
+                };
             case "max":
                 Arity(name, args, 2, 2);
-                return scope => JsonValue.Create(Math.Max(Number(args[0](scope), "max"), Number(args[1](scope), "max")));
+                return scope =>
+                {
+                    var first = args[0](scope);
+                    var second = args[1](scope);
+                    return JsonValue.Create(Math.Max(Number(first, "max"), Number(second, "max")));
+                };
             case "round":
                 Arity(name, args, 1, 2);
                 return scope =>
                 {
-                    var digits = args.Count == 2 ? (int)Number(args[1](scope), "round") : 0;
-                    return JsonValue.Create(Math.Round(Number(args[0](scope), "round"), digits, MidpointRounding.AwayFromZero));
+                    var value = args[0](scope);
+                    var places = args.Count == 2 ? args[1](scope) : null;
+                    var number = Number(value, "round");
+                    var digits = 0m;
+                    if (args.Count == 2)
+                    {
+                        // 小数位数截去小数部分；decimal 只有 0 到 28 位小数，范围之外不交给平台去抛异常
+                        digits = decimal.Truncate(Number(places, "round"));
+                        if (digits < 0 || digits > MaxScale)
+                        {
+                            throw new ExpressionException(WorkflowMessages.ExpressionNumberOutOfRange, MessageArguments.Of(("operator", "round")));
+                        }
+                    }
+
+                    return JsonValue.Create(Math.Round(number, (int)digits, MidpointRounding.AwayFromZero));
                 };
             case "tonumber":
                 Arity(name, args, 1, 1);
@@ -500,15 +520,16 @@ internal sealed class ExpressionCompiler
                 return scope => JsonValue.Create(Text(args[0](scope)));
             case "now":
                 Arity(name, args, 0, 0);
-                return scope => JsonValue.Create(scope.Now);
+                // 时间在值模型里是字符串：写成定宽的规范文本，过不过存储都是同一个值
+                return scope => JsonValue.Create(WorkflowTimeText.Format(scope.Now));
             case "date":
                 Arity(name, args, 1, 1);
                 return scope =>
                 {
                     var text = Text(args[0](scope));
-                    return DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var when)
-                        ? JsonValue.Create(when)
-                        : throw new ExpressionException(WorkflowMessages.ExpressionNotDate, MessageArguments.Of(("value", text)));
+                    return WorkflowTimeText.TryParse(text, out var when)
+                        ? JsonValue.Create(WorkflowTimeText.Format(when))
+                        : throw new ExpressionException(WorkflowMessages.ExpressionNotDate, MessageArguments.Of(("value", ExpressionException.Echo(text))));
                 };
             default:
                 throw new ExpressionException(WorkflowMessages.ExpressionUnknownFunction, MessageArguments.Of(("function", name)));
@@ -531,13 +552,16 @@ internal sealed class ExpressionCompiler
     private static JsonNode? Member(JsonNode? target, string member) => target switch
     {
         null => null,
-        JsonObject obj => obj.TryGetPropertyValue(member, out var value) ? value : null,
+        JsonObject obj => WorkflowValues.TryMember(obj, member, out var value) ? value : null,
         _ => throw new ExpressionException(WorkflowMessages.ExpressionMemberOfNonObject, MessageArguments.Of(("member", member))),
     };
 
     /// <summary>
     /// 索引：数组按整数（越界是错误），对象按字符串键（没有为 null），null 为 null
     /// </summary>
+    /// <remarks>
+    /// 数组的下标截去小数部分；负数、不小于长度的、连整数都放不下的都是越界，转换的溢出不逃出去
+    /// </remarks>
     private static JsonNode? Index(JsonNode? target, JsonNode? index)
     {
         switch (target)
@@ -545,10 +569,17 @@ internal sealed class ExpressionCompiler
             case null:
                 return null;
             case JsonArray array:
-                var position = (int)Number(index, "[]");
-                return position >= 0 && position < array.Count ? array[position] : throw new ExpressionException(WorkflowMessages.ExpressionIndexOutOfRange, MessageArguments.Of(("index", position), ("length", array.Count)));
+                var position = decimal.Truncate(Number(index, "[]"));
+                if (position >= 0 && position < array.Count)
+                {
+                    return array[(int)position];
+                }
+
+                // 参数里的下标是截断之后的整数：放得进 int 的照旧是 int，放不下的照原数
+                var reported = position >= int.MinValue && position <= int.MaxValue ? (object)(int)position : position;
+                throw new ExpressionException(WorkflowMessages.ExpressionIndexOutOfRange, MessageArguments.Of(("index", reported), ("length", array.Count)));
             case JsonObject obj:
-                return obj.TryGetPropertyValue(Text(index), out var value) ? value : null;
+                return WorkflowValues.TryMember(obj, Text(index), out var value) ? value : null;
             default:
                 throw new ExpressionException(WorkflowMessages.ExpressionIndexOfScalar);
         }
@@ -573,14 +604,98 @@ internal sealed class ExpressionCompiler
             return JsonValue.Create(first + second);
         }
 
-        return JsonValue.Create(Number(left, "+") + Number(right, "+"));
+        var augend = Number(left, "+");
+        var addend = Number(right, "+");
+        try
+        {
+            return JsonValue.Create(augend + addend);
+        }
+        catch (OverflowException)
+        {
+            throw OutOfRange("+");
+        }
     }
+
+    /// <summary>
+    /// 减法
+    /// </summary>
+    private static JsonValue Subtract(JsonNode? left, JsonNode? right)
+    {
+        var minuend = Number(left, "-");
+        var subtrahend = Number(right, "-");
+        try
+        {
+            return JsonValue.Create(minuend - subtrahend);
+        }
+        catch (OverflowException)
+        {
+            throw OutOfRange("-");
+        }
+    }
+
+    /// <summary>
+    /// 乘法
+    /// </summary>
+    private static JsonValue Multiply(JsonNode? left, JsonNode? right)
+    {
+        var multiplicand = Number(left, "*");
+        var multiplier = Number(right, "*");
+        try
+        {
+            return JsonValue.Create(multiplicand * multiplier);
+        }
+        catch (OverflowException)
+        {
+            throw OutOfRange("*");
+        }
+    }
+
+    /// <summary>
+    /// 除法：两个操作数都是数字之后才看除数是不是零
+    /// </summary>
+    private static JsonValue Divide(JsonNode? left, JsonNode? right)
+    {
+        var dividend = Number(left, "/");
+        var divisor = Number(right, "/");
+        if (divisor == 0)
+        {
+            throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero);
+        }
+
+        try
+        {
+            return JsonValue.Create(dividend / divisor);
+        }
+        catch (OverflowException)
+        {
+            throw OutOfRange("/");
+        }
+    }
+
+    /// <summary>
+    /// 取余：截断除法的余数，符号随被除数，结果总是放得下
+    /// </summary>
+    private static JsonValue Remainder(JsonNode? left, JsonNode? right)
+    {
+        var dividend = Number(left, "%");
+        var divisor = Number(right, "%");
+        return divisor == 0 ? throw new ExpressionException(WorkflowMessages.ExpressionDivisionByZero) : JsonValue.Create(dividend % divisor);
+    }
+
+    /// <summary>
+    /// 结果超出数字范围的错误
+    /// </summary>
+    /// <remarks>
+    /// decimal 放不下时平台抛 <see cref="OverflowException"/>：在这里换成表达式的错误，不让它逃出求值器
+    /// </remarks>
+    private static ExpressionException OutOfRange(string op)
+        => new(WorkflowMessages.ExpressionNumberOutOfRange, MessageArguments.Of(("operator", op)));
 
     /// <summary>
     /// 宽松相等
     /// </summary>
     /// <remarks>
-    /// 都为 null 相等；都是数字按数值；都是布尔按值；其余按字符串序数比较
+    /// 都为 null 相等，只有一边是 null 不等；都是布尔按值；都是数字或数字文本按数值；其余的标量按文本的序数比较；有一边是数组或对象时按结构深比较，里面的标量不做转换
     /// </remarks>
     private static bool AreEqual(JsonNode? left, JsonNode? right)
     {
@@ -591,7 +706,7 @@ internal sealed class ExpressionCompiler
 
         if (left is JsonValue l && right is JsonValue r)
         {
-            if (WorkflowValues.TryBool(l, out var lb) && WorkflowValues.TryBool(r, out var rb) && !IsString(l) && !IsString(r))
+            if (TryBoolean(l, out var lb) && TryBoolean(r, out var rb))
             {
                 return lb == rb;
             }
@@ -604,12 +719,87 @@ internal sealed class ExpressionCompiler
             return string.Equals(WorkflowValues.AsString(l), WorkflowValues.AsString(r), StringComparison.Ordinal);
         }
 
-        return JsonNode.DeepEquals(left, right);
+        return DeepEqual(left, right);
+    }
+
+    /// <summary>
+    /// 按结构深比较：至少一边是数组或对象
+    /// </summary>
+    /// <remarks>
+    /// 数组长度相同且逐项相等；对象成员名相同（按序数，不看顺序）且各成员相等；里面的标量不做宽松转换，类型相同才可能相等，数字按数值；容器与标量不相等。对象的成员经 <see cref="WorkflowValues.TryMember"/> 取，不区分大小写的 <see cref="JsonObject"/> 也按序数比较成员名
+    /// </remarks>
+    private static bool DeepEqual(JsonNode? left, JsonNode? right)
+    {
+        switch (left, right)
+        {
+            case (null, null):
+                return true;
+            case (JsonArray a, JsonArray b):
+                if (a.Count != b.Count)
+                {
+                    return false;
+                }
+
+                for (var index = 0; index < a.Count; index++)
+                {
+                    if (!DeepEqual(a[index], b[index]))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            case (JsonObject a, JsonObject b):
+                if (a.Count != b.Count)
+                {
+                    return false;
+                }
+
+                foreach (var (name, value) in a)
+                {
+                    if (!WorkflowValues.TryMember(b, name, out var other) || !DeepEqual(value, other))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            case (JsonValue a, JsonValue b):
+                return SameScalar(a, b);
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// 容器里的两个标量是否相同
+    /// </summary>
+    /// <remarks>
+    /// 类型相同才可能相同：数字按放进数字之后的数值（写法不同、超出 28 位小数的照同一条规则舍入），字符串逐个码元，布尔按值。放不下的数字不在规定之内，交给平台按原文比
+    /// </remarks>
+    private static bool SameScalar(JsonValue left, JsonValue right)
+    {
+        var kind = left.GetValueKind();
+        if (kind != right.GetValueKind())
+        {
+            return false;
+        }
+
+        return kind switch
+        {
+            JsonValueKind.True or JsonValueKind.False => true,
+            JsonValueKind.String => string.Equals(WorkflowValues.AsString(left), WorkflowValues.AsString(right), StringComparison.Ordinal),
+            JsonValueKind.Number when WorkflowValues.TryDecimal(left, out var l) && WorkflowValues.TryDecimal(right, out var r) => l == r,
+            _ => JsonNode.DeepEquals(left, right),
+        };
     }
 
     /// <summary>
     /// 排序比较：数字按数值，时间按时刻，其余按字符串序数
     /// </summary>
+    /// <remarks>
+    /// 两边都是数字或数字文本按数值；两边都是合文法的时间文本按时刻；其余按文本的序数（逐个 UTF-16 码元）。null、数组与对象不能比较
+    /// </remarks>
     private static int Compare(JsonNode? left, JsonNode? right, string op)
     {
         if (left is JsonValue l && right is JsonValue r)
@@ -619,12 +809,14 @@ internal sealed class ExpressionCompiler
                 return ln.CompareTo(rn);
             }
 
-            if (WorkflowValues.TryConvert<DateTimeOffset>(l, out var lt) && WorkflowValues.TryConvert<DateTimeOffset>(r, out var rt))
+            var leftText = WorkflowValues.AsString(l);
+            var rightText = WorkflowValues.AsString(r);
+            if (IsString(l) && IsString(r) && WorkflowTimeText.TryParse(leftText, out var lt) && WorkflowTimeText.TryParse(rightText, out var rt))
             {
                 return lt.CompareTo(rt);
             }
 
-            return string.CompareOrdinal(WorkflowValues.AsString(l), WorkflowValues.AsString(r));
+            return string.CompareOrdinal(leftText, rightText);
         }
 
         throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotScalar, MessageArguments.Of(("operator", op)));
@@ -634,7 +826,20 @@ internal sealed class ExpressionCompiler
     /// 要求布尔
     /// </summary>
     private static bool Boolean(JsonNode? node, string op)
-        => node is JsonValue value && !IsString(value) && WorkflowValues.TryBool(value, out var flag) ? flag : throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotBoolean, MessageArguments.Of(("operator", op)));
+        => node is JsonValue value && TryBoolean(value, out var flag) ? flag : throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotBoolean, MessageArguments.Of(("operator", op)));
+
+    /// <summary>
+    /// 是不是 JSON 的布尔值
+    /// </summary>
+    /// <remarks>
+    /// 字符串 <c>"true"</c> 不是布尔
+    /// </remarks>
+    private static bool TryBoolean(JsonValue value, out bool flag)
+    {
+        var kind = value.GetValueKind();
+        flag = kind == JsonValueKind.True;
+        return kind is JsonValueKind.True or JsonValueKind.False;
+    }
 
     /// <summary>
     /// 要求数字（字符串形式的数字也接受）
@@ -643,19 +848,17 @@ internal sealed class ExpressionCompiler
         => node is JsonValue value && WorkflowValues.TryDecimal(value, out var number) ? number : throw new ExpressionException(WorkflowMessages.ExpressionOperandsNotNumeric, MessageArguments.Of(("operator", op)));
 
     /// <summary>
-    /// 任意值的字符串形式：null 为空串，标量按 <see cref="WorkflowValues.AsString"/>，容器为 JSON 文本
+    /// 任意值的字符串形式：null 为空串，标量按 <see cref="WorkflowValues.AsString"/>，容器为紧凑的 JSON 文本
     /// </summary>
-    private static string Text(JsonNode? node) => node switch
-    {
-        null => string.Empty,
-        JsonValue value => WorkflowValues.AsString(value),
-        _ => node.ToJsonString(),
-    };
+    private static string Text(JsonNode? node) => WorkflowValueText.Of(node);
 
     /// <summary>
     /// 是否字符串标量
     /// </summary>
-    private static bool IsString(JsonNode? node) => node is JsonValue value && value.TryGetValue<string>(out _);
+    /// <remarks>
+    /// 按 JSON 的类型判断：由 <see cref="DateTimeOffset"/>、<see cref="Guid"/> 等构造的值写成 JSON 是字符串，这里也算字符串
+    /// </remarks>
+    private static bool IsString(JsonNode? node) => node is JsonValue value && value.GetValueKind() == JsonValueKind.String;
 
     /// <summary>
     /// 进入一层嵌套
@@ -670,6 +873,17 @@ internal sealed class ExpressionCompiler
             throw new ExpressionException(WorkflowMessages.ExpressionTooDeep, MessageArguments.Of(("max", MaxDepth)));
         }
     }
+
+    /// <summary>
+    /// 某个位置上的字符
+    /// </summary>
+    /// <remarks>
+    /// 基本多文种平面以外的字符占两个码元，错误里带出整个字符，不留下半个代理对
+    /// </remarks>
+    private string CharacterAt(int position)
+        => char.IsHighSurrogate(_text[position]) && position + 1 < _text.Length && char.IsLowSurrogate(_text[position + 1])
+            ? _text.Substring(position, 2)
+            : _text[position].ToString();
 
     /// <summary>
     /// 跳过空白

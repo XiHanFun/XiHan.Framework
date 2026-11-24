@@ -74,7 +74,9 @@ public sealed class ExpressionTests
         Assert.True(Bool("lastError.missing == null", scope));
         Assert.Equal(1m, Number("items[0]", scope));
         Assert.Equal(3m, Number("items[1 + 1]", scope));
-        Assert.Equal(_now, _evaluator.Evaluate("now()", scope).ValueOrThrow().ValueOrThrow().GetValue<DateTimeOffset>());
+        // 时间在值模型里是字符串：now() 给出定宽的规范文本，要时刻时按类型转换（ADR-0287）
+        Assert.Equal("2026-10-26T08:00:00.0000000+00:00", Text("now()", scope));
+        Assert.True(WorkflowValues.TryConvert<DateTimeOffset>(_evaluator.Evaluate("now()", scope).ValueOrThrow().ValueOrThrow(), out var now) && now == _now);
         Assert.True(Bool("date('2026-01-02') > date('2026-01-01') && now() > date('2026-10-25')", scope));
     }
 

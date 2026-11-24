@@ -824,10 +824,10 @@ public static class WorkflowMessages
     public const string ExpressionTooLong = "workflow.expression.too_long";
 
     /// <summary>
-    /// 表达式拼出的字符串超过长度上限
+    /// 表达式拼出的字符串或模板渲染出的文本超过长度上限
     /// </summary>
     /// <remarks>
-    /// 参数：<c>length</c>、<c>max</c>
+    /// 参数：<c>expression</c>（截断的表达式，渲染时是截断的模板）、<c>length</c>、<c>max</c>
     /// </remarks>
     public const string ExpressionStringTooLong = "workflow.expression.string_too_long";
 
@@ -907,7 +907,7 @@ public static class WorkflowMessages
     /// 值不是日期
     /// </summary>
     /// <remarks>
-    /// 参数：<c>expression</c>、<c>value</c>
+    /// 参数：<c>expression</c>、<c>value</c>（截断的）
     /// </remarks>
     public const string ExpressionNotDate = "workflow.expression.not_date";
 
@@ -974,6 +974,14 @@ public static class WorkflowMessages
     /// 参数：<c>expression</c>、<c>value</c>
     /// </remarks>
     public const string ExpressionNotNumber = "workflow.expression.not_number";
+
+    /// <summary>
+    /// 运算的操作数或结果超出数字范围
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>expression</c>、<c>operator</c>（<c>+</c>、<c>-</c>、<c>*</c>、<c>/</c> 的结果放不下，或 <c>round</c> 的小数位数不在 0 到 28 之间）
+    /// </remarks>
+    public const string ExpressionNumberOutOfRange = "workflow.expression.number_out_of_range";
 
     /// <summary>
     /// 字符串字面量没闭合

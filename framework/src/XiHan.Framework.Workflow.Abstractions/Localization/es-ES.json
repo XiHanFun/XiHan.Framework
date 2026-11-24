@@ -138,6 +138,7 @@
   "workflow.expression.not_boolean": "El resultado de la expresión '{expression}' no es un valor booleano.",
   "workflow.expression.not_date": "Expresión '{expression}': '{value}' no es una fecha.",
   "workflow.expression.not_number": "Expresión '{expression}': '{value}' no es un número.",
+  "workflow.expression.number_out_of_range": "Expresión '{expression}': un operando o el resultado del operador '{operator}' está fuera del rango de los números.",
   "workflow.expression.operands_not_boolean": "Expresión '{expression}': el operador '{operator}' necesita operandos booleanos.",
   "workflow.expression.operands_not_numeric": "Expresión '{expression}': el operador '{operator}' necesita operandos numéricos.",
   "workflow.expression.operands_not_scalar": "Expresión '{expression}': el operador '{operator}' necesita dos operandos escalares.",

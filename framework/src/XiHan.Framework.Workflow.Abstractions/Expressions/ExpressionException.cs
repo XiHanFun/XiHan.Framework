@@ -39,15 +39,31 @@ internal sealed class ExpressionException : Exception
     public IReadOnlyDictionary<string, object?>? Arguments { get; }
 
     /// <summary>
+    /// 错误里带出的文本：最多 <see cref="MaxEchoLength"/> 个字符，截断的以 <c>…</c> 结尾
+    /// </summary>
+    /// <remarks>
+    /// 错误会进校验结果、响应和实例故障，表达式、模板与求值时拿到的文本都不原样带出去。长度按 UTF-16 码元计，截断处落在代理对中间时少取一个码元，不留下半个字符
+    /// </remarks>
+    public static string Echo(string text)
+    {
+        if (text.Length <= MaxEchoLength)
+        {
+            return text;
+        }
+
+        var length = char.IsHighSurrogate(text[MaxEchoLength - 1]) ? MaxEchoLength - 1 : MaxEchoLength;
+        return string.Concat(text.AsSpan(0, length), "…");
+    }
+
+    /// <summary>
     /// 转成错误：表达式文本放在参数 <c>expression</c>，其余参数随后
     /// </summary>
     /// <remarks>
-    /// 错误会进校验结果、响应和实例故障，表达式文本最多带 <see cref="MaxEchoLength"/> 个字符
+    /// 表达式文本经 <see cref="Echo"/> 截断
     /// </remarks>
     public Error ToError(string expression)
     {
-        var echoed = expression.Length > MaxEchoLength ? string.Concat(expression.AsSpan(0, MaxEchoLength), "…") : expression;
-        var details = new Dictionary<string, object?>(StringComparer.Ordinal) { ["expression"] = echoed };
+        var details = new Dictionary<string, object?>(StringComparer.Ordinal) { ["expression"] = Echo(expression) };
         foreach (var (name, value) in Arguments ?? new Dictionary<string, object?>())
         {
             details[name] = value;

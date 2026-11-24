@@ -1511,6 +1511,7 @@ const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionMemberOfN
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNotBoolean = "workflow.expression.not_boolean" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNotDate = "workflow.expression.not_date" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNotNumber = "workflow.expression.not_number" -> string!
+const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionNumberOutOfRange = "workflow.expression.number_out_of_range" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotBoolean = "workflow.expression.operands_not_boolean" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotNumeric = "workflow.expression.operands_not_numeric" -> string!
 const XiHan.Framework.Workflow.Abstractions.WorkflowMessages.ExpressionOperandsNotScalar = "workflow.expression.operands_not_scalar" -> string!

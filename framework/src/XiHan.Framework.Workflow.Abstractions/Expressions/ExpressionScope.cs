@@ -3,6 +3,7 @@
 
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Workflow.Abstractions.Values;
 
 namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 
@@ -10,7 +11,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 表达式求值的作用域
 /// </summary>
 /// <remarks>
-/// 实例变量加临时值（<c>outcome</c>、<c>item</c> 等），以及 <c>now()</c> 用的时钟。临时值优先于同名变量
+/// 实例变量加临时值（输出映射里的 <c>outputs</c> 等），以及 <c>now()</c> 用的时钟。临时值优先于同名变量；名字区分大小写
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class ExpressionScope
@@ -61,7 +62,7 @@ public sealed class ExpressionScope
     /// 解析根名字
     /// </summary>
     /// <remarks>
-    /// 先临时值，再变量；都没有返回 <see langword="false"/>
+    /// 先临时值，再变量；都没有返回 <see langword="false"/>。名字区分大小写，变量对象本身不区分大小写时也一样
     /// </remarks>
     public bool TryResolve(string name, out JsonNode? value)
     {
@@ -71,6 +72,6 @@ public sealed class ExpressionScope
             return true;
         }
 
-        return _variables.TryGetPropertyValue(name, out value);
+        return WorkflowValues.TryMember(_variables, name, out value);
     }
 }

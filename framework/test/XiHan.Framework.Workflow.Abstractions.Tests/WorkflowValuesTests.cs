@@ -41,7 +41,8 @@ public sealed class WorkflowValuesTests
 
         Assert.True(WorkflowValues.IsTruthy(JsonValue.Create(1)) && WorkflowValues.IsTruthy(JsonValue.Create("x")) && WorkflowValues.IsTruthy(new JsonArray(1)));
         Assert.False(WorkflowValues.IsTruthy(null) || WorkflowValues.IsTruthy(JsonValue.Create(0)) || WorkflowValues.IsTruthy(JsonValue.Create("")) || WorkflowValues.IsTruthy(JsonValue.Create(false)) || WorkflowValues.IsTruthy(new JsonObject()));
-        Assert.Equal("2.50", WorkflowValues.AsString(JsonValue.Create(2.50m)));
+        // 数字的文本只取决于数值，不带 decimal 内部记着的结尾的零（ADR-0287）
+        Assert.Equal("2.5", WorkflowValues.AsString(JsonValue.Create(2.50m)));
         Assert.Equal("false", WorkflowValues.AsString(JsonValue.Create(false)));
     }
 

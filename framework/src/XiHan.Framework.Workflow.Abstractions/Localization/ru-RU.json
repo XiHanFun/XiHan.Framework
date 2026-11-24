@@ -138,6 +138,7 @@
   "workflow.expression.not_boolean": "Результат выражения '{expression}' не является логическим значением.",
   "workflow.expression.not_date": "Выражение '{expression}': '{value}' не является датой.",
   "workflow.expression.not_number": "Выражение '{expression}': '{value}' не является числом.",
+  "workflow.expression.number_out_of_range": "Выражение '{expression}': операнд или результат оператора '{operator}' выходит за пределы диапазона чисел.",
   "workflow.expression.operands_not_boolean": "Выражение '{expression}': оператору '{operator}' нужны логические операнды.",
   "workflow.expression.operands_not_numeric": "Выражение '{expression}': оператору '{operator}' нужны числовые операнды.",
   "workflow.expression.operands_not_scalar": "Выражение '{expression}': оператору '{operator}' нужны два скалярных операнда.",

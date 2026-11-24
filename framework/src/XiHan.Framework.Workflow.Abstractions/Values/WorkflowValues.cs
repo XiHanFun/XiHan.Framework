@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
@@ -219,8 +220,11 @@ public static class WorkflowValues
     }
 
     /// <summary>
-    /// 标量的字符串形式：字符串原文，数字按不变文化，布尔 <c>true</c> / <c>false</c>
+    /// 标量的字符串形式：字符串原文，数字的规范文本，布尔 <c>true</c> / <c>false</c>
     /// </summary>
+    /// <remarks>
+    /// 数字的规范文本只取决于数值（RFC-0021「表达式」的「数字」，ADR-0287）：不用指数，小数部分不带结尾的零，<c>1.50</c> 写成 <c>1.5</c>、<c>3.0</c> 写成 <c>3</c>；超出数字范围的 JSON 数字照 JSON 里的原文。由 CLR 类型构造的值（<see cref="DateTimeOffset"/>、<see cref="Guid"/> 等）按它的 JSON 形式，与过一遍存储之后读到的文本相同
+    /// </remarks>
     public static string AsString(JsonValue value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -229,22 +233,24 @@ public static class WorkflowValues
             return text;
         }
 
-        if (value.TryGetValue<bool>(out var flag))
+        switch (value.GetValueKind())
         {
-            return flag ? "true" : "false";
-        }
+            case JsonValueKind.True:
+                return "true";
+            case JsonValueKind.False:
+                return "false";
+            case JsonValueKind.Number:
+                return TryDecimal(value, out var number) ? WorkflowNumberText.Format(number) : value.ToJsonString();
+            case JsonValueKind.String:
+                // 不是字符串的 CLR 值写成 JSON 是字符串：取转义还原之后的内容，不带引号也不带 \uXXXX
+                using (var document = JsonDocument.Parse(value.ToJsonString()))
+                {
+                    return document.RootElement.GetString() ?? string.Empty;
+                }
 
-        if (TryDecimal(value, out var number))
-        {
-            return number.ToString(CultureInfo.InvariantCulture);
+            default:
+                return value.ToJsonString();
         }
-
-        if (value.TryGetValue<DateTimeOffset>(out var when))
-        {
-            return when.ToString("O", CultureInfo.InvariantCulture);
-        }
-
-        return value.ToJsonString().Trim('"');
     }
 
     /// <summary>
@@ -262,30 +268,31 @@ public static class WorkflowValues
     };
 
     /// <summary>
-    /// 标量转 decimal：数字直接取，字符串按不变文化解析
+    /// 标量转 decimal：数字按数值，字符串按数字文本的文法读
     /// </summary>
+    /// <remarks>
+    /// 规则见 RFC-0021「表达式」的「数字」（ADR-0287）：数字文本是可选的首尾空白（U+0009–U+000D 与空格）、可选的符号、ASCII 数字（可带小数点）与可选的指数，按整串匹配；数值放不下 96 位整数（绝对值超过 79228162514264337593543950335）返回 <see langword="false"/>，比 10^(-28) 更细的部分按一半取偶舍入。JSON 里的数字按它的原文读，由 CLR 的 <see cref="double"/>、<see cref="float"/> 等构造的数字按它的 JSON 形式读，与过一遍存储之后的值相同
+    /// </remarks>
     public static bool TryDecimal(JsonValue value, out decimal number)
     {
         ArgumentNullException.ThrowIfNull(value);
+        if (value.TryGetValue<JsonElement>(out var element))
+        {
+            // 从 JSON 文本读来的值：数字与字符串都按原文过同一条文法，不经平台的数字解析
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Number:
+                    return TryNumberToken(JsonMarshal.GetRawUtf8Value(element), out number);
+                case JsonValueKind.String:
+                    return WorkflowNumberText.TryParse(element.GetString(), out number);
+                default:
+                    number = 0;
+                    return false;
+            }
+        }
+
         if (value.TryGetValue<decimal>(out number))
         {
-            return true;
-        }
-
-        if (value.TryGetValue<double>(out var d))
-        {
-            if (double.IsFinite(d) && d is >= (double)decimal.MinValue and <= (double)decimal.MaxValue)
-            {
-                number = (decimal)d;
-                return true;
-            }
-
-            return false;
-        }
-
-        if (value.TryGetValue<long>(out var l))
-        {
-            number = l;
             return true;
         }
 
@@ -295,18 +302,66 @@ public static class WorkflowValues
             return true;
         }
 
-        if (value.TryGetValue<JsonElement>(out var element) && element.ValueKind == JsonValueKind.Number && element.TryGetDecimal(out number))
+        if (value.TryGetValue<long>(out var l))
         {
+            number = l;
             return true;
         }
 
-        if (value.TryGetValue<string>(out var text) && decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out number))
+        if (value.TryGetValue<string>(out var text))
         {
-            return true;
+            return WorkflowNumberText.TryParse(text, out number);
+        }
+
+        if ((value.TryGetValue<double>(out var d) && !double.IsFinite(d)) || (value.TryGetValue<float>(out var f) && !float.IsFinite(f)))
+        {
+            // 非数与无穷写不成 JSON
+            number = 0;
+            return false;
+        }
+
+        if (value.GetValueKind() == JsonValueKind.Number)
+        {
+            // 其余 CLR 类型的数字（double、float、short、ulong 等）按它的 JSON 形式：存储写下去再读回来就是这段文本
+            return WorkflowNumberText.TryParse(value.ToJsonString(), out number);
         }
 
         number = 0;
         return false;
+    }
+
+    /// <summary>
+    /// 按名字取对象的成员，名字区分大小写
+    /// </summary>
+    /// <remarks>
+    /// <see cref="JsonObject"/> 区不区分大小写取决于它是怎样造出来的：按 Web 缺省选项反序列化出来的不区分，写进存储再读回来的区分。表达式里成员名一律按序数比较（RFC-0021「表达式」，ADR-0287）：不区分大小写的对象找到的成员名与要找的不是同一个字符串时当作没有，同一个对象过不过存储结果相同
+    /// </remarks>
+    internal static bool TryMember(JsonObject obj, string name, out JsonNode? value)
+    {
+        if (obj.TryGetPropertyValue(name, out value, out var index) && string.Equals(obj.GetAt(index).Key, name, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// 读 JSON 文本里的一个数字
+    /// </summary>
+    /// <remarks>
+    /// JSON 的数字只有 ASCII 字符，逐字节放宽成字符再过数字文本的文法；短的不分配
+    /// </remarks>
+    private static bool TryNumberToken(ReadOnlySpan<byte> utf8, out decimal number)
+    {
+        Span<char> text = utf8.Length <= 128 ? stackalloc char[utf8.Length] : new char[utf8.Length];
+        for (var index = 0; index < utf8.Length; index++)
+        {
+            text[index] = (char)utf8[index];
+        }
+
+        return WorkflowNumberText.TryParse(text, out number);
     }
 
     /// <summary>

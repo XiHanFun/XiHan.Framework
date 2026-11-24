@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Workflow.Abstractions.Values;
@@ -13,7 +14,7 @@ namespace XiHan.Framework.Workflow.Abstractions.Expressions;
 /// 默认求值器
 /// </summary>
 /// <remarks>
-/// <see cref="ExpressionCompiler"/> 的小语言，编译结果按表达式文本缓存（超过上限整体清空）
+/// <see cref="ExpressionCompiler"/> 的小语言，文法与语义照 RFC-0021「表达式」，编译结果按表达式文本缓存（超过上限整体清空）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
@@ -77,12 +78,13 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
             return evaluated.Error!;
         }
 
-        if (value.OrNull() is JsonValue scalar && !scalar.TryGetValue<string>(out _) && WorkflowValues.TryBool(scalar, out var flag))
+        // 只认 JSON 的布尔值：字符串 "true"、数字与无值都不是
+        if (value.OrNull() is JsonValue scalar && scalar.GetValueKind() is JsonValueKind.True or JsonValueKind.False)
         {
-            return flag;
+            return scalar.GetValueKind() == JsonValueKind.True;
         }
 
-        return Error.Validation(WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionNotBoolean, MessageArguments.Of(("expression", expression)));
+        return Error.Validation(WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionNotBoolean, MessageArguments.Of(("expression", ExpressionException.Echo(expression))));
     }
 
     /// <inheritdoc />
@@ -95,17 +97,22 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
         while (position < source.Length)
         {
             var open = source.IndexOf("{{", position, StringComparison.Ordinal);
+            var literal = (open < 0 ? source.Length : open) - position;
+            if (TooLong(source, builder.Length, literal) is { } literalTooLong)
+            {
+                return literalTooLong;
+            }
+
+            builder.Append(source, position, literal);
             if (open < 0)
             {
-                builder.Append(source, position, source.Length - position);
                 break;
             }
 
-            builder.Append(source, position, open - position);
             var close = FindClose(source, open + 2);
             if (close < 0)
             {
-                return Error.Validation(WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionUnterminatedPlaceholder, MessageArguments.Of(("expression", source)));
+                return Error.Validation(WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionUnterminatedPlaceholder, MessageArguments.Of(("expression", ExpressionException.Echo(source))));
             }
 
             var expression = source[(open + 2)..close].Trim();
@@ -115,16 +122,31 @@ public sealed class WorkflowExpressionEvaluator : IWorkflowExpressionEvaluator
                 return evaluated.Error!;
             }
 
-            builder.Append(value.OrNull() switch
+            var text = WorkflowValueText.Of(value.OrNull());
+            if (TooLong(source, builder.Length, text.Length) is { } placeholderTooLong)
             {
-                null => string.Empty,
-                JsonValue scalar => WorkflowValues.AsString(scalar),
-                var node => node.ToJsonString(),
-            });
+                return placeholderTooLong;
+            }
+
+            builder.Append(text);
             position = close + 2;
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// 渲染结果再接上一段会不会超过长度上限
+    /// </summary>
+    /// <remarks>
+    /// 占位的结果可以是整个变量的 JSON 文本，一个模板里重复几百次就能把内存耗尽：字面文本与每个占位的文本接上去之前都按累计长度核对，上限与 <c>+</c> 拼接相同（ADR-0287）。超过时返回错误，<c>length</c> 是接上这一段之后的长度，<c>expression</c> 是截断的模板
+    /// </remarks>
+    private static Error? TooLong(string source, int rendered, int next)
+    {
+        var length = (long)rendered + next;
+        return length > ExpressionCompiler.MaxStringLength
+            ? Error.Validation(WorkflowErrors.ExpressionInvalid, WorkflowMessages.ExpressionStringTooLong, MessageArguments.Of(("expression", ExpressionException.Echo(source)), ("length", length), ("max", ExpressionCompiler.MaxStringLength)))
+            : null;
     }
 
     /// <summary>
