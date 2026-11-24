@@ -125,7 +125,7 @@ curl -s -X POST localhost:5000/diagnostics:whoami \
 {"traceId":"4bf92f3577b34da6a3ce929d0e0e4736","principal":null,"isAuthenticated":false,"tenant":null,"correlation":"order-42","remainingMs":null,"elapsedMs":0.4}
 ```
 
-再加一个 `xihan-deadline: <RFC 3339 时刻>` 请求头，`remainingMs` 就是到该时刻的剩余毫秒数。同一份操作在命令行宿主上是 `app diagnostics whoami --correlation order-42 --timeout 30`，输出同样的字段，`remainingMs` 接近 30000，`traceId` 每次调用新生成。
+再加一个 `xihan-deadline` 请求头，值是带 `T`、秒与偏移的时刻（如 `2026-11-18T03:25:00Z`，.NET 用 `DeadlineText.Format` 写出），`remainingMs` 就是到该时刻的剩余毫秒数；别的写法读不出，当作没有这个头。同一份操作在命令行宿主上是 `app diagnostics whoami --correlation order-42 --timeout 30`，输出同样的字段，`remainingMs` 接近 30000，`traceId` 每次调用新生成。
 
 ## 各协议怎样构造上下文
 
@@ -133,7 +133,7 @@ Ingress 阶段由协议适配器或派发器完成，各自把载体上的信息
 
 | 来源 | 入口 | 追踪与截止时间 | Baggage | 调用来源 |
 | --- | --- | --- | --- | --- |
-| HTTP | `HttpInvocation.CreateContext(httpContext)`，`UseXiHan()` 内部调用；端点里用 `httpContext.FindXiHanContext()` 取已建好的 | `traceparent` 头；`xihan-deadline`（RFC 3339）或 `grpc-timeout` | `baggage` 头，只收 `xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；`Accept-Language` 补 `xihan.locale` | 协议 `http`，目标是方法加路径，带远端地址、`User-Agent`、`Referer`、路由模板与端点名 |
+| HTTP | `HttpInvocation.CreateContext(httpContext)`，`UseXiHan()` 内部调用；端点里用 `httpContext.FindXiHanContext()` 取已建好的 | `traceparent` 头；`xihan-deadline`（必须带 `T`、秒与偏移，读不出当作没有）或 `grpc-timeout` | `baggage` 头，只收 `xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；`Accept-Language` 补 `xihan.locale` | 协议 `http`，目标是方法加路径，带远端地址、`User-Agent`、`Referer`、路由模板与端点名 |
 | 命令行 | `CommandLineInvocation.Create(commandContext, operationId)`，`invoke` 命令内部调用；自定义命令发起多次调用时用 `Create(context, services, operationId)` 各建一个作用域 | 每次新生成 trace-id；`--timeout <秒>` | `--tenant`、`--correlation`、`--locale` | 协议 `cli`，目标是操作 ID，没有远端地址 |
 | 消息 | `MessageDispatcher` 为每条消息开新作用域 | 信封的 `traceparent` 扩展 | `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 四个扩展进对应的键；不写幂等键 | 协议 `messaging`，目标是主题 |
 | 作业 | `JobDispatcher` 为每次运行开新作用域 | 新链路 | `xihan.correlation` 是运行 ID | 协议 `job`，目标是作业名 |

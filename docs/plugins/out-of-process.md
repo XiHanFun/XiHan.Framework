@@ -173,7 +173,7 @@ xihan-conformance plugin --dir bin --sample 'echoes.create={"text":"hi"}'
 
 握手声明的每个操作在宿主的 `OperationRegistry` 里登记为代理操作，归属是插件清单 ID，契约（`stability`、`expose`、权限码或策略）与 Schema 取自声明。代理操作和本地[操作契约](/web/operations)没有区别：协议适配器按 `expose` 发布，调用经宿主完整[管道](/startup/pipeline)，Authorize 阶段按契约判定，Handle 阶段把 JSON 载荷与上下文发给插件。
 
-上下文平铺为元数据：`traceparent` / `tracestate`、截止时间（同时设为 gRPC 调用的截止时间）、只含已登记 `xihan.*` 键的 Baggage；`Items` 与服务不传播。插件返回的业务失败原样成为调用结果，宿主用握手时拿到的消息目录翻译消息键（[全球化和本地化](/common/localization)）。读入插件写来的 `Error` 时（宿主读插件、插件读宿主同一规则，ADR-0237）：错误码不合文法的整个换成 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 一律为 `invoke`，原来的 `inner` 丢掉）；带消息键的错误不取 `text`；`details` 为空、只有空白、是空对象、通不过共同的 JSON 读取检查、不是对象，或任何一层有读成双精度会溢出的数时当作没有细节；`ok` 为假却没有 `error`（或整个 `status` 缺失）是 `plugins.process.failed`。传输层失败按下表映射：
+上下文平铺为元数据：`traceparent` / `tracestate`、截止时间（同时设为 gRPC 调用的截止时间）、只含已登记 `xihan.*` 键的 Baggage；`Items` 与服务不传播。宿主为每次调用插件的操作与每次事件投递记一条 Span `xihan.plugin.invoke`（种类 Client，是这次调用的 `xihan.invoke` 的子 Span，标签 `xihan.plugin.id`，操作调用另带 `xihan.operation`），写给插件的 `traceparent` 以它为父级，插件一侧的 Span 与回调都挂在它下面，见[日志与可观测性](/common/observability#内核发出什么)。插件返回的业务失败原样成为调用结果，宿主用握手时拿到的消息目录翻译消息键（[全球化和本地化](/common/localization)）。读入插件写来的 `Error` 时（宿主读插件、插件读宿主同一规则，ADR-0237）：错误码不合文法的整个换成 `PLUGINS_UNEXPECTED_001` + `plugins.process.failed`（`phase` 一律为 `invoke`，原来的 `inner` 丢掉）；带消息键的错误不取 `text`；`details` 为空、只有空白、是空对象、通不过共同的 JSON 读取检查、不是对象，或任何一层有读成双精度会溢出的数时当作没有细节；`ok` 为假却没有 `error`（或整个 `status` 缺失）是 `plugins.process.failed`。传输层失败按下表映射：
 
 | 插件侧 | 宿主错误码 |
 | --- | --- |
@@ -238,7 +238,7 @@ builder.AddXiHan(xihan => xihan
 
 配置节 `XiHan:Plugins:OutOfProcess`（`OutOfProcessPluginOptions.ConfigurationSection`）里最常用的是两项：`Directories` 列出启动时装载的插件目录（一个目录一个插件，相对路径相对当前目录），`Grants:<清单 ID>` 授予该插件的权限，清单声明的权限必须全部授予才能加载，清单要读的宿主配置节与绑定也在这里授予（`config:<配置节>`、`binding:<绑定名>`）。握手与启停时限、健康轮询、重启上限与工作目录等其余键见[包参考](/packages/plugins-outofprocess#配置)。
 
-取值不合类型与范围时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定，宿主在 `Configure` 时把它序列化为 JSON 对象下发。
+取值不合类型与范围时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定，宿主在 `Configure` 时把它序列化为 JSON 对象下发。清单声明并授予的资源绑定随同一个请求下发：来源与宿主自己的特性相同（Service Binding 目录与 `XiHan:Bindings`），每次配置插件时重新解析，只带名字、类型与主值，见[资源绑定](/configuration/bindings#下发给插件的绑定)。
 
 ## 常见问题
 

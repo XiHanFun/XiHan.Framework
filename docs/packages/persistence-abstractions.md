@@ -82,12 +82,12 @@ builder.AddXiHan(x => x.UseStandardProfile().UseFeature<SnowflakeIdFeature>());
 
 | 类型 | 命名空间 | 说明 |
 | --- | --- | --- |
-| `IRepository<TEntity, TKey>` | `…Abstractions.Repositories` | `FindAsync`、`FindManyAsync`、`ListAsync`、`CountAsync`、`AddAsync` / `AddRangeAsync`、`UpdateAsync` / `UpdateRangeAsync`、`RemoveAsync` / `RemoveRangeAsync` |
+| `IRepository<TEntity, TKey>` | `…Abstractions.Repositories` | `FindAsync`、`FindManyAsync`、`ListAsync`、`CountAsync`、`AddAsync` / `AddRangeAsync`、`UpdateAsync` / `UpdateRangeAsync`、`RemoveAsync` / `RemoveRangeAsync`，都返回 `ValueTask`（ADR-0265） |
 | `RepositoryServiceCollectionExtensions` | `…Abstractions.Repositories` | `AddRepository<TEntity, TKey>(connection)`（`connection` 可选：登记到命名连接）、`GetRepositoryRegistrations()` |
 | `IRepositoryRegistrar`、`RepositoryRegistrations` | `…Abstractions.Repositories` | Provider 注册闭合泛型仓储的入口与登记集合；`ConnectionOf(type)` 取实体登记的命名连接 |
 | `EntityQuery<T>`、`EntityQuery` | `…Abstractions.Queries` | 不可变查询：`Where`、`OrderBy`、`Page`、`Within`、`IncludeDeleted`；`EntityQuery.All<T>()`、`DefaultMaxTake`（1000） |
 | `Ordering<T>`、`TimeRange` | `…Abstractions.Queries` | 一项排序；时间范围提示（两端都含，`From` 不能晚于 `To`） |
-| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界、状态、是否已开数据库事务（`HasTransaction`）、开启时的选项（`Options`）；选项是初始化器记录（`TenantId`、`IsReadOnly`、`ReadsPrimary`：只读但读主库；`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
+| `IUnitOfWork`、`UnitOfWorkState`、`UnitOfWorkOptions` | `…Abstractions.UnitOfWork` | 事务边界（`BeginAsync`、`CommitAsync`、`RollbackAsync` 返回 `ValueTask`）、状态、是否已开数据库事务（`HasTransaction`）、开启时的选项（`Options`）；选项是初始化器记录（`TenantId`、`IsReadOnly`、`ReadsPrimary`：只读但读主库；`Connection`：绑定一个命名连接；`Default`：无租户、可写、不绑定连接） |
 | `UnitOfWorkMiddleware` | `…Abstractions.UnitOfWork` | Transaction 阶段的中间件，由 Provider 登记 |
 | `UnitOfWorkScope` | `…Abstractions.UnitOfWork` | 管道之外在新作用域里开工作单元：`RunAsync` 成功提交、失败或抛出回滚；带 `fault` 的重载把异常映射成调用方的错误，带 `prepare` 的重载在取工作单元之前对作用域做准备（绑定租户分片） |
 | `DomainEventTracker`、`IDomainEventDispatcher` | `…Abstractions.UnitOfWork` | 写过的聚合登记表；领域事件派发端口（Messaging 实现） |
@@ -125,7 +125,7 @@ namespace SimpleApp.Orders;
 public sealed class OrderCatalog(IRepository<Order, Guid> orders)
 {
     // 金额不小于 minAmount 的前 20 条，按金额倒序；租户与软删除过滤由仓储施加
-    public Task<IReadOnlyList<Order>> LargestAsync(int minAmount, CancellationToken cancellationToken)
+    public ValueTask<IReadOnlyList<Order>> LargestAsync(int minAmount, CancellationToken cancellationToken)
         => orders.ListAsync(
             EntityQuery.All<Order>()
                 .Where(Specification.Of<Order>(o => o.Amount >= minAmount))
@@ -150,6 +150,8 @@ public sealed class OrderCatalog(IRepository<Order, Guid> orders)
     }
 }
 ```
+
+仓储与工作单元的异步方法都返回 `ValueTask`，直接 `await` 即可，像 `LargestAsync` 这样不带 `async` 直接转出返回值的方法自己也返回 `ValueTask`。一个返回值只能消费一次：要交给只收 `Task` 的接口（`Task.WhenAll`、`Func<Task>` 形参）、存起来稍后再等或等待多次时，在调用点先 `.AsTask()`。
 
 `ImportAsync` 接受部分成功：通过校验的订单随调用提交。要全有或全无，把失败项作为操作结果返回，见[持久化](/persistence/repositories)；管道外的工作单元写法见[工作单元与事务](/persistence/unit-of-work#在管道外开工作单元)。
 

@@ -44,13 +44,14 @@ builder.AddXiHan(xihan => xihan
 }
 ```
 
-业务代码不变：[缓存读写](/caching/basics)里的 `ProductCache` 注入的还是 `ICache`，只是现在第一次 `GetOrCreateAsync` 两级都未命中才执行工厂，写入先到 Redis 再进 L1；同一实例 30 秒内的再次读取不出进程，别的实例第一次读取从 Redis 取到后回填自己的 L1。在别的实例上调用 `InvalidateAsync` 删掉这个键，Redis 发出变更通知，本实例的 L1 随之删掉，下一次读取回到 Redis。单实例开发时 L2 可以就是内存实现，行为一样，只是没有跨实例失效可谈。
+业务代码不变：[缓存读写](/caching/basics)里的 `ProductCache` 注入的还是 `ICache`，只是现在第一次 `GetOrCreateAsync` 两级都未命中才执行工厂（同一个键的并发调用只执行一次），写入先到 Redis 再进 L1；同一实例 30 秒内的再次读取不出进程，别的实例第一次读取从 Redis 取到后回填自己的 L1。在别的实例上调用 `InvalidateAsync` 删掉这个键，Redis 发出变更通知，本实例的 L1 随之删掉，下一次读取回到 Redis。单实例开发时 L2 可以就是内存实现，行为一样，只是没有跨实例失效可谈。
 
 ## 读写规则
 
 - 读：L1 命中直接返回，未命中读 L2，命中后回填 L1；批量读只把 L1 未命中的键一次交给 L2。
 - 回填：读 L2 之前记下这个键的失效轮次，回填前核对；读的途中收到过这个键的失效（别的实例刚写了它），读回的值可能早于那次写入，不回填 L1，下一次读取再去 L2。`GetAsync`、`GetManyAsync`、`GetOrCreateAsync` 都按这条规则（ADR-0229）。
-- 写与删：先 L2 再 L1，L2 失败时 L1 不留下别的实例看不到的值；写入后照旧写进 L1；`GetOrCreateAsync` 两级都未命中才执行工厂。
+- 写与删：先 L2 再 L1，L2 失败时 L1 不留下别的实例看不到的值；写入后照旧写进 L1。
+- `GetOrCreateAsync`：两级都未命中才执行工厂，结果写两级。同键的并发由两级缓存自己合并：L1 同时未命中的调用只读一次 L2，对 L2 是一次读（`GetAsync`）、一次写（`SetAsync`），不调用它的 `GetOrCreateAsync`；本实例的写入、删除与 L2 的变更通知让在途的回源脱钩，结果不再回填，之后的调用不加入它。合并的其余规则见[缓存读写](/caching/basics#最小示例)。
 - L1 的存活时间是条目自己的过期时长与 `LocalTimeToLive` 的较小者，滑动过期在 L1 里按绝对时间处理；`LocalCapacity` 满时淘汰最久未访问的条目。
 - L1 存对象引用，取回的对象不得修改，与内存实现的约定一致。
 

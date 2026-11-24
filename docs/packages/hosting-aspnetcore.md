@@ -72,7 +72,7 @@ dotnet add package XiHan.Framework.Hosting.AspNetCore --prerelease
 | `Health.HealthResponse`、`Health.FeatureHealth` | 探针与健康详情的响应体；探针不写 `features` 与 `contributions` |
 | `Authentication.InvocationAuthenticationBuilderExtensions` | `AddXiHan(configure)`：登记 ASP.NET Core 认证方案 `XiHan` |
 | `Authentication.InvocationAuthenticationOptions` | `QueryTokenPaths`：接受查询串 `access_token` 的路径前缀 |
-| `Authentication.IInvocationAuthenticationFilter` | 方案 `XiHan` 认证成功后的挂点（会话门禁） |
+| `Authentication.IInvocationAuthenticationFilter` | 方案 `XiHan` 认证成功后的挂点（会话门禁）：`AuthenticatedAsync(principal, context)`，取消看 `context.CancellationToken` |
 | `Authentication.InvocationAuthenticationDefaults` | 常量：方案名 `XiHan`、参数名 `access_token`、令牌方案 `Bearer` |
 | `Blobs.HostedBlobUrlFeature`、`Blobs.HostedBlobUrlSigner`、`Blobs.BlobEndpointRouteBuilderExtensions` | 托管的预签名地址：特性、签名器（`ForStore(name)` 给命名实例签）、`MapXiHanBlobs()`（响应带 `nosniff`，内容除 PDF 外进沙箱，ADR-0125） |
 
@@ -107,7 +107,7 @@ SignalR Hub 的认证与在 Hub 里调用操作见[实时通信](/web/realtime)�
 
 - `UseXiHan()` 要在路由之后、端点之前；`WebApplication` 自动加的路由在管道开头，直接调用即可。需要真实客户端地址时，在它之前调用 `UseForwardedHeaders()`。
 - 成功的调用不改动响应；失败时只有响应尚未开始写出才写 Problem Details，端点已写正文时保留端点的内容。
-- `baggage` 只保留已登记的键，其中 `xihan.tenant` 与 `xihan.principal` 不收（ADR-0121），`HttpInvocation.FormatBaggage` 出站也只写已登记的键（RFC-0003 规则 3）；`traceparent` 的采样标志进 `TraceFlags`，缺失或不合法时并入 ASP.NET Core 当前的请求 Activity（同一 trace-id），也没有时生成新的 trace-id；`xihan-deadline` 解析失败视为没有截止时间。
+- `baggage` 只保留已登记的键，其中 `xihan.tenant` 与 `xihan.principal` 不收（ADR-0121），`HttpInvocation.FormatBaggage` 出站也只写已登记的键（RFC-0003 规则 3）；`traceparent` 的采样标志进 `TraceFlags`，缺失或不合法时并入 ASP.NET Core 当前的请求 Activity（同一 trace-id），也没有时生成新的 trace-id；`xihan-deadline` 经原语 `DeadlineText.TryParse` 按 RFC-0003 规则 8 的文法读：如 `2026-11-18T03:25:00Z`、`2026-11-18T11:25:00.5+08:00`，必须有 `T`、秒与偏移，小数一到九位、比 100 纳秒细的部分截断；单值头，按整串匹配、不裁剪。读不出（不合文法、越界、空值、出现多次）当作没有这个头、不报错，这时 `grpc-timeout` 照常生效；`grpc-timeout` 自己读不出或出现多次同样当作没有。gRPC 元数据、MCP 的 Streamable HTTP 与认证方案 `XiHan` 共用这一个读取点。出站写这个头用 `DeadlineText.Format`（ADR-0278）。
 - 查询串令牌只在 `QueryTokenPaths` 登记的前缀下接受，前缀不能为空或 `/`；方案 `XiHan` 只认带 `PipelineBypassMetadata` 的端点。
 - 调用来源 `InvocationOrigin` 记 `http`、方法与路径（含 PathBase，不含查询串）、连接对端地址、`User-Agent` 与 `Referer`，以及匹配到的端点的路由模板（`Route`）与名字（`EndpointName`，即 `WithName`），普通端点据此在 Observe 阶段被识别（ADR-0048）。
 - 健康探针的响应体只有 `status` 与 `state`；各特性状态与 `IHealthContributor` 条目（如每个进程外插件）的状态由健康详情端点 `/health/details` 给出，条目另带 `description`、`checkedAt`、`durationMs` 与 `data`，有才写（ADR-0054、ADR-0209）。

@@ -222,7 +222,7 @@ builder.Services.AddJob<NightlyReportJob>(new JobDefinition("reports.nightly", t
 
 ### 作业登记了却一直不运行
 
-按顺序查：是否装配了 `InMemorySchedulingFeature` 或 `DatabaseSchedulingFeature`（只引用抽象包不运行作业）；应用是否已进入服务状态；cron 的时区是否写对（空为 UTC）；多实例且只装配内存实现时，看的是否不是领导者。用下一页的 `StatusAsync` 看触发器的 `NextFireAt` 与状态最直接。
+按顺序查：是否装配了 `InMemorySchedulingFeature` 或 `DatabaseSchedulingFeature`（只引用抽象包不运行作业）；应用是否已进入服务状态；cron 的时区是否写对（空为 UTC）；多实例且只装配内存实现时，看的是否不是领导者。用下一页的 `FindStatusAsync` 看触发器的 `NextFireAt` 与状态最直接。
 
 ### 用 `JobSchedule.Every` 的作业为什么节奏越来越慢
 

@@ -23,7 +23,7 @@
 | `GetManyAsync<T>` | 先在 L1 取全部，只把未命中的键一次交给 L2；读的途中失效过的键不回填 |
 | `SetAsync<T>` / `SetManyAsync<T>` | 先写 L2 再写 L1；L2 失败时 L1 不留下别的实例看不到的值 |
 | `RemoveAsync` / `RemoveManyAsync` | 先删 L2 再删 L1；两级任一存在过即报告删到 |
-| `GetOrCreateAsync<T>` | L1 未命中时交给 L2 的 `GetOrCreateAsync`（两级都未命中才执行工厂），结果回填 L1；途中有失效（含工厂写入 L2 引起的本实例通知）就不回填，下一次读取再去 L2 |
+| `GetOrCreateAsync<T>` | 同键的并发由本类合并（ADR-0271）：L1 未命中的并发调用只读一次 L2（`GetAsync`），两级都未命中只执行一次工厂，结果写 L2（`SetAsync`）再回填 L1，不调用 L2 的 `GetOrCreateAsync`；本实例的写入、删除与 L2 的变更通知让在途的回源脱钩，结果不写回、不回填；途中有失效就不回填，下一次读取再去 L2；工厂交出空值抛 `ArgumentNullException` |
 
 L1 里每个条目的存活时间是它自己的过期时长与 `LocalTimeToLive` 的较小者，滑动过期在 L1 里按绝对时间处理；从 L2 回填的条目存活 `LocalTimeToLive`。L1 存对象引用，调用方不得修改取回的对象；`ICache.Store` 是 L2 的字节存储。
 

@@ -180,6 +180,8 @@ Wasm 插件清单 `contributes.pipeline` 的每一项在对应阶段插入一个
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。配置节 `XiHan:Plugins:Wasm` 里，`Directories` 列出插件目录，`Grants:<清单 ID>` 授予 `capability:` 权限与清单要读的宿主配置节、绑定，`Mounts:<清单 ID>:<客体路径>` 把客体路径映射到宿主目录（清单的 `fs.read:` / `fs.write:` 只有映射了才算授予，没有映射时加载以 `PLUGINS_DENIED_001` 拒绝）；沙箱的上限是 `MemoryLimitBytes`（缺省 64 MiB）、`StackLimitBytes`（缺省 1 MiB）、`CallTimeoutSeconds`（缺省 30）与 `MiddlewareTimeoutMilliseconds`（缺省 100）。全部键、类型与缺省值见[包参考](/packages/plugins-wasm#配置)。
 
+清单声明并授予的资源绑定随 `xihan_configure` 下发，来源与宿主自己的特性相同（Service Binding 目录与 `XiHan:Bindings`），每次配置插件时重新解析，只带名字、类型与主值，见[资源绑定](/configuration/bindings#下发给插件的绑定)。宿主为每次调用插件的操作与每次事件投递记一条 Span `xihan.plugin.invoke`（`xihan.invoke` 的子 Span，标签 `xihan.plugin.id`，操作调用另带 `xihan.operation`），见[日志与可观测性](/common/observability#内核发出什么)。
+
 取值不合类型与范围时，`WasmPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。CPU 按 epoch 中断强制截止：操作与事件用调用上下文的剩余时间（没有时取 `CallTimeout`），中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`。
 
 | 情形 | 结果 |

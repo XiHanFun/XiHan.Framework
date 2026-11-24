@@ -8,7 +8,7 @@
 | 环层 | Ring 2（抽象） |
 | 能力 | 定义 `objectstorage.blob@1`、`objectstorage.multipart@1`、`objectstorage.presign@1`，由 [ObjectStorage.FileSystem](./objectstorage-filesystem)（默认实现）、[ObjectStorage.S3](./objectstorage-s3) 与 [Hosting.AspNetCore](./hosting-aspnetcore) 提供 |
 | 特性入口 | — |
-| 配置节 | `XiHan:ObjectStorage:Stores`、`XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` |
+| 配置节 | `XiHan:ObjectStorage:Stores`、`XiHan:ObjectStorage:StoreMaxCount`、`XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` |
 | 依赖 | `XiHan.Framework.Kernel`、`XiHan.Framework.Localization.Abstractions`；`Microsoft.Extensions.Configuration.Abstractions`、`Microsoft.Extensions.DependencyInjection.Abstractions` |
 | AOT | 兼容 |
 | 稳定性 | Stable |
@@ -39,6 +39,7 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | --- | --- | --- | --- |
 | `XiHan:ObjectStorage:Stores:<name>:Provider` | `string` | — | 命名实例的 Provider 名：`filesystem` 或 `s3`，不区分大小写 |
 | `XiHan:ObjectStorage:Stores:<name>:<设置>` | `string` | — | 该 Provider 的设置，键同其配置节；未知键报 `OBJECTSTORAGE_VALIDATION_003` |
+| `XiHan:ObjectStorage:StoreMaxCount` | 整数 1–1024 | 64 | 已建的命名实例数上限，配置定义的实例建出之后与运行时登记的都算；满了再登记新名字返回 `OBJECTSTORAGE_UNAVAILABLE_005` |
 | `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` | 正数 | 15 | 命名实例健康探测的间隔，也是单次探测的超时 |
 
 ```json
@@ -68,14 +69,15 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |
 | `Listing.BlobQuery` / `BlobPage` | 列举条件（`Prefix`、`PageSize` 1–1000 缺省 1000、`ContinuationToken`）与一页结果；`Validate()` 核对页大小，Provider 在列举开头调用，越界返回 `OBJECTSTORAGE_VALIDATION_005` |
-| `Multipart.IBlobMultipartStore` | `StartAsync`、`UploadPartAsync`、`ListPartsAsync`、`CompleteAsync`、`AbortAsync` |
+| `Multipart.IBlobMultipartStore` | `StartAsync`、`UploadPartAsync`、`ListPartsAsync`、`CompleteAsync`、`AbortAsync(uploads)`（批量放弃，逐项 `Result` 与入参同序） |
+| `Multipart.BlobMultipartStoreExtensions` | `AbortAsync(upload)`：放弃单个上传的写法，转调批量方法、取第一项 |
 | `Multipart.BlobMultipartUpload` | 一次分片上传：容器、键、上传标识、是否覆盖；可持久化后续传 |
-| `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB；`ValidatePartNumber` 与 `ValidateParts`（完成清单非空、编号严格升序）供 Provider 在访问存储前校验 |
+| `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB；`ValidatePartNumber`、`ValidateParts`（完成清单非空、编号严格升序）与 `ValidateUploads`（批量放弃的集合里没有 `null`）供 Provider 在访问存储前校验 |
 | `Signing.IBlobUrlSigner` | `SignAsync(container, key, request)` → `BlobSignedUrl` |
 | `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法，保存的文件名最长 `MaxDownloadFileNameLength`（255）、不含控制字符 |
-| `Signing.BlobSignedUrl` | 地址、方法、失效时刻与客户端必须发送的请求头 |
+| `Signing.BlobSignedUrl` | 地址 `Url`、方法 `Method`、失效时刻 `ExpiresAt` 与客户端必须发送的请求头 `Headers`；四项都是 `required` 的初始化成员，用对象初始化器构造，没有位置构造与解构 |
 | `Signing.BlobContentDisposition` | `Attachment(fileName)`：下载文件名的统一写法，非 ASCII 文件名带 `filename*` |
-| `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(name)`、`Names`、`Providers`；同时是健康项贡献者 |
+| `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(names)`（批量，逐项返回是否存在过）、`Names`、`Providers`、`MaxCount`（登记数上限，常量 `MaxCountLimit` = 1024）；同时是健康项贡献者 |
 | `Stores.BlobStoreDefinition` | 实例名（`^[a-z0-9][a-z0-9-]{0,63}$`）、Provider 名与设置；`Describes(other)` 判断定义是否相同 |
 | `Stores.IBlobStoreProvider`、`Stores.BlobStoreFailures` | 存储包的命名实例工厂：`Name`、`CreateAsync(definition)` → `Result<IBlobStore>`（失败以结果返回，不抛出）、`ProbeAsync(store)`；`BlobStoreFailures` 给出定义不合法与后端不可用的标准错误 |
 | `Stores.BlobStoreSelection` | `ProvidesDefaultInstance(node)`：被选为对象存储返回 `true`（缺省存储）；没被选为对象存储、却被要求提供分片上传或预签名（有依赖或经配置指定）时抛 `OBJECTSTORAGE_VALIDATION_004`；两者都只是兜底选出时返回 `false`，存储包按被顶替处理 |
@@ -109,6 +111,9 @@ var upload = (await multipart.StartAsync(new ContainerName("videos"), key, new B
 var partUrl = (await signer.SignAsync(new ContainerName("videos"), key, BlobUrlRequest.ForPart(upload, 1), ct)).ValueOrThrow();
 var done = await multipart.CompleteAsync(upload, parts, ct);
 
+// 放弃一批没完成的上传：逐项结果与入参同序，上传不存在也成功；只放弃一个时写 AbortAsync(upload, ct)
+var aborted = await multipart.AbortAsync(staleUploads, ct);
+
 // 限时下载链接（缺省 30 分钟）
 var link = (await signer.SignAsync(new ContainerName("invoices"), key, BlobUrlRequest.ForDownload(expiresIn: null, downloadFileName: "发票.pdf"), ct)).ValueOrThrow().Url;
 ```
@@ -141,9 +146,11 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 - 删除：不存在的项成功并报告为不存在；同一批里重复的键第二次报告不存在。
 - 列举：键的序数顺序；续页标记不透明，原样带回。不符合键文法的对象（保留前缀 `.xihan` 下的框架对象，如 S3 的条件写入探测键；S3 的目录占位）跳过，所以一页可能少于 `PageSize` 条、甚至为空而仍带续页标记，取到续页标记为空为止（ADR-0090）。
 - 范围读取：长度为空读到末尾，超出末尾截断；起点不在对象内（含空对象）返回 `OBJECTSTORAGE_VALIDATION_001`；`BlobMetadata.Length` 仍是总长。
-- 分片上传：编号 1–10000，可乱序、可重传；完成时清单编号严格升序、ETag 相符、非末片至少 5 MiB；完成前对象不可见；放弃是幂等的。
+- 分片上传：编号 1–10000，可乱序、可重传；完成时清单编号严格升序、ETag 相符、非末片至少 5 MiB；完成前对象不可见。放弃是批量的、幂等的：按入参顺序逐项执行，返回等长同序的逐项结果；上传不存在或已结束也成功，所以同一批里重复的上传每一项都成功；空集合不访问存储、返回空；存储不可达只记在该项上（`OBJECTSTORAGE_UNAVAILABLE_001`），其余项照常；每一项之前检查取消，已放弃的不恢复，整批重试即可；集合里有 `null` 在放弃任何上传之前抛出 `ArgumentException`。
 - 预签名：有效期 1 秒到 7 天，签名在本地计算，不检查对象是否存在。
 - 命名实例：同名同定义复用；定义变了替换并释放旧实例，替换时仍在旧实例上的调用可能失败；Provider 未登记或设置不合法、后端建不出来、建实例时的探测发现实例不能用（如 S3 探明服务不认条件写入；Provider 抛出携带错误码的 `FrameworkException`，注册表原样返回该错误码）时，已有的同名实例不受影响。每个实例一条健康项 `objectstorage.store.<name>`，还没探过为 Started，探测失败为 Degraded。
+- 登记数上限：已建的实例数不超过 `BlobStores.MaxCount`（`XiHan:ObjectStorage:StoreMaxCount`）。满了再登记新名字（`GetOrAddAsync`，以及 `GetAsync` 首次取用配置定义的实例）返回 `OBJECTSTORAGE_UNAVAILABLE_005`，不建实例、不淘汰已有的；同名同定义照常返回，同名换定义照常替换、不占名额；移除腾出名额。配置里定义的实例超过上限时调高这个键。
+- 批量移除：`RemoveAsync(names)` 逐项返回该名字的实例是否存在过，与入参等长同序；同一批里重复的名字第二次为 `false`，空集合返回空；名字为 `null` 在移除任何实例之前抛出 `ArgumentNullException`。整批在一次加锁里移除，之后逐个释放；某个实例释放失败只记一条 Warning，不改变返回值，也不挡住其余实例的释放。
 
 ## 错误码
 
@@ -167,6 +174,7 @@ public sealed class AzureBlobStoreConformanceTests : BlobStoreConformance
 | `OBJECTSTORAGE_UNAVAILABLE_002` | `QuotaExceeded` | 配额或单对象大小超限 |
 | `OBJECTSTORAGE_UNAVAILABLE_003` | `ConditionalWriteUnavailable` | 不覆盖写入在本存储上无法保证：S3 兼容服务不认条件写入（启动时探明即启动失败或不建命名实例，之后探明的不覆盖写入一律返回它），或存储关闭了条件写入（`ConditionalWrites = false`） |
 | `OBJECTSTORAGE_UNAVAILABLE_004` | `ConditionalWriteUnconfirmed` | 不覆盖写入暂不可用：存储是否认条件写入尚未确认（启动时连不上，或之后的探测被拒绝、缺桶；HTTP 503，探测通过后自动恢复） |
+| `OBJECTSTORAGE_UNAVAILABLE_005` | `StoreCapacityExceeded` | 命名存储实例登记已满（`XiHan:ObjectStorage:StoreMaxCount`，缺省 64）：再登记新名字以它失败，不建实例、不淘汰已有的，替换同名的不占名额（参数 `store`、`capacity`） |
 
 HTTP 宿主按错误码的类别段映射状态码，见[结果与错误处理](/web/errors)。标识不合法属于编程错误，构造时抛出 `ArgumentException`，不占错误码。
 
@@ -177,4 +185,4 @@ HTTP 宿主按错误码的类别段映射状态码，见[结果与错误处理](
 - [ObjectStorage.S3](./objectstorage-s3)
 - [Hosting.AspNetCore](./hosting-aspnetcore)
 - [Conformance 一致性套件](./conformance)
-- 规范：RFC-0012《对象存储》、ADR-0049、ADR-0050
+- 规范：RFC-0012《对象存储》、ADR-0049、ADR-0050、ADR-0266

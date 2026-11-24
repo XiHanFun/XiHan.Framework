@@ -15,7 +15,7 @@ WebSocket、Server-Sent Events 这类长连接和一次请求一次响应的调�
 | 事项 | 由谁提供 |
 | --- | --- |
 | Hub、`MapHub`、`IHubContext<THub>`、分组、客户端库 | ASP.NET Core 共享框架自带的 SignalR，不需要额外的框架包 |
-| Hub 的认证 | `Hosting.AspNetCore` 的认证方案 `XiHan`，复用内核已装配的 `IAuthenticationHandler`（JWT、OpenID Connect、ApiKey） |
+| Hub 的认证 | `Hosting.AspNetCore` 的认证方案 `XiHan`，复用内核已装配的 `ICredentialHandler`（JWT、OpenID Connect、ApiKey） |
 | 会话是否仍有效 | 应用实现 `IInvocationAuthenticationFilter` |
 | 在 Hub 里调用操作 | `HttpInvocation.CreateContext(httpContext, services)` 加 `IOperationInvoker` |
 | 跨实例推送 | SignalR 自己的背板（如 Redis）或托管服务；业务事件经消息子系统送达 |
@@ -80,7 +80,7 @@ public interface ISessionStatus
 
 public sealed class SessionGate(ISessionStatus sessions) : IInvocationAuthenticationFilter
 {
-    public ValueTask<Result> AuthenticatedAsync(Principal principal, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> AuthenticatedAsync(Principal principal, InvocationContext context)
     {
         // 会话已注销按凭据无效拒绝：客户端据 401 重新登录
         var active = principal.ClaimValues("sid").All(sessions.IsActive);
@@ -134,9 +134,9 @@ using XiHan.Framework.Primitives;
 
 public sealed class OrderPushHandler(IHubContext<NotificationHub> hub) : IMessageHandler
 {
-    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
-        await hub.Clients.All.SendAsync("orderPlaced", delivery.Envelope.Subject, cancellationToken);
+        await hub.Clients.All.SendAsync("orderPlaced", delivery.Envelope.Subject, context.CancellationToken);
         return Result.Success();
     }
 }
@@ -164,11 +164,11 @@ public interface ILocalConnections
 
 public sealed class SessionsRevokedHandler(ILocalConnections connections) : IMessageHandler
 {
-    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         // 数据是被吊销的会话 ID；每个实例只断自己的连接，没有连接时什么也不做
         var sessionIds = System.Text.Json.JsonSerializer.Deserialize(delivery.Envelope.Data.Span, RealtimeJsonContext.Default.StringArray) ?? [];
-        await connections.DisconnectAsync(sessionIds, cancellationToken);
+        await connections.DisconnectAsync(sessionIds, context.CancellationToken);
         return Result.Success();
     }
 }

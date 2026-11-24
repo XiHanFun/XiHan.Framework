@@ -81,13 +81,13 @@ curl -s localhost:5000/health/ready
 | --- | --- | --- |
 | `traceparent` | `TraceId`、`SpanId`、`TraceFlags` | W3C 版本 `00`，采样标志原样保留（上游 `-00` 时内核 Span 不采样）；缺失或格式不对时并入 ASP.NET Core 当前的请求 Activity，也没有时生成新的 trace-id |
 | `baggage` | `Baggage` | W3C 格式；只保留已登记的键（`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；`xihan.tenant` 与 `xihan.principal` 不收，调用方的租户与主体只来自认证），值按 URL 解码，未登记的 `xihan.` 键与其他键丢弃 |
-| `xihan-deadline` | `Deadline` | RFC 3339，按 UTC 解析；解析失败视为没有截止时间 |
-| `grpc-timeout` | `Deadline` | 只在没有 `xihan-deadline` 时生效；数值最多 8 位，单位 `H`、`M`、`S`、`m`、`u`、`n`，按宿主时钟换算成绝对时间 |
+| `xihan-deadline` | `Deadline` | 绝对截止时间，只认一种写法（RFC-0003 规则 8）：`2026-11-18T03:25:00Z` 或带偏移的 `2026-11-18T11:25:00.5+08:00`，必须有 `T`、秒与偏移（`Z` 或 `±HH:MM`），小数一到九位；单值头，按整串匹配，不裁剪空白。读不出（不合文法、越界、空值、出现多次）当作没有这个头，不报错 |
+| `grpc-timeout` | `Deadline` | 没有 `xihan-deadline` 或它读不出时生效；数值 1 到 8 位，单位 `H`、`M`、`S`、`m`、`u`、`n`，按宿主时钟换算成绝对时间；自己读不出或出现多次同样当作没有 |
 | `Accept-Language` | Baggage `xihan.locale` | 只在 Baggage 里没有 `xihan.locale` 时写入，见下文「区域协商与本地化」 |
 | `Authorization` | 凭据 | 只拆成方案与值原样放入，由 Authenticate 阶段解释；宿主不验证凭据 |
 | 方法、路径、连接 | 调用来源 `InvocationOrigin` | 协议 `http`；目标是方法加路径（含 PathBase，不含查询串）；远端地址、`User-Agent`、`Referer`；匹配到的端点的路由模板与 `WithName` 名字 |
 
-截止时间在进入管道时已过的请求得到 504 `KERNEL_TIMEOUT_001`。调用来源只在本进程内可读，不随下游调用传播；访问日志与审计据此取客户端信息，与协议无关。上下文的字段含义与传播规则见[调用上下文](/startup/invocation-context)。
+截止时间在进入管道时已过的请求得到 504 `KERNEL_TIMEOUT_001`。`xihan-deadline` 读不出时请求照常处理，只是没有截止时间，宿主不为此报错：空格代替 `T`、没有偏移、没有秒、只有日期、`+0800` 这类偏移、首尾带空白、HTTP 日期都读不出。调用方写这个头，.NET 用 `DeadlineText.Format(deadline)`，JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()` 写出的也合文法；不带时区的时间（`Kind` 为 `Unspecified` 的 `DateTime`、Python 的朴素 `datetime.isoformat()`）与秒为零时省略秒的写法（Java 的 `OffsetDateTime.toString()`）读不出。调用来源只在本进程内可读，不随下游调用传播；访问日志与审计据此取客户端信息，与协议无关。上下文的字段含义与传播规则见[调用上下文](/startup/invocation-context)。
 
 `Authorization` 头缺失时，只有登记在认证方案 `XiHan` 里的路径前缀下，查询串 `access_token` 才作为 `Bearer` 凭据，其他路径的查询串令牌一律忽略。这条规则只为浏览器的 WebSocket 与 EventSource 准备，见[实时通信](/web/realtime)。
 

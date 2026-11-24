@@ -87,7 +87,7 @@ if (opened.TryGetValue(out var part))
 2. `UploadPartAsync(upload, partNumber, stream)` 上传编号 1 到 10000 的一片，可乱序、可重传（后一次覆盖），返回该片的 `BlobPart`（编号与 ETag）。
 3. `ListPartsAsync(upload)` 按编号升序列出已上传的分片，续传时据此跳过已完成的片。
 4. `CompleteAsync(upload, parts)` 用编号严格升序、ETag 与已上传一致的清单拼成对象；除最后一片外每片至少 5 MiB（`BlobMultipart.MinPartBytes`）。完成前对象不可见，完成是原子的。
-5. `AbortAsync(upload)` 丢弃上传，上传不存在也成功。
+5. `AbortAsync(uploads)` 批量丢弃上传：按入参顺序逐项执行，返回等长同序的逐项结果；上传不存在或已结束也成功，空集合不访问存储，某一项遇到存储不可达只记在该项上、其余照常。只放弃一个时写 `AbortAsync(upload)`，它是转调批量方法的扩展方法。
 
 | 情况 | 结果 |
 | --- | --- |
@@ -212,7 +212,8 @@ var tenantStore = (await stores.GetOrAddAsync(definition, cancellationToken)).Va
 | Provider 未登记或设置不合法 | `OBJECTSTORAGE_VALIDATION_003`，已有的同名实例不受影响 |
 | 后端此刻建不出来（目录无权限、磁盘错误） | `OBJECTSTORAGE_UNAVAILABLE_001`，已有的同名实例不受影响 |
 | 建实例时的探测发现实例不能用（S3 探明服务不认条件写入、探测被拒绝或探测桶不存在） | Provider 给出的错误码（`OBJECTSTORAGE_UNAVAILABLE_003`、`OBJECTSTORAGE_DENIED_002`、`OBJECTSTORAGE_NOTFOUND_001`），不登记，下次取用重新探测，已有的同名实例不受影响；S3 只是暂时连不上时照常建出，后台重试 |
-| `RemoveAsync(name)` | 移除并释放，返回是否存在过；配置里有定义的实例之后再取用会重新建出 |
+| 登记已满（已建的实例数达到 `XiHan:ObjectStorage:StoreMaxCount`，缺省 64，配置定义的实例建出后也算） | 再登记新名字（含首次取用配置定义的实例）返回 `OBJECTSTORAGE_UNAVAILABLE_005`，不建实例、不淘汰已有的；同名同定义照常返回，换定义照常替换，移除腾出名额 |
+| `RemoveAsync(names)` | 批量移除并释放，逐项返回是否存在过（与入参同序，同一批里重复的名字第二次为 `false`，空集合返回空）；某个实例释放失败只记 Warning；配置里有定义的实例之后再取用会重新建出 |
 
 文件系统的命名实例必须给 `RootPath`，否则会与缺省实例落在同一目录。S3 的命名实例各建各的客户端，不读连接绑定，建出时在实例的 `HealthBucket` 里探测服务是否认条件写入，实例被替换、移除或应用停止时停止重试、释放客户端。命名实例的能力随实例本身：S3 实例同时是 `IBlobMultipartStore` 与 `IBlobUrlSigner`；文件系统实例实现分片，预签名经宿主签名器的 `ForStore(name)`，签出的地址带 `x-store=<name>`，实例名在签名里，改成别的实例或去掉都验签不过：
 

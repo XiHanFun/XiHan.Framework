@@ -61,6 +61,10 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
 | `XiHan:Messaging:Outbox:IncludeShards` | 布尔 | `true` | 装配了租户分片时也投递各分片库里的发件箱行；SqlSugar 把发件箱行留在默认库，可设为 `false` 省去多余的查询 |
 | `XiHan:Messaging:Outbox:ShardRefreshIntervalSeconds` | 正数 | 60 | 分片库清单多久从租户目录重读一次，新建的分片库最迟在这之后纳入投递 |
+| `XiHan:Messaging:Outbox:HealthProbeIntervalSeconds` | 正数 | 15 | 健康项 `messaging.outbox.backlog` 的探测间隔，也是单次探测的超时 |
+| `XiHan:Messaging:Outbox:HealthMaxPending` | 非负整数 | 1000 | 未投递的行数（未投递成功、未进死信，含退避中的，各库相加）超过它时健康项以 `MESSAGING_UNAVAILABLE_004` 降级 |
+| `XiHan:Messaging:Outbox:HealthMaxPendingAgeSeconds` | 正数 | 300 | 最老一条未投递的行从创建起等过这么久时健康项以 `MESSAGING_UNAVAILABLE_004` 降级 |
+| `XiHan:Messaging:Outbox:HealthMaxDeadLettered` | 非负整数 | 0 | 死信行数超过它时健康项以 `MESSAGING_UNAVAILABLE_005` 降级；缺省 0，有死信就降级 |
 
 ```json
 { "XiHan": { "Messaging": { "MaxAttempts": 5, "Outbox": { "PollIntervalSeconds": 0.5 } } } }
@@ -79,14 +83,15 @@ builder.AddXiHan(xihan => xihan
 | `IMessagePublisher`、`DirectPublisher` | 应用发布入口（作用域服务）：`PublishAsync`、`PublishManyAsync`，主题不合法逐项返回 `MESSAGING_VALIDATION_001`；在调用内发布时从当前调用补齐缺失的扩展 |
 | `IMessageBroker` | Provider 实现的传输：发布、`StartAsync(subscriptions, dispatch, ct)`（每个订阅一份消费）、`StopAsync` |
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |
-| `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约；一次投递的主题、信封、尝试号与订阅方式（`Mode`）；代理调用的派发委托 |
+| `IMessageHandler`、`MessageDelivery`、`MessageDispatch` | 处理器契约 `HandleAsync(delivery, context)`（取消与截止时间在 `context.CancellationToken` 上，不另收令牌）；一次投递的主题、信封、尝试号与订阅方式（`Mode`）；代理调用的派发委托 |
 | `MessageSubscriptions`、`MessageSubscription`、`SubscriptionMode` | 按（主题，方式）分组的订阅表（`All`、`Topics`、`HandlersFor(topic, mode)`、`Add(topic, handlerType, mode)`）；一个订阅；订阅方式 `Competing` / `Broadcast` |
 | `MessageDispatcher` | 把投递变成一次内核调用，`FindDelivery(context)` 取当前投递 |
-| `MessageDeliveryAttempt` | 代理一侧的一次投递尝试：`RunAsync(dispatch, delivery, options, app, logger, ct)` 等应用进入服务状态、派发一次并给出结论；`Exhausted(delivery, error, logger)` 给出用完尝试次数的结论（竞争进死信、广播丢弃）并记日志 |
+| `MessageDeliveryAttempt` | 代理一侧的一次投递尝试：`RunAsync(dispatch, delivery, options, app, logger, ct)` 等应用进入服务状态、派发一次并给出结论；`Exhausted(delivery, error, logger)` 给出用完尝试次数的结论（竞争进死信、广播丢弃）并记日志；`Undecodable(subscription, error, logger)`（Preview）给出无法解码的消息的结论，去向相同，不派发、不重试，也不等应用进入服务状态 |
 | `MessageDeliveryOutcome`、`DeliveryDisposition` | 结论与了结方式：`Complete`（确认）、`Retry`（以下一次尝试号重投）、`DeadLetter`（竞争订阅用完次数）、`Discard`（广播订阅用完次数）、`Abandon`（被停止打断，不了结、不算失败，也是 `default`） |
 | `MessagingServiceCollectionExtensions` | `AddMessageHandler<THandler>(topic, mode = Competing)`、`AddDomainEvent<TEvent>(topic, type, info, subject)`、`GetMessageSubscriptions`、`GetDomainEventRegistry` |
 | `MessagingOptions`、`MessagingInstance`、`MessagingRegistration`、`MessagingRuntime` | 公共选项（`InstanceId` 只有配置值，没有配置为空）；本实例标识（`Id`，单例，每个宿主一个：配置了 `XiHan:Messaging:InstanceId` 取配置值，否则构造时生成，广播订阅的队列名与消费组名里带它，必须每个同时在线的实例唯一，见[订阅方式](/messaging/pubsub)）；Provider 共用的装配；启停消费 |
-| `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避与保留期，`RetryDelayAfter(attempts)`） |
+| `OutboxFeature`、`OutboxPublisher`、`OutboxDispatcher`、`OutboxMessage`、`OutboxOptions` | 事务性发件箱：特性（常量 `HealthName` = `messaging.outbox.backlog`）、发布者、投递循环（`RunOnceAsync`、`RunAsync`）、实体（`NextAttemptAt`、`DispatchedAt`、`DeadLetteredAt`、`Attempts`、`LastError`）、选项（含尝试上限、退避、保留期与健康阈值，`RetryDelayAfter(attempts)`） |
+| `OutboxDeadLetters` | 死信重投（单例，由 `OutboxFeature` 登记）：`RedriveManyAsync(ids, ct)` 把死信行置回待投递，逐项结果与入参同序 |
 | `MessagingCapabilities`、`MessagingErrors`、`MessagingMessages` | 能力 ID 与版本、错误码、消息键与消息目录 |
 
 ## 使用示例
@@ -118,7 +123,10 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 ## 行为与限制
 
 - 处理器返回失败或抛出异常都算投递失败；同一主题、同一方式的多个处理器按订阅顺序执行，第一个失败即为结果；同一处理器类型以同一方式重复订阅同一主题只记一次。没有处理器的订阅直接成功。竞争订阅失败到上限进死信，广播订阅丢弃。
-- 被代理的停止信号打断的投递不算一次失败（ADR-0261）：不计尝试、不重试、不进死信，原消息留给代理重新投递；取消只认停止信号，处理器自己的超时照常是一次失败。原位重试的代理（Kafka、Redis）每次尝试前都等应用进入服务状态，排空期间不接着重试。派发抛出的异常记为 `MESSAGING_UNEXPECTED_001`，`reason` 是异常类型全名（框架异常是它的错误码），完整异常记一条 Warning。
+- 被代理的停止信号打断的投递不算一次失败（ADR-0261）：不计尝试、不重试、不进死信，原消息留给代理重新投递；取消只认停止信号，处理器自己的超时照常是一次失败。原位重试的代理（Kafka、Redis）每次尝试前都等应用进入服务状态，排空期间不接着重试。
+- 被管道拒绝的派发不计尝试（ADR-0275）：应用开始排空的那一刻，派发遇到管道入口抛出的 `KERNEL_HOSTING_004`（处理器没有执行）时，投递等 10 毫秒后回到等待，应用再进入服务状态时以原尝试号重新派发，停止信号到来即放弃。只认派发抛出的这个错误码，处理器自己返回的同码失败照常算一次失败；同一次尝试里第 10 次被拒绝按派发抛出的异常计一次失败。
+- 无法解码的消息没有信封，不是一次投递：不派发、不重试，竞争订阅把收到的字节原样写进死信，广播订阅丢弃，各记一条 Warning；自写的代理用 `MessageDeliveryAttempt.Undecodable` 取结论，按 `Disposition` 翻译成自己的动作。
+- 派发抛出的异常记为 `MESSAGING_UNEXPECTED_001`，`reason` 是异常类型全名（框架异常是它的错误码），完整异常记一条 Warning。
 - 派发不写幂等键，重试必须重新执行处理器；去重由处理器按 `Id` + `Source` 自理。
 - 派发器按 `EnvelopeExtensions.BaggageMappings` 把 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 放进 Baggage，`traceparent` 成为追踪 ID、父跨度与采样标志（上游「不采样」原样保留）；幂等键不进入消息。
 - `DirectPublisher` 与 `OutboxPublisher` 在调用内发布时从当前调用补齐缺失的扩展：`traceparent` 取当前追踪与采样标志（与调用同一 trace 的当前 Activity 优先），租户与主体先看安全上下文再看 Baggage，关联与区域取 Baggage；信封已有的扩展不变，不在调用内时不补。
@@ -127,7 +135,9 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 - 实例标识必须每个同时在线的实例唯一：重复时 Kafka 的广播退化成竞争，RabbitMQ 后启动的实例启动失败。
 - 发件箱一次发布抛出时每次记一条 Warning 日志。
 - 领域事件：未登记的事件类型让调用以 `MESSAGING_VALIDATION_003` 结束；重复登记或超过 10000 种时 `AddDomainEvent` 抛 `FrameworkException`（`MESSAGING_VALIDATION_004`）；同一主题的事件一次批量发布，任一失败即回滚。
-- 发件箱：投递至少一次；按创建时间每轮取 `BatchSize` 条到期的消息；首次投递按主题批量发布，重试逐条单独发布；失败（代理返回失败，或代理抛出，调用方取消除外）按指数退避重试，尝试达到 `MaxAttempts` 或载荷无法解码记 `DeadLetteredAt` 进死信、不再投递，退避中与死信的消息不占批次；一次发布抛出时这次调用的每条计一次尝试、本轮停止发布，余下的留到下一轮（ADR-0108）；宿主停止的一轮回滚、不计尝试；投递成功的行保留 `DispatchedRetention`（缺省 1 天）后删除，死信行不自动删除（ADR-0064）。`OutboxMessage` 需要在关系型 Provider 的模型里有表（`Topic` 长 128、`LastError` 长文本、`NextAttemptAt` 与 `DeadLetteredAt` 可空）；实体上的 `[EntityIndex]` 声明索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`，取到期消息与保留期清理共用，ADR-0072）。
+- 发件箱：投递至少一次；按创建时间每轮取 `BatchSize` 条到期的消息；首次投递按主题批量发布，重试逐条单独发布；失败（代理返回失败，或代理抛出，调用方取消除外）按指数退避重试，尝试达到 `MaxAttempts` 或载荷无法解码记 `DeadLetteredAt` 进死信、不再投递，退避中与死信的消息不占批次；一次发布抛出时这次调用的每条计一次尝试、本轮停止发布，余下的留到下一轮（ADR-0108）；宿主停止的一轮回滚、不计尝试；投递成功的行保留 `DispatchedRetention`（缺省 1 天）后删除，死信行不自动删除（ADR-0064），排除原因后经 `OutboxDeadLetters` 重投。`OutboxMessage` 需要在关系型 Provider 的模型里有表（`Topic` 长 128、`LastError` 长文本、`NextAttemptAt` 与 `DeadLetteredAt` 可空）；实体上的 `[EntityIndex]` 声明索引 `IX_OutboxMessage_DiAt_DeLeAt_CrAt`（`(DispatchedAt, DeadLetteredAt, CreatedAt)`，取到期消息与保留期清理共用，ADR-0072）。
+- 死信重投（ADR-0272）：`OutboxDeadLetters.RedriveManyAsync(ids)` 的逐项结果与入参等长同序。死信行把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在、`Attempts` 归零，`LastError` 保留到下一次投递的结果覆盖它，下一轮与首次投递的消息一样按主题成批发出；哪个库里都没有的行是 `MESSAGING_NOTFOUND_001`；不在死信里的行（待投递、退避中或已投递）不改动，是 `MESSAGING_CONFLICT_001`；重复的标识看见前一次的效果；空集合不触存储。覆盖的库与投递循环相同，按默认库、各分片库的顺序查找，全部标识有了着落即停。一个库的存储失败不挡其他库，还有标识没有着落时抛出（多个库失败抛出 `AggregateException`），否则照常返回、只记一条 Warning。
+- 发件箱的健康项 `messaging.outbox.backlog`（ADR-0272）：每个探测间隔在默认库与每个分片库（`IncludeShards`）上各开一个只读工作单元，数未投递的行数与最老一条的创建时间、死信行数，各库相加。超过阈值时条目 Degraded：积压是 `MESSAGING_UNAVAILABLE_004`，死信是 `MESSAGING_UNAVAILABLE_005`，都超过时报告积压；恰好等于阈值不算。任何一个库读不出（连不上、没有发件箱表、探测超时）时条目以 `KERNEL_UNAVAILABLE_005` 降级，不报告不完整的数字。条目的数据是 `pending`、`oldestPendingSeconds`、`deadLettered`、`databases`。条目降级时应用报告 Degraded，照常接收调用，就绪探针不受影响。SqlSugar 把发件箱行留在默认库，装配了租户分片时把 `IncludeShards` 设为 `false`，否则默认库的行按库数重复计数。
 
 ## 错误码
 
@@ -141,6 +151,10 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 | `MESSAGING_VALIDATION_004` | 领域事件类型重复登记或登记表已满（装配时以 `FrameworkException` 抛出） |
 | `MESSAGING_UNAVAILABLE_001` | 代理不可达或操作失败；发布时以 `FrameworkException` 抛出，重放时作为失败结果返回 |
 | `MESSAGING_UNAVAILABLE_002` | 队列已满：内存代理的主题通道排满时发布返回（批量整批返回，不写入半批） |
+| `MESSAGING_UNAVAILABLE_004` | 发件箱的积压超过健康阈值：未投递的行数或最老一条的等待时间（健康项 `messaging.outbox.backlog`） |
+| `MESSAGING_UNAVAILABLE_005` | 发件箱的死信行数超过健康阈值（健康项 `messaging.outbox.backlog`） |
+| `MESSAGING_NOTFOUND_001` | 发件箱消息不存在：重投死信时哪个库里都没有这一行 |
+| `MESSAGING_CONFLICT_001` | 发件箱消息不在死信里：重投只对死信行，待投递、退避中或已投递的行不改动 |
 | `MESSAGING_UNEXPECTED_001` | 处理器抛出未处理异常，代理记为一次失败的投递 |
 
 错误怎样变成 HTTP 状态码与 Problem Details 见[结果与错误处理](/web/errors)。
@@ -151,4 +165,4 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 - [Messaging.InMemory](./messaging-inmemory)、[Messaging.RabbitMQ](./messaging-rabbitmq)、[Messaging.Kafka](./messaging-kafka)、[Messaging.Redis](./messaging-redis)、[Protocols.CloudEvents](./protocols-cloudevents)
 - [Persistence.Abstractions](./persistence-abstractions)：工作单元与 `IDomainEventDispatcher` 端口
 - [Conformance 一致性套件](./conformance)
-- 规范：RFC-0009《消息、CloudEvents 信封与发件箱》；ADR-0012、ADR-0019、ADR-0025
+- 规范：RFC-0009《消息、CloudEvents 信封与发件箱》；ADR-0012、ADR-0019、ADR-0025、ADR-0272、ADR-0275

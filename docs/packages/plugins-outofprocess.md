@@ -19,7 +19,7 @@
 
 回调服务器的端点在创建宿主时选定：Windows 上是只允许当前用户的命名管道加回环 TCP，其他系统是私有目录里的 Unix 域套接字加回环 TCP（临时目录的路径含空白或 `;` 时只有回环 TCP），回环 TCP 的端口由系统分配并在此刻占住；端点按这个偏好以 `;` 分隔写进插件的 `XIHAN_PLUGIN_HOST_ADDRESS`，插件取第一个自己能连的（ADR-0237）。启动阶段让回调服务器在这些端点上监听，再启动 `onStartup` 的插件：`Configure`（下发配置节 JSON、权限、绑定与工作目录）→ `Start` → 健康监视。懒激活的插件在握手后停止进程，首次调用或投递时再启动。停止阶段按与登记相反的顺序停止全部插件，再关闭回调服务器。
 
-运行期每次调用带 `traceparent`、截止时间与已登记的 Baggage；业务失败来自插件的 `Status.error`，用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001`、`KERNEL_TIMEOUT_001` 等。插件回调 `Host.Invoke` / `Host.Publish` 以插件身份执行（主体 ID 为清单 ID，方案 `Plugin`），只能带在途调用的租户（ADR-0195）；两者都按元数据建调用上下文，截止时间取元数据与 gRPC 调用自身截止时间中较早的，`Host.Publish` 在这个上下文里发布，信封缺的租户、主体、关联 ID、区域与追踪由发布器补齐（ADR-0237）。每个插件是应用的一个健康条目 `plugins.<清单 ID>`。
+运行期每次调用带 `traceparent`、截止时间与已登记的 Baggage；每次调用插件的操作、向插件投递事件各记一条 `xihan.plugin.invoke` Span（内核 `xihan.invoke` 的子 Span，带 `xihan.plugin.id`，操作调用另带 `xihan.operation`），写给插件的 `traceparent` 以它为父级，没有监听器时不开 Span（ADR-0269）；业务失败来自插件的 `Status.error`，用握手得到的目录翻译；传输失败映射为 `PLUGINS_UNAVAILABLE_001`、`KERNEL_TIMEOUT_001` 等。插件回调 `Host.Invoke` / `Host.Publish` 以插件身份执行（主体 ID 为清单 ID，方案 `Plugin`），只能带在途调用的租户（ADR-0195）；两者都按元数据建调用上下文，截止时间取元数据与 gRPC 调用自身截止时间中较早的，`Host.Publish` 在这个上下文里发布，信封缺的租户、主体、关联 ID、区域与追踪由发布器补齐（ADR-0237）。每个插件是应用的一个健康条目 `plugins.<清单 ID>`。
 
 ## 何时使用
 
@@ -80,14 +80,14 @@ app.MapXiHanHealth();
 }
 ```
 
-时长不是正数、`HealthFailures` 不是正整数、`RestartLimit` 不是非负整数时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定（上例 `XiHan:Echo`），宿主在 `Configure` 时把它序列化为 JSON 对象下发；绑定从 `XiHan:Bindings:<名字>` 取，只下发清单声明的绑定。
+时长不是正数、`HealthFailures` 不是正整数、`RestartLimit` 不是非负整数时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定（上例 `XiHan:Echo`），宿主在 `Configure` 时把它序列化为 JSON 对象下发。清单声明并授予（`binding:<绑定名>`）的资源绑定随同一个请求下发，与内核按同一套来源解析（ADR-0268）：先读 Service Binding 目录（`SERVICE_BINDING_ROOT`，或应用经 `UseServiceBindingRoot` 指定的目录），再读 `XiHan:Bindings:<名字>`，同名时配置整体覆盖目录；绑定名与 `type` / `value` 子键按字面比。每次配置插件时解析一遍，重启或运行期加载的插件拿到的是那一刻的值；只读清单声明的那几个绑定，别的绑定读不出来不影响它。只下发名字、类型（来源没有声明时取清单的）与主值，其余属性不下发，没有主值的绑定不下发并记 Warning。声明的绑定在目录里读不出来时返回 `PLUGINS_UNEXPECTED_001`（`phase` 为 `configure`，`reason` 只写异常类型），插件进入 Failed 并按重启策略重试。
 
 ## 主要类型
 
 | 类型 | 说明 |
 | --- | --- |
 | `OutOfProcessPluginsFeature` | 特性入口，能力常量 `Capability`（`plugins.out-of-process`） |
-| `OutOfProcessPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值），`HostEndpoints` 是按偏好排序的回调端点（回环 TCP 在最后）；常量 `PipelinePermission`、`MessagingPermission`、`PluginScheme`、`HealthPrefix` |
+| `OutOfProcessPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值），`HostEndpoints` 是按偏好排序的回调端点（回环 TCP 在最后）；构造的可选参数 `serviceBindingRoot` 是下发给插件的绑定的 Service Binding 根目录（经特性装配时取 `FeatureContext.ServiceBindingRoot`，自己构造且应用用了 `UseServiceBindingRoot` 的传同一个目录，不传取环境变量）；常量 `PipelinePermission`、`MessagingPermission`、`PluginScheme`、`HealthPrefix` |
 | `OutOfProcessPluginStatus` | 诊断快照：`Status`（`PluginStatus`）、`ProcessId`、`ProtocolVersion`、`Restarts`、`Lazy` |
 | `OutOfProcessPluginOptions` | 选项与 `FromConfiguration`、`GrantsFor`、`ResolveWorkDirectory` |
 

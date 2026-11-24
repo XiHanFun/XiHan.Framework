@@ -137,7 +137,7 @@ using XiHan.Framework.Primitives;
 
 public sealed class SubdomainTenantResolver(IHttpContextAccessor http) : ITenantResolver
 {
-    public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context)
     {
         var host = http.HttpContext?.Request.Host.Host;
         // 不是 HTTP 调用（消息派发、作业）：给不出租户，交给后面的解析器

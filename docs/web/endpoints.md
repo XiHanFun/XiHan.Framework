@@ -131,7 +131,7 @@ app.MapGet("/orders/export", () => Results.Text("id,name"))
 
 SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道：不受截止时间约束，内核停止时也不会被 503 打断，因此 Authenticate 阶段管不到它们。给端点加 `PipelineBypassMetadata`，`UseXiHan()` 看到它就直接放行，不建调用上下文；探针、OpenAPI 文档、`.proto` 与 gRPC 方法的端点都带着它。
 
-这类端点需要认证时，`Hosting.AspNetCore` 提供 ASP.NET Core 认证方案 `XiHan`，把凭据交给内核已装配的同一个 `IAuthenticationHandler`，JWT、OpenID Connect、ApiKey 不用各接一遍：
+这类端点需要认证时，`Hosting.AspNetCore` 提供 ASP.NET Core 认证方案 `XiHan`，把凭据交给内核已装配的同一个 `ICredentialHandler`，JWT、OpenID Connect、ApiKey 不用各接一遍：
 
 1. `AddAuthentication().AddXiHan(...)` 登记方案；浏览器的 WebSocket 与 EventSource 带不了请求头，把允许查询串令牌的路径前缀加进 `QueryTokenPaths`。
 2. `UseAuthentication()`、`UseAuthorization()` 放在 `UseXiHan()` 之前。

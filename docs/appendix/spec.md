@@ -15,7 +15,7 @@ XiHan Framework 的本体不是 .NET 代码，而是一份语言中立的规范�
 ```text
 spec/
 ├─ rfcs/           提案：先 RFC，再 ADR，再实现
-├─ conventions/    规范性：术语表、包 ID、能力 ID、操作 ID、错误码、Baggage 键、批量优先
+├─ conventions/    规范性：规范用语、术语表、包 ID、能力 ID、操作 ID、错误码、Baggage 键、批量优先
 ├─ manifest/       规范性：xihan.manifest.json 的 JSON Schema
 ├─ plugin/         规范性：插件协议 plugin.proto 与握手、生命周期、调用文本；Wasm 载体 wasm.md
 ├─ protocol/       规范性：HTTP、gRPC、MCP、CloudEvents、命令行的映射
@@ -53,6 +53,18 @@ XiHan.Framework 引用到 `framework/spec`，各语言 SDK 引用到 `spec`。`p
 
 举例说，`orders.create` 在任何语言的实现里都推导为 `POST /orders`，失败时都返回 RFC 9457 的 Problem Details，错误码都是 `<领域大写>_<KIND>_<三位序号>`；但 Go 用 `context.Context` 传递取消、.NET 用 `CancellationToken`，这是各语言自己的事。
 
+一条规则有多强的约束力看它的用语（`conventions/normative-language.md`，ADR-0276），含义与 RFC 2119 的五个关键词相同：
+
+| 用语 | 同组的写法 | 约束力 |
+| --- | --- | --- |
+| 必须 | 须 | 绝对的要求，不照做就不符合规范 |
+| 不得 | 不能、不可、禁止 | 绝对的禁止 |
+| 应当 | 应、应该 | 推荐的做法，有站得住的理由可以不照做 |
+| 不应当 | 不应、不应该 | 不推荐的做法，有站得住的理由可以这样做 |
+| 可以 | 可、可选 | 任选，做与不做都符合规范，两边仍然要能互通 |
+
+规范性内容里描述行为、线上格式或取值的陈述句与「必须」同等约束，正文不逐句加这个词。要求落在行为上，不落在名字上：正文里的 .NET 类型名是参考实现落实这条规则的地方，别的语言不必同名。
+
 规范性内容又按一致性档划分（RFC-0024）。一个实现认领若干档，只对认领的档负责；档表是规范仓库的 [`conformance/profiles.json`](https://github.com/XiHanFun/framework-spec/blob/main/conformance/profiles.json)，每个 RFC 的状态行写着它属于哪些档：
 
 | 档 | 内容 | 谁认领 |
@@ -70,7 +82,7 @@ XiHan.Framework 引用到 `framework/spec`，各语言 SDK 引用到 `spec`。`p
 
 | 层 | 位置 | 形式 | 谁用 |
 | --- | --- | --- | --- |
-| 数据驱动向量 | `conformance/vectors/` | JSON 文件，按主题分目录（`primitives/`、`manifest/`、`pipeline/`、`operations/`、`plugin/`、`security/`、`provider/`）：`Result` 与 `Error` 编码、清单校验、版本解析、管道排序、上下文传播、包 ID 与能力 ID 文法，以及插件的握手行、回调端点、截止时间、回调状态的映射与错误的读入 | 各语言 SDK 的单元测试直接读取这些文件；Go 可以 `go get github.com/xihanfun/framework-spec/conformance` 后经内嵌的 `conformance.Vectors` 读取 |
+| 数据驱动向量 | `conformance/vectors/` | JSON 文件，按主题分目录（`primitives/`、`manifest/`、`context/`、`pipeline/`、`operations/`、`caching/`、`plugin/`、`security/`、`provider/`）：`Result` 与 `Error` 编码、清单校验、版本解析、管道排序、上下文传播、包 ID 与能力 ID 文法、操作 ID 的文法与 128 个字符的上限（`primitives/operation-ids.json`）、HTTP 载体从请求头读出的截止时间（`context/http-deadline.json`）、缓存键与键前缀必须接受与必须拒绝的样例（`caching/cache-keys.json`），以及插件的握手行、回调端点、截止时间、回调状态的映射与错误的读入 | 各语言 SDK 的单元测试直接读取这些文件；Go 可以 `go get github.com/xihanfun/framework-spec/conformance` 后经内嵌的 `conformance.Vectors` 读取 |
 | 黑盒运行器 | `conformance/cmd/xihan-conformance` | 语言中立，以宿主身份启动任意语言写的进程外插件；运行器本身用 Go 写成 | 插件作者、远程 Provider 作者 |
 
 安装运行器：
@@ -136,7 +148,7 @@ SDK 仓库按 `framework-sdk-<语言>` 命名（ADR-0010）。除 .NET 参考实
 3. 实现与一致性向量随 RFC 一起合并；没有 RFC 的公开契约变更不合并。
 4. 改动规范性内容的提交在 `CHANGELOG.md` 的「未发布」一节记一条，标明 PATCH、MINOR 或 MAJOR 与 ADR（RFC-0024）；新的规范文件与向量要写进档表。
 
-新增术语表条目同样走 RFC。错误码、能力 ID、Baggage 键、操作 ID 一经发布不改。提交前的门禁与写法约定见规范仓库的 [AGENTS.md](https://github.com/XiHanFun/framework-spec/blob/main/AGENTS.md)。
+新增术语表条目同样走 RFC。错误码、能力 ID、Baggage 键、操作 ID 一经发布不改；能力登记表里已经登记、还没有任何实现提供的 ID 标成「保留，尚无实现」，不删、不挪作他用，落地时走 RFC。提交前的门禁与写法约定见规范仓库的 [AGENTS.md](https://github.com/XiHanFun/framework-spec/blob/main/AGENTS.md)。
 
 ## 已采纳的 RFC
 
@@ -145,29 +157,29 @@ SDK 仓库按 `framework-sdk-<语言>` 命名（ADR-0010）。除 .NET 参考实
 | RFC | 主题 | 参考实现与修订 |
 | --- | --- | --- |
 | [0001](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0001-primitives.md) | 原语层 | 参考实现 `XiHan.Framework.Primitives` |
-| [0002](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0002-manifest.md) | 清单 | 参考实现 `Kernel.Capabilities` |
-| [0003](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0003-invocation-context.md) | 调用上下文与传播 | 载体映射随协议适配器实现 |
+| [0002](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0002-manifest.md) | 清单 | 2026-11-24 修订：`activation` 里 `onEvent:` 的模式可以带下划线，与主题文法同一字符集，`onOperation:` 不变；参考实现 `Kernel.Capabilities`，激活事件的文法在 `Primitives` 的 `ActivationEvent` |
+| [0003](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0003-invocation-context.md) | 调用上下文与传播 | 2026-11-24 修订：截止时间的文本只有一条文法（规则 8），HTTP 的 `xihan-deadline` 与插件元数据的 `deadline` 共用，读不出当作没有；参考实现 `Primitives` 的 `DeadlineText`，载体映射随协议适配器实现 |
 | [0004](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0004-pipeline-stages.md) | 管道阶段与排序 | 参考实现 `Kernel.Pipeline` |
 | [0005](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0005-persistence.md) | 领域协议与持久化 | 参考实现 `Domain`、`Persistence.Abstractions`，套件 `Persistence.Conformance` |
-| [0006](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0006-caching.md) | 缓存、分布式锁与幂等 | 参考实现 `Caching.Abstractions`、`Caching.InMemory`、`Caching.Redis`、`Caching.Hybrid`，套件 `Caching.Conformance` |
+| [0006](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0006-caching.md) | 缓存、分布式锁与幂等 | 2026-11-24 修订：键与键前缀的长度按 UTF-8 编码后的字节数计，不超过 512 字节，代数缓存区的区名与直写的范围、条目各不超过 128 字节；参考实现 `Caching.Abstractions`、`Caching.InMemory`、`Caching.Redis`、`Caching.Hybrid`，套件 `Caching.Conformance` |
 | [0007](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0007-multitenancy.md) | 多租户 | 参考实现 `MultiTenancy.Abstractions`、`MultiTenancy.InMemory`，套件 `MultiTenancy.Conformance`；Provider `MultiTenancy.Database` |
 | [0008](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0008-security.md) | 认证与授权 | 参考实现 `Security.Abstractions`、`Security.InMemory`、`Security.Jwt`、`Security.OpenIdConnect`，套件 `Security.Conformance`；Provider `Security.Database`、`Security.Ip2Region`（IP 归属地） |
 | [0009](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0009-messaging.md) | 消息、CloudEvents 信封与发件箱 | 参考实现 `Messaging.Abstractions`、`Messaging.InMemory`、`Messaging.RabbitMQ`、`Messaging.Kafka`、`Messaging.Redis`，套件 `Messaging.Conformance` |
 | [0010](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0010-localization.md) | 本地化：默认英文与 10 种内置区域 | 参考实现 `Localization.Abstractions`、`Localization.InMemory`；Provider `Localization.Database`，套件 `Localization.Conformance` |
-| [0011](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0011-operations.md) | 操作契约与 XGI 消息 | 参考实现 `Kernel.Operations`，协议适配器在 `Protocols.*` |
+| [0011](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0011-operations.md) | 操作契约与 XGI 消息 | 2026-11-24 修订：操作 ID 不超过 128 个字符，清单 Schema 同步设上限；参考实现 `Kernel.Operations`，协议适配器在 `Protocols.*` |
 | [0012](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0012-objectstorage.md) | 对象存储 | 参考实现 `ObjectStorage.Abstractions`、`ObjectStorage.FileSystem`、`ObjectStorage.S3`，套件 `ObjectStorage.Conformance` |
 | [0013](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0013-scheduling.md) | 调度与领导选举 | 2026-10-26 修订：作业存储、动态作业、多触发器、misfire、暂停、历史、集群分发；参考实现 `Scheduling.Abstractions`、`Scheduling.InMemory`、`Scheduling.Database`，套件 `Scheduling.Conformance` |
 | [0014](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0014-configuration.md) | 远程配置与密钥 | 参考实现 `Configuration.Abstractions`、`Configuration.Nacos`，套件 `Configuration.Conformance`；默认实现是 .NET 原生文件与环境变量，无包 |
 | [0015](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0015-auditing.md) | 审计 | 参考实现 `Auditing.Abstractions`、`Auditing.InMemory`，套件 `Auditing.Conformance`；Provider `Auditing.Database` |
-| [0016](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0016-packaging.md) | 应用清单与打包 | 参考实现 `Cli` 的 `xihan pack`；规范 `packaging/` |
+| [0016](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0016-packaging.md) | 应用清单与打包 | 2026-11-24 修订：应用清单 Schema 收紧到与字段表一致，`name`、绑定的 `secret` 与 `leader.lease` 都是 DNS 标签，Schema 表达不了的约束另列一节、由 `xihan pack` 读取时核对；参考实现 `Cli` 的 `xihan pack`；规范 `packaging/` |
 | [0017](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0017-plugin-protocol.md) | 进程外插件协议 `xihan.plugin.v1` | 规范 `plugin/`；参考实现 `Plugins.OutOfProcess`（协议代码在 `Plugins.Protocol`），套件 `Plugins.Conformance` |
-| [0018](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0018-wasm-plugins.md) | Wasm 插件 ABI（Experimental）：同一套消息经导出函数 + 线性内存 | 规范 `plugin/wasm.md`；参考实现 `Plugins.Wasm`，套件 `Plugins.Conformance` |
+| [0018](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0018-wasm-plugins.md) | Wasm 插件 ABI（Experimental）：同一套消息经导出函数 + 线性内存 | 2026-11-24 修订：只写在 RFC 里的规则并入 `plugin/wasm.md`，RFC 改为引用，规则不变；规范 `plugin/wasm.md`；参考实现 `Plugins.Wasm`，套件 `Plugins.Conformance` |
 | [0019](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0019-remote-providers.md) | 远程 Provider：子系统能力经插件操作提供，首个操作集 `caching.distributed@1` | 规范 `provider/`；适配器 `Caching.Remote` |
 | [0020](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0020-migration.md) | 版本迁移：`xihan migrate <来源版本>` 按规则集做语法级重写，不做运行期兼容桥 | 规范 `migration/README.md`；实现 `XiHan.Framework.Cli` |
 | [0021](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0021-workflow.md) | 工作流：持久化执行 | 2026-10-26 修订：触发式启动、事件网关、外部任务、HTTP 与补偿活动、跳转与迁移、认领 / 退回 / 催办、提醒与审批阈值、保留期清理；参考实现 `Workflow.Abstractions`、`Workflow.InMemory`、`Workflow.Database`，套件 `Workflow.Conformance` |
 | [0022](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0022-ai.md) | AI：聊天、嵌入、工具与知识 | 参考实现 `AI.Abstractions`、`AI.OpenAI`、`AI.VectorData`，套件 `AI.Conformance` |
 | [0023](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0023-observability.md) | 可观测性：导出与运行信息 | 参考实现 `Observability.Abstractions`、`Observability.Host`、`Observability.OpenTelemetry`；运行信息不启动外部命令，取不到的项见正文 |
-| [0024](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0024-versions-and-profiles.md) | 规范的版本与一致性档 | 档表 `conformance/profiles.json`，由 `tools/speccheck` 与 conformance 模块的测试核对；.NET 由架构测试 `SpecVectorCoverageTests` 按认领的档核对向量 |
+| [0024](https://github.com/XiHanFun/framework-spec/blob/main/rfcs/0024-versions-and-profiles.md) | 规范的版本与一致性档 | 2026-11-24 修订：新增「规范用语」，定义在 `conventions/normative-language.md`；档表 `conformance/profiles.json`，由 `tools/speccheck` 与 conformance 模块的测试核对；.NET 由架构测试 `SpecVectorCoverageTests` 按认领的档核对向量 |
 
 ## 下一步
 

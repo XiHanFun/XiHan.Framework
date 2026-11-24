@@ -119,7 +119,7 @@ public sealed class ShipmentNotifier(IMessagePublisher publisher, TimeProvider c
 
 public sealed class OrderShippedHandler(ILogger<OrderShippedHandler> logger) : IMessageHandler
 {
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         if (JsonSerializer.Deserialize(delivery.Envelope.Data.Span, ShippingJsonContext.Default.OrderShipped) is not { } shipped)
         {
@@ -180,7 +180,7 @@ public sealed class ShippingFeature : IFeature
 
 ## 订阅与处理
 
-处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic)` 订阅；处理器注册为作用域服务，每条消息在新作用域里解析。`MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）、第几次尝试（`Attempt`，从 1 起）与订阅方式（`Mode`）。派发器 `MessageDispatcher` 为每条消息开新的作用域，用信封的扩展属性构造调用上下文（四个 `xihan*` 扩展进 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志，调用来源的协议是 `InvocationProtocols.Messaging`、目标是主题），然后经[执行管道](/startup/pipeline)的全部阶段执行，按订阅顺序依次执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。
+处理器实现 `IMessageHandler`，用 `AddMessageHandler<THandler>(topic)` 订阅；处理器注册为作用域服务，每条消息在新作用域里解析。`HandleAsync(delivery, context)` 不另收取消令牌：取消与截止时间在 `context.CancellationToken` 上，与操作的处理器一样，把它传给每一个下游调用。`MessageDelivery` 带主题（`Topic`）、信封（`Envelope`）、第几次尝试（`Attempt`，从 1 起）与订阅方式（`Mode`）。派发器 `MessageDispatcher` 为每条消息开新的作用域，用信封的扩展属性构造调用上下文（四个 `xihan*` 扩展进 Baggage，`traceparent` 给出追踪 ID、父跨度与采样标志，调用来源的协议是 `InvocationProtocols.Messaging`、目标是主题），然后经[执行管道](/startup/pipeline)的全部阶段执行，按订阅顺序依次执行该主题、与投递同一订阅方式的处理器，第一个失败即为调用结果。
 
 所以处理器里能用的东西与操作处理器一样：装配了多租户的 Provider 时 `context.GetSecurity().Tenant` 是信封带来的租户，仓储自动按租户过滤；Transaction 阶段开着工作单元，处理器里的写入与发布的消息随它提交或回滚。中间件里可以用 `MessageDispatcher.FindDelivery(context)` 取当前投递。代理在应用进入服务状态之前不派发。消息没有凭据，Authenticate 阶段得到的是匿名主体；派发不写幂等键，Idempotency 阶段直接放行。
 
@@ -217,7 +217,7 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 
 处理器返回失败或抛出异常都算投递失败。代理重试到 `XiHan:Messaging:MaxAttempts`（缺省 3，含首次），竞争订阅仍失败就进死信，广播订阅丢弃并记日志；重试之间不等待。内存代理把失败的消息以下一次尝试号重新入队到队尾，死信进该主题的有界列表 `DeadLetters(topic)`；RabbitMQ、Kafka 与 Redis 的重试与死信队列、死信主题、死信流见[队列与流](/messaging/streams)。
 
-应用停止时被取消的处理器不算一次失败：这条消息不计尝试、不进死信，留给代理在下次启动或由别的实例重新投递。
+应用停止时被取消的处理器不算一次失败：这条消息不计尝试、不进死信，留给代理在下次启动或由别的实例重新投递。应用开始排空的那一刻正要派发的投递同样不计：管道以 `KERNEL_HOSTING_004` 拒绝这次派发、处理器没有执行，投递回到等待，应用再进入服务状态时以原尝试号重新派发，停止信号到来即放弃。处理器自己返回的 `KERNEL_HOSTING_004` 失败照常算一次失败。
 
 ::: warning 处理器必须能承受重复投递
 投递是至少一次：重试、重放、代理重投与发件箱的崩溃恢复都会让同一条消息再到达处理器。派发不经过幂等键，去重由处理器自理：按信封的 `Id` + `Source` 记录已处理的消息，或把处理逻辑写成天然幂等的（按主键 upsert、状态机转移）。
@@ -229,7 +229,7 @@ context.Services.AddMessageHandler<SessionRevokedHandler>("sessions.revoked", Su
 
 ## 健康项与错误码
 
-内存代理的健康项 `messaging.inmemory.capacity` 在任一主题的队列排满时转为 Degraded（`MESSAGING_UNAVAILABLE_002`）；RabbitMQ、Kafka 与 Redis 的连接健康项见[队列与流](/messaging/streams)。
+内存代理的健康项 `messaging.inmemory.capacity` 在任一主题的队列排满时转为 Degraded（`MESSAGING_UNAVAILABLE_002`）；RabbitMQ、Kafka 与 Redis 的连接健康项见[队列与流](/messaging/streams)；装配了发件箱时另有 `messaging.outbox.backlog`，报告积压与死信，见[领域事件与发件箱](/messaging/domain-events#积压、死信与重投)。
 
 处理器抛出的未处理异常由代理记为一次失败的投递（`MESSAGING_UNEXPECTED_001`），无法解码的信封是 `MESSAGING_VALIDATION_002`；消息子系统的全部错误码见 [Messaging.Abstractions](/packages/messaging-abstractions#错误码)。
 

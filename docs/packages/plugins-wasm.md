@@ -19,6 +19,10 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写入即丢弃（ADR-0186），日志走导入 `xihan.log`。
 
+`xihan_configure` 的请求带插件的配置节、工作目录与清单声明并授予（`binding:<绑定名>`）的资源绑定。绑定与内核按同一套来源解析（ADR-0268）：先读 Service Binding 目录（`SERVICE_BINDING_ROOT`，或应用经 `UseServiceBindingRoot` 指定的目录），再读 `XiHan:Bindings:<名字>`，同名时配置整体覆盖目录；绑定名与 `type` / `value` 子键按字面比。每次配置插件时解析一遍，重建实例或运行期加载的插件拿到的是那一刻的值；只读清单声明的那几个绑定。只下发名字、类型（来源没有声明时取清单的）与主值，其余属性不下发，没有主值的绑定不下发并记 Warning；声明的绑定在目录里读不出来时这一次配置失败（`PLUGINS_UNEXPECTED_001`，`phase` 为 `configure`），留给下一次调用或退避重建。
+
+每次调用插件的操作、向插件投递事件各记一条 `xihan.plugin.invoke` Span（ADR-0269）：种类 Client，是内核 `xihan.invoke` 的子 Span，带 `xihan.plugin.id`，操作调用另带 `xihan.operation`，失败时状态为 Error；写给插件的 `traceparent` 以它为父级，没有监听器时不开 Span。
+
 回调 `xihan.invoke` / `xihan.publish` 以插件身份经宿主完整管道执行，所需权限须在清单声明且已授予，只能带当前调用的租户（ADR-0195），受当前调用的截止时间与取消约束（`xihan.invoke` 新调用的截止时间取请求元数据与当前调用中较早者，`xihan.publish` 随当前调用取消，到期返回 `KERNEL_TIMEOUT_001`），嵌套深度上限 8；`xihan.publish` 与 `Host.Publish` 一样按请求元数据建回调上下文、在其中发布（信封缺的租户、主体与关联 ID 由发布器补齐），元数据的租户越界即整批不发布（ADR-0237）；回调期间管道再次进入同一插件（它自己的中间件、操作或订阅）时，在同一线程上、导入函数返回前同步再入，受外层调用的截止时间约束。
 
 ## 何时使用
@@ -102,7 +106,7 @@ Windows 上宿主可执行项目要关闭 CET 兼容：
 | 类型 | 说明 |
 | --- | --- |
 | `WasmPluginsFeature` | 特性入口，能力常量 `Capability`（`plugins.wasm`） |
-| `WasmPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值）；常量 `HealthPrefix`（`plugins.`） |
+| `WasmPluginHost` | 宿主：实现 `IPluginHost`、`IHealthContributor`、`IAsyncDisposable`；`FindStatus(manifestId)` 查找诊断快照（未加载时无值）；构造的可选参数 `serviceBindingRoot` 是下发给插件的绑定的 Service Binding 根目录（经特性装配时取 `FeatureContext.ServiceBindingRoot`，不传取环境变量）；常量 `HealthPrefix`（`plugins.`） |
 | `WasmPluginStatus` | 诊断快照：`Status`、`AbiVersion`、`ProtocolVersion`、`Restarts`、`Lazy` |
 | `WasmPluginOptions` | 选项与 `FromConfiguration`、`GrantsFor`、`MountsFor`、`ResolveWorkDirectory` |
 

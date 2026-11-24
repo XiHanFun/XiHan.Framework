@@ -38,6 +38,9 @@ dotnet add package XiHan.Framework.Primitives --prerelease
 | `Maybe` / `Maybe<T>` | 类型层面的「可能没有」，`default` 即无值 |
 | `ITypedId<TValue>` / `TypedId<TTag, TValue>` | 强类型标识，线上编码为底层值 |
 | `InvocationContext` | 取消令牌、截止时间、W3C Trace、Baggage、作用域对象袋与作用域服务 |
+| `TraceParent` | W3C `traceparent` 的解析与写出：`TryParse`、`ToString()`、`TraceId`、`SpanId`、`Sampled`；HTTP、消息信封与插件元数据共用一条文法 |
+| `DeadlineText` | 截止时间文本的解析与写出（RFC-0003 规则 8）：`TryParse(text, out deadline)` 按文法整串匹配，必须有 `T`、秒与偏移，小数一到九位、比 100 纳秒细的部分截断，读不出返回 `false`；`Format(deadline)` 写成 UTC、七位小数加 `+00:00`。HTTP 的 `xihan-deadline` 与插件协议的 `deadline` 共用 |
+| `OperationId` | 操作 ID 的文法：`IsValid`、`Validate`、`ResourceOf`、`VerbOf`；`MaxLength` = 128 |
 | `BaggageKeys` | 已登记的 Baggage 键：`xihan.tenant`、`xihan.principal`、`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；值的约束 `MaxValueLength`（256）与 `IsAcceptableValue(value)`（非空、不超长、不含控制字符，ADR-0204） |
 | `PipelineStage` / `PipelineStageExtensions` | 固定的十一个管道阶段及其清单名 |
 | `LifecycleState` / `LifecycleStateExtensions` | 九个生命周期状态与合法迁移（`CanTransitionTo`、`IsServing`） |
@@ -47,7 +50,7 @@ dotnet add package XiHan.Framework.Primitives --prerelease
 | `Redaction` | 机密遮蔽：`Mask`（`***`）与 `Redact(value)`（null 原样返回，其余一律 `***`）；选项与携带凭据的记录在 `ToString()` 里以它打印凭据 |
 | `MessageTemplate` / `MessageArguments` / `MessageKeyExtensions` | 消息键文法、`{name}` / `{0}` 模板格式化、参数字典、`key.L()` |
 | `IMessageResolver` / `MessageScope` | 消息解析器契约（`TryResolve` 解析，`Negotiate` 把调用方区域协商成启用区域，缺省原样返回）与环境作用域 |
-| `Manifests.*` | 清单对象模型：`Manifest`、`CapabilityDeclaration`、`CapabilityRequirement`、`Binding`、`Contributions`、`PipelineContribution`、`ConfigContribution`、`ManifestKind`、`ManifestRole`、`CapabilityId`、`ManifestId` |
+| `Manifests.*` | 清单对象模型：`Manifest`、`CapabilityDeclaration`、`CapabilityRequirement`、`Binding`、`Contributions`、`PipelineContribution`、`ConfigContribution`、`ManifestKind`、`ManifestRole`，以及各字段的文法 `CapabilityId`、`ManifestId`、`ActivationEvent`（`IsValid`：`onStartup`、`onOperation:<模式>`、`onEvent:<模式>`，后者的模式可以带下划线） |
 
 ## 使用示例
 
@@ -123,7 +126,7 @@ var text = InventoryMessages.OutOfStock.L(("requested", 3), ("available", 1));
 | `PRIMITIVES_VALIDATION_001` | 原语参数非法：空错误码、空消息键、清单跨字段约束等 |
 | `PRIMITIVES_VALIDATION_002` | 使用了未初始化的 `Result`（`default` 值） |
 
-一致性向量在 XiHan Spec 的 `conformance/vectors/primitives/`：错误码格式、生命周期迁移、能力依赖文本、Baggage 键，单元测试直接回放；Go SDK 的 `primitives` 包通过同一套向量。
+一致性向量在 XiHan Spec 的 `conformance/vectors/primitives/`：错误码格式、生命周期迁移、能力依赖文本、Baggage 键、操作 ID（含 128 个字符的上限两侧），单元测试直接回放；截止时间文本的文法回放 `plugin/deadlines.json` 的合法、不合法与写出三部分。Go SDK 的 `primitives` 包通过同一套向量。
 
 ## 相关
 

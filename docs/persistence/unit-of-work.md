@@ -21,6 +21,8 @@
 | `CommitAsync(ct)` | 提交，返回 `Result`；并发冲突、标识重复、容量已满以失败结果返回 |
 | `RollbackAsync(ct)` | 回滚 |
 
+三个方法返回 `ValueTask`（`CommitAsync` 是 `ValueTask<Result>`），与仓储一样只能消费一次，要交给只收 `Task` 的接口时先 `.AsTask()`。
+
 `UnitOfWorkOptions { TenantId, IsReadOnly, Connection, ReadsPrimary }` 是开启选项：`TenantId` 是当前租户；`IsReadOnly` 开只读工作单元（不开事务、拒绝写入）；`Connection` 绑定一个命名连接，只在它上面读写、开事务（见[连接与运行时数据源](/persistence/connections)）；`ReadsPrimary` 让只读工作单元读主库；`UnitOfWorkOptions.Default` 是无租户、可写、不绑定连接。
 
 工作单元由持久化 Provider 实现并注册；Provider 的特性同时把 `UnitOfWorkMiddleware` 登记到 Transaction 阶段。

@@ -32,17 +32,29 @@ public sealed class InMemoryCacheStoreConformanceTests : CacheStoreConformance
 以特性为入口的套件实现 `CreateFeature()`；内存代理每个宿主一个、两个宿主不共用，所以把多实例用例关掉：
 
 ```csharp
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Conformance;
 using XiHan.Framework.Messaging.InMemory;
+using XiHan.Framework.Testing;
 
 public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConformance
 {
     protected override bool SupportsMultipleInstances => false;
 
     protected override IFeature CreateFeature() => new InMemoryMessagingFeature();
+
+    // 读出一个主题此刻的死信，不取走：套件靠它核对哪些消息进了死信
+    protected override ValueTask<IReadOnlyList<MessageEnvelope>> ReadDeadLettersAsync(TestHost host, string topic, CancellationToken cancellationToken)
+    {
+        var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
+        return ValueTask.FromResult<IReadOnlyList<MessageEnvelope>>([.. broker.DeadLetters(topic).Select(static delivery => delivery.Envelope)]);
+    }
 }
 ```
+
+代理的套件除了特性还要实现 `ReadDeadLettersAsync`：按自己的介质（死信列表、死信队列、死信主题或死信流）读出死信，可以反复调用，还没有死信时返回空列表。
 
 运行 `dotnet test --project <测试项目>`，套件的每个 `[Fact]` 都作为这个类的用例出现：缓存套件会列出读写往返、键区分大小写、批量保持顺序、不存在才写只有一个赢家、滑动过期、分布式锁互斥等十几条，全部通过才算与默认实现语义一致。某条失败时，失败名就是语义差异所在，按它修 Provider，不要在派生类里跳过。
 

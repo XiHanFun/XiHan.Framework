@@ -59,7 +59,7 @@
 | `contributes.pipeline` | 只用于 Wasm：中间件名与阶段。进程外与进程内插件写了非空值，在发现或加载时以 `PLUGINS_VALIDATION_001` 拒绝，不静默忽略 |
 | `contributes.permissions` | 插件定义的权限码，见下文 |
 | `permissions` | 插件向宿主要的权限，见下一节 |
-| `activation` | `onStartup`（缺省）、`onOperation:<模式>`、`onEvent:<模式>`；只写后两种的插件懒激活，首次调用或投递时再启动 |
+| `activation` | `onStartup`（缺省）、`onOperation:<模式>`、`onEvent:<模式>`；只写后两种的插件懒激活，首次调用或投递时再启动。`onEvent:` 的模式与主题名同一字符集（小写字母、数字、`.`、`_`、`-`，外加通配的 `*`），`onOperation:` 的模式不能带下划线（操作 ID 里没有） |
 
 ## 权限：声明、授予与强制
 
@@ -175,7 +175,7 @@ using XiHan.Framework.Primitives;
 
 static async Task<bool> LoadEchoAsync(IPluginHost plugins, CancellationToken cancellationToken)
 {
-    var source = new PluginSource("plugins/echo", new PermissionGrant(["capability:kernel.pipeline"]));
+    var source = new PluginSource("plugins/echo", new PluginPermissions(["capability:kernel.pipeline"]));
     var loaded = await plugins.LoadAsync(source, cancellationToken);
     return loaded.TryGetValue(out var status) && status.State == LifecycleState.Ready;
 }
@@ -203,7 +203,7 @@ builder.AddXiHan(xihan => xihan.UseMinimalProfile());
 // app.UseXiHan() 之后
 // 插件目录：SamplePlugin.dll + xihan.manifest.json + 私有依赖；加载失败以结果返回，应用照常运行
 await using var plugins = new InProcessPluginHost(app.Configuration, app.Services.GetRequiredService<ILoggerFactory>());
-var source = new PluginSource(Path.Combine(AppContext.BaseDirectory, "plugins", "sample"), new PermissionGrant(["capability:kernel.diagnostics"]));
+var source = new PluginSource(Path.Combine(AppContext.BaseDirectory, "plugins", "sample"), new PluginPermissions(["capability:kernel.diagnostics"]));
 var loaded = await plugins.LoadAsync(source, CancellationToken.None);
 if (loaded.IsFailure)
 {

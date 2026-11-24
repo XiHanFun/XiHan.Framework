@@ -15,7 +15,7 @@
 
 ## 概述
 
-`JwtSecurityFeature` 注册 `JwtOptions`、`Bearer` 方案的 `JwtAuthenticationHandler` 与 Authenticate 阶段的 `AuthenticationMiddleware`。处理器用 `JsonWebTokenHandler` 校验令牌，关闭入站声明映射（`MapInboundClaims = false`），声明按 JWT 原始类型名（`sub`、`role`、`tenant`）进入主体，与 ApiKey 处理器的声明形态一致。
+`JwtSecurityFeature` 注册 `JwtOptions`、`Bearer` 方案的 `JwtCredentialHandler` 与 Authenticate 阶段的 `AuthenticationMiddleware`。处理器用 `JsonWebTokenHandler` 校验令牌，关闭入站声明映射（`MapInboundClaims = false`），声明按 JWT 原始类型名（`sub`、`role`、`tenant`）进入主体，与 ApiKey 处理器的声明形态一致。
 
 本包只提供认证。装配后顶替 `Security.InMemory` 的认证部分，授权仍由被选中的授权 Provider 承担（缺省 `Security.InMemory`，或 `Security.Database`）。本包与 `Security.OpenIdConnect` 都提供 `security.authentication@1`，同一时刻只装配其一。
 
@@ -78,7 +78,7 @@ builder.AddXiHan(xihan => xihan
 | --- | --- |
 | `JwtSecurityFeature` | 特性入口 |
 | `JwtOptions` | `Secret`、`Issuer`、`Audience`、`ClockSkew`、`NameClaim`；`FromConfiguration` 读取上表 |
-| `JwtAuthenticationHandler` | `Bearer` 方案的处理器；`SchemeName` = `Bearer` |
+| `JwtCredentialHandler` | `Bearer` 方案的处理器；`SchemeName` = `Bearer` |
 
 ## 使用示例
 
@@ -101,8 +101,10 @@ public static class TokenCheck
 {
     public static async Task<string?> SubjectOfAsync(string token, CancellationToken cancellationToken)
     {
-        var handler = new JwtAuthenticationHandler(new JwtOptions { Secret = "dev-only-signing-key-change-me-0123456789", Audience = "orders-api" });
-        var result = await handler.AuthenticateAsync(new AuthenticationCredential(JwtAuthenticationHandler.SchemeName, token), TestInvocationContext.Create(), cancellationToken);
+        var handler = new JwtCredentialHandler(new JwtOptions { Secret = "dev-only-signing-key-change-me-0123456789", Audience = "orders-api" });
+        // 取消与截止时间在调用上下文的令牌上，处理器不另收令牌
+        var context = TestInvocationContext.Create(cancellationToken: cancellationToken);
+        var result = await handler.AuthenticateAsync(new AuthenticationCredential(JwtCredentialHandler.SchemeName, token), context);
         return result.IsSuccess ? result.ValueOrThrow().Id : null;
     }
 }

@@ -8,15 +8,20 @@
 
 ## 内核发出什么
 
-内核只依赖 `System.Diagnostics` 与 `Microsoft.Extensions.Logging.Abstractions`。`FrameworkDiagnostics` 持有一个 `ActivitySource` 与一个 `Meter`，名字都是 `XiHan.Framework`（`FrameworkDiagnostics.SourceName`），版本是框架版本。Observe 阶段的内置中间件 `ObserveMiddleware` 为每次调用产生以下信号：
+内核只依赖 `System.Diagnostics` 与 `Microsoft.Extensions.Logging.Abstractions`。`FrameworkDiagnostics` 持有一个 `ActivitySource` 与一个 `Meter`，名字都是 `XiHan.Framework`（`FrameworkDiagnostics.SourceName`），版本是框架版本。Observe 阶段的内置中间件 `ObserveMiddleware` 为每次调用产生前三个信号，插件宿主调用插件时另记一条 Span：
 
 | 信号 | 名字 | 内容 |
 | --- | --- | --- |
-| Span | `xihan.invoke` | `ActivityKind.Internal`；父级见下文「采样」；标签 `xihan.outcome`；失败时状态为 Error，描述是错误码 |
-| 计数器 | `xihan.invocations` | 单位 `{invocation}`，每次调用加一，标签 `xihan.outcome` |
-| 直方图 | `xihan.invocation.duration` | 单位 `ms`，调用耗时，标签 `xihan.outcome` |
+| Span | `xihan.invoke` | `ActivityKind.Internal`；父级见下文「采样」；标签 `xihan.outcome`，操作调用另带 `xihan.operation`（创建时给出，采样器看得到）；失败时状态为 Error，描述是错误码 |
+| 计数器 | `xihan.invocations` | 单位 `{invocation}`，每次调用加一，标签 `xihan.outcome`，操作调用另带 `xihan.operation` |
+| 直方图 | `xihan.invocation.duration` | 单位 `ms`，调用耗时，标签同上 |
+| Span | `xihan.plugin.invoke` | `ActivityKind.Client`；宿主调用进程外或 Wasm 插件的操作、向插件投递事件各一条；管道里有 `xihan.invoke` 时是它的子 Span；标签 `xihan.plugin.id`（插件的清单 ID），操作调用另带 `xihan.operation`，投递不带；失败时状态为 Error，描述是错误码 |
 
 `xihan.outcome` 取 `success`、`failure` 或 `unset`；`unset` 表示管道走完也没有写入结果，用来发现漏写结果的处理器。成功、失败与取消都会记指标。调用期间的未处理异常由 `ObserveMiddleware` 以 Error 级记一条日志（`Unhandled exception during invocation '{TraceId}'.`），并转成 `KERNEL_UNEXPECTED_001` 结果；取消不在这里吞掉，由 Resilience 阶段区分超时与外部取消。
+
+`xihan.operation` 是操作 ID，只取登记表里操作描述的 ID：未知的操作 ID 不进管道，也就没有 Span 与指标，维度的取值数不超过登记的操作数。不是操作调用时（消息处理器、作业、直接交给 `App.InvokeAsync` 的处理器、没有匹配到操作端点的请求）不带这个标签，不写占位值，主题、作业名与请求路径也不进标签。两个指标的时间序列因此按操作分开：先聚合再比较的查询（`sum(...)`、`sum by (xihan_outcome)(...)`）结果不变，直接按 `{xihan_outcome="failure"}` 取单条序列的查询要加 `sum`。操作很多、后端按序列计费时，在导出一侧用视图去掉这个维度，见下文「去掉操作维度」。
+
+`xihan.plugin.invoke` 覆盖从进入插件载体到它返回的时间，含等插件可用的时间；宿主在它之内组装下发给插件的元数据，写给插件的 `traceparent` 以它为父级，插件一侧的 Span 与插件带回来的回调都挂在它下面。
 
 没有任何监听者时，`StartActivity` 返回 `null`，计数与直方图的记录也几乎没有开销。接收这些信号的是 OpenTelemetry 或任何订阅同名源与仪表的工具，内核不关心是谁。
 
@@ -98,6 +103,18 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 dotnet run
 ### 采样
 
 采样器是 `ParentBasedSampler(TraceIdRatioBasedSampler(SamplingRatio))`：没有父级的根 Span 按 `SamplingRatio`（0 到 1，缺省 1）的比例采样，有父级的沿用父级的决定。`xihan.invoke` 的父级与采样按规范 RFC-0003《调用上下文》：当前 Activity（ASP.NET Core 的请求 Span、外层调用）与调用上下文同一 trace 时是它的子 Span；否则调用上下文带着上游 `traceparent` 的标志时以上游为远端父级，上游「不采样」就不采样；没有上游时是链路的根 Span，trace-id 用调用上下文的（与 Problem Details、审计、日志一致），按 `SamplingRatio` 采样。没有 `traceparent` 的 HTTP 请求并入 ASP.NET Core 的请求 Span，两者同一 trace-id。消息沿用同一套规则：发布时信封的 `traceparent` 带发布方的采样标志（父级是发布时的 `xihan.invoke`），处理器的调用从它还原，上游「不采样」的链路在消费端也不采样。
+
+### 去掉操作维度
+
+`xihan.operation` 让两个指标的序列数从「结果数」变成「操作数 × 结果数」，直方图再乘桶数。不需要按操作看指标时，用 OpenTelemetry 的视图只留 `xihan.outcome`，Span 上的标签不受影响：
+
+```csharp
+using OpenTelemetry.Metrics;
+
+builder.Services.ConfigureOpenTelemetryMeterProvider(static (_, metrics) => metrics
+    .AddView("xihan.invocations", new MetricStreamConfiguration { TagKeys = ["xihan.outcome"] })
+    .AddView("xihan.invocation.duration", new MetricStreamConfiguration { TagKeys = ["xihan.outcome"] }));
+```
 
 ## 业务打点
 

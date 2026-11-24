@@ -54,7 +54,7 @@
 
 `ICache.Store` 暴露底层字节存储，锁与幂等用它的原子原语。存储不可达时所有方法抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不会当成未命中返回。
 
-缓存键是 `CacheKey`：非空、不含空白与控制字符、不超过 512 个字符（`CacheKey.MaxLength`）、区分大小写；从字符串创建用构造或显式转换（`new CacheKey(text)`、`(CacheKey)text`），不合法时抛 `ArgumentException`；`default(CacheKey)` 不是合法键，读 `Value` 抛 `InvalidOperationException`。缓存不自动按租户隔离键，多租户应用要把租户 ID 写进键里（幂等中间件是例外，见[分布式锁与幂等](/caching/locks)）。
+缓存键是 `CacheKey`：非空、不含空白与控制字符、UTF-8 编码后不超过 512 字节（`CacheKey.MaxBytes`）、区分大小写；纯 ASCII 的键就是 512 个字符，全是汉字的键最多 170 个字；从字符串创建用构造或显式转换（`new CacheKey(text)`、`(CacheKey)text`），不合法时抛 `ArgumentException`；`default(CacheKey)` 不是合法键，读 `Value` 抛 `InvalidOperationException`。缓存不自动按租户隔离键，多租户应用要把租户 ID 写进键里（幂等中间件是例外，见[分布式锁与幂等](/caching/locks)）。
 
 ## 启用
 
@@ -140,7 +140,15 @@ public sealed class CatalogFeature : IFeature
 
 在 `AddXiHan` 里 `UseFeature<CatalogFeature>()` 后，第一次调用 `GetAsync` 会执行 `load`，十分钟内的后续调用直接拿到同一个 `ProductView` 实例；调用 `InvalidateAsync` 返回 `true` 表示删到了，再读会重新加载。把清单里的 `CachingCapabilities.Local` 换成 `CachingCapabilities.Distributed`、把 `ICache` 换成 `ISharedCache`，这份代码就在多实例间共享缓存，前提是装配了 Redis。
 
-`GetOrCreateAsync` 不合并并发：多个调用同时未命中时各自执行工厂，后写入的覆盖先写入的。工厂代价高、需要只算一次时，先用[分布式锁](/caching/locks)串行化。
+`GetOrCreateAsync` 合并同键的并发：同一个缓存实例上，同一个键、同一种结果类型同时未命中时只有先到的调用执行工厂，其余的等它的结果，热点键过期时不会一起回源。几条规则：
+
+- 工厂在先到的那次调用里执行，收到的是它的取消令牌。等待的调用取消只结束自己的等待；先到的调用取消时工厂随它取消，由等待的调用里先到的一个接手，执行它自己的工厂。
+- 工厂抛出时，当时在等的调用收到同一个异常，失败不缓存，下一次调用重新回源。
+- 回源期间经同一个缓存写入或删除这个键，这次回源的结果不再写回，之后的调用重新读缓存。
+- 同一个键必须对应同一份数据：被合并的调用不执行自己的工厂，拿到的是先到那次的结果，过期选项也以它为准。键里要带上租户这类区分数据的维度。
+- 两条执行流的工厂互相读对方的键会死锁；一条调用链内部绕回自己的键不会。
+
+合并只在一个进程的一个缓存实例内，多实例各自回源。要跨实例只算一次，先用[分布式锁](/caching/locks)串行化；要「失效之后开始的读取一定看到新数据」并且跨实例成立，用下文的 `GenerationCache<T>`。
 
 读单个值用 `GetAsync<T>`，返回 `Maybe<T>`：
 
@@ -211,7 +219,7 @@ Redis 用 `MGET` 读、把 `SET` 与 `DEL` 放进一个批次写删；内存实�
 
 | 成员 | 语义 |
 | --- | --- |
-| `GenerationCache(cache, region, timeToLive, logger)` | `region` 是所有键的前缀，须是合法的缓存键文本、不超过 128 个字符（`MaxRegionLength`）；`timeToLive` 必须为正 |
+| `GenerationCache(cache, region, timeToLive, logger)` | `region` 是所有键的前缀，须是合法的缓存键文本、UTF-8 编码后不超过 128 字节（`MaxRegionBytes`）；`timeToLive` 必须为正 |
 | `GetOrLoadManyAsync(keys, load, ct)` | 批量读，返回 `Result<IReadOnlyList<T>>`，与 `keys` 顺序一一对应；重复的位置只读一次、只查一次源，空集合不触缓存。未命中的位置去重后一次交给 `load`，它按同样的顺序返回同样多的值（条数不符抛 `InvalidOperationException`）；`load` 失败原样返回、不写缓存 |
 | `InvalidateAsync(scopes, ct)` | 让这些范围下的全部条目失效，一次批量写入；空集合什么也不做 |
 | `InvalidateAllAsync(ct)` | 让整个区失效 |
@@ -250,7 +258,7 @@ public sealed class TenantPriceCache(ICache cache, IPriceSource source, ILogger<
 - 区与每个范围各有一个代数（随机令牌），也存在 `ICache` 里。条目写回时记下读取开始时的区代数与范围代数，读取时两个代数都还是当前值才算命中。失效就是换一个新代数，不需要知道范围下有哪些条目。
 - 读取在查源之前取代数，缺代数（从未写过、已过期或被淘汰）时先写下新代数再查源。失效之前开始的读取写回的条目带着旧代数，不会被当作命中，失效之后才开始的读取看到新代数。
 - 代数的存活时间是条目的 10 倍；代数丢了只会让旧条目作废、多查一次源，不会把旧条目当作命中。
-- 键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`。范围与条目写成 `<长度>.<文本>`；含空白、控制字符或超过 128 个字符的换成 `#<SHA-256 十六进制>`。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`，否则同名的区会互相覆盖。
+- 键是 `<区>:gen`、`<区>:gen:<范围>`、`<区>:entry:<范围>:<条目>`。范围与条目写成 `<长度>.<文本>`；含空白、控制字符或 UTF-8 编码后超过 128 字节的换成 `#<SHA-256 十六进制>`，拼出的键最长 400 字节。共用一个 Redis 的多个应用要用不同的 `KeyPrefix`，否则同名的区会互相覆盖。
 - 跨进程缓存里存的是 `GenerationCacheEntry<T>`（区代数、范围代数、值）与 `string`（代数），序列化器要认识这两种类型，见下一节。
 
 缓存后端故障（`CACHING_UNAVAILABLE_001`）时，`GetOrLoadManyAsync` 绕过缓存直接查源、不写回，结果仍然正确，每个区每 10 秒最多记一条警告；`InvalidateAsync` 与 `InvalidateAllAsync` 把异常抛给调用方，由它决定拒绝写入还是记日志。写入方的常见做法与框架相同：在写入的事务里失效一次，失败就让调用失败、事务回滚；提交之后再失效一次，挡住在提交之前读到旧数据的读取，这次失败只记错误日志，靠存活时间收敛。

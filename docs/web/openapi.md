@@ -23,6 +23,7 @@
 | `default` 响应 | `application/problem+json`，引用 `components/schemas/ProblemDetails` |
 | `components/schemas` | Schema 里的 `$defs` 提升而来；字符串枚举也是一个组件 |
 | `x-xihan-stability` | 稳定性不是 `Stable` 的操作 |
+| `deprecated` | 契约的 `Stability` 为 `Stability.Deprecated` 的操作另写 OpenAPI 标准的 `"deprecated": true`，文档界面与客户端生成器据此标成弃用；其余级别不写，`x-xihan-stability` 照旧 |
 | `x-xihan-permission` / `x-xihan-policy` | 契约或端点上的权限码 / 策略名 |
 | `summary`、`description`、字段说明 | 消息目录与 XML 文档注释，按区域翻译 |
 

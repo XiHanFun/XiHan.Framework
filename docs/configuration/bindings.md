@@ -13,7 +13,7 @@
 | 概念 | 类型 | 说明 |
 | --- | --- | --- |
 | 绑定声明 | `Binding(name, type)` | 写在清单的 `Bindings` 里；`type` 是资源类型，如 `connection:relational`、`cache:distributed`；缺省必需，可选的用初始化器写 `Required = false` |
-| 绑定值 | `BindingValue(Name, Type, Value, Properties)` | 宿主解析出的结果：名字、类型、主值（连接字符串或地址）与其余属性；`Property(key)` 取单个属性 |
+| 绑定值 | `BindingValue { Name, Type, Value, Properties }` | 宿主解析出的结果：名字、类型、主值（连接字符串或地址）与其余属性，四项都是 `required` 的初始化成员；`Property(key)` 取单个属性 |
 | 解析器 | `BindingResolver.Resolve(configuration, serviceBindingRoot)` | 内核按固定顺序收集绑定 |
 | 取用 | `FeatureContext.GetBinding(name)` / `FindBinding(name)` | 在 `Configure` 里取；前者缺失时抛出，后者返回 `Maybe<BindingValue>` |
 | 来源一 | `SERVICE_BINDING_ROOT` 目录 | Service Binding 规范的目录布局，Kubernetes 里由 Secret 挂载 |
@@ -24,7 +24,7 @@
 `BindingResolver.Resolve` 按下面的顺序收集：
 
 1. 环境变量 `SERVICE_BINDING_ROOT` 指向的目录。每个子目录是一个绑定，目录名是绑定名；目录里每个文件是一个属性，文件名是属性名、内容修剪首尾空白后是值；`type` 文件是类型，`uri` 文件既是主值也保留为属性；以 `.` 开头的文件跳过。`AppBuilder.UseServiceBindingRoot(directory)` 可以在代码里改用别的目录。
-2. 配置节 `XiHan:Bindings:<name>`。节本身的标量值或子键 `value` 是主值，子键 `type` 是类型，其余子键是属性。
+2. 配置节 `XiHan:Bindings:<name>`。节本身的标量值或子键 `value` 是主值，子键 `type` 是类型，其余子键是属性。绑定名与 `type`、`value` 两个子键按字面比，区分大小写：写成 `XiHan:Bindings:Db:Value` 读不到绑定 `db` 的主值。
 
 同名时配置整体覆盖目录来源，不逐属性合并。目录布局长这样：
 
@@ -52,7 +52,17 @@
 }
 ```
 
-环境变量写法是 `XiHan__Bindings__ledger__value`、`XiHan__Bindings__ledger__type`，Compose 与 Aspire 的生成产物就是这样注入的。
+环境变量写法是 `XiHan__Bindings__ledger__value`、`XiHan__Bindings__ledger__type`，Compose 与 Aspire 的生成产物就是这样注入的。绑定名与子键照清单里的大小写书写，不要全部大写。
+
+### 下发给插件的绑定
+
+进程外与 Wasm 插件不在宿主进程的容器里，它们的绑定由插件宿主随 `Configure` 请求下发，来源与上面相同：先读 Service Binding 目录，再读 `XiHan:Bindings`，同名时配置整体覆盖目录。应用用 `UseServiceBindingRoot` 指定了根目录时，插件宿主用同一个（特性经 `FeatureContext.ServiceBindingRoot` 取到）。与特性的绑定有三处不同：
+
+- 只下发插件清单 `bindings` 里声明、且运营方授予了 `binding:<绑定名>` 的绑定，缺授予的插件在发现时以 `PLUGINS_DENIED_001` 拒绝；别的绑定不读、不下发。
+- 每次配置插件时解析一遍，不用宿主启动时的那一份：插件重启、运行期加载时拿到的是那一刻的值。
+- 线协议只带名字、类型与主值：`type` 取来源声明的，来源没有声明时取清单声明的；其余属性不下发；没有主值的绑定整个不下发，记一条 Warning。
+
+清单声明的绑定在目录里读不出来（文件在、权限不对）时，插件这一次配置失败，进入 Failed 并按重启策略重试；根目录不存在不算失败。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
 
 ## 最小示例
 
@@ -147,11 +157,11 @@ app.MapGet("/ledger", (LedgerConnection ledger) => ledger.ConnectionString.Lengt
 
 ### 绑定的值能热更新吗
 
-不能。绑定在 `AddXiHan` 时解析一次并交给特性装配，改了要重启。轮换凭据时用滚动重启。
+特性的绑定不能：它在 `AddXiHan` 时解析一次并交给特性装配，`FeatureContext.Bindings` 此后不变，改了要重启，轮换凭据时用滚动重启。下发给插件的绑定在每次配置插件时重新解析，所以改了挂载的 Secret 或配置之后，重启那个插件（或卸载再加载）它就拿到新值；这时应用自己的那一份仍是启动时的，两者可以不同。
 
 ## 相关包与下一步
 
-- [Kernel](/packages/kernel)：`BindingResolver`、`BindingValue`、`FeatureContext.GetBinding`
+- [Kernel](/packages/kernel)：`BindingResolver`、`BindingValue`、`FeatureContext.GetBinding` 与 `ServiceBindingRoot`
 - [Primitives](/packages/primitives)：清单模型 `Manifest` 与 `Binding`
 - [应用清单与 xihan pack](/deployment/pack)：按绑定名生成 Secret 与环境变量
 - 下一页：[远程配置与密钥](/configuration/remote)

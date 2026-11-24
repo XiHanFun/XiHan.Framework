@@ -15,9 +15,9 @@
 
 ## 概述
 
-主体、租户、授权请求、策略接口与权限登记这些原语在内核的 `XiHan.Framework.Kernel.Security` 命名空间（`Principal`、`SecurityContext`、`TenantContext`、`AuthorizationRequest`、`AuthorizationResult`、`IPolicy`、`PermissionRegistry`、`PermissionDefinition`、`ResourceName`），本包在其上定义认证与授权的组件。
+主体、租户、授权请求、策略接口与权限登记这些原语在内核的 `XiHan.Framework.Kernel.Security` 命名空间（`Principal`、`SecurityContext`、`TenantContext`、`AuthorizationRequest`、`AuthorizationDecision`、`IPolicy`、`PermissionRegistry`、`PermissionDefinition`、`ResourceName`），本包在其上定义认证与授权的组件。
 
-认证：宿主把协议凭据放进调用上下文，`AuthenticationMiddleware` 交给方案匹配的 `IAuthenticationHandler`，成功写入主体，失败以结果返回。授权：调用带 `AuthorizationRequirement` 时，`AuthorizationMiddleware` 按名在 `PolicyCatalog` 取策略判定；`permission:<code>` 在权限码已登记时映射为 `PermissionPolicy`，由 `PermissionChecker` 按用户与角色授予之并集判定，再经授予来源补充、经过滤器收窄。认证与授权失败都以 `Result` 返回，宿主翻译成 401 / 403；处理器内部的基础设施故障抛异常。
+认证：宿主把协议凭据放进调用上下文，`AuthenticationMiddleware` 交给方案匹配的 `ICredentialHandler`，成功写入主体，失败以结果返回。授权：调用带 `AuthorizationRequirement` 时，`AuthorizationMiddleware` 按名在 `PolicyCatalog` 取策略判定；`permission:<code>` 在权限码已登记时映射为 `PermissionPolicy`，由 `PermissionChecker` 按用户与角色授予之并集判定，再经授予来源补充、经过滤器收窄。认证与授权失败都以 `Result` 返回，宿主翻译成 401 / 403；处理器内部的基础设施故障抛异常。
 
 条件引擎（`Conditions`）与 IP 归属地契约（`Network`）不接入任何管道阶段，应用在自己的策略、过滤器或中间件里使用。
 
@@ -59,7 +59,7 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | 类型 | 说明 |
 | --- | --- |
 | `Authentication.AuthenticationCredential` | 凭据：`Scheme`（不区分大小写）与 `Value`；`TryParse("<scheme> <value>")`；`ToString()` 隐藏值 |
-| `Authentication.IAuthenticationHandler` | 某一方案的处理器：`Scheme`、`AuthenticateAsync` → `Result<Principal>` |
+| `Authentication.ICredentialHandler` | 某一方案的处理器：`Scheme`、`AuthenticateAsync(credential, context)` → `Result<Principal>`；取消与截止时间在 `context.CancellationToken` 上，不另收令牌 |
 | `Authentication.AuthenticationMiddleware` | Authenticate 阶段的中间件 |
 | `Authorization.AuthorizationRequirement` | 授权要求：`Policy`、`Resource`；`Authenticated`、`Permission(code, resource?)` |
 | `Authorization.PolicyCatalog` | 策略目录：`Find(name)`、`Names`；策略名重复在构造时抛出 `ArgumentException` |
@@ -91,14 +91,14 @@ using XiHan.Framework.Primitives;
 using XiHan.Framework.Security.Abstractions;
 using XiHan.Framework.Security.Abstractions.Authentication;
 
-public sealed class ServiceTokenHandler : IAuthenticationHandler
+public sealed class ServiceTokenHandler : ICredentialHandler
 {
     // 开发值；真实令牌从密钥库读取
     private static readonly byte[] _expected = Encoding.UTF8.GetBytes("dev-service-token-0001");
 
     public string Scheme => "Service";
 
-    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context)
     {
         var presented = Encoding.UTF8.GetBytes(credential.Value);
         // 常量时间比较，耗时不随匹配位置泄露信息
@@ -110,7 +110,7 @@ public sealed class ServiceTokenHandler : IAuthenticationHandler
 }
 ```
 
-在特性里登记 `context.Services.AddSingleton<IAuthenticationHandler, ServiceTokenHandler>()`。认证中间件由认证 Provider 加进管道；方案名不与已有处理器重名时，`Authorization: Service <token>` 就交给它。
+在特性里登记 `context.Services.AddSingleton<ICredentialHandler, ServiceTokenHandler>()`。认证中间件由认证 Provider 加进管道；方案名不与已有处理器重名时，`Authorization: Service <token>` 就交给它。
 
 在 Authorize 阶段之前的中间件里设置授权要求，例如让没有写授权要求的操作至少要求登录：
 

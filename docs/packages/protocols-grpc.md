@@ -17,7 +17,7 @@ gRPC 协议适配器，提供 `protocols.grpc@1`：把 `Expose.Grpc` 的操作�
 
 `GrpcProtocolFeature` 调用 `AddGrpc()`，登记选项与一个 `IServiceMethodProvider`：方法在运行时按操作表动态绑定，消息以字节数组传递，不需要编译 `.proto`，也不依赖 `Google.Protobuf`。操作表在第一次解析时建成，这时全部特性已装配、登记表已定型。
 
-每个方法调用都是一次独立调用：处理器以请求的 HTTP/2 头建调用上下文（`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline` 或 `grpc-timeout`），把请求按 Schema 从 protobuf 解码为 JSON 载荷，经完整内核管道执行，再把响应编码回 protobuf。gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用。失败映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据。
+每个方法调用都是一次独立调用：处理器以请求的 HTTP/2 头建调用上下文（`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline`，没有或读不出时取 `grpc-timeout`），把请求按 Schema 从 protobuf 解码为 JSON 载荷，经完整内核管道执行，再把响应编码回 protobuf。gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用。失败映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据。
 
 ## 何时使用
 

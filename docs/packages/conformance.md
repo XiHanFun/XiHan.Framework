@@ -27,12 +27,12 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | --- | --- | --- |
 | [AI](#ai) | `KnowledgeStoreConformance`、`AIProviderConformance` | 4 + 5 |
 | [Auditing](#auditing) | `AuditTrailConformance` | 5 |
-| [Caching](#caching) | `CacheStoreConformance` | 18 |
+| [Caching](#caching) | `CacheStoreConformance` | 19 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
 | [Localization](#localization) | `MessageLocalizerConformance` | 6 |
-| [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 14 + 2 + 4 |
+| [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 16 + 2 + 5 |
 | [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance`、`TenantAdministrationConformance` | 5 + 3 + 5 |
-| [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 13 + 4 |
+| [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 14 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 36 + 3 |
 | [Plugins](#plugins) | `PluginProtocolConformance`、`WasmPluginConformance` | 7 + 8 |
 | [Scheduling](#scheduling) | `JobSchedulerConformance`、`JobStoreConformance`、`LeaderElectionConformance` | 18 + 6 + 3 |
@@ -58,7 +58,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 包 ID `XiHan.Framework.Caching.Conformance`（RFC-0006，Stable）。任何 `ICacheStore` 实现（无论提供 `caching.local` 还是 `caching.distributed`）都继承 `CacheStoreConformance`，实现 `CreateStore()`，每个用例创建一个新存储。
 
-覆盖：读写与未命中、覆盖、键区分大小写、删除并报告是否存在、批量读写保持顺序与后写覆盖、批量的逐项过期与滑动延长、批量删除逐项结果、空批量、不存在才写只有一个赢家（含并发）、比较删、比较后重设到期（值不同、不存在、已到期都不重设）、绝对过期、滑动过期在读取时延长、大值、基于存储的分布式锁的互斥 / 释放 / 到期与续约（释放后、到期被他人取得后续不回来），以及存储实现 `ICacheStoreInspector` 时的按前缀分页列键、读元数据与按前缀删除、每页上限越界（0、1001）返回 `CACHING_VALIDATION_003` 而边界值（1、1000）照常（不实现即跳过）。过期用例用真实时间等待，`ExpirationGrace`（缺省 300 毫秒）可按 Provider 调整；`SupportsRefresh`（缺省 `true`）只在接入尚未跟上契约的外部实现时临时关掉；`Key()`、`Bytes(text)`、`Text(value)` 是供派生类补充用例的辅助方法。
+覆盖：读写与未命中、覆盖、键区分大小写、含多字节字符且 UTF-8 编码后恰好 512 字节的键完整往返（两个只差最后一个字节的键是两个条目，ADR-0274）、删除并报告是否存在、批量读写保持顺序与后写覆盖、批量的逐项过期与滑动延长、批量删除逐项结果、空批量、不存在才写只有一个赢家（含并发）、比较删、比较后重设到期（值不同、不存在、已到期都不重设）、绝对过期、滑动过期在读取时延长、大值、基于存储的分布式锁的互斥 / 释放 / 到期与续约（释放后、到期被他人取得后续不回来），以及存储实现 `ICacheStoreInspector` 时的按前缀分页列键、读元数据与按前缀删除、每页上限越界（0、1001）返回 `CACHING_VALIDATION_003` 而边界值（1、1000）照常（不实现即跳过）。过期用例用真实时间等待，`ExpirationGrace`（缺省 300 毫秒）可按 Provider 调整；`SupportsRefresh`（缺省 `true`）只在接入尚未跟上契约的外部实现时临时关掉；夹具用加前缀的包装隔离各用例时覆写 `KeyPrefixBytes`（前缀占的 UTF-8 字节数，缺省 0），最长键的用例据此让出字节；`Key()`、`Bytes(text)`、`Text(value)` 是供派生类补充用例的辅助方法。
 
 `Caching.InMemory`、`Caching.Redis` 与 `Caching.Remote`（适配器 + Go 插件 `samples/CacheGoPlugin`）通过本套件。
 
@@ -83,11 +83,11 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `MessageBrokerConformance` | Stable | `CreateFeature()` 返回提供 `messaging.queue@1` 的特性；可覆写 `Configuration`、`DeliveryTimeout`（缺省 10 秒）、`SupportsMultipleInstances`（缺省真；两个宿主不能共用代理的 Provider 覆写为假，多实例用例跳过） | 信封属性、扩展与数据（含二进制）完整到达处理器；同一主题按发布顺序投递；主题互不串扰；批量发布逐项结果、空批量、非法主题整批拒绝；处理器失败或抛异常时重试到 `MaxAttempts`（2）后停止且不阻塞后续消息；租户、关联与追踪进入调用上下文；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功；同一主题的竞争与广播订阅各收到一次、各自重试；两个宿主时广播每个实例都收到、竞争每条只有一个实例收到 |
-| `MessageStreamConformance` | Preview | 继承 `MessageBrokerConformance`，同样实现 `CreateFeature()` | 在队列用例之上再验证 `messaging.stream@1`：同一分区键按发布顺序投递、按时刻重放 |
-| `OutboxConformance` | Preview | `CreateFeature()` 返回持久化特性（发件箱的存储经仓储）；可覆写 `Configuration` | 代理对某条消息一直抛出时按尝试上限与退避进死信，同批与排在后面的照常发出；返回失败与抛出逐轮状态相同；调用方取消回滚本轮、不计尝试；不是调用方取消的 `OperationCanceledException` 计为失败（ADR-0108）。套件登记发件箱仓储与可推进的时钟，逐轮驱动 `OutboxDispatcher`，不起后台循环 |
+| `MessageBrokerConformance` | Stable | `CreateFeature()` 返回提供 `messaging.queue@1` 的特性；`ReadDeadLettersAsync(host, topic, ct)`（Preview，必须实现）按自己的介质读出一个主题此刻的死信：竞争订阅的死信里能解码的信封，按进入顺序，不取走、可以反复调用，还没有死信时返回空列表；可覆写 `Configuration`、`DeliveryTimeout`（缺省 10 秒）、`RedeliveryTimeout`（缺省同 `DeliveryTimeout`；没有确认的消息要等超时才重新可见的代理把它调大，或在 `Configuration` 里把那个超时调小）、`SupportsMultipleInstances`（缺省真；两个宿主不能共用代理的 Provider 覆写为假，多实例用例跳过） | 信封属性、扩展与数据（含二进制）完整到达处理器；同一主题按发布顺序投递；主题互不串扰；批量发布逐项结果、空批量、非法主题整批拒绝；处理器失败或抛异常时重试到 `MaxAttempts`（2）后停止且不阻塞后续消息；租户、关联与追踪进入调用上下文；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功；同一主题的竞争与广播订阅各收到一次、各自重试；两个宿主时广播每个实例都收到、竞争每条只有一个实例收到；竞争订阅的投递用完尝试次数后带原信封进死信、只进一次，处理成功的消息与别的主题不受牵连；处理器正在处理时停止消费，这次投递不在原位重试、不进死信，重新开始消费后再到达并处理成功（ADR-0275） |
+| `MessageStreamConformance` | Preview | 继承 `MessageBrokerConformance`，同样实现 `CreateFeature()` 与 `ReadDeadLettersAsync` | 在队列用例之上再验证 `messaging.stream@1`：同一分区键按发布顺序投递、按时刻重放 |
+| `OutboxConformance` | Preview | `CreateFeature()` 返回持久化特性（发件箱的存储经仓储）；可覆写 `Configuration` | 代理对某条消息一直抛出时按尝试上限与退避进死信，同批与排在后面的照常发出；返回失败与抛出逐轮状态相同；调用方取消回滚本轮、不计尝试；不是调用方取消的 `OperationCanceledException` 计为失败（ADR-0108）；死信行经 `OutboxDeadLetters.RedriveManyAsync` 回到待投递（进死信时间写回空值、尝试次数归零），逐项结果与入参同序，下一轮照常发出（ADR-0272）。套件登记发件箱仓储与可推进的时钟，逐轮驱动 `OutboxDispatcher`，不起后台循环 |
 
-用例以 `TestHost` 走完整管道，主题常量 `OrdersTopic`、`ShipmentsTopic`、`UnsubscribedTopic`、`NoticesTopic`，`StartWithSubscriptionsAsync` 按给定订阅启动宿主，`WarmUpBroadcastAsync` 等每个实例的广播订阅都接上，`DeliveryLog` / `RecordingHandler` / `ReceivedMessage` 是套件登记的记录器。提供流能力的 Provider 只继承 `MessageStreamConformance`，不必再继承队列套件。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。内存持久化、SqlSugar 的 SQLite 与 PostgreSQL、EF Core 的 SQLite 通过发件箱套件（EF Core 的上下文要把 `OutboxMessage` 放进模型）。
+用例以 `TestHost` 走完整管道，主题常量 `OrdersTopic`、`ShipmentsTopic`、`UnsubscribedTopic`、`NoticesTopic`，`StartWithSubscriptionsAsync` 按给定订阅启动宿主，`WarmUpBroadcastAsync` 等每个实例的广播订阅都接上，`DeliveryLog` / `RecordingHandler` / `ReceivedMessage` 是套件登记的记录器（`DeliveryLog.BlockingIds` 里的消息让处理器等到调用被取消），`WaitForDeadLetterAsync` 等某条消息出现在死信里。提供流能力的 Provider 只继承 `MessageStreamConformance`，不必再继承队列套件。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。内存持久化、SqlSugar 的 SQLite 与 PostgreSQL、EF Core 的 SQLite 通过发件箱套件（EF Core 的上下文要把 `OutboxMessage` 放进模型）。
 
 ## MultiTenancy
 
@@ -109,8 +109,8 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 | 基类 | 实现 | 覆盖 |
 | --- | --- | --- |
-| `BlobStoreConformance` | `CreateStoreAsync()` 返回 `ValueTask<IBlobStore>`（被测存储初始化好再交出）；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、大对象流式读写 |
-| `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键以 `OBJECTSTORAGE_VALIDATION_003` 结果拒绝（不抛出）、经注册表同定义复用 / 定义变了替换 / 移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
+| `BlobStoreConformance` | `CreateStoreAsync()` 返回 `ValueTask<IBlobStore>`（被测存储初始化好再交出）；`PlantOutsideContractAsync(container, key, content)` 绕过契约直接写一个对象；可覆写 `Container`（缺省 `conformance`） | 读写往返与元数据、覆盖与不覆盖、并发的不覆盖写入只有一个成功、保留前缀 `.xihan` 下的键构造时拒绝且列举跳过存储里已有的这类对象、键区分大小写与嵌套段、批量写入逐项结果、批量删除逐项结果、按前缀分页列举、范围读取、分片上传（任意顺序上传、原子完成、非法分片列表、覆盖与中止，批量放弃的逐项结果、重复与已放弃的上传、空集合、`null` 与已取消）、非法标识提前拒绝、列举的页大小越界是校验错误（`OBJECTSTORAGE_VALIDATION_005`，边界照常）、大对象流式读写 |
+| `BlobStoreProviderConformance` | `CreateProvider()` 返回 `IBlobStoreProvider`，`ValidSettings()` 与 `OtherValidSettings()` 给两组可用设置 | 按定义建出的实例可读写且探测通过、未知设置键以 `OBJECTSTORAGE_VALIDATION_003` 结果拒绝（不抛出）、经注册表同定义复用 / 定义变了替换 / 批量移除逐项报告、移除后不存在、定义错误翻译为 `OBJECTSTORAGE_VALIDATION_003` 且不影响已有实例 |
 
 `ObjectStorage.FileSystem` 与 `ObjectStorage.S3` 通过两套用例。
 
@@ -123,7 +123,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | `RepositoryConformance` | Stable | `CreateFeature()` 返回提供 `persistence.relational@1` 的特性；可覆写 `Configuration`、`ConfigureServices`、`ConfigureApp`，以及 `EnsureTransaction`（Provider 的直接写入入口）与 `NamedConnection`（套件可用的命名连接，配置里要声明它），不覆写这两个的用例跳过 | 读己之写与提交可见性、回滚不留痕迹、标识重复（含两个工作单元并发新增同一标识，只有一个成功）、审计字段与并发戳、更新沿用存储的创建时间、租户与删除标记、软删除与物理删除、租户必填与隔离、过滤排序分页与计数（含可空值类型与 null 的相等 / 不等按 `IS NULL` 语义，判空与取反嵌套在与 / 或条件里照常过滤；规约里字符串的 `Contains` / `StartsWith` / `EndsWith` 按字面匹配，实参里的 `%`、`_`、`[`、反斜杠、`!` 与单引号不是通配符或转义符，不断言大小写；三个方法与闭包变量、常量、列三种实参在 ASCII 字母的大小写上一致，全都区分或全都不区分；一次最多取 1000 条，更大的取出条数以 `PERSISTENCE_VALIDATION_005` 拒绝，调用里是校验结果、已做的写入回滚）、失败结果与异常回滚、Transaction 阶段之外使用仓储抛错、只读操作拒绝全部写入（单条与批量，忽略拒绝的调用仍以 `PERSISTENCE_UNEXPECTED_001` 结束）、只读操作在新作用域里调用写操作照常提交、同一作用域的嵌套调用以 `PERSISTENCE_VALIDATION_002` 结束、`IUnitOfWork.HasTransaction`（开始与读取后为假，第一次写入后为真，提交与回滚后为假，只读工作单元恒为假；直接写入入口开启事务；绑定命名连接的工作单元只报告那个连接，与业务调用各报各的；ADR-0109）、标识生成器 |
 | `IdGeneratorConformance<TKey>` | Preview | `CreateGenerator(TimeProvider clock)` 返回 `IIdGenerator<TKey>`（`TKey : IComparable<TKey>`） | 顺序生成与 8 线程并发生成不重复（真实时钟）、时钟前进后标识更大（`ConformanceClock`） |
 
-`Fixtures` 命名空间里的 `ConformanceOrder`、`ConformanceNote`、`ConformanceItem` 等是套件自带的实体，`ConformanceFeature` 登记它们；EF Core、SqlSugar 这类需要映射的 Provider 在 `ConfigureServices` / `ConfigureApp` 里为这些实体建模。`ConformanceLease` 只在给出 `NamedConnection` 时登记到那个连接，EF Core 的 `DbContext` 模型要包含它。`RunAsync`、`FindAsync`、`ListAsync`、`CountAsync` 等静态辅助方法供派生类补充用例。
+`Fixtures` 命名空间里的 `ConformanceOrder`、`ConformanceNote`、`ConformanceItem` 等是套件自带的实体，`ConformanceFeature` 登记它们；EF Core、SqlSugar 这类需要映射的 Provider 在 `ConfigureServices` / `ConfigureApp` 里为这些实体建模。`ConformanceLease` 只在给出 `NamedConnection` 时登记到那个连接，EF Core 的 `DbContext` 模型要包含它。`RunAsync`、`FindAsync`、`ListAsync`、`CountAsync` 等静态辅助方法供派生类补充用例；`RunAsync(host, action, tenantId)` 的动作返回 `ValueTask<Result>`，可以直接写成转出仓储调用的 lambda。
 只读与嵌套的用例经 `ConformanceFeature` 登记的两个操作（只读的 `conformance-scripts.get`、可写的 `conformance-scripts.run`）走真实的操作契约。
 
 `DataSourceConformance` 是运行时数据源的套件（ADR-0078），每个 Provider 也都继承它：实现 `CreateDefinition(name)`（连得上，连接串末尾加分号仍连得上）与 `CreateUnreachableDefinition(name)`（连不上、带口令）。用例验证测试连接成功且不登记、同定义复用 / 定义变了替换 / 批量移除逐项报告、连不上返回 `PERSISTENCE_UNAVAILABLE_006` 且错误里没有连接串与口令、每个数据源一条健康项；不支持的 Provider（EF Core、内存实现）两个方法都返回 `null`，用例断言取用与测试连接返回 `PERSISTENCE_UNAVAILABLE_008`。SqlSugar 在 SQLite 与 PostgreSQL（`XIHAN_TEST_POSTGRES`）上都跑。

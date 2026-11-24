@@ -19,7 +19,7 @@
 
 | 能力被本包提供时 | 注册 |
 | --- | --- |
-| `security.authentication@1` | `InMemoryPrincipalStore`、`ApiKeyAuthenticationHandler`、Authenticate 阶段的 `AuthenticationMiddleware` |
+| `security.authentication@1` | `InMemoryPrincipalStore`、`ApiKeyCredentialHandler`、Authenticate 阶段的 `AuthenticationMiddleware` |
 | `security.authorization@1` | `InMemoryPermissionGrantStore` 与 `IPermissionGrantStore`、`PermissionChecker`、`authenticated` 策略、`PolicyCatalog`、Authorize 阶段的 `AuthorizationMiddleware`；启动时核对操作契约引用的策略（`SECURITY_VALIDATION_004`，ADR-0080） |
 
 清单角色是 `default`：装配 `Security.Jwt` 或 `Security.OpenIdConnect` 后本包让出认证、只提供授权；装配 `Security.Database` 后让出授权、只提供认证；两边都被顶替时本包不装配。健康项 `security.inmemory.capacity` 只看本包仍在提供的那部分存储。
@@ -90,7 +90,7 @@ builder.AddXiHan(xihan => xihan.UseFeature<InMemorySecurityFeature>());
 | `InMemorySecurityOptions` | `MaxPrincipals`、`MaxGrants`、`TenantClaim`、`Principals`、`Grants`；`FromConfiguration` 读取上面的配置，`TenantClaim` 读 `XiHan:MultiTenancy:TenantClaim`（缺省 `tenant`） |
 | `PrincipalRecord` | 配置里的一个主体：`Id`、`ApiKey`、`DisplayName`、`Roles`、`Tenant`、`Claims` |
 | `InMemoryPrincipalStore` | 主体存储：`FindByApiKey`（常量时间比较）、`Set`、`Remove`、`Capacity`、`Count` |
-| `ApiKeyAuthenticationHandler` | `ApiKey` 方案的处理器；`SchemeName` = `ApiKey` |
+| `ApiKeyCredentialHandler` | `ApiKey` 方案的处理器；`SchemeName` = `ApiKey` |
 | `InMemoryPermissionGrantStore` | 授予存储，同时是 `IPermissionGrantAdministration`：`GetManyAsync`、`GrantAsync`、`RevokeAsync`（各一次加锁处理整批）、`ListAsync`、`Capacity`、`Count` |
 | `InMemorySecurityHealthContributor` | 健康项的贡献者 |
 

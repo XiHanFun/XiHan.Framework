@@ -15,6 +15,8 @@
 | `ListAsync(query, ct)` | 按 `EntityQuery<TEntity>` 过滤、排序、分页 |
 | `CountAsync(query, ct)` | 计数，忽略查询的排序与分页 |
 
+仓储的异步方法（读取与写入）都返回 `ValueTask`，直接 `await` 即可。一个返回值只能消费一次：要交给 `Task.WhenAll`、`Func<Task>` 形参，或存起来稍后再等时，在调用点先 `.AsTask()`。
+
 `EntityQuery<T>` 是不可变的 `record`，用链式方法或 `with` 派生：
 
 | 成员 | 缺省 | 说明 |

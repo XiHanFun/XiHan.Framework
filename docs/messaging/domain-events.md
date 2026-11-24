@@ -197,7 +197,29 @@ builder.AddXiHan(xihan => xihan
 
 退避中与死信的消息不占批次，几条永久失败的消息不会挡住后面的消息。重试逐条发布：代理整批抛出时分不出是哪一条，单独重试后让整批失败的那条只拖累它自己，同批的别的消息随即发出。代理不可达时一轮只有一次调用抛出，积压的消息累计尝试比逐条失败慢；要更长的停机容忍度，调大 `MaxAttempts` 或 `MaxRetryDelaySeconds`（如 15 次、3600 秒约 5.4 小时）。缺省参数下一条消息要连续失败约 20 分钟才进死信，代理短暂拒收不会把消息成批送进死信。
 
-投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信留在表里不再投递，供排查；修好原因后把 `DeadLetteredAt` 置空、`NextAttemptAt` 设为现在，下一轮就会重新投递。死信行不自动删除，由应用按 `DeadLetteredAt` 清理或重投。处理器侧的死信（代理的死信队列、主题或流）由代理管理，见[队列与流](/messaging/streams)。
+投递是至少一次：一轮发布之后、提交之前崩溃，下一轮会重发。死信留在表里不再投递，供排查；死信行不自动删除，由应用按 `DeadLetteredAt` 清理，或在排除原因后重投，见下一节。处理器侧的死信（代理的死信队列、主题或流）由代理管理，见[队列与流](/messaging/streams)。
+
+## 积压、死信与重投
+
+`OutboxFeature` 带一条健康项 `messaging.outbox.backlog`，经健康端点（见[生命周期与健康](/startup/lifecycle)）看得到发件箱此刻的积压与死信：按 `HealthProbeIntervalSeconds`（缺省 15 秒）在默认库与每个分片库上各数一遍，条目的数据是未投递的行数 `pending`、最老一条等了多久 `oldestPendingSeconds`、死信行数 `deadLettered` 与数过的库数 `databases`。未投递的行数超过 `HealthMaxPending`（缺省 1000）或最老一条等过 `HealthMaxPendingAgeSeconds`（缺省 300）时条目以积压降级，死信行数超过 `HealthMaxDeadLettered`（缺省 0，有死信就降级）时以死信降级；应用随之报告 Degraded，照常接收调用。任何一个库读不出时条目同样降级，不报告不完整的数字。四个阈值键见 [Messaging.Abstractions](/packages/messaging-abstractions#配置)，对应的错误码见它的[错误码](/packages/messaging-abstractions#错误码)。
+
+缺省阈值下发件箱表里只要有死信，条目就是 Degraded：重投或删除死信，或者调大 `HealthMaxDeadLettered`。用 SqlSugar 加租户分片时把 `IncludeShards` 设为 `false`，否则默认库的行按库数重复计数。
+
+死信的原因排除之后（代理恢复、主题建好），用 `OutboxDeadLetters` 批量重投。它由 `OutboxFeature` 登记为单例，自己在每个库上开工作单元，不必在调用里：
+
+```csharp
+using XiHan.Framework.Messaging.Abstractions.Outbox;
+using XiHan.Framework.Primitives;
+
+public sealed class OutboxMaintenance(OutboxDeadLetters deadLetters)
+{
+    // 逐项结果与入参同序：成功、MESSAGING_NOTFOUND_001（没有这一行）或 MESSAGING_CONFLICT_001（不在死信里）
+    public ValueTask<IReadOnlyList<Result>> RedriveAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken)
+        => deadLetters.RedriveManyAsync(ids, cancellationToken);
+}
+```
+
+要重投的标识是 `OutboxMessage.Id`，在操作里用 `IRepository<OutboxMessage, Guid>` 按 `DeadLetteredAt` 不为空查出。重投的行回到待投递，尝试次数从头算，由投递循环在下一轮与首次投递的消息一样按主题成批发出；`LastError` 留到下一次投递的结果覆盖它。不在死信里的行（待投递、退避中或已投递）不改动。某个库的存储失败不挡其他库，还有标识没有着落时才抛出；已经在别的库里重投的行保持已重投，重试时它们是 `MESSAGING_CONFLICT_001`。逐项语义的细则见 [Messaging.Abstractions](/packages/messaging-abstractions#行为与限制)。
 
 ## 发件箱表
 
@@ -211,7 +233,7 @@ builder.AddXiHan(xihan => xihan
 
 ## 配置
 
-示例只设了 `XiHan:Messaging:Outbox:PollIntervalSeconds`（投递循环的轮询间隔，缺省 1）与 `BatchSize`（每轮最多投递条数，缺省 100）。尝试上限、退避间隔、已投递行的保留期与分片库的其余六个键，连同类型与取值范围，见 [Messaging.Abstractions](/packages/messaging-abstractions#配置)。
+示例只设了 `XiHan:Messaging:Outbox:PollIntervalSeconds`（投递循环的轮询间隔，缺省 1）与 `BatchSize`（每轮最多投递条数，缺省 100）。尝试上限、退避间隔、已投递行的保留期、分片库与健康阈值的其余十个键，连同类型与取值范围，见 [Messaging.Abstractions](/packages/messaging-abstractions#配置)。
 
 ## 相关包与下一步
 

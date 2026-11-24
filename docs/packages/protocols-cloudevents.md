@@ -109,8 +109,8 @@ using XiHan.Framework.Protocols.CloudEvents.Outbound;
 
 public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) : IMessageHandler
 {
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
-        => webhooks.PublishAsync(delivery.Topic, delivery.Envelope, cancellationToken);
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
+        => webhooks.PublishAsync(delivery.Topic, delivery.Envelope, context.CancellationToken);
 }
 ```
 

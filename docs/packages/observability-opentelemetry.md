@@ -15,7 +15,7 @@
 
 ## 概述
 
-内核只依赖 `System.Diagnostics`：`FrameworkDiagnostics.ActivitySource` 发出 `xihan.invoke` Span，`FrameworkDiagnostics.Meter` 发出 `xihan.invocations` 计数与 `xihan.invocation.duration` 直方图，名字都是 `XiHan.Framework`。本包在被选中时调用 `AddOpenTelemetry()`：
+内核只依赖 `System.Diagnostics`：`FrameworkDiagnostics.ActivitySource` 发出 `xihan.invoke` Span 与宿主调用插件的 `xihan.plugin.invoke` Span，`FrameworkDiagnostics.Meter` 发出 `xihan.invocations` 计数与 `xihan.invocation.duration` 直方图，名字都是 `XiHan.Framework`；操作调用的 Span 与两个指标带 `xihan.operation`（操作 ID），标签的取值规则见[日志与可观测性](/common/observability#内核发出什么)。本包在被选中时调用 `AddOpenTelemetry()`：
 
 - 资源属性：`service.name`、`service.version` 取配置或入口程序集，`service.instance.id` 取机器名。
 - 追踪：订阅缺省源与 `Sources`，采样器 `ParentBasedSampler(TraceIdRatioBasedSampler(SamplingRatio))`。
@@ -141,6 +141,7 @@ public sealed class TracingTests
 - 能力没被选中时（另有显式 Provider 提供 `observability.export@1`）只登记选项，不注册任何提供者。
 - `Tracing`、`Metrics`、`Logging` 为假时对应的提供者不注册，`TracerProvider` 等服务不存在。
 - `xihan.invoke` 的父级与采样按 RFC-0003 规则 7：同一 trace 的当前 Activity 是父级，否则以上游 `traceparent` 为远端父级（上游「不采样」就不采样），没有上游时是按 `SamplingRatio` 采样的根 Span；HTTP 与消息两种载体的细节见[日志与可观测性](/common/observability#采样)。
+- 指标 `xihan.invocations` 与 `xihan.invocation.duration` 的序列按 `xihan.operation` × `xihan.outcome` 分开（ADR-0269）；要去掉操作维度，应用用 `ConfigureOpenTelemetryMeterProvider` 给这两个仪表各加一个只留 `xihan.outcome` 的视图，写法见[日志与可观测性](/common/observability#去掉操作维度)。
 - 只靠环境变量启用 OTLP 时，端点与协议都按 OpenTelemetry 的标准环境变量（`OTEL_EXPORTER_OTLP_ENDPOINT`、`OTEL_EXPORTER_OTLP_PROTOCOL`）与默认端口决定；配置里只写 `Otlp:Protocol` 不写 `Otlp:Endpoint` 时装配失败，不静默忽略。
 - 本包没有健康条目；导出失败由 OpenTelemetry SDK 自身处理，不影响调用。
 

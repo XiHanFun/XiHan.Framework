@@ -53,7 +53,7 @@ builder.Services.AddMessageCatalog(MessageCatalog.FromEmbeddedResources("plugins
 | `IPlugin`（`XiHan.Framework.Kernel.Plugins`） | 插件契约：`Manifest`、`Configure(PluginContext)`、`StartAsync`、`StopAsync` |
 | `PluginContext`（同上） | 配置上下文：`Manifest`、`Services`、`Configuration`、`Permissions`、`Pipeline`（本宿主为 `null`） |
 | `PluginSource`（同上） | 插件目录与授予的权限 |
-| `PermissionGrant`（同上） | 授予集合：`IsGranted`、`Missing(manifest)`、`Empty` |
+| `PluginPermissions`（同上） | 授予集合：`IsGranted`、`Missing(manifest)`、`Empty` |
 
 ## 使用示例
 
@@ -116,7 +116,7 @@ using XiHan.Framework.Plugins.InProcess;
 
 await using var host = new InProcessPluginHost(new ConfigurationBuilder().Build(), NullLoggerFactory.Instance);
 
-var loaded = await host.LoadAsync(new PluginSource("plugins/report", PermissionGrant.Empty), CancellationToken.None);
+var loaded = await host.LoadAsync(new PluginSource("plugins/report", PluginPermissions.Empty), CancellationToken.None);
 Console.WriteLine(loaded.IsFailure ? loaded.Error!.Code : loaded.ValueOrThrow().State.ToString());
 
 var unloaded = await host.UnloadAsync("xihan.reports.plugin", CancellationToken.None);

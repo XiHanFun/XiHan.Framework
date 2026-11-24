@@ -40,7 +40,7 @@ orders.create    orders.get    orders.list    order-lines.delete    orders.cance
 | 属性 | 缺省 | 说明 |
 | --- | --- | --- |
 | `Id` | 必填 | 操作 ID |
-| `Stability` | `Stable` | 稳定性；`Internal` 的操作不对外发布 |
+| `Stability` | `Stable` | 稳定性；`Internal` 的操作不对外发布，`Deprecated` 的操作照常执行、在 OpenAPI 文档里标成弃用（`deprecated: true`） |
 | `Expose` | 程序集级缺省，再无则 `Expose.All` | 暴露给哪些协议，见下表 |
 | `Permission` | 无 | 调用所需的权限码，Authorize 阶段判定 |
 | `Policy` | 无 | 调用所需的授权策略名，与 `Permission` 二选一 |

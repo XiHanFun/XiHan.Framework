@@ -48,7 +48,7 @@ transaction  XiHan.Framework.Persistence.Abstractions.UnitOfWork.UnitOfWorkMiddl
 4. 处理器在所有中间件之内执行，结果写进上下文。
 5. 管道返回后，宿主读取 `context.FindOutcome()`，把 `Result` 与 `Error` 翻译回协议：HTTP 为 RFC 9457 Problem Details，gRPC 为状态码与 `xihan-error-code` 尾部元数据，命令行为退出码与 stderr。
 
-`ObserveMiddleware` 为每次调用开启名为 `xihan.invoke` 的 Activity，记录 `xihan.invocations` 计数与 `xihan.invocation.duration` 耗时（毫秒），并把未处理异常转成 `KERNEL_UNEXPECTED_001` 结果（HTTP 为 500，异常记进日志并带 trace-id）；取消不在这里吞掉，由 `DeadlineMiddleware` 区分超时（`KERNEL_TIMEOUT_001`）与外部取消（`KERNEL_CANCELLED_001`）。采样规则见[日志与可观测性](/common/observability)。
+`ObserveMiddleware` 为每次调用开启名为 `xihan.invoke` 的 Activity，记录 `xihan.invocations` 计数与 `xihan.invocation.duration` 耗时（毫秒），操作调用时三者都带标签 `xihan.operation`（操作 ID），并把未处理异常转成 `KERNEL_UNEXPECTED_001` 结果（HTTP 为 500，异常记进日志并带 trace-id）；取消不在这里吞掉，由 `DeadlineMiddleware` 区分超时（`KERNEL_TIMEOUT_001`）与外部取消（`KERNEL_CANCELLED_001`）。采样规则见[日志与可观测性](/common/observability)。
 
 ## 最小示例
 
@@ -189,7 +189,7 @@ var removed = pipeline.RemoveOwnedBy("xihan.plugins.audit");
 | 启动日志（Information 级别） | `Pipeline:` 后一行一个中间件：阶段名与类型全名 |
 | 命令行宿主 `pipeline` 命令 | 与启动日志相同 |
 | `App.DescribePipeline()`、`PipelineBuilder.Dump()` | 同上，返回字符串 |
-| `PipelineBuilder.Describe()` | `MiddlewareDescriptor` 列表：类型、阶段、`Placement`、归属、名字与约束 |
+| `PipelineBuilder.Describe()` | `MiddlewareDescriptor` 列表：类型 `Middleware`、阶段 `Stage`、`Placement`、归属 `Owner`、名字 `Name` 与约束 `Before` / `After`，按属性读取（初始化器记录，没有位置解构） |
 
 `XiHan:Kernel:UseBuiltInMiddleware=false` 时内核不登记任何内置中间件，适用于完全自定义 Observe、Resilience 与 Validate 的宿主；同时 `XiHan:Kernel:Resilience` 配置节不再读取。
 

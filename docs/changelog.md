@@ -5,16 +5,37 @@
 ## 未发布
 
 ::: warning 升级须知
+- `IMessageHandler.HandleAsync`、`ICredentialHandler.AuthenticateAsync`、`ITenantResolver.ResolveAsync`、`IInvocationAuthenticationFilter.AuthenticatedAsync` 不再收 `CancellationToken`：实现删掉最后一个参数，令牌改读 `context.CancellationToken`
+- 三处改名，查找替换：`IAuthenticationHandler` → `ICredentialHandler`（三个实现改成 `ApiKeyCredentialHandler` / `JwtCredentialHandler` / `OpenIdConnectCredentialHandler`），内核 `AuthorizationResult` → `AuthorizationDecision`，内核插件的 `PermissionGrant` → `PluginPermissions`（`Security.Abstractions` 的 `PermissionGrant` 不变）
+- 仓储与工作单元的异步方法返回 `ValueTask`：自写的仓储、工作单元与测试替身把 `Task` 换成 `ValueTask`；把返回值交给 `Task.WhenAll`、`Func<Task>` 形参或要等待多次的调用加 `.AsTask()`
+- `BlobSignedUrl`、`BindingValue`、`MiddlewareDescriptor` 的位置构造与解构删除：改用对象初始化器，解构改成读属性
+- 对象存储：`BlobStores.RemoveAsync(name, ct)` 改成 `(await RemoveAsync([name], ct))[0]`；`new S3BlobStore(…)` 改为装配特性并向容器注册 `IAmazonS3`，或经 `BlobStores` 按定义建；自写的分片上传 Provider 改实现批量的 `AbortAsync(uploads)`；命名实例超过 64 个的应用配 `XiHan:ObjectStorage:StoreMaxCount`
+- 调度：`RunsAsync` → `ListRunsAsync`，`StatusesAsync` → `FindStatusesAsync`，`StatusAsync` → `FindStatusAsync`；自写的 `IJobStore` 六个读取改名为 `List…Async`
+- 缓存键长度按 UTF-8 字节计（不超过 512 字节）：`CacheKey.MaxLength` → `MaxBytes`、`GenerationCache<T>.MaxRegionLength` → `MaxRegionBytes`，与它们比较的 `text.Length` 换成 `Encoding.UTF8.GetByteCount(text)`；含非 ASCII 字符的长键按字节重新核对
+- `GetOrCreateAsync` 合并同键并发，被合并的调用拿到先到那次的结果：缓存键里带上租户这类区分数据的维度；自写的 `ICache` 用 `InFlightLoadTable` 跟上
+- `xihan-deadline` 只认 `2026-11-18T03:25:00Z` 或带 `±HH:MM` 偏移的写法（必须有 `T`、秒与偏移），其余写法读不出、静默当作没有截止时间：自己写这个头的调用方逐个核对，.NET 用 `DeadlineText.Format`
+- 下发给插件的绑定按字面比配置键的大小写：写成 `XiHan__Bindings__<绑定名>__value` / `__type`，不要全大写
+- 指标 `xihan.invocations`、`xihan.invocation.duration` 多了 `xihan.operation` 维度：按结果取单条序列的看板与告警查询加 `sum`
+- 发件箱表里已有死信的部署，升级后健康项 `messaging.outbox.backlog` 降级：重投或删除死信，或调大 `XiHan:Messaging:Outbox:HealthMaxDeadLettered`
+- 继承 `MessageBrokerConformance` 或 `MessageStreamConformance` 的测试类实现 `ReadDeadLettersAsync`
 - `ISecretStore.GetAsync(names)` 返回与入参同序的 `Result<SecretValue>` 列表，`SecretLookup` 已删除：自写的密钥库改返回类型，读 `lookups[i].Result` 的地方改成 `lookups[i]`
 - `MapXiHanHealth()`、`MapXiHanBlobs()` 返回 `IEndpointConventionBuilder`：把别的 `Map*` 链在它们后面的写法拆成两条语句
 - 配置里写成空串的键不再当作没写，枚举键不再接受数字写法：启动时报 `ArgumentException` 并带完整配置键，按提示改配置
 :::
+
+### 版本与兼容
+
+- **调整** 收调用上下文的四个处理器契约不再另收 `CancellationToken`：`IMessageHandler.HandleAsync`、`ICredentialHandler.AuthenticateAsync`、`ITenantResolver.ResolveAsync`、`IInvocationAuthenticationFilter.AuthenticatedAsync` 删掉最后一个参数，取消与截止时间只看 `context.CancellationToken`（ADR-0263）
 
 ### 内核与原语
 
 - **新增** `ConfigurationValues`：从配置逐键读秒数、整数、布尔与枚举，写了却不合法时抛带完整配置键的 `ArgumentException`；框架各包的选项类都改用它（ADR-0255）
 - **调整** 配置里的整数接受两侧空白与前导 `+`；秒数写成 `Infinity`、`NaN` 或超出 `TimeSpan` 范围时报带配置键的错误，以前是不带配置键的 `OverflowException`（ADR-0255）
 - **修复** 操作 ID 结尾带换行的操作在编译时报 XHG003，以前到启动才失败（ADR-0254）
+- **调整** `BindingValue`、`MiddlewareDescriptor` 改为 `required` 初始化成员，位置构造与解构删除（ADR-0267）
+- **新增** `DeadlineText`：截止时间文本的解析与写出，HTTP 的 `xihan-deadline` 与插件协议共用（ADR-0278）
+- **调整** 清单 `activation` 的 `onEvent:` 模式可以带下划线，文法收成 `ActivationEvent.IsValid`（ADR-0276、ADR-0278）
+- **新增** `FeatureContext.ServiceBindingRoot`：应用指定的 Service Binding 根目录，装配之后还要解析绑定的特性用它（ADR-0268）
 
 ### 宿主、协议与插件
 
@@ -25,10 +46,22 @@
 - **修复** `XiHan:Protocols:Http:MaxRequestBodyBytes` 写成 `0` 时的报错带上配置键（ADR-0254）
 - **修复** Wasm 宿主拒收不是 Wasm 插件的清单时文案不再说「不是进程外插件」，消息键改为 `plugins.module.not_wasm`（ADR-0254）
 - **修复** 运行期加载或卸载插件时，正在进行的事件投递与健康检查不再抛出「集合已修改」；投递途中被卸载的插件跳过，不再投给正在停止的插件（ADR-0260）
+- **调整** `xihan-deadline` 只认一种写法（HTTP、gRPC 元数据、MCP 的 Streamable HTTP 与认证方案 `XiHan` 同时生效）：必须有 `T`、秒与 `Z` 或 `±HH:MM` 偏移，空格代替 `T`、没有偏移、没有秒、只有日期、`+0800`、首尾空白、HTTP 日期都读不出；读不出当作没有这个头、不报错，`grpc-timeout` 照常生效（ADR-0276、ADR-0278）
+- **调整** `xihan-deadline` 比 100 纳秒细的小数截断、不再四舍五入，`9999-12-31T23:59:59.999999999Z` 不再因进位溢出读不出（ADR-0278）
+- **新增** OpenAPI 给 `Stability.Deprecated` 的操作写标准的 `deprecated: true`（ADR-0273）
+- **调整** 内核插件的 `PermissionGrant` 改名 `PluginPermissions`，`Security.Abstractions` 的 `PermissionGrant` 不变（ADR-0264）
+- **修复** 只经 Service Binding 目录给出的绑定现在能下发给进程外与 Wasm 插件（清单声明且授予 `binding:<绑定名>`）；每次配置插件时重新解析，重启与运行期加载的插件拿到那一刻的值（ADR-0268）
+- **调整** 下发给插件的绑定里，配置来源的绑定名与 `type` / `value` 子键按字面比，`XiHan:Bindings:Db:Value` 这类大小写不同的写法不再下发；`type` 写成空串时取清单声明的类型（ADR-0268）
+- **新增** `OutOfProcessPluginHost`、`WasmPluginHost` 的构造新增可选参数 `serviceBindingRoot`（ADR-0268）
 
 ### 配置
 
 - **调整** `ISecretStore.GetAsync(names)` 返回同序、等长的 `Result<SecretValue>` 列表，删除 `SecretLookup`（ADR-0257）
+
+### 安全
+
+- **调整** `IAuthenticationHandler` 改名 `ICredentialHandler`，三个实现改名 `ApiKeyCredentialHandler` / `JwtCredentialHandler` / `OpenIdConnectCredentialHandler`（ADR-0264）
+- **调整** 内核 `AuthorizationResult` 改名 `AuthorizationDecision`（ADR-0264）
 
 ### 持久化与消息
 
@@ -36,22 +69,53 @@
 - **修复** 数据库断开时回滚与释放作用域再抛出的异常不再盖掉原结果：租户目录、授予、审计、调度与工作流的租约读写、发件箱投递循环（ADR-0259）
 - **调整** 调度与工作流「存储不可达」错误的 `reason` 不再带数据库驱动的异常消息，只写异常类型全名或框架错误码，完整异常记日志（ADR-0259）
 - **调整** 驱动把命令超时报告成取消时，审计查询、调度租约释放与工作流租约返回各自的存储不可达错误，以前抛出 `OperationCanceledException`（ADR-0259）
+- **调整** `IRepository<TEntity, TKey>` 除 `FindAsync` 之外的九个方法与 `IUnitOfWork` 的 `BeginAsync` / `CommitAsync` / `RollbackAsync` 改返回 `ValueTask`：直接 `await` 的代码重新编译即可，自写的实现与要转成 `Task` 的调用见升级须知（ADR-0265）
+- **调整** `RepositoryConformance.RunAsync` 的动作改为返回 `ValueTask<Result>`，`MessageTranslationStore.ListAsync` 改返回 `ValueTask`（ADR-0265）
 - **新增** `MessageDeliveryAttempt.RunAsync`：代理一侧的一次投递尝试，给出确认、重投、进死信、丢弃或放弃的结论；自写 `IMessageBroker` 的 Provider 可以改用它，四个内置代理已改用（ADR-0261）
 - **修复** 应用停止时被取消的处理器不再被记成一次失败：内存代理不再把它送进死信或丢弃，Kafka 不再原位重试到上限后写死信并提交位点，RabbitMQ 不再记不实的死信日志（ADR-0261）
 - **修复** Kafka 与 Redis 在应用排空期间不再原位重试把尝试次数用完后进死信（ADR-0261）
 - **修复** 内存代理停止时，已从队列取出、还在等应用进入服务状态的投递放回队列，以前丢失（ADR-0261）
 - **调整** 派发抛出的异常转成的 `MESSAGING_UNEXPECTED_001` 里 `reason` 不再带异常消息，只写异常类型全名或框架错误码，另记一条带完整异常的 Warning（ADR-0261）
+- **修复** 应用开始排空的那一刻被管道以 `KERNEL_HOSTING_004` 拒绝的派发不再计一次尝试：赶上最后一次尝试时竞争投递不再进死信、广播投递不再被丢弃（ADR-0275）
+- **新增** `MessageDeliveryAttempt.Undecodable`：无法解码的消息的结论，自写的代理按它的 `Disposition` 了结；三个代理的竞争订阅日志统一成 `it was dead-lettered`（ADR-0275）
+- **新增** 发件箱健康项 `messaging.outbox.backlog` 与四个阈值 `XiHan:Messaging:Outbox:Health*`：积压超限以 `MESSAGING_UNAVAILABLE_004` 降级，死信超限（缺省有死信就算）以 `MESSAGING_UNAVAILABLE_005` 降级（ADR-0272）
+- **新增** `OutboxDeadLetters.RedriveManyAsync(ids)`：批量重投发件箱死信，逐项结果与入参同序，尝试次数归零；不存在的行是 `MESSAGING_NOTFOUND_001`，不在死信里的行是 `MESSAGING_CONFLICT_001`（ADR-0272）
 
-### 测试
+### 缓存
 
-- **新增** `XiHan.Framework.Testing` 的 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`：按脚本失败的工作单元与仓储替身，测管道外的代码在数据库故障时的收尾（ADR-0259）
-- **新增** `XiHan.Framework.Testing` 的 `LogCapture`：把日志收进内存的日志工厂，按级别、类别、消息与异常断言组件写了哪条日志（ADR-0262）
+- **调整** 缓存键与键前缀的长度按 UTF-8 字节计（不超过 512 字节），`CacheKey.MaxLength` 改名 `MaxBytes`；含非 ASCII 字符的长键比原来更早被拒绝，全是汉字的键由 512 个字降到 170 个（ADR-0274）
+- **调整** `GenerationCache<T>` 的区名与直接写出的范围、条目各按 128 字节计，`MaxRegionLength` 改名 `MaxRegionBytes`；含非 ASCII 字符且超过 128 字节的范围或条目改用摘要，滚动升级期间新旧实例对这类范围的失效不互通，最长一个存活时间（ADR-0274）
+- **新增** `ICache.GetOrCreateAsync` 合并同键并发：同一个缓存实例上同一个键、同一种结果类型的并发未命中只回源一次，热点键过期时不再一起回源；新增 `InFlightLoadTable` 与 `InFlightLoad` 供自写的 `ICache` 使用（ADR-0271）
+- **调整** 两级缓存自己合并同键并发，对 L2 改为分开读写，不再调用 L2 的 `GetOrCreateAsync`；L1 同时未命中只读一次 L2（ADR-0271）
+- **调整** `GetOrCreateAsync` 的过期选项改在回源之前校验，令牌已取消且未命中时不再执行工厂（ADR-0271）
+
+### 调度
+
+- **调整** `IJobScheduler.RunsAsync` 改名 `ListRunsAsync`，`StatusesAsync(names)` 改名 `FindStatusesAsync`，扩展方法 `StatusAsync(name)` 改名 `FindStatusAsync`（ADR-0270）
+- **调整** `IJobStore` 的六个读取改名为 `ListTriggersAsync`、`ListRunsAsync`、`ListRunningRunsAsync`、`ListLastRunsAsync`、`ListCancelRequestedRunsAsync`、`ListNodesAsync`，`JobSchedulerConformance.StatusAsync` 改名 `GetStatusAsync`（ADR-0270）
 
 ### 对象存储
 
 - **新增** `BlobMultipart.ValidateParts`：完成清单非空、编号严格升序的校验，自写分片上传的 Provider 在访问存储前调用（ADR-0254）
 - **修复** S3 存储的完成清单里有 `null` 时抛 `ArgumentException`，以前是 `NullReferenceException`（ADR-0254）
 - **调整** 文件系统存储先查完成清单、再看上传是否存在：上传不存在且清单为空或乱序时返回 `OBJECTSTORAGE_VALIDATION_002`，与 S3 一致（ADR-0254）
+- **调整** `BlobStores.RemoveAsync` 改为批量，逐项返回是否存在过，单条重载删除；移除的实例释放失败只记 Warning，不再抛给调用方（ADR-0266）
+- **新增** 命名存储实例的登记数上限 `XiHan:ObjectStorage:StoreMaxCount`（缺省 64，1–1024），满了再登记新名字返回 `OBJECTSTORAGE_UNAVAILABLE_005`（ADR-0266）
+- **移除** `S3BlobStore` 的公开构造，S3 包的公开面不再有 AWS SDK 的类型：缺省实例由特性建出，命名实例经 `BlobStores` 按定义建（ADR-0266）
+- **调整** `IBlobMultipartStore.AbortAsync` 改为批量，逐项返回 `Result`；单条成了扩展方法，调用点不用改，自写的 Provider 改实现批量方法并用新增的 `BlobMultipart.ValidateUploads` 核对入参（ADR-0266）
+- **调整** `BlobSignedUrl` 改为 `required` 初始化成员，位置构造与解构删除（ADR-0266）
+
+### 可观测
+
+- **新增** Span `xihan.plugin.invoke`：宿主调用插件的操作与向插件投递事件各记一条，是 `xihan.invoke` 的子 Span，写给插件的 `traceparent` 以它为父级（ADR-0269）
+- **调整** 操作调用的 `xihan.invoke`、`xihan.invocations`、`xihan.invocation.duration` 新增标签 `xihan.operation`（操作 ID），两个指标的序列按操作分开；不是操作调用时不带这个标签（ADR-0269）
+
+### 测试
+
+- **新增** `XiHan.Framework.Testing` 的 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`：按脚本失败的工作单元与仓储替身，测管道外的代码在数据库故障时的收尾（ADR-0259）
+- **新增** `XiHan.Framework.Testing` 的 `LogCapture`：把日志收进内存的日志工厂，按级别、类别、消息与异常断言组件写了哪条日志（ADR-0262）
+- **新增** `MessageBrokerConformance.ReadDeadLettersAsync`（抽象，继承代理套件的测试类要实现）与两条用例：用完尝试次数进死信、停止打断的投递不进死信（ADR-0275）
+- **新增** 一致性套件的用例：`BlobStoreConformance` 的批量放弃、`OutboxConformance` 的死信重投、`CacheStoreConformance` 的恰好 512 字节的多字节键（给键加前缀的夹具覆写 `KeyPrefixBytes`）（ADR-0266、ADR-0272、ADR-0274）
 
 ## v5.0.0-rc.7（2026-11-23）
 

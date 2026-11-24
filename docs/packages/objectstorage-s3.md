@@ -15,7 +15,7 @@
 
 ## 概述
 
-本包是显式 Provider，装配后顶替默认的文件系统存储，三个能力都由同一个 `S3BlobStore` 实例提供。客户端由特性按选项创建，停止时释放；应用自己注册了 `IAmazonS3`（自定义凭据链、代理、重试策略）时沿用应用的。各家兼容服务共用这一个包，不为每家云单独做包。
+本包是显式 Provider，装配后顶替默认的文件系统存储，三个能力都由同一个 `S3BlobStore` 实例提供。客户端由特性按选项创建，停止时释放；选项表达不了的（临时凭据、代理、超时、重试策略），应用在装配前向容器注册自己的 `IAmazonS3`，缺省实例沿用它。本包的公开类型不带 AWS SDK 的类型，`S3BlobStore` 没有公开构造：更多的实例经 `BlobStores` 按定义登记，各建各的客户端。各家兼容服务共用这一个包，不为每家云单独做包。
 
 `ServiceUrl` 为空时按 `Region` 访问 Amazon S3；有值时指向兼容服务，`Region` 作签名区域，并只在服务端要求时计算与校验校验和（多数兼容服务不支持分块尾部校验和）。`AccessKey` 与 `SecretKey` 都为空时走 SDK 的默认凭据链（环境变量、配置文件、实例角色）。
 
@@ -135,7 +135,7 @@ done
 | 类型 | 说明 |
 | --- | --- |
 | `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替或其余能力只是兜底选出时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection` |
-| `S3BlobStore` | 实现 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner`；公开构造函数接收外部的 `IAmazonS3`，此时不拥有客户端 |
+| `S3BlobStore` | 实现 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner`；没有公开构造：缺省实例由 `S3ObjectStorageFeature` 建出，命名实例由 `S3BlobStoreProvider` 按定义建出，都按「条件写入探测」探测 |
 | `S3ObjectStorageOptions` | 选项；`FromConfiguration(configuration, binding)`、`FromSettings`（命名实例的设置，未知键抛出） |
 | `S3BlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `s3`；每个实例按自己的端点、区域与密钥建客户端 |
 
@@ -176,7 +176,7 @@ var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2
 - 批量删除：S3 的删除不报告对象是否存在过，先逐键 HEAD 定存在性（同一批里重复的键只有第一次算存在），再把存在的键按每批 1000 个 `DeleteObjects`；删除失败只影响本次负责删除的项。
 - 列举：`ListObjectsV2` 按前缀分页，续页标记就是 S3 的 continuation token；条目只有键、长度、ETag 与修改时间，内容类型为缺省值、自定义元数据为空，需要时再 `HeadAsync`；不符合键文法的对象（以 `/` 结尾的「目录」占位、保留前缀 `.xihan` 下的框架对象如探测键）跳过，所以一页可能少于 `PageSize` 条、甚至为空而仍带续页标记，取到续页标记为空为止；桶不存在视作空容器。
 - 范围读取经 `Range` 头，`Content-Range` 给出实际范围与总长；起点越界（416）返回 `OBJECTSTORAGE_VALIDATION_001`。
-- 分片上传直接映射 S3 multipart，`ListPartsAsync` 分页取全；不覆盖的发起与完成同样要求条件写入已确认（探测也核对分片的条件完成），完成先 HEAD 再带 `If-None-Match: *`；服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）返回 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 返回 `OBJECTSTORAGE_NOTFOUND_002`。
+- 分片上传直接映射 S3 multipart，`ListPartsAsync` 分页取全；不覆盖的发起与完成同样要求条件写入已确认（探测也核对分片的条件完成），完成先 HEAD 再带 `If-None-Match: *`；服务端拒绝分片清单（`InvalidPart`、`EntityTooSmall` 等）返回 `OBJECTSTORAGE_VALIDATION_002`，`NoSuchUpload` 返回 `OBJECTSTORAGE_NOTFOUND_002`。批量放弃没有原生接口，逐项请求 `AbortMultipartUpload`，上传或桶不存在都算成功。
 - 预签名经 SDK 在本地签出（签名 V4，端点是 http 时按 http 签）：下载可带 `Content-Disposition`，上传可限定内容类型，分片地址带上传标识与编号。
 - 没有配额，由桶策略管理。调用方的取消原样抛出。
 - 健康项 `objectstorage.s3.connection`：启动时与条件写入探测并行同步探一次，之后按 `HealthProbeIntervalSeconds` 在后台重探并缓存结果（只做 HEAD 或列桶）；失败或超时为 Degraded（`KERNEL_UNAVAILABLE_005`，`reason` 只写异常类型，完整异常进日志），应用仍在服务。条件写入的状态即时并入：数据 `conditionalWrites` 为 `confirmed` / `unconfirmed` / `unsupported` / `disabled`，连不上 Degraded，启动之后才被拒绝或缺桶 Failed（`OBJECTSTORAGE_DENIED_002` / `OBJECTSTORAGE_NOTFOUND_001`），探明不认 Failed（`OBJECTSTORAGE_UNAVAILABLE_003`）。

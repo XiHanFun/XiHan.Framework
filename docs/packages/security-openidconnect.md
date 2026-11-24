@@ -15,7 +15,7 @@
 
 ## 概述
 
-`OpenIdConnectSecurityFeature` 注册 `OpenIdConnectOptions`、元数据缓存 `OpenIdConnectMetadataCache`、`Bearer` 方案的 `OpenIdConnectAuthenticationHandler` 与 Authenticate 阶段的 `AuthenticationMiddleware`。签名密钥来自签发者 JWKS，支持 RS256、ES256 等非对称算法。
+`OpenIdConnectSecurityFeature` 注册 `OpenIdConnectOptions`、元数据缓存 `OpenIdConnectMetadataCache`、`Bearer` 方案的 `OpenIdConnectCredentialHandler` 与 Authenticate 阶段的 `AuthenticationMiddleware`。签名密钥来自签发者 JWKS，支持 RS256、ES256 等非对称算法。
 
 元数据按需取得：首次认证时取发现文档的 `issuer` 与 `jwks_uri`，再取 JWKS 的签名密钥并缓存，之后每隔 `RefreshInterval` 自动刷新；并发认证只发一次请求，其余等待同一结果。令牌的 `kid` 不在当前 JWKS 里时（签发者轮换了密钥）按需刷新一次再校验，两次按需刷新至少间隔 `MinimumRefreshInterval`，伪造的 `kid` 不会让签发者被反复请求。
 
@@ -83,7 +83,7 @@ builder.AddXiHan(xihan => xihan
 | `OpenIdConnectOptions` | 上表各项（时长为 `TimeSpan`）；`DiscoveryPath`；`ResolveMetadataAddress()` 给出发现文档的最终地址 |
 | `OpenIdConnectMetadataCache` | 元数据缓存：`GetAsync`、`RefreshAsync`（受最短间隔限制）、`Current`；取不到元数据时 5 秒后再试 |
 | `OpenIdConnectMetadata` | 一份元数据：`Issuer`、`JwksUri`、`SigningKeys`、`RetrievedAt` |
-| `OpenIdConnectAuthenticationHandler` | `Bearer` 方案的处理器；`SchemeName` = `Bearer` |
+| `OpenIdConnectCredentialHandler` | `Bearer` 方案的处理器；`SchemeName` = `Bearer` |
 
 ## 使用示例
 

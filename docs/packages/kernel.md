@@ -27,8 +27,8 @@
 | `Kernel.Json` | `ResultJson`（Result 与 Error 的线上 JSON 编码，RFC-0001「Result」） |
 | `Kernel.Resilience` | `ResilienceMiddleware`、`ResilienceOptions`、`ResiliencePolicy` |
 | `Kernel.Diagnostics` | `ObserveMiddleware`、`ActivitySource` 与 `Meter` 桥、`IAuditSink` |
-| `Kernel.Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`（`EvaluateAsync` → `Result<AuthorizationResult>`：成功是允许或拒绝，失败是无法判定）、`AuthorizationResult`、`PermissionDefinition`、`PermissionRegistry` |
-| `Kernel.Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PermissionGrant` 抽象 |
+| `Kernel.Security` | `Principal`、`TenantContext`、`SecurityContext`、`ResourceName`、`IPolicy`（`EvaluateAsync` → `Result<AuthorizationDecision>`：成功是允许或拒绝，失败是无法判定）、`AuthorizationDecision`、`PermissionDefinition`、`PermissionRegistry` |
+| `Kernel.Plugins` | `IPlugin`、`IPluginHost`、`PluginContext`、`PluginPermissions` 抽象 |
 | `Kernel.Localization` | 内核自己的消息目录 |
 
 `AddXiHan` 收集特性、求解能力图谱、按拓扑顺序调用 `Configure`，然后把 `App`、内置中间件、权限表、操作登记表、`IInvocationAccessor` 与一个宿主服务注册进容器；容器由宿主构建，内核只配置 `IServiceCollection`。宿主服务随 .NET 通用宿主启动与停止应用。
@@ -90,13 +90,14 @@ await builder.Build().RunAsync();
 | `App` | 运行中的应用：`State`、`Graph`、`Features`、`Health()`、`InvokeAsync`、`CreateContext`、`DescribeGraph()`、`DescribePipeline()` |
 | `IFeature` / `IHostedFeature` | 特性：`Manifest` + `Configure`；托管特性另有 `StartAsync` / `StopAsync` |
 | `IShadowAwareFeature` | 能力全部被顶替时内核改调 `ConfigureShadowed`，只登记与能力选择无关的服务（命名存储实例的 Provider）；不注册契约、不贡献中间件、不启动 |
-| `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`（归属为本特性的清单 ID）、`AddOperation`、`AddStartupCheck`（启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归失败策略管，ADR-0085）、`GetBinding` / `FindBinding` |
+| `FeatureContext` | `Configure` 的入口：`Services`、`Configuration`、`Node`、`AddMiddleware`、`AddPermission`（归属为本特性的清单 ID）、`AddOperation`、`AddStartupCheck`（启动核对：容器建好之后、任何特性启动之前执行，抛出即终止启动，不归失败策略管，ADR-0085）、`GetBinding` / `FindBinding`、`Bindings`（装配时解析好的一份，此后不变）、`ServiceBindingRoot`（应用经 `UseServiceBindingRoot` 指定的根目录，没有指定时为 `null`；装配之后还要按同一套来源解析绑定的特性把它与 `Configuration` 交给 `BindingResolver.Resolve`，ADR-0268） |
+| `BindingResolver` / `BindingValue` | 资源绑定的解析与结果：`Resolve(configuration, serviceBindingRoot)` 先读 Service Binding 目录、再读 `XiHan:Bindings`；`BindingValue` 是初始化器记录，`Name`、`Type`、`Value`、`Properties` 都是 `required` 成员，`Property(key)` 取单个属性，`ToString()` 遮蔽主值 |
 | `KernelOptions` / `FailurePolicy` | 内核选项与失败策略 |
 | `ConfigurationValues` | 从配置逐键读标量：`ReadSeconds`、`ReadInt32`、`ReadInt64`、`ReadBoolean`、`ReadEnum<TEnum>`。键不存在返回 `null`；写了值（含空串）就必须合法，否则抛 `ArgumentException`，消息是 `'<完整配置键>' must be …, but was '<原值>'.`。各包的选项类都用它，自己写选项类时也用它，不要各写一份解析 |
 | `StartupBannerOptions` | 启动 Banner：`Enabled`（读 `XiHan:Kernel:Banner:Enabled`）、`Output`（写入目标，缺省标准输出）、`ApplicationVersion`（宿主包从入口程序集填入）；`FromConfiguration(configuration, defaults)` 让宿主给出自己的缺省 |
 | `IHealthContributor` / `PeriodicHealthContributor` / `ContributorStatus` / `HealthSnapshot` | 健康条目与快照 |
 | `ResolvedGraph` / `ResolvedNode` | 已解析的能力图谱，节点带被选中的能力、可选依赖缺失与 shadowed 标记；`IsRequestedFor` 区分被要求的选中（有依赖或经 `XiHan:Providers` / `UseProvider` 指定）与兜底选出 |
-| `PipelineBuilder` / `IPipelineMiddleware` / `PipelineStep` / `Placement` | 管道 |
+| `PipelineBuilder` / `IPipelineMiddleware` / `PipelineStep` / `Placement` / `MiddlewareDescriptor` | 管道；`PipelineBuilder.Describe()` 返回 `MiddlewareDescriptor` 列表，它是初始化器记录：`Middleware`、`Stage`、`Placement`、`Owner` 是 `required` 成员，`Name`、`Before`、`After` 可选 |
 | `IInvocationAccessor` | 作用域服务，取当前调用的上下文 |
 | `InvocationContextExtensions` | `FindOutcome` / `SetOutcome`、`FindOrigin` / `SetOrigin`、`Find` / `Set`（`ContextItemKey<T>`） |
 | `IOperationInvoker` / `OperationRegistry` / `OperationDescriptor` | 操作调用与登记；`OperationRegistry(permissions)` 绑定核对用的权限登记表，`AddRange(owner, operations, permissions)` 一个归属的一组操作连同它定义的权限码全进或全不进；`RemoveOwnedBy(owner)` 在锁里一次撤回该归属的全部操作与权限码（插件卸载时用，之后可以再登记，ADR-0085）；`Enforce(check)` 核对已登记的操作并挂上核对，此后每次登记都经过它（授权能力用它核对契约的策略名，ADR-0080）；`EnforceAdditions(check)` 挂整组的核对，`check(已登记的, 新增的)` 看得到同一组里的其他项（协议适配器用它挡住路由与 tool 名冲突）；`GetChangeToken()` 的令牌在内容每变一次时触发，协议适配器据此让端点、文档与 tool 表跟随登记表（ADR-0251） |

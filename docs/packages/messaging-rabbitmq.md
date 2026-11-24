@@ -105,9 +105,9 @@ public interface IPaymentGateway
 
 public sealed class PaymentCapturedHandler(IPaymentGateway gateway, MessagingOptions options, ILogger<PaymentCapturedHandler> logger) : IMessageHandler
 {
-    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
-        var outcome = await gateway.ForwardAsync(delivery.Envelope, cancellationToken);
+        var outcome = await gateway.ForwardAsync(delivery.Envelope, context.CancellationToken);
         if (outcome.IsFailure && delivery.Attempt >= options.MaxAttempts)
         {
             logger.LogError("Payment event {MessageId} goes to the dead-letter queue after {Attempt} attempts.", delivery.Envelope.Id, delivery.Attempt);

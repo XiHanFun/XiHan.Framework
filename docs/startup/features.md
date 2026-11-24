@@ -92,6 +92,7 @@
 | `AddStartupCheck(Action<IServiceProvider>)` | 登记要等容器建好才能做的装配核对，在任何特性启动之前执行，抛出即终止启动，见[生命周期与健康](/startup/lifecycle) |
 | `GetBinding(name)`、`FindBinding(name)` | 读取宿主解析出的资源绑定，后者返回 `Maybe<BindingValue>` |
 | `Pipeline`、`Permissions`、`Operations`、`Bindings` | 底层的管道构建器、权限表、操作登记表与绑定表 |
+| `ServiceBindingRoot` | 应用经 `UseServiceBindingRoot` 指定的 Service Binding 根目录，没有指定时为 `null`（取环境变量 `SERVICE_BINDING_ROOT`）；装配之后还要按同一套来源解析绑定的特性用它，如插件宿主 |
 
 ## 最小示例
 

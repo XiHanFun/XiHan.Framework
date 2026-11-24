@@ -4,14 +4,14 @@
 
 ## 为什么需要
 
-一个服务要知道「是谁在调用」，才谈得上「能不能调用」。如果让每个协议宿主各自解析令牌，HTTP、gRPC、MCP、命令行就有四套校验逻辑，换一种认证方式要改四处；如果让业务代码自己校验，每个处理器都得重复一遍。框架把认证放在内核管道的 Authenticate 阶段：宿主只负责把协议里的凭据原样放进调用上下文，`IAuthenticationHandler` 把凭据变成主体 `Principal`，之后的阶段只读安全上下文。认证是能力 `security.authentication@1`，换认证方式就是换 Provider，宿主与业务代码不动。
+一个服务要知道「是谁在调用」，才谈得上「能不能调用」。如果让每个协议宿主各自解析令牌，HTTP、gRPC、MCP、命令行就有四套校验逻辑，换一种认证方式要改四处；如果让业务代码自己校验，每个处理器都得重复一遍。框架把认证放在内核管道的 Authenticate 阶段：宿主只负责把协议里的凭据原样放进调用上下文，`ICredentialHandler` 把凭据变成主体 `Principal`，之后的阶段只读安全上下文。认证是能力 `security.authentication@1`，换认证方式就是换 Provider，宿主与业务代码不动。
 
 ## 凭据、处理器与主体
 
 认证分三步，分属三个角色：
 
 1. 宿主在 Ingress 阶段把协议里的凭据原样放进调用上下文（`SetCredential`），自己不解释它。
-2. Authenticate 阶段的 `AuthenticationMiddleware` 按方案名找到 `IAuthenticationHandler`，由它把凭据变成主体 `Principal`。
+2. Authenticate 阶段的 `AuthenticationMiddleware` 按方案名找到 `ICredentialHandler`，由它把凭据变成主体 `Principal`。
 3. 主体写进安全上下文 `SecurityContext.Principal`，之后的阶段只读。
 
 认证在内核管道里完成，不依赖 ASP.NET Core 的认证中间件；同一个处理器服务 HTTP、gRPC、MCP 与命令行。ASP.NET Core 的认证只在绕过管道的端点上用到，见下文。
@@ -91,7 +91,7 @@ curl -i -H "Authorization: ApiKey wrong-key" http://localhost:5000/whoami    # 4
 
 操作契约的处理器从传进来的调用上下文读同样的东西：`context.GetSecurity().Principal`。
 
-`ApiKeyAuthenticationHandler` 逐条做常量时间比较，不用字典查找，耗时不随匹配位置泄露信息；找不到返回 `SECURITY_DENIED_003`。主体数上限 `XiHan:Security:InMemory:MaxPrincipals`，缺省 1000。
+`ApiKeyCredentialHandler` 逐条做常量时间比较，不用字典查找，耗时不随匹配位置泄露信息；找不到返回 `SECURITY_DENIED_003`。主体数上限 `XiHan:Security:InMemory:MaxPrincipals`，缺省 1000。
 
 ::: warning 内存安全只用于开发与测试
 API Key 明文写在配置里，主体与授予都在进程内存中，重启即恢复为配置内容。生产环境换成 JWT 或 OpenID Connect 认证，授予换成 `Security.Database`，见 [RBAC 授予与条件](/security/grants)。
@@ -102,7 +102,7 @@ API Key 明文写在配置里，主体与授予都在进程内存中，重启即
 `AuthenticationMiddleware` 的处理顺序：
 
 1. 调用上下文里没有凭据：保持匿名，进入第 5 步。
-2. 在容器里的 `IAuthenticationHandler` 中按方案名（不区分大小写）找第一个匹配者；找不到返回 `SECURITY_VALIDATION_001`。
+2. 在容器里的 `ICredentialHandler` 中按方案名（不区分大小写）找第一个匹配者；找不到返回 `SECURITY_VALIDATION_001`。
 3. 处理器返回 `Result<Principal>`。凭据无效、过期、签名不符一律返回 `SECURITY_DENIED_003`，不区分原因对外暴露；处理器内部的基础设施故障以异常抛出，由内核转成失败结果。
 4. 认证成功：写入新的安全上下文，保留已有的租户。
 5. `RequireAuthentication` 为真且主体仍是匿名：返回 `SECURITY_DENIED_001`。
@@ -183,7 +183,7 @@ builder.AddXiHan(xihan => xihan
 
 ## 绕过管道的端点
 
-SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道，Authenticate 阶段管不到它们。`Hosting.AspNetCore` 提供 ASP.NET Core 认证方案 `XiHan`，把这类端点的凭据交给内核已装配的同一个 `IAuthenticationHandler`，JWT、OpenID Connect、ApiKey 都适用，校验项只有一份：
+SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道，Authenticate 阶段管不到它们。`Hosting.AspNetCore` 提供 ASP.NET Core 认证方案 `XiHan`，把这类端点的凭据交给内核已装配的同一个 `ICredentialHandler`，JWT、OpenID Connect、ApiKey 都适用，校验项只有一份：
 
 - 只认带 `PipelineBypassMetadata` 的端点；普通请求仍由管道认证，不会被认证两次。
 - 凭据按宿主的同一规则取：先 `Authorization` 头，没有时只在 `QueryTokenPaths` 登记的路径前缀下接受查询串 `access_token`。
@@ -204,11 +204,11 @@ SignalR Hub、Server-Sent Events 这类长连接端点不经内核管道，Authe
 
 ### 怎样用 Cookie 或 Session 认证
 
-框架没有 Cookie 认证 Provider：内核管道服务 HTTP、gRPC、MCP、命令行四种宿主，凭据模型是 `<scheme> <value>` 的 `Authorization` 头。浏览器端应用用令牌（BFF 模式下由后端把 Cookie 换成令牌再调用），或者自己实现一个 `IAuthenticationHandler` 并在宿主的 Ingress 把 Cookie 翻译成凭据放进调用上下文。
+框架没有 Cookie 认证 Provider：内核管道服务 HTTP、gRPC、MCP、命令行四种宿主，凭据模型是 `<scheme> <value>` 的 `Authorization` 头。浏览器端应用用令牌（BFF 模式下由后端把 Cookie 换成令牌再调用），或者自己实现一个 `ICredentialHandler` 并在宿主的 Ingress 把 Cookie 翻译成凭据放进调用上下文。
 
 ### 能同时接受 ApiKey 和 Bearer 吗
 
-`Security.InMemory` 装配后又装配 `Security.Jwt` 时，内存实现让出认证能力，只剩 Bearer。要同时支持两种方案，自己写一个提供 `security.authentication@1` 的特性，登记两个 `IAuthenticationHandler`（方案分别为 `ApiKey` 与 `Bearer`），中间件按方案名匹配。
+`Security.InMemory` 装配后又装配 `Security.Jwt` 时，内存实现让出认证能力，只剩 Bearer。要同时支持两种方案，自己写一个提供 `security.authentication@1` 的特性，登记两个 `ICredentialHandler`（方案分别为 `ApiKey` 与 `Bearer`），中间件按方案名匹配。
 
 ## 相关包与下一步
 

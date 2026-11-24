@@ -47,7 +47,7 @@ namespace SimpleApp.Orders;
 
 public sealed class OrderPlacedHandler(OrderEventCounter counter) : IMessageHandler
 {
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         // 这里能看到租户等上下文；返回失败会让消息进入重试与死信流程
         counter.Increment();
@@ -132,8 +132,8 @@ using XiHan.Framework.Protocols.CloudEvents.Outbound;
 
 public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) : IMessageHandler
 {
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
-        => webhooks.PublishAsync(delivery.Topic, delivery.Envelope, cancellationToken);
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
+        => webhooks.PublishAsync(delivery.Topic, delivery.Envelope, context.CancellationToken);
 }
 ```
 

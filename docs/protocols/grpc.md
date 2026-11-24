@@ -163,7 +163,7 @@ service Orders {
 
 ## 上下文与截止时间
 
-gRPC 元数据就是 HTTP/2 头，上下文映射与 HTTP 相同：`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline`；没有 `xihan-deadline` 时接受 gRPC 标准的 `grpc-timeout`，客户端设置的 deadline 因此直接成为这次调用的截止时间。
+gRPC 元数据就是 HTTP/2 头，上下文映射与 HTTP 相同：`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline`；没有 `xihan-deadline` 或它读不出时接受 gRPC 标准的 `grpc-timeout`，客户端设置的 deadline 因此直接成为这次调用的截止时间。`xihan-deadline` 的写法见 [HTTP 宿主与中间件](/web/hosting#请求如何变成调用上下文)。
 
 gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用：每次调用在处理器里以请求头建自己的上下文、经完整管道执行，调用来源记协议 `grpc` 与方法全名（如 `/Orders/Create`），远端地址与 `User-Agent` 沿用 HTTP/2 请求。调用上下文的细节见[调用上下文](/startup/invocation-context)。
 

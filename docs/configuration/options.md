@@ -157,7 +157,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:Caching:Remote` | [Caching.Remote](/packages/caching-remote) | 远程缓存的调用超时 |
 | `XiHan:Caching:Idempotency` | [Caching.Abstractions](/packages/caching-abstractions) | 幂等记录的存活时间 |
 | `XiHan:Messaging` | [Messaging.Abstractions](/packages/messaging-abstractions) | 投递次数上限、死信后缀、实例 ID |
-| `XiHan:Messaging:Outbox` | [Messaging.Abstractions](/packages/messaging-abstractions) | 发件箱的轮询、批大小、重试与保留 |
+| `XiHan:Messaging:Outbox` | [Messaging.Abstractions](/packages/messaging-abstractions) | 发件箱的轮询、批大小、重试、保留与健康阈值 |
 | `XiHan:Messaging:InMemory` | [Messaging.InMemory](/packages/messaging-inmemory) | 内存队列的容量 |
 | `XiHan:Messaging:RabbitMQ` | [Messaging.RabbitMQ](/packages/messaging-rabbitmq) | 连接、队列前缀、预取数与健康探测 |
 | `XiHan:Messaging:Kafka` | [Messaging.Kafka](/packages/messaging-kafka) | 集群地址、消费组、主题前缀、重投延迟与客户端属性 |
@@ -174,6 +174,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:ObjectStorage:FileSystem` | [ObjectStorage.FileSystem](/packages/objectstorage-filesystem) | 根目录、容量上限与分片过期 |
 | `XiHan:ObjectStorage:S3` | [ObjectStorage.S3](/packages/objectstorage-s3) | 服务地址、区域、凭据与寻址方式 |
 | `XiHan:ObjectStorage:Stores` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 命名存储实例：`<name>:Provider` 加该 Provider 的设置 |
+| `XiHan:ObjectStorage:StoreMaxCount` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 已建的命名实例数上限（单个键） |
 | `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 命名实例健康探测的间隔（单个键） |
 | `XiHan:ObjectStorage:SignedUrls` | [Hosting.AspNetCore](/packages/hosting-aspnetcore) | 宿主代收发预签名地址的基址与签名密钥 |
 | `XiHan:Configuration:Nacos` | [Configuration.Nacos](/packages/configuration-nacos) | Nacos 服务地址、分组、命名空间、登录与超时 |

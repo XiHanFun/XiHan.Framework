@@ -17,7 +17,7 @@
 | 到达截止时间 | `KERNEL_TIMEOUT_001` | 504 | `DeadlineExceeded` | 7 |
 | 截止时间到达之前调用方取消（连接断开等） | `KERNEL_CANCELLED_001` | 408 | `Cancelled` | 8 |
 
-截止时间随调用传播：HTTP 用请求头 `xihan-deadline`（RFC 3339，UTC），gRPC 用 `grpc-timeout`，命令行用 `--timeout <秒>`；下游调用的截止时间不晚于上游。操作与仓储只需要把 `context.CancellationToken` 传下去，不必自己计时；`context.RemainingTime(now)` 与 `context.IsExpired(now)` 可读剩余时间。
+截止时间随调用传播：HTTP 用请求头 `xihan-deadline`，gRPC 用 `grpc-timeout`（没有 `xihan-deadline` 或它读不出时生效），命令行用 `--timeout <秒>`；下游调用的截止时间不晚于上游。`xihan-deadline` 的值是带 `T`、秒与偏移的时刻，如 `2026-11-18T03:25:00Z` 或 `2026-11-18T11:25:00+08:00`，.NET 用 `DeadlineText.Format` 写出；其余写法（空格代替 `T`、没有偏移、没有秒、只有日期）读不出，读不出当作没有这个头、不报错，调用照常执行，只是没有截止时间，完整规则见 [HTTP 宿主与中间件](/web/hosting#请求如何变成调用上下文)。操作与仓储只需要把 `context.CancellationToken` 传下去，不必自己计时；`context.RemainingTime(now)` 与 `context.IsExpired(now)` 可读剩余时间。
 
 ### 超时与取消的归因
 
@@ -87,7 +87,7 @@ done
 }
 ```
 
-再给请求头加 `xihan-deadline`，值是一个已经过去的 UTC 时刻，响应变成 504、`code` 为 `KERNEL_TIMEOUT_001`：截止时间在进入 Handle 之前就到了。
+再给请求头加 `xihan-deadline`，值是一个已经过去的时刻（如 `2020-01-01T00:00:00Z`），响应变成 504、`code` 为 `KERNEL_TIMEOUT_001`：截止时间在进入 Handle 之前就到了。
 
 ## 配置
 
