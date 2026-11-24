@@ -281,7 +281,7 @@ public sealed class EntityFrameworkCorePersistenceFeature<TContext> : IHostedFea
     private static Maybe<BindingValue> NamedBinding(Maybe<BindingValue> binding, string connectionString)
         => Maybe.Some(binding.TryGetValue(out var value)
             ? value with { Value = connectionString }
-            : new BindingValue(ConnectionBinding, ConnectionBindingType, connectionString, new Dictionary<string, string>(StringComparer.Ordinal)));
+            : new BindingValue { Name = ConnectionBinding, Type = ConnectionBindingType, Value = connectionString, Properties = new Dictionary<string, string>(StringComparer.Ordinal) });
 
     /// <summary>
     /// 连通性探针

@@ -21,7 +21,7 @@ public sealed class RabbitMQMessagingOptionsTests
     [Fact]
     public void FromConfigurationAndBinding_PrefersBinding_AndValidates()
     {
-        var binding = Maybe.Some(new BindingValue("queue", "queue", "amqp://guest:guest@bound:5672", new Dictionary<string, string>()));
+        var binding = Maybe.Some(new BindingValue { Name = "queue", Type = "queue", Value = "amqp://guest:guest@bound:5672", Properties = new Dictionary<string, string>() });
 
         Assert.Equal("amqp://guest:guest@bound:5672", RabbitMQMessagingOptions.FromConfiguration(Build(), binding).Configuration);
         var configured = RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Configuration", "amqps://cfg:5671"), ("XiHan:Messaging:RabbitMQ:QueuePrefix", "app."), ("XiHan:Messaging:RabbitMQ:PrefetchCount", "4")), binding);
@@ -44,7 +44,7 @@ public sealed class RabbitMQMessagingOptionsTests
         var configuration = Build(("XiHan:Messaging:RabbitMQ:Configuration", "amqp://app:from-config@cfg:5672/orders"));
 
         // 绑定只给凭据：连接仍来自配置节，用户名与密码取绑定的；含 @ 与 : 的密码不必转义
-        var credentials = Maybe.Some(new BindingValue("queue", "queue", null, new Dictionary<string, string> { ["username"] = "ops", ["password"] = "p@ss:w/rd" }));
+        var credentials = Maybe.Some(new BindingValue { Name = "queue", Type = "queue", Value = null, Properties = new Dictionary<string, string> { ["username"] = "ops", ["password"] = "p@ss:w/rd" } });
         var options = RabbitMQMessagingOptions.FromConfiguration(configuration, credentials);
         Assert.Equal("amqp://app:from-config@cfg:5672/orders", options.Configuration);
         Assert.Equal("ops", options.UserName);
@@ -56,7 +56,7 @@ public sealed class RabbitMQMessagingOptionsTests
         Assert.Equal("orders", factory.VirtualHost);
 
         // 只给密码、用户名空白：用户名照读 URI
-        var passwordOnly = Maybe.Some(new BindingValue("queue", "queue", null, new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" }));
+        var passwordOnly = Maybe.Some(new BindingValue { Name = "queue", Type = "queue", Value = null, Properties = new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" } });
         var partial = RabbitMQMessageBroker.CreateFactory(RabbitMQMessagingOptions.FromConfiguration(configuration, passwordOnly));
         Assert.Equal("app", partial.UserName);
         Assert.Equal("secret", partial.Password);
@@ -75,7 +75,7 @@ public sealed class RabbitMQMessagingOptionsTests
     [Fact]
     public void Exchange_DefaultsToXihan_IsReadFromConfiguration_AndRejectsEmptyOrReservedNames()
     {
-        var binding = Maybe.Some(new BindingValue("queue", "queue", "amqp://guest:guest@bound:5672", new Dictionary<string, string>()));
+        var binding = Maybe.Some(new BindingValue { Name = "queue", Type = "queue", Value = "amqp://guest:guest@bound:5672", Properties = new Dictionary<string, string>() });
 
         Assert.Equal("xihan", RabbitMQMessagingOptions.FromConfiguration(Build(), binding).Exchange);
         Assert.Equal("orders", RabbitMQMessagingOptions.FromConfiguration(Build(("XiHan:Messaging:RabbitMQ:Exchange", "orders")), binding).Exchange);

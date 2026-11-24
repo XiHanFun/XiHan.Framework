@@ -21,7 +21,7 @@ public sealed class KafkaMessagingOptionsTests
     [Fact]
     public void FromConfigurationAndBinding_PrefersBinding_AndValidates()
     {
-        var binding = Maybe.Some(new BindingValue("stream", "stream", "bound:9092", new Dictionary<string, string>()));
+        var binding = Maybe.Some(new BindingValue { Name = "stream", Type = "stream", Value = "bound:9092", Properties = new Dictionary<string, string>() });
         var bound = KafkaMessagingOptions.FromConfiguration(Build(), binding);
         Assert.Equal("bound:9092", bound.BootstrapServers);
         Assert.Equal("xihan", bound.ConsumerGroup);
@@ -67,15 +67,21 @@ public sealed class KafkaMessagingOptionsTests
 
         // 绑定只给凭据：引导地址仍来自配置节，四项 SASL 属性逐项取绑定的，空白的不算给出；
         // 绑定目录里的其余文件（provider、host）不是 librdkafka 的配置项，不透传
-        var binding = Maybe.Some(new BindingValue("stream", "stream", null, new Dictionary<string, string>
+        var binding = Maybe.Some(new BindingValue
         {
-            ["security.protocol"] = "SASL_SSL",
-            ["sasl.mechanism"] = " ",
-            ["sasl.username"] = "ops",
-            ["sasl.password"] = "secret",
-            ["provider"] = "confluent",
-            ["host"] = "bound",
-        }));
+            Name = "stream",
+            Type = "stream",
+            Value = null,
+            Properties = new Dictionary<string, string>
+            {
+                ["security.protocol"] = "SASL_SSL",
+                ["sasl.mechanism"] = " ",
+                ["sasl.username"] = "ops",
+                ["sasl.password"] = "secret",
+                ["provider"] = "confluent",
+                ["host"] = "bound",
+            },
+        });
         var options = KafkaMessagingOptions.FromConfiguration(configuration, binding);
 
         Assert.Equal("cfg:9092", options.BootstrapServers);

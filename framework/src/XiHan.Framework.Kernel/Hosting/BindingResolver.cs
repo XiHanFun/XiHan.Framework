@@ -97,7 +97,7 @@ public static class BindingResolver
             }
         }
 
-        return new BindingValue(section.Key, type, value, properties);
+        return new BindingValue { Name = section.Key, Type = type, Value = value, Properties = properties };
     }
 
     /// <summary>
@@ -138,6 +138,6 @@ public static class BindingResolver
             }
         }
 
-        return new BindingValue(Path.GetFileName(directory), type, value, properties);
+        return new BindingValue { Name = Path.GetFileName(directory), Type = type, Value = value, Properties = properties };
     }
 }

@@ -81,7 +81,7 @@ public sealed class TenantShardingTests
 
         Maybe<TenantShard> acme = default, beta = default, none = default;
         Maybe<BindingValue> acmeBinding = default, betaBinding = default;
-        var fallback = Maybe.Some(new BindingValue("db", "connection:relational", "Host=default", new Dictionary<string, string>(StringComparer.Ordinal) { ["pool"] = "10" }));
+        var fallback = Maybe.Some(new BindingValue { Name = "db", Type = "connection:relational", Value = "Host=default", Properties = new Dictionary<string, string>(StringComparer.Ordinal) { ["pool"] = "10" } });
         (await host.InvokeAsync(ctx =>
         {
             acme = ctx.FindTenantShard();

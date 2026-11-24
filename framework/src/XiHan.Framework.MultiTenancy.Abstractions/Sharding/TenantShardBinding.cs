@@ -56,7 +56,7 @@ public static class TenantShardBinding
             properties[TenantShardKeys.ProviderProperty] = shard.Provider;
         }
 
-        return Maybe.Some(new BindingValue(original?.Name ?? bindingName, original?.Type ?? bindingType, shard.ConnectionString, properties));
+        return Maybe.Some(new BindingValue { Name = original?.Name ?? bindingName, Type = original?.Type ?? bindingType, Value = shard.ConnectionString, Properties = properties });
     }
 
     /// <summary>

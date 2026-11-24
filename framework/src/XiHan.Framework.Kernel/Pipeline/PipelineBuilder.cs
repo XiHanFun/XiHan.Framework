@@ -889,6 +889,15 @@ public sealed class PipelineBuilder
         /// <summary>
         /// 对外公开的描述
         /// </summary>
-        public MiddlewareDescriptor Descriptor => new(Middleware, Stage, Placement, Owner) { Name = Name, Before = Before, After = After };
+        public MiddlewareDescriptor Descriptor => new()
+        {
+            Middleware = Middleware,
+            Stage = Stage,
+            Placement = Placement,
+            Owner = Owner,
+            Name = Name,
+            Before = Before,
+            After = After,
+        };
     }
 }

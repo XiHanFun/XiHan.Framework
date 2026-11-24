@@ -51,7 +51,7 @@ public sealed class RedisCachingTests
         // 用内存键值对构建配置
         static IConfiguration Build(params (string Key, string Value)[] values)
             => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
-        var binding = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", "bound:6379", new Dictionary<string, string>()));
+        var binding = Maybe.Some(new Kernel.Hosting.BindingValue { Name = "cache", Type = "cache:distributed", Value = "bound:6379", Properties = new Dictionary<string, string>() });
 
         Assert.Equal("bound:6379", RedisCachingOptions.FromConfiguration(Build(), binding).Configuration);
         // 两者都给时取绑定的连接，其余键照读配置节
@@ -60,7 +60,7 @@ public sealed class RedisCachingTests
         Assert.Equal("app:", configured.KeyPrefix);
         Assert.Equal("cfg:6379", RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:Configuration", "cfg:6379")), default).Configuration);
         // 主值为空的绑定不算给出了连接
-        var empty = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", " ", new Dictionary<string, string>()));
+        var empty = Maybe.Some(new Kernel.Hosting.BindingValue { Name = "cache", Type = "cache:distributed", Value = " ", Properties = new Dictionary<string, string>() });
         Assert.Equal("cfg:6379", RedisCachingOptions.FromConfiguration(Build(("XiHan:Caching:Redis:Configuration", "cfg:6379")), empty).Configuration);
         Assert.Equal(TimeSpan.FromMinutes(1), configured.DefaultTimeToLive);
         Assert.True(configured.PublishChanges);
@@ -81,7 +81,7 @@ public sealed class RedisCachingTests
         var configuration = Build(("XiHan:Caching:Redis:Configuration", "cfg:6379,user=app,password=from-config"));
 
         // 绑定只给凭据、不给主值：连接仍来自配置节，凭据逐项取绑定的；含逗号的密码不会把连接字符串拆错
-        var credentials = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", null, new Dictionary<string, string> { ["username"] = "ops", ["password"] = "p,w=1" }));
+        var credentials = Maybe.Some(new Kernel.Hosting.BindingValue { Name = "cache", Type = "cache:distributed", Value = null, Properties = new Dictionary<string, string> { ["username"] = "ops", ["password"] = "p,w=1" } });
         var options = RedisCachingOptions.FromConfiguration(configuration, credentials);
         Assert.Equal("cfg:6379,user=app,password=from-config", options.Configuration);
         Assert.Equal("ops", options.UserName);
@@ -92,7 +92,7 @@ public sealed class RedisCachingTests
         Assert.StartsWith("cfg:6379,", connection.ToString(includePassword: false), StringComparison.Ordinal);
 
         // 只给密码：用户名照读连接字符串；空白的属性不算给出
-        var passwordOnly = Maybe.Some(new Kernel.Hosting.BindingValue("cache", "cache:distributed", null, new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" }));
+        var passwordOnly = Maybe.Some(new Kernel.Hosting.BindingValue { Name = "cache", Type = "cache:distributed", Value = null, Properties = new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" } });
         var partial = RedisCachingFeature.ConnectionOptions(RedisCachingOptions.FromConfiguration(configuration, passwordOnly));
         Assert.Equal("app", partial.User);
         Assert.Equal("secret", partial.Password);

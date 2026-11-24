@@ -28,7 +28,7 @@ public sealed class TenantShardScopeTests
     /// <summary>
     /// 原绑定
     /// </summary>
-    private static readonly Maybe<BindingValue> _fallback = Maybe.Some(new BindingValue("db", "connection:relational", "Host=default", new Dictionary<string, string>(StringComparer.Ordinal)));
+    private static readonly Maybe<BindingValue> _fallback = Maybe.Some(new BindingValue { Name = "db", Type = "connection:relational", Value = "Host=default", Properties = new Dictionary<string, string>(StringComparer.Ordinal) });
 
     [Fact]
     public async Task BindTenant_OutsideThePipeline_BindsEvenADisabledTenant()

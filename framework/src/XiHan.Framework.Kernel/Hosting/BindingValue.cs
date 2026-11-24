@@ -10,15 +10,40 @@ namespace XiHan.Framework.Kernel.Hosting;
 /// 宿主解析出的一个资源绑定
 /// </summary>
 /// <remarks>
-/// 来源：配置节 <c>XiHan:Bindings:&lt;name&gt;</c>，或 Service Binding 规范的 <c>SERVICE_BINDING_ROOT</c> 目录
+/// 来源：配置节 <c>XiHan:Bindings:&lt;name&gt;</c>，或 Service Binding 规范的 <c>SERVICE_BINDING_ROOT</c> 目录。四项都是必填的初始化成员，没有位置构造与解构：以后加字段只加可选的初始化成员，不破坏已有的构造处（ADR-0142、ADR-0267）
 /// </remarks>
-/// <param name="Name">绑定名</param>
-/// <param name="Type">资源类型；来源未声明时为空字符串</param>
-/// <param name="Value">主值（连接字符串、URI 等）；没有时为 <see langword="null"/></param>
-/// <param name="Properties">其余属性</param>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record BindingValue(string Name, string Type, string? Value, IReadOnlyDictionary<string, string> Properties)
+public sealed record BindingValue
 {
+    /// <summary>
+    /// 绑定名
+    /// </summary>
+    public required string Name { get; init; }
+
+    /// <summary>
+    /// 资源类型
+    /// </summary>
+    /// <remarks>
+    /// 来源未声明时为空字符串
+    /// </remarks>
+    public required string Type { get; init; }
+
+    /// <summary>
+    /// 主值（连接字符串、URI 等）
+    /// </summary>
+    /// <remarks>
+    /// 没有时为 <see langword="null"/>
+    /// </remarks>
+    public required string? Value { get; init; }
+
+    /// <summary>
+    /// 其余属性
+    /// </summary>
+    /// <remarks>
+    /// 没有其余属性时是空字典
+    /// </remarks>
+    public required IReadOnlyDictionary<string, string> Properties { get; init; }
+
     /// <summary>
     /// 取属性
     /// </summary>

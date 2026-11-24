@@ -28,7 +28,7 @@ public sealed class NacosConfigurationTests
     [Fact]
     public void Options_FromConfiguration_ParsesAndRejectsInvalid()
     {
-        var binding = Maybe.Some(new BindingValue("nacos", "configuration:remote", "http://bound:8848", new Dictionary<string, string>()));
+        var binding = Maybe.Some(new BindingValue { Name = "nacos", Type = "configuration:remote", Value = "http://bound:8848", Properties = new Dictionary<string, string>() });
         var bound = NacosOptions.FromConfiguration(Build(), binding);
         Assert.Equal(["http://bound:8848"], bound.ServerAddresses);
         Assert.Equal("DEFAULT_GROUP", bound.Group);
@@ -75,13 +75,13 @@ public sealed class NacosConfigurationTests
             ("XiHan:Configuration:Nacos:Password", "from-config"));
 
         // 绑定只给凭据：地址仍来自配置节，用户名与密码取绑定的
-        var credentials = Maybe.Some(new BindingValue("nacos", "configuration:remote", null, new Dictionary<string, string> { ["username"] = "ops", ["password"] = "secret" }));
+        var credentials = Maybe.Some(new BindingValue { Name = "nacos", Type = "configuration:remote", Value = null, Properties = new Dictionary<string, string> { ["username"] = "ops", ["password"] = "secret" } });
         var options = NacosOptions.FromConfiguration(configuration, credentials);
         Assert.Equal(["http://cfg:8848"], options.ServerAddresses);
         Assert.Equal(("ops", "secret"), (options.UserName, options.Password));
 
         // 逐项：只给密码、用户名空白时用户名照读配置节
-        var passwordOnly = Maybe.Some(new BindingValue("nacos", "configuration:remote", null, new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" }));
+        var passwordOnly = Maybe.Some(new BindingValue { Name = "nacos", Type = "configuration:remote", Value = null, Properties = new Dictionary<string, string> { ["username"] = " ", ["password"] = "secret" } });
         var partial = NacosOptions.FromConfiguration(configuration, passwordOnly);
         Assert.Equal(("nacos", "secret"), (partial.UserName, partial.Password));
 

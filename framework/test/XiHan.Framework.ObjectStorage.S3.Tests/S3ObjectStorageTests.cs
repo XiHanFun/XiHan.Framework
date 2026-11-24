@@ -60,13 +60,19 @@ public sealed class S3ObjectStorageTests
     [Fact]
     public void Options_BindingOverridesConfiguration()
     {
-        var binding = new BindingValue(S3ObjectStorageFeature.ConnectionBinding, "blob", "https://s3.example.com", new Dictionary<string, string>(StringComparer.Ordinal)
+        var binding = new BindingValue
         {
-            ["region"] = "eu-west-1",
-            ["accessKey"] = "bound-ak",
-            ["secretKey"] = "bound-sk",
-            ["forcePathStyle"] = "false",
-        });
+            Name = S3ObjectStorageFeature.ConnectionBinding,
+            Type = "blob",
+            Value = "https://s3.example.com",
+            Properties = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["region"] = "eu-west-1",
+                ["accessKey"] = "bound-ak",
+                ["secretKey"] = "bound-sk",
+                ["forcePathStyle"] = "false",
+            },
+        };
 
         var options = S3ObjectStorageOptions.FromConfiguration(Configuration(("XiHan:ObjectStorage:S3:ServiceUrl", "http://localhost:9000"), ("XiHan:ObjectStorage:S3:AccessKey", "ak")), Maybe.Some(binding));
 
@@ -76,12 +82,18 @@ public sealed class S3ObjectStorageTests
         Assert.False(options.ForcePathStyle);
 
         // 空白的属性不算给出，逐项照读配置节；绑定只给凭据时地址照读配置节
-        var blank = new BindingValue(S3ObjectStorageFeature.ConnectionBinding, "blob", null, new Dictionary<string, string>(StringComparer.Ordinal)
+        var blank = new BindingValue
         {
-            ["region"] = " ",
-            ["accessKey"] = "",
-            ["secretKey"] = "bound-sk",
-        });
+            Name = S3ObjectStorageFeature.ConnectionBinding,
+            Type = "blob",
+            Value = null,
+            Properties = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["region"] = " ",
+                ["accessKey"] = "",
+                ["secretKey"] = "bound-sk",
+            },
+        };
         var partial = S3ObjectStorageOptions.FromConfiguration(Configuration(("XiHan:ObjectStorage:S3:ServiceUrl", "http://localhost:9000"), ("XiHan:ObjectStorage:S3:Region", "cn-north-1"), ("XiHan:ObjectStorage:S3:AccessKey", "ak"), ("XiHan:ObjectStorage:S3:SecretKey", "sk")), Maybe.Some(blank));
         Assert.Equal("http://localhost:9000", partial.ServiceUrl);
         Assert.Equal("cn-north-1", partial.Region);

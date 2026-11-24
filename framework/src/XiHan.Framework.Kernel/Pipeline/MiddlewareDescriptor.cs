@@ -8,13 +8,32 @@ namespace XiHan.Framework.Kernel.Pipeline;
 /// <summary>
 /// 管道中一个中间件的描述：类型、阶段、位置、归属与相对约束
 /// </summary>
-/// <param name="Middleware">中间件类型</param>
-/// <param name="Stage">所属阶段</param>
-/// <param name="Placement">阶段内位置</param>
-/// <param name="Owner">注册者（清单 ID 或 <c>app</c>）</param>
+/// <remarks>
+/// 类型、阶段、位置与归属是必填的初始化成员，没有位置构造与解构：以后加字段只加可选的初始化成员，不破坏已有的构造处（ADR-0142、ADR-0267）
+/// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
-public sealed record MiddlewareDescriptor(Type Middleware, PipelineStage Stage, Placement Placement, string Owner)
+public sealed record MiddlewareDescriptor
 {
+    /// <summary>
+    /// 中间件类型
+    /// </summary>
+    public required Type Middleware { get; init; }
+
+    /// <summary>
+    /// 所属阶段
+    /// </summary>
+    public required PipelineStage Stage { get; init; }
+
+    /// <summary>
+    /// 阶段内位置
+    /// </summary>
+    public required Placement Placement { get; init; }
+
+    /// <summary>
+    /// 注册者（清单 ID 或 <c>app</c>）
+    /// </summary>
+    public required string Owner { get; init; }
+
     /// <summary>
     /// 实例名字
     /// </summary>

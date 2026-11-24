@@ -131,5 +131,5 @@ public sealed class RedisMessagingOptionsTests
     /// 绑定 <c>queue</c>
     /// </summary>
     private static Maybe<BindingValue> Binding(string value, params (string Key, string Value)[] properties)
-        => Maybe.Some(new BindingValue(RedisMessagingFeature.ConnectionBinding, "cache:distributed", value, properties.ToDictionary(static p => p.Key, static p => p.Value, StringComparer.Ordinal)));
+        => Maybe.Some(new BindingValue { Name = RedisMessagingFeature.ConnectionBinding, Type = "cache:distributed", Value = value, Properties = properties.ToDictionary(static p => p.Key, static p => p.Value, StringComparer.Ordinal) });
 }

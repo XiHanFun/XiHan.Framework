@@ -212,4 +212,44 @@ public sealed class PipelineBuilderTests
         Assert.Equal(PipelineStage.Transaction, descriptor.Stage);
         Assert.Equal(PipelineBuilder.AppOwner, descriptor.Owner);
     }
+
+    [Fact]
+    public void Describe_ReportsEveryMemberOfARegistration()
+    {
+        var log = new List<string>();
+        var builder = new PipelineBuilder()
+            .UseAt<MiddlewareA>(PipelineStage.Handle, Placement.Beginning, owner: "xihan.a")
+            .UseAt<MiddlewareB>(PipelineStage.Handle, Placement.End, owner: "xihan.b")
+            .UseNamedInstance("p:first", new MiddlewareC(log), PipelineStage.Observe, Placement.End, owner: "xihan.plugins.p")
+            .After<MiddlewareB, MiddlewareA>();
+
+        var descriptors = builder.Describe();
+
+        var named = descriptors[0];
+        Assert.Equal((typeof(MiddlewareC), PipelineStage.Observe, Placement.End, "xihan.plugins.p", "p:first"), (named.Middleware, named.Stage, named.Placement, named.Owner, named.Name));
+        var first = descriptors[1];
+        Assert.Equal((typeof(MiddlewareA), PipelineStage.Handle, Placement.Beginning, "xihan.a", null), (first.Middleware, first.Stage, first.Placement, first.Owner, first.Name));
+        Assert.Empty(first.After);
+        var second = descriptors[2];
+        Assert.Equal((typeof(MiddlewareB), "xihan.b"), (second.Middleware, second.Owner));
+        Assert.Equal([typeof(MiddlewareA)], second.After);
+        Assert.Empty(second.Before);
+
+        // 记录是初始化器形状：with 改一项、其余照旧，相等按全部成员比
+        var moved = first with { Stage = PipelineStage.Egress };
+        Assert.Equal((typeof(MiddlewareA), PipelineStage.Egress, "xihan.a"), (moved.Middleware, moved.Stage, moved.Owner));
+        Assert.NotEqual(first, moved);
+        Assert.Equal(first, moved with { Stage = PipelineStage.Handle });
+    }
+
+    [Theory]
+    [InlineData(typeof(MiddlewareDescriptor))]
+    [InlineData(typeof(BindingValue))]
+    public void DataRecords_HaveNoPositionalConstructorOrDeconstruct(Type type)
+    {
+        // 位置构造与 Deconstruct 的签名随成员数变：正式版之后加成员就是破坏，所以两个记录只留无参构造加初始化成员（ADR-0267）
+        var constructor = Assert.Single(type.GetConstructors());
+        Assert.Empty(constructor.GetParameters());
+        Assert.Null(type.GetMethod("Deconstruct"));
+    }
 }

@@ -68,6 +68,34 @@ public sealed class HostingSupportTests
     }
 
     [Fact]
+    public void BindingValue_IsBuiltByInitializer_AndMasksItsValueWhenPrinted()
+    {
+        var binding = new BindingValue
+        {
+            Name = "db",
+            Type = "connection:relational",
+            Value = "Host=db;Password=s3cret",
+            Properties = new Dictionary<string, string>(StringComparer.Ordinal) { ["schema"] = "public" },
+        };
+
+        // with 只换主值，名字、类型与属性照旧（Provider 按租户换连接串时就是这么用的）
+        var rebound = binding with { Value = "Host=shard-1" };
+        Assert.Equal(("db", "connection:relational", "Host=shard-1"), (rebound.Name, rebound.Type, rebound.Value));
+        Assert.Same(binding.Properties, rebound.Properties);
+        Assert.Equal("public", rebound.Property("schema").ValueOrThrow());
+
+        // 主值可能是带口令的连接串：打印时遮蔽，其余成员照常打印
+        var text = binding.ToString();
+        Assert.DoesNotContain("s3cret", text, StringComparison.Ordinal);
+        Assert.Contains("Name = db, Type = connection:relational, Value = ***", text, StringComparison.Ordinal);
+
+        // 没有主值的绑定（只给凭据属性）是合法的
+        var credentialsOnly = new BindingValue { Name = "queue", Type = string.Empty, Value = null, Properties = new Dictionary<string, string>(StringComparer.Ordinal) };
+        Assert.Null(credentialsOnly.Value);
+        Assert.False(credentialsOnly.Property("username").HasValue);
+    }
+
+    [Fact]
     public void BindingResolver_ReadsScalarConfigurationValue()
     {
         var bindings = BindingResolver.Resolve(Hosts.Configuration(("XiHan:Bindings:cache", "localhost:6379")), serviceBindingRoot: Path.Combine(Path.GetTempPath(), "does-not-exist"));
