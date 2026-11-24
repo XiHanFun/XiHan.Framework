@@ -74,9 +74,10 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | 标识 | 规则 | 例子 |
 | --- | --- | --- |
 | 容器 `ContainerName` | `^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`，与 S3 桶名兼容 | `invoices` |
-| 键 `BlobKey` | `/` 分段，1 到 1024 个字符；每段非空、不是 `.` 或 `..`；不含空白、控制字符与 `\`；首段不是 `.xihan`（保留给框架）；区分大小写 | `2026/10/inv-1.pdf` |
+| 键 `BlobKey` | `/` 分段，按 UTF-8 编码后 1 到 1024 字节（`BlobKey.MaxBytes`，与 S3 一致：全是汉字的键最多 341 个字）；每段非空、不是 `.` 或 `..`；不含空白、控制字符与 `\`；首段不是 `.xihan`（保留给框架）；区分大小写 | `2026/10/inv-1.pdf` |
+| 列举的前缀 `BlobQuery.Prefix` | 字符与字节上限同键；可以为空、可以以 `/` 结尾，对各段不作要求，不受保留前缀限制；`BlobKey.IsValidPrefix` 判定 | `2026/10/` |
 | 自定义元数据 | 名 `^[a-z0-9][a-z0-9-]{0,63}$`；值不含控制字符（含换行）；名与值合计不超过 2048 个 UTF-8 字节（`BlobPutOptions.MaxMetadataBytes`，与 S3 一致） | `uploaded-by` |
-| 内容类型 | 媒体类型 `type/subtype`，可带 `;` 起头的参数（可打印 ASCII），1 到 255 个字符；`BlobPutOptions.IsValidContentType` 判定 | `text/plain; charset=utf-8` |
+| 内容类型 | 媒体类型 `type/subtype`，之后可跟若干个参数：每个 `;` 两侧可以有空格，之后必须有参数（不含 `;` 的可打印 ASCII 与空格，以非空格字符开头，引号不解析），所以 `text/plain;`、结尾多出的 `;` 与连续的 `;` 不合法；1 到 255 个字符（只有 ASCII，字符数就是字节数）；`BlobPutOptions.IsValidContentType` 判定 | `text/plain; charset=utf-8` |
 
 `ContainerName` 与 `BlobKey` 用构造或显式转换从 `string` 创建，不合法时抛出 `ArgumentException`，不会进入 Provider（内容类型与自定义元数据不合法时 `BlobPutOptions` 同样抛出）；`default` 值不是合法标识，读 `Value` 抛 `InvalidOperationException`。来自用户输入的键先用 `BlobKey.IsValid` 判断；用户给的文件名更稳的做法是不当键用，自己生成键（日期加 ID），把原文件名放进自定义元数据或业务表。
 

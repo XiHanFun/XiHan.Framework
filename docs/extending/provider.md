@@ -44,7 +44,7 @@ public sealed class FileGrantStore(IReadOnlyList<PermissionGrant> grants) : IPer
     {
         using var stream = File.OpenRead(path);
         var entries = JsonSerializer.Deserialize(stream, GrantFileJsonContext.Default.ListGrantEntry) ?? [];
-        return new FileGrantStore(entries.Select(static e => new PermissionGrant(new GrantSubject(e.Kind, e.Subject), e.Permission, e.Tenant)).ToList());
+        return new FileGrantStore(entries.Select(static e => new PermissionGrant { Subject = new GrantSubject(e.Kind, e.Subject), Permission = e.Permission, TenantId = e.Tenant }).ToList());
     }
 
     public ValueTask<Result<IReadOnlyList<IReadOnlyCollection<string>>>> GetManyAsync(IReadOnlyList<GrantSubject> subjects, string? tenantId, CancellationToken cancellationToken)

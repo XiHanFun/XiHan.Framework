@@ -189,7 +189,7 @@ builder.AddXiHan(xihan => xihan
 | 结果 | 行的变化 |
 | --- | --- |
 | 发布成功 | 记 `DispatchedAt`，清掉 `LastError`；`DispatchedRetention` 为 0 时当场删除 |
-| 发布失败，次数未用尽 | 记 `LastError`，`NextAttemptAt` 推后 `RetryDelay × 2^(Attempts − 1)`，不超过 `MaxRetryDelay` |
+| 发布失败，次数未用尽 | 记 `LastError`，`NextAttemptAt` 推后 `min(RetryDelay × 2^(Attempts − 1), MaxRetryDelay)`：翻倍到上限之后一直是上限，对任何尝试次数都是 |
 | 发布失败，次数达到 `MaxAttempts` | 记 `DeadLetteredAt` 进死信，日志 Error 级别 |
 | 载荷无法解码 | 直接进死信（重试也解不开），`LastError` 是 `MESSAGING_VALIDATION_002` |
 | 代理抛出（不可达，或某条消息让整批失败） | 这次调用里的每条按「发布失败」处理，`LastError` 是 `MESSAGING_UNAVAILABLE_001`；记一条 Warning；本轮停止发布，余下的不计尝试、留到下一轮 |

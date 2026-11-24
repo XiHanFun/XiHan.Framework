@@ -125,7 +125,7 @@ curl -s -X POST localhost:5000/diagnostics:whoami \
 {"traceId":"4bf92f3577b34da6a3ce929d0e0e4736","principal":null,"isAuthenticated":false,"tenant":null,"correlation":"order-42","remainingMs":null,"elapsedMs":0.4}
 ```
 
-再加一个 `xihan-deadline` 请求头，值是带 `T`、秒与偏移的时刻（如 `2026-11-18T03:25:00Z`，.NET 用 `DeadlineText.Format` 写出），`remainingMs` 就是到该时刻的剩余毫秒数；别的写法读不出，当作没有这个头。同一份操作在命令行宿主上是 `app diagnostics whoami --correlation order-42 --timeout 30`，输出同样的字段，`remainingMs` 接近 30000，`traceId` 每次调用新生成。
+再加一个 `xihan-deadline` 请求头，值是带 `T`、秒与偏移的时刻（如 `2026-11-18T03:25:00Z`，.NET 用 `DeadlineText.Format` 写出），`remainingMs` 就是到该时刻的剩余毫秒数；别的写法读不出，当作没有这个头，`remainingMs` 为空，宿主日志里多一条类别为 `XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog` 的 Warning（不带原值，1 分钟最多一条）。同一份操作在命令行宿主上是 `app diagnostics whoami --correlation order-42 --timeout 30`，输出同样的字段，`remainingMs` 接近 30000，`traceId` 每次调用新生成。
 
 ## 各协议怎样构造上下文
 

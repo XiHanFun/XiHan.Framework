@@ -95,7 +95,7 @@ public sealed class AssistantsFeature : IFeature
 
 | 项 | 规则 |
 | --- | --- |
-| 名字 | `<resource>_<verb>`，`-` 与 `.` 换成 `_`；超过 64 个字符时取前 55 个字符加 `_` 与 SHA-256 的前 8 位十六进制；`XiHan:AI:Tools:<操作 ID>` 覆盖 |
+| 名字 | `<resource>_<verb>`，`-` 与 `.` 换成 `_`；超过 64 个字符时取前 55 个字符、去掉结尾的 `_`，再接 `_` 与全名 SHA-256 的前 8 位小写十六进制（前缀正好以 `_` 结尾时是 63 个字符，不会出现连着的两个 `_`）；`XiHan:AI:Tools:<操作 ID>` 覆盖 |
 | 名字校验 | 必须匹配 `^[A-Za-z0-9_-]{1,64}$`，不合法或重名时启动失败（`AI_VALIDATION_001`）：`AIToolsFeature` 与 `OpenAIFeature` 启动时都构建工具目录，只装其中任何一个也一样 |
 | 描述 | 消息目录里的 `<操作 ID>.description`（ID 里的 `-` 换成 `_`），按调用方区域翻译；没有时为空 |
 | 输入 Schema | 操作的请求 Schema，没有时 `{"type":"object"}` |
@@ -114,7 +114,7 @@ public sealed class AssistantsFeature : IFeature
 | 服务 | 作用 |
 | --- | --- |
 | `IKnowledgeIngestor` | `IngestAsync(requests)` 批量摄入，每篇文档一个 `Result<int>`（写入的块数）；`RemoveAsync(collection, documentIds)` 按文档删除 |
-| `IChunkingStrategy` | 内置 `FixedWindowChunkingStrategy`：按字符的固定窗口，重叠裁到 `[0, MaxChunkSize − 1]`，换行统一为 `\n`，空白块丢弃 |
+| `IChunkingStrategy` | 内置 `FixedWindowChunkingStrategy`：固定窗口，窗口与重叠按 Unicode 码位计（代理对算一个、不会切开），重叠裁到 `[0, MaxChunkSize − 1]`；换行统一为 `\n` 之后按「窗口 − 重叠」滑动，取到文本结尾的窗口是最后一个；每块切出来之后去掉首尾的空白，去掉之后为空的不成块，去空白不改变后面窗口的位置（有重叠时相邻两块可能相同，各算一块） |
 | `IKnowledgeRetriever` | `RetrieveAsync(query)`：问题嵌入 → 向量搜索（过滤与 `MinScore` 一起交给存储） |
 | `IRagPromptAugmenter` | `Augment(question, chunks)`：把检索结果编号拼进提示词，返回 `string`（模板在启动时校验过，增强本身不会失败） |
 

@@ -87,7 +87,7 @@ curl -s localhost:5000/health/ready
 | `Authorization` | 凭据 | 只拆成方案与值原样放入，由 Authenticate 阶段解释；宿主不验证凭据 |
 | 方法、路径、连接 | 调用来源 `InvocationOrigin` | 协议 `http`；目标是方法加路径（含 PathBase，不含查询串）；远端地址、`User-Agent`、`Referer`；匹配到的端点的路由模板与 `WithName` 名字 |
 
-截止时间在进入管道时已过的请求得到 504 `KERNEL_TIMEOUT_001`。`xihan-deadline` 读不出时请求照常处理，只是没有截止时间，宿主不为此报错：空格代替 `T`、没有偏移、没有秒、只有日期、`+0800` 这类偏移、首尾带空白、HTTP 日期都读不出。调用方写这个头，.NET 用 `DeadlineText.Format(deadline)`，JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()` 写出的也合文法；不带时区的时间（`Kind` 为 `Unspecified` 的 `DateTime`、Python 的朴素 `datetime.isoformat()`）与秒为零时省略秒的写法（Java 的 `OffsetDateTime.toString()`）读不出。调用来源只在本进程内可读，不随下游调用传播；访问日志与审计据此取客户端信息，与协议无关。上下文的字段含义与传播规则见[调用上下文](/startup/invocation-context)。
+截止时间在进入管道时已过的请求得到 504 `KERNEL_TIMEOUT_001`。`xihan-deadline` 读不出时请求照常处理，只是没有截止时间，宿主不为此报错：空格代替 `T`、没有偏移、没有秒、只有日期、`+0800` 这类偏移、首尾带空白、HTTP 日期都读不出。值不为空而读不出时，宿主记一条 Warning（类别 `XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog`），带头名、原值的字符数与请求匹配到的操作 ID，不带原值；请求头这一类 1 分钟最多一条，下一条带上这期间被压掉的条数，一个请求只算一次。没有给 `xihan-deadline` 而 `grpc-timeout` 读不出时同样记，头名是 `grpc-timeout`；值为空不记。调用方写这个头，.NET 用 `DeadlineText.Format(deadline)`，JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()` 写出的也合文法；不带时区的时间（`Kind` 为 `Unspecified` 的 `DateTime`、Python 的朴素 `datetime.isoformat()`）与秒为零时省略秒的写法（Java 的 `OffsetDateTime.toString()`）读不出。调用来源只在本进程内可读，不随下游调用传播；访问日志与审计据此取客户端信息，与协议无关。上下文的字段含义与传播规则见[调用上下文](/startup/invocation-context)。
 
 `Authorization` 头缺失时，只有登记在认证方案 `XiHan` 里的路径前缀下，查询串 `access_token` 才作为 `Bearer` 凭据，其他路径的查询串令牌一律忽略。这条规则只为浏览器的 WebSocket 与 EventSource 准备，见[实时通信](/web/realtime)。
 

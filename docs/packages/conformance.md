@@ -29,8 +29,8 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 | [Auditing](#auditing) | `AuditTrailConformance` | 5 |
 | [Caching](#caching) | `CacheStoreConformance` | 19 |
 | [Configuration](#configuration) | `RemoteConfigurationClientConformance`、`SecretStoreConformance` | 3 + 2 |
-| [Localization](#localization) | `MessageLocalizerConformance` | 6 |
-| [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 16 + 2 + 5 |
+| [Localization](#localization) | `MessageLocalizerConformance` | 8 |
+| [Messaging](#messaging) | `MessageBrokerConformance`、`MessageStreamConformance`、`OutboxConformance` | 17 + 2 + 5 |
 | [MultiTenancy](#multitenancy) | `TenantStoreConformance`、`TenantShardResolverConformance`、`TenantAdministrationConformance` | 5 + 3 + 5 |
 | [ObjectStorage](#objectstorage) | `BlobStoreConformance`、`BlobStoreProviderConformance` | 14 + 4 |
 | [Persistence](#persistence) | `RepositoryConformance`、`IdGeneratorConformance<TKey>` | 36 + 3 |
@@ -75,7 +75,7 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 ## Localization
 
-包 ID `XiHan.Framework.Localization.Conformance`（RFC-0010，Preview）。基类 `MessageLocalizerConformance`，实现 `CreateLocalizer(catalogs, options)` 返回被测 `IMessageLocalizer`，实现同时必须是 `IMessageResolver`。用例覆盖回退链（精确区域 → 同语言的启用区域 → 默认区域 → 源语言）、按命中区域的文化格式化、缺模板或缺参数时退回描述、错误按键与细节翻译、按调用上下文的 Baggage 区域、先注册的目录优先、解析器按启用列表协商调用方区域（与按上下文翻译同一区域）。`Localization.InMemory` 与 `Localization.Database` 通过本套件。
+包 ID `XiHan.Framework.Localization.Conformance`（RFC-0010，Preview）。基类 `MessageLocalizerConformance`，实现 `CreateLocalizer(catalogs, options)` 返回被测 `IMessageLocalizer`，实现同时必须是 `IMessageResolver`。用例覆盖回退链（精确区域 → 同语言的启用区域 → 默认区域 → 源语言）、按命中区域的文化格式化、缺模板或缺参数时退回描述、错误按键与细节翻译、按调用上下文的 Baggage 区域、同一区域里先注册的目录优先、解析器按启用列表协商调用方区域（与按上下文翻译同一区域），以及取文案先按区域、再按目录（后注册的目录有回退链上更靠前的区域的模板时，优先于先注册的目录里更靠后的区域，ADR-0286）。`Localization.InMemory` 与 `Localization.Database` 通过本套件。
 
 ## Messaging
 
@@ -83,11 +83,11 @@ dotnet add package XiHan.Framework.Caching.Conformance --prerelease
 
 | 基类 | 稳定性 | 实现 | 覆盖 |
 | --- | --- | --- | --- |
-| `MessageBrokerConformance` | Stable | `CreateFeature()` 返回提供 `messaging.queue@1` 的特性；`ReadDeadLettersAsync(host, topic, ct)`（Preview，必须实现）按自己的介质读出一个主题此刻的死信：竞争订阅的死信里能解码的信封，按进入顺序，不取走、可以反复调用，还没有死信时返回空列表；可覆写 `Configuration`、`DeliveryTimeout`（缺省 10 秒）、`RedeliveryTimeout`（缺省同 `DeliveryTimeout`；没有确认的消息要等超时才重新可见的代理把它调大，或在 `Configuration` 里把那个超时调小）、`SupportsMultipleInstances`（缺省真；两个宿主不能共用代理的 Provider 覆写为假，多实例用例跳过） | 信封属性、扩展与数据（含二进制）完整到达处理器；同一主题按发布顺序投递；主题互不串扰；批量发布逐项结果、空批量、非法主题整批拒绝；处理器失败或抛异常时重试到 `MaxAttempts`（2）后停止且不阻塞后续消息；租户、关联与追踪进入调用上下文；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功；同一主题的竞争与广播订阅各收到一次、各自重试；两个宿主时广播每个实例都收到、竞争每条只有一个实例收到；竞争订阅的投递用完尝试次数后带原信封进死信、只进一次，处理成功的消息与别的主题不受牵连；处理器正在处理时停止消费，这次投递不在原位重试、不进死信，重新开始消费后再到达并处理成功（ADR-0275） |
+| `MessageBrokerConformance` | Stable | `CreateFeature()` 返回提供 `messaging.queue@1` 的特性；`ReadDeadLettersAsync(host, topic, ct)`（Preview，必须实现）按自己的介质读出一个主题此刻的死信：竞争订阅的死信里能解码的信封，按进入顺序，不取走、可以反复调用，还没有死信时返回空列表；可覆写 `Configuration`、`DeliveryTimeout`（缺省 10 秒）、`RedeliveryTimeout`（缺省同 `DeliveryTimeout`；没有确认的消息要等超时才重新可见的代理把它调大，或在 `Configuration` 里把那个超时调小）、`SupportsMultipleInstances`（缺省真；两个宿主不能共用代理的 Provider 覆写为假，多实例用例跳过） | 信封属性、扩展与数据（含二进制）完整到达处理器；同一主题按发布顺序投递；主题互不串扰；批量发布逐项结果、空批量、非法主题整批拒绝；处理器失败或抛异常时重试到 `MaxAttempts`（2）后停止且不阻塞后续消息；租户、关联与追踪进入调用上下文；非法主题被发布者拒绝；发布到没人订阅的主题（单条与批量）成功；同一主题的竞争与广播订阅各收到一次、各自重试；两个宿主时广播每个实例都收到、竞争每条只有一个实例收到；竞争订阅的投递用完尝试次数后带原信封进死信、只进一次，处理成功的消息与别的主题不受牵连；处理器正在处理时停止消费，这次投递不在原位重试、不进死信，重新开始消费后再到达并处理成功（ADR-0275）；前几次尝试失败、第 `MaxAttempts` 次正在处理时停止，这一次不进死信，重新开始消费后处理器再执行一次并成功，尝试号不超过上限（ADR-0284）。靠代理一侧的计数得出尝试号的 Provider 要在放弃时把这一次退掉，否则过不了最后这条 |
 | `MessageStreamConformance` | Preview | 继承 `MessageBrokerConformance`，同样实现 `CreateFeature()` 与 `ReadDeadLettersAsync` | 在队列用例之上再验证 `messaging.stream@1`：同一分区键按发布顺序投递、按时刻重放 |
 | `OutboxConformance` | Preview | `CreateFeature()` 返回持久化特性（发件箱的存储经仓储）；可覆写 `Configuration` | 代理对某条消息一直抛出时按尝试上限与退避进死信，同批与排在后面的照常发出；返回失败与抛出逐轮状态相同；调用方取消回滚本轮、不计尝试；不是调用方取消的 `OperationCanceledException` 计为失败（ADR-0108）；死信行经 `OutboxDeadLetters.RedriveManyAsync` 回到待投递（进死信时间写回空值、尝试次数归零），逐项结果与入参同序，下一轮照常发出（ADR-0272）。套件登记发件箱仓储与可推进的时钟，逐轮驱动 `OutboxDispatcher`，不起后台循环 |
 
-用例以 `TestHost` 走完整管道，主题常量 `OrdersTopic`、`ShipmentsTopic`、`UnsubscribedTopic`、`NoticesTopic`，`StartWithSubscriptionsAsync` 按给定订阅启动宿主，`WarmUpBroadcastAsync` 等每个实例的广播订阅都接上，`DeliveryLog` / `RecordingHandler` / `ReceivedMessage` 是套件登记的记录器（`DeliveryLog.BlockingIds` 里的消息让处理器等到调用被取消），`WaitForDeadLetterAsync` 等某条消息出现在死信里。提供流能力的 Provider 只继承 `MessageStreamConformance`，不必再继承队列套件。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。内存持久化、SqlSugar 的 SQLite 与 PostgreSQL、EF Core 的 SQLite 通过发件箱套件（EF Core 的上下文要把 `OutboxMessage` 放进模型）。
+用例以 `TestHost` 走完整管道，主题常量 `OrdersTopic`、`ShipmentsTopic`、`UnsubscribedTopic`、`NoticesTopic`，`StartWithSubscriptionsAsync` 按给定订阅启动宿主，`WarmUpBroadcastAsync` 等每个实例的广播订阅都接上，`DeliveryLog` / `RecordingHandler` / `ReceivedMessage` 是套件登记的记录器（`DeliveryLog.BlockingIds` 里的消息让处理器等到调用被取消，`DeliveryLog.BlockingAttempts` 按事件 ID 指定只在哪一次尝试上等到取消），`WaitForDeadLetterAsync` 等某条消息出现在死信里。提供流能力的 Provider 只继承 `MessageStreamConformance`，不必再继承队列套件。`Messaging.InMemory`、`Messaging.RabbitMQ` 通过队列套件，`Messaging.Kafka` 通过流套件。内存持久化、SqlSugar 的 SQLite 与 PostgreSQL、EF Core 的 SQLite 通过发件箱套件（EF Core 的上下文要把 `OutboxMessage` 放进模型）。
 
 ## MultiTenancy
 

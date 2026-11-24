@@ -172,7 +172,7 @@ builder.Services.AddOptions<BannerOptions>()
 | `XiHan:Localization` | [Localization.Abstractions](/packages/localization-abstractions) | 默认区域与启用的区域 |
 | `XiHan:Localization:Database` | [Localization.Database](/packages/localization-database) | 翻译快照的刷新、版本核对与条数上限 |
 | `XiHan:ObjectStorage:FileSystem` | [ObjectStorage.FileSystem](/packages/objectstorage-filesystem) | 根目录、容量上限与分片过期 |
-| `XiHan:ObjectStorage:S3` | [ObjectStorage.S3](/packages/objectstorage-s3) | 服务地址、区域、凭据与寻址方式 |
+| `XiHan:ObjectStorage:S3` | [ObjectStorage.S3](/packages/objectstorage-s3) | 服务地址、区域、凭据与会话令牌、寻址方式、请求超时、尝试次数与 HTTP 代理 |
 | `XiHan:ObjectStorage:Stores` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 命名存储实例：`<name>:Provider` 加该 Provider 的设置 |
 | `XiHan:ObjectStorage:StoreMaxCount` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 已建的命名实例数上限（单个键） |
 | `XiHan:ObjectStorage:StoreHealthProbeIntervalSeconds` | [ObjectStorage.Abstractions](/packages/objectstorage-abstractions) | 命名实例健康探测的间隔（单个键） |

@@ -8,7 +8,7 @@
 
 ## 授予模型
 
-授予是 `PermissionGrant`：主体、权限码、范围。
+授予是 `PermissionGrant`：主体、权限码、范围。它用对象初始化器构造，`Subject` 与 `Permission` 是 `required` 成员，`TenantId` 不给即平台授予：`new PermissionGrant { Subject = GrantSubject.ForRole("editor"), Permission = "orders.write", TenantId = "acme" }`。主体是缺省值、权限码为空白、范围写成空白时，设值即抛出 `ArgumentException`，`with` 走同一校验。
 
 | 成员 | 说明 |
 | --- | --- |
@@ -62,7 +62,7 @@
 
 `alice`（角色 `editor`）调用 `orders.create` 通过；`bob`（角色 `viewer`）调用 `orders.create` 得到 `SECURITY_DENIED_004`（HTTP 403）；匿名调用得到 `SECURITY_DENIED_001`（HTTP 401）。
 
-运行时增删授予用授予管理 `IPermissionGrantAdministration`（两个实现都提供）：`GrantAsync` / `RevokeAsync` 批量逐项返回结果，容量满时为 `SECURITY_UNAVAILABLE_002`，撤销不存在的授予为 `SECURITY_NOTFOUND_002`；单条用同名扩展方法。租户专属授予只能这样添加：`await grants.GrantAsync(new PermissionGrant(GrantSubject.ForUser("bob"), "orders.write", "acme"), cancellationToken)`。
+运行时增删授予用授予管理 `IPermissionGrantAdministration`（两个实现都提供）：`GrantAsync` / `RevokeAsync` 批量逐项返回结果，容量满时为 `SECURITY_UNAVAILABLE_002`，撤销不存在的授予为 `SECURITY_NOTFOUND_002`；单条用同名扩展方法。租户专属授予只能这样添加：`await grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForUser("bob"), Permission = "orders.write", TenantId = "acme" }, cancellationToken)`。
 
 ## 两种授予存储
 
@@ -116,13 +116,14 @@ public sealed class RoleAdministration(IPermissionGrantAdministration grants)
     public ValueTask<IReadOnlyList<Result>> SetUpEditorAsync(string tenantId, CancellationToken cancellationToken)
         => grants.GrantAsync(
         [
-            new PermissionGrant(GrantSubject.ForRole("editor"), "orders.read"),
-            new PermissionGrant(GrantSubject.ForRole("editor"), "orders.write", tenantId),
+            // 不给 TenantId 是平台授予
+            new PermissionGrant { Subject = GrantSubject.ForRole("editor"), Permission = "orders.read" },
+            new PermissionGrant { Subject = GrantSubject.ForRole("editor"), Permission = "orders.write", TenantId = tenantId },
         ], cancellationToken);
 
     // 不存在的授予逐项返回 SECURITY_NOTFOUND_002
     public ValueTask<IReadOnlyList<Result>> RevokeWriteAsync(string tenantId, CancellationToken cancellationToken)
-        => grants.RevokeAsync([new PermissionGrant(GrantSubject.ForRole("editor"), "orders.write", tenantId)], cancellationToken);
+        => grants.RevokeAsync([new PermissionGrant { Subject = GrantSubject.ForRole("editor"), Permission = "orders.write", TenantId = tenantId }], cancellationToken);
 }
 ```
 

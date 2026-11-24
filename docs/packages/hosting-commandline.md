@@ -59,6 +59,7 @@ return await builder.Build().RunXiHanCommandLineAsync(args);
 | `Runtime.CommandLineRunner` | 命令表与分发 |
 | `CommandLineExitCodes` | 退出码常量与 `For(error)` |
 | `CommandLineErrors` | `HOSTING_VALIDATION_001`、`HOSTING_NOTFOUND_001`、`HOSTING_NOTFOUND_002` |
+| `CommandLineMessages` | 本包的消息键常量（`hosting.commandline.*`），含调用弃用的操作时 stderr 上那一句的 `OperationDeprecated` |
 
 ## 使用示例
 
@@ -77,6 +78,7 @@ XIHAN_AUTHORIZATION="ApiKey dev-alice-key" dotnet run --project framework/sample
 - 保留选项 `json`、`data`、`authorization`、`tenant`、`correlation`、`locale`、`timeout`、`help` 不进载荷。
 - `--authorization` 与 `XIHAN_AUTHORIZATION` 只作用于 `invoke`；`mcp` 命令的调用以匿名主体执行。
 - 命令名重复时 `CommandLineRunner` 构造失败（`ArgumentException`）。
+- 弃用的操作（`Stability.Deprecated`）照常调用，stdout 与退出码不变；每次调用在 stderr 写一行按 `--locale` 翻译的提示（`CommandLineMessages.OperationDeprecated`，`hosting.commandline.operation_deprecated`），失败时在失败的那一行 JSON 之前，用法错误与未暴露的操作不写。`operations` 的稳定性一列是 `Deprecated`；带 `--help` 的命令行指向弃用的操作时，帮助之后空一行再写同一句提示（ADR-0280）。
 
 退出码：成功为 0，失败按错误码的 KIND 段取 1 到 8，对照表见[结果与错误处理](/web/errors#错误码)。`HOSTING_NOTFOUND_001`（操作未暴露给命令行）按 `NOTFOUND` 为 3，Ctrl+C 按 `CANCELLED` 为 8，用法错误（`HOSTING_VALIDATION_001`、`HOSTING_NOTFOUND_002`）为 64。
 

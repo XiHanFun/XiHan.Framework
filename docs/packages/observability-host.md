@@ -111,15 +111,17 @@ public sealed class MonitorTests
 | 项 | Linux | Windows | 其他（macOS 等） |
 | --- | --- | --- | --- |
 | CPU 型号、厂商 | `/proc/cpuinfo` 的 `model name`（没有时取 `Hardware`）、`vendor_id` | 注册表 `HKLM\HARDWARE\DESCRIPTION\System\CentralProcessor\0` 的 `ProcessorNameString`、`VendorIdentifier` | 空 |
-| 物理核心、最后一级缓存 | `/sys/devices/system/cpu/cpu<N>/topology/` 与 `cpu0/cache/index<N>/` | `GetLogicalProcessorInformation` | 空 |
-| 标称频率 | `cpu0/cpufreq/base_frequency`，没有时取 `cpuinfo_max_freq` | 注册表 `~MHz` | 空 |
-| CPU 使用率 | `/proc/stat` 首行 | `GetSystemTimes` | 空 |
-| 内存 | `/proc/meminfo` 的 `MemTotal`、`MemAvailable`、`MemFree`、`Buffers` + `Cached` | `K32GetPerformanceInfo`（空闲为空） | 空 |
-| 系统运行时长 | `/proc/uptime` | `Environment.TickCount64` | `Environment.TickCount64` |
+| 物理核心、最后一级缓存 | `/sys/devices/system/cpu/cpu<N>/topology/` 里不同的（`physical_package_id`，`core_id`）组合数；`cpu0/cache/index<N>/` 里 `level` 最高、`type` 不是 `Instruction` 的一项的 `size`，同一级有几项时取目录名按字节序最前的 | `GetLogicalProcessorInformation`：处理器核心条目数；缓存条目里级别最高、不是指令缓存的一项，同一级取先出现的 | 空 |
+| 标称频率 | `cpu0/cpufreq/base_frequency`，没有时取 `cpuinfo_max_freq`（kHz 除以 1000，不取整） | 注册表 `~MHz` | 空 |
+| CPU 使用率 | `/proc/stat` 第一个以 `cpu` 加空格起头的行，名字之后的前八列（至少四列）：空闲 = `idle` + `iowait`，总计 = 这几列之和，`guest` 两列不再加 | `GetSystemTimes`：空闲 = 空闲时间，总计 = 内核时间 + 用户时间 | 空 |
+| 内存 | `/proc/meminfo` 的 `MemTotal`、`MemAvailable`、`MemFree`、`Buffers` + `Cached`，数值是 kB、乘以 1024 | `K32GetPerformanceInfo` 的页数乘以页大小（空闲为空） | 空 |
+| 系统运行时长 | `/proc/uptime` 的第一列，按十进制小数读（只有数字与至多一个小数点），带符号、指数的写法读成空 | `Environment.TickCount64` | `Environment.TickCount64` |
 | 磁盘 | `/proc/self/mounts` 里以 `/dev/` 开头、不是 `/dev/loop` 的设备，每个设备取第一个挂载点，容量取 `DriveInfo` | `DriveInfo` 里就绪的固定、可移动与网络盘 | 同 Windows |
 | 网卡 | `NetworkInterface`，平台不支持的属性为空 | 同左 | 同左 |
 | GPU | `/sys/class/drm/card<N>/device`，名称与厂商名查 `pci.ids`（`/usr/share/hwdata`、`/usr/share/misc`、`/usr/share`） | 注册表显示适配器类 `{4d36e968-e325-11ce-bfc1-08002be10318}` 下 `MatchingDeviceId` 以 `pci` 开头的子键 | 空列表 |
 | 主板 | `/sys/class/dmi/id/` 的 `board_*`、`sys_vendor`、`product_name`、`bios_*` | 注册表 `HKLM\HARDWARE\DESCRIPTION\System\BIOS`（没有序列号） | 空 |
+
+每一项的逐条取法（各列的含义、单位、`pci.ids` 的查法、读不出的写法）写在 RFC-0023「平台读取路径」，Linux 的取法另有一致性向量 `observability/host-usage.json` 的 `linux` 一节，本包的测试回放它。
 
 已知的取舍：没有 NVIDIA 专有驱动的显存与温度、GPU 与显存使用率；Windows 没有 GPU 温度与主板序列号、没有空闲内存；Linux 的 `board_serial` 只有 root 读得到；容器里的内存与 CPU 使用率是宿主机的数值，不是 cgroup 限额，逻辑核心数是 .NET 看到的可用核心数。完整的取舍列在 RFC-0023。
 

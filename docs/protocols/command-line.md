@@ -19,7 +19,7 @@
 | `invoke <操作 ID>` | 调用操作，见下文 |
 | `mcp` | 由 `Protocols.Mcp` 注册：MCP 的 stdio 传输，接受与 `invoke` 相同的上下文选项 |
 
-没有命令时（包括只写了 `--help`）把用法写到 stderr 并返回 64；写了命令再带 `--help` 时把用法写到 stdout 并返回 0。`operations` 列出登记表里的全部操作，包括没有暴露给命令行的，用来核对各协议上的暴露情况。
+没有命令时（包括只写了 `--help`）把用法写到 stderr 并返回 64；写了命令再带 `--help` 时把用法写到 stdout 并返回 0。`operations` 列出登记表里的全部操作，包括没有暴露给命令行的，用来核对各协议上的暴露情况；弃用的操作稳定性一列是 `Deprecated`，这一列就是列表里的弃用标注。帮助不逐个列出操作：带 `--help` 的命令行指向一个弃用的操作（`invoke <操作 ID> --help` 或简写 `<resource> <verb> --help`）时，帮助之后空一行，再写一句弃用提示（默认区域，与帮助的其余文案一样），其余情况的帮助不变。
 
 参数的解析规则：第一个不是选项的记号是命令名，其余是位置参数；`--name value` 与 `--name=value` 等价；后面不跟值的 `--flag` 记为 `"true"`；`--` 之后全是位置参数。标志后面要接位置参数时写 `--flag=true`，或把标志放到最后。
 
@@ -109,6 +109,8 @@ greetings.create	Experimental	Mcp, CommandLine	-
 
 `invoke <操作 ID>` 只接受 `Expose` 含 `CommandLine`、稳定性不是 `Stability.Internal` 的操作，其他操作得到 `HOSTING_NOTFOUND_001`、退出码 3。命令名不是已登记的命令、且与下一个参数能拼成合法操作 ID 时，`<resource> <verb>` 等价于 `invoke <resource>.<verb>`，所以 `greetings create` 就是 `invoke greetings.create`。
 
+契约里 `Stability = Stability.Deprecated` 的操作照常调用，stdout 的输出与退出码都不变；每次调用在建好调用上下文之后、进管道之前，往 stderr 写一行按 `--locale`（没有时是默认区域）翻译的提示，消息键 `hosting.commandline.operation_deprecated`，英文是 `Operation 'orders.archive' is deprecated and will be removed in a future major version.`。调用失败时这一行在失败的那一行 JSON 之前；用法错误与未暴露的操作没有发起调用，不写；`mcp` 命令不经 `invoke`，也不写。
+
 载荷是一个 JSON 对象，按下面的优先顺序取第一个：
 
 | 来源 | 写法 | 说明 |
@@ -151,7 +153,7 @@ app orders create --name widget --amount 3 --tenant acme --locale zh-CN --timeou
 
 ## 输出与退出码
 
-成功时把响应 JSON 写一行到 stdout，退出码 0。失败时把一行 JSON 写到 stderr：`{"code":"<错误码>","detail":"<文案>","traceId":"<trace-id>"}`，`detail` 按 `--locale` 或默认区域翻译；还没有建出调用上下文的失败（用法错误、操作未暴露）没有 `traceId`。
+成功时把响应 JSON 写一行到 stdout，退出码 0。失败时把一行 JSON 写到 stderr：`{"code":"<错误码>","detail":"<文案>","traceId":"<trace-id>"}`，`detail` 按 `--locale` 或默认区域翻译；还没有建出调用上下文的失败（用法错误、操作未暴露）没有 `traceId`。stderr 同时承载日志与弃用提示，读失败的脚本取 stderr 的最后一行再按 JSON 解析，不要把整个 stderr 当一行 JSON。
 
 ```bash
 dotnet run -- invoke greetings.create --json '{"name":"Ada","times":99}'; echo $?

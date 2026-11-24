@@ -167,7 +167,7 @@ sys.exit(run(build))
    ```
 
 3. 监听端点：默认是 Unix 域套接字，Linux、macOS 与 Windows 都用它（grpcio 在 Windows 上同样能监听 `unix:` 地址）。套接字放在本进程新建的私有目录里（`mkdtemp`，权限 `0700`，套接字 `0600`，停止后删除）；临时目录的路径带空白（如带空格的用户名）时改为监听回环 TCP。`Plugin(network=Network.TCP)` 只绑定 `127.0.0.1` 的随机端口，隔离只靠会话令牌。grpcio 不支持 Windows 命名管道，插件不监听 `npipe`。
-4. 生命周期与配置：`Plugin(hooks=Hooks(configure=…, start=…, stop=…, health=…))` 接入回调，前三个是异步的，`health` 是同步的、应当只读状态。配置节原样交给作者，`Configuration.decode(T)` 按类型读：成员名按 ASCII 不区分大小写，字符串叶子按 JSON 数字的文法读成 `int` / `float`，`true` / `false` 读成 `bool`，读不出时抛出带 JSON 路径的 `FrameworkError`。回调抛出时，交给宿主的 `reason` 只是异常的简单类型名（如 `ValueError`），文本只写进 stderr。
+4. 生命周期与配置：`Plugin(hooks=Hooks(configure=…, start=…, stop=…, health=…))` 接入回调，前三个是异步的，`health` 是同步的、应当只读状态。配置节原样交给作者，`Configuration.decode(T)` 按类型读：成员名按 ASCII 不区分大小写，字符串叶子按 JSON 数字的文法读成 `int` / `float`，`true` / `false` 读成 `bool`，读不出时抛出带 JSON 路径的 `FrameworkError`。回调抛出时，交给宿主的 `reason` 只是异常的简单类型名（如 `ValueError`），文本只写进 stderr。`Configuration.bindings` 是清单声明并获批的资源绑定，每个 `Binding` 带 `name`、`type`、主值 `value` 与只读的属性映射 `properties`：属性名区分大小写、原样交出，没有属性时是空映射，只给了属性的绑定 `value` 为空串。主值与属性值可能是凭据，不要写进日志；`Binding` 的 `repr` 只带绑定名、类型与属性名。
 5. 回调宿主：`host_of(ctx)` 取宿主客户端（不是运行时建的上下文上抛出 `FrameworkError`；在运行时之外也要能跑的处理器用 `find_host(ctx)`，没有时是 `None`），`await host.invoke(ctx, "orders.create", payload)` 与 `await host.publish(ctx, envelopes)`（批量，逐项结果）。清单 `permissions` 要声明 `capability:kernel.pipeline`（`Host.invoke`）或 `capability:messaging.queue`（`Host.publish`）并由宿主授予；权限、租户与截止时间在发出之前先在本地核对，不合不发请求。
 6. 回调端点：SDK 按顺序取 `XIHAN_PLUGIN_HOST_ADDRESS` 里第一个 `unix` 或 `tcp` 项（grpcio 连不了命名管道），之后不换；宿主总把回环 TCP 放在最后，所以 Windows 上的 .NET 宿主经回环 TCP 回调，其他系统经 Unix 域套接字回调。没有能连的项时插件照常服务，回调以 `PLUGINS_UNAVAILABLE_001` + `plugins.host.unavailable` 失败。
 7. 取消与退出：调用方取消或截止时间到了只触发信号，不取消处理器的任务。`Stop`、stdin 关闭与 SIGTERM 按规范的时限收尾，`run` 以退出码 0 结束进程。
@@ -244,3 +244,4 @@ Python 的写法与差异：
 - 调用状态按调用隔离：处理器或中间件里再调另一个操作、或在同一个上下文上并发调用时，`operation.current` 等读到的是自己这次调用，原先互相覆盖 → 不用改。
 - `operation.is_id`、`Contract(...)`、`Manifest(...)` 与 `manifest.read` 不再接受超过 128 个字符的操作 ID（抛 `FrameworkError`，读清单为 `kernel.manifest.invalid`），原先不设上限；新增常量 `operation.MAX_ID_LENGTH` → 把 ID 缩到 128 个字符以内。
 - 清单 `activation` 里 `onEvent:` 的模式可以带下划线（如 `onEvent:order_events.*`），原先读不出 → 不用改。
+- `plugin.Binding` 多了字段 `properties`（只读映射，第四个位置参数，缺省为空，ADR-0285），`repr` 不再带 `value`；`properties` 是 `MappingProxyType`，`Binding` 与带绑定的 `Configuration` 因此不能再 `copy.deepcopy`、`pickle` 与 `dataclasses.asdict` → 读绑定与三个位置参数的构造不用改；要拷贝的用 `dataclasses.replace` 或逐成员取值，要把值写出来的直接读 `binding.value`。

@@ -112,11 +112,11 @@ public sealed class TrialGrants(IPermissionGrantAdministration grants)
 {
     // 只在 acme 租户里给 bob 导出权限；配置文件里写不了租户专属授予
     public ValueTask<Result> GrantExportAsync(CancellationToken cancellationToken)
-        => grants.GrantAsync(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"), cancellationToken);
+        => grants.GrantAsync(new PermissionGrant { Subject = GrantSubject.ForUser("bob"), Permission = "reports.export", TenantId = "acme" }, cancellationToken);
 
     // 不存在时是 SECURITY_NOTFOUND_002
     public ValueTask<Result> RevokeExportAsync(CancellationToken cancellationToken)
-        => grants.RevokeAsync(new PermissionGrant(GrantSubject.ForUser("bob"), "reports.export", "acme"), cancellationToken);
+        => grants.RevokeAsync(new PermissionGrant { Subject = GrantSubject.ForUser("bob"), Permission = "reports.export", TenantId = "acme" }, cancellationToken);
 }
 ```
 

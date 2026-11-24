@@ -93,7 +93,7 @@ public sealed class OrderLimits
 
 ## Nacos Provider
 
-`Configuration.Nacos` 直接调用 Nacos 的 HTTP 配置接口（v1，与 Nacos 2.x 兼容），不依赖 SDK：命名空间参数就是 `dataId`，版本是服务端给出的内容 MD5，`knownVersion` 非空时先长轮询监听，服务端报告变化才取整份文档。支持 `Json` 与 `Properties` 两种格式、用户名密码登录、多个服务地址按序尝试。
+`Configuration.Nacos` 直接调用 Nacos 的 HTTP 配置接口（v1，与 Nacos 2.x 兼容），不依赖 SDK：命名空间参数就是 `dataId`，版本是服务端给出的内容 MD5，`knownVersion` 非空时先长轮询监听，服务端报告变化才取整份文档。支持 `Json` 与 `Properties` 两种格式、用户名密码登录、多个服务地址按序尝试。两种格式展平成的配置键都不区分大小写：同一个键在文档里出现两次（含只差大小写的）或展平出空的键时，整份文档不合法（`CONFIGURATION_VALIDATION_001`），不取其中任何一个，发布前在 Nacos 里把重复的键删到只剩一个；两种格式逐条的读法见 [Configuration.Nacos](/packages/configuration-nacos#行为与限制)。
 
 | 成员 | 说明 |
 | --- | --- |

@@ -130,7 +130,11 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 
 ## 行为与限制
 
-- 格式：`Json` 要求根是对象，嵌套对象按 `A:B` 展平，数组按下标，`null` 保留为空值；`Properties` 把 `a.b=c` 展平成 `a:b`，`#` 与 `!` 开头的行是注释。文档不合法返回 `CONFIGURATION_VALIDATION_001`。
+- 格式（RFC-0014「Nacos Provider」的「文档格式」）：
+  - `Json` 与 .NET 自带的 JSON 配置提供程序读法相同：根必须是对象，照收 `//`、`/* */` 注释与尾逗号，嵌套最多 64 层；嵌套对象按 `A:B` 展平、数组按下标，成员名里的 `:` 原样；字符串取值，数字取 JSON 原文，布尔写成 `True` / `False`，`null` 保留为空值，空对象与空数组不产生键。
+  - `Properties` 按 `\n` 分行，行、键、值两侧的空白都去掉；空行与 `#`、`!` 开头的行是注释；第一个 `=` 或 `:` 分隔键值，没有分隔符的行值为空串；键里的 `.` 换成 `:`（`a.b=c` 展平成 `a:b`）；不认转义与续行。
+  - 两种格式的键都不区分大小写。展平之后同一个键出现两次（含只差大小写的，以及嵌套成员与带冒号的成员名展平出同一个键的）、展平出空的键、JSON 里有落单的代理项转义，整份文档不合法，不取其中任何一个；不合法的原因不带配置的值（properties 的空键只报行号）。
+  - 文档不合法返回 `CONFIGURATION_VALIDATION_001`，适配器按[远程配置的加载与轮询](/configuration/remote#远程配置的加载与轮询)处理：首次加载按 `Optional` 决定是否启动失败，轮询中保留上一份。
 - 登录：配置了 `UserName` 与 `Password` 时调用上下文路径下的 `/v1/auth/login`（缺省即 `/nacos/v1/auth/login`）取 `accessToken`，在到期前一分钟续期；响应没有 `tokenTtl` 时按 18000 秒计。令牌经请求头 `Authorization: Bearer <令牌>` 发送，不进查询串（查询串会进访问日志）；请求失败时原因只带动作与状态码，不带响应正文（ADR-0220）。
 - 多地址：每次请求按 `ServerAddresses` 的顺序尝试，连接失败或超时换下一个，全部失败时返回不可达。
 - 版本：服务端没有给出 `Content-MD5`（例如中间的代理去掉了这个头）时，客户端按 Nacos 的算法自己算，即内容按 UTF-8 编码的 MD5（小写十六进制），监听接口照样认得这个版本，长轮询不受影响。
@@ -141,7 +145,7 @@ app.MapGet("/config/orders", async (IRemoteConfigurationClient client, Cancellat
 | --- | --- |
 | `CONFIGURATION_NOTFOUND_001` | `dataId` 不存在（Nacos 返回 404） |
 | `CONFIGURATION_UNAVAILABLE_001` | 不可达、超时、登录失败或非 2xx 响应 |
-| `CONFIGURATION_VALIDATION_001` | 文档不是声明的格式 |
+| `CONFIGURATION_VALIDATION_001` | 文档不是声明的格式，或展平后有重复的键、空的键 |
 
 ## 相关
 

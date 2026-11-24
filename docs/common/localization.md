@@ -154,7 +154,7 @@ curl -si -H "Accept-Language: zh-CN" http://localhost:5000/missing
 | 子系统抽象包（`objectstorage`、`configuration` 等） | 对应的 Provider 在 `Configure` 里注册 |
 | 应用、`Plugins.InProcess` 加载的插件 | 应用注册 |
 
-同一个键出现在多个目录里时，在回退链的同一个区域上先注册的目录优先。
+同一个键出现在多个目录里时，在回退链的同一个区域上先注册的目录优先。取文案先按区域、再按目录：沿回退链逐个区域找，每个区域里按注册顺序问每个目录，第一个有这个键的就是结果。所以后注册的目录有请求区域的模板时，优先于先注册的目录里回退区域的模板；插件的目录不覆盖宿主在同一区域已有的模板。
 
 ## 取文案：`key.L()` 与 `MessageScope`
 

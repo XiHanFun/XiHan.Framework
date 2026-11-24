@@ -15,7 +15,7 @@
 
 ## 概述
 
-本包是显式 Provider，装配后顶替默认的文件系统存储，三个能力都由同一个 `S3BlobStore` 实例提供。客户端由特性按选项创建，停止时释放；选项表达不了的（临时凭据、代理、超时、重试策略），应用在装配前向容器注册自己的 `IAmazonS3`，缺省实例沿用它。本包的公开类型不带 AWS SDK 的类型，`S3BlobStore` 没有公开构造：更多的实例经 `BlobStores` 按定义登记，各建各的客户端。各家兼容服务共用这一个包，不为每家云单独做包。
+本包是显式 Provider，装配后顶替默认的文件系统存储，三个能力都由同一个 `S3BlobStore` 实例提供。客户端由特性按选项创建，停止时释放；临时凭据的会话令牌、请求超时、尝试次数与 HTTP 代理也是选项（见「配置」）。选项仍然表达不了的（自定义凭据链等），应用在装配前向容器注册自己的 `IAmazonS3`，缺省实例沿用它，这时配置里的这几个键对它不起作用，应用也直接用到 AWS SDK 的类型，SDK 升大版本要跟着改。本包的公开类型不带 AWS SDK 的类型，`S3BlobStore` 没有公开构造：更多的实例经 `BlobStores` 按定义登记，各建各的客户端。各家兼容服务共用这一个包，不为每家云单独做包。
 
 `ServiceUrl` 为空时按 `Region` 访问 Amazon S3；有值时指向兼容服务，`Region` 作签名区域，并只在服务端要求时计算与校验校验和（多数兼容服务不支持分块尾部校验和）。`AccessKey` 与 `SecretKey` 都为空时走 SDK 的默认凭据链（环境变量、配置文件、实例角色）。
 
@@ -47,6 +47,13 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | `Region` | `string` | `us-east-1` | 访问 Amazon S3 时选端点，访问兼容服务时作签名区域 |
 | `AccessKey` | `string` | 空 | 访问密钥 ID；缺省实例与 `SecretKey` 都为空时走 SDK 默认凭据链（命名实例见下文）；与 `SecretKey` 一样在选项的 `ToString()` 里打印为 `***` |
 | `SecretKey` | `string` | 空 | 访问密钥 |
+| `SessionToken` | `string` | 空（没有令牌） | 临时凭据的会话令牌，必须与 `AccessKey`、`SecretKey` 同时给出；打印为 `***` |
+| `RequestTimeoutSeconds` | 正数，可带小数，不超过 86400（`MaxRequestTimeout`） | 不另设时限 | 单次 HTTP 请求的超时，每次尝试各算各的；超时返回 `OBJECTSTORAGE_UNAVAILABLE_001`。下载的内容流交给调用方之后的读取不在其内 |
+| `MaxAttempts` | 1 到 10（`MaxAttemptsLimit`） | SDK 的缺省（共 3 次） | 一次操作最多发出的请求数，含首次，1 即不重试 |
+| `ProxyHost` | 主机名或 IP 字面量 | 空（不设代理） | HTTP 代理的主机，必须与 `ProxyPort` 同时给出；不带协议、端口、路径与用户信息，IPv6 字面量带不带方括号都收，不收带区域标识的 |
+| `ProxyPort` | 1 到 65535 | — | HTTP 代理的端口 |
+| `ProxyUserName` | `string` | 空（代理不带凭据） | 代理的用户名，必须与 `ProxyPassword` 同时给出，且只能跟着代理给；打印为 `***` |
+| `ProxyPassword` | `string` | 空 | 代理的口令；打印为 `***` |
 | `ForcePathStyle` | `bool` | `true` | 桶名放在路径而不是主机名里；各兼容服务对两种寻址的支持不同，按服务商说明设置 |
 | `EnsureBuckets` | `bool` | `false` | 写入遇到桶不存在时建桶再重试一次；缺省由基础设施预先建桶 |
 | `HealthBucket` | `string` | 空 | 框架探测用的桶：健康探测对它做 HEAD（同时验证凭据对该桶的权限）；`ConditionalWrites` 开启时在其中探测条件写入，这时必填；关闭且为空时健康探测列桶 |
@@ -71,7 +78,9 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 }
 ```
 
-绑定 `objectstorage` 存在时逐项覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`forcePathStyle`；空白的主值与属性不算给出，照读配置节。Kubernetes 里按 Service Binding 规范挂载的目录每个属性一个文件：
+会话令牌、请求超时、尝试次数与代理这七个键都不写时，建出的客户端与 SDK 的缺省相同。字符串键空白不算给出；数值键写了就必须合法，空串也不行。成组的键只给了一部分（有令牌没有两项密钥、代理只有主机或只有端口、代理凭据只给一项或没有代理）、数值不在范围内都是配置错误，读完选项（绑定覆盖之后）即核对：缺省实例启动失败，命名实例登记失败（`OBJECTSTORAGE_VALIDATION_003`）；报错带完整的键名，令牌、代理主机、代理用户名与口令的值从不进报错。
+
+绑定 `objectstorage` 存在时逐项覆盖配置：主值是服务端点，属性 `region`、`accessKey`、`secretKey`、`sessionToken`、`forcePathStyle`；空白的主值与属性不算给出，照读配置节。Kubernetes 里按 Service Binding 规范挂载的目录每个属性一个文件：
 
 ```text
 /bindings/objectstorage/type          blob
@@ -82,7 +91,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 
 绑定的解析规则见[配置与选项](/configuration/options)。命名实例（Provider 名 `s3`）的设置用同样的键，不含 `HealthProbeIntervalSeconds`（探测间隔由注册表统一），也不读绑定。
 
-命名实例的客户端过[出站地址策略](/security/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。缺省实例的端点是运维配的，不过策略。
+命名实例的客户端过[出站地址策略](/security/outbound)，定义可能来自应用的库，端点不可信；自建的 MinIO 等要放行。命名实例配了代理时，本进程建的连接是连代理的，过策略的是代理的地址：代理落在被拒绝的地址上与端点被拒绝同样处理（不建连接，读写返回 `OBJECTSTORAGE_UNAVAILABLE_001`）；端点由代理去解析、去连，本进程的策略管不到，要限制经代理能到的目标，在代理上做。没配代理的命名实例不用系统代理。缺省实例的端点与代理都是运维配的，不过策略。
 
 命名实例必须给出 `AccessKey` 与 `SecretKey`，否则建实例失败（`OBJECTSTORAGE_VALIDATION_003`）。设置可以由租户填写，没给密钥就会用宿主的 AWS 凭据链，填设置的人就能以宿主的身份访问它能访问的任何桶。确实要让命名实例用实例角色等环境凭据时，由运营方在配置里打开 `XiHan:ObjectStorage:S3:NamedInstancesUseAmbientCredentials: true`；只给一项密钥总是拒绝。
 
@@ -136,7 +145,7 @@ done
 | --- | --- |
 | `S3ObjectStorageFeature` | 特性入口（`IHostedFeature`、`IShadowAwareFeature`；被顶替或其余能力只是兜底选出时只登记命名实例 Provider）；常量 `ConnectionBinding` = `objectstorage`、`HealthName` = `objectstorage.s3.connection` |
 | `S3BlobStore` | 实现 `IBlobStore`、`IBlobMultipartStore`、`IBlobUrlSigner`；没有公开构造：缺省实例由 `S3ObjectStorageFeature` 建出，命名实例由 `S3BlobStoreProvider` 按定义建出，都按「条件写入探测」探测 |
-| `S3ObjectStorageOptions` | 选项；`FromConfiguration(configuration, binding)`、`FromSettings`（命名实例的设置，未知键抛出） |
+| `S3ObjectStorageOptions` | 选项；`FromConfiguration(configuration, binding)`、`FromSettings`（命名实例的设置，未知键抛出）；上限 `MaxRequestTimeout`（24 小时）与 `MaxAttemptsLimit`（10）；`ToString()` 把两项密钥、`SessionToken`、`ProxyUserName` 与 `ProxyPassword` 打印为 `***` |
 | `S3BlobStoreProvider` | 命名实例的 Provider，`ProviderName` = `s3`；每个实例按自己的端点、区域与密钥建客户端 |
 
 ## 使用示例
@@ -186,7 +195,7 @@ var link = (await signer.SignAsync(new ContainerName("invoices"), new BlobKey("2
 错误码的含义见 [ObjectStorage.Abstractions](/packages/objectstorage-abstractions#错误码)，本包特有的映射：
 
 - `OBJECTSTORAGE_NOTFOUND_001`：键不存在；桶不存在时读取也是它，条件写入探测的桶不存在同样报它。
-- `OBJECTSTORAGE_UNAVAILABLE_001`：其余服务端错误、网络错误与 SDK 超时；探测连不上或超时也是它，是唯一照常启动、后台重试的原因。
+- `OBJECTSTORAGE_UNAVAILABLE_001`：其余服务端错误、网络错误与 SDK 超时（含 `RequestTimeoutSeconds` 到点）；探测连不上或超时也是它，是唯一照常启动、后台重试的原因。
 - `OBJECTSTORAGE_UNAVAILABLE_003`、`OBJECTSTORAGE_UNAVAILABLE_004`、`OBJECTSTORAGE_DENIED_002`：只出自条件写入，何时返回见上文「条件写入探测」。
 
 ## 相关

@@ -59,18 +59,28 @@
 
 ## 表达式
 
-条件、模板、输出映射、表达式指派都用同一个无依赖的小语言（`IWorkflowExpressionEvaluator`）：
+条件、模板、输出映射、表达式指派都用同一个无依赖的小语言（`IWorkflowExpressionEvaluator`）。它没有赋值、循环与副作用：同一段文本、同一组变量与同一个时刻，在任何实现上求出同一个结果或同一个错误。逐条的规定（词法、文法、每个运算符与函数、模板与错误）写在规范 RFC-0021「表达式」，一致性向量是 `workflow/` 下的五个 `expression-*.json`；这里讲要点。
 
 | 类别 | 内容 |
 | --- | --- |
 | 运算符 | `\|\|`、`&&`、`==`、`!=`、`<`、`<=`、`>`、`>=`、`+`、`-`、`*`、`/`、`%`、一元 `!` 与 `-` |
 | 访问 | 成员 `.x`、索引 `[i]` |
-| 字面量 | 数字（decimal）、单双引号字符串、`true`、`false`、`null` |
-| 函数（不区分大小写） | `len`、`contains`、`startsWith`、`endsWith`、`upper`、`lower`、`trim`、`isNullOrEmpty`、`abs`、`min`、`max`、`round`、`toNumber`、`toString`、`now`、`date` |
+| 字面量 | 数字（十进制定点数，见下）、单双引号字符串、`true`、`false`、`null` |
+| 函数（名字不区分 ASCII 字母的大小写） | `len`、`contains`、`startsWith`、`endsWith`、`upper`、`lower`、`trim`、`isNullOrEmpty`、`abs`、`min`、`max`、`round`、`toNumber`、`toString`、`now`、`date` |
 
 ::: v-pre
-`+` 任一侧是字符串即拼接；`==` 跨数字类型宽松比较，字符串按序数比较。标识符是实例变量，输出映射里另有 `outputs`（节点输出）。节点属性里的字符串支持 `{{ 表达式 }}` 模板，引号内的 `}}` 不算结束。
+`+` 任一侧是字符串即拼接，两侧各取值的文本接起来；`==` 两侧都能当数字时按数值比（`1 == '1'`、`'007' == '7'` 为真），否则按值的文本的序数比较，有容器时按结构深比较。标识符是实例变量，输出映射里另有 `outputs`（节点输出）；变量名与成员名一律区分大小写，不随 `JsonObject` 的大小写选项。节点属性里的字符串支持 `{{ 表达式 }}` 模板，引号内的 `}}` 不算结束，渲染出的结果总是字符串。
 :::
+
+值与它们的文本：
+
+- 数字是十进制定点数：96 位整数加 0 到 28 位小数（数值上就是 .NET 的 `decimal`），只看数值，`1.50` 与 `1.5` 是同一个数。运算的结果按一半取偶放进数字，放不下是 `workflow.expression.number_out_of_range`（参数 `operator`），`round` 的位数不在 0 到 28 之间同样。
+- 数字的文本只取决于数值：不用指数，不带结尾的零，零写 `0`。`19.90` 写 `19.9`，`1.5 + 1.5` 写 `3`；模板、拼接、`toString` 与 `WorkflowValues.AsString` 都是这一种写法。要固定小数位数的展示（金额）在流程之外格式化，或把格式化好的字符串放进变量。
+- 字符串当数字用（算术、比较、下标与数字函数）时按一条文法读：首尾的空白只认 U+0009–U+000D 与空格，可选的符号，ASCII 数字与可选的小数点，可选的指数。
+- 数组与对象当文本用时是紧凑的 JSON：成员按名字的序数顺序，数字写上面的文本，字符串只转义 `"`、`\` 与 U+0000–U+001F，非 ASCII 字符原样，超过 64 层的容器写 `null`。按文本匹配对象的条件（`contains(obj, '"b":1')`）照这种写法写。
+- 时间是字符串。`now()` 与 `date()` 返回 UTC、七位小数、`+00:00` 的定宽文本（`2026-01-02T03:04:05.0000000+00:00`），进程内读这个结果用 `WorkflowValues.TryConvert<DateTimeOffset>`。`date()` 与比较只认 `YYYY-MM-DD`，或再加 `T` / 空格与 `HH:MM`，秒、一到九位小数与偏移可省（没有偏移是 UTC），首尾的空白不裁剪；`01/02/2026`、`Jan 2, 2026`、`12:30` 不是时间，`date()` 报 `workflow.expression.not_date`，比较时按文本。两侧都是时间文本时比较按时刻，比 100 纳秒更细的小数截断。
+
+求值的次序：二元运算符与函数先从左到右求值全部操作数，再从左到右核对类型，除法与取余最后才看除数，所以 `'x' / 0` 报 `operands_not_numeric`、`nope / 0` 报 `unknown_variable`；`&&` 与 `||` 短路，右操作数不需要时不求值也不核对；索引先求值被索引的值、再求值下标，下标超出数组是 `index_out_of_range`。
 
 空值的语义：`Evaluate` 与 `ActivityContext.EvaluateProperty` 返回 `Result<Maybe<JsonNode>>`。结果为 null，包括字面量 `null`、缺少的成员或键、值为 null 的变量、没有这个属性，都是成功的无值，不是失败。下游的处理：
 
@@ -78,7 +88,7 @@
 - `Render` 把无值渲染成空串。
 - 写回变量、输出与子流程变量时，无值写成 JSON 的 `null`。
 
-表达式最长 4000 个字符，嵌套最多 64 层（括号、函数实参、索引、一元运算符都算，`a + b + c` 这样的链不算）。超限在发布时进校验结果，运行时是 `WORKFLOW_VALIDATION_003`（`workflow.expression.too_long`、`workflow.expression.too_deep`）。`+` 拼出的字符串最长 4194304 个字符，超过是 `workflow.expression.string_too_long`。
+表达式最长 4000，嵌套最多 64 层（括号、函数实参、索引、一元运算符都算，`a + b + c` 这样的链不算）。超限在发布时进校验结果，运行时是 `WORKFLOW_VALIDATION_003`（`workflow.expression.too_long`、`workflow.expression.too_deep`）。`+` 拼出的字符串与模板渲染出的文本都不超过 4194304，超过是 `workflow.expression.string_too_long`，渲染结果更长的模板改为分段或在活动里拼。长度与位置都按 UTF-16 码元计；错误里带出的文本（`expression` 参数与 `not_date` 的 `value`）最多 200 个码元，超过的截断后接 `…`，不切开代理对。
 
 ### 扇出与变量的上限
 
@@ -187,7 +197,7 @@ public sealed class SmsActivity(ISmsSender sms) : IActivity
 - **经 HTTP**：宿主把 `details.errors` 写成 Problem Details 的字段级 `errors`，键是去掉 `$.` 的路径（如 `nodes[2].properties.Cron`），值是按调用方区域翻译好的文案数组；`detail` 是汇总。设计器按键里的下标定位节点或转移。
 - **进程内**：`validator.Diagnose(definition)` 返回同一组问题；在调用里用 `issue.MessageKey.L(issue.Arguments)` 即得调用方语言。
 
-表达式的语法与求值诊断每种一个键（`workflow.expression.unexpected_character`、`token_expected`、`unexpected_end`、`unknown_variable`、`unknown_function`、`argument_count` 等），参数都带 `expression`，位置从 1 起；错误码仍是 `WORKFLOW_VALIDATION_003`。`WorkflowJson.DeserializeDefinition` 先按与模型同一份规则核对文档，再构造模型：模型会拒绝的值（缺少成员、名字与活动类型的文法、定义 ID、版本、分类长度、超时、节点与转移 ID、变量名、重试策略）是 `workflow.definition.invalid` 加 `details.errors` 的违规列表，形状与发布时的校验相同（路径如 `$.nodes[0].id`、`$.nodes[0].retryPolicy.maxAttempts`，键如 `workflow.definition.node_id_invalid`、`member_missing`），经 HTTP 同样是字段级 `errors`。JSON 为 `null` 是 `workflow.definition.json_null`，语法错误与值的类型不符是 `json_malformed`（参数 `path`、`line`、`position`）。
+表达式的语法与求值诊断每种一个键（`workflow.expression.unexpected_character`、`token_expected`、`unexpected_end`、`unknown_variable`、`unknown_function`、`argument_count`、`number_out_of_range` 等，共 25 个，全表在 RFC-0021「表达式」的「错误」），参数都带 `expression`，位置从 1 起、按 UTF-16 码元计；错误码仍是 `WORKFLOW_VALIDATION_003`。`WorkflowJson.DeserializeDefinition` 先按与模型同一份规则核对文档，再构造模型：模型会拒绝的值（缺少成员、名字与活动类型的文法、定义 ID、版本、分类长度、超时、节点与转移 ID、变量名、重试策略）是 `workflow.definition.invalid` 加 `details.errors` 的违规列表，形状与发布时的校验相同（路径如 `$.nodes[0].id`、`$.nodes[0].retryPolicy.maxAttempts`，键如 `workflow.definition.node_id_invalid`、`member_missing`），经 HTTP 同样是字段级 `errors`。JSON 为 `null` 是 `workflow.definition.json_null`，语法错误与值的类型不符是 `json_malformed`（参数 `path`、`line`、`position`）。
 
 ### 状态的展示名
 

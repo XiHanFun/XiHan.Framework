@@ -16,7 +16,7 @@ CloudEvents 1.0 是 CNCF 定义的事件信封标准，框架的消息子系统�
 | --- | --- | --- |
 | structured | `Content-Type: application/cloudevents+json` | 请求体是一个结构化 JSON 事件 |
 | batch | `Content-Type: application/cloudevents-batch+json` | 请求体是结构化事件的数组，按顺序处理 |
-| binary | 其他内容类型且有 `ce-specversion` 头 | `ce-id`、`ce-source`、`ce-type` 必填，`ce-time`（RFC 3339）、`ce-subject` 可选，其余 `ce-*` 头是扩展属性，头值按百分号解码；`Content-Type` 是数据内容类型，请求体是数据 |
+| binary | 其他内容类型且有 `ce-specversion` 头 | `ce-id`、`ce-source`、`ce-type` 必填，`ce-time`（带 `T`、秒与偏移的 RFC 3339 时刻，与结构化 JSON 的 `time` 同一条文法，读出 UTC 时刻）、`ce-subject` 可选，其余 `ce-*` 头是扩展属性，头值按百分号解码；`Content-Type` 是数据内容类型，请求体是数据 |
 
 事件类型查配置 `XiHan:Protocols:CloudEvents:Topics:<事件类型>` 得到主题，没有映射的类型是 400 `PROTOCOLS_VALIDATION_009`。缺省只收映射过的类型：发送方由宿主授权投递某几种事件，没有映射就以类型本身为主题时，它能投进任何有订阅的主题，包括插件订阅的主题（ADR-0200）。发送方可信、想让类型直接当主题时打开 `XiHan:Protocols:CloudEvents:AcceptUnmappedTypes`，此时没有映射的类型本身须满足主题文法（`orders.placed` 可以直接当主题）。扩展属性 `xihantenant`、`xihanprincipal`、`xihancorrelation`、`xihanlocale` 与 `traceparent` 在派发时进入调用上下文，成为租户、主体、关联 ID、区域与追踪。
 
@@ -119,7 +119,7 @@ app.MapXiHanCloudEvents().RequireXiHanPermission("events.deliver");
 
 batch 先把每个事件的类型解析成主题，任一事件没有映射时整批 400、一个都不处理；派发模式逐个处理，第一个失败即停止并作为响应；发布模式按主题分组各一次 `PublishManyAsync`，第一个失败的结果作为响应。已处理的事件不回滚，发送方重试整批时，处理器按 `id` + `source` 去重，这是 CloudEvents 规范定义的事件唯一标识。
 
-入站的失败都写成 Problem Details。请求本身不合格是 400：不是 CloudEvent（`PROTOCOLS_VALIDATION_008`）、信封不合法（`MESSAGING_VALIDATION_002`）、事件类型没有映射且类型本身也不是合法主题（`PROTOCOLS_VALIDATION_009`）、请求体超过 `MaxRequestBodyBytes`（缺省 1 MiB，`PROTOCOLS_VALIDATION_013`）、batch 的事件数超过 `MaxBatchSize`（缺省 100，`PROTOCOLS_VALIDATION_014`）。派发模式下主题没有处理器是 404（`PROTOCOLS_NOTFOUND_003`）；处理器或发布失败按它返回的错误码与 KIND 映射。错误码表与全部配置键见[包参考](/packages/protocols-cloudevents#配置)。
+入站的失败都写成 Problem Details。请求本身不合格是 400：不是 CloudEvent（`PROTOCOLS_VALIDATION_008`）、信封不合法（`MESSAGING_VALIDATION_002`：缺必填属性、`time` / `ce-time` 不合文法、任何一层有重复的成员、`data` 与 `data_base64` 同时出现、扩展属性的值是对象或数组，规则同[信封](/messaging/pubsub#信封)）、事件类型没有映射且类型本身也不是合法主题（`PROTOCOLS_VALIDATION_009`）、请求体超过 `MaxRequestBodyBytes`（缺省 1 MiB，`PROTOCOLS_VALIDATION_013`）、batch 的事件数超过 `MaxBatchSize`（缺省 100，`PROTOCOLS_VALIDATION_014`）。派发模式下主题没有处理器是 404（`PROTOCOLS_NOTFOUND_003`）；处理器或发布失败按它返回的错误码与 KIND 映射。错误码表与全部配置键见[包参考](/packages/protocols-cloudevents#配置)。
 
 ## 出站 Webhook
 

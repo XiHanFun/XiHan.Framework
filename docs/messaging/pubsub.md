@@ -43,11 +43,11 @@ builder.AddXiHan(xihan => xihan
 | `Id` | 必填，事件 ID，与 `Source` 一起唯一 |
 | `Source` | 必填，来源 URI 引用（如 `/orders`） |
 | `Type` | 必填，事件类型（如 `orders.placed`） |
-| `Time` | 可选，发生时间 |
+| `Time` | 可选，发生时间；从线上读出的一律是 UTC 时刻（`Offset` 为零），按时刻使用，要别的时区自己换算 |
 | `Subject` | 可选，事件所涉的对象（如 `order/42`） |
 | `DataContentType` | 数据内容类型，缺省 `application/json` |
 | `Data` | 数据字节 |
-| `Extensions` | 扩展属性，名称只含小写字母与数字、1 到 20 个字符；用 `WithExtension(name, value)` 派生、`Extension(name)` 读取 |
+| `Extensions` | 扩展属性，名称只含小写字母与数字、1 到 20 个字符，不要与规范属性同名（`id`、`source`、`type`、`time`、`subject`、`data`、`specversion`、`datacontenttype`），否则编码时抛出；用 `WithExtension(name, value)` 派生、`Extension(name)` 读取，有无用 `Extension(name)` 判断 |
 
 框架约定的扩展属性（常量在 `EnvelopeExtensions`）：
 
@@ -63,6 +63,14 @@ builder.AddXiHan(xihan => xihan
 幂等键 `xihan.idempotency-key` 不进入消息：派发不写幂等键，带上它会让同一请求发出的几条消息与同一条消息的重试被幂等中间件当成同一次调用。
 
 主题名满足 `^[a-z0-9][a-z0-9._-]{0,127}$`（`TopicName.IsValid` / `Validate`）；死信目标是主题名加 `DeadLetterSuffix`（缺省 `.dlq`）。线上编码是 CloudEvents 结构化 JSON（`CloudEventsFormat`，`application/cloudevents+json`）。
+
+`CloudEventsFormat.Decode` 读线上的文档先过 JSON 文本的共同检查（任何一层都不能有重复的成员，含 `data` 内部），再按 RFC-0009「信封」读：
+
+- `time` 只认带 `T`、秒与偏移的 RFC 3339 时刻（`2026-01-02T03:04:05Z`、`2026-01-02T11:04:05.5+08:00`），与 `xihan-deadline` 同一条文法；空格代替 `T`、没有偏移、没有秒、只有日期、`+0800`、首尾空白都不合法。
+- `data` 与 `data_base64` 不能同时出现；文档带 `data_base64` 而不写 `datacontenttype` 时，内容类型是 `application/octet-stream`。
+- 扩展属性的值是字符串、数字或布尔，数字与布尔保留 JSON 原文；值为 `null` 视为没有这个扩展，对象与数组不合法。
+
+不合这些的信封是 `MESSAGING_VALIDATION_002`，按无法解码的消息处理：竞争订阅原样进死信，广播订阅丢弃。自己写结构化 JSON 或 `ce-time` 头的发送方用带偏移的写法：JavaScript 的 `Date.prototype.toISOString()`、Go 的 `time.RFC3339Nano`、Java 的 `Instant.toString()`、.NET 带偏移的 `ToString("O")` 都合文法。`Encode` 写完之后自己再过一遍读取的检查，写不出读得回来的文档（扩展与规范属性同名、JSON 数据里有重复的成员或孤立的代理项转义、数据嵌套得让文档超过 64 层）时抛出携带 `MESSAGING_VALIDATION_002` 的 `FrameworkException`，发布的调用方当场得到。内存代理不经线上编码，这类信封在它上面照样能发，换成别的代理或接上发件箱时在发布处抛出。
 
 ## 最小示例
 

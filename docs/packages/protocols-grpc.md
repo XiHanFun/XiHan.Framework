@@ -17,7 +17,7 @@ gRPC 协议适配器，提供 `protocols.grpc@1`：把 `Expose.Grpc` 的操作�
 
 `GrpcProtocolFeature` 调用 `AddGrpc()`，登记选项与一个 `IServiceMethodProvider`：方法在运行时按操作表动态绑定，消息以字节数组传递，不需要编译 `.proto`，也不依赖 `Google.Protobuf`。操作表在第一次解析时建成，这时全部特性已装配、登记表已定型。
 
-每个方法调用都是一次独立调用：处理器以请求的 HTTP/2 头建调用上下文（`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline`，没有或读不出时取 `grpc-timeout`），把请求按 Schema 从 protobuf 解码为 JSON 载荷，经完整内核管道执行，再把响应编码回 protobuf。gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用。失败映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据。
+每个方法调用都是一次独立调用：处理器以请求的 HTTP/2 头建调用上下文（`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline`，没有或读不出时取 `grpc-timeout`；不为空而读不出时记一条不带原值的限频 Warning，调用照常），把请求按 Schema 从 protobuf 解码为 JSON 载荷，经完整内核管道执行，再把响应编码回 protobuf。gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用。失败映射为 gRPC 状态，错误码与 trace-id 放在尾部元数据。
 
 ## 何时使用
 
@@ -107,7 +107,7 @@ JSON Schema 到 protobuf 的映射表与生成的 `.proto` 见 [gRPC、MCP 与 C
 
 - 暴露给 gRPC 的操作必须有 Schema；名字、Schema 与消息形状的问题都在映射时失败，应用启动不起来。
 - 方法名：服务 = 资源段的 PascalCase（`order-lines` → `OrderLines`），方法 = 动词的 PascalCase；`XiHan:Protocols:Grpc:Methods:<操作 ID>` = `Service/Method` 显式覆盖；包名 `XiHan:Protocols:Grpc:Package` 写进 `.proto` 的 `package`，也是路径前缀（`/{package}.Orders/Create`）。名字不合法或重复即启动失败。发布范围是 `Expose` 含 `Grpc` 且非 `Stability.Internal` 的操作。
-- 消息映射（`ProtoSchema`）：消息名取 Schema 的 `title`（封闭泛型带实参名，如 `PageResultOfUserResponse`，ADR-0034），`$defs` 里的每个对象定义一个消息；字段号按 Schema 属性顺序从 1 起；`string` → string（base64 → bytes）、`boolean` → bool、`integer` 按 `format` int32 / int64（无格式 → 十进制文本）、`number` 按 `format` float / double（decimal、无格式 → 十进制文本）、数组 → repeated、`additionalProperties` → map<string, T>、`$ref` → 嵌套消息（指向字符串枚举这类标量定义时按该标量映射为 string，不建消息也不建 proto enum）、可空 → optional、无约束 → JSON 文本。嵌套数组与映射里的映射不可表示，启动失败。`.proto` 文件由同一份描述生成并经 `MapXiHanProto()`（`GET /operations.proto`）发布给客户端。
+- 消息映射（`ProtoSchema`）：消息名取 Schema 的 `title`（封闭泛型带实参名，如 `PageResultOfUserResponse`，ADR-0034），`$defs` 里的每个对象定义一个消息；字段号按 Schema 属性顺序从 1 起；`string` → string（base64 → bytes）、`boolean` → bool、`integer` 按 `format` int32 / int64（无格式 → 十进制文本）、`number` 按 `format` float / double（decimal、无格式 → 十进制文本）、数组 → repeated、`additionalProperties` → map<string, T>、`$ref` → 嵌套消息（指向字符串枚举这类标量定义时按该标量映射为 string，不建消息也不建 proto enum）、可空 → optional、无约束 → JSON 文本。嵌套数组与映射里的映射不可表示，启动失败。`.proto` 文件由同一份描述生成并经 `MapXiHanProto()`（`GET /operations.proto`）发布给客户端；`Stability.Deprecated` 的操作的 `rpc` 带 `option deprecated = true;`（写成花括号块，其余级别以分号结束），由它生成的客户端给方法加弃用标记，方法照常调用（ADR-0280）。
 - 调用来源记 `grpc` 与方法全名，远端地址与 User-Agent 沿用 HTTP/2 请求（ADR-0043）；端点绕过 `UseXiHan()` 的回写，响应完全由 gRPC 处理器产出。流式方法与 gRPC 反射服务未提供。
 - 线上缺席的布尔、数值、`repeated`、`map` 字段按 proto3 默认值补进 JSON；字符串、字节、嵌套消息缺席即缺席。
 - 字符串枚举映射为 `string`，不建 proto `enum`；`integer` 无格式与 `decimal` 映射为十进制文本。

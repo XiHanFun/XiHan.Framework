@@ -172,7 +172,14 @@ Provider 接住取消、交回截断的应答、条数不全的嵌入或提前�
 
 ## 提示词模板
 
-`AIPromptTemplate(name, template, description)` 的占位符写成 `{name}`，连写两个左花括号（或两个右花括号）输出一个字面的花括号。`Render(arguments)` 按不变文化把值转成字符串，`null` 为空串；缺参数返回 `AI_VALIDATION_001`。参数值原样拼入，不会再被当作模板解析。
+`AIPromptTemplate(name, template, description)` 的占位符写成 `{name}`，连写两个左花括号（或两个右花括号）输出一个字面的花括号。`Render(arguments)` 从左到右扫描一遍：
+
+::: v-pre
+- 单独的 `{` 到其后第一个 `}` 之间的文本去掉两侧的空白就是占位符的名字，不作别的限制：可以为空（`{}` 取名字为空串的参数），可以含空格；不认格式说明符，`{amount:N2}` 的名字就是 `amount:N2`。
+- 找不到 `}` 的 `{` 连同其后直到结尾的文本原样写出，其中连写的两个左花括号也不再转义；单独的 `}` 原样写出。
+- 值按不变文化转成字符串，`null` 为空串；同一个占位符出现几次取几次，多给的参数不用。参数值原样拼入，不会再被当作模板解析。
+- 缺少参数返回 `AI_VALIDATION_001`（消息键 `ai.prompt.argument_missing`），报模板里第一个找不到的占位符名，不输出半截文本。
+:::
 
 提示词目录合并两处来源：配置 `XiHan:AI:Prompts:<name>:Template` 与 `:Description`（也可以把模板直接写成 `XiHan:AI:Prompts:<name>` 的值），以及 `AddAIPrompt(template)` 的显式登记；同名时显式登记优先。
 

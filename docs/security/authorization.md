@@ -203,7 +203,7 @@ public sealed class TenantMemberPolicy : IPolicy
 
 资源名 `ResourceName` 是 `xrn:<partition>:<service>:<tenant>:<type>/<id>`，用于策略判定与审计，例如 `xrn:cn:shop:acme:order/42`。分区、服务、类型段只允许小写字母、数字与连字符；租户段可以为空（全局资源），否则与租户 ID 同一文法：字母或数字开头，之后是字母、数字、`.`、`_`、`-`，不超过 64 个字符，区分大小写；ID 段不含 `/` 与空白。`ResourceName.Parse` 不合法时抛出 `ArgumentException`，`ResourceName.TryParse` 返回 `false`。
 
-资源经 `RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)` 或 `AuthorizationRequirement` 的构造参数进入请求，策略在 `request.Resource` 上读到它：
+资源经 `RequireXiHanPermission(code, resource)`、`RequireXiHanPolicy(name, resource)` 或 `AuthorizationRequirement` 的 `Resource` 成员进入请求，策略在 `request.Resource` 上读到它。`AuthorizationRequirement` 用对象初始化器构造（`new AuthorizationRequirement { Policy = name, Resource = resource }`，`Policy` 是 `required` 成员、不能为空白，`Resource` 不给即不针对具体资源），权限码的要求用快捷写法 `Permission(code, resource)`：
 
 ```csharp
 using XiHan.Framework.Kernel.Security;

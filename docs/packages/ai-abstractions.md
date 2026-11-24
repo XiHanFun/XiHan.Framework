@@ -63,8 +63,8 @@ dotnet add package XiHan.Framework.AI.Abstractions --prerelease
 | `Guardrails:UseBuiltInInjectionHeuristics` | bool | `true` | 是否启用内置的中英文提示注入模式（如「ignore previous instructions」「忽略以上指令」） |
 | `Knowledge:Collection` | string | `knowledge` | 默认集合；带租户的调用用 `<Collection>.<租户 ID>`，各租户互不可见，请求显式指明的集合原样使用（ADR-0210） |
 | `Knowledge:Dimensions` | int，至少 1 | 1536 | 嵌入维度 |
-| `Knowledge:ChunkSize` | int，至少 1 | 1000 | 切块大小（字符） |
-| `Knowledge:ChunkOverlap` | int，不小于 0 | 100 | 相邻块的重叠（字符） |
+| `Knowledge:ChunkSize` | int，至少 1 | 1000 | 切块大小，按 Unicode 码位计（代理对算一个） |
+| `Knowledge:ChunkOverlap` | int，不小于 0 | 100 | 相邻块的重叠，按 Unicode 码位计 |
 | `Knowledge:Top` | int，1 到 1000 | 5 | 默认检索条数 |
 | `Knowledge:EmbeddingProvider` | string | 目录的默认嵌入 Provider | 知识库用的嵌入 Provider；请求写了 Provider 时以请求为准 |
 | `Knowledge:PromptName` | string | 内置模板 | 提示增强用的模板名；启动时校验存在且只用 `{context}`、`{question}`，找不到或渲染不了即启动失败 |

@@ -161,9 +161,20 @@ service Orders {
 }
 ```
 
+契约里 `Stability = Stability.Deprecated` 的操作，它的 `rpc` 写成带 protobuf 标准方法选项的块，其余级别照旧以分号结束：
+
+```protobuf
+  // orders.archive
+  rpc Archive (ArchiveOrderRequest) returns (OrderResponse) {
+    option deprecated = true;
+  }
+```
+
+各语言的 gRPC 生成器据此给生成的方法加弃用标记（C# 生成 `[Obsolete]`），客户端重新生成后编译器就会提示。方法照常绑定、照常调用，状态与尾部元数据不受弃用影响；没有弃用操作的应用，`.proto` 里不出现这个选项。
+
 ## 上下文与截止时间
 
-gRPC 元数据就是 HTTP/2 头，上下文映射与 HTTP 相同：`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline`；没有 `xihan-deadline` 或它读不出时接受 gRPC 标准的 `grpc-timeout`，客户端设置的 deadline 因此直接成为这次调用的截止时间。`xihan-deadline` 的写法见 [HTTP 宿主与中间件](/web/hosting#请求如何变成调用上下文)。
+gRPC 元数据就是 HTTP/2 头，上下文映射与 HTTP 相同：`traceparent`、`baggage`、`authorization`、`accept-language`、`xihan-deadline`；没有 `xihan-deadline` 或它读不出时接受 gRPC 标准的 `grpc-timeout`，客户端设置的 deadline 因此直接成为这次调用的截止时间。`xihan-deadline` 的写法见 [HTTP 宿主与中间件](/web/hosting#请求如何变成调用上下文)。两个头读不出都当作没有、调用照常执行；值不为空而读不出时，宿主记一条带头名、原值长度与操作 ID 的限频 Warning（不带原值，与 HTTP 的请求头同一类，1 分钟最多一条），`xihan-deadline` 读得出时不看 `grpc-timeout`。
 
 gRPC 方法带 `PipelineBypassMetadata`，不经 `UseXiHan()` 的外层调用：每次调用在处理器里以请求头建自己的上下文、经完整管道执行，调用来源记协议 `grpc` 与方法全名（如 `/Orders/Create`），远端地址与 `User-Agent` 沿用 HTTP/2 请求。调用上下文的细节见[调用上下文](/startup/invocation-context)。
 

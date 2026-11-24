@@ -61,13 +61,13 @@ dotnet add package XiHan.Framework.Security.Abstractions --prerelease
 | `Authentication.AuthenticationCredential` | 凭据：`Scheme`（不区分大小写）与 `Value`；`TryParse("<scheme> <value>")`；`ToString()` 隐藏值 |
 | `Authentication.ICredentialHandler` | 某一方案的处理器：`Scheme`、`AuthenticateAsync(credential, context)` → `Result<Principal>`；取消与截止时间在 `context.CancellationToken` 上，不另收令牌 |
 | `Authentication.AuthenticationMiddleware` | Authenticate 阶段的中间件 |
-| `Authorization.AuthorizationRequirement` | 授权要求：`Policy`、`Resource`；`Authenticated`、`Permission(code, resource?)` |
+| `Authorization.AuthorizationRequirement` | 授权要求，初始化器记录：`Policy`（`required`，不能为空白）、`Resource`（可选，不给即不针对具体资源）；快捷写法 `Authenticated`、`Permission(code, resource?)` |
 | `Authorization.PolicyCatalog` | 策略目录：`Find(name)`、`Names`；策略名重复在构造时抛出 `ArgumentException` |
 | `Authorization.AuthenticatedPolicy` | 策略 `authenticated` |
 | `Authorization.PermissionPolicy` | 权限策略：`Prefix`（`permission:`）、`NameFor(code)`、`CodeOf(name)` |
 | `Authorization.AuthorizationMiddleware` | Authorize 阶段的中间件；策略判定失败以该失败结束调用（ADR-0071） |
 | `Permissions.GrantSubject` | 授予的主体：`ForUser(id)`、`ForRole(name)`，种类常量 `User`、`Role` |
-| `Permissions.PermissionGrant` | 一条授予：主体、权限码（`All` = `*`）、范围（`null` 为平台，`AnyTenant` = `*` 为每个租户，否则为该租户，ADR-0197）；`VisibleScopes(tenantId)` 给出一次调用看得到的范围 |
+| `Permissions.PermissionGrant` | 一条授予，初始化器记录：主体 `Subject` 与权限码 `Permission`（`All` = `*`）是 `required` 成员，范围 `TenantId` 可选（不给或 `null` 为平台，`AnyTenant` = `*` 为每个租户，否则为该租户，ADR-0197）；设值时校验，`with` 走同一校验；`VisibleScopes(tenantId)` 给出一次调用看得到的范围 |
 | `Permissions.IPermissionGrantStore`、`PermissionGrantStoreExtensions` | 授予存储：`GetManyAsync(subjects, tenantId)` → 与入参等长的 `Result<IReadOnlyList<IReadOnlyCollection<string>>>`，单主体写法是扩展方法 `GetGrantsAsync(subject, tenantId)`；每项是该主体对这次调用生效的授予（不带租户是平台授予，带租户是每个租户的授予加该租户的授予，`PermissionGrant.VisibleScopes`）；存储不可达是 `SECURITY_UNAVAILABLE_001`，不是空集合 |
 | `Permissions.IPermissionGrantAdministration`、`PermissionGrantAdministrationExtensions`、`PermissionGrantQuery`、`GrantTenantFilter`、`PermissionGrantPage` | 可选的授予管理：`GrantAsync` / `RevokeAsync` 与入参同序的逐项结果（撤销不存在为 `SECURITY_NOTFOUND_002`），`ListAsync(query)` 按主体与范围过滤（`Any` / `Platform` / `Of(tenantId)`，`Of("*")` 是每个租户的授予）、偏移分页并计数，越界为 `SECURITY_VALIDATION_005`；单条写法是扩展方法 |
 | `Permissions.IPermissionChecker` / `PermissionChecker` | RBAC 检查器：`HasPermissionAsync` → `Result<bool>`，存储、来源、过滤器的失败原样返回 |

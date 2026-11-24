@@ -121,7 +121,7 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 - 派发模式下成功是 202、无正文，处理器失败按错误 KIND 写 Problem Details，发送方据此重试。
 - batch 先解析全部事件的主题，任一没有映射整批 400、一个都不处理；已处理的事件不回滚，处理器按 `id` + `source` 去重。
 - 出站多条事件用一个 batch 请求，接收方须支持 `application/cloudevents-batch+json`，一个响应对整批生效。
-- 入站内容模式：`Content-Type: application/cloudevents+json`（structured）、`application/cloudevents-batch+json`（batch，事件数组），否则有 `ce-specversion` 头即 binary（属性在 `ce-*` 头，`Content-Type` 是数据内容类型，请求体是数据，头值按规范百分号解码）；都不是返回 400 `PROTOCOLS_VALIDATION_008`。`Inbound = Publish` 时发布到消息代理后立即 202，重试与死信由代理负责；派发只发生在接收请求的实例。batch 在派发模式按顺序处理、第一个失败即停止并作为响应，发布模式按主题分组一次批量发布、第一个失败的结果作为响应。
+- 入站内容模式：`Content-Type: application/cloudevents+json`（structured）、`application/cloudevents-batch+json`（batch，事件数组），否则有 `ce-specversion` 头即 binary（属性在 `ce-*` 头，`Content-Type` 是数据内容类型，请求体是数据，头值按规范百分号解码；`ce-time` 与结构化 JSON 的 `time` 同一条文法，必须有 `T`、秒与偏移，读出 UTC 时刻）；都不是返回 400 `PROTOCOLS_VALIDATION_008`。`Inbound = Publish` 时发布到消息代理后立即 202，重试与死信由代理负责；派发只发生在接收请求的实例。batch 在派发模式按顺序处理、第一个失败即停止并作为响应，发布模式按主题分组一次批量发布、第一个失败的结果作为响应。
 - 过出站地址策略（RFC-0008、ADR-0117）：Webhook 地址是运维配的，但接收方是第三方，它的 3xx 能把请求引到内网，所以命名客户端的连接与重定向都检查。接收方在内网时写进 `XiHan:Security:Outbound:AllowedHosts`；被拒绝按连接失败报告 `PROTOCOLS_UNAVAILABLE_002`，`reason` 是 `OutboundAddressDeniedException` 的类型全名。
 - HTTP 追踪头缺省不传播（ADR-0083）：启用追踪时 .NET 的 HttpClient 本会按当前 Activity 写 `traceparent`、`tracestate` 与 `baggage` 头（不是信封扩展），这会把内部追踪 ID 与 Baggage 推给第三方，所以命名客户端的主处理器缺省是关掉传播器的 `SocketsHttpHandler`（`ActivityHeadersPropagator = null`）。`PropagateTraceContext = true` 显式打开，按 .NET 的全局传播器写，只影响这个客户端，出站请求的客户端跨度照常记录；调连接参数用 `UseSocketsHttpHandler` 配置同一个处理器（设置保留），用 `ConfigurePrimaryHttpMessageHandler` 整个替换主处理器时由替换后的处理器决定是否传播。
 - 入站端点经过 `UseXiHan()`，请求凭据在外层认证；框架不给端点加任何要求，权限要由宿主自己加（ADR-0121）：`MapXiHanCloudEvents().RequireXiHanPermission(...)`，只授给平台的服务账号或服务角色。扩展属性 `xihantenant`、`xihanprincipal` 是发送方给的，派发时不和请求的身份核对，能调端点的人就能选租户、写审计主体，权限也不按租户收窄；没有装配 `security.authorization@1` 时挂了要求宿主就启动失败（`KERNEL_VALIDATION_006`，ADR-0217），不会静默敞开。
@@ -130,7 +130,7 @@ public sealed class OrderWebhookForwarder(CloudEventsWebhookPublisher webhooks) 
 | 错误码 | 情形 |
 | --- | --- |
 | `PROTOCOLS_VALIDATION_008` | 请求不是 CloudEvent（400） |
-| `MESSAGING_VALIDATION_002` | 信封不合法（400） |
+| `MESSAGING_VALIDATION_002` | 信封不合法（400）：缺必填属性、`time` / `ce-time` 不合文法、任何一层有重复的成员、`data` 与 `data_base64` 同时出现、扩展属性的值是对象或数组（RFC-0009「信封」，见 [Messaging.Abstractions](./messaging-abstractions#行为与限制)） |
 | `PROTOCOLS_VALIDATION_009` | 事件类型没有映射到主题，类型本身也不是合法主题（400） |
 | `PROTOCOLS_VALIDATION_013` | 入站请求体超过 `MaxRequestBodyBytes`（400） |
 | `PROTOCOLS_VALIDATION_014` | 入站 batch 的事件数超过 `MaxBatchSize`（400） |

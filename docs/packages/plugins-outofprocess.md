@@ -80,7 +80,7 @@ app.MapXiHanHealth();
 }
 ```
 
-时长不是正数、`HealthFailures` 不是正整数、`RestartLimit` 不是非负整数时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定（上例 `XiHan:Echo`），宿主在 `Configure` 时把它序列化为 JSON 对象下发。清单声明并授予（`binding:<绑定名>`）的资源绑定随同一个请求下发，与内核按同一套来源解析（ADR-0268）：先读 Service Binding 目录（`SERVICE_BINDING_ROOT`，或应用经 `UseServiceBindingRoot` 指定的目录），再读 `XiHan:Bindings:<名字>`，同名时配置整体覆盖目录；绑定名与 `type` / `value` 子键按字面比。每次配置插件时解析一遍，重启或运行期加载的插件拿到的是那一刻的值；只读清单声明的那几个绑定，别的绑定读不出来不影响它。只下发名字、类型（来源没有声明时取清单的）与主值，其余属性不下发，没有主值的绑定不下发并记 Warning。声明的绑定在目录里读不出来时返回 `PLUGINS_UNEXPECTED_001`（`phase` 为 `configure`，`reason` 只写异常类型），插件进入 Failed 并按重启策略重试。
+时长不是正数、`HealthFailures` 不是正整数、`RestartLimit` 不是非负整数时，`OutOfProcessPluginOptions.FromConfiguration` 以带配置键的 `ArgumentException` 拒绝启动。插件自己的配置节由插件清单 `contributes.config.section` 决定（上例 `XiHan:Echo`），宿主在 `Configure` 时把它序列化为 JSON 对象下发。清单声明并授予（`binding:<绑定名>`）的资源绑定随同一个请求下发，与内核按同一套来源解析（ADR-0268）：先读 Service Binding 目录（`SERVICE_BINDING_ROOT`，或应用经 `UseServiceBindingRoot` 指定的目录），再读 `XiHan:Bindings:<名字>`，同名时配置整体覆盖目录；绑定名与 `type` / `value` 子键按字面比。每次配置插件时解析一遍，重启或运行期加载的插件拿到的是那一刻的值；只读清单声明的那几个绑定，别的绑定读不出来不影响它。下发名字、类型（来源没有声明时取清单的）、主值与全部属性（`Binding.properties`，ADR-0285）：属性名区分大小写、原样下发，只有属性、没有主值的绑定照常下发、主值为空，主值与属性都没有的不下发并记 Warning。下发时属性名须是 1 到 253 个 ASCII 字母、数字、`.`、`_`、`-` 且不以 `.` 开头，一个绑定最多 64 个属性、属性名与属性值合计不超过 262144 个 UTF-8 字节，不合时不少发、不截断；属性随绑定受 `binding:<绑定名>` 约束、不单独授权，属性值不进日志与错误。声明的绑定在目录里读不出来时返回 `PLUGINS_UNEXPECTED_001`（`phase` 为 `configure`，`reason` 只写异常类型），属性不合上述限制时同样返回它（`reason` 只带绑定名与上限），宿主不发 `Configure`，插件进入 Failed 并按重启策略重试。
 
 ## 主要类型
 

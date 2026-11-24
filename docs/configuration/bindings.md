@@ -24,7 +24,7 @@
 `BindingResolver.Resolve` 按下面的顺序收集：
 
 1. 环境变量 `SERVICE_BINDING_ROOT` 指向的目录。每个子目录是一个绑定，目录名是绑定名；目录里每个文件是一个属性，文件名是属性名、内容修剪首尾空白后是值；`type` 文件是类型，`uri` 文件既是主值也保留为属性；以 `.` 开头的文件跳过。`AppBuilder.UseServiceBindingRoot(directory)` 可以在代码里改用别的目录。
-2. 配置节 `XiHan:Bindings:<name>`。节本身的标量值或子键 `value` 是主值，子键 `type` 是类型，其余子键是属性。绑定名与 `type`、`value` 两个子键按字面比，区分大小写：写成 `XiHan:Bindings:Db:Value` 读不到绑定 `db` 的主值。
+2. 配置节 `XiHan:Bindings:<name>`。节本身的标量值或子键 `value` 是主值，子键 `type` 是类型，其余子键是属性。绑定名与 `type`、`value` 两个子键按字面比，区分大小写：写成 `XiHan:Bindings:Db:Value` 读不到绑定 `db` 的主值，得到的是另一个没有主值的绑定 `Db`，`Value` 只是它的一个属性。
 
 同名时配置整体覆盖目录来源，不逐属性合并。目录布局长这样：
 
@@ -60,9 +60,21 @@
 
 - 只下发插件清单 `bindings` 里声明、且运营方授予了 `binding:<绑定名>` 的绑定，缺授予的插件在发现时以 `PLUGINS_DENIED_001` 拒绝；别的绑定不读、不下发。
 - 每次配置插件时解析一遍，不用宿主启动时的那一份：插件重启、运行期加载时拿到的是那一刻的值。
-- 线协议只带名字、类型与主值：`type` 取来源声明的，来源没有声明时取清单声明的；其余属性不下发；没有主值的绑定整个不下发，记一条 Warning。
+- 下发的是名字、类型、主值与全部属性：`type` 取来源声明的，来源没有声明时取清单声明的；属性与宿主里的特性读到的 `BindingValue.Properties` 是同一份，属性名区分大小写、原样下发，值为空的属性照发。只给了属性、没有主值的绑定（只挂了 `host`、`password` 这类文件、没有 `uri`）照常下发、主值为空；主值与属性都没有的不下发，记一条 Warning。属性名、数量与大小另有一道核对，见下文。
 
-清单声明的绑定在目录里读不出来（文件在、权限不对）时，插件这一次配置失败，进入 Failed 并按重启策略重试；根目录不存在不算失败。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
+属性随绑定一起受 `binding:<绑定名>` 约束，不单独授权；属性值与主值一样不进宿主的日志与错误。下发之前宿主按清单的顺序逐个核对绑定的属性：
+
+| 项 | 限制 |
+| --- | --- |
+| 属性名 | 1 到 253 个字符，只含 ASCII 字母、数字、`.`、`_`、`-`，不以 `.` 开头 |
+| 属性个数 | 一个绑定最多 64 个 |
+| 大小 | 一个绑定的属性名与属性值按 UTF-8 编码后合计不超过 262144 字节（256 KiB），主值不计入 |
+
+不合时宿主不少发、不截断，也不发 `Configure`：这个插件配置失败（`PLUGINS_UNEXPECTED_001`，`reason` 只带绑定名与上限，不带属性名与值），进入 Failed 并按重启策略重试；把不该给插件的文件挪出绑定目录，或把属性名改到上面的字符集里，插件下一次重试时自己起来。这道核对只管下发给插件的那一份，宿主进程里的特性照常读到全部属性。
+
+清单声明的绑定在目录里读不出来（文件在、权限不对）时，插件这一次配置失败，同样进入 Failed 并按重启策略重试；根目录不存在不算失败。见[进程外插件](/plugins/out-of-process)与 [Wasm 插件](/plugins/wasm)。
+
+插件一侧由各语言 SDK 把绑定交给作者：属性是一张只读的表，没有属性时是空表，只给了属性的绑定主值为空串；绑定类型的调试输出只带绑定名、类型与属性名。较早的 SDK 构建的插件不认这个字段，照旧读到名字、类型与主值，只是会多收到主值为空的绑定。各语言的写法见 [Go](/sdks/go)、[TypeScript](/sdks/typescript)、[Rust](/sdks/rust)、[Java](/sdks/java)、[Python](/sdks/python) 与 [PHP](/sdks/php)。
 
 ## 最小示例
 
@@ -143,7 +155,7 @@ app.MapGet("/ledger", (LedgerConnection ledger) => ledger.ConnectionString.Lengt
 | `queue` | `cache:distributed` | `Messaging.Redis` | 主值覆盖 `XiHan:Messaging:Redis:Configuration`；属性 `username`、`password` 覆盖连接字符串里的 `user`、`password`。绑定名与 RabbitMQ 相同（消息队列这个角色），类型是 Redis 服务；不读缓存的 `cache`，要共用一台 Redis 时让两个绑定指向它 |
 | `stream` | `stream` | `Messaging.Kafka` | 主值覆盖 `XiHan:Messaging:Kafka:BootstrapServers`；属性 `security.protocol`、`sasl.mechanism`、`sasl.username`、`sasl.password` 覆盖 `Properties` 里的同名键（只认这四项） |
 | `nacos` | `configuration:remote` | `Configuration.Nacos` | 主值覆盖 `XiHan:Configuration:Nacos:ServerAddresses`；属性 `username`、`password` 覆盖 `Username`、`Password` |
-| `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置 |
+| `objectstorage` | `blob` | `ObjectStorage.S3` | 主值（服务端点）与属性 `region`、`accessKey`、`secretKey`、`sessionToken`、`forcePathStyle` 覆盖 `XiHan:ObjectStorage:S3` 里的同名设置；`sessionToken` 是临时凭据的会话令牌，覆盖之后仍要与两项密钥同时给出 |
 
 ## 与部署产物的关系
 
@@ -153,7 +165,7 @@ app.MapGet("/ledger", (LedgerConnection ledger) => ledger.ConnectionString.Lengt
 
 ### 绑定的主值会出现在日志里吗
 
-不会。`BindingValue.ToString()` 把 `Value` 打印成 `***`，Provider 的选项记录也遮蔽连接字符串与口令，见 [远程配置与密钥](/configuration/remote)的「选项打印时遮蔽凭据」。
+不会。`BindingValue.ToString()` 把 `Value` 打印成 `***`，属性只列名字（`Properties = [password, username]`）、不打印值，Provider 的选项记录也遮蔽连接字符串与口令，见 [远程配置与密钥](/configuration/remote)的「选项打印时遮蔽凭据」。
 
 ### 绑定的值能热更新吗
 

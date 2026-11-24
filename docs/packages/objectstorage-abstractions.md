@@ -60,21 +60,21 @@ dotnet add package XiHan.Framework.ObjectStorage.Abstractions --prerelease
 | 类型 | 说明 |
 | --- | --- |
 | `Keys.ContainerName` | 容器名，`^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$`；`IsValid`、`Validate`，从 `string` 显式转换 |
-| `Keys.BlobKey` | 键：`/` 分段，1 到 1024 个字符，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`、`Validate`，从 `string` 显式转换 |
+| `Keys.BlobKey` | 键：`/` 分段，按 UTF-8 编码后 1 到 `MaxBytes`（1024）字节，每段非空且不是 `.` / `..`，不含空白、控制字符与 `\`，首段不是保留段 `ReservedSegment`（`.xihan`，框架自己的对象），区分大小写；`IsValid`、`IsReserved`、`IsValidPrefix`（列举前缀：字符与字节上限同键，可以为空、可以以 `/` 结尾，对各段不作要求）、`Validate`，从 `string` 显式转换。自己预检长度时比较 `Encoding.UTF8.GetByteCount(text)`，不是 `text.Length` |
 | `Blobs.IBlobStore` | `PutAsync(container, uploads)`、`GetAsync(container, key)`、`GetAsync(container, key, range)`、`HeadAsync`、`DeleteAsync(container, keys)`、`ListAsync(container, query)` |
 | `Blobs.BlobStoreExtensions` | `PutAsync(container, key, stream 或 bytes, options)`、`DeleteAsync(container, key)`、`ExistsAsync`、`ReadAllBytesAsync` |
 | `Blobs.BlobUpload` | 一项写入：键、内容流、选项 |
-| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，`IsValidContentType` 判定）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符，名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
+| `Blobs.BlobPutOptions` | `ContentType`（缺省 `application/octet-stream`，媒体类型、最长 `MaxContentTypeLength` 255，之后可跟若干个参数：每个 `;` 两侧可以有空格、之后必须有参数，`text/plain;` 不合法；`IsValidContentType` 判定）、`Metadata`（名 `^[a-z0-9][a-z0-9-]{0,63}$`，值不含控制字符，名与值合计不超过 `MaxMetadataBytes` 2048 个 UTF-8 字节）、`Overwrite`（缺省 `true`）；`Default` |
 | `Blobs.BlobMetadata` | 键、长度、内容类型、`ETag`、最后修改时间、自定义元数据 |
 | `Blobs.BlobContent` | 元数据、内容流与可选的实际范围 `Range`；`IAsyncDisposable`，释放时关闭流 |
 | `Blobs.BlobRange` / `BlobContentRange` | 范围请求（起点与可选长度）与实际范围（起点、长度、总长、`Last`） |
-| `Listing.BlobQuery` / `BlobPage` | 列举条件（`Prefix`、`PageSize` 1–1000 缺省 1000、`ContinuationToken`）与一页结果；`Validate()` 核对页大小，Provider 在列举开头调用，越界返回 `OBJECTSTORAGE_VALIDATION_005` |
+| `Listing.BlobQuery` / `BlobPage` | 列举条件（`Prefix` 按 `BlobKey.IsValidPrefix` 核对、不合时抛 `ArgumentException`，`PageSize` 1–1000 缺省 1000、`ContinuationToken`）与一页结果；`Validate()` 核对页大小，Provider 在列举开头调用，越界返回 `OBJECTSTORAGE_VALIDATION_005` |
 | `Multipart.IBlobMultipartStore` | `StartAsync`、`UploadPartAsync`、`ListPartsAsync`、`CompleteAsync`、`AbortAsync(uploads)`（批量放弃，逐项 `Result` 与入参同序） |
 | `Multipart.BlobMultipartStoreExtensions` | `AbortAsync(upload)`：放弃单个上传的写法，转调批量方法、取第一项 |
 | `Multipart.BlobMultipartUpload` | 一次分片上传：容器、键、上传标识、是否覆盖；可持久化后续传 |
 | `Multipart.BlobPart` / `BlobMultipart` | 分片（编号、ETag、长度）；常量 `MaxPartNumber` = 10000、`MinPartBytes` = 5 MiB；`ValidatePartNumber`、`ValidateParts`（完成清单非空、编号严格升序）与 `ValidateUploads`（批量放弃的集合里没有 `null`）供 Provider 在访问存储前校验 |
 | `Signing.IBlobUrlSigner` | `SignAsync(container, key, request)` → `BlobSignedUrl` |
-| `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法，保存的文件名最长 `MaxDownloadFileNameLength`（255）、不含控制字符 |
+| `Signing.BlobUrlRequest` | `ForDownload`、`ForUpload`、`ForPart`；`DefaultExpiresIn` = 30 分钟，`MaxExpiresIn` = 7 天；限定的内容类型须合文法，保存的文件名不为空、不全是空白、不含控制字符，按 UTF-8 编码后不超过 `MaxDownloadFileNameBytes`（255）字节 |
 | `Signing.BlobSignedUrl` | 地址 `Url`、方法 `Method`、失效时刻 `ExpiresAt` 与客户端必须发送的请求头 `Headers`；四项都是 `required` 的初始化成员，用对象初始化器构造，没有位置构造与解构 |
 | `Signing.BlobContentDisposition` | `Attachment(fileName)`：下载文件名的统一写法，非 ASCII 文件名带 `filename*` |
 | `Stores.BlobStores` | 命名实例注册表：`GetAsync(name)`、`GetOrAddAsync(definition)`、`RemoveAsync(names)`（批量，逐项返回是否存在过）、`Names`、`Providers`、`MaxCount`（登记数上限，常量 `MaxCountLimit` = 1024）；同时是健康项贡献者 |

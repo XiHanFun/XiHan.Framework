@@ -57,7 +57,7 @@ builder.AddXiHan(xihan => xihan
 | `XiHan:Messaging:Outbox:BatchSize` | 1 到 1000 的整数 | 100 | 发件箱每轮最多投递条数，也是每轮最多删除的已投递行数；按它分页查发件箱表，不能超过查询的取出上限 `EntityQuery.DefaultMaxTake` |
 | `XiHan:Messaging:Outbox:MaxAttempts` | 正整数 | 10 | 一条消息最多尝试投递的次数（含首次），用尽进死信 |
 | `XiHan:Messaging:Outbox:RetryDelaySeconds` | 正数 | 5 | 第一次失败后的重试间隔，之后每失败一次翻倍 |
-| `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限 |
+| `XiHan:Messaging:Outbox:MaxRetryDelaySeconds` | 正数 | 300 | 重试间隔的上限：翻倍到它之后一直是它，对任何尝试次数都是（`OutboxOptions.RetryDelayAfter`） |
 | `XiHan:Messaging:Outbox:DispatchedRetentionSeconds` | 非负数 | 86400 | 投递成功的行保留多久，0 为投递成功即删除 |
 | `XiHan:Messaging:Outbox:IncludeShards` | 布尔 | `true` | 装配了租户分片时也投递各分片库里的发件箱行；SqlSugar 把发件箱行留在默认库，可设为 `false` 省去多余的查询 |
 | `XiHan:Messaging:Outbox:ShardRefreshIntervalSeconds` | 正数 | 60 | 分片库清单多久从租户目录重读一次，新建的分片库最迟在这之后纳入投递 |
@@ -79,7 +79,7 @@ builder.AddXiHan(xihan => xihan
 | `MessageEnvelope` | CloudEvents 信封：`Id`、`Source`、`Type`（必填）、`Time`、`Subject`、`DataContentType`（缺省 `application/json`）、`Data`、`Extensions`；`WithExtension`、`Extension`、`IsJsonData` |
 | `EnvelopeExtensions` | 扩展属性名常量 `Tenant`（`xihantenant`）、`Principal`（`xihanprincipal`）、`Correlation`（`xihancorrelation`）、`Locale`（`xihanlocale`）、`TraceParent`、`PartitionKey`（`xihankey`）；扩展与 Baggage 键的对应 `BaggageMappings`；`IsValidName` |
 | `TopicName` | 主题文法 `^[a-z0-9][a-z0-9._-]{0,127}$`；`IsValid`、`Validate`、`MaxLength`（128） |
-| `CloudEventsFormat` | 结构化 JSON 编解码：`Encode`、`Decode`（返回 `Result<MessageEnvelope>`）、`ContentType` |
+| `CloudEventsFormat` | 结构化 JSON 编解码：`Encode`、`Decode`（返回 `Result<MessageEnvelope>`）、`ContentType`。`Decode` 先过内核 `JsonText.Check` 的共同检查，再按 RFC-0009「信封」读，规则见下文「行为与限制」；`Encode` 写完自己再过一遍检查，读不回来时抛出 `MESSAGING_VALIDATION_002` |
 | `IMessagePublisher`、`DirectPublisher` | 应用发布入口（作用域服务）：`PublishAsync`、`PublishManyAsync`，主题不合法逐项返回 `MESSAGING_VALIDATION_001`；在调用内发布时从当前调用补齐缺失的扩展 |
 | `IMessageBroker` | Provider 实现的传输：发布、`StartAsync(subscriptions, dispatch, ct)`（每个订阅一份消费）、`StopAsync` |
 | `IMessageReplayer` | 流能力：`ReplayAsync(topic, since, ct)` 按时刻重放 |
@@ -122,8 +122,9 @@ public sealed class DeliveryLoggingMiddleware(ILogger<DeliveryLoggingMiddleware>
 
 ## 行为与限制
 
+- 信封的读取（RFC-0009「信封」，ADR-0283）：`CloudEventsFormat.Decode` 先过 JSON 文本的共同检查，任何一层重复的成员（含 `data` 内部）、孤立的代理项转义都不合法，`messaging.envelope.invalid_json` 的 `reason` 是出错的路径（语法错误为 `$`，重复的成员为它的路径，如 `$.id`）；`time` 按 `TimestampText` 读，必须有 `T`、秒与偏移，读出 UTC 时刻、比 100 纳秒细的小数截断，不合文法即 `messaging.envelope.invalid_time`；`data` 与 `data_base64` 同时出现是 `messaging.envelope.data_conflict`；带 `data_base64` 而不写 `datacontenttype` 时内容类型是 `application/octet-stream`；扩展属性的值是字符串、数字或布尔（数字与布尔保留 JSON 原文），`null` 视为没有这个扩展，对象与数组是 `messaging.envelope.invalid_extension_value`。这些都是 `MESSAGING_VALIDATION_002`，经代理收到时按无法解码的消息了结。`Encode` 写出与规范属性同名的扩展、带重复成员或孤立代理项的 JSON 数据、超过 64 层的文档时抛出携带 `MESSAGING_VALIDATION_002` 的 `FrameworkException`。
 - 处理器返回失败或抛出异常都算投递失败；同一主题、同一方式的多个处理器按订阅顺序执行，第一个失败即为结果；同一处理器类型以同一方式重复订阅同一主题只记一次。没有处理器的订阅直接成功。竞争订阅失败到上限进死信，广播订阅丢弃。
-- 被代理的停止信号打断的投递不算一次失败（ADR-0261）：不计尝试、不重试、不进死信，原消息留给代理重新投递；取消只认停止信号，处理器自己的超时照常是一次失败。原位重试的代理（Kafka、Redis）每次尝试前都等应用进入服务状态，排空期间不接着重试。
+- 被代理的停止信号打断的投递不算一次失败（ADR-0261）：不计尝试、不重试、不进死信，原消息留给代理重新投递，再到达时的尝试号不因这次放弃而增加，最后一次尝试上被打断的消息照样再处理一次（ADR-0284）；靠代理一侧的计数（投递次数、重投次数）得出尝试号的自写 Provider 要在放弃时把这一次从计数里退掉，来不及退的（进程被强行终止）照旧计入。取消只认停止信号，处理器自己的超时照常是一次失败。原位重试的代理（Kafka、Redis）每次尝试前都等应用进入服务状态，排空期间不接着重试。
 - 被管道拒绝的派发不计尝试（ADR-0275）：应用开始排空的那一刻，派发遇到管道入口抛出的 `KERNEL_HOSTING_004`（处理器没有执行）时，投递等 10 毫秒后回到等待，应用再进入服务状态时以原尝试号重新派发，停止信号到来即放弃。只认派发抛出的这个错误码，处理器自己返回的同码失败照常算一次失败；同一次尝试里第 10 次被拒绝按派发抛出的异常计一次失败。
 - 无法解码的消息没有信封，不是一次投递：不派发、不重试，竞争订阅把收到的字节原样写进死信，广播订阅丢弃，各记一条 Warning；自写的代理用 `MessageDeliveryAttempt.Undecodable` 取结论，按 `Disposition` 翻译成自己的动作。
 - 派发抛出的异常记为 `MESSAGING_UNEXPECTED_001`，`reason` 是异常类型全名（框架异常是它的错误码），完整异常记一条 Warning。

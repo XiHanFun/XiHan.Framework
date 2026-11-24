@@ -8,7 +8,7 @@
 - `IMessageHandler.HandleAsync`、`ICredentialHandler.AuthenticateAsync`、`ITenantResolver.ResolveAsync`、`IInvocationAuthenticationFilter.AuthenticatedAsync` 不再收 `CancellationToken`：实现删掉最后一个参数，令牌改读 `context.CancellationToken`
 - 三处改名，查找替换：`IAuthenticationHandler` → `ICredentialHandler`（三个实现改成 `ApiKeyCredentialHandler` / `JwtCredentialHandler` / `OpenIdConnectCredentialHandler`），内核 `AuthorizationResult` → `AuthorizationDecision`，内核插件的 `PermissionGrant` → `PluginPermissions`（`Security.Abstractions` 的 `PermissionGrant` 不变）
 - 仓储与工作单元的异步方法返回 `ValueTask`：自写的仓储、工作单元与测试替身把 `Task` 换成 `ValueTask`；把返回值交给 `Task.WhenAll`、`Func<Task>` 形参或要等待多次的调用加 `.AsTask()`
-- `BlobSignedUrl`、`BindingValue`、`MiddlewareDescriptor` 的位置构造与解构删除：改用对象初始化器，解构改成读属性
+- `BlobSignedUrl`、`BindingValue`、`MiddlewareDescriptor`、`SecurityContext`、`TenantContext`、`PermissionGrant`、`AuthorizationRequirement` 的位置构造、构造重载与解构删除：改用对象初始化器（`new SecurityContext { Principal = p, Tenant = t }`、`new TenantContext { Id = id }`、`new PermissionGrant { Subject = s, Permission = p, TenantId = t }`、`new AuthorizationRequirement { Policy = policy, Resource = resource }`），解构改成读属性
 - 对象存储：`BlobStores.RemoveAsync(name, ct)` 改成 `(await RemoveAsync([name], ct))[0]`；`new S3BlobStore(…)` 改为装配特性并向容器注册 `IAmazonS3`，或经 `BlobStores` 按定义建；自写的分片上传 Provider 改实现批量的 `AbortAsync(uploads)`；命名实例超过 64 个的应用配 `XiHan:ObjectStorage:StoreMaxCount`
 - 调度：`RunsAsync` → `ListRunsAsync`，`StatusesAsync` → `FindStatusesAsync`，`StatusAsync` → `FindStatusAsync`；自写的 `IJobStore` 六个读取改名为 `List…Async`
 - 缓存键长度按 UTF-8 字节计（不超过 512 字节）：`CacheKey.MaxLength` → `MaxBytes`、`GenerationCache<T>.MaxRegionLength` → `MaxRegionBytes`，与它们比较的 `text.Length` 换成 `Encoding.UTF8.GetByteCount(text)`；含非 ASCII 字符的长键按字节重新核对
@@ -21,6 +21,22 @@
 - `ISecretStore.GetAsync(names)` 返回与入参同序的 `Result<SecretValue>` 列表，`SecretLookup` 已删除：自写的密钥库改返回类型，读 `lookups[i].Result` 的地方改成 `lookups[i]`
 - `MapXiHanHealth()`、`MapXiHanBlobs()` 返回 `IEndpointConventionBuilder`：把别的 `Map*` 链在它们后面的写法拆成两条语句
 - 配置里写成空串的键不再当作没写，枚举键不再接受数字写法：启动时报 `ArgumentException` 并带完整配置键，按提示改配置
+- 对象键、查询前缀与保存的文件名的长度按 UTF-8 字节计（键与前缀不超过 1024 字节，文件名不超过 255 字节）：`BlobKey.MaxLength` → `MaxBytes`、`BlobUrlRequest.MaxDownloadFileNameLength` → `MaxDownloadFileNameBytes`，与它们比较的 `text.Length` 换成 `Encoding.UTF8.GetByteCount(text)`；含非 ASCII 字符的长键与长文件名按字节重新核对
+- 内容类型的 `;` 之后必须有参数：`text/plain;`、结尾多出的 `;`、连续的 `;` 不再合法，去掉多余的 `;`
+- 消息信封的 `time` 与 binary 模式的 `ce-time` 只认带 `T`、秒与偏移的 RFC 3339 时刻（`2026-01-02T03:04:05Z`、`…+08:00`），空格代替 `T`、没有偏移、没有秒、只有日期、`+0800`、首尾空白、HTTP 日期都是信封不合法：自己写结构化 JSON 或 `ce-time` 的发送方逐个核对
+- 信封里重复的成员（含 `data` 内部）、`data` 与 `data_base64` 同时出现、值为对象或数组的扩展属性现在是信封不合法，竞争订阅进死信、广播订阅丢弃：升级前带这类信封的队列先排空
+- 读出的 `MessageEnvelope.Time` 一律是 UTC（`Offset` 为零），值为 `null` 的扩展属性读成没有这个扩展：取 `Offset` 的处理器改为按时刻使用，扩展的有无用 `Extension(name)` 判断
+- `CloudEventsFormat.Encode` 对与规范属性同名的扩展（`id`、`data` 等）和带重复成员的 JSON 数据抛出 `MESSAGING_VALIDATION_002`：给信封加了这类扩展的代码改名
+- 下发给插件的绑定有属性名不在 `[A-Za-z0-9._-]` 之内（1–253 个字符、不以 `.` 开头）、属性多于 64 个或名与值合计超过 256 KiB 时，这个插件配置失败并按重启策略重试：把多余的文件挪出绑定目录或改属性名
+- 把整个 stderr 当一行 JSON 解析的命令行脚本，调用弃用的操作且失败时会多读到一行提示，取最后一行；按行匹配 `.proto` 里以分号结束的 `rpc` 的脚本要认带花括号的形式（只影响已声明弃用的操作）
+- 照抄 `Caching.Remote` 消息目录的远程缓存插件，把 `caching.remote.key_invalid` 改成同样的「按 UTF-8 编码后不超过 512 字节」（10 个区域），否则与宿主的目录冲突（`LOCALIZATION_CONFLICT_001`）
+- Nacos 文档里展平后同一个键出现两次（含只差大小写的）整份文档不合法（`CONFIGURATION_VALIDATION_001`）：升级前在 Nacos 里把重复的键删到只剩一个
+- cron 表达式只按空格与制表符分段，结尾的换行、夹在中间的不换行空格等不再照收：从配置或文件读表达式的地方先 `Trim()`
+- `FixedWindowChunkingStrategy` 的窗口与重叠改按 Unicode 码位计，含表情等平面以外字符的文本块边界会变：要按新边界切的旧文档重新摄入
+- 工作流表达式里数字的文本只取决于数值：`1.50` 写 `1.5`、`1.5 + 1.5` 写 `3`（模板、拼接、`toString`、`WorkflowValues.AsString`）；要固定小数位数的展示在流程之外格式化
+- `now()` 与 `date()` 返回字符串 `2026-01-02T03:04:05.0000000+00:00`，进程内读结果改用 `WorkflowValues.TryConvert<DateTimeOffset>`；`date()` 与比较只认 `YYYY-MM-DD` 或再加 `T` / 空格与 `HH:MM[:SS[.小数]][偏移]`，`01/02/2026`、`Jan 2, 2026`、`12:30` 不再是时间
+- 工作流表达式里数组与对象的文本改为成员按名字排序的紧凑 JSON，非 ASCII 字符原样、数字写规范文本：按文本匹配容器的条件照新写法改
+- 工作流表达式的成员名与变量名一律区分大小写，不随 `JsonObject` 的选项：靠大小写不敏感取成员的表达式改成准确的名字
 :::
 
 ### 版本与兼容
@@ -36,6 +52,10 @@
 - **新增** `DeadlineText`：截止时间文本的解析与写出，HTTP 的 `xihan-deadline` 与插件协议共用（ADR-0278）
 - **调整** 清单 `activation` 的 `onEvent:` 模式可以带下划线，文法收成 `ActivationEvent.IsValid`（ADR-0276、ADR-0278）
 - **新增** `FeatureContext.ServiceBindingRoot`：应用指定的 Service Binding 根目录，装配之后还要解析绑定的特性用它（ADR-0268）
+- **新增** `TimestampText`：RFC 3339 时间戳文本的解析，截止时间的文本与消息信封的 `time` 共用（ADR-0283）
+- **新增** 内核的 `JsonText` 与 `JsonTextProblem` 公开（Preview）：读取 JSON 文本的共同检查，操作载荷、清单与消息信封共用（ADR-0283）
+- **新增** `UnreadableDeadlineLog`（Preview）：调用方给的截止时间读不出时的限频告警，内核登记为单例，自写载体读不出截止时间时经它报告（ADR-0279）
+- **调整** `BindingValue.ToString()` 的 `Properties` 只列属性名，属性值不打印（ADR-0285）
 
 ### 宿主、协议与插件
 
@@ -51,17 +71,25 @@
 - **新增** OpenAPI 给 `Stability.Deprecated` 的操作写标准的 `deprecated: true`（ADR-0273）
 - **调整** 内核插件的 `PermissionGrant` 改名 `PluginPermissions`，`Security.Abstractions` 的 `PermissionGrant` 不变（ADR-0264）
 - **修复** 只经 Service Binding 目录给出的绑定现在能下发给进程外与 Wasm 插件（清单声明且授予 `binding:<绑定名>`）；每次配置插件时重新解析，重启与运行期加载的插件拿到那一刻的值（ADR-0268）
-- **调整** 下发给插件的绑定里，配置来源的绑定名与 `type` / `value` 子键按字面比，`XiHan:Bindings:Db:Value` 这类大小写不同的写法不再下发；`type` 写成空串时取清单声明的类型（ADR-0268）
+- **调整** 下发给插件的绑定里，配置来源的绑定名与 `type` / `value` 子键按字面比：绑定名大小写不同的（`XiHan:Bindings:Db`）不下发，子键大小写写错的（`XiHan:Bindings:db:VALUE`）只是一个属性、主值为空；`type` 写成空串时取清单声明的类型（ADR-0268、ADR-0285）
 - **新增** `OutOfProcessPluginHost`、`WasmPluginHost` 的构造新增可选参数 `serviceBindingRoot`（ADR-0268）
+- **修复** 只挂属性文件、没有 `uri` 的绑定现在能下发给进程外与 Wasm 插件：绑定连同全部属性随 `Configure` 下发，主值为空；带主值的绑定里另放的凭据属性也一并到达（ADR-0285）
+- **调整** 下发给插件的绑定的属性名须是 1–253 个 ASCII 字母、数字、`.`、`_`、`-` 且不以 `.` 开头，一个绑定最多 64 个属性、名与值合计不超过 256 KiB，不合时这个插件配置失败、不少发不截断；宿主进程里的特性不受影响（ADR-0285）
+- **新增** `xihan-deadline`、`grpc-timeout` 与插件回调的 `deadline` 不为空而读不出时记一条 Warning（类别 `XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog`）：不带原值，请求头与插件回调各 1 分钟最多一条并带被压掉的条数；调用结果不变（ADR-0279）
+- **新增** `/operations.proto` 里弃用操作的 `rpc` 带 `option deprecated = true;`，重新生成的客户端会给对应方法加弃用标记（ADR-0280）
+- **新增** 命令行调用弃用的操作时 stderr 多一行本地化提示（`hosting.commandline.operation_deprecated`），stdout 与退出码不变；`<resource> <verb> --help` 指向弃用的操作时帮助末尾多一句（ADR-0280）
 
 ### 配置
 
 - **调整** `ISecretStore.GetAsync(names)` 返回同序、等长的 `Result<SecretValue>` 列表，删除 `SecretLookup`（ADR-0257）
+- **调整** Nacos 文档展平后重复的键（含只差大小写的）与空的键是文档不合法（`CONFIGURATION_VALIDATION_001`），不再悄悄取最后一个（ADR-0286）
+- **修复** Nacos 文档里落单的代理项转义与空的键返回 `CONFIGURATION_VALIDATION_001`，不再以异常漏出、被记成远端不可达；properties 键为空的原因不再带出配置的值（ADR-0286）
 
 ### 安全
 
 - **调整** `IAuthenticationHandler` 改名 `ICredentialHandler`，三个实现改名 `ApiKeyCredentialHandler` / `JwtCredentialHandler` / `OpenIdConnectCredentialHandler`（ADR-0264）
 - **调整** 内核 `AuthorizationResult` 改名 `AuthorizationDecision`（ADR-0264）
+- **调整** `SecurityContext`、`TenantContext`、`PermissionGrant`、`AuthorizationRequirement` 改为初始化成员（`Principal`、`Id`、`Subject` 与 `Permission`、`Policy` 标 `required`），位置构造、构造重载与解构删除；原先只读的成员可以经 `with` 换，校验异常的 `ParamName` 变成 `value`（ADR-0288）
 
 ### 持久化与消息
 
@@ -80,6 +108,11 @@
 - **新增** `MessageDeliveryAttempt.Undecodable`：无法解码的消息的结论，自写的代理按它的 `Disposition` 了结；三个代理的竞争订阅日志统一成 `it was dead-lettered`（ADR-0275）
 - **新增** 发件箱健康项 `messaging.outbox.backlog` 与四个阈值 `XiHan:Messaging:Outbox:Health*`：积压超限以 `MESSAGING_UNAVAILABLE_004` 降级，死信超限（缺省有死信就算）以 `MESSAGING_UNAVAILABLE_005` 降级（ADR-0272）
 - **新增** `OutboxDeadLetters.RedriveManyAsync(ids)`：批量重投发件箱死信，逐项结果与入参同序，尝试次数归零；不存在的行是 `MESSAGING_NOTFOUND_001`，不在死信里的行是 `MESSAGING_CONFLICT_001`（ADR-0272）
+- **调整** 消息信封的读取收紧：`time`（含 binary 模式的 `ce-time`）只认 RFC 3339 时刻并读成 UTC，任何一层重复的成员、`data` 与 `data_base64` 同时出现、值为对象或数组的扩展属性是信封不合法（新消息键 `messaging.envelope.data_conflict`、`messaging.envelope.invalid_extension_value`），`invalid_json` 的 `reason` 改为出错的路径（ADR-0283）
+- **调整** `CloudEventsFormat.Encode` 写不出读得回来的文档时抛出 `MESSAGING_VALIDATION_002`：与规范属性同名的扩展、JSON 数据里重复的成员或孤立的代理项、超过 64 层的文档（ADR-0283）
+- **修复** 文档带 `data_base64` 而不写 `datacontenttype` 时读成 `application/octet-stream`，读出的信封写得回去（ADR-0283）
+- **修复** 发件箱的退避对任何尝试次数都饱和在 `MaxRetryDelay`；以前上限大于间隔的 2 的 30 次方倍时到不了上限（ADR-0283）
+- **修复** Redis 上被停止打断的投递不计尝试：重启后仍是原来的尝试号，最后一次尝试上被打断的消息不再不经处理就进死信（ADR-0284）
 
 ### 缓存
 
@@ -88,11 +121,25 @@
 - **新增** `ICache.GetOrCreateAsync` 合并同键并发：同一个缓存实例上同一个键、同一种结果类型的并发未命中只回源一次，热点键过期时不再一起回源；新增 `InFlightLoadTable` 与 `InFlightLoad` 供自写的 `ICache` 使用（ADR-0271）
 - **调整** 两级缓存自己合并同键并发，对 L2 改为分开读写，不再调用 L2 的 `GetOrCreateAsync`；L1 同时未命中只读一次 L2（ADR-0271）
 - **调整** `GetOrCreateAsync` 的过期选项改在回源之前校验，令牌已取消且未命中时不再执行工厂（ADR-0271）
+- **调整** 远程缓存的 `caching.remote.key_invalid` 文案改为「按 UTF-8 编码后不超过 512 字节」（10 个区域），与 Go SDK `examples/cache` 的目录逐字一致（ADR-0274）
 
 ### 调度
 
 - **调整** `IJobScheduler.RunsAsync` 改名 `ListRunsAsync`，`StatusesAsync(names)` 改名 `FindStatusesAsync`，扩展方法 `StatusAsync(name)` 改名 `FindStatusAsync`（ADR-0270）
 - **调整** `IJobStore` 的六个读取改名为 `ListTriggersAsync`、`ListRunsAsync`、`ListRunningRunsAsync`、`ListLastRunsAsync`、`ListCancelRequestedRunsAsync`、`ListNodesAsync`，`JobSchedulerConformance.StatusAsync` 改名 `GetStatusAsync`（ADR-0270）
+- **调整** cron 只按空格与制表符分段，别的空白出现即不合法；下一次触发与起点相差超过 1830 天一律无值，以前多收最多一个月（ADR-0286）
+- **修复** 步长很大的 cron 表达式 `TryParse` 不再抛 `IndexOutOfRangeException`（ADR-0286）
+
+### 工作流
+
+- **修复** 表达式的结果放不下、`round` 的位数越界、下标超出整数范围返回 `WORKFLOW_VALIDATION_003`（新消息键 `workflow.expression.number_out_of_range`），不再抛出异常（ADR-0287）
+- **调整** 表达式的二元运算符与函数先求值全部操作数再核对：`'x' / 0` 报操作数不是数字而不是除以零（ADR-0287）
+- **调整** 模板渲染出的文本不超过 4194304 个字符，超过是 `workflow.expression.string_too_long`；表达式错误里带出的文本一律最多 200 个码元（ADR-0287）
+- **新增** 表达式小语言的规则逐条写进规范 RFC-0021「表达式」，`workflow` 档新增五个表达式向量文件（ADR-0287）
+
+### AI
+
+- **调整** `FixedWindowChunkingStrategy` 的窗口与重叠按 Unicode 码位计，不再切出半个字符；含平面以外字符的文本块边界与块数会变（ADR-0286）
 
 ### 对象存储
 
@@ -104,17 +151,24 @@
 - **移除** `S3BlobStore` 的公开构造，S3 包的公开面不再有 AWS SDK 的类型：缺省实例由特性建出，命名实例经 `BlobStores` 按定义建（ADR-0266）
 - **调整** `IBlobMultipartStore.AbortAsync` 改为批量，逐项返回 `Result`；单条成了扩展方法，调用点不用改，自写的 Provider 改实现批量方法并用新增的 `BlobMultipart.ValidateUploads` 核对入参（ADR-0266）
 - **调整** `BlobSignedUrl` 改为 `required` 初始化成员，位置构造与解构删除（ADR-0266）
+- **新增** S3 的会话令牌、请求超时、尝试次数与 HTTP 代理做成配置：`SessionToken`、`RequestTimeoutSeconds`、`MaxAttempts`、`ProxyHost` / `ProxyPort` / `ProxyUserName` / `ProxyPassword`，配置节与命名实例都能写，绑定新增 `sessionToken`；不写时与以前相同（ADR-0281）
+- **修复** S3 SDK 请求超时抛的 `TimeoutException` 归为存储故障 `OBJECTSTORAGE_UNAVAILABLE_001`（ADR-0281）
+- **调整** 对象键、查询前缀与保存的文件名的长度按 UTF-8 字节计，`BlobKey.MaxLength` 改名 `MaxBytes`、`BlobUrlRequest.MaxDownloadFileNameLength` 改名 `MaxDownloadFileNameBytes`；全是汉字的键由 1024 个字降到 341 个，文件名由 255 个降到 85 个（ADR-0282）
+- **调整** 内容类型的每个 `;` 之后必须有参数，`;` 两侧可以有空格；宿主代收的上传带 `text/plain;` 这类 `Content-Type` 返回 `OBJECTSTORAGE_VALIDATION_006`（ADR-0282）
 
 ### 可观测
 
 - **新增** Span `xihan.plugin.invoke`：宿主调用插件的操作与向插件投递事件各记一条，是 `xihan.invoke` 的子 Span，写给插件的 `traceparent` 以它为父级（ADR-0269）
 - **调整** 操作调用的 `xihan.invoke`、`xihan.invocations`、`xihan.invocation.duration` 新增标签 `xihan.operation`（操作 ID），两个指标的序列按操作分开；不是操作调用时不带这个标签（ADR-0269）
+- **修复** Linux 上的系统运行时长按十进制读，不再差一个计时单位；带符号、指数的 `/proc/uptime` 读成空（ADR-0286）
 
 ### 测试
 
 - **新增** `XiHan.Framework.Testing` 的 `ScriptedUnitOfWork` 与 `ScriptedRepository<TEntity, TKey>`：按脚本失败的工作单元与仓储替身，测管道外的代码在数据库故障时的收尾（ADR-0259）
 - **新增** `XiHan.Framework.Testing` 的 `LogCapture`：把日志收进内存的日志工厂，按级别、类别、消息与异常断言组件写了哪条日志（ADR-0262）
 - **新增** `MessageBrokerConformance.ReadDeadLettersAsync`（抽象，继承代理套件的测试类要实现）与两条用例：用完尝试次数进死信、停止打断的投递不进死信（ADR-0275）
+- **新增** 消息一致性套件的用例「最后一次尝试被停止打断，重新开始消费后再处理一次」与 `DeliveryLog.BlockingAttempts`：靠代理一侧的计数得出尝试号的自写 Provider 要在放弃时退回这一次（ADR-0284）
+- **新增** `MessageLocalizerConformance` 的用例：取文案先按区域、再按目录，先按目录查的自写本地化器过不了（ADR-0286）
 - **新增** 一致性套件的用例：`BlobStoreConformance` 的批量放弃、`OutboxConformance` 的死信重投、`CacheStoreConformance` 的恰好 512 字节的多字节键（给键加前缀的夹具覆写 `KeyPrefixBytes`）（ADR-0266、ADR-0272、ADR-0274）
 
 ## v5.0.0-rc.7（2026-11-23）

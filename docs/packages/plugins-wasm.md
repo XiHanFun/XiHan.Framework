@@ -19,7 +19,7 @@ Wasm 插件宿主（`isolation: wasm`，Experimental）：用 wasmtime 在进程
 
 每个插件一个实例，调用串行，并发到达的调用排队，排队时间计入截止时间。沙箱的边界：线性内存上限 `MemoryLimitBytes`、栈上限 `StackLimitBytes`；CPU 按 epoch 中断强制截止（操作与事件用调用上下文的剩余时间，没有截止时间时取 `CallTimeout`，中间件用 `MiddlewareTimeout`，生命周期调用用 `CallTimeout`）；没有网络；文件系统只有映射的预开放目录；WASI 的 stdout / stderr 写入即丢弃（ADR-0186），日志走导入 `xihan.log`。
 
-`xihan_configure` 的请求带插件的配置节、工作目录与清单声明并授予（`binding:<绑定名>`）的资源绑定。绑定与内核按同一套来源解析（ADR-0268）：先读 Service Binding 目录（`SERVICE_BINDING_ROOT`，或应用经 `UseServiceBindingRoot` 指定的目录），再读 `XiHan:Bindings:<名字>`，同名时配置整体覆盖目录；绑定名与 `type` / `value` 子键按字面比。每次配置插件时解析一遍，重建实例或运行期加载的插件拿到的是那一刻的值；只读清单声明的那几个绑定。只下发名字、类型（来源没有声明时取清单的）与主值，其余属性不下发，没有主值的绑定不下发并记 Warning；声明的绑定在目录里读不出来时这一次配置失败（`PLUGINS_UNEXPECTED_001`，`phase` 为 `configure`），留给下一次调用或退避重建。
+`xihan_configure` 的请求带插件的配置节、工作目录与清单声明并授予（`binding:<绑定名>`）的资源绑定。绑定与内核按同一套来源解析（ADR-0268）：先读 Service Binding 目录（`SERVICE_BINDING_ROOT`，或应用经 `UseServiceBindingRoot` 指定的目录），再读 `XiHan:Bindings:<名字>`，同名时配置整体覆盖目录；绑定名与 `type` / `value` 子键按字面比。每次配置插件时解析一遍，重建实例或运行期加载的插件拿到的是那一刻的值；只读清单声明的那几个绑定。下发名字、类型（来源没有声明时取清单的）、主值与全部属性（`Binding.properties`，ADR-0285）：属性名区分大小写、原样下发，只有属性、没有主值的绑定照常下发、主值为空，主值与属性都没有的不下发并记 Warning。下发时属性名须是 1 到 253 个 ASCII 字母、数字、`.`、`_`、`-` 且不以 `.` 开头，一个绑定最多 64 个属性、属性名与属性值合计不超过 262144 个 UTF-8 字节，不合时不少发、不截断；属性随绑定受 `binding:<绑定名>` 约束、不单独授权，属性值不进日志与错误。声明的绑定在目录里读不出来或属性不合上述限制时这一次配置失败（`PLUGINS_UNEXPECTED_001`，`phase` 为 `configure`，`reason` 只带绑定名），留给下一次调用或退避重建。
 
 每次调用插件的操作、向插件投递事件各记一条 `xihan.plugin.invoke` Span（ADR-0269）：种类 Client，是内核 `xihan.invoke` 的子 Span，带 `xihan.plugin.id`，操作调用另带 `xihan.operation`，失败时状态为 Error；写给插件的 `traceparent` 以它为父级，没有监听器时不开 Span。
 

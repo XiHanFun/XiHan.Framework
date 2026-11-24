@@ -17,7 +17,7 @@
 | 到达截止时间 | `KERNEL_TIMEOUT_001` | 504 | `DeadlineExceeded` | 7 |
 | 截止时间到达之前调用方取消（连接断开等） | `KERNEL_CANCELLED_001` | 408 | `Cancelled` | 8 |
 
-截止时间随调用传播：HTTP 用请求头 `xihan-deadline`，gRPC 用 `grpc-timeout`（没有 `xihan-deadline` 或它读不出时生效），命令行用 `--timeout <秒>`；下游调用的截止时间不晚于上游。`xihan-deadline` 的值是带 `T`、秒与偏移的时刻，如 `2026-11-18T03:25:00Z` 或 `2026-11-18T11:25:00+08:00`，.NET 用 `DeadlineText.Format` 写出；其余写法（空格代替 `T`、没有偏移、没有秒、只有日期）读不出，读不出当作没有这个头、不报错，调用照常执行，只是没有截止时间，完整规则见 [HTTP 宿主与中间件](/web/hosting#请求如何变成调用上下文)。操作与仓储只需要把 `context.CancellationToken` 传下去，不必自己计时；`context.RemainingTime(now)` 与 `context.IsExpired(now)` 可读剩余时间。
+截止时间随调用传播：HTTP 用请求头 `xihan-deadline`，gRPC 用 `grpc-timeout`（没有 `xihan-deadline` 或它读不出时生效），命令行用 `--timeout <秒>`；下游调用的截止时间不晚于上游。`xihan-deadline` 的值是带 `T`、秒与偏移的时刻，如 `2026-11-18T03:25:00Z` 或 `2026-11-18T11:25:00+08:00`，.NET 用 `DeadlineText.Format` 写出；其余写法（空格代替 `T`、没有偏移、没有秒、只有日期）读不出，读不出当作没有这个头、不报错，调用照常执行，只是没有截止时间；宿主只记一条不带原值的限频 Warning（类别 `XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog`，1 分钟最多一条），按 Warning 告警的监控据此发现发错写法的调用方。完整规则见 [HTTP 宿主与中间件](/web/hosting#请求如何变成调用上下文)。操作与仓储只需要把 `context.CancellationToken` 传下去，不必自己计时；`context.RemainingTime(now)` 与 `context.IsExpired(now)` 可读剩余时间。
 
 ### 超时与取消的归因
 

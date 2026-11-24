@@ -39,7 +39,8 @@ dotnet add package XiHan.Framework.Primitives --prerelease
 | `ITypedId<TValue>` / `TypedId<TTag, TValue>` | 强类型标识，线上编码为底层值 |
 | `InvocationContext` | 取消令牌、截止时间、W3C Trace、Baggage、作用域对象袋与作用域服务 |
 | `TraceParent` | W3C `traceparent` 的解析与写出：`TryParse`、`ToString()`、`TraceId`、`SpanId`、`Sampled`；HTTP、消息信封与插件元数据共用一条文法 |
-| `DeadlineText` | 截止时间文本的解析与写出（RFC-0003 规则 8）：`TryParse(text, out deadline)` 按文法整串匹配，必须有 `T`、秒与偏移，小数一到九位、比 100 纳秒细的部分截断，读不出返回 `false`；`Format(deadline)` 写成 UTC、七位小数加 `+00:00`。HTTP 的 `xihan-deadline` 与插件协议的 `deadline` 共用 |
+| `DeadlineText` | 截止时间文本的解析与写出（RFC-0003 规则 8）：`TryParse(text, out deadline)` 按文法整串匹配，必须有 `T`、秒与偏移，小数一到九位、比 100 纳秒细的部分截断，读不出返回 `false`；`Format(deadline)` 写成 UTC、七位小数加 `+00:00`。HTTP 的 `xihan-deadline` 与插件协议的 `deadline` 共用；`TryParse` 转给 `TimestampText` |
+| `TimestampText` | RFC 3339 时间戳文本的解析（RFC-0003 规则 8 的读法）：`TryParse(text, out timestamp)` 按整串匹配、不裁剪空白，必须有 `T`（或 `t`）、秒与偏移（`Z`、`z` 或 `±HH:MM`），小数一到九位、比 100 纳秒细的部分截断，读出的是 UTC 时刻；不交给 `DateTimeOffset.TryParse`，没有偏移的文本不按本机时区读。截止时间的文本与消息信封的 `time` 共用，只有解析，没有写出 |
 | `OperationId` | 操作 ID 的文法：`IsValid`、`Validate`、`ResourceOf`、`VerbOf`；`MaxLength` = 128 |
 | `BaggageKeys` | 已登记的 Baggage 键：`xihan.tenant`、`xihan.principal`、`xihan.correlation`、`xihan.idempotency-key`、`xihan.locale`；值的约束 `MaxValueLength`（256）与 `IsAcceptableValue(value)`（非空、不超长、不含控制字符，ADR-0204） |
 | `PipelineStage` / `PipelineStageExtensions` | 固定的十一个管道阶段及其清单名 |
