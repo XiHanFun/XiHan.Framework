@@ -1,8 +1,11 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Conformance;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Messaging.InMemory.Tests;
 
@@ -19,4 +22,15 @@ public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConform
 
     /// <inheritdoc />
     protected override IFeature CreateFeature() => new InMemoryMessagingFeature();
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// 读宿主里那个代理的死信列表
+    /// </remarks>
+    protected override ValueTask<IReadOnlyList<MessageEnvelope>> ReadDeadLettersAsync(TestHost host, string topic, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
+        return ValueTask.FromResult<IReadOnlyList<MessageEnvelope>>([.. broker.DeadLetters(topic).Select(static delivery => delivery.Envelope)]);
+    }
 }

@@ -6,7 +6,7 @@
 
 ## 主要特性
 
-* `MessageBrokerConformance`：队列语义（顺序、重试、死信、竞争与广播订阅）
+* `MessageBrokerConformance`：队列语义（顺序、重试、死信、竞争与广播订阅，停止打断的投递不进死信、重新开始消费后重新投递）
 * `MessageStreamConformance`：在队列用例之上验证同键有序与按时刻重放
 * `OutboxConformance`：发件箱的退避、死信与取消语义
 
@@ -20,14 +20,22 @@ dotnet add package XiHan.Framework.Messaging.Conformance --prerelease
 
 ### 使用
 
-继承对应基类并实现 `CreateFeature()`：
+继承对应基类并实现 `CreateFeature()`；代理的套件还要实现 `ReadDeadLettersAsync`，按自己的介质读出一个主题此刻的死信（死信列表、死信队列、死信主题或死信流），套件靠它核对哪些消息进了死信：
 
 ```csharp
 public sealed class InMemoryMessageBrokerConformanceTests : MessageBrokerConformance
 {
     protected override IFeature CreateFeature() => new InMemoryMessagingFeature();
+
+    protected override ValueTask<IReadOnlyList<MessageEnvelope>> ReadDeadLettersAsync(TestHost host, string topic, CancellationToken cancellationToken)
+    {
+        var broker = host.Services.GetRequiredService<InMemoryMessageBroker>();
+        return ValueTask.FromResult<IReadOnlyList<MessageEnvelope>>([.. broker.DeadLetters(topic).Select(static delivery => delivery.Envelope)]);
+    }
 }
 ```
+
+`ReadDeadLettersAsync` 不取走死信、可以反复调用，还没有死信时返回空列表。没有确认的消息要等超时才重新可见的代理，覆写 `RedeliveryTimeout` 或在 `Configuration` 里把那个超时调小。
 
 提供流能力的提供程序继承 `MessageStreamConformance`，不必再继承队列套件；持久化提供程序继承 `OutboxConformance`。
 

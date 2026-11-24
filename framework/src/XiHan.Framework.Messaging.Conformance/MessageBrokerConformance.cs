@@ -20,7 +20,7 @@ namespace XiHan.Framework.Messaging.Conformance;
 /// <c>messaging.queue@1</c> Provider 的一致性套件（含批量发布用例）
 /// </summary>
 /// <remarks>
-/// 继承并实现 <see cref="CreateFeature"/>，全部用例随之执行
+/// 继承并实现 <see cref="CreateFeature"/> 与 <see cref="ReadDeadLettersAsync"/>，全部用例随之执行
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class MessageBrokerConformance
@@ -56,6 +56,14 @@ public abstract class MessageBrokerConformance
     protected virtual TimeSpan DeliveryTimeout => TimeSpan.FromSeconds(10);
 
     /// <summary>
+    /// 被停止打断的投递在重新开始消费后再到达的等待上限
+    /// </summary>
+    /// <remarks>
+    /// 默认同 <see cref="DeliveryTimeout"/>。没有确认的消息要等超时才重新可见的代理（Redis 的回收阈值）覆写成更长的时间，或在 <see cref="Configuration"/> 里把那个超时调小
+    /// </remarks>
+    protected virtual TimeSpan RedeliveryTimeout => DeliveryTimeout;
+
+    /// <summary>
     /// 被测 Provider 能否让两个宿主连到同一个代理
     /// </summary>
     /// <remarks>
@@ -78,6 +86,17 @@ public abstract class MessageBrokerConformance
     /// 每个用例调用一次
     /// </remarks>
     protected abstract IFeature CreateFeature();
+
+    /// <summary>
+    /// 读出一个主题此刻的死信
+    /// </summary>
+    /// <remarks>
+    /// 套件靠它跨代理查看死信，由各 Provider 的测试按自己的介质实现：内存代理读死信列表，RabbitMQ 读死信队列，Kafka 读死信主题，Redis 读死信流。返回竞争订阅的死信里能解码的信封，按进入死信的顺序；读取不取走死信，可以反复调用；还没有死信（死信的队列、主题或流还不存在）时返回空列表
+    /// </remarks>
+    /// <param name="host">被测宿主，由 <see cref="StartAsync"/> 或 <see cref="StartWithSubscriptionsAsync"/> 启动</param>
+    /// <param name="topic">主题（不带死信后缀）</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    protected abstract ValueTask<IReadOnlyList<MessageEnvelope>> ReadDeadLettersAsync(TestHost host, string topic, CancellationToken cancellationToken);
 
     /// <summary>
     /// 用例 1：信封的属性、扩展与数据完整到达处理器
@@ -438,6 +457,99 @@ public abstract class MessageBrokerConformance
         // 两个实例收到的本套件消息
         static List<string> Received(DeliveryLog first, DeliveryLog second)
             => [.. first.All.Concat(second.All).Where(static r => r.Delivery.Envelope.Id.StartsWith("one-of-", StringComparison.Ordinal)).Select(static r => r.Delivery.Envelope.Id)];
+    }
+
+    /// <summary>
+    /// 用例 15：竞争订阅的投递用完尝试次数后进死信
+    /// </summary>
+    /// <remarks>
+    /// 死信里是原消息的信封，只进一次；处理成功的消息与别的主题不受牵连（RFC-0009「投递」第 3 条）
+    /// </remarks>
+    [Fact]
+    public async Task ExhaustedCompetingDelivery_IsDeadLettered_WithItsEnvelope()
+    {
+        var log = new DeliveryLog();
+        log.FailingIds["dead-1"] = 0;
+        await using var host = await StartAsync(log).ConfigureAwait(false);
+
+        (await PublishAsync(host, OrdersTopic, Envelope("dead-1", "orders.dead") with { Subject = "order/13" }).ConfigureAwait(false)).ThrowIfFailure();
+        (await PublishAsync(host, OrdersTopic, Envelope("alive-1", "orders.alive")).ConfigureAwait(false)).ThrowIfFailure();
+
+        var attempts = await log.WaitAsync(static r => r.Delivery.Envelope.Id == "dead-1", MaxAttempts, DeliveryTimeout).ConfigureAwait(false);
+        Assert.Equal(Enumerable.Range(1, MaxAttempts), attempts.Select(static r => r.Delivery.Attempt));
+        Assert.Single(await log.WaitAsync(static r => r.Delivery.Envelope.Id == "alive-1", 1, DeliveryTimeout).ConfigureAwait(false));
+
+        // 死信写入在最后一次尝试之后，等到它出现；之后按同一份快照断言
+        var deadLetters = await WaitForDeadLetterAsync(host, OrdersTopic, "dead-1", DeliveryTimeout).ConfigureAwait(false);
+        var dead = Assert.Single(deadLetters, static e => e.Id == "dead-1");
+        Assert.Equal(("/conformance", "orders.dead", "order/13"), (dead.Source, dead.Type, dead.Subject));
+        Assert.DoesNotContain(deadLetters, static e => e.Id == "alive-1");
+        Assert.Empty(await ReadDeadLettersAsync(host, ShipmentsTopic, CancellationToken.None).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// 用例 16：处理器正在处理时停止消费，这次投递不进死信，重新开始消费后重新投递
+    /// </summary>
+    /// <remarks>
+    /// 被停止打断的投递不是失败：不在原位重试、不进死信，原消息留给代理重新投递（RFC-0009「投递」第 3 条，ADR-0261）。在同一个宿主上停止再启动消息运行时，应用一直在服务状态。再到达时的尝试号由代理决定（内存代理、RabbitMQ 与 Kafka 仍是 1，Redis 的回收让它加一），这里只要求不超过上限
+    /// </remarks>
+    [Fact]
+    public async Task DeliveryInterruptedByStop_IsNotDeadLettered_AndIsRedeliveredAfterRestart()
+    {
+        var log = new DeliveryLog();
+        log.BlockingIds["held-1"] = 0;
+        await using var host = await StartAsync(log).ConfigureAwait(false);
+        var runtime = host.Services.GetRequiredService<MessagingRuntime>();
+
+        (await PublishAsync(host, OrdersTopic, Envelope("held-1", "orders.held")).ConfigureAwait(false)).ThrowIfFailure();
+        var first = Assert.Single(await log.WaitAsync(static r => r.Delivery.Envelope.Id == "held-1", 1, DeliveryTimeout).ConfigureAwait(false));
+        Assert.Equal(1, first.Delivery.Attempt);
+
+        // 处理器还等在调用的取消令牌上：停止消费打断它
+        await runtime.StopAsync(CancellationToken.None).ConfigureAwait(false);
+
+        // 被打断的这一次没有接着在原位重试，也没有进死信
+        Assert.Single(log.All, static r => r.Delivery.Envelope.Id == "held-1");
+        Assert.DoesNotContain(await ReadDeadLettersAsync(host, OrdersTopic, CancellationToken.None).ConfigureAwait(false), static e => e.Id == "held-1");
+
+        // 重新开始消费：同一条消息再到达，这次处理成功
+        log.BlockingIds.Clear();
+        await runtime.StartAsync(CancellationToken.None).ConfigureAwait(false);
+        var deliveries = await log.WaitAsync(static r => r.Delivery.Envelope.Id == "held-1", 2, RedeliveryTimeout).ConfigureAwait(false);
+        Assert.InRange(deliveries[1].Delivery.Attempt, 1, MaxAttempts);
+
+        // 处理成功即了结：不再投递，也不进死信
+        await Task.Delay(300).ConfigureAwait(false);
+        Assert.Equal(2, log.All.Count(static r => r.Delivery.Envelope.Id == "held-1"));
+        Assert.DoesNotContain(await ReadDeadLettersAsync(host, OrdersTopic, CancellationToken.None).ConfigureAwait(false), static e => e.Id == "held-1");
+    }
+
+    /// <summary>
+    /// 等到主题的死信里出现给定 ID 的消息，返回那一刻读到的全部死信
+    /// </summary>
+    /// <remarks>
+    /// 每 100 毫秒读一次，超时抛出 <see cref="TimeoutException"/>
+    /// </remarks>
+    protected async Task<IReadOnlyList<MessageEnvelope>> WaitForDeadLetterAsync(TestHost host, string topic, string messageId, TimeSpan timeout)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(messageId);
+        var stopwatch = Stopwatch.StartNew();
+        while (true)
+        {
+            var deadLetters = await ReadDeadLettersAsync(host, topic, CancellationToken.None).ConfigureAwait(false);
+            if (deadLetters.Any(e => string.Equals(e.Id, messageId, StringComparison.Ordinal)))
+            {
+                return deadLetters;
+            }
+
+            if (stopwatch.Elapsed >= timeout)
+            {
+                throw new TimeoutException($"Message '{messageId}' did not reach the dead letters of topic '{topic}' within {timeout}; {deadLetters.Count} dead letter(s) were read.");
+            }
+
+            await Task.Delay(100).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
