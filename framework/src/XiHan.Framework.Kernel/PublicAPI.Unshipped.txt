@@ -214,6 +214,16 @@ XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Equals(XiHan.Framework.Kerne
 XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Output.get -> System.IO.TextWriter?
 XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Output.init -> void
 XiHan.Framework.Kernel.Hosting.StartupBannerOptions.StartupBannerOptions() -> void
+XiHan.Framework.Kernel.Json.JsonText
+XiHan.Framework.Kernel.Json.JsonTextProblem
+XiHan.Framework.Kernel.Json.JsonTextProblem.Deconstruct(out bool IsSyntax, out string! Path) -> void
+XiHan.Framework.Kernel.Json.JsonTextProblem.Equals(XiHan.Framework.Kernel.Json.JsonTextProblem other) -> bool
+XiHan.Framework.Kernel.Json.JsonTextProblem.IsSyntax.get -> bool
+XiHan.Framework.Kernel.Json.JsonTextProblem.IsSyntax.init -> void
+XiHan.Framework.Kernel.Json.JsonTextProblem.JsonTextProblem() -> void
+XiHan.Framework.Kernel.Json.JsonTextProblem.JsonTextProblem(bool IsSyntax, string! Path) -> void
+XiHan.Framework.Kernel.Json.JsonTextProblem.Path.get -> string!
+XiHan.Framework.Kernel.Json.JsonTextProblem.Path.init -> void
 XiHan.Framework.Kernel.Json.ResultJson
 XiHan.Framework.Kernel.KernelCapabilities
 XiHan.Framework.Kernel.KernelErrors
@@ -591,6 +601,7 @@ const XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.BaseFileName = "apps
 const XiHan.Framework.Kernel.Hosting.ConfigurationDirectory.Variable = "XIHAN_CONFIG_PATH" -> string!
 const XiHan.Framework.Kernel.Hosting.KernelOptions.ConfigurationSection = "XiHan:Kernel" -> string!
 const XiHan.Framework.Kernel.Hosting.StartupBannerOptions.ConfigurationSection = "XiHan:Kernel:Banner" -> string!
+const XiHan.Framework.Kernel.Json.JsonText.MaxDepth = 64 -> int
 const XiHan.Framework.Kernel.KernelCapabilities.Capabilities = "kernel.capabilities" -> string!
 const XiHan.Framework.Kernel.KernelCapabilities.Diagnostics = "kernel.diagnostics" -> string!
 const XiHan.Framework.Kernel.KernelCapabilities.Hosting = "kernel.hosting" -> string!
@@ -732,6 +743,7 @@ override XiHan.Framework.Kernel.Hosting.KernelOptions.ToString() -> string!
 override XiHan.Framework.Kernel.Hosting.StartupBannerOptions.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Hosting.StartupBannerOptions.GetHashCode() -> int
 override XiHan.Framework.Kernel.Hosting.StartupBannerOptions.ToString() -> string!
+override XiHan.Framework.Kernel.Json.JsonTextProblem.GetHashCode() -> int
 override XiHan.Framework.Kernel.Operations.OperationContract.Equals(object? obj) -> bool
 override XiHan.Framework.Kernel.Operations.OperationContract.GetHashCode() -> int
 override XiHan.Framework.Kernel.Operations.OperationContract.ToString() -> string!
@@ -835,6 +847,9 @@ static XiHan.Framework.Kernel.Hosting.KernelOptions.operator ==(XiHan.Framework.
 static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.FromConfiguration(Microsoft.Extensions.Configuration.IConfiguration! configuration, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? defaults = null) -> XiHan.Framework.Kernel.Hosting.StartupBannerOptions!
 static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.operator !=(XiHan.Framework.Kernel.Hosting.StartupBannerOptions? left, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? right) -> bool
 static XiHan.Framework.Kernel.Hosting.StartupBannerOptions.operator ==(XiHan.Framework.Kernel.Hosting.StartupBannerOptions? left, XiHan.Framework.Kernel.Hosting.StartupBannerOptions? right) -> bool
+static XiHan.Framework.Kernel.Json.JsonText.Check(System.ReadOnlySpan<byte> utf8) -> XiHan.Framework.Kernel.Json.JsonTextProblem?
+static XiHan.Framework.Kernel.Json.JsonTextProblem.operator !=(XiHan.Framework.Kernel.Json.JsonTextProblem left, XiHan.Framework.Kernel.Json.JsonTextProblem right) -> bool
+static XiHan.Framework.Kernel.Json.JsonTextProblem.operator ==(XiHan.Framework.Kernel.Json.JsonTextProblem left, XiHan.Framework.Kernel.Json.JsonTextProblem right) -> bool
 static XiHan.Framework.Kernel.Json.ResultJson.Read(string! json) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Result>
 static XiHan.Framework.Kernel.Json.ResultJson.Read<T>(string! json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! valueInfo) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Result<T>>
 static XiHan.Framework.Kernel.Json.ResultJson.ReadError(string! json) -> XiHan.Framework.Primitives.Result<XiHan.Framework.Primitives.Error!>
@@ -925,6 +940,8 @@ virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.RequestInfo.get ->
 virtual XiHan.Framework.Kernel.Operations.OperationDescriptor.ResponseInfo.get -> System.Text.Json.Serialization.Metadata.JsonTypeInfo?
 virtual XiHan.Framework.Kernel.Operations.OperationPayloadSource.Invoke(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<System.ReadOnlyMemory<byte>>>
 virtual XiHan.Framework.Kernel.Pipeline.PipelineStep.Invoke(XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask
+~override XiHan.Framework.Kernel.Json.JsonTextProblem.Equals(object obj) -> bool
+~override XiHan.Framework.Kernel.Json.JsonTextProblem.ToString() -> string
 ~override XiHan.Framework.Kernel.Security.AuthorizationDecision.Equals(object obj) -> bool
 ~override XiHan.Framework.Kernel.Security.AuthorizationDecision.ToString() -> string
 ~override XiHan.Framework.Kernel.Security.ResourceName.Equals(object obj) -> bool

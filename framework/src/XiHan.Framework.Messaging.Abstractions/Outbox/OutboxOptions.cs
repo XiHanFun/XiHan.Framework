@@ -166,15 +166,23 @@ public sealed record OutboxOptions
     /// 第几次失败之后的重试间隔
     /// </summary>
     /// <remarks>
-    /// <see cref="RetryDelay"/> 乘以 2 的（失败次数减一）次方，不超过 <see cref="MaxRetryDelay"/>
+    /// <see cref="RetryDelay"/> 乘以 2 的（失败次数减一）次方，不超过 <see cref="MaxRetryDelay"/>：次数再多、上限再大都饱和在上限，不溢出（RFC-0009「发件箱」，ADR-0283；以前把指数截在 30，上限大于 <see cref="RetryDelay"/> 的 2 的 30 次方倍时到不了上限）
     /// </remarks>
     public TimeSpan RetryDelayAfter(int attempts)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(attempts, 1);
-        // 指数到 30 次时已远超任何合理上限，截断指数避免溢出
-        var factor = Math.Pow(2, Math.Min(attempts - 1, 30));
-        var ticks = RetryDelay.Ticks * factor;
-        return ticks >= MaxRetryDelay.Ticks ? MaxRetryDelay : TimeSpan.FromTicks((long)ticks);
+        var delay = RetryDelay.Ticks;
+        var limit = MaxRetryDelay.Ticks;
+        var doublings = attempts - 1;
+
+        // 按整数刻度算，不经浮点，也不截断指数：间隔翻 doublings 倍超过上限，当且仅当间隔大于上限右移 doublings 位（向下取整）
+        // 63 次及以上的翻倍必然超出 64 位整数能装下的任何上限；这样判断之后下面的左移不会溢出
+        if (doublings >= 63 || delay > limit >> doublings)
+        {
+            return MaxRetryDelay;
+        }
+
+        return TimeSpan.FromTicks(delay << doublings);
     }
 
     /// <summary>

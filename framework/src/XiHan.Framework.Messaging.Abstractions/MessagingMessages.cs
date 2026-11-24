@@ -24,7 +24,7 @@ public static class MessagingMessages
     /// 文档不是合法的 CloudEvents JSON
     /// </summary>
     /// <remarks>
-    /// 参数：<c>reason</c>
+    /// 参数：<c>reason</c>，出错的路径：语法错误与顶层不是对象为 <c>$</c>，重复的成员或类型不对的属性为它的路径
     /// </remarks>
     public const string EnvelopeInvalidJson = "messaging.envelope.invalid_json";
 
@@ -61,6 +61,19 @@ public static class MessagingMessages
     /// 参数：<c>name</c>
     /// </remarks>
     public const string EnvelopeInvalidExtension = "messaging.envelope.invalid_extension";
+
+    /// <summary>
+    /// 扩展属性的值是对象或数组
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>name</c>
+    /// </remarks>
+    public const string EnvelopeInvalidExtensionValue = "messaging.envelope.invalid_extension_value";
+
+    /// <summary>
+    /// <c>data</c> 与 <c>data_base64</c> 同时出现
+    /// </summary>
+    public const string EnvelopeDataConflict = "messaging.envelope.data_conflict";
 
     /// <summary>
     /// 信封不合法

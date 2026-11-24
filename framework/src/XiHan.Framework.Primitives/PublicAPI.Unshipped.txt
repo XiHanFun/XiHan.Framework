@@ -238,6 +238,7 @@ XiHan.Framework.Primitives.Stability.Experimental = 2 -> XiHan.Framework.Primiti
 XiHan.Framework.Primitives.Stability.Internal = 3 -> XiHan.Framework.Primitives.Stability
 XiHan.Framework.Primitives.Stability.Preview = 1 -> XiHan.Framework.Primitives.Stability
 XiHan.Framework.Primitives.Stability.Stable = 0 -> XiHan.Framework.Primitives.Stability
+XiHan.Framework.Primitives.TimestampText
 XiHan.Framework.Primitives.TraceParent
 XiHan.Framework.Primitives.TraceParent.Equals(XiHan.Framework.Primitives.TraceParent other) -> bool
 XiHan.Framework.Primitives.TraceParent.Sampled.get -> bool
@@ -409,6 +410,7 @@ static XiHan.Framework.Primitives.Result<T>.implicit operator XiHan.Framework.Pr
 static XiHan.Framework.Primitives.Result<T>.implicit operator XiHan.Framework.Primitives.Result<T>(XiHan.Framework.Primitives.Error! error) -> XiHan.Framework.Primitives.Result<T>
 static XiHan.Framework.Primitives.Result<T>.operator !=(XiHan.Framework.Primitives.Result<T> left, XiHan.Framework.Primitives.Result<T> right) -> bool
 static XiHan.Framework.Primitives.Result<T>.operator ==(XiHan.Framework.Primitives.Result<T> left, XiHan.Framework.Primitives.Result<T> right) -> bool
+static XiHan.Framework.Primitives.TimestampText.TryParse(string? text, out System.DateTimeOffset timestamp) -> bool
 static XiHan.Framework.Primitives.TraceParent.TryParse(string? text, out XiHan.Framework.Primitives.TraceParent value) -> bool
 static XiHan.Framework.Primitives.TraceParent.operator !=(XiHan.Framework.Primitives.TraceParent left, XiHan.Framework.Primitives.TraceParent right) -> bool
 static XiHan.Framework.Primitives.TraceParent.operator ==(XiHan.Framework.Primitives.TraceParent left, XiHan.Framework.Primitives.TraceParent right) -> bool

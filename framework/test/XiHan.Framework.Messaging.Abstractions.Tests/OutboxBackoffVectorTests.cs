@@ -17,7 +17,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Tests;
 /// 回放 <c>outbox-backoff.json</c>：发件箱失败之后的退避间隔与进死信的时机
 /// </summary>
 /// <remarks>
-/// <c>messaging/outbox-backoff.json</c>（RFC-0009「发件箱」，ADR-0064、ADR-0108、ADR-0277）。间隔经 <see cref="OutboxOptions.RetryDelayAfter"/> 回放，再经 <see cref="OutboxDispatcher"/> 走一遍：一行已经失败过若干次、这一次又失败，看它被推后多久、有没有进死信。投递循环用按脚本应答的工作单元与仓储驱动，行就是内存里的那个对象
+/// <c>messaging/outbox-backoff.json</c>（RFC-0009「发件箱」，ADR-0064、ADR-0108、ADR-0277、ADR-0283）。间隔经 <see cref="OutboxOptions.RetryDelayAfter"/> 回放，再经 <see cref="OutboxDispatcher"/> 走一遍：一行已经失败过若干次、这一次又失败，看它被推后多久、有没有进死信。投递循环用按脚本应答的工作单元与仓储驱动，行就是内存里的那个对象
 /// </remarks>
 public sealed class OutboxBackoffVectorTests
 {
@@ -116,6 +116,10 @@ public sealed class OutboxBackoffVectorTests
         // 指数会溢出 64 位整数的失败次数也要有：实现不得因此得出负数、零或别的值
         Assert.Contains(_vectors.Cases, static vector => vector.Attempts > 64);
         Assert.Contains(_vectors.Cases, static vector => vector.Attempts == int.MaxValue);
+
+        // 上限是间隔的 2 的 30 次方倍以上：间隔要越过这个倍数，再饱和在上限，不能把指数截在某个值上（ADR-0283）
+        Assert.Contains(_vectors.Cases, static vector => vector.DelayMs > vector.RetryDelayMs << 30 && vector.DelayMs < vector.MaxRetryDelayMs);
+        Assert.Contains(_vectors.Cases, static vector => vector.MaxRetryDelayMs > vector.RetryDelayMs << 30 && vector.DelayMs == vector.MaxRetryDelayMs);
 
         // 进死信的时机：差一次到上限的不进，正好到上限的进，超过上限的也进
         Assert.Contains(_vectors.DeadLetter, static vector => vector.Attempts == vector.MaxAttempts - 1 && !vector.DeadLettered);

@@ -266,7 +266,7 @@ public static class CloudEventsHttpBinding
     /// binary
     /// </summary>
     /// <remarks>
-    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>、<c>ce-subject</c> 可选，其余 <c>ce-*</c> 是扩展属性；数据内容类型取 <c>Content-Type</c>，数据取请求体
+    /// <c>ce-specversion</c>、<c>ce-id</c>、<c>ce-source</c>、<c>ce-type</c> 必填，<c>ce-time</c>（<see cref="TimestampText"/> 的文法，读出 UTC 时刻）、<c>ce-subject</c> 可选，其余 <c>ce-*</c> 是扩展属性；数据内容类型取 <c>Content-Type</c>，数据取请求体
     /// </remarks>
     private static Result<IReadOnlyList<MessageEnvelope>> ReadBinary(HttpRequest request, byte[] body)
     {
@@ -288,7 +288,8 @@ public static class CloudEventsHttpBinding
         var timeText = HeaderValue(headers, "time");
         if (timeText.Length > 0)
         {
-            if (!DateTimeOffset.TryParse(timeText, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var parsed))
+            // 与结构化 JSON 的 time 同一条文法（RFC-0009「信封」，ADR-0283）：不交给通用的日期解析，它把没有偏移的时间按本机时区读
+            if (!TimestampText.TryParse(timeText, out var parsed))
             {
                 return Error.Validation(MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidTime, MessageArguments.Of(("time", timeText)));
             }

@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using System.Text.Unicode;
+using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Kernel.Json;
 
@@ -10,19 +11,25 @@ namespace XiHan.Framework.Kernel.Json;
 /// XiHan 读取 JSON 文本的共同检查
 /// </summary>
 /// <remarks>
-/// 操作载荷与清单在交给反序列化之前都先过这一遍（RFC-0001「JSON 文本」，ADR-0236）：语法按 RFC 8259（不允许注释、尾逗号、BOM 与多个根值），嵌套不超过 64 层，字符串与成员名必须是合法的 Unicode（没有非法 UTF-8，没有孤立的代理项转义），任何一层都不能有重复的成员名。
-/// 语法错误不论出现在哪里都优先于重复成员，所以遇到重复成员也读到末尾；各语言的解析器报告语法错误的位置不同，这里统一只给 <c>$</c>
+/// 操作载荷、清单与消息信封在交给反序列化之前都先过这一遍（RFC-0001「JSON 文本」，ADR-0236）：语法按 RFC 8259（不允许注释、尾逗号、BOM 与多个根值），嵌套不超过 64 层，字符串与成员名必须是合法的 Unicode（没有非法 UTF-8，没有孤立的代理项转义），任何一层都不能有重复的成员名。
+/// 语法错误不论出现在哪里都优先于重复成员，所以遇到重复成员也读到末尾；各语言的解析器报告语法错误的位置不同，这里统一只给 <c>$</c>。
+/// 公开给内核之外读 XiHan JSON 文本的包共用（消息信封的结构化 JSON，ADR-0283）：同一道检查只有这一份实现
 /// </remarks>
-internal static class JsonText
+[ApiLevel(Stability.Preview, "5.0")]
+public static class JsonText
 {
     /// <summary>
     /// 最大嵌套层数
     /// </summary>
+    /// <remarks>
+    /// 最外层的对象或数组是第 1 层。检查通过之后再交给 <see cref="JsonDocument"/> 的调用方用它作 <see cref="JsonDocumentOptions.MaxDepth"/>
+    /// </remarks>
     public const int MaxDepth = 64;
 
     /// <summary>
     /// 检查 UTF-8 JSON 文本
     /// </summary>
+    /// <param name="utf8">UTF-8 编码的文本，不带 BOM</param>
     /// <returns>通过时为 <see langword="null"/>；否则是第一个问题</returns>
     public static JsonTextProblem? Check(ReadOnlySpan<byte> utf8)
     {

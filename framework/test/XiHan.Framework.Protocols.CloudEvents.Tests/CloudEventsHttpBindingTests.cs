@@ -78,6 +78,33 @@ public sealed class CloudEventsHttpBindingTests
         Assert.Equal(MessagingErrors.InvalidEnvelope, (await CloudEventsHttpBinding.ReadAsync(Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-a-b", "x")), _options, CancellationToken.None)).Error?.Code);
     }
 
+    [Theory]
+    [InlineData("2026-10-23T08:00:00")]
+    [InlineData("2026-10-23 08:00:00Z")]
+    [InlineData("2026-10-23")]
+    [InlineData("2026-10-23T08:00:00+0800")]
+    [InlineData("Fri, 23 Oct 2026 08:00:00 GMT")]
+    public async Task Read_BinaryMode_RejectsATime_OutsideTheRfc3339Grammar(string time)
+    {
+        // ce-time 与结构化 JSON 的 time 是同一条文法（RFC-0009「信封」第 3 条，ADR-0283）：通用的日期解析照收这些写法，没有偏移的按本机时区读
+        var request = Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-time", time));
+
+        var error = (await CloudEventsHttpBinding.ReadAsync(request, _options, CancellationToken.None)).Error;
+
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidTime), (error?.Code, error?.MessageKey));
+    }
+
+    [Fact]
+    public async Task Read_BinaryMode_ReadsTheTime_AsAUtcInstant()
+    {
+        var request = Request("application/json", "{}", ("ce-specversion", "1.0"), ("ce-id", "1"), ("ce-source", "/s"), ("ce-type", "t"), ("ce-time", "2026-10-23T16:00:00.5+08:00"));
+
+        var envelope = Assert.Single((await CloudEventsHttpBinding.ReadAsync(request, _options, CancellationToken.None)).ValueOrThrow());
+
+        Assert.Equal(new DateTimeOffset(2026, 10, 23, 8, 0, 0, 500, TimeSpan.Zero), envelope.Time);
+        Assert.Equal(TimeSpan.Zero, envelope.Time!.Value.Offset);
+    }
+
     [Fact]
     public async Task Read_StructuredAndBatchModes_UseTheStructuredFormat()
     {

@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 插件协议读对方写来的错误细节时先过同一份 JSON 文本检查（JsonText），不经管道的回调（Host.Publish）在回调上下文里发布要设当前调用（InvocationAccessor）；ADR-0237 -->
+    <!-- 插件协议读写对方的错误细节时按同一个值模型（JsonValues；JSON 文本检查 JsonText 已公开，ADR-0283），不经管道的回调（Host.Publish）在回调上下文里发布要设当前调用（InvocationAccessor）；ADR-0237 -->
     <InternalsVisibleTo Include="XiHan.Framework.Plugins.Protocol" />
   </ItemGroup>
 

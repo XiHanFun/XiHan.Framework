@@ -48,6 +48,7 @@ await builder.Build().RunAsync();
 * `UnreadableDeadlineLog`：调用方给的截止时间读不出时的限频告警，内核登记为单例。请求头（`xihan-deadline`、`grpc-timeout`）与插件回调各算一类，每类 1 分钟最多一条 Warning，不带原值，下一条带上被压掉的条数
 * `SecurityContext`、`Principal`、`PermissionRegistry`：安全上下文与权限登记
 * `ResultJson`：Result 与 Error 的线上 JSON 编码，与各语言 SDK 逐字一致
+* `JsonText`：读取 JSON 文本的共同检查（语法、64 层、合法 Unicode、任何一层的重复成员），操作载荷、清单与消息信封都先过它
 
 ## 更多文档
 

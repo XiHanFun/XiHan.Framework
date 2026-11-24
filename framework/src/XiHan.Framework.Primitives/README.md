@@ -51,6 +51,7 @@ public sealed class StockLedger
 * `Maybe<T>`、`TypedId<TTag, TValue>`：可选值与强类型标识
 * `InvocationContext`：取消、截止、Trace、Baggage 与作用域服务
 * `TraceParent`、`DeadlineText`：`traceparent` 与截止时间文本的解析和写出，HTTP、消息与插件协议各载体共用一条文法
+* `TimestampText`：RFC 3339 时间戳文本的解析，截止时间的文本与消息信封的 `time` 共用
 * `MessageTemplate`、`MessageArguments`：消息键与模板
 * `Manifest`：`xihan.manifest.json` 的对象模型；`ManifestId`、`CapabilityId`、`OperationId`、`ActivationEvent` 是各字段的文法
 

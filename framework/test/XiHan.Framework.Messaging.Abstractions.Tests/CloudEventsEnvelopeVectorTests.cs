@@ -1,10 +1,12 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
+using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions.Tests;
 
@@ -12,7 +14,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Tests;
 /// 回放 <c>cloudevents-envelopes.json</c>：信封的结构化 JSON 编码
 /// </summary>
 /// <remarks>
-/// <c>messaging/cloudevents-envelopes.json</c>（RFC-0009「信封」，<c>spec/protocol/cloudevents.md</c>「信封映射」与「入站」，ADR-0277）。读得出的文档经 <see cref="CloudEventsFormat.Decode"/> 与向量给的信封逐项比较，再把向量给的信封 <see cref="CloudEventsFormat.Encode"/> 之后解码回来；必须拒绝的文档都以同一个错误码拒绝
+/// <c>messaging/cloudevents-envelopes.json</c>（RFC-0009「信封」，<c>spec/protocol/cloudevents.md</c>「信封映射」与「入站」，ADR-0277、ADR-0283）。读得出的文档经 <see cref="CloudEventsFormat.Decode"/> 与向量给的信封逐项比较，再把向量给的信封 <see cref="CloudEventsFormat.Encode"/> 之后解码回来，读出的信封同样写出再读回；必须拒绝的文档都以同一个错误码拒绝
 /// </remarks>
 public sealed class CloudEventsEnvelopeVectorTests
 {
@@ -89,6 +91,35 @@ public sealed class CloudEventsEnvelopeVectorTests
     }
 
     [Fact]
+    public void Decode_ThenEncode_ThenDecode_GivesTheSameEnvelope_ForEveryValidDocument()
+    {
+        // 读得出的信封必须写得回去：以前文档带 data_base64 而不写 datacontenttype 时读成 application/json 的非 JSON 数据，再写出时抛出
+        var failures = new List<string>();
+        foreach (var vector in _vectors.Valid)
+        {
+            var envelope = CloudEventsFormat.Decode(Encoding.UTF8.GetBytes(vector.Text)).ValueOrThrow();
+            try
+            {
+                var again = CloudEventsFormat.Decode(CloudEventsFormat.Encode(envelope));
+                if (!again.TryGetValue(out var back))
+                {
+                    failures.Add($"{vector.Name}: the document written from the decoded envelope was rejected with '{again.Error}'");
+                }
+                else if (Mismatch(vector.Expected, back) is { } mismatch)
+                {
+                    failures.Add($"{vector.Name}: after decoding, encoding and decoding again {mismatch}");
+                }
+            }
+            catch (FrameworkException exception)
+            {
+                failures.Add($"{vector.Name}: the decoded envelope could not be encoded: {exception.Message}");
+            }
+        }
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    [Fact]
     public void Decode_RejectsEveryInvalidDocument_WithTheCodeInTheVectors()
     {
         Assert.NotEmpty(_vectors.Invalid);
@@ -125,6 +156,30 @@ public sealed class CloudEventsEnvelopeVectorTests
 
         // 不是 JSON 对象的文本也要有
         Assert.Contains(_vectors.Invalid, static vector => MemberNames(vector.Text).Count == 0);
+    }
+
+    [Fact]
+    public void TheVectors_CoverEveryRuleOfTheEnvelopeSection()
+    {
+        // RFC-0009「信封」五条里 ADR-0283 写明的各处，向量换了写法后不能一条都不剩
+        // 第 1 条：重复的成员（顶层与 data 内部）
+        Assert.Contains(_vectors.Invalid, static vector => MemberNames(vector.Text) is { Count: > 0 } names && names.Distinct(StringComparer.Ordinal).Count() < names.Count);
+        Assert.Contains(_vectors.Invalid, static vector => vector.Text.Contains("\"data\":{\"a\":1,\"a\":2}", StringComparison.Ordinal));
+
+        // 第 3 条：没有偏移的时间（通用的日期解析按本机时区读它），以及 DateTimeOffset 装不下、只有文法读得出的偏移
+        Assert.Contains(_vectors.Invalid, static vector => Member(vector.Text, "time") is { ValueKind: JsonValueKind.String } time && DateTime.TryParseExact(time.GetString(), "yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out _));
+        Assert.Contains(_vectors.Valid, static vector => vector.Text.Contains("+23:59", StringComparison.Ordinal) && vector.Expected.Time is not null);
+
+        // 第 4 条：data 与 data_base64 同时出现；data_base64 而没有 datacontenttype
+        Assert.Contains(_vectors.Invalid, static vector => Member(vector.Text, "data") is not null && Member(vector.Text, "data_base64") is not null);
+        Assert.Contains(_vectors.Valid, static vector => Member(vector.Text, "data_base64") is not null && Member(vector.Text, "datacontenttype") is null && vector.Expected is { DataContentType: "application/octet-stream", DataBase64: not null });
+
+        // 第 5 条：扩展属性的值是数字、布尔（保留原文）、null（没有这个属性），对象与数组不合法
+        Assert.Contains(_vectors.Valid, static vector => Member(vector.Text, "seq") is { ValueKind: JsonValueKind.Number } && vector.Expected.Extensions.GetValueOrDefault("seq") == "1.50");
+        Assert.Contains(_vectors.Valid, static vector => Member(vector.Text, "flag") is { ValueKind: JsonValueKind.True } && vector.Expected.Extensions.GetValueOrDefault("flag") == "true");
+        Assert.Contains(_vectors.Valid, static vector => Member(vector.Text, "gone") is { ValueKind: JsonValueKind.Null } && !vector.Expected.Extensions.ContainsKey("gone"));
+        Assert.Contains(_vectors.Invalid, static vector => Member(vector.Text, "detail") is { ValueKind: JsonValueKind.Object });
+        Assert.Contains(_vectors.Invalid, static vector => Member(vector.Text, "tags") is { ValueKind: JsonValueKind.Array });
     }
 
     /// <summary>
@@ -206,6 +261,27 @@ public sealed class CloudEventsEnvelopeVectorTests
         catch (JsonException)
         {
             return false;
+        }
+    }
+
+    /// <summary>
+    /// 文档顶层的一个成员
+    /// </summary>
+    /// <remarks>
+    /// 不是 JSON 对象的文本与没有这个成员的文档为 <see langword="null"/>；重复的成员取最后一个
+    /// </remarks>
+    /// <param name="text">文档原文</param>
+    /// <param name="name">成员名</param>
+    private static JsonElement? Member(string text, string name)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(text);
+            return document.RootElement.ValueKind == JsonValueKind.Object && document.RootElement.TryGetProperty(name, out var member) ? member.Clone() : null;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 

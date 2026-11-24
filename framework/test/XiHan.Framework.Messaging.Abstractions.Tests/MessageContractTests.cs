@@ -182,6 +182,135 @@ public sealed class MessageContractTests
         Assert.Equal(MessagingErrors.InvalidEnvelope, CloudEventsFormat.Decode(Encoding.UTF8.GetBytes("{\"specversion\":\"1.0\",\"id\":\"1\",\"source\":\"/o\",\"type\":\"t\",\"Bad-Name\":\"x\"}")).Error?.Code);
     }
 
+    [Theory]
+    [InlineData("2026-01-02T03:04:05Z", 2026, 1, 2, 3, 4, 5)]
+    [InlineData("2026-01-02t03:04:05z", 2026, 1, 2, 3, 4, 5)]
+    [InlineData("2026-01-02T11:04:05+08:00", 2026, 1, 2, 3, 4, 5)]
+    [InlineData("2026-01-02T03:04:05+23:59", 2026, 1, 1, 3, 5, 5)]
+    public void CloudEventsFormat_ReadsTheTime_AsAUtcInstant(string time, int year, int month, int day, int hour, int minute, int second)
+    {
+        var envelope = CloudEventsFormat.Decode(Document($"\"time\":\"{time}\"")).ValueOrThrow();
+
+        // 读出的时刻偏移为零：文法允许到 ±23:59 的偏移，DateTimeOffset 装不下
+        Assert.Equal(new DateTimeOffset(year, month, day, hour, minute, second, TimeSpan.Zero), envelope.Time);
+        Assert.Equal(TimeSpan.Zero, envelope.Time!.Value.Offset);
+    }
+
+    [Theory]
+    [InlineData("2026-01-02T03:04:05")]
+    [InlineData("2026-01-02 03:04:05Z")]
+    [InlineData("2026-01-02")]
+    [InlineData("2026-01-02T03:04Z")]
+    [InlineData("2026-01-02T03:04:05+0800")]
+    [InlineData(" 2026-01-02T03:04:05Z")]
+    [InlineData("2026-01-02T03:04:05Z ")]
+    [InlineData("2026-01-02T03:04:05.1234567891Z")]
+    [InlineData("Fri, 02 Jan 2026 03:04:05 GMT")]
+    public void CloudEventsFormat_RejectsATime_OutsideTheRfc3339Grammar(string time)
+    {
+        // 通用的日期解析读得出这些写法，没有偏移的还按本机时区读（ADR-0283）
+        Assert.True(DateTimeOffset.TryParse(time, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.RoundtripKind, out _), time);
+
+        var error = CloudEventsFormat.Decode(Document($"\"time\":\"{time}\"")).Error;
+
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidTime), (error?.Code, error?.MessageKey));
+    }
+
+    [Fact]
+    public void CloudEventsFormat_ReadsBase64DataWithoutAContentType_AsOctetStream_AndWritesItBack()
+    {
+        var envelope = CloudEventsFormat.Decode(Document("\"data_base64\":\"AAEC/w==\"")).ValueOrThrow();
+
+        Assert.Equal("application/octet-stream", envelope.DataContentType);
+        Assert.Equal(new byte[] { 0, 1, 2, 255 }, envelope.Data.ToArray());
+
+        // 以前读成 application/json 的非 JSON 数据，再写出时抛出
+        var again = CloudEventsFormat.Decode(CloudEventsFormat.Encode(envelope)).ValueOrThrow();
+        Assert.Equal("application/octet-stream", again.DataContentType);
+        Assert.Equal(new byte[] { 0, 1, 2, 255 }, again.Data.ToArray());
+
+        // 写了内容类型的照它；没有数据的仍是缺省的 application/json
+        Assert.Equal("text/plain", CloudEventsFormat.Decode(Document("\"datacontenttype\":\"text/plain\",\"data_base64\":\"aGVsbG8=\"")).ValueOrThrow().DataContentType);
+        Assert.Equal("application/json", CloudEventsFormat.Decode(Document("\"subject\":\"s\"")).ValueOrThrow().DataContentType);
+    }
+
+    [Fact]
+    public void CloudEventsFormat_RejectsDataTogetherWithDataBase64()
+    {
+        var error = CloudEventsFormat.Decode(Document("\"data\":{\"a\":1},\"data_base64\":\"AAEC/w==\"")).Error;
+
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeDataConflict), (error?.Code, error?.MessageKey));
+    }
+
+    [Fact]
+    public void CloudEventsFormat_ReadsExtensionValues_AsStringsNumbersAndBooleans_AndSkipsNull()
+    {
+        var envelope = CloudEventsFormat.Decode(Document("\"text\":\"x\",\"seq\":1.50,\"exp\":1E3,\"flag\":true,\"off\":false,\"gone\":null")).ValueOrThrow();
+
+        // 数字与布尔保留 JSON 原文；null 视为没有这个属性（以前读成空字符串）
+        Assert.Equal(
+            new Dictionary<string, string>(StringComparer.Ordinal) { ["text"] = "x", ["seq"] = "1.50", ["exp"] = "1E3", ["flag"] = "true", ["off"] = "false" },
+            envelope.Extensions.ToDictionary(StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("\"detail\":{\"a\":1}", "detail")]
+    [InlineData("\"tags\":[\"a\"]", "tags")]
+    public void CloudEventsFormat_RejectsAnExtensionValue_ThatIsAnObjectOrAnArray(string member, string name)
+    {
+        var error = CloudEventsFormat.Decode(Document(member)).Error;
+
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidExtensionValue), (error?.Code, error?.MessageKey));
+        Assert.Equal(name, error!.Details!["name"]);
+    }
+
+    [Theory]
+    [InlineData("""{"specversion":"1.0","id":"1","source":"/o","type":"t","id":"2"}""", "$.id")]
+    [InlineData("""{"specversion":"1.0","id":"1","source":"/o","type":"t","seq":"1","seq":"2"}""", "$.seq")]
+    [InlineData("""{"specversion":"1.0","id":"1","source":"/o","type":"t","seq":"1","\u0073eq":"2"}""", "$.seq")]
+    [InlineData("""{"specversion":"1.0","id":"1","source":"/o","type":"t","data":{"lines":[{"sku":"a","sku":"b"}]}}""", "$.data.lines[0].sku")]
+    [InlineData("""{"specversion":"1.0","id":"1","source":"/o","type":"t","subject":"\ud800"}""", "$")]
+    [InlineData("""{"specversion":"1.0","id":"1","source":"/o","type":"t",}""", "$")]
+    [InlineData("""[]""", "$")]
+    [InlineData("""{"specversion":"1.0","id":1,"source":"/o","type":"t"}""", "$.id")]
+    public void CloudEventsFormat_PassesTheDocumentThroughTheSharedJsonTextCheck(string document, string path)
+    {
+        // RFC-0001「JSON 文本」的共同检查：重复的成员不取最后一个（以前取），语法错误只给 $；过了检查之后形状不对的同样只给路径
+        var error = CloudEventsFormat.Decode(Encoding.UTF8.GetBytes(document)).Error;
+
+        Assert.Equal((MessagingErrors.InvalidEnvelope, MessagingMessages.EnvelopeInvalidJson), (error?.Code, error?.MessageKey));
+        Assert.Equal(path, error!.Details!["reason"]);
+    }
+
+    [Fact]
+    public void CloudEventsFormat_Encode_RefusesAnEnvelope_ItsOwnDecodeWouldReject()
+    {
+        var envelope = new MessageEnvelope { Id = "1", Source = "/o", Type = "t" };
+
+        // 扩展属性与规范属性同名：写出来是重复的成员（以前照写，读回时扩展的值顶掉规范属性）
+        var renamed = Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(envelope.WithExtension("id", "other")));
+        Assert.Equal(MessagingErrors.InvalidEnvelope, renamed.Code);
+        Assert.Contains("'$.id'", renamed.Message, StringComparison.Ordinal);
+
+        // JSON 数据里重复的成员、让文档超过 64 层的嵌套、不成对的代理项转义：消费方会把这条消息当成无法解码的送进死信，发布时就拒绝
+        var duplicated = Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(envelope with { Data = Encoding.UTF8.GetBytes("""{"a":1,"a":2}""") }));
+        Assert.Equal(MessagingErrors.InvalidEnvelope, duplicated.Code);
+        Assert.Contains("'$.data.a'", duplicated.Message, StringComparison.Ordinal);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(envelope with { Data = Encoding.UTF8.GetBytes(new string('[', 64) + new string(']', 64)) })).Code);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, Assert.Throws<FrameworkException>(() => CloudEventsFormat.Encode(envelope with { Data = Encoding.UTF8.GetBytes("""{"note":"\ud800"}""") })).Code);
+
+        // 正好 64 层的文档（数据 63 层）写得出、读得回
+        var deepest = envelope with { Data = Encoding.UTF8.GetBytes(new string('[', 63) + new string(']', 63)) };
+        Assert.Equal(deepest.Data.ToArray(), CloudEventsFormat.Decode(CloudEventsFormat.Encode(deepest)).ValueOrThrow().Data.ToArray());
+    }
+
+    /// <summary>
+    /// 带必填属性与给定成员的结构化 JSON 文档
+    /// </summary>
+    /// <param name="members">追加的顶层成员，JSON 原文</param>
+    private static byte[] Document(string members)
+        => Encoding.UTF8.GetBytes("{\"specversion\":\"1.0\",\"id\":\"1\",\"source\":\"/o\",\"type\":\"t\"," + members + "}");
+
     [Fact]
     public void Subscriptions_RecordHandlersPerTopic_AndRegisterScopedServices()
     {
