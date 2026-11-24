@@ -49,7 +49,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | `SecretKey` | `string` | 空 | 访问密钥 |
 | `SessionToken` | `string` | 空（没有令牌） | 临时凭据的会话令牌，必须与 `AccessKey`、`SecretKey` 同时给出；打印为 `***` |
 | `RequestTimeoutSeconds` | 正数，可带小数，不超过 86400（`MaxRequestTimeout`） | 不另设时限 | 单次 HTTP 请求的超时，每次尝试各算各的；超时返回 `OBJECTSTORAGE_UNAVAILABLE_001`。下载的内容流交给调用方之后的读取不在其内 |
-| `MaxAttempts` | 1 到 10（`MaxAttemptsLimit`） | SDK 的缺省（共 3 次） | 一次操作最多发出的请求数，含首次，1 即不重试 |
+| `MaxAttempts` | 1 到 10（`MaxAttemptsLimit`） | SDK 的缺省（共 3 次） | 一次操作最多发出的请求数，含首次，1 即不重试；SDK 判定连接池里的连接已被对端关闭后重发的请求不计入（SDK 的 `MaxStaleConnectionRetries`） |
 | `ProxyHost` | 主机名或 IP 字面量 | 空（不设代理） | HTTP 代理的主机，必须与 `ProxyPort` 同时给出；不带协议、端口、路径与用户信息，IPv6 字面量带不带方括号都收，不收带区域标识的 |
 | `ProxyPort` | 1 到 65535 | — | HTTP 代理的端口 |
 | `ProxyUserName` | `string` | 空（代理不带凭据） | 代理的用户名，必须与 `ProxyPassword` 同时给出，且只能跟着代理给；打印为 `***` |

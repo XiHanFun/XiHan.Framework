@@ -166,7 +166,20 @@ public sealed class S3ClientSettingsWireTests
         // 不设超时这个请求不会自己结束（SDK 对 S3 的缺省约 24.8 天）；上界留得很宽，只防挂死
         Assert.Equal(ObjectStorageErrors.StoreUnavailable, head.Error?.Code);
         Assert.True(watch.Elapsed < TimeSpan.FromSeconds(30), $"The request ended after {watch.Elapsed}.");
-        Assert.Single(endpoint.Requests);
+
+        // 到达对端的只有这一次操作的请求。SDK 判定连接失效后重发的请求不计入尝试次数（MaxStaleConnectionRetries），
+        // 超时取消与连接关闭赛跑时会出现一次这样的重发，所以这里不断言恰好一个请求；
+        // 尝试次数的上界由 MaxAttempts_BoundsTheRequestsOfOneOperation 在会应答、不靠超时的对端上核对
+        var requests = endpoint.Requests;
+        var shown = string.Join(" | ", requests.Select(static request => request.ReplaceLineEndings(" ")));
+        Assert.True(requests.Count > 0, "No request reached the endpoint.");
+        Assert.All(requests, request =>
+        {
+            Assert.StartsWith("HEAD /media/a.txt HTTP/1.1", request, StringComparison.Ordinal);
+            Assert.NotNull(RecordingHttpListener.Header(request, "amz-sdk-invocation-id"));
+        });
+        var operations = requests.Select(static request => RecordingHttpListener.Header(request, "amz-sdk-invocation-id")).Distinct(StringComparer.Ordinal).Count();
+        Assert.True(operations == 1, $"The requests belong to {operations} operations: {shown}");
     }
 
     [Fact]

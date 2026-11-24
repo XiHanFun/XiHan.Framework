@@ -143,7 +143,7 @@ public sealed record S3ObjectStorageOptions
     /// 一次操作最多发出的请求数，含首次
     /// </summary>
     /// <remarks>
-    /// 1 到 <see cref="MaxAttemptsLimit"/>，1 即不重试。为 <see langword="null"/>（缺省）时沿用 SDK 的缺省（标准重试模式，共 3 次；ADR-0281）
+    /// 1 到 <see cref="MaxAttemptsLimit"/>，1 即不重试。为 <see langword="null"/>（缺省）时沿用 SDK 的缺省（标准重试模式，共 3 次；ADR-0281）。SDK 判定连接池里的连接已被对端关闭后重发的请求不计入
     /// </remarks>
     public int? MaxAttempts
     {

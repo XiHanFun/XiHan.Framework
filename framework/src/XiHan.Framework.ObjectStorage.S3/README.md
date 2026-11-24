@@ -38,7 +38,7 @@ builder.AddXiHan(xihan => xihan.UseFullProfile().UseFeature<S3ObjectStorageFeatu
 | --- | --- | --- |
 | `SessionToken` | 字符串 | 临时凭据的会话令牌，必须与 `AccessKey`、`SecretKey` 同时给出；绑定属性 `sessionToken` 覆盖它 |
 | `RequestTimeoutSeconds` | 正数，不超过 86400 | 单次 HTTP 请求的超时，每次尝试各算各的；不写时不另设时限。超时返回 `OBJECTSTORAGE_UNAVAILABLE_001` |
-| `MaxAttempts` | 1 到 10 | 一次操作最多发出的请求数，含首次，1 即不重试；不写时取 SDK 的缺省（共 3 次） |
+| `MaxAttempts` | 1 到 10 | 一次操作最多发出的请求数，含首次，1 即不重试；SDK 判定连接池里的连接已被对端关闭后重发的请求不计入（SDK 的 `MaxStaleConnectionRetries`）；不写时取 SDK 的缺省（共 3 次） |
 | `ProxyHost`、`ProxyPort` | 主机名或 IP 字面量；1 到 65535 | HTTP 代理，两项必须同时给出。主机不带协议、端口、路径与用户信息 |
 | `ProxyUserName`、`ProxyPassword` | 字符串 | 代理的凭据，可选，两项必须同时给出，且只能跟着代理给 |
 
