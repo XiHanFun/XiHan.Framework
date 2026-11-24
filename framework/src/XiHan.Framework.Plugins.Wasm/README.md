@@ -10,6 +10,7 @@
 * 插件可贡献管道中间件，运行期可加载与卸载
 * 陷阱或超时后自动退避重建实例
 * 清单声明并授予（`binding:<绑定名>`）的资源绑定随 `Configure` 下发，与内核按同一套来源解析：先读 Service Binding 目录（`SERVICE_BINDING_ROOT`，或应用经 `UseServiceBindingRoot` 指定的目录）、再读 `XiHan:Bindings`，同名时配置整体覆盖目录；每次配置插件时解析一遍，重启或运行期加载的插件拿到的是那一刻的值。只下发名字、类型与主值，其余属性不下发，没有主值的绑定不下发并记警告
+* 每次调用插件的操作、向插件投递事件各记一条 `xihan.plugin.invoke` Span：它是内核 `xihan.invoke` 的子 Span，带 `xihan.plugin.id`，操作调用另带 `xihan.operation`；写给插件的 `trace_parent` 以它为父级。没有监听器时不开 Span
 
 ## 如何使用
 

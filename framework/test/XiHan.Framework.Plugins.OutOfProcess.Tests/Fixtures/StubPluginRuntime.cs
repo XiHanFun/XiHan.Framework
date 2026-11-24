@@ -79,7 +79,15 @@ internal sealed class StubPluginRuntime : IPluginRuntime
         return await OnDeliver().ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// 一次调用怎样结束
+    /// </summary>
+    /// <remarks>
+    /// 缺省立即成功、返回操作 ID
+    /// </remarks>
+    public Func<string, InvocationContext, ValueTask<Result<object>>> OnInvoke { get; set; } = static (operation, _) => ValueTask.FromResult(Result.Success<object>(operation));
+
     /// <inheritdoc />
     public ValueTask<Result<object>> InvokeAsync(string operation, ReadOnlyMemory<byte> payload, InvocationContext context)
-        => ValueTask.FromResult(Result.Success<object>(operation));
+        => OnInvoke(operation, context);
 }

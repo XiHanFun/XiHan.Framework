@@ -14,8 +14,9 @@ namespace XiHan.Framework.Kernel.Tests.Diagnostics;
 /// Observe 阶段 <c>xihan.invoke</c> 的父级与采样（RFC-0003 规则 7）
 /// </summary>
 /// <remarks>
-/// 监听器按 OpenTelemetry 的 ParentBased 规则采样：有父级随父级的采样位，链路的根按用例给定的根规则。同一类里的用例依次执行，监听器在用例结束时移除
+/// 监听器按 OpenTelemetry 的 ParentBased 规则采样：有父级随父级的采样位，链路的根按用例给定的根规则。监听器是进程级的，别的用例的监听器会替这里的采样器作决定，所以与其他挂监听器的用例同在一个不并行的集合里；同一集合里的用例依次执行，监听器在用例结束时移除
 /// </remarks>
+[Collection(nameof(TelemetryGroup))]
 public sealed class ObserveTracingTests
 {
     /// <summary>

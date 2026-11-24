@@ -3,6 +3,7 @@
 
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Primitives;
 
@@ -31,11 +32,14 @@ internal sealed class ProxyOperationDescriptor(OperationContract contract, strin
     public override Result<object> DecodeResponse(ReadOnlyMemory<byte> payload) => Result.Success<object>(new PluginPayload(payload));
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 调用记一条 <c>xihan.plugin.invoke</c> Span，归属（插件的清单 ID）与操作 ID 作标签（<c>invocation.md</c> §6，ADR-0269）
+    /// </remarks>
     public override ValueTask<Result<object>> ExecuteAsync(InvocationContext context, object request)
     {
         ArgumentNullException.ThrowIfNull(context);
         return request is PluginPayload payload
-            ? invoker.InvokeAsync(Id, payload.Bytes, context)
+            ? PluginTracing.InvokeAsync(invoker, OwnerId, Id, payload.Bytes, context)
             : ValueTask.FromResult(Result.Failure<object>(Error.Validation(KernelErrors.OperationTypeMismatch, KernelMessages.OperationTypeMismatch, MessageArguments.Of(("id", Id), ("expected", nameof(PluginPayload)), ("actual", request?.GetType().Name)))));
     }
 }

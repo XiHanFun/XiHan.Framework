@@ -276,7 +276,8 @@ internal sealed class PluginRoster<TRuntime> : IDisposable
                 continue;
             }
 
-            var delivered = await runtime.DeliverAsync(delivery, context).ConfigureAwait(false);
+            // 每个插件的投递各记一条 xihan.plugin.invoke Span（invocation.md §6，ADR-0269）
+            var delivered = await PluginTracing.DeliverAsync(runtime, delivery, context).ConfigureAwait(false);
             if (delivered.IsFailure)
             {
                 return delivered;
