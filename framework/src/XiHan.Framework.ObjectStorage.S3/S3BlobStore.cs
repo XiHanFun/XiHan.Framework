@@ -670,7 +670,7 @@ public sealed partial class S3BlobStore : IBlobStore, IBlobMultipartStore, IBlob
         try
         {
             var signed = await _client.GetPreSignedURLAsync(presign).ConfigureAwait(false);
-            return Result.Success(new BlobSignedUrl(new Uri(signed), request.Method, expiresAt, headers));
+            return Result.Success(new BlobSignedUrl { Url = new Uri(signed), Method = request.Method, ExpiresAt = expiresAt, Headers = headers });
         }
         catch (Exception exception) when (IsStoreFailure(exception, cancellationToken))
         {

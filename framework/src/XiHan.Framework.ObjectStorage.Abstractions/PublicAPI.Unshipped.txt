@@ -127,8 +127,7 @@ XiHan.Framework.ObjectStorage.Abstractions.ObjectStorageMessages
 XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobContentDisposition
 XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl
 XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.<Clone>$() -> XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl!
-XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.BlobSignedUrl(System.Uri! Url, XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlMethod Method, System.DateTimeOffset ExpiresAt, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers) -> void
-XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.Deconstruct(out System.Uri! Url, out XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobUrlMethod Method, out System.DateTimeOffset ExpiresAt, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Headers) -> void
+XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.BlobSignedUrl() -> void
 XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.Equals(XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl? other) -> bool
 XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.ExpiresAt.get -> System.DateTimeOffset
 XiHan.Framework.ObjectStorage.Abstractions.Signing.BlobSignedUrl.ExpiresAt.init -> void

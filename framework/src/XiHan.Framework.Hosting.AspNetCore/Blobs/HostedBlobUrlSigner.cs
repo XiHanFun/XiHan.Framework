@@ -156,7 +156,13 @@ public sealed class HostedBlobUrlSigner(HostedBlobUrlOptions options, TimeProvid
         var headers = request.ContentType is { } required
             ? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Content-Type"] = required }
             : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        return ValueTask.FromResult(Result.Success(new BlobSignedUrl(new Uri(url, UriKind.RelativeOrAbsolute), request.Method, DateTimeOffset.FromUnixTimeSeconds(expires), headers)));
+        return ValueTask.FromResult(Result.Success(new BlobSignedUrl
+        {
+            Url = new Uri(url, UriKind.RelativeOrAbsolute),
+            Method = request.Method,
+            ExpiresAt = DateTimeOffset.FromUnixTimeSeconds(expires),
+            Headers = headers,
+        }));
     }
 
     /// <summary>

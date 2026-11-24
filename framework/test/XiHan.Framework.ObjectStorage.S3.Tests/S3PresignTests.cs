@@ -4,6 +4,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.ObjectStorage.Abstractions.Blobs;
 using XiHan.Framework.ObjectStorage.Abstractions.Keys;
 using XiHan.Framework.ObjectStorage.Abstractions.Multipart;
@@ -15,7 +16,7 @@ namespace XiHan.Framework.ObjectStorage.S3.Tests;
 /// S3 原生预签名
 /// </summary>
 /// <remarks>
-/// 签出的地址不带凭据直连真实的 S3 兼容服务——下载（带保存文件名、可带 <c>Range</c>）、限定内容类型的上传、分片上传的每一片；未设置 <c>XIHAN_TEST_S3</c> 时跳过
+/// 签出的地址不带凭据直连真实的 S3 兼容服务——下载（带保存文件名、可带 <c>Range</c>）、限定内容类型的上传、分片上传的每一片；未设置 <c>XIHAN_TEST_S3</c> 时跳过。签出的结果本身（地址、方法、失效时刻、必带的头）是本地计算的，不连服务也核对
 /// </remarks>
 public sealed class S3PresignTests
 {
@@ -28,6 +29,31 @@ public sealed class S3PresignTests
     /// 直连存储的客户端：不带任何凭据
     /// </summary>
     private static readonly HttpClient _http = new();
+
+    [Fact]
+    public async Task Signing_IsLocal_AndTheResultCarriesUrlMethodExpiryAndRequiredHeaders()
+    {
+        // 签名是本地计算，不连服务：指向不存在的端点、用假密钥，核对签出的地址、方法、失效时刻与必带的头
+        var options = new S3ObjectStorageOptions { ServiceUrl = "http://s3.invalid:9000", AccessKey = "offline-access", SecretKey = "offline-secret", ForcePathStyle = true };
+        using var client = S3ObjectStorageFeature.CreateClient(options);
+        var store = new S3BlobStore(client, options, TimeProvider.System, NullLoggerFactory.Instance);
+        var before = DateTimeOffset.UtcNow;
+
+        var download = (await store.SignAsync(new ContainerName("docs"), new BlobKey("a/report.txt"), BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow();
+        var upload = (await store.SignAsync(new ContainerName("docs"), new BlobKey("a/upload.md"), BlobUrlRequest.ForUpload(TimeSpan.FromMinutes(5), "text/markdown"), CancellationToken.None)).ValueOrThrow();
+        var after = DateTimeOffset.UtcNow;
+
+        Assert.Equal(("http", "s3.invalid", "/docs/a/report.txt"), (download.Url.Scheme, download.Url.Host, download.Url.AbsolutePath));
+        Assert.Contains("X-Amz-Signature=", download.Url.Query, StringComparison.Ordinal);
+        Assert.Equal(BlobUrlMethod.Get, download.Method);
+        Assert.InRange(download.ExpiresAt, before + BlobUrlRequest.DefaultExpiresIn, after + BlobUrlRequest.DefaultExpiresIn);
+        Assert.Empty(download.Headers);
+
+        Assert.Equal("/docs/a/upload.md", upload.Url.AbsolutePath);
+        Assert.Equal(BlobUrlMethod.Put, upload.Method);
+        Assert.InRange(upload.ExpiresAt, before + TimeSpan.FromMinutes(5), after + TimeSpan.FromMinutes(5));
+        Assert.Equal(new KeyValuePair<string, string>("Content-Type", "text/markdown"), Assert.Single(upload.Headers));
+    }
 
     [Fact]
     public async Task SignedUrls_DownloadAndUpload_WithoutCredentials()
