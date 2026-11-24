@@ -93,6 +93,9 @@ XiHan.Framework.Messaging.Abstractions.MessagingRuntime.MessagingRuntime(XiHan.F
 XiHan.Framework.Messaging.Abstractions.MessagingRuntime.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Abstractions.MessagingRuntime.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Abstractions.MessagingServiceCollectionExtensions
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxDeadLetters
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxDeadLetters.OutboxDeadLetters(System.IServiceProvider! services, XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions! options, System.TimeProvider! timeProvider, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxDeadLetters.RedriveManyAsync(System.Collections.Generic.IReadOnlyList<System.Guid>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Result>!>
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxDispatcher
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxDispatcher.OutboxDispatcher(System.IServiceProvider! services, XiHan.Framework.Messaging.Abstractions.Publishing.IMessageBroker! broker, XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions! options, System.TimeProvider! timeProvider, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxDispatcher.RunAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
@@ -131,6 +134,14 @@ XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.BatchSize.init -> vo
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.DispatchedRetention.get -> System.TimeSpan
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.DispatchedRetention.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.Equals(XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions? other) -> bool
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.HealthMaxDeadLettered.get -> int
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.HealthMaxDeadLettered.init -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.HealthMaxPending.get -> int
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.HealthMaxPending.init -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.HealthMaxPendingAge.get -> System.TimeSpan
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.HealthMaxPendingAge.init -> void
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.HealthProbeInterval.get -> System.TimeSpan
+XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.HealthProbeInterval.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.IncludeShards.get -> bool
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.IncludeShards.init -> void
 XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.MaxAttempts.get -> int
@@ -182,6 +193,10 @@ const XiHan.Framework.Messaging.Abstractions.MessagingErrors.DomainEventUnregist
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.HandlerFailed = "MESSAGING_UNEXPECTED_001" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.InvalidEnvelope = "MESSAGING_VALIDATION_002" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.InvalidTopic = "MESSAGING_VALIDATION_001" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingErrors.OutboxBacklog = "MESSAGING_UNAVAILABLE_004" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingErrors.OutboxDeadLettered = "MESSAGING_UNAVAILABLE_005" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingErrors.OutboxMessageNotFound = "MESSAGING_NOTFOUND_001" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingErrors.OutboxNotDeadLettered = "MESSAGING_CONFLICT_001" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingErrors.QueueFull = "MESSAGING_UNAVAILABLE_002" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.BrokerUnavailable = "messaging.broker.unavailable" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.CatalogName = "messaging" -> string!
@@ -195,8 +210,13 @@ const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeInvalidTi
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.EnvelopeSpecVersion = "messaging.envelope.spec_version" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.HandlerFailed = "messaging.handler.failed" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.InvalidTopic = "messaging.topic.invalid" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.OutboxBacklog = "messaging.outbox.backlog" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.OutboxDeadLettered = "messaging.outbox.dead_lettered" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.OutboxMessageNotFound = "messaging.outbox.message_not_found" -> string!
+const XiHan.Framework.Messaging.Abstractions.MessagingMessages.OutboxNotDeadLettered = "messaging.outbox.not_dead_lettered" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingMessages.QueueFull = "messaging.queue.full" -> string!
 const XiHan.Framework.Messaging.Abstractions.MessagingOptions.ConfigurationSection = "XiHan:Messaging" -> string!
+const XiHan.Framework.Messaging.Abstractions.Outbox.OutboxFeature.HealthName = "messaging.outbox.backlog" -> string!
 const XiHan.Framework.Messaging.Abstractions.Outbox.OutboxOptions.ConfigurationSection = "XiHan:Messaging:Outbox" -> string!
 override XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.Equals(object? obj) -> bool
 override XiHan.Framework.Messaging.Abstractions.Envelopes.MessageEnvelope.GetHashCode() -> int

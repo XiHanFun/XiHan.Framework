@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "O atributo 'time' '{time}' não é um carimbo de data/hora RFC 3339.",
   "messaging.envelope.spec_version": "O atributo 'specversion' deve ser '{specVersion}'.",
   "messaging.handler.failed": "O manipulador de mensagens lançou uma exceção não tratada: {reason}",
+  "messaging.outbox.backlog": "O acúmulo da caixa de saída excede o limite: {pending} mensagem(ns) não entregue(s) (limite {maxPending}), a mais antiga aguarda há {oldestSeconds} segundo(s) (limite {maxOldestSeconds}).",
+  "messaging.outbox.dead_lettered": "A caixa de saída contém {deadLettered} mensagem(ns) morta(s) (limite {maxDeadLettered}); reenvie-as ou remova-as.",
+  "messaging.outbox.message_not_found": "A mensagem '{id}' da caixa de saída não existe.",
+  "messaging.outbox.not_dead_lettered": "A mensagem '{id}' da caixa de saída não é uma mensagem morta; somente mensagens mortas podem ser reenviadas.",
   "messaging.queue.full": "A fila em memória do tópico '{topic}' está cheia (capacidade {capacity}).",
   "messaging.topic.invalid": "O tópico '{topic}' não é válido."
 }

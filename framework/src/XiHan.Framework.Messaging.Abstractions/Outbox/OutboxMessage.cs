@@ -60,7 +60,7 @@ public sealed class OutboxMessage : IEntity<Guid>, IHasCreationTime
     /// 进入死信的时间
     /// </summary>
     /// <remarks>
-    /// 尝试次数用尽或载荷无法解码时写入，之后不再投递；行保留供排查，置空并把 <see cref="NextAttemptAt"/> 设为现在即重新投递。未进死信为 <see langword="null"/>
+    /// 尝试次数用尽或载荷无法解码时写入，之后不再投递；行保留供排查，用 <see cref="OutboxDeadLetters.RedriveManyAsync"/> 重投（置空它、把 <see cref="NextAttemptAt"/> 设为现在、<see cref="Attempts"/> 归零）。未进死信为 <see langword="null"/>
     /// </remarks>
     public DateTimeOffset? DeadLetteredAt { get; set; }
 

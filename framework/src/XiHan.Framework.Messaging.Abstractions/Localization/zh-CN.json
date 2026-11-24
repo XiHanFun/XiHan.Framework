@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "'time' 属性 '{time}' 不是 RFC 3339 时间戳。",
   "messaging.envelope.spec_version": "'specversion' 属性必须是 '{specVersion}'。",
   "messaging.handler.failed": "消息处理器抛出了未处理的异常：{reason}",
+  "messaging.outbox.backlog": "发件箱的积压超过阈值：{pending} 条未投递（上限 {maxPending}），最老的一条已等待 {oldestSeconds} 秒（上限 {maxOldestSeconds}）。",
+  "messaging.outbox.dead_lettered": "发件箱里有 {deadLettered} 条死信（上限 {maxDeadLettered}）；请重投或删除它们。",
+  "messaging.outbox.message_not_found": "发件箱消息 '{id}' 不存在。",
+  "messaging.outbox.not_dead_lettered": "发件箱消息 '{id}' 不在死信里；只有死信可以重投。",
   "messaging.queue.full": "主题 '{topic}' 的内存队列已满（容量 {capacity}）。",
   "messaging.topic.invalid": "主题 '{topic}' 不合法。"
 }

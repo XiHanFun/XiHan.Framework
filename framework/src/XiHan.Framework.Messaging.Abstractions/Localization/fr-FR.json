@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "L'attribut 'time' '{time}' n'est pas un horodatage RFC 3339.",
   "messaging.envelope.spec_version": "L'attribut 'specversion' doit être '{specVersion}'.",
   "messaging.handler.failed": "Le gestionnaire de messages a levé une exception non gérée : {reason}",
+  "messaging.outbox.backlog": "L'arriéré de la boîte d'envoi dépasse son seuil : {pending} message(s) non remis (limite {maxPending}), le plus ancien attend depuis {oldestSeconds} seconde(s) (limite {maxOldestSeconds}).",
+  "messaging.outbox.dead_lettered": "La boîte d'envoi contient {deadLettered} message(s) en lettres mortes (limite {maxDeadLettered}) ; renvoyez-les ou supprimez-les.",
+  "messaging.outbox.message_not_found": "Le message '{id}' de la boîte d'envoi n'existe pas.",
+  "messaging.outbox.not_dead_lettered": "Le message '{id}' de la boîte d'envoi n'est pas en lettres mortes ; seuls les messages en lettres mortes peuvent être renvoyés.",
   "messaging.queue.full": "La file d'attente en mémoire du sujet '{topic}' est pleine (capacité {capacity}).",
   "messaging.topic.invalid": "Le sujet '{topic}' n'est pas valide."
 }

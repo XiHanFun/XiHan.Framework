@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "'time' 특성 '{time}'은(는) RFC 3339 타임스탬프가 아닙니다.",
   "messaging.envelope.spec_version": "'specversion' 특성은 '{specVersion}'이어야 합니다.",
   "messaging.handler.failed": "메시지 처리기가 처리되지 않은 예외를 발생시켰습니다: {reason}",
+  "messaging.outbox.backlog": "아웃박스 적체가 임계값을 초과했습니다: 미전달 {pending}건(한도 {maxPending}), 가장 오래된 메시지가 {oldestSeconds}초 동안 대기 중입니다(한도 {maxOldestSeconds}).",
+  "messaging.outbox.dead_lettered": "아웃박스에 데드 레터가 {deadLettered}건 있습니다(한도 {maxDeadLettered}). 다시 전달하거나 삭제하십시오.",
+  "messaging.outbox.message_not_found": "아웃박스 메시지 '{id}'이(가) 존재하지 않습니다.",
+  "messaging.outbox.not_dead_lettered": "아웃박스 메시지 '{id}'은(는) 데드 레터가 아닙니다. 데드 레터만 다시 전달할 수 있습니다.",
   "messaging.queue.full": "토픽 '{topic}'의 메모리 내 큐가 가득 찼습니다(용량 {capacity}).",
   "messaging.topic.invalid": "토픽 '{topic}'이(가) 올바르지 않습니다."
 }

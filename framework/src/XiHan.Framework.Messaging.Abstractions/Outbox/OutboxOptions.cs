@@ -98,7 +98,7 @@ public sealed record OutboxOptions
     /// 是否也投递租户分片库里的发件箱行
     /// </summary>
     /// <remarks>
-    /// 默认是。装配了租户分片时，投递器在默认库之外逐个投递分片库（ADR-0211）。持久化 Provider 把发件箱行留在默认库时（SqlSugar），分片轮次查到的仍是默认库，可以关掉省去多余的查询
+    /// 默认是。装配了租户分片时，投递器在默认库之外逐个投递分片库（ADR-0211），健康项与死信重投覆盖同一批库（ADR-0272）。持久化 Provider 把发件箱行留在默认库时（SqlSugar），分片轮次查到的仍是默认库：投递只多出查询，健康项却会把默认库的行按库数重复计数，这时应当关掉
     /// </remarks>
     public bool IncludeShards { get; init; } = true;
 
@@ -113,6 +113,54 @@ public sealed record OutboxOptions
         get => field;
         init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The shard refresh interval must be positive.");
     } = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// 健康项 <c>messaging.outbox.backlog</c> 的重探间隔（也是单次探测的超时）
+    /// </summary>
+    /// <remarks>
+    /// 默认 15 秒。每次探测在默认库与每个分片库上各数一遍发件箱行（<see cref="IncludeShards"/>）
+    /// </remarks>
+    public TimeSpan HealthProbeInterval
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The health probe interval must be positive.");
+    } = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// 未投递的行数超过多少时健康项降级
+    /// </summary>
+    /// <remarks>
+    /// 默认 1000。未投递指既没有投递成功、也没有进死信的行，含退避中的；各库相加
+    /// </remarks>
+    public int HealthMaxPending
+    {
+        get => field;
+        init => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The pending threshold must not be negative.");
+    } = 1000;
+
+    /// <summary>
+    /// 最老的一条未投递的行等了多久之后健康项降级
+    /// </summary>
+    /// <remarks>
+    /// 默认 5 分钟，从行的创建时间算起，取各库里最老的一条。正常情况下一条消息在一个轮询间隔内发出；代理不可达或某条消息一直失败时，它在进死信之前一直算未投递
+    /// </remarks>
+    public TimeSpan HealthMaxPendingAge
+    {
+        get => field;
+        init => field = value > TimeSpan.Zero ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The pending age threshold must be positive.");
+    } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// 死信行数超过多少时健康项降级
+    /// </summary>
+    /// <remarks>
+    /// 默认 0：有死信就降级，直到它们被重投（<see cref="OutboxDeadLetters.RedriveManyAsync"/>）或删除。死信行不自动删除，各库相加
+    /// </remarks>
+    public int HealthMaxDeadLettered
+    {
+        get => field;
+        init => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value), value, "The dead-letter threshold must not be negative.");
+    }
 
     /// <summary>
     /// 第几次失败之后的重试间隔
@@ -133,7 +181,7 @@ public sealed record OutboxOptions
     /// 从配置读取
     /// </summary>
     /// <remarks>
-    /// 键：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>MaxAttempts</c>、<c>RetryDelaySeconds</c>、<c>MaxRetryDelaySeconds</c>、<c>DispatchedRetentionSeconds</c>、<c>IncludeShards</c>、<c>ShardRefreshIntervalSeconds</c>；非法值抛出 <see cref="ArgumentException"/>
+    /// 键：<c>PollIntervalSeconds</c>、<c>BatchSize</c>、<c>MaxAttempts</c>、<c>RetryDelaySeconds</c>、<c>MaxRetryDelaySeconds</c>、<c>DispatchedRetentionSeconds</c>、<c>IncludeShards</c>、<c>ShardRefreshIntervalSeconds</c>、<c>HealthProbeIntervalSeconds</c>、<c>HealthMaxPending</c>、<c>HealthMaxPendingAgeSeconds</c>、<c>HealthMaxDeadLettered</c>；非法值抛出 <see cref="ArgumentException"/>
     /// </remarks>
     public static OutboxOptions FromConfiguration(IConfiguration configuration)
     {
@@ -179,6 +227,26 @@ public sealed record OutboxOptions
         if (ConfigurationValues.ReadSeconds(section, "ShardRefreshIntervalSeconds") is { } refresh)
         {
             options = options with { ShardRefreshInterval = refresh };
+        }
+
+        if (ConfigurationValues.ReadSeconds(section, "HealthProbeIntervalSeconds") is { } probe)
+        {
+            options = options with { HealthProbeInterval = probe };
+        }
+
+        if (ConfigurationValues.ReadInt32(section, "HealthMaxPending", 0) is { } maxPending)
+        {
+            options = options with { HealthMaxPending = maxPending };
+        }
+
+        if (ConfigurationValues.ReadSeconds(section, "HealthMaxPendingAgeSeconds") is { } maxAge)
+        {
+            options = options with { HealthMaxPendingAge = maxAge };
+        }
+
+        if (ConfigurationValues.ReadInt32(section, "HealthMaxDeadLettered", 0) is { } maxDeadLettered)
+        {
+            options = options with { HealthMaxDeadLettered = maxDeadLettered };
         }
 
         return options;

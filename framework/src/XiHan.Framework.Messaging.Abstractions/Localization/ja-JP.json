@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "'time' 属性 '{time}' は RFC 3339 のタイムスタンプではありません。",
   "messaging.envelope.spec_version": "'specversion' 属性は '{specVersion}' でなければなりません。",
   "messaging.handler.failed": "メッセージハンドラーが未処理の例外をスローしました: {reason}",
+  "messaging.outbox.backlog": "アウトボックスの滞留がしきい値を超えています：未配信 {pending} 件（上限 {maxPending}）、最も古いものは {oldestSeconds} 秒待機しています（上限 {maxOldestSeconds}）。",
+  "messaging.outbox.dead_lettered": "アウトボックスにデッドレターが {deadLettered} 件あります（上限 {maxDeadLettered}）。再配信するか削除してください。",
+  "messaging.outbox.message_not_found": "アウトボックスメッセージ '{id}' は存在しません。",
+  "messaging.outbox.not_dead_lettered": "アウトボックスメッセージ '{id}' はデッドレターではありません。再配信できるのはデッドレターのみです。",
   "messaging.queue.full": "トピック '{topic}' のインメモリキューが満杯です (容量 {capacity})。",
   "messaging.topic.invalid": "トピック '{topic}' が不正です。"
 }

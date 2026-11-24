@@ -2,17 +2,14 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Runtime.ExceptionServices;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using XiHan.Framework.Domain.Specifications;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Publishing;
 using XiHan.Framework.MultiTenancy.Abstractions.Sharding;
-using XiHan.Framework.MultiTenancy.Abstractions.Tenants;
 using XiHan.Framework.Persistence.Abstractions.Queries;
 using XiHan.Framework.Persistence.Abstractions.Repositories;
-using XiHan.Framework.Persistence.Abstractions.UnitOfWork;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Messaging.Abstractions.Outbox;
@@ -24,25 +21,25 @@ namespace XiHan.Framework.Messaging.Abstractions.Outbox;
 /// 每轮一个工作单元：按创建时间取到期的未投递消息（未投递、未进死信、到了下一次投递时间），首次投递的按主题分组批量发布，重试的逐条单独发布；成功记投递时间（保留期为 0 时直接删除），失败——代理返回失败结果，或代理抛出（调用方取消除外）——累加次数、记原因并按指数退避推后，次数用尽或无法解码进死信，最后批量更新；再删掉超过保留期的已投递行。一次发布抛出后本轮不再发布，余下的消息不计尝试、留到下一轮（ADR-0108）。退避中与死信的消息不占批次，不挡后面的消息。装配了租户分片时一轮先投递默认库，再逐个投递分片库，每个库各自一个工作单元（ADR-0211）
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
-public sealed partial class OutboxDispatcher(IServiceProvider services, IMessageBroker broker, OutboxOptions options, TimeProvider timeProvider, ILoggerFactory loggerFactory)
+public sealed partial class OutboxDispatcher
 {
     /// <summary>
-    /// 根服务提供者
+    /// 发件箱行所在的库
     /// </summary>
     /// <remarks>
-    /// 每轮从它创建新作用域以取得工作单元与仓储
+    /// 每轮向它要默认库与分片库的清单，并经它在每个库上开工作单元
     /// </remarks>
-    private readonly IServiceProvider _services = services ?? throw new ArgumentNullException(nameof(services));
+    private readonly OutboxDatabases _databases;
 
     /// <summary>
     /// 目标代理
     /// </summary>
-    private readonly IMessageBroker _broker = broker ?? throw new ArgumentNullException(nameof(broker));
+    private readonly IMessageBroker _broker;
 
     /// <summary>
     /// 发件箱选项：轮询间隔、批大小、尝试上限、退避与保留期
     /// </summary>
-    private readonly OutboxOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+    private readonly OutboxOptions _options;
 
     /// <summary>
     /// 时间源
@@ -50,20 +47,40 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     /// <remarks>
     /// 判定到期、记投递与死信时间、推算下一次投递与驱动轮询延迟
     /// </remarks>
-    private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+    private readonly TimeProvider _timeProvider;
 
     /// <summary>
     /// 日志
     /// </summary>
-    private readonly ILogger _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<OutboxDispatcher>();
+    private readonly ILogger _logger;
 
     /// <summary>
-    /// 上一次读出的分片清单
+    /// 创建投递循环
+    /// </summary>
+    /// <param name="services">根服务提供者，每轮从它创建新作用域以取得工作单元与仓储</param>
+    /// <param name="broker">目标代理</param>
+    /// <param name="options">发件箱选项</param>
+    /// <param name="timeProvider">时间源</param>
+    /// <param name="loggerFactory">日志工厂</param>
+    public OutboxDispatcher(IServiceProvider services, IMessageBroker broker, OutboxOptions options, TimeProvider timeProvider, ILoggerFactory loggerFactory)
+        : this(new OutboxDatabases(services, options, timeProvider), broker, options, timeProvider, loggerFactory)
+    {
+    }
+
+    /// <summary>
+    /// 创建投递循环，库的清单由给定的对象提供
     /// </summary>
     /// <remarks>
-    /// 还没读过为空。整个替换，读的一方拿到的总是同一次读取的清单与时刻
+    /// 发件箱特性把同一个 <see cref="OutboxDatabases"/> 交给投递循环、健康探针与死信重投，三处共用一份分片清单
     /// </remarks>
-    private ShardCatalog? _shardCatalog;
+    internal OutboxDispatcher(OutboxDatabases databases, IMessageBroker broker, OutboxOptions options, TimeProvider timeProvider, ILoggerFactory loggerFactory)
+    {
+        _databases = databases ?? throw new ArgumentNullException(nameof(databases));
+        _broker = broker ?? throw new ArgumentNullException(nameof(broker));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+        _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<OutboxDispatcher>();
+    }
 
     /// <summary>
     /// 投递一轮
@@ -74,7 +91,7 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     public async Task<int> RunOnceAsync(CancellationToken cancellationToken)
     {
         // 默认库在前：没有装配分片、或关掉了 IncludeShards 时只有它
-        IReadOnlyList<TenantShard?> databases = [null, .. await ShardsAsync(cancellationToken).ConfigureAwait(false)];
+        var databases = await _databases.ListAsync(_logger, cancellationToken).ConfigureAwait(false);
         var dispatched = 0;
         List<Exception>? failures = null;
         foreach (var shard in databases)
@@ -111,28 +128,17 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     /// 在一个库上投递一轮
     /// </summary>
     /// <remarks>
-    /// <paramref name="shard"/> 为空是默认库；否则在新作用域里先绑定这个分片、再取工作单元与仓储，工作单元的租户是分片的租户。开作用域、提交与回滚走 <see cref="UnitOfWorkScope"/>：回滚与释放作用域自身的失败只记日志，抛出的仍是让这一轮回滚的那个异常（ADR-0259）
+    /// <paramref name="shard"/> 为空是默认库；否则工作单元开在这个分片库上，租户是分片的租户（<see cref="OutboxDatabases.RunAsync"/>）。回滚与释放作用域自身的失败只记日志，抛出的仍是让这一轮回滚的那个异常（ADR-0259）
     /// </remarks>
     private async Task<int> RunOnDatabaseAsync(TenantShard? shard, CancellationToken cancellationToken)
     {
         // 一轮一个工作单元，只覆盖发件箱行的状态写回与保留期清理：代理不在事务里，发出去的收不回来
         // 所以代理抛出不回滚（DispatchAsync 把它记成这些消息的失败，照常提交）；只有取消与存储失败整轮回滚
-        var result = await UnitOfWorkScope.RunAsync(
-            _services,
-            (scope, _) =>
+        var result = await _databases.RunAsync(
+            shard,
+            readOnly: false,
+            async (outbox, ct) =>
             {
-                if (shard is not null)
-                {
-                    // 先绑定再取工作单元：持久化客户端在首次取用时按绑定建连接，建出之后不能再绑定
-                    scope.GetRequiredService<TenantShardScope>().Bind(shard);
-                }
-
-                return ValueTask.FromResult(Result.Success());
-            },
-            shard is null ? UnitOfWorkOptions.Default : UnitOfWorkOptions.Default with { TenantId = shard.TenantId },
-            async (scope, ct) =>
-            {
-                var outbox = scope.GetRequiredService<IRepository<OutboxMessage, Guid>>();
                 var now = _timeProvider.GetUtcNow();
                 // 只取到期的：退避中的与死信的不占批次，永久失败的消息不会挡住后面的消息
                 var due = new Specification<OutboxMessage>(m => m.DispatchedAt == null && m.DeadLetteredAt == null && (m.NextAttemptAt == null || m.NextAttemptAt <= now));
@@ -146,81 +152,6 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
 
         // 提交返回的失败按存储失败抛出：这一轮已经回滚，RunOnceAsync 记下它、照常轮其余的库
         return result.ValueOrThrow();
-    }
-
-    /// <summary>
-    /// 本轮要投递的分片库
-    /// </summary>
-    /// <remarks>
-    /// 没有装配分片（容器里没有租户目录或分片解析器）或关掉了 <see cref="OutboxOptions.IncludeShards"/> 时为空。清单每 <see cref="OutboxOptions.ShardRefreshInterval"/> 重读一次；重读失败记日志、沿用上一次的清单，下一轮再读
-    /// </remarks>
-    private async ValueTask<IReadOnlyList<TenantShard>> ShardsAsync(CancellationToken cancellationToken)
-    {
-        if (!_options.IncludeShards || _services.GetService<ITenantShardResolver>() is not { } resolver || _services.GetService<ITenantStore>() is not { } tenants)
-        {
-            return [];
-        }
-
-        var now = _timeProvider.GetUtcNow();
-        var catalog = _shardCatalog;
-        if (catalog is not null && now - catalog.ReadAt < _options.ShardRefreshInterval)
-        {
-            return catalog.Shards;
-        }
-
-        var read = await ReadShardsAsync(tenants, resolver, cancellationToken).ConfigureAwait(false);
-        if (read.TryGetValue(out var shards))
-        {
-            _shardCatalog = new ShardCatalog(shards, now);
-            return shards;
-        }
-
-        // 不记读取时刻：下一轮再读。第一次就失败时本轮只投递默认库
-        LogShardsFailed(_logger, read.Error!.Code);
-        return catalog?.Shards ?? [];
-    }
-
-    /// <summary>
-    /// 从租户目录读出全部分片库
-    /// </summary>
-    /// <remarks>
-    /// 逐页读完全部租户，含停用的：停用之前写进发件箱的消息照常发出。共库的租户（解析不出分片）在默认库；按连接串与数据库种类去重，每个分片库取它的第一个租户
-    /// </remarks>
-    private static async ValueTask<Result<IReadOnlyList<TenantShard>>> ReadShardsAsync(ITenantStore tenants, ITenantShardResolver resolver, CancellationToken cancellationToken)
-    {
-        var shards = new List<TenantShard>();
-        var seen = new HashSet<(string ConnectionString, string? Provider)>();
-        var query = new TenantQuery { PageSize = TenantQuery.MaxPageSize };
-        while (true)
-        {
-            var page = await tenants.ListAsync(query, cancellationToken).ConfigureAwait(false);
-            if (!page.TryGetValue(out var listed))
-            {
-                return page.Error!;
-            }
-
-            foreach (var tenant in listed.Items)
-            {
-                var resolved = await resolver.ResolveAsync(tenant.Id, cancellationToken).ConfigureAwait(false);
-                if (!resolved.TryGetValue(out var found))
-                {
-                    return resolved.Error!;
-                }
-
-                // 同一个库的多个租户只投递一次：发件箱行不分租户，一轮取到的就是这个库里全部到期的行
-                if (found.TryGetValue(out var shard) && seen.Add((shard.ConnectionString, shard.Provider)))
-                {
-                    shards.Add(shard);
-                }
-            }
-
-            if (listed.ContinuationToken is null)
-            {
-                return Result.Success<IReadOnlyList<TenantShard>>(shards);
-            }
-
-            query = query with { ContinuationToken = listed.ContinuationToken };
-        }
     }
 
     /// <summary>
@@ -465,15 +396,4 @@ public sealed partial class OutboxDispatcher(IServiceProvider services, IMessage
     /// </summary>
     [LoggerMessage(Level = LogLevel.Error, Message = "An outbox dispatch round failed; the next round will continue.")]
     private static partial void LogRoundFailed(ILogger logger, Exception exception);
-
-    /// <summary>
-    /// 记录分片清单读取失败
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Reading the tenant shards for outbox dispatch failed with {ErrorCode}; the previous shard list is kept and the next round reads again.")]
-    private static partial void LogShardsFailed(ILogger logger, string errorCode);
-
-    /// <summary>
-    /// 一次读出的分片清单与读取时刻
-    /// </summary>
-    private sealed record ShardCatalog(IReadOnlyList<TenantShard> Shards, DateTimeOffset ReadAt);
 }

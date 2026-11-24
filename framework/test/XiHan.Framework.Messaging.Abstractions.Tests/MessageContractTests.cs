@@ -429,5 +429,28 @@ public sealed class MessageContractTests
         Assert.Equal(TimeSpan.FromSeconds(30), shards.ShardRefreshInterval);
         Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:IncludeShards", "sometimes"))));
         Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:ShardRefreshIntervalSeconds", "0"))));
+
+        // 健康项的探测间隔与三个阈值（ADR-0272）：缺省每 15 秒探一次，未投递超过 1000 条或最老一条等过 5 分钟、有死信即降级
+        Assert.Equal(TimeSpan.FromSeconds(15), defaults.HealthProbeInterval);
+        Assert.Equal(1000, defaults.HealthMaxPending);
+        Assert.Equal(TimeSpan.FromMinutes(5), defaults.HealthMaxPendingAge);
+        Assert.Equal(0, defaults.HealthMaxDeadLettered);
+        var health = OutboxOptions.FromConfiguration(Build(
+            ("XiHan:Messaging:Outbox:HealthProbeIntervalSeconds", "2.5"),
+            ("XiHan:Messaging:Outbox:HealthMaxPending", "0"),
+            ("XiHan:Messaging:Outbox:HealthMaxPendingAgeSeconds", "90"),
+            ("XiHan:Messaging:Outbox:HealthMaxDeadLettered", "25")));
+        Assert.Equal(TimeSpan.FromSeconds(2.5), health.HealthProbeInterval);
+        Assert.Equal(0, health.HealthMaxPending);
+        Assert.Equal(TimeSpan.FromSeconds(90), health.HealthMaxPendingAge);
+        Assert.Equal(25, health.HealthMaxDeadLettered);
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:HealthProbeIntervalSeconds", "0"))));
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:HealthMaxPending", "-1"))));
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:HealthMaxPendingAgeSeconds", "0"))));
+        Assert.Throws<ArgumentException>(() => OutboxOptions.FromConfiguration(Build(("XiHan:Messaging:Outbox:HealthMaxDeadLettered", "many"))));
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new OutboxOptions { HealthProbeInterval = TimeSpan.Zero });
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new OutboxOptions { HealthMaxPending = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new OutboxOptions { HealthMaxPendingAge = TimeSpan.Zero });
+        Assert.Throws<ArgumentOutOfRangeException>(static () => new OutboxOptions { HealthMaxDeadLettered = -1 });
     }
 }

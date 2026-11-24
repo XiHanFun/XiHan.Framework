@@ -45,6 +45,32 @@ public static class MessagingErrors
     public const string QueueFull = "MESSAGING_UNAVAILABLE_002";
 
     /// <summary>
+    /// 发件箱的积压超过健康阈值（未投递的行数，或最老一条等待的时间）
+    /// </summary>
+    /// <remarks>
+    /// 健康项 <c>messaging.outbox.backlog</c> 降级的原因
+    /// </remarks>
+    public const string OutboxBacklog = "MESSAGING_UNAVAILABLE_004";
+
+    /// <summary>
+    /// 发件箱的死信行数超过健康阈值
+    /// </summary>
+    /// <remarks>
+    /// 健康项 <c>messaging.outbox.backlog</c> 降级的原因
+    /// </remarks>
+    public const string OutboxDeadLettered = "MESSAGING_UNAVAILABLE_005";
+
+    /// <summary>
+    /// 发件箱消息不存在（重投死信时哪个库里都没有这一行）
+    /// </summary>
+    public const string OutboxMessageNotFound = "MESSAGING_NOTFOUND_001";
+
+    /// <summary>
+    /// 发件箱消息不在死信里（重投只对死信行）
+    /// </summary>
+    public const string OutboxNotDeadLettered = "MESSAGING_CONFLICT_001";
+
+    /// <summary>
     /// 处理器抛出未处理异常（代理侧记录）
     /// </summary>
     public const string HandlerFailed = "MESSAGING_UNEXPECTED_001";

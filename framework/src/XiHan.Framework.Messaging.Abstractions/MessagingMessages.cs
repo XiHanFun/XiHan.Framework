@@ -111,6 +111,38 @@ public static class MessagingMessages
     public const string BrokerUnavailable = "messaging.broker.unavailable";
 
     /// <summary>
+    /// 发件箱的积压超过健康阈值
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>pending</c>、<c>maxPending</c>、<c>oldestSeconds</c>、<c>maxOldestSeconds</c>
+    /// </remarks>
+    public const string OutboxBacklog = "messaging.outbox.backlog";
+
+    /// <summary>
+    /// 发件箱的死信行数超过健康阈值
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>deadLettered</c>、<c>maxDeadLettered</c>
+    /// </remarks>
+    public const string OutboxDeadLettered = "messaging.outbox.dead_lettered";
+
+    /// <summary>
+    /// 发件箱消息不存在
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>
+    /// </remarks>
+    public const string OutboxMessageNotFound = "messaging.outbox.message_not_found";
+
+    /// <summary>
+    /// 发件箱消息不在死信里
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>
+    /// </remarks>
+    public const string OutboxNotDeadLettered = "messaging.outbox.not_dead_lettered";
+
+    /// <summary>
     /// 延迟装载的目录
     /// </summary>
     /// <remarks>

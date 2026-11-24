@@ -35,6 +35,7 @@ XiHan.Framework.Messaging.Conformance.MessageStreamConformance.PartitionKey_Pres
 XiHan.Framework.Messaging.Conformance.MessageStreamConformance.Replay_RedeliversMessagesSince() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.OutboxConformance
 XiHan.Framework.Messaging.Conformance.OutboxConformance.Cancellation_RollsTheRoundBack_WithoutCountingAttempts() -> System.Threading.Tasks.Task!
+XiHan.Framework.Messaging.Conformance.OutboxConformance.DeadLetteredRows_AreRedriven_PerItemInOrder_AndDispatchedOnTheNextRound() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.OutboxConformance.FailedAndThrownPublishes_FollowTheSameRetryRules() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.OutboxConformance.OperationCanceled_NotRequestedByTheCaller_CountsAsAFailedAttempt() -> System.Threading.Tasks.Task!
 XiHan.Framework.Messaging.Conformance.OutboxConformance.OutboxConformance() -> void

@@ -9,7 +9,7 @@
 * CloudEvents 1.0 信封，租户、主体、关联、区域与追踪自动补齐
 * 竞争订阅与广播订阅，失败重试后进死信
 * 领域事件按主题批量发布
-* 事务性发件箱，与业务写入同事务
+* 事务性发件箱，与业务写入同事务；积压与死信有健康项，死信可以批量重投
 
 ## 如何使用
 
@@ -33,6 +33,16 @@ builder.AddXiHan(xihan => xihan
 ```
 
 处理器返回失败或抛出异常都算投递失败，重试到 `XiHan:Messaging:MaxAttempts`（默认 3）后竞争订阅进死信、广播订阅丢弃。宿主停止打断的处理器不算一次失败，消息之后重新投递；应用开始排空的那一刻被管道拒绝的派发（处理器没有执行）同样不算。消息派发不写幂等键，去重由处理器按消息 ID 自理。
+
+发件箱特性带健康项 `messaging.outbox.backlog`：每 `XiHan:Messaging:Outbox:HealthProbeIntervalSeconds`（默认 15）秒在默认库与各分片库上数一遍发件箱行，未投递的行数超过 `HealthMaxPending`（默认 1000）、最老的一条等过 `HealthMaxPendingAgeSeconds`（默认 300）或死信行数超过 `HealthMaxDeadLettered`（默认 0，即有死信就降级）时条目降级，读不出时同样降级；条目的数据里有 `pending`、`oldestPendingSeconds`、`deadLettered` 与 `databases`。
+
+死信行（尝试次数用尽或载荷无法解码）不再投递。排除了原因之后用 `OutboxDeadLetters` 重投，行回到待投递、尝试次数从头算，由投递循环在下一轮发出：
+
+```csharp
+var results = await deadLetters.RedriveManyAsync(ids, cancellationToken);   // 逐项结果与入参同序
+```
+
+不存在的行是 `MESSAGING_NOTFOUND_001`，不在死信里的行（待投递、退避中或已经投递）是 `MESSAGING_CONFLICT_001`；存储失败时抛出。
 
 写代理提供程序时，收到一条消息后用 `MessageDeliveryAttempt.RunAsync` 投递一次，再按结论的 `Disposition` 做自己的确认、重投或死信：
 
@@ -60,6 +70,7 @@ switch (outcome.Disposition)
 * `IMessageBroker`：代理接口，提供程序实现它
 * `MessageDeliveryAttempt`、`MessageDeliveryOutcome`、`DeliveryDisposition`：代理一侧的一次投递尝试与它的了结方式
 * `OutboxFeature`、`OutboxOptions`：事务性发件箱
+* `OutboxDeadLetters`：发件箱死信的批量重投
 
 ## 更多文档
 

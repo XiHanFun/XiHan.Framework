@@ -790,7 +790,7 @@
           "key": "IncludeShards",
           "type": "boolean",
           "default": "true",
-          "summary": "装配了租户分片时也投递各分片库里的发件箱行；SqlSugar 把发件箱行留在默认库，可关掉省去多余的查询"
+          "summary": "装配了租户分片时投递、健康项与死信重投也覆盖各分片库里的发件箱行；SqlSugar 把发件箱行留在默认库，应当关掉（不关时健康项按库数重复计数）"
         },
         {
           "key": "ShardRefreshIntervalSeconds",
@@ -798,6 +798,34 @@
           "default": "60",
           "exclusiveMinimum": 0,
           "summary": "分片库清单多久从租户目录重读一次（秒），新建的分片库最迟在这之后纳入投递"
+        },
+        {
+          "key": "HealthProbeIntervalSeconds",
+          "type": "number",
+          "default": "15",
+          "exclusiveMinimum": 0,
+          "summary": "健康项 messaging.outbox.backlog 的重探间隔（秒），也是单次探测的超时；每次探测在默认库与每个分片库上各数一遍发件箱行"
+        },
+        {
+          "key": "HealthMaxPending",
+          "type": "integer",
+          "default": "1000",
+          "minimum": 0,
+          "summary": "未投递的行数（既没有投递成功、也没有进死信，含退避中的，各库相加）超过它时健康项降级"
+        },
+        {
+          "key": "HealthMaxPendingAgeSeconds",
+          "type": "number",
+          "default": "300",
+          "exclusiveMinimum": 0,
+          "summary": "最老的一条未投递的行从创建起等了超过它（秒）时健康项降级"
+        },
+        {
+          "key": "HealthMaxDeadLettered",
+          "type": "integer",
+          "default": "0",
+          "minimum": 0,
+          "summary": "死信行数（各库相加）超过它时健康项降级；0 表示有死信就降级，直到重投或删除"
         }
       ]
     },

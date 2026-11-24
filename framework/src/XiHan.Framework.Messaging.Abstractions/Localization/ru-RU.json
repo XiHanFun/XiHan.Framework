@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "Атрибут 'time' '{time}' не является меткой времени RFC 3339.",
   "messaging.envelope.spec_version": "Атрибут 'specversion' должен быть равен '{specVersion}'.",
   "messaging.handler.failed": "Обработчик сообщений выбросил необработанное исключение: {reason}",
+  "messaging.outbox.backlog": "Очередь исходящих сообщений превышает порог: не доставлено {pending} (предел {maxPending}), самое старое ожидает {oldestSeconds} с (предел {maxOldestSeconds}).",
+  "messaging.outbox.dead_lettered": "В исходящих {deadLettered} недоставленных сообщений (предел {maxDeadLettered}); отправьте их повторно или удалите.",
+  "messaging.outbox.message_not_found": "Исходящее сообщение '{id}' не существует.",
+  "messaging.outbox.not_dead_lettered": "Исходящее сообщение '{id}' не относится к недоставленным; повторно отправить можно только недоставленные сообщения.",
   "messaging.queue.full": "Очередь в памяти для темы '{topic}' заполнена (ёмкость {capacity}).",
   "messaging.topic.invalid": "Недопустимая тема '{topic}'."
 }

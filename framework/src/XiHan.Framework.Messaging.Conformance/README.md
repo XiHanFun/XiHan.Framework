@@ -8,7 +8,7 @@
 
 * `MessageBrokerConformance`：队列语义（顺序、重试、死信、竞争与广播订阅，停止打断的投递不进死信、重新开始消费后重新投递）
 * `MessageStreamConformance`：在队列用例之上验证同键有序与按时刻重放
-* `OutboxConformance`：发件箱的退避、死信与取消语义
+* `OutboxConformance`：发件箱的退避、死信、取消语义与死信重投
 
 ## 如何使用
 

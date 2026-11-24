@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "El atributo 'time' '{time}' no es una marca de tiempo RFC 3339.",
   "messaging.envelope.spec_version": "El atributo 'specversion' debe ser '{specVersion}'.",
   "messaging.handler.failed": "El controlador de mensajes produjo una excepción no controlada: {reason}",
+  "messaging.outbox.backlog": "La acumulación de la bandeja de salida supera su umbral: {pending} mensaje(s) sin entregar (límite {maxPending}), el más antiguo lleva {oldestSeconds} segundo(s) esperando (límite {maxOldestSeconds}).",
+  "messaging.outbox.dead_lettered": "La bandeja de salida contiene {deadLettered} mensaje(s) fallido(s) (límite {maxDeadLettered}); vuelva a enviarlos o elimínelos.",
+  "messaging.outbox.message_not_found": "El mensaje '{id}' de la bandeja de salida no existe.",
+  "messaging.outbox.not_dead_lettered": "El mensaje '{id}' de la bandeja de salida no es un mensaje fallido; solo los mensajes fallidos pueden volver a enviarse.",
   "messaging.queue.full": "La cola en memoria del tema '{topic}' está llena (capacidad {capacity}).",
   "messaging.topic.invalid": "El tema '{topic}' no es válido."
 }

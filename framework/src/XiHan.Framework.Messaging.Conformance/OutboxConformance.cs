@@ -21,7 +21,7 @@ namespace XiHan.Framework.Messaging.Conformance;
 /// 发件箱投递循环在持久化 Provider 上的一致性套件
 /// </summary>
 /// <remarks>
-/// 出处：RFC-0009「发件箱」，ADR-0064、ADR-0108。继承并实现 <see cref="CreateFeature"/>（提供 <c>persistence.relational@1</c> 的持久化特性），全部用例随之执行；内存持久化与数据库 Provider 跑同一套用例，行为一致。套件登记 <see cref="OutboxMessage"/> 的仓储与可推进的时钟，用脚本代理逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/>：不装配发件箱特性、不起后台循环、不等真实时间。行按载荷里的事件 ID 区分；每条行单独写入、写入之间推进时钟，创建时间各不相同，投递顺序在任何数据库上都确定
+/// 出处：RFC-0009「发件箱」，ADR-0064、ADR-0108、ADR-0272。继承并实现 <see cref="CreateFeature"/>（提供 <c>persistence.relational@1</c> 的持久化特性），全部用例随之执行；内存持久化与数据库 Provider 跑同一套用例，行为一致。套件登记 <see cref="OutboxMessage"/> 的仓储与可推进的时钟，用脚本代理逐轮调用 <see cref="OutboxDispatcher.RunOnceAsync"/>：不装配发件箱特性、不起后台循环、不等真实时间。行按载荷里的事件 ID 区分；每条行单独写入、写入之间推进时钟，创建时间各不相同，投递顺序在任何数据库上都确定
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public abstract class OutboxConformance
@@ -239,6 +239,63 @@ public abstract class OutboxConformance
         row = (await RowsAsync(host).ConfigureAwait(false))["timed-out"];
         Assert.Equal(2, row.Attempts);
         Assert.Equal(clock.GetUtcNow(), row.DeadLetteredAt);
+    }
+
+    /// <summary>
+    /// 用例 5：死信行重投后回到待投递并照常发出，逐项结果与入参同序
+    /// </summary>
+    /// <remarks>
+    /// <see cref="OutboxDeadLetters.RedriveManyAsync"/> 在被测 Provider 上：死信行的进死信时间写回空值、下一次投递时间设为现在、尝试次数归零，失败原因留着；不存在的行、不在死信里的行与重复的标识各有各的结果；空集合返回空列表（RFC-0009「发件箱」，ADR-0272）
+    /// </remarks>
+    [Fact]
+    public async Task DeadLetteredRows_AreRedriven_PerItemInOrder_AndDispatchedOnTheNextRound()
+    {
+        var clock = new FakeTimeProvider(_start);
+        await using var host = await StartAsync(clock).ConfigureAwait(false);
+        await SeedAsync(host, clock, OrdersTopic, "dead").ConfigureAwait(false);
+        await SeedAsync(host, clock, ShipmentsTopic, "alive").ConfigureAwait(false);
+        var broker = new ScriptedOutboxBroker(static (topic, envelopes) => topic == OrdersTopic
+            ? [.. envelopes.Select(static _ => Result.Failure(Error.Unavailable(MessagingErrors.BrokerUnavailable, MessagingMessages.BrokerUnavailable, MessageArguments.Of(("reason", "nacked")))))]
+            : ScriptedOutboxBroker.Succeeded(envelopes));
+        var options = new OutboxOptions { MaxAttempts = 1 };
+        var dispatcher = Dispatcher(host, broker, clock, options);
+        var t0 = clock.GetUtcNow();
+
+        // 上限为 1：订单主题那条首次失败就进死信，发货主题那条照常发出
+        Assert.Equal(1, await dispatcher.RunOnceAsync(CancellationToken.None).ConfigureAwait(false));
+        var rows = await RowsAsync(host).ConfigureAwait(false);
+        Assert.Equal(t0, rows["dead"].DeadLetteredAt);
+        Assert.Equal(t0, rows["alive"].DispatchedAt);
+
+        // 代理恢复后重投：死信行成功；不存在的行、已经投递的行与重复的标识各有各的错误码，顺序与入参相同
+        broker.Respond = static (_, envelopes) => ScriptedOutboxBroker.Succeeded(envelopes);
+        clock.Advance(TimeSpan.FromMinutes(1));
+        var t1 = clock.GetUtcNow();
+        var deadLetters = new OutboxDeadLetters(host.Services, options, clock, NullLoggerFactory.Instance);
+        var missing = Guid.CreateVersion7();
+        var results = await deadLetters.RedriveManyAsync([rows["dead"].Id, missing, rows["alive"].Id, rows["dead"].Id], CancellationToken.None).ConfigureAwait(false);
+        Assert.Equal(
+            [null, MessagingErrors.OutboxMessageNotFound, MessagingErrors.OutboxNotDeadLettered, MessagingErrors.OutboxNotDeadLettered],
+            results.Select(static r => r.Error?.Code));
+
+        rows = await RowsAsync(host).ConfigureAwait(false);
+        Assert.Null(rows["dead"].DeadLetteredAt);
+        Assert.Null(rows["dead"].DispatchedAt);
+        Assert.Equal(t1, rows["dead"].NextAttemptAt);
+        Assert.Equal(0, rows["dead"].Attempts);
+        Assert.Equal(MessagingErrors.BrokerUnavailable, ErrorCodeOf(rows["dead"]));
+        Assert.Equal(t0, rows["alive"].DispatchedAt);
+        Assert.Equal(1, rows["alive"].Attempts);
+
+        // 下一轮照常发出：尝试次数从头算，成功后失败原因清空
+        Assert.Equal(1, await dispatcher.RunOnceAsync(CancellationToken.None).ConfigureAwait(false));
+        rows = await RowsAsync(host).ConfigureAwait(false);
+        Assert.Equal(t1, rows["dead"].DispatchedAt);
+        Assert.Equal(1, rows["dead"].Attempts);
+        Assert.Null(rows["dead"].LastError);
+        Assert.Equal(["dead", "alive", "dead"], broker.Calls);
+
+        Assert.Empty(await deadLetters.RedriveManyAsync([], CancellationToken.None).ConfigureAwait(false));
     }
 
     /// <summary>

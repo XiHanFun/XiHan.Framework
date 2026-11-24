@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "The 'time' attribute '{time}' is not an RFC 3339 timestamp.",
   "messaging.envelope.spec_version": "The 'specversion' attribute must be '{specVersion}'.",
   "messaging.handler.failed": "The message handler threw an unhandled exception: {reason}",
+  "messaging.outbox.backlog": "The outbox backlog exceeds its threshold: {pending} undelivered message(s) (limit {maxPending}), the oldest waiting for {oldestSeconds} second(s) (limit {maxOldestSeconds}).",
+  "messaging.outbox.dead_lettered": "The outbox holds {deadLettered} dead-lettered message(s) (limit {maxDeadLettered}); redrive or remove them.",
+  "messaging.outbox.message_not_found": "Outbox message '{id}' does not exist.",
+  "messaging.outbox.not_dead_lettered": "Outbox message '{id}' is not dead-lettered; only dead-lettered messages can be redriven.",
   "messaging.queue.full": "The in-memory queue for topic '{topic}' is full (capacity {capacity}).",
   "messaging.topic.invalid": "Topic '{topic}' is invalid."
 }

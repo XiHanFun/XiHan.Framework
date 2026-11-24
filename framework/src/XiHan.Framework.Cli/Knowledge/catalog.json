@@ -1887,7 +1887,9 @@
       "pipeline": [],
       "operations": [],
       "permissions": [],
-      "health": []
+      "health": [
+        "messaging.outbox.backlog"
+      ]
     },
     {
       "type": "XiHan.Framework.Messaging.InMemory.InMemoryMessagingFeature",

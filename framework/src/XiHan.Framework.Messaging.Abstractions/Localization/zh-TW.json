@@ -9,6 +9,10 @@
   "messaging.envelope.invalid_time": "'time' 屬性 '{time}' 不是 RFC 3339 時間戳記。",
   "messaging.envelope.spec_version": "'specversion' 屬性必須是 '{specVersion}'。",
   "messaging.handler.failed": "訊息處理器擲回了未處理的例外：{reason}",
+  "messaging.outbox.backlog": "寄件匣的積壓超過閾值：{pending} 筆未投遞（上限 {maxPending}），最舊的一筆已等待 {oldestSeconds} 秒（上限 {maxOldestSeconds}）。",
+  "messaging.outbox.dead_lettered": "寄件匣裡有 {deadLettered} 筆死信（上限 {maxDeadLettered}）；請重新投遞或刪除它們。",
+  "messaging.outbox.message_not_found": "寄件匣訊息 '{id}' 不存在。",
+  "messaging.outbox.not_dead_lettered": "寄件匣訊息 '{id}' 不在死信中；只有死信可以重新投遞。",
   "messaging.queue.full": "主題 '{topic}' 的記憶體佇列已滿（容量 {capacity}）。",
   "messaging.topic.invalid": "主題 '{topic}' 不合法。"
 }
