@@ -54,6 +54,32 @@ public sealed class KnowledgeTests
     }
 
     [Fact]
+    public void FixedWindow_CountsCodePoints_AndNeverSplitsASurrogatePair()
+    {
+        // 规范 RFC-0022「知识库」（ADR-0286）：窗口按码位计。以前按 UTF-16 码元计，窗口为 2 时这段文本被切成 "a" 加半个表情、半个表情加 "b"
+        var strategy = new FixedWindowChunkingStrategy();
+        const string Grinning = "\ud83d\ude00";
+        Assert.Equal(["a" + Grinning, "b" + Grinning, "c"], strategy.Chunk("a" + Grinning + "b" + Grinning + "c", new ChunkingOptions { MaxChunkSize = 2, Overlap = 0 }));
+        Assert.Equal([Grinning + Grinning, Grinning + Grinning], strategy.Chunk(Grinning + Grinning + Grinning, new ChunkingOptions { MaxChunkSize = 2, Overlap = 1 }));
+
+        // 只有基本多文种平面的文本，按码位与按码元是一回事
+        Assert.Equal(["知识库", "检索增", "强"], strategy.Chunk("知识库检索增强", new ChunkingOptions { MaxChunkSize = 3, Overlap = 0 }));
+
+        // 落单的代理项（不成对的半个字符）各算一个，原样留在块里，不丢也不替换
+        Assert.Equal(["a\ud83d", "b\ude00"], strategy.Chunk("a\ud83db\ude00", new ChunkingOptions { MaxChunkSize = 2, Overlap = 0 }));
+    }
+
+    [Fact]
+    public void FixedWindow_TrimsEveryChunkAfterCutting()
+    {
+        // 去空白在切分之后：只裁这一块的两端，后面的窗口仍按原文的位置算，去掉之后为空的不成块
+        var strategy = new FixedWindowChunkingStrategy();
+        Assert.Equal(["abc", "de", "f"], strategy.Chunk(" abc  def ", new ChunkingOptions { MaxChunkSize = 4, Overlap = 0 }));
+        Assert.Equal(["x", "y", "y", "y", "z"], strategy.Chunk("x  y  z", new ChunkingOptions { MaxChunkSize = 3, Overlap = 2 }));
+        Assert.Equal(["a", "b"], strategy.Chunk("a\u00a0\u3000b", new ChunkingOptions { MaxChunkSize = 1, Overlap = 0 }));
+    }
+
+    [Fact]
     public async Task DefaultCollection_IsPerTenant_InTenantCalls()
     {
         var store = new FakeKnowledgeStore();

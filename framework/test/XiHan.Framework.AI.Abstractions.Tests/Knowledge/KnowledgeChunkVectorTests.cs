@@ -13,7 +13,7 @@ namespace XiHan.Framework.AI.Abstractions.Tests.Knowledge;
 /// 回放 <c>knowledge-chunks.json</c>：知识库的分块、记录 ID 与默认集合
 /// </summary>
 /// <remarks>
-/// 规范 RFC-0022「知识库」（ADR-0210、ADR-0277）：固定窗口分块先把换行统一成 LF 再按窗口滑动，全是空白的块丢弃；记录 ID 是文档 ID 加 <c>#</c> 加块序号；请求没有指明集合时，不带租户的调用用配置的集合，带租户的调用用集合加 <c>.</c> 加租户 ID，拼出的名字不合文法时调用以校验错误结束。向量是规范的一部分，这里只回放，不另存一份
+/// 规范 RFC-0022「知识库」（ADR-0210、ADR-0277、ADR-0286）：固定窗口分块先把换行统一成 LF 再按窗口滑动，字符按码位计，每个窗口切出来之后去掉首尾的空白、去掉之后为空的不成块；记录 ID 是文档 ID 加 <c>#</c> 加块序号；请求没有指明集合时，不带租户的调用用配置的集合，带租户的调用用集合加 <c>.</c> 加租户 ID，拼出的名字不合文法时调用以校验错误结束。向量是规范的一部分，这里只回放，不另存一份
 /// </remarks>
 public sealed class KnowledgeChunkVectorTests
 {
@@ -107,10 +107,48 @@ public sealed class KnowledgeChunkVectorTests
         Assert.Contains(_vectors.Chunks, static vector => vector.Text.Length > 0 && vector.Chunks.Length == 0);
         Assert.Contains(_vectors.Chunks, static vector => vector.Text.Length == 0);
 
+        // 每块去掉首尾的空白：文本首尾有空白而切出的块都没有；有重叠时去掉空白之后相同的块各算一块；ASCII 以外的空白与不算空白的零宽空格
+        Assert.Contains(_vectors.Chunks, static vector => vector.Text.Length > 0 && char.IsWhiteSpace(vector.Text[0]) && char.IsWhiteSpace(vector.Text[^1]) && vector.Chunks.Length > 1);
+        Assert.All(_vectors.Chunks, static vector => Assert.All(vector.Chunks, static chunk => Assert.Equal(chunk.Trim(), chunk)));
+        Assert.Contains(_vectors.Chunks, static vector => vector.Overlap > 0 && vector.Chunks.Distinct(StringComparer.Ordinal).Count() < vector.Chunks.Length);
+        Assert.Contains(_vectors.Chunks, static vector => vector.Text.Contains('\u00a0') && vector.Chunks.All(static chunk => !chunk.Contains('\u00a0')));
+        Assert.Contains(_vectors.Chunks, static vector => vector.Chunks.Any(static chunk => chunk.EndsWith('\u200b')));
+
+        // 按码位计：有代理对的文本，切出的块里代理项都成对，块的码位数不超过窗口
+        Assert.Contains(_vectors.Chunks, static vector => vector.Text.Any(char.IsSurrogate) && vector.Chunks.Length > 1);
+        Assert.All(_vectors.Chunks, static vector => Assert.All(vector.Chunks, chunk =>
+        {
+            Assert.True(HasOnlyPairedSurrogates(chunk), vector.Name);
+            Assert.True(chunk.EnumerateRunes().Count() <= vector.MaxChunkSize, vector.Name);
+        }));
+
         // 默认集合：不带租户、拼出来正好到上限、只多一个字符
         Assert.Contains(_vectors.DefaultCollections, static vector => vector.Tenant is null && vector.DefaultCollection == vector.Collection);
         Assert.Contains(_vectors.DefaultCollections, static vector => vector.DefaultCollection is { Length: AIIdentifiers.MaxNameLength });
         Assert.Contains(_vectors.DefaultCollections, static vector => vector.DefaultCollection is null && $"{vector.Collection}.{vector.Tenant}".Length == AIIdentifiers.MaxNameLength + 1);
+    }
+
+    /// <summary>
+    /// 文本里的代理项是否都成对
+    /// </summary>
+    /// <remarks>
+    /// 窗口的边界落在代理对中间时，切出的两块各带半个字符
+    /// </remarks>
+    private static bool HasOnlyPairedSurrogates(string text)
+    {
+        for (var index = 0; index < text.Length; index++)
+        {
+            if (char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]))
+            {
+                index++;
+            }
+            else if (char.IsSurrogate(text[index]))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -159,8 +197,8 @@ public sealed class KnowledgeChunkVectorTests
     /// </summary>
     /// <param name="Name">用例的说明</param>
     /// <param name="Text">文本</param>
-    /// <param name="MaxChunkSize">窗口的字符数</param>
-    /// <param name="Overlap">相邻两块重叠的字符数</param>
+    /// <param name="MaxChunkSize">窗口的字符数（码位）</param>
+    /// <param name="Overlap">相邻两个窗口重叠的字符数</param>
     /// <param name="Chunks">切出的块</param>
     private sealed record ChunkCase(string Name, string Text, int MaxChunkSize, int Overlap, string[] Chunks);
 

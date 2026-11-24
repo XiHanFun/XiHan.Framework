@@ -6,7 +6,7 @@ using XiHan.Framework.Primitives;
 namespace XiHan.Framework.AI.Abstractions.Knowledge;
 
 /// <summary>
-/// 切块选项：块大小与相邻块的重叠（字符）
+/// 切块选项：块大小与相邻块的重叠（字符，按 Unicode 码位计）
 /// </summary>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed record ChunkingOptions
