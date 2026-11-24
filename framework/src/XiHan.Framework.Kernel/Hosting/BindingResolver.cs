@@ -39,6 +39,18 @@ public static class BindingResolver
     /// 同名时配置优先于目录
     /// </remarks>
     public static IReadOnlyDictionary<string, BindingValue> Resolve(IConfiguration configuration, string? serviceBindingRoot)
+        => Resolve(configuration, serviceBindingRoot, null);
+
+    /// <summary>
+    /// 解析绑定，可以只解析点了名的那些
+    /// </summary>
+    /// <remarks>
+    /// 同名时配置优先于目录。<paramref name="names"/> 给了时只读这些名字的绑定目录与配置节，其余的不读、不进结果：每个绑定的读法与不限名字时相同，名字按字面比。插件宿主在配置一个插件时只解析它的清单声明的绑定，别的绑定读不出来不影响它（ADR-0268）
+    /// </remarks>
+    /// <param name="configuration">宿主配置</param>
+    /// <param name="serviceBindingRoot">Service Binding 根目录；<see langword="null"/> 时取环境变量</param>
+    /// <param name="names">要解析的绑定名；<see langword="null"/> 时解析全部</param>
+    internal static IReadOnlyDictionary<string, BindingValue> Resolve(IConfiguration configuration, string? serviceBindingRoot, IReadOnlyCollection<string>? names)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         var result = new Dictionary<string, BindingValue>(StringComparer.Ordinal);
@@ -49,6 +61,12 @@ public static class BindingResolver
         {
             foreach (var directory in Directory.EnumerateDirectories(serviceBindingRoot))
             {
+                // 没点名的目录连文件都不打开；比的是目录的实际名字，与不限名字时放进结果的键相同
+                if (names is not null && !names.Contains(Path.GetFileName(directory)))
+                {
+                    continue;
+                }
+
                 var binding = FromDirectory(directory);
                 result[binding.Name] = binding;
             }
@@ -56,6 +74,11 @@ public static class BindingResolver
 
         foreach (var section in configuration.GetSection(ConfigurationSection).GetChildren())
         {
+            if (names is not null && !names.Contains(section.Key))
+            {
+                continue;
+            }
+
             var binding = FromSection(section);
             result[binding.Name] = binding;
         }

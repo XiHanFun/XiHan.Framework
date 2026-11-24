@@ -183,37 +183,33 @@ public sealed class PluginConfigureRequestsTests : IDisposable
     public void Bindings_ThatCannotBeRead_FailTheRequestInsteadOfDeliveringFewer()
     {
         Mount("db", ("uri", "postgres://db/app"));
-        var unreadable = Path.Combine(_root, "db", "password");
-        FileStream? locked = null;
-        if (OperatingSystem.IsWindows())
-        {
-            // Windows：独占打开的文件别人读不了
-            File.WriteAllText(unreadable, "s3cret");
-            locked = new FileStream(unreadable, FileMode.Open, FileAccess.Read, FileShare.None);
-        }
-        else
-        {
-            // 其他系统：指向不存在目标的符号链接（Secret 轮换到一半时就是这样）
-            File.CreateSymbolicLink(unreadable, Path.Combine(_root, "db", "..missing", "password"));
-        }
+        using var unreadable = Unreadable("db", "password");
 
-        try
-        {
-            var built = PluginConfigureRequests.Build(Manifest(new Binding("db", "connection:relational")), Configuration(), _root, "work", _logs.CreateLogger("test"));
+        var built = PluginConfigureRequests.Build(Manifest(new Binding("db", "connection:relational")), Configuration(), _root, "work", _logs.CreateLogger("test"));
 
-            // 读失败不当成「没有绑定」：少给一个绑定插件会带着缺的连接启动，这里让配置这一步失败、由重启策略再试
-            Assert.Equal(PluginErrors.Unexpected, built.Error?.Code);
-            Assert.Contains(PluginId, built.Error!.Message, StringComparison.Ordinal);
-            // 错误里只有异常类型，路径与异常消息只进日志
-            Assert.DoesNotContain(_root, built.Error.Message, StringComparison.Ordinal);
-            var logged = Assert.Single(_logs.Entries);
-            Assert.Equal(LogLevel.Error, logged.Level);
-            Assert.IsAssignableFrom<IOException>(logged.Exception);
-        }
-        finally
-        {
-            locked?.Dispose();
-        }
+        // 读失败不当成「没有绑定」：少给一个绑定插件会带着缺的连接启动，这里让配置这一步失败、由重启策略再试
+        Assert.Equal(PluginErrors.Unexpected, built.Error?.Code);
+        Assert.Contains(PluginId, built.Error!.Message, StringComparison.Ordinal);
+        // 错误里只有异常类型，路径与异常消息只进日志
+        Assert.DoesNotContain(_root, built.Error.Message, StringComparison.Ordinal);
+        var logged = Assert.Single(_logs.Entries);
+        Assert.Equal(LogLevel.Error, logged.Level);
+        Assert.IsAssignableFrom<IOException>(logged.Exception);
+    }
+
+    [Fact]
+    public void Bindings_ThePluginDidNotDeclare_AreNotRead()
+    {
+        // 一个插件的配置只取决于它自己声明的绑定：别的绑定读不出来（正在轮换、权限不对）不让它失败，宿主也不为它去读别人的凭据
+        Mount("db", ("uri", "postgres://db/app"));
+        Mount("secrets", ("uri", "vault://mounted"));
+        using var unreadable = Unreadable("secrets", "token");
+
+        var built = PluginConfigureRequests.Build(Manifest(new Binding("db", "connection:relational")), Configuration(), _root, "work", _logs.CreateLogger("test"));
+
+        Assert.True(built.IsSuccess, built.ToString());
+        Assert.Equal(["db"], built.ValueOrThrow().Bindings.Select(static b => b.Name));
+        Assert.Empty(_logs.Entries);
     }
 
     [Fact]
@@ -265,6 +261,25 @@ public sealed class PluginConfigureRequestsTests : IDisposable
     /// </summary>
     private static IConfigurationRoot Configuration(params (string Key, string Value)[] values)
         => new ConfigurationBuilder().AddInMemoryCollection(values.Select(static v => new KeyValuePair<string, string?>(v.Key, v.Value))).Build();
+
+    /// <summary>
+    /// 在一个绑定目录里放一个读不出来的属性文件
+    /// </summary>
+    /// <remarks>
+    /// Windows 上是独占打开的文件，释放返回值即放开；其他系统上是指向不存在目标的符号链接（Secret 轮换到一半时就是这样）
+    /// </remarks>
+    private FileStream? Unreadable(string binding, string file)
+    {
+        var path = Path.Combine(_root, binding, file);
+        if (OperatingSystem.IsWindows())
+        {
+            File.WriteAllText(path, "s3cret");
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+        }
+
+        File.CreateSymbolicLink(path, Path.Combine(_root, binding, "..missing", file));
+        return null;
+    }
 
     /// <summary>
     /// 在绑定根下放一个绑定目录：每个文件是一个属性

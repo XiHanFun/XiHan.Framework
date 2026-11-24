@@ -68,6 +68,42 @@ public sealed class HostingSupportTests
     }
 
     [Fact]
+    public void BindingResolver_ResolvingNamedBindings_ReadsOnlyThose_TheSameWay()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "xihan-bindings-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(root, "db"));
+        Directory.CreateDirectory(Path.Combine(root, "cache"));
+        try
+        {
+            File.WriteAllText(Path.Combine(root, "db", "type"), "connection:relational");
+            File.WriteAllText(Path.Combine(root, "db", "uri"), "postgres://db/app");
+            File.WriteAllText(Path.Combine(root, "db", "username"), "app");
+            File.WriteAllText(Path.Combine(root, "cache", "uri"), "mounted:6379");
+            var configuration = Hosts.Configuration(("XiHan:Bindings:queue:value", "amqp://configured"), ("XiHan:Bindings:cache:value", "configured:6379"), ("XiHan:Bindings:stream", "configured:9092"));
+
+            var all = BindingResolver.Resolve(configuration, root);
+            var named = BindingResolver.Resolve(configuration, root, ["db", "cache", "missing"]);
+
+            // 点了名又解析得出来的才在结果里；每个绑定与不限名字时解析出的一样（来源、优先级、类型、属性）
+            Assert.Equal(["cache", "db", "queue", "stream"], all.Keys.Order(StringComparer.Ordinal));
+            Assert.Equal(["cache", "db"], named.Keys.Order(StringComparer.Ordinal));
+            foreach (var (name, binding) in named)
+            {
+                Assert.Equal((all[name].Name, all[name].Type, all[name].Value), (binding.Name, binding.Type, binding.Value));
+                Assert.Equal(all[name].Properties, binding.Properties);
+            }
+
+            // 名字按字面比：目录与配置里是小写的 db，点名 DB 不算
+            Assert.Empty(BindingResolver.Resolve(configuration, root, ["DB", "Queue"]));
+            Assert.Empty(BindingResolver.Resolve(configuration, root, []));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void BindingValue_IsBuiltByInitializer_AndMasksItsValueWhenPrinted()
     {
         var binding = new BindingValue

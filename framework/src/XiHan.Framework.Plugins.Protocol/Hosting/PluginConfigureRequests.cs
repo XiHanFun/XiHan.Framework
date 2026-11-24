@@ -26,8 +26,8 @@ internal static partial class PluginConfigureRequests
     /// </summary>
     /// <remarks>
     /// <para>清单没有声明配置节时配置为 <c>{}</c>；已授予权限等于清单的 <c>permissions</c>（缺一项就过不了预检）。</para>
-    /// <para>绑定在每次组装时经内核的 <see cref="BindingResolver"/> 解析一遍：先读 Service Binding 目录、再读配置节 <c>XiHan:Bindings</c>，同名时配置整体覆盖目录。只下发清单声明的绑定（能不能声明由预检的 <c>binding:&lt;名&gt;</c> 授予把关，ADR-0177）；类型取来源声明的、来源没声明时取清单声明的；线协议的绑定只有名字、类型与主值，其余属性不下发，没有主值的绑定整个不下发并记警告。</para>
-    /// <para>绑定目录读失败返回 <c>PLUGINS_UNEXPECTED_001</c>（原因只写异常类型，完整异常进日志），不当成「没有绑定」少给：由调用方按配置这一步失败处理。根目录不存在不是失败。</para>
+    /// <para>绑定在每次组装时经内核的 <see cref="BindingResolver"/> 解析一遍：先读 Service Binding 目录、再读配置节 <c>XiHan:Bindings</c>，同名时配置整体覆盖目录。只读、只下发清单声明的绑定（能不能声明由预检的 <c>binding:&lt;名&gt;</c> 授予把关，ADR-0177）；类型取来源声明的、来源没声明时取清单声明的；线协议的绑定只有名字、类型与主值，其余属性不下发，没有主值的绑定整个不下发并记警告。</para>
+    /// <para>清单声明的绑定读失败返回 <c>PLUGINS_UNEXPECTED_001</c>（原因只写异常类型，完整异常进日志），不当成「没有绑定」少给：由调用方按配置这一步失败处理。根目录不存在不是失败。</para>
     /// </remarks>
     /// <param name="manifest">清单</param>
     /// <param name="configuration">宿主配置</param>
@@ -56,7 +56,8 @@ internal static partial class PluginConfigureRequests
         try
         {
             // 与内核同一个解析器、同一个根：配置插件的这一刻解析，重启或运行期加载的插件拿到的是此刻的值（配置节也是此刻读的）
-            resolved = BindingResolver.Resolve(configuration, serviceBindingRoot);
+            // 只读清单声明的那几个：别的绑定读不出来不关这个插件的事，宿主也不为它去读别人的凭据
+            resolved = BindingResolver.Resolve(configuration, serviceBindingRoot, manifest.Bindings.Select(static binding => binding.Name).ToArray());
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
