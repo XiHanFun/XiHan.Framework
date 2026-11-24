@@ -6,6 +6,7 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.CommandLine.Runtime;
 using XiHan.Framework.Kernel.Operations;
+using XiHan.Framework.Localization.Abstractions.Messages;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Hosting.CommandLine.Commands;
@@ -14,7 +15,7 @@ namespace XiHan.Framework.Hosting.CommandLine.Commands;
 /// <c>invoke &lt;operation-id&gt;</c>
 /// </summary>
 /// <remarks>
-/// 把命令行翻译为 XGI 调用。载荷来自 <c>--json</c>（JSON 对象）、<c>--data &lt;file&gt;</c>（文件里的 JSON 对象）或其余 <c>--&lt;field&gt; &lt;value&gt;</c> 选项（按操作的请求 Schema 写成对应类型，重复的选项成数组；操作没有 Schema 时值都写字符串）。调用经完整内核管道；成功把响应 JSON 写到 stdout，失败把 Problem 写到 stderr 并按错误 KIND 返回退出码。只接受暴露给命令行且非内部的操作
+/// 把命令行翻译为 XGI 调用。载荷来自 <c>--json</c>（JSON 对象）、<c>--data &lt;file&gt;</c>（文件里的 JSON 对象）或其余 <c>--&lt;field&gt; &lt;value&gt;</c> 选项（按操作的请求 Schema 写成对应类型，重复的选项成数组；操作没有 Schema 时值都写字符串）。调用经完整内核管道；成功把响应 JSON 写到 stdout，失败把 Problem 写到 stderr 并按错误 KIND 返回退出码。只接受暴露给命令行且非内部的操作；弃用的操作照常调用，进管道之前在 stderr 按调用方区域写一行提示（<see cref="CommandLineMessages.OperationDeprecated"/>）
 /// </remarks>
 internal sealed class InvokeCommand : ICommand
 {
@@ -50,6 +51,13 @@ internal sealed class InvokeCommand : ICommand
         if (!invocation.TryGetValue(out var invocationContext))
         {
             return await CommandLineFailure.WriteAsync(context.Error, invocation.Error!, context.Services, null, CommandLineExitCodes.Usage).ConfigureAwait(false);
+        }
+
+        // 弃用的操作照常调用，只在 stderr 提示一句：stdout 与退出码不变，脚本的管道不受影响（ADR-0280）。
+        // 写在上下文建好之后，才知道调用方的区域（--locale）；用法错误在这之前已经返回，没有发起调用就不提示
+        if (descriptor.Contract.Stability == Stability.Deprecated)
+        {
+            await context.Error.WriteLineAsync(invocationContext.Localize(CommandLineMessages.OperationDeprecated, MessageArguments.Of(("id", id)))).ConfigureAwait(false);
         }
 
         var response = await context.Services.GetRequiredService<IOperationInvoker>().InvokeAsync(invocationContext, new OperationRequest(id, bytes)).ConfigureAwait(false);

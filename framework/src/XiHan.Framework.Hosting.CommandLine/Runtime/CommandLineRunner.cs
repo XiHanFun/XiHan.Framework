@@ -4,6 +4,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using XiHan.Framework.Hosting.CommandLine.Commands;
 using XiHan.Framework.Hosting.CommandLine.Parsing;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Primitives;
 
 namespace XiHan.Framework.Hosting.CommandLine.Runtime;
@@ -12,7 +13,7 @@ namespace XiHan.Framework.Hosting.CommandLine.Runtime;
 /// 命令行的入口
 /// </summary>
 /// <remarks>
-/// 解析参数、找命令、在新作用域里执行并返回退出码。没有命令或 <c>help</c> 时打印帮助；命令名不存在但 <c>&lt;resource&gt; &lt;verb&gt;</c> 能拼成操作 ID 时转成 <c>invoke &lt;resource&gt;.&lt;verb&gt;</c>
+/// 解析参数、找命令、在新作用域里执行并返回退出码。没有命令或 <c>help</c> 时打印帮助，带 <c>--help</c> 的命令行指向一个弃用的操作时在帮助之后标出来；命令名不存在但 <c>&lt;resource&gt; &lt;verb&gt;</c> 能拼成操作 ID 时转成 <c>invoke &lt;resource&gt;.&lt;verb&gt;</c>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public sealed class CommandLineRunner
@@ -77,7 +78,15 @@ public sealed class CommandLineRunner
         // 没有命令是用法错误（退出码 64），显式 help 是成功
         if (parsed.Command is null || parsed.HasOption(HelpCommandName))
         {
-            await CommandLineHelp.WriteAsync(parsed.Command is null ? error : output, _commands.Values).ConfigureAwait(false);
+            var help = parsed.Command is null ? error : output;
+            await CommandLineHelp.WriteAsync(help, _commands.Values).ConfigureAwait(false);
+            // 帮助不逐个列出操作：问的那条命令指向一个弃用的操作时，在帮助之后标出来，文案与调用时 stderr 上的那一句相同（ADR-0280）
+            if (FindDeprecatedOperation(parsed).TryGetValue(out var deprecated))
+            {
+                await help.WriteLineAsync().ConfigureAwait(false);
+                await help.WriteLineAsync(CommandLineMessages.OperationDeprecated.L(("id", deprecated))).ConfigureAwait(false);
+            }
+
             return parsed.Command is null ? CommandLineExitCodes.Usage : CommandLineExitCodes.Success;
         }
 
@@ -96,6 +105,42 @@ public sealed class CommandLineRunner
         }
 
         return await ExecuteAsync(command, new CommandContext(parsed, scope.ServiceProvider, output, error, cancellationToken)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 命令行指向的操作是暴露给命令行的弃用操作时，交出它的 ID
+    /// </summary>
+    /// <remarks>
+    /// 认 <c>invoke &lt;operation-id&gt;</c> 与 <c>&lt;resource&gt; &lt;verb&gt;</c> 简写，判定与 <c>invoke</c> 相同：未登记、没有暴露给命令行或内部的操作都不算。容器里没有登记表时没有值，帮助照常打印
+    /// </remarks>
+    private Maybe<string> FindDeprecatedOperation(ParsedCommandLine parsed)
+    {
+        if (parsed.Command is null || parsed.Arguments.Count == 0)
+        {
+            return default;
+        }
+
+        string id;
+        if (string.Equals(parsed.Command, InvokeCommandName, StringComparison.Ordinal))
+        {
+            id = parsed.Arguments[0];
+        }
+        else if (!_commands.ContainsKey(parsed.Command) && OperationId.IsValid(parsed.Command + "." + parsed.Arguments[0]))
+        {
+            // 与执行时同一条简写规则：已注册的命令名优先，不当作资源段
+            id = parsed.Command + "." + parsed.Arguments[0];
+        }
+        else
+        {
+            return default;
+        }
+
+        return _services.GetService<OperationRegistry>() is { } registry
+            && registry.Find(id).TryGetValue(out var descriptor)
+            && descriptor.Contract.IsExposedTo(Expose.CommandLine)
+            && descriptor.Contract.Stability == Stability.Deprecated
+                ? Maybe.Some(id)
+                : default;
     }
 
     /// <summary>

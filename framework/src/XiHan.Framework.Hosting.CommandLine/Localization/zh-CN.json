@@ -9,6 +9,7 @@
   "hosting.commandline.invoke_json_invalid": "--json 的值必须是 JSON 对象：{reason}",
   "hosting.commandline.invoke_operation_missing": "需要操作 ID：invoke <操作 ID>。",
   "hosting.commandline.invoke_timeout_invalid": "--timeout 的值必须是正数秒。",
+  "hosting.commandline.operation_deprecated": "操作 '{id}' 已弃用，将在以后的大版本中移除。",
   "hosting.commandline.operation_not_exposed": "操作 '{id}' 未登记或未暴露给命令行。",
   "hosting.commandline.operation_shorthand": "<资源> <动词> [...]：'invoke <资源>.<动词>' 的简写。",
   "hosting.commandline.operations_description": "列出已登记的操作。",

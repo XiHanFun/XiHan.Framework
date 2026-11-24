@@ -242,6 +242,91 @@ public sealed class CommandLineRunnerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Invoke_OfADeprecatedOperation_WritesOneNoticeToStderr_AndLeavesStdoutAndTheExitCodeAlone()
+    {
+        const string Notice = "Operation 'orders.archive' is deprecated and will be removed in a future major version.";
+
+        // 弃用的操作照常调用：stdout 仍是一行响应 JSON，退出码 0；stderr 多一行提示（ADR-0280）
+        var (code, output, error) = await RunAsync("invoke", "orders.archive", "--name", "widget", "--page", "2");
+        Assert.Equal(CommandLineExitCodes.Success, code);
+        Assert.Equal(Notice + Environment.NewLine, error);
+        var line = Assert.Single(output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+        Assert.Equal(("orders.archive", "widget", 2), (Json(line).GetProperty("operation").GetString(), Json(line).GetProperty("name").GetString(), Json(line).GetProperty("page").GetInt32()));
+
+        // 同样的参数调不弃用的操作：stdout 只差操作 ID，stderr 是空的
+        var (plainCode, plainOutput, plainError) = await RunAsync("invoke", "orders.get", "--name", "widget", "--page", "2");
+        Assert.Equal(CommandLineExitCodes.Success, plainCode);
+        Assert.Equal(output.Replace("orders.archive", "orders.get", StringComparison.Ordinal), plainOutput);
+        Assert.Empty(plainError);
+
+        // 简写一样提示，每次执行一行；文案按 --locale
+        var (_, _, shorthandError) = await RunAsync("orders", "archive", "--name", "widget");
+        Assert.Equal(Notice + Environment.NewLine, shorthandError);
+        var (localizedCode, _, localizedError) = await RunAsync("orders", "archive", "--name", "widget", "--locale", "zh-CN");
+        Assert.Equal(CommandLineExitCodes.Success, localizedCode);
+        Assert.Equal("操作 'orders.archive' 已弃用，将在以后的大版本中移除。" + Environment.NewLine, localizedError);
+    }
+
+    [Fact]
+    public async Task Invoke_OfADeprecatedOperation_KeepsTheFailureLineAndExitCode_AndSkipsTheNoticeOnUsageErrors()
+    {
+        // 调用失败：提示在前，失败的那一行 JSON 在后，退出码仍按 KIND；stdout 没有输出
+        var (conflict, conflictOutput, conflictError) = await RunAsync("orders", "archive", "--name", "fail");
+        Assert.Equal(CommandLineExitCodes.Conflict, conflict);
+        Assert.Empty(conflictOutput);
+        var lines = conflictError.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("Operation 'orders.archive' is deprecated and will be removed in a future major version.", lines[0]);
+        Assert.Equal("ORDERS_CONFLICT_001", Json(lines[1]).GetProperty("code").GetString());
+
+        // 用法错误没有发起调用：stderr 只有那一行 JSON，退出码 64
+        foreach (var args in new[]
+        {
+            new[] { "invoke", "orders.archive", "--json", "not json" },
+            ["orders", "archive", "--timeout", "0"],
+            ["orders", "archive", "--authorization", "no-scheme"],
+        })
+        {
+            var (usage, usageOutput, usageError) = await RunAsync(args);
+            Assert.Equal(CommandLineExitCodes.Usage, usage);
+            Assert.Empty(usageOutput);
+            Assert.Equal(CommandLineErrors.UsageInvalid, Json(Assert.Single(usageError.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries))).GetProperty("code").GetString());
+        }
+    }
+
+    [Fact]
+    public async Task HelpAndTheOperationList_MarkTheDeprecatedOperation()
+    {
+        const string Notice = "Operation 'orders.archive' is deprecated and will be removed in a future major version.";
+
+        // 操作列表：稳定性一列就是标注
+        var (_, operations, _) = await RunAsync("operations");
+        Assert.Contains("orders.archive\tDeprecated\tCommandLine\t-" + Environment.NewLine, operations, StringComparison.Ordinal);
+        Assert.Single(operations.Split(Environment.NewLine), static row => row.Contains("\tDeprecated\t", StringComparison.Ordinal));
+
+        // 带 --help 的命令行指向弃用的操作：帮助照常，之后空一行写同一句提示；写在 stdout，stderr 是空的
+        var (_, general, _) = await RunAsync("help");
+        foreach (var args in new[] { new[] { "orders", "archive", "--help" }, ["invoke", "orders.archive", "--help"] })
+        {
+            var (code, help, error) = await RunAsync(args);
+            Assert.Equal(CommandLineExitCodes.Success, code);
+            Assert.Equal(general + Environment.NewLine + Notice + Environment.NewLine, help);
+            Assert.Empty(error);
+        }
+
+        // 其余情况的帮助一字不差：不弃用的操作、没有暴露给命令行的操作、内置命令、不带命令
+        Assert.DoesNotContain("deprecated", general, StringComparison.Ordinal);
+        foreach (var args in new[] { new[] { "orders", "get", "--help" }, ["invoke", "orders.get", "--help"], ["invoke", "orders.nope", "--help"], ["invoke", "--help"], ["graph", "--help"] })
+        {
+            Assert.Equal(general, (await RunAsync(args)).Output);
+        }
+
+        var (usage, _, usageError) = await RunAsync();
+        Assert.Equal(CommandLineExitCodes.Usage, usage);
+        Assert.Equal(general, usageError);
+    }
+
+    [Fact]
     public void ExitCodes_FollowErrorKinds()
     {
         Assert.Equal(CommandLineExitCodes.Validation, CommandLineExitCodes.For(Primitives.Error.Validation("X_VALIDATION_001", "x.y")));

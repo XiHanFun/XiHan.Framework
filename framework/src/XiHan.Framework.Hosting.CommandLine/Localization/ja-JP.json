@@ -9,6 +9,7 @@
   "hosting.commandline.invoke_json_invalid": "--json の値は JSON オブジェクトでなければなりません: {reason}",
   "hosting.commandline.invoke_operation_missing": "操作 ID が必要です: invoke <操作 ID>",
   "hosting.commandline.invoke_timeout_invalid": "--timeout の値は正の秒数でなければなりません。",
+  "hosting.commandline.operation_deprecated": "操作 '{id}' は非推奨であり、今後のメジャー バージョンで削除されます。",
   "hosting.commandline.operation_not_exposed": "操作 '{id}' は登録されていないか、コマンドラインに公開されていません。",
   "hosting.commandline.operation_shorthand": "<リソース> <動詞> [...]: 'invoke <リソース>.<動詞>' の省略形です。",
   "hosting.commandline.operations_description": "登録済みの操作を一覧表示します。",

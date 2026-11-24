@@ -111,6 +111,14 @@ public static class CommandLineMessages
     public const string OperationNotExposed = "hosting.commandline.operation_not_exposed";
 
     /// <summary>
+    /// 被调用的操作已弃用
+    /// </summary>
+    /// <remarks>
+    /// 参数：<c>id</c>。<c>invoke</c> 调到稳定性为 <see cref="Stability.Deprecated"/> 的操作时写到 stderr，带 <c>--help</c> 的命令行指向这样的操作时写在帮助之后（ADR-0280）
+    /// </remarks>
+    public const string OperationDeprecated = "hosting.commandline.operation_deprecated";
+
+    /// <summary>
     /// 本包的消息目录
     /// </summary>
     public static MessageCatalog Catalog => MessageCatalog.FromEmbeddedResources(CatalogName, typeof(CommandLineMessages));

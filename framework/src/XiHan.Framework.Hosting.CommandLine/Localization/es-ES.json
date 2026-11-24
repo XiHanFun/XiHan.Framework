@@ -9,6 +9,7 @@
   "hosting.commandline.invoke_json_invalid": "El valor de --json debe ser un objeto JSON: {reason}",
   "hosting.commandline.invoke_operation_missing": "Se requiere un id de operación: invoke <id de operación>.",
   "hosting.commandline.invoke_timeout_invalid": "El valor de --timeout debe ser un número positivo de segundos.",
+  "hosting.commandline.operation_deprecated": "La operación '{id}' está obsoleta y se eliminará en una futura versión principal.",
   "hosting.commandline.operation_not_exposed": "La operación '{id}' no está registrada o no está expuesta a la línea de comandos.",
   "hosting.commandline.operation_shorthand": "<recurso> <verbo> [...]: forma abreviada de 'invoke <recurso>.<verbo>'.",
   "hosting.commandline.operations_description": "Lista las operaciones registradas.",

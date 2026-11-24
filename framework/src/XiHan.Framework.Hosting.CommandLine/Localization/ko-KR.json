@@ -9,6 +9,7 @@
   "hosting.commandline.invoke_json_invalid": "--json 값은 JSON 객체여야 합니다: {reason}",
   "hosting.commandline.invoke_operation_missing": "작업 ID가 필요합니다: invoke <작업 ID>",
   "hosting.commandline.invoke_timeout_invalid": "--timeout 값은 양수 초여야 합니다.",
+  "hosting.commandline.operation_deprecated": "작업 '{id}'은(는) 더 이상 사용되지 않으며 향후 주 버전에서 제거됩니다.",
   "hosting.commandline.operation_not_exposed": "작업 '{id}'이(가) 등록되지 않았거나 명령줄에 노출되지 않았습니다.",
   "hosting.commandline.operation_shorthand": "<리소스> <동사> [...]: 'invoke <리소스>.<동사>'의 축약형입니다.",
   "hosting.commandline.operations_description": "등록된 작업을 나열합니다.",

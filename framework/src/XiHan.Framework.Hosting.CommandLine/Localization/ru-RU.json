@@ -9,6 +9,7 @@
   "hosting.commandline.invoke_json_invalid": "Значение --json должно быть объектом JSON: {reason}",
   "hosting.commandline.invoke_operation_missing": "Требуется ID операции: invoke <ID операции>.",
   "hosting.commandline.invoke_timeout_invalid": "Значение --timeout должно быть положительным числом секунд.",
+  "hosting.commandline.operation_deprecated": "Операция '{id}' устарела и будет удалена в одной из следующих основных версий.",
   "hosting.commandline.operation_not_exposed": "Операция '{id}' не зарегистрирована или не доступна из командной строки.",
   "hosting.commandline.operation_shorthand": "<ресурс> <глагол> [...]: сокращение для 'invoke <ресурс>.<глагол>'.",
   "hosting.commandline.operations_description": "Выводит список зарегистрированных операций.",

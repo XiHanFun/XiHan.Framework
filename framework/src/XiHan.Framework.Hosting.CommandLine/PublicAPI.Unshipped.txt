@@ -69,6 +69,7 @@ const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeDescription 
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeJsonInvalid = "hosting.commandline.invoke_json_invalid" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeOperationMissing = "hosting.commandline.invoke_operation_missing" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.InvokeTimeoutInvalid = "hosting.commandline.invoke_timeout_invalid" -> string!
+const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.OperationDeprecated = "hosting.commandline.operation_deprecated" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.OperationNotExposed = "hosting.commandline.operation_not_exposed" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.OperationShorthand = "hosting.commandline.operation_shorthand" -> string!
 const XiHan.Framework.Hosting.CommandLine.CommandLineMessages.OperationsDescription = "hosting.commandline.operations_description" -> string!
