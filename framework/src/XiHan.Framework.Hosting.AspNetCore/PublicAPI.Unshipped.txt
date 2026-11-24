@@ -1,7 +1,7 @@
 #nullable enable
 XiHan.Framework.Hosting.AspNetCore.ApplicationBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.Authentication.IInvocationAuthenticationFilter
-XiHan.Framework.Hosting.AspNetCore.Authentication.IInvocationAuthenticationFilter.AuthenticatedAsync(XiHan.Framework.Kernel.Security.Principal! principal, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Hosting.AspNetCore.Authentication.IInvocationAuthenticationFilter.AuthenticatedAsync(XiHan.Framework.Kernel.Security.Principal! principal, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationBuilderExtensions
 XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationDefaults
 XiHan.Framework.Hosting.AspNetCore.Authentication.InvocationAuthenticationHandler

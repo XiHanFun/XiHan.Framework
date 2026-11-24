@@ -265,7 +265,7 @@ public sealed class BypassEndpointAuthenticationTests
         public int Calls => Volatile.Read(ref _calls);
 
         /// <inheritdoc />
-        public ValueTask<Result> AuthenticatedAsync(Principal principal, InvocationContext context, CancellationToken cancellationToken)
+        public ValueTask<Result> AuthenticatedAsync(Principal principal, InvocationContext context)
         {
             Interlocked.Increment(ref _calls);
             return ValueTask.FromResult(principal.HasClaim("sid", Revoked)

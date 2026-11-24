@@ -19,7 +19,7 @@ public interface IInvocationAuthenticationFilter
     /// 核对已认证的主体
     /// </summary>
     /// <remarks>
-    /// 上下文是以本次请求建的调用上下文，其安全上下文已写入该主体
+    /// 上下文是以本次请求建的调用上下文，其安全上下文已写入该主体；取消在 <c>context.CancellationToken</c> 上（请求中止即取消），不另传令牌（ADR-0263）
     /// </remarks>
-    ValueTask<Result> AuthenticatedAsync(Principal principal, InvocationContext context, CancellationToken cancellationToken);
+    ValueTask<Result> AuthenticatedAsync(Principal principal, InvocationContext context);
 }
