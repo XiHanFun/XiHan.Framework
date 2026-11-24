@@ -1,6 +1,6 @@
 #nullable enable
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler
-XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.OpenIdConnectAuthenticationHandler(XiHan.Framework.Security.OpenIdConnect.OpenIdConnectOptions! options, XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadataCache! metadata) -> void
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectAuthenticationHandler.Scheme.get -> string!
 XiHan.Framework.Security.OpenIdConnect.OpenIdConnectMetadata

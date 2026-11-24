@@ -23,5 +23,8 @@ public interface IAuthenticationHandler
     /// <summary>
     /// 认证
     /// </summary>
-    ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken);
+    /// <remarks>
+    /// 取消与截止时间在 <see cref="InvocationContext.CancellationToken"/> 上，与操作的处理器、作业一样不另传令牌（ADR-0263）
+    /// </remarks>
+    ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context);
 }

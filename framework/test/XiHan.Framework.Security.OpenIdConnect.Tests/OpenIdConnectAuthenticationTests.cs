@@ -42,7 +42,7 @@ public sealed class OpenIdConnectAuthenticationTests
     /// 认证 Bearer 令牌
     /// </summary>
     private static async Task<Result<Principal>> AuthenticateAsync(OpenIdConnectAuthenticationHandler handler, string token)
-        => await handler.AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create(), CancellationToken.None);
+        => await handler.AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create());
 
     [Fact]
     public async Task ValidToken_BecomesPrincipalWithRawClaims_AndMetadataIsFetchedOnce()
@@ -210,6 +210,26 @@ public sealed class OpenIdConnectAuthenticationTests
         Assert.All(results, static r => Assert.True(r.IsSuccess));
         Assert.Equal(1, issuer.MetadataRequests);
         Assert.Equal(1, issuer.JwksRequests);
+    }
+
+    [Fact]
+    public async Task CancelledCall_IsCancelledThroughTheContextToken_WithoutAskingTheIssuer()
+    {
+        using var issuer = new FakeIssuer();
+        var (handler, cache, _) = Create(issuer);
+        var token = issuer.CreateToken();
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+        var cancelled = TestInvocationContext.Create(cancellationToken: cancellation.Token);
+
+        // 令牌只有上下文这一个来源（ADR-0263）：已取消的调用不访问签发者，也不把取消记成签发者不可用
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await handler.AuthenticateAsync(new AuthenticationCredential("Bearer", token), cancelled));
+        Assert.Equal(0, issuer.MetadataRequests);
+        Assert.Null(cache.Current);
+
+        // 取消没有进入失败退避：下一次调用照常取到元数据
+        Assert.True((await AuthenticateAsync(handler, token)).IsSuccess);
+        Assert.Equal(1, issuer.MetadataRequests);
     }
 
     /// <summary>

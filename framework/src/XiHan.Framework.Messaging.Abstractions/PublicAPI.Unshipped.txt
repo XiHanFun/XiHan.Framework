@@ -32,7 +32,7 @@ XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition.DeadLetter =
 XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition.Discard = 4 -> XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
 XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition.Retry = 2 -> XiHan.Framework.Messaging.Abstractions.Handlers.DeliveryDisposition
 XiHan.Framework.Messaging.Abstractions.Handlers.IMessageHandler
-XiHan.Framework.Messaging.Abstractions.Handlers.IMessageHandler.HandleAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Abstractions.Handlers.IMessageHandler.HandleAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.<Clone>$() -> XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery!
 XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery.Attempt.get -> int

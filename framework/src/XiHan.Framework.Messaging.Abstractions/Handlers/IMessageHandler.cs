@@ -17,5 +17,8 @@ public interface IMessageHandler
     /// <summary>
     /// 处理
     /// </summary>
-    ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken);
+    /// <remarks>
+    /// 取消与截止时间在 <see cref="InvocationContext.CancellationToken"/> 上，与操作的处理器、作业一样不另传令牌（ADR-0263）
+    /// </remarks>
+    ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context);
 }

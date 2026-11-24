@@ -18,7 +18,7 @@ public sealed class ClaimTenantResolver(MultiTenancyOptions options) : ITenantRe
     private readonly MultiTenancyOptions _options = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         // 未认证主体的声明不可信，直接放弃，交给后续解析器（如 Baggage）

@@ -50,7 +50,7 @@ public sealed class ApiKeyAuthenticationHandler(InMemoryPrincipalStore store, Se
     public string Scheme => SchemeName;
 
     /// <inheritdoc />
-    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(credential);
         if (!_store.FindByApiKey(credential.Value).TryGetValue(out var record))

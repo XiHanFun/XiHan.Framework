@@ -15,7 +15,7 @@ namespace XiHan.Framework.MultiTenancy.Abstractions.Resolution;
 public sealed class BaggageTenantResolver : ITenantResolver
 {
     /// <inheritdoc />
-    public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
         // 这里只取值不信任；是否存在、是否启用由中间件对照存储核对

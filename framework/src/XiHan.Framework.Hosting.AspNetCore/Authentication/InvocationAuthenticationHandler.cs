@@ -70,8 +70,9 @@ public sealed class InvocationAuthenticationHandler(IOptionsMonitor<InvocationAu
         }
 
         // 与管道同一套载体映射：链路、区域、来源与凭据；不记录到 HttpContext.Items，不影响之后经过 UseXiHan() 的同一请求
+        // 上下文的令牌就是 RequestAborted，处理器从上下文取令牌（ADR-0263）
         var context = HttpInvocation.CreateContext(Context, services);
-        var authenticated = await handler.AuthenticateAsync(credential, context, Context.RequestAborted).ConfigureAwait(false);
+        var authenticated = await handler.AuthenticateAsync(credential, context).ConfigureAwait(false);
         if (!authenticated.TryGetValue(out var principal))
         {
             return Fail(authenticated.Error!);

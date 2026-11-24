@@ -134,7 +134,7 @@ public sealed class TenantResolutionMiddleware(MultiTenancyOptions options) : IP
         // 注册顺序即优先级：先注册的解析器（如已认证主体的声明）压过后注册的（如调用方自报的 Baggage）
         foreach (var resolver in context.Services.GetServices<ITenantResolver>())
         {
-            var resolved = await resolver.ResolveAsync(context, context.CancellationToken).ConfigureAwait(false);
+            var resolved = await resolver.ResolveAsync(context).ConfigureAwait(false);
             // 拒绝不往下问：否则优先级更低的解析器（调用方自报的 Baggage）能绕过前面的拒绝
             if (!resolved.TryGetValue(out var candidate) || candidate.HasValue)
             {

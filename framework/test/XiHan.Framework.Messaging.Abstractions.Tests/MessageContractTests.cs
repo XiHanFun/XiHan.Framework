@@ -28,7 +28,7 @@ public sealed class MessageContractTests
     private sealed class NoopHandler : IMessageHandler
     {
         /// <inheritdoc />
-        public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken) => ValueTask.FromResult(Result.Success());
+        public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context) => ValueTask.FromResult(Result.Success());
     }
 
     /// <summary>

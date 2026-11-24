@@ -16,12 +16,12 @@ namespace XiHan.Framework.Messaging.InMemory.Tests;
 internal sealed class BlockingHandler(DeliveryLog log) : IMessageHandler
 {
     /// <inheritdoc />
-    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(delivery);
         ArgumentNullException.ThrowIfNull(context);
         log.Record(new ReceivedMessage(delivery, new Dictionary<string, string>(context.Baggage, StringComparer.Ordinal), context.TraceId));
-        await Task.Delay(Timeout.Infinite, cancellationToken);
+        await Task.Delay(Timeout.Infinite, context.CancellationToken);
         return Result.Success();
     }
 }

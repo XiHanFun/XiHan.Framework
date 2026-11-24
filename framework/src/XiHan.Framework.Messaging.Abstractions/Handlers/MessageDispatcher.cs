@@ -85,7 +85,7 @@ public sealed partial class MessageDispatcher(IServiceProvider services, App app
             foreach (var handlerType in handlers)
             {
                 var handler = (IMessageHandler)ctx.Services.GetRequiredService(handlerType);
-                var handled = await handler.HandleAsync(delivery, ctx, ctx.CancellationToken).ConfigureAwait(false);
+                var handled = await handler.HandleAsync(delivery, ctx).ConfigureAwait(false);
                 if (handled.IsFailure)
                 {
                     ctx.SetOutcome(handled);

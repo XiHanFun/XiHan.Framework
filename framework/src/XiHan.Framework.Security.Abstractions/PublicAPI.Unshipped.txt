@@ -9,7 +9,7 @@ XiHan.Framework.Security.Abstractions.Authentication.AuthenticationMiddleware
 XiHan.Framework.Security.Abstractions.Authentication.AuthenticationMiddleware.AuthenticationMiddleware(XiHan.Framework.Security.Abstractions.SecurityOptions! options) -> void
 XiHan.Framework.Security.Abstractions.Authentication.AuthenticationMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Security.Abstractions.Authentication.IAuthenticationHandler
-XiHan.Framework.Security.Abstractions.Authentication.IAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
+XiHan.Framework.Security.Abstractions.Authentication.IAuthenticationHandler.AuthenticateAsync(XiHan.Framework.Security.Abstractions.Authentication.AuthenticationCredential! credential, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Kernel.Security.Principal!>>
 XiHan.Framework.Security.Abstractions.Authentication.IAuthenticationHandler.Scheme.get -> string!
 XiHan.Framework.Security.Abstractions.Authorization.AuthenticatedPolicy
 XiHan.Framework.Security.Abstractions.Authorization.AuthenticatedPolicy.AuthenticatedPolicy() -> void

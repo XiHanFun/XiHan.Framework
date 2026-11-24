@@ -12,7 +12,7 @@ namespace XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 internal sealed class RecordingEnvelopeHandler(EnvelopeRecorder recorder) : IMessageHandler
 {
     /// <inheritdoc />
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(delivery);
         recorder.Record(delivery.Envelope);

@@ -28,7 +28,7 @@ public sealed class ServiceTokenHandler : IAuthenticationHandler
 {
     public string Scheme => "Service";
 
-    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context)
         => ValueTask.FromResult(Result.Success(new Principal("svc-billing", Scheme)));
 }
 

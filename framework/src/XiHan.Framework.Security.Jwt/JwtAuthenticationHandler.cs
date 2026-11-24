@@ -76,7 +76,7 @@ public sealed class JwtAuthenticationHandler : IAuthenticationHandler
     public string Scheme => SchemeName;
 
     /// <inheritdoc />
-    public async ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(credential);
         var validation = await _handler.ValidateTokenAsync(credential.Value, _parameters).ConfigureAwait(false);

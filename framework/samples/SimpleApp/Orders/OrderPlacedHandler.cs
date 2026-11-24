@@ -20,7 +20,7 @@ public sealed class OrderPlacedHandler(OrderEventCounter counter) : IMessageHand
     /// <remarks>
     /// 失败时返回的错误会让消息进入重试与死信流程
     /// </remarks>
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         counter.Increment();
         return ValueTask.FromResult(Result.Success());

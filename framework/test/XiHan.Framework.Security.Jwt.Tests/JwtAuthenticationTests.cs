@@ -55,7 +55,7 @@ public sealed class JwtAuthenticationTests
     /// 用给定选项（默认严格选项）认证 Bearer 令牌
     /// </summary>
     private static async Task<Result<Principal>> AuthenticateAsync(string token, JwtOptions? options = null)
-        => await new JwtAuthenticationHandler(options ?? _options).AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create(), CancellationToken.None);
+        => await new JwtAuthenticationHandler(options ?? _options).AuthenticateAsync(new AuthenticationCredential("Bearer", token), TestInvocationContext.Create());
 
     [Fact]
     public async Task ValidToken_BecomesPrincipalWithRawClaims()

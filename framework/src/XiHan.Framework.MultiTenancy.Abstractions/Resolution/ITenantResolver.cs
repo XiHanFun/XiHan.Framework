@@ -24,6 +24,7 @@ public interface ITenantResolver
     /// <item>成功且无值：这个解析器给不出租户，交给下一个解析器</item>
     /// <item>失败：拒绝这次调用（例如候选互相矛盾、调用方不属于该租户、映射所需的存储不可达），Tenant 阶段以这个错误结束调用，不再问后面的解析器（ADR-0143）</item>
     /// </list>
+    /// 取消与截止时间在 <see cref="InvocationContext.CancellationToken"/> 上，与操作的处理器、作业一样不另传令牌（ADR-0263）
     /// </remarks>
-    ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken);
+    ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context);
 }

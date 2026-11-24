@@ -16,7 +16,7 @@ namespace XiHan.Framework.Protocols.CloudEvents.Tests;
 internal sealed class RecordingHandler(DeliveryLog log) : IMessageHandler
 {
     /// <inheritdoc />
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         log.Record(delivery, context.Baggage);
         return ValueTask.FromResult(delivery.Envelope.Subject == "fail"

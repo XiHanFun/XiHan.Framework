@@ -57,9 +57,10 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
     public string Scheme => SchemeName;
 
     /// <inheritdoc />
-    public async ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(credential);
+        ArgumentNullException.ThrowIfNull(context);
         // 头部或载荷解析不出的令牌直接拒绝，不为它访问签发者
         JsonWebToken token;
         try
@@ -71,7 +72,7 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
             return InvalidToken();
         }
 
-        var metadata = await _metadata.GetAsync(cancellationToken).ConfigureAwait(false);
+        var metadata = await _metadata.GetAsync(context.CancellationToken).ConfigureAwait(false);
         if (!metadata.TryGetValue(out var current))
         {
             return metadata.Error!;
@@ -81,7 +82,7 @@ public sealed class OpenIdConnectAuthenticationHandler : IAuthenticationHandler
         if (!validation.IsValid && validation.Exception is SecurityTokenSignatureKeyNotFoundException)
         {
             // 签名密钥未知多半是签发者轮换了密钥：按需刷新（受最短间隔限制），拿到新的一份才重试
-            var refreshed = await _metadata.RefreshAsync(cancellationToken).ConfigureAwait(false);
+            var refreshed = await _metadata.RefreshAsync(context.CancellationToken).ConfigureAwait(false);
             if (refreshed.TryGetValue(out var latest) && !ReferenceEquals(latest, current))
             {
                 validation = await _handler.ValidateTokenAsync(token, Parameters(latest)).ConfigureAwait(false);

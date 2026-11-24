@@ -19,6 +19,6 @@ internal sealed class BearerHandler : IAuthenticationHandler
     public string Scheme => "Bearer";
 
     /// <inheritdoc />
-    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context)
         => ValueTask.FromResult<Result<Principal>>(Error.Literal("SECURITY_DENIED_003", "The stub handler does not authenticate."));
 }

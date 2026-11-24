@@ -41,7 +41,7 @@ public sealed class AuthenticationMiddleware(SecurityOptions options) : IPipelin
                 return;
             }
 
-            var authenticated = await handler.AuthenticateAsync(credential, context, context.CancellationToken).ConfigureAwait(false);
+            var authenticated = await handler.AuthenticateAsync(credential, context).ConfigureAwait(false);
             if (!authenticated.TryGetValue(out var principal))
             {
                 context.SetOutcome(authenticated.ToResult());

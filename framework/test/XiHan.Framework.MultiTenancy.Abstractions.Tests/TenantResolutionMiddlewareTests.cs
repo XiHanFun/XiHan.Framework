@@ -60,7 +60,7 @@ public sealed class TenantResolutionMiddlewareTests
         /// <summary>
         /// 不看上下文，直接返回构造时给定的值
         /// </summary>
-        public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+        public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context)
             => ValueTask.FromResult(Result.Success(tenantId is null ? Maybe.None<string>() : Maybe.Some(tenantId)));
     }
 
@@ -77,7 +77,7 @@ public sealed class TenantResolutionMiddlewareTests
         /// <summary>
         /// 不看上下文，直接返回构造时给定的失败
         /// </summary>
-        public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context, CancellationToken cancellationToken)
+        public ValueTask<Result<Maybe<string>>> ResolveAsync(InvocationContext context)
         {
             Called = true;
             return ValueTask.FromResult(Result.Failure<Maybe<string>>(error));

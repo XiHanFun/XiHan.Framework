@@ -14,7 +14,7 @@ namespace XiHan.Framework.Messaging.Conformance;
 public sealed class RecordingHandler(DeliveryLog log) : IMessageHandler
 {
     /// <inheritdoc />
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(delivery);
         ArgumentNullException.ThrowIfNull(context);

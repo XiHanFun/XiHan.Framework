@@ -16,6 +16,6 @@ internal sealed class StaticHandler(string scheme, Func<AuthenticationCredential
     public string Scheme => scheme;
 
     /// <inheritdoc />
-    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result<Principal>> AuthenticateAsync(AuthenticationCredential credential, InvocationContext context)
         => ValueTask.FromResult(authenticate(credential));
 }

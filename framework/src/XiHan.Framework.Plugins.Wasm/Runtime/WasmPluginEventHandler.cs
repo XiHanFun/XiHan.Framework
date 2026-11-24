@@ -15,7 +15,7 @@ namespace XiHan.Framework.Plugins.Wasm.Runtime;
 internal sealed class WasmPluginEventHandler(WasmPluginHost host) : IMessageHandler
 {
     /// <inheritdoc />
-    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context, CancellationToken cancellationToken)
+    public ValueTask<Result> HandleAsync(MessageDelivery delivery, InvocationContext context)
     {
         ArgumentNullException.ThrowIfNull(delivery);
         ArgumentNullException.ThrowIfNull(context);

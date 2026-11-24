@@ -51,7 +51,7 @@ XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceFlags.init -> void
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceId.get -> string!
 XiHan.Framework.Messaging.Conformance.ReceivedMessage.TraceId.init -> void
 XiHan.Framework.Messaging.Conformance.RecordingHandler
-XiHan.Framework.Messaging.Conformance.RecordingHandler.HandleAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, XiHan.Framework.Primitives.InvocationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
+XiHan.Framework.Messaging.Conformance.RecordingHandler.HandleAsync(XiHan.Framework.Messaging.Abstractions.Handlers.MessageDelivery! delivery, XiHan.Framework.Primitives.InvocationContext! context) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result>
 XiHan.Framework.Messaging.Conformance.RecordingHandler.RecordingHandler(XiHan.Framework.Messaging.Conformance.DeliveryLog! log) -> void
 abstract XiHan.Framework.Messaging.Conformance.MessageBrokerConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
 abstract XiHan.Framework.Messaging.Conformance.OutboxConformance.CreateFeature() -> XiHan.Framework.Kernel.Hosting.IFeature!
