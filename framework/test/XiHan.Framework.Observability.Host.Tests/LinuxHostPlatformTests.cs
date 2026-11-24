@@ -117,6 +117,52 @@ public sealed class LinuxHostPlatformTests : IDisposable
     }
 
     [Fact]
+    public void Uptime_IsReadAsADecimal_Exactly()
+    {
+        // 规范 RFC-0023「平台读取路径」（ADR-0286）：第一列按十进制读。以前按二进制浮点读，350735.47 秒读成 350735.4699999 秒，差一个计时单位
+        Write("proc/uptime", "350735.47 234388.90\n");
+        Assert.Equal(TimeSpan.FromTicks(3_507_354_700_000), Platform().ReadSystemUptime());
+
+        // 只有一列、没有换行的也读得出
+        Write("proc/uptime", "42.5");
+        Assert.Equal(TimeSpan.FromMilliseconds(42_500), Platform().ReadSystemUptime());
+    }
+
+    [Theory]
+    [InlineData("-1.00 0.00\n")]
+    [InlineData("1e3 0\n")]
+    [InlineData("NaN 0\n")]
+    [InlineData("Infinity 0\n")]
+    [InlineData(" 12.00 3.00\n")]
+    [InlineData("1,234.50 0.00\n")]
+    [InlineData("99999999999999999999 0\n")]
+    [InlineData("")]
+    public void Uptime_ThatIsNotAPlainDecimal_IsNull(string content)
+    {
+        // 只认数字与小数点。以前带符号、指数的写法照收：负数读成负的时长，NaN 与装不下的值在换算时抛出，读取不抛出的约定就破了
+        Write("proc/uptime", content);
+        Assert.Null(Platform().ReadSystemUptime());
+    }
+
+    [Fact]
+    public void Processor_CachesOfTheSameLevel_TakeTheFirstDirectoryInOrdinalOrder()
+    {
+        // 同一级有两项不是指令缓存的：取目录名按序数排在最前的那一项，不随目录的枚举次序变
+        Write("sys/devices/system/cpu/cpu0/cache/index3/level", "2\n");
+        Write("sys/devices/system/cpu/cpu0/cache/index3/type", "Unified\n");
+        Write("sys/devices/system/cpu/cpu0/cache/index3/size", "2048K\n");
+        Write("sys/devices/system/cpu/cpu0/cache/index10/level", "2\n");
+        Write("sys/devices/system/cpu/cpu0/cache/index10/type", "Data\n");
+        Write("sys/devices/system/cpu/cpu0/cache/index10/size", "512K\n");
+        Write("sys/devices/system/cpu/cpu0/cache/index0/level", "1\n");
+        Write("sys/devices/system/cpu/cpu0/cache/index0/type", "Data\n");
+        Write("sys/devices/system/cpu/cpu0/cache/index0/size", "32K\n");
+
+        // index10 按序数排在 index3 之前
+        Assert.Equal(512L * 1024, Platform().ReadProcessor().CacheBytes);
+    }
+
+    [Fact]
     public void Board_ReadsDmi_AndUnreadableSerialIsNull()
     {
         Write("sys/class/dmi/id/board_vendor", "ASUSTeK COMPUTER INC.\n");

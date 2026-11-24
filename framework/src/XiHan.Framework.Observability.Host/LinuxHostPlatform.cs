@@ -21,6 +21,14 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     /// </summary>
     private static readonly string[] _pciIdsPaths = ["usr/share/hwdata/pci.ids", "usr/share/misc/pci.ids", "usr/share/pci.ids"];
 
+    /// <summary>
+    /// <see cref="TimeSpan"/> 装得下的最大秒数
+    /// </summary>
+    /// <remarks>
+    /// 运行时长超过它时读成空，不在换算时溢出
+    /// </remarks>
+    private const decimal MaxUptimeSeconds = long.MaxValue / TimeSpan.TicksPerSecond;
+
     /// <inheritdoc />
     public override ProcessorInfo ReadProcessor()
     {
@@ -75,10 +83,22 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
 
     /// <inheritdoc />
     /// <remarks>
-    /// <c>/proc/uptime</c> 的第一列，含挂起的时间
+    /// <c>/proc/uptime</c> 的第一列（秒，十进制小数），含挂起的时间；不是这种写法或超出时长的范围为空
     /// </remarks>
     public override TimeSpan? ReadSystemUptime()
-        => ReadText("proc/uptime")?.Split(' ')[0] is { } seconds && double.TryParse(seconds, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? TimeSpan.FromSeconds(value) : null;
+    {
+        if (ReadText("proc/uptime") is not { } text)
+        {
+            return null;
+        }
+
+        // 第一列到第一个空格或换行为止。只认数字与小数点、按十进制读：带符号、指数、NaN 不是内核会写的，照收会得到负的时长或在换算时抛出；按二进制浮点读则 350735.47 秒会差出一个计时单位
+        var end = text.AsSpan().IndexOfAny(' ', '\n');
+        var seconds = end < 0 ? text.AsSpan() : text.AsSpan(0, end);
+        return decimal.TryParse(seconds, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value) && value <= MaxUptimeSeconds
+            ? TimeSpan.FromTicks((long)(value * TimeSpan.TicksPerSecond))
+            : null;
+    }
 
     /// <inheritdoc />
     /// <remarks>
@@ -317,6 +337,9 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
     /// <summary>
     /// 最后一级缓存：<c>cpu0</c> 的缓存里级别最高、不是指令缓存的那一项
     /// </summary>
+    /// <remarks>
+    /// 同一级有几项时取目录名按序数排在最前的那一项
+    /// </remarks>
     private long? LastLevelCache()
     {
         var caches = PathOf("sys/devices/system/cpu/cpu0/cache");
@@ -327,7 +350,9 @@ internal sealed class LinuxHostPlatform(string root) : HostPlatform
 
         long? bytes = null;
         long level = 0;
-        foreach (var index in Directory.EnumerateDirectories(caches, "index*").Select(Path.GetFileName))
+
+        // 按目录名排序再比：目录的枚举次序随文件系统而变，同一级有两项数据缓存时不排序就取不定
+        foreach (var index in Directory.EnumerateDirectories(caches, "index*").Select(Path.GetFileName).Order(StringComparer.Ordinal))
         {
             var prefix = $"sys/devices/system/cpu/cpu0/cache/{index}";
             if (ReadNumber($"{prefix}/level") is { } current && current > level && ReadLine($"{prefix}/type") != "Instruction" && Size(ReadLine($"{prefix}/size")) is { } size)
