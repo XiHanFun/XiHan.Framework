@@ -11,6 +11,8 @@
     <ProjectReference Include="../../src/XiHan.Framework.Protocols.Grpc/XiHan.Framework.Protocols.Grpc.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Profiles.Minimal/XiHan.Framework.Profiles.Minimal.csproj" />
     <ProjectReference Include="../../src/XiHan.Framework.Security.InMemory/XiHan.Framework.Security.InMemory.csproj" />
+    <!-- 收日志的工厂（LogCapture） -->
+    <ProjectReference Include="../../src/XiHan.Framework.Testing/XiHan.Framework.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

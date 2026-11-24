@@ -22,8 +22,21 @@ internal static class PluginDeadlines
     /// <param name="metadata">元数据的 <c>deadline</c></param>
     /// <param name="call">gRPC 调用自身的截止时间；没有为 <see langword="null"/></param>
     public static DateTimeOffset? Effective(string? metadata, DateTimeOffset? call)
+        => Effective(metadata, call, out _);
+
+    /// <summary>
+    /// 生效的截止时间，并交出元数据里的截止时间是不是写了却读不出
+    /// </summary>
+    /// <remarks>
+    /// 取法同 <see cref="Effective(string?, DateTimeOffset?)"/>。<paramref name="unreadable"/> 供宿主记限频的告警（ADR-0279）：空串是协议里「没有给」的写法，不算读不出
+    /// </remarks>
+    /// <param name="metadata">元数据的 <c>deadline</c></param>
+    /// <param name="call">gRPC 调用自身的截止时间；没有为 <see langword="null"/></param>
+    /// <param name="unreadable">元数据的 <c>deadline</c> 不为空而读不出</param>
+    public static DateTimeOffset? Effective(string? metadata, DateTimeOffset? call, out bool unreadable)
     {
         DateTimeOffset? declared = DeadlineText.TryParse(metadata, out var parsed) ? parsed : null;
+        unreadable = declared is null && !string.IsNullOrEmpty(metadata);
         return (declared, call) switch
         {
             ({ } a, { } b) => a <= b ? a : b,

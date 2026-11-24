@@ -45,6 +45,7 @@ await builder.Build().RunAsync();
 * `PipelineBuilder`、`IPipelineMiddleware`、`PipelineStage`：执行管道
 * `OperationAttribute`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`：操作契约与调用
 * `FrameworkDiagnostics`：内核的 ActivitySource 与 Meter（名字都是 `XiHan.Framework`）。Span `xihan.invoke` 与指标 `xihan.invocations`、`xihan.invocation.duration` 带 `xihan.outcome`；操作调用另带 `xihan.operation`（操作 ID），不是操作调用时没有这个标签
+* `UnreadableDeadlineLog`：调用方给的截止时间读不出时的限频告警，内核登记为单例。请求头（`xihan-deadline`、`grpc-timeout`）与插件回调各算一类，每类 1 分钟最多一条 Warning，不带原值，下一条带上被压掉的条数
 * `SecurityContext`、`Principal`、`PermissionRegistry`：安全上下文与权限登记
 * `ResultJson`：Result 与 Error 的线上 JSON 编码，与各语言 SDK 逐字一致
 

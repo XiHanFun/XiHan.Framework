@@ -282,6 +282,8 @@ public sealed class AppBuilder
         // 出站地址策略总是可取：放行项写错在这里就启动失败，应用也可以先登记自己的选项
         Services.TryAddSingleton(OutboundAddressOptions.FromConfiguration(Configuration));
         Services.TryAddSingleton<OutboundAddressPolicy>();
+        // 各载体读不出调用方给的截止时间时到这里记限频的告警：限频的状态在这个单例上，随容器存亡（ADR-0279）
+        Services.TryAddSingleton<UnreadableDeadlineLog>();
         Services.AddSingleton(permissions);
         Services.AddSingleton(operations);
         Services.TryAddSingleton<IOperationInvoker, OperationInvoker>();

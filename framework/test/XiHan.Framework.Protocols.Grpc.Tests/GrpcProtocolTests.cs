@@ -9,9 +9,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Hosting.AspNetCore;
 using XiHan.Framework.Hosting.AspNetCore.Endpoints;
 using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Primitives;
@@ -20,6 +22,7 @@ using XiHan.Framework.Protocols.Grpc.Proto;
 using XiHan.Framework.Protocols.Grpc.Services;
 using XiHan.Framework.Protocols.Grpc.Tests.Fixtures;
 using XiHan.Framework.Security.InMemory;
+using XiHan.Framework.Testing;
 
 namespace XiHan.Framework.Protocols.Grpc.Tests;
 
@@ -52,12 +55,19 @@ public sealed class GrpcProtocolTests
     /// <summary>
     /// 启动测试宿主：Minimal 组合（本地化）+ 内存安全 + gRPC 适配器 + 订单特性
     /// </summary>
-    private static async Task<(WebApplication App, GrpcChannel Channel, HttpClient Client)> StartAsync(Action<AppBuilder>? extra = null, params (string Key, string Value)[] configuration)
+    private static Task<(WebApplication App, GrpcChannel Channel, HttpClient Client)> StartAsync(Action<AppBuilder>? extra = null, params (string Key, string Value)[] configuration)
+        => StartHostAsync(null, extra, configuration);
+
+    /// <summary>
+    /// 启动测试宿主，装配之前先让调用方配置宿主的构建器（日志等）
+    /// </summary>
+    private static async Task<(WebApplication App, GrpcChannel Channel, HttpClient Client)> StartHostAsync(Action<WebApplicationBuilder>? host, Action<AppBuilder>? extra, params (string Key, string Value)[] configuration)
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(_security.Concat(configuration).Select(static c => new KeyValuePair<string, string?>(c.Key, c.Value)));
         builder.Services.AddSingleton<OriginLog>();
+        host?.Invoke(builder);
         builder.AddXiHan(xihan =>
         {
             xihan.UseMinimalProfile().UseFeature<InMemorySecurityFeature>().UseFeature<GrpcProtocolFeature>().UseFeature<OrdersFeature>();
@@ -119,6 +129,28 @@ public sealed class GrpcProtocolTests
         Assert.False(baggage.ContainsKey(BaggageKeys.Tenant));
         Assert.False(baggage.ContainsKey(BaggageKeys.Principal));
         Assert.Equal("c-1", baggage[BaggageKeys.Correlation]);
+    }
+
+    [Fact]
+    public async Task UnaryCall_WithAnUnreadableDeadline_Succeeds_AndLogsARateLimitedWarningWithoutTheValue()
+    {
+        // gRPC 元数据就是 HTTP/2 头，与 HTTP 载体同一个读取点：读不出照常当作没有，另记一条不带原值的告警（ADR-0279）
+        var logs = new LogCapture();
+        var (app, channel, _) = await StartHostAsync(builder => builder.Logging.ClearProviders().AddProvider(logs), null);
+        await using var host = app;
+        using var scope = channel;
+        var request = ProtoBytes.Concat(ProtoBytes.StringField(1, "42"), ProtoBytes.VarintField(3, 2));
+        const string Unreadable = "2026-11-18 03:25:00Z forged-log-line";
+
+        using var first = Call(channel, "Orders", "Get", request, (HttpInvocation.DeadlineHeader, Unreadable));
+        Assert.Equal("orders.get", Reply(await first.ResponseAsync).GetProperty("operation").GetString());
+        using var second = Call(channel, "Orders", "List", request, (HttpInvocation.DeadlineHeader, "2026-11-18"));
+        Assert.Equal("orders.list", Reply(await second.ResponseAsync).GetProperty("operation").GetString());
+
+        var warning = Assert.Single(logs.Entries, static entry => entry.Category == typeof(UnreadableDeadlineLog).FullName);
+        Assert.Equal(LogLevel.Warning, warning.Level);
+        Assert.Equal($"The value of request header 'xihan-deadline' ({Unreadable.Length} characters) could not be read as a deadline and is ignored; the invocation of operation 'orders.get' continues without it. Similar warnings suppressed since the previous one: 0.", warning.Message);
+        Assert.DoesNotContain(logs.Entries, static entry => entry.Message.Contains("forged-log-line", StringComparison.Ordinal));
     }
 
     [Fact]

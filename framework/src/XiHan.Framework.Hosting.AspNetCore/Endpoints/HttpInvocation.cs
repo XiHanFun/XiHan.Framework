@@ -10,7 +10,9 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using XiHan.Framework.Hosting.AspNetCore.Authentication;
+using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Kernel.Operations;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Localization.Abstractions;
 using XiHan.Framework.Localization.Abstractions.Locales;
@@ -30,7 +32,7 @@ public static partial class HttpInvocation
     /// 截止时间头
     /// </summary>
     /// <remarks>
-    /// 值是绝对截止时间的文本，文法见 <see cref="DeadlineText"/>（RFC-0003 规则 8）：如 <c>2026-11-18T03:25:00Z</c>、<c>2026-11-18T11:25:00.5+08:00</c>，必须有 <c>T</c>、秒与偏移（<c>Z</c> 或 <c>±HH:MM</c>）。单值头，按整串匹配、不裁剪；读不出（不合文法、越界、空值、出现多次）当作没有这个头，请求照常处理（<c>spec/protocol/http.md</c>「上下文映射」）。写这个头用 <see cref="DeadlineText.Format"/>
+    /// 值是绝对截止时间的文本，文法见 <see cref="DeadlineText"/>（RFC-0003 规则 8）：如 <c>2026-11-18T03:25:00Z</c>、<c>2026-11-18T11:25:00.5+08:00</c>，必须有 <c>T</c>、秒与偏移（<c>Z</c> 或 <c>±HH:MM</c>）。单值头，按整串匹配、不裁剪；读不出（不合文法、越界、空值、出现多次）当作没有这个头，请求照常处理（<c>spec/protocol/http.md</c>「上下文映射」）；值不为空而读不出时另记一条限频的 Warning，不带原值（<see cref="UnreadableDeadlineLog"/>，ADR-0279）。写这个头用 <see cref="DeadlineText.Format"/>
     /// </remarks>
     public const string DeadlineHeader = "xihan-deadline";
 
@@ -38,7 +40,7 @@ public static partial class HttpInvocation
     /// gRPC 的相对超时头
     /// </summary>
     /// <remarks>
-    /// <c>{数值}{H|M|S|m|u|n}</c>，数值 1 到 8 位；没有 <see cref="DeadlineHeader"/> 或它读不出时按当前时刻换算为截止时间，自己读不出、出现多次同样当作没有（<c>spec/protocol/grpc.md</c>）
+    /// <c>{数值}{H|M|S|m|u|n}</c>，数值 1 到 8 位；没有 <see cref="DeadlineHeader"/> 或它读不出时按当前时刻换算为截止时间，自己读不出、出现多次同样当作没有（<c>spec/protocol/grpc.md</c>）；没有 <see cref="DeadlineHeader"/> 而它不为空又读不出时，同样记那条限频的 Warning
     /// </remarks>
     public const string GrpcTimeoutHeader = "grpc-timeout";
 
@@ -46,6 +48,11 @@ public static partial class HttpInvocation
     /// 调用上下文在 <see cref="HttpContext.Items"/> 里的键
     /// </summary>
     private const string ContextItemKey = "xihan.invocation-context";
+
+    /// <summary>
+    /// 「这个请求读不出的截止时间已经报过」在 <see cref="HttpContext.Items"/> 里的键
+    /// </summary>
+    private const string UnreadableDeadlineItemKey = "xihan.unreadable-deadline-reported";
 
     /// <summary>
     /// 从请求头构造调用上下文
@@ -102,26 +109,42 @@ public static partial class HttpInvocation
         // 值不裁剪、不换别的日期格式再试；它是单值头，出现多次时各个值以逗号并成一个文本，逗号不在文法里，哪一个都不取；
         // 读不出（含空值）当作没有这个头、不报错，让 grpc-timeout 照常生效
         DateTimeOffset? deadline = null;
-        if (DeadlineText.TryParse(headers[DeadlineHeader].ToString(), out var parsed))
+        var deadlineText = headers[DeadlineHeader].ToString();
+        if (DeadlineText.TryParse(deadlineText, out var parsed))
         {
             deadline = parsed;
         }
-        else if (GrpcTimeout().Match(headers[GrpcTimeoutHeader].ToString()) is { Success: true } timeout)
+        else
         {
-            // gRPC 只给相对超时：以宿主时钟换算成绝对截止时间，纳秒按 100 纳秒刻度截断
-            var amount = long.Parse(timeout.Groups["value"].Value, CultureInfo.InvariantCulture);
-            var duration = timeout.Groups["unit"].Value switch
+            var timeoutText = headers[GrpcTimeoutHeader].ToString();
+            if (GrpcTimeout().Match(timeoutText) is { Success: true } timeout)
             {
-                "H" => TimeSpan.FromHours(amount),
-                "M" => TimeSpan.FromMinutes(amount),
-                "S" => TimeSpan.FromSeconds(amount),
-                "m" => TimeSpan.FromMilliseconds(amount),
-                "u" => TimeSpan.FromMicroseconds(amount),
-                _ => TimeSpan.FromTicks(amount / 100),
-            };
-            // 八位数的小时能到一万多年，加上当前时刻会溢出 DateTimeOffset：截到能表示的最远时刻，等同于调用期间不会到期（ADR-0203）
-            var now = (services.GetService<TimeProvider>() ?? TimeProvider.System).GetUtcNow();
-            deadline = duration < DateTimeOffset.MaxValue - now ? now + duration : DateTimeOffset.MaxValue;
+                // gRPC 只给相对超时：以宿主时钟换算成绝对截止时间，纳秒按 100 纳秒刻度截断
+                var amount = long.Parse(timeout.Groups["value"].Value, CultureInfo.InvariantCulture);
+                var duration = timeout.Groups["unit"].Value switch
+                {
+                    "H" => TimeSpan.FromHours(amount),
+                    "M" => TimeSpan.FromMinutes(amount),
+                    "S" => TimeSpan.FromSeconds(amount),
+                    "m" => TimeSpan.FromMilliseconds(amount),
+                    "u" => TimeSpan.FromMicroseconds(amount),
+                    _ => TimeSpan.FromTicks(amount / 100),
+                };
+                // 八位数的小时能到一万多年，加上当前时刻会溢出 DateTimeOffset：截到能表示的最远时刻，等同于调用期间不会到期（ADR-0203）
+                var now = (services.GetService<TimeProvider>() ?? TimeProvider.System).GetUtcNow();
+                deadline = duration < DateTimeOffset.MaxValue - now ? now + duration : DateTimeOffset.MaxValue;
+            }
+
+            // 调用方写了截止时间却读不出：调用照常继续，只留一条限频的告警（ADR-0279）。值为空是调用方没有要截止时间，不报；
+            // xihan-deadline 读不出就报它，哪怕 grpc-timeout 接着生效；它没有给时才轮到读不出的 grpc-timeout
+            if (deadlineText.Length > 0)
+            {
+                ReportUnreadableDeadline(httpContext, services, DeadlineHeader, deadlineText.Length);
+            }
+            else if (timeoutText.Length > 0 && deadline is null)
+            {
+                ReportUnreadableDeadline(httpContext, services, GrpcTimeoutHeader, timeoutText.Length);
+            }
         }
 
         var baggage = ParseBaggageCore(headers["baggage"].ToString());
@@ -163,6 +186,27 @@ public static partial class HttpInvocation
 
         context.SetOrigin(OriginOf(httpContext));
         return context;
+    }
+
+    /// <summary>
+    /// 报告请求头里读不出的截止时间
+    /// </summary>
+    /// <remarks>
+    /// 交给内核的 <see cref="UnreadableDeadlineLog"/> 限频记一条 Warning：只带头名、原值的长度与端点上的操作 ID，不带原值（ADR-0279）。容器里没有它（不是经 <c>AddXiHan</c> 装配的服务提供器）时不记
+    /// </remarks>
+    /// <param name="httpContext">当前请求</param>
+    /// <param name="services">这次调用的服务提供器</param>
+    /// <param name="header">读不出的头名</param>
+    /// <param name="length">头的原值的字符数</param>
+    private static void ReportUnreadableDeadline(HttpContext httpContext, IServiceProvider services, string header, int length)
+    {
+        // 一个请求可能建几次上下文（认证方案 XiHan、管道、MCP 的每个 tools/call）：只报一次，被压掉的条数才对得上请求数
+        if (!httpContext.Items.TryAdd(UnreadableDeadlineItemKey, header))
+        {
+            return;
+        }
+
+        services.GetService<UnreadableDeadlineLog>()?.ReportHeader(header, length, httpContext.GetEndpoint()?.Metadata.GetMetadata<OperationDescriptor>()?.Id);
     }
 
     /// <summary>

@@ -41,6 +41,10 @@ XiHan.Framework.Kernel.Diagnostics.IAuditSink.WriteAsync(XiHan.Framework.Kernel.
 XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware
 XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware.InvokeAsync(XiHan.Framework.Primitives.InvocationContext! context, XiHan.Framework.Kernel.Pipeline.PipelineStep! nextStep) -> System.Threading.Tasks.ValueTask
 XiHan.Framework.Kernel.Diagnostics.ObserveMiddleware.ObserveMiddleware(Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
+XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog
+XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog.ReportHeader(string! header, int length, string? operationId) -> void
+XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog.ReportPluginMetadata(string! pluginId, int length) -> void
+XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog.UnreadableDeadlineLog(Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, System.TimeProvider! clock) -> void
 XiHan.Framework.Kernel.Hosting.App
 XiHan.Framework.Kernel.Hosting.App.App(System.IServiceProvider! services, Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory) -> void
 XiHan.Framework.Kernel.Hosting.App.Bindings.get -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!
@@ -798,6 +802,7 @@ static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.ActivitySource.ge
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.InvocationDuration.get -> System.Diagnostics.Metrics.Histogram<double>!
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.Invocations.get -> System.Diagnostics.Metrics.Counter<long>!
 static XiHan.Framework.Kernel.Diagnostics.FrameworkDiagnostics.Meter.get -> System.Diagnostics.Metrics.Meter!
+static XiHan.Framework.Kernel.Diagnostics.UnreadableDeadlineLog.Window.get -> System.TimeSpan
 static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider! scopedServices, System.Threading.CancellationToken cancellationToken) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Kernel.Hosting.App.CreateContext(System.IServiceProvider! scopedServices, XiHan.Framework.Kernel.Hosting.InvocationContextOptions! options, System.Threading.CancellationToken cancellationToken) -> XiHan.Framework.Primitives.InvocationContext!
 static XiHan.Framework.Kernel.Hosting.BindingResolver.Resolve(Microsoft.Extensions.Configuration.IConfiguration! configuration) -> System.Collections.Generic.IReadOnlyDictionary<string!, XiHan.Framework.Kernel.Hosting.BindingValue!>!

@@ -2,6 +2,9 @@
 // See the LICENSE file in the project root for full license text.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Time.Testing;
+using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.V1;
@@ -36,6 +39,33 @@ public sealed class PluginMetadataTests
         var context = PluginMetadata.CreateContext(services, new InvocationMetadata { Deadline = "2026-11-18 03:25:00" }, "xihan.samples.echo", CancellationToken.None);
 
         Assert.Null(context.Deadline);
+    }
+
+    [Fact]
+    public void CreateContext_WarnsAboutAnUnreadableDeadline_WithoutTheText_AndLimitsTheRate()
+    {
+        var logs = new LogCapture();
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 11, 24, 8, 0, 0, TimeSpan.Zero));
+        using var services = new ServiceCollection().AddSingleton<ILoggerFactory>(logs).AddSingleton<TimeProvider>(clock).AddSingleton<UnreadableDeadlineLog>().BuildServiceProvider();
+        const string Unreadable = "2026-11-18 03:25:00 forged-log-line";
+        var call = new DateTimeOffset(2026, 11, 24, 8, 0, 30, TimeSpan.Zero);
+
+        // 读不出的照常当作没有：仍不晚于 gRPC 调用自身的截止时间（invocation.md §2，ADR-0279）
+        Assert.Equal(call, PluginMetadata.CreateContext(services, new InvocationMetadata { Deadline = Unreadable }, "xihan.samples.echo", CancellationToken.None, call).Deadline);
+        Assert.Null(PluginMetadata.CreateContext(services, new InvocationMetadata { Deadline = "tomorrow" }, "xihan.samples.echo", CancellationToken.None).Deadline);
+        // 读得出、没有给（空串）与没有元数据都不记
+        PluginMetadata.CreateContext(services, new InvocationMetadata { Deadline = "2026-11-24T08:00:05Z" }, "xihan.samples.echo", CancellationToken.None);
+        PluginMetadata.CreateContext(services, new InvocationMetadata(), "xihan.samples.echo", CancellationToken.None);
+        PluginMetadata.CreateContext(services, null, "xihan.samples.echo", CancellationToken.None);
+        clock.Advance(UnreadableDeadlineLog.Window);
+        PluginMetadata.CreateContext(services, new InvocationMetadata { Deadline = "tomorrow" }, "xihan.samples.cache", CancellationToken.None);
+
+        var entries = logs.Entries;
+        Assert.Equal(2, entries.Count);
+        Assert.All(entries, static entry => Assert.Equal(LogLevel.Warning, entry.Level));
+        Assert.Equal($"The deadline in the callback metadata of plugin 'xihan.samples.echo' ({Unreadable.Length} characters) could not be read and is ignored; the callback continues without it. Similar warnings suppressed since the previous one: 0.", entries[0].Message);
+        Assert.Equal("The deadline in the callback metadata of plugin 'xihan.samples.cache' (8 characters) could not be read and is ignored; the callback continues without it. Similar warnings suppressed since the previous one: 1.", entries[1].Message);
+        Assert.DoesNotContain(entries, static entry => entry.Message.Contains("forged-log-line", StringComparison.Ordinal) || entry.Message.Contains("tomorrow", StringComparison.Ordinal));
     }
 
     [Fact]

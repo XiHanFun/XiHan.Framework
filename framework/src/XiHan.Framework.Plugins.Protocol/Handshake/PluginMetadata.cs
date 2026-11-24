@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using Grpc.Core;
 using Microsoft.Extensions.DependencyInjection;
+using XiHan.Framework.Kernel.Diagnostics;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Kernel.Pipeline;
 using XiHan.Framework.Kernel.Security;
@@ -96,7 +97,7 @@ internal static class PluginMetadata
     /// 元数据 → 新的调用上下文（宿主回调时使用）
     /// </summary>
     /// <remarks>
-    /// 不合法的 traceparent 视为缺失，<c>trace_state</c> 不进上下文，未登记的 Baggage 键剥离，主体 Baggage 覆盖为插件自己的身份。截止时间按 <c>invocation.md</c> §2 严格读，读不出当作没有；给了 <paramref name="notAfter"/>（gRPC 调用自身的截止时间、Wasm 当前调用的截止时间）时取两者中较早者，插件不能借回调把截止时间往后推（ADR-0237）
+    /// 不合法的 traceparent 视为缺失，<c>trace_state</c> 不进上下文，未登记的 Baggage 键剥离，主体 Baggage 覆盖为插件自己的身份。截止时间按 <c>invocation.md</c> §2 严格读，读不出当作没有，不为空而读不出时经内核的 <see cref="UnreadableDeadlineLog"/> 记一条限频的 Warning（带清单 ID 与原文的长度，不带原文，ADR-0279）；给了 <paramref name="notAfter"/>（gRPC 调用自身的截止时间、Wasm 当前调用的截止时间）时取两者中较早者，插件不能借回调把截止时间往后推（ADR-0237）
     /// </remarks>
     public static InvocationContext CreateContext(IServiceProvider scopedServices, InvocationMetadata? metadata, string principalId, CancellationToken cancellationToken, DateTimeOffset? notAfter = null)
     {
@@ -123,7 +124,14 @@ internal static class PluginMetadata
             }
         }
 
-        var deadline = PluginDeadlines.Effective(metadata?.Deadline, notAfter);
+        var deadline = PluginDeadlines.Effective(metadata?.Deadline, notAfter, out var unreadable);
+
+        // 插件写了截止时间却读不出：回调照常按没有它继续（仍不晚于 notAfter），只留一条限频的告警，不带原文（ADR-0279）。
+        // 容器里没有内核的告警服务（宿主没有经 AppBuilder 装配）时不记
+        if (unreadable && metadata is not null)
+        {
+            scopedServices.GetService<UnreadableDeadlineLog>()?.ReportPluginMetadata(principalId, metadata.Deadline.Length);
+        }
 
         // 回调不能冒充别的主体：xihan.principal 一律改写成插件的清单 ID（invocation.md §5）
         baggage[BaggageKeys.Principal] = principalId;
