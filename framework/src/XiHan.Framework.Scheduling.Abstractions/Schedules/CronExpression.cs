@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Schedules;
 /// cron 表达式，秒精度
 /// </summary>
 /// <remarks>
-/// 5 段 <c>分 时 日 月 周</c>（秒视为 0）、6 段 <c>秒 分 时 日 月 周</c>，或 7 段再加 <c>年</c>（1970 到 2099）。每段支持 <c>*</c>、数值、列表 <c>a,b</c>、范围 <c>a-b</c>、步长 <c>*/n</c>、<c>a/n</c>（从 a 起到上限每 n）与 <c>a-b/n</c>；日与周还可写 <c>?</c>（等价于 <c>*</c>）；月可写 <c>JAN</c> 到 <c>DEC</c>，周可写 <c>SUN</c> 到 <c>SAT</c>，均不区分大小写。周按 Unix 约定：0 与 7 都是周日、1 是周一（不采用 Quartz 的 1 = 周日）。日段特殊写法：<c>L</c>（当月最后一天）、<c>L-n</c>（最后一天往前 n 天）、<c>nW</c>（离 n 日最近的工作日，不跨月）、<c>LW</c>（最后一个工作日）；周段特殊写法：<c>nL</c> / <c>FRIL</c>（当月最后一个周 n）、<c>n#k</c> / <c>FRI#2</c>（当月第 k 个周 n，k 为 1 到 5，不存在时该月不触发）。日与周同时限定时任一匹配即可（标准 cron 语义，不要求其一为 <c>?</c>）。下一次匹配默认按 UTC；<see cref="Next(DateTimeOffset, TimeZoneInfo)"/> 按指定时区的墙上时间匹配，夏令时跳过的墙上时间不触发、重复的墙上时间只取第一次出现。向前最多搜索 5 年，没有匹配即无值
+/// 5 段 <c>分 时 日 月 周</c>（秒视为 0）、6 段 <c>秒 分 时 日 月 周</c>，或 7 段再加 <c>年</c>（1970 到 2099）。各段以一个或多个空格、制表符分隔，表达式两端的空格与制表符不计；别的空白（换行、不换行空格等）不是分隔符，出现即不合法。每段支持 <c>*</c>、数值（可带前导 0）、列表 <c>a,b</c>、范围 <c>a-b</c>、步长 <c>*/n</c>、<c>a/n</c>（从 a 起到该段的最大值每 n）与 <c>a-b/n</c>，步长是 1 到 2147483647；日与周还可写 <c>?</c>（等价于 <c>*</c>）；月可写 <c>JAN</c> 到 <c>DEC</c>，周可写 <c>SUN</c> 到 <c>SAT</c>，名字与 <c>L</c>、<c>W</c> 都不区分 ASCII 字母的大小写。周按 Unix 约定：0 与 7 都是周日、1 是周一（不采用 Quartz 的 1 = 周日）。日段特殊写法：<c>L</c>（当月最后一天）、<c>L-n</c>（最后一天往前 n 天，n 为 0 到 30）、<c>nW</c>（离 n 日最近的工作日，不跨月）、<c>LW</c>（最后一个工作日）；周段特殊写法：<c>nL</c> / <c>FRIL</c>（当月最后一个周 n）、<c>n#k</c> / <c>FRI#2</c>（当月第 k 个周 n，k 为 1 到 5，不存在时该月不触发）。日与周同时限定时任一匹配即可（标准 cron 语义，不要求其一为 <c>?</c>）；只有整段正好是 <c>*</c> 或 <c>?</c> 才算不限定。下一次匹配默认按 UTC；<see cref="Next(DateTimeOffset, TimeZoneInfo)"/> 按指定时区的墙上时间匹配，夏令时跳过的墙上时间不触发、重复的墙上时间只取第一次出现。下一次的墙上时间与起点（去掉秒以下）相差超过 1830 天（5 × 366）即无值（规范 RFC-0013「作业与触发器」的 cron，ADR-0286）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class CronExpression
@@ -37,12 +37,18 @@ public sealed class CronExpression
     /// <summary>
     /// 向前搜索的上限，防止永不匹配的表达式（如 2 月 30 日）无限循环
     /// </summary>
+    /// <remarks>
+    /// 1830 天（5 × 366）的墙上时间：下一次触发与起点（去掉秒以下）相差不超过它
+    /// </remarks>
     private static readonly TimeSpan _searchLimit = TimeSpan.FromDays(366 * 5);
 
     /// <summary>
-    /// 分隔各段的空白字符
+    /// 分隔各段的字符：空格与制表符
     /// </summary>
-    private static readonly char[] _whitespace = [' ', '\t'];
+    /// <remarks>
+    /// 别的空白（换行、不换行空格等）不是分隔符，出现在表达式里就落在某一段中，那一段不合法
+    /// </remarks>
+    private static readonly char[] _separators = [' ', '\t'];
 
     /// <summary>
     /// 秒 0 到 59 是否匹配
@@ -150,7 +156,7 @@ public sealed class CronExpression
     /// <paramref name="after"/> 之后（不含）的下一次匹配时刻（UTC，毫秒为 0）
     /// </summary>
     /// <remarks>
-    /// 5 年内没有匹配为无值
+    /// 搜索上限（1830 天）之内没有匹配为无值
     /// </remarks>
     /// <param name="after">起点，不含</param>
     public Maybe<DateTimeOffset> Next(DateTimeOffset after)
@@ -162,7 +168,7 @@ public sealed class CronExpression
     /// <paramref name="after"/> 之后（不含）按 <paramref name="timeZone"/> 的墙上时间匹配的下一次时刻
     /// </summary>
     /// <remarks>
-    /// 带该时区在该时刻的偏移，毫秒为 0。5 年内没有匹配为无值。夏令时开始时被跳过的墙上时间不触发；夏令时结束时重复出现的墙上时间只取第一次出现
+    /// 带该时区在该时刻的偏移，毫秒为 0。搜索上限（1830 天）之内没有匹配为无值。夏令时开始时被跳过的墙上时间不触发；夏令时结束时重复出现的墙上时间只取第一次出现
     /// </remarks>
     /// <param name="after">起点，不含</param>
     /// <param name="timeZone">匹配墙上时间所用的时区</param>
@@ -188,8 +194,14 @@ public sealed class CronExpression
                 continue;
             }
 
-            // 夏令时开始时被跳过的墙上时间并不存在，不能作为触发点
+            // 上限按候选的墙上时间判定：游标按年、月、日跳着走，跳到的那一天可能已经越过上限，只在跳之前核对会多收最多一个月
             var candidate = cursor.ToDateTime();
+            if (candidate >= limit)
+            {
+                return default;
+            }
+
+            // 夏令时开始时被跳过的墙上时间并不存在，不能作为触发点
             if (timeZone.IsInvalidTime(candidate))
             {
                 cursor.MoveToNextSecond();
@@ -225,7 +237,8 @@ public sealed class CronExpression
     private static bool TryParseCore(string? expression, [NotNullWhen(true)] out CronExpression? parsed, [NotNullWhen(false)] out string? reason)
     {
         parsed = null;
-        var fields = expression is null ? [] : expression.Split(_whitespace, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // 只按空格与制表符分段，不裁各段两侧的其他空白：结尾的换行、夹在空格之间的不换行空格都不是表达式的一部分，照收的话同一个表达式换一种实现就读不出来
+        var fields = expression is null ? [] : expression.Split(_separators, StringSplitOptions.RemoveEmptyEntries);
         if (fields.Length is < 5 or > 7)
         {
             reason = fields.Length == 0 ? "the expression is empty" : $"expected 5, 6 or 7 fields but found {fields.Length}";
@@ -1153,6 +1166,12 @@ public sealed class CronExpression
             for (var value = start; value <= end; value += step)
             {
                 set[value - field.Min] = true;
+
+                // 步长可以远大于段的跨度（最大到 int.MaxValue）：剩下的不够一步就停，不让加法溢出成负数再去写匹配表
+                if (end - value < step)
+                {
+                    break;
+                }
             }
 
             return null;

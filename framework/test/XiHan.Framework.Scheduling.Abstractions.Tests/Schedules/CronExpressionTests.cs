@@ -385,6 +385,69 @@ public sealed class CronExpressionTests
         Assert.StartsWith($"Cron expression '{expression}' is invalid: {reason}.", exception.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("0 0 * * *\n")]
+    [InlineData("0 0 * * *\r\n")]
+    [InlineData("\n0 0 * * *")]
+    [InlineData("0 0\n* * *")]
+    [InlineData("0\u00a00 * * *")]
+    [InlineData("0 \u00a0 0 * * *")]
+    [InlineData("0 0 * * \u3000 *")]
+    public void TryParse_WhitespaceOtherThanSpaceAndTab_IsNotASeparator(string expression)
+    {
+        // 规范 RFC-0013 的 cron（ADR-0286）：只有空格与制表符分段。以前各段两侧的任何空白都被裁掉，结尾带换行、空格之间夹着不换行空格的表达式照收
+        Assert.False(CronExpression.TryParse(expression, out var parsed));
+        Assert.Null(parsed);
+        Assert.Throws<ArgumentException>(() => CronExpression.Parse(expression));
+    }
+
+    [Theory]
+    [InlineData("1/2147483647 * * * *", "2026-10-23T09:01:00Z")]
+    [InlineData("*/2147483647 * * * *", "2026-10-23T09:00:00Z")]
+    [InlineData("0-59/2147483647 * * * *", "2026-10-23T09:00:00Z")]
+    [InlineData("0 0 1/2147483647 * *", "2026-11-01T00:00:00Z")]
+    [InlineData("0 0 0 1 1 ? 2027/2147483647", "2027-01-01T00:00:00Z")]
+    public void TryParse_AStepFarBeyondTheField_KeepsOnlyTheStart(string expression, string expected)
+    {
+        // 步长的上限是 int.MaxValue。以前起点加步长溢出成负数，TryParse 抛出 IndexOutOfRangeException
+        Assert.True(CronExpression.TryParse(expression, out var parsed));
+        Assert.Equal(At(expected), parsed.Next(_friday).ValueOrThrow());
+    }
+
+    [Fact]
+    public void TryParse_AStepBeyondTheLimit_IsRejected()
+    {
+        Assert.False(CronExpression.TryParse("*/2147483648 * * * *", out _));
+        Assert.False(CronExpression.TryParse("*/99999999999999999999 * * * *", out _));
+    }
+
+    [Theory]
+    [InlineData("0 0 0 5 1 ? 2031", "2026-01-01T00:00:00Z", "2031-01-05T00:00:00Z")]
+    [InlineData("1 0 0 5 1 ? 2031", "2026-01-01T00:00:00Z", null)]
+    [InlineData("0 0 12 5 1 ? 2031", "2026-01-01T00:00:00Z", null)]
+    [InlineData("0 0 0 6 1 ? 2031", "2026-01-01T00:00:00Z", null)]
+    [InlineData("0 0 0 31 1 ? 2031", "2026-01-01T00:00:00Z", null)]
+    [InlineData("0 0 0 1 2 ? 2031", "2026-01-01T00:00:00Z", null)]
+    public void Next_SearchLimit_IsDecidedByTheWallClockOfTheOccurrence(string expression, string after, string? expected)
+    {
+        // 下一次的墙上时间与起点（去掉秒以下）相差不超过 1830 天。以前只在按年、月、日跳之前核对上限：
+        // 起点 2026-01-01 的上限是 2031-01-05 00:00:00，跳到同一个月的 6 日、31 日也照样返回
+        var next = CronExpression.Parse(expression).Next(At(after));
+        Assert.Equal(expected is null ? null : At(expected), next.TryGetValue(out var occurrence) ? occurrence : (DateTimeOffset?)null);
+    }
+
+    [Fact]
+    public void Next_SearchLimit_IgnoresTheFractionOfTheStart_AndFollowsTheTimeZone()
+    {
+        var cron = CronExpression.Parse("0 0 0 5 1 ? 2031");
+        Assert.Equal(At("2031-01-05T00:00:00Z"), cron.Next(At("2026-01-01T00:00:00Z").AddMilliseconds(900)).ValueOrThrow());
+
+        // 按时区推算时比的是墙上时间：上海的 2026-01-01 00:00 到 2031-01-05 00:00 正好 1830 天
+        var shanghai = FindTimeZone("Asia/Shanghai");
+        Assert.Equal(At("2031-01-04T16:00:00Z"), cron.Next(At("2025-12-31T16:00:00Z"), shanghai).ValueOrThrow());
+        Assert.False(CronExpression.Parse("1 0 0 5 1 ? 2031").Next(At("2025-12-31T16:00:00Z"), shanghai).HasValue);
+    }
+
     [Fact]
     public void Parse_Null_ThrowsArgumentNullException()
     {
