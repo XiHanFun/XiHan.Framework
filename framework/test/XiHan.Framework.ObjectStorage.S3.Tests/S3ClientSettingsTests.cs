@@ -7,6 +7,8 @@ using Amazon.S3;
 using Microsoft.Extensions.Configuration;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.ObjectStorage.Abstractions;
+using XiHan.Framework.ObjectStorage.Abstractions.Keys;
+using XiHan.Framework.ObjectStorage.Abstractions.Signing;
 using XiHan.Framework.ObjectStorage.Abstractions.Stores;
 using XiHan.Framework.Primitives;
 using XiHan.Framework.Testing;
@@ -290,6 +292,26 @@ public sealed class S3ClientSettingsTests
         // 没配时打印为空，看得出没有配置
         Assert.Contains("SessionToken = ,", new S3ObjectStorageOptions().ToString(), StringComparison.Ordinal);
         Assert.EndsWith("RequestTimeout = , MaxAttempts = , ProxyHost = , ProxyPort = , ProxyUserName = , ProxyPassword =  }", new S3ObjectStorageOptions().ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ASignedUrl_CarriesTheSessionToken_OnlyWhenThereIsOne()
+    {
+        // 临时凭据签出的地址必须带着令牌，否则服务不认这个签名。签名是本地计算，不连服务
+        var container = new ContainerName("docs");
+        var key = new BlobKey("a/report.txt");
+        var temporary = new S3ObjectStorageOptions { ServiceUrl = "http://s3.invalid:9000", AccessKey = "ak", SecretKey = "sk", SessionToken = SessionToken };
+        using var temporaryClient = S3ObjectStorageFeature.CreateClient(temporary);
+        var withToken = (await new S3BlobStore(temporaryClient, temporary, TimeProvider.System, new LogCapture()).SignAsync(container, key, BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow();
+
+        Assert.Contains("X-Amz-Security-Token=" + Uri.EscapeDataString(SessionToken), withToken.Url.Query, StringComparison.Ordinal);
+        Assert.Contains("X-Amz-Signature=", withToken.Url.Query, StringComparison.Ordinal);
+
+        var permanent = temporary with { SessionToken = null };
+        using var permanentClient = S3ObjectStorageFeature.CreateClient(permanent);
+        var withoutToken = (await new S3BlobStore(permanentClient, permanent, TimeProvider.System, new LogCapture()).SignAsync(container, key, BlobUrlRequest.ForDownload(), CancellationToken.None)).ValueOrThrow();
+
+        Assert.DoesNotContain("X-Amz-Security-Token", withoutToken.Url.Query, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
