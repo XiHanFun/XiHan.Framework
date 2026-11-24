@@ -81,7 +81,7 @@ public sealed class DatabaseSchedulingTests
 
         // 同一计划时刻按写入序号降序：后写入的在前
         var expected = runs.Select(static run => run.Id).Reverse().ToList();
-        Assert.Equal(expected, (await store.RunsAsync(new JobRunQuery { Job = job }, CancellationToken.None)).ValueOrThrow().Select(static run => run.Id));
+        Assert.Equal(expected, (await store.ListRunsAsync(new JobRunQuery { Job = job }, CancellationToken.None)).ValueOrThrow().Select(static run => run.Id));
 
         // 整体替换保留写入序号：倒着完成它们，顺序不变
         foreach (var run in Enumerable.Reverse(runs))
@@ -91,8 +91,8 @@ public sealed class DatabaseSchedulingTests
             Assert.True((await store.CompleteRunAsync(run, CancellationToken.None)).IsSuccess);
         }
 
-        Assert.Equal(expected, (await store.RunsAsync(new JobRunQuery { Job = job }, CancellationToken.None)).ValueOrThrow().Select(static run => run.Id));
-        Assert.Equal(runs[^1].Id, Assert.Single((await store.LastRunsAsync([job], CancellationToken.None)).ValueOrThrow()).Id);
+        Assert.Equal(expected, (await store.ListRunsAsync(new JobRunQuery { Job = job }, CancellationToken.None)).ValueOrThrow().Select(static run => run.Id));
+        Assert.Equal(runs[^1].Id, Assert.Single((await store.ListLastRunsAsync([job], CancellationToken.None)).ValueOrThrow()).Id);
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public sealed class DatabaseSchedulingTests
 
         // 两个节点都写过心跳后再从 node-a 登记作业：作业只写一次，node-b 虽未登记它也能运行（类型两边都登记了）
         var store = first.Services.GetRequiredService<IJobStore>();
-        await WaitUntilAsync(async () => (await store.NodesAsync(CancellationToken.None)).ValueOrThrow().Count == 2);
+        await WaitUntilAsync(async () => (await store.ListNodesAsync(CancellationToken.None)).ValueOrThrow().Count == 2);
         var definition = new JobDefinition(_exclusive, JobSchedule.Every(TimeSpan.FromMilliseconds(100)), typeof(OverlapProbeJob));
         Assert.True((await first.Services.GetRequiredService<IJobScheduler>().ScheduleAsync(definition, CancellationToken.None)).IsSuccess);
 
@@ -122,7 +122,7 @@ public sealed class DatabaseSchedulingTests
         }
 
         // 两个节点看到的是同一份历史
-        var history = (await first.Services.GetRequiredService<IJobScheduler>().RunsAsync(new JobRunQuery { Job = _exclusive }, CancellationToken.None)).ValueOrThrow();
+        var history = (await first.Services.GetRequiredService<IJobScheduler>().ListRunsAsync(new JobRunQuery { Job = _exclusive }, CancellationToken.None)).ValueOrThrow();
         Assert.Equal(["node-a", "node-b"], history.Select(static run => run.NodeId).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
         Assert.All(history.Where(static run => run.State != JobRunState.Running), static run => Assert.Equal(JobRunState.Succeeded, run.State));
     }
@@ -158,16 +158,16 @@ public sealed class DatabaseSchedulingTests
         var (run, _, _) = Assert.Single(log.Runs);
         Assert.Equal((JobTrigger.Recovery, "ghost"), (run.Trigger, run.Data["who"]!.GetValue<string>()));
         Assert.Null(run.TriggerName);
-        await WaitUntilAsync(async () => (await store.RunningAsync(job, CancellationToken.None)).ValueOrThrow().Count == 0);
-        var lost = Assert.Single((await store.RunsAsync(new JobRunQuery { Job = job, States = [JobRunState.Lost] }, CancellationToken.None)).ValueOrThrow());
+        await WaitUntilAsync(async () => (await store.ListRunningRunsAsync(job, CancellationToken.None)).ValueOrThrow().Count == 0);
+        var lost = Assert.Single((await store.ListRunsAsync(new JobRunQuery { Job = job, States = [JobRunState.Lost] }, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(ghostRun.Id, lost.Id);
         Assert.NotNull(lost.CompletedAt);
-        var recovered = Assert.Single((await store.TriggersAsync(job, CancellationToken.None)).ValueOrThrow(), static candidate => candidate.Name == "ghost");
+        var recovered = Assert.Single((await store.ListTriggersAsync(job, CancellationToken.None)).ValueOrThrow(), static candidate => candidate.Name == "ghost");
         Assert.Equal((TriggerState.Waiting, now.AddHours(1)), (recovered.State, recovered.NextFireAt));
         Assert.Null(recovered.AcquiredBy);
         Assert.Null((await store.FindJobAsync(job, CancellationToken.None)).ValueOrThrow().ValueOrThrow().ActiveRunId);
-        Assert.Equal(["node-live"], (await store.NodesAsync(CancellationToken.None)).ValueOrThrow().Select(static node => node.Id));
-        var history = (await store.RunsAsync(new JobRunQuery { Job = job }, CancellationToken.None)).ValueOrThrow();
+        Assert.Equal(["node-live"], (await store.ListNodesAsync(CancellationToken.None)).ValueOrThrow().Select(static node => node.Id));
+        var history = (await store.ListRunsAsync(new JobRunQuery { Job = job }, CancellationToken.None)).ValueOrThrow();
         Assert.Equal(2, history.Count);
         Assert.Contains(history, static candidate => candidate.Trigger == JobTrigger.Recovery && candidate.State == JobRunState.Succeeded && candidate.NodeId == "node-live");
     }
@@ -214,16 +214,16 @@ public sealed class DatabaseSchedulingTests
             // 节点写过心跳时首个周期已过：代码作业已经同步（每次启动换一个节点 ID，上一个宿主的心跳与租约不算）
             var engine = host.Services.GetRequiredService<JobSchedulerEngine>();
             var store = host.Services.GetRequiredService<IJobStore>();
-            await WaitUntilAsync(async () => (await store.NodesAsync(CancellationToken.None)).ValueOrThrow().Any(n => n.Id == node));
+            await WaitUntilAsync(async () => (await store.ListNodesAsync(CancellationToken.None)).ValueOrThrow().Any(n => n.Id == node));
             await act(host);
-            return (await engine.StatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
+            return (await engine.FindStatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
         }
 
         // 第一次启动按代码写入；运行时改计划后来源是改过
         var first = await StartAsync("0 3 * * *", async host =>
         {
             var scheduler = host.Services.GetRequiredService<IJobScheduler>();
-            Assert.Equal(JobSource.Code, (await scheduler.StatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Job.Source);
+            Assert.Equal(JobSource.Code, (await scheduler.FindStatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Job.Source);
             Assert.True((await scheduler.ScheduleAsync(new JobDefinition(name, JobSchedule.FromCron("0 4 * * *"), typeof(OverlapProbeJob)), CancellationToken.None)).IsSuccess);
         });
         Assert.Equal((JobSource.Overridden, CronText("0 4 * * *")), (first.Job.Source, first.Triggers[0].Schedule.ToString()));
@@ -236,7 +236,7 @@ public sealed class DatabaseSchedulingTests
         var third = await StartAsync("0 5 * * *", async host =>
         {
             var scheduler = host.Services.GetRequiredService<IJobScheduler>();
-            Assert.Equal(CronText("0 5 * * *"), (await scheduler.StatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Triggers[0].Schedule.ToString());
+            Assert.Equal(CronText("0 5 * * *"), (await scheduler.FindStatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow().Triggers[0].Schedule.ToString());
             Assert.True((await scheduler.ScheduleAsync(new JobDefinition(name, JobSchedule.FromCron("0 6 * * *"), typeof(OverlapProbeJob)), CancellationToken.None)).IsSuccess);
             var restored = await scheduler.RestoreAsync([name, new JobName("db.none")], CancellationToken.None);
             Assert.True(restored[0].IsSuccess);

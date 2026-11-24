@@ -63,14 +63,14 @@ public sealed class InMemorySchedulingTests
         // 第一个刻度：同步代码作业、取得租约，作业未到期
         clock.Advance(TimeSpan.FromSeconds(1));
         await WaitUntilAsync(() => engine.IsLeader);
-        Assert.Equal(new DateTimeOffset(2026, 10, 23, 3, 0, 0, TimeSpan.Zero), (await StatusAsync(engine, new JobName("nightly"))).NextRun);
+        Assert.Equal(new DateTimeOffset(2026, 10, 23, 3, 0, 0, TimeSpan.Zero), (await GetStatusAsync(engine, new JobName("nightly"))).NextRun);
         Assert.Empty(log.Runs);
         // 跨过 03:00 的刻度：作业运行，下一次是明天（从计划时刻推算，节奏不漂移）
         clock.Advance(TimeSpan.FromSeconds(30));
         await log.WaitAsync(new JobName("nightly"), 1, TimeSpan.FromSeconds(10));
         Assert.Equal((JobTrigger.Schedule, new DateTimeOffset(2026, 10, 23, 3, 0, 0, TimeSpan.Zero)), (log.Runs[0].Run.Trigger, log.Runs[0].Run.ScheduledAt));
-        await WaitUntilAsync(() => !StatusAsync(engine, new JobName("nightly")).GetAwaiter().GetResult().IsRunning);
-        var status = await StatusAsync(engine, new JobName("nightly"));
+        await WaitUntilAsync(() => !GetStatusAsync(engine, new JobName("nightly")).GetAwaiter().GetResult().IsRunning);
+        var status = await GetStatusAsync(engine, new JobName("nightly"));
         Assert.Equal(new DateTimeOffset(2026, 10, 24, 3, 0, 0, TimeSpan.Zero), status.NextRun);
         Assert.Equal((1L, new DateTimeOffset(2026, 10, 23, 3, 0, 0, TimeSpan.Zero)), (status.Triggers[0].FireCount, status.Triggers[0].PreviousFireAt));
         Assert.Equal(JobSource.Code, status.Job.Source);
@@ -175,7 +175,7 @@ public sealed class InMemorySchedulingTests
         Assert.True((await store.CompleteRunAsync(runs[0], CancellationToken.None)).IsSuccess);
         Assert.True((await store.TryBeginRunAsync(runs[2], false, CancellationToken.None)).ValueOrThrow());
         Assert.Equal(2, store.RunCount);
-        Assert.Equal(["r2", "r1"], (await store.RunsAsync(new JobRunQuery(), CancellationToken.None)).ValueOrThrow().Select(static r => r.Id));
+        Assert.Equal(["r2", "r1"], (await store.ListRunsAsync(new JobRunQuery(), CancellationToken.None)).ValueOrThrow().Select(static r => r.Id));
     }
 
     [Fact]
@@ -213,8 +213,8 @@ public sealed class InMemorySchedulingTests
     /// <summary>
     /// 作业状态
     /// </summary>
-    private static async Task<JobStatus> StatusAsync(JobSchedulerEngine engine, JobName name)
-        => (await engine.StatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
+    private static async Task<JobStatus> GetStatusAsync(JobSchedulerEngine engine, JobName name)
+        => (await engine.FindStatusAsync(name, CancellationToken.None)).ValueOrThrow().ValueOrThrow();
 
     /// <summary>
     /// 等待条件成立

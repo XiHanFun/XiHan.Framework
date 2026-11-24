@@ -92,7 +92,7 @@ public abstract class JobSchedulerConformance
         Assert.Equal((ManualJob, JobTrigger.Manual, _start), (run.Name, run.Trigger, run.ScheduledAt));
         Assert.Equal(run.Id, correlation);
         Assert.Equal(new InvocationOrigin { Protocol = InvocationProtocols.Job, Target = ManualJob.Value }, origin);
-        var status = await StatusAsync(host, ManualJob).ConfigureAwait(false);
+        var status = await GetStatusAsync(host, ManualJob).ConfigureAwait(false);
         Assert.Null(status.NextRun);
         Assert.Empty(status.Triggers);
         Assert.False(status.IsRunning);
@@ -106,8 +106,8 @@ public abstract class JobSchedulerConformance
         log.FailWith = Error.Conflict("CONFORMANCE_CONFLICT_001", "conformance.job.rejected");
         var failed = await host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal("CONFORMANCE_CONFLICT_001", failed.Error?.Code);
-        Assert.Equal("CONFORMANCE_CONFLICT_001", (await StatusAsync(host, ManualJob).ConfigureAwait(false)).Last!.Result.Error?.Code);
-        var history = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        Assert.Equal("CONFORMANCE_CONFLICT_001", (await GetStatusAsync(host, ManualJob).ConfigureAwait(false)).Last!.Result.Error?.Code);
+        var history = (await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([JobRunState.Failed, JobRunState.Succeeded], history.Select(static r => r.State));
         Assert.Equal("CONFORMANCE_CONFLICT_001", history[0].Outcome?.Error?.Code);
     }
@@ -130,7 +130,7 @@ public abstract class JobSchedulerConformance
         Assert.True(results[2].IsSuccess);
         Assert.Equal(2, log.Runs.Count);
         Assert.Empty(await host.Scheduler.TriggerAsync([], CancellationToken.None).ConfigureAwait(false));
-        Assert.False((await host.Scheduler.StatusAsync(new JobName("conformance.missing"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        Assert.False((await host.Scheduler.FindStatusAsync(new JobName("conformance.missing"), CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
         // 手动触发可带数据：覆盖作业数据的同名键，其余保留
         var outcome = await host.Scheduler.TriggerAsync(ManualJob, new JsonObject { ["who"] = "manual" }, CancellationToken.None).ConfigureAwait(false);
         Assert.True(outcome.IsSuccess);
@@ -152,14 +152,14 @@ public abstract class JobSchedulerConformance
         // 首个周期把代码作业写入存储：第一次在一个间隔之后
         await host.PollAsync().ConfigureAwait(false);
         Assert.Equal(0, CountOf(log, IntervalJob));
-        Assert.Equal(_start + _interval, (await StatusAsync(host, IntervalJob).ConfigureAwait(false)).NextRun);
+        Assert.Equal(_start + _interval, (await GetStatusAsync(host, IntervalJob).ConfigureAwait(false)).NextRun);
         await AdvanceAsync(host, _interval).ConfigureAwait(false);
         await AdvanceAsync(host, _interval).ConfigureAwait(false);
         var runs = log.Runs.Where(static r => r.Run.Name == IntervalJob).Select(static r => r.Run).ToList();
         Assert.All(runs, static r => Assert.Equal((JobTrigger.Schedule, JobTriggerDefinition.DefaultName), (r.Trigger, r.TriggerName)));
         // 作业不耗时：完成即计划时刻，下一次在它之后一个间隔
         Assert.Equal([_start + _interval, _start + (_interval * 2)], runs.Select(static r => r.ScheduledAt));
-        var status = await StatusAsync(host, IntervalJob).ConfigureAwait(false);
+        var status = await GetStatusAsync(host, IntervalJob).ConfigureAwait(false);
         Assert.NotNull(status.Last);
         Assert.False(status.IsRunning);
         Assert.Equal(_start + (_interval * 3), status.NextRun);
@@ -181,7 +181,7 @@ public abstract class JobSchedulerConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         var first = host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).AsTask();
         await log.WaitAsync(ManualJob, 1, WaitTimeout).ConfigureAwait(false);
-        Assert.True((await StatusAsync(host, ManualJob).ConfigureAwait(false)).IsRunning);
+        Assert.True((await GetStatusAsync(host, ManualJob).ConfigureAwait(false)).IsRunning);
         var second = await host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).ConfigureAwait(false);
         Assert.Equal(SchedulingErrors.JobRunning, second.Error?.Code);
         _clock.Advance(log.Delay);
@@ -190,7 +190,7 @@ public abstract class JobSchedulerConformance
         var a = host.Scheduler.TriggerAsync(ConcurrentJob, CancellationToken.None).AsTask();
         var b = host.Scheduler.TriggerAsync(ConcurrentJob, CancellationToken.None).AsTask();
         await log.WaitAsync(ConcurrentJob, 2, WaitTimeout).ConfigureAwait(false);
-        Assert.Equal(2, (await StatusAsync(host, ConcurrentJob).ConfigureAwait(false)).RunningCount);
+        Assert.Equal(2, (await GetStatusAsync(host, ConcurrentJob).ConfigureAwait(false)).RunningCount);
         _clock.Advance(log.Delay);
         Assert.All(await Task.WhenAll(a, b).ConfigureAwait(false), static r => Assert.True(r.IsSuccess));
         Assert.Equal(2, CountOf(log, ConcurrentJob));
@@ -206,7 +206,7 @@ public abstract class JobSchedulerConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         var thrown = await host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).ConfigureAwait(false);
         Assert.True(thrown.IsFailure);
-        Assert.False((await StatusAsync(host, ManualJob).ConfigureAwait(false)).IsRunning);
+        Assert.False((await GetStatusAsync(host, ManualJob).ConfigureAwait(false)).IsRunning);
         log.Throw = false;
         Assert.True((await host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
     }
@@ -229,10 +229,10 @@ public abstract class JobSchedulerConformance
         await AdvanceAsync(host, _interval).ConfigureAwait(false);
         Assert.Equal(2, CountOf(log, dynamic));
         Assert.Equal("v", log.Runs.First(r => r.Run.Name == dynamic).Run.Data["k"]!.GetValue<string>());
-        Assert.Equal(JobSource.Runtime, (await StatusAsync(host, dynamic).ConfigureAwait(false)).Job.Source);
+        Assert.Equal(JobSource.Runtime, (await GetStatusAsync(host, dynamic).ConfigureAwait(false)).Job.Source);
         // 暂停：不再按计划运行，手动触发仍可用
         Assert.True((await host.Scheduler.PauseAsync(dynamic, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        var paused = await StatusAsync(host, dynamic).ConfigureAwait(false);
+        var paused = await GetStatusAsync(host, dynamic).ConfigureAwait(false);
         Assert.True(paused.Paused);
         Assert.Equal(TriggerState.Paused, Assert.Single(paused.Triggers).State);
         await AdvanceAsync(host, _interval * 4).ConfigureAwait(false);
@@ -244,15 +244,15 @@ public abstract class JobSchedulerConformance
         await host.PollAsync().ConfigureAwait(false);
         await AdvanceAsync(host, _interval).ConfigureAwait(false);
         Assert.Equal(5, CountOf(log, dynamic));
-        Assert.False((await StatusAsync(host, dynamic).ConfigureAwait(false)).Paused);
+        Assert.False((await GetStatusAsync(host, dynamic).ConfigureAwait(false)).Paused);
         // 替换：同名登记换计划与数据，保留作业；删除后未登记
         var replaced = definition with { Triggers = [new JobTriggerDefinition("slow", JobSchedule.Every(TimeSpan.FromHours(1)))], Data = new JsonObject { ["k"] = "w" } };
         Assert.True((await host.Scheduler.ScheduleAsync(replaced, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        var status = await StatusAsync(host, dynamic).ConfigureAwait(false);
+        var status = await GetStatusAsync(host, dynamic).ConfigureAwait(false);
         Assert.Equal("slow", Assert.Single(status.Triggers).Name);
         Assert.Equal("w", status.Job.Data["k"]!.GetValue<string>());
         Assert.True((await host.Scheduler.UnscheduleAsync(dynamic, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        Assert.False((await host.Scheduler.StatusAsync(dynamic, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
+        Assert.False((await host.Scheduler.FindStatusAsync(dynamic, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().HasValue);
         Assert.Equal(SchedulingErrors.JobNotFound, (await host.Scheduler.UnscheduleAsync(dynamic, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         Assert.Equal(SchedulingErrors.JobNotFound, (await host.Scheduler.PauseAsync(dynamic, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         // 未登记的类型、重复的触发器名、未登记的日历都拒绝
@@ -290,19 +290,19 @@ public abstract class JobSchedulerConformance
         Assert.Equal(("once", "job"), (once.Run.Data["t"]!.GetValue<string>(), once.Run.Data["origin"]!.GetValue<string>()));
         Assert.Equal(2, log.Runs.Count(r => r.Run.Name == multi && r.Run.TriggerName == "fast"));
         Assert.Equal("fast", log.Runs.First(r => r.Run.Name == multi && r.Run.TriggerName == "fast").Run.Data["t"]!.GetValue<string>());
-        var status = await StatusAsync(host, multi).ConfigureAwait(false);
+        var status = await GetStatusAsync(host, multi).ConfigureAwait(false);
         Assert.Equal(["fast", "once"], status.Triggers.Select(static t => t.Name));
         var onceStatus = status.Triggers.Single(static t => t.Name == "once");
         Assert.Equal((TriggerState.Complete, 1L), (onceStatus.State, onceStatus.FireCount));
         // 单个触发器的暂停与恢复：暂停期间它不运行，作业本身不算暂停
         var key = new TriggerKey(multi, "fast");
         Assert.True((await host.Scheduler.PauseTriggersAsync([key], CancellationToken.None).ConfigureAwait(false))[0].IsSuccess);
-        Assert.Equal(TriggerState.Paused, (await StatusAsync(host, multi).ConfigureAwait(false)).Triggers.Single(static t => t.Name == "fast").State);
-        Assert.False((await StatusAsync(host, multi).ConfigureAwait(false)).Paused);
+        Assert.Equal(TriggerState.Paused, (await GetStatusAsync(host, multi).ConfigureAwait(false)).Triggers.Single(static t => t.Name == "fast").State);
+        Assert.False((await GetStatusAsync(host, multi).ConfigureAwait(false)).Paused);
         await AdvanceAsync(host, _interval).ConfigureAwait(false);
         Assert.Equal(2, log.Runs.Count(r => r.Run.Name == multi && r.Run.TriggerName == "fast"));
         Assert.True((await host.Scheduler.ResumeTriggersAsync([key], CancellationToken.None).ConfigureAwait(false))[0].IsSuccess);
-        Assert.Equal(TriggerState.Waiting, (await StatusAsync(host, multi).ConfigureAwait(false)).Triggers.Single(static t => t.Name == "fast").State);
+        Assert.Equal(TriggerState.Waiting, (await GetStatusAsync(host, multi).ConfigureAwait(false)).Triggers.Single(static t => t.Name == "fast").State);
         await host.PollAsync().ConfigureAwait(false);
         Assert.Equal(3, log.Runs.Count(r => r.Run.Name == multi && r.Run.TriggerName == "fast"));
         Assert.Equal(SchedulingErrors.TriggerNotFound, (await host.Scheduler.PauseTriggersAsync([new TriggerKey(multi, "nope")], CancellationToken.None).ConfigureAwait(false))[0].Error?.Code);
@@ -342,7 +342,7 @@ public abstract class JobSchedulerConformance
         }
 
         // Skip：恢复时丢弃错过的时刻，从现在推算
-        Assert.Equal(resumedAt + period, (await StatusAsync(host, skip).ConfigureAwait(false)).NextRun);
+        Assert.Equal(resumedAt + period, (await GetStatusAsync(host, skip).ConfigureAwait(false)).NextRun);
         await host.PollAsync().ConfigureAwait(false);
         // RunOnce：补的那次按"现在"计划；RunAll：补的那次按原计划时刻（在恢复之前）；Skip 不补
         var onceRun = Assert.Single(log.Runs.Where(r => r.Run.Name == runOnce).Skip(1)).Run;
@@ -368,7 +368,7 @@ public abstract class JobSchedulerConformance
         var (run, _, _) = Assert.Single(log.Runs, static r => r.Run.Name == ManualJob);
         Assert.Equal((JobTrigger.Manual, "queue"), (run.Trigger, run.Data["who"]!.GetValue<string>()));
         Assert.Null(run.TriggerName);
-        Assert.Empty((await StatusAsync(host, ManualJob).ConfigureAwait(false)).Triggers);
+        Assert.Empty((await GetStatusAsync(host, ManualJob).ConfigureAwait(false)).Triggers);
         Assert.Equal(SchedulingErrors.JobNotFound, (await host.Scheduler.EnqueueAsync(new JobName("conformance.missing"), null, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
     }
 
@@ -383,13 +383,13 @@ public abstract class JobSchedulerConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         var triggered = host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).AsTask();
         await log.WaitAsync(ManualJob, 1, WaitTimeout).ConfigureAwait(false);
-        var running = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, States = [JobRunState.Running] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var running = (await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob, States = [JobRunState.Running] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         var run = Assert.Single(running);
         Assert.Equal(Assert.Single(log.Runs, static r => r.Run.Name == ManualJob).Run.Id, run.Id);
         Assert.True((await host.Scheduler.CancelRunAsync(run.Id, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         var outcome = await triggered.ConfigureAwait(false);
         Assert.Equal(SchedulingErrors.RunCanceled, outcome.Error?.Code);
-        var history = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var history = (await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(JobRunState.Canceled, Assert.Single(history).State);
         Assert.Equal(SchedulingErrors.RunNotFound, (await host.Scheduler.CancelRunAsync(run.Id, CancellationToken.None).ConfigureAwait(false)).Error?.Code);
         Assert.Equal(SchedulingErrors.RunNotFound, (await host.Scheduler.CancelRunAsync("nope", CancellationToken.None).ConfigureAwait(false)).Error?.Code);
@@ -412,14 +412,14 @@ public abstract class JobSchedulerConformance
 
         log.FailWith = Error.Conflict("CONFORMANCE_CONFLICT_001", "conformance.job.rejected");
         Assert.True((await host.Scheduler.TriggerAsync(ManualJob, CancellationToken.None).ConfigureAwait(false)).IsFailure);
-        var all = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var all = (await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([_start.AddSeconds(3), _start.AddSeconds(2), _start.AddSeconds(1), _start], all.Select(static run => run.ScheduledAt));
         Assert.All(all, static run => Assert.NotNull(run.CompletedAt));
-        var page = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Skip = 1, Take = 2 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var page = (await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob, Skip = 1, Take = 2 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal(all.Skip(1).Take(2).Select(static r => r.Id), page.Select(static r => r.Id));
-        var failed = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, States = [JobRunState.Failed] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var failed = (await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob, States = [JobRunState.Failed] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal("CONFORMANCE_CONFLICT_001", Assert.Single(failed).Outcome?.Error?.Code);
-        Assert.Empty((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, To = all[^1].ScheduledAt }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Empty((await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob, To = all[^1].ScheduledAt }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
     /// <summary>
@@ -437,14 +437,14 @@ public abstract class JobSchedulerConformance
 
         foreach (var (skip, take) in new[] { (0, 0), (0, JobRunQuery.MaxTake + 1), (-1, 10) })
         {
-            var rejected = await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Skip = skip, Take = take }, CancellationToken.None).ConfigureAwait(false);
+            var rejected = await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob, Skip = skip, Take = take }, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(SchedulingErrors.RunQueryInvalid, rejected.Error?.Code);
             Assert.Equal<object?>(take, rejected.Error!.Details!["take"]);
             Assert.Equal<object?>(JobRunQuery.MaxTake, rejected.Error!.Details!["max"]);
         }
 
-        Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Take = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
-        Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = ManualJob, Take = JobRunQuery.MaxTake }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Single((await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob, Take = 1 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Single((await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = ManualJob, Take = JobRunQuery.MaxTake }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.Equal(1, (await host.Scheduler.CountRunsAsync(new JobRunQuery { Job = ManualJob, Skip = -1, Take = 0 }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
     }
 
@@ -472,12 +472,12 @@ public abstract class JobSchedulerConformance
         await AdvanceAsync(host, _interval).ConfigureAwait(false);
         await AdvanceAsync(host, _interval).ConfigureAwait(false);
         Assert.Equal(2, CountOf(log, local));
-        var status = await StatusAsync(host, local).ConfigureAwait(false);
+        var status = await GetStatusAsync(host, local).ConfigureAwait(false);
         Assert.True(status.Job.RunOnEveryInstance);
         Assert.Equal(_start + (_interval * 3), status.NextRun);
         await AdvanceAsync(host, _interval * 3).ConfigureAwait(false);
         Assert.Equal(0, CountOf(log, excluded));
-        var never = await StatusAsync(host, excluded).ConfigureAwait(false);
+        var never = await GetStatusAsync(host, excluded).ConfigureAwait(false);
         Assert.Equal(TriggerState.Complete, Assert.Single(never.Triggers).State);
         Assert.Null(never.NextRun);
     }
@@ -563,7 +563,7 @@ public abstract class JobSchedulerConformance
 
         var canceled = host.Scheduler.TriggerAsync(cancelable, CancellationToken.None).AsTask();
         await log.WaitAsync(cancelable, 1, WaitTimeout).ConfigureAwait(false);
-        var running = Assert.Single((await host.Scheduler.RunsAsync(new JobRunQuery { Job = cancelable, States = [JobRunState.Running] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        var running = Assert.Single((await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = cancelable, States = [JobRunState.Running] }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
         Assert.True((await host.Scheduler.CancelRunAsync(running.Id, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
         Assert.Equal(SchedulingErrors.RunCanceled, (await canceled.ConfigureAwait(false)).Error?.Code);
         // 越过重试间隔再轮询：被取消的运行没有重试
@@ -586,16 +586,16 @@ public abstract class JobSchedulerConformance
             services.AddJob<RecordingJob>(new JobDefinition(coded, JobSchedule.Manual, typeof(RecordingJob)) { Retry = codeRetry, Timeout = TimeSpan.FromSeconds(30) });
         }).ConfigureAwait(false);
         // 尚未写入存储的代码作业按代码登记报告状态
-        var status = await StatusAsync(host, coded).ConfigureAwait(false);
+        var status = await GetStatusAsync(host, coded).ConfigureAwait(false);
         Assert.Equal((codeRetry, TimeSpan.FromSeconds(30), JobSource.Code), (status.Job.Retry, status.Job.Timeout, status.Job.Source));
 
         var runtimeRetry = JobRetryPolicy.Exponential(5, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10));
         Assert.True((await host.Scheduler.ScheduleAsync(new JobDefinition(coded, typeof(RecordingJob)) { Retry = runtimeRetry }, CancellationToken.None).ConfigureAwait(false)).IsSuccess);
-        status = await StatusAsync(host, coded).ConfigureAwait(false);
+        status = await GetStatusAsync(host, coded).ConfigureAwait(false);
         Assert.Equal((runtimeRetry, null, JobSource.Overridden), (status.Job.Retry, status.Job.Timeout, status.Job.Source));
 
         Assert.True((await host.Scheduler.RestoreAsync([coded], CancellationToken.None).ConfigureAwait(false))[0].IsSuccess);
-        status = await StatusAsync(host, coded).ConfigureAwait(false);
+        status = await GetStatusAsync(host, coded).ConfigureAwait(false);
         Assert.Equal((codeRetry, TimeSpan.FromSeconds(30), JobSource.Code), (status.Job.Retry, status.Job.Timeout, status.Job.Source));
     }
 
@@ -605,7 +605,7 @@ public abstract class JobSchedulerConformance
     protected static async Task<IReadOnlyList<JobRunView>> AttemptsAsync(JobSchedulerHost host, JobName name)
     {
         ArgumentNullException.ThrowIfNull(host);
-        var runs = (await host.Scheduler.RunsAsync(new JobRunQuery { Job = name }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var runs = (await host.Scheduler.ListRunsAsync(new JobRunQuery { Job = name }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         return [.. runs.OrderBy(static run => run.Attempt)];
     }
 
@@ -622,10 +622,10 @@ public abstract class JobSchedulerConformance
         await using var host = await StartAsync(services => Register(services, log)).ConfigureAwait(false);
         var missing = new JobName("conformance.missing");
 
-        var statuses = (await host.Scheduler.StatusesAsync([ManualJob, missing, ManualJob], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
+        var statuses = (await host.Scheduler.FindStatusesAsync([ManualJob, missing, ManualJob], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Equal([true, false, true], statuses.Select(static status => status.HasValue));
         Assert.Equal(ManualJob, statuses[0].ValueOrThrow().Name);
-        Assert.Empty((await host.Scheduler.StatusesAsync([], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
+        Assert.Empty((await host.Scheduler.FindStatusesAsync([], CancellationToken.None).ConfigureAwait(false)).ValueOrThrow());
 
         var whole = (await host.Scheduler.ListStatusesAsync(new JobStatusQuery { PageSize = JobStatusQuery.MaxPageSize }, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow();
         Assert.Null(whole.ContinuationToken);
@@ -666,17 +666,17 @@ public abstract class JobSchedulerConformance
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await host.Scheduler.PauseAsync([ManualJob], cancelled.Token).ConfigureAwait(false)).ConfigureAwait(false);
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await host.Scheduler.TriggerAsync([new JobTriggerRequest(ManualJob)], cancelled.Token).ConfigureAwait(false)).ConfigureAwait(false);
 
-        Assert.False((await StatusAsync(host, ManualJob).ConfigureAwait(false)).Paused);
+        Assert.False((await GetStatusAsync(host, ManualJob).ConfigureAwait(false)).Paused);
         Assert.DoesNotContain(log.Runs, static r => r.Run.Name == ManualJob);
     }
 
     /// <summary>
     /// 作业的状态（必须存在）
     /// </summary>
-    protected static async Task<JobStatus> StatusAsync(JobSchedulerHost host, JobName name)
+    protected static async Task<JobStatus> GetStatusAsync(JobSchedulerHost host, JobName name)
     {
         ArgumentNullException.ThrowIfNull(host);
-        return (await host.Scheduler.StatusAsync(name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
+        return (await host.Scheduler.FindStatusAsync(name, CancellationToken.None).ConfigureAwait(false)).ValueOrThrow().ValueOrThrow();
     }
 
     /// <summary>

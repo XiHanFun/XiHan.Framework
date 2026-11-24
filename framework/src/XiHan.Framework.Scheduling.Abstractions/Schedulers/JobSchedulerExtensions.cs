@@ -49,10 +49,10 @@ public static class JobSchedulerExtensions
     /// <remarks>
     /// 未登记为无值；存储读不到时失败
     /// </remarks>
-    public static async ValueTask<Result<Maybe<JobStatus>>> StatusAsync(this IJobScheduler scheduler, JobName name, CancellationToken cancellationToken)
+    public static async ValueTask<Result<Maybe<JobStatus>>> FindStatusAsync(this IJobScheduler scheduler, JobName name, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scheduler);
-        var statuses = await scheduler.StatusesAsync([name], cancellationToken).ConfigureAwait(false);
+        var statuses = await scheduler.FindStatusesAsync([name], cancellationToken).ConfigureAwait(false);
         return statuses.TryGetValue(out var items) ? items[0] : statuses.Error!;
     }
 

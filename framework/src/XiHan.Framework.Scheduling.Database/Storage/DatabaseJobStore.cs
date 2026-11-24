@@ -143,7 +143,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<TriggerRecord>>> TriggersAsync(JobName? job, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<TriggerRecord>>> ListTriggersAsync(JobName? job, CancellationToken cancellationToken)
     {
         var query = EntityQuery.All<TriggerEntity>();
         if (job is { } name)
@@ -309,7 +309,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListRunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
@@ -347,7 +347,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunningAsync(JobName? job, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListRunningRunsAsync(JobName? job, CancellationToken cancellationToken)
     {
         var query = EntityQuery.All<JobRunEntity>().Where(new Specification<JobRunEntity>(run => run.State == RunningRun));
         if (job is { } name)
@@ -365,7 +365,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> LastRunsAsync(IReadOnlyList<JobName> jobs, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListLastRunsAsync(IReadOnlyList<JobName> jobs, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(jobs);
         var names = jobs.Select(static job => job.Value).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
@@ -429,7 +429,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<string>>> CancelRequestedRunsAsync(string nodeId, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<string>>> ListCancelRequestedRunsAsync(string nodeId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nodeId);
         var query = EntityQuery.All<JobRunEntity>()
@@ -490,7 +490,7 @@ public sealed class DatabaseJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<SchedulerNodeRecord>>> NodesAsync(CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<SchedulerNodeRecord>>> ListNodesAsync(CancellationToken cancellationToken)
     {
         var query = EntityQuery.All<SchedulerNodeEntity>().OrderBy(static node => node.Id);
         return StoreInvocation.OrUnavailable(await _invocation.RunAsync<IReadOnlyList<SchedulerNodeRecord>>(async ctx =>

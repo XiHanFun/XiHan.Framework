@@ -58,7 +58,7 @@ public interface IJobStore
     /// <remarks>
     /// <paramref name="job"/> 为空取全部；按作业名、触发器名升序
     /// </remarks>
-    ValueTask<Result<IReadOnlyList<TriggerRecord>>> TriggersAsync(JobName? job, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<TriggerRecord>>> ListTriggersAsync(JobName? job, CancellationToken cancellationToken);
 
     /// <summary>
     /// 新增或整体替换触发器
@@ -111,13 +111,13 @@ public interface IJobStore
     /// <remarks>
     /// 调度器先校验分页（<see cref="SchedulingErrors.RunQueryInvalid"/>），存储收到的查询分页在范围内
     /// </remarks>
-    ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListRunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 运行历史的总数
     /// </summary>
     /// <remarks>
-    /// 与 <see cref="RunsAsync"/> 同一组过滤项，不看分页
+    /// 与 <see cref="ListRunsAsync"/> 同一组过滤项，不看分页
     /// </remarks>
     ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 
@@ -127,12 +127,12 @@ public interface IJobStore
     /// <remarks>
     /// <paramref name="job"/> 为空取全部；按开始时刻升序
     /// </remarks>
-    ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunningAsync(JobName? job, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListRunningRunsAsync(JobName? job, CancellationToken cancellationToken);
 
     /// <summary>
     /// 每个作业最近一次已结束的运行（没有的作业不在结果里）
     /// </summary>
-    ValueTask<Result<IReadOnlyList<JobRunRecord>>> LastRunsAsync(IReadOnlyList<JobName> jobs, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListLastRunsAsync(IReadOnlyList<JobName> jobs, CancellationToken cancellationToken);
 
     /// <summary>
     /// 请求取消运行：逐项结果，不在运行中 → <see cref="SchedulingErrors.RunNotFound"/>
@@ -142,7 +142,7 @@ public interface IJobStore
     /// <summary>
     /// <paramref name="nodeId"/> 上被请求取消且仍在运行的运行 ID
     /// </summary>
-    ValueTask<Result<IReadOnlyList<string>>> CancelRequestedRunsAsync(string nodeId, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<string>>> ListCancelRequestedRunsAsync(string nodeId, CancellationToken cancellationToken);
 
     /// <summary>
     /// 删除在 <paramref name="before"/> 之前结束的运行记录
@@ -160,7 +160,7 @@ public interface IJobStore
     /// <summary>
     /// 全部节点，按 ID 升序
     /// </summary>
-    ValueTask<Result<IReadOnlyList<SchedulerNodeRecord>>> NodesAsync(CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<SchedulerNodeRecord>>> ListNodesAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// 恢复失联节点

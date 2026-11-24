@@ -138,7 +138,7 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<TriggerRecord>>> TriggersAsync(JobName? job, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<TriggerRecord>>> ListTriggersAsync(JobName? job, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
@@ -281,7 +281,7 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListRunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         // 用到了本实现不认识的条件即失败：不读不认识的条件，也不给出放宽了的结果（ADR-0228）
@@ -321,7 +321,7 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<JobRunRecord>>> RunningAsync(JobName? job, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListRunningRunsAsync(JobName? job, CancellationToken cancellationToken)
     {
         lock (_lock)
         {
@@ -336,7 +336,7 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<JobRunRecord>>> LastRunsAsync(IReadOnlyList<JobName> jobs, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<JobRunRecord>>> ListLastRunsAsync(IReadOnlyList<JobName> jobs, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(jobs);
         lock (_lock)
@@ -377,7 +377,7 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<string>>> CancelRequestedRunsAsync(string nodeId, CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<string>>> ListCancelRequestedRunsAsync(string nodeId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nodeId);
         lock (_lock)
@@ -416,7 +416,7 @@ public sealed class InMemoryJobStore : IJobStore
     }
 
     /// <inheritdoc />
-    public ValueTask<Result<IReadOnlyList<SchedulerNodeRecord>>> NodesAsync(CancellationToken cancellationToken)
+    public ValueTask<Result<IReadOnlyList<SchedulerNodeRecord>>> ListNodesAsync(CancellationToken cancellationToken)
     {
         lock (_lock)
         {

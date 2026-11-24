@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// 运行历史的只读视图
 /// </summary>
 /// <remarks>
-/// <see cref="IJobScheduler.RunsAsync"/> 交给应用的一条历史；存储里的可变形态 <see cref="JobRunRecord"/> 只留给 <see cref="Storage.IJobStore"/>（ADR-0148）
+/// <see cref="IJobScheduler.ListRunsAsync"/> 交给应用的一条历史；存储里的可变形态 <see cref="JobRunRecord"/> 只留给 <see cref="Storage.IJobStore"/>（ADR-0148）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobRunView

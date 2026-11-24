@@ -97,9 +97,9 @@ public interface IJobScheduler
     /// 按名取作业的状态
     /// </summary>
     /// <remarks>
-    /// 与入参等长、同序，未登记的为无值，重复的名字各得一份；空集合不访问存储。存储读不到时整批失败（<see cref="SchedulingErrors.StoreUnavailable"/>），不当作未登记。单个作业用扩展方法 <c>StatusAsync(name)</c>
+    /// 与入参等长、同序，未登记的为无值，重复的名字各得一份；空集合不访问存储。存储读不到时整批失败（<see cref="SchedulingErrors.StoreUnavailable"/>），不当作未登记。单个作业用扩展方法 <c>FindStatusAsync(name)</c>
     /// </remarks>
-    ValueTask<Result<IReadOnlyList<Maybe<JobStatus>>>> StatusesAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<Maybe<JobStatus>>>> FindStatusesAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken);
 
     /// <summary>
     /// 分页列出作业的状态，按作业名的序数升序
@@ -115,13 +115,13 @@ public interface IJobScheduler
     /// <remarks>
     /// 返回只读视图，不是存储记录。<see cref="JobRunQuery.Skip"/> 为负或 <see cref="JobRunQuery.Take"/> 不在 1 到 <see cref="JobRunQuery.MaxTake"/> 之间 → <see cref="SchedulingErrors.RunQueryInvalid"/>（HTTP 400），不进存储
     /// </remarks>
-    ValueTask<Result<IReadOnlyList<JobRunView>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken);
+    ValueTask<Result<IReadOnlyList<JobRunView>>> ListRunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 
     /// <summary>
     /// 运行历史的总数
     /// </summary>
     /// <remarks>
-    /// 与 <see cref="RunsAsync"/> 同一组过滤项，不看分页（ADR-0053）
+    /// 与 <see cref="ListRunsAsync"/> 同一组过滤项，不看分页（ADR-0053）
     /// </remarks>
     ValueTask<Result<long>> CountRunsAsync(JobRunQuery query, CancellationToken cancellationToken);
 

@@ -11,7 +11,7 @@ namespace XiHan.Framework.Scheduling.Abstractions.Jobs;
 /// 运行历史查询
 /// </summary>
 /// <remarks>
-/// 过滤项都可空、同时给出的取交集；结果按计划时刻降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Take"/> 条。分页越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Schedulers.IJobScheduler.RunsAsync"/> 返回 <c>SCHEDULING_VALIDATION_002</c>（HTTP 400）
+/// 过滤项都可空、同时给出的取交集；结果按计划时刻降序，跳过 <see cref="Skip"/> 条后最多 <see cref="Take"/> 条。分页越界不在构造时抛出：查询常由请求绑定而来，越界是调用方可以改正的输入，由 <see cref="Schedulers.IJobScheduler.ListRunsAsync"/> 返回 <c>SCHEDULING_VALIDATION_002</c>（HTTP 400）
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed record JobRunQuery

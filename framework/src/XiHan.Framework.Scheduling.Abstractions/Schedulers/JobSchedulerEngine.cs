@@ -546,7 +546,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<Maybe<JobStatus>>>> StatusesAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<Maybe<JobStatus>>>> FindStatusesAsync(IReadOnlyList<JobName> names, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(names);
         if (names.Count == 0)
@@ -622,19 +622,19 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return Maybe.None<JobStatus>();
         }
 
-        var triggers = await _store.TriggersAsync(name, cancellationToken).ConfigureAwait(false);
+        var triggers = await _store.ListTriggersAsync(name, cancellationToken).ConfigureAwait(false);
         if (!triggers.TryGetValue(out var triggerList))
         {
             return triggers.Error!;
         }
 
-        var running = await _store.RunningAsync(name, cancellationToken).ConfigureAwait(false);
+        var running = await _store.ListRunningRunsAsync(name, cancellationToken).ConfigureAwait(false);
         if (!running.TryGetValue(out var runningList))
         {
             return running.Error!;
         }
 
-        var last = await _store.LastRunsAsync([name], cancellationToken).ConfigureAwait(false);
+        var last = await _store.ListLastRunsAsync([name], cancellationToken).ConfigureAwait(false);
         if (!last.TryGetValue(out var lastList))
         {
             return last.Error!;
@@ -654,19 +654,19 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return jobs.Error!;
         }
 
-        var triggers = await _store.TriggersAsync(null, cancellationToken).ConfigureAwait(false);
+        var triggers = await _store.ListTriggersAsync(null, cancellationToken).ConfigureAwait(false);
         if (!triggers.TryGetValue(out var triggerList))
         {
             return triggers.Error!;
         }
 
-        var running = await _store.RunningAsync(null, cancellationToken).ConfigureAwait(false);
+        var running = await _store.ListRunningRunsAsync(null, cancellationToken).ConfigureAwait(false);
         if (!running.TryGetValue(out var runningList))
         {
             return running.Error!;
         }
 
-        var last = await _store.LastRunsAsync(jobList.Select(static job => job.Name).ToList(), cancellationToken).ConfigureAwait(false);
+        var last = await _store.ListLastRunsAsync(jobList.Select(static job => job.Name).ToList(), cancellationToken).ConfigureAwait(false);
         if (!last.TryGetValue(out var lastList))
         {
             return last.Error!;
@@ -701,7 +701,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     }
 
     /// <inheritdoc />
-    public async ValueTask<Result<IReadOnlyList<JobRunView>>> RunsAsync(JobRunQuery query, CancellationToken cancellationToken)
+    public async ValueTask<Result<IReadOnlyList<JobRunView>>> ListRunsAsync(JobRunQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         // 分页越界是调用方可以改正的输入（查询常由请求绑定）：以校验错误返回而不是抛出，也不进存储；上限与持久化的查询条数上限一致
@@ -711,7 +711,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         }
 
         // 存储记录是可变的存储形态：交给应用的是只读视图
-        var runs = await _store.RunsAsync(query, cancellationToken).ConfigureAwait(false);
+        var runs = await _store.ListRunsAsync(query, cancellationToken).ConfigureAwait(false);
         return runs.TryGetValue(out var records) ? Result.Success<IReadOnlyList<JobRunView>>(records.Select(static record => record.ToView()).ToList()) : runs.Error!;
     }
 
@@ -881,7 +881,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     {
         if (_store.IsShared)
         {
-            var nodes = await _store.NodesAsync(cancellationToken).ConfigureAwait(false);
+            var nodes = await _store.ListNodesAsync(cancellationToken).ConfigureAwait(false);
             if (nodes.TryGetValue(out var nodeList))
             {
                 var dead = nodeList.Where(node => !string.Equals(node.Id, NodeId, StringComparison.Ordinal) && node.LastHeartbeatAt + _options.NodeTimeout < now).Select(static node => node.Id).ToList();
@@ -945,7 +945,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return;
         }
 
-        var requested = await _store.CancelRequestedRunsAsync(NodeId, cancellationToken).ConfigureAwait(false);
+        var requested = await _store.ListCancelRequestedRunsAsync(NodeId, cancellationToken).ConfigureAwait(false);
         if (!requested.TryGetValue(out var ids))
         {
             LogStoreFailed(_logger, "cancel-requests", requested.Error!.Code);
@@ -978,7 +978,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
         }
 
         var jobs = await _store.ListJobsAsync(cancellationToken).ConfigureAwait(false);
-        var triggers = await _store.TriggersAsync(null, cancellationToken).ConfigureAwait(false);
+        var triggers = await _store.ListTriggersAsync(null, cancellationToken).ConfigureAwait(false);
         if (!jobs.TryGetValue(out var jobList) || !triggers.TryGetValue(out var triggerList))
         {
             LogStoreFailed(_logger, "local-refresh", (jobs.Error ?? triggers.Error)!.Code);
@@ -1155,7 +1155,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return;
         }
 
-        var current = await _store.TriggersAsync(key.Job, cancellationToken).ConfigureAwait(false);
+        var current = await _store.ListTriggersAsync(key.Job, cancellationToken).ConfigureAwait(false);
         if (!current.TryGetValue(out var triggers))
         {
             LogStoreFailed(_logger, "fire-trigger", current.Error!.Code);
@@ -1347,7 +1347,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// </remarks>
     private async ValueTask<TriggerRecord?> FreshTriggerAsync(TriggerRecord trigger, string operation)
     {
-        var found = await _store.TriggersAsync(trigger.Job, CancellationToken.None).ConfigureAwait(false);
+        var found = await _store.ListTriggersAsync(trigger.Job, CancellationToken.None).ConfigureAwait(false);
         if (!found.TryGetValue(out var triggers))
         {
             LogStoreFailed(_logger, operation, found.Error!.Code);
@@ -1735,7 +1735,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return existing.Error!;
         }
 
-        var previousTriggers = await _store.TriggersAsync(definition.Name, cancellationToken).ConfigureAwait(false);
+        var previousTriggers = await _store.ListTriggersAsync(definition.Name, cancellationToken).ConfigureAwait(false);
         if (!previousTriggers.TryGetValue(out var previous))
         {
             return previousTriggers.Error!;
@@ -1887,7 +1887,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
             return JobNotFound(name);
         }
 
-        var triggers = await _store.TriggersAsync(name, cancellationToken).ConfigureAwait(false);
+        var triggers = await _store.ListTriggersAsync(name, cancellationToken).ConfigureAwait(false);
         if (!triggers.TryGetValue(out var triggerList))
         {
             return triggers.Error!;
@@ -1945,7 +1945,7 @@ public sealed partial class JobSchedulerEngine : IJobScheduler, IDisposable
     /// </summary>
     private async ValueTask<Result> SetTriggerPausedLockedAsync(TriggerKey key, bool paused, CancellationToken cancellationToken)
     {
-        var triggers = await _store.TriggersAsync(key.Job, cancellationToken).ConfigureAwait(false);
+        var triggers = await _store.ListTriggersAsync(key.Job, cancellationToken).ConfigureAwait(false);
         if (!triggers.TryGetValue(out var triggerList))
         {
             return triggers.Error!;
