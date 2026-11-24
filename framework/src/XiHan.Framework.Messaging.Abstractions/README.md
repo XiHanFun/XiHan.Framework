@@ -48,6 +48,8 @@ switch (outcome.Disposition)
 }
 ```
 
+收到的消息无法解码时不派发，用 `MessageDeliveryAttempt.Undecodable(subscription, decoded.Error, logger)` 取了结方式：竞争订阅是 `DeadLetter`（把收到的字节原样写进死信），广播订阅是 `Discard`，日志已经记过。
+
 ## 主要类型
 
 此库提供的主要类型：

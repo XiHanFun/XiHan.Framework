@@ -551,18 +551,18 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     private async Task DeliverAsync(MessageSubscription subscription, ConsumeResult<string?, byte[]> consumed, MessageDispatch dispatch, CancellationToken cancellationToken)
     {
         var topic = subscription.Topic;
-        var broadcast = subscription.Mode == SubscriptionMode.Broadcast;
         var decoded = CloudEventsFormat.Decode(consumed.Message.Value);
         if (!decoded.TryGetValue(out var envelope))
         {
-            if (broadcast)
+            // 无法解码的消息不派发、不重试；怎么了结由 MessageDeliveryAttempt 判定，这里只翻译成死信上的动作（ADR-0275）
+            var undecodable = MessageDeliveryAttempt.Undecodable(subscription, decoded.Error, _logger);
+            if (undecodable.Disposition == DeliveryDisposition.DeadLetter)
             {
-                LogBroadcastUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
-                return;
+                // 竞争订阅：收到的消息原样（键、值与头）发布到死信主题，落盘后由消费循环提交位点
+                await ProduceAsync(TopicOf(topic) + _messaging.DeadLetterSuffix, new Message<string?, byte[]> { Key = consumed.Message.Key, Value = consumed.Message.Value, Headers = consumed.Message.Headers }, cancellationToken).ConfigureAwait(false);
             }
 
-            LogUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
-            await ProduceAsync(TopicOf(topic) + _messaging.DeadLetterSuffix, new Message<string?, byte[]> { Key = consumed.Message.Key, Value = consumed.Message.Value, Headers = consumed.Message.Headers }, cancellationToken).ConfigureAwait(false);
+            // 广播订阅没有死信：丢弃，投递完成
             return;
         }
 
@@ -691,15 +691,6 @@ public sealed partial class KafkaMessageBroker : IMessageBroker, IMessageReplaye
     /// </remarks>
     private static FrameworkException Unavailable(string what, Exception exception)
         => new(MessagingErrors.BrokerUnavailable, $"{what}.", exception);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} received an undecodable message; it was moved to the dead-letter topic: {Reason}")]
-    private static partial void LogUndecodable(ILogger logger, string topic, string reason);
-
-    /// <summary>
-    /// 记录一条无法解码的广播消息被丢弃
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} delivered an undecodable broadcast message; it was dropped: {Reason}")]
-    private static partial void LogBroadcastUndecodable(ILogger logger, string topic, string reason);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Consuming topic {Topic} failed; the consumer keeps running.")]
     private static partial void LogConsumeFailed(ILogger logger, string topic, Exception exception);

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using XiHan.Framework.Kernel;
 using XiHan.Framework.Kernel.Hosting;
+using XiHan.Framework.Messaging.Abstractions.CloudEvents;
 using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 using XiHan.Framework.Primitives;
@@ -18,7 +19,7 @@ namespace XiHan.Framework.Messaging.Abstractions.Tests;
 /// 代理一侧一次投递尝试的归类、去向、取消与日志
 /// </summary>
 /// <remarks>
-/// 成功、返回失败、抛出、被停止取消各归成什么了结方式，失败后按尝试号与订阅方式的去向，应用不在服务状态时的等待，以及三条日志（RFC-0009「投递」第 3、5 条，ADR-0261）；被管道以应用不在服务状态拒绝的派发不计尝试、回到等待，一直被拒绝时的间隔与出口（ADR-0275）
+/// 成功、返回失败、抛出、被停止取消各归成什么了结方式，失败后按尝试号与订阅方式的去向，应用不在服务状态时的等待，以及三条日志（RFC-0009「投递」第 3、5 条，ADR-0261）；被管道以应用不在服务状态拒绝的派发不计尝试、回到等待，一直被拒绝时的间隔与出口，以及无法解码的消息的了结（ADR-0275）
 /// </remarks>
 public sealed class MessageDeliveryAttemptTests
 {
@@ -642,6 +643,40 @@ public sealed class MessageDeliveryAttemptTests
         Assert.EndsWith("after attempt 1 failed: ORDERS_VALIDATION_001", Assert.Single(logs.Entries).Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(SubscriptionMode.Competing, DeliveryDisposition.DeadLetter, "Topic orders received an undecodable message; it was dead-lettered: ")]
+    [InlineData(SubscriptionMode.Broadcast, DeliveryDisposition.Discard, "Topic orders delivered an undecodable broadcast message; it was dropped: ")]
+    public void Undecodable_SettlesByMode_CarriesTheDecodeError_AndLogsItsMessage(SubscriptionMode mode, DeliveryDisposition expected, string prefix)
+    {
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
+        var decoded = CloudEventsFormat.Decode("not json"u8.ToArray());
+
+        // 没有信封：不派发、不重试，竞争订阅进死信、广播订阅丢弃，与用完尝试次数时的去向相同
+        var outcome = MessageDeliveryAttempt.Undecodable(new MessageSubscription(Topic, mode), decoded.Error, logger);
+
+        Assert.Equal(expected, outcome.Disposition);
+        Assert.Same(decoded.Error, outcome.Error);
+        Assert.Equal(MessagingErrors.InvalidEnvelope, outcome.Error?.Code);
+        // 没有消息 ID 可记：日志带解码错误的文案
+        Assert.Equal([(LogLevel.Warning, prefix + decoded.Error!.Message)], logs.Entries.Select(static e => (e.Level, e.Message)));
+    }
+
+    [Theory]
+    [InlineData(SubscriptionMode.Competing, DeliveryDisposition.DeadLetter, "Topic orders received an undecodable message; it was dead-lettered: ?")]
+    [InlineData(SubscriptionMode.Broadcast, DeliveryDisposition.Discard, "Topic orders delivered an undecodable broadcast message; it was dropped: ?")]
+    public void Undecodable_WithoutAnError_SettlesByMode_AndLogsAQuestionMark(SubscriptionMode mode, DeliveryDisposition expected, string message)
+    {
+        using var logs = new LogCapture();
+        var logger = logs.CreateLogger(nameof(MessageDeliveryAttemptTests));
+
+        var outcome = MessageDeliveryAttempt.Undecodable(new MessageSubscription(Topic, mode), null, logger);
+
+        Assert.Equal(expected, outcome.Disposition);
+        Assert.Null(outcome.Error);
+        Assert.Equal([(LogLevel.Warning, message)], logs.Entries.Select(static e => (e.Level, e.Message)));
+    }
+
     [Fact]
     public void DefaultOutcome_IsAbandon_WithoutAnError()
     {
@@ -667,5 +702,7 @@ public sealed class MessageDeliveryAttemptTests
         await Assert.ThrowsAsync<ArgumentNullException>("logger", async () => await MessageDeliveryAttempt.RunAsync(dispatch, delivery, _options, host.App, null!, CancellationToken.None));
         Assert.Throws<ArgumentNullException>("delivery", () => MessageDeliveryAttempt.Exhausted(null!, null, logger));
         Assert.Throws<ArgumentNullException>("logger", () => MessageDeliveryAttempt.Exhausted(delivery, null, null!));
+        Assert.Throws<ArgumentNullException>("subscription", () => MessageDeliveryAttempt.Undecodable(null!, null, logger));
+        Assert.Throws<ArgumentNullException>("logger", () => MessageDeliveryAttempt.Undecodable(new MessageSubscription(Topic, SubscriptionMode.Competing), null, null!));
     }
 }

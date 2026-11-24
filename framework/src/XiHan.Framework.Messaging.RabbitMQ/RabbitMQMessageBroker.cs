@@ -424,27 +424,26 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// 处理一条到达的消息
     /// </summary>
     /// <remarks>
-    /// 解码、等待宿主就绪、派发，失败重新发布到所消费队列的队尾，到了上限竞争订阅进死信队列、广播订阅丢弃；重新发布得到确认后才确认原消息。被停止打断的投递不确认、不重新发布，连接关闭后由 RabbitMQ 重新投递
+    /// 解码、等待宿主就绪、派发，失败重新发布到所消费队列的队尾，到了上限竞争订阅进死信队列、广播订阅丢弃；无法解码的消息不派发，竞争订阅原样进死信队列、广播订阅丢弃；重新发布得到确认后才确认原消息。被停止打断的投递不确认、不重新发布，连接关闭后由 RabbitMQ 重新投递
     /// </remarks>
     private async Task OnReceivedAsync(IChannel channel, MessageSubscription subscription, string queue, BasicDeliverEventArgs received, MessageDispatch dispatch, CancellationToken stopping)
     {
         var topic = subscription.Topic;
-        var broadcast = subscription.Mode == SubscriptionMode.Broadcast;
         // 尝试次数随消息头携带，重新发布时加一；缺失或非法按首次处理
         var attempt = received.BasicProperties.Headers?.TryGetValue(AttemptHeader, out var raw) == true && raw is int parsed && parsed >= 1 ? parsed : 1;
         var decoded = CloudEventsFormat.Decode(received.Body);
-        // 无法解码的消息不重试，不让坏消息阻塞队列：竞争订阅原样转入死信队列，确认后再确认原消息；
-        // 广播订阅没有死信，记日志后确认掉
+        // 无法解码的消息不派发、不重试，不让坏消息阻塞队列；怎么了结由 MessageDeliveryAttempt 判定，这里只翻译成通道上的动作（ADR-0275）
         if (!decoded.TryGetValue(out var envelope))
         {
-            if (broadcast)
+            var undecodable = MessageDeliveryAttempt.Undecodable(subscription, decoded.Error, _logger);
+            if (undecodable.Disposition != DeliveryDisposition.DeadLetter)
             {
-                LogBroadcastUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
+                // 广播订阅没有死信：确认掉
                 await SettleAsync(channel, received.DeliveryTag, topic, "?", republish: null, stopping).ConfigureAwait(false);
                 return;
             }
 
-            LogUndecodable(_logger, topic, decoded.Error?.Message ?? "?");
+            // 竞争订阅：收到的字节原样转入死信队列，确认后再确认原消息
             var body = received.Body.ToArray();
             await SettleAsync(channel, received.DeliveryTag, topic, "?", () => DeadLetterAsync(queue, body, attempt, null, stopping), stopping).ConfigureAwait(false);
             return;
@@ -687,18 +686,6 @@ public sealed partial class RabbitMQMessageBroker : IMessageBroker, IAsyncDispos
     /// </remarks>
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped {Count} message(s) published to topic '{Topic}' because no queue is bound to its routing key (nothing subscribes to it).")]
     private static partial void LogDropped(ILogger logger, int count, string topic);
-
-    /// <summary>
-    /// 记录一条无法解码的广播消息被丢弃
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} delivered an undecodable broadcast message; it was dropped: {Reason}")]
-    private static partial void LogBroadcastUndecodable(ILogger logger, string topic, string reason);
-
-    /// <summary>
-    /// 记录一条无法解码的消息被转入死信队列
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} received an undecodable message; it was moved to the dead-letter queue: {Reason}")]
-    private static partial void LogUndecodable(ILogger logger, string topic, string reason);
 
     /// <summary>
     /// 记录代理没有确认一条发布

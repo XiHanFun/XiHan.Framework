@@ -7,7 +7,6 @@ using StackExchange.Redis;
 using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Messaging.Abstractions;
 using XiHan.Framework.Messaging.Abstractions.CloudEvents;
-using XiHan.Framework.Messaging.Abstractions.Envelopes;
 using XiHan.Framework.Messaging.Abstractions.Handlers;
 
 namespace XiHan.Framework.Messaging.Redis;
@@ -373,18 +372,12 @@ internal sealed partial class RedisStreamConsumer
     {
         var topic = Subscription.Topic;
         var body = entry[RedisMessageBroker.EnvelopeField];
-        var envelope = Decode(body, out var reason);
-        if (envelope is null)
+        // 没有 envelope 字段的条目按空文档解码：同样解不开，错误说明文档不是合法的 CloudEvents JSON
+        var decoded = CloudEventsFormat.Decode(body.IsNull ? ReadOnlyMemory<byte>.Empty : (byte[]?)body);
+        if (!decoded.TryGetValue(out var envelope))
         {
-            if (IsBroadcast)
-            {
-                LogBroadcastUndecodable(_logger, topic, reason);
-                await AcknowledgeAsync(entry.Id).ConfigureAwait(false);
-                return;
-            }
-
-            LogUndecodable(_logger, topic, reason);
-            await DeadLetterAsync(entry.Id, body, attempt, MessagingErrors.InvalidEnvelope).ConfigureAwait(false);
+            // 无法解码的条目不派发、不重试；怎么了结由 MessageDeliveryAttempt 判定，这里只翻译成流上的动作（ADR-0275）
+            await SettleAsync(entry.Id, body, attempt, MessageDeliveryAttempt.Undecodable(Subscription, decoded.Error, _logger)).ConfigureAwait(false);
             return;
         }
 
@@ -392,7 +385,7 @@ internal sealed partial class RedisStreamConsumer
         {
             // 回收来的条目已投递过上限次数（之前的实例崩溃、或死信写入失败）：不再执行处理器，最后一次的错误无从得知
             var exhausted = MessageDeliveryAttempt.Exhausted(new MessageDelivery { Topic = topic, Envelope = envelope, Attempt = attempt, Mode = Subscription.Mode }, null, _logger);
-            await ExhaustedAsync(entry.Id, body, attempt, exhausted).ConfigureAwait(false);
+            await SettleAsync(entry.Id, body, attempt, exhausted).ConfigureAwait(false);
             return;
         }
 
@@ -427,7 +420,7 @@ internal sealed partial class RedisStreamConsumer
 
             if (outcome.Disposition != DeliveryDisposition.Retry)
             {
-                await ExhaustedAsync(entry.Id, body, attempt, outcome).ConfigureAwait(false);
+                await SettleAsync(entry.Id, body, attempt, outcome).ConfigureAwait(false);
                 return;
             }
 
@@ -444,37 +437,12 @@ internal sealed partial class RedisStreamConsumer
     }
 
     /// <summary>
-    /// 解码条目里的信封
+    /// 了结一条不再重试的条目：用完了尝试次数，或无法解码
     /// </summary>
     /// <remarks>
-    /// 没有 <c>envelope</c> 字段或不是合法的 CloudEvents JSON 时返回 <see langword="null"/> 并给出原因
+    /// 广播订阅（<see cref="DeliveryDisposition.Discard"/>）确认掉，不进死信；竞争订阅（<see cref="DeliveryDisposition.DeadLetter"/>）进死信流，带上结论里的错误码（最后一次失败的，或解码给出的；不知道时不带）。Warning 日志由 <see cref="MessageDeliveryAttempt"/> 记过
     /// </remarks>
-    private static MessageEnvelope? Decode(RedisValue body, out string reason)
-    {
-        if (body.IsNull)
-        {
-            reason = $"The entry has no '{RedisMessageBroker.EnvelopeField}' field.";
-            return null;
-        }
-
-        var decoded = CloudEventsFormat.Decode((byte[])body!);
-        if (decoded.TryGetValue(out var envelope))
-        {
-            reason = string.Empty;
-            return envelope;
-        }
-
-        reason = decoded.Error?.Message ?? "?";
-        return null;
-    }
-
-    /// <summary>
-    /// 了结一条用完了尝试次数的投递
-    /// </summary>
-    /// <remarks>
-    /// 广播订阅（<see cref="DeliveryDisposition.Discard"/>）确认掉，不进死信；竞争订阅（<see cref="DeliveryDisposition.DeadLetter"/>）进死信流，带上最后一次失败的错误码（不知道时不带）。Warning 日志由 <see cref="MessageDeliveryAttempt"/> 记过
-    /// </remarks>
-    private async Task ExhaustedAsync(RedisValue id, RedisValue body, int attempt, MessageDeliveryOutcome outcome)
+    private async Task SettleAsync(RedisValue id, RedisValue body, int attempt, MessageDeliveryOutcome outcome)
     {
         if (outcome.Disposition != DeliveryDisposition.DeadLetter)
         {
@@ -535,18 +503,6 @@ internal sealed partial class RedisStreamConsumer
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "{Count} pending entries on topic {Topic} (group {Group}) were trimmed before they were acknowledged; the consumers fell behind by more than MaxLength and these messages are lost.")]
     private static partial void LogTrimmedBeforeAcknowledged(ILogger logger, int count, string topic, string group);
-
-    /// <summary>
-    /// 记录一条无法解码的消息被转入死信流
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} received an undecodable message; it was moved to the dead-letter stream: {Reason}")]
-    private static partial void LogUndecodable(ILogger logger, string topic, string reason);
-
-    /// <summary>
-    /// 记录一条无法解码的广播消息被丢弃
-    /// </summary>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} delivered an undecodable broadcast message; it was dropped: {Reason}")]
-    private static partial void LogBroadcastUndecodable(ILogger logger, string topic, string reason);
 
     /// <summary>
     /// 记录重试前条目已不在待确认列表里

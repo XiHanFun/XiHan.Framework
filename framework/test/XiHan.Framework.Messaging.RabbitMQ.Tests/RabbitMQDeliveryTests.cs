@@ -14,10 +14,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.RabbitMQ.Tests;
 
 /// <summary>
-/// 停止与排空期间的投递不被了结（RFC-0009「投递」第 3、5 条，ADR-0261）
+/// 停止与排空期间的投递不被了结（RFC-0009「投递」第 3、5 条，ADR-0261），无法解码的消息按订阅方式了结（ADR-0275）
 /// </summary>
 /// <remarks>
-/// 对打桩的连接与通道验证：处理器被停止取消后经管道返回失败结果时不确认、不退回、不重新发布，也不记进死信或丢弃的日志；应用排空期间到达的投递不派发，停止后仍没有了结。不需要真实 RabbitMQ
+/// 对打桩的连接与通道验证：处理器被停止取消后经管道返回失败结果时不确认、不退回、不重新发布，也不记进死信或丢弃的日志；应用排空期间到达的投递不派发，停止后仍没有了结；无法解码的消息竞争订阅原样进死信队列、广播订阅确认掉。不需要真实 RabbitMQ
 /// </remarks>
 public sealed class RabbitMQDeliveryTests
 {
@@ -121,6 +121,51 @@ public sealed class RabbitMQDeliveryTests
             stopGate.TrySetResult();
             await draining.WaitAsync(_patience);
         }
+    }
+
+    [Theory]
+    [InlineData(SubscriptionMode.Competing, true, "Topic orders received an undecodable message; it was dead-lettered: ")]
+    [InlineData(SubscriptionMode.Broadcast, false, "Topic orders delivered an undecodable broadcast message; it was dropped: ")]
+    public async Task UndecodableMessage_IsSettledByMode_WithoutDispatching_AndLoggedUnderTheBrokersCategory(SubscriptionMode mode, bool deadLettered, string prefix)
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var logs = new LogCapture();
+        var (connection, fake) = FakeRabbitConnection.Create();
+        await using var broker = Broker(host, connection, logs);
+        var dispatched = 0;
+        await broker.StartAsync(
+            [new MessageSubscription(Topic, mode)],
+            (_, _) =>
+            {
+                Interlocked.Increment(ref dispatched);
+                return ValueTask.FromResult(Result.Success());
+            },
+            CancellationToken.None);
+        var consumer = fake.Channels[1];
+        var body = "not json"u8.ToArray();
+
+        await DeliverAsync(consumer, deliveryTag: 23, attempt: 1, body);
+
+        // 了结方式由共用的一处判定（ADR-0275）：竞争订阅把收到的字节原样发到死信队列、确认后确认原消息，广播订阅直接确认掉；都不派发
+        Assert.Equal(0, dispatched);
+        Assert.Equal([23UL], consumer.Acked);
+        Assert.Empty(consumer.Nacked);
+        if (deadLettered)
+        {
+            var published = Assert.Single(fake.Channels[0].Published);
+            Assert.Equal((string.Empty, "xihan." + Topic + ".dlq", 1), (published.Exchange, published.RoutingKey, published.Attempt));
+            Assert.Equal(body, published.Body);
+        }
+        else
+        {
+            Assert.Empty(fake.Channels[0].Published);
+            Assert.Empty(fake.Channels[0].Declared);
+        }
+
+        // 日志措辞与别的代理相同，记在 RabbitMQ 代理自己的类别下
+        var entry = Assert.Single(logs.Entries, static e => e.Level >= LogLevel.Warning);
+        Assert.Equal(typeof(RabbitMQMessageBroker).FullName, entry.Category);
+        Assert.Equal(prefix + CloudEventsFormat.Decode(body).Error!.Message, entry.Message);
     }
 
     /// <summary>

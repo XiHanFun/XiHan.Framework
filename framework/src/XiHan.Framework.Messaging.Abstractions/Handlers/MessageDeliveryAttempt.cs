@@ -25,6 +25,9 @@ namespace XiHan.Framework.Messaging.Abstractions.Handlers;
 /// <para>
 /// 取消只认令牌：令牌已请求取消时抛出的 <see cref="OperationCanceledException"/>，以及令牌已请求取消时返回的失败或抛出的其他异常（管道把取消写成失败结果返回，不抛异常），都是 <see cref="DeliveryDisposition.Abandon"/>，不算一次失败。令牌没有取消时的 <see cref="OperationCanceledException"/>（处理器自己的超时）是一次失败
 /// </para>
+/// <para>
+/// 不经派发的两种了结也在这里：用完了尝试次数（<see cref="Exhausted"/>）与收到的消息无法解码（<see cref="Undecodable"/>），都是竞争订阅进死信、广播订阅丢弃
+/// </para>
 /// </remarks>
 [ApiLevel(Stability.Preview, "5.0")]
 public static partial class MessageDeliveryAttempt
@@ -94,6 +97,34 @@ public static partial class MessageDeliveryAttempt
         }
 
         LogDeadLettered(logger, delivery.Envelope.Id, delivery.Topic, delivery.Attempt, errorCode);
+        return new MessageDeliveryOutcome(DeliveryDisposition.DeadLetter, error);
+    }
+
+    /// <summary>
+    /// 收到一条无法解码的消息时的了结方式
+    /// </summary>
+    /// <remarks>
+    /// 没有信封就没有可以交给处理器的投递，重试也解不开：不派发、不重试，也不等应用进入服务状态。竞争订阅进死信（代理把收到的字节原样写进死信），广播订阅丢弃，各记一条警告（RFC-0009「订阅方式」第 3 条、「流」第 2 条，ADR-0275）。与 <see cref="Exhausted"/> 成套：代理把这两个方法给出的 <see cref="DeliveryDisposition.DeadLetter"/> 与 <see cref="DeliveryDisposition.Discard"/> 翻译成同样的动作
+    /// </remarks>
+    /// <param name="subscription">消息来自的订阅：主题与订阅方式</param>
+    /// <param name="error">解码给出的错误（<see cref="MessagingErrors.InvalidEnvelope"/>）；不知道时为 <see langword="null"/>，日志里记 <c>?</c></param>
+    /// <param name="logger">代理自己的日志</param>
+    /// <returns><see cref="DeliveryDisposition.DeadLetter"/> 或 <see cref="DeliveryDisposition.Discard"/>，带着给出的错误</returns>
+    public static MessageDeliveryOutcome Undecodable(MessageSubscription subscription, Error? error, ILogger logger)
+    {
+        ArgumentNullException.ThrowIfNull(subscription);
+        ArgumentNullException.ThrowIfNull(logger);
+        // 没有消息 ID 可记，原因写解码错误的文案：它是框架自己的文字，说明是哪一项不合法
+        var reason = error?.Message ?? UnknownErrorCode;
+
+        // 广播不进死信：与用完尝试次数时一样，每个实例各自的一份坏消息没有可以重放的共享位置
+        if (subscription.Mode == SubscriptionMode.Broadcast)
+        {
+            LogBroadcastUndecodable(logger, subscription.Topic, reason);
+            return new MessageDeliveryOutcome(DeliveryDisposition.Discard, error);
+        }
+
+        LogUndecodable(logger, subscription.Topic, reason);
         return new MessageDeliveryOutcome(DeliveryDisposition.DeadLetter, error);
     }
 
@@ -208,4 +239,16 @@ public static partial class MessageDeliveryAttempt
     /// </summary>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Broadcast message {MessageId} on topic {Topic} was dropped after attempt {Attempt} failed: {ErrorCode}")]
     private static partial void LogBroadcastDropped(ILogger logger, string messageId, string topic, int attempt, string errorCode);
+
+    /// <summary>
+    /// 记录一条无法解码的消息进入死信
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} received an undecodable message; it was dead-lettered: {Reason}")]
+    private static partial void LogUndecodable(ILogger logger, string topic, string reason);
+
+    /// <summary>
+    /// 记录一条无法解码的广播消息被丢弃
+    /// </summary>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Topic {Topic} delivered an undecodable broadcast message; it was dropped: {Reason}")]
+    private static partial void LogBroadcastUndecodable(ILogger logger, string topic, string reason);
 }

@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for full license text.
 
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using StackExchange.Redis;
 using XiHan.Framework.Kernel;
@@ -15,10 +16,10 @@ using XiHan.Framework.Testing;
 namespace XiHan.Framework.Messaging.Redis.Tests;
 
 /// <summary>
-/// 消费循环怎么了结一次投递（RFC-0009「投递」第 3、5 条，ADR-0261）
+/// 消费循环怎么了结一次投递（RFC-0009「投递」第 3、5 条，ADR-0261、ADR-0275）
 /// </summary>
 /// <remarks>
-/// 对打桩的数据库验证新条目的投递：成功确认，失败认领后原位重试、到上限竞争订阅写死信流再确认、广播订阅确认掉，停止打断的不确认，应用排空期间不接着原位重试。不需要 Redis；回收与投递次数由 <see cref="RedisStreamBehaviorTests"/> 在真实 Redis 上验证
+/// 对打桩的数据库验证新条目的投递：成功确认，失败认领后原位重试、到上限竞争订阅写死信流再确认、广播订阅确认掉，无法解码的条目不派发、按订阅方式了结，停止打断的不确认，应用排空期间不接着原位重试。不需要 Redis；回收与投递次数由 <see cref="RedisStreamBehaviorTests"/> 在真实 Redis 上验证
 /// </remarks>
 public sealed class RedisDeliveryTests
 {
@@ -111,6 +112,55 @@ public sealed class RedisDeliveryTests
         Assert.Equal(["1-1"], fake.Claimed);
         Assert.Empty(fake.Added);
         Assert.Equal(["1-1"], fake.Acknowledged);
+    }
+
+    [Theory]
+    [InlineData(SubscriptionMode.Competing, false, true, "Topic orders received an undecodable message; it was dead-lettered: ")]
+    [InlineData(SubscriptionMode.Competing, true, true, "Topic orders received an undecodable message; it was dead-lettered: ")]
+    [InlineData(SubscriptionMode.Broadcast, false, false, "Topic orders delivered an undecodable broadcast message; it was dropped: ")]
+    [InlineData(SubscriptionMode.Broadcast, true, false, "Topic orders delivered an undecodable broadcast message; it was dropped: ")]
+    public async Task UndecodableEntry_IsSettledByMode_WithoutDispatching_AndLoggedOnTheBrokersLogger(SubscriptionMode mode, bool missingField, bool deadLettered, string prefix)
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        using var logs = new LogCapture();
+        // 坏条目两种：envelope 字段不是 CloudEvents JSON，或根本没有这个字段（按空文档解码）
+        var entry = missingField
+            ? new StreamEntry("1-1", [new NameValueEntry("other", "x")])
+            : new StreamEntry("1-1", [new NameValueEntry("envelope", "not json")]);
+        var (database, fake) = FakeRedisDatabase.Create(entry);
+        var consumer = Consumer(host, database, mode, logs.CreateLogger(typeof(RedisMessageBroker).FullName!));
+        var dispatched = 0;
+        using var stopping = new CancellationTokenSource();
+
+        var loop = consumer.RunAsync(
+            (_, _) =>
+            {
+                Interlocked.Increment(ref dispatched);
+                return ValueTask.FromResult(Result.Success());
+            },
+            stopping.Token);
+        Assert.True(SpinWait.SpinUntil(() => fake.Read(static f => f.Acknowledged.Count) == 1, _patience));
+        await StopAsync(stopping, loop);
+
+        // 了结方式由共用的一处判定（ADR-0275）：竞争订阅原样写进死信流（带尝试号与解码的错误码）再确认，广播订阅确认掉；都不派发、不认领重试
+        Assert.Equal(0, dispatched);
+        Assert.Empty(fake.Claimed);
+        Assert.Equal(["1-1"], fake.Acknowledged);
+        if (deadLettered)
+        {
+            var (key, fields) = Assert.Single(fake.Added);
+            Assert.Equal(DeadLetterKey, key);
+            Assert.Equal((missingField ? string.Empty : "not json", "1", MessagingErrors.InvalidEnvelope), (fields["envelope"], fields["attempt"], fields["error"]));
+        }
+        else
+        {
+            Assert.Empty(fake.Added);
+        }
+
+        // 日志措辞与别的代理相同；没有字段的条目与空文档的解码错误相同
+        var expected = CloudEventsFormat.Decode(missingField ? ReadOnlyMemory<byte>.Empty : "not json"u8.ToArray()).Error!.Message;
+        var warning = Assert.Single(logs.Entries, static e => e.Level >= LogLevel.Warning);
+        Assert.Equal(prefix + expected, warning.Message);
     }
 
     [Theory]
@@ -223,7 +273,10 @@ public sealed class RedisDeliveryTests
     /// <summary>
     /// 在打桩数据库上建一个订阅的消费：最多投递 2 次
     /// </summary>
-    private static RedisStreamConsumer Consumer(TestHost host, IDatabase database, SubscriptionMode mode)
+    /// <remarks>
+    /// <paramref name="logger"/> 为空时不收日志
+    /// </remarks>
+    private static RedisStreamConsumer Consumer(TestHost host, IDatabase database, SubscriptionMode mode, ILogger? logger = null)
         => new(
             database,
             new RedisMessagingOptions { Configuration = "unused:6379", PollInterval = TimeSpan.FromMilliseconds(20) },
@@ -231,7 +284,7 @@ public sealed class RedisDeliveryTests
             new MessagingInstance(new MessagingOptions()),
             host.App,
             TimeProvider.System,
-            NullLogger.Instance,
+            logger ?? NullLogger.Instance,
             new MessageSubscription(Topic, mode));
 
     /// <summary>

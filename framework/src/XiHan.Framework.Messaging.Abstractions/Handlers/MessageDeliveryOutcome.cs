@@ -34,7 +34,7 @@ public readonly record struct MessageDeliveryOutcome
     /// 这次失败的错误
     /// </summary>
     /// <remarks>
-    /// 重投、进死信与丢弃时是处理器返回的错误，或派发抛出的异常转成的 <see cref="MessagingErrors.HandlerFailed"/>；没有派发就判定用完尝试次数的投递（<see cref="MessageDeliveryAttempt.Exhausted"/> 没给错误）为 <see langword="null"/>。成功与不了结时为 <see langword="null"/>
+    /// 重投、进死信与丢弃时是处理器返回的错误，或派发抛出的异常转成的 <see cref="MessagingErrors.HandlerFailed"/>；无法解码的消息（<see cref="MessageDeliveryAttempt.Undecodable"/>）是解码给出的 <see cref="MessagingErrors.InvalidEnvelope"/>；没有派发就判定用完尝试次数的投递（<see cref="MessageDeliveryAttempt.Exhausted"/> 没给错误）为 <see langword="null"/>。成功与不了结时为 <see langword="null"/>
     /// </remarks>
     public Error? Error { get; }
 }

@@ -1,7 +1,9 @@
 // Copyright (c) XiHanFun Contributors. Licensed under the MIT License.
 // See the LICENSE file in the project root for full license text.
 
+using System.Collections.Concurrent;
 using Confluent.Kafka;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using XiHan.Framework.Kernel;
@@ -16,10 +18,10 @@ using Error = XiHan.Framework.Primitives.Error;
 namespace XiHan.Framework.Messaging.Kafka.Tests;
 
 /// <summary>
-/// 停止与排空期间的投递不被记成失败
+/// 停止与排空期间的投递不被记成失败，无法解码的消息按订阅方式了结
 /// </summary>
 /// <remarks>
-/// 打桩的生产者与消费者：处理器被停止取消后经管道返回失败结果时不原位重试、不发布死信、不提交位点；应用排空期间不接着原位重试（RFC-0009「流」第 2 条、「投递」第 5 条，ADR-0261）。不需要 Kafka
+/// 打桩的生产者与消费者：处理器被停止取消后经管道返回失败结果时不原位重试、不发布死信、不提交位点；应用排空期间不接着原位重试（RFC-0009「流」第 2 条、「投递」第 5 条，ADR-0261）；无法解码的消息竞争订阅发布到死信主题、广播订阅丢弃（ADR-0275）。不需要 Kafka
 /// </remarks>
 public sealed class KafkaDeliveryTests
 {
@@ -133,17 +135,57 @@ public sealed class KafkaDeliveryTests
         }
     }
 
+    [Theory]
+    [InlineData(SubscriptionMode.Competing, true, "Topic orders received an undecodable message; it was dead-lettered: ")]
+    [InlineData(SubscriptionMode.Broadcast, false, "Topic orders delivered an undecodable broadcast message; it was dropped: ")]
+    public async Task UndecodableMessage_IsSettledByMode_WithoutDispatching_AndLoggedUnderTheBrokersCategory(SubscriptionMode mode, bool deadLettered, string prefix)
+    {
+        await using var host = await TestHost.StartAsync(static _ => { });
+        var logs = new LogCapture();
+        var (producer, producerFake) = FakeKafkaProducer.Create();
+        var body = "not json"u8.ToArray();
+        var (consumer, consumerFake) = FakeKafkaConsumer.Create(body, Encode("ok"));
+        var dispatched = new ConcurrentQueue<string>();
+        await using var broker = Broker(host, producer, consumer, logs);
+
+        await broker.StartAsync(
+            [new MessageSubscription(Topic, mode)],
+            (delivery, _) =>
+            {
+                dispatched.Enqueue(delivery.Envelope.Id);
+                return ValueTask.FromResult(Result.Success());
+            },
+            CancellationToken.None);
+        Assert.True(SpinWait.SpinUntil(() => dispatched.Contains("ok"), _patience));
+        await broker.StopAsync(CancellationToken.None).WaitAsync(_patience);
+
+        // 了结方式由共用的一处判定（ADR-0275）：竞争订阅发布到死信主题后提交位点，广播订阅丢弃、不提交；坏消息不派发，后面的消息照常投递
+        string[] deadLetterTopics = deadLettered ? ["xihan.orders.dlq"] : [];
+        long[] committed = deadLettered ? [0L, 1L] : [];
+        Assert.Equal(["ok"], dispatched);
+        Assert.Equal(deadLetterTopics, producerFake.Topics);
+        Assert.Equal(committed, consumerFake.Read(static c => c.Committed.ToList()));
+
+        // 日志措辞与别的代理相同，记在 Kafka 代理自己的类别下
+        var entry = Assert.Single(logs.Entries, static e => e.Level >= LogLevel.Warning);
+        Assert.Equal(typeof(KafkaMessageBroker).FullName, entry.Category);
+        Assert.Equal(prefix + CloudEventsFormat.Decode(body).Error!.Message, entry.Message);
+    }
+
     /// <summary>
     /// 用打桩的生产者与消费者创建代理：最多投递 2 次
     /// </summary>
-    private static KafkaMessageBroker Broker(TestHost host, IProducer<string?, byte[]> producer, IConsumer<string?, byte[]> consumer)
+    /// <remarks>
+    /// <paramref name="logs"/> 为空时不收日志
+    /// </remarks>
+    private static KafkaMessageBroker Broker(TestHost host, IProducer<string?, byte[]> producer, IConsumer<string?, byte[]> consumer, ILoggerFactory? logs = null)
         => new(
             new KafkaMessagingOptions { BootstrapServers = "unused:9092" },
             new MessagingOptions { MaxAttempts = 2 },
             new MessagingInstance(new MessagingOptions()),
             host.App,
             new FakeTimeProvider(),
-            NullLoggerFactory.Instance,
+            logs ?? NullLoggerFactory.Instance,
             () => producer,
             _ => consumer);
 
