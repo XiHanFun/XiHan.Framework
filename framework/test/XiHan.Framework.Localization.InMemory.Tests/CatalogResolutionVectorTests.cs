@@ -14,7 +14,7 @@ namespace XiHan.Framework.Localization.InMemory.Tests;
 /// 回放 <c>catalog-resolution.json</c>：消息目录的合并、冲突与文案的查找
 /// </summary>
 /// <remarks>
-/// <c>localization/catalog-resolution.json</c>（RFC-0010「语言文件」「解析」，ADR-0277）。目录按用例的次序经 <c>AddMessageCatalog</c> 注册：冲突的用例注册时就以向量给的错误码失败；其余的从容器取登记表，用 <see cref="InMemoryMessageLocalizer"/> 按用例的默认区域与内置的启用列表逐条查找
+/// <c>localization/catalog-resolution.json</c>（RFC-0010「语言文件」「解析」，ADR-0277、ADR-0286）。目录按用例的次序经 <c>AddMessageCatalog</c> 注册：冲突的用例注册时就以向量给的错误码失败；其余的从容器取登记表，用 <see cref="InMemoryMessageLocalizer"/> 按用例的默认区域与内置的启用列表逐条查找
 /// </remarks>
 public sealed class CatalogResolutionVectorTests
 {
@@ -123,6 +123,12 @@ public sealed class CatalogResolutionVectorTests
         Assert.Contains(requests, static request => request.Expected is { } hit && hit.Locale != request.Locale);
         Assert.Contains(requests, static request => request.Expected is null);
         Assert.Contains(_vectors.Cases, static vector => vector.Default is { } defaultLocale && defaultLocale != SupportedLocales.Default);
+
+        // 区域优先于目录的次序（ADR-0286）：命中的模板在后注册的目录里，而先注册的目录在别的区域有同一个键
+        Assert.Contains(_vectors.Cases, static vector => !vector.Conflict && vector.Requests.Any(request => request.Expected is { } hit
+            && vector.Catalogs[0].Messages.Values.Any(templates => templates.ContainsKey(request.Key))
+            && !(vector.Catalogs[0].Messages.TryGetValue(hit.Locale, out var first) && first.ContainsKey(request.Key))
+            && vector.Catalogs.Skip(1).Any(catalog => catalog.Messages.TryGetValue(hit.Locale, out var later) && later.GetValueOrDefault(request.Key) == hit.Text)));
     }
 
     /// <summary>

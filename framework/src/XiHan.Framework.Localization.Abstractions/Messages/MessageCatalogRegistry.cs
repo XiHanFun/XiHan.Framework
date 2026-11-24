@@ -9,7 +9,7 @@ namespace XiHan.Framework.Localization.Abstractions.Messages;
 /// 本地化器读取的消息目录
 /// </summary>
 /// <remarks>
-/// 先是注册的目录（同名的已合并为一份），再是按归属登记的目录，按登记顺序；同一键先找到的优先，所以按归属登记的目录不覆盖已有的键。按归属登记的目录在配置阶段经 <see cref="LocalizationServiceCollectionExtensions.AddMessageCatalog(Microsoft.Extensions.DependencyInjection.IServiceCollection, string, MessageCatalog)"/>、在运行期经 <see cref="Add"/> 登记，经 <see cref="RemoveOwnedBy"/> 按归属一次撤回；插件宿主以插件的清单 ID 为归属（RFC-0010「归属目录」，ADR-0252）。容器里是单例，<c>AddMessageCatalog</c> 一并登记
+/// 先是注册的目录（同名的已合并为一份），再是按归属登记的目录，按登记顺序；同一键同一区域先找到的优先，所以按归属登记的目录不覆盖同一区域已有的模板（本地化器先按区域、再按这个顺序查找，RFC-0010「解析」）。按归属登记的目录在配置阶段经 <see cref="LocalizationServiceCollectionExtensions.AddMessageCatalog(Microsoft.Extensions.DependencyInjection.IServiceCollection, string, MessageCatalog)"/>、在运行期经 <see cref="Add"/> 登记，经 <see cref="RemoveOwnedBy"/> 按归属一次撤回；插件宿主以插件的清单 ID 为归属（RFC-0010「归属目录」，ADR-0252）。容器里是单例，<c>AddMessageCatalog</c> 一并登记
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class MessageCatalogRegistry

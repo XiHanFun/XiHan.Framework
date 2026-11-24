@@ -23,7 +23,7 @@ public sealed class DatabaseMessageLocalizer : IMessageLocalizer, IMessageResolv
     /// 目录登记表
     /// </summary>
     /// <remarks>
-    /// 同一键先找到的目录优先
+    /// 同一键同一区域先找到的目录优先
     /// </remarks>
     private readonly MessageCatalogRegistry _catalogs;
 

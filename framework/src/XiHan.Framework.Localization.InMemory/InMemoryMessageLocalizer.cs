@@ -13,7 +13,7 @@ namespace XiHan.Framework.Localization.InMemory;
 /// 汇集全部已注册目录的本地化器，同时是安装到 <see cref="MessageScope"/> 的解析器
 /// </summary>
 /// <remarks>
-/// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>；同一键先注册的目录优先。占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）。每次查找读 <see cref="MessageCatalogRegistry"/> 的当前快照，运行期按归属登记与撤回的目录立即生效
+/// 回退链：精确区域 → 同语言的其他启用区域 → 默认区域 → 源语言 <c>en-US</c>。查找先按区域、再按目录：沿回退链逐个区域找，每个区域里按注册顺序问每个目录，后注册的目录有请求区域的模板时优先于先注册的目录里回退区域的模板，同一区域里才是先注册的目录优先（RFC-0010「解析」，ADR-0286）。占位符按命中区域的文化格式化（<c>{amount:N2}</c> 在 <c>de-DE</c> 得到 <c>1.234,50</c>）。每次查找读 <see cref="MessageCatalogRegistry"/> 的当前快照，运行期按归属登记与撤回的目录立即生效
 /// </remarks>
 [ApiLevel(Stability.Stable, "5.0")]
 public sealed class InMemoryMessageLocalizer : IMessageLocalizer, IMessageResolver
@@ -22,7 +22,7 @@ public sealed class InMemoryMessageLocalizer : IMessageLocalizer, IMessageResolv
     /// 目录登记表
     /// </summary>
     /// <remarks>
-    /// 同一键先找到的目录优先
+    /// 同一键同一区域先找到的目录优先
     /// </remarks>
     private readonly MessageCatalogRegistry _catalogs;
 
@@ -96,6 +96,7 @@ public sealed class InMemoryMessageLocalizer : IMessageLocalizer, IMessageResolv
     private bool TryFind(string key, string locale, out string template, out string resolvedLocale)
     {
         // 一次查找只用一份快照：并发的登记与撤回不会让同一次查找前后看到不同的目录
+        // 外层是回退链上的区域、内层是目录：区域优先于目录的次序，调用方的语言有模板就不退到别的语言
         var catalogs = _catalogs.Catalogs;
         foreach (var candidate in Options.FallbackChain(locale))
         {

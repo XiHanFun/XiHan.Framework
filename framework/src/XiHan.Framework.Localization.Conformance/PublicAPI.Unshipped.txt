@@ -2,6 +2,7 @@
 XiHan.Framework.Localization.Conformance.MessageLocalizerConformance
 XiHan.Framework.Localization.Conformance.MessageLocalizerConformance.Find_FallsBackExactThenLanguageThenDefaultThenSource() -> void
 XiHan.Framework.Localization.Conformance.MessageLocalizerConformance.FirstRegisteredCatalog_WinsForTheSameKey() -> void
+XiHan.Framework.Localization.Conformance.MessageLocalizerConformance.LocaleOrder_ComesBeforeCatalogOrder() -> void
 XiHan.Framework.Localization.Conformance.MessageLocalizerConformance.Localize_Error_UsesKeyAndDetails_OrLiteralText() -> void
 XiHan.Framework.Localization.Conformance.MessageLocalizerConformance.Localize_FallsBackToDescription_WhenMissingOrIncomplete() -> void
 XiHan.Framework.Localization.Conformance.MessageLocalizerConformance.Localize_FormatsWithTheCultureOfTheResolvedLocale() -> void

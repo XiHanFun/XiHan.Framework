@@ -147,7 +147,7 @@ public abstract class MessageLocalizerConformance
     }
 
     /// <summary>
-    /// 用例 6：同一键在多个目录里时，先注册的目录优先
+    /// 用例 6：同一键同一区域在多个目录里时，先注册的目录优先
     /// </summary>
     [Fact]
     public void FirstRegisteredCatalog_WinsForTheSameKey()
@@ -179,6 +179,28 @@ public abstract class MessageLocalizerConformance
         Assert.True(resolver.TryResolve("orders.order.not_found", resolver.Negotiate("pt-BR"), MessageArguments.Of(("id", 7)), out var text));
         Assert.Equal(localizer.Localize("orders.order.not_found", portuguese, MessageArguments.Of(("id", 7))), text);
         Assert.Equal("Order '7' was not found.", text);
+    }
+
+    /// <summary>
+    /// 用例 8：查找先按区域、再按目录
+    /// </summary>
+    /// <remarks>
+    /// 后注册的目录有回退链上更靠前的区域的模板时，优先于先注册的目录里更靠后的区域；同一区域里才是先注册的目录优先（RFC-0010「解析」，ADR-0286）
+    /// </remarks>
+    [Fact]
+    public void LocaleOrder_ComesBeforeCatalogOrder()
+    {
+        var localizer = Localizer(null, _override, _orders);
+
+        // 先注册的目录只有 en-US，后注册的目录有 zh-TW：按 zh-TW 取到的是后者
+        Assert.Equal("不是擁有者。", localizer.Find("orders.order.denied", "zh-TW").ValueOrThrow());
+
+        // zh-CN 没有这一条：同语言的 zh-TW 在回退链上排在默认区域之前，仍然先于先注册的目录里的 en-US
+        Assert.Equal(new LocalizedText("不是擁有者。", "zh-TW"), localizer.Resolve("orders.order.denied", "zh-CN", null).ValueOrThrow());
+
+        // 同一区域里先注册的目录优先
+        Assert.Equal(new LocalizedText("Overridden.", "en-US"), localizer.Resolve("orders.order.denied", "en-US", null).ValueOrThrow());
+        Assert.Equal(new LocalizedText("Overridden.", "en-US"), localizer.Resolve("orders.order.denied", "ja-JP", null).ValueOrThrow());
     }
 
     /// <summary>
