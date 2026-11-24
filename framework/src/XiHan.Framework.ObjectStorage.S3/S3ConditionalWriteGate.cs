@@ -188,7 +188,7 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         Unconfirmed,
 
         /// <summary>
-        /// 已确认服务认条件写入（或经公开构造函数建的存储，由调用方负责）
+        /// 已确认服务认条件写入（或不探测的存储，由调用方负责）
         /// </summary>
         Confirmed,
 
@@ -236,10 +236,10 @@ internal sealed partial class S3ConditionalWriteGate : IAsyncDisposable, IDispos
         => new(client, options, multipart, clock, logger, store, options.ConditionalWrites ? GateState.Unconfirmed : GateState.Disabled);
 
     /// <summary>
-    /// 不探测的状态：经公开构造函数直接建的存储，服务是否认条件写入由调用方负责
+    /// 不探测的状态：服务是否认条件写入由调用方负责
     /// </summary>
     /// <remarks>
-    /// 条件写入开启时视作已确认，关闭时为关闭状态
+    /// 给 <see cref="S3BlobStore"/> 不探测的内部构造用（只在包内与测试里，ADR-0266）。条件写入开启时视作已确认，关闭时为关闭状态
     /// </remarks>
     internal static S3ConditionalWriteGate Unprobed(IAmazonS3 client, S3ObjectStorageOptions options, TimeProvider clock)
         => new(client, options, multipart: false, clock, NullLogger.Instance, "unprobed", options.ConditionalWrites ? GateState.Confirmed : GateState.Disabled);
