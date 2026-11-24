@@ -60,6 +60,12 @@ public sealed class HostingSupportTests
             var overridden = BindingResolver.Resolve(Hosts.Configuration(("XiHan:Bindings:db:value", "Host=override")), root)["db"];
             Assert.Equal("Host=override", overridden.Value);
             Assert.Equal(string.Empty, overridden.Type);
+
+            // 配置来源里 type、value 之外的子键是属性，名字区分大小写；目录里的属性不合并进来。
+            // 进程内的特性与插件读到的就是这一份，插件宿主把同一份随 Configure 下发给隔离运行的插件（ADR-0285）
+            var configured = BindingResolver.Resolve(Hosts.Configuration(("XiHan:Bindings:db:value", "Host=override"), ("XiHan:Bindings:db:Password", "s3cret")), root)["db"];
+            Assert.Equal(new Dictionary<string, string> { ["Password"] = "s3cret" }, configured.Properties);
+            Assert.False(configured.Property("password").HasValue);
         }
         finally
         {
@@ -111,7 +117,7 @@ public sealed class HostingSupportTests
             Name = "db",
             Type = "connection:relational",
             Value = "Host=db;Password=s3cret",
-            Properties = new Dictionary<string, string>(StringComparer.Ordinal) { ["schema"] = "public" },
+            Properties = new Dictionary<string, string>(StringComparer.Ordinal) { ["schema"] = "public", ["password"] = "pr0perty-pw" },
         };
 
         // with 只换主值，名字、类型与属性照旧（Provider 按租户换连接串时就是这么用的）
@@ -124,6 +130,9 @@ public sealed class HostingSupportTests
         var text = binding.ToString();
         Assert.DoesNotContain("s3cret", text, StringComparison.Ordinal);
         Assert.Contains("Name = db, Type = connection:relational, Value = ***", text, StringComparison.Ordinal);
+        // 属性里常是凭据（username、password、accessKey）：打印绑定时属性值一个都不出现，隔离运行的插件收到的也是这一份属性（ADR-0285）
+        Assert.DoesNotContain("pr0perty-pw", text, StringComparison.Ordinal);
+        Assert.EndsWith("Properties = [password, schema] }", text, StringComparison.Ordinal);
 
         // 没有主值的绑定（只给凭据属性）是合法的
         var credentialsOnly = new BindingValue { Name = "queue", Type = string.Empty, Value = null, Properties = new Dictionary<string, string>(StringComparer.Ordinal) };

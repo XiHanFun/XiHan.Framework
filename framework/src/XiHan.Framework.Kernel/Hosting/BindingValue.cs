@@ -40,7 +40,7 @@ public sealed record BindingValue
     /// 其余属性
     /// </summary>
     /// <remarks>
-    /// 没有其余属性时是空字典
+    /// 没有其余属性时是空字典。属性名区分大小写，值常是凭据（<c>username</c>、<c>password</c>、<c>accessKey</c>）：打印绑定时只带属性名、不带属性值，使用方同样不要把值写进日志。插件宿主把同一份属性随 <c>Configure</c> 下发给隔离运行的插件（<c>spec/plugin/lifecycle.md</c> §2，ADR-0285）
     /// </remarks>
     public required IReadOnlyDictionary<string, string> Properties { get; init; }
 
@@ -57,7 +57,7 @@ public sealed record BindingValue
     /// 打印成员，凭据以 <see cref="Redaction.Mask"/> 代替
     /// </summary>
     /// <remarks>
-    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，主值（连接串或带用户信息的 URI）不能明文出现（RFC-0014「选项里的凭据」）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对
+    /// 记录的 <c>ToString()</c> 经它输出：对象可能整个进日志与异常消息，主值（连接串或带用户信息的 URI）不能明文出现（RFC-0014「选项里的凭据」）。属性只打印名字（按序数排序），值常是凭据、一个都不打印（ADR-0285）。其余成员同编译器生成的写法；新加属性时在这里一并补上，架构测试 <c>CredentialRedactionTests</c> 会核对
     /// </remarks>
     private bool PrintMembers(StringBuilder builder)
     {
@@ -65,7 +65,16 @@ public sealed record BindingValue
         builder.Append("Name = ").Append(Name)
             .Append(", Type = ").Append(Type)
             .Append(", Value = ").Append(Redaction.Redact(Value))
-            .Append(", Properties = ").Append(Properties);
+            .Append(", Properties = [");
+
+        // 属性只打印名字：字典自己的 ToString 打印什么取决于调用方给的实现，不能指望它不带出值
+        // 绕过初始化器得到的实例（未初始化对象、反序列化）没有属性表，打印不能因此抛出
+        if (Properties is not null)
+        {
+            builder.AppendJoin(", ", Properties.Keys.Order(StringComparer.Ordinal));
+        }
+
+        builder.Append(']');
         return true;
     }
 }

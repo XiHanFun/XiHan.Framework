@@ -41,7 +41,7 @@ await builder.Build().RunAsync();
 * `AppBuilder`、`App`：装配入口与运行中的应用
 * `KernelOptions`、`StartupBannerOptions`：内核选项与启动 Banner 的选项
 * `IFeature`、`IHostedFeature`、`FeatureContext`：特性与它的装配入口
-* `BindingResolver`、`BindingValue`：资源绑定的解析与结果；`FeatureContext.Bindings` 是装配时解析好的一份，`FeatureContext.ServiceBindingRoot` 是应用指定的绑定根目录，装配之后还要按同样的来源解析时用它
+* `BindingResolver`、`BindingValue`：资源绑定的解析与结果（主值与其余属性；打印时主值遮蔽、属性只列名字）；`FeatureContext.Bindings` 是装配时解析好的一份，`FeatureContext.ServiceBindingRoot` 是应用指定的绑定根目录，装配之后还要按同样的来源解析时用它
 * `PipelineBuilder`、`IPipelineMiddleware`、`PipelineStage`：执行管道
 * `OperationAttribute`、`IOperation<TRequest, TResponse>`、`IOperationInvoker`：操作契约与调用
 * `FrameworkDiagnostics`：内核的 ActivitySource 与 Meter（名字都是 `XiHan.Framework`）。Span `xihan.invoke` 与指标 `xihan.invocations`、`xihan.invocation.duration` 带 `xihan.outcome`；操作调用另带 `xihan.operation`（操作 ID），不是操作调用时没有这个标签

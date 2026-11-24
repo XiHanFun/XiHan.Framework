@@ -3,16 +3,26 @@
 
 using System.Globalization;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
+using Google.Protobuf;
+using Google.Protobuf.Collections;
 using Grpc.Core;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using XiHan.Framework.Kernel;
+using XiHan.Framework.Kernel.Hosting;
 using XiHan.Framework.Plugins.OutOfProcess.Tests.Fixtures;
 using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
+using XiHan.Framework.Plugins.Protocol.Hosting;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Primitives.Manifests;
 using XiHan.Framework.Testing;
+using ConfigureRequest = XiHan.Framework.Plugins.Protocol.V1.ConfigureRequest;
+using ManifestBinding = XiHan.Framework.Primitives.Manifests.Binding;
+using ProtoBinding = XiHan.Framework.Plugins.Protocol.V1.Binding;
 using ProtoError = XiHan.Framework.Plugins.Protocol.V1.Error;
 using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 
@@ -260,6 +270,167 @@ public sealed class ProtocolVectorTests
             AssertError(@case.GetProperty("expected"), PluginErrorMapper.FromStatus(null, pluginId, phase).Error, "no status, phase " + phase);
         }
     }
+
+    [Fact]
+    public void BindingProperties_NamesAndLimits_FollowTheVectors()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "binding-properties.json")));
+        var limits = document.RootElement.GetProperty("limits");
+        Assert.Equal(PluginBindingProperties.MaxCount, limits.GetProperty("maxProperties").GetInt32());
+        Assert.Equal(PluginBindingProperties.MaxNameLength, limits.GetProperty("maxNameLength").GetInt32());
+        Assert.Equal(PluginBindingProperties.MaxBytes, limits.GetProperty("maxBytes").GetInt32());
+
+        var names = document.RootElement.GetProperty("names");
+        foreach (var valid in names.GetProperty("valid").EnumerateArray())
+        {
+            Assert.True(PluginBindingProperties.IsValidName(valid.GetString()!), valid.GetRawText());
+        }
+
+        foreach (var invalid in names.GetProperty("invalid").EnumerateArray())
+        {
+            Assert.False(PluginBindingProperties.IsValidName(invalid.GetString()!), invalid.GetRawText());
+        }
+    }
+
+    [Fact]
+    public void BindingProperties_Delivery_FollowsTheVectors()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "binding-properties.json")));
+        var pluginId = document.RootElement.GetProperty("pluginId").GetString()!;
+        var missingRoot = Path.Combine(Path.GetTempPath(), "xihan-no-bindings-" + Guid.NewGuid().ToString("N"));
+        foreach (var @case in document.RootElement.GetProperty("delivery").EnumerateArray())
+        {
+            var name = @case.GetProperty("name").GetString()!;
+            var declared = @case.GetProperty("declared").EnumerateArray().Select(static d => new ManifestBinding(d.GetProperty("name").GetString()!, d.GetProperty("type").GetString()!)).ToList();
+
+            // 解析出的绑定经配置来源交给真实的组装：来源没声明类型、没给主值的就不写那个键
+            var values = new List<KeyValuePair<string, string?>>();
+            foreach (var resolved in @case.GetProperty("resolved").EnumerateObject())
+            {
+                var section = BindingResolver.ConfigurationSection + ":" + resolved.Name;
+                if (resolved.Value.GetProperty("type").GetString() is { Length: > 0 } type)
+                {
+                    values.Add(new(section + ":type", type));
+                }
+
+                if (resolved.Value.GetProperty("value").ValueKind != JsonValueKind.Null)
+                {
+                    values.Add(new(section + ":value", resolved.Value.GetProperty("value").GetString()));
+                }
+
+                values.AddRange(PropertiesOf(resolved.Value.GetProperty("properties")).Select(p => new KeyValuePair<string, string?>(section + ":" + p.Key, p.Value)));
+            }
+
+            using var logs = new LogCapture();
+            var built = PluginConfigureRequests.Build(
+                TestManifests.Create(pluginId, kind: ManifestKind.Plugin, bindings: declared),
+                new ConfigurationBuilder().AddInMemoryCollection(values).Build(),
+                missingRoot,
+                "work",
+                logs.CreateLogger("test"));
+
+            if (@case.TryGetProperty("error", out var error))
+            {
+                // 不发 Configure：按配置这一步失败处理，宿主只记一条 Error
+                Assert.True(built.Error is not null, name);
+                Assert.True(error.GetProperty("code").GetString() == built.Error.Code, $"{name}: code '{built.Error.Code}'");
+                Assert.True(error.GetProperty("key").GetString() == built.Error.MessageKey, $"{name}: key '{built.Error.MessageKey}'");
+                using var details = JsonDocument.Parse(PluginJson.SerializeDetails(built.Error.Details!));
+                Assert.True(SameJson(error.GetProperty("details"), details.RootElement), $"{name}: details {details.RootElement.GetRawText()}");
+                Assert.True(logs.Entries.Count == 1 && logs.Entries[0].Level == LogLevel.Error, $"{name}: logs {logs.Entries.Count}");
+                continue;
+            }
+
+            Assert.True(built.IsSuccess, $"{name}: {built}");
+            var expected = @case.GetProperty("bindings").EnumerateArray().ToList();
+            var actual = built.ValueOrThrow().Bindings;
+            Assert.True(expected.Count == actual.Count, $"{name}: delivered {actual.Count} bindings");
+            foreach (var (want, got) in expected.Zip(actual))
+            {
+                Assert.True(
+                    (want.GetProperty("name").GetString(), want.GetProperty("type").GetString(), want.GetProperty("value").GetString()) == (got.Name, got.Type, got.Value),
+                    $"{name}: delivered '{got.Name}' of type '{got.Type}'");
+                Assert.True(SameProperties(PropertiesOf(want.GetProperty("properties")), got.Properties), $"{name}: properties of '{got.Name}'");
+            }
+
+            // 记了 Warning 的正是主值与属性都没有的那些绑定，此外没有别的日志
+            var warned = @case.GetProperty("warnings").EnumerateArray().Select(static w => w.GetString()!).ToList();
+            Assert.True(logs.Entries.Count == warned.Count && logs.Entries.All(static e => e.Level == LogLevel.Warning), $"{name}: logs {logs.Entries.Count}");
+            Assert.All(warned, binding => Assert.Contains(logs.Entries, e => e.Message.Contains($"'{binding}'", StringComparison.Ordinal)));
+        }
+    }
+
+    [Fact]
+    public void BindingProperties_Reading_IsWhatTheHostWrites()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "binding-properties.json")));
+        foreach (var @case in document.RootElement.GetProperty("reading").EnumerateArray())
+        {
+            var name = @case.GetProperty("name").GetString()!;
+            var request = new ConfigureRequest { Configuration = "{}" };
+            foreach (var binding in @case.GetProperty("bindings").EnumerateArray())
+            {
+                var proto = new ProtoBinding { Name = binding.GetProperty("name").GetString()!, Type = binding.GetProperty("type").GetString()!, Value = binding.GetProperty("value").GetString()! };
+                foreach (var property in binding.GetProperty("properties").EnumerateObject())
+                {
+                    proto.Properties.Add(property.Name, property.Value.GetString()!);
+                }
+
+                request.Bindings.Add(proto);
+            }
+
+            // 向量的字节与 JSON 文本就是宿主写出的：进程外载体发字节，Wasm 载体发 proto3 JSON
+            Assert.True(@case.GetProperty("hex").GetString() == Convert.ToHexStringLower(request.ToByteArray()), $"{name}: bytes {Convert.ToHexStringLower(request.ToByteArray())}");
+            Assert.True(@case.GetProperty("json").GetString() == Encoding.UTF8.GetString(PluginJsonCodec.Encode(request)), $"{name}: json {Encoding.UTF8.GetString(PluginJsonCodec.Encode(request))}");
+
+            // 读回来是同一个请求：没有属性的绑定读到空表，只差大小写的属性名是两项，值为空的属性照样在
+            var fromBytes = ConfigureRequest.Parser.ParseFrom(Convert.FromHexString(@case.GetProperty("hex").GetString()!));
+            var fromJson = PluginJsonCodec.Decode<ConfigureRequest>(Encoding.UTF8.GetBytes(@case.GetProperty("json").GetString()!));
+            Assert.True(request.Equals(fromBytes), $"{name}: the bytes read as {fromBytes}");
+            Assert.True(request.Equals(fromJson), $"{name}: the JSON text read as {fromJson}");
+            foreach (var (want, got) in @case.GetProperty("bindings").EnumerateArray().Zip(fromBytes.Bindings))
+            {
+                Assert.True(SameProperties(PropertiesOf(want.GetProperty("properties")), got.Properties), $"{name}: properties of '{got.Name}'");
+            }
+        }
+    }
+
+    [Fact]
+    public void BindingProperties_FixedReasons_AreWhatTheHostWrites()
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "plugin-messages.json")));
+        var reasons = document.RootElement.GetProperty("reasons").EnumerateArray()
+            .Where(static r => r.GetProperty("key").GetString() == PluginMessages.ProcessFailed && r.GetProperty("phase").GetString() == "configure")
+            .Select(static r => r.GetProperty("reason").GetString()!.Replace("{binding}", "db", StringComparison.Ordinal))
+            .ToHashSet(StringComparer.Ordinal);
+
+        // 组装 Configure 时属性不能下发的三种 reason（lifecycle.md §2）：只带绑定名与上限的数字
+        var tooMany = Enumerable.Range(0, PluginBindingProperties.MaxCount + 1).ToDictionary(static i => $"p{i}", static _ => "v", StringComparer.Ordinal);
+        Assert.Contains(PluginBindingProperties.FindViolation("db", tooMany).ValueOrThrow(), reasons);
+        Assert.Contains(PluginBindingProperties.FindViolation("db", new Dictionary<string, string> { ["user name"] = "v" }).ValueOrThrow(), reasons);
+        Assert.Contains(PluginBindingProperties.FindViolation("db", new Dictionary<string, string> { ["blob"] = new('v', PluginBindingProperties.MaxBytes) }).ValueOrThrow(), reasons);
+        Assert.False(PluginBindingProperties.FindViolation("db", new Dictionary<string, string> { ["username"] = "app" }).HasValue);
+    }
+
+    /// <summary>
+    /// 向量里一个绑定的属性：值是字符串，或 <c>{repeat, count}</c>（把 repeat 重复 count 次）
+    /// </summary>
+    private static Dictionary<string, string> PropertiesOf(JsonElement properties)
+        => properties.EnumerateObject().ToDictionary(
+            static p => p.Name,
+            static p => p.Value.ValueKind == JsonValueKind.String
+                ? p.Value.GetString()!
+                : string.Concat(Enumerable.Repeat(p.Value.GetProperty("repeat").GetString()!, p.Value.GetProperty("count").GetInt32())),
+            StringComparer.Ordinal);
+
+    /// <summary>
+    /// 两组属性逐项相同
+    /// </summary>
+    /// <remarks>
+    /// 属性名按字面比，各项的先后不计
+    /// </remarks>
+    private static bool SameProperties(Dictionary<string, string> expected, MapField<string, string> actual)
+        => expected.Count == actual.Count && expected.All(p => actual.TryGetValue(p.Key, out var value) && value == p.Value);
 
     /// <summary>
     /// 向量里的线上 Error

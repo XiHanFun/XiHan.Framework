@@ -46,6 +46,56 @@ public sealed class WasmPluginBindingTests : IDisposable
     }
 
     [Fact]
+    public async Task Binding_WithOnlyPropertyFiles_ReachesThePluginWithItsProperties()
+    {
+        // 只挂属性文件、没有 uri：修之前线协议带不了属性，这个绑定整个不下发，插件停在 Failed（ADR-0285）
+        Mount("db", ("type", "connection:relational"), ("host", "db.internal"), ("username", "app"), ("password", "mounted-pw-3c1e"));
+        using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "\"password\": \"mounted-pw-3c1e\"");
+
+        await using var host = await StartAsync(plugin, ["binding:db"]);
+
+        var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
+        Assert.True(status.State == LifecycleState.Ready, $"The plugin must be configured with the properties of the mounted binding, but it is {status.State}: {status.Error}");
+    }
+
+    [Fact]
+    public async Task Binding_PropertiesBesideTheMainValue_ReachThePlugin()
+    {
+        // 带 uri 的绑定里另放的凭据同样下发；配置来源的属性也一样（type、value 之外的子键）
+        Mount("db", ("uri", "mounted-db-7f3a"), ("password", "mounted-pw-3c1e"));
+        using var mounted = WatPlugin.ExpectingBinding("db", "connection:relational", "\"password\": \"mounted-pw-3c1e\"");
+        await using (var host = await StartAsync(mounted, ["binding:db"]))
+        {
+            var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
+            Assert.True(status.State == LifecycleState.Ready, $"The property beside the main value must reach the plugin, but it is {status.State}: {status.Error}");
+        }
+
+        using var configured = WatPlugin.ExpectingBinding("db", "connection:relational", "\"accessKey\": \"configured-ak-88d1\"");
+        await using (var host = await StartAsync(configured, ["binding:db"], ("XiHan:Bindings:db:value", "configured-db-91c2"), ("XiHan:Bindings:db:accessKey", "configured-ak-88d1")))
+        {
+            var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
+            Assert.True(status.State == LifecycleState.Ready, $"The configured property must reach the plugin, but it is {status.State}: {status.Error}");
+        }
+    }
+
+    [Fact]
+    public async Task Binding_WithTooManyProperties_FailsTheConfigureStep_WithoutNamingAnyValue()
+    {
+        // 超过上限不少发、不截断：配置这一步失败，插件停在 Failed；错误只带绑定名与上限的数字
+        Mount("db", [("uri", "mounted-db-7f3a"), .. Enumerable.Range(0, 64).Select(static i => ($"p{i:D2}", "mounted-pw-3c1e"))]);
+        using var plugin = WatPlugin.ExpectingBinding("db", "connection:relational", "mounted-db-7f3a");
+
+        await using var host = await StartAsync(plugin, ["binding:db"]);
+
+        var status = EchoWasmPluginHost.PluginHost(host).FindStatus(WatPlugin.PluginId).ValueOrThrow().Status;
+        Assert.Equal(LifecycleState.Failed, status.State);
+        Assert.Equal(PluginErrors.Unexpected, status.Error?.Code);
+        Assert.Equal("binding 'db' has more than 64 properties", status.Error?.Details?["reason"]);
+        Assert.DoesNotContain("mounted-pw-3c1e", status.Error!.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("mounted-db-7f3a", status.Error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Binding_ThatIsNotProvided_IsNotDelivered()
     {
         // 对照：根目录里没有这个绑定，插件在 Configure 里找不到它、报失败，停在 Failed

@@ -155,6 +155,52 @@ public sealed class OutOfProcessPluginHostTests
         }
     }
 
+    /// <summary>
+    /// 清单声明并获批的绑定连同属性到达插件进程
+    /// </summary>
+    /// <remarks>
+    /// ADR-0285。属性超过上限时配置这一步失败。EchoPlugin 不回报收到的绑定，这里看的是载体这一段：带属性的 <c>Configure</c> 请求插件照常应答、进入可服务状态；属性不能下发时宿主不发 <c>Configure</c>，插件停在 Failed，状态里的错误只带绑定名。请求里各字段的取值由 <c>PluginConfigureRequestsTests</c> 与向量 <c>binding-properties.json</c> 核对
+    /// </remarks>
+    [Fact]
+    public async Task Binding_WithProperties_ReachesThePluginProcess_AndBeyondTheLimitsFailsTheConfigureStep()
+    {
+        var root = Directory.CreateTempSubdirectory("xihan-plugin-bindings-");
+        try
+        {
+            // 只挂属性文件、没有 uri：修之前这个绑定整个不下发
+            Directory.CreateDirectory(Path.Combine(root.FullName, "db"));
+            await File.WriteAllTextAsync(Path.Combine(root.FullName, "db", "host"), "db.internal");
+            await File.WriteAllTextAsync(Path.Combine(root.FullName, "db", "password"), "mounted-pw-3c1e");
+            using var bound = new PluginCopy(EchoPluginHost.Directory);
+            bound.EditManifest(static manifest => manifest.Replace("\"entry\": \"EchoPlugin\"", "\"bindings\": [ { \"name\": \"db\", \"type\": \"connection:relational\" } ],\n  \"entry\": \"EchoPlugin\"", StringComparison.Ordinal));
+            (string Key, string Value)[] grants = [("XiHan:Plugins:OutOfProcess:Grants:xihan.samples.echo:2", "binding:db"), ("XiHan:Plugins:OutOfProcess:RestartLimit", "0")];
+
+            await using (var delivered = await EchoPluginHost.StartAsync(b => b.UseServiceBindingRoot(root.FullName), directory: bound.Directory, extra: grants))
+            {
+                var status = EchoPluginHost.PluginHost(delivered).FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status;
+                Assert.True(status.State is LifecycleState.Ready or LifecycleState.Degraded, $"The plugin must accept a Configure request carrying binding properties, but it is {status.State}: {status.Error}");
+            }
+
+            // 属性多于 64 个：不少发、不截断，宿主不发 Configure
+            for (var index = 0; index < 64; index++)
+            {
+                await File.WriteAllTextAsync(Path.Combine(root.FullName, "db", $"p{index:D2}"), "mounted-pw-3c1e");
+            }
+
+            await using var rejected = await EchoPluginHost.StartAsync(b => b.UseServiceBindingRoot(root.FullName), directory: bound.Directory, extra: grants);
+
+            var failed = EchoPluginHost.PluginHost(rejected).FindStatus(EchoPluginHost.PluginId).ValueOrThrow().Status;
+            Assert.Equal(LifecycleState.Failed, failed.State);
+            Assert.Equal(PluginErrors.Unexpected, failed.Error?.Code);
+            Assert.Equal("binding 'db' has more than 64 properties", failed.Error?.Details?["reason"]);
+            Assert.DoesNotContain("mounted-pw-3c1e", failed.Error!.ToString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public async Task Feature_HandsTheAppsServiceBindingRootToTheHost()
     {
