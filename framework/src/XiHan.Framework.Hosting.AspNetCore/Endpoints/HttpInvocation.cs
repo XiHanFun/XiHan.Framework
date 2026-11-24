@@ -27,15 +27,18 @@ namespace XiHan.Framework.Hosting.AspNetCore.Endpoints;
 public static partial class HttpInvocation
 {
     /// <summary>
-    /// 截止时间头：RFC 3339，UTC
+    /// 截止时间头
     /// </summary>
+    /// <remarks>
+    /// 值是绝对截止时间的文本，文法见 <see cref="DeadlineText"/>（RFC-0003 规则 8）：如 <c>2026-11-18T03:25:00Z</c>、<c>2026-11-18T11:25:00.5+08:00</c>，必须有 <c>T</c>、秒与偏移（<c>Z</c> 或 <c>±HH:MM</c>）。单值头，按整串匹配、不裁剪；读不出（不合文法、越界、空值、出现多次）当作没有这个头，请求照常处理（<c>spec/protocol/http.md</c>「上下文映射」）。写这个头用 <see cref="DeadlineText.Format"/>
+    /// </remarks>
     public const string DeadlineHeader = "xihan-deadline";
 
     /// <summary>
     /// gRPC 的相对超时头
     /// </summary>
     /// <remarks>
-    /// <c>{数值}{H|M|S|m|u|n}</c>；没有 <see cref="DeadlineHeader"/> 时按当前时刻换算为截止时间
+    /// <c>{数值}{H|M|S|m|u|n}</c>，数值 1 到 8 位；没有 <see cref="DeadlineHeader"/> 或它读不出时按当前时刻换算为截止时间，自己读不出、出现多次同样当作没有（<c>spec/protocol/grpc.md</c>）
     /// </remarks>
     public const string GrpcTimeoutHeader = "grpc-timeout";
 
@@ -48,7 +51,7 @@ public static partial class HttpInvocation
     /// 从请求头构造调用上下文
     /// </summary>
     /// <remarks>
-    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留已登记的键，其中 <see cref="BaggageKeys.Tenant"/> 与 <see cref="BaggageKeys.Principal"/> 不收：它们不能由调用方自报）、<c>xihan-deadline</c>（或 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字
+    /// <c>traceparent</c>（缺失时生成）、<c>baggage</c>（只保留已登记的键，其中 <see cref="BaggageKeys.Tenant"/> 与 <see cref="BaggageKeys.Principal"/> 不收：它们不能由调用方自报）、<c>xihan-deadline</c>（按 <see cref="DeadlineText"/> 的文法，读不出当作没有；没有时取 gRPC 的 <c>grpc-timeout</c>）、<c>Accept-Language</c>（没有显式 <c>xihan.locale</c> Baggage 时协商进去）、<c>Authorization</c>（原样放入凭据，由 Authenticate 阶段解释；没有时，登记过的查询串令牌路径下取 <c>access_token</c>，见 <see cref="InvocationAuthenticationOptions.QueryTokenPaths"/>）；调用来源（<see cref="InvocationOrigin"/>）记 HTTP 方法与路径、远端地址、<c>User-Agent</c> 与 <c>Referer</c>，以及匹配到的端点的路由模板与名字
     /// </remarks>
     public static InvocationContext CreateContext(HttpContext httpContext)
     {
@@ -95,9 +98,11 @@ public static partial class HttpInvocation
             traceFlags = traceparent.Sampled ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None;
         }
 
-        // 截止时间按不变文化解析并统一为 UTC；解析失败视为没有截止时间
+        // 截止时间按规则 8 的文法整串匹配，文法由原语 DeadlineText 统一判断，与插件协议同一条（RFC-0003 规则 8，ADR-0276、ADR-0278）：
+        // 值不裁剪、不换别的日期格式再试；它是单值头，出现多次时各个值以逗号并成一个文本，逗号不在文法里，哪一个都不取；
+        // 读不出（含空值）当作没有这个头、不报错，让 grpc-timeout 照常生效
         DateTimeOffset? deadline = null;
-        if (DateTimeOffset.TryParse(headers[DeadlineHeader].ToString(), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out var parsed))
+        if (DeadlineText.TryParse(headers[DeadlineHeader].ToString(), out var parsed))
         {
             deadline = parsed;
         }

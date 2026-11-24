@@ -28,9 +28,24 @@ internal static class ConformanceVectors
     /// </summary>
     /// <typeparam name="T">向量的对象模型</typeparam>
     /// <param name="fileName">相对于 <see cref="Directory"/> 的文件名</param>
-    public static T Load<T>(string fileName)
+    public static T Load<T>(string fileName) => LoadFile<T>(Path.Combine(Directory, fileName));
+
+    /// <summary>
+    /// 读取并反序列化别的目录下的一个向量文件
+    /// </summary>
+    /// <remarks>
+    /// 原语的文法有的与载体的向量放在一起：截止时间的文本在 <c>plugin/deadlines.json</c>，HTTP 与插件协议共用
+    /// </remarks>
+    /// <typeparam name="T">向量的对象模型</typeparam>
+    /// <param name="area"><c>conformance/vectors</c> 下的目录名，如 <c>plugin</c></param>
+    /// <param name="fileName">该目录下的文件名</param>
+    public static T Load<T>(string area, string fileName) => LoadFile<T>(Path.Combine(Directory, "..", area, fileName));
+
+    /// <summary>
+    /// 读取并反序列化给定路径的向量文件
+    /// </summary>
+    private static T LoadFile<T>(string path)
     {
-        var path = Path.Combine(Directory, fileName);
         using var stream = File.OpenRead(path);
         return JsonSerializer.Deserialize<T>(stream, _options) ?? throw new InvalidOperationException($"Vector file '{path}' is empty.");
     }

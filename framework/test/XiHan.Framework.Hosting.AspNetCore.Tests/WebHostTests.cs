@@ -278,6 +278,43 @@ public sealed class WebHostTests
         Assert.Equal("KERNEL_TIMEOUT_001", problem.RootElement.GetProperty("code").GetString());
     }
 
+    [Theory]
+    [InlineData("2020-01-01 00:00:00Z")]
+    [InlineData("2020-01-01T00:00:00")]
+    [InlineData("2020-01-01T00:00Z")]
+    [InlineData("2020-01-01")]
+    [InlineData("2020-01-01T00:00:00+0000")]
+    [InlineData("Wed, 01 Jan 2020 00:00:00 GMT")]
+    [InlineData("01/01/2020 00:00:00")]
+    public async Task DeadlineHeaderOutsideTheGrammar_IsTreatedAsAbsent(string value)
+    {
+        var (app, client, _) = await StartAsync();
+        await using var _ = app;
+
+        // 修之前通用的日期解析把这些都读成一个已经过去的时刻，调用以 504 结束；按规则 8 的文法读不出，当作没有这个头（ADR-0276、ADR-0278）
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/ok");
+        request.Headers.TryAddWithoutValidation(HttpInvocation.DeadlineHeader, value);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task RepeatedDeadlineHeader_IsTreatedAsAbsent()
+    {
+        var (app, client, captured) = await StartAsync();
+        await using var _ = app;
+
+        // 单值头出现两次：两个值以逗号并成一个文本，逗号不在文法里，哪一个都不取
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/ok");
+        request.Headers.TryAddWithoutValidation(HttpInvocation.DeadlineHeader, "2020-01-01T00:00:00Z");
+        request.Headers.TryAddWithoutValidation(HttpInvocation.DeadlineHeader, "2020-01-01T00:00:00Z");
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Null(captured.Context!.Deadline);
+    }
+
     [Fact]
     public async Task ExpiredGrpcTimeoutHeader_ReturnsGatewayTimeout()
     {

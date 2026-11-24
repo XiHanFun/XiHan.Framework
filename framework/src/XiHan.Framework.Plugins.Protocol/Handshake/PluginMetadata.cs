@@ -31,7 +31,8 @@ internal static class PluginMetadata
         var metadata = new InvocationMetadata { TraceParent = context.OutgoingTraceParent().ToString() };
         if (context.Deadline is { } deadline)
         {
-            metadata.Deadline = PluginDeadlines.Format(deadline);
+            // 与 HTTP 载体同一种写法：UTC、七位小数、+00:00（RFC-0003 规则 8）
+            metadata.Deadline = DeadlineText.Format(deadline);
         }
 
         foreach (var (key, value) in context.Baggage)

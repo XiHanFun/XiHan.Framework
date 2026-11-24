@@ -12,6 +12,7 @@ using XiHan.Framework.Plugins.Protocol;
 using XiHan.Framework.Plugins.Protocol.Handshake;
 using XiHan.Framework.Plugins.Protocol.Mapping;
 using XiHan.Framework.Primitives;
+using XiHan.Framework.Testing;
 using ProtoError = XiHan.Framework.Plugins.Protocol.V1.Error;
 using ProtoStatus = XiHan.Framework.Plugins.Protocol.V1.Status;
 
@@ -134,18 +135,26 @@ public sealed class ProtocolVectorTests
     public void Deadlines_FollowTheVectors()
     {
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(EchoPluginHost.VectorsDirectory, "deadlines.json")));
+        // 文法本身由原语 DeadlineText 回放（原语层的测试）；这里走插件协议自己的读写点：元数据的 deadline 怎样成为生效的截止时间、上下文的截止时间怎样写进元数据
+        var invalidTexts = document.RootElement.GetProperty("invalid").EnumerateArray().Select(static text => text.GetString()).ToList();
+        Assert.NotEmpty(invalidTexts);
         foreach (var valid in document.RootElement.GetProperty("valid").EnumerateArray())
         {
             var text = valid.GetProperty("text").GetString();
-            Assert.True(PluginDeadlines.TryParse(text, out var parsed), text);
-            Assert.Equal(Utc(valid.GetProperty("utc").GetString()!), parsed);
-            Assert.Equal(TimeSpan.Zero, parsed.Offset);
+            var read = PluginDeadlines.Effective(text, null);
+            Assert.True(read.HasValue, text);
+            Assert.Equal(Utc(valid.GetProperty("utc").GetString()!), read.Value);
+            Assert.Equal(TimeSpan.Zero, read.Value.Offset);
         }
 
-        foreach (var invalid in document.RootElement.GetProperty("invalid").EnumerateArray())
+        foreach (var invalid in invalidTexts)
         {
-            Assert.False(PluginDeadlines.TryParse(invalid.GetString(), out _), invalid.GetString());
+            Assert.False(PluginDeadlines.Effective(invalid, null).HasValue, invalid);
         }
+
+        // ADR-0276 补的宽松写法与并了两个时刻的值都在回放之列：HTTP 入口以前照收的，插件协议一侧从来读不出
+        Assert.Contains("Wed, 18 Nov 2026 03:25:00 +0000", invalidTexts);
+        Assert.Contains("2026-11-18T03:25:00Z,2026-11-18T03:25:05Z", invalidTexts);
 
         foreach (var effective in document.RootElement.GetProperty("effective").EnumerateArray())
         {
@@ -157,7 +166,8 @@ public sealed class ProtocolVectorTests
 
         foreach (var written in document.RootElement.GetProperty("written").EnumerateArray())
         {
-            Assert.Equal(written.GetProperty("text").GetString(), PluginDeadlines.Format(Utc(written.GetProperty("utc").GetString()!)));
+            var context = TestInvocationContext.Create(deadline: Utc(written.GetProperty("utc").GetString()!));
+            Assert.Equal(written.GetProperty("text").GetString(), PluginMetadata.FromContext(context).Deadline);
         }
     }
 

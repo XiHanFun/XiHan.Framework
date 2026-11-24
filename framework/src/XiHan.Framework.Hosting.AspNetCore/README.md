@@ -7,6 +7,7 @@
 ## 主要特性
 
 * `UseXiHan()` 把请求接入内核管道，支持 `traceparent`、`baggage`、`Accept-Language` 与截止时间
+* 截止时间头 `xihan-deadline` 只认一种写法：`2026-11-18T03:25:00Z` 或带偏移的 `2026-11-18T11:25:00.5+08:00`（必须有 `T`、秒与偏移，小数一到九位）；空格代替 `T`、没有偏移、只有日期、HTTP 日期等写法读不出，读不出与出现多次都当作没有这个头，请求照常处理。出站写这个头用 `DeadlineText.Format`
 * `MapXiHanHealth()` 提供 startup / ready / live 探针
 * 端点用 `RequireXiHanPermission` 等声明授权要求，启动时核对
 * 认证方案 `XiHan` 供 SignalR、SSE 等绕过管道的端点使用

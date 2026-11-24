@@ -6,6 +6,7 @@ XiHan.Framework.Primitives.ApiLevelAttribute.ScheduledStable.init -> void
 XiHan.Framework.Primitives.ApiLevelAttribute.Since.get -> string!
 XiHan.Framework.Primitives.ApiLevelAttribute.Stability.get -> XiHan.Framework.Primitives.Stability
 XiHan.Framework.Primitives.BaggageKeys
+XiHan.Framework.Primitives.DeadlineText
 XiHan.Framework.Primitives.Error
 XiHan.Framework.Primitives.Error.<Clone>$() -> XiHan.Framework.Primitives.Error!
 XiHan.Framework.Primitives.Error.Code.get -> string!
@@ -308,6 +309,8 @@ static XiHan.Framework.Primitives.BaggageKeys.IsAcceptableValue(string? value) -
 static XiHan.Framework.Primitives.BaggageKeys.IsRegistered(string? key) -> bool
 static XiHan.Framework.Primitives.BaggageKeys.IsWellFormed(string? key) -> bool
 static XiHan.Framework.Primitives.BaggageKeys.Registered.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static XiHan.Framework.Primitives.DeadlineText.Format(System.DateTimeOffset deadline) -> string!
+static XiHan.Framework.Primitives.DeadlineText.TryParse(string? text, out System.DateTimeOffset deadline) -> bool
 static XiHan.Framework.Primitives.Error.Conflict(string! code, string! messageKey) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Primitives.Error.Conflict(string! code, string! messageKey, System.Collections.Generic.IReadOnlyDictionary<string!, object?>? details) -> XiHan.Framework.Primitives.Error!
 static XiHan.Framework.Primitives.Error.Denied(string! code, string! messageKey) -> XiHan.Framework.Primitives.Error!
