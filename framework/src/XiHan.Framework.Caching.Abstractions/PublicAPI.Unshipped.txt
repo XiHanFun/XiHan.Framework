@@ -49,6 +49,16 @@ XiHan.Framework.Caching.Abstractions.Caches.ICacheInspector.InspectAsync(XiHan.F
 XiHan.Framework.Caching.Abstractions.Caches.ICacheInspector.ListKeysAsync(XiHan.Framework.Caching.Abstractions.Stores.CacheKeyQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<XiHan.Framework.Caching.Abstractions.Stores.CacheKeyPage!>>
 XiHan.Framework.Caching.Abstractions.Caches.ICacheInspector.RemoveByPrefixAsync(string! prefix, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Result<long>>
 XiHan.Framework.Caching.Abstractions.Caches.ISharedCache
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoad
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoad.IsSuperseded.get -> bool
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoad.TryWrite<TState>(TState state, System.Action<TState>! write) -> bool
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoadTable
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoadTable.Count.get -> int
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoadTable.InFlightLoadTable() -> void
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoadTable.RunAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Func<XiHan.Framework.Caching.Abstractions.Caches.InFlightLoad!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<T>>! load, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T>
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoadTable.Supersede(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys) -> void
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoadTable.Supersede(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key) -> void
+XiHan.Framework.Caching.Abstractions.Caches.InFlightLoadTable.SupersedePrefix(string! prefix) -> void
 XiHan.Framework.Caching.Abstractions.Caches.SerializingCache
 XiHan.Framework.Caching.Abstractions.Caches.SerializingCache.GetAsync<T>(XiHan.Framework.Caching.Abstractions.Stores.CacheKey key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<XiHan.Framework.Primitives.Maybe<T>>
 XiHan.Framework.Caching.Abstractions.Caches.SerializingCache.GetManyAsync<T>(System.Collections.Generic.IReadOnlyList<XiHan.Framework.Caching.Abstractions.Stores.CacheKey>! keys, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<XiHan.Framework.Primitives.Maybe<T>>!>

@@ -7,6 +7,7 @@
 ## 主要特性
 
 * 进程内缓存与跨进程共享缓存两套门面，支持批量读写与 `GetOrCreateAsync`
+* `GetOrCreateAsync` 合并同键并发：同一个缓存实例上同一个键同时未命中只回源一次，其余调用等它的结果
 * 绝对或滑动过期
 * 基于存储的分布式租约锁
 * `IDistributedCache` 适配与操作调用的幂等去重
@@ -36,6 +37,14 @@ var profile = await cache.GetOrCreateAsync(
 
 存储不可达时抛出携带 `CACHING_UNAVAILABLE_001` 的 `FrameworkException`，不会伪装成未命中。
 
+同一个键同时未命中时只有先到的调用执行工厂，其余的等它的结果：
+
+* 工厂在先到的那次调用里执行，收到的是它的取消令牌；等待的调用取消只结束自己的等待，先到的调用取消时由等待的调用里的一个接手、执行它自己的工厂。
+* 工厂抛出时当时在等的调用都收到同一个异常，失败不缓存。
+* 回源期间经同一个缓存写入或删除这个键，这次回源的结果不再写回，之后的调用重新读缓存。
+* 合并只在一个进程的一个缓存实例内；多实例各自回源，要跨实例只算一次用 `IDistributedLock`。
+* 同一个键必须对应同一份数据：被合并的调用不执行自己的工厂，拿到的是先到那次的结果，过期选项也以它为准。
+
 数据会被写入改变、写入后要让一批条目一起失效时，用 `GenerationCache<T>`：
 
 ```csharp
@@ -58,6 +67,7 @@ await prices.InvalidateAsync([tenantId], ct);
 * `IDistributedLock`、`LockHandle`：分布式锁
 * `ICacheSerializer`、`JsonCacheSerializer`、`CacheSerializerRegistration`、`CacheTypeInfoSource`：共享缓存的值序列化与组件类型的登记
 * `GenerationCache<T>`、`GenerationCacheKey`、`GenerationCacheEntry<T>`：按范围失效的缓存区
+* `InFlightLoadTable`、`InFlightLoad`：同键并发回源的在途表，自己实现 `ICache` 时用它得到同样的合并语义
 * `IdempotencyMiddleware`：按幂等键去重
 
 ## 更多文档

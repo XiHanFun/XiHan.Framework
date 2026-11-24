@@ -71,7 +71,14 @@ public interface ICache
     /// 命中返回，未命中则调用 <paramref name="factory"/> 并写入
     /// </summary>
     /// <remarks>
-    /// 不做并发合并：多个未命中调用者各自执行工厂
+    /// 同一个缓存实例上同一个键、同一种结果类型的并发未命中由先到的调用回源，其余的等它的结果（ADR-0271）；跨实例、跨进程不合并，要跨实例只算一次用 <see cref="Locking.IDistributedLock"/>。
+    /// <list type="bullet">
+    /// <item>工厂在先到的那次调用里执行，收到的是它的 <paramref name="cancellationToken"/>。等待的调用取消只结束自己的等待；先到的调用取消时工厂随它取消，等待的调用里先到的一个接手、执行它自己的工厂</item>
+    /// <item>工厂抛出（先到的调用没有取消）时，当时在等的调用都收到同一个异常；失败不缓存，下一次调用重新回源</item>
+    /// <item>回源期间经本实例写入或删除这个键，这次回源就与它脱钩：已经在等的调用照常拿到结果，结果不再写回缓存，之后的调用重新读缓存</item>
+    /// <item>被合并的调用拿到的是先到那次工厂的结果，过期选项也以它为准：同一个键必须对应同一份数据</item>
+    /// </list>
+    /// 缓存后端读写失败照常抛出，不改为直接回源
     /// </remarks>
     ValueTask<T> GetOrCreateAsync<T>(CacheKey key, Func<CancellationToken, ValueTask<T>> factory, CacheEntryOptions options, CancellationToken cancellationToken)
         where T : notnull;

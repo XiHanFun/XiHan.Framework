@@ -56,6 +56,14 @@ internal sealed class RecordingSharedCache : ISharedCache
     /// </remarks>
     public Action<IReadOnlyList<CacheKey>>? AfterRead { get; set; }
 
+    /// <summary>
+    /// 单键读取在记下操作之后、真正读之前等它
+    /// </summary>
+    /// <remarks>
+    /// 用来让读 L2 停在途中，好让别的调用撞上这次读取；为 <see langword="null"/> 时不等
+    /// </remarks>
+    public Task? BeforeRead { get; set; }
+
     /// <inheritdoc />
     public ICacheStore Store { get; }
 
@@ -63,6 +71,11 @@ internal sealed class RecordingSharedCache : ISharedCache
     public async ValueTask<Maybe<T>> GetAsync<T>(CacheKey key, CancellationToken cancellationToken)
     {
         Operations.Add("get:" + key.Value);
+        if (BeforeRead is { } gate)
+        {
+            await gate;
+        }
+
         var value = await _inner.GetAsync<T>(key, cancellationToken);
         AfterRead?.Invoke([key]);
         return value;

@@ -39,6 +39,16 @@ internal sealed class FakeCacheStore : ICacheStore
     public int Count => _entries.Count;
 
     /// <summary>
+    /// 为真时单键读取抛出「后端不可达」
+    /// </summary>
+    public bool FailingReads { get; set; }
+
+    /// <summary>
+    /// 为真时单键写入抛出「后端不可达」
+    /// </summary>
+    public bool FailingWrites { get; set; }
+
+    /// <summary>
     /// 直接按原始键读取字节
     /// </summary>
     /// <remarks>
@@ -52,6 +62,11 @@ internal sealed class FakeCacheStore : ICacheStore
     public ValueTask<Maybe<ReadOnlyMemory<byte>>> GetAsync(CacheKey key, CancellationToken cancellationToken)
     {
         Operations.Add("get:" + key.Value);
+        if (FailingReads)
+        {
+            throw Unavailable();
+        }
+
         return ValueTask.FromResult(_entries.TryGetValue(key.Value, out var value) ? Maybe.Some(new ReadOnlyMemory<byte>(value)) : default);
     }
 
@@ -64,6 +79,11 @@ internal sealed class FakeCacheStore : ICacheStore
     public ValueTask SetAsync(CacheKey key, ReadOnlyMemory<byte> value, CacheEntryOptions options, CancellationToken cancellationToken)
     {
         Operations.Add("set:" + key.Value);
+        if (FailingWrites)
+        {
+            throw Unavailable();
+        }
+
         _entries[key.Value] = value.ToArray();
         return ValueTask.CompletedTask;
     }
@@ -162,4 +182,9 @@ internal sealed class FakeCacheStore : ICacheStore
         Operations.Add("car:" + key.Value);
         return ValueTask.FromResult(_entries.TryGetValue(key.Value, out var current) && expectedValue.Span.SequenceEqual(current));
     }
+
+    /// <summary>
+    /// 与 Redis 断线时一样的异常
+    /// </summary>
+    private static FrameworkException Unavailable() => new(CachingErrors.StoreUnavailable, "The cache store is unavailable (simulated by FakeCacheStore).");
 }

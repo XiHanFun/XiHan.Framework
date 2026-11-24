@@ -149,7 +149,8 @@ public sealed class HybridObjectCacheTests : IDisposable
         Assert.Equal("built", await _cache.GetOrCreateAsync<string>(new CacheKey("k"), Factory, CacheEntryOptions.Default, CancellationToken.None));
         Assert.Equal("built", await _cache.GetOrCreateAsync<string>(new CacheKey("k"), Factory, CacheEntryOptions.Default, CancellationToken.None));
         Assert.Equal(1, calls);
-        Assert.Equal(["getorcreate:k"], _shared.Operations);
+        // 读与写分开交给 L2：两级都未命中才执行工厂，结果写进 L2 再回填 L1
+        Assert.Equal(["get:k", "set:k"], _shared.Operations);
 
         // 类型不匹配按未命中处理，交给 L2 判定
         Assert.False((await _cache.GetAsync<int>(new CacheKey("k"), CancellationToken.None)).HasValue);

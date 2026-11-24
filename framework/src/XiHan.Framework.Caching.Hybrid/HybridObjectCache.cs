@@ -38,6 +38,11 @@ public sealed class HybridObjectCache : ICache, IDisposable
     private readonly LocalEntryTable _local;
 
     /// <summary>
+    /// 同键并发回源的在途表
+    /// </summary>
+    private readonly InFlightLoadTable _loads = new();
+
+    /// <summary>
     /// 对 L2 存储变更的订阅
     /// </summary>
     /// <remarks>
@@ -66,16 +71,21 @@ public sealed class HybridObjectCache : ICache, IDisposable
     public void Dispose() => _changes?.Dispose();
 
     /// <summary>
-    /// 存储变了：失效 L1 里的这些键或前缀
+    /// 存储变了：失效 L1 里的这些键或前缀，在途的回源与它们脱钩
     /// </summary>
+    /// <remarks>
+    /// 通知到达之后才来的调用不加入通知之前开始的回源（它读到的可能是变更之前的数据），重新去读 L2
+    /// </remarks>
     private void Invalidate(CacheChange change)
     {
         if (change.Prefix is { } prefix)
         {
+            _loads.SupersedePrefix(prefix);
             _local.RemovePrefix(prefix);
             return;
         }
 
+        _loads.Supersede(change.Keys);
         foreach (var key in change.Keys)
         {
             _local.Remove(key.Value);
@@ -91,6 +101,14 @@ public sealed class HybridObjectCache : ICache, IDisposable
     /// L1 当前条目数
     /// </summary>
     public int LocalCount => _local.Count;
+
+    /// <summary>
+    /// 在途的键数
+    /// </summary>
+    /// <remarks>
+    /// 测试用它确认回源结束后表里不留条目
+    /// </remarks>
+    internal int InFlightCount => _loads.Count;
 
     /// <inheritdoc />
     public async ValueTask<Maybe<T>> GetAsync<T>(CacheKey key, CancellationToken cancellationToken)
@@ -164,6 +182,8 @@ public sealed class HybridObjectCache : ICache, IDisposable
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(options);
         var validated = options.Validated();
+        // 改缓存之前让在途的回源脱钩：它的结果可能早于这次写入，不能在这之后再写进 L2
+        _loads.Supersede(key);
         // 先远后近：L2 写失败时 L1 不留下别的实例看不到的值
         await _shared.SetAsync(key, value, validated, cancellationToken).ConfigureAwait(false);
         _local.Set(key.Value, value, ExpiresAt(validated));
@@ -176,11 +196,14 @@ public sealed class HybridObjectCache : ICache, IDisposable
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(options);
         var validated = options.Validated();
-        foreach (var entry in entries)
+        var keys = new CacheKey[entries.Count];
+        for (var index = 0; index < entries.Count; index++)
         {
-            ArgumentNullException.ThrowIfNull(entry.Value);
+            ArgumentNullException.ThrowIfNull(entries[index].Value);
+            keys[index] = entries[index].Key;
         }
 
+        _loads.Supersede(keys);
         await _shared.SetManyAsync(entries, validated, cancellationToken).ConfigureAwait(false);
         var expiresAt = ExpiresAt(validated);
         foreach (var entry in entries)
@@ -192,6 +215,8 @@ public sealed class HybridObjectCache : ICache, IDisposable
     /// <inheritdoc />
     public async ValueTask<bool> RemoveAsync(CacheKey key, CancellationToken cancellationToken)
     {
+        // 先脱钩再删：删除之后才到的调用不会加入删除之前开始的回源
+        _loads.Supersede(key);
         var removed = await _shared.RemoveAsync(key, cancellationToken).ConfigureAwait(false);
         // 两级任一存在过都算删到了东西
         return _local.Remove(key.Value) | removed;
@@ -201,6 +226,7 @@ public sealed class HybridObjectCache : ICache, IDisposable
     public async ValueTask<IReadOnlyList<bool>> RemoveManyAsync(IReadOnlyList<CacheKey> keys, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(keys);
+        _loads.Supersede(keys);
         var removed = await _shared.RemoveManyAsync(keys, cancellationToken).ConfigureAwait(false);
         var results = new bool[keys.Count];
         for (var index = 0; index < keys.Count; index++)
@@ -212,23 +238,63 @@ public sealed class HybridObjectCache : ICache, IDisposable
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// 合并的范围是本实例（ADR-0271）：L1 未命中的并发调用只读一次 L2，两级都未命中才由先到的调用执行工厂。本实例对这个键的写入、删除与 L2 存储的变更通知都让在途的回源脱钩；L2 是异步的，脱钩只挡得住还没发出的写回
+    /// </remarks>
     public async ValueTask<T> GetOrCreateAsync<T>(CacheKey key, Func<CancellationToken, ValueTask<T>> factory, CacheEntryOptions options, CancellationToken cancellationToken)
         where T : notnull
     {
         ArgumentNullException.ThrowIfNull(factory);
         ArgumentNullException.ThrowIfNull(options);
+        // L1 命中是常态：不进在途表
         if (_local.Get(key.Value) is T hit)
         {
             return hit;
         }
 
-        // L2 未命中才执行工厂（由 L2 判定与写入），结果回填 L1。读之前记下失效轮次：途中有失效（含工厂写入 L2 引起的本实例通知）就不回填，下一次读取再去 L2
         var validated = options.Validated();
-        var epoch = _local.EpochOf(key.Value);
-        var value = await _shared.GetOrCreateAsync(key, factory, validated, cancellationToken).ConfigureAwait(false);
-        _local.SetIfUnchanged(key.Value, value, ExpiresAt(validated), epoch);
-        return value;
+        return await _loads.RunAsync(
+            key,
+            async (load, token) =>
+            {
+                // 领头的调用再看一次 L1：上面的未命中可能已经过时，上一次回源刚好在那之后回填
+                if (_local.Get(key.Value) is T filled)
+                {
+                    return filled;
+                }
+
+                // 读 L2 之前记下失效轮次：途中有失效（含下面写入 L2 引起的本实例通知）就不回填 L1，下一次读取再去 L2
+                var epoch = _local.EpochOf(key.Value);
+                var fetched = await _shared.GetAsync<T>(key, token).ConfigureAwait(false);
+                if (fetched.TryGetValue(out var shared))
+                {
+                    Backfill(load, key.Value, shared, ExpiresAt(validated), epoch);
+                    return shared;
+                }
+
+                // 两级都未命中才执行工厂。读与写分开交给 L2，不用它的 GetOrCreateAsync：L2 自己的在途表看不到这里收到的变更通知
+                var created = await factory(token).ConfigureAwait(false);
+                ArgumentNullException.ThrowIfNull(created, nameof(factory));
+                // 回源期间这个键被写入、删除或收到变更通知：结果可能早于那次变更，交给等待的调用但不写进 L2
+                if (!load.IsSuperseded)
+                {
+                    await _shared.SetAsync(key, created, validated, token).ConfigureAwait(false);
+                }
+
+                Backfill(load, key.Value, created, ExpiresAt(validated), epoch);
+                return created;
+            },
+            cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// 把在途回源得到的值回填 L1
+    /// </summary>
+    /// <remarks>
+    /// 两道核对：回源没有被取代（本实例的写入不改失效轮次，只能靠它挡住；与取代互斥，被取代之后一定不回填），且键所在条带的失效轮次没有变过
+    /// </remarks>
+    private void Backfill(InFlightLoad load, string key, object value, DateTimeOffset expiresAt, long epoch)
+        => load.TryWrite((Local: _local, Key: key, Value: value, ExpiresAt: expiresAt, Epoch: epoch), static entry => entry.Local.SetIfUnchanged(entry.Key, entry.Value, entry.ExpiresAt, entry.Epoch));
 
     /// <summary>
     /// L1 的过期时刻
